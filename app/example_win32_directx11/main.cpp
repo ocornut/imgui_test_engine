@@ -131,16 +131,19 @@ bool MainLoopNewFrame()
 	}
 
 	// Start the Dear ImGui frame
-	ImGui_ImplDX11_NewFrame();
-	ImGui_ImplWin32_NewFrame();
-	ImGui::NewFrame();
+    if (!quit_application)
+    {
+        ImGui_ImplDX11_NewFrame();
+        ImGui_ImplWin32_NewFrame();
+    }
+    ImGui::NewFrame();
 
 	return !quit_application;
 }
 
 bool MainLoopEndFrame()
 {
-    ImGuiTestEngine_ShowTestingWindow(test_engine, NULL);
+    ImGuiTestEngine_ShowTestWindow(test_engine, NULL);
 
     // 1. Show the big demo window (Most of the sample code is in ImGui::ShowDemoWindow()! You can browse its code to learn more about Dear ImGui!).
     if (show_demo_window)
@@ -179,13 +182,22 @@ bool MainLoopEndFrame()
         ImGui::End();
     }
 
+    ImGui::EndFrame();
+
+#if 0
+    // Super fast mode doesn't render/present
+    ImGuiTestEngineIO& test_io = ImGuiTestEngine_GetIO(test_engine);
+    if (test_io.RunningTests && test_io.ConfigRunFast)
+        return true;
+#endif
+
     // Rendering
     ImGui::Render();
     g_pd3dDeviceContext->OMSetRenderTargets(1, &g_mainRenderTargetView, NULL);
     g_pd3dDeviceContext->ClearRenderTargetView(g_mainRenderTargetView, (float*)&clear_color);
     ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
 
-    g_pSwapChain->Present(1, 0); // Present with vsync
+    g_pSwapChain->Present(0, 0); // Present with vsync
     //g_pSwapChain->Present(0, 0); // Present without vsync
     return true;
 };

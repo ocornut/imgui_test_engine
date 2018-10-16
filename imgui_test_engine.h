@@ -20,6 +20,7 @@ struct ImGuiTestLocateResult;
 struct ImRect;
 
 typedef int     ImGuiTestFlags;
+typedef int     ImGuiLocateFlags;
 
 //-------------------------------------------------------------------------
 // Types
@@ -37,7 +38,13 @@ enum ImGuiTestStatus
 enum ImGuiTestFlags_
 {
     ImGuiTestFlags_None         = 0,
-    ImGuiTestFlags_NoWarmUp     = 1 << 0        // By default, we run the gui func twice before starting the test code
+    ImGuiTestFlags_NoWarmUp     = 1 << 0        // By default, we run the GUI func twice before starting the test code
+};
+
+enum ImGuiLocateFlags_
+{
+    ImGuiLocateFlags_None       = 0,
+    ImGuiLocateFlags_NoError     = 1 << 0        // Don't abort/error if the item cannot be found
 };
 
 //-------------------------------------------------------------------------
@@ -46,7 +53,8 @@ enum ImGuiTestFlags_
 
 void    ImGuiTestEngineHook_PreNewFrame();
 void    ImGuiTestEngineHook_PostNewFrame();
-void    ImGuiTestEngineHook_ItemAdd(const ImRect& bb, ImGuiID id, const ImRect* nav_bb_arg);
+void    ImGuiTestEngineHook_ItemAdd(ImGuiID id, const ImRect& bb);
+void    ImGuiTestEngineHook_ItemStatusFlags(ImGuiID id, int flags);
 
 //-------------------------------------------------------------------------
 // Hooks for Tests
@@ -81,13 +89,16 @@ struct ImGuiTestEngineIO
     ImGuiTestEngineNewFrameFunc     NewFrameFunc        = NULL;
 	void*                           UserData            = NULL;
 
-    // Options
+    // Inputs: Options
     bool                            ConfigRunFast       = true;     // Run tests as fast as possible (teleport mouse, skip delays, etc.)
     bool                            ConfigRunBlind      = false;    // Run tests in a blind ImGuiContext separated from the visible context
     bool                            ConfigBreakOnError  = false;    // Break debugger on test error
     bool                            ConfigLogVerbose    = false;    // Verbose log
     float                           MouseSpeed          = 1000.0f;  // Mouse speed (pixel/second) when not running in fast mode
     float                           ScrollSpeed         = 1000.0f;  // Scroll speed (pixel/second) when not running in fast mode
+
+    // Outputs: State
+    bool                            RunningTests        = false;
 };
 
 //-------------------------------------------------------------------------
@@ -126,6 +137,16 @@ struct ImGuiTest
 // This is the interface that most tests will interact with.
 //-------------------------------------------------------------------------
 
+enum ImGuiTestAction
+{
+    ImGuiTestAction_Unknown = 0,
+    ImGuiTestAction_Click,
+    ImGuiTestAction_Check,
+    ImGuiTestAction_Uncheck,
+    ImGuiTestAction_Open,
+    ImGuiTestAction_Close
+};
+
 struct ImGuiTestContext
 {
     ImGuiTest*              Test;
@@ -161,20 +182,28 @@ struct ImGuiTestContext
     void        Sleep(float time);
     void        SleepShort();
 
-    void        SetRef(const char* str_id);
+    void        SetRef(const char* path);
 
-    void        MouseMove(const char* str_id);
+    void        MouseMove(const char* path);
     void        MouseMove(ImVec2 pos);
     void        MouseClick(int button = 0);
 
-    void        FocusWindowForItem(const char* str_id);
+    void        FocusWindowForItem(const char* path);
 
-    void        ItemClick(const char* str_id);
-    void        ItemHold(const char* str_id, float time);
-    void        ItemOpen(const char* str_id);
-    ImGuiTestLocateResult* ItemLocate(const char* str_id);
+    void        ItemAction(ImGuiTestAction action, const char* path);
+    void        ItemClick(const char* path)       { ItemAction(ImGuiTestAction_Click, path); }
+    void        ItemOpen(const char* path)        { ItemAction(ImGuiTestAction_Open, path); }
+    void        ItemClose(const char* path)       { ItemAction(ImGuiTestAction_Close, path); }
 
-    void        MenuItemClick(const char* menu_path);
+    void        ItemHold(const char* path, float time);
+    ImGuiTestLocateResult* ItemLocate(const char* path, ImGuiLocateFlags flags = ImGuiLocateFlags_None);
+    bool        ItemIsChecked(const char* path);
+    void        ItemVerifyCheckedIfAlive(const char* path, bool checked);
+
+    void        MenuAction(ImGuiTestAction action, const char* path);
+    void        MenuClick(const char* path)     { MenuAction(ImGuiTestAction_Click, path); }
+    void        MenuCheck(const char* path)     { MenuAction(ImGuiTestAction_Check, path); }
+    void        MenuUncheck(const char* path)   { MenuAction(ImGuiTestAction_Uncheck, path); }
 
     void        PopupClose();
 };
