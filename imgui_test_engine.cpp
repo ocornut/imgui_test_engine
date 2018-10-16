@@ -1,6 +1,10 @@
 // dear imgui
 // (test engine)
 
+#if defined(_MSC_VER) && !defined(_CRT_SECURE_NO_WARNINGS)
+#define _CRT_SECURE_NO_WARNINGS
+#endif
+
 #include "imgui.h"
 #define IMGUI_DEFINE_MATH_OPERATORS
 #include "imgui_internal.h"
@@ -22,15 +26,15 @@
 // GOAL: Reliable performance measurement (w/ deterministic setup)
 // GOAL: Full blind version with no graphical context.
 
-// FIXME-TESTS: Scrolling bugs in MouseMove()
 // FIXME-TESTS: Allow the test to push an ID context (e.g. set current window)
 // FIXME-TESTS: Allow the user to specify ID with a single / separated string. In this case we need to support \/ as a real slash (rarely used).
 // FIXME-TESTS: Be able to run blind
 // FIXME-TESTS: Be able to interactively run GUI function without Test function
 // FIXME-TESTS: Provide variants of same test (e.g. run same tests with a bunch of styles/flags)
+// FIXME-TESTS: Automate clicking/opening stuff based on gathering id?
 
 //-------------------------------------------------------------------------
-// TEST ENGINE
+// [SECTION] DATA STRUCTURES
 //-------------------------------------------------------------------------
 
 static ImGuiTestEngine*     GImGuiTestEngine;
@@ -38,20 +42,23 @@ static ImGuiTestEngine*     GImGuiTestEngine;
 struct ImGuiTestLocateResult
 {
     int                 FrameCount;     // Timestamp of result
+    int                 RefCount;       // User can increment this to make the task stay valid
     ImRect              Rect;
     ImRect              RectNav;
     ImGuiID             ID;
     ImGuiWindow*        Window;
+    int                 NavLayer;
 
     ImGuiTestLocateResult()
     {
         FrameCount = -1;
+        RefCount = 0;
         Rect = RectNav = ImRect();
         ID = 0;
         Window = NULL;
+        NavLayer = 0;
     }
     bool IsValid() const { return FrameCount != 1; }
-    void Invalidate()    { FrameCount = -1; }
 };
 
 struct ImGuiTestLocateTask
@@ -89,6 +96,7 @@ struct ImGuiTestEngine
 
     // UI support
     bool                            Abort;
+    bool                            UiFocus;
     ImGuiTest*                      UiSelectedTest;
 
     // Functions
@@ -106,6 +114,7 @@ struct ImGuiTestEngine
 
         // UI support
         Abort = false;
+        UiFocus = false;
         UiSelectedTest = NULL;
     }
 
@@ -117,11 +126,11 @@ struct ImGuiTestEngine
 };
 
 //-------------------------------------------------------------------------
-// TEST ENGINE: FORWARD DECLARATIONS
+// [SECTION] TEST ENGINE: FORWARD DECLARATIONS
 //-------------------------------------------------------------------------
 
 // Private functions
-static ImGuiTestLocateResult*   ImGuiTestEngine_ItemLocate(ImGuiTestEngine* engine, const char* str_id, ImGuiID id);
+static ImGuiTestLocateResult*   ImGuiTestEngine_ItemLocate(ImGuiTestEngine* engine, ImGuiID id, const char* debug_id);
 static void                     ImGuiTestEngine_ApplyInputToImGuiContext(ImGuiTestEngine* engine);
 static void                     ImGuiTestEngine_ProcessQueue(ImGuiTestEngine* engine);
 static void                     ImGuiTestEngine_ClearTests(ImGuiTestEngine* engine);
@@ -133,7 +142,24 @@ static void                     ImGuiTestEngine_QueueTest(ImGuiTestEngine* engin
 static inline bool              ImGuiTestEngine_IsRunningTests(ImGuiTestEngine* engine) { return engine->TestsQueue.Size > 0; }
 
 //-------------------------------------------------------------------------
-// TEST ENGINE: FUNCTIONS
+// [SECTION] TEST ENGINE: FUNCTIONS
+//-------------------------------------------------------------------------
+// - ImGuiTestEngine_CreateContext()
+// - ImGuiTestEngine_ShutdownContext()
+// - ImGuiTestEngine_GetIO()
+// - ImGuiTestEngine_Abort()
+// - ImHashDecoratedPath()
+// - ImGuiTestEngine_FindLocateTask()
+// - ImGuiTestEngine_ItemLocate()
+// - ImGuiTestEngine_ClearTests()
+// - ImGuiTestEngine_ClearLocateTasks()
+// - ImGuiTestEngine_ApplyInputToImGuiContext()
+// - ImGuiTestEngine_PreNewFrame()
+// - ImGuiTestEngine_PostNewFrame()
+// - ImGuiTestEngine_Yield()
+// - ImGuiTestEngine_ProcessQueue()
+// - ImGuiTestEngine_QueueTest()
+// - ImGuiTestEngine_RunTest()
 //-------------------------------------------------------------------------
 
 ImGuiTestEngine*    ImGuiTestEngine_CreateContext(ImGuiContext* imgui_context)
@@ -171,23 +197,82 @@ void    ImGuiTestEngine_Abort(ImGuiTestEngine* engine)
         engine->TestContext->Abort = true;
 }
 
-static ImGuiTestLocateResult* ImGuiTestEngine_ItemLocate(ImGuiTestEngine* engine, const char* str_id, ImGuiID id)
+// Hash "hello/world" as if it was "helloworld"
+// To hash a forward slash we need to use "hello\\/world"
+//   IM_ASSERT(ImHashDecoratedPath("Hello/world")   == ImHash("Helloworld", 0));
+//   IM_ASSERT(ImHashDecoratedPath("Hello\\/world") == ImHash("Hello/world", 0));
+// Adapted from ImHash(). Not particularly fast!
+static ImGuiID ImHashDecoratedPath(const char* str, ImGuiID seed)
 {
-    if (id == 0)
+    static ImU32 crc32_lut[256] = { 0 };
+    if (!crc32_lut[1])
     {
-        IM_ASSERT(str_id != 0);
-        id = ImHash(str_id, 0);
+        const ImU32 polynomial = 0xEDB88320;
+        for (ImU32 i = 0; i < 256; i++)
+        {
+            ImU32 crc = i;
+            for (ImU32 j = 0; j < 8; j++)
+                crc = (crc >> 1) ^ (ImU32(-int(crc & 1)) & polynomial);
+            crc32_lut[i] = crc;
+        }
     }
 
+    // Prefixing the string with / ignore the seed
+    if (str[0] == '/')
+        seed = 0;
+
+    seed = ~seed;
+    ImU32 crc = seed;
+
+    // Zero-terminated string
+    bool inhibit_one = false;
+    const unsigned char* current = (const unsigned char*)str;
+    while (unsigned char c = *current++)
+    {
+        if (c == '\\' && !inhibit_one)
+        {
+            inhibit_one = true;
+            continue;
+        }
+
+        // Forward slashes are ignored unless prefixed with a backward slash
+        if (c == '/' && !inhibit_one)
+        {
+            inhibit_one = false;
+            continue;
+        }
+
+        // Reset the hash when encountering ### 
+        if (c == '#' && current[0] == '#' && current[1] == '#')
+            crc = seed;
+
+        crc = (crc >> 8) ^ crc32_lut[(crc & 0xFF) ^ c];
+        inhibit_one = false;
+    }
+    return ~crc;
+}
+
+// FIXME-OPT
+ImGuiTestLocateTask* ImGuiTestEngine_FindLocateTask(ImGuiTestEngine* engine, ImGuiID id)
+{
     for (int task_n = 0; task_n < engine->LocateTasks.Size; task_n++)
     {
         ImGuiTestLocateTask* task = engine->LocateTasks[task_n];
         if (task->ID == id)
-        {
-            if (task->Result.FrameCount + 2 >= engine->FrameCount)
-                return &task->Result;
-            return NULL;
-        }
+            return task;
+    }
+    return NULL;
+}
+
+static ImGuiTestLocateResult* ImGuiTestEngine_ItemLocate(ImGuiTestEngine* engine, ImGuiID id, const char* debug_id)
+{
+    IM_ASSERT(id != 0);
+
+    if (ImGuiTestLocateTask* task = ImGuiTestEngine_FindLocateTask(engine, id))
+    {
+        if (task->Result.FrameCount + 2 >= engine->FrameCount)
+            return &task->Result;
+        return NULL;
     }
 
     // Create task
@@ -195,19 +280,19 @@ static ImGuiTestLocateResult* ImGuiTestEngine_ItemLocate(ImGuiTestEngine* engine
     task->ID = id;
     task->FrameCount = engine->FrameCount;
 #if IMGUI_DEBUG_TEST_ENGINE
-    if (str_id)
+    if (debug_id)
     {
-        size_t str_id_sz = strlen(str_id);
-        if (str_id_sz < IM_ARRAYSIZE(task->DebugName) - 1)
+        size_t debug_id_sz = strlen(debug_id);
+        if (debug_id_sz < IM_ARRAYSIZE(task->DebugName) - 1)
         {
-            memcpy(task->DebugName, str_id, str_id_sz + 1);
+            memcpy(task->DebugName, debug_id, debug_id_sz + 1);
         }
         else
         {
             size_t header_sz = (size_t)(IM_ARRAYSIZE(task->DebugName) * 0.30f);
             size_t footer_sz = IM_ARRAYSIZE(task->DebugName) - 2 - header_sz;
             IM_ASSERT(header_sz > 0 && footer_sz > 0);
-            ImFormatString(task->DebugName, IM_ARRAYSIZE(task->DebugName), "%.*s..%.*s", header_sz, str_id, footer_sz, str_id + str_id_sz - footer_sz);
+            ImFormatString(task->DebugName, IM_ARRAYSIZE(task->DebugName), "%.*s..%.*s", header_sz, debug_id, footer_sz, debug_id + debug_id_sz - footer_sz);
         }
     }
 #endif
@@ -284,7 +369,7 @@ static void ImGuiTestEngine_PostNewFrame(ImGuiTestEngine* engine)
     for (int task_n = 0; task_n < engine->LocateTasks.Size; task_n++)
     {
         ImGuiTestLocateTask* task = engine->LocateTasks[task_n];
-        if (task->FrameCount < engine->FrameCount - 100)
+        if (task->FrameCount < engine->FrameCount - 100 && task->Result.RefCount == 0)
         {
             IM_DELETE(task);
             engine->LocateTasks.erase(engine->LocateTasks.Data + task_n);
@@ -312,6 +397,7 @@ static void ImGuiTestEngine_ProcessQueue(ImGuiTestEngine* engine)
     IM_ASSERT(engine->CallDepth == 0);
     engine->CallDepth++;
 
+    int ran_tests = 0;
     for (int n = 0; n < engine->TestsQueue.Size; n++)
     {
         ImGuiTest* test = engine->TestsQueue[n];
@@ -338,6 +424,7 @@ static void ImGuiTestEngine_ProcessQueue(ImGuiTestEngine* engine)
         else
             ctx.RunCurrentTest(NULL);
         ctx.Log("Done.");
+        ran_tests++;
 
         IM_ASSERT(engine->TestContext == &ctx);
         engine->TestContext = NULL;
@@ -355,6 +442,8 @@ static void ImGuiTestEngine_ProcessQueue(ImGuiTestEngine* engine)
     engine->Abort = false;
     engine->CallDepth--;
     engine->TestsQueue.clear();
+    if (ran_tests)
+        engine->UiFocus = true;
 }
 
 static void ImGuiTestEngine_QueueTest(ImGuiTestEngine* engine, ImGuiTest* test)
@@ -381,6 +470,7 @@ static void ImGuiTestEngine_RunTest(ImGuiTestEngine* engine, ImGuiTestContext* c
     ctx->Engine = engine;
     ctx->UserData = user_data;
     ctx->FrameCount = 0;
+    ctx->SetRef("");
 
     test->TestLog.clear();
 
@@ -399,6 +489,10 @@ static void ImGuiTestEngine_RunTest(ImGuiTestEngine* engine, ImGuiTestContext* c
 
 //-------------------------------------------------------------------------
 // [SECTION] HOOKS FOR CORE LIBRARY
+//-------------------------------------------------------------------------
+// - ImGuiTestEngineHook_PreNewFrame()
+// - ImGuiTestEngineHook_PostNewFrame()
+// - ImGuiTestEngineHook_ItemAdd()
 //-------------------------------------------------------------------------
 
 void ImGuiTestEngineHook_PreNewFrame()
@@ -422,27 +516,27 @@ void ImGuiTestEngineHook_ItemAdd(const ImRect& bb, ImGuiID id, const ImRect* nav
     ImGuiTestEngine* engine = GImGuiTestEngine;
     if (engine == NULL)
         return;
-    if (GImGui != engine->UiTestContext)
-        return;
 
     ImGuiContext& g = *GImGui;
-    for (int task_n = 0; task_n < engine->LocateTasks.Size; task_n++)
+    if (&g != engine->UiTestContext)
+        return;
+
+    if (ImGuiTestLocateTask* task = ImGuiTestEngine_FindLocateTask(engine, id))
     {
-        ImGuiTestLocateTask* task = engine->LocateTasks[task_n];
-        if (task->ID == id)
-        {
-            task->Result.FrameCount = g.FrameCount;
-            task->Result.Rect = bb;
-            task->Result.ID = id;
-            task->Result.RectNav = nav_bb_arg ? *nav_bb_arg : bb;
-            task->Result.Window = g.CurrentWindow;
-            break;
-        }
+        task->Result.FrameCount = g.FrameCount;
+        task->Result.Rect = bb;
+        task->Result.ID = id;
+        task->Result.NavLayer = g.CurrentWindow->DC.NavLayerCurrent;
+        task->Result.RectNav = nav_bb_arg ? *nav_bb_arg : bb;
+        task->Result.Window = g.CurrentWindow;
     }
 }
 
 //-------------------------------------------------------------------------
 // [SECTION] HOOKS FOR TESTS
+//-------------------------------------------------------------------------
+// - ImGuiTestEngineHook_Check()
+// - ImGuiTestEngineHook_Error()
 //-------------------------------------------------------------------------
 
 // Return true to request a debugger break
@@ -565,10 +659,15 @@ static void DrawTestLog(ImGuiTestEngine* e, ImGuiTest* test, bool is_interactive
     ImGui::PopStyleVar();
 }
 
-void    ImGuiTestEngine_ShowTestingWindow(ImGuiTestEngine* engine, bool* p_open)
+void    ImGuiTestEngine_ShowTestWindow(ImGuiTestEngine* engine, bool* p_open)
 {
     ImGuiContext& g = *GImGui;
 
+    if (engine->UiFocus)
+    {
+        ImGui::SetNextWindowFocus();
+        engine->UiFocus = false;
+    }
     ImGui::Begin("ImGui Test Engine", p_open);// , ImGuiWindowFlags_MenuBar);
 
 #if 0
@@ -763,24 +862,43 @@ void    ImGuiTestContext::SleepShort()
     Sleep(0.2f);
 }
 
+void ImGuiTestContext::SetRef(const char* str_id)
+{
+    IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
+    LogVerbose("SetRef '%s'\n", str_id);
+
+    size_t len = strlen(str_id);
+    IM_ASSERT(len < IM_ARRAYSIZE(RefStr) - 1);
+
+    strcpy(RefStr, str_id);
+    RefID = ImHashDecoratedPath(str_id, 0);
+}
+
 ImGuiTestLocateResult* ImGuiTestContext::ItemLocate(const char* str_id)
 {
     if (IsError())
         return NULL;
+
+    ImGuiID full_id = ImHashDecoratedPath(str_id, RefID);
 
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
     ImGuiTestLocateResult* result = NULL;
     int retries = 0;
     while (retries < 10)
     {
-        result = ImGuiTestEngine_ItemLocate(Engine, str_id, 0);
+        result = ImGuiTestEngine_ItemLocate(Engine, full_id, str_id);
         if (result)
             return result;
         ImGuiTestEngine_Yield(Engine);
         retries++;
     }
 
-    IM_ERRORF_NOHDR("Unable to locate item: '%s'", str_id);
+    // Prefixing the string with / ignore the reference/current ID
+    if (str_id[0] == '/' && RefStr[0] != 0)
+        IM_ERRORF_NOHDR("Unable to locate item: '%s'", str_id);
+    else
+        IM_ERRORF_NOHDR("Unable to locate item: '%s/%s'", RefStr, str_id);
+
     return NULL;
 }
 
@@ -792,19 +910,22 @@ void    ImGuiTestContext::MouseMove(const char* str_id)
 
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
     LogVerbose("MouseMove to '%s'\n", str_id);
+
     ImGuiTestLocateResult* result = ItemLocate(str_id);
     if (result == NULL)
         return;
+    result->RefCount++;
 
     ImGuiWindow* window = result->Window;
-    if (!window->InnerClipRect.Contains(result->Rect))
+    if (result->NavLayer == 0 && !window->InnerClipRect.Contains(result->Rect))
     {
         // If the item is not currently visible, scroll to get it in the center of our window
         IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
         LogVerbose("Scroll to '%s'\n", str_id);
 
-        while (true)
+        while (!Abort)
         {
+            // result->Rect will be updated after each iteration.
             ImRect item_rect = result->Rect;
             float item_curr_y = ImFloor(item_rect.GetCenter().y);
             float item_target_y = ImFloor(window->InnerClipRect.GetCenter().y);
@@ -816,17 +937,19 @@ void    ImGuiTestContext::MouseMove(const char* str_id)
 
             float scroll_speed = Engine->IO.ConfigRunFast ? FLT_MAX : ImFloor(Engine->IO.ScrollSpeed * g.IO.DeltaTime);
             window->Scroll.y = ImLinearSweep(window->Scroll.y, scroll_target, scroll_speed);
+
             ImGuiTestEngine_Yield(Engine);
         }
-
-        result->Invalidate();
-        result = ItemLocate(str_id);
-        IM_ASSERT(result != NULL);
+        
+        // Need another frame for the result->Rect to stabilize
+        ImGuiTestEngine_Yield(Engine);
     }
 
     MouseMove(result->Rect.GetCenter());
+    if (!Abort)
+        IM_ASSERT(g.HoveredIdPreviousFrame == result->ID);
 
-    IM_ASSERT(g.HoveredIdPreviousFrame == result->ID);
+    result->RefCount--;
 }
 
 void	ImGuiTestContext::MouseMove(ImVec2 target)
@@ -837,15 +960,17 @@ void	ImGuiTestContext::MouseMove(ImVec2 target)
         return;
 
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
-    LogVerbose("MouseMove from (%.0f,%.0f) to (%.0f,%.0f)\n", g.IO.MousePos.x, g.IO.MousePos.y, target.x, target.y);
+    LogVerbose("MouseMove from (%.0f,%.0f) to (%.0f,%.0f)\n", Engine->SetMousePosValue.x, Engine->SetMousePosValue.y, target.x, target.y);
 
+    // We manipulate Engine->SetMousePosValue without reading back from g.IO.MousePos because the later is rounded.
+    // To handle high framerate it is easier to bypass this rounding.
     while (true)
     {
-        ImVec2 delta = target - g.IO.MousePos;
-        float inv_length = ImInvLength(delta, 0.0f);
+        ImVec2 delta = target - Engine->SetMousePosValue;
+        float inv_length = ImInvLength(delta, FLT_MAX);
         float move_speed = Engine->IO.MouseSpeed * g.IO.DeltaTime;
 
-        if (inv_length > 1.0f / move_speed || Engine->IO.ConfigRunFast)
+        if (Engine->IO.ConfigRunFast || (inv_length >= 1.0f / move_speed))
         {
             Engine->SetMousePos = true;
             Engine->SetMousePosValue = target;
@@ -856,7 +981,7 @@ void	ImGuiTestContext::MouseMove(ImVec2 target)
         else
         {
             Engine->SetMousePos = true;
-            Engine->SetMousePosValue = g.IO.MousePos + delta * inv_length * move_speed;
+            Engine->SetMousePosValue = Engine->SetMousePosValue + delta * move_speed * inv_length;
             ImGuiTestEngine_Yield(Engine);
         }
     }
@@ -871,13 +996,14 @@ void    ImGuiTestContext::MouseClick(int button)
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
     LogVerbose("MouseClick %d\n", button);
 
-    ImGuiTestEngine_Yield(Engine);
+    Yield();
     Engine->SetMouseButtons = true;
     Engine->SetMouseButtonsValue = (1 << button);
-    ImGuiTestEngine_Yield(Engine);
+    Yield();
     Engine->SetMouseButtons = true;
     Engine->SetMouseButtonsValue = 0;
-    ImGuiTestEngine_Yield(Engine);
+    Yield();
+    Yield(); // Give a frame for items to react
 }
 
 void    ImGuiTestContext::FocusWindowForItem(const char* str_id)
@@ -900,10 +1026,9 @@ void    ImGuiTestContext::ItemClick(const char* str_id)
 
     FocusWindowForItem(str_id);
     MouseMove(str_id);
-    Sleep(0.05f);
+    if (!Engine->IO.ConfigRunFast)
+        Sleep(0.05f);
     MouseClick(0);
-    Yield();
-    Yield();
 }
 
 void    ImGuiTestContext::ItemHold(const char* str_id, float time)
@@ -917,13 +1042,13 @@ void    ImGuiTestContext::ItemHold(const char* str_id, float time)
     FocusWindowForItem(str_id);
     MouseMove(str_id);
 
-    ImGuiTestEngine_Yield(Engine);
+    Yield();
     Engine->SetMouseButtons = true;
     Engine->SetMouseButtonsValue = (1 << 0);
     Sleep(time);
     Engine->SetMouseButtons = true;
     Engine->SetMouseButtonsValue = 0;
-    ImGuiTestEngine_Yield(Engine);
+    Yield();
 }
 
 void    ImGuiTestContext::ItemOpen(const char* str_id)
@@ -940,6 +1065,40 @@ void    ImGuiTestContext::ItemOpen(const char* str_id)
         if (result->Window->DC.StateStorage->GetInt(result->ID, 0) == 0)
             ItemClick(str_id);
         IM_ASSERT(backup_result.Window->DC.StateStorage->GetInt(backup_result.ID, 0) == 1);
+    }
+}
+
+void    ImGuiTestContext::MenuItemClick(const char* path)
+{
+    if (IsError())
+        return;
+
+    IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
+    LogVerbose("MenuItemClick '%s'\n", path);
+
+    int depth = 0;
+    const char* path_end = path + strlen(path);
+    char buf[128];
+    while (path < path_end)
+    {
+        const char* p = ImStrchrRange(path, path_end, '/');
+        if (p == NULL)
+            p = path_end;
+        if (depth == 0)
+        {
+            // Click menu in menu bar
+            IM_ASSERT(RefStr[0] != 0);
+            ImFormatString(buf, IM_ARRAYSIZE(buf), "##menubar/%.*s", p - path, path);
+            ItemClick(buf);
+        }
+        else
+        {
+            // Click sub menu in its own window
+            ImFormatString(buf, IM_ARRAYSIZE(buf), "/##Menu_%02d/%.*s", depth - 1, p - path, path);
+            ItemClick(buf);
+        }
+        path = p + 1;
+        depth++;
     }
 }
 

@@ -52,9 +52,10 @@ void    ImGuiTestEngineHook_ItemAdd(const ImRect& bb, ImGuiID id, const ImRect* 
 // Hooks for Tests
 //-------------------------------------------------------------------------
 
-#define IM_CHECK(_EXPR)             if (ImGuiTestEngineHook_Check(__FILE__, __func__, __LINE__, (bool)(_EXPR), #_EXPR))     { IM_ASSERT(0); }
-#define IM_ERRORF(_FMT,...)         if (ImGuiTestEngineHook_Error(__FILE__, __func__, __LINE__, _FMT, __VA_ARGS__))         { IM_ASSERT(0); }
-#define IM_ERRORF_NOHDR(_FMT,...)   if (ImGuiTestEngineHook_Error(NULL, NULL, 0, _FMT, __VA_ARGS__))                        { IM_ASSERT(0); }
+// We embed every maacro in a do {} while(0) statement as a trick to allow using them as regular single statement, e.g. if (XXX) IM_CHECK(A); else IM_CHECK(B)
+#define IM_CHECK(_EXPR)             do { if (ImGuiTestEngineHook_Check(__FILE__, __func__, __LINE__, (bool)(_EXPR), #_EXPR))     { IM_ASSERT(0); } } while (0)
+#define IM_ERRORF(_FMT,...)         do { if (ImGuiTestEngineHook_Error(__FILE__, __func__, __LINE__, _FMT, __VA_ARGS__))         { IM_ASSERT(0); } } while (0)
+#define IM_ERRORF_NOHDR(_FMT,...)   do { if (ImGuiTestEngineHook_Error(NULL, NULL, 0, _FMT, __VA_ARGS__))                        { IM_ASSERT(0); } } while (0)
 //#define IM_ASSERT(_EXPR)      (void)( (!!(_EXPR)) || (ImGuiTestEngineHook_Check(false, #_EXPR, __FILE__, __func__, __LINE__), 0) )
 
 bool    ImGuiTestEngineHook_Check(const char* file, const char* func, int line, bool result, const char* expr);
@@ -69,7 +70,7 @@ ImGuiTestEngine*    ImGuiTestEngine_CreateContext(ImGuiContext* imgui_context);
 void                ImGuiTestEngine_ShutdownContext(ImGuiTestEngine* engine);
 ImGuiTestEngineIO&  ImGuiTestEngine_GetIO(ImGuiTestEngine* engine);
 void                ImGuiTestEngine_Abort(ImGuiTestEngine* engine);
-void                ImGuiTestEngine_ShowTestingWindow(ImGuiTestEngine* engine, bool* p_open);
+void                ImGuiTestEngine_ShowTestWindow(ImGuiTestEngine* engine, bool* p_open);
 
 // IO structure
 typedef bool (*ImGuiTestEngineNewFrameFunc)(ImGuiTestEngine*, void* user_data);
@@ -134,6 +135,8 @@ struct ImGuiTestContext
     int                     FrameCount;     // Test frame count (restarts from zero every time)
     int                     ActionDepth;
     bool                    Abort;
+    char                    RefStr[256];
+    ImGuiID                 RefID;
 
     ImGuiTestContext()
     {
@@ -144,6 +147,8 @@ struct ImGuiTestContext
         FrameCount = 0;
         ActionDepth = 0;
         Abort = false;
+        memset(RefStr, 0, sizeof(RefStr));
+        RefID = 0;
     }
 
     ImGuiTest*  RegisterTest(const char* category, const char* name);
@@ -156,6 +161,8 @@ struct ImGuiTestContext
     void        Sleep(float time);
     void        SleepShort();
 
+    void        SetRef(const char* str_id);
+
     void        MouseMove(const char* str_id);
     void        MouseMove(ImVec2 pos);
     void        MouseClick(int button = 0);
@@ -166,6 +173,8 @@ struct ImGuiTestContext
     void        ItemHold(const char* str_id, float time);
     void        ItemOpen(const char* str_id);
     ImGuiTestLocateResult* ItemLocate(const char* str_id);
+
+    void        MenuItemClick(const char* menu_path);
 
     void        PopupClose();
 };

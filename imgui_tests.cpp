@@ -110,71 +110,105 @@ void RegisterTests_Misc(ImGuiTestContext* ctx)
     {
         auto data = (DataGeneric*)ctx->UserData;
         IM_CHECK(data->Bool1 == false);
-        ctx->ItemClick("Window1" "Checkbox");
+        ctx->ItemClick("Window1/Checkbox");
         IM_CHECK(data->Bool1 == true);
     };
 
-    t = ctx->RegisterTest("demo", "demo_001");
+    t = ctx->RegisterTest("demo", "demo_misc_001");
     t->GuiFunc = NULL;
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
-        ctx->ItemOpen("ImGui Demo" "Widgets");
+        ctx->SetRef("ImGui Demo");
+        ctx->ItemOpen("Widgets");
         ctx->SleepShort();
-        ctx->ItemOpen("ImGui Demo" "Basic");
+        ctx->ItemOpen("Basic");
         ctx->SleepShort();
-        ctx->ItemClick("ImGui Demo" "Basic" "Button");
+        ctx->ItemClick("Basic/Button");
         ctx->SleepShort();
-        ctx->ItemClick("ImGui Demo" "Basic" "radio a");
+        ctx->ItemClick("Basic/radio a");
         ctx->SleepShort();
-        ctx->ItemClick("ImGui Demo" "Basic" "radio b");
+        ctx->ItemClick("Basic/radio b");
         ctx->SleepShort();
-        ctx->ItemClick("ImGui Demo" "Basic" "radio c");
+        ctx->ItemClick("Basic/radio c");
         ctx->SleepShort();
-        ctx->ItemClick("ImGui Demo" "Basic" "combo");
+        ctx->ItemClick("Basic/combo");
         ctx->SleepShort();
-        ctx->ItemClick("ImGui Demo" "Basic" "combo");
+        ctx->ItemClick("Basic/combo");
         ctx->SleepShort();
-        ctx->ItemClick("ImGui Demo" "Basic" "color 2" "##ColorButton");
-        //ctx->ItemClick("##Combo" "BBBB");     // id chain
+        ctx->ItemClick("Basic/color 2/##ColorButton");
+        //ctx->ItemClick("##Combo/BBBB");     // id chain
         ctx->SleepShort();
         ctx->PopupClose();
 
-        //ctx->ItemClick("ImGui Demo" "Layout");  // FIXME: close popup
-        ctx->ItemOpen("ImGui Demo" "Layout");
-        ctx->ItemOpen("ImGui Demo" "Horizontal Scrolling");
-        ctx->ItemHold("ImGui Demo" "Horizontal Scrolling" ">>", 1.0f);
+        //ctx->ItemClick("Layout");  // FIXME: close popup
+        ctx->ItemOpen("Layout");
+        ctx->ItemOpen("Horizontal Scrolling");
+        ctx->ItemHold("Horizontal Scrolling/>>", 1.0f);
         ctx->SleepShort();
     };
-
-#if 0
-    t = ImGuiTestEngine_AddTest(ctx, "misc", "demo_002_scroll");
-    t->TestFunc = [](ImGuiTestContext* ctx)
-    {
-        ctx->ItemOpen("ImGui Demo" "Widgets");
-        ctx->SleepShort();
-        ctx->ItemOpen("ImGui Demo" "Basic");
-        ctx->SleepShort();
-        ctx->ItemClick("ImGui Demo" "Basic" "color 2" "##ColorButton");
-        ctx->SleepShort();
-    };
-#endif
 
     t = ctx->RegisterTest("demo", "demo_003_menu");
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
-        ctx->ItemClick("ImGui Demo" "##menubar" "Menu");
-        ctx->SleepShort();
-        ctx->MouseMove("ImGui Demo" "##menubar" "Examples");
-        ctx->SleepShort();
-        ctx->ItemClick("##Menu_00" "Console");
-        ctx->SleepShort();
-        ctx->ItemClick("Example: Console" "Add Dummy Text");
-        ctx->SleepShort();
-        ctx->ItemClick("Example: Console" "Add Dummy Error");
-        ctx->SleepShort();
-        ctx->ItemClick("Example: Console" "#CLOSE");
+        ctx->SetRef("ImGui Demo");
+        ctx->MenuItemClick("Menu");
+        ctx->MenuItemClick("Examples/Console");
+
+        ctx->SetRef("Example: Console");
+        ctx->ItemClick("Add Dummy Text");
+        ctx->ItemClick("Add Dummy Error");
+        ctx->ItemClick("#CLOSE");
+    };
+
+    t = ctx->RegisterTest("demo", "demo_cov_001");
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ctx->SetRef("ImGui Demo");
+        ctx->ItemOpen("Help");
+        ctx->ItemOpen("Configuration");
+        ctx->ItemOpen("Window options");
+        ctx->ItemOpen("Widgets");
+        ctx->ItemOpen("Layout");
+        ctx->ItemOpen("Popups & Modal windows");
+        ctx->ItemOpen("Columns");
+        ctx->ItemOpen("Filtering");
+        ctx->ItemOpen("Inputs, Navigation & Focus");
+    };
+
+    t = ctx->RegisterTest("demo", "demo_cov_002");
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        // FIXME-TESTS:
+        //  ok MenuClick("Examples")               -> ItemClick("ImGui Demo/##menubar/Examples")
+        //     MenuOpen("Examples")                -> check open? MenuClick("Examples")
+        //  ok MenuItemClick("Examples/Console")   -> MenuOpen(), ItemClick("##Menu_00/Console")
+        //     MenuItemCheck()
+
+        ctx->SetRef("ImGui Demo");
+        ctx->MenuItemClick("Menu/Open Recent/More..");
+
+        //ctx->ItemClick("$REF/Main menu bar");
+        //ctx->ItemClick("$NAV/Main menu bar");
+        //ctx->ItemClick("$TOP/Main menu bar");
+
+        ctx->MenuItemClick("Examples/Main menu bar");
+        ctx->MenuItemClick("Examples/Console");
+        ctx->MenuItemClick("Examples/Log");
+        ctx->MenuItemClick("Examples/Simple layout");
+        ctx->MenuItemClick("Examples/Property editor");
+        ctx->MenuItemClick("Examples/Long text display");
+        ctx->MenuItemClick("Examples/Auto-resizing window");
+        ctx->MenuItemClick("Examples/Constrained-resizing window");
+        ctx->MenuItemClick("Examples/Simple overlay");
+        ctx->MenuItemClick("Examples/Manipulating window titles");
+        ctx->MenuItemClick("Examples/Custom rendering");
+
+        ctx->MenuItemClick("Help/Metrics");
+        ctx->MenuItemClick("Help/Style Editor");
+        ctx->MenuItemClick("Help/About Dear ImGui");
     };
 }
+
 #endif
 
 void RegisterTests(ImGuiTestEngine* e)
@@ -226,15 +260,15 @@ void Test_Button_001(ImGuiTestEngine* te)
 
     //ts->TestName = __FUNCTION__;
 
-    //const char* id = "Window1" "Button1";
-    //const char* id = "ImGui Demo" "Widgets";
+    //const char* id = "Window1/Button1";
+    //const char* id = "ImGui Demo/Widgets";
     //TT_MouseMove(te, id);
     //te->MouseMove(id);
 
-    // ItemLocate(it)
+    // ItemLocate(it) --> OK
     // - core engine task (hook ItemAdd)
 
-    // ItemClick(id)
+    // ItemClick(id) --> OK
     // - MouseMove(id)
     //   - ItemLocate(id)
     //   - Scroll
@@ -242,12 +276,12 @@ void Test_Button_001(ImGuiTestEngine* te)
     //   - validate hovering
     // - MouseClick()
 
-    // ItemOpen(id) / TreeNodeOpen(id)
+    // ItemOpen(id) / TreeNodeOpen(id) --> OK
     // - ItemLocate(id)
     // - if (window->GetStateStorage(id) == 0)
     //    - ItemClick()
 
-    // CheckboxCheck(id)
+    // CheckboxCheck(id) -> !!!
     // - ItemLocate(id)
     // ?? - add ImGuiItemStatusFlags_NotClipped
     // ?? - code sets ImGuiItemStatusFlags_Selected // VALID IF NOT CLIPPED
@@ -262,7 +296,7 @@ void Test_Button_001(ImGuiTestEngine* te)
     // - InputTextFill
     // - Send key: Return
 
-    // MenuActivate("path")
+    // MenuActivate("path") -> OK
     // - WindowFocus
     // - ItemClick
     // - ItemClick
@@ -289,13 +323,13 @@ void Test_Button_001(ImGuiTestEngine* te)
     // ScrollToItem("Drag Int", 0.5f)
     // CaptureWindow("ImGui Demo", "demo.png")
 
-    // MenuActivate("ImGui Demo" "Examples" "Console"
+    // MenuActivate("ImGui Demo/Examples/Console"
     // WindowSelect("Example: Console")
     // InputTextSubmit("Input", "HELP")
     // InputTextSubmit("Input", "HISTORY")
     // CaptureWindow(0, "filename.png") --> capture to PNG (padding set in some config structure)
 
-    // MenuActivate("ImGui Demo" "Examples" "Console"
+    // MenuActivate("ImGui Demo/Examples/Console"
     // window = WindowFocus("Example: Console")
     // child = GetChildByIndex(window, 0) / GetChildByName(window, "##scrolling")
     // TesterDrawOutput tester(child->DrawList)
@@ -307,7 +341,7 @@ void Test_Button_001(ImGuiTestEngine* te)
     // (glitch testing -> only two variations over a span of frames) // fixme: if style allows e.g. border e.g. active/hovered, our test fails
     // TesterDrawOutput tester;
     // tester.LogHashPosUV()     // background task log every frame
-    // MenuActivate("ImGui Demo" "Menu")
+    // MenuActivate("ImGui Demo/Menu")
     // WaitFrames(10)
     // ASSERT(tester.LogUniqueCount() == 2)
 
@@ -334,7 +368,7 @@ void Test_Button_001(ImGuiTestEngine* te)
     //  ASSERT(data->GenericBool[1] == true)
 
     // #1909 test window size
-    // MenuActivate("ImGui Demo" "Menu" "Open Recent")
+    // MenuActivate("ImGui Demo/Menu/Open Recent")
     // window = GetTopLevelWindow()
     // ASSERT(window.Size.y == style.WindowPadding.y * 2 + GetFrameHeight() * 4))
 
@@ -342,7 +376,7 @@ void Test_Button_001(ImGuiTestEngine* te)
     // MenuActivate("ImGui Demo", "Menu", "Console")
     // window = GetTopLevelWindow()
     // ASSERT(window->Name == "Examples: Console)
-    // WindowResize(window, ImVec2(10,10))  // fixme: disable error
+    // WindowResize(window, ImVec2(10,10))  // FIXME: disable error
     // ASSERT(window->Size == ImMax(style.WindowMinSize, ImVec2(10,10))
 }
 
