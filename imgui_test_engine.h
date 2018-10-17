@@ -79,14 +79,18 @@ void                ImGuiTestEngine_ShutdownContext(ImGuiTestEngine* engine);
 ImGuiTestEngineIO&  ImGuiTestEngine_GetIO(ImGuiTestEngine* engine);
 void                ImGuiTestEngine_Abort(ImGuiTestEngine* engine);
 void                ImGuiTestEngine_ShowTestWindow(ImGuiTestEngine* engine, bool* p_open);
+void                ImGuiTestEngine_QueueAllTests(ImGuiTestEngine* engine);
 
 // IO structure
 typedef bool (*ImGuiTestEngineNewFrameFunc)(ImGuiTestEngine*, void* user_data);
+typedef bool (*ImGuiTestEngineEndFrameFunc)(ImGuiTestEngine*, void* user_data);
+typedef void (*ImGuiTestEngineFileOpenerFunc)(const char* filename, int line, void* user_data);
 
 struct ImGuiTestEngineIO
 {
     ImGuiTestEngineNewFrameFunc     EndFrameFunc        = NULL;
-    ImGuiTestEngineNewFrameFunc     NewFrameFunc        = NULL;
+    ImGuiTestEngineEndFrameFunc     NewFrameFunc        = NULL;
+    ImGuiTestEngineFileOpenerFunc   FileOpenerFunc      = NULL;     // (Optional) To open source files
 	void*                           UserData            = NULL;
 
     // Inputs: Options
@@ -94,8 +98,9 @@ struct ImGuiTestEngineIO
     bool                            ConfigRunBlind      = false;    // Run tests in a blind ImGuiContext separated from the visible context
     bool                            ConfigBreakOnError  = false;    // Break debugger on test error
     bool                            ConfigLogVerbose    = false;    // Verbose log
+    bool                            ConfigLogToTTY      = false;
     float                           MouseSpeed          = 1000.0f;  // Mouse speed (pixel/second) when not running in fast mode
-    float                           ScrollSpeed         = 1000.0f;  // Scroll speed (pixel/second) when not running in fast mode
+    float                           ScrollSpeed         = 1600.0f;  // Scroll speed (pixel/second) when not running in fast mode
 
     // Outputs: State
     bool                            RunningTests        = false;
@@ -111,12 +116,15 @@ typedef void    (*ImGuiTestTestFunc)(ImGuiTestContext* ctx);
 
 struct ImGuiTest
 {
-    const char*             Category;       // Literal, not owned
-    const char*             Name;           // Literal, not owned
+    const char*             Category;           // Literal, not owned
+    const char*             Name;               // Literal, not owned
+    const char*             SourceFile;         // __FILE__
+    const char*             SourceFileShort;    // Pointer within SourceFile, skips filename.
+    int                     SourceLine;         // __LINE__
     ImGuiTestStatus         Status;
     ImGuiTestFlags          Flags;
-    ImGuiTestRunFunc        RootFunc;       // NULL function is ok
-    ImGuiTestGuiFunc        GuiFunc;        // GUI functions can be reused
+    ImGuiTestRunFunc        RootFunc;           // NULL function is ok
+    ImGuiTestGuiFunc        GuiFunc;            // GUI functions can be reused
     ImGuiTestTestFunc       TestFunc;
     ImGuiTextBuffer         TestLog;
 
@@ -124,6 +132,8 @@ struct ImGuiTest
     {
         Category = NULL;
         Name = NULL;
+        SourceFile = SourceFileShort = NULL;
+        SourceLine = 0;
         Status = ImGuiTestStatus_Unknown;
         Flags = ImGuiTestFlags_None;
         RootFunc = NULL;
@@ -172,7 +182,7 @@ struct ImGuiTestContext
         RefID = 0;
     }
 
-    ImGuiTest*  RegisterTest(const char* category, const char* name);
+    ImGuiTest*  RegisterTest(const char* category, const char* name, const char* src_file = NULL, int src_line = 0);
     void        RunCurrentTest(void* user_data);
     void        Log(const char* fmt, ...) IM_FMTARGS(1);
     void        LogVerbose(const char* fmt, ...) IM_FMTARGS(1);

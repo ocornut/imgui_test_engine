@@ -30,11 +30,13 @@ struct DataGeneric
     DataGeneric() { memset(this, 0, sizeof(*this)); }
 };
 
+#define REGISTER_TEST(_CATEGORY, _NAME)    ctx->RegisterTest(_CATEGORY, _NAME, __FILE__, __LINE__);
+
 void RegisterTests_Window(ImGuiTestContext* ctx)
 {
     ImGuiTest* t = NULL;
 
-    t = ctx->RegisterTest("window", "empty");
+    t = REGISTER_TEST("window", "empty");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         ImGui::GetStyle().WindowMinSize = ImVec2(10, 10);
@@ -58,7 +60,7 @@ void RegisterTests_Scrolling(ImGuiTestContext* ctx)
 {
     ImGuiTest* t = NULL;
 
-    t = ctx->RegisterTest("scrolling", "scrolling_001");
+    t = REGISTER_TEST("scrolling", "scrolling_001");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         ImGui::Begin("Test Scrolling", NULL, ImGuiWindowFlags_NoSavedSettings);
@@ -103,7 +105,7 @@ void RegisterTests_Misc(ImGuiTestContext* ctx)
         ImGui::End();
     };
 
-    t = ctx->RegisterTest("checkbox", "checkbox_001");
+    t = REGISTER_TEST("checkbox", "checkbox_001");
     t->RootFunc = run_func;
     t->GuiFunc = gui_func;
     t->TestFunc = [](ImGuiTestContext* ctx)
@@ -114,7 +116,7 @@ void RegisterTests_Misc(ImGuiTestContext* ctx)
         IM_CHECK(data->Bool1 == true);
     };
 
-    t = ctx->RegisterTest("demo", "demo_misc_001");
+    t = REGISTER_TEST("demo", "demo_misc_001");
     t->GuiFunc = NULL;
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
@@ -139,7 +141,7 @@ void RegisterTests_Misc(ImGuiTestContext* ctx)
         ctx->SleepShort();
     };
 
-    t = ctx->RegisterTest("demo", "demo_cov_001");
+    t = REGISTER_TEST("demo", "demo_cov_001");
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         ctx->SetRef("ImGui Demo");
@@ -154,7 +156,7 @@ void RegisterTests_Misc(ImGuiTestContext* ctx)
         ctx->ItemOpen("Inputs, Navigation & Focus");
     };
 
-    t = ctx->RegisterTest("demo", "demo_cov_002");
+    t = REGISTER_TEST("demo", "demo_cov_002");
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         ctx->SetRef("ImGui Demo");
@@ -185,7 +187,7 @@ void RegisterTests_Misc(ImGuiTestContext* ctx)
         }
     };
 
-    t = ctx->RegisterTest("demo", "console");
+    t = REGISTER_TEST("demo", "console");
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         ctx->SetRef("ImGui Demo");

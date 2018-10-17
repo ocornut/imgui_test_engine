@@ -1,6 +1,22 @@
 // dear imgui - standalone example application for DirectX 11
 // If you are new to dear imgui, see examples/README.txt and documentation at the top of imgui.cpp.
 
+// Interactive mode:
+//   main.exe
+//   main.exe -gui -fileopener ..\..\tools\win32_open_with_sublime.cmd
+
+// Command-line mode:
+//   main.exe -nogui -v -nopause
+
+//-------------------------------------------------------------------------
+
+// Visual Studio warnings
+#ifdef _MSC_VER
+#pragma warning (disable: 4996)     // 'This function or variable may be unsafe': strcpy, strdup, sprintf, vsnprintf, sscanf, fopen
+#endif
+
+//-------------------------------------------------------------------------
+
 #include "imgui.h"
 #include "imgui_impl_win32.h"
 #include "imgui_impl_dx11.h"
@@ -8,11 +24,16 @@
 #define DIRECTINPUT_VERSION 0x0800
 #include <dinput.h>
 #include <tchar.h>
+#include <stdio.h>
+#include <conio.h>
 
 #include "imgui_tests.h"
 #include "imgui_test_engine.h"
 
-// Data
+//-------------------------------------------------------------------------
+// DX11 Stuff
+//-------------------------------------------------------------------------
+
 static ID3D11Device*            g_pd3dDevice = NULL;
 static ID3D11DeviceContext*     g_pd3dDeviceContext = NULL;
 static IDXGISwapChain*          g_pSwapChain = NULL;
@@ -97,15 +118,64 @@ LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
     return DefWindowProc(hWnd, msg, wParam, lParam);
 }
 
-// Our state
+// User state
 static ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
 static bool show_demo_window = true;
 static bool show_another_window = false;
 
-static bool quit_application = false;
-static ImGuiTestEngine* test_engine = NULL;
+//-------------------------------------------------------------------------
+// Test Application
+//-------------------------------------------------------------------------
 
-bool MainLoopNewFrame()
+enum ImGuiBackend
+{
+    ImGuiBackend_Null,
+    ImGuiBackend_DX11
+};
+
+struct TestApp
+{
+    bool                Quit            = false;
+    ImGuiTestEngine*    TestEngine      = NULL;
+    ImGuiBackend        Backend         = ImGuiBackend_DX11;
+    bool                OptGUI          = true;
+    bool                OptVerbose      = false;
+    bool                OptPauseOnExit  = true;
+    char*               OptFileOpener   = NULL;
+    ImVector<char*>     Tests;
+};
+
+TestApp g_App;
+
+static bool OsCreateProcess(const char* cmd_line)
+{
+    STARTUPINFOA siStartInfo;
+    PROCESS_INFORMATION piProcInfo;
+    ZeroMemory(&siStartInfo, sizeof(STARTUPINFOA));
+    char* cmd_line_copy = strdup(cmd_line);
+    BOOL ret = CreateProcessA(NULL, cmd_line_copy, NULL, NULL, FALSE, 0, NULL, NULL, &siStartInfo, &piProcInfo);
+    free(cmd_line_copy);
+    CloseHandle(siStartInfo.hStdInput);
+    CloseHandle(siStartInfo.hStdOutput);
+    CloseHandle(siStartInfo.hStdError);
+    CloseHandle(piProcInfo.hProcess);
+    CloseHandle(piProcInfo.hThread);
+    return ret != 0;
+}
+
+static void FileOpenerFunc(const char* filename, int line, void*)
+{
+    IM_ASSERT(g_App.OptFileOpener);
+
+    ImGuiTextBuffer cmd_line;
+    cmd_line.appendf("%s %s %d", g_App.OptFileOpener, filename, line);
+    printf("Calling: '%s'\n", cmd_line.c_str());
+    bool ret = OsCreateProcess(cmd_line.c_str());
+    if (!ret)
+        printf("Error creating process!\n");
+}
+
+bool MainLoopNewFrameDX11()
 {
 	MSG msg;
 	ZeroMemory(&msg, sizeof(msg));
@@ -123,27 +193,42 @@ bool MainLoopNewFrame()
 		DispatchMessage(&msg);
         if (msg.message == WM_QUIT)
         {
-            quit_application = true;
-            ImGuiTestEngine_Abort(test_engine);
+            g_App.Quit = true;
+            ImGuiTestEngine_Abort(g_App.TestEngine);
             break;
         }
 		continue;
 	}
 
 	// Start the Dear ImGui frame
-    if (!quit_application)
+    if (!g_App.Quit)
     {
         ImGui_ImplDX11_NewFrame();
         ImGui_ImplWin32_NewFrame();
     }
     ImGui::NewFrame();
 
-	return !quit_application;
+	return !g_App.Quit;
+}
+
+bool MainLoopNewFrameNull()
+{
+    ImGuiIO& io = ImGui::GetIO();
+    io.DisplaySize = ImVec2(1920, 1080);
+
+    ImGui::NewFrame();
+
+    ImGuiTestEngineIO& test_io = ImGuiTestEngine_GetIO(g_App.TestEngine);
+    if (!test_io.RunningTests)
+        return false;
+
+    return true;
 }
 
 bool MainLoopEndFrame()
 {
-    ImGuiTestEngine_ShowTestWindow(test_engine, NULL);
+    ImGuiTestEngineIO& test_io = ImGuiTestEngine_GetIO(g_App.TestEngine);
+    ImGuiTestEngine_ShowTestWindow(g_App.TestEngine, NULL);
 
     // 1. Show the big demo window (Most of the sample code is in ImGui::ShowDemoWindow()! You can browse its code to learn more about Dear ImGui!).
     if (show_demo_window)
@@ -186,62 +271,118 @@ bool MainLoopEndFrame()
 
 #if 0
     // Super fast mode doesn't render/present
-    ImGuiTestEngineIO& test_io = ImGuiTestEngine_GetIO(test_engine);
     if (test_io.RunningTests && test_io.ConfigRunFast)
         return true;
 #endif
 
     // Rendering
-    ImGui::Render();
-    g_pd3dDeviceContext->OMSetRenderTargets(1, &g_mainRenderTargetView, NULL);
-    g_pd3dDeviceContext->ClearRenderTargetView(g_mainRenderTargetView, (float*)&clear_color);
-    ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
+    if (g_App.Backend == ImGuiBackend_DX11)
+    {
+        ImGui::Render();
+        g_pd3dDeviceContext->OMSetRenderTargets(1, &g_mainRenderTargetView, NULL);
+        g_pd3dDeviceContext->ClearRenderTargetView(g_mainRenderTargetView, (float*)&clear_color);
+        ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
 
-    g_pSwapChain->Present(0, 0); // Present with vsync
-    //g_pSwapChain->Present(0, 0); // Present without vsync
+        if (test_io.RunningTests)
+            g_pSwapChain->Present(0, 0); // Present without vsync
+        else
+            g_pSwapChain->Present(1, 0); // Present with vsync
+    }
+
     return true;
 };
 
-int main(int, char**)
+static bool ParseCommandLineOptions(int argc, char** argv)
 {
-    // Create application window
-    WNDCLASSEX wc = { sizeof(WNDCLASSEX), CS_CLASSDC, WndProc, 0L, 0L, GetModuleHandle(NULL), NULL, NULL, NULL, NULL, _T("ImGui Example"), NULL };
-    RegisterClassEx(&wc);
-    HWND hwnd = CreateWindow(_T("ImGui Example"), _T("Dear ImGui DirectX11 Example"), WS_OVERLAPPEDWINDOW, 100, 100, 1280, 800, NULL, NULL, wc.hInstance, NULL);
-
-    // Initialize Direct3D
-    if (CreateDeviceD3D(hwnd) < 0)
+    for (int n = 1; n < argc; n++)
     {
-        CleanupDeviceD3D();
-        UnregisterClass(_T("ImGui Example"), wc.hInstance);
-        return 1;
+        if (argv[n][0] == '-' || argv[n][0] == '/')
+        {
+            // Command-line option
+            if (strcmp(argv[n], "-v") == 0)
+            {
+                g_App.OptVerbose = true;
+            }
+            else if (strcmp(argv[n], "-gui") == 0)
+            {
+                g_App.OptGUI = true;
+            }
+            else if (strcmp(argv[n], "-nogui") == 0)
+            {
+                g_App.OptGUI = false;
+            }
+            else if (strcmp(argv[n], "-nopause") == 0)
+            {
+                g_App.OptPauseOnExit = false;
+            }
+            else if (strcmp(argv[n], "-fileopener") == 0 && n + 1 < argc)
+            {
+                g_App.OptFileOpener = strdup(argv[n + 1]);
+                n++;
+            }
+            else
+            {
+                printf("Syntax: %s <options> [tests]\n", argv[0]);
+                printf("Options:\n");
+                printf("  -h                  : show command-line help.\n");
+                printf("  -v                  : extra verbose mode.\n");
+                printf("  -gui / -nogui       : enable interactive mode.\n");
+                printf("  -nopause            : don't pause application on exit.\n");
+                printf("  -fileopener <file>  : provide a bat/cmd/shell script to open source file.\n");
+                printf("Tests:\n");
+                printf("   all                : queue all tests\n");
+                return false;
+            }
+        }
+        else
+        {
+            // Add tests
+            g_App.Tests.push_back(strdup(argv[n]));
+        }
     }
+    return true;
+}
 
-    // Show the window
-    ShowWindow(hwnd, SW_SHOWDEFAULT);
-    UpdateWindow(hwnd);
+int main(int argc, char** argv)
+{
+    if (!ParseCommandLineOptions(argc, argv))
+        return 0;
+
+    if (g_App.OptGUI == false)
+        g_App.Backend = ImGuiBackend_Null;
+
+    // Initialize back-end
+    HWND hwnd = 0;
+    WNDCLASSEX wc = { 0 };
+    if (g_App.Backend == ImGuiBackend_DX11)
+    {
+        // Create application window
+        wc = { sizeof(WNDCLASSEX), CS_CLASSDC, WndProc, 0L, 0L, GetModuleHandle(NULL), NULL, NULL, NULL, NULL, _T("ImGui Example"), NULL };
+        RegisterClassEx(&wc);
+        hwnd = CreateWindow(_T("ImGui Example"), _T("Dear ImGui - Tests"), WS_OVERLAPPEDWINDOW, 100, 100, 1280, 800, NULL, NULL, wc.hInstance, NULL);
+
+        // Initialize Direct3D
+        if (CreateDeviceD3D(hwnd) < 0)
+        {
+            CleanupDeviceD3D();
+            UnregisterClass(_T("ImGui Example"), wc.hInstance);
+            return 1;
+        }
+
+        // Show the window
+        ShowWindow(hwnd, SW_SHOWDEFAULT);
+        UpdateWindow(hwnd);
+    }
 
     // Setup Dear ImGui binding
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
-    ImGuiIO& io = ImGui::GetIO(); (void)io;
-    //io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;  // Enable Keyboard Controls
-
-    ImGui_ImplWin32_Init(hwnd);
-    ImGui_ImplDX11_Init(g_pd3dDevice, g_pd3dDeviceContext);
-
-    // Setup style
     ImGui::StyleColorsDark();
-    //ImGui::StyleColorsClassic();
+    ImGuiIO& io = ImGui::GetIO();
+    io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;  // Enable Keyboard Controls
 
     // Load Fonts
-    // - If no fonts are loaded, dear imgui will use the default font. You can also load multiple fonts and use ImGui::PushFont()/PopFont() to select them. 
-    // - AddFontFromFileTTF() will return the ImFont* so you can store it if you need to select the font among multiple. 
-    // - If the file cannot be loaded, the function will return NULL. Please handle those errors in your application (e.g. use an assertion, or display an error and quit).
-    // - The fonts will be rasterized at a given size (w/ oversampling) and stored into a texture when calling ImFontAtlas::Build()/GetTexDataAsXXXX(), which ImGui_ImplXXXX_NewFrame below will call.
-    // - Read 'misc/fonts/README.txt' for more instructions and details.
-    // - Remember that in C/C++ if you want to include a backslash \ in a string literal you need to write a double backslash \\ !
-    //io.Fonts->AddFontDefault();
+    io.Fonts->AddFontDefault();
     //io.Fonts->AddFontFromFileTTF("../../misc/fonts/Roboto-Medium.ttf", 16.0f);
     //io.Fonts->AddFontFromFileTTF("../../misc/fonts/Cousine-Regular.ttf", 15.0f);
     //io.Fonts->AddFontFromFileTTF("../../misc/fonts/DroidSans.ttf", 16.0f);
@@ -249,29 +390,92 @@ int main(int, char**)
     //ImFont* font = io.Fonts->AddFontFromFileTTF("c:\\Windows\\Fonts\\ArialUni.ttf", 18.0f, NULL, io.Fonts->GetGlyphRangesJapanese());
     //IM_ASSERT(font != NULL);
 
-    IM_ASSERT(test_engine == NULL);
-    test_engine = ImGuiTestEngine_CreateContext(ImGui::GetCurrentContext());
-    RegisterTests(test_engine);
+    // Setup TestEngine context
+    IM_ASSERT(g_App.TestEngine == NULL);
+    g_App.TestEngine = ImGuiTestEngine_CreateContext(ImGui::GetCurrentContext());
+    RegisterTests(g_App.TestEngine);
+    ImGuiTestEngineIO& test_io = ImGuiTestEngine_GetIO(g_App.TestEngine);
 
-    ImGuiTestEngineIO& test_engine_io = ImGuiTestEngine_GetIO(test_engine);
-	test_engine_io.NewFrameFunc = [](ImGuiTestEngine*, void*) { return MainLoopNewFrame(); };
-	test_engine_io.EndFrameFunc = [](ImGuiTestEngine*, void*) { return MainLoopEndFrame(); };
+    // Non-interactive mode queue all tests by default
+    if (!g_App.OptGUI && g_App.Tests.empty())
+        g_App.Tests.push_back(strdup("all"));
 
-    while (1)
+    // Queue requested tests
+    for (int n = 0; n < g_App.Tests.Size; n++)
     {
-		if (!MainLoopNewFrame())
-			break;
-		if (!MainLoopEndFrame())
-			break;
-	}
+        char* test_spec = g_App.Tests[n];
+        if (strcmp(test_spec, "all") == 0)
+        {
+            ImGuiTestEngine_QueueAllTests(g_App.TestEngine);
+        }
+        else
+        {
+            // FIXME
+            IM_ASSERT(0);
+        }
+    }
 
-    ImGui_ImplDX11_Shutdown();
-    ImGui_ImplWin32_Shutdown();
-    ImGui::DestroyContext();
+    switch (g_App.Backend)
+    {
+    case ImGuiBackend_Null:
+    {
+        // Init
+        io.Fonts->Build();
+        for (int n = 0; n < ImGuiKey_COUNT; n++)
+            io.KeyMap[n] = n;
+        test_io.ConfigLogVerbose = g_App.OptVerbose;
+        test_io.ConfigLogToTTY = true;
+        test_io.ConfigRunFast = true;
+        test_io.NewFrameFunc = [](ImGuiTestEngine*, void*) { return MainLoopNewFrameNull(); };
+        test_io.EndFrameFunc = [](ImGuiTestEngine*, void*) { return MainLoopEndFrame(); };
+        test_io.FileOpenerFunc = FileOpenerFunc;
 
-    CleanupDeviceD3D();
-    DestroyWindow(hwnd);
-    UnregisterClass(_T("ImGui Example"), wc.hInstance);
+        while (1)
+        {
+            if (!MainLoopNewFrameNull())
+                break;
+            if (!MainLoopEndFrame())
+                break;
+        }
+
+        ImGui::DestroyContext();
+        break;
+    }
+    case ImGuiBackend_DX11:
+    {
+        ImGui_ImplWin32_Init(hwnd);
+        ImGui_ImplDX11_Init(g_pd3dDevice, g_pd3dDeviceContext);
+
+        test_io.ConfigLogVerbose = g_App.OptVerbose;
+        test_io.NewFrameFunc = [](ImGuiTestEngine*, void*) { return MainLoopNewFrameDX11(); };
+        test_io.EndFrameFunc = [](ImGuiTestEngine*, void*) { return MainLoopEndFrame(); };
+        test_io.FileOpenerFunc = FileOpenerFunc;
+
+        while (1)
+        {
+            if (!MainLoopNewFrameDX11())
+                break;
+            if (!MainLoopEndFrame())
+                break;
+        }
+
+        ImGui_ImplDX11_Shutdown();
+        ImGui_ImplWin32_Shutdown();
+        ImGui::DestroyContext();
+
+        CleanupDeviceD3D();
+        DestroyWindow(hwnd);
+        UnregisterClass(_T("ImGui Example"), wc.hInstance);
+
+        break;
+    }
+    }
+
+    if (g_App.OptPauseOnExit && !g_App.OptGUI)
+    {
+        printf("Press Enter to exit.\n");
+        getc(stdin);
+    }
 
     return 0;
 }

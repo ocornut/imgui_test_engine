@@ -150,10 +150,13 @@ static inline bool              ImGuiTestEngine_IsRunningTests(ImGuiTestEngine* 
 //-------------------------------------------------------------------------
 // [SECTION] TEST ENGINE: FUNCTIONS
 //-------------------------------------------------------------------------
+// Public
 // - ImGuiTestEngine_CreateContext()
 // - ImGuiTestEngine_ShutdownContext()
 // - ImGuiTestEngine_GetIO()
 // - ImGuiTestEngine_Abort()
+// - ImGuiTestEngine_QueueAllTests()
+//-------------------------------------------------------------------------
 // - ImHashDecoratedPath()
 // - ImGuiTestEngine_FindLocateTask()
 // - ImGuiTestEngine_ItemLocate()
@@ -426,20 +429,30 @@ static void ImGuiTestEngine_ProcessQueue(ImGuiTestEngine* engine)
         ctx.UserData = NULL;
         ctx.UiContext = engine->UiTestContext;
         engine->TestContext = &ctx;
+
+        ctx.Log("----------------------------------------------------------------------\n");
+        ctx.Log("Test: '%s' '%s'..\n", test->Category, test->Name);
         if (test->RootFunc)
             test->RootFunc(&ctx);
         else
             ctx.RunCurrentTest(NULL);
-        ctx.Log("Done.");
         ran_tests++;
+
+        IM_ASSERT(test->Status != ImGuiTestStatus_Running);
+        if (engine->Abort)
+            test->Status = ImGuiTestStatus_Unknown;
+
+        if (engine->Abort)
+            ctx.Log("Aborted.\n");
+        else if (test->Status == ImGuiTestStatus_Success)
+            ctx.Log("Success.\n");
+        else if (test->Status == ImGuiTestStatus_Error)
+            ctx.Log("Error.\n");
+        else
+            ctx.Log("Unknown status.\n");
 
         IM_ASSERT(engine->TestContext == &ctx);
         engine->TestContext = NULL;
-
-        IM_ASSERT(test->Status != ImGuiTestStatus_Running);
-
-        if (engine->Abort)
-            test->Status = ImGuiTestStatus_Unknown;
 
         // Auto select the first error test
         //if (test->Status == ImGuiTestStatus_Error)
@@ -471,6 +484,12 @@ static void ImGuiTestEngine_QueueTest(ImGuiTestEngine* engine, ImGuiTest* test)
 
     test->Status = ImGuiTestStatus_Queued;
     engine->TestsQueue.push_back(test);
+}
+
+void ImGuiTestEngine_QueueAllTests(ImGuiTestEngine* engine)
+{
+    for (int n = 0; n < engine->TestsAll.Size; n++)
+        ImGuiTestEngine_QueueTest(engine, engine->TestsAll[n]);
 }
 
 static void ImGuiTestEngine_RunTest(ImGuiTestEngine* engine, ImGuiTestContext* ctx, void* user_data)
@@ -741,8 +760,7 @@ void    ImGuiTestEngine_ShowTestWindow(ImGuiTestEngine* engine, bool* p_open)
     ImGui::Text("TESTS (%d)", engine->TestsAll.Size);
     static ImGuiTextFilter filter;
     if (ImGui::Button("Run All"))
-        for (int n = 0; n < engine->TestsAll.Size; n++)
-            ImGuiTestEngine_QueueTest(engine, engine->TestsAll[n]);
+        ImGuiTestEngine_QueueAllTests(engine);
 
     ImGui::SameLine();
     filter.Draw("", -1.0f);
@@ -785,16 +803,49 @@ void    ImGuiTestEngine_ShowTestWindow(ImGuiTestEngine* engine, bool* p_open)
         if (ImGui::Selectable(buf, test == engine->UiSelectedTest))
             select_test = true;
 
-        if (select_test)
-            engine->UiSelectedTest = test;
-
-        if (ImGui::IsItemHovered() && test->TestLog.size() > 0)
+        /*if (ImGui::IsItemHovered() && test->TestLog.size() > 0)
         {
             ImGui::BeginTooltip();
             DrawTestLog(engine, test, false);
             ImGui::EndTooltip();
+        }*/
+
+        if (ImGui::BeginPopupContextItem())
+        {
+            select_test = true;
+
+            const bool open_source_available = (test->SourceFile != NULL) && (engine->IO.FileOpenerFunc != NULL);
+            if (open_source_available)
+            {
+                ImFormatString(buf, IM_ARRAYSIZE(buf), "Open source (%s:%d)", test->SourceFileShort, test->SourceLine);
+                if (ImGui::MenuItem(buf))
+                {
+                    engine->IO.FileOpenerFunc(test->SourceFile, test->SourceLine, engine->IO.UserData);
+                }
+            }
+            else
+            {
+                ImGui::MenuItem("Open source", NULL, false, false);
+            }
+
+            if (ImGui::MenuItem("Copy log", NULL, false, !test->TestLog.empty()))
+            {
+                ImGui::SetClipboardText(test->TestLog.c_str());
+            }
+
+            if (ImGui::MenuItem("Run test"))
+            {
+                queue_test = true;
+            }
+
+            ImGui::EndPopup();
         }
 
+        // Process selection
+        if (select_test)
+            engine->UiSelectedTest = test;
+
+        // Process queuing
         if (queue_test && engine->CallDepth == 0)
             ImGuiTestEngine_QueueTest(engine, test);
 
@@ -828,12 +879,24 @@ void    ImGuiTestEngine_ShowTestWindow(ImGuiTestEngine* engine, bool* p_open)
 // This is the interface that most tests will interact with.
 //-------------------------------------------------------------------------
 
-ImGuiTest*  ImGuiTestContext::RegisterTest(const char* category, const char* name)
+ImGuiTest*  ImGuiTestContext::RegisterTest(const char* category, const char* name, const char* src_file, int src_line)
 {
     ImGuiTest* t = IM_NEW(ImGuiTest)();
     t->Category = category;
     t->Name = name;
+    t->SourceFile = t->SourceFileShort = src_file;
+    t->SourceLine = src_line;
     Engine->TestsAll.push_back(t);
+
+    // Find filename only out of the fully qualified source path
+    if (src_file)
+    {
+        // FIXME: Be reasonable and use a named helper.
+        for (t->SourceFileShort = t->SourceFile + strlen(t->SourceFile); t->SourceFileShort > t->SourceFile; t->SourceFileShort--)
+            if (t->SourceFileShort[-1] == '/' || t->SourceFileShort[-1] == '\\')
+                break;
+    }
+
     return t;
 }
 
@@ -847,11 +910,16 @@ void    ImGuiTestContext::Log(const char* fmt, ...)
     ImGuiTestContext* ctx = Engine->TestContext;
     ImGuiTest* test = ctx->Test;
 
+    const int prev_size = test->TestLog.size();
+
     va_list args;
     va_start(args, fmt);
     test->TestLog.appendf("[%04d] ", ctx->FrameCount);
     test->TestLog.appendfv(fmt, args);
     va_end(args);
+
+    if (Engine->IO.ConfigLogToTTY)
+        printf("%s", test->TestLog.c_str() + prev_size);
 }
 
 void    ImGuiTestContext::LogVerbose(const char* fmt, ...)
@@ -861,11 +929,16 @@ void    ImGuiTestContext::LogVerbose(const char* fmt, ...)
     ImGuiTestContext* ctx = Engine->TestContext;
     ImGuiTest* test = ctx->Test;
 
+    const int prev_size = test->TestLog.size();
+
     va_list args;
     va_start(args, fmt);
     test->TestLog.appendf("[%04d] -- %*s", ctx->FrameCount, ImMax(0, (ctx->ActionDepth) * 2), "");
     test->TestLog.appendfv(fmt, args);
     va_end(args);
+
+    if (Engine->IO.ConfigLogToTTY)
+        printf("%s", test->TestLog.c_str() + prev_size);
 }
 
 void    ImGuiTestContext::Yield()
@@ -919,7 +992,7 @@ ImGuiTestLocateResult* ImGuiTestContext::ItemLocate(const char* str_id, ImGuiLoc
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
     ImGuiTestLocateResult* result = NULL;
     int retries = 0;
-    while (retries < 10)
+    while (retries < 2)
     {
         result = ImGuiTestEngine_ItemLocate(Engine, full_id, str_id);
         if (result)
