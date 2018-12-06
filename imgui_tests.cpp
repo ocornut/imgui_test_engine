@@ -194,9 +194,12 @@ void RegisterTests_Misc(ImGuiTestContext* ctx)
         ctx->MenuCheck("Examples/Console");
 
         ctx->SetRef("Example: Console");
+        ctx->ItemClick("Clear");
         ctx->ItemClick("Add Dummy Text");
         ctx->ItemClick("Add Dummy Error");
-        ctx->ItemClick("#CLOSE");
+        ctx->WindowClose();
+
+        //IM_CHECK(false);
     };
 }
 

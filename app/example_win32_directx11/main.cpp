@@ -27,6 +27,7 @@
 #include <stdio.h>
 #include <conio.h>
 
+#define IMGUI_DEFINE_MATH_OPERATORS
 #include "imgui_tests.h"
 #include "imgui_test_engine.h"
 
@@ -423,7 +424,7 @@ int main(int argc, char** argv)
         io.Fonts->Build();
         for (int n = 0; n < ImGuiKey_COUNT; n++)
             io.KeyMap[n] = n;
-        test_io.ConfigLogVerbose = g_App.OptVerbose;
+        test_io.ConfigVerboseLevel = g_App.OptVerbose ? ImGuiTestVerboseLevel_Max : ImGuiTestVerboseLevel_Normal;
         test_io.ConfigLogToTTY = true;
         test_io.ConfigRunFast = true;
         test_io.NewFrameFunc = [](ImGuiTestEngine*, void*) { return MainLoopNewFrameNull(); };
@@ -446,7 +447,7 @@ int main(int argc, char** argv)
         ImGui_ImplWin32_Init(hwnd);
         ImGui_ImplDX11_Init(g_pd3dDevice, g_pd3dDeviceContext);
 
-        test_io.ConfigLogVerbose = g_App.OptVerbose;
+        test_io.ConfigVerboseLevel = g_App.OptVerbose ? ImGuiTestVerboseLevel_Max : ImGuiTestVerboseLevel_Normal;
         test_io.NewFrameFunc = [](ImGuiTestEngine*, void*) { return MainLoopNewFrameDX11(); };
         test_io.EndFrameFunc = [](ImGuiTestEngine*, void*) { return MainLoopEndFrame(); };
         test_io.FileOpenerFunc = FileOpenerFunc;
