@@ -18,11 +18,12 @@ struct ImGuiTest;
 struct ImGuiTestContext;
 struct ImGuiTestEngine;
 struct ImGuiTestEngineIO;
-struct ImGuiTestLocateResult;
+struct ImGuiTestItemInfo;
+struct ImGuiTestItemList;
 struct ImRect;
 
-typedef int     ImGuiTestFlags;
-typedef int     ImGuiLocateFlags;
+typedef int     ImGuiTestFlags;     // See ImGuiTestFlags_
+typedef int     ImGuiLocateFlags;   // See ImGuiLocateFlags_
 
 //-------------------------------------------------------------------------
 // Types
@@ -64,7 +65,7 @@ enum ImGuiLocateFlags_
 void    ImGuiTestEngineHook_PreNewFrame();
 void    ImGuiTestEngineHook_PostNewFrame();
 void    ImGuiTestEngineHook_ItemAdd(ImGuiID id, const ImRect& bb);
-void    ImGuiTestEngineHook_ItemStatusFlags(ImGuiID id, int flags);
+void    ImGuiTestEngineHook_ItemInfo(ImGuiID id, const char* label, int flags);
 
 //-------------------------------------------------------------------------
 // Hooks for Tests
@@ -114,6 +115,29 @@ struct ImGuiTestEngineIO
 
     // Outputs: State
     bool                            RunningTests        = false;
+};
+
+struct ImGuiTestItemInfo
+{
+    int                         RefCount : 8;           // User can increment this if they want to hold on the result pointer, otherwise the task will be GC-ed.
+    int                         NavLayer : 1;
+    int                         Depth : 16;             // Depth from requested parent id. 0 == ID is immediate child of requested parent id.
+    int                         TimestampMain = -1;     // Timestamp of main result
+    int                         TimestampStatus = -1;   // Timestamp of StatusFlags
+    ImGuiID                     ID = 0;
+    ImGuiID                     ParentID = 0;
+    ImGuiWindow*                Window = NULL;
+    ImRect                      Rect = ImRect();
+    ImGuiItemStatusFlags        StatusFlags = 0;
+    char                        DebugLabel[20];         // Shortened label for debugging purpose
+
+    ImGuiTestItemInfo()
+    {
+        RefCount = 0;
+        NavLayer = 0;
+        Depth = 0;
+        memset(DebugLabel, 0, sizeof(DebugLabel));
+    }
 };
 
 //-------------------------------------------------------------------------
@@ -227,9 +251,8 @@ struct ImGuiTestContext
     void        ItemClose(ImGuiTestRef ref)     { ItemAction(ImGuiTestAction_Close, ref); }
 
     void        ItemHold(ImGuiTestRef ref, float time);
-    ImGuiTestLocateResult* ItemLocate(ImGuiTestRef ref, ImGuiLocateFlags flags = ImGuiLocateFlags_None);
+    ImGuiTestItemInfo* ItemLocate(ImGuiTestRef ref, ImGuiLocateFlags flags = ImGuiLocateFlags_None);
     bool        ItemIsChecked(ImGuiTestRef ref);
-    bool        ItemHasStatusFlags(ImGuiTestRef ref, ImGuiItemStatusFlags flags);
     void        ItemVerifyCheckedIfAlive(ImGuiTestRef ref, bool checked);
 
     void        MenuAction(ImGuiTestAction action, ImGuiTestRef ref);

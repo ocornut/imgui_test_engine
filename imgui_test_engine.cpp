@@ -4,24 +4,37 @@
 #if defined(_MSC_VER) && !defined(_CRT_SECURE_NO_WARNINGS)
 #define _CRT_SECURE_NO_WARNINGS
 #endif
+#ifdef _MSC_VER
+#pragma warning (disable: 4100)     // unreferenced formal parameter
+#endif
 
 #include "imgui.h"
 #define IMGUI_DEFINE_MATH_OPERATORS
 #include "imgui_internal.h"
 #include "imgui_test_engine.h"
 
-#ifdef _MSC_VER
-#pragma warning (disable: 4100)     // unreferenced formal parameter
-#endif
-
 #define IMGUI_DEBUG_TEST_ENGINE     1
+
+/*
+
+Index of this file:
+
+// [SECTION] DATA STRUCTURES
+// [SECTION] TEST ENGINE: FORWARD DECLARATIONS
+// [SECTION] TEST ENGINE: FUNCTIONS
+// [SECTION] HOOKS FOR CORE LIBRARY
+// [SECTION] HOOKS FOR TESTS
+// [SECTION] USER INTERFACE
+// [SECTION] ImGuiTestContext
+
+*/
 
 //-------------------------------------------------------------------------
 // TODO
 //-------------------------------------------------------------------------
 
-// GOAL: Custom testing.
 // GOAL: Code coverage.
+// GOAL: Custom testing.
 // GOAL: Take screenshots for web/docs.
 // GOAL: Reliable performance measurement (w/ deterministic setup)
 // GOAL: Full blind version with no graphical context.
@@ -30,6 +43,8 @@
 // FIXME-TESTS: Be able to interactively run GUI function without Test function
 // FIXME-TESTS: Provide variants of same test (e.g. run same tests with a bunch of styles/flags)
 // FIXME-TESTS: Automate clicking/opening stuff based on gathering id?
+// FIXME-TESTS: Mouse actions on ImGuiNavLayer_Menu layer
+// FIXME-TESTS: Fail to open a double-click tree node
 
 //-------------------------------------------------------------------------
 // [SECTION] DATA STRUCTURES
@@ -37,32 +52,13 @@
 
 static ImGuiTestEngine*     GImGuiTestEngine;
 
-struct ImGuiTestLocateResult
-{
-    int                     RefCount = 0;           // User can increment this if they want to hold on the result pointer, otherwise the task will be GC-ed.
-
-    // [Main results]
-    int                     TimestampMain = -1;     // Timestamp of result
-    ImRect                  Rect = ImRect();
-    ImGuiID                 ID = 0;
-    ImGuiWindow*            Window = NULL;
-    int                     NavLayer = 0;
-
-    // [Status flags]
-    int                     TimestampStatus = -1;    // Timestamp of result
-    ImGuiItemStatusFlags    StatusFlags = 0;
-
-    ImGuiTestLocateResult() {}
-    //bool IsValid() const { return FrameCount != 1; }
-};
-
 // Locate item position/window/state given ID.
 struct ImGuiTestLocateTask
 {
     ImGuiID                 ID = 0;
     int                     FrameCount = -1;        // Timestamp of request
     char                    DebugName[64] = "";
-    ImGuiTestLocateResult   Result;
+    ImGuiTestItemInfo       Result;
 };
 
 struct ImGuiTestEngine
@@ -102,16 +98,16 @@ struct ImGuiTestEngine
 //-------------------------------------------------------------------------
 
 // Private functions
-static ImGuiTestLocateResult*   ImGuiTestEngine_ItemLocate(ImGuiTestEngine* engine, ImGuiID id, const char* debug_id);
-static void                     ImGuiTestEngine_ApplyInputToImGuiContext(ImGuiTestEngine* engine);
-static void                     ImGuiTestEngine_ProcessQueue(ImGuiTestEngine* engine);
-static void                     ImGuiTestEngine_ClearTests(ImGuiTestEngine* engine);
-static void                     ImGuiTestEngine_ClearLocateTasks(ImGuiTestEngine* engine);
-static void                     ImGuiTestEngine_PreNewFrame(ImGuiTestEngine* engine);
-static void                     ImGuiTestEngine_PostNewFrame(ImGuiTestEngine* engine);
-static void                     ImGuiTestEngine_Yield(ImGuiTestEngine* engine);
-static void                     ImGuiTestEngine_QueueTest(ImGuiTestEngine* engine, ImGuiTest* test);
-static inline bool              ImGuiTestEngine_IsRunningTests(ImGuiTestEngine* engine) { return engine->TestsQueue.Size > 0; }
+static ImGuiTestItemInfo*   ImGuiTestEngine_ItemLocate(ImGuiTestEngine* engine, ImGuiID id, const char* debug_id);
+static void                 ImGuiTestEngine_ApplyInputToImGuiContext(ImGuiTestEngine* engine);
+static void                 ImGuiTestEngine_ProcessQueue(ImGuiTestEngine* engine);
+static void                 ImGuiTestEngine_ClearTests(ImGuiTestEngine* engine);
+static void                 ImGuiTestEngine_ClearLocateTasks(ImGuiTestEngine* engine);
+static void                 ImGuiTestEngine_PreNewFrame(ImGuiTestEngine* engine);
+static void                 ImGuiTestEngine_PostNewFrame(ImGuiTestEngine* engine);
+static void                 ImGuiTestEngine_Yield(ImGuiTestEngine* engine);
+static void                 ImGuiTestEngine_QueueTest(ImGuiTestEngine* engine, ImGuiTest* test);
+static inline bool          ImGuiTestEngine_IsRunningTests(ImGuiTestEngine* engine) { return engine->TestsQueue.Size > 0; }
 
 //-------------------------------------------------------------------------
 // [SECTION] TEST ENGINE: FUNCTIONS
@@ -239,7 +235,7 @@ ImGuiTestLocateTask* ImGuiTestEngine_FindLocateTask(ImGuiTestEngine* engine, ImG
     return NULL;
 }
 
-static ImGuiTestLocateResult* ImGuiTestEngine_ItemLocate(ImGuiTestEngine* engine, ImGuiID id, const char* debug_id)
+static ImGuiTestItemInfo* ImGuiTestEngine_ItemLocate(ImGuiTestEngine* engine, ImGuiID id, const char* debug_id)
 {
     IM_ASSERT(id != 0);
 
@@ -487,7 +483,7 @@ static void ImGuiTestEngine_RunTest(ImGuiTestEngine* engine, ImGuiTestContext* c
 // - ImGuiTestEngineHook_PreNewFrame()
 // - ImGuiTestEngineHook_PostNewFrame()
 // - ImGuiTestEngineHook_ItemAdd()
-// - ImGuiTestEngineHook_ItemStatusFlag()
+// - ImGuiTestEngineHook_ItemInfo()
 //-------------------------------------------------------------------------
 
 void ImGuiTestEngineHook_PreNewFrame()
@@ -522,16 +518,20 @@ void ImGuiTestEngineHook_ItemAdd(ImGuiID id, const ImRect& bb)
     // Locate Tasks
     if (ImGuiTestLocateTask* task = ImGuiTestEngine_FindLocateTask(engine, id))
     {
-        task->Result.TimestampMain = g.FrameCount;
-        task->Result.Rect = bb;
-        task->Result.ID = id;
-        task->Result.NavLayer = window->DC.NavLayerCurrent;
-        task->Result.Window = window;
-        task->Result.StatusFlags = window->DC.LastItemStatusFlags;
+        ImGuiTestItemInfo* item = &task->Result;
+        item->TimestampMain = g.FrameCount;
+        item->ID = id;
+        item->ParentID = window->IDStack.back();
+        item->Window = window;
+        item->Rect = bb;
+        item->NavLayer = window->DC.NavLayerCurrent;
+        item->Depth = 0;
+        item->StatusFlags = window->DC.LastItemStatusFlags;
     }
 }
 
-void ImGuiTestEngineHook_ItemStatusFlags(ImGuiID id, int flags)
+// label is optional
+void ImGuiTestEngineHook_ItemInfo(ImGuiID id, const char* label, int flags)
 {
     if (id == 0)
         return;
@@ -546,10 +546,14 @@ void ImGuiTestEngineHook_ItemStatusFlags(ImGuiID id, int flags)
     ImGuiWindow* window = g.CurrentWindow;
     IM_ASSERT(window->DC.LastItemId == id);
 
+    // Update Locate Task status flags
     if (ImGuiTestLocateTask* task = ImGuiTestEngine_FindLocateTask(engine, id))
     {
-        task->Result.TimestampStatus = g.FrameCount;
-        task->Result.StatusFlags = flags;
+        ImGuiTestItemInfo* item = &task->Result;
+        item->TimestampStatus = g.FrameCount;
+        item->StatusFlags = flags;
+        if (label)
+            ImStrncpy(item->DebugLabel, label, IM_ARRAYSIZE(item->DebugLabel));
     }
 }
 
@@ -630,6 +634,11 @@ bool ImGuiTestEngineHook_Error(const char* file, const char* func, int line, con
 //-------------------------------------------------------------------------
 // [SECTION] USER INTERFACE
 //-------------------------------------------------------------------------
+// - DrawTestLog() [internal]
+// - GetVerboseLevelName() [internal]
+// - ImGuiTestEngine_ShowTestWindow()
+//-------------------------------------------------------------------------
+
 
 static void DrawTestLog(ImGuiTestEngine* e, ImGuiTest* test, bool is_interactive)
 {
@@ -976,7 +985,7 @@ ImGuiID ImGuiTestContext::GetID(ImGuiTestRef ref)
     return ImHashDecoratedPath(ref.Path, RefID);
 }
 
-ImGuiTestLocateResult* ImGuiTestContext::ItemLocate(ImGuiTestRef ref, ImGuiLocateFlags flags)
+ImGuiTestItemInfo* ImGuiTestContext::ItemLocate(ImGuiTestRef ref, ImGuiLocateFlags flags)
 {
     if (IsError())
         return NULL;
@@ -988,13 +997,13 @@ ImGuiTestLocateResult* ImGuiTestContext::ItemLocate(ImGuiTestRef ref, ImGuiLocat
         full_id = ImHashDecoratedPath(ref.Path, RefID);
 
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
-    ImGuiTestLocateResult* result = NULL;
+    ImGuiTestItemInfo* item = NULL;
     int retries = 0;
     while (retries < 2)
     {
-        result = ImGuiTestEngine_ItemLocate(Engine, full_id, ref.Path);
-        if (result)
-            return result;
+        item = ImGuiTestEngine_ItemLocate(Engine, full_id, ref.Path);
+        if (item)
+            return item;
         ImGuiTestEngine_Yield(Engine);
         retries++;
     }
@@ -1022,13 +1031,13 @@ void    ImGuiTestContext::MouseMove(ImGuiTestRef ref)
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
     LogVerbose("MouseMove to '%s' %08X\n", ref.Path ? ref.Path : "NULL", ref.ID);
 
-    ImGuiTestLocateResult* result = ItemLocate(ref);
-    if (result == NULL)
+    ImGuiTestItemInfo* item = ItemLocate(ref);
+    if (item == NULL)
         return;
-    result->RefCount++;
+    item->RefCount++;
 
-    ImGuiWindow* window = result->Window;
-    if (result->NavLayer == 0 && !window->InnerClipRect.Contains(result->Rect))
+    ImGuiWindow* window = item->Window;
+    if (item->NavLayer == ImGuiNavLayer_Main && !window->InnerClipRect.Contains(item->Rect))
     {
         // If the item is not currently visible, scroll to get it in the center of our window
         IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
@@ -1037,7 +1046,7 @@ void    ImGuiTestContext::MouseMove(ImGuiTestRef ref)
         while (!Abort)
         {
             // result->Rect will be updated after each iteration.
-            ImRect item_rect = result->Rect;
+            ImRect item_rect = item->Rect;
             float item_curr_y = ImFloor(item_rect.GetCenter().y);
             float item_target_y = ImFloor(window->InnerClipRect.GetCenter().y);
             float scroll_delta_y = item_target_y - item_curr_y;
@@ -1056,11 +1065,11 @@ void    ImGuiTestContext::MouseMove(ImGuiTestRef ref)
         ImGuiTestEngine_Yield(Engine);
     }
 
-    MouseMove(result->Rect.GetCenter());
+    MouseMove(item->Rect.GetCenter());
     if (!Abort)
-        IM_ASSERT(g.HoveredIdPreviousFrame == result->ID);
+        IM_ASSERT(g.HoveredIdPreviousFrame == item->ID);
 
-    result->RefCount--;
+    item->RefCount--;
 }
 
 void	ImGuiTestContext::MouseMove(ImVec2 target)
@@ -1123,8 +1132,8 @@ void    ImGuiTestContext::FocusWindowForItem(ImGuiTestRef ref)
         return;
 
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
-    if (const ImGuiTestLocateResult* result = ItemLocate(ref))
-        ImGui::FocusWindow(result->Window);
+    if (const ImGuiTestItemInfo* item = ItemLocate(ref))
+        ImGui::FocusWindow(item->Window);
 }
 
 void    ImGuiTestContext::ItemAction(ImGuiTestAction action, ImGuiTestRef ref)
@@ -1150,13 +1159,13 @@ void    ImGuiTestContext::ItemAction(ImGuiTestAction action, ImGuiTestRef ref)
         IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
         LogVerbose("ItemOpen '%s' %08X\n", ref.Path ? ref.Path : "NULL", ref.ID);
 
-        if (ImGuiTestLocateResult* result = ItemLocate(ref))
-            if (result->Window->DC.StateStorage->GetInt(result->ID, 0) == 0)
+        if (ImGuiTestItemInfo* item = ItemLocate(ref))
+            if (item->Window->DC.StateStorage->GetInt(item->ID, 0) == 0)
             {
-                result->RefCount++;
+                item->RefCount++;
                 ItemClick(ref);
-                IM_ASSERT(result->Window->DC.StateStorage->GetInt(result->ID, 0) == 1);
-                result->RefCount--;
+                IM_ASSERT(item->Window->DC.StateStorage->GetInt(item->ID, 0) == 1);
+                item->RefCount--;
             }
         return;
     }
@@ -1166,13 +1175,13 @@ void    ImGuiTestContext::ItemAction(ImGuiTestAction action, ImGuiTestRef ref)
         IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
         LogVerbose("ItemClose '%s' %08X\n", ref.Path ? ref.Path : "NULL", ref.ID);
 
-        if (ImGuiTestLocateResult* result = ItemLocate(ref))
-            if (result->Window->DC.StateStorage->GetInt(result->ID, 0) == 1)
+        if (ImGuiTestItemInfo* item = ItemLocate(ref))
+            if (item->Window->DC.StateStorage->GetInt(item->ID, 0) == 1)
             {
-                result->RefCount++;
+                item->RefCount++;
                 ItemClick(ref);
-                IM_ASSERT(result->Window->DC.StateStorage->GetInt(result->ID, 0) == 0);
-                result->RefCount--;
+                IM_ASSERT(item->Window->DC.StateStorage->GetInt(item->ID, 0) == 0);
+                item->RefCount--;
             }
         return;
     }
@@ -1232,34 +1241,20 @@ bool    ImGuiTestContext::ItemIsChecked(ImGuiTestRef ref)
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
     LogVerbose("ItemIsChecked '%s' %08X\n", ref.Path ? ref.Path : "NULL", ref.ID);
 
-    if (ImGuiTestLocateResult* result = ItemLocate(ref))
+    if (ImGuiTestItemInfo* item = ItemLocate(ref))
     {
-        IM_ASSERT(result->TimestampStatus == result->TimestampMain && "Using ItemIsChecked on an item that doesn't call ImGuiTestEngineHook_ItemStatusFlags?");
-        return (result->StatusFlags & ImGuiItemStatusFlags_Checked) ? true : false;
+        IM_ASSERT(item->TimestampStatus == item->TimestampMain && "Using ItemIsChecked on an item that doesn't call ImGuiTestEngineHook_ItemStatusFlags?");
+        return (item->StatusFlags & ImGuiItemStatusFlags_Checked) ? true : false;
     }
-    return false;
-}
-
-bool    ImGuiTestContext::ItemHasStatusFlags(ImGuiTestRef ref, ImGuiItemStatusFlags flags)
-{
-    if (IsError())
-        return false;
-
-    IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
-    LogVerbose("ItemHasStatusFlags '%s' %08X, flags: %08X\n", ref.Path ? ref.Path : "NULL", ref.ID, flags);
-
-    if (ImGuiTestLocateResult* result = ItemLocate(ref))
-        if (result->TimestampMain != -1)
-            return ((result->StatusFlags & flags) == flags) ? true : false;
     return false;
 }
 
 void    ImGuiTestContext::ItemVerifyCheckedIfAlive(ImGuiTestRef ref, bool checked)
 {
     Yield();
-    if (ImGuiTestLocateResult* result = ItemLocate(ref, ImGuiLocateFlags_NoError))
-        if (result->TimestampMain + 1 >= Engine->FrameCount && result->TimestampStatus == result->TimestampMain)
-            IM_ASSERT(((result->StatusFlags & ImGuiItemStatusFlags_Checked) != 0) == checked);
+    if (ImGuiTestItemInfo* item = ItemLocate(ref, ImGuiLocateFlags_NoError))
+        if (item->TimestampMain + 1 >= Engine->FrameCount && item->TimestampStatus == item->TimestampMain)
+            IM_ASSERT(((item->StatusFlags & ImGuiItemStatusFlags_Checked) != 0) == checked);
 }
 
 void    ImGuiTestContext::MenuAction(ImGuiTestAction action, ImGuiTestRef ref)
