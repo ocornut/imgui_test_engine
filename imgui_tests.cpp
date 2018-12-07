@@ -141,6 +141,21 @@ void RegisterTests_Misc(ImGuiTestContext* ctx)
         ctx->SleepShort();
     };
 
+    t = REGISTER_TEST("demo", "demo_cov_auto_open");
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ctx->SetRef("ImGui Demo");
+        ctx->ItemOpenAllRecurse("", 999);
+        //ctx->ItemOpenAllRecurse("", 1, 1);
+    };
+
+    t = REGISTER_TEST("demo", "demo_cov_auto_close");
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ctx->SetRef("ImGui Demo");
+        ctx->ItemCloseAllRecurse("", 999);
+    };
+
     t = REGISTER_TEST("demo", "demo_cov_001");
     t->TestFunc = [](ImGuiTestContext* ctx)
     {

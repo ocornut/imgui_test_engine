@@ -23,7 +23,7 @@ struct ImGuiTestItemList;
 struct ImRect;
 
 typedef int     ImGuiTestFlags;     // See ImGuiTestFlags_
-typedef int     ImGuiLocateFlags;   // See ImGuiLocateFlags_
+typedef int     ImGuiTestOpFlags;   // See ImGuiTestOpFlags_
 
 //-------------------------------------------------------------------------
 // Types
@@ -52,10 +52,10 @@ enum ImGuiTestFlags_
     ImGuiTestFlags_NoWarmUp     = 1 << 0        // By default, we run the GUI func twice before starting the test code
 };
 
-enum ImGuiLocateFlags_
+enum ImGuiTestOpFlags_
 {
-    ImGuiLocateFlags_None       = 0,
-    ImGuiLocateFlags_NoError    = 1 << 0        // Don't abort/error if the item cannot be found
+    ImGuiTestOpFlags_None       = 0,
+    ImGuiTestOpFlags_NoError    = 1 << 0        // Don't abort/error e.g. if the item cannot be found
 };
 
 //-------------------------------------------------------------------------
@@ -99,45 +99,54 @@ typedef void (*ImGuiTestEngineFileOpenerFunc)(const char* filename, int line, vo
 
 struct ImGuiTestEngineIO
 {
-    ImGuiTestEngineNewFrameFunc     EndFrameFunc        = NULL;
-    ImGuiTestEngineEndFrameFunc     NewFrameFunc        = NULL;
-    ImGuiTestEngineFileOpenerFunc   FileOpenerFunc      = NULL;     // (Optional) To open source files
-	void*                           UserData            = NULL;
-
-    // Inputs: Options
-    bool                            ConfigRunFast       = true;     // Run tests as fast as possible (teleport mouse, skip delays, etc.)
-    bool                            ConfigRunBlind      = false;    // Run tests in a blind ImGuiContext separated from the visible context
-    bool                            ConfigBreakOnError  = false;    // Break debugger on test error
-    ImGuiTestVerboseLevel           ConfigVerboseLevel  = ImGuiTestVerboseLevel_Normal;
-    bool                            ConfigLogToTTY      = false;
-    float                           MouseSpeed          = 1000.0f;  // Mouse speed (pixel/second) when not running in fast mode
-    float                           ScrollSpeed         = 1600.0f;  // Scroll speed (pixel/second) when not running in fast mode
-
-    // Outputs: State
-    bool                            RunningTests        = false;
+    ImGuiTestEngineNewFrameFunc EndFrameFunc = NULL;
+    ImGuiTestEngineEndFrameFunc NewFrameFunc = NULL;
+    ImGuiTestEngineFileOpenerFunc FileOpenerFunc = NULL;    // (Optional) To open source files
+    void*                       UserData = NULL;
+                                
+    // Inputs: Options          
+    bool                        ConfigRunFast = true;       // Run tests as fast as possible (teleport mouse, skip delays, etc.)
+    bool                        ConfigRunBlind =    false;  // Run tests in a blind ImGuiContext separated from the visible context
+    bool                        ConfigBreakOnError = false; // Break debugger on test error
+    ImGuiTestVerboseLevel       ConfigVerboseLevel = ImGuiTestVerboseLevel_Normal;
+    bool                        ConfigLogToTTY = false;
+    float                       MouseSpeed = 1000.0f;       // Mouse speed (pixel/second) when not running in fast mode
+    float                       ScrollSpeed = 1600.0f;      // Scroll speed (pixel/second) when not running in fast mode
+                                
+    // Outputs: State           
+    bool                        RunningTests = false;
 };
 
 struct ImGuiTestItemInfo
 {
-    int                         RefCount : 8;           // User can increment this if they want to hold on the result pointer, otherwise the task will be GC-ed.
+    int                         RefCount : 8;               // User can increment this if they want to hold on the result pointer, otherwise the task will be GC-ed.
     int                         NavLayer : 1;
-    int                         Depth : 16;             // Depth from requested parent id. 0 == ID is immediate child of requested parent id.
-    int                         TimestampMain = -1;     // Timestamp of main result
-    int                         TimestampStatus = -1;   // Timestamp of StatusFlags
+    int                         Depth : 16;                 // Depth from requested parent id. 0 == ID is immediate child of requested parent id.
+    int                         TimestampMain = -1;         // Timestamp of main result
+    int                         TimestampStatus = -1;       // Timestamp of StatusFlags
     ImGuiID                     ID = 0;
     ImGuiID                     ParentID = 0;
     ImGuiWindow*                Window = NULL;
     ImRect                      Rect = ImRect();
     ImGuiItemStatusFlags        StatusFlags = 0;
-    char                        DebugLabel[20];         // Shortened label for debugging purpose
+    char                        DebugLabel[20] = "";        // Shortened label for debugging purpose
 
     ImGuiTestItemInfo()
     {
         RefCount = 0;
         NavLayer = 0;
         Depth = 0;
-        memset(DebugLabel, 0, sizeof(DebugLabel));
     }
+};
+
+struct ImGuiTestItemList
+{
+    ImPool<ImGuiTestItemInfo>   Pool;
+    void                        Clear()                 { Pool.Clear(); }
+    void                        Reserve(int capacity)   { Pool.Reserve(capacity); }
+    int                         GetSize() const         { return Pool.GetSize(); }
+    const ImGuiTestItemInfo*    GetByIndex(int n)       { return Pool.GetByIndex(n); }
+    const ImGuiTestItemInfo*    GetByID(ImGuiID id)     { return Pool.GetByKey(id); }
 };
 
 //-------------------------------------------------------------------------
@@ -239,19 +248,24 @@ struct ImGuiTestContext
     void        SetRef(ImGuiTestRef ref);
     ImGuiID     GetID(ImGuiTestRef ref);
 
-    void        MouseMove(ImVec2 pos);
     void        MouseMove(ImGuiTestRef ref);
+    void        MouseMoveToPos(ImVec2 pos);
     void        MouseClick(int button = 0);
 
     void        FocusWindowForItem(ImGuiTestRef ref);
 
+    void        GatherItems(ImGuiTestItemList* out_list, ImGuiTestRef parent, int depth = 1);
+
     void        ItemAction(ImGuiTestAction action, ImGuiTestRef ref);
-    void        ItemClick(ImGuiTestRef ref)     { ItemAction(ImGuiTestAction_Click, ref); }
-    void        ItemOpen(ImGuiTestRef ref)      { ItemAction(ImGuiTestAction_Open, ref); }
-    void        ItemClose(ImGuiTestRef ref)     { ItemAction(ImGuiTestAction_Close, ref); }
+    void        ItemClick(ImGuiTestRef ref)         { ItemAction(ImGuiTestAction_Click, ref); }
+    void        ItemOpen(ImGuiTestRef ref)          { ItemAction(ImGuiTestAction_Open, ref); }
+    void        ItemClose(ImGuiTestRef ref)         { ItemAction(ImGuiTestAction_Close, ref); }
+
+    void        ItemOpenAllRecurse(ImGuiTestRef ref_parent, int depth = 1, int max_passes = 999);
+    void        ItemCloseAllRecurse(ImGuiTestRef ref_parent, int depth = 1, int max_passes = 999);
 
     void        ItemHold(ImGuiTestRef ref, float time);
-    ImGuiTestItemInfo* ItemLocate(ImGuiTestRef ref, ImGuiLocateFlags flags = ImGuiLocateFlags_None);
+    ImGuiTestItemInfo* ItemLocate(ImGuiTestRef ref, ImGuiTestOpFlags flags = ImGuiTestOpFlags_None);
     bool        ItemIsChecked(ImGuiTestRef ref);
     void        ItemVerifyCheckedIfAlive(ImGuiTestRef ref, bool checked);
 
