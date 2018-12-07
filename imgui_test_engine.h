@@ -55,7 +55,8 @@ enum ImGuiTestFlags_
 enum ImGuiTestOpFlags_
 {
     ImGuiTestOpFlags_None       = 0,
-    ImGuiTestOpFlags_NoError    = 1 << 0        // Don't abort/error e.g. if the item cannot be found
+    ImGuiTestOpFlags_Verbose    = 1 << 0,
+    ImGuiTestOpFlags_NoError    = 1 << 1        // Don't abort/error e.g. if the item cannot be found
 };
 
 //-------------------------------------------------------------------------
@@ -142,11 +143,16 @@ struct ImGuiTestItemInfo
 struct ImGuiTestItemList
 {
     ImPool<ImGuiTestItemInfo>   Pool;
+    int&                        Size;   // THIS IS REF/POINTER to Pool.Data.Size. This codebase is totally embracing evil C++!
+
     void                        Clear()                 { Pool.Clear(); }
     void                        Reserve(int capacity)   { Pool.Reserve(capacity); }
-    int                         GetSize() const         { return Pool.GetSize(); }
+    //int                       GetSize() const         { return Pool.GetSize(); }
+    const ImGuiTestItemInfo*    operator[] (size_t n)   { return Pool.GetByIndex((int)n); }
     const ImGuiTestItemInfo*    GetByIndex(int n)       { return Pool.GetByIndex(n); }
     const ImGuiTestItemInfo*    GetByID(ImGuiID id)     { return Pool.GetByKey(id); }
+
+    ImGuiTestItemList() : Size(Pool.Data.Size) {}
 };
 
 //-------------------------------------------------------------------------
@@ -190,14 +196,17 @@ struct ImGuiTest
 // This is the interface that most tests will interact with.
 //-------------------------------------------------------------------------
 
+// Note: keep in sync with GetActionName()
 enum ImGuiTestAction
 {
     ImGuiTestAction_Unknown = 0,
     ImGuiTestAction_Click,
+    ImGuiTestAction_DoubleClick,
     ImGuiTestAction_Check,
     ImGuiTestAction_Uncheck,
     ImGuiTestAction_Open,
-    ImGuiTestAction_Close
+    ImGuiTestAction_Close,
+    ImGuiTestAction_COUNT
 };
 
 struct ImGuiTestRef
@@ -247,32 +256,40 @@ struct ImGuiTestContext
 
     void        SetRef(ImGuiTestRef ref);
     ImGuiID     GetID(ImGuiTestRef ref);
+    ImGuiTestRef GetFocusWindowRef();
 
     void        MouseMove(ImGuiTestRef ref);
     void        MouseMoveToPos(ImVec2 pos);
     void        MouseClick(int button = 0);
 
-    void        FocusWindowForItem(ImGuiTestRef ref);
+    void        BringWindowToFrontForItem(ImGuiTestRef ref, ImGuiTestOpFlags flags = ImGuiTestOpFlags_None);
 
-    void        GatherItems(ImGuiTestItemList* out_list, ImGuiTestRef parent, int depth = 1);
+    void        GatherItems(ImGuiTestItemList* out_list, ImGuiTestRef parent, int depth = 999);
 
     void        ItemAction(ImGuiTestAction action, ImGuiTestRef ref);
     void        ItemClick(ImGuiTestRef ref)         { ItemAction(ImGuiTestAction_Click, ref); }
+    void        ItemDoubleClick(ImGuiTestRef ref)   { ItemAction(ImGuiTestAction_DoubleClick, ref); }
+    void        ItemCheck(ImGuiTestRef ref)         { ItemAction(ImGuiTestAction_Check, ref); }
+    void        ItemUncheck(ImGuiTestRef ref)       { ItemAction(ImGuiTestAction_Uncheck, ref); }
     void        ItemOpen(ImGuiTestRef ref)          { ItemAction(ImGuiTestAction_Open, ref); }
     void        ItemClose(ImGuiTestRef ref)         { ItemAction(ImGuiTestAction_Close, ref); }
 
-    void        ItemOpenAllRecurse(ImGuiTestRef ref_parent, int depth = 1, int max_passes = 999);
-    void        ItemCloseAllRecurse(ImGuiTestRef ref_parent, int depth = 1, int max_passes = 999);
+    void        ItemActionAll(ImGuiTestAction action, ImGuiTestRef ref_parent, int depth = 1, int passes = 999);
+    void        ItemOpenAll(ImGuiTestRef ref_parent, int depth = 1, int passes = 999)    { ItemActionAll(ImGuiTestAction_Open, ref_parent, depth, passes); }
+    void        ItemCloseAll(ImGuiTestRef ref_parent, int depth = 1, int passes = 999)   { ItemActionAll(ImGuiTestAction_Close, ref_parent, depth, passes); }
 
     void        ItemHold(ImGuiTestRef ref, float time);
     ImGuiTestItemInfo* ItemLocate(ImGuiTestRef ref, ImGuiTestOpFlags flags = ImGuiTestOpFlags_None);
-    bool        ItemIsChecked(ImGuiTestRef ref);
     void        ItemVerifyCheckedIfAlive(ImGuiTestRef ref, bool checked);
 
     void        MenuAction(ImGuiTestAction action, ImGuiTestRef ref);
-    void        MenuClick(ImGuiTestRef ref)     { MenuAction(ImGuiTestAction_Click, ref); }
-    void        MenuCheck(ImGuiTestRef ref)     { MenuAction(ImGuiTestAction_Check, ref); }
-    void        MenuUncheck(ImGuiTestRef ref)   { MenuAction(ImGuiTestAction_Uncheck, ref); }
+    void        MenuClick(ImGuiTestRef ref)                 { MenuAction(ImGuiTestAction_Click, ref); }
+    void        MenuCheck(ImGuiTestRef ref)                 { MenuAction(ImGuiTestAction_Check, ref); }
+    void        MenuUncheck(ImGuiTestRef ref)               { MenuAction(ImGuiTestAction_Uncheck, ref); }
+
+    void        MenuActionAll(ImGuiTestAction action, ImGuiTestRef ref_parent);
+    void        MenuCheckAll(ImGuiTestRef ref_parent)       { MenuActionAll(ImGuiTestAction_Check, ref_parent); }
+    void        MenuUncheckAll(ImGuiTestRef ref_parent)     { MenuActionAll(ImGuiTestAction_Uncheck, ref_parent); }
 
     void        WindowClose();
     void        PopupClose();

@@ -145,15 +145,15 @@ void RegisterTests_Misc(ImGuiTestContext* ctx)
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         ctx->SetRef("ImGui Demo");
-        ctx->ItemOpenAllRecurse("", 999);
-        //ctx->ItemOpenAllRecurse("", 1, 1);
+        ctx->ItemOpenAll("");
+        //ctx->ItemOpenAll("", 1, 1);
     };
 
     t = REGISTER_TEST("demo", "demo_cov_auto_close");
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         ctx->SetRef("ImGui Demo");
-        ctx->ItemCloseAllRecurse("", 999);
+        ctx->ItemCloseAll("");
     };
 
     t = REGISTER_TEST("demo", "demo_cov_001");
@@ -171,16 +171,16 @@ void RegisterTests_Misc(ImGuiTestContext* ctx)
         ctx->ItemOpen("Inputs, Navigation & Focus");
     };
 
-    t = REGISTER_TEST("demo", "demo_cov_002");
+    t = REGISTER_TEST("demo", "demo_cov_apps");
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         ctx->SetRef("ImGui Demo");
         ctx->MenuClick("Menu/Open Recent/More..");
 
-        //ctx->ItemClick("$REF/Main menu bar");
-        //ctx->ItemClick("$NAV/Main menu bar");
-        //ctx->ItemClick("$TOP/Main menu bar");
-
+#if 1
+        ctx->MenuCheckAll("Examples");
+        ctx->MenuUncheckAll("Examples");
+#else
         for (int n = 0; n < 2; n++)
         {
             ImGuiTestAction action = (n == 0) ? ImGuiTestAction_Check : ImGuiTestAction_Uncheck;
@@ -200,6 +200,7 @@ void RegisterTests_Misc(ImGuiTestContext* ctx)
             ctx->MenuAction(action, "Help/Style Editor");
             ctx->MenuAction(action, "Help/About Dear ImGui");
         }
+#endif
     };
 
     t = REGISTER_TEST("demo", "console");
@@ -231,18 +232,14 @@ void RegisterTests(ImGuiTestEngine* e)
     RegisterTests_Misc(&ctx);
 }
 
-// Notes
+// Notes/Ideas
 #if 0
-struct ImGuiTestData
-{
-    int         GenericInt[10];
-    float       GenericFloat[10];
-    bool        GenericBool[10];
-    char        GenericCharBuf256[256];
-    void*       UserData;
-};
 
-void GuiFunc_001(ImGuiTestData* data)
+//ctx->ItemClick("$REF/Main menu bar");
+//ctx->ItemClick("$NAV/Main menu bar");
+//ctx->ItemClick("$TOP/Main menu bar");
+
+void GuiFunc_001(DataGeneric* data)
 {
     ImGui::SetNextWindowPos(ImVec2(100, 100));
     ImGui::Begin("Window1");
@@ -254,7 +251,7 @@ void GuiFunc_001(ImGuiTestData* data)
 
 void Test_Drag_001(ImGuiTestEngine* te)
 {
-    ImGuiTestData data;
+    DataGeneric data;
     data.GenericInt[0] = 50;
     GuiFunc_001(&data);
 
@@ -265,30 +262,8 @@ void Test_Drag_001(ImGuiTestEngine* te)
 
 void Test_Button_001(ImGuiTestEngine* te)
 {
-    ImGuiTestData data;
+    DataGeneric data;
     GuiFunc_001(&data);
-
-    // ItemLocate(it) --> OK
-    // - core engine task (hook ItemAdd)
-
-    // ItemClick(id) --> OK
-    // - MouseMove(id)
-    //   - ItemLocate(id)
-    //   - Scroll
-    //   - Move cursor
-    //   - validate hovering
-    // - MouseClick()
-
-    // ItemOpen(id) / TreeNodeOpen(id) --> OK
-    // - ItemLocate(id)
-    // - if (window->GetStateStorage(id) == 0)
-    //    - ItemClick()
-
-    // CheckboxCheck(id) --> OK
-    // - ItemLocate(id)
-    // ?? - add ImGuiItemStatusFlags_NotClipped
-    // ?? - code sets ImGuiItemStatusFlags_Selected // VALID IF NOT CLIPPED
-    // ?? - actual flags polled on NEXT ItemAdd.. dodgy
 
     // InputTextFill(id, ...)
     // - ItemActivate/ItemClick(id)

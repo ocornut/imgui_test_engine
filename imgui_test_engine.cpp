@@ -118,6 +118,22 @@ struct ImGuiTestEngine
     }
 };
 
+static const char*  GetActionName(ImGuiTestAction action)
+{
+    switch (action)
+    {
+    case ImGuiTestAction_Unknown:       return "Unknown";
+    case ImGuiTestAction_Click:         return "Click";
+    case ImGuiTestAction_DoubleClick:   return "DoubleClick";
+    case ImGuiTestAction_Check:         return "Check";
+    case ImGuiTestAction_Uncheck:       return "Uncheck";
+    case ImGuiTestAction_Open:          return "Open";
+    case ImGuiTestAction_Close:         return "Close";
+    case ImGuiTestAction_COUNT:
+    default:                            return "N/A";
+    }
+}
+
 //-------------------------------------------------------------------------
 // [SECTION] TEST ENGINE: FORWARD DECLARATIONS
 //-------------------------------------------------------------------------
@@ -451,6 +467,9 @@ static void ImGuiTestEngine_ProcessQueue(ImGuiTestEngine* engine)
     engine->Abort = false;
     engine->CallDepth--;
     engine->TestsQueue.clear();
+
+    //ImGuiContext& g = *engine->UiTestContext;
+    //if (g.OpenPopupStack.empty())   // Don't refocus Test Engine UI if popups are opened: this is so we can see remaining popups when implementing tests.
     if (ran_tests)
         engine->UiFocus = true;
 }
@@ -607,7 +626,7 @@ void ImGuiTestEngineHook_ItemInfo(ImGuiID id, const char* label, int flags)
         return;
 
     ImGuiWindow* window = g.CurrentWindow;
-    IM_ASSERT(window->DC.LastItemId == id);
+    IM_ASSERT(window->DC.LastItemId == id || (window->DC.LastItemId == 0));
 
     // Update Locate Task status flags
     if (ImGuiTestLocateTask* task = ImGuiTestEngine_FindLocateTask(engine, id))
@@ -1044,11 +1063,19 @@ void ImGuiTestContext::SetRef(ImGuiTestRef ref)
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
     LogVerbose("SetRef '%s' %08X\n", ref.Path ? ref.Path : "NULL", ref.ID);
 
-    size_t len = strlen(ref.Path);
-    IM_ASSERT(len < IM_ARRAYSIZE(RefStr) - 1);
+    if (ref.Path)
+    {
+        size_t len = strlen(ref.Path);
+        IM_ASSERT(len < IM_ARRAYSIZE(RefStr) - 1);
 
-    strcpy(RefStr, ref.Path);
-    RefID = ImHashDecoratedPath(ref.Path, 0);
+        strcpy(RefStr, ref.Path);
+        RefID = ImHashDecoratedPath(ref.Path, 0);
+    }
+    else
+    {
+        RefStr[0] = 0;
+        RefID = ref.ID;
+    }
 }
 
 ImGuiID ImGuiTestContext::GetID(ImGuiTestRef ref)
@@ -1056,6 +1083,12 @@ ImGuiID ImGuiTestContext::GetID(ImGuiTestRef ref)
     if (ref.ID)
         return ref.ID;
     return ImHashDecoratedPath(ref.Path, RefID);
+}
+
+ImGuiTestRef ImGuiTestContext::GetFocusWindowRef()
+{
+    ImGuiContext& g = *UiContext;
+    return g.NavWindow ? g.NavWindow->ID : 0;
 }
 
 ImGuiTestItemInfo* ImGuiTestContext::ItemLocate(ImGuiTestRef ref, ImGuiTestOpFlags flags)
@@ -1111,7 +1144,7 @@ void    ImGuiTestContext::MouseMove(ImGuiTestRef ref)
     item->RefCount++;
 
     // Focus window before scrolling/moving so things are nicely visible
-    FocusWindowForItem(ref);
+    BringWindowToFrontForItem(ref);
 
     ImGuiWindow* window = item->Window;
     if (item->NavLayer == ImGuiNavLayer_Main && !window->InnerClipRect.Contains(item->Rect))
@@ -1137,11 +1170,7 @@ void    ImGuiTestContext::MouseMove(ImGuiTestRef ref)
 
             ImGuiTestEngine_Yield(Engine);
 
-            if (item->Window != g.NavWindow)
-            {
-                LogVerbose("Lost focus on window '%s', getting again..\n", item->Window->Name);
-                FocusWindowForItem(ref);
-            }
+            BringWindowToFrontForItem(ref, ImGuiTestOpFlags_Verbose);
         }
         
         // Need another frame for the result->Rect to stabilize
@@ -1151,11 +1180,7 @@ void    ImGuiTestContext::MouseMove(ImGuiTestRef ref)
     MouseMoveToPos(item->Rect.GetCenter());
 
     // Focus again in case something made us lost focus (which could happen on a simple hover)
-    if (item->Window != g.NavWindow)
-    {
-        LogVerbose("Lost focus on window '%s', getting again..\n", item->Window->Name);
-        FocusWindowForItem(ref);
-    }
+    BringWindowToFrontForItem(ref, ImGuiTestOpFlags_Verbose);
 
     if (!Abort)
     {
@@ -1220,21 +1245,28 @@ void    ImGuiTestContext::MouseClick(int button)
     Yield(); // Give a frame for items to react
 }
 
-void    ImGuiTestContext::FocusWindowForItem(ImGuiTestRef ref)
+void    ImGuiTestContext::BringWindowToFrontForItem(ImGuiTestRef ref, ImGuiTestOpFlags flags)
 {
     if (IsError())
         return;
 
-    IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
     const ImGuiTestItemInfo* item = ItemLocate(ref);
-    LogVerbose("FocusWindowForItem %s\n", ImGuiTestRefDesc(ref, item).c_str());
+    //LogVerbose("FocusWindowForItem %s\n", ImGuiTestRefDesc(ref, item).c_str());
+    //LogVerbose("Lost focus on window '%s', getting again..\n", item->Window->Name);
 
-    ImGuiContext& g = *GImGui;
+    ImGuiContext& g = *UiContext;
     if (item->Window != g.NavWindow)
     {
         IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
         LogVerbose("FocusWindow('%s')\n", item->Window->Name);
         ImGui::FocusWindow(item->Window);
+        Yield();
+    }
+    else if (item->Window != g.Windows.back())
+    {
+        IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
+        LogVerbose("BringWindowToDisplayFront('%s')\n", item->Window->Name);
+        ImGui::BringWindowToDisplayFront(item->Window);
         Yield();
     }
 }
@@ -1257,16 +1289,16 @@ void    ImGuiTestContext::GatherItems(ImGuiTestItemList* out_list, ImGuiTestRef 
     Engine->GatherTask.OutList = out_list;
 
     // Keep running while gathering
-    const int begin_gather_size = out_list->GetSize();
+    const int begin_gather_size = out_list->Size;
     while (true)
     {
-        const int begin_gather_size_for_frame = out_list->GetSize();
+        const int begin_gather_size_for_frame = out_list->Size;
         Yield();
-        const int end_gather_size_for_frame = out_list->GetSize();
+        const int end_gather_size_for_frame = out_list->Size;
         if (begin_gather_size_for_frame == end_gather_size_for_frame)
             break;
     }
-    const int end_gather_size = out_list->GetSize();
+    const int end_gather_size = out_list->Size;
 
     ImGuiTestItemInfo* parent_item = ItemLocate(parent, ImGuiTestOpFlags_NoError);
     LogVerbose("GatherItems from %s, %d deep: found %d items.\n", ImGuiTestRefDesc(parent, parent_item).c_str(), depth, end_gather_size - begin_gather_size);
@@ -1288,29 +1320,36 @@ void    ImGuiTestContext::ItemAction(ImGuiTestAction action, ImGuiTestRef ref)
     //if (ref.ID == 0x0d4af068)
     //    printf("");
 
-    if (action == ImGuiTestAction_Click)
-    {
-        ImGuiTestItemInfo* item = ItemLocate(ref);
-        LogVerbose("ItemClick %s\n", ImGuiTestRefDesc(ref, item).c_str());
+    ImGuiTestItemInfo* item = ItemLocate(ref);
+    ImGuiTestRefDesc desc(ref, item);
+    if (item == NULL)
+        return;
 
+    LogVerbose("Item%s %s\n", GetActionName(action), desc.c_str());
+
+    if (action == ImGuiTestAction_Click || action == ImGuiTestAction_DoubleClick)
+    {
         MouseMove(ref);
         if (!Engine->IO.ConfigRunFast)
             Sleep(0.05f);
         MouseClick(0);
+        if (action == ImGuiTestAction_DoubleClick)
+            MouseClick(0);
         return;
     }
 
     if (action == ImGuiTestAction_Open)
     {
-        ImGuiTestItemInfo* item = ItemLocate(ref);
-        LogVerbose("ItemOpen %s\n", ImGuiTestRefDesc(ref, item).c_str());
-
-        if (item && item->Window->DC.StateStorage->GetInt(item->ID, 0) == 0)
+        if (item && (item->StatusFlags & ImGuiItemStatusFlags_Opened) == 0)
         {
             item->RefCount++;
             ItemClick(ref);
-            if (item->Window->DC.StateStorage->GetInt(item->ID, 0) != 1)
-                IM_ERRORF_NOHDR("Failed to Open item: %s", ImGuiTestRefDesc(ref, item).c_str());
+            if ((item->StatusFlags & ImGuiItemStatusFlags_Opened) == 0)
+            {
+                ItemDoubleClick(ref); // Attempt a double-click // FIXME-TEST: let's not start doing those fuzzy things..
+                if ((item->StatusFlags & ImGuiItemStatusFlags_Opened) == 0)
+                    IM_ERRORF_NOHDR("Unable to Open item: %s", ImGuiTestRefDesc(ref, item).c_str());
+            }
             item->RefCount--;
         }
         return;
@@ -1318,15 +1357,16 @@ void    ImGuiTestContext::ItemAction(ImGuiTestAction action, ImGuiTestRef ref)
 
     if (action == ImGuiTestAction_Close)
     {
-        ImGuiTestItemInfo* item = ItemLocate(ref);
-        LogVerbose("ItemClose %s\n", ImGuiTestRefDesc(ref, item).c_str());
-
-        if (item && item->Window->DC.StateStorage->GetInt(item->ID, 0) == 1)
+        if (item && (item->StatusFlags & ImGuiItemStatusFlags_Opened) != 0)
         {
             item->RefCount++;
             ItemClick(ref);
-            if (item->Window->DC.StateStorage->GetInt(item->ID, 0) != 0)
-                IM_ERRORF_NOHDR("Failed to Close item: %s", ImGuiTestRefDesc(ref, item).c_str());
+            if ((item->StatusFlags & ImGuiItemStatusFlags_Opened) != 0)
+            {
+                ItemDoubleClick(ref); // Attempt a double-click // FIXME-TEST: let's not start doing those fuzzy things..
+                if ((item->StatusFlags & ImGuiItemStatusFlags_Opened) != 0)
+                    IM_ERRORF_NOHDR("Unable to Close item: %s", ImGuiTestRefDesc(ref, item).c_str());
+            }
             item->RefCount--;
         }
         return;
@@ -1334,10 +1374,7 @@ void    ImGuiTestContext::ItemAction(ImGuiTestAction action, ImGuiTestRef ref)
 
     if (action == ImGuiTestAction_Check)
     {
-        ImGuiTestItemInfo* item = ItemLocate(ref);
-        LogVerbose("ItemCheck %s\n", ImGuiTestRefDesc(ref, item).c_str());
-
-        if (!ItemIsChecked(ref))
+        if ((item->StatusFlags & ImGuiItemStatusFlags_Checkable) && !(item->StatusFlags & ImGuiItemStatusFlags_Checked))
             ItemClick(ref);
         ItemVerifyCheckedIfAlive(ref, true);     // We can't just IM_ASSERT(ItemIsChecked()) because the item may disappear and never update its StatusFlags any more!
 
@@ -1346,12 +1383,9 @@ void    ImGuiTestContext::ItemAction(ImGuiTestAction action, ImGuiTestRef ref)
 
     if (action == ImGuiTestAction_Uncheck)
     {
-        ImGuiTestItemInfo* item = ItemLocate(ref);
-        LogVerbose("ItemUncheck %s\n", ImGuiTestRefDesc(ref, item).c_str());
-
-        if (ItemIsChecked(ref))
+        if ((item->StatusFlags & ImGuiItemStatusFlags_Checkable) && (item->StatusFlags & ImGuiItemStatusFlags_Checked))
             ItemClick(ref);
-        ItemVerifyCheckedIfAlive(ref, false);     // We can't just IM_ASSERT(ItemIsChecked()) because the item may disappear and never update its StatusFlags any more!
+        ItemVerifyCheckedIfAlive(ref, false);       // We can't just IM_ASSERT(ItemIsChecked()) because the item may disappear and never update its StatusFlags any more!
 
         return;
     }
@@ -1359,33 +1393,7 @@ void    ImGuiTestContext::ItemAction(ImGuiTestAction action, ImGuiTestRef ref)
     IM_ASSERT(0);
 }
 
-void    ImGuiTestContext::ItemOpenAllRecurse(ImGuiTestRef ref_parent, int max_depth, int max_passes)
-{
-    // Open everything!
-    int actioned_total = 0;
-    for (int pass = 0; pass < max_passes; pass++)
-    {
-        ImGuiTestItemList items;
-        GatherItems(&items, ref_parent, max_depth);
-
-        int actioned_in_current_pass = 0;
-        for (int n = 0; n < items.GetSize(); n++)
-        {
-            const ImGuiTestItemInfo* info = items.GetByIndex(n);
-            if ((info->StatusFlags & ImGuiItemStatusFlags_Openable) && !(info->StatusFlags & ImGuiItemStatusFlags_Opened))
-            {
-                ItemOpen(info->ID);
-                actioned_total++;
-                actioned_in_current_pass++;
-            }
-        }
-        if (actioned_in_current_pass == 0)
-            break;
-    }
-    LogVerbose("Opened %d items in total!\n", actioned_total);
-}
-
-void    ImGuiTestContext::ItemCloseAllRecurse(ImGuiTestRef ref_parent, int max_depth, int max_passes)
+void    ImGuiTestContext::ItemActionAll(ImGuiTestAction action, ImGuiTestRef ref_parent, int max_depth, int max_passes)
 {
     int actioned_total = 0;
     for (int pass = 0; pass < max_passes; pass++)
@@ -1395,31 +1403,78 @@ void    ImGuiTestContext::ItemCloseAllRecurse(ImGuiTestRef ref_parent, int max_d
 
         // Find deep most items
         int highest_depth = -1;
-        for (int n = 0; n < items.GetSize(); n++)
+        if (action == ImGuiTestAction_Close)
         {
-            const ImGuiTestItemInfo* info = items.GetByIndex(n);
-            if ((info->StatusFlags & ImGuiItemStatusFlags_Openable) && (info->StatusFlags & ImGuiItemStatusFlags_Opened))
-                highest_depth = ImMax(highest_depth, info->Depth);
-        }
-
-        // Close bottom-to-top because 
-        // 1) it is more likely to handle same-depth parent/child relationship better (e.g. CollapsingHeader)
-        // 2) it gives a nicer sense of symmetry with the corresponding open operation.
-        int actioned_in_current_pass = 0;
-        for (int n = items.GetSize() - 1; n >= 0; n--)
-        {
-            const ImGuiTestItemInfo* info = items.GetByIndex(n);
-            if (info->Depth == highest_depth && (info->StatusFlags & ImGuiItemStatusFlags_Openable) && (info->StatusFlags & ImGuiItemStatusFlags_Opened))
+            for (int n = 0; n < items.Size; n++)
             {
-                ItemClose(info->ID);
-                actioned_total++;
-                actioned_in_current_pass++;
+                const ImGuiTestItemInfo* info = items[n];
+                if ((info->StatusFlags & ImGuiItemStatusFlags_Openable) && (info->StatusFlags & ImGuiItemStatusFlags_Opened))
+                    highest_depth = ImMax(highest_depth, info->Depth);
             }
         }
-        if (actioned_in_current_pass == 0)
+
+        int actioned_total_at_beginning_of_pass = actioned_total;
+
+        // Process top-to-bottom in most cases
+        int scan_start = 0;
+        int scan_end = items.Size;
+        int scan_dir = +1;
+        if (action == ImGuiTestAction_Close)
+        {
+            // Close bottom-to-top because 
+            // 1) it is more likely to handle same-depth parent/child relationship better (e.g. CollapsingHeader)
+            // 2) it gives a nicer sense of symmetry with the corresponding open operation.
+            scan_start = items.Size - 1;
+            scan_end = -1;
+            scan_dir = -1;
+        }
+
+        for (int n = scan_start; n != scan_end; n += scan_dir)
+        {
+            const ImGuiTestItemInfo* info = items[n];
+            switch (action)
+            {
+            case ImGuiTestAction_Click:
+                ItemAction(action, info->ID);
+                actioned_total++;
+                break;
+            case ImGuiTestAction_Check:
+                if ((info->StatusFlags & ImGuiItemStatusFlags_Checkable) && !(info->StatusFlags & ImGuiItemStatusFlags_Checked))
+                {
+                    ItemAction(action, info->ID);
+                    actioned_total++;
+                }
+                break;
+            case ImGuiTestAction_Uncheck:
+                if ((info->StatusFlags & ImGuiItemStatusFlags_Checkable) && (info->StatusFlags & ImGuiItemStatusFlags_Checked))
+                {
+                    ItemAction(action, info->ID);
+                    actioned_total++;
+                }
+                break;
+            case ImGuiTestAction_Open:
+                if ((info->StatusFlags & ImGuiItemStatusFlags_Openable) && !(info->StatusFlags & ImGuiItemStatusFlags_Opened))
+                {
+                    ItemAction(action, info->ID);
+                    actioned_total++;
+                }
+                break;
+            case ImGuiTestAction_Close:
+                if (info->Depth == highest_depth && (info->StatusFlags & ImGuiItemStatusFlags_Openable) && (info->StatusFlags & ImGuiItemStatusFlags_Opened))
+                {
+                    ItemClose(info->ID);
+                    actioned_total++;
+                }
+                break;
+            default:
+                IM_ASSERT(0);
+            }
+        }
+
+        if (actioned_total_at_beginning_of_pass == actioned_total)
             break;
     }
-    LogVerbose("Closed %d items in total!\n", actioned_total);
+    LogVerbose("%s %d items in total!\n", GetActionName(action), actioned_total);
 }
 
 void    ImGuiTestContext::ItemHold(ImGuiTestRef ref, float time)
@@ -1439,22 +1494,6 @@ void    ImGuiTestContext::ItemHold(ImGuiTestRef ref, float time)
     Engine->SetMouseButtons = true;
     Engine->SetMouseButtonsValue = 0;
     Yield();
-}
-
-bool    ImGuiTestContext::ItemIsChecked(ImGuiTestRef ref)
-{
-    if (IsError())
-        return false;
-
-    IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
-    LogVerbose("ItemIsChecked '%s' %08X\n", ref.Path ? ref.Path : "NULL", ref.ID);
-
-    if (ImGuiTestItemInfo* item = ItemLocate(ref))
-    {
-        IM_ASSERT(item->TimestampStatus == item->TimestampMain && "Using ItemIsChecked on an item that doesn't call ImGuiTestEngineHook_ItemStatusFlags?");
-        return (item->StatusFlags & ImGuiItemStatusFlags_Checked) ? true : false;
-    }
-    return false;
 }
 
 void    ImGuiTestContext::ItemVerifyCheckedIfAlive(ImGuiTestRef ref, bool checked)
@@ -1488,7 +1527,7 @@ void    ImGuiTestContext::MenuAction(ImGuiTestAction action, ImGuiTestRef ref)
         if (depth == 0)
         {
             // Click menu in menu bar
-            IM_ASSERT(RefStr[0] != 0);
+            IM_ASSERT(RefStr[0] != 0); // Unsupported: window needs to be in Ref
             ImFormatString(buf, IM_ARRAYSIZE(buf), "##menubar/%.*s", p - path, path);
             if (is_target_item)
                 ItemAction(action, buf);
@@ -1506,6 +1545,19 @@ void    ImGuiTestContext::MenuAction(ImGuiTestAction action, ImGuiTestRef ref)
         }
         path = p + 1;
         depth++;
+    }
+}
+
+void    ImGuiTestContext::MenuActionAll(ImGuiTestAction action, ImGuiTestRef ref_parent)
+{
+    ImGuiTestItemList items;
+    MenuAction(ImGuiTestAction_Open, ref_parent);
+    GatherItems(&items, GetFocusWindowRef(), 1);
+    for (int n = 0; n < items.Size; n++)
+    {
+        const ImGuiTestItemInfo* item = items[n];
+        MenuAction(ImGuiTestAction_Open, ref_parent); // We assume that every interaction will close the menu again
+        ItemAction(action, item->ID);
     }
 }
 
