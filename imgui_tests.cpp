@@ -12,6 +12,10 @@
 #pragma warning (disable: 4100) // unreferenced formal parameter
 #endif
 
+// Helper Operators
+static inline bool operator==(const ImVec2& lhs, const ImVec2& rhs) { return lhs.x == rhs.x && lhs.y == rhs.y; }
+static inline bool operator!=(const ImVec2& lhs, const ImVec2& rhs) { return lhs.x != rhs.x && lhs.y != rhs.y; }
+
 // Generic structure with varied data.
 // This is useful for tests to quickly share data between the GUI functions and the Test function.
 struct DataGeneric
@@ -46,13 +50,39 @@ void RegisterTests_Window(ImGuiTestContext* ctx)
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         ImGuiStyle& style = ImGui::GetStyle();
-        ImGui::Begin("Test Window");
-        ImGuiWindow* window = ImGui::GetCurrentWindow();
+        ImGuiWindow* window = ImGui::FindWindowByName("Test Window");
         IM_CHECK(window->Size.x == ImMax(style.WindowMinSize.x, style.WindowPadding.x * 2.0f));
         IM_CHECK(window->Size.y == ImGui::GetFontSize() + style.FramePadding.y * 2.0f + style.WindowPadding.y * 2.0f);
         IM_CHECK(window->Size.y == window->SizeContents.y);
         IM_CHECK(window->Scroll.x == 0.0f && window->Scroll.y == 0.0f);
+    };
+
+    t = REGISTER_TEST("window", "auto resize collapse");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        // FIXME-TESTS: Ideally we'd like a variant with/without the if (Begin) here
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
+        ImGui::Text("Some text\nOver two lines\nOver three lines");
         ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiWindow* window = ImGui::FindWindowByName("Test Window");
+        ctx->SetRef("Test Window");
+        ctx->WindowSetCollapsed(false);
+        ctx->LogVerbose("Size %f %f, SizeFull %f %f\n", window->Size.x, window->Size.y, window->SizeFull.x, window->SizeFull.y);
+        IM_CHECK(window->Size == window->SizeFull);
+        ImVec2 size_full_when_uncollapsed = window->SizeFull;
+        ctx->WindowSetCollapsed(true);
+        ctx->LogVerbose("Size %f %f, SizeFull %f %f\n", window->Size.x, window->Size.y, window->SizeFull.x, window->SizeFull.y);
+        ImVec2 size_collapsed = window->Size;
+        IM_CHECK(size_full_when_uncollapsed.y > size_collapsed.y);
+        IM_CHECK(size_full_when_uncollapsed == window->SizeFull);
+        ctx->WindowSetCollapsed(false);
+        ctx->LogVerbose("Size %f %f, SizeFull %f %f\n", window->Size.x, window->Size.y, window->SizeFull.x, window->SizeFull.y);
+        IM_CHECK(window->Size.y == size_full_when_uncollapsed.y && "Window should have restored to full size.");
+        ctx->Yield();
+        IM_CHECK(window->Size.y == size_full_when_uncollapsed.y);
     };
 }
 
@@ -87,7 +117,6 @@ void RegisterTests_Scrolling(ImGuiTestContext* ctx)
 //    ImGui::ShowDemoWindow();
 //}
 
-#if 1
 void RegisterTests_Misc(ImGuiTestContext* ctx)
 {
     ImGuiTest* t = NULL;
@@ -145,15 +174,14 @@ void RegisterTests_Misc(ImGuiTestContext* ctx)
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         ctx->SetRef("ImGui Demo");
-        ctx->ItemOpenAll("");
-        //ctx->ItemOpenAll("", 1, 1);
+        ctx->ItemOpenAll("", -1);
     };
 
     t = REGISTER_TEST("demo", "demo_cov_auto_close");
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         ctx->SetRef("ImGui Demo");
-        ctx->ItemCloseAll("");
+        ctx->ItemCloseAll("", -1);
     };
 
     t = REGISTER_TEST("demo", "demo_cov_001");
@@ -203,6 +231,31 @@ void RegisterTests_Misc(ImGuiTestContext* ctx)
 #endif
     };
 
+    t = REGISTER_TEST("demo", "demo_cov_styles");
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ctx->SetRef("ImGui Demo");
+        ctx->MenuAction(ImGuiTestAction_Check, "Help/Style Editor");
+
+        ImGuiTestRef ref_window = "Style Editor";
+        ctx->SetRef(ref_window);
+        ctx->ItemClick("Colors##Selector");
+        ctx->Yield();
+        ImGuiTestRef ref_popup = ctx->GetFocusWindowRef();
+
+        ImGuiStyle style_backup = ImGui::GetStyle();
+        ImGuiTestItemList items;
+        ctx->GatherItems(&items, ref_popup);
+        for (int n = 0; n < items.Size; n++)
+        {
+            ctx->SetRef(ref_window);
+            ctx->ItemClick("Colors##Selector");
+            ctx->SetRef(ref_popup);
+            ctx->ItemClick(items[n]->ID);
+        }
+        ImGui::GetStyle() = style_backup;
+    };
+
     t = REGISTER_TEST("demo", "console");
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
@@ -219,7 +272,6 @@ void RegisterTests_Misc(ImGuiTestContext* ctx)
     };
 }
 
-#endif
 
 void RegisterTests(ImGuiTestEngine* e)
 {

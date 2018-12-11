@@ -2,8 +2,8 @@
 // If you are new to dear imgui, see examples/README.txt and documentation at the top of imgui.cpp.
 
 // Interactive mode:
-//   main.exe
-//   main.exe -gui -fileopener ..\..\tools\win32_open_with_sublime.cmd
+//   main.exe [tests]
+//   main.exe -slow -gui -fileopener ..\..\tools\win32_open_with_sublime.cmd
 
 // Command-line mode:
 //   main.exe -nogui -v -nopause
@@ -136,14 +136,15 @@ enum ImGuiBackend
 
 struct TestApp
 {
-    bool                Quit            = false;
-    ImGuiTestEngine*    TestEngine      = NULL;
-    ImGuiBackend        Backend         = ImGuiBackend_DX11;
-    bool                OptGUI          = true;
-    bool                OptVerbose      = false;
-    bool                OptPauseOnExit  = true;
-    char*               OptFileOpener   = NULL;
-    ImVector<char*>     Tests;
+    bool                    Quit            = false;
+    ImGuiTestEngine*        TestEngine      = NULL;
+    ImGuiBackend            Backend         = ImGuiBackend_DX11;
+    bool                    OptGUI          = true;
+    bool                    OptSlow         = false;
+    ImGuiTestVerboseLevel   OptVerboseLevel = ImGuiTestVerboseLevel_Normal;
+    bool                    OptPauseOnExit  = true;
+    char*                   OptFileOpener   = NULL;
+    ImVector<char*>         Tests;
 };
 
 TestApp g_App;
@@ -302,7 +303,7 @@ static bool ParseCommandLineOptions(int argc, char** argv)
             // Command-line option
             if (strcmp(argv[n], "-v") == 0)
             {
-                g_App.OptVerbose = true;
+                g_App.OptVerboseLevel = ImGuiTestVerboseLevel_Max;
             }
             else if (strcmp(argv[n], "-gui") == 0)
             {
@@ -311,6 +312,10 @@ static bool ParseCommandLineOptions(int argc, char** argv)
             else if (strcmp(argv[n], "-nogui") == 0)
             {
                 g_App.OptGUI = false;
+            }
+            else if (strcmp(argv[n], "-slow") == 0)
+            {
+                g_App.OptSlow = true;
             }
             else if (strcmp(argv[n], "-nopause") == 0)
             {
@@ -328,10 +333,12 @@ static bool ParseCommandLineOptions(int argc, char** argv)
                 printf("  -h                  : show command-line help.\n");
                 printf("  -v                  : extra verbose mode.\n");
                 printf("  -gui / -nogui       : enable interactive mode.\n");
+                printf("  -slow               : run automation at feeble human speed.\n");
                 printf("  -nopause            : don't pause application on exit.\n");
                 printf("  -fileopener <file>  : provide a bat/cmd/shell script to open source file.\n");
                 printf("Tests:\n");
-                printf("   all                : queue all tests\n");
+                printf("   all                : queue all tests.\n");
+                printf("   [pattern]          : queue all tests containing the word [pattern].\n");
                 return false;
             }
         }
@@ -406,15 +413,14 @@ int main(int argc, char** argv)
     {
         char* test_spec = g_App.Tests[n];
         if (strcmp(test_spec, "all") == 0)
-        {
-            ImGuiTestEngine_QueueAllTests(g_App.TestEngine);
-        }
+            ImGuiTestEngine_QueueTests(g_App.TestEngine, NULL);
         else
-        {
-            // FIXME
-            IM_ASSERT(0);
-        }
+            ImGuiTestEngine_QueueTests(g_App.TestEngine, test_spec);
     }
+
+    // Apply options
+    test_io.ConfigVerboseLevel = g_App.OptVerboseLevel;
+    test_io.ConfigRunFast = !g_App.OptSlow;
 
     switch (g_App.Backend)
     {
@@ -424,9 +430,7 @@ int main(int argc, char** argv)
         io.Fonts->Build();
         for (int n = 0; n < ImGuiKey_COUNT; n++)
             io.KeyMap[n] = n;
-        test_io.ConfigVerboseLevel = g_App.OptVerbose ? ImGuiTestVerboseLevel_Max : ImGuiTestVerboseLevel_Normal;
         test_io.ConfigLogToTTY = true;
-        test_io.ConfigRunFast = true;
         test_io.NewFrameFunc = [](ImGuiTestEngine*, void*) { return MainLoopNewFrameNull(); };
         test_io.EndFrameFunc = [](ImGuiTestEngine*, void*) { return MainLoopEndFrame(); };
         test_io.FileOpenerFunc = FileOpenerFunc;
@@ -439,6 +443,8 @@ int main(int argc, char** argv)
                 break;
         }
 
+        ImGuiTestEngine_PrintResultSummary(g_App.TestEngine);
+
         ImGui::DestroyContext();
         break;
     }
@@ -447,7 +453,9 @@ int main(int argc, char** argv)
         ImGui_ImplWin32_Init(hwnd);
         ImGui_ImplDX11_Init(g_pd3dDevice, g_pd3dDeviceContext);
 
-        test_io.ConfigVerboseLevel = g_App.OptVerbose ? ImGuiTestVerboseLevel_Max : ImGuiTestVerboseLevel_Normal;
+        //test_io.ConfigLogToTTY = true;
+        //test_io.ConfigVerboseLevel = ImGuiTestVerboseLevel_Max;
+
         test_io.NewFrameFunc = [](ImGuiTestEngine*, void*) { return MainLoopNewFrameDX11(); };
         test_io.EndFrameFunc = [](ImGuiTestEngine*, void*) { return MainLoopEndFrame(); };
         test_io.FileOpenerFunc = FileOpenerFunc;

@@ -39,6 +39,8 @@ Index of this file:
 // GOAL: Reliable performance measurement (w/ deterministic setup)
 // GOAL: Full blind version with no graphical context.
 
+// FIXME-TESTS: UI to setup breakpoint on frame X (gui func or at yield time for test func)
+// FIXME-TESTS: Locate within stack that uses windows/<pointer>/name
 // FIXME-TESTS: Be able to run blind
 // FIXME-TESTS: Be able to interactively run GUI function without Test function
 // FIXME-TESTS: Provide variants of same test (e.g. run same tests with a bunch of styles/flags)
@@ -67,7 +69,7 @@ struct ImGuiTestRefDesc
     }
 };
 
-// Locate item position/window/state given ID.
+// [Internal] Locate item position/window/state given ID.
 struct ImGuiTestLocateTask
 {
     ImGuiID                 ID = 0;
@@ -76,7 +78,7 @@ struct ImGuiTestLocateTask
     ImGuiTestItemInfo       Result;
 };
 
-// Gather items in given parent scope.
+// [Internal] Gather items in given parent scope.
 struct ImGuiTestGatherTask
 {
     ImGuiID                 ParentID = 0;
@@ -85,6 +87,7 @@ struct ImGuiTestGatherTask
     ImGuiTestItemInfo*      LastItemInfo = NULL;
 };
 
+// [Internal] Test Engine Context
 struct ImGuiTestEngine
 {
     ImGuiTestEngineIO       IO;
@@ -134,6 +137,22 @@ static const char*  GetActionName(ImGuiTestAction action)
     }
 }
 
+static const char*  GetActionVerb(ImGuiTestAction action)
+{
+    switch (action)
+    {
+    case ImGuiTestAction_Unknown:       return "Unknown";
+    case ImGuiTestAction_Click:         return "Clicked";
+    case ImGuiTestAction_DoubleClick:   return "DoubleClicked";
+    case ImGuiTestAction_Check:         return "Checked";
+    case ImGuiTestAction_Uncheck:       return "Unchecked";
+    case ImGuiTestAction_Open:          return "Opened";
+    case ImGuiTestAction_Close:         return "Closed";
+    case ImGuiTestAction_COUNT:
+    default:                            return "N/A";
+    }
+}
+
 //-------------------------------------------------------------------------
 // [SECTION] TEST ENGINE: FORWARD DECLARATIONS
 //-------------------------------------------------------------------------
@@ -147,8 +166,6 @@ static void                 ImGuiTestEngine_ClearLocateTasks(ImGuiTestEngine* en
 static void                 ImGuiTestEngine_PreNewFrame(ImGuiTestEngine* engine);
 static void                 ImGuiTestEngine_PostNewFrame(ImGuiTestEngine* engine);
 static void                 ImGuiTestEngine_Yield(ImGuiTestEngine* engine);
-static void                 ImGuiTestEngine_QueueTest(ImGuiTestEngine* engine, ImGuiTest* test);
-static inline bool          ImGuiTestEngine_IsRunningTests(ImGuiTestEngine* engine) { return engine->TestsQueue.Size > 0; }
 
 //-------------------------------------------------------------------------
 // [SECTION] TEST ENGINE: FUNCTIONS
@@ -363,11 +380,15 @@ static void ImGuiTestEngine_PreNewFrame(ImGuiTestEngine* engine)
     if (engine->TestContext)
         engine->TestContext->FrameCount++;
 
-    if (ImGuiTestEngine_IsRunningTests(engine))
+    if (ImGuiTestEngine_IsRunningTests(engine) && !engine->Abort)
     {
         const int key_idx_escape = g.IO.KeyMap[ImGuiKey_Escape];
         if (key_idx_escape != -1 && g.IO.KeysDown[key_idx_escape])
+        {
+            if (engine->TestContext)
+                engine->TestContext->Log("KO: User aborted (pressed ESC)\n");
             ImGuiTestEngine_Abort(engine);
+        }
     }
 
     ImGuiTestEngine_ApplyInputToImGuiContext(engine);
@@ -474,7 +495,12 @@ static void ImGuiTestEngine_ProcessQueue(ImGuiTestEngine* engine)
         engine->UiFocus = true;
 }
 
-static void ImGuiTestEngine_QueueTest(ImGuiTestEngine* engine, ImGuiTest* test)
+bool ImGuiTestEngine_IsRunningTests(ImGuiTestEngine* engine)
+{ 
+    return engine->TestsQueue.Size > 0; 
+}
+
+void ImGuiTestEngine_QueueTest(ImGuiTestEngine* engine, ImGuiTest* test)
 {
     if (engine->TestsQueue.contains(test))
         return;
@@ -492,10 +518,34 @@ static void ImGuiTestEngine_QueueTest(ImGuiTestEngine* engine, ImGuiTest* test)
     engine->TestsQueue.push_back(test);
 }
 
-void ImGuiTestEngine_QueueAllTests(ImGuiTestEngine* engine)
+void ImGuiTestEngine_QueueTests(ImGuiTestEngine* engine, const char* filter)
 {
     for (int n = 0; n < engine->TestsAll.Size; n++)
-        ImGuiTestEngine_QueueTest(engine, engine->TestsAll[n]);
+    {
+        ImGuiTest* test = engine->TestsAll[n];
+        if (filter != NULL)
+            if (ImStristr(test->Name, NULL, filter, NULL) == NULL)
+                continue;
+        ImGuiTestEngine_QueueTest(engine, test);
+    }
+}
+
+void ImGuiTestEngine_PrintResultSummary(ImGuiTestEngine* engine)
+{
+    int count_tested = 0;
+    int count_success = 0;
+    for (int n = 0; n < engine->TestsAll.Size; n++)
+    {
+        ImGuiTest* test = engine->TestsAll[n];
+        if (test->Status == ImGuiTestStatus_Unknown)
+            continue;
+        IM_ASSERT(test->Status != ImGuiTestStatus_Queued);
+        IM_ASSERT(test->Status != ImGuiTestStatus_Running);
+        count_tested++;
+        if (test->Status == ImGuiTestStatus_Success)
+            count_success++;
+    }
+    printf("\nTests Result: %s\n(%d/%d tests passed)\n", (count_success == count_tested) ? "OK" : "KO", count_success, count_tested);
 }
 
 static void ImGuiTestEngine_RunTest(ImGuiTestEngine* engine, ImGuiTestContext* ctx, void* user_data)
@@ -560,7 +610,6 @@ void ImGuiTestEngineHook_ItemAdd(ImGuiID id, const ImRect& bb)
         return;
 
     ImGuiWindow* window = g.CurrentWindow;
-    IM_ASSERT(window->DC.LastItemId == id);
 
     // FIXME-OPT: Early out if there are no active Locate/Gather tasks.
 
@@ -575,7 +624,7 @@ void ImGuiTestEngineHook_ItemAdd(ImGuiID id, const ImRect& bb)
         item->Rect = bb;
         item->NavLayer = window->DC.NavLayerCurrent;
         item->Depth = 0;
-        item->StatusFlags = window->DC.LastItemStatusFlags;
+        item->StatusFlags = (window->DC.LastItemId == id) ? window->DC.LastItemStatusFlags : ImGuiItemStatusFlags_None;
     }
 
     // Gather Task (only 1 can be active)
@@ -678,14 +727,14 @@ bool ImGuiTestEngineHook_Check(const char* file, const char* func, int line, boo
     if (ImGuiTestContext* ctx = engine->TestContext)
     {
         ImGuiTest* test = ctx->Test;
-        ctx->LogVerbose("IM_CHECK(%s)\n", expr);
+        //ctx->LogVerbose("IM_CHECK(%s)\n", expr);
 
         if (result)
         {
             if (file)
                 test->TestLog.appendf("[%04d] OK %s:%d  '%s'\n", ctx->FrameCount, file_without_path, line, expr);
             else
-                test->TestLog.appendf("[%04d] OK %s\n", ctx->FrameCount, expr);
+                test->TestLog.appendf("[%04d] OK  '%s'\n", ctx->FrameCount, expr);
         }
         else
         {
@@ -693,7 +742,7 @@ bool ImGuiTestEngineHook_Check(const char* file, const char* func, int line, boo
             if (file)
                 test->TestLog.appendf("[%04d] KO %s:%d  '%s'\n", ctx->FrameCount, file_without_path, line, expr);
             else
-                test->TestLog.appendf("[%04d] KO %s\n", ctx->FrameCount, expr);
+                test->TestLog.appendf("[%04d] KO  '%s'\n", ctx->FrameCount, expr);
         }
     }
     else
@@ -737,7 +786,6 @@ static void DrawTestLog(ImGuiTestEngine* e, ImGuiTest* test, bool is_interactive
     ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(6.0f, 2.0f));
     ImU32 error_col = IM_COL32(255, 150, 150, 255);
     ImU32 unimportant_col = IM_COL32(190, 190, 190, 255);
-    float copy_button_width = ImGui::CalcTextSize("C").x + ImGui::GetStyle().FramePadding.x * 2.0f;
 
     const char* text = test->TestLog.begin();
     const char* text_end = test->TestLog.end();
@@ -749,24 +797,6 @@ static void DrawTestLog(ImGuiTestEngine* e, ImGuiTest* test, bool is_interactive
         const bool is_error = ImStristr(line_start, line_end, "] KO", NULL) != NULL; // FIXME-OPT
         const bool is_unimportant = ImStristr(line_start, line_end, "] --", NULL) != NULL; // FIXME-OPT
 
-        if (is_interactive)
-        {
-            ImGui::PushID(line_no);
-            if (ImGui::SmallButton("C"))
-            {
-                char buf[256];
-                const char* copy_start = ImStrchrRange(line_start, line_end, '\'') + 1;
-                const char* copy_end = ImStrchrRange(copy_start, line_end, '\'');
-                ImFormatString(buf, IM_ARRAYSIZE(buf), "%.*s", copy_end - copy_start, copy_start);
-                ImGui::SetClipboardText(buf);
-            }
-            ImGui::SameLine();
-        }
-        else
-        {
-            ImGui::SetCursorPosX(ImGui::GetCursorPosX() + copy_button_width);
-        }
-
         if (is_error)
             ImGui::PushStyleColor(ImGuiCol_Text, error_col);
         else if (is_unimportant)
@@ -774,8 +804,6 @@ static void DrawTestLog(ImGuiTestEngine* e, ImGuiTest* test, bool is_interactive
         ImGui::TextUnformatted(line_start, line_end);
         if (is_error || is_unimportant)
             ImGui::PopStyleColor();
-        if (is_interactive)
-            ImGui::PopID();
 
         text = line_end + 1;
         line_no++;
@@ -788,6 +816,7 @@ static const char* GetVerboseLevelName(ImGuiTestVerboseLevel v)
     switch (v)
     {
     case ImGuiTestVerboseLevel_Silent:  return "Silent";
+    case ImGuiTestVerboseLevel_Min:     return "Minimum";
     case ImGuiTestVerboseLevel_Normal:  return "Normal";
     case ImGuiTestVerboseLevel_Max:     return "Max";
     }
@@ -844,7 +873,7 @@ void    ImGuiTestEngine_ShowTestWindow(ImGuiTestEngine* engine, bool* p_open)
     ImGui::Text("TESTS (%d)", engine->TestsAll.Size);
     static ImGuiTextFilter filter;
     if (ImGui::Button("Run All"))
-        ImGuiTestEngine_QueueAllTests(engine);
+        ImGuiTestEngine_QueueTests(engine, NULL);
 
     ImGui::SameLine();
     filter.Draw("", -1.0f);
@@ -945,6 +974,9 @@ void    ImGuiTestEngine_ShowTestWindow(ImGuiTestEngine* engine, bool* p_open)
         ImGui::Text("LOG %s: %s", engine->UiSelectedTest->Category, engine->UiSelectedTest->Name);
     else
         ImGui::Text("LOG");
+    if (ImGui::SmallButton("Copy to clipboard"))
+        if (engine->UiSelectedTest)
+            ImGui::SetClipboardText(engine->UiSelectedTest->TestLog.begin());
     ImGui::Separator();
     ImGui::BeginChild("Log");
     if (engine->UiSelectedTest)
@@ -1008,7 +1040,7 @@ void    ImGuiTestContext::Log(const char* fmt, ...)
 
 void    ImGuiTestContext::LogVerbose(const char* fmt, ...)
 {
-    if (Engine->IO.ConfigVerboseLevel == ImGuiTestVerboseLevel_Silent)
+    if (Engine->IO.ConfigVerboseLevel <= ImGuiTestVerboseLevel_Min)
         return;
 
     ImGuiTestContext* ctx = Engine->TestContext;
@@ -1261,12 +1293,14 @@ void    ImGuiTestContext::BringWindowToFrontForItem(ImGuiTestRef ref, ImGuiTestO
         LogVerbose("FocusWindow('%s')\n", item->Window->Name);
         ImGui::FocusWindow(item->Window);
         Yield();
+        Yield();
     }
-    else if (item->Window != g.Windows.back())
+    else if (item->Window->RootWindow != g.Windows.back()->RootWindow)
     {
         IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
-        LogVerbose("BringWindowToDisplayFront('%s')\n", item->Window->Name);
+        LogVerbose("BringWindowToDisplayFront('%s') (window.back=%s)\n", item->Window->Name, g.Windows.back()->Name);
         ImGui::BringWindowToDisplayFront(item->Window);
+        Yield();
         Yield();
     }
 }
@@ -1274,7 +1308,7 @@ void    ImGuiTestContext::BringWindowToFrontForItem(ImGuiTestRef ref, ImGuiTestO
 void    ImGuiTestContext::GatherItems(ImGuiTestItemList* out_list, ImGuiTestRef parent, int depth)
 {
     IM_ASSERT(out_list != NULL);
-    IM_ASSERT(depth > 0);
+    IM_ASSERT(depth > 0 || depth == -1);
     IM_ASSERT(Engine->GatherTask.ParentID == 0);
     IM_ASSERT(Engine->GatherTask.LastItemInfo == NULL);
 
@@ -1282,6 +1316,8 @@ void    ImGuiTestContext::GatherItems(ImGuiTestItemList* out_list, ImGuiTestRef 
         return;
 
     // Register gather tasks
+    if (depth == -1)
+        depth = 99;
     if (parent.ID == 0)
         parent.ID = GetID(parent);
     Engine->GatherTask.ParentID = parent.ID;
@@ -1395,6 +1431,11 @@ void    ImGuiTestContext::ItemAction(ImGuiTestAction action, ImGuiTestRef ref)
 
 void    ImGuiTestContext::ItemActionAll(ImGuiTestAction action, ImGuiTestRef ref_parent, int max_depth, int max_passes)
 {
+    if (max_depth == -1)
+        max_depth = 99;
+    if (max_passes == -1)
+        max_passes = 99;
+
     int actioned_total = 0;
     for (int pass = 0; pass < max_passes; pass++)
     {
@@ -1474,7 +1515,7 @@ void    ImGuiTestContext::ItemActionAll(ImGuiTestAction action, ImGuiTestRef ref
         if (actioned_total_at_beginning_of_pass == actioned_total)
             break;
     }
-    LogVerbose("%s %d items in total!\n", GetActionName(action), actioned_total);
+    LogVerbose("%s %d items in total!\n", GetActionVerb(action), actioned_total);
 }
 
 void    ImGuiTestContext::ItemHold(ImGuiTestRef ref, float time)
@@ -1569,6 +1610,27 @@ void    ImGuiTestContext::WindowClose()
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
     LogVerbose("WindowClose\n");
     ItemClick("#CLOSE");
+}
+
+void    ImGuiTestContext::WindowSetCollapsed(bool collapsed)
+{
+    if (IsError())
+        return;
+
+    IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
+    LogVerbose("WindowSetCollapsed(%d)\n", collapsed);
+    ImGuiWindow* window = ImGui::FindWindowByID(RefID);
+    if (window == NULL)
+    {
+        IM_ERRORF_NOHDR("Unable to find Ref window: %s / %08X", RefStr, RefID);
+        return;
+    }
+
+    if (window->Collapsed != collapsed)
+    {
+        ItemClick("#COLLAPSE");
+        IM_ASSERT(window->Collapsed == collapsed);
+    }
 }
 
 void    ImGuiTestContext::PopupClose()

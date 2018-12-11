@@ -32,9 +32,10 @@ typedef int     ImGuiTestOpFlags;   // See ImGuiTestOpFlags_
 enum ImGuiTestVerboseLevel
 {
     ImGuiTestVerboseLevel_Silent    = 0,
-    ImGuiTestVerboseLevel_Normal    = 1,
-    ImGuiTestVerboseLevel_Max       = 2,
-    ImGuiTestVerboseLevel_COUNT     = 3
+    ImGuiTestVerboseLevel_Min       = 1,
+    ImGuiTestVerboseLevel_Normal    = 2,
+    ImGuiTestVerboseLevel_Max       = 3,
+    ImGuiTestVerboseLevel_COUNT     = 4
 };
 
 enum ImGuiTestStatus
@@ -74,6 +75,7 @@ void    ImGuiTestEngineHook_ItemInfo(ImGuiID id, const char* label, int flags);
 
 // We embed every maacro in a do {} while(0) statement as a trick to allow using them as regular single statement, e.g. if (XXX) IM_CHECK(A); else IM_CHECK(B)
 #define IM_CHECK(_EXPR)             do { if (ImGuiTestEngineHook_Check(__FILE__, __func__, __LINE__, (bool)(_EXPR), #_EXPR))     { IM_ASSERT(0); } } while (0)
+#define IM_CHECK_ABORT(_EXPR)       do { if (ImGuiTestEngineHook_Check(__FILE__, __func__, __LINE__, (bool)(_EXPR), #_EXPR))     { IM_ASSERT(0); } if (!(bool)(_EXPR)) return; } while (0)
 #define IM_ERRORF(_FMT,...)         do { if (ImGuiTestEngineHook_Error(__FILE__, __func__, __LINE__, _FMT, __VA_ARGS__))         { IM_ASSERT(0); } } while (0)
 #define IM_ERRORF_NOHDR(_FMT,...)   do { if (ImGuiTestEngineHook_Error(NULL, NULL, 0, _FMT, __VA_ARGS__))                        { IM_ASSERT(0); } } while (0)
 //#define IM_ASSERT(_EXPR)      (void)( (!!(_EXPR)) || (ImGuiTestEngineHook_Check(false, #_EXPR, __FILE__, __func__, __LINE__), 0) )
@@ -91,7 +93,10 @@ void                ImGuiTestEngine_ShutdownContext(ImGuiTestEngine* engine);
 ImGuiTestEngineIO&  ImGuiTestEngine_GetIO(ImGuiTestEngine* engine);
 void                ImGuiTestEngine_Abort(ImGuiTestEngine* engine);
 void                ImGuiTestEngine_ShowTestWindow(ImGuiTestEngine* engine, bool* p_open);
-void                ImGuiTestEngine_QueueAllTests(ImGuiTestEngine* engine);
+void                ImGuiTestEngine_QueueTests(ImGuiTestEngine* engine, const char* filter = NULL);
+void                ImGuiTestEngine_QueueTest(ImGuiTestEngine* engine, ImGuiTest* test);
+bool                ImGuiTestEngine_IsRunningTests(ImGuiTestEngine* engine);
+void                ImGuiTestEngine_PrintResultSummary(ImGuiTestEngine* engine);
 
 // IO structure
 typedef bool (*ImGuiTestEngineNewFrameFunc)(ImGuiTestEngine*, void* user_data);
@@ -264,7 +269,7 @@ struct ImGuiTestContext
 
     void        BringWindowToFrontForItem(ImGuiTestRef ref, ImGuiTestOpFlags flags = ImGuiTestOpFlags_None);
 
-    void        GatherItems(ImGuiTestItemList* out_list, ImGuiTestRef parent, int depth = 999);
+    void        GatherItems(ImGuiTestItemList* out_list, ImGuiTestRef parent, int depth = -1);
 
     void        ItemAction(ImGuiTestAction action, ImGuiTestRef ref);
     void        ItemClick(ImGuiTestRef ref)         { ItemAction(ImGuiTestAction_Click, ref); }
@@ -274,9 +279,9 @@ struct ImGuiTestContext
     void        ItemOpen(ImGuiTestRef ref)          { ItemAction(ImGuiTestAction_Open, ref); }
     void        ItemClose(ImGuiTestRef ref)         { ItemAction(ImGuiTestAction_Close, ref); }
 
-    void        ItemActionAll(ImGuiTestAction action, ImGuiTestRef ref_parent, int depth = 1, int passes = 999);
-    void        ItemOpenAll(ImGuiTestRef ref_parent, int depth = 1, int passes = 999)    { ItemActionAll(ImGuiTestAction_Open, ref_parent, depth, passes); }
-    void        ItemCloseAll(ImGuiTestRef ref_parent, int depth = 1, int passes = 999)   { ItemActionAll(ImGuiTestAction_Close, ref_parent, depth, passes); }
+    void        ItemActionAll(ImGuiTestAction action, ImGuiTestRef ref_parent, int depth = 1, int passes = -1);
+    void        ItemOpenAll(ImGuiTestRef ref_parent, int depth = 1, int passes = -1)    { ItemActionAll(ImGuiTestAction_Open, ref_parent, depth, passes); }
+    void        ItemCloseAll(ImGuiTestRef ref_parent, int depth = 1, int passes = -1)   { ItemActionAll(ImGuiTestAction_Close, ref_parent, depth, passes); }
 
     void        ItemHold(ImGuiTestRef ref, float time);
     ImGuiTestItemInfo* ItemLocate(ImGuiTestRef ref, ImGuiTestOpFlags flags = ImGuiTestOpFlags_None);
@@ -292,6 +297,7 @@ struct ImGuiTestContext
     void        MenuUncheckAll(ImGuiTestRef ref_parent)     { MenuActionAll(ImGuiTestAction_Uncheck, ref_parent); }
 
     void        WindowClose();
+    void        WindowSetCollapsed(bool collapsed);
     void        PopupClose();
 };
 
