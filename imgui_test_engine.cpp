@@ -102,10 +102,14 @@ struct ImGuiTestEngine
     int                     CallDepth = 0;
     ImVector<ImGuiTestLocateTask*>  LocateTasks;
     ImGuiTestGatherTask     GatherTask;
-    bool                    SetMousePos = false;
-    bool                    SetMouseButtons = false;
-    ImVec2                  SetMousePosValue;
-    int                     SetMouseButtonsValue = 0x00;
+
+    // Inputs
+    bool                    InputMousePosSet = false;
+    bool                    InputMouseButtonsSet = false;
+    ImVec2                  InputMousePosValue;
+    int                     InputMouseButtonsValue = 0x00;
+    ImVector<ImGuiKey>      InputKeys;
+    ImVector<char>          InputChars;
 
     // UI support
     bool                    Abort = false;
@@ -151,6 +155,18 @@ static const char*  GetActionVerb(ImGuiTestAction action)
     case ImGuiTestAction_COUNT:
     default:                            return "N/A";
     }
+}
+
+static const char* GetVerboseLevelName(ImGuiTestVerboseLevel v)
+{
+    switch (v)
+    {
+    case ImGuiTestVerboseLevel_Silent:  return "Silent";
+    case ImGuiTestVerboseLevel_Min:     return "Minimum";
+    case ImGuiTestVerboseLevel_Normal:  return "Normal";
+    case ImGuiTestVerboseLevel_Max:     return "Max";
+    }
+    return "N/A";
 }
 
 //-------------------------------------------------------------------------
@@ -354,20 +370,27 @@ static void ImGuiTestEngine_ApplyInputToImGuiContext(ImGuiTestEngine* engine)
     {
         //if (engine->SetMousePos)
         {
-            g.IO.MousePos = engine->SetMousePosValue;
+            g.IO.MousePos = engine->InputMousePosValue;
             g.IO.WantSetMousePos = true;
         }
-        if (engine->SetMouseButtons)
+        if (engine->InputMouseButtonsSet)
         {
             for (int n = 0; n < IM_ARRAYSIZE(g.IO.MouseDown); n++)
-                g.IO.MouseDown[n] = (engine->SetMouseButtonsValue & (1 << n)) != 0;
+                g.IO.MouseDown[n] = (engine->InputMouseButtonsValue & (1 << n)) != 0;
         }
-        engine->SetMousePos = false;
-        engine->SetMouseButtons = false;
+        engine->InputMousePosSet = false;
+        engine->InputMouseButtonsSet = false;
+
+        if (engine->InputChars.Size > 0)
+        {
+            for (int n = 0; n < engine->InputChars.Size; n++)
+                g.IO.AddInputCharacter(engine->InputChars[n]);
+            engine->InputChars.resize(0);
+        }
     }
     else
     {
-        engine->SetMousePosValue = g.IO.MousePos;
+        engine->InputMousePosValue = g.IO.MousePos;
     }
 }
 
@@ -597,7 +620,7 @@ void ImGuiTestEngineHook_PostNewFrame()
             ImGuiTestEngine_PostNewFrame(engine);
 }
 
-void ImGuiTestEngineHook_ItemAdd(ImGuiID id, const ImRect& bb)
+void ImGuiTestEngineHook_ItemAdd(const ImRect& bb, ImGuiID id)
 {
     if (id == 0)
         return;
@@ -780,7 +803,6 @@ bool ImGuiTestEngineHook_Error(const char* file, const char* func, int line, con
 // - ImGuiTestEngine_ShowTestWindow()
 //-------------------------------------------------------------------------
 
-
 static void DrawTestLog(ImGuiTestEngine* e, ImGuiTest* test, bool is_interactive)
 {
     ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(6.0f, 2.0f));
@@ -809,18 +831,6 @@ static void DrawTestLog(ImGuiTestEngine* e, ImGuiTest* test, bool is_interactive
         line_no++;
     }
     ImGui::PopStyleVar();
-}
-
-static const char* GetVerboseLevelName(ImGuiTestVerboseLevel v)
-{
-    switch (v)
-    {
-    case ImGuiTestVerboseLevel_Silent:  return "Silent";
-    case ImGuiTestVerboseLevel_Min:     return "Minimum";
-    case ImGuiTestVerboseLevel_Normal:  return "Normal";
-    case ImGuiTestVerboseLevel_Max:     return "Max";
-    }
-    return "N/A";
 }
 
 void    ImGuiTestEngine_ShowTestWindow(ImGuiTestEngine* engine, bool* p_open)
@@ -903,7 +913,7 @@ void    ImGuiTestEngine_ShowTestWindow(ImGuiTestEngine* engine, bool* p_open)
         ImGui::ColorButton("status", status_color, ImGuiColorEditFlags_NoTooltip);
         ImGui::SameLine();
         if (test->Status == ImGuiTestStatus_Running)
-            ImGui::RenderText(p + g.Style.FramePadding + ImVec2(0,0), "|\0/\0-\0\\" + (((g.FrameCount/5) & 3) << 1), NULL);
+            ImGui::RenderText(p + g.Style.FramePadding + ImVec2(0, 0), "|\0/\0-\0\\" + (((g.FrameCount / 5) & 3) << 1), NULL);
 
         bool queue_test = false;
         bool select_test = false;
@@ -1110,6 +1120,13 @@ void ImGuiTestContext::SetRef(ImGuiTestRef ref)
     }
 }
 
+ImGuiWindow* ImGuiTestContext::GetRefWindow()
+{
+    ImGuiID window_id = GetID("");
+    ImGuiWindow* window = ImGui::FindWindowByID(window_id);
+    return window;
+}
+
 ImGuiID ImGuiTestContext::GetID(ImGuiTestRef ref)
 {
     if (ref.ID)
@@ -1160,13 +1177,53 @@ ImGuiTestItemInfo* ImGuiTestContext::ItemLocate(ImGuiTestRef ref, ImGuiTestOpFla
     return NULL;
 }
 
+// FIXME-TESTS: scroll_ratio_y unsupported
+void    ImGuiTestContext::ScrollToY(ImGuiTestRef ref, float scroll_ratio_y)
+{
+    if (IsError())
+        return;
+
+    // If the item is not currently visible, scroll to get it in the center of our window
+    IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
+    ImGuiContext& g = *UiContext;
+    ImGuiTestItemInfo* item = ItemLocate(ref);
+    ImGuiTestRefDesc desc(ref, item);
+    LogVerbose("ScrollTo %s\n", desc.c_str());
+
+    ImGuiWindow* window = item->Window;
+
+    while (!Abort)
+    {
+        // result->Rect will be updated after each iteration.
+        ImRect item_rect = item->Rect;
+        float item_curr_y = ImFloor(item_rect.GetCenter().y);
+        float item_target_y = ImFloor(window->InnerClipRect.GetCenter().y);
+        float scroll_delta_y = item_target_y - item_curr_y;
+        float scroll_target = ImClamp(window->Scroll.y - scroll_delta_y, 0.0f, ImGui::GetWindowScrollMaxY(window));
+
+        if (ImFabs(window->Scroll.y - scroll_target) < 1.0f)
+            break;
+
+        float scroll_speed = Engine->IO.ConfigRunFast ? FLT_MAX : ImFloor(Engine->IO.ScrollSpeed * g.IO.DeltaTime);
+        window->Scroll.y = ImLinearSweep(window->Scroll.y, scroll_target, scroll_speed);
+
+        ImGuiTestEngine_Yield(Engine);
+
+        BringWindowToFrontFromItem(ref);
+    }
+
+    // Need another frame for the result->Rect to stabilize
+    ImGuiTestEngine_Yield(Engine);
+}
+
+
 void    ImGuiTestContext::MouseMove(ImGuiTestRef ref)
 {
-    ImGuiContext& g = *UiContext;
     if (IsError())
         return;
 
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
+    ImGuiContext& g = *UiContext;
     ImGuiTestItemInfo* item = ItemLocate(ref);
     ImGuiTestRefDesc desc(ref, item);
     LogVerbose("MouseMove to %s\n", desc.c_str());
@@ -1176,43 +1233,16 @@ void    ImGuiTestContext::MouseMove(ImGuiTestRef ref)
     item->RefCount++;
 
     // Focus window before scrolling/moving so things are nicely visible
-    BringWindowToFrontForItem(ref);
+    BringWindowToFrontFromItem(ref);
 
     ImGuiWindow* window = item->Window;
     if (item->NavLayer == ImGuiNavLayer_Main && !window->InnerClipRect.Contains(item->Rect))
-    {
-        // If the item is not currently visible, scroll to get it in the center of our window
-        IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
-        LogVerbose("Scroll to %s\n", desc.c_str());
-
-        while (!Abort)
-        {
-            // result->Rect will be updated after each iteration.
-            ImRect item_rect = item->Rect;
-            float item_curr_y = ImFloor(item_rect.GetCenter().y);
-            float item_target_y = ImFloor(window->InnerClipRect.GetCenter().y);
-            float scroll_delta_y = item_target_y - item_curr_y;
-            float scroll_target = ImClamp(window->Scroll.y - scroll_delta_y, 0.0f, ImGui::GetWindowScrollMaxY(window));
-
-            if (ImFabs(window->Scroll.y - scroll_target) < 1.0f)
-                break;
-
-            float scroll_speed = Engine->IO.ConfigRunFast ? FLT_MAX : ImFloor(Engine->IO.ScrollSpeed * g.IO.DeltaTime);
-            window->Scroll.y = ImLinearSweep(window->Scroll.y, scroll_target, scroll_speed);
-
-            ImGuiTestEngine_Yield(Engine);
-
-            BringWindowToFrontForItem(ref, ImGuiTestOpFlags_Verbose);
-        }
-        
-        // Need another frame for the result->Rect to stabilize
-        ImGuiTestEngine_Yield(Engine);
-    }
+        ScrollToY(ref);
 
     MouseMoveToPos(item->Rect.GetCenter());
 
     // Focus again in case something made us lost focus (which could happen on a simple hover)
-    BringWindowToFrontForItem(ref, ImGuiTestOpFlags_Verbose);
+    BringWindowToFrontFromItem(ref);// , ImGuiTestOpFlags_Verbose);
 
     if (!Abort)
     {
@@ -1231,31 +1261,57 @@ void	ImGuiTestContext::MouseMoveToPos(ImVec2 target)
         return;
 
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
-    LogVerbose("MouseMove from (%.0f,%.0f) to (%.0f,%.0f)\n", Engine->SetMousePosValue.x, Engine->SetMousePosValue.y, target.x, target.y);
+    LogVerbose("MouseMove from (%.0f,%.0f) to (%.0f,%.0f)\n", Engine->InputMousePosValue.x, Engine->InputMousePosValue.y, target.x, target.y);
 
     // We manipulate Engine->SetMousePosValue without reading back from g.IO.MousePos because the later is rounded.
     // To handle high framerate it is easier to bypass this rounding.
     while (true)
     {
-        ImVec2 delta = target - Engine->SetMousePosValue;
+        ImVec2 delta = target - Engine->InputMousePosValue;
         float inv_length = ImInvLength(delta, FLT_MAX);
         float move_speed = Engine->IO.MouseSpeed * g.IO.DeltaTime;
 
         if (Engine->IO.ConfigRunFast || (inv_length >= 1.0f / move_speed))
         {
-            Engine->SetMousePos = true;
-            Engine->SetMousePosValue = target;
+            Engine->InputMousePosSet = true;
+            Engine->InputMousePosValue = target;
             ImGuiTestEngine_Yield(Engine);
             ImGuiTestEngine_Yield(Engine);
             return;
         }
         else
         {
-            Engine->SetMousePos = true;
-            Engine->SetMousePosValue = Engine->SetMousePosValue + delta * move_speed * inv_length;
+            Engine->InputMousePosSet = true;
+            Engine->InputMousePosValue = Engine->InputMousePosValue + delta * move_speed * inv_length;
             ImGuiTestEngine_Yield(Engine);
         }
     }
+}
+
+void    ImGuiTestContext::MouseDown(int button)
+{
+    if (IsError())
+        return;
+
+    IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
+    LogVerbose("MouseDown %d\n", button);
+
+    Engine->InputMouseButtonsSet = true;
+    Engine->InputMouseButtonsValue = (1 << button);
+    Yield();
+}
+
+void    ImGuiTestContext::MouseUp(int button)
+{
+    if (IsError())
+        return;
+
+    IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
+    LogVerbose("MouseUp %d\n", button);
+
+    Engine->InputMouseButtonsSet = true;
+    Engine->InputMouseButtonsValue &= ~(1 << button);
+    Yield();
 }
 
 // TODO: click time argument (seconds and/or frames)
@@ -1268,16 +1324,67 @@ void    ImGuiTestContext::MouseClick(int button)
     LogVerbose("MouseClick %d\n", button);
 
     Yield();
-    Engine->SetMouseButtons = true;
-    Engine->SetMouseButtonsValue = (1 << button);
+    Engine->InputMouseButtonsSet = true;
+    Engine->InputMouseButtonsValue = (1 << button);
     Yield();
-    Engine->SetMouseButtons = true;
-    Engine->SetMouseButtonsValue = 0;
+    Engine->InputMouseButtonsSet = true;
+    Engine->InputMouseButtonsValue = 0;
     Yield();
     Yield(); // Give a frame for items to react
 }
 
-void    ImGuiTestContext::BringWindowToFrontForItem(ImGuiTestRef ref, ImGuiTestOpFlags flags)
+/*
+void    ImGuiTestContext::KeyPressMap(ImGuiKey key)
+{
+    if (IsError())
+        return;
+
+    Engine->InputKeys.push_back(key);
+}
+*/
+
+void    ImGuiTestContext::KeyChars(const char* chars)
+{
+    if (IsError())
+        return;
+
+    int chars_len = (int)strlen(chars);
+    int pos = Engine->InputChars.Size;
+    Engine->InputChars.resize(pos + chars_len);
+    for (int n = 0; n < chars_len; n++)
+        Engine->InputChars[pos + n] = chars[n];
+}
+
+void    ImGuiTestContext::BringWindowToFront(ImGuiWindow* window)
+{
+    ImGuiContext& g = *UiContext;
+
+    if (window == NULL)
+    {
+        ImGuiID window_id = GetID("");
+        window = ImGui::FindWindowByID(window_id);
+        IM_ASSERT(window != NULL);
+    }
+
+    if (window != g.NavWindow)
+    {
+        IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
+        LogVerbose("FocusWindow('%s')\n", window->Name);
+        ImGui::FocusWindow(window);
+        Yield();
+        Yield();
+    }
+    else if (window->RootWindow != g.Windows.back()->RootWindow)
+    {
+        IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
+        LogVerbose("BringWindowToDisplayFront('%s') (window.back=%s)\n", window->Name, g.Windows.back()->Name);
+        ImGui::BringWindowToDisplayFront(window);
+        Yield();
+        Yield();
+    }
+}
+
+void    ImGuiTestContext::BringWindowToFrontFromItem(ImGuiTestRef ref)
 {
     if (IsError())
         return;
@@ -1285,24 +1392,7 @@ void    ImGuiTestContext::BringWindowToFrontForItem(ImGuiTestRef ref, ImGuiTestO
     const ImGuiTestItemInfo* item = ItemLocate(ref);
     //LogVerbose("FocusWindowForItem %s\n", ImGuiTestRefDesc(ref, item).c_str());
     //LogVerbose("Lost focus on window '%s', getting again..\n", item->Window->Name);
-
-    ImGuiContext& g = *UiContext;
-    if (item->Window != g.NavWindow)
-    {
-        IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
-        LogVerbose("FocusWindow('%s')\n", item->Window->Name);
-        ImGui::FocusWindow(item->Window);
-        Yield();
-        Yield();
-    }
-    else if (item->Window->RootWindow != g.Windows.back()->RootWindow)
-    {
-        IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
-        LogVerbose("BringWindowToDisplayFront('%s') (window.back=%s)\n", item->Window->Name, g.Windows.back()->Name);
-        ImGui::BringWindowToDisplayFront(item->Window);
-        Yield();
-        Yield();
-    }
+    BringWindowToFront(item->Window);
 }
 
 void    ImGuiTestContext::GatherItems(ImGuiTestItemList* out_list, ImGuiTestRef parent, int depth)
@@ -1529,11 +1619,11 @@ void    ImGuiTestContext::ItemHold(ImGuiTestRef ref, float time)
     MouseMove(ref);
 
     Yield();
-    Engine->SetMouseButtons = true;
-    Engine->SetMouseButtonsValue = (1 << 0);
+    Engine->InputMouseButtonsSet = true;
+    Engine->InputMouseButtonsValue = (1 << 0);
     Sleep(time);
-    Engine->SetMouseButtons = true;
-    Engine->SetMouseButtonsValue = 0;
+    Engine->InputMouseButtonsSet = true;
+    Engine->InputMouseButtonsValue = 0;
     Yield();
 }
 
@@ -1631,6 +1721,61 @@ void    ImGuiTestContext::WindowSetCollapsed(bool collapsed)
         ItemClick("#COLLAPSE");
         IM_ASSERT(window->Collapsed == collapsed);
     }
+}
+
+void    ImGuiTestContext::WindowMove(ImVec2 pos, ImVec2 pivot)
+{
+    if (IsError())
+        return;
+
+    ImGuiWindow* window = GetRefWindow();
+    pos -= pivot * window->Size;
+    pos = ImFloor(pos);
+    if (ImLengthSqr(pos - window->Pos) < 0.001f)
+        return;
+
+    IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
+    BringWindowToFront(window);
+    WindowSetCollapsed(false);
+
+    float h = ImGui::GetFrameHeight();
+
+    // FIXME-TESTS: Need to find a -visible- click point
+    MouseMoveToPos(window->Pos + ImVec2(h * 2.0f, h * 0.5f));
+    MouseDown(0);
+
+    ImVec2 delta = pos - window->Pos;
+    MouseMoveToPos(Engine->InputMousePosValue + delta);
+    Yield();
+
+    MouseUp();
+}
+
+void    ImGuiTestContext::WindowResize(ImVec2 size)
+{
+    if (IsError())
+        return;
+
+    ImGuiWindow* window = GetRefWindow();
+    size = ImFloor(size);
+    if (ImLengthSqr(size - window->Size) < 0.001f)
+        return;
+
+    IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
+    BringWindowToFront(window);
+    WindowSetCollapsed(false);
+
+    void* zero_ptr = (void*)0;
+    ImGuiID id = ImHash(&zero_ptr, sizeof(void*), GetID("#RESIZE")); // FIXME-TESTS
+    MouseMove(id);
+
+    MouseDown(0);
+
+    ImVec2 delta = size - window->Size;
+    MouseMoveToPos(Engine->InputMousePosValue + delta);
+    Yield();
+
+    MouseUp();
 }
 
 void    ImGuiTestContext::PopupClose()

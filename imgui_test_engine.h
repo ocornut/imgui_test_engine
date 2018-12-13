@@ -260,14 +260,23 @@ struct ImGuiTestContext
     void        SleepShort();
 
     void        SetRef(ImGuiTestRef ref);
+    ImGuiWindow*GetRefWindow();
     ImGuiID     GetID(ImGuiTestRef ref);
     ImGuiTestRef GetFocusWindowRef();
 
     void        MouseMove(ImGuiTestRef ref);
     void        MouseMoveToPos(ImVec2 pos);
     void        MouseClick(int button = 0);
+    void        MouseDown(int button = 0);
+    void        MouseUp(int button = 0);
+    //void      KeyPressMap(ImGuiKey key);
+    void        KeyChars(const char* chars);
 
-    void        BringWindowToFrontForItem(ImGuiTestRef ref, ImGuiTestOpFlags flags = ImGuiTestOpFlags_None);
+    void        BringWindowToFront();
+    void        BringWindowToFront(ImGuiWindow* window);
+    void        BringWindowToFrontFromItem(ImGuiTestRef ref);
+
+    void        ScrollToY(ImGuiTestRef ref, float scroll_ratio_y = 0.5f);
 
     void        GatherItems(ImGuiTestItemList* out_list, ImGuiTestRef parent, int depth = -1);
 
@@ -298,6 +307,8 @@ struct ImGuiTestContext
 
     void        WindowClose();
     void        WindowSetCollapsed(bool collapsed);
+    void        WindowMove(ImVec2 pos, ImVec2 pivot = ImVec2(0.0f, 0.0f));
+    void        WindowResize(ImVec2 sz);
     void        PopupClose();
 };
 

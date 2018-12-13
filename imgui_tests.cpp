@@ -272,6 +272,79 @@ void RegisterTests_Misc(ImGuiTestContext* ctx)
     };
 }
 
+void RegisterTests_Captures(ImGuiTestContext* ctx)
+{
+    ImGuiTest* t = NULL;
+
+    t = REGISTER_TEST("capture", "capture_demo_documents");
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ctx->SetRef("ImGui Demo");
+        ctx->MenuAction(ImGuiTestAction_Check, "Examples/Documents");
+
+        ctx->SetRef("Examples: Documents");
+        // FIXME-TESTS: Locate within stack that uses windows/<pointer>/name
+        ctx->ItemCheck("Tomato"); // FIXME: WILL FAIL, NEED TO LOCATE BY NAME (STACK WILDCARD?)
+        ctx->ItemCheck("A Rather Long Title");
+        ctx->ItemClick("##tabs/Eggplant");
+        ctx->MouseMove("##tabs/Eggplant/Modify");
+        ctx->Sleep(1.0f);
+    };
+
+    t = REGISTER_TEST("capture", "capture_readme_misc");
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiIO& io = ImGui::GetIO();
+        //ImGuiStyle& style = ImGui::GetStyle();
+
+        ctx->SetRef("ImGui Demo");
+        ctx->ItemCloseAll("");
+        ctx->MenuCheck("Examples/Simple overlay");
+        ctx->SetRef("Example: Simple overlay");
+        ImGuiWindow* window_overlay = ctx->GetRefWindow();
+        IM_CHECK_ABORT(window_overlay != NULL);
+
+        // FIXME-TESTS: Find last newly opened window?
+
+        float fh = ImGui::GetFontSize();
+        float pad = fh;
+
+        ctx->SetRef("ImGui Demo");
+        ctx->MenuCheck("Examples/Custom rendering");
+        ctx->SetRef("Example: Custom rendering");
+        ctx->WindowResize(ImVec2(fh * 30, fh * 30));
+        ctx->WindowMove(window_overlay->Rect().GetBL() + ImVec2(0.0f, pad));
+        ImGuiWindow* window_custom_rendering = ctx->GetRefWindow();
+        IM_CHECK_ABORT(window_custom_rendering != NULL);
+
+        ctx->SetRef("ImGui Demo");
+        ctx->MenuCheck("Examples/Console");
+        ctx->SetRef("Example: Console");
+        ctx->WindowResize(ImVec2(fh * 42, fh * 34));
+        ctx->WindowMove(window_custom_rendering->Pos + window_custom_rendering->Size * ImVec2(0.35f, 0.55f));
+        ctx->ItemClick("Clear");
+        ctx->ItemClick("Add Dummy Text");
+        ctx->ItemClick("Add Dummy Error");
+        ctx->ItemClick("Input");
+        ctx->KeyChars("HELP");
+        //ctx->KeyPressMap(ImGuiKey_Enter);
+
+        ctx->SetRef("ImGui Demo");
+        ctx->MenuCheck("Examples/Simple layout");
+        ctx->SetRef("Example: Simple layout");
+        ctx->WindowResize(ImVec2(fh * 50, fh * 15));
+        ctx->WindowMove(ImVec2(pad, io.DisplaySize.y - pad), ImVec2(0.0f, 1.0f));
+
+        ctx->SetRef("ImGui Demo");
+        ctx->WindowResize(ImVec2(fh * 35, io.DisplaySize.y - pad * 2.0f));
+        ctx->WindowMove(ImVec2(io.DisplaySize.x - pad, pad), ImVec2(1.0f, 0.0f));
+        ctx->ItemOpen("Widgets");
+        ctx->ItemOpen("Color\\/Picker Widgets");
+        ctx->ItemOpen("Layout");
+        ctx->ItemOpen("Groups");
+        ctx->ScrollToY("Layout", 0.8f);
+    };
+}
 
 void RegisterTests(ImGuiTestEngine* e)
 {
@@ -282,6 +355,7 @@ void RegisterTests(ImGuiTestEngine* e)
     RegisterTests_Window(&ctx);
     RegisterTests_Scrolling(&ctx);
     RegisterTests_Misc(&ctx);
+    RegisterTests_Captures(&ctx);
 }
 
 // Notes/Ideas
