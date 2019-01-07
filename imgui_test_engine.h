@@ -116,9 +116,11 @@ struct ImGuiTestEngineIO
     bool                        ConfigBreakOnError = false; // Break debugger on test error
     ImGuiTestVerboseLevel       ConfigVerboseLevel = ImGuiTestVerboseLevel_Normal;
     bool                        ConfigLogToTTY = false;
+    bool                        ConfigTakeFocusBackAfterTests = false;
     float                       MouseSpeed = 1000.0f;       // Mouse speed (pixel/second) when not running in fast mode
     float                       ScrollSpeed = 1600.0f;      // Scroll speed (pixel/second) when not running in fast mode
-                                
+    float                       TypingSpeed = 20.0f;        // Char input speed (characters/second) when not running in fast mode
+
     // Outputs: State           
     bool                        RunningTests = false;
 };
@@ -235,6 +237,7 @@ struct ImGuiTestContext
     bool                    Abort;
     char                    RefStr[256];
     ImGuiID                 RefID;
+    ImGuiInputSource        InputMode;      // ImGuiInputSource_Mouse or ImGuiInputSource_Nav
 
     ImGuiTestContext()
     {
@@ -247,6 +250,7 @@ struct ImGuiTestContext
         Abort = false;
         memset(RefStr, 0, sizeof(RefStr));
         RefID = 0;
+        InputMode = ImGuiInputSource_Mouse;
     }
 
     ImGuiTest*  RegisterTest(const char* category, const char* name, const char* src_file = NULL, int src_line = 0);
@@ -259,6 +263,8 @@ struct ImGuiTestContext
     void        Sleep(float time);
     void        SleepShort();
 
+    void        SetInputMode(ImGuiInputSource input_mode);
+
     void        SetRef(ImGuiTestRef ref);
     ImGuiWindow*GetRefWindow();
     ImGuiID     GetID(ImGuiTestRef ref);
@@ -269,8 +275,13 @@ struct ImGuiTestContext
     void        MouseClick(int button = 0);
     void        MouseDown(int button = 0);
     void        MouseUp(int button = 0);
-    //void      KeyPressMap(ImGuiKey key);
+    
+    void        KeyPressMap(ImGuiKey key);
     void        KeyChars(const char* chars);
+    void        KeyCharsEnter(const char* chars);
+
+    void        NavMove(ImGuiTestRef ref);
+    void        NavActivate();
 
     void        BringWindowToFront();
     void        BringWindowToFront(ImGuiWindow* window);
@@ -288,9 +299,9 @@ struct ImGuiTestContext
     void        ItemOpen(ImGuiTestRef ref)          { ItemAction(ImGuiTestAction_Open, ref); }
     void        ItemClose(ImGuiTestRef ref)         { ItemAction(ImGuiTestAction_Close, ref); }
 
-    void        ItemActionAll(ImGuiTestAction action, ImGuiTestRef ref_parent, int depth = 1, int passes = -1);
-    void        ItemOpenAll(ImGuiTestRef ref_parent, int depth = 1, int passes = -1)    { ItemActionAll(ImGuiTestAction_Open, ref_parent, depth, passes); }
-    void        ItemCloseAll(ImGuiTestRef ref_parent, int depth = 1, int passes = -1)   { ItemActionAll(ImGuiTestAction_Close, ref_parent, depth, passes); }
+    void        ItemActionAll(ImGuiTestAction action, ImGuiTestRef ref_parent, int depth = -1, int passes = -1);
+    void        ItemOpenAll(ImGuiTestRef ref_parent, int depth = -1, int passes = -1)    { ItemActionAll(ImGuiTestAction_Open, ref_parent, depth, passes); }
+    void        ItemCloseAll(ImGuiTestRef ref_parent, int depth = -1, int passes = -1)   { ItemActionAll(ImGuiTestAction_Close, ref_parent, depth, passes); }
 
     void        ItemHold(ImGuiTestRef ref, float time);
     ImGuiTestItemInfo* ItemLocate(ImGuiTestRef ref, ImGuiTestOpFlags flags = ImGuiTestOpFlags_None);

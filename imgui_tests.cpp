@@ -117,6 +117,25 @@ void RegisterTests_Scrolling(ImGuiTestContext* ctx)
 //    ImGui::ShowDemoWindow();
 //}
 
+void RegisterTests_Nav(ImGuiTestContext* ctx)
+{
+    ImGuiTest* t = NULL;
+
+    // Test opening a new window from a checkbox setting the focus to the new window.
+    // In 9ba2028 (2019/01/04) we fixed a bug where holding ImGuiNavInputs_Activate too long on a button would hold the focus on the wrong window.
+    t = REGISTER_TEST("nav", "nav_001");
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ctx->SetInputMode(ImGuiInputSource_Nav);
+        ctx->SetRef("Hello, world!");
+        ctx->ItemUncheck("Demo Window");
+        ctx->ItemCheck("Demo Window");
+
+        ImGuiContext& g = *ctx->UiContext;
+        IM_CHECK(g.NavWindow && g.NavWindow->ID == ctx->GetID("/ImGui Demo"));
+    };
+}
+
 void RegisterTests_Misc(ImGuiTestContext* ctx)
 {
     ImGuiTest* t = NULL;
@@ -174,14 +193,14 @@ void RegisterTests_Misc(ImGuiTestContext* ctx)
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         ctx->SetRef("ImGui Demo");
-        ctx->ItemOpenAll("", -1);
+        ctx->ItemOpenAll("");
     };
 
     t = REGISTER_TEST("demo", "demo_cov_auto_close");
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         ctx->SetRef("ImGui Demo");
-        ctx->ItemCloseAll("", -1);
+        ctx->ItemCloseAll("");
     };
 
     t = REGISTER_TEST("demo", "demo_cov_001");
@@ -208,6 +227,8 @@ void RegisterTests_Misc(ImGuiTestContext* ctx)
 #if 1
         ctx->MenuCheckAll("Examples");
         ctx->MenuUncheckAll("Examples");
+        ctx->MenuCheckAll("Help");
+        ctx->MenuUncheckAll("Help");
 #else
         for (int n = 0; n < 2; n++)
         {
@@ -291,6 +312,13 @@ void RegisterTests_Captures(ImGuiTestContext* ctx)
         ctx->Sleep(1.0f);
     };
 
+#if 1
+
+    // TODO: Better position of windows.
+    // TODO: Draw in custom rendering canvas
+    // TODO: Select color picker mode
+    // TODO: Flags document as "Modified"
+    // TODO: InputText selection
     t = REGISTER_TEST("capture", "capture_readme_misc");
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
@@ -320,14 +348,17 @@ void RegisterTests_Captures(ImGuiTestContext* ctx)
         ctx->SetRef("ImGui Demo");
         ctx->MenuCheck("Examples/Console");
         ctx->SetRef("Example: Console");
-        ctx->WindowResize(ImVec2(fh * 42, fh * 34));
+        ctx->WindowResize(ImVec2(fh * 42, fh * (34-20)));
         ctx->WindowMove(window_custom_rendering->Pos + window_custom_rendering->Size * ImVec2(0.35f, 0.55f));
         ctx->ItemClick("Clear");
         ctx->ItemClick("Add Dummy Text");
         ctx->ItemClick("Add Dummy Error");
         ctx->ItemClick("Input");
-        ctx->KeyChars("HELP");
-        //ctx->KeyPressMap(ImGuiKey_Enter);
+
+        ctx->KeyChars("H");
+        ctx->KeyPressMap(ImGuiKey_Tab);
+        ctx->KeyCharsEnter("ELP");
+        ctx->KeyCharsEnter("hello, imgui world!");
 
         ctx->SetRef("ImGui Demo");
         ctx->MenuCheck("Examples/Simple layout");
@@ -344,6 +375,7 @@ void RegisterTests_Captures(ImGuiTestContext* ctx)
         ctx->ItemOpen("Groups");
         ctx->ScrollToY("Layout", 0.8f);
     };
+#endif
 }
 
 void RegisterTests(ImGuiTestEngine* e)
@@ -354,6 +386,7 @@ void RegisterTests(ImGuiTestEngine* e)
 
     RegisterTests_Window(&ctx);
     RegisterTests_Scrolling(&ctx);
+    RegisterTests_Nav(&ctx);
     RegisterTests_Misc(&ctx);
     RegisterTests_Captures(&ctx);
 }

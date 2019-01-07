@@ -87,6 +87,18 @@ struct ImGuiTestGatherTask
     ImGuiTestItemInfo*      LastItemInfo = NULL;
 };
 
+struct ImGuiTestInput
+{
+    ImGuiKey        Key = ImGuiKey_COUNT;
+    ImGuiNavInput   NavInput = ImGuiNavInput_COUNT;
+    ImWchar         Char = 0;
+    bool            IsDown = true;
+
+    static ImGuiTestInput   FromKey(ImGuiKey v, bool down)      { ImGuiTestInput inp; inp.Key = v; inp.IsDown = down; return inp; }
+    static ImGuiTestInput   FromNav(ImGuiNavInput v, bool down) { ImGuiTestInput inp; inp.NavInput = v; inp.IsDown = down; return inp; }
+    static ImGuiTestInput   FromChar(ImWchar v)                 { ImGuiTestInput inp; inp.Char = v; return inp; }
+};
+
 // [Internal] Test Engine Context
 struct ImGuiTestEngine
 {
@@ -108,8 +120,7 @@ struct ImGuiTestEngine
     bool                    InputMouseButtonsSet = false;
     ImVec2                  InputMousePosValue;
     int                     InputMouseButtonsValue = 0x00;
-    ImVector<ImGuiKey>      InputKeys;
-    ImVector<char>          InputChars;
+    ImVector<ImGuiTestInput> InputQueue;
 
     // UI support
     bool                    Abort = false;
@@ -381,11 +392,31 @@ static void ImGuiTestEngine_ApplyInputToImGuiContext(ImGuiTestEngine* engine)
         engine->InputMousePosSet = false;
         engine->InputMouseButtonsSet = false;
 
-        if (engine->InputChars.Size > 0)
+        if (engine->InputQueue.Size > 0)
         {
-            for (int n = 0; n < engine->InputChars.Size; n++)
-                g.IO.AddInputCharacter(engine->InputChars[n]);
-            engine->InputChars.resize(0);
+            for (int n = 0; n < engine->InputQueue.Size; n++)
+            {
+                const ImGuiTestInput& input = engine->InputQueue[n];
+                if (input.Key != ImGuiKey_COUNT)
+                {
+                    IM_ASSERT(input.NavInput == ImGuiNavInput_COUNT);
+                    IM_ASSERT(input.Char == 0);
+                    int idx = g.IO.KeyMap[input.Key];
+                    if (idx >= 0 && idx < IM_ARRAYSIZE(g.IO.KeysDown))
+                        g.IO.KeysDown[idx] = input.IsDown;
+                }
+                else if (input.NavInput != ImGuiNavInput_COUNT)
+                {
+                    IM_ASSERT(input.Char == 0);
+                    IM_ASSERT(input.NavInput >= 0 && input.NavInput < ImGuiNavInput_COUNT);
+                    g.IO.NavInputs[input.NavInput] = input.IsDown;
+                }
+                else if (input.Char != 0)
+                {
+                    g.IO.AddInputCharacter(input.Char);
+                }
+            }
+            engine->InputQueue.resize(0);
         }
     }
     else
@@ -514,7 +545,7 @@ static void ImGuiTestEngine_ProcessQueue(ImGuiTestEngine* engine)
 
     //ImGuiContext& g = *engine->UiTestContext;
     //if (g.OpenPopupStack.empty())   // Don't refocus Test Engine UI if popups are opened: this is so we can see remaining popups when implementing tests.
-    if (ran_tests)
+    if (ran_tests && engine->IO.ConfigTakeFocusBackAfterTests)
         engine->UiFocus = true;
 }
 
@@ -578,6 +609,7 @@ static void ImGuiTestEngine_RunTest(ImGuiTestEngine* engine, ImGuiTestContext* c
     ctx->UserData = user_data;
     ctx->FrameCount = 0;
     ctx->SetRef("");
+    ctx->SetInputMode(ImGuiInputSource_Mouse);
 
     test->TestLog.clear();
 
@@ -872,6 +904,10 @@ void    ImGuiTestEngine_ShowTestWindow(ImGuiTestEngine* engine, bool* p_open)
     ImGui::SameLine();
     ImGui::Checkbox("Break", &engine->IO.ConfigBreakOnError);
     ImGui::SameLine();
+    ImGui::Checkbox("Focus", &engine->IO.ConfigTakeFocusBackAfterTests);
+    if (ImGui::IsItemHovered())
+        ImGui::SetTooltip("Set focus back to Test window after running tests.");
+    ImGui::SameLine();
     ImGui::PushItemWidth(60);
     ImGui::DragInt("Verbose Level", (int*)&engine->IO.ConfigVerboseLevel, 0.1f, 0, ImGuiTestVerboseLevel_COUNT - 1, GetVerboseLevelName(engine->IO.ConfigVerboseLevel));
     //ImGui::Checkbox("Verbose", &engine->IO.ConfigLogVerbose);
@@ -1100,6 +1136,23 @@ void    ImGuiTestContext::SleepShort()
     Sleep(0.2f);
 }
 
+void ImGuiTestContext::SetInputMode(ImGuiInputSource input_mode)
+{
+    IM_ASSERT(input_mode == ImGuiInputSource_Mouse || input_mode == ImGuiInputSource_Nav);
+    InputMode = input_mode;
+
+    if (InputMode == ImGuiInputSource_Nav)
+    {
+        UiContext->NavDisableHighlight = false;
+        UiContext->NavDisableMouseHover = true;
+    }
+    else
+    {
+        UiContext->NavDisableHighlight = true;
+        UiContext->NavDisableMouseHover = false;
+    }
+}
+
 void ImGuiTestContext::SetRef(ImGuiTestRef ref)
 {
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
@@ -1216,6 +1269,65 @@ void    ImGuiTestContext::ScrollToY(ImGuiTestRef ref, float scroll_ratio_y)
     ImGuiTestEngine_Yield(Engine);
 }
 
+void    ImGuiTestContext::NavMove(ImGuiTestRef ref)
+{
+    if (IsError())
+        return;
+
+    IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
+    ImGuiContext& g = *UiContext;
+    ImGuiTestItemInfo* item = ItemLocate(ref);
+    ImGuiTestRefDesc desc(ref, item);
+    LogVerbose("NavMove to %s\n", desc.c_str());
+
+    if (item == NULL)
+        return;
+    item->RefCount++;
+
+    // Focus window before scrolling/moving so things are nicely visible
+    BringWindowToFrontFromItem(ref);
+
+    ImGui::SetNavID(item->ID, item->NavLayer);
+    Yield();
+
+    if (!Abort)
+    {
+        if (g.NavId != item->ID)
+            IM_ERRORF_NOHDR("Unable to set NavId to %s", desc.c_str());
+    }
+
+    item->RefCount--;
+}
+
+void    ImGuiTestContext::NavActivate()
+{
+    if (IsError())
+        return;
+
+    IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
+    LogVerbose("NavActivate\n");
+
+    Yield();
+
+    int frames_to_hold = 2; // FIXME-TEST: <-- number of frames could be fuzzed here
+#if 1
+    // Feed gamepad nav inputs
+    for (int n = 0; n < frames_to_hold; n++)
+    {
+        Engine->InputQueue.push_back(ImGuiTestInput::FromNav(ImGuiNavInput_Activate, true));
+        Yield();
+    }
+    Yield();
+#else
+    // Feed keyboard keys
+    Engine->InputQueue.push_back(ImGuiTestInput::FromKey(ImGuiKey_Space, true));
+    for (int n = 0; n < frames_to_hold; n++)
+        Yield();
+    Engine->InputQueue.push_back(ImGuiTestInput::FromKey(ImGuiKey_Space, false));
+    Yield();
+    Yield();
+#endif
+}
 
 void    ImGuiTestContext::MouseMove(ImGuiTestRef ref)
 {
@@ -1333,26 +1445,45 @@ void    ImGuiTestContext::MouseClick(int button)
     Yield(); // Give a frame for items to react
 }
 
-/*
 void    ImGuiTestContext::KeyPressMap(ImGuiKey key)
 {
     if (IsError())
         return;
 
-    Engine->InputKeys.push_back(key);
+    Yield();
+    Engine->InputQueue.push_back(ImGuiTestInput::FromKey(key, true));
+    Yield();
+    Engine->InputQueue.push_back(ImGuiTestInput::FromKey(key, false));
+    Yield();
+    Yield(); // Give a frame for items to react
 }
-*/
 
 void    ImGuiTestContext::KeyChars(const char* chars)
 {
     if (IsError())
         return;
 
-    int chars_len = (int)strlen(chars);
-    int pos = Engine->InputChars.Size;
-    Engine->InputChars.resize(pos + chars_len);
-    for (int n = 0; n < chars_len; n++)
-        Engine->InputChars[pos + n] = chars[n];
+    while (*chars)
+    {
+        unsigned int c = 0;
+        int bytes_count = ImTextCharFromUtf8(&c, chars, NULL);
+        chars += bytes_count;
+        if (c > 0 && c <= 0xFFFF)
+            Engine->InputQueue.push_back(ImGuiTestInput::FromChar((ImWchar)c));
+
+        if (!Engine->IO.ConfigRunFast)
+            Sleep(1.0f / Engine->IO.TypingSpeed);
+    }
+    Yield();
+}
+
+void    ImGuiTestContext::KeyCharsEnter(const char* chars)
+{
+    if (IsError())
+        return;
+
+    KeyChars(chars);
+    KeyPressMap(ImGuiKey_Enter);
 }
 
 void    ImGuiTestContext::BringWindowToFront(ImGuiWindow* window)
@@ -1451,9 +1582,11 @@ void    ImGuiTestContext::ItemAction(ImGuiTestAction action, ImGuiTestRef ref)
     if (item == NULL)
         return;
 
-    LogVerbose("Item%s %s\n", GetActionName(action), desc.c_str());
+    LogVerbose("Item%s %s%s\n", GetActionName(action), desc.c_str(), (InputMode == ImGuiInputSource_Mouse) ? "" : " (w/ Nav)");
 
     if (action == ImGuiTestAction_Click || action == ImGuiTestAction_DoubleClick)
+    {
+        if (InputMode == ImGuiInputSource_Mouse)
     {
         MouseMove(ref);
         if (!Engine->IO.ConfigRunFast)
@@ -1461,6 +1594,14 @@ void    ImGuiTestContext::ItemAction(ImGuiTestAction action, ImGuiTestRef ref)
         MouseClick(0);
         if (action == ImGuiTestAction_DoubleClick)
             MouseClick(0);
+        }
+        else
+        {
+            NavMove(ref);
+            NavActivate();
+            if (action == ImGuiTestAction_DoubleClick)
+                IM_ASSERT(0);
+        }
         return;
     }
 
@@ -1525,6 +1666,7 @@ void    ImGuiTestContext::ItemActionAll(ImGuiTestAction action, ImGuiTestRef ref
         max_depth = 99;
     if (max_passes == -1)
         max_passes = 99;
+    IM_ASSERT(max_depth > 0 && max_passes > 0);
 
     int actioned_total = 0;
     for (int pass = 0; pass < max_passes; pass++)
@@ -1632,7 +1774,8 @@ void    ImGuiTestContext::ItemVerifyCheckedIfAlive(ImGuiTestRef ref, bool checke
     Yield();
     if (ImGuiTestItemInfo* item = ItemLocate(ref, ImGuiTestOpFlags_NoError))
         if (item->TimestampMain + 1 >= Engine->FrameCount && item->TimestampStatus == item->TimestampMain)
-            IM_ASSERT(((item->StatusFlags & ImGuiItemStatusFlags_Checked) != 0) == checked);
+            if (((item->StatusFlags & ImGuiItemStatusFlags_Checked) != 0) != checked)
+                IM_CHECK(((item->StatusFlags & ImGuiItemStatusFlags_Checked) != 0) == checked);
 }
 
 void    ImGuiTestContext::MenuAction(ImGuiTestAction action, ImGuiTestRef ref)
@@ -1785,7 +1928,7 @@ void    ImGuiTestContext::PopupClose()
 
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
     LogVerbose("PopupClose\n");
-    ImGui::ClosePopupToLevel(0);    // FIXME
+    ImGui::ClosePopupToLevel(0, true);    // FIXME
 }
 
 //-------------------------------------------------------------------------
