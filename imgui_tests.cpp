@@ -5,7 +5,7 @@
 #define IMGUI_DEFINE_MATH_OPERATORS
 #include "imgui_internal.h"
 #include "imgui_tests.h"
-#include "imgui_test_engine.h"
+#include "imgui_te_core.h"
 
 // Visual Studio warnings
 #ifdef _MSC_VER
@@ -107,7 +107,7 @@ void RegisterTests_Scrolling(ImGuiTestContext* ctx)
         float scroll_y = ImGui::GetScrollY();
         IM_CHECK(scroll_y > 0.0f);
         IM_CHECK(scroll_y == ImGui::GetScrollMaxY());       // #1804
-        ctx->Log("scroll_y = %f\n", scroll_y);
+        ctx->LogVerbose("scroll_y = %f\n", scroll_y);
         ImGui::End();
     };
 }
@@ -293,7 +293,36 @@ void RegisterTests_Misc(ImGuiTestContext* ctx)
     };
 }
 
-void RegisterTests_Captures(ImGuiTestContext* ctx)
+void RegisterTests_Perf(ImGuiTestContext* ctx)
+{
+    ImGuiTest* t = NULL;
+
+    t = REGISTER_TEST("perf", "perf_demo_all");
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ctx->SetRef("ImGui Demo");
+        ctx->ItemOpenAll("");
+        ctx->MenuCheckAll("Examples");
+        ctx->MenuCheckAll("Help");
+
+        IM_CHECK(ctx->UiContext->IO.DisplaySize.x > 820);
+        IM_CHECK(ctx->UiContext->IO.DisplaySize.y > 820);
+
+        // FIXME-TESTS: Backup full layout
+#ifdef IMGUI_HAS_VIEWPORT
+        ImVec2 pos = ImGui::GetMainViewport()->Pos + ImVec2(20, 20);
+#else
+        ImVec2 pos = ImVec2(20, 20);
+#endif
+        for (ImGuiWindow* window : ctx->UiContext->Windows)
+        {
+            window->Pos = pos;
+            window->SizeFull = ImVec2(800, 800);
+        }
+    };
+}
+
+void RegisterTests_Capture(ImGuiTestContext* ctx)
 {
     ImGuiTest* t = NULL;
 
@@ -388,7 +417,8 @@ void RegisterTests(ImGuiTestEngine* e)
     RegisterTests_Scrolling(&ctx);
     RegisterTests_Nav(&ctx);
     RegisterTests_Misc(&ctx);
-    RegisterTests_Captures(&ctx);
+    RegisterTests_Capture(&ctx);
+    RegisterTests_Perf(&ctx);
 }
 
 // Notes/Ideas

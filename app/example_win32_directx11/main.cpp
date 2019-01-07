@@ -28,8 +28,8 @@
 #include <conio.h>
 
 #define IMGUI_DEFINE_MATH_OPERATORS
+#include "imgui_te_core.h"
 #include "imgui_tests.h"
-#include "imgui_test_engine.h"
 
 //-------------------------------------------------------------------------
 // DX11 Stuff
@@ -140,8 +140,9 @@ struct TestApp
     ImGuiTestEngine*        TestEngine      = NULL;
     ImGuiBackend            Backend         = ImGuiBackend_DX11;
     bool                    OptGUI          = true;
-    bool                    OptSlow         = false;
-    ImGuiTestVerboseLevel   OptVerboseLevel = ImGuiTestVerboseLevel_Normal;
+    bool                    OptFast         = true;
+    ImGuiTestVerboseLevel   OptVerboseLevel = ImGuiTestVerboseLevel_COUNT; // Set in main.cpp
+    bool                    OptNoThrottle   = false;
     bool                    OptPauseOnExit  = true;
     char*                   OptFileOpener   = NULL;
     ImVector<char*>         Tests;
@@ -285,7 +286,7 @@ bool MainLoopEndFrame()
         g_pd3dDeviceContext->ClearRenderTargetView(g_mainRenderTargetView, (float*)&clear_color);
         ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
 
-        if (test_io.RunningTests)
+        if (test_io.RunningTests || test_io.ConfigNoThrottle)
             g_pSwapChain->Present(0, 0); // Present without vsync
         else
             g_pSwapChain->Present(1, 0); // Present with vsync
@@ -301,7 +302,19 @@ static bool ParseCommandLineOptions(int argc, char** argv)
         if (argv[n][0] == '-' || argv[n][0] == '/')
         {
             // Command-line option
-            if (strcmp(argv[n], "-v") == 0)
+            if (strcmp(argv[n], "-v0") == 0)
+            {
+                g_App.OptVerboseLevel = ImGuiTestVerboseLevel_Silent;
+            }
+            else if (strcmp(argv[n], "-v1") == 0)
+            {
+                g_App.OptVerboseLevel = ImGuiTestVerboseLevel_Min;
+            }
+            else if (strcmp(argv[n], "-v2") == 0 || strcmp(argv[n], "-v") == 0)
+            {
+                g_App.OptVerboseLevel = ImGuiTestVerboseLevel_Normal;
+            }
+            else if (strcmp(argv[n], "-v3") == 0)
             {
                 g_App.OptVerboseLevel = ImGuiTestVerboseLevel_Max;
             }
@@ -315,7 +328,11 @@ static bool ParseCommandLineOptions(int argc, char** argv)
             }
             else if (strcmp(argv[n], "-slow") == 0)
             {
-                g_App.OptSlow = true;
+                g_App.OptFast = false;
+            }
+            else if (strcmp(argv[n], "-nothrottle") == 0)
+            {
+                g_App.OptNoThrottle = true;
             }
             else if (strcmp(argv[n], "-nopause") == 0)
             {
@@ -331,9 +348,11 @@ static bool ParseCommandLineOptions(int argc, char** argv)
                 printf("Syntax: %s <options> [tests]\n", argv[0]);
                 printf("Options:\n");
                 printf("  -h                  : show command-line help.\n");
-                printf("  -v                  : extra verbose mode.\n");
-                printf("  -gui / -nogui       : enable interactive mode.\n");
+                printf("  -v                  : verbose mode (same as -v2)\n");
+                printf("  -v0/-v1/-v2/-v3     : verbose level [v0: silent, v1: min, v2: normal: v3: max]\n");
+                printf("  -gui/-nogui         : enable interactive mode.\n");
                 printf("  -slow               : run automation at feeble human speed.\n");
+                printf("  -nothrottle         : run GUI app without throlling/vsync by default.\n");
                 printf("  -nopause            : don't pause application on exit.\n");
                 printf("  -fileopener <file>  : provide a bat/cmd/shell script to open source file.\n");
                 printf("Tests:\n");
@@ -356,6 +375,10 @@ int main(int argc, char** argv)
     if (!ParseCommandLineOptions(argc, argv))
         return 0;
 
+    // Default verbose level differs whether we are in in GUI or Command-Line mode
+    if (g_App.OptVerboseLevel == ImGuiTestVerboseLevel_COUNT)
+        g_App.OptVerboseLevel = g_App.OptGUI ? ImGuiTestVerboseLevel_Normal : ImGuiTestVerboseLevel_Min;
+
     if (g_App.OptGUI == false)
         g_App.Backend = ImGuiBackend_Null;
 
@@ -367,7 +390,7 @@ int main(int argc, char** argv)
         // Create application window
         wc = { sizeof(WNDCLASSEX), CS_CLASSDC, WndProc, 0L, 0L, GetModuleHandle(NULL), NULL, NULL, NULL, NULL, _T("ImGui Example"), NULL };
         RegisterClassEx(&wc);
-        hwnd = CreateWindow(_T("ImGui Example"), _T("Dear ImGui - Tests"), WS_OVERLAPPEDWINDOW, 100, 100, 1280, 800, NULL, NULL, wc.hInstance, NULL);
+        hwnd = CreateWindow(_T("ImGui Example"), _T("Dear ImGui - Tests"), WS_OVERLAPPEDWINDOW, 60, 60, 1280+160, 800+100, NULL, NULL, wc.hInstance, NULL);
 
         // Initialize Direct3D
         if (CreateDeviceD3D(hwnd) < 0)
@@ -402,6 +425,7 @@ int main(int argc, char** argv)
     IM_ASSERT(g_App.TestEngine == NULL);
     g_App.TestEngine = ImGuiTestEngine_CreateContext(ImGui::GetCurrentContext());
     RegisterTests(g_App.TestEngine);
+
     ImGuiTestEngineIO& test_io = ImGuiTestEngine_GetIO(g_App.TestEngine);
 
     // Non-interactive mode queue all tests by default
@@ -419,8 +443,9 @@ int main(int argc, char** argv)
     }
 
     // Apply options
+    test_io.ConfigRunFast = g_App.OptFast;
     test_io.ConfigVerboseLevel = g_App.OptVerboseLevel;
-    test_io.ConfigRunFast = !g_App.OptSlow;
+    test_io.ConfigNoThrottle = g_App.OptNoThrottle;
 
     switch (g_App.Backend)
     {

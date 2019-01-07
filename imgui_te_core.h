@@ -112,11 +112,12 @@ struct ImGuiTestEngineIO
                                 
     // Inputs: Options          
     bool                        ConfigRunFast = true;       // Run tests as fast as possible (teleport mouse, skip delays, etc.)
-    bool                        ConfigRunBlind =    false;  // Run tests in a blind ImGuiContext separated from the visible context
+    bool                        ConfigRunBlind = false;     // Run tests in a blind ImGuiContext separated from the visible context
     bool                        ConfigBreakOnError = false; // Break debugger on test error
     ImGuiTestVerboseLevel       ConfigVerboseLevel = ImGuiTestVerboseLevel_Normal;
     bool                        ConfigLogToTTY = false;
-    bool                        ConfigTakeFocusBackAfterTests = false;
+    bool                        ConfigTakeFocusBackAfterTests = true;
+    bool                        ConfigNoThrottle = false;   // Disable vsync for performance measurement
     float                       MouseSpeed = 1000.0f;       // Mouse speed (pixel/second) when not running in fast mode
     float                       ScrollSpeed = 1600.0f;      // Scroll speed (pixel/second) when not running in fast mode
     float                       TypingSpeed = 20.0f;        // Char input speed (characters/second) when not running in fast mode

@@ -11,7 +11,8 @@
 #include "imgui.h"
 #define IMGUI_DEFINE_MATH_OPERATORS
 #include "imgui_internal.h"
-#include "imgui_test_engine.h"
+#include "imgui_te_core.h"
+#include "imgui_te_util.h"
 
 #define IMGUI_DEBUG_TEST_ENGINE     1
 
@@ -41,7 +42,7 @@ Index of this file:
 
 // FIXME-TESTS: UI to setup breakpoint on frame X (gui func or at yield time for test func)
 // FIXME-TESTS: Locate within stack that uses windows/<pointer>/name
-// FIXME-TESTS: Be able to run blind
+// FIXME-TESTS: Be able to run blind within GUI
 // FIXME-TESTS: Be able to interactively run GUI function without Test function
 // FIXME-TESTS: Provide variants of same test (e.g. run same tests with a bunch of styles/flags)
 // FIXME-TESTS: Automate clicking/opening stuff based on gathering id?
@@ -52,7 +53,7 @@ Index of this file:
 // [SECTION] DATA STRUCTURES
 //-------------------------------------------------------------------------
 
-static ImGuiTestEngine*     GImGuiTestEngine;
+static ImGuiTestEngine* GImGuiHookingEngine = NULL;
 
 // Helper to output a string showing the Path, ID or Debug Label based on what is available.
 struct ImGuiTestRefDesc
@@ -103,9 +104,10 @@ struct ImGuiTestInput
 struct ImGuiTestEngine
 {
     ImGuiTestEngineIO       IO;
-    ImGuiContext*           UiVisibleContext = NULL;    // imgui context for visible/interactive needs
-    ImGuiContext*           UiBlindContext = NULL;
-    ImGuiContext*           UiTestContext = NULL;       // imgui context for testing == io.ConfigRunBling ? UiBlindContext : UiVisibleContext
+    ImGuiContext*           UiContextVisible = NULL;        // imgui context for visible/interactive needs
+    ImGuiContext*           UiContextBlind = NULL;          // FIXME
+    ImGuiContext*           UiContextTarget = NULL;         // imgui context for testing == io.ConfigRunBlind ? UiBlindContext : UiVisibleContext when running tests, otherwise NULL.
+    ImGuiContext*           UiContextActive = NULL;         // imgui context for testing == UiContextTarget or NULL
 
     int                     FrameCount = 0;
     ImVector<ImGuiTest*>    TestsAll;
@@ -127,12 +129,26 @@ struct ImGuiTestEngine
     bool                    UiFocus = false;
     ImGuiTest*              UiSelectedTest = NULL;
 
+    // Performance Monitor
+    double                  PerfRefDeltaTime;
+    ImMovingAverage<double> PerfDeltaTime100;
+    ImMovingAverage<double> PerfDeltaTime500;
+    ImMovingAverage<double> PerfDeltaTime1000;
+    ImMovingAverage<double> PerfDeltaTime2000;
+
     // Functions
-    ImGuiTestEngine() { }
+    ImGuiTestEngine() 
+    {
+        PerfRefDeltaTime = 0.0f;
+        PerfDeltaTime100.Init(100);
+        PerfDeltaTime500.Init(500);
+        PerfDeltaTime1000.Init(1000);
+        PerfDeltaTime2000.Init(2000);
+    }
     ~ImGuiTestEngine()
     {
-        if (UiBlindContext != NULL)
-            ImGui::DestroyContext(UiBlindContext);
+        if (UiContextBlind != NULL)
+            ImGui::DestroyContext(UiContextBlind);
     }
 };
 
@@ -222,11 +238,15 @@ ImGuiTestEngine*    ImGuiTestEngine_CreateContext(ImGuiContext* imgui_context)
 {
     IM_ASSERT(imgui_context != NULL);
     ImGuiTestEngine* engine = IM_NEW(ImGuiTestEngine)();
-    if (GImGuiTestEngine == NULL)
-        GImGuiTestEngine = engine;
-    engine->UiVisibleContext = imgui_context;
-    engine->UiBlindContext = NULL;
-    engine->UiTestContext = imgui_context;
+    engine->UiContextVisible = imgui_context;
+    engine->UiContextBlind = NULL;
+    engine->UiContextTarget = engine->UiContextVisible;
+    engine->UiContextActive = NULL;
+
+    // Setup hook
+    if (GImGuiHookingEngine == NULL)
+        GImGuiHookingEngine = engine;
+
     return engine;
 }
 
@@ -237,8 +257,9 @@ void    ImGuiTestEngine_ShutdownContext(ImGuiTestEngine* engine)
     ImGuiTestEngine_ClearLocateTasks(engine);
     IM_DELETE(engine);
 
-    if (GImGuiTestEngine == NULL)
-        GImGuiTestEngine = NULL;
+    // Release hook
+    if (GImGuiHookingEngine == engine)
+        GImGuiHookingEngine = NULL;
 }
 
 ImGuiTestEngineIO&  ImGuiTestEngine_GetIO(ImGuiTestEngine* engine)
@@ -251,61 +272,6 @@ void    ImGuiTestEngine_Abort(ImGuiTestEngine* engine)
     engine->Abort = true;
     if (engine->TestContext)
         engine->TestContext->Abort = true;
-}
-
-// Hash "hello/world" as if it was "helloworld"
-// To hash a forward slash we need to use "hello\\/world"
-//   IM_ASSERT(ImHashDecoratedPath("Hello/world")   == ImHash("Helloworld", 0));
-//   IM_ASSERT(ImHashDecoratedPath("Hello\\/world") == ImHash("Hello/world", 0));
-// Adapted from ImHash(). Not particularly fast!
-static ImGuiID ImHashDecoratedPath(const char* str, ImGuiID seed)
-{
-    static ImU32 crc32_lut[256] = { 0 };
-    if (!crc32_lut[1])
-    {
-        const ImU32 polynomial = 0xEDB88320;
-        for (ImU32 i = 0; i < 256; i++)
-        {
-            ImU32 crc = i;
-            for (ImU32 j = 0; j < 8; j++)
-                crc = (crc >> 1) ^ (ImU32(-int(crc & 1)) & polynomial);
-            crc32_lut[i] = crc;
-        }
-    }
-
-    // Prefixing the string with / ignore the seed
-    if (str[0] == '/')
-        seed = 0;
-
-    seed = ~seed;
-    ImU32 crc = seed;
-
-    // Zero-terminated string
-    bool inhibit_one = false;
-    const unsigned char* current = (const unsigned char*)str;
-    while (unsigned char c = *current++)
-    {
-        if (c == '\\' && !inhibit_one)
-        {
-            inhibit_one = true;
-            continue;
-        }
-
-        // Forward slashes are ignored unless prefixed with a backward slash
-        if (c == '/' && !inhibit_one)
-        {
-            inhibit_one = false;
-            continue;
-        }
-
-        // Reset the hash when encountering ### 
-        if (c == '#' && current[0] == '#' && current[1] == '#')
-            crc = seed;
-
-        crc = (crc >> 8) ^ crc32_lut[(crc & 0xFF) ^ c];
-        inhibit_one = false;
-    }
-    return ~crc;
 }
 
 // FIXME-OPT
@@ -374,10 +340,11 @@ static void ImGuiTestEngine_ClearLocateTasks(ImGuiTestEngine* engine)
 
 static void ImGuiTestEngine_ApplyInputToImGuiContext(ImGuiTestEngine* engine)
 {
-    ImGuiContext& g = *engine->UiTestContext;
+    IM_ASSERT(engine->UiContextTarget != NULL);
+    ImGuiContext& g = *engine->UiContextTarget;
     g.IO.MouseDrawCursor = true;
 
-    if (ImGuiTestEngine_IsRunningTests(engine))
+    if (engine->UiContextActive != NULL && ImGuiTestEngine_IsRunningTests(engine))
     {
         //if (engine->SetMousePos)
         {
@@ -421,18 +388,25 @@ static void ImGuiTestEngine_ApplyInputToImGuiContext(ImGuiTestEngine* engine)
     }
     else
     {
+        IM_ASSERT(engine->UiContextActive == NULL);
         engine->InputMousePosValue = g.IO.MousePos;
     }
 }
 
 static void ImGuiTestEngine_PreNewFrame(ImGuiTestEngine* engine)
 {
-    ImGuiContext& g = *engine->UiTestContext;
-    IM_ASSERT(engine->UiTestContext == GImGui);
+    IM_ASSERT(engine->UiContextTarget != NULL);
+    IM_ASSERT(engine->UiContextTarget == GImGui);
+    ImGuiContext& g = *engine->UiContextTarget;
 
     engine->FrameCount = g.FrameCount + 1;  // NewFrame() will increase this.
     if (engine->TestContext)
         engine->TestContext->FrameCount++;
+
+    engine->PerfDeltaTime100.AddSample(g.IO.DeltaTime);
+    engine->PerfDeltaTime500.AddSample(g.IO.DeltaTime);
+    engine->PerfDeltaTime1000.AddSample(g.IO.DeltaTime);
+    engine->PerfDeltaTime2000.AddSample(g.IO.DeltaTime);
 
     if (ImGuiTestEngine_IsRunningTests(engine) && !engine->Abort)
     {
@@ -450,13 +424,14 @@ static void ImGuiTestEngine_PreNewFrame(ImGuiTestEngine* engine)
 
 static void ImGuiTestEngine_PostNewFrame(ImGuiTestEngine* engine)
 {
-    IM_ASSERT(engine->UiTestContext == GImGui);
+    IM_ASSERT(engine->UiContextTarget == GImGui);
 
     // Garbage collect unused tasks
+    const int LOCATION_TASK_ELAPSE_FRAMES = 20;
     for (int task_n = 0; task_n < engine->LocateTasks.Size; task_n++)
     {
         ImGuiTestLocateTask* task = engine->LocateTasks[task_n];
-        if (task->FrameCount < engine->FrameCount - 20 && task->Result.RefCount == 0)
+        if (task->FrameCount < engine->FrameCount - LOCATION_TASK_ELAPSE_FRAMES && task->Result.RefCount == 0)
         {
             IM_DELETE(task);
             engine->LocateTasks.erase(engine->LocateTasks.Data + task_n);
@@ -497,15 +472,19 @@ static void ImGuiTestEngine_ProcessQueue(ImGuiTestEngine* engine)
             continue;
         }
 
-        test->Status = ImGuiTestStatus_Running;
+        // FIXME-TESTS: Blind mode not supported
+        IM_ASSERT(engine->UiContextTarget != NULL);
+        IM_ASSERT(engine->UiContextActive == NULL);
+        engine->UiContextActive = engine->UiContextTarget;
         engine->UiSelectedTest = test;
+        test->Status = ImGuiTestStatus_Running;
 
         // If the user defines a RootFunc, they will call RunTest() themselves. This allows them to conveniently store data in the stack.
         ImGuiTestContext ctx;
         ctx.Test = test;
         ctx.Engine = engine;
         ctx.UserData = NULL;
-        ctx.UiContext = engine->UiTestContext;
+        ctx.UiContext = engine->UiContextActive;
         engine->TestContext = &ctx;
 
         ctx.Log("----------------------------------------------------------------------\n");
@@ -531,6 +510,9 @@ static void ImGuiTestEngine_ProcessQueue(ImGuiTestEngine* engine)
 
         IM_ASSERT(engine->TestContext == &ctx);
         engine->TestContext = NULL;
+
+        IM_ASSERT(engine->UiContextActive == engine->UiContextTarget);
+        engine->UiContextActive = NULL;
 
         // Auto select the first error test
         //if (test->Status == ImGuiTestStatus_Error)
@@ -560,7 +542,7 @@ void ImGuiTestEngine_QueueTest(ImGuiTestEngine* engine, ImGuiTest* test)
         return;
 
     // Detect lack of signal from imgui context, most likely not compiled with IMGUI_ENABLE_TEST_ENGINE=1
-    if (engine->FrameCount < engine->UiTestContext->FrameCount - 2)
+    if (engine->FrameCount < engine->UiContextTarget->FrameCount - 2)
     {
         ImGuiTestEngine_Abort(engine);
         IM_ASSERT(0 && "Not receiving signal from core library. Did you call ImGuiTestEngine_CreateContext() with the correct context? Did you compile imgui/ with IMGUI_ENABLE_TEST_ENGINE=1?");
@@ -638,32 +620,28 @@ static void ImGuiTestEngine_RunTest(ImGuiTestEngine* engine, ImGuiTestContext* c
 // - ImGuiTestEngineHook_ItemInfo()
 //-------------------------------------------------------------------------
 
-void ImGuiTestEngineHook_PreNewFrame()
+void ImGuiTestEngineHook_PreNewFrame(ImGuiContext* ctx)
 {
-    if (ImGuiTestEngine* engine = GImGuiTestEngine)
-        if (engine->UiTestContext == GImGui)
+    if (ImGuiTestEngine* engine = GImGuiHookingEngine)
+        if (engine->UiContextTarget == ctx)
             ImGuiTestEngine_PreNewFrame(engine);
 }
 
-void ImGuiTestEngineHook_PostNewFrame()
+void ImGuiTestEngineHook_PostNewFrame(ImGuiContext* ctx)
 {
-    if (ImGuiTestEngine* engine = GImGuiTestEngine)
-        if (engine->UiTestContext == GImGui)
+    if (ImGuiTestEngine* engine = GImGuiHookingEngine)
+        if (engine->UiContextTarget == ctx)
             ImGuiTestEngine_PostNewFrame(engine);
 }
 
-void ImGuiTestEngineHook_ItemAdd(const ImRect& bb, ImGuiID id)
+void ImGuiTestEngineHook_ItemAdd(ImGuiContext* ctx, const ImRect& bb, ImGuiID id)
 {
-    if (id == 0)
-        return;
-    ImGuiTestEngine* engine = GImGuiTestEngine;
-    if (engine == NULL)
+    ImGuiTestEngine* engine = GImGuiHookingEngine;
+    if (engine == NULL || engine->UiContextActive != ctx)
         return;
 
-    ImGuiContext& g = *GImGui;
-    if (&g != engine->UiTestContext)
-        return;
-
+    IM_ASSERT(id != 0);
+    ImGuiContext& g = *ctx;
     ImGuiWindow* window = g.CurrentWindow;
 
     // FIXME-OPT: Early out if there are no active Locate/Gather tasks.
@@ -717,20 +695,16 @@ void ImGuiTestEngineHook_ItemAdd(const ImRect& bb, ImGuiID id)
 }
 
 // label is optional
-void ImGuiTestEngineHook_ItemInfo(ImGuiID id, const char* label, int flags)
+void ImGuiTestEngineHook_ItemInfo(ImGuiContext* ctx, ImGuiID id, const char* label, int flags)
 {
-    if (id == 0)
-        return;
-    ImGuiTestEngine* engine = GImGuiTestEngine;
-    if (engine == NULL)
+    ImGuiTestEngine* engine = GImGuiHookingEngine;
+    if (engine == NULL || engine->UiContextActive != ctx)
         return;
 
-    ImGuiContext& g = *GImGui;
-    if (&g != engine->UiTestContext)
-        return;
-
+    IM_ASSERT(id != 0);
+    ImGuiContext& g = *ctx;
     ImGuiWindow* window = g.CurrentWindow;
-    IM_ASSERT(window->DC.LastItemId == id || (window->DC.LastItemId == 0));
+    IM_ASSERT(window->DC.LastItemId == id || window->DC.LastItemId == 0);
 
     // Update Locate Task status flags
     if (ImGuiTestLocateTask* task = ImGuiTestEngine_FindLocateTask(engine, id))
@@ -763,7 +737,7 @@ void ImGuiTestEngineHook_ItemInfo(ImGuiID id, const char* label, int flags)
 // Return true to request a debugger break
 bool ImGuiTestEngineHook_Check(const char* file, const char* func, int line, bool result, const char* expr)
 {
-    ImGuiTestEngine* engine = GImGuiTestEngine;
+    ImGuiTestEngine* engine = GImGuiHookingEngine;
     (void)func;
 
     // Removed absolute path from output so we have deterministic output (otherwise __FILE__ gives us machine depending output)
@@ -821,7 +795,7 @@ bool ImGuiTestEngineHook_Error(const char* file, const char* func, int line, con
     bool ret = ImGuiTestEngineHook_Check(file, func, line, false, buf);
     va_end(args);
 
-    ImGuiTestEngine* engine = GImGuiTestEngine;
+    ImGuiTestEngine* engine = GImGuiHookingEngine;
     if (engine && engine->Abort)
         return false;
     return ret;
@@ -916,122 +890,174 @@ void    ImGuiTestEngine_ShowTestWindow(ImGuiTestEngine* engine, bool* p_open)
     ImGui::Separator();
 
     // TESTS
-    ImGui::Text("TESTS (%d)", engine->TestsAll.Size);
-    static ImGuiTextFilter filter;
-    if (ImGui::Button("Run All"))
-        ImGuiTestEngine_QueueTests(engine, NULL);
-
-    ImGui::SameLine();
-    filter.Draw("", -1.0f);
-    ImGui::Separator();
-    ImGui::BeginChild("Tests", ImVec2(0, -log_height));
-
-    ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(6, 3));
-    ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(4, 1));
-    for (int n = 0; n < engine->TestsAll.Size; n++)
+    if (ImGui::BeginTabBar("##blah", ImGuiTabBarFlags_NoTooltip))
     {
-        ImGuiTest* test = engine->TestsAll[n];
-        if (!filter.PassFilter(test->Name) && !filter.PassFilter(test->Category))
-            continue;
+        char tab_label[32];
+        ImFormatString(tab_label, IM_ARRAYSIZE(tab_label), "TESTS (%d)###TESTS", engine->TestsAll.Size);
+        ImGui::BeginTabItem(tab_label);
 
-        ImGui::PushID(n);
+        //ImGui::Text("TESTS (%d)", engine->TestsAll.Size);
+        static ImGuiTextFilter filter;
+        if (ImGui::Button("Run All"))
+            ImGuiTestEngine_QueueTests(engine, NULL);
 
-        ImVec4 status_color;
-        switch (test->Status)
-        {
-        case ImGuiTestStatus_Error:     status_color = ImVec4(0.9f, 0.1f, 0.1f, 1.0f); break;
-        case ImGuiTestStatus_Success:   status_color = ImVec4(0.1f, 0.9f, 0.1f, 1.0f); break;
-        case ImGuiTestStatus_Queued:
-        case ImGuiTestStatus_Running:   status_color = ImVec4(0.8f, 0.4f, 0.1f, 1.0f); break;
-        default:                        status_color = ImVec4(0.4f, 0.4f, 0.4f, 1.0f); break;
-        }
-        ImVec2 p = ImGui::GetCursorScreenPos();
-        ImGui::ColorButton("status", status_color, ImGuiColorEditFlags_NoTooltip);
         ImGui::SameLine();
-        if (test->Status == ImGuiTestStatus_Running)
-            ImGui::RenderText(p + g.Style.FramePadding + ImVec2(0, 0), "|\0/\0-\0\\" + (((g.FrameCount / 5) & 3) << 1), NULL);
+        filter.Draw("", -1.0f);
+        ImGui::Separator();
+        ImGui::BeginChild("Tests", ImVec2(0, -log_height));
 
-        bool queue_test = false;
-        bool select_test = false;
-        if (ImGui::Button("Run"))
-            queue_test = select_test = true;
-        ImGui::SameLine();
-
-        char buf[128];
-        ImFormatString(buf, IM_ARRAYSIZE(buf), "%-*s - %s", 10, test->Category, test->Name);
-        if (ImGui::Selectable(buf, test == engine->UiSelectedTest))
-            select_test = true;
-
-        /*if (ImGui::IsItemHovered() && test->TestLog.size() > 0)
+        ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(6, 3));
+        ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(4, 1));
+        for (int n = 0; n < engine->TestsAll.Size; n++)
         {
-            ImGui::BeginTooltip();
-            DrawTestLog(engine, test, false);
-            ImGui::EndTooltip();
-        }*/
+            ImGuiTest* test = engine->TestsAll[n];
+            if (!filter.PassFilter(test->Name) && !filter.PassFilter(test->Category))
+                continue;
 
-        if (ImGui::BeginPopupContextItem())
-        {
-            select_test = true;
+            ImGui::PushID(n);
 
-            const bool open_source_available = (test->SourceFile != NULL) && (engine->IO.FileOpenerFunc != NULL);
-            if (open_source_available)
+            ImVec4 status_color;
+            switch (test->Status)
             {
-                ImFormatString(buf, IM_ARRAYSIZE(buf), "Open source (%s:%d)", test->SourceFileShort, test->SourceLine);
-                if (ImGui::MenuItem(buf))
+            case ImGuiTestStatus_Error:     status_color = ImVec4(0.9f, 0.1f, 0.1f, 1.0f); break;
+            case ImGuiTestStatus_Success:   status_color = ImVec4(0.1f, 0.9f, 0.1f, 1.0f); break;
+            case ImGuiTestStatus_Queued:
+            case ImGuiTestStatus_Running:   status_color = ImVec4(0.8f, 0.4f, 0.1f, 1.0f); break;
+            default:                        status_color = ImVec4(0.4f, 0.4f, 0.4f, 1.0f); break;
+            }
+            ImVec2 p = ImGui::GetCursorScreenPos();
+            ImGui::ColorButton("status", status_color, ImGuiColorEditFlags_NoTooltip);
+            ImGui::SameLine();
+            if (test->Status == ImGuiTestStatus_Running)
+                ImGui::RenderText(p + g.Style.FramePadding + ImVec2(0, 0), "|\0/\0-\0\\" + (((g.FrameCount / 5) & 3) << 1), NULL);
+
+            bool queue_test = false;
+            bool select_test = false;
+            if (ImGui::Button("Run"))
+                queue_test = select_test = true;
+            ImGui::SameLine();
+
+            char buf[128];
+            ImFormatString(buf, IM_ARRAYSIZE(buf), "%-*s - %s", 10, test->Category, test->Name);
+            if (ImGui::Selectable(buf, test == engine->UiSelectedTest))
+                select_test = true;
+
+            /*if (ImGui::IsItemHovered() && test->TestLog.size() > 0)
+            {
+                ImGui::BeginTooltip();
+                DrawTestLog(engine, test, false);
+                ImGui::EndTooltip();
+            }*/
+
+            if (ImGui::BeginPopupContextItem())
+            {
+                select_test = true;
+
+                const bool open_source_available = (test->SourceFile != NULL) && (engine->IO.FileOpenerFunc != NULL);
+                if (open_source_available)
                 {
-                    engine->IO.FileOpenerFunc(test->SourceFile, test->SourceLine, engine->IO.UserData);
+                    ImFormatString(buf, IM_ARRAYSIZE(buf), "Open source (%s:%d)", test->SourceFileShort, test->SourceLine);
+                    if (ImGui::MenuItem(buf))
+                    {
+                        engine->IO.FileOpenerFunc(test->SourceFile, test->SourceLine, engine->IO.UserData);
+                    }
                 }
-            }
-            else
-            {
-                ImGui::MenuItem("Open source", NULL, false, false);
+                else
+                {
+                    ImGui::MenuItem("Open source", NULL, false, false);
+                }
+
+                if (ImGui::MenuItem("Copy log", NULL, false, !test->TestLog.empty()))
+                {
+                    ImGui::SetClipboardText(test->TestLog.c_str());
+                }
+
+                if (ImGui::MenuItem("Run test"))
+                {
+                    queue_test = true;
+                }
+
+                ImGui::EndPopup();
             }
 
-            if (ImGui::MenuItem("Copy log", NULL, false, !test->TestLog.empty()))
-            {
-                ImGui::SetClipboardText(test->TestLog.c_str());
-            }
+            // Process selection
+            if (select_test)
+                engine->UiSelectedTest = test;
 
-            if (ImGui::MenuItem("Run test"))
-            {
-                queue_test = true;
-            }
+            // Process queuing
+            if (queue_test && engine->CallDepth == 0)
+                ImGuiTestEngine_QueueTest(engine, test);
 
-            ImGui::EndPopup();
+            ImGui::PopID();
         }
-
-        // Process selection
-        if (select_test)
-            engine->UiSelectedTest = test;
-
-        // Process queuing
-        if (queue_test && engine->CallDepth == 0)
-            ImGuiTestEngine_QueueTest(engine, test);
-
-        ImGui::PopID();
+        ImGui::PopStyleVar();
+        ImGui::PopStyleVar();
+        ImGui::EndChild();
+        ImGui::EndTabItem();
+        ImGui::EndTabBar();
     }
-    ImGui::PopStyleVar();
-    ImGui::PopStyleVar();
-    ImGui::EndChild();
 
     // LOG
     ImGui::Separator();
-    if (engine->UiSelectedTest)
-        ImGui::Text("LOG %s: %s", engine->UiSelectedTest->Category, engine->UiSelectedTest->Name);
-    else
-        ImGui::Text("LOG");
-    if (ImGui::SmallButton("Copy to clipboard"))
-        if (engine->UiSelectedTest)
-            ImGui::SetClipboardText(engine->UiSelectedTest->TestLog.begin());
-    ImGui::Separator();
-    ImGui::BeginChild("Log");
-    if (engine->UiSelectedTest)
+
+    if (ImGui::BeginTabBar("##tools"))
     {
-        DrawTestLog(engine, engine->UiSelectedTest, true);
-        if (ImGuiTestEngine_IsRunningTests(engine))
-            ImGui::SetScrollHereY();
+        if (ImGui::BeginTabItem("LOG"))
+        {
+            if (engine->UiSelectedTest)
+                ImGui::Text("Log for %s: %s", engine->UiSelectedTest->Category, engine->UiSelectedTest->Name);
+            else
+                ImGui::Text("N/A");
+            if (ImGui::SmallButton("Copy to clipboard"))
+                if (engine->UiSelectedTest)
+                    ImGui::SetClipboardText(engine->UiSelectedTest->TestLog.begin());
+            ImGui::Separator();
+            ImGui::BeginChild("Log");
+            if (engine->UiSelectedTest)
+            {
+                DrawTestLog(engine, engine->UiSelectedTest, true);
+                if (ImGuiTestEngine_IsRunningTests(engine))
+                    ImGui::SetScrollHereY();
+            }
+            ImGui::EndChild();
+            ImGui::EndTabItem();
+        }
+
+        // FIXME-TESTS: Need to be visualizing the samples/spikes.
+        if (ImGui::BeginTabItem("PERF"))
+        {
+            double dt_1 = 1.0 / ImGui::GetIO().Framerate;
+            double fps_now = 1.0 / dt_1;
+            double dt_100 = engine->PerfDeltaTime100.GetAverage();
+            double dt_1000 = engine->PerfDeltaTime1000.GetAverage();
+            double dt_2000 = engine->PerfDeltaTime2000.GetAverage();
+
+            //if (engine->PerfRefDeltaTime <= 0.0 && engine->PerfRefDeltaTime.IsFull())
+            //    engine->PerfRefDeltaTime = dt_2000;
+
+            ImGui::Checkbox("Unthrolled", &engine->IO.ConfigNoThrottle);
+            ImGui::SameLine();
+            if (ImGui::Button("Pick ref dt"))
+                engine->PerfRefDeltaTime = dt_2000;
+
+            double dt_ref = engine->PerfRefDeltaTime;
+            ImGui::Text("[ref dt]    %6.3f ms", engine->PerfRefDeltaTime * 1000);
+            ImGui::Text("[last 0001] %6.3f ms (%.1f FPS) ++ %6.3f ms",                           dt_1    * 1000.0, 1.0 / dt_1,    (dt_1 - dt_ref) * 1000);
+            ImGui::Text("[last 0100] %6.3f ms (%.1f FPS) ++ %6.3f ms ~ converging in %.1f secs", dt_100  * 1000.0, 1.0 / dt_100,  (dt_1 - dt_ref) * 1000, 100.0  / fps_now);
+            ImGui::Text("[last 1000] %6.3f ms (%.1f FPS) ++ %6.3f ms ~ converging in %.1f secs", dt_1000 * 1000.0, 1.0 / dt_1000, (dt_1 - dt_ref) * 1000, 1000.0 / fps_now);
+            ImGui::Text("[last 2000] %6.3f ms (%.1f FPS) ++ %6.3f ms ~ converging in %.1f secs", dt_2000 * 1000.0, 1.0 / dt_2000, (dt_1 - dt_ref) * 1000, 2000.0 / fps_now);
+
+            //ImGui::PlotLines("Last 100", &engine->PerfDeltaTime100.Samples.Data, engine->PerfDeltaTime100.Samples.Size, engine->PerfDeltaTime100.Idx, NULL, 0.0f, dt_1000 * 1.10f, ImVec2(0.0f, ImGui::GetFontSize()));
+            ImVec2 plot_size(0.0f, ImGui::GetFrameHeight() * 3);
+            ImMovingAverage<double>* ma = &engine->PerfDeltaTime500;
+            ImGui::PlotLines("Last 500",
+                [](void* data, int n) { ImMovingAverage<double>* ma = (ImMovingAverage<double>*)data; return (float)(ma->Samples[n] * 1000); },
+                ma, ma->Samples.Size, 0*ma->Idx, NULL, 0.0f, (float)(ImMax(dt_100, dt_1000) * 1000.0 * 1.2f), plot_size);
+
+            ImGui::EndTabItem();
+        }
+        ImGui::EndTabBar();
     }
-    ImGui::EndChild();
 
     ImGui::End();
 }
@@ -1309,7 +1335,7 @@ void    ImGuiTestContext::NavActivate()
 
     Yield();
 
-    int frames_to_hold = 2; // FIXME-TEST: <-- number of frames could be fuzzed here
+    int frames_to_hold = 2; // FIXME-TESTS: <-- number of frames could be fuzzed here
 #if 1
     // Feed gamepad nav inputs
     for (int n = 0; n < frames_to_hold; n++)
@@ -1613,7 +1639,7 @@ void    ImGuiTestContext::ItemAction(ImGuiTestAction action, ImGuiTestRef ref)
             ItemClick(ref);
             if ((item->StatusFlags & ImGuiItemStatusFlags_Opened) == 0)
             {
-                ItemDoubleClick(ref); // Attempt a double-click // FIXME-TEST: let's not start doing those fuzzy things..
+                ItemDoubleClick(ref); // Attempt a double-click // FIXME-TESTS: let's not start doing those fuzzy things..
                 if ((item->StatusFlags & ImGuiItemStatusFlags_Opened) == 0)
                     IM_ERRORF_NOHDR("Unable to Open item: %s", ImGuiTestRefDesc(ref, item).c_str());
             }
@@ -1630,7 +1656,7 @@ void    ImGuiTestContext::ItemAction(ImGuiTestAction action, ImGuiTestRef ref)
             ItemClick(ref);
             if ((item->StatusFlags & ImGuiItemStatusFlags_Opened) != 0)
             {
-                ItemDoubleClick(ref); // Attempt a double-click // FIXME-TEST: let's not start doing those fuzzy things..
+                ItemDoubleClick(ref); // Attempt a double-click // FIXME-TESTS: let's not start doing those fuzzy things..
                 if ((item->StatusFlags & ImGuiItemStatusFlags_Opened) != 0)
                     IM_ERRORF_NOHDR("Unable to Close item: %s", ImGuiTestRefDesc(ref, item).c_str());
             }

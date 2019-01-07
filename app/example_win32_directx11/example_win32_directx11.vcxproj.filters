@@ -12,9 +12,6 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\imgui_test_engine.h">
-      <Filter>imgui-test</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\imgui_tests.h">
       <Filter>imgui-test</Filter>
     </ClInclude>
@@ -39,15 +36,18 @@
     <ClInclude Include="..\..\imconfig_tests.h">
       <Filter>imgui-test</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\imgui_te_util.h">
+      <Filter>imgui-test</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\imgui_te_core.h">
+      <Filter>imgui-test</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
       <Filter>sources</Filter>
     </ClCompile>
     <ClCompile Include="..\..\imgui_tests.cpp">
-      <Filter>imgui-test</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\imgui_test_engine.cpp">
       <Filter>imgui-test</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\imgui\imgui.cpp">
@@ -67,6 +67,12 @@
     </ClCompile>
     <ClCompile Include="..\..\..\imgui\examples\imgui_impl_win32.cpp">
       <Filter>sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\imgui_te_core.cpp">
+      <Filter>imgui-test</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\imgui_te_util.cpp">
+      <Filter>imgui-test</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
