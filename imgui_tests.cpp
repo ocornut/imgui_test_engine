@@ -84,6 +84,35 @@ void RegisterTests_Window(ImGuiTestContext* ctx)
         ctx->Yield();
         IM_CHECK(window->Size.y == size_full_when_uncollapsed.y);
     };
+
+    // Bug #2282
+    t = REGISTER_TEST("window", "append");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::SetNextWindowSize(ImVec2(200, 200));
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImGui::Text("Line 1");
+        ImGui::End();
+        ImGui::Begin("Test Window");
+        ImGui::Text("Line 2");
+        ImGui::BeginChild("Blah", ImVec2(0,50), true);
+        ImGui::Text("Line 3");
+        ImGui::EndChild();
+        ImVec2 pos1 = ImGui::GetCursorScreenPos();
+        ImGui::BeginChild("Blah");
+        ImGui::Text("Line 4");
+        ImGui::EndChild();
+        ImVec2 pos2 = ImGui::GetCursorScreenPos();
+        IM_CHECK(pos1 == pos2); // Append calls to BeginChild() shouldn't affect CursorPos in parent window
+        ImGui::Text("Line 5");
+        ImVec2 pos3 = ImGui::GetCursorScreenPos();
+        ImGui::BeginChild("Blah");
+        ImGui::Text("Line 6");
+        ImGui::EndChild();
+        ImVec2 pos4 = ImGui::GetCursorScreenPos();
+        IM_CHECK(pos3 == pos4); // Append calls to BeginChild() shouldn't affect CursorPos in parent window
+        ImGui::End();
+    };
 }
 
 void RegisterTests_Scrolling(ImGuiTestContext* ctx)
@@ -297,9 +326,16 @@ void RegisterTests_Perf(ImGuiTestContext* ctx)
 {
     ImGuiTest* t = NULL;
 
+    auto PerfCaptureFunc = [](ImGuiTestContext* ctx) 
+    {
+        ctx->PerfCapture();
+    };
+
     t = REGISTER_TEST("perf", "perf_demo_all");
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
+        ctx->PerfCalcRef();
+
         ctx->SetRef("ImGui Demo");
         ctx->ItemOpenAll("");
         ctx->MenuCheckAll("Examples");
@@ -309,17 +345,163 @@ void RegisterTests_Perf(ImGuiTestContext* ctx)
         IM_CHECK(ctx->UiContext->IO.DisplaySize.y > 820);
 
         // FIXME-TESTS: Backup full layout
-#ifdef IMGUI_HAS_VIEWPORT
-        ImVec2 pos = ImGui::GetMainViewport()->Pos + ImVec2(20, 20);
-#else
-        ImVec2 pos = ImVec2(20, 20);
-#endif
+        ImVec2 pos = ctx->GetMainViewportPos() + ImVec2(20, 20);
         for (ImGuiWindow* window : ctx->UiContext->Windows)
         {
             window->Pos = pos;
             window->SizeFull = ImVec2(800, 800);
         }
+        ctx->PerfCapture();
+
+        ctx->SetRef("ImGui Demo");
+        ctx->ItemCloseAll("");
+        ctx->MenuUncheckAll("Examples");
+        ctx->MenuUncheckAll("Help");
     };
+
+    t = REGISTER_TEST("perf", "perf_stress_button");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::Begin("Test Func", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
+        int loop_count = 1000 * ctx->PerfStressAmount;
+        for (int n = 0; n < loop_count; n++)
+            ImGui::Button("Hello, world");
+        ImGui::End();
+    };
+    t->TestFunc = PerfCaptureFunc;
+
+    t = REGISTER_TEST("perf", "perf_stress_checkbox");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::Begin("Test Func", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
+        int loop_count = 1000 * ctx->PerfStressAmount;
+        bool v1 = false, v2 = true;
+        for (int n = 0; n < loop_count / 2; n++)
+        {
+            ImGui::PushID(n);
+            ImGui::Checkbox("Hello, world", &v1);
+            ImGui::Checkbox("Hello, world", &v2);
+            ImGui::PopID();
+        }
+        ImGui::End();
+    };
+    t->TestFunc = PerfCaptureFunc;
+
+    t = REGISTER_TEST("perf", "perf_stress_input_text");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::Begin("Test Func", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
+        int loop_count = 1000 * ctx->PerfStressAmount;
+        char buf[32] = "123";
+        for (int n = 0; n < loop_count; n++)
+        {
+            ImGui::PushID(n);
+            ImGui::InputText("InputText", buf, IM_ARRAYSIZE(buf), ImGuiInputTextFlags_None);
+            ImGui::PopID();
+        }
+        ImGui::End();
+    };
+    t->TestFunc = PerfCaptureFunc;
+
+    t = REGISTER_TEST("perf", "perf_stress_input_text_multiline");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::Begin("Test Func", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
+        int loop_count = 1000 * ctx->PerfStressAmount;
+        char buf[32] = "123";
+        for (int n = 0; n < loop_count; n++)
+        {
+            ImGui::PushID(n);
+            ImGui::InputTextMultiline("InputText", buf, IM_ARRAYSIZE(buf), ImVec2(0, ImGui::GetFrameHeightWithSpacing() * 2), ImGuiInputTextFlags_None);
+            ImGui::PopID();
+        }
+        ImGui::End();
+    };
+    t->TestFunc = PerfCaptureFunc;
+
+    t = REGISTER_TEST("perf", "perf_stress_list_box");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::Begin("Test Func", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
+        int loop_count = 1000 * ctx->PerfStressAmount;
+        for (int n = 0; n < loop_count; n++)
+        {
+            ImGui::PushID(n);
+            if (ImGui::ListBoxHeader("ListBox", ImVec2(0, ImGui::GetFrameHeightWithSpacing() * 2)))
+            {
+                ImGui::MenuItem("Hello");
+                ImGui::MenuItem("World");
+                ImGui::ListBoxFooter();
+            }
+            ImGui::PopID();
+        }
+        ImGui::End();
+    };
+    t->TestFunc = PerfCaptureFunc;
+
+    t = REGISTER_TEST("perf", "perf_stress_slider");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::Begin("Test Func", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
+        int loop_count = 1000 * ctx->PerfStressAmount;
+        float f = 1.234f;
+        for (int n = 0; n < loop_count; n++)
+        {
+            ImGui::PushID(n);
+            ImGui::SliderFloat("SliderFloat", &f, 0.0f, 10.0f);
+            ImGui::PopID();
+        }
+        ImGui::End();
+    };
+    t->TestFunc = PerfCaptureFunc;
+
+    t = REGISTER_TEST("perf", "perf_stress_slider2");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::Begin("Test Func", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
+        int loop_count = 1000 * ctx->PerfStressAmount;
+        ImVec2 v(0.0f, 0.0f);
+        for (int n = 0; n < loop_count; n++)
+        {
+            ImGui::PushID(n);
+            ImGui::SliderFloat2("SliderFloat2", &v.x, 0.0f, 10.0f);
+            ImGui::PopID();
+        }
+        ImGui::End();
+    };
+    t->TestFunc = PerfCaptureFunc;
+
+    t = REGISTER_TEST("perf", "perf_stress_text_unformatted");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::Begin("Test Func", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
+        const char* buf =
+            "0123456789 The quick brown fox jumps over the lazy dog.\n"
+            "0123456789   The quick brown fox jumps over the lazy dog.\n"
+            "0123456789     The quick brown fox jumps over the lazy dog.\n";
+        int loop_count = 1000 * ctx->PerfStressAmount;
+        for (int n = 0; n < loop_count; n++)
+            ImGui::TextUnformatted(buf);
+        ImGui::End();
+    };
+    t->TestFunc = PerfCaptureFunc;
+
+    t = REGISTER_TEST("perf", "perf_stress_window");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImVec2 pos = ctx->GetMainViewportPos() + ImVec2(20, 20);
+        int loop_count = 200 * ctx->PerfStressAmount;
+        for (int n = 0; n < loop_count; n++)
+        {
+            char window_name[32];
+            ImFormatString(window_name, IM_ARRAYSIZE(window_name), "Window_%05d", n+1);
+            ImGui::SetNextWindowPos(pos);
+            ImGui::Begin(window_name, NULL, ImGuiWindowFlags_NoSavedSettings|ImGuiWindowFlags_AlwaysAutoResize);
+            ImGui::TextUnformatted("Opening many windows!");
+            ImGui::End();
+        }
+    };
+    t->TestFunc = PerfCaptureFunc;
 }
 
 void RegisterTests_Capture(ImGuiTestContext* ctx)

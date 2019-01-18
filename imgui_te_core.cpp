@@ -129,7 +129,16 @@ struct ImGuiTestEngine
     bool                    UiFocus = false;
     ImGuiTest*              UiSelectedTest = NULL;
 
+    // Build Info
+    const char*             InfoBuildType = "";
+    const char*             InfoBuildCpu = "";
+    const char*             InfoBuildOS = "";
+    const char*             InfoBuildCompiler = "";
+    char                    InfoBuildDate[32];
+    const char*             InfoBuildTime = "";
+
     // Performance Monitor
+    FILE*                   PerfPersistentLogCsv;
     double                  PerfRefDeltaTime;
     ImMovingAverage<double> PerfDeltaTime100;
     ImMovingAverage<double> PerfDeltaTime500;
@@ -201,6 +210,7 @@ static const char* GetVerboseLevelName(ImGuiTestVerboseLevel v)
 //-------------------------------------------------------------------------
 
 // Private functions
+static void                 ImGuiTestEngine_SetupBuildInfo(ImGuiTestEngine* engine);
 static ImGuiTestItemInfo*   ImGuiTestEngine_ItemLocate(ImGuiTestEngine* engine, ImGuiID id, const char* debug_id);
 static void                 ImGuiTestEngine_ApplyInputToImGuiContext(ImGuiTestEngine* engine);
 static void                 ImGuiTestEngine_ProcessQueue(ImGuiTestEngine* engine);
@@ -247,11 +257,67 @@ ImGuiTestEngine*    ImGuiTestEngine_CreateContext(ImGuiContext* imgui_context)
     if (GImGuiHookingEngine == NULL)
         GImGuiHookingEngine = engine;
 
+    ImGuiTestEngine_SetupBuildInfo(engine);
+
+    engine->PerfPersistentLogCsv = fopen("imgui_perflog.csv", "a+t");
+
     return engine;
+}
+
+// Those strings are used to output easily identifiable markers in compare logs. We only need to support what we use for testing.
+// We can probably grab info in eaplatform.h/eacompiler.h etc. in EASTL
+void ImGuiTestEngine_SetupBuildInfo(ImGuiTestEngine* engine)
+{
+    // Build Type
+#if defined(DEBUG) || defined(_DEBUG)
+    engine->InfoBuildType = "Debug";
+#else
+    engine->InfoBuildType = "Release";
+#endif
+
+    // CPU
+#if defined(_M_X86) || defined(__i386__) || defined(_X86_) || defined(_M_AMD64) || defined(_AMD64_) || defined(__x86_64__)
+    engine->InfoBuildCpu = (sizeof(size_t) == 4) ? "X86" : "X64";
+#else
+    engine->InfoBuildCpu = "Unknown";
+#endif
+
+    // Platform/OS
+#if defined(_WIN32)
+    engine->InfoBuildOS = "Windows";
+#elif defined(__linux) || defined(__linux__)
+    engine->InfoBuildOS = "Linux";
+#elif defined(__MACH__) || (defined(__MSL__)
+    engine->InfoBuildOS = "OSX";
+#elif defined(__ORBIS__)
+    engine->InfoBuildOS = "PS4";
+#elif defined(_DURANGO)
+    engine->InfoBuildOS = "XboxOne";
+#else
+    engine->InfoBuildOS = "Unknown";
+#endif
+
+    // Compiler
+#if defined(_MSC_VER)
+    engine->InfoBuildCompiler = "MSVC";
+#elif defined(__clang__)
+    engine->InfoBuildCompiler = "Clang";
+#elif defined(__GNUC__)
+    engine->InfoBuildCompiler = "GCC";
+#else
+    engine->InfoBuildCompiler = "Unknown";
+#endif
+
+    // Date/Time
+    ImParseDateFromCompilerIntoYMD(__DATE__, engine->InfoBuildDate, IM_ARRAYSIZE(engine->InfoBuildDate));
+    engine->InfoBuildTime = __TIME__;
 }
 
 void    ImGuiTestEngine_ShutdownContext(ImGuiTestEngine* engine)
 {
+    if (engine->PerfPersistentLogCsv)
+        fclose(engine->PerfPersistentLogCsv);
+
     IM_ASSERT(engine->CallDepth == 0);
     ImGuiTestEngine_ClearTests(engine);
     ImGuiTestEngine_ClearLocateTasks(engine);
@@ -451,7 +517,8 @@ static void ImGuiTestEngine_Yield(ImGuiTestEngine* engine)
 
     // Call user GUI function
     if (engine->TestContext && engine->TestContext->Test->GuiFunc)
-        engine->TestContext->Test->GuiFunc(engine->TestContext);
+        if (engine->TestContext->GuiFuncEnabled)
+            engine->TestContext->Test->GuiFunc(engine->TestContext);
 }
 
 static void ImGuiTestEngine_ProcessQueue(ImGuiTestEngine* engine)
@@ -485,6 +552,7 @@ static void ImGuiTestEngine_ProcessQueue(ImGuiTestEngine* engine)
         ctx.Engine = engine;
         ctx.UserData = NULL;
         ctx.UiContext = engine->UiContextActive;
+        ctx.PerfStressAmount = engine->IO.PerfStressAmount;
         engine->TestContext = &ctx;
 
         ctx.Log("----------------------------------------------------------------------\n");
@@ -499,10 +567,13 @@ static void ImGuiTestEngine_ProcessQueue(ImGuiTestEngine* engine)
         if (engine->Abort)
             test->Status = ImGuiTestStatus_Unknown;
 
-        if (engine->Abort)
+        if (test->Status == ImGuiTestStatus_Success)
+        {
+            if ((test->Flags & ImGuiTestFlags_NoSuccessMsg) == 0)
+                ctx.Log("Success.\n");
+        }
+        else if (engine->Abort)
             ctx.Log("Aborted.\n");
-        else if (test->Status == ImGuiTestStatus_Success)
-            ctx.Log("Success.\n");
         else if (test->Status == ImGuiTestStatus_Error)
             ctx.Log("Error.\n");
         else
@@ -556,6 +627,8 @@ void ImGuiTestEngine_QueueTest(ImGuiTestEngine* engine, ImGuiTest* test)
 
 void ImGuiTestEngine_QueueTests(ImGuiTestEngine* engine, const char* filter)
 {
+    if (filter != NULL && filter[0] == 0)
+        filter = NULL;
     for (int n = 0; n < engine->TestsAll.Size; n++)
     {
         ImGuiTest* test = engine->TestsAll[n];
@@ -588,6 +661,7 @@ static void ImGuiTestEngine_RunTest(ImGuiTestEngine* engine, ImGuiTestContext* c
 {
     ImGuiTest* test = ctx->Test;
     ctx->Engine = engine;
+    ctx->EngineIO = &engine->IO;
     ctx->UserData = user_data;
     ctx->FrameCount = 0;
     ctx->SetRef("");
@@ -597,12 +671,14 @@ static void ImGuiTestEngine_RunTest(ImGuiTestEngine* engine, ImGuiTestContext* c
 
     if (!(test->Flags & ImGuiTestFlags_NoWarmUp))
     {
+        ctx->FrameCount -= 2;
         ctx->Yield();
         ctx->Yield();
     }
 
-    // Call user test function
-    test->TestFunc(ctx);
+    // Call user test function (optional)
+    if (test->TestFunc)
+        test->TestFunc(ctx);
 
     // Additional yield is currently _only_ so the Log gets scrolled to the bottom on the last frame of the log output.
     ctx->Yield();
@@ -885,6 +961,8 @@ void    ImGuiTestEngine_ShowTestWindow(ImGuiTestEngine* engine, bool* p_open)
     ImGui::PushItemWidth(60);
     ImGui::DragInt("Verbose Level", (int*)&engine->IO.ConfigVerboseLevel, 0.1f, 0, ImGuiTestVerboseLevel_COUNT - 1, GetVerboseLevelName(engine->IO.ConfigVerboseLevel));
     //ImGui::Checkbox("Verbose", &engine->IO.ConfigLogVerbose);
+    ImGui::SameLine();
+    ImGui::DragInt("Perf Stress Amount", &engine->IO.PerfStressAmount, 0.1f, 1, 20);
     ImGui::PopItemWidth();
     ImGui::PopStyleVar();
     ImGui::Separator();
@@ -899,10 +977,10 @@ void    ImGuiTestEngine_ShowTestWindow(ImGuiTestEngine* engine, bool* p_open)
         //ImGui::Text("TESTS (%d)", engine->TestsAll.Size);
         static ImGuiTextFilter filter;
         if (ImGui::Button("Run All"))
-            ImGuiTestEngine_QueueTests(engine, NULL);
+            ImGuiTestEngine_QueueTests(engine, filter.InputBuf); // FIXME: Filter func differs
 
         ImGui::SameLine();
-        filter.Draw("", -1.0f);
+        filter.Draw("##filter", -1.0f);
         ImGui::Separator();
         ImGui::BeginChild("Tests", ImVec2(0, -log_height));
 
@@ -1149,7 +1227,7 @@ void    ImGuiTestContext::Sleep(float time)
     }
     else
     {
-        while (time > 0.0f)
+        while (time > 0.0f && !Engine->Abort)
         {
             ImGuiTestEngine_Yield(Engine);
             time -= UiContext->IO.DeltaTime;
@@ -1217,6 +1295,15 @@ ImGuiTestRef ImGuiTestContext::GetFocusWindowRef()
 {
     ImGuiContext& g = *UiContext;
     return g.NavWindow ? g.NavWindow->ID : 0;
+}
+
+ImVec2 ImGuiTestContext::GetMainViewportPos()
+{
+#ifdef IMGUI_HAS_VIEWPORT
+    return ImGui::GetMainViewport()->Pos;
+#else
+    return ImVec2(0, 0);
+#endif
 }
 
 ImGuiTestItemInfo* ImGuiTestContext::ItemLocate(ImGuiTestRef ref, ImGuiTestOpFlags flags)
@@ -1955,6 +2042,57 @@ void    ImGuiTestContext::PopupClose()
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
     LogVerbose("PopupClose\n");
     ImGui::ClosePopupToLevel(0, true);    // FIXME
+}
+
+//-------------------------------------------------------------------------
+// ImGuiTestContext - Performance Tools
+//-------------------------------------------------------------------------
+
+void    ImGuiTestContext::PerfCalcRef()
+{
+    LogVerbose("Measuring ref dt...\n");
+    SetGuiFuncEnabled(false);
+    for (int n = 0; n < 500 && !Abort; n++)
+        Yield();
+    PerfRefDt = Engine->PerfDeltaTime500.GetAverage();
+    SetGuiFuncEnabled(true);
+}
+
+void    ImGuiTestContext::PerfCapture()
+{
+    ImGuiTestEngine* engine = Engine;
+
+    if (PerfRefDt < 0.0)
+        PerfCalcRef();
+    IM_ASSERT(PerfRefDt >= 0.0);
+
+    // Yield for the average to stabilize
+    LogVerbose("Measuring gui dt...\n");
+    for (int n = 0; n < 500 && !Abort; n++)
+        Yield();
+    if (Abort)
+        return;
+
+    double dt_curr = engine->PerfDeltaTime500.GetAverage();
+    double dt_ref_ms = PerfRefDt * 1000;
+    double dt_delta_ms = (dt_curr - PerfRefDt) * 1000;
+    Log("[PERF] Name: %s\n", Test->Name);
+    Log("[PERF] Conditions: Stress x%d, %s, %s, %s, %s, %s\n", 
+        PerfStressAmount, engine->InfoBuildType, engine->InfoBuildCpu, engine->InfoBuildOS, engine->InfoBuildCompiler, engine->InfoBuildDate);
+    Log("[PERF] Result: %+6.3f ms (from ref %+6.3f)\n", dt_delta_ms, dt_ref_ms);
+
+    // Log to .csv
+    if (Engine->PerfPersistentLogCsv != NULL)
+    {
+        fprintf(Engine->PerfPersistentLogCsv,
+            ",%s,%s,%.3f,,%d,%s,%s,%s,%s,%s\n",
+            Test->Category, Test->Name, dt_delta_ms,
+            PerfStressAmount, engine->InfoBuildType, engine->InfoBuildCpu, engine->InfoBuildOS, engine->InfoBuildCompiler, engine->InfoBuildDate);
+        fflush(engine->PerfPersistentLogCsv);
+    }
+
+    // Disable the "Success" message
+    Test->Flags |= ImGuiTestFlags_NoSuccessMsg;
 }
 
 //-------------------------------------------------------------------------

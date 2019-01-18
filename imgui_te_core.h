@@ -50,7 +50,8 @@ enum ImGuiTestStatus
 enum ImGuiTestFlags_
 {
     ImGuiTestFlags_None         = 0,
-    ImGuiTestFlags_NoWarmUp     = 1 << 0        // By default, we run the GUI func twice before starting the test code
+    ImGuiTestFlags_NoWarmUp     = 1 << 0,       // By default, we run the GUI func twice before starting the test code
+    ImGuiTestFlags_NoSuccessMsg = 1 << 1
 };
 
 enum ImGuiTestOpFlags_
@@ -121,6 +122,7 @@ struct ImGuiTestEngineIO
     float                       MouseSpeed = 1000.0f;       // Mouse speed (pixel/second) when not running in fast mode
     float                       ScrollSpeed = 1600.0f;      // Scroll speed (pixel/second) when not running in fast mode
     float                       TypingSpeed = 20.0f;        // Char input speed (characters/second) when not running in fast mode
+    int                         PerfStressAmount = 5;       // Integer to scale the amount of items submitted in test
 
     // Outputs: State           
     bool                        RunningTests = false;
@@ -229,29 +231,24 @@ struct ImGuiTestRef
 
 struct ImGuiTestContext
 {
-    ImGuiTest*              Test;
-    ImGuiTestEngine*        Engine;
-    ImGuiContext*           UiContext;
-    void*                   UserData;
-    int                     FrameCount;     // Test frame count (restarts from zero every time)
-    int                     ActionDepth;
-    bool                    Abort;
-    char                    RefStr[256];
-    ImGuiID                 RefID;
-    ImGuiInputSource        InputMode;      // ImGuiInputSource_Mouse or ImGuiInputSource_Nav
+    ImGuiTest*              Test = NULL;
+    ImGuiTestEngine*        Engine = NULL;
+    ImGuiTestEngineIO*      EngineIO = NULL;
+    ImGuiContext*           UiContext = NULL;
+    void*                   UserData = NULL;
+    int                     FrameCount = 0;         // Test frame count (restarts from zero every time)
+    int                     ActionDepth = 0;
+    bool                    Abort = false;
+    bool                    GuiFuncEnabled = true;
+    char                    RefStr[256] = { 0 };
+    ImGuiID                 RefID = 0;
+    ImGuiInputSource        InputMode = ImGuiInputSource_Mouse;
+
+    double                  PerfRefDt = -1.0;
+    int                     PerfStressAmount = 0;
 
     ImGuiTestContext()
     {
-        Test = NULL;
-        Engine = NULL;
-        UserData = NULL;
-        UiContext = NULL;
-        FrameCount = 0;
-        ActionDepth = 0;
-        Abort = false;
-        memset(RefStr, 0, sizeof(RefStr));
-        RefID = 0;
-        InputMode = ImGuiInputSource_Mouse;
     }
 
     ImGuiTest*  RegisterTest(const char* category, const char* name, const char* src_file = NULL, int src_line = 0);
@@ -259,6 +256,7 @@ struct ImGuiTestContext
     void        Log(const char* fmt, ...) IM_FMTARGS(1);
     void        LogVerbose(const char* fmt, ...) IM_FMTARGS(1);
     bool        IsError() const { return Test->Status == ImGuiTestStatus_Error || Abort; }
+    void        SetGuiFuncEnabled(bool v) { GuiFuncEnabled = v; }
 
     void        Yield();
     void        Sleep(float time);
@@ -270,6 +268,7 @@ struct ImGuiTestContext
     ImGuiWindow*GetRefWindow();
     ImGuiID     GetID(ImGuiTestRef ref);
     ImGuiTestRef GetFocusWindowRef();
+    ImVec2      GetMainViewportPos();
 
     void        MouseMove(ImGuiTestRef ref);
     void        MouseMoveToPos(ImVec2 pos);
@@ -322,6 +321,9 @@ struct ImGuiTestContext
     void        WindowMove(ImVec2 pos, ImVec2 pivot = ImVec2(0.0f, 0.0f));
     void        WindowResize(ImVec2 sz);
     void        PopupClose();
+
+    void        PerfCalcRef();
+    void        PerfCapture();
 };
 
 #define IM_TOKENPASTE(x, y)     x ## y

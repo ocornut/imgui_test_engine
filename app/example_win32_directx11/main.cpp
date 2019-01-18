@@ -1,12 +1,17 @@
 // dear imgui - standalone example application for DirectX 11
 // If you are new to dear imgui, see examples/README.txt and documentation at the top of imgui.cpp.
 
-// Interactive mode:
+// Interactive mode, e.g.
 //   main.exe [tests]
-//   main.exe -slow -gui -fileopener ..\..\tools\win32_open_with_sublime.cmd
+//   main.exe -gui -fileopener ..\..\tools\win32_open_with_sublime.cmd -slow
+//   main.exe -gui -fileopener ..\..\tools\win32_open_with_sublime.cmd -nothrottle
 
-// Command-line mode:
+// Command-line mode, e.g.
 //   main.exe -nogui -v -nopause
+//   main.exe -nogui -nopause perf_
+
+//#define CMDLINE_ARGS    "-gui -nothrottle perf_"
+//#define CMDLINE_ARGS    "-nogui perf_stress_input_text"
 
 //-------------------------------------------------------------------------
 
@@ -29,6 +34,7 @@
 
 #define IMGUI_DEFINE_MATH_OPERATORS
 #include "imgui_te_core.h"
+#include "imgui_te_util.h"
 #include "imgui_tests.h"
 
 //-------------------------------------------------------------------------
@@ -146,6 +152,7 @@ struct TestApp
     bool                    OptPauseOnExit  = true;
     char*                   OptFileOpener   = NULL;
     ImVector<char*>         Tests;
+    ImU64                   LastTime = 0;
 };
 
 TestApp g_App;
@@ -168,7 +175,11 @@ static bool OsCreateProcess(const char* cmd_line)
 
 static void FileOpenerFunc(const char* filename, int line, void*)
 {
-    IM_ASSERT(g_App.OptFileOpener);
+    if (!g_App.OptFileOpener)
+    {
+        printf("Executable needs to be called with a -fileopener argument!\n");
+        return;
+    }
 
     ImGuiTextBuffer cmd_line;
     cmd_line.appendf("%s %s %d", g_App.OptFileOpener, filename, line);
@@ -218,6 +229,12 @@ bool MainLoopNewFrameNull()
 {
     ImGuiIO& io = ImGui::GetIO();
     io.DisplaySize = ImVec2(1920, 1080);
+
+    ImU64 time = ImGetTimeInMicroseconds();
+    if (g_App.LastTime == 0)
+        g_App.LastTime = time;
+    io.DeltaTime = (float)((time - g_App.LastTime) / 1000) / 1000.0f;
+    g_App.LastTime = time;
 
     ImGui::NewFrame();
 
@@ -341,6 +358,7 @@ static bool ParseCommandLineOptions(int argc, char** argv)
             else if (strcmp(argv[n], "-fileopener") == 0 && n + 1 < argc)
             {
                 g_App.OptFileOpener = strdup(argv[n + 1]);
+                ImPathFixSeparatorsForCurrentOS(g_App.OptFileOpener);
                 n++;
             }
             else
@@ -372,6 +390,14 @@ static bool ParseCommandLineOptions(int argc, char** argv)
 
 int main(int argc, char** argv)
 {
+#ifdef CMDLINE_ARGS
+    if (argc == 1)
+    {
+        printf("# [exe] %s\n", CMDLINE_ARGS);
+        ImParseSplitCommandLine(&argc, &argv, CMDLINE_ARGS);
+    }
+#endif
+
     if (!ParseCommandLineOptions(argc, argv))
         return 0;
 
@@ -504,6 +530,8 @@ int main(int argc, char** argv)
         break;
     }
     }
+
+    ImGuiTestEngine_ShutdownContext(g_App.TestEngine);
 
     if (g_App.OptPauseOnExit && !g_App.OptGUI)
     {

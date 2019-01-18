@@ -1,3 +1,7 @@
+## Local perf logs
+imgui_perflog.csv
+
+## Build cruft
 build/*
 */Debug/*
 */Release/*
