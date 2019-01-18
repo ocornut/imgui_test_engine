@@ -1464,7 +1464,22 @@ void    ImGuiTestContext::MouseMove(ImGuiTestRef ref)
     if (item->NavLayer == ImGuiNavLayer_Main && !window->InnerClipRect.Contains(item->Rect))
         ScrollToY(ref);
 
-    MouseMoveToPos(item->Rect.GetCenter());
+    ImVec2 pos = item->Rect.GetCenter();
+    ImRect visible_r(0.0f, 0.0f, g.IO.DisplaySize.x, g.IO.DisplaySize.y);   // FIXME: Viewport
+    if (!visible_r.Contains(pos))
+    {
+        // Fallback move window directly to make our item reachable with the mouse.
+        float pad = g.FontSize;
+        ImVec2 delta;
+        delta.x = (pos.x < visible_r.Min.x) ? (visible_r.Min.x - pos.x + pad) : (pos.x > visible_r.Max.x) ? (visible_r.Max.x - pos.x - pad) : 0.0f;
+        delta.y = (pos.y < visible_r.Min.y) ? (visible_r.Min.y - pos.y + pad) : (pos.y > visible_r.Max.y) ? (visible_r.Max.y - pos.y - pad) : 0.0f;
+        window->Pos += delta;
+        LogVerbose("WindowMoveBypass %s delta (%.1f,%.1f)\n", window->Name, delta.x, delta.y);
+        Yield();
+        pos = item->Rect.GetCenter();
+    }
+
+    MouseMoveToPos(pos);
 
     // Focus again in case something made us lost focus (which could happen on a simple hover)
     BringWindowToFrontFromItem(ref);// , ImGuiTestOpFlags_Verbose);
@@ -2076,7 +2091,7 @@ void    ImGuiTestContext::PerfCapture()
     double dt_curr = engine->PerfDeltaTime500.GetAverage();
     double dt_ref_ms = PerfRefDt * 1000;
     double dt_delta_ms = (dt_curr - PerfRefDt) * 1000;
-    Log("[PERF] Name: %s\n", Test->Name);
+    //Log("[PERF] Name: %s\n", Test->Name);
     Log("[PERF] Conditions: Stress x%d, %s, %s, %s, %s, %s\n", 
         PerfStressAmount, engine->InfoBuildType, engine->InfoBuildCpu, engine->InfoBuildOS, engine->InfoBuildCompiler, engine->InfoBuildDate);
     Log("[PERF] Result: %+6.3f ms (from ref %+6.3f)\n", dt_delta_ms, dt_ref_ms);
