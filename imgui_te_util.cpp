@@ -143,3 +143,33 @@ void    ImParseDateFromCompilerIntoYMD(const char* in_date, char* out_buf, size_
     ImFormatString(out_buf, out_buf_size, "%04d-%02d-%02d", year, month, day);
 }
 
+const char* GetImGuiKeyName(ImGuiKey key)
+{
+    // Create switch-case from enum with regexp: ImGuiKey_{.*}, --> case ImGuiKey_\1: return "\1";
+    switch (key)
+    {
+    case ImGuiKey_Tab: return "Tab";
+    case ImGuiKey_LeftArrow: return "LeftArrow";
+    case ImGuiKey_RightArrow: return "RightArrow";
+    case ImGuiKey_UpArrow: return "UpArrow";
+    case ImGuiKey_DownArrow: return "DownArrow";
+    case ImGuiKey_PageUp: return "PageUp";
+    case ImGuiKey_PageDown: return "PageDown";
+    case ImGuiKey_Home: return "Home";
+    case ImGuiKey_End: return "End";
+    case ImGuiKey_Insert: return "Insert";
+    case ImGuiKey_Delete: return "Delete";
+    case ImGuiKey_Backspace: return "Backspace";
+    case ImGuiKey_Space: return "Space";
+    case ImGuiKey_Enter: return "Enter";
+    case ImGuiKey_Escape: return "Escape";
+    case ImGuiKey_A: return "A";
+    case ImGuiKey_C: return "C";
+    case ImGuiKey_V: return "V";
+    case ImGuiKey_X: return "X";
+    case ImGuiKey_Y: return "Y";
+    case ImGuiKey_Z: return "Z";
+    }
+    IM_ASSERT(0);
+    return "Unknown";
+}

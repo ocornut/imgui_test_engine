@@ -1,6 +1,7 @@
 // dear imgui
 // (tests)
 
+#define _CRT_SECURE_NO_WARNINGS
 #include "imgui.h"
 #define IMGUI_DEFINE_MATH_OPERATORS
 #include "imgui_internal.h"
@@ -27,7 +28,8 @@ struct DataGeneric
     bool        Bool1, Bool2;
     bool        BoolArray[10];
     char        Str256[256];
-    void*       Ptr1, *Ptr2;
+    void*       Ptr1;
+    void*       Ptr2;
     void*       PtrArray[10];
     void*       UserData;
 
@@ -35,6 +37,10 @@ struct DataGeneric
 };
 
 #define REGISTER_TEST(_CATEGORY, _NAME)    ctx->RegisterTest(_CATEGORY, _NAME, __FILE__, __LINE__);
+
+//-------------------------------------------------------------------------
+// Tests: Window
+//-------------------------------------------------------------------------
 
 void RegisterTests_Window(ImGuiTestContext* ctx)
 {
@@ -57,7 +63,7 @@ void RegisterTests_Window(ImGuiTestContext* ctx)
         IM_CHECK(window->Scroll.x == 0.0f && window->Scroll.y == 0.0f);
     };
 
-    t = REGISTER_TEST("window", "auto resize collapse");
+    t = REGISTER_TEST("window", "window_auto_resize_collapse");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         // FIXME-TESTS: Ideally we'd like a variant with/without the if (Begin) here
@@ -86,7 +92,7 @@ void RegisterTests_Window(ImGuiTestContext* ctx)
     };
 
     // Bug #2282
-    t = REGISTER_TEST("window", "append");
+    t = REGISTER_TEST("window", "window_append");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         ImGui::SetNextWindowSize(ImVec2(200, 200));
@@ -113,7 +119,38 @@ void RegisterTests_Window(ImGuiTestContext* ctx)
         IM_CHECK(pos3 == pos4); // Append calls to BeginChild() shouldn't affect CursorPos in parent window
         ImGui::End();
     };
+
+    t = REGISTER_TEST("window", "window_focus_1");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::Begin("AAAA", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImGui::End();
+        if (ctx->FrameCount >= 20 && ctx->FrameCount < 40)
+        {
+            ImGui::Begin("BBBB", NULL, ImGuiWindowFlags_NoSavedSettings);
+            ImGui::End();
+            ImGui::Begin("CCCC", NULL, ImGuiWindowFlags_NoSavedSettings);
+            ImGui::End();
+        }
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiContext& g = *ctx->UiContext;
+        IM_CHECK(g.NavWindow->ID == ctx->GetID("/AAAA"));
+        ctx->YieldFrames(19);
+        IM_CHECK(g.NavWindow->ID == ctx->GetID("/AAAA"));
+        ctx->YieldFrames(1);
+        IM_CHECK(g.NavWindow->ID == ctx->GetID("/CCCC"));
+        ctx->YieldFrames(20);
+        IM_CHECK(g.NavWindow->ID == ctx->GetID("/CCCC"));
+        ctx->YieldFrames(1);
+        IM_CHECK(g.NavWindow->ID == ctx->GetID("/AAAA"));
+    };
 }
+
+//-------------------------------------------------------------------------
+// Tests: Scrolling
+//-------------------------------------------------------------------------
 
 void RegisterTests_Scrolling(ImGuiTestContext* ctx)
 {
@@ -141,6 +178,10 @@ void RegisterTests_Scrolling(ImGuiTestContext* ctx)
     };
 }
 
+//-------------------------------------------------------------------------
+// Tests: Nav
+//-------------------------------------------------------------------------
+
 //static void gui_func_demo(ImGuiTestContext*)
 //{
 //    ImGui::ShowDemoWindow();
@@ -164,6 +205,85 @@ void RegisterTests_Nav(ImGuiTestContext* ctx)
         IM_CHECK(g.NavWindow && g.NavWindow->ID == ctx->GetID("/ImGui Demo"));
     };
 }
+
+//-------------------------------------------------------------------------
+// Tests: Widgets
+//-------------------------------------------------------------------------
+
+void RegisterTests_Widgets(ImGuiTestContext* ctx)
+{
+    ImGuiTest* t = NULL;
+
+    t = REGISTER_TEST("widgets", "widgets_inputtext");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiTestGenericState& gs = ctx->GenericState;
+        ImGui::SetNextWindowSize(ImVec2(200, 200));
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImGui::InputText("InputText", gs.Str256, IM_ARRAYSIZE(gs.Str256));
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        char* buf = ctx->GenericState.Str256;
+
+        ctx->SetRef("Test Window");
+
+        // Insert
+        strcpy(buf, "Hello");
+        ctx->ItemClick("InputText");
+        ctx->KeyCharsInputAppend("World123");
+        IM_CHECK(strcmp(buf, "HelloWorld123") == 0);
+
+        // Delete
+        ctx->ItemClick("InputText");
+        ctx->KeyPressMap(ImGuiKey_End);
+        ctx->KeyPressMap(ImGuiKey_Backspace, 3);
+        ctx->KeyPressMap(ImGuiKey_Enter);
+        IM_CHECK(strcmp(buf, "HelloWorld") == 0);
+
+        // Insert, Cancel
+        ctx->ItemClick("InputText");
+        ctx->KeyPressMap(ImGuiKey_End);
+        ctx->KeyChars("XXXXX");
+        ctx->KeyPressMap(ImGuiKey_Escape);
+        IM_CHECK(strcmp(buf, "HelloWorld") == 0);
+
+        // Delete, Cancel
+        ctx->ItemClick("InputText");
+        ctx->KeyPressMap(ImGuiKey_End);
+        ctx->KeyPressMap(ImGuiKey_Backspace, 5);
+        ctx->KeyPressMap(ImGuiKey_Escape);
+        IM_CHECK(strcmp(buf, "HelloWorld") == 0);
+    };
+}
+
+//-------------------------------------------------------------------------
+// Tests: Docking
+//-------------------------------------------------------------------------
+
+void RegisterTests_Docking(ImGuiTestContext* ctx)
+{
+#ifdef IMGUI_HAS_DOCK
+    ImGuiTest* t = NULL;
+
+    t = REGISTER_TEST("docking", "docking_focus");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        if (ctx->FrameCount == 1)
+        {
+            //ImGui::DockBuilderAddNode(0, )
+        }
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+    };
+#endif
+}
+
+//-------------------------------------------------------------------------
+// Tests: Misc
+//-------------------------------------------------------------------------
 
 void RegisterTests_Misc(ImGuiTestContext* ctx)
 {
@@ -322,6 +442,10 @@ void RegisterTests_Misc(ImGuiTestContext* ctx)
     };
 }
 
+//-------------------------------------------------------------------------
+// Tests: Perf
+//-------------------------------------------------------------------------
+
 void RegisterTests_Perf(ImGuiTestContext* ctx)
 {
     ImGuiTest* t = NULL;
@@ -358,6 +482,91 @@ void RegisterTests_Perf(ImGuiTestContext* ctx)
         ctx->MenuUncheckAll("Examples");
         ctx->MenuUncheckAll("Help");
     };
+
+    enum
+    {
+        DrawPrimFunc_RectOutline,
+        DrawPrimFunc_RectFilled,
+        DrawPrimFunc_RectRoundedOutline,
+        DrawPrimFunc_RectRoundedFilled,
+        DrawPrimFunc_CircleOutline,
+        DrawPrimFunc_CircleFilled,
+    };
+
+    auto DrawPrimFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::Begin("Test Func", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
+        int loop_count = 200 * ctx->PerfStressAmount;
+        ImDrawList* draw_list = ImGui::GetWindowDrawList();
+        int segments = 12;
+        ImGui::Button("##CircleFilled", ImVec2(200, 200));
+        ImVec2 bounds_min = ImGui::GetItemRectMin();
+        ImVec2 bounds_size = ImGui::GetItemRectSize();
+        ImVec2 center = bounds_min + bounds_size * 0.5f;
+        float r = (float)(int)(ImMin(bounds_size.x, bounds_size.y) * 0.8f * 0.5f);
+        float rounding = 8.0f;
+        ImU32 col = IM_COL32(255, 255, 0, 255);
+        switch (ctx->Test->ArgVariant)
+        {
+        case DrawPrimFunc_RectOutline:
+            for (int n = 0; n < loop_count; n++)
+                draw_list->AddRect(center - ImVec2(r,r), center + ImVec2(r,r), col, 0.0f);
+            break;
+        case DrawPrimFunc_RectFilled:
+            for (int n = 0; n < loop_count; n++)
+                draw_list->AddRectFilled(center - ImVec2(r, r), center + ImVec2(r, r), col, 0.0f);
+            break;
+        case DrawPrimFunc_RectRoundedOutline:
+            for (int n = 0; n < loop_count; n++)
+                draw_list->AddRect(center - ImVec2(r, r), center + ImVec2(r, r), col, rounding);
+            break;
+        case DrawPrimFunc_RectRoundedFilled:
+            for (int n = 0; n < loop_count; n++)
+                draw_list->AddRectFilled(center - ImVec2(r, r), center + ImVec2(r, r), col, rounding);
+            break;
+        case DrawPrimFunc_CircleOutline:
+            for (int n = 0; n < loop_count; n++)
+                draw_list->AddCircle(center, r, col, segments);
+            break;
+        case DrawPrimFunc_CircleFilled:
+            for (int n = 0; n < loop_count; n++)
+                draw_list->AddCircleFilled(center, r, col, segments);
+            break;
+        default:
+            IM_ASSERT(0);
+        }
+        ImGui::End();
+    };
+
+    t = REGISTER_TEST("perf", "perf_draw_prim_rect_outline");
+    t->ArgVariant = DrawPrimFunc_RectOutline;
+    t->GuiFunc = DrawPrimFunc;
+    t->TestFunc = PerfCaptureFunc;
+
+    t = REGISTER_TEST("perf", "perf_draw_prim_rect_filled");
+    t->ArgVariant = DrawPrimFunc_RectFilled;
+    t->GuiFunc = DrawPrimFunc;
+    t->TestFunc = PerfCaptureFunc;
+
+    t = REGISTER_TEST("perf", "perf_draw_prim_rect_rounded_outline");
+    t->ArgVariant = DrawPrimFunc_RectRoundedOutline;
+    t->GuiFunc = DrawPrimFunc;
+    t->TestFunc = PerfCaptureFunc;
+
+    t = REGISTER_TEST("perf", "perf_draw_prim_rect_rounded_filled");
+    t->ArgVariant = DrawPrimFunc_RectRoundedFilled;
+    t->GuiFunc = DrawPrimFunc;
+    t->TestFunc = PerfCaptureFunc;
+
+    t = REGISTER_TEST("perf", "perf_draw_prim_circle_outline");
+    t->ArgVariant = DrawPrimFunc_CircleOutline;
+    t->GuiFunc = DrawPrimFunc;
+    t->TestFunc = PerfCaptureFunc;
+
+    t = REGISTER_TEST("perf", "perf_draw_prim_circle_filled");
+    t->ArgVariant = DrawPrimFunc_CircleFilled;
+    t->GuiFunc = DrawPrimFunc;
+    t->TestFunc = PerfCaptureFunc;
 
     t = REGISTER_TEST("perf", "perf_stress_button");
     t->GuiFunc = [](ImGuiTestContext* ctx)
@@ -414,6 +623,23 @@ void RegisterTests_Perf(ImGuiTestContext* ctx)
             ImGui::PushID(n);
             ImGui::InputTextMultiline("InputText", buf, IM_ARRAYSIZE(buf), ImVec2(0, ImGui::GetFrameHeightWithSpacing() * 2), ImGuiInputTextFlags_None);
             ImGui::PopID();
+        }
+        ImGui::End();
+    };
+    t->TestFunc = PerfCaptureFunc;
+
+    t = REGISTER_TEST("perf", "perf_stress_hash");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::Begin("Test Func", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
+        int loop_count = 5000 * ctx->PerfStressAmount;
+        char buf[32] = { 0 };
+        ImU32 seed = 0;
+        for (int n = 0; n < loop_count; n++)
+        {
+            seed = ImHashData(buf, 32, seed);
+            seed = ImHashStr("Hash me tender", 0, seed);
+            seed = ImHashStr("Hash me true", 12, seed);
         }
         ImGui::End();
     };
@@ -504,6 +730,10 @@ void RegisterTests_Perf(ImGuiTestContext* ctx)
     t->TestFunc = PerfCaptureFunc;
 }
 
+//-------------------------------------------------------------------------
+// Tests: Capture
+//-------------------------------------------------------------------------
+
 void RegisterTests_Capture(ImGuiTestContext* ctx)
 {
     ImGuiTest* t = NULL;
@@ -568,8 +798,8 @@ void RegisterTests_Capture(ImGuiTestContext* ctx)
 
         ctx->KeyChars("H");
         ctx->KeyPressMap(ImGuiKey_Tab);
-        ctx->KeyCharsEnter("ELP");
-        ctx->KeyCharsEnter("hello, imgui world!");
+        ctx->KeyCharsInputAppend("ELP");
+        ctx->KeyCharsInputAppend("hello, imgui world!");
 
         ctx->SetRef("ImGui Demo");
         ctx->MenuCheck("Examples/Simple layout");
@@ -598,9 +828,11 @@ void RegisterTests(ImGuiTestEngine* e)
     RegisterTests_Window(&ctx);
     RegisterTests_Scrolling(&ctx);
     RegisterTests_Nav(&ctx);
+    RegisterTests_Widgets(&ctx);
+    RegisterTests_Docking(&ctx);
     RegisterTests_Misc(&ctx);
-    RegisterTests_Capture(&ctx);
     RegisterTests_Perf(&ctx);
+    RegisterTests_Capture(&ctx);
 }
 
 // Notes/Ideas

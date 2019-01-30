@@ -9,6 +9,8 @@ void    ImPathFixSeparatorsForCurrentOS(char* buf);
 void    ImParseSplitCommandLine(int* out_argc, char*** out_argv, const char* cmd_line);
 void    ImParseDateFromCompilerIntoYMD(const char* in_data, char* out_buf, size_t out_buf_size);
 
+const char* GetImGuiKeyName(ImGuiKey key);
+
 // Helper: maintain/calculate moving average
 template<typename TYPE>
 struct ImMovingAverage

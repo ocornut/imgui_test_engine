@@ -24,6 +24,7 @@ struct ImRect;
 
 typedef int     ImGuiTestFlags;     // See ImGuiTestFlags_
 typedef int     ImGuiTestOpFlags;   // See ImGuiTestOpFlags_
+typedef int     ImGuiTestRunFlags;  // See ImGuiTestRunFlags_
 
 //-------------------------------------------------------------------------
 // Types
@@ -51,7 +52,6 @@ enum ImGuiTestFlags_
 {
     ImGuiTestFlags_None         = 0,
     ImGuiTestFlags_NoWarmUp     = 1 << 0,       // By default, we run the GUI func twice before starting the test code
-    ImGuiTestFlags_NoSuccessMsg = 1 << 1
 };
 
 enum ImGuiTestOpFlags_
@@ -59,6 +59,14 @@ enum ImGuiTestOpFlags_
     ImGuiTestOpFlags_None       = 0,
     ImGuiTestOpFlags_Verbose    = 1 << 0,
     ImGuiTestOpFlags_NoError    = 1 << 1        // Don't abort/error e.g. if the item cannot be found
+};
+
+enum ImGuiTestRunFlags_
+{
+    ImGuiTestRunFlags_None          = 0,
+    ImGuiTestRunFlags_NoGuiFunc     = 1 << 0,
+    ImGuiTestRunFlags_NoTestFunc    = 1 << 1,
+    ImGuiTestRunFlags_NoSuccessMsg  = 1 << 2,
 };
 
 //-------------------------------------------------------------------------
@@ -95,8 +103,9 @@ ImGuiTestEngineIO&  ImGuiTestEngine_GetIO(ImGuiTestEngine* engine);
 void                ImGuiTestEngine_Abort(ImGuiTestEngine* engine);
 void                ImGuiTestEngine_ShowTestWindow(ImGuiTestEngine* engine, bool* p_open);
 void                ImGuiTestEngine_QueueTests(ImGuiTestEngine* engine, const char* filter = NULL);
-void                ImGuiTestEngine_QueueTest(ImGuiTestEngine* engine, ImGuiTest* test);
+void                ImGuiTestEngine_QueueTest(ImGuiTestEngine* engine, ImGuiTest* test, ImGuiTestRunFlags run_flags);
 bool                ImGuiTestEngine_IsRunningTests(ImGuiTestEngine* engine);
+bool                ImGuiTestEngine_IsRunningTest(ImGuiTestEngine* engine, ImGuiTest* test);
 void                ImGuiTestEngine_PrintResultSummary(ImGuiTestEngine* engine);
 
 // IO structure
@@ -180,6 +189,7 @@ struct ImGuiTest
     const char*             SourceFile;         // __FILE__
     const char*             SourceFileShort;    // Pointer within SourceFile, skips filename.
     int                     SourceLine;         // __LINE__
+    int                     ArgVariant;
     ImGuiTestStatus         Status;
     ImGuiTestFlags          Flags;
     ImGuiTestRunFunc        RootFunc;           // NULL function is ok
@@ -193,6 +203,7 @@ struct ImGuiTest
         Name = NULL;
         SourceFile = SourceFileShort = NULL;
         SourceLine = 0;
+        ArgVariant = 0;
         Status = ImGuiTestStatus_Unknown;
         Flags = ImGuiTestFlags_None;
         RootFunc = NULL;
@@ -229,17 +240,39 @@ struct ImGuiTestRef
     ImGuiTestRef(const char* p) { ID = 0; Path = p; }
 };
 
+// Generic structure with varied data. This is useful for tests to quickly share data between the GUI functions and the Test function.
+struct ImGuiTestGenericState
+{
+    int         Int1;
+    int         Int2;
+    int         IntArray[10];
+    float       Float1;
+    float       Float2;
+    float       FloatArray[10];
+    bool        Bool1;
+    bool        Bool2;
+    bool        BoolArray[10];
+    char        Str256[256];
+    void*       Ptr1;
+    void*       Ptr2;
+    void*       PtrArray[10];
+
+    ImGuiTestGenericState() { memset(this, 0, sizeof(*this)); }
+};
+
 struct ImGuiTestContext
 {
     ImGuiTest*              Test = NULL;
     ImGuiTestEngine*        Engine = NULL;
     ImGuiTestEngineIO*      EngineIO = NULL;
     ImGuiContext*           UiContext = NULL;
+    ImGuiTestRunFlags       RunFlags = ImGuiTestRunFlags_None;
+    ImGuiTestGenericState   GenericState;
     void*                   UserData = NULL;
-    int                     FrameCount = 0;         // Test frame count (restarts from zero every time)
+    int                     UserCounter = 0;
+    int                     FrameCount = 0;             // Test frame count (restarts from zero every time)
     int                     ActionDepth = 0;
     bool                    Abort = false;
-    bool                    GuiFuncEnabled = true;
     char                    RefStr[256] = { 0 };
     ImGuiID                 RefID = 0;
     ImGuiInputSource        InputMode = ImGuiInputSource_Mouse;
@@ -255,10 +288,12 @@ struct ImGuiTestContext
     void        RunCurrentTest(void* user_data);
     void        Log(const char* fmt, ...) IM_FMTARGS(1);
     void        LogVerbose(const char* fmt, ...) IM_FMTARGS(1);
+    void        LogDebug();
     bool        IsError() const { return Test->Status == ImGuiTestStatus_Error || Abort; }
-    void        SetGuiFuncEnabled(bool v) { GuiFuncEnabled = v; }
+    void        SetGuiFuncEnabled(bool v) { if (v) RunFlags &= ~ImGuiTestRunFlags_NoGuiFunc; else RunFlags |= ImGuiTestRunFlags_NoGuiFunc; }
 
     void        Yield();
+    void        YieldFrames(int count);
     void        Sleep(float time);
     void        SleepShort();
 
@@ -276,9 +311,9 @@ struct ImGuiTestContext
     void        MouseDown(int button = 0);
     void        MouseUp(int button = 0);
     
-    void        KeyPressMap(ImGuiKey key);
+    void        KeyPressMap(ImGuiKey key, int count = 1);
     void        KeyChars(const char* chars);
-    void        KeyCharsEnter(const char* chars);
+    void        KeyCharsInputAppend(const char* chars);
 
     void        NavMove(ImGuiTestRef ref);
     void        NavActivate();

@@ -100,50 +100,56 @@ struct ImGuiTestInput
     static ImGuiTestInput   FromChar(ImWchar v)                 { ImGuiTestInput inp; inp.Char = v; return inp; }
 };
 
+struct ImGuiTestRunTask
+{
+    ImGuiTest*                  Test = NULL;
+    ImGuiTestRunFlags           RunFlags = ImGuiTestRunFlags_None;
+};
+
 // [Internal] Test Engine Context
 struct ImGuiTestEngine
 {
-    ImGuiTestEngineIO       IO;
-    ImGuiContext*           UiContextVisible = NULL;        // imgui context for visible/interactive needs
-    ImGuiContext*           UiContextBlind = NULL;          // FIXME
-    ImGuiContext*           UiContextTarget = NULL;         // imgui context for testing == io.ConfigRunBlind ? UiBlindContext : UiVisibleContext when running tests, otherwise NULL.
-    ImGuiContext*           UiContextActive = NULL;         // imgui context for testing == UiContextTarget or NULL
+    ImGuiTestEngineIO           IO;
+    ImGuiContext*               UiContextVisible = NULL;        // imgui context for visible/interactive needs
+    ImGuiContext*               UiContextBlind = NULL;          // FIXME
+    ImGuiContext*               UiContextTarget = NULL;         // imgui context for testing == io.ConfigRunBlind ? UiBlindContext : UiVisibleContext when running tests, otherwise NULL.
+    ImGuiContext*               UiContextActive = NULL;         // imgui context for testing == UiContextTarget or NULL
 
-    int                     FrameCount = 0;
-    ImVector<ImGuiTest*>    TestsAll;
-    ImVector<ImGuiTest*>    TestsQueue;
-    ImGuiTestContext*       TestContext = NULL;
-    int                     CallDepth = 0;
+    int                         FrameCount = 0;
+    ImVector<ImGuiTest*>        TestsAll;
+    ImVector<ImGuiTestRunTask>  TestsQueue;
+    ImGuiTestContext*           TestContext = NULL;
+    int                         CallDepth = 0;
     ImVector<ImGuiTestLocateTask*>  LocateTasks;
-    ImGuiTestGatherTask     GatherTask;
+    ImGuiTestGatherTask         GatherTask;
 
     // Inputs
-    bool                    InputMousePosSet = false;
-    bool                    InputMouseButtonsSet = false;
-    ImVec2                  InputMousePosValue;
-    int                     InputMouseButtonsValue = 0x00;
-    ImVector<ImGuiTestInput> InputQueue;
+    bool                        InputMousePosSet = false;
+    bool                        InputMouseButtonsSet = false;
+    ImVec2                      InputMousePosValue;
+    int                         InputMouseButtonsValue = 0x00;
+    ImVector<ImGuiTestInput>    InputQueue;
 
     // UI support
-    bool                    Abort = false;
-    bool                    UiFocus = false;
-    ImGuiTest*              UiSelectedTest = NULL;
+    bool                        Abort = false;
+    bool                        UiFocus = false;
+    ImGuiTest*                  UiSelectedTest = NULL;
 
     // Build Info
-    const char*             InfoBuildType = "";
-    const char*             InfoBuildCpu = "";
-    const char*             InfoBuildOS = "";
-    const char*             InfoBuildCompiler = "";
-    char                    InfoBuildDate[32];
-    const char*             InfoBuildTime = "";
+    const char*                 InfoBuildType = "";
+    const char*                 InfoBuildCpu = "";
+    const char*                 InfoBuildOS = "";
+    const char*                 InfoBuildCompiler = "";
+    char                        InfoBuildDate[32];
+    const char*                 InfoBuildTime = "";
 
     // Performance Monitor
-    FILE*                   PerfPersistentLogCsv;
-    double                  PerfRefDeltaTime;
-    ImMovingAverage<double> PerfDeltaTime100;
-    ImMovingAverage<double> PerfDeltaTime500;
-    ImMovingAverage<double> PerfDeltaTime1000;
-    ImMovingAverage<double> PerfDeltaTime2000;
+    FILE*                       PerfPersistentLogCsv;
+    double                      PerfRefDeltaTime;
+    ImMovingAverage<double>     PerfDeltaTime100;
+    ImMovingAverage<double>     PerfDeltaTime500;
+    ImMovingAverage<double>     PerfDeltaTime1000;
+    ImMovingAverage<double>     PerfDeltaTime2000;
 
     // Functions
     ImGuiTestEngine() 
@@ -359,7 +365,10 @@ static ImGuiTestItemInfo* ImGuiTestEngine_ItemLocate(ImGuiTestEngine* engine, Im
     if (ImGuiTestLocateTask* task = ImGuiTestEngine_FindLocateTask(engine, id))
     {
         if (task->Result.TimestampMain + 2 >= engine->FrameCount)
+        {
+            task->FrameCount = engine->FrameCount; // Renew task
             return &task->Result;
+        }
         return NULL;
     }
 
@@ -412,6 +421,13 @@ static void ImGuiTestEngine_ApplyInputToImGuiContext(ImGuiTestEngine* engine)
 
     if (engine->UiContextActive != NULL && ImGuiTestEngine_IsRunningTests(engine))
     {
+        IM_ASSERT(engine->TestContext != NULL);
+        if (engine->TestContext->RunFlags & ImGuiTestRunFlags_NoTestFunc)
+        {
+            engine->InputQueue.resize(0);
+            return;
+        }
+
         //if (engine->SetMousePos)
         {
             g.IO.MousePos = engine->InputMousePosValue;
@@ -476,8 +492,10 @@ static void ImGuiTestEngine_PreNewFrame(ImGuiTestEngine* engine)
 
     if (ImGuiTestEngine_IsRunningTests(engine) && !engine->Abort)
     {
+        // Abort testing by holding ESC for 0.3 seconds.
+        // This is so ESC injected by tests don't interfer when sharing UI context.
         const int key_idx_escape = g.IO.KeyMap[ImGuiKey_Escape];
-        if (key_idx_escape != -1 && g.IO.KeysDown[key_idx_escape])
+        if (key_idx_escape != -1 && g.IO.KeysDown[key_idx_escape] && g.IO.KeysDownDuration[key_idx_escape] >= 0.30f)
         {
             if (engine->TestContext)
                 engine->TestContext->Log("KO: User aborted (pressed ESC)\n");
@@ -517,7 +535,7 @@ static void ImGuiTestEngine_Yield(ImGuiTestEngine* engine)
 
     // Call user GUI function
     if (engine->TestContext && engine->TestContext->Test->GuiFunc)
-        if (engine->TestContext->GuiFuncEnabled)
+        if (!(engine->TestContext->RunFlags & ImGuiTestRunFlags_NoGuiFunc))
             engine->TestContext->Test->GuiFunc(engine->TestContext);
 }
 
@@ -530,7 +548,8 @@ static void ImGuiTestEngine_ProcessQueue(ImGuiTestEngine* engine)
     engine->IO.RunningTests = true;
     for (int n = 0; n < engine->TestsQueue.Size; n++)
     {
-        ImGuiTest* test = engine->TestsQueue[n];
+        ImGuiTestRunTask* run_task = &engine->TestsQueue[n];
+        ImGuiTest* test = run_task->Test;
         IM_ASSERT(test->Status == ImGuiTestStatus_Queued);
 
         if (engine->Abort)
@@ -551,16 +570,22 @@ static void ImGuiTestEngine_ProcessQueue(ImGuiTestEngine* engine)
         ctx.Test = test;
         ctx.Engine = engine;
         ctx.UserData = NULL;
+        ctx.UserCounter = 0;
         ctx.UiContext = engine->UiContextActive;
         ctx.PerfStressAmount = engine->IO.PerfStressAmount;
+        ctx.RunFlags = run_task->RunFlags;
         engine->TestContext = &ctx;
 
         ctx.Log("----------------------------------------------------------------------\n");
         ctx.Log("Test: '%s' '%s'..\n", test->Category, test->Name);
         if (test->RootFunc)
+        {
             test->RootFunc(&ctx);
+        }
         else
+        {
             ctx.RunCurrentTest(NULL);
+        }
         ran_tests++;
 
         IM_ASSERT(test->Status != ImGuiTestStatus_Running);
@@ -569,7 +594,7 @@ static void ImGuiTestEngine_ProcessQueue(ImGuiTestEngine* engine)
 
         if (test->Status == ImGuiTestStatus_Success)
         {
-            if ((test->Flags & ImGuiTestFlags_NoSuccessMsg) == 0)
+            if ((ctx.RunFlags & ImGuiTestRunFlags_NoSuccessMsg) == 0)
                 ctx.Log("Success.\n");
         }
         else if (engine->Abort)
@@ -607,9 +632,17 @@ bool ImGuiTestEngine_IsRunningTests(ImGuiTestEngine* engine)
     return engine->TestsQueue.Size > 0; 
 }
 
-void ImGuiTestEngine_QueueTest(ImGuiTestEngine* engine, ImGuiTest* test)
+bool ImGuiTestEngine_IsRunningTest(ImGuiTestEngine* engine, ImGuiTest* test)
 {
-    if (engine->TestsQueue.contains(test))
+    for (ImGuiTestRunTask& t : engine->TestsQueue)
+        if (t.Test == test)
+            return true;
+    return false;
+}
+
+void ImGuiTestEngine_QueueTest(ImGuiTestEngine* engine, ImGuiTest* test, ImGuiTestRunFlags run_flags)
+{
+    if (ImGuiTestEngine_IsRunningTest(engine, test))
         return;
 
     // Detect lack of signal from imgui context, most likely not compiled with IMGUI_ENABLE_TEST_ENGINE=1
@@ -622,7 +655,11 @@ void ImGuiTestEngine_QueueTest(ImGuiTestEngine* engine, ImGuiTest* test)
     }
 
     test->Status = ImGuiTestStatus_Queued;
-    engine->TestsQueue.push_back(test);
+
+    ImGuiTestRunTask run_task;
+    run_task.Test = test;
+    run_task.RunFlags = run_flags;
+    engine->TestsQueue.push_back(run_task);
 }
 
 void ImGuiTestEngine_QueueTests(ImGuiTestEngine* engine, const char* filter)
@@ -635,7 +672,7 @@ void ImGuiTestEngine_QueueTests(ImGuiTestEngine* engine, const char* filter)
         if (filter != NULL)
             if (ImStristr(test->Name, NULL, filter, NULL) == NULL)
                 continue;
-        ImGuiTestEngine_QueueTest(engine, test);
+        ImGuiTestEngine_QueueTest(engine, test, ImGuiTestRunFlags_None);
     }
 }
 
@@ -663,6 +700,7 @@ static void ImGuiTestEngine_RunTest(ImGuiTestEngine* engine, ImGuiTestContext* c
     ctx->Engine = engine;
     ctx->EngineIO = &engine->IO;
     ctx->UserData = user_data;
+    ctx->UserCounter = 0;
     ctx->FrameCount = 0;
     ctx->SetRef("");
     ctx->SetInputMode(ImGuiInputSource_Mouse);
@@ -677,8 +715,17 @@ static void ImGuiTestEngine_RunTest(ImGuiTestEngine* engine, ImGuiTestContext* c
     }
 
     // Call user test function (optional)
-    if (test->TestFunc)
-        test->TestFunc(ctx);
+    if (ctx->RunFlags & ImGuiTestRunFlags_NoTestFunc)
+    {
+        // No test function
+        while (!engine->Abort)
+            ctx->Yield();
+    }
+    else
+    {
+        if (test->TestFunc)
+            test->TestFunc(ctx);
+    }
 
     // Additional yield is currently _only_ so the Log gets scrolled to the bottom on the last frame of the log output.
     ctx->Yield();
@@ -771,7 +818,7 @@ void ImGuiTestEngineHook_ItemAdd(ImGuiContext* ctx, const ImRect& bb, ImGuiID id
 }
 
 // label is optional
-void ImGuiTestEngineHook_ItemInfo(ImGuiContext* ctx, ImGuiID id, const char* label, int flags)
+void ImGuiTestEngineHook_ItemInfo(ImGuiContext* ctx, ImGuiID id, const char* label, ImGuiItemStatusFlags flags)
 {
     ImGuiTestEngine* engine = GImGuiHookingEngine;
     if (engine == NULL || engine->UiContextActive != ctx)
@@ -992,17 +1039,31 @@ void    ImGuiTestEngine_ShowTestWindow(ImGuiTestEngine* engine, bool* p_open)
             if (!filter.PassFilter(test->Name) && !filter.PassFilter(test->Category))
                 continue;
 
+            ImGuiTestContext* test_context = (engine->TestContext && engine->TestContext->Test == test) ? engine->TestContext : NULL;
+
             ImGui::PushID(n);
 
             ImVec4 status_color;
             switch (test->Status)
             {
-            case ImGuiTestStatus_Error:     status_color = ImVec4(0.9f, 0.1f, 0.1f, 1.0f); break;
-            case ImGuiTestStatus_Success:   status_color = ImVec4(0.1f, 0.9f, 0.1f, 1.0f); break;
+            case ImGuiTestStatus_Error:
+                status_color = ImVec4(0.9f, 0.1f, 0.1f, 1.0f); 
+                break;
+            case ImGuiTestStatus_Success:
+                status_color = ImVec4(0.1f, 0.9f, 0.1f, 1.0f); 
+                break;
             case ImGuiTestStatus_Queued:
-            case ImGuiTestStatus_Running:   status_color = ImVec4(0.8f, 0.4f, 0.1f, 1.0f); break;
-            default:                        status_color = ImVec4(0.4f, 0.4f, 0.4f, 1.0f); break;
+            case ImGuiTestStatus_Running:
+                if (test_context && (test_context->RunFlags & ImGuiTestRunFlags_NoTestFunc))
+                    status_color = ImVec4(0.8f, 0.0f, 0.8f, 1.0f);
+                else
+                    status_color = ImVec4(0.8f, 0.4f, 0.1f, 1.0f);
+                break;
+            default:
+                status_color = ImVec4(0.4f, 0.4f, 0.4f, 1.0f); 
+                break;
             }
+    
             ImVec2 p = ImGui::GetCursorScreenPos();
             ImGui::ColorButton("status", status_color, ImGuiColorEditFlags_NoTooltip);
             ImGui::SameLine();
@@ -1010,7 +1071,9 @@ void    ImGuiTestEngine_ShowTestWindow(ImGuiTestEngine* engine, bool* p_open)
                 ImGui::RenderText(p + g.Style.FramePadding + ImVec2(0, 0), "|\0/\0-\0\\" + (((g.FrameCount / 5) & 3) << 1), NULL);
 
             bool queue_test = false;
+            bool queue_gui_func = false;
             bool select_test = false;
+
             if (ImGui::Button("Run"))
                 queue_test = select_test = true;
             ImGui::SameLine();
@@ -1046,13 +1109,22 @@ void    ImGuiTestEngine_ShowTestWindow(ImGuiTestEngine* engine, bool* p_open)
                 }
 
                 if (ImGui::MenuItem("Copy log", NULL, false, !test->TestLog.empty()))
-                {
                     ImGui::SetClipboardText(test->TestLog.c_str());
-                }
 
                 if (ImGui::MenuItem("Run test"))
-                {
                     queue_test = true;
+
+                bool is_running_gui_func = (test_context && (test_context->RunFlags & ImGuiTestRunFlags_NoTestFunc));
+                if (ImGui::MenuItem("Run GUI func", NULL, is_running_gui_func))
+                {
+                    if (is_running_gui_func)
+                    {
+                        ImGuiTestEngine_Abort(engine);
+                    }
+                    else
+                    {
+                        queue_gui_func = true;
+                    }
                 }
 
                 ImGui::EndPopup();
@@ -1063,8 +1135,13 @@ void    ImGuiTestEngine_ShowTestWindow(ImGuiTestEngine* engine, bool* p_open)
                 engine->UiSelectedTest = test;
 
             // Process queuing
-            if (queue_test && engine->CallDepth == 0)
-                ImGuiTestEngine_QueueTest(engine, test);
+            if (engine->CallDepth == 0)
+            {
+                if (queue_test)
+                    ImGuiTestEngine_QueueTest(engine, test, ImGuiTestRunFlags_None);
+                else if (queue_gui_func)
+                    ImGuiTestEngine_QueueTest(engine, test, ImGuiTestRunFlags_NoTestFunc);
+            }
 
             ImGui::PopID();
         }
@@ -1089,6 +1166,17 @@ void    ImGuiTestEngine_ShowTestWindow(ImGuiTestEngine* engine, bool* p_open)
             if (ImGui::SmallButton("Copy to clipboard"))
                 if (engine->UiSelectedTest)
                     ImGui::SetClipboardText(engine->UiSelectedTest->TestLog.begin());
+            ImGui::Separator();
+
+            // Quick status
+            ImGuiContext* ui_context = engine->UiContextActive ? engine->UiContextActive : engine->UiContextVisible;
+            ImGuiID item_hovered_id = ui_context->HoveredIdPreviousFrame;
+            ImGuiID item_active_id = ui_context->ActiveId;
+            ImGuiTestItemInfo* item_hovered_info = item_hovered_id ? ImGuiTestEngine_ItemLocate(engine, item_hovered_id, "") : NULL;
+            ImGuiTestItemInfo* item_active_info = item_active_id ? ImGuiTestEngine_ItemLocate(engine, item_active_id, "") : NULL;
+            ImGui::Text("Hovered: 0x%08X (\"%s\")", item_hovered_id, item_hovered_info ? item_hovered_info->DebugLabel : "");
+            ImGui::Text("Active:  0x%08X (\"%s\")", item_active_id, item_active_info ? item_active_info->DebugLabel : "");
+
             ImGui::Separator();
             ImGui::BeginChild("Log");
             if (engine->UiSelectedTest)
@@ -1211,9 +1299,29 @@ void    ImGuiTestContext::LogVerbose(const char* fmt, ...)
         printf("%s", test->TestLog.c_str() + prev_size);
 }
 
+void    ImGuiTestContext::LogDebug()
+{
+    ImGuiID item_hovered_id = UiContext->HoveredIdPreviousFrame;
+    ImGuiID item_active_id = UiContext->ActiveId;
+    ImGuiTestItemInfo* item_hovered_info = item_hovered_id ? ImGuiTestEngine_ItemLocate(Engine, item_hovered_id, "") : NULL;
+    ImGuiTestItemInfo* item_active_info = item_active_id ? ImGuiTestEngine_ItemLocate(Engine, item_active_id, "") : NULL;
+    LogVerbose("Hovered: 0x%08X (\"%s\"), Active:  0x%08X(\"%s\")\n", 
+        item_hovered_id, item_hovered_info ? item_hovered_info->DebugLabel : "",
+        item_active_id, item_active_info ? item_active_info->DebugLabel : "");
+}
+
 void    ImGuiTestContext::Yield()
 {
     ImGuiTestEngine_Yield(Engine);
+}
+
+void    ImGuiTestContext::YieldFrames(int count = 0)
+{
+    while (count > 0)
+    {
+        ImGuiTestEngine_Yield(Engine);
+        count--;
+    }
 }
 
 void    ImGuiTestContext::Sleep(float time)
@@ -1487,7 +1595,7 @@ void    ImGuiTestContext::MouseMove(ImGuiTestRef ref)
     if (!Abort)
     {
         if (g.HoveredIdPreviousFrame != item->ID)
-            IM_ERRORF_NOHDR("Unable to Hover %s", desc.c_str());
+            IM_ERRORF_NOHDR("Unable to Hover %s. Expected %08X, HoveredId was %08X.", desc.c_str(), item->ID, g.HoveredIdPreviousFrame);
     }
 
     item->RefCount--;
@@ -1510,6 +1618,8 @@ void	ImGuiTestContext::MouseMoveToPos(ImVec2 target)
         ImVec2 delta = target - Engine->InputMousePosValue;
         float inv_length = ImInvLength(delta, FLT_MAX);
         float move_speed = Engine->IO.MouseSpeed * g.IO.DeltaTime;
+
+        //ImGui::GetOverlayDrawList()->AddCircle(target, 10.0f, IM_COL32(255, 255, 0, 255));
 
         if (Engine->IO.ConfigRunFast || (inv_length >= 1.0f / move_speed))
         {
@@ -1573,17 +1683,22 @@ void    ImGuiTestContext::MouseClick(int button)
     Yield(); // Give a frame for items to react
 }
 
-void    ImGuiTestContext::KeyPressMap(ImGuiKey key)
+void    ImGuiTestContext::KeyPressMap(ImGuiKey key, int count)
 {
     if (IsError())
         return;
 
-    Yield();
-    Engine->InputQueue.push_back(ImGuiTestInput::FromKey(key, true));
-    Yield();
-    Engine->InputQueue.push_back(ImGuiTestInput::FromKey(key, false));
-    Yield();
-    Yield(); // Give a frame for items to react
+    IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
+    LogVerbose("KeyPressMap(%s, %d)\n", GetImGuiKeyName(key), count);
+    while (count > 0)
+    {
+        Engine->InputQueue.push_back(ImGuiTestInput::FromKey(key, true));
+        Yield();
+        Engine->InputQueue.push_back(ImGuiTestInput::FromKey(key, false));
+        Yield();
+        Yield(); // Give a frame for items to react
+        count--;
+    }
 }
 
 void    ImGuiTestContext::KeyChars(const char* chars)
@@ -1591,6 +1706,8 @@ void    ImGuiTestContext::KeyChars(const char* chars)
     if (IsError())
         return;
 
+    IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
+    LogVerbose("KeyChars('%s')\n", chars);
     while (*chars)
     {
         unsigned int c = 0;
@@ -1605,11 +1722,14 @@ void    ImGuiTestContext::KeyChars(const char* chars)
     Yield();
 }
 
-void    ImGuiTestContext::KeyCharsEnter(const char* chars)
+void    ImGuiTestContext::KeyCharsInputAppend(const char* chars)
 {
     if (IsError())
         return;
 
+    IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
+    LogVerbose("KeyCharsInputAppend('%s')\n", chars);
+    KeyPressMap(ImGuiKey_End);
     KeyChars(chars);
     KeyPressMap(ImGuiKey_Enter);
 }
@@ -2037,7 +2157,7 @@ void    ImGuiTestContext::WindowResize(ImVec2 size)
     WindowSetCollapsed(false);
 
     void* zero_ptr = (void*)0;
-    ImGuiID id = ImHash(&zero_ptr, sizeof(void*), GetID("#RESIZE")); // FIXME-TESTS
+    ImGuiID id = ImHashData(&zero_ptr, sizeof(void*), GetID("#RESIZE")); // FIXME-TESTS
     MouseMove(id);
 
     MouseDown(0);
@@ -2107,7 +2227,7 @@ void    ImGuiTestContext::PerfCapture()
     }
 
     // Disable the "Success" message
-    Test->Flags |= ImGuiTestFlags_NoSuccessMsg;
+    RunFlags |= ImGuiTestRunFlags_NoSuccessMsg;
 }
 
 //-------------------------------------------------------------------------

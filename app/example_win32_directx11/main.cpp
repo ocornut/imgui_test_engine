@@ -13,6 +13,7 @@
 //#define CMDLINE_ARGS    "-fileopener ../../tools/win32_open_with_sublime.cmd"
 //#define CMDLINE_ARGS  "-gui -nothrottle"
 //#define CMDLINE_ARGS  "-nogui perf_stress_slider"
+//#define CMDLINE_ARGS  "-nogui -nothrottle perf_stress_hash"
 
 //-------------------------------------------------------------------------
 
@@ -438,6 +439,10 @@ int main(int argc, char** argv)
     ImGui::StyleColorsDark();
     ImGuiIO& io = ImGui::GetIO();
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;  // Enable Keyboard Controls
+    //ImGuiStyle& style = ImGui::GetStyle();
+    //style.Colors[ImGuiCol_Border] = style.Colors[ImGuiCol_BorderShadow] = ImVec4(1.0f, 0, 0, 1.0f);
+    //style.FrameBorderSize = 1.0f;
+    //style.FrameRounding = 5.0f;
 
     // Load Fonts
     io.Fonts->AddFontDefault();
