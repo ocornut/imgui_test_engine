@@ -56,9 +56,10 @@ enum ImGuiTestFlags_
 
 enum ImGuiTestOpFlags_
 {
-    ImGuiTestOpFlags_None       = 0,
-    ImGuiTestOpFlags_Verbose    = 1 << 0,
-    ImGuiTestOpFlags_NoError    = 1 << 1        // Don't abort/error e.g. if the item cannot be found
+    ImGuiTestOpFlags_None               = 0,
+    ImGuiTestOpFlags_Verbose            = 1 << 0,
+    ImGuiTestOpFlags_NoCheckHoveredId   = 1 << 1,
+    ImGuiTestOpFlags_NoError            = 1 << 2    // Don't abort/error e.g. if the item cannot be found
 };
 
 enum ImGuiTestRunFlags_
@@ -123,6 +124,7 @@ struct ImGuiTestEngineIO
     // Inputs: Options          
     bool                        ConfigRunFast = true;       // Run tests as fast as possible (teleport mouse, skip delays, etc.)
     bool                        ConfigRunBlind = false;     // Run tests in a blind ImGuiContext separated from the visible context
+    bool                        ConfigStopOnError = false;  // Stop queued tests on test error
     bool                        ConfigBreakOnError = false; // Break debugger on test error
     ImGuiTestVerboseLevel       ConfigVerboseLevel = ImGuiTestVerboseLevel_Normal;
     bool                        ConfigLogToTTY = false;
@@ -131,7 +133,7 @@ struct ImGuiTestEngineIO
     float                       MouseSpeed = 1000.0f;       // Mouse speed (pixel/second) when not running in fast mode
     float                       ScrollSpeed = 1600.0f;      // Scroll speed (pixel/second) when not running in fast mode
     float                       TypingSpeed = 20.0f;        // Char input speed (characters/second) when not running in fast mode
-    int                         PerfStressAmount = 5;       // Integer to scale the amount of items submitted in test
+    int                         PerfStressAmount = 1;       // Integer to scale the amount of items submitted in test
 
     // Outputs: State           
     bool                        RunningTests = false;
@@ -149,7 +151,7 @@ struct ImGuiTestItemInfo
     ImGuiWindow*                Window = NULL;
     ImRect                      Rect = ImRect();
     ImGuiItemStatusFlags        StatusFlags = 0;
-    char                        DebugLabel[20] = "";        // Shortened label for debugging purpose
+    char                        DebugLabel[32] = "";        // Shortened label for debugging purpose
 
     ImGuiTestItemInfo()
     {
@@ -252,6 +254,8 @@ struct ImGuiTestGenericState
     bool        Bool1;
     bool        Bool2;
     bool        BoolArray[10];
+    ImVec4      Vec4;
+    ImVec4      Vec4Array[10];
     char        Str256[256];
     void*       Ptr1;
     void*       Ptr2;
@@ -305,7 +309,7 @@ struct ImGuiTestContext
     ImGuiTestRef GetFocusWindowRef();
     ImVec2      GetMainViewportPos();
 
-    void        MouseMove(ImGuiTestRef ref);
+    void        MouseMove(ImGuiTestRef ref, ImGuiTestOpFlags flags = ImGuiTestOpFlags_None);
     void        MouseMoveToPos(ImVec2 pos);
     void        MouseClick(int button = 0);
     void        MouseDown(int button = 0);
@@ -339,6 +343,7 @@ struct ImGuiTestContext
     void        ItemCloseAll(ImGuiTestRef ref_parent, int depth = -1, int passes = -1)   { ItemActionAll(ImGuiTestAction_Close, ref_parent, depth, passes); }
 
     void        ItemHold(ImGuiTestRef ref, float time);
+    void        ItemDragAndDrop(ImGuiTestRef ref_src, ImGuiTestRef ref_dst);
     ImGuiTestItemInfo* ItemLocate(ImGuiTestRef ref, ImGuiTestOpFlags flags = ImGuiTestOpFlags_None);
     void        ItemVerifyCheckedIfAlive(ImGuiTestRef ref, bool checked);
 

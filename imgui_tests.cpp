@@ -179,34 +179,6 @@ void RegisterTests_Scrolling(ImGuiTestContext* ctx)
 }
 
 //-------------------------------------------------------------------------
-// Tests: Nav
-//-------------------------------------------------------------------------
-
-//static void gui_func_demo(ImGuiTestContext*)
-//{
-//    ImGui::ShowDemoWindow();
-//}
-
-void RegisterTests_Nav(ImGuiTestContext* ctx)
-{
-    ImGuiTest* t = NULL;
-
-    // Test opening a new window from a checkbox setting the focus to the new window.
-    // In 9ba2028 (2019/01/04) we fixed a bug where holding ImGuiNavInputs_Activate too long on a button would hold the focus on the wrong window.
-    t = REGISTER_TEST("nav", "nav_001");
-    t->TestFunc = [](ImGuiTestContext* ctx)
-    {
-        ctx->SetInputMode(ImGuiInputSource_Nav);
-        ctx->SetRef("Hello, world!");
-        ctx->ItemUncheck("Demo Window");
-        ctx->ItemCheck("Demo Window");
-
-        ImGuiContext& g = *ctx->UiContext;
-        IM_CHECK(g.NavWindow && g.NavWindow->ID == ctx->GetID("/ImGui Demo"));
-    };
-}
-
-//-------------------------------------------------------------------------
 // Tests: Widgets
 //-------------------------------------------------------------------------
 
@@ -255,6 +227,59 @@ void RegisterTests_Widgets(ImGuiTestContext* ctx)
         ctx->KeyPressMap(ImGuiKey_Backspace, 5);
         ctx->KeyPressMap(ImGuiKey_Escape);
         IM_CHECK(strcmp(buf, "HelloWorld") == 0);
+    };
+
+    t = REGISTER_TEST("widgets", "widgets_coloredit_drag");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiTestGenericState& gs = ctx->GenericState;
+        ImGui::SetNextWindowSize(ImVec2(200, 200));
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImGui::ColorEdit4("ColorEdit1", &gs.Vec4Array[0].x, ImGuiColorEditFlags_None);
+        ImGui::ColorEdit4("ColorEdit2", &gs.Vec4Array[1].x, ImGuiColorEditFlags_None);
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiTestGenericState& gs = ctx->GenericState;
+        gs.Vec4Array[0] = ImVec4(1, 0, 0, 1);
+        gs.Vec4Array[1] = ImVec4(0, 1, 0, 1);
+
+        ctx->SetRef("Test Window");
+
+        IM_CHECK(memcmp(&gs.Vec4Array[0], &gs.Vec4Array[1], sizeof(ImVec4)) != 0);
+        ctx->ItemDragAndDrop("ColorEdit1/##ColorButton", "ColorEdit2/##X"); // FIXME-TESTS: Inner items
+        IM_CHECK(memcmp(&gs.Vec4Array[0], &gs.Vec4Array[1], sizeof(ImVec4)) == 0);
+
+        ctx->Sleep(1.0f);
+    };
+}
+
+//-------------------------------------------------------------------------
+// Tests: Nav
+//-------------------------------------------------------------------------
+
+//static void gui_func_demo(ImGuiTestContext*)
+//{
+//    ImGui::ShowDemoWindow();
+//}
+
+void RegisterTests_Nav(ImGuiTestContext* ctx)
+{
+    ImGuiTest* t = NULL;
+
+    // Test opening a new window from a checkbox setting the focus to the new window.
+    // In 9ba2028 (2019/01/04) we fixed a bug where holding ImGuiNavInputs_Activate too long on a button would hold the focus on the wrong window.
+    t = REGISTER_TEST("nav", "nav_001");
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ctx->SetInputMode(ImGuiInputSource_Nav);
+        ctx->SetRef("Hello, world!");
+        ctx->ItemUncheck("Demo Window");
+        ctx->ItemCheck("Demo Window");
+
+        ImGuiContext& g = *ctx->UiContext;
+        IM_CHECK(g.NavWindow && g.NavWindow->ID == ctx->GetID("/ImGui Demo"));
     };
 }
 
@@ -827,8 +852,8 @@ void RegisterTests(ImGuiTestEngine* e)
 
     RegisterTests_Window(&ctx);
     RegisterTests_Scrolling(&ctx);
-    RegisterTests_Nav(&ctx);
     RegisterTests_Widgets(&ctx);
+    RegisterTests_Nav(&ctx);
     RegisterTests_Docking(&ctx);
     RegisterTests_Misc(&ctx);
     RegisterTests_Perf(&ctx);

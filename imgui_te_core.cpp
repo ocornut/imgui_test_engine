@@ -589,7 +589,7 @@ static void ImGuiTestEngine_ProcessQueue(ImGuiTestEngine* engine)
         ran_tests++;
 
         IM_ASSERT(test->Status != ImGuiTestStatus_Running);
-        if (engine->Abort)
+        if (engine->Abort && test->Status != ImGuiTestStatus_Error)
             test->Status = ImGuiTestStatus_Unknown;
 
         if (test->Status == ImGuiTestStatus_Success)
@@ -903,6 +903,10 @@ bool ImGuiTestEngineHook_Check(const char* file, const char* func, int line, boo
         IM_ASSERT(0);
     }
 
+    if (result == false && engine->IO.ConfigStopOnError && !engine->Abort)
+        engine->Abort = true;
+        //ImGuiTestEngine_Abort(engine);
+
     if (result == false && engine->IO.ConfigBreakOnError && !engine->Abort)
         return true;
 
@@ -999,7 +1003,9 @@ void    ImGuiTestEngine_ShowTestWindow(ImGuiTestEngine* engine, bool* p_open)
     ImGui::SameLine();
     ImGui::Checkbox("Blind", &engine->IO.ConfigRunBlind);
     ImGui::SameLine();
-    ImGui::Checkbox("Break", &engine->IO.ConfigBreakOnError);
+    ImGui::Checkbox("Stop", &engine->IO.ConfigStopOnError);
+    ImGui::SameLine();
+    ImGui::Checkbox("DbgBrk", &engine->IO.ConfigBreakOnError);
     ImGui::SameLine();
     ImGui::Checkbox("Focus", &engine->IO.ConfigTakeFocusBackAfterTests);
     if (ImGui::IsItemHovered())
@@ -1462,9 +1468,12 @@ void    ImGuiTestContext::ScrollToY(ImGuiTestRef ref, float scroll_ratio_y)
     ImGuiContext& g = *UiContext;
     ImGuiTestItemInfo* item = ItemLocate(ref);
     ImGuiTestRefDesc desc(ref, item);
-    LogVerbose("ScrollTo %s\n", desc.c_str());
+    LogVerbose("ScrollToY %s\n", desc.c_str());
 
     ImGuiWindow* window = item->Window;
+
+    //if (item->ID == 0xDFFBB0CE || item->ID == 0x87CBBA09)
+    //    printf("[%03d] scrollmax %f\n", FrameCount, ImGui::GetWindowScrollMaxY(window));
 
     while (!Abort)
     {
@@ -1481,13 +1490,13 @@ void    ImGuiTestContext::ScrollToY(ImGuiTestRef ref, float scroll_ratio_y)
         float scroll_speed = Engine->IO.ConfigRunFast ? FLT_MAX : ImFloor(Engine->IO.ScrollSpeed * g.IO.DeltaTime);
         window->Scroll.y = ImLinearSweep(window->Scroll.y, scroll_target, scroll_speed);
 
-        ImGuiTestEngine_Yield(Engine);
+        Yield();
 
         BringWindowToFrontFromItem(ref);
     }
 
     // Need another frame for the result->Rect to stabilize
-    ImGuiTestEngine_Yield(Engine);
+    Yield();
 }
 
 void    ImGuiTestContext::NavMove(ImGuiTestRef ref)
@@ -1550,7 +1559,7 @@ void    ImGuiTestContext::NavActivate()
 #endif
 }
 
-void    ImGuiTestContext::MouseMove(ImGuiTestRef ref)
+void    ImGuiTestContext::MouseMove(ImGuiTestRef ref, ImGuiTestOpFlags flags)
 {
     if (IsError())
         return;
@@ -1581,7 +1590,7 @@ void    ImGuiTestContext::MouseMove(ImGuiTestRef ref)
         ImVec2 delta;
         delta.x = (pos.x < visible_r.Min.x) ? (visible_r.Min.x - pos.x + pad) : (pos.x > visible_r.Max.x) ? (visible_r.Max.x - pos.x - pad) : 0.0f;
         delta.y = (pos.y < visible_r.Min.y) ? (visible_r.Min.y - pos.y + pad) : (pos.y > visible_r.Max.y) ? (visible_r.Max.y - pos.y - pad) : 0.0f;
-        window->Pos += delta;
+        ImGui::SetWindowPos(window, window->Pos + delta, ImGuiCond_Always);
         LogVerbose("WindowMoveBypass %s delta (%.1f,%.1f)\n", window->Name, delta.x, delta.y);
         Yield();
         pos = item->Rect.GetCenter();
@@ -1592,7 +1601,7 @@ void    ImGuiTestContext::MouseMove(ImGuiTestRef ref)
     // Focus again in case something made us lost focus (which could happen on a simple hover)
     BringWindowToFrontFromItem(ref);// , ImGuiTestOpFlags_Verbose);
 
-    if (!Abort)
+    if (!Abort && !(flags & ImGuiTestOpFlags_NoCheckHoveredId))
     {
         if (g.HoveredIdPreviousFrame != item->ID)
             IM_ERRORF_NOHDR("Unable to Hover %s. Expected %08X, HoveredId was %08X.", desc.c_str(), item->ID, g.HoveredIdPreviousFrame);
@@ -1835,13 +1844,13 @@ void    ImGuiTestContext::ItemAction(ImGuiTestAction action, ImGuiTestRef ref)
     if (action == ImGuiTestAction_Click || action == ImGuiTestAction_DoubleClick)
     {
         if (InputMode == ImGuiInputSource_Mouse)
-    {
-        MouseMove(ref);
-        if (!Engine->IO.ConfigRunFast)
-            Sleep(0.05f);
-        MouseClick(0);
-        if (action == ImGuiTestAction_DoubleClick)
+        {
+            MouseMove(ref);
+            if (!Engine->IO.ConfigRunFast)
+                Sleep(0.05f);
             MouseClick(0);
+            if (action == ImGuiTestAction_DoubleClick)
+                MouseClick(0);
         }
         else
         {
@@ -1866,6 +1875,7 @@ void    ImGuiTestContext::ItemAction(ImGuiTestAction action, ImGuiTestRef ref)
                     IM_ERRORF_NOHDR("Unable to Open item: %s", ImGuiTestRefDesc(ref, item).c_str());
             }
             item->RefCount--;
+            Yield();
         }
         return;
     }
@@ -1883,6 +1893,7 @@ void    ImGuiTestContext::ItemAction(ImGuiTestAction action, ImGuiTestRef ref)
                     IM_ERRORF_NOHDR("Unable to Close item: %s", ImGuiTestRefDesc(ref, item).c_str());
             }
             item->RefCount--;
+            Yield();
         }
         return;
     }
@@ -1890,7 +1901,10 @@ void    ImGuiTestContext::ItemAction(ImGuiTestAction action, ImGuiTestRef ref)
     if (action == ImGuiTestAction_Check)
     {
         if ((item->StatusFlags & ImGuiItemStatusFlags_Checkable) && !(item->StatusFlags & ImGuiItemStatusFlags_Checked))
+        {
             ItemClick(ref);
+            Yield();
+        }
         ItemVerifyCheckedIfAlive(ref, true);     // We can't just IM_ASSERT(ItemIsChecked()) because the item may disappear and never update its StatusFlags any more!
 
         return;
@@ -1899,7 +1913,10 @@ void    ImGuiTestContext::ItemAction(ImGuiTestAction action, ImGuiTestRef ref)
     if (action == ImGuiTestAction_Uncheck)
     {
         if ((item->StatusFlags & ImGuiItemStatusFlags_Checkable) && (item->StatusFlags & ImGuiItemStatusFlags_Checked))
+        {
             ItemClick(ref);
+            Yield();
+        }
         ItemVerifyCheckedIfAlive(ref, false);       // We can't just IM_ASSERT(ItemIsChecked()) because the item may disappear and never update its StatusFlags any more!
 
         return;
@@ -1952,6 +1969,9 @@ void    ImGuiTestContext::ItemActionAll(ImGuiTestAction action, ImGuiTestRef ref
 
         for (int n = scan_start; n != scan_end; n += scan_dir)
         {
+            if (IsError())
+                break;
+
             const ImGuiTestItemInfo* info = items[n];
             switch (action)
             {
@@ -1992,6 +2012,9 @@ void    ImGuiTestContext::ItemActionAll(ImGuiTestAction action, ImGuiTestRef ref
             }
         }
 
+        if (IsError())
+            break;
+
         if (actioned_total_at_beginning_of_pass == actioned_total)
             break;
     }
@@ -2015,6 +2038,24 @@ void    ImGuiTestContext::ItemHold(ImGuiTestRef ref, float time)
     Engine->InputMouseButtonsSet = true;
     Engine->InputMouseButtonsValue = 0;
     Yield();
+}
+
+void    ImGuiTestContext::ItemDragAndDrop(ImGuiTestRef ref_src, ImGuiTestRef ref_dst)
+{
+    if (IsError())
+        return;
+
+    IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
+    ImGuiTestItemInfo* item_src = ItemLocate(ref_src);
+    ImGuiTestItemInfo* item_dst = ItemLocate(ref_dst);
+    ImGuiTestRefDesc desc_src(ref_src, item_src);
+    ImGuiTestRefDesc desc_dst(ref_dst, item_dst);
+    LogVerbose("ItemDragAndDrop %s to %s\n", desc_src.c_str(), desc_dst.c_str());
+
+    MouseMove(ref_src);
+    MouseDown(0);
+    MouseMove(ref_dst, ImGuiTestOpFlags_NoCheckHoveredId);
+    MouseUp(0);
 }
 
 void    ImGuiTestContext::ItemVerifyCheckedIfAlive(ImGuiTestRef ref, bool checked)

@@ -301,6 +301,15 @@ bool MainLoopEndFrame()
     if (g_App.Backend == ImGuiBackend_DX11)
     {
         ImGui::Render();
+
+        // Update and Render additional Platform Windows
+        ImGuiIO& io = ImGui::GetIO();
+        if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
+        {
+            ImGui::UpdatePlatformWindows();
+            ImGui::RenderPlatformWindowsDefault();
+        }
+
         g_pd3dDeviceContext->OMSetRenderTargets(1, &g_mainRenderTargetView, NULL);
         g_pd3dDeviceContext->ClearRenderTargetView(g_mainRenderTargetView, (float*)&clear_color);
         ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
@@ -443,6 +452,12 @@ int main(int argc, char** argv)
     //style.Colors[ImGuiCol_Border] = style.Colors[ImGuiCol_BorderShadow] = ImVec4(1.0f, 0, 0, 1.0f);
     //style.FrameBorderSize = 1.0f;
     //style.FrameRounding = 5.0f;
+#ifdef IMGUI_HAS_VIEWPORT
+    io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
+#endif
+#ifdef IMGUI_HAS_DOCK
+    io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
+#endif
 
     // Load Fonts
     io.Fonts->AddFontDefault();
