@@ -143,6 +143,80 @@ void    ImParseDateFromCompilerIntoYMD(const char* in_date, char* out_buf, size_
     ImFormatString(out_buf, out_buf_size, "%04d-%02d-%02d", year, month, day);
 }
 
+void ImDebugShowInputTextState()
+{
+    ImGuiContext& g = *GImGui;
+    //static MemoryEditor mem_edit;
+    using namespace ImGui;
+
+    ImGui::Begin("Debug stb_textedit.h");
+
+    ImGuiInputTextState& imstate = g.InputTextState;
+    if (g.ActiveId != 0 && imstate.ID == g.ActiveId)
+        ImGui::Text("Active");
+    else
+        ImGui::Text("Inactive");
+
+    ImGuiStb::StbUndoState& undostate = imstate.StbState.undostate;
+
+    ImGui::Text("undo_point: %d\nredo_point:%d\nundo_char_point: %d\nredo_char_point:%d",
+        undostate.undo_point,
+        undostate.redo_point,
+        undostate.undo_char_point,
+        undostate.redo_char_point);
+
+    ImGuiStyle& style = ImGui::GetStyle();
+    ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0, -2));
+    for (int n = 0; n < STB_TEXTEDIT_UNDOSTATECOUNT; n++)
+    {
+        char type = ' ';
+        if (n < undostate.undo_point)
+            type = 'u';
+        else if (n >= undostate.redo_point)
+            type = 'r';
+
+        ImVec4 col = (type == ' ') ? style.Colors[ImGuiCol_TextDisabled] : style.Colors[ImGuiCol_Text];
+        ImGui::TextColored(col, "%c [%02d] where %03d, insert %03d, delete %03d, char_storage %03d",
+            type, n, undostate.undo_rec[n].where, undostate.undo_rec[n].insert_length, undostate.undo_rec[n].delete_length, undostate.undo_rec[n].char_storage);
+        //if (ImGui::IsItemClicked() && undostate.undo_rec[n].char_storage != -1)
+        //    mem_edit.GotoAddrAndHighlight(undostate.undo_rec[n].char_storage, undostate.undo_rec[n].char_storage + undostate.undo_rec[n].insert_length);
+    }
+    ImGui::PopStyleVar();
+
+    ImGui::End();
+
+    ImGui::Begin("Debug stb_textedit.h char_storage");
+    ImVec2 p = ImGui::GetCursorPos();
+    for (int n = 0; n < STB_TEXTEDIT_UNDOCHARCOUNT; n++)
+    {
+        int c = undostate.undo_char[n];
+        if (c > 256)
+            continue;
+        if ((n % 32) == 0)
+        {
+            ImGui::SetCursorPos(ImVec2(p.x + (n % 32) * 11, p.y + (n / 32) * 13));
+            ImGui::Text("%03d:", n);
+        }
+        ImGui::SetCursorPos(ImVec2(p.x + 40 + (n % 32) * 11, p.y + (n / 32) * 13));
+        ImGui::Text("%c", c);
+    }
+    ImGui::End();
+}
+
+void GetImGuiKeyModsPrefixStr(ImGuiKeyModFlags mod_flags, char* out_buf, size_t out_buf_size)
+{
+    if (mod_flags == 0)
+    {
+        out_buf[0] = 0;
+        return;
+    }
+    ImFormatString(out_buf, out_buf_size, "%s%s%s%s",
+        (mod_flags & ImGuiKeyModFlags_Ctrl) ? "Ctrl+" : "",
+        (mod_flags & ImGuiKeyModFlags_Alt) ? "Alt+" : "",
+        (mod_flags & ImGuiKeyModFlags_Shift) ? "Shift+" : "",
+        (mod_flags & ImGuiKeyModFlags_Super) ? "Super+" : "");
+}
+
 const char* GetImGuiKeyName(ImGuiKey key)
 {
     // Create switch-case from enum with regexp: ImGuiKey_{.*}, --> case ImGuiKey_\1: return "\1";

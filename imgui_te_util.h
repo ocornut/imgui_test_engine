@@ -1,15 +1,29 @@
 #pragma once
 
+typedef int ImGuiKeyModFlags;       // See ImGuiKeyModFlags_
+
+enum ImGuiKeyModFlags_
+{
+    ImGuiKeyModFlags_None           = 0,
+    ImGuiKeyModFlags_Ctrl           = 1 << 0,
+    ImGuiKeyModFlags_Alt            = 1 << 1,
+    ImGuiKeyModFlags_Shift          = 1 << 2,
+    ImGuiKeyModFlags_Super          = 1 << 3
+};
+
 // Helpers: miscellaneous functions
-ImGuiID ImHashDecoratedPath(const char* str, ImGuiID seed);
-ImU64   ImGetTimeInMicroseconds();
+ImGuiID     ImHashDecoratedPath(const char* str, ImGuiID seed);
+ImU64       ImGetTimeInMicroseconds();
 
-void    ImPathFixSeparatorsForCurrentOS(char* buf);
+void        ImPathFixSeparatorsForCurrentOS(char* buf);
 
-void    ImParseSplitCommandLine(int* out_argc, char*** out_argv, const char* cmd_line);
-void    ImParseDateFromCompilerIntoYMD(const char* in_data, char* out_buf, size_t out_buf_size);
+void        ImParseSplitCommandLine(int* out_argc, char*** out_argv, const char* cmd_line);
+void        ImParseDateFromCompilerIntoYMD(const char* in_data, char* out_buf, size_t out_buf_size);
+
+void        ImDebugShowInputTextState();
 
 const char* GetImGuiKeyName(ImGuiKey key);
+void        GetImGuiKeyModsPrefixStr(ImGuiKeyModFlags mod_flags, char* out_buf, size_t out_buf_size);
 
 // Helper: maintain/calculate moving average
 template<typename TYPE>

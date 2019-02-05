@@ -7,6 +7,7 @@
 #include "imgui_internal.h"
 #include "imgui_tests.h"
 #include "imgui_te_core.h"
+#include "imgui_te_util.h"
 
 // Visual Studio warnings
 #ifdef _MSC_VER
@@ -195,7 +196,7 @@ void RegisterTests_Widgets(ImGuiTestContext* ctx)
 {
     ImGuiTest* t = NULL;
 
-    t = REGISTER_TEST("widgets", "widgets_inputtext");
+    t = REGISTER_TEST("widgets", "widgets_inputtext_1");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         ImGuiTestGenericState& gs = ctx->GenericState;
@@ -213,13 +214,13 @@ void RegisterTests_Widgets(ImGuiTestContext* ctx)
         // Insert
         strcpy(buf, "Hello");
         ctx->ItemClick("InputText");
-        ctx->KeyCharsInputAppend("World123");
+        ctx->KeyCharsAppendEnter("World123");
         IM_CHECK(strcmp(buf, "HelloWorld123") == 0);
 
         // Delete
         ctx->ItemClick("InputText");
         ctx->KeyPressMap(ImGuiKey_End);
-        ctx->KeyPressMap(ImGuiKey_Backspace, 3);
+        ctx->KeyPressMap(ImGuiKey_Backspace, ImGuiKeyModFlags_None, 3);
         ctx->KeyPressMap(ImGuiKey_Enter);
         IM_CHECK(strcmp(buf, "HelloWorld") == 0);
 
@@ -233,9 +234,83 @@ void RegisterTests_Widgets(ImGuiTestContext* ctx)
         // Delete, Cancel
         ctx->ItemClick("InputText");
         ctx->KeyPressMap(ImGuiKey_End);
-        ctx->KeyPressMap(ImGuiKey_Backspace, 5);
+        ctx->KeyPressMap(ImGuiKey_Backspace, ImGuiKeyModFlags_None, 5);
         ctx->KeyPressMap(ImGuiKey_Escape);
         IM_CHECK(strcmp(buf, "HelloWorld") == 0);
+    };
+
+    t = REGISTER_TEST("widgets", "widgets_inputtext_2");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiTestGenericState& gs = ctx->GenericState;
+        if (gs.StrLarge.empty())
+            gs.StrLarge.resize(10000, 0);
+        ImGui::SetNextWindowSize(ImVec2(ImGui::GetFontSize() * 50, 0.0f));
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
+        ImGui::Text("strlen() = %d", strlen(gs.StrLarge.Data));
+        ImGui::InputText("Dummy", "", 0, ImGuiInputTextFlags_None);
+        ImGui::InputTextMultiline("InputText", gs.StrLarge.Data, gs.StrLarge.Size, ImVec2(-1, ImGui::GetFontSize() * 20), ImGuiInputTextFlags_None);
+        ImGui::End();
+
+        ImDebugShowInputTextState();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        // https://github.com/nothings/stb/issues/321
+        ImGuiTestGenericState& gs = ctx->GenericState;
+
+        // Start with a 350 characters buffer.
+        // For this test we don't inject the characters via pasting or key-by-key in order to precisely control the undo/redo state.
+        char* buf = gs.StrLarge.Data;
+        IM_CHECK(strlen(buf) == 0);
+        for (int n = 0; n < 10; n++)
+            strcat(buf, "xxxxxxx abcdefghijklmnopqrstuvwxyz\n");
+        IM_CHECK(strlen(buf) == 350);
+
+        ctx->SetRef("Test Window");
+        ctx->ItemClick("Dummy"); // This is to ensure stb_textedit_clear_state() gets called (clear the undo buffer, etc.)
+        ctx->ItemClick("InputText");
+
+        ImGuiInputTextState& input_text_state = GImGui->InputTextState;
+        ImGuiStb::StbUndoState& undo_state = input_text_state.StbState.undostate;
+        IM_CHECK(input_text_state.ID == GImGui->ActiveId);
+        IM_CHECK(undo_state.undo_point == 0);
+        IM_CHECK(undo_state.undo_char_point == 0);
+        IM_CHECK(undo_state.redo_point == STB_TEXTEDIT_UNDOSTATECOUNT);
+        IM_CHECK(undo_state.redo_char_point == STB_TEXTEDIT_UNDOCHARCOUNT);
+        IM_CHECK(STB_TEXTEDIT_UNDOCHARCOUNT == 999); // Test designed for this value
+
+        // Insert 350 characters via 10 paste operations
+        // We use paste operations instead of key-by-key insertion so we know our undo buffer will contains 10 undo points.
+        //const char line_buf[26+8+1+1] = "xxxxxxx abcdefghijklmnopqrstuvwxyz\n"; // 8+26+1 = 35
+        //ImGui::SetClipboardText(line_buf);
+        //IM_CHECK(strlen(line_buf) == 35);
+        //ctx->KeyPressMap(ImGuiKey_V, ImGuiKeyModFlags_Ctrl, 10);
+
+        // Select all, copy, paste 3 times
+        ctx->KeyPressMap(ImGuiKey_A, ImGuiKeyModFlags_Ctrl);    // Select all
+        ctx->KeyPressMap(ImGuiKey_C, ImGuiKeyModFlags_Ctrl);    // Copy
+        ctx->KeyPressMap(ImGuiKey_End, ImGuiKeyModFlags_Ctrl);  // Go to end, clear selection
+        ctx->KeyPressMap(ImGuiKey_V, ImGuiKeyModFlags_Ctrl, 3); // Paste append three times
+        size_t len = strlen(gs.StrLarge.Data);
+        IM_CHECK(len == 350 * 4);
+        IM_CHECK(undo_state.undo_point == 3);
+        IM_CHECK(undo_state.undo_char_point == 0);
+
+        // Undo x2
+        IM_CHECK(undo_state.redo_point == STB_TEXTEDIT_UNDOSTATECOUNT);
+        ctx->KeyPressMap(ImGuiKey_Z, ImGuiKeyModFlags_Ctrl);
+        ctx->KeyPressMap(ImGuiKey_Z, ImGuiKeyModFlags_Ctrl);
+        len = strlen(gs.StrLarge.Data);
+        IM_CHECK(len == 350 * 2);
+        IM_CHECK(undo_state.undo_point == 1);
+        IM_CHECK(undo_state.redo_point == STB_TEXTEDIT_UNDOSTATECOUNT - 2);
+        IM_CHECK(undo_state.redo_char_point == STB_TEXTEDIT_UNDOCHARCOUNT - 350 * 2);
+
+        // Undo x1 should call stb_textedit_discard_redo()
+        ctx->KeyPressMap(ImGuiKey_Z, ImGuiKeyModFlags_Ctrl);
+        len = strlen(gs.StrLarge.Data);
+        IM_CHECK(len == 350 * 1);
     };
 
     t = REGISTER_TEST("widgets", "widgets_coloredit_drag");
@@ -894,8 +969,8 @@ void RegisterTests_Capture(ImGuiTestContext* ctx)
 
         ctx->KeyChars("H");
         ctx->KeyPressMap(ImGuiKey_Tab);
-        ctx->KeyCharsInputAppend("ELP");
-        ctx->KeyCharsInputAppend("hello, imgui world!");
+        ctx->KeyCharsAppendEnter("ELP");
+        ctx->KeyCharsAppendEnter("hello, imgui world!");
 
         ctx->SetRef("ImGui Demo");
         ctx->MenuCheck("Examples/Simple layout");

@@ -22,9 +22,9 @@ struct ImGuiTestItemInfo;
 struct ImGuiTestItemList;
 struct ImRect;
 
-typedef int     ImGuiTestFlags;     // See ImGuiTestFlags_
-typedef int     ImGuiTestOpFlags;   // See ImGuiTestOpFlags_
-typedef int     ImGuiTestRunFlags;  // See ImGuiTestRunFlags_
+typedef int ImGuiTestFlags;     // See ImGuiTestFlags_
+typedef int ImGuiTestOpFlags;   // See ImGuiTestOpFlags_
+typedef int ImGuiTestRunFlags;  // See ImGuiTestRunFlags_
 
 //-------------------------------------------------------------------------
 // Types
@@ -126,13 +126,14 @@ struct ImGuiTestEngineIO
     bool                        ConfigRunBlind = false;     // Run tests in a blind ImGuiContext separated from the visible context
     bool                        ConfigStopOnError = false;  // Stop queued tests on test error
     bool                        ConfigBreakOnError = false; // Break debugger on test error
+    bool                        ConfigKeepTestGui = false;  // Keep test GUI running at the end of the test
     ImGuiTestVerboseLevel       ConfigVerboseLevel = ImGuiTestVerboseLevel_Normal;
     bool                        ConfigLogToTTY = false;
     bool                        ConfigTakeFocusBackAfterTests = true;
     bool                        ConfigNoThrottle = false;   // Disable vsync for performance measurement
     float                       MouseSpeed = 1000.0f;       // Mouse speed (pixel/second) when not running in fast mode
     float                       ScrollSpeed = 1600.0f;      // Scroll speed (pixel/second) when not running in fast mode
-    float                       TypingSpeed = 20.0f;        // Char input speed (characters/second) when not running in fast mode
+    float                       TypingSpeed = 30.0f;        // Char input speed (characters/second) when not running in fast mode
     int                         PerfStressAmount = 1;       // Integer to scale the amount of items submitted in test
 
     // Outputs: State           
@@ -259,6 +260,7 @@ struct ImGuiTestGenericState
     ImGuiID     Id;
     ImGuiID     IdArray[10];
     char        Str256[256];
+    ImVector<char>  StrLarge;
     void*       Ptr1;
     void*       Ptr2;
     void*       PtrArray[10];
@@ -318,9 +320,10 @@ struct ImGuiTestContext
     void        MouseDown(int button = 0);
     void        MouseUp(int button = 0);
     
-    void        KeyPressMap(ImGuiKey key, int count = 1);
+    void        KeyPressMap(ImGuiKey key, int mod_flags = 0, int count = 1);
     void        KeyChars(const char* chars);
-    void        KeyCharsInputAppend(const char* chars);
+    void        KeyCharsAppend(const char* chars);
+    void        KeyCharsAppendEnter(const char* chars);
 
     void        NavMove(ImGuiTestRef ref);
     void        NavActivate();

@@ -90,14 +90,33 @@ struct ImGuiTestGatherTask
 
 struct ImGuiTestInput
 {
-    ImGuiKey        Key = ImGuiKey_COUNT;
-    ImGuiNavInput   NavInput = ImGuiNavInput_COUNT;
-    ImWchar         Char = 0;
-    bool            IsDown = true;
+    ImGuiKey                Key = ImGuiKey_COUNT;
+    ImGuiKeyModFlags        KeyMods = ImGuiKeyModFlags_None;
+    ImGuiNavInput           NavInput = ImGuiNavInput_COUNT;
+    ImWchar                 Char = 0;
+    bool                    IsDown = true;
 
-    static ImGuiTestInput   FromKey(ImGuiKey v, bool down)      { ImGuiTestInput inp; inp.Key = v; inp.IsDown = down; return inp; }
-    static ImGuiTestInput   FromNav(ImGuiNavInput v, bool down) { ImGuiTestInput inp; inp.NavInput = v; inp.IsDown = down; return inp; }
-    static ImGuiTestInput   FromChar(ImWchar v)                 { ImGuiTestInput inp; inp.Char = v; return inp; }
+    static ImGuiTestInput   FromKey(ImGuiKey v, bool down, ImGuiKeyModFlags mods = ImGuiKeyModFlags_None) 
+    { 
+        ImGuiTestInput inp; 
+        inp.Key = v; 
+        inp.IsDown = down; 
+        inp.KeyMods = mods; 
+        return inp; 
+    }
+    static ImGuiTestInput   FromNav(ImGuiNavInput v, bool down) 
+    { 
+        ImGuiTestInput inp; 
+        inp.NavInput = v; 
+        inp.IsDown = down; 
+        return inp;
+    }
+    static ImGuiTestInput   FromChar(ImWchar v)
+    { 
+        ImGuiTestInput inp; 
+        inp.Char = v; 
+        return inp; 
+    }
 };
 
 struct ImGuiTestRunTask
@@ -450,6 +469,10 @@ static void ImGuiTestEngine_ApplyInputToImGuiContext(ImGuiTestEngine* engine)
                 {
                     IM_ASSERT(input.NavInput == ImGuiNavInput_COUNT);
                     IM_ASSERT(input.Char == 0);
+                    g.IO.KeyCtrl  = input.IsDown && (input.KeyMods & ImGuiKeyModFlags_Ctrl) != 0;
+                    g.IO.KeyAlt   = input.IsDown && (input.KeyMods & ImGuiKeyModFlags_Alt) != 0;
+                    g.IO.KeyShift = input.IsDown && (input.KeyMods & ImGuiKeyModFlags_Shift) != 0;
+                    g.IO.KeySuper = input.IsDown && (input.KeyMods & ImGuiKeyModFlags_Super) != 0;
                     int idx = g.IO.KeyMap[input.Key];
                     if (idx >= 0 && idx < IM_ARRAYSIZE(g.IO.KeysDown))
                         g.IO.KeysDown[idx] = input.IsDown;
@@ -730,6 +753,12 @@ static void ImGuiTestEngine_RunTest(ImGuiTestEngine* engine, ImGuiTestContext* c
     {
         if (test->TestFunc)
             test->TestFunc(ctx);
+
+        while (ctx->Engine->IO.ConfigKeepTestGui && !engine->Abort)
+        {
+            ctx->RunFlags |= ImGuiTestRunFlags_NoTestFunc;
+            ctx->Yield();
+        }
     }
 
     // Additional yield is currently _only_ so the Log gets scrolled to the bottom on the last frame of the log output.
@@ -1011,6 +1040,8 @@ void    ImGuiTestEngine_ShowTestWindow(ImGuiTestEngine* engine, bool* p_open)
     ImGui::Checkbox("Stop", &engine->IO.ConfigStopOnError);
     ImGui::SameLine();
     ImGui::Checkbox("DbgBrk", &engine->IO.ConfigBreakOnError);
+    ImGui::SameLine();
+    ImGui::Checkbox("KeepGUI", &engine->IO.ConfigKeepTestGui);
     ImGui::SameLine();
     ImGui::Checkbox("Focus", &engine->IO.ConfigTakeFocusBackAfterTests);
     if (ImGui::IsItemHovered())
@@ -1703,16 +1734,18 @@ void    ImGuiTestContext::MouseClick(int button)
     Yield(); // Give a frame for items to react
 }
 
-void    ImGuiTestContext::KeyPressMap(ImGuiKey key, int count)
+void    ImGuiTestContext::KeyPressMap(ImGuiKey key, int mod_flags, int count)
 {
     if (IsError())
         return;
 
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
-    LogVerbose("KeyPressMap(%s, %d)\n", GetImGuiKeyName(key), count);
+    char mod_flags_str[32];
+    GetImGuiKeyModsPrefixStr(mod_flags, mod_flags_str, IM_ARRAYSIZE(mod_flags_str));
+    LogVerbose("KeyPressMap(%s%s, %d)\n", mod_flags_str, GetImGuiKeyName(key), count);
     while (count > 0)
     {
-        Engine->InputQueue.push_back(ImGuiTestInput::FromKey(key, true));
+        Engine->InputQueue.push_back(ImGuiTestInput::FromKey(key, true, mod_flags));
         Yield();
         Engine->InputQueue.push_back(ImGuiTestInput::FromKey(key, false));
         Yield();
@@ -1742,13 +1775,24 @@ void    ImGuiTestContext::KeyChars(const char* chars)
     Yield();
 }
 
-void    ImGuiTestContext::KeyCharsInputAppend(const char* chars)
+void    ImGuiTestContext::KeyCharsAppend(const char* chars)
 {
     if (IsError())
         return;
 
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
-    LogVerbose("KeyCharsInputAppend('%s')\n", chars);
+    LogVerbose("KeyCharsAppend('%s')\n", chars);
+    KeyPressMap(ImGuiKey_End);
+    KeyChars(chars);
+}
+
+void    ImGuiTestContext::KeyCharsAppendEnter(const char* chars)
+{
+    if (IsError())
+        return;
+
+    IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
+    LogVerbose("KeyCharsAppendValidate('%s')\n", chars);
     KeyPressMap(ImGuiKey_End);
     KeyChars(chars);
     KeyPressMap(ImGuiKey_Enter);
