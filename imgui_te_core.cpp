@@ -530,8 +530,13 @@ static void ImGuiTestEngine_PostNewFrame(ImGuiTestEngine* engine)
 
 static void ImGuiTestEngine_Yield(ImGuiTestEngine* engine)
 {
-    engine->IO.EndFrameFunc(engine, engine->IO.UserData);
+    if (engine->TestContext->UiContext->FrameScopeActive)
+        engine->IO.EndFrameFunc(engine, engine->IO.UserData);
+
     engine->IO.NewFrameFunc(engine, engine->IO.UserData);
+
+    if (!engine->TestContext->UiContext->FrameScopeActive)
+        return;
 
     // Call user GUI function
     if (engine->TestContext && engine->TestContext->Test->GuiFunc)
@@ -1330,6 +1335,12 @@ void    ImGuiTestContext::YieldFrames(int count = 0)
     }
 }
 
+void    ImGuiTestContext::YieldUntil(int frame_count)
+{
+    while (FrameCount < frame_count)
+        ImGuiTestEngine_Yield(Engine);
+}
+
 void    ImGuiTestContext::Sleep(float time)
 {
     if (IsError())
@@ -1743,6 +1754,22 @@ void    ImGuiTestContext::KeyCharsInputAppend(const char* chars)
     KeyPressMap(ImGuiKey_Enter);
 }
 
+void    ImGuiTestContext::FocusWindow(ImGuiTestRef ref)
+{
+    IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
+    ImGuiTestRefDesc desc(ref, NULL);
+    LogVerbose("FocusWindow('%s')\n", desc.c_str());
+
+    ImGuiID window_id = GetID(ref);
+    ImGuiWindow* window = ImGui::FindWindowByID(window_id);
+    IM_CHECK(window != NULL);
+    if (window)
+    {
+        ImGui::FocusWindow(window);
+        Yield();
+    }
+}
+
 void    ImGuiTestContext::BringWindowToFront(ImGuiWindow* window)
 {
     ImGuiContext& g = *UiContext;
@@ -1757,7 +1784,7 @@ void    ImGuiTestContext::BringWindowToFront(ImGuiWindow* window)
     if (window != g.NavWindow)
     {
         IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
-        LogVerbose("FocusWindow('%s')\n", window->Name);
+        LogVerbose("BringWindowToFront->FocusWindow('%s')\n", window->Name);
         ImGui::FocusWindow(window);
         Yield();
         Yield();
@@ -2044,6 +2071,7 @@ void    ImGuiTestContext::ItemDragAndDrop(ImGuiTestRef ref_src, ImGuiTestRef ref
 {
     if (IsError())
         return;
+    ImGuiContext& g = *UiContext;
 
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
     ImGuiTestItemInfo* item_src = ItemLocate(ref_src);
@@ -2052,9 +2080,16 @@ void    ImGuiTestContext::ItemDragAndDrop(ImGuiTestRef ref_src, ImGuiTestRef ref
     ImGuiTestRefDesc desc_dst(ref_dst, item_dst);
     LogVerbose("ItemDragAndDrop %s to %s\n", desc_src.c_str(), desc_dst.c_str());
 
-    MouseMove(ref_src);
+    MouseMove(ref_src, ImGuiTestOpFlags_NoCheckHoveredId);
+    SleepShort();
     MouseDown(0);
+
+    // Enforce lifting drag threshold even if both item are exactly at the same location.
+    g.IO.MouseDragMaxDistanceAbs[0] = ImVec2(g.IO.MouseDragThreshold, g.IO.MouseDragThreshold);
+    g.IO.MouseDragMaxDistanceSqr[0] = (g.IO.MouseDragThreshold * g.IO.MouseDragThreshold) + (g.IO.MouseDragThreshold * g.IO.MouseDragThreshold);
+
     MouseMove(ref_dst, ImGuiTestOpFlags_NoCheckHoveredId);
+    SleepShort();
     MouseUp(0);
 }
 

@@ -125,7 +125,7 @@ void RegisterTests_Window(ImGuiTestContext* ctx)
     {
         ImGui::Begin("AAAA", NULL, ImGuiWindowFlags_NoSavedSettings);
         ImGui::End();
-        if (ctx->FrameCount >= 20 && ctx->FrameCount < 40)
+        if ((ctx->FrameCount >= 20 && ctx->FrameCount < 40) || (ctx->FrameCount >= 50))
         {
             ImGui::Begin("BBBB", NULL, ImGuiWindowFlags_NoSavedSettings);
             ImGui::End();
@@ -137,14 +137,23 @@ void RegisterTests_Window(ImGuiTestContext* ctx)
     {
         ImGuiContext& g = *ctx->UiContext;
         IM_CHECK(g.NavWindow->ID == ctx->GetID("/AAAA"));
-        ctx->YieldFrames(19);
+        ctx->YieldUntil(19);
         IM_CHECK(g.NavWindow->ID == ctx->GetID("/AAAA"));
-        ctx->YieldFrames(1);
+        ctx->YieldUntil(20);
         IM_CHECK(g.NavWindow->ID == ctx->GetID("/CCCC"));
-        ctx->YieldFrames(20);
-        IM_CHECK(g.NavWindow->ID == ctx->GetID("/CCCC"));
-        ctx->YieldFrames(1);
+        ctx->YieldUntil(30);
+        ctx->FocusWindow("/BBBB");
+        IM_CHECK(g.NavWindow->ID == ctx->GetID("/BBBB"));
+        ctx->YieldUntil(40);
+        IM_CHECK(g.NavWindow->ID == ctx->GetID("/BBBB"));
+
+        ctx->YieldUntil(41);
         IM_CHECK(g.NavWindow->ID == ctx->GetID("/AAAA"));
+
+        ctx->YieldUntil(49);
+        IM_CHECK(g.NavWindow->ID == ctx->GetID("/AAAA"));
+        ctx->YieldUntil(50);
+        IM_CHECK(g.NavWindow->ID == ctx->GetID("/CCCC"));
     };
 }
 
@@ -292,16 +301,78 @@ void RegisterTests_Docking(ImGuiTestContext* ctx)
 #ifdef IMGUI_HAS_DOCK
     ImGuiTest* t = NULL;
 
-    t = REGISTER_TEST("docking", "docking_focus");
+    t = REGISTER_TEST("docking", "docking_drag");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
+        ImGui::SetNextWindowPos(ImVec2(100, 100), ImGuiCond_Once);
+        ImGui::Begin("AAAA", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImGui::Text("This is AAAA");
+        ImGui::End();
+
+        ImGui::SetNextWindowPos(ImVec2(200, 200), ImGuiCond_Once);
+        ImGui::Begin("BBBB", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImGui::Text("This is BBBB");
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ctx->ItemDragAndDrop("/AAAA/#COLLAPSE", "/BBBB/#COLLAPSE");
+        ctx->SleepShort();
+    };
+
+    t = REGISTER_TEST("docking", "docking_2");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiTestGenericState& gs = ctx->GenericState;
+        if (ctx->FrameCount == 0)
+        {
+            ImGui::DockBuilderDockWindow("AAAA", 0);
+            ImGui::DockBuilderDockWindow("BBBB", 0);
+            ImGui::DockBuilderDockWindow("CCCC", 0);
+        }
+        if (ctx->FrameCount == 10)
+        {
+            ImGuiID dock_id = ImGui::DockBuilderAddNode(0, ImGuiDockNodeFlags_None);
+            gs.Id = dock_id;
+            ImGui::DockBuilderSetNodePos(dock_id, ImGui::GetMainViewport()->Pos + ImVec2(100, 100));
+            ImGui::DockBuilderSetNodeSize(dock_id, ImVec2(200, 200));
+            ImGui::DockBuilderDockWindow("AAAA", dock_id);
+            ImGui::DockBuilderDockWindow("BBBB", dock_id);
+            ImGui::DockBuilderDockWindow("CCCC", dock_id);
+            ImGui::DockBuilderFinish(dock_id);
+        }
+
+        ImGuiID ids[3];
+        ImGui::Begin("AAAA");
+        ids[0] = ImGui::GetWindowDockID();
+        ImGui::Text("This is AAAA");
+        ImGui::End();
+
+        ImGui::Begin("BBBB");
+        ids[1] = ImGui::GetWindowDockID();
+        ImGui::Text("This is BBBB");
+        ImGui::End();
+
+        ImGui::Begin("CCCC");
+        ids[2] = ImGui::GetWindowDockID();
+        ImGui::Text("This is CCCC");
+        ImGui::End();
+
         if (ctx->FrameCount == 1)
         {
-            //ImGui::DockBuilderAddNode(0, )
+            IM_CHECK(ids[0] == 0);
+            IM_CHECK(ids[0] == ids[1] && ids[0] == ids[2]);
+        }
+        if (ctx->FrameCount == 10)
+        {
+            IM_CHECK(gs.Id != 0);
+            IM_CHECK(ids[0] == gs.Id);
+            IM_CHECK(ids[0] == ids[1] && ids[0] == ids[2]);
         }
     };
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
+        ctx->YieldFrames(20);
     };
 #endif
 }

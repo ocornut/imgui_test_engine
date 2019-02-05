@@ -221,8 +221,14 @@ bool MainLoopNewFrameDX11()
     {
         ImGui_ImplDX11_NewFrame();
         ImGui_ImplWin32_NewFrame();
+        ImGui::NewFrame();
     }
-    ImGui::NewFrame();
+    else
+    {
+        // It would be tempting to call NewFrame() even if g_App.Quit==true because it makes winding down the Yield stack easier,
+        // however, NewFrame() calls Platform_GetWindowPos() which will return (0,0) after the WM_QUIT message and damage our .ini data. 
+        //ImGui::NewFrame();
+    }
 
 	return !g_App.Quit;
 }
@@ -303,12 +309,14 @@ bool MainLoopEndFrame()
         ImGui::Render();
 
         // Update and Render additional Platform Windows
+#ifdef IMGUI_HAS_VIEWPORT
         ImGuiIO& io = ImGui::GetIO();
         if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
         {
             ImGui::UpdatePlatformWindows();
             ImGui::RenderPlatformWindowsDefault();
         }
+#endif
 
         g_pd3dDeviceContext->OMSetRenderTargets(1, &g_mainRenderTargetView, NULL);
         g_pd3dDeviceContext->ClearRenderTargetView(g_mainRenderTargetView, (float*)&clear_color);

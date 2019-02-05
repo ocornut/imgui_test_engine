@@ -56,10 +56,10 @@ enum ImGuiTestFlags_
 
 enum ImGuiTestOpFlags_
 {
-    ImGuiTestOpFlags_None               = 0,
-    ImGuiTestOpFlags_Verbose            = 1 << 0,
-    ImGuiTestOpFlags_NoCheckHoveredId   = 1 << 1,
-    ImGuiTestOpFlags_NoError            = 1 << 2    // Don't abort/error e.g. if the item cannot be found
+    ImGuiTestOpFlags_None                   = 0,
+    ImGuiTestOpFlags_Verbose                = 1 << 0,
+    ImGuiTestOpFlags_NoCheckHoveredId       = 1 << 1,
+    ImGuiTestOpFlags_NoError                = 1 << 2    // Don't abort/error e.g. if the item cannot be found
 };
 
 enum ImGuiTestRunFlags_
@@ -256,6 +256,8 @@ struct ImGuiTestGenericState
     bool        BoolArray[10];
     ImVec4      Vec4;
     ImVec4      Vec4Array[10];
+    ImGuiID     Id;
+    ImGuiID     IdArray[10];
     char        Str256[256];
     void*       Ptr1;
     void*       Ptr2;
@@ -298,6 +300,7 @@ struct ImGuiTestContext
 
     void        Yield();
     void        YieldFrames(int count);
+    void        YieldUntil(int frame_count);
     void        Sleep(float time);
     void        SleepShort();
 
@@ -322,7 +325,7 @@ struct ImGuiTestContext
     void        NavMove(ImGuiTestRef ref);
     void        NavActivate();
 
-    void        BringWindowToFront();
+    void        FocusWindow(ImGuiTestRef ref);
     void        BringWindowToFront(ImGuiWindow* window);
     void        BringWindowToFrontFromItem(ImGuiTestRef ref);
 
