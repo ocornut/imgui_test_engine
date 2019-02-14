@@ -12,6 +12,7 @@
 // Visual Studio warnings
 #ifdef _MSC_VER
 #pragma warning (disable: 4100) // unreferenced formal parameter
+#pragma warning (disable: 4127) // conditional expression is constant
 #endif
 
 // Helper Operators
@@ -64,7 +65,28 @@ void RegisterTests_Window(ImGuiTestContext* ctx)
         IM_CHECK(window->Scroll.x == 0.0f && window->Scroll.y == 0.0f);
     };
 
-    t = REGISTER_TEST("window", "window_auto_resize_collapse");
+    // Test that a window starting collapsed performs width/contents size measurement on its first few frames.
+    t = REGISTER_TEST("window", "window_size_collapsed_1");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::SetNextWindowCollapsed(true, ImGuiCond_Once);
+        ImGui::Begin("Issue 2336", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImGui::Text("This is some text");
+        ImGui::Text("This is some more text");
+        ImGui::Text("This is some more text again");
+
+        float w = ImGui::GetWindowWidth();
+        if (ctx->FrameCount == 0) // We are past the warm-up frames already
+        {
+            float expected_w = ImGui::CalcTextSize("This is some more text again").x + ImGui::GetStyle().WindowPadding.x * 2.0f;
+            IM_CHECK(ImFabs(w - expected_w) < 1.0f);
+        }
+
+        ImGui::End();
+    };
+
+    // Test that uncollapsing an auto-resizing window does not go through a frame where the window is smaller than expected
+    t = REGISTER_TEST("window", "window_auto_resize_uncollapse");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         // FIXME-TESTS: Ideally we'd like a variant with/without the if (Begin) here
@@ -291,7 +313,12 @@ void RegisterTests_Widgets(ImGuiTestContext* ctx)
         ctx->KeyPressMap(ImGuiKey_A, ImGuiKeyModFlags_Ctrl);    // Select all
         ctx->KeyPressMap(ImGuiKey_C, ImGuiKeyModFlags_Ctrl);    // Copy
         ctx->KeyPressMap(ImGuiKey_End, ImGuiKeyModFlags_Ctrl);  // Go to end, clear selection
-        ctx->KeyPressMap(ImGuiKey_V, ImGuiKeyModFlags_Ctrl, 3); // Paste append three times
+        ctx->SleepShort();
+        for (int n = 0; n < 3; n++)
+        {
+            ctx->KeyPressMap(ImGuiKey_V, ImGuiKeyModFlags_Ctrl);// Paste append three times
+            ctx->SleepShort();
+        }
         size_t len = strlen(gs.StrLarge.Data);
         IM_CHECK(len == 350 * 4);
         IM_CHECK(undo_state.undo_point == 3);
@@ -334,8 +361,6 @@ void RegisterTests_Widgets(ImGuiTestContext* ctx)
         IM_CHECK(memcmp(&gs.Vec4Array[0], &gs.Vec4Array[1], sizeof(ImVec4)) != 0);
         ctx->ItemDragAndDrop("ColorEdit1/##ColorButton", "ColorEdit2/##X"); // FIXME-TESTS: Inner items
         IM_CHECK(memcmp(&gs.Vec4Array[0], &gs.Vec4Array[1], sizeof(ImVec4)) == 0);
-
-        ctx->Sleep(1.0f);
     };
 }
 
@@ -942,7 +967,7 @@ void RegisterTests_Capture(ImGuiTestContext* ctx)
         ctx->MenuCheck("Examples/Simple overlay");
         ctx->SetRef("Example: Simple overlay");
         ImGuiWindow* window_overlay = ctx->GetRefWindow();
-        IM_CHECK_ABORT(window_overlay != NULL);
+        IM_CHECK(window_overlay != NULL);
 
         // FIXME-TESTS: Find last newly opened window?
 
@@ -955,7 +980,7 @@ void RegisterTests_Capture(ImGuiTestContext* ctx)
         ctx->WindowResize(ImVec2(fh * 30, fh * 30));
         ctx->WindowMove(window_overlay->Rect().GetBL() + ImVec2(0.0f, pad));
         ImGuiWindow* window_custom_rendering = ctx->GetRefWindow();
-        IM_CHECK_ABORT(window_custom_rendering != NULL);
+        IM_CHECK(window_custom_rendering != NULL);
 
         ctx->SetRef("ImGui Demo");
         ctx->MenuCheck("Examples/Console");

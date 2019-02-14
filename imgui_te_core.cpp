@@ -553,18 +553,30 @@ static void ImGuiTestEngine_PostNewFrame(ImGuiTestEngine* engine)
 
 static void ImGuiTestEngine_Yield(ImGuiTestEngine* engine)
 {
-    if (engine->TestContext->UiContext->FrameScopeActive)
+    ImGuiContext& g = *engine->TestContext->UiContext;
+
+    if (g.FrameScopeActive)
         engine->IO.EndFrameFunc(engine, engine->IO.UserData);
 
     engine->IO.NewFrameFunc(engine, engine->IO.UserData);
+    IM_ASSERT(g.IO.DeltaTime > 0.0f);
 
-    if (!engine->TestContext->UiContext->FrameScopeActive)
+    if (!g.FrameScopeActive)
         return;
 
-    // Call user GUI function
     if (engine->TestContext && engine->TestContext->Test->GuiFunc)
+    {
+        // Call user GUI function
         if (!(engine->TestContext->RunFlags & ImGuiTestRunFlags_NoGuiFunc))
             engine->TestContext->Test->GuiFunc(engine->TestContext);
+
+        // Safety net
+        if (engine->TestContext->Test->Status == ImGuiTestStatus_Error)
+        {
+            while (g.CurrentWindowStack.Size > 1) // FIXME-ERRORHANDLING
+                ImGui::End();
+        }
+    }
 }
 
 static void ImGuiTestEngine_ProcessQueue(ImGuiTestEngine* engine)
@@ -753,6 +765,9 @@ static void ImGuiTestEngine_RunTest(ImGuiTestEngine* engine, ImGuiTestContext* c
     {
         if (test->TestFunc)
             test->TestFunc(ctx);
+
+        if (!ctx->Engine->IO.ConfigRunFast)
+            ctx->SleepShort();
 
         while (ctx->Engine->IO.ConfigKeepTestGui && !engine->Abort)
         {
@@ -1026,7 +1041,7 @@ void    ImGuiTestEngine_ShowTestWindow(ImGuiTestEngine* engine, bool* p_open)
     }
 #endif
 
-    const float log_height = ImGui::GetTextLineHeight() * 20.0f;
+    const float log_height = ImGui::GetTextLineHeight() * 30.0f;
     const ImU32 col_highlight = IM_COL32(255, 255, 20, 255);
 
     // Options
@@ -1529,7 +1544,8 @@ void    ImGuiTestContext::ScrollToY(ImGuiTestRef ref, float scroll_ratio_y)
         if (ImFabs(window->Scroll.y - scroll_target) < 1.0f)
             break;
 
-        float scroll_speed = Engine->IO.ConfigRunFast ? FLT_MAX : ImFloor(Engine->IO.ScrollSpeed * g.IO.DeltaTime);
+        float scroll_speed = Engine->IO.ConfigRunFast ? FLT_MAX : ImFloor(Engine->IO.ScrollSpeed * g.IO.DeltaTime + 0.99f);
+        //printf("[%03d] window->Scroll.y %f + %f\n", FrameCount, window->Scroll.y, scroll_speed);
         window->Scroll.y = ImLinearSweep(window->Scroll.y, scroll_target, scroll_speed);
 
         Yield();
@@ -1745,12 +1761,14 @@ void    ImGuiTestContext::KeyPressMap(ImGuiKey key, int mod_flags, int count)
     LogVerbose("KeyPressMap(%s%s, %d)\n", mod_flags_str, GetImGuiKeyName(key), count);
     while (count > 0)
     {
+        count--;
         Engine->InputQueue.push_back(ImGuiTestInput::FromKey(key, true, mod_flags));
         Yield();
         Engine->InputQueue.push_back(ImGuiTestInput::FromKey(key, false));
         Yield();
-        Yield(); // Give a frame for items to react
-        count--;
+
+        // Give a frame for items to react
+        Yield();
     }
 }
 

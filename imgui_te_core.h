@@ -84,8 +84,8 @@ void    ImGuiTestEngineHook_ItemInfo(ImGuiID id, const char* label, int flags);
 //-------------------------------------------------------------------------
 
 // We embed every maacro in a do {} while(0) statement as a trick to allow using them as regular single statement, e.g. if (XXX) IM_CHECK(A); else IM_CHECK(B)
-#define IM_CHECK(_EXPR)             do { if (ImGuiTestEngineHook_Check(__FILE__, __func__, __LINE__, (bool)(_EXPR), #_EXPR))     { IM_ASSERT(0); } } while (0)
-#define IM_CHECK_ABORT(_EXPR)       do { if (ImGuiTestEngineHook_Check(__FILE__, __func__, __LINE__, (bool)(_EXPR), #_EXPR))     { IM_ASSERT(0); } if (!(bool)(_EXPR)) return; } while (0)
+#define IM_CHECK_NO_ABORT(_EXPR)    do { if (ImGuiTestEngineHook_Check(__FILE__, __func__, __LINE__, (bool)(_EXPR), #_EXPR))     { IM_ASSERT(0); } } while (0)
+#define IM_CHECK(_EXPR)             do { if (ImGuiTestEngineHook_Check(__FILE__, __func__, __LINE__, (bool)(_EXPR), #_EXPR))     { IM_ASSERT(0); } if (!(bool)(_EXPR)) return; } while (0)
 #define IM_ERRORF(_FMT,...)         do { if (ImGuiTestEngineHook_Error(__FILE__, __func__, __LINE__, _FMT, __VA_ARGS__))         { IM_ASSERT(0); } } while (0)
 #define IM_ERRORF_NOHDR(_FMT,...)   do { if (ImGuiTestEngineHook_Error(NULL, NULL, 0, _FMT, __VA_ARGS__))                        { IM_ASSERT(0); } } while (0)
 //#define IM_ASSERT(_EXPR)      (void)( (!!(_EXPR)) || (ImGuiTestEngineHook_Check(false, #_EXPR, __FILE__, __func__, __LINE__), 0) )

@@ -12,6 +12,8 @@
 
 //#define CMDLINE_ARGS    "-fileopener ../../tools/win32_open_with_sublime.cmd"
 //#define CMDLINE_ARGS  "-gui -nothrottle"
+//#define CMDLINE_ARGS  "-gui perf_stress_text_unformatted"
+//#define CMDLINE_ARGS  "-nogui -v3 nav"
 //#define CMDLINE_ARGS  "-nogui perf_stress_slider"
 //#define CMDLINE_ARGS  "-nogui -nothrottle perf_stress_hash"
 
@@ -241,7 +243,9 @@ bool MainLoopNewFrameNull()
     ImU64 time = ImGetTimeInMicroseconds();
     if (g_App.LastTime == 0)
         g_App.LastTime = time;
-    io.DeltaTime = (float)((time - g_App.LastTime) / 1000) / 1000.0f;
+    io.DeltaTime = (float)((double)(time - g_App.LastTime) / 1000000.0);
+    if (io.DeltaTime <= 0.0f)
+        io.DeltaTime = 0.000001f;
     g_App.LastTime = time;
 
     ImGui::NewFrame();
@@ -501,6 +505,11 @@ int main(int argc, char** argv)
     test_io.ConfigRunFast = g_App.OptFast;
     test_io.ConfigVerboseLevel = g_App.OptVerboseLevel;
     test_io.ConfigNoThrottle = g_App.OptNoThrottle;
+    test_io.PerfStressAmount = 10;
+#ifdef _WIN32
+    if (!g_App.OptGUI && ::IsDebuggerPresent())
+        test_io.ConfigBreakOnError = true;
+#endif
 
     switch (g_App.Backend)
     {
