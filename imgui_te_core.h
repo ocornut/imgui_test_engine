@@ -244,6 +244,7 @@ struct ImGuiTestRef
 };
 
 // Generic structure with varied data. This is useful for tests to quickly share data between the GUI functions and the Test function.
+// This is however totally optional. Using a RunFunc it is possible to store custom data on the stack and read from it as UserData.
 struct ImGuiTestGenericState
 {
     int         Int1;
@@ -259,13 +260,15 @@ struct ImGuiTestGenericState
     ImVec4      Vec4Array[10];
     ImGuiID     Id;
     ImGuiID     IdArray[10];
-    char        Str256[256];
+    char        Str1[256];
+    char        Str2[256];
     ImVector<char>  StrLarge;
     void*       Ptr1;
     void*       Ptr2;
     void*       PtrArray[10];
 
-    ImGuiTestGenericState() { memset(this, 0, sizeof(*this)); }
+    ImGuiTestGenericState() { clear(); }
+    void clear()            { memset(this, 0, sizeof(*this)); }
 };
 
 struct ImGuiTestContext
@@ -349,6 +352,7 @@ struct ImGuiTestContext
     void        ItemCloseAll(ImGuiTestRef ref_parent, int depth = -1, int passes = -1)   { ItemActionAll(ImGuiTestAction_Close, ref_parent, depth, passes); }
 
     void        ItemHold(ImGuiTestRef ref, float time);
+    void        ItemHoldForFrames(ImGuiTestRef ref, int frames);
     void        ItemDragAndDrop(ImGuiTestRef ref_src, ImGuiTestRef ref_dst);
     ImGuiTestItemInfo* ItemLocate(ImGuiTestRef ref, ImGuiTestOpFlags flags = ImGuiTestOpFlags_None);
     void        ItemVerifyCheckedIfAlive(ImGuiTestRef ref, bool checked);

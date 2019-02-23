@@ -224,12 +224,12 @@ void RegisterTests_Widgets(ImGuiTestContext* ctx)
         ImGuiTestGenericState& gs = ctx->GenericState;
         ImGui::SetNextWindowSize(ImVec2(200, 200));
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
-        ImGui::InputText("InputText", gs.Str256, IM_ARRAYSIZE(gs.Str256));
+        ImGui::InputText("InputText", gs.Str1, IM_ARRAYSIZE(gs.Str1));
         ImGui::End();
     };
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
-        char* buf = ctx->GenericState.Str256;
+        char* buf = ctx->GenericState.Str1;
 
         ctx->SetRef("Test Window");
 
@@ -273,8 +273,7 @@ void RegisterTests_Widgets(ImGuiTestContext* ctx)
         ImGui::InputText("Dummy", "", 0, ImGuiInputTextFlags_None);
         ImGui::InputTextMultiline("InputText", gs.StrLarge.Data, gs.StrLarge.Size, ImVec2(-1, ImGui::GetFontSize() * 20), ImGuiInputTextFlags_None);
         ImGui::End();
-
-        ImDebugShowInputTextState();
+        //ImDebugShowInputTextState();
     };
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
@@ -294,7 +293,7 @@ void RegisterTests_Widgets(ImGuiTestContext* ctx)
         ctx->ItemClick("InputText");
 
         ImGuiInputTextState& input_text_state = GImGui->InputTextState;
-        ImGuiStb::StbUndoState& undo_state = input_text_state.StbState.undostate;
+        ImStb::StbUndoState& undo_state = input_text_state.Stb.undostate;
         IM_CHECK(input_text_state.ID == GImGui->ActiveId);
         IM_CHECK(undo_state.undo_point == 0);
         IM_CHECK(undo_state.undo_char_point == 0);
@@ -340,11 +339,75 @@ void RegisterTests_Widgets(ImGuiTestContext* ctx)
         IM_CHECK(len == 350 * 1);
     };
 
+    t = REGISTER_TEST("widgets", "widgets_inputtext_3_text_ownership");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiTestGenericState& gs = ctx->GenericState;
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
+        ImGui::LogToBuffer();
+        ImGui::InputText("##InputText", gs.Str1, IM_ARRAYSIZE(gs.Str1)); // Remove label to simplify the capture/comparison
+        ImFormatString(gs.Str2, IM_ARRAYSIZE(gs.Str2), "%s", ctx->UiContext->LogBuffer.c_str());
+        ImGui::LogFinish();
+        ImGui::Text("Captured: \"%s\"", gs.Str2);
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiTestGenericState& gs = ctx->GenericState;
+        char* buf_user = gs.Str1;
+        char* buf_visible = gs.Str2;
+        ctx->SetRef("Test Window");
+
+        IM_CHECK(strcmp(buf_visible, "") == 0);
+        strcpy(buf_user, "Hello");
+        ctx->Yield();
+        IM_CHECK(strcmp(buf_visible, "Hello") == 0);
+        ctx->ItemClick("##InputText");
+        ctx->KeyCharsAppend("1");
+        ctx->Yield();
+        IM_CHECK(strcmp(buf_user, "Hello1") == 0);
+        IM_CHECK(strcmp(buf_visible, "Hello1") == 0);
+
+        // Because the item is active, it owns the source data, so:
+        strcpy(buf_user, "Overwritten");
+        ctx->Yield();
+        IM_CHECK(strcmp(buf_user, "Hello1") == 0);
+        IM_CHECK(strcmp(buf_visible, "Hello1") == 0);
+
+        // Lose focus, at this point the InputTextState->ID should be holding on the last active state,
+        // so we verify that InputText() is picking up external changes.
+        ctx->KeyPressMap(ImGuiKey_Escape);
+        IM_CHECK(ctx->UiContext->ActiveId == 0);
+        strcpy(buf_user, "Hello2");
+        ctx->Yield();
+        IM_CHECK(strcmp(buf_user, "Hello2") == 0);
+        IM_CHECK(strcmp(buf_visible, "Hello2") == 0);
+    };
+
+    // Test that InputText doesn't go havoc when activated via another item
+    t = REGISTER_TEST("widgets", "widgets_inputtext_4_id_conflict");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiTestGenericState& gs = ctx->GenericState;
+        ImGui::SetNextWindowSize(ImVec2(ImGui::GetFontSize() * 50, 0.0f));
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
+        if (ctx->FrameCount < 50)
+            ImGui::Button("Hello");
+        else
+            ImGui::InputText("Hello", gs.Str1, IM_ARRAYSIZE(gs.Str1));
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ctx->SetRef("Test Window");
+        ctx->ItemHoldForFrames("Hello", 100);
+    };
+    
     t = REGISTER_TEST("widgets", "widgets_coloredit_drag");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         ImGuiTestGenericState& gs = ctx->GenericState;
-        ImGui::SetNextWindowSize(ImVec2(200, 200));
+        ImGui::SetNextWindowSize(ImVec2(300, 200));
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
         ImGui::ColorEdit4("ColorEdit1", &gs.Vec4Array[0].x, ImGuiColorEditFlags_None);
         ImGui::ColorEdit4("ColorEdit2", &gs.Vec4Array[1].x, ImGuiColorEditFlags_None);
@@ -362,6 +425,52 @@ void RegisterTests_Widgets(ImGuiTestContext* ctx)
         ctx->ItemDragAndDrop("ColorEdit1/##ColorButton", "ColorEdit2/##X"); // FIXME-TESTS: Inner items
         IM_CHECK(memcmp(&gs.Vec4Array[0], &gs.Vec4Array[1], sizeof(ImVec4)) == 0);
     };
+
+    // Issue #2371
+    t = REGISTER_TEST("widgets", "widgets_tabbar_recurse");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
+        if (ImGui::BeginTabBar("TabBar 0"))
+        {
+            if (ImGui::BeginTabItem("TabItem"))
+            {
+                // If we have many tab bars here, it will invalidate pointers from pooled tab bars
+                for (int i = 0; i < 128; i++)
+                {
+                    char buf[64];
+                    ImFormatString(buf, IM_ARRAYSIZE(buf), "Inner TabBar %d", i);
+                    if (ImGui::BeginTabBar(buf))
+                    {
+                        if (ImGui::BeginTabItem("Inner TabItem"))
+                            ImGui::EndTabItem();
+                        ImGui::EndTabBar();
+                    }
+                }
+                ImGui::EndTabItem();
+            }
+            ImGui::EndTabBar();
+        }
+        ImGui::End();
+    };
+
+#ifdef IMGUI_HAS_DOCK
+    t = REGISTER_TEST("widgets", "widgets_tabbar_dockspace");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+        if (ImGui::BeginTabBar("TabBar"))
+        {
+            if (ImGui::BeginTabItem("TabItem"))
+            {
+                ImGui::DockSpace(ImGui::GetID("Hello"), ImVec2(0, 0));
+                ImGui::EndTabItem();
+            }
+            ImGui::EndTabBar();
+        }
+        ImGui::End();
+    };
+#endif
 }
 
 //-------------------------------------------------------------------------
@@ -828,6 +937,7 @@ void RegisterTests_Perf(ImGuiTestContext* ctx)
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         ImGui::Begin("Test Func", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
+        ImGui::Text("Hashing..");
         int loop_count = 5000 * ctx->PerfStressAmount;
         char buf[32] = { 0 };
         ImU32 seed = 0;
@@ -983,25 +1093,30 @@ void RegisterTests_Capture(ImGuiTestContext* ctx)
         IM_CHECK(window_custom_rendering != NULL);
 
         ctx->SetRef("ImGui Demo");
-        ctx->MenuCheck("Examples/Console");
-        ctx->SetRef("Example: Console");
-        ctx->WindowResize(ImVec2(fh * 42, fh * (34-20)));
-        ctx->WindowMove(window_custom_rendering->Pos + window_custom_rendering->Size * ImVec2(0.35f, 0.55f));
-        ctx->ItemClick("Clear");
-        ctx->ItemClick("Add Dummy Text");
-        ctx->ItemClick("Add Dummy Error");
-        ctx->ItemClick("Input");
-
-        ctx->KeyChars("H");
-        ctx->KeyPressMap(ImGuiKey_Tab);
-        ctx->KeyCharsAppendEnter("ELP");
-        ctx->KeyCharsAppendEnter("hello, imgui world!");
-
-        ctx->SetRef("ImGui Demo");
         ctx->MenuCheck("Examples/Simple layout");
         ctx->SetRef("Example: Simple layout");
         ctx->WindowResize(ImVec2(fh * 50, fh * 15));
         ctx->WindowMove(ImVec2(pad, io.DisplaySize.y - pad), ImVec2(0.0f, 1.0f));
+
+        ctx->SetRef("ImGui Demo");
+        ctx->MenuCheck("Examples/Documents");
+        ctx->SetRef("Example: Documents");
+        ctx->WindowResize(ImVec2(fh * 20, fh * 27));
+        ctx->WindowMove(ImVec2(window_custom_rendering->Pos.x + window_custom_rendering->Size.x + pad, pad));
+
+        ctx->SetRef("ImGui Demo");
+        ctx->MenuCheck("Examples/Console");
+        ctx->SetRef("Example: Console");
+        ctx->WindowResize(ImVec2(fh * 40, fh * (34-7)));
+        ctx->WindowMove(window_custom_rendering->Pos + window_custom_rendering->Size * ImVec2(0.30f, 0.60f));
+        ctx->ItemClick("Clear");
+        ctx->ItemClick("Add Dummy Text");
+        ctx->ItemClick("Add Dummy Error");
+        ctx->ItemClick("Input");
+        ctx->KeyChars("H");
+        ctx->KeyPressMap(ImGuiKey_Tab);
+        ctx->KeyCharsAppendEnter("ELP");
+        ctx->KeyCharsAppendEnter("hello, imgui world!");
 
         ctx->SetRef("ImGui Demo");
         ctx->WindowResize(ImVec2(fh * 35, io.DisplaySize.y - pad * 2.0f));
@@ -1011,6 +1126,8 @@ void RegisterTests_Capture(ImGuiTestContext* ctx)
         ctx->ItemOpen("Layout");
         ctx->ItemOpen("Groups");
         ctx->ScrollToY("Layout", 0.8f);
+
+        ctx->Sleep(2.0f);
     };
 #endif
 }

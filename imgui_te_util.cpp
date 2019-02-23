@@ -151,13 +151,13 @@ void ImDebugShowInputTextState()
 
     ImGui::Begin("Debug stb_textedit.h");
 
-    ImGuiInputTextState& imstate = g.InputTextState;
-    if (g.ActiveId != 0 && imstate.ID == g.ActiveId)
+    ImGuiInputTextState& edit_state = g.InputTextState;
+    if (g.ActiveId != 0 && edit_state.ID == g.ActiveId)
         ImGui::Text("Active");
     else
         ImGui::Text("Inactive");
 
-    ImGuiStb::StbUndoState& undostate = imstate.StbState.undostate;
+    ImStb::StbUndoState& undostate = edit_state.Stb.undostate;
 
     ImGui::Text("undo_point: %d\nredo_point:%d\nundo_char_point: %d\nredo_char_point:%d",
         undostate.undo_point,

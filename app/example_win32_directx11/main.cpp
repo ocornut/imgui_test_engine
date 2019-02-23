@@ -465,7 +465,7 @@ int main(int argc, char** argv)
     //style.FrameBorderSize = 1.0f;
     //style.FrameRounding = 5.0f;
 #ifdef IMGUI_HAS_VIEWPORT
-    io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
+    //io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
 #endif
 #ifdef IMGUI_HAS_DOCK
     io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;

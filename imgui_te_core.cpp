@@ -744,6 +744,7 @@ static void ImGuiTestEngine_RunTest(ImGuiTestEngine* engine, ImGuiTestContext* c
     ctx->FrameCount = 0;
     ctx->SetRef("");
     ctx->SetInputMode(ImGuiInputSource_Mouse);
+    ctx->GenericState.clear();
 
     test->TestLog.clear();
 
@@ -1041,7 +1042,7 @@ void    ImGuiTestEngine_ShowTestWindow(ImGuiTestEngine* engine, bool* p_open)
     }
 #endif
 
-    const float log_height = ImGui::GetTextLineHeight() * 30.0f;
+    const float log_height = ImGui::GetTextLineHeight() * 20.0f;
     const ImU32 col_highlight = IM_COL32(255, 255, 20, 255);
 
     // Options
@@ -1063,7 +1064,7 @@ void    ImGuiTestEngine_ShowTestWindow(ImGuiTestEngine* engine, bool* p_open)
         ImGui::SetTooltip("Set focus back to Test window after running tests.");
     ImGui::SameLine();
     ImGui::PushItemWidth(60);
-    ImGui::DragInt("Verbose Level", (int*)&engine->IO.ConfigVerboseLevel, 0.1f, 0, ImGuiTestVerboseLevel_COUNT - 1, GetVerboseLevelName(engine->IO.ConfigVerboseLevel));
+    ImGui::DragInt("Verbose", (int*)&engine->IO.ConfigVerboseLevel, 0.1f, 0, ImGuiTestVerboseLevel_COUNT - 1, GetVerboseLevelName(engine->IO.ConfigVerboseLevel));
     //ImGui::Checkbox("Verbose", &engine->IO.ConfigLogVerbose);
     ImGui::SameLine();
     ImGui::DragInt("Perf Stress Amount", &engine->IO.PerfStressAmount, 0.1f, 1, 20);
@@ -1685,6 +1686,8 @@ void	ImGuiTestContext::MouseMoveToPos(ImVec2 target)
         ImVec2 delta = target - Engine->InputMousePosValue;
         float inv_length = ImInvLength(delta, FLT_MAX);
         float move_speed = Engine->IO.MouseSpeed * g.IO.DeltaTime;
+        if (g.IO.KeyShift)
+            move_speed *= 0.1f;
 
         //ImGui::GetOverlayDrawList()->AddCircle(target, 10.0f, IM_COL32(255, 255, 0, 255));
 
@@ -1867,6 +1870,8 @@ void    ImGuiTestContext::BringWindowToFrontFromItem(ImGuiTestRef ref)
         return;
 
     const ImGuiTestItemInfo* item = ItemLocate(ref);
+    if (item == NULL)
+        IM_CHECK(item != NULL);
     //LogVerbose("FocusWindowForItem %s\n", ImGuiTestRefDesc(ref, item).c_str());
     //LogVerbose("Lost focus on window '%s', getting again..\n", item->Window->Name);
     BringWindowToFront(item->Window);
@@ -2129,6 +2134,24 @@ void    ImGuiTestContext::ItemHold(ImGuiTestRef ref, float time)
     Yield();
 }
 
+void    ImGuiTestContext::ItemHoldForFrames(ImGuiTestRef ref, int frames)
+{
+    if (IsError())
+        return;
+
+    IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
+    LogVerbose("ItemHoldForFrames '%s' %08X\n", ref.Path ? ref.Path : "NULL", ref.ID);
+
+    MouseMove(ref);
+    Yield();
+    Engine->InputMouseButtonsSet = true;
+    Engine->InputMouseButtonsValue = (1 << 0);
+    YieldFrames(frames);
+    Engine->InputMouseButtonsSet = true;
+    Engine->InputMouseButtonsValue = 0;
+    Yield();
+}
+
 void    ImGuiTestContext::ItemDragAndDrop(ImGuiTestRef ref_src, ImGuiTestRef ref_dst)
 {
     if (IsError())
@@ -2189,20 +2212,37 @@ void    ImGuiTestContext::MenuAction(ImGuiTestAction action, ImGuiTestRef ref)
             // Click menu in menu bar
             IM_ASSERT(RefStr[0] != 0); // Unsupported: window needs to be in Ref
             ImFormatString(buf, IM_ARRAYSIZE(buf), "##menubar/%.*s", p - path, path);
-            if (is_target_item)
-                ItemAction(action, buf);
-            else
-                ItemAction(ImGuiTestAction_Click, buf);
         }
         else
         {
             // Click sub menu in its own window
             ImFormatString(buf, IM_ARRAYSIZE(buf), "/##Menu_%02d/%.*s", depth - 1, p - path, path);
-            if (is_target_item)
-                ItemAction(action, buf);
-            else
-                ItemAction(ImGuiTestAction_Click, buf);
         }
+
+        // We cannot move diagonally to a menu item because depending on the angle and other items we cross on our path we could close our target menu.
+        // First move horizontal into the menu...
+        if (depth > 0)
+        {
+            ImGuiTestItemInfo* item = ItemLocate(buf);
+            item->RefCount++;
+            if (depth > 1 && Engine->InputMousePosValue.x <= item->Rect.Min.x || Engine->InputMousePosValue.x >= item->Rect.Max.x)
+                MouseMoveToPos(ImVec2(item->Rect.GetCenter().x, Engine->InputMousePosValue.y));
+            if (depth > 0 && Engine->InputMousePosValue.y <= item->Rect.Min.y || Engine->InputMousePosValue.y >= item->Rect.Max.y)
+                MouseMoveToPos(ImVec2(Engine->InputMousePosValue.x, item->Rect.GetCenter().y));
+            item->RefCount--;
+        }
+
+        if (is_target_item)
+        {
+            // Final item
+            ItemAction(action, buf);
+        }
+        else
+        {
+            // Then aim at the menu item
+            ItemAction(ImGuiTestAction_Click, buf);
+        }
+
         path = p + 1;
         depth++;
     }
