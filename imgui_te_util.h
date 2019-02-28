@@ -12,7 +12,7 @@ enum ImGuiKeyModFlags_
 };
 
 // Helpers: miscellaneous functions
-ImGuiID     ImHashDecoratedPath(const char* str, ImGuiID seed);
+ImGuiID     ImHashDecoratedPath(const char* str, ImGuiID seed = 0);
 ImU64       ImGetTimeInMicroseconds();
 
 void        ImPathFixSeparatorsForCurrentOS(char* buf);

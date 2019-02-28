@@ -301,10 +301,11 @@ void ImGuiTestEngine_SetupBuildInfo(ImGuiTestEngine* engine)
 #endif
 
     // CPU
-#if defined(_M_X86) || defined(__i386__) || defined(_X86_) || defined(_M_AMD64) || defined(_AMD64_) || defined(__x86_64__)
+#if defined(_M_X86) || defined(_M_IX86) || defined(__i386) || defined(__i386__) || defined(_X86_) || defined(_M_AMD64) || defined(_AMD64_) || defined(__x86_64__)
     engine->InfoBuildCpu = (sizeof(size_t) == 4) ? "X86" : "X64";
 #else
-    engine->InfoBuildCpu = "Unknown";
+#error
+    engine->InfoBuildCpu = (sizeof(size_t) == 4) ? "Unknown32" : "Unknown64";
 #endif
 
     // Platform/OS

@@ -473,7 +473,9 @@ int main(int argc, char** argv)
 
     // Load Fonts
     io.Fonts->AddFontDefault();
-    //io.Fonts->AddFontFromFileTTF("../../misc/fonts/Roboto-Medium.ttf", 16.0f);
+    //ImFontConfig cfg;
+    //cfg.RasterizerMultiply = 1.1f;
+    //io.Fonts->AddFontFromFileTTF("../../../imgui/misc/fonts/RobotoMono-Regular.ttf", 16.0f, &cfg);
     //io.Fonts->AddFontFromFileTTF("../../misc/fonts/Cousine-Regular.ttf", 15.0f);
     //io.Fonts->AddFontFromFileTTF("../../misc/fonts/DroidSans.ttf", 16.0f);
     //io.Fonts->AddFontFromFileTTF("../../misc/fonts/ProggyTiny.ttf", 10.0f);

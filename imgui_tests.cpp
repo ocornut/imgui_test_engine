@@ -218,6 +218,32 @@ void RegisterTests_Widgets(ImGuiTestContext* ctx)
 {
     ImGuiTest* t = NULL;
 
+    t = REGISTER_TEST("widgets", "widgets_checkbox_001");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::Begin("Window1");
+        ImGui::Checkbox("Checkbox", &ctx->GenericState.Bool1);
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        IM_CHECK(ctx->GenericState.Bool1 == false);
+        ctx->ItemClick("Window1/Checkbox");
+        IM_CHECK(ctx->GenericState.Bool1 == true);
+    };
+
+    // FIXME-TESTS: WIP
+    t = REGISTER_TEST("widgets", "widgets_datatype_1");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::SetNextWindowSize(ImVec2(200, 200));
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+        char buf[3] = { 42, 100, 42 };
+        ImGui::DragScalar("Drag", ImGuiDataType_S8, &buf[1], 0.5f, NULL, NULL);
+        IM_ASSERT(buf[0] == 42 && buf[2] == 42);
+        ImGui::End();
+    };
+
     t = REGISTER_TEST("widgets", "widgets_inputtext_1");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
@@ -593,29 +619,27 @@ void RegisterTests_Docking(ImGuiTestContext* ctx)
 void RegisterTests_Misc(ImGuiTestContext* ctx)
 {
     ImGuiTest* t = NULL;
-    auto run_func = [](ImGuiTestContext* ctx)
-    {
-        DataGeneric data;
-        data.Bool1 = false;
-        ctx->RunCurrentTest(&data);
-    };
-    auto gui_func = [](ImGuiTestContext* ctx)
-    {
-        auto data = (DataGeneric*)ctx->UserData;
-        ImGui::Begin("Window1");
-        ImGui::Checkbox("Checkbox", &data->Bool1);
-        ImGui::End();
-    };
 
-    t = REGISTER_TEST("checkbox", "checkbox_001");
-    t->RootFunc = run_func;
-    t->GuiFunc = gui_func;
+    t = REGISTER_TEST("misc", "hash_001");
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
-        auto data = (DataGeneric*)ctx->UserData;
-        IM_CHECK(data->Bool1 == false);
-        ctx->ItemClick("Window1/Checkbox");
-        IM_CHECK(data->Bool1 == true);
+        // Test hash function for the property we need
+        IM_CHECK(ImHashStr("helloworld", 0) == ImHashStr("world", 0, ImHashStr("hello", 0)));   // String concatenation
+        IM_CHECK(ImHashStr("hello###world", 0) == ImHashStr("###world", 0));                    // ### operator reset back to the seed
+        IM_CHECK(ImHashStr("hello###world", 0, 1234) == ImHashStr("###world", 0, 1234));        // ### operator reset back to the seed
+        IM_CHECK(ImHashStr("helloxxx", 5) == ImHashStr("hello", 0));                            // String size is honored
+        IM_CHECK(ImHashStr("", 0, 0) == 0);                                                     // Empty string doesn't alter hash
+        IM_CHECK(ImHashStr("", 0, 1234) == 1234);                                               // Empty string doesn't alter hash
+        IM_CHECK(ImHashStr("hello", 5) == ImHashData("hello", 5));                              // FIXME: Do we need to guarantee this?
+
+        const int data[2] = { 42, 50 };
+        IM_CHECK(ImHashData(&data[0], sizeof(int) * 2) == ImHashData(&data[1], sizeof(int), ImHashData(&data[0], sizeof(int))));
+        IM_CHECK(ImHashData("", 0, 1234) == 1234);                                              // Empty data doesn't alter hash
+
+        // Verify that Test Engine high-level hash wrapper works
+        IM_CHECK(ImHashDecoratedPath("Hello/world") == ImHashStr("Helloworld", 0));             // Slashes are ignored
+        IM_CHECK(ImHashDecoratedPath("Hello\\/world") == ImHashStr("Hello/world", 0));          // Slashes can be inhibited
+        IM_CHECK(ImHashDecoratedPath("/Hello", 42) == ImHashDecoratedPath("Hello"));            // Leading / clears seed
     };
 
     t = REGISTER_TEST("demo", "demo_misc_001");
