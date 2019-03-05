@@ -107,6 +107,7 @@ void                ImGuiTestEngine_QueueTests(ImGuiTestEngine* engine, const ch
 void                ImGuiTestEngine_QueueTest(ImGuiTestEngine* engine, ImGuiTest* test, ImGuiTestRunFlags run_flags);
 bool                ImGuiTestEngine_IsRunningTests(ImGuiTestEngine* engine);
 bool                ImGuiTestEngine_IsRunningTest(ImGuiTestEngine* engine, ImGuiTest* test);
+void                ImGuiTestEngine_CalcSourceLineEnds(ImGuiTestEngine* engine);
 void                ImGuiTestEngine_PrintResultSummary(ImGuiTestEngine* engine);
 
 // IO structure
@@ -192,6 +193,7 @@ struct ImGuiTest
     const char*             SourceFile;         // __FILE__
     const char*             SourceFileShort;    // Pointer within SourceFile, skips filename.
     int                     SourceLine;         // __LINE__
+    int                     SourceLineEnd;      //
     int                     ArgVariant;
     ImGuiTestStatus         Status;
     ImGuiTestFlags          Flags;
@@ -205,7 +207,7 @@ struct ImGuiTest
         Category = NULL;
         Name = NULL;
         SourceFile = SourceFileShort = NULL;
-        SourceLine = 0;
+        SourceLine = SourceLineEnd = 0;
         ArgVariant = 0;
         Status = ImGuiTestStatus_Unknown;
         Flags = ImGuiTestFlags_None;
@@ -230,6 +232,7 @@ enum ImGuiTestAction
     ImGuiTestAction_Uncheck,
     ImGuiTestAction_Open,
     ImGuiTestAction_Close,
+    ImGuiTestAction_Input,
     ImGuiTestAction_COUNT
 };
 
@@ -330,6 +333,7 @@ struct ImGuiTestContext
 
     void        NavMove(ImGuiTestRef ref);
     void        NavActivate();
+    void        NavInput();
 
     void        FocusWindow(ImGuiTestRef ref);
     void        BringWindowToFront(ImGuiWindow* window);
@@ -346,6 +350,7 @@ struct ImGuiTestContext
     void        ItemUncheck(ImGuiTestRef ref)       { ItemAction(ImGuiTestAction_Uncheck, ref); }
     void        ItemOpen(ImGuiTestRef ref)          { ItemAction(ImGuiTestAction_Open, ref); }
     void        ItemClose(ImGuiTestRef ref)         { ItemAction(ImGuiTestAction_Close, ref); }
+    void        ItemInput(ImGuiTestRef ref)         { ItemAction(ImGuiTestAction_Input, ref); }
 
     void        ItemActionAll(ImGuiTestAction action, ImGuiTestRef ref_parent, int depth = -1, int passes = -1);
     void        ItemOpenAll(ImGuiTestRef ref_parent, int depth = -1, int passes = -1)    { ItemActionAll(ImGuiTestAction_Open, ref_parent, depth, passes); }

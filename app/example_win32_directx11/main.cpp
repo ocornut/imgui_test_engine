@@ -10,9 +10,11 @@
 //   main.exe -nogui -v -nopause
 //   main.exe -nogui -nopause perf_
 
-//#define CMDLINE_ARGS    "-fileopener ../../tools/win32_open_with_sublime.cmd"
+//#define CMDLINE_ARGS  "-fileopener ../../tools/win32_open_with_sublime.cmd"
 //#define CMDLINE_ARGS  "-gui -nothrottle"
-//#define CMDLINE_ARGS  "-gui perf_stress_text_unformatted"
+//#define CMDLINE_ARGS    "-slow widgets_inputtext_5_deactivate_flags"
+//#define CMDLINE_ARGS  "-gui perf_stress_text_unformatted_2"
+//#define CMDLINE_ARGS    "-slow widgets_inputtext_5_deactivate_flags"
 //#define CMDLINE_ARGS  "-nogui -v3 nav"
 //#define CMDLINE_ARGS  "-nogui perf_stress_slider"
 //#define CMDLINE_ARGS  "-nogui -nothrottle perf_stress_hash"
@@ -486,6 +488,7 @@ int main(int argc, char** argv)
     IM_ASSERT(g_App.TestEngine == NULL);
     g_App.TestEngine = ImGuiTestEngine_CreateContext(ImGui::GetCurrentContext());
     RegisterTests(g_App.TestEngine);
+    ImGuiTestEngine_CalcSourceLineEnds(g_App.TestEngine);
 
     ImGuiTestEngineIO& test_io = ImGuiTestEngine_GetIO(g_App.TestEngine);
 
@@ -507,7 +510,7 @@ int main(int argc, char** argv)
     test_io.ConfigRunFast = g_App.OptFast;
     test_io.ConfigVerboseLevel = g_App.OptVerboseLevel;
     test_io.ConfigNoThrottle = g_App.OptNoThrottle;
-    test_io.PerfStressAmount = 10;
+    test_io.PerfStressAmount = 5;
 #ifdef _WIN32
     if (!g_App.OptGUI && ::IsDebuggerPresent())
         test_io.ConfigBreakOnError = true;

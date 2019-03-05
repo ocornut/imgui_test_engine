@@ -88,8 +88,17 @@ struct ImGuiTestGatherTask
     ImGuiTestItemInfo*      LastItemInfo = NULL;
 };
 
+enum ImGuiTestInputType
+{
+    ImGuiTestInputType_None,
+    ImGuiTestInputType_Key,
+    ImGuiTestInputType_Nav,
+    ImGuiTestInputType_Char
+};
+
 struct ImGuiTestInput
 {
+    ImGuiTestInputType      Type;
     ImGuiKey                Key = ImGuiKey_COUNT;
     ImGuiKeyModFlags        KeyMods = ImGuiKeyModFlags_None;
     ImGuiNavInput           NavInput = ImGuiNavInput_COUNT;
@@ -99,6 +108,7 @@ struct ImGuiTestInput
     static ImGuiTestInput   FromKey(ImGuiKey v, bool down, ImGuiKeyModFlags mods = ImGuiKeyModFlags_None) 
     { 
         ImGuiTestInput inp; 
+        inp.Type = ImGuiTestInputType_Key;
         inp.Key = v; 
         inp.IsDown = down; 
         inp.KeyMods = mods; 
@@ -107,14 +117,16 @@ struct ImGuiTestInput
     static ImGuiTestInput   FromNav(ImGuiNavInput v, bool down) 
     { 
         ImGuiTestInput inp; 
-        inp.NavInput = v; 
+        inp.Type = ImGuiTestInputType_Nav;
+        inp.NavInput = v;
         inp.IsDown = down; 
         return inp;
     }
     static ImGuiTestInput   FromChar(ImWchar v)
     { 
         ImGuiTestInput inp; 
-        inp.Char = v; 
+        inp.Type = ImGuiTestInputType_Char;
+        inp.Char = v;
         return inp; 
     }
 };
@@ -466,27 +478,32 @@ static void ImGuiTestEngine_ApplyInputToImGuiContext(ImGuiTestEngine* engine)
             for (int n = 0; n < engine->InputQueue.Size; n++)
             {
                 const ImGuiTestInput& input = engine->InputQueue[n];
-                if (input.Key != ImGuiKey_COUNT)
+                switch (input.Type)
                 {
-                    IM_ASSERT(input.NavInput == ImGuiNavInput_COUNT);
-                    IM_ASSERT(input.Char == 0);
+                case ImGuiTestInputType_Key:
+                {
+                    IM_ASSERT(input.Key != ImGuiKey_COUNT);
                     g.IO.KeyCtrl  = input.IsDown && (input.KeyMods & ImGuiKeyModFlags_Ctrl) != 0;
-                    g.IO.KeyAlt   = input.IsDown && (input.KeyMods & ImGuiKeyModFlags_Alt) != 0;
+                    g.IO.KeyAlt   = input.IsDown && (input.KeyMods & ImGuiKeyModFlags_Alt)  != 0;
                     g.IO.KeyShift = input.IsDown && (input.KeyMods & ImGuiKeyModFlags_Shift) != 0;
                     g.IO.KeySuper = input.IsDown && (input.KeyMods & ImGuiKeyModFlags_Super) != 0;
                     int idx = g.IO.KeyMap[input.Key];
                     if (idx >= 0 && idx < IM_ARRAYSIZE(g.IO.KeysDown))
                         g.IO.KeysDown[idx] = input.IsDown;
+                    break;
                 }
-                else if (input.NavInput != ImGuiNavInput_COUNT)
+                case ImGuiTestInputType_Nav:
                 {
-                    IM_ASSERT(input.Char == 0);
                     IM_ASSERT(input.NavInput >= 0 && input.NavInput < ImGuiNavInput_COUNT);
                     g.IO.NavInputs[input.NavInput] = input.IsDown;
+                    break;
                 }
-                else if (input.Char != 0)
+                case ImGuiTestInputType_Char:
                 {
+                    IM_ASSERT(input.Char != 0);
                     g.IO.AddInputCharacter(input.Char);
+                    break;
+                }
                 }
             }
             engine->InputQueue.resize(0);
@@ -714,6 +731,26 @@ void ImGuiTestEngine_QueueTests(ImGuiTestEngine* engine, const char* filter)
             if (ImStristr(test->Name, NULL, filter, NULL) == NULL)
                 continue;
         ImGuiTestEngine_QueueTest(engine, test, ImGuiTestRunFlags_None);
+    }
+}
+
+void ImGuiTestEngine_CalcSourceLineEnds(ImGuiTestEngine* engine)
+{
+    if (engine->TestsAll.empty())
+        return;
+
+    ImVector<int> line_starts;
+    line_starts.resize(engine->TestsAll.Size, 0);
+    for (int n = 0; n < engine->TestsAll.Size; n++)
+        line_starts.push_back(engine->TestsAll[n]->SourceLine);
+    ImQsort(line_starts.Data, (size_t)line_starts.Size, sizeof(int), [](const void* lhs, const void* rhs) { return (*(const int*)lhs) - *(const int*)rhs; });
+
+    for (int n = 0; n < engine->TestsAll.Size; n++)
+    {
+        ImGuiTest* test = engine->TestsAll[n];
+        for (int m = 0; m < line_starts.Size; m++) // FIXME-OPT
+            if (line_starts[m] == test->SourceLine)
+                test->SourceLineEnd = ImMax(test->SourceLine, (m + 1 < line_starts.Size) ? line_starts[m + 1] - 1 : 99999);
     }
 }
 
@@ -1149,6 +1186,7 @@ void    ImGuiTestEngine_ShowTestWindow(ImGuiTestEngine* engine, bool* p_open)
                 ImGui::EndTooltip();
             }*/
 
+            bool view_source = false;
             if (ImGui::BeginPopupContextItem())
             {
                 select_test = true;
@@ -1161,14 +1199,20 @@ void    ImGuiTestEngine_ShowTestWindow(ImGuiTestEngine* engine, bool* p_open)
                     {
                         engine->IO.FileOpenerFunc(test->SourceFile, test->SourceLine, engine->IO.UserData);
                     }
+                    if (ImGui::MenuItem("View source..."))
+                        view_source = true;
                 }
                 else
                 {
                     ImGui::MenuItem("Open source", NULL, false, false);
+                    ImGui::MenuItem("View source", NULL, false, false);
                 }
 
                 if (ImGui::MenuItem("Copy log", NULL, false, !test->TestLog.empty()))
                     ImGui::SetClipboardText(test->TestLog.c_str());
+
+                if (ImGui::MenuItem("Clear log", NULL, false, !test->TestLog.empty()))
+                    test->TestLog.clear();
 
                 if (ImGui::MenuItem("Run test"))
                     queue_test = true;
@@ -1186,6 +1230,37 @@ void    ImGuiTestEngine_ShowTestWindow(ImGuiTestEngine* engine, bool* p_open)
                     }
                 }
 
+                ImGui::EndPopup();
+            }
+
+            // Process source popup
+            static ImGuiTextBuffer source_blurb;
+            static int goto_line = -1;
+            if (view_source)
+            {
+                source_blurb.clear();
+                size_t file_size = 0;
+                char* file_data = (char*)ImFileLoadToMemory(test->SourceFile, "rb", &file_size);
+                if (file_data)
+                    source_blurb.append(file_data, file_data + file_size);
+                else
+                    source_blurb.append("<Error loading sources>");
+                goto_line = (test->SourceLine + test->SourceLineEnd) / 2;
+                ImGui::OpenPopup("Source");
+            }
+            if (ImGui::BeginPopup("Source"))
+            {
+                // FIXME: Local vs screen pos too messy :(
+                const ImVec2 start_pos = ImGui::GetCursorStartPos();
+                const float line_height = ImGui::GetTextLineHeight();
+                if (goto_line != -1)
+                    ImGui::SetScrollFromPosY(start_pos.y + (goto_line - 1) * line_height, 0.5f);
+                goto_line = -1;
+
+                ImRect r(0.0f, test->SourceLine * line_height, ImGui::GetWindowWidth(), (test->SourceLine + 1) * line_height); // SourceLineEnd is too flaky
+                ImGui::GetWindowDrawList()->AddRectFilled(ImGui::GetWindowPos() + start_pos + r.Min, ImGui::GetWindowPos() + start_pos + r.Max, IM_COL32(80, 80, 150, 150));
+
+                ImGui::TextUnformatted(source_blurb.c_str(), source_blurb.end());
                 ImGui::EndPopup();
             }
 
@@ -1298,7 +1373,7 @@ ImGuiTest*  ImGuiTestContext::RegisterTest(const char* category, const char* nam
     t->Category = category;
     t->Name = name;
     t->SourceFile = t->SourceFileShort = src_file;
-    t->SourceLine = src_line;
+    t->SourceLine = t->SourceLineEnd = src_line;
     Engine->TestsAll.push_back(t);
 
     // Find filename only out of the fully qualified source path
@@ -1617,6 +1692,23 @@ void    ImGuiTestContext::NavActivate()
     Yield();
     Yield();
 #endif
+}
+
+void    ImGuiTestContext::NavInput()
+{
+    if (IsError())
+        return;
+
+    IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
+    LogVerbose("NavInput\n");
+
+    int frames_to_hold = 2; // FIXME-TESTS: <-- number of frames could be fuzzed here
+    for (int n = 0; n < frames_to_hold; n++)
+    {
+        Engine->InputQueue.push_back(ImGuiTestInput::FromNav(ImGuiNavInput_Input, true));
+        Yield();
+    }
+    Yield();
 }
 
 void    ImGuiTestContext::MouseMove(ImGuiTestRef ref, ImGuiTestOpFlags flags)
@@ -1954,6 +2046,18 @@ void    ImGuiTestContext::ItemAction(ImGuiTestAction action, ImGuiTestRef ref)
             if (action == ImGuiTestAction_DoubleClick)
                 IM_ASSERT(0);
         }
+        return;
+    }
+
+    if (action == ImGuiTestAction_Input)
+    {
+        if (InputMode == ImGuiInputSource_Mouse)
+            MouseMove(ref);
+        else
+            NavMove(ref);
+        if (!Engine->IO.ConfigRunFast)
+            Sleep(0.05f);
+        NavInput();
         return;
     }
 

@@ -429,6 +429,66 @@ void RegisterTests_Widgets(ImGuiTestContext* ctx)
         ctx->ItemHoldForFrames("Hello", 100);
     };
     
+    // Test the IsItemDeactivatedXXX flags(), bug mentioned in #2215
+    t = REGISTER_TEST("widgets", "widgets_inputtext_5_deactivate_flags");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiTestGenericState& gs = ctx->GenericState;
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
+        bool& b_ret = gs.BoolArray[0];
+        bool& b_activated = gs.BoolArray[1];
+        bool& b_deactivated = gs.BoolArray[2];
+        bool& b_deactivated_after_edit = gs.BoolArray[3];
+        b_ret |= ImGui::InputText("Field", gs.Str1, IM_ARRAYSIZE(gs.Str1));
+        b_activated |= ImGui::IsItemActivated();
+        b_deactivated |= ImGui::IsItemDeactivated();
+        b_deactivated_after_edit |= ImGui::IsItemDeactivatedAfterEdit();
+        ImGui::Text("Ret: %d", b_ret);
+        ImGui::Text("IsItemActivated: %d", b_activated);
+        ImGui::Text("IsItemDeactivated: %d", b_deactivated);
+        ImGui::Text("IsItemDeactivatedAfterEdit: %d", b_deactivated_after_edit);
+        ImGui::InputText("Dummy Sibling", gs.Str2, IM_ARRAYSIZE(gs.Str2));
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        // Accumulate return values over several frames/action into each bool
+        ImGuiTestGenericState& gs = ctx->GenericState;
+        bool& b_ret = gs.BoolArray[0];
+        bool& b_activated = gs.BoolArray[1];
+        bool& b_deactivated = gs.BoolArray[2];
+        bool& b_deactivated_after_edit = gs.BoolArray[3];
+
+        // Testing activation flag being set
+        ctx->SetRef("Test Window");
+        ctx->ItemClick("Field");
+        IM_CHECK(!b_ret && b_activated && !b_deactivated && !b_deactivated_after_edit);
+        gs.clear();
+
+        // Testing deactivated flag being set when canceling with Escape
+        ctx->KeyPressMap(ImGuiKey_Escape);
+        IM_CHECK(!b_ret && !b_activated && b_deactivated && !b_deactivated_after_edit);
+        gs.clear();
+
+        // Testing validation with Return after editing
+        ctx->ItemClick("Field");
+        memset(gs.BoolArray, 0, sizeof(gs.BoolArray));
+        ctx->KeyCharsAppend("Hello");
+        IM_CHECK(b_ret && !b_activated && !b_deactivated && !b_deactivated_after_edit);
+        gs.clear();
+        ctx->KeyPressMap(ImGuiKey_Enter);
+        IM_CHECK(b_ret && !b_activated && b_deactivated && b_deactivated_after_edit);
+        gs.clear();
+
+        // Testing validation with Tab after editing
+        ctx->ItemClick("Field");
+        ctx->KeyCharsAppend(" World");
+        gs.clear();
+        ctx->KeyPressMap(ImGuiKey_Tab);
+        IM_CHECK(b_ret && !b_activated && b_deactivated && b_deactivated_after_edit);
+        gs.clear();
+    };
+
     t = REGISTER_TEST("widgets", "widgets_coloredit_drag");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
@@ -450,6 +510,29 @@ void RegisterTests_Widgets(ImGuiTestContext* ctx)
         IM_CHECK(memcmp(&gs.Vec4Array[0], &gs.Vec4Array[1], sizeof(ImVec4)) != 0);
         ctx->ItemDragAndDrop("ColorEdit1/##ColorButton", "ColorEdit2/##X"); // FIXME-TESTS: Inner items
         IM_CHECK(memcmp(&gs.Vec4Array[0], &gs.Vec4Array[1], sizeof(ImVec4)) == 0);
+    };
+
+    t = REGISTER_TEST("widgets", "widgets_selectable");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
+        ctx->SetRef("Test Window");
+        ImGui::Selectable("Selectable A");
+        if (ctx->FrameCount == 0)
+            IM_CHECK(ImGui::GetItemID() == ctx->GetID("Selectable A"));
+        ImGui::Selectable("Selectable B", false, ImGuiSelectableFlags_Disabled);
+        if (ctx->FrameCount == 0)
+            IM_CHECK(ImGui::GetItemID() == ctx->GetID("Selectable B")); // Make sure B has an ID
+        ImGui::Selectable("Selectable C");
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ctx->SetRef("Test Window");
+        ctx->ItemClick("Selectable A");
+        IM_CHECK(ctx->UiContext->NavId == ctx->GetID("Selectable A"));
+        ctx->KeyPressMap(ImGuiKey_DownArrow);
+        IM_CHECK(ctx->UiContext->NavId == ctx->GetID("Selectable C")); // Make sure we have skipped B
     };
 
     // Issue #2371
@@ -524,6 +607,32 @@ void RegisterTests_Nav(ImGuiTestContext* ctx)
 
         ImGuiContext& g = *ctx->UiContext;
         IM_CHECK(g.NavWindow && g.NavWindow->ID == ctx->GetID("/ImGui Demo"));
+    };
+
+    // Verify that CTRL+Tab steal focus (#2380)
+    t = REGISTER_TEST("nav", "nav_002");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiTestGenericState& gs = ctx->GenericState;
+        ImGui::Begin("Test window 1", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImGui::Text("This is test window 1");
+        ImGui::InputText("InputText", gs.Str1, IM_ARRAYSIZE(gs.Str1));
+        ImGui::End();
+        ImGui::Begin("Test window 2", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImGui::Text("This is test window 2");
+        ImGui::InputText("InputText", gs.Str2, IM_ARRAYSIZE(gs.Str2));
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ctx->SetInputMode(ImGuiInputSource_Nav);
+        ctx->SetRef("Test window 1");
+        ctx->ItemInput("InputText");
+        ctx->KeyCharsAppend("123");
+        IM_CHECK(ctx->UiContext->ActiveId == ctx->GetID("InputText"));
+        ctx->KeyPressMap(ImGuiKey_Tab, ImGuiKeyModFlags_Ctrl);
+        IM_CHECK(ctx->UiContext->ActiveId == 0);
+        ctx->Sleep(1.0f);
     };
 }
 
@@ -753,21 +862,6 @@ void RegisterTests_Misc(ImGuiTestContext* ctx)
             ctx->ItemClick(items[n]->ID);
         }
         ImGui::GetStyle() = style_backup;
-    };
-
-    t = REGISTER_TEST("demo", "console");
-    t->TestFunc = [](ImGuiTestContext* ctx)
-    {
-        ctx->SetRef("ImGui Demo");
-        ctx->MenuCheck("Examples/Console");
-
-        ctx->SetRef("Example: Console");
-        ctx->ItemClick("Clear");
-        ctx->ItemClick("Add Dummy Text");
-        ctx->ItemClick("Add Dummy Error");
-        ctx->WindowClose();
-
-        //IM_CHECK(false);
     };
 }
 
@@ -1027,7 +1121,7 @@ void RegisterTests_Perf(ImGuiTestContext* ctx)
     };
     t->TestFunc = PerfCaptureFunc;
 
-    t = REGISTER_TEST("perf", "perf_stress_text_unformatted");
+    t = REGISTER_TEST("perf", "perf_stress_text_unformatted_1");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         ImGui::Begin("Test Func", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
@@ -1038,6 +1132,23 @@ void RegisterTests_Perf(ImGuiTestContext* ctx)
         int loop_count = 1000 * ctx->PerfStressAmount;
         for (int n = 0; n < loop_count; n++)
             ImGui::TextUnformatted(buf);
+        ImGui::End();
+    };
+    t->TestFunc = PerfCaptureFunc;
+
+    t = REGISTER_TEST("perf", "perf_stress_text_unformatted_2");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::Begin("Test Func", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
+        static ImGuiTextBuffer buf;
+        if (buf.empty())
+        {
+            for (int i = 0; i < 1000; i++)
+                buf.appendf("%i The quick brown fox jumps over the lazy dog\n", i);
+        }
+        int loop_count = 100 * ctx->PerfStressAmount;
+        for (int n = 0; n < loop_count; n++)
+            ImGui::TextUnformatted(buf.begin(), buf.end());
         ImGui::End();
     };
     t->TestFunc = PerfCaptureFunc;

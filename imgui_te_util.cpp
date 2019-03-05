@@ -143,6 +143,42 @@ void    ImParseDateFromCompilerIntoYMD(const char* in_date, char* out_buf, size_
     ImFormatString(out_buf, out_buf_size, "%04d-%02d-%02d", year, month, day);
 }
 
+bool    ImFileLoadSourceBlurb(const char* file_name, int line_no_start, int line_no_end, ImGuiTextBuffer* out_buf)
+{
+    size_t file_size = 0;
+    char* file_begin = (char*)ImFileLoadToMemory(file_name, "rb", &file_size, 1);
+    if (file_begin == NULL)
+        return false;
+
+    char* file_end = file_begin + file_size;
+    int line_no = 0;
+    const char* test_src_begin = NULL;
+    const char* test_src_end = NULL;
+    for (const char* p = file_begin; p < file_end; )
+    {
+        line_no++;
+        const char* line_begin = p;
+        const char* line_end = ImStrchrRange(line_begin + 1, file_end, '\n');
+        if (line_end == NULL)
+            line_end = file_end;
+        if (line_no >= line_no_start && line_no <= line_no_end)
+        {
+            if (test_src_begin == NULL)
+                test_src_begin = line_begin;
+            test_src_end = ImMax(test_src_end, line_end);
+        }
+        p = line_end + 1;
+    }
+
+    if (test_src_begin != NULL)
+        out_buf->append(test_src_begin, test_src_end);
+    else
+        out_buf->clear();
+
+    ImGui::MemFree(file_begin);
+    return true;
+}
+
 void ImDebugShowInputTextState()
 {
     ImGuiContext& g = *GImGui;
