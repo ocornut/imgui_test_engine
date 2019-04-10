@@ -380,8 +380,10 @@ struct ImGuiTestContext
     void        WindowResize(ImVec2 sz);
     void        PopupClose();
 
+#ifdef IMGUI_HAS_DOCK
     void        DockSetMulti(ImGuiID dock_id, const char* window_name, ...);
     ImGuiID     DockSetupBasicMulti(ImGuiID dock_id, const char* window_name, ...);
+#endif
 
     void        PerfCalcRef();
     void        PerfCapture();

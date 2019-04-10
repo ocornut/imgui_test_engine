@@ -2485,6 +2485,7 @@ void    ImGuiTestContext::PopupClose()
     ImGui::ClosePopupToLevel(0, true);    // FIXME
 }
 
+#ifdef IMGUI_HAS_DOCK
 void    ImGuiTestContext::DockSetMulti(ImGuiID dock_id, const char* window_name, ...)
 {
     va_list args;
@@ -2511,6 +2512,8 @@ ImGuiID ImGuiTestContext::DockSetupBasicMulti(ImGuiID dock_id, const char* windo
     }
     return dock_id;
 }
+#endif // #ifdef IMGUI_HAS_DOCK
+
 
 //-------------------------------------------------------------------------
 // ImGuiTestContext - Performance Tools
