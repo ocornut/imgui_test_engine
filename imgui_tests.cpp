@@ -148,35 +148,39 @@ void RegisterTests_Window(ImGuiTestContext* ctx)
     {
         ImGui::Begin("AAAA", NULL, ImGuiWindowFlags_NoSavedSettings);
         ImGui::End();
+        ImGui::Begin("BBBB", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImGui::End();
         if ((ctx->FrameCount >= 20 && ctx->FrameCount < 40) || (ctx->FrameCount >= 50))
         {
-            ImGui::Begin("BBBB", NULL, ImGuiWindowFlags_NoSavedSettings);
-            ImGui::End();
             ImGui::Begin("CCCC", NULL, ImGuiWindowFlags_NoSavedSettings);
+            ImGui::End();
+            ImGui::Begin("DDDD", NULL, ImGuiWindowFlags_NoSavedSettings);
             ImGui::End();
         }
     };
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         ImGuiContext& g = *ctx->UiContext;
-        IM_CHECK(g.NavWindow->ID == ctx->GetID("/AAAA"));
+        IM_CHECK(g.NavWindow->ID == ctx->GetID("/BBBB"));
         ctx->YieldUntil(19);
-        IM_CHECK(g.NavWindow->ID == ctx->GetID("/AAAA"));
+        IM_CHECK(g.NavWindow->ID == ctx->GetID("/BBBB"));
         ctx->YieldUntil(20);
-        IM_CHECK(g.NavWindow->ID == ctx->GetID("/CCCC"));
+        IM_CHECK(g.NavWindow->ID == ctx->GetID("/DDDD"));
         ctx->YieldUntil(30);
-        ctx->FocusWindow("/BBBB");
-        IM_CHECK(g.NavWindow->ID == ctx->GetID("/BBBB"));
+        ctx->FocusWindow("/CCCC");
+        IM_CHECK(g.NavWindow->ID == ctx->GetID("/CCCC"));
+        ctx->YieldUntil(39);
         ctx->YieldUntil(40);
-        IM_CHECK(g.NavWindow->ID == ctx->GetID("/BBBB"));
+        IM_CHECK(g.NavWindow->ID == ctx->GetID("/CCCC"));
 
+        // When docked, it should NOT takes 1 extra frame to lose focus (fixed 2019/03/28)
         ctx->YieldUntil(41);
-        IM_CHECK(g.NavWindow->ID == ctx->GetID("/AAAA"));
+        IM_CHECK(g.NavWindow->ID == ctx->GetID("/BBBB"));
 
         ctx->YieldUntil(49);
-        IM_CHECK(g.NavWindow->ID == ctx->GetID("/AAAA"));
+        IM_CHECK(g.NavWindow->ID == ctx->GetID("/BBBB"));
         ctx->YieldUntil(50);
-        IM_CHECK(g.NavWindow->ID == ctx->GetID("/CCCC"));
+        IM_CHECK(g.NavWindow->ID == ctx->GetID("/DDDD"));
     };
 }
 
@@ -648,6 +652,9 @@ void RegisterTests_Docking(ImGuiTestContext* ctx)
     t = REGISTER_TEST("docking", "docking_drag");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
+        if (ctx->FrameCount == 0)
+            ctx->DockSetMulti(0, "AAAA", "BBBB", NULL);
+
         ImGui::SetNextWindowPos(ImVec2(100, 100), ImGuiCond_Once);
         ImGui::Begin("AAAA", NULL, ImGuiWindowFlags_NoSavedSettings);
         ImGui::Text("This is AAAA");
@@ -664,27 +671,49 @@ void RegisterTests_Docking(ImGuiTestContext* ctx)
         ctx->SleepShort();
     };
 
+    // Test setting focus on a docked window, and setting focus on a specific item inside. (#2453)
+    // In particular, while the selected tab is locked down early (causing a frame delay in the tab selection), 
+    // the window that has requested focus should allow items to be submitted (SkipItems==false) during its hidden frame,
+    // mimicking the behavior of any newly appearing window.
+    t = REGISTER_TEST("docking", "docking_focus_1");
+    t->Flags |= ImGuiTestFlags_NoAutoFinish;
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiTestGenericState& gs = ctx->GenericState;
+        if (ctx->FrameCount == 0)
+            gs.DockId = ctx->DockSetupBasicMulti(0, "AAAA", "BBBB", "CCCC", NULL);
+
+        if (ctx->FrameCount == 10)  ImGui::SetNextWindowFocus();
+        ImGui::Begin("AAAA");
+        if (ctx->FrameCount == 10)  IM_CHECK(ImGui::IsWindowFocused());
+        if (ctx->FrameCount == 10)  ImGui::SetKeyboardFocusHere();
+        ImGui::InputText("Input", gs.Str1, IM_ARRAYSIZE(gs.Str1));
+        if (ctx->FrameCount == 10)  IM_CHECK(!ImGui::IsItemActive());
+        if (ctx->FrameCount == 11)  IM_CHECK(ImGui::IsItemActive());
+        ImGui::End();
+
+        if (ctx->FrameCount == 50)  ImGui::SetNextWindowFocus();
+        ImGui::Begin("BBBB");
+        if (ctx->FrameCount == 50)  IM_CHECK(ImGui::IsWindowFocused());
+        if (ctx->FrameCount == 50)  ImGui::SetKeyboardFocusHere();
+        ImGui::InputText("Input", gs.Str2, IM_ARRAYSIZE(gs.Str2));
+        if (ctx->FrameCount == 50)  IM_CHECK(!ImGui::IsItemActive());
+        if (ctx->FrameCount == 51)  IM_CHECK(ImGui::IsItemActive());
+        ImGui::End();
+
+        if (ctx->FrameCount == 60)
+            ctx->Finish();
+    };
+
     t = REGISTER_TEST("docking", "docking_2");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         ImGuiTestGenericState& gs = ctx->GenericState;
         if (ctx->FrameCount == 0)
-        {
-            ImGui::DockBuilderDockWindow("AAAA", 0);
-            ImGui::DockBuilderDockWindow("BBBB", 0);
-            ImGui::DockBuilderDockWindow("CCCC", 0);
-        }
+            ctx->DockSetMulti(0, "AAAA", "BBBB", "CCCC", NULL);
+
         if (ctx->FrameCount == 10)
-        {
-            ImGuiID dock_id = ImGui::DockBuilderAddNode(0, ImGuiDockNodeFlags_None);
-            gs.Id = dock_id;
-            ImGui::DockBuilderSetNodePos(dock_id, ImGui::GetMainViewport()->Pos + ImVec2(100, 100));
-            ImGui::DockBuilderSetNodeSize(dock_id, ImVec2(200, 200));
-            ImGui::DockBuilderDockWindow("AAAA", dock_id);
-            ImGui::DockBuilderDockWindow("BBBB", dock_id);
-            ImGui::DockBuilderDockWindow("CCCC", dock_id);
-            ImGui::DockBuilderFinish(dock_id);
-        }
+            gs.DockId = ctx->DockSetupBasicMulti(0, "AAAA", "BBBB", "CCCC", NULL);
 
         ImGuiID ids[3];
         ImGui::Begin("AAAA");
@@ -709,8 +738,8 @@ void RegisterTests_Docking(ImGuiTestContext* ctx)
         }
         if (ctx->FrameCount == 10)
         {
-            IM_CHECK(gs.Id != 0);
-            IM_CHECK(ids[0] == gs.Id);
+            IM_CHECK(gs.DockId != 0);
+            IM_CHECK(ids[0] == gs.DockId);
             IM_CHECK(ids[0] == ids[1] && ids[0] == ids[2]);
         }
     };
@@ -1019,6 +1048,22 @@ void RegisterTests_Perf(ImGuiTestContext* ctx)
     };
     t->TestFunc = PerfCaptureFunc;
 
+    t = REGISTER_TEST("perf", "perf_stress_coloredit4");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::Begin("Test Func", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
+        int loop_count = 500 * ctx->PerfStressAmount;
+        ImVec4 col(1.0f, 0.0f, 0.0f, 1.0f);
+        for (int n = 0; n < loop_count / 2; n++)
+        {
+            ImGui::PushID(n);
+            ImGui::ColorEdit4("Color", &col.x);
+            ImGui::PopID();
+        }
+        ImGui::End();
+    };
+    t->TestFunc = PerfCaptureFunc;
+
     t = REGISTER_TEST("perf", "perf_stress_input_text");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
@@ -1279,7 +1324,7 @@ void RegisterTests(ImGuiTestEngine* e)
     RegisterTests_Nav(&ctx);
     RegisterTests_Docking(&ctx);
     RegisterTests_Misc(&ctx);
-    RegisterTests_Perf(&ctx);
+    //RegisterTests_Perf(&ctx);
     RegisterTests_Capture(&ctx);
 }
 

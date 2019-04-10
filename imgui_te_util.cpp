@@ -6,6 +6,10 @@
 #include "imgui_te_util.h"
 #include "imgui_internal.h"
 #include <chrono>
+#if defined(_WIN32) && !defined(_WINDOWS_)
+#define WIN32_LEAN_AND_MEAN
+#include <Windows.h>
+#endif
 
 // Hash "hello/world" as if it was "helloworld"
 // To hash a forward slash we need to use "hello\\/world"
@@ -68,6 +72,25 @@ ImU64   ImGetTimeInMicroseconds()
     using namespace std::chrono;
     microseconds ms = duration_cast<microseconds>(high_resolution_clock::now().time_since_epoch());
     return ms.count();
+}
+
+void    ImOsConsoleSetTextColor(ImOsConsoleTextColor color)
+{
+#ifdef _WIN32
+    HANDLE hConsole = ::GetStdHandle(STD_OUTPUT_HANDLE);
+    WORD wAttributes = FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE;
+    switch (color)
+    {
+    case ImOsConsoleTextColor_Black:        wAttributes = 0x00; break;
+    case ImOsConsoleTextColor_White:        wAttributes = FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE; break;
+    case ImOsConsoleTextColor_BrightWhite:  wAttributes = FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE | FOREGROUND_INTENSITY; break;
+    case ImOsConsoleTextColor_BrightRed:    wAttributes = FOREGROUND_RED | FOREGROUND_INTENSITY; break;
+    case ImOsConsoleTextColor_BrightGreen:  wAttributes = FOREGROUND_GREEN | FOREGROUND_INTENSITY; break;
+    case ImOsConsoleTextColor_BrightBlue:   wAttributes = FOREGROUND_BLUE | FOREGROUND_INTENSITY; break;
+    default: IM_ASSERT(0);
+    }
+    ::SetConsoleTextAttribute(hConsole, wAttributes);
+#endif
 }
 
 void    ImPathFixSeparatorsForCurrentOS(char* buf)

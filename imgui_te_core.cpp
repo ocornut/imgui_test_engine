@@ -40,6 +40,7 @@ Index of this file:
 // GOAL: Reliable performance measurement (w/ deterministic setup)
 // GOAL: Full blind version with no graphical context.
 
+// FIXME-TESTS: threaded test func instead of intrusive yield
 // FIXME-TESTS: UI to setup breakpoint on frame X (gui func or at yield time for test func)
 // FIXME-TESTS: Locate within stack that uses windows/<pointer>/name
 // FIXME-TESTS: Be able to run blind within GUI
@@ -797,13 +798,22 @@ static void ImGuiTestEngine_RunTest(ImGuiTestEngine* engine, ImGuiTestContext* c
     if (ctx->RunFlags & ImGuiTestRunFlags_NoTestFunc)
     {
         // No test function
-        while (!engine->Abort)
+        while (!engine->Abort && test->Status == ImGuiTestStatus_Running)
             ctx->Yield();
     }
     else
     {
         if (test->TestFunc)
+        {
             test->TestFunc(ctx);
+        }
+        else
+        {
+            // No test function
+            if (test->Flags & ImGuiTestFlags_NoAutoFinish)
+                while (!engine->Abort && test->Status == ImGuiTestStatus_Running)
+                    ctx->Yield();
+        }
 
         if (!ctx->Engine->IO.ConfigRunFast)
             ctx->SleepShort();
@@ -958,12 +968,14 @@ bool ImGuiTestEngineHook_Check(const char* file, const char* func, int line, boo
 
     if (result == false)
     {
+        ImOsConsoleSetTextColor(ImOsConsoleTextColor_BrightRed);
         if (file)
             printf("KO: %s:%d  '%s'\n", file_without_path, line, expr);
         else
             printf("KO: %s\n", expr);
+        ImOsConsoleSetTextColor(ImOsConsoleTextColor_White);
     }
-
+    
     if (ImGuiTestContext* ctx = engine->TestContext)
     {
         ImGuiTest* test = ctx->Test;
@@ -1085,8 +1097,8 @@ void    ImGuiTestEngine_ShowTestWindow(ImGuiTestEngine* engine, bool* p_open)
 
     // Options
     ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0, 0));
-    ImGui::Text("OPTIONS:");
-    ImGui::SameLine();
+    //ImGui::Text("OPTIONS:");
+    //ImGui::SameLine();
     ImGui::Checkbox("Fast", &engine->IO.ConfigRunFast);
     ImGui::SameLine();
     ImGui::Checkbox("Blind", &engine->IO.ConfigRunBlind);
@@ -1103,8 +1115,10 @@ void    ImGuiTestEngine_ShowTestWindow(ImGuiTestEngine* engine, bool* p_open)
     ImGui::SameLine();
     ImGui::PushItemWidth(60);
     ImGui::DragInt("Verbose", (int*)&engine->IO.ConfigVerboseLevel, 0.1f, 0, ImGuiTestVerboseLevel_COUNT - 1, GetVerboseLevelName(engine->IO.ConfigVerboseLevel));
+    ImGui::PopItemWidth();
     //ImGui::Checkbox("Verbose", &engine->IO.ConfigLogVerbose);
     ImGui::SameLine();
+    ImGui::PushItemWidth(30);
     ImGui::DragInt("Perf Stress Amount", &engine->IO.PerfStressAmount, 0.1f, 1, 20);
     ImGui::PopItemWidth();
     ImGui::PopStyleVar();
@@ -1442,6 +1456,15 @@ void    ImGuiTestContext::LogDebug()
     LogVerbose("Hovered: 0x%08X (\"%s\"), Active:  0x%08X(\"%s\")\n", 
         item_hovered_id, item_hovered_info ? item_hovered_info->DebugLabel : "",
         item_active_id, item_active_info ? item_active_info->DebugLabel : "");
+}
+
+void    ImGuiTestContext::Finish()
+{
+    if (RunFlags & ImGuiTestRunFlags_NoTestFunc)
+        return;
+    ImGuiTest* test = Test;
+    if (test->Status == ImGuiTestStatus_Running)
+        test->Status = ImGuiTestStatus_Success;
 }
 
 void    ImGuiTestContext::Yield()
@@ -2460,6 +2483,33 @@ void    ImGuiTestContext::PopupClose()
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
     LogVerbose("PopupClose\n");
     ImGui::ClosePopupToLevel(0, true);    // FIXME
+}
+
+void    ImGuiTestContext::DockSetMulti(ImGuiID dock_id, const char* window_name, ...)
+{
+    va_list args;
+    va_start(args, window_name);
+    while (window_name != NULL)
+    {
+        ImGui::DockBuilderDockWindow(window_name, dock_id);
+        window_name = va_arg(args, const char*);
+    }
+    va_end(args);
+}
+
+ImGuiID ImGuiTestContext::DockSetupBasicMulti(ImGuiID dock_id, const char* window_name, ...)
+{
+    va_list args;
+    va_start(args, window_name);
+    dock_id = ImGui::DockBuilderAddNode(0, ImGuiDockNodeFlags_None);
+    ImGui::DockBuilderSetNodePos(dock_id, ImGui::GetMainViewport()->Pos + ImVec2(100, 100));
+    ImGui::DockBuilderSetNodeSize(dock_id, ImVec2(200, 200));
+    while (window_name != NULL)
+    {
+        ImGui::DockBuilderDockWindow(window_name, dock_id);
+        window_name = va_arg(args, const char*);
+    }
+    return dock_id;
 }
 
 //-------------------------------------------------------------------------

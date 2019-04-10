@@ -52,6 +52,7 @@ enum ImGuiTestFlags_
 {
     ImGuiTestFlags_None         = 0,
     ImGuiTestFlags_NoWarmUp     = 1 << 0,       // By default, we run the GUI func twice before starting the test code
+    ImGuiTestFlags_NoAutoFinish = 1 << 1        // By default, tests with no test func end on Frame 0 (after the warm up). Setting this require test to call ctx->Finish().
 };
 
 enum ImGuiTestOpFlags_
@@ -269,6 +270,7 @@ struct ImGuiTestGenericState
     void*       Ptr1;
     void*       Ptr2;
     void*       PtrArray[10];
+    ImGuiID     DockId;
 
     ImGuiTestGenericState() { clear(); }
     void clear()            { memset(this, 0, sizeof(*this)); }
@@ -303,8 +305,9 @@ struct ImGuiTestContext
     void        Log(const char* fmt, ...) IM_FMTARGS(1);
     void        LogVerbose(const char* fmt, ...) IM_FMTARGS(1);
     void        LogDebug();
-    bool        IsError() const { return Test->Status == ImGuiTestStatus_Error || Abort; }
-    void        SetGuiFuncEnabled(bool v) { if (v) RunFlags &= ~ImGuiTestRunFlags_NoGuiFunc; else RunFlags |= ImGuiTestRunFlags_NoGuiFunc; }
+    void        Finish();
+    bool        IsError() const             { return Test->Status == ImGuiTestStatus_Error || Abort; }
+    void        SetGuiFuncEnabled(bool v)   { if (v) RunFlags &= ~ImGuiTestRunFlags_NoGuiFunc; else RunFlags |= ImGuiTestRunFlags_NoGuiFunc; }
 
     void        Yield();
     void        YieldFrames(int count);
@@ -376,6 +379,9 @@ struct ImGuiTestContext
     void        WindowMove(ImVec2 pos, ImVec2 pivot = ImVec2(0.0f, 0.0f));
     void        WindowResize(ImVec2 sz);
     void        PopupClose();
+
+    void        DockSetMulti(ImGuiID dock_id, const char* window_name, ...);
+    ImGuiID     DockSetupBasicMulti(ImGuiID dock_id, const char* window_name, ...);
 
     void        PerfCalcRef();
     void        PerfCapture();

@@ -11,9 +11,21 @@ enum ImGuiKeyModFlags_
     ImGuiKeyModFlags_Super          = 1 << 3
 };
 
+enum ImOsConsoleTextColor
+{
+    ImOsConsoleTextColor_Black,
+    ImOsConsoleTextColor_White,
+    ImOsConsoleTextColor_BrightWhite,
+    ImOsConsoleTextColor_BrightRed,
+    ImOsConsoleTextColor_BrightGreen,
+    ImOsConsoleTextColor_BrightBlue
+};
+
 // Helpers: miscellaneous functions
 ImGuiID     ImHashDecoratedPath(const char* str, ImGuiID seed = 0);
 ImU64       ImGetTimeInMicroseconds();
+
+void        ImOsConsoleSetTextColor(ImOsConsoleTextColor color);
 
 void        ImPathFixSeparatorsForCurrentOS(char* buf);
 

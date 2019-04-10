@@ -328,7 +328,7 @@ bool MainLoopEndFrame()
         g_pd3dDeviceContext->ClearRenderTargetView(g_mainRenderTargetView, (float*)&clear_color);
         ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
 
-        if (test_io.RunningTests || test_io.ConfigNoThrottle)
+        if ((test_io.RunningTests && test_io.ConfigRunFast) || test_io.ConfigNoThrottle)
             g_pSwapChain->Present(0, 0); // Present without vsync
         else
             g_pSwapChain->Present(1, 0); // Present with vsync
@@ -371,6 +371,7 @@ static bool ParseCommandLineOptions(int argc, char** argv)
             else if (strcmp(argv[n], "-slow") == 0)
             {
                 g_App.OptFast = false;
+                g_App.OptNoThrottle = false;
             }
             else if (strcmp(argv[n], "-nothrottle") == 0)
             {
@@ -512,8 +513,8 @@ int main(int argc, char** argv)
     test_io.ConfigNoThrottle = g_App.OptNoThrottle;
     test_io.PerfStressAmount = 5;
 #ifdef _WIN32
-    if (!g_App.OptGUI && ::IsDebuggerPresent())
-        test_io.ConfigBreakOnError = true;
+//    if (!g_App.OptGUI && ::IsDebuggerPresent())
+  //      test_io.ConfigBreakOnError = true;
 #endif
 
     switch (g_App.Backend)
