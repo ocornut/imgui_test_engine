@@ -6,6 +6,7 @@
 #include "imgui_te_util.h"
 #include "imgui_internal.h"
 #include <chrono>
+#include <thread>
 #if defined(_WIN32) && !defined(_WINDOWS_)
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
@@ -66,11 +67,17 @@ ImGuiID ImHashDecoratedPath(const char* str, ImGuiID seed)
     return ~crc;
 }
 
+void    ImSleepInMilliseconds(int ms)
+{
+    using namespace std;
+    this_thread::sleep_for(chrono::milliseconds(ms));
+}
+
 // Trying std::chrono out of unfettered optimism that it may actually work..
 ImU64   ImGetTimeInMicroseconds()
 {
-    using namespace std::chrono;
-    microseconds ms = duration_cast<microseconds>(high_resolution_clock::now().time_since_epoch());
+    using namespace std;
+    chrono::microseconds ms = chrono::duration_cast<chrono::microseconds>(chrono::high_resolution_clock::now().time_since_epoch());
     return ms.count();
 }
 

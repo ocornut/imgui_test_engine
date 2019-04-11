@@ -9,6 +9,13 @@
 #include "imgui_te_core.h"
 #include "imgui_te_util.h"
 
+//-------------------------------------------------------------------------
+// NOTES (also see TODO in imgui_te_core.cpp)
+//-------------------------------------------------------------------------
+// - Tests can't reliably once ImGuiCond_Once or ImGuiCond_FirstUseEver
+//-------------------------------------------------------------------------
+
+
 // Visual Studio warnings
 #ifdef _MSC_VER
 #pragma warning (disable: 4100) // unreferenced formal parameter
@@ -69,7 +76,7 @@ void RegisterTests_Window(ImGuiTestContext* ctx)
     t = REGISTER_TEST("window", "window_size_collapsed_1");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
-        ImGui::SetNextWindowCollapsed(true, ImGuiCond_Once);
+        ImGui::SetNextWindowCollapsed(true, ImGuiCond_Appearing);
         ImGui::Begin("Issue 2336", NULL, ImGuiWindowFlags_NoSavedSettings);
         ImGui::Text("This is some text");
         ImGui::Text("This is some more text");
@@ -649,26 +656,94 @@ void RegisterTests_Docking(ImGuiTestContext* ctx)
 #ifdef IMGUI_HAS_DOCK
     ImGuiTest* t = NULL;
 
-    t = REGISTER_TEST("docking", "docking_drag");
+    // Test that ConfigDockingTabBarOnSingleWindows transitions doesn't break window size.
+    t = REGISTER_TEST("docking", "docking_auto_nodes_size");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
+        const ImVec2 expected_sz = ImVec2(200, 200);
         if (ctx->FrameCount == 0)
-            ctx->DockSetMulti(0, "AAAA", "BBBB", NULL);
+        {
+            ImGui::SetNextWindowDockID(0);
+            ImGui::SetNextWindowSize(expected_sz);
+        }
+        ImGui::Begin("AAAA", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImGui::Text("This is AAAA");
+        const ImVec2 actual_sz = ImGui::GetWindowSize();
+        if (ctx->FrameCount >= 0)
+            IM_CHECK(actual_sz == expected_sz);
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        bool backup_cfg = ctx->UiContext->IO.ConfigDockingTabBarOnSingleWindows;
+        ctx->LogVerbose("ConfigDockingTabBarOnSingleWindows = false\n");
+        ctx->UiContext->IO.ConfigDockingTabBarOnSingleWindows = false;
+        ctx->YieldFrames(4);
+        ctx->LogVerbose("ConfigDockingTabBarOnSingleWindows = true\n");
+        ctx->UiContext->IO.ConfigDockingTabBarOnSingleWindows = true;
+        ctx->YieldFrames(4);
+        ctx->LogVerbose("ConfigDockingTabBarOnSingleWindows = false\n");
+        ctx->UiContext->IO.ConfigDockingTabBarOnSingleWindows = false;
+        ctx->YieldFrames(4);
+        ctx->UiContext->IO.ConfigDockingTabBarOnSingleWindows = backup_cfg;
+    };
 
-        ImGui::SetNextWindowPos(ImVec2(100, 100), ImGuiCond_Once);
+    // Test merging windows by dragging them.
+    t = REGISTER_TEST("docking", "docking_drag_merge");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
         ImGui::Begin("AAAA", NULL, ImGuiWindowFlags_NoSavedSettings);
         ImGui::Text("This is AAAA");
         ImGui::End();
 
-        ImGui::SetNextWindowPos(ImVec2(200, 200), ImGuiCond_Once);
         ImGui::Begin("BBBB", NULL, ImGuiWindowFlags_NoSavedSettings);
         ImGui::Text("This is BBBB");
         ImGui::End();
     };
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
-        ctx->ItemDragAndDrop("/AAAA/#COLLAPSE", "/BBBB/#COLLAPSE");
+        // FIXME-TESTS: Doesn't work if already docked
+        ctx->DockSetMulti(0, "AAAA", "BBBB", NULL);
+
+        ctx->SetRef("AAAA");
+        ctx->WindowResize(ImVec2(200, 200));
+        ctx->WindowMove(ImVec2(100, 100));
+
+        ctx->SetRef("BBBB");
+        ctx->WindowResize(ImVec2(200, 200));
+        ctx->WindowMove(ImVec2(200, 200));
+
         ctx->SleepShort();
+        ctx->SetRef("");
+        ctx->DockWindowInto("AAAA", "BBBB");
+
+        ImGuiWindow* window_aaaa = ctx->GetWindowByRef("AAAA");
+        ImGuiWindow* window_bbbb = ctx->GetWindowByRef("BBBB");
+        IM_CHECK(window_aaaa->DockNode == window_bbbb->DockNode);
+        IM_CHECK(window_aaaa->DockNode != NULL);
+        IM_CHECK(window_aaaa->DockNode->Pos == ImVec2(200, 200));
+        IM_CHECK(window_aaaa->Pos == ImVec2(200, 200));
+        IM_CHECK(window_bbbb->Pos == ImVec2(200, 200));
+
+        ctx->SleepShort();
+        ctx->DockSetMulti(0, "AAAA", NULL);
+        ctx->SleepShort();
+
+        ctx->SetRef("AAAA");
+        ctx->WindowMove(ImVec2(100, 100));
+        ctx->SetRef("BBBB");
+        ctx->WindowMove(ImVec2(300, 300));
+
+        ctx->SleepShort();
+        ctx->SetRef("");
+        ctx->DockWindowInto("AAAA", "BBBB", ImGuiDir_Left);
+        ctx->SleepShort();
+
+        IM_CHECK(window_aaaa->Pos == ImVec2(300, 300));
+        IM_CHECK(window_bbbb->Pos == ImVec2(300, 300));
+
+        //ctx->ItemDragAndDrop("/AAAA/#COLLAPSE", "/BBBB/#COLLAPSE");
+        //ctx->SleepShort();
     };
 
     // Test setting focus on a docked window, and setting focus on a specific item inside. (#2453)
@@ -1256,7 +1331,7 @@ void RegisterTests_Capture(ImGuiTestContext* ctx)
         ctx->ItemCloseAll("");
         ctx->MenuCheck("Examples/Simple overlay");
         ctx->SetRef("Example: Simple overlay");
-        ImGuiWindow* window_overlay = ctx->GetRefWindow();
+        ImGuiWindow* window_overlay = ctx->GetWindowByRef("");
         IM_CHECK(window_overlay != NULL);
 
         // FIXME-TESTS: Find last newly opened window?
@@ -1269,7 +1344,7 @@ void RegisterTests_Capture(ImGuiTestContext* ctx)
         ctx->SetRef("Example: Custom rendering");
         ctx->WindowResize(ImVec2(fh * 30, fh * 30));
         ctx->WindowMove(window_overlay->Rect().GetBL() + ImVec2(0.0f, pad));
-        ImGuiWindow* window_custom_rendering = ctx->GetRefWindow();
+        ImGuiWindow* window_custom_rendering = ctx->GetWindowByRef("");
         IM_CHECK(window_custom_rendering != NULL);
 
         ctx->SetRef("ImGui Demo");
@@ -1284,6 +1359,7 @@ void RegisterTests_Capture(ImGuiTestContext* ctx)
         ctx->WindowResize(ImVec2(fh * 20, fh * 27));
         ctx->WindowMove(ImVec2(window_custom_rendering->Pos.x + window_custom_rendering->Size.x + pad, pad));
 
+        ctx->LogVerbose("Setup Console window...\n");
         ctx->SetRef("ImGui Demo");
         ctx->MenuCheck("Examples/Console");
         ctx->SetRef("Example: Console");
@@ -1298,6 +1374,7 @@ void RegisterTests_Capture(ImGuiTestContext* ctx)
         ctx->KeyCharsAppendEnter("ELP");
         ctx->KeyCharsAppendEnter("hello, imgui world!");
 
+        ctx->LogVerbose("Setup Demo window...\n");
         ctx->SetRef("ImGui Demo");
         ctx->WindowResize(ImVec2(fh * 35, io.DisplaySize.y - pad * 2.0f));
         ctx->WindowMove(ImVec2(io.DisplaySize.x - pad, pad), ImVec2(1.0f, 0.0f));

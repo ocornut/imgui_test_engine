@@ -16,6 +16,27 @@
 
 #define IMGUI_DEBUG_TEST_ENGINE     1
 
+//-------------------------------------------------------------------------
+// TODO
+//-------------------------------------------------------------------------
+
+// GOAL: Code coverage.
+// GOAL: Custom testing.
+// GOAL: Take screenshots for web/docs.
+// GOAL: Reliable performance measurement (w/ deterministic setup)
+// GOAL: Full blind version with no graphical context.
+
+// FIXME-TESTS: threaded test func instead of intrusive yield
+// FIXME-TESTS: UI to setup breakpoint (e.g. GUI func on frame X, beginning of Test func or at certain Yield/Sleep spot)
+// FIXME-TESTS: Locate within stack that uses windows/<pointer>/name -> ItemInfo hook
+// FIXME-TESTS: Be able to run blind within GUI
+// FIXME-TESTS: Be able to interactively run GUI function without Test function
+// FIXME-TESTS: Provide variants of same test (e.g. run same tests with a bunch of styles/flags, incl. configuration flags)
+// FIXME-TESTS: Automate clicking/opening stuff based on gathering id?
+// FIXME-TESTS: Mouse actions on ImGuiNavLayer_Menu layer
+// FIXME-TESTS: Fail to open a double-click tree node
+
+
 /*
 
 Index of this file:
@@ -29,26 +50,6 @@ Index of this file:
 // [SECTION] ImGuiTestContext
 
 */
-
-//-------------------------------------------------------------------------
-// TODO
-//-------------------------------------------------------------------------
-
-// GOAL: Code coverage.
-// GOAL: Custom testing.
-// GOAL: Take screenshots for web/docs.
-// GOAL: Reliable performance measurement (w/ deterministic setup)
-// GOAL: Full blind version with no graphical context.
-
-// FIXME-TESTS: threaded test func instead of intrusive yield
-// FIXME-TESTS: UI to setup breakpoint on frame X (gui func or at yield time for test func)
-// FIXME-TESTS: Locate within stack that uses windows/<pointer>/name
-// FIXME-TESTS: Be able to run blind within GUI
-// FIXME-TESTS: Be able to interactively run GUI function without Test function
-// FIXME-TESTS: Provide variants of same test (e.g. run same tests with a bunch of styles/flags)
-// FIXME-TESTS: Automate clicking/opening stuff based on gathering id?
-// FIXME-TESTS: Mouse actions on ImGuiNavLayer_Menu layer
-// FIXME-TESTS: Fail to open a double-click tree node
 
 //-------------------------------------------------------------------------
 // [SECTION] DATA STRUCTURES
@@ -104,23 +105,23 @@ struct ImGuiTestInput
     ImGuiKeyModFlags        KeyMods = ImGuiKeyModFlags_None;
     ImGuiNavInput           NavInput = ImGuiNavInput_COUNT;
     ImWchar                 Char = 0;
-    bool                    IsDown = true;
+    ImGuiKeyState           State = ImGuiKeyState_Unknown;;
 
-    static ImGuiTestInput   FromKey(ImGuiKey v, bool down, ImGuiKeyModFlags mods = ImGuiKeyModFlags_None) 
+    static ImGuiTestInput   FromKey(ImGuiKey v, ImGuiKeyState state, ImGuiKeyModFlags mods = ImGuiKeyModFlags_None)
     { 
         ImGuiTestInput inp; 
         inp.Type = ImGuiTestInputType_Key;
         inp.Key = v; 
-        inp.IsDown = down; 
         inp.KeyMods = mods; 
-        return inp; 
+        inp.State = state;
+        return inp;
     }
-    static ImGuiTestInput   FromNav(ImGuiNavInput v, bool down) 
+    static ImGuiTestInput   FromNav(ImGuiNavInput v, ImGuiKeyState state)
     { 
         ImGuiTestInput inp; 
         inp.Type = ImGuiTestInputType_Nav;
         inp.NavInput = v;
-        inp.IsDown = down; 
+        inp.State = state;
         return inp;
     }
     static ImGuiTestInput   FromChar(ImWchar v)
@@ -160,6 +161,7 @@ struct ImGuiTestEngine
     bool                        InputMouseButtonsSet = false;
     ImVec2                      InputMousePosValue;
     int                         InputMouseButtonsValue = 0x00;
+    ImGuiKeyModFlags            InputKeyMods = 0x00;
     ImVector<ImGuiTestInput>    InputQueue;
 
     // UI support
@@ -182,6 +184,9 @@ struct ImGuiTestEngine
     ImMovingAverage<double>     PerfDeltaTime500;
     ImMovingAverage<double>     PerfDeltaTime1000;
     ImMovingAverage<double>     PerfDeltaTime2000;
+
+    bool                        ToolSlowDown = false;
+    int                         ToolSlowDownMs = 100;
 
     // Functions
     ImGuiTestEngine() 
@@ -254,8 +259,8 @@ static void                 ImGuiTestEngine_ApplyInputToImGuiContext(ImGuiTestEn
 static void                 ImGuiTestEngine_ProcessQueue(ImGuiTestEngine* engine);
 static void                 ImGuiTestEngine_ClearTests(ImGuiTestEngine* engine);
 static void                 ImGuiTestEngine_ClearLocateTasks(ImGuiTestEngine* engine);
-static void                 ImGuiTestEngine_PreNewFrame(ImGuiTestEngine* engine);
-static void                 ImGuiTestEngine_PostNewFrame(ImGuiTestEngine* engine);
+static void                 ImGuiTestEngine_PreNewFrame(ImGuiTestEngine* engine, ImGuiContext* ctx);
+static void                 ImGuiTestEngine_PostNewFrame(ImGuiTestEngine* engine, ImGuiContext* ctx);
 static void                 ImGuiTestEngine_Yield(ImGuiTestEngine* engine);
 
 //-------------------------------------------------------------------------
@@ -461,6 +466,47 @@ static void ImGuiTestEngine_ApplyInputToImGuiContext(ImGuiTestEngine* engine)
             return;
         }
 
+        // Process input requests/queues
+        if (engine->InputQueue.Size > 0)
+        {
+            for (int n = 0; n < engine->InputQueue.Size; n++)
+            {
+                const ImGuiTestInput& input = engine->InputQueue[n];
+                switch (input.Type)
+                {
+                case ImGuiTestInputType_Key:
+                {
+                    if (input.State == ImGuiKeyState_Down)
+                        engine->InputKeyMods |= input.KeyMods;
+                    else
+                        engine->InputKeyMods &= ~input.KeyMods;
+
+                    if (input.Key != ImGuiKey_COUNT)
+                    {
+                        int idx = g.IO.KeyMap[input.Key];
+                        if (idx >= 0 && idx < IM_ARRAYSIZE(g.IO.KeysDown))
+                            g.IO.KeysDown[idx] = (input.State == ImGuiKeyState_Down);
+                    }
+                    break;
+                }
+                case ImGuiTestInputType_Nav:
+                {
+                    IM_ASSERT(input.NavInput >= 0 && input.NavInput < ImGuiNavInput_COUNT);
+                    g.IO.NavInputs[input.NavInput] = (input.State == ImGuiKeyState_Down);
+                    break;
+                }
+                case ImGuiTestInputType_Char:
+                {
+                    IM_ASSERT(input.Char != 0);
+                    g.IO.AddInputCharacter(input.Char);
+                    break;
+                }
+                }
+            }
+            engine->InputQueue.resize(0);
+        }
+
+        // Apply mouse position
         //if (engine->SetMousePos)
         {
             g.IO.MousePos = engine->InputMousePosValue;
@@ -474,41 +520,11 @@ static void ImGuiTestEngine_ApplyInputToImGuiContext(ImGuiTestEngine* engine)
         engine->InputMousePosSet = false;
         engine->InputMouseButtonsSet = false;
 
-        if (engine->InputQueue.Size > 0)
-        {
-            for (int n = 0; n < engine->InputQueue.Size; n++)
-            {
-                const ImGuiTestInput& input = engine->InputQueue[n];
-                switch (input.Type)
-                {
-                case ImGuiTestInputType_Key:
-                {
-                    IM_ASSERT(input.Key != ImGuiKey_COUNT);
-                    g.IO.KeyCtrl  = input.IsDown && (input.KeyMods & ImGuiKeyModFlags_Ctrl) != 0;
-                    g.IO.KeyAlt   = input.IsDown && (input.KeyMods & ImGuiKeyModFlags_Alt)  != 0;
-                    g.IO.KeyShift = input.IsDown && (input.KeyMods & ImGuiKeyModFlags_Shift) != 0;
-                    g.IO.KeySuper = input.IsDown && (input.KeyMods & ImGuiKeyModFlags_Super) != 0;
-                    int idx = g.IO.KeyMap[input.Key];
-                    if (idx >= 0 && idx < IM_ARRAYSIZE(g.IO.KeysDown))
-                        g.IO.KeysDown[idx] = input.IsDown;
-                    break;
-                }
-                case ImGuiTestInputType_Nav:
-                {
-                    IM_ASSERT(input.NavInput >= 0 && input.NavInput < ImGuiNavInput_COUNT);
-                    g.IO.NavInputs[input.NavInput] = input.IsDown;
-                    break;
-                }
-                case ImGuiTestInputType_Char:
-                {
-                    IM_ASSERT(input.Char != 0);
-                    g.IO.AddInputCharacter(input.Char);
-                    break;
-                }
-                }
-            }
-            engine->InputQueue.resize(0);
-        }
+        // Apply keyboard mods
+        g.IO.KeyCtrl  = (engine->InputKeyMods & ImGuiKeyModFlags_Ctrl) != 0;
+        g.IO.KeyAlt   = (engine->InputKeyMods & ImGuiKeyModFlags_Alt) != 0;
+        g.IO.KeyShift = (engine->InputKeyMods & ImGuiKeyModFlags_Shift) != 0;
+        g.IO.KeySuper = (engine->InputKeyMods & ImGuiKeyModFlags_Super) != 0;
     }
     else
     {
@@ -517,11 +533,12 @@ static void ImGuiTestEngine_ApplyInputToImGuiContext(ImGuiTestEngine* engine)
     }
 }
 
-static void ImGuiTestEngine_PreNewFrame(ImGuiTestEngine* engine)
+static void ImGuiTestEngine_PreNewFrame(ImGuiTestEngine* engine, ImGuiContext* ctx)
 {
-    IM_ASSERT(engine->UiContextTarget != NULL);
-    IM_ASSERT(engine->UiContextTarget == GImGui);
-    ImGuiContext& g = *engine->UiContextTarget;
+    if (engine->UiContextTarget != ctx)
+        return;
+    IM_ASSERT(ctx == GImGui);
+    ImGuiContext& g = *ctx;
 
     engine->FrameCount = g.FrameCount + 1;  // NewFrame() will increase this.
     if (engine->TestContext)
@@ -548,9 +565,11 @@ static void ImGuiTestEngine_PreNewFrame(ImGuiTestEngine* engine)
     ImGuiTestEngine_ApplyInputToImGuiContext(engine);
 }
 
-static void ImGuiTestEngine_PostNewFrame(ImGuiTestEngine* engine)
+static void ImGuiTestEngine_PostNewFrame(ImGuiTestEngine* engine, ImGuiContext* ctx)
 {
-    IM_ASSERT(engine->UiContextTarget == GImGui);
+    if (engine->UiContextTarget != ctx)
+        return;
+    IM_ASSERT(ctx == GImGui);
 
     // Garbage collect unused tasks
     const int LOCATION_TASK_ELAPSE_FRAMES = 20;
@@ -563,7 +582,11 @@ static void ImGuiTestEngine_PostNewFrame(ImGuiTestEngine* engine)
             engine->LocateTasks.erase(engine->LocateTasks.Data + task_n);
             task_n--;
         }
-    }    
+    }
+
+    // Slow down whole app
+    if (engine->ToolSlowDown)
+        ImSleepInMilliseconds(engine->ToolSlowDownMs);
 
     // Process on-going queues
     if (engine->CallDepth == 0)
@@ -844,15 +867,13 @@ static void ImGuiTestEngine_RunTest(ImGuiTestEngine* engine, ImGuiTestContext* c
 void ImGuiTestEngineHook_PreNewFrame(ImGuiContext* ctx)
 {
     if (ImGuiTestEngine* engine = GImGuiHookingEngine)
-        if (engine->UiContextTarget == ctx)
-            ImGuiTestEngine_PreNewFrame(engine);
+        ImGuiTestEngine_PreNewFrame(engine, ctx);
 }
 
 void ImGuiTestEngineHook_PostNewFrame(ImGuiContext* ctx)
 {
     if (ImGuiTestEngine* engine = GImGuiHookingEngine)
-        if (engine->UiContextTarget == ctx)
-            ImGuiTestEngine_PostNewFrame(engine);
+        ImGuiTestEngine_PostNewFrame(engine, ctx);
 }
 
 void ImGuiTestEngineHook_ItemAdd(ImGuiContext* ctx, const ImRect& bb, ImGuiID id)
@@ -1370,6 +1391,18 @@ void    ImGuiTestEngine_ShowTestWindow(ImGuiTestEngine* engine, bool* p_open)
 
             ImGui::EndTabItem();
         }
+
+        if (ImGui::BeginTabItem("TOOLS"))
+        {
+            ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
+            ImGui::Checkbox("Slow down whole app", &engine->ToolSlowDown);
+            ImGui::SameLine();
+            ImGui::PushItemWidth(70);
+            ImGui::SliderInt("##ms", &engine->ToolSlowDownMs, 0, 400, "%.0f ms");
+            ImGui::PopItemWidth();
+            ImGui::EndTabItem();
+        }
+
         ImGui::EndTabBar();
     }
 
@@ -1508,7 +1541,7 @@ void    ImGuiTestContext::Sleep(float time)
 
 void    ImGuiTestContext::SleepShort()
 {
-    Sleep(0.2f);
+    Sleep(0.3f);
 }
 
 void ImGuiTestContext::SetInputMode(ImGuiInputSource input_mode)
@@ -1548,9 +1581,9 @@ void ImGuiTestContext::SetRef(ImGuiTestRef ref)
     }
 }
 
-ImGuiWindow* ImGuiTestContext::GetRefWindow()
+ImGuiWindow* ImGuiTestContext::GetWindowByRef(ImGuiTestRef ref)
 {
-    ImGuiID window_id = GetID("");
+    ImGuiID window_id = GetID(ref);
     ImGuiWindow* window = ImGui::FindWindowByID(window_id);
     return window;
 }
@@ -1702,16 +1735,16 @@ void    ImGuiTestContext::NavActivate()
     // Feed gamepad nav inputs
     for (int n = 0; n < frames_to_hold; n++)
     {
-        Engine->InputQueue.push_back(ImGuiTestInput::FromNav(ImGuiNavInput_Activate, true));
+        Engine->InputQueue.push_back(ImGuiTestInput::FromNav(ImGuiNavInput_Activate, ImGuiKeyState_Down));
         Yield();
     }
     Yield();
 #else
     // Feed keyboard keys
-    Engine->InputQueue.push_back(ImGuiTestInput::FromKey(ImGuiKey_Space, true));
+    Engine->InputQueue.push_back(ImGuiTestInput::FromKey(ImGuiKey_Space, ImGuiKeyState_Down));
     for (int n = 0; n < frames_to_hold; n++)
         Yield();
-    Engine->InputQueue.push_back(ImGuiTestInput::FromKey(ImGuiKey_Space, false));
+    Engine->InputQueue.push_back(ImGuiTestInput::FromKey(ImGuiKey_Space, ImGuiKeyState_Up));
     Yield();
     Yield();
 #endif
@@ -1728,7 +1761,7 @@ void    ImGuiTestContext::NavInput()
     int frames_to_hold = 2; // FIXME-TESTS: <-- number of frames could be fuzzed here
     for (int n = 0; n < frames_to_hold; n++)
     {
-        Engine->InputQueue.push_back(ImGuiTestInput::FromNav(ImGuiNavInput_Input, true));
+        Engine->InputQueue.push_back(ImGuiTestInput::FromNav(ImGuiNavInput_Input, ImGuiKeyState_Down));
         Yield();
     }
     Yield();
@@ -1757,20 +1790,9 @@ void    ImGuiTestContext::MouseMove(ImGuiTestRef ref, ImGuiTestOpFlags flags)
         ScrollToY(ref);
 
     ImVec2 pos = item->Rect.GetCenter();
-    ImRect visible_r(0.0f, 0.0f, g.IO.DisplaySize.x, g.IO.DisplaySize.y);   // FIXME: Viewport
-    if (!visible_r.Contains(pos))
-    {
-        // Fallback move window directly to make our item reachable with the mouse.
-        float pad = g.FontSize;
-        ImVec2 delta;
-        delta.x = (pos.x < visible_r.Min.x) ? (visible_r.Min.x - pos.x + pad) : (pos.x > visible_r.Max.x) ? (visible_r.Max.x - pos.x - pad) : 0.0f;
-        delta.y = (pos.y < visible_r.Min.y) ? (visible_r.Min.y - pos.y + pad) : (pos.y > visible_r.Max.y) ? (visible_r.Max.y - pos.y - pad) : 0.0f;
-        ImGui::SetWindowPos(window, window->Pos + delta, ImGuiCond_Always);
-        LogVerbose("WindowMoveBypass %s delta (%.1f,%.1f)\n", window->Name, delta.x, delta.y);
-        Yield();
-        pos = item->Rect.GetCenter();
-    }
-
+    WindowMoveToMakePosVisible(window, pos);
+    
+    pos = item->Rect.GetCenter();
     MouseMoveToPos(pos);
 
     // Focus again in case something made us lost focus (which could happen on a simple hover)
@@ -1785,10 +1807,29 @@ void    ImGuiTestContext::MouseMove(ImGuiTestRef ref, ImGuiTestOpFlags flags)
     item->RefCount--;
 }
 
+void    ImGuiTestContext::WindowMoveToMakePosVisible(ImGuiWindow* window, ImVec2 pos)
+{
+    ImGuiContext& g = *UiContext;
+    if (IsError())
+        return;
+
+    ImRect visible_r(0.0f, 0.0f, g.IO.DisplaySize.x, g.IO.DisplaySize.y);   // FIXME: Viewport
+    if (!visible_r.Contains(pos))
+    {
+        // Fallback move window directly to make our item reachable with the mouse.
+        float pad = g.FontSize;
+        ImVec2 delta;
+        delta.x = (pos.x < visible_r.Min.x) ? (visible_r.Min.x - pos.x + pad) : (pos.x > visible_r.Max.x) ? (visible_r.Max.x - pos.x - pad) : 0.0f;
+        delta.y = (pos.y < visible_r.Min.y) ? (visible_r.Min.y - pos.y + pad) : (pos.y > visible_r.Max.y) ? (visible_r.Max.y - pos.y - pad) : 0.0f;
+        ImGui::SetWindowPos(window, window->Pos + delta, ImGuiCond_Always);
+        LogVerbose("WindowMoveBypass %s delta (%.1f,%.1f)\n", window->Name, delta.x, delta.y);
+        Yield();
+    }
+}
+
 void	ImGuiTestContext::MouseMoveToPos(ImVec2 target)
 {
     ImGuiContext& g = *UiContext;
-
     if (IsError())
         return;
 
@@ -1802,8 +1843,8 @@ void	ImGuiTestContext::MouseMoveToPos(ImVec2 target)
         ImVec2 delta = target - Engine->InputMousePosValue;
         float inv_length = ImInvLength(delta, FLT_MAX);
         float move_speed = Engine->IO.MouseSpeed * g.IO.DeltaTime;
-        if (g.IO.KeyShift)
-            move_speed *= 0.1f;
+        //if (g.IO.KeyShift)
+        //    move_speed *= 0.1f;
 
         //ImGui::GetOverlayDrawList()->AddCircle(target, 10.0f, IM_COL32(255, 255, 0, 255));
 
@@ -1869,6 +1910,44 @@ void    ImGuiTestContext::MouseClick(int button)
     Yield(); // Give a frame for items to react
 }
 
+void    ImGuiTestContext::MouseLiftDragThreshold()
+{
+    if (IsError())
+        return;
+
+    ImGuiContext& g = *UiContext;
+    g.IO.MouseDragMaxDistanceAbs[0] = ImVec2(g.IO.MouseDragThreshold, g.IO.MouseDragThreshold);
+    g.IO.MouseDragMaxDistanceSqr[0] = (g.IO.MouseDragThreshold * g.IO.MouseDragThreshold) + (g.IO.MouseDragThreshold * g.IO.MouseDragThreshold);
+}
+
+void    ImGuiTestContext::KeyDownMap(ImGuiKey key, int mod_flags)
+{
+    if (IsError())
+        return;
+
+    IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
+    char mod_flags_str[32];
+    GetImGuiKeyModsPrefixStr(mod_flags, mod_flags_str, IM_ARRAYSIZE(mod_flags_str));
+    LogVerbose("KeyDownMap(%s%s)\n", mod_flags_str, (key != ImGuiKey_COUNT) ? GetImGuiKeyName(key) : "");
+    Engine->InputQueue.push_back(ImGuiTestInput::FromKey(key, ImGuiKeyState_Down, mod_flags));
+    Yield();
+    Yield();
+}
+
+void    ImGuiTestContext::KeyUpMap(ImGuiKey key, int mod_flags)
+{
+    if (IsError())
+        return;
+
+    IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
+    char mod_flags_str[32];
+    GetImGuiKeyModsPrefixStr(mod_flags, mod_flags_str, IM_ARRAYSIZE(mod_flags_str));
+    LogVerbose("KeyUpMap(%s%s)\n", mod_flags_str, (key != ImGuiKey_COUNT) ? GetImGuiKeyName(key) : "");
+    Engine->InputQueue.push_back(ImGuiTestInput::FromKey(key, ImGuiKeyState_Up, mod_flags));
+    Yield();
+    Yield();
+}
+
 void    ImGuiTestContext::KeyPressMap(ImGuiKey key, int mod_flags, int count)
 {
     if (IsError())
@@ -1877,13 +1956,13 @@ void    ImGuiTestContext::KeyPressMap(ImGuiKey key, int mod_flags, int count)
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
     char mod_flags_str[32];
     GetImGuiKeyModsPrefixStr(mod_flags, mod_flags_str, IM_ARRAYSIZE(mod_flags_str));
-    LogVerbose("KeyPressMap(%s%s, %d)\n", mod_flags_str, GetImGuiKeyName(key), count);
+    LogVerbose("KeyPressMap(%s%s, %d)\n", mod_flags_str, (key != ImGuiKey_COUNT) ? GetImGuiKeyName(key) : "", count);
     while (count > 0)
     {
         count--;
-        Engine->InputQueue.push_back(ImGuiTestInput::FromKey(key, true, mod_flags));
+        Engine->InputQueue.push_back(ImGuiTestInput::FromKey(key, ImGuiKeyState_Down, mod_flags));
         Yield();
-        Engine->InputQueue.push_back(ImGuiTestInput::FromKey(key, false));
+        Engine->InputQueue.push_back(ImGuiTestInput::FromKey(key, ImGuiKeyState_Up, mod_flags));
         Yield();
 
         // Give a frame for items to react
@@ -2284,7 +2363,6 @@ void    ImGuiTestContext::ItemDragAndDrop(ImGuiTestRef ref_src, ImGuiTestRef ref
 {
     if (IsError())
         return;
-    ImGuiContext& g = *UiContext;
 
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
     ImGuiTestItemInfo* item_src = ItemLocate(ref_src);
@@ -2298,8 +2376,7 @@ void    ImGuiTestContext::ItemDragAndDrop(ImGuiTestRef ref_src, ImGuiTestRef ref
     MouseDown(0);
 
     // Enforce lifting drag threshold even if both item are exactly at the same location.
-    g.IO.MouseDragMaxDistanceAbs[0] = ImVec2(g.IO.MouseDragThreshold, g.IO.MouseDragThreshold);
-    g.IO.MouseDragMaxDistanceSqr[0] = (g.IO.MouseDragThreshold * g.IO.MouseDragThreshold) + (g.IO.MouseDragThreshold * g.IO.MouseDragThreshold);
+    MouseLiftDragThreshold();
 
     MouseMove(ref_dst, ImGuiTestOpFlags_NoCheckHoveredId);
     SleepShort();
@@ -2416,7 +2493,7 @@ void    ImGuiTestContext::WindowSetCollapsed(bool collapsed)
     if (window->Collapsed != collapsed)
     {
         ItemClick("#COLLAPSE");
-        IM_ASSERT(window->Collapsed == collapsed);
+        IM_CHECK(window->Collapsed == collapsed);
     }
 }
 
@@ -2425,7 +2502,7 @@ void    ImGuiTestContext::WindowMove(ImVec2 pos, ImVec2 pivot)
     if (IsError())
         return;
 
-    ImGuiWindow* window = GetRefWindow();
+    ImGuiWindow* window = GetWindowByRef("");
     pos -= pivot * window->Size;
     pos = ImFloor(pos);
     if (ImLengthSqr(pos - window->Pos) < 0.001f)
@@ -2441,11 +2518,22 @@ void    ImGuiTestContext::WindowMove(ImVec2 pos, ImVec2 pivot)
     MouseMoveToPos(window->Pos + ImVec2(h * 2.0f, h * 0.5f));
     MouseDown(0);
 
+    // Disable docking
+#if IMGUI_HAS_DOCK
+    if (UiContext->IO.ConfigDockingWithShift)
+        KeyUpMap(ImGuiKey_COUNT, ImGuiKeyModFlags_Shift);
+    else
+        KeyDownMap(ImGuiKey_COUNT, ImGuiKeyModFlags_Shift);
+#endif
+
     ImVec2 delta = pos - window->Pos;
     MouseMoveToPos(Engine->InputMousePosValue + delta);
     Yield();
 
     MouseUp();
+#if IMGUI_HAS_DOCK
+    KeyUpMap(ImGuiKey_COUNT, ImGuiKeyModFlags_Shift);
+#endif
 }
 
 void    ImGuiTestContext::WindowResize(ImVec2 size)
@@ -2453,7 +2541,7 @@ void    ImGuiTestContext::WindowResize(ImVec2 size)
     if (IsError())
         return;
 
-    ImGuiWindow* window = GetRefWindow();
+    ImGuiWindow* window = GetWindowByRef("");
     size = ImFloor(size);
     if (ImLengthSqr(size - window->Size) < 0.001f)
         return;
@@ -2486,6 +2574,54 @@ void    ImGuiTestContext::PopupClose()
 }
 
 #ifdef IMGUI_HAS_DOCK
+void    ImGuiTestContext::DockWindowInto(const char* window_name_src, const char* window_name_dst, ImGuiDir split_dir)
+{
+    ImGuiContext& g = *UiContext;
+    if (IsError())
+        return;
+
+    IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
+    LogVerbose("DockWindowInto %s to %s\n", window_name_src, window_name_dst);
+
+    ImGuiWindow* window_src = GetWindowByRef(window_name_src);
+    ImGuiWindow* window_dst = GetWindowByRef(window_name_dst);
+    IM_CHECK(window_src != NULL);
+    IM_CHECK(window_dst != NULL);
+    if (!window_src || !window_dst)
+        return;
+
+    ImGuiTestRef ref_src(window_src->MoveId);
+    ImGuiTestRef ref_dst(window_dst->MoveId);
+    ImGuiTestItemInfo* item_src = ItemLocate(ref_src);
+    ImGuiTestItemInfo* item_dst = ItemLocate(ref_dst);
+    ImGuiTestRefDesc desc_src(ref_src, item_src);
+    ImGuiTestRefDesc desc_dst(ref_dst, item_dst);
+    FocusWindow(window_name_dst);
+    FocusWindow(window_name_src);
+
+    MouseMove(ref_src, ImGuiTestOpFlags_NoCheckHoveredId);
+    SleepShort();
+
+    if (split_dir != ImGuiDir_None)
+    {
+        // FIXME-TESTS: Not handling the operation at user's level.
+        ImGui::DockContextQueueDock(&g, window_dst->RootWindow, window_dst->DockNode, window_src, split_dir, 0.5f, false);
+    }
+    else
+    {
+        MouseDown(0);
+        MouseLiftDragThreshold();
+
+        WindowMoveToMakePosVisible(window_dst, window_dst->Rect().GetCenter());
+
+        MouseMoveToPos(window_dst->Rect().GetCenter());
+        SleepShort();
+        MouseUp(0);
+    }
+    Yield();
+    Yield();
+}
+
 void    ImGuiTestContext::DockSetMulti(ImGuiID dock_id, const char* window_name, ...)
 {
     va_list args;

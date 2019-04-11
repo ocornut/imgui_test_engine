@@ -11,6 +11,13 @@ enum ImGuiKeyModFlags_
     ImGuiKeyModFlags_Super          = 1 << 3
 };
 
+enum ImGuiKeyState
+{
+    ImGuiKeyState_Unknown,
+    ImGuiKeyState_Up,       // Released
+    ImGuiKeyState_Down      // Pressed/held
+};
+
 enum ImOsConsoleTextColor
 {
     ImOsConsoleTextColor_Black,
@@ -23,6 +30,7 @@ enum ImOsConsoleTextColor
 
 // Helpers: miscellaneous functions
 ImGuiID     ImHashDecoratedPath(const char* str, ImGuiID seed = 0);
+void        ImSleepInMilliseconds(int ms);
 ImU64       ImGetTimeInMicroseconds();
 
 void        ImOsConsoleSetTextColor(ImOsConsoleTextColor color);

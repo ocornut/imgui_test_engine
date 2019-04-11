@@ -10,13 +10,14 @@
 //   main.exe -nogui -v -nopause
 //   main.exe -nogui -nopause perf_
 
-//#define CMDLINE_ARGS  "-fileopener ../../tools/win32_open_with_sublime.cmd"
+#define CMDLINE_ARGS  "-fileopener ../../tools/win32_open_with_sublime.cmd -slow"
 //#define CMDLINE_ARGS  "-gui -nothrottle"
 //#define CMDLINE_ARGS    "-slow widgets_inputtext_5_deactivate_flags"
 //#define CMDLINE_ARGS  "-gui perf_stress_text_unformatted_2"
 //#define CMDLINE_ARGS    "-slow widgets_inputtext_5_deactivate_flags"
 //#define CMDLINE_ARGS  "-nogui -v3 nav"
-//#define CMDLINE_ARGS  "-nogui perf_stress_slider"
+//#define CMDLINE_ARGS  "-slow"
+//#define CMDLINE_ARGS  "-gui docking_focus -slow"
 //#define CMDLINE_ARGS  "-nogui -nothrottle perf_stress_hash"
 
 //-------------------------------------------------------------------------

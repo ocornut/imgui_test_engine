@@ -318,17 +318,21 @@ struct ImGuiTestContext
     void        SetInputMode(ImGuiInputSource input_mode);
 
     void        SetRef(ImGuiTestRef ref);
-    ImGuiWindow*GetRefWindow();
+    ImGuiWindow*GetWindowByRef(ImGuiTestRef ref);
     ImGuiID     GetID(ImGuiTestRef ref);
     ImGuiTestRef GetFocusWindowRef();
     ImVec2      GetMainViewportPos();
 
     void        MouseMove(ImGuiTestRef ref, ImGuiTestOpFlags flags = ImGuiTestOpFlags_None);
     void        MouseMoveToPos(ImVec2 pos);
+    void        MouseMoveToPosInsideWindow(ImVec2* pos, ImGuiWindow* window);
     void        MouseClick(int button = 0);
     void        MouseDown(int button = 0);
     void        MouseUp(int button = 0);
+    void        MouseLiftDragThreshold();
     
+    void        KeyDownMap(ImGuiKey key, int mod_flags = 0);
+    void        KeyUpMap(ImGuiKey key, int mod_flags = 0);
     void        KeyPressMap(ImGuiKey key, int mod_flags = 0, int count = 1);
     void        KeyChars(const char* chars);
     void        KeyCharsAppend(const char* chars);
@@ -374,13 +378,16 @@ struct ImGuiTestContext
     void        MenuCheckAll(ImGuiTestRef ref_parent)       { MenuActionAll(ImGuiTestAction_Check, ref_parent); }
     void        MenuUncheckAll(ImGuiTestRef ref_parent)     { MenuActionAll(ImGuiTestAction_Uncheck, ref_parent); }
 
+    // FIXME-TESTS: Refactor this horrible mess... perhaps all functions should have a ImGuiTestRef defaulting to empty?
     void        WindowClose();
     void        WindowSetCollapsed(bool collapsed);
     void        WindowMove(ImVec2 pos, ImVec2 pivot = ImVec2(0.0f, 0.0f));
     void        WindowResize(ImVec2 sz);
+    void        WindowMoveToMakePosVisible(ImGuiWindow* window, ImVec2 pos);
     void        PopupClose();
 
 #ifdef IMGUI_HAS_DOCK
+    void        DockWindowInto(const char* window_src, const char* window_dst, ImGuiDir split_dir = ImGuiDir_None);
     void        DockSetMulti(ImGuiID dock_id, const char* window_name, ...);
     ImGuiID     DockSetupBasicMulti(ImGuiID dock_id, const char* window_name, ...);
 #endif
