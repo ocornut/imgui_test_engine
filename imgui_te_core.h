@@ -85,8 +85,9 @@ void    ImGuiTestEngineHook_ItemInfo(ImGuiID id, const char* label, int flags);
 //-------------------------------------------------------------------------
 
 // We embed every maacro in a do {} while(0) statement as a trick to allow using them as regular single statement, e.g. if (XXX) IM_CHECK(A); else IM_CHECK(B)
-#define IM_CHECK_NO_ABORT(_EXPR)    do { if (ImGuiTestEngineHook_Check(__FILE__, __func__, __LINE__, (bool)(_EXPR), #_EXPR))     { IM_ASSERT(0); } } while (0)
+#define IM_CHECK_NO_RET(_EXPR)      do { if (ImGuiTestEngineHook_Check(__FILE__, __func__, __LINE__, (bool)(_EXPR), #_EXPR))     { IM_ASSERT(0); } } while (0)
 #define IM_CHECK(_EXPR)             do { if (ImGuiTestEngineHook_Check(__FILE__, __func__, __LINE__, (bool)(_EXPR), #_EXPR))     { IM_ASSERT(0); } if (!(bool)(_EXPR)) return; } while (0)
+#define IM_CHECK_RETV(_EXPR, _RETV) do { if (ImGuiTestEngineHook_Check(__FILE__, __func__, __LINE__, (bool)(_EXPR), #_EXPR))     { IM_ASSERT(0); } if (!(bool)(_EXPR)) return _RETV; } while (0)
 #define IM_ERRORF(_FMT,...)         do { if (ImGuiTestEngineHook_Error(__FILE__, __func__, __LINE__, _FMT, __VA_ARGS__))         { IM_ASSERT(0); } } while (0)
 #define IM_ERRORF_NOHDR(_FMT,...)   do { if (ImGuiTestEngineHook_Error(NULL, NULL, 0, _FMT, __VA_ARGS__))                        { IM_ASSERT(0); } } while (0)
 //#define IM_ASSERT(_EXPR)      (void)( (!!(_EXPR)) || (ImGuiTestEngineHook_Check(false, #_EXPR, __FILE__, __func__, __LINE__), 0) )
@@ -320,6 +321,7 @@ struct ImGuiTestContext
     void        SetRef(ImGuiTestRef ref);
     ImGuiWindow*GetWindowByRef(ImGuiTestRef ref);
     ImGuiID     GetID(ImGuiTestRef ref);
+    ImGuiID     GetID(ImGuiTestRef seed_ref, ImGuiTestRef ref);
     ImGuiTestRef GetFocusWindowRef();
     ImVec2      GetMainViewportPos();
 
@@ -343,8 +345,8 @@ struct ImGuiTestContext
     void        NavInput();
 
     void        FocusWindow(ImGuiTestRef ref);
-    void        BringWindowToFront(ImGuiWindow* window);
-    void        BringWindowToFrontFromItem(ImGuiTestRef ref);
+    bool        BringWindowToFront(ImGuiWindow* window, ImGuiTestOpFlags flags = ImGuiTestOpFlags_None);
+    bool        BringWindowToFrontFromItem(ImGuiTestRef ref);
 
     void        ScrollToY(ImGuiTestRef ref, float scroll_ratio_y = 0.5f);
 
@@ -380,9 +382,9 @@ struct ImGuiTestContext
 
     // FIXME-TESTS: Refactor this horrible mess... perhaps all functions should have a ImGuiTestRef defaulting to empty?
     void        WindowClose();
-    void        WindowSetCollapsed(bool collapsed);
-    void        WindowMove(ImVec2 pos, ImVec2 pivot = ImVec2(0.0f, 0.0f));
-    void        WindowResize(ImVec2 sz);
+    void        WindowSetCollapsed(ImGuiTestRef ref, bool collapsed);
+    void        WindowMove(ImGuiTestRef ref, ImVec2 pos, ImVec2 pivot = ImVec2(0.0f, 0.0f));
+    void        WindowResize(ImGuiTestRef ref, ImVec2 sz);
     void        WindowMoveToMakePosVisible(ImGuiWindow* window, ImVec2 pos);
     void        PopupClose();
 

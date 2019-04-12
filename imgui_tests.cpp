@@ -105,16 +105,16 @@ void RegisterTests_Window(ImGuiTestContext* ctx)
     {
         ImGuiWindow* window = ImGui::FindWindowByName("Test Window");
         ctx->SetRef("Test Window");
-        ctx->WindowSetCollapsed(false);
+        ctx->WindowSetCollapsed("", false);
         ctx->LogVerbose("Size %f %f, SizeFull %f %f\n", window->Size.x, window->Size.y, window->SizeFull.x, window->SizeFull.y);
         IM_CHECK(window->Size == window->SizeFull);
         ImVec2 size_full_when_uncollapsed = window->SizeFull;
-        ctx->WindowSetCollapsed(true);
+        ctx->WindowSetCollapsed("", true);
         ctx->LogVerbose("Size %f %f, SizeFull %f %f\n", window->Size.x, window->Size.y, window->SizeFull.x, window->SizeFull.y);
         ImVec2 size_collapsed = window->Size;
         IM_CHECK(size_full_when_uncollapsed.y > size_collapsed.y);
         IM_CHECK(size_full_when_uncollapsed == window->SizeFull);
-        ctx->WindowSetCollapsed(false);
+        ctx->WindowSetCollapsed("", false);
         ctx->LogVerbose("Size %f %f, SizeFull %f %f\n", window->Size.x, window->Size.y, window->SizeFull.x, window->SizeFull.y);
         IM_CHECK(window->Size.y == size_full_when_uncollapsed.y && "Window should have restored to full size.");
         ctx->Yield();
@@ -702,45 +702,51 @@ void RegisterTests_Docking(ImGuiTestContext* ctx)
     };
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
-        // FIXME-TESTS: Doesn't work if already docked
-        ctx->DockSetMulti(0, "AAAA", "BBBB", NULL);
-
-        ctx->SetRef("AAAA");
-        ctx->WindowResize(ImVec2(200, 200));
-        ctx->WindowMove(ImVec2(100, 100));
-
-        ctx->SetRef("BBBB");
-        ctx->WindowResize(ImVec2(200, 200));
-        ctx->WindowMove(ImVec2(200, 200));
-
-        ctx->SleepShort();
-        ctx->SetRef("");
-        ctx->DockWindowInto("AAAA", "BBBB");
+        // FIXME-TESTS: Tests doesn't work if already docked
+        // FIXME-TESTS: DockSetMulti takes window_name not ref
 
         ImGuiWindow* window_aaaa = ctx->GetWindowByRef("AAAA");
         ImGuiWindow* window_bbbb = ctx->GetWindowByRef("BBBB");
-        IM_CHECK(window_aaaa->DockNode == window_bbbb->DockNode);
+
+        // Init state
+        ctx->DockSetMulti(0, "AAAA", "BBBB", NULL);
+        IM_CHECK(window_aaaa->DockId == 0);
+        IM_CHECK(window_bbbb->DockId == 0);
+        ctx->WindowResize("/AAAA", ImVec2(200, 200));
+        ctx->WindowMove("/AAAA", ImVec2(100, 100));
+        ctx->WindowResize("/BBBB", ImVec2(200, 200));
+        ctx->WindowMove("/BBBB", ImVec2(200, 200));
+
+        // Dock Once
+        ctx->SleepShort();
+        ctx->DockWindowInto("AAAA", "BBBB");
         IM_CHECK(window_aaaa->DockNode != NULL);
+        IM_CHECK(window_aaaa->DockNode == window_bbbb->DockNode);
         IM_CHECK(window_aaaa->DockNode->Pos == ImVec2(200, 200));
         IM_CHECK(window_aaaa->Pos == ImVec2(200, 200));
         IM_CHECK(window_bbbb->Pos == ImVec2(200, 200));
+        ImGuiID dock_id = window_bbbb->DockId;
 
+        // Undock AAAA, BBBB should still refer/dock to node.
         ctx->SleepShort();
         ctx->DockSetMulti(0, "AAAA", NULL);
         ctx->SleepShort();
+        IM_CHECK(window_aaaa->DockId == 0);
+        IM_CHECK(window_bbbb->DockId == dock_id);
 
-        ctx->SetRef("AAAA");
-        ctx->WindowMove(ImVec2(100, 100));
-        ctx->SetRef("BBBB");
-        ctx->WindowMove(ImVec2(300, 300));
+        // Intentionally move both floating windows away
+        ctx->WindowMove("/AAAA", ImVec2(100, 100));
+        ctx->WindowMove("/BBBB", ImVec2(300, 300));
 
+        // Dock again (BBBB still refers to dock id, making this different from the first docking)
         ctx->SleepShort();
-        ctx->SetRef("");
-        ctx->DockWindowInto("AAAA", "BBBB", ImGuiDir_Left);
+        ctx->DockWindowInto("/AAAA", "/BBBB", ImGuiDir_None);
         ctx->SleepShort();
-
+        IM_CHECK(window_aaaa->DockId == dock_id);
+        IM_CHECK(window_bbbb->DockId == dock_id);
         IM_CHECK(window_aaaa->Pos == ImVec2(300, 300));
         IM_CHECK(window_bbbb->Pos == ImVec2(300, 300));
+        IM_CHECK(window_aaaa->DockNode->Pos == ImVec2(300, 300));
 
         //ctx->ItemDragAndDrop("/AAAA/#COLLAPSE", "/BBBB/#COLLAPSE");
         //ctx->SleepShort();
@@ -1342,29 +1348,29 @@ void RegisterTests_Capture(ImGuiTestContext* ctx)
         ctx->SetRef("ImGui Demo");
         ctx->MenuCheck("Examples/Custom rendering");
         ctx->SetRef("Example: Custom rendering");
-        ctx->WindowResize(ImVec2(fh * 30, fh * 30));
-        ctx->WindowMove(window_overlay->Rect().GetBL() + ImVec2(0.0f, pad));
+        ctx->WindowResize("", ImVec2(fh * 30, fh * 30));
+        ctx->WindowMove("", window_overlay->Rect().GetBL() + ImVec2(0.0f, pad));
         ImGuiWindow* window_custom_rendering = ctx->GetWindowByRef("");
         IM_CHECK(window_custom_rendering != NULL);
 
         ctx->SetRef("ImGui Demo");
         ctx->MenuCheck("Examples/Simple layout");
         ctx->SetRef("Example: Simple layout");
-        ctx->WindowResize(ImVec2(fh * 50, fh * 15));
-        ctx->WindowMove(ImVec2(pad, io.DisplaySize.y - pad), ImVec2(0.0f, 1.0f));
+        ctx->WindowResize("", ImVec2(fh * 50, fh * 15));
+        ctx->WindowMove("", ImVec2(pad, io.DisplaySize.y - pad), ImVec2(0.0f, 1.0f));
 
         ctx->SetRef("ImGui Demo");
         ctx->MenuCheck("Examples/Documents");
         ctx->SetRef("Example: Documents");
-        ctx->WindowResize(ImVec2(fh * 20, fh * 27));
-        ctx->WindowMove(ImVec2(window_custom_rendering->Pos.x + window_custom_rendering->Size.x + pad, pad));
+        ctx->WindowResize("", ImVec2(fh * 20, fh * 27));
+        ctx->WindowMove("", ImVec2(window_custom_rendering->Pos.x + window_custom_rendering->Size.x + pad, pad));
 
         ctx->LogVerbose("Setup Console window...\n");
         ctx->SetRef("ImGui Demo");
         ctx->MenuCheck("Examples/Console");
         ctx->SetRef("Example: Console");
-        ctx->WindowResize(ImVec2(fh * 40, fh * (34-7)));
-        ctx->WindowMove(window_custom_rendering->Pos + window_custom_rendering->Size * ImVec2(0.30f, 0.60f));
+        ctx->WindowResize("", ImVec2(fh * 40, fh * (34-7)));
+        ctx->WindowMove("", window_custom_rendering->Pos + window_custom_rendering->Size * ImVec2(0.30f, 0.60f));
         ctx->ItemClick("Clear");
         ctx->ItemClick("Add Dummy Text");
         ctx->ItemClick("Add Dummy Error");
@@ -1376,8 +1382,8 @@ void RegisterTests_Capture(ImGuiTestContext* ctx)
 
         ctx->LogVerbose("Setup Demo window...\n");
         ctx->SetRef("ImGui Demo");
-        ctx->WindowResize(ImVec2(fh * 35, io.DisplaySize.y - pad * 2.0f));
-        ctx->WindowMove(ImVec2(io.DisplaySize.x - pad, pad), ImVec2(1.0f, 0.0f));
+        ctx->WindowResize("", ImVec2(fh * 35, io.DisplaySize.y - pad * 2.0f));
+        ctx->WindowMove("", ImVec2(io.DisplaySize.x - pad, pad), ImVec2(1.0f, 0.0f));
         ctx->ItemOpen("Widgets");
         ctx->ItemOpen("Color\\/Picker Widgets");
         ctx->ItemOpen("Layout");

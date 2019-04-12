@@ -1061,6 +1061,7 @@ static void DrawTestLog(ImGuiTestEngine* e, ImGuiTest* test, bool is_interactive
 {
     ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(6.0f, 2.0f));
     ImU32 error_col = IM_COL32(255, 150, 150, 255);
+    ImU32 warning_col = ImGui::GetColorU32(ImGuiCol_Text); // IM_COL32(230, 230, 180, 255);
     ImU32 unimportant_col = IM_COL32(190, 190, 190, 255);
 
     const char* text = test->TestLog.begin();
@@ -1071,20 +1072,29 @@ static void DrawTestLog(ImGuiTestEngine* e, ImGuiTest* test, bool is_interactive
         const char* line_start = text;
         const char* line_end = ImStreolRange(line_start, text_end);
         const bool is_error = ImStristr(line_start, line_end, "] KO", NULL) != NULL; // FIXME-OPT
+        const bool is_warning = ImStristr(line_start, line_end, "[warn]", NULL) != NULL; // FIXME-OPT
         const bool is_unimportant = ImStristr(line_start, line_end, "] --", NULL) != NULL; // FIXME-OPT
 
         if (is_error)
             ImGui::PushStyleColor(ImGuiCol_Text, error_col);
+        else if (is_warning)
+            ImGui::PushStyleColor(ImGuiCol_Text, warning_col);
         else if (is_unimportant)
             ImGui::PushStyleColor(ImGuiCol_Text, unimportant_col);
         ImGui::TextUnformatted(line_start, line_end);
-        if (is_error || is_unimportant)
+        if (is_error || is_warning || is_unimportant)
             ImGui::PopStyleColor();
 
         text = line_end + 1;
         line_no++;
     }
     ImGui::PopStyleVar();
+}
+
+static void HelpTooltip(const char* desc)
+{
+    if (ImGui::IsItemHovered())
+        ImGui::SetTooltip(desc);
 }
 
 void    ImGuiTestEngine_ShowTestWindow(ImGuiTestEngine* engine, bool* p_open)
@@ -1120,19 +1130,17 @@ void    ImGuiTestEngine_ShowTestWindow(ImGuiTestEngine* engine, bool* p_open)
     ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0, 0));
     //ImGui::Text("OPTIONS:");
     //ImGui::SameLine();
-    ImGui::Checkbox("Fast", &engine->IO.ConfigRunFast);
+    ImGui::Checkbox("Fast", &engine->IO.ConfigRunFast); HelpTooltip("Run tests as fast as possible (teleport mouse, etc.).");
     ImGui::SameLine();
-    ImGui::Checkbox("Blind", &engine->IO.ConfigRunBlind);
+    ImGui::Checkbox("Blind", &engine->IO.ConfigRunBlind); HelpTooltip("<UNSUPPORTED>\nRun tests in a blind ui context.");
     ImGui::SameLine();
-    ImGui::Checkbox("Stop", &engine->IO.ConfigStopOnError);
+    ImGui::Checkbox("Stop", &engine->IO.ConfigStopOnError); HelpTooltip("Stop on error.");
     ImGui::SameLine();
-    ImGui::Checkbox("DbgBrk", &engine->IO.ConfigBreakOnError);
+    ImGui::Checkbox("DbgBrk", &engine->IO.ConfigBreakOnError); HelpTooltip("Break in debugger when hitting an error.");
     ImGui::SameLine();
-    ImGui::Checkbox("KeepGUI", &engine->IO.ConfigKeepTestGui);
+    ImGui::Checkbox("KeepGUI", &engine->IO.ConfigKeepTestGui); HelpTooltip("Keep GUI function running after test function is finished.");
     ImGui::SameLine();
-    ImGui::Checkbox("Focus", &engine->IO.ConfigTakeFocusBackAfterTests);
-    if (ImGui::IsItemHovered())
-        ImGui::SetTooltip("Set focus back to Test window after running tests.");
+    ImGui::Checkbox("Focus", &engine->IO.ConfigTakeFocusBackAfterTests); HelpTooltip("Set focus back to Test window after running tests.");
     ImGui::SameLine();
     ImGui::PushItemWidth(60);
     ImGui::DragInt("Verbose", (int*)&engine->IO.ConfigVerboseLevel, 0.1f, 0, ImGuiTestVerboseLevel_COUNT - 1, GetVerboseLevelName(engine->IO.ConfigVerboseLevel));
@@ -1140,7 +1148,7 @@ void    ImGuiTestEngine_ShowTestWindow(ImGuiTestEngine* engine, bool* p_open)
     //ImGui::Checkbox("Verbose", &engine->IO.ConfigLogVerbose);
     ImGui::SameLine();
     ImGui::PushItemWidth(30);
-    ImGui::DragInt("Perf Stress Amount", &engine->IO.PerfStressAmount, 0.1f, 1, 20);
+    ImGui::DragInt("Perf Stress Amount", &engine->IO.PerfStressAmount, 0.1f, 1, 20); HelpTooltip("Increase workload of performance tests (higher means longer run).");
     ImGui::PopItemWidth();
     ImGui::PopStyleVar();
     ImGui::Separator();
@@ -1595,6 +1603,13 @@ ImGuiID ImGuiTestContext::GetID(ImGuiTestRef ref)
     return ImHashDecoratedPath(ref.Path, RefID);
 }
 
+ImGuiID ImGuiTestContext::GetID(ImGuiTestRef seed_ref, ImGuiTestRef ref)
+{
+    if (ref.ID)
+        return ref.ID;
+    return ImHashDecoratedPath(ref.Path, GetID(seed_ref));
+}
+
 ImGuiTestRef ImGuiTestContext::GetFocusWindowRef()
 {
     ImGuiContext& g = *UiContext;
@@ -1801,7 +1816,8 @@ void    ImGuiTestContext::MouseMove(ImGuiTestRef ref, ImGuiTestOpFlags flags)
     if (!Abort && !(flags & ImGuiTestOpFlags_NoCheckHoveredId))
     {
         if (g.HoveredIdPreviousFrame != item->ID)
-            IM_ERRORF_NOHDR("Unable to Hover %s. Expected %08X, HoveredId was %08X.", desc.c_str(), item->ID, g.HoveredIdPreviousFrame);
+            IM_ERRORF_NOHDR("Unable to Hover %s. Expected %08X in '%s', HoveredId was %08X in '%s'.", 
+                desc.c_str(), item->ID, item->Window ? item->Window->Name : "<NULL>", g.HoveredIdPreviousFrame, g.HoveredWindow ? g.HoveredWindow->Name : "");
     }
 
     item->RefCount--;
@@ -2030,9 +2046,11 @@ void    ImGuiTestContext::FocusWindow(ImGuiTestRef ref)
     }
 }
 
-void    ImGuiTestContext::BringWindowToFront(ImGuiWindow* window)
+bool    ImGuiTestContext::BringWindowToFront(ImGuiWindow* window, ImGuiTestOpFlags flags)
 {
     ImGuiContext& g = *UiContext;
+    if (IsError())
+        return false;
 
     if (window == NULL)
     {
@@ -2048,6 +2066,7 @@ void    ImGuiTestContext::BringWindowToFront(ImGuiWindow* window)
         ImGui::FocusWindow(window);
         Yield();
         Yield();
+        //IM_CHECK(g.NavWindow == window);
     }
     else if (window->RootWindow != g.Windows.back()->RootWindow)
     {
@@ -2057,19 +2076,34 @@ void    ImGuiTestContext::BringWindowToFront(ImGuiWindow* window)
         Yield();
         Yield();
     }
+
+    // We cannot guarantee this will work 100%
+    // Because merely hovering an item may e.g. open a window or change focus.
+    // In particular this can be the case with MenuItem. So trying to Open a MenuItem may lead to its child opening while hovering, 
+    // causing this function to seemingly fail (even if the end goal was reached).
+    bool ret = (window == g.NavWindow);
+    if (!ret && !(flags & ImGuiTestOpFlags_NoError))
+        Log("-- [warn] Expected focused window '%s', but '%s' got focus back.\n", window->Name, g.NavWindow ? g.NavWindow->Name : "<NULL>");
+    
+    return ret;
 }
 
-void    ImGuiTestContext::BringWindowToFrontFromItem(ImGuiTestRef ref)
+bool    ImGuiTestContext::BringWindowToFrontFromItem(ImGuiTestRef ref)
 {
+    ImGuiContext& g = *UiContext;
     if (IsError())
-        return;
+        return false;
 
     const ImGuiTestItemInfo* item = ItemLocate(ref);
     if (item == NULL)
-        IM_CHECK(item != NULL);
+        IM_CHECK_RETV(item != NULL, false);
     //LogVerbose("FocusWindowForItem %s\n", ImGuiTestRefDesc(ref, item).c_str());
     //LogVerbose("Lost focus on window '%s', getting again..\n", item->Window->Name);
-    BringWindowToFront(item->Window);
+    bool ret = BringWindowToFront(item->Window, ImGuiTestOpFlags_NoError);
+    if (!ret)
+        Log("-- [warn] Expected focused window '%s' for item '%s', but '%s' got focus back.\n", item->Window->Name, item->DebugLabel, g.NavWindow ? g.NavWindow->Name : "<NULL>");
+
+    return ret;
 }
 
 void    ImGuiTestContext::GatherItems(ImGuiTestItemList* out_list, ImGuiTestRef parent, int depth)
@@ -2429,6 +2463,7 @@ void    ImGuiTestContext::MenuAction(ImGuiTestAction action, ImGuiTestRef ref)
         if (depth > 0)
         {
             ImGuiTestItemInfo* item = ItemLocate(buf);
+            IM_CHECK(item != NULL);
             item->RefCount++;
             if (depth > 1 && Engine->InputMousePosValue.x <= item->Rect.Min.x || Engine->InputMousePosValue.x >= item->Rect.Max.x)
                 MouseMoveToPos(ImVec2(item->Rect.GetCenter().x, Engine->InputMousePosValue.y));
@@ -2476,14 +2511,14 @@ void    ImGuiTestContext::WindowClose()
     ItemClick("#CLOSE");
 }
 
-void    ImGuiTestContext::WindowSetCollapsed(bool collapsed)
+void    ImGuiTestContext::WindowSetCollapsed(ImGuiTestRef ref, bool collapsed)
 {
     if (IsError())
         return;
 
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
     LogVerbose("WindowSetCollapsed(%d)\n", collapsed);
-    ImGuiWindow* window = ImGui::FindWindowByID(RefID);
+    ImGuiWindow* window = GetWindowByRef(ref);
     if (window == NULL)
     {
         IM_ERRORF_NOHDR("Unable to find Ref window: %s / %08X", RefStr, RefID);
@@ -2497,25 +2532,30 @@ void    ImGuiTestContext::WindowSetCollapsed(bool collapsed)
     }
 }
 
-void    ImGuiTestContext::WindowMove(ImVec2 pos, ImVec2 pivot)
+void    ImGuiTestContext::WindowMove(ImGuiTestRef ref, ImVec2 input_pos, ImVec2 pivot)
 {
     if (IsError())
         return;
 
-    ImGuiWindow* window = GetWindowByRef("");
-    pos -= pivot * window->Size;
-    pos = ImFloor(pos);
-    if (ImLengthSqr(pos - window->Pos) < 0.001f)
+    IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
+
+    ImGuiWindow* window = GetWindowByRef(ref);
+    IM_CHECK(window != NULL);
+
+    ImVec2 target_pos = ImFloor(input_pos - pivot * window->Size);
+    if (ImLengthSqr(target_pos - window->Pos) < 0.001f)
         return;
 
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
+    LogVerbose("WindowMove %s (%.1f,%.1f) \n", window->Name, input_pos.x, input_pos.y);
     BringWindowToFront(window);
-    WindowSetCollapsed(false);
+    WindowSetCollapsed(ref, false);
 
     float h = ImGui::GetFrameHeight();
 
     // FIXME-TESTS: Need to find a -visible- click point
     MouseMoveToPos(window->Pos + ImVec2(h * 2.0f, h * 0.5f));
+    IM_CHECK(UiContext->HoveredWindow == window);
     MouseDown(0);
 
     // Disable docking
@@ -2526,7 +2566,7 @@ void    ImGuiTestContext::WindowMove(ImVec2 pos, ImVec2 pivot)
         KeyDownMap(ImGuiKey_COUNT, ImGuiKeyModFlags_Shift);
 #endif
 
-    ImVec2 delta = pos - window->Pos;
+    ImVec2 delta = target_pos - window->Pos;
     MouseMoveToPos(Engine->InputMousePosValue + delta);
     Yield();
 
@@ -2536,22 +2576,24 @@ void    ImGuiTestContext::WindowMove(ImVec2 pos, ImVec2 pivot)
 #endif
 }
 
-void    ImGuiTestContext::WindowResize(ImVec2 size)
+void    ImGuiTestContext::WindowResize(ImGuiTestRef ref, ImVec2 size)
 {
     if (IsError())
         return;
 
-    ImGuiWindow* window = GetWindowByRef("");
+    ImGuiWindow* window = GetWindowByRef(ref);
     size = ImFloor(size);
     if (ImLengthSqr(size - window->Size) < 0.001f)
         return;
 
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
+    LogVerbose("WindowResize %s (%.1f,%.1f)\n", window->Name, size.x, size.y);
+
     BringWindowToFront(window);
-    WindowSetCollapsed(false);
+    WindowSetCollapsed(ref, false);
 
     void* zero_ptr = (void*)0;
-    ImGuiID id = ImHashData(&zero_ptr, sizeof(void*), GetID("#RESIZE")); // FIXME-TESTS
+    ImGuiID id = ImHashData(&zero_ptr, sizeof(void*), GetID(ref, "#RESIZE")); // FIXME-TESTS
     MouseMove(id);
 
     MouseDown(0);
