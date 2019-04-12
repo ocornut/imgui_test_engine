@@ -709,7 +709,7 @@ void RegisterTests_Docking(ImGuiTestContext* ctx)
         ImGuiWindow* window_bbbb = ctx->GetWindowByRef("BBBB");
 
         // Init state
-        ctx->DockSetMulti(0, "AAAA", "BBBB", NULL);
+        ctx->DockMultiClear("AAAA", "BBBB", NULL);
         IM_CHECK(window_aaaa->DockId == 0);
         IM_CHECK(window_bbbb->DockId == 0);
         ctx->WindowResize("/AAAA", ImVec2(200, 200));
@@ -718,7 +718,6 @@ void RegisterTests_Docking(ImGuiTestContext* ctx)
         ctx->WindowMove("/BBBB", ImVec2(200, 200));
 
         // Dock Once
-        ctx->SleepShort();
         ctx->DockWindowInto("AAAA", "BBBB");
         IM_CHECK(window_aaaa->DockNode != NULL);
         IM_CHECK(window_aaaa->DockNode == window_bbbb->DockNode);
@@ -727,29 +726,48 @@ void RegisterTests_Docking(ImGuiTestContext* ctx)
         IM_CHECK(window_bbbb->Pos == ImVec2(200, 200));
         ImGuiID dock_id = window_bbbb->DockId;
 
-        // Undock AAAA, BBBB should still refer/dock to node.
-        ctx->SleepShort();
-        ctx->DockSetMulti(0, "AAAA", NULL);
-        ctx->SleepShort();
-        IM_CHECK(window_aaaa->DockId == 0);
-        IM_CHECK(window_bbbb->DockId == dock_id);
+        {
+            // Undock AAAA, BBBB should still refer/dock to node.
+            ctx->DockMultiClear("AAAA", NULL);
+            IM_CHECK(window_aaaa->DockId == 0);
+            IM_CHECK(window_bbbb->DockId == dock_id);
 
-        // Intentionally move both floating windows away
-        ctx->WindowMove("/AAAA", ImVec2(100, 100));
-        ctx->WindowMove("/BBBB", ImVec2(300, 300));
+            // Intentionally move both floating windows away
+            ctx->WindowMove("/AAAA", ImVec2(100, 100));
+            ctx->WindowResize("/AAAA", ImVec2(100, 100));
+            ctx->WindowMove("/BBBB", ImVec2(300, 300));
+            ctx->WindowResize("/BBBB", ImVec2(200, 200)); // Should already the case
 
-        // Dock again (BBBB still refers to dock id, making this different from the first docking)
-        ctx->SleepShort();
-        ctx->DockWindowInto("/AAAA", "/BBBB", ImGuiDir_None);
-        ctx->SleepShort();
-        IM_CHECK(window_aaaa->DockId == dock_id);
-        IM_CHECK(window_bbbb->DockId == dock_id);
-        IM_CHECK(window_aaaa->Pos == ImVec2(300, 300));
-        IM_CHECK(window_bbbb->Pos == ImVec2(300, 300));
-        IM_CHECK(window_aaaa->DockNode->Pos == ImVec2(300, 300));
+            // Dock again (BBBB still refers to dock id, making this different from the first docking)
+            ctx->DockWindowInto("/AAAA", "/BBBB", ImGuiDir_None);
+            IM_CHECK(window_aaaa->DockId == dock_id);
+            IM_CHECK(window_bbbb->DockId == dock_id);
+            IM_CHECK(window_aaaa->Pos == ImVec2(300, 300));
+            IM_CHECK(window_bbbb->Pos == ImVec2(300, 300));
+            IM_CHECK(window_aaaa->Size == ImVec2(200, 200));
+            IM_CHECK(window_bbbb->Size == ImVec2(200, 200));
+            IM_CHECK(window_aaaa->DockNode->Pos == ImVec2(300, 300));
+            IM_CHECK(window_aaaa->DockNode->Size == ImVec2(200, 200));
+        }
 
-        //ctx->ItemDragAndDrop("/AAAA/#COLLAPSE", "/BBBB/#COLLAPSE");
-        //ctx->SleepShort();
+        {
+            // Undock AAAA, BBBB should still refer/dock to node.
+            ctx->DockMultiClear("AAAA", NULL);
+            IM_CHECK(window_aaaa->DockId == 0);
+            IM_CHECK(window_bbbb->DockId == dock_id);
+
+            // Intentionally move both floating windows away
+            ctx->WindowMove("/AAAA", ImVec2(100, 100));
+            ctx->WindowMove("/BBBB", ImVec2(200, 200));
+
+            // Dock on the side (BBBB still refers to dock id, making this different from the first docking)
+            ctx->DockWindowInto("/AAAA", "/BBBB", ImGuiDir_Left);
+            IM_CHECK(window_aaaa->DockNode->ParentNode->ID == dock_id);
+            IM_CHECK(window_bbbb->DockNode->ParentNode->ID == dock_id);
+            IM_CHECK(window_aaaa->DockNode->ParentNode->Pos == ImVec2(200, 200));
+            IM_CHECK(window_aaaa->Pos == ImVec2(200, 200));
+            IM_CHECK(window_bbbb->Pos == ImVec2(301, 200));
+        }
     };
 
     // Test setting focus on a docked window, and setting focus on a specific item inside. (#2453)
@@ -762,7 +780,7 @@ void RegisterTests_Docking(ImGuiTestContext* ctx)
     {
         ImGuiTestGenericState& gs = ctx->GenericState;
         if (ctx->FrameCount == 0)
-            gs.DockId = ctx->DockSetupBasicMulti(0, "AAAA", "BBBB", "CCCC", NULL);
+            gs.DockId = ctx->DockMultiSetupBasic(0, "AAAA", "BBBB", "CCCC", NULL);
 
         if (ctx->FrameCount == 10)  ImGui::SetNextWindowFocus();
         ImGui::Begin("AAAA");
@@ -791,10 +809,10 @@ void RegisterTests_Docking(ImGuiTestContext* ctx)
     {
         ImGuiTestGenericState& gs = ctx->GenericState;
         if (ctx->FrameCount == 0)
-            ctx->DockSetMulti(0, "AAAA", "BBBB", "CCCC", NULL);
+            ctx->DockMultiClear("AAAA", "BBBB", "CCCC", NULL);
 
         if (ctx->FrameCount == 10)
-            gs.DockId = ctx->DockSetupBasicMulti(0, "AAAA", "BBBB", "CCCC", NULL);
+            gs.DockId = ctx->DockMultiSetupBasic(0, "AAAA", "BBBB", "CCCC", NULL);
 
         ImGuiID ids[3];
         ImGui::Begin("AAAA");

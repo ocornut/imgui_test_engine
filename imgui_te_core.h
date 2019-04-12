@@ -22,9 +22,10 @@ struct ImGuiTestItemInfo;
 struct ImGuiTestItemList;
 struct ImRect;
 
-typedef int ImGuiTestFlags;     // See ImGuiTestFlags_
-typedef int ImGuiTestOpFlags;   // See ImGuiTestOpFlags_
-typedef int ImGuiTestRunFlags;  // See ImGuiTestRunFlags_
+typedef int ImGuiTestFlags;         // See ImGuiTestFlags_
+typedef int ImGuiTestOpFlags;       // See ImGuiTestOpFlags_
+typedef int ImGuiTestCheckFlags;    // See ImGuiTestCheckFlags_
+typedef int ImGuiTestRunFlags;      // See ImGuiTestRunFlags_
 
 //-------------------------------------------------------------------------
 // Types
@@ -63,6 +64,12 @@ enum ImGuiTestOpFlags_
     ImGuiTestOpFlags_NoError                = 1 << 2    // Don't abort/error e.g. if the item cannot be found
 };
 
+enum ImGuiTestCheckFlags_
+{
+    ImGuiTestCheckFlags_None                = 0,
+    ImGuiTestCheckFlags_SilentSuccess       = 1 << 0
+};
+
 enum ImGuiTestRunFlags_
 {
     ImGuiTestRunFlags_None          = 0,
@@ -85,15 +92,16 @@ void    ImGuiTestEngineHook_ItemInfo(ImGuiID id, const char* label, int flags);
 //-------------------------------------------------------------------------
 
 // We embed every maacro in a do {} while(0) statement as a trick to allow using them as regular single statement, e.g. if (XXX) IM_CHECK(A); else IM_CHECK(B)
-#define IM_CHECK_NO_RET(_EXPR)      do { if (ImGuiTestEngineHook_Check(__FILE__, __func__, __LINE__, (bool)(_EXPR), #_EXPR))     { IM_ASSERT(0); } } while (0)
-#define IM_CHECK(_EXPR)             do { if (ImGuiTestEngineHook_Check(__FILE__, __func__, __LINE__, (bool)(_EXPR), #_EXPR))     { IM_ASSERT(0); } if (!(bool)(_EXPR)) return; } while (0)
-#define IM_CHECK_RETV(_EXPR, _RETV) do { if (ImGuiTestEngineHook_Check(__FILE__, __func__, __LINE__, (bool)(_EXPR), #_EXPR))     { IM_ASSERT(0); } if (!(bool)(_EXPR)) return _RETV; } while (0)
-#define IM_ERRORF(_FMT,...)         do { if (ImGuiTestEngineHook_Error(__FILE__, __func__, __LINE__, _FMT, __VA_ARGS__))         { IM_ASSERT(0); } } while (0)
-#define IM_ERRORF_NOHDR(_FMT,...)   do { if (ImGuiTestEngineHook_Error(NULL, NULL, 0, _FMT, __VA_ARGS__))                        { IM_ASSERT(0); } } while (0)
+#define IM_CHECK_NO_RET(_EXPR)      do { if (ImGuiTestEngineHook_Check(__FILE__, __func__, __LINE__, ImGuiTestCheckFlags_None, (bool)(_EXPR), #_EXPR))  { IM_ASSERT(0); } } while (0)
+#define IM_CHECK(_EXPR)             do { if (ImGuiTestEngineHook_Check(__FILE__, __func__, __LINE__, ImGuiTestCheckFlags_None, (bool)(_EXPR), #_EXPR))  { IM_ASSERT(0); } if (!(bool)(_EXPR)) return; } while (0)
+#define IM_CHECK_SILENT(_EXPR)      do { if (ImGuiTestEngineHook_Check(__FILE__, __func__, __LINE__, ImGuiTestCheckFlags_SilentSuccess, (bool)(_EXPR), #_EXPR))  { IM_ASSERT(0); } if (!(bool)(_EXPR)) return; } while (0)
+#define IM_CHECK_RETV(_EXPR, _RETV) do { if (ImGuiTestEngineHook_Check(__FILE__, __func__, __LINE__, ImGuiTestCheckFlags_None, (bool)(_EXPR), #_EXPR))  { IM_ASSERT(0); } if (!(bool)(_EXPR)) return _RETV; } while (0)
+#define IM_ERRORF(_FMT,...)         do { if (ImGuiTestEngineHook_Error(__FILE__, __func__, __LINE__, ImGuiTestCheckFlags_None, _FMT, __VA_ARGS__))      { IM_ASSERT(0); } } while (0)
+#define IM_ERRORF_NOHDR(_FMT,...)   do { if (ImGuiTestEngineHook_Error(NULL, NULL, 0, ImGuiTestCheckFlags_None, _FMT, __VA_ARGS__))                     { IM_ASSERT(0); } } while (0)
 //#define IM_ASSERT(_EXPR)      (void)( (!!(_EXPR)) || (ImGuiTestEngineHook_Check(false, #_EXPR, __FILE__, __func__, __LINE__), 0) )
 
-bool    ImGuiTestEngineHook_Check(const char* file, const char* func, int line, bool result, const char* expr);
-bool    ImGuiTestEngineHook_Error(const char* file, const char* func, int line, const char* fmt, ...);
+bool    ImGuiTestEngineHook_Check(const char* file, const char* func, int line, ImGuiTestCheckFlags flags, bool result, const char* expr);
+bool    ImGuiTestEngineHook_Error(const char* file, const char* func, int line, ImGuiTestCheckFlags flags, const char* fmt, ...);
 
 //-------------------------------------------------------------------------
 // ImGuiTestEngine
@@ -314,6 +322,7 @@ struct ImGuiTestContext
     void        YieldFrames(int count);
     void        YieldUntil(int frame_count);
     void        Sleep(float time);
+    void        SleepDebugNoSkip(float time);
     void        SleepShort();
 
     void        SetInputMode(ImGuiInputSource input_mode);
@@ -329,9 +338,10 @@ struct ImGuiTestContext
     void        MouseMoveToPos(ImVec2 pos);
     void        MouseMoveToPosInsideWindow(ImVec2* pos, ImGuiWindow* window);
     void        MouseClick(int button = 0);
+    void        MouseDoubleClick(int button = 0);
     void        MouseDown(int button = 0);
     void        MouseUp(int button = 0);
-    void        MouseLiftDragThreshold();
+    void        MouseLiftDragThreshold(int button = 0);
     
     void        KeyDownMap(ImGuiKey key, int mod_flags = 0);
     void        KeyUpMap(ImGuiKey key, int mod_flags = 0);
@@ -390,8 +400,9 @@ struct ImGuiTestContext
 
 #ifdef IMGUI_HAS_DOCK
     void        DockWindowInto(const char* window_src, const char* window_dst, ImGuiDir split_dir = ImGuiDir_None);
-    void        DockSetMulti(ImGuiID dock_id, const char* window_name, ...);
-    ImGuiID     DockSetupBasicMulti(ImGuiID dock_id, const char* window_name, ...);
+    void        DockMultiClear(const char* window_name, ...);
+    void        DockMultiSet(ImGuiID dock_id, const char* window_name, ...);
+    ImGuiID     DockMultiSetupBasic(ImGuiID dock_id, const char* window_name, ...);
 #endif
 
     void        PerfCalcRef();

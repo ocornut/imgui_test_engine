@@ -977,7 +977,7 @@ void ImGuiTestEngineHook_ItemInfo(ImGuiContext* ctx, ImGuiID id, const char* lab
 //-------------------------------------------------------------------------
 
 // Return true to request a debugger break
-bool ImGuiTestEngineHook_Check(const char* file, const char* func, int line, bool result, const char* expr)
+bool ImGuiTestEngineHook_Check(const char* file, const char* func, int line, ImGuiTestCheckFlags flags, bool result, const char* expr)
 {
     ImGuiTestEngine* engine = GImGuiHookingEngine;
     (void)func;
@@ -1002,14 +1002,14 @@ bool ImGuiTestEngineHook_Check(const char* file, const char* func, int line, boo
         ImGuiTest* test = ctx->Test;
         //ctx->LogVerbose("IM_CHECK(%s)\n", expr);
 
-        if (result)
+        if (result && !(flags & ImGuiTestCheckFlags_SilentSuccess))
         {
             if (file)
                 test->TestLog.appendf("[%04d] OK %s:%d  '%s'\n", ctx->FrameCount, file_without_path, line, expr);
             else
                 test->TestLog.appendf("[%04d] OK  '%s'\n", ctx->FrameCount, expr);
         }
-        else
+        if (!result)
         {
             test->Status = ImGuiTestStatus_Error;
             if (file)
@@ -1034,13 +1034,13 @@ bool ImGuiTestEngineHook_Check(const char* file, const char* func, int line, boo
     return false;
 }
 
-bool ImGuiTestEngineHook_Error(const char* file, const char* func, int line, const char* fmt, ...)
+bool ImGuiTestEngineHook_Error(const char* file, const char* func, int line, ImGuiTestCheckFlags flags, const char* fmt, ...)
 {
     va_list args;
     va_start(args, fmt);
     char buf[256];
     ImFormatStringV(buf, IM_ARRAYSIZE(buf), fmt, args);
-    bool ret = ImGuiTestEngineHook_Check(file, func, line, false, buf);
+    bool ret = ImGuiTestEngineHook_Check(file, func, line, flags, false, buf);
     va_end(args);
 
     ImGuiTestEngine* engine = GImGuiHookingEngine;
@@ -1547,6 +1547,18 @@ void    ImGuiTestContext::Sleep(float time)
     }
 }
 
+void    ImGuiTestContext::SleepDebugNoSkip(float time)
+{
+    if (IsError())
+        return;
+
+    while (time > 0.0f && !Engine->Abort)
+    {
+        ImGuiTestEngine_Yield(Engine);
+        time -= UiContext->IO.DeltaTime;
+    }
+}
+
 void    ImGuiTestContext::SleepShort()
 {
     Sleep(0.3f);
@@ -1889,6 +1901,7 @@ void    ImGuiTestContext::MouseDown(int button)
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
     LogVerbose("MouseDown %d\n", button);
 
+    UiContext->IO.MouseClickedTime[button] = -FLT_MAX; // Prevent accidental double-click from happening ever
     Engine->InputMouseButtonsSet = true;
     Engine->InputMouseButtonsValue = (1 << button);
     Yield();
@@ -1917,6 +1930,7 @@ void    ImGuiTestContext::MouseClick(int button)
     LogVerbose("MouseClick %d\n", button);
 
     Yield();
+    UiContext->IO.MouseClickedTime[button] = -FLT_MAX; // Prevent accidental double-click from happening ever
     Engine->InputMouseButtonsSet = true;
     Engine->InputMouseButtonsValue = (1 << button);
     Yield();
@@ -1926,14 +1940,37 @@ void    ImGuiTestContext::MouseClick(int button)
     Yield(); // Give a frame for items to react
 }
 
-void    ImGuiTestContext::MouseLiftDragThreshold()
+// TODO: click time argument (seconds and/or frames)
+void    ImGuiTestContext::MouseDoubleClick(int button)
+{
+    if (IsError())
+        return;
+
+    IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
+    LogVerbose("MouseDoubleClick %d\n", button);
+
+    Yield();
+    UiContext->IO.MouseClickedTime[button] = -FLT_MAX; // Prevent accidental double-click from happening ever
+    for (int n = 0; n < 2; n++)
+    {
+        Engine->InputMouseButtonsSet = true;
+        Engine->InputMouseButtonsValue = (1 << button);
+        Yield();
+        Engine->InputMouseButtonsSet = true;
+        Engine->InputMouseButtonsValue = 0;
+        Yield();
+    }
+    Yield(); // Give a frame for items to react
+}
+
+void    ImGuiTestContext::MouseLiftDragThreshold(int button)
 {
     if (IsError())
         return;
 
     ImGuiContext& g = *UiContext;
-    g.IO.MouseDragMaxDistanceAbs[0] = ImVec2(g.IO.MouseDragThreshold, g.IO.MouseDragThreshold);
-    g.IO.MouseDragMaxDistanceSqr[0] = (g.IO.MouseDragThreshold * g.IO.MouseDragThreshold) + (g.IO.MouseDragThreshold * g.IO.MouseDragThreshold);
+    g.IO.MouseDragMaxDistanceAbs[button] = ImVec2(g.IO.MouseDragThreshold, g.IO.MouseDragThreshold);
+    g.IO.MouseDragMaxDistanceSqr[button] = (g.IO.MouseDragThreshold * g.IO.MouseDragThreshold) + (g.IO.MouseDragThreshold * g.IO.MouseDragThreshold);
 }
 
 void    ImGuiTestContext::KeyDownMap(ImGuiKey key, int mod_flags)
@@ -2038,7 +2075,7 @@ void    ImGuiTestContext::FocusWindow(ImGuiTestRef ref)
 
     ImGuiID window_id = GetID(ref);
     ImGuiWindow* window = ImGui::FindWindowByID(window_id);
-    IM_CHECK(window != NULL);
+    IM_CHECK_SILENT(window != NULL);
     if (window)
     {
         ImGui::FocusWindow(window);
@@ -2171,10 +2208,11 @@ void    ImGuiTestContext::ItemAction(ImGuiTestAction action, ImGuiTestRef ref)
             MouseMove(ref);
             if (!Engine->IO.ConfigRunFast)
                 Sleep(0.05f);
-            MouseClick(0);
             if (action == ImGuiTestAction_DoubleClick)
+                MouseDoubleClick(0);
+            else
                 MouseClick(0);
-        }
+            }
         else
         {
             NavMove(ref);
@@ -2527,7 +2565,7 @@ void    ImGuiTestContext::WindowSetCollapsed(ImGuiTestRef ref, bool collapsed)
 
     if (window->Collapsed != collapsed)
     {
-        ItemClick("#COLLAPSE");
+        ItemClick(GetID(ref, "#COLLAPSE"));
         IM_CHECK(window->Collapsed == collapsed);
     }
 }
@@ -2537,17 +2575,15 @@ void    ImGuiTestContext::WindowMove(ImGuiTestRef ref, ImVec2 input_pos, ImVec2 
     if (IsError())
         return;
 
-    IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
-
     ImGuiWindow* window = GetWindowByRef(ref);
-    IM_CHECK(window != NULL);
+    IM_CHECK_SILENT(window != NULL);
 
+    IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
+    LogVerbose("WindowMove %s (%.1f,%.1f) \n", window->Name, input_pos.x, input_pos.y);
     ImVec2 target_pos = ImFloor(input_pos - pivot * window->Size);
     if (ImLengthSqr(target_pos - window->Pos) < 0.001f)
         return;
 
-    IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
-    LogVerbose("WindowMove %s (%.1f,%.1f) \n", window->Name, input_pos.x, input_pos.y);
     BringWindowToFront(window);
     WindowSetCollapsed(ref, false);
 
@@ -2555,7 +2591,7 @@ void    ImGuiTestContext::WindowMove(ImGuiTestRef ref, ImVec2 input_pos, ImVec2 
 
     // FIXME-TESTS: Need to find a -visible- click point
     MouseMoveToPos(window->Pos + ImVec2(h * 2.0f, h * 0.5f));
-    IM_CHECK(UiContext->HoveredWindow == window);
+    IM_CHECK_SILENT(UiContext->HoveredWindow == window);
     MouseDown(0);
 
     // Disable docking
@@ -2583,11 +2619,11 @@ void    ImGuiTestContext::WindowResize(ImGuiTestRef ref, ImVec2 size)
 
     ImGuiWindow* window = GetWindowByRef(ref);
     size = ImFloor(size);
-    if (ImLengthSqr(size - window->Size) < 0.001f)
-        return;
 
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
     LogVerbose("WindowResize %s (%.1f,%.1f)\n", window->Name, size.x, size.y);
+    if (ImLengthSqr(size - window->Size) < 0.001f)
+        return;
 
     BringWindowToFront(window);
     WindowSetCollapsed(ref, false);
@@ -2623,12 +2659,12 @@ void    ImGuiTestContext::DockWindowInto(const char* window_name_src, const char
         return;
 
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
-    LogVerbose("DockWindowInto %s to %s\n", window_name_src, window_name_dst);
+    LogVerbose("DockWindowInto '%s' to '%s'\n", window_name_src, window_name_dst);
 
     ImGuiWindow* window_src = GetWindowByRef(window_name_src);
     ImGuiWindow* window_dst = GetWindowByRef(window_name_dst);
-    IM_CHECK(window_src != NULL);
-    IM_CHECK(window_dst != NULL);
+    IM_CHECK_SILENT(window_src != NULL);
+    IM_CHECK_SILENT(window_dst != NULL);
     if (!window_src || !window_dst)
         return;
 
@@ -2651,12 +2687,13 @@ void    ImGuiTestContext::DockWindowInto(const char* window_name_src, const char
     }
     else
     {
-        MouseDown(0);
-        MouseLiftDragThreshold();
-
         WindowMoveToMakePosVisible(window_dst, window_dst->Rect().GetCenter());
 
+        MouseDown(0);
+        MouseLiftDragThreshold();
         MouseMoveToPos(window_dst->Rect().GetCenter());
+        IM_CHECK_SILENT(g.MovingWindow == window_src);
+        IM_CHECK_SILENT(g.HoveredWindowUnderMovingWindow == window_dst);
         SleepShort();
         MouseUp(0);
     }
@@ -2664,8 +2701,27 @@ void    ImGuiTestContext::DockWindowInto(const char* window_name_src, const char
     Yield();
 }
 
-void    ImGuiTestContext::DockSetMulti(ImGuiID dock_id, const char* window_name, ...)
+void    ImGuiTestContext::DockMultiClear(const char* window_name, ...)
 {
+    IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
+    LogVerbose("DockMultiClear\n");
+    
+    va_list args;
+    va_start(args, window_name);
+    while (window_name != NULL)
+    {
+        ImGui::DockBuilderDockWindow(window_name, 0);
+        window_name = va_arg(args, const char*);
+    }
+    va_end(args);
+    Yield();
+}
+
+void    ImGuiTestContext::DockMultiSet(ImGuiID dock_id, const char* window_name, ...)
+{
+    IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
+    LogVerbose("DockMultiSet %08X\n", dock_id);
+
     va_list args;
     va_start(args, window_name);
     while (window_name != NULL)
@@ -2674,9 +2730,10 @@ void    ImGuiTestContext::DockSetMulti(ImGuiID dock_id, const char* window_name,
         window_name = va_arg(args, const char*);
     }
     va_end(args);
+    Yield();
 }
 
-ImGuiID ImGuiTestContext::DockSetupBasicMulti(ImGuiID dock_id, const char* window_name, ...)
+ImGuiID ImGuiTestContext::DockMultiSetupBasic(ImGuiID dock_id, const char* window_name, ...)
 {
     va_list args;
     va_start(args, window_name);
