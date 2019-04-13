@@ -86,16 +86,18 @@ void    ImGuiTestEngineHook_PreNewFrame();
 void    ImGuiTestEngineHook_PostNewFrame();
 void    ImGuiTestEngineHook_ItemAdd(ImGuiID id, const ImRect& bb);
 void    ImGuiTestEngineHook_ItemInfo(ImGuiID id, const char* label, int flags);
+void    ImGuiTestEngineHook_AssertFunc(const char* expr, const char* file, const char* function, int line);
 
 //-------------------------------------------------------------------------
 // Hooks for Tests
 //-------------------------------------------------------------------------
 
-// We embed every maacro in a do {} while(0) statement as a trick to allow using them as regular single statement, e.g. if (XXX) IM_CHECK(A); else IM_CHECK(B)
-#define IM_CHECK_NO_RET(_EXPR)      do { if (ImGuiTestEngineHook_Check(__FILE__, __func__, __LINE__, ImGuiTestCheckFlags_None, (bool)(_EXPR), #_EXPR))  { IM_ASSERT(0); } } while (0)
-#define IM_CHECK(_EXPR)             do { if (ImGuiTestEngineHook_Check(__FILE__, __func__, __LINE__, ImGuiTestCheckFlags_None, (bool)(_EXPR), #_EXPR))  { IM_ASSERT(0); } if (!(bool)(_EXPR)) return; } while (0)
+// We embed every macro in a do {} while(0) statement as a trick to allow using them as regular single statement, e.g. if (XXX) IM_CHECK(A); else IM_CHECK(B)
+// We leave the assert call (which will trigger a debugger break) outside of the check function to step out faster.
+#define IM_CHECK_NO_RET(_EXPR)      do { if (ImGuiTestEngineHook_Check(__FILE__, __func__, __LINE__, ImGuiTestCheckFlags_None, (bool)(_EXPR), #_EXPR))  { IM_ASSERT(_EXPR); } } while (0)
+#define IM_CHECK(_EXPR)             do { if (ImGuiTestEngineHook_Check(__FILE__, __func__, __LINE__, ImGuiTestCheckFlags_None, (bool)(_EXPR), #_EXPR))  { IM_ASSERT(_EXPR); } if (!(bool)(_EXPR)) return; } while (0)
 #define IM_CHECK_SILENT(_EXPR)      do { if (ImGuiTestEngineHook_Check(__FILE__, __func__, __LINE__, ImGuiTestCheckFlags_SilentSuccess, (bool)(_EXPR), #_EXPR))  { IM_ASSERT(0); } if (!(bool)(_EXPR)) return; } while (0)
-#define IM_CHECK_RETV(_EXPR, _RETV) do { if (ImGuiTestEngineHook_Check(__FILE__, __func__, __LINE__, ImGuiTestCheckFlags_None, (bool)(_EXPR), #_EXPR))  { IM_ASSERT(0); } if (!(bool)(_EXPR)) return _RETV; } while (0)
+#define IM_CHECK_RETV(_EXPR, _RETV) do { if (ImGuiTestEngineHook_Check(__FILE__, __func__, __LINE__, ImGuiTestCheckFlags_None, (bool)(_EXPR), #_EXPR))  { IM_ASSERT(_EXPR); } if (!(bool)(_EXPR)) return _RETV; } while (0)
 #define IM_ERRORF(_FMT,...)         do { if (ImGuiTestEngineHook_Error(__FILE__, __func__, __LINE__, ImGuiTestCheckFlags_None, _FMT, __VA_ARGS__))      { IM_ASSERT(0); } } while (0)
 #define IM_ERRORF_NOHDR(_FMT,...)   do { if (ImGuiTestEngineHook_Error(NULL, NULL, 0, ImGuiTestCheckFlags_None, _FMT, __VA_ARGS__))                     { IM_ASSERT(0); } } while (0)
 //#define IM_ASSERT(_EXPR)      (void)( (!!(_EXPR)) || (ImGuiTestEngineHook_Check(false, #_EXPR, __FILE__, __func__, __LINE__), 0) )
@@ -285,6 +287,13 @@ struct ImGuiTestGenericState
     void clear()            { memset(this, 0, sizeof(*this)); }
 };
 
+enum ImGuiTestActiveFunc
+{
+    ImGuiTestActiveFunc_None,
+    ImGuiTestActiveFunc_GuiFunc,
+    ImGuiTestActiveFunc_TestFunc
+};
+
 struct ImGuiTestContext
 {
     ImGuiTest*              Test = NULL;
@@ -293,6 +302,7 @@ struct ImGuiTestContext
     ImGuiContext*           UiContext = NULL;
     ImGuiTestRunFlags       RunFlags = ImGuiTestRunFlags_None;
     ImGuiTestGenericState   GenericState;
+    ImGuiTestActiveFunc     ActiveFunc = ImGuiTestActiveFunc_None;
     void*                   UserData = NULL;
     int                     UserCounter = 0;
     int                     FrameCount = 0;             // Test frame count (restarts from zero every time)
@@ -317,6 +327,7 @@ struct ImGuiTestContext
     void        Finish();
     bool        IsError() const             { return Test->Status == ImGuiTestStatus_Error || Abort; }
     void        SetGuiFuncEnabled(bool v)   { if (v) RunFlags &= ~ImGuiTestRunFlags_NoGuiFunc; else RunFlags |= ImGuiTestRunFlags_NoGuiFunc; }
+    void        RecoverFromUiContextErrors();
 
     void        Yield();
     void        YieldFrames(int count);
@@ -403,6 +414,7 @@ struct ImGuiTestContext
     void        DockMultiClear(const char* window_name, ...);
     void        DockMultiSet(ImGuiID dock_id, const char* window_name, ...);
     ImGuiID     DockMultiSetupBasic(ImGuiID dock_id, const char* window_name, ...);
+    bool        DockIdIsUndockedOrStandalone(ImGuiID dock_id);
 #endif
 
     void        PerfCalcRef();

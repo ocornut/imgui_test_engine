@@ -25,7 +25,8 @@ enum ImOsConsoleTextColor
     ImOsConsoleTextColor_BrightWhite,
     ImOsConsoleTextColor_BrightRed,
     ImOsConsoleTextColor_BrightGreen,
-    ImOsConsoleTextColor_BrightBlue
+    ImOsConsoleTextColor_BrightBlue,
+    ImOsConsoleTextColor_BrightYellow
 };
 
 // Helpers: miscellaneous functions

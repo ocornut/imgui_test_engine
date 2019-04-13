@@ -13,8 +13,8 @@
 // NOTES (also see TODO in imgui_te_core.cpp)
 //-------------------------------------------------------------------------
 // - Tests can't reliably once ImGuiCond_Once or ImGuiCond_FirstUseEver
+// - GuiFunc can't run code that yields. There is an assert for that.
 //-------------------------------------------------------------------------
-
 
 // Visual Studio warnings
 #ifdef _MSC_VER
@@ -58,7 +58,7 @@ void RegisterTests_Window(ImGuiTestContext* ctx)
     t = REGISTER_TEST("window", "empty");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
-        ImGui::GetStyle().WindowMinSize = ImVec2(10, 10);
+        //ImGui::GetStyle().WindowMinSize = ImVec2(10, 10);
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
         ImGui::End();
     };
@@ -636,6 +636,7 @@ void RegisterTests_Nav(ImGuiTestContext* ctx)
     };
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
+        // FIXME-TESTS: Fails if window is resized too small
         ctx->SetInputMode(ImGuiInputSource_Nav);
         ctx->SetRef("Test window 1");
         ctx->ItemInput("InputText");
@@ -655,6 +656,49 @@ void RegisterTests_Docking(ImGuiTestContext* ctx)
 {
 #ifdef IMGUI_HAS_DOCK
     ImGuiTest* t = NULL;
+
+    t = REGISTER_TEST("docking", "docking_basic_1");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiTestGenericState& gs = ctx->GenericState;
+
+        ImGuiID ids[3];
+        ImGui::Begin("AAAA");
+        ids[0] = ImGui::GetWindowDockID();
+        ImGui::Text("This is AAAA");
+        ImGui::End();
+
+        ImGui::Begin("BBBB");
+        ids[1] = ImGui::GetWindowDockID();
+        ImGui::Text("This is BBBB");
+        ImGui::End();
+
+        ImGui::Begin("CCCC");
+        ids[2] = ImGui::GetWindowDockID();
+        ImGui::Text("This is CCCC");
+        ImGui::End();
+
+        if (ctx->FrameCount == 1)
+        {
+            IM_CHECK(ctx->DockIdIsUndockedOrStandalone(ids[0]));
+            IM_CHECK(ctx->DockIdIsUndockedOrStandalone(ids[1]));
+            IM_CHECK(ctx->DockIdIsUndockedOrStandalone(ids[2]));
+        }
+        if (ctx->FrameCount == 11)
+        {
+            IM_CHECK(gs.DockId != 0);
+            IM_CHECK(ids[0] == gs.DockId);
+            IM_CHECK(ids[0] == ids[1] && ids[0] == ids[2]);
+        }
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiTestGenericState& gs = ctx->GenericState;
+        ctx->DockMultiClear("AAAA", "BBBB", "CCCC", NULL);
+        ctx->YieldUntil(10);
+        gs.DockId = ctx->DockMultiSetupBasic(0, "AAAA", "BBBB", "CCCC", NULL);
+        ctx->YieldUntil(20);
+    };
 
     // Test that ConfigDockingTabBarOnSingleWindows transitions doesn't break window size.
     t = REGISTER_TEST("docking", "docking_auto_nodes_size");
@@ -710,8 +754,10 @@ void RegisterTests_Docking(ImGuiTestContext* ctx)
 
         // Init state
         ctx->DockMultiClear("AAAA", "BBBB", NULL);
-        IM_CHECK(window_aaaa->DockId == 0);
-        IM_CHECK(window_bbbb->DockId == 0);
+        if (ctx->UiContext->IO.ConfigDockingTabBarOnSingleWindows)
+            IM_CHECK(window_aaaa->DockId != 0 && window_bbbb->DockId != 0 && window_aaaa->DockId != window_bbbb->DockId);
+        else
+            IM_CHECK(window_aaaa->DockId == 0 && window_bbbb->DockId == 0);
         ctx->WindowResize("/AAAA", ImVec2(200, 200));
         ctx->WindowMove("/AAAA", ImVec2(100, 100));
         ctx->WindowResize("/BBBB", ImVec2(200, 200));
@@ -729,7 +775,7 @@ void RegisterTests_Docking(ImGuiTestContext* ctx)
         {
             // Undock AAAA, BBBB should still refer/dock to node.
             ctx->DockMultiClear("AAAA", NULL);
-            IM_CHECK(window_aaaa->DockId == 0);
+            IM_CHECK(ctx->DockIdIsUndockedOrStandalone(window_aaaa->DockId));
             IM_CHECK(window_bbbb->DockId == dock_id);
 
             // Intentionally move both floating windows away
@@ -753,7 +799,7 @@ void RegisterTests_Docking(ImGuiTestContext* ctx)
         {
             // Undock AAAA, BBBB should still refer/dock to node.
             ctx->DockMultiClear("AAAA", NULL);
-            IM_CHECK(window_aaaa->DockId == 0);
+            IM_CHECK(ctx->DockIdIsUndockedOrStandalone(window_aaaa->DockId));
             IM_CHECK(window_bbbb->DockId == dock_id);
 
             // Intentionally move both floating windows away
@@ -766,7 +812,8 @@ void RegisterTests_Docking(ImGuiTestContext* ctx)
             IM_CHECK(window_bbbb->DockNode->ParentNode->ID == dock_id);
             IM_CHECK(window_aaaa->DockNode->ParentNode->Pos == ImVec2(200, 200));
             IM_CHECK(window_aaaa->Pos == ImVec2(200, 200));
-            IM_CHECK(window_bbbb->Pos == ImVec2(301, 200));
+            IM_CHECK(window_bbbb->Pos.x > window_aaaa->Pos.x);
+            IM_CHECK(window_bbbb->Pos.y == 200);
         }
     };
 
@@ -802,49 +849,6 @@ void RegisterTests_Docking(ImGuiTestContext* ctx)
 
         if (ctx->FrameCount == 60)
             ctx->Finish();
-    };
-
-    t = REGISTER_TEST("docking", "docking_2");
-    t->GuiFunc = [](ImGuiTestContext* ctx)
-    {
-        ImGuiTestGenericState& gs = ctx->GenericState;
-        if (ctx->FrameCount == 0)
-            ctx->DockMultiClear("AAAA", "BBBB", "CCCC", NULL);
-
-        if (ctx->FrameCount == 10)
-            gs.DockId = ctx->DockMultiSetupBasic(0, "AAAA", "BBBB", "CCCC", NULL);
-
-        ImGuiID ids[3];
-        ImGui::Begin("AAAA");
-        ids[0] = ImGui::GetWindowDockID();
-        ImGui::Text("This is AAAA");
-        ImGui::End();
-
-        ImGui::Begin("BBBB");
-        ids[1] = ImGui::GetWindowDockID();
-        ImGui::Text("This is BBBB");
-        ImGui::End();
-
-        ImGui::Begin("CCCC");
-        ids[2] = ImGui::GetWindowDockID();
-        ImGui::Text("This is CCCC");
-        ImGui::End();
-
-        if (ctx->FrameCount == 1)
-        {
-            IM_CHECK(ids[0] == 0);
-            IM_CHECK(ids[0] == ids[1] && ids[0] == ids[2]);
-        }
-        if (ctx->FrameCount == 10)
-        {
-            IM_CHECK(gs.DockId != 0);
-            IM_CHECK(ids[0] == gs.DockId);
-            IM_CHECK(ids[0] == ids[1] && ids[0] == ids[2]);
-        }
-    };
-    t->TestFunc = [](ImGuiTestContext* ctx)
-    {
-        ctx->YieldFrames(20);
     };
 #endif
 }
@@ -1408,7 +1412,14 @@ void RegisterTests_Capture(ImGuiTestContext* ctx)
         ctx->ItemOpen("Groups");
         ctx->ScrollToY("Layout", 0.8f);
 
+        // FIXME-TESTS: Snap!
         ctx->Sleep(2.0f);
+
+        // Close verything
+        ctx->SetRef("ImGui Demo");
+        ctx->ItemCloseAll("");
+        ctx->MenuUncheckAll("Examples");
+        ctx->MenuUncheckAll("Help");
     };
 #endif
 }

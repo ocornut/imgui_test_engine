@@ -595,7 +595,8 @@ static void ImGuiTestEngine_PostNewFrame(ImGuiTestEngine* engine, ImGuiContext* 
 
 static void ImGuiTestEngine_Yield(ImGuiTestEngine* engine)
 {
-    ImGuiContext& g = *engine->TestContext->UiContext;
+    ImGuiTestContext* ctx = engine->TestContext;
+    ImGuiContext& g = *ctx->UiContext;
 
     if (g.FrameScopeActive)
         engine->IO.EndFrameFunc(engine, engine->IO.UserData);
@@ -606,18 +607,26 @@ static void ImGuiTestEngine_Yield(ImGuiTestEngine* engine)
     if (!g.FrameScopeActive)
         return;
 
-    if (engine->TestContext && engine->TestContext->Test->GuiFunc)
+    if (ctx)
+    {
+        // Can only yield in the test func!
+        IM_ASSERT(ctx->ActiveFunc == ImGuiTestActiveFunc_TestFunc);
+    }
+
+    if (ctx && ctx->Test->GuiFunc)
     {
         // Call user GUI function
-        if (!(engine->TestContext->RunFlags & ImGuiTestRunFlags_NoGuiFunc))
+        if (!(ctx->RunFlags & ImGuiTestRunFlags_NoGuiFunc))
+        {
+            ImGuiTestActiveFunc backup_active_func = ctx->ActiveFunc;
+            ctx->ActiveFunc = ImGuiTestActiveFunc_GuiFunc;
             engine->TestContext->Test->GuiFunc(engine->TestContext);
+            ctx->ActiveFunc = backup_active_func;
+        }
 
         // Safety net
-        if (engine->TestContext->Test->Status == ImGuiTestStatus_Error)
-        {
-            while (g.CurrentWindowStack.Size > 1) // FIXME-ERRORHANDLING
-                ImGui::End();
-        }
+        if (ctx->Test->Status == ImGuiTestStatus_Error)
+            ctx->RecoverFromUiContextErrors();
     }
 }
 
@@ -810,6 +819,12 @@ static void ImGuiTestEngine_RunTest(ImGuiTestEngine* engine, ImGuiTestContext* c
 
     test->TestLog.clear();
 
+    // Mark as currently running the TestFunc (this is the only time when we are allowed to yield)
+    IM_ASSERT(ctx->ActiveFunc == ImGuiTestActiveFunc_None);
+    ImGuiTestActiveFunc backup_active_func = ctx->ActiveFunc;
+    ctx->ActiveFunc = ImGuiTestActiveFunc_TestFunc;
+
+    // Warm up GUI
     if (!(test->Flags & ImGuiTestFlags_NoWarmUp))
     {
         ctx->FrameCount -= 2;
@@ -828,6 +843,7 @@ static void ImGuiTestEngine_RunTest(ImGuiTestEngine* engine, ImGuiTestContext* c
     {
         if (test->TestFunc)
         {
+            // Test function
             test->TestFunc(ctx);
         }
         else
@@ -837,6 +853,9 @@ static void ImGuiTestEngine_RunTest(ImGuiTestEngine* engine, ImGuiTestContext* c
                 while (!engine->Abort && test->Status == ImGuiTestStatus_Running)
                     ctx->Yield();
         }
+
+        if (test->Status == ImGuiTestStatus_Error)
+            ctx->RecoverFromUiContextErrors();
 
         if (!ctx->Engine->IO.ConfigRunFast)
             ctx->SleepShort();
@@ -850,6 +869,9 @@ static void ImGuiTestEngine_RunTest(ImGuiTestEngine* engine, ImGuiTestContext* c
 
     // Additional yield is currently _only_ so the Log gets scrolled to the bottom on the last frame of the log output.
     ctx->Yield();
+
+    // Restore active func
+    ctx->ActiveFunc = backup_active_func;
 
     if (test->Status == ImGuiTestStatus_Running)
         test->Status = ImGuiTestStatus_Success;
@@ -967,6 +989,20 @@ void ImGuiTestEngineHook_ItemInfo(ImGuiContext* ctx, ImGuiID id, const char* lab
         if (label)
             ImStrncpy(item->DebugLabel, label, IM_ARRAYSIZE(item->DebugLabel));
     }
+}
+
+void ImGuiTestEngineHook_AssertFunc(const char* expr, const char* file, const char* function, int line)
+{
+    ImOsConsoleSetTextColor(ImOsConsoleTextColor_BrightYellow);
+    printf("Assert: '%s'\nIn %s:%d, function %s.", expr, file, line, function);
+    ImOsConsoleSetTextColor(ImOsConsoleTextColor_White);
+
+    // Consider using github.com/scottt/debugbreak
+#ifdef _MSC_VER
+    __debugbreak();
+#else
+    IM_ASSERT(0);
+#endif
 }
 
 //-------------------------------------------------------------------------
@@ -1157,7 +1193,8 @@ void    ImGuiTestEngine_ShowTestWindow(ImGuiTestEngine* engine, bool* p_open)
     if (ImGui::BeginTabBar("##blah", ImGuiTabBarFlags_NoTooltip))
     {
         char tab_label[32];
-        ImFormatString(tab_label, IM_ARRAYSIZE(tab_label), "TESTS (%d)###TESTS", engine->TestsAll.Size);
+        //ImFormatString(tab_label, IM_ARRAYSIZE(tab_label), "TESTS (%d)###TESTS", engine->TestsAll.Size);
+        ImFormatString(tab_label, IM_ARRAYSIZE(tab_label), "TESTS###TESTS");
         ImGui::BeginTabItem(tab_label);
 
         //ImGui::Text("TESTS (%d)", engine->TestsAll.Size);
@@ -1402,12 +1439,22 @@ void    ImGuiTestEngine_ShowTestWindow(ImGuiTestEngine* engine, bool* p_open)
 
         if (ImGui::BeginTabItem("TOOLS"))
         {
-            ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
+            ImGuiIO& io = ImGui::GetIO();
+            ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
+            
             ImGui::Checkbox("Slow down whole app", &engine->ToolSlowDown);
             ImGui::SameLine();
             ImGui::PushItemWidth(70);
             ImGui::SliderInt("##ms", &engine->ToolSlowDownMs, 0, 400, "%.0f ms");
             ImGui::PopItemWidth();
+            
+            ImGui::Text("Configuration:");
+            ImGui::CheckboxFlags("io.ConfigFlags: NavEnableKeyboard", (unsigned int *)&io.ConfigFlags, ImGuiConfigFlags_NavEnableKeyboard);
+            ImGui::CheckboxFlags("io.ConfigFlags: NavEnableGamepad", (unsigned int *)&io.ConfigFlags, ImGuiConfigFlags_NavEnableGamepad);
+#ifdef IMGUI_HAS_DOCK
+            ImGui::Checkbox("io.ConfigDockingTabBarOnSingleWindows", &io.ConfigDockingTabBarOnSingleWindows);
+#endif
+
             ImGui::EndTabItem();
         }
 
@@ -1506,6 +1553,13 @@ void    ImGuiTestContext::Finish()
     ImGuiTest* test = Test;
     if (test->Status == ImGuiTestStatus_Running)
         test->Status = ImGuiTestStatus_Success;
+}
+
+void    ImGuiTestContext::RecoverFromUiContextErrors()
+{
+    ImGuiContext& g = *UiContext;
+    while (g.CurrentWindowStack.Size > 1) // FIXME-ERRORHANDLING
+        ImGui::End();
 }
 
 void    ImGuiTestContext::Yield()
@@ -1690,7 +1744,7 @@ void    ImGuiTestContext::ScrollToY(ImGuiTestRef ref, float scroll_ratio_y)
     ImGuiWindow* window = item->Window;
 
     //if (item->ID == 0xDFFBB0CE || item->ID == 0x87CBBA09)
-    //    printf("[%03d] scrollmax %f\n", FrameCount, ImGui::GetWindowScrollMaxY(window));
+    //    printf("[%03d] scroll_max_y %f\n", FrameCount, ImGui::GetWindowScrollMaxY(window));
 
     while (!Abort)
     {
@@ -1699,14 +1753,19 @@ void    ImGuiTestContext::ScrollToY(ImGuiTestRef ref, float scroll_ratio_y)
         float item_curr_y = ImFloor(item_rect.GetCenter().y);
         float item_target_y = ImFloor(window->InnerClipRect.GetCenter().y);
         float scroll_delta_y = item_target_y - item_curr_y;
-        float scroll_target = ImClamp(window->Scroll.y - scroll_delta_y, 0.0f, ImGui::GetWindowScrollMaxY(window));
+        float scroll_max_y = ImGui::GetWindowScrollMaxY(window);
+        float scroll_target_y = ImClamp(window->Scroll.y - scroll_delta_y, 0.0f, scroll_max_y);
 
-        if (ImFabs(window->Scroll.y - scroll_target) < 1.0f)
+        if (ImFabs(window->Scroll.y - scroll_target_y) < 1.0f)
             break;
 
+        // FIXME-TESTS: There's a bug which can be repro by moving #RESIZE grips to Layer 0, making window small and trying to resize a dock node host.
+        // Somehow SizeContents.y keeps increase and we never reach our desired (but faulty) scroll target.
         float scroll_speed = Engine->IO.ConfigRunFast ? FLT_MAX : ImFloor(Engine->IO.ScrollSpeed * g.IO.DeltaTime + 0.99f);
+        float scroll_y = ImLinearSweep(window->Scroll.y, scroll_target_y, scroll_speed);
         //printf("[%03d] window->Scroll.y %f + %f\n", FrameCount, window->Scroll.y, scroll_speed);
-        window->Scroll.y = ImLinearSweep(window->Scroll.y, scroll_target, scroll_speed);
+        //window->Scroll.y = scroll_y;
+        ImGui::SetWindowScrollY(window, scroll_y);
 
         Yield();
 
@@ -2212,7 +2271,7 @@ void    ImGuiTestContext::ItemAction(ImGuiTestAction action, ImGuiTestRef ref)
                 MouseDoubleClick(0);
             else
                 MouseClick(0);
-            }
+        }
         else
         {
             NavMove(ref);
@@ -2591,7 +2650,7 @@ void    ImGuiTestContext::WindowMove(ImGuiTestRef ref, ImVec2 input_pos, ImVec2 
 
     // FIXME-TESTS: Need to find a -visible- click point
     MouseMoveToPos(window->Pos + ImVec2(h * 2.0f, h * 0.5f));
-    IM_CHECK_SILENT(UiContext->HoveredWindow == window);
+    //IM_CHECK_SILENT(UiContext->HoveredWindow == window);  // FIXME-TESTS: 
     MouseDown(0);
 
     // Disable docking
@@ -2628,10 +2687,17 @@ void    ImGuiTestContext::WindowResize(ImGuiTestRef ref, ImVec2 size)
     BringWindowToFront(window);
     WindowSetCollapsed(ref, false);
 
-    void* zero_ptr = (void*)0;
-    ImGuiID id = ImHashData(&zero_ptr, sizeof(void*), GetID(ref, "#RESIZE")); // FIXME-TESTS
-    MouseMove(id);
+    ImGuiID id = 0;
+    if (window->DockNode)
+        id = GetID(window->DockNode->HostWindow->ID, "#RESIZE");
+    else
+        id = GetID(ref, "#RESIZE");
 
+    // FIXME-TESTS: Resize grip are pushing a void* index
+    const void* zero_ptr = (void*)0;
+    id = ImHashData(&zero_ptr, sizeof(void*), id);
+
+    MouseMove(id);
     MouseDown(0);
 
     ImVec2 delta = size - window->Size;
@@ -2668,8 +2734,8 @@ void    ImGuiTestContext::DockWindowInto(const char* window_name_src, const char
     if (!window_src || !window_dst)
         return;
 
-    ImGuiTestRef ref_src(window_src->MoveId);
-    ImGuiTestRef ref_dst(window_dst->MoveId);
+    ImGuiTestRef ref_src(window_src->DockIsActive ? window_src->ID : window_src->MoveId);   // FIXME-TESTS FIXME-DOCKING: Identify tab
+    ImGuiTestRef ref_dst(window_dst->DockIsActive ? window_dst->ID : window_dst->MoveId);
     ImGuiTestItemInfo* item_src = ItemLocate(ref_src);
     ImGuiTestItemInfo* item_dst = ItemLocate(ref_dst);
     ImGuiTestRefDesc desc_src(ref_src, item_src);
@@ -2680,23 +2746,28 @@ void    ImGuiTestContext::DockWindowInto(const char* window_name_src, const char
     MouseMove(ref_src, ImGuiTestOpFlags_NoCheckHoveredId);
     SleepShort();
 
-    if (split_dir != ImGuiDir_None)
-    {
-        // FIXME-TESTS: Not handling the operation at user's level.
-        ImGui::DockContextQueueDock(&g, window_dst->RootWindow, window_dst->DockNode, window_src, split_dir, 0.5f, false);
-    }
-    else
-    {
-        WindowMoveToMakePosVisible(window_dst, window_dst->Rect().GetCenter());
+    //// FIXME-TESTS: Not handling the operation at user's level.
+    //if (split_dir != ImGuiDir_None)
+    //  ImGui::DockContextQueueDock(&g, window_dst->RootWindow, window_dst->DockNode, window_src, split_dir, 0.5f, false);
 
-        MouseDown(0);
-        MouseLiftDragThreshold();
-        MouseMoveToPos(window_dst->Rect().GetCenter());
-        IM_CHECK_SILENT(g.MovingWindow == window_src);
-        IM_CHECK_SILENT(g.HoveredWindowUnderMovingWindow == window_dst);
-        SleepShort();
-        MouseUp(0);
-    }
+    ImVec2 drop_pos;
+    bool drop_is_valid = ImGui::DockContextCalcDropPosForDocking(window_dst->RootWindow, window_dst->DockNode, window_src, split_dir, false, &drop_pos);
+    IM_CHECK(drop_is_valid);
+    if (!drop_is_valid)
+        return;
+
+    WindowMoveToMakePosVisible(window_dst, drop_pos);
+    drop_is_valid = ImGui::DockContextCalcDropPosForDocking(window_dst->RootWindow, window_dst->DockNode, window_src, split_dir, false, &drop_pos);
+    IM_CHECK(drop_is_valid);
+
+    MouseDown(0);
+    MouseLiftDragThreshold();
+    MouseMoveToPos(drop_pos);
+    IM_CHECK_SILENT(g.MovingWindow == window_src);
+    IM_CHECK_SILENT(g.HoveredWindowUnderMovingWindow == window_dst);
+    SleepShort();
+
+    MouseUp(0);
     Yield();
     Yield();
 }
@@ -2747,8 +2818,18 @@ ImGuiID ImGuiTestContext::DockMultiSetupBasic(ImGuiID dock_id, const char* windo
     }
     return dock_id;
 }
-#endif // #ifdef IMGUI_HAS_DOCK
 
+bool    ImGuiTestContext::DockIdIsUndockedOrStandalone(ImGuiID dock_id)
+{
+    if (dock_id == 0)
+        return true;
+    if (ImGuiDockNode* node = ImGui::DockBuilderGetNode(dock_id))
+        if (node->IsRootNode() && node->IsLeafNode() && node->Windows.Size == 1)
+            return true;
+    return false;
+}
+
+#endif // #ifdef IMGUI_HAS_DOCK
 
 //-------------------------------------------------------------------------
 // ImGuiTestContext - Performance Tools
