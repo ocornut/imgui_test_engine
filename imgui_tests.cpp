@@ -700,6 +700,42 @@ void RegisterTests_Docking(ImGuiTestContext* ctx)
         ctx->YieldUntil(20);
     };
 
+    // Test that docking into a parent node forwardin docking into the central node or last focused node
+    t = REGISTER_TEST("docking", "docking_into_parent_node");
+    t->Flags |= ImGuiTestFlags_NoAutoFinish;
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiTestGenericState& gs = ctx->GenericState;
+
+        ImGuiID dockspace_id = ImHashStr("Dockspace");
+
+        if (ctx->IsFirstFrame())
+        {
+            ImGui::DockBuilderRemoveNode(dockspace_id);
+            ImGui::DockBuilderDockWindow("AAAA", 0);
+            ImGui::DockBuilderDockWindow("BBBB", 0);
+        }
+        if (ctx->FrameCount == 2)
+        {
+            ImGui::DockBuilderSplitNode(dockspace_id, ImGuiDir_Left, 0.5f, &gs.IdArray[0], &gs.IdArray[1]);
+            IM_CHECK(gs.IdArray[0] != 0 && gs.IdArray[1]);
+            ImGui::DockBuilderDockWindow("BBBB", dockspace_id);
+            ImGuiWindow* window = ImGui::FindWindowByName("BBBB");
+            IM_CHECK(window->DockId != dockspace_id);
+            IM_CHECK(window->DockId == gs.IdArray[1]);
+        }
+
+        ImGui::Begin("AAAA", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImGui::DockSpace(dockspace_id);
+        ImGui::End();
+
+        ImGui::Begin("BBBB", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImGui::End();
+
+        if (ctx->FrameCount == 10)
+            ctx->Finish();
+    };
+
     // Test that ConfigDockingTabBarOnSingleWindows transitions doesn't break window size.
     t = REGISTER_TEST("docking", "docking_auto_nodes_size");
     t->GuiFunc = [](ImGuiTestContext* ctx)
@@ -865,22 +901,22 @@ void RegisterTests_Misc(ImGuiTestContext* ctx)
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         // Test hash function for the property we need
-        IM_CHECK(ImHashStr("helloworld", 0) == ImHashStr("world", 0, ImHashStr("hello", 0)));   // String concatenation
-        IM_CHECK(ImHashStr("hello###world", 0) == ImHashStr("###world", 0));                    // ### operator reset back to the seed
-        IM_CHECK(ImHashStr("hello###world", 0, 1234) == ImHashStr("###world", 0, 1234));        // ### operator reset back to the seed
-        IM_CHECK(ImHashStr("helloxxx", 5) == ImHashStr("hello", 0));                            // String size is honored
-        IM_CHECK(ImHashStr("", 0, 0) == 0);                                                     // Empty string doesn't alter hash
-        IM_CHECK(ImHashStr("", 0, 1234) == 1234);                                               // Empty string doesn't alter hash
-        IM_CHECK(ImHashStr("hello", 5) == ImHashData("hello", 5));                              // FIXME: Do we need to guarantee this?
+        IM_CHECK(ImHashStr("helloworld") == ImHashStr("world", 0, ImHashStr("hello", 0)));  // String concatenation
+        IM_CHECK(ImHashStr("hello###world") == ImHashStr("###world"));                      // ### operator reset back to the seed
+        IM_CHECK(ImHashStr("hello###world", 0, 1234) == ImHashStr("###world", 0, 1234));    // ### operator reset back to the seed
+        IM_CHECK(ImHashStr("helloxxx", 5) == ImHashStr("hello"));                           // String size is honored
+        IM_CHECK(ImHashStr("", 0, 0) == 0);                                                 // Empty string doesn't alter hash
+        IM_CHECK(ImHashStr("", 0, 1234) == 1234);                                           // Empty string doesn't alter hash
+        IM_CHECK(ImHashStr("hello", 5) == ImHashData("hello", 5));                          // FIXME: Do we need to guarantee this?
 
         const int data[2] = { 42, 50 };
         IM_CHECK(ImHashData(&data[0], sizeof(int) * 2) == ImHashData(&data[1], sizeof(int), ImHashData(&data[0], sizeof(int))));
-        IM_CHECK(ImHashData("", 0, 1234) == 1234);                                              // Empty data doesn't alter hash
+        IM_CHECK(ImHashData("", 0, 1234) == 1234);                                          // Empty data doesn't alter hash
 
         // Verify that Test Engine high-level hash wrapper works
-        IM_CHECK(ImHashDecoratedPath("Hello/world") == ImHashStr("Helloworld", 0));             // Slashes are ignored
-        IM_CHECK(ImHashDecoratedPath("Hello\\/world") == ImHashStr("Hello/world", 0));          // Slashes can be inhibited
-        IM_CHECK(ImHashDecoratedPath("/Hello", 42) == ImHashDecoratedPath("Hello"));            // Leading / clears seed
+        IM_CHECK(ImHashDecoratedPath("Hello/world") == ImHashStr("Helloworld"));            // Slashes are ignored
+        IM_CHECK(ImHashDecoratedPath("Hello\\/world") == ImHashStr("Hello/world"));         // Slashes can be inhibited
+        IM_CHECK(ImHashDecoratedPath("/Hello", 42) == ImHashDecoratedPath("Hello"));        // Leading / clears seed
     };
 
     t = REGISTER_TEST("demo", "demo_misc_001");

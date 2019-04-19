@@ -831,6 +831,7 @@ static void ImGuiTestEngine_RunTest(ImGuiTestEngine* engine, ImGuiTestContext* c
         ctx->Yield();
         ctx->Yield();
     }
+    ctx->FirstFrameCount = ctx->FrameCount;
 
     // Call user test function (optional)
     if (ctx->RunFlags & ImGuiTestRunFlags_NoTestFunc)
@@ -2688,9 +2689,11 @@ void    ImGuiTestContext::WindowResize(ImGuiTestRef ref, ImVec2 size)
     WindowSetCollapsed(ref, false);
 
     ImGuiID id = 0;
+#ifdef IMGUI_HAS_DOCKING
     if (window->DockNode)
         id = GetID(window->DockNode->HostWindow->ID, "#RESIZE");
     else
+#endif
         id = GetID(ref, "#RESIZE");
 
     // FIXME-TESTS: Resize grip are pushing a void* index

@@ -306,6 +306,7 @@ struct ImGuiTestContext
     void*                   UserData = NULL;
     int                     UserCounter = 0;
     int                     FrameCount = 0;             // Test frame count (restarts from zero every time)
+    int                     FirstFrameCount = 0;        // This is generally -2 or 0 depending on whether we have warm up enabled
     int                     ActionDepth = 0;
     bool                    Abort = false;
     char                    RefStr[256] = { 0 };
@@ -326,6 +327,7 @@ struct ImGuiTestContext
     void        LogDebug();
     void        Finish();
     bool        IsError() const             { return Test->Status == ImGuiTestStatus_Error || Abort; }
+    bool        IsFirstFrame() const        { return FrameCount == FirstFrameCount; }
     void        SetGuiFuncEnabled(bool v)   { if (v) RunFlags &= ~ImGuiTestRunFlags_NoGuiFunc; else RunFlags |= ImGuiTestRunFlags_NoGuiFunc; }
     void        RecoverFromUiContextErrors();
 
