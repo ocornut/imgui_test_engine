@@ -239,7 +239,7 @@ void RegisterTests_Button(ImGuiTestContext* ctx)
 {
     ImGuiTest* t = NULL;
 
-    t = REGISTER_TEST("button", "click");
+    t = REGISTER_TEST("button", "button_click");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         bool& clicked = ctx->GenericState.Bool1;
@@ -259,77 +259,87 @@ void RegisterTests_Button(ImGuiTestContext* ctx)
         IM_CHECK(clicked);
     };
 
+    // Test ButtonBehavior interactions (see comments at the top of the ButtonBehavior() function)
     enum
     {
         ButtonStateMachineTestStep_None,
-
         ButtonStateMachineTestStep_Init,
         ButtonStateMachineTestStep_MovedOver,
         ButtonStateMachineTestStep_MouseDown,
         ButtonStateMachineTestStep_MovedAway,
         ButtonStateMachineTestStep_MovedOverAgain,
         ButtonStateMachineTestStep_MouseUp,
-        ButtonStateMachineTestStep_Done,
+        ButtonStateMachineTestStep_Done
     };
 
-    t = REGISTER_TEST("button", "click_state_machine");
+    t = REGISTER_TEST("button", "button_states");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         int& next_step = ctx->GenericState.Int1;
 
-        ImGui::Begin("Test Button", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
 
-        bool clicked = ImGui::Button("Test");
+        const bool pressed = ImGui::Button("Test");
+        const bool hovered = ImGui::IsItemHovered();
+        const bool active = ImGui::IsItemActive();
+        const bool activated = ImGui::IsItemActivated();
+        const bool deactivated = ImGui::IsItemDeactivated();
 
         switch (next_step)
         {
         case ButtonStateMachineTestStep_Init:
-            IM_CHECK(!clicked);
-            IM_CHECK(!ImGui::IsItemHovered());
-            IM_CHECK(!ImGui::IsItemActivated());
-            IM_CHECK(!ImGui::IsItemActive());
+            IM_CHECK(!pressed);
+            IM_CHECK(!hovered);
+            IM_CHECK(!active);
+            IM_CHECK(!activated);
+            IM_CHECK(!deactivated);
             break;
         case ButtonStateMachineTestStep_MovedOver:
-            IM_CHECK(!clicked);
-            IM_CHECK(ImGui::IsItemHovered());
-            IM_CHECK(!ImGui::IsItemActivated());
-            IM_CHECK(!ImGui::IsItemActive());
+            IM_CHECK(!pressed);
+            IM_CHECK(hovered);
+            IM_CHECK(!active);
+            IM_CHECK(!activated);
+            IM_CHECK(!deactivated);
             break;
         case ButtonStateMachineTestStep_MouseDown:
-            IM_CHECK(!clicked);
-            IM_CHECK(ImGui::IsItemHovered());
-            IM_CHECK(ImGui::IsItemActivated());
-            IM_CHECK(ImGui::IsItemActive());
+            IM_CHECK(!pressed);
+            IM_CHECK(hovered);
+            IM_CHECK(active);
+            IM_CHECK(activated);
+            IM_CHECK(!deactivated);
             break;
-        case ButtonStateMachineTestStep_MovedAway: // Not triggered
-            IM_CHECK(!clicked);
-            IM_CHECK(!ImGui::IsItemHovered());
-            IM_CHECK(!ImGui::IsItemActivated());
-            IM_CHECK(!ImGui::IsItemActive());
+        case ButtonStateMachineTestStep_MovedAway:
+            IM_CHECK(!pressed);
+            IM_CHECK(!hovered);
+            IM_CHECK(active);
+            IM_CHECK(!activated);
+            IM_CHECK(!deactivated);
             break;
-        case ButtonStateMachineTestStep_MovedOverAgain: // Not triggered
-            IM_CHECK(!clicked);
-            IM_CHECK(ImGui::IsItemHovered());
-            IM_CHECK(ImGui::IsItemActivated());
-            IM_CHECK(ImGui::IsItemActive());
+        case ButtonStateMachineTestStep_MovedOverAgain:
+            IM_CHECK(!pressed);
+            IM_CHECK(hovered);
+            IM_CHECK(active);
+            IM_CHECK(!activated);
+            IM_CHECK(!deactivated);
             break;
         case ButtonStateMachineTestStep_MouseUp:
-            IM_CHECK(clicked);
-            IM_CHECK(ImGui::IsItemHovered());
-            IM_CHECK(!ImGui::IsItemActivated());
-            IM_CHECK(!ImGui::IsItemActive());
+            IM_CHECK(pressed);
+            IM_CHECK(hovered);
+            IM_CHECK(!active);
+            IM_CHECK(!activated);
+            IM_CHECK(deactivated);
             break;
         case ButtonStateMachineTestStep_Done:
-            IM_CHECK(!clicked);
-            IM_CHECK(!ImGui::IsItemHovered());
-            IM_CHECK(!ImGui::IsItemActivated());
-            IM_CHECK(!ImGui::IsItemActive());
+            IM_CHECK(!pressed);
+            IM_CHECK(!hovered);
+            IM_CHECK(!active);
+            IM_CHECK(!activated);
+            IM_CHECK(!deactivated);
             break;
         case ButtonStateMachineTestStep_None:
         default:
             break;
         }
-
         next_step = ButtonStateMachineTestStep_None;
 
         // The "Dummy" button allows to move the mouse away from the "Test" button
@@ -343,11 +353,10 @@ void RegisterTests_Button(ImGuiTestContext* ctx)
         int& next_step = ctx->GenericState.Int1;
         next_step = ButtonStateMachineTestStep_None;
 
-        ctx->SetRef("Test Button");
+        ctx->SetRef("Test Window");
 
-        // Move mouse away from `Test` button
+        // Move mouse away from "Test" button
         ctx->MouseMove("Dummy");
-
         next_step = ButtonStateMachineTestStep_Init;
         ctx->Yield();
 
@@ -358,15 +367,13 @@ void RegisterTests_Button(ImGuiTestContext* ctx)
         next_step = ButtonStateMachineTestStep_MouseDown;
         ctx->MouseDown();
 
-        // For now, moving the mouse to another button doesn't work if the
-        // mouse button is down
-        //ctx->MouseMove("Dummy");
-        //next_step = ButtonStateMachineTestStep_MovedAway;
-        //ctx->Yield();
+        ctx->MouseMove("Dummy", ImGuiTestOpFlags_NoCheckHoveredId);
+        next_step = ButtonStateMachineTestStep_MovedAway;
+        ctx->Yield();
 
-        //ctx->MouseMove("Test");
-        //next_step = ButtonStateMachineTestStep_MovedOverAgain;
-        //ctx->Yield();
+        ctx->MouseMove("Test");
+        next_step = ButtonStateMachineTestStep_MovedOverAgain;
+        ctx->Yield();
 
         next_step = ButtonStateMachineTestStep_MouseUp;
         ctx->MouseUp();
@@ -1655,6 +1662,7 @@ void RegisterTests(ImGuiTestEngine* e)
     RegisterTests_Window(&ctx);
     RegisterTests_Scrolling(&ctx);
     RegisterTests_Widgets(&ctx);
+    RegisterTests_Button(&ctx);
     RegisterTests_Nav(&ctx);
     RegisterTests_Docking(&ctx);
     RegisterTests_Misc(&ctx);

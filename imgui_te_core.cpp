@@ -1854,6 +1854,7 @@ void    ImGuiTestContext::NavInput()
     Yield();
 }
 
+// FIXME: Maybe ImGuiTestOpFlags_NoCheckHoveredId could be automatic if we detect that another item is active as intended?
 void    ImGuiTestContext::MouseMove(ImGuiTestRef ref, ImGuiTestOpFlags flags)
 {
     if (IsError())
