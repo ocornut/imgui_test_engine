@@ -773,7 +773,7 @@ void ImGuiTestEngine_CalcSourceLineEnds(ImGuiTestEngine* engine)
         return;
 
     ImVector<int> line_starts;
-    line_starts.resize(engine->TestsAll.Size, 0);
+    line_starts.reserve(engine->TestsAll.Size);
     for (int n = 0; n < engine->TestsAll.Size; n++)
         line_starts.push_back(engine->TestsAll[n]->SourceLine);
     ImQsort(line_starts.Data, (size_t)line_starts.Size, sizeof(int), [](const void* lhs, const void* rhs) { return (*(const int*)lhs) - *(const int*)rhs; });
@@ -781,9 +781,9 @@ void ImGuiTestEngine_CalcSourceLineEnds(ImGuiTestEngine* engine)
     for (int n = 0; n < engine->TestsAll.Size; n++)
     {
         ImGuiTest* test = engine->TestsAll[n];
-        for (int m = 0; m < line_starts.Size; m++) // FIXME-OPT
+        for (int m = 0; m < line_starts.Size - 1; m++) // FIXME-OPT
             if (line_starts[m] == test->SourceLine)
-                test->SourceLineEnd = ImMax(test->SourceLine, (m + 1 < line_starts.Size) ? line_starts[m + 1] - 1 : 99999);
+                test->SourceLineEnd = ImMax(test->SourceLine, line_starts[m + 1]);
     }
 }
 
