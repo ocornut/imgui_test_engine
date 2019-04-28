@@ -92,6 +92,24 @@ void RegisterTests_Window(ImGuiTestContext* ctx)
         ImGui::End();
     };
 
+    t = REGISTER_TEST("window", "window_auto_resize_basic");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        // FIXME-TESTS: Ideally we'd like a variant with/without the if (Begin) here
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
+        ImGui::Text("Hello World");
+        ImGui::BeginChild("Child", ImVec2(0, 200));
+        ImGui::EndChild();
+        ImVec2 sz = ImGui::GetWindowSize();
+        ImGui::End();
+        if (ctx->FrameCount >= 0 && ctx->FrameCount <= 2)
+        {
+            ImGuiStyle& style = ImGui::GetStyle();
+            IM_CHECK((int)sz.x == (int)(ImGui::CalcTextSize("Hello World").x + style.WindowPadding.x * 2.0f));
+            IM_CHECK((int)sz.y == (int)(ImGui::GetFrameHeight() + ImGui::CalcTextSize("Hello World").y + style.ItemSpacing.y + 200.0f + style.WindowPadding.y * 2.0f));
+        }
+    };
+
     // Test that uncollapsing an auto-resizing window does not go through a frame where the window is smaller than expected
     t = REGISTER_TEST("window", "window_auto_resize_uncollapse");
     t->GuiFunc = [](ImGuiTestContext* ctx)
@@ -188,6 +206,28 @@ void RegisterTests_Window(ImGuiTestContext* ctx)
         IM_CHECK(g.NavWindow->ID == ctx->GetID("/BBBB"));
         ctx->YieldUntil(50);
         IM_CHECK(g.NavWindow->ID == ctx->GetID("/DDDD"));
+    };
+
+    t = REGISTER_TEST("window", "window_focus_popup");
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiContext& g = *ctx->UiContext;
+        ctx->SetRef("ImGui Demo");
+        ctx->ItemOpen("Popups & Modal windows");
+        ctx->ItemOpen("Popups");
+        ctx->ItemClick("Popups/Toggle..");
+
+        ImGuiWindow* popup_1 = g.NavWindow;
+        ctx->SetRef(popup_1->Name);
+        ctx->ItemClick("Stacked Popup");
+        IM_CHECK(popup_1->WasActive);
+
+        ImGuiWindow* popup_2 = g.NavWindow;
+        ctx->MouseMove("Bream", ImGuiTestOpFlags_NoFocusWindow | ImGuiTestOpFlags_NoCheckHoveredId);
+        ctx->MouseClick(1); // Close with right-click
+        IM_CHECK(popup_1->WasActive);
+        IM_CHECK(!popup_2->WasActive);
+        IM_CHECK(g.NavWindow == popup_1);
     };
 }
 

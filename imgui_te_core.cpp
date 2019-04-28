@@ -1870,7 +1870,8 @@ void    ImGuiTestContext::MouseMove(ImGuiTestRef ref, ImGuiTestOpFlags flags)
     item->RefCount++;
 
     // Focus window before scrolling/moving so things are nicely visible
-    BringWindowToFrontFromItem(ref);
+    if (!(flags & ImGuiTestOpFlags_NoFocusWindow))
+        BringWindowToFrontFromItem(ref);
 
     ImGuiWindow* window = item->Window;
     if (item->NavLayer == ImGuiNavLayer_Main && !window->InnerClipRect.Contains(item->Rect))
@@ -1883,7 +1884,8 @@ void    ImGuiTestContext::MouseMove(ImGuiTestRef ref, ImGuiTestOpFlags flags)
     MouseMoveToPos(pos);
 
     // Focus again in case something made us lost focus (which could happen on a simple hover)
-    BringWindowToFrontFromItem(ref);// , ImGuiTestOpFlags_Verbose);
+    if (!(flags & ImGuiTestOpFlags_NoFocusWindow))
+        BringWindowToFrontFromItem(ref);// , ImGuiTestOpFlags_Verbose);
 
     if (!Abort && !(flags & ImGuiTestOpFlags_NoCheckHoveredId))
     {
@@ -2300,12 +2302,16 @@ void    ImGuiTestContext::ItemAction(ImGuiTestAction action, ImGuiTestRef ref)
         if (item && (item->StatusFlags & ImGuiItemStatusFlags_Opened) == 0)
         {
             item->RefCount++;
-            ItemClick(ref);
+            MouseMove(ref); // Some item just on hover, give them that chance
             if ((item->StatusFlags & ImGuiItemStatusFlags_Opened) == 0)
             {
-                ItemDoubleClick(ref); // Attempt a double-click // FIXME-TESTS: let's not start doing those fuzzy things..
+                ItemClick(ref);
                 if ((item->StatusFlags & ImGuiItemStatusFlags_Opened) == 0)
-                    IM_ERRORF_NOHDR("Unable to Open item: %s", ImGuiTestRefDesc(ref, item).c_str());
+                {
+                    ItemDoubleClick(ref); // Attempt a double-click // FIXME-TESTS: let's not start doing those fuzzy things..
+                    if ((item->StatusFlags & ImGuiItemStatusFlags_Opened) == 0)
+                        IM_ERRORF_NOHDR("Unable to Open item: %s", ImGuiTestRefDesc(ref, item).c_str());
+                }
             }
             item->RefCount--;
             Yield();
