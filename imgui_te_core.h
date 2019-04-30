@@ -131,8 +131,8 @@ typedef void (*ImGuiTestEngineFileOpenerFunc)(const char* filename, int line, vo
 
 struct ImGuiTestEngineIO
 {
-    ImGuiTestEngineNewFrameFunc EndFrameFunc = NULL;
-    ImGuiTestEngineEndFrameFunc NewFrameFunc = NULL;
+    ImGuiTestEngineEndFrameFunc EndFrameFunc = NULL;
+    ImGuiTestEngineNewFrameFunc NewFrameFunc = NULL;
     ImGuiTestEngineFileOpenerFunc FileOpenerFunc = NULL;    // (Optional) To open source files
     void*                       UserData = NULL;
                                 
@@ -286,7 +286,7 @@ struct ImGuiTestGenericState
     ImGuiID     DockId;
 
     ImGuiTestGenericState() { clear(); }
-    void clear()            { memset(this, 0, sizeof(*this)); }
+    void clear()            { StrLarge.clear(); memset(this, 0, sizeof(*this)); }
 };
 
 enum ImGuiTestActiveFunc
