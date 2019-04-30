@@ -116,6 +116,7 @@ void                ImGuiTestEngine_ShutdownContext(ImGuiTestEngine* engine);
 ImGuiTestEngineIO&  ImGuiTestEngine_GetIO(ImGuiTestEngine* engine);
 void                ImGuiTestEngine_Abort(ImGuiTestEngine* engine);
 void                ImGuiTestEngine_ShowTestWindow(ImGuiTestEngine* engine, bool* p_open);
+ImGuiTest*          ImGuiTestEngine_RegisterTest(ImGuiTestEngine* engine, const char* category, const char* name, const char* src_file = NULL, int src_line = 0);
 void                ImGuiTestEngine_QueueTests(ImGuiTestEngine* engine, const char* filter = NULL);
 void                ImGuiTestEngine_QueueTest(ImGuiTestEngine* engine, ImGuiTest* test, ImGuiTestRunFlags run_flags);
 bool                ImGuiTestEngine_IsRunningTests(ImGuiTestEngine* engine);
@@ -321,7 +322,6 @@ struct ImGuiTestContext
     {
     }
 
-    ImGuiTest*  RegisterTest(const char* category, const char* name, const char* src_file = NULL, int src_line = 0);
     void        RunCurrentTest(void* user_data);
     void        Log(const char* fmt, ...) IM_FMTARGS(1);
     void        LogVerbose(const char* fmt, ...) IM_FMTARGS(1);

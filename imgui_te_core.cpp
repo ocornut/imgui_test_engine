@@ -753,6 +753,27 @@ void ImGuiTestEngine_QueueTest(ImGuiTestEngine* engine, ImGuiTest* test, ImGuiTe
     engine->TestsQueue.push_back(run_task);
 }
 
+ImGuiTest* ImGuiTestEngine_RegisterTest(ImGuiTestEngine* engine, const char* category, const char* name, const char* src_file, int src_line)
+{
+    ImGuiTest* t = IM_NEW(ImGuiTest)();
+    t->Category = category;
+    t->Name = name;
+    t->SourceFile = t->SourceFileShort = src_file;
+    t->SourceLine = t->SourceLineEnd = src_line;
+    engine->TestsAll.push_back(t);
+
+    // Find filename only out of the fully qualified source path
+    if (src_file)
+    {
+        // FIXME: Be reasonable and use a named helper.
+        for (t->SourceFileShort = t->SourceFile + strlen(t->SourceFile); t->SourceFileShort > t->SourceFile; t->SourceFileShort--)
+            if (t->SourceFileShort[-1] == '/' || t->SourceFileShort[-1] == '\\')
+                break;
+    }
+
+    return t;
+}
+
 void ImGuiTestEngine_QueueTests(ImGuiTestEngine* engine, const char* filter)
 {
     if (filter != NULL && filter[0] == 0)
@@ -1469,27 +1490,6 @@ void    ImGuiTestEngine_ShowTestWindow(ImGuiTestEngine* engine, bool* p_open)
 // [SECTION] ImGuiTestContext
 // This is the interface that most tests will interact with.
 //-------------------------------------------------------------------------
-
-ImGuiTest*  ImGuiTestContext::RegisterTest(const char* category, const char* name, const char* src_file, int src_line)
-{
-    ImGuiTest* t = IM_NEW(ImGuiTest)();
-    t->Category = category;
-    t->Name = name;
-    t->SourceFile = t->SourceFileShort = src_file;
-    t->SourceLine = t->SourceLineEnd = src_line;
-    Engine->TestsAll.push_back(t);
-
-    // Find filename only out of the fully qualified source path
-    if (src_file)
-    {
-        // FIXME: Be reasonable and use a named helper.
-        for (t->SourceFileShort = t->SourceFile + strlen(t->SourceFile); t->SourceFileShort > t->SourceFile; t->SourceFileShort--)
-            if (t->SourceFileShort[-1] == '/' || t->SourceFileShort[-1] == '\\')
-                break;
-    }
-
-    return t;
-}
 
 void	ImGuiTestContext::RunCurrentTest(void* user_data)
 {

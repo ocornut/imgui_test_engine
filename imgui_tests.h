@@ -10,12 +10,12 @@ struct ImGuiTestEngine;
 // Tests
 void RegisterTests(ImGuiTestEngine* e);
 
-void RegisterTests_Window(ImGuiTestContext* ctx);
-void RegisterTests_Scrolling(ImGuiTestContext* ctx);
-void RegisterTests_Button(ImGuiTestContext* ctx);
-void RegisterTests_Widgets(ImGuiTestContext* ctx);
-void RegisterTests_Nav(ImGuiTestContext* ctx);
-void RegisterTests_Docking(ImGuiTestContext* ctx);
-void RegisterTests_Misc(ImGuiTestContext* ctx);
-void RegisterTests_Perf(ImGuiTestContext* ctx);
-void RegisterTests_Capture(ImGuiTestContext* ctx);
+void RegisterTests_Window(ImGuiTestEngine* e);
+void RegisterTests_Scrolling(ImGuiTestEngine* e);
+void RegisterTests_Button(ImGuiTestEngine* e);
+void RegisterTests_Widgets(ImGuiTestEngine* e);
+void RegisterTests_Nav(ImGuiTestEngine* e);
+void RegisterTests_Docking(ImGuiTestEngine* e);
+void RegisterTests_Misc(ImGuiTestEngine* e);
+void RegisterTests_Perf(ImGuiTestEngine* e);
+void RegisterTests_Capture(ImGuiTestEngine* e);

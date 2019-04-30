@@ -45,13 +45,13 @@ struct DataGeneric
     DataGeneric() { memset(this, 0, sizeof(*this)); }
 };
 
-#define REGISTER_TEST(_CATEGORY, _NAME)    ctx->RegisterTest(_CATEGORY, _NAME, __FILE__, __LINE__);
+#define REGISTER_TEST(_CATEGORY, _NAME)    ImGuiTestEngine_RegisterTest(e, _CATEGORY, _NAME, __FILE__, __LINE__);
 
 //-------------------------------------------------------------------------
 // Tests: Window
 //-------------------------------------------------------------------------
 
-void RegisterTests_Window(ImGuiTestContext* ctx)
+void RegisterTests_Window(ImGuiTestEngine* e)
 {
     ImGuiTest* t = NULL;
 
@@ -235,7 +235,7 @@ void RegisterTests_Window(ImGuiTestContext* ctx)
 // Tests: Button
 //-------------------------------------------------------------------------
 
-void RegisterTests_Button(ImGuiTestContext* ctx)
+void RegisterTests_Button(ImGuiTestEngine* e)
 {
     ImGuiTest* t = NULL;
 
@@ -388,7 +388,7 @@ void RegisterTests_Button(ImGuiTestContext* ctx)
 // Tests: Scrolling
 //-------------------------------------------------------------------------
 
-void RegisterTests_Scrolling(ImGuiTestContext* ctx)
+void RegisterTests_Scrolling(ImGuiTestEngine* e)
 {
     ImGuiTest* t = NULL;
 
@@ -418,7 +418,7 @@ void RegisterTests_Scrolling(ImGuiTestContext* ctx)
 // Tests: Widgets
 //-------------------------------------------------------------------------
 
-void RegisterTests_Widgets(ImGuiTestContext* ctx)
+void RegisterTests_Widgets(ImGuiTestEngine* e)
 {
     ImGuiTest* t = NULL;
 
@@ -795,7 +795,7 @@ void RegisterTests_Widgets(ImGuiTestContext* ctx)
 //    ImGui::ShowDemoWindow();
 //}
 
-void RegisterTests_Nav(ImGuiTestContext* ctx)
+void RegisterTests_Nav(ImGuiTestEngine* e)
 {
     ImGuiTest* t = NULL;
 
@@ -845,7 +845,7 @@ void RegisterTests_Nav(ImGuiTestContext* ctx)
 // Tests: Docking
 //-------------------------------------------------------------------------
 
-void RegisterTests_Docking(ImGuiTestContext* ctx)
+void RegisterTests_Docking(ImGuiTestEngine* e)
 {
 #ifdef IMGUI_HAS_DOCK
     ImGuiTest* t = NULL;
@@ -1086,7 +1086,7 @@ void RegisterTests_Docking(ImGuiTestContext* ctx)
 // Tests: Misc
 //-------------------------------------------------------------------------
 
-void RegisterTests_Misc(ImGuiTestContext* ctx)
+void RegisterTests_Misc(ImGuiTestEngine* e)
 {
     ImGuiTest* t = NULL;
 
@@ -1230,7 +1230,7 @@ void RegisterTests_Misc(ImGuiTestContext* ctx)
 // Tests: Perf
 //-------------------------------------------------------------------------
 
-void RegisterTests_Perf(ImGuiTestContext* ctx)
+void RegisterTests_Perf(ImGuiTestEngine* e)
 {
     ImGuiTest* t = NULL;
 
@@ -1552,7 +1552,7 @@ void RegisterTests_Perf(ImGuiTestContext* ctx)
 // Tests: Capture
 //-------------------------------------------------------------------------
 
-void RegisterTests_Capture(ImGuiTestContext* ctx)
+void RegisterTests_Capture(ImGuiTestEngine* e)
 {
     ImGuiTest* t = NULL;
 
@@ -1655,19 +1655,15 @@ void RegisterTests_Capture(ImGuiTestContext* ctx)
 
 void RegisterTests(ImGuiTestEngine* e)
 {
-    ImGuiTestContext ctx;
-    ctx.Engine = e;
-    ctx.UiContext = NULL;
-
-    RegisterTests_Window(&ctx);
-    RegisterTests_Scrolling(&ctx);
-    RegisterTests_Widgets(&ctx);
-    RegisterTests_Button(&ctx);
-    RegisterTests_Nav(&ctx);
-    RegisterTests_Docking(&ctx);
-    RegisterTests_Misc(&ctx);
-    //RegisterTests_Perf(&ctx);
-    RegisterTests_Capture(&ctx);
+    RegisterTests_Window(e);
+    RegisterTests_Scrolling(e);
+    RegisterTests_Widgets(e);
+    RegisterTests_Button(e);
+    RegisterTests_Nav(e);
+    RegisterTests_Docking(e);
+    RegisterTests_Misc(e);
+    //RegisterTests_Perf(e);
+    RegisterTests_Capture(e);
 }
 
 // Notes/Ideas
