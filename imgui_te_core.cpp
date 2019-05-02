@@ -35,6 +35,7 @@
 // FIXME-TESTS: Automate clicking/opening stuff based on gathering id?
 // FIXME-TESTS: Mouse actions on ImGuiNavLayer_Menu layer
 // FIXME-TESTS: Fail to open a double-click tree node
+// FIXME-TESTS: Possible ID resolving variables e.g. "$REF/Main menu bar" / "$NAV/Main menu bar" / "$TOP/Main menu bar"
 
 
 /*

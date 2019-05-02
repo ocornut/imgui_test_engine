@@ -842,6 +842,53 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
 }
 
 //-------------------------------------------------------------------------
+// Tests: Columns
+//-------------------------------------------------------------------------
+
+void RegisterTests_Columns(ImGuiTestEngine* e)
+{
+    ImGuiTest* t = NULL;
+
+    // - Test number of draw calls used by columns
+    t = REGISTER_TEST("columns", "columns_draw_calls");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::Begin("Test window 1", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImGui::Text("Hello");
+        ImDrawList* draw_list = ImGui::GetWindowDrawList();
+
+        // Test: Single column don't consume draw call.
+        int cmd_count = draw_list->CmdBuffer.Size;
+        ImGui::BeginColumns("columns1", 1);
+        ImGui::Text("AAAA"); ImGui::NextColumn();
+        ImGui::Text("BBBB"); ImGui::NextColumn();
+        ImGui::EndColumns();
+        ImGui::Text("Hello");
+        IM_CHECK(draw_list->CmdBuffer.Size == cmd_count + 0);
+
+        // Test: Multi-column consume 1 draw call per column + 1 due to conservative overlap expectation (FIXME)
+        ImGui::BeginColumns("columns3", 3);
+        ImGui::Text("AAAA"); ImGui::NextColumn();
+        ImGui::Text("BBBB"); ImGui::NextColumn();
+        ImGui::Text("CCCC"); ImGui::NextColumn();
+        ImGui::EndColumns();
+        ImGui::Text("Hello");
+        IM_CHECK(draw_list->CmdBuffer.Size == cmd_count || draw_list->CmdBuffer.Size == cmd_count + 3 + 1);
+
+        // Test: Unused column don't consume a draw call
+        cmd_count = draw_list->CmdBuffer.Size;
+        ImGui::BeginColumns("columns3", 3);
+        ImGui::Text("AAAA"); ImGui::NextColumn();
+        ImGui::Text("BBBB"); ImGui::NextColumn(); // Leave one column empty
+        ImGui::EndColumns();
+        ImGui::Text("Hello");
+        IM_CHECK(draw_list->CmdBuffer.Size == cmd_count || draw_list->CmdBuffer.Size == cmd_count + 2 + 1);
+
+        ImGui::End();
+    };
+};
+
+//-------------------------------------------------------------------------
 // Tests: Docking
 //-------------------------------------------------------------------------
 
@@ -1269,11 +1316,14 @@ void RegisterTests_Perf(ImGuiTestEngine* e)
 
     enum
     {
-        DrawPrimFunc_RectOutline,
+        DrawPrimFunc_RectStroke,
+        DrawPrimFunc_RectStrokeThick,
         DrawPrimFunc_RectFilled,
-        DrawPrimFunc_RectRoundedOutline,
+        DrawPrimFunc_RectRoundedStroke,
+        DrawPrimFunc_RectRoundedStrokeThick,
         DrawPrimFunc_RectRoundedFilled,
-        DrawPrimFunc_CircleOutline,
+        DrawPrimFunc_CircleStroke,
+        DrawPrimFunc_CircleStrokeThick,
         DrawPrimFunc_CircleFilled,
     };
 
@@ -1292,25 +1342,37 @@ void RegisterTests_Perf(ImGuiTestEngine* e)
         ImU32 col = IM_COL32(255, 255, 0, 255);
         switch (ctx->Test->ArgVariant)
         {
-        case DrawPrimFunc_RectOutline:
+        case DrawPrimFunc_RectStroke:
             for (int n = 0; n < loop_count; n++)
-                draw_list->AddRect(center - ImVec2(r,r), center + ImVec2(r,r), col, 0.0f);
+                draw_list->AddRect(center - ImVec2(r,r), center + ImVec2(r,r), col, 0.0f, ~0, 1.0f);
+            break;
+        case DrawPrimFunc_RectStrokeThick:
+            for (int n = 0; n < loop_count; n++)
+                draw_list->AddRect(center - ImVec2(r, r), center + ImVec2(r, r), col, 0.0f, ~0, 4.0f);
             break;
         case DrawPrimFunc_RectFilled:
             for (int n = 0; n < loop_count; n++)
                 draw_list->AddRectFilled(center - ImVec2(r, r), center + ImVec2(r, r), col, 0.0f);
             break;
-        case DrawPrimFunc_RectRoundedOutline:
+        case DrawPrimFunc_RectRoundedStroke:
             for (int n = 0; n < loop_count; n++)
-                draw_list->AddRect(center - ImVec2(r, r), center + ImVec2(r, r), col, rounding);
+                draw_list->AddRect(center - ImVec2(r, r), center + ImVec2(r, r), col, rounding, ~0, 1.0f);
+            break;
+        case DrawPrimFunc_RectRoundedStrokeThick:
+            for (int n = 0; n < loop_count; n++)
+                draw_list->AddRect(center - ImVec2(r, r), center + ImVec2(r, r), col, rounding, ~0, 4.0f);
             break;
         case DrawPrimFunc_RectRoundedFilled:
             for (int n = 0; n < loop_count; n++)
                 draw_list->AddRectFilled(center - ImVec2(r, r), center + ImVec2(r, r), col, rounding);
             break;
-        case DrawPrimFunc_CircleOutline:
+        case DrawPrimFunc_CircleStroke:
             for (int n = 0; n < loop_count; n++)
-                draw_list->AddCircle(center, r, col, segments);
+                draw_list->AddCircle(center, r, col, segments, 1.0f);
+            break;
+        case DrawPrimFunc_CircleStrokeThick:
+            for (int n = 0; n < loop_count; n++)
+                draw_list->AddCircle(center, r, col, segments, 4.0f);
             break;
         case DrawPrimFunc_CircleFilled:
             for (int n = 0; n < loop_count; n++)
@@ -1322,8 +1384,13 @@ void RegisterTests_Perf(ImGuiTestEngine* e)
         ImGui::End();
     };
 
-    t = REGISTER_TEST("perf", "perf_draw_prim_rect_outline");
-    t->ArgVariant = DrawPrimFunc_RectOutline;
+    t = REGISTER_TEST("perf", "perf_draw_prim_rect_stroke");
+    t->ArgVariant = DrawPrimFunc_RectStroke;
+    t->GuiFunc = DrawPrimFunc;
+    t->TestFunc = PerfCaptureFunc;
+
+    t = REGISTER_TEST("perf", "perf_draw_prim_rect_stroke_thick");
+    t->ArgVariant = DrawPrimFunc_RectStrokeThick;
     t->GuiFunc = DrawPrimFunc;
     t->TestFunc = PerfCaptureFunc;
 
@@ -1332,8 +1399,13 @@ void RegisterTests_Perf(ImGuiTestEngine* e)
     t->GuiFunc = DrawPrimFunc;
     t->TestFunc = PerfCaptureFunc;
 
-    t = REGISTER_TEST("perf", "perf_draw_prim_rect_rounded_outline");
-    t->ArgVariant = DrawPrimFunc_RectRoundedOutline;
+    t = REGISTER_TEST("perf", "perf_draw_prim_rect_rounded_stroke");
+    t->ArgVariant = DrawPrimFunc_RectRoundedStroke;
+    t->GuiFunc = DrawPrimFunc;
+    t->TestFunc = PerfCaptureFunc;
+
+    t = REGISTER_TEST("perf", "perf_draw_prim_rect_rounded_stroke_thick");
+    t->ArgVariant = DrawPrimFunc_RectRoundedStrokeThick;
     t->GuiFunc = DrawPrimFunc;
     t->TestFunc = PerfCaptureFunc;
 
@@ -1342,8 +1414,13 @@ void RegisterTests_Perf(ImGuiTestEngine* e)
     t->GuiFunc = DrawPrimFunc;
     t->TestFunc = PerfCaptureFunc;
 
-    t = REGISTER_TEST("perf", "perf_draw_prim_circle_outline");
-    t->ArgVariant = DrawPrimFunc_CircleOutline;
+    t = REGISTER_TEST("perf", "perf_draw_prim_circle_stroke");
+    t->ArgVariant = DrawPrimFunc_CircleStroke;
+    t->GuiFunc = DrawPrimFunc;
+    t->TestFunc = PerfCaptureFunc;
+
+    t = REGISTER_TEST("perf", "perf_draw_prim_circle_stroke_thick");
+    t->ArgVariant = DrawPrimFunc_CircleStrokeThick;
     t->GuiFunc = DrawPrimFunc;
     t->TestFunc = PerfCaptureFunc;
 
@@ -1660,136 +1737,9 @@ void RegisterTests(ImGuiTestEngine* e)
     RegisterTests_Widgets(e);
     RegisterTests_Button(e);
     RegisterTests_Nav(e);
+    RegisterTests_Columns(e);
     RegisterTests_Docking(e);
     RegisterTests_Misc(e);
     //RegisterTests_Perf(e);
     RegisterTests_Capture(e);
 }
-
-// Notes/Ideas
-#if 0
-
-//ctx->ItemClick("$REF/Main menu bar");
-//ctx->ItemClick("$NAV/Main menu bar");
-//ctx->ItemClick("$TOP/Main menu bar");
-
-void GuiFunc_001(DataGeneric* data)
-{
-    ImGui::SetNextWindowPos(ImVec2(100, 100));
-    ImGui::Begin("Window1");
-    ImGui::Text("This is a test.");
-    ImGui::Button("Button1");
-    ImGui::DragInt("Drag Int", &data->GenericInt[0]);
-    ImGui::End();
-}
-
-void Test_Drag_001(ImGuiTestEngine* te)
-{
-    DataGeneric data;
-    data.GenericInt[0] = 50;
-    GuiFunc_001(&data);
-
-    // MouseMove("Window1", "Drag Int")
-    // MouseClickDrag(ImVec2(-100, 0))
-    // IM_ASSERT(data.GenericInt[0] < 50)
-}
-
-void Test_Button_001(ImGuiTestEngine* te)
-{
-    DataGeneric data;
-    GuiFunc_001(&data);
-
-    // InputTextFill(id, ...)
-    // - ItemActivate/ItemClick(id)
-    // - Send keys e.g. CTRL+A, Delete
-    // - Send keys "my keywords
-
-    // InputTextSubmit()
-    // - InputTextFill
-    // - Send key: Return
-
-    // MenuActivate("path") --> OK
-    // - WindowFocus
-    // - ItemClick
-    // - ItemClick
-    // - etc.
-
-    // WindowFocus("ImGui Demo")
-    // - FocusWindow/BringToFront <- bypass z-sorting
-
-    // CaptureItem
-    // - ItemLocate
-    // - FocusWindow
-    // - CaptureRect
-
-    // id/scope
-    // - fully qualified
-    // - implicit relative to window
-    // - implicit relative to last interacted item?
-
-    // GuiFunc = ShowDemoWindow()
-    // WindowFocus("ImGui Demo")
-    // ItemOpen("Widgets")
-    // ItemOpen("Basic")
-    // CaptureItem("Drag Int", "drag.png")
-    // ScrollToItem("Drag Int", 0.5f)
-    // CaptureWindow("ImGui Demo", "demo.png")
-
-    // MenuActivate("ImGui Demo/Examples/Console"
-    // WindowSelect("Example: Console")
-    // InputTextSubmit("Input", "HELP")
-    // InputTextSubmit("Input", "HISTORY")
-    // CaptureWindow(0, "filename.png") --> capture to PNG (padding set in some config structure)
-
-    // MenuActivate("ImGui Demo/Examples/Console"
-    // window = WindowFocus("Example: Console")
-    // child = GetChildByIndex(window, 0) / GetChildByName(window, "##scrolling")
-    // TesterDrawOutput tester(child->DrawList)
-    // count = tester.Count()
-    // InputTextSubmit("Input", "HELP")
-    // InputTextSubmit("Input", "HISTORY")
-    // ASSERT(tester.Count() > count)
-
-    // (glitch testing -> only two variations over a span of frames) // fixme: if style allows e.g. border e.g. active/hovered, our test fails
-    // TesterDrawOutput tester;
-    // tester.LogHashPosUV()     // background task log every frame
-    // MenuActivate("ImGui Demo/Menu")
-    // WaitFrames(10)
-    // ASSERT(tester.LogUniqueCount() == 2)
-
-    // (error handling behavior)
-    // -> by default, failures are auto reported + task/stack unwind
-    // -> be able to override this
-
-    // test IsItemHovered() for windows title bar
-    // GuiFunc()
-    // {
-    //    Begin("Blah")
-    //    data->GenericBool[0] = IsItemHovered()
-    //    data->GenericBool[1] = IsWindowHovered()
-    //    End()
-    // }
-    // TestFunc:
-    //  WindowMove("Blah", ImVec2(100,100)
-    //  MouseMove(ImVec2(10,10))
-    //  ASSERT(g.HoveredWindow != window)
-    //  ASSERT(data->GenericBool[1] == false)
-    //  MouseMove(window->TitleBarRect().Center)
-    //  ASSERT(g.HoveredWindow == window)
-    //  ASSERT(data->GenericBool[0] == true)
-    //  ASSERT(data->GenericBool[1] == true)
-
-    // #1909 test window size
-    // MenuActivate("ImGui Demo/Menu/Open Recent")
-    // window = GetTopLevelWindow()
-    // ASSERT(window.Size.y == style.WindowPadding.y * 2 + GetFrameHeight() * 4))
-
-    // #1500 resize small
-    // MenuActivate("ImGui Demo", "Menu", "Console")
-    // window = GetTopLevelWindow()
-    // ASSERT(window->Name == "Examples: Console)
-    // WindowResize(window, ImVec2(10,10))  // FIXME: disable error
-    // ASSERT(window->Size == ImMax(style.WindowMinSize, ImVec2(10,10))
-}
-
-#endif
