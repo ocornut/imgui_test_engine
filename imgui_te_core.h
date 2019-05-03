@@ -262,7 +262,7 @@ struct ImGuiTestRef
 
 // Generic structure with varied data. This is useful for tests to quickly share data between the GUI functions and the Test function.
 // This is however totally optional. Using a RunFunc it is possible to store custom data on the stack and read from it as UserData.
-struct ImGuiTestGenericState
+struct ImGuiTestGenericVars
 {
     int         Int1;
     int         Int2;
@@ -285,7 +285,7 @@ struct ImGuiTestGenericState
     void*       PtrArray[10];
     ImGuiID     DockId;
 
-    ImGuiTestGenericState() { clear(); }
+    ImGuiTestGenericVars()  { clear(); }
     void clear()            { StrLarge.clear(); memset(this, 0, sizeof(*this)); }
 };
 
@@ -303,7 +303,7 @@ struct ImGuiTestContext
     ImGuiTestEngineIO*      EngineIO = NULL;
     ImGuiContext*           UiContext = NULL;
     ImGuiTestRunFlags       RunFlags = ImGuiTestRunFlags_None;
-    ImGuiTestGenericState   GenericState;
+    ImGuiTestGenericVars    GenericVars;
     ImGuiTestActiveFunc     ActiveFunc = ImGuiTestActiveFunc_None;
     void*                   UserData = NULL;
     int                     UserCounter = 0;

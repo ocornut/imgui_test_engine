@@ -242,7 +242,7 @@ void RegisterTests_Button(ImGuiTestEngine* e)
     t = REGISTER_TEST("button", "button_click");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
-        bool& clicked = ctx->GenericState.Bool1;
+        bool& clicked = ctx->GenericVars.Bool1;
 
         ImGui::Begin("Test Button", NULL, ImGuiWindowFlags_NoSavedSettings);
         if (ImGui::Button("Test"))
@@ -251,7 +251,7 @@ void RegisterTests_Button(ImGuiTestEngine* e)
     };
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
-        bool& clicked = ctx->GenericState.Bool1;
+        bool& clicked = ctx->GenericVars.Bool1;
         clicked = false;
 
         ctx->SetRef("Test Button");
@@ -275,7 +275,7 @@ void RegisterTests_Button(ImGuiTestEngine* e)
     t = REGISTER_TEST("button", "button_states");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
-        int& next_step = ctx->GenericState.Int1;
+        int& next_step = ctx->GenericVars.Int1;
 
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
 
@@ -349,8 +349,7 @@ void RegisterTests_Button(ImGuiTestEngine* e)
     };
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
-
-        int& next_step = ctx->GenericState.Int1;
+        int& next_step = ctx->GenericVars.Int1;
         next_step = ButtonStateMachineTestStep_None;
 
         ctx->SetRef("Test Window");
@@ -426,14 +425,14 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         ImGui::Begin("Window1");
-        ImGui::Checkbox("Checkbox", &ctx->GenericState.Bool1);
+        ImGui::Checkbox("Checkbox", &ctx->GenericVars.Bool1);
         ImGui::End();
     };
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
-        IM_CHECK(ctx->GenericState.Bool1 == false);
+        IM_CHECK(ctx->GenericVars.Bool1 == false);
         ctx->ItemClick("Window1/Checkbox");
-        IM_CHECK(ctx->GenericState.Bool1 == true);
+        IM_CHECK(ctx->GenericVars.Bool1 == true);
     };
 
     // FIXME-TESTS: WIP
@@ -451,15 +450,15 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
     t = REGISTER_TEST("widgets", "widgets_inputtext_1");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
-        ImGuiTestGenericState& gs = ctx->GenericState;
+        ImGuiTestGenericVars& vars = ctx->GenericVars;
         ImGui::SetNextWindowSize(ImVec2(200, 200));
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
-        ImGui::InputText("InputText", gs.Str1, IM_ARRAYSIZE(gs.Str1));
+        ImGui::InputText("InputText", vars.Str1, IM_ARRAYSIZE(vars.Str1));
         ImGui::End();
     };
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
-        char* buf = ctx->GenericState.Str1;
+        char* buf = ctx->GenericVars.Str1;
 
         ctx->SetRef("Test Window");
 
@@ -494,25 +493,25 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
     t = REGISTER_TEST("widgets", "widgets_inputtext_2");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
-        ImGuiTestGenericState& gs = ctx->GenericState;
-        if (gs.StrLarge.empty())
-            gs.StrLarge.resize(10000, 0);
+        ImGuiTestGenericVars& vars = ctx->GenericVars;
+        if (vars.StrLarge.empty())
+            vars.StrLarge.resize(10000, 0);
         ImGui::SetNextWindowSize(ImVec2(ImGui::GetFontSize() * 50, 0.0f));
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
-        ImGui::Text("strlen() = %d", strlen(gs.StrLarge.Data));
+        ImGui::Text("strlen() = %d", strlen(vars.StrLarge.Data));
         ImGui::InputText("Dummy", "", 0, ImGuiInputTextFlags_None);
-        ImGui::InputTextMultiline("InputText", gs.StrLarge.Data, gs.StrLarge.Size, ImVec2(-1, ImGui::GetFontSize() * 20), ImGuiInputTextFlags_None);
+        ImGui::InputTextMultiline("InputText", vars.StrLarge.Data, vars.StrLarge.Size, ImVec2(-1, ImGui::GetFontSize() * 20), ImGuiInputTextFlags_None);
         ImGui::End();
         //ImDebugShowInputTextState();
     };
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         // https://github.com/nothings/stb/issues/321
-        ImGuiTestGenericState& gs = ctx->GenericState;
+        ImGuiTestGenericVars& vars = ctx->GenericVars;
 
         // Start with a 350 characters buffer.
         // For this test we don't inject the characters via pasting or key-by-key in order to precisely control the undo/redo state.
-        char* buf = gs.StrLarge.Data;
+        char* buf = vars.StrLarge.Data;
         IM_CHECK(strlen(buf) == 0);
         for (int n = 0; n < 10; n++)
             strcat(buf, "xxxxxxx abcdefghijklmnopqrstuvwxyz\n");
@@ -548,7 +547,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
             ctx->KeyPressMap(ImGuiKey_V, ImGuiKeyModFlags_Ctrl);// Paste append three times
             ctx->SleepShort();
         }
-        size_t len = strlen(gs.StrLarge.Data);
+        size_t len = strlen(vars.StrLarge.Data);
         IM_CHECK(len == 350 * 4);
         IM_CHECK(undo_state.undo_point == 3);
         IM_CHECK(undo_state.undo_char_point == 0);
@@ -557,7 +556,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         IM_CHECK(undo_state.redo_point == STB_TEXTEDIT_UNDOSTATECOUNT);
         ctx->KeyPressMap(ImGuiKey_Z, ImGuiKeyModFlags_Ctrl);
         ctx->KeyPressMap(ImGuiKey_Z, ImGuiKeyModFlags_Ctrl);
-        len = strlen(gs.StrLarge.Data);
+        len = strlen(vars.StrLarge.Data);
         IM_CHECK(len == 350 * 2);
         IM_CHECK(undo_state.undo_point == 1);
         IM_CHECK(undo_state.redo_point == STB_TEXTEDIT_UNDOSTATECOUNT - 2);
@@ -565,27 +564,27 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
 
         // Undo x1 should call stb_textedit_discard_redo()
         ctx->KeyPressMap(ImGuiKey_Z, ImGuiKeyModFlags_Ctrl);
-        len = strlen(gs.StrLarge.Data);
+        len = strlen(vars.StrLarge.Data);
         IM_CHECK(len == 350 * 1);
     };
 
     t = REGISTER_TEST("widgets", "widgets_inputtext_3_text_ownership");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
-        ImGuiTestGenericState& gs = ctx->GenericState;
+        ImGuiTestGenericVars& vars = ctx->GenericVars;
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
         ImGui::LogToBuffer();
-        ImGui::InputText("##InputText", gs.Str1, IM_ARRAYSIZE(gs.Str1)); // Remove label to simplify the capture/comparison
-        ImFormatString(gs.Str2, IM_ARRAYSIZE(gs.Str2), "%s", ctx->UiContext->LogBuffer.c_str());
+        ImGui::InputText("##InputText", vars.Str1, IM_ARRAYSIZE(vars.Str1)); // Remove label to simplify the capture/comparison
+        ImFormatString(vars.Str2, IM_ARRAYSIZE(vars.Str2), "%s", ctx->UiContext->LogBuffer.c_str());
         ImGui::LogFinish();
-        ImGui::Text("Captured: \"%s\"", gs.Str2);
+        ImGui::Text("Captured: \"%s\"", vars.Str2);
         ImGui::End();
     };
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
-        ImGuiTestGenericState& gs = ctx->GenericState;
-        char* buf_user = gs.Str1;
-        char* buf_visible = gs.Str2;
+        ImGuiTestGenericVars& vars = ctx->GenericVars;
+        char* buf_user = vars.Str1;
+        char* buf_visible = vars.Str2;
         ctx->SetRef("Test Window");
 
         IM_CHECK(strcmp(buf_visible, "") == 0);
@@ -618,13 +617,13 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
     t = REGISTER_TEST("widgets", "widgets_inputtext_4_id_conflict");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
-        ImGuiTestGenericState& gs = ctx->GenericState;
+        ImGuiTestGenericVars& vars = ctx->GenericVars;
         ImGui::SetNextWindowSize(ImVec2(ImGui::GetFontSize() * 50, 0.0f));
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
         if (ctx->FrameCount < 50)
             ImGui::Button("Hello");
         else
-            ImGui::InputText("Hello", gs.Str1, IM_ARRAYSIZE(gs.Str1));
+            ImGui::InputText("Hello", vars.Str1, IM_ARRAYSIZE(vars.Str1));
         ImGui::End();
     };
     t->TestFunc = [](ImGuiTestContext* ctx)
@@ -637,13 +636,13 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
     t = REGISTER_TEST("widgets", "widgets_inputtext_5_deactivate_flags");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
-        ImGuiTestGenericState& gs = ctx->GenericState;
+        ImGuiTestGenericVars& vars = ctx->GenericVars;
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
-        bool& b_ret = gs.BoolArray[0];
-        bool& b_activated = gs.BoolArray[1];
-        bool& b_deactivated = gs.BoolArray[2];
-        bool& b_deactivated_after_edit = gs.BoolArray[3];
-        b_ret |= ImGui::InputText("Field", gs.Str1, IM_ARRAYSIZE(gs.Str1));
+        bool& b_ret = vars.BoolArray[0];
+        bool& b_activated = vars.BoolArray[1];
+        bool& b_deactivated = vars.BoolArray[2];
+        bool& b_deactivated_after_edit = vars.BoolArray[3];
+        b_ret |= ImGui::InputText("Field", vars.Str1, IM_ARRAYSIZE(vars.Str1));
         b_activated |= ImGui::IsItemActivated();
         b_deactivated |= ImGui::IsItemDeactivated();
         b_deactivated_after_edit |= ImGui::IsItemDeactivatedAfterEdit();
@@ -651,69 +650,69 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ImGui::Text("IsItemActivated: %d", b_activated);
         ImGui::Text("IsItemDeactivated: %d", b_deactivated);
         ImGui::Text("IsItemDeactivatedAfterEdit: %d", b_deactivated_after_edit);
-        ImGui::InputText("Dummy Sibling", gs.Str2, IM_ARRAYSIZE(gs.Str2));
+        ImGui::InputText("Dummy Sibling", vars.Str2, IM_ARRAYSIZE(vars.Str2));
         ImGui::End();
     };
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         // Accumulate return values over several frames/action into each bool
-        ImGuiTestGenericState& gs = ctx->GenericState;
-        bool& b_ret = gs.BoolArray[0];
-        bool& b_activated = gs.BoolArray[1];
-        bool& b_deactivated = gs.BoolArray[2];
-        bool& b_deactivated_after_edit = gs.BoolArray[3];
+        ImGuiTestGenericVars& vars = ctx->GenericVars;
+        bool& b_ret = vars.BoolArray[0];
+        bool& b_activated = vars.BoolArray[1];
+        bool& b_deactivated = vars.BoolArray[2];
+        bool& b_deactivated_after_edit = vars.BoolArray[3];
 
         // Testing activation flag being set
         ctx->SetRef("Test Window");
         ctx->ItemClick("Field");
         IM_CHECK(!b_ret && b_activated && !b_deactivated && !b_deactivated_after_edit);
-        gs.clear();
+        vars.clear();
 
         // Testing deactivated flag being set when canceling with Escape
         ctx->KeyPressMap(ImGuiKey_Escape);
         IM_CHECK(!b_ret && !b_activated && b_deactivated && !b_deactivated_after_edit);
-        gs.clear();
+        vars.clear();
 
         // Testing validation with Return after editing
         ctx->ItemClick("Field");
-        memset(gs.BoolArray, 0, sizeof(gs.BoolArray));
+        memset(vars.BoolArray, 0, sizeof(vars.BoolArray));
         ctx->KeyCharsAppend("Hello");
         IM_CHECK(b_ret && !b_activated && !b_deactivated && !b_deactivated_after_edit);
-        gs.clear();
+        vars.clear();
         ctx->KeyPressMap(ImGuiKey_Enter);
         IM_CHECK(b_ret && !b_activated && b_deactivated && b_deactivated_after_edit);
-        gs.clear();
+        vars.clear();
 
         // Testing validation with Tab after editing
         ctx->ItemClick("Field");
         ctx->KeyCharsAppend(" World");
-        gs.clear();
+        vars.clear();
         ctx->KeyPressMap(ImGuiKey_Tab);
         IM_CHECK(b_ret && !b_activated && b_deactivated && b_deactivated_after_edit);
-        gs.clear();
+        vars.clear();
     };
 
     t = REGISTER_TEST("widgets", "widgets_coloredit_drag");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
-        ImGuiTestGenericState& gs = ctx->GenericState;
+        ImGuiTestGenericVars& vars = ctx->GenericVars;
         ImGui::SetNextWindowSize(ImVec2(300, 200));
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
-        ImGui::ColorEdit4("ColorEdit1", &gs.Vec4Array[0].x, ImGuiColorEditFlags_None);
-        ImGui::ColorEdit4("ColorEdit2", &gs.Vec4Array[1].x, ImGuiColorEditFlags_None);
+        ImGui::ColorEdit4("ColorEdit1", &vars.Vec4Array[0].x, ImGuiColorEditFlags_None);
+        ImGui::ColorEdit4("ColorEdit2", &vars.Vec4Array[1].x, ImGuiColorEditFlags_None);
         ImGui::End();
     };
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
-        ImGuiTestGenericState& gs = ctx->GenericState;
-        gs.Vec4Array[0] = ImVec4(1, 0, 0, 1);
-        gs.Vec4Array[1] = ImVec4(0, 1, 0, 1);
+        ImGuiTestGenericVars& vars = ctx->GenericVars;
+        vars.Vec4Array[0] = ImVec4(1, 0, 0, 1);
+        vars.Vec4Array[1] = ImVec4(0, 1, 0, 1);
 
         ctx->SetRef("Test Window");
 
-        IM_CHECK(memcmp(&gs.Vec4Array[0], &gs.Vec4Array[1], sizeof(ImVec4)) != 0);
+        IM_CHECK(memcmp(&vars.Vec4Array[0], &vars.Vec4Array[1], sizeof(ImVec4)) != 0);
         ctx->ItemDragAndDrop("ColorEdit1/##ColorButton", "ColorEdit2/##X"); // FIXME-TESTS: Inner items
-        IM_CHECK(memcmp(&gs.Vec4Array[0], &gs.Vec4Array[1], sizeof(ImVec4)) == 0);
+        IM_CHECK(memcmp(&vars.Vec4Array[0], &vars.Vec4Array[1], sizeof(ImVec4)) == 0);
     };
 
     t = REGISTER_TEST("widgets", "widgets_selectable");
@@ -817,14 +816,14 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
     t = REGISTER_TEST("nav", "nav_002");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
-        ImGuiTestGenericState& gs = ctx->GenericState;
+        ImGuiTestGenericVars& vars = ctx->GenericVars;
         ImGui::Begin("Test window 1", NULL, ImGuiWindowFlags_NoSavedSettings);
         ImGui::Text("This is test window 1");
-        ImGui::InputText("InputText", gs.Str1, IM_ARRAYSIZE(gs.Str1));
+        ImGui::InputText("InputText", vars.Str1, IM_ARRAYSIZE(vars.Str1));
         ImGui::End();
         ImGui::Begin("Test window 2", NULL, ImGuiWindowFlags_NoSavedSettings);
         ImGui::Text("This is test window 2");
-        ImGui::InputText("InputText", gs.Str2, IM_ARRAYSIZE(gs.Str2));
+        ImGui::InputText("InputText", vars.Str2, IM_ARRAYSIZE(vars.Str2));
         ImGui::End();
     };
     t->TestFunc = [](ImGuiTestContext* ctx)
@@ -900,7 +899,7 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
     t = REGISTER_TEST("docking", "docking_basic_1");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
-        ImGuiTestGenericState& gs = ctx->GenericState;
+        ImGuiTestGenericVars& vars = ctx->GenericVars;
 
         ImGuiID ids[3];
         ImGui::Begin("AAAA");
@@ -926,26 +925,26 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
         }
         if (ctx->FrameCount == 11)
         {
-            IM_CHECK(gs.DockId != 0);
-            IM_CHECK(ids[0] == gs.DockId);
+            IM_CHECK(vars.DockId != 0);
+            IM_CHECK(ids[0] == vars.DockId);
             IM_CHECK(ids[0] == ids[1] && ids[0] == ids[2]);
         }
     };
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
-        ImGuiTestGenericState& gs = ctx->GenericState;
+        ImGuiTestGenericVars& vars = ctx->GenericVars;
         ctx->DockMultiClear("AAAA", "BBBB", "CCCC", NULL);
         ctx->YieldUntil(10);
-        gs.DockId = ctx->DockMultiSetupBasic(0, "AAAA", "BBBB", "CCCC", NULL);
+        vars.DockId = ctx->DockMultiSetupBasic(0, "AAAA", "BBBB", "CCCC", NULL);
         ctx->YieldUntil(20);
     };
 
-    // Test that docking into a parent node forwardin docking into the central node or last focused node
+    // Test that docking into a parent node forwarding docking into the central node or last focused node
     t = REGISTER_TEST("docking", "docking_into_parent_node");
     t->Flags |= ImGuiTestFlags_NoAutoFinish;
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
-        ImGuiTestGenericState& gs = ctx->GenericState;
+        ImGuiTestGenericVars& vars = ctx->GenericVars;
 
         ImGuiID dockspace_id = ImHashStr("Dockspace");
 
@@ -957,12 +956,12 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
         }
         if (ctx->FrameCount == 2)
         {
-            ImGui::DockBuilderSplitNode(dockspace_id, ImGuiDir_Left, 0.5f, &gs.IdArray[0], &gs.IdArray[1]);
-            IM_CHECK(gs.IdArray[0] != 0 && gs.IdArray[1]);
+            ImGui::DockBuilderSplitNode(dockspace_id, ImGuiDir_Left, 0.5f, &vars.IdArray[0], &vars.IdArray[1]);
+            IM_CHECK(vars.IdArray[0] != 0 && vars.IdArray[1]);
             ImGui::DockBuilderDockWindow("BBBB", dockspace_id);
             ImGuiWindow* window = ImGui::FindWindowByName("BBBB");
             IM_CHECK(window->DockId != dockspace_id);
-            IM_CHECK(window->DockId == gs.IdArray[1]);
+            IM_CHECK(window->DockId == vars.IdArray[1]);
         }
 
         ImGui::Begin("AAAA", NULL, ImGuiWindowFlags_NoSavedSettings);
@@ -1101,15 +1100,15 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
     t->Flags |= ImGuiTestFlags_NoAutoFinish;
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
-        ImGuiTestGenericState& gs = ctx->GenericState;
+        ImGuiTestGenericVars& vars = ctx->GenericVars;
         if (ctx->FrameCount == 0)
-            gs.DockId = ctx->DockMultiSetupBasic(0, "AAAA", "BBBB", "CCCC", NULL);
+            vars.DockId = ctx->DockMultiSetupBasic(0, "AAAA", "BBBB", "CCCC", NULL);
 
         if (ctx->FrameCount == 10)  ImGui::SetNextWindowFocus();
         ImGui::Begin("AAAA");
         if (ctx->FrameCount == 10)  IM_CHECK(ImGui::IsWindowFocused());
         if (ctx->FrameCount == 10)  ImGui::SetKeyboardFocusHere();
-        ImGui::InputText("Input", gs.Str1, IM_ARRAYSIZE(gs.Str1));
+        ImGui::InputText("Input", vars.Str1, IM_ARRAYSIZE(vars.Str1));
         if (ctx->FrameCount == 10)  IM_CHECK(!ImGui::IsItemActive());
         if (ctx->FrameCount == 11)  IM_CHECK(ImGui::IsItemActive());
         ImGui::End();
@@ -1118,7 +1117,7 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
         ImGui::Begin("BBBB");
         if (ctx->FrameCount == 50)  IM_CHECK(ImGui::IsWindowFocused());
         if (ctx->FrameCount == 50)  ImGui::SetKeyboardFocusHere();
-        ImGui::InputText("Input", gs.Str2, IM_ARRAYSIZE(gs.Str2));
+        ImGui::InputText("Input", vars.Str2, IM_ARRAYSIZE(vars.Str2));
         if (ctx->FrameCount == 50)  IM_CHECK(!ImGui::IsItemActive());
         if (ctx->FrameCount == 51)  IM_CHECK(ImGui::IsItemActive());
         ImGui::End();
@@ -1721,7 +1720,7 @@ void RegisterTests_Capture(ImGuiTestEngine* e)
         // FIXME-TESTS: Snap!
         ctx->Sleep(2.0f);
 
-        // Close verything
+        // Close everything
         ctx->SetRef("ImGui Demo");
         ctx->ItemCloseAll("");
         ctx->MenuUncheckAll("Examples");

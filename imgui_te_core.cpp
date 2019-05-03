@@ -837,7 +837,7 @@ static void ImGuiTestEngine_RunTest(ImGuiTestEngine* engine, ImGuiTestContext* c
     ctx->FrameCount = 0;
     ctx->SetRef("");
     ctx->SetInputMode(ImGuiInputSource_Mouse);
-    ctx->GenericState.clear();
+    ctx->GenericVars.clear();
 
     test->TestLog.clear();
 
