@@ -88,8 +88,40 @@ void RegisterTests_Window(ImGuiTestEngine* e)
             float expected_w = ImGui::CalcTextSize("This is some more text again").x + ImGui::GetStyle().WindowPadding.x * 2.0f;
             IM_CHECK(ImFabs(w - expected_w) < 1.0f);
         }
-
         ImGui::End();
+    };
+
+    t = REGISTER_TEST("window", "window_size_unrounded");
+    t->Flags |= ImGuiTestFlags_NoAutoFinish;
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        // #2067
+        {
+            ImGui::SetNextWindowPos(ImVec2(901.0f, 103.0f), ImGuiCond_Once);
+            ImGui::SetNextWindowSize(ImVec2(348.48f, 400.0f), ImGuiCond_Once);
+            ImGui::Begin("Issue 2067", NULL, ImGuiWindowFlags_NoSavedSettings);
+            ImVec2 pos = ImGui::GetWindowPos();
+            ImVec2 size = ImGui::GetWindowSize();
+            //ctx->Log("%f %f, %f %f\n", pos.x, pos.y, size.x, size.y);
+            IM_CHECK_NO_RET(pos.x == 901.0f && pos.y == 103.0f);
+            IM_CHECK_NO_RET(size.x == 348.0f && size.y == 400.0f);
+            ImGui::End();
+        }
+        // Test that non-rounded size constraint are not altering pos/size (#2530)
+        {
+            ImGui::SetNextWindowPos(ImVec2(901.0f, 103.0f), ImGuiCond_Once);
+            ImGui::SetNextWindowSize(ImVec2(348.48f, 400.0f), ImGuiCond_Once);
+            ImGui::SetNextWindowSizeConstraints(ImVec2(475.200012f, 0.0f), ImVec2(475.200012f, 100.4f));
+            ImGui::Begin("Issue 2530", NULL, ImGuiWindowFlags_NoSavedSettings);
+            ImVec2 pos = ImGui::GetWindowPos();
+            ImVec2 size = ImGui::GetWindowSize();
+            //ctx->Log("%f %f, %f %f\n", pos.x, pos.y, size.x, size.y);
+            IM_CHECK(pos.x == 901.0f && pos.y == 103.0f);
+            IM_CHECK(size.x == 475.0f && size.y == 100.0f);
+            ImGui::End();
+        }
+        if (ctx->FrameCount == 2)
+            ctx->Finish();
     };
 
     t = REGISTER_TEST("window", "window_auto_resize_basic");
@@ -239,24 +271,39 @@ void RegisterTests_Button(ImGuiTestEngine* e)
 {
     ImGuiTest* t = NULL;
 
-    t = REGISTER_TEST("button", "button_click");
+    t = REGISTER_TEST("button", "button_press");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
-        bool& clicked = ctx->GenericVars.Bool1;
-
-        ImGui::Begin("Test Button", NULL, ImGuiWindowFlags_NoSavedSettings);
-        if (ImGui::Button("Test"))
-            clicked = true;
+        ImGuiTestGenericVars& vars = ctx->GenericVars;
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+        if (ImGui::Button("Button0"))
+            vars.IntArray[0]++;
+        if (ImGui::ButtonEx("Button1", ImVec2(0, 0), ImGuiButtonFlags_PressedOnDoubleClick))
+            vars.IntArray[1]++;
+        if (ImGui::ButtonEx("Button2", ImVec2(0, 0), ImGuiButtonFlags_PressedOnClickRelease | ImGuiButtonFlags_PressedOnDoubleClick))
+            vars.IntArray[2]++;
+        if (ImGui::ButtonEx("Button3", ImVec2(0, 0), ImGuiButtonFlags_Repeat))
+            vars.IntArray[3]++;
         ImGui::End();
     };
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
-        bool& clicked = ctx->GenericVars.Bool1;
-        clicked = false;
+        ImGuiTestGenericVars& vars = ctx->GenericVars;
+        ctx->SetRef("Test Window");
+        ctx->ItemClick("Button0");
+        IM_CHECK(vars.IntArray[0] == 1);
+        ctx->ItemDoubleClick("Button1");
+        IM_CHECK(vars.IntArray[1] == 1);
+        ctx->ItemDoubleClick("Button2");
+        IM_CHECK(vars.IntArray[2] == 2);
 
-        ctx->SetRef("Test Button");
-        ctx->ItemClick("Test");
-        IM_CHECK(clicked);
+        ctx->ItemClick("Button3");
+        IM_CHECK(vars.IntArray[3] == 1);
+        ctx->MouseDown(0);
+        IM_CHECK(vars.IntArray[3] == 1);
+        ctx->SleepDebugNoSkip(ctx->UiContext->IO.KeyRepeatDelay + ctx->UiContext->IO.KeyRepeatRate * 3); // FIXME-TESTS: Can we elapse context time without elapsing wall clock time?
+        IM_CHECK(vars.IntArray[3] == 1 + 3 * 2); // FIXME: MouseRepeatRate is double KeyRepeatRate, that's not documented
+        ctx->MouseUp(1);
     };
 
     // Test ButtonBehavior interactions (see comments at the top of the ButtonBehavior() function)
@@ -1426,6 +1473,56 @@ void RegisterTests_Perf(ImGuiTestEngine* e)
     t = REGISTER_TEST("perf", "perf_draw_prim_circle_filled");
     t->ArgVariant = DrawPrimFunc_CircleFilled;
     t->GuiFunc = DrawPrimFunc;
+    t->TestFunc = PerfCaptureFunc;
+
+    auto DrawSplittedFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::Begin("Test Func", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
+        ImDrawList* draw_list = ImGui::GetWindowDrawList();
+
+        int split_count = ctx->Test->ArgVariant;
+        int loop_count = 200 * ctx->PerfStressAmount;
+
+        ImGui::Button("##CircleFilled", ImVec2(200, 200));
+        ImVec2 bounds_min = ImGui::GetItemRectMin();
+        ImVec2 bounds_size = ImGui::GetItemRectSize();
+        ImVec2 center = bounds_min + bounds_size * 0.5f;
+        float r = (float)(int)(ImMin(bounds_size.x, bounds_size.y) * 0.8f * 0.5f);
+
+        if (ctx->FrameCount == 0)
+            ctx->Log("%d primitives over %d channels\n", loop_count, split_count);
+        if (split_count != 1)
+        {
+            IM_CHECK_SILENT((loop_count % split_count) == 0);
+            loop_count /= split_count;
+            draw_list->ChannelsSplit(split_count);
+            for (int n = 0; n < loop_count; n++)
+                for (int ch = 0; ch < split_count; ch++)
+                {
+                    draw_list->ChannelsSetCurrent(ch);
+                    draw_list->AddCircleFilled(center, r, IM_COL32(255, 255, 0, 255), 12);
+                }
+            draw_list->ChannelsMerge();
+        }
+        else
+        {
+            for (int n = 0; n < loop_count; n++)
+                draw_list->AddCircleFilled(center, r, IM_COL32(255, 255, 0, 255), 12);
+        }
+        if (ctx->FrameCount == 0)
+            ctx->Log("Vertices: %d\n", draw_list->VtxBuffer.Size);
+
+        ImGui::End();
+    };
+
+    t = REGISTER_TEST("perf", "perf_draw_split_1");
+    t->ArgVariant = 1;
+    t->GuiFunc = DrawSplittedFunc;
+    t->TestFunc = PerfCaptureFunc;
+
+    t = REGISTER_TEST("perf", "perf_draw_split_0");
+    t->ArgVariant = 10;
+    t->GuiFunc = DrawSplittedFunc;
     t->TestFunc = PerfCaptureFunc;
 
     t = REGISTER_TEST("perf", "perf_stress_button");

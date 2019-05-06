@@ -58,17 +58,17 @@ enum ImGuiTestFlags_
 
 enum ImGuiTestOpFlags_
 {
-    ImGuiTestOpFlags_None                   = 0,
-    ImGuiTestOpFlags_Verbose                = 1 << 0,
-    ImGuiTestOpFlags_NoCheckHoveredId       = 1 << 1,
-    ImGuiTestOpFlags_NoError                = 1 << 2,   // Don't abort/error e.g. if the item cannot be found
-    ImGuiTestOpFlags_NoFocusWindow          = 1 << 3
+    ImGuiTestOpFlags_None               = 0,
+    ImGuiTestOpFlags_Verbose            = 1 << 0,
+    ImGuiTestOpFlags_NoCheckHoveredId   = 1 << 1,
+    ImGuiTestOpFlags_NoError            = 1 << 2,   // Don't abort/error e.g. if the item cannot be found
+    ImGuiTestOpFlags_NoFocusWindow      = 1 << 3
 };
 
 enum ImGuiTestCheckFlags_
 {
-    ImGuiTestCheckFlags_None                = 0,
-    ImGuiTestCheckFlags_SilentSuccess       = 1 << 0
+    ImGuiTestCheckFlags_None            = 0,
+    ImGuiTestCheckFlags_SilentSuccess   = 1 << 0
 };
 
 enum ImGuiTestRunFlags_
