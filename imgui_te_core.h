@@ -73,10 +73,12 @@ enum ImGuiTestCheckFlags_
 
 enum ImGuiTestRunFlags_
 {
-    ImGuiTestRunFlags_None          = 0,
-    ImGuiTestRunFlags_NoGuiFunc     = 1 << 0,
-    ImGuiTestRunFlags_NoTestFunc    = 1 << 1,
-    ImGuiTestRunFlags_NoSuccessMsg  = 1 << 2,
+    ImGuiTestRunFlags_None              = 0,
+    ImGuiTestRunFlags_NoGuiFunc         = 1 << 0,
+    ImGuiTestRunFlags_NoTestFunc        = 1 << 1,
+    ImGuiTestRunFlags_NoSuccessMsg      = 1 << 2,
+    ImGuiTestRunFlags_NoStopOnError     = 1 << 3,
+    ImGuiTestRunFlags_NoBreakOnError    = 1 << 4,
 };
 
 //-------------------------------------------------------------------------
@@ -260,33 +262,65 @@ struct ImGuiTestRef
     ImGuiTestRef(const char* p) { ID = 0; Path = p; }
 };
 
+struct ImGuiTestGenericStatus
+{
+    int     Ret;
+    int     Hovered;
+    int     Active;
+    int     Focused;
+    int     Clicked;
+    int     Visible;
+    int     Activated;
+    int     Deactivated;
+    int     DeactivatedAfterEdit;
+
+    ImGuiTestGenericStatus()    { Clear(); }
+    void Clear()                { memset(this, 0, sizeof(*this)); }
+    void QuerySet(bool ret_val = false) { Clear(); QueryInc(ret_val); }
+    void QueryInc(bool ret_val = false)
+    { 
+        Ret += ret_val;
+        Hovered += ImGui::IsItemHovered();
+        Active += ImGui::IsItemActive();;
+        Focused += ImGui::IsItemFocused();
+        Clicked += ImGui::IsItemClicked();
+        Visible += ImGui::IsItemVisible();
+        Activated += ImGui::IsItemActivated();
+        Deactivated += ImGui::IsItemDeactivated();
+        DeactivatedAfterEdit += ImGui::IsItemDeactivatedAfterEdit();
+    }
+};
+
 // Generic structure with varied data. This is useful for tests to quickly share data between the GUI functions and the Test function.
 // This is however totally optional. Using a RunFunc it is possible to store custom data on the stack and read from it as UserData.
 struct ImGuiTestGenericVars
 {
-    int         Int1;
-    int         Int2;
-    int         IntArray[10];
-    float       Float1;
-    float       Float2;
-    float       FloatArray[10];
-    bool        Bool1;
-    bool        Bool2;
-    bool        BoolArray[10];
-    ImVec4      Vec4;
-    ImVec4      Vec4Array[10];
-    ImGuiID     Id;
-    ImGuiID     IdArray[10];
-    char        Str1[256];
-    char        Str2[256];
+    int             Int1;
+    int             Int2;
+    int             IntArray[10];
+    float           Float1;
+    float           Float2;
+    float           FloatArray[10];
+    bool            Bool1;
+    bool            Bool2;
+    bool            BoolArray[10];
+    ImVec4          Vec4;
+    ImVec4          Vec4Array[10];
+    ImGuiID         Id;
+    ImGuiID         IdArray[10];
+    char            Str1[256];
+    char            Str2[256];
     ImVector<char>  StrLarge;
-    void*       Ptr1;
-    void*       Ptr2;
-    void*       PtrArray[10];
-    ImGuiID     DockId;
+    void*           Ptr1;
+    void*           Ptr2;
+    void*           PtrArray[10];
+    ImGuiID         DockId;
+    ImGuiTestGenericStatus  Status;
 
-    ImGuiTestGenericVars()  { clear(); }
-    void clear()            { StrLarge.clear(); memset(this, 0, sizeof(*this)); }
+    ImGuiTestGenericVars()  { Clear(); }
+    void Clear()            { StrLarge.clear(); memset(this, 0, sizeof(*this)); }
+    void ClearInts()        { Int1 = Int2 = 0; memset(IntArray, 0, sizeof(IntArray)); }
+    void ClearBools()       { Bool2 = Bool2 = false; memset(BoolArray, 0, sizeof(BoolArray)); }
 };
 
 enum ImGuiTestActiveFunc

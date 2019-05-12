@@ -303,7 +303,7 @@ void RegisterTests_Button(ImGuiTestEngine* e)
         IM_CHECK(vars.IntArray[3] == 1);
         ctx->SleepDebugNoSkip(ctx->UiContext->IO.KeyRepeatDelay + ctx->UiContext->IO.KeyRepeatRate * 3); // FIXME-TESTS: Can we elapse context time without elapsing wall clock time?
         IM_CHECK(vars.IntArray[3] == 1 + 3 * 2); // FIXME: MouseRepeatRate is double KeyRepeatRate, that's not documented
-        ctx->MouseUp(1);
+        ctx->MouseUp(0);
     };
 
     // Test ButtonBehavior interactions (see comments at the top of the ButtonBehavior() function)
@@ -322,68 +322,67 @@ void RegisterTests_Button(ImGuiTestEngine* e)
     t = REGISTER_TEST("button", "button_states");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
-        int& next_step = ctx->GenericVars.Int1;
+        ImGuiTestGenericVars& vars = ctx->GenericVars;
+        ImGuiTestGenericStatus& status = vars.Status;
+        int next_step = vars.Int1;
+        vars.Int1 = ButtonStateMachineTestStep_None;
 
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
 
         const bool pressed = ImGui::Button("Test");
-        const bool hovered = ImGui::IsItemHovered();
-        const bool active = ImGui::IsItemActive();
-        const bool activated = ImGui::IsItemActivated();
-        const bool deactivated = ImGui::IsItemDeactivated();
+        status.QuerySet();
 
         switch (next_step)
         {
         case ButtonStateMachineTestStep_Init:
-            IM_CHECK(!pressed);
-            IM_CHECK(!hovered);
-            IM_CHECK(!active);
-            IM_CHECK(!activated);
-            IM_CHECK(!deactivated);
+            IM_CHECK(0 == pressed);
+            IM_CHECK(0 == status.Hovered);
+            IM_CHECK(0 == status.Active);
+            IM_CHECK(0 == status.Activated);
+            IM_CHECK(0 == status.Deactivated);
             break;
         case ButtonStateMachineTestStep_MovedOver:
-            IM_CHECK(!pressed);
-            IM_CHECK(hovered);
-            IM_CHECK(!active);
-            IM_CHECK(!activated);
-            IM_CHECK(!deactivated);
+            IM_CHECK(0 == pressed);
+            IM_CHECK(1 == status.Hovered);
+            IM_CHECK(0 == status.Active);
+            IM_CHECK(0 == status.Activated);
+            IM_CHECK(0 == status.Deactivated);
             break;
         case ButtonStateMachineTestStep_MouseDown:
-            IM_CHECK(!pressed);
-            IM_CHECK(hovered);
-            IM_CHECK(active);
-            IM_CHECK(activated);
-            IM_CHECK(!deactivated);
+            IM_CHECK(0 == pressed);
+            IM_CHECK(1 == status.Hovered);
+            IM_CHECK(1 == status.Active);
+            IM_CHECK(1 == status.Activated);
+            IM_CHECK(0 == status.Deactivated);
             break;
         case ButtonStateMachineTestStep_MovedAway:
-            IM_CHECK(!pressed);
-            IM_CHECK(!hovered);
-            IM_CHECK(active);
-            IM_CHECK(!activated);
-            IM_CHECK(!deactivated);
+            IM_CHECK(0 == pressed);
+            IM_CHECK(0 == status.Hovered);
+            IM_CHECK(1 == status.Active);
+            IM_CHECK(0 == status.Activated);
+            IM_CHECK(0 == status.Deactivated);
             break;
         case ButtonStateMachineTestStep_MovedOverAgain:
-            IM_CHECK(!pressed);
-            IM_CHECK(hovered);
-            IM_CHECK(active);
-            IM_CHECK(!activated);
-            IM_CHECK(!deactivated);
+            IM_CHECK(0 == pressed);
+            IM_CHECK(1 == status.Hovered);
+            IM_CHECK(1 == status.Active);
+            IM_CHECK(0 == status.Activated);
+            IM_CHECK(0 == status.Deactivated);
             break;
         case ButtonStateMachineTestStep_MouseUp:
-            IM_CHECK(pressed);
-            IM_CHECK(hovered);
-            IM_CHECK(!active);
-            IM_CHECK(!activated);
-            IM_CHECK(deactivated);
+            IM_CHECK(1 == pressed);
+            IM_CHECK(1 == status.Hovered);
+            IM_CHECK(0 == status.Active);
+            IM_CHECK(0 == status.Activated);
+            IM_CHECK(1 == status.Deactivated);
             break;
         case ButtonStateMachineTestStep_Done:
-            IM_CHECK(!pressed);
-            IM_CHECK(!hovered);
-            IM_CHECK(!active);
-            IM_CHECK(!activated);
-            IM_CHECK(!deactivated);
+            IM_CHECK(0 == pressed);
+            IM_CHECK(0 == status.Hovered);
+            IM_CHECK(0 == status.Active);
+            IM_CHECK(0 == status.Activated);
+            IM_CHECK(0 == status.Deactivated);
             break;
-        case ButtonStateMachineTestStep_None:
         default:
             break;
         }
@@ -678,25 +677,15 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ctx->SetRef("Test Window");
         ctx->ItemHoldForFrames("Hello", 100);
     };
-    
-    // Test the IsItemDeactivatedXXX flags(), bug mentioned in #2215
-    t = REGISTER_TEST("widgets", "widgets_inputtext_5_deactivate_flags");
+
+    // Test the IsItemDeactivatedXXX() functions, bug mentioned in #2215
+    t = REGISTER_TEST("widgets", "widgets_deactivated_inputtext");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         ImGuiTestGenericVars& vars = ctx->GenericVars;
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
-        bool& b_ret = vars.BoolArray[0];
-        bool& b_activated = vars.BoolArray[1];
-        bool& b_deactivated = vars.BoolArray[2];
-        bool& b_deactivated_after_edit = vars.BoolArray[3];
-        b_ret |= ImGui::InputText("Field", vars.Str1, IM_ARRAYSIZE(vars.Str1));
-        b_activated |= ImGui::IsItemActivated();
-        b_deactivated |= ImGui::IsItemDeactivated();
-        b_deactivated_after_edit |= ImGui::IsItemDeactivatedAfterEdit();
-        ImGui::Text("Ret: %d", b_ret);
-        ImGui::Text("IsItemActivated: %d", b_activated);
-        ImGui::Text("IsItemDeactivated: %d", b_deactivated);
-        ImGui::Text("IsItemDeactivatedAfterEdit: %d", b_deactivated_after_edit);
+        bool ret = ImGui::InputText("Field", vars.Str1, IM_ARRAYSIZE(vars.Str1));
+        vars.Status.QueryInc(ret);
         ImGui::InputText("Dummy Sibling", vars.Str2, IM_ARRAYSIZE(vars.Str2));
         ImGui::End();
     };
@@ -704,39 +693,38 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
     {
         // Accumulate return values over several frames/action into each bool
         ImGuiTestGenericVars& vars = ctx->GenericVars;
-        bool& b_ret = vars.BoolArray[0];
-        bool& b_activated = vars.BoolArray[1];
-        bool& b_deactivated = vars.BoolArray[2];
-        bool& b_deactivated_after_edit = vars.BoolArray[3];
+        ImGuiTestGenericStatus& status = vars.Status;
 
         // Testing activation flag being set
         ctx->SetRef("Test Window");
         ctx->ItemClick("Field");
-        IM_CHECK(!b_ret && b_activated && !b_deactivated && !b_deactivated_after_edit);
-        vars.clear();
+        IM_CHECK(status.Ret == 0 && status.Activated == 1 && status.Deactivated == 0 && status.DeactivatedAfterEdit == 0);
+        status.Clear();
 
         // Testing deactivated flag being set when canceling with Escape
         ctx->KeyPressMap(ImGuiKey_Escape);
-        IM_CHECK(!b_ret && !b_activated && b_deactivated && !b_deactivated_after_edit);
-        vars.clear();
+        IM_CHECK(status.Ret == 0 && status.Activated == 0 && status.Deactivated == 1 && status.DeactivatedAfterEdit == 0);
+        status.Clear();
 
         // Testing validation with Return after editing
         ctx->ItemClick("Field");
-        memset(vars.BoolArray, 0, sizeof(vars.BoolArray));
+        IM_CHECK(!status.Ret && status.Activated && !status.Deactivated && !status.DeactivatedAfterEdit);
+        status.Clear();
         ctx->KeyCharsAppend("Hello");
-        IM_CHECK(b_ret && !b_activated && !b_deactivated && !b_deactivated_after_edit);
-        vars.clear();
+        IM_CHECK(status.Ret && !status.Activated && !status.Deactivated && !status.DeactivatedAfterEdit);
+        status.Clear();
         ctx->KeyPressMap(ImGuiKey_Enter);
-        IM_CHECK(b_ret && !b_activated && b_deactivated && b_deactivated_after_edit);
-        vars.clear();
+        IM_CHECK(!status.Ret && !status.Activated && status.Deactivated && status.DeactivatedAfterEdit);
+        status.Clear();
 
         // Testing validation with Tab after editing
         ctx->ItemClick("Field");
         ctx->KeyCharsAppend(" World");
-        vars.clear();
+        IM_CHECK(status.Ret && status.Activated && !status.Deactivated && !status.DeactivatedAfterEdit);
+        status.Clear();
         ctx->KeyPressMap(ImGuiKey_Tab);
-        IM_CHECK(b_ret && !b_activated && b_deactivated && b_deactivated_after_edit);
-        vars.clear();
+        IM_CHECK(!status.Ret && !status.Activated && status.Deactivated && status.DeactivatedAfterEdit);
+        status.Clear();
     };
 
     t = REGISTER_TEST("widgets", "widgets_coloredit_drag");

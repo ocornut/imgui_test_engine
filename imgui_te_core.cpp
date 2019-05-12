@@ -837,7 +837,7 @@ static void ImGuiTestEngine_RunTest(ImGuiTestEngine* engine, ImGuiTestContext* c
     ctx->FrameCount = 0;
     ctx->SetRef("");
     ctx->SetInputMode(ImGuiInputSource_Mouse);
-    ctx->GenericVars.clear();
+    ctx->GenericVars.Clear();
 
     test->TestLog.clear();
 
@@ -1674,7 +1674,7 @@ ImGuiID ImGuiTestContext::GetID(ImGuiTestRef ref)
 ImGuiID ImGuiTestContext::GetID(ImGuiTestRef seed_ref, ImGuiTestRef ref)
 {
     if (ref.ID)
-        return ref.ID;
+        return ref.ID; // FIXME: What if seed_ref != 0
     return ImHashDecoratedPath(ref.Path, GetID(seed_ref));
 }
 
