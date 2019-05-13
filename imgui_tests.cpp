@@ -679,7 +679,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
     };
 
     // Test the IsItemDeactivatedXXX() functions, bug mentioned in #2215
-    t = REGISTER_TEST("widgets", "widgets_deactivated_inputtext");
+    t = REGISTER_TEST("widgets", "widgets_status_inputtext");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         ImGuiTestGenericVars& vars = ctx->GenericVars;
@@ -698,33 +698,121 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         // Testing activation flag being set
         ctx->SetRef("Test Window");
         ctx->ItemClick("Field");
-        IM_CHECK(status.Ret == 0 && status.Activated == 1 && status.Deactivated == 0 && status.DeactivatedAfterEdit == 0);
+        IM_CHECK(status.Ret == 0 && status.Activated == 1 && status.Deactivated == 0 && status.DeactivatedAfterEdit == 0 && status.Edited == 0);
         status.Clear();
 
         // Testing deactivated flag being set when canceling with Escape
         ctx->KeyPressMap(ImGuiKey_Escape);
-        IM_CHECK(status.Ret == 0 && status.Activated == 0 && status.Deactivated == 1 && status.DeactivatedAfterEdit == 0);
+        IM_CHECK(status.Ret == 0 && status.Activated == 0 && status.Deactivated == 1 && status.DeactivatedAfterEdit == 0 && status.Edited == 0);
         status.Clear();
 
         // Testing validation with Return after editing
         ctx->ItemClick("Field");
-        IM_CHECK(!status.Ret && status.Activated && !status.Deactivated && !status.DeactivatedAfterEdit);
+        IM_CHECK(!status.Ret && status.Activated && !status.Deactivated && !status.DeactivatedAfterEdit && status.Edited == 0);
         status.Clear();
         ctx->KeyCharsAppend("Hello");
-        IM_CHECK(status.Ret && !status.Activated && !status.Deactivated && !status.DeactivatedAfterEdit);
+        IM_CHECK(status.Ret && !status.Activated && !status.Deactivated && !status.DeactivatedAfterEdit && status.Edited >= 1);
         status.Clear();
         ctx->KeyPressMap(ImGuiKey_Enter);
-        IM_CHECK(!status.Ret && !status.Activated && status.Deactivated && status.DeactivatedAfterEdit);
+        IM_CHECK(!status.Ret && !status.Activated && status.Deactivated && status.DeactivatedAfterEdit && status.Edited == 0);
         status.Clear();
 
         // Testing validation with Tab after editing
         ctx->ItemClick("Field");
         ctx->KeyCharsAppend(" World");
-        IM_CHECK(status.Ret && status.Activated && !status.Deactivated && !status.DeactivatedAfterEdit);
+        IM_CHECK(status.Ret && status.Activated && !status.Deactivated && !status.DeactivatedAfterEdit && status.Edited >= 1);
         status.Clear();
         ctx->KeyPressMap(ImGuiKey_Tab);
-        IM_CHECK(!status.Ret && !status.Activated && status.Deactivated && status.DeactivatedAfterEdit);
+        IM_CHECK(!status.Ret && !status.Activated && status.Deactivated && status.DeactivatedAfterEdit && status.Edited == 0);
         status.Clear();
+    };
+
+    // Test the IsItemDeactivatedXXX() functions e.g. #2550, #1875
+    t = REGISTER_TEST("widgets", "widgets_status_inputfloat2");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiTestGenericVars& vars = ctx->GenericVars;
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
+        bool ret = ImGui::InputFloat4("Field", &vars.FloatArray[0]);
+        vars.Status.QueryInc(ret);
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        // Accumulate return values over several frames/action into each bool
+        ImGuiTestGenericVars& vars = ctx->GenericVars;
+        ImGuiTestGenericStatus& status = vars.Status;
+
+        // FIXME-TESTS: Better helper to build ids out of various type of data
+        ctx->SetRef("Test Window");
+        int n;
+        n = 0; ImGuiID field_0 = ImHash(&n, sizeof(n), ctx->GetID("Field"));
+        n = 1; ImGuiID field_1 = ImHash(&n, sizeof(n), ctx->GetID("Field"));
+        //n = 2; ImGuiID field_2 = ImHash(&n, sizeof(n), ctx->GetID("Field"));
+
+        // Testing activation/deactivation flags
+        ctx->ItemClick(field_0);
+        IM_CHECK(status.Ret == 0 && status.Activated == 1 && status.Deactivated == 0 && status.DeactivatedAfterEdit == 0);
+        status.Clear();
+        ctx->KeyPressMap(ImGuiKey_Enter);
+        IM_CHECK(status.Ret == 0 && status.Activated == 0 && status.Deactivated == 1 && status.DeactivatedAfterEdit == 0);
+        status.Clear();
+
+        // Testing validation with Return after editing
+        ctx->ItemClick(field_0);
+        status.Clear();
+        ctx->KeyCharsAppend("123");
+        IM_CHECK(status.Ret >= 1 && status.Activated == 0 && status.Deactivated == 0);
+        status.Clear();
+        ctx->KeyPressMap(ImGuiKey_Enter);
+        IM_CHECK(status.Ret == 0 && status.Activated == 0 && status.Deactivated == 1);
+        status.Clear();
+
+        // Testing validation with Tab after editing
+        ctx->ItemClick(field_0);
+        ctx->KeyCharsAppend("456");
+        status.Clear();
+        ctx->KeyPressMap(ImGuiKey_Tab);
+        IM_CHECK(status.Ret == 0 && status.Activated == 1 && status.Deactivated == 1 && status.DeactivatedAfterEdit == 1);
+
+        // Testing Edited flag on all components
+        ctx->ItemClick(field_1); // FIXME-TESTS: Should not be necessary!
+        ctx->ItemClick(field_0);
+        ctx->KeyCharsAppend("111");
+        IM_CHECK(status.Edited >= 1);
+        ctx->KeyPressMap(ImGuiKey_Tab);
+        status.Clear();
+        ctx->KeyCharsAppend("222");
+        IM_CHECK(status.Edited >= 1);
+        ctx->KeyPressMap(ImGuiKey_Tab);
+        status.Clear();
+        ctx->KeyCharsAppend("333");
+        IM_CHECK(status.Edited >= 1);
+    };
+
+    // Test the IsItemEdited() function when input vs output format are not matching
+    t = REGISTER_TEST("widgets", "widgets_status_inputfloat");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiTestGenericVars& vars = ctx->GenericVars;
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
+        bool ret = ImGui::InputFloat("Field", &vars.Float1);
+        vars.Status.QueryInc(ret);
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiTestGenericVars& vars = ctx->GenericVars;
+        ImGuiTestGenericStatus& status = vars.Status;
+
+        // Input "1" which will be formatted as "1.000", make sure we don't report IsItemEdited() multiple times!
+        ctx->SetRef("Test Window");
+        ctx->ItemClick("Field");
+        ctx->KeyCharsAppend("1");
+        IM_CHECK(status.Ret == 1 && status.Edited == 1 && status.Activated == 1 && status.Deactivated == 0 && status.DeactivatedAfterEdit == 0);
+        ctx->Yield();
+        ctx->Yield();
+        IM_CHECK(status.Edited == 1);
     };
 
     t = REGISTER_TEST("widgets", "widgets_coloredit_drag");

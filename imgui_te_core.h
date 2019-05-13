@@ -270,6 +270,7 @@ struct ImGuiTestGenericStatus
     int     Focused;
     int     Clicked;
     int     Visible;
+    int     Edited;
     int     Activated;
     int     Deactivated;
     int     DeactivatedAfterEdit;
@@ -285,6 +286,7 @@ struct ImGuiTestGenericStatus
         Focused += ImGui::IsItemFocused();
         Clicked += ImGui::IsItemClicked();
         Visible += ImGui::IsItemVisible();
+        Edited += ImGui::IsItemEdited();
         Activated += ImGui::IsItemActivated();
         Deactivated += ImGui::IsItemDeactivated();
         DeactivatedAfterEdit += ImGui::IsItemDeactivatedAfterEdit();
