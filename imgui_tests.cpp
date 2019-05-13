@@ -26,25 +26,6 @@
 static inline bool operator==(const ImVec2& lhs, const ImVec2& rhs) { return lhs.x == rhs.x && lhs.y == rhs.y; }
 static inline bool operator!=(const ImVec2& lhs, const ImVec2& rhs) { return lhs.x != rhs.x && lhs.y != rhs.y; }
 
-// Generic structure with varied data.
-// This is useful for tests to quickly share data between the GUI functions and the Test function.
-struct DataGeneric
-{
-    int         Int1, Int2;
-    int         IntArray[10];
-    float       Float1, Float2;
-    float       FloatArray[10];
-    bool        Bool1, Bool2;
-    bool        BoolArray[10];
-    char        Str256[256];
-    void*       Ptr1;
-    void*       Ptr2;
-    void*       PtrArray[10];
-    void*       UserData;
-
-    DataGeneric() { memset(this, 0, sizeof(*this)); }
-};
-
 #define REGISTER_TEST(_CATEGORY, _NAME)    ImGuiTestEngine_RegisterTest(e, _CATEGORY, _NAME, __FILE__, __LINE__);
 
 //-------------------------------------------------------------------------
@@ -961,6 +942,55 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
         IM_CHECK(ctx->UiContext->ActiveId == 0);
         ctx->Sleep(1.0f);
     };
+
+    t = REGISTER_TEST("nav", "nav_003");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiTestGenericVars& vars = ctx->GenericVars;
+        bool& b_popup_open = vars.Bool1;
+        bool& b_field_active = vars.Bool2;
+        ImGuiID& popup_id = vars.Id;
+
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+
+        if (ImGui::Button("Open Popup"))
+            ImGui::OpenPopup("Popup");
+
+        b_popup_open = ImGui::BeginPopup("Popup");
+        if (b_popup_open)
+        {
+            popup_id = ImGui::GetCurrentWindow()->ID;
+
+            ImGui::InputText("Field", vars.Str1, IM_ARRAYSIZE(vars.Str1));
+            b_field_active = ImGui::IsItemActive();
+
+            ImGui::EndPopup();
+        }
+
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiTestGenericVars& vars = ctx->GenericVars;
+        bool& b_popup_open = vars.Bool1;
+        bool& b_field_active = vars.Bool2;
+        ImGuiID& popup_id = vars.Id;
+        popup_id = 0;
+
+        ctx->SetRef("Test Window");
+        ctx->ItemClick("Open Popup");
+
+        while (popup_id == 0)
+            ctx->Yield();
+
+
+        ctx->SetRef(popup_id);
+        ctx->ItemClick("Field");
+        IM_CHECK(b_popup_open && b_field_active);
+
+        ctx->KeyPressMap(ImGuiKey_Escape);
+        IM_CHECK(b_popup_open && !b_field_active);
+    };
 }
 
 //-------------------------------------------------------------------------
@@ -1249,6 +1279,35 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
             ctx->Finish();
     };
 #endif
+}
+
+//-------------------------------------------------------------------------
+// Tests: Draw
+//-------------------------------------------------------------------------
+
+void RegisterTests_Draw(ImGuiTestEngine* e)
+{
+    ImGuiTest* t = NULL;
+
+    t = REGISTER_TEST("draw", "atlas_build_glyph_overlap");
+    t->GuiFunc = NULL;
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ImFontAtlas atlas;
+        ImFontConfig font_config;
+
+        static const ImWchar default_ranges[] =
+        {
+            0x0020, 0x00FF, // Basic Latin + Latin Supplement
+            0x0080, 0x00FF, // Latin_Supplement
+
+            0,
+        };
+        font_config.GlyphRanges = default_ranges;
+
+        atlas.AddFontDefault(&font_config);
+        atlas.Build();
+    };
 }
 
 //-------------------------------------------------------------------------
@@ -1912,6 +1971,7 @@ void RegisterTests(ImGuiTestEngine* e)
     RegisterTests_Columns(e);
     RegisterTests_Docking(e);
     RegisterTests_Misc(e);
+    RegisterTests_Draw(e);
     //RegisterTests_Perf(e);
     RegisterTests_Capture(e);
 }
