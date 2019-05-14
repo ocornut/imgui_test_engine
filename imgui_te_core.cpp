@@ -156,6 +156,8 @@ struct ImGuiTestEngine
     int                         CallDepth = 0;
     ImVector<ImGuiTestLocateTask*>  LocateTasks;
     ImGuiTestGatherTask         GatherTask;
+    void*                       UserDataBuffer = NULL;
+    size_t                      UserDataBufferSize = 0;
 
     // Inputs
     bool                        InputMousePosSet = false;
@@ -676,7 +678,21 @@ static void ImGuiTestEngine_ProcessQueue(ImGuiTestEngine* engine)
         }
         else
         {
-            ctx.RunCurrentTest(NULL);
+            if (test->UserDataConstructor != NULL)
+            {
+                if ((engine->UserDataBuffer == NULL) || (engine->UserDataBufferSize < test->UserDataSize))
+                {
+                    IM_FREE(engine->UserDataBuffer);
+                    engine->UserDataBufferSize = test->UserDataSize;
+                    engine->UserDataBuffer = IM_ALLOC(engine->UserDataBufferSize);
+                }
+
+                test->UserDataConstructor(engine->UserDataBuffer);
+                ctx.RunCurrentTest(engine->UserDataBuffer);
+                test->UserDataDestructor(engine->UserDataBuffer);
+            }
+            else
+                ctx.RunCurrentTest(NULL);
         }
         ran_tests++;
 

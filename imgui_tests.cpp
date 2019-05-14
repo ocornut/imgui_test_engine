@@ -253,42 +253,48 @@ void RegisterTests_Button(ImGuiTestEngine* e)
     ImGuiTest* t = NULL;
 
     t = REGISTER_TEST("button", "button_press");
+
+    struct ButtonPressTestVars { int ButtonPressCount[4] = { 0 }; };
+    t->SetUserDataType<ButtonPressTestVars>();
+
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
-        ImGuiTestGenericVars& vars = ctx->GenericVars;
+        ButtonPressTestVars& vars = ctx->GetUserData<ButtonPressTestVars>();
+
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
         if (ImGui::Button("Button0"))
-            vars.IntArray[0]++;
+            vars.ButtonPressCount[0]++;
         if (ImGui::ButtonEx("Button1", ImVec2(0, 0), ImGuiButtonFlags_PressedOnDoubleClick))
-            vars.IntArray[1]++;
+            vars.ButtonPressCount[1]++;
         if (ImGui::ButtonEx("Button2", ImVec2(0, 0), ImGuiButtonFlags_PressedOnClickRelease | ImGuiButtonFlags_PressedOnDoubleClick))
-            vars.IntArray[2]++;
+            vars.ButtonPressCount[2]++;
         if (ImGui::ButtonEx("Button3", ImVec2(0, 0), ImGuiButtonFlags_Repeat))
-            vars.IntArray[3]++;
+            vars.ButtonPressCount[3]++;
         ImGui::End();
     };
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
-        ImGuiTestGenericVars& vars = ctx->GenericVars;
+        ButtonPressTestVars& vars = ctx->GetUserData<ButtonPressTestVars>();
+
         ctx->SetRef("Test Window");
         ctx->ItemClick("Button0");
-        IM_CHECK(vars.IntArray[0] == 1);
+        IM_CHECK(vars.ButtonPressCount[0] == 1);
         ctx->ItemDoubleClick("Button1");
-        IM_CHECK(vars.IntArray[1] == 1);
+        IM_CHECK(vars.ButtonPressCount[1] == 1);
         ctx->ItemDoubleClick("Button2");
-        IM_CHECK(vars.IntArray[2] == 2);
+        IM_CHECK(vars.ButtonPressCount[2] == 2);
 
         ctx->ItemClick("Button3");
-        IM_CHECK(vars.IntArray[3] == 1);
+        IM_CHECK(vars.ButtonPressCount[3] == 1);
         ctx->MouseDown(0);
-        IM_CHECK(vars.IntArray[3] == 1);
+        IM_CHECK(vars.ButtonPressCount[3] == 1);
         ctx->SleepDebugNoSkip(ctx->UiContext->IO.KeyRepeatDelay + ctx->UiContext->IO.KeyRepeatRate * 3); // FIXME-TESTS: Can we elapse context time without elapsing wall clock time?
-        IM_CHECK(vars.IntArray[3] == 1 + 3 * 2); // FIXME: MouseRepeatRate is double KeyRepeatRate, that's not documented
+        IM_CHECK(vars.ButtonPressCount[3] == 1 + 3 * 2); // FIXME: MouseRepeatRate is double KeyRepeatRate, that's not documented
         ctx->MouseUp(0);
     };
 
     // Test ButtonBehavior interactions (see comments at the top of the ButtonBehavior() function)
-    enum
+    enum ButtonStateMachineTestStep
     {
         ButtonStateMachineTestStep_None,
         ButtonStateMachineTestStep_Init,
@@ -301,12 +307,20 @@ void RegisterTests_Button(ImGuiTestEngine* e)
     };
 
     t = REGISTER_TEST("button", "button_states");
+
+    struct ButtonStateTestVars
+    {
+        ButtonStateMachineTestStep  NextStep;
+        ImGuiTestGenericStatus      Status;
+    };
+    t->SetUserDataType<ButtonStateTestVars>();
+
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
-        ImGuiTestGenericVars& vars = ctx->GenericVars;
+        ButtonStateTestVars& vars = ctx->GetUserData<ButtonStateTestVars>();
         ImGuiTestGenericStatus& status = vars.Status;
-        int next_step = vars.Int1;
-        vars.Int1 = ButtonStateMachineTestStep_None;
+        ButtonStateMachineTestStep& next_step = vars.NextStep;
+        next_step = ButtonStateMachineTestStep_None;
 
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
 
@@ -376,7 +390,8 @@ void RegisterTests_Button(ImGuiTestEngine* e)
     };
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
-        int& next_step = ctx->GenericVars.Int1;
+        ButtonStateTestVars& vars = ctx->GetUserData<ButtonStateTestVars>();
+        ButtonStateMachineTestStep& next_step = vars.NextStep;
         next_step = ButtonStateMachineTestStep_None;
 
         ctx->SetRef("Test Window");

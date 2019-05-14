@@ -202,21 +202,29 @@ typedef void    (*ImGuiTestRunFunc)(ImGuiTestContext* ctx);
 typedef void    (*ImGuiTestGuiFunc)(ImGuiTestContext* ctx);
 typedef void    (*ImGuiTestTestFunc)(ImGuiTestContext* ctx);
 
+// Wraps a placement new of a given type (where 'buffer' is the allocated memory)
+typedef void    (*ImGuiTestUserDataConstructor)(void* buffer);
+typedef void    (*ImGuiTestUserDataDestructor)(void* ptr);
+
 struct ImGuiTest
 {
-    const char*             Category;           // Literal, not owned
-    const char*             Name;               // Literal, not owned
-    const char*             SourceFile;         // __FILE__
-    const char*             SourceFileShort;    // Pointer within SourceFile, skips filename.
-    int                     SourceLine;         // __LINE__
-    int                     SourceLineEnd;      //
-    int                     ArgVariant;
-    ImGuiTestStatus         Status;
-    ImGuiTestFlags          Flags;
-    ImGuiTestRunFunc        RootFunc;           // NULL function is ok
-    ImGuiTestGuiFunc        GuiFunc;            // GUI functions can be reused
-    ImGuiTestTestFunc       TestFunc;
-    ImGuiTextBuffer         TestLog;
+    const char*                     Category;           // Literal, not owned
+    const char*                     Name;               // Literal, not owned
+    const char*                     SourceFile;         // __FILE__
+    const char*                     SourceFileShort;    // Pointer within SourceFile, skips filename.
+    int                             SourceLine;         // __LINE__
+    int                             SourceLineEnd;      //
+    int                             ArgVariant;
+    size_t                          UserDataSize;
+    // size_t                          UserDataAlign;
+    ImGuiTestUserDataConstructor    UserDataConstructor;
+    ImGuiTestUserDataDestructor     UserDataDestructor;
+    ImGuiTestStatus                 Status;
+    ImGuiTestFlags                  Flags;
+    ImGuiTestRunFunc                RootFunc;           // NULL function is ok
+    ImGuiTestGuiFunc                GuiFunc;            // GUI functions can be reused
+    ImGuiTestTestFunc               TestFunc;
+    ImGuiTextBuffer                 TestLog;
 
     ImGuiTest()
     {
@@ -225,11 +233,24 @@ struct ImGuiTest
         SourceFile = SourceFileShort = NULL;
         SourceLine = SourceLineEnd = 0;
         ArgVariant = 0;
+        UserDataSize = 0;
+        // UserDataAlign = 0;
+        UserDataConstructor = NULL;
+        UserDataDestructor = NULL;
         Status = ImGuiTestStatus_Unknown;
         Flags = ImGuiTestFlags_None;
         RootFunc = NULL;
         GuiFunc = NULL;
         TestFunc = NULL;
+    }
+
+    template <typename T>
+    void SetUserDataType()
+    {
+        UserDataSize = sizeof(T);
+        // UserDataAlign = alignof(T);
+        UserDataConstructor = [](void* buffer) { IM_PLACEMENT_NEW(buffer) T; };
+        UserDataDestructor = [](void* ptr) { IM_UNUSED(ptr); reinterpret_cast<T*>(ptr)->~T(); };
     }
 };
 
@@ -367,6 +388,8 @@ struct ImGuiTestContext
     bool        IsFirstFrame() const        { return FrameCount == FirstFrameCount; }
     void        SetGuiFuncEnabled(bool v)   { if (v) RunFlags &= ~ImGuiTestRunFlags_NoGuiFunc; else RunFlags |= ImGuiTestRunFlags_NoGuiFunc; }
     void        RecoverFromUiContextErrors();
+    template <typename T>
+    T&          GetUserData()               { return *reinterpret_cast<T*>(UserData); }
 
     void        Yield();
     void        YieldFrames(int count);
