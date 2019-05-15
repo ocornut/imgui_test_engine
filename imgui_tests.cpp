@@ -36,6 +36,7 @@ void RegisterTests_Window(ImGuiTestEngine* e)
 {
     ImGuiTest* t = NULL;
 
+    // ## Test size of an empty window
     t = REGISTER_TEST("window", "empty");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
@@ -53,7 +54,7 @@ void RegisterTests_Window(ImGuiTestEngine* e)
         IM_CHECK(window->Scroll.x == 0.0f && window->Scroll.y == 0.0f);
     };
 
-    // Test that a window starting collapsed performs width/contents size measurement on its first few frames.
+    // ## Test that a window starting collapsed performs width/contents size measurement on its first few frames.
     t = REGISTER_TEST("window", "window_size_collapsed_1");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
@@ -72,6 +73,7 @@ void RegisterTests_Window(ImGuiTestEngine* e)
         ImGui::End();
     };
 
+    // ## Test that non-integer size/position passed to window gets rounded down and not cause any drift.
     t = REGISTER_TEST("window", "window_size_unrounded");
     t->Flags |= ImGuiTestFlags_NoAutoFinish;
     t->GuiFunc = [](ImGuiTestContext* ctx)
@@ -105,6 +107,7 @@ void RegisterTests_Window(ImGuiTestEngine* e)
             ctx->Finish();
     };
 
+    // ## Test basic window auto resize
     t = REGISTER_TEST("window", "window_auto_resize_basic");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
@@ -123,7 +126,7 @@ void RegisterTests_Window(ImGuiTestEngine* e)
         }
     };
 
-    // Test that uncollapsing an auto-resizing window does not go through a frame where the window is smaller than expected
+    // ## Test that uncollapsing an auto-resizing window does not go through a frame where the window is smaller than expected
     t = REGISTER_TEST("window", "window_auto_resize_uncollapse");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
@@ -152,7 +155,7 @@ void RegisterTests_Window(ImGuiTestEngine* e)
         IM_CHECK(window->Size.y == size_full_when_uncollapsed.y);
     };
 
-    // Bug #2282
+    // ## Test appending multiple times to a child window (bug #2282)
     t = REGISTER_TEST("window", "window_append");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
@@ -181,6 +184,8 @@ void RegisterTests_Window(ImGuiTestEngine* e)
         ImGui::End();
     };
 
+    // ## Test basic focus behavior
+    // FIXME-TESTS: This in particular when combined with Docking should be tested with and without ConfigDockingTabBarOnSingleWindows
     t = REGISTER_TEST("window", "window_focus_1");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
@@ -220,7 +225,8 @@ void RegisterTests_Window(ImGuiTestEngine* e)
         ctx->YieldUntil(50);
         IM_CHECK(g.NavWindow->ID == ctx->GetID("/DDDD"));
     };
-
+    
+    // ## Test popup focus and right-click to close popups up to a given level
     t = REGISTER_TEST("window", "window_focus_popup");
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
@@ -252,11 +258,10 @@ void RegisterTests_Button(ImGuiTestEngine* e)
 {
     ImGuiTest* t = NULL;
 
+    // ## Test basic button presses
     t = REGISTER_TEST("button", "button_press");
-
     struct ButtonPressTestVars { int ButtonPressCount[4] = { 0 }; };
     t->SetUserDataType<ButtonPressTestVars>();
-
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         ButtonPressTestVars& vars = ctx->GetUserData<ButtonPressTestVars>();
@@ -293,7 +298,7 @@ void RegisterTests_Button(ImGuiTestEngine* e)
         ctx->MouseUp(0);
     };
 
-    // Test ButtonBehavior interactions (see comments at the top of the ButtonBehavior() function)
+    // ## Test ButtonBehavior frame by frame behaviors (see comments at the top of the ButtonBehavior() function)
     enum ButtonStateMachineTestStep
     {
         ButtonStateMachineTestStep_None,
@@ -307,27 +312,18 @@ void RegisterTests_Button(ImGuiTestEngine* e)
     };
 
     t = REGISTER_TEST("button", "button_states");
-
-    struct ButtonStateTestVars
-    {
-        ButtonStateMachineTestStep  NextStep;
-        ImGuiTestGenericStatus      Status;
-    };
+    struct ButtonStateTestVars { ButtonStateMachineTestStep NextStep; ImGuiTestGenericStatus Status; };
     t->SetUserDataType<ButtonStateTestVars>();
-
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         ButtonStateTestVars& vars = ctx->GetUserData<ButtonStateTestVars>();
         ImGuiTestGenericStatus& status = vars.Status;
-        ButtonStateMachineTestStep& next_step = vars.NextStep;
-        next_step = ButtonStateMachineTestStep_None;
 
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
 
         const bool pressed = ImGui::Button("Test");
         status.QuerySet();
-
-        switch (next_step)
+        switch (vars.NextStep)
         {
         case ButtonStateMachineTestStep_Init:
             IM_CHECK(0 == pressed);
@@ -381,7 +377,7 @@ void RegisterTests_Button(ImGuiTestEngine* e)
         default:
             break;
         }
-        next_step = ButtonStateMachineTestStep_None;
+        vars.NextStep = ButtonStateMachineTestStep_None;
 
         // The "Dummy" button allows to move the mouse away from the "Test" button
         ImGui::Button("Dummy");
@@ -391,36 +387,35 @@ void RegisterTests_Button(ImGuiTestEngine* e)
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         ButtonStateTestVars& vars = ctx->GetUserData<ButtonStateTestVars>();
-        ButtonStateMachineTestStep& next_step = vars.NextStep;
-        next_step = ButtonStateMachineTestStep_None;
+        vars.NextStep = ButtonStateMachineTestStep_None;
 
         ctx->SetRef("Test Window");
 
         // Move mouse away from "Test" button
         ctx->MouseMove("Dummy");
-        next_step = ButtonStateMachineTestStep_Init;
+        vars.NextStep = ButtonStateMachineTestStep_Init;
         ctx->Yield();
 
         ctx->MouseMove("Test");
-        next_step = ButtonStateMachineTestStep_MovedOver;
+        vars.NextStep = ButtonStateMachineTestStep_MovedOver;
         ctx->Yield();
 
-        next_step = ButtonStateMachineTestStep_MouseDown;
+        vars.NextStep = ButtonStateMachineTestStep_MouseDown;
         ctx->MouseDown();
 
         ctx->MouseMove("Dummy", ImGuiTestOpFlags_NoCheckHoveredId);
-        next_step = ButtonStateMachineTestStep_MovedAway;
+        vars.NextStep = ButtonStateMachineTestStep_MovedAway;
         ctx->Yield();
 
         ctx->MouseMove("Test");
-        next_step = ButtonStateMachineTestStep_MovedOverAgain;
+        vars.NextStep = ButtonStateMachineTestStep_MovedOverAgain;
         ctx->Yield();
 
-        next_step = ButtonStateMachineTestStep_MouseUp;
+        vars.NextStep = ButtonStateMachineTestStep_MouseUp;
         ctx->MouseUp();
 
         ctx->MouseMove("Dummy");
-        next_step = ButtonStateMachineTestStep_Done;
+        vars.NextStep = ButtonStateMachineTestStep_Done;
         ctx->Yield();
     };
 }
@@ -433,6 +428,7 @@ void RegisterTests_Scrolling(ImGuiTestEngine* e)
 {
     ImGuiTest* t = NULL;
 
+    // ## Test that basic SetScrollHereY call scrolls all the way (#1804)
     t = REGISTER_TEST("scrolling", "scrolling_001");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
@@ -449,7 +445,7 @@ void RegisterTests_Scrolling(ImGuiTestEngine* e)
         IM_ASSERT(window->SizeContents.y > 0.0f);
         float scroll_y = ImGui::GetScrollY();
         IM_CHECK(scroll_y > 0.0f);
-        IM_CHECK(scroll_y == ImGui::GetScrollMaxY());       // #1804
+        IM_CHECK(scroll_y == ImGui::GetScrollMaxY());
         ctx->LogVerbose("scroll_y = %f\n", scroll_y);
         ImGui::End();
     };
@@ -463,6 +459,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
 {
     ImGuiTest* t = NULL;
 
+    // ## Test checkbox click
     t = REGISTER_TEST("widgets", "widgets_checkbox_001");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
@@ -489,6 +486,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ImGui::End();
     };
 
+    // ## Test InputText widget
     t = REGISTER_TEST("widgets", "widgets_inputtext_1");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
@@ -532,6 +530,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         IM_CHECK(strcmp(buf, "HelloWorld") == 0);
     };
 
+    // ## Test InputText undo/redo ops, in particular related to issue we had with stb_textedit undo/redo buffers
     t = REGISTER_TEST("widgets", "widgets_inputtext_2");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
@@ -610,6 +609,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         IM_CHECK(len == 350 * 1);
     };
 
+    // ## Test InputText vs user ownership of data
     t = REGISTER_TEST("widgets", "widgets_inputtext_3_text_ownership");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
@@ -655,7 +655,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         IM_CHECK(strcmp(buf_visible, "Hello2") == 0);
     };
 
-    // Test that InputText doesn't go havoc when activated via another item
+    // ## Test that InputText doesn't go havoc when activated via another item
     t = REGISTER_TEST("widgets", "widgets_inputtext_4_id_conflict");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
@@ -674,7 +674,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ctx->ItemHoldForFrames("Hello", 100);
     };
 
-    // Test the IsItemDeactivatedXXX() functions, bug mentioned in #2215
+    // ## Test InputText() and IsItemDeactivatedXXX() functions (mentioned in #2215)
     t = REGISTER_TEST("widgets", "widgets_status_inputtext");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
@@ -723,7 +723,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         status.Clear();
     };
 
-    // Test the IsItemDeactivatedXXX() functions e.g. #2550, #1875
+    // ## Test the IsItemDeactivatedXXX() functions (e.g. #2550, #1875)
     t = REGISTER_TEST("widgets", "widgets_status_inputfloat2");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
@@ -786,7 +786,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         IM_CHECK(status.Edited >= 1);
     };
 
-    // Test the IsItemEdited() function when input vs output format are not matching
+    // ## Test the IsItemEdited() function when input vs output format are not matching
     t = REGISTER_TEST("widgets", "widgets_status_inputfloat");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
@@ -811,6 +811,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         IM_CHECK(status.Edited == 1);
     };
 
+    // ## Test ColorEdit Drag and Drop
     t = REGISTER_TEST("widgets", "widgets_coloredit_drag");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
@@ -834,6 +835,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         IM_CHECK(memcmp(&vars.Vec4Array[0], &vars.Vec4Array[1], sizeof(ImVec4)) == 0);
     };
 
+    // ## Test that disabled Selectable has an ID but doesn't interfer with navigation
     t = REGISTER_TEST("widgets", "widgets_selectable");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
@@ -857,7 +859,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         IM_CHECK(ctx->UiContext->NavId == ctx->GetID("Selectable C")); // Make sure we have skipped B
     };
 
-    // Issue #2371
+    // ## Test recursing Tab Bars (Bug #2371)
     t = REGISTER_TEST("widgets", "widgets_tabbar_recurse");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
@@ -886,6 +888,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
     };
 
 #ifdef IMGUI_HAS_DOCK
+    // ## Test Dockspace within a TabItem
     t = REGISTER_TEST("widgets", "widgets_tabbar_dockspace");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
@@ -908,16 +911,11 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
 // Tests: Nav
 //-------------------------------------------------------------------------
 
-//static void gui_func_demo(ImGuiTestContext*)
-//{
-//    ImGui::ShowDemoWindow();
-//}
-
 void RegisterTests_Nav(ImGuiTestEngine* e)
 {
     ImGuiTest* t = NULL;
 
-    // Test opening a new window from a checkbox setting the focus to the new window.
+    // ## Test opening a new window from a checkbox setting the focus to the new window.
     // In 9ba2028 (2019/01/04) we fixed a bug where holding ImGuiNavInputs_Activate too long on a button would hold the focus on the wrong window.
     t = REGISTER_TEST("nav", "nav_001");
     t->TestFunc = [](ImGuiTestContext* ctx)
@@ -931,8 +929,8 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
         IM_CHECK(g.NavWindow && g.NavWindow->ID == ctx->GetID("/ImGui Demo"));
     };
 
-    // Verify that CTRL+Tab steal focus (#2380)
-    t = REGISTER_TEST("nav", "nav_002");
+    // ## Verify that CTRL+Tab steal focus (#2380)
+    t = REGISTER_TEST("nav", "nav_ctrl_tab_takes_focus_away");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         ImGuiTestGenericVars& vars = ctx->GenericVars;
@@ -958,7 +956,8 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
         ctx->Sleep(1.0f);
     };
 
-    t = REGISTER_TEST("nav", "nav_003");
+    // ## Test that ESC deactivate InputText without closing current Popup (#2321, #787)
+    t = REGISTER_TEST("nav", "nav_esc_popup");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         ImGuiTestGenericVars& vars = ctx->GenericVars;
@@ -967,7 +966,6 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
         ImGuiID& popup_id = vars.Id;
 
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
-
         if (ImGui::Button("Open Popup"))
             ImGui::OpenPopup("Popup");
 
@@ -975,13 +973,10 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
         if (b_popup_open)
         {
             popup_id = ImGui::GetCurrentWindow()->ID;
-
             ImGui::InputText("Field", vars.Str1, IM_ARRAYSIZE(vars.Str1));
             b_field_active = ImGui::IsItemActive();
-
             ImGui::EndPopup();
         }
-
         ImGui::End();
     };
     t->TestFunc = [](ImGuiTestContext* ctx)
@@ -989,6 +984,8 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
         ImGuiTestGenericVars& vars = ctx->GenericVars;
         bool& b_popup_open = vars.Bool1;
         bool& b_field_active = vars.Bool2;
+
+        // FIXME-TESTS: Come up with a better mecanism to get popup ID
         ImGuiID& popup_id = vars.Id;
         popup_id = 0;
 
@@ -997,7 +994,6 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
 
         while (popup_id == 0)
             ctx->Yield();
-
 
         ctx->SetRef(popup_id);
         ctx->ItemClick("Field");
@@ -1016,7 +1012,7 @@ void RegisterTests_Columns(ImGuiTestEngine* e)
 {
     ImGuiTest* t = NULL;
 
-    // - Test number of draw calls used by columns
+    // ## Test number of draw calls used by columns
     t = REGISTER_TEST("columns", "columns_draw_calls");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
@@ -1107,7 +1103,7 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
         ctx->YieldUntil(20);
     };
 
-    // Test that docking into a parent node forwarding docking into the central node or last focused node
+    // ## Test that docking into a parent node forwarding docking into the central node or last focused node
     t = REGISTER_TEST("docking", "docking_into_parent_node");
     t->Flags |= ImGuiTestFlags_NoAutoFinish;
     t->GuiFunc = [](ImGuiTestContext* ctx)
@@ -1143,7 +1139,7 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
             ctx->Finish();
     };
 
-    // Test that ConfigDockingTabBarOnSingleWindows transitions doesn't break window size.
+    // ## Test that ConfigDockingTabBarOnSingleWindows transitions doesn't break window size.
     t = REGISTER_TEST("docking", "docking_auto_nodes_size");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
@@ -1175,7 +1171,7 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
         ctx->UiContext->IO.ConfigDockingTabBarOnSingleWindows = backup_cfg;
     };
 
-    // Test merging windows by dragging them.
+    // ## Test merging windows by dragging them.
     t = REGISTER_TEST("docking", "docking_drag_merge");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
@@ -1260,10 +1256,10 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
         }
     };
 
-    // Test setting focus on a docked window, and setting focus on a specific item inside. (#2453)
-    // In particular, while the selected tab is locked down early (causing a frame delay in the tab selection), 
-    // the window that has requested focus should allow items to be submitted (SkipItems==false) during its hidden frame,
-    // mimicking the behavior of any newly appearing window.
+    // ## Test setting focus on a docked window, and setting focus on a specific item inside. (#2453)
+    // ## In particular, while the selected tab is locked down early (causing a frame delay in the tab selection), 
+    // ## the window that has requested focus should allow items to be submitted (SkipItems==false) during its hidden frame,
+    // ## mimicking the behavior of any newly appearing window.
     t = REGISTER_TEST("docking", "docking_focus_1");
     t->Flags |= ImGuiTestFlags_NoAutoFinish;
     t->GuiFunc = [](ImGuiTestContext* ctx)
@@ -1297,35 +1293,6 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
 }
 
 //-------------------------------------------------------------------------
-// Tests: Draw
-//-------------------------------------------------------------------------
-
-void RegisterTests_Draw(ImGuiTestEngine* e)
-{
-    ImGuiTest* t = NULL;
-
-    t = REGISTER_TEST("draw", "atlas_build_glyph_overlap");
-    t->GuiFunc = NULL;
-    t->TestFunc = [](ImGuiTestContext* ctx)
-    {
-        ImFontAtlas atlas;
-        ImFontConfig font_config;
-
-        static const ImWchar default_ranges[] =
-        {
-            0x0020, 0x00FF, // Basic Latin + Latin Supplement
-            0x0080, 0x00FF, // Latin_Supplement
-
-            0,
-        };
-        font_config.GlyphRanges = default_ranges;
-
-        atlas.AddFontDefault(&font_config);
-        atlas.Build();
-    };
-}
-
-//-------------------------------------------------------------------------
 // Tests: Misc
 //-------------------------------------------------------------------------
 
@@ -1333,6 +1300,7 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
 {
     ImGuiTest* t = NULL;
 
+    // ## Test hash functions and ##/### operators
     t = REGISTER_TEST("misc", "hash_001");
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
@@ -1355,6 +1323,24 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
         IM_CHECK(ImHashDecoratedPath("/Hello", 42) == ImHashDecoratedPath("Hello"));        // Leading / clears seed
     };
 
+    // ## Test ImFontAtlas building with overlapping glyph ranges (#2353, #2233)
+    t = REGISTER_TEST("misc", "misc_atlas_build_glyph_overlap");
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ImFontAtlas atlas;
+        ImFontConfig font_config;
+        static const ImWchar default_ranges[] =
+        {
+            0x0020, 0x00FF, // Basic Latin + Latin Supplement
+            0x0080, 0x00FF, // Latin_Supplement
+            0,
+        };
+        font_config.GlyphRanges = default_ranges;
+        atlas.AddFontDefault(&font_config);
+        atlas.Build();
+    };
+
+    // FIXME-TESTS
     t = REGISTER_TEST("demo", "demo_misc_001");
     t->GuiFunc = NULL;
     t->TestFunc = [](ImGuiTestContext* ctx)
@@ -1380,6 +1366,7 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
         ctx->SleepShort();
     };
 
+    // ## Coverage: open everything in demo window
     t = REGISTER_TEST("demo", "demo_cov_auto_open");
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
@@ -1387,6 +1374,7 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
         ctx->ItemOpenAll("");
     };
 
+    // ## Coverage: closes everything in demo window
     t = REGISTER_TEST("demo", "demo_cov_auto_close");
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
@@ -1414,35 +1402,13 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
     {
         ctx->SetRef("ImGui Demo");
         ctx->MenuClick("Menu/Open Recent/More..");
-
-#if 1
         ctx->MenuCheckAll("Examples");
         ctx->MenuUncheckAll("Examples");
         ctx->MenuCheckAll("Help");
         ctx->MenuUncheckAll("Help");
-#else
-        for (int n = 0; n < 2; n++)
-        {
-            ImGuiTestAction action = (n == 0) ? ImGuiTestAction_Check : ImGuiTestAction_Uncheck;
-            ctx->MenuAction(action, "Examples/Main menu bar");
-            ctx->MenuAction(action, "Examples/Console");
-            ctx->MenuAction(action, "Examples/Log");
-            ctx->MenuAction(action, "Examples/Simple layout");
-            ctx->MenuAction(action, "Examples/Property editor");
-            ctx->MenuAction(action, "Examples/Long text display");
-            ctx->MenuAction(action, "Examples/Auto-resizing window");
-            ctx->MenuAction(action, "Examples/Constrained-resizing window");
-            ctx->MenuAction(action, "Examples/Simple overlay");
-            ctx->MenuAction(action, "Examples/Manipulating window titles");
-            ctx->MenuAction(action, "Examples/Custom rendering");
-
-            ctx->MenuAction(action, "Help/Metrics");
-            ctx->MenuAction(action, "Help/Style Editor");
-            ctx->MenuAction(action, "Help/About Dear ImGui");
-        }
-#endif
     };
 
+    // ## Coverage: select all styles via the Style Editor
     t = REGISTER_TEST("demo", "demo_cov_styles");
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
@@ -1986,7 +1952,6 @@ void RegisterTests(ImGuiTestEngine* e)
     RegisterTests_Columns(e);
     RegisterTests_Docking(e);
     RegisterTests_Misc(e);
-    RegisterTests_Draw(e);
     //RegisterTests_Perf(e);
     RegisterTests_Capture(e);
 }

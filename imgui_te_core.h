@@ -216,7 +216,6 @@ struct ImGuiTest
     int                             SourceLineEnd;      //
     int                             ArgVariant;
     size_t                          UserDataSize;
-    // size_t                          UserDataAlign;
     ImGuiTestUserDataConstructor    UserDataConstructor;
     ImGuiTestUserDataDestructor     UserDataDestructor;
     ImGuiTestStatus                 Status;
@@ -234,7 +233,6 @@ struct ImGuiTest
         SourceLine = SourceLineEnd = 0;
         ArgVariant = 0;
         UserDataSize = 0;
-        // UserDataAlign = 0;
         UserDataConstructor = NULL;
         UserDataDestructor = NULL;
         Status = ImGuiTestStatus_Unknown;
@@ -248,7 +246,6 @@ struct ImGuiTest
     void SetUserDataType()
     {
         UserDataSize = sizeof(T);
-        // UserDataAlign = alignof(T);
         UserDataConstructor = [](void* buffer) { IM_PLACEMENT_NEW(buffer) T; };
         UserDataDestructor = [](void* ptr) { IM_UNUSED(ptr); reinterpret_cast<T*>(ptr)->~T(); };
     }
@@ -388,8 +385,9 @@ struct ImGuiTestContext
     bool        IsFirstFrame() const        { return FrameCount == FirstFrameCount; }
     void        SetGuiFuncEnabled(bool v)   { if (v) RunFlags &= ~ImGuiTestRunFlags_NoGuiFunc; else RunFlags |= ImGuiTestRunFlags_NoGuiFunc; }
     void        RecoverFromUiContextErrors();
+
     template <typename T>
-    T&          GetUserData()               { return *reinterpret_cast<T*>(UserData); }
+    T&          GetUserData()               { IM_ASSERT(UserData != NULL);return *(T*)(UserData); }
 
     void        Yield();
     void        YieldFrames(int count);
