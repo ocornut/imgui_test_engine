@@ -939,6 +939,40 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ImGui::End();
     };
 #endif
+
+    // ## Test SetSelected on first frame
+    t = REGISTER_TEST("widgets", "widgets_tabitem_setselected");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+        if (ImGui::BeginTabBar("tab_bar"))
+        {
+            if (ImGui::BeginTabItem("TabItem 0"))
+            {
+                ImGui::TextUnformatted("First tab content");
+                ImGui::EndTabItem();
+            }
+
+            const int FIRST_FRAME = 1;
+            if (ctx->FrameCount >= FIRST_FRAME)
+            {
+                bool tab_item_visible = false;
+                if (ImGui::BeginTabItem("TabItem 1", NULL, ctx->FrameCount == FIRST_FRAME ? ImGuiTabItemFlags_SetSelected : ImGuiTabItemFlags_None))
+                {
+                    tab_item_visible = true;
+                    ImGui::TextUnformatted("Second tab content");
+                    ImGui::EndTabItem();
+                }
+
+                // FIXME-TESTS: Use IM_CHECK() and patch RecoverFromUiContextErrors() to handle unclosed tab bars
+                if (ctx->FrameCount > FIRST_FRAME)
+                    IM_CHECK_NO_RET(tab_item_visible);
+            }
+            ImGui::EndTabBar();
+        }
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx) { ctx->Yield(); };
 }
 
 //-------------------------------------------------------------------------
