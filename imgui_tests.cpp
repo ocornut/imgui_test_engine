@@ -1036,6 +1036,37 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
         ctx->KeyPressMap(ImGuiKey_Escape);
         IM_CHECK(b_popup_open && !b_field_active);
     };
+
+    // ## Test AltGr doesn't trigger menu layer
+    t = REGISTER_TEST("nav", "nav_altctrl_no_menu");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::Begin("Test window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_MenuBar);
+        if (ImGui::BeginMenuBar())
+        {
+            if (ImGui::BeginMenu("Menu"))
+            {
+                ImGui::Text("Blah");
+                ImGui::EndMenu();
+            }
+            ImGui::EndMenuBar();
+        }
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        // FIXME-TESTS: Fails if window is resized too small
+        IM_CHECK(ctx->UiContext->IO.ConfigFlags & ImGuiConfigFlags_NavEnableKeyboard);
+        //ctx->SetInputMode(ImGuiInputSource_Nav);
+        ctx->SetRef("Test window");
+        IM_CHECK(ctx->UiContext->NavLayer == ImGuiNavLayer_Main);
+        ctx->KeyPressMap(ImGuiKey_COUNT, ImGuiKeyModFlags_Alt);
+        IM_CHECK(ctx->UiContext->NavLayer == ImGuiNavLayer_Menu);
+        ctx->KeyPressMap(ImGuiKey_COUNT, ImGuiKeyModFlags_Alt);
+        IM_CHECK(ctx->UiContext->NavLayer == ImGuiNavLayer_Main);
+        ctx->KeyPressMap(ImGuiKey_COUNT, ImGuiKeyModFlags_Alt | ImGuiKeyModFlags_Ctrl);
+        IM_CHECK(ctx->UiContext->NavLayer == ImGuiNavLayer_Main);
+    };
 }
 
 //-------------------------------------------------------------------------
