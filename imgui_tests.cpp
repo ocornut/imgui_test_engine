@@ -25,6 +25,7 @@
 // Helper Operators
 static inline bool operator==(const ImVec2& lhs, const ImVec2& rhs) { return lhs.x == rhs.x && lhs.y == rhs.y; }
 static inline bool operator!=(const ImVec2& lhs, const ImVec2& rhs) { return lhs.x != rhs.x && lhs.y != rhs.y; }
+static inline bool FloatEqual(float f1, float f2, float epsilon = FLT_EPSILON) { float d = f2 - f1; return fabsf(d) <= FLT_EPSILON; }
 
 #define REGISTER_TEST(_CATEGORY, _NAME)    ImGuiTestEngine_RegisterTest(e, _CATEGORY, _NAME, __FILE__, __LINE__);
 
@@ -484,6 +485,39 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ImGui::DragScalar("Drag", ImGuiDataType_S8, &buf[1], 0.5f, NULL, NULL);
         IM_ASSERT(buf[0] == 42 && buf[2] == 42);
         ImGui::End();
+    };
+
+    // ## Test DragInt() as InputText
+    // ## Test ColorEdit4() as InputText (#2557)
+    t = REGISTER_TEST("widgets", "widgets_as_input");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiTestGenericVars& vars = ctx->GenericVars;
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImGui::DragInt("Drag", &vars.Int1);
+        ImGui::ColorEdit4("Color", &vars.Vec4.x);
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiTestGenericVars& vars = ctx->GenericVars;
+        ctx->SetRef("Test Window");
+
+        IM_CHECK(vars.Int1 == 0);
+        ctx->ItemInput("Drag");
+        IM_CHECK(ctx->UiContext->ActiveId == ctx->GetID("Drag"));
+        ctx->KeyCharsAppendEnter("123");
+        IM_CHECK(vars.Int1 == 123);
+
+        ctx->ItemInput("Color##Y");
+        IM_CHECK(ctx->UiContext->ActiveId == ctx->GetID("Color##Y"));
+        ctx->KeyCharsAppend("123");
+        IM_CHECK(FloatEqual(vars.Vec4.y, 123.0f / 255.0f));
+        ctx->KeyPressMap(ImGuiKey_Tab);
+        ctx->KeyCharsAppendEnter("200");
+        IM_CHECK(FloatEqual(vars.Vec4.x,   0.0f / 255.0f));
+        IM_CHECK(FloatEqual(vars.Vec4.y, 123.0f / 255.0f));
+        IM_CHECK(FloatEqual(vars.Vec4.z, 200.0f / 255.0f));
     };
 
     // ## Test InputText widget
@@ -1171,6 +1205,54 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
         ctx->UiContext->IO.ConfigDockingTabBarOnSingleWindows = backup_cfg;
     };
 
+    // ## Test that undocking a whole _node_ doesn't lose/reset size
+    t = REGISTER_TEST("docking", "docking_undock_from_dockspace_size");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiID dockspace_id = ctx->GetID("/Test Window/Dockspace");
+        if (ctx->IsFirstFrame())
+        {
+            ImGui::DockBuilderRemoveNode(dockspace_id);
+            ImGui::DockBuilderAddNode(dockspace_id, ImGuiDockNodeFlags_DockSpace);
+            ImGui::DockBuilderDockWindow("AAAA", dockspace_id);
+            ImGui::DockBuilderDockWindow("BBBB", dockspace_id);
+        }
+
+        ImGui::SetNextWindowSize(ImVec2(500, 500));
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImGui::DockSpace(dockspace_id);
+        ImGui::End();
+        
+        ImGui::Begin("AAAA", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImGui::Text("This is AAAA");
+        ImGui::End();
+
+        ImGui::Begin("BBBB", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImGui::Text("This is BBBB");
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiID dockspace_id = ctx->GetID("/Test Window/Dockspace");
+
+        ImGuiWindow* window_a = ImGui::FindWindowByName("AAAA");
+        ImGuiWindow* window_b = ImGui::FindWindowByName("BBBB");
+        ImVec2 window_a_size_old = window_a->Size;
+        ImVec2 window_b_size_old = window_b->Size;
+
+        // Undock node
+        ImGuiID dock_button_id = ImHashDecoratedPath("#COLLAPSE", dockspace_id); // FIXME_TESTS
+        ctx->MouseMove(dock_button_id);
+        ctx->MouseDown(0);
+        ctx->MouseMoveToPos(ImGui::GetIO().MousePos + ImVec2(20, 20));
+        ctx->MouseUp();
+
+        ImVec2 window_a_size_new = window_a->Size;
+        ImVec2 window_b_size_new = window_b->Size;
+        IM_CHECK(window_a_size_old == window_a_size_new);
+        IM_CHECK(window_b_size_old == window_b_size_new);
+    };
+
     // ## Test merging windows by dragging them.
     t = REGISTER_TEST("docking", "docking_drag_merge");
     t->GuiFunc = [](ImGuiTestContext* ctx)
@@ -1338,6 +1420,20 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
         font_config.GlyphRanges = default_ranges;
         atlas.AddFontDefault(&font_config);
         atlas.Build();
+    };
+
+    t = REGISTER_TEST("misc", "misc_atlas_ranges_builder");
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        {
+            ImFontGlyphRangesBuilder builder;
+            builder.AddChar(31);
+            builder.AddChar(0x10000-1);
+            ImVector<ImWchar> out_ranges;
+            builder.BuildRanges(&out_ranges);
+            builder.Clear();
+            IM_CHECK(out_ranges.Size == 5);
+        }
     };
 
     // FIXME-TESTS

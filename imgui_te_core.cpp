@@ -218,6 +218,7 @@ static const char*  GetActionName(ImGuiTestAction action)
     case ImGuiTestAction_Uncheck:       return "Uncheck";
     case ImGuiTestAction_Open:          return "Open";
     case ImGuiTestAction_Close:         return "Close";
+    case ImGuiTestAction_Input:         return "Input";
     case ImGuiTestAction_COUNT:
     default:                            return "N/A";
     }
@@ -2306,12 +2307,17 @@ void    ImGuiTestContext::ItemAction(ImGuiTestAction action, ImGuiTestRef ref)
     if (action == ImGuiTestAction_Input)
     {
         if (InputMode == ImGuiInputSource_Mouse)
+        {
             MouseMove(ref);
+            KeyDownMap(ImGuiKey_COUNT, ImGuiKeyModFlags_Ctrl);
+            MouseClick(0);
+            KeyUpMap(ImGuiKey_COUNT, ImGuiKeyModFlags_Ctrl);
+        }
         else
+        {
             NavMove(ref);
-        if (!Engine->IO.ConfigRunFast)
-            Sleep(0.05f);
-        NavInput();
+            NavInput();
+        }
         return;
     }
 
