@@ -1081,6 +1081,33 @@ void RegisterTests_Columns(ImGuiTestEngine* e)
         ImGui::Text("Hello");
         IM_CHECK(draw_list->CmdBuffer.Size == cmd_count || draw_list->CmdBuffer.Size == cmd_count + 2 + 1);
 
+        // Test: Separators in columns don't consume a draw call
+        cmd_count = draw_list->CmdBuffer.Size;
+        ImGui::BeginColumns("columns3", 3);
+        ImGui::Text("AAAA"); ImGui::NextColumn();
+        ImGui::Text("BBBB"); ImGui::NextColumn();
+        ImGui::Text("CCCC"); ImGui::NextColumn();
+        ImGui::Separator();
+        ImGui::Text("1111"); ImGui::NextColumn();
+        ImGui::Text("2222"); ImGui::NextColumn();
+        ImGui::Text("3333"); ImGui::NextColumn();
+        ImGui::EndColumns();
+        ImGui::Text("Hello");
+        IM_CHECK(draw_list->CmdBuffer.Size == cmd_count || draw_list->CmdBuffer.Size == cmd_count + 3 + 1);
+
+        // Test: Selectables in columns don't consume a draw call
+        cmd_count = draw_list->CmdBuffer.Size;
+        ImGui::BeginColumns("columns3", 3);
+        ImGui::Selectable("AAAA", true, ImGuiSelectableFlags_SpanAllColumns); ImGui::NextColumn();
+        ImGui::Text("BBBB"); ImGui::NextColumn();
+        ImGui::Text("CCCC"); ImGui::NextColumn();
+        ImGui::Selectable("1111", true, ImGuiSelectableFlags_SpanAllColumns); ImGui::NextColumn();
+        ImGui::Text("2222"); ImGui::NextColumn();
+        ImGui::Text("3333"); ImGui::NextColumn();
+        ImGui::EndColumns();
+        ImGui::Text("Hello");
+        IM_CHECK(draw_list->CmdBuffer.Size == cmd_count || draw_list->CmdBuffer.Size == cmd_count + 3 + 1);
+
         ImGui::End();
     };
 };
