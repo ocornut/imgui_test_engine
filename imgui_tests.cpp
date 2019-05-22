@@ -953,20 +953,16 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
                 ImGui::EndTabItem();
             }
 
-            const int FIRST_FRAME = 1;
-            if (ctx->FrameCount >= FIRST_FRAME)
+            if (ctx->FrameCount >= 0)
             {
-                bool tab_item_visible = false;
-                if (ImGui::BeginTabItem("TabItem 1", NULL, ctx->FrameCount == FIRST_FRAME ? ImGuiTabItemFlags_SetSelected : ImGuiTabItemFlags_None))
+                bool tab_item_visible = ImGui::BeginTabItem("TabItem 1", NULL, ctx->FrameCount == 0 ? ImGuiTabItemFlags_SetSelected : ImGuiTabItemFlags_None);
+                if (tab_item_visible)
                 {
-                    tab_item_visible = true;
                     ImGui::TextUnformatted("Second tab content");
                     ImGui::EndTabItem();
                 }
-
-                // FIXME-TESTS: Use IM_CHECK() and patch RecoverFromUiContextErrors() to handle unclosed tab bars
-                if (ctx->FrameCount > FIRST_FRAME)
-                    IM_CHECK_NO_RET(tab_item_visible);
+                if (ctx->FrameCount > 0)
+                    IM_CHECK(tab_item_visible);
             }
             ImGui::EndTabBar();
         }

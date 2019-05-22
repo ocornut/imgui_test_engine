@@ -1578,7 +1578,13 @@ void    ImGuiTestContext::RecoverFromUiContextErrors()
 {
     ImGuiContext& g = *UiContext;
     while (g.CurrentWindowStack.Size > 1) // FIXME-ERRORHANDLING
+    {
+        // FIXME-ERRORHANDLING: Can't recover from inside BeginTabItem/EndTabItem yet.
+        // FIXME-ERRORHANDLING: Can't recover from interleaved BeginTabBar/Begin
+        while (g.CurrentTabBar)
+            ImGui::EndTabBar();
         ImGui::End();
+    }
 }
 
 void    ImGuiTestContext::Yield()
