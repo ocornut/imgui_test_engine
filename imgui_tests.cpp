@@ -730,6 +730,25 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ctx->ItemHoldForFrames("Hello", 100);
     };
 
+    // ## Test that InputText doesn't append two tab characters if the backend supplies both tab key and character
+    t = REGISTER_TEST("widgets", "widgets_inputtext_5_tab_double_insertion");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiTestGenericVars& vars = ctx->GenericVars;
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImGui::InputText("Field", vars.Str1, IM_ARRAYSIZE(vars.Str1), ImGuiInputTextFlags_AllowTabInput);
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiTestGenericVars& vars = ctx->GenericVars;
+        ctx->SetRef("Test Window");
+        ctx->ItemClick("Field");
+        ctx->UiContext->IO.AddInputCharacter((ImWchar)'\t');
+        ctx->KeyPressMap(ImGuiKey_Tab);
+        IM_CHECK(strcmp(vars.Str1, "\t") == 0);
+    };
+
     // ## Test InputText() and IsItemDeactivatedXXX() functions (mentioned in #2215)
     t = REGISTER_TEST("widgets", "widgets_status_inputtext");
     t->GuiFunc = [](ImGuiTestContext* ctx)
@@ -1535,15 +1554,13 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
     t = REGISTER_TEST("misc", "misc_atlas_ranges_builder");
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
-        {
-            ImFontGlyphRangesBuilder builder;
-            builder.AddChar(31);
-            builder.AddChar(0x10000-1);
-            ImVector<ImWchar> out_ranges;
-            builder.BuildRanges(&out_ranges);
-            builder.Clear();
-            IM_CHECK(out_ranges.Size == 5);
-        }
+        ImFontGlyphRangesBuilder builder;
+        builder.AddChar(31);
+        builder.AddChar(0x10000-1);
+        ImVector<ImWchar> out_ranges;
+        builder.BuildRanges(&out_ranges);
+        builder.Clear();
+        IM_CHECK(out_ranges.Size == 5);
     };
 
     // FIXME-TESTS
