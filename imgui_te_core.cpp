@@ -629,8 +629,8 @@ static void ImGuiTestEngine_Yield(ImGuiTestEngine* engine)
         }
 
         // Safety net
-        if (ctx->Test->Status == ImGuiTestStatus_Error)
-            ctx->RecoverFromUiContextErrors();
+        //if (ctx->Test->Status == ImGuiTestStatus_Error)
+        ctx->RecoverFromUiContextErrors();
     }
 }
 
@@ -894,8 +894,8 @@ static void ImGuiTestEngine_RunTest(ImGuiTestEngine* engine, ImGuiTestContext* c
                     ctx->Yield();
         }
 
-        if (test->Status == ImGuiTestStatus_Error)
-            ctx->RecoverFromUiContextErrors();
+        //if (test->Status == ImGuiTestStatus_Error)
+        ctx->RecoverFromUiContextErrors();
 
         if (!ctx->Engine->IO.ConfigRunFast)
             ctx->SleepShort();
@@ -1577,14 +1577,20 @@ void    ImGuiTestContext::Finish()
 void    ImGuiTestContext::RecoverFromUiContextErrors()
 {
     ImGuiContext& g = *UiContext;
+    IM_ASSERT(Test != NULL);
+
+    bool recovered = false;
     while (g.CurrentWindowStack.Size > 1) // FIXME-ERRORHANDLING
     {
         // FIXME-ERRORHANDLING: Can't recover from inside BeginTabItem/EndTabItem yet.
         // FIXME-ERRORHANDLING: Can't recover from interleaved BeginTabBar/Begin
-        while (g.CurrentTabBar)
+        while (g.CurrentTabBar != NULL)
             ImGui::EndTabBar();
         ImGui::End();
+        recovered = true;
     }
+    if (recovered && Test->Status != ImGuiTestStatus_Error)
+        LogVerbose("[warn] Recovered invalid ui state at end of frame.\n");
 }
 
 void    ImGuiTestContext::Yield()
@@ -1776,7 +1782,7 @@ void    ImGuiTestContext::ScrollToY(ImGuiTestRef ref, float scroll_ratio_y)
         // result->Rect will be updated after each iteration.
         ImRect item_rect = item->Rect;
         float item_curr_y = ImFloor(item_rect.GetCenter().y);
-        float item_target_y = ImFloor(window->InnerClipRect.GetCenter().y);
+        float item_target_y = ImFloor(window->InnerWorkRectClipped.GetCenter().y);
         float scroll_delta_y = item_target_y - item_curr_y;
         float scroll_max_y = ImGui::GetWindowScrollMaxY(window);
         float scroll_target_y = ImClamp(window->Scroll.y - scroll_delta_y, 0.0f, scroll_max_y);
@@ -1899,7 +1905,7 @@ void    ImGuiTestContext::MouseMove(ImGuiTestRef ref, ImGuiTestOpFlags flags)
         BringWindowToFrontFromItem(ref);
 
     ImGuiWindow* window = item->Window;
-    if (item->NavLayer == ImGuiNavLayer_Main && !window->InnerClipRect.Contains(item->Rect))
+    if (item->NavLayer == ImGuiNavLayer_Main && !window->InnerWorkRectClipped.Contains(item->Rect))
         ScrollToY(ref);
 
     ImVec2 pos = item->Rect.GetCenter();

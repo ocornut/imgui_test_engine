@@ -166,7 +166,7 @@ void RegisterTests_Window(ImGuiTestEngine* e)
         ImGui::End();
         ImGui::Begin("Test Window");
         ImGui::Text("Line 2");
-        ImGui::BeginChild("Blah", ImVec2(0,50), true);
+        ImGui::BeginChild("Blah", ImVec2(0, 50), true);
         ImGui::Text("Line 3");
         ImGui::EndChild();
         ImVec2 pos1 = ImGui::GetCursorScreenPos();
@@ -226,7 +226,7 @@ void RegisterTests_Window(ImGuiTestEngine* e)
         ctx->YieldUntil(50);
         IM_CHECK(g.NavWindow->ID == ctx->GetID("/DDDD"));
     };
-    
+
     // ## Test popup focus and right-click to close popups up to a given level
     t = REGISTER_TEST("window", "window_focus_popup");
     t->TestFunc = [](ImGuiTestContext* ctx)
@@ -248,6 +248,28 @@ void RegisterTests_Window(ImGuiTestEngine* e)
         IM_CHECK(popup_1->WasActive);
         IM_CHECK(!popup_2->WasActive);
         IM_CHECK(g.NavWindow == popup_1);
+    };
+
+    // ## Test that child window outside the visible section of their parent are clipped
+    t = REGISTER_TEST("window", "window_child_clip");
+    t->Flags |= ImGuiTestFlags_NoAutoFinish;
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::SetNextWindowSize(ImVec2(200, 200));
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImGui::SetCursorPos(ImVec2(0, 0));
+        ImGui::BeginChild("Child 1", ImVec2(100, 100));
+        if (ctx->FrameCount == 2)
+            IM_CHECK(ctx->UiContext->CurrentWindow->SkipItems == false);
+        ImGui::EndChild();
+        ImGui::SetCursorPos(ImVec2(300, 300));
+        ImGui::BeginChild("Child 2", ImVec2(100, 100));
+        if (ctx->FrameCount == 2)
+            IM_CHECK(ctx->UiContext->CurrentWindow->SkipItems == true);
+        ImGui::EndChild();
+        ImGui::End();
+        if (ctx->FrameCount == 2)
+            ctx->Finish();
     };
 }
 
