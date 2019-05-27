@@ -167,7 +167,8 @@ struct ImGuiTestItemInfo
     ImGuiID                     ID = 0;
     ImGuiID                     ParentID = 0;
     ImGuiWindow*                Window = NULL;
-    ImRect                      Rect = ImRect();
+    ImRect                      RectFull = ImRect();
+    ImRect                      RectClipped = ImRect();
     ImGuiItemStatusFlags        StatusFlags = 0;
     char                        DebugLabel[32] = "";        // Shortened label for debugging purpose
 

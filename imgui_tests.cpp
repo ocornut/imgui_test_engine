@@ -1081,14 +1081,14 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
         bool& b_popup_open = vars.Bool1;
         bool& b_field_active = vars.Bool2;
 
-        // FIXME-TESTS: Come up with a better mecanism to get popup ID
+        // FIXME-TESTS: Come up with a better mechanism to get popup ID
         ImGuiID& popup_id = vars.Id;
         popup_id = 0;
 
         ctx->SetRef("Test Window");
         ctx->ItemClick("Open Popup");
 
-        while (popup_id == 0)
+        while (popup_id == 0 && !ctx->IsError())
             ctx->Yield();
 
         ctx->SetRef(popup_id);

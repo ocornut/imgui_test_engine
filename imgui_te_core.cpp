@@ -925,9 +925,13 @@ static void ImGuiTestEngine_RunTest(ImGuiTestEngine* engine, ImGuiTestContext* c
         }
     }
 
-    // Additional yield is currently _only_ so the Log gets scrolled to the bottom on the last frame of the log output.
+    // Additional yields 
+    // - to avoid consecutive tests who may share identifiers from missing their window/item activation.
+    // - so the log gets scrolled to the bottom on the last frame of the log output.
+    ctx->RunFlags |= ImGuiTestRunFlags_NoGuiFunc;
     ctx->Yield();
-
+    ctx->Yield();
+    
     // Restore active func
     ctx->ActiveFunc = backup_active_func;
 
@@ -976,7 +980,9 @@ void ImGuiTestEngineHook_ItemAdd(ImGuiContext* ctx, const ImRect& bb, ImGuiID id
         item->ID = id;
         item->ParentID = window->IDStack.back();
         item->Window = window;
-        item->Rect = bb;
+        item->RectFull = item->RectClipped = bb;
+        item->RectClipped.ClipWithFull(window->ClipRect);      // This two step clipping is important, we want RectClipped to stays within RectFull
+        item->RectClipped.ClipWithFull(item->RectFull);
         item->NavLayer = window->DC.NavLayerCurrent;
         item->Depth = 0;
         item->StatusFlags = (window->DC.LastItemId == id) ? window->DC.LastItemStatusFlags : ImGuiItemStatusFlags_None;
@@ -1008,7 +1014,9 @@ void ImGuiTestEngineHook_ItemAdd(ImGuiContext* ctx, const ImRect& bb, ImGuiID id
             item_info->ID = id;
             item_info->ParentID = window->IDStack.back();
             item_info->Window = window;
-            item_info->Rect = bb;
+            item_info->RectFull = item_info->RectClipped = bb;
+            item_info->RectClipped.ClipWithFull(window->ClipRect);      // This two step clipping is important, we want RectClipped to stays within RectFull
+            item_info->RectClipped.ClipWithFull(item_info->RectFull);
             item_info->NavLayer = window->DC.NavLayerCurrent;
             item_info->Depth = depth;
             engine->GatherTask.LastItemInfo = item_info;
@@ -1447,7 +1455,7 @@ void    ImGuiTestEngine_ShowTestWindow(ImGuiTestEngine* engine, bool* p_open)
             ImGuiID item_active_id = ui_context->ActiveId;
             ImGuiTestItemInfo* item_hovered_info = item_hovered_id ? ImGuiTestEngine_ItemLocate(engine, item_hovered_id, "") : NULL;
             ImGuiTestItemInfo* item_active_info = item_active_id ? ImGuiTestEngine_ItemLocate(engine, item_active_id, "") : NULL;
-            ImGui::Text("Hovered: 0x%08X (\"%s\")", item_hovered_id, item_hovered_info ? item_hovered_info->DebugLabel : "");
+            ImGui::Text("Hovered: 0x%08X (\"%s\") @ (%.1f,%.1f)", item_hovered_id, item_hovered_info ? item_hovered_info->DebugLabel : "", ui_context->IO.MousePos.x, ui_context->IO.MousePos.y);
             ImGui::Text("Active:  0x%08X (\"%s\")", item_active_id, item_active_info ? item_active_info->DebugLabel : "");
 
             ImGui::Separator();
@@ -1830,9 +1838,8 @@ void    ImGuiTestContext::ScrollToY(ImGuiTestRef ref, float scroll_ratio_y)
 
     while (!Abort)
     {
-        // result->Rect will be updated after each iteration.
-        ImRect item_rect = item->Rect;
-        float item_curr_y = ImFloor(item_rect.GetCenter().y);
+        // result->Rect fields will be updated after each iteration.
+        float item_curr_y = ImFloor(item->RectFull.GetCenter().y);
         float item_target_y = ImFloor(window->InnerWorkRectClipped.GetCenter().y);
         float scroll_delta_y = item_target_y - item_curr_y;
         float scroll_max_y = ImGui::GetWindowScrollMaxY(window);
@@ -1956,13 +1963,16 @@ void    ImGuiTestContext::MouseMove(ImGuiTestRef ref, ImGuiTestOpFlags flags)
         BringWindowToFrontFromItem(ref);
 
     ImGuiWindow* window = item->Window;
-    if (item->NavLayer == ImGuiNavLayer_Main && !window->InnerWorkRectClipped.Contains(item->Rect))
+    ImRect window_inner_r_padded = window->InnerWorkRectClipped;
+    window_inner_r_padded.Expand(-4.0f); // == WINDOWS_RESIZE_FROM_EDGES_HALF_THICKNESS
+    if (item->NavLayer == ImGuiNavLayer_Main && !window_inner_r_padded.Contains(item->RectClipped))
         ScrollToY(ref);
 
-    ImVec2 pos = item->Rect.GetCenter();
+    ImVec2 pos = item->RectFull.GetCenter();
     WindowMoveToMakePosVisible(window, pos);
     
-    pos = item->Rect.GetCenter();
+    // Move toward an actually visible point
+    pos = item->RectClipped.GetCenter();
     MouseMoveToPos(pos);
 
     // Focus again in case something made us lost focus (which could happen on a simple hover)
@@ -1972,8 +1982,10 @@ void    ImGuiTestContext::MouseMove(ImGuiTestRef ref, ImGuiTestOpFlags flags)
     if (!Abort && !(flags & ImGuiTestOpFlags_NoCheckHoveredId))
     {
         if (g.HoveredIdPreviousFrame != item->ID)
-            IM_ERRORF_NOHDR("Unable to Hover %s. Expected %08X in '%s', HoveredId was %08X in '%s'.", 
-                desc.c_str(), item->ID, item->Window ? item->Window->Name : "<NULL>", g.HoveredIdPreviousFrame, g.HoveredWindow ? g.HoveredWindow->Name : "");
+            IM_ERRORF_NOHDR("Unable to Hover %s. Expected %08X in '%s', HoveredId was %08X in '%s'. Targeted position (%.1f,%.1f)",
+                desc.c_str(), item->ID, item->Window ? item->Window->Name : "<NULL>",
+                g.HoveredIdPreviousFrame, g.HoveredWindow ? g.HoveredWindow->Name : "",
+                pos.x, pos.y);
     }
 
     item->RefCount--;
@@ -2656,10 +2668,10 @@ void    ImGuiTestContext::MenuAction(ImGuiTestAction action, ImGuiTestRef ref)
             ImGuiTestItemInfo* item = ItemLocate(buf);
             IM_CHECK(item != NULL);
             item->RefCount++;
-            if (depth > 1 && Engine->InputMousePosValue.x <= item->Rect.Min.x || Engine->InputMousePosValue.x >= item->Rect.Max.x)
-                MouseMoveToPos(ImVec2(item->Rect.GetCenter().x, Engine->InputMousePosValue.y));
-            if (depth > 0 && Engine->InputMousePosValue.y <= item->Rect.Min.y || Engine->InputMousePosValue.y >= item->Rect.Max.y)
-                MouseMoveToPos(ImVec2(Engine->InputMousePosValue.x, item->Rect.GetCenter().y));
+            if (depth > 1 && Engine->InputMousePosValue.x <= item->RectFull.Min.x || Engine->InputMousePosValue.x >= item->RectFull.Max.x)
+                MouseMoveToPos(ImVec2(item->RectFull.GetCenter().x, Engine->InputMousePosValue.y));
+            if (depth > 0 && Engine->InputMousePosValue.y <= item->RectFull.Min.y || Engine->InputMousePosValue.y >= item->RectFull.Max.y)
+                MouseMoveToPos(ImVec2(Engine->InputMousePosValue.x, item->RectFull.GetCenter().y));
             item->RefCount--;
         }
 
