@@ -271,6 +271,28 @@ void RegisterTests_Window(ImGuiTestEngine* e)
         if (ctx->FrameCount == 2)
             ctx->Finish();
     };
+
+    // ## Test that basic SetScrollHereY call scrolls all the way (#1804)
+    t = REGISTER_TEST("window", "window_scrolling_001");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::Begin("Test Scrolling", NULL, ImGuiWindowFlags_NoSavedSettings);
+        for (int n = 0; n < 100; n++)
+            ImGui::Text("Hello %d\n", n);
+        ImGui::SetScrollHereY(0.0f);
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::Begin("Test Scrolling");
+        ImGuiWindow* window = ImGui::GetCurrentWindow();
+        IM_ASSERT(window->SizeContents.y > 0.0f);
+        float scroll_y = ImGui::GetScrollY();
+        IM_CHECK(scroll_y > 0.0f);
+        IM_CHECK(scroll_y == ImGui::GetScrollMaxY());
+        ctx->LogVerbose("scroll_y = %f\n", scroll_y);
+        ImGui::End();
+    };
 }
 
 //-------------------------------------------------------------------------
@@ -440,37 +462,6 @@ void RegisterTests_Button(ImGuiTestEngine* e)
         ctx->MouseMove("Dummy");
         vars.NextStep = ButtonStateMachineTestStep_Done;
         ctx->Yield();
-    };
-}
-
-//-------------------------------------------------------------------------
-// Tests: Scrolling
-//-------------------------------------------------------------------------
-
-void RegisterTests_Scrolling(ImGuiTestEngine* e)
-{
-    ImGuiTest* t = NULL;
-
-    // ## Test that basic SetScrollHereY call scrolls all the way (#1804)
-    t = REGISTER_TEST("scrolling", "scrolling_001");
-    t->GuiFunc = [](ImGuiTestContext* ctx)
-    {
-        ImGui::Begin("Test Scrolling", NULL, ImGuiWindowFlags_NoSavedSettings);
-        for (int n = 0; n < 100; n++)
-            ImGui::Text("Hello %d\n", n);
-        ImGui::SetScrollHereY(0.0f);
-        ImGui::End();
-    };
-    t->TestFunc = [](ImGuiTestContext* ctx)
-    {
-        ImGui::Begin("Test Scrolling");
-        ImGuiWindow* window = ImGui::GetCurrentWindow();
-        IM_ASSERT(window->SizeContents.y > 0.0f);
-        float scroll_y = ImGui::GetScrollY();
-        IM_CHECK(scroll_y > 0.0f);
-        IM_CHECK(scroll_y == ImGui::GetScrollMaxY());
-        ctx->LogVerbose("scroll_y = %f\n", scroll_y);
-        ImGui::End();
     };
 }
 
@@ -2168,7 +2159,6 @@ void RegisterTests_Capture(ImGuiTestEngine* e)
 void RegisterTests(ImGuiTestEngine* e)
 {
     RegisterTests_Window(e);
-    RegisterTests_Scrolling(e);
     RegisterTests_Widgets(e);
     RegisterTests_Button(e);
     RegisterTests_Nav(e);

@@ -48,6 +48,7 @@ Index of this file:
 // [SECTION] HOOKS FOR CORE LIBRARY
 // [SECTION] HOOKS FOR TESTS
 // [SECTION] USER INTERFACE
+// [SECTION] SETTINGS
 // [SECTION] ImGuiTestContext
 
 */
@@ -171,6 +172,7 @@ struct ImGuiTestEngine
     bool                        Abort = false;
     bool                        UiFocus = false;
     ImGuiTest*                  UiSelectedTest = NULL;
+    ImGuiTextFilter             UiTestFilter;
 
     // Build Info
     const char*                 InfoBuildType = "";
@@ -267,6 +269,11 @@ static void                 ImGuiTestEngine_PreNewFrame(ImGuiTestEngine* engine,
 static void                 ImGuiTestEngine_PostNewFrame(ImGuiTestEngine* engine, ImGuiContext* ctx);
 static void                 ImGuiTestEngine_Yield(ImGuiTestEngine* engine);
 
+// Settings
+static void*                ImGuiTestEngine_SettingsReadOpen(ImGuiContext*, ImGuiSettingsHandler*, const char* name);
+static void                 ImGuiTestEngine_SettingsReadLine(ImGuiContext*, ImGuiSettingsHandler*, void* entry, const char* line);
+static void                 ImGuiTestEngine_SettingsWriteAll(ImGuiContext* imgui_ctx, ImGuiSettingsHandler* handler, ImGuiTextBuffer* buf);
+
 //-------------------------------------------------------------------------
 // [SECTION] TEST ENGINE: FUNCTIONS
 //-------------------------------------------------------------------------
@@ -307,6 +314,15 @@ ImGuiTestEngine*    ImGuiTestEngine_CreateContext(ImGuiContext* imgui_context)
     ImGuiTestEngine_SetupBuildInfo(engine);
 
     engine->PerfPersistentLogCsv = fopen("imgui_perflog.csv", "a+t");
+
+    // Add .ini handle for ImGuiWindow type
+    ImGuiSettingsHandler ini_handler;
+    ini_handler.TypeName = "TestEngine";
+    ini_handler.TypeHash = ImHashStr("TestEngine");
+    ini_handler.ReadOpenFn = ImGuiTestEngine_SettingsReadOpen;
+    ini_handler.ReadLineFn = ImGuiTestEngine_SettingsReadLine;
+    ini_handler.WriteAllFn = ImGuiTestEngine_SettingsWriteAll;
+    imgui_context->SettingsHandlers.push_back(ini_handler);
 
     return engine;
 }
@@ -1239,13 +1255,14 @@ void    ImGuiTestEngine_ShowTestWindow(ImGuiTestEngine* engine, bool* p_open)
         ImFormatString(tab_label, IM_ARRAYSIZE(tab_label), "TESTS###TESTS");
         ImGui::BeginTabItem(tab_label);
 
+        ImGuiTextFilter* filter = &engine->UiTestFilter;
+
         //ImGui::Text("TESTS (%d)", engine->TestsAll.Size);
-        static ImGuiTextFilter filter;
         if (ImGui::Button("Run All"))
-            ImGuiTestEngine_QueueTests(engine, filter.InputBuf); // FIXME: Filter func differs
+            ImGuiTestEngine_QueueTests(engine, filter->InputBuf); // FIXME: Filter func differs
 
         ImGui::SameLine();
-        filter.Draw("##filter", -1.0f);
+        filter->Draw("##filter", -1.0f);
         ImGui::Separator();
         ImGui::BeginChild("Tests", ImVec2(0, -log_height));
 
@@ -1254,7 +1271,7 @@ void    ImGuiTestEngine_ShowTestWindow(ImGuiTestEngine* engine, bool* p_open)
         for (int n = 0; n < engine->TestsAll.Size; n++)
         {
             ImGuiTest* test = engine->TestsAll[n];
-            if (!filter.PassFilter(test->Name) && !filter.PassFilter(test->Category))
+            if (!filter->PassFilter(test->Name) && !filter->PassFilter(test->Category))
                 continue;
 
             ImGuiTestContext* test_context = (engine->TestContext && engine->TestContext->Test == test) ? engine->TestContext : NULL;
@@ -1504,6 +1521,38 @@ void    ImGuiTestEngine_ShowTestWindow(ImGuiTestEngine* engine, bool* p_open)
     }
 
     ImGui::End();
+}
+
+
+//-------------------------------------------------------------------------
+// [SECTION] SETTINGS
+//-------------------------------------------------------------------------
+
+static void*    ImGuiTestEngine_SettingsReadOpen(ImGuiContext*, ImGuiSettingsHandler*, const char* name)
+{
+    if (strcmp(name, "Data") != 0)
+        return NULL;
+    return (void*)1;
+}
+
+static void     ImGuiTestEngine_SettingsReadLine(ImGuiContext* imgui_ctx, ImGuiSettingsHandler*, void* entry, const char* line)
+{
+    ImGuiTestEngine* engine = GImGuiHookingEngine;
+    IM_ASSERT(engine != NULL);
+    IM_ASSERT(engine->UiContextTarget == imgui_ctx);
+
+    if (strncmp(line, "Filter=", 7) == 0) { ImStrncpy(engine->UiTestFilter.InputBuf, line + 7, IM_ARRAYSIZE(engine->UiTestFilter.InputBuf)); engine->UiTestFilter.Build(); }
+}
+
+static void     ImGuiTestEngine_SettingsWriteAll(ImGuiContext* imgui_ctx, ImGuiSettingsHandler* handler, ImGuiTextBuffer* buf)
+{
+    ImGuiTestEngine* engine = GImGuiHookingEngine;
+    IM_ASSERT(engine != NULL);
+    IM_ASSERT(engine->UiContextTarget == imgui_ctx);
+
+    buf->appendf("[%s][Data]\n", handler->TypeName);
+    buf->appendf("Filter=%s", engine->UiTestFilter.InputBuf);
+    buf->appendf("\n");
 }
 
 //-------------------------------------------------------------------------

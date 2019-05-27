@@ -11,7 +11,6 @@ struct ImGuiTestEngine;
 void RegisterTests(ImGuiTestEngine* e);
 
 void RegisterTests_Window(ImGuiTestEngine* e);
-void RegisterTests_Scrolling(ImGuiTestEngine* e);
 void RegisterTests_Button(ImGuiTestEngine* e);
 void RegisterTests_Widgets(ImGuiTestEngine* e);
 void RegisterTests_Nav(ImGuiTestEngine* e);
