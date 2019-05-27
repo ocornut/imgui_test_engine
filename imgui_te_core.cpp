@@ -260,7 +260,7 @@ static const char* GetVerboseLevelName(ImGuiTestVerboseLevel v)
 static void                 ImGuiTestEngine_SetupBuildInfo(ImGuiTestEngine* engine);
 static ImGuiTestItemInfo*   ImGuiTestEngine_ItemLocate(ImGuiTestEngine* engine, ImGuiID id, const char* debug_id);
 static void                 ImGuiTestEngine_ApplyInputToImGuiContext(ImGuiTestEngine* engine);
-static void                 ImGuiTestEngine_ProcessQueue(ImGuiTestEngine* engine);
+static void                 ImGuiTestEngine_ProcessTestQueue(ImGuiTestEngine* engine);
 static void                 ImGuiTestEngine_ClearTests(ImGuiTestEngine* engine);
 static void                 ImGuiTestEngine_ClearLocateTasks(ImGuiTestEngine* engine);
 static void                 ImGuiTestEngine_PreNewFrame(ImGuiTestEngine* engine, ImGuiContext* ctx);
@@ -594,7 +594,7 @@ static void ImGuiTestEngine_PostNewFrame(ImGuiTestEngine* engine, ImGuiContext* 
 
     // Process on-going queues
     if (engine->CallDepth == 0)
-        ImGuiTestEngine_ProcessQueue(engine);
+        ImGuiTestEngine_ProcessTestQueue(engine);
 }
 
 static void ImGuiTestEngine_Yield(ImGuiTestEngine* engine)
@@ -634,7 +634,7 @@ static void ImGuiTestEngine_Yield(ImGuiTestEngine* engine)
     }
 }
 
-static void ImGuiTestEngine_ProcessQueue(ImGuiTestEngine* engine)
+static void ImGuiTestEngine_ProcessTestQueue(ImGuiTestEngine* engine)
 {
     IM_ASSERT(engine->CallDepth == 0);
     engine->CallDepth++;
@@ -693,7 +693,9 @@ static void ImGuiTestEngine_ProcessQueue(ImGuiTestEngine* engine)
                 test->UserDataDestructor(engine->UserDataBuffer);
             }
             else
+            {
                 ctx.RunCurrentTest(NULL);
+            }
         }
         ran_tests++;
 
@@ -1182,7 +1184,7 @@ void    ImGuiTestEngine_ShowTestWindow(ImGuiTestEngine* engine, bool* p_open)
         ImGui::SetNextWindowFocus();
         engine->UiFocus = false;
     }
-    ImGui::Begin("ImGui Test Engine", p_open);// , ImGuiWindowFlags_MenuBar);
+    ImGui::Begin("Dear ImGui Test Engine", p_open);// , ImGuiWindowFlags_MenuBar);
 
 #if 0
     if (0 && ImGui::BeginMenuBar())

@@ -232,7 +232,7 @@ void RegisterTests_Window(ImGuiTestEngine* e)
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         ImGuiContext& g = *ctx->UiContext;
-        ctx->SetRef("ImGui Demo");
+        ctx->SetRef("Dear ImGui Demo");
         ctx->ItemOpen("Popups & Modal windows");
         ctx->ItemOpen("Popups");
         ctx->ItemClick("Popups/Toggle..");
@@ -1031,7 +1031,7 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
         ctx->ItemCheck("Demo Window");
 
         ImGuiContext& g = *ctx->UiContext;
-        IM_CHECK(g.NavWindow && g.NavWindow->ID == ctx->GetID("/ImGui Demo"));
+        IM_CHECK(g.NavWindow && g.NavWindow->ID == ctx->GetID("/Dear ImGui Demo"));
     };
 
     // ## Verify that CTRL+Tab steal focus (#2380)
@@ -1568,7 +1568,7 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
     t->GuiFunc = NULL;
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
-        ctx->SetRef("ImGui Demo");
+        ctx->SetRef("Dear ImGui Demo");
         ctx->ItemOpen("Widgets");
         ctx->ItemOpen("Basic");
         ctx->ItemClick("Basic/Button");
@@ -1593,7 +1593,7 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
     t = REGISTER_TEST("demo", "demo_cov_auto_open");
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
-        ctx->SetRef("ImGui Demo");
+        ctx->SetRef("Dear ImGui Demo");
         ctx->ItemOpenAll("");
     };
 
@@ -1601,14 +1601,14 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
     t = REGISTER_TEST("demo", "demo_cov_auto_close");
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
-        ctx->SetRef("ImGui Demo");
+        ctx->SetRef("Dear ImGui Demo");
         ctx->ItemCloseAll("");
     };
 
     t = REGISTER_TEST("demo", "demo_cov_001");
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
-        ctx->SetRef("ImGui Demo");
+        ctx->SetRef("Dear ImGui Demo");
         ctx->ItemOpen("Help");
         ctx->ItemOpen("Configuration");
         ctx->ItemOpen("Window options");
@@ -1623,7 +1623,7 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
     t = REGISTER_TEST("demo", "demo_cov_apps");
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
-        ctx->SetRef("ImGui Demo");
+        ctx->SetRef("Dear ImGui Demo");
         ctx->MenuClick("Menu/Open Recent/More..");
         ctx->MenuCheckAll("Examples");
         ctx->MenuUncheckAll("Examples");
@@ -1635,7 +1635,7 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
     t = REGISTER_TEST("demo", "demo_cov_styles");
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
-        ctx->SetRef("ImGui Demo");
+        ctx->SetRef("Dear ImGui Demo");
         ctx->MenuAction(ImGuiTestAction_Check, "Help/Style Editor");
 
         ImGuiTestRef ref_window = "Style Editor";
@@ -1676,7 +1676,7 @@ void RegisterTests_Perf(ImGuiTestEngine* e)
     {
         ctx->PerfCalcRef();
 
-        ctx->SetRef("ImGui Demo");
+        ctx->SetRef("Dear ImGui Demo");
         ctx->ItemOpenAll("");
         ctx->MenuCheckAll("Examples");
         ctx->MenuCheckAll("Help");
@@ -1693,7 +1693,7 @@ void RegisterTests_Perf(ImGuiTestEngine* e)
         }
         ctx->PerfCapture();
 
-        ctx->SetRef("ImGui Demo");
+        ctx->SetRef("Dear ImGui Demo");
         ctx->ItemCloseAll("");
         ctx->MenuUncheckAll("Examples");
         ctx->MenuUncheckAll("Help");
@@ -2071,7 +2071,7 @@ void RegisterTests_Capture(ImGuiTestEngine* e)
     t = REGISTER_TEST("capture", "capture_demo_documents");
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
-        ctx->SetRef("ImGui Demo");
+        ctx->SetRef("Dear ImGui Demo");
         ctx->MenuAction(ImGuiTestAction_Check, "Examples/Documents");
 
         ctx->SetRef("Examples: Documents");
@@ -2096,7 +2096,7 @@ void RegisterTests_Capture(ImGuiTestEngine* e)
         ImGuiIO& io = ImGui::GetIO();
         //ImGuiStyle& style = ImGui::GetStyle();
 
-        ctx->SetRef("ImGui Demo");
+        ctx->SetRef("Dear ImGui Demo");
         ctx->ItemCloseAll("");
         ctx->MenuCheck("Examples/Simple overlay");
         ctx->SetRef("Example: Simple overlay");
@@ -2108,7 +2108,7 @@ void RegisterTests_Capture(ImGuiTestEngine* e)
         float fh = ImGui::GetFontSize();
         float pad = fh;
 
-        ctx->SetRef("ImGui Demo");
+        ctx->SetRef("Dear ImGui Demo");
         ctx->MenuCheck("Examples/Custom rendering");
         ctx->SetRef("Example: Custom rendering");
         ctx->WindowResize("", ImVec2(fh * 30, fh * 30));
@@ -2116,20 +2116,20 @@ void RegisterTests_Capture(ImGuiTestEngine* e)
         ImGuiWindow* window_custom_rendering = ctx->GetWindowByRef("");
         IM_CHECK(window_custom_rendering != NULL);
 
-        ctx->SetRef("ImGui Demo");
+        ctx->SetRef("Dear ImGui Demo");
         ctx->MenuCheck("Examples/Simple layout");
         ctx->SetRef("Example: Simple layout");
         ctx->WindowResize("", ImVec2(fh * 50, fh * 15));
         ctx->WindowMove("", ImVec2(pad, io.DisplaySize.y - pad), ImVec2(0.0f, 1.0f));
 
-        ctx->SetRef("ImGui Demo");
+        ctx->SetRef("Dear ImGui Demo");
         ctx->MenuCheck("Examples/Documents");
         ctx->SetRef("Example: Documents");
         ctx->WindowResize("", ImVec2(fh * 20, fh * 27));
         ctx->WindowMove("", ImVec2(window_custom_rendering->Pos.x + window_custom_rendering->Size.x + pad, pad));
 
         ctx->LogVerbose("Setup Console window...\n");
-        ctx->SetRef("ImGui Demo");
+        ctx->SetRef("Dear ImGui Demo");
         ctx->MenuCheck("Examples/Console");
         ctx->SetRef("Example: Console");
         ctx->WindowResize("", ImVec2(fh * 40, fh * (34-7)));
@@ -2144,7 +2144,7 @@ void RegisterTests_Capture(ImGuiTestEngine* e)
         ctx->KeyCharsAppendEnter("hello, imgui world!");
 
         ctx->LogVerbose("Setup Demo window...\n");
-        ctx->SetRef("ImGui Demo");
+        ctx->SetRef("Dear ImGui Demo");
         ctx->WindowResize("", ImVec2(fh * 35, io.DisplaySize.y - pad * 2.0f));
         ctx->WindowMove("", ImVec2(io.DisplaySize.x - pad, pad), ImVec2(1.0f, 0.0f));
         ctx->ItemOpen("Widgets");
@@ -2157,7 +2157,7 @@ void RegisterTests_Capture(ImGuiTestEngine* e)
         ctx->Sleep(2.0f);
 
         // Close everything
-        ctx->SetRef("ImGui Demo");
+        ctx->SetRef("Dear ImGui Demo");
         ctx->ItemCloseAll("");
         ctx->MenuUncheckAll("Examples");
         ctx->MenuUncheckAll("Help");
