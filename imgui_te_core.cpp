@@ -1840,7 +1840,7 @@ void    ImGuiTestContext::ScrollToY(ImGuiTestRef ref, float scroll_ratio_y)
     {
         // result->Rect fields will be updated after each iteration.
         float item_curr_y = ImFloor(item->RectFull.GetCenter().y);
-        float item_target_y = ImFloor(window->InnerWorkRectClipped.GetCenter().y);
+        float item_target_y = ImFloor(window->InnerClipRect.GetCenter().y);
         float scroll_delta_y = item_target_y - item_curr_y;
         float scroll_max_y = ImGui::GetWindowScrollMaxY(window);
         float scroll_target_y = ImClamp(window->Scroll.y - scroll_delta_y, 0.0f, scroll_max_y);
@@ -1963,7 +1963,7 @@ void    ImGuiTestContext::MouseMove(ImGuiTestRef ref, ImGuiTestOpFlags flags)
         BringWindowToFrontFromItem(ref);
 
     ImGuiWindow* window = item->Window;
-    ImRect window_inner_r_padded = window->InnerWorkRectClipped;
+    ImRect window_inner_r_padded = window->InnerClipRect;
     window_inner_r_padded.Expand(-4.0f); // == WINDOWS_RESIZE_FROM_EDGES_HALF_THICKNESS
     if (item->NavLayer == ImGuiNavLayer_Main && !window_inner_r_padded.Contains(item->RectClipped))
         ScrollToY(ref);
