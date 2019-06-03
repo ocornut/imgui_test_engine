@@ -273,9 +273,10 @@ void RegisterTests_Window(ImGuiTestEngine* e)
     };
 
     // ## Test that basic SetScrollHereY call scrolls all the way (#1804)
-    t = REGISTER_TEST("window", "window_scrolling_001");
+    t = REGISTER_TEST("window", "window_scroll_001");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
+        ImGui::SetNextWindowSize(ImVec2(0.0f, 500));
         ImGui::Begin("Test Scrolling", NULL, ImGuiWindowFlags_NoSavedSettings);
         for (int n = 0; n < 100; n++)
             ImGui::Text("Hello %d\n", n);
@@ -288,9 +289,23 @@ void RegisterTests_Window(ImGuiTestEngine* e)
         ImGuiWindow* window = ImGui::GetCurrentWindow();
         IM_ASSERT(window->SizeContents.y > 0.0f);
         float scroll_y = ImGui::GetScrollY();
+        float scroll_max_y = ImGui::GetScrollMaxY();
         IM_CHECK(scroll_y > 0.0f);
-        IM_CHECK(scroll_y == ImGui::GetScrollMaxY());
+        IM_CHECK(scroll_y == scroll_max_y);
+        //IM_CHECK(window->SizeContents.y )
+
         ctx->LogVerbose("scroll_y = %f\n", scroll_y);
+        ctx->LogVerbose("scroll_max_y = %f\n", scroll_max_y);
+        ctx->LogVerbose("window->SizeContents.y = %f\n", window->SizeContents.y);
+
+        ImGuiStyle& style = ImGui::GetStyle();
+        //float expected_size_contents_y = 100 * ImGui::GetTextLineHeightWithSpacing() - style.ItemSpacing.y; // FIXME-SIZECONTENTS: <- We will change to this definition in 1.71 
+        float expected_size_contents_y = 100 * ImGui::GetTextLineHeightWithSpacing() - style.ItemSpacing.y + window->WindowPadding.y * 2.0f + ImGui::GetFrameHeight();
+        IM_CHECK(FloatEqual(window->SizeContents.y, expected_size_contents_y));
+
+        float expected_scroll_max_y = expected_size_contents_y - window->Size.y - window->ScrollbarSizes.y;
+        IM_CHECK(FloatEqual(scroll_max_y, expected_scroll_max_y));
+
         ImGui::End();
     };
 }

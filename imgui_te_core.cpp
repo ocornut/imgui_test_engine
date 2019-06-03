@@ -26,6 +26,7 @@
 // GOAL: Reliable performance measurement (w/ deterministic setup)
 // GOAL: Full blind version with no graphical context.
 
+// FIXME-TESTS: IM_CHECK macro that may print both values.
 // FIXME-TESTS: threaded test func instead of intrusive yield
 // FIXME-TESTS: UI to setup breakpoint (e.g. GUI func on frame X, beginning of Test func or at certain Yield/Sleep spot)
 // FIXME-TESTS: Locate within stack that uses windows/<pointer>/name -> ItemInfo hook
@@ -261,6 +262,7 @@ static const char* GetVerboseLevelName(ImGuiTestVerboseLevel v)
 // Private functions
 static void                 ImGuiTestEngine_SetupBuildInfo(ImGuiTestEngine* engine);
 static ImGuiTestItemInfo*   ImGuiTestEngine_ItemLocate(ImGuiTestEngine* engine, ImGuiID id, const char* debug_id);
+static void                 ImGuiTestEngine_ClearInput(ImGuiTestEngine* engine);
 static void                 ImGuiTestEngine_ApplyInputToImGuiContext(ImGuiTestEngine* engine);
 static void                 ImGuiTestEngine_ProcessTestQueue(ImGuiTestEngine* engine);
 static void                 ImGuiTestEngine_ClearTests(ImGuiTestEngine* engine);
@@ -469,6 +471,22 @@ static void ImGuiTestEngine_ClearLocateTasks(ImGuiTestEngine* engine)
     for (int n = 0; n < engine->LocateTasks.Size; n++)
         IM_DELETE(engine->LocateTasks[n]);
     engine->LocateTasks.clear();
+}
+
+static void ImGuiTestEngine_ClearInput(ImGuiTestEngine* engine)
+{
+    IM_ASSERT(engine->UiContextTarget != NULL);
+    ImGuiContext& g = *engine->UiContextTarget;
+    engine->InputMouseButtonsValue = 0;
+    engine->InputMouseButtonsSet = false;
+    engine->InputMousePosSet = false;
+    engine->InputKeyMods = ImGuiKeyModFlags_None;
+    engine->InputQueue.clear();
+    g.IO.KeyCtrl = g.IO.KeyShift = g.IO.KeyAlt = g.IO.KeySuper = false;
+    memset(g.IO.MouseDown, 0, sizeof(g.IO.MouseDown));
+    memset(g.IO.KeysDown, 0, sizeof(g.IO.KeysDown));
+    memset(g.IO.NavInputs, 0, sizeof(g.IO.NavInputs));
+    ImGuiTestEngine_ApplyInputToImGuiContext(engine);
 }
 
 static void ImGuiTestEngine_ApplyInputToImGuiContext(ImGuiTestEngine* engine)
@@ -810,16 +828,17 @@ ImGuiTest* ImGuiTestEngine_RegisterTest(ImGuiTestEngine* engine, const char* cat
     return t;
 }
 
-void ImGuiTestEngine_QueueTests(ImGuiTestEngine* engine, const char* filter)
+void ImGuiTestEngine_QueueTests(ImGuiTestEngine* engine, const char* filter_str)
 {
-    if (filter != NULL && filter[0] == 0)
-        filter = NULL;
+    ImGuiTextFilter filter;
+    ImFormatString(filter.InputBuf, IM_ARRAYSIZE(filter.InputBuf), "%s", filter_str);
+    filter.Build();
+    IM_ASSERT(strlen(filter_str) + 1 < IM_ARRAYSIZE(filter.InputBuf));
     for (int n = 0; n < engine->TestsAll.Size; n++)
     {
         ImGuiTest* test = engine->TestsAll[n];
-        if (filter != NULL)
-            if (ImStristr(test->Name, NULL, filter, NULL) == NULL)
-                continue;
+        if (!filter.PassFilter(test->Name))
+            continue;
         ImGuiTestEngine_QueueTest(engine, test, ImGuiTestRunFlags_None);
     }
 }
@@ -864,6 +883,9 @@ void ImGuiTestEngine_PrintResultSummary(ImGuiTestEngine* engine)
 
 static void ImGuiTestEngine_RunTest(ImGuiTestEngine* engine, ImGuiTestContext* ctx, void* user_data)
 {
+    // Clear ImGui inputs to avoid key/mouse leaks from one test to another
+    ImGuiTestEngine_ClearInput(engine);
+
     ImGuiTest* test = ctx->Test;
     ctx->Engine = engine;
     ctx->EngineIO = &engine->IO;
@@ -873,7 +895,6 @@ static void ImGuiTestEngine_RunTest(ImGuiTestEngine* engine, ImGuiTestContext* c
     ctx->SetRef("");
     ctx->SetInputMode(ImGuiInputSource_Mouse);
     ctx->GenericVars.Clear();
-
     test->TestLog.clear();
 
     // Mark as currently running the TestFunc (this is the only time when we are allowed to yield)
@@ -1113,7 +1134,8 @@ bool ImGuiTestEngineHook_Check(const char* file, const char* func, int line, ImG
         }
         if (!result)
         {
-            test->Status = ImGuiTestStatus_Error;
+            if (!(ctx->RunFlags & ImGuiTestRunFlags_NoTestFunc))
+                test->Status = ImGuiTestStatus_Error;
             if (file)
                 test->TestLog.appendf("[%04d] KO %s:%d  '%s'\n", ctx->FrameCount, file_without_path, line, expr);
             else
