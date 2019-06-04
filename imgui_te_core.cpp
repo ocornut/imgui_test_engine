@@ -705,8 +705,8 @@ static void ImGuiTestEngine_ProcessTestQueue(ImGuiTestEngine* engine)
         ctx.RunFlags = run_task->RunFlags;
         engine->TestContext = &ctx;
 
-        ctx.Log("----------------------------------------------------------------------\n");
-        ctx.Log("Test: '%s' '%s'..\n", test->Category, test->Name);
+        ctx.LogEx(ImGuiTestLogFlags_NoHeader, "----------------------------------------------------------------------\n");
+        ctx.LogEx(ImGuiTestLogFlags_None, "Test: '%s' '%s'..\n", test->Category, test->Name);
         if (test->RootFunc)
         {
             test->RootFunc(&ctx);
@@ -831,9 +831,12 @@ ImGuiTest* ImGuiTestEngine_RegisterTest(ImGuiTestEngine* engine, const char* cat
 void ImGuiTestEngine_QueueTests(ImGuiTestEngine* engine, const char* filter_str)
 {
     ImGuiTextFilter filter;
-    ImFormatString(filter.InputBuf, IM_ARRAYSIZE(filter.InputBuf), "%s", filter_str);
-    filter.Build();
-    IM_ASSERT(strlen(filter_str) + 1 < IM_ARRAYSIZE(filter.InputBuf));
+    if (filter_str != NULL)
+    {
+        IM_ASSERT(strlen(filter_str) + 1 < IM_ARRAYSIZE(filter.InputBuf));
+        ImFormatString(filter.InputBuf, IM_ARRAYSIZE(filter.InputBuf), "%s", filter_str);
+        filter.Build();
+    }
     for (int n = 0; n < engine->TestsAll.Size; n++)
     {
         ImGuiTest* test = engine->TestsAll[n];
@@ -1595,44 +1598,62 @@ void	ImGuiTestContext::RunCurrentTest(void* user_data)
     ImGuiTestEngine_RunTest(Engine, this, user_data);
 }
 
-void    ImGuiTestContext::Log(const char* fmt, ...)
+void    ImGuiTestContext::LogEx(ImGuiTestLogFlags flags, const char* fmt, ...)
 {
-    ImGuiTestContext* ctx = Engine->TestContext;
+    va_list args;
+    va_start(args, fmt);
+    LogExV(flags, fmt, args);
+    va_end(args);
+}
+
+void    ImGuiTestContext::LogExV(ImGuiTestLogFlags flags, const char* fmt, va_list args)
+{
+    IM_ASSERT(this == Engine->TestContext);
+    ImGuiTestContext* ctx = this;
     ImGuiTest* test = ctx->Test;
+
+    if (flags & ImGuiTestLogFlags_Verbose)
+    {
+        if (Engine->IO.ConfigVerboseLevel <= ImGuiTestVerboseLevel_Min)
+            return;
+
+        if (Engine->IO.ConfigVerboseLevel == ImGuiTestVerboseLevel_Normal && ctx->ActionDepth > 1)
+            return;
+    }
 
     const int prev_size = test->TestLog.size();
 
-    va_list args;
-    va_start(args, fmt);
-    test->TestLog.appendf("[%04d] ", ctx->FrameCount);
-    test->TestLog.appendfv(fmt, args);
-    va_end(args);
+    if (flags & ImGuiTestLogFlags_Verbose)
+    {
+        if (!(flags & ImGuiTestLogFlags_NoHeader))
+            test->TestLog.appendf("[%04d] -- %*s", ctx->FrameCount, ImMax(0, (ctx->ActionDepth - 1) * 2), "");
+        test->TestLog.appendfv(fmt, args);
+    }
+    else
+    {
+        if (!(flags & ImGuiTestLogFlags_NoHeader))
+            test->TestLog.appendf("[%04d] ", ctx->FrameCount);
+        test->TestLog.appendfv(fmt, args);
+    }
 
     if (Engine->IO.ConfigLogToTTY)
         printf("%s", test->TestLog.c_str() + prev_size);
 }
 
-void    ImGuiTestContext::LogVerbose(const char* fmt, ...)
+void    ImGuiTestContext::Log(const char* fmt, ...)
 {
-    if (Engine->IO.ConfigVerboseLevel <= ImGuiTestVerboseLevel_Min)
-        return;
-
-    ImGuiTestContext* ctx = Engine->TestContext;
-    if (Engine->IO.ConfigVerboseLevel == ImGuiTestVerboseLevel_Normal && ctx->ActionDepth > 1)
-        return;
-
-    ImGuiTest* test = ctx->Test;
-
-    const int prev_size = test->TestLog.size();
-
     va_list args;
     va_start(args, fmt);
-    test->TestLog.appendf("[%04d] -- %*s", ctx->FrameCount, ImMax(0, (ctx->ActionDepth - 1) * 2), "");
-    test->TestLog.appendfv(fmt, args);
+    LogExV(ImGuiTestLogFlags_None, fmt, args);
     va_end(args);
+}
 
-    if (Engine->IO.ConfigLogToTTY)
-        printf("%s", test->TestLog.c_str() + prev_size);
+void    ImGuiTestContext::LogVerbose(const char* fmt, ...)
+{
+    va_list args;
+    va_start(args, fmt);
+    LogExV(ImGuiTestLogFlags_Verbose, fmt, args);
+    va_end(args);
 }
 
 void    ImGuiTestContext::LogDebug()
@@ -2298,7 +2319,7 @@ bool    ImGuiTestContext::BringWindowToFront(ImGuiWindow* window, ImGuiTestOpFla
     // causing this function to seemingly fail (even if the end goal was reached).
     bool ret = (window == g.NavWindow);
     if (!ret && !(flags & ImGuiTestOpFlags_NoError))
-        Log("-- [warn] Expected focused window '%s', but '%s' got focus back.\n", window->Name, g.NavWindow ? g.NavWindow->Name : "<NULL>");
+        LogVerbose("-- [warn] Expected focused window '%s', but '%s' got focus back.\n", window->Name, g.NavWindow ? g.NavWindow->Name : "<NULL>");
     
     return ret;
 }
@@ -2316,7 +2337,7 @@ bool    ImGuiTestContext::BringWindowToFrontFromItem(ImGuiTestRef ref)
     //LogVerbose("Lost focus on window '%s', getting again..\n", item->Window->Name);
     bool ret = BringWindowToFront(item->Window, ImGuiTestOpFlags_NoError);
     if (!ret)
-        Log("-- [warn] Expected focused window '%s' for item '%s', but '%s' got focus back.\n", item->Window->Name, item->DebugLabel, g.NavWindow ? g.NavWindow->Name : "<NULL>");
+        LogVerbose("-- [warn] Expected focused window '%s' for item '%s', but '%s' got focus back.\n", item->Window->Name, item->DebugLabel, g.NavWindow ? g.NavWindow->Name : "<NULL>");
 
     return ret;
 }

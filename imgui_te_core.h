@@ -23,8 +23,9 @@ struct ImGuiTestItemList;
 struct ImRect;
 
 typedef int ImGuiTestFlags;         // See ImGuiTestFlags_
-typedef int ImGuiTestOpFlags;       // See ImGuiTestOpFlags_
 typedef int ImGuiTestCheckFlags;    // See ImGuiTestCheckFlags_
+typedef int ImGuiTestLogFlags;      // See ImGuiTestLogFlags_
+typedef int ImGuiTestOpFlags;       // See ImGuiTestOpFlags_
 typedef int ImGuiTestRunFlags;      // See ImGuiTestRunFlags_
 
 //-------------------------------------------------------------------------
@@ -56,6 +57,19 @@ enum ImGuiTestFlags_
     ImGuiTestFlags_NoAutoFinish = 1 << 1        // By default, tests with no test func end on Frame 0 (after the warm up). Setting this require test to call ctx->Finish().
 };
 
+enum ImGuiTestCheckFlags_
+{
+    ImGuiTestCheckFlags_None            = 0,
+    ImGuiTestCheckFlags_SilentSuccess   = 1 << 0
+};
+
+enum ImGuiTestLogFlags_
+{
+    ImGuiTestLogFlags_None              = 0,
+    ImGuiTestLogFlags_NoHeader          = 1 << 0,   // Do not display framecount and depth padding
+    ImGuiTestLogFlags_Verbose           = 1 << 1
+};
+
 enum ImGuiTestOpFlags_
 {
     ImGuiTestOpFlags_None               = 0,
@@ -63,12 +77,6 @@ enum ImGuiTestOpFlags_
     ImGuiTestOpFlags_NoCheckHoveredId   = 1 << 1,
     ImGuiTestOpFlags_NoError            = 1 << 2,   // Don't abort/error e.g. if the item cannot be found
     ImGuiTestOpFlags_NoFocusWindow      = 1 << 3
-};
-
-enum ImGuiTestCheckFlags_
-{
-    ImGuiTestCheckFlags_None            = 0,
-    ImGuiTestCheckFlags_SilentSuccess   = 1 << 0
 };
 
 enum ImGuiTestRunFlags_
@@ -378,6 +386,8 @@ struct ImGuiTestContext
     }
 
     void        RunCurrentTest(void* user_data);
+    void        LogEx(ImGuiTestLogFlags flags, const char* fmt, ...) IM_FMTARGS(1);
+    void        LogExV(ImGuiTestLogFlags flags, const char* fmt, va_list args) IM_FMTLIST(1);
     void        Log(const char* fmt, ...) IM_FMTARGS(1);
     void        LogVerbose(const char* fmt, ...) IM_FMTARGS(1);
     void        LogDebug();
