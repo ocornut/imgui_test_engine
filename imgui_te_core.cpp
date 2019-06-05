@@ -1885,8 +1885,7 @@ void    ImGuiTestContext::ScrollToY(ImGuiTestRef ref, float scroll_ratio_y)
         float item_curr_y = ImFloor(item->RectFull.GetCenter().y);
         float item_target_y = ImFloor(window->InnerClipRect.GetCenter().y);
         float scroll_delta_y = item_target_y - item_curr_y;
-        float scroll_max_y = ImGui::GetWindowScrollMaxY(window);
-        float scroll_target_y = ImClamp(window->Scroll.y - scroll_delta_y, 0.0f, scroll_max_y);
+        float scroll_target_y = ImClamp(window->Scroll.y - scroll_delta_y, 0.0f, window->ScrollMax.y);
 
         if (ImFabs(window->Scroll.y - scroll_target_y) < 1.0f)
             break;
@@ -2128,7 +2127,12 @@ void    ImGuiTestContext::MouseClick(int button)
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
     LogVerbose("MouseClick %d\n", button);
 
+    // Make sure mouse buttons are released
+    IM_ASSERT(Engine->InputMouseButtonsValue == 0);
+
     Yield();
+
+    // Press
     UiContext->IO.MouseClickedTime[button] = -FLT_MAX; // Prevent accidental double-click from happening ever
     Engine->InputMouseButtonsSet = true;
     Engine->InputMouseButtonsValue = (1 << button);

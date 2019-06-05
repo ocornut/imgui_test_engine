@@ -51,7 +51,7 @@ void RegisterTests_Window(ImGuiTestEngine* e)
         ImGuiWindow* window = ImGui::FindWindowByName("Test Window");
         IM_CHECK(window->Size.x == ImMax(style.WindowMinSize.x, style.WindowPadding.x * 2.0f));
         IM_CHECK(window->Size.y == ImGui::GetFontSize() + style.FramePadding.y * 2.0f + style.WindowPadding.y * 2.0f);
-        IM_CHECK(window->Size.y == window->SizeContents.y);
+        IM_CHECK(window->ContentSize.x == 0.0f && window->ContentSize.y == 0.0f);
         IM_CHECK(window->Scroll.x == 0.0f && window->Scroll.y == 0.0f);
     };
 
@@ -72,6 +72,57 @@ void RegisterTests_Window(ImGuiTestEngine* e)
             IM_CHECK(ImFabs(w - expected_w) < 1.0f);
         }
         ImGui::End();
+    };
+
+    t = REGISTER_TEST("window", "window_size_contents");
+    t->Flags |= ImGuiTestFlags_NoAutoFinish;
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiStyle& style = ImGui::GetStyle();
+
+        {
+            ImGui::Begin("Test Contents Size 1", NULL, ImGuiWindowFlags_AlwaysAutoResize);
+            ImGui::ColorButton("test", ImVec4(1, 0.4f, 0, 1.0f), ImGuiColorEditFlags_NoTooltip, ImVec2(150, 150));
+            ImGuiWindow* window = ctx->UiContext->CurrentWindow;
+            if (ctx->FrameCount > 0)
+                IM_CHECK(window->ContentSize.x == 150.0f && window->ContentSize.y == 150.0f);
+            ImGui::End();
+        }
+        {
+            ImGui::SetNextWindowContentSize(ImVec2(150, 150));
+            ImGui::Begin("Test Contents Size 2", NULL, ImGuiWindowFlags_AlwaysAutoResize);
+            ImGuiWindow* window = ctx->UiContext->CurrentWindow;
+            if (ctx->FrameCount >= 0)
+                IM_CHECK(window->ContentSize.x == 150.0f && window->ContentSize.y == 150.0f);
+            ImGui::End();
+        }
+        {
+            ImGui::SetNextWindowContentSize(ImVec2(150, 150));
+            ImGui::SetNextWindowSize(ImVec2(150, 150) + style.WindowPadding * 2.0f + ImVec2(0.0f, ImGui::GetFrameHeight()));
+            ImGui::Begin("Test Contents Size 3", NULL, ImGuiWindowFlags_None);
+            ImGuiWindow* window = ctx->UiContext->CurrentWindow;
+            if (ctx->FrameCount >= 0)
+            {
+                IM_CHECK(window->ScrollbarY == false);
+                IM_CHECK(window->ScrollMax.y == 0.0f);
+            }
+            ImGui::End();
+        }
+        {
+            ImGui::SetNextWindowContentSize(ImVec2(150, 150 + 1));
+            ImGui::SetNextWindowSize(ImVec2(150, 150) + style.WindowPadding * 2.0f + ImVec2(0.0f, ImGui::GetFrameHeight()));
+            ImGui::Begin("Test Contents Size 4", NULL, ImGuiWindowFlags_None);
+            ImGuiWindow* window = ctx->UiContext->CurrentWindow;
+            if (ctx->FrameCount >= 0)
+            {
+                IM_CHECK(window->ScrollbarY == true);
+                IM_CHECK(window->ScrollMax.y == 1.0f);
+            }
+            ImGui::End();
+        }
+
+        if (ctx->FrameCount == 2)
+            ctx->Finish();
     };
 
     // ## Test that non-integer size/position passed to window gets rounded down and not cause any drift.
@@ -273,6 +324,7 @@ void RegisterTests_Window(ImGuiTestEngine* e)
     };
 
     // ## Test that basic SetScrollHereY call scrolls all the way (#1804)
+    // ## Test expected value of ScrollMaxY
     t = REGISTER_TEST("window", "window_scroll_001");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
@@ -285,28 +337,73 @@ void RegisterTests_Window(ImGuiTestEngine* e)
     };
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
-        ImGui::Begin("Test Scrolling");
-        ImGuiWindow* window = ImGui::GetCurrentWindow();
-        IM_ASSERT(window->SizeContents.y > 0.0f);
-        float scroll_y = ImGui::GetScrollY();
-        float scroll_max_y = ImGui::GetScrollMaxY();
-        IM_CHECK(scroll_y > 0.0f);
-        IM_CHECK(scroll_y == scroll_max_y);
-        //IM_CHECK(window->SizeContents.y )
+        ImGuiWindow* window = ImGui::FindWindowByName("Test Scrolling");
+        ImGuiStyle& style = ImGui::GetStyle();
 
+        IM_ASSERT(window->ContentSize.y > 0.0f);
+        float scroll_y = window->Scroll.y;
+        float scroll_max_y = window->ScrollMax.y;
         ctx->LogVerbose("scroll_y = %f\n", scroll_y);
         ctx->LogVerbose("scroll_max_y = %f\n", scroll_max_y);
-        ctx->LogVerbose("window->SizeContents.y = %f\n", window->SizeContents.y);
+        ctx->LogVerbose("window->SizeContents.y = %f\n", window->ContentSize.y);
 
-        ImGuiStyle& style = ImGui::GetStyle();
-        //float expected_size_contents_y = 100 * ImGui::GetTextLineHeightWithSpacing() - style.ItemSpacing.y; // FIXME-SIZECONTENTS: <- We will change to this definition in 1.71 
-        float expected_size_contents_y = 100 * ImGui::GetTextLineHeightWithSpacing() - style.ItemSpacing.y + window->WindowPadding.y * 2.0f + ImGui::GetFrameHeight();
-        IM_CHECK(FloatEqual(window->SizeContents.y, expected_size_contents_y));
+        IM_CHECK_NO_RET(scroll_y > 0.0f);
+        IM_CHECK_NO_RET(scroll_y == scroll_max_y);
 
-        float expected_scroll_max_y = expected_size_contents_y - window->Size.y - window->ScrollbarSizes.y;
+        float expected_size_contents_y = 100 * ImGui::GetTextLineHeightWithSpacing() - style.ItemSpacing.y; // Newer definition of SizeContents as per 1.71
+        IM_CHECK(FloatEqual(window->ContentSize.y, expected_size_contents_y));
+
+        float expected_scroll_max_y = expected_size_contents_y + window->WindowPadding.y * 2.0f - window->InnerRect.GetHeight();
         IM_CHECK(FloatEqual(scroll_max_y, expected_scroll_max_y));
+    };
 
+    // ## Test that ScrollMax values are correctly zero (we had/have bugs where they are seldomly == BorderSize)
+    t = REGISTER_TEST("window", "window_scroll_002");
+    t->Flags |= ImGuiTestFlags_NoAutoFinish;
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::Begin("Test Scrolling 1", NULL, ImGuiWindowFlags_AlwaysHorizontalScrollbar | ImGuiWindowFlags_AlwaysAutoResize);
+        ImGui::Dummy(ImVec2(200, 200));
+        ImGuiWindow* window1 = ctx->UiContext->CurrentWindow;
+        IM_CHECK_NO_RET(window1->ScrollMax.x == 0.0f);
+        IM_CHECK_NO_RET(window1->ScrollMax.y == 0.0f);
         ImGui::End();
+
+        ImGui::Begin("Test Scrolling 2", NULL, ImGuiWindowFlags_AlwaysVerticalScrollbar | ImGuiWindowFlags_AlwaysAutoResize);
+        ImGui::Dummy(ImVec2(200, 200));
+        ImGuiWindow* window2 = ctx->UiContext->CurrentWindow;
+        IM_CHECK_NO_RET(window2->ScrollMax.x == 0.0f);
+        IM_CHECK_NO_RET(window2->ScrollMax.y == 0.0f);
+        ImGui::End();
+        if (ctx->FrameCount == 2)
+            ctx->Finish();
+    };
+
+    // ## Test that an auto-fit window doesn't have scrolbar while resize (FIXME-TESTS: Also test non-zero ScrollMax when implemented)
+    t = REGISTER_TEST("window", "window_scroll_while_resizing");
+    t->Flags |= ImGuiTestFlags_NoAutoFinish;
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::Begin("Test Scrolling", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImGui::Text("Below is a child window");
+        ImGui::BeginChild("blah", ImVec2(0, 0), false, ImGuiWindowFlags_HorizontalScrollbar);
+        ImGuiWindow* child_window = ctx->UiContext->CurrentWindow;
+        ImGui::EndChild();
+        IM_CHECK(child_window->ScrollbarY == false);
+        if (ctx->FrameCount >= ctx->FirstFrameCount)
+        {
+            ImGuiWindow* window = ctx->UiContext->CurrentWindow;
+            IM_CHECK(window->ScrollbarY == false);
+            //IM_CHECK(window->ScrollMax.y == 0.0f);    // FIXME-TESTS: 1.71 I would like to make this change but unsure of side effects yet
+            if (ctx->FrameCount == 2)
+                ctx->Finish();
+        }
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ctx->WindowResize("Test Scrolling", ImVec2(400, 400));
+        ctx->WindowResize("Test Scrolling", ImVec2(100, 100));
     };
 }
 
@@ -371,7 +468,7 @@ void RegisterTests_Button(ImGuiTestEngine* e)
         ButtonStateMachineTestStep_Done
     };
 
-    t = REGISTER_TEST("button", "button_states");
+    t = REGISTER_TEST("button", "button_status");
     struct ButtonStateTestVars { ButtonStateMachineTestStep NextStep; ImGuiTestGenericStatus Status; };
     t->SetUserDataType<ButtonStateTestVars>();
     t->GuiFunc = [](ImGuiTestContext* ctx)
@@ -805,7 +902,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
     };
 
     // ## Test the IsItemDeactivatedXXX() functions (e.g. #2550, #1875)
-    t = REGISTER_TEST("widgets", "widgets_status_inputfloat2");
+    t = REGISTER_TEST("widgets", "widgets_status_multicomponent");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         ImGuiTestGenericVars& vars = ctx->GenericVars;
@@ -868,7 +965,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
     };
 
     // ## Test the IsItemEdited() function when input vs output format are not matching
-    t = REGISTER_TEST("widgets", "widgets_status_inputfloat");
+    t = REGISTER_TEST("widgets", "widgets_status_inputfloat_format_mismatch");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         ImGuiTestGenericVars& vars = ctx->GenericVars;
@@ -892,7 +989,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         IM_CHECK(status.Edited == 1);
     };
 
-    // ## Test ColorEdit Drag and Drop
+    // ## Test ColorEdit basic Drag and Drop
     t = REGISTER_TEST("widgets", "widgets_coloredit_drag");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
@@ -916,8 +1013,8 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         IM_CHECK(memcmp(&vars.Vec4Array[0], &vars.Vec4Array[1], sizeof(ImVec4)) == 0);
     };
 
-    // ## Test that disabled Selectable has an ID but doesn't interfer with navigation
-    t = REGISTER_TEST("widgets", "widgets_selectable");
+    // ## Test that disabled Selectable has an ID but doesn't interfere with navigation
+    t = REGISTER_TEST("widgets", "widgets_selectable_disabled");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
@@ -987,7 +1084,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
     };
 #endif
 
-    // ## Test SetSelected on first frame
+    // ## Test SetSelected on first frame of a TabItem
     t = REGISTER_TEST("widgets", "widgets_tabitem_setselected");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
@@ -1040,7 +1137,7 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
         IM_CHECK(g.NavWindow && g.NavWindow->ID == ctx->GetID("/Dear ImGui Demo"));
     };
 
-    // ## Verify that CTRL+Tab steal focus (#2380)
+    // ## Test that CTRL+Tab steal focus (#2380)
     t = REGISTER_TEST("nav", "nav_ctrl_tab_takes_focus_away");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
@@ -1115,7 +1212,7 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
     };
 
     // ## Test AltGr doesn't trigger menu layer
-    t = REGISTER_TEST("nav", "nav_altctrl_no_menu");
+    t = REGISTER_TEST("nav", "nav_altgr_no_menu");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         ImGui::Begin("Test window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_MenuBar);
@@ -1624,6 +1721,42 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
         ctx->ItemOpen("Columns");
         ctx->ItemOpen("Filtering");
         ctx->ItemOpen("Inputs, Navigation & Focus");
+    };
+
+    // ## Open misc elements which are beneficial to coverage and not covered with ItemOpenAll
+    t = REGISTER_TEST("demo", "demo_cov_002");
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ctx->SetRef("Dear ImGui Demo");
+        ctx->ItemOpen("Layout");
+        ctx->ItemOpen("Horizontal Scrolling");
+        ctx->ItemCheck("Horizontal Scrolling/Show Horizontal contents size demo window");   // FIXME-TESTS: ItemXXX functions could do the recursion (e.g. Open parent)
+        ctx->ItemUncheck("Horizontal Scrolling/Show Horizontal contents size demo window");
+
+        ctx->SetRef("Dear ImGui Demo");
+        ctx->MenuCheck("Help/About Dear ImGui");
+        ctx->SetRef("About Dear ImGui");
+        ctx->ItemCheck("Config\\/Build Information");
+        ctx->SetRef("Dear ImGui Demo");
+
+        ctx->SetRef("Dear ImGui Demo");
+        ctx->MenuCheck("Help/Style Editor");
+        ctx->SetRef("Style Editor");
+        ctx->ItemClick("##tabs/Sizes");
+        ctx->ItemClick("##tabs/Colors");
+        ctx->ItemClick("##tabs/Fonts");
+        ctx->ItemClick("##tabs/Rendering");
+
+        ctx->SetRef("Dear ImGui Demo");
+        ctx->MenuCheck("Examples/Custom rendering");
+        ctx->SetRef("Example: Custom rendering");
+        ctx->ItemClick("##TabBar/Primitives");
+        ctx->ItemClick("##TabBar/Canvas");
+        ctx->ItemClick("##TabBar/BG\\/FG draw lists");
+
+        ctx->SetRef("Dear ImGui Demo");
+        ctx->MenuUncheckAll("Examples");
+        ctx->MenuUncheckAll("Help");
     };
 
     t = REGISTER_TEST("demo", "demo_cov_apps");
