@@ -162,11 +162,12 @@ struct ImGuiTestEngine
     size_t                      UserDataBufferSize = 0;
 
     // Inputs
-    bool                        InputMousePosSet = false;
-    bool                        InputMouseButtonsSet = false;
-    ImVec2                      InputMousePosValue;
-    int                         InputMouseButtonsValue = 0x00;
-    ImGuiKeyModFlags            InputKeyMods = 0x00;
+    ImGuiIO                     InputSimulatedIO;
+    int                         InputApplyingSimulatedIO = 0;
+    ImVec2                      InputMousePosValue;             // Own non-rounded copy of MousePos in order facilitate simulating mouse mouvement very slow speed and high-framerate
+    ImVec2                      InputHostLastMousePos;
+    int                         InputMouseButtonsValue = 0x00;  // FIXME-TESTS: Use simulated_io.MouseDown[] ?
+    ImGuiKeyModFlags            InputKeyMods = 0x00;            // FIXME-TESTS: Use simulated_io.KeyXXX ?
     ImVector<ImGuiTestInput>    InputQueue;
 
     // UI support
@@ -476,16 +477,16 @@ static void ImGuiTestEngine_ClearLocateTasks(ImGuiTestEngine* engine)
 static void ImGuiTestEngine_ClearInput(ImGuiTestEngine* engine)
 {
     IM_ASSERT(engine->UiContextTarget != NULL);
-    ImGuiContext& g = *engine->UiContextTarget;
     engine->InputMouseButtonsValue = 0;
-    engine->InputMouseButtonsSet = false;
-    engine->InputMousePosSet = false;
     engine->InputKeyMods = ImGuiKeyModFlags_None;
     engine->InputQueue.clear();
-    g.IO.KeyCtrl = g.IO.KeyShift = g.IO.KeyAlt = g.IO.KeySuper = false;
-    memset(g.IO.MouseDown, 0, sizeof(g.IO.MouseDown));
-    memset(g.IO.KeysDown, 0, sizeof(g.IO.KeysDown));
-    memset(g.IO.NavInputs, 0, sizeof(g.IO.NavInputs));
+
+    ImGuiIO& simulated_io = engine->InputSimulatedIO;
+    simulated_io.KeyCtrl = simulated_io.KeyShift = simulated_io.KeyAlt = simulated_io.KeySuper = false;
+    memset(simulated_io.MouseDown, 0, sizeof(simulated_io.MouseDown));
+    memset(simulated_io.KeysDown, 0, sizeof(simulated_io.KeysDown));
+    memset(simulated_io.NavInputs, 0, sizeof(simulated_io.NavInputs));
+    simulated_io.ClearInputCharacters();
     ImGuiTestEngine_ApplyInputToImGuiContext(engine);
 }
 
@@ -493,16 +494,23 @@ static void ImGuiTestEngine_ApplyInputToImGuiContext(ImGuiTestEngine* engine)
 {
     IM_ASSERT(engine->UiContextTarget != NULL);
     ImGuiContext& g = *engine->UiContextTarget;
-    g.IO.MouseDrawCursor = true;
 
-    if (engine->UiContextActive != NULL && ImGuiTestEngine_IsRunningTests(engine))
+    ImGuiIO& main_io = g.IO;
+    ImGuiIO& simulated_io = engine->InputSimulatedIO;
+
+    main_io.MouseDrawCursor = true;
+
+    const bool want_simulated_inputs = engine->UiContextActive != NULL && ImGuiTestEngine_IsRunningTests(engine) && !(engine->TestContext->RunFlags & ImGuiTestRunFlags_NoTestFunc);
+    if (want_simulated_inputs)
     {
         IM_ASSERT(engine->TestContext != NULL);
-        if (engine->TestContext->RunFlags & ImGuiTestRunFlags_NoTestFunc)
-        {
-            engine->InputQueue.resize(0);
-            return;
-        }
+
+        // Clear host IO queues (because we can't easily just memcpy the vectors)
+        if (engine->InputApplyingSimulatedIO == 0)
+            simulated_io.MousePos = main_io.MousePos;
+
+        engine->InputApplyingSimulatedIO = 2;
+        main_io.ClearInputCharacters();
 
         // Process input requests/queues
         if (engine->InputQueue.Size > 0)
@@ -521,22 +529,22 @@ static void ImGuiTestEngine_ApplyInputToImGuiContext(ImGuiTestEngine* engine)
 
                     if (input.Key != ImGuiKey_COUNT)
                     {
-                        int idx = g.IO.KeyMap[input.Key];
-                        if (idx >= 0 && idx < IM_ARRAYSIZE(g.IO.KeysDown))
-                            g.IO.KeysDown[idx] = (input.State == ImGuiKeyState_Down);
+                        int idx = main_io.KeyMap[input.Key];
+                        if (idx >= 0 && idx < IM_ARRAYSIZE(simulated_io.KeysDown))
+                            simulated_io.KeysDown[idx] = (input.State == ImGuiKeyState_Down);
                     }
                     break;
                 }
                 case ImGuiTestInputType_Nav:
                 {
                     IM_ASSERT(input.NavInput >= 0 && input.NavInput < ImGuiNavInput_COUNT);
-                    g.IO.NavInputs[input.NavInput] = (input.State == ImGuiKeyState_Down);
+                    simulated_io.NavInputs[input.NavInput] = (input.State == ImGuiKeyState_Down);
                     break;
                 }
                 case ImGuiTestInputType_Char:
                 {
                     IM_ASSERT(input.Char != 0);
-                    g.IO.AddInputCharacter(input.Char);
+                    main_io.AddInputCharacter(input.Char);
                     break;
                 }
                 }
@@ -545,29 +553,38 @@ static void ImGuiTestEngine_ApplyInputToImGuiContext(ImGuiTestEngine* engine)
         }
 
         // Apply mouse position
-        //if (engine->SetMousePos)
-        {
-            g.IO.MousePos = engine->InputMousePosValue;
-            g.IO.WantSetMousePos = true;
-        }
-        if (engine->InputMouseButtonsSet)
-        {
-            for (int n = 0; n < IM_ARRAYSIZE(g.IO.MouseDown); n++)
-                g.IO.MouseDown[n] = (engine->InputMouseButtonsValue & (1 << n)) != 0;
-        }
-        engine->InputMousePosSet = false;
-        engine->InputMouseButtonsSet = false;
+        simulated_io.MousePos = engine->InputMousePosValue;
+        //main_io.WantSetMousePos = true;
+        for (int n = 0; n < IM_ARRAYSIZE(simulated_io.MouseDown); n++)
+            simulated_io.MouseDown[n] = (engine->InputMouseButtonsValue & (1 << n)) != 0;
 
         // Apply keyboard mods
-        g.IO.KeyCtrl  = (engine->InputKeyMods & ImGuiKeyModFlags_Ctrl) != 0;
-        g.IO.KeyAlt   = (engine->InputKeyMods & ImGuiKeyModFlags_Alt) != 0;
-        g.IO.KeyShift = (engine->InputKeyMods & ImGuiKeyModFlags_Shift) != 0;
-        g.IO.KeySuper = (engine->InputKeyMods & ImGuiKeyModFlags_Super) != 0;
+        simulated_io.KeyCtrl  = (engine->InputKeyMods & ImGuiKeyModFlags_Ctrl) != 0;
+        simulated_io.KeyAlt   = (engine->InputKeyMods & ImGuiKeyModFlags_Alt) != 0;
+        simulated_io.KeyShift = (engine->InputKeyMods & ImGuiKeyModFlags_Shift) != 0;
+        simulated_io.KeySuper = (engine->InputKeyMods & ImGuiKeyModFlags_Super) != 0;
+
+        // Apply to real IO
+        #define COPY_FIELD(_FIELD)  { memcpy(&main_io._FIELD, &simulated_io._FIELD, sizeof(simulated_io._FIELD)); }
+        COPY_FIELD(MousePos);
+        COPY_FIELD(MouseDown);
+        COPY_FIELD(MouseWheel);
+        COPY_FIELD(MouseWheelH);
+        COPY_FIELD(KeyCtrl);
+        COPY_FIELD(KeyShift);
+        COPY_FIELD(KeyAlt);
+        COPY_FIELD(KeySuper);
+        COPY_FIELD(KeysDown);
+        COPY_FIELD(NavInputs);
+        #undef COPY_FIELD
+
+        // FIXME-TESTS: This is a bit of a mess, ideally we should be able to swap/copy/isolate IO without all that fuss..
+        memset(simulated_io.NavInputs, 0, sizeof(simulated_io.NavInputs));
+        simulated_io.ClearInputCharacters();
     }
     else
     {
-        IM_ASSERT(engine->UiContextActive == NULL);
-        engine->InputMousePosValue = g.IO.MousePos;
+        engine->InputQueue.resize(0);
     }
 }
 
@@ -589,10 +606,14 @@ static void ImGuiTestEngine_PreNewFrame(ImGuiTestEngine* engine, ImGuiContext* c
 
     if (ImGuiTestEngine_IsRunningTests(engine) && !engine->Abort)
     {
-        // Abort testing by holding ESC for 0.3 seconds.
-        // This is so ESC injected by tests don't interfer when sharing UI context.
+        // Abort testing by press ESC
+        //// Abort testing by holding ESC for 0.3 seconds.
+        //// This is so ESC injected by tests don't interfere when sharing UI context.
+        ImGuiIO& main_io = g.IO;
+        ImGuiIO& simulated_io = engine->InputSimulatedIO;
         const int key_idx_escape = g.IO.KeyMap[ImGuiKey_Escape];
-        if (key_idx_escape != -1 && g.IO.KeysDown[key_idx_escape] && g.IO.KeysDownDuration[key_idx_escape] >= 0.30f)
+        if (key_idx_escape != -1 && main_io.KeysDown[key_idx_escape] && !simulated_io.KeysDown[key_idx_escape])
+            //g.IO.KeysDown[key_idx_escape] && g.IO.KeysDownDuration[key_idx_escape] >= 0.30f)
         {
             if (engine->TestContext)
                 engine->TestContext->Log("KO: User aborted (pressed ESC)\n");
@@ -608,6 +629,27 @@ static void ImGuiTestEngine_PostNewFrame(ImGuiTestEngine* engine, ImGuiContext* 
     if (engine->UiContextTarget != ctx)
         return;
     IM_ASSERT(ctx == GImGui);
+
+    // Restore host inputs
+    const bool want_simulated_inputs = engine->UiContextActive != NULL && ImGuiTestEngine_IsRunningTests(engine) && !(engine->TestContext->RunFlags & ImGuiTestRunFlags_NoTestFunc);
+    if (!want_simulated_inputs)
+    {
+        ImGuiIO& main_io = ctx->IO;
+        //IM_ASSERT(engine->UiContextActive == NULL);
+        if (engine->InputApplyingSimulatedIO > 0)
+        {
+            // Restore
+            engine->InputApplyingSimulatedIO--;
+            main_io.MousePos = engine->InputHostLastMousePos;
+            //main_io.WantSetMousePos = true;
+        }
+        else
+        {
+            // Backup
+            if (ImGui::IsMousePosValid(&main_io.MousePos))
+                engine->InputMousePosValue = engine->InputHostLastMousePos = main_io.MousePos;
+        }
+    }
 
     // Garbage collect unused tasks
     const int LOCATION_TASK_ELAPSE_FRAMES = 20;
@@ -2077,7 +2119,7 @@ void	ImGuiTestContext::MouseMoveToPos(ImVec2 target)
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
     LogVerbose("MouseMove from (%.0f,%.0f) to (%.0f,%.0f)\n", Engine->InputMousePosValue.x, Engine->InputMousePosValue.y, target.x, target.y);
 
-    // We manipulate Engine->SetMousePosValue without reading back from g.IO.MousePos because the later is rounded.
+    // We manipulate Engine->InputMousePosValue without reading back from g.IO.MousePos because the later is rounded.
     // To handle high framerate it is easier to bypass this rounding.
     while (true)
     {
@@ -2091,7 +2133,6 @@ void	ImGuiTestContext::MouseMoveToPos(ImVec2 target)
 
         if (Engine->IO.ConfigRunFast || (inv_length >= 1.0f / move_speed))
         {
-            Engine->InputMousePosSet = true;
             Engine->InputMousePosValue = target;
             ImGuiTestEngine_Yield(Engine);
             ImGuiTestEngine_Yield(Engine);
@@ -2099,7 +2140,6 @@ void	ImGuiTestContext::MouseMoveToPos(ImVec2 target)
         }
         else
         {
-            Engine->InputMousePosSet = true;
             Engine->InputMousePosValue = Engine->InputMousePosValue + delta * move_speed * inv_length;
             ImGuiTestEngine_Yield(Engine);
         }
@@ -2115,7 +2155,6 @@ void    ImGuiTestContext::MouseDown(int button)
     LogVerbose("MouseDown %d\n", button);
 
     UiContext->IO.MouseClickedTime[button] = -FLT_MAX; // Prevent accidental double-click from happening ever
-    Engine->InputMouseButtonsSet = true;
     Engine->InputMouseButtonsValue = (1 << button);
     Yield();
 }
@@ -2128,7 +2167,6 @@ void    ImGuiTestContext::MouseUp(int button)
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
     LogVerbose("MouseUp %d\n", button);
 
-    Engine->InputMouseButtonsSet = true;
     Engine->InputMouseButtonsValue &= ~(1 << button);
     Yield();
 }
@@ -2149,10 +2187,8 @@ void    ImGuiTestContext::MouseClick(int button)
 
     // Press
     UiContext->IO.MouseClickedTime[button] = -FLT_MAX; // Prevent accidental double-click from happening ever
-    Engine->InputMouseButtonsSet = true;
     Engine->InputMouseButtonsValue = (1 << button);
     Yield();
-    Engine->InputMouseButtonsSet = true;
     Engine->InputMouseButtonsValue = 0;
     Yield();
     Yield(); // Give a frame for items to react
@@ -2171,10 +2207,8 @@ void    ImGuiTestContext::MouseDoubleClick(int button)
     UiContext->IO.MouseClickedTime[button] = -FLT_MAX; // Prevent accidental double-click from happening ever
     for (int n = 0; n < 2; n++)
     {
-        Engine->InputMouseButtonsSet = true;
         Engine->InputMouseButtonsValue = (1 << button);
         Yield();
-        Engine->InputMouseButtonsSet = true;
         Engine->InputMouseButtonsValue = 0;
         Yield();
     }
@@ -2632,10 +2666,8 @@ void    ImGuiTestContext::ItemHold(ImGuiTestRef ref, float time)
     MouseMove(ref);
 
     Yield();
-    Engine->InputMouseButtonsSet = true;
     Engine->InputMouseButtonsValue = (1 << 0);
     Sleep(time);
-    Engine->InputMouseButtonsSet = true;
     Engine->InputMouseButtonsValue = 0;
     Yield();
 }
@@ -2650,10 +2682,8 @@ void    ImGuiTestContext::ItemHoldForFrames(ImGuiTestRef ref, int frames)
 
     MouseMove(ref);
     Yield();
-    Engine->InputMouseButtonsSet = true;
     Engine->InputMouseButtonsValue = (1 << 0);
     YieldFrames(frames);
-    Engine->InputMouseButtonsSet = true;
     Engine->InputMouseButtonsValue = 0;
     Yield();
 }
