@@ -949,13 +949,11 @@ static void ImGuiTestEngine_RunTest(ImGuiTestEngine* engine, ImGuiTestContext* c
         }
     }
 
-    // Additional yields 
-    // - to avoid consecutive tests who may share identifiers from missing their window/item activation.
-    // - so the log gets scrolled to the bottom on the last frame of the log output.
+    // Additional yields to avoid consecutive tests who may share identifiers from missing their window/item activation.
     ctx->RunFlags |= ImGuiTestRunFlags_NoGuiFunc;
     ctx->Yield();
     ctx->Yield();
-    
+
     // Restore active func
     ctx->ActiveFunc = backup_active_func;
 
@@ -1079,6 +1077,19 @@ void ImGuiTestEngineHook_ItemInfo(ImGuiContext* ctx, ImGuiID id, const char* lab
         if (label)
             ImStrncpy(item->DebugLabel, label, IM_ARRAYSIZE(item->DebugLabel));
     }
+}
+
+// Forward core/user-land text to test log
+void ImGuiTestEngineHook_Log(ImGuiContext* ctx, const char* fmt, ...)
+{
+    ImGuiTestEngine* engine = GImGuiHookingEngine;
+    if (engine == NULL || engine->UiContextActive != ctx)
+        return;
+
+    va_list args;
+    va_start(args, fmt);
+    engine->TestContext->LogExV(ImGuiTestLogFlags_None, fmt, args);
+    va_end(args);
 }
 
 void ImGuiTestEngineHook_AssertFunc(const char* expr, const char* file, const char* function, int line)
@@ -1488,8 +1499,11 @@ void    ImGuiTestEngine_ShowTestWindow(ImGuiTestEngine* engine, bool* p_open)
             if (engine->UiSelectedTest)
             {
                 DrawTestLog(engine, engine->UiSelectedTest, true);
-                if (ImGuiTestEngine_IsRunningTests(engine))
+                if (engine->UiSelectedTest->TestLogScrollToBottom)
+                {
+                    engine->UiSelectedTest->TestLogScrollToBottom = false;
                     ImGui::SetScrollHereY();
+                }
             }
             ImGui::EndChild();
             ImGui::EndTabItem();
@@ -1635,6 +1649,7 @@ void    ImGuiTestContext::LogExV(ImGuiTestLogFlags flags, const char* fmt, va_li
             test->TestLog.appendf("[%04d] ", ctx->FrameCount);
         test->TestLog.appendfv(fmt, args);
     }
+    test->TestLogScrollToBottom = true;
 
     if (Engine->IO.ConfigLogToTTY)
         printf("%s", test->TestLog.c_str() + prev_size);
