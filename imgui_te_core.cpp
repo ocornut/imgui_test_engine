@@ -1188,9 +1188,9 @@ bool ImGuiTestEngineHook_Check(const char* file, const char* func, int line, ImG
         if (result && !(flags & ImGuiTestCheckFlags_SilentSuccess))
         {
             if (file)
-                test->TestLog.appendf("[%04d] OK %s:%d  '%s'\n", ctx->FrameCount, file_without_path, line, expr);
+                test->TestLog.appendf("[%04d] OK %s:%d  '%s'", ctx->FrameCount, file_without_path, line, expr);
             else
-                test->TestLog.appendf("[%04d] OK  '%s'\n", ctx->FrameCount, expr);
+                test->TestLog.appendf("[%04d] OK  '%s'", ctx->FrameCount, expr);
         }
         if (!result)
         {
@@ -1200,11 +1200,12 @@ bool ImGuiTestEngineHook_Check(const char* file, const char* func, int line, ImG
                 test->TestLog.appendf("[%04d] KO %s:%d  '%s'", ctx->FrameCount, file_without_path, line, expr, value_expr);
             else
                 test->TestLog.appendf("[%04d] KO  '%s'", ctx->FrameCount, expr, value_expr);
-
-            if (value_expr != NULL)
-                test->TestLog.appendf(" -> '%s'", value_expr);
-            test->TestLog.appendf("\n");
         }
+
+        bool display_value_expr = (value_expr != NULL) && (result == false);
+        if (display_value_expr)
+            test->TestLog.appendf(" -> '%s'", value_expr);
+        test->TestLog.appendf("\n");
     }
     else
     {

@@ -106,55 +106,60 @@ void    ImGuiTestEngineHook_AssertFunc(const char* expr, const char* file, const
 
 // We embed every macro in a do {} while(0) statement as a trick to allow using them as regular single statement, e.g. if (XXX) IM_CHECK(A); else IM_CHECK(B)
 // We leave the assert call (which will trigger a debugger break) outside of the check function to step out faster.
-#define IM_CHECK_NO_RET(_EXPR)      do { if (ImGuiTestEngineHook_Check(__FILE__, __func__, __LINE__, ImGuiTestCheckFlags_None, (bool)(_EXPR), #_EXPR))  { IM_ASSERT(_EXPR); } } while (0)
-#define IM_CHECK(_EXPR)             do { if (ImGuiTestEngineHook_Check(__FILE__, __func__, __LINE__, ImGuiTestCheckFlags_None, (bool)(_EXPR), #_EXPR))  { IM_ASSERT(_EXPR); } if (!(bool)(_EXPR)) return; } while (0)
-#define IM_CHECK_SILENT(_EXPR)      do { if (ImGuiTestEngineHook_Check(__FILE__, __func__, __LINE__, ImGuiTestCheckFlags_SilentSuccess, (bool)(_EXPR), #_EXPR))  { IM_ASSERT(0); } if (!(bool)(_EXPR)) return; } while (0)
-#define IM_CHECK_RETV(_EXPR, _RETV) do { if (ImGuiTestEngineHook_Check(__FILE__, __func__, __LINE__, ImGuiTestCheckFlags_None, (bool)(_EXPR), #_EXPR))  { IM_ASSERT(_EXPR); } if (!(bool)(_EXPR)) return _RETV; } while (0)
-#define IM_ERRORF(_FMT,...)         do { if (ImGuiTestEngineHook_Error(__FILE__, __func__, __LINE__, ImGuiTestCheckFlags_None, _FMT, __VA_ARGS__))      { IM_ASSERT(0); } } while (0)
-#define IM_ERRORF_NOHDR(_FMT,...)   do { if (ImGuiTestEngineHook_Error(NULL, NULL, 0, ImGuiTestCheckFlags_None, _FMT, __VA_ARGS__))                     { IM_ASSERT(0); } } while (0)
+#define IM_CHECK_NO_RET(_EXPR)      do { if (ImGuiTestEngineHook_Check(__FILE__, __func__, __LINE__, ImGuiTestCheckFlags_None, (bool)(_EXPR), #_EXPR))          { IM_ASSERT(_EXPR); } } while (0)
+#define IM_CHECK(_EXPR)             do { if (ImGuiTestEngineHook_Check(__FILE__, __func__, __LINE__, ImGuiTestCheckFlags_None, (bool)(_EXPR), #_EXPR))          { IM_ASSERT(_EXPR); } if (!(bool)(_EXPR)) return; } while (0)
+#define IM_CHECK_SILENT(_EXPR)      do { if (ImGuiTestEngineHook_Check(__FILE__, __func__, __LINE__, ImGuiTestCheckFlags_SilentSuccess, (bool)(_EXPR), #_EXPR)) { IM_ASSERT(0); } if (!(bool)(_EXPR)) return; } while (0)
+#define IM_CHECK_RETV(_EXPR, _RETV) do { if (ImGuiTestEngineHook_Check(__FILE__, __func__, __LINE__, ImGuiTestCheckFlags_None, (bool)(_EXPR), #_EXPR))          { IM_ASSERT(_EXPR); } if (!(bool)(_EXPR)) return _RETV; } while (0)
+#define IM_ERRORF(_FMT,...)         do { if (ImGuiTestEngineHook_Error(__FILE__, __func__, __LINE__, ImGuiTestCheckFlags_None, _FMT, __VA_ARGS__))              { IM_ASSERT(0); } } while (0)
+#define IM_ERRORF_NOHDR(_FMT,...)   do { if (ImGuiTestEngineHook_Error(NULL, NULL, 0, ImGuiTestCheckFlags_None, _FMT, __VA_ARGS__))                             { IM_ASSERT(0); } } while (0)
 
-template <typename T> void ImGuiTestEngineUtil_AppendStrValue(ImGuiTextBuffer& buff, T value)           { static_assert(false, "Append function not defined"); }
-template <> inline void ImGuiTestEngineUtil_AppendStrValue(ImGuiTextBuffer& buff, const char* value)    { buff.appendf("%s", value); }
-template <> inline void ImGuiTestEngineUtil_AppendStrValue(ImGuiTextBuffer& buff, int value)            { buff.appendf("%d", value); }
-template <> inline void ImGuiTestEngineUtil_AppendStrValue(ImGuiTextBuffer& buff, short value)          { buff.appendf("%hd", value); }
-template <> inline void ImGuiTestEngineUtil_AppendStrValue(ImGuiTextBuffer& buff, unsigned int value)   { buff.appendf("%u", value); }
-template <> inline void ImGuiTestEngineUtil_AppendStrValue(ImGuiTextBuffer& buff, float value)          { buff.appendf("%f", value); }
-template <> inline void ImGuiTestEngineUtil_AppendStrValue(ImGuiTextBuffer& buff, ImVec2 value)         { buff.appendf("(%f, %f)", value.x, value.y); }
-template <> inline void ImGuiTestEngineUtil_AppendStrValue(ImGuiTextBuffer& buff, const void* value)    { buff.appendf("%p", value); }
+template<typename T> void ImGuiTestEngineUtil_AppendStrValue(ImGuiTextBuffer& buf, T value)         { IM_STATIC_ASSERT(false && "Append function not defined"); }
+template<> inline void ImGuiTestEngineUtil_AppendStrValue(ImGuiTextBuffer& buf, const char* value)  { buf.appendf("%s", value); }
+template<> inline void ImGuiTestEngineUtil_AppendStrValue(ImGuiTextBuffer& buf, int value)          { buf.appendf("%d", value); }
+template<> inline void ImGuiTestEngineUtil_AppendStrValue(ImGuiTextBuffer& buf, short value)        { buf.appendf("%hd", value); }
+template<> inline void ImGuiTestEngineUtil_AppendStrValue(ImGuiTextBuffer& buf, unsigned int value) { buf.appendf("%u", value); }
+template<> inline void ImGuiTestEngineUtil_AppendStrValue(ImGuiTextBuffer& buf, float value)        { buf.appendf("%f", value); }
+template<> inline void ImGuiTestEngineUtil_AppendStrValue(ImGuiTextBuffer& buf, ImVec2 value)       { buf.appendf("(%f, %f)", value.x, value.y); }
+template<> inline void ImGuiTestEngineUtil_AppendStrValue(ImGuiTextBuffer& buf, const void* value)  { buf.appendf("%p", value); }
 
-#define IM_CHECK_BINARY(_LHS, _RHS, _OP)                                  \
-    do                                                                    \
-    {                                                                     \
-        auto __lhs = _LHS;  /* Cache in variables to avoid side effects */\
-        auto __rhs = _RHS;                                                \
-        bool __res = __lhs _OP __rhs;                                     \
-        ImGuiTextBuffer value_expr_buffer;                                \
-        ImGuiTestEngineUtil_AppendStrValue(value_expr_buffer, __lhs);     \
-        value_expr_buffer.append(#_OP);                                   \
-        ImGuiTestEngineUtil_AppendStrValue(value_expr_buffer, __rhs);     \
-        if (ImGuiTestEngineHook_Check(__FILE__, __func__, __LINE__, ImGuiTestCheckFlags_None, __res, #_LHS #_OP #_RHS, value_expr_buffer.c_str())) \
-            IM_ASSERT(__res);                                             \
-        if (!__res)                                                       \
-            return;                                                       \
+// Those macros allow us to print out the values of both lhs and rhs expressions involved in a check.
+#define IM_CHECK_OP(_LHS, _RHS, _OP)                                        \
+    do                                                                      \
+    {                                                                       \
+        auto __lhs = _LHS;  /* Cache in variables to avoid side effects */  \
+        auto __rhs = _RHS;                                                  \
+        bool __res = __lhs _OP __rhs;                                       \
+        ImGuiTextBuffer value_expr_buf;                                     \
+        {                                                                   \
+            ImGuiTestEngineUtil_AppendStrValue(value_expr_buf, __lhs);      \
+            value_expr_buf.append(" " #_OP " ");                            \
+            ImGuiTestEngineUtil_AppendStrValue(value_expr_buf, __rhs);      \
+        }                                                                   \
+        if (ImGuiTestEngineHook_Check(__FILE__, __func__, __LINE__, ImGuiTestCheckFlags_None, __res, #_LHS " " #_OP " " #_RHS, value_expr_buf.c_str())) \
+            IM_ASSERT(__res);                                               \
+        if (!__res)                                                         \
+            return;                                                         \
     } while (0)
-#define IM_CHECK_EQUAL(_LHS, _RHS)              IM_CHECK_BINARY(_LHS, _RHS, ==)
-#define IM_CHECK_NOT_EQUAL(_LHS, _RHS)          IM_CHECK_BINARY(_LHS, _RHS, !=)
-#define IM_CHECK_LESSER(_LHS, _RHS)             IM_CHECK_BINARY(_LHS, _RHS, <)
-#define IM_CHECK_LESSER_OR_EQUAL(_LHS, _RHS)    IM_CHECK_BINARY(_LHS, _RHS, <=)
-#define IM_CHECK_GREATER(_LHS, _RHS)            IM_CHECK_BINARY(_LHS, _RHS, >)
-#define IM_CHECK_GREATER_OR_EQUAL(_LHS, _RHS)   IM_CHECK_BINARY(_LHS, _RHS, >=)
+#define IM_CHECK_EQUAL(_LHS, _RHS)              IM_CHECK_OP(_LHS, _RHS, ==)
+#define IM_CHECK_NOT_EQUAL(_LHS, _RHS)          IM_CHECK_OP(_LHS, _RHS, !=)
+#define IM_CHECK_LESSER(_LHS, _RHS)             IM_CHECK_OP(_LHS, _RHS, <)
+#define IM_CHECK_LESSER_OR_EQUAL(_LHS, _RHS)    IM_CHECK_OP(_LHS, _RHS, <=)
+#define IM_CHECK_GREATER(_LHS, _RHS)            IM_CHECK_OP(_LHS, _RHS, >)
+#define IM_CHECK_GREATER_OR_EQUAL(_LHS, _RHS)   IM_CHECK_OP(_LHS, _RHS, >=)
 
-#define IM_CHECK_STR_EQUAL(_LHS, _RHS)                                    \
-    do                                                                    \
-    {                                                                     \
-        bool __res = strcmp(_LHS, _RHS) == 0;                             \
-        ImGuiTextBuffer value_expr_buffer;                                \
-        value_expr_buffer.appendf("\"%s\" == \"%s\"", _LHS, _RHS);        \
-        value_expr_buffer.append("\"");                                   \
-        if (ImGuiTestEngineHook_Check(__FILE__, __func__, __LINE__, ImGuiTestCheckFlags_None, __res, #_LHS " == " #_RHS, value_expr_buffer.c_str())) \
-            IM_ASSERT(__res);                                             \
-        if (!__res)                                                       \
-            return;                                                       \
+#define IM_CHECK_STR_EQUAL(_LHS, _RHS)                                      \
+    do                                                                      \
+    {                                                                       \
+        bool __res = strcmp(_LHS, _RHS) == 0;                               \
+        ImGuiTextBuffer value_expr_buf;                                     \
+        {                                                                   \
+            value_expr_buf.appendf("\"%s\" == \"%s\"", _LHS, _RHS);         \
+            value_expr_buf.append("\"");                                    \
+        }                                                                   \
+        if (ImGuiTestEngineHook_Check(__FILE__, __func__, __LINE__, ImGuiTestCheckFlags_None, __res, #_LHS " == " #_RHS, value_expr_buf.c_str())) \
+            IM_ASSERT(__res);                                               \
+        if (!__res)                                                         \
+            return;                                                         \
     } while (0)
 
 //#define IM_ASSERT(_EXPR)      (void)( (!!(_EXPR)) || (ImGuiTestEngineHook_Check(false, #_EXPR, __FILE__, __func__, __LINE__), 0) )
