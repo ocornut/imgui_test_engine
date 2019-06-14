@@ -1156,7 +1156,7 @@ void ImGuiTestEngineHook_AssertFunc(const char* expr, const char* file, const ch
 //-------------------------------------------------------------------------
 
 // Return true to request a debugger break
-bool ImGuiTestEngineHook_Check(const char* file, const char* func, int line, ImGuiTestCheckFlags flags, bool result, const char* expr)
+bool ImGuiTestEngineHook_Check(const char* file, const char* func, int line, ImGuiTestCheckFlags flags, bool result, const char* expr, const char* value_expr)
 {
     ImGuiTestEngine* engine = GImGuiHookingEngine;
     (void)func;
@@ -1170,9 +1170,13 @@ bool ImGuiTestEngineHook_Check(const char* file, const char* func, int line, ImG
     {
         ImOsConsoleSetTextColor(ImOsConsoleTextColor_BrightRed);
         if (file)
-            printf("KO: %s:%d  '%s'\n", file_without_path, line, expr);
+            printf("KO: %s:%d  '%s'", file_without_path, line, expr);
         else
-            printf("KO: %s\n", expr);
+            printf("KO: %s", expr);
+
+        if (value_expr != NULL)
+            printf(" -> '%s'", value_expr);
+        printf("\n");
         ImOsConsoleSetTextColor(ImOsConsoleTextColor_White);
     }
     
@@ -1193,9 +1197,13 @@ bool ImGuiTestEngineHook_Check(const char* file, const char* func, int line, ImG
             if (!(ctx->RunFlags & ImGuiTestRunFlags_NoTestFunc))
                 test->Status = ImGuiTestStatus_Error;
             if (file)
-                test->TestLog.appendf("[%04d] KO %s:%d  '%s'\n", ctx->FrameCount, file_without_path, line, expr);
+                test->TestLog.appendf("[%04d] KO %s:%d  '%s'", ctx->FrameCount, file_without_path, line, expr, value_expr);
             else
-                test->TestLog.appendf("[%04d] KO  '%s'\n", ctx->FrameCount, expr);
+                test->TestLog.appendf("[%04d] KO  '%s'", ctx->FrameCount, expr, value_expr);
+
+            if (value_expr != NULL)
+                test->TestLog.appendf(" -> '%s'", value_expr);
+            test->TestLog.appendf("\n");
         }
     }
     else
