@@ -267,7 +267,7 @@ static void FileOpenerFunc(const char* filename, int line, void*)
 {
     if (!g_App.OptFileOpener)
     {
-        printf("Executable needs to be called with a -fileopener argument!\n");
+        fprintf(stderr, "Executable needs to be called with a -fileopener argument!\n");
         return;
     }
 
@@ -276,7 +276,7 @@ static void FileOpenerFunc(const char* filename, int line, void*)
     printf("Calling: '%s'\n", cmd_line.c_str());
     bool ret = OsCreateProcess(cmd_line.c_str());
     if (!ret)
-        printf("Error creating process!\n");
+        fprintf(stderr, "Error creating process!\n");
 }
 
 bool MainLoopNewFrameDX11()
