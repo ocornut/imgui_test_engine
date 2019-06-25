@@ -3,9 +3,9 @@ imgui_perflog.csv
 
 ## Build cruft
 build/*
-*/Debug/*
-*/Release/*
-*/x64/*
+Debug/*
+Release/*
+x64/*
 *.o
 *.obj
 *.exe
