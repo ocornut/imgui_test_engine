@@ -113,7 +113,7 @@ void    ImGuiTestEngineHook_AssertFunc(const char* expr, const char* file, const
 #define IM_ERRORF(_FMT,...)         do { if (ImGuiTestEngineHook_Error(__FILE__, __func__, __LINE__, ImGuiTestCheckFlags_None, _FMT, __VA_ARGS__))              { IM_ASSERT(0); } } while (0)
 #define IM_ERRORF_NOHDR(_FMT,...)   do { if (ImGuiTestEngineHook_Error(NULL, NULL, 0, ImGuiTestCheckFlags_None, _FMT, __VA_ARGS__))                             { IM_ASSERT(0); } } while (0)
 
-template<typename T> void ImGuiTestEngineUtil_AppendStrValue(ImGuiTextBuffer& buf, T value)         { IM_STATIC_ASSERT(false && "Append function not defined"); }
+template<typename T> void ImGuiTestEngineUtil_AppendStrValue(ImGuiTextBuffer& buf, T value)         { /*static_assert(false, "Append function not defined");*/ }
 template<> inline void ImGuiTestEngineUtil_AppendStrValue(ImGuiTextBuffer& buf, const char* value)  { buf.appendf("%s", value); }
 template<> inline void ImGuiTestEngineUtil_AppendStrValue(ImGuiTextBuffer& buf, int value)          { buf.appendf("%d", value); }
 template<> inline void ImGuiTestEngineUtil_AppendStrValue(ImGuiTextBuffer& buf, short value)        { buf.appendf("%hd", value); }
@@ -184,6 +184,7 @@ bool                ImGuiTestEngine_IsRunningTests(ImGuiTestEngine* engine);
 bool                ImGuiTestEngine_IsRunningTest(ImGuiTestEngine* engine, ImGuiTest* test);
 void                ImGuiTestEngine_CalcSourceLineEnds(ImGuiTestEngine* engine);
 void                ImGuiTestEngine_PrintResultSummary(ImGuiTestEngine* engine);
+void                ImGuiTestEngine_GetResult(ImGuiTestEngine* engine, int& count_tested, int& success_count);
 
 // IO structure
 typedef bool (*ImGuiTestEngineNewFrameFunc)(ImGuiTestEngine*, void* user_data);
@@ -229,7 +230,7 @@ struct ImGuiTestItemInfo
     ImRect                      RectFull = ImRect();
     ImRect                      RectClipped = ImRect();
     ImGuiItemStatusFlags        StatusFlags = 0;
-    char                        DebugLabel[32] = "";        // Shortened label for debugging purpose
+    char                        DebugLabel[32] = {};        // Shortened label for debugging purpose
 
     ImGuiTestItemInfo()
     {
@@ -402,7 +403,7 @@ struct ImGuiTestGenericVars
     ImGuiTestGenericVars()  { Clear(); }
     void Clear()            { StrLarge.clear(); memset(this, 0, sizeof(*this)); }
     void ClearInts()        { Int1 = Int2 = 0; memset(IntArray, 0, sizeof(IntArray)); }
-    void ClearBools()       { Bool2 = Bool2 = false; memset(BoolArray, 0, sizeof(BoolArray)); }
+    void ClearBools()       { Bool1 = Bool2 = false; memset(BoolArray, 0, sizeof(BoolArray)); }
 };
 
 enum ImGuiTestActiveFunc
@@ -439,10 +440,10 @@ struct ImGuiTestContext
     }
 
     void        RunCurrentTest(void* user_data);
-    void        LogEx(ImGuiTestLogFlags flags, const char* fmt, ...) IM_FMTARGS(1);
-    void        LogExV(ImGuiTestLogFlags flags, const char* fmt, va_list args) IM_FMTLIST(1);
-    void        Log(const char* fmt, ...) IM_FMTARGS(1);
-    void        LogVerbose(const char* fmt, ...) IM_FMTARGS(1);
+    void        LogEx(ImGuiTestLogFlags flags, const char* fmt, ...) IM_FMTARGS(3); // implicit 'this' arg
+    void        LogExV(ImGuiTestLogFlags flags, const char* fmt, va_list args) IM_FMTLIST(3);
+    void        Log(const char* fmt, ...) IM_FMTARGS(2);
+    void        LogVerbose(const char* fmt, ...) IM_FMTARGS(2);
     void        LogDebug();
     void        Finish();
     bool        IsError() const             { return Test->Status == ImGuiTestStatus_Error || Abort; }

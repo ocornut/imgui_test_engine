@@ -24,7 +24,6 @@
 
 // Helper Operators
 static inline bool operator==(const ImVec2& lhs, const ImVec2& rhs) { return lhs.x == rhs.x && lhs.y == rhs.y; }
-static inline bool operator!=(const ImVec2& lhs, const ImVec2& rhs) { return lhs.x != rhs.x && lhs.y != rhs.y; }
 static inline bool FloatEqual(float f1, float f2, float epsilon = FLT_EPSILON) { float d = f2 - f1; return fabsf(d) <= FLT_EPSILON; }
 
 #define REGISTER_TEST(_CATEGORY, _NAME)    ImGuiTestEngine_RegisterTest(e, _CATEGORY, _NAME, __FILE__, __LINE__);
@@ -698,8 +697,8 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
             vars.StrLarge.resize(10000, 0);
         ImGui::SetNextWindowSize(ImVec2(ImGui::GetFontSize() * 50, 0.0f));
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
-        ImGui::Text("strlen() = %d", strlen(vars.StrLarge.Data));
-        ImGui::InputText("Dummy", "", 0, ImGuiInputTextFlags_None);
+        ImGui::Text("strlen() = %d", (int)strlen(vars.StrLarge.Data));
+        ImGui::InputText("Dummy", vars.Str1, IM_ARRAYSIZE(vars.Str1), ImGuiInputTextFlags_None);
         ImGui::InputTextMultiline("InputText", vars.StrLarge.Data, vars.StrLarge.Size, ImVec2(-1, ImGui::GetFontSize() * 20), ImGuiInputTextFlags_None);
         ImGui::End();
         //ImDebugShowInputTextState();

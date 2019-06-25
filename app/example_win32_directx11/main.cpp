@@ -362,7 +362,7 @@ bool MainLoopEndFrame()
     return true;
 };
 
-static bool ParseCommandLineOptions(int argc, char** argv)
+static bool ParseCommandLineOptions(int argc, char const** argv)
 {
     for (int n = 1; n < argc; n++)
     {
@@ -444,7 +444,7 @@ static bool ParseCommandLineOptions(int argc, char** argv)
     return true;
 }
 
-int main(int argc, char** argv)
+int main(int argc, char const** argv)
 {
 #ifdef DEBUG_CRT
     DebugCrtInit(0);

@@ -38,7 +38,7 @@ void        ImOsConsoleSetTextColor(ImOsConsoleTextColor color);
 
 void        ImPathFixSeparatorsForCurrentOS(char* buf);
 
-void        ImParseSplitCommandLine(int* out_argc, char*** out_argv, const char* cmd_line);
+void        ImParseSplitCommandLine(int* out_argc, char const*** out_argv, const char* cmd_line);
 void        ImParseDateFromCompilerIntoYMD(const char* in_data, char* out_buf, size_t out_buf_size);
 
 bool        ImFileLoadSourceBlurb(const char* file_name, int line_no_start, int line_no_end, ImGuiTextBuffer* out_buf);

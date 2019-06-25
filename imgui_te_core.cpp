@@ -252,8 +252,9 @@ static const char* GetVerboseLevelName(ImGuiTestVerboseLevel v)
     case ImGuiTestVerboseLevel_Min:     return "Minimum";
     case ImGuiTestVerboseLevel_Normal:  return "Normal";
     case ImGuiTestVerboseLevel_Max:     return "Max";
+    case ImGuiTestVerboseLevel_COUNT:
+    default:                            return "N/A";
     }
-    return "N/A";
 }
 
 //-------------------------------------------------------------------------
@@ -354,7 +355,7 @@ void ImGuiTestEngine_SetupBuildInfo(ImGuiTestEngine* engine)
     engine->InfoBuildOS = "Windows";
 #elif defined(__linux) || defined(__linux__)
     engine->InfoBuildOS = "Linux";
-#elif defined(__MACH__) || (defined(__MSL__)
+#elif defined(__MACH__) || defined(__MSL__)
     engine->InfoBuildOS = "OSX";
 #elif defined(__ORBIS__)
     engine->InfoBuildOS = "PS4";
@@ -450,7 +451,7 @@ static ImGuiTestItemInfo* ImGuiTestEngine_ItemLocate(ImGuiTestEngine* engine, Im
             size_t header_sz = (size_t)(IM_ARRAYSIZE(task->DebugName) * 0.30f);
             size_t footer_sz = IM_ARRAYSIZE(task->DebugName) - 2 - header_sz;
             IM_ASSERT(header_sz > 0 && footer_sz > 0);
-            ImFormatString(task->DebugName, IM_ARRAYSIZE(task->DebugName), "%.*s..%.*s", header_sz, debug_id, footer_sz, debug_id + debug_id_sz - footer_sz);
+            ImFormatString(task->DebugName, IM_ARRAYSIZE(task->DebugName), "%.*s..%.*s", (int)header_sz, debug_id, (int)footer_sz, debug_id + debug_id_sz - footer_sz);
         }
     }
 #endif
@@ -547,6 +548,9 @@ static void ImGuiTestEngine_ApplyInputToImGuiContext(ImGuiTestEngine* engine)
                     main_io.AddInputCharacter(input.Char);
                     break;
                 }
+                case ImGuiTestInputType_None:
+                default:
+                    break;
                 }
             }
             engine->InputQueue.resize(0);
@@ -912,6 +916,14 @@ void ImGuiTestEngine_PrintResultSummary(ImGuiTestEngine* engine)
 {
     int count_tested = 0;
     int count_success = 0;
+    ImGuiTestEngine_GetResult(engine, count_tested, count_success);
+    printf("\nTests Result: %s\n(%d/%d tests passed)\n", (count_success == count_tested) ? "OK" : "KO", count_success, count_tested);
+}
+
+void ImGuiTestEngine_GetResult(ImGuiTestEngine* engine, int& count_tested, int& count_success)
+{
+    count_tested = 0;
+    count_success = 0;
     for (int n = 0; n < engine->TestsAll.Size; n++)
     {
         ImGuiTest* test = engine->TestsAll[n];
@@ -923,7 +935,6 @@ void ImGuiTestEngine_PrintResultSummary(ImGuiTestEngine* engine)
         if (test->Status == ImGuiTestStatus_Success)
             count_success++;
     }
-    printf("\nTests Result: %s\n(%d/%d tests passed)\n", (count_success == count_tested) ? "OK" : "KO", count_success, count_tested);
 }
 
 static void ImGuiTestEngine_RunTest(ImGuiTestEngine* engine, ImGuiTestContext* ctx, void* user_data)
@@ -1170,13 +1181,13 @@ bool ImGuiTestEngineHook_Check(const char* file, const char* func, int line, ImG
     {
         ImOsConsoleSetTextColor(ImOsConsoleTextColor_BrightRed);
         if (file)
-            printf("KO: %s:%d  '%s'", file_without_path, line, expr);
+            fprintf(stderr, "KO: %s:%d  '%s'", file_without_path, line, expr);
         else
-            printf("KO: %s", expr);
+            fprintf(stderr, "KO: %s", expr);
 
         if (value_expr != NULL)
-            printf(" -> '%s'", value_expr);
-        printf("\n");
+            fprintf(stderr, " -> '%s'", value_expr);
+        fprintf(stderr, "\n");
         ImOsConsoleSetTextColor(ImOsConsoleTextColor_White);
     }
     
@@ -1197,9 +1208,9 @@ bool ImGuiTestEngineHook_Check(const char* file, const char* func, int line, ImG
             if (!(ctx->RunFlags & ImGuiTestRunFlags_NoTestFunc))
                 test->Status = ImGuiTestStatus_Error;
             if (file)
-                test->TestLog.appendf("[%04d] KO %s:%d  '%s'", ctx->FrameCount, file_without_path, line, expr, value_expr);
+                test->TestLog.appendf("[%04d] KO %s:%d  '%s'", ctx->FrameCount, file_without_path, line, expr);
             else
-                test->TestLog.appendf("[%04d] KO  '%s'", ctx->FrameCount, expr, value_expr);
+                test->TestLog.appendf("[%04d] KO  '%s'", ctx->FrameCount, expr);
         }
 
         bool display_value_expr = (value_expr != NULL) && (result == false);
@@ -1209,7 +1220,7 @@ bool ImGuiTestEngineHook_Check(const char* file, const char* func, int line, ImG
     }
     else
     {
-        printf("Error: no active test!\n");
+        fprintf(stderr, "Error: no active test!\n");
         IM_ASSERT(0);
     }
 
@@ -1283,7 +1294,7 @@ static void DrawTestLog(ImGuiTestEngine* e, ImGuiTest* test, bool is_interactive
 static void HelpTooltip(const char* desc)
 {
     if (ImGui::IsItemHovered())
-        ImGui::SetTooltip(desc);
+        ImGui::SetTooltip("%s", desc);
 }
 
 void    ImGuiTestEngine_ShowTestWindow(ImGuiTestEngine* engine, bool* p_open)
@@ -1313,7 +1324,6 @@ void    ImGuiTestEngine_ShowTestWindow(ImGuiTestEngine* engine, bool* p_open)
 #endif
 
     const float log_height = ImGui::GetTextLineHeight() * 20.0f;
-    const ImU32 col_highlight = IM_COL32(255, 255, 20, 255);
 
     // Options
     ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0, 0));
@@ -1398,7 +1408,7 @@ void    ImGuiTestEngine_ShowTestWindow(ImGuiTestEngine* engine, bool* p_open)
             ImGui::ColorButton("status", status_color, ImGuiColorEditFlags_NoTooltip);
             ImGui::SameLine();
             if (test->Status == ImGuiTestStatus_Running)
-                ImGui::RenderText(p + g.Style.FramePadding + ImVec2(0, 0), "|\0/\0-\0\\" + (((g.FrameCount / 5) & 3) << 1), NULL);
+                ImGui::RenderText(p + g.Style.FramePadding + ImVec2(0, 0), &"|\0/\0-\0\\"[(((g.FrameCount / 5) & 3) << 1)], NULL);
 
             bool queue_test = false;
             bool queue_gui_func = false;
@@ -2758,12 +2768,12 @@ void    ImGuiTestContext::MenuAction(ImGuiTestAction action, ImGuiTestRef ref)
         {
             // Click menu in menu bar
             IM_ASSERT(RefStr[0] != 0); // Unsupported: window needs to be in Ref
-            ImFormatString(buf, IM_ARRAYSIZE(buf), "##menubar/%.*s", p - path, path);
+            ImFormatString(buf, IM_ARRAYSIZE(buf), "##menubar/%.*s", (int)(p - path), path);
         }
         else
         {
             // Click sub menu in its own window
-            ImFormatString(buf, IM_ARRAYSIZE(buf), "/##Menu_%02d/%.*s", depth - 1, p - path, path);
+            ImFormatString(buf, IM_ARRAYSIZE(buf), "/##Menu_%02d/%.*s", depth - 1, (int)(p - path), path);
         }
 
         // We cannot move diagonally to a menu item because depending on the angle and other items we cross on our path we could close our target menu.
@@ -2773,9 +2783,9 @@ void    ImGuiTestContext::MenuAction(ImGuiTestAction action, ImGuiTestRef ref)
             ImGuiTestItemInfo* item = ItemLocate(buf);
             IM_CHECK(item != NULL);
             item->RefCount++;
-            if (depth > 1 && Engine->InputMousePosValue.x <= item->RectFull.Min.x || Engine->InputMousePosValue.x >= item->RectFull.Max.x)
+            if (depth > 1 && (Engine->InputMousePosValue.x <= item->RectFull.Min.x || Engine->InputMousePosValue.x >= item->RectFull.Max.x))
                 MouseMoveToPos(ImVec2(item->RectFull.GetCenter().x, Engine->InputMousePosValue.y));
-            if (depth > 0 && Engine->InputMousePosValue.y <= item->RectFull.Min.y || Engine->InputMousePosValue.y >= item->RectFull.Max.y)
+            if (depth > 0 && (Engine->InputMousePosValue.y <= item->RectFull.Min.y || Engine->InputMousePosValue.y >= item->RectFull.Max.y))
                 MouseMoveToPos(ImVec2(Engine->InputMousePosValue.x, item->RectFull.GetCenter().y));
             item->RefCount--;
         }

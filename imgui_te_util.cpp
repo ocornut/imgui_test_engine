@@ -114,7 +114,7 @@ void    ImPathFixSeparatorsForCurrentOS(char* buf)
 #endif
 }
 
-void    ImParseSplitCommandLine(int* out_argc, char*** out_argv, const char* cmd_line)
+void    ImParseSplitCommandLine(int* out_argc, char const*** out_argv, const char* cmd_line)
 {
     size_t cmd_line_len = strlen(cmd_line);
 
@@ -136,7 +136,7 @@ void    ImParseSplitCommandLine(int* out_argc, char*** out_argv, const char* cmd
     }
 
     int argc = n;
-    char** argv = (char**)malloc(sizeof(char*) * (argc + 1) + (cmd_line_len + 1));
+    char const** argv = (char const**)malloc(sizeof(char*) * (argc + 1) + (cmd_line_len + 1));
     char* cmd_line_dup = (char*)argv + sizeof(char*) * (argc + 1);
     strcpy(cmd_line_dup, cmd_line);
 

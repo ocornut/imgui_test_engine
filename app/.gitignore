@@ -33,10 +33,7 @@ xcuserdata
 *.out.wasm
 
 ## Unix executables
-example_glfw_opengl2/example_glfw_opengl2
-example_glfw_opengl3/example_glfw_opengl3
-example_sdl_opengl2/example_sdl_opengl2
-example_sdl_opengl3/example_sdl_opengl3
+test_app
 
 ## Dear ImGui Ini files
 imgui.ini
