@@ -443,7 +443,7 @@ static bool MainLoopNewFrameNull()
     return true;
 }
 
-static void MainLoopNull()
+static bool MainLoopNull()
 {
     // Init
     ImGuiIO& io = ImGui::GetIO();
@@ -465,9 +465,15 @@ static void MainLoopNull()
             break;
     }
 
+    int count_tested = 0;
+    int count_success = 0;
+    ImGuiTestEngine_GetResult(g_App.TestEngine, count_tested, count_success);
+
     ImGuiTestEngine_PrintResultSummary(g_App.TestEngine);
 
     ImGui::DestroyContext();
+
+    return count_tested == count_success;
 }
 
 static bool ParseCommandLineOptions(int argc, char const** argv)
@@ -552,6 +558,13 @@ static bool ParseCommandLineOptions(int argc, char const** argv)
     return true;
 }
 
+enum ImGuiTestApp_Status
+{
+    ImGuiTestApp_Status_Success,
+    ImGuiTestApp_Status_CommandLineError,
+    ImGuiTestApp_Status_TestFailed,
+};
+
 int main(int argc, char const** argv)
 {
 #ifdef DEBUG_CRT
@@ -564,14 +577,14 @@ int main(int argc, char const** argv)
         printf("# [exe] %s\n", CMDLINE_ARGS);
         ImParseSplitCommandLine(&argc, &argv, CMDLINE_ARGS);
         if (!ParseCommandLineOptions(argc, argv))
-            return 0;
+            return ImGuiTestApp_Status_CommandLineError;
         free(argv);
     }
     else
 #endif
     {
         if (!ParseCommandLineOptions(argc, argv))
-            return 0;
+            return ImGuiTestApp_Status_CommandLineError;
     }
     argv = NULL;
 
@@ -642,10 +655,13 @@ int main(int argc, char const** argv)
   //      test_io.ConfigBreakOnError = true;
 #endif
 
+    ImGuiTestApp_Status error_code = ImGuiTestApp_Status_Success;
+
     switch (g_App.Backend)
     {
     case ImGuiBackend_Null:
-        MainLoopNull();
+        if (!MainLoopNull())
+            error_code = ImGuiTestApp_Status_TestFailed;
         break;
     case ImGuiBackend_DX11:
         MainLoopDX11();
@@ -663,5 +679,5 @@ int main(int argc, char const** argv)
         getc(stdin);
     }
 
-    return 0;
+    return error_code;
 }
