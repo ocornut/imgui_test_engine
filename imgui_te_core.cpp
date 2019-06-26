@@ -1147,9 +1147,9 @@ void ImGuiTestEngineHook_Log(ImGuiContext* ctx, const char* fmt, ...)
 
 void ImGuiTestEngineHook_AssertFunc(const char* expr, const char* file, const char* function, int line)
 {
-    ImOsConsoleSetTextColor(ImOsConsoleTextColor_BrightYellow);
-    printf("Assert: '%s'\nIn %s:%d, function %s.", expr, file, line, function);
-    ImOsConsoleSetTextColor(ImOsConsoleTextColor_White);
+    ImOsConsoleSetTextColor(ImOsConsoleStream_StandardError, ImOsConsoleTextColor_BrightYellow);
+    fprintf(stderr, "Assert: '%s'\nIn %s:%d, function %s.", expr, file, line, function);
+    ImOsConsoleSetTextColor(ImOsConsoleStream_StandardError, ImOsConsoleTextColor_White);
 
     // Consider using github.com/scottt/debugbreak
 #ifdef _MSC_VER
@@ -1179,7 +1179,7 @@ bool ImGuiTestEngineHook_Check(const char* file, const char* func, int line, ImG
 
     if (result == false)
     {
-        ImOsConsoleSetTextColor(ImOsConsoleTextColor_BrightRed);
+        ImOsConsoleSetTextColor(ImOsConsoleStream_StandardError, ImOsConsoleTextColor_BrightRed);
         if (file)
             fprintf(stderr, "KO: %s:%d  '%s'", file_without_path, line, expr);
         else
@@ -1188,7 +1188,7 @@ bool ImGuiTestEngineHook_Check(const char* file, const char* func, int line, ImG
         if (value_expr != NULL)
             fprintf(stderr, " -> '%s'", value_expr);
         fprintf(stderr, "\n");
-        ImOsConsoleSetTextColor(ImOsConsoleTextColor_White);
+        ImOsConsoleSetTextColor(ImOsConsoleStream_StandardError, ImOsConsoleTextColor_White);
     }
     
     if (ImGuiTestContext* ctx = engine->TestContext)

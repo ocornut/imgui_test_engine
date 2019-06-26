@@ -81,10 +81,15 @@ ImU64   ImGetTimeInMicroseconds()
     return ms.count();
 }
 
-void    ImOsConsoleSetTextColor(ImOsConsoleTextColor color)
+void    ImOsConsoleSetTextColor(ImOsConsoleStream stream, ImOsConsoleTextColor color)
 {
 #ifdef _WIN32
-    HANDLE hConsole = ::GetStdHandle(STD_OUTPUT_HANDLE);
+    HANDLE hConsole = 0;
+    switch (stream)
+    {
+    case ImOsConsoleStream_StandardOutput: hConsole = ::GetStdHandle(STD_OUTPUT_HANDLE); break;
+    case ImOsConsoleStream_StandardError:  hConsole = ::GetStdHandle(STD_ERROR_HANDLE);  break;
+    }
     WORD wAttributes = FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE;
     switch (color)
     {
@@ -98,6 +103,29 @@ void    ImOsConsoleSetTextColor(ImOsConsoleTextColor color)
     default: IM_ASSERT(0);
     }
     ::SetConsoleTextAttribute(hConsole, wAttributes);
+#elif defined(__linux) || defined(__linux__) || defined(__MACH__) || defined(__MSL__)
+    // FIXME: check system capabilities (with environment variable TERM)
+    FILE* handle = 0;
+    switch (stream)
+    {
+    case ImOsConsoleStream_StandardOutput: handle = stdout; break;
+    case ImOsConsoleStream_StandardError:  handle = stderr; break;
+    }
+
+    const char* modifier = "";
+    switch (color)
+    {
+    case ImOsConsoleTextColor_Black:        modifier = "\033[30m";   break;
+    case ImOsConsoleTextColor_White:        modifier = "\033[0m";    break;
+    case ImOsConsoleTextColor_BrightWhite:  modifier = "\033[1;37m"; break;
+    case ImOsConsoleTextColor_BrightRed:    modifier = "\033[1;31m"; break;
+    case ImOsConsoleTextColor_BrightGreen:  modifier = "\033[1;32m"; break;
+    case ImOsConsoleTextColor_BrightBlue:   modifier = "\033[1;34m"; break;
+    case ImOsConsoleTextColor_BrightYellow: modifier = "\033[1;33m"; break;
+    default: IM_ASSERT(0);
+    }
+
+    fprintf(handle, "%s", modifier);
 #endif
 }
 

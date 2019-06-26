@@ -18,6 +18,12 @@ enum ImGuiKeyState
     ImGuiKeyState_Down      // Pressed/held
 };
 
+enum ImOsConsoleStream
+{
+    ImOsConsoleStream_StandardOutput,
+    ImOsConsoleStream_StandardError
+};
+
 enum ImOsConsoleTextColor
 {
     ImOsConsoleTextColor_Black,
@@ -34,7 +40,7 @@ ImGuiID     ImHashDecoratedPath(const char* str, ImGuiID seed = 0);
 void        ImSleepInMilliseconds(int ms);
 ImU64       ImGetTimeInMicroseconds();
 
-void        ImOsConsoleSetTextColor(ImOsConsoleTextColor color);
+void        ImOsConsoleSetTextColor(ImOsConsoleStream stream, ImOsConsoleTextColor color);
 
 void        ImPathFixSeparatorsForCurrentOS(char* buf);
 
