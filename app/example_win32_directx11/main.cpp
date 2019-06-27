@@ -22,6 +22,30 @@
 
 //-------------------------------------------------------------------------
 
+#ifdef _WIN32
+#define DEBUG_CRT
+#endif
+
+#ifdef DEBUG_CRT
+#define _CRTDBG_MAP_ALLOC  
+#include <stdlib.h>  
+#include <crtdbg.h>
+static inline void DebugCrtInit(long break_alloc)
+{
+    _CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
+    _CrtSetReportMode(_CRT_ERROR, _CRTDBG_MODE_DEBUG);
+    if (break_alloc != 0)
+        _CrtSetBreakAlloc(break_alloc);
+}
+
+static inline void DebugCrtDumpLeaks()
+{
+    _CrtDumpMemoryLeaks();
+}
+#endif // #ifdef DEBUG_CRT
+
+//-------------------------------------------------------------------------
+
 // Visual Studio warnings
 #ifdef _MSC_VER
 #pragma warning (disable: 4996)     // 'This function or variable may be unsafe': strcpy, strdup, sprintf, vsnprintf, sscanf, fopen
@@ -422,16 +446,26 @@ static bool ParseCommandLineOptions(int argc, char** argv)
 
 int main(int argc, char** argv)
 {
+#ifdef DEBUG_CRT
+    DebugCrtInit(0);
+#endif
+
 #ifdef CMDLINE_ARGS
     if (argc == 1)
     {
         printf("# [exe] %s\n", CMDLINE_ARGS);
         ImParseSplitCommandLine(&argc, &argv, CMDLINE_ARGS);
+        if (!ParseCommandLineOptions(argc, argv))
+            return 0;
+        free(argv);
     }
+    else
 #endif
-
-    if (!ParseCommandLineOptions(argc, argv))
-        return 0;
+    {
+        if (!ParseCommandLineOptions(argc, argv))
+            return 0;
+    }
+    argv = NULL;
 
     // Default verbose level differs whether we are in in GUI or Command-Line mode
     if (g_App.OptVerboseLevel == ImGuiTestVerboseLevel_COUNT)
@@ -582,6 +616,9 @@ int main(int argc, char** argv)
     }
 
     ImGuiTestEngine_ShutdownContext(g_App.TestEngine);
+
+    if (g_App.OptFileOpener)
+        free(g_App.OptFileOpener);
 
     if (g_App.OptPauseOnExit && !g_App.OptGUI)
     {

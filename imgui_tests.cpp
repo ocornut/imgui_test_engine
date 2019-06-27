@@ -1257,6 +1257,20 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
 // Tests: Columns
 //-------------------------------------------------------------------------
 
+#ifdef IMGUI_HAS_TABLE
+static void HelperTableSubmitCells(int count_w, int count_h)
+{
+    for (int line = 0; line < count_h; line++)
+        for (int column = 0; column < count_w; column++)
+        {
+            char label[32];
+            ImFormatString(label, IM_ARRAYSIZE(label), "%d,%d", line, column);
+            ImGui::TableNextCell();
+            ImGui::Button(label, ImVec2(-FLT_MIN, 0.0f));
+        }
+}
+#endif
+
 void RegisterTests_Columns(ImGuiTestEngine* e)
 {
     ImGuiTest* t = NULL;
@@ -1325,6 +1339,38 @@ void RegisterTests_Columns(ImGuiTestEngine* e)
 
         ImGui::End();
     };
+
+#ifdef IMGUI_HAS_TABLE
+    t = REGISTER_TEST("table", "table_1");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::Begin("Test window 1", NULL, ImGuiWindowFlags_NoSavedSettings);
+
+        ImDrawList* draw_list = ImGui::GetWindowDrawList();
+
+        ImGui::Text("Text before");
+        {
+            int cmd_size_before = draw_list->CmdBuffer.Size;
+            ImGui::BeginTable("##table1", 4, ImGuiTableFlags_NoClipH | ImGuiTableFlags_PadH | ImGuiTableFlags_PadV | ImGuiTableFlags_Borders, ImVec2(400, 0));
+            HelperTableSubmitCells(4, 5);
+            ImGui::EndTable();
+            ImGui::Text("Some text");
+            int cmd_size_after = draw_list->CmdBuffer.Size;
+            IM_CHECK_EQUAL(cmd_size_before, cmd_size_after);
+        }
+        {
+            int cmd_size_before = draw_list->CmdBuffer.Size;
+            ImGui::BeginTable("##table2", 4, ImGuiTableFlags_PadH | ImGuiTableFlags_PadV | ImGuiTableFlags_Borders, ImVec2(400, 0));
+            HelperTableSubmitCells(4, 5);
+            ImGui::EndTable();
+            ImGui::Text("Some text");
+            int cmd_size_after = draw_list->CmdBuffer.Size;
+            IM_CHECK_EQUAL(cmd_size_before, cmd_size_after);
+        }
+
+        ImGui::End();
+    };
+#endif
 };
 
 //-------------------------------------------------------------------------
@@ -1740,8 +1786,8 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
 
         //ctx->ItemClick("Layout");  // FIXME: close popup
         ctx->ItemOpen("Layout");
-        ctx->ItemOpen("Horizontal Scrolling");
-        ctx->ItemHold("Horizontal Scrolling/>>", 1.0f);
+        ctx->ItemOpen("Scrolling");
+        ctx->ItemHold("Scrolling/>>", 1.0f);
         ctx->SleepShort();
     };
 
@@ -1782,9 +1828,9 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
     {
         ctx->SetRef("Dear ImGui Demo");
         ctx->ItemOpen("Layout");
-        ctx->ItemOpen("Horizontal Scrolling");
-        ctx->ItemCheck("Horizontal Scrolling/Show Horizontal contents size demo window");   // FIXME-TESTS: ItemXXX functions could do the recursion (e.g. Open parent)
-        ctx->ItemUncheck("Horizontal Scrolling/Show Horizontal contents size demo window");
+        ctx->ItemOpen("Scrolling");
+        ctx->ItemCheck("Scrolling/Show Horizontal contents size demo window");   // FIXME-TESTS: ItemXXX functions could do the recursion (e.g. Open parent)
+        ctx->ItemUncheck("Scrolling/Show Horizontal contents size demo window");
 
         ctx->SetRef("Dear ImGui Demo");
         ctx->MenuCheck("Help/About Dear ImGui");

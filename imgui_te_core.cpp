@@ -1531,6 +1531,10 @@ void    ImGuiTestEngine_ShowTestWindow(ImGuiTestEngine* engine, bool* p_open)
                 ImGui::Text("Log for %s: %s", engine->UiSelectedTest->Category, engine->UiSelectedTest->Name);
             else
                 ImGui::Text("N/A");
+            if (ImGui::SmallButton("Clear"))
+                if (engine->UiSelectedTest)
+                    engine->UiSelectedTest->TestLog.clear();
+            ImGui::SameLine();
             if (ImGui::SmallButton("Copy to clipboard"))
                 if (engine->UiSelectedTest)
                     ImGui::SetClipboardText(engine->UiSelectedTest->TestLog.begin());
