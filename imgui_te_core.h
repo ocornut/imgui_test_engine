@@ -130,6 +130,7 @@ template<> inline void ImGuiTestEngineUtil_AppendStrValue(ImGuiTextBuffer& buf, 
         auto __rhs = _RHS;                                                  \
         bool __res = __lhs _OP __rhs;                                       \
         ImGuiTextBuffer value_expr_buf;                                     \
+        if (!__res)                                                         \
         {                                                                   \
             ImGuiTestEngineUtil_AppendStrValue(value_expr_buf, __lhs);      \
             value_expr_buf.append(" " #_OP " ");                            \
@@ -152,9 +153,9 @@ template<> inline void ImGuiTestEngineUtil_AppendStrValue(ImGuiTextBuffer& buf, 
     {                                                                       \
         bool __res = strcmp(_LHS, _RHS) == 0;                               \
         ImGuiTextBuffer value_expr_buf;                                     \
+        if (!__res)                                                         \
         {                                                                   \
             value_expr_buf.appendf("\"%s\" == \"%s\"", _LHS, _RHS);         \
-            value_expr_buf.append("\"");                                    \
         }                                                                   \
         if (ImGuiTestEngineHook_Check(__FILE__, __func__, __LINE__, ImGuiTestCheckFlags_None, __res, #_LHS " == " #_RHS, value_expr_buf.c_str())) \
             IM_ASSERT(__res);                                               \
