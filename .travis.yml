@@ -14,4 +14,4 @@ before_install:
 
 script: 
   - make -C app
-  - app/test_app -nogui -v2 -nopause
+  - app/imgui_test_app -nogui -v2 -nopause
