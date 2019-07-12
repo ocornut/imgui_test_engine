@@ -173,6 +173,7 @@ struct ImGuiTestEngine
     // UI support
     bool                        Abort = false;
     bool                        UiFocus = false;
+    ImGuiTest*                  UiSelectAndScrollToTest = NULL;
     ImGuiTest*                  UiSelectedTest = NULL;
     ImGuiTextFilter             UiTestFilter;
 
@@ -385,6 +386,10 @@ void    ImGuiTestEngine_ShutdownContext(ImGuiTestEngine* engine)
 {
     if (engine->PerfPersistentLogCsv)
         fclose(engine->PerfPersistentLogCsv);
+
+    IM_FREE(engine->UserDataBuffer);
+    engine->UserDataBuffer = NULL;
+    engine->UserDataBufferSize = 0;
 
     IM_ASSERT(engine->CallDepth == 0);
     ImGuiTestEngine_ClearTests(engine);
@@ -750,6 +755,7 @@ static void ImGuiTestEngine_ProcessTestQueue(ImGuiTestEngine* engine)
         ctx.PerfStressAmount = engine->IO.PerfStressAmount;
         ctx.RunFlags = run_task->RunFlags;
         engine->TestContext = &ctx;
+        engine->UiSelectAndScrollToTest = test;
 
         ctx.LogEx(ImGuiTestLogFlags_NoHeader, "----------------------------------------------------------------------\n");
         ctx.LogEx(ImGuiTestLogFlags_None, "Test: '%s' '%s'..\n", test->Category, test->Name);
@@ -1202,6 +1208,7 @@ bool ImGuiTestEngineHook_Check(const char* file, const char* func, int line, ImG
                 test->TestLog.appendf("[%04d] OK %s:%d  '%s'", ctx->FrameCount, file_without_path, line, expr);
             else
                 test->TestLog.appendf("[%04d] OK  '%s'", ctx->FrameCount, expr);
+            test->TestLog.appendf("\n");
         }
         if (!result)
         {
@@ -1211,12 +1218,11 @@ bool ImGuiTestEngineHook_Check(const char* file, const char* func, int line, ImG
                 test->TestLog.appendf("[%04d] KO %s:%d  '%s'", ctx->FrameCount, file_without_path, line, expr);
             else
                 test->TestLog.appendf("[%04d] KO  '%s'", ctx->FrameCount, expr);
+            bool display_value_expr = (value_expr != NULL) && (result == false);
+            if (display_value_expr)
+                test->TestLog.appendf(" -> '%s'", value_expr);
+            test->TestLog.appendf("\n");
         }
-
-        bool display_value_expr = (value_expr != NULL) && (result == false);
-        if (display_value_expr)
-            test->TestLog.appendf(" -> '%s'", value_expr);
-        test->TestLog.appendf("\n");
     }
     else
     {
@@ -1430,6 +1436,9 @@ void    ImGuiTestEngine_ShowTestWindow(ImGuiTestEngine* engine, bool* p_open)
                 ImGui::EndTooltip();
             }*/
 
+            if (engine->UiSelectAndScrollToTest == test)
+                ImGui::SetScrollHereY();
+
             bool view_source = false;
             if (ImGui::BeginPopupContextItem())
             {
@@ -1529,6 +1538,7 @@ void    ImGuiTestEngine_ShowTestWindow(ImGuiTestEngine* engine, bool* p_open)
         ImGui::EndTabItem();
         ImGui::EndTabBar();
     }
+    engine->UiSelectAndScrollToTest = NULL;
 
     // LOG
     ImGui::Separator();
@@ -2909,7 +2919,7 @@ void    ImGuiTestContext::WindowResize(ImGuiTestRef ref, ImVec2 size)
     WindowSetCollapsed(ref, false);
 
     ImGuiID id = 0;
-#ifdef IMGUI_HAS_DOCKING
+#ifdef IMGUI_HAS_DOCK
     if (window->DockNode)
         id = GetID(window->DockNode->HostWindow->ID, "#RESIZE");
     else

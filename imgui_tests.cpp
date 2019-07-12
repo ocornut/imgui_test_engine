@@ -1350,7 +1350,7 @@ void RegisterTests_Columns(ImGuiTestEngine* e)
         ImGui::Text("Text before");
         {
             int cmd_size_before = draw_list->CmdBuffer.Size;
-            ImGui::BeginTable("##table1", 4, ImGuiTableFlags_NoClipH | ImGuiTableFlags_PadH | ImGuiTableFlags_PadV | ImGuiTableFlags_Borders, ImVec2(400, 0));
+            ImGui::BeginTable("##table1", 4, ImGuiTableFlags_NoClipX | ImGuiTableFlags_Borders, ImVec2(400, 0));
             HelperTableSubmitCells(4, 5);
             ImGui::EndTable();
             ImGui::Text("Some text");
@@ -1359,7 +1359,7 @@ void RegisterTests_Columns(ImGuiTestEngine* e)
         }
         {
             int cmd_size_before = draw_list->CmdBuffer.Size;
-            ImGui::BeginTable("##table2", 4, ImGuiTableFlags_PadH | ImGuiTableFlags_PadV | ImGuiTableFlags_Borders, ImVec2(400, 0));
+            ImGui::BeginTable("##table2", 4, ImGuiTableFlags_Borders, ImVec2(400, 0));
             HelperTableSubmitCells(4, 5);
             ImGui::EndTable();
             ImGui::Text("Some text");
@@ -1690,6 +1690,36 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
         IM_CHECK_EQUAL(ImHashDecoratedPath("Hello/world"), ImHashStr("Helloworld"));            // Slashes are ignored
         IM_CHECK_EQUAL(ImHashDecoratedPath("Hello\\/world"), ImHashStr("Hello/world"));         // Slashes can be inhibited
         IM_CHECK_EQUAL(ImHashDecoratedPath("/Hello", 42), ImHashDecoratedPath("Hello"));        // Leading / clears seed
+    };
+
+    // ## Test ImPool functions
+    t = REGISTER_TEST("misc", "pool_001");
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ImPool<ImGuiTabBar> pool;
+        pool.GetOrAddByKey(0x11);
+        pool.GetOrAddByKey(0x22); // May invalidate first point
+        ImGuiTabBar* t1 = pool.GetByKey(0x11);
+        ImGuiTabBar* t2 = pool.GetByKey(0x22);
+        IM_CHECK(t1 != NULL && t2 != NULL);
+        IM_CHECK(t1 + 1 == t2);
+        IM_CHECK(pool.GetIndex(t1) == 0);
+        IM_CHECK(pool.GetIndex(t2) == 1);
+        IM_CHECK(pool.Contains(t1) && pool.Contains(t2));
+        IM_CHECK(pool.Contains(t2 + 1) == false);
+        IM_CHECK(pool.GetByIndex(pool.GetIndex(t1)) == t1);
+        IM_CHECK(pool.GetByIndex(pool.GetIndex(t2)) == t2);
+        ImGuiTabBar* t3 = pool.GetOrAddByKey(0x33);
+        IM_CHECK(pool.GetIndex(t3) == 2);
+        IM_CHECK(pool.GetSize() == 3);
+        pool.Remove(0x22, pool.GetByKey(0x22));
+        IM_CHECK(pool.GetByKey(0x22) == NULL);
+        IM_CHECK(pool.GetSize() == 3);
+        ImGuiTabBar* t4 = pool.GetOrAddByKey(0x40);
+        IM_CHECK(pool.GetIndex(t4) == 1);
+        IM_CHECK(pool.GetSize() == 3);
+        pool.Clear();
+        IM_CHECK(pool.GetSize() == 0);
     };
 
     // ## Test behavior of ImParseFormatTrimDecorations
