@@ -1555,75 +1555,83 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
     };
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
-        // FIXME-TESTS: Tests doesn't work if already docked
-        // FIXME-TESTS: DockSetMulti takes window_name not ref
-
-        ImGuiWindow* window_aaaa = ctx->GetWindowByRef("AAAA");
-        ImGuiWindow* window_bbbb = ctx->GetWindowByRef("BBBB");
-
-        // Init state
-        ctx->DockMultiClear("AAAA", "BBBB", NULL);
-        if (ctx->UiContext->IO.ConfigDockingTabBarOnSingleWindows)
-            IM_CHECK(window_aaaa->DockId != 0 && window_bbbb->DockId != 0 && window_aaaa->DockId != window_bbbb->DockId);
-        else
-            IM_CHECK(window_aaaa->DockId == 0 && window_bbbb->DockId == 0);
-        ctx->WindowResize("/AAAA", ImVec2(200, 200));
-        ctx->WindowMove("/AAAA", ImVec2(100, 100));
-        ctx->WindowResize("/BBBB", ImVec2(200, 200));
-        ctx->WindowMove("/BBBB", ImVec2(200, 200));
-
-        // Dock Once
-        ctx->DockWindowInto("AAAA", "BBBB");
-        IM_CHECK(window_aaaa->DockNode != NULL);
-        IM_CHECK(window_aaaa->DockNode == window_bbbb->DockNode);
-        IM_CHECK_EQUAL(window_aaaa->DockNode->Pos, ImVec2(200, 200));
-        IM_CHECK_EQUAL(window_aaaa->Pos, ImVec2(200, 200));
-        IM_CHECK_EQUAL(window_bbbb->Pos, ImVec2(200, 200));
-        ImGuiID dock_id = window_bbbb->DockId;
-
+        ImGuiIO& io = ImGui::GetIO();
+        const bool backup_cfg_docking_tab_bar_on_single_windows = io.ConfigDockingTabBarOnSingleWindows; // FIXME-TESTS: Abstract that as a helper (e.g test case iterator)
+        for (int test_case_n = 0; test_case_n < 2; test_case_n++)
         {
-            // Undock AAAA, BBBB should still refer/dock to node.
-            ctx->DockMultiClear("AAAA", NULL);
-            IM_CHECK(ctx->DockIdIsUndockedOrStandalone(window_aaaa->DockId));
-            IM_CHECK(window_bbbb->DockId == dock_id);
+            // FIXME-TESTS: Tests doesn't work if already docked
+            // FIXME-TESTS: DockSetMulti takes window_name not ref
+            io.ConfigDockingTabBarOnSingleWindows = (test_case_n == 1);
+            ctx->Log("## TEST CASE %d: with ConfigDockingTabBarOnSingleWindows = %d\n", test_case_n, io.ConfigDockingTabBarOnSingleWindows);
 
-            // Intentionally move both floating windows away
+            ImGuiWindow* window_aaaa = ctx->GetWindowByRef("AAAA");
+            ImGuiWindow* window_bbbb = ctx->GetWindowByRef("BBBB");
+
+            // Init state
+            ctx->DockMultiClear("AAAA", "BBBB", NULL);
+            if (ctx->UiContext->IO.ConfigDockingTabBarOnSingleWindows)
+                IM_CHECK(window_aaaa->DockId != 0 && window_bbbb->DockId != 0 && window_aaaa->DockId != window_bbbb->DockId);
+            else
+                IM_CHECK(window_aaaa->DockId == 0 && window_bbbb->DockId == 0);
+            ctx->WindowResize("/AAAA", ImVec2(200, 200));
             ctx->WindowMove("/AAAA", ImVec2(100, 100));
-            ctx->WindowResize("/AAAA", ImVec2(100, 100));
-            ctx->WindowMove("/BBBB", ImVec2(300, 300));
-            ctx->WindowResize("/BBBB", ImVec2(200, 200)); // Should already the case
-
-            // Dock again (BBBB still refers to dock id, making this different from the first docking)
-            ctx->DockWindowInto("/AAAA", "/BBBB", ImGuiDir_None);
-            IM_CHECK_EQUAL(window_aaaa->DockId, dock_id);
-            IM_CHECK_EQUAL(window_bbbb->DockId, dock_id);
-            IM_CHECK_EQUAL(window_aaaa->Pos, ImVec2(300, 300));
-            IM_CHECK_EQUAL(window_bbbb->Pos, ImVec2(300, 300));
-            IM_CHECK_EQUAL(window_aaaa->Size, ImVec2(200, 200));
-            IM_CHECK_EQUAL(window_bbbb->Size, ImVec2(200, 200));
-            IM_CHECK_EQUAL(window_aaaa->DockNode->Pos, ImVec2(300, 300));
-            IM_CHECK_EQUAL(window_aaaa->DockNode->Size, ImVec2(200, 200));
-        }
-
-        {
-            // Undock AAAA, BBBB should still refer/dock to node.
-            ctx->DockMultiClear("AAAA", NULL);
-            IM_CHECK(ctx->DockIdIsUndockedOrStandalone(window_aaaa->DockId));
-            IM_CHECK_EQUAL(window_bbbb->DockId, dock_id);
-
-            // Intentionally move both floating windows away
-            ctx->WindowMove("/AAAA", ImVec2(100, 100));
+            ctx->WindowResize("/BBBB", ImVec2(200, 200));
             ctx->WindowMove("/BBBB", ImVec2(200, 200));
 
-            // Dock on the side (BBBB still refers to dock id, making this different from the first docking)
-            ctx->DockWindowInto("/AAAA", "/BBBB", ImGuiDir_Left);
-            IM_CHECK_EQUAL(window_aaaa->DockNode->ParentNode->ID, dock_id);
-            IM_CHECK_EQUAL(window_bbbb->DockNode->ParentNode->ID, dock_id);
-            IM_CHECK_EQUAL(window_aaaa->DockNode->ParentNode->Pos, ImVec2(200, 200));
+            // Dock Once
+            ctx->DockWindowInto("AAAA", "BBBB");
+            IM_CHECK(window_aaaa->DockNode != NULL);
+            IM_CHECK(window_aaaa->DockNode == window_bbbb->DockNode);
+            IM_CHECK_EQUAL(window_aaaa->DockNode->Pos, ImVec2(200, 200));
             IM_CHECK_EQUAL(window_aaaa->Pos, ImVec2(200, 200));
-            IM_CHECK_GREATER(window_bbbb->Pos.x, window_aaaa->Pos.x);
-            IM_CHECK_EQUAL(window_bbbb->Pos.y, 200);
+            IM_CHECK_EQUAL(window_bbbb->Pos, ImVec2(200, 200));
+            ImGuiID dock_id = window_bbbb->DockId;
+
+            {
+                // Undock AAAA, BBBB should still refer/dock to node.
+                ctx->DockMultiClear("AAAA", NULL);
+                IM_CHECK(ctx->DockIdIsUndockedOrStandalone(window_aaaa->DockId));
+                IM_CHECK(window_bbbb->DockId == dock_id);
+
+                // Intentionally move both floating windows away
+                ctx->WindowMove("/AAAA", ImVec2(100, 100));
+                ctx->WindowResize("/AAAA", ImVec2(100, 100));
+                ctx->WindowMove("/BBBB", ImVec2(300, 300));
+                ctx->WindowResize("/BBBB", ImVec2(200, 200)); // Should already the case
+
+                // Dock again (BBBB still refers to dock id, making this different from the first docking)
+                ctx->DockWindowInto("/AAAA", "/BBBB", ImGuiDir_None);
+                IM_CHECK_EQUAL(window_aaaa->DockId, dock_id);
+                IM_CHECK_EQUAL(window_bbbb->DockId, dock_id);
+                IM_CHECK_EQUAL(window_aaaa->Pos, ImVec2(300, 300));
+                IM_CHECK_EQUAL(window_bbbb->Pos, ImVec2(300, 300));
+                IM_CHECK_EQUAL(window_aaaa->Size, ImVec2(200, 200));
+                IM_CHECK_EQUAL(window_bbbb->Size, ImVec2(200, 200));
+                IM_CHECK_EQUAL(window_aaaa->DockNode->Pos, ImVec2(300, 300));
+                IM_CHECK_EQUAL(window_aaaa->DockNode->Size, ImVec2(200, 200));
+            }
+
+            {
+                // Undock AAAA, BBBB should still refer/dock to node.
+                ctx->DockMultiClear("AAAA", NULL);
+                IM_CHECK(ctx->DockIdIsUndockedOrStandalone(window_aaaa->DockId));
+                IM_CHECK_EQUAL(window_bbbb->DockId, dock_id);
+
+                // Intentionally move both floating windows away
+                ctx->WindowMove("/AAAA", ImVec2(100, 100));
+                ctx->WindowMove("/BBBB", ImVec2(200, 200));
+
+                // Dock on the side (BBBB still refers to dock id, making this different from the first docking)
+                ctx->DockWindowInto("/AAAA", "/BBBB", ImGuiDir_Left);
+                IM_CHECK_EQUAL(window_aaaa->DockNode->ParentNode->ID, dock_id);
+                IM_CHECK_EQUAL(window_bbbb->DockNode->ParentNode->ID, dock_id);
+                IM_CHECK_EQUAL(window_aaaa->DockNode->ParentNode->Pos, ImVec2(200, 200));
+                IM_CHECK_EQUAL(window_aaaa->Pos, ImVec2(200, 200));
+                IM_CHECK_GREATER(window_bbbb->Pos.x, window_aaaa->Pos.x);
+                IM_CHECK_EQUAL(window_bbbb->Pos.y, 200);
+            }
         }
+        io.ConfigDockingTabBarOnSingleWindows = backup_cfg_docking_tab_bar_on_single_windows;
     };
 
     // ## Test setting focus on a docked window, and setting focus on a specific item inside. (#2453)

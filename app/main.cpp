@@ -610,6 +610,7 @@ int main(int argc, char const** argv)
 #endif
 #ifdef IMGUI_HAS_DOCK
     io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
+    //io.ConfigDockingTabBarOnSingleWindows = true;
 #endif
 
     // Load Fonts

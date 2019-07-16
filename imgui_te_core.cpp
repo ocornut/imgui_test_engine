@@ -1007,7 +1007,11 @@ void ImGuiTestEngineHook_Log(ImGuiContext* ctx, const char* fmt, ...)
 void ImGuiTestEngineHook_AssertFunc(const char* expr, const char* file, const char* function, int line)
 {
     ImOsConsoleSetTextColor(ImOsConsoleStream_StandardError, ImOsConsoleTextColor_BrightYellow);
-    fprintf(stderr, "Assert: '%s'\nIn %s:%d, function %s.", expr, file, line, function);
+    fprintf(stderr, "Assert: '%s'\nIn %s:%d, function %s()\n", expr, file, line, function);
+    if (ImGuiTestEngine* engine = GImGuiHookingEngine)
+        if (ImGuiTestContext* ctx = engine->TestContext)
+            if (ImGuiTest* text = ctx->Test)
+                fprintf(stderr, "While running test: %s %s\n", ctx->Test->Category, ctx->Test->Name);
     ImOsConsoleSetTextColor(ImOsConsoleStream_StandardError, ImOsConsoleTextColor_White);
 
     // Consider using github.com/scottt/debugbreak

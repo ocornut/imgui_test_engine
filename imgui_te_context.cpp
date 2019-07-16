@@ -1254,7 +1254,7 @@ void    ImGuiTestContext::WindowResize(ImGuiTestRef ref, ImVec2 size)
 
     ImGuiID id = 0;
 #ifdef IMGUI_HAS_DOCK
-    if (window->DockNode)
+    if (window->DockIsActive)
         id = GetID(window->DockNode->HostWindow->ID, "#RESIZE");
     else
 #endif
