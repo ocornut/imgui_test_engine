@@ -42,6 +42,9 @@
     <ClInclude Include="..\imgui_te_core.h">
       <Filter>imgui-test</Filter>
     </ClInclude>
+    <ClInclude Include="..\imgui_te_context.h">
+      <Filter>imgui-test</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -72,6 +75,9 @@
       <Filter>imgui-test</Filter>
     </ClCompile>
     <ClCompile Include="..\imgui_te_util.cpp">
+      <Filter>imgui-test</Filter>
+    </ClCompile>
+    <ClCompile Include="..\imgui_te_context.cpp">
       <Filter>imgui-test</Filter>
     </ClCompile>
   </ItemGroup>

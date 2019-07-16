@@ -156,6 +156,7 @@
     <ClInclude Include="..\..\imgui\imstb_truetype.h" />
     <ClInclude Include="..\imconfig_tests.h" />
     <ClInclude Include="..\imgui_tests.h" />
+    <ClInclude Include="..\imgui_te_context.h" />
     <ClInclude Include="..\imgui_te_core.h" />
     <ClInclude Include="..\imgui_te_util.h" />
   </ItemGroup>
@@ -167,6 +168,7 @@
     <ClCompile Include="..\..\imgui\imgui_draw.cpp" />
     <ClCompile Include="..\..\imgui\imgui_widgets.cpp" />
     <ClCompile Include="..\imgui_tests.cpp" />
+    <ClCompile Include="..\imgui_te_context.cpp" />
     <ClCompile Include="..\imgui_te_core.cpp" />
     <ClCompile Include="..\imgui_te_util.cpp" />
     <ClCompile Include="main.cpp" />

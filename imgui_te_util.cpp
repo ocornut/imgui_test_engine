@@ -342,3 +342,59 @@ const char* GetImGuiKeyName(ImGuiKey key)
     IM_ASSERT(0);
     return "Unknown";
 }
+
+// Those strings are used to output easily identifiable markers in compare logs. We only need to support what we use for testing.
+// We can probably grab info in eaplatform.h/eacompiler.h etc. in EASTL
+const ImGuiTestsBuildInfo& ImGetBuildInfo()
+{
+    static ImGuiTestsBuildInfo build_info;
+    if (build_info.Type[0] == '\0')
+    {
+        // Build Type
+#if defined(DEBUG) || defined(_DEBUG)
+        build_info.Type = "Debug";
+#else
+        build_info.Type = "Release";
+#endif
+
+        // CPU
+#if defined(_M_X86) || defined(_M_IX86) || defined(__i386) || defined(__i386__) || defined(_X86_) || defined(_M_AMD64) || defined(_AMD64_) || defined(__x86_64__)
+        build_info.Cpu = (sizeof(size_t) == 4) ? "X86" : "X64";
+#else
+#error
+        build_info.Cpu = (sizeof(size_t) == 4) ? "Unknown32" : "Unknown64";
+#endif
+
+        // Platform/OS
+#if defined(_WIN32)
+        build_info.OS = "Windows";
+#elif defined(__linux) || defined(__linux__)
+        build_info.OS = "Linux";
+#elif defined(__MACH__) || defined(__MSL__)
+        build_info.OS = "OSX";
+#elif defined(__ORBIS__)
+        build_info.OS = "PS4";
+#elif defined(_DURANGO)
+        build_info.OS = "XboxOne";
+#else
+        build_info.OS = "Unknown";
+#endif
+
+        // Compiler
+#if defined(_MSC_VER)
+        build_info.Compiler = "MSVC";
+#elif defined(__clang__)
+        build_info.Compiler = "Clang";
+#elif defined(__GNUC__)
+        build_info.Compiler = "GCC";
+#else
+        build_info.Compiler = "Unknown";
+#endif
+
+        // Date/Time
+        ImParseDateFromCompilerIntoYMD(__DATE__, build_info.Date, IM_ARRAYSIZE(build_info.Date));
+        build_info.Time = __TIME__;
+    }
+
+    return build_info;
+}

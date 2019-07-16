@@ -7,6 +7,7 @@
 #include "imgui_internal.h"
 #include "imgui_tests.h"
 #include "imgui_te_core.h"
+#include "imgui_te_context.h"
 #include "imgui_te_util.h"
 
 //-------------------------------------------------------------------------

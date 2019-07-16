@@ -35,6 +35,16 @@ enum ImOsConsoleTextColor
     ImOsConsoleTextColor_BrightYellow
 };
 
+struct ImGuiTestsBuildInfo
+{
+    const char* Type = "";
+    const char* Cpu = "";
+    const char* OS = "";
+    const char* Compiler = "";
+    char        Date[32];
+    const char* Time = "";
+};
+
 // Helpers: miscellaneous functions
 ImGuiID     ImHashDecoratedPath(const char* str, ImGuiID seed = 0);
 void        ImSleepInMilliseconds(int ms);
@@ -52,6 +62,7 @@ void        ImDebugShowInputTextState();
 
 const char* GetImGuiKeyName(ImGuiKey key);
 void        GetImGuiKeyModsPrefixStr(ImGuiKeyModFlags mod_flags, char* out_buf, size_t out_buf_size);
+const ImGuiTestsBuildInfo&  ImGetBuildInfo();
 
 // Helper: maintain/calculate moving average
 template<typename TYPE>
