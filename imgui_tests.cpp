@@ -860,6 +860,34 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         IM_CHECK_STR_EQUAL(vars.Str1, "\t");
     };
 
+    // ## Test ColorEdit4() and IsItemDeactivatedXXX() functions
+    // ## Test that IsItemActivated() doesn't trigger when clicking the color button to open picker
+    t = REGISTER_TEST("widgets", "widgets_status_coloredit");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiTestGenericVars& vars = ctx->GenericVars;
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
+        bool ret = ImGui::ColorEdit4("Field", &vars.Vec4.x, ImGuiColorEditFlags_None);
+        vars.Status.QueryInc(ret);
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        // Accumulate return values over several frames/action into each bool
+        ImGuiTestGenericVars& vars = ctx->GenericVars;
+        ImGuiTestGenericStatus& status = vars.Status;
+
+        // Testing activation flag being set
+        ctx->SetRef("Test Window");
+        ctx->ItemClick("Field/##ColorButton");
+        IM_CHECK(status.Ret == 0 && status.Activated == 1 && status.Deactivated == 1 && status.DeactivatedAfterEdit == 0 && status.Edited == 0);
+        status.Clear();
+
+        ctx->KeyPressMap(ImGuiKey_Escape);
+        IM_CHECK(status.Ret == 0 && status.Activated == 0 && status.Deactivated == 0 && status.DeactivatedAfterEdit == 0 && status.Edited == 0);
+        status.Clear();
+    };
+
     // ## Test InputText() and IsItemDeactivatedXXX() functions (mentioned in #2215)
     t = REGISTER_TEST("widgets", "widgets_status_inputtext");
     t->GuiFunc = [](ImGuiTestContext* ctx)
@@ -2360,7 +2388,6 @@ void RegisterTests_Capture(ImGuiTestEngine* e)
     };
 
 #if 1
-
     // TODO: Better position of windows.
     // TODO: Draw in custom rendering canvas
     // TODO: Select color picker mode

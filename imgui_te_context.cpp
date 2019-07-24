@@ -316,7 +316,7 @@ void    ImGuiTestContext::ScrollToY(ImGuiTestRef ref, float scroll_ratio_y)
         float scroll_y = ImLinearSweep(window->Scroll.y, scroll_target_y, scroll_speed);
         //printf("[%03d] window->Scroll.y %f + %f\n", FrameCount, window->Scroll.y, scroll_speed);
         //window->Scroll.y = scroll_y;
-        ImGui::SetWindowScrollY(window, scroll_y);
+        ImGui::SetScrollY(window, scroll_y);
 
         Yield();
 
