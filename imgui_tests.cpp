@@ -365,7 +365,7 @@ void RegisterTests_Window(ImGuiTestEngine* e)
         ImGui::Begin("Test Scrolling 1", NULL, ImGuiWindowFlags_AlwaysHorizontalScrollbar | ImGuiWindowFlags_AlwaysAutoResize);
         ImGui::Dummy(ImVec2(200, 200));
         ImGuiWindow* window1 = ctx->UiContext->CurrentWindow;
-        IM_CHECK_NO_RET(window1->ScrollMax.x == 0.0f);
+        IM_CHECK_NO_RET(window1->ScrollMax.x == 0.0f); // FIXME-TESTS: If another window in another test used same name, ScrollMax won't be zero on first frame
         IM_CHECK_NO_RET(window1->ScrollMax.y == 0.0f);
         ImGui::End();
 
@@ -379,7 +379,26 @@ void RegisterTests_Window(ImGuiTestEngine* e)
             ctx->Finish();
     };
 
-    // ## Test that an auto-fit window doesn't have scrolbar while resize (FIXME-TESTS: Also test non-zero ScrollMax when implemented)
+    // ## Test that SetScrollY/GetScrollY values are matching. You'd think this would be obvious! Think again!
+    t = REGISTER_TEST("window", "window_scroll_003");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::Begin("Test Scrolling 3");
+        for (int n = 0; n < 100; n++)
+            ImGui::Text("Line %d", n);
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ctx->Yield();
+        ImGuiWindow* window = ImGui::FindWindowByName("Test Scrolling 3");
+        ImGui::SetScrollY(window, 100.0f);
+        ctx->Yield();
+        float sy = window->Scroll.y;
+        IM_CHECK_EQUAL(sy, 100.0f);
+    };
+
+    // ## Test that an auto-fit window doesn't have scrollbar while resizing (FIXME-TESTS: Also test non-zero ScrollMax when implemented)
     t = REGISTER_TEST("window", "window_scroll_while_resizing");
     t->Flags |= ImGuiTestFlags_NoAutoFinish;
     t->GuiFunc = [](ImGuiTestContext* ctx)
@@ -1508,17 +1527,17 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
     };
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
-        bool backup_cfg = ctx->UiContext->IO.ConfigDockingTabBarOnSingleWindows;
-        ctx->LogVerbose("ConfigDockingTabBarOnSingleWindows = false\n");
-        ctx->UiContext->IO.ConfigDockingTabBarOnSingleWindows = false;
+        bool backup_cfg = ctx->UiContext->IO.ConfigDockingAlwaysTabBar;
+        ctx->LogVerbose("ConfigDockingAlwaysTabBar = false\n");
+        ctx->UiContext->IO.ConfigDockingAlwaysTabBar = false;
         ctx->YieldFrames(4);
-        ctx->LogVerbose("ConfigDockingTabBarOnSingleWindows = true\n");
-        ctx->UiContext->IO.ConfigDockingTabBarOnSingleWindows = true;
+        ctx->LogVerbose("ConfigDockingAlwaysTabBar = true\n");
+        ctx->UiContext->IO.ConfigDockingAlwaysTabBar = true;
         ctx->YieldFrames(4);
-        ctx->LogVerbose("ConfigDockingTabBarOnSingleWindows = false\n");
-        ctx->UiContext->IO.ConfigDockingTabBarOnSingleWindows = false;
+        ctx->LogVerbose("ConfigDockingAlwaysTabBar = false\n");
+        ctx->UiContext->IO.ConfigDockingAlwaysTabBar = false;
         ctx->YieldFrames(4);
-        ctx->UiContext->IO.ConfigDockingTabBarOnSingleWindows = backup_cfg;
+        ctx->UiContext->IO.ConfigDockingAlwaysTabBar = backup_cfg;
     };
 
     // ## Test that undocking a whole _node_ doesn't lose/reset size
@@ -1584,20 +1603,20 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         ImGuiIO& io = ImGui::GetIO();
-        const bool backup_cfg_docking_tab_bar_on_single_windows = io.ConfigDockingTabBarOnSingleWindows; // FIXME-TESTS: Abstract that as a helper (e.g test case iterator)
+        const bool backup_cfg_docking_always_tab_bar = io.ConfigDockingAlwaysTabBar; // FIXME-TESTS: Abstract that as a helper (e.g test case iterator)
         for (int test_case_n = 0; test_case_n < 2; test_case_n++)
         {
             // FIXME-TESTS: Tests doesn't work if already docked
             // FIXME-TESTS: DockSetMulti takes window_name not ref
-            io.ConfigDockingTabBarOnSingleWindows = (test_case_n == 1);
-            ctx->Log("## TEST CASE %d: with ConfigDockingTabBarOnSingleWindows = %d\n", test_case_n, io.ConfigDockingTabBarOnSingleWindows);
+            io.ConfigDockingAlwaysTabBar = (test_case_n == 1);
+            ctx->Log("## TEST CASE %d: with ConfigDockingAlwaysTabBar = %d\n", test_case_n, io.ConfigDockingAlwaysTabBar);
 
             ImGuiWindow* window_aaaa = ctx->GetWindowByRef("AAAA");
             ImGuiWindow* window_bbbb = ctx->GetWindowByRef("BBBB");
 
             // Init state
             ctx->DockMultiClear("AAAA", "BBBB", NULL);
-            if (ctx->UiContext->IO.ConfigDockingTabBarOnSingleWindows)
+            if (ctx->UiContext->IO.ConfigDockingAlwaysTabBar)
                 IM_CHECK(window_aaaa->DockId != 0 && window_bbbb->DockId != 0 && window_aaaa->DockId != window_bbbb->DockId);
             else
                 IM_CHECK(window_aaaa->DockId == 0 && window_bbbb->DockId == 0);
@@ -1659,7 +1678,7 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
                 IM_CHECK_EQUAL(window_bbbb->Pos.y, 200);
             }
         }
-        io.ConfigDockingTabBarOnSingleWindows = backup_cfg_docking_tab_bar_on_single_windows;
+        io.ConfigDockingAlwaysTabBar = backup_cfg_docking_always_tab_bar;
     };
 
     // ## Test setting focus on a docked window, and setting focus on a specific item inside. (#2453)

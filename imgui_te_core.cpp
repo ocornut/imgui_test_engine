@@ -182,7 +182,7 @@ static void  ImGuiTestEngine_SettingsWriteAll(ImGuiContext* imgui_ctx, ImGuiSett
 // - ImGuiTestEngine_PreNewFrame()
 // - ImGuiTestEngine_PostNewFrame()
 // - ImGuiTestEngine_Yield()
-// - ImGuiTestEngine_ProcessQueue()
+// - ImGuiTestEngine_ProcessTestQueue()
 // - ImGuiTestEngine_QueueTest()
 // - ImGuiTestEngine_RunTest()
 //-------------------------------------------------------------------------
@@ -576,6 +576,9 @@ static void ImGuiTestEngine_ProcessTestQueue(ImGuiTestEngine* engine)
     IM_ASSERT(engine->CallDepth == 0);
     engine->CallDepth++;
 
+    // Avoid tracking scrolling in UI when running a single test
+    const bool track_scrolling = (engine->TestsQueue.Size > 1);
+
     int ran_tests = 0;
     engine->IO.RunningTests = true;
     for (int n = 0; n < engine->TestsQueue.Size; n++)
@@ -610,7 +613,8 @@ static void ImGuiTestEngine_ProcessTestQueue(ImGuiTestEngine* engine)
         ctx.PerfStressAmount = engine->IO.PerfStressAmount;
         ctx.RunFlags = run_task->RunFlags;
         engine->TestContext = &ctx;
-        engine->UiSelectAndScrollToTest = test;
+        if (track_scrolling)
+            engine->UiSelectAndScrollToTest = test;
 
         ctx.LogEx(ImGuiTestLogFlags_NoHeader, "----------------------------------------------------------------------\n");
         ctx.LogEx(ImGuiTestLogFlags_None, "Test: '%s' '%s'..\n", test->Category, test->Name);
@@ -1490,7 +1494,7 @@ void    ImGuiTestEngine_ShowTestWindow(ImGuiTestEngine* engine, bool* p_open)
             ImGui::CheckboxFlags("io.ConfigFlags: NavEnableKeyboard", (unsigned int *)&io.ConfigFlags, ImGuiConfigFlags_NavEnableKeyboard);
             ImGui::CheckboxFlags("io.ConfigFlags: NavEnableGamepad", (unsigned int *)&io.ConfigFlags, ImGuiConfigFlags_NavEnableGamepad);
 #ifdef IMGUI_HAS_DOCK
-            ImGui::Checkbox("io.ConfigDockingTabBarOnSingleWindows", &io.ConfigDockingTabBarOnSingleWindows);
+            ImGui::Checkbox("io.ConfigDockingAlwaysTabBar", &io.ConfigDockingAlwaysTabBar);
 #endif
 
             ImGui::EndTabItem();
