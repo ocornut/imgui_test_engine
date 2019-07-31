@@ -49,10 +49,10 @@ void RegisterTests_Window(ImGuiTestEngine* e)
     {
         ImGuiStyle& style = ImGui::GetStyle();
         ImGuiWindow* window = ImGui::FindWindowByName("Test Window");
-        IM_CHECK_EQUAL(window->Size.x, ImMax(style.WindowMinSize.x, style.WindowPadding.x * 2.0f));
-        IM_CHECK_EQUAL(window->Size.y, ImGui::GetFontSize() + style.FramePadding.y * 2.0f + style.WindowPadding.y * 2.0f);
-        IM_CHECK_EQUAL(window->ContentSize, ImVec2(0, 0));
-        IM_CHECK_EQUAL(window->Scroll, ImVec2(0, 0));
+        IM_CHECK_EQ(window->Size.x, ImMax(style.WindowMinSize.x, style.WindowPadding.x * 2.0f));
+        IM_CHECK_EQ(window->Size.y, ImGui::GetFontSize() + style.FramePadding.y * 2.0f + style.WindowPadding.y * 2.0f);
+        IM_CHECK_EQ(window->ContentSize, ImVec2(0, 0));
+        IM_CHECK_EQ(window->Scroll, ImVec2(0, 0));
     };
 
     // ## Test that a window starting collapsed performs width/contents size measurement on its first few frames.
@@ -69,7 +69,7 @@ void RegisterTests_Window(ImGuiTestEngine* e)
         if (ctx->FrameCount == 0) // We are past the warm-up frames already
         {
             float expected_w = ImGui::CalcTextSize("This is some more text again").x + ImGui::GetStyle().WindowPadding.x * 2.0f;
-            IM_CHECK_LESSER(ImFabs(w - expected_w), 1.0f);
+            IM_CHECK_LT(ImFabs(w - expected_w), 1.0f);
         }
         ImGui::End();
     };
@@ -85,7 +85,7 @@ void RegisterTests_Window(ImGuiTestEngine* e)
             ImGui::ColorButton("test", ImVec4(1, 0.4f, 0, 1.0f), ImGuiColorEditFlags_NoTooltip, ImVec2(150, 150));
             ImGuiWindow* window = ctx->UiContext->CurrentWindow;
             if (ctx->FrameCount > 0)
-                IM_CHECK_EQUAL(window->ContentSize, ImVec2(150.0f, 150.0f));
+                IM_CHECK_EQ(window->ContentSize, ImVec2(150.0f, 150.0f));
             ImGui::End();
         }
         {
@@ -93,7 +93,7 @@ void RegisterTests_Window(ImGuiTestEngine* e)
             ImGui::Begin("Test Contents Size 2", NULL, ImGuiWindowFlags_AlwaysAutoResize);
             ImGuiWindow* window = ctx->UiContext->CurrentWindow;
             if (ctx->FrameCount >= 0)
-                IM_CHECK_EQUAL(window->ContentSize, ImVec2(150.0f, 150.0f));
+                IM_CHECK_EQ(window->ContentSize, ImVec2(150.0f, 150.0f));
             ImGui::End();
         }
         {
@@ -104,7 +104,7 @@ void RegisterTests_Window(ImGuiTestEngine* e)
             if (ctx->FrameCount >= 0)
             {
                 IM_CHECK(window->ScrollbarY == false);
-                IM_CHECK_EQUAL(window->ScrollMax.y, 0.0f);
+                IM_CHECK_EQ(window->ScrollMax.y, 0.0f);
             }
             ImGui::End();
         }
@@ -116,7 +116,7 @@ void RegisterTests_Window(ImGuiTestEngine* e)
             if (ctx->FrameCount >= 0)
             {
                 IM_CHECK(window->ScrollbarY == true);
-                IM_CHECK_EQUAL(window->ScrollMax.y, 1.0f);
+                IM_CHECK_EQ(window->ScrollMax.y, 1.0f);
             }
             ImGui::End();
         }
@@ -151,8 +151,8 @@ void RegisterTests_Window(ImGuiTestEngine* e)
             ImVec2 pos = ImGui::GetWindowPos();
             ImVec2 size = ImGui::GetWindowSize();
             //ctx->Log("%f %f, %f %f\n", pos.x, pos.y, size.x, size.y);
-            IM_CHECK_EQUAL(pos, ImVec2(901.0f, 103.0f));
-            IM_CHECK_EQUAL(size, ImVec2(475.0f, 100.0f));
+            IM_CHECK_EQ(pos, ImVec2(901.0f, 103.0f));
+            IM_CHECK_EQ(size, ImVec2(475.0f, 100.0f));
             ImGui::End();
         }
         if (ctx->FrameCount == 2)
@@ -173,8 +173,8 @@ void RegisterTests_Window(ImGuiTestEngine* e)
         if (ctx->FrameCount >= 0 && ctx->FrameCount <= 2)
         {
             ImGuiStyle& style = ImGui::GetStyle();
-            IM_CHECK_EQUAL((int)sz.x, (int)(ImGui::CalcTextSize("Hello World").x + style.WindowPadding.x * 2.0f));
-            IM_CHECK_EQUAL((int)sz.y, (int)(ImGui::GetFrameHeight() + ImGui::CalcTextSize("Hello World").y + style.ItemSpacing.y + 200.0f + style.WindowPadding.y * 2.0f));
+            IM_CHECK_EQ((int)sz.x, (int)(ImGui::CalcTextSize("Hello World").x + style.WindowPadding.x * 2.0f));
+            IM_CHECK_EQ((int)sz.y, (int)(ImGui::GetFrameHeight() + ImGui::CalcTextSize("Hello World").y + style.ItemSpacing.y + 200.0f + style.WindowPadding.y * 2.0f));
         }
     };
 
@@ -193,18 +193,18 @@ void RegisterTests_Window(ImGuiTestEngine* e)
         ctx->SetRef("Test Window");
         ctx->WindowSetCollapsed("", false);
         ctx->LogVerbose("Size %f %f, SizeFull %f %f\n", window->Size.x, window->Size.y, window->SizeFull.x, window->SizeFull.y);
-        IM_CHECK_EQUAL(window->Size, window->SizeFull);
+        IM_CHECK_EQ(window->Size, window->SizeFull);
         ImVec2 size_full_when_uncollapsed = window->SizeFull;
         ctx->WindowSetCollapsed("", true);
         ctx->LogVerbose("Size %f %f, SizeFull %f %f\n", window->Size.x, window->Size.y, window->SizeFull.x, window->SizeFull.y);
         ImVec2 size_collapsed = window->Size;
-        IM_CHECK_GREATER(size_full_when_uncollapsed.y, size_collapsed.y);
-        IM_CHECK_EQUAL(size_full_when_uncollapsed, window->SizeFull);
+        IM_CHECK_GT(size_full_when_uncollapsed.y, size_collapsed.y);
+        IM_CHECK_EQ(size_full_when_uncollapsed, window->SizeFull);
         ctx->WindowSetCollapsed("", false);
         ctx->LogVerbose("Size %f %f, SizeFull %f %f\n", window->Size.x, window->Size.y, window->SizeFull.x, window->SizeFull.y);
         IM_CHECK(window->Size.y == size_full_when_uncollapsed.y && "Window should have restored to full size.");
         ctx->Yield();
-        IM_CHECK_EQUAL(window->Size.y, size_full_when_uncollapsed.y);
+        IM_CHECK_EQ(window->Size.y, size_full_when_uncollapsed.y);
     };
 
     // ## Test appending multiple times to a child window (bug #2282)
@@ -225,14 +225,14 @@ void RegisterTests_Window(ImGuiTestEngine* e)
         ImGui::Text("Line 4");
         ImGui::EndChild();
         ImVec2 pos2 = ImGui::GetCursorScreenPos();
-        IM_CHECK_EQUAL(pos1, pos2); // Append calls to BeginChild() shouldn't affect CursorPos in parent window
+        IM_CHECK_EQ(pos1, pos2); // Append calls to BeginChild() shouldn't affect CursorPos in parent window
         ImGui::Text("Line 5");
         ImVec2 pos3 = ImGui::GetCursorScreenPos();
         ImGui::BeginChild("Blah");
         ImGui::Text("Line 6");
         ImGui::EndChild();
         ImVec2 pos4 = ImGui::GetCursorScreenPos();
-        IM_CHECK_EQUAL(pos3, pos4); // Append calls to BeginChild() shouldn't affect CursorPos in parent window
+        IM_CHECK_EQ(pos3, pos4); // Append calls to BeginChild() shouldn't affect CursorPos in parent window
         ImGui::End();
     };
 
@@ -256,26 +256,26 @@ void RegisterTests_Window(ImGuiTestEngine* e)
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         ImGuiContext& g = *ctx->UiContext;
-        IM_CHECK_EQUAL(g.NavWindow->ID, ctx->GetID("/BBBB"));
+        IM_CHECK_EQ(g.NavWindow->ID, ctx->GetID("/BBBB"));
         ctx->YieldUntil(19);
-        IM_CHECK_EQUAL(g.NavWindow->ID, ctx->GetID("/BBBB"));
+        IM_CHECK_EQ(g.NavWindow->ID, ctx->GetID("/BBBB"));
         ctx->YieldUntil(20);
-        IM_CHECK_EQUAL(g.NavWindow->ID, ctx->GetID("/DDDD"));
+        IM_CHECK_EQ(g.NavWindow->ID, ctx->GetID("/DDDD"));
         ctx->YieldUntil(30);
         ctx->FocusWindow("/CCCC");
-        IM_CHECK_EQUAL(g.NavWindow->ID, ctx->GetID("/CCCC"));
+        IM_CHECK_EQ(g.NavWindow->ID, ctx->GetID("/CCCC"));
         ctx->YieldUntil(39);
         ctx->YieldUntil(40);
-        IM_CHECK_EQUAL(g.NavWindow->ID, ctx->GetID("/CCCC"));
+        IM_CHECK_EQ(g.NavWindow->ID, ctx->GetID("/CCCC"));
 
         // When docked, it should NOT takes 1 extra frame to lose focus (fixed 2019/03/28)
         ctx->YieldUntil(41);
-        IM_CHECK_EQUAL(g.NavWindow->ID, ctx->GetID("/BBBB"));
+        IM_CHECK_EQ(g.NavWindow->ID, ctx->GetID("/BBBB"));
 
         ctx->YieldUntil(49);
-        IM_CHECK_EQUAL(g.NavWindow->ID, ctx->GetID("/BBBB"));
+        IM_CHECK_EQ(g.NavWindow->ID, ctx->GetID("/BBBB"));
         ctx->YieldUntil(50);
-        IM_CHECK_EQUAL(g.NavWindow->ID, ctx->GetID("/DDDD"));
+        IM_CHECK_EQ(g.NavWindow->ID, ctx->GetID("/DDDD"));
     };
 
     // ## Test popup focus and right-click to close popups up to a given level
@@ -380,6 +380,7 @@ void RegisterTests_Window(ImGuiTestEngine* e)
     };
 
     // ## Test that SetScrollY/GetScrollY values are matching. You'd think this would be obvious! Think again!
+    // FIXME-TESTS: With/without menu bars, could we easily allow for test variations that affects both GuiFunc and TestFunc
     t = REGISTER_TEST("window", "window_scroll_003");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
@@ -395,7 +396,7 @@ void RegisterTests_Window(ImGuiTestEngine* e)
         ImGui::SetScrollY(window, 100.0f);
         ctx->Yield();
         float sy = window->Scroll.y;
-        IM_CHECK_EQUAL(sy, 100.0f);
+        IM_CHECK_EQ(sy, 100.0f);
     };
 
     // ## Test that an auto-fit window doesn't have scrollbar while resizing (FIXME-TESTS: Also test non-zero ScrollMax when implemented)
@@ -459,18 +460,18 @@ void RegisterTests_Button(ImGuiTestEngine* e)
 
         ctx->SetRef("Test Window");
         ctx->ItemClick("Button0");
-        IM_CHECK_EQUAL(vars.ButtonPressCount[0], 1);
+        IM_CHECK_EQ(vars.ButtonPressCount[0], 1);
         ctx->ItemDoubleClick("Button1");
-        IM_CHECK_EQUAL(vars.ButtonPressCount[1], 1);
+        IM_CHECK_EQ(vars.ButtonPressCount[1], 1);
         ctx->ItemDoubleClick("Button2");
-        IM_CHECK_EQUAL(vars.ButtonPressCount[2], 2);
+        IM_CHECK_EQ(vars.ButtonPressCount[2], 2);
 
         ctx->ItemClick("Button3");
-        IM_CHECK_EQUAL(vars.ButtonPressCount[3], 1);
+        IM_CHECK_EQ(vars.ButtonPressCount[3], 1);
         ctx->MouseDown(0);
-        IM_CHECK_EQUAL(vars.ButtonPressCount[3], 1);
+        IM_CHECK_EQ(vars.ButtonPressCount[3], 1);
         ctx->SleepDebugNoSkip(ctx->UiContext->IO.KeyRepeatDelay + ctx->UiContext->IO.KeyRepeatRate * 3); // FIXME-TESTS: Can we elapse context time without elapsing wall clock time?
-        IM_CHECK_EQUAL(vars.ButtonPressCount[3], 1 + 3 * 2); // FIXME: MouseRepeatRate is double KeyRepeatRate, that's not documented
+        IM_CHECK_EQ(vars.ButtonPressCount[3], 1 + 3 * 2); // FIXME: MouseRepeatRate is double KeyRepeatRate, that's not documented
         ctx->MouseUp(0);
     };
 
@@ -486,7 +487,6 @@ void RegisterTests_Button(ImGuiTestEngine* e)
         ButtonStateMachineTestStep_MouseUp,
         ButtonStateMachineTestStep_Done
     };
-
     t = REGISTER_TEST("button", "button_status");
     struct ButtonStateTestVars { ButtonStateMachineTestStep NextStep; ImGuiTestGenericStatus Status; };
     t->SetUserDataType<ButtonStateTestVars>();
@@ -647,14 +647,14 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ImGuiTestGenericVars& vars = ctx->GenericVars;
         ctx->SetRef("Test Window");
 
-        IM_CHECK_EQUAL(vars.Int1, 0);
+        IM_CHECK_EQ(vars.Int1, 0);
         ctx->ItemInput("Drag");
-        IM_CHECK_EQUAL(ctx->UiContext->ActiveId, ctx->GetID("Drag"));
+        IM_CHECK_EQ(ctx->UiContext->ActiveId, ctx->GetID("Drag"));
         ctx->KeyCharsAppendEnter("123");
-        IM_CHECK_EQUAL(vars.Int1, 123);
+        IM_CHECK_EQ(vars.Int1, 123);
 
         ctx->ItemInput("Color##Y");
-        IM_CHECK_EQUAL(ctx->UiContext->ActiveId, ctx->GetID("Color##Y"));
+        IM_CHECK_EQ(ctx->UiContext->ActiveId, ctx->GetID("Color##Y"));
         ctx->KeyCharsAppend("123");
         IM_CHECK(FloatEqual(vars.Vec4.y, 123.0f / 255.0f));
         ctx->KeyPressMap(ImGuiKey_Tab);
@@ -684,28 +684,28 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         strcpy(buf, "Hello");
         ctx->ItemClick("InputText");
         ctx->KeyCharsAppendEnter("World123");
-        IM_CHECK_STR_EQUAL(buf, "HelloWorld123");
+        IM_CHECK_STR_EQ(buf, "HelloWorld123");
 
         // Delete
         ctx->ItemClick("InputText");
         ctx->KeyPressMap(ImGuiKey_End);
         ctx->KeyPressMap(ImGuiKey_Backspace, ImGuiKeyModFlags_None, 3);
         ctx->KeyPressMap(ImGuiKey_Enter);
-        IM_CHECK_STR_EQUAL(buf, "HelloWorld");
+        IM_CHECK_STR_EQ(buf, "HelloWorld");
 
         // Insert, Cancel
         ctx->ItemClick("InputText");
         ctx->KeyPressMap(ImGuiKey_End);
         ctx->KeyChars("XXXXX");
         ctx->KeyPressMap(ImGuiKey_Escape);
-        IM_CHECK_STR_EQUAL(buf, "HelloWorld");
+        IM_CHECK_STR_EQ(buf, "HelloWorld");
 
         // Delete, Cancel
         ctx->ItemClick("InputText");
         ctx->KeyPressMap(ImGuiKey_End);
         ctx->KeyPressMap(ImGuiKey_Backspace, ImGuiKeyModFlags_None, 5);
         ctx->KeyPressMap(ImGuiKey_Escape);
-        IM_CHECK_STR_EQUAL(buf, "HelloWorld");
+        IM_CHECK_STR_EQ(buf, "HelloWorld");
     };
 
     // ## Test InputText undo/redo ops, in particular related to issue we had with stb_textedit undo/redo buffers
@@ -731,10 +731,10 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         // Start with a 350 characters buffer.
         // For this test we don't inject the characters via pasting or key-by-key in order to precisely control the undo/redo state.
         char* buf = vars.StrLarge.Data;
-        IM_CHECK_EQUAL((int)strlen(buf), 0);
+        IM_CHECK_EQ((int)strlen(buf), 0);
         for (int n = 0; n < 10; n++)
             strcat(buf, "xxxxxxx abcdefghijklmnopqrstuvwxyz\n");
-        IM_CHECK_EQUAL((int)strlen(buf), 350);
+        IM_CHECK_EQ((int)strlen(buf), 350);
 
         ctx->SetRef("Test Window");
         ctx->ItemClick("Dummy"); // This is to ensure stb_textedit_clear_state() gets called (clear the undo buffer, etc.)
@@ -742,12 +742,12 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
 
         ImGuiInputTextState& input_text_state = GImGui->InputTextState;
         ImStb::StbUndoState& undo_state = input_text_state.Stb.undostate;
-        IM_CHECK_EQUAL(input_text_state.ID, GImGui->ActiveId);
-        IM_CHECK_EQUAL(undo_state.undo_point, 0);
-        IM_CHECK_EQUAL(undo_state.undo_char_point, 0);
-        IM_CHECK_EQUAL(undo_state.redo_point, STB_TEXTEDIT_UNDOSTATECOUNT);
-        IM_CHECK_EQUAL(undo_state.redo_char_point, STB_TEXTEDIT_UNDOCHARCOUNT);
-        IM_CHECK_EQUAL(STB_TEXTEDIT_UNDOCHARCOUNT, 999); // Test designed for this value
+        IM_CHECK_EQ(input_text_state.ID, GImGui->ActiveId);
+        IM_CHECK_EQ(undo_state.undo_point, 0);
+        IM_CHECK_EQ(undo_state.undo_char_point, 0);
+        IM_CHECK_EQ(undo_state.redo_point, STB_TEXTEDIT_UNDOSTATECOUNT);
+        IM_CHECK_EQ(undo_state.redo_char_point, STB_TEXTEDIT_UNDOCHARCOUNT);
+        IM_CHECK_EQ(STB_TEXTEDIT_UNDOCHARCOUNT, 999); // Test designed for this value
 
         // Insert 350 characters via 10 paste operations
         // We use paste operations instead of key-by-key insertion so we know our undo buffer will contains 10 undo points.
@@ -775,24 +775,24 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
             ctx->SleepShort();
         }
         int len = (int)strlen(vars.StrLarge.Data);
-        IM_CHECK_EQUAL(len, 350 * 4);
-        IM_CHECK_EQUAL(undo_state.undo_point, 3);
-        IM_CHECK_EQUAL(undo_state.undo_char_point, 0);
+        IM_CHECK_EQ(len, 350 * 4);
+        IM_CHECK_EQ(undo_state.undo_point, 3);
+        IM_CHECK_EQ(undo_state.undo_char_point, 0);
 
         // Undo x2
         IM_CHECK(undo_state.redo_point == STB_TEXTEDIT_UNDOSTATECOUNT);
         ctx->KeyPressMap(ImGuiKey_Z, ImGuiKeyModFlags_Ctrl);
         ctx->KeyPressMap(ImGuiKey_Z, ImGuiKeyModFlags_Ctrl);
         len = (int)strlen(vars.StrLarge.Data);
-        IM_CHECK_EQUAL(len, 350 * 2);
-        IM_CHECK_EQUAL(undo_state.undo_point, 1);
-        IM_CHECK_EQUAL(undo_state.redo_point, STB_TEXTEDIT_UNDOSTATECOUNT - 2);
-        IM_CHECK_EQUAL(undo_state.redo_char_point, STB_TEXTEDIT_UNDOCHARCOUNT - 350 * 2);
+        IM_CHECK_EQ(len, 350 * 2);
+        IM_CHECK_EQ(undo_state.undo_point, 1);
+        IM_CHECK_EQ(undo_state.redo_point, STB_TEXTEDIT_UNDOSTATECOUNT - 2);
+        IM_CHECK_EQ(undo_state.redo_char_point, STB_TEXTEDIT_UNDOCHARCOUNT - 350 * 2);
 
         // Undo x1 should call stb_textedit_discard_redo()
         ctx->KeyPressMap(ImGuiKey_Z, ImGuiKeyModFlags_Ctrl);
         len = (int)strlen(vars.StrLarge.Data);
-        IM_CHECK_EQUAL(len, 350 * 1);
+        IM_CHECK_EQ(len, 350 * 1);
     };
 
     // ## Test InputText vs user ownership of data
@@ -815,30 +815,30 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         char* buf_visible = vars.Str2;
         ctx->SetRef("Test Window");
 
-        IM_CHECK_STR_EQUAL(buf_visible, "");
+        IM_CHECK_STR_EQ(buf_visible, "");
         strcpy(buf_user, "Hello");
         ctx->Yield();
-        IM_CHECK_STR_EQUAL(buf_visible, "Hello");
+        IM_CHECK_STR_EQ(buf_visible, "Hello");
         ctx->ItemClick("##InputText");
         ctx->KeyCharsAppend("1");
         ctx->Yield();
-        IM_CHECK_STR_EQUAL(buf_user, "Hello1");
-        IM_CHECK_STR_EQUAL(buf_visible, "Hello1");
+        IM_CHECK_STR_EQ(buf_user, "Hello1");
+        IM_CHECK_STR_EQ(buf_visible, "Hello1");
 
         // Because the item is active, it owns the source data, so:
         strcpy(buf_user, "Overwritten");
         ctx->Yield();
-        IM_CHECK_STR_EQUAL(buf_user, "Hello1");
-        IM_CHECK_STR_EQUAL(buf_visible, "Hello1");
+        IM_CHECK_STR_EQ(buf_user, "Hello1");
+        IM_CHECK_STR_EQ(buf_visible, "Hello1");
 
         // Lose focus, at this point the InputTextState->ID should be holding on the last active state,
         // so we verify that InputText() is picking up external changes.
         ctx->KeyPressMap(ImGuiKey_Escape);
-        IM_CHECK_EQUAL(ctx->UiContext->ActiveId, (unsigned)0);
+        IM_CHECK_EQ(ctx->UiContext->ActiveId, (unsigned)0);
         strcpy(buf_user, "Hello2");
         ctx->Yield();
-        IM_CHECK_STR_EQUAL(buf_user, "Hello2");
-        IM_CHECK_STR_EQUAL(buf_visible, "Hello2");
+        IM_CHECK_STR_EQ(buf_user, "Hello2");
+        IM_CHECK_STR_EQ(buf_visible, "Hello2");
     };
 
     // ## Test that InputText doesn't go havoc when activated via another item
@@ -876,7 +876,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ctx->ItemClick("Field");
         ctx->UiContext->IO.AddInputCharacter((ImWchar)'\t');
         ctx->KeyPressMap(ImGuiKey_Tab);
-        IM_CHECK_STR_EQUAL(vars.Str1, "\t");
+        IM_CHECK_STR_EQ(vars.Str1, "\t");
     };
 
     // ## Test ColorEdit4() and IsItemDeactivatedXXX() functions
@@ -1063,9 +1063,9 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
 
         ctx->SetRef("Test Window");
 
-        IM_CHECK_NOT_EQUAL(memcmp(&vars.Vec4Array[0], &vars.Vec4Array[1], sizeof(ImVec4)), 0);
+        IM_CHECK_NE(memcmp(&vars.Vec4Array[0], &vars.Vec4Array[1], sizeof(ImVec4)), 0);
         ctx->ItemDragAndDrop("ColorEdit1/##ColorButton", "ColorEdit2/##X"); // FIXME-TESTS: Inner items
-        IM_CHECK_EQUAL(memcmp(&vars.Vec4Array[0], &vars.Vec4Array[1], sizeof(ImVec4)), 0);
+        IM_CHECK_EQ(memcmp(&vars.Vec4Array[0], &vars.Vec4Array[1], sizeof(ImVec4)), 0);
     };
 
     // ## Test that disabled Selectable has an ID but doesn't interfere with navigation
@@ -1076,10 +1076,10 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ctx->SetRef("Test Window");
         ImGui::Selectable("Selectable A");
         if (ctx->FrameCount == 0)
-            IM_CHECK_EQUAL(ImGui::GetItemID(), ctx->GetID("Selectable A"));
+            IM_CHECK_EQ(ImGui::GetItemID(), ctx->GetID("Selectable A"));
         ImGui::Selectable("Selectable B", false, ImGuiSelectableFlags_Disabled);
         if (ctx->FrameCount == 0)
-            IM_CHECK_EQUAL(ImGui::GetItemID(), ctx->GetID("Selectable B")); // Make sure B has an ID
+            IM_CHECK_EQ(ImGui::GetItemID(), ctx->GetID("Selectable B")); // Make sure B has an ID
         ImGui::Selectable("Selectable C");
         ImGui::End();
     };
@@ -1087,9 +1087,9 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
     {
         ctx->SetRef("Test Window");
         ctx->ItemClick("Selectable A");
-        IM_CHECK_EQUAL(ctx->UiContext->NavId, ctx->GetID("Selectable A"));
+        IM_CHECK_EQ(ctx->UiContext->NavId, ctx->GetID("Selectable A"));
         ctx->KeyPressMap(ImGuiKey_DownArrow);
-        IM_CHECK_EQUAL(ctx->UiContext->NavId, ctx->GetID("Selectable C")); // Make sure we have skipped B
+        IM_CHECK_EQ(ctx->UiContext->NavId, ctx->GetID("Selectable C")); // Make sure we have skipped B
     };
 
     // ## Test recursing Tab Bars (Bug #2371)
@@ -1213,9 +1213,9 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
         ctx->SetRef("Test window 1");
         ctx->ItemInput("InputText");
         ctx->KeyCharsAppend("123");
-        IM_CHECK_EQUAL(ctx->UiContext->ActiveId, ctx->GetID("InputText"));
+        IM_CHECK_EQ(ctx->UiContext->ActiveId, ctx->GetID("InputText"));
         ctx->KeyPressMap(ImGuiKey_Tab, ImGuiKeyModFlags_Ctrl);
-        IM_CHECK_EQUAL(ctx->UiContext->ActiveId, (ImGuiID)0);
+        IM_CHECK_EQ(ctx->UiContext->ActiveId, (ImGuiID)0);
         ctx->Sleep(1.0f);
     };
 
@@ -1337,7 +1337,7 @@ void RegisterTests_Columns(ImGuiTestEngine* e)
         ImGui::Text("BBBB"); ImGui::NextColumn();
         ImGui::EndColumns();
         ImGui::Text("Hello");
-        IM_CHECK_EQUAL(draw_list->CmdBuffer.Size, cmd_count + 0);
+        IM_CHECK_EQ(draw_list->CmdBuffer.Size, cmd_count + 0);
 
         // Test: Multi-column consume 1 draw call per column + 1 due to conservative overlap expectation (FIXME)
         ImGui::BeginColumns("columns3", 3);
@@ -1403,7 +1403,7 @@ void RegisterTests_Columns(ImGuiTestEngine* e)
             ImGui::EndTable();
             ImGui::Text("Some text");
             int cmd_size_after = draw_list->CmdBuffer.Size;
-            IM_CHECK_EQUAL(cmd_size_before, cmd_size_after);
+            IM_CHECK_EQ(cmd_size_before, cmd_size_after);
         }
         {
             int cmd_size_before = draw_list->CmdBuffer.Size;
@@ -1412,7 +1412,7 @@ void RegisterTests_Columns(ImGuiTestEngine* e)
             ImGui::EndTable();
             ImGui::Text("Some text");
             int cmd_size_after = draw_list->CmdBuffer.Size;
-            IM_CHECK_EQUAL(cmd_size_before, cmd_size_after);
+            IM_CHECK_EQ(cmd_size_before, cmd_size_after);
         }
 
         ImGui::End();
@@ -1522,7 +1522,7 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
         ImGui::Text("This is AAAA");
         const ImVec2 actual_sz = ImGui::GetWindowSize();
         if (ctx->FrameCount >= 0)
-            IM_CHECK_EQUAL(actual_sz, expected_sz);
+            IM_CHECK_EQ(actual_sz, expected_sz);
         ImGui::End();
     };
     t->TestFunc = [](ImGuiTestContext* ctx)
@@ -1584,8 +1584,8 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
 
         ImVec2 window_a_size_new = window_a->Size;
         ImVec2 window_b_size_new = window_b->Size;
-        IM_CHECK_EQUAL(window_a_size_old, window_a_size_new);
-        IM_CHECK_EQUAL(window_b_size_old, window_b_size_new);
+        IM_CHECK_EQ(window_a_size_old, window_a_size_new);
+        IM_CHECK_EQ(window_b_size_old, window_b_size_new);
     };
 
     // ## Test merging windows by dragging them.
@@ -1629,9 +1629,9 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
             ctx->DockWindowInto("AAAA", "BBBB");
             IM_CHECK(window_aaaa->DockNode != NULL);
             IM_CHECK(window_aaaa->DockNode == window_bbbb->DockNode);
-            IM_CHECK_EQUAL(window_aaaa->DockNode->Pos, ImVec2(200, 200));
-            IM_CHECK_EQUAL(window_aaaa->Pos, ImVec2(200, 200));
-            IM_CHECK_EQUAL(window_bbbb->Pos, ImVec2(200, 200));
+            IM_CHECK_EQ(window_aaaa->DockNode->Pos, ImVec2(200, 200));
+            IM_CHECK_EQ(window_aaaa->Pos, ImVec2(200, 200));
+            IM_CHECK_EQ(window_bbbb->Pos, ImVec2(200, 200));
             ImGuiID dock_id = window_bbbb->DockId;
 
             {
@@ -1648,21 +1648,21 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
 
                 // Dock again (BBBB still refers to dock id, making this different from the first docking)
                 ctx->DockWindowInto("/AAAA", "/BBBB", ImGuiDir_None);
-                IM_CHECK_EQUAL(window_aaaa->DockId, dock_id);
-                IM_CHECK_EQUAL(window_bbbb->DockId, dock_id);
-                IM_CHECK_EQUAL(window_aaaa->Pos, ImVec2(300, 300));
-                IM_CHECK_EQUAL(window_bbbb->Pos, ImVec2(300, 300));
-                IM_CHECK_EQUAL(window_aaaa->Size, ImVec2(200, 200));
-                IM_CHECK_EQUAL(window_bbbb->Size, ImVec2(200, 200));
-                IM_CHECK_EQUAL(window_aaaa->DockNode->Pos, ImVec2(300, 300));
-                IM_CHECK_EQUAL(window_aaaa->DockNode->Size, ImVec2(200, 200));
+                IM_CHECK_EQ(window_aaaa->DockId, dock_id);
+                IM_CHECK_EQ(window_bbbb->DockId, dock_id);
+                IM_CHECK_EQ(window_aaaa->Pos, ImVec2(300, 300));
+                IM_CHECK_EQ(window_bbbb->Pos, ImVec2(300, 300));
+                IM_CHECK_EQ(window_aaaa->Size, ImVec2(200, 200));
+                IM_CHECK_EQ(window_bbbb->Size, ImVec2(200, 200));
+                IM_CHECK_EQ(window_aaaa->DockNode->Pos, ImVec2(300, 300));
+                IM_CHECK_EQ(window_aaaa->DockNode->Size, ImVec2(200, 200));
             }
 
             {
                 // Undock AAAA, BBBB should still refer/dock to node.
                 ctx->DockMultiClear("AAAA", NULL);
                 IM_CHECK(ctx->DockIdIsUndockedOrStandalone(window_aaaa->DockId));
-                IM_CHECK_EQUAL(window_bbbb->DockId, dock_id);
+                IM_CHECK_EQ(window_bbbb->DockId, dock_id);
 
                 // Intentionally move both floating windows away
                 ctx->WindowMove("/AAAA", ImVec2(100, 100));
@@ -1670,12 +1670,12 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
 
                 // Dock on the side (BBBB still refers to dock id, making this different from the first docking)
                 ctx->DockWindowInto("/AAAA", "/BBBB", ImGuiDir_Left);
-                IM_CHECK_EQUAL(window_aaaa->DockNode->ParentNode->ID, dock_id);
-                IM_CHECK_EQUAL(window_bbbb->DockNode->ParentNode->ID, dock_id);
-                IM_CHECK_EQUAL(window_aaaa->DockNode->ParentNode->Pos, ImVec2(200, 200));
-                IM_CHECK_EQUAL(window_aaaa->Pos, ImVec2(200, 200));
-                IM_CHECK_GREATER(window_bbbb->Pos.x, window_aaaa->Pos.x);
-                IM_CHECK_EQUAL(window_bbbb->Pos.y, 200);
+                IM_CHECK_EQ(window_aaaa->DockNode->ParentNode->ID, dock_id);
+                IM_CHECK_EQ(window_bbbb->DockNode->ParentNode->ID, dock_id);
+                IM_CHECK_EQ(window_aaaa->DockNode->ParentNode->Pos, ImVec2(200, 200));
+                IM_CHECK_EQ(window_aaaa->Pos, ImVec2(200, 200));
+                IM_CHECK_GT(window_bbbb->Pos.x, window_aaaa->Pos.x);
+                IM_CHECK_EQ(window_bbbb->Pos.y, 200);
             }
         }
         io.ConfigDockingAlwaysTabBar = backup_cfg_docking_always_tab_bar;
@@ -1730,22 +1730,22 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         // Test hash function for the property we need
-        IM_CHECK_EQUAL(ImHashStr("helloworld"), ImHashStr("world", 0, ImHashStr("hello", 0)));  // String concatenation
-        IM_CHECK_EQUAL(ImHashStr("hello###world"), ImHashStr("###world"));                      // ### operator reset back to the seed
-        IM_CHECK_EQUAL(ImHashStr("hello###world", 0, 1234), ImHashStr("###world", 0, 1234));    // ### operator reset back to the seed
-        IM_CHECK_EQUAL(ImHashStr("helloxxx", 5), ImHashStr("hello"));                           // String size is honored
-        IM_CHECK_EQUAL(ImHashStr("", 0, 0), (ImU32)0);                                          // Empty string doesn't alter hash
-        IM_CHECK_EQUAL(ImHashStr("", 0, 1234), (ImU32)1234);                                    // Empty string doesn't alter hash
-        IM_CHECK_EQUAL(ImHashStr("hello", 5), ImHashData("hello", 5));                          // FIXME: Do we need to guarantee this?
+        IM_CHECK_EQ(ImHashStr("helloworld"), ImHashStr("world", 0, ImHashStr("hello", 0)));  // String concatenation
+        IM_CHECK_EQ(ImHashStr("hello###world"), ImHashStr("###world"));                      // ### operator reset back to the seed
+        IM_CHECK_EQ(ImHashStr("hello###world", 0, 1234), ImHashStr("###world", 0, 1234));    // ### operator reset back to the seed
+        IM_CHECK_EQ(ImHashStr("helloxxx", 5), ImHashStr("hello"));                           // String size is honored
+        IM_CHECK_EQ(ImHashStr("", 0, 0), (ImU32)0);                                          // Empty string doesn't alter hash
+        IM_CHECK_EQ(ImHashStr("", 0, 1234), (ImU32)1234);                                    // Empty string doesn't alter hash
+        IM_CHECK_EQ(ImHashStr("hello", 5), ImHashData("hello", 5));                          // FIXME: Do we need to guarantee this?
 
         const int data[2] = { 42, 50 };
-        IM_CHECK_EQUAL(ImHashData(&data[0], sizeof(int) * 2), ImHashData(&data[1], sizeof(int), ImHashData(&data[0], sizeof(int))));
-        IM_CHECK_EQUAL(ImHashData("", 0, 1234), (ImU32)1234);                                   // Empty data doesn't alter hash
+        IM_CHECK_EQ(ImHashData(&data[0], sizeof(int) * 2), ImHashData(&data[1], sizeof(int), ImHashData(&data[0], sizeof(int))));
+        IM_CHECK_EQ(ImHashData("", 0, 1234), (ImU32)1234);                                   // Empty data doesn't alter hash
 
         // Verify that Test Engine high-level hash wrapper works
-        IM_CHECK_EQUAL(ImHashDecoratedPath("Hello/world"), ImHashStr("Helloworld"));            // Slashes are ignored
-        IM_CHECK_EQUAL(ImHashDecoratedPath("Hello\\/world"), ImHashStr("Hello/world"));         // Slashes can be inhibited
-        IM_CHECK_EQUAL(ImHashDecoratedPath("/Hello", 42), ImHashDecoratedPath("Hello"));        // Leading / clears seed
+        IM_CHECK_EQ(ImHashDecoratedPath("Hello/world"), ImHashStr("Helloworld"));            // Slashes are ignored
+        IM_CHECK_EQ(ImHashDecoratedPath("Hello\\/world"), ImHashStr("Hello/world"));         // Slashes can be inhibited
+        IM_CHECK_EQ(ImHashDecoratedPath("/Hello", 42), ImHashDecoratedPath("Hello"));        // Leading / clears seed
     };
 
     // ## Test ImPool functions
@@ -1847,7 +1847,7 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
         ImVector<ImWchar> out_ranges;
         builder.BuildRanges(&out_ranges);
         builder.Clear();
-        IM_CHECK_EQUAL(out_ranges.Size, 5);
+        IM_CHECK_EQ(out_ranges.Size, 5);
     };
 
     // FIXME-TESTS
@@ -2004,8 +2004,8 @@ void RegisterTests_Perf(ImGuiTestEngine* e)
         ctx->MenuCheckAll("Examples");
         ctx->MenuCheckAll("Help");
 
-        IM_CHECK_GREATER(ctx->UiContext->IO.DisplaySize.x, 820);
-        IM_CHECK_GREATER(ctx->UiContext->IO.DisplaySize.y, 820);
+        IM_CHECK_GT(ctx->UiContext->IO.DisplaySize.x, 820);
+        IM_CHECK_GT(ctx->UiContext->IO.DisplaySize.y, 820);
 
         // FIXME-TESTS: Backup full layout
         ImVec2 pos = ctx->GetMainViewportPos() + ImVec2(20, 20);

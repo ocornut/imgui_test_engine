@@ -213,14 +213,14 @@ template<> inline void ImGuiTestEngineUtil_AppendStrValue(ImGuiTextBuffer& buf, 
         if (!__res)                                                         \
             return;                                                         \
     } while (0)
-#define IM_CHECK_EQUAL(_LHS, _RHS)              IM_CHECK_OP(_LHS, _RHS, ==)
-#define IM_CHECK_NOT_EQUAL(_LHS, _RHS)          IM_CHECK_OP(_LHS, _RHS, !=)
-#define IM_CHECK_LESSER(_LHS, _RHS)             IM_CHECK_OP(_LHS, _RHS, <)
-#define IM_CHECK_LESSER_OR_EQUAL(_LHS, _RHS)    IM_CHECK_OP(_LHS, _RHS, <=)
-#define IM_CHECK_GREATER(_LHS, _RHS)            IM_CHECK_OP(_LHS, _RHS, >)
-#define IM_CHECK_GREATER_OR_EQUAL(_LHS, _RHS)   IM_CHECK_OP(_LHS, _RHS, >=)
+#define IM_CHECK_EQ(_LHS, _RHS)         IM_CHECK_OP(_LHS, _RHS, ==)     // Equal
+#define IM_CHECK_NE(_LHS, _RHS)         IM_CHECK_OP(_LHS, _RHS, !=)     // Not Equal
+#define IM_CHECK_LT(_LHS, _RHS)         IM_CHECK_OP(_LHS, _RHS, <)      // Less Than
+#define IM_CHECK_LE(_LHS, _RHS)         IM_CHECK_OP(_LHS, _RHS, <=)     // Less or Equal
+#define IM_CHECK_GT(_LHS, _RHS)         IM_CHECK_OP(_LHS, _RHS, >)      // Greater Than
+#define IM_CHECK_GE(_LHS, _RHS)         IM_CHECK_OP(_LHS, _RHS, >=)     // Greater or Equal
 
-#define IM_CHECK_STR_EQUAL(_LHS, _RHS)                                      \
+#define IM_CHECK_STR_EQ(_LHS, _RHS)                                         \
     do                                                                      \
     {                                                                       \
         bool __res = strcmp(_LHS, _RHS) == 0;                               \
