@@ -1429,6 +1429,11 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
 #ifdef IMGUI_HAS_DOCK
     ImGuiTest* t = NULL;
 
+    // FIXME-TESTS
+    // - Dock window A+B into Dockspace
+    // - Drag/extract dock node (will create new node)
+    // - Check that new dock pos/size are right
+
     t = REGISTER_TEST("docking", "docking_basic_1");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
@@ -1447,7 +1452,7 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
 
         ImGui::Begin("CCCC");
         ids[2] = ImGui::GetWindowDockID();
-        ImGui::Text("This is CCCC");
+        ImGui::Text("This is CCCC (longer)");
         ImGui::End();
 
         if (ctx->FrameCount == 1)
@@ -1470,6 +1475,70 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
         ctx->YieldUntil(10);
         vars.DockId = ctx->DockMultiSetupBasic(0, "AAAA", "BBBB", "CCCC", NULL);
         ctx->YieldUntil(20);
+    };
+
+    // ## Test SetNextWindowDockID() api
+    t = REGISTER_TEST("docking", "docking_basic_set_next_api");
+    t->Flags |= ImGuiTestFlags_NoAutoFinish;
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiTestGenericVars& vars = ctx->GenericVars;
+
+        if (vars.Id == 0)
+            vars.Id = ImGui::DockContextGenNodeID(ctx->UiContext);
+
+        ImGui::SetNextWindowDockID(vars.Id, ImGuiCond_Always);
+        ImGui::Begin("AAAA", NULL, ImGuiWindowFlags_NoSavedSettings);
+        IM_CHECK_EQ(vars.Id, ImGui::GetWindowDockID());
+        ImGui::Text("This is AAAA");
+        ImGui::End();
+
+        ImGui::SetNextWindowDockID(vars.Id, ImGuiCond_Always);
+        ImGui::Begin("BBBB", NULL, ImGuiWindowFlags_NoSavedSettings);
+        IM_CHECK_EQ(vars.Id, ImGui::GetWindowDockID());
+        ImGui::Text("This is BBBB");
+        ImGui::End();
+
+        if (ctx->FrameCount == 3)
+            ctx->Finish();
+    };
+
+    // ## Test that initial size of new dock node is based on visible/focused window
+    t = REGISTER_TEST("docking", "docking_basic_initial_node_size");
+    t->Flags |= ImGuiTestFlags_NoAutoFinish;
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiTestGenericVars& vars = ctx->GenericVars;
+
+        if (vars.Id == 0)
+            vars.Id = ImGui::DockContextGenNodeID(ctx->UiContext);
+
+        ImGuiWindow* window_a = ImGui::FindWindowByName("AAAA");
+        ImGuiWindow* window_b = ImGui::FindWindowByName("BBBB");
+
+        ImGui::SetNextWindowDockID(vars.Id, ImGuiCond_Appearing);
+        ImGui::Begin("AAAA", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
+        IM_CHECK_EQ(vars.Id, ImGui::GetWindowDockID());
+        ImGui::Text("This is AAAA");
+        ImGui::End();
+
+        ImGui::SetNextWindowDockID(vars.Id, ImGuiCond_Appearing);
+        ImGui::Begin("BBBB", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
+        IM_CHECK_EQ(vars.Id, ImGui::GetWindowDockID());
+        ImGui::Text("This is BBBB... longer!");
+        ImGui::End();
+
+        if (ctx->FrameCount == 3)
+        {
+            // If the node is (200,200) here: this is the size setup by DockMultiSetupBasic() in a previous test,
+            // and we have a side-effect/leak from a previous host window.
+            ImGuiDockNode* node = window_b->DockNode;
+            IM_CHECK(window_a->DockNode == window_b->DockNode);
+            IM_CHECK(node->VisibleWindow == window_b);              // BBBB is visible
+            IM_CHECK_GE(node->Size.x, window_b->ContentSize.x);     // Therefore we expect node to be fitting BBBB
+            IM_CHECK_GE(node->Size.y, window_b->ContentSize.y);
+            ctx->Finish();
+        }
     };
 
     // ## Test that docking into a parent node forwarding docking into the central node or last focused node
@@ -1575,15 +1644,14 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
         ImVec2 window_a_size_old = window_a->Size;
         ImVec2 window_b_size_old = window_b->Size;
 
-        // Undock node
-        ImGuiID dock_button_id = ImHashDecoratedPath("#COLLAPSE", dockspace_id); // FIXME_TESTS
-        ctx->MouseMove(dock_button_id);
-        ctx->MouseDown(0);
-        ctx->MouseMoveToPos(ImGui::GetIO().MousePos + ImVec2(20, 20));
-        ctx->MouseUp();
+        ctx->UndockNode(dockspace_id);
 
+        IM_CHECK(window_a->DockNode != NULL);
+        IM_CHECK(window_b->DockNode != NULL);
+        IM_CHECK(window_a->DockNode == window_b->DockNode);
         ImVec2 window_a_size_new = window_a->Size;
         ImVec2 window_b_size_new = window_b->Size;
+        IM_CHECK_EQ(window_a->DockNode->Size, window_b_size_new);
         IM_CHECK_EQ(window_a_size_old, window_a_size_new);
         IM_CHECK_EQ(window_b_size_old, window_b_size_new);
     };
@@ -1633,6 +1701,7 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
             IM_CHECK_EQ(window_aaaa->Pos, ImVec2(200, 200));
             IM_CHECK_EQ(window_bbbb->Pos, ImVec2(200, 200));
             ImGuiID dock_id = window_bbbb->DockId;
+            ctx->Sleep(0.5f);
 
             {
                 // Undock AAAA, BBBB should still refer/dock to node.

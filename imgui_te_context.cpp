@@ -1396,6 +1396,21 @@ bool    ImGuiTestContext::DockIdIsUndockedOrStandalone(ImGuiID dock_id)
     return false;
 }
 
+void    ImGuiTestContext::UndockNode(ImGuiID dock_id)
+{
+    ImGuiDockNode* node = ImGui::DockBuilderGetNode(dock_id);
+    if (node == NULL)
+        return;
+    if (node->IsFloatingNode())
+        return;
+
+    ImGuiID dock_button_id = ImHashDecoratedPath("#COLLAPSE", dock_id); // FIXME_TESTS
+    MouseMove(dock_button_id);
+    MouseDown(0);
+    MouseMoveToPos(ImGui::GetIO().MousePos + ImVec2(20, 20));
+    MouseUp();
+}
+
 #endif // #ifdef IMGUI_HAS_DOCK
 
 //-------------------------------------------------------------------------
