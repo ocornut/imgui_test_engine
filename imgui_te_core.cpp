@@ -1131,6 +1131,7 @@ static void DrawTestLog(ImGuiTestEngine* e, ImGuiTest* test, bool is_interactive
     ImU32 warning_col = ImGui::GetColorU32(ImGuiCol_Text); // IM_COL32(230, 230, 180, 255);
     ImU32 unimportant_col = IM_COL32(190, 190, 190, 255);
 
+    // FIXME-OPT: Split TestLog by lines so we can clip it easily.
     const char* text = test->TestLog.begin();
     const char* text_end = test->TestLog.end();
     int line_no = 0;
@@ -1305,6 +1306,23 @@ void    ImGuiTestEngine_ShowTestWindow(ImGuiTestEngine* engine, bool* p_open)
             {
                 select_test = true;
 
+                if (ImGui::MenuItem("Run test"))
+                    queue_test = true;
+
+                bool is_running_gui_func = (test_context && (test_context->RunFlags & ImGuiTestRunFlags_NoTestFunc));
+                if (ImGui::MenuItem("Run GUI func", NULL, is_running_gui_func))
+                {
+                    if (is_running_gui_func)
+                    {
+                        ImGuiTestEngine_Abort(engine);
+                    }
+                    else
+                    {
+                        queue_gui_func = true;
+                    }
+                }
+                ImGui::Separator();
+
                 const bool open_source_available = (test->SourceFile != NULL) && (engine->IO.FileOpenerFunc != NULL);
                 if (open_source_available)
                 {
@@ -1327,22 +1345,6 @@ void    ImGuiTestEngine_ShowTestWindow(ImGuiTestEngine* engine, bool* p_open)
 
                 if (ImGui::MenuItem("Clear log", NULL, false, !test->TestLog.empty()))
                     test->TestLog.clear();
-
-                if (ImGui::MenuItem("Run test"))
-                    queue_test = true;
-
-                bool is_running_gui_func = (test_context && (test_context->RunFlags & ImGuiTestRunFlags_NoTestFunc));
-                if (ImGui::MenuItem("Run GUI func", NULL, is_running_gui_func))
-                {
-                    if (is_running_gui_func)
-                    {
-                        ImGuiTestEngine_Abort(engine);
-                    }
-                    else
-                    {
-                        queue_gui_func = true;
-                    }
-                }
 
                 ImGui::EndPopup();
             }

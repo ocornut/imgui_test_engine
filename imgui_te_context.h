@@ -216,6 +216,7 @@ struct ImGuiTestContext
     bool        BringWindowToFrontFromItem(ImGuiTestRef ref);
 
     void        ScrollToY(ImGuiTestRef ref, float scroll_ratio_y = 0.5f);
+    void        ScrollVerifyScrollMax(ImGuiWindow* window);
 
     void        GatherItems(ImGuiTestItemList* out_list, ImGuiTestRef parent, int depth = -1);
 

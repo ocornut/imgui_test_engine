@@ -428,15 +428,15 @@ void RegisterTests_Window(ImGuiTestEngine* e)
 }
 
 //-------------------------------------------------------------------------
-// Tests: Button
+// Tests: Widgets
 //-------------------------------------------------------------------------
 
-void RegisterTests_Button(ImGuiTestEngine* e)
+void RegisterTests_Widgets(ImGuiTestEngine* e)
 {
     ImGuiTest* t = NULL;
 
     // ## Test basic button presses
-    t = REGISTER_TEST("button", "button_press");
+    t = REGISTER_TEST("widgets", "widgets_button_press");
     struct ButtonPressTestVars { int ButtonPressCount[4] = { 0 }; };
     t->SetUserDataType<ButtonPressTestVars>();
     t->GuiFunc = [](ImGuiTestContext* ctx)
@@ -487,7 +487,7 @@ void RegisterTests_Button(ImGuiTestEngine* e)
         ButtonStateMachineTestStep_MouseUp,
         ButtonStateMachineTestStep_Done
     };
-    t = REGISTER_TEST("button", "button_status");
+    t = REGISTER_TEST("widgets", "widgets_button_status");
     struct ButtonStateTestVars { ButtonStateMachineTestStep NextStep; ImGuiTestGenericStatus Status; };
     t->SetUserDataType<ButtonStateTestVars>();
     t->GuiFunc = [](ImGuiTestContext* ctx)
@@ -557,7 +557,7 @@ void RegisterTests_Button(ImGuiTestEngine* e)
 
         // The "Dummy" button allows to move the mouse away from the "Test" button
         ImGui::Button("Dummy");
-        
+
         ImGui::End();
     };
     t->TestFunc = [](ImGuiTestContext* ctx)
@@ -594,15 +594,6 @@ void RegisterTests_Button(ImGuiTestEngine* e)
         vars.NextStep = ButtonStateMachineTestStep_Done;
         ctx->Yield();
     };
-}
-
-//-------------------------------------------------------------------------
-// Tests: Widgets
-//-------------------------------------------------------------------------
-
-void RegisterTests_Widgets(ImGuiTestEngine* e)
-{
-    ImGuiTest* t = NULL;
 
     // ## Test checkbox click
     t = REGISTER_TEST("widgets", "widgets_checkbox_001");
@@ -1388,7 +1379,25 @@ void RegisterTests_Columns(ImGuiTestEngine* e)
     };
 
 #ifdef IMGUI_HAS_TABLE
+
     t = REGISTER_TEST("table", "table_1");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::Begin("Test window 1", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImGui::BeginTable("##table0", 4);
+        ImGui::TableAddColumn("One", 0, ImGuiTableColumnFlags_WidthFixed, 100.0f);
+        ImGui::TableAddColumn("Two");
+        ImGui::TableAddColumn("Three");
+        ImGui::TableAddColumn("Four");
+        HelperTableSubmitCells(4, 5);
+        ImGuiTable* table = ctx->UiContext->CurrentTable;
+        IM_CHECK_EQ(table->Columns[0].WidthRequested, 100.0f);
+        ImGui::EndTable();
+        ImGui::End();
+    };
+
+    // ## Table: measure draw calls count
+    t = REGISTER_TEST("table", "table_2_draw_calls");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         ImGui::Begin("Test window 1", NULL, ImGuiWindowFlags_NoSavedSettings);
@@ -1795,7 +1804,7 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
     ImGuiTest* t = NULL;
 
     // ## Test hash functions and ##/### operators
-    t = REGISTER_TEST("misc", "hash_001");
+    t = REGISTER_TEST("misc", "misc_hash_001");
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         // Test hash function for the property we need
@@ -1817,8 +1826,31 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
         IM_CHECK_EQ(ImHashDecoratedPath("/Hello", 42), ImHashDecoratedPath("Hello"));        // Leading / clears seed
     };
 
+    // ## Test ImVector functions
+    t = REGISTER_TEST("misc", "misc_vector_001");
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ImVector<int> v;
+        IM_CHECK(v.Data == NULL);
+        v.push_back(0);
+        v.push_back(1);
+        IM_CHECK(v.Data != NULL && v.Size == 2);
+        v.push_back(2);
+        bool r = v.find_erase(1);
+        IM_CHECK(r == true);
+        IM_CHECK(v.Data != NULL && v.Size == 2);
+        r = v.find_erase(1);
+        IM_CHECK(r == false);
+        IM_CHECK(v.contains(0));
+        IM_CHECK(v.contains(2));
+        v.resize(0);
+        IM_CHECK(v.Data != NULL && v.Capacity >= 3);
+        v.clear();
+        IM_CHECK(v.Data == NULL && v.Capacity == 0);
+    };
+
     // ## Test ImPool functions
-    t = REGISTER_TEST("misc", "pool_001");
+    t = REGISTER_TEST("misc", "misc_pool_001");
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         ImPool<ImGuiTabBar> pool;
@@ -1951,6 +1983,9 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
     {
         ctx->SetRef("Dear ImGui Demo");
         ctx->ItemOpenAll("");
+
+        ImGuiWindow* window = ctx->GetWindowByRef("");
+        ctx->ScrollVerifyScrollMax(window);
     };
 
     // ## Coverage: closes everything in demo window
@@ -1987,13 +2022,13 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
         ctx->ItemUncheck("Scrolling/Show Horizontal contents size demo window");
 
         ctx->SetRef("Dear ImGui Demo");
-        ctx->MenuCheck("Help/About Dear ImGui");
+        ctx->MenuCheck("Tools/About Dear ImGui");
         ctx->SetRef("About Dear ImGui");
         ctx->ItemCheck("Config\\/Build Information");
         ctx->SetRef("Dear ImGui Demo");
 
         ctx->SetRef("Dear ImGui Demo");
-        ctx->MenuCheck("Help/Style Editor");
+        ctx->MenuCheck("Tools/Style Editor");
         ctx->SetRef("Style Editor");
         ctx->ItemClick("##tabs/Sizes");
         ctx->ItemClick("##tabs/Colors");
@@ -2009,7 +2044,7 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
 
         ctx->SetRef("Dear ImGui Demo");
         ctx->MenuUncheckAll("Examples");
-        ctx->MenuUncheckAll("Help");
+        ctx->MenuUncheckAll("Tools");
     };
 
     t = REGISTER_TEST("demo", "demo_cov_apps");
@@ -2019,8 +2054,8 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
         ctx->MenuClick("Menu/Open Recent/More..");
         ctx->MenuCheckAll("Examples");
         ctx->MenuUncheckAll("Examples");
-        ctx->MenuCheckAll("Help");
-        ctx->MenuUncheckAll("Help");
+        ctx->MenuCheckAll("Tools");
+        ctx->MenuUncheckAll("Tools");
     };
 
     // ## Coverage: select all styles via the Style Editor
@@ -2028,7 +2063,7 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         ctx->SetRef("Dear ImGui Demo");
-        ctx->MenuAction(ImGuiTestAction_Check, "Help/Style Editor");
+        ctx->MenuAction(ImGuiTestAction_Check, "Tools/Style Editor");
 
         ImGuiTestRef ref_window = "Style Editor";
         ctx->SetRef(ref_window);
@@ -2071,7 +2106,7 @@ void RegisterTests_Perf(ImGuiTestEngine* e)
         ctx->SetRef("Dear ImGui Demo");
         ctx->ItemOpenAll("");
         ctx->MenuCheckAll("Examples");
-        ctx->MenuCheckAll("Help");
+        ctx->MenuCheckAll("Tools");
 
         IM_CHECK_GT(ctx->UiContext->IO.DisplaySize.x, 820);
         IM_CHECK_GT(ctx->UiContext->IO.DisplaySize.y, 820);
@@ -2088,7 +2123,7 @@ void RegisterTests_Perf(ImGuiTestEngine* e)
         ctx->SetRef("Dear ImGui Demo");
         ctx->ItemCloseAll("");
         ctx->MenuUncheckAll("Examples");
-        ctx->MenuUncheckAll("Help");
+        ctx->MenuUncheckAll("Tools");
     };
 
     enum
@@ -2551,7 +2586,7 @@ void RegisterTests_Capture(ImGuiTestEngine* e)
         ctx->SetRef("Dear ImGui Demo");
         ctx->ItemCloseAll("");
         ctx->MenuUncheckAll("Examples");
-        ctx->MenuUncheckAll("Help");
+        ctx->MenuUncheckAll("Tools");
     };
 #endif
 }
@@ -2560,7 +2595,6 @@ void RegisterTests(ImGuiTestEngine* e)
 {
     RegisterTests_Window(e);
     RegisterTests_Widgets(e);
-    RegisterTests_Button(e);
     RegisterTests_Nav(e);
     RegisterTests_Columns(e);
     RegisterTests_Docking(e);

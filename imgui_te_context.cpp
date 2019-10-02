@@ -100,17 +100,34 @@ void    ImGuiTestContext::RecoverFromUiContextErrors()
     IM_ASSERT(Test != NULL);
 
     bool recovered = false;
+    const bool verbose = (Test->Status != ImGuiTestStatus_Error); // If we are already in a test error state, recovering is normal.
     while (g.CurrentWindowStack.Size > 1) // FIXME-ERRORHANDLING
     {
         // FIXME-ERRORHANDLING: Can't recover from inside BeginTabItem/EndTabItem yet.
         // FIXME-ERRORHANDLING: Can't recover from interleaved BeginTabBar/Begin
+
+#ifdef IMGUI_HAS_TABLE
+        ImGuiWindow* window = g.CurrentWindow;
+        while (window->DC.CurrentTable != NULL)
+        {
+            if (verbose)
+                LogVerbose("[warn] Recovered from missing EndTable() call.\n");
+            ImGui::EndTable();
+        }
+#endif
+
         while (g.CurrentTabBar != NULL)
+        {
+            if (verbose)
+                LogVerbose("[warn] Recovered from missing EndTabBar() call.\n");
             ImGui::EndTabBar();
+        }
+
+        if (verbose)
+            LogVerbose("[warn] Recovered from missing End() call.\n");
         ImGui::End();
         recovered = true;
     }
-    if (recovered && Test->Status != ImGuiTestStatus_Error)
-        LogVerbose("[warn] Recovered invalid ui state at end of frame.\n");
 }
 
 void    ImGuiTestContext::Yield()
@@ -325,6 +342,23 @@ void    ImGuiTestContext::ScrollToY(ImGuiTestRef ref, float scroll_ratio_y)
 
     // Need another frame for the result->Rect to stabilize
     Yield();
+}
+
+// Verify that ScrollMax is stable regardless of scrolling position
+// - This can break when the layout of clipped items doesn't match layout of unclipped items
+// - This can break with non-rounded calls to ItemSize(), namely when the starting position is negative (above visible area)
+//   We should ideally be more tolerant of non-rounded sizes passed by the users.
+// - One of the net visible effect of an unstable ScrollMax is that the End key would put you at a spot that's not exactly the lowest spot,
+//   and so a second press to End would you move again by a few pixels.
+void    ImGuiTestContext::ScrollVerifyScrollMax(ImGuiWindow* window)
+{
+    ImGui::SetScrollY(window, 0.0f);
+    Yield();
+    float scroll_max_0 = window->ScrollMax.y;
+    ImGui::SetScrollY(window, window->ScrollMax.y);
+    Yield();
+    float scroll_max_1 = window->ScrollMax.y;
+    IM_CHECK_EQ(scroll_max_0, scroll_max_1);
 }
 
 void    ImGuiTestContext::NavMove(ImGuiTestRef ref)
