@@ -38,24 +38,24 @@ void    ImGuiTestContext::LogExV(ImGuiTestLogFlags flags, const char* fmt, va_li
             return;
     }
 
-    const int prev_size = test->TestLog.size();
-
+    ImGuiTestLog* log = &test->TestLog;
+    const int prev_size = log->Buffer.size();
     if (flags & ImGuiTestLogFlags_Verbose)
     {
         if (!(flags & ImGuiTestLogFlags_NoHeader))
-            test->TestLog.appendf("[%04d] -- %*s", ctx->FrameCount, ImMax(0, (ctx->ActionDepth - 1) * 2), "");
-        test->TestLog.appendfv(fmt, args);
+            log->Buffer.appendf("[%04d] -- %*s", ctx->FrameCount, ImMax(0, (ctx->ActionDepth - 1) * 2), "");
+        log->Buffer.appendfv(fmt, args);
     }
     else
     {
         if (!(flags & ImGuiTestLogFlags_NoHeader))
-            test->TestLog.appendf("[%04d] ", ctx->FrameCount);
-        test->TestLog.appendfv(fmt, args);
+            log->Buffer.appendf("[%04d] ", ctx->FrameCount);
+        log->Buffer.appendfv(fmt, args);
     }
-    test->TestLogScrollToBottom = true;
 
+    // Copy to TTY
     if (EngineIO->ConfigLogToTTY)
-        printf("%s", test->TestLog.c_str() + prev_size);
+        printf("%s", log->Buffer.c_str() + prev_size);
 }
 
 void    ImGuiTestContext::Log(const char* fmt, ...)

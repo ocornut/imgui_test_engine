@@ -98,7 +98,7 @@ struct TestApp
     bool                    OptNoThrottle = false;
     bool                    OptPauseOnExit = true;
     char*                   OptFileOpener = NULL;
-    ImVector<char*>         Tests;
+    ImVector<char*>         TestsToRun;
     ImU64                   LastTime = 0;
 };
 
@@ -552,7 +552,7 @@ static bool ParseCommandLineOptions(int argc, char const** argv)
         else
         {
             // Add tests
-            g_App.Tests.push_back(strdup(argv[n]));
+            g_App.TestsToRun.push_back(strdup(argv[n]));
         }
     }
     return true;
@@ -633,18 +633,20 @@ int main(int argc, char const** argv)
     ImGuiTestEngineIO& test_io = ImGuiTestEngine_GetIO(g_App.TestEngine);
 
     // Non-interactive mode queue all tests by default
-    if (!g_App.OptGUI && g_App.Tests.empty())
-        g_App.Tests.push_back(strdup("all"));
+    if (!g_App.OptGUI && g_App.TestsToRun.empty())
+        g_App.TestsToRun.push_back(strdup("all"));
 
     // Queue requested tests
-    for (int n = 0; n < g_App.Tests.Size; n++)
+    for (int n = 0; n < g_App.TestsToRun.Size; n++)
     {
-        char* test_spec = g_App.Tests[n];
+        char* test_spec = g_App.TestsToRun[n];
         if (strcmp(test_spec, "all") == 0)
             ImGuiTestEngine_QueueTests(g_App.TestEngine, NULL, ImGuiTestRunFlags_CommandLine);
         else
             ImGuiTestEngine_QueueTests(g_App.TestEngine, test_spec, ImGuiTestRunFlags_CommandLine);
+        IM_FREE(test_spec);
     }
+    g_App.TestsToRun.clear();
 
     // Apply options
     test_io.ConfigRunFast = g_App.OptFast;

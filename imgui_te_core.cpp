@@ -815,7 +815,7 @@ static void ImGuiTestEngine_RunTest(ImGuiTestEngine* engine, ImGuiTestContext* c
     ctx->SetRef("");
     ctx->SetInputMode(ImGuiInputSource_Mouse);
     ctx->GenericVars.Clear();
-    test->TestLog.clear();
+    test->TestLog.Clear();
 
     // Mark as currently running the TestFunc (this is the only time when we are allowed to yield)
     IM_ASSERT(ctx->ActiveFunc == ImGuiTestActiveFunc_None);
@@ -1067,23 +1067,22 @@ bool ImGuiTestEngineHook_Check(const char* file, const char* func, int line, ImG
         if (result && !(flags & ImGuiTestCheckFlags_SilentSuccess))
         {
             if (file)
-                test->TestLog.appendf("[%04d] OK %s:%d  '%s'", ctx->FrameCount, file_without_path, line, expr);
+                ctx->Log("OK %s:%d  '%s'\n", file_without_path, line, expr);
             else
-                test->TestLog.appendf("[%04d] OK  '%s'", ctx->FrameCount, expr);
-            test->TestLog.appendf("\n");
+                ctx->Log("OK  '%s'\n", expr);
         }
         if (!result)
         {
             if (!(ctx->RunFlags & ImGuiTestRunFlags_NoTestFunc))
                 test->Status = ImGuiTestStatus_Error;
             if (file)
-                test->TestLog.appendf("[%04d] KO %s:%d  '%s'", ctx->FrameCount, file_without_path, line, expr);
+                test->TestLog.Buffer.appendf("[%04d] KO %s:%d  '%s'", ctx->FrameCount, file_without_path, line, expr);
             else
-                test->TestLog.appendf("[%04d] KO  '%s'", ctx->FrameCount, expr);
+                test->TestLog.Buffer.appendf("[%04d] KO  '%s'", ctx->FrameCount, expr);
             bool display_value_expr = (value_expr != NULL) && (result == false);
             if (display_value_expr)
-                test->TestLog.appendf(" -> '%s'", value_expr);
-            test->TestLog.appendf("\n");
+                test->TestLog.Buffer.appendf(" -> '%s'", value_expr);
+            test->TestLog.Buffer.appendf("\n");
         }
     }
     else
@@ -1127,35 +1126,39 @@ bool ImGuiTestEngineHook_Error(const char* file, const char* func, int line, ImG
 
 static void DrawTestLog(ImGuiTestEngine* e, ImGuiTest* test, bool is_interactive)
 {
-    ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(6.0f, 2.0f));
     ImU32 error_col = IM_COL32(255, 150, 150, 255);
     ImU32 warning_col = ImGui::GetColorU32(ImGuiCol_Text); // IM_COL32(230, 230, 180, 255);
     ImU32 unimportant_col = IM_COL32(190, 190, 190, 255);
 
     // FIXME-OPT: Split TestLog by lines so we can clip it easily.
-    const char* text = test->TestLog.begin();
-    const char* text_end = test->TestLog.end();
-    int line_no = 0;
-    while (text < text_end)
+    ImGuiTestLog* log = &test->TestLog;
+    log->UpdateLineOffsets();
+
+    const char* text = test->TestLog.Buffer.begin();
+    const char* text_end = test->TestLog.Buffer.end();
+    ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(6.0f, 2.0f));
+    ImGuiListClipper clipper;
+    clipper.Begin(log->LineOffsets.Size);
+    while (clipper.Step())
     {
-        const char* line_start = text;
-        const char* line_end = ImStreolRange(line_start, text_end);
-        const bool is_error = ImStristr(line_start, line_end, "] KO", NULL) != NULL; // FIXME-OPT
-        const bool is_warning = ImStristr(line_start, line_end, "[warn]", NULL) != NULL; // FIXME-OPT
-        const bool is_unimportant = ImStristr(line_start, line_end, "] --", NULL) != NULL; // FIXME-OPT
+        for (int line_no = clipper.DisplayStart; line_no < clipper.DisplayEnd; line_no++)
+        {
+            const char* line_start = text + log->LineOffsets[line_no];
+            const char* line_end = (line_no + 1 < log->LineOffsets.Size) ? (text + log->LineOffsets[line_no + 1] - 1) : text_end;
+            const bool is_error = ImStristr(line_start, line_end, "] KO", NULL) != NULL; // FIXME-OPT
+            const bool is_warning = ImStristr(line_start, line_end, "[warn]", NULL) != NULL; // FIXME-OPT
+            const bool is_unimportant = ImStristr(line_start, line_end, "] --", NULL) != NULL; // FIXME-OPT
 
-        if (is_error)
-            ImGui::PushStyleColor(ImGuiCol_Text, error_col);
-        else if (is_warning)
-            ImGui::PushStyleColor(ImGuiCol_Text, warning_col);
-        else if (is_unimportant)
-            ImGui::PushStyleColor(ImGuiCol_Text, unimportant_col);
-        ImGui::TextUnformatted(line_start, line_end);
-        if (is_error || is_warning || is_unimportant)
-            ImGui::PopStyleColor();
-
-        text = line_end + 1;
-        line_no++;
+            if (is_error)
+                ImGui::PushStyleColor(ImGuiCol_Text, error_col);
+            else if (is_warning)
+                ImGui::PushStyleColor(ImGuiCol_Text, warning_col);
+            else if (is_unimportant)
+                ImGui::PushStyleColor(ImGuiCol_Text, unimportant_col);
+            ImGui::TextUnformatted(line_start, line_end);
+            if (is_error || is_warning || is_unimportant)
+                ImGui::PopStyleColor();
+        }
     }
     ImGui::PopStyleVar();
 }
@@ -1357,11 +1360,11 @@ void    ImGuiTestEngine_ShowTestWindow(ImGuiTestEngine* engine, bool* p_open)
                     ImGui::MenuItem("View source", NULL, false, false);
                 }
 
-                if (ImGui::MenuItem("Copy log", NULL, false, !test->TestLog.empty()))
-                    ImGui::SetClipboardText(test->TestLog.c_str());
+                if (ImGui::MenuItem("Copy log", NULL, false, !test->TestLog.Buffer.empty()))
+                    ImGui::SetClipboardText(test->TestLog.Buffer.c_str());
 
-                if (ImGui::MenuItem("Clear log", NULL, false, !test->TestLog.empty()))
-                    test->TestLog.clear();
+                if (ImGui::MenuItem("Clear log", NULL, false, !test->TestLog.Buffer.empty()))
+                    test->TestLog.Clear();
 
                 ImGui::EndPopup();
             }
@@ -1434,11 +1437,11 @@ void    ImGuiTestEngine_ShowTestWindow(ImGuiTestEngine* engine, bool* p_open)
                 ImGui::Text("N/A");
             if (ImGui::SmallButton("Clear"))
                 if (engine->UiSelectedTest)
-                    engine->UiSelectedTest->TestLog.clear();
+                    engine->UiSelectedTest->TestLog.Clear();
             ImGui::SameLine();
             if (ImGui::SmallButton("Copy to clipboard"))
                 if (engine->UiSelectedTest)
-                    ImGui::SetClipboardText(engine->UiSelectedTest->TestLog.begin());
+                    ImGui::SetClipboardText(engine->UiSelectedTest->TestLog.Buffer.c_str());
             ImGui::Separator();
 
             // Quick status
@@ -1455,11 +1458,8 @@ void    ImGuiTestEngine_ShowTestWindow(ImGuiTestEngine* engine, bool* p_open)
             if (engine->UiSelectedTest)
             {
                 DrawTestLog(engine, engine->UiSelectedTest, true);
-                if (engine->UiSelectedTest->TestLogScrollToBottom)
-                {
-                    engine->UiSelectedTest->TestLogScrollToBottom = false;
+                if (ImGui::GetScrollY() >= ImGui::GetScrollMaxY())
                     ImGui::SetScrollHereY();
-                }
             }
             ImGui::EndChild();
             ImGui::EndTabItem();

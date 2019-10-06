@@ -365,6 +365,44 @@ typedef void    (*ImGuiTestTestFunc)(ImGuiTestContext* ctx);
 typedef void    (*ImGuiTestUserDataConstructor)(void* buffer);
 typedef void    (*ImGuiTestUserDataDestructor)(void* ptr);
 
+struct ImGuiTestLog
+{
+    ImGuiTextBuffer     Buffer;
+    ImVector<int>       LineOffsets;
+    int                 LineOffsetsValidUpTo;
+
+    ImGuiTestLog()
+    {
+        LineOffsetsValidUpTo = 0;
+    }
+    void Clear()
+    {
+        Buffer.clear();
+        LineOffsets.clear();
+        LineOffsetsValidUpTo = 0;
+    }
+    void UpdateLineOffsets()
+    {
+        if (LineOffsetsValidUpTo >= Buffer.size())
+            return;
+        const char* p_begin = Buffer.c_str();
+        const char* p_end = Buffer.end();
+        const char* p = p_begin + LineOffsetsValidUpTo;
+        while (p < p_end)
+        {
+            const char* p_bol = p;
+            const char* p_eol = strchr(p, '\n');
+            
+            bool last_empty_line = (p_bol + 1 == p_end);
+
+            if (!last_empty_line)
+                LineOffsets.push_back(p_bol - p_begin);
+            p = p_eol ? p_eol + 1 : NULL;
+        }
+        LineOffsetsValidUpTo = Buffer.size();
+    }
+};
+
 struct ImGuiTest
 {
     const char*                     Category;           // Literal, not owned
@@ -382,8 +420,7 @@ struct ImGuiTest
     ImGuiTestRunFunc                RootFunc;           // NULL function is ok
     ImGuiTestGuiFunc                GuiFunc;            // GUI functions can be reused
     ImGuiTestTestFunc               TestFunc;
-    ImGuiTextBuffer                 TestLog;
-    bool                            TestLogScrollToBottom;
+    ImGuiTestLog                    TestLog;
 
     ImGuiTest()
     {
@@ -400,7 +437,6 @@ struct ImGuiTest
         RootFunc = NULL;
         GuiFunc = NULL;
         TestFunc = NULL;
-        TestLogScrollToBottom = false;
     }
 
     template <typename T>
