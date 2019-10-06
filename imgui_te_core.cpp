@@ -103,6 +103,7 @@ struct ImGuiTestEngine
     ImGuiTest*                  UiSelectAndScrollToTest = NULL;
     ImGuiTest*                  UiSelectedTest = NULL;
     ImGuiTextFilter             UiTestFilter;
+    float                       UiLogHeight = 150.0f;
 
     // Performance Monitor
     FILE*                       PerfPersistentLogCsv;
@@ -577,7 +578,7 @@ static void ImGuiTestEngine_ProcessTestQueue(ImGuiTestEngine* engine)
     engine->CallDepth++;
 
     // Avoid tracking scrolling in UI when running a single test
-    const bool track_scrolling = (engine->TestsQueue.Size > 1);
+    const bool track_scrolling = (engine->TestsQueue.Size > 1) || (engine->TestsQueue.Size == 1 && (engine->TestsQueue[0].RunFlags & ImGuiTestRunFlags_CommandLine));
 
     int ran_tests = 0;
     engine->IO.RunningTests = true;
@@ -739,7 +740,7 @@ ImGuiTest* ImGuiTestEngine_RegisterTest(ImGuiTestEngine* engine, const char* cat
     return t;
 }
 
-void ImGuiTestEngine_QueueTests(ImGuiTestEngine* engine, const char* filter_str)
+void ImGuiTestEngine_QueueTests(ImGuiTestEngine* engine, const char* filter_str, ImGuiTestRunFlags run_flags)
 {
     ImGuiTextFilter filter;
     if (filter_str != NULL)
@@ -753,7 +754,7 @@ void ImGuiTestEngine_QueueTests(ImGuiTestEngine* engine, const char* filter_str)
         ImGuiTest* test = engine->TestsAll[n];
         if (!filter.PassFilter(test->Name))
             continue;
-        ImGuiTestEngine_QueueTest(engine, test, ImGuiTestRunFlags_None);
+        ImGuiTestEngine_QueueTest(engine, test, run_flags);
     }
 }
 
@@ -1168,6 +1169,7 @@ static void HelpTooltip(const char* desc)
 void    ImGuiTestEngine_ShowTestWindow(ImGuiTestEngine* engine, bool* p_open)
 {
     ImGuiContext& g = *GImGui;
+    ImGuiStyle& style = g.Style;
 
     if (engine->UiFocus)
     {
@@ -1190,8 +1192,6 @@ void    ImGuiTestEngine_ShowTestWindow(ImGuiTestEngine* engine, bool* p_open)
         ImGui::EndMenuBar();
     }
 #endif
-
-    const float log_height = ImGui::GetTextLineHeight() * 20.0f;
 
     // Options
     ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0, 0));
@@ -1220,7 +1220,24 @@ void    ImGuiTestEngine_ShowTestWindow(ImGuiTestEngine* engine, bool* p_open)
     ImGui::PopStyleVar();
     ImGui::Separator();
 
+    // FIXME-DOGFOODING: It would be about time that we made it easier to create splitters, current low-level splitter behavior is not easy to use properly.
+    // FIXME-SCROLL: When resizing either we'd like to keep scroll focus on something (e.g. last clicked item for list, bottom for log)
+    // See https://github.com/ocornut/imgui/issues/319
+    const float avail_y = ImGui::GetContentRegionAvail().y - style.ItemSpacing.y;
+    float log_height = engine->UiLogHeight;
+    float list_height = avail_y - engine->UiLogHeight;
+    {
+        ImGuiWindow* window = ImGui::GetCurrentWindow();
+        float y = ImGui::GetCursorScreenPos().y + list_height;
+        ImRect splitter_bb = ImRect(window->WorkRect.Min.x, y - 1, window->WorkRect.Max.x, y + 1);
+        const float min_size = ImGui::GetFrameHeight();
+        ImGui::SplitterBehavior(splitter_bb, ImGui::GetID("splitter"), ImGuiAxis_Y, &list_height, &log_height, min_size, min_size, 3.0f);
+        engine->UiLogHeight = log_height;
+        //ImGui::DebugDrawItemRect();
+    }
+
     // TESTS
+    ImGui::BeginChild("List", ImVec2(0, list_height));
     if (ImGui::BeginTabBar("##blah", ImGuiTabBarFlags_NoTooltip))
     {
         char tab_label[32];
@@ -1237,7 +1254,7 @@ void    ImGuiTestEngine_ShowTestWindow(ImGuiTestEngine* engine, bool* p_open)
         ImGui::SameLine();
         filter->Draw("##filter", -1.0f);
         ImGui::Separator();
-        ImGui::BeginChild("Tests", ImVec2(0, -log_height));
+        ImGui::BeginChild("Tests", ImVec2(0, 0));
 
         ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(6, 3));
         ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(4, 1));
@@ -1401,11 +1418,12 @@ void    ImGuiTestEngine_ShowTestWindow(ImGuiTestEngine* engine, bool* p_open)
         ImGui::EndTabItem();
         ImGui::EndTabBar();
     }
+    ImGui::EndChild();
     engine->UiSelectAndScrollToTest = NULL;
 
     // LOG
-    ImGui::Separator();
-
+    //ImGui::Separator();
+    ImGui::BeginChild("Log", ImVec2(0, log_height));
     if (ImGui::BeginTabBar("##tools"))
     {
         if (ImGui::BeginTabItem("LOG"))
@@ -1504,6 +1522,7 @@ void    ImGuiTestEngine_ShowTestWindow(ImGuiTestEngine* engine, bool* p_open)
 
         ImGui::EndTabBar();
     }
+    ImGui::EndChild();
 
     ImGui::End();
 }
@@ -1526,7 +1545,8 @@ static void     ImGuiTestEngine_SettingsReadLine(ImGuiContext* imgui_ctx, ImGuiS
     IM_ASSERT(engine != NULL);
     IM_ASSERT(engine->UiContextTarget == imgui_ctx);
 
-    if (strncmp(line, "Filter=", 7) == 0) { ImStrncpy(engine->UiTestFilter.InputBuf, line + 7, IM_ARRAYSIZE(engine->UiTestFilter.InputBuf)); engine->UiTestFilter.Build(); }
+    if (sscanf(line, "Filter=%s", engine->UiTestFilter.InputBuf) == 1)  { engine->UiTestFilter.Build(); }   // FIXME
+    else if (sscanf(line, "LogHeight=%f", &engine->UiLogHeight) == 1)   { }
 }
 
 static void     ImGuiTestEngine_SettingsWriteAll(ImGuiContext* imgui_ctx, ImGuiSettingsHandler* handler, ImGuiTextBuffer* buf)
@@ -1536,7 +1556,8 @@ static void     ImGuiTestEngine_SettingsWriteAll(ImGuiContext* imgui_ctx, ImGuiS
     IM_ASSERT(engine->UiContextTarget == imgui_ctx);
 
     buf->appendf("[%s][Data]\n", handler->TypeName);
-    buf->appendf("Filter=%s", engine->UiTestFilter.InputBuf);
+    buf->appendf("Filter=%s\n", engine->UiTestFilter.InputBuf);
+    buf->appendf("LogHeight=%.0f\n", engine->UiLogHeight);
     buf->appendf("\n");
 }
 

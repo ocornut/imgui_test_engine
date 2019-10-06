@@ -641,9 +641,9 @@ int main(int argc, char const** argv)
     {
         char* test_spec = g_App.Tests[n];
         if (strcmp(test_spec, "all") == 0)
-            ImGuiTestEngine_QueueTests(g_App.TestEngine, NULL);
+            ImGuiTestEngine_QueueTests(g_App.TestEngine, NULL, ImGuiTestRunFlags_CommandLine);
         else
-            ImGuiTestEngine_QueueTests(g_App.TestEngine, test_spec);
+            ImGuiTestEngine_QueueTests(g_App.TestEngine, test_spec, ImGuiTestRunFlags_CommandLine);
     }
 
     // Apply options
