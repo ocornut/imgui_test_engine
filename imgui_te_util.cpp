@@ -129,6 +129,15 @@ void    ImOsConsoleSetTextColor(ImOsConsoleStream stream, ImOsConsoleTextColor c
 #endif
 }
 
+bool    ImOsIsDebuggerPresent()
+{
+#ifdef _WIN32
+    return ::IsDebuggerPresent() != 0;
+#else
+    // FIXME
+#endif
+}
+
 void    ImPathFixSeparatorsForCurrentOS(char* buf)
 {
 #ifdef _WIN32

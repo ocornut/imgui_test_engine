@@ -196,6 +196,22 @@ template<> inline void ImGuiTestEngineUtil_AppendStrValue(ImGuiTextBuffer& buf, 
 template<> inline void ImGuiTestEngineUtil_AppendStrValue(ImGuiTextBuffer& buf, const void* value)  { buf.appendf("%p", value); }
 
 // Those macros allow us to print out the values of both lhs and rhs expressions involved in a check.
+#define IM_CHECK_OP_NO_RET(_LHS, _RHS, _OP)                                 \
+    do                                                                      \
+    {                                                                       \
+        auto __lhs = _LHS;  /* Cache in variables to avoid side effects */  \
+        auto __rhs = _RHS;                                                  \
+        bool __res = __lhs _OP __rhs;                                       \
+        ImGuiTextBuffer value_expr_buf;                                     \
+        if (!__res)                                                         \
+        {                                                                   \
+            ImGuiTestEngineUtil_AppendStrValue(value_expr_buf, __lhs);      \
+            value_expr_buf.append(" " #_OP " ");                            \
+            ImGuiTestEngineUtil_AppendStrValue(value_expr_buf, __rhs);      \
+        }                                                                   \
+        if (ImGuiTestEngineHook_Check(__FILE__, __func__, __LINE__, ImGuiTestCheckFlags_None, __res, #_LHS " " #_OP " " #_RHS, value_expr_buf.c_str())) \
+            IM_ASSERT(__res);                                               \
+    } while (0)
 #define IM_CHECK_OP(_LHS, _RHS, _OP)                                        \
     do                                                                      \
     {                                                                       \
@@ -214,12 +230,20 @@ template<> inline void ImGuiTestEngineUtil_AppendStrValue(ImGuiTextBuffer& buf, 
         if (!__res)                                                         \
             return;                                                         \
     } while (0)
-#define IM_CHECK_EQ(_LHS, _RHS)         IM_CHECK_OP(_LHS, _RHS, ==)     // Equal
-#define IM_CHECK_NE(_LHS, _RHS)         IM_CHECK_OP(_LHS, _RHS, !=)     // Not Equal
-#define IM_CHECK_LT(_LHS, _RHS)         IM_CHECK_OP(_LHS, _RHS, <)      // Less Than
-#define IM_CHECK_LE(_LHS, _RHS)         IM_CHECK_OP(_LHS, _RHS, <=)     // Less or Equal
-#define IM_CHECK_GT(_LHS, _RHS)         IM_CHECK_OP(_LHS, _RHS, >)      // Greater Than
-#define IM_CHECK_GE(_LHS, _RHS)         IM_CHECK_OP(_LHS, _RHS, >=)     // Greater or Equal
+
+#define IM_CHECK_EQ(_LHS, _RHS)         IM_CHECK_OP(_LHS, _RHS, ==)         // Equal
+#define IM_CHECK_NE(_LHS, _RHS)         IM_CHECK_OP(_LHS, _RHS, !=)         // Not Equal
+#define IM_CHECK_LT(_LHS, _RHS)         IM_CHECK_OP(_LHS, _RHS, <)          // Less Than
+#define IM_CHECK_LE(_LHS, _RHS)         IM_CHECK_OP(_LHS, _RHS, <=)         // Less or Equal
+#define IM_CHECK_GT(_LHS, _RHS)         IM_CHECK_OP(_LHS, _RHS, >)          // Greater Than
+#define IM_CHECK_GE(_LHS, _RHS)         IM_CHECK_OP(_LHS, _RHS, >=)         // Greater or Equal
+
+#define IM_CHECK_EQ_NO_RET(_LHS, _RHS)  IM_CHECK_OP_NO_RET(_LHS, _RHS, ==)  // Equal
+#define IM_CHECK_NE_NO_RET(_LHS, _RHS)  IM_CHECK_OP_NO_RET(_LHS, _RHS, !=)  // Not Equal
+#define IM_CHECK_LT_NO_RET(_LHS, _RHS)  IM_CHECK_OP_NO_RET(_LHS, _RHS, <)   // Less Than
+#define IM_CHECK_LE_NO_RET(_LHS, _RHS)  IM_CHECK_OP_NO_RET(_LHS, _RHS, <=)  // Less or Equal
+#define IM_CHECK_GT_NO_RET(_LHS, _RHS)  IM_CHECK_OP_NO_RET(_LHS, _RHS, >)   // Greater Than
+#define IM_CHECK_GE_NO_RET(_LHS, _RHS)  IM_CHECK_OP_NO_RET(_LHS, _RHS, >=)  // Greater or Equal
 
 #define IM_CHECK_STR_EQ(_LHS, _RHS)                                         \
     do                                                                      \

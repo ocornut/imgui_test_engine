@@ -653,10 +653,8 @@ int main(int argc, char const** argv)
     test_io.ConfigVerboseLevel = g_App.OptVerboseLevel;
     test_io.ConfigNoThrottle = g_App.OptNoThrottle;
     test_io.PerfStressAmount = 5;
-#ifdef _WIN32
-    if (!g_App.OptGUI && ::IsDebuggerPresent())
+    if (!g_App.OptGUI && ImOsIsDebuggerPresent())
         test_io.ConfigBreakOnError = true;
-#endif
 
     ImGuiTestApp_Status error_code = ImGuiTestApp_Status_Success;
 

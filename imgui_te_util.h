@@ -51,6 +51,7 @@ void        ImSleepInMilliseconds(int ms);
 ImU64       ImGetTimeInMicroseconds();
 
 void        ImOsConsoleSetTextColor(ImOsConsoleStream stream, ImOsConsoleTextColor color);
+bool        ImOsIsDebuggerPresent();
 
 void        ImPathFixSeparatorsForCurrentOS(char* buf);
 
