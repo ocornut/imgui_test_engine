@@ -2306,6 +2306,33 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
         IM_CHECK_EQ(out_ranges.Size, 5);
     };
 
+    // ## Test whether splitting/merging draw lists properly retains a texture id.
+    t = REGISTER_TEST("misc", "misc_drawlist_splitter_texture_id");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImDrawList* draw_list = ImGui::GetWindowDrawList();
+        ImTextureID prev_texture_id = draw_list->_TextureIdStack.back();
+        if (ctx->FrameCount == 0)
+        {
+            draw_list->ChannelsSplit(2);
+            draw_list->ChannelsSetCurrent(0);
+            // Image wont be clipped when added directly into the drawlist.
+            draw_list->AddImage((ImTextureID)100, ImVec2(0, 0), ImVec2(16, 16));
+            draw_list->ChannelsSetCurrent(1);
+            draw_list->AddImage((ImTextureID)200, ImVec2(0, 0), ImVec2(16, 16));
+            draw_list->ChannelsMerge();
+            IM_CHECK(prev_texture_id == draw_list->CmdBuffer.back().TextureId);
+            // Replace fake texture IDs with a known good ID in order to prevent graphics API crashing application.
+            for (ImDrawCmd& cmd : draw_list->CmdBuffer)
+            {
+                if (cmd.TextureId == (ImTextureID)100 || cmd.TextureId == (ImTextureID)200)
+                    cmd.TextureId = prev_texture_id;
+            }
+        }
+        ImGui::End();
+    };
+
     t = REGISTER_TEST("misc", "misc_repeat_typematic");
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
