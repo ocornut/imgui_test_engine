@@ -427,6 +427,171 @@ void RegisterTests_Window(ImGuiTestEngine* e)
     };
 }
 
+
+//-------------------------------------------------------------------------
+// Tests: Layout
+//-------------------------------------------------------------------------
+
+void RegisterTests_Layout(ImGuiTestEngine* e)
+{
+    ImGuiTest* t = NULL;
+
+    // ## Test matching LastItemRect.Max/CursorMaxPos
+    // ## Test text baseline
+    t = REGISTER_TEST("layout", "layout_baseline_and_cursormax");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        float y = 0.0f;
+
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImGuiContext& g = *ctx->UiContext;
+        ImGuiStyle& style = ImGui::GetStyle();
+        ImGuiWindow* window = ImGui::GetCurrentWindow();
+        ImDrawList* draw_list = window->DrawList;
+       
+        enum ItemType
+        {
+            ItemType_SmallButton,
+            ItemType_Button,
+            ItemType_Text,
+            ItemType_BulletText,
+            ItemType_TreeNode,
+            ItemType_Selectable,
+            ItemType_ImageButton,
+            ItemType_COUNT,
+            ItemType_START = 0
+        };
+        const char* item_type_names[] =
+        {
+            "SmallButton",
+            "Button",
+            "Text",
+            "BulletText",
+            "TreeNode",
+            "Selectable",
+            "ImageButton"
+        };
+
+        for (int item_type = ItemType_START; item_type < ItemType_COUNT; item_type++)
+        {
+            const char* item_type_name = item_type_names[item_type];
+            for (int n = 0; n < 5; n++)
+            {
+                ctx->LogVerbose("Test '%s' variant %d\n", item_type_name, n);
+
+                // Emit button with varying baseline
+                y = window->DC.CursorPos.y;
+                if (n > 0)
+                {
+                    if (n >= 1 && n <= 2)
+                        ImGui::SmallButton("Button");
+                    else if (n >= 3 && n <= 4)
+                        ImGui::Button("Button");
+                    ImGui::SameLine();
+                }
+
+                const int label_line_count = (n == 0 || n == 1 || n == 3) ? 1 : 2;
+
+                char label[32];
+                ImFormatString(label, IM_ARRAYSIZE(label), (label_line_count == 1) ? "%s%d" : "%s%d\nHello", item_type_name, n);
+
+                float expected_padding = 0.0f;
+                switch (item_type)
+                {
+                case ItemType_SmallButton:
+                    expected_padding = window->DC.CurrLineTextBaseOffset;
+                    ImGui::SmallButton(label);
+                    break;
+                case ItemType_Button:
+                    expected_padding = style.FramePadding.y * 2.0f;
+                    ImGui::Button(label);
+                    break;
+                case ItemType_Text:
+                    expected_padding = window->DC.CurrLineTextBaseOffset;
+                    ImGui::Text(label);
+                    break;
+                case ItemType_BulletText:
+                    expected_padding = (n <= 2) ? 0.0f : style.FramePadding.y * 1.0f;
+                    ImGui::BulletText(label);
+                    break;
+                case ItemType_TreeNode:
+                    expected_padding = (n <= 2) ? 0.0f : style.FramePadding.y * 2.0f;
+                    ImGui::TreeNodeEx(label, ImGuiTreeNodeFlags_NoTreePushOnOpen);
+                    break;
+                case ItemType_Selectable:
+                    // FIXME-TESTS: We may want to aim the specificies of Selectable() and not clear ItemSpacing
+                    //expected_padding = style.ItemSpacing.y * 0.5f;
+                    expected_padding = window->DC.CurrLineTextBaseOffset;
+                    ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0, 0));
+                    ImGui::Selectable(label);
+                    ImGui::PopStyleVar();
+                    ImGui::Spacing();
+                    break;
+                case ItemType_ImageButton:
+                    expected_padding = style.FramePadding.y * 2.0f;
+                    ImGui::ImageButton(ImGui::GetIO().Fonts->TexID, ImVec2(100, ImGui::GetTextLineHeight() * label_line_count), ImVec2(0, 0), ImVec2(1, 1), -1, ImVec4(1.0f, 0.6f, 0.0f, 1.0f));
+                    break;
+                }
+
+                ImGui::DebugDrawItemRect(IM_COL32(255, 0, 0, 200));
+                draw_list->AddLine(ImVec2(window->Pos.x, window->DC.CursorMaxPos.y), ImVec2(window->Pos.x + window->Size.x, window->DC.CursorMaxPos.y), IM_COL32(255, 255, 0, 100));
+                if (label_line_count > 1)
+                    IM_CHECK_EQ_NO_RET(window->DC.CursorMaxPos.y, window->DC.LastItemRect.Max.y);
+
+                const float current_height = window->DC.LastItemRect.Max.y - y;
+                const float expected_height = g.FontSize * label_line_count + expected_padding;
+                IM_CHECK_EQ_NO_RET(current_height, expected_height);
+            }
+            
+            ImGui::Spacing();
+        }
+
+        // FIXME-TESTS: Selectable()
+
+        ImGui::End();
+    };
+
+    // ## Test size of items with explicit thin size and larger label
+#if 0
+    t = REGISTER_TEST("layout", "layout_height_label");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImGuiWindow* window = ImGui::GetCurrentWindow();
+        ImGuiContext& g = *ctx->UiContext;
+
+        ImGui::Button("Button", ImVec2(0, 8));
+        IM_CHECK_EQ_NO_RET(window->DC.LastItemRect.GetHeight(), 8.0f);
+
+        ImGui::Separator();
+
+        float values[3] = { 1.0f, 2.0f, 3.0f };
+        ImGui::PlotHistogram("##Histogram", values, 3, 0, NULL, 0.0f, 4.0f, ImVec2(0, 8));
+        IM_CHECK_EQ_NO_RET(window->DC.LastItemRect.GetHeight(), 8.0f);
+        ImGui::Separator();
+
+        ImGui::PlotHistogram("Histogram\nTwoLines", values, 3, 0, NULL, 0.0f, 4.0f, ImVec2(0, 8));
+        IM_CHECK_EQ_NO_RET(window->DC.LastItemRect.GetHeight(), g.FontSize * 2.0f);
+        ImGui::Separator();
+
+        static char buf[128] = "";
+        ImGui::InputTextMultiline("##InputText", buf, IM_ARRAYSIZE(buf), ImVec2(0, 8));
+        IM_CHECK_EQ_NO_RET(window->DC.LastItemRect.GetHeight(), 8.0f);
+        ImGui::Separator();
+
+        ImGui::InputTextMultiline("InputText\nTwoLines", buf, IM_ARRAYSIZE(buf), ImVec2(0, 8));
+        IM_CHECK_EQ_NO_RET(window->DC.LastItemRect.GetHeight(), g.FontSize * 2.0f);
+        ImGui::Separator();
+
+        ImGui::Text("Text");
+        IM_CHECK_EQ_NO_RET(window->DC.LastItemRect.GetHeight(), g.FontSize);
+
+        ImGui::End();
+    };
+#endif
+
+}
+
 //-------------------------------------------------------------------------
 // Tests: Widgets
 //-------------------------------------------------------------------------
@@ -2594,6 +2759,7 @@ void RegisterTests_Capture(ImGuiTestEngine* e)
 void RegisterTests(ImGuiTestEngine* e)
 {
     RegisterTests_Window(e);
+    RegisterTests_Layout(e);
     RegisterTests_Widgets(e);
     RegisterTests_Nav(e);
     RegisterTests_Columns(e);
