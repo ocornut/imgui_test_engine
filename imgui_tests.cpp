@@ -1351,6 +1351,63 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ImGui::End();
     };
     t->TestFunc = [](ImGuiTestContext* ctx) { ctx->Yield(); };
+
+    // ## Test ImGuiTreeNodeFlags_SpanAvailWidth flag
+    t = REGISTER_TEST("widgets", "widgets_tree_node_span_avail_width");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::SetNextWindowSize(ImVec2(300, 100), ImGuiCond_Always);
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImGuiWindow* window = ImGui::GetCurrentWindow();
+        if (ctx->FrameCount == 2)
+        {
+            if (ImGui::TreeNodeEx("One", ImGuiTreeNodeFlags_DefaultOpen))
+            {
+                IM_ON_SCOPE_EXIT(ImGui::TreePop());
+                if (ImGui::TreeNodeEx("Two", ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_SpanAvailWidth))
+                {
+                    IM_ON_SCOPE_EXIT(ImGui::TreePop());
+                    IM_CHECK(window->DC.LastItemStatusFlags & ImGuiItemStatusFlags_HasDisplayRect);
+                    // Interaction rect matches visible rect.
+                    IM_CHECK(window->DC.LastItemDisplayRect.Min == window->DC.LastItemRect.Min);
+                    IM_CHECK(window->DC.LastItemDisplayRect.Max == window->DC.LastItemRect.Max);
+                    // Interaction rect extends to the end of the available area.
+                    IM_CHECK(window->DC.LastItemRect.Max.x == window->WorkRect.Max.x);
+                }
+            }
+        }
+        ImGui::End();
+    };
+    // ## Test ImGuiTreeNodeFlags_SpanFullWidth flag
+    t = REGISTER_TEST("widgets", "widgets_tree_node_span_full_width");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::SetNextWindowSize(ImVec2(300, 100), ImGuiCond_Always);
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImGuiWindow* window = ImGui::GetCurrentWindow();
+        if (ctx->FrameCount == 2)
+        {
+            ImGui::Indent();
+            if (ImGui::TreeNodeEx("One", ImGuiTreeNodeFlags_DefaultOpen))
+            {
+                IM_ON_SCOPE_EXIT(ImGui::TreePop());
+                if (ImGui::TreeNodeEx("Two", ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_SpanFullWidth))
+                {
+                    IM_ON_SCOPE_EXIT(ImGui::TreePop());
+                    // Interaction rect matches visible rect.
+                    IM_CHECK(window->DC.LastItemStatusFlags & ImGuiItemStatusFlags_HasDisplayRect);
+                    IM_CHECK(window->DC.LastItemDisplayRect.Min == window->DC.LastItemRect.Min);
+                    IM_CHECK(window->DC.LastItemDisplayRect.Max == window->DC.LastItemRect.Max);
+                    // ImGuiTreeNodeFlags_SpanFullWidth also extends interaction rect to the left.
+                    IM_CHECK(window->DC.LastItemRect.Min.x == window->WorkRect.Min.x);
+                    // Interaction rect extends to the end of the available area.
+                    IM_CHECK(window->DC.LastItemRect.Max.x == window->WorkRect.Max.x);
+                }
+            }
+            ImGui::Unindent();
+        }
+        ImGui::End();
+    };
 }
 
 //-------------------------------------------------------------------------
