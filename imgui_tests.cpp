@@ -340,7 +340,7 @@ void RegisterTests_Window(ImGuiTestEngine* e)
         ImGuiWindow* window = ImGui::FindWindowByName("Test Scrolling");
         ImGuiStyle& style = ImGui::GetStyle();
 
-        IM_ASSERT(window->ContentSize.y > 0.0f);
+        IM_CHECK(window->ContentSize.y > 0.0f);
         float scroll_y = window->Scroll.y;
         float scroll_max_y = window->ScrollMax.y;
         ctx->LogVerbose("scroll_y = %f\n", scroll_y);

@@ -1,5 +1,5 @@
 // dear imgui
-// (test engine)
+// (test engine, test context = end user automation api)
 
 #pragma once
 
@@ -58,11 +58,14 @@ inline const char*  GetActionVerb(ImGuiTestAction action)
     case ImGuiTestAction_Uncheck:       return "Unchecked";
     case ImGuiTestAction_Open:          return "Opened";
     case ImGuiTestAction_Close:         return "Closed";
+    case ImGuiTestAction_Input:         return "Input";
     case ImGuiTestAction_COUNT:
     default:                            return "N/A";
     }
 }
 
+// Helper struct to store various queryable state of an item.
+// This facilitate interactions between GuiFunc <> TestFunc, since those state are frequently used.
 struct ImGuiTestGenericStatus
 {
     int     Ret;
@@ -102,7 +105,7 @@ enum ImGuiTestActiveFunc
 };
 
 // Generic structure with varied data. This is useful for tests to quickly share data between the GUI functions and the Test function.
-// This is however totally optional. Using a RunFunc it is possible to store custom data on the stack and read from it as UserData.
+// This is however totally optional. Using SetUserDataType() it is possible to store custom data on the stack and read from it as UserData.
 struct ImGuiTestGenericVars
 {
     int             Int1;

@@ -1,5 +1,5 @@
 ﻿// dear imgui
-// (test engine)
+// (test engine, core)
 
 #if defined(_MSC_VER) && !defined(_CRT_SECURE_NO_WARNINGS)
 #define _CRT_SECURE_NO_WARNINGS
@@ -174,7 +174,6 @@ static void  ImGuiTestEngine_SettingsWriteAll(ImGuiContext* imgui_ctx, ImGuiSett
 // - ImGuiTestEngine_Abort()
 // - ImGuiTestEngine_QueueAllTests()
 //-------------------------------------------------------------------------
-// - ImHashDecoratedPath()
 // - ImGuiTestEngine_FindLocateTask()
 // - ImGuiTestEngine_ItemLocate()
 // - ImGuiTestEngine_ClearTests()
@@ -188,6 +187,7 @@ static void  ImGuiTestEngine_SettingsWriteAll(ImGuiContext* imgui_ctx, ImGuiSett
 // - ImGuiTestEngine_RunTest()
 //-------------------------------------------------------------------------
 
+// Create test context and attach to imgui context
 ImGuiTestEngine*    ImGuiTestEngine_CreateContext(ImGuiContext* imgui_context)
 {
     IM_ASSERT(imgui_context != NULL);
@@ -244,8 +244,8 @@ ImGuiTestEngineIO&  ImGuiTestEngine_GetIO(ImGuiTestEngine* engine)
 void    ImGuiTestEngine_Abort(ImGuiTestEngine* engine)
 {
     engine->Abort = true;
-    if (engine->TestContext)
-        engine->TestContext->Abort = true;
+    if (ImGuiTestContext* test_context = engine->TestContext)
+        test_context->Abort = true;
 }
 
 // FIXME-OPT
@@ -260,6 +260,9 @@ ImGuiTestLocateTask* ImGuiTestEngine_FindLocateTask(ImGuiTestEngine* engine, ImG
     return NULL;
 }
 
+// Request information about one item.
+// Will push a request for the test engine to process. 
+// Will return NULL when results are not ready (or not available).
 ImGuiTestItemInfo* ImGuiTestEngine_ItemLocate(ImGuiTestEngine* engine, ImGuiID id, const char* debug_id)
 {
     IM_ASSERT(id != 0);
@@ -522,6 +525,7 @@ static void ImGuiTestEngine_PostNewFrame(ImGuiTestEngine* engine, ImGuiContext* 
         ImGuiTestEngine_ProcessTestQueue(engine);
 }
 
+// Yield control back from the TestFunc to the main update + GuiFunc, for one frame.
 void ImGuiTestEngine_Yield(ImGuiTestEngine* engine)
 {
     ImGuiTestContext* ctx = engine->TestContext;
@@ -603,7 +607,6 @@ static void ImGuiTestEngine_ProcessTestQueue(ImGuiTestEngine* engine)
         engine->UiSelectedTest = test;
         test->Status = ImGuiTestStatus_Running;
 
-        // If the user defines a RootFunc, they will call RunTest() themselves. This allows them to conveniently store data in the stack.
         ImGuiTestContext ctx;
         ctx.Test = test;
         ctx.Engine = engine;
@@ -621,29 +624,22 @@ static void ImGuiTestEngine_ProcessTestQueue(ImGuiTestEngine* engine)
 
         ctx.LogEx(ImGuiTestLogFlags_NoHeader, "----------------------------------------------------------------------\n");
         ctx.LogEx(ImGuiTestLogFlags_None, "Test: '%s' '%s'..\n", test->Category, test->Name);
-        if (test->RootFunc)
+        if (test->UserDataConstructor != NULL)
         {
-            test->RootFunc(&ctx);
+            if ((engine->UserDataBuffer == NULL) || (engine->UserDataBufferSize < test->UserDataSize))
+            {
+                IM_FREE(engine->UserDataBuffer);
+                engine->UserDataBufferSize = test->UserDataSize;
+                engine->UserDataBuffer = IM_ALLOC(engine->UserDataBufferSize);
+            }
+
+            test->UserDataConstructor(engine->UserDataBuffer);
+            ImGuiTestEngine_RunTest(engine, &ctx, engine->UserDataBuffer);
+            test->UserDataDestructor(engine->UserDataBuffer);
         }
         else
         {
-            if (test->UserDataConstructor != NULL)
-            {
-                if ((engine->UserDataBuffer == NULL) || (engine->UserDataBufferSize < test->UserDataSize))
-                {
-                    IM_FREE(engine->UserDataBuffer);
-                    engine->UserDataBufferSize = test->UserDataSize;
-                    engine->UserDataBuffer = IM_ALLOC(engine->UserDataBufferSize);
-                }
-
-                test->UserDataConstructor(engine->UserDataBuffer);
-                ImGuiTestEngine_RunTest(engine, &ctx, engine->UserDataBuffer);
-                test->UserDataDestructor(engine->UserDataBuffer);
-            }
-            else
-            {
-                ImGuiTestEngine_RunTest(engine, &ctx, NULL);
-            }
+            ImGuiTestEngine_RunTest(engine, &ctx, NULL);
         }
         ran_tests++;
 
@@ -825,6 +821,9 @@ static void ImGuiTestEngine_RunTest(ImGuiTestEngine* engine, ImGuiTestContext* c
     ctx->ActiveFunc = ImGuiTestActiveFunc_TestFunc;
 
     // Warm up GUI
+    // - We need one mandatory frame running GuiFunc before running TestFunc
+    // - We add a second frame, to avoid running tests while e.g. windows are typically appearing for the first time, hidden,
+    // measuring their initial size. Most tests are going to be more meaningful with this stabilized base.
     if (!(test->Flags & ImGuiTestFlags_NoWarmUp))
     {
         ctx->FrameCount -= 2;
@@ -855,7 +854,7 @@ static void ImGuiTestEngine_RunTest(ImGuiTestEngine* engine, ImGuiTestContext* c
                     ctx->Yield();
         }
 
-        //if (test->Status == ImGuiTestStatus_Error)
+        // Recover missing End*/Pop* calls.
         ctx->RecoverFromUiContextErrors();
 
         if (!engine->IO.ConfigRunFast)
@@ -1202,17 +1201,17 @@ void    ImGuiTestEngine_ShowTestWindow(ImGuiTestEngine* engine, bool* p_open)
     ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0, 0));
     //ImGui::Text("OPTIONS:");
     //ImGui::SameLine();
-    ImGui::Checkbox("Fast", &engine->IO.ConfigRunFast); HelpTooltip("Run tests as fast as possible (teleport mouse, etc.).");
+    ImGui::Checkbox("Fast", &engine->IO.ConfigRunFast); HelpTooltip("Run tests as fast as possible (no vsync, no delay, teleport mouse, etc.).");
     ImGui::SameLine();
     ImGui::Checkbox("Blind", &engine->IO.ConfigRunBlind); HelpTooltip("<UNSUPPORTED>\nRun tests in a blind ui context.");
     ImGui::SameLine();
-    ImGui::Checkbox("Stop", &engine->IO.ConfigStopOnError); HelpTooltip("Stop on error.");
+    ImGui::Checkbox("Stop", &engine->IO.ConfigStopOnError); HelpTooltip("Stop running tests when hitting an error.");
     ImGui::SameLine();
     ImGui::Checkbox("DbgBrk", &engine->IO.ConfigBreakOnError); HelpTooltip("Break in debugger when hitting an error.");
     ImGui::SameLine();
     ImGui::Checkbox("KeepGUI", &engine->IO.ConfigKeepTestGui); HelpTooltip("Keep GUI function running after test function is finished.");
     ImGui::SameLine();
-    ImGui::Checkbox("Focus", &engine->IO.ConfigTakeFocusBackAfterTests); HelpTooltip("Set focus back to Test window after running tests.");
+    ImGui::Checkbox("Refocus", &engine->IO.ConfigTakeFocusBackAfterTests); HelpTooltip("Set focus back to Test window after running tests.");
     ImGui::SameLine();
     ImGui::PushItemWidth(60);
     ImGui::DragInt("Verbose", (int*)&engine->IO.ConfigVerboseLevel, 0.1f, 0, ImGuiTestVerboseLevel_COUNT - 1, GetVerboseLevelName(engine->IO.ConfigVerboseLevel));

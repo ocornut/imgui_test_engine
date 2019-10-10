@@ -1,5 +1,5 @@
 // dear imgui
-// (test engine)
+// (test engine, test context = end user automation api)
 
 #if defined(_MSC_VER) && !defined(_CRT_SECURE_NO_WARNINGS)
 #define _CRT_SECURE_NO_WARNINGS
@@ -33,7 +33,6 @@ void    ImGuiTestContext::LogExV(ImGuiTestLogFlags flags, const char* fmt, va_li
     {
         if (EngineIO->ConfigVerboseLevel <= ImGuiTestVerboseLevel_Min)
             return;
-
         if (EngineIO->ConfigVerboseLevel == ImGuiTestVerboseLevel_Normal && ctx->ActionDepth > 1)
             return;
     }
@@ -94,18 +93,20 @@ void    ImGuiTestContext::Finish()
         test->Status = ImGuiTestStatus_Success;
 }
 
+// FIXME-ERRORHANDLING: Can't recover from inside BeginTabItem/EndTabItem yet.
+// FIXME-ERRORHANDLING: Can't recover from interleaved BeginTabBar/Begin
+// FIXME-ERRORHANDLING: Once this function is amazingly sturdy, we should make it a ImGui:: function.. See #1651
 void    ImGuiTestContext::RecoverFromUiContextErrors()
 {
     ImGuiContext& g = *UiContext;
     IM_ASSERT(Test != NULL);
 
-    bool recovered = false;
-    const bool verbose = (Test->Status != ImGuiTestStatus_Error); // If we are already in a test error state, recovering is normal.
-    while (g.CurrentWindowStack.Size > 1) // FIXME-ERRORHANDLING
-    {
-        // FIXME-ERRORHANDLING: Can't recover from inside BeginTabItem/EndTabItem yet.
-        // FIXME-ERRORHANDLING: Can't recover from interleaved BeginTabBar/Begin
+    // If we are already in a test error state, recovering is normal so we'll hide the log.
+    const bool verbose = (Test->Status != ImGuiTestStatus_Error);
 
+    bool recovered = false;
+    while (g.CurrentWindowStack.Size > 1)
+    {
 #ifdef IMGUI_HAS_TABLE
         ImGuiWindow* window = g.CurrentWindow;
         while (window->DC.CurrentTable != NULL)
@@ -169,6 +170,9 @@ void    ImGuiTestContext::Sleep(float time)
     }
 }
 
+// Sleep for a forced wall clock time
+// FIXME-TESTS: This is slowing down tests when running in Fast mode :(
+// instead, we could accelerate the values of io.DeltaTime passed to ImGui::NewFrame() in order to accelerate ImGui time without waiting real wall clock time.
 void    ImGuiTestContext::SleepDebugNoSkip(float time)
 {
     if (IsError())
@@ -379,6 +383,7 @@ void    ImGuiTestContext::NavMove(ImGuiTestRef ref)
     // Focus window before scrolling/moving so things are nicely visible
     BringWindowToFrontFromItem(ref);
 
+    // Teleport
     ImGui::SetNavID(item->ID, item->NavLayer);
     Yield();
 
@@ -601,7 +606,7 @@ void    ImGuiTestContext::MouseDoubleClick(int button)
     LogVerbose("MouseDoubleClick %d\n", button);
 
     Yield();
-    UiContext->IO.MouseClickedTime[button] = -FLT_MAX; // Prevent accidental double-click from happening ever
+    UiContext->IO.MouseClickedTime[button] = -FLT_MAX; // Prevent accidental double-click followed by single click
     for (int n = 0; n < 2; n++)
     {
         Inputs->MouseButtonsValue = (1 << button);
@@ -894,7 +899,9 @@ void    ImGuiTestContext::ItemAction(ImGuiTestAction action, ImGuiTestRef ref)
         if (item && (item->StatusFlags & ImGuiItemStatusFlags_Opened) == 0)
         {
             item->RefCount++;
-            MouseMove(ref); // Some item just on hover, give them that chance
+            MouseMove(ref); 
+            
+            // Some item may open just by hovering, give them that chance
             if ((item->StatusFlags & ImGuiItemStatusFlags_Opened) == 0)
             {
                 ItemClick(ref);
@@ -936,7 +943,7 @@ void    ImGuiTestContext::ItemAction(ImGuiTestAction action, ImGuiTestRef ref)
             ItemClick(ref);
             Yield();
         }
-        ItemVerifyCheckedIfAlive(ref, true);     // We can't just IM_ASSERT(ItemIsChecked()) because the item may disappear and never update its StatusFlags any more!
+        ItemVerifyCheckedIfAlive(ref, true); // We can't just IM_ASSERT(ItemIsChecked()) because the item may disappear and never update its StatusFlags any more!
 
         return;
     }
@@ -948,7 +955,7 @@ void    ImGuiTestContext::ItemAction(ImGuiTestAction action, ImGuiTestRef ref)
             ItemClick(ref);
             Yield();
         }
-        ItemVerifyCheckedIfAlive(ref, false);       // We can't just IM_ASSERT(ItemIsChecked()) because the item may disappear and never update its StatusFlags any more!
+        ItemVerifyCheckedIfAlive(ref, false); // We can't just IM_ASSERT(ItemIsChecked()) because the item may disappear and never update its StatusFlags any more!
 
         return;
     }
@@ -982,7 +989,7 @@ void    ImGuiTestContext::ItemActionAll(ImGuiTestAction action, ImGuiTestRef ref
             }
         }
 
-        int actioned_total_at_beginning_of_pass = actioned_total;
+        const int actioned_total_at_beginning_of_pass = actioned_total;
 
         // Process top-to-bottom in most cases
         int scan_start = 0;
@@ -1155,7 +1162,7 @@ void    ImGuiTestContext::MenuAction(ImGuiTestAction action, ImGuiTestRef ref)
         }
 
         // We cannot move diagonally to a menu item because depending on the angle and other items we cross on our path we could close our target menu.
-        // First move horizontal into the menu...
+        // First move horizontally into the menu, then vertically!
         if (depth > 0)
         {
             ImGuiTestItemInfo* item = ItemLocate(buf);
@@ -1207,6 +1214,7 @@ void    ImGuiTestContext::WindowClose()
     ItemClick("#CLOSE");
 }
 
+// FIXME-TESTS: Maybe we could automatically uncollapse window on most interactions, only a specific flag is used? (for tests which wants collapsing)
 void    ImGuiTestContext::WindowSetCollapsed(ImGuiTestRef ref, bool collapsed)
 {
     if (IsError())

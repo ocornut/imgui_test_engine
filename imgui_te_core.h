@@ -1,9 +1,9 @@
 // dear imgui
-// (test engine)
+// (test engine, core)
 
 #pragma once
 
-#include "stdio.h"              // FILE
+#include <stdio.h>              // FILE
 #include "imgui_internal.h"     // ImPool<>, ImGuiItemStatusFlags, ImFormatString
 #include "imgui_te_util.h"
 
@@ -315,19 +315,20 @@ struct ImGuiTestEngineIO
     bool                        RunningTests = false;
 };
 
+// Result of an ItemLocate query
 struct ImGuiTestItemInfo
 {
-    int                         RefCount : 8;               // User can increment this if they want to hold on the result pointer, otherwise the task will be GC-ed.
-    int                         NavLayer : 1;
+    int                         RefCount : 8;               // User can increment this if they want to hold on the result pointer across frames, otherwise the task will be GC-ed.
+    int                         NavLayer : 1;               // Nav layer of the item
     int                         Depth : 16;                 // Depth from requested parent id. 0 == ID is immediate child of requested parent id.
-    int                         TimestampMain = -1;         // Timestamp of main result
+    int                         TimestampMain = -1;         // Timestamp of main result (all fields)
     int                         TimestampStatus = -1;       // Timestamp of StatusFlags
-    ImGuiID                     ID = 0;
-    ImGuiID                     ParentID = 0;
-    ImGuiWindow*                Window = NULL;
-    ImRect                      RectFull = ImRect();
-    ImRect                      RectClipped = ImRect();
-    ImGuiItemStatusFlags        StatusFlags = 0;
+    ImGuiID                     ID = 0;                     // Item ID
+    ImGuiID                     ParentID = 0;               // Item Parent ID (value at top of the ID stack)
+    ImGuiWindow*                Window = NULL;              // Item Window
+    ImRect                      RectFull = ImRect();        // Item Rectangle
+    ImRect                      RectClipped = ImRect();     // Item Rectangle (clipped with window->ClipRect at time of item submission)
+    ImGuiItemStatusFlags        StatusFlags = 0;            // Item Status flags (fully updated for some items only, compare TimestampStatus to FrameCount)
     char                        DebugLabel[32] = {};        // Shortened label for debugging purpose
 
     ImGuiTestItemInfo()
@@ -338,6 +339,7 @@ struct ImGuiTestItemInfo
     }
 };
 
+// Result of an ItemGather query
 struct ImGuiTestItemList
 {
     ImPool<ImGuiTestItemInfo>   Pool;
@@ -362,7 +364,7 @@ struct ImGuiTestGatherTask
     ImGuiTestItemInfo*      LastItemInfo = NULL;
 };
 
-// Helper to output a string showing the Path, ID or Debug Label based on what is available.
+// Helper to output a string showing the Path, ID or Debug Label based on what is available (some items only have ID as we couldn't find/store a Path)
 struct ImGuiTestRefDesc
 {
     char Buf[40];
@@ -427,6 +429,7 @@ struct ImGuiTestLog
     }
 };
 
+// Storage for one test
 struct ImGuiTest
 {
     const char*                     Category;           // Literal, not owned
@@ -435,15 +438,14 @@ struct ImGuiTest
     const char*                     SourceFileShort;    // Pointer within SourceFile, skips filename.
     int                             SourceLine;         // __LINE__
     int                             SourceLineEnd;      //
-    int                             ArgVariant;
-    size_t                          UserDataSize;
+    int                             ArgVariant;         // User parameter, for use by GuiFunc/TestFunc. Generally we use it to run variations of a same test.
+    size_t                          UserDataSize;       // When SetUserDataType() is used, we create an instance of user structure so we can be used by GuiFunc/TestFunc.
     ImGuiTestUserDataConstructor    UserDataConstructor;
     ImGuiTestUserDataDestructor     UserDataDestructor;
     ImGuiTestStatus                 Status;
-    ImGuiTestFlags                  Flags;
-    ImGuiTestRunFunc                RootFunc;           // NULL function is ok
+    ImGuiTestFlags                  Flags;              // See ImGuiTestFlags_
     ImGuiTestGuiFunc                GuiFunc;            // GUI functions can be reused
-    ImGuiTestTestFunc               TestFunc;
+    ImGuiTestTestFunc               TestFunc;           // Test function
     ImGuiTestLog                    TestLog;
 
     ImGuiTest()
@@ -458,7 +460,6 @@ struct ImGuiTest
         UserDataDestructor = NULL;
         Status = ImGuiTestStatus_Unknown;
         Flags = ImGuiTestFlags_None;
-        RootFunc = NULL;
         GuiFunc = NULL;
         TestFunc = NULL;
     }
