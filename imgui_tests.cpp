@@ -1454,6 +1454,47 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
         ctx->KeyPressMap(ImGuiKey_COUNT, ImGuiKeyModFlags_Alt | ImGuiKeyModFlags_Ctrl);
         IM_CHECK(ctx->UiContext->NavLayer == ImGuiNavLayer_Main);
     };
+
+    // ## Test navigation home and end keys
+    t = REGISTER_TEST("nav", "nav_home_end_keys");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::SetNextWindowFocus();
+        ImGui::SetNextWindowSize(ImVec2(100, 150));
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+        {
+            for (int i = 0; i < 10; i++)
+            {
+                char name[32];
+                ImFormatString(name, sizeof(name), "Button %d", i);
+                ImGui::Button(name);
+            }
+        }
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        IM_CHECK(ctx->UiContext->IO.ConfigFlags & ImGuiConfigFlags_NavEnableKeyboard);
+        ImGuiWindow* window = ImGui::FindWindowByName("Test Window");
+        ctx->SetRef("Test window");
+        ctx->KeyPressMap(ImGuiKey_COUNT, ImGuiKeyModFlags_Alt);
+        ctx->KeyPressMap(ImGuiKey_COUNT, ImGuiKeyModFlags_Alt);
+        IM_CHECK(ctx->UiContext->NavId == window->GetID("Button 0"));
+        IM_CHECK(window->Scroll.y == 0);
+        // Navigate to the middle of window
+        for (int i = 0; i < 5; i++)
+            ctx->KeyPressMap(ImGuiKey_DownArrow);
+        IM_CHECK(ctx->UiContext->NavId == window->GetID("Button 5"));
+        IM_CHECK(window->Scroll.y > 0 && window->Scroll.y < window->ScrollMax.y);
+        // From the middle to the end
+        ctx->KeyPressMap(ImGuiKey_End);
+        IM_CHECK(ctx->UiContext->NavId == window->GetID("Button 9"));
+        IM_CHECK(window->Scroll.y == window->ScrollMax.y);
+        // From the end to the start
+        ctx->KeyPressMap(ImGuiKey_Home);
+        IM_CHECK(ctx->UiContext->NavId == window->GetID("Button 0"));
+        IM_CHECK(window->Scroll.y == 0);
+    };
 }
 
 //-------------------------------------------------------------------------
