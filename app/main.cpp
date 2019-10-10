@@ -67,6 +67,11 @@ static inline void DebugCrtDumpLeaks()
 #define DIRECTINPUT_VERSION 0x0800
 #include <dinput.h>
 #include <tchar.h>
+#elif IMGUI_TESTS_ENABLE_SDLOGL3
+#include "imgui_impl_sdl.h"
+#include "imgui_impl_opengl3.h"
+#include <SDL.h>
+#include <GL/gl3w.h>
 #endif // IMGUI_TESTS_ENABLE_DX11
 
 //-------------------------------------------------------------------------
@@ -77,10 +82,14 @@ enum ImGuiBackend
 {
     ImGuiBackend_Null,
     ImGuiBackend_DX11,
+    ImGuiBackend_SDLOGL3,
 };
 
 #ifdef IMGUI_TESTS_ENABLE_DX11
 const ImGuiBackend DEFAULT_BACKEND = ImGuiBackend_DX11;
+const bool DEFAULT_OPT_GUI = true;
+#elif IMGUI_TESTS_ENABLE_SDLOGL3
+const ImGuiBackend DEFAULT_BACKEND = ImGuiBackend_SDLOGL3;
 const bool DEFAULT_OPT_GUI = true;
 #else
 const ImGuiBackend DEFAULT_BACKEND = ImGuiBackend_Null;
@@ -412,9 +421,151 @@ static void MainLoopDX11()
     DestroyWindow(hwnd);
     UnregisterClass(_T("ImGui Example"), wc.hInstance);
 }
+#elif IMGUI_TESTS_ENABLE_SDLOGL3
 
+static bool MainLoopNewFrameSDLOGL3(SDL_Window* window)
+{
+    // Poll and handle events (inputs, window resize, etc.)
+    // You can read the io.WantCaptureMouse, io.WantCaptureKeyboard flags to tell if dear imgui wants to use your inputs.
+    // - When io.WantCaptureMouse is true, do not dispatch mouse input data to your main application.
+    // - When io.WantCaptureKeyboard is true, do not dispatch keyboard input data to your main application.
+    // Generally you may always pass all inputs to dear imgui, and hide them from your application based on those two flags.
+    SDL_Event event;
+    while (SDL_PollEvent(&event))
+    {
+        ImGui_ImplSDL2_ProcessEvent(&event);
+        if (event.type == SDL_QUIT || (event.type == SDL_WINDOWEVENT && event.window.event == SDL_WINDOWEVENT_CLOSE && event.window.windowID == SDL_GetWindowID(window)))
+        {
+            g_App.Quit = true;
+            ImGuiTestEngine_Abort(g_App.TestEngine);
+            break;
+        }
+    }
+
+    // Start the Dear ImGui frame
+    if (!g_App.Quit)
+    {
+        ImGui_ImplOpenGL3_NewFrame();
+        ImGui_ImplSDL2_NewFrame(window);
+        ImGui::NewFrame();
+    }
+    return !g_App.Quit;
+}
+
+static bool MainLoopSDLOGL3()
+{
+    // Setup SDL
+    // (Some versions of SDL before <2.0.10 appears to have performance/stalling issues on a minority of Windows systems,
+    // depending on whether SDL_INIT_GAMECONTROLLER is enabled or disabled.. updating to latest version of SDL is recommended!)
+    if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER | SDL_INIT_GAMECONTROLLER) != 0)
+    {
+        printf("Error: %s\n", SDL_GetError());
+        return -1;
+    }
+
+    // Decide GL+GLSL versions
+#if __APPLE__
+    // GL 3.2 Core + GLSL 150
+    const char* glsl_version = "#version 150";
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, SDL_GL_CONTEXT_FORWARD_COMPATIBLE_FLAG); // Always required on Mac
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 2);
+#else
+    // GL 3.0 + GLSL 130
+    const char* glsl_version = "#version 130";
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, 0);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
+#endif
+
+    // Create window with graphics context
+    SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
+    SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
+    SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
+    SDL_WindowFlags window_flags = (SDL_WindowFlags)(SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI);
+    SDL_Window* window = SDL_CreateWindow("Dear ImGui SDL2+OpenGL3 example", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 1280, 720, window_flags);
+    SDL_GLContext gl_context = SDL_GL_CreateContext(window);
+    SDL_GL_MakeCurrent(window, gl_context);
+
+    bool err = gl3wInit() != 0;
+    if (err)
+    {
+        fprintf(stderr, "Failed to initialize OpenGL loader!\n");
+        return 1;
+    }
+
+    // Setup Platform/Renderer bindings
+    ImGui_ImplSDL2_InitForOpenGL(window, gl_context);
+    ImGui_ImplOpenGL3_Init(glsl_version);
+
+
+    // Init
+    ImGuiIO& io = ImGui::GetIO();
+    io.Fonts->Build();
+    for (int n = 0; n < ImGuiKey_COUNT; n++)
+        io.KeyMap[n] = n;
+
+    ImGuiTestEngineIO& test_io = ImGuiTestEngine_GetIO(g_App.TestEngine);
+    test_io.UserData = window;
+    test_io.ConfigLogToTTY = true;
+    test_io.NewFrameFunc = [](ImGuiTestEngine*, void* window) { return MainLoopNewFrameSDLOGL3((SDL_Window*)window); };
+    test_io.EndFrameFunc = [](ImGuiTestEngine*, void* window) {
+        if (!MainLoopEndFrame())
+            return false;
+        // Super fast mode doesn't render/present
+        ImGuiTestEngineIO& test_io = ImGuiTestEngine_GetIO(g_App.TestEngine);
+        if (test_io.RunningTests && test_io.ConfigRunFast)
+            return true;
+        ImGui::Render();
+        ImGuiIO& io = ImGui::GetIO();
+#ifdef IMGUI_HAS_VIEWPORT
+        if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
+        {
+            ImGui::UpdatePlatformWindows();
+            ImGui::RenderPlatformWindowsDefault();
+        }
+#endif
+        SDL_GL_SetSwapInterval(test_io.ConfigNoThrottle ? 1 : 0); // Enable vsync
+        glViewport(0, 0, (int)io.DisplaySize.x, (int)io.DisplaySize.y);
+        glClearColor(clear_color.x, clear_color.y, clear_color.z, clear_color.w);
+        glClear(GL_COLOR_BUFFER_BIT);
+        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+        SDL_GL_SwapWindow((SDL_Window*)window);
+        return true;
+    };
+    test_io.FileOpenerFunc = NULL;
+
+    while (1)
+    {
+        if (!MainLoopNewFrameSDLOGL3(window))
+            break;
+        if (!test_io.EndFrameFunc(nullptr, window))
+            break;
+    }
+
+    int count_tested = 0;
+    int count_success = 0;
+    ImGuiTestEngine_GetResult(g_App.TestEngine, count_tested, count_success);
+
+    ImGuiTestEngine_PrintResultSummary(g_App.TestEngine);
+
+    // Cleanup
+    ImGui_ImplOpenGL3_Shutdown();
+    ImGui_ImplSDL2_Shutdown();
+    ImGui::DestroyContext();
+
+    SDL_GL_DeleteContext(gl_context);
+    SDL_DestroyWindow(window);
+    SDL_Quit();
+
+    return count_tested == count_success;
+}
+static void MainLoopDX11() {}
 #else
 static void MainLoopDX11() {}
+static void MainLoopSDLOGL3() {}
 #endif // IMGUI_TESTS_ENABLE_DX11
 
 //-------------------------------------------------------------------------
@@ -476,7 +627,7 @@ static bool MainLoopNull()
     return count_tested == count_success;
 }
 
-static bool ParseCommandLineOptions(int argc, char const** argv)
+static bool ParseCommandLineOptions(int argc, char** argv)
 {
     for (int n = 1; n < argc; n++)
     {
@@ -565,7 +716,7 @@ enum ImGuiTestApp_Status
     ImGuiTestApp_Status_TestFailed,
 };
 
-int main(int argc, char const** argv)
+int main(int argc, char** argv)
 {
 #ifdef DEBUG_CRT
     DebugCrtInit(0);
@@ -575,7 +726,7 @@ int main(int argc, char const** argv)
     if (argc == 1)
     {
         printf("# [exe] %s\n", CMDLINE_ARGS);
-        ImParseSplitCommandLine(&argc, &argv, CMDLINE_ARGS);
+        ImParseSplitCommandLine(&argc, (const char***)&argv, CMDLINE_ARGS);
         if (!ParseCommandLineOptions(argc, argv))
             return ImGuiTestApp_Status_CommandLineError;
         free(argv);
@@ -666,6 +817,9 @@ int main(int argc, char const** argv)
         break;
     case ImGuiBackend_DX11:
         MainLoopDX11();
+        break;
+    case ImGuiBackend_SDLOGL3:
+        MainLoopSDLOGL3();
         break;
     }
 

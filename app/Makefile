@@ -5,15 +5,17 @@
 
 EXE = imgui_test_app
 SOURCES = main.cpp
-SOURCES += ../imgui_te_core.cpp ../imgui_te_util.cpp ../imgui_tests.cpp
+SOURCES += ../imgui_te_core.cpp ../imgui_te_util.cpp ../imgui_tests.cpp ../imgui_te_context.cpp
 SOURCES += ../../imgui/imgui.cpp ../../imgui/imgui_demo.cpp ../../imgui/imgui_draw.cpp ../../imgui/imgui_widgets.cpp
+SOURCES += ../../imgui/examples/imgui_impl_opengl3.cpp ../../imgui/examples/imgui_impl_sdl.cpp ../../imgui/examples/libs/gl3w/GL/gl3w.c
 OBJS = $(addsuffix .o, $(basename $(notdir $(SOURCES))))
 UNAME_S := $(shell uname -s)
 
-CXXFLAGS = -I../ -I../../imgui
-CXXFLAGS += -DIMGUI_ENABLE_TEST_ENGINE
-CXXFLAGS += -g -Wall -Wformat -std=c++11
-LIBS =
+CXXFLAGS = -std=c++11
+CFLAGS = -I../ -I../../imgui -I../../imgui/examples -I../../imgui/examples/libs/gl3w
+CFLAGS += -DIMGUI_ENABLE_TEST_ENGINE=1 -DIMGUI_TESTS_ENABLE_SDLOGL3=1 -DIMGUI_IMPL_OPENGL_LOADER_GL3W=1
+CFLAGS += -g -Wall -Wformat `pkg-config --cflags sdl2`
+LIBS = `pkg-config --libs sdl2`
 
 ##---------------------------------------------------------------------
 ## BUILD FLAGS PER PLATFORM
@@ -21,17 +23,17 @@ LIBS =
 
 ifeq ($(UNAME_S), Linux) #LINUX
 	ECHO_MESSAGE = "Linux"
-	CFLAGS = $(CXXFLAGS)
+	LIBS += -ldl -lGL
 endif
 
 ifeq ($(UNAME_S), Darwin) #APPLE
 	ECHO_MESSAGE = "Mac OS X"
-	CFLAGS = $(CXXFLAGS)
+	LIBS += -framework CoreFoundation -framework OpenGL
 endif
 
 ifeq ($(findstring MINGW,$(UNAME_S)),MINGW)
 	ECHO_MESSAGE = "MinGW"
-	CFLAGS = $(CXXFLAGS)
+	LIBS += -lopengl32
 endif
 
 ##---------------------------------------------------------------------
@@ -39,16 +41,18 @@ endif
 ##---------------------------------------------------------------------
 
 %.o:%.cpp
-	$(CXX) $(CXXFLAGS) -c -o $@ $<
+	$(CXX) $(CFLAGS) $(CXXFLAGS) -c -o $@ $<
 
 %.o:../%.cpp
-	$(CXX) $(CXXFLAGS) -c -o $@ $<
+	$(CXX) $(CFLAGS) $(CXXFLAGS) -c -o $@ $<
 
 %.o:../../imgui/%.cpp
-	$(CXX) $(CXXFLAGS) -c -o $@ $<
+	$(CXX) $(CFLAGS) $(CXXFLAGS) -c -o $@ $<
 
-%.o:../../imgui/libs/gl3w/GL/%.c
-# %.o:../../imgui/libs/glad/src/%.c
+%.o:../../imgui/examples/%.cpp
+	$(CXX) $(CFLAGS) $(CXXFLAGS) -c -o $@ $<
+
+%.o:../../imgui/examples/libs/gl3w/GL/%.c
 	$(CC) $(CFLAGS) -c -o $@ $<
 
 all: $(EXE)
