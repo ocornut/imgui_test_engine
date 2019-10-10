@@ -425,6 +425,33 @@ void RegisterTests_Window(ImGuiTestEngine* e)
         ctx->WindowResize("Test Scrolling", ImVec2(400, 400));
         ctx->WindowResize("Test Scrolling", ImVec2(100, 100));
     };
+
+    // ## Test that tight tab bar does not create extra drawcalls
+    t = REGISTER_TEST("window", "window_tab_bar_drawcalls");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+        if (ImGui::BeginTabBar("Tab Drawcalls"))
+        {
+            for (int i = 0; i < 20; i++)
+            {
+                char name[32];
+                ImFormatString(name, sizeof(name), "Tab %d", i);
+                if (ImGui::BeginTabItem(name))
+                    ImGui::EndTabItem();
+            }
+            ImGui::EndTabBar();
+        }
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiWindow* window = ImGui::FindWindowByName("Test Window");
+        ctx->WindowResize("Test Window", ImVec2(300, 300));
+        int draw_calls = window->DrawList->CmdBuffer.Size;
+        ctx->WindowResize("Test Window", ImVec2(1, 1));
+        IM_CHECK(draw_calls == window->DrawList->CmdBuffer.Size);
+    };
 }
 
 
