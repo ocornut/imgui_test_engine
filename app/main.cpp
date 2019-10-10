@@ -461,7 +461,7 @@ static void MainLoopSDLOGL3()
     if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER | SDL_INIT_GAMECONTROLLER) != 0)
     {
         printf("Error: %s\n", SDL_GetError());
-        return -1;
+        return;
     }
 
     // Decide GL+GLSL versions
@@ -494,7 +494,7 @@ static void MainLoopSDLOGL3()
     if (err)
     {
         fprintf(stderr, "Failed to initialize OpenGL loader!\n");
-        return 1;
+        return;
     }
 
     // Setup Platform/Renderer bindings
