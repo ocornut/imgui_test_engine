@@ -60,19 +60,19 @@ static inline void DebugCrtDumpLeaks()
 #include "imgui_te_util.h"
 #include "imgui_tests.h"
 
-#ifdef IMGUI_TESTS_ENABLE_DX11
+#ifdef IMGUI_TESTS_BACKEND_WIN32_DX11
 #include "imgui_impl_win32.h"
 #include "imgui_impl_dx11.h"
 #include <d3d11.h>
 #define DIRECTINPUT_VERSION 0x0800
 #include <dinput.h>
 #include <tchar.h>
-#elif IMGUI_TESTS_ENABLE_SDLOGL3
+#elif IMGUI_TESTS_BACKEND_SDL_GL3
 #include "imgui_impl_sdl.h"
 #include "imgui_impl_opengl3.h"
 #include <SDL.h>
 #include <GL/gl3w.h>
-#endif // IMGUI_TESTS_ENABLE_DX11
+#endif
 
 //-------------------------------------------------------------------------
 // Test Application
@@ -81,15 +81,15 @@ static inline void DebugCrtDumpLeaks()
 enum ImGuiBackend
 {
     ImGuiBackend_Null,
-    ImGuiBackend_DX11,
-    ImGuiBackend_SDLOGL3,
+    ImGuiBackend_Win32_DX11,
+    ImGuiBackend_SDL_GL3
 };
 
-#ifdef IMGUI_TESTS_ENABLE_DX11
-const ImGuiBackend DEFAULT_BACKEND = ImGuiBackend_DX11;
+#ifdef IMGUI_TESTS_BACKEND_WIN32_DX11
+const ImGuiBackend DEFAULT_BACKEND = ImGuiBackend_Win32_DX11;
 const bool DEFAULT_OPT_GUI = true;
-#elif IMGUI_TESTS_ENABLE_SDLOGL3
-const ImGuiBackend DEFAULT_BACKEND = ImGuiBackend_SDLOGL3;
+#elif IMGUI_TESTS_BACKEND_SDL_GL3
+const ImGuiBackend DEFAULT_BACKEND = ImGuiBackend_SDL_GL3;
 const bool DEFAULT_OPT_GUI = true;
 #else
 const ImGuiBackend DEFAULT_BACKEND = ImGuiBackend_Null;
@@ -167,10 +167,10 @@ static bool MainLoopEndFrame()
 
 
 //-------------------------------------------------------------------------
-// DX11 Stuff
+// Win32 + DX11 Stuff
 //-------------------------------------------------------------------------
 
-#ifdef IMGUI_TESTS_ENABLE_DX11
+#ifdef IMGUI_TESTS_BACKEND_WIN32_DX11
 
 static ID3D11Device*            g_pd3dDevice = NULL;
 static ID3D11DeviceContext*     g_pd3dDeviceContext = NULL;
@@ -272,6 +272,7 @@ static bool OsCreateProcess(const char* cmd_line)
     return ret != 0;
 }
 
+// Source file opener
 static void FileOpenerFunc(const char* filename, int line, void*)
 {
     if (!g_App.OptFileOpener)
@@ -401,7 +402,6 @@ static void MainLoopDX11()
 
     test_io.NewFrameFunc = [](ImGuiTestEngine*, void*) { return MainLoopNewFrameDX11(); };
     test_io.EndFrameFunc = end_frame_func;
-
     test_io.FileOpenerFunc = FileOpenerFunc;
 
     while (1)
@@ -415,13 +415,14 @@ static void MainLoopDX11()
 
     ImGui_ImplDX11_Shutdown();
     ImGui_ImplWin32_Shutdown();
-    ImGui::DestroyContext();
 
     CleanupDeviceD3D();
     DestroyWindow(hwnd);
     UnregisterClass(_T("ImGui Example"), wc.hInstance);
 }
-#elif IMGUI_TESTS_ENABLE_SDLOGL3
+#endif // IMGUI_TESTS_BACKEND_WIN32_DX11
+
+#ifdef IMGUI_TESTS_BACKEND_SDL_GL3
 
 static bool MainLoopNewFrameSDLOGL3(SDL_Window* window)
 {
@@ -452,7 +453,7 @@ static bool MainLoopNewFrameSDLOGL3(SDL_Window* window)
     return !g_App.Quit;
 }
 
-static bool MainLoopSDLOGL3()
+static void MainLoopSDLOGL3()
 {
     // Setup SDL
     // (Some versions of SDL before <2.0.10 appears to have performance/stalling issues on a minority of Windows systems,
@@ -500,12 +501,9 @@ static bool MainLoopSDLOGL3()
     ImGui_ImplSDL2_InitForOpenGL(window, gl_context);
     ImGui_ImplOpenGL3_Init(glsl_version);
 
-
     // Init
     ImGuiIO& io = ImGui::GetIO();
     io.Fonts->Build();
-    for (int n = 0; n < ImGuiKey_COUNT; n++)
-        io.KeyMap[n] = n;
 
     ImGuiTestEngineIO& test_io = ImGuiTestEngine_GetIO(g_App.TestEngine);
     test_io.UserData = window;
@@ -520,13 +518,6 @@ static bool MainLoopSDLOGL3()
             return true;
         ImGui::Render();
         ImGuiIO& io = ImGui::GetIO();
-#ifdef IMGUI_HAS_VIEWPORT
-        if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
-        {
-            ImGui::UpdatePlatformWindows();
-            ImGui::RenderPlatformWindowsDefault();
-        }
-#endif
         SDL_GL_SetSwapInterval(test_io.ConfigNoThrottle ? 1 : 0); // Enable vsync
         glViewport(0, 0, (int)io.DisplaySize.x, (int)io.DisplaySize.y);
         glClearColor(clear_color.x, clear_color.y, clear_color.z, clear_color.w);
@@ -545,28 +536,15 @@ static bool MainLoopSDLOGL3()
             break;
     }
 
-    int count_tested = 0;
-    int count_success = 0;
-    ImGuiTestEngine_GetResult(g_App.TestEngine, count_tested, count_success);
-
-    ImGuiTestEngine_PrintResultSummary(g_App.TestEngine);
-
     // Cleanup
     ImGui_ImplOpenGL3_Shutdown();
     ImGui_ImplSDL2_Shutdown();
-    ImGui::DestroyContext();
 
     SDL_GL_DeleteContext(gl_context);
     SDL_DestroyWindow(window);
     SDL_Quit();
-
-    return count_tested == count_success;
 }
-static void MainLoopDX11() {}
-#else
-static void MainLoopDX11() {}
-static void MainLoopSDLOGL3() {}
-#endif // IMGUI_TESTS_ENABLE_DX11
+#endif // IMGUI_TESTS_BACKEND_SDL_GL3
 
 //-------------------------------------------------------------------------
 // No GUI Stuff
@@ -594,7 +572,7 @@ static bool MainLoopNewFrameNull()
     return true;
 }
 
-static bool MainLoopNull()
+static void MainLoopNull()
 {
     // Init
     ImGuiIO& io = ImGui::GetIO();
@@ -615,16 +593,6 @@ static bool MainLoopNull()
         if (!MainLoopEndFrame())
             break;
     }
-
-    int count_tested = 0;
-    int count_success = 0;
-    ImGuiTestEngine_GetResult(g_App.TestEngine, count_tested, count_success);
-
-    ImGuiTestEngine_PrintResultSummary(g_App.TestEngine);
-
-    ImGui::DestroyContext();
-
-    return count_tested == count_success;
 }
 
 static bool ParseCommandLineOptions(int argc, char** argv)
@@ -709,11 +677,12 @@ static bool ParseCommandLineOptions(int argc, char** argv)
     return true;
 }
 
+// Return value for main()
 enum ImGuiTestApp_Status
 {
-    ImGuiTestApp_Status_Success,
-    ImGuiTestApp_Status_CommandLineError,
-    ImGuiTestApp_Status_TestFailed,
+    ImGuiTestApp_Status_Success = 0,
+    ImGuiTestApp_Status_CommandLineError = 1,
+    ImGuiTestApp_Status_TestFailed = 2,
 };
 
 int main(int argc, char** argv)
@@ -807,22 +776,37 @@ int main(int argc, char** argv)
     if (!g_App.OptGUI && ImOsIsDebuggerPresent())
         test_io.ConfigBreakOnError = true;
 
-    ImGuiTestApp_Status error_code = ImGuiTestApp_Status_Success;
-
     switch (g_App.Backend)
     {
     case ImGuiBackend_Null:
-        if (!MainLoopNull())
-            error_code = ImGuiTestApp_Status_TestFailed;
+        MainLoopNull();
         break;
-    case ImGuiBackend_DX11:
+#ifdef IMGUI_TESTS_BACKEND_WIN32_DX11
+    case ImGuiBackend_Win32_DX11:
         MainLoopDX11();
         break;
-    case ImGuiBackend_SDLOGL3:
+#endif
+#ifdef IMGUI_TESTS_BACKEND_SDL_GL3
+    case ImGuiBackend_SDL_GL3:
         MainLoopSDLOGL3();
         break;
+#endif
+    default:
+        IM_ASSERT(0);
     }
 
+    // Gather results
+    int count_tested = 0;
+    int count_success = 0;
+    ImGuiTestEngine_GetResult(g_App.TestEngine, count_tested, count_success);
+    ImGuiTestEngine_PrintResultSummary(g_App.TestEngine);
+    ImGuiTestApp_Status error_code = ImGuiTestApp_Status_Success;
+    if (count_tested != count_success)
+        error_code = ImGuiTestApp_Status_TestFailed;
+
+    // Shutdown
+    // We shutdown the Dear ImGui context _before_ the test engine context, so .ini data may be saved.
+    ImGui::DestroyContext();
     ImGuiTestEngine_ShutdownContext(g_App.TestEngine);
 
     if (g_App.OptFileOpener)

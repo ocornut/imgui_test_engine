@@ -1,10 +1,10 @@
 #include "imconfig.h"
 //#define IMGUI_USE_FNV1A
-#define IMGUI_ENABLE_TEST_ENGINE    1
+#define IMGUI_ENABLE_TEST_ENGINE
 #define ImDrawIdx                   unsigned int
 
 #ifdef _WIN32
-#define IMGUI_TESTS_ENABLE_DX11
+#define IMGUI_TESTS_BACKEND_WIN32_DX11
 #endif
 
 // Assert handler

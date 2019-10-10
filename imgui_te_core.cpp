@@ -217,6 +217,8 @@ ImGuiTestEngine*    ImGuiTestEngine_CreateContext(ImGuiContext* imgui_context)
 
 void    ImGuiTestEngine_ShutdownContext(ImGuiTestEngine* engine)
 {
+    engine->UiContextVisible = engine->UiContextBlind = engine->UiContextTarget = engine->UiContextActive = NULL;
+
     if (engine->PerfPersistentLogCsv)
         fclose(engine->PerfPersistentLogCsv);
 
