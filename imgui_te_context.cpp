@@ -331,6 +331,9 @@ void    ImGuiTestContext::ScrollToY(ImGuiTestRef ref, float scroll_ratio_y)
         if (ImFabs(window->Scroll.y - scroll_target_y) < 1.0f)
             break;
 
+        // FIXME-TESTS: Scroll snap on edge can make this function loops forever.
+        // [20191014: Repro is to resize e.g. widgets_checkbox_001 window to be small vertically]
+
         // FIXME-TESTS: There's a bug which can be repro by moving #RESIZE grips to Layer 0, making window small and trying to resize a dock node host.
         // Somehow SizeContents.y keeps increase and we never reach our desired (but faulty) scroll target.
         float scroll_speed = EngineIO->ConfigRunFast ? FLT_MAX : ImFloor(EngineIO->ScrollSpeed * g.IO.DeltaTime + 0.99f);

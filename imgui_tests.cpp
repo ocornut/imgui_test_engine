@@ -425,33 +425,6 @@ void RegisterTests_Window(ImGuiTestEngine* e)
         ctx->WindowResize("Test Scrolling", ImVec2(400, 400));
         ctx->WindowResize("Test Scrolling", ImVec2(100, 100));
     };
-
-    // ## Test that tight tab bar does not create extra drawcalls
-    t = REGISTER_TEST("window", "window_tab_bar_drawcalls");
-    t->GuiFunc = [](ImGuiTestContext* ctx)
-    {
-        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
-        if (ImGui::BeginTabBar("Tab Drawcalls"))
-        {
-            for (int i = 0; i < 20; i++)
-            {
-                char name[32];
-                ImFormatString(name, sizeof(name), "Tab %d", i);
-                if (ImGui::BeginTabItem(name))
-                    ImGui::EndTabItem();
-            }
-            ImGui::EndTabBar();
-        }
-        ImGui::End();
-    };
-    t->TestFunc = [](ImGuiTestContext* ctx)
-    {
-        ImGuiWindow* window = ImGui::FindWindowByName("Test Window");
-        ctx->WindowResize("Test Window", ImVec2(300, 300));
-        int draw_calls = window->DrawList->CmdBuffer.Size;
-        ctx->WindowResize("Test Window", ImVec2(1, 1));
-        IM_CHECK(draw_calls == window->DrawList->CmdBuffer.Size);
-    };
 }
 
 
@@ -1275,6 +1248,33 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         IM_CHECK_EQ(ctx->UiContext->NavId, ctx->GetID("Selectable C")); // Make sure we have skipped B
     };
 
+    // ## Test that tight tab bar does not create extra drawcalls
+    t = REGISTER_TEST("widgets", "widgets_tabbar_drawcalls");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+        if (ImGui::BeginTabBar("Tab Drawcalls"))
+        {
+            for (int i = 0; i < 20; i++)
+            {
+                char name[32];
+                ImFormatString(name, sizeof(name), "Tab %d", i);
+                if (ImGui::BeginTabItem(name))
+                    ImGui::EndTabItem();
+            }
+            ImGui::EndTabBar();
+        }
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiWindow* window = ImGui::FindWindowByName("Test Window");
+        ctx->WindowResize("Test Window", ImVec2(300, 300));
+        int draw_calls = window->DrawList->CmdBuffer.Size;
+        ctx->WindowResize("Test Window", ImVec2(1, 1));
+        IM_CHECK(draw_calls == window->DrawList->CmdBuffer.Size);
+    };
+
     // ## Test recursing Tab Bars (Bug #2371)
     t = REGISTER_TEST("widgets", "widgets_tabbar_recurse");
     t->GuiFunc = [](ImGuiTestContext* ctx)
@@ -1323,7 +1323,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
 #endif
 
     // ## Test SetSelected on first frame of a TabItem
-    t = REGISTER_TEST("widgets", "widgets_tabitem_setselected");
+    t = REGISTER_TEST("widgets", "widgets_tabbar_tabitem_setselected");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
@@ -1486,14 +1486,13 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
     t = REGISTER_TEST("nav", "nav_home_end_keys");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
-        ImGui::SetNextWindowFocus();
         ImGui::SetNextWindowSize(ImVec2(100, 150));
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
         {
             for (int i = 0; i < 10; i++)
             {
                 char name[32];
-                ImFormatString(name, sizeof(name), "Button %d", i);
+                ImFormatString(name, IM_ARRAYSIZE(name), "Button %d", i);
                 ImGui::Button(name);
             }
         }
@@ -1504,8 +1503,12 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
         IM_CHECK(ctx->UiContext->IO.ConfigFlags & ImGuiConfigFlags_NavEnableKeyboard);
         ImGuiWindow* window = ImGui::FindWindowByName("Test Window");
         ctx->SetRef("Test window");
+        ctx->SetInputMode(ImGuiInputSource_Nav);
+
+        // FIXME-TESTS: This should not be required but nav init request is not applied until we start navigating, this is a workaround
         ctx->KeyPressMap(ImGuiKey_COUNT, ImGuiKeyModFlags_Alt);
         ctx->KeyPressMap(ImGuiKey_COUNT, ImGuiKeyModFlags_Alt);
+
         IM_CHECK(ctx->UiContext->NavId == window->GetID("Button 0"));
         IM_CHECK(window->Scroll.y == 0);
         // Navigate to the middle of window
