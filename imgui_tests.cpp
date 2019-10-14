@@ -1359,7 +1359,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ImGui::SetNextWindowSize(ImVec2(300, 100), ImGuiCond_Always);
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
         ImGuiWindow* window = ImGui::GetCurrentWindow();
-        if (ctx->FrameCount == 2)
+        if (ctx->FrameCount <= 2)
         {
             if (ImGui::TreeNodeEx("One", ImGuiTreeNodeFlags_DefaultOpen))
             {
@@ -1367,7 +1367,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
                 if (ImGui::TreeNodeEx("Two", ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_SpanAvailWidth))
                 {
                     IM_ON_SCOPE_EXIT(ImGui::TreePop());
-                    IM_CHECK(window->DC.LastItemStatusFlags & ImGuiItemStatusFlags_HasDisplayRect);
+                    IM_CHECK((window->DC.LastItemStatusFlags & ImGuiItemStatusFlags_HasDisplayRect) != 0);
                     // Interaction rect matches visible rect.
                     IM_CHECK(window->DC.LastItemDisplayRect.Min == window->DC.LastItemRect.Min);
                     IM_CHECK(window->DC.LastItemDisplayRect.Max == window->DC.LastItemRect.Max);
@@ -1385,7 +1385,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ImGui::SetNextWindowSize(ImVec2(300, 100), ImGuiCond_Always);
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
         ImGuiWindow* window = ImGui::GetCurrentWindow();
-        if (ctx->FrameCount == 2)
+        if (ctx->FrameCount <= 2)
         {
             ImGui::Indent();
             if (ImGui::TreeNodeEx("One", ImGuiTreeNodeFlags_DefaultOpen))
@@ -1395,7 +1395,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
                 {
                     IM_ON_SCOPE_EXIT(ImGui::TreePop());
                     // Interaction rect matches visible rect.
-                    IM_CHECK(window->DC.LastItemStatusFlags & ImGuiItemStatusFlags_HasDisplayRect);
+                    IM_CHECK((window->DC.LastItemStatusFlags & ImGuiItemStatusFlags_HasDisplayRect) != 0);
                     IM_CHECK(window->DC.LastItemDisplayRect.Min == window->DC.LastItemRect.Min);
                     IM_CHECK(window->DC.LastItemDisplayRect.Max == window->DC.LastItemRect.Max);
                     // ImGuiTreeNodeFlags_SpanFullWidth also extends interaction rect to the left.

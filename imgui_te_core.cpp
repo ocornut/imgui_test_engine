@@ -643,22 +643,6 @@ static void ImGuiTestEngine_ProcessTestQueue(ImGuiTestEngine* engine)
         }
         ran_tests++;
 
-        IM_ASSERT(test->Status != ImGuiTestStatus_Running);
-        if (engine->Abort && test->Status != ImGuiTestStatus_Error)
-            test->Status = ImGuiTestStatus_Unknown;
-
-        if (test->Status == ImGuiTestStatus_Success)
-        {
-            if ((ctx.RunFlags & ImGuiTestRunFlags_NoSuccessMsg) == 0)
-                ctx.Log("Success.\n");
-        }
-        else if (engine->Abort)
-            ctx.Log("Aborted.\n");
-        else if (test->Status == ImGuiTestStatus_Error)
-            ctx.Log("Error.\n");
-        else
-            ctx.Log("Unknown status.\n");
-
         IM_ASSERT(engine->TestContext == &ctx);
         engine->TestContext = NULL;
 
@@ -867,6 +851,25 @@ static void ImGuiTestEngine_RunTest(ImGuiTestEngine* engine, ImGuiTestContext* c
         }
     }
 
+    // Process and display result/status
+    if (test->Status == ImGuiTestStatus_Running)
+        test->Status = ImGuiTestStatus_Success;
+
+    if (engine->Abort && test->Status != ImGuiTestStatus_Error)
+        test->Status = ImGuiTestStatus_Unknown;
+
+    if (test->Status == ImGuiTestStatus_Success)
+    {
+        if ((ctx->RunFlags & ImGuiTestRunFlags_NoSuccessMsg) == 0)
+            ctx->Log("Success.\n");
+    }
+    else if (engine->Abort)
+        ctx->Log("Aborted.\n");
+    else if (test->Status == ImGuiTestStatus_Error)
+        ctx->Log("Error.\n");
+    else
+        ctx->Log("Unknown status.\n");
+
     // Additional yields to avoid consecutive tests who may share identifiers from missing their window/item activation.
     ctx->RunFlags |= ImGuiTestRunFlags_NoGuiFunc;
     ctx->Yield();
@@ -874,9 +877,6 @@ static void ImGuiTestEngine_RunTest(ImGuiTestEngine* engine, ImGuiTestContext* c
 
     // Restore active func
     ctx->ActiveFunc = backup_active_func;
-
-    if (test->Status == ImGuiTestStatus_Running)
-        test->Status = ImGuiTestStatus_Success;
 }
 
 //-------------------------------------------------------------------------
