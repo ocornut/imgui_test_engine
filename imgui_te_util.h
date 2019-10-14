@@ -53,6 +53,7 @@ ImU64       ImGetTimeInMicroseconds();
 void        ImOsConsoleSetTextColor(ImOsConsoleStream stream, ImOsConsoleTextColor color);
 bool        ImOsIsDebuggerPresent();
 
+const char* ImPathFindFilename(const char* path, const char* path_end = NULL);
 void        ImPathFixSeparatorsForCurrentOS(char* buf);
 
 void        ImParseSplitCommandLine(int* out_argc, char const*** out_argv, const char* cmd_line);

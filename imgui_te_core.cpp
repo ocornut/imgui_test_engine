@@ -712,12 +712,7 @@ ImGuiTest* ImGuiTestEngine_RegisterTest(ImGuiTestEngine* engine, const char* cat
 
     // Find filename only out of the fully qualified source path
     if (src_file)
-    {
-        // FIXME: Be reasonable and use a named helper.
-        for (t->SourceFileShort = t->SourceFile + strlen(t->SourceFile); t->SourceFileShort > t->SourceFile; t->SourceFileShort--)
-            if (t->SourceFileShort[-1] == '/' || t->SourceFileShort[-1] == '\\')
-                break;
-    }
+        t->SourceFileShort = ImPathFindFilename(t->SourceFileShort);
 
     return t;
 }
@@ -1143,10 +1138,16 @@ static bool ParseLineAndDrawFileOpenItem(ImGuiTestEngine* e, ImGuiTest* test, co
     if (line_no == -1 || filename_start == filename_end)
         return false;
 
-    char label[128];
-    ImFormatString(label, IM_ARRAYSIZE(label), "Open %.*s at line %d", filename_end - filename_start, filename_start, line_no);
-    if (ImGui::MenuItem(label))
-        e->IO.FileOpenerFunc(test->SourceFile, line_no, e->IO.UserData);
+    char buf[FILENAME_MAX];
+    ImFormatString(buf, IM_ARRAYSIZE(buf), "Open %.*s at line %d", filename_end - filename_start, filename_start, line_no);
+    if (ImGui::MenuItem(buf))
+    {
+        // FIXME-TESTS: Assume folder is same as folder of test->SourceFile!
+        const char* src_file_path = test->SourceFile;
+        const char* src_file_name = ImPathFindFilename(src_file_path);
+        ImFormatString(buf, IM_ARRAYSIZE(buf), "%.*s%.*s", src_file_name - src_file_path, src_file_path, filename_end - filename_start, filename_start);
+        e->IO.FileOpenerFunc(buf, line_no, e->IO.UserData);
+    }
 
     return true;
 }

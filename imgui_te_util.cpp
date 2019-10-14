@@ -138,6 +138,20 @@ bool    ImOsIsDebuggerPresent()
 #endif
 }
 
+const char* ImPathFindFilename(const char* path, const char* path_end)
+{
+    if (!path_end)
+        path_end = path + strlen(path);
+    const char* p = path_end;
+    while (p > path)
+    {
+        if (p[-1] == '/' || p[-1] == '\\')
+            break;
+        p--;
+    }
+    return p;
+}
+
 void    ImPathFixSeparatorsForCurrentOS(char* buf)
 {
 #ifdef _WIN32
