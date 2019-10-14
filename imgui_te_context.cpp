@@ -384,8 +384,15 @@ void    ImGuiTestContext::NavMove(ImGuiTestRef ref)
     BringWindowToFrontFromItem(ref);
 
     // Teleport
-    ImGui::SetNavID(item->ID, item->NavLayer);
-    Yield();
+    // FIXME-NAV: We should have a nav request feature that does this, 
+    // except it'll have to queue the request to find rect, then set scrolling, which would incur a 2 frame delay :/
+    IM_ASSERT(g.NavMoveRequest == false);
+    ImRect rect_rel = item->RectFull;
+    rect_rel.Translate(ImVec2(-item->Window->Pos.x, -item->Window->Pos.y));
+    ImGui::SetNavIDWithRectRel(item->ID, item->NavLayer, rect_rel);
+    ImGui::ScrollToBringRectIntoView(item->Window, item->RectFull);
+    while (g.NavMoveRequest)
+        Yield();
 
     if (!Abort)
     {
@@ -866,14 +873,20 @@ void    ImGuiTestContext::ItemAction(ImGuiTestAction action, ImGuiTestRef ref)
                 MouseDoubleClick(0);
             else
                 MouseClick(0);
+            return;
         }
         else
         {
-            NavMove(ref);
-            NavActivate();
-            if (action == ImGuiTestAction_DoubleClick)
-                IM_ASSERT(0);
+            action = ImGuiTestAction_NavActivate;
         }
+    }
+
+    if (action == ImGuiTestAction_NavActivate)
+    {
+        NavMove(ref);
+        NavActivate();
+        if (action == ImGuiTestAction_DoubleClick)
+            IM_ASSERT(0);
         return;
     }
 

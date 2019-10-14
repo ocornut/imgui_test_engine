@@ -27,6 +27,7 @@ enum ImGuiTestAction
     ImGuiTestAction_Open,
     ImGuiTestAction_Close,
     ImGuiTestAction_Input,
+    ImGuiTestAction_NavActivate,
     ImGuiTestAction_COUNT
 };
 
@@ -42,6 +43,7 @@ inline const char* GetActionName(ImGuiTestAction action)
     case ImGuiTestAction_Open:          return "Open";
     case ImGuiTestAction_Close:         return "Close";
     case ImGuiTestAction_Input:         return "Input";
+    case ImGuiTestAction_NavActivate:   return "NavActivate";
     case ImGuiTestAction_COUNT:
     default:                            return "N/A";
     }
@@ -59,6 +61,7 @@ inline const char*  GetActionVerb(ImGuiTestAction action)
     case ImGuiTestAction_Open:          return "Opened";
     case ImGuiTestAction_Close:         return "Closed";
     case ImGuiTestAction_Input:         return "Input";
+    case ImGuiTestAction_NavActivate:   return "NavActivate";
     case ImGuiTestAction_COUNT:
     default:                            return "N/A";
     }
@@ -231,6 +234,7 @@ struct ImGuiTestContext
     void        ItemOpen(ImGuiTestRef ref)          { ItemAction(ImGuiTestAction_Open, ref); }
     void        ItemClose(ImGuiTestRef ref)         { ItemAction(ImGuiTestAction_Close, ref); }
     void        ItemInput(ImGuiTestRef ref)         { ItemAction(ImGuiTestAction_Input, ref); }
+    void        ItemNavActivate(ImGuiTestRef ref)   { ItemAction(ImGuiTestAction_NavActivate, ref); }
 
     void        ItemActionAll(ImGuiTestAction action, ImGuiTestRef ref_parent, int depth = -1, int passes = -1);
     void        ItemOpenAll(ImGuiTestRef ref_parent, int depth = -1, int passes = -1)    { ItemActionAll(ImGuiTestAction_Open, ref_parent, depth, passes); }

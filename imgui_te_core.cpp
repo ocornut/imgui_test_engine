@@ -1228,13 +1228,13 @@ void    ImGuiTestEngine_ShowTestWindow(ImGuiTestEngine* engine, bool* p_open)
     // FIXME-SCROLL: When resizing either we'd like to keep scroll focus on something (e.g. last clicked item for list, bottom for log)
     // See https://github.com/ocornut/imgui/issues/319
     const float avail_y = ImGui::GetContentRegionAvail().y - style.ItemSpacing.y;
+    const float min_size = ImGui::GetFrameHeight();
     float log_height = engine->UiLogHeight;
-    float list_height = avail_y - engine->UiLogHeight;
+    float list_height = ImMax(avail_y - engine->UiLogHeight, min_size);
     {
         ImGuiWindow* window = ImGui::GetCurrentWindow();
         float y = ImGui::GetCursorScreenPos().y + list_height;
         ImRect splitter_bb = ImRect(window->WorkRect.Min.x, y - 1, window->WorkRect.Max.x, y + 1);
-        const float min_size = ImGui::GetFrameHeight();
         ImGui::SplitterBehavior(splitter_bb, ImGui::GetID("splitter"), ImGuiAxis_Y, &list_height, &log_height, min_size, min_size, 3.0f);
         engine->UiLogHeight = log_height;
         //ImGui::DebugDrawItemRect();
@@ -1242,7 +1242,7 @@ void    ImGuiTestEngine_ShowTestWindow(ImGuiTestEngine* engine, bool* p_open)
 
     // TESTS
     ImGui::BeginChild("List", ImVec2(0, list_height));
-    if (ImGui::BeginTabBar("##blah", ImGuiTabBarFlags_NoTooltip))
+    if (ImGui::BeginTabBar("##Tests", ImGuiTabBarFlags_NoTooltip))
     {
         char tab_label[32];
         //ImFormatString(tab_label, IM_ARRAYSIZE(tab_label), "TESTS (%d)###TESTS", engine->TestsAll.Size);
@@ -1311,6 +1311,8 @@ void    ImGuiTestEngine_ShowTestWindow(ImGuiTestEngine* engine, bool* p_open)
             ImFormatString(buf, IM_ARRAYSIZE(buf), "%-*s - %s", 10, test->Category, test->Name);
             if (ImGui::Selectable(buf, test == engine->UiSelectedTest))
                 select_test = true;
+            if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(0))
+                queue_test = true;
 
             /*if (ImGui::IsItemHovered() && test->TestLog.size() > 0)
             {
@@ -1416,6 +1418,7 @@ void    ImGuiTestEngine_ShowTestWindow(ImGuiTestEngine* engine, bool* p_open)
 
             ImGui::PopID();
         }
+        ImGui::Spacing();
         ImGui::PopStyleVar();
         ImGui::PopStyleVar();
         ImGui::EndChild();
