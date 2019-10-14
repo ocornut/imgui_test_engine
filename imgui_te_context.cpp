@@ -158,6 +158,7 @@ void    ImGuiTestContext::Sleep(float time)
 
     if (EngineIO->ConfigRunFast)
     {
+        //ImGuiTestEngine_AddExtraTime(Engine, time); // We could add time, for now we have no use for it...
         ImGuiTestEngine_Yield(Engine);
     }
     else
@@ -170,16 +171,15 @@ void    ImGuiTestContext::Sleep(float time)
     }
 }
 
-// Sleep for a forced wall clock time
-// FIXME-TESTS: This is slowing down tests when running in Fast mode :(
-// instead, we could accelerate the values of io.DeltaTime passed to ImGui::NewFrame() in order to accelerate ImGui time without waiting real wall clock time.
-void    ImGuiTestContext::SleepDebugNoSkip(float time)
+// Sleep for a given clock time from the point of view of the imgui context, without affecting wall clock time of the running application.
+void    ImGuiTestContext::SleepNoSkip(float time, float frame_time_step)
 {
     if (IsError())
         return;
 
     while (time > 0.0f && !Abort)
     {
+        ImGuiTestEngine_SetDeltaTime(Engine, frame_time_step);
         ImGuiTestEngine_Yield(Engine);
         time -= UiContext->IO.DeltaTime;
     }

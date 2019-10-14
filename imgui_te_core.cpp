@@ -85,6 +85,7 @@ struct ImGuiTestEngine
     ImGuiContext*               UiContextActive = NULL;         // imgui context for testing == UiContextTarget or NULL
 
     int                         FrameCount = 0;
+    float                       OverrideDeltaTime = -1.0f;      // Inject custom delta time into imgui context to simulate clock passing faster than wall clock time.
     ImVector<ImGuiTest*>        TestsAll;
     ImVector<ImGuiTestRunTask>  TestsQueue;
     ImGuiTestContext*           TestContext = NULL;
@@ -113,6 +114,7 @@ struct ImGuiTestEngine
     ImMovingAverage<double>     PerfDeltaTime1000;
     ImMovingAverage<double>     PerfDeltaTime2000;
 
+    // Tools
     bool                        ToolSlowDown = false;
     int                         ToolSlowDownMs = 100;
 
@@ -447,7 +449,15 @@ static void ImGuiTestEngine_PreNewFrame(ImGuiTestEngine* engine, ImGuiContext* c
     IM_ASSERT(ctx == GImGui);
     ImGuiContext& g = *ctx;
 
-    engine->FrameCount = g.FrameCount + 1;  // NewFrame() will increase this.
+    // Inject extra time into the imgui context
+    if (engine->OverrideDeltaTime >= 0.0f)
+    {
+        ctx->IO.DeltaTime = engine->OverrideDeltaTime;
+        engine->OverrideDeltaTime = -1.0f;
+    }
+
+    // NewFrame() will increase this so we are +1 ahead at the time of calling this
+    engine->FrameCount = g.FrameCount + 1;
     if (engine->TestContext)
         engine->TestContext->FrameCount++;
 
@@ -459,13 +469,10 @@ static void ImGuiTestEngine_PreNewFrame(ImGuiTestEngine* engine, ImGuiContext* c
     if (ImGuiTestEngine_IsRunningTests(engine) && !engine->Abort)
     {
         // Abort testing by press ESC
-        //// Abort testing by holding ESC for 0.3 seconds.
-        //// This is so ESC injected by tests don't interfere when sharing UI context.
         ImGuiIO& main_io = g.IO;
         ImGuiIO& simulated_io = engine->Inputs.SimulatedIO;
         const int key_idx_escape = g.IO.KeyMap[ImGuiKey_Escape];
         if (key_idx_escape != -1 && main_io.KeysDown[key_idx_escape] && !simulated_io.KeysDown[key_idx_escape])
-            //g.IO.KeysDown[key_idx_escape] && g.IO.KeysDownDuration[key_idx_escape] >= 0.30f)
         {
             if (engine->TestContext)
                 engine->TestContext->Log("KO: User aborted (pressed ESC)\n");
@@ -561,6 +568,12 @@ void ImGuiTestEngine_Yield(ImGuiTestEngine* engine)
         //if (ctx->Test->Status == ImGuiTestStatus_Error)
         ctx->RecoverFromUiContextErrors();
     }
+}
+
+void ImGuiTestEngine_SetDeltaTime(ImGuiTestEngine* engine, float delta_time)
+{
+    IM_ASSERT(delta_time >= 0.0f);
+    engine->OverrideDeltaTime = delta_time;
 }
 
 int ImGuiTestEngine_GetFrameCount(ImGuiTestEngine* engine)

@@ -158,6 +158,7 @@ struct ImGuiTestInputs
 ImGuiTestItemInfo*   ImGuiTestEngine_ItemLocate(ImGuiTestEngine* engine, ImGuiID id, const char* debug_id);
 void                 ImGuiTestEngine_PushInput(ImGuiTestEngine* engine, const ImGuiTestInput& input);
 void                 ImGuiTestEngine_Yield(ImGuiTestEngine* engine);
+void                 ImGuiTestEngine_SetDeltaTime(ImGuiTestEngine* engine, float delta_time);
 int                  ImGuiTestEngine_GetFrameCount(ImGuiTestEngine* engine);
 double               ImGuiTestEngine_GetPerfDeltaTime500Average(ImGuiTestEngine* engine);
 FILE*                ImGuiTestEngine_GetPerfPersistentLogCsv(ImGuiTestEngine* engine);

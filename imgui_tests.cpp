@@ -635,8 +635,13 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         IM_CHECK_EQ(vars.ButtonPressCount[3], 1);
         ctx->MouseDown(0);
         IM_CHECK_EQ(vars.ButtonPressCount[3], 1);
-        ctx->SleepDebugNoSkip(ctx->UiContext->IO.KeyRepeatDelay + ctx->UiContext->IO.KeyRepeatRate * 3); // FIXME-TESTS: Can we elapse context time without elapsing wall clock time?
-        IM_CHECK_EQ(vars.ButtonPressCount[3], 1 + 3 * 2); // FIXME: MouseRepeatRate is double KeyRepeatRate, that's not documented
+
+        const float step = ImMin(ctx->UiContext->IO.KeyRepeatDelay, ctx->UiContext->IO.KeyRepeatRate) * 0.50f;
+        ctx->SleepNoSkip(ctx->UiContext->IO.KeyRepeatDelay, step);
+        ctx->SleepNoSkip(ctx->UiContext->IO.KeyRepeatRate, step);
+        ctx->SleepNoSkip(ctx->UiContext->IO.KeyRepeatRate, step);
+        ctx->SleepNoSkip(ctx->UiContext->IO.KeyRepeatRate, step);
+        IM_CHECK_EQ(vars.ButtonPressCount[3], 1 + 1 + 3 * 2); // FIXME: MouseRepeatRate is double KeyRepeatRate, that's not documented / or that's a bug
         ctx->MouseUp(0);
     };
 
@@ -1033,6 +1038,41 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ctx->UiContext->IO.AddInputCharacter((ImWchar)'\t');
         ctx->KeyPressMap(ImGuiKey_Tab);
         IM_CHECK_STR_EQ(vars.Str1, "\t");
+    };
+
+    // ## Test for Nav interference
+    t = REGISTER_TEST("widgets", "widgets_inputtext_nav");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiTestGenericVars& vars = ctx->GenericVars;
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImVec2 sz(50, 0);
+        ImGui::Button("UL", sz); ImGui::SameLine(); 
+        ImGui::Button("U",  sz); ImGui::SameLine();
+        ImGui::Button("UR", sz);
+        ImGui::Button("L",  sz); ImGui::SameLine();
+        ImGui::SetNextItemWidth(sz.x);
+        ImGui::InputText("##Field", vars.Str1, IM_ARRAYSIZE(vars.Str1), ImGuiInputTextFlags_AllowTabInput);
+        ImGui::SameLine();
+        ImGui::Button("R", sz);
+        ImGui::Button("DL", sz); ImGui::SameLine();
+        ImGui::Button("D", sz); ImGui::SameLine();
+        ImGui::Button("DR", sz);
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ctx->SetRef("Test Window");
+        ctx->ItemClick("##Field");
+        ctx->KeyPressMap(ImGuiKey_LeftArrow);
+        IM_CHECK_EQ(ctx->UiContext->NavId, ctx->GetID("##Field"));
+        ctx->KeyPressMap(ImGuiKey_RightArrow);
+        IM_CHECK_EQ(ctx->UiContext->NavId, ctx->GetID("##Field"));
+        ctx->KeyPressMap(ImGuiKey_UpArrow);
+        IM_CHECK_EQ(ctx->UiContext->NavId, ctx->GetID("U"));
+        ctx->KeyPressMap(ImGuiKey_DownArrow);
+        ctx->KeyPressMap(ImGuiKey_DownArrow);
+        IM_CHECK_EQ(ctx->UiContext->NavId, ctx->GetID("D"));
     };
 
     // ## Test ColorEdit4() and IsItemDeactivatedXXX() functions
@@ -2242,6 +2282,38 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
         builder.BuildRanges(&out_ranges);
         builder.Clear();
         IM_CHECK_EQ(out_ranges.Size, 5);
+    };
+
+    t = REGISTER_TEST("misc", "misc_repeat_typematic");
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ctx->LogVerbose("Regular repeat delay/rate\n");
+        IM_CHECK_EQ_NO_RET(ImGui::CalcTypematicRepeatAmount(0.00f, 0.00f, 1.0f, 0.2f), 1); // Trigger @ 0.0f, 1.0f, 1.2f, 1.4f, etc.
+        IM_CHECK_EQ_NO_RET(ImGui::CalcTypematicRepeatAmount(0.00f, 0.99f, 1.0f, 0.2f), 0); // "
+        IM_CHECK_EQ_NO_RET(ImGui::CalcTypematicRepeatAmount(0.99f, 1.00f, 1.0f, 0.2f), 1); // "
+        IM_CHECK_EQ_NO_RET(ImGui::CalcTypematicRepeatAmount(0.99f, 1.01f, 1.0f, 0.2f), 1); // "
+        IM_CHECK_EQ_NO_RET(ImGui::CalcTypematicRepeatAmount(0.99f, 1.41f, 1.0f, 0.2f), 3); // "
+        IM_CHECK_EQ_NO_RET(ImGui::CalcTypematicRepeatAmount(1.01f, 1.41f, 1.0f, 0.2f), 2); // "
+
+        IM_CHECK_EQ_NO_RET(ImGui::CalcTypematicRepeatAmount(0.99f, 1.01f, 1.1f, 0.2f), 0); // Trigger @ 0.0f, 1.1f, 1.3f, 1.5f, etc.
+
+        IM_CHECK_EQ_NO_RET(ImGui::CalcTypematicRepeatAmount(0.99f, 1.01f, 0.1f, 1.0f), 0); // Trigger @ 0.0f, 0.1f, 1.1f, 2.1f, etc.
+        IM_CHECK_EQ_NO_RET(ImGui::CalcTypematicRepeatAmount(0.99f, 1.11f, 0.1f, 1.0f), 1); // "
+
+        ctx->LogVerbose("No repeat delay\n");
+        IM_CHECK_EQ_NO_RET(ImGui::CalcTypematicRepeatAmount(0.00f, 0.00f, 0.0f, 0.2f), 1); // Trigger @ 0.0f, 0.2f, 0.4f, 0.6f, etc.
+        IM_CHECK_EQ_NO_RET(ImGui::CalcTypematicRepeatAmount(0.19f, 0.20f, 0.0f, 0.2f), 1); // Trigger @ 0.0f, 0.2f, 0.4f, 0.6f, etc.
+        IM_CHECK_EQ_NO_RET(ImGui::CalcTypematicRepeatAmount(0.20f, 0.20f, 0.0f, 0.2f), 0); // Trigger @ 0.0f, 0.2f, 0.4f, 0.6f, etc.
+        IM_CHECK_EQ_NO_RET(ImGui::CalcTypematicRepeatAmount(0.19f, 1.01f, 0.0f, 0.2f), 5); // Trigger @ 0.0f, 0.2f, 0.4f, 0.6f, etc.
+
+        ctx->LogVerbose("No repeat rate\n");
+        IM_CHECK_EQ_NO_RET(ImGui::CalcTypematicRepeatAmount(0.00f, 0.00f, 1.0f, 0.0f), 1); // Trigger @ 0.0f, 1.0f
+        IM_CHECK_EQ_NO_RET(ImGui::CalcTypematicRepeatAmount(0.99f, 1.01f, 1.0f, 0.0f), 1); // "
+        IM_CHECK_EQ_NO_RET(ImGui::CalcTypematicRepeatAmount(1.01f, 2.00f, 1.0f, 0.0f), 0); // "
+
+        ctx->LogVerbose("No repeat delay/rate\n");
+        IM_CHECK_EQ_NO_RET(ImGui::CalcTypematicRepeatAmount(0.00f, 0.00f, 0.0f, 0.0f), 1); // Trigger @ 0.0f
+        IM_CHECK_EQ_NO_RET(ImGui::CalcTypematicRepeatAmount(0.01f, 1.01f, 0.0f, 0.0f), 0); // "
     };
 
     // FIXME-TESTS

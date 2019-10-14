@@ -185,7 +185,7 @@ struct ImGuiTestContext
     void        YieldFrames(int count);
     void        YieldUntil(int frame_count);
     void        Sleep(float time);
-    void        SleepDebugNoSkip(float time);
+    void        SleepNoSkip(float time, float frame_time_step);
     void        SleepShort();
 
     void        SetInputMode(ImGuiInputSource input_mode);
