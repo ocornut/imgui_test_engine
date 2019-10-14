@@ -1125,6 +1125,32 @@ bool ImGuiTestEngineHook_Error(const char* file, const char* func, int line, ImG
 // - ImGuiTestEngine_ShowTestWindow()
 //-------------------------------------------------------------------------
 
+// Look for " filename:number " in the string.
+static bool ParseLineAndDrawFileOpenItem(ImGuiTestEngine* e, ImGuiTest* test, const char* line_start, const char* line_end)
+{
+    const char* separator = ImStrchrRange(line_start, line_end, ':');
+    if (separator == NULL)
+        return false;
+
+    const char* filename_end = separator;
+    const char* filename_start = separator - 1;
+    while (filename_start > line_start && filename_start[-1] != ' ')
+        filename_start--;
+
+    int line_no = -1;
+    sscanf(separator + 1, "%d ", &line_no);
+
+    if (line_no == -1 || filename_start == filename_end)
+        return false;
+
+    char label[128];
+    ImFormatString(label, IM_ARRAYSIZE(label), "Open %.*s at line %d", filename_end - filename_start, filename_start, line_no);
+    if (ImGui::MenuItem(label))
+        e->IO.FileOpenerFunc(test->SourceFile, line_no, e->IO.UserData);
+
+    return true;
+}
+
 static void DrawTestLog(ImGuiTestEngine* e, ImGuiTest* test, bool is_interactive)
 {
     ImU32 error_col = IM_COL32(255, 150, 150, 255);
@@ -1159,6 +1185,16 @@ static void DrawTestLog(ImGuiTestEngine* e, ImGuiTest* test, bool is_interactive
             ImGui::TextUnformatted(line_start, line_end);
             if (is_error || is_warning || is_unimportant)
                 ImGui::PopStyleColor();
+
+            ImGui::PushID(line_no);
+
+            if (ImGui::BeginPopupContextItem("Context", 1))
+            {
+                if (!ParseLineAndDrawFileOpenItem(e, test, line_start, line_end))
+                    ImGui::MenuItem("No options", NULL, false, false);
+                ImGui::EndPopup();
+            }
+            ImGui::PopID();
         }
     }
     ImGui::PopStyleVar();
