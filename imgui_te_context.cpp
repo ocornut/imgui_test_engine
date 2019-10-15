@@ -124,6 +124,13 @@ void    ImGuiTestContext::RecoverFromUiContextErrors()
             ImGui::EndTabBar();
         }
 
+        while (g.CurrentWindow->DC.TreeDepth > 0)
+        {
+            if (verbose)
+                LogVerbose("[warn] Recovered from missing TreePop() call.\n");
+            ImGui::TreePop();
+        }
+
         if (verbose)
             LogVerbose("[warn] Recovered from missing End() call.\n");
         ImGui::End();
