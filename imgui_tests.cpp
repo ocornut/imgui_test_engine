@@ -2,6 +2,7 @@
 // (tests)
 
 #define _CRT_SECURE_NO_WARNINGS
+#include <limits.h>
 #include "imgui.h"
 #define IMGUI_DEFINE_MATH_OPERATORS
 #include "imgui_internal.h"
@@ -1768,6 +1769,7 @@ void RegisterTests_Columns(ImGuiTestEngine* e)
         ImGui::End();
     };
 #endif
+
     // ## Test behavior of column functions without multiple columns.
     t = REGISTER_TEST("columns", "columns_functions_without_columns");
     t->TestFunc = [](ImGuiTestContext* ctx)
@@ -2360,6 +2362,84 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
         ctx->LogVerbose("No repeat delay/rate\n");
         IM_CHECK_EQ_NO_RET(ImGui::CalcTypematicRepeatAmount(0.00f, 0.00f, 0.0f, 0.0f), 1); // Trigger @ 0.0f
         IM_CHECK_EQ_NO_RET(ImGui::CalcTypematicRepeatAmount(0.01f, 1.01f, 0.0f, 0.0f), 0); // "
+    };
+
+    // ## Test ImGui::InputScalar() handling overflow for different data types
+    t = REGISTER_TEST("misc", "misc_input_scalar_overflow");
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        {
+            ImS8 one = 1;
+            ImS8 value = SCHAR_MAX;
+            ImGui::DataTypeApplyOp(ImGuiDataType_S8, '+', &value, &value, &one);
+            IM_CHECK(value == SCHAR_MAX);
+            value = SCHAR_MIN;
+            ImGui::DataTypeApplyOp(ImGuiDataType_S8, '-', &value, &value, &one);
+            IM_CHECK(value == SCHAR_MIN);
+        }
+        {
+            ImU8 one = 1;
+            ImU8 value = UCHAR_MAX;
+            ImGui::DataTypeApplyOp(ImGuiDataType_U8, '+', &value, &value, &one);
+            IM_CHECK(value == UCHAR_MAX);
+            value = 0;
+            ImGui::DataTypeApplyOp(ImGuiDataType_U8, '-', &value, &value, &one);
+            IM_CHECK(value == 0);
+        }
+        {
+            ImS16 one = 1;
+            ImS16 value = SHRT_MAX;
+            ImGui::DataTypeApplyOp(ImGuiDataType_S16, '+', &value, &value, &one);
+            IM_CHECK(value == SHRT_MAX);
+            value = SHRT_MIN;
+            ImGui::DataTypeApplyOp(ImGuiDataType_S16, '-', &value, &value, &one);
+            IM_CHECK(value == SHRT_MIN);
+        }
+        {
+            ImU16 one = 1;
+            ImU16 value = USHRT_MAX;
+            ImGui::DataTypeApplyOp(ImGuiDataType_U16, '+', &value, &value, &one);
+            IM_CHECK(value == USHRT_MAX);
+            value = 0;
+            ImGui::DataTypeApplyOp(ImGuiDataType_U16, '-', &value, &value, &one);
+            IM_CHECK(value == 0);
+        }
+        {
+            ImS32 one = 1;
+            ImS32 value = INT_MAX;
+            ImGui::DataTypeApplyOp(ImGuiDataType_S32, '+', &value, &value, &one);
+            IM_CHECK(value == INT_MAX);
+            value = INT_MIN;
+            ImGui::DataTypeApplyOp(ImGuiDataType_S32, '-', &value, &value, &one);
+            IM_CHECK(value == INT_MIN);
+        }
+        {
+            ImU32 one = 1;
+            ImU32 value = UINT_MAX;
+            ImGui::DataTypeApplyOp(ImGuiDataType_U32, '+', &value, &value, &one);
+            IM_CHECK(value == UINT_MAX);
+            value = 0;
+            ImGui::DataTypeApplyOp(ImGuiDataType_U32, '-', &value, &value, &one);
+            IM_CHECK(value == 0);
+        }
+        {
+            ImS64 one = 1;
+            ImS64 value = LONG_LONG_MAX;
+            ImGui::DataTypeApplyOp(ImGuiDataType_S64, '+', &value, &value, &one);
+            IM_CHECK(value == LONG_LONG_MAX);
+            value = LONG_LONG_MIN;
+            ImGui::DataTypeApplyOp(ImGuiDataType_S64, '-', &value, &value, &one);
+            IM_CHECK(value == LONG_LONG_MIN);
+        }
+        {
+            ImU64 one = 1;
+            ImU64 value = ULONG_LONG_MAX;
+            ImGui::DataTypeApplyOp(ImGuiDataType_U64, '+', &value, &value, &one);
+            IM_CHECK(value == ULONG_LONG_MAX);
+            value = 0;
+            ImGui::DataTypeApplyOp(ImGuiDataType_U64, '-', &value, &value, &one);
+            IM_CHECK(value == 0);
+        }
     };
 
     // FIXME-TESTS
