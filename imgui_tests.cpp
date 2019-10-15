@@ -1448,6 +1448,17 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         }
         ImGui::End();
     };
+
+    // ## Test PlotLines() with a single value (#2387).
+    t = REGISTER_TEST("widgets", "widgets_plot_lines_unexpected_input");
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        float values[1] = {0.f};
+        ImGui::PlotLines("PlotLines 1", NULL, 0);
+        ImGui::PlotLines("PlotLines 2", values, 0);
+        ImGui::PlotLines("PlotLines 3", values, 1);
+        // FIXME-TESTS: If test did not crash - it passed. A better way to check this would be useful.
+    };
 }
 
 //-------------------------------------------------------------------------
