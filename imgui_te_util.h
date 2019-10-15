@@ -82,28 +82,3 @@ struct ImMovingAverage
     int     GetSampleCount() const  { return Samples.Size; }
     bool    IsFull() const          { return FillAmount == Samples.Size; }
 };
-
-// Executes passed callback when object destructor is called.
-// FIXME-TESTS: Remove this. It's a nice pattern but we want to head toward recovery on ImGui:: side.
-template <typename Function>
-class ScopeGuard
-{
-public:
-    explicit ScopeGuard(Function cb) : callback(cb) { }
-    ~ScopeGuard() { callback(); }
-private:
-    Function callback;
-};
-
-template <typename F>
-ScopeGuard<F> MakeScopeGuard(F f)
-{
-    return ScopeGuard<F>(f);
-};
-
-#define _IM_CONCAT(arg1, arg2) arg1 ## arg2
-#define IM_CONCAT(arg1, arg2) _IM_CONCAT(arg1, arg2)
-
-// Execute statement when current scope exits. Used in cases where failing IM_CHECK() may leave application state broken.
-// FIXME-TESTS: Remove this. It's a nice pattern but we want to head toward recovery on ImGui:: side.
-#define IM_ON_SCOPE_EXIT(...) auto IM_CONCAT(scope_exit_, __LINE__) = MakeScopeGuard([=]() { __VA_ARGS__; })

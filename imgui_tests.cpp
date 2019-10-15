@@ -1392,8 +1392,8 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
     };
     t->TestFunc = [](ImGuiTestContext* ctx) { ctx->Yield(); };
 
-    // ## Test ImGuiTreeNodeFlags_SpanAvailWidth flag
-    t = REGISTER_TEST("widgets", "widgets_tree_node_span_avail_width");
+    // ## Test ImGuiTreeNodeFlags_SpanAvailWidth and ImGuiTreeNodeFlags_SpanFullWidth flags
+    t = REGISTER_TEST("widgets", "widgets_tree_node_span_width");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         ImGui::SetNextWindowSize(ImVec2(300, 100), ImGuiCond_Always);
@@ -1401,50 +1401,47 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ImGuiWindow* window = ImGui::GetCurrentWindow();
         if (ctx->FrameCount <= 2)
         {
-            if (ImGui::TreeNodeEx("One", ImGuiTreeNodeFlags_DefaultOpen))
+            ImGui::SetNextTreeNodeOpen(true);
+            if (ImGui::TreeNodeEx("Parent"))
             {
-                IM_ON_SCOPE_EXIT(ImGui::TreePop());
-                if (ImGui::TreeNodeEx("Two", ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_SpanAvailWidth))
+                // Interaction rect does not span entire width of work area.
+                IM_CHECK(window->DC.LastItemRect.Max.x < window->WorkRect.Max.x);
+                // But it starts at very beginning of WorkRect for first tree level.
+                IM_CHECK(window->DC.LastItemRect.Min.x == window->WorkRect.Min.x);
+                ImGui::SetNextTreeNodeOpen(true);
+                if (ImGui::TreeNodeEx("One"))
                 {
-                    IM_ON_SCOPE_EXIT(ImGui::TreePop());
+                    // Interaction rect does not span entire width of work area.
+                    IM_CHECK(window->DC.LastItemRect.Max.x < window->WorkRect.Max.x);
+                    IM_CHECK(window->DC.LastItemRect.Min.x > window->WorkRect.Min.x);
+                    ImGui::TreePop();
+                }
+                ImGui::SetNextTreeNodeOpen(true);
+                if (ImGui::TreeNodeEx("Two", ImGuiTreeNodeFlags_SpanAvailWidth))
+                {
+                    // Interaction rect matches visible frame rect
                     IM_CHECK((window->DC.LastItemStatusFlags & ImGuiItemStatusFlags_HasDisplayRect) != 0);
-                    // Interaction rect matches visible rect.
                     IM_CHECK(window->DC.LastItemDisplayRect.Min == window->DC.LastItemRect.Min);
                     IM_CHECK(window->DC.LastItemDisplayRect.Max == window->DC.LastItemRect.Max);
                     // Interaction rect extends to the end of the available area.
                     IM_CHECK(window->DC.LastItemRect.Max.x == window->WorkRect.Max.x);
+                    ImGui::TreePop();
                 }
-            }
-        }
-        ImGui::End();
-    };
-    // ## Test ImGuiTreeNodeFlags_SpanFullWidth flag
-    t = REGISTER_TEST("widgets", "widgets_tree_node_span_full_width");
-    t->GuiFunc = [](ImGuiTestContext* ctx)
-    {
-        ImGui::SetNextWindowSize(ImVec2(300, 100), ImGuiCond_Always);
-        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
-        ImGuiWindow* window = ImGui::GetCurrentWindow();
-        if (ctx->FrameCount <= 2)
-        {
-            ImGui::Indent();
-            if (ImGui::TreeNodeEx("One", ImGuiTreeNodeFlags_DefaultOpen))
-            {
-                IM_ON_SCOPE_EXIT(ImGui::TreePop());
-                if (ImGui::TreeNodeEx("Two", ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_SpanFullWidth))
+                ImGui::SetNextTreeNodeOpen(true);
+                if (ImGui::TreeNodeEx("Three", ImGuiTreeNodeFlags_SpanFullWidth))
                 {
-                    IM_ON_SCOPE_EXIT(ImGui::TreePop());
-                    // Interaction rect matches visible rect.
+                    // Interaction rect matches visible frame rect
                     IM_CHECK((window->DC.LastItemStatusFlags & ImGuiItemStatusFlags_HasDisplayRect) != 0);
                     IM_CHECK(window->DC.LastItemDisplayRect.Min == window->DC.LastItemRect.Min);
                     IM_CHECK(window->DC.LastItemDisplayRect.Max == window->DC.LastItemRect.Max);
+                    // Interaction rect extends to the end of the available area.
+                    IM_CHECK(window->DC.LastItemRect.Max.x == window->WorkRect.Max.x);
                     // ImGuiTreeNodeFlags_SpanFullWidth also extends interaction rect to the left.
                     IM_CHECK(window->DC.LastItemRect.Min.x == window->WorkRect.Min.x);
-                    // Interaction rect extends to the end of the available area.
-                    IM_CHECK(window->DC.LastItemRect.Max.x == window->WorkRect.Max.x);
+                    ImGui::TreePop();
                 }
+                ImGui::TreePop();
             }
-            ImGui::Unindent();
         }
         ImGui::End();
     };
