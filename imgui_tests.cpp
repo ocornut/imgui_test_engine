@@ -1760,6 +1760,17 @@ void RegisterTests_Columns(ImGuiTestEngine* e)
         ImGui::End();
     };
 #endif
+    // ## Test behavior of column functions without multiple columns.
+    t = REGISTER_TEST("columns", "columns_functions_without_columns");
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::Begin("Test window 1", NULL, ImGuiWindowFlags_NoSavedSettings);
+        IM_CHECK(ImGui::GetColumnsCount() == 1);
+        IM_CHECK(ImGui::GetColumnOffset() == 0.0f);
+        IM_CHECK(ImGui::GetColumnWidth() == ImGui::GetContentRegionAvail().x);
+        IM_CHECK(ImGui::GetColumnIndex() == 0);
+        ImGui::End();
+    };
 };
 
 //-------------------------------------------------------------------------
