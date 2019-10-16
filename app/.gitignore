@@ -37,3 +37,7 @@ test_app
 
 ## Dear ImGui Ini files
 imgui.ini
+
+## JetBrains IDEs
+.idea
+cmake-build-*
