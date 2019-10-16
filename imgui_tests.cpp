@@ -1400,50 +1400,49 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ImGui::SetNextWindowSize(ImVec2(300, 100), ImGuiCond_Always);
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
         ImGuiWindow* window = ImGui::GetCurrentWindow();
-        if (ctx->FrameCount <= 2)
+
+        ImGui::SetNextTreeNodeOpen(true);
+        if (ImGui::TreeNodeEx("Parent"))
         {
+            // Interaction rect does not span entire width of work area.
+            IM_CHECK(window->DC.LastItemRect.Max.x < window->WorkRect.Max.x);
+            // But it starts at very beginning of WorkRect for first tree level.
+            IM_CHECK(window->DC.LastItemRect.Min.x == window->WorkRect.Min.x);
             ImGui::SetNextTreeNodeOpen(true);
-            if (ImGui::TreeNodeEx("Parent"))
+            if (ImGui::TreeNodeEx("Regular"))
             {
                 // Interaction rect does not span entire width of work area.
                 IM_CHECK(window->DC.LastItemRect.Max.x < window->WorkRect.Max.x);
-                // But it starts at very beginning of WorkRect for first tree level.
-                IM_CHECK(window->DC.LastItemRect.Min.x == window->WorkRect.Min.x);
-                ImGui::SetNextTreeNodeOpen(true);
-                if (ImGui::TreeNodeEx("One"))
-                {
-                    // Interaction rect does not span entire width of work area.
-                    IM_CHECK(window->DC.LastItemRect.Max.x < window->WorkRect.Max.x);
-                    IM_CHECK(window->DC.LastItemRect.Min.x > window->WorkRect.Min.x);
-                    ImGui::TreePop();
-                }
-                ImGui::SetNextTreeNodeOpen(true);
-                if (ImGui::TreeNodeEx("Two", ImGuiTreeNodeFlags_SpanAvailWidth))
-                {
-                    // Interaction rect matches visible frame rect
-                    IM_CHECK((window->DC.LastItemStatusFlags & ImGuiItemStatusFlags_HasDisplayRect) != 0);
-                    IM_CHECK(window->DC.LastItemDisplayRect.Min == window->DC.LastItemRect.Min);
-                    IM_CHECK(window->DC.LastItemDisplayRect.Max == window->DC.LastItemRect.Max);
-                    // Interaction rect extends to the end of the available area.
-                    IM_CHECK(window->DC.LastItemRect.Max.x == window->WorkRect.Max.x);
-                    ImGui::TreePop();
-                }
-                ImGui::SetNextTreeNodeOpen(true);
-                if (ImGui::TreeNodeEx("Three", ImGuiTreeNodeFlags_SpanFullWidth))
-                {
-                    // Interaction rect matches visible frame rect
-                    IM_CHECK((window->DC.LastItemStatusFlags & ImGuiItemStatusFlags_HasDisplayRect) != 0);
-                    IM_CHECK(window->DC.LastItemDisplayRect.Min == window->DC.LastItemRect.Min);
-                    IM_CHECK(window->DC.LastItemDisplayRect.Max == window->DC.LastItemRect.Max);
-                    // Interaction rect extends to the end of the available area.
-                    IM_CHECK(window->DC.LastItemRect.Max.x == window->WorkRect.Max.x);
-                    // ImGuiTreeNodeFlags_SpanFullWidth also extends interaction rect to the left.
-                    IM_CHECK(window->DC.LastItemRect.Min.x == window->WorkRect.Min.x);
-                    ImGui::TreePop();
-                }
+                IM_CHECK(window->DC.LastItemRect.Min.x > window->WorkRect.Min.x);
                 ImGui::TreePop();
             }
+            ImGui::SetNextTreeNodeOpen(true);
+            if (ImGui::TreeNodeEx("SpanAvailWidth", ImGuiTreeNodeFlags_SpanAvailWidth))
+            {
+                // Interaction rect matches visible frame rect
+                IM_CHECK((window->DC.LastItemStatusFlags & ImGuiItemStatusFlags_HasDisplayRect) != 0);
+                IM_CHECK(window->DC.LastItemDisplayRect.Min == window->DC.LastItemRect.Min);
+                IM_CHECK(window->DC.LastItemDisplayRect.Max == window->DC.LastItemRect.Max);
+                // Interaction rect extends to the end of the available area.
+                IM_CHECK(window->DC.LastItemRect.Max.x == window->WorkRect.Max.x);
+                ImGui::TreePop();
+            }
+            ImGui::SetNextTreeNodeOpen(true);
+            if (ImGui::TreeNodeEx("SpanFullWidth", ImGuiTreeNodeFlags_SpanFullWidth))
+            {
+                // Interaction rect matches visible frame rect
+                IM_CHECK((window->DC.LastItemStatusFlags & ImGuiItemStatusFlags_HasDisplayRect) != 0);
+                IM_CHECK(window->DC.LastItemDisplayRect.Min == window->DC.LastItemRect.Min);
+                IM_CHECK(window->DC.LastItemDisplayRect.Max == window->DC.LastItemRect.Max);
+                // Interaction rect extends to the end of the available area.
+                IM_CHECK(window->DC.LastItemRect.Max.x == window->WorkRect.Max.x);
+                // ImGuiTreeNodeFlags_SpanFullWidth also extends interaction rect to the left.
+                IM_CHECK(window->DC.LastItemRect.Min.x == window->WorkRect.Min.x);
+                ImGui::TreePop();
+            }
+            ImGui::TreePop();
         }
+
         ImGui::End();
     };
 
@@ -2312,23 +2311,29 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
         ImDrawList* draw_list = ImGui::GetWindowDrawList();
         ImTextureID prev_texture_id = draw_list->_TextureIdStack.back();
-        if (ctx->FrameCount == 0)
-        {
-            draw_list->ChannelsSplit(2);
-            draw_list->ChannelsSetCurrent(0);
-            // Image wont be clipped when added directly into the drawlist.
-            draw_list->AddImage((ImTextureID)100, ImVec2(0, 0), ImVec2(16, 16));
-            draw_list->ChannelsSetCurrent(1);
-            draw_list->AddImage((ImTextureID)200, ImVec2(0, 0), ImVec2(16, 16));
-            draw_list->ChannelsMerge();
-            IM_CHECK(prev_texture_id == draw_list->CmdBuffer.back().TextureId);
-            // Replace fake texture IDs with a known good ID in order to prevent graphics API crashing application.
-            for (ImDrawCmd& cmd : draw_list->CmdBuffer)
-            {
-                if (cmd.TextureId == (ImTextureID)100 || cmd.TextureId == (ImTextureID)200)
-                    cmd.TextureId = prev_texture_id;
-            }
-        }
+        const int draw_count = draw_list->CmdBuffer.Size;
+        IM_CHECK(draw_list->CmdBuffer.back().ElemCount == 0);
+
+        ImVec2 p = ImGui::GetCursorScreenPos();
+        ImGui::Dummy(ImVec2(100+10+100, 100));
+
+        draw_list->ChannelsSplit(2);
+        draw_list->ChannelsSetCurrent(0);
+        // Image wont be clipped when added directly into the draw list.
+        draw_list->AddImage((ImTextureID)100, p, p + ImVec2(100, 100));
+        draw_list->ChannelsSetCurrent(1);
+        draw_list->AddImage((ImTextureID)200, p + ImVec2(110, 0), p + ImVec2(210, 100));
+        draw_list->ChannelsMerge();
+
+        IM_CHECK_NO_RET(draw_list->CmdBuffer.Size == draw_count + 2);
+        IM_CHECK_NO_RET(draw_list->CmdBuffer.back().ElemCount == 0);
+        IM_CHECK_NO_RET(prev_texture_id == draw_list->CmdBuffer.back().TextureId);
+
+        // Replace fake texture IDs with a known good ID in order to prevent graphics API crashing application.
+        for (ImDrawCmd& cmd : draw_list->CmdBuffer)
+            if (cmd.TextureId == (ImTextureID)100 || cmd.TextureId == (ImTextureID)200)
+                cmd.TextureId = prev_texture_id;
+
         ImGui::End();
     };
 
@@ -2370,7 +2375,10 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
     {
         {
             ImS8 one = 1;
-            ImS8 value = SCHAR_MAX;
+            ImS8 value = 2;
+            ImGui::DataTypeApplyOp(ImGuiDataType_S8, '+', &value, &value, &one);
+            IM_CHECK(value == 3);
+            value = SCHAR_MAX;
             ImGui::DataTypeApplyOp(ImGuiDataType_S8, '+', &value, &value, &one);
             IM_CHECK(value == SCHAR_MAX);
             value = SCHAR_MIN;
@@ -2379,7 +2387,10 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
         }
         {
             ImU8 one = 1;
-            ImU8 value = UCHAR_MAX;
+            ImU8 value = 2;
+            ImGui::DataTypeApplyOp(ImGuiDataType_U8, '+', &value, &value, &one);
+            IM_CHECK(value == 3);
+            value = UCHAR_MAX;
             ImGui::DataTypeApplyOp(ImGuiDataType_U8, '+', &value, &value, &one);
             IM_CHECK(value == UCHAR_MAX);
             value = 0;
@@ -2388,7 +2399,10 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
         }
         {
             ImS16 one = 1;
-            ImS16 value = SHRT_MAX;
+            ImS16 value = 2;
+            ImGui::DataTypeApplyOp(ImGuiDataType_S16, '+', &value, &value, &one);
+            IM_CHECK(value == 3);
+            value = SHRT_MAX;
             ImGui::DataTypeApplyOp(ImGuiDataType_S16, '+', &value, &value, &one);
             IM_CHECK(value == SHRT_MAX);
             value = SHRT_MIN;
@@ -2397,7 +2411,10 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
         }
         {
             ImU16 one = 1;
-            ImU16 value = USHRT_MAX;
+            ImU16 value = 2;
+            ImGui::DataTypeApplyOp(ImGuiDataType_U16, '+', &value, &value, &one);
+            IM_CHECK(value == 3);
+            value = USHRT_MAX;
             ImGui::DataTypeApplyOp(ImGuiDataType_U16, '+', &value, &value, &one);
             IM_CHECK(value == USHRT_MAX);
             value = 0;
@@ -2406,7 +2423,10 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
         }
         {
             ImS32 one = 1;
-            ImS32 value = INT_MAX;
+            ImS32 value = 2;
+            ImGui::DataTypeApplyOp(ImGuiDataType_S32, '+', &value, &value, &one);
+            IM_CHECK(value == 3);
+            value = INT_MAX;
             ImGui::DataTypeApplyOp(ImGuiDataType_S32, '+', &value, &value, &one);
             IM_CHECK(value == INT_MAX);
             value = INT_MIN;
@@ -2415,7 +2435,10 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
         }
         {
             ImU32 one = 1;
-            ImU32 value = UINT_MAX;
+            ImU32 value = 2;
+            ImGui::DataTypeApplyOp(ImGuiDataType_U32, '+', &value, &value, &one);
+            IM_CHECK(value == 3);
+            value = UINT_MAX;
             ImGui::DataTypeApplyOp(ImGuiDataType_U32, '+', &value, &value, &one);
             IM_CHECK(value == UINT_MAX);
             value = 0;
@@ -2424,18 +2447,24 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
         }
         {
             ImS64 one = 1;
-            ImS64 value = LONG_LONG_MAX;
+            ImS64 value = 2;
             ImGui::DataTypeApplyOp(ImGuiDataType_S64, '+', &value, &value, &one);
-            IM_CHECK(value == LONG_LONG_MAX);
-            value = LONG_LONG_MIN;
+            IM_CHECK(value == 3);
+            value = LLONG_MAX;
+            ImGui::DataTypeApplyOp(ImGuiDataType_S64, '+', &value, &value, &one);
+            IM_CHECK(value == LLONG_MAX);
+            value = LLONG_MIN;
             ImGui::DataTypeApplyOp(ImGuiDataType_S64, '-', &value, &value, &one);
-            IM_CHECK(value == LONG_LONG_MIN);
+            IM_CHECK(value == LLONG_MIN);
         }
         {
             ImU64 one = 1;
-            ImU64 value = ULONG_LONG_MAX;
+            ImU64 value = 2;
             ImGui::DataTypeApplyOp(ImGuiDataType_U64, '+', &value, &value, &one);
-            IM_CHECK(value == ULONG_LONG_MAX);
+            IM_CHECK(value == 3);
+            value = ULLONG_MAX;
+            ImGui::DataTypeApplyOp(ImGuiDataType_U64, '+', &value, &value, &one);
+            IM_CHECK(value == ULLONG_MAX);
             value = 0;
             ImGui::DataTypeApplyOp(ImGuiDataType_U64, '-', &value, &value, &one);
             IM_CHECK(value == 0);
