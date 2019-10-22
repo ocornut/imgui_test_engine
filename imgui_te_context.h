@@ -163,24 +163,24 @@ struct ImGuiTestContext
     double                  PerfRefDt = -1.0;
     int                     PerfStressAmount = 0;
 
-    ImGuiTestContext()
-    {
-    }
+    ImGuiTestContext()      {}
 
-    void        LogEx(ImGuiTestLogFlags flags, const char* fmt, ...) IM_FMTARGS(3); // implicit 'this' arg
-    void        LogExV(ImGuiTestLogFlags flags, const char* fmt, va_list args) IM_FMTLIST(3);
-    void        Log(const char* fmt, ...) IM_FMTARGS(2);
-    void        LogVerbose(const char* fmt, ...) IM_FMTARGS(2);
-    void        LogDebug();
+    // Main control
     void        Finish();
     bool        IsError() const             { return Test->Status == ImGuiTestStatus_Error || Abort; }
     bool        IsFirstFrame() const        { return FrameCount == FirstFrameCount; }
     void        SetGuiFuncEnabled(bool v)   { if (v) RunFlags &= ~ImGuiTestRunFlags_NoGuiFunc; else RunFlags |= ImGuiTestRunFlags_NoGuiFunc; }
     void        RecoverFromUiContextErrors();
+    template <typename T> T& GetUserData()  { IM_ASSERT(UserData != NULL); return *(T*)(UserData); }
 
-    template <typename T>
-    T&          GetUserData()               { IM_ASSERT(UserData != NULL);return *(T*)(UserData); }
+    // Logging
+    void        LogEx(ImGuiTestLogFlags flags, const char* fmt, ...) IM_FMTARGS(3); // implicit 'this' arg
+    void        LogExV(ImGuiTestLogFlags flags, const char* fmt, va_list args) IM_FMTLIST(3);
+    void        Log(const char* fmt, ...) IM_FMTARGS(2);
+    void        LogVerbose(const char* fmt, ...) IM_FMTARGS(2);
+    void        LogDebug();
 
+    // Yield, Timing
     void        Yield();
     void        YieldFrames(int count);
     void        YieldUntil(int frame_count);
@@ -188,15 +188,28 @@ struct ImGuiTestContext
     void        SleepNoSkip(float time, float frame_time_step);
     void        SleepShort();
 
-    void        SetInputMode(ImGuiInputSource input_mode);
+    // Windows
+    // FIXME-TESTS: Refactor this horrible mess... perhaps all functions should have a ImGuiTestRef defaulting to empty?
+    void        WindowRef(ImGuiTestRef ref);
+    void        WindowClose(ImGuiTestRef ref);
+    void        WindowCollapse(ImGuiTestRef ref, bool collapsed);
+    void        WindowFocus(ImGuiTestRef ref);
+    void        WindowMove(ImGuiTestRef ref, ImVec2 pos, ImVec2 pivot = ImVec2(0.0f, 0.0f));
+    void        WindowResize(ImGuiTestRef ref, ImVec2 sz);
+    void        WindowMoveToMakePosVisible(ImGuiWindow* window, ImVec2 pos);
+    bool        WindowBringToFront(ImGuiWindow* window, ImGuiTestOpFlags flags = ImGuiTestOpFlags_None);
+    void        PopupClose();
+    ImGuiWindow* GetWindowByRef(ImGuiTestRef ref);
+    ImGuiTestRef GetFocusWindowRef();
 
-    void        SetRef(ImGuiTestRef ref);
-    ImGuiWindow*GetWindowByRef(ImGuiTestRef ref);
+    // ID 
     ImGuiID     GetID(ImGuiTestRef ref);
     ImGuiID     GetID(ImGuiTestRef seed_ref, ImGuiTestRef ref);
-    ImGuiTestRef GetFocusWindowRef();
+
+    // Misc
     ImVec2      GetMainViewportPos();
 
+    // Mouse inputs
     void        MouseMove(ImGuiTestRef ref, ImGuiTestOpFlags flags = ImGuiTestOpFlags_None);
     void        MouseMoveToPos(ImVec2 pos);
     void        MouseMoveToPosInsideWindow(ImVec2* pos, ImGuiWindow* window);
@@ -206,6 +219,7 @@ struct ImGuiTestContext
     void        MouseUp(int button = 0);
     void        MouseLiftDragThreshold(int button = 0);
     
+    // Keyboard inputs
     void        KeyDownMap(ImGuiKey key, int mod_flags = 0);
     void        KeyUpMap(ImGuiKey key, int mod_flags = 0);
     void        KeyPressMap(ImGuiKey key, int mod_flags = 0, int count = 1);
@@ -213,19 +227,21 @@ struct ImGuiTestContext
     void        KeyCharsAppend(const char* chars);
     void        KeyCharsAppendEnter(const char* chars);
 
+    // Navigation inputs
+    void        SetInputMode(ImGuiInputSource input_mode);
     void        NavMove(ImGuiTestRef ref);
     void        NavActivate();
     void        NavInput();
 
-    void        FocusWindow(ImGuiTestRef ref);
-    bool        BringWindowToFront(ImGuiWindow* window, ImGuiTestOpFlags flags = ImGuiTestOpFlags_None);
-    bool        BringWindowToFrontFromItem(ImGuiTestRef ref);
-
+    // Scrolling
     void        ScrollToY(ImGuiTestRef ref, float scroll_ratio_y = 0.5f);
     void        ScrollVerifyScrollMax(ImGuiWindow* window);
 
-    void        GatherItems(ImGuiTestItemList* out_list, ImGuiTestRef parent, int depth = -1);
+    // Low-level queries
+    ImGuiTestItemInfo*  ItemLocate(ImGuiTestRef ref, ImGuiTestOpFlags flags = ImGuiTestOpFlags_None);
+    void                GatherItems(ImGuiTestItemList* out_list, ImGuiTestRef parent, int depth = -1);
 
+    // Item/Widgets manipulation
     void        ItemAction(ImGuiTestAction action, ImGuiTestRef ref);
     void        ItemClick(ImGuiTestRef ref)         { ItemAction(ImGuiTestAction_Click, ref); }
     void        ItemDoubleClick(ImGuiTestRef ref)   { ItemAction(ImGuiTestAction_DoubleClick, ref); }
@@ -243,26 +259,18 @@ struct ImGuiTestContext
     void        ItemHold(ImGuiTestRef ref, float time);
     void        ItemHoldForFrames(ImGuiTestRef ref, int frames);
     void        ItemDragAndDrop(ImGuiTestRef ref_src, ImGuiTestRef ref_dst);
-    ImGuiTestItemInfo* ItemLocate(ImGuiTestRef ref, ImGuiTestOpFlags flags = ImGuiTestOpFlags_None);
     void        ItemVerifyCheckedIfAlive(ImGuiTestRef ref, bool checked);
 
+    // Menus
     void        MenuAction(ImGuiTestAction action, ImGuiTestRef ref);
+    void        MenuActionAll(ImGuiTestAction action, ImGuiTestRef ref_parent);
     void        MenuClick(ImGuiTestRef ref)                 { MenuAction(ImGuiTestAction_Click, ref); }
     void        MenuCheck(ImGuiTestRef ref)                 { MenuAction(ImGuiTestAction_Check, ref); }
     void        MenuUncheck(ImGuiTestRef ref)               { MenuAction(ImGuiTestAction_Uncheck, ref); }
-
-    void        MenuActionAll(ImGuiTestAction action, ImGuiTestRef ref_parent);
     void        MenuCheckAll(ImGuiTestRef ref_parent)       { MenuActionAll(ImGuiTestAction_Check, ref_parent); }
     void        MenuUncheckAll(ImGuiTestRef ref_parent)     { MenuActionAll(ImGuiTestAction_Uncheck, ref_parent); }
 
-    // FIXME-TESTS: Refactor this horrible mess... perhaps all functions should have a ImGuiTestRef defaulting to empty?
-    void        WindowClose();
-    void        WindowSetCollapsed(ImGuiTestRef ref, bool collapsed);
-    void        WindowMove(ImGuiTestRef ref, ImVec2 pos, ImVec2 pivot = ImVec2(0.0f, 0.0f));
-    void        WindowResize(ImGuiTestRef ref, ImVec2 sz);
-    void        WindowMoveToMakePosVisible(ImGuiWindow* window, ImVec2 pos);
-    void        PopupClose();
-
+    // Docking
 #ifdef IMGUI_HAS_DOCK
     void        DockWindowInto(const char* window_src, const char* window_dst, ImGuiDir split_dir = ImGuiDir_None);
     void        DockMultiClear(const char* window_name, ...);
@@ -272,6 +280,7 @@ struct ImGuiTestContext
     void        UndockNode(ImGuiID dock_id);
 #endif
 
+    // Performances
     void        PerfCalcRef();
     void        PerfCapture();
 };

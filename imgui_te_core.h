@@ -100,8 +100,8 @@ struct ImGuiTestRef
     ImGuiID                 ID;
     const char*             Path;
 
-    ImGuiTestRef() { ID = 0; Path = NULL; }
-    ImGuiTestRef(ImGuiID id) { ID = id; Path = NULL; }
+    ImGuiTestRef()              { ID = 0; Path = NULL; }
+    ImGuiTestRef(ImGuiID id)    { ID = id; Path = NULL; }
     ImGuiTestRef(const char* p) { ID = 0; Path = p; }
 };
 
@@ -123,6 +123,7 @@ struct ImGuiTestInput
         inp.State = state;
         return inp;
     }
+
     static ImGuiTestInput   FromNav(ImGuiNavInput v, ImGuiKeyState state)
     {
         ImGuiTestInput inp;
@@ -131,6 +132,7 @@ struct ImGuiTestInput
         inp.State = state;
         return inp;
     }
+
     static ImGuiTestInput   FromChar(ImWchar v)
     {
         ImGuiTestInput inp;

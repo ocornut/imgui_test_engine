@@ -802,7 +802,7 @@ static void ImGuiTestEngine_RunTest(ImGuiTestEngine* engine, ImGuiTestContext* c
     ctx->UserData = user_data;
     ctx->UserCounter = 0;
     ctx->FrameCount = 0;
-    ctx->SetRef("");
+    ctx->WindowRef("");
     ctx->SetInputMode(ImGuiInputSource_Mouse);
     ctx->GenericVars.Clear();
     test->TestLog.Clear();

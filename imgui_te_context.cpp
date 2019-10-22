@@ -214,7 +214,7 @@ void ImGuiTestContext::SetInputMode(ImGuiInputSource input_mode)
     }
 }
 
-void ImGuiTestContext::SetRef(ImGuiTestRef ref)
+void ImGuiTestContext::WindowRef(ImGuiTestRef ref)
 {
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
     LogVerbose("SetRef '%s' %08X\n", ref.Path ? ref.Path : "NULL", ref.ID);
@@ -239,7 +239,7 @@ void ImGuiTestContext::SetRef(ImGuiTestRef ref)
         {
             IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
             LogVerbose("Uncollapse window '%s'\n", window->Name);
-            WindowSetCollapsed("", false);
+            WindowCollapse("", false);
             IM_CHECK_EQ(window->Collapsed, false);
         }
 }
@@ -361,7 +361,7 @@ void    ImGuiTestContext::ScrollToY(ImGuiTestRef ref, float scroll_ratio_y)
 
         Yield();
 
-        BringWindowToFrontFromItem(ref);
+        WindowBringToFront(window);
     }
 
     // Need another frame for the result->Rect to stabilize
@@ -401,7 +401,7 @@ void    ImGuiTestContext::NavMove(ImGuiTestRef ref)
     item->RefCount++;
 
     // Focus window before scrolling/moving so things are nicely visible
-    BringWindowToFrontFromItem(ref);
+    WindowBringToFront(item->Window);
 
     // Teleport
     // FIXME-NAV: We should have a nav request feature that does this, 
@@ -488,7 +488,7 @@ void    ImGuiTestContext::MouseMove(ImGuiTestRef ref, ImGuiTestOpFlags flags)
 
     // Focus window before scrolling/moving so things are nicely visible
     if (!(flags & ImGuiTestOpFlags_NoFocusWindow))
-        BringWindowToFrontFromItem(ref);
+        WindowBringToFront(item->Window);
 
     ImGuiWindow* window = item->Window;
     ImRect window_inner_r_padded = window->InnerClipRect;
@@ -505,7 +505,7 @@ void    ImGuiTestContext::MouseMove(ImGuiTestRef ref, ImGuiTestOpFlags flags)
 
     // Focus again in case something made us lost focus (which could happen on a simple hover)
     if (!(flags & ImGuiTestOpFlags_NoFocusWindow))
-        BringWindowToFrontFromItem(ref);// , ImGuiTestOpFlags_Verbose);
+        WindowBringToFront(window);// , ImGuiTestOpFlags_Verbose);
 
     if (!Abort && !(flags & ImGuiTestOpFlags_NoCheckHoveredId))
     {
@@ -748,23 +748,7 @@ void    ImGuiTestContext::KeyCharsAppendEnter(const char* chars)
     KeyPressMap(ImGuiKey_Enter);
 }
 
-void    ImGuiTestContext::FocusWindow(ImGuiTestRef ref)
-{
-    IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
-    ImGuiTestRefDesc desc(ref, NULL);
-    LogVerbose("FocusWindow('%s')\n", desc.c_str());
-
-    ImGuiID window_id = GetID(ref);
-    ImGuiWindow* window = ImGui::FindWindowByID(window_id);
-    IM_CHECK_SILENT(window != NULL);
-    if (window)
-    {
-        ImGui::FocusWindow(window);
-        Yield();
-    }
-}
-
-bool    ImGuiTestContext::BringWindowToFront(ImGuiWindow* window, ImGuiTestOpFlags flags)
+bool    ImGuiTestContext::WindowBringToFront(ImGuiWindow* window, ImGuiTestOpFlags flags)
 {
     ImGuiContext& g = *UiContext;
     if (IsError())
@@ -803,24 +787,6 @@ bool    ImGuiTestContext::BringWindowToFront(ImGuiWindow* window, ImGuiTestOpFla
     if (!ret && !(flags & ImGuiTestOpFlags_NoError))
         LogVerbose("-- [warn] Expected focused window '%s', but '%s' got focus back.\n", window->Name, g.NavWindow ? g.NavWindow->Name : "<NULL>");
     
-    return ret;
-}
-
-bool    ImGuiTestContext::BringWindowToFrontFromItem(ImGuiTestRef ref)
-{
-    ImGuiContext& g = *UiContext;
-    if (IsError())
-        return false;
-
-    const ImGuiTestItemInfo* item = ItemLocate(ref);
-    if (item == NULL)
-        IM_CHECK_RETV(item != NULL, false);
-    //LogVerbose("FocusWindowForItem %s\n", ImGuiTestRefDesc(ref, item).c_str());
-    //LogVerbose("Lost focus on window '%s', getting again..\n", item->Window->Name);
-    bool ret = BringWindowToFront(item->Window, ImGuiTestOpFlags_NoError);
-    if (!ret)
-        LogVerbose("-- [warn] Expected focused window '%s' for item '%s', but '%s' got focus back.\n", item->Window->Name, item->DebugLabel, g.NavWindow ? g.NavWindow->Name : "<NULL>");
-
     return ret;
 }
 
@@ -1237,23 +1203,23 @@ void    ImGuiTestContext::MenuActionAll(ImGuiTestAction action, ImGuiTestRef ref
     }
 }
 
-void    ImGuiTestContext::WindowClose()
+void    ImGuiTestContext::WindowClose(ImGuiTestRef ref)
 {
     if (IsError())
         return;
 
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
     LogVerbose("WindowClose\n");
-    ItemClick("#CLOSE");
+    ItemClick(GetID(ref, "#CLOSE"));
 }
 
-void    ImGuiTestContext::WindowSetCollapsed(ImGuiTestRef ref, bool collapsed)
+void    ImGuiTestContext::WindowCollapse(ImGuiTestRef ref, bool collapsed)
 {
     if (IsError())
         return;
 
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
-    LogVerbose("WindowSetCollapsed(%d)\n", collapsed);
+    LogVerbose("WindowSetCollapsed %d\n", collapsed);
     ImGuiWindow* window = GetWindowByRef(ref);
     if (window == NULL)
     {
@@ -1266,6 +1232,23 @@ void    ImGuiTestContext::WindowSetCollapsed(ImGuiTestRef ref, bool collapsed)
         ItemClick(GetID(ref, "#COLLAPSE"));
         Yield();
         IM_CHECK(window->Collapsed == collapsed);
+    }
+}
+
+// FIXME-TESTS: Ideally we would aim toward a clickable spot in the window.
+void    ImGuiTestContext::WindowFocus(ImGuiTestRef ref)
+{
+    IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
+    ImGuiTestRefDesc desc(ref, NULL);
+    LogVerbose("FocusWindow('%s')\n", desc.c_str());
+
+    ImGuiID window_id = GetID(ref);
+    ImGuiWindow* window = ImGui::FindWindowByID(window_id);
+    IM_CHECK_SILENT(window != NULL);
+    if (window)
+    {
+        ImGui::FocusWindow(window);
+        Yield();
     }
 }
 
@@ -1283,8 +1266,8 @@ void    ImGuiTestContext::WindowMove(ImGuiTestRef ref, ImVec2 input_pos, ImVec2 
     if (ImLengthSqr(target_pos - window->Pos) < 0.001f)
         return;
 
-    BringWindowToFront(window);
-    WindowSetCollapsed(ref, false);
+    WindowBringToFront(window);
+    WindowCollapse(ref, false);
 
     float h = ImGui::GetFrameHeight();
 
@@ -1324,8 +1307,8 @@ void    ImGuiTestContext::WindowResize(ImGuiTestRef ref, ImVec2 size)
     if (ImLengthSqr(size - window->Size) < 0.001f)
         return;
 
-    BringWindowToFront(window);
-    WindowSetCollapsed(ref, false);
+    WindowBringToFront(window);
+    WindowCollapse(ref, false);
 
     ImGuiID id = 0;
 #ifdef IMGUI_HAS_DOCK
@@ -1382,8 +1365,8 @@ void    ImGuiTestContext::DockWindowInto(const char* window_name_src, const char
     ImGuiTestItemInfo* item_dst = ItemLocate(ref_dst);
     ImGuiTestRefDesc desc_src(ref_src, item_src);
     ImGuiTestRefDesc desc_dst(ref_dst, item_dst);
-    FocusWindow(window_name_dst);
-    FocusWindow(window_name_src);
+    WindowFocus(window_name_dst);
+    WindowFocus(window_name_src);
 
     MouseMove(ref_src, ImGuiTestOpFlags_NoCheckHoveredId);
     SleepShort();

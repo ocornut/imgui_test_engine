@@ -191,17 +191,17 @@ void RegisterTests_Window(ImGuiTestEngine* e)
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         ImGuiWindow* window = ImGui::FindWindowByName("Test Window");
-        ctx->SetRef("Test Window");
-        ctx->WindowSetCollapsed("", false);
+        ctx->WindowRef("Test Window");
+        ctx->WindowCollapse("", false);
         ctx->LogVerbose("Size %f %f, SizeFull %f %f\n", window->Size.x, window->Size.y, window->SizeFull.x, window->SizeFull.y);
         IM_CHECK_EQ(window->Size, window->SizeFull);
         ImVec2 size_full_when_uncollapsed = window->SizeFull;
-        ctx->WindowSetCollapsed("", true);
+        ctx->WindowCollapse("", true);
         ctx->LogVerbose("Size %f %f, SizeFull %f %f\n", window->Size.x, window->Size.y, window->SizeFull.x, window->SizeFull.y);
         ImVec2 size_collapsed = window->Size;
         IM_CHECK_GT(size_full_when_uncollapsed.y, size_collapsed.y);
         IM_CHECK_EQ(size_full_when_uncollapsed, window->SizeFull);
-        ctx->WindowSetCollapsed("", false);
+        ctx->WindowCollapse("", false);
         ctx->LogVerbose("Size %f %f, SizeFull %f %f\n", window->Size.x, window->Size.y, window->SizeFull.x, window->SizeFull.y);
         IM_CHECK(window->Size.y == size_full_when_uncollapsed.y && "Window should have restored to full size.");
         ctx->Yield();
@@ -263,7 +263,7 @@ void RegisterTests_Window(ImGuiTestEngine* e)
         ctx->YieldUntil(20);
         IM_CHECK_EQ(g.NavWindow->ID, ctx->GetID("/DDDD"));
         ctx->YieldUntil(30);
-        ctx->FocusWindow("/CCCC");
+        ctx->WindowFocus("/CCCC");
         IM_CHECK_EQ(g.NavWindow->ID, ctx->GetID("/CCCC"));
         ctx->YieldUntil(39);
         ctx->YieldUntil(40);
@@ -284,13 +284,13 @@ void RegisterTests_Window(ImGuiTestEngine* e)
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         ImGuiContext& g = *ctx->UiContext;
-        ctx->SetRef("Dear ImGui Demo");
+        ctx->WindowRef("Dear ImGui Demo");
         ctx->ItemOpen("Popups & Modal windows");
         ctx->ItemOpen("Popups");
         ctx->ItemClick("Popups/Toggle..");
 
         ImGuiWindow* popup_1 = g.NavWindow;
-        ctx->SetRef(popup_1->Name);
+        ctx->WindowRef(popup_1->Name);
         ctx->ItemClick("Stacked Popup");
         IM_CHECK(popup_1->WasActive);
 
@@ -624,7 +624,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
     {
         ButtonPressTestVars& vars = ctx->GetUserData<ButtonPressTestVars>();
 
-        ctx->SetRef("Test Window");
+        ctx->WindowRef("Test Window");
         ctx->ItemClick("Button0");
         IM_CHECK_EQ(vars.ButtonPressCount[0], 1);
         ctx->ItemDoubleClick("Button1");
@@ -736,7 +736,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ButtonStateTestVars& vars = ctx->GetUserData<ButtonStateTestVars>();
         vars.NextStep = ButtonStateMachineTestStep_None;
 
-        ctx->SetRef("Test Window");
+        ctx->WindowRef("Test Window");
 
         // Move mouse away from "Test" button
         ctx->MouseMove("Dummy");
@@ -807,7 +807,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         ImGuiTestGenericVars& vars = ctx->GenericVars;
-        ctx->SetRef("Test Window");
+        ctx->WindowRef("Test Window");
 
         IM_CHECK_EQ(vars.Int1, 0);
         ctx->ItemInput("Drag");
@@ -840,7 +840,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
     {
         char* buf = ctx->GenericVars.Str1;
 
-        ctx->SetRef("Test Window");
+        ctx->WindowRef("Test Window");
 
         // Insert
         strcpy(buf, "Hello");
@@ -898,7 +898,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
             strcat(buf, "xxxxxxx abcdefghijklmnopqrstuvwxyz\n");
         IM_CHECK_EQ((int)strlen(buf), 350);
 
-        ctx->SetRef("Test Window");
+        ctx->WindowRef("Test Window");
         ctx->ItemClick("Dummy"); // This is to ensure stb_textedit_clear_state() gets called (clear the undo buffer, etc.)
         ctx->ItemClick("InputText");
 
@@ -975,7 +975,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ImGuiTestGenericVars& vars = ctx->GenericVars;
         char* buf_user = vars.Str1;
         char* buf_visible = vars.Str2;
-        ctx->SetRef("Test Window");
+        ctx->WindowRef("Test Window");
 
         IM_CHECK_STR_EQ(buf_visible, "");
         strcpy(buf_user, "Hello");
@@ -1018,7 +1018,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
     };
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
-        ctx->SetRef("Test Window");
+        ctx->WindowRef("Test Window");
         ctx->ItemHoldForFrames("Hello", 100);
     };
 
@@ -1034,7 +1034,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         ImGuiTestGenericVars& vars = ctx->GenericVars;
-        ctx->SetRef("Test Window");
+        ctx->WindowRef("Test Window");
         ctx->ItemClick("Field");
         ctx->UiContext->IO.AddInputCharacter((ImWchar)'\t');
         ctx->KeyPressMap(ImGuiKey_Tab);
@@ -1063,7 +1063,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
     };
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
-        ctx->SetRef("Test Window");
+        ctx->WindowRef("Test Window");
         ctx->ItemClick("##Field");
         ctx->KeyPressMap(ImGuiKey_LeftArrow);
         IM_CHECK_EQ(ctx->UiContext->NavId, ctx->GetID("##Field"));
@@ -1094,7 +1094,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ImGuiTestGenericStatus& status = vars.Status;
 
         // Testing activation flag being set
-        ctx->SetRef("Test Window");
+        ctx->WindowRef("Test Window");
         ctx->ItemClick("Field/##ColorButton");
         IM_CHECK(status.Ret == 0 && status.Activated == 1 && status.Deactivated == 1 && status.DeactivatedAfterEdit == 0 && status.Edited == 0);
         status.Clear();
@@ -1122,7 +1122,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ImGuiTestGenericStatus& status = vars.Status;
 
         // Testing activation flag being set
-        ctx->SetRef("Test Window");
+        ctx->WindowRef("Test Window");
         ctx->ItemClick("Field");
         IM_CHECK(status.Ret == 0 && status.Activated == 1 && status.Deactivated == 0 && status.DeactivatedAfterEdit == 0 && status.Edited == 0);
         status.Clear();
@@ -1170,7 +1170,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ImGuiTestGenericStatus& status = vars.Status;
 
         // FIXME-TESTS: Better helper to build ids out of various type of data
-        ctx->SetRef("Test Window");
+        ctx->WindowRef("Test Window");
         int n;
         n = 0; ImGuiID field_0 = ImHash(&n, sizeof(n), ctx->GetID("Field"));
         n = 1; ImGuiID field_1 = ImHash(&n, sizeof(n), ctx->GetID("Field"));
@@ -1232,7 +1232,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ImGuiTestGenericStatus& status = vars.Status;
 
         // Input "1" which will be formatted as "1.000", make sure we don't report IsItemEdited() multiple times!
-        ctx->SetRef("Test Window");
+        ctx->WindowRef("Test Window");
         ctx->ItemClick("Field");
         ctx->KeyCharsAppend("1");
         IM_CHECK(status.Ret == 1 && status.Edited == 1 && status.Activated == 1 && status.Deactivated == 0 && status.DeactivatedAfterEdit == 0);
@@ -1258,7 +1258,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         vars.Vec4Array[0] = ImVec4(1, 0, 0, 1);
         vars.Vec4Array[1] = ImVec4(0, 1, 0, 1);
 
-        ctx->SetRef("Test Window");
+        ctx->WindowRef("Test Window");
 
         IM_CHECK_NE(memcmp(&vars.Vec4Array[0], &vars.Vec4Array[1], sizeof(ImVec4)), 0);
         ctx->ItemDragAndDrop("ColorEdit1/##ColorButton", "ColorEdit2/##X"); // FIXME-TESTS: Inner items
@@ -1270,19 +1270,18 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
-        ctx->SetRef("Test Window");
         ImGui::Selectable("Selectable A");
         if (ctx->FrameCount == 0)
-            IM_CHECK_EQ(ImGui::GetItemID(), ctx->GetID("Selectable A"));
+            IM_CHECK_EQ(ImGui::GetItemID(), ImGui::GetID("Selectable A"));
         ImGui::Selectable("Selectable B", false, ImGuiSelectableFlags_Disabled);
         if (ctx->FrameCount == 0)
-            IM_CHECK_EQ(ImGui::GetItemID(), ctx->GetID("Selectable B")); // Make sure B has an ID
+            IM_CHECK_EQ(ImGui::GetItemID(), ImGui::GetID("Selectable B")); // Make sure B has an ID
         ImGui::Selectable("Selectable C");
         ImGui::End();
     };
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
-        ctx->SetRef("Test Window");
+        ctx->WindowRef("Test Window");
         ctx->ItemClick("Selectable A");
         IM_CHECK_EQ(ctx->UiContext->NavId, ctx->GetID("Selectable A"));
         ctx->KeyPressMap(ImGuiKey_DownArrow);
@@ -1472,7 +1471,7 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         ctx->SetInputMode(ImGuiInputSource_Nav);
-        ctx->SetRef("Hello, world!");
+        ctx->WindowRef("Hello, world!");
         ctx->ItemUncheck("Demo Window");
         ctx->ItemCheck("Demo Window");
 
@@ -1498,7 +1497,7 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
     {
         // FIXME-TESTS: Fails if window is resized too small
         ctx->SetInputMode(ImGuiInputSource_Nav);
-        ctx->SetRef("Test window 1");
+        ctx->WindowRef("Test window 1");
         ctx->ItemInput("InputText");
         ctx->KeyCharsAppend("123");
         IM_CHECK_EQ(ctx->UiContext->ActiveId, ctx->GetID("InputText"));
@@ -1540,13 +1539,13 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
         ImGuiID& popup_id = vars.Id;
         popup_id = 0;
 
-        ctx->SetRef("Test Window");
+        ctx->WindowRef("Test Window");
         ctx->ItemClick("Open Popup");
 
         while (popup_id == 0 && !ctx->IsError())
             ctx->Yield();
 
-        ctx->SetRef(popup_id);
+        ctx->WindowRef(popup_id);
         ctx->ItemClick("Field");
         IM_CHECK(b_popup_open);
         IM_CHECK(b_field_active);
@@ -1577,7 +1576,7 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
         // FIXME-TESTS: Fails if window is resized too small
         IM_CHECK(ctx->UiContext->IO.ConfigFlags & ImGuiConfigFlags_NavEnableKeyboard);
         //ctx->SetInputMode(ImGuiInputSource_Nav);
-        ctx->SetRef("Test window");
+        ctx->WindowRef("Test window");
         IM_CHECK(ctx->UiContext->NavLayer == ImGuiNavLayer_Main);
         ctx->KeyPressMap(ImGuiKey_COUNT, ImGuiKeyModFlags_Alt);
         IM_CHECK(ctx->UiContext->NavLayer == ImGuiNavLayer_Menu);
@@ -1607,7 +1606,7 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
     {
         IM_CHECK(ctx->UiContext->IO.ConfigFlags & ImGuiConfigFlags_NavEnableKeyboard);
         ImGuiWindow* window = ImGui::FindWindowByName("Test Window");
-        ctx->SetRef("Test window");
+        ctx->WindowRef("Test window");
         ctx->SetInputMode(ImGuiInputSource_Nav);
 
         // FIXME-TESTS: This should not be required but nav init request is not applied until we start navigating, this is a workaround
@@ -2538,7 +2537,7 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
     t->GuiFunc = NULL;
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
-        ctx->SetRef("Dear ImGui Demo");
+        ctx->WindowRef("Dear ImGui Demo");
         ctx->ItemOpen("Widgets");
         ctx->ItemOpen("Basic");
         ctx->ItemClick("Basic/Button");
@@ -2563,7 +2562,7 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
     t = REGISTER_TEST("demo", "demo_cov_auto_open");
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
-        ctx->SetRef("Dear ImGui Demo");
+        ctx->WindowRef("Dear ImGui Demo");
         ctx->ItemOpenAll("");
 
         ImGuiWindow* window = ctx->GetWindowByRef("");
@@ -2574,14 +2573,14 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
     t = REGISTER_TEST("demo", "demo_cov_auto_close");
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
-        ctx->SetRef("Dear ImGui Demo");
+        ctx->WindowRef("Dear ImGui Demo");
         ctx->ItemCloseAll("");
     };
 
     t = REGISTER_TEST("demo", "demo_cov_001");
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
-        ctx->SetRef("Dear ImGui Demo");
+        ctx->WindowRef("Dear ImGui Demo");
         ctx->ItemOpen("Help");
         ctx->ItemOpen("Configuration");
         ctx->ItemOpen("Window options");
@@ -2597,34 +2596,34 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
     t = REGISTER_TEST("demo", "demo_cov_002");
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
-        ctx->SetRef("Dear ImGui Demo");
+        ctx->WindowRef("Dear ImGui Demo");
         ctx->ItemOpen("Layout");
         ctx->ItemOpen("Scrolling");
         ctx->ItemCheck("Scrolling/Show Horizontal contents size demo window");   // FIXME-TESTS: ItemXXX functions could do the recursion (e.g. Open parent)
         ctx->ItemUncheck("Scrolling/Show Horizontal contents size demo window");
 
-        ctx->SetRef("Dear ImGui Demo");
+        ctx->WindowRef("Dear ImGui Demo");
         ctx->MenuCheck("Tools/About Dear ImGui");
-        ctx->SetRef("About Dear ImGui");
+        ctx->WindowRef("About Dear ImGui");
         ctx->ItemCheck("Config\\/Build Information");
-        ctx->SetRef("Dear ImGui Demo");
+        ctx->WindowRef("Dear ImGui Demo");
 
-        ctx->SetRef("Dear ImGui Demo");
+        ctx->WindowRef("Dear ImGui Demo");
         ctx->MenuCheck("Tools/Style Editor");
-        ctx->SetRef("Style Editor");
+        ctx->WindowRef("Style Editor");
         ctx->ItemClick("##tabs/Sizes");
         ctx->ItemClick("##tabs/Colors");
         ctx->ItemClick("##tabs/Fonts");
         ctx->ItemClick("##tabs/Rendering");
 
-        ctx->SetRef("Dear ImGui Demo");
+        ctx->WindowRef("Dear ImGui Demo");
         ctx->MenuCheck("Examples/Custom rendering");
-        ctx->SetRef("Example: Custom rendering");
+        ctx->WindowRef("Example: Custom rendering");
         ctx->ItemClick("##TabBar/Primitives");
         ctx->ItemClick("##TabBar/Canvas");
         ctx->ItemClick("##TabBar/BG\\/FG draw lists");
 
-        ctx->SetRef("Dear ImGui Demo");
+        ctx->WindowRef("Dear ImGui Demo");
         ctx->MenuUncheckAll("Examples");
         ctx->MenuUncheckAll("Tools");
     };
@@ -2632,7 +2631,7 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
     t = REGISTER_TEST("demo", "demo_cov_apps");
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
-        ctx->SetRef("Dear ImGui Demo");
+        ctx->WindowRef("Dear ImGui Demo");
         ctx->MenuClick("Menu/Open Recent/More..");
         ctx->MenuCheckAll("Examples");
         ctx->MenuUncheckAll("Examples");
@@ -2644,11 +2643,11 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
     t = REGISTER_TEST("demo", "demo_cov_styles");
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
-        ctx->SetRef("Dear ImGui Demo");
+        ctx->WindowRef("Dear ImGui Demo");
         ctx->MenuAction(ImGuiTestAction_Check, "Tools/Style Editor");
 
         ImGuiTestRef ref_window = "Style Editor";
-        ctx->SetRef(ref_window);
+        ctx->WindowRef(ref_window);
         ctx->ItemClick("Colors##Selector");
         ctx->Yield();
         ImGuiTestRef ref_popup = ctx->GetFocusWindowRef();
@@ -2658,9 +2657,9 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
         ctx->GatherItems(&items, ref_popup);
         for (int n = 0; n < items.Size; n++)
         {
-            ctx->SetRef(ref_window);
+            ctx->WindowRef(ref_window);
             ctx->ItemClick("Colors##Selector");
-            ctx->SetRef(ref_popup);
+            ctx->WindowRef(ref_popup);
             ctx->ItemClick(items[n]->ID);
         }
         ImGui::GetStyle() = style_backup;
@@ -2685,7 +2684,7 @@ void RegisterTests_Perf(ImGuiTestEngine* e)
     {
         ctx->PerfCalcRef();
 
-        ctx->SetRef("Dear ImGui Demo");
+        ctx->WindowRef("Dear ImGui Demo");
         ctx->ItemOpenAll("");
         ctx->MenuCheckAll("Examples");
         ctx->MenuCheckAll("Tools");
@@ -2702,7 +2701,7 @@ void RegisterTests_Perf(ImGuiTestEngine* e)
         }
         ctx->PerfCapture();
 
-        ctx->SetRef("Dear ImGui Demo");
+        ctx->WindowRef("Dear ImGui Demo");
         ctx->ItemCloseAll("");
         ctx->MenuUncheckAll("Examples");
         ctx->MenuUncheckAll("Tools");
@@ -3080,10 +3079,10 @@ void RegisterTests_Capture(ImGuiTestEngine* e)
     t = REGISTER_TEST("capture", "capture_demo_documents");
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
-        ctx->SetRef("Dear ImGui Demo");
+        ctx->WindowRef("Dear ImGui Demo");
         ctx->MenuAction(ImGuiTestAction_Check, "Examples/Documents");
 
-        ctx->SetRef("Examples: Documents");
+        ctx->WindowRef("Examples: Documents");
         // FIXME-TESTS: Locate within stack that uses windows/<pointer>/name
         ctx->ItemCheck("Tomato"); // FIXME: WILL FAIL, NEED TO LOCATE BY NAME (STACK WILDCARD?)
         ctx->ItemCheck("A Rather Long Title");
@@ -3104,10 +3103,10 @@ void RegisterTests_Capture(ImGuiTestEngine* e)
         ImGuiIO& io = ImGui::GetIO();
         //ImGuiStyle& style = ImGui::GetStyle();
 
-        ctx->SetRef("Dear ImGui Demo");
+        ctx->WindowRef("Dear ImGui Demo");
         ctx->ItemCloseAll("");
         ctx->MenuCheck("Examples/Simple overlay");
-        ctx->SetRef("Example: Simple overlay");
+        ctx->WindowRef("Example: Simple overlay");
         ImGuiWindow* window_overlay = ctx->GetWindowByRef("");
         IM_CHECK(window_overlay != NULL);
 
@@ -3116,30 +3115,30 @@ void RegisterTests_Capture(ImGuiTestEngine* e)
         float fh = ImGui::GetFontSize();
         float pad = fh;
 
-        ctx->SetRef("Dear ImGui Demo");
+        ctx->WindowRef("Dear ImGui Demo");
         ctx->MenuCheck("Examples/Custom rendering");
-        ctx->SetRef("Example: Custom rendering");
+        ctx->WindowRef("Example: Custom rendering");
         ctx->WindowResize("", ImVec2(fh * 30, fh * 30));
         ctx->WindowMove("", window_overlay->Rect().GetBL() + ImVec2(0.0f, pad));
         ImGuiWindow* window_custom_rendering = ctx->GetWindowByRef("");
         IM_CHECK(window_custom_rendering != NULL);
 
-        ctx->SetRef("Dear ImGui Demo");
+        ctx->WindowRef("Dear ImGui Demo");
         ctx->MenuCheck("Examples/Simple layout");
-        ctx->SetRef("Example: Simple layout");
+        ctx->WindowRef("Example: Simple layout");
         ctx->WindowResize("", ImVec2(fh * 50, fh * 15));
         ctx->WindowMove("", ImVec2(pad, io.DisplaySize.y - pad), ImVec2(0.0f, 1.0f));
 
-        ctx->SetRef("Dear ImGui Demo");
+        ctx->WindowRef("Dear ImGui Demo");
         ctx->MenuCheck("Examples/Documents");
-        ctx->SetRef("Example: Documents");
+        ctx->WindowRef("Example: Documents");
         ctx->WindowResize("", ImVec2(fh * 20, fh * 27));
         ctx->WindowMove("", ImVec2(window_custom_rendering->Pos.x + window_custom_rendering->Size.x + pad, pad));
 
         ctx->LogVerbose("Setup Console window...\n");
-        ctx->SetRef("Dear ImGui Demo");
+        ctx->WindowRef("Dear ImGui Demo");
         ctx->MenuCheck("Examples/Console");
-        ctx->SetRef("Example: Console");
+        ctx->WindowRef("Example: Console");
         ctx->WindowResize("", ImVec2(fh * 40, fh * (34-7)));
         ctx->WindowMove("", window_custom_rendering->Pos + window_custom_rendering->Size * ImVec2(0.30f, 0.60f));
         ctx->ItemClick("Clear");
@@ -3152,7 +3151,7 @@ void RegisterTests_Capture(ImGuiTestEngine* e)
         ctx->KeyCharsAppendEnter("hello, imgui world!");
 
         ctx->LogVerbose("Setup Demo window...\n");
-        ctx->SetRef("Dear ImGui Demo");
+        ctx->WindowRef("Dear ImGui Demo");
         ctx->WindowResize("", ImVec2(fh * 35, io.DisplaySize.y - pad * 2.0f));
         ctx->WindowMove("", ImVec2(io.DisplaySize.x - pad, pad), ImVec2(1.0f, 0.0f));
         ctx->ItemOpen("Widgets");
@@ -3165,7 +3164,7 @@ void RegisterTests_Capture(ImGuiTestEngine* e)
         ctx->Sleep(2.0f);
 
         // Close everything
-        ctx->SetRef("Dear ImGui Demo");
+        ctx->WindowRef("Dear ImGui Demo");
         ctx->ItemCloseAll("");
         ctx->MenuUncheckAll("Examples");
         ctx->MenuUncheckAll("Tools");
