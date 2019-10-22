@@ -232,6 +232,16 @@ void ImGuiTestContext::SetRef(ImGuiTestRef ref)
         RefStr[0] = 0;
         RefID = ref.ID;
     }
+
+    // Automatically uncollapse by default
+    if (ImGuiWindow* window = GetWindowByRef(""))
+        if (window->Collapsed)
+        {
+            IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
+            LogVerbose("Uncollapse window '%s'\n", window->Name);
+            WindowSetCollapsed("", false);
+            IM_CHECK_EQ(window->Collapsed, false);
+        }
 }
 
 ImGuiWindow* ImGuiTestContext::GetWindowByRef(ImGuiTestRef ref)
@@ -1237,7 +1247,6 @@ void    ImGuiTestContext::WindowClose()
     ItemClick("#CLOSE");
 }
 
-// FIXME-TESTS: Maybe we could automatically uncollapse window on most interactions, only a specific flag is used? (for tests which wants collapsing)
 void    ImGuiTestContext::WindowSetCollapsed(ImGuiTestRef ref, bool collapsed)
 {
     if (IsError())
@@ -1255,6 +1264,7 @@ void    ImGuiTestContext::WindowSetCollapsed(ImGuiTestRef ref, bool collapsed)
     if (window->Collapsed != collapsed)
     {
         ItemClick(GetID(ref, "#COLLAPSE"));
+        Yield();
         IM_CHECK(window->Collapsed == collapsed);
     }
 }

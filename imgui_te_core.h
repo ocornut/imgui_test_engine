@@ -189,6 +189,7 @@ void    ImGuiTestEngineHook_AssertFunc(const char* expr, const char* file, const
 
 template<typename T> void ImGuiTestEngineUtil_AppendStrValue(ImGuiTextBuffer& buf, T value)         { /*static_assert(false, "Append function not defined");*/ }
 template<> inline void ImGuiTestEngineUtil_AppendStrValue(ImGuiTextBuffer& buf, const char* value)  { buf.appendf("%s", value); }
+template<> inline void ImGuiTestEngineUtil_AppendStrValue(ImGuiTextBuffer& buf, bool value)         { buf.append(value ? "true" : "false"); }
 template<> inline void ImGuiTestEngineUtil_AppendStrValue(ImGuiTextBuffer& buf, int value)          { buf.appendf("%d", value); }
 template<> inline void ImGuiTestEngineUtil_AppendStrValue(ImGuiTextBuffer& buf, short value)        { buf.appendf("%hd", value); }
 template<> inline void ImGuiTestEngineUtil_AppendStrValue(ImGuiTextBuffer& buf, unsigned int value) { buf.appendf("%u", value); }

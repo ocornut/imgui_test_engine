@@ -1640,13 +1640,17 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
 static void HelperTableSubmitCells(int count_w, int count_h)
 {
     for (int line = 0; line < count_h; line++)
+    {
+        ImGui::TableNextRow();
         for (int column = 0; column < count_w; column++)
         {
+            if (!ImGui::TableSetColumnIndex(column))
+                continue;
             char label[32];
             ImFormatString(label, IM_ARRAYSIZE(label), "%d,%d", line, column);
-            ImGui::TableNextCell();
             ImGui::Button(label, ImVec2(-FLT_MIN, 0.0f));
         }
+    }
 }
 #endif
 
@@ -1738,11 +1742,11 @@ void RegisterTests_Columns(ImGuiTestEngine* e)
     };
 
     // ## Table: measure draw calls count
+    // FIXME-TESTS: Resize window width to e.g. ideal size first, then resize down
     t = REGISTER_TEST("table", "table_2_draw_calls");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         ImGui::Begin("Test window 1", NULL, ImGuiWindowFlags_NoSavedSettings);
-
         ImDrawList* draw_list = ImGui::GetWindowDrawList();
 
         ImGui::Text("Text before");
@@ -1764,9 +1768,67 @@ void RegisterTests_Columns(ImGuiTestEngine* e)
             int cmd_size_after = draw_list->CmdBuffer.Size;
             IM_CHECK_EQ(cmd_size_before, cmd_size_after);
         }
+        ImGui::End();
+    };
+
+    // ## Table: measure equal width
+    t = REGISTER_TEST("table", "table_3_width");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::SetNextWindowSize(ImVec2(400, 0), ImGuiCond_Appearing);
+        ImGui::Begin("Test window 1", NULL, ImGuiWindowFlags_NoSavedSettings);
+
+        struct TestCase
+        {
+            int             ColumnCount;
+            ImGuiTableFlags Flags;
+        };
+
+        TestCase test_cases[] =
+        {
+            { 2, ImGuiTableFlags_None },
+            { 3, ImGuiTableFlags_None },
+            { 9, ImGuiTableFlags_None },
+            { 2, ImGuiTableFlags_BordersOuter },
+            { 3, ImGuiTableFlags_BordersOuter },
+            { 9, ImGuiTableFlags_BordersOuter },
+            { 2, ImGuiTableFlags_BordersInnerV },
+            { 3, ImGuiTableFlags_BordersInnerV },
+            { 9, ImGuiTableFlags_BordersInnerV },
+            { 2, ImGuiTableFlags_Borders },
+            { 3, ImGuiTableFlags_Borders },
+            { 9, ImGuiTableFlags_Borders },
+        };
+
+        for (int test_case_n = 0; test_case_n < IM_ARRAYSIZE(test_cases); test_case_n++)
+        {
+            const TestCase& tc = test_cases[test_case_n];
+            ImGui::PushID(test_case_n);
+            ImGui::BeginTable("##table", tc.ColumnCount, tc.Flags, ImVec2(0, 0));
+            ImGui::TableNextRow();
+
+            float min_w = FLT_MAX;
+            float max_w = -FLT_MAX;
+            for (int n = 0; n < tc.ColumnCount; n++)
+            {
+                ImGui::TableSetColumnIndex(n);
+                float w = ImGui::GetContentRegionAvail().x;
+                min_w = ImMin(w, min_w);
+                max_w = ImMax(w, max_w);
+                ImGui::Text("Width %.2f", w);
+            }
+            float w_variance = max_w - min_w;
+            IM_CHECK_LE(w_variance, 1.0f);
+            ImGui::EndTable();
+
+            ImGui::Text("#%02d: Variance %.2f (min %.2f max %.2f)", test_case_n, w_variance, min_w, max_w);
+            ImGui::PopID();
+            ImGui::Separator();
+        }
 
         ImGui::End();
     };
+
 #endif
 
     // ## Test behavior of column functions without multiple columns.
