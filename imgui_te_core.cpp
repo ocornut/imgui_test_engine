@@ -1158,7 +1158,7 @@ static bool ParseLineAndDrawFileOpenItem(ImGuiTestEngine* e, ImGuiTest* test, co
         // FIXME-TESTS: Assume folder is same as folder of test->SourceFile!
         const char* src_file_path = test->SourceFile;
         const char* src_file_name = ImPathFindFilename(src_file_path);
-        ImFormatString(buf, IM_ARRAYSIZE(buf), "%.*s%.*s", src_file_name - src_file_path, src_file_path, (int)(filename_end - filename_start), filename_start);
+        ImFormatString(buf, IM_ARRAYSIZE(buf), "%.*s%.*s", (int)(src_file_name - src_file_path), src_file_path, (int)(filename_end - filename_start), filename_start);
         e->IO.FileOpenerFunc(buf, line_no, e->IO.UserData);
     }
 
