@@ -1,0 +1,33 @@
+name: Tests
+
+on:
+  push: {}
+  pull_request: {}
+  schedule:
+    - cron: '40 8,20 * * *'
+    
+jobs:
+  Test:
+    runs-on: ubuntu-18.04
+    strategy:
+      matrix:
+        branch: [master, docking]
+
+    steps:
+    - uses: actions/checkout@v1
+      with:
+        fetch-depth: 1
+
+    - uses: actions/checkout@v1
+      with:
+        fetch-depth: 1
+        repository: ocornut/imgui
+        ref: ${{ matrix.branch }}
+
+    - name: Build
+      run: |
+        make -C app/
+
+    - name: Test
+      run: |
+        app/imgui_test_app all
