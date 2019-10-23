@@ -1024,8 +1024,8 @@ void ImGuiTestEngineHook_AssertFunc(const char* expr, const char* file, const ch
     fprintf(stderr, "Assert: '%s'\nIn %s:%d, function %s()\n", expr, file, line, function);
     if (ImGuiTestEngine* engine = GImGuiHookingEngine)
         if (ImGuiTestContext* ctx = engine->TestContext)
-            if (ImGuiTest* text = ctx->Test)
-                fprintf(stderr, "While running test: %s %s\n", ctx->Test->Category, ctx->Test->Name);
+            if (ImGuiTest* test = ctx->Test)
+                fprintf(stderr, "While running test: %s %s\n", test->Category, test->Name);
     ImOsConsoleSetTextColor(ImOsConsoleStream_StandardError, ImOsConsoleTextColor_White);
 
     // Consider using github.com/scottt/debugbreak
@@ -1152,13 +1152,13 @@ static bool ParseLineAndDrawFileOpenItem(ImGuiTestEngine* e, ImGuiTest* test, co
         return false;
 
     char buf[FILENAME_MAX];
-    ImFormatString(buf, IM_ARRAYSIZE(buf), "Open %.*s at line %d", filename_end - filename_start, filename_start, line_no);
+    ImFormatString(buf, IM_ARRAYSIZE(buf), "Open %.*s at line %d", (int)(filename_end - filename_start), filename_start, line_no);
     if (ImGui::MenuItem(buf))
     {
         // FIXME-TESTS: Assume folder is same as folder of test->SourceFile!
         const char* src_file_path = test->SourceFile;
         const char* src_file_name = ImPathFindFilename(src_file_path);
-        ImFormatString(buf, IM_ARRAYSIZE(buf), "%.*s%.*s", src_file_name - src_file_path, src_file_path, filename_end - filename_start, filename_start);
+        ImFormatString(buf, IM_ARRAYSIZE(buf), "%.*s%.*s", src_file_name - src_file_path, src_file_path, (int)(filename_end - filename_start), filename_start);
         e->IO.FileOpenerFunc(buf, line_no, e->IO.UserData);
     }
 

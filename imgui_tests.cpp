@@ -509,11 +509,11 @@ void RegisterTests_Layout(ImGuiTestEngine* e)
                     break;
                 case ItemType_Text:
                     expected_padding = window->DC.CurrLineTextBaseOffset;
-                    ImGui::Text(label);
+                    ImGui::Text("%s", label);
                     break;
                 case ItemType_BulletText:
                     expected_padding = (n <= 2) ? 0.0f : style.FramePadding.y * 1.0f;
-                    ImGui::BulletText(label);
+                    ImGui::BulletText("%s", label);
                     break;
                 case ItemType_TreeNode:
                     expected_padding = (n <= 2) ? 0.0f : style.FramePadding.y * 2.0f;

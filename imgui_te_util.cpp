@@ -135,6 +135,7 @@ bool    ImOsIsDebuggerPresent()
     return ::IsDebuggerPresent() != 0;
 #else
     // FIXME
+    return false;
 #endif
 }
 

@@ -104,7 +104,6 @@ void    ImGuiTestContext::RecoverFromUiContextErrors()
     // If we are already in a test error state, recovering is normal so we'll hide the log.
     const bool verbose = (Test->Status != ImGuiTestStatus_Error);
 
-    bool recovered = false;
     while (g.CurrentWindowStack.Size > 1)
     {
 #ifdef IMGUI_HAS_TABLE
@@ -134,7 +133,6 @@ void    ImGuiTestContext::RecoverFromUiContextErrors()
         if (verbose)
             LogVerbose("[warn] Recovered from missing End() call.\n");
         ImGui::End();
-        recovered = true;
     }
 }
 
