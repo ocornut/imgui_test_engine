@@ -31,3 +31,27 @@ jobs:
     - name: Test
       run: |
         app/imgui_test_app all
+
+  Tables:
+    runs-on: ubuntu-18.04
+
+    steps:
+    - uses: actions/checkout@v1
+      with:
+        fetch-depth: 1
+
+    - uses: actions/checkout@v1
+      with:
+        fetch-depth: 1
+        repository: ocornut/imgui_private
+        path: imgui
+        ref: tables
+        token: ${{ secrets.IMGUI_PRIVATE_ACCESS }}
+
+    - name: Build
+      run: |
+        make -C app/
+
+    - name: Test
+      run: |
+        app/imgui_test_app all
