@@ -48,6 +48,9 @@
     <ClInclude Include="..\imgui_te_app.h">
       <Filter>imgui-test</Filter>
     </ClInclude>
+    <ClInclude Include="..\imgui_te_capture.h">
+      <Filter>imgui-test</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -84,6 +87,9 @@
       <Filter>imgui-test</Filter>
     </ClCompile>
     <ClCompile Include="..\imgui_te_context.cpp">
+      <Filter>imgui-test</Filter>
+    </ClCompile>
+    <ClCompile Include="..\imgui_te_capture.cpp">
       <Filter>imgui-test</Filter>
     </ClCompile>
   </ItemGroup>

@@ -6,6 +6,7 @@
 #include <stdio.h>                  // FILE
 #include "imgui_internal.h"         // ImPool<>, ImGuiItemStatusFlags, ImFormatString
 #include "imgui_te_util.h"
+#include "imgui_capture_tool.h"
 
 //-------------------------------------------------------------------------
 // Forward Declarations
@@ -167,6 +168,7 @@ int                 ImGuiTestEngine_GetFrameCount(ImGuiTestEngine* engine);
 double              ImGuiTestEngine_GetPerfDeltaTime500Average(ImGuiTestEngine* engine);
 FILE*               ImGuiTestEngine_GetPerfPersistentLogCsv(ImGuiTestEngine* engine);
 const char*         ImGuiTestEngine_GetVerboseLevelName(ImGuiTestVerboseLevel v);
+bool                ImGuiTestEngine_CaptureWindow(ImGuiTestEngine* engine, ImGuiWindow* window, const char* output_file, CaptureWindowFlags flags);
 
 //-------------------------------------------------------------------------
 // Hooks for Core Library
@@ -282,6 +284,7 @@ void                ImGuiTestEngine_ShutdownContext(ImGuiTestEngine* engine);
 ImGuiTestEngineIO&  ImGuiTestEngine_GetIO(ImGuiTestEngine* engine);
 void                ImGuiTestEngine_Abort(ImGuiTestEngine* engine);
 void                ImGuiTestEngine_ShowTestWindow(ImGuiTestEngine* engine, bool* p_open);
+void                ImGuiTestEngine_ShowScreenshotWindow(ImGuiTestEngine* engine, bool* p_open);
 ImGuiTest*          ImGuiTestEngine_RegisterTest(ImGuiTestEngine* engine, const char* category, const char* name, const char* src_file = NULL, int src_line = 0);
 void                ImGuiTestEngine_QueueTests(ImGuiTestEngine* engine, const char* filter = NULL, ImGuiTestRunFlags run_flags = 0);
 void                ImGuiTestEngine_QueueTest(ImGuiTestEngine* engine, ImGuiTest* test, ImGuiTestRunFlags run_flags);
@@ -295,12 +298,14 @@ void                ImGuiTestEngine_GetResult(ImGuiTestEngine* engine, int& coun
 typedef bool (*ImGuiTestEngineNewFrameFunc)(ImGuiTestEngine*, void* user_data);
 typedef bool (*ImGuiTestEngineEndFrameFunc)(ImGuiTestEngine*, void* user_data);
 typedef void (*ImGuiTestEngineSrcFileOpenFunc)(const char* filename, int line, void* user_data);
+typedef bool (*ImGuiTestEngineCaptureFbFunc)(int, int, int, int, unsigned*, void*);
 
 struct ImGuiTestEngineIO
 {
     ImGuiTestEngineEndFrameFunc EndFrameFunc = NULL;
     ImGuiTestEngineNewFrameFunc NewFrameFunc = NULL;
     ImGuiTestEngineSrcFileOpenFunc SrcFileOpenFunc = NULL;  // (Optional) To open source files
+    ImGuiTestEngineCaptureFbFunc CaptureFramebufferFunc = NULL;
     void*                       UserData = NULL;
                                 
     // Inputs: Options          
@@ -313,6 +318,7 @@ struct ImGuiTestEngineIO
     ImGuiTestVerboseLevel       ConfigVerboseLevelOnError = ImGuiTestVerboseLevel_Info;
     bool                        ConfigLogToTTY = false;
     bool                        ConfigTakeFocusBackAfterTests = true;
+    bool                        ConfigShowScreenshotWindow = false;
     bool                        ConfigNoThrottle = false;   // Disable vsync for performance measurement
     float                       MouseSpeed = 1000.0f;       // Mouse speed (pixel/second) when not running in fast mode
     float                       ScrollSpeed = 1600.0f;      // Scroll speed (pixel/second) when not running in fast mode

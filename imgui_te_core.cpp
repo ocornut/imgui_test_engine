@@ -84,6 +84,7 @@ struct ImGuiTestEngine
     ImGuiContext*               UiContextTarget = NULL;         // imgui context for testing == io.ConfigRunBlind ? UiBlindContext : UiVisibleContext when running tests, otherwise NULL.
     ImGuiContext*               UiContextActive = NULL;         // imgui context for testing == UiContextTarget or NULL
 
+    ImGuiCaptureTool            CaptureTool;
     int                         FrameCount = 0;
     float                       OverrideDeltaTime = -1.0f;      // Inject custom delta time into imgui context to simulate clock passing faster than wall clock time.
     ImVector<ImGuiTest*>        TestsAll;
@@ -585,6 +586,25 @@ const char* ImGuiTestEngine_GetVerboseLevelName(ImGuiTestVerboseLevel v)
     if (v >= 0 && v < IM_ARRAYSIZE(names))
         return names[v];
     return "N/A";
+}
+
+bool ImGuiTestEngine_CaptureWindow(ImGuiTestEngine* engine, ImGuiWindow* window, const char* output_file, CaptureWindowFlags flags)
+{
+    if (engine->CaptureTool.CaptureFramebuffer == NULL)
+        return false;
+    if (engine->IO.ConfigRunFast)
+        // Graphics API must render a window so it can be captured.
+        return false;
+    engine->CaptureTool.UserData = engine->TestContext;
+    engine->CaptureTool.Flags = flags;
+    engine->CaptureTool.SaveFileName = output_file;
+    for (bool do_continue = true; do_continue;)
+    {
+        do_continue = engine->CaptureTool.CaptureWindow(window);
+        if (do_continue)
+            ImGuiTestEngine_Yield(engine);
+    }
+    return true;
 }
 
 static void ImGuiTestEngine_ProcessTestQueue(ImGuiTestEngine* engine)
@@ -1261,6 +1281,8 @@ void    ImGuiTestEngine_ShowTestWindow(ImGuiTestEngine* engine, bool* p_open)
     ImGui::SameLine();
     ImGui::Checkbox("Refocus", &engine->IO.ConfigTakeFocusBackAfterTests); HelpTooltip("Set focus back to Test window after running tests.");
     ImGui::SameLine();
+    ImGui::Checkbox("Screenshot", &engine->IO.ConfigShowScreenshotWindow); HelpTooltip("Show screenshot capture utility window.");
+    ImGui::SameLine();
     ImGui::PushItemWidth(60);
     ImGui::DragInt("Verbose", (int*)&engine->IO.ConfigVerboseLevel, 0.1f, 0, ImGuiTestVerboseLevel_COUNT - 1, ImGuiTestEngine_GetVerboseLevelName(engine->IO.ConfigVerboseLevel));
     ImGui::PopItemWidth();
@@ -1589,6 +1611,16 @@ void    ImGuiTestEngine_ShowTestWindow(ImGuiTestEngine* engine, bool* p_open)
     ImGui::End();
 }
 
+void ImGuiTestEngine_ShowScreenshotWindow(ImGuiTestEngine* engine, bool* p_open)
+{
+    ImGuiCaptureTool& capture_tool = engine->CaptureTool;
+    capture_tool.CaptureFramebuffer = engine->IO.CaptureFramebufferFunc;
+    if (engine->IO.ConfigShowScreenshotWindow && capture_tool.CaptureFramebuffer)
+    {
+        capture_tool.Flags |= CaptureWindowFlags_FullSize;
+        capture_tool.ScreenshotMaker(&engine->IO.ConfigShowScreenshotWindow);
+    }
+}
 
 //-------------------------------------------------------------------------
 // [SECTION] SETTINGS

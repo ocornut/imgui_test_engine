@@ -60,6 +60,7 @@ static inline void DebugCrtDumpLeaks()
 #include "imgui_te_util.h"
 #include "imgui_tests.h"
 #include "imgui_te_app.h"
+#include "imgui_capture_tool.h"
 
 //-------------------------------------------------------------------------
 // Test Application
@@ -72,10 +73,13 @@ void MainLoop();
 
 // Main loop for null backend. Used in builds with graphics api backend.
 void MainLoopNull();
+// Backend-specific function that captures specified portion of framebuffer.
+bool CaptureFramebufferScreenshot(int x, int y, int w, int h, unsigned* pixels, void* user);
 
 bool MainLoopEndFrame()
 {
     ImGuiTestEngine_ShowTestWindow(g_App.TestEngine, NULL);
+    ImGuiTestEngine_ShowScreenshotWindow(g_App.TestEngine, NULL);
 
     static bool show_demo_window = true;
     static bool show_another_window = false;
@@ -317,7 +321,10 @@ int main(int argc, char** argv)
     if (!g_App.OptGUI && ImOsIsDebuggerPresent())
         test_io.ConfigBreakOnError = true;
     test_io.SrcFileOpenFunc = SrcFileOpenerFunc;
-
+#if defined(IMGUI_TESTS_BACKEND_WIN32_DX11) || defined(IMGUI_TESTS_BACKEND_SDL_GL3)
+    if (g_App.OptGUI)
+        test_io.CaptureFramebufferFunc = &CaptureFramebufferScreenshot;
+#endif
     // Run
     if (g_App.OptGUI)
         MainLoop();

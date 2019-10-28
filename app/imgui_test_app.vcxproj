@@ -157,6 +157,7 @@
     <ClInclude Include="..\imconfig_tests.h" />
     <ClInclude Include="..\imgui_tests.h" />
     <ClInclude Include="..\imgui_te_app.h" />
+    <ClInclude Include="..\imgui_te_capture.h" />
     <ClInclude Include="..\imgui_te_context.h" />
     <ClInclude Include="..\imgui_te_core.h" />
     <ClInclude Include="..\imgui_te_util.h" />
@@ -170,6 +171,7 @@
     <ClCompile Include="..\..\imgui\imgui_widgets.cpp" />
     <ClCompile Include="..\imgui_tests.cpp" />
     <ClCompile Include="..\imgui_te_backends.cpp" />
+    <ClCompile Include="..\imgui_te_capture.cpp" />
     <ClCompile Include="..\imgui_te_context.cpp" />
     <ClCompile Include="..\imgui_te_core.cpp" />
     <ClCompile Include="..\imgui_te_util.cpp" />

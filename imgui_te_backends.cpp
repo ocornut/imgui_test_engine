@@ -58,6 +58,12 @@ void MainLoop()
     // No graphics backend is used. Do same thing no matter if g_App.OptGUI is enabled or disabled.
     MainLoopNull();
 }
+
+bool CaptureFramebufferScreenshot(int x, int y, int w, int h, unsigned* pixels, void* user)
+{
+    // Could use software renderer for off-screen captures.
+    return false;
+}
 #endif
 
 //-------------------------------------------------------------------------
@@ -286,6 +292,61 @@ void MainLoop()
     DestroyWindow(hwnd);
     UnregisterClass(_T("ImGui Example"), wc.hInstance);
 }
+
+bool CaptureFramebufferScreenshot(int x, int y, int w, int h, unsigned* pixels, void* user)
+{
+    ImGuiContext& g = *GImGui;
+    ImGuiIO& io = g.IO;
+
+    D3D11_TEXTURE2D_DESC texture_desc;
+    memset(&texture_desc, 0, sizeof(texture_desc));
+    texture_desc.Width = (UINT)io.DisplaySize.x;
+    texture_desc.Height = (UINT)io.DisplaySize.y;
+    texture_desc.MipLevels = 1;
+    texture_desc.ArraySize = 1;
+    texture_desc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+    texture_desc.SampleDesc.Count = 1;
+    texture_desc.SampleDesc.Quality = 0;
+    texture_desc.Usage = D3D11_USAGE_STAGING;
+    texture_desc.CPUAccessFlags = D3D11_CPU_ACCESS_READ;
+
+    ID3D11Texture2D* texture = nullptr;
+    HRESULT hr = g_pd3dDevice->CreateTexture2D(&texture_desc, nullptr, &texture);
+    if (FAILED(hr))
+    {
+        if (texture)
+        {
+            texture->Release();
+            texture = nullptr;
+        }
+        return false;
+    }
+
+    ID3D11Resource* source = nullptr;
+    g_mainRenderTargetView->GetResource(&source);
+    g_pd3dDeviceContext->CopyResource(texture, source);
+    source->Release();
+
+    D3D11_MAPPED_SUBRESOURCE mapped;
+    mapped.pData = nullptr;
+    hr = g_pd3dDeviceContext->Map(texture, 0, D3D11_MAP_READ, 0, &mapped);
+    if (FAILED(hr) || !mapped.pData)
+    {
+        texture->Release();
+        return false;
+    }
+
+    // D3D11 does not provide means to capture a partial screenshot. We copy rect x,y,w,h on CPU side.
+    for (int index_y = y; index_y < y + h; ++index_y)
+    {
+        unsigned* src = (unsigned*)((unsigned char*)mapped.pData + index_y * mapped.RowPitch);
+        memcpy(&pixels[index_y * w], &src[x], w * 4);
+    }
+
+    g_pd3dDeviceContext->Unmap(texture, 0);
+    texture->Release();
+    return false;
+}
 #endif
 
 //-------------------------------------------------------------------------
@@ -418,5 +479,29 @@ void MainLoop()
     SDL_GL_DeleteContext(gl_context);
     SDL_DestroyWindow(window);
     SDL_Quit();
+}
+
+bool CaptureFramebufferScreenshot(int x, int y, int w, int h, unsigned* pixels, void* user)
+{
+    int y2 = (int)ImGui::GetIO().DisplaySize.y - (y + h);
+    glPixelStorei(GL_PACK_ALIGNMENT, 1);
+    glReadPixels(x, y2, w, h, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
+
+    // Flip vertically
+    int comp = 4;
+    int stride = w * comp;
+    unsigned char* line_tmp = new unsigned char[stride];
+    unsigned char* line_a = (unsigned char*)pixels;
+    unsigned char* line_b = (unsigned char*)pixels + (stride * (h - 1));
+    while (line_a < line_b)
+    {
+        memcpy(line_tmp, line_a, stride);
+        memcpy(line_a, line_b, stride);
+        memcpy(line_b, line_tmp, stride);
+        line_a += stride;
+        line_b -= stride;
+    }
+    delete[] line_tmp;
+    return true;
 }
 #endif // IMGUI_TESTS_BACKEND_SDL_GL3
