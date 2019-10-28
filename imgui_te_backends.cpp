@@ -5,7 +5,7 @@
 bool MainLoopEndFrame();
 
 //-------------------------------------------------------------------------
-// No GUI Stuff
+// Backend: Null
 //-------------------------------------------------------------------------
 
 bool MainLoopNewFrameNull()
@@ -42,7 +42,6 @@ void MainLoopNull()
     test_io.ConfigLogToTTY = true;
     test_io.NewFrameFunc = [](ImGuiTestEngine*, void*) { return MainLoopNewFrameNull(); };
     test_io.EndFrameFunc = [](ImGuiTestEngine*, void*) { return MainLoopEndFrame(); };
-    test_io.FileOpenerFunc = NULL;
 
     while (1)
     {
@@ -53,8 +52,16 @@ void MainLoopNull()
     }
 }
 
+#if !defined(IMGUI_TESTS_BACKEND_WIN32_DX11) && !defined(IMGUI_TESTS_BACKEND_SDL_GL3)
+void MainLoop()
+{
+    // No graphics backend is used. Do same thing no matter if g_App.OptGUI is enabled or disabled.
+    MainLoopNull();
+}
+#endif
+
 //-------------------------------------------------------------------------
-// Win32 + DX11 Stuff
+// Backend: Win32 + DX11
 //-------------------------------------------------------------------------
 
 #ifdef IMGUI_TESTS_BACKEND_WIN32_DX11
@@ -147,39 +154,6 @@ LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
         return 0;
     }
     return DefWindowProc(hWnd, msg, wParam, lParam);
-}
-
-static bool OsCreateProcess(const char* cmd_line)
-{
-    STARTUPINFOA siStartInfo;
-    PROCESS_INFORMATION piProcInfo;
-    ZeroMemory(&siStartInfo, sizeof(STARTUPINFOA));
-    char* cmd_line_copy = strdup(cmd_line);
-    BOOL ret = CreateProcessA(NULL, cmd_line_copy, NULL, NULL, FALSE, 0, NULL, NULL, &siStartInfo, &piProcInfo);
-    free(cmd_line_copy);
-    CloseHandle(siStartInfo.hStdInput);
-    CloseHandle(siStartInfo.hStdOutput);
-    CloseHandle(siStartInfo.hStdError);
-    CloseHandle(piProcInfo.hProcess);
-    CloseHandle(piProcInfo.hThread);
-    return ret != 0;
-}
-
-// Source file opener
-static void FileOpenerFunc(const char* filename, int line, void*)
-{
-    if (!g_App.OptFileOpener)
-    {
-        fprintf(stderr, "Executable needs to be called with a -fileopener argument!\n");
-        return;
-    }
-
-    ImGuiTextBuffer cmd_line;
-    cmd_line.appendf("%s %s %d", g_App.OptFileOpener, filename, line);
-    printf("Calling: '%s'\n", cmd_line.c_str());
-    bool ret = OsCreateProcess(cmd_line.c_str());
-    if (!ret)
-        fprintf(stderr, "Error creating process!\n");
 }
 
 bool MainLoopNewFrameDX11()
@@ -295,7 +269,6 @@ void MainLoop()
 
     test_io.NewFrameFunc = [](ImGuiTestEngine*, void*) { return MainLoopNewFrameDX11(); };
     test_io.EndFrameFunc = end_frame_func;
-    test_io.FileOpenerFunc = FileOpenerFunc;
 
     while (1)
     {
@@ -316,7 +289,7 @@ void MainLoop()
 #endif
 
 //-------------------------------------------------------------------------
-// SDL + OpenGL Stuff
+// Backend: SDL + OpenGL3
 //------------------------------------------------------------------------
 
 #ifdef IMGUI_TESTS_BACKEND_SDL_GL3
@@ -326,7 +299,7 @@ void MainLoop()
 #include <GL/gl3w.h>
 #include "imgui_te_core.h"
 
-static bool MainLoopNewFrameSDLOGL3(SDL_Window* window)
+static bool MainLoopNewFrameSDLGL3(SDL_Window* window)
 {
     // Poll and handle events (inputs, window resize, etc.)
     // You can read the io.WantCaptureMouse, io.WantCaptureKeyboard flags to tell if dear imgui wants to use your inputs.
@@ -410,7 +383,7 @@ void MainLoop()
     ImGuiTestEngineIO& test_io = ImGuiTestEngine_GetIO(g_App.TestEngine);
     test_io.UserData = window;
     test_io.ConfigLogToTTY = true;
-    test_io.NewFrameFunc = [](ImGuiTestEngine*, void* window) { return MainLoopNewFrameSDLOGL3((SDL_Window*)window); };
+    test_io.NewFrameFunc = [](ImGuiTestEngine*, void* window) { return MainLoopNewFrameSDLGL3((SDL_Window*)window); };
     test_io.EndFrameFunc = [](ImGuiTestEngine*, void* window)
     {
         if (!MainLoopEndFrame())
@@ -429,11 +402,10 @@ void MainLoop()
         SDL_GL_SwapWindow((SDL_Window*)window);
         return true;
     };
-    test_io.FileOpenerFunc = NULL;
 
     while (1)
     {
-        if (!MainLoopNewFrameSDLOGL3(window))
+        if (!MainLoopNewFrameSDLGL3(window))
             break;
         if (!test_io.EndFrameFunc(nullptr, window))
             break;
@@ -446,13 +418,5 @@ void MainLoop()
     SDL_GL_DeleteContext(gl_context);
     SDL_DestroyWindow(window);
     SDL_Quit();
-}
-#endif // IMGUI_TESTS_BACKEND_SDL_GL3
-
-#if !defined(IMGUI_TESTS_BACKEND_WIN32_DX11) && !defined(IMGUI_TESTS_BACKEND_SDL_GL3)
-void MainLoop()
-{
-    // No graphics backend is used. Do same thing no matter if g_App.OptGUI is enabled or disabled.
-    MainLoopNull();
 }
 #endif // IMGUI_TESTS_BACKEND_SDL_GL3

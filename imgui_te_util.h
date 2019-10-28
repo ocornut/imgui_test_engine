@@ -50,6 +50,7 @@ ImGuiID     ImHashDecoratedPath(const char* str, ImGuiID seed = 0);
 void        ImSleepInMilliseconds(int ms);
 ImU64       ImGetTimeInMicroseconds();
 
+bool        ImOsCreateProcess(const char* cmd_line);
 void        ImOsConsoleSetTextColor(ImOsConsoleStream stream, ImOsConsoleTextColor color);
 bool        ImOsIsDebuggerPresent();
 

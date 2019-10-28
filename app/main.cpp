@@ -69,7 +69,8 @@ TestApp g_App;
 
 // Main loop function implemented per-backend.
 void MainLoop();
-// Main loop for null backend. May be used in builds with graphics api backend.
+
+// Main loop for null backend. Used in builds with graphics api backend.
 void MainLoopNull();
 
 bool MainLoopEndFrame()
@@ -197,10 +198,27 @@ static bool ParseCommandLineOptions(int argc, char** argv)
         else
         {
             // Add tests
-            g_App.TestsToRun.push_back(strdup(argv[n]));
+            g_App.TestsToRun.push_back(ImStrdup(argv[n]));
         }
     }
     return true;
+}
+
+// Source file opener
+static void FileOpenerFunc(const char* filename, int line, void*)
+{
+    if (!g_App.OptFileOpener)
+    {
+        fprintf(stderr, "Executable needs to be called with a -fileopener argument!\n");
+        return;
+    }
+
+    ImGuiTextBuffer cmd_line;
+    cmd_line.appendf("%s %s %d", g_App.OptFileOpener, filename, line);
+    printf("Calling: '%s'\n", cmd_line.c_str());
+    bool ret = ImOsCreateProcess(cmd_line.c_str());
+    if (!ret)
+        fprintf(stderr, "Error creating process!\n");
 }
 
 // Return value for main()
@@ -298,6 +316,7 @@ int main(int argc, char** argv)
     test_io.PerfStressAmount = 5;
     if (!g_App.OptGUI && ImOsIsDebuggerPresent())
         test_io.ConfigBreakOnError = true;
+    test_io.FileOpenerFunc = FileOpenerFunc;
 
     if (g_App.OptGUI)
         MainLoop();

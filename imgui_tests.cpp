@@ -1791,14 +1791,15 @@ void RegisterTests_Columns(ImGuiTestEngine* e)
             { 2, ImGuiTableFlags_BordersOuter },
             { 3, ImGuiTableFlags_BordersOuter },
             { 9, ImGuiTableFlags_BordersOuter },
-            { 2, ImGuiTableFlags_BordersInnerV },
-            { 3, ImGuiTableFlags_BordersInnerV },
-            { 9, ImGuiTableFlags_BordersInnerV },
+            { 2, ImGuiTableFlags_BordersV },
+            { 3, ImGuiTableFlags_BordersV },
+            { 9, ImGuiTableFlags_BordersV },
             { 2, ImGuiTableFlags_Borders },
             { 3, ImGuiTableFlags_Borders },
             { 9, ImGuiTableFlags_Borders },
         };
 
+        ImGui::Text("(width variance should be <= 1.0f)");
         for (int test_case_n = 0; test_case_n < IM_ARRAYSIZE(test_cases); test_case_n++)
         {
             const TestCase& tc = test_cases[test_case_n];

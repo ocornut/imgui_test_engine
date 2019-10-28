@@ -13,6 +13,10 @@ struct TestApp
 {
     bool                    Quit = false;
     ImGuiTestEngine*        TestEngine = NULL;
+    ImU64                   LastTime = 0;
+    ImVec4                  ClearColor = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
+
+    // Command-line options
     bool                    OptGUI = DEFAULT_OPT_GUI;
     bool                    OptFast = true;
     ImGuiTestVerboseLevel   OptVerboseLevel = ImGuiTestVerboseLevel_COUNT; // Set in main.cpp
@@ -20,8 +24,6 @@ struct TestApp
     bool                    OptPauseOnExit = true;
     char*                   OptFileOpener = NULL;
     ImVector<char*>         TestsToRun;
-    ImU64                   LastTime = 0;
-    ImVec4                  ClearColor = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
 };
 
 extern TestApp g_App;
