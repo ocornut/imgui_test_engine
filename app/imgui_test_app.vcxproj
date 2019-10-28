@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
@@ -156,6 +156,7 @@
     <ClInclude Include="..\..\imgui\imstb_truetype.h" />
     <ClInclude Include="..\imconfig_tests.h" />
     <ClInclude Include="..\imgui_tests.h" />
+    <ClInclude Include="..\imgui_te_app.h" />
     <ClInclude Include="..\imgui_te_context.h" />
     <ClInclude Include="..\imgui_te_core.h" />
     <ClInclude Include="..\imgui_te_util.h" />
@@ -168,6 +169,7 @@
     <ClCompile Include="..\..\imgui\imgui_draw.cpp" />
     <ClCompile Include="..\..\imgui\imgui_widgets.cpp" />
     <ClCompile Include="..\imgui_tests.cpp" />
+    <ClCompile Include="..\imgui_te_backends.cpp" />
     <ClCompile Include="..\imgui_te_context.cpp" />
     <ClCompile Include="..\imgui_te_core.cpp" />
     <ClCompile Include="..\imgui_te_util.cpp" />
