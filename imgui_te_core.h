@@ -21,7 +21,6 @@ struct ImRect;
 
 typedef int ImGuiTestFlags;         // See ImGuiTestFlags_
 typedef int ImGuiTestCheckFlags;    // See ImGuiTestCheckFlags_
-typedef int ImGuiTestLogFlags;      // See ImGuiTestLogFlags_
 typedef int ImGuiTestOpFlags;       // See ImGuiTestOpFlags_
 typedef int ImGuiTestRunFlags;      // See ImGuiTestRunFlags_
 
@@ -32,11 +31,16 @@ typedef int ImGuiTestRunFlags;      // See ImGuiTestRunFlags_
 enum ImGuiTestVerboseLevel
 {
     ImGuiTestVerboseLevel_Silent    = 0,
-    ImGuiTestVerboseLevel_Min       = 1,
-    ImGuiTestVerboseLevel_Normal    = 2,
-    ImGuiTestVerboseLevel_Max       = 3,
-    ImGuiTestVerboseLevel_COUNT     = 4
+    ImGuiTestVerboseLevel_Error     = 1,
+    ImGuiTestVerboseLevel_Warning   = 2,
+    ImGuiTestVerboseLevel_Info      = 3,
+    ImGuiTestVerboseLevel_Debug     = 4,
+    ImGuiTestVerboseLevel_Trace     = 5,
+    ImGuiTestVerboseLevel_COUNT     = 6
 };
+
+static const char* ImGuiTestVerboseLevelNames[] = {"Slinet", "Trace", "Debug", "Info", "Warning", "Error", "N/A"};
+IM_STATIC_ASSERT(IM_ARRAYSIZE(ImGuiTestVerboseLevelNames) == (ImGuiTestVerboseLevel_COUNT + 1));
 
 enum ImGuiTestStatus
 {
@@ -58,13 +62,6 @@ enum ImGuiTestCheckFlags_
 {
     ImGuiTestCheckFlags_None            = 0,
     ImGuiTestCheckFlags_SilentSuccess   = 1 << 0
-};
-
-enum ImGuiTestLogFlags_
-{
-    ImGuiTestLogFlags_None              = 0,
-    ImGuiTestLogFlags_NoHeader          = 1 << 0,   // Do not display framecount and depth padding
-    ImGuiTestLogFlags_Verbose           = 1 << 1
 };
 
 enum ImGuiTestOpFlags_
@@ -306,7 +303,8 @@ struct ImGuiTestEngineIO
     bool                        ConfigStopOnError = false;  // Stop queued tests on test error
     bool                        ConfigBreakOnError = false; // Break debugger on test error
     bool                        ConfigKeepTestGui = false;  // Keep test GUI running at the end of the test
-    ImGuiTestVerboseLevel       ConfigVerboseLevel = ImGuiTestVerboseLevel_Normal;
+    ImGuiTestVerboseLevel       ConfigVerboseLevel = ImGuiTestVerboseLevel_Warning;
+    ImGuiTestVerboseLevel       ConfigVerboseLevelOnError = ImGuiTestVerboseLevel_Info;
     bool                        ConfigLogToTTY = false;
     bool                        ConfigTakeFocusBackAfterTests = true;
     bool                        ConfigNoThrottle = false;   // Disable vsync for performance measurement
@@ -387,29 +385,38 @@ struct ImGuiTestRefDesc
 // ImGuiTestLog
 //-------------------------------------------------------------------------
 
+struct ImGuiTestLogLineInfo
+{
+    ImGuiTestVerboseLevel Level;
+    int                   LineOffset;
+};
+
 struct ImGuiTestLog
 {
-    ImGuiTextBuffer     Buffer;
-    ImVector<int>       LineOffsets;
-    int                 LineOffsetsValidUpTo;
+    ImGuiTextBuffer                Buffer;
+    ImVector<ImGuiTestLogLineInfo> LineInfo;
+    ImVector<ImGuiTestLogLineInfo> LineInfoError;
+    bool                           CachedLinesPrintedToTTY;
 
     ImGuiTestLog()
     {
-        LineOffsetsValidUpTo = 0;
+        CachedLinesPrintedToTTY = false;
     }
+
     void Clear()
     {
         Buffer.clear();
-        LineOffsets.clear();
-        LineOffsetsValidUpTo = 0;
+        LineInfo.clear();
+        LineInfoError.clear();
+        CachedLinesPrintedToTTY = false;
     }
-    void UpdateLineOffsets()
+
+    void UpdateLineOffsets(ImGuiTestEngineIO* engine_io, ImGuiTestVerboseLevel level, const char* start)
     {
-        if (LineOffsetsValidUpTo >= Buffer.size())
-            return;
-        const char* p_begin = Buffer.c_str();
+        IM_ASSERT(Buffer.begin() <= start && start < Buffer.end());
+        const char* p_begin = start;
         const char* p_end = Buffer.end();
-        const char* p = p_begin + LineOffsetsValidUpTo;
+        const char* p = p_begin;
         while (p < p_end)
         {
             const char* p_bol = p;
@@ -418,10 +425,15 @@ struct ImGuiTestLog
             bool last_empty_line = (p_bol + 1 == p_end);
 
             if (!last_empty_line)
-                LineOffsets.push_back(p_bol - p_begin);
+            {
+                int offset = (int)(p_bol - Buffer.c_str());
+                if (engine_io->ConfigVerboseLevel >= level)
+                    LineInfo.push_back({level, offset});
+                if (engine_io->ConfigVerboseLevelOnError >= level)
+                    LineInfoError.push_back({level, offset});
+            }
             p = p_eol ? p_eol + 1 : NULL;
         }
-        LineOffsetsValidUpTo = Buffer.size();
     }
 };
 

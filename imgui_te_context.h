@@ -174,11 +174,15 @@ struct ImGuiTestContext
     template <typename T> T& GetUserData()  { IM_ASSERT(UserData != NULL); return *(T*)(UserData); }
 
     // Logging
-    void        LogEx(ImGuiTestLogFlags flags, const char* fmt, ...) IM_FMTARGS(3); // implicit 'this' arg
-    void        LogExV(ImGuiTestLogFlags flags, const char* fmt, va_list args) IM_FMTLIST(3);
-    void        Log(const char* fmt, ...) IM_FMTARGS(2);
-    void        LogVerbose(const char* fmt, ...) IM_FMTARGS(2);
-    void        LogDebug();
+    void        Log(ImGuiTestVerboseLevel level, const char* fmt, ...) IM_FMTARGS(3);
+    void        LogV(ImGuiTestVerboseLevel level, const char* fmt, va_list args) IM_FMTLIST(3);
+    void        LogRaw(ImGuiTestVerboseLevel level, const char* message);                                               // Only includes log level marker in addition to passed string
+    void        LogDebug(const char* fmt, ...) IM_FMTARGS(2);
+    void        LogInfo(const char* fmt, ...) IM_FMTARGS(2);
+    void        LogWarning(const char* fmt, ...) IM_FMTARGS(2);
+    void        LogError(const char* fmt, ...) IM_FMTARGS(2);
+    void        LogToTTY(ImGuiTestVerboseLevel level, const char* message);
+    void        LogDebugInfo();
 
     // Yield, Timing
     void        Yield();

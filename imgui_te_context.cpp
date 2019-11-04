@@ -5,6 +5,10 @@
 #define _CRT_SECURE_NO_WARNINGS
 #endif
 
+#ifndef _WIN32
+#include <unistd.h>     // usleep
+#endif
+
 #include "imgui.h"
 #define IMGUI_DEFINE_MATH_OPERATORS
 #include "imgui_te_core.h"
@@ -16,70 +20,158 @@
 // This is the interface that most tests will interact with.
 //-------------------------------------------------------------------------
 
-void    ImGuiTestContext::LogEx(ImGuiTestLogFlags flags, const char* fmt, ...)
+void    ImGuiTestContext::Log(ImGuiTestVerboseLevel level, const char* fmt, ...)
 {
     va_list args;
     va_start(args, fmt);
-    LogExV(flags, fmt, args);
+    LogV(level, fmt, args);
     va_end(args);
 }
 
-void    ImGuiTestContext::LogExV(ImGuiTestLogFlags flags, const char* fmt, va_list args)
+void    ImGuiTestContext::LogV(ImGuiTestVerboseLevel level, const char* fmt, va_list args)
 {
     ImGuiTestContext* ctx = this;
     ImGuiTest* test = ctx->Test;
 
-    if (flags & ImGuiTestLogFlags_Verbose)
-    {
-        if (EngineIO->ConfigVerboseLevel <= ImGuiTestVerboseLevel_Min)
-            return;
-        if (EngineIO->ConfigVerboseLevel == ImGuiTestVerboseLevel_Normal && ctx->ActionDepth > 1)
-            return;
-    }
+    IM_ASSERT(level > ImGuiTestVerboseLevel_Silent && level < ImGuiTestVerboseLevel_COUNT);
+
+    if (level == ImGuiTestVerboseLevel_Debug && ctx->ActionDepth > 1)
+        level = ImGuiTestVerboseLevel_Trace;
+
+    // Log all messages that we may want to print in future.
+    if (EngineIO->ConfigVerboseLevelOnError < level)
+        return;
 
     ImGuiTestLog* log = &test->TestLog;
-    const int prev_size = log->Buffer.size();
-    if (flags & ImGuiTestLogFlags_Verbose)
-    {
-        if (!(flags & ImGuiTestLogFlags_NoHeader))
-            log->Buffer.appendf("[%04d] -- %*s", ctx->FrameCount, ImMax(0, (ctx->ActionDepth - 1) * 2), "");
-        log->Buffer.appendfv(fmt, args);
-    }
-    else
-    {
-        if (!(flags & ImGuiTestLogFlags_NoHeader))
-            log->Buffer.appendf("[%04d] ", ctx->FrameCount);
-        log->Buffer.appendfv(fmt, args);
-    }
+    int prev_size = log->Buffer.size();
 
-    // Copy to TTY
-    if (EngineIO->ConfigLogToTTY)
-        printf("%s", log->Buffer.c_str() + prev_size);
+    log->Buffer.appendf("[%c] [%04d] ", *ImGuiTestVerboseLevelNames[level], ctx->FrameCount);
+    if (level >= ImGuiTestVerboseLevel_Debug)
+        log->Buffer.appendf("-- %*s", ImMax(0, (ctx->ActionDepth - 1) * 2), "");
+    log->Buffer.appendfv(fmt, args);
+    log->Buffer.append("\n");
+
+    log->UpdateLineOffsets(EngineIO, level, log->Buffer.begin() + prev_size);
+    LogToTTY(level, log->Buffer.c_str() + prev_size);
 }
 
-void    ImGuiTestContext::Log(const char* fmt, ...)
+void    ImGuiTestContext::LogRaw(ImGuiTestVerboseLevel level, const char* message)
+{
+    ImGuiTestContext* ctx = this;
+    ImGuiTest* test = ctx->Test;
+
+    IM_ASSERT(level > ImGuiTestVerboseLevel_Silent && level < ImGuiTestVerboseLevel_COUNT);
+
+    // Log all messages that we may want to print in future.
+    if (EngineIO->ConfigVerboseLevelOnError < level)
+        return;
+
+    ImGuiTestLog* log = &test->TestLog;
+    int prev_size = log->Buffer.size();
+
+    log->Buffer.appendf("[%c] ", *ImGuiTestVerboseLevelNames[level]);
+    if (level >= ImGuiTestVerboseLevel_Debug)
+        log->Buffer.appendf("-- %*s", ImMax(0, (ctx->ActionDepth - 1) * 2), "");
+    log->Buffer.append(message);
+    log->Buffer.append("\n");
+
+    log->UpdateLineOffsets(EngineIO, level, log->Buffer.begin() + prev_size);
+    LogToTTY(level, log->Buffer.c_str() + prev_size);
+}
+
+void    ImGuiTestContext::LogDebug(const char* fmt, ...)
 {
     va_list args;
     va_start(args, fmt);
-    LogExV(ImGuiTestLogFlags_None, fmt, args);
+    LogV(ImGuiTestVerboseLevel_Debug, fmt, args);
     va_end(args);
 }
 
-void    ImGuiTestContext::LogVerbose(const char* fmt, ...)
+void ImGuiTestContext::LogInfo(const char* fmt, ...)
 {
     va_list args;
     va_start(args, fmt);
-    LogExV(ImGuiTestLogFlags_Verbose, fmt, args);
+    LogV(ImGuiTestVerboseLevel_Info, fmt, args);
     va_end(args);
 }
 
-void    ImGuiTestContext::LogDebug()
+void ImGuiTestContext::LogWarning(const char* fmt, ...)
+{
+    va_list args;
+    va_start(args, fmt);
+    LogV(ImGuiTestVerboseLevel_Warning, fmt, args);
+    va_end(args);
+}
+
+void ImGuiTestContext::LogError(const char* fmt, ...)
+{
+    va_list args;
+    va_start(args, fmt);
+    LogV(ImGuiTestVerboseLevel_Error, fmt, args);
+    va_end(args);
+}
+
+void    ImGuiTestContext::LogToTTY(ImGuiTestVerboseLevel level, const char* message)
+{
+    IM_ASSERT(level > ImGuiTestVerboseLevel_Silent && level < ImGuiTestVerboseLevel_COUNT);
+
+    if (!EngineIO->ConfigLogToTTY)
+        return;
+
+    ImGuiTestContext* ctx = this;
+    ImGuiTest* test = ctx->Test;
+    ImGuiTestLog* log = &test->TestLog;
+
+    if (test->Status == ImGuiTestStatus_Error)
+    {
+        // Current test failed.
+        if (!log->CachedLinesPrintedToTTY)
+        {
+            // Print current message and all previous logged messages.
+            log->CachedLinesPrintedToTTY = true;
+            for (int i = 0; i < log->LineInfo.Size; i++)
+            {
+                ImGuiTestLogLineInfo& line_info = log->LineInfo[i];
+                char* line_beg = log->Buffer.Buf.Data + line_info.LineOffset;
+                char* line_end = strchr(line_beg, '\n');
+                char line_end_bkp = *(line_end + 1);
+                *(line_end + 1) = 0;                            // Terminate line temporarily to avoid extra copying.
+                LogToTTY(line_info.Level, line_beg);
+                *(line_end + 1) = line_end_bkp;                 // Restore new line after printing.
+            }
+            return;                                             // This process included current line as well.
+        }
+        // Otherwise print only current message. If we are executing here log level already is within range of
+        // ConfigVerboseLevelOnError setting.
+    }
+    else if (EngineIO->ConfigVerboseLevel <= level)
+        // Skip printing messages of lower level than configured.
+        return;
+
+    switch (level)
+    {
+    case ImGuiTestVerboseLevel_Warning:
+        ImOsConsoleSetTextColor(ImOsConsoleStream_StandardOutput, ImOsConsoleTextColor_BrightYellow);
+        break;
+    case ImGuiTestVerboseLevel_Error:
+        ImOsConsoleSetTextColor(ImOsConsoleStream_StandardOutput, ImOsConsoleTextColor_BrightRed);
+        break;
+    default:
+        ImOsConsoleSetTextColor(ImOsConsoleStream_StandardOutput, ImOsConsoleTextColor_White);
+        break;
+    }
+    fprintf(stdout, "%s", message);
+    ImOsConsoleSetTextColor(ImOsConsoleStream_StandardOutput, ImOsConsoleTextColor_White);
+    fflush(stdout);
+}
+
+void    ImGuiTestContext::LogDebugInfo()
 {
     ImGuiID item_hovered_id = UiContext->HoveredIdPreviousFrame;
     ImGuiID item_active_id = UiContext->ActiveId;
     ImGuiTestItemInfo* item_hovered_info = item_hovered_id ? ImGuiTestEngine_ItemLocate(Engine, item_hovered_id, "") : NULL;
     ImGuiTestItemInfo* item_active_info = item_active_id ? ImGuiTestEngine_ItemLocate(Engine, item_active_id, "") : NULL;
-    LogVerbose("Hovered: 0x%08X (\"%s\"), Active:  0x%08X(\"%s\")\n", 
+    LogDebug("Hovered: 0x%08X (\"%s\"), Active:  0x%08X(\"%s\")",
         item_hovered_id, item_hovered_info ? item_hovered_info->DebugLabel : "",
         item_active_id, item_active_info ? item_active_info->DebugLabel : "");
 }
@@ -111,7 +203,7 @@ void    ImGuiTestContext::RecoverFromUiContextErrors()
         while (window->DC.CurrentTable != NULL)
         {
             if (verbose)
-                LogVerbose("[warn] Recovered from missing EndTable() call.\n");
+                LogWarning("Recovered from missing EndTable() call.");
             ImGui::EndTable();
         }
 #endif
@@ -119,19 +211,19 @@ void    ImGuiTestContext::RecoverFromUiContextErrors()
         while (g.CurrentTabBar != NULL)
         {
             if (verbose)
-                LogVerbose("[warn] Recovered from missing EndTabBar() call.\n");
+                LogWarning("Recovered from missing EndTabBar() call.");
             ImGui::EndTabBar();
         }
 
         while (g.CurrentWindow->DC.TreeDepth > 0)
         {
             if (verbose)
-                LogVerbose("[warn] Recovered from missing TreePop() call.\n");
+                LogWarning("Recovered from missing TreePop() call.");
             ImGui::TreePop();
         }
 
         if (verbose)
-            LogVerbose("[warn] Recovered from missing End() call.\n");
+            LogWarning("Recovered from missing End() call.");
         ImGui::End();
     }
 }
@@ -215,7 +307,7 @@ void ImGuiTestContext::SetInputMode(ImGuiInputSource input_mode)
 void ImGuiTestContext::WindowRef(ImGuiTestRef ref)
 {
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
-    LogVerbose("SetRef '%s' %08X\n", ref.Path ? ref.Path : "NULL", ref.ID);
+    LogDebug("SetRef '%s' %08X", ref.Path ? ref.Path : "NULL", ref.ID);
 
     if (ref.Path)
     {
@@ -236,7 +328,7 @@ void ImGuiTestContext::WindowRef(ImGuiTestRef ref)
         if (window->Collapsed)
         {
             IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
-            LogVerbose("Uncollapse window '%s'\n", window->Name);
+            LogDebug("Uncollapse window '%s'", window->Name);
             WindowCollapse("", false);
             IM_CHECK_EQ(window->Collapsed, false);
         }
@@ -328,7 +420,7 @@ void    ImGuiTestContext::ScrollToY(ImGuiTestRef ref, float scroll_ratio_y)
     ImGuiContext& g = *UiContext;
     ImGuiTestItemInfo* item = ItemLocate(ref);
     ImGuiTestRefDesc desc(ref, item);
-    LogVerbose("ScrollToY %s\n", desc.c_str());
+    LogDebug("ScrollToY %s", desc.c_str());
 
     ImGuiWindow* window = item->Window;
 
@@ -392,7 +484,7 @@ void    ImGuiTestContext::NavMove(ImGuiTestRef ref)
     ImGuiContext& g = *UiContext;
     ImGuiTestItemInfo* item = ItemLocate(ref);
     ImGuiTestRefDesc desc(ref, item);
-    LogVerbose("NavMove to %s\n", desc.c_str());
+    LogDebug("NavMove to %s", desc.c_str());
 
     if (item == NULL)
         return;
@@ -427,7 +519,7 @@ void    ImGuiTestContext::NavActivate()
         return;
 
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
-    LogVerbose("NavActivate\n");
+    LogDebug("NavActivate");
 
     Yield();
 
@@ -457,7 +549,7 @@ void    ImGuiTestContext::NavInput()
         return;
 
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
-    LogVerbose("NavInput\n");
+    LogDebug("NavInput");
 
     int frames_to_hold = 2; // FIXME-TESTS: <-- number of frames could be fuzzed here
     for (int n = 0; n < frames_to_hold; n++)
@@ -478,7 +570,7 @@ void    ImGuiTestContext::MouseMove(ImGuiTestRef ref, ImGuiTestOpFlags flags)
     ImGuiContext& g = *UiContext;
     ImGuiTestItemInfo* item = ItemLocate(ref);
     ImGuiTestRefDesc desc(ref, item);
-    LogVerbose("MouseMove to %s\n", desc.c_str());
+    LogDebug("MouseMove to %s", desc.c_str());
 
     if (item == NULL)
         return;
@@ -532,7 +624,7 @@ void    ImGuiTestContext::WindowMoveToMakePosVisible(ImGuiWindow* window, ImVec2
         delta.x = (pos.x < visible_r.Min.x) ? (visible_r.Min.x - pos.x + pad) : (pos.x > visible_r.Max.x) ? (visible_r.Max.x - pos.x - pad) : 0.0f;
         delta.y = (pos.y < visible_r.Min.y) ? (visible_r.Min.y - pos.y + pad) : (pos.y > visible_r.Max.y) ? (visible_r.Max.y - pos.y - pad) : 0.0f;
         ImGui::SetWindowPos(window, window->Pos + delta, ImGuiCond_Always);
-        LogVerbose("WindowMoveBypass %s delta (%.1f,%.1f)\n", window->Name, delta.x, delta.y);
+        LogDebug("WindowMoveBypass %s delta (%.1f,%.1f)", window->Name, delta.x, delta.y);
         Yield();
     }
 }
@@ -544,7 +636,7 @@ void	ImGuiTestContext::MouseMoveToPos(ImVec2 target)
         return;
 
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
-    LogVerbose("MouseMove from (%.0f,%.0f) to (%.0f,%.0f)\n", Inputs->MousePosValue.x, Inputs->MousePosValue.y, target.x, target.y);
+    LogDebug("MouseMove from (%.0f,%.0f) to (%.0f,%.0f)", Inputs->MousePosValue.x, Inputs->MousePosValue.y, target.x, target.y);
 
     // We manipulate Inputs->MousePosValue without reading back from g.IO.MousePos because the later is rounded.
     // To handle high framerate it is easier to bypass this rounding.
@@ -579,7 +671,7 @@ void    ImGuiTestContext::MouseDown(int button)
         return;
 
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
-    LogVerbose("MouseDown %d\n", button);
+    LogDebug("MouseDown %d", button);
 
     UiContext->IO.MouseClickedTime[button] = -FLT_MAX; // Prevent accidental double-click from happening ever
     Inputs->MouseButtonsValue = (1 << button);
@@ -592,7 +684,7 @@ void    ImGuiTestContext::MouseUp(int button)
         return;
 
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
-    LogVerbose("MouseUp %d\n", button);
+    LogDebug("MouseUp %d", button);
 
     Inputs->MouseButtonsValue &= ~(1 << button);
     Yield();
@@ -605,7 +697,7 @@ void    ImGuiTestContext::MouseClick(int button)
         return;
 
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
-    LogVerbose("MouseClick %d\n", button);
+    LogDebug("MouseClick %d", button);
 
     // Make sure mouse buttons are released
     IM_ASSERT(Inputs->MouseButtonsValue == 0);
@@ -628,7 +720,7 @@ void    ImGuiTestContext::MouseDoubleClick(int button)
         return;
 
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
-    LogVerbose("MouseDoubleClick %d\n", button);
+    LogDebug("MouseDoubleClick %d", button);
 
     Yield();
     UiContext->IO.MouseClickedTime[button] = -FLT_MAX; // Prevent accidental double-click followed by single click
@@ -660,7 +752,7 @@ void    ImGuiTestContext::KeyDownMap(ImGuiKey key, int mod_flags)
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
     char mod_flags_str[32];
     GetImGuiKeyModsPrefixStr(mod_flags, mod_flags_str, IM_ARRAYSIZE(mod_flags_str));
-    LogVerbose("KeyDownMap(%s%s)\n", mod_flags_str, (key != ImGuiKey_COUNT) ? GetImGuiKeyName(key) : "");
+    LogDebug("KeyDownMap(%s%s)", mod_flags_str, (key != ImGuiKey_COUNT) ? GetImGuiKeyName(key) : "");
     Inputs->Queue.push_back(ImGuiTestInput::FromKey(key, ImGuiKeyState_Down, mod_flags));
     Yield();
     Yield();
@@ -674,7 +766,7 @@ void    ImGuiTestContext::KeyUpMap(ImGuiKey key, int mod_flags)
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
     char mod_flags_str[32];
     GetImGuiKeyModsPrefixStr(mod_flags, mod_flags_str, IM_ARRAYSIZE(mod_flags_str));
-    LogVerbose("KeyUpMap(%s%s)\n", mod_flags_str, (key != ImGuiKey_COUNT) ? GetImGuiKeyName(key) : "");
+    LogDebug("KeyUpMap(%s%s)", mod_flags_str, (key != ImGuiKey_COUNT) ? GetImGuiKeyName(key) : "");
     Inputs->Queue.push_back(ImGuiTestInput::FromKey(key, ImGuiKeyState_Up, mod_flags));
     Yield();
     Yield();
@@ -688,7 +780,7 @@ void    ImGuiTestContext::KeyPressMap(ImGuiKey key, int mod_flags, int count)
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
     char mod_flags_str[32];
     GetImGuiKeyModsPrefixStr(mod_flags, mod_flags_str, IM_ARRAYSIZE(mod_flags_str));
-    LogVerbose("KeyPressMap(%s%s, %d)\n", mod_flags_str, (key != ImGuiKey_COUNT) ? GetImGuiKeyName(key) : "", count);
+    LogDebug("KeyPressMap(%s%s, %d)", mod_flags_str, (key != ImGuiKey_COUNT) ? GetImGuiKeyName(key) : "", count);
     while (count > 0)
     {
         count--;
@@ -708,7 +800,7 @@ void    ImGuiTestContext::KeyChars(const char* chars)
         return;
 
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
-    LogVerbose("KeyChars('%s')\n", chars);
+    LogDebug("KeyChars('%s')", chars);
     while (*chars)
     {
         unsigned int c = 0;
@@ -729,7 +821,7 @@ void    ImGuiTestContext::KeyCharsAppend(const char* chars)
         return;
 
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
-    LogVerbose("KeyCharsAppend('%s')\n", chars);
+    LogDebug("KeyCharsAppend('%s')", chars);
     KeyPressMap(ImGuiKey_End);
     KeyChars(chars);
 }
@@ -740,7 +832,7 @@ void    ImGuiTestContext::KeyCharsAppendEnter(const char* chars)
         return;
 
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
-    LogVerbose("KeyCharsAppendValidate('%s')\n", chars);
+    LogDebug("KeyCharsAppendValidate('%s')", chars);
     KeyPressMap(ImGuiKey_End);
     KeyChars(chars);
     KeyPressMap(ImGuiKey_Enter);
@@ -762,7 +854,7 @@ bool    ImGuiTestContext::WindowBringToFront(ImGuiWindow* window, ImGuiTestOpFla
     if (window != g.NavWindow)
     {
         IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
-        LogVerbose("BringWindowToFront->FocusWindow('%s')\n", window->Name);
+        LogDebug("BringWindowToFront->FocusWindow('%s')", window->Name);
         ImGui::FocusWindow(window);
         Yield();
         Yield();
@@ -771,7 +863,7 @@ bool    ImGuiTestContext::WindowBringToFront(ImGuiWindow* window, ImGuiTestOpFla
     else if (window->RootWindow != g.Windows.back()->RootWindow)
     {
         IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
-        LogVerbose("BringWindowToDisplayFront('%s') (window.back=%s)\n", window->Name, g.Windows.back()->Name);
+        LogDebug("BringWindowToDisplayFront('%s') (window.back=%s)", window->Name, g.Windows.back()->Name);
         ImGui::BringWindowToDisplayFront(window);
         Yield();
         Yield();
@@ -783,7 +875,7 @@ bool    ImGuiTestContext::WindowBringToFront(ImGuiWindow* window, ImGuiTestOpFla
     // causing this function to seemingly fail (even if the end goal was reached).
     bool ret = (window == g.NavWindow);
     if (!ret && !(flags & ImGuiTestOpFlags_NoError))
-        LogVerbose("-- [warn] Expected focused window '%s', but '%s' got focus back.\n", window->Name, g.NavWindow ? g.NavWindow->Name : "<NULL>");
+        LogDebug("-- Expected focused window '%s', but '%s' got focus back.", window->Name, g.NavWindow ? g.NavWindow->Name : "<NULL>");
     
     return ret;
 }
@@ -820,7 +912,7 @@ void    ImGuiTestContext::GatherItems(ImGuiTestItemList* out_list, ImGuiTestRef 
     const int end_gather_size = out_list->Size;
 
     ImGuiTestItemInfo* parent_item = ItemLocate(parent, ImGuiTestOpFlags_NoError);
-    LogVerbose("GatherItems from %s, %d deep: found %d items.\n", ImGuiTestRefDesc(parent, parent_item).c_str(), depth, end_gather_size - begin_gather_size);
+    LogDebug("GatherItems from %s, %d deep: found %d items.", ImGuiTestRefDesc(parent, parent_item).c_str(), depth, end_gather_size - begin_gather_size);
 
     GatherTask->ParentID = 0;
     GatherTask->Depth = 0;
@@ -844,7 +936,7 @@ void    ImGuiTestContext::ItemAction(ImGuiTestAction action, ImGuiTestRef ref)
     if (item == NULL)
         return;
 
-    LogVerbose("Item%s %s%s\n", GetActionName(action), desc.c_str(), (InputMode == ImGuiInputSource_Mouse) ? "" : " (w/ Nav)");
+    LogDebug("Item%s %s%s", GetActionName(action), desc.c_str(), (InputMode == ImGuiInputSource_Mouse) ? "" : " (w/ Nav)");
 
     if (action == ImGuiTestAction_Click || action == ImGuiTestAction_DoubleClick)
     {
@@ -1053,7 +1145,7 @@ void    ImGuiTestContext::ItemActionAll(ImGuiTestAction action, ImGuiTestRef ref
         if (actioned_total_at_beginning_of_pass == actioned_total)
             break;
     }
-    LogVerbose("%s %d items in total!\n", GetActionVerb(action), actioned_total);
+    LogDebug("%s %d items in total!", GetActionVerb(action), actioned_total);
 }
 
 void    ImGuiTestContext::ItemHold(ImGuiTestRef ref, float time)
@@ -1062,7 +1154,7 @@ void    ImGuiTestContext::ItemHold(ImGuiTestRef ref, float time)
         return;
 
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
-    LogVerbose("ItemHold '%s' %08X\n", ref.Path ? ref.Path : "NULL", ref.ID);
+    LogDebug("ItemHold '%s' %08X", ref.Path ? ref.Path : "NULL", ref.ID);
 
     MouseMove(ref);
 
@@ -1079,7 +1171,7 @@ void    ImGuiTestContext::ItemHoldForFrames(ImGuiTestRef ref, int frames)
         return;
 
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
-    LogVerbose("ItemHoldForFrames '%s' %08X\n", ref.Path ? ref.Path : "NULL", ref.ID);
+    LogDebug("ItemHoldForFrames '%s' %08X", ref.Path ? ref.Path : "NULL", ref.ID);
 
     MouseMove(ref);
     Yield();
@@ -1099,7 +1191,7 @@ void    ImGuiTestContext::ItemDragAndDrop(ImGuiTestRef ref_src, ImGuiTestRef ref
     ImGuiTestItemInfo* item_dst = ItemLocate(ref_dst);
     ImGuiTestRefDesc desc_src(ref_src, item_src);
     ImGuiTestRefDesc desc_dst(ref_dst, item_dst);
-    LogVerbose("ItemDragAndDrop %s to %s\n", desc_src.c_str(), desc_dst.c_str());
+    LogDebug("ItemDragAndDrop %s to %s", desc_src.c_str(), desc_dst.c_str());
 
     MouseMove(ref_src, ImGuiTestOpFlags_NoCheckHoveredId);
     SleepShort();
@@ -1132,7 +1224,7 @@ void    ImGuiTestContext::MenuAction(ImGuiTestAction action, ImGuiTestRef ref)
         return;
 
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
-    LogVerbose("MenuAction '%s' %08X\n", ref.Path ? ref.Path : "NULL", ref.ID);
+    LogDebug("MenuAction '%s' %08X", ref.Path ? ref.Path : "NULL", ref.ID);
 
     IM_ASSERT(ref.Path != NULL);
 
@@ -1207,7 +1299,7 @@ void    ImGuiTestContext::WindowClose(ImGuiTestRef ref)
         return;
 
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
-    LogVerbose("WindowClose\n");
+    LogDebug("WindowClose");
     ItemClick(GetID(ref, "#CLOSE"));
 }
 
@@ -1217,7 +1309,7 @@ void    ImGuiTestContext::WindowCollapse(ImGuiTestRef ref, bool collapsed)
         return;
 
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
-    LogVerbose("WindowSetCollapsed %d\n", collapsed);
+    LogDebug("WindowSetCollapsed %d", collapsed);
     ImGuiWindow* window = GetWindowByRef(ref);
     if (window == NULL)
     {
@@ -1238,7 +1330,7 @@ void    ImGuiTestContext::WindowFocus(ImGuiTestRef ref)
 {
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
     ImGuiTestRefDesc desc(ref, NULL);
-    LogVerbose("FocusWindow('%s')\n", desc.c_str());
+    LogDebug("FocusWindow('%s')", desc.c_str());
 
     ImGuiID window_id = GetID(ref);
     ImGuiWindow* window = ImGui::FindWindowByID(window_id);
@@ -1259,7 +1351,7 @@ void    ImGuiTestContext::WindowMove(ImGuiTestRef ref, ImVec2 input_pos, ImVec2 
     IM_CHECK_SILENT(window != NULL);
 
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
-    LogVerbose("WindowMove %s (%.1f,%.1f) \n", window->Name, input_pos.x, input_pos.y);
+    LogDebug("WindowMove %s (%.1f,%.1f) ", window->Name, input_pos.x, input_pos.y);
     ImVec2 target_pos = ImFloor(input_pos - pivot * window->Size);
     if (ImLengthSqr(target_pos - window->Pos) < 0.001f)
         return;
@@ -1301,7 +1393,7 @@ void    ImGuiTestContext::WindowResize(ImGuiTestRef ref, ImVec2 size)
     size = ImFloor(size);
 
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
-    LogVerbose("WindowResize %s (%.1f,%.1f)\n", window->Name, size.x, size.y);
+    LogDebug("WindowResize %s (%.1f,%.1f)", window->Name, size.x, size.y);
     if (ImLengthSqr(size - window->Size) < 0.001f)
         return;
 
@@ -1336,7 +1428,7 @@ void    ImGuiTestContext::PopupClose()
         return;
 
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
-    LogVerbose("PopupClose\n");
+    LogDebug("PopupClose");
     ImGui::ClosePopupToLevel(0, true);    // FIXME
 }
 
@@ -1348,7 +1440,7 @@ void    ImGuiTestContext::DockWindowInto(const char* window_name_src, const char
         return;
 
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
-    LogVerbose("DockWindowInto '%s' to '%s'\n", window_name_src, window_name_dst);
+    LogDebug("DockWindowInto '%s' to '%s'", window_name_src, window_name_dst);
 
     ImGuiWindow* window_src = GetWindowByRef(window_name_src);
     ImGuiWindow* window_dst = GetWindowByRef(window_name_dst);
@@ -1398,7 +1490,7 @@ void    ImGuiTestContext::DockWindowInto(const char* window_name_src, const char
 void    ImGuiTestContext::DockMultiClear(const char* window_name, ...)
 {
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
-    LogVerbose("DockMultiClear\n");
+    LogDebug("DockMultiClear");
     
     va_list args;
     va_start(args, window_name);
@@ -1414,7 +1506,7 @@ void    ImGuiTestContext::DockMultiClear(const char* window_name, ...)
 void    ImGuiTestContext::DockMultiSet(ImGuiID dock_id, const char* window_name, ...)
 {
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
-    LogVerbose("DockMultiSet %08X\n", dock_id);
+    LogDebug("DockMultiSet %08X", dock_id);
 
     va_list args;
     va_start(args, window_name);
@@ -1475,7 +1567,7 @@ void    ImGuiTestContext::UndockNode(ImGuiID dock_id)
 
 void    ImGuiTestContext::PerfCalcRef()
 {
-    LogVerbose("Measuring ref dt...\n");
+    LogDebug("Measuring ref dt...");
     SetGuiFuncEnabled(false);
     for (int n = 0; n < 500 && !Abort; n++)
         Yield();
@@ -1490,7 +1582,7 @@ void    ImGuiTestContext::PerfCapture()
     IM_ASSERT(PerfRefDt >= 0.0);
 
     // Yield for the average to stabilize
-    LogVerbose("Measuring gui dt...\n");
+    LogDebug("Measuring gui dt...");
     for (int n = 0; n < 500 && !Abort; n++)
         Yield();
     if (Abort)
@@ -1502,10 +1594,10 @@ void    ImGuiTestContext::PerfCapture()
 
     const ImBuildInfo& build_info = ImGetBuildInfo();
 
-    //Log("[PERF] Name: %s\n", Test->Name);
-    Log("[PERF] Conditions: Stress x%d, %s, %s, %s, %s, %s\n", 
+    //LogDebug("[PERF] Name: %s", Test->Name);
+    LogDebug("[PERF] Conditions: Stress x%d, %s, %s, %s, %s, %s",
         PerfStressAmount, build_info.Type, build_info.Cpu, build_info.OS, build_info.Compiler, build_info.Date);
-    Log("[PERF] Result: %+6.3f ms (from ref %+6.3f)\n", dt_delta_ms, dt_ref_ms);
+    LogDebug("[PERF] Result: %+6.3f ms (from ref %+6.3f)", dt_delta_ms, dt_ref_ms);
 
     // Log to .csv
     FILE* csv_perf_log = ImGuiTestEngine_GetPerfPersistentLogCsv(Engine);

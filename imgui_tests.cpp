@@ -138,7 +138,7 @@ void RegisterTests_Window(ImGuiTestEngine* e)
             ImGui::Begin("Issue 2067", NULL, ImGuiWindowFlags_NoSavedSettings);
             ImVec2 pos = ImGui::GetWindowPos();
             ImVec2 size = ImGui::GetWindowSize();
-            //ctx->Log("%f %f, %f %f\n", pos.x, pos.y, size.x, size.y);
+            //ctx->LogDebug("%f %f, %f %f", pos.x, pos.y, size.x, size.y);
             IM_CHECK_NO_RET(pos.x == 901.0f && pos.y == 103.0f);
             IM_CHECK_NO_RET(size.x == 348.0f && size.y == 400.0f);
             ImGui::End();
@@ -151,7 +151,7 @@ void RegisterTests_Window(ImGuiTestEngine* e)
             ImGui::Begin("Issue 2530", NULL, ImGuiWindowFlags_NoSavedSettings);
             ImVec2 pos = ImGui::GetWindowPos();
             ImVec2 size = ImGui::GetWindowSize();
-            //ctx->Log("%f %f, %f %f\n", pos.x, pos.y, size.x, size.y);
+            //ctx->LogDebug("%f %f, %f %f", pos.x, pos.y, size.x, size.y);
             IM_CHECK_EQ(pos, ImVec2(901.0f, 103.0f));
             IM_CHECK_EQ(size, ImVec2(475.0f, 100.0f));
             ImGui::End();
@@ -193,16 +193,16 @@ void RegisterTests_Window(ImGuiTestEngine* e)
         ImGuiWindow* window = ImGui::FindWindowByName("Test Window");
         ctx->WindowRef("Test Window");
         ctx->WindowCollapse("", false);
-        ctx->LogVerbose("Size %f %f, SizeFull %f %f\n", window->Size.x, window->Size.y, window->SizeFull.x, window->SizeFull.y);
+        ctx->LogDebug("Size %f %f, SizeFull %f %f", window->Size.x, window->Size.y, window->SizeFull.x, window->SizeFull.y);
         IM_CHECK_EQ(window->Size, window->SizeFull);
         ImVec2 size_full_when_uncollapsed = window->SizeFull;
         ctx->WindowCollapse("", true);
-        ctx->LogVerbose("Size %f %f, SizeFull %f %f\n", window->Size.x, window->Size.y, window->SizeFull.x, window->SizeFull.y);
+        ctx->LogDebug("Size %f %f, SizeFull %f %f", window->Size.x, window->Size.y, window->SizeFull.x, window->SizeFull.y);
         ImVec2 size_collapsed = window->Size;
         IM_CHECK_GT(size_full_when_uncollapsed.y, size_collapsed.y);
         IM_CHECK_EQ(size_full_when_uncollapsed, window->SizeFull);
         ctx->WindowCollapse("", false);
-        ctx->LogVerbose("Size %f %f, SizeFull %f %f\n", window->Size.x, window->Size.y, window->SizeFull.x, window->SizeFull.y);
+        ctx->LogDebug("Size %f %f, SizeFull %f %f", window->Size.x, window->Size.y, window->SizeFull.x, window->SizeFull.y);
         IM_CHECK(window->Size.y == size_full_when_uncollapsed.y && "Window should have restored to full size.");
         ctx->Yield();
         IM_CHECK_EQ(window->Size.y, size_full_when_uncollapsed.y);
@@ -344,9 +344,9 @@ void RegisterTests_Window(ImGuiTestEngine* e)
         IM_CHECK(window->ContentSize.y > 0.0f);
         float scroll_y = window->Scroll.y;
         float scroll_max_y = window->ScrollMax.y;
-        ctx->LogVerbose("scroll_y = %f\n", scroll_y);
-        ctx->LogVerbose("scroll_max_y = %f\n", scroll_max_y);
-        ctx->LogVerbose("window->SizeContents.y = %f\n", window->ContentSize.y);
+        ctx->LogDebug("scroll_y = %f", scroll_y);
+        ctx->LogDebug("scroll_max_y = %f", scroll_max_y);
+        ctx->LogDebug("window->SizeContents.y = %f", window->ContentSize.y);
 
         IM_CHECK_NO_RET(scroll_y > 0.0f);
         IM_CHECK_NO_RET(scroll_y == scroll_max_y);
@@ -478,7 +478,7 @@ void RegisterTests_Layout(ImGuiTestEngine* e)
             const char* item_type_name = item_type_names[item_type];
             for (int n = 0; n < 5; n++)
             {
-                ctx->LogVerbose("Test '%s' variant %d\n", item_type_name, n);
+                ctx->LogDebug("Test '%s' variant %d", item_type_name, n);
 
                 // Emit button with varying baseline
                 y = window->DC.CursorPos.y;
@@ -2046,13 +2046,13 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         bool backup_cfg = ctx->UiContext->IO.ConfigDockingAlwaysTabBar;
-        ctx->LogVerbose("ConfigDockingAlwaysTabBar = false\n");
+        ctx->LogDebug("ConfigDockingAlwaysTabBar = false");
         ctx->UiContext->IO.ConfigDockingAlwaysTabBar = false;
         ctx->YieldFrames(4);
-        ctx->LogVerbose("ConfigDockingAlwaysTabBar = true\n");
+        ctx->LogDebug("ConfigDockingAlwaysTabBar = true");
         ctx->UiContext->IO.ConfigDockingAlwaysTabBar = true;
         ctx->YieldFrames(4);
-        ctx->LogVerbose("ConfigDockingAlwaysTabBar = false\n");
+        ctx->LogDebug("ConfigDockingAlwaysTabBar = false");
         ctx->UiContext->IO.ConfigDockingAlwaysTabBar = false;
         ctx->YieldFrames(4);
         ctx->UiContext->IO.ConfigDockingAlwaysTabBar = backup_cfg;
@@ -2126,7 +2126,7 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
             // FIXME-TESTS: Tests doesn't work if already docked
             // FIXME-TESTS: DockSetMulti takes window_name not ref
             io.ConfigDockingAlwaysTabBar = (test_case_n == 1);
-            ctx->Log("## TEST CASE %d: with ConfigDockingAlwaysTabBar = %d\n", test_case_n, io.ConfigDockingAlwaysTabBar);
+            ctx->LogDebug("## TEST CASE %d: with ConfigDockingAlwaysTabBar = %d", test_case_n, io.ConfigDockingAlwaysTabBar);
 
             ImGuiWindow* window_aaaa = ctx->GetWindowByRef("AAAA");
             ImGuiWindow* window_bbbb = ctx->GetWindowByRef("BBBB");
@@ -2427,7 +2427,7 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
     t = REGISTER_TEST("misc", "misc_repeat_typematic");
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
-        ctx->LogVerbose("Regular repeat delay/rate\n");
+        ctx->LogDebug("Regular repeat delay/rate");
         IM_CHECK_EQ_NO_RET(ImGui::CalcTypematicRepeatAmount(0.00f, 0.00f, 1.0f, 0.2f), 1); // Trigger @ 0.0f, 1.0f, 1.2f, 1.4f, etc.
         IM_CHECK_EQ_NO_RET(ImGui::CalcTypematicRepeatAmount(0.00f, 0.99f, 1.0f, 0.2f), 0); // "
         IM_CHECK_EQ_NO_RET(ImGui::CalcTypematicRepeatAmount(0.99f, 1.00f, 1.0f, 0.2f), 1); // "
@@ -2440,18 +2440,18 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
         IM_CHECK_EQ_NO_RET(ImGui::CalcTypematicRepeatAmount(0.99f, 1.01f, 0.1f, 1.0f), 0); // Trigger @ 0.0f, 0.1f, 1.1f, 2.1f, etc.
         IM_CHECK_EQ_NO_RET(ImGui::CalcTypematicRepeatAmount(0.99f, 1.11f, 0.1f, 1.0f), 1); // "
 
-        ctx->LogVerbose("No repeat delay\n");
+        ctx->LogDebug("No repeat delay");
         IM_CHECK_EQ_NO_RET(ImGui::CalcTypematicRepeatAmount(0.00f, 0.00f, 0.0f, 0.2f), 1); // Trigger @ 0.0f, 0.2f, 0.4f, 0.6f, etc.
         IM_CHECK_EQ_NO_RET(ImGui::CalcTypematicRepeatAmount(0.19f, 0.20f, 0.0f, 0.2f), 1); // Trigger @ 0.0f, 0.2f, 0.4f, 0.6f, etc.
         IM_CHECK_EQ_NO_RET(ImGui::CalcTypematicRepeatAmount(0.20f, 0.20f, 0.0f, 0.2f), 0); // Trigger @ 0.0f, 0.2f, 0.4f, 0.6f, etc.
         IM_CHECK_EQ_NO_RET(ImGui::CalcTypematicRepeatAmount(0.19f, 1.01f, 0.0f, 0.2f), 5); // Trigger @ 0.0f, 0.2f, 0.4f, 0.6f, etc.
 
-        ctx->LogVerbose("No repeat rate\n");
+        ctx->LogDebug("No repeat rate");
         IM_CHECK_EQ_NO_RET(ImGui::CalcTypematicRepeatAmount(0.00f, 0.00f, 1.0f, 0.0f), 1); // Trigger @ 0.0f, 1.0f
         IM_CHECK_EQ_NO_RET(ImGui::CalcTypematicRepeatAmount(0.99f, 1.01f, 1.0f, 0.0f), 1); // "
         IM_CHECK_EQ_NO_RET(ImGui::CalcTypematicRepeatAmount(1.01f, 2.00f, 1.0f, 0.0f), 0); // "
 
-        ctx->LogVerbose("No repeat delay/rate\n");
+        ctx->LogDebug("No repeat delay/rate");
         IM_CHECK_EQ_NO_RET(ImGui::CalcTypematicRepeatAmount(0.00f, 0.00f, 0.0f, 0.0f), 1); // Trigger @ 0.0f
         IM_CHECK_EQ_NO_RET(ImGui::CalcTypematicRepeatAmount(0.01f, 1.01f, 0.0f, 0.0f), 0); // "
     };
@@ -2863,7 +2863,7 @@ void RegisterTests_Perf(ImGuiTestEngine* e)
         float r = (float)(int)(ImMin(bounds_size.x, bounds_size.y) * 0.8f * 0.5f);
 
         if (ctx->FrameCount == 0)
-            ctx->Log("%d primitives over %d channels\n", loop_count, split_count);
+            ctx->LogDebug("%d primitives over %d channels", loop_count, split_count);
         if (split_count != 1)
         {
             IM_CHECK_SILENT((loop_count % split_count) == 0);
@@ -2883,7 +2883,7 @@ void RegisterTests_Perf(ImGuiTestEngine* e)
                 draw_list->AddCircleFilled(center, r, IM_COL32(255, 255, 0, 255), 12);
         }
         if (ctx->FrameCount == 0)
-            ctx->Log("Vertices: %d\n", draw_list->VtxBuffer.Size);
+            ctx->LogDebug("Vertices: %d", draw_list->VtxBuffer.Size);
 
         ImGui::End();
     };
@@ -3161,7 +3161,7 @@ void RegisterTests_Capture(ImGuiTestEngine* e)
         ctx->WindowResize("", ImVec2(fh * 20, fh * 27));
         ctx->WindowMove("", ImVec2(window_custom_rendering->Pos.x + window_custom_rendering->Size.x + pad, pad));
 
-        ctx->LogVerbose("Setup Console window...\n");
+        ctx->LogDebug("Setup Console window...");
         ctx->WindowRef("Dear ImGui Demo");
         ctx->MenuCheck("Examples/Console");
         ctx->WindowRef("Example: Console");
@@ -3176,7 +3176,7 @@ void RegisterTests_Capture(ImGuiTestEngine* e)
         ctx->KeyCharsAppendEnter("ELP");
         ctx->KeyCharsAppendEnter("hello, imgui world!");
 
-        ctx->LogVerbose("Setup Demo window...\n");
+        ctx->LogDebug("Setup Demo window...");
         ctx->WindowRef("Dear ImGui Demo");
         ctx->WindowResize("", ImVec2(fh * 35, io.DisplaySize.y - pad * 2.0f));
         ctx->WindowMove("", ImVec2(io.DisplaySize.x - pad, pad), ImVec2(1.0f, 0.0f));

@@ -20,6 +20,7 @@ struct TestApp
     bool                    OptGUI = DEFAULT_OPT_GUI;
     bool                    OptFast = true;
     ImGuiTestVerboseLevel   OptVerboseLevel = ImGuiTestVerboseLevel_COUNT; // Set in main.cpp
+    ImGuiTestVerboseLevel   OptVerboseLevelOnError = ImGuiTestVerboseLevel_COUNT; // Set in main.cpp
     bool                    OptNoThrottle = false;
     bool                    OptPauseOnExit = true;
     char*                   OptFileOpener = NULL;

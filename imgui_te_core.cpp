@@ -134,19 +134,6 @@ struct ImGuiTestEngine
     }
 };
 
-static const char* GetVerboseLevelName(ImGuiTestVerboseLevel v)
-{
-    switch (v)
-    {
-    case ImGuiTestVerboseLevel_Silent:  return "Silent";
-    case ImGuiTestVerboseLevel_Min:     return "Minimum";
-    case ImGuiTestVerboseLevel_Normal:  return "Normal";
-    case ImGuiTestVerboseLevel_Max:     return "Max";
-    case ImGuiTestVerboseLevel_COUNT:
-    default:                            return "N/A";
-    }
-}
-
 //-------------------------------------------------------------------------
 // [SECTION] TEST ENGINE: FORWARD DECLARATIONS
 //-------------------------------------------------------------------------
@@ -475,7 +462,7 @@ static void ImGuiTestEngine_PreNewFrame(ImGuiTestEngine* engine, ImGuiContext* c
         if (key_idx_escape != -1 && main_io.KeysDown[key_idx_escape] && !simulated_io.KeysDown[key_idx_escape])
         {
             if (engine->TestContext)
-                engine->TestContext->Log("KO: User aborted (pressed ESC)\n");
+                engine->TestContext->LogWarning("KO: User aborted (pressed ESC)");
             ImGuiTestEngine_Abort(engine);
         }
     }
@@ -635,8 +622,10 @@ static void ImGuiTestEngine_ProcessTestQueue(ImGuiTestEngine* engine)
         if (track_scrolling)
             engine->UiSelectAndScrollToTest = test;
 
-        ctx.LogEx(ImGuiTestLogFlags_NoHeader, "----------------------------------------------------------------------\n");
-        ctx.LogEx(ImGuiTestLogFlags_None, "Test: '%s' '%s'..\n", test->Category, test->Name);
+
+
+        ctx.LogRaw(ImGuiTestVerboseLevel_Info, "----------------------------------------------------------------------");
+        ctx.LogInfo("Test: '%s' '%s'..", test->Category, test->Name);
         if (test->UserDataConstructor != NULL)
         {
             if ((engine->UserDataBuffer == NULL) || (engine->UserDataBufferSize < test->UserDataSize))
@@ -869,14 +858,14 @@ static void ImGuiTestEngine_RunTest(ImGuiTestEngine* engine, ImGuiTestContext* c
     if (test->Status == ImGuiTestStatus_Success)
     {
         if ((ctx->RunFlags & ImGuiTestRunFlags_NoSuccessMsg) == 0)
-            ctx->Log("Success.\n");
+            ctx->LogInfo("Success.");
     }
     else if (engine->Abort)
-        ctx->Log("Aborted.\n");
+        ctx->LogWarning("Aborted.");
     else if (test->Status == ImGuiTestStatus_Error)
-        ctx->Log("Error.\n");
+        ctx->LogError("Error.");
     else
-        ctx->Log("Unknown status.\n");
+        ctx->LogWarning("Unknown status.");
 
     // Additional yields to avoid consecutive tests who may share identifiers from missing their window/item activation.
     ctx->RunFlags |= ImGuiTestRunFlags_NoGuiFunc;
@@ -1014,19 +1003,22 @@ void ImGuiTestEngineHook_Log(ImGuiContext* ctx, const char* fmt, ...)
 
     va_list args;
     va_start(args, fmt);
-    engine->TestContext->LogExV(ImGuiTestLogFlags_None, fmt, args);
+    engine->TestContext->LogV(ImGuiTestVerboseLevel_Debug, fmt, args);
     va_end(args);
 }
 
 void ImGuiTestEngineHook_AssertFunc(const char* expr, const char* file, const char* function, int line)
 {
-    ImOsConsoleSetTextColor(ImOsConsoleStream_StandardError, ImOsConsoleTextColor_BrightYellow);
-    fprintf(stderr, "Assert: '%s'\nIn %s:%d, function %s()\n", expr, file, line, function);
     if (ImGuiTestEngine* engine = GImGuiHookingEngine)
+    {
         if (ImGuiTestContext* ctx = engine->TestContext)
+        {
+            ctx->LogError("Assert: '%s'", expr);
+            ctx->LogWarning("In %s:%d, function %s()", file, line, function);
             if (ImGuiTest* test = ctx->Test)
-                fprintf(stderr, "While running test: %s %s\n", test->Category, test->Name);
-    ImOsConsoleSetTextColor(ImOsConsoleStream_StandardError, ImOsConsoleTextColor_White);
+                ctx->LogWarning("While running test: %s %s", test->Category, test->Name);
+        }
+    }
 
     // Consider using github.com/scottt/debugbreak
 #ifdef _MSC_VER
@@ -1054,49 +1046,42 @@ bool ImGuiTestEngineHook_Check(const char* file, const char* func, int line, ImG
     while (file_without_path > file && file_without_path[-1] != '/' && file_without_path[-1] != '\\')
         file_without_path--;
 
-    if (result == false)
-    {
-        ImOsConsoleSetTextColor(ImOsConsoleStream_StandardError, ImOsConsoleTextColor_BrightRed);
-        if (file)
-            fprintf(stderr, "KO: %s:%d  '%s'", file_without_path, line, expr);
-        else
-            fprintf(stderr, "KO: %s", expr);
-
-        if (value_expr != NULL)
-            fprintf(stderr, " -> '%s'", value_expr);
-        fprintf(stderr, "\n");
-        ImOsConsoleSetTextColor(ImOsConsoleStream_StandardError, ImOsConsoleTextColor_White);
-    }
-    
     if (ImGuiTestContext* ctx = engine->TestContext)
     {
         ImGuiTest* test = ctx->Test;
-        //ctx->LogVerbose("IM_CHECK(%s)\n", expr);
-
-        if (result && !(flags & ImGuiTestCheckFlags_SilentSuccess))
-        {
-            if (file)
-                ctx->Log("OK %s:%d  '%s'\n", file_without_path, line, expr);
-            else
-                ctx->Log("OK  '%s'\n", expr);
-        }
+        //ctx->LogDebug("IM_CHECK(%s)", expr);
         if (!result)
         {
             if (!(ctx->RunFlags & ImGuiTestRunFlags_NoTestFunc))
                 test->Status = ImGuiTestStatus_Error;
-            if (file)
-                test->TestLog.Buffer.appendf("[%04d] KO %s:%d  '%s'", ctx->FrameCount, file_without_path, line, expr);
-            else
-                test->TestLog.Buffer.appendf("[%04d] KO  '%s'", ctx->FrameCount, expr);
+
             bool display_value_expr = (value_expr != NULL) && (result == false);
-            if (display_value_expr)
-                test->TestLog.Buffer.appendf(" -> '%s'", value_expr);
-            test->TestLog.Buffer.appendf("\n");
+            if (file)
+            {
+                if (display_value_expr)
+                    ctx->LogError("KO %s:%d '%s' -> '%s'", file_without_path, line, expr, value_expr);
+                else
+                    ctx->LogError("KO %s:%d '%s'", file_without_path, line, expr);
+            }
+            else
+            {
+                if (display_value_expr)
+                    ctx->LogError("KO '%s' -> '%s'", expr, value_expr);
+                else
+                    ctx->LogError("KO '%s'", expr);
+            }
+        }
+        else if (!(flags & ImGuiTestCheckFlags_SilentSuccess))
+        {
+            if (file)
+                ctx->LogInfo("OK %s:%d '%s'", file_without_path, line, expr);
+            else
+                ctx->LogInfo("OK '%s'", expr);
         }
     }
     else
     {
-        fprintf(stderr, "Error: no active test!\n");
+        ctx->LogError("Error: no active test!\n");
         IM_ASSERT(0);
     }
 
@@ -1173,35 +1158,42 @@ static void DrawTestLog(ImGuiTestEngine* e, ImGuiTest* test, bool is_interactive
 
     // FIXME-OPT: Split TestLog by lines so we can clip it easily.
     ImGuiTestLog* log = &test->TestLog;
-    log->UpdateLineOffsets();
 
     const char* text = test->TestLog.Buffer.begin();
     const char* text_end = test->TestLog.Buffer.end();
     ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(6.0f, 2.0f));
+    ImVector<ImGuiTestLogLineInfo>& line_info_vector = test->Status == ImGuiTestStatus_Error ? log->LineInfoError : log->LineInfo;
     ImGuiListClipper clipper;
-    clipper.Begin(log->LineOffsets.Size);
+    clipper.Begin(line_info_vector.Size);
     while (clipper.Step())
     {
         for (int line_no = clipper.DisplayStart; line_no < clipper.DisplayEnd; line_no++)
         {
-            const char* line_start = text + log->LineOffsets[line_no];
-            const char* line_end = (line_no + 1 < log->LineOffsets.Size) ? (text + log->LineOffsets[line_no + 1] - 1) : text_end;
-            const bool is_error = ImStristr(line_start, line_end, "] KO", NULL) != NULL; // FIXME-OPT
-            const bool is_warning = ImStristr(line_start, line_end, "[warn]", NULL) != NULL; // FIXME-OPT
-            const bool is_unimportant = ImStristr(line_start, line_end, "] --", NULL) != NULL; // FIXME-OPT
+            ImGuiTestLogLineInfo& line_info = line_info_vector[line_no];
+            const char* line_start = text + line_info.LineOffset;
+            const char* line_end = strchr(line_start, '\n');
+            if (line_end == NULL)
+                line_end = text_end;
 
-            if (is_error)
+            switch (line_info.Level)
+            {
+            case ImGuiTestVerboseLevel_Error:
                 ImGui::PushStyleColor(ImGuiCol_Text, error_col);
-            else if (is_warning)
+                break;
+            case ImGuiTestVerboseLevel_Warning:
                 ImGui::PushStyleColor(ImGuiCol_Text, warning_col);
-            else if (is_unimportant)
+                break;
+            case ImGuiTestVerboseLevel_Trace:
                 ImGui::PushStyleColor(ImGuiCol_Text, unimportant_col);
+                break;
+            default:
+                ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32_WHITE);
+                break;
+            }
             ImGui::TextUnformatted(line_start, line_end);
-            if (is_error || is_warning || is_unimportant)
-                ImGui::PopStyleColor();
+            ImGui::PopStyleColor();
 
             ImGui::PushID(line_no);
-
             if (ImGui::BeginPopupContextItem("Context", 1))
             {
                 if (!ParseLineAndDrawFileOpenItem(e, test, line_start, line_end))
@@ -1262,7 +1254,7 @@ void    ImGuiTestEngine_ShowTestWindow(ImGuiTestEngine* engine, bool* p_open)
     ImGui::Checkbox("Refocus", &engine->IO.ConfigTakeFocusBackAfterTests); HelpTooltip("Set focus back to Test window after running tests.");
     ImGui::SameLine();
     ImGui::PushItemWidth(60);
-    ImGui::DragInt("Verbose", (int*)&engine->IO.ConfigVerboseLevel, 0.1f, 0, ImGuiTestVerboseLevel_COUNT - 1, GetVerboseLevelName(engine->IO.ConfigVerboseLevel));
+    ImGui::DragInt("Verbose", (int*)&engine->IO.ConfigVerboseLevel, 0.1f, 0, ImGuiTestVerboseLevel_COUNT - 1, ImGuiTestVerboseLevelNames[engine->IO.ConfigVerboseLevel]);
     ImGui::PopItemWidth();
     ImGui::SameLine();
     ImGui::PushItemWidth(30);

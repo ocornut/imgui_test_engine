@@ -129,21 +129,18 @@ static bool ParseCommandLineOptions(int argc, char** argv)
         if (argv[n][0] == '-')
         {
             // Command-line option
-            if (strcmp(argv[n], "-v0") == 0)
+            if (strcmp(argv[n], "-v") == 0)
             {
-                g_App.OptVerboseLevel = ImGuiTestVerboseLevel_Silent;
+                g_App.OptVerboseLevel = ImGuiTestVerboseLevel_Info;
+                g_App.OptVerboseLevelOnError = ImGuiTestVerboseLevel_Debug;
             }
-            else if (strcmp(argv[n], "-v1") == 0)
+            else if (strncmp(argv[n], "-v", 2) == 0 && strlen(argv[n] + 2) == 1 && *(argv[n] + 2) >= '0' && *(argv[n] + 2) <= '5')
             {
-                g_App.OptVerboseLevel = ImGuiTestVerboseLevel_Min;
+                g_App.OptVerboseLevel = (ImGuiTestVerboseLevel)atoi(argv[n] + 2);
             }
-            else if (strcmp(argv[n], "-v2") == 0 || strcmp(argv[n], "-v") == 0)
+            else if (strncmp(argv[n], "-ve", 3) == 0 && strlen(argv[n] + 3) == 1 && *(argv[n] + 3) >= '0' && *(argv[n] + 3) <= '5')
             {
-                g_App.OptVerboseLevel = ImGuiTestVerboseLevel_Normal;
-            }
-            else if (strcmp(argv[n], "-v3") == 0)
-            {
-                g_App.OptVerboseLevel = ImGuiTestVerboseLevel_Max;
+                g_App.OptVerboseLevelOnError = (ImGuiTestVerboseLevel)atoi(argv[n] + 3);
             }
             else if (strcmp(argv[n], "-gui") == 0)
             {
@@ -181,17 +178,18 @@ static bool ParseCommandLineOptions(int argc, char** argv)
             {
                 printf("Syntax: %s <options> [tests]\n", argv[0]);
                 printf("Options:\n");
-                printf("  -h                  : show command-line help.\n");
-                printf("  -v                  : verbose mode (same as -v2)\n");
-                printf("  -v0/-v1/-v2/-v3     : verbose level [v0: silent, v1: min, v2: normal: v3: max]\n");
-                printf("  -gui/-nogui         : enable interactive mode.\n");
-                printf("  -slow               : run automation at feeble human speed.\n");
-                printf("  -nothrottle         : run GUI app without throlling/vsync by default.\n");
-                printf("  -nopause            : don't pause application on exit.\n");
-                printf("  -fileopener <file>  : provide a bat/cmd/shell script to open source file.\n");
+                printf("  -h                       : show command-line help.\n");
+                printf("  -v                       : verbose mode (same as -v2 -ve4)\n");
+                printf("  -v0/-v1/-v2/-v3/-v4      : verbose level [v0: silent, v1: errors, v2: warnings: v3: info, v4: debug]\n");
+                printf("  -ve0/-ve1/-ve2/-ve3/-ve4 : verbose level for failing tests [v0: silent, v1: errors, v2: warnings: v3: info, v4: debug]\n");
+                printf("  -gui/-nogui              : enable interactive mode.\n");
+                printf("  -slow                    : run automation at feeble human speed.\n");
+                printf("  -nothrottle              : run GUI app without throlling/vsync by default.\n");
+                printf("  -nopause                 : don't pause application on exit.\n");
+                printf("  -fileopener <file>       : provide a bat/cmd/shell script to open source file.\n");
                 printf("Tests:\n");
-                printf("   all                : queue all tests.\n");
-                printf("   [pattern]          : queue all tests containing the word [pattern].\n");
+                printf("   all                     : queue all tests.\n");
+                printf("   [pattern]               : queue all tests containing the word [pattern].\n");
                 return false;
             }
         }
@@ -254,7 +252,9 @@ int main(int argc, char** argv)
 
     // Default verbose level differs whether we are in in GUI or Command-Line mode
     if (g_App.OptVerboseLevel == ImGuiTestVerboseLevel_COUNT)
-        g_App.OptVerboseLevel = g_App.OptGUI ? ImGuiTestVerboseLevel_Normal : ImGuiTestVerboseLevel_Min;
+        g_App.OptVerboseLevel = g_App.OptGUI ? ImGuiTestVerboseLevel_Info : ImGuiTestVerboseLevel_Silent;
+    if (g_App.OptVerboseLevelOnError == ImGuiTestVerboseLevel_COUNT)
+        g_App.OptVerboseLevelOnError = g_App.OptGUI ? ImGuiTestVerboseLevel_Info : ImGuiTestVerboseLevel_Debug;
 
     // Setup Dear ImGui binding
     IMGUI_CHECKVERSION();
@@ -311,6 +311,7 @@ int main(int argc, char** argv)
     ImGuiTestEngineIO& test_io = ImGuiTestEngine_GetIO(g_App.TestEngine);
     test_io.ConfigRunFast = g_App.OptFast;
     test_io.ConfigVerboseLevel = g_App.OptVerboseLevel;
+    test_io.ConfigVerboseLevelOnError = g_App.OptVerboseLevelOnError;
     test_io.ConfigNoThrottle = g_App.OptNoThrottle;
     test_io.PerfStressAmount = 5;
     if (!g_App.OptGUI && ImOsIsDebuggerPresent())

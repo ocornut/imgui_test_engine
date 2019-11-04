@@ -30,7 +30,7 @@ jobs:
 
     - name: Test
       run: |
-        app/imgui_test_app all
+        app/imgui_test_app -v2 -ve4 all
 
   Tables:
     runs-on: ubuntu-18.04
@@ -54,4 +54,4 @@ jobs:
 
     - name: Test
       run: |
-        app/imgui_test_app all
+        app/imgui_test_app -v2 -ve4 all
