@@ -34,6 +34,9 @@ jobs:
 
   Tables:
     runs-on: ubuntu-18.04
+    strategy:
+      matrix:
+        branch: [tables]
 
     steps:
     - uses: actions/checkout@v1
@@ -45,7 +48,7 @@ jobs:
         fetch-depth: 1
         repository: ocornut/imgui_private
         path: imgui
-        ref: tables
+        ref: ${{ matrix.branch }}
         token: ${{ secrets.IMGUI_PRIVATE_ACCESS }}
 
     - name: Build
