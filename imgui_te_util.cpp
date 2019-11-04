@@ -390,9 +390,10 @@ const char* GetImGuiKeyName(ImGuiKey key)
 
 // Those strings are used to output easily identifiable markers in compare logs. We only need to support what we use for testing.
 // We can probably grab info in eaplatform.h/eacompiler.h etc. in EASTL
-const ImGuiTestsBuildInfo& ImGetBuildInfo()
+const ImBuildInfo& ImGetBuildInfo()
 {
-    static ImGuiTestsBuildInfo build_info;
+    static ImBuildInfo build_info;
+
     if (build_info.Type[0] == '\0')
     {
         // Build Type

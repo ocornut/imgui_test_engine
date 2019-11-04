@@ -35,14 +35,14 @@ enum ImOsConsoleTextColor
     ImOsConsoleTextColor_BrightYellow
 };
 
-struct ImGuiTestsBuildInfo
+struct ImBuildInfo
 {
     const char* Type = "";
     const char* Cpu = "";
     const char* OS = "";
     const char* Compiler = "";
-    char        Date[32];
-    const char* Time = "";
+    char        Date[32];           // "YYYY-MM-DD"
+    const char* Time = "";          // 
 };
 
 // Helpers: miscellaneous functions
@@ -65,7 +65,7 @@ void        ImDebugShowInputTextState();
 
 const char* GetImGuiKeyName(ImGuiKey key);
 void        GetImGuiKeyModsPrefixStr(ImGuiKeyModFlags mod_flags, char* out_buf, size_t out_buf_size);
-const ImGuiTestsBuildInfo&  ImGetBuildInfo();
+const ImBuildInfo&  ImGetBuildInfo();
 
 // Helper: maintain/calculate moving average
 template<typename TYPE>

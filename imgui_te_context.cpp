@@ -1500,7 +1500,7 @@ void    ImGuiTestContext::PerfCapture()
     double dt_ref_ms = PerfRefDt * 1000;
     double dt_delta_ms = (dt_curr - PerfRefDt) * 1000;
 
-    const ImGuiTestsBuildInfo& build_info = ImGetBuildInfo();
+    const ImBuildInfo& build_info = ImGetBuildInfo();
 
     //Log("[PERF] Name: %s\n", Test->Name);
     Log("[PERF] Conditions: Stress x%d, %s, %s, %s, %s, %s\n", 

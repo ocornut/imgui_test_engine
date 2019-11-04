@@ -1,4 +1,4 @@
-// dear imgui - standalone example application for DirectX 11
+// dear imgui - Standalone GUI/command-line app for Test Engine
 // If you are new to dear imgui, see examples/README.txt and documentation at the top of imgui.cpp.
 
 // Interactive mode, e.g.
@@ -126,7 +126,7 @@ static bool ParseCommandLineOptions(int argc, char** argv)
 {
     for (int n = 1; n < argc; n++)
     {
-        if (argv[n][0] == '-' || argv[n][0] == '/')
+        if (argv[n][0] == '-')
         {
             // Command-line option
             if (strcmp(argv[n], "-v0") == 0)
@@ -205,7 +205,7 @@ static bool ParseCommandLineOptions(int argc, char** argv)
 }
 
 // Source file opener
-static void FileOpenerFunc(const char* filename, int line, void*)
+static void SrcFileOpenerFunc(const char* filename, int line, void*)
 {
     if (!g_App.OptFileOpener)
     {
@@ -222,11 +222,11 @@ static void FileOpenerFunc(const char* filename, int line, void*)
 }
 
 // Return value for main()
-enum ImGuiTestApp_Status
+enum ImGuiTestAppErrorCode
 {
-    ImGuiTestApp_Status_Success = 0,
-    ImGuiTestApp_Status_CommandLineError = 1,
-    ImGuiTestApp_Status_TestFailed = 2,
+    ImGuiTestAppErrorCode_Success = 0,
+    ImGuiTestAppErrorCode_CommandLineError = 1,
+    ImGuiTestAppErrorCode_TestFailed = 2
 };
 
 int main(int argc, char** argv)
@@ -241,14 +241,14 @@ int main(int argc, char** argv)
         printf("# [exe] %s\n", CMDLINE_ARGS);
         ImParseSplitCommandLine(&argc, (const char***)&argv, CMDLINE_ARGS);
         if (!ParseCommandLineOptions(argc, argv))
-            return ImGuiTestApp_Status_CommandLineError;
+            return ImGuiTestAppErrorCode_CommandLineError;
         free(argv);
     }
     else
 #endif
     {
         if (!ParseCommandLineOptions(argc, argv))
-            return ImGuiTestApp_Status_CommandLineError;
+            return ImGuiTestAppErrorCode_CommandLineError;
     }
     argv = NULL;
 
@@ -291,8 +291,6 @@ int main(int argc, char** argv)
     RegisterTests(g_App.TestEngine);
     ImGuiTestEngine_CalcSourceLineEnds(g_App.TestEngine);
 
-    ImGuiTestEngineIO& test_io = ImGuiTestEngine_GetIO(g_App.TestEngine);
-
     // Non-interactive mode queue all tests by default
     if (!g_App.OptGUI && g_App.TestsToRun.empty())
         g_App.TestsToRun.push_back(strdup("all"));
@@ -310,27 +308,29 @@ int main(int argc, char** argv)
     g_App.TestsToRun.clear();
 
     // Apply options
+    ImGuiTestEngineIO& test_io = ImGuiTestEngine_GetIO(g_App.TestEngine);
     test_io.ConfigRunFast = g_App.OptFast;
     test_io.ConfigVerboseLevel = g_App.OptVerboseLevel;
     test_io.ConfigNoThrottle = g_App.OptNoThrottle;
     test_io.PerfStressAmount = 5;
     if (!g_App.OptGUI && ImOsIsDebuggerPresent())
         test_io.ConfigBreakOnError = true;
-    test_io.FileOpenerFunc = FileOpenerFunc;
+    test_io.SrcFileOpenFunc = SrcFileOpenerFunc;
 
+    // Run
     if (g_App.OptGUI)
         MainLoop();
     else
         MainLoopNull();
 
-    // Gather results
+    // Print results
     int count_tested = 0;
     int count_success = 0;
     ImGuiTestEngine_GetResult(g_App.TestEngine, count_tested, count_success);
     ImGuiTestEngine_PrintResultSummary(g_App.TestEngine);
-    ImGuiTestApp_Status error_code = ImGuiTestApp_Status_Success;
+    ImGuiTestAppErrorCode error_code = ImGuiTestAppErrorCode_Success;
     if (count_tested != count_success)
-        error_code = ImGuiTestApp_Status_TestFailed;
+        error_code = ImGuiTestAppErrorCode_TestFailed;
 
     // Shutdown
     // We shutdown the Dear ImGui context _before_ the test engine context, so .ini data may be saved.

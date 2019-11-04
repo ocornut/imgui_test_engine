@@ -3,8 +3,8 @@
 
 #pragma once
 
-#include <stdio.h>              // FILE
-#include "imgui_internal.h"     // ImPool<>, ImGuiItemStatusFlags, ImFormatString
+#include <stdio.h>                  // FILE
+#include "imgui_internal.h"         // ImPool<>, ImGuiItemStatusFlags, ImFormatString
 #include "imgui_te_util.h"
 
 //-------------------------------------------------------------------------
@@ -157,27 +157,27 @@ struct ImGuiTestInputs
 // Internal function
 //-------------------------------------------------------------------------
 
-ImGuiTestItemInfo*   ImGuiTestEngine_ItemLocate(ImGuiTestEngine* engine, ImGuiID id, const char* debug_id);
-void                 ImGuiTestEngine_PushInput(ImGuiTestEngine* engine, const ImGuiTestInput& input);
-void                 ImGuiTestEngine_Yield(ImGuiTestEngine* engine);
-void                 ImGuiTestEngine_SetDeltaTime(ImGuiTestEngine* engine, float delta_time);
-int                  ImGuiTestEngine_GetFrameCount(ImGuiTestEngine* engine);
-double               ImGuiTestEngine_GetPerfDeltaTime500Average(ImGuiTestEngine* engine);
-FILE*                ImGuiTestEngine_GetPerfPersistentLogCsv(ImGuiTestEngine* engine);
+ImGuiTestItemInfo*  ImGuiTestEngine_ItemLocate(ImGuiTestEngine* engine, ImGuiID id, const char* debug_id);
+void                ImGuiTestEngine_PushInput(ImGuiTestEngine* engine, const ImGuiTestInput& input);
+void                ImGuiTestEngine_Yield(ImGuiTestEngine* engine);
+void                ImGuiTestEngine_SetDeltaTime(ImGuiTestEngine* engine, float delta_time);
+int                 ImGuiTestEngine_GetFrameCount(ImGuiTestEngine* engine);
+double              ImGuiTestEngine_GetPerfDeltaTime500Average(ImGuiTestEngine* engine);
+FILE*               ImGuiTestEngine_GetPerfPersistentLogCsv(ImGuiTestEngine* engine);
 
 //-------------------------------------------------------------------------
 // Hooks for Core Library
 //-------------------------------------------------------------------------
 
-void    ImGuiTestEngineHook_PreNewFrame(ImGuiContext* ctx);
-void    ImGuiTestEngineHook_PostNewFrame(ImGuiContext* ctx);
-void    ImGuiTestEngineHook_ItemAdd(ImGuiContext* ctx, const ImRect& bb, ImGuiID id);
-void    ImGuiTestEngineHook_ItemInfo(ImGuiContext* ctx, ImGuiID id, const char* label, ImGuiItemStatusFlags flags);
-void    ImGuiTestEngineHook_Log(ImGuiContext* ctx, const char* fmt, ...);
-void    ImGuiTestEngineHook_AssertFunc(const char* expr, const char* file, const char* function, int line);
+void                ImGuiTestEngineHook_PreNewFrame(ImGuiContext* ctx);
+void                ImGuiTestEngineHook_PostNewFrame(ImGuiContext* ctx);
+void                ImGuiTestEngineHook_ItemAdd(ImGuiContext* ctx, const ImRect& bb, ImGuiID id);
+void                ImGuiTestEngineHook_ItemInfo(ImGuiContext* ctx, ImGuiID id, const char* label, ImGuiItemStatusFlags flags);
+void                ImGuiTestEngineHook_Log(ImGuiContext* ctx, const char* fmt, ...);
+void                ImGuiTestEngineHook_AssertFunc(const char* expr, const char* file, const char* function, int line);
 
 //-------------------------------------------------------------------------
-// Hooks for Tests
+// Macros for Tests
 //-------------------------------------------------------------------------
 
 // We embed every macro in a do {} while(0) statement as a trick to allow using them as regular single statement, e.g. if (XXX) IM_CHECK(A); else IM_CHECK(B)
@@ -270,7 +270,7 @@ bool    ImGuiTestEngineHook_Check(const char* file, const char* func, int line, 
 bool    ImGuiTestEngineHook_Error(const char* file, const char* func, int line, ImGuiTestCheckFlags flags, const char* fmt, ...);
 
 //-------------------------------------------------------------------------
-// ImGuiTestEngine
+// ImGuiTestEngine API
 //-------------------------------------------------------------------------
 
 // Functions
@@ -291,13 +291,13 @@ void                ImGuiTestEngine_GetResult(ImGuiTestEngine* engine, int& coun
 // IO structure
 typedef bool (*ImGuiTestEngineNewFrameFunc)(ImGuiTestEngine*, void* user_data);
 typedef bool (*ImGuiTestEngineEndFrameFunc)(ImGuiTestEngine*, void* user_data);
-typedef void (*ImGuiTestEngineFileOpenerFunc)(const char* filename, int line, void* user_data);
+typedef void (*ImGuiTestEngineSrcFileOpenFunc)(const char* filename, int line, void* user_data);
 
 struct ImGuiTestEngineIO
 {
     ImGuiTestEngineEndFrameFunc EndFrameFunc = NULL;
     ImGuiTestEngineNewFrameFunc NewFrameFunc = NULL;
-    ImGuiTestEngineFileOpenerFunc FileOpenerFunc = NULL;    // (Optional) To open source files
+    ImGuiTestEngineSrcFileOpenFunc SrcFileOpenFunc = NULL;  // (Optional) To open source files
     void*                       UserData = NULL;
                                 
     // Inputs: Options          
@@ -373,7 +373,7 @@ struct ImGuiTestRefDesc
 {
     char Buf[40];
 
-    const char* c_str() { return Buf; }
+    const char* c_str()     { return Buf; }
     ImGuiTestRefDesc(const ImGuiTestRef& ref, const ImGuiTestItemInfo* item = NULL)
     {
         if (ref.Path)
@@ -384,16 +384,8 @@ struct ImGuiTestRefDesc
 };
 
 //-------------------------------------------------------------------------
-// ImGuiTest
+// ImGuiTestLog
 //-------------------------------------------------------------------------
-
-typedef void    (*ImGuiTestRunFunc)(ImGuiTestContext* ctx);
-typedef void    (*ImGuiTestGuiFunc)(ImGuiTestContext* ctx);
-typedef void    (*ImGuiTestTestFunc)(ImGuiTestContext* ctx);
-
-// Wraps a placement new of a given type (where 'buffer' is the allocated memory)
-typedef void    (*ImGuiTestUserDataConstructor)(void* buffer);
-typedef void    (*ImGuiTestUserDataDestructor)(void* ptr);
 
 struct ImGuiTestLog
 {
@@ -422,7 +414,7 @@ struct ImGuiTestLog
         {
             const char* p_bol = p;
             const char* p_eol = strchr(p, '\n');
-            
+
             bool last_empty_line = (p_bol + 1 == p_end);
 
             if (!last_empty_line)
@@ -432,6 +424,18 @@ struct ImGuiTestLog
         LineOffsetsValidUpTo = Buffer.size();
     }
 };
+
+//-------------------------------------------------------------------------
+// ImGuiTest
+//-------------------------------------------------------------------------
+
+typedef void    (*ImGuiTestRunFunc)(ImGuiTestContext* ctx);
+typedef void    (*ImGuiTestGuiFunc)(ImGuiTestContext* ctx);
+typedef void    (*ImGuiTestTestFunc)(ImGuiTestContext* ctx);
+
+// Wraps a placement new of a given type (where 'buffer' is the allocated memory)
+typedef void    (*ImGuiTestUserDataConstructor)(void* buffer);
+typedef void    (*ImGuiTestUserDataDestructor)(void* ptr);
 
 // Storage for one test
 struct ImGuiTest

@@ -1729,7 +1729,7 @@ void RegisterTests_Columns(ImGuiTestEngine* e)
     {
         ImGui::Begin("Test window 1", NULL, ImGuiWindowFlags_NoSavedSettings);
         ImGui::BeginTable("##table0", 4);
-        ImGui::TableAddColumn("One", 0, ImGuiTableColumnFlags_WidthFixed, 100.0f);
+        ImGui::TableAddColumn("One", ImGuiTableColumnFlags_WidthFixed, 100.0f, 0);
         ImGui::TableAddColumn("Two");
         ImGui::TableAddColumn("Three");
         ImGui::TableAddColumn("Four");
@@ -1761,7 +1761,21 @@ void RegisterTests_Columns(ImGuiTestEngine* e)
         {
             int cmd_size_before = draw_list->CmdBuffer.Size;
             ImGui::BeginTable("##table2", 4, ImGuiTableFlags_Borders, ImVec2(400, 0));
-            HelperTableSubmitCells(4, 5);
+            HelperTableSubmitCells(4, 4);
+            ImGui::EndTable();
+            ImGui::Text("Some text");
+            int cmd_size_after = draw_list->CmdBuffer.Size;
+            IM_CHECK_EQ(cmd_size_before, cmd_size_after);
+        }
+        {
+            int cmd_size_before = draw_list->CmdBuffer.Size;
+            ImGui::BeginTable("##table3", 4, ImGuiTableFlags_Borders, ImVec2(400, 0));
+            ImGui::TableAddColumn("One");
+            ImGui::TableAddColumn("TwoTwo");
+            ImGui::TableAddColumn("ThreeThreeThree");
+            ImGui::TableAddColumn("FourFourFourFour");
+            ImGui::TableAutoHeaders();
+            HelperTableSubmitCells(4, 4);
             ImGui::EndTable();
             ImGui::Text("Some text");
             int cmd_size_after = draw_list->CmdBuffer.Size;
@@ -1829,17 +1843,28 @@ void RegisterTests_Columns(ImGuiTestEngine* e)
         ImGui::End();
     };
 
-#endif
+    // ## Test behavior of some Table functions without BeginTable
+    t = REGISTER_TEST("table", "table_4_functions_without_table");
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::Begin("Test window 1", NULL, ImGuiWindowFlags_NoSavedSettings);
+        IM_CHECK_EQ(ImGui::TableGetColumnIndex(), 0);
+        IM_CHECK_EQ(ImGui::TableSetColumnIndex(42), false);
+        IM_CHECK_EQ(ImGui::TableGetColumnIsVisible(0), false);
+        IM_CHECK_EQ(ImGui::TableGetColumnIsSorted(0), false);
+        ImGui::End();
+    };
+#endif // #ifdef IMGUI_HAS_TABLE
 
-    // ## Test behavior of column functions without multiple columns.
+    // ## Test behavior of some Column functions without Columns/BeginColumns.
     t = REGISTER_TEST("columns", "columns_functions_without_columns");
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         ImGui::Begin("Test window 1", NULL, ImGuiWindowFlags_NoSavedSettings);
-        IM_CHECK(ImGui::GetColumnsCount() == 1);
-        IM_CHECK(ImGui::GetColumnOffset() == 0.0f);
-        IM_CHECK(ImGui::GetColumnWidth() == ImGui::GetContentRegionAvail().x);
-        IM_CHECK(ImGui::GetColumnIndex() == 0);
+        IM_CHECK_EQ(ImGui::GetColumnsCount(), 1);
+        IM_CHECK_EQ(ImGui::GetColumnOffset(), 0.0f);
+        IM_CHECK_EQ(ImGui::GetColumnWidth(), ImGui::GetContentRegionAvail().x);
+        IM_CHECK_EQ(ImGui::GetColumnIndex(), 0);
         ImGui::End();
     };
 };

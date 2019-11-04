@@ -17,8 +17,23 @@
 
 #define IMGUI_DEBUG_TEST_ENGINE     1
 
+/*
+
+Index of this file:
+
+// [SECTION] TODO
+// [SECTION] DATA STRUCTURES
+// [SECTION] TEST ENGINE: FORWARD DECLARATIONS
+// [SECTION] TEST ENGINE: FUNCTIONS
+// [SECTION] HOOKS FOR CORE LIBRARY
+// [SECTION] HOOKS FOR TESTS
+// [SECTION] USER INTERFACE
+// [SECTION] SETTINGS
+
+*/
+
 //-------------------------------------------------------------------------
-// TODO
+// [SECTION] TODO
 //-------------------------------------------------------------------------
 
 // GOAL: Code coverage.
@@ -38,21 +53,6 @@
 // FIXME-TESTS: Mouse actions on ImGuiNavLayer_Menu layer
 // FIXME-TESTS: Fail to open a double-click tree node
 // FIXME-TESTS: Possible ID resolving variables e.g. "$REF/Main menu bar" / "$NAV/Main menu bar" / "$TOP/Main menu bar"
-
-
-/*
-
-Index of this file:
-
-// [SECTION] DATA STRUCTURES
-// [SECTION] TEST ENGINE: FORWARD DECLARATIONS
-// [SECTION] TEST ENGINE: FUNCTIONS
-// [SECTION] HOOKS FOR CORE LIBRARY
-// [SECTION] HOOKS FOR TESTS
-// [SECTION] USER INTERFACE
-// [SECTION] SETTINGS
-
-*/
 
 //-------------------------------------------------------------------------
 // [SECTION] DATA STRUCTURES
@@ -1159,7 +1159,7 @@ static bool ParseLineAndDrawFileOpenItem(ImGuiTestEngine* e, ImGuiTest* test, co
         const char* src_file_path = test->SourceFile;
         const char* src_file_name = ImPathFindFilename(src_file_path);
         ImFormatString(buf, IM_ARRAYSIZE(buf), "%.*s%.*s", (int)(src_file_name - src_file_path), src_file_path, (int)(filename_end - filename_start), filename_start);
-        e->IO.FileOpenerFunc(buf, line_no, e->IO.UserData);
+        e->IO.SrcFileOpenFunc(buf, line_no, e->IO.UserData);
     }
 
     return true;
@@ -1249,8 +1249,6 @@ void    ImGuiTestEngine_ShowTestWindow(ImGuiTestEngine* engine, bool* p_open)
 
     // Options
     ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0, 0));
-    //ImGui::Text("OPTIONS:");
-    //ImGui::SameLine();
     ImGui::Checkbox("Fast", &engine->IO.ConfigRunFast); HelpTooltip("Run tests as fast as possible (no vsync, no delay, teleport mouse, etc.).");
     ImGui::SameLine();
     ImGui::Checkbox("Blind", &engine->IO.ConfigRunBlind); HelpTooltip("<UNSUPPORTED>\nRun tests in a blind ui context.");
@@ -1266,7 +1264,6 @@ void    ImGuiTestEngine_ShowTestWindow(ImGuiTestEngine* engine, bool* p_open)
     ImGui::PushItemWidth(60);
     ImGui::DragInt("Verbose", (int*)&engine->IO.ConfigVerboseLevel, 0.1f, 0, ImGuiTestVerboseLevel_COUNT - 1, GetVerboseLevelName(engine->IO.ConfigVerboseLevel));
     ImGui::PopItemWidth();
-    //ImGui::Checkbox("Verbose", &engine->IO.ConfigLogVerbose);
     ImGui::SameLine();
     ImGui::PushItemWidth(30);
     ImGui::DragInt("Perf Stress Amount", &engine->IO.PerfStressAmount, 0.1f, 1, 20); HelpTooltip("Increase workload of performance tests (higher means longer run).");
@@ -1396,13 +1393,13 @@ void    ImGuiTestEngine_ShowTestWindow(ImGuiTestEngine* engine, bool* p_open)
                 }
                 ImGui::Separator();
 
-                const bool open_source_available = (test->SourceFile != NULL) && (engine->IO.FileOpenerFunc != NULL);
+                const bool open_source_available = (test->SourceFile != NULL) && (engine->IO.SrcFileOpenFunc != NULL);
                 if (open_source_available)
                 {
                     ImFormatString(buf, IM_ARRAYSIZE(buf), "Open source (%s:%d)", test->SourceFileShort, test->SourceLine);
                     if (ImGui::MenuItem(buf))
                     {
-                        engine->IO.FileOpenerFunc(test->SourceFile, test->SourceLine, engine->IO.UserData);
+                        engine->IO.SrcFileOpenFunc(test->SourceFile, test->SourceLine, engine->IO.UserData);
                     }
                     if (ImGui::MenuItem("View source..."))
                         view_source = true;
@@ -1479,7 +1476,6 @@ void    ImGuiTestEngine_ShowTestWindow(ImGuiTestEngine* engine, bool* p_open)
     engine->UiSelectAndScrollToTest = NULL;
 
     // LOG
-    //ImGui::Separator();
     ImGui::BeginChild("Log", ImVec2(0, log_height));
     if (ImGui::BeginTabBar("##tools"))
     {
@@ -1584,6 +1580,9 @@ void    ImGuiTestEngine_ShowTestWindow(ImGuiTestEngine* engine, bool* p_open)
 
 //-------------------------------------------------------------------------
 // [SECTION] SETTINGS
+//-------------------------------------------------------------------------
+// FIXME: In our wildest dreams we could provide a imgui_club/ serialization helper that would be
+// easy to use in both the ReadLine and WriteAll functions.
 //-------------------------------------------------------------------------
 
 static void*    ImGuiTestEngine_SettingsReadOpen(ImGuiContext*, ImGuiSettingsHandler*, const char* name)
