@@ -21,6 +21,7 @@ struct ImRect;
 
 typedef int ImGuiTestFlags;         // See ImGuiTestFlags_
 typedef int ImGuiTestCheckFlags;    // See ImGuiTestCheckFlags_
+typedef int ImGuiTestLogFlags;      // See ImGuiTestLogFlags_
 typedef int ImGuiTestOpFlags;       // See ImGuiTestOpFlags_
 typedef int ImGuiTestRunFlags;      // See ImGuiTestRunFlags_
 
@@ -38,9 +39,6 @@ enum ImGuiTestVerboseLevel
     ImGuiTestVerboseLevel_Trace     = 5,
     ImGuiTestVerboseLevel_COUNT     = 6
 };
-
-static const char* ImGuiTestVerboseLevelNames[] = {"Slinet", "Trace", "Debug", "Info", "Warning", "Error", "N/A"};
-IM_STATIC_ASSERT(IM_ARRAYSIZE(ImGuiTestVerboseLevelNames) == (ImGuiTestVerboseLevel_COUNT + 1));
 
 enum ImGuiTestStatus
 {
@@ -62,6 +60,12 @@ enum ImGuiTestCheckFlags_
 {
     ImGuiTestCheckFlags_None            = 0,
     ImGuiTestCheckFlags_SilentSuccess   = 1 << 0
+};
+
+enum ImGuiTestLogFlags_
+{
+    ImGuiTestLogFlags_None              = 0,
+    ImGuiTestLogFlags_NoHeader          = 1 << 0    // Do not display framecount and depth padding
 };
 
 enum ImGuiTestOpFlags_
@@ -161,6 +165,7 @@ void                ImGuiTestEngine_SetDeltaTime(ImGuiTestEngine* engine, float 
 int                 ImGuiTestEngine_GetFrameCount(ImGuiTestEngine* engine);
 double              ImGuiTestEngine_GetPerfDeltaTime500Average(ImGuiTestEngine* engine);
 FILE*               ImGuiTestEngine_GetPerfPersistentLogCsv(ImGuiTestEngine* engine);
+const char*         ImGuiTestEngine_GetVerboseLevelName(ImGuiTestVerboseLevel v);
 
 //-------------------------------------------------------------------------
 // Hooks for Core Library

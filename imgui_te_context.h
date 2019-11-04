@@ -174,14 +174,13 @@ struct ImGuiTestContext
     template <typename T> T& GetUserData()  { IM_ASSERT(UserData != NULL); return *(T*)(UserData); }
 
     // Logging
-    void        Log(ImGuiTestVerboseLevel level, const char* fmt, ...) IM_FMTARGS(3);
-    void        LogV(ImGuiTestVerboseLevel level, const char* fmt, va_list args) IM_FMTLIST(3);
-    void        LogRaw(ImGuiTestVerboseLevel level, const char* message);                                               // Only includes log level marker in addition to passed string
-    void        LogDebug(const char* fmt, ...) IM_FMTARGS(2);
-    void        LogInfo(const char* fmt, ...) IM_FMTARGS(2);
-    void        LogWarning(const char* fmt, ...) IM_FMTARGS(2);
-    void        LogError(const char* fmt, ...) IM_FMTARGS(2);
+    void        LogEx(ImGuiTestVerboseLevel level, ImGuiTestLogFlags flags, const char* fmt, ...) IM_FMTARGS(4);
+    void        LogExV(ImGuiTestVerboseLevel level, ImGuiTestLogFlags flags, const char* fmt, va_list args) IM_FMTLIST(4);
     void        LogToTTY(ImGuiTestVerboseLevel level, const char* message);
+    void        LogDebug(const char* fmt, ...)      IM_FMTARGS(2);  // ImGuiTestVerboseLevel_Debug or ImGuiTestVerboseLevel_Trace depending on context depth
+    void        LogInfo(const char* fmt, ...)       IM_FMTARGS(2);  // ImGuiTestVerboseLevel_Info
+    void        LogWarning(const char* fmt, ...)    IM_FMTARGS(2);  // ImGuiTestVerboseLevel_Warning
+    void        LogError(const char* fmt, ...)      IM_FMTARGS(2);  // ImGuiTestVerboseLevel_Error
     void        LogDebugInfo();
 
     // Yield, Timing

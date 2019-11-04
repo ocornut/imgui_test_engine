@@ -578,6 +578,15 @@ FILE* ImGuiTestEngine_GetPerfPersistentLogCsv(ImGuiTestEngine* engine)
     return engine->PerfPersistentLogCsv;
 }
 
+const char* ImGuiTestEngine_GetVerboseLevelName(ImGuiTestVerboseLevel v)
+{
+    static const char* names[ImGuiTestVerboseLevel_COUNT] = { "Silent", "Error", "Warning", "Info", "Debug", "Trace" };
+    IM_STATIC_ASSERT(IM_ARRAYSIZE(names) == ImGuiTestVerboseLevel_COUNT);
+    if (v >= 0 && v < IM_ARRAYSIZE(names))
+        return names[v];
+    return "N/A";
+}
+
 static void ImGuiTestEngine_ProcessTestQueue(ImGuiTestEngine* engine)
 {
     IM_ASSERT(engine->CallDepth == 0);
@@ -622,9 +631,7 @@ static void ImGuiTestEngine_ProcessTestQueue(ImGuiTestEngine* engine)
         if (track_scrolling)
             engine->UiSelectAndScrollToTest = test;
 
-
-
-        ctx.LogRaw(ImGuiTestVerboseLevel_Info, "----------------------------------------------------------------------");
+        ctx.LogEx(ImGuiTestVerboseLevel_Info, ImGuiTestLogFlags_NoHeader, "----------------------------------------------------------------------");
         ctx.LogInfo("Test: '%s' '%s'..", test->Category, test->Name);
         if (test->UserDataConstructor != NULL)
         {
@@ -1003,7 +1010,7 @@ void ImGuiTestEngineHook_Log(ImGuiContext* ctx, const char* fmt, ...)
 
     va_list args;
     va_start(args, fmt);
-    engine->TestContext->LogV(ImGuiTestVerboseLevel_Debug, fmt, args);
+    engine->TestContext->LogExV(ImGuiTestVerboseLevel_Debug, ImGuiTestLogFlags_None, fmt, args);
     va_end(args);
 }
 
@@ -1183,6 +1190,7 @@ static void DrawTestLog(ImGuiTestEngine* e, ImGuiTest* test, bool is_interactive
             case ImGuiTestVerboseLevel_Warning:
                 ImGui::PushStyleColor(ImGuiCol_Text, warning_col);
                 break;
+            case ImGuiTestVerboseLevel_Debug:
             case ImGuiTestVerboseLevel_Trace:
                 ImGui::PushStyleColor(ImGuiCol_Text, unimportant_col);
                 break;
@@ -1254,7 +1262,7 @@ void    ImGuiTestEngine_ShowTestWindow(ImGuiTestEngine* engine, bool* p_open)
     ImGui::Checkbox("Refocus", &engine->IO.ConfigTakeFocusBackAfterTests); HelpTooltip("Set focus back to Test window after running tests.");
     ImGui::SameLine();
     ImGui::PushItemWidth(60);
-    ImGui::DragInt("Verbose", (int*)&engine->IO.ConfigVerboseLevel, 0.1f, 0, ImGuiTestVerboseLevel_COUNT - 1, ImGuiTestVerboseLevelNames[engine->IO.ConfigVerboseLevel]);
+    ImGui::DragInt("Verbose", (int*)&engine->IO.ConfigVerboseLevel, 0.1f, 0, ImGuiTestVerboseLevel_COUNT - 1, ImGuiTestEngine_GetVerboseLevelName(engine->IO.ConfigVerboseLevel));
     ImGui::PopItemWidth();
     ImGui::SameLine();
     ImGui::PushItemWidth(30);

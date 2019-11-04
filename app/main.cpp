@@ -252,9 +252,9 @@ int main(int argc, char** argv)
 
     // Default verbose level differs whether we are in in GUI or Command-Line mode
     if (g_App.OptVerboseLevel == ImGuiTestVerboseLevel_COUNT)
-        g_App.OptVerboseLevel = g_App.OptGUI ? ImGuiTestVerboseLevel_Info : ImGuiTestVerboseLevel_Silent;
+        g_App.OptVerboseLevel = g_App.OptGUI ? ImGuiTestVerboseLevel_Debug : ImGuiTestVerboseLevel_Silent;
     if (g_App.OptVerboseLevelOnError == ImGuiTestVerboseLevel_COUNT)
-        g_App.OptVerboseLevelOnError = g_App.OptGUI ? ImGuiTestVerboseLevel_Info : ImGuiTestVerboseLevel_Debug;
+        g_App.OptVerboseLevelOnError = g_App.OptGUI ? ImGuiTestVerboseLevel_Debug : ImGuiTestVerboseLevel_Debug;
 
     // Setup Dear ImGui binding
     IMGUI_CHECKVERSION();

@@ -20,15 +20,15 @@
 // This is the interface that most tests will interact with.
 //-------------------------------------------------------------------------
 
-void    ImGuiTestContext::Log(ImGuiTestVerboseLevel level, const char* fmt, ...)
+void    ImGuiTestContext::LogEx(ImGuiTestVerboseLevel level, ImGuiTestLogFlags flags, const char* fmt, ...)
 {
     va_list args;
     va_start(args, fmt);
-    LogV(level, fmt, args);
+    LogExV(level, flags, fmt, args);
     va_end(args);
 }
 
-void    ImGuiTestContext::LogV(ImGuiTestVerboseLevel level, const char* fmt, va_list args)
+void    ImGuiTestContext::LogExV(ImGuiTestVerboseLevel level, ImGuiTestLogFlags flags, const char* fmt, va_list args)
 {
     ImGuiTestContext* ctx = this;
     ImGuiTest* test = ctx->Test;
@@ -43,36 +43,17 @@ void    ImGuiTestContext::LogV(ImGuiTestVerboseLevel level, const char* fmt, va_
         return;
 
     ImGuiTestLog* log = &test->TestLog;
-    int prev_size = log->Buffer.size();
+    const int prev_size = log->Buffer.size();
 
-    log->Buffer.appendf("[%c] [%04d] ", *ImGuiTestVerboseLevelNames[level], ctx->FrameCount);
+    const char verbose_level_char = ImGuiTestEngine_GetVerboseLevelName(level)[0];
+    if (flags & ImGuiTestLogFlags_NoHeader)
+        log->Buffer.appendf("[%c] ", verbose_level_char);
+    else
+        log->Buffer.appendf("[%c] [%04d] ", verbose_level_char, ctx->FrameCount);
+
     if (level >= ImGuiTestVerboseLevel_Debug)
         log->Buffer.appendf("-- %*s", ImMax(0, (ctx->ActionDepth - 1) * 2), "");
     log->Buffer.appendfv(fmt, args);
-    log->Buffer.append("\n");
-
-    log->UpdateLineOffsets(EngineIO, level, log->Buffer.begin() + prev_size);
-    LogToTTY(level, log->Buffer.c_str() + prev_size);
-}
-
-void    ImGuiTestContext::LogRaw(ImGuiTestVerboseLevel level, const char* message)
-{
-    ImGuiTestContext* ctx = this;
-    ImGuiTest* test = ctx->Test;
-
-    IM_ASSERT(level > ImGuiTestVerboseLevel_Silent && level < ImGuiTestVerboseLevel_COUNT);
-
-    // Log all messages that we may want to print in future.
-    if (EngineIO->ConfigVerboseLevelOnError < level)
-        return;
-
-    ImGuiTestLog* log = &test->TestLog;
-    int prev_size = log->Buffer.size();
-
-    log->Buffer.appendf("[%c] ", *ImGuiTestVerboseLevelNames[level]);
-    if (level >= ImGuiTestVerboseLevel_Debug)
-        log->Buffer.appendf("-- %*s", ImMax(0, (ctx->ActionDepth - 1) * 2), "");
-    log->Buffer.append(message);
     log->Buffer.append("\n");
 
     log->UpdateLineOffsets(EngineIO, level, log->Buffer.begin() + prev_size);
@@ -83,7 +64,7 @@ void    ImGuiTestContext::LogDebug(const char* fmt, ...)
 {
     va_list args;
     va_start(args, fmt);
-    LogV(ImGuiTestVerboseLevel_Debug, fmt, args);
+    LogExV(ImGuiTestVerboseLevel_Debug, ImGuiTestLogFlags_None, fmt, args);
     va_end(args);
 }
 
@@ -91,7 +72,7 @@ void ImGuiTestContext::LogInfo(const char* fmt, ...)
 {
     va_list args;
     va_start(args, fmt);
-    LogV(ImGuiTestVerboseLevel_Info, fmt, args);
+    LogExV(ImGuiTestVerboseLevel_Info, ImGuiTestLogFlags_None, fmt, args);
     va_end(args);
 }
 
@@ -99,7 +80,7 @@ void ImGuiTestContext::LogWarning(const char* fmt, ...)
 {
     va_list args;
     va_start(args, fmt);
-    LogV(ImGuiTestVerboseLevel_Warning, fmt, args);
+    LogExV(ImGuiTestVerboseLevel_Warning, ImGuiTestLogFlags_None, fmt, args);
     va_end(args);
 }
 
@@ -107,7 +88,7 @@ void ImGuiTestContext::LogError(const char* fmt, ...)
 {
     va_list args;
     va_start(args, fmt);
-    LogV(ImGuiTestVerboseLevel_Error, fmt, args);
+    LogExV(ImGuiTestVerboseLevel_Error, ImGuiTestLogFlags_None, fmt, args);
     va_end(args);
 }
 
