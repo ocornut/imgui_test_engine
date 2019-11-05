@@ -45,11 +45,13 @@ void    ImGuiTestContext::LogExV(ImGuiTestVerboseLevel level, ImGuiTestLogFlags 
     ImGuiTestLog* log = &test->TestLog;
     const int prev_size = log->Buffer.size();
 
-    const char verbose_level_char = ImGuiTestEngine_GetVerboseLevelName(level)[0];
-    if (flags & ImGuiTestLogFlags_NoHeader)
-        log->Buffer.appendf("[%c] ", verbose_level_char);
-    else
-        log->Buffer.appendf("[%c] [%04d] ", verbose_level_char, ctx->FrameCount);
+    //const char verbose_level_char = ImGuiTestEngine_GetVerboseLevelName(level)[0];
+    //if (flags & ImGuiTestLogFlags_NoHeader)
+    //    log->Buffer.appendf("[%c] ", verbose_level_char);
+    //else
+    //    log->Buffer.appendf("[%c] [%04d] ", verbose_level_char, ctx->FrameCount);
+    if ((flags & ImGuiTestLogFlags_NoHeader) == 0)
+        log->Buffer.appendf("[%04d] ", ctx->FrameCount);
 
     if (level >= ImGuiTestVerboseLevel_Debug)
         log->Buffer.appendf("-- %*s", ImMax(0, (ctx->ActionDepth - 1) * 2), "");
