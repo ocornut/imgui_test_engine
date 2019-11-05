@@ -2693,7 +2693,10 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
 }
 
 //-------------------------------------------------------------------------
-// Tests: Perf
+// Tests: Performance Tests
+//-------------------------------------------------------------------------
+// FIXME-TESTS: Maybe group and expose in a different spot of the UI?
+// We currently don't call RegisterTests_Perf() by default because those are more costly.
 //-------------------------------------------------------------------------
 
 void RegisterTests_Perf(ImGuiTestEngine* e)
@@ -2705,6 +2708,7 @@ void RegisterTests_Perf(ImGuiTestEngine* e)
         ctx->PerfCapture();
     };
 
+    // ## Measure the cost all demo contents
     t = REGISTER_TEST("perf", "perf_demo_all");
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
@@ -2715,8 +2719,8 @@ void RegisterTests_Perf(ImGuiTestEngine* e)
         ctx->MenuCheckAll("Examples");
         ctx->MenuCheckAll("Tools");
 
-        IM_CHECK_GT(ctx->UiContext->IO.DisplaySize.x, 820);
-        IM_CHECK_GT(ctx->UiContext->IO.DisplaySize.y, 820);
+        IM_CHECK_SILENT(ctx->UiContext->IO.DisplaySize.x > 820);
+        IM_CHECK_SILENT(ctx->UiContext->IO.DisplaySize.y > 820);
 
         // FIXME-TESTS: Backup full layout
         ImVec2 pos = ctx->GetMainViewportPos() + ImVec2(20, 20);
@@ -2733,6 +2737,7 @@ void RegisterTests_Perf(ImGuiTestEngine* e)
         ctx->MenuUncheckAll("Tools");
     };
 
+    // ## Measure the drawing cost of various ImDrawList primitives
     enum
     {
         DrawPrimFunc_RectStroke,
@@ -2743,7 +2748,7 @@ void RegisterTests_Perf(ImGuiTestEngine* e)
         DrawPrimFunc_RectRoundedFilled,
         DrawPrimFunc_CircleStroke,
         DrawPrimFunc_CircleStrokeThick,
-        DrawPrimFunc_CircleFilled,
+        DrawPrimFunc_CircleFilled
     };
 
     auto DrawPrimFunc = [](ImGuiTestContext* ctx)
@@ -2848,6 +2853,7 @@ void RegisterTests_Perf(ImGuiTestEngine* e)
     t->GuiFunc = DrawPrimFunc;
     t->TestFunc = PerfCaptureFunc;
 
+    // ## Measure the cost of ImDrawListSplitter split/merge functions
     auto DrawSplittedFunc = [](ImGuiTestContext* ctx)
     {
         ImGui::Begin("Test Func", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
@@ -2898,6 +2904,7 @@ void RegisterTests_Perf(ImGuiTestEngine* e)
     t->GuiFunc = DrawSplittedFunc;
     t->TestFunc = PerfCaptureFunc;
 
+    // ## Measure the cost of simple Button() calls
     t = REGISTER_TEST("perf", "perf_stress_button");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
@@ -2909,6 +2916,7 @@ void RegisterTests_Perf(ImGuiTestEngine* e)
     };
     t->TestFunc = PerfCaptureFunc;
 
+    // ## Measure the cost of simple Checkbox() calls
     t = REGISTER_TEST("perf", "perf_stress_checkbox");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
@@ -2926,6 +2934,7 @@ void RegisterTests_Perf(ImGuiTestEngine* e)
     };
     t->TestFunc = PerfCaptureFunc;
 
+    // ## Measure the cost of simple ColorEdit4() calls (multi-component, group based widgets are quite heavy)
     t = REGISTER_TEST("perf", "perf_stress_coloredit4");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
@@ -2942,6 +2951,7 @@ void RegisterTests_Perf(ImGuiTestEngine* e)
     };
     t->TestFunc = PerfCaptureFunc;
 
+    // ## Measure the cost of simple InputText() calls
     t = REGISTER_TEST("perf", "perf_stress_input_text");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
@@ -2958,6 +2968,8 @@ void RegisterTests_Perf(ImGuiTestEngine* e)
     };
     t->TestFunc = PerfCaptureFunc;
 
+    // ## Measure the cost of simple InputTextMultiline() calls
+    // (this is creating a child window for every non-clipped widget, so doesn't scale very well)
     t = REGISTER_TEST("perf", "perf_stress_input_text_multiline");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
@@ -2974,6 +2986,7 @@ void RegisterTests_Perf(ImGuiTestEngine* e)
     };
     t->TestFunc = PerfCaptureFunc;
 
+    // ## Measure the cost of our ImHashXXX functions
     t = REGISTER_TEST("perf", "perf_stress_hash");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
@@ -2992,6 +3005,8 @@ void RegisterTests_Perf(ImGuiTestEngine* e)
     };
     t->TestFunc = PerfCaptureFunc;
 
+    // ## Measure the cost of simple Listbox() calls
+    // (this is creating a child window for every non-clipped widget, so doesn't scale very well)
     t = REGISTER_TEST("perf", "perf_stress_list_box");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
@@ -3012,6 +3027,7 @@ void RegisterTests_Perf(ImGuiTestEngine* e)
     };
     t->TestFunc = PerfCaptureFunc;
 
+    // ## Measure the cost of simple SliderFloat() calls
     t = REGISTER_TEST("perf", "perf_stress_slider");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
@@ -3028,6 +3044,8 @@ void RegisterTests_Perf(ImGuiTestEngine* e)
     };
     t->TestFunc = PerfCaptureFunc;
 
+    // ## Measure the cost of simple SliderFloat2() calls
+    // This at a glance by compared to SliderFloat() test shows us the overhead of group-based multi-component widgets
     t = REGISTER_TEST("perf", "perf_stress_slider2");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
@@ -3044,6 +3062,7 @@ void RegisterTests_Perf(ImGuiTestEngine* e)
     };
     t->TestFunc = PerfCaptureFunc;
 
+    // ## Measure the cost of TextUnformatted() calls with relatively short text
     t = REGISTER_TEST("perf", "perf_stress_text_unformatted_1");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
@@ -3059,6 +3078,7 @@ void RegisterTests_Perf(ImGuiTestEngine* e)
     };
     t->TestFunc = PerfCaptureFunc;
 
+    // ## Measure the cost of TextUnformatted() calls with long text
     t = REGISTER_TEST("perf", "perf_stress_text_unformatted_2");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
@@ -3076,6 +3096,7 @@ void RegisterTests_Perf(ImGuiTestEngine* e)
     };
     t->TestFunc = PerfCaptureFunc;
 
+    // ## Measure the cost/overhead of creating too many windows
     t = REGISTER_TEST("perf", "perf_stress_window");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {

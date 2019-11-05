@@ -1546,6 +1546,7 @@ void    ImGuiTestContext::UndockNode(ImGuiID dock_id)
 // ImGuiTestContext - Performance Tools
 //-------------------------------------------------------------------------
 
+// Calculate the reference DeltaTime, averaged over 500 frames, with GuiFunc disabled.
 void    ImGuiTestContext::PerfCalcRef()
 {
     LogDebug("Measuring ref dt...");
@@ -1558,6 +1559,7 @@ void    ImGuiTestContext::PerfCalcRef()
 
 void    ImGuiTestContext::PerfCapture()
 {
+    // Calculate reference average DeltaTime if it wasn't explicitely called by TestFunc
     if (PerfRefDt < 0.0)
         PerfCalcRef();
     IM_ASSERT(PerfRefDt >= 0.0);
@@ -1575,10 +1577,11 @@ void    ImGuiTestContext::PerfCapture()
 
     const ImBuildInfo& build_info = ImGetBuildInfo();
 
-    //LogDebug("[PERF] Name: %s", Test->Name);
-    LogDebug("[PERF] Conditions: Stress x%d, %s, %s, %s, %s, %s",
+    // Display results
+    // FIXME-TESTS: Would be nice if we could submit a custom marker (e.g. branch/feature name)
+    LogInfo("[PERF] Conditions: Stress x%d, %s, %s, %s, %s, %s",
         PerfStressAmount, build_info.Type, build_info.Cpu, build_info.OS, build_info.Compiler, build_info.Date);
-    LogDebug("[PERF] Result: %+6.3f ms (from ref %+6.3f)", dt_delta_ms, dt_ref_ms);
+    LogInfo("[PERF] Result: %+6.3f ms (from ref %+6.3f)", dt_delta_ms, dt_ref_ms);
 
     // Log to .csv
     FILE* csv_perf_log = ImGuiTestEngine_GetPerfPersistentLogCsv(Engine);
