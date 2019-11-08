@@ -350,7 +350,7 @@ struct ImGuiTestItemInfo
 struct ImGuiTestItemList
 {
     ImPool<ImGuiTestItemInfo>   Pool;
-    int&                        Size;   // THIS IS REF/POINTER to Pool.Data.Size. This codebase is totally embracing evil C++!
+    int&                        Size;           // FIXME: THIS IS REF/POINTER to Pool.Buf.Size! This codebase is totally embracing evil C++!
 
     void                        Clear()                 { Pool.Clear(); }
     void                        Reserve(int capacity)   { Pool.Reserve(capacity); }
@@ -359,7 +359,7 @@ struct ImGuiTestItemList
     const ImGuiTestItemInfo*    GetByIndex(int n)       { return Pool.GetByIndex(n); }
     const ImGuiTestItemInfo*    GetByID(ImGuiID id)     { return Pool.GetByKey(id); }
 
-    ImGuiTestItemList() : Size(Pool.Data.Size) {}
+    ImGuiTestItemList() : Size(Pool.Buf.Size) {} // FIXME: THIS IS REF/POINTER to Pool.Buf.Size!
 };
 
 // Gather items in given parent scope.
