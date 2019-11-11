@@ -394,7 +394,7 @@ void MainLoop()
             return true;
         ImGui::Render();
         ImGuiIO& io = ImGui::GetIO();
-        SDL_GL_SetSwapInterval(test_io.ConfigNoThrottle ? 1 : 0); // Enable vsync
+        SDL_GL_SetSwapInterval(test_io.ConfigNoThrottle ? 0 : 1); // Enable vsync
         glViewport(0, 0, (int)io.DisplaySize.x, (int)io.DisplaySize.y);
         glClearColor(g_App.ClearColor.x, g_App.ClearColor.y, g_App.ClearColor.z, g_App.ClearColor.w);
         glClear(GL_COLOR_BUFFER_BIT);
