@@ -5,6 +5,7 @@
 
 #include "imgui.h"
 #include "imgui_te_core.h"
+#include "imgui_capture_tool.h"
 
 // Undo some of the damage done by <windows.h>
 #ifdef Yield
@@ -211,6 +212,8 @@ struct ImGuiTestContext
 
     // Misc
     ImVec2      GetMainViewportPos();
+    bool        CaptureWindow(ImGuiTestRef ref, const char* output_file, CaptureWindowFlags flags=CaptureWindowFlags_Default);
+    bool        CaptureWindow(ImGuiWindow* window, const char* output_file, CaptureWindowFlags flags=CaptureWindowFlags_Default);
 
     // Mouse inputs
     void        MouseMove(ImGuiTestRef ref, ImGuiTestOpFlags flags = ImGuiTestOpFlags_None);

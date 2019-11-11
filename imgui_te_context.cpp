@@ -353,6 +353,16 @@ ImVec2 ImGuiTestContext::GetMainViewportPos()
 #endif
 }
 
+bool ImGuiTestContext::CaptureWindow(ImGuiTestRef ref, const char* output_file, CaptureWindowFlags flags)
+{
+    return CaptureWindow(GetWindowByRef(ref), output_file, flags);
+}
+
+bool ImGuiTestContext::CaptureWindow(ImGuiWindow* window, const char* output_file, CaptureWindowFlags flags)
+{
+    return ImGuiTestEngine_CaptureWindow(Engine, window, output_file, flags);
+}
+
 ImGuiTestItemInfo* ImGuiTestContext::ItemLocate(ImGuiTestRef ref, ImGuiTestOpFlags flags)
 {
     if (IsError())
