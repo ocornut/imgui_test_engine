@@ -10,6 +10,7 @@
 #if defined(_WIN32) && !defined(_WINDOWS_)
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
+#include <shellapi.h>
 #endif
 
 // Hash "hello/world" as if it was "helloworld"
@@ -99,6 +100,15 @@ bool    ImOsCreateProcess(const char* cmd_line)
 #else
     IM_UNUSED(cmd_line);
     return false;
+#endif
+}
+
+void    ImOsOpenInShell(const char* path)
+{
+#ifdef _WIN32
+    ::ShellExecuteA(NULL, "open", path, NULL, NULL, SW_SHOWDEFAULT);
+#else
+    IM_UNUSED(filename);
 #endif
 }
 

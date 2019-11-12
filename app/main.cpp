@@ -79,7 +79,6 @@ bool CaptureFramebufferScreenshot(int x, int y, int w, int h, unsigned* pixels, 
 bool MainLoopEndFrame()
 {
     ImGuiTestEngine_ShowTestWindow(g_App.TestEngine, NULL);
-    ImGuiTestEngine_ShowScreenshotWindow(g_App.TestEngine, NULL);
 
     static bool show_demo_window = true;
     static bool show_another_window = false;
@@ -323,7 +322,7 @@ int main(int argc, char** argv)
     test_io.SrcFileOpenFunc = SrcFileOpenerFunc;
 #if defined(IMGUI_TESTS_BACKEND_WIN32_DX11) || defined(IMGUI_TESTS_BACKEND_SDL_GL3)
     if (g_App.OptGUI)
-        test_io.CaptureFramebufferFunc = &CaptureFramebufferScreenshot;
+        test_io.ScreenCaptureFunc = &CaptureFramebufferScreenshot;
 #endif
     // Run
     if (g_App.OptGUI)

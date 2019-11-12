@@ -293,8 +293,9 @@ void MainLoop()
     UnregisterClass(_T("ImGui Example"), wc.hInstance);
 }
 
-bool CaptureFramebufferScreenshot(int x, int y, int w, int h, unsigned* pixels, void* user)
+bool CaptureFramebufferScreenshot(int x, int y, int w, int h, unsigned int* pixels, void* user_data)
 {
+    IM_UNUSED(user_data);
     ImGuiContext& g = *GImGui;
     ImGuiIO& io = g.IO;
 
@@ -339,13 +340,13 @@ bool CaptureFramebufferScreenshot(int x, int y, int w, int h, unsigned* pixels, 
     // D3D11 does not provide means to capture a partial screenshot. We copy rect x,y,w,h on CPU side.
     for (int index_y = y; index_y < y + h; ++index_y)
     {
-        unsigned* src = (unsigned*)((unsigned char*)mapped.pData + index_y * mapped.RowPitch);
-        memcpy(&pixels[index_y * w], &src[x], w * 4);
+        unsigned int* src = (unsigned int*)((unsigned char*)mapped.pData + index_y * mapped.RowPitch);
+        memcpy(&pixels[(index_y - y) * w], &src[x], w * 4);
     }
 
     g_pd3dDeviceContext->Unmap(texture, 0);
     texture->Release();
-    return false;
+    return true;
 }
 #endif
 

@@ -84,7 +84,6 @@ struct ImGuiTestEngine
     ImGuiContext*               UiContextTarget = NULL;         // imgui context for testing == io.ConfigRunBlind ? UiBlindContext : UiVisibleContext when running tests, otherwise NULL.
     ImGuiContext*               UiContextActive = NULL;         // imgui context for testing == UiContextTarget or NULL
 
-    ImGuiCaptureTool            CaptureTool;
     int                         FrameCount = 0;
     float                       OverrideDeltaTime = -1.0f;      // Inject custom delta time into imgui context to simulate clock passing faster than wall clock time.
     ImVector<ImGuiTest*>        TestsAll;
@@ -116,6 +115,7 @@ struct ImGuiTestEngine
     ImMovingAverage<double>     PerfDeltaTime2000;
 
     // Tools
+    ImGuiCaptureTool            CaptureTool;
     bool                        ToolSlowDown = false;
     int                         ToolSlowDownMs = 100;
 
@@ -588,22 +588,17 @@ const char* ImGuiTestEngine_GetVerboseLevelName(ImGuiTestVerboseLevel v)
     return "N/A";
 }
 
-bool ImGuiTestEngine_CaptureWindow(ImGuiTestEngine* engine, ImGuiWindow* window, const char* output_file, CaptureWindowFlags flags)
+bool ImGuiTestEngine_CaptureWindow(ImGuiTestEngine* engine, ImGuiWindow* window, const char* output_file, ImGuiCaptureWindowFlags flags)
 {
-    if (engine->CaptureTool.CaptureFramebuffer == NULL)
+    if (engine->CaptureTool.ScreenCaptureFunc == NULL)
         return false;
-    if (engine->IO.ConfigRunFast)
-        // Graphics API must render a window so it can be captured.
+    if (engine->IO.ConfigRunFast)   // Graphics API must render a window so it can be captured.
         return false;
     engine->CaptureTool.UserData = engine->TestContext;
     engine->CaptureTool.Flags = flags;
-    engine->CaptureTool.SaveFileName = output_file;
-    for (bool do_continue = true; do_continue;)
-    {
-        do_continue = engine->CaptureTool.CaptureWindow(window);
-        if (do_continue)
-            ImGuiTestEngine_Yield(engine);
-    }
+    ImFormatString(engine->CaptureTool.SaveFileName, IM_ARRAYSIZE(engine->CaptureTool.SaveFileName), "%s", output_file);
+    while (engine->CaptureTool.CaptureWindow(window))
+        ImGuiTestEngine_Yield(engine);
     return true;
 }
 
@@ -1281,15 +1276,11 @@ void    ImGuiTestEngine_ShowTestWindow(ImGuiTestEngine* engine, bool* p_open)
     ImGui::SameLine();
     ImGui::Checkbox("Refocus", &engine->IO.ConfigTakeFocusBackAfterTests); HelpTooltip("Set focus back to Test window after running tests.");
     ImGui::SameLine();
-    ImGui::Checkbox("Screenshot", &engine->IO.ConfigShowScreenshotWindow); HelpTooltip("Show screenshot capture utility window.");
-    ImGui::SameLine();
-    ImGui::PushItemWidth(60);
+    ImGui::SetNextItemWidth(60);
     ImGui::DragInt("Verbose", (int*)&engine->IO.ConfigVerboseLevel, 0.1f, 0, ImGuiTestVerboseLevel_COUNT - 1, ImGuiTestEngine_GetVerboseLevelName(engine->IO.ConfigVerboseLevel));
-    ImGui::PopItemWidth();
     ImGui::SameLine();
-    ImGui::PushItemWidth(30);
+    ImGui::SetNextItemWidth(30);
     ImGui::DragInt("Perf Stress Amount", &engine->IO.PerfStressAmount, 0.1f, 1, 20); HelpTooltip("Increase workload of performance tests (higher means longer run).");
-    ImGui::PopItemWidth();
     ImGui::PopStyleVar();
     ImGui::Separator();
 
@@ -1316,194 +1307,219 @@ void    ImGuiTestEngine_ShowTestWindow(ImGuiTestEngine* engine, bool* p_open)
     {
         char tab_label[32];
         ImFormatString(tab_label, IM_ARRAYSIZE(tab_label), "TESTS###TESTS");
-        ImGui::BeginTabItem(tab_label);
-
-        ImGuiTextFilter* filter = &engine->UiTestFilter;
-
-        //ImGui::Text("TESTS (%d)", engine->TestsAll.Size);
-        if (ImGui::Button("Run All"))
-            ImGuiTestEngine_QueueTests(engine, filter->InputBuf); // FIXME: Filter func differs
-
-        ImGui::SameLine();
-        filter->Draw("##filter", -1.0f);
-        ImGui::Separator();
-
-        if (ImGui::BeginChild("Tests", ImVec2(0, 0)))
+        if (ImGui::BeginTabItem(tab_label))
         {
-            ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(6, 3));
-            ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(4, 1));
-            for (int n = 0; n < engine->TestsAll.Size; n++)
+            ImGuiTextFilter* filter = &engine->UiTestFilter;
+
+            //ImGui::Text("TESTS (%d)", engine->TestsAll.Size);
+            if (ImGui::Button("Run All"))
+                ImGuiTestEngine_QueueTests(engine, filter->InputBuf); // FIXME: Filter func differs
+
+            ImGui::SameLine();
+            filter->Draw("##filter", -1.0f);
+            ImGui::Separator();
+
+            if (ImGui::BeginChild("Tests", ImVec2(0, 0)))
             {
-                ImGuiTest* test = engine->TestsAll[n];
-                if (!filter->PassFilter(test->Name) && !filter->PassFilter(test->Category))
-                    continue;
-
-                ImGuiTestContext* test_context = (engine->TestContext && engine->TestContext->Test == test) ? engine->TestContext : NULL;
-
-                ImGui::PushID(n);
-
-                ImVec4 status_color;
-                switch (test->Status)
+                ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(6, 3));
+                ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(4, 1));
+                for (int n = 0; n < engine->TestsAll.Size; n++)
                 {
-                case ImGuiTestStatus_Error:
-                    status_color = ImVec4(0.9f, 0.1f, 0.1f, 1.0f);
-                    break;
-                case ImGuiTestStatus_Success:
-                    status_color = ImVec4(0.1f, 0.9f, 0.1f, 1.0f);
-                    break;
-                case ImGuiTestStatus_Queued:
-                case ImGuiTestStatus_Running:
-                    if (test_context && (test_context->RunFlags & ImGuiTestRunFlags_NoTestFunc))
-                        status_color = ImVec4(0.8f, 0.0f, 0.8f, 1.0f);
-                    else
-                        status_color = ImVec4(0.8f, 0.4f, 0.1f, 1.0f);
-                    break;
-                default:
-                    status_color = ImVec4(0.4f, 0.4f, 0.4f, 1.0f);
-                    break;
-                }
+                    ImGuiTest* test = engine->TestsAll[n];
+                    if (!filter->PassFilter(test->Name) && !filter->PassFilter(test->Category))
+                        continue;
 
-                ImVec2 p = ImGui::GetCursorScreenPos();
-                ImGui::ColorButton("status", status_color, ImGuiColorEditFlags_NoTooltip);
-                ImGui::SameLine();
-                if (test->Status == ImGuiTestStatus_Running)
-                    ImGui::RenderText(p + g.Style.FramePadding + ImVec2(0, 0), &"|\0/\0-\0\\"[(((g.FrameCount / 5) & 3) << 1)], NULL);
+                    ImGuiTestContext* test_context = (engine->TestContext && engine->TestContext->Test == test) ? engine->TestContext : NULL;
 
-                bool queue_test = false;
-                bool queue_gui_func = false;
-                bool select_test = false;
+                    ImGui::PushID(n);
 
-                if (ImGui::Button("Run"))
-                    queue_test = select_test = true;
-                ImGui::SameLine();
-
-                char buf[128];
-                ImFormatString(buf, IM_ARRAYSIZE(buf), "%-*s - %s", 10, test->Category, test->Name);
-                if (ImGui::Selectable(buf, test == engine->UiSelectedTest))
-                    select_test = true;
-
-                // Double-click to run test, CTRL+Double-click to run GUI function
-                if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(0))
-                    if (ImGui::GetIO().KeyCtrl)
-                        queue_gui_func = true;
-                    else
-                        queue_test = true;
-
-                /*if (ImGui::IsItemHovered() && test->TestLog.size() > 0)
-                {
-                    ImGui::BeginTooltip();
-                    DrawTestLog(engine, test, false);
-                    ImGui::EndTooltip();
-                }*/
-
-                if (engine->UiSelectAndScrollToTest == test)
-                    ImGui::SetScrollHereY();
-
-                bool view_source = false;
-                if (ImGui::BeginPopupContextItem())
-                {
-                    select_test = true;
-
-                    if (ImGui::MenuItem("Run test"))
-                        queue_test = true;
-
-                    bool is_running_gui_func = (test_context && (test_context->RunFlags & ImGuiTestRunFlags_NoTestFunc));
-                    if (ImGui::MenuItem("Run GUI func", NULL, is_running_gui_func))
+                    ImVec4 status_color;
+                    switch (test->Status)
                     {
-                        if (is_running_gui_func)
+                    case ImGuiTestStatus_Error:
+                        status_color = ImVec4(0.9f, 0.1f, 0.1f, 1.0f);
+                        break;
+                    case ImGuiTestStatus_Success:
+                        status_color = ImVec4(0.1f, 0.9f, 0.1f, 1.0f);
+                        break;
+                    case ImGuiTestStatus_Queued:
+                    case ImGuiTestStatus_Running:
+                        if (test_context && (test_context->RunFlags & ImGuiTestRunFlags_NoTestFunc))
+                            status_color = ImVec4(0.8f, 0.0f, 0.8f, 1.0f);
+                        else
+                            status_color = ImVec4(0.8f, 0.4f, 0.1f, 1.0f);
+                        break;
+                    default:
+                        status_color = ImVec4(0.4f, 0.4f, 0.4f, 1.0f);
+                        break;
+                    }
+
+                    ImVec2 p = ImGui::GetCursorScreenPos();
+                    ImGui::ColorButton("status", status_color, ImGuiColorEditFlags_NoTooltip);
+                    ImGui::SameLine();
+                    if (test->Status == ImGuiTestStatus_Running)
+                        ImGui::RenderText(p + g.Style.FramePadding + ImVec2(0, 0), &"|\0/\0-\0\\"[(((g.FrameCount / 5) & 3) << 1)], NULL);
+
+                    bool queue_test = false;
+                    bool queue_gui_func = false;
+                    bool select_test = false;
+
+                    if (ImGui::Button("Run"))
+                        queue_test = select_test = true;
+                    ImGui::SameLine();
+
+                    char buf[128];
+                    ImFormatString(buf, IM_ARRAYSIZE(buf), "%-*s - %s", 10, test->Category, test->Name);
+                    if (ImGui::Selectable(buf, test == engine->UiSelectedTest))
+                        select_test = true;
+
+                    // Double-click to run test, CTRL+Double-click to run GUI function
+                    if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(0))
+                        if (ImGui::GetIO().KeyCtrl)
+                            queue_gui_func = true;
+                        else
+                            queue_test = true;
+
+                    /*if (ImGui::IsItemHovered() && test->TestLog.size() > 0)
+                    {
+                        ImGui::BeginTooltip();
+                        DrawTestLog(engine, test, false);
+                        ImGui::EndTooltip();
+                    }*/
+
+                    if (engine->UiSelectAndScrollToTest == test)
+                        ImGui::SetScrollHereY();
+
+                    bool view_source = false;
+                    if (ImGui::BeginPopupContextItem())
+                    {
+                        select_test = true;
+
+                        if (ImGui::MenuItem("Run test"))
+                            queue_test = true;
+
+                        bool is_running_gui_func = (test_context && (test_context->RunFlags & ImGuiTestRunFlags_NoTestFunc));
+                        if (ImGui::MenuItem("Run GUI func", NULL, is_running_gui_func))
                         {
-                            ImGuiTestEngine_Abort(engine);
+                            if (is_running_gui_func)
+                            {
+                                ImGuiTestEngine_Abort(engine);
+                            }
+                            else
+                            {
+                                queue_gui_func = true;
+                            }
+                        }
+                        ImGui::Separator();
+
+                        const bool open_source_available = (test->SourceFile != NULL) && (engine->IO.SrcFileOpenFunc != NULL);
+                        if (open_source_available)
+                        {
+                            ImFormatString(buf, IM_ARRAYSIZE(buf), "Open source (%s:%d)", test->SourceFileShort, test->SourceLine);
+                            if (ImGui::MenuItem(buf))
+                            {
+                                engine->IO.SrcFileOpenFunc(test->SourceFile, test->SourceLine, engine->IO.UserData);
+                            }
+                            if (ImGui::MenuItem("View source..."))
+                                view_source = true;
                         }
                         else
                         {
-                            queue_gui_func = true;
+                            ImGui::MenuItem("Open source", NULL, false, false);
+                            ImGui::MenuItem("View source", NULL, false, false);
                         }
-                    }
-                    ImGui::Separator();
 
-                    const bool open_source_available = (test->SourceFile != NULL) && (engine->IO.SrcFileOpenFunc != NULL);
-                    if (open_source_available)
+                        ImGui::Separator();
+                        if (ImGui::MenuItem("Copy name", NULL, false))
+                            ImGui::SetClipboardText(test->Name);
+
+                        if (ImGui::MenuItem("Copy log", NULL, false, !test->TestLog.Buffer.empty()))
+                            ImGui::SetClipboardText(test->TestLog.Buffer.c_str());
+
+                        if (ImGui::MenuItem("Clear log", NULL, false, !test->TestLog.Buffer.empty()))
+                            test->TestLog.Clear();
+
+                        ImGui::EndPopup();
+                    }
+
+                    // Process source popup
+                    static ImGuiTextBuffer source_blurb;
+                    static int goto_line = -1;
+                    if (view_source)
                     {
-                        ImFormatString(buf, IM_ARRAYSIZE(buf), "Open source (%s:%d)", test->SourceFileShort, test->SourceLine);
-                        if (ImGui::MenuItem(buf))
-                        {
-                            engine->IO.SrcFileOpenFunc(test->SourceFile, test->SourceLine, engine->IO.UserData);
-                        }
-                        if (ImGui::MenuItem("View source..."))
-                            view_source = true;
+                        source_blurb.clear();
+                        size_t file_size = 0;
+                        char* file_data = (char*)ImFileLoadToMemory(test->SourceFile, "rb", &file_size);
+                        if (file_data)
+                            source_blurb.append(file_data, file_data + file_size);
+                        else
+                            source_blurb.append("<Error loading sources>");
+                        goto_line = (test->SourceLine + test->SourceLineEnd) / 2;
+                        ImGui::OpenPopup("Source");
                     }
-                    else
+                    if (ImGui::BeginPopup("Source"))
                     {
-                        ImGui::MenuItem("Open source", NULL, false, false);
-                        ImGui::MenuItem("View source", NULL, false, false);
+                        // FIXME: Local vs screen pos too messy :(
+                        const ImVec2 start_pos = ImGui::GetCursorStartPos();
+                        const float line_height = ImGui::GetTextLineHeight();
+                        if (goto_line != -1)
+                            ImGui::SetScrollFromPosY(start_pos.y + (goto_line - 1) * line_height, 0.5f);
+                        goto_line = -1;
+
+                        ImRect r(0.0f, test->SourceLine * line_height, ImGui::GetWindowWidth(), (test->SourceLine + 1) * line_height); // SourceLineEnd is too flaky
+                        ImGui::GetWindowDrawList()->AddRectFilled(ImGui::GetWindowPos() + start_pos + r.Min, ImGui::GetWindowPos() + start_pos + r.Max, IM_COL32(80, 80, 150, 150));
+
+                        ImGui::TextUnformatted(source_blurb.c_str(), source_blurb.end());
+                        ImGui::EndPopup();
                     }
 
-                    ImGui::Separator();
-                    if (ImGui::MenuItem("Copy name", NULL, false))
-                        ImGui::SetClipboardText(test->Name);
+                    // Process selection
+                    if (select_test)
+                        engine->UiSelectedTest = test;
 
-                    if (ImGui::MenuItem("Copy log", NULL, false, !test->TestLog.Buffer.empty()))
-                        ImGui::SetClipboardText(test->TestLog.Buffer.c_str());
+                    // Process queuing
+                    if (engine->CallDepth == 0)
+                    {
+                        if (queue_test)
+                            ImGuiTestEngine_QueueTest(engine, test, ImGuiTestRunFlags_ManualRun);
+                        else if (queue_gui_func)
+                            ImGuiTestEngine_QueueTest(engine, test, ImGuiTestRunFlags_ManualRun | ImGuiTestRunFlags_NoTestFunc);
+                    }
 
-                    if (ImGui::MenuItem("Clear log", NULL, false, !test->TestLog.Buffer.empty()))
-                        test->TestLog.Clear();
-
-                    ImGui::EndPopup();
+                    ImGui::PopID();
                 }
-
-                // Process source popup
-                static ImGuiTextBuffer source_blurb;
-                static int goto_line = -1;
-                if (view_source)
-                {
-                    source_blurb.clear();
-                    size_t file_size = 0;
-                    char* file_data = (char*)ImFileLoadToMemory(test->SourceFile, "rb", &file_size);
-                    if (file_data)
-                        source_blurb.append(file_data, file_data + file_size);
-                    else
-                        source_blurb.append("<Error loading sources>");
-                    goto_line = (test->SourceLine + test->SourceLineEnd) / 2;
-                    ImGui::OpenPopup("Source");
-                }
-                if (ImGui::BeginPopup("Source"))
-                {
-                    // FIXME: Local vs screen pos too messy :(
-                    const ImVec2 start_pos = ImGui::GetCursorStartPos();
-                    const float line_height = ImGui::GetTextLineHeight();
-                    if (goto_line != -1)
-                        ImGui::SetScrollFromPosY(start_pos.y + (goto_line - 1) * line_height, 0.5f);
-                    goto_line = -1;
-
-                    ImRect r(0.0f, test->SourceLine * line_height, ImGui::GetWindowWidth(), (test->SourceLine + 1) * line_height); // SourceLineEnd is too flaky
-                    ImGui::GetWindowDrawList()->AddRectFilled(ImGui::GetWindowPos() + start_pos + r.Min, ImGui::GetWindowPos() + start_pos + r.Max, IM_COL32(80, 80, 150, 150));
-
-                    ImGui::TextUnformatted(source_blurb.c_str(), source_blurb.end());
-                    ImGui::EndPopup();
-                }
-
-                // Process selection
-                if (select_test)
-                    engine->UiSelectedTest = test;
-
-                // Process queuing
-                if (engine->CallDepth == 0)
-                {
-                    if (queue_test)
-                        ImGuiTestEngine_QueueTest(engine, test, ImGuiTestRunFlags_ManualRun);
-                    else if (queue_gui_func)
-                        ImGuiTestEngine_QueueTest(engine, test, ImGuiTestRunFlags_ManualRun | ImGuiTestRunFlags_NoTestFunc);
-                }
-
-                ImGui::PopID();
+                ImGui::Spacing();
+                ImGui::PopStyleVar();
+                ImGui::PopStyleVar();
             }
-            ImGui::Spacing();
-            ImGui::PopStyleVar();
-            ImGui::PopStyleVar();
+            ImGui::EndChild();
+            ImGui::EndTabItem();
         }
 
-        ImGui::EndChild();
-        ImGui::EndTabItem();
+        // Tools
+        if (ImGui::BeginTabItem("TOOLS"))
+        {
+            ImGuiIO& io = ImGui::GetIO();
+            ImGui::Text("%.3f ms/frame (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
+            ImGui::Separator();
+
+            ImGui::Text("Tools:");
+            ImGui::Checkbox("Capture Tool", &engine->CaptureTool.Visible);
+            ImGui::Checkbox("Slow down whole app", &engine->ToolSlowDown);
+            ImGui::SameLine();
+            ImGui::SetNextItemWidth(70);
+            ImGui::SliderInt("##ms", &engine->ToolSlowDownMs, 0, 400, "%.0f ms");
+
+            ImGui::Separator();
+            ImGui::Text("Configuration:");
+            ImGui::CheckboxFlags("io.ConfigFlags: NavEnableKeyboard", (unsigned int *)&io.ConfigFlags, ImGuiConfigFlags_NavEnableKeyboard);
+            ImGui::CheckboxFlags("io.ConfigFlags: NavEnableGamepad", (unsigned int *)&io.ConfigFlags, ImGuiConfigFlags_NavEnableGamepad);
+#ifdef IMGUI_HAS_DOCK
+            ImGui::Checkbox("io.ConfigDockingAlwaysTabBar", &io.ConfigDockingAlwaysTabBar);
+#endif
+            ImGui::EndTabItem();
+        }
+
         ImGui::EndTabBar();
     }
     ImGui::EndChild();
@@ -1583,42 +1599,19 @@ void    ImGuiTestEngine_ShowTestWindow(ImGuiTestEngine* engine, bool* p_open)
             ImGui::EndTabItem();
         }
 
-        if (ImGui::BeginTabItem("TOOLS"))
-        {
-            ImGuiIO& io = ImGui::GetIO();
-            ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
-            
-            ImGui::Checkbox("Slow down whole app", &engine->ToolSlowDown);
-            ImGui::SameLine();
-            ImGui::PushItemWidth(70);
-            ImGui::SliderInt("##ms", &engine->ToolSlowDownMs, 0, 400, "%.0f ms");
-            ImGui::PopItemWidth();
-            
-            ImGui::Text("Configuration:");
-            ImGui::CheckboxFlags("io.ConfigFlags: NavEnableKeyboard", (unsigned int *)&io.ConfigFlags, ImGuiConfigFlags_NavEnableKeyboard);
-            ImGui::CheckboxFlags("io.ConfigFlags: NavEnableGamepad", (unsigned int *)&io.ConfigFlags, ImGuiConfigFlags_NavEnableGamepad);
-#ifdef IMGUI_HAS_DOCK
-            ImGui::Checkbox("io.ConfigDockingAlwaysTabBar", &io.ConfigDockingAlwaysTabBar);
-#endif
-
-            ImGui::EndTabItem();
-        }
-
         ImGui::EndTabBar();
     }
     ImGui::EndChild();
 
     ImGui::End();
-}
 
-void ImGuiTestEngine_ShowScreenshotWindow(ImGuiTestEngine* engine, bool* p_open)
-{
+    // Capture Tool
     ImGuiCaptureTool& capture_tool = engine->CaptureTool;
-    capture_tool.CaptureFramebuffer = engine->IO.CaptureFramebufferFunc;
-    if (engine->IO.ConfigShowScreenshotWindow && capture_tool.CaptureFramebuffer)
+    capture_tool.ScreenCaptureFunc = engine->IO.ScreenCaptureFunc;
+    if (capture_tool.Visible)
     {
-        capture_tool.Flags |= CaptureWindowFlags_FullSize;
-        capture_tool.ScreenshotMaker(&engine->IO.ConfigShowScreenshotWindow);
+        capture_tool.Flags |= ImGuiCaptureWindowFlags_FullSize;
+        capture_tool.ShowCaptureToolWindow(&capture_tool.Visible);
     }
 }
 
@@ -1642,8 +1635,10 @@ static void     ImGuiTestEngine_SettingsReadLine(ImGuiContext* imgui_ctx, ImGuiS
     IM_ASSERT(engine != NULL);
     IM_ASSERT(engine->UiContextTarget == imgui_ctx);
 
+    int n = 0;
     if (sscanf(line, "Filter=%s", engine->UiTestFilter.InputBuf) == 1)  { engine->UiTestFilter.Build(); }   // FIXME
     else if (sscanf(line, "LogHeight=%f", &engine->UiLogHeight) == 1)   { }
+    else if (sscanf(line, "CaptureTool=%d", &n) == 1)                   { engine->CaptureTool.Visible = (n != 0); }
 }
 
 static void     ImGuiTestEngine_SettingsWriteAll(ImGuiContext* imgui_ctx, ImGuiSettingsHandler* handler, ImGuiTextBuffer* buf)
@@ -1655,6 +1650,7 @@ static void     ImGuiTestEngine_SettingsWriteAll(ImGuiContext* imgui_ctx, ImGuiS
     buf->appendf("[%s][Data]\n", handler->TypeName);
     buf->appendf("Filter=%s\n", engine->UiTestFilter.InputBuf);
     buf->appendf("LogHeight=%.0f\n", engine->UiLogHeight);
+    buf->appendf("CaptureTool=%d\n", engine->CaptureTool.Visible);
     buf->appendf("\n");
 }
 

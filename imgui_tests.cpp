@@ -1172,8 +1172,8 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         // FIXME-TESTS: Better helper to build ids out of various type of data
         ctx->WindowRef("Test Window");
         int n;
-        n = 0; ImGuiID field_0 = ImHash(&n, sizeof(n), ctx->GetID("Field"));
-        n = 1; ImGuiID field_1 = ImHash(&n, sizeof(n), ctx->GetID("Field"));
+        n = 0; ImGuiID field_0 = ImHashData(&n, sizeof(n), ctx->GetID("Field"));
+        n = 1; ImGuiID field_1 = ImHashData(&n, sizeof(n), ctx->GetID("Field"));
         //n = 2; ImGuiID field_2 = ImHash(&n, sizeof(n), ctx->GetID("Field"));
 
         // Testing activation/deactivation flags
@@ -1400,14 +1400,14 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
         ImGuiWindow* window = ImGui::GetCurrentWindow();
 
-        ImGui::SetNextTreeNodeOpen(true);
+        ImGui::SetNextItemOpen(true);
         if (ImGui::TreeNodeEx("Parent"))
         {
             // Interaction rect does not span entire width of work area.
             IM_CHECK(window->DC.LastItemRect.Max.x < window->WorkRect.Max.x);
             // But it starts at very beginning of WorkRect for first tree level.
             IM_CHECK(window->DC.LastItemRect.Min.x == window->WorkRect.Min.x);
-            ImGui::SetNextTreeNodeOpen(true);
+            ImGui::SetNextItemOpen(true);
             if (ImGui::TreeNodeEx("Regular"))
             {
                 // Interaction rect does not span entire width of work area.
@@ -1415,7 +1415,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
                 IM_CHECK(window->DC.LastItemRect.Min.x > window->WorkRect.Min.x);
                 ImGui::TreePop();
             }
-            ImGui::SetNextTreeNodeOpen(true);
+            ImGui::SetNextItemOpen(true);
             if (ImGui::TreeNodeEx("SpanAvailWidth", ImGuiTreeNodeFlags_SpanAvailWidth))
             {
                 // Interaction rect matches visible frame rect
@@ -1426,7 +1426,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
                 IM_CHECK(window->DC.LastItemRect.Max.x == window->WorkRect.Max.x);
                 ImGui::TreePop();
             }
-            ImGui::SetNextTreeNodeOpen(true);
+            ImGui::SetNextItemOpen(true);
             if (ImGui::TreeNodeEx("SpanFullWidth", ImGuiTreeNodeFlags_SpanFullWidth))
             {
                 // Interaction rect matches visible frame rect

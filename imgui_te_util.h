@@ -51,6 +51,7 @@ void        ImSleepInMilliseconds(int ms);
 ImU64       ImGetTimeInMicroseconds();
 
 bool        ImOsCreateProcess(const char* cmd_line);
+void        ImOsOpenInShell(const char* path);
 void        ImOsConsoleSetTextColor(ImOsConsoleStream stream, ImOsConsoleTextColor color);
 bool        ImOsIsDebuggerPresent();
 
