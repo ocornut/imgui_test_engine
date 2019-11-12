@@ -1647,6 +1647,7 @@ static void HelperTableSubmitCells(int count_w, int count_h)
                 continue;
             char label[32];
             ImFormatString(label, IM_ARRAYSIZE(label), "%d,%d", line, column);
+            //ImGui::TextUnformatted(label);
             ImGui::Button(label, ImVec2(-FLT_MIN, 0.0f));
         }
     }
@@ -1742,6 +1743,7 @@ void RegisterTests_Columns(ImGuiTestEngine* e)
 
     // ## Table: measure draw calls count
     // FIXME-TESTS: Resize window width to e.g. ideal size first, then resize down
+    // Important: HelperTableSubmitCells uses Button() with -1 width which will CPU clip text, so we don't have interference from the contents here.
     t = REGISTER_TEST("table", "table_2_draw_calls");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
@@ -1776,6 +1778,19 @@ void RegisterTests_Columns(ImGuiTestEngine* e)
             ImGui::TableAddColumn("FourFourFourFour");
             ImGui::TableAutoHeaders();
             HelperTableSubmitCells(4, 4);
+            ImGui::EndTable();
+            ImGui::Text("Some text");
+            int cmd_size_after = draw_list->CmdBuffer.Size;
+            IM_CHECK_EQ(cmd_size_before, cmd_size_after);
+        }
+        {
+            int cmd_size_before = draw_list->CmdBuffer.Size;
+            ImGui::BeginTable("##table4", 3, ImGuiTableFlags_Borders);
+            ImGui::TableAddColumn("One");
+            ImGui::TableAddColumn("TwoTwo");
+            ImGui::TableAddColumn("ThreeThreeThree");
+            ImGui::TableAutoHeaders();
+            HelperTableSubmitCells(3, 4);
             ImGui::EndTable();
             ImGui::Text("Some text");
             int cmd_size_after = draw_list->CmdBuffer.Size;

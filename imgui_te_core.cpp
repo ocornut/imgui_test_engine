@@ -1359,8 +1359,13 @@ void    ImGuiTestEngine_ShowTestWindow(ImGuiTestEngine* engine, bool* p_open)
                 ImFormatString(buf, IM_ARRAYSIZE(buf), "%-*s - %s", 10, test->Category, test->Name);
                 if (ImGui::Selectable(buf, test == engine->UiSelectedTest))
                     select_test = true;
+
+                // Double-click to run test, CTRL+Double-click to run GUI function
                 if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(0))
-                    queue_test = true;
+                    if (ImGui::GetIO().KeyCtrl)
+                        queue_gui_func = true;
+                    else
+                        queue_test = true;
 
                 /*if (ImGui::IsItemHovered() && test->TestLog.size() > 0)
                 {
@@ -1463,9 +1468,9 @@ void    ImGuiTestEngine_ShowTestWindow(ImGuiTestEngine* engine, bool* p_open)
                 if (engine->CallDepth == 0)
                 {
                     if (queue_test)
-                        ImGuiTestEngine_QueueTest(engine, test, ImGuiTestRunFlags_None);
+                        ImGuiTestEngine_QueueTest(engine, test, ImGuiTestRunFlags_ManualRun);
                     else if (queue_gui_func)
-                        ImGuiTestEngine_QueueTest(engine, test, ImGuiTestRunFlags_NoTestFunc);
+                        ImGuiTestEngine_QueueTest(engine, test, ImGuiTestRunFlags_ManualRun | ImGuiTestRunFlags_NoTestFunc);
                 }
 
                 ImGui::PopID();

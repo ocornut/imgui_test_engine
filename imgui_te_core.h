@@ -85,7 +85,8 @@ enum ImGuiTestRunFlags_
     ImGuiTestRunFlags_NoSuccessMsg      = 1 << 2,
     ImGuiTestRunFlags_NoStopOnError     = 1 << 3,
     ImGuiTestRunFlags_NoBreakOnError    = 1 << 4,
-    ImGuiTestRunFlags_CommandLine       = 1 << 5
+    ImGuiTestRunFlags_ManualRun         = 1 << 5,
+    ImGuiTestRunFlags_CommandLine       = 1 << 6
 };
 
 enum ImGuiTestInputType
