@@ -20,27 +20,27 @@ struct ImageBuf
 
 typedef bool (*ImGuiScreenCaptureFunc)(int x, int y, int w, int h, unsigned int* pixels, void* user_data);
 
-enum ImGuiCaptureWindowFlags_
+enum ImGuiCaptureToolFlags_
 {
-    ImGuiCaptureWindowFlags_None                    = 0,        //
-    ImGuiCaptureWindowFlags_FullSize                = 1 << 1,   // Expand window to it's content size and capture it's full height.
-    ImGuiCaptureWindowFlags_IgnoreCurrentWindow     = 1 << 2    // Current window will not appear in screenshots or helper UI.
+    ImGuiCaptureToolFlags_None                      = 0,        //
+    ImGuiCaptureToolFlags_FullSize                  = 1 << 1,   // Expand window to it's content size and capture it's full height.
+    ImGuiCaptureToolFlags_IgnoreCurrentWindow       = 1 << 2    // Current window will not appear in screenshots or helper UI.
 };
 
-typedef unsigned int ImGuiCaptureWindowFlags;
+typedef unsigned int ImGuiCaptureToolFlags;
 
-enum ImGuiScreenCaptureType
+enum ImGuiCaptureToolState
 {
-    ImGuiCaptureType_None,                          // No capture in progress.
-    ImGuiCaptureType_MultipleWindows,               // Capture of multiple windows in progress.
-    ImGuiCaptureType_SelectRectStart,               // Next mouse click will create selection rectangle.
-    ImGuiCaptureType_SelectRectUpdate               // Update selection rectangle until mouse is released.
+    ImGuiCaptureToolState_None,                     // No capture in progress.
+    ImGuiCaptureToolState_MultipleWindows,          // Capture of multiple windows in progress.
+    ImGuiCaptureToolState_SelectRectStart,          // Next mouse click will create selection rectangle.
+    ImGuiCaptureToolState_SelectRectUpdate          // Update selection rectangle until mouse is released.
 };
 
 struct ImGuiCaptureTool
 {
     bool                    Visible;
-    ImGuiCaptureWindowFlags Flags;                  // Optional. Flags for customizing behavior of screenshot tool.
+    ImGuiCaptureToolFlags   Flags;                  // Optional. Flags for customizing behavior of screenshot tool.
     ImGuiScreenCaptureFunc  ScreenCaptureFunc;      // Required. Graphics-backend-specific function that captures specified portion of framebuffer and writes RGBA data to `pixels` buffer. UserData will be passed to this function as `user` parameter.
     float                   Padding;                // Optional. Extra padding at the edges of the screenshot.
     float                   SnapGridSize;           //
@@ -48,9 +48,9 @@ struct ImGuiCaptureTool
     void*                   UserData;               // Optional. Custom user pointer.
 
     ImRect                  _CaptureRect;           // Viewport rect that is being captured.
-    ImGuiScreenCaptureType  _CaptureType;           // Hint used to determine which capture function is in progress. This flag is not set for some capture types that dont span multiple frames.
-    int                     _Chunk;                 // Number of chunk that is being captured when capture spans multiple frames.
-    int                     _Frame;                 // Frame number during capture process that spans multiple frames.
+    ImGuiCaptureToolState   _CaptureState;          // Hint used to determine which capture function is in progress. This flag is not set for some capture types that dont span multiple frames.
+    int                     _ChunkNo;               // Number of chunk that is being captured when capture spans multiple frames.
+    int                     _FrameNo;               // Frame number during capture process that spans multiple frames.
     ImageBuf                _Output;                // Output image buffer.
     ImGuiWindow*            _Window;                // Window to be captured.
     float                   _WindowNameMaxPosX;     // X post after longest window name in CaptureWindowsSelector().
@@ -67,10 +67,10 @@ struct ImGuiCaptureTool
         ImStrncpy(SaveFileName, "imgui_capture.png", (size_t)IM_ARRAYSIZE(SaveFileName));
         UserData = NULL;
 
-        _Frame = 0;
+        _FrameNo = 0;
         _CaptureRect = ImRect();
-        _CaptureType = ImGuiCaptureType_None;
-        _Chunk = 0;
+        _CaptureState = ImGuiCaptureToolState_None;
+        _ChunkNo = 0;
         _Window = NULL;
         _WindowNameMaxPosX = 170.0f;
         _WindowState = ImRect();

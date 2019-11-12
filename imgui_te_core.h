@@ -168,7 +168,7 @@ int                 ImGuiTestEngine_GetFrameCount(ImGuiTestEngine* engine);
 double              ImGuiTestEngine_GetPerfDeltaTime500Average(ImGuiTestEngine* engine);
 FILE*               ImGuiTestEngine_GetPerfPersistentLogCsv(ImGuiTestEngine* engine);
 const char*         ImGuiTestEngine_GetVerboseLevelName(ImGuiTestVerboseLevel v);
-bool                ImGuiTestEngine_CaptureWindow(ImGuiTestEngine* engine, ImGuiWindow* window, const char* output_file, ImGuiCaptureWindowFlags flags);
+bool                ImGuiTestEngine_CaptureWindow(ImGuiTestEngine* engine, ImGuiWindow* window, const char* output_file, ImGuiCaptureToolFlags flags);
 
 //-------------------------------------------------------------------------
 // Hooks for Core Library

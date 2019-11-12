@@ -588,7 +588,7 @@ const char* ImGuiTestEngine_GetVerboseLevelName(ImGuiTestVerboseLevel v)
     return "N/A";
 }
 
-bool ImGuiTestEngine_CaptureWindow(ImGuiTestEngine* engine, ImGuiWindow* window, const char* output_file, ImGuiCaptureWindowFlags flags)
+bool ImGuiTestEngine_CaptureWindow(ImGuiTestEngine* engine, ImGuiWindow* window, const char* output_file, ImGuiCaptureToolFlags flags)
 {
     if (engine->CaptureTool.ScreenCaptureFunc == NULL)
         return false;
@@ -1610,7 +1610,7 @@ void    ImGuiTestEngine_ShowTestWindow(ImGuiTestEngine* engine, bool* p_open)
     capture_tool.ScreenCaptureFunc = engine->IO.ScreenCaptureFunc;
     if (capture_tool.Visible)
     {
-        capture_tool.Flags |= ImGuiCaptureWindowFlags_FullSize;
+        capture_tool.Flags |= ImGuiCaptureToolFlags_FullSize;
         capture_tool.ShowCaptureToolWindow(&capture_tool.Visible);
     }
 }

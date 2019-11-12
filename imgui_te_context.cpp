@@ -353,12 +353,12 @@ ImVec2 ImGuiTestContext::GetMainViewportPos()
 #endif
 }
 
-bool ImGuiTestContext::CaptureWindow(ImGuiTestRef ref, const char* output_file, ImGuiCaptureWindowFlags flags)
+bool ImGuiTestContext::CaptureWindow(ImGuiTestRef ref, const char* output_file, ImGuiCaptureToolFlags flags)
 {
     return CaptureWindow(GetWindowByRef(ref), output_file, flags);
 }
 
-bool ImGuiTestContext::CaptureWindow(ImGuiWindow* window, const char* output_file, ImGuiCaptureWindowFlags flags)
+bool ImGuiTestContext::CaptureWindow(ImGuiWindow* window, const char* output_file, ImGuiCaptureToolFlags flags)
 {
     return ImGuiTestEngine_CaptureWindow(Engine, window, output_file, flags);
 }
