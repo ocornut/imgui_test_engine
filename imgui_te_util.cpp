@@ -108,7 +108,14 @@ void    ImOsOpenInShell(const char* path)
 #ifdef _WIN32
     ::ShellExecuteA(NULL, "open", path, NULL, NULL, SW_SHOWDEFAULT);
 #else
-    IM_UNUSED(filename);
+    char command[1024];
+#if __APPLE__
+    const char* open_executable = "open";
+#else
+    const char* open_executable = "xdg-open";
+#endif
+    if (ImFormatString(command, IM_ARRAYSIZE(command), "%s \"%s\"", open_executable, path) < IM_ARRAYSIZE(command))
+        system(command);
 #endif
 }
 

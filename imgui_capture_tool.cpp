@@ -278,7 +278,8 @@ void ImGuiCaptureTool::CaptureWindowsSelector(const char* title)
     if (_CaptureState == ImGuiCaptureToolState_SelectRectStart || _CaptureState == ImGuiCaptureToolState_SelectRectUpdate)
     {
         ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
-        ImGui::SetTooltip("Select multiple windows by pressing left mouse button and dragging.");
+        if (ImGui::IsItemHovered())
+            ImGui::SetTooltip("Select multiple windows by pressing left mouse button and dragging.");
     }
     ImGui::Separator();
 
@@ -304,6 +305,7 @@ void ImGuiCaptureTool::CaptureWindowsSelector(const char* title)
     }
 
     float max_window_name_x = 0.0f;
+    int capture_windows_count = 0;
     ImRect capture_rect;
     ImGui::Text("Windows:");
     for (ImGuiWindow* window : g.Windows)
@@ -317,12 +319,12 @@ void ImGuiCaptureTool::CaptureWindowsSelector(const char* title)
             if (_CaptureState == ImGuiCaptureToolState_MultipleWindows)
             {
                 window->Hidden = true;
-                window->HiddenFramesCannotSkipItems = 1;
+                window->HiddenFramesCannotSkipItems = 2;
             }
             continue;
         }
 
-        if ((window->Flags & ImGuiWindowFlags_Popup) || (window->Flags & ImGuiWindowFlags_Tooltip))
+        if (Flags & ImGuiCaptureToolFlags_ExpandToIncludePopups && ((window->Flags & ImGuiWindowFlags_Popup) || (window->Flags & ImGuiWindowFlags_Tooltip)))
         {
             capture_rect.Add(window->Rect());
             continue;
@@ -348,7 +350,10 @@ void ImGuiCaptureTool::CaptureWindowsSelector(const char* title)
 
         max_window_name_x = ImMax(max_window_name_x, g.CurrentWindow->DC.CursorPosPrevLine.x - g.CurrentWindow->Pos.x);
         if (*p_selected)
+        {
             capture_rect.Add(window->Rect());
+            capture_windows_count++;
+        }
         ImGui::SameLine(_WindowNameMaxPosX + g.Style.ItemSpacing.x);
         ImGui::SetNextItemWidth(100);
         ImGui::DragFloat2("Pos", &window->Pos.x, 0.05f, 0.0f, 0.0f, "%.0f");
@@ -363,7 +368,7 @@ void ImGuiCaptureTool::CaptureWindowsSelector(const char* title)
             {
                 // Hide windows that are not selected during capture.
                 window->Hidden = true;
-                window->HiddenFramesCannotSkipItems = 1;
+                window->HiddenFramesCannotSkipItems = 2;
             }
         }
     }
@@ -371,9 +376,12 @@ void ImGuiCaptureTool::CaptureWindowsSelector(const char* title)
 
     // Draw capture rectangle
     ImDrawList* draw_list = ImGui::GetForegroundDrawList();
-    const bool can_capture = capture_rect.GetWidth() > 0 && capture_rect.GetHeight() > 0;
+    const bool can_capture = capture_rect.Min.x != FLT_MIN && capture_rect.Min.y != FLT_MIN &&
+        capture_rect.Max.x != FLT_MAX && capture_rect.Max.y != FLT_MAX && capture_windows_count > 0;
     if (can_capture && _CaptureState != ImGuiCaptureToolState_PickingSingleWindow)
     {
+        IM_ASSERT(capture_rect.GetWidth() > 0);
+        IM_ASSERT(capture_rect.GetHeight() > 0);
         capture_rect.Expand(Padding);
         capture_rect.ClipWith(ImRect(ImVec2(0, 0), io.DisplaySize));
         draw_list->AddRect(capture_rect.Min - ImVec2(1.0f, 1.0f), capture_rect.Max + ImVec2(1.0f, 1.0f), IM_COL32_WHITE);
@@ -449,6 +457,9 @@ void ImGuiCaptureTool::ShowCaptureToolWindow(bool* p_open)
         ImGui::CheckboxFlags("Stitch and capture full contents height", &Flags, ImGuiCaptureToolFlags_StitchFullContents);
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Full height of picked window will be captured.");
+        ImGui::CheckboxFlags("Include tooltips", &Flags, ImGuiCaptureToolFlags_ExpandToIncludePopups);
+        if (ImGui::IsItemHovered())
+            ImGui::SetTooltip("Capture area will be expanded to include visible tooltips.");
 
         ImGui::PopItemWidth();
         ImGui::TreePop();
@@ -479,6 +490,7 @@ void ImGuiCaptureTool::SnapWindowsToGrid(float cell_size)
 
         if (window->Flags & ImGuiWindowFlags_ChildWindow)
             continue;
+
         if ((window->Flags & ImGuiWindowFlags_Popup) || (window->Flags & ImGuiWindowFlags_Tooltip))
             continue;
 

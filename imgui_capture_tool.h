@@ -24,7 +24,8 @@ enum ImGuiCaptureToolFlags_
 {
     ImGuiCaptureToolFlags_None                      = 0,        //
     ImGuiCaptureToolFlags_StitchFullContents        = 1 << 1,   // Expand window to it's content size and capture its full height.
-    ImGuiCaptureToolFlags_IgnoreCaptureToolWindow   = 1 << 2    // Current window will not appear in screenshots or helper UI.
+    ImGuiCaptureToolFlags_IgnoreCaptureToolWindow   = 1 << 2,   // Current window will not appear in screenshots or helper UI.
+    ImGuiCaptureToolFlags_ExpandToIncludePopups     = 1 << 3,   // Expand capture area to automatically include visible popups and tooltips.
 };
 
 typedef unsigned int ImGuiCaptureToolFlags;

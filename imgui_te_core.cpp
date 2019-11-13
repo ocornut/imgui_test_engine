@@ -1519,7 +1519,7 @@ void    ImGuiTestEngine_ShowTestWindow(ImGuiTestEngine* engine, bool* p_open)
             ImGui::Checkbox("Slow down whole app", &engine->ToolSlowDown);
             ImGui::SameLine();
             ImGui::SetNextItemWidth(70);
-            ImGui::SliderInt("##ms", &engine->ToolSlowDownMs, 0, 400, "%.0f ms");
+            ImGui::SliderInt("##ms", &engine->ToolSlowDownMs, 0, 400, "%d ms");
 
             ImGui::Separator();
             ImGui::Text("Configuration:");
