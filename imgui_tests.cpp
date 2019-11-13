@@ -302,6 +302,22 @@ void RegisterTests_Window(ImGuiTestEngine* e)
         IM_CHECK(g.NavWindow == popup_1);
     };
 
+    // ## Test that child window correctly affect contents size based on how their size was specified.
+    t = REGISTER_TEST("window", "window_child_layout_size");
+    t->Flags |= ImGuiTestFlags_NoAutoFinish;
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImGui::Text("Hi");
+        ImGui::BeginChild("Child 1", ImVec2(100, 100), true);
+        ImGui::EndChild();
+        if (ctx->FrameCount == 2)
+            IM_CHECK_EQ(ctx->UiContext->CurrentWindow->ContentSize, ImVec2(100, 100 + ImGui::GetTextLineHeightWithSpacing()));
+        if (ctx->FrameCount == 2)
+            ctx->Finish();
+        ImGui::End();
+    };
+
     // ## Test that child window outside the visible section of their parent are clipped
     t = REGISTER_TEST("window", "window_child_clip");
     t->Flags |= ImGuiTestFlags_NoAutoFinish;
@@ -312,12 +328,12 @@ void RegisterTests_Window(ImGuiTestEngine* e)
         ImGui::SetCursorPos(ImVec2(0, 0));
         ImGui::BeginChild("Child 1", ImVec2(100, 100));
         if (ctx->FrameCount == 2)
-            IM_CHECK(ctx->UiContext->CurrentWindow->SkipItems == false);
+            IM_CHECK_EQ(ctx->UiContext->CurrentWindow->SkipItems, false);
         ImGui::EndChild();
         ImGui::SetCursorPos(ImVec2(300, 300));
         ImGui::BeginChild("Child 2", ImVec2(100, 100));
         if (ctx->FrameCount == 2)
-            IM_CHECK(ctx->UiContext->CurrentWindow->SkipItems == true);
+            IM_CHECK_EQ(ctx->UiContext->CurrentWindow->SkipItems, true);
         ImGui::EndChild();
         ImGui::End();
         if (ctx->FrameCount == 2)
