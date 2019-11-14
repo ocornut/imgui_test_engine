@@ -526,13 +526,13 @@ void ImGuiTestEngine_Yield(ImGuiTestEngine* engine)
     ImGuiTestContext* ctx = engine->TestContext;
     ImGuiContext& g = *ctx->UiContext;
 
-    if (g.FrameScopeActive)
+    if (g.WithinFrameScope)
         engine->IO.EndFrameFunc(engine, engine->IO.UserData);
 
     engine->IO.NewFrameFunc(engine, engine->IO.UserData);
     IM_ASSERT(g.IO.DeltaTime > 0.0f);
 
-    if (!g.FrameScopeActive)
+    if (!g.WithinFrameScope)
         return;
 
     if (ctx)
@@ -830,10 +830,12 @@ static void ImGuiTestEngine_RunTest(ImGuiTestEngine* engine, ImGuiTestContext* c
     ctx->GenericVars.Clear();
     test->TestLog.Clear();
 
-    // Set up buffered clipboard
-    const char* (*get_clipboard_text_fn)(void*) = ctx->UiContext->IO.GetClipboardTextFn;
-    void (*set_clipboard_text_fn)(void*, const char*) = ctx->UiContext->IO.SetClipboardTextFn;
-    void* clipboard_user_data = ctx->UiContext->IO.ClipboardUserData;
+    // Setup buffered clipboard
+    typedef const char* (*ImGuiGetClipboardTextFn)(void* user_data);
+    typedef void        (*ImGuiSetClipboardTextFn)(void* user_data, const char* text);
+    ImGuiGetClipboardTextFn backup_get_clipboard_text_fn = ctx->UiContext->IO.GetClipboardTextFn;
+    ImGuiSetClipboardTextFn backup_set_clipboard_text_fn = ctx->UiContext->IO.SetClipboardTextFn;
+    void*                   backup_clipboard_user_data   = ctx->UiContext->IO.ClipboardUserData;
     ctx->UiContext->IO.GetClipboardTextFn = [](void* user_data) -> const char*
     {
         ImGuiTestContext* ctx = (ImGuiTestContext*)user_data;
@@ -842,14 +844,8 @@ static void ImGuiTestEngine_RunTest(ImGuiTestEngine* engine, ImGuiTestContext* c
     ctx->UiContext->IO.SetClipboardTextFn = [](void* user_data, const char* text)
     {
         ImGuiTestContext* ctx = (ImGuiTestContext*)user_data;
-        int text_length = text ? strlen(text) : 0;
-        if (text_length == 0)
-            ctx->Clipboard.clear();
-        else
-        {
-            ctx->Clipboard.resize(text_length + 1);
-            strcpy(ctx->Clipboard.Data, text);
-        }
+        ctx->Clipboard.resize((int)strlen(text) + 1);
+        strcpy(ctx->Clipboard.Data, text);
     };
     ctx->UiContext->IO.ClipboardUserData = ctx;
 
@@ -933,9 +929,9 @@ static void ImGuiTestEngine_RunTest(ImGuiTestEngine* engine, ImGuiTestContext* c
     ctx->ActiveFunc = backup_active_func;
 
     // Restore backend clipboard functions
-    ctx->UiContext->IO.GetClipboardTextFn = get_clipboard_text_fn;
-    ctx->UiContext->IO.SetClipboardTextFn = set_clipboard_text_fn;
-    ctx->UiContext->IO.ClipboardUserData = clipboard_user_data;
+    ctx->UiContext->IO.GetClipboardTextFn = backup_get_clipboard_text_fn;
+    ctx->UiContext->IO.SetClipboardTextFn = backup_set_clipboard_text_fn;
+    ctx->UiContext->IO.ClipboardUserData = backup_clipboard_user_data;
 }
 
 //-------------------------------------------------------------------------

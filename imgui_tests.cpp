@@ -935,14 +935,6 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         //ctx->KeyPressMap(ImGuiKey_V, ImGuiKeyModFlags_Ctrl, 10);
 
         // Select all, copy, paste 3 times
-        // FIXME-TESTS: [Omar] This is occasionally failing under Windows.. which I tracked to Win32 ::OpenClipbard() returning false occasionally :(
-        // I really don't know what we are supposed to do, if there are local apps creating clipboard contention and what is the proper solution.
-        // When it happened and I first studied the problem, I noticed that after a reboot it would not happen again..
-        // Perhaps the win32 clipboard behavior is up to applications behaving decently, 
-        // - if our imgui bindings/apps are the misbehaving cause: what's the issue and how do we fix it?
-        // - if our imgui bindings/apps are not the cause: can we workaround it? How would other apps deal with it, retry calling OpenClipboard multiple times??
-        // Somehow it would make some sense if the testing engine used its own internal clipboard and then this would be a non-issue.
-        // But also the purpose of testing is to also detect those larger issues...
         ctx->KeyPressMap(ImGuiKey_A, ImGuiKeyModFlags_Ctrl);    // Select all
         ctx->KeyPressMap(ImGuiKey_C, ImGuiKeyModFlags_Ctrl);    // Copy
         ctx->KeyPressMap(ImGuiKey_End, ImGuiKeyModFlags_Ctrl);  // Go to end, clear selection
