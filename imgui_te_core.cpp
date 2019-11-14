@@ -1445,10 +1445,12 @@ void    ImGuiTestEngine_ShowTestWindow(ImGuiTestEngine* engine, bool* p_open)
 
                     // Double-click to run test, CTRL+Double-click to run GUI function
                     if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(0))
+                    {
                         if (ImGui::GetIO().KeyCtrl)
                             queue_gui_func = true;
                         else
                             queue_test = true;
+                    }
 
                     /*if (ImGui::IsItemHovered() && test->TestLog.size() > 0)
                     {
