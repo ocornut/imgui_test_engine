@@ -2589,6 +2589,21 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
         }
     };
 
+    // ## Test basic clipboard, test that clipboard is empty on start
+    t = REGISTER_TEST("misc", "misc_clipboard");
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        // By specs, the testing system should provide an empty clipboard (we don't want user clipboard leaking into tests!)
+        const char* clipboard_text = ImGui::GetClipboardText();
+        IM_CHECK_STR_EQ(clipboard_text, "");
+
+        // Regular clipboard test
+        const char* message = "Clippy is alive.";
+        ImGui::SetClipboardText(message);
+        clipboard_text = ImGui::GetClipboardText();
+        IM_CHECK_STR_EQ(message, clipboard_text);
+    };
+
     // FIXME-TESTS
     t = REGISTER_TEST("demo", "demo_misc_001");
     t->GuiFunc = NULL;

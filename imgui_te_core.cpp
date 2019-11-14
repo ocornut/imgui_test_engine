@@ -826,8 +826,32 @@ static void ImGuiTestEngine_RunTest(ImGuiTestEngine* engine, ImGuiTestContext* c
     ctx->FrameCount = 0;
     ctx->WindowRef("");
     ctx->SetInputMode(ImGuiInputSource_Mouse);
+    ctx->Clipboard.clear();
     ctx->GenericVars.Clear();
     test->TestLog.Clear();
+
+    // Set up buffered clipboard
+    const char* (*get_clipboard_text_fn)(void*) = ctx->UiContext->IO.GetClipboardTextFn;
+    void (*set_clipboard_text_fn)(void*, const char*) = ctx->UiContext->IO.SetClipboardTextFn;
+    void* clipboard_user_data = ctx->UiContext->IO.ClipboardUserData;
+    ctx->UiContext->IO.GetClipboardTextFn = [](void* user_data) -> const char*
+    {
+        ImGuiTestContext* ctx = (ImGuiTestContext*)user_data;
+        return ctx->Clipboard.empty() ? "" : ctx->Clipboard.Data;
+    };
+    ctx->UiContext->IO.SetClipboardTextFn = [](void* user_data, const char* text)
+    {
+        ImGuiTestContext* ctx = (ImGuiTestContext*)user_data;
+        int text_length = text ? strlen(text) : 0;
+        if (text_length == 0)
+            ctx->Clipboard.clear();
+        else
+        {
+            ctx->Clipboard.resize(text_length + 1);
+            strcpy(ctx->Clipboard.Data, text);
+        }
+    };
+    ctx->UiContext->IO.ClipboardUserData = ctx;
 
     // Mark as currently running the TestFunc (this is the only time when we are allowed to yield)
     IM_ASSERT(ctx->ActiveFunc == ImGuiTestActiveFunc_None);
@@ -907,6 +931,11 @@ static void ImGuiTestEngine_RunTest(ImGuiTestEngine* engine, ImGuiTestContext* c
 
     // Restore active func
     ctx->ActiveFunc = backup_active_func;
+
+    // Restore backend clipboard functions
+    ctx->UiContext->IO.GetClipboardTextFn = get_clipboard_text_fn;
+    ctx->UiContext->IO.SetClipboardTextFn = set_clipboard_text_fn;
+    ctx->UiContext->IO.ClipboardUserData = clipboard_user_data;
 }
 
 //-------------------------------------------------------------------------

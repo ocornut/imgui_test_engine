@@ -160,6 +160,7 @@ struct ImGuiTestContext
     char                    RefStr[256] = { 0 };
     ImGuiID                 RefID = 0;
     ImGuiInputSource        InputMode = ImGuiInputSource_Mouse;
+    ImVector<char>          Clipboard;
 
     double                  PerfRefDt = -1.0;
     int                     PerfStressAmount = 0;
