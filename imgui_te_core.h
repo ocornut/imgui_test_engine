@@ -318,6 +318,9 @@ struct ImGuiTestEngineIO
     bool                        ConfigLogToTTY = false;
     bool                        ConfigTakeFocusBackAfterTests = true;
     bool                        ConfigNoThrottle = false;   // Disable vsync for performance measurement
+    float                       WatchdogTimerWarn = 30.0f;
+    float                       WatchdogTimerKillTest = 60.0f;
+    float                       WatchdogTimerKillAll = 65.0f;
     float                       MouseSpeed = 1000.0f;       // Mouse speed (pixel/second) when not running in fast mode
     float                       ScrollSpeed = 1600.0f;      // Scroll speed (pixel/second) when not running in fast mode
     float                       TypingSpeed = 30.0f;        // Char input speed (characters/second) when not running in fast mode

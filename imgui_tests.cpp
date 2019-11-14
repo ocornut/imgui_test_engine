@@ -2266,6 +2266,16 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
 {
     ImGuiTest* t = NULL;
 
+    // ## Test watchdog
+#if 0
+    t = REGISTER_TEST("misc", "misc_watchdog");
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        while (true)
+            ctx->Yield();
+    };
+#endif
+    
     // ## Test hash functions and ##/### operators
     t = REGISTER_TEST("misc", "misc_hash_001");
     t->TestFunc = [](ImGuiTestContext* ctx)

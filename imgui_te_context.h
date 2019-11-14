@@ -155,6 +155,7 @@ struct ImGuiTestContext
     int                     UserCounter = 0;
     int                     FrameCount = 0;             // Test frame count (restarts from zero every time)
     int                     FirstFrameCount = 0;        // First frame where Test is running. After warm-up. This is generally -2 or 0 depending on whether we have warm up enabled
+    double                  RunningTime = 0.0f;
     int                     ActionDepth = 0;
     bool                    Abort = false;
     char                    RefStr[256] = { 0 };

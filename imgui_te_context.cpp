@@ -127,9 +127,11 @@ void    ImGuiTestContext::LogToTTY(ImGuiTestVerboseLevel level, const char* mess
         // Otherwise print only current message. If we are executing here log level already is within range of
         // ConfigVerboseLevelOnError setting.
     }
-    else if (EngineIO->ConfigVerboseLevel <= level)
+    else if (EngineIO->ConfigVerboseLevel < level)
+    {
         // Skip printing messages of lower level than configured.
         return;
+    }
 
     switch (level)
     {

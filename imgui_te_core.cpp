@@ -430,6 +430,33 @@ void ImGuiTestEngine_ApplyInputToImGuiContext(ImGuiTestEngine* engine)
     }
 }
 
+// FIXME: Trying to abort a running GUI test won't kill the app immediately.
+static void ImGuiTestEngine_UpdateWatchdog(ImGuiTestEngine* engine, ImGuiContext* ctx, double t0, double t1)
+{
+    ImGuiTestContext* test_ctx = engine->TestContext;
+    IM_ASSERT(engine->IO.WatchdogTimerKillTest >= engine->IO.WatchdogTimerWarn);
+    IM_ASSERT(engine->IO.WatchdogTimerKillAll >= engine->IO.WatchdogTimerKillTest);
+
+    // Emit a warning and then fail the test after a given time.
+    if (t0 < engine->IO.WatchdogTimerWarn && t1 >= engine->IO.WatchdogTimerWarn)
+    {
+        test_ctx->LogWarning("[Watchdog] Running time for '%s' is >%.f seconds, may be excessive.", test_ctx->Test->Name, t1);
+    }
+    if (t0 < engine->IO.WatchdogTimerKillTest && t1 >= engine->IO.WatchdogTimerKillTest)
+    {
+        test_ctx->LogError("[Watchdog] Running time for '%s' is >%.f seconds, aborting.", test_ctx->Test->Name, t1);
+        IM_CHECK(false);
+    }
+
+    // Final safety watchdog in case the TestFunc is calling Yield() but never returning.
+    // Note that we are not catching infinite loop cases where the TestFunc may be running but not yielding..
+    if (t0 < engine->IO.WatchdogTimerKillAll + 5.0f && t1 >= engine->IO.WatchdogTimerKillAll + 5.0f)
+    {
+        test_ctx->LogError("[Watchdog] Emergency process exit as the test didn't return.");
+        exit(1);
+    }
+}
+
 static void ImGuiTestEngine_PreNewFrame(ImGuiTestEngine* engine, ImGuiContext* ctx)
 {
     if (engine->UiContextTarget != ctx)
@@ -446,8 +473,14 @@ static void ImGuiTestEngine_PreNewFrame(ImGuiTestEngine* engine, ImGuiContext* c
 
     // NewFrame() will increase this so we are +1 ahead at the time of calling this
     engine->FrameCount = g.FrameCount + 1;
-    if (engine->TestContext)
-        engine->TestContext->FrameCount++;
+    if (ImGuiTestContext* test_ctx = engine->TestContext)
+    {
+        double t0 = test_ctx->RunningTime;
+        double t1 = t0 + ctx->IO.DeltaTime;
+        test_ctx->FrameCount++;
+        test_ctx->RunningTime = t1;
+        ImGuiTestEngine_UpdateWatchdog(engine, ctx, t0, t1);
+    }
 
     engine->PerfDeltaTime100.AddSample(g.IO.DeltaTime);
     engine->PerfDeltaTime500.AddSample(g.IO.DeltaTime);
@@ -1211,7 +1244,7 @@ static bool ParseLineAndDrawFileOpenItem(ImGuiTestEngine* e, ImGuiTest* test, co
 static void DrawTestLog(ImGuiTestEngine* e, ImGuiTest* test, bool is_interactive)
 {
     ImU32 error_col = IM_COL32(255, 150, 150, 255);
-    ImU32 warning_col = ImGui::GetColorU32(ImGuiCol_Text); // IM_COL32(230, 230, 180, 255);
+    ImU32 warning_col = IM_COL32(240, 240, 150, 255);
     ImU32 unimportant_col = IM_COL32(190, 190, 190, 255);
 
     // FIXME-OPT: Split TestLog by lines so we can clip it easily.
