@@ -434,23 +434,28 @@ void ImGuiTestEngine_ApplyInputToImGuiContext(ImGuiTestEngine* engine)
 static void ImGuiTestEngine_UpdateWatchdog(ImGuiTestEngine* engine, ImGuiContext* ctx, double t0, double t1)
 {
     ImGuiTestContext* test_ctx = engine->TestContext;
-    IM_ASSERT(engine->IO.WatchdogTimerKillTest >= engine->IO.WatchdogTimerWarn);
-    IM_ASSERT(engine->IO.WatchdogTimerKillAll >= engine->IO.WatchdogTimerKillTest);
+
+    if (!engine->IO.ConfigRunFast)
+        return;
+
+    const float timer_warn      = engine->IO.ConfigRunWithGui ? 30.0f : 15.0f;
+    const float timer_kill_test = engine->IO.ConfigRunWithGui ? 60.0f : 30.0f;
+    const float timer_kill_app  = engine->IO.ConfigRunWithGui ? FLT_MAX : 35.0f;
 
     // Emit a warning and then fail the test after a given time.
-    if (t0 < engine->IO.WatchdogTimerWarn && t1 >= engine->IO.WatchdogTimerWarn)
+    if (t0 < timer_warn && t1 >= timer_warn)
     {
-        test_ctx->LogWarning("[Watchdog] Running time for '%s' is >%.f seconds, may be excessive.", test_ctx->Test->Name, t1);
+        test_ctx->LogWarning("[Watchdog] Running time for '%s' is >%.f seconds, may be excessive.", test_ctx->Test->Name, timer_warn);
     }
-    if (t0 < engine->IO.WatchdogTimerKillTest && t1 >= engine->IO.WatchdogTimerKillTest)
+    if (t0 < timer_kill_test && t1 >= timer_kill_test)
     {
-        test_ctx->LogError("[Watchdog] Running time for '%s' is >%.f seconds, aborting.", test_ctx->Test->Name, t1);
+        test_ctx->LogError("[Watchdog] Running time for '%s' is >%.f seconds, aborting.", test_ctx->Test->Name, timer_kill_test);
         IM_CHECK(false);
     }
 
     // Final safety watchdog in case the TestFunc is calling Yield() but never returning.
     // Note that we are not catching infinite loop cases where the TestFunc may be running but not yielding..
-    if (t0 < engine->IO.WatchdogTimerKillAll + 5.0f && t1 >= engine->IO.WatchdogTimerKillAll + 5.0f)
+    if (t0 < timer_kill_app + 5.0f && t1 >= timer_kill_app + 5.0f)
     {
         test_ctx->LogError("[Watchdog] Emergency process exit as the test didn't return.");
         exit(1);
@@ -927,7 +932,7 @@ static void ImGuiTestEngine_RunTest(ImGuiTestEngine* engine, ImGuiTestContext* c
         if (!engine->IO.ConfigRunFast)
             ctx->SleepShort();
 
-        while (engine->IO.ConfigKeepTestGui && !engine->Abort)
+        while (engine->IO.ConfigKeepGuiFunc && !engine->Abort)
         {
             ctx->RunFlags |= ImGuiTestRunFlags_NoTestFunc;
             ctx->Yield();
@@ -1341,7 +1346,7 @@ void    ImGuiTestEngine_ShowTestWindow(ImGuiTestEngine* engine, bool* p_open)
     ImGui::SameLine();
     ImGui::Checkbox("DbgBrk", &engine->IO.ConfigBreakOnError); HelpTooltip("Break in debugger when hitting an error.");
     ImGui::SameLine();
-    ImGui::Checkbox("KeepGUI", &engine->IO.ConfigKeepTestGui); HelpTooltip("Keep GUI function running after test function is finished.");
+    ImGui::Checkbox("KeepGUI", &engine->IO.ConfigKeepGuiFunc); HelpTooltip("Keep GUI function running after test function is finished.");
     ImGui::SameLine();
     ImGui::Checkbox("Refocus", &engine->IO.ConfigTakeFocusBackAfterTests); HelpTooltip("Set focus back to Test window after running tests.");
     ImGui::SameLine();

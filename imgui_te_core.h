@@ -293,38 +293,37 @@ void                ImGuiTestEngine_CalcSourceLineEnds(ImGuiTestEngine* engine);
 void                ImGuiTestEngine_PrintResultSummary(ImGuiTestEngine* engine);
 void                ImGuiTestEngine_GetResult(ImGuiTestEngine* engine, int& count_tested, int& success_count);
 
-// IO structure
+// Function pointers for IO structure
 typedef bool (*ImGuiTestEngineNewFrameFunc)(ImGuiTestEngine*, void* user_data);
 typedef bool (*ImGuiTestEngineEndFrameFunc)(ImGuiTestEngine*, void* user_data);
 typedef void (*ImGuiTestEngineSrcFileOpenFunc)(const char* filename, int line, void* user_data);
 typedef bool (*ImGuiTestEngineScreenCaptureFunc)(int x, int y, int w, int h, unsigned int* pixels, void* user_data);
 
+// IO structure
 struct ImGuiTestEngineIO
 {
-    ImGuiTestEngineEndFrameFunc         EndFrameFunc = NULL;
-    ImGuiTestEngineNewFrameFunc         NewFrameFunc = NULL;
-    ImGuiTestEngineSrcFileOpenFunc      SrcFileOpenFunc = NULL; // (Optional) To open source files
-    ImGuiTestEngineScreenCaptureFunc    ScreenCaptureFunc = NULL;
-    void*                               UserData = NULL;
+    ImGuiTestEngineEndFrameFunc     EndFrameFunc = NULL;
+    ImGuiTestEngineNewFrameFunc     NewFrameFunc = NULL;
+    ImGuiTestEngineSrcFileOpenFunc  SrcFileOpenFunc = NULL;     // (Optional) To open source files
+    ImGuiTestEngineScreenCaptureFunc ScreenCaptureFunc = NULL;  // (Optional) To capture graphics output
+    void*                           UserData = NULL;
                                 
     // Inputs: Options          
-    bool                        ConfigRunFast = true;       // Run tests as fast as possible (teleport mouse, skip delays, etc.)
-    bool                        ConfigRunBlind = false;     // Run tests in a blind ImGuiContext separated from the visible context
-    bool                        ConfigStopOnError = false;  // Stop queued tests on test error
-    bool                        ConfigBreakOnError = false; // Break debugger on test error
-    bool                        ConfigKeepTestGui = false;  // Keep test GUI running at the end of the test
+    bool                        ConfigRunWithGui = false;       // Run without graphics output (e.g. command-line)
+    bool                        ConfigRunFast = true;           // Run tests as fast as possible (teleport mouse, skip delays, etc.)
+    bool                        ConfigRunBlind = false;         // Run tests in a blind ImGuiContext separated from the visible context
+    bool                        ConfigStopOnError = false;      // Stop queued tests on test error
+    bool                        ConfigBreakOnError = false;     // Break debugger on test error
+    bool                        ConfigKeepGuiFunc = false;      // Keep test GUI running at the end of the test
     ImGuiTestVerboseLevel       ConfigVerboseLevel = ImGuiTestVerboseLevel_Warning;
     ImGuiTestVerboseLevel       ConfigVerboseLevelOnError = ImGuiTestVerboseLevel_Info;
     bool                        ConfigLogToTTY = false;
     bool                        ConfigTakeFocusBackAfterTests = true;
-    bool                        ConfigNoThrottle = false;   // Disable vsync for performance measurement
-    float                       WatchdogTimerWarn = 30.0f;
-    float                       WatchdogTimerKillTest = 60.0f;
-    float                       WatchdogTimerKillAll = 65.0f;
-    float                       MouseSpeed = 1000.0f;       // Mouse speed (pixel/second) when not running in fast mode
-    float                       ScrollSpeed = 1600.0f;      // Scroll speed (pixel/second) when not running in fast mode
-    float                       TypingSpeed = 30.0f;        // Char input speed (characters/second) when not running in fast mode
-    int                         PerfStressAmount = 1;       // Integer to scale the amount of items submitted in test
+    bool                        ConfigNoThrottle = false;       // Disable vsync for performance measurement
+    float                       MouseSpeed = 1000.0f;           // Mouse speed (pixel/second) when not running in fast mode
+    float                       ScrollSpeed = 1600.0f;          // Scroll speed (pixel/second) when not running in fast mode
+    float                       TypingSpeed = 30.0f;            // Char input speed (characters/second) when not running in fast mode
+    int                         PerfStressAmount = 1;           // Integer to scale the amount of items submitted in test
 
     // Outputs: State           
     bool                        RunningTests = false;

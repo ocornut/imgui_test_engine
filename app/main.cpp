@@ -63,18 +63,18 @@ static inline void DebugCrtDumpLeaks()
 #include "imgui_capture_tool.h"
 
 //-------------------------------------------------------------------------
+// Back-end Functions (in imgui_te_backends.cpp)
+//-------------------------------------------------------------------------
+
+void MainLoop();
+void MainLoopNull();
+bool CaptureFramebufferScreenshot(int x, int y, int w, int h, unsigned int* pixels, void* user);
+
+//-------------------------------------------------------------------------
 // Test Application
 //-------------------------------------------------------------------------
 
 TestApp g_App;
-
-// Main loop function implemented per-backend.
-void MainLoop();
-
-// Main loop for null backend. Used in builds with graphics api backend.
-void MainLoopNull();
-// Backend-specific function that captures specified portion of framebuffer.
-bool CaptureFramebufferScreenshot(int x, int y, int w, int h, unsigned* pixels, void* user);
 
 bool MainLoopEndFrame()
 {
@@ -312,6 +312,7 @@ int main(int argc, char** argv)
 
     // Apply options
     ImGuiTestEngineIO& test_io = ImGuiTestEngine_GetIO(g_App.TestEngine);
+    test_io.ConfigRunWithGui = g_App.OptGUI;
     test_io.ConfigRunFast = g_App.OptFast;
     test_io.ConfigVerboseLevel = g_App.OptVerboseLevel;
     test_io.ConfigVerboseLevelOnError = g_App.OptVerboseLevelOnError;
@@ -324,6 +325,7 @@ int main(int argc, char** argv)
     if (g_App.OptGUI)
         test_io.ScreenCaptureFunc = &CaptureFramebufferScreenshot;
 #endif
+
     // Run
     if (g_App.OptGUI)
         MainLoop();
