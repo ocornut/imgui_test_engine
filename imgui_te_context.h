@@ -62,13 +62,13 @@ inline const char*  GetActionVerb(ImGuiTestAction action)
     case ImGuiTestAction_Open:          return "Opened";
     case ImGuiTestAction_Close:         return "Closed";
     case ImGuiTestAction_Input:         return "Input";
-    case ImGuiTestAction_NavActivate:   return "NavActivate";
+    case ImGuiTestAction_NavActivate:   return "NavActivated";
     case ImGuiTestAction_COUNT:
     default:                            return "N/A";
     }
 }
 
-// Helper struct to store various queryable state of an item.
+// Helper struct to store various query-able state of an item.
 // This facilitate interactions between GuiFunc <> TestFunc, since those state are frequently used.
 struct ImGuiTestGenericStatus
 {
@@ -146,27 +146,28 @@ struct ImGuiTestContext
     ImGuiTest*              Test = NULL;
     ImGuiTestEngineIO*      EngineIO = NULL;
     ImGuiContext*           UiContext = NULL;
-    ImGuiTestInputs*        Inputs;
-    ImGuiTestGatherTask*    GatherTask;
+    ImGuiTestInputs*        Inputs = NULL;
+    ImGuiTestGatherTask*    GatherTask = NULL;
     ImGuiTestRunFlags       RunFlags = ImGuiTestRunFlags_None;
-    ImGuiTestGenericVars    GenericVars;
-    ImGuiTestActiveFunc     ActiveFunc = ImGuiTestActiveFunc_None;
+    ImGuiTestActiveFunc     ActiveFunc = ImGuiTestActiveFunc_None;  // None/GuiFunc/TestFunc
     void*                   UserData = NULL;
-    int                     UserCounter = 0;
-    int                     FrameCount = 0;             // Test frame count (restarts from zero every time)
-    int                     FirstFrameCount = 0;        // First frame where Test is running. After warm-up. This is generally -2 or 0 depending on whether we have warm up enabled
-    double                  RunningTime = 0.0f;
+    int                     FrameCount = 0;                         // Test frame count (restarts from zero every time)
+    int                     FirstFrameCount = 0;                    // First frame where Test is running. After warm-up. This is generally -2 or 0 depending on whether we have warm up enabled
+    double                  RunningTime = 0.0f;                     // Amount of wall clock time the Test has been running. Used by safety watchdog.
     int                     ActionDepth = 0;
     bool                    Abort = false;
-    char                    RefStr[256] = { 0 };
+
+    // Commonly user exposed state for the ctx-> functions
+    ImGuiTestGenericVars    GenericVars;
+    char                    RefStr[256] = { 0 };                    // Reference window/path for ID construction
     ImGuiID                 RefID = 0;
     ImGuiInputSource        InputMode = ImGuiInputSource_Mouse;
+    ImGuiTestOpFlags        OpFlags = ImGuiTestOpFlags_None;
     ImVector<char>          Clipboard;
 
+    // Performance
     double                  PerfRefDt = -1.0;
     int                     PerfStressAmount = 0;
-
-    ImGuiTestContext()      {}
 
     // Main control
     void        Finish();
@@ -198,7 +199,8 @@ struct ImGuiTestContext
     // FIXME-TESTS: Refactor this horrible mess... perhaps all functions should have a ImGuiTestRef defaulting to empty?
     void        WindowRef(ImGuiTestRef ref);
     void        WindowClose(ImGuiTestRef ref);
-    void        WindowCollapse(ImGuiTestRef ref, bool collapsed);
+    void        WindowCollapse(ImGuiWindow* window, bool collapsed);
+    void        WindowAutoUncollapse(ImGuiWindow* window);
     void        WindowFocus(ImGuiTestRef ref);
     void        WindowMove(ImGuiTestRef ref, ImVec2 pos, ImVec2 pivot = ImVec2(0.0f, 0.0f));
     void        WindowResize(ImGuiTestRef ref, ImVec2 sz);
@@ -293,13 +295,14 @@ struct ImGuiTestContext
     void        PerfCapture();
 };
 
+// Helper to increment/decrement the function depth (so our log entry can be padded accordingly)
 #define IM_TOKENPASTE(x, y)     x ## y
 #define IM_TOKENPASTE2(x, y)    IM_TOKENPASTE(x, y)
-#define IMGUI_TEST_CONTEXT_REGISTER_DEPTH(_THIS)            ImGuiTestContextDepthRegister IM_TOKENPASTE2(depth_register, __LINE__)(_THIS)
+#define IMGUI_TEST_CONTEXT_REGISTER_DEPTH(_THIS)        ImGuiTestContextDepthScope IM_TOKENPASTE2(depth_register, __LINE__)(_THIS)
 
-struct ImGuiTestContextDepthRegister
+struct ImGuiTestContextDepthScope
 {
     ImGuiTestContext*       TestContext;
-    ImGuiTestContextDepthRegister(ImGuiTestContext* ctx)    { TestContext = ctx; TestContext->ActionDepth++; }
-    ~ImGuiTestContextDepthRegister()                        { TestContext->ActionDepth--; }
+    ImGuiTestContextDepthScope(ImGuiTestContext* ctx)   { TestContext = ctx; TestContext->ActionDepth++; }
+    ~ImGuiTestContextDepthScope()                       { TestContext->ActionDepth--; }
 };

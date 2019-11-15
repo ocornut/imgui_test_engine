@@ -57,25 +57,29 @@ enum ImGuiTestFlags_
     ImGuiTestFlags_NoAutoFinish = 1 << 1        // By default, tests with no test func end on Frame 0 (after the warm up). Setting this require test to call ctx->Finish().
 };
 
+// Flags for IM_CHECK* macros.
 enum ImGuiTestCheckFlags_
 {
     ImGuiTestCheckFlags_None            = 0,
     ImGuiTestCheckFlags_SilentSuccess   = 1 << 0
 };
 
+// Flags for ImGuiTestContext::Log* functions.
 enum ImGuiTestLogFlags_
 {
     ImGuiTestLogFlags_None              = 0,
-    ImGuiTestLogFlags_NoHeader          = 1 << 0    // Do not display framecount and depth padding
+    ImGuiTestLogFlags_NoHeader          = 1 << 0    // Do not display frame count and depth padding
 };
 
+// Generic flags for various ImGuiTestContext functions
 enum ImGuiTestOpFlags_
 {
     ImGuiTestOpFlags_None               = 0,
     ImGuiTestOpFlags_Verbose            = 1 << 0,
     ImGuiTestOpFlags_NoCheckHoveredId   = 1 << 1,
     ImGuiTestOpFlags_NoError            = 1 << 2,   // Don't abort/error e.g. if the item cannot be found
-    ImGuiTestOpFlags_NoFocusWindow      = 1 << 3
+    ImGuiTestOpFlags_NoFocusWindow      = 1 << 3,
+    ImGuiTestOpFlags_NoAutoUncollapse   = 1 << 4    // Disable automatically uncollapsing windows (useful when specifically testing Collapsing behaviors)
 };
 
 enum ImGuiTestRunFlags_

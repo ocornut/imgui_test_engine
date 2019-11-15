@@ -292,7 +292,7 @@ void ImGuiTestContext::SetInputMode(ImGuiInputSource input_mode)
 void ImGuiTestContext::WindowRef(ImGuiTestRef ref)
 {
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
-    LogDebug("SetRef '%s' %08X", ref.Path ? ref.Path : "NULL", ref.ID);
+    LogDebug("WindowRef '%s' %08X", ref.Path ? ref.Path : "NULL", ref.ID);
 
     if (ref.Path)
     {
@@ -309,14 +309,9 @@ void ImGuiTestContext::WindowRef(ImGuiTestRef ref)
     }
 
     // Automatically uncollapse by default
-    if (ImGuiWindow* window = GetWindowByRef(""))
-        if (window->Collapsed)
-        {
-            IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
-            LogDebug("Uncollapse window '%s'", window->Name);
-            WindowCollapse("", false);
-            IM_CHECK_EQ(window->Collapsed, false);
-        }
+    if (!(OpFlags & ImGuiTestOpFlags_NoAutoUncollapse))
+        if (ImGuiWindow* window = GetWindowByRef(""))
+            WindowAutoUncollapse(window);
 }
 
 ImGuiWindow* ImGuiTestContext::GetWindowByRef(ImGuiTestRef ref)
@@ -933,6 +928,10 @@ void    ImGuiTestContext::ItemAction(ImGuiTestAction action, ImGuiTestRef ref)
 
     LogDebug("Item%s %s%s", GetActionName(action), desc.c_str(), (InputMode == ImGuiInputSource_Mouse) ? "" : " (w/ Nav)");
 
+    // Automatically uncollapse by default
+    if (item->Window && !(OpFlags & ImGuiTestOpFlags_NoAutoUncollapse))
+        WindowAutoUncollapse(item->Window);
+
     if (action == ImGuiTestAction_Click || action == ImGuiTestAction_DoubleClick)
     {
         if (InputMode == ImGuiInputSource_Mouse)
@@ -1298,25 +1297,41 @@ void    ImGuiTestContext::WindowClose(ImGuiTestRef ref)
     ItemClick(GetID(ref, "#CLOSE"));
 }
 
-void    ImGuiTestContext::WindowCollapse(ImGuiTestRef ref, bool collapsed)
+void    ImGuiTestContext::WindowCollapse(ImGuiWindow* window, bool collapsed)
 {
     if (IsError())
+        return;
+    if (window == NULL)
         return;
 
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
     LogDebug("WindowSetCollapsed %d", collapsed);
-    ImGuiWindow* window = GetWindowByRef(ref);
-    if (window == NULL)
-    {
-        IM_ERRORF_NOHDR("Unable to find Ref window: %s / %08X", RefStr, RefID);
-        return;
-    }
+    //ImGuiWindow* window = GetWindowByRef(ref);
+    //if (window == NULL)
+    //{
+    //    IM_ERRORF_NOHDR("Unable to find Ref window: %s / %08X", RefStr, RefID);
+    //    return;
+    //}
 
     if (window->Collapsed != collapsed)
     {
-        ItemClick(GetID(ref, "#COLLAPSE"));
+        ImGuiTestOpFlags backup_op_flags = OpFlags;
+        OpFlags |= ImGuiTestOpFlags_NoAutoUncollapse;
+        ItemClick(GetID(window->ID, "#COLLAPSE"));
+        OpFlags = backup_op_flags;
         Yield();
         IM_CHECK(window->Collapsed == collapsed);
+    }
+}
+
+void    ImGuiTestContext::WindowAutoUncollapse(ImGuiWindow* window)
+{
+    if (window->Collapsed)
+    {
+        IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
+        LogDebug("Uncollapse window '%s'", window->Name);
+        WindowCollapse(window, false);
+        IM_CHECK_EQ(window->Collapsed, false);
     }
 }
 
@@ -1352,7 +1367,7 @@ void    ImGuiTestContext::WindowMove(ImGuiTestRef ref, ImVec2 input_pos, ImVec2 
         return;
 
     WindowBringToFront(window);
-    WindowCollapse(ref, false);
+    WindowCollapse(window, false);
 
     float h = ImGui::GetFrameHeight();
 
@@ -1393,7 +1408,7 @@ void    ImGuiTestContext::WindowResize(ImGuiTestRef ref, ImVec2 size)
         return;
 
     WindowBringToFront(window);
-    WindowCollapse(ref, false);
+    WindowCollapse(window, false);
 
     ImGuiID id = 0;
 #ifdef IMGUI_HAS_DOCK

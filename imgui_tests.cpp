@@ -191,17 +191,18 @@ void RegisterTests_Window(ImGuiTestEngine* e)
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         ImGuiWindow* window = ImGui::FindWindowByName("Test Window");
+        ctx->OpFlags |= ImGuiTestOpFlags_NoAutoUncollapse;
         ctx->WindowRef("Test Window");
-        ctx->WindowCollapse("", false);
+        ctx->WindowCollapse(window, false);
         ctx->LogDebug("Size %f %f, SizeFull %f %f", window->Size.x, window->Size.y, window->SizeFull.x, window->SizeFull.y);
         IM_CHECK_EQ(window->Size, window->SizeFull);
         ImVec2 size_full_when_uncollapsed = window->SizeFull;
-        ctx->WindowCollapse("", true);
+        ctx->WindowCollapse(window, true);
         ctx->LogDebug("Size %f %f, SizeFull %f %f", window->Size.x, window->Size.y, window->SizeFull.x, window->SizeFull.y);
         ImVec2 size_collapsed = window->Size;
         IM_CHECK_GT(size_full_when_uncollapsed.y, size_collapsed.y);
         IM_CHECK_EQ(size_full_when_uncollapsed, window->SizeFull);
-        ctx->WindowCollapse("", false);
+        ctx->WindowCollapse(window, false);
         ctx->LogDebug("Size %f %f, SizeFull %f %f", window->Size.x, window->Size.y, window->SizeFull.x, window->SizeFull.y);
         IM_CHECK(window->Size.y == size_full_when_uncollapsed.y && "Window should have restored to full size.");
         ctx->Yield();
@@ -792,8 +793,10 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
     };
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
+        // We use WindowRef() to ensure the window is uncollapsed.
         IM_CHECK(ctx->GenericVars.Bool1 == false);
-        ctx->ItemClick("Window1/Checkbox");
+        ctx->WindowRef("Window1");
+        ctx->ItemClick("Checkbox");
         IM_CHECK(ctx->GenericVars.Bool1 == true);
     };
 

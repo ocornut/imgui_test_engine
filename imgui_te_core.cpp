@@ -687,7 +687,6 @@ static void ImGuiTestEngine_ProcessTestQueue(ImGuiTestEngine* engine)
         ctx.Inputs = &engine->Inputs;
         ctx.GatherTask = &engine->GatherTask;
         ctx.UserData = NULL;
-        ctx.UserCounter = 0;
         ctx.UiContext = engine->UiContextActive;
         ctx.PerfStressAmount = engine->IO.PerfStressAmount;
         ctx.RunFlags = run_task->RunFlags;
@@ -860,7 +859,6 @@ static void ImGuiTestEngine_RunTest(ImGuiTestEngine* engine, ImGuiTestContext* c
 
     ImGuiTest* test = ctx->Test;
     ctx->UserData = user_data;
-    ctx->UserCounter = 0;
     ctx->FrameCount = 0;
     ctx->WindowRef("");
     ctx->SetInputMode(ImGuiInputSource_Mouse);
