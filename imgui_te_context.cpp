@@ -589,11 +589,30 @@ void    ImGuiTestContext::MouseMove(ImGuiTestRef ref, ImGuiTestOpFlags flags)
 
     if (!Abort && !(flags & ImGuiTestOpFlags_NoCheckHoveredId))
     {
-        if (g.HoveredIdPreviousFrame != item->ID)
+        const ImGuiID hovered_id = g.HoveredIdPreviousFrame;
+        if (hovered_id != item->ID)
+        {
+            if (!(window->Flags & ImGuiWindowFlags_NoResize) && !(flags & ImGuiTestOpFlags_IsSecondAttempt))
+            {
+                bool is_resize_corner = false;
+                for (int n = 0; n < 2; n++)
+                    is_resize_corner |= (hovered_id == ImGui::GetWindowResizeID(window, n));
+                if (is_resize_corner)
+                {
+                    LogDebug("Obstructed by ResizeGrip, trying to resize window and trying again..");
+                    float extra_size = window->CalcFontSize() * 3.0f;
+                    WindowResize(window->ID, window->Size + ImVec2(extra_size, extra_size));
+                    MouseMove(ref, flags | ImGuiTestOpFlags_IsSecondAttempt);
+                    item->RefCount--;
+                    return;
+                }
+            }
+
             IM_ERRORF_NOHDR("Unable to Hover %s. Expected %08X in '%s', HoveredId was %08X in '%s'. Targeted position (%.1f,%.1f)",
                 desc.c_str(), item->ID, item->Window ? item->Window->Name : "<NULL>",
-                g.HoveredIdPreviousFrame, g.HoveredWindow ? g.HoveredWindow->Name : "",
+                hovered_id, g.HoveredWindow ? g.HoveredWindow->Name : "",
                 pos.x, pos.y);
+        }
     }
 
     item->RefCount--;
@@ -1410,18 +1429,7 @@ void    ImGuiTestContext::WindowResize(ImGuiTestRef ref, ImVec2 size)
     WindowBringToFront(window);
     WindowCollapse(window, false);
 
-    ImGuiID id = 0;
-#ifdef IMGUI_HAS_DOCK
-    if (window->DockIsActive)
-        id = GetID(window->DockNode->HostWindow->ID, "#RESIZE");
-    else
-#endif
-        id = GetID(ref, "#RESIZE");
-
-    // FIXME-TESTS: Resize grip are pushing a void* index
-    const void* zero_ptr = (void*)0;
-    id = ImHashData(&zero_ptr, sizeof(void*), id);
-
+    ImGuiID id = ImGui::GetWindowResizeID(window, 0);
     MouseMove(id);
     MouseDown(0);
 

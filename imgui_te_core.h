@@ -79,7 +79,8 @@ enum ImGuiTestOpFlags_
     ImGuiTestOpFlags_NoCheckHoveredId   = 1 << 1,
     ImGuiTestOpFlags_NoError            = 1 << 2,   // Don't abort/error e.g. if the item cannot be found
     ImGuiTestOpFlags_NoFocusWindow      = 1 << 3,
-    ImGuiTestOpFlags_NoAutoUncollapse   = 1 << 4    // Disable automatically uncollapsing windows (useful when specifically testing Collapsing behaviors)
+    ImGuiTestOpFlags_NoAutoUncollapse   = 1 << 4,   // Disable automatically uncollapsing windows (useful when specifically testing Collapsing behaviors)
+    ImGuiTestOpFlags_IsSecondAttempt    = 1 << 5
 };
 
 enum ImGuiTestRunFlags_
