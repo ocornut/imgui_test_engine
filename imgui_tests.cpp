@@ -1858,10 +1858,14 @@ void RegisterTests_Columns(ImGuiTestEngine* e)
                 ImGui::Text("Width %.2f", w);
             }
             float w_variance = max_w - min_w;
-            IM_CHECK_LE(w_variance, 1.0f);
+            IM_CHECK_LE_NO_RET(w_variance, 1.0f);
             ImGui::EndTable();
 
+            if (w_variance > 1.0f)
+                ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(255, 100, 100, 255));
             ImGui::Text("#%02d: Variance %.2f (min %.2f max %.2f)", test_case_n, w_variance, min_w, max_w);
+            if (w_variance > 1.0f)
+                ImGui::PopStyleColor();
             ImGui::PopID();
             ImGui::Separator();
         }

@@ -173,12 +173,13 @@ void    ImGuiTestContext::Finish()
 // FIXME-ERRORHANDLING: Can't recover from inside BeginTabItem/EndTabItem yet.
 // FIXME-ERRORHANDLING: Can't recover from interleaved BeginTabBar/Begin
 // FIXME-ERRORHANDLING: Once this function is amazingly sturdy, we should make it a ImGui:: function.. See #1651
+// FIXME-ERRORHANDLING: This is flawed as we are not necessarily End/Popping things in the right order.
 void    ImGuiTestContext::RecoverFromUiContextErrors()
 {
     ImGuiContext& g = *UiContext;
     IM_ASSERT(Test != NULL);
 
-    // If we are already in a test error state, recovering is normal so we'll hide the log.
+    // If we are _already_ in a test error state, recovering is normal so we'll hide the log.
     const bool verbose = (Test->Status != ImGuiTestStatus_Error);
 
     while (g.CurrentWindowStack.Size > 1)
@@ -187,29 +188,46 @@ void    ImGuiTestContext::RecoverFromUiContextErrors()
         ImGuiWindow* window = g.CurrentWindow;
         while (window->DC.CurrentTable != NULL)
         {
-            if (verbose)
-                LogWarning("Recovered from missing EndTable() call.");
+            if (verbose) LogWarning("Recovered from missing EndTable() call.");
             ImGui::EndTable();
         }
 #endif
 
         while (g.CurrentTabBar != NULL)
         {
-            if (verbose)
-                LogWarning("Recovered from missing EndTabBar() call.");
+            if (verbose) LogWarning("Recovered from missing EndTabBar() call.");
             ImGui::EndTabBar();
         }
 
         while (g.CurrentWindow->DC.TreeDepth > 0)
         {
-            if (verbose)
-                LogWarning("Recovered from missing TreePop() call.");
+            if (verbose) LogWarning("Recovered from missing TreePop() call.");
             ImGui::TreePop();
         }
 
-        if (verbose)
-            LogWarning("Recovered from missing End() call.");
-        ImGui::End();
+        while (g.CurrentWindow->DC.GroupStack.Size > g.CurrentWindow->DC.StackSizesBackup[1])
+        {
+            if (verbose) LogWarning("Recovered from missing EndGroup() call.");
+            ImGui::EndGroup();
+        }
+
+        while (g.CurrentWindow->IDStack.Size > g.CurrentWindow->DC.StackSizesBackup[0])
+        {
+            if (verbose) LogWarning("Recovered from missing PopID() call.");
+            ImGui::PopID();
+        }
+
+        if (g.CurrentWindow->Flags & ImGuiWindowFlags_ChildWindow)
+        {
+            if (verbose)
+                LogWarning("Recovered from missing EndChild() call.");
+            ImGui::EndChild();
+        }
+        else
+        {
+            if (verbose) LogWarning("Recovered from missing End() call.");
+            ImGui::End();
+        }
     }
 }
 
