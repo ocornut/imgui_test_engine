@@ -2636,14 +2636,25 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
     };
 
     // ## Coverage: open everything in demo window
+    // ## Extra: test for inconsistent ScrollMax.y across whole demo window
+    // ## Extra: run Log/Capture api on whole demo window
     t = REGISTER_TEST("demo", "demo_cov_auto_open");
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         ctx->WindowRef("Dear ImGui Demo");
         ctx->ItemOpenAll("");
 
+        // Additional tests we bundled here because we are benefiting from the "opened all" state
         ImGuiWindow* window = ctx->GetWindowByRef("");
         ctx->ScrollVerifyScrollMax(window);
+
+        // Test the Log/Capture api
+        const char* clipboard = ImGui::GetClipboardText();
+        IM_CHECK(strlen(clipboard) == 0);
+        ctx->ItemClick("Capture\\/Logging/LogButtons/Log To Clipboard");
+        clipboard = ImGui::GetClipboardText();
+        const int clipboard_len = (int)strlen(clipboard);
+        IM_CHECK_GT(clipboard_len, 15000); // This is going to vary (as of 2019-11-18 on Master this 22766)
     };
 
     // ## Coverage: closes everything in demo window

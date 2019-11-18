@@ -239,9 +239,10 @@ struct ImGuiTestContext
 
     // Navigation inputs
     void        SetInputMode(ImGuiInputSource input_mode);
-    void        NavMove(ImGuiTestRef ref);
+    void        NavKeyPress(ImGuiNavInput input);
+    void        NavMoveTo(ImGuiTestRef ref);
     void        NavActivate();
-    void        NavInput();
+    void        NavInput();     // Press ImGuiNavInput_Input (e.g. Triangle) to turn a widget into a text input
 
     // Scrolling
     void        ScrollToY(ImGuiTestRef ref, float scroll_ratio_y = 0.5f);

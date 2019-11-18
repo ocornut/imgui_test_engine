@@ -465,7 +465,7 @@ void    ImGuiTestContext::ScrollVerifyScrollMax(ImGuiWindow* window)
     IM_CHECK_EQ(scroll_max_0, scroll_max_1);
 }
 
-void    ImGuiTestContext::NavMove(ImGuiTestRef ref)
+void    ImGuiTestContext::NavMoveTo(ImGuiTestRef ref)
 {
     if (IsError())
         return;
@@ -501,6 +501,21 @@ void    ImGuiTestContext::NavMove(ImGuiTestRef ref)
     }
 
     item->RefCount--;
+}
+
+void    ImGuiTestContext::NavKeyPress(ImGuiNavInput input)
+{
+    IM_ASSERT(input >= 0 && input < ImGuiNavInput_COUNT);
+    if (IsError())
+        return;
+
+    IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
+    LogDebug("NavInput %d", (int)input);
+
+    ImGuiTestEngine_PushInput(Engine, ImGuiTestInput::FromNav(input, ImGuiKeyState_Down));
+    Yield();
+    ImGuiTestEngine_PushInput(Engine, ImGuiTestInput::FromNav(input, ImGuiKeyState_Up));
+    Yield();
 }
 
 void    ImGuiTestContext::NavActivate()
@@ -972,7 +987,7 @@ void    ImGuiTestContext::ItemAction(ImGuiTestAction action, ImGuiTestRef ref)
 
     if (action == ImGuiTestAction_NavActivate)
     {
-        NavMove(ref);
+        NavMoveTo(ref);
         NavActivate();
         if (action == ImGuiTestAction_DoubleClick)
             IM_ASSERT(0);
@@ -990,7 +1005,7 @@ void    ImGuiTestContext::ItemAction(ImGuiTestAction action, ImGuiTestRef ref)
         }
         else
         {
-            NavMove(ref);
+            NavMoveTo(ref);
             NavInput();
         }
         return;
