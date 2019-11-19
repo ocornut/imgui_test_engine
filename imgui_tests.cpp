@@ -1646,25 +1646,6 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
 // Tests: Columns
 //-------------------------------------------------------------------------
 
-#ifdef IMGUI_HAS_TABLE
-static void HelperTableSubmitCells(int count_w, int count_h)
-{
-    for (int line = 0; line < count_h; line++)
-    {
-        ImGui::TableNextRow();
-        for (int column = 0; column < count_w; column++)
-        {
-            if (!ImGui::TableSetColumnIndex(column))
-                continue;
-            char label[32];
-            ImFormatString(label, IM_ARRAYSIZE(label), "%d,%d", line, column);
-            //ImGui::TextUnformatted(label);
-            ImGui::Button(label, ImVec2(-FLT_MIN, 0.0f));
-        }
-    }
-}
-#endif
-
 void RegisterTests_Columns(ImGuiTestEngine* e)
 {
     ImGuiTest* t = NULL;
@@ -1734,7 +1715,81 @@ void RegisterTests_Columns(ImGuiTestEngine* e)
         ImGui::End();
     };
 
+    // ## Test behavior of some Column functions without Columns/BeginColumns.
+    t = REGISTER_TEST("columns", "columns_functions_without_columns");
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::Begin("Test window 1", NULL, ImGuiWindowFlags_NoSavedSettings);
+        IM_CHECK_EQ(ImGui::GetColumnsCount(), 1);
+        IM_CHECK_EQ(ImGui::GetColumnOffset(), 0.0f);
+        IM_CHECK_EQ(ImGui::GetColumnWidth(), ImGui::GetContentRegionAvail().x);
+        IM_CHECK_EQ(ImGui::GetColumnIndex(), 0);
+        ImGui::End();
+    };
+}
+
 #ifdef IMGUI_HAS_TABLE
+static void HelperTableSubmitCells(int count_w, int count_h)
+{
+    for (int line = 0; line < count_h; line++)
+    {
+        ImGui::TableNextRow();
+        for (int column = 0; column < count_w; column++)
+        {
+            if (!ImGui::TableSetColumnIndex(column))
+                continue;
+            char label[32];
+            ImFormatString(label, IM_ARRAYSIZE(label), "%d,%d", line, column);
+            //ImGui::TextUnformatted(label);
+            ImGui::Button(label, ImVec2(-FLT_MIN, 0.0f));
+        }
+    }
+}
+
+// columns_desc = "WWW", "FFW", "FAA" etc.
+static void HelperTableWithResizingPolicies(const char* table_id, ImGuiTableFlags table_flags, const char* columns_desc)
+{
+    table_flags |= ImGuiTableFlags_Resizable | ImGuiTableFlags_Hideable | ImGuiTableFlags_Reorderable | ImGuiTableFlags_Borders;
+
+    int columns_count = (int)strlen(columns_desc);
+    IM_ASSERT(columns_count < 26); // Because we are using alphabetical letters for names
+    ImGui::BeginTable(table_id, columns_count, table_flags);
+    for (int column = 0; column < columns_count; column++)
+    {
+        const char policy = columns_desc[column];
+        ImGuiTableColumnFlags column_flags = ImGuiTableColumnFlags_None;
+        if      (policy >= 'a' && policy <= 'z') { column_flags |= ImGuiTableColumnFlags_DefaultHide; }
+        if      (policy == 'f' || policy == 'F') { column_flags |= ImGuiTableColumnFlags_WidthFixed; }
+        else if (policy == 'w' || policy == 'W') { column_flags |= ImGuiTableColumnFlags_WidthStretch; }
+        else if (policy == 'a' || policy == 'A') { column_flags |= ImGuiTableColumnFlags_WidthAuto; }
+        else IM_ASSERT(0);
+        char name[16];
+        ImFormatString(name, IM_ARRAYSIZE(name), "%c%d", policy, column + 1);
+        ImGui::TableAddColumn(name, column_flags);
+    }
+    ImGui::TableAutoHeaders();
+    for (int row = 0; row < 2; row++)
+    {
+        ImGui::TableNextRow();
+        for (int column = 0; column < columns_count; column++)
+        {
+            ImGui::TableSetColumnIndex(column);
+            const char* column_desc = "Unknown";
+            const char policy = columns_desc[column];
+            if (policy == 'F') { column_desc = "Fixed"; }
+            if (policy == 'W') { column_desc = "Stretch"; }
+            if (policy == 'A') { column_desc = "Auto"; }
+            ImGui::Text("%s %d,%d", column_desc, row, column);
+        }
+    }
+    ImGui::EndTable();
+}
+#endif // #ifdef IMGUI_HAS_TABLE
+
+void RegisterTests_Table(ImGuiTestEngine* e)
+{
+#ifdef IMGUI_HAS_TABLE
+    ImGuiTest* t = NULL;
 
     t = REGISTER_TEST("table", "table_1");
     t->GuiFunc = [](ImGuiTestContext* ctx)
@@ -1844,6 +1899,9 @@ void RegisterTests_Columns(ImGuiTestEngine* e)
         {
             const TestCase& tc = test_cases[test_case_n];
             ImGui::PushID(test_case_n);
+
+            ImGui::Spacing();
+            ImGui::Spacing();
             ImGui::BeginTable("##table", tc.ColumnCount, tc.Flags, ImVec2(0, 0));
             ImGui::TableNextRow();
 
@@ -1867,7 +1925,6 @@ void RegisterTests_Columns(ImGuiTestEngine* e)
             if (w_variance > 1.0f)
                 ImGui::PopStyleColor();
             ImGui::PopID();
-            ImGui::Separator();
         }
 
         ImGui::End();
@@ -1884,19 +1941,67 @@ void RegisterTests_Columns(ImGuiTestEngine* e)
         IM_CHECK_EQ(ImGui::TableGetColumnIsSorted(0), false);
         ImGui::End();
     };
-#endif // #ifdef IMGUI_HAS_TABLE
 
-    // ## Test behavior of some Column functions without Columns/BeginColumns.
-    t = REGISTER_TEST("columns", "columns_functions_without_columns");
-    t->TestFunc = [](ImGuiTestContext* ctx)
+    // ## Resizing test-bed (not an actual automated test)
+    t = REGISTER_TEST("table", "table_5_resizing_behaviors");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
     {
+        ImGui::SetNextWindowPos(ctx->GetMainViewportPos() + ImVec2(20, 5), ImGuiCond_Once);
+        ImGui::SetNextWindowSize(ImVec2(400.0f, 0.0f), ImGuiCond_Once);
         ImGui::Begin("Test window 1", NULL, ImGuiWindowFlags_NoSavedSettings);
-        IM_CHECK_EQ(ImGui::GetColumnsCount(), 1);
-        IM_CHECK_EQ(ImGui::GetColumnOffset(), 0.0f);
-        IM_CHECK_EQ(ImGui::GetColumnWidth(), ImGui::GetContentRegionAvail().x);
-        IM_CHECK_EQ(ImGui::GetColumnIndex(), 0);
+
+        ImGui::BulletText("OK: Resize from F1| or F2|");    // ok: alter ->WidthRequested of Fixed column. Subsequent columns will be offset.
+        ImGui::BulletText("OK: Resize from F3|");           // ok: alter ->WidthRequested of Fixed column. If active, ScrollX extent can be altered.
+        HelperTableWithResizingPolicies("table1", 0, "FFF");
+        ImGui::Spacing();
+
+        ImGui::BulletText("OK: Resize from F1| or F2|");    // ok: alter ->WidthRequested of Fixed column. If active, ScrollX extent can be altered, but it doesn't make much sense as the Weighted column will always be minimal size.
+        ImGui::BulletText("OK: Resize from W3| (off)");     // ok: no-op (disabled by Rule A)
+        HelperTableWithResizingPolicies("table2", 0, "FFW");
+        ImGui::Spacing();
+
+        ImGui::BulletText("KO: Resize from W1| or W2|");    // FIXME: not implemented
+        ImGui::BulletText("OK: Resize from W3| (off)");     // ok: no-op (disabled by Rule A)
+        HelperTableWithResizingPolicies("table3", 0, "WWWw");
+        ImGui::Spacing();
+        
+        // Need F2w + F3w to be stable to avoid moving W1
+        // lock F2L
+        // move F2R
+        // move F3L
+        // lock F3R
+        ImGui::BulletText("OK: Resize from W1| (fwd)");     // ok: forward to resizing |F2. F3 will not move.        
+        ImGui::BulletText("KO: Resize from F2| or F3|");    // FIXME should resize F2, F3 and not have effect on W1 (Weighted columns are _before_ the Fixed column).
+        ImGui::BulletText("OK: Resize from F4| (off)");     // ok: no-op (disabled by Rule A) 
+        HelperTableWithResizingPolicies("table4", 0, "WFFF");
+        ImGui::Spacing();
+
+        ImGui::BulletText("OK: Resize from W1| (fwd)");     // ok: forward to resizing |F2
+        ImGui::BulletText("OK: Resize from F2| (off)");     // ok: no-op (disabled by Rule A)
+        HelperTableWithResizingPolicies("table5", 0, "WF");
+        ImGui::Spacing();
+
+        ImGui::BulletText("KO: Resize from W1|");           // FIXME
+        ImGui::BulletText("KO: Resize from W2|");           // FIXME
+        HelperTableWithResizingPolicies("table6", 0, "WWF");
+        ImGui::Spacing();
+
+        ImGui::BulletText("KO: Resize from W1|");           // FIXME
+        ImGui::BulletText("KO: Resize from F2|");           // FIXME
+        HelperTableWithResizingPolicies("table7", 0, "WFW");
+        ImGui::Spacing();
+
+        ImGui::BulletText("OK: Resize from W2| (fwd)");     // ok: forward
+        HelperTableWithResizingPolicies("table8", 0, "FWF");
+        ImGui::Spacing();
+
+        ImGui::BulletText("OK: Resize from ");
+        HelperTableWithResizingPolicies("table9", 0, "WWFWW");
+        ImGui::Spacing();
+
         ImGui::End();
     };
+#endif // #ifdef IMGUI_HAS_TABLE
 };
 
 //-------------------------------------------------------------------------
@@ -3292,6 +3397,7 @@ void RegisterTests(ImGuiTestEngine* e)
     RegisterTests_Widgets(e);
     RegisterTests_Nav(e);
     RegisterTests_Columns(e);
+    RegisterTests_Table(e);
     RegisterTests_Docking(e);
     RegisterTests_Misc(e);
     //RegisterTests_Perf(e);
