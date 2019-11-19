@@ -67,6 +67,8 @@ void        ImDebugShowInputTextState();
 const char* GetImGuiKeyName(ImGuiKey key);
 void        GetImGuiKeyModsPrefixStr(ImGuiKeyModFlags mod_flags, char* out_buf, size_t out_buf_size);
 const ImBuildInfo&  ImGetBuildInfo();
+bool        ImCreatePath(char* directory_name);                                                                         // Create directories for specified path. file_name may be modified.
+bool        ImFileCreatePath(char* file_name);                                                                          // Create directories for specified file. file_name may be modified.
 
 // Helper: maintain/calculate moving average
 template<typename TYPE>

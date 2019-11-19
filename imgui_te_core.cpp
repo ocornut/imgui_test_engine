@@ -615,28 +615,23 @@ const char* ImGuiTestEngine_GetVerboseLevelName(ImGuiTestVerboseLevel v)
     return "N/A";
 }
 
-bool ImGuiTestEngine_CaptureWindow(ImGuiTestEngine* engine, ImGuiWindow* window, const char* output_file, ImGuiCaptureToolFlags flags)
+bool ImGuiTestEngine_CaptureScreenshot(ImGuiTestEngine* engine, ImGuiCaptureArgs* args)
 {
-    ImGuiCaptureTool& ct = engine->CaptureTool;
+    ImGuiCaptureContext& ct = engine->CaptureTool.Capture;
     if (ct.ScreenCaptureFunc == NULL)
     {
         IM_ASSERT(0);
         return false;
     }
-    if (engine->IO.ConfigRunFast)   // Graphics API must render a window so it can be captured.
-    {
-        IM_ASSERT(0);               // FIXME-TESTS: Disable
-        return false;
-    }
 
-    ct.UserData = engine->TestContext;
-    ct.Flags = flags;
-    ImStrncpy(ct.SaveFileName, output_file, IM_ARRAYSIZE(ct.SaveFileName));
+    // Graphics API must render a window so it can be captured
+    const bool prev_fast = engine->IO.ConfigRunFast;
+    engine->IO.ConfigRunFast = false;
 
-    ct.CaptureWindowStart(window);
-    while (ct.CaptureWindowUpdate())
+    while (ct.CaptureScreenshot(args))
         ImGuiTestEngine_Yield(engine);
 
+    engine->IO.ConfigRunFast = prev_fast;
     return true;
 }
 
@@ -1674,7 +1669,7 @@ void    ImGuiTestEngine_ShowTestWindow(ImGuiTestEngine* engine, bool* p_open)
 
     // Capture Tool
     ImGuiCaptureTool& capture_tool = engine->CaptureTool;
-    capture_tool.ScreenCaptureFunc = engine->IO.ScreenCaptureFunc;
+    capture_tool.Capture.ScreenCaptureFunc = engine->IO.ScreenCaptureFunc;
     if (capture_tool.Visible)
         capture_tool.ShowCaptureToolWindow(&capture_tool.Visible);
 }

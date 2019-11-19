@@ -11,6 +11,10 @@
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
 #include <shellapi.h>
+#else
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <errno.h>
 #endif
 
 // Hash "hello/world" as if it was "helloworld"
@@ -460,4 +464,53 @@ const ImBuildInfo& ImGetBuildInfo()
     }
 
     return build_info;
+}
+
+#if _WIN32
+static const char IM_DIR_SEPARATOR = '\\'
+#else
+static const char IM_DIR_SEPARATOR = '/';
+#endif
+
+// Create directories for specified path. directory_name may be modified. Slashes may be replaced with platform directory separators.
+bool ImCreatePath(char* directory_name)
+{
+#if defined(_WIN32)
+    ImVector<ImWchar> buf;
+#endif
+    // Modification of passed file_name allows us to avoid extra temporary memory allocation.
+    // strtok() pokes \0 into places where slashes are, we create a directory using directory_name and restore slash.
+    for (char* token = strtok(directory_name, "\\/"); token != NULL; token = strtok(NULL, "\\/"))
+    {
+        // strtok() replaces slashes with NULLs. Restore removed slashes here.
+        if (token != directory_name)
+            *(token - 1) = IM_DIR_SEPARATOR;
+
+#if defined(_WIN32)
+        const int filename_wsize = ImTextCountCharsFromUtf8(directory_name, NULL) + 1;
+        buf.resize(filename_wsize);
+        ImTextStrFromUtf8(&buf[0], filename_wsize, directory_name, NULL);
+        if (!CreateDirectoryW(buf.Data) && GetLastError() != ERROR_ALREADY_EXISTS)
+#else
+        if (mkdir(directory_name, S_IRWXU) != 0 && errno != EEXIST)
+#endif
+            return false;
+    }
+    return true;
+}
+
+// Create directories for specified file. file_name may be modified. Slashes may be replaced with platform directory separators.
+bool ImFileCreatePath(char* file_name)
+{
+    char* last_slash = ImMax(strrchr(file_name, '/'), strrchr(file_name, '\\'));
+    // If specified path does not contain a slash we assume it is a file name in a current directory, and current
+    // directory always exists. We do not treat it as an error.
+    if (last_slash == NULL)
+        return true;
+
+    // Modification of passed file_name allows us to avoid extra temporary memory allocation.
+    *last_slash = 0;
+    bool result = ImCreatePath(file_name);
+    *last_slash = IM_DIR_SEPARATOR;
+    return result;
 }

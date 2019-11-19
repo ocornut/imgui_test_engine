@@ -216,8 +216,7 @@ struct ImGuiTestContext
 
     // Misc
     ImVec2      GetMainViewportPos();
-    bool        CaptureWindow(ImGuiTestRef ref, const char* output_file, ImGuiCaptureToolFlags flags = 0);
-    bool        CaptureWindow(ImGuiWindow* window, const char* output_file, ImGuiCaptureToolFlags flags = 0);
+    bool        CaptureScreenshot(ImGuiCaptureArgs* args);
 
     // Mouse inputs
     void        MouseMove(ImGuiTestRef ref, ImGuiTestOpFlags flags = ImGuiTestOpFlags_None);

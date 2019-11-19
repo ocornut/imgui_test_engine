@@ -3380,8 +3380,18 @@ void RegisterTests_Capture(ImGuiTestEngine* e)
         ctx->ItemOpen("Groups");
         ctx->ScrollToY("Layout", 0.8f);
 
-        // FIXME-TESTS: Snap!
-        ctx->Sleep(2.0f);
+        ctx->LogDebug("Capture screenshot...");
+        ctx->WindowRef("");
+
+        ImGuiCaptureArgs args;
+        args.InCaptureWindows.push_back(ctx->GetWindowByRef("Dear ImGui Demo"));
+        args.InCaptureWindows.push_back(ctx->GetWindowByRef("Example: Simple overlay"));
+        args.InCaptureWindows.push_back(ctx->GetWindowByRef("Example: Custom rendering"));
+        args.InCaptureWindows.push_back(ctx->GetWindowByRef("Example: Simple layout"));
+        args.InCaptureWindows.push_back(ctx->GetWindowByRef("Example: Documents"));
+        args.InCaptureWindows.push_back(ctx->GetWindowByRef("Example: Console"));
+        ImStrncpy(args.OutImageFile, "captures/demo_screenshot.png", IM_ARRAYSIZE(args.OutImageFile));
+        ctx->CaptureScreenshot(&args);
 
         // Close everything
         ctx->WindowRef("Dear ImGui Demo");

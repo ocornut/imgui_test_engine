@@ -64,129 +64,166 @@ void ImageBuf::RemoveAlpha()
 }
 
 //-----------------------------------------------------------------------------
-// ImGuiCaptureTool
+// ImGuiCaptureContext
 //-----------------------------------------------------------------------------
 
-ImGuiCaptureTool::ImGuiCaptureTool(ImGuiScreenCaptureFunc capture_func)
-{
-    Visible = false;
-    Flags = ImGuiCaptureToolFlags_StitchFullContents;
-    ScreenCaptureFunc = capture_func;
-    Padding = 10.0f;
-    SnapGridSize = 32.0f;
-    memset(SaveFileName, 0, sizeof(SaveFileName));
-    ImStrncpy(SaveFileName, "imgui_capture.png", (size_t)IM_ARRAYSIZE(SaveFileName));
-    UserData = NULL;
-
-    _FrameNo = 0;
-    _CaptureRect = ImRect();
-    _CaptureState = ImGuiCaptureToolState_None;
-    _ChunkNo = 0;
-    _Window = NULL;
-    _WindowNameMaxPosX = 170.0f;
-    _WindowBackupRect = ImRect();
-}
-
-void ImGuiCaptureTool::CaptureWindowStart(ImGuiWindow* window)
-{
-    IM_ASSERT(window != NULL);
-    _CaptureState = ImGuiCaptureToolState_CapturingSingleWIndow;
-    _Window = window;
-    _ChunkNo = _FrameNo = 0;
-}
-
-
 // Returns true when capture is in progress.
-bool ImGuiCaptureTool::CaptureWindowUpdate()
+bool ImGuiCaptureContext::CaptureScreenshot(ImGuiCaptureArgs* args)
 {
     ImGuiContext& g = *GImGui;
     ImGuiIO& io = g.IO;
+    IM_ASSERT(args != NULL);
     IM_ASSERT(ScreenCaptureFunc != NULL);
-    IM_ASSERT(SaveFileName != NULL);
-    IM_ASSERT(_Window != NULL);
-    IM_ASSERT(_CaptureState == ImGuiCaptureToolState_CapturingSingleWIndow);
+    IM_ASSERT(args->OutImageBuf != NULL || args->OutImageFile[0]);
+
+    ImageBuf* output = args->OutImageBuf ? args->OutImageBuf : &_Output;
 
     // Hide other windows so they can't be seen visible behind captured window
-    for (ImGuiWindow* w : g.Windows)
+    for (ImGuiWindow* window : g.Windows)
     {
-        if (w == _Window || (w->Flags & ImGuiWindowFlags_ChildWindow))
+        if (window->Flags & ImGuiWindowFlags_ChildWindow || args->InCaptureWindows.contains(window))
             continue;
-        w->Hidden = true;
-        w->HiddenFramesCannotSkipItems = 2;
+        window->Hidden = true;
+        window->HiddenFramesCannotSkipItems = 2;
     }
 
     if (_FrameNo == 0)
     {
         // Initialize capture state.
         _ChunkNo = 0;
-        _WindowBackupRect = _Window->Rect();
-        ImGui::FocusWindow(_Window);
-        ImGui::SetWindowCollapsed(_Window, false);
-        ImGui::SetWindowPos(_Window, ImVec2(Padding, Padding)); // FIXME-VIEWPORTS
+        _CaptureRect = ImRect();
+        _WindowBackupRects.clear();
+        _CombinedWindowRectPos = ImVec2(FLT_MAX, FLT_MAX);
+        _DisplayWindowPaddingBackup = g.Style.DisplayWindowPadding;
+        _DisplaySafeAreaPaddingBackup = g.Style.DisplaySafeAreaPadding;
+        g.Style.DisplayWindowPadding = ImVec2(0, 0);                    // Allow window to be positioned fully outside
+        g.Style.DisplaySafeAreaPadding = ImVec2(0, 0);                  // of visible viewport.
+        args->_Capturing = true;
 
-        _CaptureRect.Min = ImVec2(0, 0);
-        _CaptureRect.Max = ImVec2(Padding, Padding) * 2;
-        if (Flags & ImGuiCaptureToolFlags_StitchFullContents)
+        bool is_capturing_rect = args->InCaptureRect.GetWidth() > 0 && args->InCaptureRect.GetHeight() > 0;
+        if (is_capturing_rect)
         {
-            // Resize window to it's contents and capture it's entire width/height.
-            ImVec2 full_size(
-                ImMax(_Window->SizeFull.x, _Window->ContentSize.x + _Window->WindowPadding.y * 2),
-                ImMax(_Window->SizeFull.y, _Window->ContentSize.y + _Window->WindowPadding.y * 2 + _Window->TitleBarHeight() + _Window->MenuBarHeight()));
-            _CaptureRect.Max += full_size;
-            ImGui::SetWindowSize(_Window, full_size);
+            // Capture arbitrary rectangle. If any windows are specified in this mode only they will appear in captured region.
+            _CaptureRect = args->InCaptureRect;
+            if (args->InCaptureWindows.empty())
+            {
+                // Gather all top level windows. We will need to move them in order to capture regions larger than viewport.
+                for (ImGuiWindow* window : g.Windows)
+                {
+                    // Child windows will be included by their parents.
+                    if (window->ParentWindow != NULL)
+                        continue;
+
+                    if ((window->Flags & ImGuiWindowFlags_Popup || window->Flags & ImGuiWindowFlags_Tooltip) && !(args->InFlags & ImGuiCaptureToolFlags_ExpandToIncludePopups))
+                        continue;
+
+                    args->InCaptureWindows.push_back(window);
+                }
+            }
         }
-        else
+
+        // Save rectangle covering all windows and find top-left corner of combined rect which will be used to
+        // translate this group of windows to top-left corner of the screen.
+        for (ImGuiWindow* window : args->InCaptureWindows)
         {
-            _CaptureRect.Max += _Window->Size;
+            _WindowBackupRects.push_back(window->Rect());
+            _CombinedWindowRectPos = ImVec2(ImMin(_CombinedWindowRectPos.x, window->Pos.x), ImMin(_CombinedWindowRectPos.y, window->Pos.y));
         }
 
-        _Output.CreateEmpty((int)_CaptureRect.GetWidth(), (int)_CaptureRect.GetHeight());
-
-        if (Flags & ImGuiCaptureToolFlags_StitchFullContents)
-            _CaptureRect.Max.y = io.DisplaySize.y;
+        if (args->InFlags & ImGuiCaptureToolFlags_StitchFullContents)
+        {
+            if (is_capturing_rect)
+                ImGui::LogText("Capture Tool: capture of full window contents is not possible when capturing specified rect.");
+            else if (args->InCaptureWindows.size() != 1)
+                ImGui::LogText("Capture Tool: capture of full window contents is not possible when capturing more than one window.");
+            else
+            {
+                // Resize window to it's contents and capture it's entire width/height. However if window is bigger than
+                // it's contents - keep original size.
+                ImVec2 full_size;
+                ImGuiWindow* window = args->InCaptureWindows.front();
+                full_size.x = ImMax(window->SizeFull.x, window->ContentSize.x + window->WindowPadding.y * 2);
+                full_size.y = ImMax(window->SizeFull.y, window->ContentSize.y + window->WindowPadding.y * 2 + window->TitleBarHeight() + window->MenuBarHeight());
+                ImGui::SetWindowSize(window, full_size);
+            }
+        }
     }
-    else if ((_FrameNo % 3) == 0)
+    else if (_FrameNo == 1)
     {
+        // Move group of windows so combined rectangle position is at the top-left corner + padding and create combined
+        // capture rect of entire area that will be saved to screenshot. Doing this on the second frame because when
+        // ImGuiCaptureToolFlags_StitchFullContents flag is used we need to allow window to reposition.
+        ImVec2 move_offset = ImVec2(args->InPadding, args->InPadding) - _CombinedWindowRectPos;
+        for (ImGuiWindow* window : args->InCaptureWindows)
+        {
+            // Repositioning of a window may take multiple frames, depending on whether window was already rendered or not.
+            ImGui::SetWindowPos(window, window->Pos + move_offset);  // FIXME-VIEWPORTS
+            _CaptureRect.Add(window->Rect());
+        }
+
+        // Include padding in capture.
+        _CaptureRect.Expand(args->InPadding);
+
+        // Initialize capture buffer.
+        output->CreateEmpty((int)_CaptureRect.GetWidth(), (int)_CaptureRect.GetHeight());
+    }
+    else if ((_FrameNo % 4) == 0)
+    {
+        // FIXME: Implement capture of regions wider than viewport.
         // Capture a portion of image. Capturing of windows wider than viewport is not implemented yet.
-        const int x1 = (int)_CaptureRect.Min.x;
-        const int y1 = (int)_CaptureRect.Min.y;
-        const int w = (int)_CaptureRect.GetWidth();
-        const int h = (int)ImMin(_Output.Height - _ChunkNo * _CaptureRect.GetHeight(), _CaptureRect.GetHeight());
+        ImRect capture_rect = _CaptureRect;
+        capture_rect.ClipWith(ImRect(ImVec2(0, 0), io.DisplaySize));
+        const int capture_height = ImMin(io.DisplaySize.y, _CaptureRect.GetHeight());
+        const int x1 = (int)capture_rect.Min.x;
+        const int y1 = (int)capture_rect.Min.y;
+        const int w = (int)capture_rect.GetWidth();
+        const int h = (int)ImMin(output->Height - _ChunkNo * capture_height, capture_height);
         if (h > 0)
         {
-            if (!ScreenCaptureFunc(x1, y1, w, h,
-                &_Output.Data[_ChunkNo * (int)_CaptureRect.GetWidth() * (int)_CaptureRect.GetHeight()], UserData))
+            if (!ScreenCaptureFunc(x1, y1, w, h, &output->Data[_ChunkNo * w * capture_height], UserData))
                 return false;
             _ChunkNo++;
 
             // Window moves up in order to expose it's lower part.
-            _Window->Pos.y -= h;
-
-            if (_Window->Pos.y + _Window->Size.y < Padding)
-            {
-                // A fix for edge case where ImGui tries to keep window visible (see ClampWindowRect), but
-                // we need to take a snapshot of few remaining pixels of padding. And so we cheat. Window
-                // is moved to the very bottom of the screen in order to avoid covering padding space at
-                // the top of the screen. Next iteration will take a snapshot of remaining padding at the
-                // top and screenshot taking process will stop.
-                _Window->Pos.y = _CaptureRect.GetHeight();
-            }
+            for (ImGuiWindow* window : args->InCaptureWindows)
+                ImGui::SetWindowPos(window, window->Pos - ImVec2(0, h));
+            _CaptureRect.TranslateY(-h);
         }
         else
         {
-            // Save file
-            _Output.RemoveAlpha();
-            _Output.SaveFile(SaveFileName);
-            _Output.Clear();
+            output->RemoveAlpha();
+
+            if (args->OutImageBuf == NULL)
+            {
+                // Save file only if custom buffer was not specified.
+                int file_name_size = IM_ARRAYSIZE(_SaveFileNameFinal);
+                if (ImFormatString(_SaveFileNameFinal, file_name_size, args->OutImageFile, args->OutFileCounter + 1) >= file_name_size)
+                    ImGui::LogText("Capture Tool: file name is too long.");
+                else if (!ImFileCreatePath(_SaveFileNameFinal))
+                    ImGui::LogText("Capture Tool: unable to create directory for file '%s'.", _SaveFileNameFinal);
+                else
+                {
+                    ++args->OutFileCounter;
+                    output->SaveFile(_SaveFileNameFinal);
+                }
+                output->Clear();
+            }
 
             // Restore window position
-            ImGui::SetWindowPos(_Window, _WindowBackupRect.Min, ImGuiCond_Always);
-            ImGui::SetWindowSize(_Window, _WindowBackupRect.GetSize(), ImGuiCond_Always);
+            for (int i = 0; i < _WindowBackupRects.size(); i++)
+            {
+                ImRect rect = _WindowBackupRects[i];
+                ImGuiWindow* window = args->InCaptureWindows[i];
+                ImGui::SetWindowPos(window, rect.Min, ImGuiCond_Always);
+                ImGui::SetWindowSize(window, rect.GetSize(), ImGuiCond_Always);
+            }
 
-            _CaptureState = ImGuiCaptureToolState_None;
-            _Window = NULL;
             _FrameNo = _ChunkNo = 0;
-
+            g.Style.DisplayWindowPadding = _DisplayWindowPaddingBackup;
+            g.Style.DisplaySafeAreaPadding = _DisplaySafeAreaPaddingBackup;
+            args->_Capturing = false;
+            args->InCaptureWindows.clear();
+            args->InCaptureRect = ImRect();
             return false;
         }
     }
@@ -196,29 +233,26 @@ bool ImGuiCaptureTool::CaptureWindowUpdate()
     return true;
 }
 
-// Capturing a rectangle is simpler than capture a window, because we don't need to be doing any stiching.
-void ImGuiCaptureTool::CaptureRect(const ImRect& rect)
-{
-    IM_ASSERT(ScreenCaptureFunc != NULL);
-    IM_ASSERT(SaveFileName != NULL);
-    IM_ASSERT(!rect.IsInverted());
-    IM_ASSERT(rect.GetWidth() < 100000 && rect.GetHeight() < 100000);
+//-----------------------------------------------------------------------------
+// ImGuiCaptureTool
+//-----------------------------------------------------------------------------
 
-    _Output.CreateEmpty((int)rect.GetWidth(), (int)rect.GetHeight());
-    if (ScreenCaptureFunc((int)rect.Min.x, (int)rect.Min.y, (int)rect.GetWidth(), (int)rect.GetHeight(), _Output.Data, UserData))
-    {
-        _Output.RemoveAlpha();
-        _Output.SaveFile(SaveFileName);
-        _Output.Clear();
-    }
+ImGuiCaptureTool::ImGuiCaptureTool(ImGuiScreenCaptureFunc capture_func)
+{
+    Capture.ScreenCaptureFunc = capture_func;
+    ImStrncpy(SaveFileName, "captures/imgui_capture_%04d.png", (size_t)IM_ARRAYSIZE(SaveFileName));
 }
 
-void ImGuiCaptureTool::CaptureWindowPicker(const char* title)
+void ImGuiCaptureTool::CaptureWindowPicker(const char* title, ImGuiCaptureArgs* args)
 {
     ImGuiContext& g = *GImGui;
     ImGuiIO& io = g.IO;
-    IM_ASSERT(ScreenCaptureFunc != NULL);
-    IM_ASSERT(SaveFileName != NULL);
+
+    if (_CaptureState == ImGuiCaptureToolState_Capturing && args->_Capturing)
+    {
+        if (ImGui::IsKeyPressedMap(ImGuiKey_Escape) || !Capture.CaptureScreenshot(args))
+            _CaptureState = ImGuiCaptureToolState_None;
+    }
 
     ImGuiID picking_id = ImGui::GetID("##picking");
     if (ImGui::Button(title))
@@ -239,9 +273,12 @@ void ImGuiCaptureTool::CaptureWindowPicker(const char* title)
     ImGuiWindow* capture_window = g.HoveredRootWindow;
     if (capture_window)
     {
+        if (Flags & ImGuiCaptureToolFlags_IgnoreCaptureToolWindow && capture_window == ImGui::GetCurrentWindow())
+            return;
+
         // Draw rect that is about to be captured
         ImRect r = capture_window->Rect();
-        r.Expand(Padding);
+        r.Expand(args->InPadding);
         r.ClipWith(ImRect(ImVec2(0, 0), io.DisplaySize));
         r.Expand(1.0f);
         fg_draw_list->AddRect(r.Min, r.Max, IM_COL32_WHITE, 0.0f, ~0, 2.0f);
@@ -250,15 +287,17 @@ void ImGuiCaptureTool::CaptureWindowPicker(const char* title)
     ImGui::SetTooltip("Capture window: %s\nPress ESC to cancel.", capture_window ? capture_window->Name : "<None>");
     if (ImGui::IsMouseClicked(0))
     {
-        CaptureWindowStart(capture_window);
-    }
-    else if (ImGui::IsKeyPressedMap(ImGuiKey_Escape))
-    {
-        _CaptureState = ImGuiCaptureToolState_None;
+        args->InCaptureWindows.clear();
+        args->InCaptureWindows.push_back(capture_window);
+        _CaptureState = ImGuiCaptureToolState_Capturing;
+        // We cheat a little. args->_Capturing is set to true when Capture.CaptureScreenshot(args), but we use this
+        // field to differentiate which capture is in progress (windows picker or selector), therefore we set it to true
+        // in advance and execute Capture.CaptureScreenshot(args) only when args->_Capturing is true.
+        args->_Capturing = true;
     }
 }
 
-void ImGuiCaptureTool::CaptureWindowsSelector(const char* title)
+void ImGuiCaptureTool::CaptureWindowsSelector(const char* title, ImGuiCaptureArgs* args)
 {
     ImGuiContext& g = *GImGui;
     ImGuiIO& io = g.IO;
@@ -288,24 +327,23 @@ void ImGuiCaptureTool::CaptureWindowsSelector(const char* title)
     if (_CaptureState == ImGuiCaptureToolState_SelectRectStart && ImGui::IsMouseDown(0))
     {
         if (ImGui::IsWindowHovered(ImGuiHoveredFlags_AnyWindow))
-        {
             _CaptureState = ImGuiCaptureToolState_None;
-        }
         else
         {
-            _CaptureRect.Min = io.MousePos;
+            args->InCaptureRect.Min = io.MousePos;
             _CaptureState = ImGuiCaptureToolState_SelectRectUpdate;
         }
     }
     else if (_CaptureState == ImGuiCaptureToolState_SelectRectUpdate)
     {
         // Avoid inverted-rect issue
-        select_rect.Min = ImMin(_CaptureRect.Min, io.MousePos);
-        select_rect.Max = ImMax(_CaptureRect.Min, io.MousePos);
+        select_rect.Min = ImMin(args->InCaptureRect.Min, io.MousePos);
+        select_rect.Max = ImMax(args->InCaptureRect.Min, io.MousePos);
     }
 
+    args->InCaptureWindows.clear();
+
     float max_window_name_x = 0.0f;
-    int capture_windows_count = 0;
     ImRect capture_rect;
     ImGui::Text("Windows:");
     for (ImGuiWindow* window : g.Windows)
@@ -313,24 +351,17 @@ void ImGuiCaptureTool::CaptureWindowsSelector(const char* title)
         if (!window->WasActive)
             continue;
 
-        if (Flags & ImGuiCaptureToolFlags_IgnoreCaptureToolWindow && window == g.CurrentWindow)
-        {
-            // Skip
-            if (_CaptureState == ImGuiCaptureToolState_MultipleWindows)
-            {
-                window->Hidden = true;
-                window->HiddenFramesCannotSkipItems = 2;
-            }
-            continue;
-        }
-
-        if (Flags & ImGuiCaptureToolFlags_ExpandToIncludePopups && ((window->Flags & ImGuiWindowFlags_Popup) || (window->Flags & ImGuiWindowFlags_Tooltip)))
+        if (args->InFlags & ImGuiCaptureToolFlags_ExpandToIncludePopups && ((window->Flags & ImGuiWindowFlags_Popup) || (window->Flags & ImGuiWindowFlags_Tooltip)))
         {
             capture_rect.Add(window->Rect());
+            args->InCaptureWindows.push_back(window);
             continue;
         }
 
         if (window->Flags & ImGuiWindowFlags_ChildWindow)
+            continue;
+
+        if (args->InFlags & ImGuiCaptureToolFlags_IgnoreCaptureToolWindow && window == ImGui::GetCurrentWindow())
             continue;
 
         ImGui::PushID(window);
@@ -352,7 +383,7 @@ void ImGuiCaptureTool::CaptureWindowsSelector(const char* title)
         if (*p_selected)
         {
             capture_rect.Add(window->Rect());
-            capture_windows_count++;
+            args->InCaptureWindows.push_back(window);
         }
         ImGui::SameLine(_WindowNameMaxPosX + g.Style.ItemSpacing.x);
         ImGui::SetNextItemWidth(100);
@@ -361,28 +392,18 @@ void ImGuiCaptureTool::CaptureWindowsSelector(const char* title)
         ImGui::SetNextItemWidth(100);
         ImGui::DragFloat2("Size", &window->SizeFull.x, 0.05f, 0.0f, 0.0f, "%.0f");
         ImGui::PopID();
-
-        if (_CaptureState == ImGuiCaptureToolState_MultipleWindows)
-        {
-            if (!*p_selected)
-            {
-                // Hide windows that are not selected during capture.
-                window->Hidden = true;
-                window->HiddenFramesCannotSkipItems = 2;
-            }
-        }
     }
     _WindowNameMaxPosX = max_window_name_x;
 
     // Draw capture rectangle
     ImDrawList* draw_list = ImGui::GetForegroundDrawList();
     const bool can_capture = capture_rect.Min.x != FLT_MIN && capture_rect.Min.y != FLT_MIN &&
-        capture_rect.Max.x != FLT_MAX && capture_rect.Max.y != FLT_MAX && capture_windows_count > 0;
-    if (can_capture && _CaptureState != ImGuiCaptureToolState_PickingSingleWindow)
+        capture_rect.Max.x != FLT_MAX && capture_rect.Max.y != FLT_MAX && !args->InCaptureWindows.empty();
+    if (can_capture && (_CaptureState == ImGuiCaptureToolState_None || _CaptureState == ImGuiCaptureToolState_SelectRectUpdate))
     {
         IM_ASSERT(capture_rect.GetWidth() > 0);
         IM_ASSERT(capture_rect.GetHeight() > 0);
-        capture_rect.Expand(Padding);
+        capture_rect.Expand(args->InPadding);
         capture_rect.ClipWith(ImRect(ImVec2(0, 0), io.DisplaySize));
         draw_list->AddRect(capture_rect.Min - ImVec2(1.0f, 1.0f), capture_rect.Max + ImVec2(1.0f, 1.0f), IM_COL32_WHITE);
     }
@@ -393,39 +414,32 @@ void ImGuiCaptureTool::CaptureWindowsSelector(const char* title)
     // Process capture
     if (can_capture && do_capture)
     {
-        _FrameNo = 0;
-        _CaptureState = ImGuiCaptureToolState_MultipleWindows;
+        _CaptureState = ImGuiCaptureToolState_Capturing;
+        // We cheat a little. args->_Capturing is set to true when Capture.CaptureScreenshot(args), but we use this
+        // field to differentiate which capture is in progress (windows picker or selector), therefore we set it to true
+        // in advance and execute Capture.CaptureScreenshot(args) only when args->_Capturing is true.
+        args->_Capturing = true;
     }
+
     if (ImGui::IsItemHovered())
         ImGui::SetTooltip("Alternatively press Alt+C to capture selection.");
 
-    if (_CaptureState == ImGuiCaptureToolState_MultipleWindows)
+    if (_CaptureState == ImGuiCaptureToolState_Capturing && args->_Capturing)
     {
-        if (_FrameNo < 3)
-        {
-            // Render for few frames to allow windows to get hidden.
-            _FrameNo++;
-        }
-        else
-        {
-            CaptureRect(capture_rect);
+        if (!Capture.CaptureScreenshot(args))
             _CaptureState = ImGuiCaptureToolState_None;
-        }
     }
 }
 
 void ImGuiCaptureTool::ShowCaptureToolWindow(bool* p_open)
 {
-    if (_CaptureState == ImGuiCaptureToolState_CapturingSingleWIndow)
-        CaptureWindowUpdate();
-
     if (!ImGui::Begin("Dear ImGui Capture Tool", p_open))
     {
         ImGui::End();
         return;
     }
 
-    if (ScreenCaptureFunc == NULL)
+    if (Capture.ScreenCaptureFunc == NULL)
     {
         ImGui::TextColored(ImVec4(1, 0, 0, 1), "Back-end is missing ScreenCaptureFunc!");
         ImGui::End();
@@ -455,6 +469,7 @@ void ImGuiCaptureTool::ShowCaptureToolWindow(bool* p_open)
 
         ImGui::Checkbox("Software Mouse Cursor", &io.MouseDrawCursor);  // FIXME-TESTS: Test engine always resets this value.
         ImGui::CheckboxFlags("Stitch and capture full contents height", &Flags, ImGuiCaptureToolFlags_StitchFullContents);
+        ImGui::CheckboxFlags("Always ignore capture tool window", &Flags, ImGuiCaptureToolFlags_IgnoreCaptureToolWindow);
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Full height of picked window will be captured.");
         ImGui::CheckboxFlags("Include tooltips", &Flags, ImGuiCaptureToolFlags_ExpandToIncludePopups);
@@ -467,10 +482,23 @@ void ImGuiCaptureTool::ShowCaptureToolWindow(bool* p_open)
 
     ImGui::Separator();
 
-    Flags |= ImGuiCaptureToolFlags_IgnoreCaptureToolWindow;
+    // Ensure that use of different contexts use same file counter and don't overwrite previously created files.
+    _CaptureArgsPicker.OutFileCounter = _CaptureArgsSelector.OutFileCounter = ImMax(_CaptureArgsPicker.OutFileCounter, _CaptureArgsSelector.OutFileCounter);
+    // Propagate settings from UI to args.
+    _CaptureArgsPicker.InPadding = _CaptureArgsSelector.InPadding = Padding;
+    _CaptureArgsPicker.InFlags = _CaptureArgsSelector.InFlags = Flags;
+    ImStrncpy(_CaptureArgsPicker.OutImageFile, SaveFileName, (size_t)IM_ARRAYSIZE(_CaptureArgsPicker.OutImageFile));
+    ImStrncpy(_CaptureArgsSelector.OutImageFile, SaveFileName, (size_t)IM_ARRAYSIZE(_CaptureArgsSelector.OutImageFile));
 
-    CaptureWindowPicker("Capture Window..");
-    CaptureWindowsSelector("Capture Selected");
+    // Hide tool window unconditionally.
+    if (Flags & ImGuiCaptureToolFlags_IgnoreCaptureToolWindow && _CaptureState == ImGuiCaptureToolState_Capturing)
+    {
+        ImGui::GetCurrentWindow()->Hidden = true;
+        ImGui::GetCurrentWindow()->HiddenFramesCannotSkipItems = 2;
+    }
+
+    CaptureWindowPicker("Capture Window..", &_CaptureArgsPicker);
+    CaptureWindowsSelector("Capture Selected", &_CaptureArgsSelector);
 
     ImGui::Separator();
 
