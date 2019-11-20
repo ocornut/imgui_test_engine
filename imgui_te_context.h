@@ -87,7 +87,7 @@ struct ImGuiTestGenericStatus
     void Clear()                { memset(this, 0, sizeof(*this)); }
     void QuerySet(bool ret_val = false) { Clear(); QueryInc(ret_val); }
     void QueryInc(bool ret_val = false)
-    { 
+    {
         Ret += ret_val;
         Hovered += ImGui::IsItemHovered();
         Active += ImGui::IsItemActive();;
@@ -156,6 +156,7 @@ struct ImGuiTestContext
     double                  RunningTime = 0.0f;                     // Amount of wall clock time the Test has been running. Used by safety watchdog.
     int                     ActionDepth = 0;
     bool                    Abort = false;
+    ImGuiCaptureArgs        CaptureArgs;
 
     // Commonly user exposed state for the ctx-> functions
     ImGuiTestGenericVars    GenericVars;
@@ -210,13 +211,14 @@ struct ImGuiTestContext
     ImGuiWindow* GetWindowByRef(ImGuiTestRef ref);
     ImGuiTestRef GetFocusWindowRef();
 
-    // ID 
+    // ID
     ImGuiID     GetID(ImGuiTestRef ref);
     ImGuiID     GetID(ImGuiTestRef seed_ref, ImGuiTestRef ref);
 
     // Misc
     ImVec2      GetMainViewportPos();
-    bool        CaptureScreenshot(ImGuiCaptureArgs* args);
+    bool        CaptureAddWindow(ImGuiTestRef ref);
+    bool        CaptureScreenshot();
 
     // Mouse inputs
     void        MouseMove(ImGuiTestRef ref, ImGuiTestOpFlags flags = ImGuiTestOpFlags_None);
@@ -227,7 +229,7 @@ struct ImGuiTestContext
     void        MouseDown(int button = 0);
     void        MouseUp(int button = 0);
     void        MouseLiftDragThreshold(int button = 0);
-    
+
     // Keyboard inputs
     void        KeyDownMap(ImGuiKey key, int mod_flags = 0);
     void        KeyUpMap(ImGuiKey key, int mod_flags = 0);

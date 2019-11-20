@@ -239,7 +239,7 @@ bool ImGuiCaptureContext::CaptureScreenshot(ImGuiCaptureArgs* args)
 
 ImGuiCaptureTool::ImGuiCaptureTool(ImGuiScreenCaptureFunc capture_func)
 {
-    Capture.ScreenCaptureFunc = capture_func;
+    Context.ScreenCaptureFunc = capture_func;
     ImStrncpy(SaveFileName, "captures/imgui_capture_%04d.png", (size_t)IM_ARRAYSIZE(SaveFileName));
 }
 
@@ -250,7 +250,7 @@ void ImGuiCaptureTool::CaptureWindowPicker(const char* title, ImGuiCaptureArgs* 
 
     if (_CaptureState == ImGuiCaptureToolState_Capturing && args->_Capturing)
     {
-        if (ImGui::IsKeyPressedMap(ImGuiKey_Escape) || !Capture.CaptureScreenshot(args))
+        if (ImGui::IsKeyPressedMap(ImGuiKey_Escape) || !Context.CaptureScreenshot(args))
             _CaptureState = ImGuiCaptureToolState_None;
     }
 
@@ -426,7 +426,7 @@ void ImGuiCaptureTool::CaptureWindowsSelector(const char* title, ImGuiCaptureArg
 
     if (_CaptureState == ImGuiCaptureToolState_Capturing && args->_Capturing)
     {
-        if (!Capture.CaptureScreenshot(args))
+        if (!Context.CaptureScreenshot(args))
             _CaptureState = ImGuiCaptureToolState_None;
     }
 }
@@ -439,7 +439,7 @@ void ImGuiCaptureTool::ShowCaptureToolWindow(bool* p_open)
         return;
     }
 
-    if (Capture.ScreenCaptureFunc == NULL)
+    if (Context.ScreenCaptureFunc == NULL)
     {
         ImGui::TextColored(ImVec4(1, 0, 0, 1), "Back-end is missing ScreenCaptureFunc!");
         ImGui::End();

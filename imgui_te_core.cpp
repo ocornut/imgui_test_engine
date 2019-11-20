@@ -119,7 +119,7 @@ struct ImGuiTestEngine
     int                         ToolSlowDownMs = 100;
 
     // Functions
-    ImGuiTestEngine() 
+    ImGuiTestEngine()
     {
         PerfRefDeltaTime = 0.0f;
         PerfDeltaTime100.Init(100);
@@ -245,7 +245,7 @@ ImGuiTestLocateTask* ImGuiTestEngine_FindLocateTask(ImGuiTestEngine* engine, ImG
 }
 
 // Request information about one item.
-// Will push a request for the test engine to process. 
+// Will push a request for the test engine to process.
 // Will return NULL when results are not ready (or not available).
 ImGuiTestItemInfo* ImGuiTestEngine_ItemLocate(ImGuiTestEngine* engine, ImGuiID id, const char* debug_id)
 {
@@ -617,7 +617,7 @@ const char* ImGuiTestEngine_GetVerboseLevelName(ImGuiTestVerboseLevel v)
 
 bool ImGuiTestEngine_CaptureScreenshot(ImGuiTestEngine* engine, ImGuiCaptureArgs* args)
 {
-    ImGuiCaptureContext& ct = engine->CaptureTool.Capture;
+    ImGuiCaptureContext& ct = engine->CaptureTool.Context;
     if (ct.ScreenCaptureFunc == NULL)
     {
         IM_ASSERT(0);
@@ -674,6 +674,7 @@ static void ImGuiTestEngine_ProcessTestQueue(ImGuiTestEngine* engine)
         ctx.UiContext = engine->UiContextActive;
         ctx.PerfStressAmount = engine->IO.PerfStressAmount;
         ctx.RunFlags = run_task->RunFlags;
+        ImFormatString(ctx.CaptureArgs.OutImageFile, IM_ARRAYSIZE(ctx.CaptureArgs.OutImageFile), "captures/%s_%%04d.png", test->Name);
         engine->TestContext = &ctx;
         if (track_scrolling)
             engine->UiSelectAndScrollToTest = test;
@@ -723,8 +724,8 @@ static void ImGuiTestEngine_ProcessTestQueue(ImGuiTestEngine* engine)
 }
 
 bool ImGuiTestEngine_IsRunningTests(ImGuiTestEngine* engine)
-{ 
-    return engine->TestsQueue.Size > 0; 
+{
+    return engine->TestsQueue.Size > 0;
 }
 
 bool ImGuiTestEngine_IsRunningTest(ImGuiTestEngine* engine, ImGuiTest* test)
@@ -1669,7 +1670,7 @@ void    ImGuiTestEngine_ShowTestWindow(ImGuiTestEngine* engine, bool* p_open)
 
     // Capture Tool
     ImGuiCaptureTool& capture_tool = engine->CaptureTool;
-    capture_tool.Capture.ScreenCaptureFunc = engine->IO.ScreenCaptureFunc;
+    capture_tool.Context.ScreenCaptureFunc = engine->IO.ScreenCaptureFunc;
     if (capture_tool.Visible)
         capture_tool.ShowCaptureToolWindow(&capture_tool.Visible);
 }

@@ -466,7 +466,7 @@ void RegisterTests_Layout(ImGuiTestEngine* e)
         ImGuiStyle& style = ImGui::GetStyle();
         ImGuiWindow* window = ImGui::GetCurrentWindow();
         ImDrawList* draw_list = window->DrawList;
-       
+
         enum ItemType
         {
             ItemType_SmallButton,
@@ -560,7 +560,7 @@ void RegisterTests_Layout(ImGuiTestEngine* e)
                 const float expected_height = g.FontSize * label_line_count + expected_padding;
                 IM_CHECK_EQ_NO_RET(current_height, expected_height);
             }
-            
+
             ImGui::Spacing();
         }
 
@@ -1059,7 +1059,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ImGuiTestGenericVars& vars = ctx->GenericVars;
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
         ImVec2 sz(50, 0);
-        ImGui::Button("UL", sz); ImGui::SameLine(); 
+        ImGui::Button("UL", sz); ImGui::SameLine();
         ImGui::Button("U",  sz); ImGui::SameLine();
         ImGui::Button("UR", sz);
         ImGui::Button("L",  sz); ImGui::SameLine();
@@ -1964,15 +1964,15 @@ void RegisterTests_Table(ImGuiTestEngine* e)
         ImGui::BulletText("OK: Resize from W3| (off)");     // ok: no-op (disabled by Rule A)
         HelperTableWithResizingPolicies("table3", 0, "WWWw");
         ImGui::Spacing();
-        
+
         // Need F2w + F3w to be stable to avoid moving W1
         // lock F2L
         // move F2R
         // move F3L
         // lock F3R
-        ImGui::BulletText("OK: Resize from W1| (fwd)");     // ok: forward to resizing |F2. F3 will not move.        
+        ImGui::BulletText("OK: Resize from W1| (fwd)");     // ok: forward to resizing |F2. F3 will not move.
         ImGui::BulletText("KO: Resize from F2| or F3|");    // FIXME should resize F2, F3 and not have effect on W1 (Weighted columns are _before_ the Fixed column).
-        ImGui::BulletText("OK: Resize from F4| (off)");     // ok: no-op (disabled by Rule A) 
+        ImGui::BulletText("OK: Resize from F4| (off)");     // ok: no-op (disabled by Rule A)
         HelperTableWithResizingPolicies("table4", 0, "WFFF");
         ImGui::Spacing();
 
@@ -2210,7 +2210,7 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
         ImGui::DockSpace(dockspace_id);
         ImGui::End();
-        
+
         ImGui::Begin("AAAA", NULL, ImGuiWindowFlags_NoSavedSettings);
         ImGui::Text("This is AAAA");
         ImGui::End();
@@ -2335,7 +2335,7 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
     };
 
     // ## Test setting focus on a docked window, and setting focus on a specific item inside. (#2453)
-    // ## In particular, while the selected tab is locked down early (causing a frame delay in the tab selection), 
+    // ## In particular, while the selected tab is locked down early (causing a frame delay in the tab selection),
     // ## the window that has requested focus should allow items to be submitted (SkipItems==false) during its hidden frame,
     // ## mimicking the behavior of any newly appearing window.
     t = REGISTER_TEST("docking", "docking_focus_1");
@@ -2387,7 +2387,7 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
             ctx->Yield();
     };
 #endif
-    
+
     // ## Test hash functions and ##/### operators
     t = REGISTER_TEST("misc", "misc_hash_001");
     t->TestFunc = [](ImGuiTestContext* ctx)
@@ -2874,7 +2874,7 @@ void RegisterTests_Perf(ImGuiTestEngine* e)
 {
     ImGuiTest* t = NULL;
 
-    auto PerfCaptureFunc = [](ImGuiTestContext* ctx) 
+    auto PerfCaptureFunc = [](ImGuiTestContext* ctx)
     {
         //ctx->KeyDownMap(ImGuiKey_COUNT, ImGuiKeyModFlags_Shift);
         ctx->PerfCapture();
@@ -3383,15 +3383,13 @@ void RegisterTests_Capture(ImGuiTestEngine* e)
         ctx->LogDebug("Capture screenshot...");
         ctx->WindowRef("");
 
-        ImGuiCaptureArgs args;
-        args.InCaptureWindows.push_back(ctx->GetWindowByRef("Dear ImGui Demo"));
-        args.InCaptureWindows.push_back(ctx->GetWindowByRef("Example: Simple overlay"));
-        args.InCaptureWindows.push_back(ctx->GetWindowByRef("Example: Custom rendering"));
-        args.InCaptureWindows.push_back(ctx->GetWindowByRef("Example: Simple layout"));
-        args.InCaptureWindows.push_back(ctx->GetWindowByRef("Example: Documents"));
-        args.InCaptureWindows.push_back(ctx->GetWindowByRef("Example: Console"));
-        ImStrncpy(args.OutImageFile, "captures/demo_screenshot.png", IM_ARRAYSIZE(args.OutImageFile));
-        ctx->CaptureScreenshot(&args);
+        ctx->CaptureAddWindow("Dear ImGui Demo");
+        ctx->CaptureAddWindow("Example: Simple overlay");
+        ctx->CaptureAddWindow("Example: Custom rendering");
+        ctx->CaptureAddWindow("Example: Simple layout");
+        ctx->CaptureAddWindow("Example: Documents");
+        ctx->CaptureAddWindow("Example: Console");
+        ctx->CaptureScreenshot();
 
         // Close everything
         ctx->WindowRef("Dear ImGui Demo");

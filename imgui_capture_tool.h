@@ -86,7 +86,7 @@ struct ImGuiCaptureContext
 // Implements UI for capturing images
 struct ImGuiCaptureTool
 {
-    ImGuiCaptureContext     Capture;                        // Screenshot capture context.
+    ImGuiCaptureContext     Context;                        // Screenshot capture context.
     ImGuiCaptureFlags       Flags = ImGuiCaptureToolFlags_Default;// Customize behavior of screenshot capture process. Flags are used by both ImGuiCaptureTool and ImGuiCaptureContext.
     bool                    Visible = false;                // Tool visibility state.
     float                   Padding = 10.0f;                // Extra padding around captured area.
