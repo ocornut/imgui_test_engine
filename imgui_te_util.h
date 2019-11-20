@@ -42,7 +42,7 @@ struct ImBuildInfo
     const char* OS = "";
     const char* Compiler = "";
     char        Date[32];           // "YYYY-MM-DD"
-    const char* Time = "";          // 
+    const char* Time = "";          //
 };
 
 // Helpers: miscellaneous functions
@@ -67,8 +67,7 @@ void        ImDebugShowInputTextState();
 const char* GetImGuiKeyName(ImGuiKey key);
 void        GetImGuiKeyModsPrefixStr(ImGuiKeyModFlags mod_flags, char* out_buf, size_t out_buf_size);
 const ImBuildInfo&  ImGetBuildInfo();
-bool        ImCreatePath(char* directory_name);                                                                         // Create directories for specified path. file_name may be modified.
-bool        ImFileCreatePath(char* file_name);                                                                          // Create directories for specified file. file_name may be modified.
+bool        ImFileCreateDirectoryChain(const char* directory_name, const char* directory_name_end = NULL);
 
 // Helper: maintain/calculate moving average
 template<typename TYPE>

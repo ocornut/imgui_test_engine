@@ -199,7 +199,7 @@ bool ImGuiCaptureContext::CaptureScreenshot(ImGuiCaptureArgs* args)
                 int file_name_size = IM_ARRAYSIZE(_SaveFileNameFinal);
                 if (ImFormatString(_SaveFileNameFinal, file_name_size, args->OutImageFile, args->OutFileCounter + 1) >= file_name_size)
                     ImGui::LogText("Capture Tool: file name is too long.");
-                else if (!ImFileCreatePath(_SaveFileNameFinal))
+                else if (!ImFileCreateDirectoryChain(_SaveFileNameFinal, ImPathFindFilename(_SaveFileNameFinal)))
                     ImGui::LogText("Capture Tool: unable to create directory for file '%s'.", _SaveFileNameFinal);
                 else
                 {
