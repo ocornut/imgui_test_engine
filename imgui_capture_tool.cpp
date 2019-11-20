@@ -173,7 +173,7 @@ bool ImGuiCaptureContext::CaptureScreenshot(ImGuiCaptureArgs* args)
         // Capture a portion of image. Capturing of windows wider than viewport is not implemented yet.
         ImRect capture_rect = _CaptureRect;
         capture_rect.ClipWith(ImRect(ImVec2(0, 0), io.DisplaySize));
-        const int capture_height = ImMin(io.DisplaySize.y, _CaptureRect.GetHeight());
+        const int capture_height = ImMin((int)io.DisplaySize.y, (int)_CaptureRect.GetHeight());
         const int x1 = (int)capture_rect.Min.x;
         const int y1 = (int)capture_rect.Min.y;
         const int w = (int)capture_rect.GetWidth();
@@ -186,8 +186,8 @@ bool ImGuiCaptureContext::CaptureScreenshot(ImGuiCaptureArgs* args)
 
             // Window moves up in order to expose it's lower part.
             for (ImGuiWindow* window : args->InCaptureWindows)
-                ImGui::SetWindowPos(window, window->Pos - ImVec2(0, h));
-            _CaptureRect.TranslateY(-h);
+                ImGui::SetWindowPos(window, window->Pos - ImVec2(0, (float)h));
+            _CaptureRect.TranslateY(-(float)h);
         }
         else
         {
@@ -455,8 +455,15 @@ void ImGuiCaptureTool::ShowCaptureToolWindow(bool* p_open)
         ImGui::PushItemWidth(-200.0f);
         ImGui::InputText("##", SaveFileName, IM_ARRAYSIZE(SaveFileName));
         ImGui::SameLine(0.0f, style.ItemInnerSpacing.x);
-        if (ImGui::Button("Open"))
-            ImOsOpenInShell(SaveFileName);
+        bool has_last_file_name = *Context._SaveFileNameFinal != 0;
+        if (!has_last_file_name)
+            ImGui::PushStyleColor(ImGuiCol_Text, style.Colors[ImGuiCol_TextDisabled]);
+        if (ImGui::Button("Open Last") && has_last_file_name)           // FIXME-CAPTURE: Running tests changes last captured file name.
+            ImOsOpenInShell(Context._SaveFileNameFinal);
+        if (!has_last_file_name)
+            ImGui::PopStyleColor();
+        else if (ImGui::IsItemHovered())
+            ImGui::SetTooltip("Open %s", Context._SaveFileNameFinal);
         ImGui::SameLine(0.0f, style.ItemInnerSpacing.x);
         ImGui::TextUnformatted("Out filename");
         ImGui::DragFloat("Padding", &Padding, 0.1f, 0, 32, "%.0f");

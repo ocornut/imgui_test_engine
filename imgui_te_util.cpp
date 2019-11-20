@@ -467,7 +467,7 @@ const ImBuildInfo& ImGetBuildInfo()
 }
 
 #if _WIN32
-static const char IM_DIR_SEPARATOR = '\\'
+static const char IM_DIR_SEPARATOR = '\\';
 #else
 static const char IM_DIR_SEPARATOR = '/';
 #endif
@@ -475,6 +475,9 @@ static const char IM_DIR_SEPARATOR = '/';
 // Create directories for specified path. directory_name may be modified. Slashes may be replaced with platform directory separators.
 bool ImFileCreateDirectoryChain(const char* directory_name, const char* directory_name_end)
 {
+    IM_ASSERT(directory_name != NULL);
+    IM_ASSERT(directory_name[0] != 0);
+
     if (directory_name_end == NULL)
         directory_name_end = directory_name + strlen(directory_name);
 
@@ -493,10 +496,10 @@ bool ImFileCreateDirectoryChain(const char* directory_name, const char* director
             *(token - 1) = IM_DIR_SEPARATOR;
 
 #if defined(_WIN32)
-        const int filename_wsize = ImTextCountCharsFromUtf8(directory_name, NULL) + 1;
+        const int filename_wsize = ImTextCountCharsFromUtf8(path, NULL) + 1;
         buf.resize(filename_wsize);
-        ImTextStrFromUtf8(&buf[0], filename_wsize, directory_name, NULL);
-        if (!CreateDirectoryW(buf.Data) && GetLastError() != ERROR_ALREADY_EXISTS)
+        ImTextStrFromUtf8(&buf[0], filename_wsize, path, NULL);
+        if (!CreateDirectoryW((wchar_t*)&buf[0], NULL) && GetLastError() != ERROR_ALREADY_EXISTS)
 #else
         if (mkdir(path, S_IRWXU) != 0 && errno != EEXIST)
 #endif
