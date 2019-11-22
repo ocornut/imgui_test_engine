@@ -2876,7 +2876,9 @@ void RegisterTests_Perf(ImGuiTestEngine* e)
 
     auto PerfCaptureFunc = [](ImGuiTestContext* ctx) 
     {
+        //ctx->KeyDownMap(ImGuiKey_COUNT, ImGuiKeyModFlags_Shift);
         ctx->PerfCapture();
+        //ctx->KeyUpMap(ImGuiKey_COUNT, ImGuiKeyModFlags_Shift);
     };
 
     // ## Measure the cost all demo contents
@@ -2928,7 +2930,7 @@ void RegisterTests_Perf(ImGuiTestEngine* e)
         int loop_count = 200 * ctx->PerfStressAmount;
         ImDrawList* draw_list = ImGui::GetWindowDrawList();
         int segments = 12;
-        ImGui::Button("##CircleFilled", ImVec2(200, 200));
+        ImGui::Button("##CircleFilled", ImVec2(120, 120));
         ImVec2 bounds_min = ImGui::GetItemRectMin();
         ImVec2 bounds_size = ImGui::GetItemRectSize();
         ImVec2 center = bounds_min + bounds_size * 0.5f;
