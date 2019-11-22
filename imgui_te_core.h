@@ -171,7 +171,6 @@ void                ImGuiTestEngine_Yield(ImGuiTestEngine* engine);
 void                ImGuiTestEngine_SetDeltaTime(ImGuiTestEngine* engine, float delta_time);
 int                 ImGuiTestEngine_GetFrameCount(ImGuiTestEngine* engine);
 double              ImGuiTestEngine_GetPerfDeltaTime500Average(ImGuiTestEngine* engine);
-FILE*               ImGuiTestEngine_GetPerfPersistentLogCsv(ImGuiTestEngine* engine);
 const char*         ImGuiTestEngine_GetVerboseLevelName(ImGuiTestVerboseLevel v);
 bool                ImGuiTestEngine_CaptureWindow(ImGuiTestEngine* engine, ImGuiWindow* window, const char* output_file, ImGuiCaptureToolFlags flags);
 
@@ -329,6 +328,7 @@ struct ImGuiTestEngineIO
     float                       ScrollSpeed = 1600.0f;          // Scroll speed (pixel/second) when not running in fast mode
     float                       TypingSpeed = 30.0f;            // Char input speed (characters/second) when not running in fast mode
     int                         PerfStressAmount = 1;           // Integer to scale the amount of items submitted in test
+    char                        PerfAnnotation[32] = "";        // e.g. fill in branch name
 
     // Outputs: State           
     bool                        RunningTests = false;

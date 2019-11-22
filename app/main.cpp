@@ -326,6 +326,16 @@ int main(int argc, char** argv)
         test_io.ScreenCaptureFunc = &CaptureFramebufferScreenshot;
 #endif
 
+    // Branch name stored in annotation field by default
+    // FIXME-TESTS: Obtain from git? maybe pipe from a batch-file?
+#if defined(IMGUI_HAS_DOCK)
+    strcpy(test_io.PerfAnnotation, "docking");
+#elif defined(IMGUI_HAS_TABLE)
+    strcpy(test_io.PerfAnnotation, "tables");
+#else
+    strcpy(test_io.PerfAnnotation, "master");
+#endif
+
     // Run
     if (g_App.OptGUI)
         MainLoop();

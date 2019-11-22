@@ -167,7 +167,7 @@ struct ImGuiTestContext
 
     // Performance
     double                  PerfRefDt = -1.0;
-    int                     PerfStressAmount = 0;
+    int                     PerfStressAmount = 0;                   // Convenience copy of engine->IO.PerfStressAmount
 
     // Main control
     void        Finish();

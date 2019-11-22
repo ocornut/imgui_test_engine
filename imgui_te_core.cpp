@@ -107,7 +107,6 @@ struct ImGuiTestEngine
     float                       UiLogHeight = 150.0f;
 
     // Performance Monitor
-    FILE*                       PerfPersistentLogCsv;
     double                      PerfRefDeltaTime;
     ImMovingAverage<double>     PerfDeltaTime100;
     ImMovingAverage<double>     PerfDeltaTime500;
@@ -191,8 +190,6 @@ ImGuiTestEngine*    ImGuiTestEngine_CreateContext(ImGuiContext* imgui_context)
     if (GImGuiHookingEngine == NULL)
         GImGuiHookingEngine = engine;
 
-    engine->PerfPersistentLogCsv = fopen("imgui_perflog.csv", "a+t");
-
     // Add .ini handle for ImGuiWindow type
     ImGuiSettingsHandler ini_handler;
     ini_handler.TypeName = "TestEngine";
@@ -208,9 +205,6 @@ ImGuiTestEngine*    ImGuiTestEngine_CreateContext(ImGuiContext* imgui_context)
 void    ImGuiTestEngine_ShutdownContext(ImGuiTestEngine* engine)
 {
     engine->UiContextVisible = engine->UiContextBlind = engine->UiContextTarget = engine->UiContextActive = NULL;
-
-    if (engine->PerfPersistentLogCsv)
-        fclose(engine->PerfPersistentLogCsv);
 
     IM_FREE(engine->UserDataBuffer);
     engine->UserDataBuffer = NULL;
@@ -610,11 +604,6 @@ int ImGuiTestEngine_GetFrameCount(ImGuiTestEngine* engine)
 double ImGuiTestEngine_GetPerfDeltaTime500Average(ImGuiTestEngine* engine)
 {
     return engine->PerfDeltaTime500.GetAverage();
-}
-
-FILE* ImGuiTestEngine_GetPerfPersistentLogCsv(ImGuiTestEngine* engine)
-{
-    return engine->PerfPersistentLogCsv;
 }
 
 const char* ImGuiTestEngine_GetVerboseLevelName(ImGuiTestVerboseLevel v)
@@ -1656,6 +1645,9 @@ void    ImGuiTestEngine_ShowTestWindow(ImGuiTestEngine* engine, bool* p_open)
             ImGui::SameLine();
             if (ImGui::Button("Pick ref dt"))
                 engine->PerfRefDeltaTime = dt_2000;
+
+            const ImGuiInputTextCallback filter_callback = [](ImGuiInputTextCallbackData* data) { return (data->EventChar == ',' || data->EventChar == ';') ? 1 : 0; };
+            ImGui::InputText("Branch/Annotation", engine->IO.PerfAnnotation, IM_ARRAYSIZE(engine->IO.PerfAnnotation), ImGuiInputTextFlags_CallbackCharFilter, filter_callback, NULL);
 
             double dt_ref = engine->PerfRefDeltaTime;
             ImGui::Text("[ref dt]    %6.3f ms", engine->PerfRefDeltaTime * 1000);

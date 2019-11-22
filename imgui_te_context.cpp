@@ -1629,7 +1629,7 @@ void    ImGuiTestContext::PerfCalcRef()
 
 void    ImGuiTestContext::PerfCapture()
 {
-    // Calculate reference average DeltaTime if it wasn't explicitely called by TestFunc
+    // Calculate reference average DeltaTime if it wasn't explicitly called by TestFunc
     if (PerfRefDt < 0.0)
         PerfCalcRef();
     IM_ASSERT(PerfRefDt >= 0.0);
@@ -1654,14 +1654,19 @@ void    ImGuiTestContext::PerfCapture()
     LogInfo("[PERF] Result: %+6.3f ms (from ref %+6.3f)", dt_delta_ms, dt_ref_ms);
 
     // Log to .csv
-    FILE* csv_perf_log = ImGuiTestEngine_GetPerfPersistentLogCsv(Engine);
-    if (csv_perf_log != NULL)
+    FILE* f = fopen("imgui_perflog.csv", "a+t");
+    if (f == NULL)
     {
-        fprintf(csv_perf_log,
-            ",%s,%s,%.3f,,%d,%s,%s,%s,%s,%s\n",
+        LogError("Failed to log to CSV file!");
+    }
+    else
+    {
+        fprintf(f,
+            "%s,%s,%.3f,x%d,%s,%s,%s,%s,%s,%s\n",
             Test->Category, Test->Name, dt_delta_ms,
-            PerfStressAmount, build_info.Type, build_info.Cpu, build_info.OS, build_info.Compiler, build_info.Date);
-        fflush(csv_perf_log);
+            PerfStressAmount, EngineIO->PerfAnnotation, build_info.Type, build_info.Cpu, build_info.OS, build_info.Compiler, build_info.Date);
+        fflush(f);
+        fclose(f);
     }
 
     // Disable the "Success" message
