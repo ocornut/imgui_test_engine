@@ -61,13 +61,13 @@ void        ImPathFixSeparatorsForCurrentOS(char* buf);
 void        ImParseSplitCommandLine(int* out_argc, char const*** out_argv, const char* cmd_line);
 void        ImParseDateFromCompilerIntoYMD(const char* in_data, char* out_buf, size_t out_buf_size);
 
+bool        ImFileCreateDirectoryChain(const char* path, const char* path_end = NULL);
 bool        ImFileLoadSourceBlurb(const char* file_name, int line_no_start, int line_no_end, ImGuiTextBuffer* out_buf);
 void        ImDebugShowInputTextState();
 
 const char* GetImGuiKeyName(ImGuiKey key);
 void        GetImGuiKeyModsPrefixStr(ImGuiKeyModFlags mod_flags, char* out_buf, size_t out_buf_size);
 const ImBuildInfo&  ImGetBuildInfo();
-bool        ImFileCreateDirectoryChain(const char* directory_name, const char* directory_name_end = NULL);
 
 // Helper: maintain/calculate moving average
 template<typename TYPE>

@@ -376,6 +376,7 @@ bool ImGuiTestContext::CaptureAddWindow(ImGuiTestRef ref)
     return window != NULL;
 }
 
+// FIXME-TESTS: Could log the final filename(s) in ImGuiTest so the test browser could expose button to view/open them?
 bool ImGuiTestContext::CaptureScreenshot()
 {
     return ImGuiTestEngine_CaptureScreenshot(Engine, &CaptureArgs);

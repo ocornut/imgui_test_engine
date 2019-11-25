@@ -472,42 +472,48 @@ static const char IM_DIR_SEPARATOR = '\\';
 static const char IM_DIR_SEPARATOR = '/';
 #endif
 
-// Create directories for specified path. directory_name may be modified. Slashes may be replaced with platform directory separators.
-bool ImFileCreateDirectoryChain(const char* directory_name, const char* directory_name_end)
+// Create directories for specified path. Slashes will be replaced with platform directory separators.
+// e.g. ImFileCreateDirectoryChain("aaaa/bbbb/cccc.png")
+// will try to create "aaaa/" then "aaaa/bbbb/".
+bool ImFileCreateDirectoryChain(const char* path, const char* path_end)
 {
-    IM_ASSERT(directory_name != NULL);
-    IM_ASSERT(directory_name[0] != 0);
+    IM_ASSERT(path != NULL);
+    IM_ASSERT(path[0] != 0);
 
-    if (directory_name_end == NULL)
-        directory_name_end = directory_name + strlen(directory_name);
+    if (path_end == NULL)
+        path_end = path + strlen(path);
 
-    char* path = ImStrdup(directory_name);
-    path[directory_name_end - directory_name] = 0;
+    // Copy in a local, zero-terminated buffer
+    size_t path_len = path_end - path;
+    char* path_local = (char*)IM_ALLOC(path_len + 1);
+    memcpy(path_local, path, path_len);
+    path_local[path_len] = 0;
 
 #if defined(_WIN32)
     ImVector<ImWchar> buf;
 #endif
     // Modification of passed file_name allows us to avoid extra temporary memory allocation.
     // strtok() pokes \0 into places where slashes are, we create a directory using directory_name and restore slash.
-    for (char* token = strtok(path, "\\/"); token != NULL; token = strtok(NULL, "\\/"))
+    for (char* token = strtok(path_local, "\\/"); token != NULL; token = strtok(NULL, "\\/"))
     {
-        // strtok() replaces slashes with NULLs. Restore removed slashes here.
-        if (token != path)
+        // strtok() replaces slashes with NULLs. Overwrite removed slashes here with the type of slashes the OS needs (win32 functions need backslashes).
+        if (token != path_local)
             *(token - 1) = IM_DIR_SEPARATOR;
 
 #if defined(_WIN32)
-        const int filename_wsize = ImTextCountCharsFromUtf8(path, NULL) + 1;
+        // Use ::CreateDirectoryW() because ::CreateDirectoryA() treat filenames in the local code-page instead of UTF-8.
+        const int filename_wsize = ImTextCountCharsFromUtf8(path_local, NULL) + 1;
         buf.resize(filename_wsize);
-        ImTextStrFromUtf8(&buf[0], filename_wsize, path, NULL);
-        if (!CreateDirectoryW((wchar_t*)&buf[0], NULL) && GetLastError() != ERROR_ALREADY_EXISTS)
+        ImTextStrFromUtf8(&buf[0], filename_wsize, path_local, NULL);
+        if (!::CreateDirectoryW((wchar_t*)&buf[0], NULL) && GetLastError() != ERROR_ALREADY_EXISTS)
 #else
-        if (mkdir(path, S_IRWXU) != 0 && errno != EEXIST)
+        if (mkdir(path_local, S_IRWXU) != 0 && errno != EEXIST)
 #endif
         {
-            IM_FREE(path);
+            IM_FREE(path_local);
             return false;
         }
     }
-    IM_FREE(path);
+    IM_FREE(path_local);
     return true;
 }

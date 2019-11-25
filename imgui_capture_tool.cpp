@@ -74,7 +74,7 @@ bool ImGuiCaptureContext::CaptureScreenshot(ImGuiCaptureArgs* args)
     ImGuiIO& io = g.IO;
     IM_ASSERT(args != NULL);
     IM_ASSERT(ScreenCaptureFunc != NULL);
-    IM_ASSERT(args->OutImageBuf != NULL || args->OutImageFile[0]);
+    IM_ASSERT(args->OutImageBuf != NULL || args->OutImageFileTemplate[0]);
 
     ImageBuf* output = args->OutImageBuf ? args->OutImageBuf : &_Output;
 
@@ -197,14 +197,22 @@ bool ImGuiCaptureContext::CaptureScreenshot(ImGuiCaptureArgs* args)
             {
                 // Save file only if custom buffer was not specified.
                 int file_name_size = IM_ARRAYSIZE(_SaveFileNameFinal);
-                if (ImFormatString(_SaveFileNameFinal, file_name_size, args->OutImageFile, args->OutFileCounter + 1) >= file_name_size)
+                if (ImFormatString(_SaveFileNameFinal, file_name_size, args->OutImageFileTemplate, args->OutFileCounter + 1) >= file_name_size)
+                {
                     ImGui::LogText("Capture Tool: file name is too long.");
-                else if (!ImFileCreateDirectoryChain(_SaveFileNameFinal, ImPathFindFilename(_SaveFileNameFinal)))
-                    ImGui::LogText("Capture Tool: unable to create directory for file '%s'.", _SaveFileNameFinal);
+                }
                 else
                 {
-                    ++args->OutFileCounter;
-                    output->SaveFile(_SaveFileNameFinal);
+                    ImPathFixSeparatorsForCurrentOS(_SaveFileNameFinal);
+                    if (!ImFileCreateDirectoryChain(_SaveFileNameFinal, ImPathFindFilename(_SaveFileNameFinal)))
+                    {
+                        ImGui::LogText("Capture Tool: unable to create directory for file '%s'.", _SaveFileNameFinal);
+                    }
+                    else
+                    {
+                        args->OutFileCounter++;
+                        output->SaveFile(_SaveFileNameFinal);
+                    }
                 }
                 output->Clear();
             }
@@ -254,8 +262,9 @@ void ImGuiCaptureTool::CaptureWindowPicker(const char* title, ImGuiCaptureArgs* 
             _CaptureState = ImGuiCaptureToolState_None;
     }
 
+    const ImVec2 button_sz = ImVec2(ImGui::CalcTextSize("M").x * 30, 0.0f);
     ImGuiID picking_id = ImGui::GetID("##picking");
-    if (ImGui::Button(title))
+    if (ImGui::Button(title, button_sz))
         _CaptureState = ImGuiCaptureToolState_PickingSingleWindow;
 
     if (_CaptureState != ImGuiCaptureToolState_PickingSingleWindow)
@@ -301,9 +310,10 @@ void ImGuiCaptureTool::CaptureWindowsSelector(const char* title, ImGuiCaptureArg
 {
     ImGuiContext& g = *GImGui;
     ImGuiIO& io = g.IO;
+    const ImVec2 button_sz = ImVec2(ImGui::CalcTextSize("M").x * 30, 0.0f);
 
     // Capture Button
-    bool do_capture = ImGui::Button(title);
+    bool do_capture = ImGui::Button(title, button_sz);
     do_capture |= io.KeyAlt && ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_C));
     if (_CaptureState == ImGuiCaptureToolState_SelectRectUpdate && !ImGui::IsMouseDown(0))
     {
@@ -312,7 +322,7 @@ void ImGuiCaptureTool::CaptureWindowsSelector(const char* title, ImGuiCaptureArg
         do_capture = true;
     }
 
-    if (ImGui::Button("Select Rect"))
+    if (ImGui::Button("Rect-Select Windows", button_sz))
         _CaptureState = ImGuiCaptureToolState_SelectRectStart;
     if (_CaptureState == ImGuiCaptureToolState_SelectRectStart || _CaptureState == ImGuiCaptureToolState_SelectRectUpdate)
     {
@@ -397,8 +407,7 @@ void ImGuiCaptureTool::CaptureWindowsSelector(const char* title, ImGuiCaptureArg
 
     // Draw capture rectangle
     ImDrawList* draw_list = ImGui::GetForegroundDrawList();
-    const bool can_capture = capture_rect.Min.x != FLT_MIN && capture_rect.Min.y != FLT_MIN &&
-        capture_rect.Max.x != FLT_MAX && capture_rect.Max.y != FLT_MAX && !args->InCaptureWindows.empty();
+    const bool can_capture = !capture_rect.IsInverted() && !args->InCaptureWindows.empty();
     if (can_capture && (_CaptureState == ImGuiCaptureToolState_None || _CaptureState == ImGuiCaptureToolState_SelectRectUpdate))
     {
         IM_ASSERT(capture_rect.GetWidth() > 0);
@@ -414,11 +423,11 @@ void ImGuiCaptureTool::CaptureWindowsSelector(const char* title, ImGuiCaptureArg
     // Process capture
     if (can_capture && do_capture)
     {
-        _CaptureState = ImGuiCaptureToolState_Capturing;
         // We cheat a little. args->_Capturing is set to true when Capture.CaptureScreenshot(args), but we use this
         // field to differentiate which capture is in progress (windows picker or selector), therefore we set it to true
         // in advance and execute Capture.CaptureScreenshot(args) only when args->_Capturing is true.
         args->_Capturing = true;
+        _CaptureState = ImGuiCaptureToolState_Capturing;
     }
 
     if (ImGui::IsItemHovered())
@@ -449,20 +458,27 @@ void ImGuiCaptureTool::ShowCaptureToolWindow(bool* p_open)
     ImGuiIO& io = ImGui::GetIO();
     ImGuiStyle& style = ImGui::GetStyle();
 
+    // Options
     ImGui::SetNextItemOpen(true, ImGuiCond_Once);
     if (ImGui::TreeNode("Options"))
     {
         ImGui::PushItemWidth(-200.0f);
         ImGui::InputText("##", SaveFileName, IM_ARRAYSIZE(SaveFileName));
         ImGui::SameLine(0.0f, style.ItemInnerSpacing.x);
-        bool has_last_file_name = *Context._SaveFileNameFinal != 0;
+        const bool has_last_file_name = (Context._SaveFileNameFinal[0] != 0);
         if (!has_last_file_name)
-            ImGui::PushStyleColor(ImGuiCol_Text, style.Colors[ImGuiCol_TextDisabled]);
+        {
+            ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
+            ImGui::PushStyleColor(ImGuiCol_Text, style.Colors[ImGuiCol_Text] * ImVec4(1,1,1,0.5f));
+        }
         if (ImGui::Button("Open Last") && has_last_file_name)           // FIXME-CAPTURE: Running tests changes last captured file name.
             ImOsOpenInShell(Context._SaveFileNameFinal);
         if (!has_last_file_name)
+        {
             ImGui::PopStyleColor();
-        else if (ImGui::IsItemHovered())
+            ImGui::PopItemFlag();
+        }
+        if (has_last_file_name && ImGui::IsItemHovered())
             ImGui::SetTooltip("Open %s", Context._SaveFileNameFinal);
         ImGui::SameLine(0.0f, style.ItemInnerSpacing.x);
         ImGui::TextUnformatted("Out filename");
@@ -494,19 +510,19 @@ void ImGuiCaptureTool::ShowCaptureToolWindow(bool* p_open)
     // Propagate settings from UI to args.
     _CaptureArgsPicker.InPadding = _CaptureArgsSelector.InPadding = Padding;
     _CaptureArgsPicker.InFlags = _CaptureArgsSelector.InFlags = Flags;
-    ImStrncpy(_CaptureArgsPicker.OutImageFile, SaveFileName, (size_t)IM_ARRAYSIZE(_CaptureArgsPicker.OutImageFile));
-    ImStrncpy(_CaptureArgsSelector.OutImageFile, SaveFileName, (size_t)IM_ARRAYSIZE(_CaptureArgsSelector.OutImageFile));
+    ImStrncpy(_CaptureArgsPicker.OutImageFileTemplate, SaveFileName, (size_t)IM_ARRAYSIZE(_CaptureArgsPicker.OutImageFileTemplate));
+    ImStrncpy(_CaptureArgsSelector.OutImageFileTemplate, SaveFileName, (size_t)IM_ARRAYSIZE(_CaptureArgsSelector.OutImageFileTemplate));
 
     // Hide tool window unconditionally.
     if (Flags & ImGuiCaptureToolFlags_IgnoreCaptureToolWindow && _CaptureState == ImGuiCaptureToolState_Capturing)
     {
-        ImGui::GetCurrentWindow()->Hidden = true;
-        ImGui::GetCurrentWindow()->HiddenFramesCannotSkipItems = 2;
+        ImGuiWindow* window = ImGui::GetCurrentWindowRead();
+        window->Hidden = true;
+        window->HiddenFramesCannotSkipItems = 2;
     }
 
-    CaptureWindowPicker("Capture Window..", &_CaptureArgsPicker);
+    CaptureWindowPicker("Capture Window", &_CaptureArgsPicker);
     CaptureWindowsSelector("Capture Selected", &_CaptureArgsSelector);
-
     ImGui::Separator();
 
     ImGui::End();

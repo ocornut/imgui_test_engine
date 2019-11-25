@@ -31,7 +31,7 @@ enum ImGuiCaptureToolFlags_
 
 typedef unsigned int ImGuiCaptureFlags;
 
-enum ImGuiCaptureToolState_
+enum ImGuiCaptureToolState
 {
     ImGuiCaptureToolState_None,                             // No capture in progress.
     ImGuiCaptureToolState_PickingSingleWindow,              // CaptureWindowPicker() is sellecting a window under mouse cursor.
@@ -40,9 +40,7 @@ enum ImGuiCaptureToolState_
     ImGuiCaptureToolState_Capturing                         // Capture is in progress.
 };
 
-typedef unsigned int ImGuiCaptureToolState;
-
-// Struct defines input and output arguments for capture process.
+// Defines input and output arguments for capture process.
 struct ImGuiCaptureArgs
 {
     // [Input]
@@ -54,7 +52,7 @@ struct ImGuiCaptureArgs
     // [Output]
     int                     OutFileCounter = 0;             // Counter which may be appended to file name when saving. By default counting starts from 1. When done this field holds number of saved files.
     ImageBuf*               OutImageBuf = NULL;             // Output will be saved to image buffer if specified.
-    char                    OutImageFile[256] = "";         // Output will be saved to a file if OutImageBuf is NULL.
+    char                    OutImageFileTemplate[256] = ""; // Output will be saved to a file if OutImageBuf is NULL.
 
     // [Internal]
     bool                    _Capturing = false;
@@ -87,15 +85,15 @@ struct ImGuiCaptureContext
 struct ImGuiCaptureTool
 {
     ImGuiCaptureContext     Context;                        // Screenshot capture context.
-    ImGuiCaptureFlags       Flags = ImGuiCaptureToolFlags_Default;// Customize behavior of screenshot capture process. Flags are used by both ImGuiCaptureTool and ImGuiCaptureContext.
+    ImGuiCaptureFlags       Flags = ImGuiCaptureToolFlags_Default; // Customize behavior of screenshot capture process. Flags are used by both ImGuiCaptureTool and ImGuiCaptureContext.
     bool                    Visible = false;                // Tool visibility state.
     float                   Padding = 10.0f;                // Extra padding around captured area.
-    char                    SaveFileName[256];              // File name where screesnshot will be saved. May contain directories or variation of %d format.
+    char                    SaveFileName[256];              // File name where screenshots will be saved. May contain directories or variation of %d format.
     float                   SnapGridSize = 32.0f;           // Size of the grid cell for "snap to grid" functionality.
 
     ImGuiCaptureArgs        _CaptureArgsPicker;             // Capture args for single window picker widget.
     ImGuiCaptureArgs        _CaptureArgsSelector;           // Capture args for multiple window selector widget.
-    ImGuiCaptureToolState   _CaptureState = 0;              // Hint used to determine which capture function is in progress.
+    ImGuiCaptureToolState   _CaptureState = ImGuiCaptureToolState_None; // Which capture function is in progress.
     float                   _WindowNameMaxPosX = 170.0f;    // X post after longest window name in CaptureWindowsSelector().
 
     ImGuiCaptureTool(ImGuiScreenCaptureFunc capture_func = NULL);
@@ -106,7 +104,7 @@ struct ImGuiCaptureTool
     // Render a selector for selecting multiple windows for capture.
     void    CaptureWindowsSelector(const char* title, ImGuiCaptureArgs* args);
 
-    // Render a screenshot maker window with various options and utilities.
+    // Render a capture tool window with various options and utilities.
     void    ShowCaptureToolWindow(bool* p_open = NULL);
 
     // Snaps edges of all visible windows to a virtual grid.

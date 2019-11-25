@@ -625,13 +625,13 @@ bool ImGuiTestEngine_CaptureScreenshot(ImGuiTestEngine* engine, ImGuiCaptureArgs
     }
 
     // Graphics API must render a window so it can be captured
-    const bool prev_fast = engine->IO.ConfigRunFast;
+    const bool backup_fast = engine->IO.ConfigRunFast;
     engine->IO.ConfigRunFast = false;
 
     while (ct.CaptureScreenshot(args))
         ImGuiTestEngine_Yield(engine);
 
-    engine->IO.ConfigRunFast = prev_fast;
+    engine->IO.ConfigRunFast = backup_fast;
     return true;
 }
 
@@ -674,7 +674,7 @@ static void ImGuiTestEngine_ProcessTestQueue(ImGuiTestEngine* engine)
         ctx.UiContext = engine->UiContextActive;
         ctx.PerfStressAmount = engine->IO.PerfStressAmount;
         ctx.RunFlags = run_task->RunFlags;
-        ImFormatString(ctx.CaptureArgs.OutImageFile, IM_ARRAYSIZE(ctx.CaptureArgs.OutImageFile), "captures/%s_%%04d.png", test->Name);
+        ImFormatString(ctx.CaptureArgs.OutImageFileTemplate, IM_ARRAYSIZE(ctx.CaptureArgs.OutImageFileTemplate), "captures/%s_%%04d.png", test->Name);
         engine->TestContext = &ctx;
         if (track_scrolling)
             engine->UiSelectAndScrollToTest = test;
