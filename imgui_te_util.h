@@ -42,7 +42,7 @@ struct ImBuildInfo
     const char* OS = "";
     const char* Compiler = "";
     char        Date[32];           // "YYYY-MM-DD"
-    const char* Time = "";          // 
+    const char* Time = "";          //
 };
 
 // Helpers: miscellaneous functions

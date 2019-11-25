@@ -58,7 +58,7 @@ ImGuiID ImHashDecoratedPath(const char* str, ImGuiID seed)
             continue;
         }
 
-        // Reset the hash when encountering ### 
+        // Reset the hash when encountering ###
         if (c == '#' && current[0] == '#' && current[1] == '#')
             crc = seed;
 

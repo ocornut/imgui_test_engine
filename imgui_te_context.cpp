@@ -502,7 +502,7 @@ void    ImGuiTestContext::NavMoveTo(ImGuiTestRef ref)
     WindowBringToFront(item->Window);
 
     // Teleport
-    // FIXME-NAV: We should have a nav request feature that does this, 
+    // FIXME-NAV: We should have a nav request feature that does this,
     // except it'll have to queue the request to find rect, then set scrolling, which would incur a 2 frame delay :/
     IM_ASSERT(g.NavMoveRequest == false);
     ImRect rect_rel = item->RectFull;
@@ -611,7 +611,7 @@ void    ImGuiTestContext::MouseMove(ImGuiTestRef ref, ImGuiTestOpFlags flags)
 
     ImVec2 pos = item->RectFull.GetCenter();
     WindowMoveToMakePosVisible(window, pos);
-    
+
     // Move toward an actually visible point
     pos = item->RectClipped.GetCenter();
     MouseMoveToPos(pos);
@@ -913,12 +913,12 @@ bool    ImGuiTestContext::WindowBringToFront(ImGuiWindow* window, ImGuiTestOpFla
 
     // We cannot guarantee this will work 100%
     // Because merely hovering an item may e.g. open a window or change focus.
-    // In particular this can be the case with MenuItem. So trying to Open a MenuItem may lead to its child opening while hovering, 
+    // In particular this can be the case with MenuItem. So trying to Open a MenuItem may lead to its child opening while hovering,
     // causing this function to seemingly fail (even if the end goal was reached).
     bool ret = (window == g.NavWindow);
     if (!ret && !(flags & ImGuiTestOpFlags_NoError))
         LogDebug("-- Expected focused window '%s', but '%s' got focus back.", window->Name, g.NavWindow ? g.NavWindow->Name : "<NULL>");
-    
+
     return ret;
 }
 
@@ -1034,8 +1034,8 @@ void    ImGuiTestContext::ItemAction(ImGuiTestAction action, ImGuiTestRef ref)
         if (item && (item->StatusFlags & ImGuiItemStatusFlags_Opened) == 0)
         {
             item->RefCount++;
-            MouseMove(ref); 
-            
+            MouseMove(ref);
+
             // Some item may open just by hovering, give them that chance
             if ((item->StatusFlags & ImGuiItemStatusFlags_Opened) == 0)
             {
@@ -1132,7 +1132,7 @@ void    ImGuiTestContext::ItemActionAll(ImGuiTestAction action, ImGuiTestRef ref
         int scan_dir = +1;
         if (action == ImGuiTestAction_Close)
         {
-            // Close bottom-to-top because 
+            // Close bottom-to-top because
             // 1) it is more likely to handle same-depth parent/child relationship better (e.g. CollapsingHeader)
             // 2) it gives a nicer sense of symmetry with the corresponding open operation.
             scan_start = items.Size - 1;
@@ -1425,7 +1425,7 @@ void    ImGuiTestContext::WindowMove(ImGuiTestRef ref, ImVec2 input_pos, ImVec2 
 
     // FIXME-TESTS: Need to find a -visible- click point
     MouseMoveToPos(window->Pos + ImVec2(h * 2.0f, h * 0.5f));
-    //IM_CHECK_SILENT(UiContext->HoveredWindow == window);  // FIXME-TESTS: 
+    //IM_CHECK_SILENT(UiContext->HoveredWindow == window);  // FIXME-TESTS:
     MouseDown(0);
 
     // Disable docking
@@ -1542,7 +1542,7 @@ void    ImGuiTestContext::DockMultiClear(const char* window_name, ...)
 {
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
     LogDebug("DockMultiClear");
-    
+
     va_list args;
     va_start(args, window_name);
     while (window_name != NULL)

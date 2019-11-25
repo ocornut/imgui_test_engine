@@ -311,8 +311,8 @@ struct ImGuiTestEngineIO
     ImGuiTestEngineSrcFileOpenFunc  SrcFileOpenFunc = NULL;     // (Optional) To open source files
     ImGuiTestEngineScreenCaptureFunc ScreenCaptureFunc = NULL;  // (Optional) To capture graphics output
     void*                           UserData = NULL;
-                                
-    // Inputs: Options          
+
+    // Inputs: Options
     bool                        ConfigRunWithGui = false;       // Run without graphics output (e.g. command-line)
     bool                        ConfigRunFast = true;           // Run tests as fast as possible (teleport mouse, skip delays, etc.)
     bool                        ConfigRunBlind = false;         // Run tests in a blind ImGuiContext separated from the visible context
@@ -330,7 +330,7 @@ struct ImGuiTestEngineIO
     int                         PerfStressAmount = 1;           // Integer to scale the amount of items submitted in test
     char                        PerfAnnotation[32] = "";        // e.g. fill in branch name
 
-    // Outputs: State           
+    // Outputs: State
     bool                        RunningTests = false;
 };
 

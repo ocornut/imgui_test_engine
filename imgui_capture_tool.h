@@ -10,7 +10,7 @@ struct ImageBuf
 
     ImageBuf()      { Width = Height = 0; Data = NULL; }
     ~ImageBuf()     { Clear(); }
-    
+
     void Clear();                               // Free allocated memory buffer if such exists.
     void CreateEmpty(int w, int h);             // Reallocate buffer for pixel data, and zero it.
     void CreateEmptyNoMemClear(int w, int h);   // Reallocate buffer for pixel data, but do not zero memory buffer.

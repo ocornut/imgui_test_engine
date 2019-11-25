@@ -119,7 +119,7 @@ struct ImGuiTestEngine
     int                         ToolSlowDownMs = 100;
 
     // Functions
-    ImGuiTestEngine() 
+    ImGuiTestEngine()
     {
         PerfRefDeltaTime = 0.0f;
         PerfDeltaTime100.Init(100);
@@ -245,7 +245,7 @@ ImGuiTestLocateTask* ImGuiTestEngine_FindLocateTask(ImGuiTestEngine* engine, ImG
 }
 
 // Request information about one item.
-// Will push a request for the test engine to process. 
+// Will push a request for the test engine to process.
 // Will return NULL when results are not ready (or not available).
 ImGuiTestItemInfo* ImGuiTestEngine_ItemLocate(ImGuiTestEngine* engine, ImGuiID id, const char* debug_id)
 {
@@ -728,8 +728,8 @@ static void ImGuiTestEngine_ProcessTestQueue(ImGuiTestEngine* engine)
 }
 
 bool ImGuiTestEngine_IsRunningTests(ImGuiTestEngine* engine)
-{ 
-    return engine->TestsQueue.Size > 0; 
+{
+    return engine->TestsQueue.Size > 0;
 }
 
 bool ImGuiTestEngine_IsRunningTest(ImGuiTestEngine* engine, ImGuiTest* test)

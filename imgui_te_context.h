@@ -87,7 +87,7 @@ struct ImGuiTestGenericStatus
     void Clear()                { memset(this, 0, sizeof(*this)); }
     void QuerySet(bool ret_val = false) { Clear(); QueryInc(ret_val); }
     void QueryInc(bool ret_val = false)
-    { 
+    {
         Ret += ret_val;
         Hovered += ImGui::IsItemHovered();
         Active += ImGui::IsItemActive();;
@@ -210,7 +210,7 @@ struct ImGuiTestContext
     ImGuiWindow* GetWindowByRef(ImGuiTestRef ref);
     ImGuiTestRef GetFocusWindowRef();
 
-    // ID 
+    // ID
     ImGuiID     GetID(ImGuiTestRef ref);
     ImGuiID     GetID(ImGuiTestRef seed_ref, ImGuiTestRef ref);
 
@@ -228,7 +228,7 @@ struct ImGuiTestContext
     void        MouseDown(int button = 0);
     void        MouseUp(int button = 0);
     void        MouseLiftDragThreshold(int button = 0);
-    
+
     // Keyboard inputs
     void        KeyDownMap(ImGuiKey key, int mod_flags = 0);
     void        KeyUpMap(ImGuiKey key, int mod_flags = 0);
