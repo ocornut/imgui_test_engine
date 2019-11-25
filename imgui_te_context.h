@@ -156,6 +156,7 @@ struct ImGuiTestContext
     double                  RunningTime = 0.0f;                     // Amount of wall clock time the Test has been running. Used by safety watchdog.
     int                     ActionDepth = 0;
     bool                    Abort = false;
+    ImGuiCaptureArgs        CaptureArgs;
 
     // Commonly user exposed state for the ctx-> functions
     ImGuiTestGenericVars    GenericVars;
@@ -216,8 +217,8 @@ struct ImGuiTestContext
 
     // Misc
     ImVec2      GetMainViewportPos();
-    bool        CaptureWindow(ImGuiTestRef ref, const char* output_file, ImGuiCaptureToolFlags flags = 0);
-    bool        CaptureWindow(ImGuiWindow* window, const char* output_file, ImGuiCaptureToolFlags flags = 0);
+    bool        CaptureAddWindow(ImGuiTestRef ref);
+    bool        CaptureScreenshot();
 
     // Mouse inputs
     void        MouseMove(ImGuiTestRef ref, ImGuiTestOpFlags flags = ImGuiTestOpFlags_None);

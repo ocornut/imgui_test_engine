@@ -368,14 +368,18 @@ ImVec2 ImGuiTestContext::GetMainViewportPos()
 #endif
 }
 
-bool ImGuiTestContext::CaptureWindow(ImGuiTestRef ref, const char* output_file, ImGuiCaptureToolFlags flags)
+bool ImGuiTestContext::CaptureAddWindow(ImGuiTestRef ref)
 {
-    return CaptureWindow(GetWindowByRef(ref), output_file, flags);
+    ImGuiWindow* window = GetWindowByRef(ref);
+    if (window)
+        CaptureArgs.InCaptureWindows.push_back(window);
+    return window != NULL;
 }
 
-bool ImGuiTestContext::CaptureWindow(ImGuiWindow* window, const char* output_file, ImGuiCaptureToolFlags flags)
+// FIXME-TESTS: Could log the final filename(s) in ImGuiTest so the test browser could expose button to view/open them?
+bool ImGuiTestContext::CaptureScreenshot()
 {
-    return ImGuiTestEngine_CaptureWindow(Engine, window, output_file, flags);
+    return ImGuiTestEngine_CaptureScreenshot(Engine, &CaptureArgs);
 }
 
 ImGuiTestItemInfo* ImGuiTestContext::ItemLocate(ImGuiTestRef ref, ImGuiTestOpFlags flags)

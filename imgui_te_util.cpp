@@ -11,6 +11,10 @@
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
 #include <shellapi.h>
+#else
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <errno.h>
 #endif
 
 // Hash "hello/world" as if it was "helloworld"
@@ -460,4 +464,56 @@ const ImBuildInfo& ImGetBuildInfo()
     }
 
     return build_info;
+}
+
+#if _WIN32
+static const char IM_DIR_SEPARATOR = '\\';
+#else
+static const char IM_DIR_SEPARATOR = '/';
+#endif
+
+// Create directories for specified path. Slashes will be replaced with platform directory separators.
+// e.g. ImFileCreateDirectoryChain("aaaa/bbbb/cccc.png")
+// will try to create "aaaa/" then "aaaa/bbbb/".
+bool ImFileCreateDirectoryChain(const char* path, const char* path_end)
+{
+    IM_ASSERT(path != NULL);
+    IM_ASSERT(path[0] != 0);
+
+    if (path_end == NULL)
+        path_end = path + strlen(path);
+
+    // Copy in a local, zero-terminated buffer
+    size_t path_len = path_end - path;
+    char* path_local = (char*)IM_ALLOC(path_len + 1);
+    memcpy(path_local, path, path_len);
+    path_local[path_len] = 0;
+
+#if defined(_WIN32)
+    ImVector<ImWchar> buf;
+#endif
+    // Modification of passed file_name allows us to avoid extra temporary memory allocation.
+    // strtok() pokes \0 into places where slashes are, we create a directory using directory_name and restore slash.
+    for (char* token = strtok(path_local, "\\/"); token != NULL; token = strtok(NULL, "\\/"))
+    {
+        // strtok() replaces slashes with NULLs. Overwrite removed slashes here with the type of slashes the OS needs (win32 functions need backslashes).
+        if (token != path_local)
+            *(token - 1) = IM_DIR_SEPARATOR;
+
+#if defined(_WIN32)
+        // Use ::CreateDirectoryW() because ::CreateDirectoryA() treat filenames in the local code-page instead of UTF-8.
+        const int filename_wsize = ImTextCountCharsFromUtf8(path_local, NULL) + 1;
+        buf.resize(filename_wsize);
+        ImTextStrFromUtf8(&buf[0], filename_wsize, path_local, NULL);
+        if (!::CreateDirectoryW((wchar_t*)&buf[0], NULL) && GetLastError() != ERROR_ALREADY_EXISTS)
+#else
+        if (mkdir(path_local, S_IRWXU) != 0 && errno != EEXIST)
+#endif
+        {
+            IM_FREE(path_local);
+            return false;
+        }
+    }
+    IM_FREE(path_local);
+    return true;
 }

@@ -1,3 +1,7 @@
+
+## Local captures
+captures/*
+
 ## Local perf logs
 imgui_perflog.csv
 

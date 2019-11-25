@@ -172,7 +172,7 @@ void                ImGuiTestEngine_SetDeltaTime(ImGuiTestEngine* engine, float 
 int                 ImGuiTestEngine_GetFrameCount(ImGuiTestEngine* engine);
 double              ImGuiTestEngine_GetPerfDeltaTime500Average(ImGuiTestEngine* engine);
 const char*         ImGuiTestEngine_GetVerboseLevelName(ImGuiTestVerboseLevel v);
-bool                ImGuiTestEngine_CaptureWindow(ImGuiTestEngine* engine, ImGuiWindow* window, const char* output_file, ImGuiCaptureToolFlags flags);
+bool                ImGuiTestEngine_CaptureScreenshot(ImGuiTestEngine* engine, ImGuiCaptureArgs* args);
 
 //-------------------------------------------------------------------------
 // Hooks for Core Library
