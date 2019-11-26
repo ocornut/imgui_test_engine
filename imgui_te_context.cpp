@@ -434,6 +434,8 @@ void    ImGuiTestContext::ScrollToY(ImGuiTestRef ref, float scroll_ratio_y)
     ImGuiTestRefDesc desc(ref, item);
     LogDebug("ScrollToY %s", desc.c_str());
 
+    if (item == NULL)
+        return;
     ImGuiWindow* window = item->Window;
 
     //if (item->ID == 0xDFFBB0CE || item->ID == 0x87CBBA09)
