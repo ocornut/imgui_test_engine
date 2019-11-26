@@ -540,6 +540,7 @@ void    ImGuiTestContext::NavKeyPress(ImGuiNavInput input)
     Yield();
     ImGuiTestEngine_PushInput(Engine, ImGuiTestInput::FromNav(input, ImGuiKeyState_Up));
     Yield();
+    Yield(); // For nav code to react e.g. run a query
 }
 
 void    ImGuiTestContext::NavActivate()

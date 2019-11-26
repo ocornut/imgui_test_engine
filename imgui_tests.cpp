@@ -1466,6 +1466,86 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ImGui::PlotLines("PlotLines 3", values, 1);
         // FIXME-TESTS: If test did not crash - it passed. A better way to check this would be useful.
     };
+
+    // ## Test BeginDragDropSource() with NULL id.
+    t = REGISTER_TEST("widgets", "widgets_drag_source_null_id");
+    struct WidgetDragSourceNullIDData
+    {
+        ImVec2 Source;
+        ImVec2 Destination;
+        bool Dropped = false;
+    };
+    t->SetUserDataType<WidgetDragSourceNullIDData>();
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        WidgetDragSourceNullIDData& user_data = *(WidgetDragSourceNullIDData*)ctx->UserData;
+
+        ImGui::Begin("Null ID Test");
+        ImGui::TextUnformatted("Null ID");
+        user_data.Source = ImRect(ImGui::GetItemRectMin(), ImGui::GetItemRectMax()).GetCenter();
+
+        if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_SourceAllowNullID))
+        {
+            int magic = 0xF00;
+            ImGui::SetDragDropPayload("MAGIC", &magic, sizeof(int));
+            ImGui::EndDragDropSource();
+        }
+        ImGui::TextUnformatted("Drop Here");
+        user_data.Destination = ImRect(ImGui::GetItemRectMin(), ImGui::GetItemRectMax()).GetCenter();
+
+        if (ImGui::BeginDragDropTarget())
+        {
+            if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("MAGIC"))
+            {
+                user_data.Dropped = true;
+                IM_CHECK_EQ(payload->DataSize, (int)sizeof(int));
+                IM_CHECK_EQ(*(int*)payload->Data, 0xF00);
+            }
+            ImGui::EndDragDropTarget();
+        }
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        WidgetDragSourceNullIDData& user_data = *(WidgetDragSourceNullIDData*)ctx->UserData;
+
+        // ImGui::TextUnformatted() does not have an ID therefore we can not use ctx->ItemDragAndDrop() as that refers
+        // to items by their ID.
+        ctx->MouseMoveToPos(user_data.Source);
+        ctx->SleepShort();
+        ctx->MouseDown(0);
+
+        ctx->MouseMoveToPos(user_data.Destination);
+        ctx->SleepShort();
+        ctx->MouseUp(0);
+
+        IM_CHECK(user_data.Dropped);
+    };
+
+    // ## Test long text rendering by TextUnformatted().
+    t = REGISTER_TEST("widgets", "widgets_text_unformatted_long");
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ctx->WindowRef("Dear ImGui Demo");
+        ctx->MenuClick("Examples/Long text display");
+        ctx->WindowRef("Example: Long text display");
+        ctx->ItemClick("Add 1000 lines");
+        ctx->SleepShort();
+
+        char title[64];
+        ImFormatString(title, IM_ARRAYSIZE(title), "/Example: Long text display\\/Log_%08X", ctx->GetID("Log"));
+
+        ImGuiWindow* log_panel = ctx->GetWindowByRef(title);
+        IM_CHECK(log_panel != NULL);
+        ImGui::SetScrollY(log_panel, log_panel->ScrollMax.y);
+        ctx->SleepShort();
+        ctx->ItemClick("Clear");
+        // FIXME-TESTS: A bit of extra testing that will be possible once tomato problem is solved.
+        // ctx->ComboClick("Test type/Single call to TextUnformatted()");
+        // ctx->ComboClick("Test type/Multiple calls to Text(), clipped");
+        // ctx->ComboClick("Test type/Multiple calls to Text(), not clipped (slow)");
+        ctx->WindowClose("");
+    };
 }
 
 //-------------------------------------------------------------------------
@@ -1639,6 +1719,20 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
         ctx->KeyPressMap(ImGuiKey_Home);
         IM_CHECK(ctx->UiContext->NavId == window->GetID("Button 0"));
         IM_CHECK(window->Scroll.y == 0);
+    };
+
+    // ## Test vertical wrap-around in menus/popups
+    t = REGISTER_TEST("nav", "nav_popup_wraparound");
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ctx->WindowRef("Dear ImGui Demo");
+        ctx->MenuClick("Menu");
+        ctx->KeyPressMap(ImGuiKey_COUNT, ImGuiKeyModFlags_Alt);
+        IM_CHECK(ctx->UiContext->NavId == ctx->GetID("/##Menu_00/New"));
+        ctx->NavKeyPress(ImGuiNavInput_KeyUp_);
+        IM_CHECK(ctx->UiContext->NavId == ctx->GetID("/##Menu_00/Quit"));
+        ctx->NavKeyPress(ImGuiNavInput_KeyDown_);
+        IM_CHECK(ctx->UiContext->NavId == ctx->GetID("/##Menu_00/New"));
     };
 }
 
