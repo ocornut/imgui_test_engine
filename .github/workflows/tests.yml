@@ -5,7 +5,7 @@ on:
   pull_request: {}
   schedule:
     - cron: '40 8,20 * * *'
-    
+
 jobs:
   Test:
     runs-on: ubuntu-18.04
@@ -30,7 +30,7 @@ jobs:
 
     - name: Test
       run: |
-        app/imgui_test_app -nogui -nopause -v2 -ve4 all
+        timeout 300 app/imgui_test_app -nogui -nopause -v2 -ve4 all
 
   Tables:
     runs-on: ubuntu-18.04
@@ -57,4 +57,4 @@ jobs:
 
     - name: Test
       run: |
-        app/imgui_test_app -nogui -nopause -v2 -ve4 all
+        timeout 300 app/imgui_test_app -nogui -nopause -v2 -ve4 all
