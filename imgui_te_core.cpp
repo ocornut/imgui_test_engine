@@ -937,7 +937,7 @@ static void ImGuiTestEngine_RunTest(ImGuiTestEngine* engine, ImGuiTestContext* c
     else if (engine->Abort)
         ctx->LogWarning("Aborted.");
     else if (test->Status == ImGuiTestStatus_Error)
-        ctx->LogError("Error.");
+        ctx->LogError("%s test failed.", test->Name);
     else
         ctx->LogWarning("Unknown status.");
 
