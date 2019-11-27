@@ -443,6 +443,45 @@ void RegisterTests_Window(ImGuiTestEngine* e)
         ctx->WindowResize("Test Scrolling", ImVec2(400, 400));
         ctx->WindowResize("Test Scrolling", ImVec2(100, 100));
     };
+
+    // ## Test window data garbage collection
+    t = REGISTER_TEST("window", "window_memory_gc");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        // Pretend window is no longer active once we start testing.
+        if (ctx->FrameCount < 2)
+        {
+            for (int i = 0; i < 5; i++)
+            {
+                char name[16];
+                ImFormatString(name, IM_ARRAYSIZE(name), "GC Test %d", i);
+                ImGui::Begin(name);
+                ImGui::TextUnformatted(name);
+                ImGui::End();
+            }
+        }
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        float backup_timer = 0.0f;
+        for (int i = 0; i < 5; i++)
+        {
+            char name[16];
+            ImFormatString(name, IM_ARRAYSIZE(name), "GC Test %d", i);
+            ImGuiWindow* window = ctx->GetWindowByRef(name);
+            IM_CHECK(!window->DrawList->CmdBuffer.empty());
+        }
+        ImSwap(ctx->UiContext->IO.ConfigWindowsMemoryCompactTimer, backup_timer);
+        ctx->YieldFrames(3);                                        // Give time to perform GC
+        for (int i = 0; i < 5; i++)
+        {
+            char name[16];
+            ImFormatString(name, IM_ARRAYSIZE(name), "GC Test %d", i);
+            ImGuiWindow* window = ctx->GetWindowByRef(name);
+            IM_CHECK(window->DrawList->CmdBuffer.empty());
+        }
+        ImSwap(ctx->UiContext->IO.ConfigWindowsMemoryCompactTimer, backup_timer);
+    };
 }
 
 
