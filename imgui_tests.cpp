@@ -443,6 +443,26 @@ void RegisterTests_Window(ImGuiTestEngine* e)
         ctx->WindowResize("Test Scrolling", ImVec2(400, 400));
         ctx->WindowResize("Test Scrolling", ImVec2(100, 100));
     };
+
+    // ## Test window moving
+    t = REGISTER_TEST("window", "window_move");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::SetNextWindowSize(ImVec2(0, 0));
+        ImGui::Begin("Movable Window");
+        ImGui::TextUnformatted("Lorem ipsum dolor sit amet");
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiWindow* window = ctx->GetWindowByRef("Movable Window");
+        ctx->WindowMove("Movable Window", ImVec2(0, 0));
+        IM_CHECK(window->Pos == ImVec2(0, 0));
+        ctx->WindowMove("Movable Window", ImVec2(100, 0));
+        IM_CHECK(window->Pos == ImVec2(100, 0));
+        ctx->WindowMove("Movable Window", ImVec2(50, 100));
+        IM_CHECK(window->Pos == ImVec2(50, 100));
+    };
 }
 
 
