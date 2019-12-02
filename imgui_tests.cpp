@@ -463,6 +463,41 @@ void RegisterTests_Window(ImGuiTestEngine* e)
         ctx->WindowMove("Movable Window", ImVec2(50, 100));
         IM_CHECK(window->Pos == ImVec2(50, 100));
     };
+
+    // ## Test closing current popup
+    // FIXME-TESTS: Test left-click/right-click forms of closing popups
+    t = REGISTER_TEST("window", "window_close_current_popup");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::SetNextWindowSize(ImVec2(0, 0));
+        ImGui::Begin("Popups", NULL, ImGuiWindowFlags_MenuBar);
+        if (ImGui::BeginMenuBar())
+        {
+            if (ImGui::BeginMenu("Menu"))
+            {
+                if (ImGui::BeginMenu("Submenu"))
+                {
+                    if (ImGui::MenuItem("Close"))
+                        ImGui::CloseCurrentPopup();
+                    ImGui::EndMenu();
+                }
+                ImGui::EndMenu();
+            }
+            ImGui::EndMenuBar();
+        }
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ctx->WindowRef("Popups");
+        IM_CHECK(ctx->UiContext->OpenPopupStack.size() == 0);
+        ctx->MenuClick("Menu");
+        IM_CHECK(ctx->UiContext->OpenPopupStack.size() == 1);
+        ctx->MenuClick("Menu/Submenu");
+        IM_CHECK(ctx->UiContext->OpenPopupStack.size() == 2);
+        ctx->MenuClick("Menu/Submenu/Close");
+        IM_CHECK(ctx->UiContext->OpenPopupStack.size() == 0);
+    };
 }
 
 
