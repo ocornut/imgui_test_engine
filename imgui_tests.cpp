@@ -3045,6 +3045,41 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
         IM_CHECK_NO_RET(IM_CHECK_UTF8_CP16("Power\u0644\u064f\u0644\u064f\u0635\u0651\u0628\u064f\u0644\u064f\u0644\u0635\u0651\u0628\u064f\u0631\u0631\u064b \u0963 \u0963h \u0963 \u0963\u5197"));
     };
 
+    // ## Test ImGuiTextFilter
+    t = REGISTER_TEST("misc", "misc_text_filter");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        static ImGuiTextFilter filter;
+        ImGui::Begin("Text filter");
+        filter.Draw("Filter", ImGui::GetFontSize() * 16);   // Test input filter drawing
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        // Test ImGuiTextFilter::Draw()
+        ctx->WindowRef("Text filter");
+        ctx->ItemInput("Filter");
+        ctx->KeyCharsAppend("Big,Cat,, ,  ,Bird"); // Trigger filter rebuild
+
+        // Test functionality
+        ImGuiTextFilter filter;
+        ImStrncpy(filter.InputBuf, "-bar", IM_ARRAYSIZE(filter.InputBuf));
+        filter.Build();
+
+        IM_CHECK(filter.PassFilter("bartender") == false);
+        IM_CHECK(filter.PassFilter("cartender") == true);
+
+        ImStrncpy(filter.InputBuf, "bar ", IM_ARRAYSIZE(filter.InputBuf));
+        filter.Build();
+        IM_CHECK(filter.PassFilter("bartender") == true);
+        IM_CHECK(filter.PassFilter("cartender") == false);
+
+        ImStrncpy(filter.InputBuf, "bar", IM_ARRAYSIZE(filter.InputBuf));
+        filter.Build();
+        IM_CHECK(filter.PassFilter("bartender") == true);
+        IM_CHECK(filter.PassFilter("cartender") == false);
+    };
+
     // FIXME-TESTS
     t = REGISTER_TEST("demo", "demo_misc_001");
     t->GuiFunc = NULL;
