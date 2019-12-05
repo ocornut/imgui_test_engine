@@ -213,7 +213,7 @@ struct ImGuiTestContext
 
     // ID
     ImGuiID     GetID(ImGuiTestRef ref);
-    ImGuiID     GetID(ImGuiTestRef seed_ref, ImGuiTestRef ref);
+    ImGuiID     GetID(ImGuiTestRef ref, ImGuiTestRef seed_ref);
 
     // Misc
     ImVec2      GetMainViewportPos();

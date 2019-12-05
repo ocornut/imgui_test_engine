@@ -346,7 +346,7 @@ ImGuiID ImGuiTestContext::GetID(ImGuiTestRef ref)
     return ImHashDecoratedPath(ref.Path, RefID);
 }
 
-ImGuiID ImGuiTestContext::GetID(ImGuiTestRef seed_ref, ImGuiTestRef ref)
+ImGuiID ImGuiTestContext::GetID(ImGuiTestRef ref, ImGuiTestRef seed_ref)
 {
     if (ref.ID)
         return ref.ID; // FIXME: What if seed_ref != 0
@@ -1353,7 +1353,7 @@ void    ImGuiTestContext::WindowClose(ImGuiTestRef ref)
 
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
     LogDebug("WindowClose");
-    ItemClick(GetID(ref, "#CLOSE"));
+    ItemClick(GetID("#CLOSE", ref));
 }
 
 void    ImGuiTestContext::WindowCollapse(ImGuiWindow* window, bool collapsed)
@@ -1376,7 +1376,7 @@ void    ImGuiTestContext::WindowCollapse(ImGuiWindow* window, bool collapsed)
     {
         ImGuiTestOpFlags backup_op_flags = OpFlags;
         OpFlags |= ImGuiTestOpFlags_NoAutoUncollapse;
-        ItemClick(GetID(window->ID, "#COLLAPSE"));
+        ItemClick(GetID("#COLLAPSE", window->ID));
         OpFlags = backup_op_flags;
         Yield();
         IM_CHECK(window->Collapsed == collapsed);
