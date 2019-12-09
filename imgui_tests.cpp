@@ -3801,6 +3801,96 @@ void RegisterTests_Capture(ImGuiTestEngine* e)
         ctx->MenuUncheckAll("Tools");
     };
 #endif
+
+    // ## Capture a screenshot displaying different supported styles.
+    t = REGISTER_TEST("capture", "capture_readme_styles");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        char string_buffer[] = "Quick brown fox";
+        float float_value = 0.6f;
+
+        ImGuiStyle style_backup = ImGui::GetStyle();
+        ImGuiStyle& style = ImGui::GetStyle();
+
+        ImGui::PushFont(FindFontByName("Roboto-Medium.ttf, 16px"));
+
+        ImGui::StyleColorsDark(&style);
+        style.FrameRounding = style.ChildRounding = style.GrabRounding = 5;
+        style.FrameBorderSize = style.ChildBorderSize = 1;
+        ImGui::SetNextWindowSize(ImVec2(300, 160), ImGuiCond_Always);
+        ImGui::Begin("Debug##Dark", NULL, ImGuiWindowFlags_AlwaysAutoResize);
+        ImGui::Text("Hello, world 123");
+        ImGui::Button("Save");
+        ImGui::SetNextItemWidth(194);
+        ImGui::InputText("string", string_buffer, IM_ARRAYSIZE(string_buffer));
+        ImGui::SetNextItemWidth(194);
+        ImGui::SliderFloat("float", &float_value, 0.0f, 1.0f);
+        ImGui::End();
+
+        ImGui::StyleColorsLight(&ImGui::GetStyle());
+        style.FrameRounding = style.ChildRounding = style.GrabRounding = 5;
+        ImGui::SetNextWindowSize(ImVec2(300, 160), ImGuiCond_Always);
+        ImGui::Begin("Debug##Light", NULL, ImGuiWindowFlags_AlwaysAutoResize);
+        ImGui::Text("Hello, world 123");
+        ImGui::Button("Save");
+        ImGui::SetNextItemWidth(194);
+        ImGui::InputText("string", string_buffer, IM_ARRAYSIZE(string_buffer));
+        ImGui::SetNextItemWidth(194);
+        ImGui::SliderFloat("float", &float_value, 0.0f, 1.0f);
+        ImGui::End();
+
+        ImGui::PopFont();
+
+        style = style_backup;
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiIO& io = ctx->UiContext->IO;
+        bool cursor_blink_backup = false;
+        float padding = 13.0f;
+        ImGuiWindow* dark = ctx->GetWindowByRef("Debug##Dark");
+        ImGuiWindow* light = ctx->GetWindowByRef("Debug##Light");
+
+        ImSwap(io.ConfigInputTextCursorBlink, cursor_blink_backup);
+
+        // Position windows one next to another
+        ctx->WindowMove("Debug##Dark", ImVec2(padding, padding));
+        ctx->WindowMove("Debug##Light", dark->Pos + ImVec2(dark->Size.x + padding, 0));
+
+        // Move mouse out of screen capture area
+        ctx->WindowRef("Debug##Dark");
+        ctx->ItemClick("string");
+        ctx->KeyPressMap(ImGuiKey_End);
+        ctx->MouseMove("float");
+        ctx->MouseMoveToPos(ctx->UiContext->IO.MousePos + ImVec2(30, -10));
+
+        // Capture a combined screenshot with dark window having cursor and focus.
+        ImageBuf combined_screenshot, light_window_screenshot;
+        ctx->CaptureArgs.InPadding = padding;
+        ctx->CaptureArgs.InCaptureWindows.push_back(dark);
+        ctx->CaptureArgs.InCaptureWindows.push_back(light);
+        ctx->CaptureArgs.OutImageBuf = &combined_screenshot;
+        ctx->CaptureScreenshot();
+
+        // Capture light window with mouse cursor and focus and copy it into combined screenshot
+        ctx->WindowRef("Debug##Light");
+        // Move to top-left corner. That is where screenshots are taken. This way we will keep mouse cursor visible over this window.
+        ctx->WindowMove("", ImVec2(0, 0));
+        ctx->ItemClick("string");
+        ctx->KeyPressMap(ImGuiKey_End);
+        ctx->MouseMove("float");
+        ctx->MouseMoveToPos(ctx->UiContext->IO.MousePos + ImVec2(30, -10));
+        ctx->CaptureArgs.InPadding = 0;
+        ctx->CaptureArgs.InCaptureWindows.push_back(light);
+        ctx->CaptureArgs.OutImageBuf = &light_window_screenshot;
+        ctx->CaptureScreenshot();
+
+        // Save combined screenshot.
+        combined_screenshot.BlitSubImage(padding * 2 + dark->Size.x, padding, 0, 0, light_window_screenshot.Width, light_window_screenshot.Height, &light_window_screenshot);
+        combined_screenshot.SaveFile("captures/capture_readme_styles.png");
+
+        ImSwap(io.ConfigInputTextCursorBlink, cursor_blink_backup);
+    };
 }
 
 void RegisterTests(ImGuiTestEngine* e)

@@ -63,6 +63,18 @@ void ImageBuf::RemoveAlpha()
     }
 }
 
+void ImageBuf::BlitSubImage(int dst_x, int dst_y, int src_x, int src_y, int w, int h, const ImageBuf* source)
+{
+    IM_ASSERT(source && "Source image is null.");
+    IM_ASSERT(dst_x >= 0 && dst_y >= 0 && "Destination coordinates can not be negative.");
+    IM_ASSERT(src_x >= 0 && src_y >= 0 && "Source coordinates can not be negative.");
+    IM_ASSERT(dst_x + w <= Width && dst_y + h <= Height && "Destination image is too small.");
+    IM_ASSERT(src_x + w <= source->Width && src_y + h <= source->Height && "Source image is too small.");
+
+    for (int y = 0; y < h; y++)
+        memcpy(&Data[(dst_y + y) * Width + dst_x], &source->Data[(src_y + y) * source->Width + src_x], source->Width * 4);
+}
+
 //-----------------------------------------------------------------------------
 // ImGuiCaptureContext
 //-----------------------------------------------------------------------------

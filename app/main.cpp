@@ -281,6 +281,7 @@ int main(int argc, char** argv)
     io.Fonts->AddFontDefault();
     //ImFontConfig cfg;
     //cfg.RasterizerMultiply = 1.1f;
+    io.Fonts->AddFontFromFileTTF("../../../imgui/misc/fonts/Roboto-Medium.ttf", 16.0f);
     //io.Fonts->AddFontFromFileTTF("../../../imgui/misc/fonts/RobotoMono-Regular.ttf", 16.0f, &cfg);
     //io.Fonts->AddFontFromFileTTF("../../../imgui/misc/fonts/Cousine-Regular.ttf", 15.0f);
     //io.Fonts->AddFontFromFileTTF("../../../imgui/misc/fonts/DroidSans.ttf", 16.0f);

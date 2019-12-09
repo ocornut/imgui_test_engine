@@ -16,6 +16,7 @@ struct ImageBuf
     void CreateEmptyNoMemClear(int w, int h);               // Reallocate buffer for pixel data, but do not zero memory buffer.
     void SaveFile(const char* filename);                    // Save pixel data to specified file.
     void RemoveAlpha();                                     // Clear alpha channel from all pixels.
+    void BlitSubImage(int dst_x, int dst_y, int src_x, int src_y, int w, int h, const ImageBuf* source);
 };
 
 typedef bool (*ImGuiScreenCaptureFunc)(int x, int y, int w, int h, unsigned int* pixels, void* user_data);
