@@ -288,9 +288,27 @@ int main(int argc, char** argv)
     //ImFont* font = io.Fonts->AddFontFromFileTTF("c:\\Windows\\Fonts\\ArialUni.ttf", 18.0f, NULL, io.Fonts->GetGlyphRangesJapanese());
     //IM_ASSERT(font != NULL);
 
-    // Setup TestEngine context
+    // Create TestEngine context
     IM_ASSERT(g_App.TestEngine == NULL);
     g_App.TestEngine = ImGuiTestEngine_CreateContext(ImGui::GetCurrentContext());
+
+    // Apply options
+    ImGuiTestEngineIO& test_io = ImGuiTestEngine_GetIO(g_App.TestEngine);
+    test_io.ConfigRunWithGui = g_App.OptGUI;
+    test_io.ConfigRunFast = g_App.OptFast;
+    test_io.ConfigVerboseLevel = g_App.OptVerboseLevel;
+    test_io.ConfigVerboseLevelOnError = g_App.OptVerboseLevelOnError;
+    test_io.ConfigNoThrottle = g_App.OptNoThrottle;
+    test_io.PerfStressAmount = 5;
+    if (!g_App.OptGUI && ImOsIsDebuggerPresent())
+        test_io.ConfigBreakOnError = true;
+    test_io.SrcFileOpenFunc = SrcFileOpenerFunc;
+#if defined(IMGUI_TESTS_BACKEND_WIN32_DX11) || defined(IMGUI_TESTS_BACKEND_SDL_GL3)
+    if (g_App.OptGUI)
+        test_io.ScreenCaptureFunc = &CaptureFramebufferScreenshot;
+#endif
+
+    // Set up TestEngine context
     RegisterTests(g_App.TestEngine);
     ImGuiTestEngine_CalcSourceLineEnds(g_App.TestEngine);
 
@@ -309,22 +327,6 @@ int main(int argc, char** argv)
         IM_FREE(test_spec);
     }
     g_App.TestsToRun.clear();
-
-    // Apply options
-    ImGuiTestEngineIO& test_io = ImGuiTestEngine_GetIO(g_App.TestEngine);
-    test_io.ConfigRunWithGui = g_App.OptGUI;
-    test_io.ConfigRunFast = g_App.OptFast;
-    test_io.ConfigVerboseLevel = g_App.OptVerboseLevel;
-    test_io.ConfigVerboseLevelOnError = g_App.OptVerboseLevelOnError;
-    test_io.ConfigNoThrottle = g_App.OptNoThrottle;
-    test_io.PerfStressAmount = 5;
-    if (!g_App.OptGUI && ImOsIsDebuggerPresent())
-        test_io.ConfigBreakOnError = true;
-    test_io.SrcFileOpenFunc = SrcFileOpenerFunc;
-#if defined(IMGUI_TESTS_BACKEND_WIN32_DX11) || defined(IMGUI_TESTS_BACKEND_SDL_GL3)
-    if (g_App.OptGUI)
-        test_io.ScreenCaptureFunc = &CaptureFramebufferScreenshot;
-#endif
 
     // Branch name stored in annotation field by default
     // FIXME-TESTS: Obtain from git? maybe pipe from a batch-file?
