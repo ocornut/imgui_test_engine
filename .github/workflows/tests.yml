@@ -30,7 +30,8 @@ jobs:
 
     - name: Test
       run: |
-        timeout 300 app/imgui_test_app -nogui -nopause -v2 -ve4 all
+        cd app/bin
+        timeout 300 ./imgui_test_app -nogui -nopause -v2 -ve4 all
 
   Tables:
     runs-on: ubuntu-18.04
@@ -57,4 +58,5 @@ jobs:
 
     - name: Test
       run: |
-        timeout 300 app/imgui_test_app -nogui -nopause -v2 -ve4 all
+        cd app/bin
+        timeout 300 ./imgui_test_app -nogui -nopause -v2 -ve4 all
