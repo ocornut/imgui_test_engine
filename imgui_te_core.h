@@ -386,7 +386,7 @@ struct ImGuiTestGatherTask
 // Helper to output a string showing the Path, ID or Debug Label based on what is available (some items only have ID as we couldn't find/store a Path)
 struct ImGuiTestRefDesc
 {
-    char Buf[40];
+    char Buf[80];
 
     const char* c_str()     { return Buf; }
     ImGuiTestRefDesc(const ImGuiTestRef& ref, const ImGuiTestItemInfo* item = NULL)

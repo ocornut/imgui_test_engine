@@ -517,3 +517,13 @@ bool ImFileCreateDirectoryChain(const char* path, const char* path_end)
     IM_FREE(path_local);
     return true;
 }
+
+// FIXME-TESTS: Should eventually remove.
+ImFont* FindFontByName(const char* name)
+{
+    ImGuiContext& g = *GImGui;
+    for (ImFont* font : g.IO.Fonts->Fonts)
+        if (strcmp(font->ConfigData->Name, name) == 0)
+            return font;
+    return NULL;
+}

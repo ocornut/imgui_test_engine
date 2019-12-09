@@ -68,6 +68,7 @@ void        ImDebugShowInputTextState();
 const char* GetImGuiKeyName(ImGuiKey key);
 void        GetImGuiKeyModsPrefixStr(ImGuiKeyModFlags mod_flags, char* out_buf, size_t out_buf_size);
 const ImBuildInfo&  ImGetBuildInfo();
+ImFont*     FindFontByName(const char* name);
 
 // Helper: maintain/calculate moving average
 template<typename TYPE>
