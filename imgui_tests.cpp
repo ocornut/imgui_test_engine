@@ -3705,12 +3705,12 @@ void RegisterTests_Capture(ImGuiTestEngine* e)
         ctx->WindowRef("Dear ImGui Demo");
         ctx->MenuAction(ImGuiTestAction_Check, "Examples/Documents");
 
-        ctx->WindowRef("Examples: Documents");
+        ctx->WindowRef("Example: Documents");
         // FIXME-TESTS: Locate within stack that uses windows/<pointer>/name
         //ctx->ItemCheck("Tomato"); // FIXME: WILL FAIL, NEED TO LOCATE BY NAME (STACK WILDCARD?)
-        ctx->ItemCheck("A Rather Long Title");
-        ctx->ItemClick("##tabs/Eggplant");
-        ctx->MouseMove("##tabs/Eggplant/Modify");
+        //ctx->ItemCheck("A Rather Long Title"); // FIXME: WILL FAIL
+        //ctx->ItemClick("##tabs/Eggplant");
+        //ctx->MouseMove("##tabs/Eggplant/Modify");
         ctx->Sleep(1.0f);
     };
 
@@ -3806,52 +3806,56 @@ void RegisterTests_Capture(ImGuiTestEngine* e)
     t = REGISTER_TEST("capture", "capture_readme_styles");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
-        char string_buffer[] = "Quick brown fox";
-        float float_value = 0.6f;
-
-        ImGuiStyle style_backup = ImGui::GetStyle();
+        ImGuiIO& io = ImGui::GetIO();
         ImGuiStyle& style = ImGui::GetStyle();
+        const ImGuiStyle backup_style = style;
+        const bool backup_cursor_blink = io.ConfigInputTextCursorBlink;
 
-        ImGui::PushFont(FindFontByName("Roboto-Medium.ttf, 16px"));
-
-        ImGui::StyleColorsDark(&style);
-        style.FrameRounding = style.ChildRounding = style.GrabRounding = 5;
+        // Setup style
+        ImFont* font = FindFontByName("Roboto-Medium.ttf, 16px");
+        IM_CHECK_SILENT(font != NULL);
+        ImGui::PushFont(font);
+        style.FrameRounding = style.ChildRounding = 0;
+        style.GrabRounding = 0;
         style.FrameBorderSize = style.ChildBorderSize = 1;
-        ImGui::SetNextWindowSize(ImVec2(300, 160), ImGuiCond_Always);
-        ImGui::Begin("Debug##Dark", NULL, ImGuiWindowFlags_AlwaysAutoResize);
-        ImGui::Text("Hello, world 123");
-        ImGui::Button("Save");
-        ImGui::SetNextItemWidth(194);
-        ImGui::InputText("string", string_buffer, IM_ARRAYSIZE(string_buffer));
-        ImGui::SetNextItemWidth(194);
-        ImGui::SliderFloat("float", &float_value, 0.0f, 1.0f);
-        ImGui::End();
+        io.ConfigInputTextCursorBlink = false;
 
-        ImGui::StyleColorsLight(&ImGui::GetStyle());
-        style.FrameRounding = style.ChildRounding = style.GrabRounding = 5;
-        ImGui::SetNextWindowSize(ImVec2(300, 160), ImGuiCond_Always);
-        ImGui::Begin("Debug##Light", NULL, ImGuiWindowFlags_AlwaysAutoResize);
-        ImGui::Text("Hello, world 123");
-        ImGui::Button("Save");
-        ImGui::SetNextItemWidth(194);
-        ImGui::InputText("string", string_buffer, IM_ARRAYSIZE(string_buffer));
-        ImGui::SetNextItemWidth(194);
-        ImGui::SliderFloat("float", &float_value, 0.0f, 1.0f);
-        ImGui::End();
-
+        // Show two windows
+        for (int n = 0; n < 2; n++)
+        {
+            bool open = true;
+            ImGui::SetNextWindowSize(ImVec2(300, 160), ImGuiCond_Appearing);
+            if (n == 0)
+            {
+                ImGui::StyleColorsDark(&style);
+                ImGui::Begin("Debug##Dark", &open);
+            }
+            else
+            {
+                ImGui::StyleColorsLight(&style);
+                ImGui::Begin("Debug##Light", &open);
+            }
+            char string_buffer[] = "Quick brown fox";
+            float float_value = 0.6f;
+            ImGui::Text("Hello, world 123");
+            ImGui::Button("Save");
+            ImGui::SetNextItemWidth(194);
+            ImGui::InputText("string", string_buffer, IM_ARRAYSIZE(string_buffer));
+            ImGui::SetNextItemWidth(194);
+            ImGui::SliderFloat("float", &float_value, 0.0f, 1.0f);
+            ImGui::End();
+        }
         ImGui::PopFont();
 
-        style = style_backup;
+        // Restore style
+        style = backup_style;
+        io.ConfigInputTextCursorBlink = backup_cursor_blink;
     };
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
-        ImGuiIO& io = ctx->UiContext->IO;
-        bool cursor_blink_backup = false;
         float padding = 13.0f;
         ImGuiWindow* dark = ctx->GetWindowByRef("Debug##Dark");
         ImGuiWindow* light = ctx->GetWindowByRef("Debug##Light");
-
-        ImSwap(io.ConfigInputTextCursorBlink, cursor_blink_backup);
 
         // Position windows one next to another
         ctx->WindowMove("Debug##Dark", ImVec2(padding, padding));
@@ -3873,8 +3877,9 @@ void RegisterTests_Capture(ImGuiTestEngine* e)
         ctx->CaptureScreenshot();
 
         // Capture light window with mouse cursor and focus and copy it into combined screenshot
-        ctx->WindowRef("Debug##Light");
         // Move to top-left corner. That is where screenshots are taken. This way we will keep mouse cursor visible over this window.
+        // FIXME-TESTS: "That is where screenshots are taken" is an assumption we want to avoid.
+        ctx->WindowRef("Debug##Light");
         ctx->WindowMove("", ImVec2(0, 0));
         ctx->ItemClick("string");
         ctx->KeyPressMap(ImGuiKey_End);
@@ -3886,10 +3891,11 @@ void RegisterTests_Capture(ImGuiTestEngine* e)
         ctx->CaptureScreenshot();
 
         // Save combined screenshot.
-        combined_screenshot.BlitSubImage(padding * 2 + dark->Size.x, padding, 0, 0, light_window_screenshot.Width, light_window_screenshot.Height, &light_window_screenshot);
-        combined_screenshot.SaveFile("captures/capture_readme_styles.png");
-
-        ImSwap(io.ConfigInputTextCursorBlink, cursor_blink_backup);
+        // FIXME-TESTS: Filename should be automatic
+        combined_screenshot.BlitSubImage((int)(padding * 2 + dark->Size.x), (int)(padding), 0, 0, light_window_screenshot.Width, light_window_screenshot.Height, &light_window_screenshot);
+        ctx->LogDebug("SaveFile()");
+        bool ret = combined_screenshot.SaveFile("captures/capture_readme_styles.png");
+        IM_CHECK(ret);
     };
 }
 

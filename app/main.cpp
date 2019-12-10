@@ -264,6 +264,7 @@ int main(int argc, char** argv)
     ImGui::CreateContext();
     ImGui::StyleColorsDark();
     ImGuiIO& io = ImGui::GetIO();
+    io.IniFilename = "imgui.ini";
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;  // Enable Keyboard Controls
     //ImGuiStyle& style = ImGui::GetStyle();
     //style.Colors[ImGuiCol_Border] = style.Colors[ImGuiCol_BorderShadow] = ImVec4(1.0f, 0, 0, 1.0f);
@@ -281,12 +282,12 @@ int main(int argc, char** argv)
     io.Fonts->AddFontDefault();
     //ImFontConfig cfg;
     //cfg.RasterizerMultiply = 1.1f;
-    io.Fonts->AddFontFromFileTTF("../../../imgui/misc/fonts/Roboto-Medium.ttf", 16.0f);
-    //io.Fonts->AddFontFromFileTTF("../../../imgui/misc/fonts/RobotoMono-Regular.ttf", 16.0f, &cfg);
-    //io.Fonts->AddFontFromFileTTF("../../../imgui/misc/fonts/Cousine-Regular.ttf", 15.0f);
-    //io.Fonts->AddFontFromFileTTF("../../../imgui/misc/fonts/DroidSans.ttf", 16.0f);
-    //io.Fonts->AddFontFromFileTTF("../../../imgui/misc/fonts/ProggyTiny.ttf", 10.0f);
-    //ImFont* font = io.Fonts->AddFontFromFileTTF("c:\\Windows\\Fonts\\ArialUni.ttf", 18.0f, NULL, io.Fonts->GetGlyphRangesJapanese());
+    #define FONT_DIR "../../imgui/misc/fonts/"
+    io.Fonts->AddFontFromFileTTF(FONT_DIR "Roboto-Medium.ttf", 16.0f);
+    //io.Fonts->AddFontFromFileTTF(FONT_DIR "RobotoMono-Regular.ttf", 16.0f, &cfg);
+    //io.Fonts->AddFontFromFileTTF(FONT_DIR "Cousine-Regular.ttf", 15.0f);
+    //io.Fonts->AddFontFromFileTTF(FONT_DIR "DroidSans.ttf", 16.0f);
+    //io.Fonts->AddFontFromFileTTF(FONT_DIR "ProggyTiny.ttf", 10.0f);
     //IM_ASSERT(font != NULL);
 
     // Create TestEngine context

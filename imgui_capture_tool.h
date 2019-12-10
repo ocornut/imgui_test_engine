@@ -14,7 +14,7 @@ struct ImageBuf
     void Clear();                                           // Free allocated memory buffer if such exists.
     void CreateEmpty(int w, int h);                         // Reallocate buffer for pixel data, and zero it.
     void CreateEmptyNoMemClear(int w, int h);               // Reallocate buffer for pixel data, but do not zero memory buffer.
-    void SaveFile(const char* filename);                    // Save pixel data to specified file.
+    bool SaveFile(const char* filename);                    // Save pixel data to specified file.
     void RemoveAlpha();                                     // Clear alpha channel from all pixels.
     void BlitSubImage(int dst_x, int dst_y, int src_x, int src_y, int w, int h, const ImageBuf* source);
 };
@@ -56,7 +56,7 @@ struct ImGuiCaptureArgs
     char                    OutImageFileTemplate[256] = ""; // Output will be saved to a file if OutImageBuf is NULL.
 
     // [Internal]
-    bool                    _Capturing = false;
+    bool                    _Capturing = false;             // FIXME-TESTS: ???
 };
 
 // Implements functionality for capturing images

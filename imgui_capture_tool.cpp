@@ -47,9 +47,10 @@ void ImageBuf::CreateEmptyNoMemClear(int w, int h)
     Data = (u32*) malloc(Width * Height * 4);
 }
 
-void ImageBuf::SaveFile(const char* filename)
+bool ImageBuf::SaveFile(const char* filename)
 {
-    stbi_write_png(filename, Width, Height, 4, Data, Width * 4);
+    int ret = stbi_write_png(filename, Width, Height, 4, Data, Width * 4);
+    return ret != 0;
 }
 
 void ImageBuf::RemoveAlpha()
@@ -242,8 +243,8 @@ bool ImGuiCaptureContext::CaptureScreenshot(ImGuiCaptureArgs* args)
             g.Style.DisplayWindowPadding = _DisplayWindowPaddingBackup;
             g.Style.DisplaySafeAreaPadding = _DisplaySafeAreaPaddingBackup;
             args->_Capturing = false;
-            args->InCaptureWindows.clear();
-            args->InCaptureRect = ImRect();
+            args->InCaptureWindows.clear(); // FIXME-TESTS: Why clearing this? aka why isn't args a read-only structure
+            args->InCaptureRect = ImRect(); // FIXME-TESTS: "
             return false;
         }
     }
