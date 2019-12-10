@@ -3812,6 +3812,7 @@ void RegisterTests_Capture(ImGuiTestEngine* e)
         const bool backup_cursor_blink = io.ConfigInputTextCursorBlink;
 
         // Setup style
+        // FIXME-TESTS: Ideally we'd want to be able to manipulate fonts
         ImFont* font = FindFontByName("Roboto-Medium.ttf, 16px");
         IM_CHECK_SILENT(font != NULL);
         ImGui::PushFont(font);
@@ -3853,49 +3854,21 @@ void RegisterTests_Capture(ImGuiTestEngine* e)
     };
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
+        // Capture both windows in separate captures
         float padding = 13.0f;
-        ImGuiWindow* dark = ctx->GetWindowByRef("Debug##Dark");
-        ImGuiWindow* light = ctx->GetWindowByRef("Debug##Light");
-
-        // Position windows one next to another
-        ctx->WindowMove("Debug##Dark", ImVec2(padding, padding));
-        ctx->WindowMove("Debug##Light", dark->Pos + ImVec2(dark->Size.x + padding, 0));
-
-        // Move mouse out of screen capture area
-        ctx->WindowRef("Debug##Dark");
-        ctx->ItemClick("string");
-        ctx->KeyPressMap(ImGuiKey_End);
-        ctx->MouseMove("float");
-        ctx->MouseMoveToPos(ctx->UiContext->IO.MousePos + ImVec2(30, -10));
-
-        // Capture a combined screenshot with dark window having cursor and focus.
-        ImageBuf combined_screenshot, light_window_screenshot;
-        ctx->CaptureArgs.InPadding = padding;
-        ctx->CaptureArgs.InCaptureWindows.push_back(dark);
-        ctx->CaptureArgs.InCaptureWindows.push_back(light);
-        ctx->CaptureArgs.OutImageBuf = &combined_screenshot;
-        ctx->CaptureScreenshot();
-
-        // Capture light window with mouse cursor and focus and copy it into combined screenshot
-        // Move to top-left corner. That is where screenshots are taken. This way we will keep mouse cursor visible over this window.
-        // FIXME-TESTS: "That is where screenshots are taken" is an assumption we want to avoid.
-        ctx->WindowRef("Debug##Light");
-        ctx->WindowMove("", ImVec2(0, 0));
-        ctx->ItemClick("string");
-        ctx->KeyPressMap(ImGuiKey_End);
-        ctx->MouseMove("float");
-        ctx->MouseMoveToPos(ctx->UiContext->IO.MousePos + ImVec2(30, -10));
-        ctx->CaptureArgs.InPadding = 0;
-        ctx->CaptureArgs.InCaptureWindows.push_back(light);
-        ctx->CaptureArgs.OutImageBuf = &light_window_screenshot;
-        ctx->CaptureScreenshot();
-
-        // Save combined screenshot.
-        // FIXME-TESTS: Filename should be automatic
-        combined_screenshot.BlitSubImage((int)(padding * 2 + dark->Size.x), (int)(padding), 0, 0, light_window_screenshot.Width, light_window_screenshot.Height, &light_window_screenshot);
-        ctx->LogDebug("SaveFile()");
-        bool ret = combined_screenshot.SaveFile("captures/capture_readme_styles.png");
-        IM_CHECK(ret);
+        ImGuiContext& g = *ctx->UiContext;
+        for (int n = 0; n < 2; n++)
+        {
+            ImGuiWindow* window = (n == 0) ? ctx->GetWindowByRef("/Debug##Dark") : ctx->GetWindowByRef("/Debug##Light");
+            ctx->WindowRef(window->Name);
+            ctx->ItemClick("string");
+            ctx->KeyPressMap(ImGuiKey_End);
+            ctx->MouseMove("float");
+            ctx->MouseMoveToPos(g.IO.MousePos + ImVec2(30, -10));
+            ctx->CaptureArgs.InPadding = padding;
+            ctx->CaptureArgs.InCaptureWindows.push_back(window);
+            ctx->CaptureScreenshot();
+        }
     };
 }
 
