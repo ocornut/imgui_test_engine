@@ -371,8 +371,8 @@ ImVec2 ImGuiTestContext::GetMainViewportPos()
 bool ImGuiTestContext::CaptureAddWindow(ImGuiTestRef ref)
 {
     ImGuiWindow* window = GetWindowByRef(ref);
-    if (window)
-        CaptureArgs.InCaptureWindows.push_back(window);
+    IM_CHECK_RETV(window != NULL, false);
+    CaptureArgs.InCaptureWindows.push_back(window);
     return window != NULL;
 }
 
