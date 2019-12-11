@@ -354,6 +354,26 @@ ImGuiID ImGuiTestContext::GetID(ImGuiTestRef ref, ImGuiTestRef seed_ref)
     return ImHashDecoratedPath(ref.Path, GetID(seed_ref));
 }
 
+ImGuiID ImGuiTestContext::GetID(int n)
+{
+    return GetID(n, RefID);
+}
+
+ImGuiID ImGuiTestContext::GetID(int n, ImGuiTestRef seed_ref)
+{
+    return ImHash(&n, sizeof(n), GetID(seed_ref));
+}
+
+ImGuiID ImGuiTestContext::GetID(void* p)
+{
+    return GetID(p, RefID);
+}
+
+ImGuiID ImGuiTestContext::GetID(void* p, ImGuiTestRef seed_ref)
+{
+    return ImHash(&p, sizeof(p), GetID(seed_ref));
+}
+
 ImGuiTestRef ImGuiTestContext::GetFocusWindowRef()
 {
     ImGuiContext& g = *UiContext;

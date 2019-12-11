@@ -214,6 +214,10 @@ struct ImGuiTestContext
     // ID
     ImGuiID     GetID(ImGuiTestRef ref);
     ImGuiID     GetID(ImGuiTestRef ref, ImGuiTestRef seed_ref);
+    ImGuiID     GetID(int n);
+    ImGuiID     GetID(int n, ImGuiTestRef seed_ref);
+    ImGuiID     GetID(void* p);
+    ImGuiID     GetID(void* p, ImGuiTestRef seed_ref);
 
     // Misc
     ImVec2      GetMainViewportPos();
