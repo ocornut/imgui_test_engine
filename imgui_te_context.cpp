@@ -904,8 +904,21 @@ void    ImGuiTestContext::KeyCharsAppendEnter(const char* chars)
         return;
 
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
-    LogDebug("KeyCharsAppendValidate('%s')", chars);
+    LogDebug("KeyCharsAppendEnter('%s')", chars);
     KeyPressMap(ImGuiKey_End);
+    KeyChars(chars);
+    KeyPressMap(ImGuiKey_Enter);
+}
+
+void ImGuiTestContext::KeyCharsReplaceEnter(const char* chars)
+{
+    if (IsError())
+        return;
+
+    IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
+    LogDebug("KeyCharsReplaceEnter('%s')", chars);
+    KeyPressMap(ImGuiKey_A, ImGuiKeyModFlags_Ctrl);
+    KeyPressMap(ImGuiKey_Delete);
     KeyChars(chars);
     KeyPressMap(ImGuiKey_Enter);
 }
