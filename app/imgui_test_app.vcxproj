@@ -161,6 +161,8 @@
     <ClInclude Include="..\imgui_te_context.h" />
     <ClInclude Include="..\imgui_te_core.h" />
     <ClInclude Include="..\imgui_te_util.h" />
+    <ClInclude Include="..\libs\stb_image_write.h" />
+    <ClInclude Include="..\libs\Str\Str.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\imgui\examples\imgui_impl_dx11.cpp" />
@@ -175,10 +177,12 @@
     <ClCompile Include="..\imgui_te_context.cpp" />
     <ClCompile Include="..\imgui_te_core.cpp" />
     <ClCompile Include="..\imgui_te_util.cpp" />
+    <ClCompile Include="..\libs\Str\Str.cpp" />
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Natvis Include="..\..\imgui\misc\natvis\imgui.natvis" />
+    <Natvis Include="..\libs\Str\Str.natvis" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

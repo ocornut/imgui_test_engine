@@ -10,6 +10,12 @@
     <Filter Include="imgui-test">
       <UniqueIdentifier>{611da0d0-92ea-43f7-a6bf-8ca55c15c748}</UniqueIdentifier>
     </Filter>
+    <Filter Include="libs">
+      <UniqueIdentifier>{de7957ca-84b4-4215-a39a-d54a12a24b7f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="libs\Str">
+      <UniqueIdentifier>{b5362045-8271-4dee-aab6-e50bfe76db87}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\imgui_tests.h">
@@ -50,6 +56,12 @@
     </ClInclude>
     <ClInclude Include="..\imgui_capture_tool.h">
       <Filter>imgui-test</Filter>
+    </ClInclude>
+    <ClInclude Include="..\libs\stb_image_write.h">
+      <Filter>libs</Filter>
+    </ClInclude>
+    <ClInclude Include="..\libs\Str\Str.h">
+      <Filter>libs\Str</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -92,10 +104,16 @@
     <ClCompile Include="..\imgui_capture_tool.cpp">
       <Filter>imgui-test</Filter>
     </ClCompile>
+    <ClCompile Include="..\libs\Str\Str.cpp">
+      <Filter>libs\Str</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Natvis Include="..\..\imgui\misc\natvis\imgui.natvis">
       <Filter>sources</Filter>
+    </Natvis>
+    <Natvis Include="..\libs\Str\Str.natvis">
+      <Filter>libs\Str</Filter>
     </Natvis>
   </ItemGroup>
 </Project>
