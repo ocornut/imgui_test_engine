@@ -1871,7 +1871,7 @@ static void HelperTableSubmitCells(int count_w, int count_h)
         {
             if (!ImGui::TableSetColumnIndex(column))
                 continue;
-            Str16f label("%d,%d", line, column)
+            Str16f label("%d,%d", line, column);
             //ImGui::TextUnformatted(label.c_str());
             ImGui::Button(label.c_str(), ImVec2(-FLT_MIN, 0.0f));
         }
