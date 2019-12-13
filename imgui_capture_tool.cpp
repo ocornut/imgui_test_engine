@@ -104,7 +104,7 @@ bool ImGuiCaptureContext::CaptureScreenshot(ImGuiCaptureArgs* args)
     {
         // Initialize capture state.
         _ChunkNo = 0;
-        _CaptureRect = ImRect();
+        _CaptureRect = ImRect(FLT_MAX, FLT_MAX, -FLT_MAX, -FLT_MAX);
         _WindowBackupRects.clear();
         _CombinedWindowRectPos = ImVec2(FLT_MAX, FLT_MAX);
         _DisplayWindowPaddingBackup = g.Style.DisplayWindowPadding;
@@ -367,7 +367,7 @@ void ImGuiCaptureTool::CaptureWindowsSelector(const char* title, ImGuiCaptureArg
     args->InCaptureWindows.clear();
 
     float max_window_name_x = 0.0f;
-    ImRect capture_rect;
+    ImRect capture_rect(FLT_MAX, FLT_MAX, -FLT_MAX, -FLT_MAX);
     ImGui::Text("Windows:");
     for (ImGuiWindow* window : g.Windows)
     {
