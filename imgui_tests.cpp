@@ -3504,6 +3504,151 @@ void RegisterTests_Perf(ImGuiTestEngine* e)
     };
     t->TestFunc = PerfCaptureFunc;
 
+    // ## Measure the cost of dumb column-like setup using SameLine()
+    t = REGISTER_TEST("perf", "perf_stress_rows_1a");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::SetNextWindowSize(ImVec2(400, 0));
+        ImGui::Begin("Test Func", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
+        int loop_count = 50 * 2 * ctx->PerfStressAmount;
+        for (int n = 0; n < loop_count; n++)
+        {
+            ImGui::TextUnformatted("Cell 1");
+            ImGui::SameLine(100);
+            ImGui::TextUnformatted("Cell 2");
+            ImGui::SameLine(200);
+            ImGui::TextUnformatted("Cell 3");
+        }
+        ImGui::Columns(1);
+        ImGui::End();
+    };
+    t->TestFunc = PerfCaptureFunc;
+
+    t = REGISTER_TEST("perf", "perf_stress_rows_1b");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::SetNextWindowSize(ImVec2(400, 0));
+        ImGui::Begin("Test Func", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
+        int loop_count = 50 * 2 * ctx->PerfStressAmount;
+        for (int n = 0; n < loop_count; n++)
+        {
+            ImGui::Text("Cell 1");
+            ImGui::SameLine(100);
+            ImGui::Text("Cell 2");
+            ImGui::SameLine(200);
+            ImGui::Text("Cell 3");
+        }
+        ImGui::Columns(1);
+        ImGui::End();
+    };
+    t->TestFunc = PerfCaptureFunc;
+
+    // ## Measure the cost of NextColumn(): one column set, many rows
+    t = REGISTER_TEST("perf", "perf_stress_columns_1");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::SetNextWindowSize(ImVec2(400, 0));
+        ImGui::Begin("Test Func", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
+        ImGui::Columns(3, "Columns", true);
+        int loop_count = 50 * 2 * ctx->PerfStressAmount;
+        for (int n = 0; n < loop_count; n++)
+        {
+            ImGui::Text("Cell 1,%d", n);
+            ImGui::NextColumn();
+            ImGui::TextUnformatted("Cell 2");
+            ImGui::NextColumn();
+            ImGui::TextUnformatted("Cell 3");
+            ImGui::NextColumn();
+        }
+        ImGui::Columns(1);
+        ImGui::End();
+    };
+    t->TestFunc = PerfCaptureFunc;
+
+    // ## Measure the cost of Columns(): many columns sets, few rows
+    t = REGISTER_TEST("perf", "perf_stress_columns_2");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::SetNextWindowSize(ImVec2(400, 0));
+        ImGui::Begin("Test Func", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
+        int loop_count = 50 * ctx->PerfStressAmount;
+        for (int n = 0; n < loop_count; n++)
+        {
+            ImGui::PushID(n);
+            ImGui::Columns(3, "Columns", true);
+            for (int row = 0; row < 2; row++)
+            {
+                ImGui::Text("Cell 1,%d", n);
+                ImGui::NextColumn();
+                ImGui::TextUnformatted("Cell 2");
+                ImGui::NextColumn();
+                ImGui::TextUnformatted("Cell 3");
+                ImGui::NextColumn();
+            }
+            ImGui::Columns(1);
+            ImGui::Separator();
+            ImGui::PopID();
+        }
+        ImGui::End();
+    };
+    t->TestFunc = PerfCaptureFunc;
+
+#ifdef IMGUI_HAS_TABLE
+    // ## Measure the cost of TableNextCell(), TableNextRow(): one table, many rows
+    t = REGISTER_TEST("perf", "perf_stress_table_1");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::SetNextWindowSize(ImVec2(400, 0));
+        ImGui::Begin("Test Func", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
+        int loop_count = 50 * 2 * ctx->PerfStressAmount;
+        if (ImGui::BeginTable("Table", 3, ImGuiTableFlags_BordersV))
+        {
+            for (int n = 0; n < loop_count; n++)
+            {
+                ImGui::TableNextCell();
+                ImGui::Text("Cell 1,%d", n);
+                ImGui::TableNextCell();
+                ImGui::TextUnformatted("Cell 2");
+                ImGui::TableNextCell();
+                ImGui::TextUnformatted("Cell 3");
+            }
+            ImGui::EndTable();
+        }
+        ImGui::End();
+    };
+    t->TestFunc = PerfCaptureFunc;
+
+    // ## Measure the cost of BeginTable(): many tables with few rows
+    t = REGISTER_TEST("perf", "perf_stress_table_2");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::SetNextWindowSize(ImVec2(400, 0));
+        ImGui::Begin("Test Func", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
+        int loop_count = 50 * ctx->PerfStressAmount;
+        for (int n = 0; n < loop_count; n++)
+        {
+            ImGui::PushID(n);
+            if (ImGui::BeginTable("Table", 3, ImGuiTableFlags_BordersV))
+            {
+                for (int row = 0; row < 2; row++)
+                {
+                    ImGui::TableNextCell();
+                    ImGui::Text("Cell 1,%d", n);
+                    ImGui::TableNextCell();
+                    ImGui::TextUnformatted("Cell 2");
+                    ImGui::TableNextCell();
+                    ImGui::TextUnformatted("Cell 3");
+                }
+                ImGui::EndTable();
+            }
+            ImGui::Separator();
+            ImGui::PopID();
+        }
+        ImGui::End();
+    };
+    t->TestFunc = PerfCaptureFunc;
+#endif // IMGUI_HAS_TABLE
+
     // ## Measure the cost of simple ColorEdit4() calls (multi-component, group based widgets are quite heavy)
     t = REGISTER_TEST("perf", "perf_stress_coloredit4");
     t->GuiFunc = [](ImGuiTestContext* ctx)
