@@ -3,6 +3,7 @@
 
 #define _CRT_SECURE_NO_WARNINGS
 #include <limits.h>
+#include "libs/Str/Str.h"
 #include "imgui.h"
 #define IMGUI_DEFINE_MATH_OPERATORS
 #include "imgui_internal.h"
@@ -565,38 +566,37 @@ void RegisterTests_Layout(ImGuiTestEngine* e)
 
                 const int label_line_count = (n == 0 || n == 1 || n == 3) ? 1 : 2;
 
-                char label[32];
-                ImFormatString(label, IM_ARRAYSIZE(label), (label_line_count == 1) ? "%s%d" : "%s%d\nHello", item_type_name, n);
+                Str30f label(label_line_count == 1 ? "%s%d" : "%s%d\nHello", item_type_name, n);
 
                 float expected_padding = 0.0f;
                 switch (item_type)
                 {
                 case ItemType_SmallButton:
                     expected_padding = window->DC.CurrLineTextBaseOffset;
-                    ImGui::SmallButton(label);
+                    ImGui::SmallButton(label.c_str());
                     break;
                 case ItemType_Button:
                     expected_padding = style.FramePadding.y * 2.0f;
-                    ImGui::Button(label);
+                    ImGui::Button(label.c_str());
                     break;
                 case ItemType_Text:
                     expected_padding = window->DC.CurrLineTextBaseOffset;
-                    ImGui::Text("%s", label);
+                    ImGui::Text("%s", label.c_str());
                     break;
                 case ItemType_BulletText:
                     expected_padding = (n <= 2) ? 0.0f : style.FramePadding.y * 1.0f;
-                    ImGui::BulletText("%s", label);
+                    ImGui::BulletText("%s", label.c_str());
                     break;
                 case ItemType_TreeNode:
                     expected_padding = (n <= 2) ? 0.0f : style.FramePadding.y * 2.0f;
-                    ImGui::TreeNodeEx(label, ImGuiTreeNodeFlags_NoTreePushOnOpen);
+                    ImGui::TreeNodeEx(label.c_str(), ImGuiTreeNodeFlags_NoTreePushOnOpen);
                     break;
                 case ItemType_Selectable:
                     // FIXME-TESTS: We may want to aim the specificies of Selectable() and not clear ItemSpacing
                     //expected_padding = style.ItemSpacing.y * 0.5f;
                     expected_padding = window->DC.CurrLineTextBaseOffset;
                     ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0, 0));
-                    ImGui::Selectable(label);
+                    ImGui::Selectable(label.c_str());
                     ImGui::PopStyleVar();
                     ImGui::Spacing();
                     break;
@@ -1031,7 +1031,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
         ImGui::LogToBuffer();
         ImGui::InputText("##InputText", vars.Str1, IM_ARRAYSIZE(vars.Str1)); // Remove label to simplify the capture/comparison
-        ImFormatString(vars.Str2, IM_ARRAYSIZE(vars.Str2), "%s", ctx->UiContext->LogBuffer.c_str());
+        ImStrncpy(vars.Str2, ctx->UiContext->LogBuffer.c_str(), IM_ARRAYSIZE(vars.Str2));
         ImGui::LogFinish();
         ImGui::Text("Captured: \"%s\"", vars.Str2);
         ImGui::End();
@@ -1362,12 +1362,8 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         if (ImGui::BeginTabBar("Tab Drawcalls"))
         {
             for (int i = 0; i < 20; i++)
-            {
-                char name[32];
-                ImFormatString(name, sizeof(name), "Tab %d", i);
-                if (ImGui::BeginTabItem(name))
+                if (ImGui::BeginTabItem(Str30f("Tab %d", i).c_str()))
                     ImGui::EndTabItem();
-            }
             ImGui::EndTabBar();
         }
         ImGui::End();
@@ -1392,16 +1388,12 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
             {
                 // If we have many tab bars here, it will invalidate pointers from pooled tab bars
                 for (int i = 0; i < 128; i++)
-                {
-                    char buf[64];
-                    ImFormatString(buf, IM_ARRAYSIZE(buf), "Inner TabBar %d", i);
-                    if (ImGui::BeginTabBar(buf))
+                    if (ImGui::BeginTabBar(Str30f("Inner TabBar %d", i).c_str()))
                     {
                         if (ImGui::BeginTabItem("Inner TabItem"))
                             ImGui::EndTabItem();
                         ImGui::EndTabBar();
                     }
-                }
                 ImGui::EndTabItem();
             }
             ImGui::EndTabBar();
@@ -1587,10 +1579,8 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ctx->ItemClick("Add 1000 lines");
         ctx->SleepShort();
 
-        char title[64];
-        ImFormatString(title, IM_ARRAYSIZE(title), "/Example: Long text display\\/Log_%08X", ctx->GetID("Log"));
-
-        ImGuiWindow* log_panel = ctx->GetWindowByRef(title);
+        Str64f title("/Example: Long text display\\/Log_%08X", ctx->GetID("Log"));
+        ImGuiWindow* log_panel = ctx->GetWindowByRef(title.c_str());
         IM_CHECK(log_panel != NULL);
         ImGui::SetScrollY(log_panel, log_panel->ScrollMax.y);
         ctx->SleepShort();
@@ -1738,14 +1728,8 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
     {
         ImGui::SetNextWindowSize(ImVec2(100, 150));
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
-        {
-            for (int i = 0; i < 10; i++)
-            {
-                char name[32];
-                ImFormatString(name, IM_ARRAYSIZE(name), "Button %d", i);
-                ImGui::Button(name);
-            }
-        }
+        for (int i = 0; i < 10; i++)
+            ImGui::Button(Str30f("Button %d", i).c_str());
         ImGui::End();
     };
     t->TestFunc = [](ImGuiTestContext* ctx)
@@ -1887,10 +1871,9 @@ static void HelperTableSubmitCells(int count_w, int count_h)
         {
             if (!ImGui::TableSetColumnIndex(column))
                 continue;
-            char label[32];
-            ImFormatString(label, IM_ARRAYSIZE(label), "%d,%d", line, column);
-            //ImGui::TextUnformatted(label);
-            ImGui::Button(label, ImVec2(-FLT_MIN, 0.0f));
+            Str16f label("%d,%d", line, column)
+            //ImGui::TextUnformatted(label.c_str());
+            ImGui::Button(label.c_str(), ImVec2(-FLT_MIN, 0.0f));
         }
     }
 }
@@ -1912,9 +1895,7 @@ static void HelperTableWithResizingPolicies(const char* table_id, ImGuiTableFlag
         else if (policy == 'w' || policy == 'W') { column_flags |= ImGuiTableColumnFlags_WidthStretch; }
         else if (policy == 'a' || policy == 'A') { column_flags |= ImGuiTableColumnFlags_WidthAuto; }
         else IM_ASSERT(0);
-        char name[16];
-        ImFormatString(name, IM_ARRAYSIZE(name), "%c%d", policy, column + 1);
-        ImGui::TableSetupColumn(name, column_flags);
+        ImGui::TableSetupColumn(Str16f("%c%d", policy, column + 1).c_str(), column_flags);
     }
     ImGui::TableAutoHeaders();
     for (int row = 0; row < 2; row++)
@@ -2572,10 +2553,9 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
         {
             for (int i = 0; i < 5; i++)
             {
-                char name[16];
-                ImFormatString(name, IM_ARRAYSIZE(name), "GC Test %d", i);
-                ImGui::Begin(name);
-                ImGui::TextUnformatted(name);
+                Str16f name("GC Test %d", i);
+                ImGui::Begin(name.c_str());
+                ImGui::TextUnformatted(name.c_str());
                 ImGui::End();
             }
         }
@@ -2585,9 +2565,7 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
         ctx->LogDebug("Check normal state");
         for (int i = 0; i < 3; i++)
         {
-            char name[16];
-            ImFormatString(name, IM_ARRAYSIZE(name), "GC Test %d", i);
-            ImGuiWindow* window = ctx->GetWindowByRef(name);
+            ImGuiWindow* window = ctx->GetWindowByRef(Str16f("GC Test %d", i).c_str());
             IM_CHECK(!window->MemoryCompacted);
             IM_CHECK(!window->DrawList->CmdBuffer.empty());
         }
@@ -2599,9 +2577,7 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
         ctx->LogDebug("Check GC-ed state");
         for (int i = 0; i < 3; i++)
         {
-            char name[16];
-            ImFormatString(name, IM_ARRAYSIZE(name), "GC Test %d", i);
-            ImGuiWindow* window = ctx->GetWindowByRef(name);
+            ImGuiWindow* window = ctx->GetWindowByRef(Str16f("GC Test %d", i).c_str());
             IM_CHECK(window->MemoryCompacted);
             IM_CHECK(window->IDStack.empty());
             IM_CHECK(window->DrawList->CmdBuffer.empty());
@@ -3819,10 +3795,8 @@ void RegisterTests_Perf(ImGuiTestEngine* e)
         int loop_count = 200 * ctx->PerfStressAmount;
         for (int n = 0; n < loop_count; n++)
         {
-            char window_name[32];
-            ImFormatString(window_name, IM_ARRAYSIZE(window_name), "Window_%05d", n+1);
             ImGui::SetNextWindowPos(pos);
-            ImGui::Begin(window_name, NULL, ImGuiWindowFlags_NoSavedSettings|ImGuiWindowFlags_AlwaysAutoResize);
+            ImGui::Begin(Str16f("Window_%05d", n + 1).c_str(), NULL, ImGuiWindowFlags_NoSavedSettings|ImGuiWindowFlags_AlwaysAutoResize);
             ImGui::TextUnformatted("Opening many windows!");
             ImGui::End();
         }

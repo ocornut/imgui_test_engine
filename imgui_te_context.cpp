@@ -14,6 +14,7 @@
 #include "imgui_te_core.h"
 #include "imgui_te_context.h"
 #include "imgui_te_util.h"
+#include "libs/Str/Str.h"
 
 //-------------------------------------------------------------------------
 // [SECTION] ImGuiTestContext
@@ -1286,7 +1287,7 @@ void    ImGuiTestContext::MenuAction(ImGuiTestAction action, ImGuiTestRef ref)
     int depth = 0;
     const char* path = ref.Path;
     const char* path_end = path + strlen(path);
-    char buf[128];
+    Str128 buf;
     while (path < path_end)
     {
         const char* p = ImStrchrRange(path, path_end, '/');
@@ -1297,19 +1298,19 @@ void    ImGuiTestContext::MenuAction(ImGuiTestAction action, ImGuiTestRef ref)
         {
             // Click menu in menu bar
             IM_ASSERT(RefStr[0] != 0); // Unsupported: window needs to be in Ref
-            ImFormatString(buf, IM_ARRAYSIZE(buf), "##menubar/%.*s", (int)(p - path), path);
+            buf.setf("##menubar/%.*s", (int)(p - path), path);
         }
         else
         {
             // Click sub menu in its own window
-            ImFormatString(buf, IM_ARRAYSIZE(buf), "/##Menu_%02d/%.*s", depth - 1, (int)(p - path), path);
+            buf.setf("/##Menu_%02d/%.*s", depth - 1, (int)(p - path), path);
         }
 
         // We cannot move diagonally to a menu item because depending on the angle and other items we cross on our path we could close our target menu.
         // First move horizontally into the menu, then vertically!
         if (depth > 0)
         {
-            ImGuiTestItemInfo* item = ItemLocate(buf);
+            ImGuiTestItemInfo* item = ItemLocate(buf.c_str());
             IM_CHECK(item != NULL);
             item->RefCount++;
             if (depth > 1 && (Inputs->MousePosValue.x <= item->RectFull.Min.x || Inputs->MousePosValue.x >= item->RectFull.Max.x))
@@ -1322,12 +1323,12 @@ void    ImGuiTestContext::MenuAction(ImGuiTestAction action, ImGuiTestRef ref)
         if (is_target_item)
         {
             // Final item
-            ItemAction(action, buf);
+            ItemAction(action, buf.c_str());
         }
         else
         {
             // Then aim at the menu item
-            ItemAction(ImGuiTestAction_Click, buf);
+            ItemAction(ImGuiTestAction_Click, buf.c_str());
         }
 
         path = p + 1;

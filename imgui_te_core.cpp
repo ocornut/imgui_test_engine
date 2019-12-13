@@ -14,6 +14,7 @@
 #include "imgui_te_core.h"
 #include "imgui_te_util.h"
 #include "imgui_te_context.h"
+#include "libs/Str/Str.h"
 
 #define IMGUI_DEBUG_TEST_ENGINE     1
 
@@ -1178,9 +1179,9 @@ bool ImGuiTestEngineHook_Error(const char* file, const char* func, int line, ImG
 {
     va_list args;
     va_start(args, fmt);
-    char buf[256];
-    ImFormatStringV(buf, IM_ARRAYSIZE(buf), fmt, args);
-    bool ret = ImGuiTestEngineHook_Check(file, func, line, flags, false, buf);
+    Str256 buf;
+    buf.setfv(fmt, args);
+    bool ret = ImGuiTestEngineHook_Check(file, func, line, flags, false, buf.c_str());
     va_end(args);
 
     ImGuiTestEngine* engine = GImGuiHookingEngine;
@@ -1215,15 +1216,14 @@ static bool ParseLineAndDrawFileOpenItem(ImGuiTestEngine* e, ImGuiTest* test, co
     if (line_no == -1 || filename_start == filename_end)
         return false;
 
-    char buf[FILENAME_MAX];
-    ImFormatString(buf, IM_ARRAYSIZE(buf), "Open %.*s at line %d", (int)(filename_end - filename_start), filename_start, line_no);
-    if (ImGui::MenuItem(buf))
+    Str256f buf("Open %.*s at line %d", (int)(filename_end - filename_start), filename_start, line_no);
+    if (ImGui::MenuItem(buf.c_str()))
     {
         // FIXME-TESTS: Assume folder is same as folder of test->SourceFile!
         const char* src_file_path = test->SourceFile;
         const char* src_file_name = ImPathFindFilename(src_file_path);
-        ImFormatString(buf, IM_ARRAYSIZE(buf), "%.*s%.*s", (int)(src_file_name - src_file_path), src_file_path, (int)(filename_end - filename_start), filename_start);
-        e->IO.SrcFileOpenFunc(buf, line_no, e->IO.UserData);
+        buf.setf("%.*s%.*s", (int)(src_file_name - src_file_path), src_file_path, (int)(filename_end - filename_start), filename_start);
+        e->IO.SrcFileOpenFunc(buf.c_str(), line_no, e->IO.UserData);
     }
 
     return true;
@@ -1363,9 +1363,7 @@ void    ImGuiTestEngine_ShowTestWindow(ImGuiTestEngine* engine, bool* p_open)
     ImGui::BeginChild("List", ImVec2(0, list_height), false, ImGuiWindowFlags_NoScrollbar);
     if (ImGui::BeginTabBar("##Tests", ImGuiTabBarFlags_NoTooltip))
     {
-        char tab_label[32];
-        ImFormatString(tab_label, IM_ARRAYSIZE(tab_label), "TESTS###TESTS");
-        if (ImGui::BeginTabItem(tab_label))
+        if (ImGui::BeginTabItem("TESTS###TESTS"))
         {
             ImGuiTextFilter* filter = &engine->UiTestFilter;
 
@@ -1426,9 +1424,8 @@ void    ImGuiTestEngine_ShowTestWindow(ImGuiTestEngine* engine, bool* p_open)
                         queue_test = select_test = true;
                     ImGui::SameLine();
 
-                    char buf[128];
-                    ImFormatString(buf, IM_ARRAYSIZE(buf), "%-*s - %s", 10, test->Category, test->Name);
-                    if (ImGui::Selectable(buf, test == engine->UiSelectedTest))
+                    Str128f buf("%-*s - %s", 10, test->Category, test->Name);
+                    if (ImGui::Selectable(buf.c_str(), test == engine->UiSelectedTest))
                         select_test = true;
 
                     // Double-click to run test, CTRL+Double-click to run GUI function
@@ -1475,8 +1472,8 @@ void    ImGuiTestEngine_ShowTestWindow(ImGuiTestEngine* engine, bool* p_open)
                         const bool open_source_available = (test->SourceFile != NULL) && (engine->IO.SrcFileOpenFunc != NULL);
                         if (open_source_available)
                         {
-                            ImFormatString(buf, IM_ARRAYSIZE(buf), "Open source (%s:%d)", test->SourceFileShort, test->SourceLine);
-                            if (ImGui::MenuItem(buf))
+                            buf.setf("Open source (%s:%d)", test->SourceFileShort, test->SourceLine);
+                            if (ImGui::MenuItem(buf.c_str()))
                             {
                                 engine->IO.SrcFileOpenFunc(test->SourceFile, test->SourceLine, engine->IO.UserData);
                             }
