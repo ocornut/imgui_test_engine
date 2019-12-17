@@ -78,8 +78,7 @@ all: $(EXE)
 	@echo Build complete for $(ECHO_MESSAGE)
 
 $(EXE): $(OBJS)
-	@mkdir -p bin
-	$(CXX) -o bin/$@ $^ $(CXXFLAGS) $(LIBS)
+	$(CXX) -o $@ $^ $(CXXFLAGS) $(LIBS)
 
 clean:
-	rm -f bin/$(EXE) $(OBJS)
+	rm -f $(EXE) $(OBJS)
