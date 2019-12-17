@@ -55,12 +55,15 @@ static inline void DebugCrtDumpLeaks()
 
 #include "imgui.h"
 #include <stdio.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 #define IMGUI_DEFINE_MATH_OPERATORS
 #include "imgui_te_core.h"
 #include "imgui_te_util.h"
 #include "imgui_tests.h"
 #include "imgui_te_app.h"
 #include "imgui_capture_tool.h"
+#include "libs/Str/Str.h"
 
 //-------------------------------------------------------------------------
 // Back-end Functions (in imgui_te_backends.cpp)
@@ -282,13 +285,31 @@ int main(int argc, char** argv)
     io.Fonts->AddFontDefault();
     //ImFontConfig cfg;
     //cfg.RasterizerMultiply = 1.1f;
-    #define FONT_DIR "../../imgui/misc/fonts/"
-    io.Fonts->AddFontFromFileTTF(FONT_DIR "Roboto-Medium.ttf", 16.0f);
-    //io.Fonts->AddFontFromFileTTF(FONT_DIR "RobotoMono-Regular.ttf", 16.0f, &cfg);
-    //io.Fonts->AddFontFromFileTTF(FONT_DIR "Cousine-Regular.ttf", 15.0f);
-    //io.Fonts->AddFontFromFileTTF(FONT_DIR "DroidSans.ttf", 16.0f);
-    //io.Fonts->AddFontFromFileTTF(FONT_DIR "ProggyTiny.ttf", 10.0f);
-    //IM_ASSERT(font != NULL);
+
+
+    const char* base_font_dir = nullptr;
+    const char* font_dirs[] = {"../../imgui/misc/fonts", "../../../imgui/misc/fonts"};
+    for (const char* font_dir : font_dirs)
+    {
+        struct stat dir_stat;
+        if (stat(font_dir, &dir_stat) == 0)
+        {
+            base_font_dir = font_dir;
+            break;
+        }
+    }
+
+    if (base_font_dir != NULL)
+    {
+        io.Fonts->AddFontFromFileTTF(Str64f("%s/%s", base_font_dir, "Roboto-Medium.ttf").c_str(), 16.0f);
+        //io.Fonts->AddFontFromFileTTF(Str64f("%s/%s", base_font_dir, "RobotoMono-Regular.ttf").c_str(), 16.0f, &cfg);
+        //io.Fonts->AddFontFromFileTTF(Str64f("%s/%s", base_font_dir, "Cousine-Regular.ttf").c_str(), 15.0f);
+        //io.Fonts->AddFontFromFileTTF(Str64f("%s/%s", base_font_dir, "DroidSans.ttf").c_str(), 16.0f);
+        //io.Fonts->AddFontFromFileTTF(Str64f("%s/%s", base_font_dir, "ProggyTiny.ttf").c_str(), 10.0f);
+        //IM_ASSERT(font != NULL);
+    }
+    else
+        fprintf(stderr, "Font directory not found. Fonts not loaded.\n");
 
     // Create TestEngine context
     IM_ASSERT(g_App.TestEngine == NULL);
