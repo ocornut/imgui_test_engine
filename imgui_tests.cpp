@@ -3121,16 +3121,18 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
     t = REGISTER_TEST("misc", "misc_bezier_closest_point");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
-        static ImVec2 points[4] = { {30, 75}, {185, 355}, {400, 60}, {590, 370} };
+        // FIXME-TESTS: Store normalized?
+        static ImVec2 points[4] = { ImVec2(30, 75), ImVec2(185, 355), ImVec2(400, 60), ImVec2(590, 370) };
         static int num_segments = 0;
         const ImGuiStyle& style = ctx->UiContext->Style;
 
         ImGui::SetNextWindowSize(ImVec2(600, 400), ImGuiCond_Appearing);
-        ImGui::Begin("Bezier");
+        ImGui::Begin("Bezier", NULL, ImGuiWindowFlags_NoSavedSettings);
         ImGui::DragInt("Segments", &num_segments, 0.05f, 0, 20);
 
         ImDrawList* draw_list = ImGui::GetWindowDrawList();
-        ImVec2 wp = ImGui::GetWindowPos();
+        const ImVec2 mouse_pos = ImGui::GetMousePos();
+        const ImVec2 wp = ImGui::GetWindowPos();
 
         // Draw modifiable control points
         for (ImVec2& pt : points)
@@ -3138,7 +3140,9 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
             const float half_circle = 2.0f;
             const float full_circle = half_circle * 2.0f;
             ImRect r(wp + pt - ImVec2(half_circle, half_circle), wp + pt + ImVec2(half_circle, half_circle));
-            ImGui::ItemAdd(r, ImGui::GetID(&pt));
+            ImGuiID id = ImGui::GetID((void*)(&pt - points));
+
+            ImGui::ItemAdd(r, id);
             bool is_hovered = ImGui::IsItemHovered();
             bool is_active = ImGui::IsItemActive();
             if (is_hovered || is_active)
@@ -3149,13 +3153,15 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
             if (is_active)
             {
                 if (ImGui::IsMouseDown(0))
-                    pt = ImGui::GetMousePos() - wp;
+                    pt = mouse_pos - wp;
                 else
                     ImGui::ClearActiveID();
             }
             else if (ImGui::IsMouseDown(0) && is_hovered)
-                ImGui::SetActiveID(ImGui::GetID(&pt), ImGui::GetCurrentWindow());
+                ImGui::SetActiveID(id, ImGui::GetCurrentWindow());
         }
+        draw_list->AddLine(wp + points[0], wp + points[1], IM_COL32(0,255,0,100));
+        draw_list->AddLine(wp + points[2], wp + points[3], IM_COL32(0,255,0,100));
 
         // Draw curve itself
         draw_list->AddBezierCurve(wp + points[0], wp + points[1], wp + points[2], wp + points[3], IM_COL32_WHITE, 2.0f, num_segments);
@@ -3163,14 +3169,13 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
         // Draw point closest to the mouse cursor
         ImVec2 point;
         if (num_segments == 0)
-            point = ImBezierClosestPointCasteljau(ImGui::GetMousePos(), wp + points[0], wp + points[1], wp + points[2], wp + points[3], style.CurveTessellationTol);
+            point = ImBezierClosestPointCasteljau(wp + points[0], wp + points[1], wp + points[2], wp + points[3], mouse_pos, style.CurveTessellationTol);
         else
-            point = ImBezierClosestPoint(ImGui::GetMousePos(), wp + points[0], wp + points[1], wp + points[2], wp + points[3], num_segments);
+            point = ImBezierClosestPoint(wp + points[0], wp + points[1], wp + points[2], wp + points[3], mouse_pos, num_segments);
         draw_list->AddCircleFilled(point, 4.0f, IM_COL32(255,0,0,255));
 
         ImGui::End();
     };
-
 
     // ## Coverage: open everything in demo window
     // ## Extra: test for inconsistent ScrollMax.y across whole demo window
