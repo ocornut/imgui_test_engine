@@ -1885,7 +1885,8 @@ static void HelperTableWithResizingPolicies(const char* table_id, ImGuiTableFlag
 
     int columns_count = (int)strlen(columns_desc);
     IM_ASSERT(columns_count < 26); // Because we are using alphabetical letters for names
-    ImGui::BeginTable(table_id, columns_count, table_flags);
+    if (!ImGui::BeginTable(table_id, columns_count, table_flags))
+        return;
     for (int column = 0; column < columns_count; column++)
     {
         const char policy = columns_desc[column];
@@ -1893,7 +1894,7 @@ static void HelperTableWithResizingPolicies(const char* table_id, ImGuiTableFlag
         if      (policy >= 'a' && policy <= 'z') { column_flags |= ImGuiTableColumnFlags_DefaultHide; }
         if      (policy == 'f' || policy == 'F') { column_flags |= ImGuiTableColumnFlags_WidthFixed; }
         else if (policy == 'w' || policy == 'W') { column_flags |= ImGuiTableColumnFlags_WidthStretch; }
-        else if (policy == 'a' || policy == 'A') { column_flags |= ImGuiTableColumnFlags_WidthAuto; }
+        else if (policy == 'a' || policy == 'A') { column_flags |= ImGuiTableColumnFlags_WidthAlwaysAutoResize; }
         else IM_ASSERT(0);
         ImGui::TableSetupColumn(Str16f("%c%d", policy, column + 1).c_str(), column_flags);
     }
@@ -1925,15 +1926,17 @@ void RegisterTests_Table(ImGuiTestEngine* e)
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         ImGui::Begin("Test window 1", NULL, ImGuiWindowFlags_NoSavedSettings);
-        ImGui::BeginTable("##table0", 4);
-        ImGui::TableSetupColumn("One", ImGuiTableColumnFlags_WidthFixed, 100.0f, 0);
-        ImGui::TableSetupColumn("Two");
-        ImGui::TableSetupColumn("Three");
-        ImGui::TableSetupColumn("Four");
-        HelperTableSubmitCells(4, 5);
-        ImGuiTable* table = ctx->UiContext->CurrentTable;
-        IM_CHECK_EQ(table->Columns[0].WidthRequested, 100.0f);
-        ImGui::EndTable();
+        if (ImGui::BeginTable("##table0", 4))
+        {
+            ImGui::TableSetupColumn("One", ImGuiTableColumnFlags_WidthFixed, 100.0f, 0);
+            ImGui::TableSetupColumn("Two");
+            ImGui::TableSetupColumn("Three");
+            ImGui::TableSetupColumn("Four");
+            HelperTableSubmitCells(4, 5);
+            ImGuiTable* table = ctx->UiContext->CurrentTable;
+            IM_CHECK_EQ(table->Columns[0].WidthRequested, 100.0f);
+            ImGui::EndTable();
+        }
         ImGui::End();
     };
 
@@ -1949,45 +1952,53 @@ void RegisterTests_Table(ImGuiTestEngine* e)
         ImGui::Text("Text before");
         {
             int cmd_size_before = draw_list->CmdBuffer.Size;
-            ImGui::BeginTable("##table1", 4, ImGuiTableFlags_NoClipX | ImGuiTableFlags_Borders, ImVec2(400, 0));
-            HelperTableSubmitCells(4, 5);
-            ImGui::EndTable();
+            if (ImGui::BeginTable("##table1", 4, ImGuiTableFlags_NoClipX | ImGuiTableFlags_Borders, ImVec2(400, 0)))
+            {
+                HelperTableSubmitCells(4, 5);
+                ImGui::EndTable();
+            }
             ImGui::Text("Some text");
             int cmd_size_after = draw_list->CmdBuffer.Size;
             IM_CHECK_EQ(cmd_size_before, cmd_size_after);
         }
         {
             int cmd_size_before = draw_list->CmdBuffer.Size;
-            ImGui::BeginTable("##table2", 4, ImGuiTableFlags_Borders, ImVec2(400, 0));
-            HelperTableSubmitCells(4, 4);
-            ImGui::EndTable();
+            if (ImGui::BeginTable("##table2", 4, ImGuiTableFlags_Borders, ImVec2(400, 0)))
+            {
+                HelperTableSubmitCells(4, 4);
+                ImGui::EndTable();
+            }
             ImGui::Text("Some text");
             int cmd_size_after = draw_list->CmdBuffer.Size;
             IM_CHECK_EQ(cmd_size_before, cmd_size_after);
         }
         {
             int cmd_size_before = draw_list->CmdBuffer.Size;
-            ImGui::BeginTable("##table3", 4, ImGuiTableFlags_Borders, ImVec2(400, 0));
-            ImGui::TableSetupColumn("One");
-            ImGui::TableSetupColumn("TwoTwo");
-            ImGui::TableSetupColumn("ThreeThreeThree");
-            ImGui::TableSetupColumn("FourFourFourFour");
-            ImGui::TableAutoHeaders();
-            HelperTableSubmitCells(4, 4);
-            ImGui::EndTable();
+            if (ImGui::BeginTable("##table3", 4, ImGuiTableFlags_Borders, ImVec2(400, 0)))
+            {
+                ImGui::TableSetupColumn("One");
+                ImGui::TableSetupColumn("TwoTwo");
+                ImGui::TableSetupColumn("ThreeThreeThree");
+                ImGui::TableSetupColumn("FourFourFourFour");
+                ImGui::TableAutoHeaders();
+                HelperTableSubmitCells(4, 4);
+                ImGui::EndTable();
+            }
             ImGui::Text("Some text");
             int cmd_size_after = draw_list->CmdBuffer.Size;
             IM_CHECK_EQ(cmd_size_before, cmd_size_after);
         }
         {
             int cmd_size_before = draw_list->CmdBuffer.Size;
-            ImGui::BeginTable("##table4", 3, ImGuiTableFlags_Borders);
-            ImGui::TableSetupColumn("One");
-            ImGui::TableSetupColumn("TwoTwo");
-            ImGui::TableSetupColumn("ThreeThreeThree");
-            ImGui::TableAutoHeaders();
-            HelperTableSubmitCells(3, 4);
-            ImGui::EndTable();
+            if (ImGui::BeginTable("##table4", 3, ImGuiTableFlags_Borders))
+            {
+                ImGui::TableSetupColumn("One");
+                ImGui::TableSetupColumn("TwoTwo");
+                ImGui::TableSetupColumn("ThreeThreeThree");
+                ImGui::TableAutoHeaders();
+                HelperTableSubmitCells(3, 4);
+                ImGui::EndTable();
+            }
             ImGui::Text("Some text");
             int cmd_size_after = draw_list->CmdBuffer.Size;
             IM_CHECK_EQ(cmd_size_before, cmd_size_after);
@@ -2032,28 +2043,30 @@ void RegisterTests_Table(ImGuiTestEngine* e)
 
             ImGui::Spacing();
             ImGui::Spacing();
-            ImGui::BeginTable("##table", tc.ColumnCount, tc.Flags, ImVec2(0, 0));
-            ImGui::TableNextRow();
-
-            float min_w = FLT_MAX;
-            float max_w = -FLT_MAX;
-            for (int n = 0; n < tc.ColumnCount; n++)
+            if (ImGui::BeginTable("##table", tc.ColumnCount, tc.Flags, ImVec2(0, 0)))
             {
-                ImGui::TableSetColumnIndex(n);
-                float w = ImGui::GetContentRegionAvail().x;
-                min_w = ImMin(w, min_w);
-                max_w = ImMax(w, max_w);
-                ImGui::Text("Width %.2f", w);
-            }
-            float w_variance = max_w - min_w;
-            IM_CHECK_LE_NO_RET(w_variance, 1.0f);
-            ImGui::EndTable();
+                ImGui::TableNextRow();
 
-            if (w_variance > 1.0f)
-                ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(255, 100, 100, 255));
-            ImGui::Text("#%02d: Variance %.2f (min %.2f max %.2f)", test_case_n, w_variance, min_w, max_w);
-            if (w_variance > 1.0f)
-                ImGui::PopStyleColor();
+                float min_w = FLT_MAX;
+                float max_w = -FLT_MAX;
+                for (int n = 0; n < tc.ColumnCount; n++)
+                {
+                    ImGui::TableSetColumnIndex(n);
+                    float w = ImGui::GetContentRegionAvail().x;
+                    min_w = ImMin(w, min_w);
+                    max_w = ImMax(w, max_w);
+                    ImGui::Text("Width %.2f", w);
+                }
+                float w_variance = max_w - min_w;
+                IM_CHECK_LE_NO_RET(w_variance, 1.0f);
+                ImGui::EndTable();
+
+                if (w_variance > 1.0f)
+                    ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(255, 100, 100, 255));
+                ImGui::Text("#%02d: Variance %.2f (min %.2f max %.2f)", test_case_n, w_variance, min_w, max_w);
+                if (w_variance > 1.0f)
+                    ImGui::PopStyleColor();
+            }
             ImGui::PopID();
         }
 
@@ -2129,6 +2142,53 @@ void RegisterTests_Table(ImGuiTestEngine* e)
         HelperTableWithResizingPolicies("table9", 0, "WWFWW");
         ImGui::Spacing();
 
+        ImGui::End();
+    };
+
+    // ## Test Visible flag
+    t = REGISTER_TEST("table", "table_6_clip");
+    t->Flags |= ImGuiTestFlags_NoAutoFinish;
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::Begin("Test window 1", NULL, ImGuiWindowFlags_NoSavedSettings);
+        if (ImGui::BeginTable("table1", 4, ImGuiTableFlags_ScrollX | ImGuiTableFlags_Borders, ImVec2(200, 200)))
+        {
+            ImGui::TableSetupColumn("One", 0, 80);
+            ImGui::TableSetupColumn("Two", 0, 80);
+            ImGui::TableSetupColumn("Three", 0, 80);
+            ImGui::TableSetupColumn("Four", 0, 80);
+            for (int row = 0; row < 2; row++)
+            {
+                ImGui::TableNextRow();
+                bool visible_0 = ImGui::TableSetColumnIndex(0);
+                ImGui::Text(visible_0 ? "1" : "0");
+                bool visible_1 = ImGui::TableSetColumnIndex(1);
+                ImGui::Text(visible_1 ? "1" : "0");
+                bool visible_2 = ImGui::TableSetColumnIndex(2);
+                ImGui::Text(visible_2 ? "1" : "0");
+                bool visible_3 = ImGui::TableSetColumnIndex(3);
+                ImGui::Text(visible_3 ? "1" : "0");
+                if (ctx->FrameCount > 1)
+                {
+                    IM_CHECK_EQ(visible_0, true);
+                    IM_CHECK_EQ(visible_1, true);
+                    IM_CHECK_EQ(visible_2, true); // Half Visible
+                    IM_CHECK_EQ(visible_3, false);
+                    ctx->Finish();
+                }
+            }
+            ImGui::EndTable();
+        }
+        ImGui::End();
+    };
+
+    // ## Test that BeginTable/EndTable with no contents doesn't fail
+    t = REGISTER_TEST("table", "table_7_empty");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::Begin("Test window 1", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImGui::BeginTable("Table", 3);
+        ImGui::EndTable();
         ImGui::End();
     };
 #endif // #ifdef IMGUI_HAS_TABLE
@@ -3217,7 +3277,11 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
         ctx->ItemOpen("Widgets");
         ctx->ItemOpen("Layout");
         ctx->ItemOpen("Popups & Modal windows");
+#if IMGUI_HAS_TABLE
+        ctx->ItemOpen("Tables & Columns");
+#else
         ctx->ItemOpen("Columns");
+#endif
         ctx->ItemOpen("Filtering");
         ctx->ItemOpen("Inputs, Navigation & Focus");
     };

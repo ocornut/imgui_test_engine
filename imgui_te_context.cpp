@@ -186,8 +186,8 @@ void    ImGuiTestContext::RecoverFromUiContextErrors()
     while (g.CurrentWindowStack.Size > 1)
     {
 #ifdef IMGUI_HAS_TABLE
-        ImGuiWindow* window = g.CurrentWindow;
-        while (window->DC.CurrentTable != NULL)
+        ImGuiTable* table = g.CurrentTable;
+        if (table->OuterWindow == g.CurrentWindow || table->InnerWindow == g.CurrentWindow)
         {
             if (verbose) LogWarning("Recovered from missing EndTable() call.");
             ImGui::EndTable();
@@ -392,7 +392,8 @@ ImVec2 ImGuiTestContext::GetMainViewportPos()
 bool ImGuiTestContext::CaptureAddWindow(ImGuiTestRef ref)
 {
     ImGuiWindow* window = GetWindowByRef(ref);
-    IM_CHECK_RETV(window != NULL, false);
+    if (window == NULL)
+        IM_CHECK_RETV(window != NULL, false);
     CaptureArgs.InCaptureWindows.push_back(window);
     return window != NULL;
 }
@@ -400,8 +401,8 @@ bool ImGuiTestContext::CaptureAddWindow(ImGuiTestRef ref)
 // FIXME-TESTS: Could log the final filename(s) in ImGuiTest so the test browser could expose button to view/open them?
 bool ImGuiTestContext::CaptureScreenshot()
 {
-    IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
-    LogDebug("CaptureScreenshot()");
+    //IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this); // No extra depth to make it visible
+    LogInfo("CaptureScreenshot()");
     return ImGuiTestEngine_CaptureScreenshot(Engine, &CaptureArgs);
 }
 
@@ -1344,7 +1345,7 @@ void    ImGuiTestContext::MenuAction(ImGuiTestAction action, ImGuiTestRef ref)
         if (depth > 0)
         {
             ImGuiTestItemInfo* item = ItemLocate(buf.c_str());
-            IM_CHECK(item != NULL);
+            IM_CHECK_SILENT(item != NULL);
             item->RefCount++;
             if (depth > 1 && (Inputs->MousePosValue.x <= item->RectFull.Min.x || Inputs->MousePosValue.x >= item->RectFull.Max.x))
                 MouseMoveToPos(ImVec2(item->RectFull.GetCenter().x, Inputs->MousePosValue.y));
