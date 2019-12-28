@@ -354,22 +354,22 @@ ImGuiID ImGuiTestContext::GetID(ImGuiTestRef ref, ImGuiTestRef seed_ref)
     return ImHashDecoratedPath(ref.Path, GetID(seed_ref));
 }
 
-ImGuiID ImGuiTestContext::GetID(int n)
+ImGuiID ImGuiTestContext::GetIDByInt(int n)
 {
-    return GetID(n, RefID);
+    return ImHash(&n, sizeof(n), GetID(RefID));
 }
 
-ImGuiID ImGuiTestContext::GetID(int n, ImGuiTestRef seed_ref)
+ImGuiID ImGuiTestContext::GetIDByInt(int n, ImGuiTestRef seed_ref)
 {
     return ImHash(&n, sizeof(n), GetID(seed_ref));
 }
 
-ImGuiID ImGuiTestContext::GetID(void* p)
+ImGuiID ImGuiTestContext::GetIDByPtr(void* p)
 {
-    return GetID(p, RefID);
+    return ImHash(&p, sizeof(p), GetID(RefID));
 }
 
-ImGuiID ImGuiTestContext::GetID(void* p, ImGuiTestRef seed_ref)
+ImGuiID ImGuiTestContext::GetIDByPtr(void* p, ImGuiTestRef seed_ref)
 {
     return ImHash(&p, sizeof(p), GetID(seed_ref));
 }
