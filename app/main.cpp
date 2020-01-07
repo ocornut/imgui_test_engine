@@ -194,7 +194,7 @@ static bool ParseCommandLineOptions(int argc, char** argv)
                 printf("  -nopause                 : don't pause application on exit.\n");
                 printf("  -fileopener <file>       : provide a bat/cmd/shell script to open source file.\n");
                 printf("Tests:\n");
-                printf("   all                     : queue all tests.\n");
+                printf("   all/tests/perf          : queue by groups: all, only tests, only performance benchmarks.\n");
                 printf("   [pattern]               : queue all tests containing the word [pattern].\n");
                 return false;
             }
@@ -337,16 +337,24 @@ int main(int argc, char** argv)
 
     // Non-interactive mode queue all tests by default
     if (!g_App.OptGUI && g_App.TestsToRun.empty())
-        g_App.TestsToRun.push_back(strdup("all"));
+        g_App.TestsToRun.push_back(strdup("tests"));
 
     // Queue requested tests
+    // FIXME: Maybe need some cleanup to not hard-coded groups.
     for (int n = 0; n < g_App.TestsToRun.Size; n++)
     {
         char* test_spec = g_App.TestsToRun[n];
-        if (strcmp(test_spec, "all") == 0)
-            ImGuiTestEngine_QueueTests(g_App.TestEngine, NULL, ImGuiTestRunFlags_CommandLine);
+        if (strcmp(test_spec, "tests") == 0)
+            ImGuiTestEngine_QueueTests(g_App.TestEngine, ImGuiTestGroup_Tests, NULL, ImGuiTestRunFlags_CommandLine);
+        else if (strcmp(test_spec, "perf") == 0)
+            ImGuiTestEngine_QueueTests(g_App.TestEngine, ImGuiTestGroup_Perf, NULL, ImGuiTestRunFlags_CommandLine);
         else
-            ImGuiTestEngine_QueueTests(g_App.TestEngine, test_spec, ImGuiTestRunFlags_CommandLine);
+        {
+            if (strcmp(test_spec, "all") == 0)
+                test_spec = NULL;
+            for (int group = 0; group < ImGuiTestGroup_COUNT; group++)
+                ImGuiTestEngine_QueueTests(g_App.TestEngine, (ImGuiTestGroup)group, test_spec, ImGuiTestRunFlags_CommandLine);
+        }
         IM_FREE(test_spec);
     }
     g_App.TestsToRun.clear();

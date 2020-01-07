@@ -4133,6 +4133,7 @@ void RegisterTests_Capture(ImGuiTestEngine* e)
 
 void RegisterTests(ImGuiTestEngine* e)
 {
+    // Tests
     RegisterTests_Window(e);
     RegisterTests_Layout(e);
     RegisterTests_Widgets(e);
@@ -4141,6 +4142,10 @@ void RegisterTests(ImGuiTestEngine* e)
     RegisterTests_Table(e);
     RegisterTests_Docking(e);
     RegisterTests_Misc(e);
-    RegisterTests_Perf(e);
+
+    // Captures
     RegisterTests_Capture(e);
+
+    // Performance Benchmarks
+    RegisterTests_Perf(e);
 }

@@ -20,11 +20,11 @@ struct ImGuiTestItemInfo;
 struct ImGuiTestItemList;
 struct ImRect;
 
-typedef int ImGuiTestFlags;         // See ImGuiTestFlags_
-typedef int ImGuiTestCheckFlags;    // See ImGuiTestCheckFlags_
-typedef int ImGuiTestLogFlags;      // See ImGuiTestLogFlags_
-typedef int ImGuiTestOpFlags;       // See ImGuiTestOpFlags_
-typedef int ImGuiTestRunFlags;      // See ImGuiTestRunFlags_
+typedef int ImGuiTestFlags;         // Flags: See ImGuiTestFlags_
+typedef int ImGuiTestCheckFlags;    // Flags: See ImGuiTestCheckFlags_
+typedef int ImGuiTestLogFlags;      // Flags: See ImGuiTestLogFlags_
+typedef int ImGuiTestOpFlags;       // Flags: See ImGuiTestOpFlags_
+typedef int ImGuiTestRunFlags;      // Flags: See ImGuiTestRunFlags_
 
 //-------------------------------------------------------------------------
 // Types
@@ -48,6 +48,14 @@ enum ImGuiTestStatus
     ImGuiTestStatus_Queued      = 1,
     ImGuiTestStatus_Running     = 2,
     ImGuiTestStatus_Error       = 3,
+};
+
+enum ImGuiTestGroup
+{
+    ImGuiTestGroup_Unknown      = -1,
+    ImGuiTestGroup_Tests        = 0,
+    ImGuiTestGroup_Perf         = 1,
+    ImGuiTestGroup_COUNT
 };
 
 enum ImGuiTestFlags_
@@ -289,7 +297,7 @@ ImGuiTestEngineIO&  ImGuiTestEngine_GetIO(ImGuiTestEngine* engine);
 void                ImGuiTestEngine_Abort(ImGuiTestEngine* engine);
 void                ImGuiTestEngine_ShowTestWindow(ImGuiTestEngine* engine, bool* p_open);
 ImGuiTest*          ImGuiTestEngine_RegisterTest(ImGuiTestEngine* engine, const char* category, const char* name, const char* src_file = NULL, int src_line = 0);
-void                ImGuiTestEngine_QueueTests(ImGuiTestEngine* engine, const char* filter = NULL, ImGuiTestRunFlags run_flags = 0);
+void                ImGuiTestEngine_QueueTests(ImGuiTestEngine* engine, ImGuiTestGroup group, const char* filter = NULL, ImGuiTestRunFlags run_flags = 0);
 void                ImGuiTestEngine_QueueTest(ImGuiTestEngine* engine, ImGuiTest* test, ImGuiTestRunFlags run_flags);
 bool                ImGuiTestEngine_IsRunningTests(ImGuiTestEngine* engine);
 bool                ImGuiTestEngine_IsRunningTest(ImGuiTestEngine* engine, ImGuiTest* test);
@@ -469,6 +477,7 @@ typedef void    (*ImGuiTestUserDataDestructor)(void* ptr);
 // Storage for one test
 struct ImGuiTest
 {
+    ImGuiTestGroup                  Group;              // Coarse groups: 'Tests' or 'Perf'
     const char*                     Category;           // Literal, not owned
     const char*                     Name;               // Literal, not owned
     const char*                     SourceFile;         // __FILE__
