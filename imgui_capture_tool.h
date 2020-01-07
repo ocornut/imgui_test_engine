@@ -35,7 +35,7 @@ typedef unsigned int ImGuiCaptureFlags;
 enum ImGuiCaptureToolState
 {
     ImGuiCaptureToolState_None,                             // No capture in progress.
-    ImGuiCaptureToolState_PickingSingleWindow,              // CaptureWindowPicker() is sellecting a window under mouse cursor.
+    ImGuiCaptureToolState_PickingSingleWindow,              // CaptureWindowPicker() is selecting a window under mouse cursor.
     ImGuiCaptureToolState_SelectRectStart,                  // Next mouse click will create selection rectangle.
     ImGuiCaptureToolState_SelectRectUpdate,                 // Update selection rectangle until mouse is released.
     ImGuiCaptureToolState_Capturing                         // Capture is in progress.

@@ -3151,33 +3151,7 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
         IM_CHECK(filter.PassFilter("cartender") == false);
     };
 
-    // FIXME-TESTS
-    t = REGISTER_TEST("demo", "demo_misc_001");
-    t->GuiFunc = NULL;
-    t->TestFunc = [](ImGuiTestContext* ctx)
-    {
-        ctx->WindowRef("Dear ImGui Demo");
-        ctx->ItemOpen("Widgets");
-        ctx->ItemOpen("Basic");
-        ctx->ItemClick("Basic/Button");
-        ctx->ItemClick("Basic/radio a");
-        ctx->ItemClick("Basic/radio b");
-        ctx->ItemClick("Basic/radio c");
-        ctx->ItemClick("Basic/combo");
-        ctx->ItemClick("Basic/combo");
-        ctx->ItemClick("Basic/color 2/##ColorButton");
-        //ctx->ItemClick("##Combo/BBBB");     // id chain
-        ctx->SleepShort();
-        ctx->PopupClose();
-
-        //ctx->ItemClick("Layout");  // FIXME: close popup
-        ctx->ItemOpen("Layout");
-        ctx->ItemOpen("Scrolling");
-        ctx->ItemHold("Scrolling/>>", 1.0f);
-        ctx->SleepShort();
-    };
-
-    // ## Visual ImBezierClosestPoint test.
+        // ## Visual ImBezierClosestPoint test.
     t = REGISTER_TEST("misc", "misc_bezier_closest_point");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
@@ -3235,6 +3209,32 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
         draw_list->AddCircleFilled(point, 4.0f, IM_COL32(255,0,0,255));
 
         ImGui::End();
+    };
+
+    // FIXME-TESTS
+    t = REGISTER_TEST("demo", "demo_misc_001");
+    t->GuiFunc = NULL;
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ctx->WindowRef("Dear ImGui Demo");
+        ctx->ItemOpen("Widgets");
+        ctx->ItemOpen("Basic");
+        ctx->ItemClick("Basic/Button");
+        ctx->ItemClick("Basic/radio a");
+        ctx->ItemClick("Basic/radio b");
+        ctx->ItemClick("Basic/radio c");
+        ctx->ItemClick("Basic/combo");
+        ctx->ItemClick("Basic/combo");
+        ctx->ItemClick("Basic/color 2/##ColorButton");
+        //ctx->ItemClick("##Combo/BBBB");     // id chain
+        ctx->SleepShort();
+        ctx->PopupClose();
+
+        //ctx->ItemClick("Layout");  // FIXME: close popup
+        ctx->ItemOpen("Layout");
+        ctx->ItemOpen("Scrolling");
+        ctx->ItemHold("Scrolling/>>", 1.0f);
+        ctx->SleepShort();
     };
 
     // ## Coverage: open everything in demo window
@@ -4113,6 +4113,22 @@ void RegisterTests_Capture(ImGuiTestEngine* e)
             ctx->CaptureScreenshot();
         }
     };
+
+#ifdef IMGUI_HAS_TABLE
+    // ## Capture all tables demo
+    t = REGISTER_TEST("capture", "capture_tables_demo");
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ctx->WindowRef("Dear ImGui Demo");
+        ctx->ItemOpen("Tables & Columns");
+        ctx->ItemClick("Tables/Open all");
+        ImGuiWindow* window = ctx->GetWindowByRef("");
+        ctx->CaptureArgs.InFlags |= ImGuiCaptureToolFlags_StitchFullContents;
+        ctx->CaptureArgs.InPadding = 13.0f;
+        ctx->CaptureArgs.InCaptureWindows.push_back(window);
+        ctx->CaptureScreenshot();
+    };
+#endif
 }
 
 void RegisterTests(ImGuiTestEngine* e)
@@ -4125,6 +4141,6 @@ void RegisterTests(ImGuiTestEngine* e)
     RegisterTests_Table(e);
     RegisterTests_Docking(e);
     RegisterTests_Misc(e);
-    //RegisterTests_Perf(e);
+    RegisterTests_Perf(e);
     RegisterTests_Capture(e);
 }
