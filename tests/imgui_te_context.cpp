@@ -711,19 +711,55 @@ void	ImGuiTestContext::MouseMoveToPos(ImVec2 target)
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
     LogDebug("MouseMove from (%.0f,%.0f) to (%.0f,%.0f)", Inputs->MousePosValue.x, Inputs->MousePosValue.y, target.x, target.y);
 
+    if (EngineIO->ConfigRunFast)
+    {
+        Inputs->MousePosValue = target;
+        ImGuiTestEngine_Yield(Engine);
+        ImGuiTestEngine_Yield(Engine);
+        return;
+    }
+
+    // Simulate slower movements. We use a slightly curved movement to make the movement look less robotic.
+
+    // Calculate some basic parameters
+    const ImVec2 start_pos = Inputs->MousePosValue;
+    const ImVec2 delta = target - start_pos;
+    const float length2 = ImLengthSqr(delta);
+    const float length = (length2 > 0.0001f) ? ImSqrt(length2) : 1.0f;
+    const float inv_length = 1.0f / length;
+
+    // Calculate a vector perpendicular to the motion delta
+    const ImVec2 perp = ImVec2(delta.y, -delta.x) * inv_length;
+
+    // Calculate how much wobble we want, clamped to max out when the delta is 100 pixels (shorter movements get less wobble)
+    const float position_offset_magnitude = ImClamp(length, 1.0f, 100.0f) * EngineIO->MouseWobble;
+
+    // Wobble positions, using a sine wave based on position as a cheap way to get a deterministic offset 
+    ImVec2 intermediate_pos_a = start_pos + (delta * 0.3f);
+    ImVec2 intermediate_pos_b = start_pos + (delta * 0.6f);
+    intermediate_pos_a += perp * ImSin(intermediate_pos_a.y * 0.1f) * position_offset_magnitude;
+    intermediate_pos_b += perp * ImCos(intermediate_pos_b.y * 0.1f) * position_offset_magnitude;
+
     // We manipulate Inputs->MousePosValue without reading back from g.IO.MousePos because the later is rounded.
     // To handle high framerate it is easier to bypass this rounding.
+    float current_dist = 0.0f; // Our current distance along the line (in pixels)
     while (true)
-    {
-        ImVec2 delta = target - Inputs->MousePosValue;
-        float inv_length = ImInvLength(delta, FLT_MAX);
+    {        
         float move_speed = EngineIO->MouseSpeed * g.IO.DeltaTime;
+
         //if (g.IO.KeyShift)
         //    move_speed *= 0.1f;
 
+        current_dist += move_speed; // Move along the line
+
+        // Calculate a parametric position on the direct line that we will use for the curve
+        float t = current_dist * inv_length;
+        t = ImClamp(t, 0.0f, 1.0f);
+        t = 1.0f - ((ImCos(t * IM_PI) + 1.0f) * 0.5f); // Generate a smooth curve with acceleration/deceleration
+
         //ImGui::GetOverlayDrawList()->AddCircle(target, 10.0f, IM_COL32(255, 255, 0, 255));
 
-        if (EngineIO->ConfigRunFast || (inv_length >= 1.0f / move_speed))
+        if (t >= 1.0f)
         {
             Inputs->MousePosValue = target;
             ImGuiTestEngine_Yield(Engine);
@@ -732,7 +768,9 @@ void	ImGuiTestContext::MouseMoveToPos(ImVec2 target)
         }
         else
         {
-            Inputs->MousePosValue = Inputs->MousePosValue + delta * move_speed * inv_length;
+            // Use a bezier curve through the wobble points
+            Inputs->MousePosValue = ImBezierCalc(start_pos, intermediate_pos_a, intermediate_pos_b, target, t);
+            //ImGui::GetOverlayDrawList()->AddBezierCurve(start_pos, intermediate_pos_a, intermediate_pos_b, target, IM_COL32(255,0,0,255), 1.0f);
             ImGuiTestEngine_Yield(Engine);
         }
     }
