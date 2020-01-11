@@ -174,6 +174,11 @@ static bool ParseCommandLineOptions(int argc, char** argv)
             {
                 g_App.OptPauseOnExit = false;
             }
+            else if (strcmp(argv[n], "-stressamount") == 0 && n+1 < argc)
+            {
+                g_App.OptStressAmount = atoi(argv[n + 1]);
+                n++;
+            }
             else if (strcmp(argv[n], "-fileopener") == 0 && n + 1 < argc)
             {
                 g_App.OptFileOpener = strdup(argv[n + 1]);
@@ -192,6 +197,7 @@ static bool ParseCommandLineOptions(int argc, char** argv)
                 printf("  -slow                    : run automation at feeble human speed.\n");
                 printf("  -nothrottle              : run GUI app without throlling/vsync by default.\n");
                 printf("  -nopause                 : don't pause application on exit.\n");
+                printf("  -stressamount <int>      : set performance test duration multiplier (default: 5)\n");
                 printf("  -fileopener <file>       : provide a bat/cmd/shell script to open source file.\n");
                 printf("Tests:\n");
                 printf("   all/tests/perf          : queue by groups: all, only tests, only performance benchmarks.\n");
@@ -322,7 +328,7 @@ int main(int argc, char** argv)
     test_io.ConfigVerboseLevel = g_App.OptVerboseLevel;
     test_io.ConfigVerboseLevelOnError = g_App.OptVerboseLevelOnError;
     test_io.ConfigNoThrottle = g_App.OptNoThrottle;
-    test_io.PerfStressAmount = 5;
+    test_io.PerfStressAmount = g_App.OptStressAmount;
     if (!g_App.OptGUI && ImOsIsDebuggerPresent())
         test_io.ConfigBreakOnError = true;
     test_io.SrcFileOpenFunc = SrcFileOpenerFunc;

@@ -23,6 +23,7 @@ struct TestApp
     ImGuiTestVerboseLevel   OptVerboseLevelOnError = ImGuiTestVerboseLevel_COUNT; // Set in main.cpp
     bool                    OptNoThrottle = false;
     bool                    OptPauseOnExit = true;
+    int                     OptStressAmount = 5;
     char*                   OptFileOpener = NULL;
     ImVector<char*>         TestsToRun;
 };
