@@ -675,7 +675,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
 
     // ## Test basic button presses
     t = REGISTER_TEST("widgets", "widgets_button_press");
-    struct ButtonPressTestVars { int ButtonPressCount[4] = { 0 }; };
+    struct ButtonPressTestVars { int ButtonPressCount[5] = { 0 }; };
     t->SetUserDataType<ButtonPressTestVars>();
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
@@ -688,8 +688,10 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
             vars.ButtonPressCount[1]++;
         if (ImGui::ButtonEx("Button2", ImVec2(0, 0), ImGuiButtonFlags_PressedOnClickRelease | ImGuiButtonFlags_PressedOnDoubleClick))
             vars.ButtonPressCount[2]++;
-        if (ImGui::ButtonEx("Button3", ImVec2(0, 0), ImGuiButtonFlags_Repeat))
+        if (ImGui::ButtonEx("Button3", ImVec2(0, 0), ImGuiButtonFlags_PressedOnClickReleaseAnywhere))
             vars.ButtonPressCount[3]++;
+        if (ImGui::ButtonEx("Button4", ImVec2(0, 0), ImGuiButtonFlags_Repeat))
+            vars.ButtonPressCount[4]++;
         ImGui::End();
     };
     t->TestFunc = [](ImGuiTestContext* ctx)
@@ -704,17 +706,30 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ctx->ItemDoubleClick("Button2");
         IM_CHECK_EQ(vars.ButtonPressCount[2], 2);
 
-        ctx->ItemClick("Button3");
-        IM_CHECK_EQ(vars.ButtonPressCount[3], 1);
+        // Test ImGuiButtonFlags_PressedOnClickRelease vs ImGuiButtonFlags_PressedOnClickReleaseAnywhere
+        vars.ButtonPressCount[2] = 0;
+        ctx->MouseMove("Button2");
         ctx->MouseDown(0);
+        ctx->MouseMove("Button0", ImGuiTestOpFlags_NoCheckHoveredId);
+        ctx->MouseUp(0);
+        IM_CHECK_EQ(vars.ButtonPressCount[2], 0);
+        ctx->MouseMove("Button3");
+        ctx->MouseDown(0);
+        ctx->MouseMove("Button0", ImGuiTestOpFlags_NoCheckHoveredId);
+        ctx->MouseUp(0);
         IM_CHECK_EQ(vars.ButtonPressCount[3], 1);
 
+        // Test ImGuiButtonFlags_Repeat
+        ctx->ItemClick("Button4");
+        IM_CHECK_EQ(vars.ButtonPressCount[4], 1);
+        ctx->MouseDown(0);
+        IM_CHECK_EQ(vars.ButtonPressCount[4], 1);
         const float step = ImMin(ctx->UiContext->IO.KeyRepeatDelay, ctx->UiContext->IO.KeyRepeatRate) * 0.50f;
         ctx->SleepNoSkip(ctx->UiContext->IO.KeyRepeatDelay, step);
         ctx->SleepNoSkip(ctx->UiContext->IO.KeyRepeatRate, step);
         ctx->SleepNoSkip(ctx->UiContext->IO.KeyRepeatRate, step);
         ctx->SleepNoSkip(ctx->UiContext->IO.KeyRepeatRate, step);
-        IM_CHECK_EQ(vars.ButtonPressCount[3], 1 + 1 + 3 * 2); // FIXME: MouseRepeatRate is double KeyRepeatRate, that's not documented / or that's a bug
+        IM_CHECK_EQ(vars.ButtonPressCount[4], 1 + 1 + 3 * 2); // FIXME: MouseRepeatRate is double KeyRepeatRate, that's not documented / or that's a bug
         ctx->MouseUp(0);
     };
 
@@ -3426,7 +3441,7 @@ void RegisterTests_Perf(ImGuiTestEngine* e)
         ImGui::Begin("Test Func", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
         int loop_count = 200 * ctx->PerfStressAmount;
         ImDrawList* draw_list = ImGui::GetWindowDrawList();
-        int segments = 12;
+        int segments = 0;
         ImGui::Button("##CircleFilled", ImVec2(120, 120));
         ImVec2 bounds_min = ImGui::GetItemRectMin();
         ImVec2 bounds_size = ImGui::GetItemRectSize();
@@ -4079,7 +4094,7 @@ void RegisterTests_Capture(ImGuiTestEngine* e)
                 ImGui::StyleColorsLight(&style);
                 ImGui::Begin("Debug##Light", &open);
             }
-            char string_buffer[] = "Quick brown fox";
+            char string_buffer[] = "";
             float float_value = 0.6f;
             ImGui::Text("Hello, world 123");
             ImGui::Button("Save");
@@ -4105,7 +4120,8 @@ void RegisterTests_Capture(ImGuiTestEngine* e)
             ImGuiWindow* window = (n == 0) ? ctx->GetWindowByRef("/Debug##Dark") : ctx->GetWindowByRef("/Debug##Light");
             ctx->WindowRef(window->Name);
             ctx->ItemClick("string");
-            ctx->KeyPressMap(ImGuiKey_End);
+            ctx->KeyChars("quick brown fox");
+            //ctx->KeyPressMap(ImGuiKey_End);
             ctx->MouseMove("float");
             ctx->MouseMoveToPos(g.IO.MousePos + ImVec2(30, -10));
             ctx->CaptureArgs.InPadding = padding;
