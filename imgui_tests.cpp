@@ -2997,7 +2997,7 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
     {
         #define IM_CHECK_UTF8_CP16(_TEXT)   (CheckUtf8_cp16(u8##_TEXT, u##_TEXT))
         // #define IM_CHECK_UTF8_CP32(_TEXT) (CheckUtf8_cp32(u8##_TEXT, U##_TEXT))
-        
+
         // Test data taken from https://bitbucket.org/knight666/utf8rewind/src/default/testdata/big-list-of-naughty-strings-master/blns.txt
 
         // Special Characters
@@ -3025,7 +3025,7 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
         IM_CHECK_NO_RET(IM_CHECK_UTF8_CP16("\u2070\u2074\u2075"));
         IM_CHECK_NO_RET(IM_CHECK_UTF8_CP16("\u2080\u2081\u2082"));
         IM_CHECK_NO_RET(IM_CHECK_UTF8_CP16("\u2070\u2074\u2075\u2080\u2081\u2082"));
-        
+
         // Quotation Marks
         // Strings which contain misplaced quotation marks; can cause encoding errors
         IM_CHECK_NO_RET(IM_CHECK_UTF8_CP16("'"));
@@ -3114,7 +3114,7 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
         // Strings which contain unicode with an "upsidedown" effect (via http://www.upsidedowntext.com)
         IM_CHECK_NO_RET(IM_CHECK_UTF8_CP16("\u02d9\u0250nb\u1d09l\u0250 \u0250u\u0183\u0250\u026f \u01dd\u0279olop \u0287\u01dd \u01dd\u0279oq\u0250l \u0287n \u0287unp\u1d09p\u1d09\u0254u\u1d09 \u0279od\u026f\u01dd\u0287 po\u026fsn\u1d09\u01dd op p\u01dds '\u0287\u1d09l\u01dd \u0183u\u1d09\u0254s\u1d09d\u1d09p\u0250 \u0279n\u0287\u01dd\u0287\u0254\u01ddsuo\u0254 '\u0287\u01dd\u026f\u0250 \u0287\u1d09s \u0279olop \u026fnsd\u1d09 \u026f\u01dd\u0279o\u02e5"));
         IM_CHECK_NO_RET(IM_CHECK_UTF8_CP16("00\u02d9\u0196$-"));
-        
+
         // Unicode font
         // Strings which contain bold/italic/etc. versions of normal characters
         IM_CHECK_NO_RET(IM_CHECK_UTF8_CP16("\uff34\uff48\uff45 \uff51\uff55\uff49\uff43\uff4b \uff42\uff52\uff4f\uff57\uff4e \uff46\uff4f\uff58 \uff4a\uff55\uff4d\uff50\uff53 \uff4f\uff56\uff45\uff52 \uff54\uff48\uff45 \uff4c\uff41\uff5a\uff59 \uff44\uff4f\uff47"));
@@ -3433,7 +3433,13 @@ void RegisterTests_Perf(ImGuiTestEngine* e)
         DrawPrimFunc_RectRoundedFilled,
         DrawPrimFunc_CircleStroke,
         DrawPrimFunc_CircleStrokeThick,
-        DrawPrimFunc_CircleFilled
+        DrawPrimFunc_CircleFilled,
+        DrawPrimFunc_TriangleStroke,
+        DrawPrimFunc_TriangleStrokeThick,
+        DrawPrimFunc_LongStroke,
+        DrawPrimFunc_LongStrokeThick,
+        DrawPrimFunc_LongJaggedStroke,
+        DrawPrimFunc_LongJaggedStrokeThick,
     };
 
     auto DrawPrimFunc = [](ImGuiTestContext* ctx)
@@ -3487,6 +3493,30 @@ void RegisterTests_Perf(ImGuiTestEngine* e)
             for (int n = 0; n < loop_count; n++)
                 draw_list->AddCircleFilled(center, r, col, segments);
             break;
+        case DrawPrimFunc_TriangleStroke:
+            for (int n = 0; n < loop_count; n++)
+                draw_list->AddNgon(center, r, col, 3, 1.0f);
+            break;
+        case DrawPrimFunc_TriangleStrokeThick:
+            for (int n = 0; n < loop_count; n++)
+                draw_list->AddNgon(center, r, col, 3, 4.0f);
+            break;
+        case DrawPrimFunc_LongStroke:
+            draw_list->AddNgon(center, r, col, 10 * loop_count, 1.0f);
+            break;
+        case DrawPrimFunc_LongStrokeThick:
+            draw_list->AddNgon(center, r, col, 10 * loop_count, 4.0f);
+            break;
+        case DrawPrimFunc_LongJaggedStroke:
+            for (float n = 0; n < 10 * loop_count; n += 2.51327412287f)
+                draw_list->PathLineTo(center + ImVec2(r * sinf(n), r * cosf(n)));
+            draw_list->PathStroke(col, false, 1.0);
+            break;
+        case DrawPrimFunc_LongJaggedStrokeThick:
+            for (float n = 0; n < 10 * loop_count; n += 2.51327412287f)
+                draw_list->PathLineTo(center + ImVec2(r * sinf(n), r * cosf(n)));
+            draw_list->PathStroke(col, false, 4.0);
+            break;
         default:
             IM_ASSERT(0);
         }
@@ -3535,6 +3565,36 @@ void RegisterTests_Perf(ImGuiTestEngine* e)
 
     t = REGISTER_TEST("perf", "perf_draw_prim_circle_filled");
     t->ArgVariant = DrawPrimFunc_CircleFilled;
+    t->GuiFunc = DrawPrimFunc;
+    t->TestFunc = PerfCaptureFunc;
+
+    t = REGISTER_TEST("perf", "perf_draw_prim_triangle_stroke");
+    t->ArgVariant = DrawPrimFunc_TriangleStroke;
+    t->GuiFunc = DrawPrimFunc;
+    t->TestFunc = PerfCaptureFunc;
+
+    t = REGISTER_TEST("perf", "perf_draw_prim_triangle_stroke_thick");
+    t->ArgVariant = DrawPrimFunc_TriangleStrokeThick;
+    t->GuiFunc = DrawPrimFunc;
+    t->TestFunc = PerfCaptureFunc;
+
+    t = REGISTER_TEST("perf", "perf_draw_prim_long_stroke");
+    t->ArgVariant = DrawPrimFunc_LongStroke;
+    t->GuiFunc = DrawPrimFunc;
+    t->TestFunc = PerfCaptureFunc;
+
+    t = REGISTER_TEST("perf", "perf_draw_prim_long_stroke_thick");
+    t->ArgVariant = DrawPrimFunc_LongStrokeThick;
+    t->GuiFunc = DrawPrimFunc;
+    t->TestFunc = PerfCaptureFunc;
+
+    t = REGISTER_TEST("perf", "perf_draw_prim_long_jagged_stroke");
+    t->ArgVariant = DrawPrimFunc_LongJaggedStroke;
+    t->GuiFunc = DrawPrimFunc;
+    t->TestFunc = PerfCaptureFunc;
+
+    t = REGISTER_TEST("perf", "perf_draw_prim_long_jagged_stroke_thick");
+    t->ArgVariant = DrawPrimFunc_LongJaggedStrokeThick;
     t->GuiFunc = DrawPrimFunc;
     t->TestFunc = PerfCaptureFunc;
 
