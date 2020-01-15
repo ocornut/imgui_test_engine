@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-18.04
     strategy:
       matrix:
-        branch: [master, docking]
+        branch: [master, docking, tables]
 
     steps:
     - uses: actions/checkout@v1
@@ -31,30 +31,3 @@ jobs:
     - name: Test
       run: |
         timeout 300 app/imgui_test_app -nogui -nopause -v2 -ve4 tests
-
-  Tables:
-    runs-on: ubuntu-18.04
-    strategy:
-      matrix:
-        branch: [tables]
-
-    steps:
-    - uses: actions/checkout@v1
-      with:
-        fetch-depth: 1
-
-    - uses: actions/checkout@v1
-      with:
-        fetch-depth: 1
-        repository: ocornut/imgui_private
-        path: imgui
-        ref: ${{ matrix.branch }}
-        token: ${{ secrets.IMGUI_PRIVATE_ACCESS }}
-
-    - name: Build
-      run: |
-        make -C app/
-
-    - name: Test
-      run: |
-        timeout 300 app/imgui_test_app -nogui -nopause -v2 -ve4 all
