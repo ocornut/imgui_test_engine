@@ -3790,6 +3790,12 @@ void RegisterTests_Perf(ImGuiTestEngine* e)
         DrawPrimFunc_LongStrokeThick,
         DrawPrimFunc_LongJaggedStroke,
         DrawPrimFunc_LongJaggedStrokeThick,
+		DrawPrimFunc_Line,
+		DrawPrimFunc_LineAA,
+		DrawPrimFunc_LineAANoTex,
+		DrawPrimFunc_LineThick,
+		DrawPrimFunc_LineThickAA,
+		DrawPrimFunc_LineThickAANoTex
     };
 
     auto DrawPrimFunc = [](ImGuiTestContext* ctx)
@@ -3805,6 +3811,7 @@ void RegisterTests_Perf(ImGuiTestEngine* e)
         float r = (float)(int)(ImMin(bounds_size.x, bounds_size.y) * 0.8f * 0.5f);
         float rounding = 8.0f;
         ImU32 col = IM_COL32(255, 255, 0, 255);
+		ImDrawListFlags old_flags = draw_list->Flags; // Save old flags as some of these tests manipulate them
         switch (ctx->Test->ArgVariant)
         {
         case DrawPrimFunc_RectStroke:
@@ -3867,9 +3874,42 @@ void RegisterTests_Perf(ImGuiTestEngine* e)
                 draw_list->PathLineTo(center + ImVec2(r * sinf(n), r * cosf(n)));
             draw_list->PathStroke(col, false, 4.0);
             break;
+		case DrawPrimFunc_Line:
+			draw_list->Flags &= ~ImDrawListFlags_AntiAliasedLines;
+			for (int n = 0; n < loop_count; n++)
+				draw_list->AddLine(center - ImVec2(r, r), center + ImVec2(r, r), col, 1.0f);
+			break;
+		case DrawPrimFunc_LineAA:
+            draw_list->Flags |= ImDrawListFlags_AntiAliasedLines;
+			for (int n = 0; n < loop_count; n++)
+				draw_list->AddLine(center - ImVec2(r, r), center + ImVec2(r, r), col, 1.0f);
+			break;
+		case DrawPrimFunc_LineAANoTex:
+			draw_list->Flags |= ImDrawListFlags_AntiAliasedLines;
+			draw_list->Flags &= ~ImDrawListFlags_AntiAliasedLinesUseTexData;
+			for (int n = 0; n < loop_count; n++)
+				draw_list->AddLine(center - ImVec2(r, r), center + ImVec2(r, r), col, 1.0f);
+			break;
+		case DrawPrimFunc_LineThick:
+			draw_list->Flags &= ~ImDrawListFlags_AntiAliasedLines;
+			for (int n = 0; n < loop_count; n++)
+				draw_list->AddLine(center - ImVec2(r, r), center + ImVec2(r, r), col, 4.0f);
+			break;
+		case DrawPrimFunc_LineThickAA:
+			draw_list->Flags |= ImDrawListFlags_AntiAliasedLines;
+			for (int n = 0; n < loop_count; n++)
+				draw_list->AddLine(center - ImVec2(r, r), center + ImVec2(r, r), col, 4.0f);
+			break;
+		case DrawPrimFunc_LineThickAANoTex:
+			draw_list->Flags |= ImDrawListFlags_AntiAliasedLines;
+			draw_list->Flags &= ~ImDrawListFlags_AntiAliasedLinesUseTexData;
+			for (int n = 0; n < loop_count; n++)
+				draw_list->AddLine(center - ImVec2(r, r), center + ImVec2(r, r), col, 4.0f);
+			break;
         default:
             IM_ASSERT(0);
         }
+		draw_list->Flags = old_flags; // Restre flags
         ImGui::End();
     };
 
@@ -3947,6 +3987,36 @@ void RegisterTests_Perf(ImGuiTestEngine* e)
     t->ArgVariant = DrawPrimFunc_LongJaggedStrokeThick;
     t->GuiFunc = DrawPrimFunc;
     t->TestFunc = PerfCaptureFunc;
+
+    t = REGISTER_TEST("perf", "perf_draw_prim_line");
+	t->ArgVariant = DrawPrimFunc_Line;
+	t->GuiFunc = DrawPrimFunc;
+	t->TestFunc = PerfCaptureFunc;
+
+	t = REGISTER_TEST("perf", "perf_draw_prim_line_antialiased");
+	t->ArgVariant = DrawPrimFunc_LineAA;
+	t->GuiFunc = DrawPrimFunc;
+	t->TestFunc = PerfCaptureFunc;
+
+	t = REGISTER_TEST("perf", "perf_draw_prim_line_antialiased_no_tex");
+	t->ArgVariant = DrawPrimFunc_LineAANoTex;
+	t->GuiFunc = DrawPrimFunc;
+	t->TestFunc = PerfCaptureFunc;
+
+	t = REGISTER_TEST("perf", "perf_draw_prim_line_thick");
+	t->ArgVariant = DrawPrimFunc_LineThick;
+	t->GuiFunc = DrawPrimFunc;
+	t->TestFunc = PerfCaptureFunc;
+
+	t = REGISTER_TEST("perf", "perf_draw_prim_line_thick_antialiased");
+	t->ArgVariant = DrawPrimFunc_LineThickAA;
+	t->GuiFunc = DrawPrimFunc;
+	t->TestFunc = PerfCaptureFunc;
+
+	t = REGISTER_TEST("perf", "perf_draw_prim_line_thick_antialiased_no_tex");
+	t->ArgVariant = DrawPrimFunc_LineThickAANoTex;
+	t->GuiFunc = DrawPrimFunc;
+	t->TestFunc = PerfCaptureFunc;
 
     // ## Measure the cost of ImDrawListSplitter split/merge functions
     auto DrawSplittedFunc = [](ImGuiTestContext* ctx)
@@ -4470,6 +4540,63 @@ void RegisterTests_Perf(ImGuiTestEngine* e)
 			// Restore draw list flags
 			draw_list->Flags = backup_draw_list_flags;
 			ImGui::EndChild();
+        }
+        ImGui::End();
+    };
+    t->TestFunc = PerfCaptureFunc;
+    
+    // ## Draw various AA/non-AA lines (not really a perf test, more a correctness one)
+	t = REGISTER_TEST("perf", "perf_misc_lines");
+	t->GuiFunc = [](ImGuiTestContext* ctx)
+	{
+		const int num_cols = 16; // Number of columns (line rotations) to draw
+		const int num_rows = 3; // Number of rows (line variants) to draw
+		const float line_len = 64.0f; // Length of line to draw
+		const ImVec2 line_spacing(74.0f, 96.0f); // Spacing between lines
+
+		ImGui::SetNextWindowSize(ImVec2((num_cols + 0.5f) * line_spacing.x, (num_rows * line_spacing.y) + 128.0f));
+		if (ImGui::Begin("perf_misc_lines"))
+		{
+			ImDrawList* draw_list = ImGui::GetWindowDrawList();
+
+			static float base_rot = 0.0f;
+			ImGui::SliderFloat("Base rotation", &base_rot, 0.0f, 360.0f);
+			static float line_width = 1.0f;
+			ImGui::SliderFloat("Line width", &line_width, 1.0f, 10.0f);
+
+			ImVec2 window_pos = ImGui::GetWindowPos();
+			ImVec2 cursor_pos = ImGui::GetCursorPos();
+			ImVec2 base_pos(window_pos.x + cursor_pos.x + (line_spacing.x * 0.5f), window_pos.y + cursor_pos.y);
+
+			for (int i = 0; i < num_rows; i++)
+			{
+				const char* name = "";
+				switch (i)
+				{
+				case 0: name = "No AA";  draw_list->Flags &= ~ImDrawListFlags_AntiAliasedLines; break;
+				case 1: name = "AA no texturing"; draw_list->Flags |= ImDrawListFlags_AntiAliasedLines; draw_list->Flags &= ~ImDrawListFlags_AntiAliasedLinesUseTexData; break;
+				case 2: name = "AA w/ texturing"; draw_list->Flags |= ImDrawListFlags_AntiAliasedLines; draw_list->Flags |= ImDrawListFlags_AntiAliasedLinesUseTexData; break;
+				}
+
+				int initial_vtx_count = draw_list->VtxBuffer.Size;
+				int initial_idx_count = draw_list->IdxBuffer.Size;
+
+				for (int j = 0; j < num_cols; j++)
+				{
+					float r = (base_rot * IM_PI / 180.0f) + ((j * IM_PI * 0.5f) / (num_cols - 1));
+
+					ImVec2 center = ImVec2(base_pos.x + (line_spacing.x * j), base_pos.y + (line_spacing.y * (i + 0.5f)));
+					ImVec2 start = ImVec2(center.x + (ImSin(r) * line_len * 0.5f), center.y + (ImCos(r) * line_len * 0.5f));
+					ImVec2 end = ImVec2(center.x - (ImSin(r) * line_len * 0.5f), center.y - (ImCos(r) * line_len * 0.5f));
+
+					draw_list->AddLine(start, end, IM_COL32(255, 255, 255, 255), line_width);
+				}
+
+				ImGui::SetCursorPosY(cursor_pos.y + (i * line_spacing.y));
+				ImGui::Text("%s - %d vertices, %d indices", name, draw_list->VtxBuffer.Size - initial_vtx_count, draw_list->IdxBuffer.Size - initial_idx_count);
+			}
+
+			ImGui::SetCursorPosY(cursor_pos.y + (num_rows * line_spacing.y));
 		}
 		ImGui::End();
 	};
