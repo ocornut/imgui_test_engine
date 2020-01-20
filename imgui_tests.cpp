@@ -2293,6 +2293,8 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
     };
 
     // ## Test that initial size of new dock node is based on visible/focused window
+    // FIXME-DOCK FIXME-WIP: This is not actually reliable yet (see stashes around August 2019)
+#if 0
     t = REGISTER_TEST("docking", "docking_basic_initial_node_size");
     t->Flags |= ImGuiTestFlags_NoAutoFinish;
     t->GuiFunc = [](ImGuiTestContext* ctx)
@@ -2329,6 +2331,7 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
             ctx->Finish();
         }
     };
+#endif
 
     // ## Test that docking into a parent node forwarding docking into the central node or last focused node
     t = REGISTER_TEST("docking", "docking_into_parent_node");
