@@ -4004,6 +4004,163 @@ void RegisterTests_Perf(ImGuiTestEngine* e)
         }
     };
     t->TestFunc = PerfCaptureFunc;
+
+	// ## Circle segment count comparisons
+	t = REGISTER_TEST("perf", "perf_circle_segment_counts");
+	t->GuiFunc = [](ImGuiTestContext* ctx)
+	{
+		const int num_cols = 3; // Number of columns to draw
+		const int num_rows = 3; // Number of rows to draw
+		const float max_radius = 400.0f; // Maximum allowed radius
+
+		static ImVec2 content_size(32.0f, 32.0f); // Size of window content on last frame
+
+		//
+//		ImGui::SetNextWindowSize(ImVec2((num_cols + 0.5f) * item_spacing.x, (num_rows * item_spacing.y) + 128.0f));
+		if (ImGui::Begin("perf_circle_segment_counts", NULL, ImGuiWindowFlags_HorizontalScrollbar))
+		{
+			// Control area
+
+			static float line_width = 1.0f;
+			ImGui::SliderFloat("Line width", &line_width, 1.0f, 10.0f);
+
+			static float radius = 32.0f;
+			ImGui::SliderFloat("Radius", &radius, 1.0f, max_radius);
+
+			static int segments = 32;
+			ImGui::SliderInt("Segments", &segments, 1, 512);
+
+			ImGui::DragFloat("Circle segment Max Error", &ImGui::GetStyle().CircleSegmentMaxError, 0.01f, 0.1f, 10.0f, "%.2f", 1.0f);
+
+			static bool no_aa = false;
+			ImGui::Checkbox("No anti-aliasing", &no_aa);
+
+			ImGui::SameLine();
+
+			static bool overdraw = false;
+			ImGui::Checkbox("Overdraw", &overdraw);
+			if (ImGui::IsItemHovered())
+				ImGui::SetTooltip("Draws each primitive repeatedly so that stray low-alpha pixels are easier to spot");
+
+			ImGui::SameLine();
+
+			const char* fill_modes[] = { "Stoke", "Fill", "Stroke+fill" };
+			static int fill_mode = 0;
+			ImGui::SetNextItemWidth(128.0f);
+			ImGui::Combo("Fill mode", &fill_mode, fill_modes, IM_ARRAYSIZE(fill_modes));
+
+			// Display area
+
+			ImGui::SetNextWindowContentSize(content_size);
+			ImGui::BeginChild("Display", ImGui::GetContentRegionAvail(), false, ImGuiWindowFlags_HorizontalScrollbar);
+
+			ImDrawList* draw_list = ImGui::GetWindowDrawList();
+
+			// Set up the grid layout
+
+			float spacing = ImMax(96.0f, (radius * 2.0f) + line_width + 8.0f);
+
+			ImVec2 item_spacing(spacing, spacing); // Spacing between rows/columns
+
+			ImVec2 window_pos = ImGui::GetWindowPos();
+			ImVec2 cursor_pos = ImGui::GetCursorPos();
+			ImVec2 scroll_pos = ImVec2(ImGui::GetScrollX(), ImGui::GetScrollY());
+
+			// Draw the first <n> radius/segment size pairs in a quazi-logarithmic down the side
+
+			for (int pair_rad = 1, step = 1; pair_rad <= 512; pair_rad += step)
+			{
+				ImGui::TextColored((pair_rad == (int)radius) ? ImVec4(1.0f, 0.0f, 0.0f, 1.0f) : ImVec4(1.0f, 1.0f, 1.0f, 1.0f), "Rad %d = %d segs", pair_rad, draw_list->GetSuggestedCircleSegmentCount((float)pair_rad));
+				if ((pair_rad >= 16) && ((pair_rad & (pair_rad - 1)) == 0))
+					step *= 2;
+			}
+
+			// Calculate the worst-case width for the size pairs
+			float max_pair_width = ImGui::CalcTextSize("Rad 0000 = 0000 segs").x;
+
+			const ImVec2 text_standoff(max_pair_width + 64.0f, 16.0f); // How much space to leave for the size list and labels
+			ImVec2 base_pos(window_pos.x - scroll_pos.x + cursor_pos.x + (item_spacing.x * 0.5f) + text_standoff.x, window_pos.y - scroll_pos.y + cursor_pos.y + text_standoff.y);
+
+			// Update content size for next frame
+			content_size = ImVec2(cursor_pos.x + (item_spacing.x * num_cols) + text_standoff.x, ImMax(cursor_pos.y + (item_spacing.y * num_rows) + text_standoff.y, ImGui::GetCursorPosY()));
+
+			// Save old flags
+			ImDrawListFlags old_flags = draw_list->Flags;
+
+			if (no_aa)
+				draw_list->Flags &= ~ImDrawListFlags_AntiAliasedLines;
+
+			// Get the suggested segment count for this radius
+			int suggested_segment_count = draw_list->GetSuggestedCircleSegmentCount(radius);
+
+			// Draw row/column labels
+
+			for (int i = 0; i < num_cols; i++)
+			{
+				const char* name = "";
+				char buf[64];
+
+				switch (i)
+				{
+				case 0: sprintf(buf, "%d segs", suggested_segment_count); name = buf; break;
+				case 1: sprintf(buf, "%d segs", segments); name = buf; break;
+				case 2: name = "512 segs"; break;
+				}
+
+				ImGui::SetCursorPos(ImVec2(max_pair_width + 8.0f, cursor_pos.y + text_standoff.y + ((i + 0.5f) * item_spacing.y)));
+				ImGui::Text(name);
+
+				ImGui::SetCursorPos(ImVec2(text_standoff.x + ((i + 0.5f) * item_spacing.x), cursor_pos.y));
+				ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), name);
+			}
+
+			// Draw circles
+
+			for (int y = 0; y < num_rows; y++)
+			{
+				for (int x = 0; x < num_cols; x++)
+				{
+					ImVec2 center = ImVec2(base_pos.x + (item_spacing.x * x), base_pos.y + (item_spacing.y * (y + 0.5f)));
+
+					for (int pass = 0; pass < 2; pass++)
+					{						
+						int num_segments;
+
+						int type_index = (pass == 0) ? x : y;
+						ImU32 color = (pass == 0) ? IM_COL32(255, 0, 0, 255) : IM_COL32(255, 255, 255, 255);
+
+						switch (type_index)
+						{
+						case 0: num_segments = suggested_segment_count; break;
+						case 1: num_segments = segments; break;
+						case 2: num_segments = 512; break;
+						}
+
+						const int num_to_draw = overdraw ? 20 : 1;
+
+						// We fill either if fill mode was selected, or in stroke+fill mode for the first pass (so we can see what varying segment count fill+stroke looks like)
+						bool fill = (fill_mode == 1) || ((fill_mode == 2) && (pass == 0));
+
+						for (int i = 0; i < num_to_draw; i++)
+						{
+							if (fill)
+								draw_list->AddCircleFilled(center, radius, color, num_segments);
+							else
+								draw_list->AddCircle(center, radius, color, num_segments, line_width);
+						}
+					}
+				}
+			}
+
+			// Restore draw list flags
+
+			draw_list->Flags = old_flags;
+
+			ImGui::EndChild();
+		}
+		ImGui::End();
+	};
+	t->TestFunc = PerfCaptureFunc;
 }
 
 //-------------------------------------------------------------------------
