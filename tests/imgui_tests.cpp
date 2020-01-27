@@ -4101,7 +4101,7 @@ void RegisterTests_Perf(ImGuiTestEngine* e)
 				{
 					ImVec2 center = ImVec2(base_pos.x + (item_spacing.x * x), base_pos.y + (item_spacing.y * (y + 0.5f)));
 					for (int pass = 0; pass < 2; pass++)
-					{						
+					{
                         const int type_index = (pass == 0) ? x : y;
                         const ImU32 color = ImColor((pass == 0) ? color_bg : color_fg);
                         const int num_segment_count = segment_count_by_column[type_index];
