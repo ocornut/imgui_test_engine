@@ -26,8 +26,8 @@ jobs:
 
     - name: Build
       run: |
-        make -C app/
+        make -C tests/app/
 
     - name: Test
       run: |
-        timeout 300 app/imgui_test_app -nogui -nopause -v2 -ve4 tests
+        timeout 300 tests/app/imgui_test_app -nogui -nopause -v2 -ve4 tests
