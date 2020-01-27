@@ -1,10 +1,22 @@
 /*
- *
- * Index of this file:
- *
- * - DebugMergeFontAwesome4()
- *
- */
+//-----------------------------------------------------------------------------------
+// Index of this file
+//-----------------------------------------------------------------------------------
+
+- DebugMergeFontAwesome4(float size)
+
+//-----------------------------------------------------------------------------------
+// Typical setup
+//-----------------------------------------------------------------------------------
+
+#define IMGUI_FONTAWESOME4_IMPLEMENTATION
+#include "../imgui_dev/helpers/imgui_debug_fontawesome.h"
+
+then:
+
+ImGui::Text("Play " ICON_FA_MUSIC);
+
+*/
 
 //-----------------------------------------------------------------------------------
 // Header Mess
@@ -22,12 +34,12 @@
 //-----------------------------------------------------------------------------------
 
 #include "IconsFontAwesome4_c.h"
-#include "imgui_fonts_fontawesome4.h"
+#include "imgui_data_fontawesome4.h"
 
-// define IMGUI_FONTS_FONTAWESOME4_IMPLEMENTATION before including imgui_debug.h in one cpp file
+// define IMGUI_FONTS_FONTAWESOME4_IMPLEMENTATION before including imgui_debug.h in one .cpp file
 // ImGui::Text(ICON_FA_ARROWS_H " New Horizontal divider");
 // ImGui::Text(ICON_FA_ARROWS_V " New Vertical divider");
-ImFont* DebugMergeFontAwesome4(float size)
+static inline ImFont* DebugMergeFontAwesome4(float size)
 {
     ImGuiIO& io = ImGui::GetIO();
 
