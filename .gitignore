@@ -1,0 +1,13 @@
+## Build output
+## (FIXME: Could we somehow have .csv and captures/ in a same output folder?)
+build_scripts/tools/
+build_scripts/*.zip
+build_scripts/captures
+build_scripts/imgui_perflog.csv
+build_scripts/pvs_studio/output
+
+## Build config
+build_scripts/config/build_config.bat
+
+## Ini files
+imgui.ini

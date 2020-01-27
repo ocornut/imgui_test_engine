@@ -1,6 +1,7 @@
 @set PVS_DIR=C:\Program Files (x86)\PVS-Studio
 @set WORK_DIR=%~dp0
-@set PROJ_DIR=%WORK_DIR%\..\..\imgui\examples\example_win32_directx11
+@set IMGUI_DIR=%WORK_DIR%..\..\..\imgui
+@set PROJ_DIR=%IMGUI_DIR%\examples\example_win32_directx11
 @set PROJ_NAME=example_win32_directx11
 
 @echo ---- Running PVS Studio

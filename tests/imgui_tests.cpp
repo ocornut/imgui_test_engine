@@ -2586,7 +2586,7 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
 bool CheckUtf8_cp16(const char* utf8, const char16_t* unicode)
 {
     IM_STATIC_ASSERT(sizeof(ImWchar) == sizeof(char16_t));
-    const int utf8_len = strlen(utf8);
+    const int utf8_len = (int)strlen(utf8);
     const int max_chars = utf8_len * 4 + 1;
 
     ImWchar* converted = (ImWchar*)IM_ALLOC(max_chars * sizeof(ImWchar));
@@ -4086,11 +4086,12 @@ void RegisterTests_Perf(ImGuiTestEngine* e)
 			for (int i = 0; i < num_cols; i++)
 			{
                 Str64f name("%s\n%d segs", desc_by_column[i], segment_count_by_column[i]);
-				ImGui::SetCursorScreenPos(ImVec2(cursor_pos.x + max_pair_width + 8.0f, cursor_pos.y + text_standoff.y + ((i + 0.5f) * item_spacing.y)));
-				ImGui::TextColored(color_fg, name.c_str());
-
-				ImGui::SetCursorScreenPos(ImVec2(cursor_pos.x + text_standoff.x + ((i + 0.2f) * item_spacing.x), cursor_pos.y));
-				ImGui::TextColored(color_bg, name.c_str());
+                draw_list->AddText(
+                    ImVec2(cursor_pos.x + max_pair_width + 8.0f, cursor_pos.y + text_standoff.y + ((i + 0.5f) * item_spacing.y)),
+                    ImGui::GetColorU32(color_fg), name.c_str());
+                draw_list->AddText(
+                    ImVec2(cursor_pos.x + text_standoff.x + ((i + 0.2f) * item_spacing.x), cursor_pos.y),
+                    ImGui::GetColorU32(color_bg), name.c_str());
 			}
 
 			// Draw circles

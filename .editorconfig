@@ -10,3 +10,11 @@ indent_style = space
 indent_size = 4
 insert_final_newline = true
 trim_trailing_whitespace = true
+
+[stb_*]
+indent_size = 3
+trim_trailing_whitespace = false
+
+[Makefile]
+indent_style = tab
+indent_size = 4
