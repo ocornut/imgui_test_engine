@@ -1,0 +1,12 @@
+## Local perf logs
+imgui_perflog.csv
+
+## build_binaries output
+tools/
+*.zip
+
+## config
+config/build_config.bat
+
+## Dear ImGui Ini files
+imgui.ini
