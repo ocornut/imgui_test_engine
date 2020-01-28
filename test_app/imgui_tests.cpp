@@ -3,7 +3,7 @@
 
 #define _CRT_SECURE_NO_WARNINGS
 #include <limits.h>
-#include <str/Str.h>
+#include <Str/Str.h>
 #include "imgui.h"
 #define IMGUI_DEFINE_MATH_OPERATORS
 #include "imgui_internal.h"

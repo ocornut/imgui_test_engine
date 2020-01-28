@@ -64,7 +64,7 @@ static inline void DebugCrtDumpLeaks()
 #include "imgui_capture_tool.h"
 #include "backends.h"
 #include "test_app.h"
-#include <str/Str.h>
+#include <Str/Str.h>
 
 //-------------------------------------------------------------------------
 // Test Application
