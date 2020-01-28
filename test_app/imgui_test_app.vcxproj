@@ -157,12 +157,13 @@
     <ClInclude Include="..\libs\stb\stb_image_write.h" />
     <ClInclude Include="..\libs\Str\Str.h" />
     <ClInclude Include="..\test_engine\imgui_capture_tool.h" />
-    <ClInclude Include="..\test_engine\imgui_te_app.h" />
     <ClInclude Include="..\test_engine\imgui_te_context.h" />
     <ClInclude Include="..\test_engine\imgui_te_core.h" />
     <ClInclude Include="..\test_engine\imgui_te_util.h" />
+    <ClInclude Include="backends.h" />
     <ClInclude Include="imconfig_tests.h" />
     <ClInclude Include="imgui_tests.h" />
+    <ClInclude Include="test_app.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\imgui\examples\imgui_impl_dx11.cpp" />
@@ -173,10 +174,10 @@
     <ClCompile Include="..\..\imgui\imgui_widgets.cpp" />
     <ClCompile Include="..\libs\Str\Str.cpp" />
     <ClCompile Include="..\test_engine\imgui_capture_tool.cpp" />
-    <ClCompile Include="..\test_engine\imgui_te_backends.cpp" />
     <ClCompile Include="..\test_engine\imgui_te_context.cpp" />
     <ClCompile Include="..\test_engine\imgui_te_core.cpp" />
     <ClCompile Include="..\test_engine\imgui_te_util.cpp" />
+    <ClCompile Include="backends.cpp" />
     <ClCompile Include="imgui_tests.cpp" />
     <ClCompile Include="main.cpp" />
   </ItemGroup>

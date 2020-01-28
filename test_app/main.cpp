@@ -61,17 +61,10 @@ static inline void DebugCrtDumpLeaks()
 #include "imgui_te_core.h"
 #include "imgui_te_util.h"
 #include "imgui_tests.h"
-#include "imgui_te_app.h"
 #include "imgui_capture_tool.h"
+#include "backends.h"
+#include "test_app.h"
 #include <str/Str.h>
-
-//-------------------------------------------------------------------------
-// Back-end Functions (in imgui_te_backends.cpp)
-//-------------------------------------------------------------------------
-
-void MainLoop();
-void MainLoopNull();
-bool CaptureFramebufferScreenshot(int x, int y, int w, int h, unsigned int* pixels, void* user);
 
 //-------------------------------------------------------------------------
 // Test Application

@@ -39,9 +39,6 @@
     <ClInclude Include="..\..\imgui\imconfig.h">
       <Filter>imgui</Filter>
     </ClInclude>
-    <ClInclude Include="..\test_engine\imgui_te_app.h">
-      <Filter>test_engine</Filter>
-    </ClInclude>
     <ClInclude Include="..\test_engine\imgui_te_context.h">
       <Filter>test_engine</Filter>
     </ClInclude>
@@ -66,6 +63,12 @@
     <ClInclude Include="..\libs\Str\Str.h">
       <Filter>libs\Str</Filter>
     </ClInclude>
+    <ClInclude Include="test_app.h">
+      <Filter>test_app</Filter>
+    </ClInclude>
+    <ClInclude Include="backends.h">
+      <Filter>test_app</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\imgui\imgui.cpp">
@@ -85,9 +88,6 @@
     </ClCompile>
     <ClCompile Include="..\..\imgui\examples\imgui_impl_win32.cpp">
       <Filter>test_app</Filter>
-    </ClCompile>
-    <ClCompile Include="..\test_engine\imgui_te_backends.cpp">
-      <Filter>test_engine</Filter>
     </ClCompile>
     <ClCompile Include="..\test_engine\imgui_te_context.cpp">
       <Filter>test_engine</Filter>
@@ -109,6 +109,9 @@
     </ClCompile>
     <ClCompile Include="..\libs\Str\Str.cpp">
       <Filter>libs\Str</Filter>
+    </ClCompile>
+    <ClCompile Include="backends.cpp">
+      <Filter>test_app</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

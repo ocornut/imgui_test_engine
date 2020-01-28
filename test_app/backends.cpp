@@ -1,8 +1,8 @@
 #include <imgui.h>
 #define IMGUI_DEFINE_MATH_OPERATORS
-#include "imgui_te_app.h"
+#include "test_app.h"
 
-bool MainLoopEndFrame();
+extern bool MainLoopEndFrame(); // FIXME
 
 //-------------------------------------------------------------------------
 // Backend: Null
