@@ -3,13 +3,13 @@
 // File generated from build/generate_font_awesome4_header.bat
 // You can find fontawesome-webfont.ttf at https://github.com/FortAwesome/Font-Awesome/blob/fa-4/fonts/fontawesome-webfont.ttf
 // List of icons' strings: https://github.com/juliettef/IconFontCppHeaders
-// Generated with tools\binary_to_compressed_c.exe ..\fonts\fontawesome-webfont.ttf font_awesome_4_webfont
+// Generated with tools\binary_to_compressed_c.exe ..\data\fonts\fontawesome-webfont.ttf font_awesome_4_webfont
 
 void GetFontAwesomeCompressedFontDataTTF(const void** data, unsigned int* size);
 
 #ifdef IMGUI_FONTS_FONTAWESOME4_IMPLEMENTATION
  
-// File: '..\fonts\fontawesome-webfont.ttf' (122092 bytes)
+// File: '..\data\fonts\fontawesome-webfont.ttf' (122092 bytes)
 // Exported using binary_to_compressed_c.cpp
 static const unsigned int font_awesome_4_webfont_compressed_size = 90773;
 static const unsigned int font_awesome_4_webfont_compressed_data[90776/4] =

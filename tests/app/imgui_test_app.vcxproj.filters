@@ -7,19 +7,19 @@
     <Filter Include="sources">
       <UniqueIdentifier>{08e36723-ce4f-4cff-9662-c40801cf1acf}</UniqueIdentifier>
     </Filter>
-    <Filter Include="imgui-test">
-      <UniqueIdentifier>{611da0d0-92ea-43f7-a6bf-8ca55c15c748}</UniqueIdentifier>
-    </Filter>
     <Filter Include="libs">
       <UniqueIdentifier>{de7957ca-84b4-4215-a39a-d54a12a24b7f}</UniqueIdentifier>
     </Filter>
     <Filter Include="libs\Str">
       <UniqueIdentifier>{b5362045-8271-4dee-aab6-e50bfe76db87}</UniqueIdentifier>
     </Filter>
+    <Filter Include="imgui-tests">
+      <UniqueIdentifier>{611da0d0-92ea-43f7-a6bf-8ca55c15c748}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\imgui_tests.h">
-      <Filter>imgui-test</Filter>
+      <Filter>imgui-tests</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\imgui\imgui.h">
       <Filter>imgui</Filter>
@@ -40,22 +40,22 @@
       <Filter>imgui</Filter>
     </ClInclude>
     <ClInclude Include="..\imconfig_tests.h">
-      <Filter>imgui-test</Filter>
+      <Filter>imgui-tests</Filter>
     </ClInclude>
     <ClInclude Include="..\imgui_te_util.h">
-      <Filter>imgui-test</Filter>
+      <Filter>imgui-tests</Filter>
     </ClInclude>
     <ClInclude Include="..\imgui_te_core.h">
-      <Filter>imgui-test</Filter>
+      <Filter>imgui-tests</Filter>
     </ClInclude>
     <ClInclude Include="..\imgui_te_context.h">
-      <Filter>imgui-test</Filter>
+      <Filter>imgui-tests</Filter>
     </ClInclude>
     <ClInclude Include="..\imgui_te_app.h">
-      <Filter>imgui-test</Filter>
+      <Filter>imgui-tests</Filter>
     </ClInclude>
     <ClInclude Include="..\imgui_capture_tool.h">
-      <Filter>imgui-test</Filter>
+      <Filter>imgui-tests</Filter>
     </ClInclude>
     <ClInclude Include="..\..\libs\stb_image_write.h">
       <Filter>libs</Filter>
@@ -69,7 +69,7 @@
       <Filter>sources</Filter>
     </ClCompile>
     <ClCompile Include="..\imgui_tests.cpp">
-      <Filter>imgui-test</Filter>
+      <Filter>imgui-tests</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\imgui\imgui.cpp">
       <Filter>imgui</Filter>
@@ -90,19 +90,19 @@
       <Filter>sources</Filter>
     </ClCompile>
     <ClCompile Include="..\imgui_te_backends.cpp">
-      <Filter>imgui-test</Filter>
+      <Filter>imgui-tests</Filter>
     </ClCompile>
     <ClCompile Include="..\imgui_te_core.cpp">
-      <Filter>imgui-test</Filter>
+      <Filter>imgui-tests</Filter>
     </ClCompile>
     <ClCompile Include="..\imgui_te_util.cpp">
-      <Filter>imgui-test</Filter>
+      <Filter>imgui-tests</Filter>
     </ClCompile>
     <ClCompile Include="..\imgui_te_context.cpp">
-      <Filter>imgui-test</Filter>
+      <Filter>imgui-tests</Filter>
     </ClCompile>
     <ClCompile Include="..\imgui_capture_tool.cpp">
-      <Filter>imgui-test</Filter>
+      <Filter>imgui-tests</Filter>
     </ClCompile>
     <ClCompile Include="..\..\libs\Str\Str.cpp">
       <Filter>libs\Str</Filter>
