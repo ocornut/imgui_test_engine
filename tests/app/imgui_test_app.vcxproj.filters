@@ -57,10 +57,10 @@
     <ClInclude Include="..\imgui_capture_tool.h">
       <Filter>imgui-test</Filter>
     </ClInclude>
-    <ClInclude Include="..\libs\stb_image_write.h">
+    <ClInclude Include="..\..\libs\stb_image_write.h">
       <Filter>libs</Filter>
     </ClInclude>
-    <ClInclude Include="..\libs\Str\Str.h">
+    <ClInclude Include="..\..\libs\Str\Str.h">
       <Filter>libs\Str</Filter>
     </ClInclude>
   </ItemGroup>
@@ -104,7 +104,7 @@
     <ClCompile Include="..\imgui_capture_tool.cpp">
       <Filter>imgui-test</Filter>
     </ClCompile>
-    <ClCompile Include="..\libs\Str\Str.cpp">
+    <ClCompile Include="..\..\libs\Str\Str.cpp">
       <Filter>libs\Str</Filter>
     </ClCompile>
   </ItemGroup>
@@ -112,7 +112,7 @@
     <Natvis Include="..\..\..\imgui\misc\natvis\imgui.natvis">
       <Filter>sources</Filter>
     </Natvis>
-    <Natvis Include="..\libs\Str\Str.natvis">
+    <Natvis Include="..\..\libs\Str\Str.natvis">
       <Filter>libs\Str</Filter>
     </Natvis>
   </ItemGroup>
