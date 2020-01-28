@@ -14,7 +14,7 @@
 #include "imgui_te_core.h"
 #include "imgui_te_util.h"
 #include "imgui_te_context.h"
-#include "libs/Str/Str.h"
+#include <Str/Str.h>
 
 #define IMGUI_DEBUG_TEST_ENGINE     1
 

@@ -9,7 +9,7 @@ build_scripts/pvs_studio/output
 build_scripts/config/build_config.bat
 
 ## Application artifacts
-tests/app/captures/*
+test_app/captures/*
 imgui.ini
 imgui_perflog.csv
 
@@ -17,11 +17,11 @@ imgui_perflog.csv
 *.o
 *.obj
 *.exe
-tests/app/build/*
-tests/app/Debug/*
-tests/app/Release/*
-tests/app/x64/*
-tests/app/test_app
+test_app/build/*
+test_app/Debug/*
+test_app/Release/*
+test_app/x64/*
+test_app/test_app
 sample_editor/build/*
 sample_editor/Debug/*
 sample_editor/Release/*

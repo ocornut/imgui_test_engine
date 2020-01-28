@@ -63,7 +63,7 @@ static inline void DebugCrtDumpLeaks()
 #include "imgui_tests.h"
 #include "imgui_te_app.h"
 #include "imgui_capture_tool.h"
-#include "libs/Str/Str.h"
+#include <str/Str.h>
 
 //-------------------------------------------------------------------------
 // Back-end Functions (in imgui_te_backends.cpp)

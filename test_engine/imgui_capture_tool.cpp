@@ -17,7 +17,7 @@
 #pragma warning (disable: 4457)                             // declaration of 'xx' hides function parameter
 #endif
 #define STB_IMAGE_WRITE_IMPLEMENTATION
-#include "libs/stb_image_write.h"
+#include <stb/stb_image_write.h>
 #ifdef _MSC_VER
 #pragma warning (pop)
 #endif

@@ -12,7 +12,7 @@
       <UniqueIdentifier>{ae52ecae-4354-4c59-b06b-cda499312915}</UniqueIdentifier>
     </Filter>
     <Filter Include="libs\Str">
-      <UniqueIdentifier>{8fd1ba17-ea76-49ca-8757-735f19862867}</UniqueIdentifier>
+      <UniqueIdentifier>{95a0db3d-8b12-4601-b4fb-90cfdcf6c092}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -59,11 +59,11 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <Natvis Include="..\libs\Str\Str.natvis">
-      <Filter>libs\Str</Filter>
-    </Natvis>
     <Natvis Include="..\..\imgui\misc\natvis\imgui.natvis">
       <Filter>imgui</Filter>
+    </Natvis>
+    <Natvis Include="..\libs\Str\Str.natvis">
+      <Filter>libs\Str</Filter>
     </Natvis>
   </ItemGroup>
 </Project>
