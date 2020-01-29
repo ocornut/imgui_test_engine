@@ -83,12 +83,6 @@
     <ClCompile Include="..\..\imgui\imgui_widgets.cpp">
       <Filter>imgui</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\imgui\examples\imgui_impl_dx11.cpp">
-      <Filter>test_app</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\imgui\examples\imgui_impl_win32.cpp">
-      <Filter>test_app</Filter>
-    </ClCompile>
     <ClCompile Include="..\test_engine\imgui_te_context.cpp">
       <Filter>test_engine</Filter>
     </ClCompile>
@@ -112,6 +106,12 @@
     </ClCompile>
     <ClCompile Include="backends.cpp">
       <Filter>test_app</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\imgui\examples\imgui_impl_win32.cpp">
+      <Filter>imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\imgui\examples\imgui_impl_dx11.cpp">
+      <Filter>imgui</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

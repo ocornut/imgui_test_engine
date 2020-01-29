@@ -37,6 +37,15 @@
     <ClInclude Include="..\libs\Str\Str.h">
       <Filter>libs\Str</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\imgui\examples\imgui_impl_win32.h">
+      <Filter>imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\imgui\examples\imgui_impl_dx11.h">
+      <Filter>imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="..\helpers\imgui_simple_app.h">
+      <Filter>imgui</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\imgui\imgui.cpp">
@@ -56,6 +65,15 @@
     </ClCompile>
     <ClCompile Include="..\libs\Str\Str.cpp">
       <Filter>libs\Str</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\imgui\examples\imgui_impl_win32.cpp">
+      <Filter>imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\imgui\examples\imgui_impl_dx11.cpp">
+      <Filter>imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\helpers\imgui_simple_app.cpp">
+      <Filter>imgui</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
