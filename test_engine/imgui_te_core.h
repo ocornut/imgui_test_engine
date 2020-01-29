@@ -515,7 +515,7 @@ struct ImGuiTest
     void SetUserDataType()
     {
         UserDataSize = sizeof(T);
-        UserDataConstructor = [](void* buffer) { IM_PLACEMENT_NEW(buffer) T; };
+        UserDataConstructor = [](void* ptr) { IM_PLACEMENT_NEW(ptr) T; };
         UserDataDestructor = [](void* ptr) { IM_UNUSED(ptr); reinterpret_cast<T*>(ptr)->~T(); };
     }
 };

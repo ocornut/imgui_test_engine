@@ -675,7 +675,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
 
     // ## Test basic button presses
     t = REGISTER_TEST("widgets", "widgets_button_press");
-    struct ButtonPressTestVars { int ButtonPressCount[5] = { 0 }; };
+    struct ButtonPressTestVars { int ButtonPressCount[6] = { 0 }; };
     t->SetUserDataType<ButtonPressTestVars>();
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
@@ -731,6 +731,69 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ctx->SleepNoSkip(ctx->UiContext->IO.KeyRepeatRate, step);
         IM_CHECK_EQ(vars.ButtonPressCount[4], 1 + 1 + 3 * 2); // FIXME: MouseRepeatRate is double KeyRepeatRate, that's not documented / or that's a bug
         ctx->MouseUp(0);
+    };
+
+    // ## Test basic button presses
+    t = REGISTER_TEST("widgets", "widgets_button_mouse_buttons");
+    t->SetUserDataType<ButtonPressTestVars>();
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ButtonPressTestVars& vars = ctx->GetUserData<ButtonPressTestVars>();
+
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
+        if (ImGui::ButtonEx("ButtonL", ImVec2(0, 0), ImGuiButtonFlags_MouseButtonLeft))
+            vars.ButtonPressCount[0]++;
+        if (ImGui::ButtonEx("ButtonR", ImVec2(0, 0), ImGuiButtonFlags_MouseButtonRight))
+            vars.ButtonPressCount[1]++;
+        if (ImGui::ButtonEx("ButtonM", ImVec2(0, 0), ImGuiButtonFlags_MouseButtonMiddle))
+            vars.ButtonPressCount[2]++;
+        if (ImGui::ButtonEx("ButtonLR", ImVec2(0, 0), ImGuiButtonFlags_MouseButtonLeft | ImGuiButtonFlags_MouseButtonRight))
+            vars.ButtonPressCount[3]++;
+
+        if (ImGui::ButtonEx("ButtonL-release", ImVec2(0, 0), ImGuiButtonFlags_MouseButtonLeft | ImGuiButtonFlags_PressedOnRelease))
+            vars.ButtonPressCount[4]++;
+        if (ImGui::ButtonEx("ButtonR-release", ImVec2(0, 0), ImGuiButtonFlags_MouseButtonRight | ImGuiButtonFlags_PressedOnRelease))
+        {
+            ctx->LogDebug("Pressed!");
+            vars.ButtonPressCount[5]++;
+        }
+        for (int n = 0; n < IM_ARRAYSIZE(vars.ButtonPressCount); n++)
+            ImGui::Text("%d: %d", n, vars.ButtonPressCount[n]);
+
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ButtonPressTestVars& vars = ctx->GetUserData<ButtonPressTestVars>();
+
+        ctx->WindowRef("Test Window");
+        ctx->ItemClick("ButtonL", 0);
+        IM_CHECK_EQ(vars.ButtonPressCount[0], 1);
+        ctx->ItemClick("ButtonR", 1);
+        IM_CHECK_EQ(vars.ButtonPressCount[1], 1);
+        ctx->ItemClick("ButtonM", 2);
+        IM_CHECK_EQ(vars.ButtonPressCount[2], 1);
+        ctx->ItemClick("ButtonLR", 0);
+        ctx->ItemClick("ButtonLR", 1);
+        IM_CHECK_EQ(vars.ButtonPressCount[3], 2);
+
+        vars.ButtonPressCount[3] = 0;
+        ctx->MouseMove("ButtonLR");
+        ctx->MouseDown(0);
+        ctx->MouseDown(1);
+        ctx->MouseUp(0);
+        ctx->MouseUp(1);
+        IM_CHECK_EQ(vars.ButtonPressCount[3], 1);
+
+        vars.ButtonPressCount[3] = 0;
+        ctx->MouseMove("ButtonLR");
+        ctx->MouseDown(0);
+        ctx->MouseMove("ButtonR", ImGuiTestOpFlags_NoCheckHoveredId);
+        ctx->MouseDown(1);
+        ctx->MouseUp(0);
+        ctx->MouseMove("ButtonLR");
+        ctx->MouseUp(1);
+        IM_CHECK_EQ(vars.ButtonPressCount[3], 0);
     };
 
     // ## Test ButtonBehavior frame by frame behaviors (see comments at the top of the ButtonBehavior() function)

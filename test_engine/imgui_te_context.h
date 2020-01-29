@@ -259,15 +259,15 @@ struct ImGuiTestContext
     void                GatherItems(ImGuiTestItemList* out_list, ImGuiTestRef parent, int depth = -1);
 
     // Item/Widgets manipulation
-    void        ItemAction(ImGuiTestAction action, ImGuiTestRef ref);
-    void        ItemClick(ImGuiTestRef ref)         { ItemAction(ImGuiTestAction_Click, ref); }
-    void        ItemDoubleClick(ImGuiTestRef ref)   { ItemAction(ImGuiTestAction_DoubleClick, ref); }
-    void        ItemCheck(ImGuiTestRef ref)         { ItemAction(ImGuiTestAction_Check, ref); }
-    void        ItemUncheck(ImGuiTestRef ref)       { ItemAction(ImGuiTestAction_Uncheck, ref); }
-    void        ItemOpen(ImGuiTestRef ref)          { ItemAction(ImGuiTestAction_Open, ref); }
-    void        ItemClose(ImGuiTestRef ref)         { ItemAction(ImGuiTestAction_Close, ref); }
-    void        ItemInput(ImGuiTestRef ref)         { ItemAction(ImGuiTestAction_Input, ref); }
-    void        ItemNavActivate(ImGuiTestRef ref)   { ItemAction(ImGuiTestAction_NavActivate, ref); }
+    void        ItemAction(ImGuiTestAction action, ImGuiTestRef ref, void* action_arg = NULL);
+    void        ItemClick(ImGuiTestRef ref, int button = 0) { ItemAction(ImGuiTestAction_Click, ref, (void*)(intptr_t)button); }
+    void        ItemDoubleClick(ImGuiTestRef ref)           { ItemAction(ImGuiTestAction_DoubleClick, ref); }
+    void        ItemCheck(ImGuiTestRef ref)                 { ItemAction(ImGuiTestAction_Check, ref); }
+    void        ItemUncheck(ImGuiTestRef ref)               { ItemAction(ImGuiTestAction_Uncheck, ref); }
+    void        ItemOpen(ImGuiTestRef ref)                  { ItemAction(ImGuiTestAction_Open, ref); }
+    void        ItemClose(ImGuiTestRef ref)                 { ItemAction(ImGuiTestAction_Close, ref); }
+    void        ItemInput(ImGuiTestRef ref)                 { ItemAction(ImGuiTestAction_Input, ref); }
+    void        ItemNavActivate(ImGuiTestRef ref)           { ItemAction(ImGuiTestAction_NavActivate, ref); }
 
     void        ItemActionAll(ImGuiTestAction action, ImGuiTestRef ref_parent, int depth = -1, int passes = -1);
     void        ItemOpenAll(ImGuiTestRef ref_parent, int depth = -1, int passes = -1)    { ItemActionAll(ImGuiTestAction_Open, ref_parent, depth, passes); }

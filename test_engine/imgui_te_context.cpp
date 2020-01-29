@@ -1044,7 +1044,7 @@ void    ImGuiTestContext::GatherItems(ImGuiTestItemList* out_list, ImGuiTestRef 
     GatherTask->LastItemInfo = NULL;
 }
 
-void    ImGuiTestContext::ItemAction(ImGuiTestAction action, ImGuiTestRef ref)
+void    ImGuiTestContext::ItemAction(ImGuiTestAction action, ImGuiTestRef ref, void* action_arg)
 {
     if (IsError())
         return;
@@ -1070,13 +1070,15 @@ void    ImGuiTestContext::ItemAction(ImGuiTestAction action, ImGuiTestRef ref)
     {
         if (InputMode == ImGuiInputSource_Mouse)
         {
+            const int mouse_button = (int)(intptr_t)action_arg;
+            IM_ASSERT(mouse_button >= 0 && mouse_button < ImGuiMouseButton_COUNT);
             MouseMove(ref);
             if (!EngineIO->ConfigRunFast)
                 Sleep(0.05f);
             if (action == ImGuiTestAction_DoubleClick)
-                MouseDoubleClick(0);
+                MouseDoubleClick(mouse_button);
             else
-                MouseClick(0);
+                MouseClick(mouse_button);
             return;
         }
         else
@@ -1087,6 +1089,7 @@ void    ImGuiTestContext::ItemAction(ImGuiTestAction action, ImGuiTestRef ref)
 
     if (action == ImGuiTestAction_NavActivate)
     {
+        IM_ASSERT(action_arg == NULL); // Unused
         NavMoveTo(ref);
         NavActivate();
         if (action == ImGuiTestAction_DoubleClick)
@@ -1096,6 +1099,7 @@ void    ImGuiTestContext::ItemAction(ImGuiTestAction action, ImGuiTestRef ref)
 
     if (action == ImGuiTestAction_Input)
     {
+        IM_ASSERT(action_arg == NULL); // Unused
         if (InputMode == ImGuiInputSource_Mouse)
         {
             MouseMove(ref);
@@ -1113,6 +1117,7 @@ void    ImGuiTestContext::ItemAction(ImGuiTestAction action, ImGuiTestRef ref)
 
     if (action == ImGuiTestAction_Open)
     {
+        IM_ASSERT(action_arg == NULL); // Unused
         if (item && (item->StatusFlags & ImGuiItemStatusFlags_Opened) == 0)
         {
             item->RefCount++;
@@ -1137,6 +1142,7 @@ void    ImGuiTestContext::ItemAction(ImGuiTestAction action, ImGuiTestRef ref)
 
     if (action == ImGuiTestAction_Close)
     {
+        IM_ASSERT(action_arg == NULL); // Unused
         if (item && (item->StatusFlags & ImGuiItemStatusFlags_Opened) != 0)
         {
             item->RefCount++;
@@ -1155,25 +1161,25 @@ void    ImGuiTestContext::ItemAction(ImGuiTestAction action, ImGuiTestRef ref)
 
     if (action == ImGuiTestAction_Check)
     {
+        IM_ASSERT(action_arg == NULL); // Unused
         if ((item->StatusFlags & ImGuiItemStatusFlags_Checkable) && !(item->StatusFlags & ImGuiItemStatusFlags_Checked))
         {
             ItemClick(ref);
             Yield();
         }
         ItemVerifyCheckedIfAlive(ref, true); // We can't just IM_ASSERT(ItemIsChecked()) because the item may disappear and never update its StatusFlags any more!
-
         return;
     }
 
     if (action == ImGuiTestAction_Uncheck)
     {
+        IM_ASSERT(action_arg == NULL); // Unused
         if ((item->StatusFlags & ImGuiItemStatusFlags_Checkable) && (item->StatusFlags & ImGuiItemStatusFlags_Checked))
         {
             ItemClick(ref);
             Yield();
         }
         ItemVerifyCheckedIfAlive(ref, false); // We can't just IM_ASSERT(ItemIsChecked()) because the item may disappear and never update its StatusFlags any more!
-
         return;
     }
 
