@@ -1694,7 +1694,7 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
     };
 
     // ## Test that CTRL+Tab steal focus (#2380)
-    t = REGISTER_TEST("nav", "nav_ctrl_tab_takes_focus_away");
+    t = REGISTER_TEST("nav", "nav_ctrl_tab_steals_focus_away");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         ImGuiTestGenericVars& vars = ctx->GenericVars;
@@ -1850,6 +1850,83 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
         IM_CHECK(ctx->UiContext->NavId == ctx->GetID("/##Menu_00/Quit"));
         ctx->NavKeyPress(ImGuiNavInput_KeyDown_);
         IM_CHECK(ctx->UiContext->NavId == ctx->GetID("/##Menu_00/New"));
+    };
+
+    // ## Test CTRL+TAB window focusing
+    t = REGISTER_TEST("nav", "nav_ctrl_tab_focusing");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::Begin("Window 1", NULL, ImGuiWindowFlags_AlwaysAutoResize);
+        ImGui::TextUnformatted("Not empty space");
+        ImGui::End();
+
+        ImGui::Begin("Window 2", NULL, ImGuiWindowFlags_AlwaysAutoResize);
+        ImGui::BeginChild("Child");
+        ImGui::Button("Button");
+        ImGui::EndChild();
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiContext& g = *ctx->UiContext;
+        ImGuiWindow* window2 = ctx->GetWindowByRef("Window 2");
+
+        // Set up window focus order.
+        ctx->WindowFocus("Window 1");
+        ctx->WindowFocus("Window 2");
+
+        ctx->KeyPressMap(ImGuiKey_Tab, ImGuiKeyModFlags_Ctrl);
+        IM_CHECK_EQ(g.NavWindow, ctx->GetWindowByRef("Window 1"));
+        ctx->KeyPressMap(ImGuiKey_Tab, ImGuiKeyModFlags_Ctrl);
+        IM_CHECK_EQ(g.NavWindow, ctx->GetWindowByRef("Window 2"));
+
+        // Set up window focus order.
+        ctx->WindowFocus("Window 1");
+        // Focus child window.
+        ctx->ItemClick(Str30f("Window 2\\/Child_%08X/Button", window2->GetID("Child")).c_str());
+
+        ctx->KeyPressMap(ImGuiKey_Tab, ImGuiKeyModFlags_Ctrl);
+        IM_CHECK_EQ(g.NavWindow, ctx->GetWindowByRef("Window 1"));
+    };
+
+    // ## Test NavID restoration during CTRL+TAB focusing
+    t = REGISTER_TEST("nav", "nav_ctrl_tab_nav_id_restore");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::Begin("Window 1", NULL, ImGuiWindowFlags_AlwaysAutoResize);
+        ImGui::Button("Button");
+        ImGui::End();
+
+        ImGui::Begin("Window 2", NULL, ImGuiWindowFlags_AlwaysAutoResize);
+        ImGui::BeginChild("Child");
+        ImGui::Button("Button");
+        ImGui::EndChild();
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiContext& g = *ctx->UiContext;
+        ImGuiWindow* window2 = ctx->GetWindowByRef("Window 2");
+        Str30f win2_button_ref("Window 2\\/Child_%08X/Button", window2->GetID("Child"));
+
+        // Set nav ID to the button
+        ctx->WindowFocus("Window 1");
+        ctx->NavActivate();
+        ctx->NavMoveTo("Window 1/Button");
+        // Focus another window
+        ctx->WindowFocus("Window 2");
+        // Ensure nav id was changed
+        IM_CHECK_NE(ctx->GetID("Window 1/Button"), g.NavId);
+        // Explicitly navigate to the button
+        ctx->NavMoveTo(win2_button_ref.c_str());
+        // Ctrl+Tab back to previous window
+        ctx->KeyPressMap(ImGuiKey_Tab, ImGuiKeyModFlags_Ctrl);
+        // Check if nav id was restored
+        IM_CHECK_EQ(ctx->GetID("Window 1/Button"), g.NavId);
+        // Ctrl+Tab back to previous window
+        ctx->KeyPressMap(ImGuiKey_Tab, ImGuiKeyModFlags_Ctrl);
+        // Check if nav id was restored
+        IM_CHECK_EQ(ctx->GetID(win2_button_ref.c_str()), g.NavId);
     };
 }
 
