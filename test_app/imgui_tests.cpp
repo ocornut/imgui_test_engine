@@ -1681,7 +1681,7 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
 
     // ## Test opening a new window from a checkbox setting the focus to the new window.
     // In 9ba2028 (2019/01/04) we fixed a bug where holding ImGuiNavInputs_Activate too long on a button would hold the focus on the wrong window.
-    t = REGISTER_TEST("nav", "nav_001");
+    t = REGISTER_TEST("nav", "nav_basic");
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         ctx->SetInputMode(ImGuiInputSource_Nav);
@@ -1693,8 +1693,8 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
         IM_CHECK(g.NavWindow && g.NavWindow->ID == ctx->GetID("/Dear ImGui Demo"));
     };
 
-    // ## Test that CTRL+Tab steal focus (#2380)
-    t = REGISTER_TEST("nav", "nav_ctrl_tab_steals_focus_away");
+    // ## Test that CTRL+Tab steal active id (#2380)
+    t = REGISTER_TEST("nav", "nav_ctrl_tab_takes_activeid_away");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         ImGuiTestGenericVars& vars = ctx->GenericVars;
@@ -1861,8 +1861,9 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
         ImGui::End();
 
         ImGui::Begin("Window 2", NULL, ImGuiWindowFlags_AlwaysAutoResize);
-        ImGui::BeginChild("Child");
-        ImGui::Button("Button");
+        ImGui::Button("Button Out");
+        ImGui::BeginChild("Child", ImVec2(50, 50), true);
+        ImGui::Button("Button In");
         ImGui::EndChild();
         ImGui::End();
     };
@@ -1876,17 +1877,16 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
         ctx->WindowFocus("Window 2");
 
         ctx->KeyPressMap(ImGuiKey_Tab, ImGuiKeyModFlags_Ctrl);
-        IM_CHECK_EQ(g.NavWindow, ctx->GetWindowByRef("Window 1"));
+        IM_CHECK(g.NavWindow == ctx->GetWindowByRef("Window 1"));
         ctx->KeyPressMap(ImGuiKey_Tab, ImGuiKeyModFlags_Ctrl);
-        IM_CHECK_EQ(g.NavWindow, ctx->GetWindowByRef("Window 2"));
+        IM_CHECK(g.NavWindow == ctx->GetWindowByRef("Window 2"));
 
-        // Set up window focus order.
+        // Set up window focus order, focus child window.
         ctx->WindowFocus("Window 1");
-        // Focus child window.
-        ctx->ItemClick(Str30f("Window 2\\/Child_%08X/Button", window2->GetID("Child")).c_str());
+        ctx->ItemClick(Str30f("Window 2\\/Child_%08X/Button In", window2->GetID("Child")).c_str());
 
         ctx->KeyPressMap(ImGuiKey_Tab, ImGuiKeyModFlags_Ctrl);
-        IM_CHECK_EQ(g.NavWindow, ctx->GetWindowByRef("Window 1"));
+        IM_CHECK(g.NavWindow == ctx->GetWindowByRef("Window 1"));
     };
 
     // ## Test NavID restoration during CTRL+TAB focusing
@@ -1894,12 +1894,12 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         ImGui::Begin("Window 1", NULL, ImGuiWindowFlags_AlwaysAutoResize);
-        ImGui::Button("Button");
+        ImGui::Button("Button 1");
         ImGui::End();
 
         ImGui::Begin("Window 2", NULL, ImGuiWindowFlags_AlwaysAutoResize);
-        ImGui::BeginChild("Child");
-        ImGui::Button("Button");
+        ImGui::BeginChild("Child", ImVec2(50, 50));
+        ImGui::Button("Button 2");
         ImGui::EndChild();
         ImGui::End();
     };
@@ -1907,25 +1907,25 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
     {
         ImGuiContext& g = *ctx->UiContext;
         ImGuiWindow* window2 = ctx->GetWindowByRef("Window 2");
-        Str30f win2_button_ref("Window 2\\/Child_%08X/Button", window2->GetID("Child"));
 
-        // Set nav ID to the button
+        Str30  win1_button_ref("Window 1/Button 1");
+        Str30f win2_button_ref("Window 2\\/Child_%08X/Button 2", window2->GetID("Child"));
+
+        // Focus Window 2, navigate to the button
         ctx->WindowFocus("Window 1");
-        ctx->NavActivate();
-        ctx->NavMoveTo("Window 1/Button");
-        // Focus another window
+        ctx->NavMoveTo(win1_button_ref.c_str());
+
+        // Focus Window 2, ensure nav id was changed, navigate to the button
         ctx->WindowFocus("Window 2");
-        // Ensure nav id was changed
-        IM_CHECK_NE(ctx->GetID("Window 1/Button"), g.NavId);
-        // Explicitly navigate to the button
+        IM_CHECK_NE(ctx->GetID(win1_button_ref.c_str()), g.NavId);
         ctx->NavMoveTo(win2_button_ref.c_str());
-        // Ctrl+Tab back to previous window
+
+        // Ctrl+Tab back to previous window, check if nav id was restored
         ctx->KeyPressMap(ImGuiKey_Tab, ImGuiKeyModFlags_Ctrl);
-        // Check if nav id was restored
-        IM_CHECK_EQ(ctx->GetID("Window 1/Button"), g.NavId);
-        // Ctrl+Tab back to previous window
+        IM_CHECK_EQ(ctx->GetID(win1_button_ref.c_str()), g.NavId);
+
+        // Ctrl+Tab back to previous window, check if nav id was restored
         ctx->KeyPressMap(ImGuiKey_Tab, ImGuiKeyModFlags_Ctrl);
-        // Check if nav id was restored
         IM_CHECK_EQ(ctx->GetID(win2_button_ref.c_str()), g.NavId);
     };
 }
