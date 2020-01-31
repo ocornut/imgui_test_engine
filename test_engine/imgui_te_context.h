@@ -3,6 +3,8 @@
 
 #pragma once
 
+#include <stdint.h> // uintptr_t
+
 #include "imgui.h"
 #include "imgui_te_core.h"
 #include "imgui_capture_tool.h"
