@@ -308,6 +308,7 @@ void ImGuiTestContext::SetInputMode(ImGuiInputSource input_mode)
     }
 }
 
+// FIXME-TESTS: May be to focus window when docked? Otherwise locate request won't even see an item?
 void ImGuiTestContext::WindowRef(ImGuiTestRef ref)
 {
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
@@ -435,7 +436,7 @@ ImGuiTestItemInfo* ImGuiTestContext::ItemLocate(ImGuiTestRef ref, ImGuiTestOpFla
         if (ref.Path && ref.Path[0] == '/' && RefStr[0] != 0)
             IM_ERRORF_NOHDR("Unable to locate item: '%s'", ref.Path);
         else if (ref.Path)
-            IM_ERRORF_NOHDR("Unable to locate item: '%s/%s'", RefStr, ref.Path);
+            IM_ERRORF_NOHDR("Unable to locate item: '%s/%s' (0x%08X)", RefStr, ref.Path, full_id);
         else
             IM_ERRORF_NOHDR("Unable to locate item: 0x%08X", ref.ID);
     }
@@ -1606,7 +1607,7 @@ void    ImGuiTestContext::DockWindowInto(const char* window_name_src, const char
 
     ImVec2 drop_pos;
     bool drop_is_valid = ImGui::DockContextCalcDropPosForDocking(window_dst->RootWindow, window_dst->DockNode, window_src, split_dir, false, &drop_pos);
-    IM_CHECK(drop_is_valid);
+    IM_CHECK_SILENT(drop_is_valid);
     if (!drop_is_valid)
         return;
 
@@ -1618,7 +1619,11 @@ void    ImGuiTestContext::DockWindowInto(const char* window_name_src, const char
     MouseLiftDragThreshold();
     MouseMoveToPos(drop_pos);
     IM_CHECK_SILENT(g.MovingWindow == window_src);
-    IM_CHECK_SILENT(g.HoveredWindowUnderMovingWindow == window_dst);
+#ifdef IMGUI_HAS_DOCK
+    IM_CHECK_SILENT(g.HoveredWindowUnderMovingWindow->RootWindowDockStop == window_dst);
+#else
+    IM_CHECK_SILENT(g.HoveredWindowUnderMovingWindow->RootWindow == window_dst);
+#endif
     SleepShort();
 
     MouseUp(0);
