@@ -1873,11 +1873,7 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
         ImGuiWindow* window2 = ctx->GetWindowByRef("Window 2");
 
         // FIXME-TESTS: Facilitate usage of variants
-#ifdef IMGUI_HAS_DOCK
-        const int test_count = 2;
-#else
-        const int test_count = 1;
-#endif
+        const int test_count = ctx->HasDock ? 2 : 1;
         for (int test_n = 0; test_n < test_count; test_n++)
         {
             ctx->LogDebug("TEST CASE %d", test_n);
@@ -1925,11 +1921,7 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
         ImGuiContext& g = *ctx->UiContext;
 
         // FIXME-TESTS: Facilitate usage of variants
-#ifdef IMGUI_HAS_DOCK
-        const int test_count = 2;
-#else
-        const int test_count = 1;
-#endif
+        const int test_count = ctx->HasDock ? 2 : 1;
         for (int test_n = 0; test_n < test_count; test_n++)
         {
             ctx->LogDebug("TEST CASE %d", test_n);
@@ -1944,7 +1936,7 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
             Str30  win1_button_ref("Window 1/Button 1");
             Str30f win2_button_ref("Window 2\\/Child_%08X/Button 2", window2->GetID("Child"));
 
-            // Focus Window 2, navigate to the button
+            // Focus Window 1, navigate to the button
             ctx->WindowFocus("Window 1");
             ctx->NavMoveTo(win1_button_ref.c_str());
 
@@ -1960,6 +1952,54 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
             // Ctrl+Tab back to previous window, check if nav id was restored
             ctx->KeyPressMap(ImGuiKey_Tab, ImGuiKeyModFlags_Ctrl);
             IM_CHECK_EQ(ctx->GetID(win2_button_ref.c_str()), g.NavId);
+        }
+    };
+
+    // ## Test NavID restoration when focusing another window or STOPPING to submit another world
+    t = REGISTER_TEST("nav", "nav_focus_restore");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::Begin("Window 1", NULL, ImGuiWindowFlags_AlwaysAutoResize);
+        ImGui::Button("Button 1");
+        ImGui::End();
+
+        if (!ctx->GenericVars.Bool1)
+            return;
+        ImGui::Begin("Window 2", NULL, ImGuiWindowFlags_AlwaysAutoResize);
+        ImGui::Button("Button 2");
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiContext& g = *ctx->UiContext;
+
+        // FIXME-TESTS: Facilitate usage of variants
+        const int test_count = ctx->HasDock ? 2 : 1;
+        for (int test_n = 0; test_n < test_count; test_n++)
+        {
+            ctx->LogDebug("TEST CASE %d", test_n);
+            ctx->GenericVars.Bool1 = true;
+            ctx->YieldFrames(2);
+#ifdef IMGUI_HAS_DOCK
+            ctx->DockMultiClear("Window 1", "Window 2", NULL);
+            if (test_n == 1)
+                ctx->DockWindowInto("Window 2", "Window 1");
+#endif
+            ctx->WindowFocus("Window 1");
+            ctx->NavMoveTo("Window 1/Button 1");
+
+            ctx->WindowFocus("Window 2");
+            ctx->NavMoveTo("Window 2/Button 2");
+
+            ctx->WindowFocus("Window 1");
+            IM_CHECK_EQ(g.NavId, ctx->GetID("Window 1/Button 1"));
+
+            ctx->WindowFocus("Window 2");
+            IM_CHECK_EQ(g.NavId, ctx->GetID("Window 2/Button 2"));
+
+            ctx->GenericVars.Bool1 = false;
+            ctx->YieldFrames(2);
+            IM_CHECK_EQ(g.NavId, ctx->GetID("Window 1/Button 1"));
         }
     };
 }

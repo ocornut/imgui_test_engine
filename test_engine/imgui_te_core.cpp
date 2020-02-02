@@ -675,6 +675,11 @@ static void ImGuiTestEngine_ProcessTestQueue(ImGuiTestEngine* engine)
         ctx.UiContext = engine->UiContextActive;
         ctx.PerfStressAmount = engine->IO.PerfStressAmount;
         ctx.RunFlags = run_task->RunFlags;
+#ifdef IMGUI_HAS_DOCK
+        ctx.HasDock = true;
+#else
+        ctx.HasDock = false;
+#endif
         ImFormatString(ctx.CaptureArgs.OutImageFileTemplate, IM_ARRAYSIZE(ctx.CaptureArgs.OutImageFileTemplate), "captures/%s_%%04d.png", test->Name);
         engine->TestContext = &ctx;
         if (track_scrolling)

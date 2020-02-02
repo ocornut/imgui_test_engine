@@ -158,6 +158,7 @@ struct ImGuiTestContext
     double                  RunningTime = 0.0f;                     // Amount of wall clock time the Test has been running. Used by safety watchdog.
     int                     ActionDepth = 0;
     bool                    Abort = false;
+    bool                    HasDock = false;                        // #ifdef IMGUI_HAS_DOCK
     ImGuiCaptureArgs        CaptureArgs;
 
     // Commonly user exposed state for the ctx-> functions
