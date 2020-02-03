@@ -430,7 +430,10 @@ static void ImGuiTestEngine_UpdateWatchdog(ImGuiTestEngine* engine, ImGuiContext
 {
     ImGuiTestContext* test_ctx = engine->TestContext;
 
-    if (!engine->IO.ConfigRunFast)
+    if (!engine->IO.ConfigRunFast || ImOsIsDebuggerPresent())
+        return;
+
+    if (test_ctx->RunFlags & ImGuiTestRunFlags_ManualRun)
         return;
 
     const float timer_warn      = engine->IO.ConfigRunWithGui ? 30.0f : 15.0f;
