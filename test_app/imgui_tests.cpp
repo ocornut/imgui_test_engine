@@ -2002,6 +2002,37 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
             IM_CHECK_EQ(g.NavId, ctx->GetID("Window 1/Button 1"));
         }
     };
+
+    // ## Test NavID restoration after activating menu item.
+    t = REGISTER_TEST("nav", "nav_focus_restore_menus");
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiContext& g = *ctx->UiContext;
+
+        // FIXME-TESTS: Facilitate usage of variants
+        const int test_count = ctx->HasDock ? 2 : 1;
+        for (int test_n = 0; test_n < test_count; test_n++)
+        {
+            ctx->LogDebug("TEST CASE %d", test_n);
+#ifdef IMGUI_HAS_DOCK
+            ctx->WindowRef(ImGuiTestRef());
+            ctx->DockMultiClear("Dear ImGui Demo", "Hello, world!", NULL);
+            if (test_n == 0)
+                ctx->DockWindowInto("Dear ImGui Demo", "Hello, world!");
+#endif
+            ctx->WindowRef("Dear ImGui Demo");
+            // Focus item.
+            ctx->NavMoveTo("Configuration");
+            // Focus menu.
+            ctx->NavKeyPress(ImGuiNavInput_Menu);
+            // Open menu, focus first item in the menu.
+            ctx->NavActivate();
+            // Activate first item in the menu.
+            ctx->NavActivate();
+            // Verify NavId was restored to initial value.
+            IM_CHECK_EQ(g.NavId, ctx->GetID("Configuration"));
+        }
+    };
 }
 
 //-------------------------------------------------------------------------
