@@ -950,7 +950,19 @@ void    ImGuiTestContext::KeyCharsAppendEnter(const char* chars)
     KeyPressMap(ImGuiKey_Enter);
 }
 
-void ImGuiTestContext::KeyCharsReplaceEnter(const char* chars)
+void    ImGuiTestContext::KeyCharsReplace(const char* chars)
+{
+    if (IsError())
+        return;
+
+    IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
+    LogDebug("KeyCharsReplace('%s')", chars);
+    KeyPressMap(ImGuiKey_A, ImGuiKeyModFlags_Ctrl);
+    KeyPressMap(ImGuiKey_Delete);
+    KeyChars(chars);
+}
+
+void    ImGuiTestContext::KeyCharsReplaceEnter(const char* chars)
 {
     if (IsError())
         return;
@@ -959,7 +971,7 @@ void ImGuiTestContext::KeyCharsReplaceEnter(const char* chars)
     LogDebug("KeyCharsReplaceEnter('%s')", chars);
     KeyPressMap(ImGuiKey_A, ImGuiKeyModFlags_Ctrl);
     KeyPressMap(ImGuiKey_Delete);
-    KeyChars(chars);
+    KeyCharsReplace(chars);
     KeyPressMap(ImGuiKey_Enter);
 }
 

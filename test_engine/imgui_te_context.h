@@ -244,6 +244,7 @@ struct ImGuiTestContext
     void        KeyChars(const char* chars);
     void        KeyCharsAppend(const char* chars);
     void        KeyCharsAppendEnter(const char* chars);
+    void        KeyCharsReplace(const char* chars);
     void        KeyCharsReplaceEnter(const char* chars);
 
     // Navigation inputs

@@ -1185,6 +1185,38 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         IM_CHECK_STR_EQ(vars.Str1, "\t");
     };
 
+    // ## Test input clearing action (ESC key) being undoable (#3008).
+    t = REGISTER_TEST("widgets", "widgets_inputtext_6_esc_undo");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiTestGenericVars& vars = ctx->GenericVars;
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImGui::InputText("Field", vars.Str1, IM_ARRAYSIZE(vars.Str1));
+        ImGui::End();
+
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiTestGenericVars& vars = ctx->GenericVars;
+        // FIXME-TESTS: Facilitate usage of variants
+        const int test_count = ctx->HasDock ? 2 : 1;
+        for (int test_n = 0; test_n < test_count; test_n++)
+        {
+            ctx->LogDebug("TEST CASE %d", test_n);
+            const char* initial_value = (test_n == 0) ? "" : "initial";
+            strcpy(vars.Str1, initial_value);
+            ctx->WindowRef("Test Window");
+            ctx->ItemInput("Field");
+            ctx->KeyCharsReplace("text");
+            IM_CHECK_STR_EQ(vars.Str1, "text");
+            ctx->KeyPressMap(ImGuiKey_Escape);                      // Reset input to initial value.
+            IM_CHECK_STR_EQ(vars.Str1, initial_value);
+            ctx->ItemInput("Field");
+            ctx->KeyPressMap(ImGuiKey_Z, ImGuiKeyModFlags_Ctrl);    // Undo
+            IM_CHECK_STR_EQ(vars.Str1, "text");
+        }
+    };
+
     // ## Test for Nav interference
     t = REGISTER_TEST("widgets", "widgets_inputtext_nav");
     t->GuiFunc = [](ImGuiTestContext* ctx)
