@@ -179,7 +179,7 @@ struct ImGuiTestContext
     bool        IsFirstFrame() const        { return FrameCount == FirstFrameCount; }
     void        SetGuiFuncEnabled(bool v)   { if (v) RunFlags &= ~ImGuiTestRunFlags_NoGuiFunc; else RunFlags |= ImGuiTestRunFlags_NoGuiFunc; }
     void        RecoverFromUiContextErrors();
-    template <typename T> T& GetUserData()  { IM_ASSERT(UserData != NULL); return *(T*)(UserData); }
+    template <typename T> T& GetUserData()  { IM_ASSERT(UserData != NULL); return *(T*)(UserData); } // FIXME: Assert to compare sizes
 
     // Logging
     void        LogEx(ImGuiTestVerboseLevel level, ImGuiTestLogFlags flags, const char* fmt, ...) IM_FMTARGS(4);

@@ -1217,6 +1217,40 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         }
     };
 
+    // ## Test resize callback (#3009, #2006, #1443, #1008)
+    t = REGISTER_TEST("widgets", "widgets_inputtext_7_resizecallback");
+    struct StrVars { Str str; };
+    t->SetUserDataType<StrVars>();
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        StrVars& vars = ctx->GetUserData<StrVars>();
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+        if (ImGui::InputText("Field1", &vars.str, ImGuiInputTextFlags_EnterReturnsTrue))
+        {
+            IM_CHECK_EQ(vars.str.capacity(), 4 + 5 + 1);
+            IM_CHECK_STR_EQ(vars.str.c_str(), "abcdhello");
+        }
+        Str str_local_unsaved = "abcd";
+        if (ImGui::InputText("Field2", &str_local_unsaved, ImGuiInputTextFlags_EnterReturnsTrue))
+        {
+            IM_CHECK_EQ(str_local_unsaved.capacity(), 4 + 5 + 1);
+            IM_CHECK_STR_EQ(str_local_unsaved.c_str(), "abcdhello");
+        }
+        ImGui::End();
+
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        StrVars& vars = ctx->GetUserData<StrVars>();
+        vars.str.set("abcd");
+        IM_CHECK_EQ(vars.str.capacity(), 4+1);
+        ctx->WindowRef("Test Window");
+        ctx->ItemInput("Field1");
+        ctx->KeyCharsAppendEnter("hello");
+        ctx->ItemInput("Field2");
+        ctx->KeyCharsAppendEnter("hello");
+    };
+
     // ## Test for Nav interference
     t = REGISTER_TEST("widgets", "widgets_inputtext_nav");
     t->GuiFunc = [](ImGuiTestContext* ctx)
