@@ -538,7 +538,7 @@ void    ImGuiTestContext::NavMoveTo(ImGuiTestRef ref)
     IM_ASSERT(g.NavMoveRequest == false);
     ImRect rect_rel = item->RectFull;
     rect_rel.Translate(ImVec2(-item->Window->Pos.x, -item->Window->Pos.y));
-    ImGui::SetNavIDWithRectRel(item->ID, item->NavLayer, 0, rect_rel);
+    ImGui::SetNavIDWithRectRel(item->ID, item->NavLayer, 0, rect_rel); // Ben- Not sure why this is needed in the coroutine case but not otherwise?
     ImGui::ScrollToBringRectIntoView(item->Window, item->RectFull);
     while (g.NavMoveRequest)
         Yield();

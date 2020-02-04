@@ -7,6 +7,10 @@
 #include "imgui_internal.h"         // ImPool<>, ImGuiItemStatusFlags, ImFormatString
 #include "imgui_te_util.h"
 #include "imgui_capture_tool.h"
+// Temporary includes for coroutines
+#include <thread>
+#include <mutex>
+#include <condition_variable>
 
 //-------------------------------------------------------------------------
 // Forward Declarations
@@ -465,6 +469,40 @@ struct ImGuiTestLog
             p = p_eol ? p_eol + 1 : NULL;
         }
     }
+};
+
+//-------------------------------------------------------------------------
+// ImGuiTestCoroutine
+//-------------------------------------------------------------------------
+
+// A coroutine function - ctx is an arbitrary context object
+typedef void(*ImGuiTestCoroutineFunc)(void* ctx);
+
+// This implements a coroutine (based on a thread, but never executing concurrently) that allows yielding and then resuming from the yield point
+// Code using a coroutine should basically do "while (coroutine.Run()) { <do other work> }", whilst coroutine code should do "while (<something>) { <do work>; ImGuiTestCoroutine::Yield(); }"
+struct ImGuiTestCoroutine
+{
+private:
+    std::thread*                    Thread;             // The thread this coroutine is using
+    std::condition_variable         StateChange;        // Condition variable notified when the coroutine state changes
+    std::mutex                      StateMutex;         // Mutex to protect coroutine state
+    bool                            CoroutineRunning;   // Is the coroutine currently running? Lock StateMutex before access and notify StateChange on change
+    bool                            CoroutineTerminated;// Has the coroutine terminated? Lock StateMutex before access and notify StateChange on change
+
+public:
+    // Create a new coroutine - ctx will be passed to the function as arbitrary context
+    ImGuiTestCoroutine(ImGuiTestCoroutineFunc func, void* ctx);
+    ~ImGuiTestCoroutine();
+
+    // Run the coroutine until the next call to Yield(). Returns TRUE if the coroutine yielded, FALSE if it terminated (or had previously terminated)
+    bool Run();
+
+    // Yield the current coroutine (can only be called from a coroutine)
+    static void Yield();
+
+private:
+    // Internal implementation for Yield()
+    void YieldInternal();
 };
 
 //-------------------------------------------------------------------------
