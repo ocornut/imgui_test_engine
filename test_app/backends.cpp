@@ -450,13 +450,25 @@ void MainLoop()
     {
         if (!MainLoopEndFrame())
             return false;
-        // Super fast mode doesn't render/present
         ImGuiTestEngineIO& test_io = ImGuiTestEngine_GetIO(g_App.TestEngine);
+#if 0
+        // Super fast mode doesn't render/present
         if (test_io.RunningTests && test_io.ConfigRunFast)
             return true;
+#endif
         ImGui::Render();
         ImGuiIO& io = ImGui::GetIO();
-        SDL_GL_SetSwapInterval(test_io.ConfigNoThrottle ? 0 : 1); // Enable vsync
+#ifdef IMGUI_HAS_VIEWPORT
+        if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
+        {
+            SDL_Window* backup_current_window = SDL_GL_GetCurrentWindow();
+            SDL_GLContext backup_current_context = SDL_GL_GetCurrentContext();
+            ImGui::UpdatePlatformWindows();
+            ImGui::RenderPlatformWindowsDefault();
+            SDL_GL_MakeCurrent(backup_current_window, backup_current_context);
+        }
+#endif
+        SDL_GL_SetSwapInterval(((test_io.RunningTests && test_io.ConfigRunFast) || test_io.ConfigNoThrottle) ? 0 : 1); // Enable vsync
         glViewport(0, 0, (int)io.DisplaySize.x, (int)io.DisplaySize.y);
         glClearColor(g_App.ClearColor.x, g_App.ClearColor.y, g_App.ClearColor.z, g_App.ClearColor.w);
         glClear(GL_COLOR_BUFFER_BIT);
