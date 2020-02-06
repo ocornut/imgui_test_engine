@@ -94,6 +94,13 @@ bool ImGuiCaptureContext::CaptureScreenshot(ImGuiCaptureArgs* args)
     // Hide other windows so they can't be seen visible behind captured window
     for (ImGuiWindow* window : g.Windows)
     {
+#ifdef IMGUI_HAS_VIEWPORT
+        if ((io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable) && (args->InFlags & ImGuiCaptureToolFlags_StitchFullContents))
+        {
+            // FIXME-VIEWPORTS: Content stitching is not possible because window would get moved out of main viewport and detach from it. We need a way to force captured windows to remain in main viewport here.
+            return false;
+        }
+#endif
         if (window->Flags & ImGuiWindowFlags_ChildWindow || args->InCaptureWindows.contains(window))
             continue;
         window->Hidden = true;
@@ -167,10 +174,17 @@ bool ImGuiCaptureContext::CaptureScreenshot(ImGuiCaptureArgs* args)
         // capture rect of entire area that will be saved to screenshot. Doing this on the second frame because when
         // ImGuiCaptureToolFlags_StitchFullContents flag is used we need to allow window to reposition.
         ImVec2 move_offset = ImVec2(args->InPadding, args->InPadding) - _CombinedWindowRectPos;
+#ifdef IMGUI_HAS_VIEWPORT
+        if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
+        {
+            ImGuiViewport* main_viewport = ImGui::GetMainViewport();
+            move_offset += main_viewport->Pos;
+        }
+#endif
         for (ImGuiWindow* window : args->InCaptureWindows)
         {
             // Repositioning of a window may take multiple frames, depending on whether window was already rendered or not.
-            ImGui::SetWindowPos(window, window->Pos + move_offset);  // FIXME-VIEWPORTS
+            ImGui::SetWindowPos(window, window->Pos + move_offset);
             _CaptureRect.Add(window->Rect());
         }
 
@@ -185,10 +199,18 @@ bool ImGuiCaptureContext::CaptureScreenshot(ImGuiCaptureArgs* args)
         // FIXME: Implement capture of regions wider than viewport.
         // Capture a portion of image. Capturing of windows wider than viewport is not implemented yet.
         ImRect capture_rect = _CaptureRect;
-        capture_rect.ClipWith(ImRect(ImVec2(0, 0), io.DisplaySize));
+        ImRect clip_rect(ImVec2(0, 0), io.DisplaySize);
+#ifdef IMGUI_HAS_VIEWPORT
+        if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
+        {
+            ImGuiViewport* main_viewport = ImGui::GetMainViewport();
+            clip_rect = ImRect(main_viewport->Pos, main_viewport->Pos + main_viewport->Size);
+        }
+#endif
+        capture_rect.ClipWith(clip_rect);
         const int capture_height = ImMin((int)io.DisplaySize.y, (int)_CaptureRect.GetHeight());
-        const int x1 = (int)capture_rect.Min.x;
-        const int y1 = (int)capture_rect.Min.y;
+        const int x1 = (int)(capture_rect.Min.x - clip_rect.Min.x);
+        const int y1 = (int)(capture_rect.Min.y - clip_rect.Min.y);
         const int w = (int)capture_rect.GetWidth();
         const int h = (int)ImMin(output->Height - _ChunkNo * capture_height, capture_height);
         if (h > 0)
@@ -426,7 +448,17 @@ void ImGuiCaptureTool::CaptureWindowsSelector(const char* title, ImGuiCaptureArg
         IM_ASSERT(capture_rect.GetWidth() > 0);
         IM_ASSERT(capture_rect.GetHeight() > 0);
         capture_rect.Expand(args->InPadding);
-        capture_rect.ClipWith(ImRect(ImVec2(0, 0), io.DisplaySize));
+        ImVec2 display_pos(0, 0);
+        ImVec2 display_size = io.DisplaySize;
+#ifdef IMGUI_HAS_VIEWPORT
+        if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
+        {
+            ImGuiViewport* main_viewport = ImGui::GetMainViewport();
+            display_pos = main_viewport->Pos;
+            display_size = main_viewport->Size;
+        }
+#endif
+        capture_rect.ClipWith(ImRect(display_pos, display_pos + display_size));
         draw_list->AddRect(capture_rect.Min - ImVec2(1.0f, 1.0f), capture_rect.Max + ImVec2(1.0f, 1.0f), IM_COL32_WHITE);
     }
 
