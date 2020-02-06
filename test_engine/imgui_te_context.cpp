@@ -187,7 +187,7 @@ void    ImGuiTestContext::RecoverFromUiContextErrors()
     {
 #ifdef IMGUI_HAS_TABLE
         ImGuiTable* table = g.CurrentTable;
-        if (table->OuterWindow == g.CurrentWindow || table->InnerWindow == g.CurrentWindow)
+        if (table && (table->OuterWindow == g.CurrentWindow || table->InnerWindow == g.CurrentWindow))
         {
             if (verbose) LogWarning("Recovered from missing EndTable() call.");
             ImGui::EndTable();
