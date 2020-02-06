@@ -2224,7 +2224,11 @@ static void HelperTableWithResizingPolicies(const char* table_id, ImGuiTableFlag
         else IM_ASSERT(0);
         ImGui::TableSetupColumn(Str16f("%c%d", policy, column + 1).c_str(), column_flags);
     }
+    ImFont* font = FindFontByName("Roboto-Medium.ttf, 16px");
+    IM_CHECK_SILENT(font != NULL);
+    ImGui::PushFont(font);
     ImGui::TableAutoHeaders();
+    ImGui::PopFont();
     for (int row = 0; row < 2; row++)
     {
         ImGui::TableNextRow();
@@ -2514,6 +2518,31 @@ void RegisterTests_Table(ImGuiTestEngine* e)
     {
         ImGui::Begin("Test window 1", NULL, ImGuiWindowFlags_NoSavedSettings);
         ImGui::BeginTable("Table", 3);
+        ImGui::EndTable();
+        ImGui::End();
+    };
+
+    // ## Test default sort order assignment
+    t = REGISTER_TEST("table", "table_8_default_sort_order");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::Begin("Test window 1", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImGui::BeginTable("Table", 4, ImGuiTableFlags_MultiSortable);
+        ImGui::TableSetupColumn("0", ImGuiTableColumnFlags_None);
+        ImGui::TableSetupColumn("1", ImGuiTableColumnFlags_DefaultSort);
+        ImGui::TableSetupColumn("1", ImGuiTableColumnFlags_DefaultSort | ImGuiTableColumnFlags_PreferSortAscending);
+        ImGui::TableSetupColumn("2", ImGuiTableColumnFlags_DefaultSort | ImGuiTableColumnFlags_PreferSortDescending);
+        const ImGuiTableSortSpecs* sort_specs = ImGui::TableGetSortSpecs();
+        ImGui::TableAutoHeaders();
+        IM_CHECK_EQ(sort_specs->SpecsCount, 3);
+        IM_CHECK_EQ(sort_specs->Specs[0].ColumnIndex, 1);
+        IM_CHECK_EQ(sort_specs->Specs[1].ColumnIndex, 2);
+        IM_CHECK_EQ(sort_specs->Specs[2].ColumnIndex, 3);
+        IM_CHECK_EQ(sort_specs->Specs[0].SortDirection, ImGuiSortDirection_Ascending);
+        IM_CHECK_EQ(sort_specs->Specs[1].SortDirection, ImGuiSortDirection_Ascending);
+        IM_CHECK_EQ(sort_specs->Specs[2].SortDirection, ImGuiSortDirection_Descending);
+        //ImGuiTable* table = ctx->UiContext->CurrentTable;
+        //IM_CHECK_EQ(table->SortSpecsCount, 3);
         ImGui::EndTable();
         ImGui::End();
     };
