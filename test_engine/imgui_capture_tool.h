@@ -73,6 +73,7 @@ struct ImGuiCaptureContext
     int                     _ChunkNo = 0;                   // Number of chunk that is being captured when capture spans multiple frames.
     int                     _FrameNo = 0;                   // Frame number during capture process that spans multiple frames.
     ImVector<ImRect>        _WindowBackupRects;             // Backup window state that will be restored when screen capturing is done. Size and order matches windows of ImGuiCaptureArgs::InCaptureWindows.
+    ImVector<ImGuiWindow*>  _WindowBackupRectsWindows;      // Backup windows that will have their state restored. args->InCaptureWindows can not be used because popups may get closed during capture and no longer appear in that list.
     ImVec2                  _DisplayWindowPaddingBackup;    // Backup padding. We set it to {0, 0} during capture.
     ImVec2                  _DisplaySafeAreaPaddingBackup;  // Backup padding. We set it to {0, 0} during capture.
 

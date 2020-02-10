@@ -147,6 +147,7 @@ bool ImGuiCaptureContext::CaptureScreenshot(ImGuiCaptureArgs* args)
         for (ImGuiWindow* window : args->InCaptureWindows)
         {
             _WindowBackupRects.push_back(window->Rect());
+            _WindowBackupRectsWindows.push_back(window);
             _CombinedWindowRectPos = ImVec2(ImMin(_CombinedWindowRectPos.x, window->Pos.x), ImMin(_CombinedWindowRectPos.y, window->Pos.y));
         }
 
@@ -255,8 +256,11 @@ bool ImGuiCaptureContext::CaptureScreenshot(ImGuiCaptureArgs* args)
             // Restore window position
             for (int i = 0; i < _WindowBackupRects.size(); i++)
             {
+                ImGuiWindow* window = _WindowBackupRectsWindows[i];
+                if (window->Hidden)
+                    continue;
+
                 ImRect rect = _WindowBackupRects[i];
-                ImGuiWindow* window = args->InCaptureWindows[i];
                 ImGui::SetWindowPos(window, rect.Min, ImGuiCond_Always);
                 ImGui::SetWindowSize(window, rect.GetSize(), ImGuiCond_Always);
             }
