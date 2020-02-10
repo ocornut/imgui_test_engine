@@ -324,6 +324,15 @@ void ImGuiTestEngine_PushInput(ImGuiTestEngine* engine, const ImGuiTestInput& in
     engine->Inputs.Queue.push_back(input);
 }
 
+static bool ImGuiTestEngine_UseSimulatedInputs(ImGuiTestEngine* engine)
+{
+    if (engine->UiContextActive)
+        if (ImGuiTestEngine_IsRunningTests(engine))
+            if (!(engine->TestContext->RunFlags & ImGuiTestRunFlags_NoTestFunc))
+                return true;
+    return false;
+}
+
 void ImGuiTestEngine_ApplyInputToImGuiContext(ImGuiTestEngine* engine)
 {
     IM_ASSERT(engine->UiContextTarget != NULL);
@@ -334,8 +343,8 @@ void ImGuiTestEngine_ApplyInputToImGuiContext(ImGuiTestEngine* engine)
 
     main_io.MouseDrawCursor = true;
 
-    const bool want_simulated_inputs = engine->UiContextActive != NULL && ImGuiTestEngine_IsRunningTests(engine) && !(engine->TestContext->RunFlags & ImGuiTestRunFlags_NoTestFunc);
-    if (want_simulated_inputs)
+    const bool use_simulated_inputs = ImGuiTestEngine_UseSimulatedInputs(engine);
+    if (use_simulated_inputs)
     {
         IM_ASSERT(engine->TestContext != NULL);
 
@@ -493,11 +502,18 @@ static void ImGuiTestEngine_PreNewFrame(ImGuiTestEngine* engine, ImGuiContext* c
     if (ImGuiTestEngine_IsRunningTests(engine) && !engine->Abort)
     {
         // Abort testing by holding ESC
-        // When running GuiFunc only main_io == simulated_io so we held for a hold.
+        // When running GuiFunc only main_io == simulated_io we test for a long hold.
         ImGuiIO& main_io = g.IO;
-        //ImGuiIO& simulated_io = engine->Inputs.SimulatedIO;
+        ImGuiIO& simulated_io = engine->Inputs.SimulatedIO;
         const int key_idx_escape = g.IO.KeyMap[ImGuiKey_Escape];
-        if (key_idx_escape != -1 && main_io.KeysDownDuration[key_idx_escape] > 0.5f)// && !simulated_io.KeysDown[key_idx_escape])
+        const bool use_simulated_inputs = ImGuiTestEngine_UseSimulatedInputs(engine);
+
+        bool abort = false;
+        if (use_simulated_inputs)
+            abort = (key_idx_escape != -1 && main_io.KeysDown[key_idx_escape] && !simulated_io.KeysDown[key_idx_escape]);
+        else
+            abort = (key_idx_escape != -1 && main_io.KeysDownDuration[key_idx_escape] > 0.5f);
+        if (abort)
         {
             if (engine->TestContext)
                 engine->TestContext->LogWarning("KO: User aborted (pressed ESC)");

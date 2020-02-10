@@ -535,7 +535,7 @@ ImFont* FindFontByName(const char* name)
 
 struct InputTextCallbackStr_UserData
 {
-    Str*                    Str;
+    Str*                    StrObj;
     ImGuiInputTextCallback  ChainCallback;
     void*                   ChainCallbackUserData;
 };
@@ -547,9 +547,10 @@ static int InputTextCallbackStr(ImGuiInputTextCallbackData* data)
     {
         // Resize string callback
         // If for some reason we refuse the new length (BufTextLen) and/or capacity (BufSize) we need to set them back to what we want.
-        IM_ASSERT(data->Buf == user_data->Str->c_str());
-        user_data->Str->reserve(data->BufTextLen + 1);
-        data->Buf = (char*)user_data->Str->c_str();
+        Str* str = user_data->StrObj;
+        IM_ASSERT(data->Buf == str->c_str());
+        str->reserve(data->BufTextLen + 1);
+        data->Buf = (char*)str->c_str();
     }
     else if (user_data->ChainCallback)
     {
@@ -566,7 +567,7 @@ bool ImGui::InputText(const char* label, Str* str, ImGuiInputTextFlags flags, Im
     flags |= ImGuiInputTextFlags_CallbackResize;
 
     InputTextCallbackStr_UserData cb_user_data;
-    cb_user_data.Str = str;
+    cb_user_data.StrObj = str;
     cb_user_data.ChainCallback = callback;
     cb_user_data.ChainCallbackUserData = user_data;
     return InputText(label, (char*)str->c_str(), str->capacity() + 1, flags, InputTextCallbackStr, &cb_user_data);
@@ -578,7 +579,7 @@ bool ImGui::InputTextMultiline(const char* label, Str* str, const ImVec2& size, 
     flags |= ImGuiInputTextFlags_CallbackResize;
 
     InputTextCallbackStr_UserData cb_user_data;
-    cb_user_data.Str = str;
+    cb_user_data.StrObj = str;
     cb_user_data.ChainCallback = callback;
     cb_user_data.ChainCallbackUserData = user_data;
     return InputTextMultiline(label, (char*)str->c_str(), str->capacity() + 1, size, flags, InputTextCallbackStr, &cb_user_data);
