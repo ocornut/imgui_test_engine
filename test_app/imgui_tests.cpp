@@ -1214,6 +1214,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
             ctx->ItemInput("Field");
             ctx->KeyPressMap(ImGuiKey_Z, ImGuiKeyModFlags_Ctrl);    // Undo
             IM_CHECK_STR_EQ(vars.Str1, "text");
+            ctx->KeyPressMap(ImGuiKey_Enter);                       // Unfocus otherwise test_n==1 strcpy will fail
         }
     };
 

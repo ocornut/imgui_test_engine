@@ -492,11 +492,12 @@ static void ImGuiTestEngine_PreNewFrame(ImGuiTestEngine* engine, ImGuiContext* c
 
     if (ImGuiTestEngine_IsRunningTests(engine) && !engine->Abort)
     {
-        // Abort testing by press ESC
+        // Abort testing by holding ESC
+        // When running GuiFunc only main_io == simulated_io so we held for a hold.
         ImGuiIO& main_io = g.IO;
-        ImGuiIO& simulated_io = engine->Inputs.SimulatedIO;
+        //ImGuiIO& simulated_io = engine->Inputs.SimulatedIO;
         const int key_idx_escape = g.IO.KeyMap[ImGuiKey_Escape];
-        if (key_idx_escape != -1 && main_io.KeysDown[key_idx_escape] && !simulated_io.KeysDown[key_idx_escape])
+        if (key_idx_escape != -1 && main_io.KeysDownDuration[key_idx_escape] > 0.5f)// && !simulated_io.KeysDown[key_idx_escape])
         {
             if (engine->TestContext)
                 engine->TestContext->LogWarning("KO: User aborted (pressed ESC)");
