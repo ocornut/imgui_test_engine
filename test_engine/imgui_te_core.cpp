@@ -1155,9 +1155,7 @@ bool ImGuiTestEngineHook_Check(const char* file, const char* func, int line, ImG
     (void)func;
 
     // Removed absolute path from output so we have deterministic output (otherwise __FILE__ gives us machine depending output)
-    const char* file_without_path = file ? (file + strlen(file)) : NULL;
-    while (file_without_path > file && file_without_path[-1] != '/' && file_without_path[-1] != '\\')
-        file_without_path--;
+    const char* file_without_path = file ? ImPathFindFilename(file) : "";
 
     if (ImGuiTestContext* ctx = engine->TestContext)
     {

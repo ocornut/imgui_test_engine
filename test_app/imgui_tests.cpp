@@ -2226,7 +2226,8 @@ static void HelperTableWithResizingPolicies(const char* table_id, ImGuiTableFlag
         ImGui::TableSetupColumn(Str16f("%c%d", policy, column + 1).c_str(), column_flags);
     }
     ImFont* font = FindFontByName("Roboto-Medium.ttf, 16px");
-    IM_CHECK_SILENT(font != NULL);
+    if (!font)
+        IM_CHECK_NO_RET(font != NULL);
     ImGui::PushFont(font);
     ImGui::TableAutoHeaders();
     ImGui::PopFont();
