@@ -512,47 +512,34 @@ void ImGuiCaptureTool::ShowCaptureToolWindow(bool* p_open)
     ImGui::SetNextItemOpen(true, ImGuiCond_Once);
     if (ImGui::TreeNode("Options"))
     {
-        ImGui::PushItemWidth(-200.0f);
-        ImGui::InputText("##", SaveFileName, IM_ARRAYSIZE(SaveFileName));
-        ImGui::SameLine(0.0f, style.ItemInnerSpacing.x);
         const bool has_last_file_name = (Context._SaveFileNameFinal[0] != 0);
         if (!has_last_file_name)
-        {
-            ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
-            ImGui::PushStyleColor(ImGuiCol_Text, style.Colors[ImGuiCol_Text] * ImVec4(1,1,1,0.5f));
-        }
-        if (ImGui::Button("Open Last") && has_last_file_name)           // FIXME-CAPTURE: Running tests changes last captured file name.
+            ImGui::PushDisabled();
+        if (ImGui::Button("Open Last"))             // FIXME-CAPTURE: Running tests changes last captured file name.
             ImOsOpenInShell(Context._SaveFileNameFinal);
         if (!has_last_file_name)
-        {
-            ImGui::PopStyleColor();
-            ImGui::PopItemFlag();
-        }
+            ImGui::PopDisabled();
         if (has_last_file_name && ImGui::IsItemHovered())
             ImGui::SetTooltip("Open %s", Context._SaveFileNameFinal);
-        ImGui::SameLine(0.0f, style.ItemInnerSpacing.x);
+        ImGui::SameLine();
+
         Str128 save_file_dir(SaveFileName);
         if (!save_file_dir[0])
-        {
-            ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
-            ImGui::PushStyleColor(ImGuiCol_Text, style.Colors[ImGuiCol_Text] * ImVec4(1,1,1,0.5f));
-        }
+            ImGui::PushDisabled();
         else if (char* slash_pos = ImMax(strrchr(save_file_dir.c_str(), '/'), strrchr(save_file_dir.c_str(), '\\')))
             *slash_pos = 0;                         // Remove file name.
         else
             strcpy(save_file_dir.c_str(), ".");     // Only filename is present, open current directory.
-        if (ImGui::Button("Open Dir") && save_file_dir[0])
+        if (ImGui::Button("Open Directory"))
             ImOsOpenInShell(save_file_dir.c_str());
         if (save_file_dir[0] && ImGui::IsItemHovered())
-            ImGui::SetTooltip("Open %s", save_file_dir.c_str());
+            ImGui::SetTooltip("Open %s/", save_file_dir.c_str());
         if (!save_file_dir[0])
-        {
-            ImGui::PopStyleColor();
-            ImGui::PopItemFlag();
-        }
+            ImGui::PopDisabled();
 
-        ImGui::SameLine(0.0f, style.ItemInnerSpacing.x);
-        ImGui::TextUnformatted("Out filename");
+        ImGui::PushItemWidth(-200.0f);
+
+        ImGui::InputText("Out filename template", SaveFileName, IM_ARRAYSIZE(SaveFileName));
         ImGui::DragFloat("Padding", &Padding, 0.1f, 0, 32, "%.0f");
 
         if (ImGui::Button("Snap Windows To Grid", ImVec2(-200, 0)))

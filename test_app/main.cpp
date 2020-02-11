@@ -232,6 +232,41 @@ enum ImGuiTestAppErrorCode
     ImGuiTestAppErrorCode_TestFailed = 2
 };
 
+static void LoadFonts()
+{
+    ImGuiIO& io = ImGui::GetIO();
+    io.Fonts->AddFontDefault();
+    //ImFontConfig cfg;
+    //cfg.RasterizerMultiply = 1.1f;
+
+    // Find font directory
+    Str64 base_font_dir;
+    for (int i = 0; i < 3; i++)
+    {
+        for (int j = 0; j <= i; j++)
+            base_font_dir.append("../");
+        base_font_dir.append("imgui/misc/fonts");
+        struct stat dir_stat;
+        if (stat(base_font_dir.c_str(), &dir_stat) == 0)
+            break;
+        base_font_dir.clear();
+    }
+
+    if (!base_font_dir.empty())
+    {
+        io.Fonts->AddFontFromFileTTF(Str64f("%s/%s", base_font_dir.c_str(), "Roboto-Medium.ttf").c_str(), 16.0f);
+        //io.Fonts->AddFontFromFileTTF(Str64f("%s/%s", base_font_dir.c_str(), "RobotoMono-Regular.ttf").c_str(), 16.0f, &cfg);
+        //io.Fonts->AddFontFromFileTTF(Str64f("%s/%s", base_font_dir.c_str(), "Cousine-Regular.ttf").c_str(), 15.0f);
+        //io.Fonts->AddFontFromFileTTF(Str64f("%s/%s", base_font_dir.c_str(), "DroidSans.ttf").c_str(), 16.0f);
+        //io.Fonts->AddFontFromFileTTF(Str64f("%s/%s", base_font_dir.c_str(), "ProggyTiny.ttf").c_str(), 10.0f);
+        //IM_ASSERT(font != NULL);
+    }
+    else
+    {
+        fprintf(stderr, "Font directory not found. Fonts not loaded.\n");
+    }
+}
+
 int main(int argc, char** argv)
 {
 #ifdef DEBUG_CRT
@@ -281,34 +316,7 @@ int main(int argc, char** argv)
 #endif
 
     // Load Fonts
-    io.Fonts->AddFontDefault();
-    //ImFontConfig cfg;
-    //cfg.RasterizerMultiply = 1.1f;
-
-    Str64 base_font_dir;
-    for (int i = 0; i < 3; i++)
-    {
-        for (int j = 0; j <= i; j++)
-            base_font_dir.append("../");
-        base_font_dir.append("imgui/misc/fonts");
-        struct stat dir_stat;
-        if (stat(base_font_dir.c_str(), &dir_stat) == 0)
-            break;
-        else
-            base_font_dir.clear();
-    }
-
-    if (!base_font_dir.empty())
-    {
-        io.Fonts->AddFontFromFileTTF(Str64f("%s/%s", base_font_dir.c_str(), "Roboto-Medium.ttf").c_str(), 16.0f);
-        //io.Fonts->AddFontFromFileTTF(Str64f("%s/%s", base_font_dir.c_str(), "RobotoMono-Regular.ttf").c_str(), 16.0f, &cfg);
-        //io.Fonts->AddFontFromFileTTF(Str64f("%s/%s", base_font_dir.c_str(), "Cousine-Regular.ttf").c_str(), 15.0f);
-        //io.Fonts->AddFontFromFileTTF(Str64f("%s/%s", base_font_dir.c_str(), "DroidSans.ttf").c_str(), 16.0f);
-        //io.Fonts->AddFontFromFileTTF(Str64f("%s/%s", base_font_dir.c_str(), "ProggyTiny.ttf").c_str(), 10.0f);
-        //IM_ASSERT(font != NULL);
-    }
-    else
-        fprintf(stderr, "Font directory not found. Fonts not loaded.\n");
+    LoadFonts();
 
     // Create TestEngine context
     IM_ASSERT(g_App.TestEngine == NULL);

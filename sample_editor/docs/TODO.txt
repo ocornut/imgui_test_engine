@@ -1,0 +1,8 @@
+
+
+DOCKING
+- Default docking setup on init.
+
+DRAG AND DROP
+- Integrate WM_DROPFILE type of drag and drop (stashes/dragdrop_from_os).
+

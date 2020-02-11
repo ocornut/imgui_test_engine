@@ -9,7 +9,7 @@
 // Typical setup
 //-----------------------------------------------------------------------------------
 
-#define IMGUI_FONTAWESOME4_IMPLEMENTATION
+#define IMGUI_FONTS_FONTAWESOME4_IMPLEMENTATION
 #include "../imgui_dev/helpers/imgui_debug_fontawesome.h"
 
 then:

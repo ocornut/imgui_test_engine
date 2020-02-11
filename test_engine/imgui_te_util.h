@@ -88,12 +88,22 @@ struct ImMovingAverage
 };
 
 //-----------------------------------------------------------------------------
+// Misc ImGui extensions
+//-----------------------------------------------------------------------------
+
+namespace ImGui
+{
+void    PushDisabled();
+void    PopDisabled();
+}
+
+//-----------------------------------------------------------------------------
 // STR + InputText bindings (FIXME: move to Str.cpp?)
 //-----------------------------------------------------------------------------
 
 class Str;
 namespace ImGui
 {
-bool  InputText(const char* label, Str* str, ImGuiInputTextFlags flags = 0, ImGuiInputTextCallback callback = NULL, void* user_data = NULL);
-bool  InputTextMultiline(const char* label, Str* str, const ImVec2& size = ImVec2(0, 0), ImGuiInputTextFlags flags = 0, ImGuiInputTextCallback callback = NULL, void* user_data = NULL);
+bool    InputText(const char* label, Str* str, ImGuiInputTextFlags flags = 0, ImGuiInputTextCallback callback = NULL, void* user_data = NULL);
+bool    InputTextMultiline(const char* label, Str* str, const ImVec2& size = ImVec2(0, 0), ImGuiInputTextFlags flags = 0, ImGuiInputTextCallback callback = NULL, void* user_data = NULL);
 }

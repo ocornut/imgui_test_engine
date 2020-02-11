@@ -52,8 +52,11 @@ void MainLoopNull()
     }
 }
 
-bool CaptureScreenshotNull(int x, int y, int w, int h, unsigned int* pixels, void* user)
+bool CaptureScreenshotNull(int x, int y, int w, int h, unsigned int* pixels, void* user_data)
 {
+    IM_UNUSED(x);
+    IM_UNUSED(y);
+    IM_UNUSED(user_data);
     memset(pixels, 0, w * h * sizeof(unsigned int));
     return true;
 }
