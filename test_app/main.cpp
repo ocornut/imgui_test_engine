@@ -285,26 +285,26 @@ int main(int argc, char** argv)
     //ImFontConfig cfg;
     //cfg.RasterizerMultiply = 1.1f;
 
-
-    const char* base_font_dir = nullptr;
-    const char* font_dirs[] = {"../../imgui/misc/fonts", "../../../imgui/misc/fonts"};
-    for (const char* font_dir : font_dirs)
+    Str64 base_font_dir;
+    for (int i = 0; i < 3; i++)
     {
+        for (int j = 0; j <= i; j++)
+            base_font_dir.append("../");
+        base_font_dir.append("imgui/misc/fonts");
         struct stat dir_stat;
-        if (stat(font_dir, &dir_stat) == 0)
-        {
-            base_font_dir = font_dir;
+        if (stat(base_font_dir.c_str(), &dir_stat) == 0)
             break;
-        }
+        else
+            base_font_dir.clear();
     }
 
-    if (base_font_dir != NULL)
+    if (!base_font_dir.empty())
     {
-        io.Fonts->AddFontFromFileTTF(Str64f("%s/%s", base_font_dir, "Roboto-Medium.ttf").c_str(), 16.0f);
-        //io.Fonts->AddFontFromFileTTF(Str64f("%s/%s", base_font_dir, "RobotoMono-Regular.ttf").c_str(), 16.0f, &cfg);
-        //io.Fonts->AddFontFromFileTTF(Str64f("%s/%s", base_font_dir, "Cousine-Regular.ttf").c_str(), 15.0f);
-        //io.Fonts->AddFontFromFileTTF(Str64f("%s/%s", base_font_dir, "DroidSans.ttf").c_str(), 16.0f);
-        //io.Fonts->AddFontFromFileTTF(Str64f("%s/%s", base_font_dir, "ProggyTiny.ttf").c_str(), 10.0f);
+        io.Fonts->AddFontFromFileTTF(Str64f("%s/%s", base_font_dir.c_str(), "Roboto-Medium.ttf").c_str(), 16.0f);
+        //io.Fonts->AddFontFromFileTTF(Str64f("%s/%s", base_font_dir.c_str(), "RobotoMono-Regular.ttf").c_str(), 16.0f, &cfg);
+        //io.Fonts->AddFontFromFileTTF(Str64f("%s/%s", base_font_dir.c_str(), "Cousine-Regular.ttf").c_str(), 15.0f);
+        //io.Fonts->AddFontFromFileTTF(Str64f("%s/%s", base_font_dir.c_str(), "DroidSans.ttf").c_str(), 16.0f);
+        //io.Fonts->AddFontFromFileTTF(Str64f("%s/%s", base_font_dir.c_str(), "ProggyTiny.ttf").c_str(), 10.0f);
         //IM_ASSERT(font != NULL);
     }
     else
