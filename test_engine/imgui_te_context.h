@@ -123,6 +123,7 @@ struct ImGuiTestGenericVars
     bool            Bool1;
     bool            Bool2;
     bool            BoolArray[10];
+    ImVec2          Vec2;
     ImVec4          Vec4;
     ImVec4          Vec4Array[10];
     ImGuiID         Id;

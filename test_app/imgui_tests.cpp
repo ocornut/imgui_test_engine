@@ -4474,6 +4474,105 @@ void RegisterTests_Perf(ImGuiTestEngine* e)
 		ImGui::End();
 	};
 	t->TestFunc = PerfCaptureFunc;
+
+    // ## Measure performance of drawlist text rendering
+    {
+        enum PerfTestTextFlags : unsigned
+        {
+            PerfTestTextFlags_TextShort             = 1u,
+            PerfTestTextFlags_TextLong              = 1u << 1u,
+            PerfTestTextFlags_TextWayTooLong        = 1u << 2u,
+            PerfTestTextFlags_NoWrapWidth           = 1u << 3u,
+            PerfTestTextFlags_WithWrapWidth         = 1u << 4u,
+            PerfTestTextFlags_NoCpuFineClipRect     = 1u << 5u,
+            PerfTestTextFlags_WithCpuFineClipRect   = 1u << 6u,
+        };
+        auto measure_text_rendering_perf = [](ImGuiTestContext* ctx)
+        {
+            ImGui::SetNextWindowSize(ImVec2(300, 120), ImGuiCond_Always);
+            ImGui::Begin("Test Func", NULL, ImGuiWindowFlags_NoSavedSettings);
+
+            ImGuiWindow* window = ImGui::GetCurrentWindow();
+            ImDrawList* draw_list = ImGui::GetWindowDrawList();
+            int test_variant = ctx->Test->ArgVariant;
+            ImVector<char>& str = ctx->GenericVars.StrLarge;
+            float wrap_width = 0.0f;
+            int& line_num = ctx->GenericVars.Int1;
+            ImVec4* cpu_fine_clip_rect = NULL;
+            ImVec2& text_size = ctx->GenericVars.Vec2;
+            ImVec2 window_padding = ImGui::GetCursorScreenPos() - window->Pos;
+
+            if (test_variant & PerfTestTextFlags_WithWrapWidth)
+                wrap_width = 250.0f;
+
+            if (test_variant & PerfTestTextFlags_WithCpuFineClipRect)
+                cpu_fine_clip_rect = &ctx->GenericVars.Vec4;
+
+            // Set up test string.
+            if (ctx->GenericVars.StrLarge.empty())
+            {
+                if (test_variant & PerfTestTextFlags_TextLong)
+                {
+                    line_num = 6;
+                    str.resize(2000);
+                }
+                else if (test_variant & PerfTestTextFlags_TextWayTooLong)
+                {
+                    line_num = 1;
+                    str.resize(10000);
+                }
+                else
+                {
+                    line_num = 400;
+                    str.resize(30);
+                }
+                // Support variable stress.
+                line_num *= ctx->PerfStressAmount;
+                // Create test string.
+                memset(str.Data, 'f', str.Size);
+                for (int i = 14; i < str.Size; i += 15)
+                    str.Data[i] = ' ';      // Spaces for word wrap.
+                str.back() = 0;             // Null-terminate
+                // Measure text size and cache result.
+                text_size = ImGui::CalcTextSize(str.begin(), str.end(), false, wrap_width);
+                // Set up a cpu fine clip rect which should be about half of rect rendered text would occupy.
+                if (test_variant & PerfTestTextFlags_WithCpuFineClipRect)
+                {
+                    cpu_fine_clip_rect->x = window->Pos.x + window_padding.x;
+                    cpu_fine_clip_rect->y = window->Pos.y + window_padding.y;
+                    cpu_fine_clip_rect->z = window->Pos.x + window_padding.x + text_size.x * 0.5f;
+                    cpu_fine_clip_rect->w = window->Pos.y + window_padding.y + text_size.y * line_num * 0.5f;
+                }
+            }
+
+            ImGui::PushClipRect(ImVec2(-FLT_MAX, -FLT_MAX), ImVec2(FLT_MAX, FLT_MAX), false);
+            for (int i = 0, end = line_num; i < end; i++)
+                draw_list->AddText(NULL, 0.0f, window->Pos + ImVec2(window_padding.x, window_padding.y + text_size.y * (float)i), IM_COL32_WHITE, &str.front(), &str.back(), wrap_width, cpu_fine_clip_rect);
+            ImGui::PopClipRect();
+
+            ImGui::End();
+        };
+        const char* base_name = "perf_drawlist_text";
+        const char* text_suffixes[] = {"_short", "_long", "_too_long"};
+        const char* wrap_suffixes[] = {"", "_wrapped"};
+        const char* clip_suffixes[] = {"", "_clipped"};
+        for (int i = 0; i < IM_ARRAYSIZE(text_suffixes); i++)
+        {
+            for (int j = 0; j < IM_ARRAYSIZE(wrap_suffixes); j++)
+            {
+                for (int k = 0; k < IM_ARRAYSIZE(clip_suffixes); k++)
+                {
+                    size_t test_name_len = strlen(base_name) + strlen(text_suffixes[i]) + strlen(wrap_suffixes[j]) + strlen(clip_suffixes[k]);
+                    char* test_name = (char*)IM_ALLOC(test_name_len + 1);
+                    ImFormatString(test_name, test_name_len + 1, "%s%s%s%s", base_name, text_suffixes[i], wrap_suffixes[j], clip_suffixes[k]);
+                    t = REGISTER_TEST("perf", test_name);
+                    t->ArgVariant = (PerfTestTextFlags_TextShort << i) | (PerfTestTextFlags_NoWrapWidth << j) | (PerfTestTextFlags_NoCpuFineClipRect << k);
+                    t->GuiFunc = measure_text_rendering_perf;
+                    t->TestFunc = PerfCaptureFunc;
+                }
+            }
+        }
+    }
 }
 
 //-------------------------------------------------------------------------
