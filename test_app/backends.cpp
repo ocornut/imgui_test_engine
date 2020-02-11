@@ -52,6 +52,12 @@ void MainLoopNull()
     }
 }
 
+bool CaptureScreenshotNull(int x, int y, int w, int h, unsigned int* pixels, void* user)
+{
+    memset(pixels, 0, w * h * sizeof(unsigned int));
+    return true;
+}
+
 #if !defined(IMGUI_TESTS_BACKEND_WIN32_DX11) && !defined(IMGUI_TESTS_BACKEND_SDL_GL3) && !defined(IMGUI_TESTS_BACKEND_GLFW_GL3)
 void MainLoop()
 {

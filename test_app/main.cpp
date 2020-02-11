@@ -328,7 +328,9 @@ int main(int argc, char** argv)
 #if defined(IMGUI_TESTS_BACKEND_WIN32_DX11) || defined(IMGUI_TESTS_BACKEND_SDL_GL3) || defined(IMGUI_TESTS_BACKEND_GLFW_GL3)
     if (g_App.OptGUI)
         test_io.ScreenCaptureFunc = &CaptureFramebufferScreenshot;
+    else
 #endif
+        test_io.ScreenCaptureFunc = &CaptureScreenshotNull;
 
     // Set up TestEngine context
     RegisterTests(g_App.TestEngine);

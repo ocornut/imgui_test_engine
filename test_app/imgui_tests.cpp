@@ -4477,12 +4477,6 @@ void RegisterTests_Perf(ImGuiTestEngine* e)
 
 void RegisterTests_Capture(ImGuiTestEngine* e)
 {
-    if (!ImGuiTestEngine_GetIO(e).ConfigRunWithGui)
-    {
-        ImGui::LogText("'capture' tests are not registered because they require graphics renderer to function.");
-        return;
-    }
-
     ImGuiTest* t = NULL;
 
     t = REGISTER_TEST("capture", "capture_demo_documents");
