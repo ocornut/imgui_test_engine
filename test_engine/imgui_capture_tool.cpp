@@ -9,6 +9,7 @@
 #include "imgui_internal.h"
 #include "imgui_capture_tool.h"
 #include "imgui_te_util.h"
+#include <Str/Str.h>
 
 // stb_image_write
 #ifdef _MSC_VER
@@ -529,6 +530,27 @@ void ImGuiCaptureTool::ShowCaptureToolWindow(bool* p_open)
         }
         if (has_last_file_name && ImGui::IsItemHovered())
             ImGui::SetTooltip("Open %s", Context._SaveFileNameFinal);
+        ImGui::SameLine(0.0f, style.ItemInnerSpacing.x);
+        Str128 save_file_dir(SaveFileName);
+        if (!save_file_dir[0])
+        {
+            ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
+            ImGui::PushStyleColor(ImGuiCol_Text, style.Colors[ImGuiCol_Text] * ImVec4(1,1,1,0.5f));
+        }
+        else if (char* slash_pos = ImMax(strrchr(save_file_dir.c_str(), '/'), strrchr(save_file_dir.c_str(), '\\')))
+            *slash_pos = 0;                         // Remove file name.
+        else
+            strcpy(save_file_dir.c_str(), ".");     // Only filename is present, open current directory.
+        if (ImGui::Button("Open Dir") && save_file_dir[0])
+            ImOsOpenInShell(save_file_dir.c_str());
+        if (save_file_dir[0] && ImGui::IsItemHovered())
+            ImGui::SetTooltip("Open %s", save_file_dir.c_str());
+        if (!save_file_dir[0])
+        {
+            ImGui::PopStyleColor();
+            ImGui::PopItemFlag();
+        }
+
         ImGui::SameLine(0.0f, style.ItemInnerSpacing.x);
         ImGui::TextUnformatted("Out filename");
         ImGui::DragFloat("Padding", &Padding, 0.1f, 0, 32, "%.0f");
