@@ -3,13 +3,13 @@ name: Tests
 on:
   push: {}
   pull_request: {}
-  schedule:
-    - cron: '40 8,20 * * *'
 
 jobs:
-  Test:
-    runs-on: ubuntu-18.04
+  Linux:
+    runs-on: ubuntu-latest
+
     strategy:
+      fail-fast: false
       matrix:
         branch: [master, docking, tables]
 
