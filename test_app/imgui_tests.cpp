@@ -809,7 +809,12 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ButtonStateMachineTestStep_Done
     };
     t = REGISTER_TEST("widgets", "widgets_button_status");
-    struct ButtonStateTestVars { ButtonStateMachineTestStep NextStep; ImGuiTestGenericStatus Status; };
+    struct ButtonStateTestVars
+    {
+        ButtonStateMachineTestStep NextStep;
+        ImGuiTestGenericStatus Status;
+        ButtonStateTestVars() { NextStep = ButtonStateMachineTestStep_None; }
+    };
     t->SetUserDataType<ButtonStateTestVars>();
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
