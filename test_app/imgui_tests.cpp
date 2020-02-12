@@ -1068,16 +1068,16 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         //const char line_buf[26+8+1+1] = "xxxxxxx abcdefghijklmnopqrstuvwxyz\n"; // 8+26+1 = 35
         //ImGui::SetClipboardText(line_buf);
         //IM_CHECK(strlen(line_buf) == 35);
-        //ctx->KeyPressMap(ImGuiKey_V, ImGuiKeyModFlags_Ctrl, 10);
+        //ctx->KeyPressMap(ImGuiKey_V, ImGuiKeyModFlags_Shortcut, 10);
 
         // Select all, copy, paste 3 times
-        ctx->KeyPressMap(ImGuiKey_A, ImGuiKeyModFlags_Ctrl);    // Select all
-        ctx->KeyPressMap(ImGuiKey_C, ImGuiKeyModFlags_Ctrl);    // Copy
-        ctx->KeyPressMap(ImGuiKey_End, ImGuiKeyModFlags_Ctrl);  // Go to end, clear selection
+        ctx->KeyPressMap(ImGuiKey_A, ImGuiKeyModFlags_Shortcut);    // Select all
+        ctx->KeyPressMap(ImGuiKey_C, ImGuiKeyModFlags_Shortcut);    // Copy
+        ctx->KeyPressMap(ImGuiKey_End, ImGuiKeyModFlags_Shortcut);  // Go to end, clear selection
         ctx->SleepShort();
         for (int n = 0; n < 3; n++)
         {
-            ctx->KeyPressMap(ImGuiKey_V, ImGuiKeyModFlags_Ctrl);// Paste append three times
+            ctx->KeyPressMap(ImGuiKey_V, ImGuiKeyModFlags_Shortcut);// Paste append three times
             ctx->SleepShort();
         }
         int len = (int)strlen(vars.StrLarge.Data);
@@ -1087,8 +1087,8 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
 
         // Undo x2
         IM_CHECK(undo_state.redo_point == STB_TEXTEDIT_UNDOSTATECOUNT);
-        ctx->KeyPressMap(ImGuiKey_Z, ImGuiKeyModFlags_Ctrl);
-        ctx->KeyPressMap(ImGuiKey_Z, ImGuiKeyModFlags_Ctrl);
+        ctx->KeyPressMap(ImGuiKey_Z, ImGuiKeyModFlags_Shortcut);
+        ctx->KeyPressMap(ImGuiKey_Z, ImGuiKeyModFlags_Shortcut);
         len = (int)strlen(vars.StrLarge.Data);
         IM_CHECK_EQ(len, 350 * 2);
         IM_CHECK_EQ(undo_state.undo_point, 1);
@@ -1096,7 +1096,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         IM_CHECK_EQ(undo_state.redo_char_point, STB_TEXTEDIT_UNDOCHARCOUNT - 350 * 2);
 
         // Undo x1 should call stb_textedit_discard_redo()
-        ctx->KeyPressMap(ImGuiKey_Z, ImGuiKeyModFlags_Ctrl);
+        ctx->KeyPressMap(ImGuiKey_Z, ImGuiKeyModFlags_Shortcut);
         len = (int)strlen(vars.StrLarge.Data);
         IM_CHECK_EQ(len, 350 * 1);
     };
@@ -1212,7 +1212,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
             ctx->KeyPressMap(ImGuiKey_Escape);                      // Reset input to initial value.
             IM_CHECK_STR_EQ(vars.Str1, initial_value);
             ctx->ItemInput("Field");
-            ctx->KeyPressMap(ImGuiKey_Z, ImGuiKeyModFlags_Ctrl);    // Undo
+            ctx->KeyPressMap(ImGuiKey_Z, ImGuiKeyModFlags_Shortcut);    // Undo
             IM_CHECK_STR_EQ(vars.Str1, "text");
             ctx->KeyPressMap(ImGuiKey_Enter);                       // Unfocus otherwise test_n==1 strcpy will fail
         }

@@ -8,7 +8,12 @@ enum ImGuiKeyModFlags_
     ImGuiKeyModFlags_Ctrl           = 1 << 0,
     ImGuiKeyModFlags_Alt            = 1 << 1,
     ImGuiKeyModFlags_Shift          = 1 << 2,
-    ImGuiKeyModFlags_Super          = 1 << 3
+    ImGuiKeyModFlags_Super          = 1 << 3,
+#if defined(__APPLE__)
+    ImGuiKeyModFlags_Shortcut = ImGuiKeyModFlags_Super
+#else
+    ImGuiKeyModFlags_Shortcut = ImGuiKeyModFlags_Ctrl
+#endif
 };
 
 enum ImGuiKeyState
