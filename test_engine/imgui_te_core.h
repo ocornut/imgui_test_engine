@@ -483,8 +483,9 @@ typedef void    (*ImGuiTestUserDataDestructor)(void* ptr);
 struct ImGuiTest
 {
     ImGuiTestGroup                  Group;              // Coarse groups: 'Tests' or 'Perf'
+    bool                            NameOwned;          //
     const char*                     Category;           // Literal, not owned
-    const char*                     Name;               // Literal, not owned
+    const char*                     Name;               // Literal, generally not owned unless NameOwned=true
     const char*                     SourceFile;         // __FILE__
     const char*                     SourceFileShort;    // Pointer within SourceFile, skips filename.
     int                             SourceLine;         // __LINE__
@@ -501,6 +502,8 @@ struct ImGuiTest
 
     ImGuiTest()
     {
+        Group = ImGuiTestGroup_Unknown;
+        NameOwned = false;
         Category = NULL;
         Name = NULL;
         SourceFile = SourceFileShort = NULL;
@@ -514,6 +517,9 @@ struct ImGuiTest
         GuiFunc = NULL;
         TestFunc = NULL;
     }
+    ~ImGuiTest();
+
+    void SetOwnedName(const char* name);
 
     template <typename T>
     void SetUserDataType()

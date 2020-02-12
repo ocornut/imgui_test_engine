@@ -4477,15 +4477,15 @@ void RegisterTests_Perf(ImGuiTestEngine* e)
 
     // ## Measure performance of drawlist text rendering
     {
-        enum PerfTestTextFlags : unsigned
+        enum PerfTestTextFlags : int
         {
-            PerfTestTextFlags_TextShort             = 1u,
-            PerfTestTextFlags_TextLong              = 1u << 1u,
-            PerfTestTextFlags_TextWayTooLong        = 1u << 2u,
-            PerfTestTextFlags_NoWrapWidth           = 1u << 3u,
-            PerfTestTextFlags_WithWrapWidth         = 1u << 4u,
-            PerfTestTextFlags_NoCpuFineClipRect     = 1u << 5u,
-            PerfTestTextFlags_WithCpuFineClipRect   = 1u << 6u,
+            PerfTestTextFlags_TextShort             = 1 << 0,
+            PerfTestTextFlags_TextLong              = 1 << 1,
+            PerfTestTextFlags_TextWayTooLong        = 1 << 2,
+            PerfTestTextFlags_NoWrapWidth           = 1 << 3,
+            PerfTestTextFlags_WithWrapWidth         = 1 << 4,
+            PerfTestTextFlags_NoCpuFineClipRect     = 1 << 5,
+            PerfTestTextFlags_WithCpuFineClipRect   = 1 << 6,
         };
         auto measure_text_rendering_perf = [](ImGuiTestContext* ctx)
         {
@@ -4552,20 +4552,19 @@ void RegisterTests_Perf(ImGuiTestEngine* e)
 
             ImGui::End();
         };
-        const char* base_name = "perf_drawlist_text";
-        const char* text_suffixes[] = {"_short", "_long", "_too_long"};
-        const char* wrap_suffixes[] = {"", "_wrapped"};
-        const char* clip_suffixes[] = {"", "_clipped"};
+        const char* base_name = "perf_draw_text";
+        const char* text_suffixes[] = { "_short", "_long", "_too_long" };
+        const char* wrap_suffixes[] = { "", "_wrapped" };
+        const char* clip_suffixes[] = { "", "_clipped" };
         for (int i = 0; i < IM_ARRAYSIZE(text_suffixes); i++)
         {
             for (int j = 0; j < IM_ARRAYSIZE(wrap_suffixes); j++)
             {
                 for (int k = 0; k < IM_ARRAYSIZE(clip_suffixes); k++)
                 {
-                    size_t test_name_len = strlen(base_name) + strlen(text_suffixes[i]) + strlen(wrap_suffixes[j]) + strlen(clip_suffixes[k]);
-                    char* test_name = (char*)IM_ALLOC(test_name_len + 1);
-                    ImFormatString(test_name, test_name_len + 1, "%s%s%s%s", base_name, text_suffixes[i], wrap_suffixes[j], clip_suffixes[k]);
-                    t = REGISTER_TEST("perf", test_name);
+                    Str64f test_name("%s%s%s%s", base_name, text_suffixes[i], wrap_suffixes[j], clip_suffixes[k]);
+                    t = REGISTER_TEST("perf", "");
+                    t->SetOwnedName(test_name.c_str());
                     t->ArgVariant = (PerfTestTextFlags_TextShort << i) | (PerfTestTextFlags_NoWrapWidth << j) | (PerfTestTextFlags_NoCpuFineClipRect << k);
                     t->GuiFunc = measure_text_rendering_perf;
                     t->TestFunc = PerfCaptureFunc;

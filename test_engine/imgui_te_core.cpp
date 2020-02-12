@@ -30,6 +30,7 @@ Index of this file:
 // [SECTION] HOOKS FOR TESTS
 // [SECTION] USER INTERFACE
 // [SECTION] SETTINGS
+// [SECTION] ImGuiTest
 
 */
 
@@ -1753,6 +1754,23 @@ static void     ImGuiTestEngine_SettingsWriteAll(ImGuiContext* imgui_ctx, ImGuiS
     buf->appendf("LogHeight=%.0f\n", engine->UiLogHeight);
     buf->appendf("CaptureTool=%d\n", engine->CaptureTool.Visible);
     buf->appendf("\n");
+}
+
+//-------------------------------------------------------------------------
+// [SECTION] ImGuiTest
+//-------------------------------------------------------------------------
+
+ImGuiTest::~ImGuiTest()
+{
+    if (NameOwned)
+        ImGui::MemFree((char*)Name);
+}
+
+void ImGuiTest::SetOwnedName(const char* name)
+{
+    IM_ASSERT(!NameOwned);
+    NameOwned = true;
+    Name = ImStrdup(name);
 }
 
 //-------------------------------------------------------------------------
