@@ -3792,10 +3792,14 @@ void RegisterTests_Perf(ImGuiTestEngine* e)
         DrawPrimFunc_LongJaggedStrokeThick,
 		DrawPrimFunc_Line,
 		DrawPrimFunc_LineAA,
-		DrawPrimFunc_LineAANoTex,
-		DrawPrimFunc_LineThick,
+#ifdef IMGUI_HAS_TEXLINES
+        DrawPrimFunc_LineAANoTex,
+#endif
+        DrawPrimFunc_LineThick,
 		DrawPrimFunc_LineThickAA,
-		DrawPrimFunc_LineThickAANoTex
+#ifdef IMGUI_HAS_TEXLINES
+        DrawPrimFunc_LineThickAANoTex
+#endif
     };
 
     auto DrawPrimFunc = [](ImGuiTestContext* ctx)
@@ -3884,12 +3888,14 @@ void RegisterTests_Perf(ImGuiTestEngine* e)
 			for (int n = 0; n < loop_count; n++)
 				draw_list->AddLine(center - ImVec2(r, r), center + ImVec2(r, r), col, 1.0f);
 			break;
+#ifdef IMGUI_HAS_TEXLINES
 		case DrawPrimFunc_LineAANoTex:
 			draw_list->Flags |= ImDrawListFlags_AntiAliasedLines;
 			draw_list->Flags &= ~ImDrawListFlags_AntiAliasedLinesUseTexData;
 			for (int n = 0; n < loop_count; n++)
 				draw_list->AddLine(center - ImVec2(r, r), center + ImVec2(r, r), col, 1.0f);
 			break;
+#endif
 		case DrawPrimFunc_LineThick:
 			draw_list->Flags &= ~ImDrawListFlags_AntiAliasedLines;
 			for (int n = 0; n < loop_count; n++)
@@ -3900,12 +3906,14 @@ void RegisterTests_Perf(ImGuiTestEngine* e)
 			for (int n = 0; n < loop_count; n++)
 				draw_list->AddLine(center - ImVec2(r, r), center + ImVec2(r, r), col, 4.0f);
 			break;
-		case DrawPrimFunc_LineThickAANoTex:
+#ifdef IMGUI_HAS_TEXLINES
+        case DrawPrimFunc_LineThickAANoTex:
 			draw_list->Flags |= ImDrawListFlags_AntiAliasedLines;
 			draw_list->Flags &= ~ImDrawListFlags_AntiAliasedLinesUseTexData;
 			for (int n = 0; n < loop_count; n++)
 				draw_list->AddLine(center - ImVec2(r, r), center + ImVec2(r, r), col, 4.0f);
 			break;
+#endif
         default:
             IM_ASSERT(0);
         }
@@ -3998,10 +4006,12 @@ void RegisterTests_Perf(ImGuiTestEngine* e)
 	t->GuiFunc = DrawPrimFunc;
 	t->TestFunc = PerfCaptureFunc;
 
+#ifdef IMGUI_HAS_TEXLINES
 	t = REGISTER_TEST("perf", "perf_draw_prim_line_antialiased_no_tex");
 	t->ArgVariant = DrawPrimFunc_LineAANoTex;
 	t->GuiFunc = DrawPrimFunc;
 	t->TestFunc = PerfCaptureFunc;
+#endif
 
 	t = REGISTER_TEST("perf", "perf_draw_prim_line_thick");
 	t->ArgVariant = DrawPrimFunc_LineThick;
@@ -4013,10 +4023,12 @@ void RegisterTests_Perf(ImGuiTestEngine* e)
 	t->GuiFunc = DrawPrimFunc;
 	t->TestFunc = PerfCaptureFunc;
 
+#ifdef IMGUI_HAS_TEXLINES
 	t = REGISTER_TEST("perf", "perf_draw_prim_line_thick_antialiased_no_tex");
 	t->ArgVariant = DrawPrimFunc_LineThickAANoTex;
 	t->GuiFunc = DrawPrimFunc;
 	t->TestFunc = PerfCaptureFunc;
+#endif
 
     // ## Measure the cost of ImDrawListSplitter split/merge functions
     auto DrawSplittedFunc = [](ImGuiTestContext* ctx)
@@ -4571,6 +4583,10 @@ void RegisterTests_Perf(ImGuiTestEngine* e)
 			ImVec2 cursor_pos = ImGui::GetCursorPos();
             ImVec2 cursor_screen_pos = ImGui::GetCursorScreenPos();
             ImVec2 base_pos(cursor_screen_pos.x + (line_spacing.x * 0.5f), cursor_screen_pos.y);
+
+#ifndef IMGUI_HAS_TEXLINES
+            const ImDrawListFlags ImDrawListFlags_AntiAliasedLinesUseTexData = 0;
+#endif
 
 			for (int i = 0; i < num_rows; i++)
 			{

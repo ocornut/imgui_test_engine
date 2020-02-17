@@ -23,9 +23,9 @@
 Index of this file:
 
 // [SECTION] TODO
+// [SECTION] FORWARD DECLARATIONS
 // [SECTION] DATA STRUCTURES
-// [SECTION] TEST ENGINE: FORWARD DECLARATIONS
-// [SECTION] TEST ENGINE: FUNCTIONS
+// [SECTION] TEST ENGINE FUNCTIONS
 // [SECTION] HOOKS FOR CORE LIBRARY
 // [SECTION] HOOKS FOR TESTS
 // [SECTION] USER INTERFACE
@@ -55,6 +55,26 @@ Index of this file:
 // FIXME-TESTS: Mouse actions on ImGuiNavLayer_Menu layer
 // FIXME-TESTS: Fail to open a double-click tree node
 // FIXME-TESTS: Possible ID resolving variables e.g. "$REF/Main menu bar" / "$NAV/Main menu bar" / "$TOP/Main menu bar"
+
+//-------------------------------------------------------------------------
+// [SECTION] FORWARD DECLARATIONS
+//-------------------------------------------------------------------------
+
+// Private functions
+static void ImGuiTestEngine_ClearInput(ImGuiTestEngine* engine);
+static void ImGuiTestEngine_ApplyInputToImGuiContext(ImGuiTestEngine* engine);
+static void ImGuiTestEngine_ProcessTestQueue(ImGuiTestEngine* engine);
+static void ImGuiTestEngine_ClearTests(ImGuiTestEngine* engine);
+static void ImGuiTestEngine_ClearLocateTasks(ImGuiTestEngine* engine);
+static void ImGuiTestEngine_PreNewFrame(ImGuiTestEngine* engine, ImGuiContext* ctx);
+static void ImGuiTestEngine_PostNewFrame(ImGuiTestEngine* engine, ImGuiContext* ctx);
+static void ImGuiTestEngine_RunTest(ImGuiTestEngine* engine, ImGuiTestContext* ctx, void* user_data);
+
+// Settings
+static void* ImGuiTestEngine_SettingsReadOpen(ImGuiContext*, ImGuiSettingsHandler*, const char* name);
+static void  ImGuiTestEngine_SettingsReadLine(ImGuiContext*, ImGuiSettingsHandler*, void* entry, const char* line);
+static void  ImGuiTestEngine_SettingsWriteAll(ImGuiContext* imgui_ctx, ImGuiSettingsHandler* handler, ImGuiTextBuffer* buf);
+
 
 //-------------------------------------------------------------------------
 // [SECTION] DATA STRUCTURES
@@ -137,26 +157,7 @@ struct ImGuiTestEngine
 };
 
 //-------------------------------------------------------------------------
-// [SECTION] TEST ENGINE: FORWARD DECLARATIONS
-//-------------------------------------------------------------------------
-
-// Private functions
-static void ImGuiTestEngine_ClearInput(ImGuiTestEngine* engine);
-static void ImGuiTestEngine_ApplyInputToImGuiContext(ImGuiTestEngine* engine);
-static void ImGuiTestEngine_ProcessTestQueue(ImGuiTestEngine* engine);
-static void ImGuiTestEngine_ClearTests(ImGuiTestEngine* engine);
-static void ImGuiTestEngine_ClearLocateTasks(ImGuiTestEngine* engine);
-static void ImGuiTestEngine_PreNewFrame(ImGuiTestEngine* engine, ImGuiContext* ctx);
-static void ImGuiTestEngine_PostNewFrame(ImGuiTestEngine* engine, ImGuiContext* ctx);
-static void ImGuiTestEngine_RunTest(ImGuiTestEngine* engine, ImGuiTestContext* ctx, void* user_data);
-
-// Settings
-static void* ImGuiTestEngine_SettingsReadOpen(ImGuiContext*, ImGuiSettingsHandler*, const char* name);
-static void  ImGuiTestEngine_SettingsReadLine(ImGuiContext*, ImGuiSettingsHandler*, void* entry, const char* line);
-static void  ImGuiTestEngine_SettingsWriteAll(ImGuiContext* imgui_ctx, ImGuiSettingsHandler* handler, ImGuiTextBuffer* buf);
-
-//-------------------------------------------------------------------------
-// [SECTION] TEST ENGINE: FUNCTIONS
+// [SECTION] TEST ENGINE FUNCTIONS
 //-------------------------------------------------------------------------
 // Public
 // - ImGuiTestEngine_CreateContext()
