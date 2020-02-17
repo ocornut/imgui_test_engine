@@ -4552,9 +4552,9 @@ void RegisterTests_Perf(ImGuiTestEngine* e)
 		const int num_cols = 16; // Number of columns (line rotations) to draw
 		const int num_rows = 3; // Number of rows (line variants) to draw
 		const float line_len = 64.0f; // Length of line to draw
-		const ImVec2 line_spacing(74.0f, 96.0f); // Spacing between lines
+		const ImVec2 line_spacing(80.0f, 96.0f); // Spacing between lines
 
-		ImGui::SetNextWindowSize(ImVec2((num_cols + 0.5f) * line_spacing.x, (num_rows * line_spacing.y) + 128.0f));
+		ImGui::SetNextWindowSize(ImVec2((num_cols + 0.5f) * line_spacing.x, (num_rows * 2 * line_spacing.y) + 128.0f), ImGuiCond_Once);
 		if (ImGui::Begin("perf_misc_lines"))
 		{
 			ImDrawList* draw_list = ImGui::GetWindowDrawList();
@@ -4564,14 +4564,28 @@ void RegisterTests_Perf(ImGuiTestEngine* e)
 			static float line_width = 1.0f;
 			ImGui::SliderFloat("Line width", &line_width, 1.0f, 10.0f);
 
-			ImVec2 window_pos = ImGui::GetWindowPos();
+            ImGui::Text("Press SHIFT to toggle textured/non-textured rows");
+            bool tex_toggle = ImGui::GetIO().KeyShift;
+
+            // Rotating lines
 			ImVec2 cursor_pos = ImGui::GetCursorPos();
-			ImVec2 base_pos(window_pos.x + cursor_pos.x + (line_spacing.x * 0.5f), window_pos.y + cursor_pos.y);
+            ImVec2 cursor_screen_pos = ImGui::GetCursorScreenPos();
+            ImVec2 base_pos(cursor_screen_pos.x + (line_spacing.x * 0.5f), cursor_screen_pos.y);
 
 			for (int i = 0; i < num_rows; i++)
 			{
+                int row_idx = i;
+
+                if (tex_toggle)
+                {
+                    if (i == 1)
+                        row_idx = 2;
+                    else if (i == 2)
+                        row_idx = 1;
+                }
+
 				const char* name = "";
-				switch (i)
+				switch (row_idx)
 				{
 				case 0: name = "No AA";  draw_list->Flags &= ~ImDrawListFlags_AntiAliasedLines; break;
 				case 1: name = "AA no texturing"; draw_list->Flags |= ImDrawListFlags_AntiAliasedLines; draw_list->Flags &= ~ImDrawListFlags_AntiAliasedLinesUseTexData; break;
@@ -4597,6 +4611,52 @@ void RegisterTests_Perf(ImGuiTestEngine* e)
 			}
 
 			ImGui::SetCursorPosY(cursor_pos.y + (num_rows * line_spacing.y));
+
+            // Squares
+            cursor_pos = ImGui::GetCursorPos();
+            cursor_screen_pos = ImGui::GetCursorScreenPos();
+            base_pos = ImVec2(cursor_screen_pos.x + (line_spacing.x * 0.5f), cursor_screen_pos.y);
+
+            for (int i = 0; i < num_rows; i++)
+            {
+                int row_idx = i;
+
+                if (tex_toggle)
+                {
+                    if (i == 1)
+                        row_idx = 2;
+                    else if (i == 2)
+                        row_idx = 1;
+                }
+
+                const char* name = "";
+                switch (row_idx)
+                {
+                case 0: name = "No AA";  draw_list->Flags &= ~ImDrawListFlags_AntiAliasedLines; break;
+                case 1: name = "AA no texturing"; draw_list->Flags |= ImDrawListFlags_AntiAliasedLines; draw_list->Flags &= ~ImDrawListFlags_AntiAliasedLinesUseTexData; break;
+                case 2: name = "AA w/ texturing"; draw_list->Flags |= ImDrawListFlags_AntiAliasedLines; draw_list->Flags |= ImDrawListFlags_AntiAliasedLinesUseTexData; break;
+                }
+
+                int initial_vtx_count = draw_list->VtxBuffer.Size;
+                int initial_idx_count = draw_list->IdxBuffer.Size;
+
+                for (int j = 0; j < num_cols; j++)
+                {
+                    float cell_line_width = line_width + ((j * 4.0f) / (num_cols - 1));
+
+                    ImVec2 center = ImVec2(base_pos.x + (line_spacing.x * j), base_pos.y + (line_spacing.y * (i + 0.5f)));
+                    ImVec2 top_left = ImVec2(center.x - (line_len * 0.5f), center.y - (line_len * 0.5f));
+                    ImVec2 bottom_right = ImVec2(center.x + (line_len * 0.5f), center.y + (line_len * 0.5f));
+
+                    draw_list->AddRect(top_left, bottom_right, IM_COL32(255, 255, 255, 255), 0.0f, ImDrawCornerFlags_All, cell_line_width);
+                    
+                    ImGui::SetCursorPos(ImVec2(cursor_pos.x + ((j + 0.5f) * line_spacing.x) - 16.0f, cursor_pos.y + ((i + 0.5f) * line_spacing.y) - (ImGui::GetTextLineHeight() * 0.5f)));
+                    ImGui::Text("%.2f", cell_line_width);
+                }
+
+                ImGui::SetCursorPosY(cursor_pos.y + (i * line_spacing.y));
+                ImGui::Text("%s - %d vertices, %d indices", name, draw_list->VtxBuffer.Size - initial_vtx_count, draw_list->IdxBuffer.Size - initial_idx_count);
+            }
 		}
 		ImGui::End();
 	};
