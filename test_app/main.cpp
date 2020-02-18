@@ -241,19 +241,19 @@ static void LoadFonts()
 
     // Find font directory
     Str64 base_font_dir;
-    for (int i = 0; i < 3; i++)
+    for (int parent_level = 0; parent_level < 3; parent_level++)
     {
-        for (int j = 0; j <= i; j++)
-            base_font_dir.append("../");
-        base_font_dir.append("imgui/misc/fonts");
-        struct stat dir_stat;
-        if (stat(base_font_dir.c_str(), &dir_stat) == 0)
-            break;
         base_font_dir.clear();
+        for (int j = 0; j < parent_level; j++)
+            base_font_dir.append("../");
+        base_font_dir.append("data/fonts/");
+        if (ImFileExist(base_font_dir.c_str()))
+            break;
     }
 
     if (!base_font_dir.empty())
     {
+        io.Fonts->AddFontFromFileTTF(Str64f("%s/%s", base_font_dir.c_str(), "NotoSans-Regular.ttf").c_str(), 16.0f);
         io.Fonts->AddFontFromFileTTF(Str64f("%s/%s", base_font_dir.c_str(), "Roboto-Medium.ttf").c_str(), 16.0f);
         //io.Fonts->AddFontFromFileTTF(Str64f("%s/%s", base_font_dir.c_str(), "RobotoMono-Regular.ttf").c_str(), 16.0f, &cfg);
         //io.Fonts->AddFontFromFileTTF(Str64f("%s/%s", base_font_dir.c_str(), "Cousine-Regular.ttf").c_str(), 15.0f);

@@ -1,6 +1,7 @@
 
 #include "imgui_simple_app.h"
 #include "imgui.h"
+#include "imgui_internal.h"
 
 #ifdef IMGUI_SIMPLE_APP_WIN32_DX11
 
@@ -30,13 +31,20 @@ static void CleanupRenderTarget(ImGuiSimpleApp_ImplWin32DX11* app);
 static ImGuiSimpleApp_ImplWin32DX11* g_AppForWndProc = NULL;
 LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
-static bool ImGuiSimpleApp_ImplWin32DX11_InitCreateWindow(ImGuiSimpleApp* app_opaque, const char* window_title_a, const ImVec2& window_size)
+static bool ImGuiSimpleApp_ImplWin32DX11_InitCreateWindow(ImGuiSimpleApp* app_opaque, const char* window_title_a, ImVec2 window_size)
 {
     ImGuiSimpleApp_ImplWin32DX11* app = (ImGuiSimpleApp_ImplWin32DX11*)app_opaque;
+    ImGui_ImplWin32_EnableDpiAwareness();
 
     // Create application window
     app->WC = { sizeof(WNDCLASSEXA), CS_CLASSDC, WndProc, 0L, 0L, ::GetModuleHandle(NULL), NULL, NULL, NULL, NULL, L"ImGuiSimpleApp", NULL };
     ::RegisterClassEx(&app->WC);
+
+    POINT pos = { 100, 100 };
+    HMONITOR monitor = ::MonitorFromPoint(pos, 0);
+    float dpi_scale = ImGui_ImplWin32_GetDpiScaleForMonitor(monitor);
+    window_size.x = ImFloor(window_size.x * dpi_scale);
+    window_size.y = ImFloor(window_size.y * dpi_scale);
 
 #ifdef UNICODE
     const int count = ::MultiByteToWideChar(CP_UTF8, 0, window_title_a, -1, NULL, 0);
@@ -46,11 +54,11 @@ static bool ImGuiSimpleApp_ImplWin32DX11_InitCreateWindow(ImGuiSimpleApp* app_op
         free(window_title_t);
         return false;
     }
-    app->Hwnd = ::CreateWindowEx(0L, app->WC.lpszClassName, window_title_t, WS_OVERLAPPEDWINDOW, 100, 100, (int)window_size.x, (int)window_size.y, NULL, NULL, app->WC.hInstance, NULL);
+    app->Hwnd = ::CreateWindowEx(0L, app->WC.lpszClassName, window_title_t, WS_OVERLAPPEDWINDOW, pos.x, pos.y, (int)window_size.x, (int)window_size.y, NULL, NULL, app->WC.hInstance, NULL);
     free(window_title_t);
 #else
     const char* window_title_t = window_titLe_a;
-    app->Hwnd = ::CreateWindowEx(0L, app->WC.lpszClassName, window_titLe_t, WS_OVERLAPPEDWINDOW, 100, 100, (int)window_size.x, (int)window_size.y, NULL, NULL, app->WC.hInstance, NULL);
+    app->Hwnd = ::CreateWindowEx(0L, app->WC.lpszClassName, window_titLe_t, WS_OVERLAPPEDWINDOW, pos.x, pos.y, (int)window_size.x, (int)window_size.y, NULL, NULL, app->WC.hInstance, NULL);
 #endif
 
     // Initialize Direct3D
@@ -66,6 +74,8 @@ static bool ImGuiSimpleApp_ImplWin32DX11_InitCreateWindow(ImGuiSimpleApp* app_op
     ::ShowWindow(app->Hwnd, SW_SHOWDEFAULT);
     ::UpdateWindow(app->Hwnd);
     g_AppForWndProc = NULL;
+
+    app->DpiScale = ImGui_ImplWin32_GetDpiScaleForHwnd(app->Hwnd);
 
     return true;
 }
@@ -95,6 +105,7 @@ static void ImGuiSimpleApp_ImplWin32DX11_ShutdownBackends(ImGuiSimpleApp* app_op
 static bool ImGuiSimpleApp_ImplWin32DX11_NewFrame(ImGuiSimpleApp* app_opaque)
 {
     ImGuiSimpleApp_ImplWin32DX11* app = (ImGuiSimpleApp_ImplWin32DX11*)app_opaque;
+    app->DpiScale = ImGui_ImplWin32_GetDpiScaleForHwnd(app->Hwnd);
 
     g_AppForWndProc = app;
     MSG msg;
@@ -133,9 +144,8 @@ static void ImGuiSimpleApp_ImplWin32DX11_Render(ImGuiSimpleApp* app_opaque)
 #endif
 
     // Render main viewport
-    ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
     app->pd3dDeviceContext->OMSetRenderTargets(1, &app->mainRenderTargetView, NULL);
-    app->pd3dDeviceContext->ClearRenderTargetView(app->mainRenderTargetView, (float*)&clear_color);
+    app->pd3dDeviceContext->ClearRenderTargetView(app->mainRenderTargetView, (float*)&app->ClearColor);
     ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
     app->pSwapChain->Present(1, 0); // Present with vsync
 }

@@ -184,6 +184,9 @@
     <Natvis Include="..\..\imgui\misc\natvis\imgui.natvis" />
     <Natvis Include="..\libs\Str\Str.natvis" />
   </ItemGroup>
+  <ItemGroup>
+    <Text Include="docs\TODO.txt" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

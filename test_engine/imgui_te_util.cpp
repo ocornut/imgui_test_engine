@@ -305,6 +305,13 @@ bool    ImFileLoadSourceBlurb(const char* file_name, int line_no_start, int line
     return true;
 }
 
+bool ImFileExist(const char* filename)
+{
+    struct stat dir_stat;
+    int ret = stat(filename, &dir_stat);
+    return (ret == 0);
+}
+
 void ImDebugShowInputTextState()
 {
     ImGuiContext& g = *GImGui;

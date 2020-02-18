@@ -14,6 +14,12 @@
     <Filter Include="libs\Str">
       <UniqueIdentifier>{95a0db3d-8b12-4601-b4fb-90cfdcf6c092}</UniqueIdentifier>
     </Filter>
+    <Filter Include="imgui_backends">
+      <UniqueIdentifier>{cd2f5d3c-4165-43ac-97c2-235df2be986a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="docs">
+      <UniqueIdentifier>{f6fc3c16-99ff-4353-a8c9-3adc35dae6ce}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\imgui\imconfig.h">
@@ -37,14 +43,14 @@
     <ClInclude Include="..\libs\Str\Str.h">
       <Filter>libs\Str</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\imgui\examples\imgui_impl_win32.h">
-      <Filter>imgui</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\imgui\examples\imgui_impl_dx11.h">
-      <Filter>imgui</Filter>
+      <Filter>imgui_backends</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\imgui\examples\imgui_impl_win32.h">
+      <Filter>imgui_backends</Filter>
     </ClInclude>
     <ClInclude Include="..\helpers\imgui_simple_app.h">
-      <Filter>imgui</Filter>
+      <Filter>imgui_backends</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -66,14 +72,14 @@
     <ClCompile Include="..\libs\Str\Str.cpp">
       <Filter>libs\Str</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\imgui\examples\imgui_impl_win32.cpp">
-      <Filter>imgui</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\imgui\examples\imgui_impl_dx11.cpp">
-      <Filter>imgui</Filter>
+      <Filter>imgui_backends</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\imgui\examples\imgui_impl_win32.cpp">
+      <Filter>imgui_backends</Filter>
     </ClCompile>
     <ClCompile Include="..\helpers\imgui_simple_app.cpp">
-      <Filter>imgui</Filter>
+      <Filter>imgui_backends</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -83,5 +89,10 @@
     <Natvis Include="..\libs\Str\Str.natvis">
       <Filter>libs\Str</Filter>
     </Natvis>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="docs\TODO.txt">
+      <Filter>docs</Filter>
+    </Text>
   </ItemGroup>
 </Project>

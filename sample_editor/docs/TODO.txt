@@ -1,4 +1,6 @@
 
+DPI
+- Single varying DPI: reload font and style on dpi change.
 
 DOCKING
 - Default docking setup on init.
