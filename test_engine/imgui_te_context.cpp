@@ -357,22 +357,22 @@ ImGuiID ImGuiTestContext::GetID(ImGuiTestRef ref, ImGuiTestRef seed_ref)
 
 ImGuiID ImGuiTestContext::GetIDByInt(int n)
 {
-    return ImHash(&n, sizeof(n), GetID(RefID));
+    return ImHashData(&n, sizeof(n), GetID(RefID));
 }
 
 ImGuiID ImGuiTestContext::GetIDByInt(int n, ImGuiTestRef seed_ref)
 {
-    return ImHash(&n, sizeof(n), GetID(seed_ref));
+    return ImHashData(&n, sizeof(n), GetID(seed_ref));
 }
 
 ImGuiID ImGuiTestContext::GetIDByPtr(void* p)
 {
-    return ImHash(&p, sizeof(p), GetID(RefID));
+    return ImHashData(&p, sizeof(p), GetID(RefID));
 }
 
 ImGuiID ImGuiTestContext::GetIDByPtr(void* p, ImGuiTestRef seed_ref)
 {
-    return ImHash(&p, sizeof(p), GetID(seed_ref));
+    return ImHashData(&p, sizeof(p), GetID(seed_ref));
 }
 
 ImGuiTestRef ImGuiTestContext::GetFocusWindowRef()

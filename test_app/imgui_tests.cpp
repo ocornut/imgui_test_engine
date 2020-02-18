@@ -1390,7 +1390,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         int n;
         n = 0; ImGuiID field_0 = ImHashData(&n, sizeof(n), ctx->GetID("Field"));
         n = 1; ImGuiID field_1 = ImHashData(&n, sizeof(n), ctx->GetID("Field"));
-        //n = 2; ImGuiID field_2 = ImHash(&n, sizeof(n), ctx->GetID("Field"));
+        //n = 2; ImGuiID field_2 = ImHashData(&n, sizeof(n), ctx->GetID("Field"));
 
         // Testing activation/deactivation flags
         ctx->ItemClick(field_0);
