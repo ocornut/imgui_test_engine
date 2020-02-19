@@ -309,7 +309,8 @@ bool                ImGuiTestEngine_IsRunningTests(ImGuiTestEngine* engine);
 bool                ImGuiTestEngine_IsRunningTest(ImGuiTestEngine* engine, ImGuiTest* test);
 void                ImGuiTestEngine_CalcSourceLineEnds(ImGuiTestEngine* engine);
 void                ImGuiTestEngine_PrintResultSummary(ImGuiTestEngine* engine);
-void                ImGuiTestEngine_StopTestQueueCoroutine(ImGuiTestEngine* engine);
+void                ImGuiTestEngine_CoroutineStopRequest(ImGuiTestEngine* engine);
+void                ImGuiTestEngine_CoroutineStopAndJoin(ImGuiTestEngine* engine);
 void                ImGuiTestEngine_GetResult(ImGuiTestEngine* engine, int& count_tested, int& success_count);
 
 // Function pointers for IO structure
@@ -512,6 +513,7 @@ struct ImGuiTest
     ImGuiTestFlags                  Flags;              // See ImGuiTestFlags_
     ImGuiTestGuiFunc                GuiFunc;            // GUI functions can be reused
     ImGuiTestTestFunc               TestFunc;           // Test function
+    int                             GuiFuncLastFrame;
     ImGuiTestLog                    TestLog;
 
     ImGuiTest()
@@ -530,6 +532,7 @@ struct ImGuiTest
         Flags = ImGuiTestFlags_None;
         GuiFunc = NULL;
         TestFunc = NULL;
+        GuiFuncLastFrame = -1;
     }
     ~ImGuiTest();
 

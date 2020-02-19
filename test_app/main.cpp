@@ -64,6 +64,7 @@ static inline void DebugCrtDumpLeaks()
 #include "imgui_capture_tool.h"
 #include "backends.h"
 #include "test_app.h"
+#include "../helpers/imgui_app.h"
 #include <Str/Str.h>
 
 //-------------------------------------------------------------------------
@@ -115,8 +116,6 @@ bool MainLoopEndFrame()
             show_another_window = false;
         ImGui::End();
     }
-
-    ImGui::EndFrame();
 
     return true;
 }
@@ -319,27 +318,37 @@ int main(int argc, char** argv)
     // Load Fonts
     LoadFonts();
 
+    // Creates window
+    if (g_App.OptGUI)
+    {
+#ifdef _WIN32
+        g_App.AppWindow = ImGuiApp_ImplWin32DX11_Create();
+        g_App.AppWindow->DpiAware = false;
+#endif
+    }
+    if (g_App.AppWindow == NULL)
+        g_App.AppWindow = ImGuiApp_ImplNull_Create();
+
     // Create TestEngine context
     IM_ASSERT(g_App.TestEngine == NULL);
-    g_App.TestEngine = ImGuiTestEngine_CreateContext(ImGui::GetCurrentContext());
+    ImGuiTestEngine* engine = ImGuiTestEngine_CreateContext(ImGui::GetCurrentContext());
+    g_App.TestEngine = engine;
 
     // Apply options
-    ImGuiTestEngineIO& test_io = ImGuiTestEngine_GetIO(g_App.TestEngine);
+    ImGuiTestEngineIO& test_io = ImGuiTestEngine_GetIO(engine);
     test_io.ConfigRunWithGui = g_App.OptGUI;
     test_io.ConfigRunFast = g_App.OptFast;
     test_io.ConfigVerboseLevel = g_App.OptVerboseLevel;
     test_io.ConfigVerboseLevelOnError = g_App.OptVerboseLevelOnError;
     test_io.ConfigNoThrottle = g_App.OptNoThrottle;
     test_io.PerfStressAmount = g_App.OptStressAmount;
+    if (!g_App.OptGUI)
+        test_io.ConfigLogToTTY = true;
     if (!g_App.OptGUI && ImOsIsDebuggerPresent())
         test_io.ConfigBreakOnError = true;
     test_io.SrcFileOpenFunc = SrcFileOpenerFunc;
-#if defined(IMGUI_TESTS_BACKEND_WIN32_DX11) || defined(IMGUI_TESTS_BACKEND_SDL_GL3) || defined(IMGUI_TESTS_BACKEND_GLFW_GL3)
-    if (g_App.OptGUI)
-        test_io.ScreenCaptureFunc = &CaptureFramebufferScreenshot;
-    else
-#endif
-        test_io.ScreenCaptureFunc = &CaptureScreenshotNull;
+    test_io.UserData = (void*)&g_App;
+    test_io.ScreenCaptureFunc = [](int x, int y, int w, int h, unsigned int* pixels, void* user_data) { ImGuiApp* app = g_App.AppWindow; return app->CaptureFramebuffer(app, x, y, w, h, pixels, user_data); };
 
     test_io.CoroutineCreateFunc = &ImCoroutineCreate;
     test_io.CoroutineDestroyFunc = &ImCoroutineDestroy;
@@ -347,8 +356,8 @@ int main(int argc, char** argv)
     test_io.CoroutineYieldFunc = &ImCoroutineYield;
 
     // Set up TestEngine context
-    RegisterTests(g_App.TestEngine);
-    ImGuiTestEngine_CalcSourceLineEnds(g_App.TestEngine);
+    RegisterTests(engine);
+    ImGuiTestEngine_CalcSourceLineEnds(engine);
 
     // Non-interactive mode queue all tests by default
     if (!g_App.OptGUI && g_App.TestsToRun.empty())
@@ -360,15 +369,15 @@ int main(int argc, char** argv)
     {
         char* test_spec = g_App.TestsToRun[n];
         if (strcmp(test_spec, "tests") == 0)
-            ImGuiTestEngine_QueueTests(g_App.TestEngine, ImGuiTestGroup_Tests, NULL, ImGuiTestRunFlags_CommandLine);
+            ImGuiTestEngine_QueueTests(engine, ImGuiTestGroup_Tests, NULL, ImGuiTestRunFlags_CommandLine);
         else if (strcmp(test_spec, "perf") == 0)
-            ImGuiTestEngine_QueueTests(g_App.TestEngine, ImGuiTestGroup_Perf, NULL, ImGuiTestRunFlags_CommandLine);
+            ImGuiTestEngine_QueueTests(engine, ImGuiTestGroup_Perf, NULL, ImGuiTestRunFlags_CommandLine);
         else
         {
             if (strcmp(test_spec, "all") == 0)
                 test_spec = NULL;
             for (int group = 0; group < ImGuiTestGroup_COUNT; group++)
-                ImGuiTestEngine_QueueTests(g_App.TestEngine, (ImGuiTestGroup)group, test_spec, ImGuiTestRunFlags_CommandLine);
+                ImGuiTestEngine_QueueTests(engine, (ImGuiTestGroup)group, test_spec, ImGuiTestRunFlags_CommandLine);
         }
         IM_FREE(test_spec);
     }
@@ -384,28 +393,61 @@ int main(int argc, char** argv)
     strcpy(test_io.PerfAnnotation, "master");
 #endif
 
-    // Run
-    if (g_App.OptGUI)
-        MainLoop();
-    else
-        MainLoopNull();
+    // Create window
+    ImGuiApp* app_window = g_App.AppWindow;
+    app_window->InitCreateWindow(app_window, "Dear ImGui: Test Engine", ImVec2(1440, 900));
+    app_window->InitBackends(app_window);
 
-    // Print results
+    // Main loop
+    bool aborted = false;
+    while (true)
+    {
+        if (!app_window->NewFrame(app_window))
+            aborted = true;
+        if (aborted)
+        {
+            ImGuiTestEngine_Abort(engine);
+            ImGuiTestEngine_CoroutineStopRequest(engine);
+            if (!ImGuiTestEngine_IsRunningTests(engine))
+                break;
+        }
+
+        ImGui::NewFrame();
+        MainLoopEndFrame();
+        ImGui::Render();
+
+        if (!g_App.OptGUI && !test_io.RunningTests)
+            break;
+
+        app_window->Vsync = true;
+        if ((test_io.RunningTests && test_io.ConfigRunFast) || test_io.ConfigNoThrottle)
+            app_window->Vsync = false;
+        app_window->ClearColor = g_App.ClearColor;
+        app_window->Render(app_window);
+    }
+    ImGuiTestEngine_CoroutineStopAndJoin(engine);
+
+    // Print results (command-line mode)
     ImGuiTestAppErrorCode error_code = ImGuiTestAppErrorCode_Success;
-    if (!g_App.Quit)
+    if (!aborted)
     {
         int count_tested = 0;
         int count_success = 0;
-        ImGuiTestEngine_GetResult(g_App.TestEngine, count_tested, count_success);
-        ImGuiTestEngine_PrintResultSummary(g_App.TestEngine);
+        ImGuiTestEngine_GetResult(engine, count_tested, count_success);
+        ImGuiTestEngine_PrintResultSummary(engine);
         if (count_tested != count_success)
             error_code = ImGuiTestAppErrorCode_TestFailed;
     }
+
+    // Shutdown window
+    app_window->ShutdownBackends(app_window);
+    app_window->ShutdownCloseWindow(app_window);
 
     // Shutdown
     // We shutdown the Dear ImGui context _before_ the test engine context, so .ini data may be saved.
     ImGui::DestroyContext();
     ImGuiTestEngine_ShutdownContext(g_App.TestEngine);
+    app_window->Destroy(app_window);
 
     if (g_App.OptFileOpener)
         free(g_App.OptFileOpener);

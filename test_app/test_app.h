@@ -9,9 +9,12 @@ static const bool DEFAULT_OPT_GUI = true;
 static const bool DEFAULT_OPT_GUI = false;
 #endif
 
+struct ImGuiApp;
+
 struct TestApp
 {
     bool                    Quit = false;
+    ImGuiApp*               AppWindow = NULL;
     ImGuiTestEngine*        TestEngine = NULL;
     ImU64                   LastTime = 0;
     ImVec4                  ClearColor = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);

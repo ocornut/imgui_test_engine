@@ -68,6 +68,7 @@ static void ImGuiTestEngine_ClearTests(ImGuiTestEngine* engine);
 static void ImGuiTestEngine_ClearLocateTasks(ImGuiTestEngine* engine);
 static void ImGuiTestEngine_PreNewFrame(ImGuiTestEngine* engine, ImGuiContext* ui_ctx);
 static void ImGuiTestEngine_PostNewFrame(ImGuiTestEngine* engine, ImGuiContext* ui_ctx);
+static void ImGuiTestEngine_RunGuiFunc(ImGuiTestEngine* engine);
 static void ImGuiTestEngine_RunTest(ImGuiTestEngine* engine, ImGuiTestContext* ui_ctx, void* user_data);
 static void ImGuiTestEngine_TestQueueCoroutineMain(void* engine_opaque);
 
@@ -208,7 +209,13 @@ ImGuiTestEngine*    ImGuiTestEngine_CreateContext(ImGuiContext* imgui_context)
     return engine;
 }
 
-void    ImGuiTestEngine_StopTestQueueCoroutine(ImGuiTestEngine* engine)
+void    ImGuiTestEngine_CoroutineStopRequest(ImGuiTestEngine* engine)
+{
+    if (engine->TestQueueCoroutine != NULL)
+        engine->TestQueueCoroutineShouldExit = true;
+}
+
+void    ImGuiTestEngine_CoroutineStopAndJoin(ImGuiTestEngine* engine)
 {
     if (engine->TestQueueCoroutine != NULL)
     {
@@ -227,7 +234,7 @@ void    ImGuiTestEngine_StopTestQueueCoroutine(ImGuiTestEngine* engine)
 void    ImGuiTestEngine_ShutdownContext(ImGuiTestEngine* engine)
 {
     // Shutdown coroutine
-    ImGuiTestEngine_StopTestQueueCoroutine(engine);
+    ImGuiTestEngine_CoroutineStopAndJoin(engine);
 
     engine->UiContextVisible = engine->UiContextBlind = engine->UiContextTarget = engine->UiContextActive = NULL;
 
@@ -592,9 +599,25 @@ static void ImGuiTestEngine_PostNewFrame(ImGuiTestEngine* engine, ImGuiContext* 
         ImSleepInMilliseconds(engine->ToolSlowDownMs);
 
     // Call user GUI function
+    ImGuiTestEngine_RunGuiFunc(engine);
+
+    // Process on-going queues in a coroutine
+    // We perform lazy creation of the coroutine to ensure that IO functions are set up first
+    if (!engine->TestQueueCoroutine)
+        engine->TestQueueCoroutine = engine->IO.CoroutineCreateFunc(ImGuiTestEngine_TestQueueCoroutineMain, "Dear ImGui Test Queue (coroutine)", engine);
+
+    // Run the test coroutine. This will resume the test queue from either the last point the test called YieldFromCoroutine(),
+    // or the loop in ImGuiTestEngine_TestQueueCoroutineMain that does so if no test is running.
+    // If you want to breakpoint the point execution continues in the test code, breakpoint the exit condition in YieldFromCoroutine()
+    engine->IO.CoroutineRunFunc(engine->TestQueueCoroutine);
+}
+
+static void ImGuiTestEngine_RunGuiFunc(ImGuiTestEngine* engine)
+{
     ImGuiTestContext* ctx = engine->TestContext;
     if (ctx && ctx->Test->GuiFunc)
     {
+        ctx->Test->GuiFuncLastFrame = ctx->UiContext->FrameCount;
         if (!(ctx->RunFlags & ImGuiTestRunFlags_NoGuiFunc))
         {
             ImGuiTestActiveFunc backup_active_func = ctx->ActiveFunc;
@@ -607,16 +630,6 @@ static void ImGuiTestEngine_PostNewFrame(ImGuiTestEngine* engine, ImGuiContext* 
         //if (ctx->Test->Status == ImGuiTestStatus_Error)
         ctx->RecoverFromUiContextErrors();
     }
-
-    // Process on-going queues in a coroutine
-    // We perform lazy creation of the coroutine to ensure that IO functions are set up first
-    if (!engine->TestQueueCoroutine)
-        engine->TestQueueCoroutine = engine->IO.CoroutineCreateFunc(ImGuiTestEngine_TestQueueCoroutineMain, "Dear ImGui Test Queue (coroutine)", engine);
-
-    // Run the test coroutine. This will resume the test queue from either the last point the test called YieldFromCoroutine(),
-    // or the loop in ImGuiTestEngine_TestQueueCoroutineMain that does so if no test is running.
-    // If you want to breakpoint the point execution continues in the test code, breakpoint the exit condition in YieldFromCoroutine()
-    engine->IO.CoroutineRunFunc(engine->TestQueueCoroutine);
 }
 
 // Main function for the test coroutine
@@ -957,6 +970,10 @@ static void ImGuiTestEngine_RunTest(ImGuiTestEngine* engine, ImGuiTestContext* c
     }
     else
     {
+        // Sanity check
+        if (test->GuiFunc)
+            IM_ASSERT(test->GuiFuncLastFrame == ctx->UiContext->FrameCount);
+
         if (test->TestFunc)
         {
             // Test function

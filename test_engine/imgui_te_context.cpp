@@ -1632,9 +1632,9 @@ void    ImGuiTestContext::DockWindowInto(const char* window_name_src, const char
     MouseMoveToPos(drop_pos);
     IM_CHECK_SILENT(g.MovingWindow == window_src);
 #ifdef IMGUI_HAS_DOCK
-    IM_CHECK_SILENT(g.HoveredWindowUnderMovingWindow->RootWindowDockStop == window_dst);
+    IM_CHECK_SILENT(g.HoveredWindowUnderMovingWindow && g.HoveredWindowUnderMovingWindow->RootWindowDockStop == window_dst);
 #else
-    IM_CHECK_SILENT(g.HoveredWindowUnderMovingWindow->RootWindow == window_dst);
+    IM_CHECK_SILENT(g.HoveredWindowUnderMovingWindow && g.HoveredWindowUnderMovingWindow->RootWindow == window_dst);
 #endif
     SleepShort();
 
