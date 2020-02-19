@@ -1,9 +1,9 @@
 #include "imgui.h"
-#include "../helpers/imgui_simple_app.h"
+#include "../helpers/imgui_app.h"
 #include "../helpers/IconsFontAwesome5.h"
 
 // FIXME-SAMPLE FIXME-FONT: This is looking very poor with DpiScale == 1.0f, switch to FreeType?
-static void LoadFonts(ImGuiSimpleApp* app)
+static void LoadFonts(ImGuiApp* app)
 {
     ImGuiIO& io = ImGui::GetIO();
 
@@ -36,7 +36,7 @@ static void LoadFonts(ImGuiSimpleApp* app)
 int main(int argc, char** argv)
 {
 #ifdef _WIN32
-    ImGuiSimpleApp* app = ImGuiSimpleApp_ImplWin32DX11_Create();
+    ImGuiApp* app = ImGuiApp_ImplWin32DX11_Create();
 #endif
 
     // Setup Dear ImGui context
@@ -113,10 +113,7 @@ int main(int argc, char** argv)
     app->ShutdownBackends(app);
     app->ShutdownCloseWindow(app);
     ImGui::DestroyContext();
-
-#ifdef _WIN32
-    ImGuiSimpleApp_ImplWin32DX11_Destroy(app);
-#endif
+    app->Destroy(app);
 
     return 0;
 }

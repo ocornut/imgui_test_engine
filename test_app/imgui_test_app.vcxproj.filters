@@ -72,13 +72,13 @@
     <ClInclude Include="imconfig_test_app.h">
       <Filter>test_app</Filter>
     </ClInclude>
-    <ClInclude Include="..\helpers\imgui_simple_app.h">
-      <Filter>imgui_backends</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\imgui\examples\imgui_impl_dx11.h">
       <Filter>imgui_backends</Filter>
     </ClInclude>
     <ClInclude Include="..\..\imgui\examples\imgui_impl_win32.h">
+      <Filter>imgui_backends</Filter>
+    </ClInclude>
+    <ClInclude Include="..\helpers\imgui_app.h">
       <Filter>imgui_backends</Filter>
     </ClInclude>
   </ItemGroup>
@@ -125,7 +125,7 @@
     <ClCompile Include="..\..\imgui\examples\imgui_impl_win32.cpp">
       <Filter>imgui_backends</Filter>
     </ClCompile>
-    <ClCompile Include="..\helpers\imgui_simple_app.cpp">
+    <ClCompile Include="..\helpers\imgui_app.cpp">
       <Filter>imgui_backends</Filter>
     </ClCompile>
   </ItemGroup>

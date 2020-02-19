@@ -8,6 +8,7 @@ IMGUI_PATH = ../../imgui
 SOURCES = main.cpp
 SOURCES += ../imgui_capture_tool.cpp ../imgui_te_core.cpp ../imgui_te_util.cpp ../imgui_tests.cpp ../imgui_te_context.cpp ../backends.cpp
 SOURCES += $(IMGUI_PATH)/imgui.cpp $(IMGUI_PATH)/imgui_demo.cpp $(IMGUI_PATH)/imgui_draw.cpp $(IMGUI_PATH)/imgui_widgets.cpp
+SOURCES += ../helpers/imgui_app.cpp
 SOURCES += ../libs/Str/Str.cpp
 OBJS = $(addsuffix .o, $(basename $(notdir $(SOURCES))))
 UNAME_S := $(shell uname -s)
@@ -63,6 +64,9 @@ endif
 	$(CXX) $(CFLAGS) $(CXXFLAGS) -c -o $@ $<
 
 %.o:../test_engine/%.cpp
+	$(CXX) $(CFLAGS) $(CXXFLAGS) -c -o $@ $<
+
+%.o:../helpers/%.cpp
 	$(CXX) $(CFLAGS) $(CXXFLAGS) -c -o $@ $<
 
 %.o:../libs/Str/%.cpp
