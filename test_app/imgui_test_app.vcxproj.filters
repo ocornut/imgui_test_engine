@@ -19,6 +19,9 @@
     <Filter Include="libs\Str">
       <UniqueIdentifier>{d69cd375-607c-4081-b89d-67e27ace2d71}</UniqueIdentifier>
     </Filter>
+    <Filter Include="imgui_backends">
+      <UniqueIdentifier>{23e0fd5e-9fd8-453f-9bf8-a818fae7f3b3}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\imgui\imgui.h">
@@ -51,9 +54,6 @@
     <ClInclude Include="..\test_engine\imgui_capture_tool.h">
       <Filter>test_engine</Filter>
     </ClInclude>
-    <ClInclude Include="imconfig_tests.h">
-      <Filter>test_app</Filter>
-    </ClInclude>
     <ClInclude Include="imgui_tests.h">
       <Filter>test_app</Filter>
     </ClInclude>
@@ -68,6 +68,18 @@
     </ClInclude>
     <ClInclude Include="backends.h">
       <Filter>test_app</Filter>
+    </ClInclude>
+    <ClInclude Include="imconfig_test_app.h">
+      <Filter>test_app</Filter>
+    </ClInclude>
+    <ClInclude Include="..\helpers\imgui_simple_app.h">
+      <Filter>imgui_backends</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\imgui\examples\imgui_impl_dx11.h">
+      <Filter>imgui_backends</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\imgui\examples\imgui_impl_win32.h">
+      <Filter>imgui_backends</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -107,11 +119,14 @@
     <ClCompile Include="backends.cpp">
       <Filter>test_app</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\imgui\examples\imgui_impl_win32.cpp">
-      <Filter>imgui</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\imgui\examples\imgui_impl_dx11.cpp">
-      <Filter>imgui</Filter>
+      <Filter>imgui_backends</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\imgui\examples\imgui_impl_win32.cpp">
+      <Filter>imgui_backends</Filter>
+    </ClCompile>
+    <ClCompile Include="..\helpers\imgui_simple_app.cpp">
+      <Filter>imgui_backends</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

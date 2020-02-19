@@ -177,7 +177,6 @@ struct ImGuiTestInputs
 
 ImGuiTestItemInfo*  ImGuiTestEngine_ItemLocate(ImGuiTestEngine* engine, ImGuiID id, const char* debug_id);
 void                ImGuiTestEngine_PushInput(ImGuiTestEngine* engine, const ImGuiTestInput& input);
-void                ImGuiTestEngine_TestQueueCoroutineMain(void* ctx);
 void                ImGuiTestEngine_Yield(ImGuiTestEngine* engine);
 void                ImGuiTestEngine_SetDeltaTime(ImGuiTestEngine* engine, float delta_time);
 int                 ImGuiTestEngine_GetFrameCount(ImGuiTestEngine* engine);
@@ -313,34 +312,30 @@ void                ImGuiTestEngine_PrintResultSummary(ImGuiTestEngine* engine);
 void                ImGuiTestEngine_GetResult(ImGuiTestEngine* engine, int& count_tested, int& success_count);
 
 // Function pointers for IO structure
-typedef bool (*ImGuiTestEngineNewFrameFunc)(ImGuiTestEngine*, void* user_data);
-typedef bool (*ImGuiTestEngineEndFrameFunc)(ImGuiTestEngine*, void* user_data);
 typedef void (*ImGuiTestEngineSrcFileOpenFunc)(const char* filename, int line, void* user_data);
 typedef bool (*ImGuiTestEngineScreenCaptureFunc)(int x, int y, int w, int h, unsigned int* pixels, void* user_data);
-typedef ImGuiTestCoroutineHandle (*ImGuiTestEngineCreateCoroutine)(ImGuiTestCoroutineFunc func, const char* name, void* ctx);
-typedef void (*ImGuiTestEngineDestroyCoroutine)(ImGuiTestCoroutineHandle handle);
-typedef bool (*ImGuiTestEngineRunCoroutine)(ImGuiTestCoroutineHandle handle);
-typedef void (*ImGuiTestEngineYieldFromCurrentCoroutine)();
+typedef ImGuiTestCoroutineHandle (*ImGuiTestEngineCoroutineCreateFunc)(ImGuiTestCoroutineFunc func, const char* name, void* ctx);
+typedef void (*ImGuiTestEngineCoroutineDestroyFunc)(ImGuiTestCoroutineHandle handle);
+typedef bool (*ImGuiTestEngineCoroutineRunFunc)(ImGuiTestCoroutineHandle handle);
+typedef void (*ImGuiTestEngineCoroutineYieldFunc)();
 
 // IO structure
 struct ImGuiTestEngineIO
 {
-    ImGuiTestEngineEndFrameFunc     EndFrameFunc = NULL;
-    ImGuiTestEngineNewFrameFunc     NewFrameFunc = NULL;
-    ImGuiTestEngineSrcFileOpenFunc  SrcFileOpenFunc = NULL;     // (Optional) To open source files
-    ImGuiTestEngineScreenCaptureFunc ScreenCaptureFunc = NULL;  // (Optional) To capture graphics output
-    void*                           UserData = NULL;
+    ImGuiTestEngineSrcFileOpenFunc      SrcFileOpenFunc = NULL;     // (Optional) To open source files
+    ImGuiTestEngineScreenCaptureFunc    ScreenCaptureFunc = NULL;  // (Optional) To capture graphics output
+    void*                               UserData = NULL;
 
     // Coroutine support functions
     // Coroutines should be used like this:
-    // ImGuiTestCoroutineHandle handle = CreateCoroutine(<func>, <name>, <ctx>); // name being for debugging, and ctx being an arbitrary user context pointer
-    // while (RunCoroutine(handle)) { <do other stuff };
-    // DestroyCoroutine(handle);
-    // The coroutine code itself should call YieldFromCoroutine() whenever it wants to yield control back to the main thread.
-    ImGuiTestEngineCreateCoroutine  CreateCoroutine = NULL;     // Create a new coroutine
-    ImGuiTestEngineDestroyCoroutine DestroyCoroutine = NULL;    // Destroy a coroutine (which must have completed first)
-    ImGuiTestEngineRunCoroutine     RunCoroutine = NULL;        // Run a coroutine until it yields or finishes, returning false if finished
-    ImGuiTestEngineYieldFromCurrentCoroutine YieldFromCoroutine = NULL; // Yield from a coroutine back to the caller, preserving coroutine state
+    //   ImGuiTestCoroutineHandle handle = CoroutineCreate(<func>, <name>, <ctx>); // name being for debugging, and ctx being an arbitrary user context pointer
+    //   while (CoroutineRun(handle)) { <do other stuff };
+    //   CoroutineDestroy(handle);
+    // The coroutine code itself should call CoroutineYieldFunc() whenever it wants to yield control back to the main thread.
+    ImGuiTestEngineCoroutineCreateFunc  CoroutineCreateFunc = NULL;     // Create a new coroutine
+    ImGuiTestEngineCoroutineDestroyFunc CoroutineDestroyFunc = NULL;    // Destroy a coroutine (which must have completed first)
+    ImGuiTestEngineCoroutineRunFunc     CoroutineRunFunc = NULL;        // Run a coroutine until it yields or finishes, returning false if finished
+    ImGuiTestEngineCoroutineYieldFunc   CoroutineYieldFunc = NULL;      // Yield from a coroutine back to the caller, preserving coroutine state
 
     // Inputs: Options
     bool                        ConfigRunWithGui = false;       // Run without graphics output (e.g. command-line)

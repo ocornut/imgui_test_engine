@@ -1655,7 +1655,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
 
     // ## Test PlotLines() with a single value (#2387).
     t = REGISTER_TEST("widgets", "widgets_plot_lines_unexpected_input");
-    t->TestFunc = [](ImGuiTestContext* ctx)
+    t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         float values[1] = {0.f};
         ImGui::PlotLines("PlotLines 1", NULL, 0);

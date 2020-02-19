@@ -29,7 +29,7 @@ static void CleanupDeviceD3D(ImGuiSimpleApp_ImplWin32DX11* app);
 static void CreateRenderTarget(ImGuiSimpleApp_ImplWin32DX11* app);
 static void CleanupRenderTarget(ImGuiSimpleApp_ImplWin32DX11* app);
 static ImGuiSimpleApp_ImplWin32DX11* g_AppForWndProc = NULL;
-LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+static LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
 static bool ImGuiSimpleApp_ImplWin32DX11_InitCreateWindow(ImGuiSimpleApp* app_opaque, const char* window_title_a, ImVec2 window_size)
 {
@@ -98,6 +98,7 @@ static void ImGuiSimpleApp_ImplWin32DX11_InitBackends(ImGuiSimpleApp* app_opaque
 static void ImGuiSimpleApp_ImplWin32DX11_ShutdownBackends(ImGuiSimpleApp* app_opaque)
 {
     ImGuiSimpleApp_ImplWin32DX11* app = (ImGuiSimpleApp_ImplWin32DX11*)app_opaque;
+    IM_UNUSED(app);
     ImGui_ImplDX11_Shutdown();
     ImGui_ImplWin32_Shutdown();
 }
@@ -222,7 +223,7 @@ void CleanupRenderTarget(ImGuiSimpleApp_ImplWin32DX11* app)
 
 // Win32 message handler
 extern LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
-LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
+static LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
     if (ImGui_ImplWin32_WndProcHandler(hWnd, msg, wParam, lParam))
         return true;

@@ -10,7 +10,7 @@
 //   main.exe -nogui -v -nopause
 //   main.exe -nogui -nopause perf_
 
-#define CMDLINE_ARGS  "-fileopener ../tools/win32_open_with_sublime.cmd"
+#define CMDLINE_ARGS  "-fileopener tools/win32_open_with_sublime.cmd"
 //#define CMDLINE_ARGS  "-gui -nothrottle"
 //#define CMDLINE_ARGS    "-slow widgets_inputtext_5_deactivate_flags"
 //#define CMDLINE_ARGS  "-gui perf_stress_text_unformatted_2"
@@ -273,6 +273,7 @@ int main(int argc, char** argv)
     DebugCrtInit(0);
 #endif
 
+    // Parse command-line arguments
 #ifdef CMDLINE_ARGS
     if (argc == 1)
     {
@@ -340,10 +341,10 @@ int main(int argc, char** argv)
 #endif
         test_io.ScreenCaptureFunc = &CaptureScreenshotNull;
 
-    test_io.CreateCoroutine = &CreateCoroutine;
-    test_io.DestroyCoroutine = &DestroyCoroutine;
-    test_io.RunCoroutine = &RunCoroutine;
-    test_io.YieldFromCoroutine = &YieldFromCoroutine;
+    test_io.CoroutineCreateFunc = &ImCoroutineCreate;
+    test_io.CoroutineDestroyFunc = &ImCoroutineDestroy;
+    test_io.CoroutineRunFunc = &ImCoroutineRun;
+    test_io.CoroutineYieldFunc = &ImCoroutineYield;
 
     // Set up TestEngine context
     RegisterTests(g_App.TestEngine);

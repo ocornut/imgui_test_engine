@@ -69,6 +69,7 @@ static void ImGuiTestEngine_ClearLocateTasks(ImGuiTestEngine* engine);
 static void ImGuiTestEngine_PreNewFrame(ImGuiTestEngine* engine, ImGuiContext* ui_ctx);
 static void ImGuiTestEngine_PostNewFrame(ImGuiTestEngine* engine, ImGuiContext* ui_ctx);
 static void ImGuiTestEngine_RunTest(ImGuiTestEngine* engine, ImGuiTestContext* ui_ctx, void* user_data);
+static void ImGuiTestEngine_TestQueueCoroutineMain(void* engine_opaque);
 
 // Settings
 static void* ImGuiTestEngine_SettingsReadOpen(ImGuiContext*, ImGuiSettingsHandler*, const char* name);
@@ -156,9 +157,11 @@ struct ImGuiTestEngine
         {
             // Run until the coroutine exits
             TestQueueCoroutineShouldExit = true;
-            while (IO.RunCoroutine(TestQueueCoroutine));
+            while (IO.CoroutineRunFunc(TestQueueCoroutine))
+            {
+            }
 
-            IO.DestroyCoroutine(TestQueueCoroutine);
+            IO.CoroutineDestroyFunc(TestQueueCoroutine);
             TestQueueCoroutine = NULL;
         }
 
@@ -581,16 +584,14 @@ static void ImGuiTestEngine_PostNewFrame(ImGuiTestEngine* engine, ImGuiContext* 
         ImSleepInMilliseconds(engine->ToolSlowDownMs);
 
     // Process on-going queues in a coroutine
-
+    // We perform lazy creation of the coroutine to ensure that IO functions are set up first
     if (!engine->TestQueueCoroutine)
-    {
-        // We perform lazy creation of the coroutine to ensure that IO functions are set up first
-        engine->TestQueueCoroutine = engine->IO.CreateCoroutine(ImGuiTestEngine_TestQueueCoroutineMain, "Test queue coroutine", engine);
-    }
+        engine->TestQueueCoroutine = engine->IO.CoroutineCreateFunc(ImGuiTestEngine_TestQueueCoroutineMain, "Dear ImGui Test Queue (coroutine)", engine);
 
-    // Run the test coroutine. This will resume the test queue from either the last point the test called YieldFromCoroutine(), or the loop in ImGuiTestEngine_TestQueueCoroutineMain that does so if no test is running
+    // Run the test coroutine. This will resume the test queue from either the last point the test called YieldFromCoroutine(),
+    // or the loop in ImGuiTestEngine_TestQueueCoroutineMain that does so if no test is running.
     // If you want to breakpoint the point execution continues in the test code, breakpoint the exit condition in YieldFromCoroutine()
-    engine->IO.RunCoroutine(engine->TestQueueCoroutine);
+    engine->IO.CoroutineRunFunc(engine->TestQueueCoroutine);
 }
 
 // Main function for the test coroutine
@@ -600,7 +601,7 @@ void ImGuiTestEngine_TestQueueCoroutineMain(void* ctx)
     while (!engine->TestQueueCoroutineShouldExit)
     {
         ImGuiTestEngine_ProcessTestQueue(engine);
-        engine->IO.YieldFromCoroutine();
+        engine->IO.CoroutineYieldFunc();
     }
 }
 
@@ -615,7 +616,7 @@ void ImGuiTestEngine_Yield(ImGuiTestEngine* engine)
         IM_ASSERT(ctx->ActiveFunc == ImGuiTestActiveFunc_TestFunc);
     }
 
-    engine->IO.YieldFromCoroutine();
+    engine->IO.CoroutineYieldFunc();
 
     if (ctx && ctx->Test->GuiFunc)
     {

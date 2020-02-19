@@ -1,6 +1,7 @@
 #include <imgui.h>
 #define IMGUI_DEFINE_MATH_OPERATORS
 #include "test_app.h"
+#include <Str/Str.h>
 
 #ifdef _MSC_VER
 #pragma warning (disable: 4996)     // 'This function or variable may be unsafe': strcpy, strdup, sprintf, vsnprintf, sscanf, fopen
@@ -44,8 +45,6 @@ void MainLoopNull()
 
     ImGuiTestEngineIO& test_io = ImGuiTestEngine_GetIO(g_App.TestEngine);
     test_io.ConfigLogToTTY = true;
-    test_io.NewFrameFunc = [](ImGuiTestEngine*, void*) { return MainLoopNewFrameNull(); };
-    test_io.EndFrameFunc = [](ImGuiTestEngine*, void*) { return MainLoopEndFrame(); };
 
     while (1)
     {
@@ -219,6 +218,12 @@ bool MainLoopNewFrameDX11()
 
 static void MainLoopEndFrameRenderDX11()
 {
+    ImGuiTestEngineIO& test_io = ImGuiTestEngine_GetIO(g_App.TestEngine);
+
+    // Super fast mode doesn't render/present
+    //if (test_io.RunningTests && test_io.ConfigRunFast)
+    //    return;
+
     // Rendering
     ImGui::Render();
 
@@ -235,7 +240,6 @@ static void MainLoopEndFrameRenderDX11()
     g_pd3dDeviceContext->ClearRenderTargetView(g_mainRenderTargetView, (float*)&g_App.ClearColor);
     ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
 
-    ImGuiTestEngineIO& test_io = ImGuiTestEngine_GetIO(g_App.TestEngine);
     if ((test_io.RunningTests && test_io.ConfigRunFast) || test_io.ConfigNoThrottle)
         g_pSwapChain->Present(0, 0); // Present without vsync
     else
@@ -268,34 +272,19 @@ void MainLoop()
     ImGui_ImplWin32_Init(hwnd);
     ImGui_ImplDX11_Init(g_pd3dDevice, g_pd3dDeviceContext);
 
-    ImGuiTestEngineIO& test_io = ImGuiTestEngine_GetIO(g_App.TestEngine);
+    //ImGuiTestEngineIO& test_io = ImGuiTestEngine_GetIO(g_App.TestEngine);
     //test_io.ConfigLogToTTY = true;
     //test_io.ConfigVerboseLevel = ImGuiTestVerboseLevel_Max;
-
-    auto end_frame_func =
-        [](ImGuiTestEngine*, void*)
-        {
-            if (!MainLoopEndFrame())
-                return false;
-#if 0
-            // Super fast mode doesn't render/present
-            if (test_io.RunningTests && test_io.ConfigRunFast)
-                return true;
-#endif
-            MainLoopEndFrameRenderDX11();
-            return true;
-        };
-
-    test_io.NewFrameFunc = [](ImGuiTestEngine*, void*) { return MainLoopNewFrameDX11(); };
-    test_io.EndFrameFunc = end_frame_func;
 
     while (1)
     {
         if (!MainLoopNewFrameDX11())
             break;
 
-        if (!end_frame_func(NULL, NULL))
+        if (!MainLoopEndFrame())
             break;
+
+        MainLoopEndFrameRenderDX11();
     }
 
     ImGui_ImplDX11_Shutdown();
@@ -374,12 +363,12 @@ bool CaptureFramebufferScreenshot(int x, int y, int w, int h, unsigned int* pixe
 
 struct ImGuiTestCoroutineData
 {
-    std::thread*                    Thread;             // The thread this coroutine is using
-    std::condition_variable         StateChange;        // Condition variable notified when the coroutine state changes
-    std::mutex                      StateMutex;         // Mutex to protect coroutine state
-    bool                            CoroutineRunning;   // Is the coroutine currently running? Lock StateMutex before access and notify StateChange on change
-    bool                            CoroutineTerminated;// Has the coroutine terminated? Lock StateMutex before access and notify StateChange on change
-    ImVector<char>                  Name;               // The name of this coroutine
+    std::thread*                Thread;                 // The thread this coroutine is using
+    std::condition_variable     StateChange;            // Condition variable notified when the coroutine state changes
+    std::mutex                  StateMutex;             // Mutex to protect coroutine state
+    bool                        CoroutineRunning;       // Is the coroutine currently running? Lock StateMutex before access and notify StateChange on change
+    bool                        CoroutineTerminated;    // Has the coroutine terminated? Lock StateMutex before access and notify StateChange on change
+    Str64                       Name;                   // The name of this coroutine
 };
 
 // The coroutine executing on the current thread (if it is a coroutine thread)
@@ -389,7 +378,7 @@ static thread_local ImGuiTestCoroutineData* GThreadCoroutine = NULL;
 void CoroutineThreadMain(ImGuiTestCoroutineData* data, ImGuiTestCoroutineFunc func, void* ctx)
 {
     // Set our thread name
-    ImThreadSetCurrentThreadDescription(data->Name.Data);
+    ImThreadSetCurrentThreadDescription(data->Name.c_str());
 
     // Set the thread coroutine
     GThreadCoroutine = data;
@@ -418,26 +407,23 @@ void CoroutineThreadMain(ImGuiTestCoroutineData* data, ImGuiTestCoroutineFunc fu
     }
 }
 
-ImGuiTestCoroutineHandle CreateCoroutine(ImGuiTestCoroutineFunc func, const char* name, void* ctx)
+ImGuiTestCoroutineHandle ImCoroutineCreate(ImGuiTestCoroutineFunc func, const char* name, void* ctx)
 {
     ImGuiTestCoroutineData* data = new ImGuiTestCoroutineData();
 
-    data->Name.resize((int)strlen(name) + 1);
-    strcpy(data->Name.Data, name);
+    data->Name = name;
     data->CoroutineRunning = false;
     data->CoroutineTerminated = false;
-
     data->Thread = new std::thread(CoroutineThreadMain, data, func, ctx);
 
     return (ImGuiTestCoroutineHandle)data;
 }
 
-void DestroyCoroutine(ImGuiTestCoroutineHandle handle)
+void ImCoroutineDestroy(ImGuiTestCoroutineHandle handle)
 {
     ImGuiTestCoroutineData* data = (ImGuiTestCoroutineData*)handle;
 
     IM_ASSERT(data->CoroutineTerminated); // The coroutine needs to run to termination otherwise it may leak all sorts of things and this will deadlock    
-
     if (data->Thread)
     {
         data->Thread->join();
@@ -451,7 +437,7 @@ void DestroyCoroutine(ImGuiTestCoroutineHandle handle)
 }
 
 // Run the coroutine until the next call to Yield(). Returns TRUE if the coroutine yielded, FALSE if it terminated (or had previously terminated)
-bool RunCoroutine(ImGuiTestCoroutineHandle handle)
+bool ImCoroutineRun(ImGuiTestCoroutineHandle handle)
 {
     ImGuiTestCoroutineData* data = (ImGuiTestCoroutineData*)handle;
 
@@ -484,7 +470,7 @@ bool RunCoroutine(ImGuiTestCoroutineHandle handle)
 }
 
 // Yield the current coroutine (can only be called from a coroutine)
-void YieldFromCoroutine()
+void ImCoroutineYield()
 {
     IM_ASSERT(GThreadCoroutine); // This can only be called from a coroutine thread
 
@@ -493,21 +479,18 @@ void YieldFromCoroutine()
     // Flag that we are not running any more
     {
         std::lock_guard<std::mutex> lock(data->StateMutex);
-
         data->CoroutineRunning = false;
         data->StateChange.notify_all();
     }
 
     // At this point the thread that called RunCoroutine() will leave the "Wait for coroutine to stop" loop
-
     // Wait until we get started up again
     while (1)
     {
         std::unique_lock<std::mutex> lock(data->StateMutex);
         if (data->CoroutineRunning)
         {
-            // Breakpoint here if you want to catch the point where execution of this coroutine resumes
-            break;
+            break; // Breakpoint here if you want to catch the point where execution of this coroutine resumes
         }
         data->StateChange.wait(lock);
     }
@@ -551,6 +534,35 @@ static bool MainLoopNewFrameSDLGL3(SDL_Window* window)
         ImGui::NewFrame();
     }
     return !g_App.Quit;
+}
+
+static void MainLoopEndFrameSDLGL3(SDL_Window* window)
+{
+    ImGuiTestEngineIO& test_io = ImGuiTestEngine_GetIO(g_App.TestEngine);
+
+    // Super fast mode doesn't render/present
+    //if (test_io.RunningTests && test_io.ConfigRunFast)
+    //    break;
+
+    ImGui::Render();
+    ImGuiIO& io = ImGui::GetIO();
+#ifdef IMGUI_HAS_VIEWPORT
+    if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
+    {
+        SDL_Window* backup_current_window = SDL_GL_GetCurrentWindow();
+        SDL_GLContext backup_current_context = SDL_GL_GetCurrentContext();
+        ImGui::UpdatePlatformWindows();
+        ImGui::RenderPlatformWindowsDefault();
+        SDL_GL_MakeCurrent(backup_current_window, backup_current_context);
+    }
+#endif
+
+    SDL_GL_SetSwapInterval(((test_io.RunningTests && test_io.ConfigRunFast) || test_io.ConfigNoThrottle) ? 0 : 1); // Enable vsync
+    glViewport(0, 0, (int)io.DisplaySize.x, (int)io.DisplaySize.y);
+    glClearColor(g_App.ClearColor.x, g_App.ClearColor.y, g_App.ClearColor.z, g_App.ClearColor.w);
+    glClear(GL_COLOR_BUFFER_BIT);
+    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+    SDL_GL_SwapWindow((SDL_Window*)window);
 }
 
 void MainLoop()
@@ -608,44 +620,16 @@ void MainLoop()
     ImGuiTestEngineIO& test_io = ImGuiTestEngine_GetIO(g_App.TestEngine);
     test_io.UserData = window;
     test_io.ConfigLogToTTY = true;
-    test_io.NewFrameFunc = [](ImGuiTestEngine*, void* window) { return MainLoopNewFrameSDLGL3((SDL_Window*)window); };
-    test_io.EndFrameFunc = [](ImGuiTestEngine*, void* window)
-    {
-        if (!MainLoopEndFrame())
-            return false;
-        ImGuiTestEngineIO& test_io = ImGuiTestEngine_GetIO(g_App.TestEngine);
-#if 0
-        // Super fast mode doesn't render/present
-        if (test_io.RunningTests && test_io.ConfigRunFast)
-            return true;
-#endif
-        ImGui::Render();
-        ImGuiIO& io = ImGui::GetIO();
-#ifdef IMGUI_HAS_VIEWPORT
-        if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
-        {
-            SDL_Window* backup_current_window = SDL_GL_GetCurrentWindow();
-            SDL_GLContext backup_current_context = SDL_GL_GetCurrentContext();
-            ImGui::UpdatePlatformWindows();
-            ImGui::RenderPlatformWindowsDefault();
-            SDL_GL_MakeCurrent(backup_current_window, backup_current_context);
-        }
-#endif
-        SDL_GL_SetSwapInterval(((test_io.RunningTests && test_io.ConfigRunFast) || test_io.ConfigNoThrottle) ? 0 : 1); // Enable vsync
-        glViewport(0, 0, (int)io.DisplaySize.x, (int)io.DisplaySize.y);
-        glClearColor(g_App.ClearColor.x, g_App.ClearColor.y, g_App.ClearColor.z, g_App.ClearColor.w);
-        glClear(GL_COLOR_BUFFER_BIT);
-        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-        SDL_GL_SwapWindow((SDL_Window*)window);
-        return true;
-    };
 
     while (1)
     {
         if (!MainLoopNewFrameSDLGL3(window))
             break;
-        if (!test_io.EndFrameFunc(nullptr, window))
+
+        if (!MainLoopEndFrame())
             break;
+
+        MainLoopEndFrameSDLGL3(window);
     }
 
     // Cleanup
@@ -689,6 +673,33 @@ static bool MainLoopNewFrameGLFWGL3(GLFWwindow* window)
         ImGui::NewFrame();
     }
     return !g_App.Quit;
+}
+
+static void MainLoopEndFrameGLFWGL3(GLFWwindow* window)
+{
+    ImGuiTestEngineIO& test_io = ImGuiTestEngine_GetIO(g_App.TestEngine);
+
+    // Super fast mode doesn't render/present
+    //if (test_io.RunningTests && test_io.ConfigRunFast)
+    //    return;
+
+    ImGui::Render();
+    ImGuiIO& io = ImGui::GetIO();
+#ifdef IMGUI_HAS_VIEWPORT
+    if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
+    {
+        GLFWwindow* backup_current_context = glfwGetCurrentContext();
+        ImGui::UpdatePlatformWindows();
+        ImGui::RenderPlatformWindowsDefault();
+        glfwMakeContextCurrent(backup_current_context);
+    }
+#endif
+    glfwSwapInterval(((test_io.RunningTests && test_io.ConfigRunFast) || test_io.ConfigNoThrottle) ? 0 : 1); // Enable vsync
+    glViewport(0, 0, (int)io.DisplaySize.x, (int)io.DisplaySize.y);
+    glClearColor(g_App.ClearColor.x, g_App.ClearColor.y, g_App.ClearColor.z, g_App.ClearColor.w);
+    glClear(GL_COLOR_BUFFER_BIT);
+    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+    glfwSwapBuffers((GLFWwindow*)window);
 }
 
 static void glfw_error_callback(int error, const char* description)
@@ -745,43 +756,16 @@ void MainLoop()
     ImGuiTestEngineIO& test_io = ImGuiTestEngine_GetIO(g_App.TestEngine);
     test_io.UserData = window;
     test_io.ConfigLogToTTY = true;
-    test_io.NewFrameFunc = [](ImGuiTestEngine*, void* window) { return MainLoopNewFrameGLFWGL3((GLFWwindow *)window); };
-    test_io.EndFrameFunc = [](ImGuiTestEngine*, void* window)
-    {
-        if (!MainLoopEndFrame())
-            return false;
-        ImGuiTestEngineIO& test_io = ImGuiTestEngine_GetIO(g_App.TestEngine);
-#if 0
-        // Super fast mode doesn't render/present
-        if (test_io.RunningTests && test_io.ConfigRunFast)
-            return true;
-#endif
-        ImGui::Render();
-        ImGuiIO& io = ImGui::GetIO();
-#ifdef IMGUI_HAS_VIEWPORT
-        if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
-        {
-            GLFWwindow* backup_current_context = glfwGetCurrentContext();
-            ImGui::UpdatePlatformWindows();
-            ImGui::RenderPlatformWindowsDefault();
-            glfwMakeContextCurrent(backup_current_context);
-        }
-#endif
-        glfwSwapInterval(((test_io.RunningTests && test_io.ConfigRunFast) || test_io.ConfigNoThrottle) ? 0 : 1); // Enable vsync
-        glViewport(0, 0, (int)io.DisplaySize.x, (int)io.DisplaySize.y);
-        glClearColor(g_App.ClearColor.x, g_App.ClearColor.y, g_App.ClearColor.z, g_App.ClearColor.w);
-        glClear(GL_COLOR_BUFFER_BIT);
-        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-        glfwSwapBuffers((GLFWwindow *)window);
-        return true;
-    };
 
     while (1)
     {
         if (!MainLoopNewFrameGLFWGL3(window))
             break;
-        if (!test_io.EndFrameFunc(nullptr, window))
-            break;
+
+        if (!MainLoopEndFrame())
+            return false;
+
+        MainLoopEndFrameGLFWGL3();
     }
 
     // Cleanup
