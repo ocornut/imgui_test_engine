@@ -66,9 +66,9 @@ static void ImGuiTestEngine_ApplyInputToImGuiContext(ImGuiTestEngine* engine);
 static void ImGuiTestEngine_ProcessTestQueue(ImGuiTestEngine* engine);
 static void ImGuiTestEngine_ClearTests(ImGuiTestEngine* engine);
 static void ImGuiTestEngine_ClearLocateTasks(ImGuiTestEngine* engine);
-static void ImGuiTestEngine_PreNewFrame(ImGuiTestEngine* engine, ImGuiContext* ctx);
-static void ImGuiTestEngine_PostNewFrame(ImGuiTestEngine* engine, ImGuiContext* ctx);
-static void ImGuiTestEngine_RunTest(ImGuiTestEngine* engine, ImGuiTestContext* ctx, void* user_data);
+static void ImGuiTestEngine_PreNewFrame(ImGuiTestEngine* engine, ImGuiContext* ui_ctx);
+static void ImGuiTestEngine_PostNewFrame(ImGuiTestEngine* engine, ImGuiContext* ui_ctx);
+static void ImGuiTestEngine_RunTest(ImGuiTestEngine* engine, ImGuiTestContext* ui_ctx, void* user_data);
 
 // Settings
 static void* ImGuiTestEngine_SettingsReadOpen(ImGuiContext*, ImGuiSettingsHandler*, const char* name);
@@ -437,7 +437,7 @@ void ImGuiTestEngine_ApplyInputToImGuiContext(ImGuiTestEngine* engine)
 }
 
 // FIXME: Trying to abort a running GUI test won't kill the app immediately.
-static void ImGuiTestEngine_UpdateWatchdog(ImGuiTestEngine* engine, ImGuiContext* ctx, double t0, double t1)
+static void ImGuiTestEngine_UpdateWatchdog(ImGuiTestEngine* engine, ImGuiContext* ui_ctx, double t0, double t1)
 {
     ImGuiTestContext* test_ctx = engine->TestContext;
 
@@ -471,17 +471,17 @@ static void ImGuiTestEngine_UpdateWatchdog(ImGuiTestEngine* engine, ImGuiContext
     }
 }
 
-static void ImGuiTestEngine_PreNewFrame(ImGuiTestEngine* engine, ImGuiContext* ctx)
+static void ImGuiTestEngine_PreNewFrame(ImGuiTestEngine* engine, ImGuiContext* ui_ctx)
 {
-    if (engine->UiContextTarget != ctx)
+    if (engine->UiContextTarget != ui_ctx)
         return;
-    IM_ASSERT(ctx == GImGui);
-    ImGuiContext& g = *ctx;
+    IM_ASSERT(ui_ctx == GImGui);
+    ImGuiContext& g = *ui_ctx;
 
     // Inject extra time into the imgui context
     if (engine->OverrideDeltaTime >= 0.0f)
     {
-        ctx->IO.DeltaTime = engine->OverrideDeltaTime;
+        ui_ctx->IO.DeltaTime = engine->OverrideDeltaTime;
         engine->OverrideDeltaTime = -1.0f;
     }
 
@@ -490,10 +490,10 @@ static void ImGuiTestEngine_PreNewFrame(ImGuiTestEngine* engine, ImGuiContext* c
     if (ImGuiTestContext* test_ctx = engine->TestContext)
     {
         double t0 = test_ctx->RunningTime;
-        double t1 = t0 + ctx->IO.DeltaTime;
+        double t1 = t0 + ui_ctx->IO.DeltaTime;
         test_ctx->FrameCount++;
         test_ctx->RunningTime = t1;
-        ImGuiTestEngine_UpdateWatchdog(engine, ctx, t0, t1);
+        ImGuiTestEngine_UpdateWatchdog(engine, ui_ctx, t0, t1);
     }
 
     engine->PerfDeltaTime100.AddSample(g.IO.DeltaTime);
@@ -526,17 +526,17 @@ static void ImGuiTestEngine_PreNewFrame(ImGuiTestEngine* engine, ImGuiContext* c
     ImGuiTestEngine_ApplyInputToImGuiContext(engine);
 }
 
-static void ImGuiTestEngine_PostNewFrame(ImGuiTestEngine* engine, ImGuiContext* ctx)
+static void ImGuiTestEngine_PostNewFrame(ImGuiTestEngine* engine, ImGuiContext* ui_ctx)
 {
-    if (engine->UiContextTarget != ctx)
+    if (engine->UiContextTarget != ui_ctx)
         return;
-    IM_ASSERT(ctx == GImGui);
+    IM_ASSERT(ui_ctx == GImGui);
 
     // Restore host inputs
     const bool want_simulated_inputs = engine->UiContextActive != NULL && ImGuiTestEngine_IsRunningTests(engine) && !(engine->TestContext->RunFlags & ImGuiTestRunFlags_NoTestFunc);
     if (!want_simulated_inputs)
     {
-        ImGuiIO& main_io = ctx->IO;
+        ImGuiIO& main_io = ui_ctx->IO;
         //IM_ASSERT(engine->UiContextActive == NULL);
         if (engine->Inputs.ApplyingSimulatedIO > 0)
         {
@@ -1000,26 +1000,26 @@ static void ImGuiTestEngine_RunTest(ImGuiTestEngine* engine, ImGuiTestContext* c
 // - ImGuiTestEngineHook_ItemInfo()
 //-------------------------------------------------------------------------
 
-void ImGuiTestEngineHook_PreNewFrame(ImGuiContext* ctx)
+void ImGuiTestEngineHook_PreNewFrame(ImGuiContext* ui_ctx)
 {
     if (ImGuiTestEngine* engine = GImGuiHookingEngine)
-        ImGuiTestEngine_PreNewFrame(engine, ctx);
+        ImGuiTestEngine_PreNewFrame(engine, ui_ctx);
 }
 
-void ImGuiTestEngineHook_PostNewFrame(ImGuiContext* ctx)
+void ImGuiTestEngineHook_PostNewFrame(ImGuiContext* ui_ctx)
 {
     if (ImGuiTestEngine* engine = GImGuiHookingEngine)
-        ImGuiTestEngine_PostNewFrame(engine, ctx);
+        ImGuiTestEngine_PostNewFrame(engine, ui_ctx);
 }
 
-void ImGuiTestEngineHook_ItemAdd(ImGuiContext* ctx, const ImRect& bb, ImGuiID id)
+void ImGuiTestEngineHook_ItemAdd(ImGuiContext* ui_ctx, const ImRect& bb, ImGuiID id)
 {
     ImGuiTestEngine* engine = GImGuiHookingEngine;
-    if (engine == NULL || engine->UiContextActive != ctx)
+    if (engine == NULL || engine->UiContextActive != ui_ctx)
         return;
 
     IM_ASSERT(id != 0);
-    ImGuiContext& g = *ctx;
+    ImGuiContext& g = *ui_ctx;
     ImGuiWindow* window = g.CurrentWindow;
 
     // FIXME-OPT: Early out if there are no active Locate/Gather tasks.
@@ -1077,14 +1077,14 @@ void ImGuiTestEngineHook_ItemAdd(ImGuiContext* ctx, const ImRect& bb, ImGuiID id
 }
 
 // label is optional
-void ImGuiTestEngineHook_ItemInfo(ImGuiContext* ctx, ImGuiID id, const char* label, ImGuiItemStatusFlags flags)
+void ImGuiTestEngineHook_ItemInfo(ImGuiContext* ui_ctx, ImGuiID id, const char* label, ImGuiItemStatusFlags flags)
 {
     ImGuiTestEngine* engine = GImGuiHookingEngine;
-    if (engine == NULL || engine->UiContextActive != ctx)
+    if (engine == NULL || engine->UiContextActive != ui_ctx)
         return;
 
     IM_ASSERT(id != 0);
-    ImGuiContext& g = *ctx;
+    ImGuiContext& g = *ui_ctx;
     ImGuiWindow* window = g.CurrentWindow;
     IM_ASSERT(window->DC.LastItemId == id || window->DC.LastItemId == 0);
 
@@ -1110,10 +1110,10 @@ void ImGuiTestEngineHook_ItemInfo(ImGuiContext* ctx, ImGuiID id, const char* lab
 }
 
 // Forward core/user-land text to test log
-void ImGuiTestEngineHook_Log(ImGuiContext* ctx, const char* fmt, ...)
+void ImGuiTestEngineHook_Log(ImGuiContext* ui_ctx, const char* fmt, ...)
 {
     ImGuiTestEngine* engine = GImGuiHookingEngine;
-    if (engine == NULL || engine->UiContextActive != ctx)
+    if (engine == NULL || engine->UiContextActive != ui_ctx)
         return;
 
     va_list args;
