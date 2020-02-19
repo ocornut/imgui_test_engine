@@ -7,10 +7,6 @@
 #include "imgui_internal.h"         // ImPool<>, ImGuiItemStatusFlags, ImFormatString
 #include "imgui_te_util.h"
 #include "imgui_capture_tool.h"
-// Temporary includes for coroutines
-#include <thread>
-#include <mutex>
-#include <condition_variable>
 
 //-------------------------------------------------------------------------
 // Forward Declarations
@@ -29,6 +25,8 @@ typedef int ImGuiTestCheckFlags;    // Flags: See ImGuiTestCheckFlags_
 typedef int ImGuiTestLogFlags;      // Flags: See ImGuiTestLogFlags_
 typedef int ImGuiTestOpFlags;       // Flags: See ImGuiTestOpFlags_
 typedef int ImGuiTestRunFlags;      // Flags: See ImGuiTestRunFlags_
+typedef void(*ImGuiTestCoroutineFunc)(void* ctx); // A coroutine function - ctx is an arbitrary context object
+typedef void* ImGuiTestCoroutineHandle; // An arbitrary handle used internally to represent coroutines (NULL indicates no handle)
 
 //-------------------------------------------------------------------------
 // Types
@@ -179,6 +177,7 @@ struct ImGuiTestInputs
 
 ImGuiTestItemInfo*  ImGuiTestEngine_ItemLocate(ImGuiTestEngine* engine, ImGuiID id, const char* debug_id);
 void                ImGuiTestEngine_PushInput(ImGuiTestEngine* engine, const ImGuiTestInput& input);
+void                ImGuiTestEngine_TestQueueCoroutineMain(void* ctx);
 void                ImGuiTestEngine_Yield(ImGuiTestEngine* engine);
 void                ImGuiTestEngine_SetDeltaTime(ImGuiTestEngine* engine, float delta_time);
 int                 ImGuiTestEngine_GetFrameCount(ImGuiTestEngine* engine);
@@ -318,6 +317,10 @@ typedef bool (*ImGuiTestEngineNewFrameFunc)(ImGuiTestEngine*, void* user_data);
 typedef bool (*ImGuiTestEngineEndFrameFunc)(ImGuiTestEngine*, void* user_data);
 typedef void (*ImGuiTestEngineSrcFileOpenFunc)(const char* filename, int line, void* user_data);
 typedef bool (*ImGuiTestEngineScreenCaptureFunc)(int x, int y, int w, int h, unsigned int* pixels, void* user_data);
+typedef ImGuiTestCoroutineHandle (*ImGuiTestEngineCreateCoroutine)(ImGuiTestCoroutineFunc func, const char* name, void* ctx);
+typedef void (*ImGuiTestEngineDestroyCoroutine)(ImGuiTestCoroutineHandle handle);
+typedef bool (*ImGuiTestEngineRunCoroutine)(ImGuiTestCoroutineHandle handle);
+typedef void (*ImGuiTestEngineYieldFromCurrentCoroutine)();
 
 // IO structure
 struct ImGuiTestEngineIO
@@ -327,6 +330,17 @@ struct ImGuiTestEngineIO
     ImGuiTestEngineSrcFileOpenFunc  SrcFileOpenFunc = NULL;     // (Optional) To open source files
     ImGuiTestEngineScreenCaptureFunc ScreenCaptureFunc = NULL;  // (Optional) To capture graphics output
     void*                           UserData = NULL;
+
+    // Coroutine support functions
+    // Coroutines should be used like this:
+    // ImGuiTestCoroutineHandle handle = CreateCoroutine(<func>, <name>, <ctx>); // name being for debugging, and ctx being an arbitrary user context pointer
+    // while (RunCoroutine(handle)) { <do other stuff };
+    // DestroyCoroutine(handle);
+    // The coroutine code itself should call YieldFromCoroutine() whenever it wants to yield control back to the main thread.
+    ImGuiTestEngineCreateCoroutine  CreateCoroutine = NULL;     // Create a new coroutine
+    ImGuiTestEngineDestroyCoroutine DestroyCoroutine = NULL;    // Destroy a coroutine (which must have completed first)
+    ImGuiTestEngineRunCoroutine     RunCoroutine = NULL;        // Run a coroutine until it yields or finishes, returning false if finished
+    ImGuiTestEngineYieldFromCurrentCoroutine YieldFromCoroutine = NULL; // Yield from a coroutine back to the caller, preserving coroutine state
 
     // Inputs: Options
     bool                        ConfigRunWithGui = false;       // Run without graphics output (e.g. command-line)
@@ -469,40 +483,6 @@ struct ImGuiTestLog
             p = p_eol ? p_eol + 1 : NULL;
         }
     }
-};
-
-//-------------------------------------------------------------------------
-// ImGuiTestCoroutine
-//-------------------------------------------------------------------------
-
-// A coroutine function - ctx is an arbitrary context object
-typedef void(*ImGuiTestCoroutineFunc)(void* ctx);
-
-// This implements a coroutine (based on a thread, but never executing concurrently) that allows yielding and then resuming from the yield point
-// Code using a coroutine should basically do "while (coroutine.Run()) { <do other work> }", whilst coroutine code should do "while (<something>) { <do work>; ImGuiTestCoroutine::Yield(); }"
-struct ImGuiTestCoroutine
-{
-private:
-    std::thread*                    Thread;             // The thread this coroutine is using
-    std::condition_variable         StateChange;        // Condition variable notified when the coroutine state changes
-    std::mutex                      StateMutex;         // Mutex to protect coroutine state
-    bool                            CoroutineRunning;   // Is the coroutine currently running? Lock StateMutex before access and notify StateChange on change
-    bool                            CoroutineTerminated;// Has the coroutine terminated? Lock StateMutex before access and notify StateChange on change
-
-public:
-    // Create a new coroutine - ctx will be passed to the function as arbitrary context
-    ImGuiTestCoroutine(ImGuiTestCoroutineFunc func, void* ctx);
-    ~ImGuiTestCoroutine();
-
-    // Run the coroutine until the next call to Yield(). Returns TRUE if the coroutine yielded, FALSE if it terminated (or had previously terminated)
-    bool Run();
-
-    // Yield the current coroutine (can only be called from a coroutine)
-    static void Yield();
-
-private:
-    // Internal implementation for Yield()
-    void YieldInternal();
 };
 
 //-------------------------------------------------------------------------

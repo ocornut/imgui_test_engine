@@ -340,6 +340,11 @@ int main(int argc, char** argv)
 #endif
         test_io.ScreenCaptureFunc = &CaptureScreenshotNull;
 
+    test_io.CreateCoroutine = &CreateCoroutine;
+    test_io.DestroyCoroutine = &DestroyCoroutine;
+    test_io.RunCoroutine = &RunCoroutine;
+    test_io.YieldFromCoroutine = &YieldFromCoroutine;
+
     // Set up TestEngine context
     RegisterTests(g_App.TestEngine);
     ImGuiTestEngine_CalcSourceLineEnds(g_App.TestEngine);

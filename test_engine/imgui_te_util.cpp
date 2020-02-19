@@ -18,6 +18,11 @@
 #include <errno.h>
 #endif
 
+#if defined(__linux) || defined(__linux__) || defined(__MACH__) || defined(__MSL__)
+// For pthread_setname_np()
+#include <pthread.h>
+#endif
+
 // Hash "hello/world" as if it was "helloworld"
 // To hash a forward slash we need to use "hello\\/world"
 //   IM_ASSERT(ImHashDecoratedPath("Hello/world")   == ImHash("Helloworld", 0));
@@ -534,6 +539,73 @@ ImFont* FindFontByName(const char* name)
         if (strcmp(font->ConfigData->Name, name) == 0)
             return font;
     return NULL;
+}
+
+#if defined(_WIN32)
+// Helper function for setting thread name on Win32
+// This is a separate function because __try cannot coexist with local objects that need destructors called on stack unwind
+void ImThreadSetCurrentThreadDescriptionWin32OldStyle(const char* description)
+{
+    // Old-style Win32 thread name setting method
+    // See https://docs.microsoft.com/en-us/visualstudio/debugger/how-to-set-a-thread-name-in-native-code
+    const DWORD MS_VC_EXCEPTION = 0x406D1388;
+#pragma pack(push,8)
+    typedef struct tagTHREADNAME_INFO
+    {
+        DWORD dwType; // Must be 0x1000.
+        LPCSTR szName; // Pointer to name (in user addr space).
+        DWORD dwThreadID; // Thread ID (-1=caller thread).
+        DWORD dwFlags; // Reserved for future use, must be zero.
+    } THREADNAME_INFO;
+#pragma pack(pop)
+
+    THREADNAME_INFO info;
+    info.dwType = 0x1000;
+    info.szName = description;
+    info.dwThreadID = (DWORD)-1;
+    info.dwFlags = 0;
+#pragma warning(push)
+#pragma warning(disable: 6320 6322)
+    __try
+    {
+        RaiseException(MS_VC_EXCEPTION, 0, sizeof(info) / sizeof(ULONG_PTR), (ULONG_PTR*)&info);
+    }
+    __except (EXCEPTION_EXECUTE_HANDLER)
+    {
+    }
+#pragma warning(pop)
+}
+#endif
+
+// Set the description (name) of the current thread for debugging purposes
+void ImThreadSetCurrentThreadDescription(const char* description)
+{
+#if defined(_WIN32) // Windows
+    // New-style thread name setting
+    // Only supported from Win 10 version 1607/Server 2016 onwards, hence the need for dynamic linking
+
+    typedef HRESULT (WINAPI* SetThreadDescriptionFunc)(HANDLE hThread, PCWSTR lpThreadDescription);
+
+    SetThreadDescriptionFunc set_thread_description = (SetThreadDescriptionFunc)GetProcAddress(GetModuleHandleA("Kernel32.dll"), "SetThreadDescription");
+
+    if (set_thread_description)
+    {
+        ImVector<ImWchar> buf;
+        const int description_wsize = ImTextCountCharsFromUtf8(description, NULL) + 1;
+        buf.resize(description_wsize);
+        ImTextStrFromUtf8(&buf[0], description_wsize, description, NULL);
+        set_thread_description(GetCurrentThread(), (wchar_t*)&buf[0]);
+    }
+
+    // Also do the old-style method too even if the new-style one worked, as the two work in slightly different sets of circumstances
+    ImThreadSetCurrentThreadDescriptionWin32OldStyle(description);
+#elif defined(__linux) || defined(__linux__) // Linux
+    pthread_setname_np(pthread_self(), description);
+#elif defined(__MACH__) || defined(__MSL__) // OSX
+    pthread_setname_np(description);
+#else
+    // This is a nice-to-have rather than critical functionality, so fail silently if we don't support this platform
+#endif
 }
 
 //-----------------------------------------------------------------------------

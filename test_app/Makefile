@@ -26,6 +26,8 @@ ifeq ($(HAS_SDL2), 1)
 	SOURCES += $(IMGUI_PATH)/examples/imgui_impl_opengl3.cpp $(IMGUI_PATH)/examples/imgui_impl_sdl.cpp $(IMGUI_PATH)/examples/libs/gl3w/GL/gl3w.c
 endif
 
+LIBS += -lpthread
+
 ##---------------------------------------------------------------------
 ## BUILD FLAGS PER PLATFORM
 ##---------------------------------------------------------------------

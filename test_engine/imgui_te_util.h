@@ -76,6 +76,8 @@ void        GetImGuiKeyModsPrefixStr(ImGuiKeyModFlags mod_flags, char* out_buf, 
 const ImBuildInfo&  ImGetBuildInfo();
 ImFont*     FindFontByName(const char* name);
 
+void        ImThreadSetCurrentThreadDescription(const char* description); // Set the description/name of the current thread (for debugging purposes)
+
 // Helper: maintain/calculate moving average
 template<typename TYPE>
 struct ImMovingAverage

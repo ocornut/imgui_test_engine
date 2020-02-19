@@ -115,7 +115,7 @@ struct ImGuiTestEngine
     ImGuiTestGatherTask         GatherTask;
     void*                       UserDataBuffer = NULL;
     size_t                      UserDataBufferSize = 0;
-    ImGuiTestCoroutine*         TestQueueCoroutine = NULL;      // Coroutine to run the test queue
+    ImGuiTestCoroutineHandle    TestQueueCoroutine = NULL;      // Coroutine to run the test queue
     bool                        TestQueueCoroutineShouldExit = false; // Flag to indicate that we are shutting down and the test queue coroutine should stop
 
     // Inputs
@@ -149,16 +149,6 @@ struct ImGuiTestEngine
         PerfDeltaTime500.Init(500);
         PerfDeltaTime1000.Init(1000);
         PerfDeltaTime2000.Init(2000);
-
-        TestQueueCoroutine = new ImGuiTestCoroutine([](void* ctx)
-        {
-            ImGuiTestEngine* engine = (ImGuiTestEngine*)ctx;
-            while (!engine->TestQueueCoroutineShouldExit)
-            {
-                ImGuiTestEngine_ProcessTestQueue(engine);
-                ImGuiTestCoroutine::Yield();
-            }
-        }, this);
     }
     ~ImGuiTestEngine()
     {
@@ -166,9 +156,9 @@ struct ImGuiTestEngine
         {
             // Run until the coroutine exits
             TestQueueCoroutineShouldExit = true;
-            while (TestQueueCoroutine->Run());
+            while (IO.RunCoroutine(TestQueueCoroutine));
 
-            delete TestQueueCoroutine;
+            IO.DestroyCoroutine(TestQueueCoroutine);
             TestQueueCoroutine = NULL;
         }
 
@@ -591,14 +581,32 @@ static void ImGuiTestEngine_PostNewFrame(ImGuiTestEngine* engine, ImGuiContext* 
         ImSleepInMilliseconds(engine->ToolSlowDownMs);
 
     // Process on-going queues in a coroutine
-    engine->TestQueueCoroutine->Run();
+
+    if (!engine->TestQueueCoroutine)
+    {
+        // We perform lazy creation of the coroutine to ensure that IO functions are set up first
+        engine->TestQueueCoroutine = engine->IO.CreateCoroutine(ImGuiTestEngine_TestQueueCoroutineMain, "Test queue coroutine", engine);
+    }
+
+    // Run the test coroutine. This will resume the test queue from either the last point the test called YieldFromCoroutine(), or the loop in ImGuiTestEngine_TestQueueCoroutineMain that does so if no test is running
+    // If you want to breakpoint the point execution continues in the test code, breakpoint the exit condition in YieldFromCoroutine()
+    engine->IO.RunCoroutine(engine->TestQueueCoroutine);
+}
+
+// Main function for the test coroutine
+void ImGuiTestEngine_TestQueueCoroutineMain(void* ctx)
+{
+    ImGuiTestEngine* engine = (ImGuiTestEngine*)ctx;
+    while (!engine->TestQueueCoroutineShouldExit)
+    {
+        ImGuiTestEngine_ProcessTestQueue(engine);
+        engine->IO.YieldFromCoroutine();
+    }
 }
 
 // Yield control back from the TestFunc to the main update + GuiFunc, for one frame.
 void ImGuiTestEngine_Yield(ImGuiTestEngine* engine)
-{
-    ImGuiTestCoroutine::Yield();
-    
+{   
     ImGuiTestContext* ctx = engine->TestContext;
 
     if (ctx)
@@ -606,6 +614,8 @@ void ImGuiTestEngine_Yield(ImGuiTestEngine* engine)
         // Can only yield in the test func!
         IM_ASSERT(ctx->ActiveFunc == ImGuiTestActiveFunc_TestFunc);
     }
+
+    engine->IO.YieldFromCoroutine();
 
     if (ctx && ctx->Test->GuiFunc)
     {
@@ -1779,125 +1789,6 @@ void ImGuiTest::SetOwnedName(const char* name)
     IM_ASSERT(!NameOwned);
     NameOwned = true;
     Name = ImStrdup(name);
-}
-
-//-------------------------------------------------------------------------
-// [SECTION] COROUTINES
-//-------------------------------------------------------------------------
-// This implements a simple coroutine system, using cooperative threads to
-// achieve this in a relatively platform-independent manner
-//-------------------------------------------------------------------------
-
-// The coroutine executing on the current thread (if it is a coroutine thread)
-static thread_local ImGuiTestCoroutine* GThreadCoroutine = NULL;
-
-ImGuiTestCoroutine::ImGuiTestCoroutine(ImGuiTestCoroutineFunc func, void* ctx)
-{
-    CoroutineRunning = false;
-    CoroutineTerminated = false;
-
-    Thread = new std::thread([this, func, ctx]
-    {
-        // Set the thread coroutine
-        GThreadCoroutine = this;
-
-        // Wait for initial Run()
-        while(1)
-        {
-            std::unique_lock<std::mutex> lock(StateMutex);
-            if (CoroutineRunning)
-            {
-                break;
-            }
-            StateChange.wait(lock);
-        }
-
-        // Run user code, which will then call Yield() when it wants to yield control
-        func(ctx);
-
-        // Mark as terminated
-        {
-            std::lock_guard<std::mutex> lock(StateMutex);
-
-            CoroutineTerminated = true;
-            CoroutineRunning = false;
-            StateChange.notify_all();
-        }
-    });
-}
-
-ImGuiTestCoroutine::~ImGuiTestCoroutine()
-{
-    IM_ASSERT(CoroutineTerminated); // The coroutine needs to run to termination otherwise it may leak all sorts of things and this will deadlock    
-
-    if (Thread)
-    {
-        Thread->join();
-
-        delete Thread;
-        Thread = NULL;
-    }
-}
-
-// Run the coroutine until the next call to Yield(). Returns TRUE if the coroutine yielded, FALSE if it terminated (or had previously terminated)
-bool ImGuiTestCoroutine::Run()
-{
-    // Wake up coroutine thread
-    {
-        std::lock_guard<std::mutex> lock(StateMutex);
-
-        if (CoroutineTerminated)
-            return false; // Coroutine has already finished
-
-        CoroutineRunning = true;
-        StateChange.notify_all();
-    }
-
-    // Wait for coroutine to stop
-    while (1)
-    {
-        std::unique_lock<std::mutex> lock(StateMutex);
-        if (!CoroutineRunning)
-        {
-            if (CoroutineTerminated)
-                return false; // Coroutine finished
-            break;
-        }
-        StateChange.wait(lock);
-    }
-
-    return true;
-}
-
-// Yield the current coroutine (can only be called from a coroutine)
-void ImGuiTestCoroutine::Yield()
-{
-    IM_ASSERT(GThreadCoroutine); // This can only be called from a coroutine thread
-
-    GThreadCoroutine->YieldInternal();
-}
-
-// Yield the current coroutine (internal implementation)
-void ImGuiTestCoroutine::YieldInternal()
-{
-    // Flag that we are not running any more
-    {
-        std::lock_guard<std::mutex> lock(StateMutex);
-
-        CoroutineRunning = false;
-        StateChange.notify_all();
-    }
-
-    // Wait until we get started up again
-    while (1)
-    {
-        std::unique_lock<std::mutex> lock(StateMutex);
-        if (CoroutineRunning)
-        {
-            break;
-        }
-        StateChange.wait(lock);
-    }
 }
 
 //-------------------------------------------------------------------------
