@@ -309,6 +309,7 @@ bool                ImGuiTestEngine_IsRunningTests(ImGuiTestEngine* engine);
 bool                ImGuiTestEngine_IsRunningTest(ImGuiTestEngine* engine, ImGuiTest* test);
 void                ImGuiTestEngine_CalcSourceLineEnds(ImGuiTestEngine* engine);
 void                ImGuiTestEngine_PrintResultSummary(ImGuiTestEngine* engine);
+void                ImGuiTestEngine_StopTestQueueCoroutine(ImGuiTestEngine* engine);
 void                ImGuiTestEngine_GetResult(ImGuiTestEngine* engine, int& count_tested, int& success_count);
 
 // Function pointers for IO structure

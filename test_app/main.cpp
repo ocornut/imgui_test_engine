@@ -391,13 +391,16 @@ int main(int argc, char** argv)
         MainLoopNull();
 
     // Print results
-    int count_tested = 0;
-    int count_success = 0;
-    ImGuiTestEngine_GetResult(g_App.TestEngine, count_tested, count_success);
-    ImGuiTestEngine_PrintResultSummary(g_App.TestEngine);
     ImGuiTestAppErrorCode error_code = ImGuiTestAppErrorCode_Success;
-    if (count_tested != count_success)
-        error_code = ImGuiTestAppErrorCode_TestFailed;
+    if (!g_App.Quit)
+    {
+        int count_tested = 0;
+        int count_success = 0;
+        ImGuiTestEngine_GetResult(g_App.TestEngine, count_tested, count_success);
+        ImGuiTestEngine_PrintResultSummary(g_App.TestEngine);
+        if (count_tested != count_success)
+            error_code = ImGuiTestAppErrorCode_TestFailed;
+    }
 
     // Shutdown
     // We shutdown the Dear ImGui context _before_ the test engine context, so .ini data may be saved.
