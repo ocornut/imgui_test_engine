@@ -6,7 +6,7 @@
 EXE = imgui_test_app
 IMGUI_PATH = ../../imgui
 SOURCES = main.cpp
-SOURCES += ../imgui_capture_tool.cpp ../imgui_te_core.cpp ../imgui_te_util.cpp ../imgui_tests.cpp ../imgui_te_context.cpp ../backends.cpp
+SOURCES += ../imgui_capture_tool.cpp ../imgui_te_core.cpp ../imgui_te_util.cpp ../imgui_tests.cpp ../imgui_te_context.cpp ../coroutine_impl_std_thread.cpp
 SOURCES += $(IMGUI_PATH)/imgui.cpp $(IMGUI_PATH)/imgui_demo.cpp $(IMGUI_PATH)/imgui_draw.cpp $(IMGUI_PATH)/imgui_widgets.cpp
 SOURCES += ../helpers/imgui_app.cpp
 SOURCES += ../libs/Str/Str.cpp
