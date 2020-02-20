@@ -406,3 +406,204 @@ static LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 }
 
 #endif // #ifdef IMGUI_APP_WIN32_DX11
+
+// Used by both SDL and GLFW backends on unixes.
+static bool ImGuiApp_ImplGL3_CaptureFramebuffer(ImGuiApp* app, int x, int y, int w, int h, unsigned int* pixels, void* user_data);
+
+#ifdef IMGUI_APP_SDL_GL3
+
+// Include
+#include "imgui_impl_sdl.h"
+#include "imgui_impl_opengl3.h"
+#include <SDL.h>
+#include <GL/gl3w.h>
+
+#define SDL_HAS_PER_MONITOR_DPI             SDL_VERSION_ATLEAST(2,0,4)
+
+// Data
+struct ImGuiApp_ImplSdlGL3 : public ImGuiApp
+{
+    SDL_Window* window;
+    SDL_GLContext gl_context;
+    const char* glsl_version;
+};
+
+// Forward declarations of helper functions
+static float ImGuiApp_ImplSdl_GetDPI(int display_index)
+{
+#if SDL_HAS_PER_MONITOR_DPI
+    if (display_index >= 0)
+    {
+        float dpi;
+        if (SDL_GetDisplayDPI(display_index, &dpi, NULL, NULL) == 0)
+            return dpi / 96.0f;
+    }
+#endif
+    return 1.0f;
+}
+
+
+// Functions
+static bool ImGuiApp_ImplSdl_CreateWindow(ImGuiApp* app_opaque, const char* window_title, ImVec2 window_size)
+{
+    ImGuiApp_ImplSdlGL3* app = (ImGuiApp_ImplSdlGL3*)app_opaque;
+    // Setup SDL
+    // (Some versions of SDL before <2.0.10 appears to have performance/stalling issues on a minority of Windows systems,
+    // depending on whether SDL_INIT_GAMECONTROLLER is enabled or disabled.. updating to latest version of SDL is recommended!)
+    if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER | SDL_INIT_GAMECONTROLLER) != 0)
+    {
+        printf("Error: %s\n", SDL_GetError());
+        return false;
+    }
+
+    // Decide GL+GLSL versions
+#if __APPLE__
+    // GL 3.2 Core + GLSL 150
+    app->glsl_version = "#version 150";
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, SDL_GL_CONTEXT_FORWARD_COMPATIBLE_FLAG); // Always required on Mac
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 2);
+#else
+    // GL 3.0 + GLSL 130
+    app->glsl_version = "#version 130";
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, 0);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
+#endif
+
+    // Create window with graphics context
+    SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
+    SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
+    SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
+    app->DpiScale = app->DpiAware ? ImGuiApp_ImplSdl_GetDPI(0) : 1.0f;    // Main display scale
+    window_size.x = ImFloor(window_size.x * app->DpiScale);
+    window_size.y = ImFloor(window_size.y * app->DpiScale);
+    SDL_WindowFlags window_flags = (SDL_WindowFlags)(SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI);
+    app->window = SDL_CreateWindow(window_title, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, (int)window_size.x, (int)window_size.y, window_flags);
+    app->gl_context = SDL_GL_CreateContext(app->window);
+    SDL_GL_MakeCurrent(app->window, app->gl_context);
+
+    bool err = gl3wInit() != 0;
+    if (err)
+    {
+        fprintf(stderr, "Failed to initialize OpenGL loader!\n");
+        return false;
+    }
+    return true;
+}
+
+static void ImGuiApp_ImplSdl_InitBackends(ImGuiApp* app_opaque)
+{
+    ImGuiApp_ImplSdlGL3* app = (ImGuiApp_ImplSdlGL3*)app_opaque;
+    ImGui_ImplSDL2_InitForOpenGL(app->window, app->gl_context);
+    ImGui_ImplOpenGL3_Init(app->glsl_version);
+}
+
+static bool ImGuiApp_ImplSdlGL3_NewFrame(ImGuiApp* app_opaque)
+{
+    ImGuiApp_ImplSdlGL3* app = (ImGuiApp_ImplSdlGL3*)app_opaque;
+    // Poll and handle events (inputs, window resize, etc.)
+    // You can read the io.WantCaptureMouse, io.WantCaptureKeyboard flags to tell if dear imgui wants to use your inputs.
+    // - When io.WantCaptureMouse is true, do not dispatch mouse input data to your main application.
+    // - When io.WantCaptureKeyboard is true, do not dispatch keyboard input data to your main application.
+    // Generally you may always pass all inputs to dear imgui, and hide them from your application based on those two flags.
+    SDL_Event event;
+    while (SDL_PollEvent(&event))
+    {
+        ImGui_ImplSDL2_ProcessEvent(&event);
+        if (event.type == SDL_QUIT)
+            return false;
+        else if (event.type == SDL_WINDOWEVENT && event.window.windowID == SDL_GetWindowID(app->window))
+        {
+            if (event.window.event == SDL_WINDOWEVENT_MOVED)
+                app->DpiScale = ImGuiApp_ImplSdl_GetDPI(SDL_GetWindowDisplayIndex(app->window));
+            if (event.window.event == SDL_WINDOWEVENT_CLOSE)
+                return false;
+        }
+    }
+    ImGui_ImplOpenGL3_NewFrame();
+    ImGui_ImplSDL2_NewFrame(app->window);
+    return true;
+}
+
+static void ImGuiApp_ImplSdlGL3_Render(ImGuiApp* app_opaque)
+{
+    ImGuiApp_ImplSdlGL3* app = (ImGuiApp_ImplSdlGL3*)app_opaque;
+    ImGuiIO& io = ImGui::GetIO();
+#ifdef IMGUI_HAS_VIEWPORT
+    if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
+    {
+        SDL_Window* backup_current_window = SDL_GL_GetCurrentWindow();
+        SDL_GLContext backup_current_context = SDL_GL_GetCurrentContext();
+        ImGui::UpdatePlatformWindows();
+        ImGui::RenderPlatformWindowsDefault();
+        SDL_GL_MakeCurrent(backup_current_window, backup_current_context);
+    }
+#endif
+    SDL_GL_SetSwapInterval(app->Vsync ? 1 : 0);
+    glViewport(0, 0, (int)io.DisplaySize.x, (int)io.DisplaySize.y);
+    glClearColor(app->ClearColor.x, app->ClearColor.y, app->ClearColor.z, app->ClearColor.w);
+    glClear(GL_COLOR_BUFFER_BIT);
+    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+    SDL_GL_SwapWindow(app->window);
+}
+
+static void ImGuiApp_ImplSdlGL3_ShutdownCloseWindow(ImGuiApp* app_opaque)
+{
+    ImGuiApp_ImplSdlGL3* app = (ImGuiApp_ImplSdlGL3*)app_opaque;
+    SDL_GL_DeleteContext(app->gl_context);
+    SDL_DestroyWindow(app->window);
+    SDL_Quit();
+}
+
+static void ImGuiApp_ImplSdlGL3_ShutdownBackends(ImGuiApp* app_opaque)
+{
+    ImGuiApp_ImplSdlGL3* app = (ImGuiApp_ImplSdlGL3*)app_opaque;
+    IM_UNUSED(app);
+    ImGui_ImplOpenGL3_Shutdown();
+    ImGui_ImplSDL2_Shutdown();
+}
+
+ImGuiApp* ImGuiApp_ImplSdlGL3_Create()
+{
+    ImGuiApp_ImplSdlGL3* intf = new ImGuiApp_ImplSdlGL3();
+    intf->InitCreateWindow      = ImGuiApp_ImplSdl_CreateWindow;
+    intf->InitBackends          = ImGuiApp_ImplSdl_InitBackends;
+    intf->NewFrame              = ImGuiApp_ImplSdlGL3_NewFrame;
+    intf->Render                = ImGuiApp_ImplSdlGL3_Render;
+    intf->ShutdownCloseWindow   = ImGuiApp_ImplSdlGL3_ShutdownCloseWindow;
+    intf->ShutdownBackends      = ImGuiApp_ImplSdlGL3_ShutdownBackends;
+    intf->CaptureFramebuffer    = ImGuiApp_ImplGL3_CaptureFramebuffer;
+    intf->Destroy               = [](ImGuiApp* app) { delete (ImGuiApp_ImplSdlGL3*)app; };
+    return intf;
+}
+
+#endif // #ifdef IMGUI_APP_SDL_GL3
+
+#if defined(IMGUI_APP_SDL_GL3) || defined(IMGUI_APP_GLFW_GL3)
+static bool ImGuiApp_ImplGL3_CaptureFramebuffer(ImGuiApp* app, int x, int y, int w, int h, unsigned int* pixels, void* user_data)
+{
+    int y2 = (int)ImGui::GetIO().DisplaySize.y - (y + h);
+    glPixelStorei(GL_PACK_ALIGNMENT, 1);
+    glReadPixels(x, y2, w, h, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
+
+    // Flip vertically
+    int comp = 4;
+    int stride = w * comp;
+    unsigned char* line_tmp = new unsigned char[stride];
+    unsigned char* line_a = (unsigned char*)pixels;
+    unsigned char* line_b = (unsigned char*)pixels + (stride * (h - 1));
+    while (line_a < line_b)
+    {
+        memcpy(line_tmp, line_a, stride);
+        memcpy(line_a, line_b, stride);
+        memcpy(line_b, line_tmp, stride);
+        line_a += stride;
+        line_b -= stride;
+    }
+    delete[] line_tmp;
+    return true;
+}
+#endif

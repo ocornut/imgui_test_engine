@@ -3,7 +3,7 @@
 #include "imgui.h"
 #include "imgui_te_core.h"
 
-#if defined(IMGUI_TESTS_BACKEND_WIN32_DX11) || defined(IMGUI_TESTS_BACKEND_SDL_GL3)
+#if defined(IMGUI_APP_WIN32_DX11) || defined(IMGUI_APP_SDL_GL3)
 static const bool DEFAULT_OPT_GUI = true;
 #else
 static const bool DEFAULT_OPT_GUI = false;

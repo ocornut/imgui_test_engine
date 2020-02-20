@@ -23,7 +23,7 @@ ifeq ($(HAS_SDL2), 1)
 	LIBS = $(shell pkg-config --libs sdl2)
 	CFLAGS += $(shell pkg-config --cflags sdl2)
 	CFLAGS += -I$(IMGUI_PATH)/examples/libs/gl3w
-	CFLAGS += -DIMGUI_TESTS_BACKEND_SDL_GL3 -DIMGUI_IMPL_OPENGL_LOADER_GL3W
+	CFLAGS += -DIMGUI_APP_SDL_GL3 -DIMGUI_IMPL_OPENGL_LOADER_GL3W
 	SOURCES += $(IMGUI_PATH)/examples/imgui_impl_opengl3.cpp $(IMGUI_PATH)/examples/imgui_impl_sdl.cpp $(IMGUI_PATH)/examples/libs/gl3w/GL/gl3w.c
 endif
 

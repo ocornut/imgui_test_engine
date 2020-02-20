@@ -35,4 +35,6 @@ ImGuiApp*     ImGuiApp_ImplNull_Create();
 
 #ifdef IMGUI_APP_WIN32_DX11
 ImGuiApp*     ImGuiApp_ImplWin32DX11_Create();
+#elif defined(IMGUI_APP_SDL_GL3)
+ImGuiApp*     ImGuiApp_ImplSdlGL3_Create();
 #endif

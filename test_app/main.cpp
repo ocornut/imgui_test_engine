@@ -324,6 +324,9 @@ int main(int argc, char** argv)
 #ifdef _WIN32
         g_App.AppWindow = ImGuiApp_ImplWin32DX11_Create();
         g_App.AppWindow->DpiAware = true;
+#elif IMGUI_APP_SDL_GL3
+        g_App.AppWindow = ImGuiApp_ImplSdlGL3_Create();
+        g_App.AppWindow->DpiAware = true;
 #endif
     }
     if (g_App.AppWindow == NULL)
