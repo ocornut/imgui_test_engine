@@ -351,6 +351,7 @@ struct ImGuiTestEngineIO
     bool                        ConfigLogToTTY = false;
     bool                        ConfigTakeFocusBackAfterTests = true;
     bool                        ConfigNoThrottle = false;       // Disable vsync for performance measurement
+    float                       DpiScale = 1.0f;
     float                       MouseSpeed = 800.0f;            // Mouse speed (pixel/second) when not running in fast mode
     float                       MouseWobble = 0.25f;            // How much wobble to apply to the mouse (pixels per pixel of move distance) when not running in fast mode
     float                       ScrollSpeed = 1600.0f;          // Scroll speed (pixel/second) when not running in fast mode

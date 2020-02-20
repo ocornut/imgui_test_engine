@@ -231,10 +231,13 @@ enum ImGuiTestAppErrorCode
     ImGuiTestAppErrorCode_TestFailed = 2
 };
 
-static void LoadFonts()
+static void LoadFonts(float dpi_scale)
 {
     ImGuiIO& io = ImGui::GetIO();
-    io.Fonts->AddFontDefault();
+
+    ImFontConfig cfg;
+    cfg.SizePixels = 13.0f * dpi_scale;
+    io.Fonts->AddFontDefault(&cfg);
     //ImFontConfig cfg;
     //cfg.RasterizerMultiply = 1.1f;
 
@@ -252,12 +255,12 @@ static void LoadFonts()
 
     if (!base_font_dir.empty())
     {
-        io.Fonts->AddFontFromFileTTF(Str64f("%s/%s", base_font_dir.c_str(), "NotoSans-Regular.ttf").c_str(), 16.0f);
-        io.Fonts->AddFontFromFileTTF(Str64f("%s/%s", base_font_dir.c_str(), "Roboto-Medium.ttf").c_str(), 16.0f);
-        //io.Fonts->AddFontFromFileTTF(Str64f("%s/%s", base_font_dir.c_str(), "RobotoMono-Regular.ttf").c_str(), 16.0f, &cfg);
-        //io.Fonts->AddFontFromFileTTF(Str64f("%s/%s", base_font_dir.c_str(), "Cousine-Regular.ttf").c_str(), 15.0f);
-        //io.Fonts->AddFontFromFileTTF(Str64f("%s/%s", base_font_dir.c_str(), "DroidSans.ttf").c_str(), 16.0f);
-        //io.Fonts->AddFontFromFileTTF(Str64f("%s/%s", base_font_dir.c_str(), "ProggyTiny.ttf").c_str(), 10.0f);
+        io.Fonts->AddFontFromFileTTF(Str64f("%s/%s", base_font_dir.c_str(), "NotoSans-Regular.ttf").c_str(), 16.0f * dpi_scale);
+        io.Fonts->AddFontFromFileTTF(Str64f("%s/%s", base_font_dir.c_str(), "Roboto-Medium.ttf").c_str(), 16.0f * dpi_scale);
+        //io.Fonts->AddFontFromFileTTF(Str64f("%s/%s", base_font_dir.c_str(), "RobotoMono-Regular.ttf").c_str(), 16.0f * dpi_scale, &cfg);
+        //io.Fonts->AddFontFromFileTTF(Str64f("%s/%s", base_font_dir.c_str(), "Cousine-Regular.ttf").c_str(), 15.0f * dpi_scale);
+        //io.Fonts->AddFontFromFileTTF(Str64f("%s/%s", base_font_dir.c_str(), "DroidSans.ttf").c_str(), 16.0f * dpi_scale);
+        //io.Fonts->AddFontFromFileTTF(Str64f("%s/%s", base_font_dir.c_str(), "ProggyTiny.ttf").c_str(), 10.0f * dpi_scale);
         //IM_ASSERT(font != NULL);
     }
     else
@@ -315,15 +318,12 @@ int main(int argc, char** argv)
     //io.ConfigDockingTabBarOnSingleWindows = true;
 #endif
 
-    // Load Fonts
-    LoadFonts();
-
     // Creates window
     if (g_App.OptGUI)
     {
 #ifdef _WIN32
         g_App.AppWindow = ImGuiApp_ImplWin32DX11_Create();
-        g_App.AppWindow->DpiAware = false;
+        g_App.AppWindow->DpiAware = true;
 #endif
     }
     if (g_App.AppWindow == NULL)
@@ -397,6 +397,11 @@ int main(int argc, char** argv)
     ImGuiApp* app_window = g_App.AppWindow;
     app_window->InitCreateWindow(app_window, "Dear ImGui: Test Engine", ImVec2(1440, 900));
     app_window->InitBackends(app_window);
+
+    // Load fonts, Set DPI scale
+    LoadFonts(app_window->DpiScale);
+    ImGui::GetStyle().ScaleAllSizes(app_window->DpiScale);
+    test_io.DpiScale = app_window->DpiScale;
 
     // Main loop
     bool aborted = false;

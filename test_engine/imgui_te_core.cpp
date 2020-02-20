@@ -1315,7 +1315,7 @@ static void DrawTestLog(ImGuiTestEngine* e, ImGuiTest* test, bool is_interactive
 
     const char* text = test->TestLog.Buffer.begin();
     const char* text_end = test->TestLog.Buffer.end();
-    ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(6.0f, 2.0f));
+    ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(6.0f, 2.0f) * e->IO.DpiScale);
     ImVector<ImGuiTestLogLineInfo>& line_info_vector = test->Status == ImGuiTestStatus_Error ? log->LineInfoError : log->LineInfo;
     ImGuiListClipper clipper;
     clipper.Begin(line_info_vector.Size);
@@ -1382,8 +1382,8 @@ void    ImGuiTestEngine_ShowTestGroup(ImGuiTestEngine* engine, ImGuiTestGroup gr
 
     if (ImGui::BeginChild("Tests", ImVec2(0, 0)))
     {
-        ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(6, 3));
-        ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(4, 1));
+        ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(6, 3) * engine->IO.DpiScale);
+        ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(4, 1) * engine->IO.DpiScale);
         for (int n = 0; n < engine->TestsAll.Size; n++)
         {
             ImGuiTest* test = engine->TestsAll[n];
@@ -1600,11 +1600,11 @@ void    ImGuiTestEngine_ShowTestWindow(ImGuiTestEngine* engine, bool* p_open)
     ImGui::SameLine();
     ImGui::Checkbox("Refocus", &engine->IO.ConfigTakeFocusBackAfterTests); HelpTooltip("Set focus back to Test window after running tests.");
     ImGui::SameLine();
-    ImGui::SetNextItemWidth(60);
+    ImGui::SetNextItemWidth(60 * engine->IO.DpiScale);
     if (ImGui::DragInt("Verbose", (int*)&engine->IO.ConfigVerboseLevel, 0.1f, 0, ImGuiTestVerboseLevel_COUNT - 1, ImGuiTestEngine_GetVerboseLevelName(engine->IO.ConfigVerboseLevel)))
         engine->IO.ConfigVerboseLevelOnError = engine->IO.ConfigVerboseLevel;
     ImGui::SameLine();
-    ImGui::SetNextItemWidth(30);
+    ImGui::SetNextItemWidth(30 * engine->IO.DpiScale);
     ImGui::DragInt("Perf Stress Amount", &engine->IO.PerfStressAmount, 0.1f, 1, 20); HelpTooltip("Increase workload of performance tests (higher means longer run).");
     ImGui::PopStyleVar();
     ImGui::Separator();
@@ -1694,10 +1694,11 @@ void    ImGuiTestEngine_ShowTestWindow(ImGuiTestEngine* engine, bool* p_open)
             ImGui::Separator();
 
             ImGui::Text("Tools:");
+            ImGui::DragFloat("DpiScale", &engine->IO.DpiScale, 0.005f, 0.0f, 0.0f, "%.2f");
             ImGui::Checkbox("Capture Tool", &engine->CaptureTool.Visible);
             ImGui::Checkbox("Slow down whole app", &engine->ToolSlowDown);
             ImGui::SameLine();
-            ImGui::SetNextItemWidth(70);
+            ImGui::SetNextItemWidth(70 * engine->IO.DpiScale);
             ImGui::SliderInt("##ms", &engine->ToolSlowDownMs, 0, 400, "%d ms");
 
             ImGui::Separator();
