@@ -9,8 +9,8 @@
 // Typical setup
 //-----------------------------------------------------------------------------------
 
-#define IMGUI_FONTS_FONTAWESOME4_IMPLEMENTATION
-#include "../imgui_dev/helpers/imgui_debug_fontawesome.h"
+#define IMGUI_FONTAWESOME4_IMPLEMENTATION
+#include "../imgui_dev/helpers/imgui_fontawesome4.h"
 
 then:
 
@@ -33,10 +33,10 @@ ImGui::Text("Play " ICON_FA_MUSIC);
 // Implementations
 //-----------------------------------------------------------------------------------
 
-#include "IconsFontAwesome4_c.h"
-#include "imgui_data_fontawesome4.h"
+#include "IconsFontAwesome4_c.h"        // Codepoint headers
+#include "imgui_fontawesome4_data.h"    // TTF data
 
-// define IMGUI_FONTS_FONTAWESOME4_IMPLEMENTATION before including imgui_debug.h in one .cpp file
+// define IMGUI_FONTAWESOME4_IMPLEMENTATION before including imgui_debug.h in one .cpp file
 // ImGui::Text(ICON_FA_ARROWS_H " New Horizontal divider");
 // ImGui::Text(ICON_FA_ARROWS_V " New Vertical divider");
 static inline ImFont* DebugMergeFontAwesome4(float size)

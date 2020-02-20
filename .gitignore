@@ -22,10 +22,10 @@ test_app/Debug/*
 test_app/Release/*
 test_app/x64/*
 test_app/test_app
-sample_editor/build/*
-sample_editor/Debug/*
-sample_editor/Release/*
-sample_editor/x64/*
+editor_demo/build/*
+editor_demo/Debug/*
+editor_demo/Release/*
+editor_demo/x64/*
 
 ## Visual Studio artifacts
 .vs/*

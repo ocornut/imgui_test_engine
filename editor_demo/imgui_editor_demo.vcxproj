@@ -21,7 +21,7 @@
   <PropertyGroup Label="Globals">
     <ProjectGuid>{C007452B-1817-4854-9F0C-5900527099D8}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
-    <RootNamespace>imgui_sample_editor</RootNamespace>
+    <RootNamespace>imgui_editor_demo</RootNamespace>
     <WindowsTargetPlatformVersion>8.1</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />

@@ -7,7 +7,7 @@
 
 void GetFontAwesomeCompressedFontDataTTF(const void** data, unsigned int* size);
 
-#ifdef IMGUI_FONTS_FONTAWESOME4_IMPLEMENTATION
+#ifdef IMGUI_FONTAWESOME4_IMPLEMENTATION
  
 // File: '..\data\fonts\fontawesome-webfont.ttf' (122092 bytes)
 // Exported using binary_to_compressed_c.cpp
@@ -1908,10 +1908,9 @@ static const unsigned int font_awesome_4_webfont_compressed_data[90776/4] =
     0x55cec6fa, 0x0000002d, 
 };
 
-
 void GetFontAwesomeCompressedFontDataTTF(const void** data, unsigned int* size)
 {
     *data = font_awesome_4_webfont_compressed_data;
     *size = font_awesome_4_webfont_compressed_size;
 }
-#endif // IMGUI_FONTS_FONTAWESOME4_IMPLEMENTATION 
+#endif // IMGUI_FONTAWESOME4_IMPLEMENTATION 

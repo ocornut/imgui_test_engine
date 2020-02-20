@@ -53,7 +53,7 @@ int main(int argc, char** argv)
 #endif
 
     // Setup application
-    app->InitCreateWindow(app, "Dear ImGui: Sample Editor", ImVec2(1600, 1000));
+    app->InitCreateWindow(app, "Dear ImGui: Editor Demo", ImVec2(1600, 1000));
     app->InitBackends(app);
     app->ClearColor = ImVec4(0.021f, 0.337f, 0.253f, 1.000f);
 
@@ -92,7 +92,7 @@ int main(int argc, char** argv)
             }
             if (ImGui::BeginMenu("Help"))
             {
-                if (ImGui::MenuItem("About Sample Editor", ""))
+                if (ImGui::MenuItem("About Editor Demo", ""))
                 {
                 }
                 ImGui::EndMenu();
@@ -100,7 +100,7 @@ int main(int argc, char** argv)
             ImGui::EndMainMenuBar();
         }
 
-        ImGui::Begin("Dear ImGui Sample Editor");
+        ImGui::Begin("Editor Demo");
         ImGui::Text(ICON_FA_SEARCH " Search");
         ImGui::ColorEdit4("ClearColor", &app->ClearColor.x);
         ImGui::End();
