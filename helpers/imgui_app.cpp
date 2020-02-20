@@ -582,6 +582,190 @@ ImGuiApp* ImGuiApp_ImplSdlGL3_Create()
 
 #endif // #ifdef IMGUI_APP_SDL_GL3
 
+#ifdef IMGUI_APP_GLFW_GL3
+
+// Include
+#include "imgui_impl_glfw.h"
+#include "imgui_impl_opengl3.h"
+#if _WIN32
+#include "imgui_impl_win32.cpp"
+#endif
+#define GLFW_INCLUDE_NONE
+#include <GLFW/glfw3.h>
+#include <GL/gl3w.h>
+
+#define GLFW_HAS_PER_MONITOR_DPI      (GLFW_VERSION_MAJOR * 1000 + GLFW_VERSION_MINOR * 100 >= 3300) // 3.3+ glfwGetMonitorContentScale
+
+// Data
+struct ImGuiApp_ImplGlfwGL3 : public ImGuiApp
+{
+    GLFWwindow* window;
+    // Glfw_GLContext gl_context;
+    const char* glsl_version;
+};
+
+// Forward declarations of helper functions
+static float ImGuiApp_ImplGlfw_GetDPI(GLFWmonitor* monitor)
+{
+#if GLFW_HAS_PER_MONITOR_DPI
+    float x_scale, y_scale;
+    glfwGetMonitorContentScale(monitor, &x_scale, &y_scale);
+    return x_scale;
+#else
+    return 1.0f;
+#endif
+}
+
+static float ImGuiApp_ImplGlfw_GetDPI(GLFWwindow* window)
+{
+    int window_x, window_y, window_width, window_height;
+    glfwGetWindowPos(window, &window_x, &window_y);
+    glfwGetWindowSize(window, &window_width, &window_height);
+    // Find window center
+    window_x += (int)((float)window_width * 0.5f);
+    window_y += (int)((float)window_height * 0.5f);
+    int num_monitors = 0;
+    GLFWmonitor** monitors = glfwGetMonitors(&num_monitors);
+    while (num_monitors-- > 0)
+    {
+        GLFWmonitor* monitor = *monitors;
+        int monitor_x, monitor_y, monitor_width, monitor_height;
+        glfwGetMonitorWorkarea(monitor, &monitor_x, &monitor_y, &monitor_width, &monitor_height);
+        if (monitor_x <= window_x && window_x < (monitor_x + monitor_width) && monitor_y <= window_y && window_y < (monitor_y + monitor_height))
+            return ImGuiApp_ImplGlfw_GetDPI(monitor);
+        monitors++;
+    }
+    return 1.0f;
+}
+
+static void ImGuiApp_ImplGlfw_ErrorCallback(int error, const char* description)
+{
+    fprintf(stderr, "Glfw Error %d: %s\n", error, description);
+}
+
+static bool ImGuiApp_ImplGlfw_CreateWindow(ImGuiApp* app_opaque, const char* window_title, ImVec2 window_size)
+{
+    ImGuiApp_ImplGlfwGL3* app = (ImGuiApp_ImplGlfwGL3*)app_opaque;
+#if GLFW_HAS_PER_MONITOR_DPI && _WIN32
+    if (app->DpiAware)
+        ImGui_ImplWin32_EnableDpiAwareness();
+#endif
+    // Setup window
+    glfwSetErrorCallback(ImGuiApp_ImplGlfw_ErrorCallback);
+    if (!glfwInit())
+        return false;
+
+    // Decide GL+GLSL versions
+#if __APPLE__
+    // GL 3.2 + GLSL 150
+    app->glsl_version = "#version 150";
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 2);
+    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);  // 3.2+ only
+    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);            // Required on Mac
+#else
+    // GL 3.0 + GLSL 130
+    app->glsl_version = "#version 130";
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
+    //glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);  // 3.2+ only
+    //glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);            // 3.0+ only
+#endif
+    // Create window with graphics context
+    GLFWmonitor* primaryMonitor = glfwGetPrimaryMonitor();
+    float dpi_scale = app->DpiAware ? ImGuiApp_ImplGlfw_GetDPI(primaryMonitor) : 1.0f;
+    window_size.x = ImFloor(window_size.x * app->DpiScale);
+    window_size.y = ImFloor(window_size.y * app->DpiScale);
+    app->window = glfwCreateWindow((int)window_size.x, (int)window_size.y, window_title, NULL, NULL);
+    if (app->window == NULL)
+        return false;
+    glfwMakeContextCurrent(app->window);
+    // Initialize OpenGL loader
+    bool err = gl3wInit() != 0;
+    if (err)
+    {
+        fprintf(stderr, "Failed to initialize OpenGL loader!\n");
+        return false;
+    }
+    return true;
+}
+
+static void ImGuiApp_ImplGlfw_InitBackends(ImGuiApp* app_opaque)
+{
+    ImGuiApp_ImplGlfwGL3* app = (ImGuiApp_ImplGlfwGL3*)app_opaque;
+    ImGui_ImplGlfw_InitForOpenGL(app->window, true);
+    ImGui_ImplOpenGL3_Init(app->glsl_version);
+}
+
+static bool ImGuiApp_ImplGlfwGL3_NewFrame(ImGuiApp* app_opaque)
+{
+    ImGuiApp_ImplGlfwGL3* app = (ImGuiApp_ImplGlfwGL3*)app_opaque;
+    // Poll and handle events (inputs, window resize, etc.)
+    // You can read the io.WantCaptureMouse, io.WantCaptureKeyboard flags to tell if dear imgui wants to use your inputs.
+    // - When io.WantCaptureMouse is true, do not dispatch mouse input data to your main application.
+    // - When io.WantCaptureKeyboard is true, do not dispatch keyboard input data to your main application.
+    // Generally you may always pass all inputs to dear imgui, and hide them from your application based on those two flags.
+    glfwPollEvents();
+    if (glfwWindowShouldClose(app->window))
+        return false;
+    app->DpiScale = ImGuiApp_ImplGlfw_GetDPI(app->window);
+    ImGui_ImplOpenGL3_NewFrame();
+    ImGui_ImplGlfw_NewFrame();
+    return true;
+}
+
+static void ImGuiApp_ImplGlfwGL3_Render(ImGuiApp* app_opaque)
+{
+    ImGuiApp_ImplGlfwGL3* app = (ImGuiApp_ImplGlfwGL3*)app_opaque;
+    ImGuiIO& io = ImGui::GetIO();
+#ifdef IMGUI_HAS_VIEWPORT
+    if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
+    {
+        GLFWwindow* backup_current_context = glfwGetCurrentContext();
+        ImGui::UpdatePlatformWindows();
+        ImGui::RenderPlatformWindowsDefault();
+        glfwMakeContextCurrent(backup_current_context);
+    }
+#endif
+    glfwSwapInterval(app->Vsync ? 1 : 0);
+    glViewport(0, 0, (int)io.DisplaySize.x, (int)io.DisplaySize.y);
+    glClearColor(app->ClearColor.x, app->ClearColor.y, app->ClearColor.z, app->ClearColor.w);
+    glClear(GL_COLOR_BUFFER_BIT);
+    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+    glfwSwapBuffers(app->window);
+}
+
+static void ImGuiApp_ImplGlfwGL3_ShutdownCloseWindow(ImGuiApp* app_opaque)
+{
+    ImGuiApp_ImplGlfwGL3* app = (ImGuiApp_ImplGlfwGL3*)app_opaque;
+    glfwDestroyWindow(app->window);
+    glfwTerminate();
+}
+
+static void ImGuiApp_ImplGlfwGL3_ShutdownBackends(ImGuiApp* app_opaque)
+{
+    ImGuiApp_ImplGlfwGL3* app = (ImGuiApp_ImplGlfwGL3*)app_opaque;
+    IM_UNUSED(app);
+    ImGui_ImplOpenGL3_Shutdown();
+    ImGui_ImplGlfw_Shutdown();
+}
+
+ImGuiApp* ImGuiApp_ImplGlfwGL3_Create()
+{
+    ImGuiApp_ImplGlfwGL3* intf = new ImGuiApp_ImplGlfwGL3();
+    intf->InitCreateWindow      = ImGuiApp_ImplGlfw_CreateWindow;
+    intf->InitBackends          = ImGuiApp_ImplGlfw_InitBackends;
+    intf->NewFrame              = ImGuiApp_ImplGlfwGL3_NewFrame;
+    intf->Render                = ImGuiApp_ImplGlfwGL3_Render;
+    intf->ShutdownCloseWindow   = ImGuiApp_ImplGlfwGL3_ShutdownCloseWindow;
+    intf->ShutdownBackends      = ImGuiApp_ImplGlfwGL3_ShutdownBackends;
+    intf->CaptureFramebuffer    = ImGuiApp_ImplGL3_CaptureFramebuffer;
+    intf->Destroy               = [](ImGuiApp* app) { delete (ImGuiApp_ImplGlfwGL3*)app; };
+    return intf;
+}
+
+#endif // #ifdef IMGUI_APP_GLFW_GL3
+
 #if defined(IMGUI_APP_SDL_GL3) || defined(IMGUI_APP_GLFW_GL3)
 static bool ImGuiApp_ImplGL3_CaptureFramebuffer(ImGuiApp* app, int x, int y, int w, int h, unsigned int* pixels, void* user_data)
 {
