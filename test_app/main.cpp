@@ -267,6 +267,7 @@ static void LoadFonts(float dpi_scale)
     {
         fprintf(stderr, "Font directory not found. Fonts not loaded.\n");
     }
+    io.Fonts->Build();
 }
 
 int main(int argc, char** argv)
