@@ -1131,7 +1131,7 @@ void    ImGuiTestContext::ItemAction(ImGuiTestAction action, ImGuiTestRef ref, v
     if (action == ImGuiTestAction_Open)
     {
         IM_ASSERT(action_arg == NULL); // Unused
-        if (item && (item->StatusFlags & ImGuiItemStatusFlags_Opened) == 0)
+        if ((item->StatusFlags & ImGuiItemStatusFlags_Opened) == 0)
         {
             item->RefCount++;
             MouseMove(ref);
@@ -1156,7 +1156,7 @@ void    ImGuiTestContext::ItemAction(ImGuiTestAction action, ImGuiTestRef ref, v
     if (action == ImGuiTestAction_Close)
     {
         IM_ASSERT(action_arg == NULL); // Unused
-        if (item && (item->StatusFlags & ImGuiItemStatusFlags_Opened) != 0)
+        if ((item->StatusFlags & ImGuiItemStatusFlags_Opened) != 0)
         {
             item->RefCount++;
             ItemClick(ref);

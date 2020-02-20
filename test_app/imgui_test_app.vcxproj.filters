@@ -66,9 +66,6 @@
     <ClInclude Include="test_app.h">
       <Filter>test_app</Filter>
     </ClInclude>
-    <ClInclude Include="backends.h">
-      <Filter>test_app</Filter>
-    </ClInclude>
     <ClInclude Include="imconfig_test_app.h">
       <Filter>test_app</Filter>
     </ClInclude>
@@ -79,6 +76,9 @@
       <Filter>imgui_backends</Filter>
     </ClInclude>
     <ClInclude Include="..\helpers\imgui_app.h">
+      <Filter>imgui_backends</Filter>
+    </ClInclude>
+    <ClInclude Include="..\helpers\imgui_coroutine_impl_stdthread.h">
       <Filter>imgui_backends</Filter>
     </ClInclude>
   </ItemGroup>
@@ -116,9 +116,6 @@
     <ClCompile Include="..\libs\Str\Str.cpp">
       <Filter>libs\Str</Filter>
     </ClCompile>
-    <ClCompile Include="backends.cpp">
-      <Filter>test_app</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\imgui\examples\imgui_impl_dx11.cpp">
       <Filter>imgui_backends</Filter>
     </ClCompile>
@@ -126,6 +123,9 @@
       <Filter>imgui_backends</Filter>
     </ClCompile>
     <ClCompile Include="..\helpers\imgui_app.cpp">
+      <Filter>imgui_backends</Filter>
+    </ClCompile>
+    <ClCompile Include="..\helpers\imgui_coroutine_impl_stdthread.cpp">
       <Filter>imgui_backends</Filter>
     </ClCompile>
   </ItemGroup>

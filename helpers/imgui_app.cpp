@@ -13,6 +13,9 @@ Index of this file:
 
 // [SECTION] ImGuiApp Implementation: Null
 // [SECTION] ImGuiApp Implementation: Win32 + DX11
+// [SECTION] ImGuiApp Implementation: SDL + OpenGL3
+// [SECTION] ImGuiApp Implementation: GLFW + OpenGL3
+// [SECTION] ImGuiApp Implementation: OpenGL3 capture
 
 */
 
@@ -32,6 +35,7 @@ static bool ImGuiApp_ImplNull_CreateWindow(ImGuiApp* app, const char*, ImVec2 si
     IM_UNUSED(app);
     ImGuiIO& io = ImGui::GetIO();
     io.DisplaySize = size;
+    //io.Fonts->Build();
     for (int n = 0; n < ImGuiKey_COUNT; n++)
         io.KeyMap[n] = n;
 
@@ -49,6 +53,12 @@ static bool ImGuiApp_ImplNull_NewFrame(ImGuiApp* app_opaque)
 {
     ImGuiApp_ImplNull* app = (ImGuiApp_ImplNull*)app_opaque;
     ImGuiIO& io = ImGui::GetIO();
+
+    // Dummy build
+    //unsigned char* pixels = NULL;
+    //int width = 0;
+    //int height = 0;
+    //io.Fonts->GetTexDataAsAlpha8(&pixels, &width, &height);
 
     ImU64 time = ImGetTimeInMicroseconds();
     if (app->LastTime == 0)
@@ -406,7 +416,11 @@ static LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 
 #endif // #ifdef IMGUI_APP_WIN32_DX11
 
-// Used by both SDL and GLFW backends on unixes.
+//-----------------------------------------------------------------------------
+// [SECTION] ImGuiApp Implementation: SDL + OpenGL3
+//-----------------------------------------------------------------------------
+
+// Used by both SDL and GLFW backends.
 static bool ImGuiApp_ImplGL3_CaptureFramebuffer(ImGuiApp* app, int x, int y, int w, int h, unsigned int* pixels, void* user_data);
 
 #ifdef IMGUI_APP_SDL_GL3
@@ -580,6 +594,10 @@ ImGuiApp* ImGuiApp_ImplSdlGL3_Create()
 }
 
 #endif // #ifdef IMGUI_APP_SDL_GL3
+
+//-----------------------------------------------------------------------------
+// [SECTION] ImGuiApp Implementation: GLFW + OpenGL3
+//-----------------------------------------------------------------------------
 
 #ifdef IMGUI_APP_GLFW_GL3
 
@@ -765,6 +783,10 @@ ImGuiApp* ImGuiApp_ImplGlfwGL3_Create()
 
 #endif // #ifdef IMGUI_APP_GLFW_GL3
 
+//-----------------------------------------------------------------------------
+// [SECTION] ImGuiApp Implementation: OpenGL3 capture
+//-----------------------------------------------------------------------------
+
 #if defined(IMGUI_APP_SDL_GL3) || defined(IMGUI_APP_GLFW_GL3)
 static bool ImGuiApp_ImplGL3_CaptureFramebuffer(ImGuiApp* app, int x, int y, int w, int h, unsigned int* pixels, void* user_data)
 {
@@ -790,3 +812,4 @@ static bool ImGuiApp_ImplGL3_CaptureFramebuffer(ImGuiApp* app, int x, int y, int
     return true;
 }
 #endif
+

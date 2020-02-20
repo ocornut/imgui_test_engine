@@ -62,9 +62,9 @@ static inline void DebugCrtDumpLeaks()
 #include "imgui_te_util.h"
 #include "imgui_tests.h"
 #include "imgui_capture_tool.h"
-#include "coroutine_impl_std_thread.h"
 #include "test_app.h"
 #include "../helpers/imgui_app.h"
+#include "../helpers/imgui_coroutine_impl_stdthread.h"
 #include <Str/Str.h>
 
 //-------------------------------------------------------------------------
@@ -277,6 +277,10 @@ int main(int argc, char** argv)
 #endif
 
     // Parse command-line arguments
+#if defined(IMGUI_APP_WIN32_DX11) || defined(IMGUI_APP_SDL_GL3) || defined(IMGUI_APP_GLFW_GL3)
+    g_App.OptGUI = true;
+#endif
+
 #ifdef CMDLINE_ARGS
     if (argc == 1)
     {
@@ -322,7 +326,7 @@ int main(int argc, char** argv)
     // Creates window
     if (g_App.OptGUI)
     {
-#ifdef _WIN32
+#ifdef IMGUI_APP_WIN32_DX11
         g_App.AppWindow = ImGuiApp_ImplWin32DX11_Create();
         g_App.AppWindow->DpiAware = true;
 #elif IMGUI_APP_SDL_GL3
@@ -357,10 +361,10 @@ int main(int argc, char** argv)
     test_io.UserData = (void*)&g_App;
     test_io.ScreenCaptureFunc = [](int x, int y, int w, int h, unsigned int* pixels, void* user_data) { ImGuiApp* app = g_App.AppWindow; return app->CaptureFramebuffer(app, x, y, w, h, pixels, user_data); };
 
-    test_io.CoroutineCreateFunc = &ImCoroutineCreate;
-    test_io.CoroutineDestroyFunc = &ImCoroutineDestroy;
-    test_io.CoroutineRunFunc = &ImCoroutineRun;
-    test_io.CoroutineYieldFunc = &ImCoroutineYield;
+    test_io.CoroutineCreateFunc = &Coroutine_ImplStdThread_Create;
+    test_io.CoroutineDestroyFunc = &Coroutine_ImplStdThread_Destroy;
+    test_io.CoroutineRunFunc = &Coroutine_ImplStdThread_Run;
+    test_io.CoroutineYieldFunc = &Coroutine_ImplStdThread_Yield;
 
     // Set up TestEngine context
     RegisterTests(engine);

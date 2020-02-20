@@ -1,6 +1,6 @@
-#include <imgui.h>
-#define IMGUI_DEFINE_MATH_OPERATORS
 #include "test_app.h"
+#include <imgui.h>
+#include "imgui_coroutine_impl_stdthread.h"
 #include <Str/Str.h>
 
 #ifdef _MSC_VER
@@ -16,21 +16,21 @@
 #include <mutex>
 #include <condition_variable>
 
-struct ImGuiTestCoroutineData
+struct Coroutine_ImplStdThreadData
 {
-    std::thread*                Thread;                 // The thread this coroutine is using
-    std::condition_variable     StateChange;            // Condition variable notified when the coroutine state changes
-    std::mutex                  StateMutex;             // Mutex to protect coroutine state
-    bool                        CoroutineRunning;       // Is the coroutine currently running? Lock StateMutex before access and notify StateChange on change
-    bool                        CoroutineTerminated;    // Has the coroutine terminated? Lock StateMutex before access and notify StateChange on change
-    Str64                       Name;                   // The name of this coroutine
+    std::thread*            Thread;                 // The thread this coroutine is using
+    std::condition_variable StateChange;            // Condition variable notified when the coroutine state changes
+    std::mutex              StateMutex;             // Mutex to protect coroutine state
+    bool                    CoroutineRunning;       // Is the coroutine currently running? Lock StateMutex before access and notify StateChange on change
+    bool                    CoroutineTerminated;    // Has the coroutine terminated? Lock StateMutex before access and notify StateChange on change
+    Str64                   Name;                   // The name of this coroutine
 };
 
 // The coroutine executing on the current thread (if it is a coroutine thread)
-static thread_local ImGuiTestCoroutineData* GThreadCoroutine = NULL;
+static thread_local Coroutine_ImplStdThreadData* GThreadCoroutine = NULL;
 
 // The main function for a coroutine thread
-void CoroutineThreadMain(ImGuiTestCoroutineData* data, ImGuiTestCoroutineFunc func, void* ctx)
+void CoroutineThreadMain(Coroutine_ImplStdThreadData* data, ImGuiTestCoroutineFunc func, void* ctx)
 {
     // Set our thread name
     ImThreadSetCurrentThreadDescription(data->Name.c_str());
@@ -43,9 +43,7 @@ void CoroutineThreadMain(ImGuiTestCoroutineData* data, ImGuiTestCoroutineFunc fu
     {
         std::unique_lock<std::mutex> lock(data->StateMutex);
         if (data->CoroutineRunning)
-        {
             break;
-        }
         data->StateChange.wait(lock);
     }
 
@@ -62,9 +60,9 @@ void CoroutineThreadMain(ImGuiTestCoroutineData* data, ImGuiTestCoroutineFunc fu
     }
 }
 
-ImGuiTestCoroutineHandle ImCoroutineCreate(ImGuiTestCoroutineFunc func, const char* name, void* ctx)
+ImGuiTestCoroutineHandle Coroutine_ImplStdThread_Create(ImGuiTestCoroutineFunc func, const char* name, void* ctx)
 {
-    ImGuiTestCoroutineData* data = new ImGuiTestCoroutineData();
+    Coroutine_ImplStdThreadData* data = new Coroutine_ImplStdThreadData();
 
     data->Name = name;
     data->CoroutineRunning = false;
@@ -74,9 +72,9 @@ ImGuiTestCoroutineHandle ImCoroutineCreate(ImGuiTestCoroutineFunc func, const ch
     return (ImGuiTestCoroutineHandle)data;
 }
 
-void ImCoroutineDestroy(ImGuiTestCoroutineHandle handle)
+void Coroutine_ImplStdThread_Destroy(ImGuiTestCoroutineHandle handle)
 {
-    ImGuiTestCoroutineData* data = (ImGuiTestCoroutineData*)handle;
+    Coroutine_ImplStdThreadData* data = (Coroutine_ImplStdThreadData*)handle;
 
     IM_ASSERT(data->CoroutineTerminated); // The coroutine needs to run to termination otherwise it may leak all sorts of things and this will deadlock    
     if (data->Thread)
@@ -92,9 +90,9 @@ void ImCoroutineDestroy(ImGuiTestCoroutineHandle handle)
 }
 
 // Run the coroutine until the next call to Yield(). Returns TRUE if the coroutine yielded, FALSE if it terminated (or had previously terminated)
-bool ImCoroutineRun(ImGuiTestCoroutineHandle handle)
+bool Coroutine_ImplStdThread_Run(ImGuiTestCoroutineHandle handle)
 {
-    ImGuiTestCoroutineData* data = (ImGuiTestCoroutineData*)handle;
+    Coroutine_ImplStdThreadData* data = (Coroutine_ImplStdThreadData*)handle;
 
     // Wake up coroutine thread
     {
@@ -125,11 +123,11 @@ bool ImCoroutineRun(ImGuiTestCoroutineHandle handle)
 }
 
 // Yield the current coroutine (can only be called from a coroutine)
-void ImCoroutineYield()
+void Coroutine_ImplStdThread_Yield()
 {
     IM_ASSERT(GThreadCoroutine); // This can only be called from a coroutine thread
 
-    ImGuiTestCoroutineData* data = GThreadCoroutine;
+    Coroutine_ImplStdThreadData* data = GThreadCoroutine;
 
     // Flag that we are not running any more
     {
@@ -144,9 +142,7 @@ void ImCoroutineYield()
     {
         std::unique_lock<std::mutex> lock(data->StateMutex);
         if (data->CoroutineRunning)
-        {
             break; // Breakpoint here if you want to catch the point where execution of this coroutine resumes
-        }
         data->StateChange.wait(lock);
     }
 }
