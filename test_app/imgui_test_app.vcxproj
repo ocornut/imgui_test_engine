@@ -166,7 +166,6 @@
     <ClInclude Include="..\test_engine\imgui_te_util.h" />
     <ClInclude Include="imconfig_test_app.h" />
     <ClInclude Include="imgui_tests.h" />
-    <ClInclude Include="test_app.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\imgui\examples\imgui_impl_dx11.cpp" />

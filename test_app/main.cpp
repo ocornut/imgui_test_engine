@@ -62,7 +62,6 @@ static inline void DebugCrtDumpLeaks()
 #include "imgui_te_util.h"
 #include "imgui_tests.h"
 #include "imgui_capture_tool.h"
-#include "test_app.h"
 #include "../helpers/imgui_app.h"
 #include "../helpers/imgui_coroutine_impl_stdthread.h"
 #include <Str/Str.h>
@@ -70,6 +69,28 @@ static inline void DebugCrtDumpLeaks()
 //-------------------------------------------------------------------------
 // Test Application
 //-------------------------------------------------------------------------
+
+struct ImGuiApp;
+
+struct TestApp
+{
+    bool                    Quit = false;
+    ImGuiApp*               AppWindow = NULL;
+    ImGuiTestEngine*        TestEngine = NULL;
+    ImU64                   LastTime = 0;
+    ImVec4                  ClearColor = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
+
+    // Command-line options
+    bool                    OptGUI = false;
+    bool                    OptFast = true;
+    ImGuiTestVerboseLevel   OptVerboseLevel = ImGuiTestVerboseLevel_COUNT; // Set in main.cpp
+    ImGuiTestVerboseLevel   OptVerboseLevelOnError = ImGuiTestVerboseLevel_COUNT; // Set in main.cpp
+    bool                    OptNoThrottle = false;
+    bool                    OptPauseOnExit = true;
+    int                     OptStressAmount = 5;
+    char*                   OptFileOpener = NULL;
+    ImVector<char*>         TestsToRun;
+};
 
 TestApp g_App;
 
@@ -328,17 +349,15 @@ int main(int argc, char** argv)
     {
 #ifdef IMGUI_APP_WIN32_DX11
         g_App.AppWindow = ImGuiApp_ImplWin32DX11_Create();
-        g_App.AppWindow->DpiAware = true;
 #elif IMGUI_APP_SDL_GL3
         g_App.AppWindow = ImGuiApp_ImplSdlGL3_Create();
-        g_App.AppWindow->DpiAware = true;
 #elif IMGUI_APP_GLFW_GL3
         g_App.AppWindow = ImGuiApp_ImplGlfwGL3_Create();
-        g_App.AppWindow->DpiAware = true;
 #endif
     }
     if (g_App.AppWindow == NULL)
         g_App.AppWindow = ImGuiApp_ImplNull_Create();
+    g_App.AppWindow->DpiAware = false;
 
     // Create TestEngine context
     IM_ASSERT(g_App.TestEngine == NULL);

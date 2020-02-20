@@ -63,9 +63,6 @@
     <ClInclude Include="..\libs\Str\Str.h">
       <Filter>libs\Str</Filter>
     </ClInclude>
-    <ClInclude Include="test_app.h">
-      <Filter>test_app</Filter>
-    </ClInclude>
     <ClInclude Include="imconfig_test_app.h">
       <Filter>test_app</Filter>
     </ClInclude>
