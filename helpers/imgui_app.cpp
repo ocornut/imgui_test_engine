@@ -342,7 +342,7 @@ static bool CreateDeviceD3D(ImGuiApp_ImplWin32DX11* app)
     sd.BufferCount = 2;
     sd.BufferDesc.Width = 0;
     sd.BufferDesc.Height = 0;
-    sd.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+    sd.BufferDesc.Format = app->SrgbFramebuffer ? DXGI_FORMAT_R8G8B8A8_UNORM_SRGB : DXGI_FORMAT_R8G8B8A8_UNORM;
     sd.BufferDesc.RefreshRate.Numerator = 60;
     sd.BufferDesc.RefreshRate.Denominator = 1;
     sd.Flags = DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH;
@@ -726,6 +726,10 @@ static bool ImGuiApp_ImplGlfwGL3_NewFrame(ImGuiApp* app_opaque)
     if (glfwWindowShouldClose(app->window))
         return false;
     app->DpiScale = ImGuiApp_ImplGlfw_GetDPI(app->window);
+    if (app->SrgbFramebuffer)
+        glEnable(GL_FRAMEBUFFER_SRGB);
+    else
+        glDisable(GL_FRAMEBUFFER_SRGB);
     ImGui_ImplOpenGL3_NewFrame();
     ImGui_ImplGlfw_NewFrame();
     return true;

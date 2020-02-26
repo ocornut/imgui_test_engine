@@ -14,11 +14,12 @@ struct ImVec2;
 
 struct ImGuiApp
 {
-    bool            DpiAware = true;
-    bool            Quit = false;
-    bool            Vsync = true;
-    float           DpiScale = 1.0f;
-    ImVec4          ClearColor = ImVec4(0.0f, 0.0f, 0.0f, 1.0f);
+    bool            DpiAware = true;                                // [In]  InitCreateWindow()
+    bool            SrgbFramebuffer = false;                        // [In]  InitCreateWindow() FIXME-WIP
+    bool            Quit = false;                                   // [In]  NewFrame()
+    float           DpiScale = 1.0f;                                // [Out] InitCreateWindow() / NewFrame()
+    ImVec4          ClearColor = ImVec4(0.0f, 0.0f, 0.0f, 1.0f);    // [In]  Render()
+    bool            Vsync = true;                                   // [Out] Render() 
 
     bool            (*InitCreateWindow)(ImGuiApp* app, const char* window_title, ImVec2 window_size) = NULL;
     void            (*InitBackends)(ImGuiApp* app) = NULL;
