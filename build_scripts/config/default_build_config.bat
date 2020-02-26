@@ -8,6 +8,7 @@
 @rem # CLANG
 @rem Default clang installation dir
 @set CONFIG_CLANG_PATH=C:\Program Files\LLVM\bin
+REM @set CONFIG_CLANG_PATH=C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Tools\Llvm\bin
 
 @rem ###########################################################################
 @rem # MinGW
