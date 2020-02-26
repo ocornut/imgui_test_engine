@@ -1741,6 +1741,77 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         // ctx->ComboClick("Test type/Multiple calls to Text(), not clipped (slow)");
         ctx->WindowClose("");
     };
+
+    auto widgets_overlapping_drop_targets_gui = [](ImGuiTestContext* ctx)
+    {
+        ImGui::Begin("Overlapping Drop Targets", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
+        ImGui::Button("Drag");
+        if (ImGui::BeginDragDropSource())
+        {
+            int value = 0xF00D;
+            ImGui::SetDragDropPayload("value", &value, sizeof(int));
+            ImGui::EndDragDropSource();
+        }
+
+        auto render_big_button = [](ImGuiTestContext* ctx)
+        {
+            ImGui::Button("Big", ImVec2(100, 100));
+            if (ImGui::BeginDragDropTarget())
+            {
+                if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("value"))
+                    ctx->GenericVars.Int1 = 0xBAD;
+                ImGui::EndDragDropTarget();
+            }
+        };
+
+        auto render_small_button = [](ImGuiTestContext* ctx)
+        {
+            ImGui::Button("Small", ImVec2(50, 50));
+            if (ImGui::BeginDragDropTarget())
+            {
+                if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("value"))
+                    ctx->GenericVars.Int1 = *(int*)payload->Data;
+                ImGui::EndDragDropTarget();
+            }
+        };
+
+        if (ctx->Test->ArgVariant == 0)
+        {
+            // Render small button over big one.
+            render_big_button(ctx);
+            ImGui::SetCursorPos(ImGui::GetCursorPos() + ImVec2(25, -75));
+            render_small_button(ctx);
+        }
+        else
+        {
+            // Render small button over small one.
+            ImVec2 pos = ImGui::GetCursorPos();
+            ImGui::SetCursorPos(pos + ImVec2(25, 25));
+            render_small_button(ctx);
+            ImGui::SetCursorPos(pos);
+            render_big_button(ctx);
+        }
+        ImGui::End();
+    };
+    auto widgets_overlapping_drop_targets_test = [](ImGuiTestContext* ctx)
+    {
+        ctx->WindowRef("Overlapping Drop Targets");
+        ctx->MouseMove("Drag");
+        ctx->ItemDragAndDrop("Drag", "Small");
+        IM_CHECK(ctx->GenericVars.Int1 == 0xF00D);
+    };
+
+    // ## Test overlapping drag and drop targets. Small area is on the top.
+    t = REGISTER_TEST("widgets", "widgets_overlapping_drop_targets_1");
+    t->GuiFunc = widgets_overlapping_drop_targets_gui;
+    t->TestFunc = widgets_overlapping_drop_targets_test;
+    t->ArgVariant = 0;
+
+    // ## Test overlapping drag and drop targets. Small area is on the bottom.
+    t = REGISTER_TEST("widgets", "widgets_overlapping_drop_targets_2");
+    t->GuiFunc = widgets_overlapping_drop_targets_gui;
+    t->TestFunc = widgets_overlapping_drop_targets_test;
+    t->ArgVariant = 1;
 }
 
 //-------------------------------------------------------------------------
