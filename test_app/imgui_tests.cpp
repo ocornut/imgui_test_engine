@@ -1457,30 +1457,6 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         IM_CHECK(status.Edited == 1);
     };
 
-    // ## Test ColorEdit basic Drag and Drop
-    t = REGISTER_TEST("widgets", "widgets_coloredit_drag");
-    t->GuiFunc = [](ImGuiTestContext* ctx)
-    {
-        ImGuiTestGenericVars& vars = ctx->GenericVars;
-        ImGui::SetNextWindowSize(ImVec2(300, 200));
-        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
-        ImGui::ColorEdit4("ColorEdit1", &vars.Vec4Array[0].x, ImGuiColorEditFlags_None);
-        ImGui::ColorEdit4("ColorEdit2", &vars.Vec4Array[1].x, ImGuiColorEditFlags_None);
-        ImGui::End();
-    };
-    t->TestFunc = [](ImGuiTestContext* ctx)
-    {
-        ImGuiTestGenericVars& vars = ctx->GenericVars;
-        vars.Vec4Array[0] = ImVec4(1, 0, 0, 1);
-        vars.Vec4Array[1] = ImVec4(0, 1, 0, 1);
-
-        ctx->WindowRef("Test Window");
-
-        IM_CHECK_NE(memcmp(&vars.Vec4Array[0], &vars.Vec4Array[1], sizeof(ImVec4)), 0);
-        ctx->ItemDragAndDrop("ColorEdit1/##ColorButton", "ColorEdit2/##X"); // FIXME-TESTS: Inner items
-        IM_CHECK_EQ(memcmp(&vars.Vec4Array[0], &vars.Vec4Array[1], sizeof(ImVec4)), 0);
-    };
-
     // ## Test that disabled Selectable has an ID but doesn't interfere with navigation
     t = REGISTER_TEST("widgets", "widgets_selectable_disabled");
     t->GuiFunc = [](ImGuiTestContext* ctx)
@@ -1664,6 +1640,30 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         // FIXME-TESTS: If test did not crash - it passed. A better way to check this would be useful.
     };
 
+    // ## Test ColorEdit basic Drag and Drop
+    t = REGISTER_TEST("widgets", "widgets_drag_coloredit");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiTestGenericVars& vars = ctx->GenericVars;
+        ImGui::SetNextWindowSize(ImVec2(300, 200));
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImGui::ColorEdit4("ColorEdit1", &vars.Vec4Array[0].x, ImGuiColorEditFlags_None);
+        ImGui::ColorEdit4("ColorEdit2", &vars.Vec4Array[1].x, ImGuiColorEditFlags_None);
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiTestGenericVars& vars = ctx->GenericVars;
+        vars.Vec4Array[0] = ImVec4(1, 0, 0, 1);
+        vars.Vec4Array[1] = ImVec4(0, 1, 0, 1);
+
+        ctx->WindowRef("Test Window");
+
+        IM_CHECK_NE(memcmp(&vars.Vec4Array[0], &vars.Vec4Array[1], sizeof(ImVec4)), 0);
+        ctx->ItemDragAndDrop("ColorEdit1/##ColorButton", "ColorEdit2/##X"); // FIXME-TESTS: Inner items
+        IM_CHECK_EQ(memcmp(&vars.Vec4Array[0], &vars.Vec4Array[1], sizeof(ImVec4)), 0);
+    };
+
     // ## Test BeginDragDropSource() with NULL id.
     t = REGISTER_TEST("widgets", "widgets_drag_source_null_id");
     struct WidgetDragSourceNullIDData
@@ -1719,6 +1719,56 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         IM_CHECK(user_data.Dropped);
     };
 
+    // ## Test overlapping drag and drop targets. The drag and drop system always prioritize the smaller target.
+    t = REGISTER_TEST("widgets", "widgets_drag_overlapping_targets");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
+
+        ImGui::Button("Drag");
+        if (ImGui::BeginDragDropSource())
+        {
+            int value = 0xF00D;
+            ImGui::SetDragDropPayload("_TEST_VALUE", &value, sizeof(int));
+            ImGui::EndDragDropSource();
+        }
+
+        auto render_button = [](ImGuiTestContext* ctx, const char* name, const ImVec2& pos, const ImVec2& size)
+        {
+            ImGui::SetCursorScreenPos(pos);
+            ImGui::Button(name, size);
+            if (ImGui::BeginDragDropTarget())
+            {
+                if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("_TEST_VALUE"))
+                    ctx->GenericVars.Id = ImGui::GetItemID();
+                ImGui::EndDragDropTarget();
+            }
+        };
+
+        // Render small button over big one
+        ImVec2 pos = ImGui::GetCursorScreenPos();
+        render_button(ctx, "Big1", pos, ImVec2(100, 100));
+        render_button(ctx, "Small1", pos + ImVec2(25, 25), ImVec2(50, 50));
+
+        // Render small button over small one
+        render_button(ctx, "Small2", pos + ImVec2(0, 110) + ImVec2(25, 25), ImVec2(50, 50));
+        render_button(ctx, "Big2", pos + ImVec2(0, 110), ImVec2(100, 100));
+
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ctx->WindowRef("Test Window");
+
+        ctx->GenericVars.Id = 0;
+        ctx->ItemDragAndDrop("Drag", "Small1");
+        IM_CHECK(ctx->GenericVars.Id == ctx->GetID("Small1"));
+
+        ctx->GenericVars.Id = 0;
+        ctx->ItemDragAndDrop("Drag", "Small2");
+        IM_CHECK(ctx->GenericVars.Id == ctx->GetID("Small2"));
+    };
+
     // ## Test long text rendering by TextUnformatted().
     t = REGISTER_TEST("widgets", "widgets_text_unformatted_long");
     t->TestFunc = [](ImGuiTestContext* ctx)
@@ -1741,77 +1791,6 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         // ctx->ComboClick("Test type/Multiple calls to Text(), not clipped (slow)");
         ctx->WindowClose("");
     };
-
-    auto widgets_overlapping_drop_targets_gui = [](ImGuiTestContext* ctx)
-    {
-        ImGui::Begin("Overlapping Drop Targets", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
-        ImGui::Button("Drag");
-        if (ImGui::BeginDragDropSource())
-        {
-            int value = 0xF00D;
-            ImGui::SetDragDropPayload("value", &value, sizeof(int));
-            ImGui::EndDragDropSource();
-        }
-
-        auto render_big_button = [](ImGuiTestContext* ctx)
-        {
-            ImGui::Button("Big", ImVec2(100, 100));
-            if (ImGui::BeginDragDropTarget())
-            {
-                if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("value"))
-                    ctx->GenericVars.Int1 = 0xBAD;
-                ImGui::EndDragDropTarget();
-            }
-        };
-
-        auto render_small_button = [](ImGuiTestContext* ctx)
-        {
-            ImGui::Button("Small", ImVec2(50, 50));
-            if (ImGui::BeginDragDropTarget())
-            {
-                if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("value"))
-                    ctx->GenericVars.Int1 = *(int*)payload->Data;
-                ImGui::EndDragDropTarget();
-            }
-        };
-
-        if (ctx->Test->ArgVariant == 0)
-        {
-            // Render small button over big one.
-            render_big_button(ctx);
-            ImGui::SetCursorPos(ImGui::GetCursorPos() + ImVec2(25, -75));
-            render_small_button(ctx);
-        }
-        else
-        {
-            // Render small button over small one.
-            ImVec2 pos = ImGui::GetCursorPos();
-            ImGui::SetCursorPos(pos + ImVec2(25, 25));
-            render_small_button(ctx);
-            ImGui::SetCursorPos(pos);
-            render_big_button(ctx);
-        }
-        ImGui::End();
-    };
-    auto widgets_overlapping_drop_targets_test = [](ImGuiTestContext* ctx)
-    {
-        ctx->WindowRef("Overlapping Drop Targets");
-        ctx->MouseMove("Drag");
-        ctx->ItemDragAndDrop("Drag", "Small");
-        IM_CHECK(ctx->GenericVars.Int1 == 0xF00D);
-    };
-
-    // ## Test overlapping drag and drop targets. Small area is on the top.
-    t = REGISTER_TEST("widgets", "widgets_overlapping_drop_targets_1");
-    t->GuiFunc = widgets_overlapping_drop_targets_gui;
-    t->TestFunc = widgets_overlapping_drop_targets_test;
-    t->ArgVariant = 0;
-
-    // ## Test overlapping drag and drop targets. Small area is on the bottom.
-    t = REGISTER_TEST("widgets", "widgets_overlapping_drop_targets_2");
-    t->GuiFunc = widgets_overlapping_drop_targets_gui;
-    t->TestFunc = widgets_overlapping_drop_targets_test;
-    t->ArgVariant = 1;
 }
 
 //-------------------------------------------------------------------------
