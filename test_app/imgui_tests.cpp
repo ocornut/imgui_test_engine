@@ -1794,6 +1794,53 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         // ctx->ComboClick("Test type/Multiple calls to Text(), not clipped (slow)");
         ctx->WindowClose("");
     };
+
+    // ## Test menu appending.
+    t = REGISTER_TEST("widgets", "widgets_menu_append");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::Begin("Append Menus", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_MenuBar);
+        ImGui::BeginMenuBar();
+
+        // Menu that we will append to.
+        if (ImGui::BeginMenu("First Menu"))
+        {
+            ImGui::MenuItem("1 First");
+            if (ImGui::BeginMenu("Second Menu"))
+            {
+                ImGui::MenuItem("2 First");
+                ImGui::EndMenu();
+            }
+            ImGui::EndMenu();
+        }
+
+        // Append to first menu.
+        if (ImGui::BeginMenu("First Menu"))
+        {
+            if (ImGui::MenuItem("1 Second"))
+                ctx->GenericVars.Bool1 = true;
+            if (ImGui::BeginMenu("Second Menu"))
+            {
+                ImGui::MenuItem("2 Second");
+                ImGui::EndMenu();
+            }
+            ImGui::EndMenu();
+        }
+
+        ImGui::EndMenuBar();
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ctx->WindowRef("Append Menus");
+        ctx->MenuClick("First Menu");
+        ctx->MenuClick("First Menu/1 First");
+        IM_CHECK_EQ(ctx->GenericVars.Bool1, false);
+        ctx->MenuClick("First Menu/1 Second");
+        IM_CHECK_EQ(ctx->GenericVars.Bool1, true);
+        ctx->MenuClick("First Menu/Second Menu/2 First");
+        ctx->MenuClick("First Menu/Second Menu/2 Second");
+    };
 }
 
 //-------------------------------------------------------------------------
