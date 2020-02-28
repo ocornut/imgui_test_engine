@@ -1040,7 +1040,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ImGui::InputText("Dummy", vars.Str1, IM_ARRAYSIZE(vars.Str1), ImGuiInputTextFlags_None);
         ImGui::InputTextMultiline("InputText", vars.StrLarge.Data, vars.StrLarge.Size, ImVec2(-1, ImGui::GetFontSize() * 20), ImGuiInputTextFlags_None);
         ImGui::End();
-        //ImDebugShowInputTextState();
+        //DebugInputTextState();
     };
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
@@ -1740,7 +1740,10 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
             if (ImGui::BeginDragDropTarget())
             {
                 if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("_TEST_VALUE"))
+                {
+                    IM_UNUSED(payload);
                     ctx->GenericVars.Id = ImGui::GetItemID();
+                }
                 ImGui::EndDragDropTarget();
             }
         };
@@ -3764,7 +3767,7 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
         ImGuiStyle style_backup = ImGui::GetStyle();
         ImGuiTestItemList items;
         ctx->GatherItems(&items, ref_popup);
-        for (int n = 0; n < items.Size; n++)
+        for (int n = 0; n < items.GetSize(); n++)
         {
             ctx->WindowRef(ref_window);
             ctx->ItemClick("Colors##Selector");

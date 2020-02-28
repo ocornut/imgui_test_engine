@@ -317,66 +317,6 @@ bool ImFileExist(const char* filename)
     return (ret == 0);
 }
 
-void ImDebugShowInputTextState()
-{
-    ImGuiContext& g = *GImGui;
-    //static MemoryEditor mem_edit;
-    using namespace ImGui;
-
-    ImGui::Begin("Debug stb_textedit.h");
-
-    ImGuiInputTextState& edit_state = g.InputTextState;
-    if (g.ActiveId != 0 && edit_state.ID == g.ActiveId)
-        ImGui::Text("Active");
-    else
-        ImGui::Text("Inactive");
-
-    ImStb::StbUndoState& undostate = edit_state.Stb.undostate;
-
-    ImGui::Text("undo_point: %d\nredo_point:%d\nundo_char_point: %d\nredo_char_point:%d",
-        undostate.undo_point,
-        undostate.redo_point,
-        undostate.undo_char_point,
-        undostate.redo_char_point);
-
-    ImGuiStyle& style = ImGui::GetStyle();
-    ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0, -2));
-    for (int n = 0; n < STB_TEXTEDIT_UNDOSTATECOUNT; n++)
-    {
-        char type = ' ';
-        if (n < undostate.undo_point)
-            type = 'u';
-        else if (n >= undostate.redo_point)
-            type = 'r';
-
-        ImVec4 col = (type == ' ') ? style.Colors[ImGuiCol_TextDisabled] : style.Colors[ImGuiCol_Text];
-        ImGui::TextColored(col, "%c [%02d] where %03d, insert %03d, delete %03d, char_storage %03d",
-            type, n, undostate.undo_rec[n].where, undostate.undo_rec[n].insert_length, undostate.undo_rec[n].delete_length, undostate.undo_rec[n].char_storage);
-        //if (ImGui::IsItemClicked() && undostate.undo_rec[n].char_storage != -1)
-        //    mem_edit.GotoAddrAndHighlight(undostate.undo_rec[n].char_storage, undostate.undo_rec[n].char_storage + undostate.undo_rec[n].insert_length);
-    }
-    ImGui::PopStyleVar();
-
-    ImGui::End();
-
-    ImGui::Begin("Debug stb_textedit.h char_storage");
-    ImVec2 p = ImGui::GetCursorPos();
-    for (int n = 0; n < STB_TEXTEDIT_UNDOCHARCOUNT; n++)
-    {
-        int c = undostate.undo_char[n];
-        if (c > 256)
-            continue;
-        if ((n % 32) == 0)
-        {
-            ImGui::SetCursorPos(ImVec2(p.x + (n % 32) * 11, p.y + (n / 32) * 13));
-            ImGui::Text("%03d:", n);
-        }
-        ImGui::SetCursorPos(ImVec2(p.x + 40 + (n % 32) * 11, p.y + (n / 32) * 13));
-        ImGui::Text("%c", c);
-    }
-    ImGui::End();
-}
-
 void GetImGuiKeyModsPrefixStr(ImGuiKeyModFlags mod_flags, char* out_buf, size_t out_buf_size)
 {
     if (mod_flags == 0)
@@ -544,7 +484,7 @@ ImFont* FindFontByName(const char* name)
 #if defined(_WIN32)
 // Helper function for setting thread name on Win32
 // This is a separate function because __try cannot coexist with local objects that need destructors called on stack unwind
-void ImThreadSetCurrentThreadDescriptionWin32OldStyle(const char* description)
+static void ImThreadSetCurrentThreadDescriptionWin32OldStyle(const char* description)
 {
     // Old-style Win32 thread name setting method
     // See https://docs.microsoft.com/en-us/visualstudio/debugger/how-to-set-a-thread-name-in-native-code
@@ -682,11 +622,11 @@ bool ImGui::InputTextMultiline(const char* label, Str* str, const ImVec2& size, 
     return InputTextMultiline(label, (char*)str->c_str(), str->capacity() + 1, size, flags, InputTextCallbackStr, &cb_user_data);
 }
 
-bool ImFindParentSubPath(const char* sub_path, int tries, Str* output)
+bool ImFileFindInParents(const char* sub_path, int max_parent_count, Str* output)
 {
     IM_ASSERT(sub_path != NULL);
     IM_ASSERT(output != NULL);
-    for (int parent_level = 0; parent_level < tries; parent_level++)
+    for (int parent_level = 0; parent_level < max_parent_count; parent_level++)
     {
         output->clear();
         for (int j = 0; j < parent_level; j++)
@@ -699,7 +639,7 @@ bool ImFindParentSubPath(const char* sub_path, int tries, Str* output)
     return false;
 }
 
-bool ImGetGitBranchName(const char* git_repo_path, Str* branch_name)
+bool ImGitGetBranchName(const char* git_repo_path, Str* branch_name)
 {
     IM_ASSERT(git_repo_path != NULL);
     IM_ASSERT(branch_name != NULL);

@@ -1,5 +1,5 @@
 // dear imgui
-// (test engine, test context = end user automation api)
+// (test engine, test context = end user automation API)
 
 #if defined(_MSC_VER) && !defined(_CRT_SECURE_NO_WARNINGS)
 #define _CRT_SECURE_NO_WARNINGS
@@ -1037,16 +1037,16 @@ void    ImGuiTestContext::GatherItems(ImGuiTestItemList* out_list, ImGuiTestRef 
     GatherTask->OutList = out_list;
 
     // Keep running while gathering
-    const int begin_gather_size = out_list->Size;
+    const int begin_gather_size = out_list->GetSize();
     while (true)
     {
-        const int begin_gather_size_for_frame = out_list->Size;
+        const int begin_gather_size_for_frame = out_list->GetSize();
         Yield();
-        const int end_gather_size_for_frame = out_list->Size;
+        const int end_gather_size_for_frame = out_list->GetSize();
         if (begin_gather_size_for_frame == end_gather_size_for_frame)
             break;
     }
-    const int end_gather_size = out_list->Size;
+    const int end_gather_size = out_list->GetSize();
 
     ImGuiTestItemInfo* parent_item = ItemLocate(parent, ImGuiTestOpFlags_NoError);
     LogDebug("GatherItems from %s, %d deep: found %d items.", ImGuiTestRefDesc(parent, parent_item).c_str(), depth, end_gather_size - begin_gather_size);
@@ -1217,7 +1217,7 @@ void    ImGuiTestContext::ItemActionAll(ImGuiTestAction action, ImGuiTestRef ref
         int highest_depth = -1;
         if (action == ImGuiTestAction_Close)
         {
-            for (int n = 0; n < items.Size; n++)
+            for (int n = 0; n < items.GetSize(); n++)
             {
                 const ImGuiTestItemInfo* info = items[n];
                 if ((info->StatusFlags & ImGuiItemStatusFlags_Openable) && (info->StatusFlags & ImGuiItemStatusFlags_Opened))
@@ -1229,14 +1229,14 @@ void    ImGuiTestContext::ItemActionAll(ImGuiTestAction action, ImGuiTestRef ref
 
         // Process top-to-bottom in most cases
         int scan_start = 0;
-        int scan_end = items.Size;
+        int scan_end = items.GetSize();
         int scan_dir = +1;
         if (action == ImGuiTestAction_Close)
         {
             // Close bottom-to-top because
             // 1) it is more likely to handle same-depth parent/child relationship better (e.g. CollapsingHeader)
             // 2) it gives a nicer sense of symmetry with the corresponding open operation.
-            scan_start = items.Size - 1;
+            scan_start = items.GetSize() - 1;
             scan_end = -1;
             scan_dir = -1;
         }
@@ -1432,7 +1432,7 @@ void    ImGuiTestContext::MenuActionAll(ImGuiTestAction action, ImGuiTestRef ref
     ImGuiTestItemList items;
     MenuAction(ImGuiTestAction_Open, ref_parent);
     GatherItems(&items, GetFocusWindowRef(), 1);
-    for (int n = 0; n < items.Size; n++)
+    for (int n = 0; n < items.GetSize(); n++)
     {
         const ImGuiTestItemInfo* item = items[n];
         MenuAction(ImGuiTestAction_Open, ref_parent); // We assume that every interaction will close the menu again

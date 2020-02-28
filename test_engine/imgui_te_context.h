@@ -1,5 +1,5 @@
 // dear imgui
-// (test engine, test context = end user automation api)
+// (test engine, test context = end user automation API)
 
 #pragma once
 

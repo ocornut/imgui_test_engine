@@ -82,7 +82,7 @@ void DebugInputTextState()
             type = 'r';
 
         ImVec4 col = (type == ' ') ? style.Colors[ImGuiCol_TextDisabled] : style.Colors[ImGuiCol_Text];
-        ImGui::TextColored(col, "%c [%02d] where %d, insert %d, delete %d, char_storage %d",
+        ImGui::TextColored(col, "%c [%02d] where %03d, insert %03d, delete %03d, char_storage %03d",
             type, n, undostate.undo_rec[n].where, undostate.undo_rec[n].insert_length, undostate.undo_rec[n].delete_length, undostate.undo_rec[n].char_storage);
         //if (ImGui::IsItemClicked() && undostate.undo_rec[n].char_storage != -1)
         //    mem_edit.GotoAddrAndHighlight(undostate.undo_rec[n].char_storage, undostate.undo_rec[n].char_storage + undostate.undo_rec[n].insert_length);

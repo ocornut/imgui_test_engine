@@ -239,6 +239,7 @@ template<> inline void ImGuiTestEngineUtil_AppendStrValue(ImGuiTextBuffer& buf, 
         if (ImGuiTestEngineHook_Check(__FILE__, __func__, __LINE__, ImGuiTestCheckFlags_None, __res, #_LHS " " #_OP " " #_RHS, value_expr_buf.c_str())) \
             IM_ASSERT(__res);                                               \
     } while (0)
+
 #define IM_CHECK_OP(_LHS, _RHS, _OP)                                        \
     do                                                                      \
     {                                                                       \
@@ -258,6 +259,19 @@ template<> inline void ImGuiTestEngineUtil_AppendStrValue(ImGuiTextBuffer& buf, 
             return;                                                         \
     } while (0)
 
+#define IM_CHECK_STR_EQ(_LHS, _RHS)                                         \
+    do                                                                      \
+    {                                                                       \
+        bool __res = strcmp(_LHS, _RHS) == 0;                               \
+        ImGuiTextBuffer value_expr_buf;                                     \
+        if (!__res)                                                         \
+            value_expr_buf.appendf("\"%s\" == \"%s\"", _LHS, _RHS);         \
+        if (ImGuiTestEngineHook_Check(__FILE__, __func__, __LINE__, ImGuiTestCheckFlags_None, __res, #_LHS " == " #_RHS, value_expr_buf.c_str())) \
+            IM_ASSERT(__res);                                               \
+        if (!__res)                                                         \
+            return;                                                         \
+    } while (0)
+
 #define IM_CHECK_EQ(_LHS, _RHS)         IM_CHECK_OP(_LHS, _RHS, ==)         // Equal
 #define IM_CHECK_NE(_LHS, _RHS)         IM_CHECK_OP(_LHS, _RHS, !=)         // Not Equal
 #define IM_CHECK_LT(_LHS, _RHS)         IM_CHECK_OP(_LHS, _RHS, <)          // Less Than
@@ -271,23 +285,6 @@ template<> inline void ImGuiTestEngineUtil_AppendStrValue(ImGuiTextBuffer& buf, 
 #define IM_CHECK_LE_NO_RET(_LHS, _RHS)  IM_CHECK_OP_NO_RET(_LHS, _RHS, <=)  // Less or Equal
 #define IM_CHECK_GT_NO_RET(_LHS, _RHS)  IM_CHECK_OP_NO_RET(_LHS, _RHS, >)   // Greater Than
 #define IM_CHECK_GE_NO_RET(_LHS, _RHS)  IM_CHECK_OP_NO_RET(_LHS, _RHS, >=)  // Greater or Equal
-
-#define IM_CHECK_STR_EQ(_LHS, _RHS)                                         \
-    do                                                                      \
-    {                                                                       \
-        bool __res = strcmp(_LHS, _RHS) == 0;                               \
-        ImGuiTextBuffer value_expr_buf;                                     \
-        if (!__res)                                                         \
-        {                                                                   \
-            value_expr_buf.appendf("\"%s\" == \"%s\"", _LHS, _RHS);         \
-        }                                                                   \
-        if (ImGuiTestEngineHook_Check(__FILE__, __func__, __LINE__, ImGuiTestCheckFlags_None, __res, #_LHS " == " #_RHS, value_expr_buf.c_str())) \
-            IM_ASSERT(__res);                                               \
-        if (!__res)                                                         \
-            return;                                                         \
-    } while (0)
-
-//#define IM_ASSERT(_EXPR)      (void)( (!!(_EXPR)) || (ImGuiTestEngineHook_Check(false, #_EXPR, __FILE__, __func__, __LINE__), 0) )
 
 bool    ImGuiTestEngineHook_Check(const char* file, const char* func, int line, ImGuiTestCheckFlags flags, bool result, const char* expr, char const* value_expr = NULL);
 bool    ImGuiTestEngineHook_Error(const char* file, const char* func, int line, ImGuiTestCheckFlags flags, const char* fmt, ...);
@@ -391,16 +388,13 @@ struct ImGuiTestItemInfo
 struct ImGuiTestItemList
 {
     ImPool<ImGuiTestItemInfo>   Pool;
-    int&                        Size;           // FIXME: THIS IS REF/POINTER to Pool.Buf.Size! This codebase is totally embracing evil C++!
 
     void                        Clear()                 { Pool.Clear(); }
     void                        Reserve(int capacity)   { Pool.Reserve(capacity); }
-    //int                       GetSize() const         { return Pool.GetSize(); }
+    int                         GetSize() const         { return Pool.GetSize(); }
     const ImGuiTestItemInfo*    operator[] (size_t n)   { return Pool.GetByIndex((int)n); }
     const ImGuiTestItemInfo*    GetByIndex(int n)       { return Pool.GetByIndex(n); }
     const ImGuiTestItemInfo*    GetByID(ImGuiID id)     { return Pool.GetByKey(id); }
-
-    ImGuiTestItemList() : Size(Pool.Buf.Size) {} // FIXME: THIS IS REF/POINTER to Pool.Buf.Size!
 };
 
 // Gather items in given parent scope.

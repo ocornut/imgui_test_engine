@@ -44,8 +44,6 @@ Index of this file:
 // GOAL: Reliable performance measurement (w/ deterministic setup)
 // GOAL: Full blind version with no graphical context.
 
-// FIXME-TESTS: IM_CHECK macro that may print both values.
-// FIXME-TESTS: threaded test func instead of intrusive yield
 // FIXME-TESTS: UI to setup breakpoint (e.g. GUI func on frame X, beginning of Test func or at certain Yield/Sleep spot)
 // FIXME-TESTS: Locate within stack that uses windows/<pointer>/name -> ItemInfo hook
 // FIXME-TESTS: Be able to run blind within GUI
@@ -69,7 +67,7 @@ static void ImGuiTestEngine_ClearLocateTasks(ImGuiTestEngine* engine);
 static void ImGuiTestEngine_PreNewFrame(ImGuiTestEngine* engine, ImGuiContext* ui_ctx);
 static void ImGuiTestEngine_PostNewFrame(ImGuiTestEngine* engine, ImGuiContext* ui_ctx);
 static void ImGuiTestEngine_RunGuiFunc(ImGuiTestEngine* engine);
-static void ImGuiTestEngine_RunTest(ImGuiTestEngine* engine, ImGuiTestContext* ui_ctx, void* user_data);
+static void ImGuiTestEngine_RunTest(ImGuiTestEngine* engine, ImGuiTestContext* ctx);
 static void ImGuiTestEngine_TestQueueCoroutineMain(void* engine_opaque);
 
 // Settings
@@ -757,13 +755,16 @@ static void ImGuiTestEngine_ProcessTestQueue(ImGuiTestEngine* engine)
                 engine->UserDataBuffer = IM_ALLOC(engine->UserDataBufferSize);
             }
 
+            // Run test with a custom data type in the stack
+            ctx.UserData = engine->UserDataBuffer;
             test->UserDataConstructor(engine->UserDataBuffer);
-            ImGuiTestEngine_RunTest(engine, &ctx, engine->UserDataBuffer);
+            ImGuiTestEngine_RunTest(engine, &ctx);
             test->UserDataDestructor(engine->UserDataBuffer);
         }
         else
         {
-            ImGuiTestEngine_RunTest(engine, &ctx, NULL);
+            // Run test
+            ImGuiTestEngine_RunTest(engine, &ctx);
         }
         ran_tests++;
 
@@ -911,13 +912,12 @@ void ImGuiTestEngine_GetResult(ImGuiTestEngine* engine, int& count_tested, int& 
     }
 }
 
-static void ImGuiTestEngine_RunTest(ImGuiTestEngine* engine, ImGuiTestContext* ctx, void* user_data)
+static void ImGuiTestEngine_RunTest(ImGuiTestEngine* engine, ImGuiTestContext* ctx)
 {
     // Clear ImGui inputs to avoid key/mouse leaks from one test to another
     ImGuiTestEngine_ClearInput(engine);
 
     ImGuiTest* test = ctx->Test;
-    ctx->UserData = user_data;
     ctx->FrameCount = 0;
     ctx->WindowRef("");
     ctx->SetInputMode(ImGuiInputSource_Mouse);

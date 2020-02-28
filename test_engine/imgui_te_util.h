@@ -1,5 +1,7 @@
 #pragma once
 
+class Str;
+
 typedef int ImGuiKeyModFlags;       // See ImGuiKeyModFlags_
 
 enum ImGuiKeyModFlags_
@@ -40,6 +42,7 @@ enum ImOsConsoleTextColor
     ImOsConsoleTextColor_BrightYellow
 };
 
+// Could include branch?
 struct ImBuildInfo
 {
     const char* Type = "";
@@ -49,8 +52,6 @@ struct ImBuildInfo
     char        Date[32];           // "YYYY-MM-DD"
     const char* Time = "";          //
 };
-
-class Str;
 
 // Helpers: miscellaneous functions
 ImGuiID     ImHashDecoratedPath(const char* str, ImGuiID seed = 0);
@@ -64,7 +65,6 @@ bool        ImOsIsDebuggerPresent();
 
 const char* ImPathFindFilename(const char* path, const char* path_end = NULL);
 void        ImPathFixSeparatorsForCurrentOS(char* buf);
-bool        ImFindParentSubPath(const char* sub_path, int tries, Str* output);
 
 void        ImParseSplitCommandLine(int* out_argc, char const*** out_argv, const char* cmd_line);
 void        ImParseDateFromCompilerIntoYMD(const char* in_data, char* out_buf, size_t out_buf_size);
@@ -72,15 +72,16 @@ void        ImParseDateFromCompilerIntoYMD(const char* in_data, char* out_buf, s
 bool        ImFileCreateDirectoryChain(const char* path, const char* path_end = NULL);
 bool        ImFileLoadSourceBlurb(const char* filename, int line_no_start, int line_no_end, ImGuiTextBuffer* out_buf);
 bool        ImFileExist(const char* filename);
-void        ImDebugShowInputTextState();
+bool        ImFileFindInParents(const char* sub_path, int max_parent_count, Str* output);
 
 const char* GetImGuiKeyName(ImGuiKey key);
 void        GetImGuiKeyModsPrefixStr(ImGuiKeyModFlags mod_flags, char* out_buf, size_t out_buf_size);
-const ImBuildInfo&  ImGetBuildInfo();
 ImFont*     FindFontByName(const char* name);
 
 void        ImThreadSetCurrentThreadDescription(const char* description); // Set the description/name of the current thread (for debugging purposes)
-bool        ImGetGitBranchName(const char* git_repo_path, Str* branch_name);
+
+const ImBuildInfo&  ImGetBuildInfo();
+bool                ImGitGetBranchName(const char* git_repo_path, Str* branch_name);
 
 // Helper: maintain/calculate moving average
 template<typename TYPE>
@@ -113,7 +114,6 @@ void    PopDisabled();
 // STR + InputText bindings (FIXME: move to Str.cpp?)
 //-----------------------------------------------------------------------------
 
-class Str;
 namespace ImGui
 {
 bool    InputText(const char* label, Str* str, ImGuiInputTextFlags flags = 0, ImGuiInputTextCallback callback = NULL, void* user_data = NULL);
