@@ -262,19 +262,8 @@ static void LoadFonts(float dpi_scale)
     //ImFontConfig cfg;
     //cfg.RasterizerMultiply = 1.1f;
 
-    // Find font directory
     Str64 base_font_dir;
-    for (int parent_level = 0; parent_level < 3; parent_level++)
-    {
-        base_font_dir.clear();
-        for (int j = 0; j < parent_level; j++)
-            base_font_dir.append("../");
-        base_font_dir.append("data/fonts/");
-        if (ImFileExist(base_font_dir.c_str()))
-            break;
-    }
-
-    if (!base_font_dir.empty())
+    if (ImFindParentSubPath("data/fonts/", 3, &base_font_dir))
     {
         io.Fonts->AddFontFromFileTTF(Str64f("%s/%s", base_font_dir.c_str(), "NotoSans-Regular.ttf").c_str(), 16.0f * dpi_scale);
         io.Fonts->AddFontFromFileTTF(Str64f("%s/%s", base_font_dir.c_str(), "Roboto-Medium.ttf").c_str(), 16.0f * dpi_scale);
@@ -414,14 +403,15 @@ int main(int argc, char** argv)
     g_App.TestsToRun.clear();
 
     // Branch name stored in annotation field by default
-    // FIXME-TESTS: Obtain from git? maybe pipe from a batch-file?
-#if defined(IMGUI_HAS_DOCK)
-    strcpy(test_io.PerfAnnotation, "docking");
-#elif defined(IMGUI_HAS_TABLE)
-    strcpy(test_io.PerfAnnotation, "tables");
-#else
-    strcpy(test_io.PerfAnnotation, "master");
-#endif
+    Str64 git_repo_path, git_branch;
+    if (ImFindParentSubPath("imgui/", 4, &git_repo_path) && ImGetGitBranchName(git_repo_path.c_str(), &git_branch))
+        strncpy(test_io.GitBranchName, git_branch.c_str(), IM_ARRAYSIZE(test_io.GitBranchName));
+    else
+    {
+        fprintf(stderr, "Dear ImGui git repository was not found.\n");
+        strcpy(test_io.GitBranchName, "unknown");
+    }
+    printf("Git branch: %s\n", test_io.GitBranchName);
 
     // Create window
     ImGuiApp* app_window = g_App.AppWindow;

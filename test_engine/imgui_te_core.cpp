@@ -1703,6 +1703,8 @@ void    ImGuiTestEngine_ShowTestWindow(ImGuiTestEngine* engine, bool* p_open)
 
             ImGui::Separator();
             ImGui::Text("Configuration:");
+            const ImGuiInputTextCallback filter_callback = [](ImGuiInputTextCallbackData* data) { return (data->EventChar == ',' || data->EventChar == ';') ? 1 : 0; };
+            ImGui::InputText("Branch/Annotation", engine->IO.GitBranchName, IM_ARRAYSIZE(engine->IO.GitBranchName), ImGuiInputTextFlags_CallbackCharFilter, filter_callback, NULL);
             ImGui::CheckboxFlags("io.ConfigFlags: NavEnableKeyboard", (unsigned int *)&io.ConfigFlags, ImGuiConfigFlags_NavEnableKeyboard);
             ImGui::CheckboxFlags("io.ConfigFlags: NavEnableGamepad", (unsigned int *)&io.ConfigFlags, ImGuiConfigFlags_NavEnableGamepad);
 #ifdef IMGUI_HAS_DOCK
@@ -1727,9 +1729,6 @@ void    ImGuiTestEngine_ShowTestWindow(ImGuiTestEngine* engine, bool* p_open)
             ImGui::SameLine();
             if (ImGui::Button("Pick ref dt"))
                 engine->PerfRefDeltaTime = dt_2000;
-
-            const ImGuiInputTextCallback filter_callback = [](ImGuiInputTextCallbackData* data) { return (data->EventChar == ',' || data->EventChar == ';') ? 1 : 0; };
-            ImGui::InputText("Branch/Annotation", engine->IO.PerfAnnotation, IM_ARRAYSIZE(engine->IO.PerfAnnotation), ImGuiInputTextFlags_CallbackCharFilter, filter_callback, NULL);
 
             double dt_ref = engine->PerfRefDeltaTime;
             ImGui::Text("[ref dt]    %6.3f ms", engine->PerfRefDeltaTime * 1000);

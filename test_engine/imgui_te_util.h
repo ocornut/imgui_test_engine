@@ -50,6 +50,8 @@ struct ImBuildInfo
     const char* Time = "";          //
 };
 
+class Str;
+
 // Helpers: miscellaneous functions
 ImGuiID     ImHashDecoratedPath(const char* str, ImGuiID seed = 0);
 void        ImSleepInMilliseconds(int ms);
@@ -62,6 +64,7 @@ bool        ImOsIsDebuggerPresent();
 
 const char* ImPathFindFilename(const char* path, const char* path_end = NULL);
 void        ImPathFixSeparatorsForCurrentOS(char* buf);
+bool        ImFindParentSubPath(const char* sub_path, int tries, Str* output);
 
 void        ImParseSplitCommandLine(int* out_argc, char const*** out_argv, const char* cmd_line);
 void        ImParseDateFromCompilerIntoYMD(const char* in_data, char* out_buf, size_t out_buf_size);
@@ -77,6 +80,7 @@ const ImBuildInfo&  ImGetBuildInfo();
 ImFont*     FindFontByName(const char* name);
 
 void        ImThreadSetCurrentThreadDescription(const char* description); // Set the description/name of the current thread (for debugging purposes)
+bool        ImGetGitBranchName(const char* git_repo_path, Str* branch_name);
 
 // Helper: maintain/calculate moving average
 template<typename TYPE>

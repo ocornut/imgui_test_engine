@@ -682,3 +682,41 @@ bool ImGui::InputTextMultiline(const char* label, Str* str, const ImVec2& size, 
     return InputTextMultiline(label, (char*)str->c_str(), str->capacity() + 1, size, flags, InputTextCallbackStr, &cb_user_data);
 }
 
+bool ImFindParentSubPath(const char* sub_path, int tries, Str* output)
+{
+    IM_ASSERT(sub_path != NULL);
+    IM_ASSERT(output != NULL);
+    for (int parent_level = 0; parent_level < tries; parent_level++)
+    {
+        output->clear();
+        for (int j = 0; j < parent_level; j++)
+            output->append("../");
+        output->append(sub_path);
+        if (ImFileExist(output->c_str()))
+            return true;
+    }
+    output->clear();
+    return false;
+}
+
+bool ImGetGitBranchName(const char* git_repo_path, Str* branch_name)
+{
+    IM_ASSERT(git_repo_path != NULL);
+    IM_ASSERT(branch_name != NULL);
+    Str256f head_path("%s/.git/HEAD", git_repo_path);
+    size_t head_size = 0;
+    bool result = false;
+    if (char* git_head = (char*)ImFileLoadToMemory(head_path.c_str(), "r", &head_size, 1))
+    {
+        const char prefix[] = "ref: refs/heads/";       // Branch name is prefixed with this in HEAD file.
+        const int prefix_length = IM_ARRAYSIZE(prefix) - 1;
+        strtok(git_head, "\r\n");                       // Trim new line
+        if (head_size > prefix_length && strncmp(git_head, prefix, prefix_length) == 0)
+        {
+            strcpy(branch_name->c_str(), git_head + prefix_length);
+            result = true;
+        }
+        IM_FREE(git_head);
+    }
+    return result;
+}

@@ -1769,7 +1769,7 @@ void    ImGuiTestContext::PerfCapture()
         fprintf(f,
             "%s,%s,%.3f,x%d,%s,%s,%s,%s,%s,%s\n",
             Test->Category, Test->Name, dt_delta_ms,
-            PerfStressAmount, EngineIO->PerfAnnotation, build_info.Type, build_info.Cpu, build_info.OS, build_info.Compiler, build_info.Date);
+            PerfStressAmount, EngineIO->GitBranchName, build_info.Type, build_info.Cpu, build_info.OS, build_info.Compiler, build_info.Date);
         fflush(f);
         fclose(f);
     }

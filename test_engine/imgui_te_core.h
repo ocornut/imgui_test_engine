@@ -357,7 +357,7 @@ struct ImGuiTestEngineIO
     float                       ScrollSpeed = 1600.0f;          // Scroll speed (pixel/second) when not running in fast mode
     float                       TypingSpeed = 30.0f;            // Char input speed (characters/second) when not running in fast mode
     int                         PerfStressAmount = 1;           // Integer to scale the amount of items submitted in test
-    char                        PerfAnnotation[32] = "";        // e.g. fill in branch name
+    char                        GitBranchName[64] = "";         // e.g. fill in branch name
 
     // Outputs: State
     bool                        RunningTests = false;
