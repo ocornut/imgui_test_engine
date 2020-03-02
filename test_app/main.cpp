@@ -390,7 +390,7 @@ int main(int argc, char** argv)
         if (strcmp(test_spec, "tests") == 0)
             ImGuiTestEngine_QueueTests(engine, ImGuiTestGroup_Tests, NULL, ImGuiTestRunFlags_CommandLine);
         else if (strcmp(test_spec, "perf") == 0)
-            ImGuiTestEngine_QueueTests(engine, ImGuiTestGroup_Perf, NULL, ImGuiTestRunFlags_CommandLine);
+            ImGuiTestEngine_QueueTests(engine, ImGuiTestGroup_Perfs, NULL, ImGuiTestRunFlags_CommandLine);
         else
         {
             if (strcmp(test_spec, "all") == 0)

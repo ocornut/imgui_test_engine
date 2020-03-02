@@ -466,6 +466,7 @@ void    ImGuiTestContext::ScrollToY(ImGuiTestRef ref, float scroll_ratio_y)
     //if (item->ID == 0xDFFBB0CE || item->ID == 0x87CBBA09)
     //    printf("[%03d] scroll_max_y %f\n", FrameCount, ImGui::GetWindowScrollMaxY(window));
 
+    int failures = 0;
     while (!Abort)
     {
         // result->Rect fields will be updated after each iteration.
@@ -489,6 +490,20 @@ void    ImGuiTestContext::ScrollToY(ImGuiTestRef ref, float scroll_ratio_y)
         ImGui::SetScrollY(window, scroll_y);
 
         Yield();
+
+        // Error handling to avoid getting stuck in this function.
+        if (ImFabs(window->Scroll.y - scroll_y) >= 1.0f)
+        {
+            if (++failures < 3)
+            {
+                LogWarning("ScrollToY: failing to set scrolling. Requested %.2f, got %.2f. Will try again.", scroll_y, window->Scroll.y);
+            }
+            else
+            {
+                IM_ERRORF("ScrollToY: failing to set scrolling. Requested %.2f, got %.2f. Aborting.", scroll_y, window->Scroll.y);
+                break;
+            }
+        }
 
         WindowBringToFront(window);
     }
@@ -615,6 +630,7 @@ void    ImGuiTestContext::NavInput()
     Yield();
 }
 
+// FIXME-TESTS: This is too eagerly trying to scroll everything even if already visible.
 // FIXME: Maybe ImGuiTestOpFlags_NoCheckHoveredId could be automatic if we detect that another item is active as intended?
 void    ImGuiTestContext::MouseMove(ImGuiTestRef ref, ImGuiTestOpFlags flags)
 {

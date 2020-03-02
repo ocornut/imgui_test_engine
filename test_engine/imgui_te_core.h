@@ -56,7 +56,7 @@ enum ImGuiTestGroup
 {
     ImGuiTestGroup_Unknown      = -1,
     ImGuiTestGroup_Tests        = 0,
-    ImGuiTestGroup_Perf         = 1,
+    ImGuiTestGroup_Perfs        = 1,
     ImGuiTestGroup_COUNT
 };
 

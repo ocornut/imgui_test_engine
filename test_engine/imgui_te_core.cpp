@@ -126,7 +126,8 @@ struct ImGuiTestEngine
     bool                        UiFocus = false;
     ImGuiTest*                  UiSelectAndScrollToTest = NULL;
     ImGuiTest*                  UiSelectedTest = NULL;
-    ImGuiTextFilter             UiTestFilter;
+    ImGuiTextFilter             UiFilterTests;
+    ImGuiTextFilter             UiFilterPerfs;
     float                       UiLogHeight = 150.0f;
 
     // Performance Monitor
@@ -601,8 +602,9 @@ static void ImGuiTestEngine_PostNewFrame(ImGuiTestEngine* engine, ImGuiContext* 
 
     // Process on-going queues in a coroutine
     // We perform lazy creation of the coroutine to ensure that IO functions are set up first
+    // (we include the word "Main" to facilitate filtering for both this thread and the Main Thread in debuggers)
     if (!engine->TestQueueCoroutine)
-        engine->TestQueueCoroutine = engine->IO.CoroutineCreateFunc(ImGuiTestEngine_TestQueueCoroutineMain, "Dear ImGui Test Queue (coroutine)", engine);
+        engine->TestQueueCoroutine = engine->IO.CoroutineCreateFunc(ImGuiTestEngine_TestQueueCoroutineMain, "Main Dear ImGui Test Thread", engine);
 
     // Run the test coroutine. This will resume the test queue from either the last point the test called YieldFromCoroutine(),
     // or the loop in ImGuiTestEngine_TestQueueCoroutineMain that does so if no test is running.
@@ -829,7 +831,7 @@ ImGuiTest* ImGuiTestEngine_RegisterTest(ImGuiTestEngine* engine, const char* cat
 {
     ImGuiTestGroup group = ImGuiTestGroup_Tests;
     if (strcmp(category, "perf") == 0)
-        group = ImGuiTestGroup_Perf;
+        group = ImGuiTestGroup_Perfs;
 
     ImGuiTest* t = IM_NEW(ImGuiTest)();
     t->Group = group;
@@ -1367,10 +1369,9 @@ static void HelpTooltip(const char* desc)
         ImGui::SetTooltip("%s", desc);
 }
 
-void    ImGuiTestEngine_ShowTestGroup(ImGuiTestEngine* engine, ImGuiTestGroup group)
+void    ImGuiTestEngine_ShowTestGroup(ImGuiTestEngine* engine, ImGuiTestGroup group, ImGuiTextFilter* filter)
 {
     ImGuiStyle& style = ImGui::GetStyle();
-    ImGuiTextFilter* filter = &engine->UiTestFilter;
 
     //ImGui::Text("TESTS (%d)", engine->TestsAll.Size);
     if (ImGui::Button("Run All"))
@@ -1632,12 +1633,12 @@ void    ImGuiTestEngine_ShowTestWindow(ImGuiTestEngine* engine, bool* p_open)
     {
         if (ImGui::BeginTabItem("TESTS"))
         {
-            ImGuiTestEngine_ShowTestGroup(engine, ImGuiTestGroup_Tests);
+            ImGuiTestEngine_ShowTestGroup(engine, ImGuiTestGroup_Tests, &engine->UiFilterTests);
             ImGui::EndTabItem();
         }
         if (ImGui::BeginTabItem("PERFS"))
         {
-            ImGuiTestEngine_ShowTestGroup(engine, ImGuiTestGroup_Perf);
+            ImGuiTestEngine_ShowTestGroup(engine, ImGuiTestGroup_Perfs, &engine->UiFilterPerfs);
             ImGui::EndTabItem();
         }
 
@@ -1781,9 +1782,10 @@ static void     ImGuiTestEngine_SettingsReadLine(ImGuiContext* imgui_ctx, ImGuiS
     IM_ASSERT(engine->UiContextTarget == imgui_ctx);
 
     int n = 0;
-    if (sscanf(line, "Filter=%s", engine->UiTestFilter.InputBuf) == 1)  { engine->UiTestFilter.Build(); }   // FIXME
-    else if (sscanf(line, "LogHeight=%f", &engine->UiLogHeight) == 1)   { }
-    else if (sscanf(line, "CaptureTool=%d", &n) == 1)                   { engine->CaptureTool.Visible = (n != 0); }
+    /**/ if (sscanf(line, "FilterTests=%s", engine->UiFilterTests.InputBuf) == 1)   { engine->UiFilterTests.Build(); }
+    else if (sscanf(line, "FilterPerfs=%s", engine->UiFilterPerfs.InputBuf) == 1)   { engine->UiFilterPerfs.Build(); }
+    else if (sscanf(line, "LogHeight=%f", &engine->UiLogHeight) == 1)               { }
+    else if (sscanf(line, "CaptureTool=%d", &n) == 1)                               { engine->CaptureTool.Visible = (n != 0); }
 }
 
 static void     ImGuiTestEngine_SettingsWriteAll(ImGuiContext* imgui_ctx, ImGuiSettingsHandler* handler, ImGuiTextBuffer* buf)
@@ -1793,7 +1795,8 @@ static void     ImGuiTestEngine_SettingsWriteAll(ImGuiContext* imgui_ctx, ImGuiS
     IM_ASSERT(engine->UiContextTarget == imgui_ctx);
 
     buf->appendf("[%s][Data]\n", handler->TypeName);
-    buf->appendf("Filter=%s\n", engine->UiTestFilter.InputBuf);
+    buf->appendf("FilterTests=%s\n", engine->UiFilterTests.InputBuf);
+    buf->appendf("FilterPerfs=%s\n", engine->UiFilterPerfs.InputBuf);
     buf->appendf("LogHeight=%.0f\n", engine->UiLogHeight);
     buf->appendf("CaptureTool=%d\n", engine->CaptureTool.Visible);
     buf->appendf("\n");
