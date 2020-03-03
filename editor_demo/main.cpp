@@ -96,8 +96,12 @@ static void DarkTheme(ImGuiStyle* style)
 
 int main(int argc, char** argv)
 {
-#ifdef _WIN32
+#ifdef IMGUI_APP_WIN32_DX11
     ImGuiApp* app = ImGuiApp_ImplWin32DX11_Create();
+#elif IMGUI_APP_SDL_GL3
+    ImGuiApp* app = ImGuiApp_ImplSdlGL3_Create();
+#elif IMGUI_APP_GLFW_GL3
+    ImGuiApp* app = ImGuiApp_ImplGlfwGL3_Create();
 #endif
 
     // Setup Dear ImGui context
