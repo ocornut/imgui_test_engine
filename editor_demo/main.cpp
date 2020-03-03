@@ -1,8 +1,11 @@
 #include "imgui.h"
 #define IMGUI_DEFINE_MATH_OPERATORS
 #include "imgui_internal.h"
+#include "editor_widgets.h"
+#include "../test_engine/imgui_te_util.h"
 #include "../helpers/imgui_app.h"
 #include "../helpers/IconsFontAwesome5.h"
+#include <Str/Str.h>
 
 // FIXME-SAMPLE FIXME-FONT: This is looking very poor with DpiScale == 1.0f, switch to FreeType?
 static void LoadFonts(ImGuiApp* app)
@@ -23,10 +26,18 @@ static void LoadFonts(ImGuiApp* app)
     font_cfg_icons.GlyphRanges = icon_fa_ranges;
 
     // FIXME-SAMPLE FIXME-FONT: FontAwesome5 is rasterized multiple times needlessly!
+
+    // Font 0
     io.Fonts->AddFontFromFileTTF("../data/fonts/NotoSans-Regular.ttf", 16.0f * app->DpiScale, &font_cfg);
     io.Fonts->AddFontFromFileTTF("../data/fonts/fa5-regular-400.otf", 13.0f * app->DpiScale, &font_cfg_icons);
     io.Fonts->AddFontFromFileTTF("../data/fonts/fa5-solid-900.otf", 13.0f * app->DpiScale, &font_cfg_icons);
 
+    // Font 1
+    io.Fonts->AddFontFromFileTTF("../data/fonts/NotoSans-Regular.ttf", 24.0f * app->DpiScale, &font_cfg);
+    io.Fonts->AddFontFromFileTTF("../data/fonts/fa5-regular-400.otf", 19.5f * app->DpiScale, &font_cfg_icons);
+    io.Fonts->AddFontFromFileTTF("../data/fonts/fa5-solid-900.otf", 19.5f * app->DpiScale, &font_cfg_icons);
+
+    // Font 2 (Mono)
     io.Fonts->AddFontFromFileTTF("../data/fonts/NotoSansMono-Regular.ttf", 16.0f * app->DpiScale, &font_cfg);
     io.Fonts->AddFontFromFileTTF("../data/fonts/fa5-regular-400.otf", 13.0f * app->DpiScale, &font_cfg_icons);
     io.Fonts->AddFontFromFileTTF("../data/fonts/fa5-solid-900.otf", 13.0f * app->DpiScale, &font_cfg_icons);
@@ -96,6 +107,7 @@ static void DarkTheme(ImGuiStyle* style)
 
 int main(int argc, char** argv)
 {
+    // Setup application backend
 #ifdef IMGUI_APP_WIN32_DX11
     ImGuiApp* app = ImGuiApp_ImplWin32DX11_Create();
 #elif IMGUI_APP_SDL_GL3
@@ -133,6 +145,16 @@ int main(int argc, char** argv)
     style.WindowRounding = 0.0f;
     style.ScaleAllSizes(app->DpiScale);
     LoadFonts(app);
+
+#if 0
+    Str64 imgui_folder;
+    ImFileFindInParents("imgui/", 4, &imgui_folder);
+    size_t readme_md_size = 0;
+    char* readme_md = (char*)ImFileLoadToMemory(Str128f("%s/docs/README.md", imgui_folder.c_str()).c_str(), "rb", &readme_md_size, +1);
+#else
+    size_t readme_md_size = 0;
+    char* readme_md = (char*)ImFileLoadToMemory("docs/README.md", "rb", &readme_md_size, +1);
+#endif
 
     // Main loop
     while (app->NewFrame(app) && !app->Quit)
@@ -205,6 +227,13 @@ int main(int argc, char** argv)
                 ImGui::EndMenu();
             }
             ImGui::EndMainMenuBar();
+        }
+
+        if (readme_md != NULL)
+        {
+            ImGui::Begin("Readme");
+            RenderMarkdown(readme_md, readme_md + readme_md_size);
+            ImGui::End();
         }
 
         ImGui::Begin("Editor Demo");

@@ -4,7 +4,7 @@
 
 #pragma once
 
-#ifdef _WIN32
+#if defined(_WIN32) && !defined(IMGUI_APP_WIN32_DX11)
 #define IMGUI_APP_WIN32_DX11
 #endif
 
