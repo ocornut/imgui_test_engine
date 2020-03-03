@@ -23,6 +23,9 @@
     <Filter Include="libs\imgui_markdown">
       <UniqueIdentifier>{21881388-fa50-4fa2-a5fb-e0debecd003b}</UniqueIdentifier>
     </Filter>
+    <Filter Include="shared">
+      <UniqueIdentifier>{9e5548de-99f5-4e89-b4a9-7cb34eecc6f2}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\imgui\imconfig.h">
@@ -52,9 +55,6 @@
     <ClInclude Include="..\..\imgui\examples\imgui_impl_win32.h">
       <Filter>imgui_backends</Filter>
     </ClInclude>
-    <ClInclude Include="..\helpers\imgui_app.h">
-      <Filter>imgui_backends</Filter>
-    </ClInclude>
     <ClInclude Include="..\libs\imgui_markdown\imgui_markdown.h">
       <Filter>libs\imgui_markdown</Filter>
     </ClInclude>
@@ -63,6 +63,9 @@
     </ClInclude>
     <ClInclude Include="..\test_engine\imgui_te_util.h">
       <Filter>sources</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\imgui_app.h">
+      <Filter>shared</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -90,14 +93,14 @@
     <ClCompile Include="..\..\imgui\examples\imgui_impl_win32.cpp">
       <Filter>imgui_backends</Filter>
     </ClCompile>
-    <ClCompile Include="..\helpers\imgui_app.cpp">
-      <Filter>imgui_backends</Filter>
-    </ClCompile>
     <ClCompile Include="editor_widgets.cpp">
       <Filter>sources</Filter>
     </ClCompile>
     <ClCompile Include="..\test_engine\imgui_te_util.cpp">
       <Filter>sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\imgui_app.cpp">
+      <Filter>shared</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

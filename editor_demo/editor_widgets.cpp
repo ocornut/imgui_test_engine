@@ -1,7 +1,7 @@
 #include "editor_widgets.h"
 #include "imgui.h"
 #include "../test_engine/imgui_te_util.h"
-#include "../helpers/IconsFontAwesome5.h"
+#include "../shared/IconsFontAwesome5.h"
 #include "Str/Str.h"
 #include "imgui_markdown/imgui_markdown.h"
 

@@ -10,7 +10,7 @@
 // Typical setup
 //-----------------------------------------------------------------------------------
 
-#include "../imgui_dev/helpers/imgui_debug.h"
+#include "../imgui_dev/shared/imgui_debug.h"
 
 */
 

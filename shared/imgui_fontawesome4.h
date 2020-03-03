@@ -10,7 +10,7 @@
 //-----------------------------------------------------------------------------------
 
 #define IMGUI_FONTAWESOME4_IMPLEMENTATION
-#include "../imgui_dev/helpers/imgui_fontawesome4.h"
+#include "../imgui_dev/shared/imgui_fontawesome4.h"
 
 then:
 

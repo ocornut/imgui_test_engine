@@ -156,8 +156,8 @@
     <ClInclude Include="..\..\imgui\imstb_rectpack.h" />
     <ClInclude Include="..\..\imgui\imstb_textedit.h" />
     <ClInclude Include="..\..\imgui\imstb_truetype.h" />
-    <ClInclude Include="..\helpers\imgui_app.h" />
-    <ClInclude Include="..\helpers\imgui_coroutine_impl_stdthread.h" />
+    <ClInclude Include="..\shared\imgui_app.h" />
+    <ClInclude Include="..\shared\imgui_coroutine_impl_stdthread.h" />
     <ClInclude Include="..\libs\stb\stb_image_write.h" />
     <ClInclude Include="..\libs\Str\Str.h" />
     <ClInclude Include="..\test_engine\imgui_capture_tool.h" />
@@ -174,8 +174,8 @@
     <ClCompile Include="..\..\imgui\imgui_demo.cpp" />
     <ClCompile Include="..\..\imgui\imgui_draw.cpp" />
     <ClCompile Include="..\..\imgui\imgui_widgets.cpp" />
-    <ClCompile Include="..\helpers\imgui_app.cpp" />
-    <ClCompile Include="..\helpers\imgui_coroutine_impl_stdthread.cpp" />
+    <ClCompile Include="..\shared\imgui_app.cpp" />
+    <ClCompile Include="..\shared\imgui_coroutine_impl_stdthread.cpp" />
     <ClCompile Include="..\libs\Str\Str.cpp" />
     <ClCompile Include="..\test_engine\imgui_capture_tool.cpp" />
     <ClCompile Include="..\test_engine\imgui_te_context.cpp" />

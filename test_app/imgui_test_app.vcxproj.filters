@@ -22,6 +22,9 @@
     <Filter Include="imgui_backends">
       <UniqueIdentifier>{23e0fd5e-9fd8-453f-9bf8-a818fae7f3b3}</UniqueIdentifier>
     </Filter>
+    <Filter Include="shared">
+      <UniqueIdentifier>{67f74698-0094-4ad4-b787-ab144bdfd6a2}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\imgui\imgui.h">
@@ -72,11 +75,11 @@
     <ClInclude Include="..\..\imgui\examples\imgui_impl_win32.h">
       <Filter>imgui_backends</Filter>
     </ClInclude>
-    <ClInclude Include="..\helpers\imgui_app.h">
-      <Filter>imgui_backends</Filter>
+    <ClInclude Include="..\shared\imgui_app.h">
+      <Filter>shared</Filter>
     </ClInclude>
-    <ClInclude Include="..\helpers\imgui_coroutine_impl_stdthread.h">
-      <Filter>imgui_backends</Filter>
+    <ClInclude Include="..\shared\imgui_coroutine_impl_stdthread.h">
+      <Filter>shared</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -119,11 +122,11 @@
     <ClCompile Include="..\..\imgui\examples\imgui_impl_win32.cpp">
       <Filter>imgui_backends</Filter>
     </ClCompile>
-    <ClCompile Include="..\helpers\imgui_app.cpp">
-      <Filter>imgui_backends</Filter>
+    <ClCompile Include="..\shared\imgui_app.cpp">
+      <Filter>shared</Filter>
     </ClCompile>
-    <ClCompile Include="..\helpers\imgui_coroutine_impl_stdthread.cpp">
-      <Filter>imgui_backends</Filter>
+    <ClCompile Include="..\shared\imgui_coroutine_impl_stdthread.cpp">
+      <Filter>shared</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
