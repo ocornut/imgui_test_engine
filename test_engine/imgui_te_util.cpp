@@ -5,7 +5,7 @@
 #include "imgui.h"
 #include "imgui_te_util.h"
 #include "imgui_internal.h"
-#include <Str/Str.h>
+#include "libs/Str/Str.h"
 #include <chrono>
 #include <thread>
 #if defined(_WIN32) && !defined(_WINDOWS_)

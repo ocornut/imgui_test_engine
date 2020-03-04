@@ -8,8 +8,8 @@
 #define IMGUI_DEFINE_MATH_OPERATORS
 #include "imgui_internal.h"
 #include "imgui_capture_tool.h"
-#include "../test_engine/imgui_te_util.h"
-#include <Str/Str.h>
+#include "test_engine/imgui_te_util.h"
+#include "libs/Str/Str.h"
 
 // stb_image_write
 #ifdef _MSC_VER
@@ -18,7 +18,7 @@
 #pragma warning (disable: 4457)                             // declaration of 'xx' hides function parameter
 #endif
 #define STB_IMAGE_WRITE_IMPLEMENTATION
-#include <stb/stb_image_write.h>
+#include "libs/stb/stb_image_write.h"
 #ifdef _MSC_VER
 #pragma warning (pop)
 #endif

@@ -1,9 +1,9 @@
 #include "editor_widgets.h"
 #include "imgui.h"
-#include "../test_engine/imgui_te_util.h"
-#include "../shared/IconsFontAwesome5.h"
-#include "Str/Str.h"
-#include "imgui_markdown/imgui_markdown.h"
+#include "test_engine/imgui_te_util.h"
+#include "shared/IconsFontAwesome5.h"
+#include "libs/Str/Str.h"
+#include "libs/imgui_markdown/imgui_markdown.h"
 
 static void LinkCallback(ImGui::MarkdownLinkCallbackData data)
 {

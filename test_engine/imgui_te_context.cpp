@@ -14,7 +14,7 @@
 #include "imgui_te_core.h"
 #include "imgui_te_context.h"
 #include "imgui_te_util.h"
-#include <Str/Str.h>
+#include "libs/Str/Str.h"
 
 //-------------------------------------------------------------------------
 // [SECTION] ImGuiTestContext

@@ -1,7 +1,7 @@
 #include <imgui.h>
-#include "imgui_te_core.h"
+#include "test_engine/imgui_te_core.h"
 #include "imgui_coroutine_impl_stdthread.h"
-#include <Str/Str.h>
+#include "libs/Str/Str.h"
 
 #ifdef _MSC_VER
 #pragma warning (disable: 4996)     // 'This function or variable may be unsafe': strcpy, strdup, sprintf, vsnprintf, sscanf, fopen

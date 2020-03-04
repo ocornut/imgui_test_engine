@@ -1,4 +1,6 @@
 
+// FIXME: Need imgui_te_core.h to be included
+
 // Coroutine implementation using std::thread
 ImGuiTestCoroutineHandle    Coroutine_ImplStdThread_Create(ImGuiTestCoroutineFunc func, const char* name, void* ctx);
 void                        Coroutine_ImplStdThread_Destroy(ImGuiTestCoroutineHandle handle);

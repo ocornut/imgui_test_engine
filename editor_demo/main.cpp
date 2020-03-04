@@ -2,10 +2,10 @@
 #define IMGUI_DEFINE_MATH_OPERATORS
 #include "imgui_internal.h"
 #include "editor_widgets.h"
-#include "../test_engine/imgui_te_util.h"
-#include "../shared/imgui_app.h"
-#include "../shared/IconsFontAwesome5.h"
-#include <Str/Str.h>
+#include "libs/Str/Str.h"
+#include "shared/imgui_app.h"
+#include "shared/IconsFontAwesome5.h"
+#include "test_engine/imgui_te_util.h"
 
 // FIXME-SAMPLE FIXME-FONT: This is looking very poor with DpiScale == 1.0f, switch to FreeType?
 static void LoadFonts(ImGuiApp* app)

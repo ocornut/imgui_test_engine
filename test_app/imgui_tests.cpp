@@ -3,14 +3,14 @@
 
 #define _CRT_SECURE_NO_WARNINGS
 #include <limits.h>
-#include <Str/Str.h>
 #include "imgui.h"
 #define IMGUI_DEFINE_MATH_OPERATORS
 #include "imgui_internal.h"
 #include "imgui_tests.h"
-#include "imgui_te_core.h"
-#include "imgui_te_context.h"
-#include "imgui_te_util.h"
+#include "test_engine/imgui_te_core.h"
+#include "test_engine/imgui_te_context.h"
+#include "test_engine/imgui_te_util.h"
+#include "libs/Str/Str.h"
 
 //-------------------------------------------------------------------------
 // NOTES (also see TODO in imgui_te_core.cpp)
