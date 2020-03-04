@@ -7,7 +7,7 @@
 
 #include "imgui.h"
 #include "imgui_te_core.h"
-#include "imgui_capture_tool.h"
+#include "../shared/imgui_capture_tool.h"
 
 // Undo some of the damage done by <windows.h>
 #ifdef Yield

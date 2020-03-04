@@ -6,7 +6,7 @@
 #include <stdio.h>                  // FILE
 #include "imgui_internal.h"         // ImPool<>, ImGuiItemStatusFlags, ImFormatString
 #include "imgui_te_util.h"
-#include "imgui_capture_tool.h"
+#include "../shared/imgui_capture_tool.h"
 
 //-------------------------------------------------------------------------
 // Forward Declarations

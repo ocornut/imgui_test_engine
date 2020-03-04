@@ -1,27 +1,39 @@
 #pragma once
 
+//-----------------------------------------------------------------------------
+// Forward declarations and basic types
+//-----------------------------------------------------------------------------
+
+struct ImGuiCaptureArgs;
+struct ImGuiCaptureContext;
+struct ImGuiCaptureImageBuf;
+struct ImGuiCaptureTool;
+typedef unsigned int ImGuiCaptureFlags;
+
+//-----------------------------------------------------------------------------
+
+// [Internal]
 // Helper class for simple bitmap manipulation (not particularly efficient!)
-struct ImageBuf
+struct ImGuiCaptureImageBuf
 {
-    typedef unsigned int u32;
+    int             Width;
+    int             Height;
+    unsigned int*   Data;
 
-    int             Width, Height;
-    u32*            Data;
-
-    ImageBuf()      { Width = Height = 0; Data = NULL; }
-    ~ImageBuf()     { Clear(); }
+    ImGuiCaptureImageBuf()      { Width = Height = 0; Data = NULL; }
+    ~ImGuiCaptureImageBuf()     { Clear(); }
 
     void Clear();                                           // Free allocated memory buffer if such exists.
     void CreateEmpty(int w, int h);                         // Reallocate buffer for pixel data, and zero it.
     void CreateEmptyNoMemClear(int w, int h);               // Reallocate buffer for pixel data, but do not zero memory buffer.
     bool SaveFile(const char* filename);                    // Save pixel data to specified file.
     void RemoveAlpha();                                     // Clear alpha channel from all pixels.
-    void BlitSubImage(int dst_x, int dst_y, int src_x, int src_y, int w, int h, const ImageBuf* source);
+    void BlitSubImage(int dst_x, int dst_y, int src_x, int src_y, int w, int h, const ImGuiCaptureImageBuf* source);
 };
 
 typedef bool (*ImGuiScreenCaptureFunc)(int x, int y, int w, int h, unsigned int* pixels, void* user_data);
 
-enum ImGuiCaptureToolFlags_
+enum ImGuiCaptureFlags_
 {
     ImGuiCaptureToolFlags_None                    = 0,      //
     ImGuiCaptureToolFlags_StitchFullContents      = 1 << 1, // Expand window to it's content size and capture its full height.
@@ -29,8 +41,6 @@ enum ImGuiCaptureToolFlags_
     ImGuiCaptureToolFlags_ExpandToIncludePopups   = 1 << 3, // Expand capture area to automatically include visible popups and tooltips.
     ImGuiCaptureToolFlags_Default                 = ImGuiCaptureToolFlags_StitchFullContents | ImGuiCaptureToolFlags_IgnoreCaptureToolWindow
 };
-
-typedef unsigned int ImGuiCaptureFlags;
 
 enum ImGuiCaptureToolState
 {
@@ -52,7 +62,7 @@ struct ImGuiCaptureArgs
 
     // [Output]
     int                     OutFileCounter = 0;             // Counter which may be appended to file name when saving. By default counting starts from 1. When done this field holds number of saved files.
-    ImageBuf*               OutImageBuf = NULL;             // Output will be saved to image buffer if specified.
+    ImGuiCaptureImageBuf*   OutImageBuf = NULL;             // Output will be saved to image buffer if specified.
     char                    OutImageFileTemplate[256] = ""; // Output will be saved to a file if OutImageBuf is NULL.
 
     // [Internal]
@@ -68,7 +78,7 @@ struct ImGuiCaptureContext
     // [Internal]
     ImRect                  _CaptureRect;                   // Viewport rect that is being captured.
     ImVec2                  _CombinedWindowRectPos;         // Top-left corner of region that covers all windows included in capture. This is not same as _CaptureRect.Min when capturing explicitly specified rect.
-    ImageBuf                _Output;                        // Output image buffer.
+    ImGuiCaptureImageBuf    _Output;                        // Output image buffer.
     char                    _SaveFileNameFinal[256] = "";   // Final file name to which captured image will be saved.
     int                     _ChunkNo = 0;                   // Number of chunk that is being captured when capture spans multiple frames.
     int                     _FrameNo = 0;                   // Frame number during capture process that spans multiple frames.

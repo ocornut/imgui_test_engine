@@ -61,8 +61,8 @@ static inline void DebugCrtDumpLeaks()
 #include "imgui_te_core.h"
 #include "imgui_te_util.h"
 #include "imgui_tests.h"
-#include "imgui_capture_tool.h"
 #include "../shared/imgui_app.h"
+#include "../shared/imgui_capture_tool.h"
 #include "../shared/imgui_coroutine_impl_stdthread.h"
 #include <Str/Str.h>
 

@@ -8,7 +8,7 @@
 #define IMGUI_DEFINE_MATH_OPERATORS
 #include "imgui_internal.h"
 #include "imgui_capture_tool.h"
-#include "imgui_te_util.h"
+#include "../test_engine/imgui_te_util.h"
 #include <Str/Str.h>
 
 // stb_image_write
@@ -27,36 +27,36 @@
 // ImageBuf
 //-----------------------------------------------------------------------------
 
-void ImageBuf::Clear()
+void ImGuiCaptureImageBuf::Clear()
 {
     if (Data)
         free(Data);
     Data = NULL;
 }
 
-void ImageBuf::CreateEmpty(int w, int h)
+void ImGuiCaptureImageBuf::CreateEmpty(int w, int h)
 {
     CreateEmptyNoMemClear(w, h);
     memset(Data, 0, Width * Height * 4);
 }
 
-void ImageBuf::CreateEmptyNoMemClear(int w, int h)
+void ImGuiCaptureImageBuf::CreateEmptyNoMemClear(int w, int h)
 {
     Clear();
     Width = w;
     Height = h;
-    Data = (u32*) malloc(Width * Height * 4);
+    Data = (unsigned int*)malloc(Width * Height * 4);
 }
 
-bool ImageBuf::SaveFile(const char* filename)
+bool ImGuiCaptureImageBuf::SaveFile(const char* filename)
 {
     int ret = stbi_write_png(filename, Width, Height, 4, Data, Width * 4);
     return ret != 0;
 }
 
-void ImageBuf::RemoveAlpha()
+void ImGuiCaptureImageBuf::RemoveAlpha()
 {
-    u32* p = Data;
+    unsigned int* p = Data;
     int n = Width * Height;
     while (n-- > 0)
     {
@@ -65,7 +65,7 @@ void ImageBuf::RemoveAlpha()
     }
 }
 
-void ImageBuf::BlitSubImage(int dst_x, int dst_y, int src_x, int src_y, int w, int h, const ImageBuf* source)
+void ImGuiCaptureImageBuf::BlitSubImage(int dst_x, int dst_y, int src_x, int src_y, int w, int h, const ImGuiCaptureImageBuf* source)
 {
     IM_ASSERT(source && "Source image is null.");
     IM_ASSERT(dst_x >= 0 && dst_y >= 0 && "Destination coordinates can not be negative.");
@@ -90,7 +90,7 @@ bool ImGuiCaptureContext::CaptureScreenshot(ImGuiCaptureArgs* args)
     IM_ASSERT(ScreenCaptureFunc != NULL);
     IM_ASSERT(args->OutImageBuf != NULL || args->OutImageFileTemplate[0]);
 
-    ImageBuf* output = args->OutImageBuf ? args->OutImageBuf : &_Output;
+    ImGuiCaptureImageBuf* output = args->OutImageBuf ? args->OutImageBuf : &_Output;
 
     // Hide other windows so they can't be seen visible behind captured window
     for (ImGuiWindow* window : g.Windows)
