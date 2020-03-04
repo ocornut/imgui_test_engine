@@ -8,7 +8,7 @@
 #define IMGUI_DEFINE_MATH_OPERATORS
 #include "imgui_internal.h"
 #include "imgui_capture_tool.h"
-#include "test_engine/imgui_te_util.h"
+#include "shared/imgui_utils.h"
 #include "libs/Str/Str.h"
 
 // stb_image_write
@@ -490,6 +490,21 @@ void ImGuiCaptureTool::CaptureWindowsSelector(const char* title, ImGuiCaptureArg
     }
 }
 
+static void PushDisabled()
+{
+    ImGuiStyle& style = ImGui::GetStyle();
+    ImVec4 col = style.Colors[ImGuiCol_Text];
+    ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
+    ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(col.x, col.y, col.z, col.w * 0.5f));
+}
+
+static void PopDisabled()
+{
+    ImGui::PopStyleColor();
+    ImGui::PopItemFlag();
+}
+
+
 void ImGuiCaptureTool::ShowCaptureToolWindow(bool* p_open)
 {
     if (!ImGui::Begin("Dear ImGui Capture Tool", p_open))
@@ -514,18 +529,18 @@ void ImGuiCaptureTool::ShowCaptureToolWindow(bool* p_open)
     {
         const bool has_last_file_name = (Context._SaveFileNameFinal[0] != 0);
         if (!has_last_file_name)
-            ImGui::PushDisabled();
+            PushDisabled();
         if (ImGui::Button("Open Last"))             // FIXME-CAPTURE: Running tests changes last captured file name.
             ImOsOpenInShell(Context._SaveFileNameFinal);
         if (!has_last_file_name)
-            ImGui::PopDisabled();
+            PopDisabled();
         if (has_last_file_name && ImGui::IsItemHovered())
             ImGui::SetTooltip("Open %s", Context._SaveFileNameFinal);
         ImGui::SameLine();
 
         Str128 save_file_dir(SaveFileName);
         if (!save_file_dir[0])
-            ImGui::PushDisabled();
+            PushDisabled();
         else if (char* slash_pos = ImMax(strrchr(save_file_dir.c_str(), '/'), strrchr(save_file_dir.c_str(), '\\')))
             *slash_pos = 0;                         // Remove file name.
         else
@@ -535,7 +550,7 @@ void ImGuiCaptureTool::ShowCaptureToolWindow(bool* p_open)
         if (save_file_dir[0] && ImGui::IsItemHovered())
             ImGui::SetTooltip("Open %s/", save_file_dir.c_str());
         if (!save_file_dir[0])
-            ImGui::PopDisabled();
+            PopDisabled();
 
         ImGui::PushItemWidth(-200.0f);
 

@@ -6,11 +6,12 @@
 #include <stdio.h>                  // FILE
 #include "imgui_internal.h"         // ImPool<>, ImGuiItemStatusFlags, ImFormatString
 #include "imgui_te_util.h"
-#include "../shared/imgui_capture_tool.h"
 
 //-------------------------------------------------------------------------
 // Forward Declarations
 //-------------------------------------------------------------------------
+
+struct ImGuiCaptureArgs;
 
 struct ImGuiTest;
 struct ImGuiTestContext;

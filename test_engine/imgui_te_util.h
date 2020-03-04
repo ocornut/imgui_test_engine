@@ -1,7 +1,5 @@
 #pragma once
 
-class Str;
-
 typedef int ImGuiKeyModFlags;       // See ImGuiKeyModFlags_
 
 enum ImGuiKeyModFlags_
@@ -25,63 +23,11 @@ enum ImGuiKeyState
     ImGuiKeyState_Down      // Pressed/held
 };
 
-enum ImOsConsoleStream
-{
-    ImOsConsoleStream_StandardOutput,
-    ImOsConsoleStream_StandardError
-};
-
-enum ImOsConsoleTextColor
-{
-    ImOsConsoleTextColor_Black,
-    ImOsConsoleTextColor_White,
-    ImOsConsoleTextColor_BrightWhite,
-    ImOsConsoleTextColor_BrightRed,
-    ImOsConsoleTextColor_BrightGreen,
-    ImOsConsoleTextColor_BrightBlue,
-    ImOsConsoleTextColor_BrightYellow
-};
-
-// Could include branch?
-struct ImBuildInfo
-{
-    const char* Type = "";
-    const char* Cpu = "";
-    const char* OS = "";
-    const char* Compiler = "";
-    char        Date[32];           // "YYYY-MM-DD"
-    const char* Time = "";          //
-};
-
 // Helpers: miscellaneous functions
 ImGuiID     ImHashDecoratedPath(const char* str, ImGuiID seed = 0);
-void        ImSleepInMilliseconds(int ms);
-ImU64       ImGetTimeInMicroseconds();
-
-bool        ImOsCreateProcess(const char* cmd_line);
-void        ImOsOpenInShell(const char* path);
-void        ImOsConsoleSetTextColor(ImOsConsoleStream stream, ImOsConsoleTextColor color);
-bool        ImOsIsDebuggerPresent();
-
-const char* ImPathFindFilename(const char* path, const char* path_end = NULL);
-void        ImPathFixSeparatorsForCurrentOS(char* buf);
-
-void        ImParseSplitCommandLine(int* out_argc, char const*** out_argv, const char* cmd_line);
-void        ImParseDateFromCompilerIntoYMD(const char* in_data, char* out_buf, size_t out_buf_size);
-
-bool        ImFileCreateDirectoryChain(const char* path, const char* path_end = NULL);
-bool        ImFileLoadSourceBlurb(const char* filename, int line_no_start, int line_no_end, ImGuiTextBuffer* out_buf);
-bool        ImFileExist(const char* filename);
-bool        ImFileFindInParents(const char* sub_path, int max_parent_count, Str* output);
-
 const char* GetImGuiKeyName(ImGuiKey key);
 void        GetImGuiKeyModsPrefixStr(ImGuiKeyModFlags mod_flags, char* out_buf, size_t out_buf_size);
 ImFont*     FindFontByName(const char* name);
-
-void        ImThreadSetCurrentThreadDescription(const char* description); // Set the description/name of the current thread (for debugging purposes)
-
-const ImBuildInfo&  ImGetBuildInfo();
-bool                ImGitGetBranchName(const char* git_repo_path, Str* branch_name);
 
 // Helper: maintain/calculate moving average
 template<typename TYPE>
@@ -104,18 +50,15 @@ struct ImMovingAverage
 // Misc ImGui extensions
 //-----------------------------------------------------------------------------
 
+class Str;
+
 namespace ImGui
 {
+
 void    PushDisabled();
 void    PopDisabled();
-}
 
-//-----------------------------------------------------------------------------
 // STR + InputText bindings (FIXME: move to Str.cpp?)
-//-----------------------------------------------------------------------------
-
-namespace ImGui
-{
 bool    InputText(const char* label, Str* str, ImGuiInputTextFlags flags = 0, ImGuiInputTextCallback callback = NULL, void* user_data = NULL);
 bool    InputTextMultiline(const char* label, Str* str, const ImVec2& size = ImVec2(0, 0), ImGuiInputTextFlags flags = 0, ImGuiInputTextCallback callback = NULL, void* user_data = NULL);
 }

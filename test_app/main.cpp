@@ -55,8 +55,6 @@ static inline void DebugCrtDumpLeaks()
 
 #include "imgui.h"
 #include <stdio.h>
-#include <sys/types.h>
-#include <sys/stat.h>
 #define IMGUI_DEFINE_MATH_OPERATORS
 #include "imgui_tests.h"
 #include "test_engine/imgui_te_core.h"
@@ -64,6 +62,7 @@ static inline void DebugCrtDumpLeaks()
 #include "shared/imgui_app.h"
 #include "shared/imgui_capture_tool.h"
 #include "shared/imgui_coroutine_impl_stdthread.h"
+#include "shared/imgui_utils.h"
 #include "libs/Str/Str.h"
 
 //-------------------------------------------------------------------------
@@ -406,7 +405,7 @@ int main(int argc, char** argv)
     Str64 git_repo_path;
     Str64 git_branch;
     if (ImFileFindInParents("imgui/", 4, &git_repo_path))
-        if (ImGitGetBranchName(git_repo_path.c_str(), &git_branch))
+        if (ImBuildGetGitBranchName(git_repo_path.c_str(), &git_branch))
             strncpy(test_io.GitBranchName, git_branch.c_str(), IM_ARRAYSIZE(test_io.GitBranchName));
     if (!test_io.GitBranchName[0])
     {

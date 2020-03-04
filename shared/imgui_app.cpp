@@ -42,7 +42,7 @@ static bool ImGuiApp_ImplNull_CreateWindow(ImGuiApp* app, const char*, ImVec2 si
     return true;
 }
 
-static ImU64 ImGetTimeInMicroseconds()
+static uint64_t ImTimeGetInMicroseconds()
 {
     using namespace std;
     chrono::microseconds ms = chrono::duration_cast<chrono::microseconds>(chrono::high_resolution_clock::now().time_since_epoch());
@@ -60,7 +60,7 @@ static bool ImGuiApp_ImplNull_NewFrame(ImGuiApp* app_opaque)
     //int height = 0;
     //io.Fonts->GetTexDataAsAlpha8(&pixels, &width, &height);
 
-    ImU64 time = ImGetTimeInMicroseconds();
+    uint64_t time = ImTimeGetInMicroseconds();
     if (app->LastTime == 0)
         app->LastTime = time;
     io.DeltaTime = (float)((double)(time - app->LastTime) / 1000000.0);
@@ -420,8 +420,9 @@ static LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 // [SECTION] ImGuiApp Implementation: SDL + OpenGL3
 //-----------------------------------------------------------------------------
 
-// Used by both SDL and GLFW backends.
+#if defined(IMGUI_APP_SDL_GL3) || defined(IMGUI_APP_GLFW_GL3)
 static bool ImGuiApp_ImplGL3_CaptureFramebuffer(ImGuiApp* app, int x, int y, int w, int h, unsigned int* pixels, void* user_data);
+#endif
 
 #ifdef IMGUI_APP_SDL_GL3
 

@@ -14,6 +14,7 @@
 #include "imgui_te_core.h"
 #include "imgui_te_context.h"
 #include "imgui_te_util.h"
+#include "shared/imgui_utils.h"
 #include "libs/Str/Str.h"
 
 //-------------------------------------------------------------------------
@@ -1766,7 +1767,7 @@ void    ImGuiTestContext::PerfCapture()
     double dt_ref_ms = PerfRefDt * 1000;
     double dt_delta_ms = (dt_curr - PerfRefDt) * 1000;
 
-    const ImBuildInfo& build_info = ImGetBuildInfo();
+    const ImBuildInfo& build_info = ImBuildGetCompilationInfo();
 
     // Display results
     // FIXME-TESTS: Would be nice if we could submit a custom marker (e.g. branch/feature name)

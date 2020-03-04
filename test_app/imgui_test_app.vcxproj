@@ -161,6 +161,7 @@
     <ClInclude Include="..\shared\imgui_coroutine_impl_stdthread.h" />
     <ClInclude Include="..\libs\stb\stb_image_write.h" />
     <ClInclude Include="..\libs\Str\Str.h" />
+    <ClInclude Include="..\shared\imgui_utils.h" />
     <ClInclude Include="..\test_engine\imgui_te_context.h" />
     <ClInclude Include="..\test_engine\imgui_te_core.h" />
     <ClInclude Include="..\test_engine\imgui_te_util.h" />
@@ -178,6 +179,7 @@
     <ClCompile Include="..\shared\imgui_capture_tool.cpp" />
     <ClCompile Include="..\shared\imgui_coroutine_impl_stdthread.cpp" />
     <ClCompile Include="..\libs\Str\Str.cpp" />
+    <ClCompile Include="..\shared\imgui_utils.cpp" />
     <ClCompile Include="..\test_engine\imgui_te_context.cpp" />
     <ClCompile Include="..\test_engine\imgui_te_core.cpp" />
     <ClCompile Include="..\test_engine\imgui_te_util.cpp" />

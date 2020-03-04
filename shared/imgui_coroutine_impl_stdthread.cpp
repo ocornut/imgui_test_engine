@@ -1,6 +1,7 @@
 #include <imgui.h>
 #include "test_engine/imgui_te_core.h"
 #include "imgui_coroutine_impl_stdthread.h"
+#include "shared/imgui_utils.h"
 #include "libs/Str/Str.h"
 
 #ifdef _MSC_VER

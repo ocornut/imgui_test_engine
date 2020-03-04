@@ -34,6 +34,9 @@ ImGui::Text("Play " ICON_FA_MUSIC);
 //-----------------------------------------------------------------------------------
 
 #include "IconsFontAwesome4_c.h"        // Codepoint headers
+
+#ifdef IMGUI_FONTAWESOME4_IMPLEMENTATION
+
 #include "imgui_fontawesome4_data.h"    // TTF data
 
 // define IMGUI_FONTAWESOME4_IMPLEMENTATION before including imgui_debug.h in one .cpp file
@@ -53,3 +56,5 @@ static inline ImFont* DebugMergeFontAwesome4(float size)
     GetFontAwesomeCompressedFontDataTTF(&font_data, &font_data_size);
     return io.Fonts->AddFontFromMemoryCompressedTTF(font_data, font_data_size, size, &cfg, icon_ranges);
 }
+
+#endif

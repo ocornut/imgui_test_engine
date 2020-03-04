@@ -81,6 +81,9 @@
     <ClInclude Include="..\shared\imgui_capture_tool.h">
       <Filter>shared</Filter>
     </ClInclude>
+    <ClInclude Include="..\shared\imgui_utils.h">
+      <Filter>shared</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\imgui\imgui.cpp">
@@ -126,6 +129,9 @@
       <Filter>shared</Filter>
     </ClCompile>
     <ClCompile Include="..\shared\imgui_capture_tool.cpp">
+      <Filter>shared</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\imgui_utils.cpp">
       <Filter>shared</Filter>
     </ClCompile>
   </ItemGroup>

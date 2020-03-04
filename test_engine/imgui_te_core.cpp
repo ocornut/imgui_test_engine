@@ -14,6 +14,7 @@
 #include "imgui_te_core.h"
 #include "imgui_te_util.h"
 #include "imgui_te_context.h"
+#include "shared/imgui_utils.h"
 #include "libs/Str/Str.h"
 
 #define IMGUI_DEBUG_TEST_ENGINE     1
@@ -595,7 +596,7 @@ static void ImGuiTestEngine_PostNewFrame(ImGuiTestEngine* engine, ImGuiContext* 
 
     // Slow down whole app
     if (engine->ToolSlowDown)
-        ImSleepInMilliseconds(engine->ToolSlowDownMs);
+        ImThreadSleepInMilliseconds(engine->ToolSlowDownMs);
 
     // Call user GUI function
     ImGuiTestEngine_RunGuiFunc(engine);

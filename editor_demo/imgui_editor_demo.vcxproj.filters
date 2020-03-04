@@ -61,10 +61,10 @@
     <ClInclude Include="editor_widgets.h">
       <Filter>sources</Filter>
     </ClInclude>
-    <ClInclude Include="..\test_engine\imgui_te_util.h">
-      <Filter>sources</Filter>
-    </ClInclude>
     <ClInclude Include="..\shared\imgui_app.h">
+      <Filter>shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\imgui_utils.h">
       <Filter>shared</Filter>
     </ClInclude>
   </ItemGroup>
@@ -96,10 +96,10 @@
     <ClCompile Include="editor_widgets.cpp">
       <Filter>sources</Filter>
     </ClCompile>
-    <ClCompile Include="..\test_engine\imgui_te_util.cpp">
-      <Filter>sources</Filter>
-    </ClCompile>
     <ClCompile Include="..\shared\imgui_app.cpp">
+      <Filter>shared</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\imgui_utils.cpp">
       <Filter>shared</Filter>
     </ClCompile>
   </ItemGroup>
