@@ -748,7 +748,10 @@ static void ImGuiTestEngine_ProcessTestQueue(ImGuiTestEngine* engine)
             engine->UiSelectAndScrollToTest = test;
 
         ctx.LogEx(ImGuiTestVerboseLevel_Info, ImGuiTestLogFlags_NoHeader, "----------------------------------------------------------------------");
-        ctx.LogInfo("Test: '%s' '%s'..", test->Category, test->Name);
+
+        // Test name is not displayed in UI due to a happy accident - logged test name is cleared in
+        // ImGuiTestEngine_RunTest(). This is a behavior we want.
+        ctx.LogWarning("Test: '%s' '%s'..", test->Category, test->Name);
         if (test->UserDataConstructor != NULL)
         {
             if ((engine->UserDataBuffer == NULL) || (engine->UserDataBufferSize < test->UserDataSize))
