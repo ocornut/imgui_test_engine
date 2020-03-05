@@ -9,7 +9,6 @@
 #include "imgui_internal.h"
 #include "imgui_capture_tool.h"
 #include "shared/imgui_utils.h"
-#include "libs/Str/Str.h"
 
 // stb_image_write
 #ifdef _MSC_VER
@@ -538,17 +537,18 @@ void ImGuiCaptureTool::ShowCaptureToolWindow(bool* p_open)
             ImGui::SetTooltip("Open %s", Context._SaveFileNameFinal);
         ImGui::SameLine();
 
-        Str128 save_file_dir(SaveFileName);
+        char save_file_dir[256];
+        strcpy(save_file_dir, SaveFileName);
         if (!save_file_dir[0])
             PushDisabled();
-        else if (char* slash_pos = ImMax(strrchr(save_file_dir.c_str(), '/'), strrchr(save_file_dir.c_str(), '\\')))
+        else if (char* slash_pos = ImMax(strrchr(save_file_dir, '/'), strrchr(save_file_dir, '\\')))
             *slash_pos = 0;                         // Remove file name.
         else
-            strcpy(save_file_dir.c_str(), ".");     // Only filename is present, open current directory.
+            strcpy(save_file_dir, ".");             // Only filename is present, open current directory.
         if (ImGui::Button("Open Directory"))
-            ImOsOpenInShell(save_file_dir.c_str());
+            ImOsOpenInShell(save_file_dir);
         if (save_file_dir[0] && ImGui::IsItemHovered())
-            ImGui::SetTooltip("Open %s/", save_file_dir.c_str());
+            ImGui::SetTooltip("Open %s/", save_file_dir);
         if (!save_file_dir[0])
             PopDisabled();
 
