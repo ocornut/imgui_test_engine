@@ -4819,7 +4819,8 @@ void RegisterTests_Perf(ImGuiTestEngine* e)
             int test_variant = ctx->Test->ArgVariant;
             ImVector<char>& str = ctx->GenericVars.StrLarge;
             float wrap_width = 0.0f;
-            int& line_num = ctx->GenericVars.Int1;
+            int& line_count = ctx->GenericVars.Int1;
+            int& line_length = ctx->GenericVars.Int2;
             ImVec4* cpu_fine_clip_rect = NULL;
             ImVec2& text_size = ctx->GenericVars.Vec2;
             ImVec2 window_padding = ImGui::GetCursorScreenPos() - window->Pos;
@@ -4835,42 +4836,51 @@ void RegisterTests_Perf(ImGuiTestEngine* e)
             {
                 if (test_variant & PerfTestTextFlags_TextLong)
                 {
-                    line_num = 6;
-                    str.resize(2000);
+                    line_count = 6;
+                    line_length = 2000;
                 }
                 else if (test_variant & PerfTestTextFlags_TextWayTooLong)
                 {
-                    line_num = 1;
-                    str.resize(10000);
+                    line_count = 1;
+                    line_length = 10000;
                 }
                 else
                 {
-                    line_num = 400;
-                    str.resize(30);
+                    line_count = 400;
+                    line_length = 30;
                 }
+
                 // Support variable stress.
-                line_num *= ctx->PerfStressAmount;
-                // Create test string.
-                memset(str.Data, 'f', str.Size);
+                line_count *= ctx->PerfStressAmount;
+
+                // Create a test string.
+                str.resize(line_length * line_count);
+                for (int i = 0; i < str.Size; i++)
+                    str.Data[i] = '0' + (char)(((2166136261 ^ i) * 16777619) & 0x7F) % ('z' - '0');
                 for (int i = 14; i < str.Size; i += 15)
                     str.Data[i] = ' ';      // Spaces for word wrap.
                 str.back() = 0;             // Null-terminate
+
                 // Measure text size and cache result.
-                text_size = ImGui::CalcTextSize(str.begin(), str.end(), false, wrap_width);
+                text_size = ImGui::CalcTextSize(str.begin(), str.begin() + line_length, false, wrap_width);
+
                 // Set up a cpu fine clip rect which should be about half of rect rendered text would occupy.
                 if (test_variant & PerfTestTextFlags_WithCpuFineClipRect)
                 {
                     cpu_fine_clip_rect->x = window->Pos.x + window_padding.x;
                     cpu_fine_clip_rect->y = window->Pos.y + window_padding.y;
                     cpu_fine_clip_rect->z = window->Pos.x + window_padding.x + text_size.x * 0.5f;
-                    cpu_fine_clip_rect->w = window->Pos.y + window_padding.y + text_size.y * line_num * 0.5f;
+                    cpu_fine_clip_rect->w = window->Pos.y + window_padding.y + text_size.y * line_count * 0.5f;
                 }
             }
 
-            ImGui::PushClipRect(ImVec2(-FLT_MAX, -FLT_MAX), ImVec2(FLT_MAX, FLT_MAX), false);
-            for (int i = 0, end = line_num; i < end; i++)
-                draw_list->AddText(NULL, 0.0f, window->Pos + ImVec2(window_padding.x, window_padding.y + text_size.y * (float)i), IM_COL32_WHITE, &str.front(), &str.back(), wrap_width, cpu_fine_clip_rect);
-            ImGui::PopClipRect();
+            // Push artificially large clip rect to prevent coarse clipping of text on CPU side.
+            ImVec2 text_pos = window->Pos + window_padding;
+            draw_list->PushClipRect(text_pos, text_pos + ImVec2(text_size.x * 1.0f, text_size.y * line_count));
+            for (int i = 0, end = line_count; i < end; i++)
+                draw_list->AddText(NULL, 0.0f, text_pos + ImVec2(0.0f, text_size.y * (float)i),
+                    IM_COL32_WHITE, str.begin() + (i * line_length), str.begin() + ((i + 1) * line_length), wrap_width, cpu_fine_clip_rect);
+            draw_list->PopClipRect();
 
             ImGui::End();
         };
