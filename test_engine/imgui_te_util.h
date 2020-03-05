@@ -1,5 +1,8 @@
 #pragma once
 
+#define IM_CONCAT_0(a, b) a ## b
+#define IM_CONCAT(a, b) IM_CONCAT_0(a, b)
+
 typedef int ImGuiKeyModFlags;       // See ImGuiKeyModFlags_
 
 enum ImGuiKeyModFlags_
