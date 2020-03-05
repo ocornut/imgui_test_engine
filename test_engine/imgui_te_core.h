@@ -35,11 +35,11 @@ typedef void* ImGuiTestCoroutineHandle; // An arbitrary handle used internally t
 
 enum ImGuiTestVerboseLevel
 {
-    ImGuiTestVerboseLevel_Silent    = 0,
-    ImGuiTestVerboseLevel_Error     = 1,
-    ImGuiTestVerboseLevel_Warning   = 2,
-    ImGuiTestVerboseLevel_Info      = 3,
-    ImGuiTestVerboseLevel_Debug     = 4,
+    ImGuiTestVerboseLevel_Silent    = 0, // -v0
+    ImGuiTestVerboseLevel_Error     = 1, // -v1
+    ImGuiTestVerboseLevel_Warning   = 2, // -v2
+    ImGuiTestVerboseLevel_Info      = 3, // -v3
+    ImGuiTestVerboseLevel_Debug     = 4, // -v4
     ImGuiTestVerboseLevel_Trace     = 5,
     ImGuiTestVerboseLevel_COUNT     = 6
 };
