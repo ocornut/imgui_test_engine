@@ -20,7 +20,7 @@ pushd %LOCAL_DIR%..\..\imgui\examples\example_null\
 @REM Clang+Microsoft headers don't seem to work with -std=c++03
 set CFLAGS=
 set CFLAGS=%CFLAGS% -std=c++11
-set CFLAGS=%CFLAGS% -Weverything
+set CFLAGS=%CFLAGS% -Weverything -Wextra
 set CFLAGS=%CFLAGS% -Wno-zero-as-null-pointer-constant
 set CFLAGS=%CFLAGS% -Wno-double-promotion
 set CFLAGS=%CFLAGS% -Wno-reserved-id-macro
