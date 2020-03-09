@@ -1285,8 +1285,8 @@ bool ImGuiTestEngineHook_Error(const char* file, const char* func, int line, ImG
 // - ImGuiTestEngine_ShowTestWindow()
 //-------------------------------------------------------------------------
 
-// Look for " filename:number " in the string.
-static bool ParseLineAndDrawFileOpenItem(ImGuiTestEngine* e, ImGuiTest* test, const char* line_start, const char* line_end)
+// Look for " filename:number " in the string and add menu option to open source.
+static bool ParseLineAndDrawFileOpenItemForSourceFile(ImGuiTestEngine* e, ImGuiTest* test, const char* line_start, const char* line_end)
 {
     const char* separator = ImStrchrRange(line_start, line_end, ':');
     if (separator == NULL)
@@ -1296,14 +1296,15 @@ static bool ParseLineAndDrawFileOpenItem(ImGuiTestEngine* e, ImGuiTest* test, co
     const char* filename_start = separator - 1;
     while (filename_start > line_start && filename_start[-1] != ' ')
         filename_start--;
+    if (filename_start == filename_end)
+        return false;
 
     int line_no = -1;
     sscanf(separator + 1, "%d ", &line_no);
-
-    if (line_no == -1 || filename_start == filename_end)
+    if (line_no == -1)
         return false;
 
-    Str256f buf("Open %.*s at line %d", (int)(filename_end - filename_start), filename_start, line_no);
+    Str256f buf("Open '%.*s' at line %d", (int)(filename_end - filename_start), filename_start, line_no);
     if (ImGui::MenuItem(buf.c_str()))
     {
         // FIXME-TESTS: Assume folder is same as folder of test->SourceFile!
@@ -1314,6 +1315,39 @@ static bool ParseLineAndDrawFileOpenItem(ImGuiTestEngine* e, ImGuiTest* test, co
     }
 
     return true;
+}
+
+// Look for "[ ,"]filename.png" in the string and add menu option to open image.
+static bool ParseLineAndDrawFileOpenItemForImageFile(ImGuiTestEngine* e, ImGuiTest* test, const char* line_start, const char* line_end, const char* file_ext)
+{
+    const char* extension = ImStristr(line_start, line_end, file_ext, NULL);
+    if (extension == NULL)
+        return false;
+
+    const char* filename_end = extension + strlen(file_ext);
+    const char* filename_start = extension - 1;
+    while (filename_start > line_start && filename_start[-1] != ' ' && filename_start[-1] != '\'' && filename_start[-1] != '\"')
+        filename_start--;
+    if (filename_start == filename_end)
+        return false;
+
+    Str256f buf("Open '%.*s'", (int)(filename_end - filename_start), filename_start);
+    if (ImGui::MenuItem(buf.c_str()))
+    {
+        buf.setf("%.*s", (int)(filename_end - filename_start), filename_start);
+        ImOsOpenInShell(buf.c_str());
+    }
+
+    return true;
+}
+
+static bool ParseLineAndDrawFileOpenItem(ImGuiTestEngine* e, ImGuiTest* test, const char* line_start, const char* line_end)
+{
+    if (ParseLineAndDrawFileOpenItemForSourceFile(e, test, line_start, line_end))
+        return true;
+    if (ParseLineAndDrawFileOpenItemForImageFile(e, test, line_start, line_end, ".png"))
+        return true;
+    return false;
 }
 
 static void DrawTestLog(ImGuiTestEngine* e, ImGuiTest* test, bool is_interactive)

@@ -30,12 +30,12 @@ enum ImOsConsoleTextColor
 struct ImBuildInfo
 {
     // FIXME: Could include branch?
-    const char* Type = "";
-    const char* Cpu = "";
-    const char* OS = "";
-    const char* Compiler = "";
-    char        Date[32];           // "YYYY-MM-DD"
-    const char* Time = "";          //
+    const char*     Type = "";
+    const char*     Cpu = "";
+    const char*     OS = "";
+    const char*     Compiler = "";
+    char            Date[32];           // "YYYY-MM-DD"
+    const char*     Time = "";          //
 };
 
 //-----------------------------------------------------------------------------
