@@ -5,6 +5,7 @@
 #include "libs/Str/Str.h"
 #include "shared/imgui_app.h"
 #include "shared/IconsFontAwesome5.h"
+#include "shared/imgui_capture_tool.h"
 
 // FIXME-SAMPLE FIXME-FONT: This is looking very poor with DpiScale == 1.0f, switch to FreeType?
 static void LoadFonts(ImGuiApp* app)
@@ -155,6 +156,11 @@ int main(int argc, char** argv)
     char* readme_md = (char*)ImFileLoadToMemory("docs/README.md", "rb", &readme_md_size, +1);
 #endif
 
+    bool show_capture_tool = false;
+    ImGuiCaptureTool capture_tool;
+    capture_tool.Context.UserData = app;
+    capture_tool.Context.ScreenCaptureFunc = [](int x, int y, int w, int h, unsigned int* pixels, void* user_data) { ImGuiApp* app = (ImGuiApp*)user_data; return app->CaptureFramebuffer(app, x, y, w, h, pixels, NULL); };
+
     // Main loop
     while (app->NewFrame(app) && !app->Quit)
     {
@@ -218,6 +224,12 @@ int main(int argc, char** argv)
                 ImGui::EndMenu();
             }
 
+            if (ImGui::BeginMenu("View"))
+            {
+                ImGui::MenuItem("Capture Tool", NULL, &show_capture_tool);
+                ImGui::EndMenu();
+            }
+
             if (ImGui::BeginMenu("Help"))
             {
                 if (ImGui::MenuItem("About Editor Demo", ""))
@@ -239,6 +251,9 @@ int main(int argc, char** argv)
         ImGui::Text(ICON_FA_SEARCH " Search");
         ImGui::ColorEdit4("ClearColor", &app->ClearColor.x);
         ImGui::End();
+
+        if (show_capture_tool)
+            capture_tool.ShowCaptureToolWindow(&show_capture_tool);
 
         ImGui::Render();
         app->Render(app);

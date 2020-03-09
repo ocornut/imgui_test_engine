@@ -169,6 +169,7 @@
     <ClInclude Include="..\shared\imgui_app.h" />
     <ClInclude Include="..\libs\imgui_markdown\imgui_markdown.h" />
     <ClInclude Include="..\libs\Str\Str.h" />
+    <ClInclude Include="..\shared\imgui_capture_tool.h" />
     <ClInclude Include="..\shared\imgui_utils.h" />
     <ClInclude Include="editor_widgets.h" />
   </ItemGroup>
@@ -181,6 +182,7 @@
     <ClCompile Include="..\..\imgui\imgui_widgets.cpp" />
     <ClCompile Include="..\shared\imgui_app.cpp" />
     <ClCompile Include="..\libs\Str\Str.cpp" />
+    <ClCompile Include="..\shared\imgui_capture_tool.cpp" />
     <ClCompile Include="..\shared\imgui_utils.cpp" />
     <ClCompile Include="editor_widgets.cpp" />
     <ClCompile Include="main.cpp" />
