@@ -694,6 +694,10 @@ bool ImGuiTestEngine_CaptureScreenshot(ImGuiTestEngine* engine, ImGuiCaptureArgs
     const bool backup_fast = engine->IO.ConfigRunFast;
     engine->IO.ConfigRunFast = false;
 
+    // Because we rely on window->ContentSize for stitching, let 1 extra frame elapse to make sure any
+    // windows which contents have changed in the last frame get a correct window->ContentSize value.
+    ImGuiTestEngine_Yield(engine);
+
     while (ct.CaptureScreenshot(args))
         ImGuiTestEngine_Yield(engine);
 

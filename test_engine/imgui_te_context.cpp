@@ -404,8 +404,11 @@ bool ImGuiTestContext::CaptureAddWindow(ImGuiTestRef ref)
 bool ImGuiTestContext::CaptureScreenshot()
 {
     //IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this); // No extra depth to make it visible
+    IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
     LogInfo("CaptureScreenshot()");
-    return ImGuiTestEngine_CaptureScreenshot(Engine, &CaptureArgs);
+    bool ret = ImGuiTestEngine_CaptureScreenshot(Engine, &CaptureArgs);
+    LogDebug("Captured %d*%d pixels.", (int)CaptureArgs.OutImageSize.x, (int)CaptureArgs.OutImageSize.y);
+    return ret;
 }
 
 ImGuiTestItemInfo* ImGuiTestContext::ItemLocate(ImGuiTestRef ref, ImGuiTestOpFlags flags)
@@ -838,8 +841,11 @@ void    ImGuiTestContext::MouseClick(int button)
     Inputs->MouseButtonsValue = (1 << button);
     Yield();
     Inputs->MouseButtonsValue = 0;
-    Yield();
-    Yield(); // Give a frame for items to react
+
+    Yield(); // Let the imgui frame finish, start a new frame.
+    // Now NewFrame() has seen the mouse release.
+    Yield(); // Let the imgui frame finish, now e.g. Button() function will return true. Start a new frame.
+    // At this point, we are in a new frame but our windows haven't been Begin()-ed into, so anything processed by Begin() is not valid yet.
 }
 
 // TODO: click time argument (seconds and/or frames)

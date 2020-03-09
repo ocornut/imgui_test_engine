@@ -193,6 +193,7 @@ bool ImGuiCaptureContext::CaptureScreenshot(ImGuiCaptureArgs* args)
         _CaptureRect.Expand(args->InPadding);
 
         // Initialize capture buffer.
+        args->OutImageSize = _CaptureRect.GetSize();
         output->CreateEmpty((int)_CaptureRect.GetWidth(), (int)_CaptureRect.GetHeight());
     }
     else if ((_FrameNo % 4) == 0)

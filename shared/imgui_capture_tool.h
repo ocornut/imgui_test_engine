@@ -64,6 +64,7 @@ struct ImGuiCaptureArgs
     int                     OutFileCounter = 0;             // Counter which may be appended to file name when saving. By default counting starts from 1. When done this field holds number of saved files.
     ImGuiCaptureImageBuf*   OutImageBuf = NULL;             // Output will be saved to image buffer if specified.
     char                    OutImageFileTemplate[256] = ""; // Output will be saved to a file if OutImageBuf is NULL.
+    ImVec2                  OutImageSize;
 
     // [Internal]
     bool                    _Capturing = false;             // FIXME-TESTS: ???
