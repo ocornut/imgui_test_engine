@@ -491,13 +491,13 @@ void RegisterTests_Window(ImGuiTestEngine* e)
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         ctx->WindowRef("Popups");
-        IM_CHECK(ctx->UiContext->OpenPopupStack.size() == 0);
+        IM_CHECK(ctx->UiContext->OpenPopupStack.Size == 0);
         ctx->MenuClick("Menu");
-        IM_CHECK(ctx->UiContext->OpenPopupStack.size() == 1);
+        IM_CHECK(ctx->UiContext->OpenPopupStack.Size == 1);
         ctx->MenuClick("Menu/Submenu");
-        IM_CHECK(ctx->UiContext->OpenPopupStack.size() == 2);
+        IM_CHECK(ctx->UiContext->OpenPopupStack.Size == 2);
         ctx->MenuClick("Menu/Submenu/Close");
-        IM_CHECK(ctx->UiContext->OpenPopupStack.size() == 0);
+        IM_CHECK(ctx->UiContext->OpenPopupStack.Size == 0);
     };
 }
 

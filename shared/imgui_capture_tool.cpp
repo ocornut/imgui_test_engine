@@ -153,20 +153,16 @@ bool ImGuiCaptureContext::CaptureScreenshot(ImGuiCaptureArgs* args)
 
         if (args->InFlags & ImGuiCaptureToolFlags_StitchFullContents)
         {
-            if (is_capturing_rect)
-                ImGui::LogText("Capture Tool: capture of full window contents is not possible when capturing specified rect.");
-            else if (args->InCaptureWindows.size() != 1)
-                ImGui::LogText("Capture Tool: capture of full window contents is not possible when capturing more than one window.");
-            else
-            {
-                // Resize window to it's contents and capture it's entire width/height. However if window is bigger than
-                // it's contents - keep original size.
-                ImVec2 full_size;
-                ImGuiWindow* window = args->InCaptureWindows.front();
-                full_size.x = ImMax(window->SizeFull.x, window->ContentSize.x + window->WindowPadding.y * 2);
-                full_size.y = ImMax(window->SizeFull.y, window->ContentSize.y + window->WindowPadding.y * 2 + window->TitleBarHeight() + window->MenuBarHeight());
-                ImGui::SetWindowSize(window, full_size);
-            }
+            IM_ASSERT(!is_capturing_rect && "Capture Tool: capture of full window contents is not possible when capturing specified rect.");
+            IM_ASSERT(args->InCaptureWindows.Size == 1 && "Capture Tool: capture of full window contents is not possible when capturing more than one window.");
+
+            // Resize window to it's contents and capture it's entire width/height. However if window is bigger than
+            // it's contents - keep original size.
+            ImVec2 full_size;
+            ImGuiWindow* window = args->InCaptureWindows.front();
+            full_size.x = ImMax(window->SizeFull.x, window->ContentSize.x + window->WindowPadding.y * 2);
+            full_size.y = ImMax(window->SizeFull.y, window->ContentSize.y + window->WindowPadding.y * 2 + window->TitleBarHeight() + window->MenuBarHeight());
+            ImGui::SetWindowSize(window, full_size);
         }
     }
     else if (_FrameNo == 1)
@@ -234,28 +230,22 @@ bool ImGuiCaptureContext::CaptureScreenshot(ImGuiCaptureArgs* args)
             {
                 // Save file only if custom buffer was not specified.
                 int file_name_size = IM_ARRAYSIZE(_SaveFileNameFinal);
-                if (ImFormatString(_SaveFileNameFinal, file_name_size, args->OutImageFileTemplate, args->OutFileCounter + 1) >= file_name_size)
+                ImFormatString(_SaveFileNameFinal, file_name_size, args->OutImageFileTemplate, args->OutFileCounter + 1);
+                ImPathFixSeparatorsForCurrentOS(_SaveFileNameFinal);
+                if (!ImFileCreateDirectoryChain(_SaveFileNameFinal, ImPathFindFilename(_SaveFileNameFinal)))
                 {
-                    ImGui::LogText("Capture Tool: file name is too long.");
+                    printf("Capture Tool: unable to create directory for file '%s'.\n", _SaveFileNameFinal);
                 }
                 else
                 {
-                    ImPathFixSeparatorsForCurrentOS(_SaveFileNameFinal);
-                    if (!ImFileCreateDirectoryChain(_SaveFileNameFinal, ImPathFindFilename(_SaveFileNameFinal)))
-                    {
-                        ImGui::LogText("Capture Tool: unable to create directory for file '%s'.", _SaveFileNameFinal);
-                    }
-                    else
-                    {
-                        args->OutFileCounter++;
-                        output->SaveFile(_SaveFileNameFinal);
-                    }
+                    args->OutFileCounter++;
+                    output->SaveFile(_SaveFileNameFinal);
                 }
                 output->Clear();
             }
 
             // Restore window position
-            for (int i = 0; i < _WindowBackupRects.size(); i++)
+            for (int i = 0; i < _WindowBackupRects.Size; i++)
             {
                 ImGuiWindow* window = _WindowBackupRectsWindows[i];
                 if (window->Hidden)
