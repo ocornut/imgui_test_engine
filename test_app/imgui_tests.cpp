@@ -5025,6 +5025,7 @@ void RegisterTests_Capture(ImGuiTestEngine* e)
             ctx->MouseMove("float");
             ctx->MouseMoveToPos(g.IO.MousePos + ImVec2(30, -10));
             ctx->CaptureArgs.InPadding = padding;
+            ctx->CaptureArgs.InCaptureWindows.clear();
             ctx->CaptureArgs.InCaptureWindows.push_back(window);
             ctx->CaptureScreenshot();
         }

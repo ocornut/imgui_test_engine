@@ -498,7 +498,6 @@ static void PopDisabled()
     ImGui::PopItemFlag();
 }
 
-
 void ImGuiCaptureTool::ShowCaptureToolWindow(bool* p_open)
 {
     if (!ImGui::Begin("Dear ImGui Capture Tool", p_open))
@@ -559,7 +558,20 @@ void ImGuiCaptureTool::ShowCaptureToolWindow(bool* p_open)
         ImGui::DragFloat("##SnapGridSize", &SnapGridSize, 1.0f, 1.0f, 128.0f, "%.0f");
 
         ImGui::Checkbox("Software Mouse Cursor", &io.MouseDrawCursor);  // FIXME-TESTS: Test engine always resets this value.
+#ifdef IMGUI_HAS_VIEWPORT
+        if ((io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable))
+            PushDisabled();
+#endif
         ImGui::CheckboxFlags("Stitch and capture full contents height", &Flags, ImGuiCaptureToolFlags_StitchFullContents);
+#ifdef IMGUI_HAS_VIEWPORT
+        if ((io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable))
+        {
+            Flags &= ~ImGuiCaptureToolFlags_StitchFullContents;
+            PopDisabled();
+            if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
+                ImGui::SetTooltip("Content stitching is not possible when using viewports.");
+        }
+#endif
         ImGui::CheckboxFlags("Always ignore capture tool window", &Flags, ImGuiCaptureToolFlags_IgnoreCaptureToolWindow);
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Full height of picked window will be captured.");
