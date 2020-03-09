@@ -142,6 +142,8 @@ struct ImGuiTestEngine
     ImGuiCaptureTool            CaptureTool;
     bool                        ToolSlowDown = false;
     int                         ToolSlowDownMs = 100;
+    ImGuiCaptureContext         CaptureContext;
+    ImGuiCaptureArgs*           CurrentCaptureArgs = NULL;
 
     // Functions
     ImGuiTestEngine()
@@ -683,8 +685,7 @@ const char* ImGuiTestEngine_GetVerboseLevelName(ImGuiTestVerboseLevel v)
 
 bool ImGuiTestEngine_CaptureScreenshot(ImGuiTestEngine* engine, ImGuiCaptureArgs* args)
 {
-    ImGuiCaptureContext& ct = engine->CaptureTool.Context;
-    if (ct.ScreenCaptureFunc == NULL)
+    if (engine->IO.ScreenCaptureFunc == NULL)
     {
         IM_ASSERT(0);
         return false;
@@ -698,7 +699,8 @@ bool ImGuiTestEngine_CaptureScreenshot(ImGuiTestEngine* engine, ImGuiCaptureArgs
     // windows which contents have changed in the last frame get a correct window->ContentSize value.
     ImGuiTestEngine_Yield(engine);
 
-    while (ct.CaptureScreenshot(args))
+    engine->CurrentCaptureArgs = args;
+    while (engine->CurrentCaptureArgs != NULL)
         ImGuiTestEngine_Yield(engine);
 
     engine->IO.ConfigRunFast = backup_fast;
@@ -1767,6 +1769,14 @@ void    ImGuiTestEngine_ShowTestWindow(ImGuiTestEngine* engine, bool* p_open)
     capture_tool.Context.ScreenCaptureFunc = engine->IO.ScreenCaptureFunc;
     if (capture_tool.Visible)
         capture_tool.ShowCaptureToolWindow(&capture_tool.Visible);
+
+    // Capture a screenshot from main thread while coroutine waits
+    if (engine->CurrentCaptureArgs != NULL)
+    {
+        engine->CaptureContext.ScreenCaptureFunc = engine->IO.ScreenCaptureFunc;
+        if (!engine->CaptureContext.CaptureScreenshot(engine->CurrentCaptureArgs))
+            engine->CurrentCaptureArgs = NULL;
+    }
 }
 
 //-------------------------------------------------------------------------
