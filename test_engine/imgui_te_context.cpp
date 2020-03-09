@@ -403,11 +403,10 @@ bool ImGuiTestContext::CaptureAddWindow(ImGuiTestRef ref)
 // FIXME-TESTS: Could log the final filename(s) in ImGuiTest so the test browser could expose button to view/open them?
 bool ImGuiTestContext::CaptureScreenshot()
 {
-    //IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this); // No extra depth to make it visible
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
     LogInfo("CaptureScreenshot()");
     bool ret = ImGuiTestEngine_CaptureScreenshot(Engine, &CaptureArgs);
-    LogDebug("Captured %d*%d pixels.", (int)CaptureArgs.OutImageSize.x, (int)CaptureArgs.OutImageSize.y);
+    LogDebug("Saved '%s' (%d*%d pixels)", CaptureArgs.OutSavedFileName, (int)CaptureArgs.OutImageSize.x, (int)CaptureArgs.OutImageSize.y);
     return ret;
 }
 

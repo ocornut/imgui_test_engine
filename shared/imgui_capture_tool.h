@@ -59,12 +59,13 @@ struct ImGuiCaptureArgs
     ImVector<ImGuiWindow*>  InCaptureWindows;               // Windows to capture. All other windows will be hidden. May be used with InCaptureRect to capture only some windows in specified rect.
     ImRect                  InCaptureRect;                  // Screen rect to capture. Does not include padding.
     float                   InPadding = 10.0f;              // Extra padding at the edges of the screenshot.
+    int                     InFileCounter = 0;              // Counter which may be appended to file name when saving. By default counting starts from 1. When done this field holds number of saved files.
+    ImGuiCaptureImageBuf*   InOutputImageBuf = NULL;        // Output will be saved to image buffer if specified.
+    char                    InOutputFileTemplate[256] = ""; // Output will be saved to a file if InOutputImageBuf is NULL.
 
     // [Output]
-    int                     OutFileCounter = 0;             // Counter which may be appended to file name when saving. By default counting starts from 1. When done this field holds number of saved files.
-    ImGuiCaptureImageBuf*   OutImageBuf = NULL;             // Output will be saved to image buffer if specified.
-    char                    OutImageFileTemplate[256] = ""; // Output will be saved to a file if OutImageBuf is NULL.
-    ImVec2                  OutImageSize;
+    ImVec2                  OutImageSize;                   // Produced image size.
+    char                    OutSavedFileName[256] = "";     // Saved file name, if any.
 
     // [Internal]
     bool                    _Capturing = false;             // FIXME-TESTS: ???
@@ -80,7 +81,6 @@ struct ImGuiCaptureContext
     ImRect                  _CaptureRect;                   // Viewport rect that is being captured.
     ImVec2                  _CombinedWindowRectPos;         // Top-left corner of region that covers all windows included in capture. This is not same as _CaptureRect.Min when capturing explicitly specified rect.
     ImGuiCaptureImageBuf    _Output;                        // Output image buffer.
-    char                    _SaveFileNameFinal[256] = "";   // Final file name to which captured image will be saved.
     int                     _ChunkNo = 0;                   // Number of chunk that is being captured when capture spans multiple frames.
     int                     _FrameNo = 0;                   // Frame number during capture process that spans multiple frames.
     ImVector<ImRect>        _WindowBackupRects;             // Backup window state that will be restored when screen capturing is done. Size and order matches windows of ImGuiCaptureArgs::InCaptureWindows.
@@ -103,6 +103,7 @@ struct ImGuiCaptureTool
     float                   Padding = 10.0f;                // Extra padding around captured area.
     char                    SaveFileName[256];              // File name where screenshots will be saved. May contain directories or variation of %d format.
     float                   SnapGridSize = 32.0f;           // Size of the grid cell for "snap to grid" functionality.
+    char                    LastSaveFileName[256];          // File name of last captured file.
 
     ImGuiCaptureArgs        _CaptureArgsPicker;             // Capture args for single window picker widget.
     ImGuiCaptureArgs        _CaptureArgsSelector;           // Capture args for multiple window selector widget.

@@ -87,9 +87,9 @@ bool ImGuiCaptureContext::CaptureScreenshot(ImGuiCaptureArgs* args)
     ImGuiIO& io = g.IO;
     IM_ASSERT(args != NULL);
     IM_ASSERT(ScreenCaptureFunc != NULL);
-    IM_ASSERT(args->OutImageBuf != NULL || args->OutImageFileTemplate[0]);
+    IM_ASSERT(args->InOutputImageBuf != NULL || args->InOutputFileTemplate[0]);
 
-    ImGuiCaptureImageBuf* output = args->OutImageBuf ? args->OutImageBuf : &_Output;
+    ImGuiCaptureImageBuf* output = args->InOutputImageBuf ? args->InOutputImageBuf : &_Output;
 
     // Hide other windows so they can't be seen visible behind captured window
     for (ImGuiWindow* window : g.Windows)
@@ -226,20 +226,20 @@ bool ImGuiCaptureContext::CaptureScreenshot(ImGuiCaptureArgs* args)
         {
             output->RemoveAlpha();
 
-            if (args->OutImageBuf == NULL)
+            if (args->InOutputImageBuf == NULL)
             {
                 // Save file only if custom buffer was not specified.
-                int file_name_size = IM_ARRAYSIZE(_SaveFileNameFinal);
-                ImFormatString(_SaveFileNameFinal, file_name_size, args->OutImageFileTemplate, args->OutFileCounter + 1);
-                ImPathFixSeparatorsForCurrentOS(_SaveFileNameFinal);
-                if (!ImFileCreateDirectoryChain(_SaveFileNameFinal, ImPathFindFilename(_SaveFileNameFinal)))
+                int file_name_size = IM_ARRAYSIZE(args->OutSavedFileName);
+                ImFormatString(args->OutSavedFileName, file_name_size, args->InOutputFileTemplate, args->InFileCounter + 1);
+                ImPathFixSeparatorsForCurrentOS(args->OutSavedFileName);
+                if (!ImFileCreateDirectoryChain(args->OutSavedFileName, ImPathFindFilename(args->OutSavedFileName)))
                 {
-                    printf("Capture Tool: unable to create directory for file '%s'.\n", _SaveFileNameFinal);
+                    printf("Capture Tool: unable to create directory for file '%s'.\n", args->OutSavedFileName);
                 }
                 else
                 {
-                    args->OutFileCounter++;
-                    output->SaveFile(_SaveFileNameFinal);
+                    args->InFileCounter++;
+                    output->SaveFile(args->OutSavedFileName);
                 }
                 output->Clear();
             }
@@ -260,8 +260,6 @@ bool ImGuiCaptureContext::CaptureScreenshot(ImGuiCaptureArgs* args)
             g.Style.DisplayWindowPadding = _DisplayWindowPaddingBackup;
             g.Style.DisplaySafeAreaPadding = _DisplaySafeAreaPaddingBackup;
             args->_Capturing = false;
-            args->InCaptureWindows.clear(); // FIXME-TESTS: Why clearing this? aka why isn't args a read-only structure
-            args->InCaptureRect = ImRect(); // FIXME-TESTS: "
             return false;
         }
     }
@@ -289,7 +287,10 @@ void ImGuiCaptureTool::CaptureWindowPicker(const char* title, ImGuiCaptureArgs* 
     if (_CaptureState == ImGuiCaptureToolState_Capturing && args->_Capturing)
     {
         if (ImGui::IsKeyPressedMap(ImGuiKey_Escape) || !Context.CaptureScreenshot(args))
+        {
             _CaptureState = ImGuiCaptureToolState_None;
+            ImStrncpy(LastSaveFileName, args->OutSavedFileName, IM_ARRAYSIZE(LastSaveFileName));
+        }
     }
 
     const ImVec2 button_sz = ImVec2(ImGui::CalcTextSize("M").x * 30, 0.0f);
@@ -476,7 +477,10 @@ void ImGuiCaptureTool::CaptureWindowsSelector(const char* title, ImGuiCaptureArg
     if (_CaptureState == ImGuiCaptureToolState_Capturing && args->_Capturing)
     {
         if (!Context.CaptureScreenshot(args))
+        {
             _CaptureState = ImGuiCaptureToolState_None;
+            ImStrncpy(LastSaveFileName, args->OutSavedFileName, IM_ARRAYSIZE(LastSaveFileName));
+        }
     }
 }
 
@@ -517,15 +521,15 @@ void ImGuiCaptureTool::ShowCaptureToolWindow(bool* p_open)
     ImGui::SetNextItemOpen(true, ImGuiCond_Once);
     if (ImGui::TreeNode("Options"))
     {
-        const bool has_last_file_name = (Context._SaveFileNameFinal[0] != 0);
+        const bool has_last_file_name = (LastSaveFileName[0] != 0);
         if (!has_last_file_name)
             PushDisabled();
         if (ImGui::Button("Open Last"))             // FIXME-CAPTURE: Running tests changes last captured file name.
-            ImOsOpenInShell(Context._SaveFileNameFinal);
+            ImOsOpenInShell(LastSaveFileName);
         if (!has_last_file_name)
             PopDisabled();
         if (has_last_file_name && ImGui::IsItemHovered())
-            ImGui::SetTooltip("Open %s", Context._SaveFileNameFinal);
+            ImGui::SetTooltip("Open %s", LastSaveFileName);
         ImGui::SameLine();
 
         char save_file_dir[256];
@@ -570,12 +574,12 @@ void ImGuiCaptureTool::ShowCaptureToolWindow(bool* p_open)
     ImGui::Separator();
 
     // Ensure that use of different contexts use same file counter and don't overwrite previously created files.
-    _CaptureArgsPicker.OutFileCounter = _CaptureArgsSelector.OutFileCounter = ImMax(_CaptureArgsPicker.OutFileCounter, _CaptureArgsSelector.OutFileCounter);
+    _CaptureArgsPicker.InFileCounter = _CaptureArgsSelector.InFileCounter = ImMax(_CaptureArgsPicker.InFileCounter, _CaptureArgsSelector.InFileCounter);
     // Propagate settings from UI to args.
     _CaptureArgsPicker.InPadding = _CaptureArgsSelector.InPadding = Padding;
     _CaptureArgsPicker.InFlags = _CaptureArgsSelector.InFlags = Flags;
-    ImStrncpy(_CaptureArgsPicker.OutImageFileTemplate, SaveFileName, (size_t)IM_ARRAYSIZE(_CaptureArgsPicker.OutImageFileTemplate));
-    ImStrncpy(_CaptureArgsSelector.OutImageFileTemplate, SaveFileName, (size_t)IM_ARRAYSIZE(_CaptureArgsSelector.OutImageFileTemplate));
+    ImStrncpy(_CaptureArgsPicker.InOutputFileTemplate, SaveFileName, (size_t)IM_ARRAYSIZE(_CaptureArgsPicker.InOutputFileTemplate));
+    ImStrncpy(_CaptureArgsSelector.InOutputFileTemplate, SaveFileName, (size_t)IM_ARRAYSIZE(_CaptureArgsSelector.InOutputFileTemplate));
 
     // Hide tool window unconditionally.
     if (Flags & ImGuiCaptureToolFlags_IgnoreCaptureToolWindow && _CaptureState == ImGuiCaptureToolState_Capturing)

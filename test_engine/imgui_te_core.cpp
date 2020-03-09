@@ -748,7 +748,7 @@ static void ImGuiTestEngine_ProcessTestQueue(ImGuiTestEngine* engine)
 #else
         ctx.HasDock = false;
 #endif
-        ImFormatString(ctx.CaptureArgs.OutImageFileTemplate, IM_ARRAYSIZE(ctx.CaptureArgs.OutImageFileTemplate), "captures/%s_%%04d.png", test->Name);
+        ImFormatString(ctx.CaptureArgs.InOutputFileTemplate, IM_ARRAYSIZE(ctx.CaptureArgs.InOutputFileTemplate), "captures/%s_%%04d.png", test->Name);
         engine->TestContext = &ctx;
         if (track_scrolling)
             engine->UiSelectAndScrollToTest = test;
@@ -1775,7 +1775,10 @@ void    ImGuiTestEngine_ShowTestWindow(ImGuiTestEngine* engine, bool* p_open)
     {
         engine->CaptureContext.ScreenCaptureFunc = engine->IO.ScreenCaptureFunc;
         if (!engine->CaptureContext.CaptureScreenshot(engine->CurrentCaptureArgs))
+        {
+            ImStrncpy(engine->CaptureTool.LastSaveFileName, engine->CurrentCaptureArgs->OutSavedFileName, IM_ARRAYSIZE(engine->CaptureTool.LastSaveFileName));
             engine->CurrentCaptureArgs = NULL;
+        }
     }
 }
 
