@@ -84,6 +84,9 @@
     <ClInclude Include="..\shared\imgui_utils.h">
       <Filter>shared</Filter>
     </ClInclude>
+    <ClInclude Include="..\test_engine\imgui_te_imconfig.h">
+      <Filter>test_engine</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\imgui\imgui.cpp">
