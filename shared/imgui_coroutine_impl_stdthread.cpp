@@ -31,7 +31,7 @@ struct Coroutine_ImplStdThreadData
 static thread_local Coroutine_ImplStdThreadData* GThreadCoroutine = NULL;
 
 // The main function for a coroutine thread
-void CoroutineThreadMain(Coroutine_ImplStdThreadData* data, ImGuiTestCoroutineFunc func, void* ctx)
+void CoroutineThreadMain(Coroutine_ImplStdThreadData* data, ImGuiTestCoroutineMainFunc func, void* ctx)
 {
     // Set our thread name
     ImThreadSetCurrentThreadDescription(data->Name.c_str());
@@ -61,7 +61,7 @@ void CoroutineThreadMain(Coroutine_ImplStdThreadData* data, ImGuiTestCoroutineFu
     }
 }
 
-ImGuiTestCoroutineHandle Coroutine_ImplStdThread_Create(ImGuiTestCoroutineFunc func, const char* name, void* ctx)
+ImGuiTestCoroutineHandle Coroutine_ImplStdThread_Create(ImGuiTestCoroutineMainFunc func, const char* name, void* ctx)
 {
     Coroutine_ImplStdThreadData* data = new Coroutine_ImplStdThreadData();
 

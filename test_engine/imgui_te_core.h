@@ -11,14 +11,18 @@
 // Forward Declarations
 //-------------------------------------------------------------------------
 
-struct ImGuiCaptureArgs;
-
 struct ImGuiTest;
 struct ImGuiTestContext;
 struct ImGuiTestEngine;
 struct ImGuiTestEngineIO;
 struct ImGuiTestItemInfo;
 struct ImGuiTestItemList;
+struct ImGuiTestInputs;
+struct ImGuiTestGatherTask;
+struct ImGuiTestLocateTask;
+struct ImGuiTestRunTask;
+
+struct ImGuiCaptureArgs;
 struct ImRect;
 
 typedef int ImGuiTestFlags;         // Flags: See ImGuiTestFlags_
@@ -26,8 +30,14 @@ typedef int ImGuiTestCheckFlags;    // Flags: See ImGuiTestCheckFlags_
 typedef int ImGuiTestLogFlags;      // Flags: See ImGuiTestLogFlags_
 typedef int ImGuiTestOpFlags;       // Flags: See ImGuiTestOpFlags_
 typedef int ImGuiTestRunFlags;      // Flags: See ImGuiTestRunFlags_
-typedef void(*ImGuiTestCoroutineFunc)(void* ctx); // A coroutine function - ctx is an arbitrary context object
-typedef void* ImGuiTestCoroutineHandle; // An arbitrary handle used internally to represent coroutines (NULL indicates no handle)
+
+// Coroutine abstraction (see shared/imgui_coroutine_impl_stdthread.h for a suggested implementation of this)
+typedef void*                       ImGuiTestCoroutineHandle;                   // An arbitrary handle used internally to represent coroutines (NULL indicates no handle)
+typedef void                        (*ImGuiTestCoroutineMainFunc)(void* ctx);   // A coroutine function - ctx is an arbitrary context object
+typedef ImGuiTestCoroutineHandle    (*ImGuiTestEngineCoroutineCreateFunc)(ImGuiTestCoroutineMainFunc func, const char* name, void* ctx);
+typedef void                        (*ImGuiTestEngineCoroutineDestroyFunc)(ImGuiTestCoroutineHandle handle);
+typedef bool                        (*ImGuiTestEngineCoroutineRunFunc)(ImGuiTestCoroutineHandle handle);
+typedef void                        (*ImGuiTestEngineCoroutineYieldFunc)();
 
 //-------------------------------------------------------------------------
 // Types
@@ -114,6 +124,7 @@ enum ImGuiTestInputType
     ImGuiTestInputType_Char
 };
 
+// Weak reference to an Item/Window given an ID or ID path.
 struct ImGuiTestRef
 {
     ImGuiID                 ID;
@@ -160,30 +171,6 @@ struct ImGuiTestInput
         return inp;
     }
 };
-
-struct ImGuiTestInputs
-{
-    ImGuiIO                     SimulatedIO;
-    int                         ApplyingSimulatedIO = 0;
-    ImVec2                      MousePosValue;             // Own non-rounded copy of MousePos in order facilitate simulating mouse movement very slow speed and high-framerate
-    ImVec2                      HostLastMousePos;
-    int                         MouseButtonsValue = 0x00;  // FIXME-TESTS: Use simulated_io.MouseDown[] ?
-    ImGuiKeyModFlags            KeyMods = 0x00;            // FIXME-TESTS: Use simulated_io.KeyXXX ?
-    ImVector<ImGuiTestInput>    Queue;
-};
-
-//-------------------------------------------------------------------------
-// Internal function
-//-------------------------------------------------------------------------
-
-ImGuiTestItemInfo*  ImGuiTestEngine_ItemLocate(ImGuiTestEngine* engine, ImGuiID id, const char* debug_id);
-void                ImGuiTestEngine_PushInput(ImGuiTestEngine* engine, const ImGuiTestInput& input);
-void                ImGuiTestEngine_Yield(ImGuiTestEngine* engine);
-void                ImGuiTestEngine_SetDeltaTime(ImGuiTestEngine* engine, float delta_time);
-int                 ImGuiTestEngine_GetFrameCount(ImGuiTestEngine* engine);
-double              ImGuiTestEngine_GetPerfDeltaTime500Average(ImGuiTestEngine* engine);
-const char*         ImGuiTestEngine_GetVerboseLevelName(ImGuiTestVerboseLevel v);
-bool                ImGuiTestEngine_CaptureScreenshot(ImGuiTestEngine* engine, ImGuiCaptureArgs* args);
 
 //-------------------------------------------------------------------------
 // Hooks for Core Library
@@ -312,21 +299,17 @@ void                ImGuiTestEngine_CoroutineStopAndJoin(ImGuiTestEngine* engine
 void                ImGuiTestEngine_GetResult(ImGuiTestEngine* engine, int& count_tested, int& success_count);
 
 // Function pointers for IO structure
-typedef void (*ImGuiTestEngineSrcFileOpenFunc)(const char* filename, int line, void* user_data);
-typedef bool (*ImGuiTestEngineScreenCaptureFunc)(int x, int y, int w, int h, unsigned int* pixels, void* user_data);
-typedef ImGuiTestCoroutineHandle (*ImGuiTestEngineCoroutineCreateFunc)(ImGuiTestCoroutineFunc func, const char* name, void* ctx);
-typedef void (*ImGuiTestEngineCoroutineDestroyFunc)(ImGuiTestCoroutineHandle handle);
-typedef bool (*ImGuiTestEngineCoroutineRunFunc)(ImGuiTestCoroutineHandle handle);
-typedef void (*ImGuiTestEngineCoroutineYieldFunc)();
+typedef void        (*ImGuiTestEngineSrcFileOpenFunc)(const char* filename, int line, void* user_data);
+typedef bool        (*ImGuiTestEngineScreenCaptureFunc)(int x, int y, int w, int h, unsigned int* pixels, void* user_data);
 
 // IO structure
 struct ImGuiTestEngineIO
 {
-    ImGuiTestEngineSrcFileOpenFunc      SrcFileOpenFunc = NULL;     // (Optional) To open source files
-    ImGuiTestEngineScreenCaptureFunc    ScreenCaptureFunc = NULL;  // (Optional) To capture graphics output
+    ImGuiTestEngineSrcFileOpenFunc      SrcFileOpenFunc = NULL;         // (Optional) To open source files
+    ImGuiTestEngineScreenCaptureFunc    ScreenCaptureFunc = NULL;       // (Optional) To capture graphics output
     void*                               UserData = NULL;
 
-    // Coroutine support functions
+    // Coroutine support functions.
     // Coroutines should be used like this:
     //   ImGuiTestCoroutineHandle handle = CoroutineCreate(<func>, <name>, <ctx>); // name being for debugging, and ctx being an arbitrary user context pointer
     //   while (CoroutineRun(handle)) { <do other stuff };
@@ -396,15 +379,6 @@ struct ImGuiTestItemList
     const ImGuiTestItemInfo*    operator[] (size_t n)   { return Pool.GetByIndex((int)n); }
     const ImGuiTestItemInfo*    GetByIndex(int n)       { return Pool.GetByIndex(n); }
     const ImGuiTestItemInfo*    GetByID(ImGuiID id)     { return Pool.GetByKey(id); }
-};
-
-// Gather items in given parent scope.
-struct ImGuiTestGatherTask
-{
-    ImGuiID                 ParentID = 0;
-    int                     Depth = 0;
-    ImGuiTestItemList*      OutList = NULL;
-    ImGuiTestItemInfo*      LastItemInfo = NULL;
 };
 
 // Helper to output a string showing the Path, ID or Debug Label based on what is available (some items only have ID as we couldn't find/store a Path)

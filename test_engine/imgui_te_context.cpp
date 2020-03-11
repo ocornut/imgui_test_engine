@@ -13,6 +13,7 @@
 #define IMGUI_DEFINE_MATH_OPERATORS
 #include "imgui_te_core.h"
 #include "imgui_te_context.h"
+#include "imgui_te_internal.h"
 #include "imgui_te_util.h"
 #include "shared/imgui_utils.h"
 #include "libs/Str/Str.h"

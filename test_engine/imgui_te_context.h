@@ -9,6 +9,9 @@
 #include "imgui_te_core.h"
 #include "shared/imgui_capture_tool.h"  // ImGuiCaptureArgs // FIXME
 
+#define IM_TOKENCONCAT_INTERNAL(x, y)   x ## y
+#define IM_TOKENCONCAT(x, y)            IM_TOKENCONCAT_INTERNAL(x, y)
+
 // Undo some of the damage done by <windows.h>
 #ifdef Yield
 #undef Yield
@@ -307,9 +310,7 @@ struct ImGuiTestContext
 };
 
 // Helper to increment/decrement the function depth (so our log entry can be padded accordingly)
-#define IM_TOKENPASTE(x, y)     x ## y
-#define IM_TOKENPASTE2(x, y)    IM_TOKENPASTE(x, y)
-#define IMGUI_TEST_CONTEXT_REGISTER_DEPTH(_THIS)        ImGuiTestContextDepthScope IM_TOKENPASTE2(depth_register, __LINE__)(_THIS)
+#define IMGUI_TEST_CONTEXT_REGISTER_DEPTH(_THIS)        ImGuiTestContextDepthScope IM_TOKENCONCAT(depth_register, __LINE__)(_THIS)
 
 struct ImGuiTestContextDepthScope
 {

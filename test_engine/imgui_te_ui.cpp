@@ -16,6 +16,7 @@
 //-------------------------------------------------------------------------
 // - DrawTestLog() [internal]
 // - GetVerboseLevelName() [internal]
+// - ImGuiTestEngine_ShowTestGroup() [Internal]
 // - ImGuiTestEngine_ShowTestWindow()
 //-------------------------------------------------------------------------
 
@@ -153,7 +154,7 @@ static void HelpTooltip(const char* desc)
         ImGui::SetTooltip("%s", desc);
 }
 
-void    ImGuiTestEngine_ShowTestGroup(ImGuiTestEngine* e, ImGuiTestGroup group, ImGuiTextFilter* filter)
+static void ImGuiTestEngine_ShowTestGroup(ImGuiTestEngine* e, ImGuiTestGroup group, ImGuiTextFilter* filter)
 {
     ImGuiStyle& style = ImGui::GetStyle();
     ImGuiTestEngineIO& e_io = ImGuiTestEngine_GetIO(e);
