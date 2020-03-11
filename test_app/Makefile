@@ -7,7 +7,7 @@ EXE = imgui_test_app
 IMGUI_PATH = ../../imgui
 SOURCES = main.cpp
 # FIXME: The paths look wrong here??
-SOURCES += ../imgui_tests.cpp ../imgui_te_context.cpp ../imgui_te_core.cpp ../imgui_te_util.cpp
+SOURCES += ../imgui_tests.cpp ../imgui_te_context.cpp ../imgui_te_core.cpp ../imgui_te_ui.cpp ../imgui_te_util.cpp
 SOURCES += $(IMGUI_PATH)/imgui.cpp $(IMGUI_PATH)/imgui_demo.cpp $(IMGUI_PATH)/imgui_draw.cpp $(IMGUI_PATH)/imgui_widgets.cpp
 SOURCES += ../shared/imgui_app.cpp ../shared/imgui_capture_tool.cpp ../shared/imgui_coroutine_impl_stdthread.cpp ../shared/imgui_utils.cpp
 SOURCES += ../libs/Str/Str.cpp
@@ -16,7 +16,7 @@ UNAME_S := $(shell uname -s)
 
 CXXFLAGS = -std=c++11
 CFLAGS = -I../ -I$(IMGUI_PATH) -I$(IMGUI_PATH)/examples
-CFLAGS += -DIMGUI_USER_CONFIG="test_app/test_app_imconfig.h"
+CFLAGS += -DIMGUI_USER_CONFIG=\"test_app/test_app_imconfig.h\"
 CFLAGS += -g -Wall -Wformat
 HAS_SDL2 = $(shell pkg-config --exists sdl2 && echo 1)
 

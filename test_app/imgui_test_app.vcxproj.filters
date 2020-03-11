@@ -87,6 +87,9 @@
     <ClInclude Include="test_app_imconfig.h">
       <Filter>test_app</Filter>
     </ClInclude>
+    <ClInclude Include="..\test_engine\imgui_te_internal.h">
+      <Filter>test_engine</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\imgui\imgui.cpp">
@@ -136,6 +139,9 @@
     </ClCompile>
     <ClCompile Include="..\shared\imgui_utils.cpp">
       <Filter>shared</Filter>
+    </ClCompile>
+    <ClCompile Include="..\test_engine\imgui_te_ui.cpp">
+      <Filter>test_engine</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
