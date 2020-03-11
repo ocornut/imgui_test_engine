@@ -279,6 +279,7 @@ ImGuiCaptureTool::ImGuiCaptureTool(ImGuiScreenCaptureFunc capture_func)
     ImStrncpy(SaveFileName, "captures/imgui_capture_%04d.png", (size_t)IM_ARRAYSIZE(SaveFileName));
 }
 
+// Interactively pick a single window
 void ImGuiCaptureTool::CaptureWindowPicker(const char* title, ImGuiCaptureArgs* args)
 {
     ImGuiContext& g = *GImGui;
@@ -313,8 +314,9 @@ void ImGuiCaptureTool::CaptureWindowPicker(const char* title, ImGuiCaptureArgs* 
     ImGuiWindow* capture_window = g.HoveredRootWindow;
     if (capture_window)
     {
-        if (Flags & ImGuiCaptureToolFlags_IgnoreCaptureToolWindow && capture_window == ImGui::GetCurrentWindow())
-            return;
+        if (Flags & ImGuiCaptureToolFlags_HideCaptureToolWindow)
+            if (capture_window == ImGui::GetCurrentWindow())
+                return;
 
         // Draw rect that is about to be captured
         ImRect r = capture_window->Rect();
@@ -402,7 +404,7 @@ void ImGuiCaptureTool::CaptureWindowsSelector(const char* title, ImGuiCaptureArg
         if (window->Flags & ImGuiWindowFlags_ChildWindow)
             continue;
 
-        if (args->InFlags & ImGuiCaptureToolFlags_IgnoreCaptureToolWindow && window == ImGui::GetCurrentWindow())
+        if (args->InFlags & ImGuiCaptureToolFlags_HideCaptureToolWindow && window == ImGui::GetCurrentWindow())
             continue;
 
         ImGui::PushID(window);
@@ -411,12 +413,15 @@ void ImGuiCaptureTool::CaptureWindowsSelector(const char* title, ImGuiCaptureArg
         if (_CaptureState == ImGuiCaptureToolState_SelectRectUpdate)
             *p_selected = select_rect.Contains(window->Rect());
 
-        // Ensure that text after the ## is actually displayed to the user (FIXME: won't be able to check/uncheck from it)
+        // Ensure that text after the ## is actually displayed to the user (FIXME: won't be able to check/uncheck from that portion of the text)
         ImGui::Checkbox(window->Name, p_selected);
         if (const char* remaining_text = ImGui::FindRenderedTextEnd(window->Name))
             if (remaining_text[0] != 0)
             {
-                ImGui::SameLine(0, 1);
+                if (remaining_text > window->Name)
+                    ImGui::SameLine(0, 1);
+                else
+                    ImGui::SameLine(0, ImGui::GetStyle().ItemInnerSpacing.x);
                 ImGui::TextUnformatted(remaining_text);
             }
 
@@ -572,7 +577,7 @@ void ImGuiCaptureTool::ShowCaptureToolWindow(bool* p_open)
                 ImGui::SetTooltip("Content stitching is not possible when using viewports.");
         }
 #endif
-        ImGui::CheckboxFlags("Always ignore capture tool window", &Flags, ImGuiCaptureToolFlags_IgnoreCaptureToolWindow);
+        ImGui::CheckboxFlags("Hide capture tool window", &Flags, ImGuiCaptureToolFlags_HideCaptureToolWindow);
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Full height of picked window will be captured.");
         ImGui::CheckboxFlags("Include tooltips", &Flags, ImGuiCaptureToolFlags_ExpandToIncludePopups);
@@ -594,12 +599,13 @@ void ImGuiCaptureTool::ShowCaptureToolWindow(bool* p_open)
     ImStrncpy(_CaptureArgsSelector.InOutputFileTemplate, SaveFileName, (size_t)IM_ARRAYSIZE(_CaptureArgsSelector.InOutputFileTemplate));
 
     // Hide tool window unconditionally.
-    if (Flags & ImGuiCaptureToolFlags_IgnoreCaptureToolWindow && _CaptureState == ImGuiCaptureToolState_Capturing)
-    {
-        ImGuiWindow* window = ImGui::GetCurrentWindowRead();
-        window->Hidden = true;
-        window->HiddenFramesCannotSkipItems = 2;
-    }
+    if (Flags & ImGuiCaptureToolFlags_HideCaptureToolWindow)
+        if (_CaptureState == ImGuiCaptureToolState_Capturing || _CaptureState == ImGuiCaptureToolState_PickingSingleWindow)
+        {
+            ImGuiWindow* window = ImGui::GetCurrentWindow();
+            window->Hidden = true;
+            window->HiddenFramesCannotSkipItems = 2;
+        }
 
     CaptureWindowPicker("Capture Window", &_CaptureArgsPicker);
     CaptureWindowsSelector("Capture Selected", &_CaptureArgsSelector);

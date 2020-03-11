@@ -3,19 +3,17 @@
 
 #pragma once
 
-#include <stdint.h> // uintptr_t
-
 #include "imgui.h"
 #include "imgui_te_core.h"
 #include "shared/imgui_capture_tool.h"  // ImGuiCaptureArgs // FIXME
-
-#define IM_TOKENCONCAT_INTERNAL(x, y)   x ## y
-#define IM_TOKENCONCAT(x, y)            IM_TOKENCONCAT_INTERNAL(x, y)
 
 // Undo some of the damage done by <windows.h>
 #ifdef Yield
 #undef Yield
 #endif
+
+#define IM_TOKENCONCAT_INTERNAL(x, y)   x ## y
+#define IM_TOKENCONCAT(x, y)            IM_TOKENCONCAT_INTERNAL(x, y)
 
 //-------------------------------------------------------------------------
 // ImGuiTestContext

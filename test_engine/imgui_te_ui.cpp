@@ -154,7 +154,7 @@ static void HelpTooltip(const char* desc)
         ImGui::SetTooltip("%s", desc);
 }
 
-static void ImGuiTestEngine_ShowTestGroup(ImGuiTestEngine* e, ImGuiTestGroup group, ImGuiTextFilter* filter)
+static void ShowTestGroup(ImGuiTestEngine* e, ImGuiTestGroup group, ImGuiTextFilter* filter)
 {
     ImGuiStyle& style = ImGui::GetStyle();
     ImGuiTestEngineIO& e_io = ImGuiTestEngine_GetIO(e);
@@ -419,12 +419,12 @@ void    ImGuiTestEngine_ShowTestWindow(ImGuiTestEngine* engine, bool* p_open)
     {
         if (ImGui::BeginTabItem("TESTS"))
         {
-            ImGuiTestEngine_ShowTestGroup(engine, ImGuiTestGroup_Tests, &engine->UiFilterTests);
+            ShowTestGroup(engine, ImGuiTestGroup_Tests, &engine->UiFilterTests);
             ImGui::EndTabItem();
         }
         if (ImGui::BeginTabItem("PERFS"))
         {
-            ImGuiTestEngine_ShowTestGroup(engine, ImGuiTestGroup_Perfs, &engine->UiFilterPerfs);
+            ShowTestGroup(engine, ImGuiTestGroup_Perfs, &engine->UiFilterPerfs);
             ImGui::EndTabItem();
         }
 
@@ -547,6 +547,7 @@ void    ImGuiTestEngine_ShowTestWindow(ImGuiTestEngine* engine, bool* p_open)
         capture_tool.ShowCaptureToolWindow(&capture_tool.Visible);
 
     // Capture a screenshot from main thread while coroutine waits
+    // FIXME: Move that out of here!
     if (engine->CurrentCaptureArgs != NULL)
     {
         engine->CaptureContext.ScreenCaptureFunc = engine->IO.ScreenCaptureFunc;

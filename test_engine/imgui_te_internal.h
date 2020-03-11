@@ -2,8 +2,6 @@
 
 #include "shared/imgui_capture_tool.h"  // ImGuiCaptureTool  // FIXME
 
-#define IMGUI_DEBUG_TEST_ENGINE     1
-
 //-------------------------------------------------------------------------
 // DATA STRUCTURES
 //-------------------------------------------------------------------------

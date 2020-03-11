@@ -3420,7 +3420,7 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
 #define IM_TEST_USING_ImWchar32 1
-#define IM_IS_WCHAR32 IM_CONCAT(IM_TEST_USING_, ImWchar)
+#define IM_IS_WCHAR32 IM_TOKENCONCAT(IM_TEST_USING_, ImWchar)
 
         auto check_utf8 = [](const char* utf8, const ImWchar* unicode)
         {

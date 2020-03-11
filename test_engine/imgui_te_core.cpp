@@ -215,7 +215,7 @@ ImGuiTestItemInfo* ImGuiTestEngine_ItemLocate(ImGuiTestEngine* engine, ImGuiID i
     ImGuiTestLocateTask* task = IM_NEW(ImGuiTestLocateTask)();
     task->ID = id;
     task->FrameCount = engine->FrameCount;
-#if IMGUI_DEBUG_TEST_ENGINE
+#if IMGUI_TEST_ENGINE_DEBUG
     if (debug_id)
     {
         size_t debug_id_sz = strlen(debug_id);

@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include <stdio.h>                  // FILE
+#define IMGUI_TEST_ENGINE_DEBUG     1
 #include "imgui_internal.h"         // ImPool<>, ImGuiItemStatusFlags, ImFormatString
 #include "imgui_te_util.h"
 

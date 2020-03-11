@@ -35,11 +35,11 @@ typedef bool (*ImGuiScreenCaptureFunc)(int x, int y, int w, int h, unsigned int*
 
 enum ImGuiCaptureFlags_
 {
-    ImGuiCaptureToolFlags_None                    = 0,      //
-    ImGuiCaptureToolFlags_StitchFullContents      = 1 << 1, // Expand window to it's content size and capture its full height.
-    ImGuiCaptureToolFlags_IgnoreCaptureToolWindow = 1 << 2, // Current window will not appear in screenshots or helper UI.
-    ImGuiCaptureToolFlags_ExpandToIncludePopups   = 1 << 3, // Expand capture area to automatically include visible popups and tooltips.
-    ImGuiCaptureToolFlags_Default                 = ImGuiCaptureToolFlags_StitchFullContents | ImGuiCaptureToolFlags_IgnoreCaptureToolWindow
+    ImGuiCaptureToolFlags_None                  = 0,        //
+    ImGuiCaptureToolFlags_StitchFullContents    = 1 << 1,   // Expand window to it's content size and capture its full height.
+    ImGuiCaptureToolFlags_HideCaptureToolWindow = 1 << 2,   // Current window will not appear in screenshots or helper UI.
+    ImGuiCaptureToolFlags_ExpandToIncludePopups = 1 << 3,   // Expand capture area to automatically include visible popups and tooltips.
+    ImGuiCaptureToolFlags_Default_              = ImGuiCaptureToolFlags_StitchFullContents | ImGuiCaptureToolFlags_HideCaptureToolWindow
 };
 
 enum ImGuiCaptureToolState
@@ -98,7 +98,7 @@ struct ImGuiCaptureContext
 struct ImGuiCaptureTool
 {
     ImGuiCaptureContext     Context;                        // Screenshot capture context.
-    ImGuiCaptureFlags       Flags = ImGuiCaptureToolFlags_Default; // Customize behavior of screenshot capture process. Flags are used by both ImGuiCaptureTool and ImGuiCaptureContext.
+    ImGuiCaptureFlags       Flags = ImGuiCaptureToolFlags_Default_; // Customize behavior of screenshot capture process. Flags are used by both ImGuiCaptureTool and ImGuiCaptureContext.
     bool                    Visible = false;                // Tool visibility state.
     float                   Padding = 10.0f;                // Extra padding around captured area.
     char                    SaveFileName[256];              // File name where screenshots will be saved. May contain directories or variation of %d format.
