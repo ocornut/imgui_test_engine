@@ -86,7 +86,7 @@
       <WarningLevel>Level4</WarningLevel>
       <Optimization>Disabled</Optimization>
       <AdditionalIncludeDirectories>..;..\..\imgui;..\..\imgui\examples;%(AdditionalIncludeDirectories);</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>_UNICODE;UNICODE;IMGUI_USER_CONFIG="test_app/imconfig_test_app.h";%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_UNICODE;UNICODE;IMGUI_USER_CONFIG="test_app/test_app_imconfig.h";%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -100,7 +100,7 @@
       <WarningLevel>Level4</WarningLevel>
       <Optimization>Disabled</Optimization>
       <AdditionalIncludeDirectories>..;..\..\imgui;..\..\imgui\examples;%(AdditionalIncludeDirectories);</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>_UNICODE;UNICODE;IMGUI_USER_CONFIG="test_app/imconfig_test_app.h";%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_UNICODE;UNICODE;IMGUI_USER_CONFIG="test_app/test_app_imconfig.h";%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -117,7 +117,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <AdditionalIncludeDirectories>..;..\..\imgui;..\..\imgui\examples;%(AdditionalIncludeDirectories);</AdditionalIncludeDirectories>
       <BufferSecurityCheck>false</BufferSecurityCheck>
-      <PreprocessorDefinitions>_UNICODE;UNICODE;IMGUI_USER_CONFIG="test_app/imconfig_test_app.h";%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_UNICODE;UNICODE;IMGUI_USER_CONFIG="test_app/test_app_imconfig.h";%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -136,7 +136,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <AdditionalIncludeDirectories>..;..\..\imgui;..\..\imgui\examples;%(AdditionalIncludeDirectories);</AdditionalIncludeDirectories>
       <BufferSecurityCheck>false</BufferSecurityCheck>
-      <PreprocessorDefinitions>_UNICODE;UNICODE;IMGUI_USER_CONFIG="test_app/imconfig_test_app.h";%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_UNICODE;UNICODE;IMGUI_USER_CONFIG="test_app/test_app_imconfig.h";%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -166,8 +166,8 @@
     <ClInclude Include="..\test_engine\imgui_te_core.h" />
     <ClInclude Include="..\test_engine\imgui_te_imconfig.h" />
     <ClInclude Include="..\test_engine\imgui_te_util.h" />
-    <ClInclude Include="imconfig_test_app.h" />
     <ClInclude Include="imgui_tests.h" />
+    <ClInclude Include="test_app_imconfig.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\imgui\examples\imgui_impl_dx11.cpp" />

@@ -16,7 +16,7 @@ UNAME_S := $(shell uname -s)
 
 CXXFLAGS = -std=c++11
 CFLAGS = -I../ -I$(IMGUI_PATH) -I$(IMGUI_PATH)/examples
-CFLAGS += -DIMGUI_ENABLE_TEST_ENGINE
+CFLAGS += -DIMGUI_USER_CONFIG="test_app/test_app_imconfig.h"
 CFLAGS += -g -Wall -Wformat
 HAS_SDL2 = $(shell pkg-config --exists sdl2 && echo 1)
 

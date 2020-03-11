@@ -63,9 +63,6 @@
     <ClInclude Include="..\libs\Str\Str.h">
       <Filter>libs\Str</Filter>
     </ClInclude>
-    <ClInclude Include="imconfig_test_app.h">
-      <Filter>test_app</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\imgui\examples\imgui_impl_dx11.h">
       <Filter>imgui_backends</Filter>
     </ClInclude>
@@ -86,6 +83,9 @@
     </ClInclude>
     <ClInclude Include="..\test_engine\imgui_te_imconfig.h">
       <Filter>test_engine</Filter>
+    </ClInclude>
+    <ClInclude Include="test_app_imconfig.h">
+      <Filter>test_app</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
