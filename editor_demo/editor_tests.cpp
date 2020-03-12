@@ -4,7 +4,7 @@
 #include "imgui.h"
 #include "test_engine/imgui_te_context.h"
 
-void RegisterTests_Window(ImGuiTestEngine* e)
+void RegisterTests(ImGuiTestEngine* e)
 {
     ImGuiTest* t = NULL;
 

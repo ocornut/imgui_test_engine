@@ -195,9 +195,6 @@ void    ImGuiTestEngine_Stop(ImGuiTestEngine* engine)
 
 void    ImGuiTestEngine_PostRender(ImGuiTestEngine* engine)
 {
-    // Update flags
-    engine->IO.RenderWantMaxSpeed = (engine->IO.RunningTests && engine->IO.ConfigRunFast) || engine->IO.ConfigNoThrottle;
-
     // Capture a screenshot from main thread while coroutine waits
     if (engine->CurrentCaptureArgs != NULL)
     {
@@ -215,7 +212,7 @@ ImGuiTestEngineIO&  ImGuiTestEngine_GetIO(ImGuiTestEngine* engine)
     return engine->IO;
 }
 
-void    ImGuiTestEngine_AbortTest(ImGuiTestEngine* engine)
+void    ImGuiTestEngine_Abort(ImGuiTestEngine* engine)
 {
     engine->Abort = true;
     if (ImGuiTestContext* test_context = engine->TestContext)
@@ -507,7 +504,7 @@ static void ImGuiTestEngine_PreNewFrame(ImGuiTestEngine* engine, ImGuiContext* u
         {
             if (engine->TestContext)
                 engine->TestContext->LogWarning("KO: User aborted (pressed ESC)");
-            ImGuiTestEngine_AbortTest(engine);
+            ImGuiTestEngine_Abort(engine);
         }
     }
 
@@ -566,6 +563,9 @@ static void ImGuiTestEngine_PostNewFrame(ImGuiTestEngine* engine, ImGuiContext* 
     // or the loop in ImGuiTestEngine_TestQueueCoroutineMain that does so if no test is running.
     // If you want to breakpoint the point execution continues in the test code, breakpoint the exit condition in YieldFromCoroutine()
     engine->IO.CoroutineFuncs->RunFunc(engine->TestQueueCoroutine);
+
+    // Update output flags
+    engine->IO.RenderWantMaxSpeed = (engine->IO.RunningTests && engine->IO.ConfigRunFast) || engine->IO.ConfigNoThrottle;
 }
 
 static void ImGuiTestEngine_RunGuiFunc(ImGuiTestEngine* engine)
@@ -759,7 +759,7 @@ bool ImGuiTestEngine_IsRunningTests(ImGuiTestEngine* engine)
     return engine->TestsQueue.Size > 0;
 }
 
-bool ImGuiTestEngine_IsRunningTest(ImGuiTestEngine* engine, ImGuiTest* test)
+static bool ImGuiTestEngine_IsRunningTest(ImGuiTestEngine* engine, ImGuiTest* test)
 {
     for (ImGuiTestRunTask& t : engine->TestsQueue)
         if (t.Test == test)
@@ -775,7 +775,7 @@ void ImGuiTestEngine_QueueTest(ImGuiTestEngine* engine, ImGuiTest* test, ImGuiTe
     // Detect lack of signal from imgui context, most likely not compiled with IMGUI_ENABLE_TEST_ENGINE=1
     if (engine->FrameCount < engine->UiContextTarget->FrameCount - 2)
     {
-        ImGuiTestEngine_AbortTest(engine);
+        ImGuiTestEngine_Abort(engine);
         IM_ASSERT(0 && "Not receiving signal from core library. Did you call ImGuiTestEngine_CreateContext() with the correct context? Did you compile imgui/ with IMGUI_ENABLE_TEST_ENGINE=1?");
         test->Status = ImGuiTestStatus_Error;
         return;

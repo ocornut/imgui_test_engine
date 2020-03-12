@@ -266,23 +266,22 @@ bool    ImGuiTestEngineHook_Error(const char* file, const char* func, int line, 
 //-------------------------------------------------------------------------
 
 // Functions: Initialization
-ImGuiTestEngine*    ImGuiTestEngine_CreateContext(ImGuiContext* imgui_context);
-void                ImGuiTestEngine_ShutdownContext(ImGuiTestEngine* engine);
+ImGuiTestEngine*    ImGuiTestEngine_CreateContext(ImGuiContext* imgui_context);     // Create test engine
+void                ImGuiTestEngine_ShutdownContext(ImGuiTestEngine* engine);       // Destroy test engine. Call after ImGui::DestroyContext() so test engine specific ini data gets saved.
 void                ImGuiTestEngine_Start(ImGuiTestEngine* engine);
 void                ImGuiTestEngine_Stop(ImGuiTestEngine* engine);
-void                ImGuiTestEngine_PostRender(ImGuiTestEngine* engine);
+void                ImGuiTestEngine_PostRender(ImGuiTestEngine* engine);            // Call every frame after framebuffer swap, will process screen capture.
 ImGuiTestEngineIO&  ImGuiTestEngine_GetIO(ImGuiTestEngine* engine);
 
-// Functions: Usage
+// Functions: Main
 ImGuiTest*          ImGuiTestEngine_RegisterTest(ImGuiTestEngine* engine, const char* category, const char* name, const char* src_file = NULL, int src_line = 0);
 void                ImGuiTestEngine_QueueTests(ImGuiTestEngine* engine, ImGuiTestGroup group, const char* filter = NULL, ImGuiTestRunFlags run_flags = 0);
 void                ImGuiTestEngine_QueueTest(ImGuiTestEngine* engine, ImGuiTest* test, ImGuiTestRunFlags run_flags);
-void                ImGuiTestEngine_AbortTest(ImGuiTestEngine* engine);
-bool                ImGuiTestEngine_IsRunningTests(ImGuiTestEngine* engine);
-bool                ImGuiTestEngine_IsRunningTest(ImGuiTestEngine* engine, ImGuiTest* test);
+void                ImGuiTestEngine_Abort(ImGuiTestEngine* engine);
+bool                ImGuiTestEngine_IsRunningTests(ImGuiTestEngine* engine);        // FIXME: Clarify difference between this and io.RunningTests
 void                ImGuiTestEngine_CoroutineStopRequest(ImGuiTestEngine* engine);
-void                ImGuiTestEngine_PrintResultSummary(ImGuiTestEngine* engine);
 void                ImGuiTestEngine_GetResult(ImGuiTestEngine* engine, int& count_tested, int& success_count);
+void                ImGuiTestEngine_PrintResultSummary(ImGuiTestEngine* engine);
 
 // Functions: UI
 void                ImGuiTestEngine_ShowTestWindow(ImGuiTestEngine* engine, bool* p_open);

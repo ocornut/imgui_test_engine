@@ -1,6 +1,7 @@
 #include "imgui.h"
 #define IMGUI_DEFINE_MATH_OPERATORS
 #include "imgui_internal.h"
+#include "editor_tests.h"
 #include "editor_widgets.h"
 #include "libs/Str/Str.h"
 #include "shared/imgui_app.h"
@@ -140,17 +141,16 @@ int main(int argc, char** argv)
     app->InitCreateWindow(app, "Dear ImGui: Editor Demo", ImVec2(1600, 1000));
     app->InitBackends(app);
 
-    // Initialize test engine
 #ifdef EDITOR_DEMO_ENABLE_TEST_ENGINE
+    // Initialize test engine
     ImGuiTestEngine* engine = ImGuiTestEngine_CreateContext(ImGui::GetCurrentContext());
     ImGuiTestEngineIO& test_io = ImGuiTestEngine_GetIO(engine);
     test_io.ConfigVerboseLevel = ImGuiTestVerboseLevel_Info;
     test_io.ConfigVerboseLevelOnError = ImGuiTestVerboseLevel_Debug;
     test_io.CoroutineFuncs = Coroutine_ImplStdThread_GetInterface();
 
-    extern void RegisterTests_Window(ImGuiTestEngine * e);
-    RegisterTests_Window(engine);
-
+    // Register tests
+    RegisterTests(engine);
     ImGuiTestEngine_Start(engine);
 #endif
 
@@ -192,7 +192,7 @@ int main(int argc, char** argv)
 #ifdef EDITOR_DEMO_ENABLE_TEST_ENGINE
         if (aborted)
         {
-            ImGuiTestEngine_AbortTest(engine);
+            ImGuiTestEngine_Abort(engine);
             ImGuiTestEngine_CoroutineStopRequest(engine);
             if (!ImGuiTestEngine_IsRunningTests(engine))
                 break;
@@ -298,16 +298,16 @@ int main(int argc, char** argv)
 #ifdef EDITOR_DEMO_ENABLE_TEST_ENGINE
         if (show_test_engine)
             ImGuiTestEngine_ShowTestWindow(engine, &show_test_engine);
+        app->Vsync = test_io.RenderWantMaxSpeed ? false : true;
 #endif
 
         ImGui::Render();
 
+        app->Render(app);
+
 #ifdef EDITOR_DEMO_ENABLE_TEST_ENGINE
         ImGuiTestEngine_PostRender(engine);
-        app->Vsync = test_io.RenderWantMaxSpeed ? false : true;
 #endif
-
-        app->Render(app);
     }
 
     // Shutdown

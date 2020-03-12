@@ -144,11 +144,11 @@
     <ClCompile Include="..\test_engine\imgui_te_core.cpp">
       <Filter>test_engine</Filter>
     </ClCompile>
-    <ClCompile Include="editor_demo_tests.cpp">
-      <Filter>sources</Filter>
-    </ClCompile>
     <ClCompile Include="..\test_engine\imgui_te_coroutine.cpp">
       <Filter>test_engine</Filter>
+    </ClCompile>
+    <ClCompile Include="editor_tests.cpp">
+      <Filter>sources</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

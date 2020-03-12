@@ -93,7 +93,7 @@ struct TestApp
 
 TestApp g_App;
 
-bool MainLoopEndFrame()
+static void ShowUI()
 {
     ImGuiTestEngine_ShowTestWindow(g_App.TestEngine, NULL);
 
@@ -136,8 +136,6 @@ bool MainLoopEndFrame()
             show_another_window = false;
         ImGui::End();
     }
-
-    return true;
 }
 
 static bool ParseCommandLineOptions(int argc, char** argv)
@@ -450,16 +448,15 @@ int main(int argc, char** argv)
             aborted = true;
         if (aborted)
         {
-            ImGuiTestEngine_AbortTest(engine);
+            ImGuiTestEngine_Abort(engine);
             ImGuiTestEngine_CoroutineStopRequest(engine);
             if (!ImGuiTestEngine_IsRunningTests(engine))
                 break;
         }
 
         ImGui::NewFrame();
-        MainLoopEndFrame();
+        ShowUI();
         ImGui::Render();
-        ImGuiTestEngine_PostRender(engine);
 
         if (!g_App.OptGUI && !test_io.RunningTests)
             break;
@@ -467,6 +464,8 @@ int main(int argc, char** argv)
         app_window->Vsync = test_io.RenderWantMaxSpeed ? false : true;
         app_window->ClearColor = g_App.ClearColor;
         app_window->Render(app_window);
+
+        ImGuiTestEngine_PostRender(engine);
     }
 
     ImGuiTestEngine_Stop(engine);
