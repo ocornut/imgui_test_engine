@@ -26,6 +26,9 @@
     <Filter Include="shared">
       <UniqueIdentifier>{9e5548de-99f5-4e89-b4a9-7cb34eecc6f2}</UniqueIdentifier>
     </Filter>
+    <Filter Include="test_engine">
+      <UniqueIdentifier>{ae1d9064-cf18-479d-ab01-dcda003d1c1e}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\imgui\imconfig.h">
@@ -73,6 +76,24 @@
     <ClInclude Include="editor_demo_imconfig.h">
       <Filter>sources</Filter>
     </ClInclude>
+    <ClInclude Include="..\test_engine\imgui_te_core.h">
+      <Filter>test_engine</Filter>
+    </ClInclude>
+    <ClInclude Include="..\test_engine\imgui_te_imconfig.h">
+      <Filter>test_engine</Filter>
+    </ClInclude>
+    <ClInclude Include="..\test_engine\imgui_te_internal.h">
+      <Filter>test_engine</Filter>
+    </ClInclude>
+    <ClInclude Include="..\test_engine\imgui_te_util.h">
+      <Filter>test_engine</Filter>
+    </ClInclude>
+    <ClInclude Include="..\test_engine\imgui_te_context.h">
+      <Filter>test_engine</Filter>
+    </ClInclude>
+    <ClInclude Include="..\test_engine\imgui_te_coroutine.h">
+      <Filter>test_engine</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\imgui\imgui.cpp">
@@ -110,6 +131,24 @@
     </ClCompile>
     <ClCompile Include="..\shared\imgui_capture_tool.cpp">
       <Filter>shared</Filter>
+    </ClCompile>
+    <ClCompile Include="..\test_engine\imgui_te_ui.cpp">
+      <Filter>test_engine</Filter>
+    </ClCompile>
+    <ClCompile Include="..\test_engine\imgui_te_util.cpp">
+      <Filter>test_engine</Filter>
+    </ClCompile>
+    <ClCompile Include="..\test_engine\imgui_te_context.cpp">
+      <Filter>test_engine</Filter>
+    </ClCompile>
+    <ClCompile Include="..\test_engine\imgui_te_core.cpp">
+      <Filter>test_engine</Filter>
+    </ClCompile>
+    <ClCompile Include="editor_demo_tests.cpp">
+      <Filter>sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\test_engine\imgui_te_coroutine.cpp">
+      <Filter>test_engine</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

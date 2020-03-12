@@ -1126,10 +1126,11 @@ void ImGuiTestEngineHook_AssertFunc(const char* expr, const char* file, const ch
     }
 
     // Consider using github.com/scottt/debugbreak
-#ifdef _MSC_VER
-    __debugbreak();
+#if __GNUC__
+    // __builtin_trap() is not part of IM_DEBUG_BREAK() because GCC optimizes away everything that comes after.
+    __builtin_trap();
 #else
-    IM_ASSERT(0);
+    IM_DEBUG_BREAK();
 #endif
 }
 

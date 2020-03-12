@@ -6,6 +6,10 @@
 #include "shared/imgui_app.h"
 #include "shared/IconsFontAwesome5.h"
 #include "shared/imgui_capture_tool.h"
+#ifdef EDITOR_DEMO_ENABLE_TEST_ENGINE
+#include "test_engine/imgui_te_core.h"
+#include "test_engine/imgui_te_coroutine.h"
+#endif
 
 // FIXME-SAMPLE FIXME-FONT: This is looking very poor with DpiScale == 1.0f, switch to FreeType?
 static void LoadFonts(ImGuiApp* app)
@@ -136,6 +140,20 @@ int main(int argc, char** argv)
     app->InitCreateWindow(app, "Dear ImGui: Editor Demo", ImVec2(1600, 1000));
     app->InitBackends(app);
 
+    // Initialize test engine
+#ifdef EDITOR_DEMO_ENABLE_TEST_ENGINE
+    ImGuiTestEngine* engine = ImGuiTestEngine_CreateContext(ImGui::GetCurrentContext());
+    ImGuiTestEngineIO& test_io = ImGuiTestEngine_GetIO(engine);
+    test_io.ConfigVerboseLevel = ImGuiTestVerboseLevel_Info;
+    test_io.ConfigVerboseLevelOnError = ImGuiTestVerboseLevel_Debug;
+    test_io.CoroutineFuncs = Coroutine_ImplStdThread_GetInterface();
+
+    extern void RegisterTests_Window(ImGuiTestEngine * e);
+    RegisterTests_Window(engine);
+
+    ImGuiTestEngine_Start(engine);
+#endif
+
     // Setup style, load fonts
     // FIXME-SAMPLE FIXME-DPI: Reload at runtime according to changing DPI.
     ImGuiStyle& style = ImGui::GetStyle();
@@ -157,17 +175,29 @@ int main(int argc, char** argv)
 #endif
 
     bool show_capture_tool = false;
+    bool show_test_engine = false;
     ImGuiCaptureTool capture_tool;
     capture_tool.Context.UserData = app;
     capture_tool.Context.ScreenCaptureFunc = [](int x, int y, int w, int h, unsigned int* pixels, void* user_data) { ImGuiApp* app = (ImGuiApp*)user_data; return app->CaptureFramebuffer(app, x, y, w, h, pixels, NULL); };
 
     // Main loop
-    while (true)
+    bool aborted = false;
+    while (!aborted)
     {
         if (!app->NewFrame(app))
-            break;
-        if (!app->Quit)
-            break;
+            aborted = true;
+        if (app->Quit)
+            aborted = true;
+
+#ifdef EDITOR_DEMO_ENABLE_TEST_ENGINE
+        if (aborted)
+        {
+            ImGuiTestEngine_AbortTest(engine);
+            ImGuiTestEngine_CoroutineStopRequest(engine);
+            if (!ImGuiTestEngine_IsRunningTests(engine))
+                break;
+        }
+#endif
 
         ImGui::NewFrame();
 
@@ -232,6 +262,11 @@ int main(int argc, char** argv)
             if (ImGui::BeginMenu("View"))
             {
                 ImGui::MenuItem("Capture Tool", NULL, &show_capture_tool);
+#ifdef EDITOR_DEMO_ENABLE_TEST_ENGINE
+                ImGui::MenuItem("Test Engine", NULL, &show_test_engine);
+#else
+                ImGui::MenuItem("Test Engine", NULL, &show_test_engine, false);
+#endif
                 ImGui::EndMenu();
             }
 
@@ -260,14 +295,30 @@ int main(int argc, char** argv)
         if (show_capture_tool)
             capture_tool.ShowCaptureToolWindow(&show_capture_tool);
 
+#ifdef EDITOR_DEMO_ENABLE_TEST_ENGINE
+        if (show_test_engine)
+            ImGuiTestEngine_ShowTestWindow(engine, &show_test_engine);
+#endif
+
         ImGui::Render();
+
+#ifdef EDITOR_DEMO_ENABLE_TEST_ENGINE
+        app->Vsync = !(test_io.RunningTests && test_io.ConfigRunFast) && !test_io.ConfigNoThrottle;
+#endif
+
         app->Render(app);
     }
 
     // Shutdown
+#ifdef EDITOR_DEMO_ENABLE_TEST_ENGINE
+    ImGuiTestEngine_Stop(engine);
+#endif
     app->ShutdownBackends(app);
     app->ShutdownCloseWindow(app);
     ImGui::DestroyContext();
+#ifdef EDITOR_DEMO_ENABLE_TEST_ENGINE
+    ImGuiTestEngine_ShutdownContext(engine);
+#endif
     app->Destroy(app);
 
     return 0;
