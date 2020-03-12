@@ -5,6 +5,7 @@
 
 #include "imgui.h"
 #include "imgui_te_core.h"
+#include <stdint.h> // intptr_t
 #include "shared/imgui_capture_tool.h"  // ImGuiCaptureArgs // FIXME
 
 // Undo some of the damage done by <windows.h>
