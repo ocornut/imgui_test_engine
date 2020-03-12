@@ -281,6 +281,33 @@ static void LoadFonts(float dpi_scale)
     io.Fonts->Build();
 }
 
+static void QueueTests(ImGuiTestEngine* engine)
+{
+    // Non-interactive mode queue all tests by default
+    if (!g_App.OptGUI && g_App.TestsToRun.empty())
+        g_App.TestsToRun.push_back(strdup("tests"));
+
+    // Queue requested tests
+    // FIXME: Maybe need some cleanup to not hard-coded groups.
+    for (int n = 0; n < g_App.TestsToRun.Size; n++)
+    {
+        char* test_spec = g_App.TestsToRun[n];
+        if (strcmp(test_spec, "tests") == 0)
+            ImGuiTestEngine_QueueTests(engine, ImGuiTestGroup_Tests, NULL, ImGuiTestRunFlags_CommandLine);
+        else if (strcmp(test_spec, "perf") == 0)
+            ImGuiTestEngine_QueueTests(engine, ImGuiTestGroup_Perfs, NULL, ImGuiTestRunFlags_CommandLine);
+        else
+        {
+            if (strcmp(test_spec, "all") == 0)
+                test_spec = NULL;
+            for (int group = 0; group < ImGuiTestGroup_COUNT; group++)
+                ImGuiTestEngine_QueueTests(engine, (ImGuiTestGroup)group, test_spec, ImGuiTestRunFlags_CommandLine);
+        }
+        IM_FREE(test_spec);
+    }
+    g_App.TestsToRun.clear();
+}
+
 int main(int argc, char** argv)
 {
 #ifdef DEBUG_CRT
@@ -385,33 +412,9 @@ int main(int argc, char** argv)
     test_io.CoroutineFuncs = Coroutine_ImplStdThread_GetInterface();
     test_io.UserData = (void*)&g_App;
 
-    // Set up TestEngine context
+    // Register and queue our tests
     RegisterTests(engine);
-    ImGuiTestEngine_CalcSourceLineEnds(engine);
-
-    // Non-interactive mode queue all tests by default
-    if (!g_App.OptGUI && g_App.TestsToRun.empty())
-        g_App.TestsToRun.push_back(strdup("tests"));
-
-    // Queue requested tests
-    // FIXME: Maybe need some cleanup to not hard-coded groups.
-    for (int n = 0; n < g_App.TestsToRun.Size; n++)
-    {
-        char* test_spec = g_App.TestsToRun[n];
-        if (strcmp(test_spec, "tests") == 0)
-            ImGuiTestEngine_QueueTests(engine, ImGuiTestGroup_Tests, NULL, ImGuiTestRunFlags_CommandLine);
-        else if (strcmp(test_spec, "perf") == 0)
-            ImGuiTestEngine_QueueTests(engine, ImGuiTestGroup_Perfs, NULL, ImGuiTestRunFlags_CommandLine);
-        else
-        {
-            if (strcmp(test_spec, "all") == 0)
-                test_spec = NULL;
-            for (int group = 0; group < ImGuiTestGroup_COUNT; group++)
-                ImGuiTestEngine_QueueTests(engine, (ImGuiTestGroup)group, test_spec, ImGuiTestRunFlags_CommandLine);
-        }
-        IM_FREE(test_spec);
-    }
-    g_App.TestsToRun.clear();
+    QueueTests(engine);
 
     // Retrieve Git branch name, store in annotation field by default
     Str64 git_repo_path;
@@ -425,6 +428,9 @@ int main(int argc, char** argv)
         fprintf(stderr, "Dear ImGui git repository was not found.\n");
     }
     printf("Git branch: \"%s\"\n", test_io.GitBranchName);
+
+    // Start engine
+    ImGuiTestEngine_Start(engine);
 
     // Create window
     ImGuiApp* app_window = g_App.AppWindow;
@@ -444,7 +450,7 @@ int main(int argc, char** argv)
             aborted = true;
         if (aborted)
         {
-            ImGuiTestEngine_Abort(engine);
+            ImGuiTestEngine_AbortTest(engine);
             ImGuiTestEngine_CoroutineStopRequest(engine);
             if (!ImGuiTestEngine_IsRunningTests(engine))
                 break;
@@ -463,7 +469,8 @@ int main(int argc, char** argv)
         app_window->ClearColor = g_App.ClearColor;
         app_window->Render(app_window);
     }
-    ImGuiTestEngine_CoroutineStopAndJoin(engine);
+
+    ImGuiTestEngine_Stop(engine);
 
     // Print results (command-line mode)
     ImGuiTestAppErrorCode error_code = ImGuiTestAppErrorCode_Success;

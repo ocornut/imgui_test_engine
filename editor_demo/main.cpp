@@ -162,8 +162,13 @@ int main(int argc, char** argv)
     capture_tool.Context.ScreenCaptureFunc = [](int x, int y, int w, int h, unsigned int* pixels, void* user_data) { ImGuiApp* app = (ImGuiApp*)user_data; return app->CaptureFramebuffer(app, x, y, w, h, pixels, NULL); };
 
     // Main loop
-    while (app->NewFrame(app) && !app->Quit)
+    while (true)
     {
+        if (!app->NewFrame(app))
+            break;
+        if (!app->Quit)
+            break;
+
         ImGui::NewFrame();
 
 #ifdef IMGUI_HAS_DOCK

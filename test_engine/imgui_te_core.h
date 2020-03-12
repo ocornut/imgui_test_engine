@@ -180,6 +180,9 @@ void                ImGuiTestEngineHook_AssertFunc(const char* expr, const char*
 // Macros for Tests
 //-------------------------------------------------------------------------
 
+// Register a new test
+#define IM_REGISTER_TEST(_ENGINE, _CAT, _NAME)    ImGuiTestEngine_RegisterTest(_ENGINE, _CAT, _NAME, __FILE__, __LINE__);
+
 // We embed every macro in a do {} while(0) statement as a trick to allow using them as regular single statement, e.g. if (XXX) IM_CHECK(A); else IM_CHECK(B)
 // We leave the assert call (which will trigger a debugger break) outside of the check function to step out faster.
 #define IM_CHECK_NO_RET(_EXPR)      do { if (ImGuiTestEngineHook_Check(__FILE__, __func__, __LINE__, ImGuiTestCheckFlags_None, (bool)(_EXPR), #_EXPR))          { IM_ASSERT(_EXPR); } } while (0)
@@ -274,24 +277,29 @@ bool    ImGuiTestEngineHook_Error(const char* file, const char* func, int line, 
 // ImGuiTestEngine API
 //-------------------------------------------------------------------------
 
-// Functions
+// Functions: Initialization
 ImGuiTestEngine*    ImGuiTestEngine_CreateContext(ImGuiContext* imgui_context);
 void                ImGuiTestEngine_ShutdownContext(ImGuiTestEngine* engine);
+void                ImGuiTestEngine_Start(ImGuiTestEngine* engine);
+void                ImGuiTestEngine_Stop(ImGuiTestEngine* engine);
 ImGuiTestEngineIO&  ImGuiTestEngine_GetIO(ImGuiTestEngine* engine);
-void                ImGuiTestEngine_Abort(ImGuiTestEngine* engine);
-void                ImGuiTestEngine_ShowTestWindow(ImGuiTestEngine* engine, bool* p_open);
+
+// Functions: Usage
 ImGuiTest*          ImGuiTestEngine_RegisterTest(ImGuiTestEngine* engine, const char* category, const char* name, const char* src_file = NULL, int src_line = 0);
 void                ImGuiTestEngine_QueueTests(ImGuiTestEngine* engine, ImGuiTestGroup group, const char* filter = NULL, ImGuiTestRunFlags run_flags = 0);
 void                ImGuiTestEngine_QueueTest(ImGuiTestEngine* engine, ImGuiTest* test, ImGuiTestRunFlags run_flags);
+void                ImGuiTestEngine_AbortTest(ImGuiTestEngine* engine);
 bool                ImGuiTestEngine_IsRunningTests(ImGuiTestEngine* engine);
 bool                ImGuiTestEngine_IsRunningTest(ImGuiTestEngine* engine, ImGuiTest* test);
-void                ImGuiTestEngine_CalcSourceLineEnds(ImGuiTestEngine* engine);
-void                ImGuiTestEngine_PrintResultSummary(ImGuiTestEngine* engine);
 void                ImGuiTestEngine_CoroutineStopRequest(ImGuiTestEngine* engine);
-void                ImGuiTestEngine_CoroutineStopAndJoin(ImGuiTestEngine* engine);
+void                ImGuiTestEngine_PrintResultSummary(ImGuiTestEngine* engine);
 void                ImGuiTestEngine_GetResult(ImGuiTestEngine* engine, int& count_tested, int& success_count);
 
+// Functions: UI
+void                ImGuiTestEngine_ShowTestWindow(ImGuiTestEngine* engine, bool* p_open);
+
 // Function pointers for IO structure
+// (also see imgui_te_coroutine.h for coroutine functions)
 typedef void        (*ImGuiTestEngineSrcFileOpenFunc)(const char* filename, int line, void* user_data);
 typedef bool        (*ImGuiTestEngineScreenCaptureFunc)(int x, int y, int w, int h, unsigned int* pixels, void* user_data);
 

@@ -63,6 +63,7 @@ static ImGuiTestEngine* GImGuiHookingEngine = NULL;
 //-------------------------------------------------------------------------
 
 // Private functions
+static void ImGuiTestEngine_StartCalcSourceLineEnds(ImGuiTestEngine* engine);
 static void ImGuiTestEngine_ClearInput(ImGuiTestEngine* engine);
 static void ImGuiTestEngine_ApplyInputToImGuiContext(ImGuiTestEngine* engine);
 static void ImGuiTestEngine_ProcessTestQueue(ImGuiTestEngine* engine);
@@ -134,7 +135,7 @@ void    ImGuiTestEngine_CoroutineStopRequest(ImGuiTestEngine* engine)
         engine->TestQueueCoroutineShouldExit = true;
 }
 
-void    ImGuiTestEngine_CoroutineStopAndJoin(ImGuiTestEngine* engine)
+static void    ImGuiTestEngine_CoroutineStopAndJoin(ImGuiTestEngine* engine)
 {
     if (engine->TestQueueCoroutine != NULL)
     {
@@ -170,12 +171,34 @@ void    ImGuiTestEngine_ShutdownContext(ImGuiTestEngine* engine)
         GImGuiHookingEngine = NULL;
 }
 
+void    ImGuiTestEngine_Start(ImGuiTestEngine* engine)
+{
+    IM_ASSERT(!engine->Started);
+
+    ImGuiTestEngine_StartCalcSourceLineEnds(engine);
+
+    // Create our coroutine
+    // (we include the word "Main" in the name to facilitate filtering for both this thread and the "Main Thread" in debuggers)
+    if (!engine->TestQueueCoroutine)
+        engine->TestQueueCoroutine = engine->IO.CoroutineFuncs->CreateFunc(ImGuiTestEngine_TestQueueCoroutineMain, "Main Dear ImGui Test Thread", engine);
+
+    engine->Started = true;
+}
+
+void    ImGuiTestEngine_Stop(ImGuiTestEngine* engine)
+{
+    IM_ASSERT(engine->Started);
+
+    ImGuiTestEngine_CoroutineStopAndJoin(engine);
+    engine->Started = false;
+}
+
 ImGuiTestEngineIO&  ImGuiTestEngine_GetIO(ImGuiTestEngine* engine)
 {
     return engine->IO;
 }
 
-void    ImGuiTestEngine_Abort(ImGuiTestEngine* engine)
+void    ImGuiTestEngine_AbortTest(ImGuiTestEngine* engine)
 {
     engine->Abort = true;
     if (ImGuiTestContext* test_context = engine->TestContext)
@@ -467,7 +490,7 @@ static void ImGuiTestEngine_PreNewFrame(ImGuiTestEngine* engine, ImGuiContext* u
         {
             if (engine->TestContext)
                 engine->TestContext->LogWarning("KO: User aborted (pressed ESC)");
-            ImGuiTestEngine_Abort(engine);
+            ImGuiTestEngine_AbortTest(engine);
         }
     }
 
@@ -522,11 +545,6 @@ static void ImGuiTestEngine_PostNewFrame(ImGuiTestEngine* engine, ImGuiContext* 
     ImGuiTestEngine_RunGuiFunc(engine);
 
     // Process on-going queues in a coroutine
-    // We perform lazy creation of the coroutine to ensure that IO functions are set up first
-    // (we include the word "Main" to facilitate filtering for both this thread and the Main Thread in debuggers)
-    if (!engine->TestQueueCoroutine)
-        engine->TestQueueCoroutine = engine->IO.CoroutineFuncs->CreateFunc(ImGuiTestEngine_TestQueueCoroutineMain, "Main Dear ImGui Test Thread", engine);
-
     // Run the test coroutine. This will resume the test queue from either the last point the test called YieldFromCoroutine(),
     // or the loop in ImGuiTestEngine_TestQueueCoroutineMain that does so if no test is running.
     // If you want to breakpoint the point execution continues in the test code, breakpoint the exit condition in YieldFromCoroutine()
@@ -741,7 +759,7 @@ void ImGuiTestEngine_QueueTest(ImGuiTestEngine* engine, ImGuiTest* test, ImGuiTe
     // Detect lack of signal from imgui context, most likely not compiled with IMGUI_ENABLE_TEST_ENGINE=1
     if (engine->FrameCount < engine->UiContextTarget->FrameCount - 2)
     {
-        ImGuiTestEngine_Abort(engine);
+        ImGuiTestEngine_AbortTest(engine);
         IM_ASSERT(0 && "Not receiving signal from core library. Did you call ImGuiTestEngine_CreateContext() with the correct context? Did you compile imgui/ with IMGUI_ENABLE_TEST_ENGINE=1?");
         test->Status = ImGuiTestStatus_Error;
         return;
@@ -797,7 +815,7 @@ void ImGuiTestEngine_QueueTests(ImGuiTestEngine* engine, ImGuiTestGroup group, c
     }
 }
 
-void ImGuiTestEngine_CalcSourceLineEnds(ImGuiTestEngine* engine)
+static void ImGuiTestEngine_StartCalcSourceLineEnds(ImGuiTestEngine* engine)
 {
     if (engine->TestsAll.empty())
         return;

@@ -1,4 +1,5 @@
 #pragma once
+#include <math.h>   // fabsf
 
 typedef int ImGuiKeyModFlags;       // See ImGuiKeyModFlags_
 
@@ -23,11 +24,14 @@ enum ImGuiKeyState
     ImGuiKeyState_Down      // Pressed/held
 };
 
-// Helpers: miscellaneous functions
-ImGuiID     ImHashDecoratedPath(const char* str, ImGuiID seed = 0);
-const char* GetImGuiKeyName(ImGuiKey key);
-void        GetImGuiKeyModsPrefixStr(ImGuiKeyModFlags mod_flags, char* out_buf, size_t out_buf_size);
-ImFont*     FindFontByName(const char* name);
+// Maths helpers
+static inline bool  ImFloatEq(float f1, float f2) { float d = f2 - f1; return fabsf(d) <= FLT_EPSILON; }
+
+// Miscellaneous functions
+ImGuiID             ImHashDecoratedPath(const char* str, ImGuiID seed = 0);
+const char*         GetImGuiKeyName(ImGuiKey key);
+void                GetImGuiKeyModsPrefixStr(ImGuiKeyModFlags mod_flags, char* out_buf, size_t out_buf_size);
+ImFont*             FindFontByName(const char* name);
 
 // Helper: maintain/calculate moving average
 template<typename TYPE>

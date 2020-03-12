@@ -254,7 +254,7 @@ static void ShowTestGroup(ImGuiTestEngine* e, ImGuiTestGroup group, ImGuiTextFil
                 {
                     if (is_running_gui_func)
                     {
-                        ImGuiTestEngine_Abort(e);
+                        ImGuiTestEngine_AbortTest(e);
                     }
                     else
                     {

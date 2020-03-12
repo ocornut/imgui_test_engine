@@ -25,11 +25,9 @@
 #pragma warning (disable: 4127) // conditional expression is constant
 #endif
 
-// Helper Operators
-static inline bool operator==(const ImVec2& lhs, const ImVec2& rhs) { return lhs.x == rhs.x && lhs.y == rhs.y; }
-static inline bool FloatEqual(float f1, float f2, float epsilon = FLT_EPSILON) { float d = f2 - f1; return fabsf(d) <= FLT_EPSILON; }
-
-#define REGISTER_TEST(_CATEGORY, _NAME)    ImGuiTestEngine_RegisterTest(e, _CATEGORY, _NAME, __FILE__, __LINE__);
+// Helpers
+#define REGISTER_TEST(_CATEGORY, _NAME)                                 IM_REGISTER_TEST(e, _CATEGORY, _NAME)
+static inline bool operator==(const ImVec2& lhs, const ImVec2& rhs)     { return lhs.x == rhs.x && lhs.y == rhs.y; }    // for IM_CHECK_EQ()
 
 //-------------------------------------------------------------------------
 // Tests: Window
@@ -370,10 +368,10 @@ void RegisterTests_Window(ImGuiTestEngine* e)
         IM_CHECK_NO_RET(scroll_y == scroll_max_y);
 
         float expected_size_contents_y = 100 * ImGui::GetTextLineHeightWithSpacing() - style.ItemSpacing.y; // Newer definition of SizeContents as per 1.71
-        IM_CHECK(FloatEqual(window->ContentSize.y, expected_size_contents_y));
+        IM_CHECK(ImFloatEq(window->ContentSize.y, expected_size_contents_y));
 
         float expected_scroll_max_y = expected_size_contents_y + window->WindowPadding.y * 2.0f - window->InnerRect.GetHeight();
-        IM_CHECK(FloatEqual(scroll_max_y, expected_scroll_max_y));
+        IM_CHECK(ImFloatEq(scroll_max_y, expected_scroll_max_y));
     };
 
     // ## Test that ScrollMax values are correctly zero (we had/have bugs where they are seldomly == BorderSize)
@@ -975,12 +973,12 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ctx->ItemInput("Color##Y");
         IM_CHECK_EQ(ctx->UiContext->ActiveId, ctx->GetID("Color##Y"));
         ctx->KeyCharsAppend("123");
-        IM_CHECK(FloatEqual(vars.Vec4.y, 123.0f / 255.0f));
+        IM_CHECK(ImFloatEq(vars.Vec4.y, 123.0f / 255.0f));
         ctx->KeyPressMap(ImGuiKey_Tab);
         ctx->KeyCharsAppendEnter("200");
-        IM_CHECK(FloatEqual(vars.Vec4.x,   0.0f / 255.0f));
-        IM_CHECK(FloatEqual(vars.Vec4.y, 123.0f / 255.0f));
-        IM_CHECK(FloatEqual(vars.Vec4.z, 200.0f / 255.0f));
+        IM_CHECK(ImFloatEq(vars.Vec4.x,   0.0f / 255.0f));
+        IM_CHECK(ImFloatEq(vars.Vec4.y, 123.0f / 255.0f));
+        IM_CHECK(ImFloatEq(vars.Vec4.z, 200.0f / 255.0f));
     };
 
     // ## Test InputText widget
