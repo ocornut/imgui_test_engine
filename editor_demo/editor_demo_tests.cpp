@@ -1,6 +1,7 @@
 // dear imgui editor demo
 // (tests)
 
+#include "imgui.h"
 #include "test_engine/imgui_te_context.h"
 
 void RegisterTests_Window(ImGuiTestEngine* e)
@@ -21,7 +22,7 @@ void RegisterTests_Window(ImGuiTestEngine* e)
         ctx->MenuClick("View/Capture Tool");
 
         if (window == NULL)
-            window = ctx->GetWindowByRef("/Dear ImGui Capture Tool");
+            window = ctx->GetWindowByRef("Dear ImGui Capture Tool");
         IM_CHECK(window->WasActive != is_active);
 
         ctx->MenuClick("View");

@@ -336,9 +336,10 @@ void ImGuiTestContext::WindowRef(ImGuiTestRef ref)
             WindowAutoUncollapse(window);
 }
 
+// Turn ref into a root ref unless ref is empty
 ImGuiWindow* ImGuiTestContext::GetWindowByRef(ImGuiTestRef ref)
 {
-    ImGuiID window_id = GetID(ref);
+    ImGuiID window_id = ref.IsEmpty() ? GetID(ref) : GetID(ref, "/");
     ImGuiWindow* window = ImGui::FindWindowByID(window_id);
     return window;
 }
@@ -392,21 +393,28 @@ ImVec2 ImGuiTestContext::GetMainViewportPos()
 #endif
 }
 
-bool ImGuiTestContext::CaptureAddWindow(ImGuiTestRef ref)
+void ImGuiTestContext::CaptureInitArgs(ImGuiCaptureArgs* args)
+{
+    args->InPadding = 13.0f;
+    ImFormatString(args->InOutputFileTemplate, IM_ARRAYSIZE(args->InOutputFileTemplate), "captures/%s_%04d.png", Test->Name, CaptureCounter);
+    CaptureCounter++;
+}
+
+bool ImGuiTestContext::CaptureAddWindow(ImGuiCaptureArgs* args, ImGuiTestRef ref)
 {
     ImGuiWindow* window = GetWindowByRef(ref);
     if (window == NULL)
         IM_CHECK_RETV(window != NULL, false);
-    CaptureArgs.InCaptureWindows.push_back(window);
+    args->InCaptureWindows.push_back(window);
     return window != NULL;
 }
 
-bool ImGuiTestContext::CaptureScreenshot()
+bool ImGuiTestContext::CaptureScreenshot(ImGuiCaptureArgs* args)
 {
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
     LogInfo("CaptureScreenshot()");
-    bool ret = ImGuiTestEngine_CaptureScreenshot(Engine, &CaptureArgs);
-    LogDebug("Saved '%s' (%d*%d pixels)", CaptureArgs.OutSavedFileName, (int)CaptureArgs.OutImageSize.x, (int)CaptureArgs.OutImageSize.y);
+    bool ret = ImGuiTestEngine_CaptureScreenshot(Engine, args);
+    LogDebug("Saved '%s' (%d*%d pixels)", args->OutSavedFileName, (int)args->OutImageSize.x, (int)args->OutImageSize.y);
     return ret;
 }
 

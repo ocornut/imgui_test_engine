@@ -3,7 +3,6 @@
 
 #pragma once
 
-#define IMGUI_TEST_ENGINE_DEBUG     1
 #include "imgui_internal.h"         // ImPool<>, ImGuiItemStatusFlags, ImFormatString
 #include "imgui_te_util.h"
 
@@ -115,17 +114,6 @@ enum ImGuiTestInputType
     ImGuiTestInputType_Key,
     ImGuiTestInputType_Nav,
     ImGuiTestInputType_Char
-};
-
-// Weak reference to an Item/Window given an ID or ID path.
-struct ImGuiTestRef
-{
-    ImGuiID                 ID;
-    const char*             Path;
-
-    ImGuiTestRef()              { ID = 0; Path = NULL; }
-    ImGuiTestRef(ImGuiID id)    { ID = id; Path = NULL; }
-    ImGuiTestRef(const char* p) { ID = 0; Path = p; }
 };
 
 struct ImGuiTestInput
@@ -372,10 +360,22 @@ struct ImGuiTestItemList
     const ImGuiTestItemInfo*    GetByID(ImGuiID id)     { return Pool.GetByKey(id); }
 };
 
+// Weak reference to an Item/Window given an ID or ID path.
+struct ImGuiTestRef
+{
+    ImGuiID         ID;
+    const char*     Path;
+
+    ImGuiTestRef()              { ID = 0; Path = NULL; }
+    ImGuiTestRef(ImGuiID id)    { ID = id; Path = NULL; }
+    ImGuiTestRef(const char* p) { ID = 0; Path = p; }
+    bool IsEmpty() const        { return ID == 0 && (Path == NULL || Path[0] == 0); }
+};
+
 // Helper to output a string showing the Path, ID or Debug Label based on what is available (some items only have ID as we couldn't find/store a Path)
 struct ImGuiTestRefDesc
 {
-    char Buf[80];
+    char            Buf[80];
 
     const char* c_str()     { return Buf; }
     ImGuiTestRefDesc(const ImGuiTestRef& ref, const ImGuiTestItemInfo* item = NULL)

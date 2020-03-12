@@ -96,7 +96,6 @@ static void DrawTestLog(ImGuiTestEngine* e, ImGuiTest* test)
     ImU32 warning_col = IM_COL32(240, 240, 150, 255);
     ImU32 unimportant_col = IM_COL32(190, 190, 190, 255);
 
-    // FIXME-OPT: Split TestLog by lines so we can clip it easily.
     ImGuiTestLog* log = &test->TestLog;
     ImGuiTestEngineIO& e_io = ImGuiTestEngine_GetIO(e);
 

@@ -1,7 +1,7 @@
 #pragma once
 
-#include "shared/imgui_capture_tool.h"  // ImGuiCaptureTool  // FIXME
 #include "imgui_te_coroutine.h"
+#include "shared/imgui_capture_tool.h"  // ImGuiCaptureTool  // FIXME
 
 //-------------------------------------------------------------------------
 // DATA STRUCTURES
@@ -47,7 +47,7 @@ struct ImGuiTestEngine
 {
     ImGuiTestEngineIO           IO;
     ImGuiContext*               UiContextVisible = NULL;        // imgui context for visible/interactive needs
-    ImGuiContext*               UiContextBlind = NULL;          // FIXME
+    ImGuiContext*               UiContextBlind = NULL;          // FIXME: Unsupported
     ImGuiContext*               UiContextTarget = NULL;         // imgui context for testing == io.ConfigRunBlind ? UiBlindContext : UiVisibleContext when running tests, otherwise NULL.
     ImGuiContext*               UiContextActive = NULL;         // imgui context for testing == UiContextTarget or NULL
 
@@ -84,9 +84,9 @@ struct ImGuiTestEngine
     ImMovingAverage<double>     PerfDeltaTime2000;
 
     // Tools
-    ImGuiCaptureTool            CaptureTool;
     bool                        ToolSlowDown = false;
     int                         ToolSlowDownMs = 100;
+    ImGuiCaptureTool            CaptureTool;
     ImGuiCaptureContext         CaptureContext;
     ImGuiCaptureArgs*           CurrentCaptureArgs = NULL;
 

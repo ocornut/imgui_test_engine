@@ -7,6 +7,7 @@
 #define IMGUI_DEFINE_MATH_OPERATORS
 #include "imgui_internal.h"
 #include "imgui_tests.h"
+#include "shared/imgui_capture_tool.h"
 #include "test_engine/imgui_te_core.h"
 #include "test_engine/imgui_te_context.h"
 #include "test_engine/imgui_te_util.h"
@@ -4999,13 +5000,15 @@ void RegisterTests_Capture(ImGuiTestEngine* e)
         ctx->LogDebug("Capture screenshot...");
         ctx->WindowRef("");
 
-        ctx->CaptureAddWindow("Dear ImGui Demo");
-        ctx->CaptureAddWindow("Example: Simple overlay");
-        ctx->CaptureAddWindow("Example: Custom rendering");
-        ctx->CaptureAddWindow("Example: Simple layout");
-        ctx->CaptureAddWindow("Example: Documents");
-        ctx->CaptureAddWindow("Example: Console");
-        ctx->CaptureScreenshot();
+        ImGuiCaptureArgs args;
+        ctx->CaptureInitArgs(&args);
+        ctx->CaptureAddWindow(&args, "Dear ImGui Demo");
+        ctx->CaptureAddWindow(&args, "Example: Simple overlay");
+        ctx->CaptureAddWindow(&args, "Example: Custom rendering");
+        ctx->CaptureAddWindow(&args, "Example: Simple layout");
+        ctx->CaptureAddWindow(&args, "Example: Documents");
+        ctx->CaptureAddWindow(&args, "Example: Console");
+        ctx->CaptureScreenshot(&args);
 
         // Close everything
         ctx->WindowRef("Dear ImGui Demo");
@@ -5068,7 +5071,6 @@ void RegisterTests_Capture(ImGuiTestEngine* e)
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         // Capture both windows in separate captures
-        float padding = 13.0f;
         ImGuiContext& g = *ctx->UiContext;
         for (int n = 0; n < 2; n++)
         {
@@ -5079,10 +5081,11 @@ void RegisterTests_Capture(ImGuiTestEngine* e)
             //ctx->KeyPressMap(ImGuiKey_End);
             ctx->MouseMove("float");
             ctx->MouseMoveToPos(g.IO.MousePos + ImVec2(30, -10));
-            ctx->CaptureArgs.InPadding = padding;
-            ctx->CaptureArgs.InCaptureWindows.clear();
-            ctx->CaptureArgs.InCaptureWindows.push_back(window);
-            ctx->CaptureScreenshot();
+
+            ImGuiCaptureArgs args;
+            ctx->CaptureInitArgs(&args);
+            ctx->CaptureAddWindow(&args, window->Name);
+            ctx->CaptureScreenshot(&args);
         }
     };
 

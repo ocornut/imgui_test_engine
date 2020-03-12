@@ -238,7 +238,7 @@ ImGuiTestItemInfo* ImGuiTestEngine_ItemLocate(ImGuiTestEngine* engine, ImGuiID i
     ImGuiTestLocateTask* task = IM_NEW(ImGuiTestLocateTask)();
     task->ID = id;
     task->FrameCount = engine->FrameCount;
-#if IMGUI_TEST_ENGINE_DEBUG
+#ifdef IMGUI_TEST_ENGINE_DEBUG
     if (debug_id)
     {
         size_t debug_id_sz = strlen(debug_id);
@@ -684,7 +684,6 @@ static void ImGuiTestEngine_ProcessTestQueue(ImGuiTestEngine* engine)
 #else
         ctx.HasDock = false;
 #endif
-        ImFormatString(ctx.CaptureArgs.InOutputFileTemplate, IM_ARRAYSIZE(ctx.CaptureArgs.InOutputFileTemplate), "captures/%s_%%04d.png", test->Name);
         engine->TestContext = &ctx;
         if (track_scrolling)
             engine->UiSelectAndScrollToTest = test;

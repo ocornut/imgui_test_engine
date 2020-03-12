@@ -137,7 +137,7 @@ void ImGui::PopDisabled()
 }
 
 //-----------------------------------------------------------------------------
-// STR + InputText bindings (FIXME: move to Str.cpp?)
+// STR + InputText bindings
 //-----------------------------------------------------------------------------
 
 struct InputTextCallbackStr_UserData

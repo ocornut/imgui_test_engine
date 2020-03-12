@@ -10,6 +10,8 @@ struct ImGuiCaptureImageBuf;
 struct ImGuiCaptureTool;
 typedef unsigned int ImGuiCaptureFlags;
 
+struct ImGuiWindow;
+
 //-----------------------------------------------------------------------------
 
 // [Internal]

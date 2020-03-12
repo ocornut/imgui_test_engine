@@ -4,9 +4,9 @@
 #pragma once
 
 #include "imgui.h"
-#include "imgui_te_core.h"
-#include <stdint.h> // intptr_t
-#include "shared/imgui_capture_tool.h"  // ImGuiCaptureArgs // FIXME
+#include "imgui_internal.h"
+#include "imgui_te_core.h"              // ImGuiTestRef, IM_CHECK*, enums
+#include <stdint.h>                     // intptr_t
 
 // Undo some of the damage done by <windows.h>
 #ifdef Yield
@@ -15,6 +15,17 @@
 
 #define IM_TOKENCONCAT_INTERNAL(x, y)   x ## y
 #define IM_TOKENCONCAT(x, y)            IM_TOKENCONCAT_INTERNAL(x, y)
+
+//-------------------------------------------------------------------------
+// External forward declaration
+//-------------------------------------------------------------------------
+
+struct ImGuiCaptureArgs;
+struct ImGuiTest;
+struct ImGuiTestEngine;
+struct ImGuiTestEngineIO;
+struct ImGuiTestInputs;
+struct ImGuiTestGatherTask;
 
 //-------------------------------------------------------------------------
 // ImGuiTestContext
@@ -160,9 +171,9 @@ struct ImGuiTestContext
     int                     FirstFrameCount = 0;                    // First frame where Test is running. After warm-up. This is generally -2 or 0 depending on whether we have warm up enabled
     double                  RunningTime = 0.0f;                     // Amount of wall clock time the Test has been running. Used by safety watchdog.
     int                     ActionDepth = 0;
+    int                     CaptureCounter = 0;
     bool                    Abort = false;
     bool                    HasDock = false;                        // #ifdef IMGUI_HAS_DOCK
-    ImGuiCaptureArgs        CaptureArgs;
 
     // Commonly user exposed state for the ctx-> functions
     ImGuiTestGenericVars    GenericVars;
@@ -227,8 +238,11 @@ struct ImGuiTestContext
 
     // Misc
     ImVec2      GetMainViewportPos();
-    bool        CaptureAddWindow(ImGuiTestRef ref);
-    bool        CaptureScreenshot();
+
+    // Capture
+    void        CaptureInitArgs(ImGuiCaptureArgs* args);
+    bool        CaptureAddWindow(ImGuiCaptureArgs* args, ImGuiTestRef ref);
+    bool        CaptureScreenshot(ImGuiCaptureArgs* args);
 
     // Mouse inputs
     void        MouseMove(ImGuiTestRef ref, ImGuiTestOpFlags flags = ImGuiTestOpFlags_None);
