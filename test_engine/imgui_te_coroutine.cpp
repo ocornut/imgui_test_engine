@@ -1,6 +1,5 @@
 #include <imgui.h>
-#include "test_engine/imgui_te_core.h"
-#include "imgui_coroutine_impl_stdthread.h"
+#include "imgui_te_coroutine.h"
 #include "shared/imgui_utils.h"
 #include "libs/Str/Str.h"
 
@@ -12,6 +11,8 @@
 // Coroutine implementation using std::thread
 // This implements a coroutine using std::thread, with a helper thread for each coroutine (with serialised execution, so threads never actually run concurrently)
 //------------------------------------------------------------------------
+
+#ifdef IMGUI_TEST_ENGINE_ENABLE_COROUTINE_STDTHREAD_IMPL
 
 #include <thread>
 #include <mutex>
@@ -147,3 +148,5 @@ void Coroutine_ImplStdThread_Yield()
         data->StateChange.wait(lock);
     }
 }
+
+#endif // #ifdef IMGUI_TEST_ENGINE_ENABLE_COROUTINE_STDTHREAD_IMPL

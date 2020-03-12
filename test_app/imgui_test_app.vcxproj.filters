@@ -72,9 +72,6 @@
     <ClInclude Include="..\shared\imgui_app.h">
       <Filter>shared</Filter>
     </ClInclude>
-    <ClInclude Include="..\shared\imgui_coroutine_impl_stdthread.h">
-      <Filter>shared</Filter>
-    </ClInclude>
     <ClInclude Include="..\shared\imgui_capture_tool.h">
       <Filter>shared</Filter>
     </ClInclude>
@@ -88,6 +85,9 @@
       <Filter>test_app</Filter>
     </ClInclude>
     <ClInclude Include="..\test_engine\imgui_te_internal.h">
+      <Filter>test_engine</Filter>
+    </ClInclude>
+    <ClInclude Include="..\test_engine\imgui_te_coroutine.h">
       <Filter>test_engine</Filter>
     </ClInclude>
   </ItemGroup>
@@ -131,9 +131,6 @@
     <ClCompile Include="..\shared\imgui_app.cpp">
       <Filter>shared</Filter>
     </ClCompile>
-    <ClCompile Include="..\shared\imgui_coroutine_impl_stdthread.cpp">
-      <Filter>shared</Filter>
-    </ClCompile>
     <ClCompile Include="..\shared\imgui_capture_tool.cpp">
       <Filter>shared</Filter>
     </ClCompile>
@@ -141,6 +138,9 @@
       <Filter>shared</Filter>
     </ClCompile>
     <ClCompile Include="..\test_engine\imgui_te_ui.cpp">
+      <Filter>test_engine</Filter>
+    </ClCompile>
+    <ClCompile Include="..\test_engine\imgui_te_coroutine.cpp">
       <Filter>test_engine</Filter>
     </ClCompile>
   </ItemGroup>

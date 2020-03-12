@@ -5,6 +5,7 @@
 
 #define IMGUI_TEST_ENGINE_DEBUG     1
 #include "imgui_internal.h"         // ImPool<>, ImGuiItemStatusFlags, ImFormatString
+#include "imgui_te_coroutine.h"     // Function pointers for IO structure (FIXME)
 #include "imgui_te_util.h"
 
 //-------------------------------------------------------------------------
@@ -30,14 +31,6 @@ typedef int ImGuiTestCheckFlags;    // Flags: See ImGuiTestCheckFlags_
 typedef int ImGuiTestLogFlags;      // Flags: See ImGuiTestLogFlags_
 typedef int ImGuiTestOpFlags;       // Flags: See ImGuiTestOpFlags_
 typedef int ImGuiTestRunFlags;      // Flags: See ImGuiTestRunFlags_
-
-// Coroutine abstraction (see shared/imgui_coroutine_impl_stdthread.h for a suggested implementation of this)
-typedef void*                       ImGuiTestCoroutineHandle;                   // An arbitrary handle used internally to represent coroutines (NULL indicates no handle)
-typedef void                        (*ImGuiTestCoroutineMainFunc)(void* ctx);   // A coroutine function - ctx is an arbitrary context object
-typedef ImGuiTestCoroutineHandle    (*ImGuiTestEngineCoroutineCreateFunc)(ImGuiTestCoroutineMainFunc func, const char* name, void* ctx);
-typedef void                        (*ImGuiTestEngineCoroutineDestroyFunc)(ImGuiTestCoroutineHandle handle);
-typedef bool                        (*ImGuiTestEngineCoroutineRunFunc)(ImGuiTestCoroutineHandle handle);
-typedef void                        (*ImGuiTestEngineCoroutineYieldFunc)();
 
 //-------------------------------------------------------------------------
 // Types
