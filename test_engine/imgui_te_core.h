@@ -5,7 +5,6 @@
 
 #define IMGUI_TEST_ENGINE_DEBUG     1
 #include "imgui_internal.h"         // ImPool<>, ImGuiItemStatusFlags, ImFormatString
-#include "imgui_te_coroutine.h"     // Function pointers for IO structure (FIXME)
 #include "imgui_te_util.h"
 
 //-------------------------------------------------------------------------
@@ -14,6 +13,7 @@
 
 struct ImGuiTest;
 struct ImGuiTestContext;
+struct ImGuiTestCoroutineInterface;
 struct ImGuiTestEngine;
 struct ImGuiTestEngineIO;
 struct ImGuiTestItemInfo;
@@ -298,20 +298,10 @@ typedef bool        (*ImGuiTestEngineScreenCaptureFunc)(int x, int y, int w, int
 // IO structure
 struct ImGuiTestEngineIO
 {
+    void*                               UserData = NULL;                // User data for SrcFileOpenFunc and ScreenCaptureFunc
     ImGuiTestEngineSrcFileOpenFunc      SrcFileOpenFunc = NULL;         // (Optional) To open source files
     ImGuiTestEngineScreenCaptureFunc    ScreenCaptureFunc = NULL;       // (Optional) To capture graphics output
-    void*                               UserData = NULL;
-
-    // Coroutine support functions.
-    // Coroutines should be used like this:
-    //   ImGuiTestCoroutineHandle handle = CoroutineCreate(<func>, <name>, <ctx>); // name being for debugging, and ctx being an arbitrary user context pointer
-    //   while (CoroutineRun(handle)) { <do other stuff };
-    //   CoroutineDestroy(handle);
-    // The coroutine code itself should call CoroutineYieldFunc() whenever it wants to yield control back to the main thread.
-    ImGuiTestEngineCoroutineCreateFunc  CoroutineCreateFunc = NULL;     // Create a new coroutine
-    ImGuiTestEngineCoroutineDestroyFunc CoroutineDestroyFunc = NULL;    // Destroy a coroutine (which must have completed first)
-    ImGuiTestEngineCoroutineRunFunc     CoroutineRunFunc = NULL;        // Run a coroutine until it yields or finishes, returning false if finished
-    ImGuiTestEngineCoroutineYieldFunc   CoroutineYieldFunc = NULL;      // Yield from a coroutine back to the caller, preserving coroutine state
+    ImGuiTestCoroutineInterface*        CoroutineFuncs = NULL;          // (Required) Coroutine functions (see imgui_te_coroutines.h)
 
     // Inputs: Options
     bool                        ConfigRunWithGui = false;       // Run without graphics output (e.g. command-line)

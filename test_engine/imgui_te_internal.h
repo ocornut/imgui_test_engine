@@ -1,6 +1,7 @@
 #pragma once
 
 #include "shared/imgui_capture_tool.h"  // ImGuiCaptureTool  // FIXME
+#include "imgui_te_coroutine.h"
 
 //-------------------------------------------------------------------------
 // DATA STRUCTURES

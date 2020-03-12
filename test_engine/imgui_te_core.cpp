@@ -142,10 +142,10 @@ void    ImGuiTestEngine_CoroutineStopAndJoin(ImGuiTestEngine* engine)
         engine->TestQueueCoroutineShouldExit = true;
         while (true)
         {
-            if (!engine->IO.CoroutineRunFunc(engine->TestQueueCoroutine))
+            if (!engine->IO.CoroutineFuncs->RunFunc(engine->TestQueueCoroutine))
                 break;
         }
-        engine->IO.CoroutineDestroyFunc(engine->TestQueueCoroutine);
+        engine->IO.CoroutineFuncs->DestroyFunc(engine->TestQueueCoroutine);
         engine->TestQueueCoroutine = NULL;
     }
 }
@@ -525,12 +525,12 @@ static void ImGuiTestEngine_PostNewFrame(ImGuiTestEngine* engine, ImGuiContext* 
     // We perform lazy creation of the coroutine to ensure that IO functions are set up first
     // (we include the word "Main" to facilitate filtering for both this thread and the Main Thread in debuggers)
     if (!engine->TestQueueCoroutine)
-        engine->TestQueueCoroutine = engine->IO.CoroutineCreateFunc(ImGuiTestEngine_TestQueueCoroutineMain, "Main Dear ImGui Test Thread", engine);
+        engine->TestQueueCoroutine = engine->IO.CoroutineFuncs->CreateFunc(ImGuiTestEngine_TestQueueCoroutineMain, "Main Dear ImGui Test Thread", engine);
 
     // Run the test coroutine. This will resume the test queue from either the last point the test called YieldFromCoroutine(),
     // or the loop in ImGuiTestEngine_TestQueueCoroutineMain that does so if no test is running.
     // If you want to breakpoint the point execution continues in the test code, breakpoint the exit condition in YieldFromCoroutine()
-    engine->IO.CoroutineRunFunc(engine->TestQueueCoroutine);
+    engine->IO.CoroutineFuncs->RunFunc(engine->TestQueueCoroutine);
 }
 
 static void ImGuiTestEngine_RunGuiFunc(ImGuiTestEngine* engine)
@@ -560,7 +560,7 @@ static void ImGuiTestEngine_TestQueueCoroutineMain(void* engine_opaque)
     while (!engine->TestQueueCoroutineShouldExit)
     {
         ImGuiTestEngine_ProcessTestQueue(engine);
-        engine->IO.CoroutineYieldFunc();
+        engine->IO.CoroutineFuncs->YieldFunc();
     }
 }
 
@@ -573,7 +573,7 @@ void ImGuiTestEngine_Yield(ImGuiTestEngine* engine)
     if (ctx)
         IM_ASSERT(ctx->ActiveFunc == ImGuiTestActiveFunc_TestFunc);
 
-    engine->IO.CoroutineYieldFunc();
+    engine->IO.CoroutineFuncs->YieldFunc();
 }
 
 void ImGuiTestEngine_SetDeltaTime(ImGuiTestEngine* engine, float delta_time)

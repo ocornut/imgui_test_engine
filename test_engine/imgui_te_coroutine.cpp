@@ -32,7 +32,7 @@ struct Coroutine_ImplStdThreadData
 static thread_local Coroutine_ImplStdThreadData* GThreadCoroutine = NULL;
 
 // The main function for a coroutine thread
-void CoroutineThreadMain(Coroutine_ImplStdThreadData* data, ImGuiTestCoroutineMainFunc func, void* ctx)
+static void CoroutineThreadMain(Coroutine_ImplStdThreadData* data, ImGuiTestCoroutineMainFunc func, void* ctx)
 {
     // Set our thread name
     ImThreadSetCurrentThreadDescription(data->Name.c_str());
@@ -62,7 +62,7 @@ void CoroutineThreadMain(Coroutine_ImplStdThreadData* data, ImGuiTestCoroutineMa
     }
 }
 
-ImGuiTestCoroutineHandle Coroutine_ImplStdThread_Create(ImGuiTestCoroutineMainFunc func, const char* name, void* ctx)
+static ImGuiTestCoroutineHandle Coroutine_ImplStdThread_Create(ImGuiTestCoroutineMainFunc func, const char* name, void* ctx)
 {
     Coroutine_ImplStdThreadData* data = new Coroutine_ImplStdThreadData();
 
@@ -74,7 +74,7 @@ ImGuiTestCoroutineHandle Coroutine_ImplStdThread_Create(ImGuiTestCoroutineMainFu
     return (ImGuiTestCoroutineHandle)data;
 }
 
-void Coroutine_ImplStdThread_Destroy(ImGuiTestCoroutineHandle handle)
+static void Coroutine_ImplStdThread_Destroy(ImGuiTestCoroutineHandle handle)
 {
     Coroutine_ImplStdThreadData* data = (Coroutine_ImplStdThreadData*)handle;
 
@@ -92,7 +92,7 @@ void Coroutine_ImplStdThread_Destroy(ImGuiTestCoroutineHandle handle)
 }
 
 // Run the coroutine until the next call to Yield(). Returns TRUE if the coroutine yielded, FALSE if it terminated (or had previously terminated)
-bool Coroutine_ImplStdThread_Run(ImGuiTestCoroutineHandle handle)
+static bool Coroutine_ImplStdThread_Run(ImGuiTestCoroutineHandle handle)
 {
     Coroutine_ImplStdThreadData* data = (Coroutine_ImplStdThreadData*)handle;
 
@@ -125,7 +125,7 @@ bool Coroutine_ImplStdThread_Run(ImGuiTestCoroutineHandle handle)
 }
 
 // Yield the current coroutine (can only be called from a coroutine)
-void Coroutine_ImplStdThread_Yield()
+static void Coroutine_ImplStdThread_Yield()
 {
     IM_ASSERT(GThreadCoroutine); // This can only be called from a coroutine thread
 
@@ -147,6 +147,16 @@ void Coroutine_ImplStdThread_Yield()
             break; // Breakpoint here if you want to catch the point where execution of this coroutine resumes
         data->StateChange.wait(lock);
     }
+}
+
+ImGuiTestCoroutineInterface* Coroutine_ImplStdThread_GetInterface()
+{
+    static ImGuiTestCoroutineInterface intf;
+    intf.CreateFunc = Coroutine_ImplStdThread_Create;
+    intf.DestroyFunc = Coroutine_ImplStdThread_Destroy;
+    intf.RunFunc = Coroutine_ImplStdThread_Run;
+    intf.YieldFunc = Coroutine_ImplStdThread_Yield;
+    return &intf;
 }
 
 #endif // #ifdef IMGUI_TEST_ENGINE_ENABLE_COROUTINE_STDTHREAD_IMPL

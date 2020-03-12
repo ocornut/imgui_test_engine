@@ -378,14 +378,12 @@ int main(int argc, char** argv)
         test_io.ConfigLogToTTY = true;
     if (!g_App.OptGUI && ImOsIsDebuggerPresent())
         test_io.ConfigBreakOnError = true;
-    test_io.SrcFileOpenFunc = SrcFileOpenerFunc;
-    test_io.UserData = (void*)&g_App;
-    test_io.ScreenCaptureFunc = [](int x, int y, int w, int h, unsigned int* pixels, void* user_data) { ImGuiApp* app = g_App.AppWindow; return app->CaptureFramebuffer(app, x, y, w, h, pixels, user_data); };
 
-    test_io.CoroutineCreateFunc = &Coroutine_ImplStdThread_Create;
-    test_io.CoroutineDestroyFunc = &Coroutine_ImplStdThread_Destroy;
-    test_io.CoroutineRunFunc = &Coroutine_ImplStdThread_Run;
-    test_io.CoroutineYieldFunc = &Coroutine_ImplStdThread_Yield;
+    // Set up functions
+    test_io.SrcFileOpenFunc = SrcFileOpenerFunc;
+    test_io.ScreenCaptureFunc = [](int x, int y, int w, int h, unsigned int* pixels, void* user_data) { ImGuiApp* app = g_App.AppWindow; return app->CaptureFramebuffer(app, x, y, w, h, pixels, user_data); };
+    test_io.CoroutineFuncs = Coroutine_ImplStdThread_GetInterface();
+    test_io.UserData = (void*)&g_App;
 
     // Set up TestEngine context
     RegisterTests(engine);
