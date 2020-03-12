@@ -393,8 +393,9 @@ ImVec2 ImGuiTestContext::GetMainViewportPos()
 #endif
 }
 
-void ImGuiTestContext::CaptureInitArgs(ImGuiCaptureArgs* args)
+void ImGuiTestContext::CaptureInitArgs(ImGuiCaptureArgs* args, int flags)
 {
+    args->InFlags = (ImGuiCaptureFlags)flags;
     args->InPadding = 13.0f;
     ImFormatString(args->InOutputFileTemplate, IM_ARRAYSIZE(args->InOutputFileTemplate), "captures/%s_%04d.png", Test->Name, CaptureCounter);
     CaptureCounter++;

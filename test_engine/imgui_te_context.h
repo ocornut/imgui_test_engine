@@ -240,7 +240,7 @@ struct ImGuiTestContext
     ImVec2      GetMainViewportPos();
 
     // Capture
-    void        CaptureInitArgs(ImGuiCaptureArgs* args);
+    void        CaptureInitArgs(ImGuiCaptureArgs* args, int capture_flags = 0);
     bool        CaptureAddWindow(ImGuiCaptureArgs* args, ImGuiTestRef ref);
     bool        CaptureScreenshot(ImGuiCaptureArgs* args);
 

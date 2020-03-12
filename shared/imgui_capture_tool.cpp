@@ -95,7 +95,7 @@ bool ImGuiCaptureContext::CaptureScreenshot(ImGuiCaptureArgs* args)
     for (ImGuiWindow* window : g.Windows)
     {
 #ifdef IMGUI_HAS_VIEWPORT
-        if ((io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable) && (args->InFlags & ImGuiCaptureToolFlags_StitchFullContents))
+        if ((io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable) && (args->InFlags & ImGuiCaptureFlags_StitchFullContents))
         {
             // FIXME-VIEWPORTS: Content stitching is not possible because window would get moved out of main viewport and detach from it. We need a way to force captured windows to remain in main viewport here.
             return false;
@@ -134,7 +134,7 @@ bool ImGuiCaptureContext::CaptureScreenshot(ImGuiCaptureArgs* args)
                     if (window->ParentWindow != NULL)
                         continue;
 
-                    if ((window->Flags & ImGuiWindowFlags_Popup || window->Flags & ImGuiWindowFlags_Tooltip) && !(args->InFlags & ImGuiCaptureToolFlags_ExpandToIncludePopups))
+                    if ((window->Flags & ImGuiWindowFlags_Popup || window->Flags & ImGuiWindowFlags_Tooltip) && !(args->InFlags & ImGuiCaptureFlags_ExpandToIncludePopups))
                         continue;
 
                     args->InCaptureWindows.push_back(window);
@@ -151,7 +151,7 @@ bool ImGuiCaptureContext::CaptureScreenshot(ImGuiCaptureArgs* args)
             _CombinedWindowRectPos = ImVec2(ImMin(_CombinedWindowRectPos.x, window->Pos.x), ImMin(_CombinedWindowRectPos.y, window->Pos.y));
         }
 
-        if (args->InFlags & ImGuiCaptureToolFlags_StitchFullContents)
+        if (args->InFlags & ImGuiCaptureFlags_StitchFullContents)
         {
             IM_ASSERT(!is_capturing_rect && "Capture Tool: capture of full window contents is not possible when capturing specified rect.");
             IM_ASSERT(args->InCaptureWindows.Size == 1 && "Capture Tool: capture of full window contents is not possible when capturing more than one window.");
@@ -314,7 +314,7 @@ void ImGuiCaptureTool::CaptureWindowPicker(const char* title, ImGuiCaptureArgs* 
     ImGuiWindow* capture_window = g.HoveredRootWindow;
     if (capture_window)
     {
-        if (Flags & ImGuiCaptureToolFlags_HideCaptureToolWindow)
+        if (Flags & ImGuiCaptureFlags_HideCaptureToolWindow)
             if (capture_window == ImGui::GetCurrentWindow())
                 return;
 
@@ -394,7 +394,7 @@ void ImGuiCaptureTool::CaptureWindowsSelector(const char* title, ImGuiCaptureArg
         if (!window->WasActive)
             continue;
 
-        if (args->InFlags & ImGuiCaptureToolFlags_ExpandToIncludePopups && ((window->Flags & ImGuiWindowFlags_Popup) || (window->Flags & ImGuiWindowFlags_Tooltip)))
+        if (args->InFlags & ImGuiCaptureFlags_ExpandToIncludePopups && ((window->Flags & ImGuiWindowFlags_Popup) || (window->Flags & ImGuiWindowFlags_Tooltip)))
         {
             capture_rect.Add(window->Rect());
             args->InCaptureWindows.push_back(window);
@@ -404,7 +404,7 @@ void ImGuiCaptureTool::CaptureWindowsSelector(const char* title, ImGuiCaptureArg
         if (window->Flags & ImGuiWindowFlags_ChildWindow)
             continue;
 
-        if (args->InFlags & ImGuiCaptureToolFlags_HideCaptureToolWindow && window == ImGui::GetCurrentWindow())
+        if (args->InFlags & ImGuiCaptureFlags_HideCaptureToolWindow && window == ImGui::GetCurrentWindow())
             continue;
 
         ImGui::PushID(window);
@@ -567,20 +567,20 @@ void ImGuiCaptureTool::ShowCaptureToolWindow(bool* p_open)
         if ((io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable))
             PushDisabled();
 #endif
-        ImGui::CheckboxFlags("Stitch and capture full contents height", &Flags, ImGuiCaptureToolFlags_StitchFullContents);
+        ImGui::CheckboxFlags("Stitch and capture full contents height", &Flags, ImGuiCaptureFlags_StitchFullContents);
 #ifdef IMGUI_HAS_VIEWPORT
         if ((io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable))
         {
-            Flags &= ~ImGuiCaptureToolFlags_StitchFullContents;
+            Flags &= ~ImGuiCaptureFlags_StitchFullContents;
             PopDisabled();
             if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
                 ImGui::SetTooltip("Content stitching is not possible when using viewports.");
         }
 #endif
-        ImGui::CheckboxFlags("Hide capture tool window", &Flags, ImGuiCaptureToolFlags_HideCaptureToolWindow);
+        ImGui::CheckboxFlags("Hide capture tool window", &Flags, ImGuiCaptureFlags_HideCaptureToolWindow);
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Full height of picked window will be captured.");
-        ImGui::CheckboxFlags("Include tooltips", &Flags, ImGuiCaptureToolFlags_ExpandToIncludePopups);
+        ImGui::CheckboxFlags("Include tooltips", &Flags, ImGuiCaptureFlags_ExpandToIncludePopups);
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Capture area will be expanded to include visible tooltips.");
 
@@ -599,7 +599,7 @@ void ImGuiCaptureTool::ShowCaptureToolWindow(bool* p_open)
     ImStrncpy(_CaptureArgsSelector.InOutputFileTemplate, SaveFileName, (size_t)IM_ARRAYSIZE(_CaptureArgsSelector.InOutputFileTemplate));
 
     // Hide tool window unconditionally.
-    if (Flags & ImGuiCaptureToolFlags_HideCaptureToolWindow)
+    if (Flags & ImGuiCaptureFlags_HideCaptureToolWindow)
         if (_CaptureState == ImGuiCaptureToolState_Capturing || _CaptureState == ImGuiCaptureToolState_PickingSingleWindow)
         {
             ImGuiWindow* window = ImGui::GetCurrentWindow();
