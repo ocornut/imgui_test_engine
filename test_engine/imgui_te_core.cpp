@@ -193,6 +193,23 @@ void    ImGuiTestEngine_Stop(ImGuiTestEngine* engine)
     engine->Started = false;
 }
 
+void    ImGuiTestEngine_PostRender(ImGuiTestEngine* engine)
+{
+    // Update flags
+    engine->IO.RenderWantMaxSpeed = (engine->IO.RunningTests && engine->IO.ConfigRunFast) || engine->IO.ConfigNoThrottle;
+
+    // Capture a screenshot from main thread while coroutine waits
+    if (engine->CurrentCaptureArgs != NULL)
+    {
+        engine->CaptureContext.ScreenCaptureFunc = engine->IO.ScreenCaptureFunc;
+        if (!engine->CaptureContext.CaptureScreenshot(engine->CurrentCaptureArgs))
+        {
+            ImStrncpy(engine->CaptureTool.LastSaveFileName, engine->CurrentCaptureArgs->OutSavedFileName, IM_ARRAYSIZE(engine->CaptureTool.LastSaveFileName));
+            engine->CurrentCaptureArgs = NULL;
+        }
+    }
+}
+
 ImGuiTestEngineIO&  ImGuiTestEngine_GetIO(ImGuiTestEngine* engine)
 {
     return engine->IO;

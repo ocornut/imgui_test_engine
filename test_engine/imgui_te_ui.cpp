@@ -27,11 +27,11 @@ static bool ParseLineAndDrawFileOpenItemForSourceFile(ImGuiTestEngine* e, ImGuiT
     if (separator == NULL)
         return false;
 
-    const char* filename_end = separator;
-    const char* filename_start = separator - 1;
-    while (filename_start > line_start&& filename_start[-1] != ' ')
-        filename_start--;
-    if (filename_start == filename_end)
+    const char* path_end = separator;
+    const char* path_begin = separator - 1;
+    while (path_begin > line_start&& path_begin[-1] != ' ')
+        path_begin--;
+    if (path_begin == path_end)
         return false;
 
     int line_no = -1;
@@ -39,13 +39,13 @@ static bool ParseLineAndDrawFileOpenItemForSourceFile(ImGuiTestEngine* e, ImGuiT
     if (line_no == -1)
         return false;
 
-    Str256f buf("Open '%.*s' at line %d", (int)(filename_end - filename_start), filename_start, line_no);
+    Str256f buf("Open '%.*s' at line %d", (int)(path_end - path_begin), path_begin, line_no);
     if (ImGui::MenuItem(buf.c_str()))
     {
         // FIXME-TESTS: Assume folder is same as folder of test->SourceFile!
-        const char* src_file_path = test->SourceFile;
-        const char* src_file_name = ImPathFindFilename(src_file_path);
-        buf.setf("%.*s%.*s", (int)(src_file_name - src_file_path), src_file_path, (int)(filename_end - filename_start), filename_start);
+        const char* src_path = test->SourceFile;
+        const char* src_name = ImPathFindFilename(src_path);
+        buf.setf("%.*s%.*s", (int)(src_name - src_path), src_path, (int)(path_end - path_begin), path_begin);
 
         ImGuiTestEngineIO& e_io = ImGuiTestEngine_GetIO(e);
         e_io.SrcFileOpenFunc(buf.c_str(), line_no, e_io.UserData);
@@ -64,17 +64,30 @@ static bool ParseLineAndDrawFileOpenItemForImageFile(ImGuiTestEngine* e, ImGuiTe
     if (extension == NULL)
         return false;
 
-    const char* filename_end = extension + strlen(file_ext);
-    const char* filename_start = extension - 1;
-    while (filename_start > line_start&& filename_start[-1] != ' ' && filename_start[-1] != '\'' && filename_start[-1] != '\"')
-        filename_start--;
-    if (filename_start == filename_end)
+    const char* path_end = extension + strlen(file_ext);
+    const char* path_begin = extension - 1;
+    while (path_begin > line_start && path_begin[-1] != ' ' && path_begin[-1] != '\'' && path_begin[-1] != '\"')
+        path_begin--;
+    if (path_begin == path_end)
         return false;
 
-    Str256f buf("Open '%.*s'", (int)(filename_end - filename_start), filename_start);
+    Str256 buf;
+
+    // Open file
+    buf.setf("Open file: %.*s", (int)(path_end - path_begin), path_begin);
     if (ImGui::MenuItem(buf.c_str()))
     {
-        buf.setf("%.*s", (int)(filename_end - filename_start), filename_start);
+        buf.setf("%.*s", (int)(path_end - path_begin), path_begin);
+        ImOsOpenInShell(buf.c_str());
+    }
+
+    // Open folder
+    const char* folder_begin = path_begin;
+    const char* folder_end = ImPathFindFilename(path_begin, path_end);
+    buf.setf("Open folder: %.*s", (int)(folder_end - folder_begin), path_begin);
+    if (ImGui::MenuItem(buf.c_str()))
+    {
+        buf.setf("%.*s", (int)(folder_end - folder_begin), folder_begin);
         ImOsOpenInShell(buf.c_str());
     }
 
@@ -542,18 +555,6 @@ void    ImGuiTestEngine_ShowTestWindow(ImGuiTestEngine* engine, bool* p_open)
     capture_tool.Context.ScreenCaptureFunc = engine->IO.ScreenCaptureFunc;
     if (capture_tool.Visible)
         capture_tool.ShowCaptureToolWindow(&capture_tool.Visible);
-
-    // Capture a screenshot from main thread while coroutine waits
-    // FIXME: Move that out of here!
-    if (engine->CurrentCaptureArgs != NULL)
-    {
-        engine->CaptureContext.ScreenCaptureFunc = engine->IO.ScreenCaptureFunc;
-        if (!engine->CaptureContext.CaptureScreenshot(engine->CurrentCaptureArgs))
-        {
-            ImStrncpy(engine->CaptureTool.LastSaveFileName, engine->CurrentCaptureArgs->OutSavedFileName, IM_ARRAYSIZE(engine->CaptureTool.LastSaveFileName));
-            engine->CurrentCaptureArgs = NULL;
-        }
-    }
 }
 
 //-------------------------------------------------------------------------

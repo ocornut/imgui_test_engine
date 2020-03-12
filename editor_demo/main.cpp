@@ -303,7 +303,8 @@ int main(int argc, char** argv)
         ImGui::Render();
 
 #ifdef EDITOR_DEMO_ENABLE_TEST_ENGINE
-        app->Vsync = !(test_io.RunningTests && test_io.ConfigRunFast) && !test_io.ConfigNoThrottle;
+        ImGuiTestEngine_PostRender(engine);
+        app->Vsync = test_io.RenderWantMaxSpeed ? false : true;
 #endif
 
         app->Render(app);

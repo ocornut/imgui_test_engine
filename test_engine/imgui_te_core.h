@@ -270,6 +270,7 @@ ImGuiTestEngine*    ImGuiTestEngine_CreateContext(ImGuiContext* imgui_context);
 void                ImGuiTestEngine_ShutdownContext(ImGuiTestEngine* engine);
 void                ImGuiTestEngine_Start(ImGuiTestEngine* engine);
 void                ImGuiTestEngine_Stop(ImGuiTestEngine* engine);
+void                ImGuiTestEngine_PostRender(ImGuiTestEngine* engine);
 ImGuiTestEngineIO&  ImGuiTestEngine_GetIO(ImGuiTestEngine* engine);
 
 // Functions: Usage
@@ -321,6 +322,7 @@ struct ImGuiTestEngineIO
 
     // Outputs: State
     bool                        RunningTests = false;
+    bool                        RenderWantMaxSpeed = false;
 };
 
 // Result of an ItemLocate query

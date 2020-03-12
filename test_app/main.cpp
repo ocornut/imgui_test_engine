@@ -459,13 +459,12 @@ int main(int argc, char** argv)
         ImGui::NewFrame();
         MainLoopEndFrame();
         ImGui::Render();
+        ImGuiTestEngine_PostRender(engine);
 
         if (!g_App.OptGUI && !test_io.RunningTests)
             break;
 
-        app_window->Vsync = true;
-        if ((test_io.RunningTests && test_io.ConfigRunFast) || test_io.ConfigNoThrottle)
-            app_window->Vsync = false;
+        app_window->Vsync = test_io.RenderWantMaxSpeed ? false : true;
         app_window->ClearColor = g_App.ClearColor;
         app_window->Render(app_window);
     }
