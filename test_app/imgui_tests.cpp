@@ -2652,6 +2652,30 @@ void RegisterTests_Table(ImGuiTestEngine* e)
         ImGui::EndTable();
         ImGui::End();
     };
+
+    // ## Test using the maximum of 64 columns (#3058)
+    t = REGISTER_TEST("table", "table_9_max_columns");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::Begin("Test window 1", NULL, ImGuiWindowFlags_NoSavedSettings);
+        //ImDrawList* cmd = ImGui::GetWindowDrawList();
+        ImGui::BeginTable("Table", 64);
+        for (int n = 0; n < 64; n++)
+            ImGui::TableSetupColumn("Header");
+        ImGui::TableAutoHeaders();
+        for (int i = 0; i < 10; i++)
+        {
+            ImGui::TableNextRow();
+            for (int n = 0; n < 64; n++)
+            {
+                ImGui::Text("Data");
+                ImGui::TableNextCell();
+            }
+        }
+        ImGui::EndTable();
+        ImGui::End();
+    };
+
 #endif // #ifdef IMGUI_HAS_TABLE
 };
 
@@ -3128,6 +3152,33 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
         v.clear();
         IM_CHECK(v.Data == NULL && v.Capacity == 0);
     };
+
+    // ## Test ImVector functions
+#ifdef IMGUI_HAS_TABLE
+    t = REGISTER_TEST("misc", "misc_bitarray");
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ImBitArray<128> v128;
+        IM_CHECK_EQ(sizeof(v128), 16);
+        v128.ClearBits();
+        v128.SetBitRange(1, 1);
+        IM_CHECK(v128.Storage[0] == 0x00000002 && v128.Storage[1] == 0x00000000 && v128.Storage[2] == 0x00000000);
+        v128.ClearBits();
+        v128.SetBitRange(1, 31);
+        IM_CHECK(v128.Storage[0] == 0xFFFFFFFE && v128.Storage[1] == 0x00000000 && v128.Storage[2] == 0x00000000);
+        v128.ClearBits();
+        v128.SetBitRange(1, 32);
+        IM_CHECK(v128.Storage[0] == 0xFFFFFFFE && v128.Storage[1] == 0x00000001 && v128.Storage[2] == 0x00000000);
+        v128.ClearBits();
+        v128.SetBitRange(0, 64);
+        IM_CHECK(v128.Storage[0] == 0xFFFFFFFF && v128.Storage[1] == 0xFFFFFFFF && v128.Storage[2] == 0x00000001);
+
+        ImBitArray<129> v129;
+        IM_CHECK_EQ(sizeof(v129), 20);
+        v129.SetBit(128);
+        IM_CHECK(v129.TestBit(128) == true);
+    };
+#endif
 
     // ## Test ImPool functions
     t = REGISTER_TEST("misc", "misc_pool_001");
@@ -5091,7 +5142,7 @@ void RegisterTests_Capture(ImGuiTestEngine* e)
 
 #ifdef IMGUI_HAS_TABLE
     // ## Capture all tables demo
-    t = REGISTER_TEST("capture", "capture_tables_demo");
+    t = REGISTER_TEST("capture", "capture_table_demo");
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         ctx->WindowRef("Dear ImGui Demo");
