@@ -1,21 +1,11 @@
 #pragma once
 #include <math.h>   // fabsf
 
-typedef int ImGuiKeyModFlags;       // See ImGuiKeyModFlags_
-
-enum ImGuiKeyModFlags_
-{
-    ImGuiKeyModFlags_None           = 0,
-    ImGuiKeyModFlags_Ctrl           = 1 << 0,
-    ImGuiKeyModFlags_Alt            = 1 << 1,
-    ImGuiKeyModFlags_Shift          = 1 << 2,
-    ImGuiKeyModFlags_Super          = 1 << 3,
 #if defined(__APPLE__)
-    ImGuiKeyModFlags_Shortcut = ImGuiKeyModFlags_Super
+#define ImGuiKeyModFlags_Shortcut   ImGuiKeyModFlags_Super
 #else
-    ImGuiKeyModFlags_Shortcut = ImGuiKeyModFlags_Ctrl
+#define ImGuiKeyModFlags_Shortcut   ImGuiKeyModFlags_Ctrl
 #endif
-};
 
 enum ImGuiKeyState
 {
