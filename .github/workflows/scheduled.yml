@@ -38,7 +38,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        branch: [master, docking, tables]
+        # MacOS minutes are expensive (x10) for private repo so reduce the amount of tests running there for now.
+        # branch: [master, docking, tables]
+        branch: [docking]
 
     steps:
       - uses: actions/checkout@v1
