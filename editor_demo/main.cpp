@@ -1,6 +1,7 @@
 #include "imgui.h"
 #define IMGUI_DEFINE_MATH_OPERATORS
 #include "imgui_internal.h"
+#include "editor_assets_browser.h"
 #include "editor_tests.h"
 #include "editor_widgets.h"
 #include "libs/Str/Str.h"
@@ -174,7 +175,9 @@ int main(int argc, char** argv)
     char* readme_md = (char*)ImFileLoadToMemory("docs/README.md", "rb", &readme_md_size, +1);
 #endif
 
+    bool show_readme = true;
     bool show_capture_tool = false;
+    bool show_assets_browser = false;
     bool show_test_engine = false;
     ImGuiCaptureTool capture_tool;
     capture_tool.Context.UserData = app;
@@ -261,6 +264,11 @@ int main(int argc, char** argv)
 
             if (ImGui::BeginMenu("View"))
             {
+                // Demo
+                ImGui::MenuItem("Assets Browser", NULL, &show_assets_browser);
+                ImGui::Separator();
+
+                // Tools
                 ImGui::MenuItem("Capture Tool", NULL, &show_capture_tool);
 #ifdef EDITOR_DEMO_ENABLE_TEST_ENGINE
                 ImGui::MenuItem("Test Engine", NULL, &show_test_engine);
@@ -272,17 +280,16 @@ int main(int argc, char** argv)
 
             if (ImGui::BeginMenu("Help"))
             {
-                if (ImGui::MenuItem("About Editor Demo", ""))
-                {
-                }
+                ImGui::MenuItem("Readme", NULL, &show_readme);
+                ImGui::MenuItem("About Editor Demo", "", false, false);
                 ImGui::EndMenu();
             }
             ImGui::EndMainMenuBar();
         }
 
-        if (readme_md != NULL)
+        if (show_readme && readme_md != NULL)
         {
-            ImGui::Begin("Readme");
+            ImGui::Begin("Readme", &show_readme);
             RenderMarkdown(readme_md, readme_md + readme_md_size);
             ImGui::End();
         }
@@ -291,6 +298,9 @@ int main(int argc, char** argv)
         ImGui::Text(ICON_FA_SEARCH " Search");
         ImGui::ColorEdit4("ClearColor", &app->ClearColor.x);
         ImGui::End();
+
+        if (show_assets_browser)
+            ShowExampleAppAssetBrowser(&show_assets_browser);
 
         if (show_capture_tool)
             capture_tool.ShowCaptureToolWindow(&show_capture_tool);

@@ -177,6 +177,7 @@
     <ClInclude Include="..\test_engine\imgui_te_imconfig.h" />
     <ClInclude Include="..\test_engine\imgui_te_internal.h" />
     <ClInclude Include="..\test_engine\imgui_te_util.h" />
+    <ClInclude Include="editor_assets_browser.h" />
     <ClInclude Include="editor_demo_imconfig.h" />
     <ClInclude Include="editor_widgets.h" />
   </ItemGroup>
@@ -196,6 +197,7 @@
     <ClCompile Include="..\test_engine\imgui_te_coroutine.cpp" />
     <ClCompile Include="..\test_engine\imgui_te_ui.cpp" />
     <ClCompile Include="..\test_engine\imgui_te_util.cpp" />
+    <ClCompile Include="editor_assets_browser.cpp" />
     <ClCompile Include="editor_tests.cpp" />
     <ClCompile Include="editor_widgets.cpp" />
     <ClCompile Include="main.cpp" />

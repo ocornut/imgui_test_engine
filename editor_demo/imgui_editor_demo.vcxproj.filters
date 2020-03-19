@@ -94,6 +94,9 @@
     <ClInclude Include="..\test_engine\imgui_te_coroutine.h">
       <Filter>test_engine</Filter>
     </ClInclude>
+    <ClInclude Include="editor_assets_browser.h">
+      <Filter>sources</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\imgui\imgui.cpp">
@@ -148,6 +151,9 @@
       <Filter>test_engine</Filter>
     </ClCompile>
     <ClCompile Include="editor_tests.cpp">
+      <Filter>sources</Filter>
+    </ClCompile>
+    <ClCompile Include="editor_assets_browser.cpp">
       <Filter>sources</Filter>
     </ClCompile>
   </ItemGroup>
