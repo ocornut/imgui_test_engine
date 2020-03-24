@@ -1840,6 +1840,40 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ctx->MenuClick("First Menu/Second Menu/2 First");
         ctx->MenuClick("First Menu/Second Menu/2 Second");
     };
+
+    // ## Test main menubar appending.
+    t = REGISTER_TEST("widgets", "widgets_main_menubar_append");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        // Menu that we will append to.
+        if (ImGui::BeginMainMenuBar())
+        {
+            if (ImGui::BeginMenu("First Menu"))
+                ImGui::EndMenu();
+            ImGui::EndMenuBar();
+        }
+
+        // Append to first menu.
+        if (ImGui::BeginMainMenuBar())
+        {
+            if (ImGui::BeginMenu("Second Menu"))
+            {
+                if (ImGui::MenuItem("Second"))
+                    ctx->GenericVars.Bool1 = true;
+                ImGui::EndMenu();
+            }
+            ImGui::EndMainMenuBar();
+        }
+
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ctx->WindowRef("##MainMenuBar"
+        );
+        ctx->MenuClick("Second Menu/Second");
+        IM_CHECK_EQ(ctx->GenericVars.Bool1, true);
+    };
 }
 
 //-------------------------------------------------------------------------
@@ -3159,7 +3193,7 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         ImBitArray<128> v128;
-        IM_CHECK_EQ(sizeof(v128), 16);
+        IM_CHECK_EQ((int)sizeof(v128), 16);
         v128.ClearBits();
         v128.SetBitRange(1, 1);
         IM_CHECK(v128.Storage[0] == 0x00000002 && v128.Storage[1] == 0x00000000 && v128.Storage[2] == 0x00000000);
@@ -3174,7 +3208,7 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
         IM_CHECK(v128.Storage[0] == 0xFFFFFFFF && v128.Storage[1] == 0xFFFFFFFF && v128.Storage[2] == 0x00000001);
 
         ImBitArray<129> v129;
-        IM_CHECK_EQ(sizeof(v129), 20);
+        IM_CHECK_EQ((int)sizeof(v129), 20);
         v129.SetBit(128);
         IM_CHECK(v129.TestBit(128) == true);
     };
