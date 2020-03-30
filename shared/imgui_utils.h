@@ -55,6 +55,7 @@ bool                ImFileLoadSourceBlurb(const char* filename, int line_no_star
 
 // Path helpers (strictly string manipulation!)
 const char*         ImPathFindFilename(const char* path, const char* path_end = NULL);
+const char*         ImPathFindFileExt(const char* path, const char* path_end = NULL);
 void                ImPathFixSeparatorsForCurrentOS(char* buf);
 
 // Time helpers

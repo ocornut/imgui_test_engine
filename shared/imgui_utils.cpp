@@ -251,6 +251,7 @@ bool ImFileLoadSourceBlurb(const char* file_name, int line_no_start, int line_no
 // Path handling helpers (strictly string manipulation!)
 //-----------------------------------------------------------------------------
 // - ImPathFindFilename()
+// - ImPathFindFileExt()
 // - ImPathFixSeparatorsForCurrentOS()
 //-----------------------------------------------------------------------------
 
@@ -262,6 +263,21 @@ const char* ImPathFindFilename(const char* path, const char* path_end)
     while (p > path)
     {
         if (p[-1] == '/' || p[-1] == '\\')
+            break;
+        p--;
+    }
+    return p;
+}
+
+const char* ImPathFindFileExt(const char* path, const char* path_end)
+{
+    path = ImPathFindFilename(path, path_end);
+    if (!path_end)
+        path_end = path + strlen(path);
+    const char* p = path_end;
+    while (p > path)
+    {
+        if (p[-1] == '.')
             break;
         p--;
     }

@@ -243,6 +243,8 @@ struct ImGuiTestContext
     void        CaptureInitArgs(ImGuiCaptureArgs* args, int capture_flags = 0);
     bool        CaptureAddWindow(ImGuiCaptureArgs* args, ImGuiTestRef ref);
     bool        CaptureScreenshot(ImGuiCaptureArgs* args);
+    bool        BeginCaptureGif(ImGuiCaptureArgs* args);
+    bool        EndCaptureGif(ImGuiCaptureArgs* args);
 
     // Mouse inputs
     void        MouseMove(ImGuiTestRef ref, ImGuiTestOpFlags flags = ImGuiTestOpFlags_None);

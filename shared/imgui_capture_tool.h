@@ -1,5 +1,7 @@
 #pragma once
 
+#include <stdint.h> // uint64_t
+
 //-----------------------------------------------------------------------------
 // Forward declarations and basic types
 //-----------------------------------------------------------------------------
@@ -13,6 +15,8 @@ typedef unsigned int ImGuiCaptureFlags;
 struct ImGuiWindow;
 
 //-----------------------------------------------------------------------------
+
+struct GifWriter;
 
 // [Internal]
 // Helper class for simple bitmap manipulation (not particularly efficient!)
@@ -60,10 +64,11 @@ struct ImGuiCaptureArgs
     ImGuiCaptureFlags       InFlags = 0;                    // Flags for customizing behavior of screenshot tool.
     ImVector<ImGuiWindow*>  InCaptureWindows;               // Windows to capture. All other windows will be hidden. May be used with InCaptureRect to capture only some windows in specified rect.
     ImRect                  InCaptureRect;                  // Screen rect to capture. Does not include padding.
-    float                   InPadding = 10.0f;              // Extra padding at the edges of the screenshot.
+    float                   InPadding = 10.0f;              // Extra padding at the edges of the screenshot. Ensure that there is available space around capture rect horizontally, also vertically if ImGuiCaptureFlags_StitchFullContents is not used.
     int                     InFileCounter = 0;              // Counter which may be appended to file name when saving. By default counting starts from 1. When done this field holds number of saved files.
     ImGuiCaptureImageBuf*   InOutputImageBuf = NULL;        // Output will be saved to image buffer if specified.
     char                    InOutputFileTemplate[256] = ""; // Output will be saved to a file if InOutputImageBuf is NULL.
+    int                     InRecordFPSTarget = 100;        // FPS target for recording gifs.
 
     // [Output]
     ImVec2                  OutImageSize;                   // Produced image size.
@@ -89,11 +94,18 @@ struct ImGuiCaptureContext
     ImVector<ImGuiWindow*>  _WindowBackupRectsWindows;      // Backup windows that will have their state restored. args->InCaptureWindows can not be used because popups may get closed during capture and no longer appear in that list.
     ImVec2                  _DisplayWindowPaddingBackup;    // Backup padding. We set it to {0, 0} during capture.
     ImVec2                  _DisplaySafeAreaPaddingBackup;  // Backup padding. We set it to {0, 0} during capture.
+    bool                    _Recording = false;             // Flag indicating that gif recording is in progress.
+    uint64_t                _LastRecorderFrameTime = 0;     // Time when last gif frame was recorded.
+    GifWriter*              _GifWriter = NULL;              // Gif image writer state.
 
     ImGuiCaptureContext(ImGuiScreenCaptureFunc capture_func = NULL) { ScreenCaptureFunc = capture_func; }
 
     // Capture a screenshot. If this function returns true then it should be called again with same arguments on the next frame.
     bool    CaptureScreenshot(ImGuiCaptureArgs* args);
+    // Begin gif capture. args->InOutputFileTemplate must be specified. Call CaptureScreenshot() every frame afterwards.
+    void    BeginGifCapture(ImGuiCaptureArgs* args);
+    // End gif capture. Call CaptureScreenshot() every frame afterwards until it returns false.
+    void    EndGifCapture(ImGuiCaptureArgs* args);
 };
 
 // Implements UI for capturing images

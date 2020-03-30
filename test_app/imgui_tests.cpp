@@ -5174,6 +5174,41 @@ void RegisterTests_Capture(ImGuiTestEngine* e)
             ctx->CaptureScreenshot(&args);
         }
     };
+    t = REGISTER_TEST("capture", "capture_readme_gif");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::SetNextWindowSize(ImVec2(300, 160), ImGuiCond_Appearing);
+        ImGui::Begin("CaptureGif");
+        static char string_buffer[64] = {};
+        static float float_value = 0.6f;
+        ImGui::Text("Hello, world 123");
+        ImGui::Button("Save");
+        ImGui::SetNextItemWidth(194);
+        ImGui::InputText("string", string_buffer, IM_ARRAYSIZE(string_buffer));
+        ImGui::SetNextItemWidth(194);
+        ImGui::SliderFloat("float", &float_value, 0.0f, 4.0f);
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ctx->WindowRef("CaptureGif");
+        ImGuiWindow* window = ctx->GetWindowByRef("/CaptureGif");
+        ImGuiCaptureArgs args;
+        ctx->CaptureInitArgs(&args);
+        args.InRecordFPSTarget = 100;
+        ctx->CaptureAddWindow(&args, window->Name);
+        ctx->BeginCaptureGif(&args);
+        ctx->ItemInput("string");
+        ctx->KeyCharsReplace("Dear ImGui: Now with gif animations \\o/");
+        ctx->SleepShort();
+        ctx->ItemInput("float");
+        ctx->KeyCharsReplaceEnter("3.14");
+        ctx->SleepShort();
+        ctx->ItemClick("Save");
+        ctx->SleepShort();
+        ctx->EndCaptureGif(&args);
+        ctx->Yield();
+    };
 
 #ifdef IMGUI_HAS_TABLE
     // ## Capture all tables demo

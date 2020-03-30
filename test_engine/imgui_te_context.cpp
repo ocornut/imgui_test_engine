@@ -419,6 +419,20 @@ bool ImGuiTestContext::CaptureScreenshot(ImGuiCaptureArgs* args)
     return ret;
 }
 
+bool ImGuiTestContext::BeginCaptureGif(ImGuiCaptureArgs* args)
+{
+    IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
+    LogInfo("CaptureScreenshot()");
+    return ImGuiTestEngine_BeginCaptureAnimation(Engine, args);
+}
+
+bool ImGuiTestContext::EndCaptureGif(ImGuiCaptureArgs* args)
+{
+    bool ret = ImGuiTestEngine_EndCaptureAnimation(Engine, args);
+    LogDebug("Saved '%s' (%d*%d pixels)", args->OutSavedFileName, (int)args->OutImageSize.x, (int)args->OutImageSize.y);
+    return ret;
+}
+
 ImGuiTestItemInfo* ImGuiTestContext::ItemLocate(ImGuiTestRef ref, ImGuiTestOpFlags flags)
 {
     if (IsError())

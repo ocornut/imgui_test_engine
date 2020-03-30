@@ -18,6 +18,11 @@
 #endif
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "libs/stb/stb_image_write.h"
+#define GIF_TEMP_MALLOC IM_ALLOC
+#define GIF_TEMP_FREE IM_FREE
+#define GIF_MALLOC IM_ALLOC
+#define GIF_FREE IM_FREE
+#include "libs/gif-h/gif.h"
 #ifdef _MSC_VER
 #pragma warning (pop)
 #endif
@@ -88,6 +93,9 @@ bool ImGuiCaptureContext::CaptureScreenshot(ImGuiCaptureArgs* args)
     IM_ASSERT(args != NULL);
     IM_ASSERT(ScreenCaptureFunc != NULL);
     IM_ASSERT(args->InOutputImageBuf != NULL || args->InOutputFileTemplate[0]);
+    IM_ASSERT(args->InRecordFPSTarget != 0);
+    IM_ASSERT((!_Recording || args->InOutputFileTemplate[0]) && "Output file must be specified when recording gif.");
+    IM_ASSERT((!_Recording || !(args->InFlags & ImGuiCaptureFlags_StitchFullContents)) && "Image stitching is not supported when recording gifs.");
 
     ImGuiCaptureImageBuf* output = args->InOutputImageBuf ? args->InOutputImageBuf : &_Output;
 
@@ -98,18 +106,48 @@ bool ImGuiCaptureContext::CaptureScreenshot(ImGuiCaptureArgs* args)
         if ((io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable) && (args->InFlags & ImGuiCaptureFlags_StitchFullContents))
         {
             // FIXME-VIEWPORTS: Content stitching is not possible because window would get moved out of main viewport and detach from it. We need a way to force captured windows to remain in main viewport here.
+            IM_ASSERT(false);
             return false;
         }
 #endif
         if (window->Flags & ImGuiWindowFlags_ChildWindow || args->InCaptureWindows.contains(window))
             continue;
+
         window->Hidden = true;
         window->HiddenFramesCannotSkipItems = 2;
+    }
+
+    // _Recording will be set to false when we are stopping gif capture.
+    const bool is_recording_gif = _Recording || _GifWriter != NULL;
+
+    if (is_recording_gif)
+    {
+        if ((ImTimeGetInMicroseconds() - _LastRecorderFrameTime) < (uint64_t)(10000000 / args->InRecordFPSTarget))
+            return true;
     }
 
     if (_FrameNo == 0)
     {
         // Initialize capture state.
+        if (args->InOutputFileTemplate[0])
+        {
+            int file_name_size = IM_ARRAYSIZE(args->OutSavedFileName);
+            ImFormatString(args->OutSavedFileName, file_name_size, args->InOutputFileTemplate, args->InFileCounter + 1);
+            ImPathFixSeparatorsForCurrentOS(args->OutSavedFileName);
+            if (!ImFileCreateDirectoryChain(args->OutSavedFileName, ImPathFindFilename(args->OutSavedFileName)))
+            {
+                printf("Capture Tool: unable to create directory for file '%s'.\n", args->OutSavedFileName);
+                return false;
+            }
+
+            // File template will most likely end with .png, but we need .gif for animated images.
+            if (is_recording_gif)
+            {
+                if (char* ext = (char*)ImPathFindFileExt(args->OutSavedFileName))
+                    ImStrncpy(ext, "gif", ext - args->OutSavedFileName);
+            }
+        }
+
         _ChunkNo = 0;
         _CaptureRect = ImRect(FLT_MAX, FLT_MAX, -FLT_MAX, -FLT_MAX);
         _WindowBackupRects.clear();
@@ -181,12 +219,26 @@ bool ImGuiCaptureContext::CaptureScreenshot(ImGuiCaptureArgs* args)
         for (ImGuiWindow* window : args->InCaptureWindows)
         {
             // Repositioning of a window may take multiple frames, depending on whether window was already rendered or not.
-            ImGui::SetWindowPos(window, window->Pos + move_offset);
+            if (args->InFlags & ImGuiCaptureFlags_StitchFullContents)
+                ImGui::SetWindowPos(window, window->Pos + move_offset);
             _CaptureRect.Add(window->Rect());
         }
 
         // Include padding in capture.
         _CaptureRect.Expand(args->InPadding);
+
+        ImRect clip_rect(ImVec2(0, 0), io.DisplaySize);
+#ifdef IMGUI_HAS_VIEWPORT
+        if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
+        {
+            ImGuiViewport* main_viewport = ImGui::GetMainViewport();
+            clip_rect = ImRect(main_viewport->Pos, main_viewport->Pos + main_viewport->Size);
+        }
+#endif
+        if (args->InFlags & ImGuiCaptureFlags_StitchFullContents)
+            IM_ASSERT(_CaptureRect.Min.x >= clip_rect.Min.x && _CaptureRect.Max.x <= clip_rect.Max.x);  // Horizontal stitching is not implemented. Do not allow capture that does not fit into viewport horizontally.
+        else
+            _CaptureRect.ClipWith(clip_rect);   // Can not capture area outside of screen. Clip capture rect, since we capturing only visible rect anyway.
 
         // Initialize capture buffer.
         args->OutImageSize = _CaptureRect.GetSize();
@@ -213,38 +265,76 @@ bool ImGuiCaptureContext::CaptureScreenshot(ImGuiCaptureArgs* args)
         const int h = (int)ImMin(output->Height - _ChunkNo * capture_height, capture_height);
         if (h > 0)
         {
+            IM_ASSERT(w == output->Width);
+            if (args->InFlags & ImGuiCaptureFlags_StitchFullContents)
+                IM_ASSERT(h <= output->Height);     // When stitching, image can be taller than captured viewport.
+            else
+                IM_ASSERT(h == output->Height);
+
+            // Calculate gif_frame_interval before doing capture, so that capture process time is not included.
+            int gif_frame_interval = 0;
+            if (is_recording_gif)
+            {
+                if (_LastRecorderFrameTime == 0)
+                {
+                    // Rewind time into the past by one capture interval. This ensures that first frame saves correct interval time instead of 0.
+                    _LastRecorderFrameTime = ImTimeGetInMicroseconds() - (10000000 / args->InRecordFPSTarget);
+                }
+
+                gif_frame_interval = (ImTimeGetInMicroseconds() - _LastRecorderFrameTime) / 100000;
+            }
+
             if (!ScreenCaptureFunc(x1, y1, w, h, &output->Data[_ChunkNo * w * capture_height], UserData))
                 return false;
-            _ChunkNo++;
 
-            // Window moves up in order to expose it's lower part.
-            for (ImGuiWindow* window : args->InCaptureWindows)
-                ImGui::SetWindowPos(window, window->Pos - ImVec2(0, (float)h));
-            _CaptureRect.TranslateY(-(float)h);
+            if (args->InFlags & ImGuiCaptureFlags_StitchFullContents)
+            {
+                // Window moves up in order to expose it's lower part.
+                for (ImGuiWindow* window : args->InCaptureWindows)
+                    ImGui::SetWindowPos(window, window->Pos - ImVec2(0, (float)h));
+                _CaptureRect.TranslateY(-(float)h);
+                _ChunkNo++;
+            }
+
+            if (is_recording_gif)
+            {
+                // _GifWriter is NULL when recording just started. Initialize recording state.
+                if (_GifWriter == NULL)
+                {
+                    // First gif frame. Initialize gif now that dimensions are known.
+                    unsigned width = (unsigned)capture_rect.GetWidth();
+                    unsigned height = (unsigned)capture_rect.GetHeight();
+                    _GifWriter = IM_NEW(GifWriter);
+                    GifBegin(_GifWriter, args->OutSavedFileName, width, height, 100 / args->InRecordFPSTarget);
+                }
+
+                // Save new gif frame. Gif interval is calculated from time spent rendering.
+                _LastRecorderFrameTime = ImTimeGetInMicroseconds();
+                GifWriteFrame(_GifWriter, (const uint8_t*)output->Data, output->Width, output->Height, gif_frame_interval);
+            }
         }
-        else
+
+        // Image is finalized immediately when we are not stitching. Otherwise image is finalized when we have captured and stitched all frames.
+        if (!_Recording && (!(args->InFlags & ImGuiCaptureFlags_StitchFullContents) || h <= 0))
         {
             output->RemoveAlpha();
 
-            if (args->InOutputImageBuf == NULL)
+            if (_GifWriter != NULL)
             {
-                // Save file only if custom buffer was not specified.
-                int file_name_size = IM_ARRAYSIZE(args->OutSavedFileName);
-                ImFormatString(args->OutSavedFileName, file_name_size, args->InOutputFileTemplate, args->InFileCounter + 1);
-                ImPathFixSeparatorsForCurrentOS(args->OutSavedFileName);
-                if (!ImFileCreateDirectoryChain(args->OutSavedFileName, ImPathFindFilename(args->OutSavedFileName)))
-                {
-                    printf("Capture Tool: unable to create directory for file '%s'.\n", args->OutSavedFileName);
-                }
-                else
-                {
-                    args->InFileCounter++;
-                    output->SaveFile(args->OutSavedFileName);
-                }
+                // At this point _Recording is false, but we know we were recording because _GifWriter is not NULL. Finalize gif animation here.
+                GifEnd(_GifWriter);
+                IM_DELETE(_GifWriter);
+                _GifWriter = NULL;
+            }
+            else if (args->InOutputImageBuf == NULL)
+            {
+                // Save single frame.
+                args->InFileCounter++;
+                output->SaveFile(args->OutSavedFileName);
                 output->Clear();
             }
 
-            // Restore window position
+            // Restore window positions unconditionally. We may have moved them ourselves during capture.
             for (int i = 0; i < _WindowBackupRects.Size; i++)
             {
                 ImGuiWindow* window = _WindowBackupRectsWindows[i];
@@ -256,7 +346,7 @@ bool ImGuiCaptureContext::CaptureScreenshot(ImGuiCaptureArgs* args)
                 ImGui::SetWindowSize(window, rect.GetSize(), ImGuiCond_Always);
             }
 
-            _FrameNo = _ChunkNo = 0;
+            _FrameNo = _ChunkNo = _LastRecorderFrameTime = 0;
             g.Style.DisplayWindowPadding = _DisplayWindowPaddingBackup;
             g.Style.DisplaySafeAreaPadding = _DisplaySafeAreaPaddingBackup;
             args->_Capturing = false;
@@ -267,6 +357,24 @@ bool ImGuiCaptureContext::CaptureScreenshot(ImGuiCaptureArgs* args)
     // Keep going
     _FrameNo++;
     return true;
+}
+
+void ImGuiCaptureContext::BeginGifCapture(ImGuiCaptureArgs* args)
+{
+    IM_ASSERT(args != NULL);
+    IM_ASSERT(_Recording == false);
+    IM_ASSERT(_GifWriter == NULL);
+    _Recording = true;
+    args->InOutputImageBuf = &_Output;
+    args->InRecordFPSTarget = ImClamp(args->InRecordFPSTarget, 1, 100);
+}
+
+void ImGuiCaptureContext::EndGifCapture(ImGuiCaptureArgs* args)
+{
+    IM_ASSERT(args != NULL);
+    IM_ASSERT(_Recording == true);
+    IM_ASSERT(_GifWriter != NULL);
+    _Recording = false;
 }
 
 //-----------------------------------------------------------------------------
@@ -470,6 +578,25 @@ void ImGuiCaptureTool::CaptureWindowsSelector(const char* title, ImGuiCaptureArg
     if (_CaptureState == ImGuiCaptureToolState_SelectRectUpdate)
         draw_list->AddRect(select_rect.Min - ImVec2(1.0f, 1.0f), select_rect.Max + ImVec2(1.0f, 1.0f), IM_COL32_WHITE);
 
+    // Draw gif recording controls
+    ImGui::DragInt("##FPS", &args->InRecordFPSTarget, 0.1f, 10, 100, "FPS=%d");
+    ImGui::SameLine();
+    if (ImGui::Button(Context._Recording ? "Stop###StopRecord" : "Record###StopRecord") || (Context._Recording && ImGui::IsKeyPressedMap(ImGuiKey_Escape)))
+    {
+        if (!Context._Recording)
+        {
+            if (can_capture)
+            {
+                Context.BeginGifCapture(args);
+                do_capture = true;
+            }
+        }
+        else
+        {
+            Context.EndGifCapture(args);
+        }
+    }
+
     // Process capture
     if (can_capture && do_capture)
     {
@@ -485,6 +612,9 @@ void ImGuiCaptureTool::CaptureWindowsSelector(const char* title, ImGuiCaptureArg
 
     if (_CaptureState == ImGuiCaptureToolState_Capturing && args->_Capturing)
     {
+        if (Context._Recording || Context._GifWriter)
+            args->InFlags &= ~ImGuiCaptureFlags_StitchFullContents;
+
         if (!Context.CaptureScreenshot(args))
         {
             _CaptureState = ImGuiCaptureToolState_None;

@@ -601,7 +601,7 @@ static void ImGuiTestEngine_TestQueueCoroutineMain(void* engine_opaque)
 
 // Yield control back from the TestFunc to the main update + GuiFunc, for one frame.
 void ImGuiTestEngine_Yield(ImGuiTestEngine* engine)
-{   
+{
     ImGuiTestContext* ctx = engine->TestContext;
 
     // Can only yield in the test func!
@@ -659,6 +659,31 @@ bool ImGuiTestEngine_CaptureScreenshot(ImGuiTestEngine* engine, ImGuiCaptureArgs
     engine->IO.ConfigRunFast = backup_fast;
     return true;
 }
+
+bool ImGuiTestEngine_BeginCaptureAnimation(ImGuiTestEngine* engine, ImGuiCaptureArgs* args)
+{
+    if (engine->IO.ScreenCaptureFunc == NULL)
+    {
+        IM_ASSERT(0);
+        return false;
+    }
+
+    engine->RunFastBackupValue = engine->IO.ConfigRunFast;
+    engine->IO.ConfigRunFast = false;
+    engine->CurrentCaptureArgs = args;
+    engine->CaptureContext.BeginGifCapture(args);
+    return true;
+}
+
+bool ImGuiTestEngine_EndCaptureAnimation(ImGuiTestEngine* engine, ImGuiCaptureArgs* args)
+{
+    engine->CaptureContext.EndGifCapture(args);
+    while (engine->CaptureContext._GifWriter != NULL)   // Wait until last frame is captured and gif is saved.
+        ImGuiTestEngine_Yield(engine);
+    engine->IO.ConfigRunFast = engine->RunFastBackupValue;
+    engine->CurrentCaptureArgs = NULL;
+    return true;
+};
 
 static void ImGuiTestEngine_ProcessTestQueue(ImGuiTestEngine* engine)
 {

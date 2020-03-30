@@ -89,6 +89,7 @@ struct ImGuiTestEngine
     ImGuiCaptureTool            CaptureTool;
     ImGuiCaptureContext         CaptureContext;
     ImGuiCaptureArgs*           CurrentCaptureArgs = NULL;
+    bool                        RunFastBackupValue = false;
 
     // Functions
     ImGuiTestEngine()
@@ -119,5 +120,7 @@ int                 ImGuiTestEngine_GetFrameCount(ImGuiTestEngine* engine);
 double              ImGuiTestEngine_GetPerfDeltaTime500Average(ImGuiTestEngine* engine);
 const char*         ImGuiTestEngine_GetVerboseLevelName(ImGuiTestVerboseLevel v);
 bool                ImGuiTestEngine_CaptureScreenshot(ImGuiTestEngine* engine, ImGuiCaptureArgs* args);
+bool                ImGuiTestEngine_BeginCaptureAnimation(ImGuiTestEngine* engine, ImGuiCaptureArgs* args);
+bool                ImGuiTestEngine_EndCaptureAnimation(ImGuiTestEngine* engine, ImGuiCaptureArgs* args);
 
 //-------------------------------------------------------------------------
