@@ -5087,6 +5087,7 @@ void RegisterTests_Capture(ImGuiTestEngine* e)
 
         ImGuiCaptureArgs args;
         ctx->CaptureInitArgs(&args);
+        args.InPadding = pad;
         ctx->CaptureAddWindow(&args, "Dear ImGui Demo");
         ctx->CaptureAddWindow(&args, "Example: Simple overlay");
         ctx->CaptureAddWindow(&args, "Example: Custom rendering");

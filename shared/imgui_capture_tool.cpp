@@ -394,12 +394,16 @@ void ImGuiCaptureTool::CaptureWindowsSelector(const char* title, ImGuiCaptureArg
         if (!window->WasActive)
             continue;
 
-        if (args->InFlags & ImGuiCaptureFlags_ExpandToIncludePopups && ((window->Flags & ImGuiWindowFlags_Popup) || (window->Flags & ImGuiWindowFlags_Tooltip)))
+        const bool is_popup = (window->Flags & ImGuiWindowFlags_Popup) || (window->Flags & ImGuiWindowFlags_Tooltip);
+        if (args->InFlags & ImGuiCaptureFlags_ExpandToIncludePopups && is_popup)
         {
             capture_rect.Add(window->Rect());
             args->InCaptureWindows.push_back(window);
             continue;
         }
+
+        if (is_popup)
+            continue;
 
         if (window->Flags & ImGuiWindowFlags_ChildWindow)
             continue;
@@ -563,20 +567,22 @@ void ImGuiCaptureTool::ShowCaptureToolWindow(bool* p_open)
         ImGui::DragFloat("##SnapGridSize", &SnapGridSize, 1.0f, 1.0f, 128.0f, "%.0f");
 
         ImGui::Checkbox("Software Mouse Cursor", &io.MouseDrawCursor);  // FIXME-TESTS: Test engine always resets this value.
+
+        bool content_stitching_available = _CaptureArgsSelector.InCaptureWindows.size() <= 1;
 #ifdef IMGUI_HAS_VIEWPORT
-        if ((io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable))
-            PushDisabled();
+        content_stitching_available &= !(io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable);
 #endif
+        if (!content_stitching_available)
+            PushDisabled();
         ImGui::CheckboxFlags("Stitch and capture full contents height", &Flags, ImGuiCaptureFlags_StitchFullContents);
-#ifdef IMGUI_HAS_VIEWPORT
-        if ((io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable))
+        if (!content_stitching_available)
         {
             Flags &= ~ImGuiCaptureFlags_StitchFullContents;
             PopDisabled();
             if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
                 ImGui::SetTooltip("Content stitching is not possible when using viewports.");
         }
-#endif
+
         ImGui::CheckboxFlags("Hide capture tool window", &Flags, ImGuiCaptureFlags_HideCaptureToolWindow);
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Full height of picked window will be captured.");
