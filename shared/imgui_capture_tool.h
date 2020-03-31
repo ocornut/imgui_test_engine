@@ -1,7 +1,5 @@
 #pragma once
 
-#include <stdint.h> // uint64_t
-
 //-----------------------------------------------------------------------------
 // Forward declarations and basic types
 //-----------------------------------------------------------------------------
@@ -94,16 +92,16 @@ struct ImGuiCaptureContext
     ImVector<ImGuiWindow*>  _WindowBackupRectsWindows;      // Backup windows that will have their state restored. args->InCaptureWindows can not be used because popups may get closed during capture and no longer appear in that list.
     ImVec2                  _DisplayWindowPaddingBackup;    // Backup padding. We set it to {0, 0} during capture.
     ImVec2                  _DisplaySafeAreaPaddingBackup;  // Backup padding. We set it to {0, 0} during capture.
-    bool                    _Recording = false;             // Flag indicating that gif recording is in progress.
-    uint64_t                _LastRecorderFrameTime = 0;     // Time when last gif frame was recorded.
-    GifWriter*              _GifWriter = NULL;              // Gif image writer state.
+    bool                    _Recording = false;             // Flag indicating that GIF recording is in progress.
+    size_t                  _LastRecordedFrameTimeMs = 0;   // Time when last GIF frame was recorded.
+    GifWriter*              _GifWriter = NULL;              // GIF image writer state.
 
     ImGuiCaptureContext(ImGuiScreenCaptureFunc capture_func = NULL) { ScreenCaptureFunc = capture_func; }
 
     // Capture a screenshot. If this function returns true then it should be called again with same arguments on the next frame.
-    bool    CaptureScreenshot(ImGuiCaptureArgs* args);
+    bool    CaptureUpdate(ImGuiCaptureArgs* args);
 
-    // Begin gif capture. args->InOutputFileTemplate must be specified. Call CaptureScreenshot() every frame afterwards until it returns false.
+    // Begin gif capture. args->InOutputFileTemplate must be specified. Call CaptureUpdate() every frame afterwards until it returns false.
     void    BeginGifCapture(ImGuiCaptureArgs* args);
     void    EndGifCapture(ImGuiCaptureArgs* args);
 };

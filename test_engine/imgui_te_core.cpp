@@ -199,7 +199,7 @@ void    ImGuiTestEngine_PostRender(ImGuiTestEngine* engine)
     if (engine->CurrentCaptureArgs != NULL)
     {
         engine->CaptureContext.ScreenCaptureFunc = engine->IO.ScreenCaptureFunc;
-        if (!engine->CaptureContext.CaptureScreenshot(engine->CurrentCaptureArgs))
+        if (!engine->CaptureContext.CaptureUpdate(engine->CurrentCaptureArgs))
         {
             ImStrncpy(engine->CaptureTool.LastSaveFileName, engine->CurrentCaptureArgs->OutSavedFileName, IM_ARRAYSIZE(engine->CaptureTool.LastSaveFileName));
             engine->CurrentCaptureArgs = NULL;

@@ -86,7 +86,7 @@ void ImGuiCaptureImageBuf::BlitSubImage(int dst_x, int dst_y, int src_x, int src
 //-----------------------------------------------------------------------------
 
 // Returns true when capture is in progress.
-bool ImGuiCaptureContext::CaptureScreenshot(ImGuiCaptureArgs* args)
+bool ImGuiCaptureContext::CaptureUpdate(ImGuiCaptureArgs* args)
 {
     ImGuiContext& g = *GImGui;
     ImGuiIO& io = g.IO;
@@ -117,11 +117,14 @@ bool ImGuiCaptureContext::CaptureScreenshot(ImGuiCaptureArgs* args)
         window->HiddenFramesCannotSkipItems = 2;
     }
 
-    // _Recording will be set to false when we are stopping gif capture.
-    const bool is_recording_gif = _Recording || _GifWriter != NULL;
-    if (is_recording_gif)
+    // Recording will be set to false when we are stopping GIF capture.
+    // FIXME: Lossy time calculation, could accumulate instead of resetting.
+    const bool is_recording_gif = _Recording || (_GifWriter != NULL);
+    const size_t current_time_ms = ImTimeGetInMicroseconds() / 1000;
+    if (is_recording_gif || _LastRecordedFrameTimeMs == 0)
     {
-        if ((ImTimeGetInMicroseconds() - _LastRecorderFrameTime) < (uint64_t)(10000000 / args->InRecordFPSTarget))
+        size_t delta_ms = current_time_ms - _LastRecordedFrameTimeMs;
+        if (delta_ms < 1000 / args->InRecordFPSTarget)
             return true;
     }
 
@@ -241,7 +244,7 @@ bool ImGuiCaptureContext::CaptureScreenshot(ImGuiCaptureArgs* args)
         args->OutImageSize = _CaptureRect.GetSize();
         output->CreateEmpty((int)_CaptureRect.GetWidth(), (int)_CaptureRect.GetHeight());
     }
-    else if ((_FrameNo % 4) == 0)
+    else if ((_FrameNo % 4) == 0 || is_recording_gif)
     {
         // FIXME: Implement capture of regions wider than viewport.
         // Capture a portion of image. Capturing of windows wider than viewport is not implemented yet.
@@ -268,17 +271,6 @@ bool ImGuiCaptureContext::CaptureScreenshot(ImGuiCaptureArgs* args)
             else
                 IM_ASSERT(h == output->Height);
 
-            // Calculate gif_frame_interval before doing capture, so that capture process time is not included.
-            int gif_frame_interval = 0;
-            if (is_recording_gif)
-            {
-                // Rewind time into the past by one capture interval. This ensures that first frame saves correct interval time instead of 0.
-                if (_LastRecorderFrameTime == 0)
-                    _LastRecorderFrameTime = ImTimeGetInMicroseconds() - (10000000 / args->InRecordFPSTarget);
-
-                gif_frame_interval = (int)((ImTimeGetInMicroseconds() - _LastRecorderFrameTime) / 100000);
-            }
-
             if (!ScreenCaptureFunc(x1, y1, w, h, &output->Data[_ChunkNo * w * capture_height], UserData))
                 return false;
 
@@ -294,18 +286,21 @@ bool ImGuiCaptureContext::CaptureScreenshot(ImGuiCaptureArgs* args)
             if (is_recording_gif)
             {
                 // _GifWriter is NULL when recording just started. Initialize recording state.
+                const int gif_frame_interval = 100 / args->InRecordFPSTarget;
                 if (_GifWriter == NULL)
                 {
-                    // First gif frame. Initialize gif now that dimensions are known.
+                    // First GIF frame, initialize now that dimensions are known.
                     unsigned int width = (unsigned int)capture_rect.GetWidth();
                     unsigned int height = (unsigned int)capture_rect.GetHeight();
+                    IM_ASSERT(_GifWriter == NULL);
                     _GifWriter = IM_NEW(GifWriter)();
-                    GifBegin(_GifWriter, args->OutSavedFileName, width, height, 100 / args->InRecordFPSTarget);
+                    GifBegin(_GifWriter, args->OutSavedFileName, width, height, gif_frame_interval);
                 }
 
-                // Save new gif frame. Gif interval is calculated from time spent rendering.
-                _LastRecorderFrameTime = ImTimeGetInMicroseconds();
-                GifWriteFrame(_GifWriter, (const uint8_t*)output->Data, output->Width, output->Height, gif_frame_interval);
+                // Save new GIF frame
+                // FIXME: Not optimal at all (e.g. compare to gifsicle -O3 output)
+                GifWriteFrame(_GifWriter, (const uint8_t*)output->Data, output->Width, output->Height, gif_frame_interval, 8, false);
+                _LastRecordedFrameTimeMs = current_time_ms;
             }
         }
 
@@ -342,7 +337,7 @@ bool ImGuiCaptureContext::CaptureScreenshot(ImGuiCaptureArgs* args)
             }
 
             _FrameNo = _ChunkNo = 0;
-            _LastRecorderFrameTime = 0;
+            _LastRecordedFrameTimeMs = 0;
             g.Style.DisplayWindowPadding = _DisplayWindowPaddingBackup;
             g.Style.DisplaySafeAreaPadding = _DisplaySafeAreaPaddingBackup;
             args->_Capturing = false;
@@ -392,7 +387,7 @@ void ImGuiCaptureTool::CaptureWindowPicker(const char* title, ImGuiCaptureArgs* 
 
     if (_CaptureState == ImGuiCaptureToolState_Capturing && args->_Capturing)
     {
-        if (ImGui::IsKeyPressedMap(ImGuiKey_Escape) || !Context.CaptureScreenshot(args))
+        if (ImGui::IsKeyPressedMap(ImGuiKey_Escape) || !Context.CaptureUpdate(args))
         {
             _CaptureState = ImGuiCaptureToolState_None;
             ImStrncpy(LastSaveFileName, args->OutSavedFileName, IM_ARRAYSIZE(LastSaveFileName));
@@ -437,9 +432,9 @@ void ImGuiCaptureTool::CaptureWindowPicker(const char* title, ImGuiCaptureArgs* 
         args->InCaptureWindows.clear();
         args->InCaptureWindows.push_back(capture_window);
         _CaptureState = ImGuiCaptureToolState_Capturing;
-        // We cheat a little. args->_Capturing is set to true when Capture.CaptureScreenshot(args), but we use this
+        // We cheat a little. args->_Capturing is set to true when Capture.CaptureUpdate(args), but we use this
         // field to differentiate which capture is in progress (windows picker or selector), therefore we set it to true
-        // in advance and execute Capture.CaptureScreenshot(args) only when args->_Capturing is true.
+        // in advance and execute Capture.CaptureUpdate(args) only when args->_Capturing is true.
         args->_Capturing = true;
     }
 }
@@ -575,7 +570,8 @@ void ImGuiCaptureTool::CaptureWindowsSelector(const char* title, ImGuiCaptureArg
     if (_CaptureState == ImGuiCaptureToolState_SelectRectUpdate)
         draw_list->AddRect(select_rect.Min - ImVec2(1.0f, 1.0f), select_rect.Max + ImVec2(1.0f, 1.0f), IM_COL32_WHITE);
 
-    // Draw gif recording controls
+    // Draw GIF recording controls
+    // (Prefer 100/FPS to be an integer)
     ImGui::DragInt("##FPS", &args->InRecordFPSTarget, 0.1f, 10, 100, "FPS=%d");
     ImGui::SameLine();
     if (ImGui::Button(Context._Recording ? "Stop###StopRecord" : "Record###StopRecord") || (Context._Recording && ImGui::IsKeyPressedMap(ImGuiKey_Escape)))
@@ -597,9 +593,9 @@ void ImGuiCaptureTool::CaptureWindowsSelector(const char* title, ImGuiCaptureArg
     // Process capture
     if (can_capture && do_capture)
     {
-        // We cheat a little. args->_Capturing is set to true when Capture.CaptureScreenshot(args), but we use this
+        // We cheat a little. args->_Capturing is set to true when Capture.CaptureUpdate(args), but we use this
         // field to differentiate which capture is in progress (windows picker or selector), therefore we set it to true
-        // in advance and execute Capture.CaptureScreenshot(args) only when args->_Capturing is true.
+        // in advance and execute Capture.CaptureUpdate(args) only when args->_Capturing is true.
         args->_Capturing = true;
         _CaptureState = ImGuiCaptureToolState_Capturing;
     }
@@ -612,7 +608,7 @@ void ImGuiCaptureTool::CaptureWindowsSelector(const char* title, ImGuiCaptureArg
         if (Context._Recording || Context._GifWriter)
             args->InFlags &= ~ImGuiCaptureFlags_StitchFullContents;
 
-        if (!Context.CaptureScreenshot(args))
+        if (!Context.CaptureUpdate(args))
         {
             _CaptureState = ImGuiCaptureToolState_None;
             ImStrncpy(LastSaveFileName, args->OutSavedFileName, IM_ARRAYSIZE(LastSaveFileName));
