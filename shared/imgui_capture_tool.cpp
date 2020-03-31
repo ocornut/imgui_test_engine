@@ -119,7 +119,6 @@ bool ImGuiCaptureContext::CaptureScreenshot(ImGuiCaptureArgs* args)
 
     // _Recording will be set to false when we are stopping gif capture.
     const bool is_recording_gif = _Recording || _GifWriter != NULL;
-
     if (is_recording_gif)
     {
         if ((ImTimeGetInMicroseconds() - _LastRecorderFrameTime) < (uint64_t)(10000000 / args->InRecordFPSTarget))
@@ -273,13 +272,11 @@ bool ImGuiCaptureContext::CaptureScreenshot(ImGuiCaptureArgs* args)
             int gif_frame_interval = 0;
             if (is_recording_gif)
             {
+                // Rewind time into the past by one capture interval. This ensures that first frame saves correct interval time instead of 0.
                 if (_LastRecorderFrameTime == 0)
-                {
-                    // Rewind time into the past by one capture interval. This ensures that first frame saves correct interval time instead of 0.
                     _LastRecorderFrameTime = ImTimeGetInMicroseconds() - (10000000 / args->InRecordFPSTarget);
-                }
 
-                gif_frame_interval = (ImTimeGetInMicroseconds() - _LastRecorderFrameTime) / 100000;
+                gif_frame_interval = (int)((ImTimeGetInMicroseconds() - _LastRecorderFrameTime) / 100000);
             }
 
             if (!ScreenCaptureFunc(x1, y1, w, h, &output->Data[_ChunkNo * w * capture_height], UserData))
@@ -300,9 +297,9 @@ bool ImGuiCaptureContext::CaptureScreenshot(ImGuiCaptureArgs* args)
                 if (_GifWriter == NULL)
                 {
                     // First gif frame. Initialize gif now that dimensions are known.
-                    unsigned width = (unsigned)capture_rect.GetWidth();
-                    unsigned height = (unsigned)capture_rect.GetHeight();
-                    _GifWriter = IM_NEW(GifWriter);
+                    unsigned int width = (unsigned int)capture_rect.GetWidth();
+                    unsigned int height = (unsigned int)capture_rect.GetHeight();
+                    _GifWriter = IM_NEW(GifWriter)();
                     GifBegin(_GifWriter, args->OutSavedFileName, width, height, 100 / args->InRecordFPSTarget);
                 }
 
@@ -344,7 +341,8 @@ bool ImGuiCaptureContext::CaptureScreenshot(ImGuiCaptureArgs* args)
                 ImGui::SetWindowSize(window, rect.GetSize(), ImGuiCond_Always);
             }
 
-            _FrameNo = _ChunkNo = _LastRecorderFrameTime = 0;
+            _FrameNo = _ChunkNo = 0;
+            _LastRecorderFrameTime = 0;
             g.Style.DisplayWindowPadding = _DisplayWindowPaddingBackup;
             g.Style.DisplaySafeAreaPadding = _DisplaySafeAreaPaddingBackup;
             args->_Capturing = false;
@@ -364,7 +362,8 @@ void ImGuiCaptureContext::BeginGifCapture(ImGuiCaptureArgs* args)
     IM_ASSERT(_GifWriter == NULL);
     _Recording = true;
     args->InOutputImageBuf = &_Output;
-    args->InRecordFPSTarget = ImClamp(args->InRecordFPSTarget, 1, 100);
+    IM_ASSERT(args->InRecordFPSTarget >= 1);
+    IM_ASSERT(args->InRecordFPSTarget <= 100);
 }
 
 void ImGuiCaptureContext::EndGifCapture(ImGuiCaptureArgs* args)

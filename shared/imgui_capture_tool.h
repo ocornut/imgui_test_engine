@@ -68,7 +68,7 @@ struct ImGuiCaptureArgs
     int                     InFileCounter = 0;              // Counter which may be appended to file name when saving. By default counting starts from 1. When done this field holds number of saved files.
     ImGuiCaptureImageBuf*   InOutputImageBuf = NULL;        // Output will be saved to image buffer if specified.
     char                    InOutputFileTemplate[256] = ""; // Output will be saved to a file if InOutputImageBuf is NULL.
-    int                     InRecordFPSTarget = 100;        // FPS target for recording gifs.
+    int                     InRecordFPSTarget = 25;         // FPS target for recording gifs.
 
     // [Output]
     ImVec2                  OutImageSize;                   // Produced image size.
@@ -102,9 +102,9 @@ struct ImGuiCaptureContext
 
     // Capture a screenshot. If this function returns true then it should be called again with same arguments on the next frame.
     bool    CaptureScreenshot(ImGuiCaptureArgs* args);
-    // Begin gif capture. args->InOutputFileTemplate must be specified. Call CaptureScreenshot() every frame afterwards.
+
+    // Begin gif capture. args->InOutputFileTemplate must be specified. Call CaptureScreenshot() every frame afterwards until it returns false.
     void    BeginGifCapture(ImGuiCaptureArgs* args);
-    // End gif capture. Call CaptureScreenshot() every frame afterwards until it returns false.
     void    EndGifCapture(ImGuiCaptureArgs* args);
 };
 

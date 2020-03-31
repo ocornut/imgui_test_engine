@@ -5195,7 +5195,6 @@ void RegisterTests_Capture(ImGuiTestEngine* e)
         ImGuiWindow* window = ctx->GetWindowByRef("/CaptureGif");
         ImGuiCaptureArgs args;
         ctx->CaptureInitArgs(&args);
-        args.InRecordFPSTarget = 100;
         ctx->CaptureAddWindow(&args, window->Name);
         ctx->BeginCaptureGif(&args);
         ctx->ItemInput("string");

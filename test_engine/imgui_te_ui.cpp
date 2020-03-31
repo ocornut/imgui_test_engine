@@ -100,6 +100,8 @@ static bool ParseLineAndDrawFileOpenItem(ImGuiTestEngine* e, ImGuiTest* test, co
         return true;
     if (ParseLineAndDrawFileOpenItemForImageFile(e, test, line_start, line_end, ".png"))
         return true;
+    if (ParseLineAndDrawFileOpenItemForImageFile(e, test, line_start, line_end, ".gif"))
+        return true;
     return false;
 }
 

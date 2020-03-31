@@ -25,6 +25,9 @@
     <Filter Include="shared">
       <UniqueIdentifier>{67f74698-0094-4ad4-b787-ab144bdfd6a2}</UniqueIdentifier>
     </Filter>
+    <Filter Include="libs\gif-h">
+      <UniqueIdentifier>{d1c7fb3b-d0a7-4516-bee9-c8278a748528}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\imgui\imgui.h">
@@ -89,6 +92,9 @@
     </ClInclude>
     <ClInclude Include="..\test_engine\imgui_te_coroutine.h">
       <Filter>test_engine</Filter>
+    </ClInclude>
+    <ClInclude Include="..\libs\gif-h\gif.h">
+      <Filter>libs\gif-h</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

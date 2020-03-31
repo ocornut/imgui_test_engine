@@ -249,6 +249,7 @@ struct ImGuiTestContext
     // Mouse inputs
     void        MouseMove(ImGuiTestRef ref, ImGuiTestOpFlags flags = ImGuiTestOpFlags_None);
     void        MouseMoveToPos(ImVec2 pos);
+    void        MouseTeleportToPos(ImVec2 pos);
     void        MouseClick(int button = 0);
     void        MouseDoubleClick(int button = 0);
     void        MouseDown(int button = 0);
