@@ -142,10 +142,8 @@ bool ImGuiCaptureContext::CaptureScreenshot(ImGuiCaptureArgs* args)
 
             // File template will most likely end with .png, but we need .gif for animated images.
             if (is_recording_gif)
-            {
-                if (char* ext = (char*)ImPathFindFileExt(args->OutSavedFileName))
-                    ImStrncpy(ext, "gif", ext - args->OutSavedFileName);
-            }
+                if (char* ext = (char*)ImPathFindExtension(args->OutSavedFileName))
+                    ImStrncpy(ext, ".gif", ext - args->OutSavedFileName);
         }
 
         _ChunkNo = 0;

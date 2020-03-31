@@ -269,17 +269,20 @@ const char* ImPathFindFilename(const char* path, const char* path_end)
     return p;
 }
 
-const char* ImPathFindFileExt(const char* path, const char* path_end)
+// "folder/filename" -> return pointer to "" (end of string)
+// "folder/filename.png" -> return pointer to ".png"
+// "folder/filename.png.bak" -> return pointer to ".png.bak"
+const char* ImPathFindExtension(const char* path, const char* path_end)
 {
-    path = ImPathFindFilename(path, path_end);
     if (!path_end)
         path_end = path + strlen(path);
-    const char* p = path_end;
-    while (p > path)
+    const char* filename = ImPathFindFilename(path, path_end);
+    const char* p = filename;
+    while (p < path_end)
     {
-        if (p[-1] == '.')
+        if (p[0] == '.')
             break;
-        p--;
+        p++;
     }
     return p;
 }
