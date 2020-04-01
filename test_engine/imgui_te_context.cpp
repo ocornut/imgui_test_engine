@@ -470,8 +470,34 @@ ImGuiTestItemInfo* ImGuiTestContext::ItemLocate(ImGuiTestRef ref, ImGuiTestOpFla
     return NULL;
 }
 
+void    ImGuiTestContext::ScrollToTop()
+{
+    if (IsError())
+        return;
+    ImGuiWindow* window = GetWindowByRef("");
+    if (window)
+        ImGui::SetScrollY(window, 0.0f);
+    else
+        LogError("ScrollToTop: failed to get window");
+    Yield();
+    Yield();
+}
+
+void    ImGuiTestContext::ScrollToBottom()
+{
+    if (IsError())
+        return;
+    ImGuiWindow* window = GetWindowByRef("");
+    if (window)
+        ImGui::SetScrollY(window, window->ScrollMax.y);
+    else
+        LogError("ScrollToBottom: failed to get window");
+    Yield();
+    Yield();
+}
+
 // FIXME-TESTS: scroll_ratio_y unsupported
-void    ImGuiTestContext::ScrollToY(ImGuiTestRef ref, float scroll_ratio_y)
+void    ImGuiTestContext::ScrollToItemY(ImGuiTestRef ref, float scroll_ratio_y)
 {
     IM_UNUSED(scroll_ratio_y);
 
@@ -483,7 +509,7 @@ void    ImGuiTestContext::ScrollToY(ImGuiTestRef ref, float scroll_ratio_y)
     ImGuiContext& g = *UiContext;
     ImGuiTestItemInfo* item = ItemLocate(ref);
     ImGuiTestRefDesc desc(ref, item);
-    LogDebug("ScrollToY %s", desc.c_str());
+    LogDebug("ScrollToItemY %s", desc.c_str());
 
     if (item == NULL)
         return;
@@ -522,11 +548,11 @@ void    ImGuiTestContext::ScrollToY(ImGuiTestRef ref, float scroll_ratio_y)
         {
             if (++failures < 3)
             {
-                LogWarning("ScrollToY: failing to set scrolling. Requested %.2f, got %.2f. Will try again.", scroll_y, window->Scroll.y);
+                LogWarning("ScrollToItemY: failed to set scrolling. Requested %.2f, got %.2f. Will try again.", scroll_y, window->Scroll.y);
             }
             else
             {
-                IM_ERRORF("ScrollToY: failing to set scrolling. Requested %.2f, got %.2f. Aborting.", scroll_y, window->Scroll.y);
+                IM_ERRORF("ScrollToItemY: failed to set scrolling. Requested %.2f, got %.2f. Aborting.", scroll_y, window->Scroll.y);
                 break;
             }
         }
@@ -681,7 +707,7 @@ void    ImGuiTestContext::MouseMove(ImGuiTestRef ref, ImGuiTestOpFlags flags)
     ImRect window_inner_r_padded = window->InnerClipRect;
     window_inner_r_padded.Expand(-4.0f); // == WINDOWS_RESIZE_FROM_EDGES_HALF_THICKNESS
     if (item->NavLayer == ImGuiNavLayer_Main && !window_inner_r_padded.Contains(item->RectClipped))
-        ScrollToY(ref);
+        ScrollToItemY(ref);
 
     ImVec2 pos = item->RectFull.GetCenter();
     WindowMoveToMakePosVisible(window, pos);

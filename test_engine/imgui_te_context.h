@@ -274,7 +274,9 @@ struct ImGuiTestContext
     void        NavInput();     // Press ImGuiNavInput_Input (e.g. Triangle) to turn a widget into a text input
 
     // Scrolling
-    void        ScrollToY(ImGuiTestRef ref, float scroll_ratio_y = 0.5f);
+    void        ScrollToTop();
+    void        ScrollToBottom();
+    void        ScrollToItemY(ImGuiTestRef ref, float scroll_ratio_y = 0.5f);
     void        ScrollVerifyScrollMax(ImGuiWindow* window);
 
     // Low-level queries

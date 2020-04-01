@@ -645,6 +645,7 @@ bool ImGuiTestEngine_CaptureScreenshot(ImGuiTestEngine* engine, ImGuiCaptureArgs
     }
 
     // Graphics API must render a window so it can be captured
+    // FIXME: This should work without this, as long as Present vs Vsync are separated (we need a Present, we don't need Vsync)
     const bool backup_fast = engine->IO.ConfigRunFast;
     engine->IO.ConfigRunFast = false;
 
