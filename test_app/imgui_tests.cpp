@@ -1575,6 +1575,199 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
     };
     t->TestFunc = [](ImGuiTestContext* ctx) { ctx->Yield(); };
 
+    // ## Test various TreeNode flags
+    t = REGISTER_TEST("widgets", "widgets_tree_node_behaviors");
+    struct TreeNodeTestVars { bool Reset = true, IsOpen = false, IsMultiSelect = false; int ToggleCount = 0; ImGuiTreeNodeFlags Flags = 0; };
+    t->SetUserDataType<TreeNodeTestVars>();
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::SetNextWindowSize(ImVec2(300, 100), ImGuiCond_Always);
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+
+        TreeNodeTestVars& vars = ctx->GetUserData<TreeNodeTestVars>();
+        if (vars.Reset)
+        {
+            ImGui::GetStateStorage()->SetInt(ImGui::GetID("AAA"), 0);
+            vars.ToggleCount = 0;
+        }
+        vars.Reset = false;
+        ImGui::Text("Flags: 0x%08X, MultiSelect: %d", vars.Flags, vars.IsMultiSelect);
+
+#ifdef IMGUI_HAS_MULTI_SELECT
+        if (vars.IsMultiSelect)
+        {
+            ImGui::BeginMultiSelect(ImGuiMultiSelectFlags_None, NULL, false); // Dummy, won't interact properly
+            ImGui::SetNextItemSelectionData(NULL);
+        }
+#endif
+
+        vars.IsOpen = ImGui::TreeNodeEx("AAA", vars.Flags);
+        if (ImGui::IsItemToggledOpen())
+            vars.ToggleCount++;
+        if (vars.IsOpen)
+            ImGui::TreePop();
+
+#ifdef IMGUI_HAS_MULTI_SELECT
+        if (vars.IsMultiSelect)
+            ImGui::EndMultiSelect();
+#endif
+
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        TreeNodeTestVars& vars = ctx->GetUserData<TreeNodeTestVars>();
+        ctx->WindowRef("Test Window");
+
+#ifdef IMGUI_HAS_MULTI_SELECT
+        int loop_count = 2;
+#else
+        int loop_count = 1;
+#endif
+
+        for (int loop_n = 0; loop_n < loop_count; loop_n++)
+        {
+            vars.IsMultiSelect = (loop_n == 1);
+
+            if (!vars.IsMultiSelect) // _OpenOnArrow is implicit/automatic with MultiSelect
+            {
+                ctx->LogInfo("## ImGuiTreeNodeFlags_None, IsMultiSelect=%d", vars.IsMultiSelect);
+                vars.Reset = true;
+                vars.Flags = ImGuiTreeNodeFlags_None;
+                ctx->Yield();
+                IM_CHECK(vars.IsOpen == false && vars.ToggleCount == 0);
+
+                // Click on arrow
+                ctx->MouseMove("AAA", ImGuiTestOpFlags_MoveToEdgeL);
+                ctx->MouseDown(0);
+                IM_CHECK_EQ(vars.IsOpen, false);
+                ctx->MouseUp(0); // Toggle on Up with _OpenOnArrow (may change!)
+                IM_CHECK_EQ(vars.IsOpen, true);
+                ctx->MouseClick(0);
+                IM_CHECK_EQ(vars.IsOpen, false);
+                ctx->MouseDoubleClick(0);
+                IM_CHECK_EQ(vars.IsOpen, false);
+                IM_CHECK_EQ(vars.ToggleCount, 4);
+
+                // Click on main section 
+                vars.ToggleCount = 0;
+                ctx->MouseMove("AAA");
+                ctx->MouseClick(0);
+                IM_CHECK_EQ_NO_RET(vars.IsOpen, true);
+                ctx->MouseClick(0);
+                IM_CHECK_EQ_NO_RET(vars.IsOpen, false);
+                ctx->MouseDoubleClick(0);
+                IM_CHECK_EQ_NO_RET(vars.IsOpen, false);
+                IM_CHECK_EQ_NO_RET(vars.ToggleCount, 4);
+            }
+
+            if (!vars.IsMultiSelect) // _OpenOnArrow is implicit/automatic with MultiSelect
+            {
+                ctx->LogInfo("## ImGuiTreeNodeFlags_OpenOnDoubleClick, IsMultiSelect=%d", vars.IsMultiSelect);
+                vars.Reset = true;
+                vars.Flags = ImGuiTreeNodeFlags_OpenOnDoubleClick;
+                ctx->Yield();
+                IM_CHECK(vars.IsOpen == false && vars.ToggleCount == 0);
+
+                // Click on arrow
+                ctx->MouseMove("AAA", ImGuiTestOpFlags_MoveToEdgeL);
+                ctx->MouseDown(0);
+                IM_CHECK_EQ(vars.IsOpen, false);
+                ctx->MouseUp(0);
+                IM_CHECK_EQ(vars.IsOpen, false);
+                ctx->MouseClick(0);
+                IM_CHECK_EQ(vars.IsOpen, false);
+                IM_CHECK_EQ(vars.ToggleCount, 0);
+                ctx->MouseDoubleClick(0);
+                IM_CHECK_EQ(vars.IsOpen, true);
+                ctx->MouseDoubleClick(0);
+                IM_CHECK_EQ(vars.IsOpen, false);
+                IM_CHECK_EQ(vars.ToggleCount, 2);
+
+                // Click on main section
+                vars.ToggleCount = 0;
+                ctx->MouseMove("AAA");
+                ctx->MouseClick(0);
+                IM_CHECK_EQ(vars.IsOpen, false);
+                ctx->MouseClick(0);
+                IM_CHECK_EQ(vars.IsOpen, false);
+                IM_CHECK_EQ(vars.ToggleCount, 0);
+                ctx->MouseDoubleClick(0);
+                IM_CHECK_EQ(vars.IsOpen, true);
+                ctx->MouseDoubleClick(0);
+                IM_CHECK_EQ(vars.IsOpen, false);
+                IM_CHECK_EQ(vars.ToggleCount, 2);
+            }
+
+            {
+                ctx->LogInfo("## ImGuiTreeNodeFlags_OpenOnArrow, IsMultiSelect=%d", vars.IsMultiSelect);
+                vars.Reset = true;
+                vars.Flags = ImGuiTreeNodeFlags_OpenOnArrow;
+                ctx->Yield();
+                IM_CHECK(vars.IsOpen == false && vars.ToggleCount == 0);
+
+                // Click on arrow
+                ctx->MouseMove("AAA", ImGuiTestOpFlags_MoveToEdgeL);
+                ctx->MouseDown(0);
+                IM_CHECK_EQ(vars.IsOpen, true);
+                ctx->MouseUp(0);
+                IM_CHECK_EQ(vars.IsOpen, true);
+                ctx->MouseClick(0);
+                IM_CHECK_EQ(vars.IsOpen, false);
+                IM_CHECK_EQ(vars.ToggleCount, 2);
+                ctx->MouseDoubleClick(0);
+                IM_CHECK_EQ(vars.IsOpen, false);
+                IM_CHECK_EQ(vars.ToggleCount, 4);
+
+                // Click on main section
+                vars.ToggleCount = 0;
+                ctx->MouseMove("AAA");
+                ctx->MouseClick(0);
+                IM_CHECK_EQ(vars.IsOpen, false);
+                ctx->MouseClick(0);
+                IM_CHECK_EQ(vars.IsOpen, false);
+                IM_CHECK_EQ(vars.ToggleCount, 0);
+                ctx->MouseDoubleClick(0);
+                IM_CHECK_EQ(vars.IsOpen, false);
+                IM_CHECK_EQ(vars.ToggleCount, 0);
+            }
+
+            {
+                ctx->LogInfo("## ImGuiTreeNodeFlags_OpenOnArrow|ImGuiTreeNodeFlags_OpenOnDoubleClick, IsMultiSelect=%d", vars.IsMultiSelect);
+                vars.Reset = true;
+                vars.Flags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_OpenOnDoubleClick;
+                ctx->Yield();
+                IM_CHECK(vars.IsOpen == false && vars.ToggleCount == 0);
+
+                // Click on arrow
+                ctx->MouseMove("AAA", ImGuiTestOpFlags_MoveToEdgeL);
+                ctx->MouseDown(0);
+                IM_CHECK_EQ(vars.IsOpen, true);
+                ctx->MouseUp(0);
+                ctx->MouseClick(0);
+                IM_CHECK_EQ(vars.IsOpen, false);
+                IM_CHECK_EQ(vars.ToggleCount, 2);
+                ctx->MouseDoubleClick(0);
+                IM_CHECK_EQ(vars.IsOpen, false);
+                IM_CHECK_EQ(vars.ToggleCount, 4);
+
+                // Click on main section
+                vars.ToggleCount = 0;
+                ctx->MouseMove("AAA");
+                ctx->MouseClick(0);
+                IM_CHECK_EQ(vars.IsOpen, false);
+                ctx->MouseClick(0);
+                IM_CHECK_EQ(vars.IsOpen, false);
+                IM_CHECK_EQ(vars.ToggleCount, 0);
+                ctx->MouseDoubleClick(0);
+                IM_CHECK_EQ(vars.IsOpen, true);
+                ctx->MouseDoubleClick(0);
+                IM_CHECK_EQ(vars.IsOpen, false);
+                IM_CHECK_EQ(vars.ToggleCount, 2);
+            }
+        }
+    };
+
     // ## Test ImGuiTreeNodeFlags_SpanAvailWidth and ImGuiTreeNodeFlags_SpanFullWidth flags
     t = REGISTER_TEST("widgets", "widgets_tree_node_span_width");
     t->GuiFunc = [](ImGuiTestContext* ctx)

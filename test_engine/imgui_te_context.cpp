@@ -682,6 +682,26 @@ void    ImGuiTestContext::NavInput()
     Yield();
 }
 
+static ImVec2 GetMouseAimingPos(ImGuiTestItemInfo* item, ImGuiTestOpFlags flags)
+{
+    ImRect r = item->RectClipped;
+    ImVec2 pos;
+    //pos = r.GetCenter();
+    if (flags & ImGuiTestOpFlags_MoveToEdgeL)
+        pos.x = (r.Min.x + 1.0f);
+    else if (flags & ImGuiTestOpFlags_MoveToEdgeR)
+        pos.x = (r.Max.x - 1.0f);
+    else
+        pos.x = (r.Min.x + r.Max.x) * 0.5f;
+    if (flags & ImGuiTestOpFlags_MoveToEdgeU)
+        pos.y = (r.Min.y + 1.0f);
+    else if (flags & ImGuiTestOpFlags_MoveToEdgeD)
+        pos.y = (r.Max.y - 1.0f);
+    else
+        pos.y = (r.Min.y + r.Max.y) * 0.5f;
+    return pos;
+}
+
 // FIXME-TESTS: This is too eagerly trying to scroll everything even if already visible.
 // FIXME: Maybe ImGuiTestOpFlags_NoCheckHoveredId could be automatic if we detect that another item is active as intended?
 void    ImGuiTestContext::MouseMove(ImGuiTestRef ref, ImGuiTestOpFlags flags)
@@ -713,7 +733,7 @@ void    ImGuiTestContext::MouseMove(ImGuiTestRef ref, ImGuiTestOpFlags flags)
     WindowMoveToMakePosVisible(window, pos);
 
     // Move toward an actually visible point
-    pos = item->RectClipped.GetCenter();
+    pos = GetMouseAimingPos(item, flags);
     MouseMoveToPos(pos);
 
     // Focus again in case something made us lost focus (which could happen on a simple hover)
