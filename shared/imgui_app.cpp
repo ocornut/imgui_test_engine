@@ -1,6 +1,30 @@
 //-----------------------------------------------------------------------------
 // Simple Dear ImGui App Framework (using standard bindings)
 //-----------------------------------------------------------------------------
+// Example usage:
+/*
+    #include "imgui_app.h"
+    ImGuiApp* app = ImGuiApp_ImplWin32DX11_Create();
+    app->DpiAware = true;
+    app->Vsync = true;
+    app->InitCreateWindow(app, "My Application", ImVec2(1600, 1200));
+    app->InitBackends(app);
+    while (true)
+    {
+        if (!app->NewFrame(app))
+            break;
+        ImGui::NewFrame();
+        [...]
+        ImGui::Render();
+        app->Render(app);
+    }
+    app->ShutdownBackends(app);
+    app->ShutdownCloseWindow(app);
+    ImGui::DestroyContext();
+    app->Destroy(app);
+*/
+//-----------------------------------------------------------------------------
+
 
 #include "imgui_app.h"
 #include "imgui.h"

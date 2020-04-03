@@ -264,16 +264,12 @@ static void ShowTestGroup(ImGuiTestEngine* e, ImGuiTestGroup group, ImGuiTextFil
                     queue_test = true;
 
                 bool is_running_gui_func = (test_context && (test_context->RunFlags & ImGuiTestRunFlags_NoTestFunc));
-                if (ImGui::MenuItem("Run GUI func", NULL, is_running_gui_func))
+                if (ImGui::MenuItem("Run GUI func", "Ctrl+Click", is_running_gui_func))
                 {
                     if (is_running_gui_func)
-                    {
                         ImGuiTestEngine_Abort(e);
-                    }
                     else
-                    {
                         queue_gui_func = true;
-                    }
                 }
                 ImGui::Separator();
 

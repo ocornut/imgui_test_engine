@@ -1576,7 +1576,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
     t->TestFunc = [](ImGuiTestContext* ctx) { ctx->Yield(); };
 
     // ## Test various TreeNode flags
-    t = REGISTER_TEST("widgets", "widgets_tree_node_behaviors");
+    t = REGISTER_TEST("widgets", "widgets_treenode_behaviors");
     struct TreeNodeTestVars { bool Reset = true, IsOpen = false, IsMultiSelect = false; int ToggleCount = 0; ImGuiTreeNodeFlags Flags = 0; };
     t->SetUserDataType<TreeNodeTestVars>();
     t->GuiFunc = [](ImGuiTestContext* ctx)
@@ -1769,7 +1769,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
     };
 
     // ## Test ImGuiTreeNodeFlags_SpanAvailWidth and ImGuiTreeNodeFlags_SpanFullWidth flags
-    t = REGISTER_TEST("widgets", "widgets_tree_node_span_width");
+    t = REGISTER_TEST("widgets", "widgets_treenode_span_width");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         ImGui::SetNextWindowSize(ImVec2(300, 100), ImGuiCond_Always);
