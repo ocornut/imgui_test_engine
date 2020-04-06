@@ -11,7 +11,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        branch: [master, docking, tables]
+        branch: [master, docking, tables, features/range_select]
 
     steps:
       - uses: actions/checkout@v1
@@ -39,7 +39,6 @@ jobs:
       fail-fast: false
       matrix:
         # MacOS minutes are expensive (x10) for private repo so reduce the amount of tests running there for now.
-        # branch: [master, docking, tables]
         branch: [docking]
 
     steps:
@@ -70,7 +69,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        branch: [master, docking, tables]
+        branch: [docking]
         arch: [Win32, x64]
 
     steps:
