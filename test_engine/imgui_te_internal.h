@@ -89,7 +89,8 @@ struct ImGuiTestEngine
     ImGuiCaptureTool            CaptureTool;
     ImGuiCaptureContext         CaptureContext;
     ImGuiCaptureArgs*           CurrentCaptureArgs = NULL;
-    bool                        RunFastBackupValue = false;
+    bool                        BackupConfigRunFast = false;
+    bool                        BackupConfigNoThrottle = false;
 
     // Functions
     ImGuiTestEngine()

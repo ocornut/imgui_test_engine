@@ -93,7 +93,7 @@ struct ImGuiCaptureContext
     ImVec2                  _DisplayWindowPaddingBackup;    // Backup padding. We set it to {0, 0} during capture.
     ImVec2                  _DisplaySafeAreaPaddingBackup;  // Backup padding. We set it to {0, 0} during capture.
     bool                    _Recording = false;             // Flag indicating that GIF recording is in progress.
-    size_t                  _LastRecordedFrameTimeMs = 0;   // Time when last GIF frame was recorded.
+    double                  _LastRecordedFrameTimeSec = 0;  // Time when last GIF frame was recorded.
     GifWriter*              _GifWriter = NULL;              // GIF image writer state.
 
     ImGuiCaptureContext(ImGuiScreenCaptureFunc capture_func = NULL) { ScreenCaptureFunc = capture_func; }
@@ -104,6 +104,7 @@ struct ImGuiCaptureContext
     // Begin gif capture. args->InOutputFileTemplate must be specified. Call CaptureUpdate() every frame afterwards until it returns false.
     void    BeginGifCapture(ImGuiCaptureArgs* args);
     void    EndGifCapture(ImGuiCaptureArgs* args);
+    bool    IsCapturingGif();
 };
 
 // Implements UI for capturing images

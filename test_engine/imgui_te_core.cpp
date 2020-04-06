@@ -199,6 +199,13 @@ void    ImGuiTestEngine_PostRender(ImGuiTestEngine* engine)
     if (engine->CurrentCaptureArgs != NULL)
     {
         engine->CaptureContext.ScreenCaptureFunc = engine->IO.ScreenCaptureFunc;
+
+        // Gifs are captured with application running as fast as possible. ConfigRunFast = false so all interactions are
+        // recorded and ConfigNoThrottle = true so application renders without vsync at max possible framerate. Lastly
+        // here we fake delta time so recorded gif appears to run at normal speed.
+        if (engine->CaptureContext.IsCapturingGif())
+            ImGuiTestEngine_SetDeltaTime(engine, 1.0f / 60.0f);
+
         if (!engine->CaptureContext.CaptureUpdate(engine->CurrentCaptureArgs))
         {
             ImStrncpy(engine->CaptureTool.LastSaveFileName, engine->CurrentCaptureArgs->OutSavedFileName, IM_ARRAYSIZE(engine->CaptureTool.LastSaveFileName));
@@ -672,8 +679,10 @@ bool ImGuiTestEngine_BeginCaptureAnimation(ImGuiTestEngine* engine, ImGuiCapture
         return false;
     }
 
-    engine->RunFastBackupValue = engine->IO.ConfigRunFast;
+    engine->BackupConfigRunFast = engine->IO.ConfigRunFast;
+    engine->BackupConfigNoThrottle = engine->IO.ConfigNoThrottle;
     engine->IO.ConfigRunFast = false;
+    engine->IO.ConfigNoThrottle = true;
     engine->CurrentCaptureArgs = args;
     engine->CaptureContext.BeginGifCapture(args);
     return true;
@@ -684,7 +693,8 @@ bool ImGuiTestEngine_EndCaptureAnimation(ImGuiTestEngine* engine, ImGuiCaptureAr
     engine->CaptureContext.EndGifCapture(args);
     while (engine->CaptureContext._GifWriter != NULL)   // Wait until last frame is captured and gif is saved.
         ImGuiTestEngine_Yield(engine);
-    engine->IO.ConfigRunFast = engine->RunFastBackupValue;
+    engine->IO.ConfigRunFast = engine->BackupConfigRunFast;
+    engine->IO.ConfigNoThrottle = engine->BackupConfigNoThrottle;
     engine->CurrentCaptureArgs = NULL;
     return true;
 };

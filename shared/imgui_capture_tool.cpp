@@ -110,7 +110,7 @@ bool ImGuiCaptureContext::CaptureUpdate(ImGuiCaptureArgs* args)
             return false;
         }
 #endif
-        if (window->Flags & ImGuiWindowFlags_ChildWindow || args->InCaptureWindows.contains(window))
+        if ((window->Flags & ImGuiWindowFlags_ChildWindow) || args->InCaptureWindows.contains(window))
             continue;
 
         window->Hidden = true;
@@ -119,12 +119,12 @@ bool ImGuiCaptureContext::CaptureUpdate(ImGuiCaptureArgs* args)
 
     // Recording will be set to false when we are stopping GIF capture.
     // FIXME: Lossy time calculation, could accumulate instead of resetting.
-    const bool is_recording_gif = _Recording || (_GifWriter != NULL);
-    const size_t current_time_ms = ImTimeGetInMicroseconds() / 1000;
-    if (is_recording_gif || _LastRecordedFrameTimeMs == 0)
+    const bool is_recording_gif = IsCapturingGif();
+    const double current_time_sec = ImGui::GetTime();
+    if (is_recording_gif && _LastRecordedFrameTimeSec > 0)
     {
-        size_t delta_ms = current_time_ms - _LastRecordedFrameTimeMs;
-        if (delta_ms < 1000 / args->InRecordFPSTarget)
+        double delta_sec = current_time_sec - _LastRecordedFrameTimeSec;
+        if (delta_sec < 1.0 / args->InRecordFPSTarget)
             return true;
     }
 
@@ -300,7 +300,7 @@ bool ImGuiCaptureContext::CaptureUpdate(ImGuiCaptureArgs* args)
                 // Save new GIF frame
                 // FIXME: Not optimal at all (e.g. compare to gifsicle -O3 output)
                 GifWriteFrame(_GifWriter, (const uint8_t*)output->Data, output->Width, output->Height, gif_frame_interval, 8, false);
-                _LastRecordedFrameTimeMs = current_time_ms;
+                _LastRecordedFrameTimeSec = current_time_sec;
             }
         }
 
@@ -337,7 +337,7 @@ bool ImGuiCaptureContext::CaptureUpdate(ImGuiCaptureArgs* args)
             }
 
             _FrameNo = _ChunkNo = 0;
-            _LastRecordedFrameTimeMs = 0;
+            _LastRecordedFrameTimeSec = 0;
             g.Style.DisplayWindowPadding = _DisplayWindowPaddingBackup;
             g.Style.DisplaySafeAreaPadding = _DisplaySafeAreaPaddingBackup;
             args->_Capturing = false;
@@ -367,6 +367,11 @@ void ImGuiCaptureContext::EndGifCapture(ImGuiCaptureArgs* args)
     IM_ASSERT(_Recording == true);
     IM_ASSERT(_GifWriter != NULL);
     _Recording = false;
+}
+
+bool ImGuiCaptureContext::IsCapturingGif()
+{
+    return _Recording || _GifWriter;
 }
 
 //-----------------------------------------------------------------------------
@@ -574,9 +579,9 @@ void ImGuiCaptureTool::CaptureWindowsSelector(const char* title, ImGuiCaptureArg
     // (Prefer 100/FPS to be an integer)
     ImGui::DragInt("##FPS", &args->InRecordFPSTarget, 0.1f, 10, 100, "FPS=%d");
     ImGui::SameLine();
-    if (ImGui::Button(Context._Recording ? "Stop###StopRecord" : "Record###StopRecord") || (Context._Recording && ImGui::IsKeyPressedMap(ImGuiKey_Escape)))
+    if (ImGui::Button(Context.IsCapturingGif() ? "Stop###StopRecord" : "Record###StopRecord") || (Context._Recording && ImGui::IsKeyPressedMap(ImGuiKey_Escape)))
     {
-        if (!Context._Recording)
+        if (!Context.IsCapturingGif())
         {
             if (can_capture)
             {
@@ -605,7 +610,7 @@ void ImGuiCaptureTool::CaptureWindowsSelector(const char* title, ImGuiCaptureArg
 
     if (_CaptureState == ImGuiCaptureToolState_Capturing && args->_Capturing)
     {
-        if (Context._Recording || Context._GifWriter)
+        if (Context.IsCapturingGif())
             args->InFlags &= ~ImGuiCaptureFlags_StitchFullContents;
 
         if (!Context.CaptureUpdate(args))

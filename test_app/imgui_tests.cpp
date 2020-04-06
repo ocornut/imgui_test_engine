@@ -5639,7 +5639,6 @@ void RegisterTests_Capture(ImGuiTestEngine* e)
         ctx->ItemClick("Save");
         ctx->SleepShort();
         ctx->EndCaptureGif(&args);
-        ctx->Yield();
     };
 
 #ifdef IMGUI_HAS_TABLE
