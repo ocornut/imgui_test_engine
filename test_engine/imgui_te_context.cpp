@@ -421,8 +421,9 @@ bool ImGuiTestContext::CaptureScreenshot(ImGuiCaptureArgs* args)
 
 bool ImGuiTestContext::BeginCaptureGif(ImGuiCaptureArgs* args)
 {
+
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
-    LogInfo("CaptureScreenshot()");
+    LogInfo("BeginCaptureGif()");
     return ImGuiTestEngine_BeginCaptureAnimation(Engine, args);
 }
 
@@ -823,7 +824,7 @@ void	ImGuiTestContext::MouseMoveToPos(ImVec2 target)
     // Calculate how much wobble we want, clamped to max out when the delta is 100 pixels (shorter movements get less wobble)
     const float position_offset_magnitude = ImClamp(length, 1.0f, 100.0f) * EngineIO->MouseWobble;
 
-    // Wobble positions, using a sine wave based on position as a cheap way to get a deterministic offset 
+    // Wobble positions, using a sine wave based on position as a cheap way to get a deterministic offset
     ImVec2 intermediate_pos_a = start_pos + (delta * 0.3f);
     ImVec2 intermediate_pos_b = start_pos + (delta * 0.6f);
     intermediate_pos_a += perp * ImSin(intermediate_pos_a.y * 0.1f) * position_offset_magnitude;
@@ -833,7 +834,7 @@ void	ImGuiTestContext::MouseMoveToPos(ImVec2 target)
     // To handle high framerate it is easier to bypass this rounding.
     float current_dist = 0.0f; // Our current distance along the line (in pixels)
     while (true)
-    {        
+    {
         float move_speed = EngineIO->MouseSpeed * g.IO.DeltaTime;
 
         //if (g.IO.KeyShift)

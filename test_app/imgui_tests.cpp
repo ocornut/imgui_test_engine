@@ -1649,7 +1649,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
                 IM_CHECK_EQ(vars.IsOpen, false);
                 IM_CHECK_EQ(vars.ToggleCount, 4);
 
-                // Click on main section 
+                // Click on main section
                 vars.ToggleCount = 0;
                 ctx->MouseMove("AAA");
                 ctx->MouseClick(0);
@@ -2084,7 +2084,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
 
         // When using SelectAll() / SetRange() we assume that our objects ID are indices.
         // In this demo we always store selection using indices and never in another manner (e.g. object ID or pointers).
-        // If your selection system is storing selection using object ID and you want to support Shift+Click range-selection, 
+        // If your selection system is storing selection using object ID and you want to support Shift+Click range-selection,
         // you will need a way to iterate from one object to another given the ID you use.
         // You are likely to need some kind of data structure to convert 'view index' <> 'object ID'.
         // FIXME-MULTISELECT: Would be worth providing a demo of doing this.
@@ -2092,7 +2092,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         void SetRange(int n1, int n2, bool v)   { if (n2 < n1) { int tmp = n2; n2 = n1; n1 = tmp; } for (int n = n1; n <= n2; n++) SetSelected(n, v); }
         void SelectAll(int count)               { Storage.Data.resize(count); for (int idx = 0; idx < count; idx++) Storage.Data[idx] = ImGuiStorage::ImGuiStoragePair((ImGuiID)idx, 1); SelectionSize = count; } // This could be using SetRange(), but it this way is faster.
     };
-    struct MultiSelectTestVars 
+    struct MultiSelectTestVars
     {
         ExampleSelection    Selection;
     };
@@ -5192,7 +5192,7 @@ void RegisterTests_Perf(ImGuiTestEngine* e)
         ImGui::End();
     };
     t->TestFunc = PerfCaptureFunc;
-    
+
     // ## Draw various AA/non-AA lines (not really a perf test, more a correctness one)
 	t = REGISTER_TEST("perf", "perf_misc_lines");
 	t->GuiFunc = [](ImGuiTestContext* ctx)
@@ -5301,7 +5301,7 @@ void RegisterTests_Perf(ImGuiTestEngine* e)
                     ImVec2 bottom_right = ImVec2(center.x + (line_len * 0.5f), center.y + (line_len * 0.5f));
 
                     draw_list->AddRect(top_left, bottom_right, IM_COL32(255, 255, 255, 255), 0.0f, ImDrawCornerFlags_All, cell_line_width);
-                    
+
                     ImGui::SetCursorPos(ImVec2(cursor_pos.x + ((j + 0.5f) * line_spacing.x) - 16.0f, cursor_pos.y + ((i + 0.5f) * line_spacing.y) - (ImGui::GetTextLineHeight() * 0.5f)));
                     ImGui::Text("%.2f", cell_line_width);
                 }
@@ -5649,7 +5649,7 @@ void RegisterTests_Capture(ImGuiTestEngine* e)
         ctx->WindowRef("Dear ImGui Demo");
         ctx->ItemOpen("Tables & Columns");
         ctx->ItemClick("Tables/Open all");
-        
+
         ImGuiCaptureArgs args;
         ctx->CaptureInitArgs(&args, ImGuiCaptureFlags_StitchFullContents);
         ctx->CaptureAddWindow(&args, "");
