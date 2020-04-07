@@ -76,6 +76,13 @@ struct ImGuiCaptureArgs
     bool                    _Capturing = false;             // FIXME-TESTS: ???
 };
 
+enum ImGuiCaptureToolStatus
+{
+    ImGuiCaptureToolStatus_InProgress,
+    ImGuiCaptureToolStatus_Done,
+    ImGuiCaptureToolStatus_Error,
+};
+
 // Implements functionality for capturing images
 struct ImGuiCaptureContext
 {
@@ -99,7 +106,7 @@ struct ImGuiCaptureContext
     ImGuiCaptureContext(ImGuiScreenCaptureFunc capture_func = NULL) { ScreenCaptureFunc = capture_func; }
 
     // Capture a screenshot. If this function returns true then it should be called again with same arguments on the next frame.
-    bool    CaptureUpdate(ImGuiCaptureArgs* args);
+    ImGuiCaptureToolStatus CaptureUpdate(ImGuiCaptureArgs* args);
 
     // Begin gif capture. args->InOutputFileTemplate must be specified. Call CaptureUpdate() every frame afterwards until it returns false.
     void    BeginGifCapture(ImGuiCaptureArgs* args);

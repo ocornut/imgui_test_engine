@@ -412,6 +412,9 @@ bool ImGuiTestContext::CaptureAddWindow(ImGuiCaptureArgs* args, ImGuiTestRef ref
 
 bool ImGuiTestContext::CaptureScreenshot(ImGuiCaptureArgs* args)
 {
+    if (IsError())
+        return false;
+
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
     LogInfo("CaptureScreenshot()");
     bool ret = ImGuiTestEngine_CaptureScreenshot(Engine, args);
@@ -421,6 +424,8 @@ bool ImGuiTestContext::CaptureScreenshot(ImGuiCaptureArgs* args)
 
 bool ImGuiTestContext::BeginCaptureGif(ImGuiCaptureArgs* args)
 {
+    if (IsError())
+        return false;
 
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
     LogInfo("BeginCaptureGif()");
@@ -429,8 +434,18 @@ bool ImGuiTestContext::BeginCaptureGif(ImGuiCaptureArgs* args)
 
 bool ImGuiTestContext::EndCaptureGif(ImGuiCaptureArgs* args)
 {
-    bool ret = ImGuiTestEngine_EndCaptureAnimation(Engine, args);
-    LogDebug("Saved '%s' (%d*%d pixels)", args->OutSavedFileName, (int)args->OutImageSize.x, (int)args->OutImageSize.y);
+    bool ret = Engine->CaptureContext.IsCapturingGif() && ImGuiTestEngine_EndCaptureAnimation(Engine, args);
+    if (ret)
+    {
+        // In-progress capture was cancelled by user. Delete incomplete file.
+        if (IsError())
+        {
+            //ImFileDelete(args->OutSavedFileName);
+            return false;
+        }
+
+        LogDebug("Saved '%s' (%d*%d pixels)", args->OutSavedFileName, (int)args->OutImageSize.x, (int)args->OutImageSize.y);
+    }
     return ret;
 }
 

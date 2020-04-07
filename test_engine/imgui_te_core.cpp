@@ -195,20 +195,20 @@ void    ImGuiTestEngine_Stop(ImGuiTestEngine* engine)
 
 void    ImGuiTestEngine_PostRender(ImGuiTestEngine* engine)
 {
+    if (engine->IO.ConfigFixedDeltaTime != 0.0f)
+        ImGuiTestEngine_SetDeltaTime(engine, engine->IO.ConfigFixedDeltaTime);
+
     // Capture a screenshot from main thread while coroutine waits
     if (engine->CurrentCaptureArgs != NULL)
     {
         engine->CaptureContext.ScreenCaptureFunc = engine->IO.ScreenCaptureFunc;
-
-        // Gifs are captured with application running as fast as possible. ConfigRunFast = false so all interactions are
-        // recorded and ConfigNoThrottle = true so application renders without vsync at max possible framerate. Lastly
-        // here we fake delta time so recorded gif appears to run at normal speed.
-        if (engine->CaptureContext.IsCapturingGif())
-            ImGuiTestEngine_SetDeltaTime(engine, 1.0f / 60.0f);
-
-        if (!engine->CaptureContext.CaptureUpdate(engine->CurrentCaptureArgs))
+        ImGuiCaptureToolStatus status = engine->CaptureContext.CaptureUpdate(engine->CurrentCaptureArgs);
+        if (status != ImGuiCaptureToolStatus_InProgress)
         {
-            ImStrncpy(engine->CaptureTool.LastSaveFileName, engine->CurrentCaptureArgs->OutSavedFileName, IM_ARRAYSIZE(engine->CaptureTool.LastSaveFileName));
+            if (status == ImGuiCaptureToolStatus_Done)
+                ImStrncpy(engine->CaptureTool.LastSaveFileName, engine->CurrentCaptureArgs->OutSavedFileName, IM_ARRAYSIZE(engine->CaptureTool.LastSaveFileName));
+            //else
+            //    ImFileDelete(engine->CurrentCaptureArgs->OutSavedFileName);
             engine->CurrentCaptureArgs = NULL;
         }
     }
@@ -654,6 +654,8 @@ bool ImGuiTestEngine_CaptureScreenshot(ImGuiTestEngine* engine, ImGuiCaptureArgs
         return false;
     }
 
+    IM_ASSERT(engine->CurrentCaptureArgs == NULL && "Nested captures are not supported.");
+
     // Graphics API must render a window so it can be captured
     // FIXME: This should work without this, as long as Present vs Vsync are separated (we need a Present, we don't need Vsync)
     const bool backup_fast = engine->IO.ConfigRunFast;
@@ -679,10 +681,16 @@ bool ImGuiTestEngine_BeginCaptureAnimation(ImGuiTestEngine* engine, ImGuiCapture
         return false;
     }
 
+    IM_ASSERT(engine->CurrentCaptureArgs == NULL && "Nested captures are not supported.");
+
     engine->BackupConfigRunFast = engine->IO.ConfigRunFast;
     engine->BackupConfigNoThrottle = engine->IO.ConfigNoThrottle;
-    engine->IO.ConfigRunFast = false;
-    engine->IO.ConfigNoThrottle = true;
+    if (engine->IO.ConfigRunFast)
+    {
+        engine->IO.ConfigRunFast = false;
+        engine->IO.ConfigNoThrottle = true;
+        engine->IO.ConfigFixedDeltaTime = 1.0f / 60.0f;
+    }
     engine->CurrentCaptureArgs = args;
     engine->CaptureContext.BeginGifCapture(args);
     return true;
@@ -690,11 +698,15 @@ bool ImGuiTestEngine_BeginCaptureAnimation(ImGuiTestEngine* engine, ImGuiCapture
 
 bool ImGuiTestEngine_EndCaptureAnimation(ImGuiTestEngine* engine, ImGuiCaptureArgs* args)
 {
+    IM_ASSERT(engine->CurrentCaptureArgs != NULL && "No capture is in progress.");
+    IM_ASSERT(engine->CaptureContext.IsCapturingGif() && "No gif capture is in progress.");
+
     engine->CaptureContext.EndGifCapture(args);
     while (engine->CaptureContext._GifWriter != NULL)   // Wait until last frame is captured and gif is saved.
         ImGuiTestEngine_Yield(engine);
     engine->IO.ConfigRunFast = engine->BackupConfigRunFast;
     engine->IO.ConfigNoThrottle = engine->BackupConfigNoThrottle;
+    engine->IO.ConfigFixedDeltaTime = 0;
     engine->CurrentCaptureArgs = NULL;
     return true;
 };
@@ -1003,6 +1015,8 @@ static void ImGuiTestEngine_RunTest(ImGuiTestEngine* engine, ImGuiTestContext* c
         }
     }
 
+    IM_ASSERT(engine->CurrentCaptureArgs == NULL && "Active capture was not terminated in the test code.");
+
     // Process and display result/status
     if (test->Status == ImGuiTestStatus_Running)
         test->Status = ImGuiTestStatus_Success;
@@ -1228,6 +1242,15 @@ bool ImGuiTestEngineHook_Check(const char* file, const char* func, int line, ImG
                     ctx->LogError("KO '%s' -> '%s'", expr, value_expr);
                 else
                     ctx->LogError("KO '%s'", expr);
+            }
+
+            // In case test failed without finishing gif capture - finish it here. It has to happen here because capture
+            // args struct is on test function stack and would be lost when test function returns.
+            if (engine->CaptureContext.IsCapturingGif())
+            {
+                ImGuiCaptureArgs* args = engine->CurrentCaptureArgs;
+                ImGuiTestEngine_EndCaptureAnimation(engine, args);
+                //ImFileDelete(args->OutSavedFileName);
             }
         }
         else if (!(flags & ImGuiTestCheckFlags_SilentSuccess))

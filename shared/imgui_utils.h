@@ -49,6 +49,7 @@ bool                ImOsIsDebuggerPresent();
 
 // File/Directory helpers
 bool                ImFileExist(const char* filename);
+bool                ImFileDelete(const char* filename);
 bool                ImFileCreateDirectoryChain(const char* path, const char* path_end = NULL);
 bool                ImFileFindInParents(const char* sub_path, int max_parent_count, Str* output);
 bool                ImFileLoadSourceBlurb(const char* filename, int line_no_start, int line_no_end, ImGuiTextBuffer* out_buf);

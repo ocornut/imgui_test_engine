@@ -86,7 +86,7 @@ void ImGuiCaptureImageBuf::BlitSubImage(int dst_x, int dst_y, int src_x, int src
 //-----------------------------------------------------------------------------
 
 // Returns true when capture is in progress.
-bool ImGuiCaptureContext::CaptureUpdate(ImGuiCaptureArgs* args)
+ImGuiCaptureToolStatus ImGuiCaptureContext::CaptureUpdate(ImGuiCaptureArgs* args)
 {
     ImGuiContext& g = *GImGui;
     ImGuiIO& io = g.IO;
@@ -107,7 +107,7 @@ bool ImGuiCaptureContext::CaptureUpdate(ImGuiCaptureArgs* args)
         {
             // FIXME-VIEWPORTS: Content stitching is not possible because window would get moved out of main viewport and detach from it. We need a way to force captured windows to remain in main viewport here.
             IM_ASSERT(false);
-            return false;
+            return ImGuiCaptureToolStatus_Error;
         }
 #endif
         if ((window->Flags & ImGuiWindowFlags_ChildWindow) || args->InCaptureWindows.contains(window))
@@ -125,7 +125,7 @@ bool ImGuiCaptureContext::CaptureUpdate(ImGuiCaptureArgs* args)
     {
         double delta_sec = current_time_sec - _LastRecordedFrameTimeSec;
         if (delta_sec < 1.0 / args->InRecordFPSTarget)
-            return true;
+            return ImGuiCaptureToolStatus_InProgress;
     }
 
     if (_FrameNo == 0)
@@ -139,7 +139,7 @@ bool ImGuiCaptureContext::CaptureUpdate(ImGuiCaptureArgs* args)
             if (!ImFileCreateDirectoryChain(args->OutSavedFileName, ImPathFindFilename(args->OutSavedFileName)))
             {
                 printf("Capture Tool: unable to create directory for file '%s'.\n", args->OutSavedFileName);
-                return false;
+                return ImGuiCaptureToolStatus_Error;
             }
 
             // File template will most likely end with .png, but we need .gif for animated images.
@@ -272,7 +272,10 @@ bool ImGuiCaptureContext::CaptureUpdate(ImGuiCaptureArgs* args)
                 IM_ASSERT(h == output->Height);
 
             if (!ScreenCaptureFunc(x1, y1, w, h, &output->Data[_ChunkNo * w * capture_height], UserData))
-                return false;
+            {
+                printf("Screen capture function failed.\n");
+                return ImGuiCaptureToolStatus_Error;
+            }
 
             if (args->InFlags & ImGuiCaptureFlags_StitchFullContents)
             {
@@ -341,13 +344,13 @@ bool ImGuiCaptureContext::CaptureUpdate(ImGuiCaptureArgs* args)
             g.Style.DisplayWindowPadding = _DisplayWindowPaddingBackup;
             g.Style.DisplaySafeAreaPadding = _DisplaySafeAreaPaddingBackup;
             args->_Capturing = false;
-            return false;
+            return ImGuiCaptureToolStatus_Done;
         }
     }
 
     // Keep going
     _FrameNo++;
-    return true;
+    return ImGuiCaptureToolStatus_InProgress;
 }
 
 void ImGuiCaptureContext::BeginGifCapture(ImGuiCaptureArgs* args)
@@ -392,11 +395,15 @@ void ImGuiCaptureTool::CaptureWindowPicker(const char* title, ImGuiCaptureArgs* 
 
     if (_CaptureState == ImGuiCaptureToolState_Capturing && args->_Capturing)
     {
-        if (ImGui::IsKeyPressedMap(ImGuiKey_Escape) || !Context.CaptureUpdate(args))
+        ImGuiCaptureToolStatus status = Context.CaptureUpdate(args);
+        if (ImGui::IsKeyPressedMap(ImGuiKey_Escape) || status != ImGuiCaptureToolStatus_InProgress)
         {
             _CaptureState = ImGuiCaptureToolState_None;
-            ImStrncpy(LastSaveFileName, args->OutSavedFileName, IM_ARRAYSIZE(LastSaveFileName));
-        }
+            if (status == ImGuiCaptureToolStatus_Done)
+                ImStrncpy(LastSaveFileName, args->OutSavedFileName, IM_ARRAYSIZE(LastSaveFileName));
+            //else
+            //    ImFileDelete(args->OutSavedFileName);
+       }
     }
 
     const ImVec2 button_sz = ImVec2(ImGui::CalcTextSize("M").x * 30, 0.0f);
@@ -613,10 +620,14 @@ void ImGuiCaptureTool::CaptureWindowsSelector(const char* title, ImGuiCaptureArg
         if (Context.IsCapturingGif())
             args->InFlags &= ~ImGuiCaptureFlags_StitchFullContents;
 
-        if (!Context.CaptureUpdate(args))
+        ImGuiCaptureToolStatus status = Context.CaptureUpdate(args);
+        if (status != ImGuiCaptureToolStatus_InProgress)
         {
             _CaptureState = ImGuiCaptureToolState_None;
-            ImStrncpy(LastSaveFileName, args->OutSavedFileName, IM_ARRAYSIZE(LastSaveFileName));
+            if (status == ImGuiCaptureToolStatus_Done)
+                ImStrncpy(LastSaveFileName, args->OutSavedFileName, IM_ARRAYSIZE(LastSaveFileName));
+            //else
+            //    ImFileDelete(args->OutSavedFileName);
         }
     }
 }

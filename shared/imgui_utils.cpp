@@ -15,6 +15,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <errno.h>
+#include <unistd.h>
 #endif
 #if defined(__linux) || defined(__linux__) || defined(__MACH__) || defined(__MSL__)
 #include <pthread.h>    // pthread_setname_np()
@@ -140,6 +141,20 @@ bool ImFileExist(const char* filename)
     struct stat dir_stat;
     int ret = stat(filename, &dir_stat);
     return (ret == 0);
+}
+
+bool ImFileDelete(const char* filename)
+{
+#if _WIN32
+    const int filename_wsize = ::MultiByteToWideChar(CP_UTF8, 0, filename, -1, NULL, 0);
+    ImVector<wchar_t> buf;
+    buf.resize(filename_wsize);
+    ::MultiByteToWideChar(CP_UTF8, 0, filename, -1, (wchar_t*)&buf[0], filename_wsize);
+    return DeleteFileW(&buf[0]) == TRUE;
+#else
+    unlink(filename);
+#endif
+    return false;
 }
 
 #if _WIN32
