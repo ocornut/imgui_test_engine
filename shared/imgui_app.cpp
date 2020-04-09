@@ -29,7 +29,7 @@
 #include "imgui_app.h"
 #include "imgui.h"
 #include "imgui_internal.h"
-#include <chrono>
+#include <chrono>   // time_since_epoch
 
 /*
 
@@ -67,7 +67,7 @@ static bool ImGuiApp_ImplNull_CreateWindow(ImGuiApp* app, const char*, ImVec2 si
     return true;
 }
 
-static uint64_t ImTimeGetInMicroseconds()
+static uint64_t ImGuiApp_GetTimeInMicroseconds()
 {
     using namespace std;
     chrono::microseconds ms = chrono::duration_cast<chrono::microseconds>(chrono::high_resolution_clock::now().time_since_epoch());
@@ -85,7 +85,7 @@ static bool ImGuiApp_ImplNull_NewFrame(ImGuiApp* app_opaque)
     //int height = 0;
     //io.Fonts->GetTexDataAsAlpha8(&pixels, &width, &height);
 
-    uint64_t time = ImTimeGetInMicroseconds();
+    uint64_t time = ImGuiApp_GetTimeInMicroseconds();
     if (app->LastTime == 0)
         app->LastTime = time;
     io.DeltaTime = (float)((double)(time - app->LastTime) / 1000000.0);
@@ -152,7 +152,7 @@ static void CleanupDeviceD3D(ImGuiApp_ImplWin32DX11* app);
 static void CreateRenderTarget(ImGuiApp_ImplWin32DX11* app);
 static void CleanupRenderTarget(ImGuiApp_ImplWin32DX11* app);
 static ImGuiApp_ImplWin32DX11* g_AppForWndProc = NULL;
-static LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+static LRESULT WINAPI ImGuiApp_ImplWin32_WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
 static bool ImGuiApp_ImplWin32DX11_InitCreateWindow(ImGuiApp* app_opaque, const char* window_title_a, ImVec2 window_size)
 {
@@ -161,7 +161,7 @@ static bool ImGuiApp_ImplWin32DX11_InitCreateWindow(ImGuiApp* app_opaque, const 
         ImGui_ImplWin32_EnableDpiAwareness();
 
     // Create application window
-    app->WC = { sizeof(WNDCLASSEXA), CS_CLASSDC, WndProc, 0L, 0L, ::GetModuleHandle(NULL), NULL, NULL, NULL, NULL, L"ImGuiApp", NULL };
+    app->WC = { sizeof(WNDCLASSEXA), CS_CLASSDC, ImGuiApp_ImplWin32_WndProc, 0L, 0L, ::GetModuleHandle(NULL), NULL, NULL, NULL, NULL, L"ImGuiApp", NULL };
     ::RegisterClassEx(&app->WC);
 
     POINT pos = { 100, 100 };
@@ -412,7 +412,7 @@ void CleanupRenderTarget(ImGuiApp_ImplWin32DX11* app)
 
 // Win32 message handler
 extern LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
-static LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
+static LRESULT WINAPI ImGuiApp_ImplWin32_WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
     if (ImGui_ImplWin32_WndProcHandler(hWnd, msg, wParam, lParam))
         return true;

@@ -8,7 +8,7 @@
 #define IMGUI_DEFINE_MATH_OPERATORS
 #include "imgui_internal.h"
 #include "imgui_capture_tool.h"
-#include "shared/imgui_utils.h"
+#include "../shared/imgui_utils.h"
 
 // stb_image_write
 #ifdef _MSC_VER
@@ -17,12 +17,12 @@
 #pragma warning (disable: 4457)                             // declaration of 'xx' hides function parameter
 #endif
 #define STB_IMAGE_WRITE_IMPLEMENTATION
-#include "libs/stb/stb_image_write.h"
+#include "../libs/stb/stb_image_write.h"
 #define GIF_TEMP_MALLOC IM_ALLOC
 #define GIF_TEMP_FREE IM_FREE
 #define GIF_MALLOC IM_ALLOC
 #define GIF_FREE IM_FREE
-#include "libs/gif-h/gif.h"
+#include "../libs/gif-h/gif.h"
 #ifdef _MSC_VER
 #pragma warning (pop)
 #endif
