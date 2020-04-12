@@ -3998,9 +3998,6 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
     t = REGISTER_TEST("misc", "misc_utf8");
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
-#define IM_TEST_USING_ImWchar32 1
-#define IM_IS_WCHAR32 IM_TOKENCONCAT(IM_TEST_USING_, ImWchar)
-
         auto check_utf8 = [](const char* utf8, const ImWchar* unicode)
         {
             const int utf8_len = (int)strlen(utf8);
@@ -4030,7 +4027,7 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
             ImTextCharFromUtf8(&code_point, str, str + strlen(str));
             return code_point;
         };
-#if IM_IS_WCHAR32
+#ifdef IMGUI_USE_WCHAR32
         #define IM_CHECK_UTF8(_TEXT)   (check_utf8(u8##_TEXT, (ImWchar*)U##_TEXT))
         // Test whether 32bit codepoints are correctly decoded.
         IM_CHECK_NO_RET(get_first_codepoint((const char*)u8"\U0001f60d") == 0x0001f60d);
@@ -4103,7 +4100,7 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
         IM_CHECK_NO_RET(IM_CHECK_UTF8("(\uff89\u0ca5\u76ca\u0ca5\uff09\uff89\ufeff \u253b\u2501\u253b"));
         IM_CHECK_NO_RET(IM_CHECK_UTF8("( \u0361\u00b0 \u035c\u0296 \u0361\u00b0)"));
 
-#if IM_IS_WCHAR32
+#ifdef IMGUI_USE_WCHAR32
         // Emoji
         // Strings which contain Emoji; should be the same behavior as two-byte characters, but not always
         IM_CHECK_NO_RET(IM_CHECK_UTF8("\U0001f60d"));
@@ -4161,7 +4158,7 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
         // Unicode font
         // Strings which contain bold/italic/etc. versions of normal characters
         IM_CHECK_NO_RET(IM_CHECK_UTF8("\uff34\uff48\uff45 \uff51\uff55\uff49\uff43\uff4b \uff42\uff52\uff4f\uff57\uff4e \uff46\uff4f\uff58 \uff4a\uff55\uff4d\uff50\uff53 \uff4f\uff56\uff45\uff52 \uff54\uff48\uff45 \uff4c\uff41\uff5a\uff59 \uff44\uff4f\uff47"));
-#if IM_IS_WCHAR32
+#ifdef IMGUI_USE_WCHAR32
         IM_CHECK_NO_RET(IM_CHECK_UTF8("\U0001d413\U0001d421\U0001d41e \U0001d42a\U0001d42e\U0001d422\U0001d41c\U0001d424 \U0001d41b\U0001d42b\U0001d428\U0001d430\U0001d427 \U0001d41f\U0001d428\U0001d431 \U0001d423\U0001d42e\U0001d426\U0001d429\U0001d42c \U0001d428\U0001d42f\U0001d41e\U0001d42b \U0001d42d\U0001d421\U0001d41e \U0001d425\U0001d41a\U0001d433\U0001d432 \U0001d41d\U0001d428\U0001d420"));
         IM_CHECK_NO_RET(IM_CHECK_UTF8("\U0001d57f\U0001d58d\U0001d58a \U0001d596\U0001d59a\U0001d58e\U0001d588\U0001d590 \U0001d587\U0001d597\U0001d594\U0001d59c\U0001d593 \U0001d58b\U0001d594\U0001d59d \U0001d58f\U0001d59a\U0001d592\U0001d595\U0001d598 \U0001d594\U0001d59b\U0001d58a\U0001d597 \U0001d599\U0001d58d\U0001d58a \U0001d591\U0001d586\U0001d59f\U0001d59e \U0001d589\U0001d594\U0001d58c"));
         IM_CHECK_NO_RET(IM_CHECK_UTF8("\U0001d47b\U0001d489\U0001d486 \U0001d492\U0001d496\U0001d48a\U0001d484\U0001d48c \U0001d483\U0001d493\U0001d490\U0001d498\U0001d48f \U0001d487\U0001d490\U0001d499 \U0001d48b\U0001d496\U0001d48e\U0001d491\U0001d494 \U0001d490\U0001d497\U0001d486\U0001d493 \U0001d495\U0001d489\U0001d486 \U0001d48d\U0001d482\U0001d49b\U0001d49a \U0001d485\U0001d490\U0001d488"));
@@ -4174,10 +4171,25 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
         // iOS Vulnerability
         // Strings which crashed iMessage in iOS versions 8.3 and earlier
         IM_CHECK_NO_RET(IM_CHECK_UTF8("Power\u0644\u064f\u0644\u064f\u0635\u0651\u0628\u064f\u0644\u064f\u0644\u0635\u0651\u0628\u064f\u0631\u0631\u064b \u0963 \u0963h \u0963 \u0963\u5197"));
-
-#undef IM_TEST_USING_ImWchar32
-#undef IM_IS_WCHAR32
     };
+
+#ifdef IMGUI_USE_WCHAR32
+    t = REGISTER_TEST("misc", "misc_utf16_surrogate");
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        // See: http://www.russellcottrell.com/greek/utilities/SurrogatePairCalculator.htm
+        // 0x20628 = 0xD841 + 0xDE28
+        ImGuiIO& io = ctx->UiContext->IO;
+        io.ClearInputCharacters();
+        IM_CHECK_EQ(io.InputQueueSurrogate, 0);
+        io.AddInputCharacterUTF16(0xD841);
+        IM_CHECK_EQ(io.InputQueueCharacters.Size, 0);
+        IM_CHECK_EQ(io.InputQueueSurrogate, 0xD841);
+        io.AddInputCharacterUTF16(0xDE28);
+        IM_CHECK_EQ(io.InputQueueCharacters.Size, 1);
+        IM_CHECK_EQ(io.InputQueueCharacters[0], (ImWchar)0x20628);
+    };
+#endif
 
     // ## Test ImGuiTextFilter
     t = REGISTER_TEST("misc", "misc_text_filter");
