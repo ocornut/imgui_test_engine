@@ -78,7 +78,7 @@ static void Coroutine_ImplStdThread_Destroy(ImGuiTestCoroutineHandle handle)
 {
     Coroutine_ImplStdThreadData* data = (Coroutine_ImplStdThreadData*)handle;
 
-    IM_ASSERT(data->CoroutineTerminated); // The coroutine needs to run to termination otherwise it may leak all sorts of things and this will deadlock    
+    IM_ASSERT(data->CoroutineTerminated); // The coroutine needs to run to termination otherwise it may leak all sorts of things and this will deadlock
     if (data->Thread)
     {
         data->Thread->join();

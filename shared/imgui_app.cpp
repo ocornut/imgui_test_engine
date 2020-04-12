@@ -35,16 +35,41 @@
 
 Index of this file:
 
-// [SECTION] ImGuiApp Implementation: Null
+// [SECTION] Defines
+// [SECTION] ImGuiApp Implementation: NULL
 // [SECTION] ImGuiApp Implementation: Win32 + DX11
 // [SECTION] ImGuiApp Implementation: SDL + OpenGL3
 // [SECTION] ImGuiApp Implementation: GLFW + OpenGL3
-// [SECTION] ImGuiApp Implementation: OpenGL3 capture
+// [SECTION] ImGuiApp Implementation: OpenGL (Shared)
 
 */
 
 //-----------------------------------------------------------------------------
-// [SECTION] ImGuiApp Implementation: Null
+// [SECTION] Defines
+//-----------------------------------------------------------------------------
+
+#ifdef IMGUI_APP_WIN32_DX11
+#define IMGUI_APP_WIN32
+#define IMGUI_APP_DX11
+#endif
+
+#ifdef IMGUI_APP_SDL_GL3
+#define IMGUI_APP_SDL
+#define IMGUI_APP_GL3
+#endif
+
+#ifdef IMGUI_APP_GLFW_GL3
+#define IMGUI_APP_GLFW
+#define IMGUI_APP_GL3
+#endif
+
+// Forward declarations
+#if defined(IMGUI_APP_GL2) || defined(IMGUI_APP_GL3)
+static bool ImGuiApp_ImplGL_CaptureFramebuffer(ImGuiApp* app, int x, int y, int w, int h, unsigned int* pixels, void* user_data);
+#endif
+
+//-----------------------------------------------------------------------------
+// [SECTION] ImGuiApp Implementation: NULL
 //-----------------------------------------------------------------------------
 
 // Data
@@ -120,6 +145,7 @@ ImGuiApp* ImGuiApp_ImplNull_Create()
     return intf;
 }
 
+
 //-----------------------------------------------------------------------------
 // [SECTION] ImGuiApp Implementation: Win32 + DX11
 //-----------------------------------------------------------------------------
@@ -151,7 +177,7 @@ static bool CreateDeviceD3D(ImGuiApp_ImplWin32DX11* app);
 static void CleanupDeviceD3D(ImGuiApp_ImplWin32DX11* app);
 static void CreateRenderTarget(ImGuiApp_ImplWin32DX11* app);
 static void CleanupRenderTarget(ImGuiApp_ImplWin32DX11* app);
-static ImGuiApp_ImplWin32DX11* g_AppForWndProc = NULL;
+static ImGuiApp* g_AppForWndProc = NULL;
 static LRESULT WINAPI ImGuiApp_ImplWin32_WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
 static bool ImGuiApp_ImplWin32DX11_InitCreateWindow(ImGuiApp* app_opaque, const char* window_title_a, ImVec2 window_size)
@@ -417,7 +443,7 @@ static LRESULT WINAPI ImGuiApp_ImplWin32_WndProc(HWND hWnd, UINT msg, WPARAM wPa
     if (ImGui_ImplWin32_WndProcHandler(hWnd, msg, wParam, lParam))
         return true;
 
-    ImGuiApp_ImplWin32DX11* app = g_AppForWndProc;
+    ImGuiApp_ImplWin32DX11* app = (ImGuiApp_ImplWin32DX11*)g_AppForWndProc;
     switch (msg)
     {
     case WM_SIZE:
@@ -441,13 +467,10 @@ static LRESULT WINAPI ImGuiApp_ImplWin32_WndProc(HWND hWnd, UINT msg, WPARAM wPa
 
 #endif // #ifdef IMGUI_APP_WIN32_DX11
 
+
 //-----------------------------------------------------------------------------
 // [SECTION] ImGuiApp Implementation: SDL + OpenGL3
 //-----------------------------------------------------------------------------
-
-#if defined(IMGUI_APP_SDL_GL3) || defined(IMGUI_APP_GLFW_GL3)
-static bool ImGuiApp_ImplGL3_CaptureFramebuffer(ImGuiApp* app, int x, int y, int w, int h, unsigned int* pixels, void* user_data);
-#endif
 
 #ifdef IMGUI_APP_SDL_GL3
 
@@ -614,12 +637,13 @@ ImGuiApp* ImGuiApp_ImplSdlGL3_Create()
     intf->Render                = ImGuiApp_ImplSdlGL3_Render;
     intf->ShutdownCloseWindow   = ImGuiApp_ImplSdlGL3_ShutdownCloseWindow;
     intf->ShutdownBackends      = ImGuiApp_ImplSdlGL3_ShutdownBackends;
-    intf->CaptureFramebuffer    = ImGuiApp_ImplGL3_CaptureFramebuffer;
+    intf->CaptureFramebuffer    = ImGuiApp_ImplGL_CaptureFramebuffer;
     intf->Destroy               = [](ImGuiApp* app) { delete (ImGuiApp_ImplSdlGL3*)app; };
     return intf;
 }
 
 #endif // #ifdef IMGUI_APP_SDL_GL3
+
 
 //-----------------------------------------------------------------------------
 // [SECTION] ImGuiApp Implementation: GLFW + OpenGL3
@@ -638,6 +662,7 @@ ImGuiApp* ImGuiApp_ImplSdlGL3_Create()
 #include <GL/gl3w.h>
 
 #define GLFW_HAS_PER_MONITOR_DPI      (GLFW_VERSION_MAJOR * 1000 + GLFW_VERSION_MINOR * 100 >= 3300) // 3.3+ glfwGetMonitorContentScale
+#define GLFW_HAS_MONITOR_WORK_AREA    (GLFW_VERSION_MAJOR * 1000 + GLFW_VERSION_MINOR * 100 >= 3300) // 3.3+ glfwGetMonitorWorkarea
 
 // Data
 struct ImGuiApp_ImplGlfwGL3 : public ImGuiApp
@@ -647,7 +672,7 @@ struct ImGuiApp_ImplGlfwGL3 : public ImGuiApp
     const char* glsl_version;
 };
 
-// Forward declarations of helper functions
+// Helper functions
 static float ImGuiApp_ImplGlfw_GetDPI(GLFWmonitor* monitor)
 {
 #if GLFW_HAS_PER_MONITOR_DPI
@@ -655,12 +680,14 @@ static float ImGuiApp_ImplGlfw_GetDPI(GLFWmonitor* monitor)
     glfwGetMonitorContentScale(monitor, &x_scale, &y_scale);
     return x_scale;
 #else
+    IM_UNUSED(monitor);
     return 1.0f;
 #endif
 }
 
 static float ImGuiApp_ImplGlfw_GetDPI(GLFWwindow* window)
 {
+#if GLFW_HAS_MONITOR_WORK_AREA
     int window_x, window_y, window_width, window_height;
     glfwGetWindowPos(window, &window_x, &window_y);
     glfwGetWindowSize(window, &window_width, &window_height);
@@ -678,6 +705,9 @@ static float ImGuiApp_ImplGlfw_GetDPI(GLFWwindow* window)
             return ImGuiApp_ImplGlfw_GetDPI(monitor);
         monitors++;
     }
+#else
+    IM_UNUSED(window);
+#endif
     return 1.0f;
 }
 
@@ -719,6 +749,7 @@ static bool ImGuiApp_ImplGlfw_CreateWindow(ImGuiApp* app_opaque, const char* win
     float dpi_scale = app->DpiAware ? ImGuiApp_ImplGlfw_GetDPI(primaryMonitor) : 1.0f;
     window_size.x = ImFloor(window_size.x * app->DpiScale);
     window_size.y = ImFloor(window_size.y * app->DpiScale);
+    IM_UNUSED(dpi_scale); // FIXME 2020/04/12: is the code above correct?
     app->window = glfwCreateWindow((int)window_size.x, (int)window_size.y, window_title, NULL, NULL);
     if (app->window == NULL)
         return false;
@@ -806,20 +837,24 @@ ImGuiApp* ImGuiApp_ImplGlfwGL3_Create()
     intf->Render                = ImGuiApp_ImplGlfwGL3_Render;
     intf->ShutdownCloseWindow   = ImGuiApp_ImplGlfwGL3_ShutdownCloseWindow;
     intf->ShutdownBackends      = ImGuiApp_ImplGlfwGL3_ShutdownBackends;
-    intf->CaptureFramebuffer    = ImGuiApp_ImplGL3_CaptureFramebuffer;
+    intf->CaptureFramebuffer    = ImGuiApp_ImplGL_CaptureFramebuffer;
     intf->Destroy               = [](ImGuiApp* app) { delete (ImGuiApp_ImplGlfwGL3*)app; };
     return intf;
 }
 
 #endif // #ifdef IMGUI_APP_GLFW_GL3
 
+
 //-----------------------------------------------------------------------------
-// [SECTION] ImGuiApp Implementation: OpenGL3 capture
+// [SECTION] ImGuiApp Implementation: OpenGL (Shared)
 //-----------------------------------------------------------------------------
 
-#if defined(IMGUI_APP_SDL_GL3) || defined(IMGUI_APP_GLFW_GL3)
-static bool ImGuiApp_ImplGL3_CaptureFramebuffer(ImGuiApp* app, int x, int y, int w, int h, unsigned int* pixels, void* user_data)
+#if defined(IMGUI_APP_GL2) || defined(IMGUI_APP_GL3)
+static bool ImGuiApp_ImplGL_CaptureFramebuffer(ImGuiApp* app, int x, int y, int w, int h, unsigned int* pixels, void* user_data)
 {
+    IM_UNUSED(app);
+    IM_UNUSED(user_data);
+
     int y2 = (int)ImGui::GetIO().DisplaySize.y - (y + h);
     glPixelStorei(GL_PACK_ALIGNMENT, 1);
     glReadPixels(x, y2, w, h, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
@@ -842,4 +877,3 @@ static bool ImGuiApp_ImplGL3_CaptureFramebuffer(ImGuiApp* app, int x, int y, int
     return true;
 }
 #endif
-
