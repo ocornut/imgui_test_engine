@@ -3762,4 +3762,33 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
             IM_CHECK(vars.Dropped);
         }
     };
+
+    // ## Test disabled items setting g.HoveredId and taking clicks.
+    t = IM_REGISTER_TEST(e, "widgets", "widgets_disabled");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiContext& g = *ctx->UiContext;
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
+        ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
+        ctx->GenericVars.BoolArray[0] |= ImGui::Button("Disabled");
+        ctx->GenericVars.BoolArray[1] |= ImGui::IsItemHovered();
+        ctx->GenericVars.BoolArray[2] |= ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled);
+        ctx->GenericVars.BoolArray[3] |= g.HoveredId == g.CurrentWindow->DC.LastItemId;
+        ImGui::PopItemFlag();
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiWindow* window = ctx->GetWindowByRef("Test Window");
+        ctx->SetRef("Test Window");
+        ctx->ItemClick("Disabled");
+        IM_CHECK(ctx->GenericVars.BoolArray[0] == false);   // Was not clicked because button is disabled.
+        IM_CHECK(ctx->GenericVars.BoolArray[1] == false);   // Wont report as being hovered because button is disabled.
+        IM_CHECK(ctx->GenericVars.BoolArray[2] == true);
+        IM_CHECK(ctx->GenericVars.BoolArray[3] == true);    // Will set HoveredId even when disabled.
+
+        ImVec2 window_pos = window->Pos;
+        ctx->ItemDragWithDelta("Disabled", ImVec2(30, 0));
+        IM_CHECK(window_pos == window->Pos);                // Disabled items consume click events
+    };
 }
