@@ -402,7 +402,10 @@ int main(int argc, char** argv)
     if (!g_App.OptGUI)
         test_io.ConfigLogToTTY = true;
     if (!g_App.OptGUI && ImOsIsDebuggerPresent())
+    {
+        test_io.ConfigLogToDebugger = true;
         test_io.ConfigBreakOnError = true;
+    }
 
     // Set up functions
     test_io.SrcFileOpenFunc = SrcFileOpenerFunc;

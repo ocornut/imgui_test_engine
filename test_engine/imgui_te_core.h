@@ -313,6 +313,7 @@ struct ImGuiTestEngineIO
     ImGuiTestVerboseLevel       ConfigVerboseLevel = ImGuiTestVerboseLevel_Warning;
     ImGuiTestVerboseLevel       ConfigVerboseLevelOnError = ImGuiTestVerboseLevel_Info;
     bool                        ConfigLogToTTY = false;
+    bool                        ConfigLogToDebugger = false;
     bool                        ConfigTakeFocusBackAfterTests = true;
     bool                        ConfigNoThrottle = false;       // Disable vsync for performance measurement
     float                       ConfigFixedDeltaTime = 0.0f;    // Use fixed delta time instead of calculating it from wall clock

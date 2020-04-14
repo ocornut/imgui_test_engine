@@ -46,6 +46,7 @@ bool                ImOsCreateProcess(const char* cmd_line);
 void                ImOsOpenInShell(const char* path);
 void                ImOsConsoleSetTextColor(ImOsConsoleStream stream, ImOsConsoleTextColor color);
 bool                ImOsIsDebuggerPresent();
+void                ImOsOutputDebugString(const char* message);
 
 // File/Directory helpers
 bool                ImFileExist(const char* filename);

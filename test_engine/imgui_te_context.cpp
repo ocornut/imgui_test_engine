@@ -63,6 +63,7 @@ void    ImGuiTestContext::LogExV(ImGuiTestVerboseLevel level, ImGuiTestLogFlags 
 
     log->UpdateLineOffsets(EngineIO, level, log->Buffer.begin() + prev_size);
     LogToTTY(level, log->Buffer.c_str() + prev_size);
+    LogToDebugger(level, log->Buffer.c_str() + prev_size);
 }
 
 void    ImGuiTestContext::LogDebug(const char* fmt, ...)
@@ -151,6 +152,40 @@ void    ImGuiTestContext::LogToTTY(ImGuiTestVerboseLevel level, const char* mess
     fprintf(stdout, "%s", message);
     ImOsConsoleSetTextColor(ImOsConsoleStream_StandardOutput, ImOsConsoleTextColor_White);
     fflush(stdout);
+}
+
+void        ImGuiTestContext::LogToDebugger(ImGuiTestVerboseLevel level, const char* message)
+{
+    IM_ASSERT(level > ImGuiTestVerboseLevel_Silent && level < ImGuiTestVerboseLevel_COUNT);
+
+    if (!EngineIO->ConfigLogToDebugger)
+        return;
+
+    if (EngineIO->ConfigVerboseLevel < level)
+        return;
+
+    switch (level)
+    {
+    default:
+        break;
+    case ImGuiTestVerboseLevel_Error:
+        ImOsOutputDebugString("[error] ");
+        break;
+    case ImGuiTestVerboseLevel_Warning:
+        ImOsOutputDebugString("[warn.] ");
+        break;
+    case ImGuiTestVerboseLevel_Info:
+        ImOsOutputDebugString("[info ] ");
+        break;
+    case ImGuiTestVerboseLevel_Debug:
+        ImOsOutputDebugString("[debug] ");
+        break;
+    case ImGuiTestVerboseLevel_Trace:
+        ImOsOutputDebugString("[trace] ");
+        break;
+    }
+
+    ImOsOutputDebugString(message);
 }
 
 void    ImGuiTestContext::LogDebugInfo()

@@ -129,6 +129,13 @@ bool    ImOsIsDebuggerPresent()
 #endif
 }
 
+void    ImOsOutputDebugString(const char* message)
+{
+#ifdef _WIN32
+    OutputDebugStringA(message);
+#endif
+}
+
 //-----------------------------------------------------------------------------
 // File/Directory handling helpers
 //-----------------------------------------------------------------------------
