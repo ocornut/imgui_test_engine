@@ -18,14 +18,33 @@ CXXFLAGS = -std=c++11
 CFLAGS = -I../ -I$(IMGUI_PATH) -I$(IMGUI_PATH)/examples
 CFLAGS += -DIMGUI_USER_CONFIG=\"test_app/test_app_imconfig.h\"
 CFLAGS += -g -Wall -Wformat
-HAS_SDL2 = $(shell pkg-config --exists sdl2 && echo 1)
 
-ifeq ($(HAS_SDL2), 1)
-	LIBS = $(shell pkg-config --libs sdl2)
-	CFLAGS += $(shell pkg-config --cflags sdl2)
+ifeq ($(BACKEND_LIB),)
+	ifeq ($(shell pkg-config --exists sdl2 && echo 1), 1)
+		BACKEND_LIB := sdl2
+	endif
+endif
+
+ifeq ($(BACKEND_LIB),)
+	ifeq ($(shell pkg-config --exists glfw3 && echo 1), 1)
+		BACKEND_LIB := glfw3
+	endif
+endif
+
+ifneq ($(BACKEND_LIB),)
+	ifeq ($(BACKEND_LIB), sdl2)
+		CFLAGS += -DIMGUI_APP_SDL_GL3
+		SOURCES += $(IMGUI_PATH)/examples/imgui_impl_sdl.cpp
+	endif
+	ifeq ($(BACKEND_LIB), glfw3)
+		CFLAGS += -DIMGUI_APP_GLFW_GL3
+		SOURCES += $(IMGUI_PATH)/examples/imgui_impl_glfw.cpp
+	endif
+	LIBS = $(shell pkg-config --libs $(BACKEND_LIB))
+	CFLAGS += $(shell pkg-config --cflags $(BACKEND_LIB))
 	CFLAGS += -I$(IMGUI_PATH)/examples/libs/gl3w
-	CFLAGS += -DIMGUI_APP_SDL_GL3 -DIMGUI_IMPL_OPENGL_LOADER_GL3W
-	SOURCES += $(IMGUI_PATH)/examples/imgui_impl_opengl3.cpp $(IMGUI_PATH)/examples/imgui_impl_sdl.cpp $(IMGUI_PATH)/examples/libs/gl3w/GL/gl3w.c
+	CFLAGS += -DIMGUI_IMPL_OPENGL_LOADER_GL3W
+	SOURCES += $(IMGUI_PATH)/examples/imgui_impl_opengl3.cpp $(IMGUI_PATH)/examples/libs/gl3w/GL/gl3w.c
 endif
 
 LIBS += -lpthread
@@ -37,7 +56,7 @@ LIBS += -lpthread
 ifeq ($(UNAME_S), Linux) #LINUX
 	ECHO_MESSAGE = "Linux"
 	LIBS += -ldl
-	ifeq ($(HAS_SDL2), 1)
+	ifneq ($(BACKEND_LIB),)
 		LIBS += -lGL
 	endif
 endif

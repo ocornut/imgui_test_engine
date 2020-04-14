@@ -24,13 +24,29 @@ jobs:
           repository: ocornut/imgui
           ref: ${{ matrix.branch }}
 
+      - name: Install Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libglfw3-dev libsdl2-dev
+
       - name: Build
         run: |
+          make -C test_app/ clean
           make -C test_app/
 
-      - name: Test
+      - name: Run Tests
         run: |
           timeout 300 test_app/imgui_test_app -nogui -nopause -v2 -ve4 tests
+
+      - name: Build (with SDL2)
+        run: |
+          make -C test_app/ clean
+          make -C test_app/ BACKEND_LIB=sdl2
+
+      - name: Build (with GLFW3)
+        run: |
+          make -C test_app/ clean
+          make -C test_app/ BACKEND_LIB=glfw3
 
   MacOS:
     runs-on: macos-latest
@@ -56,7 +72,7 @@ jobs:
         run: |
           make -C test_app/
 
-      - name: Test
+      - name: Run Tests
         run: |
           test_app/imgui_test_app -nogui -nopause -v2 -ve4 tests
 
