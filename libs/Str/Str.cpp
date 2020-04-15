@@ -20,10 +20,10 @@
 #endif
 
 // Static empty buffer we can point to for empty strings
-// Pointing to a literal increases the like-hood of getting a crash if someone attempts to write in the empty string buffer. 
+// Pointing to a literal increases the like-hood of getting a crash if someone attempts to write in the empty string buffer.
 char*   Str::EmptyBuffer = (char*)"\0NULL";
 
-// Clear 
+// Clear
 void    Str::clear()
 {
     if (Owned && !is_using_local_buf())
@@ -61,13 +61,13 @@ void    Str::reserve(int new_capacity)
         // Disowned or LocalBuf -> Heap
         new_data = (char*)STR_MEMALLOC(new_capacity * sizeof(char));
     }
-    strcpy(new_data, Data); 
+    strcpy(new_data, Data);
 
     if (Owned && !is_using_local_buf())
         STR_MEMFREE(Data);
 
     Data = new_data;
-    Capacity = new_capacity; 
+    Capacity = new_capacity;
 }
 
 // Reserve memory, discarding the current of the buffer (if we expect to be fully rewritten)
@@ -89,7 +89,7 @@ void    Str::reserve_discard(int new_capacity)
     {
         // Disowned or LocalBuf -> Heap
         Data = (char*)STR_MEMALLOC(new_capacity * sizeof(char));
-        Capacity = new_capacity; 
+        Capacity = new_capacity;
     }
 }
 
@@ -101,7 +101,7 @@ void    Str::shrink_to_fit()
     if (Capacity <= new_capacity)
         return;
 
-    char* new_data = (char*)STR_MEMALLOC(new_capacity * sizeof(char)); 
+    char* new_data = (char*)STR_MEMALLOC(new_capacity * sizeof(char));
     memcpy(new_data, Data, new_capacity);
     STR_MEMFREE(Data);
     Data = new_data;

@@ -31,7 +31,7 @@ struct ExampleSelectionData
 
     // When using SelectAll() / SetRange() we assume that our objects ID are indices.
     // In this demo we always store selection using indices and never in another manner (e.g. object ID or pointers).
-    // If your selection system is storing selection using object ID and you want to support Shift+Click range-selection, 
+    // If your selection system is storing selection using object ID and you want to support Shift+Click range-selection,
     // you will need a way to iterate from one object to another given the ID you use.
     // You are likely to need some kind of data structure to convert 'view index' from/to 'ID'.
     // FIXME-MULTISELECT: Would be worth providing a demo of doing this.
@@ -147,7 +147,7 @@ struct ExampleAssetBrowser
                             }
 
                         // Demonstrate dragging
-                        // FIXME-MULTISELECT: Selectable() currently has a hacky workaround to make this work, 
+                        // FIXME-MULTISELECT: Selectable() currently has a hacky workaround to make this work,
                         // the side-effect of which makes CTRL+Shift+ tends to react on _release_ (acceptable side-effect)
                         if (ImGui::BeginDragDropSource())
                         {

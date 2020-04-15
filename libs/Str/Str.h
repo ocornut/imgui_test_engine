@@ -8,9 +8,9 @@
 // distribute, and modify this file as you see fit.
 
 /*
-- This isn't a fully featured string class. 
+- This isn't a fully featured string class.
 - It is a simple, bearable replacement to std::string that isn't heap abusive nor bloated (can actually be debugged by humans).
-- String are mutable. We don't maintain size so length() is not-constant time. 
+- String are mutable. We don't maintain size so length() is not-constant time.
 - Maximum string size currently limited to 2 MB (we allocate 21 bits to hold capacity).
 - Local buffer size is currently limited to 1023 bytes (we allocate 10 bits to hold local buffer size).
 - In "non-owned" mode for literals/reference we don't do any tracking/counting of references.
@@ -71,12 +71,12 @@ All StrXXX types derives from Str and instance hold the local buffer capacity. S
   0.24 - allow set_ref(const char* NULL) to clear the string. include fixes for linux.
   0.23 - added append(char). added append_from(int idx, XXX) functions. fixed some compilers warnings.
   0.22 - documentation improvements, comments. fixes for some compilers.
-  0.21 - added StrXXXf() constructor to construct directly from a format string. 
+  0.21 - added StrXXXf() constructor to construct directly from a format string.
 */
 
 /*
 TODO
-- Since we lose 4-bytes of padding on 64-bits architecture, perhaps just spread the header to 8-bytes and lift size limits? 
+- Since we lose 4-bytes of padding on 64-bits architecture, perhaps just spread the header to 8-bytes and lift size limits?
 - More functions/helpers.
 */
 

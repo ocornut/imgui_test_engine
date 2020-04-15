@@ -1473,6 +1473,25 @@ void    ImGuiTestContext::ItemDragAndDrop(ImGuiTestRef ref_src, ImGuiTestRef ref
     MouseUp(0);
 }
 
+void    ImGuiTestContext::ItemDragWithDelta(ImGuiTestRef ref_src, ImVec2 pos_delta)
+{
+    if (IsError())
+        return;
+
+    IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
+    ImGuiTestItemInfo* item_src = ItemLocate(ref_src);
+    ImGuiTestRefDesc desc_src(ref_src, item_src);
+    LogDebug("ItemDragWithDelta %s to (%f, %f)", desc_src.c_str(), pos_delta.x, pos_delta.y);
+
+    MouseMove(ref_src, ImGuiTestOpFlags_NoCheckHoveredId);
+    SleepShort();
+    MouseDown(0);
+
+    MouseMoveToPos(UiContext->IO.MousePos + pos_delta);
+    SleepShort();
+    MouseUp(0);
+}
+
 void    ImGuiTestContext::ItemVerifyCheckedIfAlive(ImGuiTestRef ref, bool checked)
 {
     Yield();
