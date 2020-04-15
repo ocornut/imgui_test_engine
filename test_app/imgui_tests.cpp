@@ -2841,7 +2841,7 @@ static void HelperTableSubmitCells(int count_w, int count_h)
 // columns_desc = "WWW", "FFW", "FAA" etc.
 static void HelperTableWithResizingPolicies(const char* table_id, ImGuiTableFlags table_flags, const char* columns_desc)
 {
-    table_flags |= ImGuiTableFlags_Resizable | ImGuiTableFlags_Hideable | ImGuiTableFlags_Reorderable | ImGuiTableFlags_Borders;
+    table_flags |= ImGuiTableFlags_Resizable | ImGuiTableFlags_Hideable | ImGuiTableFlags_Reorderable | ImGuiTableFlags_Borders | ImGuiTableFlags_NoSavedSettings;
 
     int columns_count = (int)strlen(columns_desc);
     IM_ASSERT(columns_count < 26); // Because we are using alphabetical letters for names
@@ -3108,6 +3108,88 @@ void RegisterTests_Table(ImGuiTestEngine* e)
         ImGui::Spacing();
 
         ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ctx->WindowRef("Test window 1");
+        ImGuiContext& g = *ctx->UiContext;
+        ImGuiTable* table = NULL;
+        ImVector<float> initial_col_size;
+
+        table = g.Tables.GetByKey(ctx->GetID("table1"));    // Columns: FFF, do not span entire width of the table
+        IM_CHECK(table->ColumnsTotalWidth + 1 < table->InnerWindow->ContentRegionRect.GetWidth());
+        initial_col_size.resize(table->ColumnsCount);
+        for (int column_n = 0; column_n >= 0; column_n = table->Columns[column_n].NextActiveColumn)
+        {
+            const ImGuiTableColumn* col_curr = &table->Columns[column_n];
+            const ImGuiTableColumn* col_prev = col_curr->PrevActiveColumn >= 0 ? &table->Columns[col_curr->PrevActiveColumn] : NULL;
+            const ImGuiTableColumn* col_next = col_curr->NextActiveColumn >= 0 ? &table->Columns[col_curr->NextActiveColumn] : NULL;
+            const float width_curr = col_curr->WidthGiven;
+            const float width_prev = col_prev ? col_prev->WidthGiven : 0;
+            const float width_next = col_next ? col_next->WidthGiven : 0;
+            const float width_total = table->ColumnsTotalWidth;
+            const float move_by = -30;
+            ImGuiID handle_id = ImGui::TableGetColumnResizeID(table, column_n);
+            initial_col_size[column_n] = col_curr->WidthGiven;              // Save initial column size for next test
+
+            // Resize a column
+            ctx->ItemDragWithDelta(handle_id, ImVec2(move_by, 0));
+
+            IM_CHECK(!col_prev || col_prev->WidthGiven == width_prev);      // Previous column width does not change
+            IM_CHECK(col_curr->WidthGiven == width_curr + move_by);         // Current column expands
+            IM_CHECK(!col_next || col_next->WidthGiven == width_next);      // Next column width does not change
+            IM_CHECK(table->ColumnsTotalWidth == width_total + move_by);    // Empty space after last column shrinks
+        }
+        IM_CHECK(table->ColumnsTotalWidth + 1 < table->InnerWindow->ContentRegionRect.GetWidth());  // All columns span entire width of the table
+
+        // Test column fitting
+        {
+            // Ensure columns are smaller than their contents due to previous tests on table1
+            for (int column_n = 0; column_n >= 0; column_n = table->Columns[column_n].NextActiveColumn)
+                IM_CHECK(table->Columns[column_n].WidthGiven < initial_col_size[column_n]);
+
+            // Fit right-most column
+            int column_n = table->RightMostActiveColumn;
+            const ImGuiTableColumn* col_curr = &table->Columns[column_n];
+
+            // Fit column. ID calculation from BeginTableEx() and TableAutoHeaders()
+            ImGuiID instance_id = table->InstanceCurrent * table->ColumnsCount + column_n;
+            ImGuiID table_id = ctx->GetIDByInt(table->ID + table->InstanceCurrent);
+            ImGuiID column_label_id = ctx->GetID("F3", ctx->GetIDByInt(instance_id, table_id));
+            ctx->ItemClick(column_label_id, ImGuiMouseButton_Right);
+            ctx->WindowRef(g.NavWindow->Name);
+            ctx->ItemClick("Size column to fit");
+            IM_CHECK(col_curr->WidthGiven == initial_col_size[column_n]);  // Column restored original size
+
+            // Ensure columns other than right-most one were not affected
+            for (column_n = 0; column_n >= 0 && column_n < table->RightMostActiveColumn; column_n = table->Columns[column_n].NextActiveColumn)
+                IM_CHECK(table->Columns[column_n].WidthGiven < initial_col_size[column_n]);
+
+            // Test fitting rest of the columns
+            ctx->ItemClick(column_label_id, ImGuiMouseButton_Right);
+            ctx->WindowRef(g.NavWindow->Name);
+            ctx->ItemClick("Size all columns to fit");
+
+            // Ensure all columns fit to contents
+            for (column_n = 0; column_n >= 0; column_n = table->Columns[column_n].NextActiveColumn)
+                IM_CHECK(table->Columns[column_n].WidthGiven == initial_col_size[column_n]);
+
+            ctx->WindowRef("Test window 1");                    // Restore previous ref
+        }
+
+        table = g.Tables.GetByKey(ctx->GetID("table2"));        // Columns: FFW, do span entire width of the table
+        IM_CHECK(table->ColumnsTotalWidth + 1 == table->InnerWindow->ContentRegionRect.GetWidth());
+
+        // Iterate visible columns and check existence of resize handles
+        for (int column_n = 0; column_n >= 0; column_n = table->Columns[column_n].NextActiveColumn)
+        {
+            ImGuiID handle_id = ImGui::TableGetColumnResizeID(table, column_n);
+            if (column_n == table->RightMostActiveColumn)
+                IM_CHECK(ctx->ItemLocate(handle_id, ImGuiTestOpFlags_NoError) == NULL); // W
+            else
+                IM_CHECK(ctx->ItemLocate(handle_id, ImGuiTestOpFlags_NoError) != NULL); // FF
+        }
+        IM_CHECK(table->ColumnsTotalWidth + 1 == table->InnerWindow->ContentRegionRect.GetWidth());
     };
 
     // ## Test Visible flag
