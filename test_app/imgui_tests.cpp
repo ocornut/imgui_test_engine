@@ -1577,18 +1577,20 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
 
     // ## Test various TreeNode flags
     t = REGISTER_TEST("widgets", "widgets_treenode_behaviors");
-    struct TreeNodeTestVars { bool Reset = true, IsOpen = false, IsMultiSelect = false; int ToggleCount = 0; ImGuiTreeNodeFlags Flags = 0; };
+    struct TreeNodeTestVars { bool Reset = true, IsOpen = false, IsMultiSelect = false; int ToggleCount = 0; int DragSourceCount = 0;  ImGuiTreeNodeFlags Flags = 0; };
     t->SetUserDataType<TreeNodeTestVars>();
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         ImGui::SetNextWindowSize(ImVec2(300, 100), ImGuiCond_Always);
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
 
+        ImGui::ColorButton("Color", ImVec4(1.0f, 1.0f, 0.0f, 1.0f), ImGuiColorEditFlags_NoTooltip); // To test open-on-drag-hold
+
         TreeNodeTestVars& vars = ctx->GetUserData<TreeNodeTestVars>();
         if (vars.Reset)
         {
             ImGui::GetStateStorage()->SetInt(ImGui::GetID("AAA"), 0);
-            vars.ToggleCount = 0;
+            vars.ToggleCount = vars.DragSourceCount = 0;
         }
         vars.Reset = false;
         ImGui::Text("Flags: 0x%08X, MultiSelect: %d", vars.Flags, vars.IsMultiSelect);
@@ -1604,8 +1606,18 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         vars.IsOpen = ImGui::TreeNodeEx("AAA", vars.Flags);
         if (ImGui::IsItemToggledOpen())
             vars.ToggleCount++;
+        if (ImGui::BeginDragDropSource())
+        {
+            vars.DragSourceCount++;
+            ImGui::SetDragDropPayload("_TREENODE", NULL, 0);
+            ImGui::Text("Drag Source Tooltip");
+            ImGui::EndDragDropSource();
+        }
         if (vars.IsOpen)
+        {
+            ImGui::Text("Contents");
             ImGui::TreePop();
+        }
 
 #ifdef IMGUI_HAS_MULTI_SELECT
         if (vars.IsMultiSelect)
@@ -1659,6 +1671,16 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
                 ctx->MouseDoubleClick(0);
                 IM_CHECK_EQ_NO_RET(vars.IsOpen, false);
                 IM_CHECK_EQ_NO_RET(vars.ToggleCount, 4);
+
+                // Test TreeNode as drag source
+                IM_CHECK_EQ(vars.DragSourceCount, 0);
+                ctx->ItemDragWithDelta("AAA", ImVec2(50, 50));
+                IM_CHECK_GT(vars.DragSourceCount, 0);
+                IM_CHECK_EQ(vars.IsOpen, false);
+
+                // Test TreeNode opening on drag-hold
+                ctx->ItemDragOverAndHold("Color", "AAA");
+                IM_CHECK_EQ(vars.IsOpen, true);
             }
 
             if (!vars.IsMultiSelect) // _OpenOnArrow is implicit/automatic with MultiSelect
@@ -1697,6 +1719,16 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
                 ctx->MouseDoubleClick(0);
                 IM_CHECK_EQ(vars.IsOpen, false);
                 IM_CHECK_EQ(vars.ToggleCount, 2);
+
+                // Test TreeNode as drag source
+                IM_CHECK_EQ(vars.DragSourceCount, 0);
+                ctx->ItemDragWithDelta("AAA", ImVec2(50, 50));
+                IM_CHECK_GT(vars.DragSourceCount, 0);
+                IM_CHECK_EQ(vars.IsOpen, false);
+
+                // Test TreeNode opening on drag-hold
+                ctx->ItemDragOverAndHold("Color", "AAA");
+                IM_CHECK_EQ(vars.IsOpen, true);
             }
 
             {
@@ -1730,6 +1762,16 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
                 ctx->MouseDoubleClick(0);
                 IM_CHECK_EQ(vars.IsOpen, false);
                 IM_CHECK_EQ(vars.ToggleCount, 0);
+
+                // Test TreeNode as drag source
+                IM_CHECK_EQ(vars.DragSourceCount, 0);
+                ctx->ItemDragWithDelta("AAA", ImVec2(50, 50));
+                IM_CHECK_GT(vars.DragSourceCount, 0);
+                IM_CHECK_EQ(vars.IsOpen, false);
+
+                // Test TreeNode opening on drag-hold
+                ctx->ItemDragOverAndHold("Color", "AAA");
+                IM_CHECK_EQ(vars.IsOpen, true);
             }
 
             {
@@ -1764,6 +1806,16 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
                 ctx->MouseDoubleClick(0);
                 IM_CHECK_EQ(vars.IsOpen, false);
                 IM_CHECK_EQ(vars.ToggleCount, 2);
+
+                // Test TreeNode as drag source
+                IM_CHECK_EQ(vars.DragSourceCount, 0);
+                ctx->ItemDragWithDelta("AAA", ImVec2(50, 50));
+                IM_CHECK_GT(vars.DragSourceCount, 0);
+                IM_CHECK_EQ(vars.IsOpen, false);
+
+                // Test TreeNode opening on drag-hold
+                ctx->ItemDragOverAndHold("Color", "AAA");
+                IM_CHECK_EQ(vars.IsOpen, true);
             }
         }
     };

@@ -1449,6 +1449,31 @@ void    ImGuiTestContext::ItemHoldForFrames(ImGuiTestRef ref, int frames)
     Yield();
 }
 
+// Used to test opening containers (TreeNode, Tabs) while dragging a payload
+void    ImGuiTestContext::ItemDragOverAndHold(ImGuiTestRef ref_src, ImGuiTestRef ref_dst)
+{
+    if (IsError())
+        return;
+
+    IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
+    ImGuiTestItemInfo* item_src = ItemLocate(ref_src);
+    ImGuiTestItemInfo* item_dst = ItemLocate(ref_dst);
+    ImGuiTestRefDesc desc_src(ref_src, item_src);
+    ImGuiTestRefDesc desc_dst(ref_dst, item_dst);
+    LogDebug("ItemDragOverAndHold %s to %s", desc_src.c_str(), desc_dst.c_str());
+
+    MouseMove(ref_src, ImGuiTestOpFlags_NoCheckHoveredId);
+    SleepShort();
+    MouseDown(0);
+
+    // Enforce lifting drag threshold even if both item are exactly at the same location.
+    MouseLiftDragThreshold();
+
+    MouseMove(ref_dst, ImGuiTestOpFlags_NoCheckHoveredId);
+    SleepNoSkip(1.0f, 1.0f / 10.0f);
+    MouseUp(0);
+}
+
 void    ImGuiTestContext::ItemDragAndDrop(ImGuiTestRef ref_src, ImGuiTestRef ref_dst)
 {
     if (IsError())

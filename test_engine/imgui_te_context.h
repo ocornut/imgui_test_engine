@@ -300,6 +300,7 @@ struct ImGuiTestContext
 
     void        ItemHold(ImGuiTestRef ref, float time);
     void        ItemHoldForFrames(ImGuiTestRef ref, int frames);
+    void        ItemDragOverAndHold(ImGuiTestRef ref_src, ImGuiTestRef ref_dst);
     void        ItemDragAndDrop(ImGuiTestRef ref_src, ImGuiTestRef ref_dst);
     void        ItemDragWithDelta(ImGuiTestRef ref_src, ImVec2 pos_delta);
     void        ItemVerifyCheckedIfAlive(ImGuiTestRef ref, bool checked);
