@@ -31,6 +31,7 @@ static void LoadFonts(ImGuiApp* app)
     font_cfg_icons.GlyphMinAdvanceX = 18.0f * app->DpiScale; // Make icon font more monospace looking to simplify alignment
     font_cfg_icons.GlyphRanges = icon_fa_ranges;
 
+    // FIXME-SAMPLE FIXME-FONT: Fonts should be rounded?
     // FIXME-SAMPLE FIXME-FONT: FontAwesome5 is rasterized multiple times needlessly!
 
     // Font 0

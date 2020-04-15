@@ -2469,8 +2469,8 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
         IM_CHECK(!b_field_active);
     };
 
-    // ## Test AltGr doesn't trigger menu layer
-    t = REGISTER_TEST("nav", "nav_altgr_no_menu");
+    // ## Test that Alt toggle layer, test that AltGr doesn't.
+    t = REGISTER_TEST("nav", "nav_menu_alt_key");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         ImGui::Begin("Test window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_MenuBar);
@@ -2539,12 +2539,12 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
     };
 
     // ## Test vertical wrap-around in menus/popups
-    t = REGISTER_TEST("nav", "nav_popup_wraparound");
+    t = REGISTER_TEST("nav", "nav_menu_wraparound");
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         ctx->WindowRef("Dear ImGui Demo");
         ctx->MenuClick("Menu");
-        ctx->KeyPressMap(ImGuiKey_COUNT, ImGuiKeyModFlags_Alt);
+        ctx->KeyPressMap(ImGuiKey_COUNT, ImGuiKeyModFlags_Alt); // FIXME
         IM_CHECK(ctx->UiContext->NavId == ctx->GetID("/##Menu_00/New"));
         ctx->NavKeyPress(ImGuiNavInput_KeyUp_);
         IM_CHECK(ctx->UiContext->NavId == ctx->GetID("/##Menu_00/Quit"));
@@ -2704,7 +2704,7 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
     };
 
     // ## Test NavID restoration after activating menu item.
-    t = REGISTER_TEST("nav", "nav_focus_restore_menus");
+    t = REGISTER_TEST("nav", "nav_focus_restore_menu");
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         ImGuiContext& g = *ctx->UiContext;
@@ -3111,12 +3111,12 @@ void RegisterTests_Table(ImGuiTestEngine* e)
     };
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
-        ctx->WindowRef("Test window 1");
         ImGuiContext& g = *ctx->UiContext;
         ImGuiTable* table = NULL;
         ImVector<float> initial_col_size;
 
-        table = g.Tables.GetByKey(ctx->GetID("table1"));    // Columns: FFF, do not span entire width of the table
+        ctx->WindowRef("Test window 1");
+        table = ImGui::FindTableByID(ctx->GetID("table1"));    // Columns: FFF, do not span entire width of the table
         IM_CHECK(table->ColumnsTotalWidth + 1 < table->InnerWindow->ContentRegionRect.GetWidth());
         initial_col_size.resize(table->ColumnsCount);
         for (int column_n = 0; column_n >= 0; column_n = table->Columns[column_n].NextActiveColumn)
@@ -3128,7 +3128,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
             const float width_prev = col_prev ? col_prev->WidthGiven : 0;
             const float width_next = col_next ? col_next->WidthGiven : 0;
             const float width_total = table->ColumnsTotalWidth;
-            const float move_by = -30;
+            const float move_by = -30.0f;
             ImGuiID handle_id = ImGui::TableGetColumnResizeID(table, column_n);
             initial_col_size[column_n] = col_curr->WidthGiven;              // Save initial column size for next test
 
@@ -3153,8 +3153,8 @@ void RegisterTests_Table(ImGuiTestEngine* e)
             const ImGuiTableColumn* col_curr = &table->Columns[column_n];
 
             // Fit column. ID calculation from BeginTableEx() and TableAutoHeaders()
-            ImGuiID instance_id = table->InstanceCurrent * table->ColumnsCount + column_n;
-            ImGuiID table_id = ctx->GetIDByInt(table->ID + table->InstanceCurrent);
+            ImGuiID instance_id = table->InstanceCurrent * table->ColumnsCount + column_n;      // pushed by TableAutoHeaders()
+            ImGuiID table_id = ctx->GetIDByInt(table->ID + table->InstanceCurrent);             // pushed by BeginTable()
             ImGuiID column_label_id = ctx->GetID("F3", ctx->GetIDByInt(instance_id, table_id));
             ctx->ItemClick(column_label_id, ImGuiMouseButton_Right);
             ctx->WindowRef(g.NavWindow->Name);
@@ -3177,7 +3177,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
             ctx->WindowRef("Test window 1");                    // Restore previous ref
         }
 
-        table = g.Tables.GetByKey(ctx->GetID("table2"));        // Columns: FFW, do span entire width of the table
+        table = ImGui::FindTableByID(ctx->GetID("table2"));     // Columns: FFW, do span entire width of the table
         IM_CHECK(table->ColumnsTotalWidth + 1 == table->InnerWindow->ContentRegionRect.GetWidth());
 
         // Iterate visible columns and check existence of resize handles
@@ -4519,9 +4519,6 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
 
 //-------------------------------------------------------------------------
 // Tests: Performance Tests
-//-------------------------------------------------------------------------
-// FIXME-TESTS: Maybe group and expose in a different spot of the UI?
-// We currently don't call RegisterTests_Perf() by default because those are more costly.
 //-------------------------------------------------------------------------
 
 void RegisterTests_Perf(ImGuiTestEngine* e)

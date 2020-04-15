@@ -44,8 +44,6 @@ Index of this file:
 // FIXME-TESTS: UI to setup breakpoint (e.g. GUI func on frame X, beginning of Test func or at certain Yield/Sleep spot)
 // FIXME-TESTS: Locate within stack that uses windows/<pointer>/name -> ItemInfo hook
 // FIXME-TESTS: Be able to run blind within GUI
-// FIXME-TESTS: Be able to interactively run GUI function without Test function
-// FIXME-TESTS: Provide variants of same test (e.g. run same tests with a bunch of styles/flags, incl. configuration flags)
 // FIXME-TESTS: Automate clicking/opening stuff based on gathering id?
 // FIXME-TESTS: Mouse actions on ImGuiNavLayer_Menu layer
 // FIXME-TESTS: Fail to open a double-click tree node

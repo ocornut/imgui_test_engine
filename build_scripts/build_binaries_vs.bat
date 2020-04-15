@@ -10,6 +10,7 @@ set TOOLSETS=v140
 set PROJECTS=
 set PROJECTS=%PROJECTS% example_glfw_opengl2
 set PROJECTS=%PROJECTS% example_glfw_opengl3
+REM set PROJECTS=%PROJECTS% example_glfw_vulkan
 set PROJECTS=%PROJECTS% example_win32_directx9
 set PROJECTS=%PROJECTS% example_win32_directx11
 

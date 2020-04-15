@@ -1666,7 +1666,7 @@ void    ImGuiTestContext::WindowMove(ImGuiTestRef ref, ImVec2 input_pos, ImVec2 
 
     // FIXME-TESTS: Need to find a -visible- click point
     MouseMoveToPos(window->Pos + ImVec2(h * 2.0f, h * 0.5f));
-    //IM_CHECK_SILENT(UiContext->HoveredWindow == window);  // FIXME-TESTS:
+    //IM_CHECK_SILENT(UiContext->HoveredWindow == window);
     MouseDown(0);
 
     // Disable docking
