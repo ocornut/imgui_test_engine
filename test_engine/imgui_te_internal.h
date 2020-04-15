@@ -21,7 +21,7 @@ struct ImGuiTestLocateTask
 {
     ImGuiID                 ID = 0;
     int                     FrameCount = -1;        // Timestamp of request
-    char                    DebugName[64] = "";
+    char                    DebugName[64] = "";     // Debug string representing the queried ID
     ImGuiTestItemInfo       Result;
 };
 

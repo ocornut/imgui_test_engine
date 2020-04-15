@@ -25,6 +25,9 @@ STYLE
 - Resize grip is too noticeable especially with large font (use same color as button).
 - Look into colorful icons. Find nice colorful icon library. How does CustomRect api would work with multi-dpi?
 
+MISC
+- Use decorated scrollbars (#3114)
+
 IMGUI_APP
 - To allow editor to start fullscreen we may need to expose monitors?
 

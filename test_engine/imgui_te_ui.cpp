@@ -414,7 +414,7 @@ void    ImGuiTestEngine_ShowTestWindow(ImGuiTestEngine* engine, bool* p_open)
     float list_height = ImMax(avail_y - engine->UiLogHeight, min_size_0);
     {
         ImGuiWindow* window = ImGui::GetCurrentWindow();
-        float y = ImGui::GetCursorScreenPos().y + list_height;
+        float y = ImGui::GetCursorScreenPos().y + list_height + IM_ROUND(style.ItemSpacing.y * 0.5f);
         ImRect splitter_bb = ImRect(window->WorkRect.Min.x, y - 1, window->WorkRect.Max.x, y + 1);
         ImGui::SplitterBehavior(splitter_bb, ImGui::GetID("splitter"), ImGuiAxis_Y, &list_height, &log_height, min_size_0, min_size_1, 3.0f);
         engine->UiLogHeight = log_height;
