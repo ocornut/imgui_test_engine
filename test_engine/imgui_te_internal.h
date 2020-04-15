@@ -27,8 +27,8 @@ struct ImGuiTestLocateTask
 
 struct ImGuiTestRunTask
 {
-    ImGuiTest*                  Test = NULL;
-    ImGuiTestRunFlags           RunFlags = ImGuiTestRunFlags_None;
+    ImGuiTest*              Test = NULL;
+    ImGuiTestRunFlags       RunFlags = ImGuiTestRunFlags_None;
 };
 
 struct ImGuiTestInputs

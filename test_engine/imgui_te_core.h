@@ -161,12 +161,12 @@ struct ImGuiTestInput
 // Hooks for Core Library
 //-------------------------------------------------------------------------
 
-void                ImGuiTestEngineHook_PreNewFrame(ImGuiContext* ui_ctx);
-void                ImGuiTestEngineHook_PostNewFrame(ImGuiContext* ui_ctx);
-void                ImGuiTestEngineHook_ItemAdd(ImGuiContext* ui_ctx, const ImRect& bb, ImGuiID id);
-void                ImGuiTestEngineHook_ItemInfo(ImGuiContext* ui_ctx, ImGuiID id, const char* label, ImGuiItemStatusFlags flags);
-void                ImGuiTestEngineHook_Log(ImGuiContext* ui_ctx, const char* fmt, ...);
-void                ImGuiTestEngineHook_AssertFunc(const char* expr, const char* file, const char* function, int line);
+extern void     ImGuiTestEngineHook_PreNewFrame(ImGuiContext* ui_ctx);
+extern void     ImGuiTestEngineHook_PostNewFrame(ImGuiContext* ui_ctx);
+extern void     ImGuiTestEngineHook_ItemAdd(ImGuiContext* ui_ctx, const ImRect& bb, ImGuiID id);
+extern void     ImGuiTestEngineHook_ItemInfo(ImGuiContext* ui_ctx, ImGuiID id, const char* label, ImGuiItemStatusFlags flags);
+extern void     ImGuiTestEngineHook_Log(ImGuiContext* ui_ctx, const char* fmt, ...);
+extern void     ImGuiTestEngineHook_AssertFunc(const char* expr, const char* file, const char* function, int line);
 
 //-------------------------------------------------------------------------
 // Macros for Tests

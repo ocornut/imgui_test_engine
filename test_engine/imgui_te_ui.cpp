@@ -486,6 +486,7 @@ void    ImGuiTestEngine_ShowTestWindow(ImGuiTestEngine* engine, bool* p_open)
         {
             ImGuiIO& io = ImGui::GetIO();
             ImGui::Text("%.3f ms/frame (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
+            ImGui::Text("TestEngine: HooksEnabled: %d, LocateTasks: %d", g.TestEngineHooks, engine->LocateTasks.Size);
             ImGui::Separator();
 
             ImGui::Text("Tools:");
