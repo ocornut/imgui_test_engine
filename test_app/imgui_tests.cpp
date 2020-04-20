@@ -3339,6 +3339,74 @@ void RegisterTests_Table(ImGuiTestEngine* e)
         ImGui::End();
     };
 
+    t = REGISTER_TEST("table", "table_10_multi_invoke");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::SetNextWindowSize(ImVec2(300, 400), ImGuiCond_Appearing);
+        ImGui::Begin("Test window 1", NULL, ImGuiWindowFlags_NoSavedSettings);
+
+        const int col_count = 3;
+        for (int i = 0; i < 2; i++)
+        {
+            ImGui::BeginTable("Table", col_count, ImGuiTableFlags_NoSavedSettings|ImGuiTableFlags_Resizable|ImGuiTableFlags_Borders);
+            for (int c = 0; c < col_count; c++)
+                ImGui::TableSetupColumn("Header", c ? ImGuiTableColumnFlags_WidthFixed : ImGuiTableColumnFlags_WidthStretch);
+            ImGui::TableAutoHeaders();
+            for (int r = 0; r < 10; r++)
+            {
+                ImGui::TableNextRow();
+                for (int c = 0; c < col_count; c++)
+                {
+                    // Second table contains larger data, attempting to confuse column sync.
+                    ImGui::Text(i ? "Long Data" : "Data");
+                    ImGui::TableNextCell();
+                }
+            }
+
+            if (ctx->IsFirstFrame() || ctx->GenericVars.Bool1)
+            {
+                // Perform actual test.
+                ImGuiContext& g = *ctx->UiContext;
+                ImGuiTable* table = g.CurrentTable;
+                float column_widths[col_count];
+
+                if (i == 0)
+                {
+                    // Save column widths of table during first iteration.
+                    for (int c = 0; c < col_count; c++)
+                        column_widths[c] = table->Columns[c].WidthGiven;
+                }
+                else
+                {
+                    // Verify column widths match during second iteration.
+                    for (int c = 0; c < col_count; c++)
+                        IM_CHECK(column_widths[c] == table->Columns[c].WidthGiven);
+                }
+            }
+
+            ImGui::EndTable();
+        }
+
+        ctx->GenericVars.Bool1 = false;
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ctx->WindowRef("Test window 1");
+        ImGuiTable* table = ImGui::FindTableByID(ctx->GetID("Table"));
+
+        for (int instance_no = 0; instance_no < 2; instance_no++)
+        {
+            // Resize a column in the second table. It is not important whether we increase or reduce column size.
+            // Changing direction ensures resize happens around the first third of the table and does not stick to
+            // either side of the table across multiple test runs.
+            int direction = (table->ColumnsTotalWidth * 0.3f) < table->Columns[0].WidthGiven ? -1 : 1;
+            int length = 30 + 10 * instance_no; // Different length for different table instances
+            ctx->ItemDragWithDelta(ImGui::TableGetColumnResizeID(table, 0, instance_no), ImVec2(length * direction, 0));
+            ctx->GenericVars.Bool1 = true;      // Retest again
+            ctx->Yield();                       // Render one more frame to retest column widths
+        }
+    };
 #endif // #ifdef IMGUI_HAS_TABLE
 };
 
