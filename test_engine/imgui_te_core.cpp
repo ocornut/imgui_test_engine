@@ -71,7 +71,6 @@ static void ImGuiTestEngine_PreNewFrame(ImGuiTestEngine* engine, ImGuiContext* u
 static void ImGuiTestEngine_PostNewFrame(ImGuiTestEngine* engine, ImGuiContext* ui_ctx);
 static void ImGuiTestEngine_RunGuiFunc(ImGuiTestEngine* engine);
 static void ImGuiTestEngine_RunTest(ImGuiTestEngine* engine, ImGuiTestContext* ctx);
-static void ImGuiTestEngine_UpdateHooks(ImGuiTestEngine* engine);
 static void ImGuiTestEngine_TestQueueCoroutineMain(void* engine_opaque);
 
 // Settings
@@ -932,7 +931,7 @@ void ImGuiTestEngine_GetResult(ImGuiTestEngine* engine, int& count_tested, int& 
     }
 }
 
-static void ImGuiTestEngine_UpdateHooks(ImGuiTestEngine* engine)
+void ImGuiTestEngine_UpdateHooks(ImGuiTestEngine* engine)
 {
     bool want_hooking = false;
 
@@ -943,9 +942,16 @@ static void ImGuiTestEngine_UpdateHooks(ImGuiTestEngine* engine)
         want_hooking = true;
     if (engine->GatherTask.ParentID != 0)
         want_hooking = true;
+    if (engine->StackTool.QueryStackId != 0)
+        want_hooking = true;
 
-    IM_ASSERT(engine->UiContextTarget->TestEngine == engine);
-    engine->UiContextTarget->TestEngineHooks = want_hooking;
+    ImGuiContext* ui_ctx = engine->UiContextTarget;
+    IM_ASSERT(ui_ctx->TestEngine == engine);
+    ui_ctx->TestEngineHookItems = want_hooking;
+
+    ui_ctx->TestEngineHookIdInfo = 0;
+    if (engine->StackTool.QueryIdInfoOutput != NULL)
+        ui_ctx->TestEngineHookIdInfo = engine->StackTool.QueryIdInfoOutput->ID;
 }
 
 static void ImGuiTestEngine_RunTest(ImGuiTestEngine* engine, ImGuiTestContext* ctx)
@@ -1118,6 +1124,20 @@ void ImGuiTestEngineHook_ItemAdd(ImGuiContext* ui_ctx, const ImRect& bb, ImGuiID
         item->StatusFlags = (window->DC.LastItemId == id) ? window->DC.LastItemStatusFlags : ImGuiItemStatusFlags_None;
     }
 
+    // Stack ID query
+    if (engine->StackTool.QueryStackId == id && engine->StackTool.QueryStep == 0)
+    {
+        //IM_ASSERT(engine->StackTool.Results.Size == 0); // double query OR id conflict?
+        engine->StackTool.QueryStep++;
+        engine->StackTool.Results.resize(window->IDStack.Size + 1);
+        for (int n = 0; n < window->IDStack.Size + 1; n++)
+        {
+            ImGuiStackLevelInfo info;
+            info.ID = (n < window->IDStack.Size) ? window->IDStack[n] : id;
+            engine->StackTool.Results[n] = info;
+        }
+    }
+
     // Gather Task (only 1 can be active)
     if (engine->GatherTask.ParentID != 0 && window->DC.NavLayerCurrent == ImGuiNavLayer_Main) // FIXME: Layer filter?
     {
@@ -1194,6 +1214,48 @@ void ImGuiTestEngineHook_Log(ImGuiContext* ui_ctx, const char* fmt, ...)
     va_start(args, fmt);
     engine->TestContext->LogExV(ImGuiTestVerboseLevel_Debug, ImGuiTestLogFlags_None, fmt, args);
     va_end(args);
+}
+
+void ImGuiTestEngineHook_IdInfo(ImGuiContext* ui_ctx, ImGuiDataType data_type, ImGuiID id, const void* data_id)
+{
+    ImGuiTestEngine* engine = (ImGuiTestEngine*)ui_ctx->TestEngine;
+    ImGuiStackLevelInfo* info = engine->StackTool.QueryIdInfoOutput;
+    IM_ASSERT(engine->StackTool.Results.index_from_ptr(info) != -1);
+    IM_ASSERT(info->ID == id);
+
+    if (data_type == ImGuiDataType_S32)
+        ImFormatString(info->Desc, IM_ARRAYSIZE(info->Desc), "int %d", (int)(intptr_t)data_id);
+    else if (data_type == ImGuiDataType_String)
+        ImFormatString(info->Desc, IM_ARRAYSIZE(info->Desc), "str \"%s\"", (const char*)data_id);
+    else if (data_type == ImGuiDataType_Pointer)
+        ImFormatString(info->Desc, IM_ARRAYSIZE(info->Desc), "ptr %p", data_id);
+    else if (data_type == ImGuiDataType_ID)
+    {
+        if (!info->QuerySuccess)
+            ImFormatString(info->Desc, IM_ARRAYSIZE(info->Desc), "ovr 0x%08X", id);
+    }
+    else
+        IM_ASSERT(0);
+    info->QuerySuccess = true;
+}
+
+void ImGuiTestEngineHook_IdInfo(ImGuiContext* ui_ctx, ImGuiDataType data_type, ImGuiID id, const void* data_id, const void* data_id_end)
+{
+    ImGuiTestEngine* engine = (ImGuiTestEngine*)ui_ctx->TestEngine;
+    ImGuiStackLevelInfo* info = engine->StackTool.QueryIdInfoOutput;
+    IM_ASSERT(engine->StackTool.Results.index_from_ptr(info) != -1);
+    IM_ASSERT(info->ID == id);
+
+    if (data_type == ImGuiDataType_String)
+    {
+        if (data_id_end)
+            ImFormatString(info->Desc, IM_ARRAYSIZE(info->Desc), "str \"%.*s\"", (int)((const char*)data_id_end - (const char*)data_id), (const char*)data_id);
+        else
+            ImFormatString(info->Desc, IM_ARRAYSIZE(info->Desc), "str \"%s\"", (const char*)data_id);
+    }
+    else
+        IM_ASSERT(0);
+    info->QuerySuccess = true;
 }
 
 void ImGuiTestEngineHook_AssertFunc(const char* expr, const char* file, const char* function, int line)
@@ -1330,6 +1392,7 @@ static void     ImGuiTestEngine_SettingsReadLine(ImGuiContext* ui_ctx, ImGuiSett
     /**/ if (sscanf(line, "FilterTests=%s", engine->UiFilterTests.InputBuf) == 1)   { engine->UiFilterTests.Build(); }
     else if (sscanf(line, "FilterPerfs=%s", engine->UiFilterPerfs.InputBuf) == 1)   { engine->UiFilterPerfs.Build(); }
     else if (sscanf(line, "LogHeight=%f", &engine->UiLogHeight) == 1)               { }
+    else if (sscanf(line, "StackTool=%d", &n) == 1)                                 { engine->StackTool.Visible = (n != 0); }
     else if (sscanf(line, "CaptureTool=%d", &n) == 1)                               { engine->CaptureTool.Visible = (n != 0); }
 }
 
@@ -1343,6 +1406,7 @@ static void     ImGuiTestEngine_SettingsWriteAll(ImGuiContext* ui_ctx, ImGuiSett
     buf->appendf("FilterTests=%s\n", engine->UiFilterTests.InputBuf);
     buf->appendf("FilterPerfs=%s\n", engine->UiFilterPerfs.InputBuf);
     buf->appendf("LogHeight=%.0f\n", engine->UiLogHeight);
+    buf->appendf("StackTool=%d\n", engine->StackTool.Visible);
     buf->appendf("CaptureTool=%d\n", engine->CaptureTool.Visible);
     buf->appendf("\n");
 }

@@ -31,14 +31,35 @@ struct ImGuiTestRunTask
     ImGuiTestRunFlags       RunFlags = ImGuiTestRunFlags_None;
 };
 
+struct ImGuiStackLevelInfo
+{
+    ImGuiID                 ID = 0;
+    bool                    QueryStarted = false;
+    bool                    QuerySuccess = false;       // Obtained infos from PushID() hook
+    char                    Desc[59] = "";
+};
+
+struct ImGuiStackTool
+{
+    bool                    Visible = false;
+    ImGuiID                 QueryStackId = 0;           // Stack id to query details for
+    int                     QueryStep = -1;
+    ImGuiStackLevelInfo*    QueryIdInfoOutput = NULL;   // Current stack level we're hooking PushID for
+    int                     QueryIdInfoTimestamp = -1;
+    ImVector<ImGuiStackLevelInfo> Results;
+
+    void    ShowStackToolWindow(ImGuiTestEngine* engine, bool* p_open = NULL);
+    void    UpdateQueries(ImGuiTestEngine* engine);
+};
+
 struct ImGuiTestInputs
 {
     ImGuiIO                     SimulatedIO;
     int                         ApplyingSimulatedIO = 0;
-    ImVec2                      MousePosValue;             // Own non-rounded copy of MousePos in order facilitate simulating mouse movement very slow speed and high-framerate
+    ImVec2                      MousePosValue;                  // Own non-rounded copy of MousePos in order facilitate simulating mouse movement very slow speed and high-framerate
     ImVec2                      HostLastMousePos;
-    int                         MouseButtonsValue = 0x00;  // FIXME-TESTS: Use simulated_io.MouseDown[] ?
-    ImGuiKeyModFlags            KeyMods = 0x00;            // FIXME-TESTS: Use simulated_io.KeyXXX ?
+    int                         MouseButtonsValue = 0x00;       // FIXME-TESTS: Use simulated_io.MouseDown[] ?
+    ImGuiKeyModFlags            KeyMods = 0x00;                 // FIXME-TESTS: Use simulated_io.KeyXXX ?
     ImVector<ImGuiTestInput>    Queue;
 };
 
@@ -86,6 +107,7 @@ struct ImGuiTestEngine
     // Tools
     bool                        ToolSlowDown = false;
     int                         ToolSlowDownMs = 100;
+    ImGuiStackTool              StackTool;
     ImGuiCaptureTool            CaptureTool;
     ImGuiCaptureContext         CaptureContext;
     ImGuiCaptureArgs*           CurrentCaptureArgs = NULL;

@@ -166,6 +166,8 @@ extern void     ImGuiTestEngineHook_PostNewFrame(ImGuiContext* ui_ctx);
 extern void     ImGuiTestEngineHook_ItemAdd(ImGuiContext* ui_ctx, const ImRect& bb, ImGuiID id);
 extern void     ImGuiTestEngineHook_ItemInfo(ImGuiContext* ui_ctx, ImGuiID id, const char* label, ImGuiItemStatusFlags flags);
 extern void     ImGuiTestEngineHook_Log(ImGuiContext* ui_ctx, const char* fmt, ...);
+extern void     ImGuiTestEngineHook_IdInfo(ImGuiContext* ui_ctx, ImGuiDataType data_type, ImGuiID id, const void* data_id);
+extern void     ImGuiTestEngineHook_IdInfo(ImGuiContext* ui_ctx, ImGuiDataType data_type, ImGuiID id, const void* data_id, const void* data_id_end);
 extern void     ImGuiTestEngineHook_AssertFunc(const char* expr, const char* file, const char* function, int line);
 
 //-------------------------------------------------------------------------
@@ -284,6 +286,7 @@ void                ImGuiTestEngine_QueueTest(ImGuiTestEngine* engine, ImGuiTest
 void                ImGuiTestEngine_Abort(ImGuiTestEngine* engine);
 bool                ImGuiTestEngine_IsRunningTests(ImGuiTestEngine* engine);        // FIXME: Clarify difference between this and io.RunningTests
 void                ImGuiTestEngine_CoroutineStopRequest(ImGuiTestEngine* engine);
+void                ImGuiTestEngine_UpdateHooks(ImGuiTestEngine* engine);
 void                ImGuiTestEngine_GetResult(ImGuiTestEngine* engine, int& count_tested, int& success_count);
 void                ImGuiTestEngine_PrintResultSummary(ImGuiTestEngine* engine);
 
