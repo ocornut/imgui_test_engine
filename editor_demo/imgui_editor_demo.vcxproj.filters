@@ -11,9 +11,6 @@
     <Filter Include="libs">
       <UniqueIdentifier>{ae52ecae-4354-4c59-b06b-cda499312915}</UniqueIdentifier>
     </Filter>
-    <Filter Include="libs\Str">
-      <UniqueIdentifier>{95a0db3d-8b12-4601-b4fb-90cfdcf6c092}</UniqueIdentifier>
-    </Filter>
     <Filter Include="imgui_backends">
       <UniqueIdentifier>{cd2f5d3c-4165-43ac-97c2-235df2be986a}</UniqueIdentifier>
     </Filter>
@@ -25,9 +22,6 @@
     </Filter>
     <Filter Include="shared">
       <UniqueIdentifier>{9e5548de-99f5-4e89-b4a9-7cb34eecc6f2}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="test_engine">
-      <UniqueIdentifier>{ae1d9064-cf18-479d-ab01-dcda003d1c1e}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -49,9 +43,6 @@
     <ClInclude Include="..\..\imgui\imstb_truetype.h">
       <Filter>imgui</Filter>
     </ClInclude>
-    <ClInclude Include="..\libs\Str\Str.h">
-      <Filter>libs\Str</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\imgui\examples\imgui_impl_dx11.h">
       <Filter>imgui_backends</Filter>
     </ClInclude>
@@ -67,32 +58,8 @@
     <ClInclude Include="..\shared\imgui_app.h">
       <Filter>shared</Filter>
     </ClInclude>
-    <ClInclude Include="..\shared\imgui_utils.h">
-      <Filter>shared</Filter>
-    </ClInclude>
-    <ClInclude Include="..\shared\imgui_capture_tool.h">
-      <Filter>shared</Filter>
-    </ClInclude>
     <ClInclude Include="editor_demo_imconfig.h">
       <Filter>sources</Filter>
-    </ClInclude>
-    <ClInclude Include="..\test_engine\imgui_te_core.h">
-      <Filter>test_engine</Filter>
-    </ClInclude>
-    <ClInclude Include="..\test_engine\imgui_te_imconfig.h">
-      <Filter>test_engine</Filter>
-    </ClInclude>
-    <ClInclude Include="..\test_engine\imgui_te_internal.h">
-      <Filter>test_engine</Filter>
-    </ClInclude>
-    <ClInclude Include="..\test_engine\imgui_te_util.h">
-      <Filter>test_engine</Filter>
-    </ClInclude>
-    <ClInclude Include="..\test_engine\imgui_te_context.h">
-      <Filter>test_engine</Filter>
-    </ClInclude>
-    <ClInclude Include="..\test_engine\imgui_te_coroutine.h">
-      <Filter>test_engine</Filter>
     </ClInclude>
     <ClInclude Include="editor_assets_browser.h">
       <Filter>sources</Filter>
@@ -126,27 +93,6 @@
     <ClCompile Include="..\shared\imgui_app.cpp">
       <Filter>shared</Filter>
     </ClCompile>
-    <ClCompile Include="..\shared\imgui_utils.cpp">
-      <Filter>shared</Filter>
-    </ClCompile>
-    <ClCompile Include="..\shared\imgui_capture_tool.cpp">
-      <Filter>shared</Filter>
-    </ClCompile>
-    <ClCompile Include="..\test_engine\imgui_te_ui.cpp">
-      <Filter>test_engine</Filter>
-    </ClCompile>
-    <ClCompile Include="..\test_engine\imgui_te_util.cpp">
-      <Filter>test_engine</Filter>
-    </ClCompile>
-    <ClCompile Include="..\test_engine\imgui_te_context.cpp">
-      <Filter>test_engine</Filter>
-    </ClCompile>
-    <ClCompile Include="..\test_engine\imgui_te_core.cpp">
-      <Filter>test_engine</Filter>
-    </ClCompile>
-    <ClCompile Include="..\test_engine\imgui_te_coroutine.cpp">
-      <Filter>test_engine</Filter>
-    </ClCompile>
     <ClCompile Include="editor_tests.cpp">
       <Filter>sources</Filter>
     </ClCompile>
@@ -157,9 +103,6 @@
   <ItemGroup>
     <Natvis Include="..\..\imgui\misc\natvis\imgui.natvis">
       <Filter>imgui</Filter>
-    </Natvis>
-    <Natvis Include="..\libs\Str\Str.natvis">
-      <Filter>libs\Str</Filter>
     </Natvis>
   </ItemGroup>
   <ItemGroup>

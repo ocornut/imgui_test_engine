@@ -23,6 +23,10 @@ test_app/Debug/*
 test_app/Release/*
 test_app/x64/*
 test_app/test_app
+test_engine/build/*
+test_engine/Debug/*
+test_engine/Release/*
+test_engine/x64/*
 editor_demo/build/*
 editor_demo/Debug/*
 editor_demo/Release/*

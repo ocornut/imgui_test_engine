@@ -156,18 +156,7 @@
     <ClInclude Include="..\..\imgui\imstb_rectpack.h" />
     <ClInclude Include="..\..\imgui\imstb_textedit.h" />
     <ClInclude Include="..\..\imgui\imstb_truetype.h" />
-    <ClInclude Include="..\libs\gif-h\gif.h" />
     <ClInclude Include="..\shared\imgui_app.h" />
-    <ClInclude Include="..\shared\imgui_capture_tool.h" />
-    <ClInclude Include="..\libs\stb\stb_image_write.h" />
-    <ClInclude Include="..\libs\Str\Str.h" />
-    <ClInclude Include="..\shared\imgui_utils.h" />
-    <ClInclude Include="..\test_engine\imgui_te_context.h" />
-    <ClInclude Include="..\test_engine\imgui_te_core.h" />
-    <ClInclude Include="..\test_engine\imgui_te_coroutine.h" />
-    <ClInclude Include="..\test_engine\imgui_te_imconfig.h" />
-    <ClInclude Include="..\test_engine\imgui_te_internal.h" />
-    <ClInclude Include="..\test_engine\imgui_te_util.h" />
     <ClInclude Include="imgui_tests.h" />
     <ClInclude Include="test_app_imconfig.h" />
   </ItemGroup>
@@ -179,19 +168,16 @@
     <ClCompile Include="..\..\imgui\imgui_draw.cpp" />
     <ClCompile Include="..\..\imgui\imgui_widgets.cpp" />
     <ClCompile Include="..\shared\imgui_app.cpp" />
-    <ClCompile Include="..\shared\imgui_capture_tool.cpp" />
-    <ClCompile Include="..\shared\imgui_utils.cpp" />
-    <ClCompile Include="..\test_engine\imgui_te_context.cpp" />
-    <ClCompile Include="..\test_engine\imgui_te_core.cpp" />
-    <ClCompile Include="..\test_engine\imgui_te_coroutine.cpp" />
-    <ClCompile Include="..\test_engine\imgui_te_ui.cpp" />
-    <ClCompile Include="..\test_engine\imgui_te_util.cpp" />
     <ClCompile Include="imgui_tests.cpp" />
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Natvis Include="..\..\imgui\misc\natvis\imgui.natvis" />
-    <Natvis Include="..\libs\Str\Str.natvis" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\test_engine\imgui_test_engine.vcxproj">
+      <Project>{e6fac6ef-4b54-45c4-9e76-3b063b51d4b9}</Project>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

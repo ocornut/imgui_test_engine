@@ -4,29 +4,14 @@
     <Filter Include="imgui">
       <UniqueIdentifier>{0587d7a3-f2ce-4d56-b84f-a0005d3bfce6}</UniqueIdentifier>
     </Filter>
-    <Filter Include="libs">
-      <UniqueIdentifier>{de7957ca-84b4-4215-a39a-d54a12a24b7f}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="test_engine">
-      <UniqueIdentifier>{ea1f9e76-839d-4813-b11f-d4b3b610727a}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="test_app">
-      <UniqueIdentifier>{08e36723-ce4f-4cff-9662-c40801cf1acf}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="libs\stb">
-      <UniqueIdentifier>{176e850d-50b7-4dec-a2b4-1ee03de225ff}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="libs\Str">
-      <UniqueIdentifier>{d69cd375-607c-4081-b89d-67e27ace2d71}</UniqueIdentifier>
-    </Filter>
     <Filter Include="imgui_backends">
       <UniqueIdentifier>{23e0fd5e-9fd8-453f-9bf8-a818fae7f3b3}</UniqueIdentifier>
     </Filter>
     <Filter Include="shared">
       <UniqueIdentifier>{67f74698-0094-4ad4-b787-ab144bdfd6a2}</UniqueIdentifier>
     </Filter>
-    <Filter Include="libs\gif-h">
-      <UniqueIdentifier>{d1c7fb3b-d0a7-4516-bee9-c8278a748528}</UniqueIdentifier>
+    <Filter Include="test_app">
+      <UniqueIdentifier>{08e36723-ce4f-4cff-9662-c40801cf1acf}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -48,23 +33,8 @@
     <ClInclude Include="..\..\imgui\imconfig.h">
       <Filter>imgui</Filter>
     </ClInclude>
-    <ClInclude Include="..\test_engine\imgui_te_context.h">
-      <Filter>test_engine</Filter>
-    </ClInclude>
-    <ClInclude Include="..\test_engine\imgui_te_core.h">
-      <Filter>test_engine</Filter>
-    </ClInclude>
-    <ClInclude Include="..\test_engine\imgui_te_util.h">
-      <Filter>test_engine</Filter>
-    </ClInclude>
     <ClInclude Include="imgui_tests.h">
       <Filter>test_app</Filter>
-    </ClInclude>
-    <ClInclude Include="..\libs\stb\stb_image_write.h">
-      <Filter>libs\stb</Filter>
-    </ClInclude>
-    <ClInclude Include="..\libs\Str\Str.h">
-      <Filter>libs\Str</Filter>
     </ClInclude>
     <ClInclude Include="..\..\imgui\examples\imgui_impl_dx11.h">
       <Filter>imgui_backends</Filter>
@@ -75,26 +45,8 @@
     <ClInclude Include="..\shared\imgui_app.h">
       <Filter>shared</Filter>
     </ClInclude>
-    <ClInclude Include="..\shared\imgui_capture_tool.h">
-      <Filter>shared</Filter>
-    </ClInclude>
-    <ClInclude Include="..\shared\imgui_utils.h">
-      <Filter>shared</Filter>
-    </ClInclude>
-    <ClInclude Include="..\test_engine\imgui_te_imconfig.h">
-      <Filter>test_engine</Filter>
-    </ClInclude>
     <ClInclude Include="test_app_imconfig.h">
       <Filter>test_app</Filter>
-    </ClInclude>
-    <ClInclude Include="..\test_engine\imgui_te_internal.h">
-      <Filter>test_engine</Filter>
-    </ClInclude>
-    <ClInclude Include="..\test_engine\imgui_te_coroutine.h">
-      <Filter>test_engine</Filter>
-    </ClInclude>
-    <ClInclude Include="..\libs\gif-h\gif.h">
-      <Filter>libs\gif-h</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -109,15 +61,6 @@
     </ClCompile>
     <ClCompile Include="..\..\imgui\imgui_widgets.cpp">
       <Filter>imgui</Filter>
-    </ClCompile>
-    <ClCompile Include="..\test_engine\imgui_te_context.cpp">
-      <Filter>test_engine</Filter>
-    </ClCompile>
-    <ClCompile Include="..\test_engine\imgui_te_core.cpp">
-      <Filter>test_engine</Filter>
-    </ClCompile>
-    <ClCompile Include="..\test_engine\imgui_te_util.cpp">
-      <Filter>test_engine</Filter>
     </ClCompile>
     <ClCompile Include="imgui_tests.cpp">
       <Filter>test_app</Filter>
@@ -134,25 +77,10 @@
     <ClCompile Include="..\shared\imgui_app.cpp">
       <Filter>shared</Filter>
     </ClCompile>
-    <ClCompile Include="..\shared\imgui_capture_tool.cpp">
-      <Filter>shared</Filter>
-    </ClCompile>
-    <ClCompile Include="..\shared\imgui_utils.cpp">
-      <Filter>shared</Filter>
-    </ClCompile>
-    <ClCompile Include="..\test_engine\imgui_te_ui.cpp">
-      <Filter>test_engine</Filter>
-    </ClCompile>
-    <ClCompile Include="..\test_engine\imgui_te_coroutine.cpp">
-      <Filter>test_engine</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Natvis Include="..\..\imgui\misc\natvis\imgui.natvis">
       <Filter>imgui</Filter>
-    </Natvis>
-    <Natvis Include="..\libs\Str\Str.natvis">
-      <Filter>libs\Str</Filter>
     </Natvis>
   </ItemGroup>
 </Project>

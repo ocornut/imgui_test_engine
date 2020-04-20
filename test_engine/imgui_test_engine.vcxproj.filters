@@ -1,0 +1,86 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="test_engine">
+      <UniqueIdentifier>{ea1f9e76-839d-4813-b11f-d4b3b610727a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="shared">
+      <UniqueIdentifier>{3b2b4040-3edb-4cdf-b1d4-ba9f0398d799}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="libs">
+      <UniqueIdentifier>{675b986b-801f-4e94-bd48-dd14edd7aa08}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="libs\stb">
+      <UniqueIdentifier>{4b6d6fed-3e9c-4f8f-924e-83558972663a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="libs\Str">
+      <UniqueIdentifier>{1b980fb8-862d-42ef-b74f-275e89b3ced6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="libs\gif-h">
+      <UniqueIdentifier>{7b7e388b-c887-40d1-a34a-b41ca0b5a4d4}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\test_engine\imgui_te_context.h">
+      <Filter>test_engine</Filter>
+    </ClInclude>
+    <ClInclude Include="..\test_engine\imgui_te_core.h">
+      <Filter>test_engine</Filter>
+    </ClInclude>
+    <ClInclude Include="..\test_engine\imgui_te_util.h">
+      <Filter>test_engine</Filter>
+    </ClInclude>
+    <ClInclude Include="..\test_engine\imgui_te_imconfig.h">
+      <Filter>test_engine</Filter>
+    </ClInclude>
+    <ClInclude Include="..\test_engine\imgui_te_internal.h">
+      <Filter>test_engine</Filter>
+    </ClInclude>
+    <ClInclude Include="..\test_engine\imgui_te_coroutine.h">
+      <Filter>test_engine</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\imgui_capture_tool.h">
+      <Filter>shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\imgui_utils.h">
+      <Filter>shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\libs\stb\stb_image_write.h">
+      <Filter>libs\stb</Filter>
+    </ClInclude>
+    <ClInclude Include="..\libs\Str\Str.h">
+      <Filter>libs\Str</Filter>
+    </ClInclude>
+    <ClInclude Include="..\libs\gif-h\gif.h">
+      <Filter>libs\gif-h</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\test_engine\imgui_te_context.cpp">
+      <Filter>test_engine</Filter>
+    </ClCompile>
+    <ClCompile Include="..\test_engine\imgui_te_core.cpp">
+      <Filter>test_engine</Filter>
+    </ClCompile>
+    <ClCompile Include="..\test_engine\imgui_te_util.cpp">
+      <Filter>test_engine</Filter>
+    </ClCompile>
+    <ClCompile Include="..\test_engine\imgui_te_ui.cpp">
+      <Filter>test_engine</Filter>
+    </ClCompile>
+    <ClCompile Include="..\test_engine\imgui_te_coroutine.cpp">
+      <Filter>test_engine</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\imgui_capture_tool.cpp">
+      <Filter>shared</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\imgui_utils.cpp">
+      <Filter>shared</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Natvis Include="..\libs\Str\Str.natvis">
+      <Filter>libs\Str</Filter>
+    </Natvis>
+  </ItemGroup>
+</Project>
