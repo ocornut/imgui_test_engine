@@ -10,7 +10,6 @@ SOURCES = main.cpp
 SOURCES += ../imgui_tests.cpp ../imgui_te_context.cpp ../imgui_te_core.cpp ../imgui_te_coroutine.cpp ../imgui_te_ui.cpp ../imgui_te_util.cpp
 SOURCES += $(IMGUI_PATH)/imgui.cpp $(IMGUI_PATH)/imgui_demo.cpp $(IMGUI_PATH)/imgui_draw.cpp $(IMGUI_PATH)/imgui_widgets.cpp
 SOURCES += ../shared/imgui_app.cpp ../shared/imgui_capture_tool.cpp ../shared/imgui_utils.cpp
-SOURCES += ../libs/Str/Str.cpp
 OBJS = $(addsuffix .o, $(basename $(notdir $(SOURCES))))
 UNAME_S := $(shell uname -s)
 

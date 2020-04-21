@@ -5,6 +5,7 @@
 #include "imgui.h"
 #include "imgui_te_util.h"
 #include "imgui_internal.h"
+#define STR_IMPLEMENTATION
 #include "libs/Str/Str.h"
 
 // Hash "hello/world" as if it was "helloworld"

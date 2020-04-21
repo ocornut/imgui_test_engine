@@ -125,9 +125,6 @@
     <ClCompile Include="main.cpp">
       <Filter>test_app</Filter>
     </ClCompile>
-    <ClCompile Include="..\libs\Str\Str.cpp">
-      <Filter>libs\Str</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\imgui\examples\imgui_impl_dx11.cpp">
       <Filter>imgui_backends</Filter>
     </ClCompile>

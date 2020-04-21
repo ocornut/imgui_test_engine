@@ -180,7 +180,6 @@
     <ClCompile Include="..\..\imgui\imgui_widgets.cpp" />
     <ClCompile Include="..\shared\imgui_app.cpp" />
     <ClCompile Include="..\shared\imgui_capture_tool.cpp" />
-    <ClCompile Include="..\libs\Str\Str.cpp" />
     <ClCompile Include="..\shared\imgui_utils.cpp" />
     <ClCompile Include="..\test_engine\imgui_te_context.cpp" />
     <ClCompile Include="..\test_engine\imgui_te_core.cpp" />
