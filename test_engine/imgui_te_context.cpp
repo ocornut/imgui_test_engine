@@ -489,17 +489,43 @@ ImGuiTestItemInfo* ImGuiTestContext::ItemLocate(ImGuiTestRef ref, ImGuiTestOpFla
     if (IsError())
         return NULL;
 
-    ImGuiID full_id;
-    if (ref.ID)
-        full_id = ref.ID;
+    ImGuiID full_id = 0;
+    if (ref.Path && strncmp(ref.Path, "**/", 3) == 0)
+    {
+        // Wildcard matching
+        ImGuiTestLocateWildcardTask* task = &Engine->ImGuiTestFindLabelTask;
+        task->InBaseId = RefID;
+        task->InLabel = ref.Path + 3;
+        task->OutItemId = 0;
+
+        int retries = 0;
+        while (retries < 2 && full_id == 0)
+        {
+            ImGuiTestEngine_Yield(Engine);
+            full_id = task->OutItemId;
+            retries++;
+        }
+
+        // FIXME: InFilterItemFlags is not unset here intentionally, because it is set in ItemAction() and reused in later calls to ItemLocate() to resolve ambiguities.
+        task->InBaseId = 0;
+        task->InLabel = NULL;
+        task->OutItemId = 0;
+    }
     else
-        full_id = ImHashDecoratedPath(ref.Path, RefID);
+    {
+        // Normal matching
+        if (ref.ID)
+            full_id = ref.ID;
+        else
+            full_id = ImHashDecoratedPath(ref.Path, RefID);
+    }
+
 
     // If ui_ctx->TestEngineHooksEnabled is not already on (first ItemLocate task in a while) we'll probably need an extra frame to warmup
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
     ImGuiTestItemInfo* item = NULL;
     int retries = 0;
-    while (retries < 2)
+    while (full_id && retries < 2)
     {
         item = ImGuiTestEngine_ItemLocate(Engine, full_id, ref.Path);
         if (item)
@@ -1225,6 +1251,16 @@ void    ImGuiTestContext::ItemAction(ImGuiTestAction action, ImGuiTestRef ref, v
     //if (ref.ID == 0x0d4af068)
     //    printf("");
 
+    if (ref.Path != NULL && strncmp(ref.Path, "**/", 3) == 0)
+    {
+        // This is a fragile way to avoid some ambiguities. These flags are not cleared by ItemLocate() because
+        // ItemAction() may call ItemLocate() again to get same item and thus it needs these flags to remain in place.
+        if (action == ImGuiTestAction_Check || action == ImGuiTestAction_Uncheck)
+            Engine->ImGuiTestFindLabelTask.InFilterItemFlags = ImGuiItemStatusFlags_Checkable;
+        else if (action == ImGuiTestAction_Open || action == ImGuiTestAction_Close)
+            Engine->ImGuiTestFindLabelTask.InFilterItemFlags = ImGuiItemStatusFlags_Openable;
+    }
+
     ImGuiTestItemInfo* item = ItemLocate(ref);
     ImGuiTestRefDesc desc(ref, item);
     if (item == NULL)
@@ -1249,7 +1285,6 @@ void    ImGuiTestContext::ItemAction(ImGuiTestAction action, ImGuiTestRef ref, v
                 MouseDoubleClick(mouse_button);
             else
                 MouseClick(mouse_button);
-            return;
         }
         else
         {
@@ -1264,10 +1299,8 @@ void    ImGuiTestContext::ItemAction(ImGuiTestAction action, ImGuiTestRef ref, v
         NavActivate();
         if (action == ImGuiTestAction_DoubleClick)
             IM_ASSERT(0);
-        return;
     }
-
-    if (action == ImGuiTestAction_Input)
+    else if (action == ImGuiTestAction_Input)
     {
         IM_ASSERT(action_arg == NULL); // Unused
         if (InputMode == ImGuiInputSource_Mouse)
@@ -1282,10 +1315,8 @@ void    ImGuiTestContext::ItemAction(ImGuiTestAction action, ImGuiTestRef ref, v
             NavMoveTo(ref);
             NavInput();
         }
-        return;
     }
-
-    if (action == ImGuiTestAction_Open)
+    else if (action == ImGuiTestAction_Open)
     {
         IM_ASSERT(action_arg == NULL); // Unused
         if ((item->StatusFlags & ImGuiItemStatusFlags_Opened) == 0)
@@ -1307,10 +1338,8 @@ void    ImGuiTestContext::ItemAction(ImGuiTestAction action, ImGuiTestRef ref, v
             item->RefCount--;
             Yield();
         }
-        return;
     }
-
-    if (action == ImGuiTestAction_Close)
+    else if (action == ImGuiTestAction_Close)
     {
         IM_ASSERT(action_arg == NULL); // Unused
         if ((item->StatusFlags & ImGuiItemStatusFlags_Opened) != 0)
@@ -1326,10 +1355,8 @@ void    ImGuiTestContext::ItemAction(ImGuiTestAction action, ImGuiTestRef ref, v
             item->RefCount--;
             Yield();
         }
-        return;
     }
-
-    if (action == ImGuiTestAction_Check)
+    else if (action == ImGuiTestAction_Check)
     {
         IM_ASSERT(action_arg == NULL); // Unused
         if ((item->StatusFlags & ImGuiItemStatusFlags_Checkable) && !(item->StatusFlags & ImGuiItemStatusFlags_Checked))
@@ -1338,10 +1365,8 @@ void    ImGuiTestContext::ItemAction(ImGuiTestAction action, ImGuiTestRef ref, v
             Yield();
         }
         ItemVerifyCheckedIfAlive(ref, true); // We can't just IM_ASSERT(ItemIsChecked()) because the item may disappear and never update its StatusFlags any more!
-        return;
     }
-
-    if (action == ImGuiTestAction_Uncheck)
+    else if (action == ImGuiTestAction_Uncheck)
     {
         IM_ASSERT(action_arg == NULL); // Unused
         if ((item->StatusFlags & ImGuiItemStatusFlags_Checkable) && (item->StatusFlags & ImGuiItemStatusFlags_Checked))
@@ -1350,10 +1375,9 @@ void    ImGuiTestContext::ItemAction(ImGuiTestAction action, ImGuiTestRef ref, v
             Yield();
         }
         ItemVerifyCheckedIfAlive(ref, false); // We can't just IM_ASSERT(ItemIsChecked()) because the item may disappear and never update its StatusFlags any more!
-        return;
     }
 
-    IM_ASSERT(0);
+    Engine->ImGuiTestFindLabelTask.InFilterItemFlags = 0;
 }
 
 void    ImGuiTestContext::ItemActionAll(ImGuiTestAction action, ImGuiTestRef ref_parent, int max_depth, int max_passes)

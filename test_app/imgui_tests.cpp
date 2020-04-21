@@ -5986,11 +5986,12 @@ void RegisterTests_Capture(ImGuiTestEngine* e)
         ctx->MenuAction(ImGuiTestAction_Check, "Examples/Documents");
 
         ctx->WindowRef("Example: Documents");
-        // FIXME-TESTS: Locate within stack that uses windows/<pointer>/name
-        //ctx->ItemCheck("Tomato"); // FIXME: WILL FAIL, NEED TO LOCATE BY NAME (STACK WILDCARD?)
-        //ctx->ItemCheck("A Rather Long Title"); // FIXME: WILL FAIL
-        //ctx->ItemClick("##tabs/Eggplant");
-        //ctx->MouseMove("##tabs/Eggplant/Modify");
+        ctx->WindowResize(ctx->RefID, ImVec2(600, 300));    // Ensure no items are clipped, because then they cant be found by item search
+        ctx->ItemCheck("**/Tomato");
+        ctx->ItemCheck("**/A Rather Long Title");
+        ctx->ItemClick("##tabs/Eggplant");
+        ctx->WindowRef(ctx->GetID("##tabs/Eggplant"));
+        ctx->MouseMove("**/Modify");
         ctx->Sleep(1.0f);
     };
 

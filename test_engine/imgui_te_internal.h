@@ -25,6 +25,14 @@ struct ImGuiTestLocateTask
     ImGuiTestItemInfo       Result;
 };
 
+struct ImGuiTestLocateWildcardTask
+{
+    ImGuiID InBaseId = 0;                           // A known base ID which appears before wildcard ID(s)
+    const char* InLabel = 0;                        // A label string which appears on ID stack after unknown ID(s)
+    ImGuiItemStatusFlags InFilterItemFlags = 0;     // Flags required for item to be returned
+    ImGuiID OutItemId = 0;                          // Result item ID
+};
+
 struct ImGuiTestRunTask
 {
     ImGuiTest*              Test = NULL;
@@ -79,6 +87,7 @@ struct ImGuiTestEngine
     ImVector<ImGuiTestRunTask>  TestsQueue;
     ImGuiTestContext*           TestContext = NULL;
     ImVector<ImGuiTestLocateTask*>  LocateTasks;
+    ImGuiTestLocateWildcardTask ImGuiTestFindLabelTask;
     ImGuiTestGatherTask         GatherTask;
     void*                       UserDataBuffer = NULL;
     size_t                      UserDataBufferSize = 0;

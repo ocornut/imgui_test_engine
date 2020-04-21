@@ -1185,6 +1185,27 @@ void ImGuiTestEngineHook_ItemInfo(ImGuiContext* ui_ctx, ImGuiID id, const char* 
     //ImGuiWindow* window = g.CurrentWindow;
     //IM_ASSERT(window->DC.LastItemId == id || window->DC.LastItemId == 0); // Need _ItemAdd() to be submitted before _ItemInfo()
 
+    ImGuiTestLocateWildcardTask* label_task = &engine->ImGuiTestFindLabelTask;
+    if (label_task->OutItemId == 0 && label_task->InLabel && strcmp(label_task->InLabel, label) == 0)
+    {
+        for (ImGuiID* stack_id = g.CurrentWindow->IDStack.end(); stack_id > g.CurrentWindow->IDStack.begin();)
+        {
+            stack_id--;                                                 // FIXME: Depth limit
+            if (*stack_id == label_task->InBaseId)
+            {
+                if (ImGuiItemStatusFlags filter_flags = label_task->InFilterItemFlags)
+                {
+                    if (!(filter_flags & flags))
+                        continue;
+                }
+
+                // FIXME: Return other than final id
+                label_task->OutItemId = id;
+                break;
+            }
+        }
+    }
+
     // Update Locate Task status flags
     if (ImGuiTestLocateTask* task = ImGuiTestEngine_FindLocateTask(engine, id))
     {
