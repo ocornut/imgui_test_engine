@@ -385,7 +385,10 @@ void    ImGuiTestEngine_ShowTestWindow(ImGuiTestEngine* engine, bool* p_open)
     ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0, 0));
     ImGui::Checkbox("Fast", &engine->IO.ConfigRunFast); HelpTooltip("Run tests as fast as possible (no vsync, no delay, teleport mouse, etc.).");
     ImGui::SameLine();
-    ImGui::Checkbox("Blind", &engine->IO.ConfigRunBlind); HelpTooltip("<UNSUPPORTED>\nRun tests in a blind ui context.");
+    ImGui::PushDisabled();
+    ImGui::Checkbox("Blind", &engine->IO.ConfigRunBlind);
+    ImGui::PopDisabled();
+    HelpTooltip("<UNSUPPORTED>\nRun tests in a blind ui context.");
     ImGui::SameLine();
     ImGui::Checkbox("Stop", &engine->IO.ConfigStopOnError); HelpTooltip("Stop running tests when hitting an error.");
     ImGui::SameLine();
@@ -472,35 +475,33 @@ void    ImGuiTestEngine_ShowTestWindow(ImGuiTestEngine* engine, bool* p_open)
         }
 
         // Tools
-        if (ImGui::BeginTabItem("MISC TOOLS"))
+        if (ImGui::BeginTabItem("TOOLS"))
         {
             ImGuiIO& io = ImGui::GetIO();
             ImGui::Text("%.3f ms/frame (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
             ImGui::Text("TestEngine: HookItems: %d, HookPushId: %d, LocateTasks: %d", g.TestEngineHookItems, g.TestEngineHookIdInfo != 0, engine->LocateTasks.Size);
             ImGui::Separator();
 
-            ImGui::Text("Tools:");
             ImGui::Checkbox("Stack Tool", &engine->StackTool.Visible);
             ImGui::Checkbox("Capture Tool", &engine->CaptureTool.Visible);
             ImGui::Checkbox("Slow down whole app", &engine->ToolSlowDown);
             ImGui::SameLine(); ImGui::SetNextItemWidth(70 * engine->IO.DpiScale);
-            ImGui::DragFloat("DpiScale", &engine->IO.DpiScale, 0.005f, 0.0f, 0.0f, "%.2f");
             ImGui::SliderInt("##ms", &engine->ToolSlowDownMs, 0, 400, "%d ms");
 
-            ImGui::Separator();
-            ImGui::Text("Configuration:");
-            const ImGuiInputTextCallback filter_callback = [](ImGuiInputTextCallbackData* data) { return (data->EventChar == ',' || data->EventChar == ';') ? 1 : 0; };
-            ImGui::InputText("Branch/Annotation", engine->IO.GitBranchName, IM_ARRAYSIZE(engine->IO.GitBranchName), ImGuiInputTextFlags_CallbackCharFilter, filter_callback, NULL);
             ImGui::CheckboxFlags("io.ConfigFlags: NavEnableKeyboard", (unsigned int*)&io.ConfigFlags, ImGuiConfigFlags_NavEnableKeyboard);
             ImGui::CheckboxFlags("io.ConfigFlags: NavEnableGamepad", (unsigned int*)&io.ConfigFlags, ImGuiConfigFlags_NavEnableGamepad);
 #ifdef IMGUI_HAS_DOCK
             ImGui::Checkbox("io.ConfigDockingAlwaysTabBar", &io.ConfigDockingAlwaysTabBar);
 #endif
+
+            ImGui::DragFloat("DpiScale", &engine->IO.DpiScale, 0.005f, 0.0f, 0.0f, "%.2f");
+            const ImGuiInputTextCallback filter_callback = [](ImGuiInputTextCallbackData* data) { return (data->EventChar == ',' || data->EventChar == ';') ? 1 : 0; };
+            ImGui::InputText("Branch/Annotation", engine->IO.GitBranchName, IM_ARRAYSIZE(engine->IO.GitBranchName), ImGuiInputTextFlags_CallbackCharFilter, filter_callback, NULL);
             ImGui::EndTabItem();
         }
 
         // FIXME-TESTS: Need to be visualizing the samples/spikes.
-        if (ImGui::BeginTabItem("PERFS TOOLS"))
+        if (ImGui::BeginTabItem("PERFS"))
         {
             double dt_1 = 1.0 / ImGui::GetIO().Framerate;
             double fps_now = 1.0 / dt_1;
