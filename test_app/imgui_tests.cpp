@@ -2421,6 +2421,82 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         IM_CHECK_EQ(selection1.SelectionSize, 10);
     };
 #endif
+    t = REGISTER_TEST("widgets", "widgets_selectable_span_all_columns");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::SetNextWindowSize(ImVec2(300, 200), ImGuiCond_Appearing);
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+
+        ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0, 0));
+        ImGui::Columns(3);
+        ImGui::Button("C1");
+        ImGui::NextColumn();
+        ImGui::Selectable("Selectable", &ctx->GenericVars.Bool1, ImGuiSelectableFlags_SpanAllColumns);
+        ctx->GenericVars.Bool1 = ImGui::IsItemHovered();
+        ImGui::NextColumn();
+        ImGui::Button("C3");
+        ImGui::Columns();
+        ImGui::PopStyleVar();
+
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ctx->WindowRef("Test Window");
+        ctx->MouseMove("C1", ImGuiTestOpFlags_NoCheckHoveredId);
+        IM_CHECK(ctx->GenericVars.Bool1 == true);
+        ctx->MouseMove("C3", ImGuiTestOpFlags_NoCheckHoveredId);
+        IM_CHECK(ctx->GenericVars.Bool1 == true);
+    };
+#if IMGUI_HAS_TABLE
+    t = REGISTER_TEST("widgets", "widgets_selectable_span_all_table");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::SetNextWindowSize(ImVec2(300, 200), ImGuiCond_Appearing);
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+
+        const int column_count = 3;
+        ImGui::BeginTable("table", column_count, ImGuiTableFlags_NoSavedSettings | ImGuiTableFlags_Reorderable);
+        for (int i = 0; i < column_count; i++)
+            ImGui::TableSetupColumn(Str30f("%d", i + 1).c_str());
+
+        ImGui::TableAutoHeaders();
+        ImGui::TableNextRow();
+
+        ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0, 0));
+        ImGui::Button("C1");
+        ImGui::TableSetColumnIndex(1);
+        ImGui::Selectable("Selectable", &ctx->GenericVars.Bool1, ImGuiSelectableFlags_SpanAllColumns);
+        ctx->GenericVars.Bool1 = ImGui::IsItemHovered();
+        ImGui::TableSetColumnIndex(2);
+        ImGui::Button("C3");
+        ImGui::PopStyleVar();
+
+        ImGui::EndTable();
+
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ctx->WindowRef("Test Window");
+        ImGuiTable* table = ImGui::FindTableByID(ctx->GetID("table"));
+        ImGuiID seed_id = ctx->GetIDByInt(table->ID);
+
+        for (int i = 0; i < 2; i++)
+        {
+            ctx->MouseMove(ctx->GetID("C1", seed_id), ImGuiTestOpFlags_NoCheckHoveredId);
+            IM_CHECK(ctx->GenericVars.Bool1 == true);
+            ctx->MouseMove(ctx->GetID("C3", seed_id), ImGuiTestOpFlags_NoCheckHoveredId);
+            IM_CHECK(ctx->GenericVars.Bool1 == true);
+
+            // Reorder columns and test again
+            ImGuiID table_id = ctx->GetIDByInt(table->ID);
+            ImGuiID column_label_id1 = ctx->GetID("1", ctx->GetIDByInt(0, table_id));
+            ImGuiID column_label_id2 = ctx->GetID("2", ctx->GetIDByInt(1, table_id));
+            ctx->ItemDragAndDrop(column_label_id1, column_label_id2);
+        }
+    };
+#endif
 }
 
 //-------------------------------------------------------------------------
