@@ -2421,6 +2421,8 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         IM_CHECK_EQ(selection1.SelectionSize, 10);
     };
 #endif
+
+    // ## Test Selectable() with ImGuiSelectableFlags_SpanAllColumns inside Columns()
     t = REGISTER_TEST("widgets", "widgets_selectable_span_all_columns");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
@@ -2432,7 +2434,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ImGui::Button("C1");
         ImGui::NextColumn();
         ImGui::Selectable("Selectable", &ctx->GenericVars.Bool1, ImGuiSelectableFlags_SpanAllColumns);
-        ctx->GenericVars.Bool1 = ImGui::IsItemHovered();
+        ctx->GenericVars.Status.QuerySet();
         ImGui::NextColumn();
         ImGui::Button("C3");
         ImGui::Columns();
@@ -2443,11 +2445,12 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         ctx->WindowRef("Test Window");
-        ctx->MouseMove("C1", ImGuiTestOpFlags_NoCheckHoveredId);
-        IM_CHECK(ctx->GenericVars.Bool1 == true);
-        ctx->MouseMove("C3", ImGuiTestOpFlags_NoCheckHoveredId);
-        IM_CHECK(ctx->GenericVars.Bool1 == true);
+        ctx->MouseMove("C1", ImGuiTestOpFlags_NoCheckHoveredId); // Button itself won't be hovered, Selectable will!
+        IM_CHECK(ctx->GenericVars.Status.Hovered == 1);
+        ctx->MouseMove("C3", ImGuiTestOpFlags_NoCheckHoveredId); // Button itself won't be hovered, Selectable will!
+        IM_CHECK(ctx->GenericVars.Status.Hovered == 1);
     };
+
 #if IMGUI_HAS_TABLE
     t = REGISTER_TEST("widgets", "widgets_selectable_span_all_table");
     t->GuiFunc = [](ImGuiTestContext* ctx)
@@ -2467,7 +2470,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ImGui::Button("C1");
         ImGui::TableSetColumnIndex(1);
         ImGui::Selectable("Selectable", &ctx->GenericVars.Bool1, ImGuiSelectableFlags_SpanAllColumns);
-        ctx->GenericVars.Bool1 = ImGui::IsItemHovered();
+        ctx->GenericVars.Status.QuerySet();
         ImGui::TableSetColumnIndex(2);
         ImGui::Button("C3");
         ImGui::PopStyleVar();
@@ -2484,10 +2487,10 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
 
         for (int i = 0; i < 2; i++)
         {
-            ctx->MouseMove(ctx->GetID("C1", seed_id), ImGuiTestOpFlags_NoCheckHoveredId);
-            IM_CHECK(ctx->GenericVars.Bool1 == true);
-            ctx->MouseMove(ctx->GetID("C3", seed_id), ImGuiTestOpFlags_NoCheckHoveredId);
-            IM_CHECK(ctx->GenericVars.Bool1 == true);
+            ctx->MouseMove(ctx->GetID("C1", seed_id), ImGuiTestOpFlags_NoCheckHoveredId); // Button itself won't be hovered, Selectable will!
+            IM_CHECK(ctx->GenericVars.Status.Hovered == 1);
+            ctx->MouseMove(ctx->GetID("C3", seed_id), ImGuiTestOpFlags_NoCheckHoveredId); // Button itself won't be hovered, Selectable will!
+            IM_CHECK(ctx->GenericVars.Status.Hovered == 1);
 
             // Reorder columns and test again
             ImGuiID table_id = ctx->GetIDByInt(table->ID);
@@ -3415,7 +3418,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
         ImGui::End();
     };
 
-    t = REGISTER_TEST("table", "table_10_multi_invoke");
+    t = REGISTER_TEST("table", "table_10_multi_instance");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         ImGui::SetNextWindowSize(ImVec2(300, 400), ImGuiCond_Appearing);
@@ -3476,9 +3479,9 @@ void RegisterTests_Table(ImGuiTestEngine* e)
             // Resize a column in the second table. It is not important whether we increase or reduce column size.
             // Changing direction ensures resize happens around the first third of the table and does not stick to
             // either side of the table across multiple test runs.
-            int direction = (table->ColumnsTotalWidth * 0.3f) < table->Columns[0].WidthGiven ? -1 : 1;
-            int length = 30 + 10 * instance_no; // Different length for different table instances
-            ctx->ItemDragWithDelta(ImGui::TableGetColumnResizeID(table, 0, instance_no), ImVec2(length * direction, 0));
+            float direction = (table->ColumnsTotalWidth * 0.3f) < table->Columns[0].WidthGiven ? -1.0f : 1.0f;
+            float length = 30.0f + 10.0f * instance_no; // Different length for different table instances
+            ctx->ItemDragWithDelta(ImGui::TableGetColumnResizeID(table, 0, instance_no), ImVec2(length * direction, 0.0f));
             ctx->GenericVars.Bool1 = true;      // Retest again
             ctx->Yield();                       // Render one more frame to retest column widths
         }
