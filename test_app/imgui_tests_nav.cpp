@@ -1405,7 +1405,7 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
     };
 
     // ## Test SetKeyboardFocusHere()
-    t = IM_REGISTER_TEST(e, "nav", "nav_tabbing_set_focus");
+    t = IM_REGISTER_TEST(e, "nav", "nav_focus_api");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         ImGui::SetNextWindowSize(ImVec2(300, 200), ImGuiCond_Appearing);
@@ -1436,6 +1436,26 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
             // Sub-component
             ImGui::SetKeyboardFocusHere(2);
             ImGui::SliderFloat4("Float4", &vars.FloatArray[0], 0.0f, 1.0f);
+        }
+        else if (vars.Step == 5)
+        {
+            if (vars.Bool1)
+            {
+                ImGui::SetKeyboardFocusHere();
+                ImGui::InputText("Text1", vars.Str1, IM_ARRAYSIZE(vars.Str1));
+            }
+            ImGui::InputText("NoFocus1", vars.Str2, IM_ARRAYSIZE(vars.Str2));
+            vars.Status.QuerySet();
+        }
+        else if (vars.Step == 6)
+        {
+            if (vars.Bool1)
+            {
+                ImGui::InputText("Text1", vars.Str1, IM_ARRAYSIZE(vars.Str1));
+                ImGui::SetKeyboardFocusHere(-1);
+            }
+            ImGui::InputText("NoFocus1", vars.Str2, IM_ARRAYSIZE(vars.Str2));
+            vars.Status.QuerySet();
         }
         ImGui::End();
     };
@@ -1482,6 +1502,31 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
         ctx->Yield(2);
         int field_idx = 2;
         IM_CHECK_EQ(g.ActiveId, ImHashData(&field_idx, sizeof(int), ctx->GetID("Float4")));
+
+#if IMGUI_VERSION_NUM >= 18420
+        // Test focusing next item when it disappears.
+        vars.Step = 5;
+        vars.Bool1 = true;
+        ctx->Yield(2);
+        IM_CHECK_EQ(g.ActiveId, ctx->GetID("Text1"));
+        IM_CHECK_EQ(vars.Status.Activated, 0);
+        vars.Bool1 = false;
+        ctx->Yield();
+        IM_CHECK_EQ(vars.Status.Activated, 0);
+        vars.Step = 0;
+        ctx->Yield();
+
+        // Test focusing previous item when it disappears.
+        vars.Step = 6;
+        vars.Bool1 = true;
+        ctx->Yield(2);
+        IM_CHECK_EQ(g.ActiveId, ctx->GetID("Text1"));
+        IM_CHECK_EQ(vars.Status.Activated, 0);
+        vars.Bool1 = false;
+        ctx->Yield();
+        IM_CHECK_EQ(g.ActiveId, 0u);
+        IM_CHECK_EQ(vars.Status.Activated, 0);
+#endif
     };
 
     // ## Test wrapping behavior
