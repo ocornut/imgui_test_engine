@@ -1958,4 +1958,88 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         }
     };
 #endif
+
+    // ## Test SetKeyboardFocusHere(), including cases when focused widget disappears. (#432)
+    t = IM_REGISTER_TEST(e, "widgets", "widgets_set_keyboard_focus_here");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::SetNextWindowSize(ImVec2(300, 200), ImGuiCond_Appearing);
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+
+        if (ctx->GenericVars.Int1 == 1)
+        {
+            ImGui::SetKeyboardFocusHere();
+            ImGui::InputText("Text##1", ctx->GenericVars.Str1, IM_ARRAYSIZE(ctx->GenericVars.Str1));
+            ctx->GenericVars.Status.QuerySet();
+        }
+        else if (ctx->GenericVars.Int1 == 2)
+        {
+            ImGui::InputText("Text##2", ctx->GenericVars.Str1, IM_ARRAYSIZE(ctx->GenericVars.Str1));
+            ImGui::SetKeyboardFocusHere(-1);
+            ctx->GenericVars.Status.QuerySet();
+        }
+        else if (ctx->GenericVars.Int1 == 3)
+        {
+            if (ctx->GenericVars.Bool1)
+            {
+                ImGui::SetKeyboardFocusHere();
+                ImGui::InputText("Text##3", ctx->GenericVars.Str1, IM_ARRAYSIZE(ctx->GenericVars.Str1));
+            }
+            ImGui::InputText("NoFocus##1", ctx->GenericVars.Str2, IM_ARRAYSIZE(ctx->GenericVars.Str2));
+            ctx->GenericVars.Status.QuerySet();
+
+        }
+        else if (ctx->GenericVars.Int1 == 4)
+        {
+            if (ctx->GenericVars.Bool1)
+            {
+                ImGui::InputText("Text##3", ctx->GenericVars.Str1, IM_ARRAYSIZE(ctx->GenericVars.Str1));
+                ImGui::SetKeyboardFocusHere(-1);
+            }
+            ImGui::InputText("NoFocus##1", ctx->GenericVars.Str2, IM_ARRAYSIZE(ctx->GenericVars.Str2));
+            ctx->GenericVars.Status.QuerySet();
+        }
+
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ctx->WindowRef("Test Window");
+
+        // Test focusing next item.
+        ctx->GenericVars.Int1 = 1;
+        ctx->Yield();
+        // ctx->Yield();                                            // This yield was required when next item focus was
+        // handled on the next frame (before fixing #432)
+        IM_CHECK_NO_RET(ctx->GenericVars.Status.Activated == 1);
+        ctx->GenericVars.Int1 = 0;                                  // Render nothing for one frame. Clears both active
+        ctx->Yield();                                               // ID and SetKeyboardFocusHere() request.
+
+        // Test focusing previous item.
+        ctx->GenericVars.Int1 = 2;
+        ctx->Yield();
+        ctx->Yield();
+        IM_CHECK_NO_RET(ctx->GenericVars.Status.Activated == 1);
+        ctx->GenericVars.Int1 = 0;
+        ctx->Yield();
+
+        // Test focusing next item when it disappears.
+        ctx->GenericVars.Int1 = 3;
+        ctx->GenericVars.Bool1 = true;
+        ctx->Yield();
+        ctx->GenericVars.Bool1 = false;
+        ctx->Yield();
+        IM_CHECK_NO_RET(ctx->GenericVars.Status.Activated == 0);
+        ctx->GenericVars.Int1 = 0;
+        ctx->Yield();
+
+        // Test focusing previous item when it disappears.
+        ctx->GenericVars.Int1 = 4;
+        ctx->GenericVars.Bool1 = true;
+        ctx->Yield();
+        ctx->Yield();
+        ctx->GenericVars.Bool1 = false;
+        ctx->Yield();
+        IM_CHECK_NO_RET(ctx->GenericVars.Status.Activated == 0);
+    };
 }
