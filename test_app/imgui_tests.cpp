@@ -2016,6 +2016,52 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         IM_CHECK(ctx->GenericVars.Id == ctx->GetID("Small2"));
     };
 
+    // ## Test drag sources with _SourceNoPreviewTooltip flag not producing a tooltip.
+    t = REGISTER_TEST("widgets", "widgets_drag_no_preview_tooltip");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
+
+        auto create_drag_drop_source = [](ImGuiDragDropFlags flags)
+        {
+            if (ImGui::BeginDragDropSource(flags))
+            {
+                int value = 0xF00D;
+                ImGui::SetDragDropPayload("_TEST_VALUE", &value, sizeof(int));
+                ImGui::EndDragDropSource();
+            }
+        };
+
+        ImGui::Button("Drag");
+        create_drag_drop_source(ImGuiDragDropFlags_SourceNoPreviewTooltip);
+
+        ImGui::Button("Drag Extern");
+        if (ImGui::IsItemClicked())
+            create_drag_drop_source(ImGuiDragDropFlags_SourceNoPreviewTooltip | ImGuiDragDropFlags_SourceExtern);
+
+        ImGui::Button("Drop");
+        if (ImGui::BeginDragDropTarget())
+        {
+            ImGui::AcceptDragDropPayload("_TEST_VALUE");
+            ImGui::EndDragDropTarget();
+        }
+
+        ImGuiContext& g = *ctx->UiContext;
+        ImGuiWindow* tooltip = ctx->GetWindowByRef(Str16f("##Tooltip_%02d", g.TooltipOverrideCount).c_str());
+        ctx->GenericVars.Bool1 |= g.TooltipOverrideCount != 0;
+        ctx->GenericVars.Bool1 |= tooltip != NULL && (tooltip->Active || tooltip->WasActive);
+
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ctx->WindowRef("Test Window");
+        ctx->ItemDragAndDrop("Drag", "Drop");
+        IM_CHECK(ctx->GenericVars.Bool1 == false);
+        ctx->ItemDragAndDrop("Drag Extern", "Drop");
+        IM_CHECK(ctx->GenericVars.Bool1 == false);
+    };
+
     // ## Test long text rendering by TextUnformatted().
     t = REGISTER_TEST("widgets", "widgets_text_unformatted_long");
     t->TestFunc = [](ImGuiTestContext* ctx)
