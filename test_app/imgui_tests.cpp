@@ -3507,6 +3507,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
         ImGui::End();
     };
 
+    // ## Test rendering two tables with same ID.
     t = REGISTER_TEST("table", "table_10_multi_instance");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
@@ -3574,6 +3575,43 @@ void RegisterTests_Table(ImGuiTestEngine* e)
             ctx->GenericVars.Bool1 = true;      // Retest again
             ctx->Yield();                       // Render one more frame to retest column widths
         }
+    };
+
+    // ## Test two tables in a tooltip continuously expanding tooltip size (#3162)
+    t = REGISTER_TEST("table", "table_two_tables_in_tooltip");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::Begin("Bug Report", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImGui::Button("Test Tooltip");
+        if (ImGui::IsItemHovered())
+        {
+            ImGui::BeginTooltip();
+            for (int i = 0; i < 2; i++)
+                if (ImGui::BeginTable(Str16f("Table%d", i).c_str(), 2))
+                {
+                    ImGui::TableSetupColumn("Header1");
+                    ImGui::TableSetupColumn("Header2");
+                    ImGui::TableAutoHeaders();
+                    ImGui::TableNextRow();
+                    ImGui::TableSetColumnIndex(0);
+                    ImGui::TextUnformatted("Test1");
+                    ImGui::TableSetColumnIndex(1);
+                    ImGui::TextUnformatted("Test2");
+                    ImGui::EndTable();
+                }
+            ctx->GenericVars.Float1 = ImGui::GetCurrentWindow()->Size.x;
+            ImGui::EndTooltip();
+        }
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ctx->WindowRef("Bug Report");
+        ctx->MouseMove("Test Tooltip");
+        ctx->SleepShort();
+        const float tooltip_width = ctx->GenericVars.Float1;
+        for (int n = 0; n < 3; n++)
+            IM_CHECK_EQ(ctx->GenericVars.Float1, tooltip_width);
     };
 #endif // #ifdef IMGUI_HAS_TABLE
 };
