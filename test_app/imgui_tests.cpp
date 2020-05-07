@@ -4706,7 +4706,7 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
 
         ctx->WindowRef("Dear ImGui Demo");
         ctx->MenuCheck("Tools/Style Editor");
-        ctx->WindowRef("Style Editor");
+        ctx->WindowRef("Dear ImGui Style Editor");
         ctx->ItemClick("##tabs/Sizes");
         ctx->ItemClick("##tabs/Colors");
         ctx->ItemClick("##tabs/Fonts");
@@ -4742,7 +4742,7 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
         ctx->WindowRef("Dear ImGui Demo");
         ctx->MenuAction(ImGuiTestAction_Check, "Tools/Style Editor");
 
-        ImGuiTestRef ref_window = "Style Editor";
+        ImGuiTestRef ref_window = "Dear ImGui Style Editor";
         ctx->WindowRef(ref_window);
         ctx->ItemClick("Colors##Selector");
         ctx->Yield();
