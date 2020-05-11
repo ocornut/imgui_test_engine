@@ -3948,6 +3948,48 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
 }
 
 //-------------------------------------------------------------------------
+// Tests: Draw, ImDrawList
+//-------------------------------------------------------------------------
+
+void RegisterTests_Draw(ImGuiTestEngine* e)
+{
+    ImGuiTest* t = NULL;
+
+    // ## Test whether splitting/merging draw lists properly retains a texture id.
+    t = REGISTER_TEST("draw", "draw_splitter_texture_id");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImDrawList* draw_list = ImGui::GetWindowDrawList();
+        ImTextureID prev_texture_id = draw_list->_TextureIdStack.back();
+        const int draw_count = draw_list->CmdBuffer.Size;
+        IM_CHECK(draw_list->CmdBuffer.back().ElemCount == 0);
+
+        ImVec2 p = ImGui::GetCursorScreenPos();
+        ImGui::Dummy(ImVec2(100 + 10 + 100, 100));
+
+        draw_list->ChannelsSplit(2);
+        draw_list->ChannelsSetCurrent(0);
+        // Image wont be clipped when added directly into the draw list.
+        draw_list->AddImage((ImTextureID)100, p, p + ImVec2(100, 100));
+        draw_list->ChannelsSetCurrent(1);
+        draw_list->AddImage((ImTextureID)200, p + ImVec2(110, 0), p + ImVec2(210, 100));
+        draw_list->ChannelsMerge();
+
+        IM_CHECK_NO_RET(draw_list->CmdBuffer.Size == draw_count + 2);
+        IM_CHECK_NO_RET(draw_list->CmdBuffer.back().ElemCount == 0);
+        IM_CHECK_NO_RET(prev_texture_id == draw_list->CmdBuffer.back().TextureId);
+
+        // Replace fake texture IDs with a known good ID in order to prevent graphics API crashing application.
+        for (ImDrawCmd& cmd : draw_list->CmdBuffer)
+            if (cmd.TextureId == (ImTextureID)100 || cmd.TextureId == (ImTextureID)200)
+                cmd.TextureId = prev_texture_id;
+
+        ImGui::End();
+    };
+}
+
+//-------------------------------------------------------------------------
 // Tests: Misc
 //-------------------------------------------------------------------------
 
@@ -4181,38 +4223,6 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
         IM_CHECK_EQ(out_ranges.Size, 5);
     };
 
-    // ## Test whether splitting/merging draw lists properly retains a texture id.
-    t = REGISTER_TEST("misc", "misc_drawlist_splitter_texture_id");
-    t->GuiFunc = [](ImGuiTestContext* ctx)
-    {
-        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
-        ImDrawList* draw_list = ImGui::GetWindowDrawList();
-        ImTextureID prev_texture_id = draw_list->_TextureIdStack.back();
-        const int draw_count = draw_list->CmdBuffer.Size;
-        IM_CHECK(draw_list->CmdBuffer.back().ElemCount == 0);
-
-        ImVec2 p = ImGui::GetCursorScreenPos();
-        ImGui::Dummy(ImVec2(100+10+100, 100));
-
-        draw_list->ChannelsSplit(2);
-        draw_list->ChannelsSetCurrent(0);
-        // Image wont be clipped when added directly into the draw list.
-        draw_list->AddImage((ImTextureID)100, p, p + ImVec2(100, 100));
-        draw_list->ChannelsSetCurrent(1);
-        draw_list->AddImage((ImTextureID)200, p + ImVec2(110, 0), p + ImVec2(210, 100));
-        draw_list->ChannelsMerge();
-
-        IM_CHECK_NO_RET(draw_list->CmdBuffer.Size == draw_count + 2);
-        IM_CHECK_NO_RET(draw_list->CmdBuffer.back().ElemCount == 0);
-        IM_CHECK_NO_RET(prev_texture_id == draw_list->CmdBuffer.back().TextureId);
-
-        // Replace fake texture IDs with a known good ID in order to prevent graphics API crashing application.
-        for (ImDrawCmd& cmd : draw_list->CmdBuffer)
-            if (cmd.TextureId == (ImTextureID)100 || cmd.TextureId == (ImTextureID)200)
-                cmd.TextureId = prev_texture_id;
-
-        ImGui::End();
-    };
 
     t = REGISTER_TEST("misc", "misc_repeat_typematic");
     t->TestFunc = [](ImGuiTestContext* ctx)
@@ -6109,6 +6119,7 @@ void RegisterTests(ImGuiTestEngine* e)
     RegisterTests_Columns(e);
     RegisterTests_Table(e);
     RegisterTests_Docking(e);
+    RegisterTests_Draw(e);
     RegisterTests_Misc(e);
 
     // Captures
