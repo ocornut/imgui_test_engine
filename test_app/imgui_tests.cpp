@@ -2067,7 +2067,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         ctx->WindowRef("Dear ImGui Demo");
-        ctx->MenuClick("Examples/Long text display");
+        ctx->MenuCheck("Examples/Long text display");
         ctx->WindowRef("Example: Long text display");
         ctx->ItemClick("Add 1000 lines");
         ctx->SleepShort();
@@ -2160,8 +2160,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
     };
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
-        ctx->WindowRef("##MainMenuBar"
-        );
+        ctx->WindowRef("##MainMenuBar");
         ctx->MenuClick("Second Menu/Second");
         IM_CHECK_EQ(ctx->GenericVars.Bool1, true);
     };
@@ -2909,6 +2908,50 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
             // Verify NavId was restored to initial value.
             IM_CHECK_EQ(g.NavId, ctx->GetID("Configuration"));
         }
+    };
+
+    // ## Test navigation in popups that are appended across multiple calls to BeginPopup()/EndPopup(). (#3223)
+    t = REGISTER_TEST("nav", "nav_appended_popup");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        if (ImGui::BeginMainMenuBar())
+        {
+            if (ImGui::BeginMenu("Menu"))
+            {
+                ImGui::MenuItem("a");
+                ImGui::MenuItem("b");
+                ImGui::EndMenu();
+            }
+            ImGui::EndMainMenuBar();
+        }
+        if (ImGui::BeginMainMenuBar())
+        {
+            if (ImGui::BeginMenu("Menu"))
+            {
+                ImGui::MenuItem("c");
+                ImGui::MenuItem("d");
+                ImGui::EndMenu();
+            }
+            ImGui::EndMainMenuBar();
+        }
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ctx->WindowRef("##MainMenuBar");
+
+        // Open menu, focus first "a" item.
+        ctx->MenuClick("Menu");
+        ctx->KeyPressMap(ImGuiKey_COUNT, ImGuiKeyModFlags_Alt); // FIXME
+        ctx->WindowRef(ctx->UiContext->NavWindow->Name);
+
+        // Navigate to "c" item.
+        IM_CHECK_EQ(ImGui::GetFocusID(), ctx->GetID("a"));
+        ctx->NavKeyPress(ImGuiNavInput_KeyDown_);
+        ctx->NavKeyPress(ImGuiNavInput_KeyDown_);
+        IM_CHECK_EQ(ImGui::GetFocusID(), ctx->GetID("c"));
+        ctx->NavKeyPress(ImGuiNavInput_KeyDown_);
+        ctx->NavKeyPress(ImGuiNavInput_KeyDown_);
+        IM_CHECK_EQ(ImGui::GetFocusID(), ctx->GetID("a"));
     };
 }
 
