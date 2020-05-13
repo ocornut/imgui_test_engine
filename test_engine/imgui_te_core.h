@@ -337,7 +337,7 @@ struct ImGuiTestEngineIO
 struct ImGuiTestItemInfo
 {
     int                         RefCount : 8;               // User can increment this if they want to hold on the result pointer across frames, otherwise the task will be GC-ed.
-    int                         NavLayer : 1;               // Nav layer of the item
+    unsigned int                NavLayer : 1;               // Nav layer of the item
     int                         Depth : 16;                 // Depth from requested parent id. 0 == ID is immediate child of requested parent id.
     int                         TimestampMain = -1;         // Timestamp of main result (all fields)
     int                         TimestampStatus = -1;       // Timestamp of StatusFlags

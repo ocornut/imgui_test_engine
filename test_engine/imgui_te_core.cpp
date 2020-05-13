@@ -1159,17 +1159,17 @@ void ImGuiTestEngineHook_ItemAdd(ImGuiContext* ui_ctx, const ImRect& bb, ImGuiID
         }
         if (depth != -1)
         {
-            ImGuiTestItemInfo* item_info = engine->GatherTask.OutList->Pool.GetOrAddByKey(id);
-            item_info->TimestampMain = engine->FrameCount;
-            item_info->ID = id;
-            item_info->ParentID = window->IDStack.back();
-            item_info->Window = window;
-            item_info->RectFull = item_info->RectClipped = bb;
-            item_info->RectClipped.ClipWithFull(window->ClipRect);      // This two step clipping is important, we want RectClipped to stays within RectFull
-            item_info->RectClipped.ClipWithFull(item_info->RectFull);
-            item_info->NavLayer = window->DC.NavLayerCurrent;
-            item_info->Depth = depth;
-            engine->GatherTask.LastItemInfo = item_info;
+            ImGuiTestItemInfo* item = engine->GatherTask.OutList->Pool.GetOrAddByKey(id);
+            item->TimestampMain = engine->FrameCount;
+            item->ID = id;
+            item->ParentID = window->IDStack.back();
+            item->Window = window;
+            item->RectFull = item->RectClipped = bb;
+            item->RectClipped.ClipWithFull(window->ClipRect);      // This two step clipping is important, we want RectClipped to stays within RectFull
+            item->RectClipped.ClipWithFull(item->RectFull);
+            item->NavLayer = window->DC.NavLayerCurrent;
+            item->Depth = depth;
+            engine->GatherTask.LastItemInfo = item;
         }
     }
 }
