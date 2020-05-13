@@ -2314,4 +2314,143 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         IM_CHECK(ImAbs(s8_ratio_half_inv - 0.5f) < 0.01f);
         IM_CHECK(ImAbs(u8_ratio_half_inv - 0.5f) < 0.01f);
     };
+
+
+    // ## Test tooltip positioning in various conditions.
+    t = IM_REGISTER_TEST(e, "widgets", "widgets_tooltip_positioning");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        // Initialized here to prevent crash when running GuiFunc only.
+        if (ctx->IsFirstGuiFrame())
+            ctx->GenericVars.Vec2 = ImVec2(50, 50);
+
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
+        ImGui::Button("Ok", ImVec2(100, 0));
+        if (ImGui::IsItemHovered())
+        {
+            ImGui::BeginTooltip();
+            ImGui::InvisibleButton("Space", ctx->GenericVars.Vec2);
+            ImGui::EndTooltip();
+        }
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiContext& g = *ctx->UiContext;
+        ctx->WindowRef("Test Window");
+        ctx->MouseMove("Ok");       // Force tooltip creation
+        ImGuiWindow* tooltip = ctx->GetWindowByRef("##Tooltip_00");
+
+        ImVec2 viewport_pos = ctx->GetMainViewportPos();
+        ImVec2 viewport_size = g.IO.DisplaySize;
+
+        struct WindowTestData
+        {
+            ImVec2 Pos;             // Window position
+            ImVec2 Pivot;           // Window position pivot
+            ImGuiDir DirSmall;      // Expected default tooltip location
+            ImGuiDir DirBigH;       // Expected location when tooltip is as wide as viewport
+            ImGuiDir DirBigV;       // Expected location when tooltip is as high as viewport
+        };
+
+        // Test tooltip positioning around viewport corners
+        static WindowTestData corner_test_data[] =
+        {
+            // Top-left corner
+            {
+                viewport_pos,
+                ImVec2(0.0f, 0.0f),
+                ImGuiDir_Right,
+                ImGuiDir_Down,
+                ImGuiDir_Right,
+            },
+            // Top edge
+            {
+                viewport_pos + ImVec2(viewport_size.x * 0.5f, 0.0f),
+                ImVec2(0.5f, 0.0f),
+                ImGuiDir_Right,
+                ImGuiDir_Down,
+                ImGuiDir_Right,
+            },
+            // Top-right corner
+            {
+                viewport_pos + ImVec2(viewport_size.x, 0.0f),
+                ImVec2(1.0f, 0.0f),
+                ImGuiDir_Down,
+                ImGuiDir_Down,
+                ImGuiDir_Left,
+            },
+            // Right edge
+            {
+                viewport_pos + ImVec2(viewport_size.x, viewport_size.y * 0.5f),
+                ImVec2(1.0f, 0.5f),
+                ImGuiDir_Down,
+                ImGuiDir_Down,
+                ImGuiDir_Left,
+            },
+            // Bottom-right corner
+            {
+                viewport_pos + viewport_size,
+                ImVec2(1.0f, 1.0f),
+                ImGuiDir_Up,
+                ImGuiDir_Up,
+                ImGuiDir_Left,
+            },
+            // Bottom edge
+            {
+                viewport_pos + ImVec2(viewport_size.x * 0.5f, viewport_size.y),
+                ImVec2(0.5f, 1.0f),
+                ImGuiDir_Right,
+                ImGuiDir_Up,
+                ImGuiDir_Right,
+            },
+            // Bottom-left corner
+            {
+                viewport_pos + ImVec2(0.0f, viewport_size.y),
+                ImVec2(0.0f, 1.0f),
+                ImGuiDir_Right,
+                ImGuiDir_Up,
+                ImGuiDir_Right,
+            },
+            // Left edge
+            {
+                viewport_pos + ImVec2(0.0f, viewport_size.y * 0.5f),
+                ImVec2(0.0f, 0.5f),
+                ImGuiDir_Right,
+                ImGuiDir_Down,
+                ImGuiDir_Right,
+            },
+        };
+
+        for (int i = 0; i < IM_ARRAYSIZE(corner_test_data); i++)
+        {
+            WindowTestData* data = &corner_test_data[i];
+            ctx->GenericVars.Vec2 = ImVec2(50, 50);
+            ctx->WindowMove(ctx->RefID, data->Pos, data->Pivot);
+            ctx->MouseMove("Ok");
+
+            // Check default tooltip location
+            IM_CHECK(tooltip->AutoPosLastDirection == data->DirSmall);
+
+            // Check tooltip location when it is real wide and verify that location does not change when it is too wide
+            // First iteration: tooltip is just wide enough to fit within viewport
+            // First iteration: tooltip is wider than viewport
+            for (int j = 0; j < 2; j++)
+            {
+                ctx->GenericVars.Vec2 = ImVec2((j * 0.25f * viewport_size.x) + (viewport_size.x - (g.Style.WindowPadding.x + g.Style.DisplaySafeAreaPadding.x) * 2), 50);
+                ctx->SleepNoSkip(0.1f, 1.0f / 60.0f);
+                IM_CHECK(tooltip->AutoPosLastDirection == data->DirBigH);
+            }
+
+            // Check tooltip location when it is real tall and verify that location does not change when it is too tall
+            // First iteration: tooltip is just tall enough to fit within viewport
+            // First iteration: tooltip is taller than viewport
+            for (int j = 0; j < 2; j++)
+            {
+                ctx->GenericVars.Vec2 = ImVec2(50, (j * 0.25f * viewport_size.x) + (viewport_size.y - (g.Style.WindowPadding.y + g.Style.DisplaySafeAreaPadding.y) * 2));
+                ctx->SleepNoSkip(0.1f, 1.0f / 60.0f);
+                IM_CHECK(tooltip->AutoPosLastDirection == data->DirBigV);
+            }
+        }
+    };
 }
