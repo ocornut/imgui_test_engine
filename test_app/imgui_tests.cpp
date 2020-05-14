@@ -3339,11 +3339,11 @@ void RegisterTests_Table(ImGuiTestEngine* e)
         table = ImGui::FindTableByID(ctx->GetID("table1"));    // Columns: FFF, do not span entire width of the table
         IM_CHECK(table->ColumnsTotalWidth + 1 < table->InnerWindow->ContentRegionRect.GetWidth());
         initial_col_size.resize(table->ColumnsCount);
-        for (int column_n = 0; column_n >= 0; column_n = table->Columns[column_n].NextActiveColumn)
+        for (int column_n = 0; column_n >= 0; column_n = table->Columns[column_n].NextVisibleColumn)
         {
             const ImGuiTableColumn* col_curr = &table->Columns[column_n];
-            const ImGuiTableColumn* col_prev = col_curr->PrevActiveColumn >= 0 ? &table->Columns[col_curr->PrevActiveColumn] : NULL;
-            const ImGuiTableColumn* col_next = col_curr->NextActiveColumn >= 0 ? &table->Columns[col_curr->NextActiveColumn] : NULL;
+            const ImGuiTableColumn* col_prev = col_curr->PrevVisibleColumn >= 0 ? &table->Columns[col_curr->PrevVisibleColumn] : NULL;
+            const ImGuiTableColumn* col_next = col_curr->NextVisibleColumn >= 0 ? &table->Columns[col_curr->NextVisibleColumn] : NULL;
             const float width_curr = col_curr->WidthGiven;
             const float width_prev = col_prev ? col_prev->WidthGiven : 0;
             const float width_next = col_next ? col_next->WidthGiven : 0;
@@ -3365,11 +3365,11 @@ void RegisterTests_Table(ImGuiTestEngine* e)
         // Test column fitting
         {
             // Ensure columns are smaller than their contents due to previous tests on table1
-            for (int column_n = 0; column_n >= 0; column_n = table->Columns[column_n].NextActiveColumn)
+            for (int column_n = 0; column_n >= 0; column_n = table->Columns[column_n].NextVisibleColumn)
                 IM_CHECK(table->Columns[column_n].WidthGiven < initial_col_size[column_n]);
 
             // Fit right-most column
-            int column_n = table->RightMostActiveColumn;
+            int column_n = table->RightMostVisibleColumn;
             const ImGuiTableColumn* col_curr = &table->Columns[column_n];
 
             // Fit column. ID calculation from BeginTableEx() and TableAutoHeaders()
@@ -3382,7 +3382,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
             IM_CHECK(col_curr->WidthGiven == initial_col_size[column_n]);  // Column restored original size
 
             // Ensure columns other than right-most one were not affected
-            for (column_n = 0; column_n >= 0 && column_n < table->RightMostActiveColumn; column_n = table->Columns[column_n].NextActiveColumn)
+            for (column_n = 0; column_n >= 0 && column_n < table->RightMostVisibleColumn; column_n = table->Columns[column_n].NextVisibleColumn)
                 IM_CHECK(table->Columns[column_n].WidthGiven < initial_col_size[column_n]);
 
             // Test fitting rest of the columns
@@ -3391,7 +3391,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
             ctx->ItemClick("Size all columns to fit");
 
             // Ensure all columns fit to contents
-            for (column_n = 0; column_n >= 0; column_n = table->Columns[column_n].NextActiveColumn)
+            for (column_n = 0; column_n >= 0; column_n = table->Columns[column_n].NextVisibleColumn)
                 IM_CHECK(table->Columns[column_n].WidthGiven == initial_col_size[column_n]);
 
             ctx->WindowRef("Test window 1");                    // Restore previous ref
@@ -3401,10 +3401,10 @@ void RegisterTests_Table(ImGuiTestEngine* e)
         IM_CHECK(table->ColumnsTotalWidth + 1 == table->InnerWindow->ContentRegionRect.GetWidth());
 
         // Iterate visible columns and check existence of resize handles
-        for (int column_n = 0; column_n >= 0; column_n = table->Columns[column_n].NextActiveColumn)
+        for (int column_n = 0; column_n >= 0; column_n = table->Columns[column_n].NextVisibleColumn)
         {
             ImGuiID handle_id = ImGui::TableGetColumnResizeID(table, column_n);
-            if (column_n == table->RightMostActiveColumn)
+            if (column_n == table->RightMostVisibleColumn)
                 IM_CHECK(ctx->ItemLocate(handle_id, ImGuiTestOpFlags_NoError) == NULL); // W
             else
                 IM_CHECK(ctx->ItemLocate(handle_id, ImGuiTestOpFlags_NoError) != NULL); // FF
