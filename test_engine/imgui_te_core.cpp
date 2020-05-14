@@ -714,6 +714,9 @@ static void ImGuiTestEngine_ProcessTestQueue(ImGuiTestEngine* engine)
 {
     // Avoid tracking scrolling in UI when running a single test
     const bool track_scrolling = (engine->TestsQueue.Size > 1) || (engine->TestsQueue.Size == 1 && (engine->TestsQueue[0].RunFlags & ImGuiTestRunFlags_CommandLine));
+    ImGuiIO& io = ImGui::GetIO();
+    const char* settings_ini_backup = io.IniFilename;
+    io.IniFilename = NULL;
 
     int ran_tests = 0;
     engine->IO.RunningTests = true;
@@ -803,6 +806,7 @@ static void ImGuiTestEngine_ProcessTestQueue(ImGuiTestEngine* engine)
     //if (g.OpenPopupStack.empty())   // Don't refocus Test Engine UI if popups are opened: this is so we can see remaining popups when implementing tests.
     if (ran_tests && engine->IO.ConfigTakeFocusBackAfterTests)
         engine->UiFocus = true;
+    io.IniFilename = settings_ini_backup;
 }
 
 bool ImGuiTestEngine_IsRunningTests(ImGuiTestEngine* engine)
