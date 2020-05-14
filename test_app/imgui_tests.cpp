@@ -8,6 +8,7 @@
 #include "imgui_internal.h"
 #include "imgui_tests.h"
 #include "shared/imgui_capture_tool.h"
+#include "shared/imgui_utils.h"
 #include "test_engine/imgui_te_core.h"
 #include "test_engine/imgui_te_context.h"
 #include "test_engine/imgui_te_util.h"
@@ -3667,6 +3668,135 @@ void RegisterTests_Table(ImGuiTestEngine* e)
         const float tooltip_width = ctx->GenericVars.Float1;
         for (int n = 0; n < 3; n++)
             IM_CHECK_EQ(ctx->GenericVars.Float1, tooltip_width);
+    };
+
+    // ## Test saving and loading table settings.
+    t = REGISTER_TEST("table", "table_settings");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        if (ctx->FrameCount < 0)
+            ctx->GenericVars.Int1 = ImGuiWindowFlags_NoSavedSettings;
+
+        const int column_count = 4;
+        ImGui::SetNextWindowSize(ImVec2(300, 200), ImGuiCond_Appearing);
+        ImGui::Begin("Table Settings", NULL, (ImGuiWindowFlags)ctx->GenericVars.Int1);
+
+        if (ImGui::BeginTable("Table", column_count, ImGuiTableFlags_Resizable |
+            ImGuiTableFlags_Hideable | ImGuiTableFlags_Reorderable | ImGuiTableFlags_Sortable))
+        {
+            ImGui::TableSetupColumn("Col1");
+            ImGui::TableSetupColumn("Col2");
+            ImGui::TableSetupColumn("Col3", ImGuiTableColumnFlags_WidthFixed, 50.0f);
+            ImGui::TableSetupColumn("Col4", ImGuiTableColumnFlags_WidthStretch);
+            ImGui::TableAutoHeaders();
+            HelperTableSubmitCells(column_count, 3);
+            ImGui::EndTable();
+        }
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ctx->WindowRef("Table Settings");
+        ImGuiID table_id = ctx->GetID("Table");
+        ImGuiTable* table = ImGui::FindTableByID(table_id);
+
+        // Number of tested settings == number of bits used in the mask for iterating all combinations.
+        const int number_of_settings = 5;
+        for (unsigned int mask = 0, end = (1 << number_of_settings); mask < end && !ctx->IsError(); mask++)
+        {
+            const bool Col0Sorted = (mask >> 0) & 1;
+            const bool Col1Hidden = (mask >> 1) & 1;
+            const bool ColsReordered = (mask >> 2) & 1;
+            const bool Col2Resized = (mask >> 3) & 1;
+            const bool Col3Resized = (mask >> 4) & 1;
+
+            // Discard previous table state.
+            table = ImGui::FindTableByID(table_id);
+            if (table)
+                ctx->TableDiscard(table);
+            ctx->Yield();                                                   // Rebuild a table on next frame
+            table = ImGui::FindTableByID(table_id);
+
+            // Modify table. Each bit in the mask corresponds to a single tested function.
+            // Modify number_of_settings when new tests are added.
+            // Modify expected_test_states adding new test states when new tests are added.
+            ctx->LogInfo("Permutation %d: Col0Sorted:%d Col1Hidden:%d ColsReordered:%d Col2Resized:%d Col3Resized:%d", mask,
+                Col0Sorted, Col1Hidden, ColsReordered, Col2Resized, Col3Resized);
+
+            if (Col0Sorted)
+            {
+                table->Columns[0].SortOrder = 0;
+                table->Columns[0].SortDirection = ImGuiSortDirection_Descending;
+            }
+
+            if (Col1Hidden)
+            {
+                table->Columns[1].IsVisible = table->Columns[1].IsVisibleNextFrame = false;
+                ctx->Yield();   // Must come into effect before reordering.
+            }
+
+            if (ColsReordered)
+            {
+                table->ReorderColumn = table->HeldHeaderColumn = 0;
+                table->ReorderColumnDir = 1;
+            }
+
+            if (Col2Resized)
+                table->Columns[2].WidthRequest = 60;
+
+            if (Col3Resized)
+                table->Columns[3].WidthStretchWeight = 0.2f;
+
+            ctx->Yield();
+
+            // Save table settings and destroy the table.
+            table->Flags &= ~ImGuiTableFlags_NoSavedSettings;
+            ImGui::TableSaveSettings(table);
+            const char* settings = ImGui::SaveIniSettingsToMemory();
+
+            // Recreate table with no settings.
+            ctx->TableDiscard(table);
+            ctx->Yield();
+            table = ImGui::FindTableByID(table_id);
+
+            // Verify that settings were indeed reset.
+            IM_CHECK_NO_RET(table->Columns[0].SortOrder == -1);
+            IM_CHECK_NO_RET(table->Columns[0].SortDirection == ImGuiSortDirection_Ascending);  // FIXME-TABLE: Should be ImGuiSortDirection_None for unsorted columns.
+            IM_CHECK_NO_RET(table->Columns[1].IsVisible == true);
+            IM_CHECK_NO_RET(table->Columns[0].DisplayOrder == 0);
+            IM_CHECK_NO_RET(table->Columns[1].DisplayOrder == 1);
+            IM_CHECK_NO_RET(table->Columns[2].DisplayOrder == 2);
+            IM_CHECK_NO_RET(table->Columns[3].DisplayOrder == 3);
+            IM_CHECK_NO_RET(table->Columns[2].WidthGiven == 50.0f);
+            IM_CHECK_NO_RET(table->Columns[3].WidthStretchWeight == 1.0f);
+
+            if (ctx->IsError())
+                break;
+
+            // Load saved settings.
+            Str16f table_ini_section("[Table][0x%08X,%d]", table->ID, table->ColumnsCount);
+            ImVector<char> table_settings;
+            IM_CHECK_NO_RET(ImFindIniSection(settings, table_ini_section.c_str(), &table_settings) == true);
+            ImGui::LoadIniSettingsFromMemory(table_settings.Data);
+            ctx->GenericVars.Int1 = 0;                                      // Allow loading settings for test window and table.
+            ctx->Yield();                                                   // Load settings, also a chance to mess up loaded state.
+            ctx->GenericVars.Int1 = ImGuiWindowFlags_NoSavedSettings;       // Prevent saving settings for test window and table when testing is done.
+            ctx->Yield();                                                   // One more frame, so _NoSavedSettings get saved.
+
+            // Verify that table has settings that were saved.
+            IM_CHECK_EQ_NO_RET(table->Columns[0].SortOrder, Col0Sorted ? 0 : -1);
+            IM_CHECK_EQ_NO_RET(table->Columns[0].SortDirection, Col0Sorted ? ImGuiSortDirection_Descending : ImGuiSortDirection_None);
+            IM_CHECK_EQ_NO_RET(table->Columns[1].IsVisible, !Col1Hidden);
+            IM_CHECK_EQ_NO_RET(table->Columns[0].DisplayOrder, ColsReordered ? (Col1Hidden ? 2 : 1) : 0);
+            IM_CHECK_EQ_NO_RET(table->Columns[1].DisplayOrder, ColsReordered ? 0 : 1);
+            IM_CHECK_EQ_NO_RET(table->Columns[2].DisplayOrder, ColsReordered ? (Col1Hidden ? 1 : 2) : 2);
+            IM_CHECK_EQ_NO_RET(table->Columns[2].WidthGiven, (Col2Resized ? 60.0f : 50.0f));
+            IM_CHECK_EQ_NO_RET(table->Columns[3].WidthStretchWeight, Col3Resized ? 0.2f : 1.0f);
+        }
+
+        // Ensure table settings do not leak in case of errors.
+        if (ImGuiTable* table = ImGui::FindTableByID(table_id))
+            ctx->TableDiscard(table);
     };
 #endif // #ifdef IMGUI_HAS_TABLE
 };

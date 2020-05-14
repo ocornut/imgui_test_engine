@@ -422,7 +422,7 @@ void ImThreadSetCurrentThreadDescription(const char* description)
 // Parsing helpers
 //-----------------------------------------------------------------------------
 // - ImParseSplitCommandLine()
-// - ImParseDateFromCompilerIntoYMD()
+// - ImFindIniSection()
 //-----------------------------------------------------------------------------
 
 void    ImParseSplitCommandLine(int* out_argc, char const*** out_argv, const char* cmd_line)
@@ -471,6 +471,39 @@ void    ImParseSplitCommandLine(int* out_argc, char const*** out_argv, const cha
 
     *out_argc = argc;
     *out_argv = argv;
+}
+
+bool ImFindIniSection(const char* ini_config, const char* header, ImVector<char>* result)
+{
+    IM_ASSERT(ini_config != NULL);
+    IM_ASSERT(header != NULL);
+    IM_ASSERT(result != NULL);
+
+    size_t ini_len = strlen(ini_config);
+    size_t header_len = strlen(header);
+
+    IM_ASSERT(header_len > 0);
+
+    if (ini_len == 0)
+        return false;
+
+    const char* section_start = strstr(ini_config, header);
+    if (section_start == NULL)
+        return false;
+
+    const char* section_end = strstr(section_start + header_len, "\n[");
+    if (section_end == NULL)
+        section_end = section_start + ini_len;
+
+    // "\n[" matches next header start on all platforms, but it cuts new line marker in half on windows.
+    if (*(section_end - 1) == '\r')
+        --section_end;
+
+    size_t section_len = section_end - section_start;
+    result->resize(section_len + 1);
+    ImStrncpy(result->Data, section_start, section_len);
+
+    return true;
 }
 
 //-----------------------------------------------------------------------------
