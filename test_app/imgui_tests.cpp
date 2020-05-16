@@ -6060,12 +6060,11 @@ void RegisterTests_Capture(ImGuiTestEngine* e)
                 ImGui::StyleColorsLight(&style);
                 ImGui::Begin("Debug##Light", &open);
             }
-            char string_buffer[] = "";
             float float_value = 0.6f;
             ImGui::Text("Hello, world 123");
             ImGui::Button("Save");
             ImGui::SetNextItemWidth(194);
-            ImGui::InputText("string", string_buffer, IM_ARRAYSIZE(string_buffer));
+            ImGui::InputText("string", ctx->GenericVars.Str1, IM_ARRAYSIZE(ctx->GenericVars.Str1));
             ImGui::SetNextItemWidth(194);
             ImGui::SliderFloat("float", &float_value, 0.0f, 1.0f);
             ImGui::End();
@@ -6085,7 +6084,7 @@ void RegisterTests_Capture(ImGuiTestEngine* e)
             ImGuiWindow* window = (n == 0) ? ctx->GetWindowByRef("/Debug##Dark") : ctx->GetWindowByRef("/Debug##Light");
             ctx->WindowRef(window->Name);
             ctx->ItemClick("string");
-            ctx->KeyChars("quick brown fox");
+            ctx->KeyCharsReplace("quick brown fox");
             //ctx->KeyPressMap(ImGuiKey_End);
             ctx->MouseMove("float");
             ctx->MouseMoveToPos(g.IO.MousePos + ImVec2(30, -10));
