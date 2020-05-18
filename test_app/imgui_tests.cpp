@@ -939,48 +939,68 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
 
     // ## Test all types with DragScalar().
     t = REGISTER_TEST("widgets", "widgets_datatype_1");
+    struct DragDatatypeVars { int widget_type = 0;  ImGuiDataType data_type = 0; char data_storage[10] = ""; char data_zero[8] = ""; };
+    t->SetUserDataType<DragDatatypeVars>();
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
+        DragDatatypeVars& vars = ctx->GetUserData<DragDatatypeVars>();
         ImGui::SetNextWindowSize(ImVec2(200, 200));
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
-        ImGui::DragScalar("Drag", ctx->GenericVars.Int1, &ctx->GenericVars.Str1[1], 0.5f);
-        ctx->GenericVars.Status.QueryInc();
+        bool ret;
+        if (vars.widget_type == 0)
+            ret = ImGui::DragScalar("Drag", vars.data_type, &vars.data_storage[1], 0.5f);
+        else
+            ret = ImGui::SliderScalar("Slider", vars.data_type, &vars.data_storage[1], &vars.data_zero, &vars.data_zero);
+        ctx->GenericVars.Status.QueryInc(ret);
         ImGui::End();
     };
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         ImGuiContext& g = *ctx->UiContext;
-        const int data_type_sizes[] = {
-            sizeof(char), sizeof(unsigned char),
-            sizeof(short), sizeof(unsigned short),
-            sizeof(int), sizeof(unsigned int),
-            sizeof(long long int), sizeof(unsigned long long int),
-            sizeof(float), sizeof(double)
-        };
-        static_assert(IM_ARRAYSIZE(data_type_sizes) == ImGuiDataType_COUNT, "");
+        DragDatatypeVars& vars = ctx->GetUserData<DragDatatypeVars>();
 
         ctx->WindowRef("Test Window");
-        for (int i = 0; i < ImGuiDataType_COUNT; i++)
+        for (int widget_type = 0; widget_type < 2; widget_type++)
         {
-            ctx->GenericVars.Int1 = i;                                                      // ImGuiDataType_
-            ctx->GenericVars.Str1[0] = ctx->GenericVars.Str1[1 + data_type_sizes[i]] = 42;  // Sentinel values
-            memset(&ctx->GenericVars.Str1[1], 0, data_type_sizes[i]);
-            ctx->MouseMove("Drag");
-            ctx->MouseDown();
-            ctx->MouseMoveToPos(g.IO.MousePos + ImVec2(30, 0));
-            IM_CHECK(ctx->GenericVars.Status.Edited);
-            ctx->GenericVars.Status.Clear();
-            ctx->MouseMoveToPos(g.IO.MousePos + ImVec2(-40, 0));
-            IM_CHECK(ctx->GenericVars.Status.Edited);
-            ctx->GenericVars.Status.Clear();
-            ctx->MouseUp();
-            ctx->ItemInput("Drag");
-            ctx->KeyChars(Str16f("%d", i).c_str());                                         // Case fixed by PR #3231
-            IM_CHECK(ctx->GenericVars.Status.Edited);
-            ctx->GenericVars.Status.Clear();
-            ctx->KeyPressMap(ImGuiKey_Enter);
-            IM_CHECK(ctx->GenericVars.Str1[0] == 42);                                       // Ensure there were no oob writes.
-            IM_CHECK(ctx->GenericVars.Str1[1 + data_type_sizes[i]] == 42);
+            for (int data_type = 0; data_type < ImGuiDataType_COUNT; data_type++)
+            {
+                size_t data_size = ImGui::DataTypeGetInfo(data_type)->Size;
+                IM_ASSERT(data_size + 2 <= sizeof(vars.data_storage));
+                memset(vars.data_storage, 0, sizeof(vars.data_storage));
+                memset(vars.data_zero, 0, sizeof(vars.data_zero));
+                vars.widget_type = widget_type;
+                vars.data_type = data_type;
+                vars.data_storage[0] = vars.data_storage[1 + data_size] = 42; // Sentinel values
+                const char* widget_name = widget_type == 0 ? "Drag" : "Slider";
+
+                if (widget_type == 0)
+                {
+                    ctx->GenericVars.Status.Clear();
+                    ctx->MouseMove(widget_name);
+                    ctx->MouseDown();
+                    ctx->MouseMoveToPos(g.IO.MousePos + ImVec2(30, 0));
+                    IM_CHECK(ctx->GenericVars.Status.Edited >= 1);
+                    ctx->GenericVars.Status.Clear();
+                    ctx->MouseMoveToPos(g.IO.MousePos + ImVec2(-40, 0));
+                    IM_CHECK(ctx->GenericVars.Status.Edited >= 1);
+                    ctx->MouseUp();
+                }
+
+                ctx->GenericVars.Status.Clear();
+                ctx->ItemInput(widget_name);
+                ctx->KeyChars("123");                               // Case fixed by PR #3231
+                IM_CHECK_EQ(ctx->GenericVars.Status.Ret, 1);
+                IM_CHECK_EQ(ctx->GenericVars.Status.Edited, 1);
+                ctx->GenericVars.Status.Clear();
+                ctx->Yield();
+                IM_CHECK_EQ(ctx->GenericVars.Status.Ret, 0);        // Verify it doesn't keep returning as edited.
+                IM_CHECK_EQ(ctx->GenericVars.Status.Edited, 0);
+
+                ctx->GenericVars.Status.Clear();
+                ctx->KeyPressMap(ImGuiKey_Enter);
+                IM_CHECK(vars.data_storage[0] == 42);               // Ensure there were no oob writes.
+                IM_CHECK(vars.data_storage[1 + data_size] == 42);
+            }
         }
     };
 
