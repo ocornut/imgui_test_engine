@@ -937,16 +937,51 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         IM_CHECK(ctx->GenericVars.Bool1 == true);
     };
 
-    // FIXME-TESTS: WIP
+    // ## Test all types with DragScalar().
     t = REGISTER_TEST("widgets", "widgets_datatype_1");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         ImGui::SetNextWindowSize(ImVec2(200, 200));
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
-        char buf[3] = { 42, 100, 42 };
-        ImGui::DragScalar("Drag", ImGuiDataType_S8, &buf[1], 0.5f, NULL, NULL);
-        IM_ASSERT(buf[0] == 42 && buf[2] == 42);
+        ImGui::DragScalar("Drag", ctx->GenericVars.Int1, &ctx->GenericVars.Str1[1], 0.5f);
+        ctx->GenericVars.Status.QueryInc();
         ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiContext& g = *ctx->UiContext;
+        const int data_type_sizes[] = {
+            sizeof(char), sizeof(unsigned char),
+            sizeof(short), sizeof(unsigned short),
+            sizeof(int), sizeof(unsigned int),
+            sizeof(long long int), sizeof(unsigned long long int),
+            sizeof(float), sizeof(double)
+        };
+        static_assert(IM_ARRAYSIZE(data_type_sizes) == ImGuiDataType_COUNT, "");
+
+        ctx->WindowRef("Test Window");
+        for (int i = 0; i < ImGuiDataType_COUNT; i++)
+        {
+            ctx->GenericVars.Int1 = i;                                                      // ImGuiDataType_
+            ctx->GenericVars.Str1[0] = ctx->GenericVars.Str1[1 + data_type_sizes[i]] = 42;  // Sentinel values
+            memset(&ctx->GenericVars.Str1[1], 0, data_type_sizes[i]);
+            ctx->MouseMove("Drag");
+            ctx->MouseDown();
+            ctx->MouseMoveToPos(g.IO.MousePos + ImVec2(30, 0));
+            IM_CHECK(ctx->GenericVars.Status.Edited);
+            ctx->GenericVars.Status.Clear();
+            ctx->MouseMoveToPos(g.IO.MousePos + ImVec2(-40, 0));
+            IM_CHECK(ctx->GenericVars.Status.Edited);
+            ctx->GenericVars.Status.Clear();
+            ctx->MouseUp();
+            ctx->ItemInput("Drag");
+            ctx->KeyChars(Str16f("%d", i).c_str());                                         // Case fixed by PR #3231
+            IM_CHECK(ctx->GenericVars.Status.Edited);
+            ctx->GenericVars.Status.Clear();
+            ctx->KeyPressMap(ImGuiKey_Enter);
+            IM_CHECK(ctx->GenericVars.Str1[0] == 42);                                       // Ensure there were no oob writes.
+            IM_CHECK(ctx->GenericVars.Str1[1 + data_type_sizes[i]] == 42);
+        }
     };
 
     // ## Test DragInt() as InputText
