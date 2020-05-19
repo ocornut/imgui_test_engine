@@ -1937,12 +1937,34 @@ void    ImGuiTestContext::UndockNode(ImGuiID dock_id)
         return;
     if (node->IsFloatingNode())
         return;
+    if (node->Windows.empty())
+        return;
 
     ImGuiID dock_button_id = ImHashDecoratedPath("#COLLAPSE", dock_id); // FIXME_TESTS
-    MouseMove(dock_button_id);
-    MouseDown(0);
-    MouseMoveToPos(ImGui::GetIO().MousePos + ImVec2(20, 20));
+    const float h = node->Windows[0]->TitleBarHeight();
+    if (!UiContext->IO.ConfigDockingWithShift)
+        KeyDownMap(ImGuiKey_COUNT, ImGuiKeyModFlags_Shift);
+    ItemDragWithDelta(dock_button_id, ImVec2(h, h) * -2);
+    if (!UiContext->IO.ConfigDockingWithShift)
+        KeyUpMap(ImGuiKey_COUNT, ImGuiKeyModFlags_Shift);
     MouseUp();
+}
+
+void    ImGuiTestContext::UndockWindow(const char* window_name)
+{
+    IM_ASSERT(window_name != NULL);
+
+    ImGuiWindow* window = GetWindowByRef(window_name);
+    if (!window->DockIsActive)
+        return;
+
+    const float h = window->TitleBarHeight();
+    if (!UiContext->IO.ConfigDockingWithShift)
+        KeyDownMap(ImGuiKey_COUNT, ImGuiKeyModFlags_Shift);
+    ItemDragWithDelta(window_name, ImVec2(h, h) * -2);
+    if (!UiContext->IO.ConfigDockingWithShift)
+        KeyUpMap(ImGuiKey_COUNT, ImGuiKeyModFlags_Shift);
+    Yield();
 }
 
 #endif // #ifdef IMGUI_HAS_DOCK

@@ -323,6 +323,7 @@ struct ImGuiTestContext
     ImGuiID     DockMultiSetupBasic(ImGuiID dock_id, const char* window_name, ...);
     bool        DockIdIsUndockedOrStandalone(ImGuiID dock_id);
     void        UndockNode(ImGuiID dock_id);
+    void        UndockWindow(const char* window_name);
 #endif
 
     // Performances

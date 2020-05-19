@@ -4039,6 +4039,69 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
         if (ctx->FrameCount == 60)
             ctx->Finish();
     };
+
+    // ## Test window undocking.
+    t = REGISTER_TEST("docking", "docking_undock_tabs_and_nodes");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::SetNextWindowSize(ImVec2(300, 200), ImGuiCond_Appearing);
+        ImGui::Begin("Window 1", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImGui::End();
+
+        ImGui::SetNextWindowSize(ImVec2(300, 200), ImGuiCond_Appearing);
+        ImGui::Begin("Window 2", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiWindow* window1 = ctx->GetWindowByRef("Window 1");
+        ImGuiWindow* window2 = ctx->GetWindowByRef("Window 2");
+        ImGuiWindow* demo_window = ctx->GetWindowByRef("Dear ImGui Demo");
+        ctx->DockMultiClear("Window 1", "Window 2", "Dear ImGui Demo", NULL);
+
+        // Test undocking from tab.
+        ctx->DockWindowInto("Window 1", "Window 2");
+        IM_CHECK(window1->DockNode != NULL);
+        IM_CHECK(window1->DockNode == window2->DockNode);
+        ctx->UndockWindow("Window 1");
+        IM_CHECK(window1->DockNode == NULL || ctx->DockIdIsUndockedOrStandalone(window1->DockNode->ID));
+        IM_CHECK(window2->DockNode == NULL || ctx->DockIdIsUndockedOrStandalone(window2->DockNode->ID));
+
+        // Ensure demo window is visible.
+        ctx->WindowMoveToMakePosVisible(demo_window, demo_window->Pos);
+        ctx->WindowMoveToMakePosVisible(demo_window, demo_window->Pos + demo_window->Size);
+
+        // Test undocking from collapse button.
+        for (int direction = 0; direction < ImGuiDir_COUNT; direction++)
+        {
+            // Test undocking with one and two windows.
+            for (int n = 0; n < 2; n++)
+            {
+                ctx->DockMultiClear("Window 1", "Window 2", "Dear ImGui Demo", NULL);
+                ctx->Yield();
+                ctx->DockWindowInto("Window 1", "Dear ImGui Demo", (ImGuiDir)direction);
+                if (n)
+                    ctx->DockWindowInto("Window 2", "Window 1");
+                IM_CHECK(demo_window->DockNode != NULL);
+                IM_CHECK(demo_window->DockNode->ParentNode != NULL);
+                IM_CHECK(window1->DockNode != NULL);
+                if (n)
+                {
+                    IM_CHECK(window1->DockNode == window2->DockNode);
+                    IM_CHECK(window1->DockNode->ParentNode == window2->DockNode->ParentNode);
+                }
+                IM_CHECK(window1->DockNode->ParentNode == demo_window->DockNode->ParentNode);
+                ctx->UndockNode(window1->DockNode->ID);
+                IM_CHECK(window1->DockNode != NULL);
+                if (n)
+                {
+                    IM_CHECK(window1->DockNode == window2->DockNode);
+                    IM_CHECK(window2->DockNode->ParentNode == NULL);
+                }
+                IM_CHECK(window1->DockNode->ParentNode == NULL);
+            }
+        }
+    };
 #endif
 }
 
