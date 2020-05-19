@@ -5769,7 +5769,7 @@ void RegisterTests_Perf(ImGuiTestEngine* e)
             ImVec2 base_pos(cursor_screen_pos.x + (line_spacing.x * 0.5f), cursor_screen_pos.y);
 
 #ifndef IMGUI_HAS_TEXLINES
-            const ImDrawListFlags ImDrawListFlags_AntiAliasedLinesUseTexData = 0;
+            const ImDrawListFlags ImDrawListFlags_AntiAliasedLinesUseTex = 0;
 #endif
 
 			for (int i = 0; i < num_rows; i++)
