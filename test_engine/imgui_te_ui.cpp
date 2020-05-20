@@ -479,7 +479,7 @@ void    ImGuiTestEngine_ShowTestWindow(ImGuiTestEngine* engine, bool* p_open)
         {
             ImGuiIO& io = ImGui::GetIO();
             ImGui::Text("%.3f ms/frame (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
-            ImGui::Text("TestEngine: HookItems: %d, HookPushId: %d, LocateTasks: %d", g.TestEngineHookItems, g.TestEngineHookIdInfo != 0, engine->LocateTasks.Size);
+            ImGui::Text("TestEngine: HookItems: %d, HookPushId: %d, InfoTasks: %d", g.TestEngineHookItems, g.TestEngineHookIdInfo != 0, engine->InfoTasks.Size);
             ImGui::Separator();
 
             ImGui::Checkbox("Stack Tool", &engine->StackTool.Visible);
@@ -569,8 +569,8 @@ void    ImGuiStackTool::ShowStackToolWindow(ImGuiTestEngine* engine, bool* p_ope
     // Quick status
     ImGuiID hovered_id = g.HoveredIdPreviousFrame;
     ImGuiID active_id = g.ActiveId;
-    ImGuiTestItemInfo* hovered_id_info = hovered_id ? ImGuiTestEngine_ItemLocate(engine, hovered_id, "") : NULL;
-    ImGuiTestItemInfo* active_id_info = active_id ? ImGuiTestEngine_ItemLocate(engine, active_id, "") : NULL;
+    ImGuiTestItemInfo* hovered_id_info = hovered_id ? ImGuiTestEngine_FindItemInfo(engine, hovered_id, "") : NULL;
+    ImGuiTestItemInfo* active_id_info = active_id ? ImGuiTestEngine_FindItemInfo(engine, active_id, "") : NULL;
     ImGui::Text("HoveredId: 0x%08X (\"%s\")", hovered_id, hovered_id_info ? hovered_id_info->DebugLabel : "");
     ImGui::Text("ActiveId:  0x%08X (\"%s\")", active_id, active_id_info ? active_id_info->DebugLabel : "");
     if (ImGui::Button("Item Picker..."))
@@ -604,7 +604,7 @@ void    ImGuiStackTool::ShowStackToolWindow(ImGuiTestEngine* engine, bool* p_ope
         // Source: ItemInfo()
         // FIXME: Ambiguity between empty label (which is a string) and custom ID (which is no)
 #if 1
-        if (ImGuiTestItemInfo* new_info = ImGuiTestEngine_ItemLocate(engine, info->ID, ""))
+        if (ImGuiTestItemInfo* new_info = ImGuiTestEngine_FindItemInfo(engine, info->ID, ""))
         {
             ImGui::Text("??? \"%s\"", new_info->DebugLabel);
             continue;

@@ -65,7 +65,6 @@ static void ImGuiTestEngine_ClearInput(ImGuiTestEngine* engine);
 static void ImGuiTestEngine_ApplyInputToImGuiContext(ImGuiTestEngine* engine);
 static void ImGuiTestEngine_ProcessTestQueue(ImGuiTestEngine* engine);
 static void ImGuiTestEngine_ClearTests(ImGuiTestEngine* engine);
-static void ImGuiTestEngine_ClearLocateTasks(ImGuiTestEngine* engine);
 static void ImGuiTestEngine_PreNewFrame(ImGuiTestEngine* engine, ImGuiContext* ui_ctx);
 static void ImGuiTestEngine_PostNewFrame(ImGuiTestEngine* engine, ImGuiContext* ui_ctx);
 static void ImGuiTestEngine_RunGuiFunc(ImGuiTestEngine* engine);
@@ -87,10 +86,8 @@ static void  ImGuiTestEngine_SettingsWriteAll(ImGuiContext* imgui_ctx, ImGuiSett
 // - ImGuiTestEngine_Abort()
 // - ImGuiTestEngine_QueueAllTests()
 //-------------------------------------------------------------------------
-// - ImGuiTestEngine_FindLocateTask()
-// - ImGuiTestEngine_ItemLocate()
+// - ImGuiTestEngine_FindItemInfo()
 // - ImGuiTestEngine_ClearTests()
-// - ImGuiTestEngine_ClearLocateTasks()
 // - ImGuiTestEngine_ApplyInputToImGuiContext()
 // - ImGuiTestEngine_PreNewFrame()
 // - ImGuiTestEngine_PostNewFrame()
@@ -163,7 +160,11 @@ void    ImGuiTestEngine_ShutdownContext(ImGuiTestEngine* engine)
     engine->UserDataBufferSize = 0;
 
     ImGuiTestEngine_ClearTests(engine);
-    ImGuiTestEngine_ClearLocateTasks(engine);
+
+    for (int n = 0; n < engine->InfoTasks.Size; n++)
+        IM_DELETE(engine->InfoTasks[n]);
+    engine->InfoTasks.clear();
+
     IM_DELETE(engine);
 
     // Release hook
@@ -228,11 +229,11 @@ void    ImGuiTestEngine_Abort(ImGuiTestEngine* engine)
 }
 
 // FIXME-OPT
-ImGuiTestLocateTask* ImGuiTestEngine_FindLocateTask(ImGuiTestEngine* engine, ImGuiID id)
+static ImGuiTestInfoTask* ImGuiTestEngine_FindInfoTask(ImGuiTestEngine* engine, ImGuiID id)
 {
-    for (int task_n = 0; task_n < engine->LocateTasks.Size; task_n++)
+    for (int task_n = 0; task_n < engine->InfoTasks.Size; task_n++)
     {
-        ImGuiTestLocateTask* task = engine->LocateTasks[task_n];
+        ImGuiTestInfoTask* task = engine->InfoTasks[task_n];
         if (task->ID == id)
             return task;
     }
@@ -242,11 +243,11 @@ ImGuiTestLocateTask* ImGuiTestEngine_FindLocateTask(ImGuiTestEngine* engine, ImG
 // Request information about one item.
 // Will push a request for the test engine to process.
 // Will return NULL when results are not ready (or not available).
-ImGuiTestItemInfo* ImGuiTestEngine_ItemLocate(ImGuiTestEngine* engine, ImGuiID id, const char* debug_id)
+ImGuiTestItemInfo* ImGuiTestEngine_FindItemInfo(ImGuiTestEngine* engine, ImGuiID id, const char* debug_id)
 {
     IM_ASSERT(id != 0);
 
-    if (ImGuiTestLocateTask* task = ImGuiTestEngine_FindLocateTask(engine, id))
+    if (ImGuiTestInfoTask* task = ImGuiTestEngine_FindInfoTask(engine, id))
     {
         if (task->Result.TimestampMain + 2 >= engine->FrameCount)
         {
@@ -257,7 +258,7 @@ ImGuiTestItemInfo* ImGuiTestEngine_ItemLocate(ImGuiTestEngine* engine, ImGuiID i
     }
 
     // Create task
-    ImGuiTestLocateTask* task = IM_NEW(ImGuiTestLocateTask)();
+    ImGuiTestInfoTask* task = IM_NEW(ImGuiTestInfoTask)();
     task->ID = id;
     task->FrameCount = engine->FrameCount;
 #ifdef IMGUI_TEST_ENGINE_DEBUG
@@ -277,7 +278,7 @@ ImGuiTestItemInfo* ImGuiTestEngine_ItemLocate(ImGuiTestEngine* engine, ImGuiID i
         }
     }
 #endif
-    engine->LocateTasks.push_back(task);
+    engine->InfoTasks.push_back(task);
 
     return NULL;
 }
@@ -288,13 +289,6 @@ static void ImGuiTestEngine_ClearTests(ImGuiTestEngine* engine)
         IM_DELETE(engine->TestsAll[n]);
     engine->TestsAll.clear();
     engine->TestsQueue.clear();
-}
-
-static void ImGuiTestEngine_ClearLocateTasks(ImGuiTestEngine* engine)
-{
-    for (int n = 0; n < engine->LocateTasks.Size; n++)
-        IM_DELETE(engine->LocateTasks[n]);
-    engine->LocateTasks.clear();
 }
 
 void ImGuiTestEngine_ClearInput(ImGuiTestEngine* engine)
@@ -552,13 +546,13 @@ static void ImGuiTestEngine_PostNewFrame(ImGuiTestEngine* engine, ImGuiContext* 
 
     // Garbage collect unused tasks
     const int LOCATION_TASK_ELAPSE_FRAMES = 20;
-    for (int task_n = 0; task_n < engine->LocateTasks.Size; task_n++)
+    for (int task_n = 0; task_n < engine->InfoTasks.Size; task_n++)
     {
-        ImGuiTestLocateTask* task = engine->LocateTasks[task_n];
+        ImGuiTestInfoTask* task = engine->InfoTasks[task_n];
         if (task->FrameCount < engine->FrameCount - LOCATION_TASK_ELAPSE_FRAMES && task->Result.RefCount == 0)
         {
             IM_DELETE(task);
-            engine->LocateTasks.erase(engine->LocateTasks.Data + task_n);
+            engine->InfoTasks.erase(engine->InfoTasks.Data + task_n);
             task_n--;
         }
     }
@@ -938,7 +932,7 @@ void ImGuiTestEngine_UpdateHooks(ImGuiTestEngine* engine)
     //if (engine->TestContext != NULL)
     //    want_hooking = true;
 
-    if (engine->LocateTasks.Size > 0)
+    if (engine->InfoTasks.Size > 0)
         want_hooking = true;
     if (engine->GatherTask.ParentID != 0)
         want_hooking = true;
@@ -1106,10 +1100,10 @@ void ImGuiTestEngineHook_ItemAdd(ImGuiContext* ui_ctx, const ImRect& bb, ImGuiID
     ImGuiContext& g = *ui_ctx;
     ImGuiWindow* window = g.CurrentWindow;
 
-    // FIXME-OPT: Early out if there are no active Locate/Gather tasks.
+    // FIXME-OPT: Early out if there are no active Info/Gather tasks.
 
-    // Locate Tasks
-    if (ImGuiTestLocateTask* task = ImGuiTestEngine_FindLocateTask(engine, id))
+    // Info Tasks
+    if (ImGuiTestInfoTask* task = ImGuiTestEngine_FindInfoTask(engine, id))
     {
         ImGuiTestItemInfo* item = &task->Result;
         item->TimestampMain = g.FrameCount;
@@ -1184,8 +1178,8 @@ void ImGuiTestEngineHook_ItemInfo(ImGuiContext* ui_ctx, ImGuiID id, const char* 
     //ImGuiWindow* window = g.CurrentWindow;
     //IM_ASSERT(window->DC.LastItemId == id || window->DC.LastItemId == 0); // Need _ItemAdd() to be submitted before _ItemInfo()
 
-    // Update Locate Task status flags
-    if (ImGuiTestLocateTask* task = ImGuiTestEngine_FindLocateTask(engine, id))
+    // Update Info Task status flags
+    if (ImGuiTestInfoTask* task = ImGuiTestEngine_FindInfoTask(engine, id))
     {
         ImGuiTestItemInfo* item = &task->Result;
         item->TimestampStatus = g.FrameCount;

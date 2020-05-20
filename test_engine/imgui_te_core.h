@@ -19,8 +19,8 @@ struct ImGuiTestItemInfo;
 struct ImGuiTestItemList;
 struct ImGuiTestInputs;
 struct ImGuiTestGatherTask;
-struct ImGuiTestLocateTask;
 struct ImGuiTestFindByLabelTask;
+struct ImGuiTestInfoTask;
 struct ImGuiTestRunTask;
 
 struct ImGuiCaptureArgs;
@@ -336,7 +336,7 @@ struct ImGuiTestEngineIO
     bool                        RenderWantMaxSpeed = false;
 };
 
-// Result of an ItemLocate query
+// Result of an ItemInfo query
 struct ImGuiTestItemInfo
 {
     int                         RefCount : 8;               // User can increment this if they want to hold on the result pointer across frames, otherwise the task will be GC-ed.

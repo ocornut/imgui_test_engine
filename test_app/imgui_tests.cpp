@@ -2376,7 +2376,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         IM_CHECK_EQ(selection.SelectionSize, 8);
 
         // Test reverse clipped SHIFT+Click
-        // FIXME-TESTS: Locate query could disable clipper?
+        // FIXME-TESTS: ItemInfo query could disable clipper?
         // FIXME-TESTS: We would need to disable clipper because it conveniently rely on cliprect which is affected by actual viewport, so ScrollToBottom() is not enough...
         //ctx->ScrollToBottom();
         ctx->ItemClick("Object 0030");
@@ -3460,9 +3460,9 @@ void RegisterTests_Table(ImGuiTestEngine* e)
         {
             ImGuiID handle_id = ImGui::TableGetColumnResizeID(table, column_n);
             if (column_n == table->RightMostVisibleColumn)
-                IM_CHECK(ctx->ItemLocate(handle_id, ImGuiTestOpFlags_NoError) == NULL); // W
+                IM_CHECK(ctx->ItemInfo(handle_id, ImGuiTestOpFlags_NoError) == NULL); // W
             else
-                IM_CHECK(ctx->ItemLocate(handle_id, ImGuiTestOpFlags_NoError) != NULL); // FF
+                IM_CHECK(ctx->ItemInfo(handle_id, ImGuiTestOpFlags_NoError) != NULL); // FF
         }
         IM_CHECK(table->ColumnsTotalWidth + 1 == table->InnerWindow->ContentRegionRect.GetWidth());
     };

@@ -7,6 +7,18 @@
 // DATA STRUCTURES
 //-------------------------------------------------------------------------
 
+// Query item position/window/state given ID.
+struct ImGuiTestInfoTask
+{
+    // Input
+    ImGuiID                 ID = 0;
+    int                     FrameCount = -1;        // Timestamp of request
+    char                    DebugName[64] = "";     // Debug string representing the queried ID
+
+    // Output
+    ImGuiTestItemInfo       Result;
+};
+
 // Gather item list in given parent ID.
 struct ImGuiTestGatherTask
 {
@@ -17,18 +29,6 @@ struct ImGuiTestGatherTask
     // Output/Temp
     ImGuiTestItemList*      OutList = NULL;
     ImGuiTestItemInfo*      LastItemInfo = NULL;
-};
-
-// Locate item position/window/state given ID.
-struct ImGuiTestLocateTask
-{
-    // Input
-    ImGuiID                 ID = 0;
-    int                     FrameCount = -1;        // Timestamp of request
-    char                    DebugName[64] = "";     // Debug string representing the queried ID
-
-    // Output
-    ImGuiTestItemInfo       Result;
 };
 
 // Find item ID given a label and a parent id
@@ -97,9 +97,9 @@ struct ImGuiTestEngine
     ImVector<ImGuiTest*>        TestsAll;
     ImVector<ImGuiTestRunTask>  TestsQueue;
     ImGuiTestContext*           TestContext = NULL;
-    ImVector<ImGuiTestLocateTask*>  LocateTasks;
-    ImGuiTestFindByLabelTask    FindByLabelTask;
+    ImVector<ImGuiTestInfoTask*>InfoTasks;
     ImGuiTestGatherTask         GatherTask;
+    ImGuiTestFindByLabelTask    FindByLabelTask;
     void*                       UserDataBuffer = NULL;
     size_t                      UserDataBufferSize = 0;
     ImGuiTestCoroutineHandle    TestQueueCoroutine = NULL;      // Coroutine to run the test queue
@@ -155,7 +155,7 @@ struct ImGuiTestEngine
 // FUNCTIONS
 //-------------------------------------------------------------------------
 
-ImGuiTestItemInfo*  ImGuiTestEngine_ItemLocate(ImGuiTestEngine* engine, ImGuiID id, const char* debug_id);
+ImGuiTestItemInfo*  ImGuiTestEngine_FindItemInfo(ImGuiTestEngine* engine, ImGuiID id, const char* debug_id);
 void                ImGuiTestEngine_PushInput(ImGuiTestEngine* engine, const ImGuiTestInput& input);
 void                ImGuiTestEngine_Yield(ImGuiTestEngine* engine);
 void                ImGuiTestEngine_SetDeltaTime(ImGuiTestEngine* engine, float delta_time);

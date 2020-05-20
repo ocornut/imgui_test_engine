@@ -281,7 +281,7 @@ struct ImGuiTestContext
     void        ScrollVerifyScrollMax(ImGuiWindow* window);
 
     // Low-level queries
-    ImGuiTestItemInfo*  ItemLocate(ImGuiTestRef ref, ImGuiTestOpFlags flags = ImGuiTestOpFlags_None);
+    ImGuiTestItemInfo*  ItemInfo(ImGuiTestRef ref, ImGuiTestOpFlags flags = ImGuiTestOpFlags_None);
     void                GatherItems(ImGuiTestItemList* out_list, ImGuiTestRef parent, int depth = -1);
 
     // Item/Widgets manipulation

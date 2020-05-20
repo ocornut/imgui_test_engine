@@ -192,8 +192,8 @@ void    ImGuiTestContext::LogDebugInfo()
 {
     ImGuiID item_hovered_id = UiContext->HoveredIdPreviousFrame;
     ImGuiID item_active_id = UiContext->ActiveId;
-    ImGuiTestItemInfo* item_hovered_info = item_hovered_id ? ImGuiTestEngine_ItemLocate(Engine, item_hovered_id, "") : NULL;
-    ImGuiTestItemInfo* item_active_info = item_active_id ? ImGuiTestEngine_ItemLocate(Engine, item_active_id, "") : NULL;
+    ImGuiTestItemInfo* item_hovered_info = item_hovered_id ? ImGuiTestEngine_FindItemInfo(Engine, item_hovered_id, "") : NULL;
+    ImGuiTestItemInfo* item_active_info = item_active_id ? ImGuiTestEngine_FindItemInfo(Engine, item_active_id, "") : NULL;
     LogDebug("Hovered: 0x%08X (\"%s\"), Active:  0x%08X(\"%s\")",
         item_hovered_id, item_hovered_info ? item_hovered_info->DebugLabel : "",
         item_active_id, item_active_info ? item_active_info->DebugLabel : "");
@@ -472,7 +472,7 @@ bool ImGuiTestContext::EndCaptureGif(ImGuiCaptureArgs* args)
     bool ret = Engine->CaptureContext.IsCapturingGif() && ImGuiTestEngine_EndCaptureAnimation(Engine, args);
     if (ret)
     {
-        // In-progress capture was cancelled by user. Delete incomplete file.
+        // In-progress capture was canceled by user. Delete incomplete file.
         if (IsError())
         {
             //ImFileDelete(args->OutSavedFileName);
@@ -484,7 +484,7 @@ bool ImGuiTestContext::EndCaptureGif(ImGuiCaptureArgs* args)
     return ret;
 }
 
-ImGuiTestItemInfo* ImGuiTestContext::ItemLocate(ImGuiTestRef ref, ImGuiTestOpFlags flags)
+ImGuiTestItemInfo* ImGuiTestContext::ItemInfo(ImGuiTestRef ref, ImGuiTestOpFlags flags)
 {
     if (IsError())
         return NULL;
@@ -508,7 +508,7 @@ ImGuiTestItemInfo* ImGuiTestContext::ItemLocate(ImGuiTestRef ref, ImGuiTestOpFla
         }
         full_id = task->OutItemId;
 
-        // FIXME: InFilterItemStatusFlags is not clear here intentionally, because it is set in ItemAction() and reused in later calls to ItemLocate() to resolve ambiguities.
+        // FIXME: InFilterItemStatusFlags is not clear here intentionally, because it is set in ItemAction() and reused in later calls to ItemInfo() to resolve ambiguities.
         task->InBaseId = 0;
         task->InLabel = NULL;
         task->OutItemId = 0;
@@ -523,13 +523,13 @@ ImGuiTestItemInfo* ImGuiTestContext::ItemLocate(ImGuiTestRef ref, ImGuiTestOpFla
     }
 
 
-    // If ui_ctx->TestEngineHooksEnabled is not already on (first ItemLocate task in a while) we'll probably need an extra frame to warmup
+    // If ui_ctx->TestEngineHooksEnabled is not already on (first ItemItem task in a while) we'll probably need an extra frame to warmup
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
     ImGuiTestItemInfo* item = NULL;
     int retries = 0;
     while (full_id && retries < 2)
     {
-        item = ImGuiTestEngine_ItemLocate(Engine, full_id, ref.Path);
+        item = ImGuiTestEngine_FindItemInfo(Engine, full_id, ref.Path);
         if (item)
             return item;
         ImGuiTestEngine_Yield(Engine);
@@ -587,7 +587,7 @@ void    ImGuiTestContext::ScrollToItemY(ImGuiTestRef ref, float scroll_ratio_y)
     // If the item is not currently visible, scroll to get it in the center of our window
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
     ImGuiContext& g = *UiContext;
-    ImGuiTestItemInfo* item = ItemLocate(ref);
+    ImGuiTestItemInfo* item = ItemInfo(ref);
     ImGuiTestRefDesc desc(ref, item);
     LogDebug("ScrollToItemY %s", desc.c_str());
 
@@ -668,7 +668,7 @@ void    ImGuiTestContext::NavMoveTo(ImGuiTestRef ref)
 
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
     ImGuiContext& g = *UiContext;
-    ImGuiTestItemInfo* item = ItemLocate(ref);
+    ImGuiTestItemInfo* item = ItemInfo(ref);
     ImGuiTestRefDesc desc(ref, item);
     LogDebug("NavMove to %s", desc.c_str());
 
@@ -791,7 +791,7 @@ void    ImGuiTestContext::MouseMove(ImGuiTestRef ref, ImGuiTestOpFlags flags)
 
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
     ImGuiContext& g = *UiContext;
-    ImGuiTestItemInfo* item = ItemLocate(ref);
+    ImGuiTestItemInfo* item = ItemInfo(ref);
     ImGuiTestRefDesc desc(ref, item);
     LogDebug("MouseMove to %s", desc.c_str());
 
@@ -1233,7 +1233,7 @@ void    ImGuiTestContext::GatherItems(ImGuiTestItemList* out_list, ImGuiTestRef 
     }
     const int end_gather_size = out_list->GetSize();
 
-    ImGuiTestItemInfo* parent_item = ItemLocate(parent, ImGuiTestOpFlags_NoError);
+    ImGuiTestItemInfo* parent_item = ItemInfo(parent, ImGuiTestOpFlags_NoError);
     LogDebug("GatherItems from %s, %d deep: found %d items.", ImGuiTestRefDesc(parent, parent_item).c_str(), depth, end_gather_size - begin_gather_size);
 
     GatherTask->ParentID = 0;
@@ -1257,15 +1257,15 @@ void    ImGuiTestContext::ItemAction(ImGuiTestAction action, ImGuiTestRef ref, v
     if (is_wildcard)
     {
         // This is a fragile way to avoid some ambiguities, we're relying on expected action to further filter by status flags.
-        // These flags are not cleared by ItemLocate() because
-        // ItemAction() may call ItemLocate() again to get same item and thus it needs these flags to remain in place.
+        // These flags are not cleared by ItemInfo() because ItemAction() may call ItemInfo() again to get same item and thus it
+        // needs these flags to remain in place.
         if (action == ImGuiTestAction_Check || action == ImGuiTestAction_Uncheck)
             Engine->FindByLabelTask.InFilterItemStatusFlags = ImGuiItemStatusFlags_Checkable;
         else if (action == ImGuiTestAction_Open || action == ImGuiTestAction_Close)
             Engine->FindByLabelTask.InFilterItemStatusFlags = ImGuiItemStatusFlags_Openable;
     }
 
-    ImGuiTestItemInfo* item = ItemLocate(ref);
+    ImGuiTestItemInfo* item = ItemInfo(ref);
     ImGuiTestRefDesc desc(ref, item);
     if (item == NULL)
         return;
@@ -1521,8 +1521,8 @@ void    ImGuiTestContext::ItemDragOverAndHold(ImGuiTestRef ref_src, ImGuiTestRef
         return;
 
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
-    ImGuiTestItemInfo* item_src = ItemLocate(ref_src);
-    ImGuiTestItemInfo* item_dst = ItemLocate(ref_dst);
+    ImGuiTestItemInfo* item_src = ItemInfo(ref_src);
+    ImGuiTestItemInfo* item_dst = ItemInfo(ref_dst);
     ImGuiTestRefDesc desc_src(ref_src, item_src);
     ImGuiTestRefDesc desc_dst(ref_dst, item_dst);
     LogDebug("ItemDragOverAndHold %s to %s", desc_src.c_str(), desc_dst.c_str());
@@ -1545,8 +1545,8 @@ void    ImGuiTestContext::ItemDragAndDrop(ImGuiTestRef ref_src, ImGuiTestRef ref
         return;
 
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
-    ImGuiTestItemInfo* item_src = ItemLocate(ref_src);
-    ImGuiTestItemInfo* item_dst = ItemLocate(ref_dst);
+    ImGuiTestItemInfo* item_src = ItemInfo(ref_src);
+    ImGuiTestItemInfo* item_dst = ItemInfo(ref_dst);
     ImGuiTestRefDesc desc_src(ref_src, item_src);
     ImGuiTestRefDesc desc_dst(ref_dst, item_dst);
     LogDebug("ItemDragAndDrop %s to %s", desc_src.c_str(), desc_dst.c_str());
@@ -1569,7 +1569,7 @@ void    ImGuiTestContext::ItemDragWithDelta(ImGuiTestRef ref_src, ImVec2 pos_del
         return;
 
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
-    ImGuiTestItemInfo* item_src = ItemLocate(ref_src);
+    ImGuiTestItemInfo* item_src = ItemInfo(ref_src);
     ImGuiTestRefDesc desc_src(ref_src, item_src);
     LogDebug("ItemDragWithDelta %s to (%f, %f)", desc_src.c_str(), pos_delta.x, pos_delta.y);
 
@@ -1585,7 +1585,7 @@ void    ImGuiTestContext::ItemDragWithDelta(ImGuiTestRef ref_src, ImVec2 pos_del
 void    ImGuiTestContext::ItemVerifyCheckedIfAlive(ImGuiTestRef ref, bool checked)
 {
     Yield();
-    ImGuiTestItemInfo* item = ItemLocate(ref, ImGuiTestOpFlags_NoError);
+    ImGuiTestItemInfo* item = ItemInfo(ref, ImGuiTestOpFlags_NoError);
     if (item
      && (item->TimestampMain + 1 >= ImGuiTestEngine_GetFrameCount(Engine))
      && (item->TimestampStatus == item->TimestampMain)
@@ -1631,7 +1631,7 @@ void    ImGuiTestContext::MenuAction(ImGuiTestAction action, ImGuiTestRef ref)
         // First move horizontally into the menu, then vertically!
         if (depth > 0)
         {
-            ImGuiTestItemInfo* item = ItemLocate(buf.c_str());
+            ImGuiTestItemInfo* item = ItemInfo(buf.c_str());
             IM_CHECK_SILENT(item != NULL);
             item->RefCount++;
             if (depth > 1 && (Inputs->MousePosValue.x <= item->RectFull.Min.x || Inputs->MousePosValue.x >= item->RectFull.Max.x))
@@ -1833,8 +1833,8 @@ void    ImGuiTestContext::DockWindowInto(const char* window_name_src, const char
 
     ImGuiTestRef ref_src(window_src->DockIsActive ? window_src->ID : window_src->MoveId);   // FIXME-TESTS FIXME-DOCKING: Identify tab
     ImGuiTestRef ref_dst(window_dst->DockIsActive ? window_dst->ID : window_dst->MoveId);
-    ImGuiTestItemInfo* item_src = ItemLocate(ref_src);
-    ImGuiTestItemInfo* item_dst = ItemLocate(ref_dst);
+    ImGuiTestItemInfo* item_src = ItemInfo(ref_src);
+    ImGuiTestItemInfo* item_dst = ItemInfo(ref_dst);
     ImGuiTestRefDesc desc_src(ref_src, item_src);
     ImGuiTestRefDesc desc_dst(ref_dst, item_dst);
     WindowFocus(window_name_dst);
