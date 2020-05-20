@@ -181,8 +181,8 @@ int main(int argc, char** argv)
     bool show_assets_browser = false;
     bool show_test_engine = false;
     ImGuiCaptureTool capture_tool;
-    capture_tool.Context.UserData = app;
     capture_tool.Context.ScreenCaptureFunc = [](int x, int y, int w, int h, unsigned int* pixels, void* user_data) { ImGuiApp* app = (ImGuiApp*)user_data; return app->CaptureFramebuffer(app, x, y, w, h, pixels, NULL); };
+    capture_tool.Context.ScreenCaptureUserData = app;
 
     // Main loop
     bool aborted = false;

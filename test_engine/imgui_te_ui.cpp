@@ -48,7 +48,7 @@ static bool ParseLineAndDrawFileOpenItemForSourceFile(ImGuiTestEngine* e, ImGuiT
         buf.setf("%.*s%.*s", (int)(src_name - src_path), src_path, (int)(path_end - path_begin), path_begin);
 
         ImGuiTestEngineIO& e_io = ImGuiTestEngine_GetIO(e);
-        e_io.SrcFileOpenFunc(buf.c_str(), line_no, e_io.UserData);
+        e_io.SrcFileOpenFunc(buf.c_str(), line_no, e_io.SrcFileOpenUserData);
     }
 
     return true;
@@ -278,7 +278,7 @@ static void ShowTestGroup(ImGuiTestEngine* e, ImGuiTestGroup group, ImGuiTextFil
                 {
                     buf.setf("Open source (%s:%d)", test->SourceFileShort, test->SourceLine);
                     if (ImGui::MenuItem(buf.c_str()))
-                        e->IO.SrcFileOpenFunc(test->SourceFile, test->SourceLine, e->IO.UserData);
+                        e->IO.SrcFileOpenFunc(test->SourceFile, test->SourceLine, e->IO.SrcFileOpenFunc);
                     if (ImGui::MenuItem("View source..."))
                         view_source = true;
                 }
@@ -548,6 +548,7 @@ void    ImGuiTestEngine_ShowTestWindow(ImGuiTestEngine* engine, bool* p_open)
     // Capture Tool
     ImGuiCaptureTool& capture_tool = engine->CaptureTool;
     capture_tool.Context.ScreenCaptureFunc = engine->IO.ScreenCaptureFunc;
+    capture_tool.Context.ScreenCaptureUserData = engine->IO.ScreenCaptureUserData;
     if (capture_tool.Visible)
         capture_tool.ShowCaptureToolWindow(&capture_tool.Visible);
 }

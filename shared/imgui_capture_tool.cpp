@@ -271,7 +271,7 @@ ImGuiCaptureToolStatus ImGuiCaptureContext::CaptureUpdate(ImGuiCaptureArgs* args
             else
                 IM_ASSERT(h == output->Height);
 
-            if (!ScreenCaptureFunc(x1, y1, w, h, &output->Data[_ChunkNo * w * capture_height], UserData))
+            if (!ScreenCaptureFunc(x1, y1, w, h, &output->Data[_ChunkNo * w * capture_height], ScreenCaptureUserData))
             {
                 printf("Screen capture function failed.\n");
                 return ImGuiCaptureToolStatus_Error;

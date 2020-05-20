@@ -301,9 +301,11 @@ typedef bool        (*ImGuiTestEngineScreenCaptureFunc)(int x, int y, int w, int
 // IO structure
 struct ImGuiTestEngineIO
 {
-    void*                               UserData = NULL;                // User data for SrcFileOpenFunc and ScreenCaptureFunc
+    // Inputs: Functions
     ImGuiTestEngineSrcFileOpenFunc      SrcFileOpenFunc = NULL;         // (Optional) To open source files
+    void*                               SrcFileOpenUserData = NULL;     // (Optional) User data for SrcFileOpenFunc
     ImGuiTestEngineScreenCaptureFunc    ScreenCaptureFunc = NULL;       // (Optional) To capture graphics output
+    void*                               ScreenCaptureUserData = NULL;   // (Optional) User data for ScreenCaptureFunc
     ImGuiTestCoroutineInterface*        CoroutineFuncs = NULL;          // (Required) Coroutine functions (see imgui_te_coroutines.h)
 
     // Inputs: Options

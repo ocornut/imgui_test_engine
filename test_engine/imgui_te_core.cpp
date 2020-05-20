@@ -203,6 +203,7 @@ void    ImGuiTestEngine_PostRender(ImGuiTestEngine* engine)
     if (engine->CurrentCaptureArgs != NULL)
     {
         engine->CaptureContext.ScreenCaptureFunc = engine->IO.ScreenCaptureFunc;
+        engine->CaptureContext.ScreenCaptureUserData = engine->IO.ScreenCaptureUserData;
         ImGuiCaptureToolStatus status = engine->CaptureContext.CaptureUpdate(engine->CurrentCaptureArgs);
         if (status != ImGuiCaptureToolStatus_InProgress)
         {
