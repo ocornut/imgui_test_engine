@@ -278,7 +278,7 @@ static void ShowTestGroup(ImGuiTestEngine* e, ImGuiTestGroup group, ImGuiTextFil
                 {
                     buf.setf("Open source (%s:%d)", test->SourceFileShort, test->SourceLine);
                     if (ImGui::MenuItem(buf.c_str()))
-                        e->IO.SrcFileOpenFunc(test->SourceFile, test->SourceLine, e->IO.SrcFileOpenFunc);
+                        e->IO.SrcFileOpenFunc(test->SourceFile, test->SourceLine, e->IO.SrcFileOpenUserData);
                     if (ImGui::MenuItem("View source..."))
                         view_source = true;
                 }
