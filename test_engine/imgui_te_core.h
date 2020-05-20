@@ -20,6 +20,7 @@ struct ImGuiTestItemList;
 struct ImGuiTestInputs;
 struct ImGuiTestGatherTask;
 struct ImGuiTestLocateTask;
+struct ImGuiTestFindByLabelTask;
 struct ImGuiTestRunTask;
 
 struct ImGuiCaptureArgs;

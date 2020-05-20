@@ -490,23 +490,25 @@ ImGuiTestItemInfo* ImGuiTestContext::ItemLocate(ImGuiTestRef ref, ImGuiTestOpFla
         return NULL;
 
     ImGuiID full_id = 0;
-    if (ref.Path && strncmp(ref.Path, "**/", 3) == 0)
+
+    const bool is_wildcard = ref.Path && strncmp(ref.Path, "**/", 3) == 0;
+    if (is_wildcard)
     {
         // Wildcard matching
-        ImGuiTestLocateWildcardTask* task = &Engine->ImGuiTestFindLabelTask;
+        ImGuiTestFindByLabelTask* task = &Engine->FindByLabelTask;
         task->InBaseId = RefID;
         task->InLabel = ref.Path + 3;
         task->OutItemId = 0;
 
         int retries = 0;
-        while (retries < 2 && full_id == 0)
+        while (retries < 2 && task->OutItemId == 0)
         {
             ImGuiTestEngine_Yield(Engine);
-            full_id = task->OutItemId;
             retries++;
         }
+        full_id = task->OutItemId;
 
-        // FIXME: InFilterItemFlags is not unset here intentionally, because it is set in ItemAction() and reused in later calls to ItemLocate() to resolve ambiguities.
+        // FIXME: InFilterItemStatusFlags is not clear here intentionally, because it is set in ItemAction() and reused in later calls to ItemLocate() to resolve ambiguities.
         task->InBaseId = 0;
         task->InLabel = NULL;
         task->OutItemId = 0;
@@ -1251,14 +1253,16 @@ void    ImGuiTestContext::ItemAction(ImGuiTestAction action, ImGuiTestRef ref, v
     //if (ref.ID == 0x0d4af068)
     //    printf("");
 
-    if (ref.Path != NULL && strncmp(ref.Path, "**/", 3) == 0)
+    const bool is_wildcard = ref.Path != NULL && strncmp(ref.Path, "**/", 3) == 0;
+    if (is_wildcard)
     {
-        // This is a fragile way to avoid some ambiguities. These flags are not cleared by ItemLocate() because
+        // This is a fragile way to avoid some ambiguities, we're relying on expected action to further filter by status flags.
+        // These flags are not cleared by ItemLocate() because
         // ItemAction() may call ItemLocate() again to get same item and thus it needs these flags to remain in place.
         if (action == ImGuiTestAction_Check || action == ImGuiTestAction_Uncheck)
-            Engine->ImGuiTestFindLabelTask.InFilterItemFlags = ImGuiItemStatusFlags_Checkable;
+            Engine->FindByLabelTask.InFilterItemStatusFlags = ImGuiItemStatusFlags_Checkable;
         else if (action == ImGuiTestAction_Open || action == ImGuiTestAction_Close)
-            Engine->ImGuiTestFindLabelTask.InFilterItemFlags = ImGuiItemStatusFlags_Openable;
+            Engine->FindByLabelTask.InFilterItemStatusFlags = ImGuiItemStatusFlags_Openable;
     }
 
     ImGuiTestItemInfo* item = ItemLocate(ref);
@@ -1377,7 +1381,8 @@ void    ImGuiTestContext::ItemAction(ImGuiTestAction action, ImGuiTestRef ref, v
         ItemVerifyCheckedIfAlive(ref, false); // We can't just IM_ASSERT(ItemIsChecked()) because the item may disappear and never update its StatusFlags any more!
     }
 
-    Engine->ImGuiTestFindLabelTask.InFilterItemFlags = 0;
+    //if (is_wildcard)
+        Engine->FindByLabelTask.InFilterItemStatusFlags = ImGuiItemStatusFlags_None;
 }
 
 void    ImGuiTestContext::ItemActionAll(ImGuiTestAction action, ImGuiTestRef ref_parent, int max_depth, int max_passes)

@@ -42,7 +42,6 @@ Index of this file:
 // GOAL: Full blind version with no graphical context.
 
 // FIXME-TESTS: UI to setup breakpoint (e.g. GUI func on frame X, beginning of Test func or at certain Yield/Sleep spot)
-// FIXME-TESTS: Locate within stack that uses windows/<pointer>/name -> ItemInfo hook
 // FIXME-TESTS: Be able to run blind within GUI
 // FIXME-TESTS: Automate clicking/opening stuff based on gathering id?
 // FIXME-TESTS: Mouse actions on ImGuiNavLayer_Menu layer
@@ -1185,27 +1184,6 @@ void ImGuiTestEngineHook_ItemInfo(ImGuiContext* ui_ctx, ImGuiID id, const char* 
     //ImGuiWindow* window = g.CurrentWindow;
     //IM_ASSERT(window->DC.LastItemId == id || window->DC.LastItemId == 0); // Need _ItemAdd() to be submitted before _ItemInfo()
 
-    ImGuiTestLocateWildcardTask* label_task = &engine->ImGuiTestFindLabelTask;
-    if (label_task->OutItemId == 0 && label_task->InLabel && strcmp(label_task->InLabel, label) == 0)
-    {
-        for (ImGuiID* stack_id = g.CurrentWindow->IDStack.end(); stack_id > g.CurrentWindow->IDStack.begin();)
-        {
-            stack_id--;                                                 // FIXME: Depth limit
-            if (*stack_id == label_task->InBaseId)
-            {
-                if (ImGuiItemStatusFlags filter_flags = label_task->InFilterItemFlags)
-                {
-                    if (!(filter_flags & flags))
-                        continue;
-                }
-
-                // FIXME: Return other than final id
-                label_task->OutItemId = id;
-                break;
-            }
-        }
-    }
-
     // Update Locate Task status flags
     if (ImGuiTestLocateTask* task = ImGuiTestEngine_FindLocateTask(engine, id))
     {
@@ -1224,6 +1202,26 @@ void ImGuiTestEngineHook_ItemInfo(ImGuiContext* ui_ctx, ImGuiID id, const char* 
         item->StatusFlags = flags;
         if (label)
             ImStrncpy(item->DebugLabel, label, IM_ARRAYSIZE(item->DebugLabel));
+    }
+
+    // Update Find by Label Task
+    ImGuiTestFindByLabelTask* label_task = &engine->FindByLabelTask;
+    if (label_task->InLabel && strcmp(label_task->InLabel, label) == 0 && label_task->OutItemId == 0)
+    {
+        for (ImGuiID* p_id_stack = g.CurrentWindow->IDStack.end(); p_id_stack > g.CurrentWindow->IDStack.begin();)
+        {
+            p_id_stack--; // FIXME-TESTS: Depth limit
+            if (*p_id_stack == label_task->InBaseId)
+            {
+                if (ImGuiItemStatusFlags filter_flags = label_task->InFilterItemStatusFlags)
+                    if (!(filter_flags & flags))
+                        continue;
+
+                // FIXME-TESTS: Return other than final id
+                label_task->OutItemId = id;
+                break;
+            }
+        }
     }
 }
 

@@ -7,11 +7,14 @@
 // DATA STRUCTURES
 //-------------------------------------------------------------------------
 
-// Gather items in given parent scope.
+// Gather item list in given parent ID.
 struct ImGuiTestGatherTask
 {
+    // Input
     ImGuiID                 ParentID = 0;
     int                     Depth = 0;
+
+    // Output/Temp
     ImGuiTestItemList*      OutList = NULL;
     ImGuiTestItemInfo*      LastItemInfo = NULL;
 };
@@ -19,20 +22,28 @@ struct ImGuiTestGatherTask
 // Locate item position/window/state given ID.
 struct ImGuiTestLocateTask
 {
+    // Input
     ImGuiID                 ID = 0;
     int                     FrameCount = -1;        // Timestamp of request
     char                    DebugName[64] = "";     // Debug string representing the queried ID
+
+    // Output
     ImGuiTestItemInfo       Result;
 };
 
-struct ImGuiTestLocateWildcardTask
+// Find item ID given a label and a parent id
+struct ImGuiTestFindByLabelTask
 {
-    ImGuiID InBaseId = 0;                           // A known base ID which appears before wildcard ID(s)
-    const char* InLabel = 0;                        // A label string which appears on ID stack after unknown ID(s)
-    ImGuiItemStatusFlags InFilterItemFlags = 0;     // Flags required for item to be returned
-    ImGuiID OutItemId = 0;                          // Result item ID
+    // Input
+    ImGuiID                 InBaseId = 0;                   // A known base ID which appears before wildcard ID(s)
+    const char*             InLabel = NULL;                 // A label string which appears on ID stack after unknown ID(s)
+    ImGuiItemStatusFlags    InFilterItemStatusFlags = 0;    // Flags required for item to be returned
+
+    // Output
+    ImGuiID                 OutItemId = 0;                  // Result item ID
 };
 
+// Processed by test queue
 struct ImGuiTestRunTask
 {
     ImGuiTest*              Test = NULL;
@@ -87,7 +98,7 @@ struct ImGuiTestEngine
     ImVector<ImGuiTestRunTask>  TestsQueue;
     ImGuiTestContext*           TestContext = NULL;
     ImVector<ImGuiTestLocateTask*>  LocateTasks;
-    ImGuiTestLocateWildcardTask ImGuiTestFindLabelTask;
+    ImGuiTestFindByLabelTask    FindByLabelTask;
     ImGuiTestGatherTask         GatherTask;
     void*                       UserDataBuffer = NULL;
     size_t                      UserDataBufferSize = 0;
