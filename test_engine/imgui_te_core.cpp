@@ -934,6 +934,8 @@ void ImGuiTestEngine_UpdateHooks(ImGuiTestEngine* engine)
 
     if (engine->InfoTasks.Size > 0)
         want_hooking = true;
+    if (engine->FindByLabelTask.InBaseId != 0)
+        want_hooking = true;
     if (engine->GatherTask.ParentID != 0)
         want_hooking = true;
     if (engine->StackTool.QueryStackId != 0)
