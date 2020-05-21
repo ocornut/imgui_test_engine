@@ -1851,8 +1851,12 @@ void    ImGuiTestContext::DockWindowInto(const char* window_name_src, const char
     ImGuiTestItemInfo* item_dst = ItemInfo(ref_dst);
     ImGuiTestRefDesc desc_src(ref_src, item_src);
     ImGuiTestRefDesc desc_dst(ref_dst, item_dst);
-    WindowFocus(window_name_dst);
-    WindowFocus(window_name_src);
+
+    // Avoid focusing if we don't need it (this facilitate avoiding focus flashing when recording animated gifs)
+    if (g.Windows[g.Windows.Size - 2] != window_dst)
+        WindowFocus(window_name_dst);
+    if (g.Windows[g.Windows.Size - 1] != window_src)
+        WindowFocus(window_name_src);
 
     MouseMove(ref_src, ImGuiTestOpFlags_NoCheckHoveredId);
     SleepShort();
