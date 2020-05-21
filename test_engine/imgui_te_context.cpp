@@ -1752,10 +1752,24 @@ void    ImGuiTestContext::WindowMove(ImGuiTestRef ref, ImVec2 input_pos, ImVec2 
     WindowBringToFront(window);
     WindowCollapse(window, false);
 
-    float h = ImGui::GetFrameHeight();
+    // FIXME-TESTS: Need to find a -visible- click point. drag_pos may end up being outside of main viewport.
+    ImVec2 drag_pos;
+#if IMGUI_HAS_DOCK
+    if (window->DockNode != NULL && window->DockNode->TabBar != NULL)
+    {
+        ImGuiTabBar* tab_bar = window->DockNode->TabBar;
+        ImGuiTabItem* tab = ImGui::TabBarFindTabByID(tab_bar, window->ID);
+        IM_ASSERT(tab != NULL);
+        drag_pos = tab_bar->BarRect.Min + ImVec2(tab->Offset + tab->Width * 0.5f, tab_bar->BarRect.GetHeight() * 0.5f);
+    }
+    else
+#endif
+    {
+        const float h = window->TitleBarHeight();
+        drag_pos = window->Pos + ImVec2(window->Size.x, h) * 0.5f;
+    }
 
-    // FIXME-TESTS: Need to find a -visible- click point
-    MouseMoveToPos(window->Pos + ImVec2(h * 2.0f, h * 0.5f));
+    MouseMoveToPos(drag_pos);
     //IM_CHECK_SILENT(UiContext->HoveredWindow == window);
     MouseDown(0);
 
