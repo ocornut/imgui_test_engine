@@ -110,11 +110,26 @@ ImGuiCaptureToolStatus ImGuiCaptureContext::CaptureUpdate(ImGuiCaptureArgs* args
             return ImGuiCaptureToolStatus_Error;
         }
 #endif
-        if ((window->Flags & ImGuiWindowFlags_ChildWindow) || args->InCaptureWindows.contains(window))
-            continue;
 
-        window->Hidden = true;
-        window->HiddenFramesCannotSkipItems = 2;
+        bool is_window_hidden = !args->InCaptureWindows.contains(window);
+        if (window->Flags & ImGuiWindowFlags_ChildWindow)
+            is_window_hidden = false;
+#if IMGUI_HAS_DOCK
+        else if ((window->Flags & ImGuiWindowFlags_DockNodeHost))
+            for (ImGuiWindow* capture_window : args->InCaptureWindows)
+            {
+                if (capture_window->DockNode != NULL && capture_window->DockNode->HostWindow == window)
+                {
+                    is_window_hidden = false;
+                    break;
+                }
+            }
+#endif
+        if (is_window_hidden)
+        {
+            window->Hidden = true;
+            window->HiddenFramesCannotSkipItems = 2;
+        }
     }
 
     // Recording will be set to false when we are stopping GIF capture.
