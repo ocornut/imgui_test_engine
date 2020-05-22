@@ -43,6 +43,8 @@ Index of this file:
 
 // FIXME-TESTS: UI to setup breakpoint (e.g. GUI func on frame X, beginning of Test func or at certain Yield/Sleep spot)
 // FIXME-TESTS: Be able to run blind within GUI
+// FIXME-TESTS: Be able to run in own contexts to avoid side-effects
+// FIXME-TESTS: Randomize test order in shared context ~ kind of fuzzing (need to be able to repro order!)
 // FIXME-TESTS: Automate clicking/opening stuff based on gathering id?
 // FIXME-TESTS: Mouse actions on ImGuiNavLayer_Menu layer
 // FIXME-TESTS: Fail to open a double-click tree node

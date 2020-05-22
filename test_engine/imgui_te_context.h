@@ -168,7 +168,7 @@ struct ImGuiTestContext
     ImGuiTestActiveFunc     ActiveFunc = ImGuiTestActiveFunc_None;  // None/GuiFunc/TestFunc
     void*                   UserData = NULL;
     int                     FrameCount = 0;                         // Test frame count (restarts from zero every time)
-    int                     FirstFrameCount = 0;                    // First frame where Test is running. After warm-up. This is generally -2 or 0 depending on whether we have warm up enabled
+    int                     FirstFrameCount = 0;                    // First frame where Test is running (after warm-up frame). This is generally -1 or 0 depending on whether we have warm up enabled
     double                  RunningTime = 0.0f;                     // Amount of wall clock time the Test has been running. Used by safety watchdog.
     int                     ActionDepth = 0;
     int                     CaptureCounter = 0;
@@ -190,7 +190,7 @@ struct ImGuiTestContext
     // Main control
     void        Finish();
     bool        IsError() const             { return Test->Status == ImGuiTestStatus_Error || Abort; }
-    bool        IsFirstFrame() const        { return FrameCount == FirstFrameCount; }
+    bool        IsFirstFrame() const        { return FrameCount == FirstFrameCount; }   // First frame where TestFunc is running (after warm-up frame).
     void        SetGuiFuncEnabled(bool v)   { if (v) RunFlags &= ~ImGuiTestRunFlags_NoGuiFunc; else RunFlags |= ImGuiTestRunFlags_NoGuiFunc; }
     void        RecoverFromUiContextErrors();
     template <typename T> T& GetUserData()  { IM_ASSERT(UserData != NULL); return *(T*)(UserData); } // FIXME: Assert to compare sizes
