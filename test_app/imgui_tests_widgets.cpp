@@ -2171,4 +2171,88 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         IM_CHECK(g.ActiveId == ctx->GetID("Text2"));
         IM_CHECK(vars.Status.Activated == 1);
     };
+
+    // ## Test sliders with inverted ranges.
+    t = IM_REGISTER_TEST(e, "widgets", "widgets_sliders_with_inverted_ranges");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiDataType data_type = ctx->GenericVars.Int1;
+        void* val_p = ctx->GenericVars.Str1 + 0;
+        void* min_p = ctx->GenericVars.Str1 + 8;
+        void* max_p = ctx->GenericVars.Str1 + 16;
+
+        ImGui::SetNextWindowSize(ImVec2(300, 200), ImGuiCond_Appearing);
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImGui::SliderScalar("Slider", data_type, val_p, min_p, max_p);
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        void* val_p = ctx->GenericVars.Str1 + 0;
+        void* min_p = ctx->GenericVars.Str1 + 8;
+        void* max_p = ctx->GenericVars.Str1 + 16;
+        ctx->WindowRef("Test Window");
+
+        for (int data_type = 0; data_type < ImGuiDataType_COUNT; data_type++)
+        {
+            ctx->GenericVars.Int1 = data_type;
+            for (int invert_range = 0; invert_range < 2; invert_range++)
+            {
+                memset(ctx->GenericVars.Str1, 0, 24);
+                switch (data_type)
+                {
+                    case ImGuiDataType_S8:
+                        *(int8_t*)min_p = INT8_MIN;
+                        *(int8_t*)max_p = INT8_MAX;
+                        break;
+                    case ImGuiDataType_U8:
+                        *(uint8_t*)max_p = UINT8_MAX;
+                        break;
+                    case ImGuiDataType_S16:
+                        *(int16_t*)min_p = INT16_MIN;
+                        *(int16_t*)max_p = INT16_MAX;
+                        break;
+                    case ImGuiDataType_U16:
+                        *(uint16_t*)max_p = UINT16_MAX;
+                        break;
+                    case ImGuiDataType_S32:
+                        *(int32_t*)min_p = INT32_MIN / 2;
+                        *(int32_t*)max_p = INT32_MAX / 2;
+                        break;
+                    case ImGuiDataType_U32:
+                        *(uint32_t*)max_p = UINT32_MAX / 2;
+                        break;
+                    case ImGuiDataType_S64:
+                        *(int64_t*)min_p = INT64_MIN / 2;
+                        *(int64_t*)max_p = INT64_MAX / 2;
+                        break;
+                    case ImGuiDataType_U64:
+                        *(uint64_t*)max_p = UINT64_MAX / 2;
+                        break;
+                    case ImGuiDataType_Float:
+                        *(float*)min_p = -999999999.0;  // Floating point types do not use their min/max
+                        *(float*)max_p = +999999999.0;  // supported values because widget may not be able
+                        break;                          // to display them due to lossy RoundScalarWithFormatT().
+                    case ImGuiDataType_Double:
+                        *(double*)min_p = -999999999.0;
+                        *(double*)max_p = +999999999.0;
+                        break;
+                }
+
+                if (invert_range)
+                    ImSwap(*(uint64_t*)min_p, *(uint64_t*)max_p);   // Binary swap
+
+                ctx->Yield();                                       // Render with a new data type and ranges
+
+                for (int to_right = 0; to_right < 2; to_right++)
+                {
+                    ctx->MouseMove("Slider");
+                    ctx->MouseDown();
+                    ctx->MouseMove("Slider", (to_right ? ImGuiTestOpFlags_MoveToEdgeR : ImGuiTestOpFlags_MoveToEdgeL));
+                    ctx->MouseUp();
+                    IM_CHECK(*(uint64_t*)val_p == (to_right ? *(uint64_t*)max_p : *(uint64_t*)min_p));
+                }
+            }
+        }
+    };
 }
