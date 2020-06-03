@@ -224,7 +224,7 @@ void    Str::set(const char* src)
         return;
     }
     int buf_len = (int)strlen(src)+1;
-    if ((int)Capacity < buf_len)
+    if (Capacity < buf_len)
         reserve_discard(buf_len);
     memcpy(Data, src, buf_len);
     Owned = 1;

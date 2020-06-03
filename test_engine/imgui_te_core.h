@@ -128,7 +128,7 @@ struct ImGuiTestInput
     ImGuiKeyModFlags        KeyMods = ImGuiKeyModFlags_None;
     ImGuiNavInput           NavInput = ImGuiNavInput_COUNT;
     ImWchar                 Char = 0;
-    ImGuiKeyState           State = ImGuiKeyState_Unknown;;
+    ImGuiKeyState           State = ImGuiKeyState_Unknown;
 
     static ImGuiTestInput   FromKey(ImGuiKey v, ImGuiKeyState state, ImGuiKeyModFlags mods = ImGuiKeyModFlags_None)
     {

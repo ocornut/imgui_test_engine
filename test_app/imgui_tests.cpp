@@ -83,7 +83,7 @@ void RegisterTests_Window(ImGuiTestEngine* e)
         ImGuiStyle& style = ImGui::GetStyle();
 
         {
-            ImGui::Begin("Test Contents Size 1", NULL, ImGuiWindowFlags_AlwaysAutoResize);
+            ImGui::Begin("Test Contents Size 1", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
             ImGui::ColorButton("test", ImVec4(1, 0.4f, 0, 1.0f), ImGuiColorEditFlags_NoTooltip, ImVec2(150, 150));
             ImGuiWindow* window = ctx->UiContext->CurrentWindow;
             if (ctx->FrameCount > 0)
@@ -92,7 +92,7 @@ void RegisterTests_Window(ImGuiTestEngine* e)
         }
         {
             ImGui::SetNextWindowContentSize(ImVec2(150, 150));
-            ImGui::Begin("Test Contents Size 2", NULL, ImGuiWindowFlags_AlwaysAutoResize);
+            ImGui::Begin("Test Contents Size 2", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
             ImGuiWindow* window = ctx->UiContext->CurrentWindow;
             if (ctx->FrameCount >= 0)
                 IM_CHECK_EQ(window->ContentSize, ImVec2(150.0f, 150.0f));
@@ -101,7 +101,7 @@ void RegisterTests_Window(ImGuiTestEngine* e)
         {
             ImGui::SetNextWindowContentSize(ImVec2(150, 150));
             ImGui::SetNextWindowSize(ImVec2(150, 150) + style.WindowPadding * 2.0f + ImVec2(0.0f, ImGui::GetFrameHeight()));
-            ImGui::Begin("Test Contents Size 3", NULL, ImGuiWindowFlags_None);
+            ImGui::Begin("Test Contents Size 3", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_None);
             ImGuiWindow* window = ctx->UiContext->CurrentWindow;
             if (ctx->FrameCount >= 0)
             {
@@ -113,7 +113,7 @@ void RegisterTests_Window(ImGuiTestEngine* e)
         {
             ImGui::SetNextWindowContentSize(ImVec2(150, 150 + 1));
             ImGui::SetNextWindowSize(ImVec2(150, 150) + style.WindowPadding * 2.0f + ImVec2(0.0f, ImGui::GetFrameHeight()));
-            ImGui::Begin("Test Contents Size 4", NULL, ImGuiWindowFlags_None);
+            ImGui::Begin("Test Contents Size 4", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_None);
             ImGuiWindow* window = ctx->UiContext->CurrentWindow;
             if (ctx->FrameCount >= 0)
             {
@@ -218,7 +218,7 @@ void RegisterTests_Window(ImGuiTestEngine* e)
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
         ImGui::Text("Line 1");
         ImGui::End();
-        ImGui::Begin("Test Window");
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
         ImGui::Text("Line 2");
         ImGui::BeginChild("Blah", ImVec2(0, 50), true);
         ImGui::Text("Line 3");
@@ -381,14 +381,14 @@ void RegisterTests_Window(ImGuiTestEngine* e)
     t->Flags |= ImGuiTestFlags_NoAutoFinish;
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
-        ImGui::Begin("Test Scrolling 1", NULL, ImGuiWindowFlags_AlwaysHorizontalScrollbar | ImGuiWindowFlags_AlwaysAutoResize);
+        ImGui::Begin("Test Scrolling 1", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysHorizontalScrollbar | ImGuiWindowFlags_AlwaysAutoResize);
         ImGui::Dummy(ImVec2(200, 200));
         ImGuiWindow* window1 = ctx->UiContext->CurrentWindow;
         IM_CHECK_NO_RET(window1->ScrollMax.x == 0.0f); // FIXME-TESTS: If another window in another test used same name, ScrollMax won't be zero on first frame
         IM_CHECK_NO_RET(window1->ScrollMax.y == 0.0f);
         ImGui::End();
 
-        ImGui::Begin("Test Scrolling 2", NULL, ImGuiWindowFlags_AlwaysVerticalScrollbar | ImGuiWindowFlags_AlwaysAutoResize);
+        ImGui::Begin("Test Scrolling 2", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysVerticalScrollbar | ImGuiWindowFlags_AlwaysAutoResize);
         ImGui::Dummy(ImVec2(200, 200));
         ImGuiWindow* window2 = ctx->UiContext->CurrentWindow;
         IM_CHECK_NO_RET(window2->ScrollMax.x == 0.0f);
@@ -403,7 +403,7 @@ void RegisterTests_Window(ImGuiTestEngine* e)
     t = REGISTER_TEST("window", "window_scroll_003");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
-        ImGui::Begin("Test Scrolling 3");
+        ImGui::Begin("Test Scrolling 3", NULL, ImGuiWindowFlags_NoSavedSettings);
         for (int n = 0; n < 100; n++)
             ImGui::Text("Line %d", n);
         ImGui::End();
@@ -450,7 +450,7 @@ void RegisterTests_Window(ImGuiTestEngine* e)
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         ImGui::SetNextWindowSize(ImVec2(0, 0));
-        ImGui::Begin("Movable Window");
+        ImGui::Begin("Movable Window", NULL, ImGuiWindowFlags_NoSavedSettings);
         ImGui::TextUnformatted("Lorem ipsum dolor sit amet");
         ImGui::End();
     };
@@ -471,7 +471,7 @@ void RegisterTests_Window(ImGuiTestEngine* e)
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         ImGui::SetNextWindowSize(ImVec2(0, 0));
-        ImGui::Begin("Popups", NULL, ImGuiWindowFlags_MenuBar);
+        ImGui::Begin("Popups", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_MenuBar);
         if (ImGui::BeginMenuBar())
         {
             if (ImGui::BeginMenu("Menu"))
@@ -925,7 +925,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
     t = REGISTER_TEST("widgets", "widgets_checkbox_001");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
-        ImGui::Begin("Window1");
+        ImGui::Begin("Window1", NULL, ImGuiWindowFlags_NoSavedSettings);
         ImGui::Checkbox("Checkbox", &ctx->GenericVars.Bool1);
         ImGui::End();
     };
@@ -1977,7 +1977,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
     {
         WidgetDragSourceNullIDData& user_data = *(WidgetDragSourceNullIDData*)ctx->UserData;
 
-        ImGui::Begin("Null ID Test");
+        ImGui::Begin("Null ID Test", NULL, ImGuiWindowFlags_NoSavedSettings);
         ImGui::TextUnformatted("Null ID");
         user_data.Source = ImRect(ImGui::GetItemRectMin(), ImGui::GetItemRectMax()).GetCenter();
 
@@ -2788,11 +2788,11 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
     t = REGISTER_TEST("nav", "nav_ctrl_tab_focusing");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
-        ImGui::Begin("Window 1", NULL, ImGuiWindowFlags_AlwaysAutoResize);
+        ImGui::Begin("Window 1", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
         ImGui::TextUnformatted("Not empty space");
         ImGui::End();
 
-        ImGui::Begin("Window 2", NULL, ImGuiWindowFlags_AlwaysAutoResize);
+        ImGui::Begin("Window 2", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
         ImGui::Button("Button Out");
         ImGui::BeginChild("Child", ImVec2(50, 50), true);
         ImGui::Button("Button In");
@@ -2838,11 +2838,11 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
     t = REGISTER_TEST("nav", "nav_ctrl_tab_nav_id_restore");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
-        ImGui::Begin("Window 1", NULL, ImGuiWindowFlags_AlwaysAutoResize);
+        ImGui::Begin("Window 1", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
         ImGui::Button("Button 1");
         ImGui::End();
 
-        ImGui::Begin("Window 2", NULL, ImGuiWindowFlags_AlwaysAutoResize);
+        ImGui::Begin("Window 2", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
         ImGui::BeginChild("Child", ImVec2(50, 50), true);
         ImGui::Button("Button 2");
         ImGui::EndChild();
@@ -2891,13 +2891,13 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
     t = REGISTER_TEST("nav", "nav_focus_restore");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
-        ImGui::Begin("Window 1", NULL, ImGuiWindowFlags_AlwaysAutoResize);
+        ImGui::Begin("Window 1", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
         ImGui::Button("Button 1");
         ImGui::End();
 
         if (!ctx->GenericVars.Bool1)
             return;
-        ImGui::Begin("Window 2", NULL, ImGuiWindowFlags_AlwaysAutoResize);
+        ImGui::Begin("Window 2", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
         ImGui::Button("Button 2");
         ImGui::End();
     };
@@ -3969,7 +3969,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
         IM_CHECK(sort_specs == NULL);
     };
 #endif // #ifdef IMGUI_HAS_TABLE
-};
+}
 
 //-------------------------------------------------------------------------
 // Tests: Docking
@@ -3991,17 +3991,17 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
         ImGuiTestGenericVars& vars = ctx->GenericVars;
 
         ImGuiID ids[3];
-        ImGui::Begin("AAAA");
+        ImGui::Begin("AAAA", NULL, ImGuiWindowFlags_NoSavedSettings);
         ids[0] = ImGui::GetWindowDockID();
         ImGui::Text("This is AAAA");
         ImGui::End();
 
-        ImGui::Begin("BBBB");
+        ImGui::Begin("BBBB", NULL, ImGuiWindowFlags_NoSavedSettings);
         ids[1] = ImGui::GetWindowDockID();
         ImGui::Text("This is BBBB");
         ImGui::End();
 
-        ImGui::Begin("CCCC");
+        ImGui::Begin("CCCC", NULL, ImGuiWindowFlags_NoSavedSettings);
         ids[2] = ImGui::GetWindowDockID();
         ImGui::Text("This is CCCC (longer)");
         ImGui::End();
@@ -4319,7 +4319,7 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
             vars.DockId = ctx->DockMultiSetupBasic(0, "AAAA", "BBBB", "CCCC", NULL);
 
         if (ctx->FrameCount == 10)  ImGui::SetNextWindowFocus();
-        ImGui::Begin("AAAA");
+        ImGui::Begin("AAAA", NULL, ImGuiWindowFlags_NoSavedSettings);
         if (ctx->FrameCount == 10)  IM_CHECK(ImGui::IsWindowFocused());
         if (ctx->FrameCount == 10)  ImGui::SetKeyboardFocusHere();
         ImGui::InputText("Input", vars.Str1, IM_ARRAYSIZE(vars.Str1));
@@ -4328,7 +4328,7 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
         ImGui::End();
 
         if (ctx->FrameCount == 50)  ImGui::SetNextWindowFocus();
-        ImGui::Begin("BBBB");
+        ImGui::Begin("BBBB", NULL, ImGuiWindowFlags_NoSavedSettings);
         if (ctx->FrameCount == 50)  IM_CHECK(ImGui::IsWindowFocused());
         if (ctx->FrameCount == 50)  ImGui::SetKeyboardFocusHere();
         ImGui::InputText("Input", vars.Str2, IM_ARRAYSIZE(vars.Str2));
@@ -4475,7 +4475,7 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
             for (int i = 0; i < 5; i++)
             {
                 Str16f name("GC Test %d", i);
-                ImGui::Begin(name.c_str());
+                ImGui::Begin(name.c_str(), NULL, ImGuiWindowFlags_NoSavedSettings);
                 ImGui::TextUnformatted(name.c_str());
                 ImGui::End();
             }
@@ -5034,7 +5034,7 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         static ImGuiTextFilter filter;
-        ImGui::Begin("Text filter");
+        ImGui::Begin("Text filter", NULL, ImGuiWindowFlags_NoSavedSettings);
         filter.Draw("Filter", ImGui::GetFontSize() * 16);   // Test input filter drawing
         ImGui::End();
     };
@@ -5974,7 +5974,7 @@ void RegisterTests_Perf(ImGuiTestEngine* e)
         for (int n = 0; n < loop_count; n++)
         {
             ImGui::SetNextWindowPos(pos);
-            ImGui::Begin(Str16f("Window_%05d", n + 1).c_str(), NULL, ImGuiWindowFlags_NoSavedSettings|ImGuiWindowFlags_AlwaysAutoResize);
+            ImGui::Begin(Str16f("Window_%05d", n + 1).c_str(), NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
             ImGui::TextUnformatted("Opening many windows!");
             ImGui::End();
         }
@@ -6114,7 +6114,7 @@ void RegisterTests_Perf(ImGuiTestEngine* e)
 		const ImVec2 line_spacing(80.0f, 96.0f); // Spacing between lines
 
 		ImGui::SetNextWindowSize(ImVec2((num_cols + 0.5f) * line_spacing.x, (num_rows * 2 * line_spacing.y) + 128.0f), ImGuiCond_Once);
-		if (ImGui::Begin("perf_misc_lines"))
+		if (ImGui::Begin("perf_misc_lines", NULL, ImGuiWindowFlags_NoSavedSettings))
 		{
 			ImDrawList* draw_list = ImGui::GetWindowDrawList();
 
@@ -6476,12 +6476,12 @@ void RegisterTests_Capture(ImGuiTestEngine* e)
             if (n == 0)
             {
                 ImGui::StyleColorsDark(&style);
-                ImGui::Begin("Debug##Dark", &open);
+                ImGui::Begin("Debug##Dark", &open, ImGuiWindowFlags_NoSavedSettings);
             }
             else
             {
                 ImGui::StyleColorsLight(&style);
-                ImGui::Begin("Debug##Light", &open);
+                ImGui::Begin("Debug##Light", &open, ImGuiWindowFlags_NoSavedSettings);
             }
             float float_value = 0.6f;
             ImGui::Text("Hello, world 123");
@@ -6522,7 +6522,7 @@ void RegisterTests_Capture(ImGuiTestEngine* e)
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         ImGui::SetNextWindowSize(ImVec2(300, 160), ImGuiCond_Appearing);
-        ImGui::Begin("CaptureGif");
+        ImGui::Begin("CaptureGif", NULL, ImGuiWindowFlags_NoSavedSettings);
         static char string_buffer[64] = {};
         static float float_value = 0.6f;
         ImGui::Text("Hello, world 123");

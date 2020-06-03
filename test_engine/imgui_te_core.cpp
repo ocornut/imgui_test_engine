@@ -708,7 +708,7 @@ bool ImGuiTestEngine_EndCaptureAnimation(ImGuiTestEngine* engine, ImGuiCaptureAr
     engine->IO.ConfigFixedDeltaTime = 0;
     engine->CurrentCaptureArgs = NULL;
     return true;
-};
+}
 
 static void ImGuiTestEngine_ProcessTestQueue(ImGuiTestEngine* engine)
 {
