@@ -506,7 +506,7 @@ static void ImGuiTestEngine_PreNewFrame(ImGuiTestEngine* engine, ImGuiContext* u
         if (use_simulated_inputs)
             abort = (key_idx_escape != -1 && main_io.KeysDown[key_idx_escape] && !simulated_io.KeysDown[key_idx_escape]);
         else
-            abort = (key_idx_escape != -1 && main_io.KeysDownDuration[key_idx_escape] > 0.5f);
+            abort = (key_idx_escape != -1 && main_io.KeysDownDuration[key_idx_escape] > 0.30f);
         if (abort)
         {
             if (engine->TestContext)

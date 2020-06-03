@@ -225,7 +225,7 @@ static void ShowTestGroup(ImGuiTestEngine* e, ImGuiTestGroup group, ImGuiTextFil
                 ImGui::RenderText(p + style.FramePadding + ImVec2(0, 0), &"|\0/\0-\0\\"[(((ImGui::GetFrameCount() / 5) & 3) << 1)], NULL);
 
             bool queue_test = false;
-            bool queue_gui_func = false;
+            bool queue_gui_func_toggle = false;
             bool select_test = false;
 
             if (ImGui::Button("Run"))
@@ -237,10 +237,11 @@ static void ShowTestGroup(ImGuiTestEngine* e, ImGuiTestGroup group, ImGuiTextFil
                 select_test = true;
 
             // Double-click to run test, CTRL+Double-click to run GUI function
+            const bool is_running_gui_func = (test_context && (test_context->RunFlags & ImGuiTestRunFlags_NoTestFunc));
             if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(0))
             {
                 if (ImGui::GetIO().KeyCtrl)
-                    queue_gui_func = true;
+                    queue_gui_func_toggle = true;
                 else
                     queue_test = true;
             }
@@ -262,15 +263,9 @@ static void ShowTestGroup(ImGuiTestEngine* e, ImGuiTestGroup group, ImGuiTextFil
 
                 if (ImGui::MenuItem("Run test"))
                     queue_test = true;
+                if (ImGui::MenuItem("Run GUI func", "Ctrl+DblClick", is_running_gui_func))
+                    queue_gui_func_toggle = true;
 
-                bool is_running_gui_func = (test_context && (test_context->RunFlags & ImGuiTestRunFlags_NoTestFunc));
-                if (ImGui::MenuItem("Run GUI func", "Ctrl+Click", is_running_gui_func))
-                {
-                    if (is_running_gui_func)
-                        ImGuiTestEngine_Abort(e);
-                    else
-                        queue_gui_func = true;
-                }
                 ImGui::Separator();
 
                 const bool open_source_available = (test->SourceFile != NULL) && (e->IO.SrcFileOpenFunc != NULL);
@@ -337,13 +332,12 @@ static void ShowTestGroup(ImGuiTestEngine* e, ImGuiTestGroup group, ImGuiTextFil
                 e->UiSelectedTest = test;
 
             // Process queuing
-            if (!e->IO.RunningTests)
-            {
-                if (queue_test)
-                    ImGuiTestEngine_QueueTest(e, test, ImGuiTestRunFlags_ManualRun);
-                else if (queue_gui_func)
-                    ImGuiTestEngine_QueueTest(e, test, ImGuiTestRunFlags_ManualRun | ImGuiTestRunFlags_NoTestFunc);
-            }
+            if (queue_gui_func_toggle && is_running_gui_func)
+                ImGuiTestEngine_Abort(e);
+            else if (queue_gui_func_toggle && !e->IO.RunningTests)
+                ImGuiTestEngine_QueueTest(e, test, ImGuiTestRunFlags_ManualRun | ImGuiTestRunFlags_NoTestFunc);
+            if (queue_test && !e->IO.RunningTests)
+                ImGuiTestEngine_QueueTest(e, test, ImGuiTestRunFlags_ManualRun);
 
             ImGui::PopID();
         }
