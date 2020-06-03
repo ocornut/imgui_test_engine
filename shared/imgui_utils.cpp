@@ -473,7 +473,7 @@ void    ImParseSplitCommandLine(int* out_argc, char const*** out_argv, const cha
     *out_argv = argv;
 }
 
-bool ImFindIniSection(const char* ini_config, const char* header, ImVector<char>* result)
+bool ImParseFindIniSection(const char* ini_config, const char* header, ImVector<char>* result)
 {
     IM_ASSERT(ini_config != NULL);
     IM_ASSERT(header != NULL);
@@ -500,7 +500,7 @@ bool ImFindIniSection(const char* ini_config, const char* header, ImVector<char>
         --section_end;
 
     size_t section_len = section_end - section_start;
-    result->resize(section_len + 1);
+    result->resize((int)section_len + 1);
     ImStrncpy(result->Data, section_start, section_len);
 
     return true;

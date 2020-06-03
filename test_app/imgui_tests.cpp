@@ -3098,6 +3098,15 @@ void RegisterTests_Columns(ImGuiTestEngine* e)
 }
 
 #ifdef IMGUI_HAS_TABLE
+
+static ImGuiTableColumn* HelperTableFindColumnByName(ImGuiTable* table, const char* name)
+{
+    for (int i = 0; i < table->Columns.size(); i++)
+        if (strcmp(ImGui::TableGetColumnName(table, i), name) == 0)
+            return &table->Columns[i];
+    return NULL;
+}
+
 static void HelperTableSubmitCells(int count_w, int count_h)
 {
     for (int line = 0; line < count_h; line++)
@@ -3404,11 +3413,12 @@ void RegisterTests_Table(ImGuiTestEngine* e)
             const float width_prev = col_prev ? col_prev->WidthGiven : 0;
             const float width_next = col_next ? col_next->WidthGiven : 0;
             const float width_total = table->ColumnsTotalWidth;
-            const float move_by = -30.0f;
-            ImGuiID handle_id = ImGui::TableGetColumnResizeID(table, column_n);
             initial_col_size[column_n] = col_curr->WidthGiven;              // Save initial column size for next test
 
             // Resize a column
+            // FIXME-TESTS: higher level helpers.
+            const float move_by = -30.0f;
+            ImGuiID handle_id = ImGui::TableGetColumnResizeID(table, column_n);
             ctx->ItemDragWithDelta(handle_id, ImVec2(move_by, 0));
 
             IM_CHECK(!col_prev || col_prev->WidthGiven == width_prev);      // Previous column width does not change
@@ -3672,23 +3682,25 @@ void RegisterTests_Table(ImGuiTestEngine* e)
 
     // ## Test saving and loading table settings.
     t = REGISTER_TEST("table", "table_settings");
+    struct TableSettingsVars { ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoSavedSettings; bool call_get_sort_specs = false; };
+    t->SetUserDataType<TableSettingsVars>();
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
-        if (ctx->FrameCount < 0)
-            ctx->GenericVars.Int1 = ImGuiWindowFlags_NoSavedSettings;
+        TableSettingsVars& vars = ctx->GetUserData<TableSettingsVars>();
 
         const int column_count = 4;
         ImGui::SetNextWindowSize(ImVec2(300, 200), ImGuiCond_Appearing);
-        ImGui::Begin("Table Settings", NULL, (ImGuiWindowFlags)ctx->GenericVars.Int1);
+        ImGui::Begin("Table Settings", NULL, vars.window_flags);
 
-        if (ImGui::BeginTable("Table", column_count, ImGuiTableFlags_Resizable |
-            ImGuiTableFlags_Hideable | ImGuiTableFlags_Reorderable | ImGuiTableFlags_Sortable))
+        if (ImGui::BeginTable("Table", column_count, ImGuiTableFlags_Resizable | ImGuiTableFlags_Hideable | ImGuiTableFlags_Reorderable | ImGuiTableFlags_Sortable))
         {
             ImGui::TableSetupColumn("Col1");
             ImGui::TableSetupColumn("Col2");
             ImGui::TableSetupColumn("Col3", ImGuiTableColumnFlags_WidthFixed, 50.0f);
             ImGui::TableSetupColumn("Col4", ImGuiTableColumnFlags_WidthStretch);
             ImGui::TableAutoHeaders();
+            if (vars.call_get_sort_specs) // Test against TableGetSortSpecs() having side effects
+                ImGui::TableGetSortSpecs();
             HelperTableSubmitCells(column_count, 3);
             ImGui::EndTable();
         }
@@ -3696,63 +3708,120 @@ void RegisterTests_Table(ImGuiTestEngine* e)
     };
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
+        TableSettingsVars& vars = ctx->GetUserData<TableSettingsVars>();
+
         ctx->WindowRef("Table Settings");
         ImGuiID table_id = ctx->GetID("Table");
         ImGuiTable* table = ImGui::FindTableByID(table_id);
 
         // Number of tested settings == number of bits used in the mask for iterating all combinations.
-        const int number_of_settings = 5;
+        const int number_of_settings = 6;
         for (unsigned int mask = 0, end = (1 << number_of_settings); mask < end && !ctx->IsError(); mask++)
         {
-            const bool Col0Sorted = (mask >> 0) & 1;
-            const bool Col1Hidden = (mask >> 1) & 1;
-            const bool ColsReordered = (mask >> 2) & 1;
-            const bool Col2Resized = (mask >> 3) & 1;
-            const bool Col3Resized = (mask >> 4) & 1;
+            vars.call_get_sort_specs = ((mask >> 0) & 1) == 0;
+            const bool col0_sorted_desc = (mask >> 1) & 1;
+            const bool col1_hidden = (mask >> 2) & 1;
+            const bool col0_reordered = (mask >> 3) & 1;
+            const bool col2_resized = (mask >> 4) & 1;
+            const bool col3_resized = (mask >> 5) & 1;
+
+            // Verify that settings were indeed reset.
+            auto check_initial_settings = [](ImGuiTable* table)
+            {
+                IM_CHECK_EQ_NO_RET(table->Columns[0].SortOrder, 0);
+                IM_CHECK_EQ_NO_RET(table->Columns[1].SortOrder, -1);
+                IM_CHECK_EQ_NO_RET(table->Columns[2].SortOrder, -1);
+                IM_CHECK_EQ_NO_RET(table->Columns[3].SortOrder, -1);
+                IM_CHECK_EQ_NO_RET(table->Columns[0].SortDirection, ImGuiSortDirection_Ascending);
+
+                IM_CHECK_EQ_NO_RET(table->Columns[0].IsVisible, true);
+                IM_CHECK_EQ_NO_RET(table->Columns[1].IsVisible, true);
+                IM_CHECK_EQ_NO_RET(table->Columns[2].IsVisible, true);
+                IM_CHECK_EQ_NO_RET(table->Columns[3].IsVisible, true);
+
+                IM_CHECK_EQ_NO_RET(table->Columns[0].DisplayOrder, 0);
+                IM_CHECK_EQ_NO_RET(table->Columns[1].DisplayOrder, 1);
+                IM_CHECK_EQ_NO_RET(table->Columns[2].DisplayOrder, 2);
+                IM_CHECK_EQ_NO_RET(table->Columns[3].DisplayOrder, 3);
+
+                IM_CHECK_EQ_NO_RET(table->Columns[2].WidthGiven, 50.0f);
+                IM_CHECK_EQ_NO_RET(table->Columns[3].WidthStretchWeight, 1.0f);
+            };
+            auto check_modified_settings = [&](ImGuiTable* table)
+            {
+                IM_CHECK_EQ_NO_RET(table->Columns[0].SortOrder, 0);
+                IM_CHECK_EQ_NO_RET(table->Columns[0].SortDirection, col0_sorted_desc ? ImGuiSortDirection_Descending : ImGuiSortDirection_Ascending);
+                IM_CHECK_EQ_NO_RET(table->Columns[1].IsVisible, !col1_hidden);
+                IM_CHECK_EQ_NO_RET(table->Columns[0].DisplayOrder, col0_reordered ? (col1_hidden ? 2 : 1) : 0);
+                IM_CHECK_EQ_NO_RET(table->Columns[1].DisplayOrder, col0_reordered ? 0 : 1);
+                IM_CHECK_EQ_NO_RET(table->Columns[2].DisplayOrder, col0_reordered ? (col1_hidden ? 1 : 2) : 2);
+                IM_CHECK_EQ_NO_RET(table->Columns[2].WidthGiven, (col2_resized ? 60.0f : 50.0f));
+                IM_CHECK_EQ_NO_RET(table->Columns[3].WidthStretchWeight, col3_resized ? 0.2f : 1.0f);
+            };
 
             // Discard previous table state.
             table = ImGui::FindTableByID(table_id);
             if (table)
                 ctx->TableDiscard(table);
-            ctx->Yield();                                                   // Rebuild a table on next frame
+            ctx->Yield(); // Rebuild a table on next frame
+
+            ctx->LogInfo("Permutation %d: col0_sorted_desc:%d col1_hidden:%d col0_reordered:%d col2_resized:%d col3_resized:%d", mask,
+                col0_sorted_desc, col1_hidden, col0_reordered, col2_resized, col3_resized);
+
+            // Check initial settings
+            ctx->LogInfo("1/4 Check initial settings");
             table = ImGui::FindTableByID(table_id);
+            check_initial_settings(table);
 
             // Modify table. Each bit in the mask corresponds to a single tested function.
             // Modify number_of_settings when new tests are added.
             // Modify expected_test_states adding new test states when new tests are added.
-            ctx->LogInfo("Permutation %d: Col0Sorted:%d Col1Hidden:%d ColsReordered:%d Col2Resized:%d Col3Resized:%d", mask,
-                Col0Sorted, Col1Hidden, ColsReordered, Col2Resized, Col3Resized);
-
-            if (Col0Sorted)
+            if (col0_sorted_desc)
             {
+                // FIXME-TESTS: Later we should try to simulate inputs at user level
                 table->Columns[0].SortOrder = 0;
                 table->Columns[0].SortDirection = ImGuiSortDirection_Descending;
             }
 
-            if (Col1Hidden)
+            if (col1_hidden)
             {
+                // FIXME-TESTS: Later we should try to simulate inputs at user level
                 table->Columns[1].IsVisible = table->Columns[1].IsVisibleNextFrame = false;
                 ctx->Yield();   // Must come into effect before reordering.
             }
 
-            if (ColsReordered)
+            if (col0_reordered)
             {
+                // FIXME-TESTS: Later we should try to simulate inputs at user level
                 table->ReorderColumn = table->HeldHeaderColumn = 0;
-                table->ReorderColumnDir = 1;
+                table->ReorderColumnDir = +1;
             }
 
-            if (Col2Resized)
+            if (col2_resized)
+            {
+                // FIXME-TESTS: Later we should try to simulate inputs at user level
                 table->Columns[2].WidthRequest = 60;
+            }
 
-            if (Col3Resized)
+            if (col3_resized)
+            {
+                // FIXME-TESTS: Later we should try to simulate inputs at user level
                 table->Columns[3].WidthStretchWeight = 0.2f;
+            }
 
             ctx->Yield();
+
+            ctx->LogInfo("2/4 Check modified settings");
+            check_modified_settings(table);
 
             // Save table settings and destroy the table.
             table->Flags &= ~ImGuiTableFlags_NoSavedSettings;
             ImGui::TableSaveSettings(table);
-            const char* settings = ImGui::SaveIniSettingsToMemory();
+            const char* all_settings = ImGui::SaveIniSettingsToMemory();
+            Str64f table_ini_section("[Table][0x%08X,%d]", table->ID, table->ColumnsCount);
+            ImVector<char> table_settings;
+            IM_CHECK_NO_RET(ImParseFindIniSection(all_settings, table_ini_section.c_str(), &table_settings) == true);
+            all_settings = NULL;
 
             // Recreate table with no settings.
             ctx->TableDiscard(table);
@@ -3760,42 +3829,26 @@ void RegisterTests_Table(ImGuiTestEngine* e)
             table = ImGui::FindTableByID(table_id);
 
             // Verify that settings were indeed reset.
-            IM_CHECK_NO_RET(table->Columns[0].SortOrder == -1);
-            IM_CHECK_NO_RET(table->Columns[0].SortDirection == ImGuiSortDirection_Ascending);  // FIXME-TABLE: Should be ImGuiSortDirection_None for unsorted columns.
-            IM_CHECK_NO_RET(table->Columns[1].IsVisible == true);
-            IM_CHECK_NO_RET(table->Columns[0].DisplayOrder == 0);
-            IM_CHECK_NO_RET(table->Columns[1].DisplayOrder == 1);
-            IM_CHECK_NO_RET(table->Columns[2].DisplayOrder == 2);
-            IM_CHECK_NO_RET(table->Columns[3].DisplayOrder == 3);
-            IM_CHECK_NO_RET(table->Columns[2].WidthGiven == 50.0f);
-            IM_CHECK_NO_RET(table->Columns[3].WidthStretchWeight == 1.0f);
-
+            ctx->LogInfo("3/4 Check initial settings (after clear)");
+            check_initial_settings(table);
             if (ctx->IsError())
                 break;
 
             // Load saved settings.
-            Str16f table_ini_section("[Table][0x%08X,%d]", table->ID, table->ColumnsCount);
-            ImVector<char> table_settings;
-            IM_CHECK_NO_RET(ImFindIniSection(settings, table_ini_section.c_str(), &table_settings) == true);
             ImGui::LoadIniSettingsFromMemory(table_settings.Data);
-            ctx->GenericVars.Int1 = 0;                                      // Allow loading settings for test window and table.
-            ctx->Yield();                                                   // Load settings, also a chance to mess up loaded state.
-            ctx->GenericVars.Int1 = ImGuiWindowFlags_NoSavedSettings;       // Prevent saving settings for test window and table when testing is done.
-            ctx->Yield();                                                   // One more frame, so _NoSavedSettings get saved.
+            vars.window_flags = ImGuiWindowFlags_None;              // Allow loading settings for test window and table.
+            ctx->Yield();                                           // Load settings, also a chance to mess up loaded state.
+            vars.window_flags = ImGuiWindowFlags_NoSavedSettings;   // Prevent saving settings for test window and table when testing is done.
+            ctx->Yield();                                           // One more frame, so _NoSavedSettings get saved.
 
             // Verify that table has settings that were saved.
-            IM_CHECK_EQ_NO_RET(table->Columns[0].SortOrder, Col0Sorted ? 0 : -1);
-            IM_CHECK_EQ_NO_RET(table->Columns[0].SortDirection, Col0Sorted ? ImGuiSortDirection_Descending : ImGuiSortDirection_None);
-            IM_CHECK_EQ_NO_RET(table->Columns[1].IsVisible, !Col1Hidden);
-            IM_CHECK_EQ_NO_RET(table->Columns[0].DisplayOrder, ColsReordered ? (Col1Hidden ? 2 : 1) : 0);
-            IM_CHECK_EQ_NO_RET(table->Columns[1].DisplayOrder, ColsReordered ? 0 : 1);
-            IM_CHECK_EQ_NO_RET(table->Columns[2].DisplayOrder, ColsReordered ? (Col1Hidden ? 1 : 2) : 2);
-            IM_CHECK_EQ_NO_RET(table->Columns[2].WidthGiven, (Col2Resized ? 60.0f : 50.0f));
-            IM_CHECK_EQ_NO_RET(table->Columns[3].WidthStretchWeight, Col3Resized ? 0.2f : 1.0f);
+            ctx->LogInfo("4/4 Check modified settings (after reload)");
+            check_modified_settings(table);
         }
 
         // Ensure table settings do not leak in case of errors.
-        if (ImGuiTable* table = ImGui::FindTableByID(table_id))
+        table = ImGui::FindTableByID(table_id);
+        if (table)
             ctx->TableDiscard(table);
     };
 
@@ -3804,7 +3857,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         int& table_flags = ctx->GenericVars.Int1;
-        ImGui::SetNextWindowSize(ImVec2(600, 80), ImGuiCond_Appearing);
+        ImGui::SetNextWindowSize(ImVec2(600, 80), ImGuiCond_Appearing); // FIXME-TESTS: Why?
         ImGui::Begin("Test window", NULL, ImGuiWindowFlags_NoSavedSettings);
 
         if (ctx->IsFirstFrame())
@@ -3836,28 +3889,23 @@ void RegisterTests_Table(ImGuiTestEngine* e)
         int& table_flags = ctx->GenericVars.Int1;
 
         // Clicks a column header, optionally holding a specified modifier key. Returns SortDirection of clicked column.
-        auto click_column_get_sort = [&](const char* label, ImGuiKeyModFlags click_mod = ImGuiKeyModFlags_None) -> ImGuiSortDirection
+        auto click_column_and_get_sort = [&](const char* label, ImGuiKeyModFlags click_mod = ImGuiKeyModFlags_None) -> ImGuiSortDirection
         {
             IM_ASSERT(ctx != NULL);
             IM_ASSERT(table != NULL);
             IM_ASSERT(label != NULL);
 
-            for (int i = 0; i < table->Columns.size(); i++)
-            {
-                if (strcmp(ImGui::TableGetColumnName(table, i), label) == 0)
-                {
-                    ImGuiTableColumn* column = &table->Columns[i];
-                    ImGuiID column_label_id = ctx->GetID(label, ctx->GetIDByInt(i, ctx->GetIDByInt(table->ID)));
-                    if (click_mod != ImGuiKeyModFlags_None)
-                        ctx->KeyDownMap(ImGuiKey_COUNT, click_mod);
-                    ctx->ItemClick(column_label_id, ImGuiMouseButton_Left);
-                    if (click_mod != ImGuiKeyModFlags_None)
-                        ctx->KeyUpMap(ImGuiKey_COUNT, click_mod);
-                    return column->SortDirection;
-                }
-            }
-            IM_ASSERT(false);
-            return ImGuiSortDirection_None;
+            ImGuiTableColumn* column = HelperTableFindColumnByName(table, label);
+            IM_CHECK_RETV(column != NULL, ImGuiSortDirection_None);
+
+            int column_n = table->Columns.index_from_ptr(column);
+            ImGuiID column_header_id = ctx->GetID(label, ctx->GetIDByInt(column_n, ctx->GetIDByInt(table->ID))); // FIXME-TESTS: Add helpers
+            if (click_mod != ImGuiKeyModFlags_None)
+                ctx->KeyDownMap(ImGuiKey_COUNT, click_mod);
+            ctx->ItemClick(column_header_id, ImGuiMouseButton_Left);
+            if (click_mod != ImGuiKeyModFlags_None)
+                ctx->KeyUpMap(ImGuiKey_COUNT, click_mod);
+            return column->SortDirection;
         };
 
         // Calls ImGui::TableGetSortSpecs() and returns it's result.
@@ -3874,37 +3922,40 @@ void RegisterTests_Table(ImGuiTestEngine* e)
         sort_specs = table_get_sort_specs(ctx, table);
         IM_CHECK(sort_specs != NULL);
         IM_CHECK(sort_specs->SpecsCount == 1);
-        IM_CHECK(sort_specs->ColumnsMask == 1);
+        IM_CHECK(sort_specs->ColumnsMask == 0x01);
         IM_CHECK(sort_specs->Specs[0].ColumnIndex == 0);
         IM_CHECK(sort_specs->Specs[0].SortOrder == 0);
         IM_CHECK(sort_specs->Specs[0].SortDirection == ImGuiSortDirection_Ascending);
 
-        IM_CHECK_EQ(click_column_get_sort("Default"), ImGuiSortDirection_Descending);   // Sorted implicitly by calling TableGetSortSpecs().
-        IM_CHECK_EQ(click_column_get_sort("Default"), ImGuiSortDirection_Ascending);
-        IM_CHECK_EQ(click_column_get_sort("PreferSortAscending"), ImGuiSortDirection_Ascending);
-        IM_CHECK_EQ(click_column_get_sort("PreferSortAscending"), ImGuiSortDirection_Descending);
+        IM_CHECK_EQ(click_column_and_get_sort("Default"), ImGuiSortDirection_Descending);   // Sorted implicitly by calling TableGetSortSpecs().
+        IM_CHECK_EQ(click_column_and_get_sort("Default"), ImGuiSortDirection_Ascending);
+        IM_CHECK_EQ(click_column_and_get_sort("PreferSortAscending"), ImGuiSortDirection_Ascending);
+        IM_CHECK_EQ(click_column_and_get_sort("PreferSortAscending"), ImGuiSortDirection_Descending);
 
-        // Not holding shift does not perform multisort.
+        // Not holding shift does not perform multi-sort.
         sort_specs = table_get_sort_specs(ctx, table);
         IM_CHECK(sort_specs != NULL);
         IM_CHECK(sort_specs->SpecsCount == 1);
 
-        // Holding shift includes all sortable columns in multisort.
-        IM_CHECK_EQ(click_column_get_sort("PreferSortDescending", ImGuiKeyModFlags_Shift), ImGuiSortDirection_Descending);
-        IM_CHECK_EQ(click_column_get_sort("PreferSortDescending", ImGuiKeyModFlags_Shift), ImGuiSortDirection_Ascending);
-        IM_CHECK_EQ(click_column_get_sort("NoSort", ImGuiKeyModFlags_Shift), ImGuiSortDirection_Ascending);
-        IM_CHECK_EQ(click_column_get_sort("NoSort", ImGuiKeyModFlags_Shift), ImGuiSortDirection_Ascending);
-        IM_CHECK_EQ(click_column_get_sort("NoSortAscending", ImGuiKeyModFlags_Shift), ImGuiSortDirection_Descending);
-        IM_CHECK_EQ(click_column_get_sort("NoSortAscending", ImGuiKeyModFlags_Shift), ImGuiSortDirection_Descending);
-        IM_CHECK_EQ(click_column_get_sort("NoSortDescending", ImGuiKeyModFlags_Shift), ImGuiSortDirection_Ascending);
-        IM_CHECK_EQ(click_column_get_sort("NoSortDescending", ImGuiKeyModFlags_Shift), ImGuiSortDirection_Ascending);
-
-        // Verify final sort spec.
+        // Holding shift includes all sortable columns in multi-sort.
+        IM_CHECK_EQ(click_column_and_get_sort("PreferSortDescending", ImGuiKeyModFlags_Shift), ImGuiSortDirection_Descending);
+        IM_CHECK_EQ(click_column_and_get_sort("PreferSortDescending", ImGuiKeyModFlags_Shift), ImGuiSortDirection_Ascending);
         sort_specs = table_get_sort_specs(ctx, table);
-        IM_CHECK(sort_specs != NULL);
-        IM_CHECK(sort_specs->SpecsCount == 4);
+        IM_CHECK(sort_specs && sort_specs->SpecsCount == 2);
 
-        // Disable multi-sort and ensure there is only one softed column left.
+        IM_CHECK_EQ(click_column_and_get_sort("NoSort", ImGuiKeyModFlags_Shift), ImGuiSortDirection_Ascending);
+        IM_CHECK_EQ(click_column_and_get_sort("NoSort", ImGuiKeyModFlags_Shift), ImGuiSortDirection_Ascending);
+        sort_specs = table_get_sort_specs(ctx, table);
+        IM_CHECK(sort_specs&& sort_specs->SpecsCount == 2);
+
+        IM_CHECK_EQ(click_column_and_get_sort("NoSortAscending", ImGuiKeyModFlags_Shift), ImGuiSortDirection_Descending);
+        IM_CHECK_EQ(click_column_and_get_sort("NoSortAscending", ImGuiKeyModFlags_Shift), ImGuiSortDirection_Descending);
+        IM_CHECK_EQ(click_column_and_get_sort("NoSortDescending", ImGuiKeyModFlags_Shift), ImGuiSortDirection_Ascending);
+        IM_CHECK_EQ(click_column_and_get_sort("NoSortDescending", ImGuiKeyModFlags_Shift), ImGuiSortDirection_Ascending);
+        sort_specs = table_get_sort_specs(ctx, table);
+        IM_CHECK(sort_specs&& sort_specs->SpecsCount == 4);
+
+        // Disable multi-sort and ensure there is only one sorted column left.
         table_flags = ImGuiTableFlags_Sortable;
         ctx->Yield();
         sort_specs = table_get_sort_specs(ctx, table);
@@ -3912,7 +3963,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
         IM_CHECK(sort_specs->SpecsCount == 1);
 
         // Disable sorting completely. Sort spec should not be returned.
-        table_flags = 0;
+        table_flags = ImGuiTableFlags_None;
         ctx->Yield();
         sort_specs = table_get_sort_specs(ctx, table);
         IM_CHECK(sort_specs == NULL);

@@ -70,7 +70,7 @@ void                ImThreadSetCurrentThreadDescription(const char* description)
 
 // Parsing helpers
 void                ImParseSplitCommandLine(int* out_argc, char const*** out_argv, const char* cmd_line);
-bool                ImFindIniSection(const char* ini_config, const char* header, ImVector<char>* result);
+bool                ImParseFindIniSection(const char* ini_config, const char* header, ImVector<char>* result);
 
 // Build Info helpers
 const ImBuildInfo&  ImBuildGetCompilationInfo();
