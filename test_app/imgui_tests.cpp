@@ -4517,7 +4517,37 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
 // Tests: Draw, ImDrawList
 //-------------------------------------------------------------------------
 
-void RegisterTests_Draw(ImGuiTestEngine* e)
+struct HelpersTextureId
+{
+    // Fake texture ID
+    ImTextureID DummyTex0 = (ImTextureID)100;
+    ImTextureID DummyTex1 = (ImTextureID)200;
+
+    // Replace fake texture IDs with a known good ID in order to prevent graphics API crashing application.
+    void RemoveDummyTexFromDrawList(ImDrawList* draw_list, ImTextureID replacement_tex_id)
+    {
+        for (ImDrawCmd& cmd : draw_list->CmdBuffer)
+            if (cmd.TextureId == DummyTex0 || cmd.TextureId == DummyTex1)
+                cmd.TextureId = replacement_tex_id;
+    }
+};
+
+static bool CanTestVtxOffset(ImGuiTestContext* ctx)
+{
+    if ((ctx->UiContext->IO.BackendFlags & ImGuiBackendFlags_RendererHasVtxOffset) == 0)
+    {
+        ctx->LogInfo("Skipping: back-end does not support RendererHasVtxOffset!");
+        return false;
+    }
+    if (sizeof(ImDrawIdx) != 2)
+    {
+        ctx->LogInfo("sizeof(ImDrawIdx) != 2");
+        return false;
+    }
+    return true;
+};
+
+void RegisterTests_DrawList(ImGuiTestEngine* e)
 {
     ImGuiTest* t = NULL;
 
@@ -4558,185 +4588,193 @@ void RegisterTests_Draw(ImGuiTestEngine* e)
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
         ImDrawList* draw_list = ImGui::GetWindowDrawList();
         ImTextureID prev_texture_id = draw_list->_TextureIdStack.back();
-        const int draw_count = draw_list->CmdBuffer.Size;
+        const int start_cmdbuffer_size = draw_list->CmdBuffer.Size;
         IM_CHECK_EQ(draw_list->CmdBuffer.back().ElemCount, 0u);
 
         ImVec2 p = ImGui::GetCursorScreenPos();
         ImGui::Dummy(ImVec2(100 + 10 + 100, 100));
 
+        HelpersTextureId dummy_tex;
+
         draw_list->ChannelsSplit(2);
         draw_list->ChannelsSetCurrent(0);
-        // Image wont be clipped when added directly into the draw list.
-        draw_list->AddImage((ImTextureID)100, p, p + ImVec2(100, 100));
+        draw_list->AddImage(dummy_tex.DummyTex0, p, p + ImVec2(100, 100));
         draw_list->ChannelsSetCurrent(1);
-        draw_list->AddImage((ImTextureID)200, p + ImVec2(110, 0), p + ImVec2(210, 100));
+        draw_list->AddImage(dummy_tex.DummyTex1, p + ImVec2(110, 0), p + ImVec2(210, 100));
         draw_list->ChannelsMerge();
 
-        IM_CHECK_EQ_NO_RET(draw_list->CmdBuffer.Size, draw_count + 2);
+        IM_CHECK_EQ_NO_RET(draw_list->CmdBuffer.Size, start_cmdbuffer_size + 2);
         IM_CHECK_EQ_NO_RET(draw_list->CmdBuffer.back().ElemCount, 0u);
         IM_CHECK_EQ_NO_RET(prev_texture_id, draw_list->CmdBuffer.back().TextureId);
 
-        // Replace fake texture IDs with a known good ID in order to prevent graphics API crashing application.
-        for (ImDrawCmd& cmd : draw_list->CmdBuffer)
-            if (cmd.TextureId == (ImTextureID)100 || cmd.TextureId == (ImTextureID)200)
-                cmd.TextureId = prev_texture_id;
+        dummy_tex.RemoveDummyTexFromDrawList(draw_list, prev_texture_id);
 
         ImGui::End();
     };
 
-    // ## Test RendererHasVtxOffset
-    t = REGISTER_TEST("draw", "draw_16_bit_indices_with_vtx_offset");
-    t->TestFunc = NULL;
+    t = REGISTER_TEST("drawlist", "drawlist_merge_cmd");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
-        if ((ImGui::GetIO().BackendFlags & ImGuiBackendFlags_RendererHasVtxOffset) == 0)
-        {
-            ctx->LogInfo("Backend does not support RendererHasVtxOffset");
-            return;
-        }
+        ImGui::SetNextWindowSize(ImVec2(200, 200)); // Make sure our columns aren't clipped
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
 
-        if (sizeof(ImDrawIdx) != 2)
-        {
-            ctx->LogInfo("sizeof(ImDrawIdx) != 2");
+        ImDrawList* draw_list = ImGui::GetWindowDrawList();
+
+        const int start_cmdbuffer_size = draw_list->CmdBuffer.Size;
+        //ImGui::Text("Hello");
+        draw_list->AddDrawCmd(); // Empty command
+        IM_CHECK_EQ(draw_list->CmdBuffer.Size, start_cmdbuffer_size + 1);
+        IM_CHECK_EQ(draw_list->CmdBuffer.back().ElemCount, 0u);
+
+        ImGui::Columns(2);
+        IM_CHECK_EQ(draw_list->CmdBuffer.Size, 1); // In channel 1
+        ImGui::Text("One");
+        IM_CHECK_EQ(draw_list->CmdBuffer.Size, 1); // In channel 1
+
+        ImGui::NextColumn();
+        IM_CHECK_EQ(draw_list->CmdBuffer.Size, 1); // In channel 2
+        ImGui::Text("Two");
+        IM_CHECK_EQ(draw_list->CmdBuffer.Size, 1); // In channel 2
+
+        ImGui::PushColumnsBackground(); // In channel 0 -> will trigger merge
+        IM_CHECK_EQ(draw_list->CmdBuffer.Size, start_cmdbuffer_size);
+        ImGui::PopColumnsBackground();
+
+        IM_CHECK_EQ(draw_list->CmdBuffer.Size, 1); // In channel 2
+
+        ImGui::Columns(1);
+        IM_CHECK_EQ(draw_list->CmdBuffer.Size, start_cmdbuffer_size + 2); // Channel 1 and 2 each other one Cmd
+
+        ImGui::End();
+    };
+
+    // ## Test VtxOffset
+    t = REGISTER_TEST("drawlist", "drawlist_vtxoffset_basic");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        if (CanTestVtxOffset(ctx) == false)
             return;
-        }
 
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
         ImDrawList* draw_list = ImGui::GetWindowDrawList();
         IM_CHECK_EQ(draw_list->CmdBuffer.back().ElemCount, 0u);
         IM_CHECK_EQ(draw_list->CmdBuffer.back().VtxOffset, 0u);
 
-        const int start_vertex_count = draw_list->VtxBuffer.Size;
-        const int start_cmd_count = draw_list->CmdBuffer.Size;
-        ctx->LogDebug("start_vertex_count = %d", start_vertex_count);
-        ctx->LogDebug("start_cmd_count = %d", start_cmd_count);
+        const int start_vtxbuffer_size = draw_list->VtxBuffer.Size;
+        const int start_cmdbuffer_size = draw_list->CmdBuffer.Size;
+        ctx->LogDebug("VtxBuffer.Size = %d, CmdBuffer.Size = %d", start_vtxbuffer_size, start_cmdbuffer_size);
 
         // fill up vertex buffer with rectangles
-        const int rect_count = (65536 - start_vertex_count - 1) / 4;
+        const int rect_count = (65536 - start_vtxbuffer_size - 1) / 4;
+        const int expected_threshold = rect_count * 4 + start_vtxbuffer_size;
         ctx->LogDebug("rect_count = %d", rect_count);
-
-        const int expected_threshold = rect_count * 4 + start_vertex_count;
         ctx->LogDebug("expected_threshold = %d", expected_threshold);
 
         const ImVec2 p_min = ImGui::GetCursorScreenPos();
         const ImVec2 p_max = p_min + ImVec2(50, 50);
-        const ImU32 color = IM_COL32(255, 255, 255, 255);
         ImGui::Dummy(p_max - p_min);
         for (int n = 0; n < rect_count; n++)
-            draw_list->AddRectFilled(p_min, p_max, color);
+            draw_list->AddRectFilled(p_min, p_max, IM_COL32(255,0,0,255));
 
         // we are just before reaching 64k vertex count, so far everything
         // should land single command buffer
         IM_CHECK_EQ_NO_RET(draw_list->VtxBuffer.Size, expected_threshold);
-        IM_CHECK_EQ_NO_RET(draw_list->CmdBuffer.Size, start_cmd_count);
+        IM_CHECK_EQ_NO_RET(draw_list->CmdBuffer.Size, start_cmdbuffer_size);
         IM_CHECK_EQ_NO_RET(draw_list->CmdBuffer.back().VtxOffset, 0u);
+        IM_CHECK_EQ_NO_RET(draw_list->_VtxCurrentOffset, 0u);
 
-        // next rect should pass 64k threshold and emit new command
-        draw_list->AddRectFilled(p_min, p_max, color);
+        // Test #3232
+#if 1
+        draw_list->PrimReserve(6, 4);
+        draw_list->PrimUnreserve(6, 4);
+        ImVec4 clip_rect = draw_list->_ClipRectStack.back();
+        draw_list->PushClipRect(ImVec2(clip_rect.x, clip_rect.y), ImVec2(clip_rect.z, clip_rect.w)); // Use same cliprect so pop will easily
+        draw_list->PopClipRect();
+        IM_CHECK_EQ(draw_list->_VtxCurrentOffset, draw_list->CmdBuffer.back().VtxOffset);
+#endif
+
+        // Next rect should pass 64k threshold and emit new command
+        draw_list->AddRectFilled(p_min, p_max, IM_COL32(0,255,0,255));
         IM_CHECK_GE_NO_RET(draw_list->VtxBuffer.Size, 65536);
-        IM_CHECK_EQ_NO_RET(draw_list->CmdBuffer.Size, start_cmd_count + 1);
+        IM_CHECK_EQ_NO_RET(draw_list->CmdBuffer.Size, start_cmdbuffer_size + 1);
         IM_CHECK_EQ_NO_RET(draw_list->CmdBuffer.back().VtxOffset, (unsigned int)expected_threshold);
+        IM_CHECK_EQ_NO_RET(draw_list->_VtxCurrentOffset, (unsigned int)expected_threshold);
 
         ImGui::End();
     };
 
-    // ## Test RendererHasVtxOffset with Splitter, which should generate identical
-    // draw call pattern as test without one
-    t = REGISTER_TEST("draw", "draw_splitter_16_bit_indices_with_vtx_offset");
+    // ## Test VtxOffset with Splitter, which should generate identical draw call pattern as test without one
+    t = REGISTER_TEST("drawlist", "drawlist_vtxoffset_splitter");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
-        if ((ImGui::GetIO().BackendFlags & ImGuiBackendFlags_RendererHasVtxOffset) == 0)
-        {
-            ctx->LogInfo("Backend does not support RendererHasVtxOffset");
+        if (CanTestVtxOffset(ctx) == false)
             return;
-        }
-
-        if (sizeof(ImDrawIdx) != 2)
-        {
-            ctx->LogInfo("sizeof(ImDrawIdx) != 2");
-            return;
-        }
 
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
         ImDrawList* draw_list = ImGui::GetWindowDrawList();
         IM_CHECK_EQ(draw_list->CmdBuffer.back().ElemCount, 0u);
         IM_CHECK_EQ(draw_list->CmdBuffer.back().VtxOffset, 0u);
 
-        const int start_vertex_count = draw_list->VtxBuffer.Size;
-        const int start_cmd_count = draw_list->CmdBuffer.Size;
-        ctx->LogDebug("start_vertex_count = %d", start_vertex_count);
-        ctx->LogDebug("start_cmd_count = %d", start_cmd_count);
+        const int start_vtxbuffer_size = draw_list->VtxBuffer.Size;
+        const int start_cmdbuffer_size = draw_list->CmdBuffer.Size;
+        ctx->LogDebug("VtxBuffer.Size = %d, CmdBuffer.Size = %d", start_vtxbuffer_size, start_cmdbuffer_size);
 
-        // fill up vertex buffer with rectangles
-        const int rect_count = (65536 - start_vertex_count - 1) / 4;
+        // Fill up vertex buffer with rectangles
+        const int rect_count = (65536 - start_vtxbuffer_size - 1) / 4;
+        const int expected_threshold = rect_count * 4 + start_vtxbuffer_size;
         ctx->LogDebug("rect_count = %d", rect_count);
-
-        const int expected_threshold = rect_count * 4 + start_vertex_count;
         ctx->LogDebug("expected_threshold = %d", expected_threshold);
-
-        draw_list->ChannelsSplit(rect_count);
 
         const ImVec2 p_min = ImGui::GetCursorScreenPos();
         const ImVec2 p_max = p_min + ImVec2(50, 50);
         const ImU32 color = IM_COL32(255, 255, 255, 255);
         ImGui::Dummy(p_max - p_min);
+        draw_list->ChannelsSplit(rect_count);
         for (int n = 0; n < rect_count; n++)
         {
             draw_list->ChannelsSetCurrent(n);
             draw_list->AddRectFilled(p_min, p_max, color);
         }
-
         draw_list->ChannelsMerge();
 
-        // we are just before reaching 64k vertex count, so far everything
-        // should land single command buffer
+        // We are just before reaching 64k vertex count, so far everything should land in single draw command
         IM_CHECK_EQ_NO_RET(draw_list->VtxBuffer.Size, expected_threshold);
-        IM_CHECK_EQ_NO_RET(draw_list->CmdBuffer.Size, start_cmd_count);
+        IM_CHECK_EQ_NO_RET(draw_list->CmdBuffer.Size, start_cmdbuffer_size);
         IM_CHECK_EQ_NO_RET(draw_list->CmdBuffer.back().VtxOffset, 0u);
 
-        // next rect should pass 64k threshold and emit new command
+        // Next rect should pass 64k threshold and emit new command
         draw_list->AddRectFilled(p_min, p_max, color);
         IM_CHECK_GE_NO_RET(draw_list->VtxBuffer.Size, 65536);
-        IM_CHECK_EQ_NO_RET(draw_list->CmdBuffer.Size, start_cmd_count + 1);
+        IM_CHECK_EQ_NO_RET(draw_list->CmdBuffer.Size, start_cmdbuffer_size + 1);
         IM_CHECK_EQ_NO_RET(draw_list->CmdBuffer.back().VtxOffset, (unsigned int)expected_threshold);
 
         ImGui::End();
     };
 
-    // ## Test RendererHasVtxOffset with Splitter with worst case scenario
+    // ## Test VtxOffset with Splitter with worst case scenario
     // Draw calls are interleaved, one with VtxOffset == 0, next with VtxOffset != 0
-    t = REGISTER_TEST("draw", "draw_splitter_16_bit_indices_with_vtx_offset_draw_call_explosion");
+#if 0
+    t = REGISTER_TEST("drawlist", "drawlist_vtxoffset_splitter_draw_call_explosion");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
-        if ((ImGui::GetIO().BackendFlags & ImGuiBackendFlags_RendererHasVtxOffset) == 0)
-        {
-            ctx->LogInfo("Backend does not support RendererHasVtxOffset");
+        if (CanTestVtxOffset(ctx) == false)
             return;
-        }
-
-        if (sizeof(ImDrawIdx) != 2)
-        {
-            ctx->LogInfo("sizeof(ImDrawIdx) != 2");
-            return;
-        }
 
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
         ImDrawList* draw_list = ImGui::GetWindowDrawList();
         IM_CHECK_EQ(draw_list->CmdBuffer.back().ElemCount, 0u);
         IM_CHECK_EQ(draw_list->CmdBuffer.back().VtxOffset, 0u);
 
-        const int start_vertex_count = draw_list->VtxBuffer.Size;
-        const int start_cmd_count = draw_list->CmdBuffer.Size;
-        ctx->LogDebug("start_vertex_count = %d", start_vertex_count);
-        ctx->LogDebug("start_cmd_count = %d", start_cmd_count);
+        const int start_vtxbuffer_size = draw_list->VtxBuffer.Size;
+        const int start_cmdbuffer_size = draw_list->CmdBuffer.Size;
+        ctx->LogDebug("VtxBuffer.Size = %d, CmdBuffer.Size = %d", start_vtxbuffer_size, start_cmdbuffer_size);
 
-        // fill up vertex buffer with rectangles
-        const int rect_count = (65536 - start_vertex_count - 1) / 4;
+        // Fill up vertex buffer with rectangles
+        const int rect_count = (65536 - start_vtxbuffer_size - 1) / 4;
         ctx->LogDebug("rect_count = %d", rect_count);
 
-        // expected number of draw calls after interleaving channels
-        // with VtxOffset == 0 and != 0
-        const int expected_draw_command_count = start_cmd_count + rect_count * 2 - 1; // minus one, because last channel became active one
+        // Expected number of draw calls after interleaving channels with VtxOffset == 0 and != 0
+        const int expected_draw_command_count = start_cmdbuffer_size + rect_count * 2 - 1; // minus one, because last channel became active one
 
         const ImVec2 p_min = ImGui::GetCursorScreenPos();
         const ImVec2 p_max = p_min + ImVec2(50, 50);
@@ -4750,26 +4788,32 @@ void RegisterTests_Draw(ImGuiTestEngine* e)
         {
             draw_list->ChannelsSetCurrent(n * 2);
             draw_list->AddRectFilled(p_min, p_max, color);
-            IM_CHECK_EQ_NO_RET(draw_list->CmdBuffer.back().VtxOffset, 0u);
+            if (n == 0 || n == rect_count - 1) // Reduce check/log spam
+            {
+                IM_CHECK_EQ_NO_RET(draw_list->CmdBuffer.back().VtxOffset, 0u);
+                IM_CHECK_EQ_NO_RET(draw_list->_VtxCurrentOffset, 0u);
+            }
         }
 
-        // At this point all new rects will pass 64k vertex count,
-        // and draw calls will have VtxOffset != 0
-
+        // From this point all new rects will pass 64k vertex count, and draw calls will have VtxOffset != 0
         // Draw rect to every odd channel
         for (int n = 0; n < rect_count; n++)
         {
             draw_list->ChannelsSetCurrent(n * 2 + 1);
             draw_list->AddRectFilled(p_min, p_max, color);
-            IM_CHECK_NE_NO_RET(draw_list->CmdBuffer.back().VtxOffset, 0u);
+            if (n == 0 || n == rect_count - 1) // Reduce check/log spam
+            {
+                IM_CHECK_GE_NO_RET(draw_list->CmdBuffer.back().VtxOffset, 0u);
+                IM_CHECK_GE_NO_RET(draw_list->_VtxCurrentOffset, 0u);
+            }
         }
 
         draw_list->ChannelsMerge();
-
         IM_CHECK_EQ(draw_list->CmdBuffer.Size, expected_draw_command_count);
 
         ImGui::End();
     };
+#endif
 }
 
 //-------------------------------------------------------------------------
@@ -6904,7 +6948,7 @@ void RegisterTests(ImGuiTestEngine* e)
     RegisterTests_Columns(e);
     RegisterTests_Table(e);
     RegisterTests_Docking(e);
-    RegisterTests_Draw(e);
+    RegisterTests_DrawList(e);
     RegisterTests_Misc(e);
 
     // Captures
