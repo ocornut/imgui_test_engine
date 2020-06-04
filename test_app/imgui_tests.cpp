@@ -4583,6 +4583,193 @@ void RegisterTests_Draw(ImGuiTestEngine* e)
 
         ImGui::End();
     };
+
+    // ## Test RendererHasVtxOffset
+    t = REGISTER_TEST("draw", "draw_16_bit_indices_with_vtx_offset");
+    t->TestFunc = NULL;
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        if ((ImGui::GetIO().BackendFlags & ImGuiBackendFlags_RendererHasVtxOffset) == 0)
+        {
+            ctx->LogInfo("Backend does not support RendererHasVtxOffset");
+            return;
+        }
+
+        if (sizeof(ImDrawIdx) != 2)
+        {
+            ctx->LogInfo("sizeof(ImDrawIdx) != 2");
+            return;
+        }
+
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImDrawList* draw_list = ImGui::GetWindowDrawList();
+        IM_CHECK_EQ(draw_list->CmdBuffer.back().ElemCount, 0u);
+        IM_CHECK_EQ(draw_list->CmdBuffer.back().VtxOffset, 0u);
+
+        const int start_vertex_count = draw_list->VtxBuffer.Size;
+        const int start_cmd_count = draw_list->CmdBuffer.Size;
+        ctx->LogDebug("start_vertex_count = %d", start_vertex_count);
+        ctx->LogDebug("start_cmd_count = %d", start_cmd_count);
+
+        // fill up vertex buffer with rectangles
+        const int rect_count = (65536 - start_vertex_count - 1) / 4;
+        ctx->LogDebug("rect_count = %d", rect_count);
+
+        const int expected_threshold = rect_count * 4 + start_vertex_count;
+        ctx->LogDebug("expected_threshold = %d", expected_threshold);
+
+        const ImVec2 p_min = ImGui::GetCursorScreenPos();
+        const ImVec2 p_max = p_min + ImVec2(50, 50);
+        const ImU32 color = IM_COL32(255, 255, 255, 255);
+        ImGui::Dummy(p_max - p_min);
+        for (int n = 0; n < rect_count; n++)
+            draw_list->AddRectFilled(p_min, p_max, color);
+
+        // we are just before reaching 64k vertex count, so far everything
+        // should land single command buffer
+        IM_CHECK_EQ_NO_RET(draw_list->VtxBuffer.Size, expected_threshold);
+        IM_CHECK_EQ_NO_RET(draw_list->CmdBuffer.Size, start_cmd_count);
+        IM_CHECK_EQ_NO_RET(draw_list->CmdBuffer.back().VtxOffset, 0u);
+
+        // next rect should pass 64k threshold and emit new command
+        draw_list->AddRectFilled(p_min, p_max, color);
+        IM_CHECK_GE_NO_RET(draw_list->VtxBuffer.Size, 65536);
+        IM_CHECK_EQ_NO_RET(draw_list->CmdBuffer.Size, start_cmd_count + 1);
+        IM_CHECK_EQ_NO_RET(draw_list->CmdBuffer.back().VtxOffset, (unsigned int)expected_threshold);
+
+        ImGui::End();
+    };
+
+    // ## Test RendererHasVtxOffset with Splitter, which should generate identical
+    // draw call pattern as test without one
+    t = REGISTER_TEST("draw", "draw_splitter_16_bit_indices_with_vtx_offset");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        if ((ImGui::GetIO().BackendFlags & ImGuiBackendFlags_RendererHasVtxOffset) == 0)
+        {
+            ctx->LogInfo("Backend does not support RendererHasVtxOffset");
+            return;
+        }
+
+        if (sizeof(ImDrawIdx) != 2)
+        {
+            ctx->LogInfo("sizeof(ImDrawIdx) != 2");
+            return;
+        }
+
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImDrawList* draw_list = ImGui::GetWindowDrawList();
+        IM_CHECK_EQ(draw_list->CmdBuffer.back().ElemCount, 0u);
+        IM_CHECK_EQ(draw_list->CmdBuffer.back().VtxOffset, 0u);
+
+        const int start_vertex_count = draw_list->VtxBuffer.Size;
+        const int start_cmd_count = draw_list->CmdBuffer.Size;
+        ctx->LogDebug("start_vertex_count = %d", start_vertex_count);
+        ctx->LogDebug("start_cmd_count = %d", start_cmd_count);
+
+        // fill up vertex buffer with rectangles
+        const int rect_count = (65536 - start_vertex_count - 1) / 4;
+        ctx->LogDebug("rect_count = %d", rect_count);
+
+        const int expected_threshold = rect_count * 4 + start_vertex_count;
+        ctx->LogDebug("expected_threshold = %d", expected_threshold);
+
+        draw_list->ChannelsSplit(rect_count);
+
+        const ImVec2 p_min = ImGui::GetCursorScreenPos();
+        const ImVec2 p_max = p_min + ImVec2(50, 50);
+        const ImU32 color = IM_COL32(255, 255, 255, 255);
+        ImGui::Dummy(p_max - p_min);
+        for (int n = 0; n < rect_count; n++)
+        {
+            draw_list->ChannelsSetCurrent(n);
+            draw_list->AddRectFilled(p_min, p_max, color);
+        }
+
+        draw_list->ChannelsMerge();
+
+        // we are just before reaching 64k vertex count, so far everything
+        // should land single command buffer
+        IM_CHECK_EQ_NO_RET(draw_list->VtxBuffer.Size, expected_threshold);
+        IM_CHECK_EQ_NO_RET(draw_list->CmdBuffer.Size, start_cmd_count);
+        IM_CHECK_EQ_NO_RET(draw_list->CmdBuffer.back().VtxOffset, 0u);
+
+        // next rect should pass 64k threshold and emit new command
+        draw_list->AddRectFilled(p_min, p_max, color);
+        IM_CHECK_GE_NO_RET(draw_list->VtxBuffer.Size, 65536);
+        IM_CHECK_EQ_NO_RET(draw_list->CmdBuffer.Size, start_cmd_count + 1);
+        IM_CHECK_EQ_NO_RET(draw_list->CmdBuffer.back().VtxOffset, (unsigned int)expected_threshold);
+
+        ImGui::End();
+    };
+
+    // ## Test RendererHasVtxOffset with Splitter with worst case scenario
+    // Draw calls are interleaved, one with VtxOffset == 0, next with VtxOffset != 0
+    t = REGISTER_TEST("draw", "draw_splitter_16_bit_indices_with_vtx_offset_draw_call_explosion");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        if ((ImGui::GetIO().BackendFlags & ImGuiBackendFlags_RendererHasVtxOffset) == 0)
+        {
+            ctx->LogInfo("Backend does not support RendererHasVtxOffset");
+            return;
+        }
+
+        if (sizeof(ImDrawIdx) != 2)
+        {
+            ctx->LogInfo("sizeof(ImDrawIdx) != 2");
+            return;
+        }
+
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImDrawList* draw_list = ImGui::GetWindowDrawList();
+        IM_CHECK_EQ(draw_list->CmdBuffer.back().ElemCount, 0u);
+        IM_CHECK_EQ(draw_list->CmdBuffer.back().VtxOffset, 0u);
+
+        const int start_vertex_count = draw_list->VtxBuffer.Size;
+        const int start_cmd_count = draw_list->CmdBuffer.Size;
+        ctx->LogDebug("start_vertex_count = %d", start_vertex_count);
+        ctx->LogDebug("start_cmd_count = %d", start_cmd_count);
+
+        // fill up vertex buffer with rectangles
+        const int rect_count = (65536 - start_vertex_count - 1) / 4;
+        ctx->LogDebug("rect_count = %d", rect_count);
+
+        // expected number of draw calls after interleaving channels
+        // with VtxOffset == 0 and != 0
+        const int expected_draw_command_count = start_cmd_count + rect_count * 2 - 1; // minus one, because last channel became active one
+
+        const ImVec2 p_min = ImGui::GetCursorScreenPos();
+        const ImVec2 p_max = p_min + ImVec2(50, 50);
+        const ImU32 color = IM_COL32(255, 255, 255, 255);
+        ImGui::Dummy(p_max - p_min);
+
+        // Make split and draw rect to every even channel
+        draw_list->ChannelsSplit(rect_count * 2);
+
+        for (int n = 0; n < rect_count; n++)
+        {
+            draw_list->ChannelsSetCurrent(n * 2);
+            draw_list->AddRectFilled(p_min, p_max, color);
+            IM_CHECK_EQ_NO_RET(draw_list->CmdBuffer.back().VtxOffset, 0u);
+        }
+
+        // At this point all new rects will pass 64k vertex count,
+        // and draw calls will have VtxOffset != 0
+
+        // Draw rect to every odd channel
+        for (int n = 0; n < rect_count; n++)
+        {
+            draw_list->ChannelsSetCurrent(n * 2 + 1);
+            draw_list->AddRectFilled(p_min, p_max, color);
+            IM_CHECK_NE_NO_RET(draw_list->CmdBuffer.back().VtxOffset, 0u);
+        }
+
+        draw_list->ChannelsMerge();
+
+        IM_CHECK_EQ(draw_list->CmdBuffer.Size, expected_draw_command_count);
+
+        ImGui::End();
+    };
 }
 
 //-------------------------------------------------------------------------
