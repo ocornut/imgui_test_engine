@@ -15,6 +15,9 @@
 #pragma warning (push)
 #pragma warning (disable: 4456)                             // declaration of 'xx' hides previous local declaration
 #pragma warning (disable: 4457)                             // declaration of 'xx' hides function parameter
+#else
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wsign-conversion"
 #endif
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "../libs/stb/stb_image_write.h"
@@ -25,6 +28,8 @@
 #include "../libs/gif-h/gif.h"
 #ifdef _MSC_VER
 #pragma warning (pop)
+#else
+#pragma GCC diagnostic pop
 #endif
 
 //-----------------------------------------------------------------------------
@@ -41,7 +46,7 @@ void ImGuiCaptureImageBuf::Clear()
 void ImGuiCaptureImageBuf::CreateEmpty(int w, int h)
 {
     CreateEmptyNoMemClear(w, h);
-    memset(Data, 0, Width * Height * 4);
+    memset(Data, 0, (size_t)(Width * Height * 4));
 }
 
 void ImGuiCaptureImageBuf::CreateEmptyNoMemClear(int w, int h)
@@ -49,7 +54,7 @@ void ImGuiCaptureImageBuf::CreateEmptyNoMemClear(int w, int h)
     Clear();
     Width = w;
     Height = h;
-    Data = (unsigned int*)malloc(Width * Height * 4);
+    Data = (unsigned int*)malloc((size_t)(Width * Height * 4));
 }
 
 bool ImGuiCaptureImageBuf::SaveFile(const char* filename)
@@ -78,7 +83,7 @@ void ImGuiCaptureImageBuf::BlitSubImage(int dst_x, int dst_y, int src_x, int src
     IM_ASSERT(src_x + w <= source->Width && src_y + h <= source->Height && "Source image is too small.");
 
     for (int y = 0; y < h; y++)
-        memcpy(&Data[(dst_y + y) * Width + dst_x], &source->Data[(src_y + y) * source->Width + src_x], source->Width * 4);
+        memcpy(&Data[(dst_y + y) * Width + dst_x], &source->Data[(src_y + y) * source->Width + src_x], (size_t)source->Width * 4);
 }
 
 //-----------------------------------------------------------------------------
@@ -148,7 +153,7 @@ ImGuiCaptureToolStatus ImGuiCaptureContext::CaptureUpdate(ImGuiCaptureArgs* args
         // Initialize capture state.
         if (args->InOutputFileTemplate[0])
         {
-            int file_name_size = IM_ARRAYSIZE(args->OutSavedFileName);
+            size_t file_name_size = IM_ARRAYSIZE(args->OutSavedFileName);
             ImFormatString(args->OutSavedFileName, file_name_size, args->InOutputFileTemplate, args->InFileCounter + 1);
             ImPathFixSeparatorsForCurrentOS(args->OutSavedFileName);
             if (!ImFileCreateDirectoryChain(args->OutSavedFileName, ImPathFindFilename(args->OutSavedFileName)))
@@ -160,7 +165,7 @@ ImGuiCaptureToolStatus ImGuiCaptureContext::CaptureUpdate(ImGuiCaptureArgs* args
             // File template will most likely end with .png, but we need .gif for animated images.
             if (is_recording_gif)
                 if (char* ext = (char*)ImPathFindExtension(args->OutSavedFileName))
-                    ImStrncpy(ext, ".gif", ext - args->OutSavedFileName);
+                    ImStrncpy(ext, ".gif", (size_t)(ext - args->OutSavedFileName));
         }
 
         _ChunkNo = 0;
@@ -312,12 +317,12 @@ ImGuiCaptureToolStatus ImGuiCaptureContext::CaptureUpdate(ImGuiCaptureArgs* args
                     unsigned int height = (unsigned int)capture_rect.GetHeight();
                     IM_ASSERT(_GifWriter == NULL);
                     _GifWriter = IM_NEW(GifWriter)();
-                    GifBegin(_GifWriter, args->OutSavedFileName, width, height, gif_frame_interval);
+                    GifBegin(_GifWriter, args->OutSavedFileName, width, height, (uint32_t)gif_frame_interval);
                 }
 
                 // Save new GIF frame
                 // FIXME: Not optimal at all (e.g. compare to gifsicle -O3 output)
-                GifWriteFrame(_GifWriter, (const uint8_t*)output->Data, output->Width, output->Height, gif_frame_interval, 8, false);
+                GifWriteFrame(_GifWriter, (const uint8_t*)output->Data, (uint32_t)output->Width, (uint32_t)output->Height, (uint32_t)gif_frame_interval, 8, false);
                 _LastRecordedFrameTimeSec = current_time_sec;
             }
         }

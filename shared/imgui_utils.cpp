@@ -133,6 +133,8 @@ void    ImOsOutputDebugString(const char* message)
 {
 #ifdef _WIN32
     OutputDebugStringA(message);
+#else
+    IM_UNUSED(message);
 #endif
 }
 
@@ -184,7 +186,7 @@ bool ImFileCreateDirectoryChain(const char* path, const char* path_end)
         path_end = path + strlen(path);
 
     // Copy in a local, zero-terminated buffer
-    size_t path_len = path_end - path;
+    size_t path_len = (size_t)(path_end - path);
     char* path_local = (char*)IM_ALLOC(path_len + 1);
     memcpy(path_local, path, path_len);
     path_local[path_len] = 0;
@@ -335,7 +337,7 @@ uint64_t ImTimeGetInMicroseconds()
     // Trying std::chrono out of unfettered optimism that it may actually work..
     using namespace std;
     chrono::microseconds ms = chrono::duration_cast<chrono::microseconds>(chrono::high_resolution_clock::now().time_since_epoch());
-    return ms.count();
+    return (uint64_t)ms.count();
 }
 
 //-----------------------------------------------------------------------------
@@ -447,8 +449,8 @@ void    ImParseSplitCommandLine(int* out_argc, char const*** out_argv, const cha
     }
 
     int argc = n;
-    char const** argv = (char const**)malloc(sizeof(char*) * (argc + 1) + (cmd_line_len + 1));
-    char* cmd_line_dup = (char*)argv + sizeof(char*) * (argc + 1);
+    char const** argv = (char const**)malloc(sizeof(char*) * ((size_t)argc + 1) + (cmd_line_len + 1));
+    char* cmd_line_dup = (char*)argv + sizeof(char*) * ((size_t)argc + 1);
     strcpy(cmd_line_dup, cmd_line);
 
     {
@@ -499,7 +501,7 @@ bool ImParseFindIniSection(const char* ini_config, const char* header, ImVector<
     if (*(section_end - 1) == '\r')
         --section_end;
 
-    size_t section_len = section_end - section_start;
+    size_t section_len = (size_t)(section_end - section_start);
     result->resize((int)section_len + 1);
     ImStrncpy(result->Data, section_start, section_len);
 

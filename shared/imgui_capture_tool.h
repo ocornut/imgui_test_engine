@@ -37,7 +37,7 @@ struct ImGuiCaptureImageBuf
 
 typedef bool (*ImGuiScreenCaptureFunc)(int x, int y, int w, int h, unsigned int* pixels, void* user_data);
 
-enum ImGuiCaptureFlags_
+enum ImGuiCaptureFlags_ : unsigned int
 {
     ImGuiCaptureFlags_None                      = 0,        //
     ImGuiCaptureFlags_StitchFullContents        = 1 << 1,   // Expand window to it's content size and capture its full height.
@@ -46,7 +46,7 @@ enum ImGuiCaptureFlags_
     ImGuiCaptureFlags_Default_                  = ImGuiCaptureFlags_StitchFullContents | ImGuiCaptureFlags_HideCaptureToolWindow
 };
 
-enum ImGuiCaptureToolState
+enum ImGuiCaptureToolState : unsigned int
 {
     ImGuiCaptureToolState_None,                             // No capture in progress.
     ImGuiCaptureToolState_PickingSingleWindow,              // CaptureWindowPicker() is selecting a window under mouse cursor.

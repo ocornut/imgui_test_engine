@@ -1,8 +1,6 @@
-Simple c++ string type with an optional local buffer
-
 ```
 Str
-Simple c++ string type with an optional local buffer, by omar cornut
+Simple C++ string type with an optional local buffer, by Omar Cornut
 https://github.com/ocornut/str
 
 LICENSE
@@ -10,6 +8,12 @@ This software is in the public domain. Where that dedication is not
 recognized, you are granted a perpetual, irrevocable license to copy,
 distribute, and modify this file as you see fit.
 
+USAGE
+Include Str.h in whatever places need to refer to it.
+In ONE .cpp file, write '#define STR_IMPLEMENTATION' before the #include.
+This expands out the actual implementation into that C/C++ file.
+
+NOTES
 - This isn't a fully featured string class. 
 - It is a simple, bearable replacement to std::string that isn't heap abusive nor bloated (can actually be debugged by humans!).
 - String are mutable. We don't maintain size so length() is not-constant time. 

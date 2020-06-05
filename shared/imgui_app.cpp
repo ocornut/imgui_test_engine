@@ -96,7 +96,7 @@ static uint64_t ImGuiApp_GetTimeInMicroseconds()
 {
     using namespace std;
     chrono::microseconds ms = chrono::duration_cast<chrono::microseconds>(chrono::high_resolution_clock::now().time_since_epoch());
-    return ms.count();
+    return (uint64_t)ms.count();
 }
 
 static bool ImGuiApp_ImplNull_NewFrame(ImGuiApp* app_opaque)
@@ -127,7 +127,7 @@ static bool ImGuiApp_ImplNull_CaptureFramebuffer(ImGuiApp* app, int x, int y, in
     IM_UNUSED(user_data);
     IM_UNUSED(x);
     IM_UNUSED(y);
-    memset(pixels, 0, w * h * sizeof(unsigned int));
+    memset(pixels, 0, (size_t)(w * h) * sizeof(unsigned int));
     return true;
 }
 
@@ -860,11 +860,11 @@ static bool ImGuiApp_ImplGL_CaptureFramebuffer(ImGuiApp* app, int x, int y, int 
     glReadPixels(x, y2, w, h, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
 
     // Flip vertically
-    int comp = 4;
-    int stride = w * comp;
+    size_t comp = 4;
+    size_t stride = (size_t)w * comp;
     unsigned char* line_tmp = new unsigned char[stride];
     unsigned char* line_a = (unsigned char*)pixels;
-    unsigned char* line_b = (unsigned char*)pixels + (stride * (h - 1));
+    unsigned char* line_b = (unsigned char*)pixels + (stride * ((size_t)h - 1));
     while (line_a < line_b)
     {
         memcpy(line_tmp, line_a, stride);

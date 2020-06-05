@@ -25,6 +25,9 @@
 #ifdef _MSC_VER
 #pragma warning (disable: 4100) // unreferenced formal parameter
 #pragma warning (disable: 4127) // conditional expression is constant
+#else
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wno-unused-parameter"
 #endif
 
 // Helpers
@@ -1093,7 +1096,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
         ImGui::Text("strlen() = %d", (int)strlen(vars.StrLarge.Data));
         ImGui::InputText("Dummy", vars.Str1, IM_ARRAYSIZE(vars.Str1), ImGuiInputTextFlags_None);
-        ImGui::InputTextMultiline("InputText", vars.StrLarge.Data, vars.StrLarge.Size, ImVec2(-1, ImGui::GetFontSize() * 20), ImGuiInputTextFlags_None);
+        ImGui::InputTextMultiline("InputText", vars.StrLarge.Data, (size_t)vars.StrLarge.Size, ImVec2(-1, ImGui::GetFontSize() * 20), ImGuiInputTextFlags_None);
         ImGui::End();
         //DebugInputTextState();
     };
@@ -2041,7 +2044,6 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
             {
                 if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("_TEST_VALUE"))
                 {
-                    IM_UNUSED(payload);
                     ctx->GenericVars.Id = ImGui::GetItemID();
                 }
                 ImGui::EndDragDropTarget();
@@ -2584,7 +2586,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
     {
         ctx->WindowRef("Test Window");
         ImGuiTable* table = ImGui::FindTableByID(ctx->GetID("table"));
-        ImGuiID seed_id = ctx->GetIDByInt(table->ID);
+        ImGuiID seed_id = ctx->GetIDByInt((int)table->ID);
 
         for (int i = 0; i < 2; i++)
         {
@@ -2594,7 +2596,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
             IM_CHECK(ctx->GenericVars.Status.Hovered == 1);
 
             // Reorder columns and test again
-            ImGuiID table_id = ctx->GetIDByInt(table->ID);
+            ImGuiID table_id = ctx->GetIDByInt((int)table->ID);
             ImGuiID column_label_id1 = ctx->GetID("1", ctx->GetIDByInt(0, table_id));
             ImGuiID column_label_id2 = ctx->GetID("2", ctx->GetIDByInt(1, table_id));
             ctx->ItemDragAndDrop(column_label_id1, column_label_id2);
@@ -3439,9 +3441,9 @@ void RegisterTests_Table(ImGuiTestEngine* e)
             const ImGuiTableColumn* col_curr = &table->Columns[column_n];
 
             // Fit column. ID calculation from BeginTableEx() and TableAutoHeaders()
-            ImGuiID instance_id = table->InstanceCurrent * table->ColumnsCount + column_n;      // pushed by TableAutoHeaders()
-            ImGuiID table_id = ctx->GetIDByInt(table->ID + table->InstanceCurrent);             // pushed by BeginTable()
-            ImGuiID column_label_id = ctx->GetID("F3", ctx->GetIDByInt(instance_id, table_id));
+            ImGuiID instance_id = (ImGuiID)(table->InstanceCurrent * table->ColumnsCount + column_n);   // pushed by TableAutoHeaders()
+            ImGuiID table_id = ctx->GetIDByInt((int)(table->ID + (ImGuiID)table->InstanceCurrent));     // pushed by BeginTable()
+            ImGuiID column_label_id = ctx->GetID("F3", ctx->GetIDByInt((int)instance_id, table_id));
             ctx->ItemClick(column_label_id, ImGuiMouseButton_Right);
             ctx->WindowRef(g.NavWindow->Name);
             ctx->ItemClick("Size column to fit");
@@ -3899,7 +3901,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
             IM_CHECK_RETV(column != NULL, ImGuiSortDirection_None);
 
             int column_n = table->Columns.index_from_ptr(column);
-            ImGuiID column_header_id = ctx->GetID(label, ctx->GetIDByInt(column_n, ctx->GetIDByInt(table->ID))); // FIXME-TESTS: Add helpers
+            ImGuiID column_header_id = ctx->GetID(label, ctx->GetIDByInt(column_n, ctx->GetIDByInt((int)table->ID))); // FIXME-TESTS: Add helpers
             if (click_mod != ImGuiKeyModFlags_None)
                 ctx->KeyDownMap(ImGuiKey_COUNT, click_mod);
             ctx->ItemClick(column_header_id, ImGuiMouseButton_Left);
@@ -4841,18 +4843,18 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
             const int utf8_len = (int)strlen(utf8);
             const int max_chars = utf8_len * 4 + 1;
 
-            ImWchar* converted = (ImWchar*)IM_ALLOC(max_chars * sizeof(ImWchar));
-            char* reconverted = (char*)IM_ALLOC(max_chars * sizeof(char));
+            ImWchar* converted = (ImWchar*)IM_ALLOC((size_t)max_chars * sizeof(ImWchar));
+            char* reconverted = (char*)IM_ALLOC((size_t)max_chars * sizeof(char));
 
             // Convert UTF-8 text to unicode codepoints and check against expected value.
             int result_bytes = ImTextStrFromUtf8(converted, max_chars, utf8, NULL);
-            bool success = ImStrlenW((ImWchar*)unicode) == result_bytes && memcmp(converted, unicode, result_bytes * sizeof(ImWchar)) == 0;
+            bool success = ImStrlenW((ImWchar*)unicode) == result_bytes && memcmp(converted, unicode, (size_t)result_bytes * sizeof(ImWchar)) == 0;
 
             // Convert resulting unicode codepoints back to UTF-8 and check them against initial UTF-8 input value.
             if (success)
             {
                 result_bytes = ImTextStrToUtf8(reconverted, max_chars, converted, NULL);
-                success &= (utf8_len == result_bytes) && (memcmp(utf8, reconverted, result_bytes * sizeof(char)) == 0);
+                success &= (utf8_len == result_bytes) && (memcmp(utf8, reconverted, (size_t)result_bytes * sizeof(char)) == 0);
             }
 
             IM_FREE(converted);
