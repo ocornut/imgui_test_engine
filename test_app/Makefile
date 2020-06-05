@@ -58,6 +58,11 @@ ifeq ($(UNAME_S), Linux) #LINUX
 	ifneq ($(BACKEND_LIB),)
 		LIBS += -lGL
 	endif
+	CFLAGS += -Werror -Wextra -Wpedantic
+	ifeq ($(shell $(CXX) -v 2>&1 | grep -c "clang version"), 1)
+		CFLAGS += -Wshadow
+		LIBS += -lstdc++ -lm
+	endif
 endif
 
 ifeq ($(UNAME_S), Darwin) #APPLE
