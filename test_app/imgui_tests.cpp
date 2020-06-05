@@ -27,7 +27,7 @@
 #pragma warning (disable: 4127) // conditional expression is constant
 #else
 #pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wno-unused-parameter"
+#pragma GCC diagnostic ignored "-Wunused-parameter"
 #endif
 
 // Helpers
