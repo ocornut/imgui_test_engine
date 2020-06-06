@@ -4751,6 +4751,51 @@ void RegisterTests_DrawList(ImGuiTestEngine* e)
         ImGui::End();
     };
 
+    // ## Test starting Splitter when VtxOffset != 0
+    t = REGISTER_TEST("drawlist", "drawlist_vtxoffset_splitter_2");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        if (CanTestVtxOffset(ctx) == false)
+            return;
+
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImDrawList* draw_list = ImGui::GetWindowDrawList();
+      
+        // fill up vertex buffer with rectangles
+        const int start_vtxbuffer_size = draw_list->VtxBuffer.Size;
+        const int rect_count = (65536 - start_vtxbuffer_size - 1) / 4;
+        const int expected_threshold = rect_count * 4 + start_vtxbuffer_size;
+
+        const ImVec2 p_min = ImGui::GetCursorScreenPos();
+        const ImVec2 p_max = p_min + ImVec2(50, 50);
+        ImGui::Dummy(p_max - p_min);
+        IM_CHECK_EQ_NO_RET(draw_list->CmdBuffer.back().VtxOffset, 0u);
+        for (int n = 0; n < rect_count + 1; n++)
+            draw_list->AddRectFilled(p_min, p_max, IM_COL32(255, 0, 0, 255));
+        unsigned int vtx_offset = draw_list->CmdBuffer.back().VtxOffset;
+        IM_CHECK_GE_NO_RET(draw_list->CmdBuffer.back().VtxOffset, 0u);
+
+        ImGui::Columns(3);
+        ImGui::Text("One");
+        ImGui::NextColumn();
+        ImGui::Text("Two");
+        ImGui::NextColumn();
+        ImGui::Text("Three");
+        ImGui::NextColumn();
+        ImGui::Columns(1);
+
+        draw_list->ChannelsSplit(3);
+        for (int n = 1; n < 3; n++)
+        {
+            draw_list->ChannelsSetCurrent(n);
+            IM_CHECK_EQ_NO_RET(draw_list->CmdBuffer.back().VtxOffset, vtx_offset);
+            draw_list->AddRectFilled(p_min, p_max, IM_COL32(0, 255, 0, 255));
+        }
+        draw_list->ChannelsMerge();
+
+        ImGui::End();
+    };
+
     // ## Test VtxOffset with Splitter with worst case scenario
     // Draw calls are interleaved, one with VtxOffset == 0, next with VtxOffset != 0
 #if 0
