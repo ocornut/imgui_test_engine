@@ -2044,6 +2044,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
             {
                 if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("_TEST_VALUE"))
                 {
+                    IM_UNUSED(payload);
                     ctx->GenericVars.Id = ImGui::GetItemID();
                 }
                 ImGui::EndDragDropTarget();
