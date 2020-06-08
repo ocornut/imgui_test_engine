@@ -216,6 +216,7 @@ struct ImGuiTestContext
 
     // Windows
     // FIXME-TESTS: Refactor this horrible mess... perhaps all functions should have a ImGuiTestRef defaulting to empty?
+    void        WindowRef(ImGuiWindow* window);
     void        WindowRef(ImGuiTestRef ref);
     void        WindowClose(ImGuiTestRef ref);
     void        WindowCollapse(ImGuiWindow* window, bool collapsed);

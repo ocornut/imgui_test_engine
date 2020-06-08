@@ -345,6 +345,22 @@ void ImGuiTestContext::SetInputMode(ImGuiInputSource input_mode)
     }
 }
 
+void ImGuiTestContext::WindowRef(ImGuiWindow* window)
+{
+    IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
+    LogDebug("WindowRef '%s' %08X", window->Name, window->ID);
+
+    // We grab the ID directly and avoid ImHashDecoratedPath so "/" in window names are not ignored.
+    size_t len = strlen(window->Name);
+    IM_ASSERT(len < IM_ARRAYSIZE(RefStr) - 1);
+    strcpy(RefStr, window->Name);
+    RefID = window->ID;
+
+    // Automatically uncollapse by default
+    if (!(OpFlags & ImGuiTestOpFlags_NoAutoUncollapse))
+        WindowAutoUncollapse(window);
+}
+
 // FIXME-TESTS: May be to focus window when docked? Otherwise locate request won't even see an item?
 void ImGuiTestContext::WindowRef(ImGuiTestRef ref)
 {

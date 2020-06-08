@@ -295,7 +295,7 @@ void RegisterTests_Window(ImGuiTestEngine* e)
         ctx->ItemClick("Popups/Toggle..");
 
         ImGuiWindow* popup_1 = g.NavWindow;
-        ctx->WindowRef(popup_1->Name);
+        ctx->WindowRef(popup_1);
         ctx->ItemClick("Stacked Popup");
         IM_CHECK(popup_1->WasActive);
 
@@ -3001,7 +3001,7 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
         // Open menu, focus first "a" item.
         ctx->MenuClick("Menu");
         ctx->KeyPressMap(ImGuiKey_COUNT, ImGuiKeyModFlags_Alt); // FIXME
-        ctx->WindowRef(ctx->UiContext->NavWindow->Name);
+        ctx->WindowRef(ctx->UiContext->NavWindow);
 
         // Navigate to "c" item.
         IM_CHECK_EQ(ImGui::GetFocusID(), ctx->GetID("a"));
@@ -3447,7 +3447,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
             ImGuiID table_id = ctx->GetIDByInt((int)(table->ID + (ImGuiID)table->InstanceCurrent));     // pushed by BeginTable()
             ImGuiID column_label_id = ctx->GetID("F3", ctx->GetIDByInt((int)instance_id, table_id));
             ctx->ItemClick(column_label_id, ImGuiMouseButton_Right);
-            ctx->WindowRef(g.NavWindow->Name);
+            ctx->WindowRef(g.NavWindow);
             ctx->ItemClick("Size column to fit");
             IM_CHECK(col_curr->WidthGiven == initial_col_size[column_n]);  // Column restored original size
 
@@ -3457,7 +3457,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
 
             // Test fitting rest of the columns
             ctx->ItemClick(column_label_id, ImGuiMouseButton_Right);
-            ctx->WindowRef(g.NavWindow->Name);
+            ctx->WindowRef(g.NavWindow);
             ctx->ItemClick("Size all columns to fit");
 
             // Ensure all columns fit to contents
@@ -6611,7 +6611,7 @@ void RegisterTests_Capture(ImGuiTestEngine* e)
         for (int n = 0; n < 2; n++)
         {
             ImGuiWindow* window = (n == 0) ? ctx->GetWindowByRef("/Debug##Dark") : ctx->GetWindowByRef("/Debug##Light");
-            ctx->WindowRef(window->Name);
+            ctx->WindowRef(window);
             ctx->ItemClick("string");
             ctx->KeyCharsReplace("quick brown fox");
             //ctx->KeyPressMap(ImGuiKey_End);
