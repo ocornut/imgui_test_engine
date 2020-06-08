@@ -4571,7 +4571,11 @@ void RegisterTests_DrawList(ImGuiTestEngine* e)
 
         draw_list->AddCallback(cb, (void*)ctx);
         IM_CHECK_EQ(draw_list->CmdBuffer.Size, 5);
- 
+
+        // Test callbacks in columns
+        ImGui::Columns(3);
+        ImGui::Columns(1);
+
         ImGui::End();
     };
     t->TestFunc = [](ImGuiTestContext* ctx)
@@ -4619,6 +4623,7 @@ void RegisterTests_DrawList(ImGuiTestEngine* e)
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
 
         ImDrawList* draw_list = ImGui::GetWindowDrawList();
+        IM_CHECK_EQ(draw_list->CmdBuffer.back().ElemCount, 0u);
 
         const int start_cmdbuffer_size = draw_list->CmdBuffer.Size;
         //ImGui::Text("Hello");
@@ -4681,7 +4686,7 @@ void RegisterTests_DrawList(ImGuiTestEngine* e)
         IM_CHECK_EQ_NO_RET(draw_list->VtxBuffer.Size, expected_threshold);
         IM_CHECK_EQ_NO_RET(draw_list->CmdBuffer.Size, start_cmdbuffer_size);
         IM_CHECK_EQ_NO_RET(draw_list->CmdBuffer.back().VtxOffset, 0u);
-        IM_CHECK_EQ_NO_RET(draw_list->_VtxCurrentOffset, 0u);
+        IM_CHECK_EQ_NO_RET(draw_list->_CmdHeader.VtxOffset, 0u);
 
         // Test #3232
 #if 1
@@ -4690,7 +4695,7 @@ void RegisterTests_DrawList(ImGuiTestEngine* e)
         ImVec4 clip_rect = draw_list->_ClipRectStack.back();
         draw_list->PushClipRect(ImVec2(clip_rect.x, clip_rect.y), ImVec2(clip_rect.z, clip_rect.w)); // Use same cliprect so pop will easily
         draw_list->PopClipRect();
-        IM_CHECK_EQ(draw_list->_VtxCurrentOffset, draw_list->CmdBuffer.back().VtxOffset);
+        IM_CHECK_EQ(draw_list->_CmdHeader.VtxOffset, draw_list->CmdBuffer.back().VtxOffset);
 #endif
 
         // Next rect should pass 64k threshold and emit new command
@@ -4698,7 +4703,7 @@ void RegisterTests_DrawList(ImGuiTestEngine* e)
         IM_CHECK_GE_NO_RET(draw_list->VtxBuffer.Size, 65536);
         IM_CHECK_EQ_NO_RET(draw_list->CmdBuffer.Size, start_cmdbuffer_size + 1);
         IM_CHECK_EQ_NO_RET(draw_list->CmdBuffer.back().VtxOffset, (unsigned int)expected_threshold);
-        IM_CHECK_EQ_NO_RET(draw_list->_VtxCurrentOffset, (unsigned int)expected_threshold);
+        IM_CHECK_EQ_NO_RET(draw_list->_CmdHeader.VtxOffset, (unsigned int)expected_threshold);
 
         ImGui::End();
     };
@@ -4776,11 +4781,18 @@ void RegisterTests_DrawList(ImGuiTestEngine* e)
         IM_CHECK_GE_NO_RET(draw_list->CmdBuffer.back().VtxOffset, 0u);
 
         ImGui::Columns(3);
-        ImGui::Text("One");
+        ImGui::Text("AAA");
         ImGui::NextColumn();
-        ImGui::Text("Two");
+        ImGui::Text("BBB");
         ImGui::NextColumn();
-        ImGui::Text("Three");
+        ImGui::Text("CCC");
+        ImGui::NextColumn();
+
+        ImGui::Text("AAA 2");
+        ImGui::NextColumn();
+        ImGui::Text("BBB 2");
+        ImGui::NextColumn();
+        ImGui::Text("CCC 2");
         ImGui::NextColumn();
         ImGui::Columns(1);
 
@@ -4798,7 +4810,6 @@ void RegisterTests_DrawList(ImGuiTestEngine* e)
 
     // ## Test VtxOffset with Splitter with worst case scenario
     // Draw calls are interleaved, one with VtxOffset == 0, next with VtxOffset != 0
-#if 0
     t = REGISTER_TEST("drawlist", "drawlist_vtxoffset_splitter_draw_call_explosion");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
@@ -4836,7 +4847,7 @@ void RegisterTests_DrawList(ImGuiTestEngine* e)
             if (n == 0 || n == rect_count - 1) // Reduce check/log spam
             {
                 IM_CHECK_EQ_NO_RET(draw_list->CmdBuffer.back().VtxOffset, 0u);
-                IM_CHECK_EQ_NO_RET(draw_list->_VtxCurrentOffset, 0u);
+                IM_CHECK_EQ_NO_RET(draw_list->_CmdHeader.VtxOffset, 0u);
             }
         }
 
@@ -4849,7 +4860,7 @@ void RegisterTests_DrawList(ImGuiTestEngine* e)
             if (n == 0 || n == rect_count - 1) // Reduce check/log spam
             {
                 IM_CHECK_GE_NO_RET(draw_list->CmdBuffer.back().VtxOffset, 0u);
-                IM_CHECK_GE_NO_RET(draw_list->_VtxCurrentOffset, 0u);
+                IM_CHECK_GE_NO_RET(draw_list->_CmdHeader.VtxOffset, 0u);
             }
         }
 
@@ -4858,7 +4869,6 @@ void RegisterTests_DrawList(ImGuiTestEngine* e)
 
         ImGui::End();
     };
-#endif
 }
 
 //-------------------------------------------------------------------------
@@ -6037,7 +6047,7 @@ void RegisterTests_Perf(ImGuiTestEngine* e)
     t->GuiFunc = DrawSplittedFunc;
     t->TestFunc = PerfCaptureFunc;
 
-    t = REGISTER_TEST("perf", "perf_draw_split_0");
+    t = REGISTER_TEST("perf", "perf_draw_split_10");
     t->ArgVariant = 10;
     t->GuiFunc = DrawSplittedFunc;
     t->TestFunc = PerfCaptureFunc;
