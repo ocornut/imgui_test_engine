@@ -3981,7 +3981,8 @@ void RegisterTests_Table(ImGuiTestEngine* e)
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
         memset(ctx->GenericVars.BoolArray, 0, sizeof(ctx->GenericVars.BoolArray));
         const int column_count = 15;
-        if (ImGui::BeginTable("Table", column_count, ImGuiTableFlags_Scroll | ctx->GenericVars.Int1))
+        ImGuiTableFlags flags = ImGuiTableFlags_Scroll | ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg | ctx->GenericVars.Int1;
+        if (ImGui::BeginTable("Table", column_count, flags))
         {
             for (int i = 0; i < column_count; i++)
                 ImGui::TableSetupColumn(Str16f("Col%d", i).c_str());
@@ -3994,9 +3995,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
                 {
                     if (!ImGui::TableSetColumnIndex(column))
                         continue;
-                    Str16f label("%d,%d", line, column);
-                    ImGui::Button(label.c_str(), ImVec2(40.0f, 20.0f));
-
+                    ImGui::Text(Str16f("%d,%d", line, column).c_str(), ImVec2(40.0f, 20.0f));
                     if (line < 5)
                         ctx->GenericVars.BoolArray[line] |= ImGui::IsItemVisible();
                 }
@@ -4010,9 +4009,11 @@ void RegisterTests_Table(ImGuiTestEngine* e)
     {
         ctx->WindowRef("Test Window");
         ImGuiTable* table = ImGui::FindTableByID(ctx->GetID("Table"));
+        ctx->WindowRef(table->InnerWindow);
 
         // Reset scroll, if any.
-        table->InnerWindow->Scroll = ImVec2(0, 0);
+        ctx->ScrollToX(0.0f);
+        ctx->ScrollToY(0.0f);
         ctx->Yield();
 
         // No initial freezing.
@@ -4028,8 +4029,9 @@ void RegisterTests_Table(ImGuiTestEngine* e)
             IM_CHECK_EQ(ctx->GenericVars.BoolArray[i], true);
         }
 
-        // Scroll to the bottom-righ of the table.
-        table->InnerWindow->Scroll = table->InnerWindow->ScrollMax;
+        // Scroll to the bottom-right of the table.
+        ctx->ScrollToX(table->InnerWindow->ScrollMax.x);
+        ctx->ScrollToY(table->InnerWindow->ScrollMax.y);
         ctx->Yield();
 
         // First five columns and rows are no longer visible
@@ -4043,7 +4045,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
         for (int freeze_count = 1; freeze_count <= 3; freeze_count++)
         {
             ctx->GenericVars.Int1 = ImGuiTableFlags_ScrollFreezeTopRow * freeze_count;
-            IM_ASSERT((ctx->GenericVars.Int1 & ~ImGuiTableFlags_ScrollFreezeRowsMask_) == 0);
+            IM_ASSERT((ctx->GenericVars.Int1 & ~ImGuiTableFlags_ScrollFreezeRowsMask_) == 0); // Make sure we don't overflow
             ctx->Yield();
             IM_CHECK(table->FreezeRowsRequest == freeze_count);
             IM_CHECK(table->FreezeRowsCount == freeze_count);
@@ -4060,11 +4062,11 @@ void RegisterTests_Table(ImGuiTestEngine* e)
             }
         }
 
-        // Test column freezig.
+        // Test column freezing.
         for (int freeze_count = 1; freeze_count <= 3; freeze_count++)
         {
             ctx->GenericVars.Int1 = ImGuiTableFlags_ScrollFreezeLeftColumn * freeze_count;
-            IM_ASSERT((ctx->GenericVars.Int1 & ~ImGuiTableFlags_ScrollFreezeColumnsMask_) == 0);
+            IM_ASSERT((ctx->GenericVars.Int1 & ~ImGuiTableFlags_ScrollFreezeColumnsMask_) == 0); // Make sure we don't overflow
             ctx->Yield();
             IM_CHECK(table->FreezeColumnsRequest == freeze_count);
             IM_CHECK(table->FreezeColumnsCount == freeze_count);

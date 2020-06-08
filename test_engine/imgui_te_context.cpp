@@ -572,10 +572,9 @@ void    ImGuiTestContext::ScrollToTop()
         return;
     ImGuiWindow* window = GetWindowByRef("");
     if (window)
-        ImGui::SetScrollY(window, 0.0f);
+        ScrollToY(0.0f);
     else
         LogError("ScrollToTop: failed to get window");
-    Yield();
     Yield();
 }
 
@@ -585,10 +584,72 @@ void    ImGuiTestContext::ScrollToBottom()
         return;
     ImGuiWindow* window = GetWindowByRef("");
     if (window)
-        ImGui::SetScrollY(window, window->ScrollMax.y);
+        ScrollToY(window->ScrollMax.y);
     else
         LogError("ScrollToBottom: failed to get window");
     Yield();
+}
+
+bool    ImGuiTestContext::ScrollErrorCheck(ImGuiAxis axis, float expected, float actual, int* remaining_attempts)
+{
+    if (IsError())
+        return false;
+
+    float THRESHOLD = 1.0f;
+    if (ImFabs(actual - expected) <= THRESHOLD)
+        return true;
+
+    (*remaining_attempts)--;
+    if (*remaining_attempts > 0)
+    {
+        LogWarning("Failed to set Scroll%c. Requested %.2f, got %.2f. Will try again.", 'X' + axis, expected, actual);
+        return true;
+    }
+    else
+    {
+        IM_ERRORF("Failed to set Scroll%c. Requested %.2f, got %.2f. Aborting.", 'X' + axis, expected, actual);
+        return false;
+    }
+}
+
+void    ImGuiTestContext::ScrollTo(ImGuiAxis axis, float scroll_target)
+{
+    if (IsError())
+        return;
+
+    IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
+    ImGuiWindow* window = GetWindowByRef("");
+    const char axis_c = (char)('X' + axis);
+    if (!window)
+    {
+        LogError("ScrollTo%c: failed to get window", axis_c);
+        return;
+    }
+
+    ImGuiContext& g = *UiContext;
+    LogDebug("ScrollTo%c %.1f/%.1f", axis_c, scroll_target, window->ScrollMax[axis]);
+    WindowBringToFront(window);
+
+    int remaining_failures = 3;
+    while (!Abort)
+    {
+        if (ImFabs(window->Scroll[axis] - scroll_target) < 1.0f)
+            break;
+
+        float scroll_speed = EngineIO->ConfigRunFast ? FLT_MAX : ImFloor(EngineIO->ScrollSpeed * g.IO.DeltaTime + 0.99f);
+        float scroll_next = ImLinearSweep(window->Scroll[axis], scroll_target, scroll_speed);
+        if (axis == ImGuiAxis_X)
+            ImGui::SetScrollX(window, scroll_next);
+        else
+            ImGui::SetScrollY(window, scroll_next);
+        Yield();
+
+        // Error handling to avoid getting stuck in this function.
+        if (!ScrollErrorCheck(axis, scroll_next, window->Scroll[axis], &remaining_failures))
+            break;
+    }
+
+    // Need another frame for the result->Rect to stabilize
     Yield();
 }
 
@@ -611,10 +672,7 @@ void    ImGuiTestContext::ScrollToItemY(ImGuiTestRef ref, float scroll_ratio_y)
         return;
     ImGuiWindow* window = item->Window;
 
-    //if (item->ID == 0xDFFBB0CE || item->ID == 0x87CBBA09)
-    //    printf("[%03d] scroll_max_y %f\n", FrameCount, ImGui::GetWindowScrollMaxY(window));
-
-    int failures = 0;
+    int remaining_failures = 0;
     while (!Abort)
     {
         // result->Rect fields will be updated after each iteration.
@@ -622,7 +680,6 @@ void    ImGuiTestContext::ScrollToItemY(ImGuiTestRef ref, float scroll_ratio_y)
         float item_target_y = ImFloor(window->InnerClipRect.GetCenter().y);
         float scroll_delta_y = item_target_y - item_curr_y;
         float scroll_target_y = ImClamp(window->Scroll.y - scroll_delta_y, 0.0f, window->ScrollMax.y);
-
         if (ImFabs(window->Scroll.y - scroll_target_y) < 1.0f)
             break;
 
@@ -632,26 +689,15 @@ void    ImGuiTestContext::ScrollToItemY(ImGuiTestRef ref, float scroll_ratio_y)
         // FIXME-TESTS: There's a bug which can be repro by moving #RESIZE grips to Layer 0, making window small and trying to resize a dock node host.
         // Somehow SizeContents.y keeps increase and we never reach our desired (but faulty) scroll target.
         float scroll_speed = EngineIO->ConfigRunFast ? FLT_MAX : ImFloor(EngineIO->ScrollSpeed * g.IO.DeltaTime + 0.99f);
-        float scroll_y = ImLinearSweep(window->Scroll.y, scroll_target_y, scroll_speed);
+        float scroll_next_y = ImLinearSweep(window->Scroll.y, scroll_target_y, scroll_speed);
         //printf("[%03d] window->Scroll.y %f + %f\n", FrameCount, window->Scroll.y, scroll_speed);
-        //window->Scroll.y = scroll_y;
-        ImGui::SetScrollY(window, scroll_y);
-
+        //window->Scroll.y = scroll_next_y;
+        ImGui::SetScrollY(window, scroll_next_y);
         Yield();
 
         // Error handling to avoid getting stuck in this function.
-        if (ImFabs(window->Scroll.y - scroll_y) >= 1.0f)
-        {
-            if (++failures < 3)
-            {
-                LogWarning("ScrollToItemY: failed to set scrolling. Requested %.2f, got %.2f. Will try again.", scroll_y, window->Scroll.y);
-            }
-            else
-            {
-                IM_ERRORF("ScrollToItemY: failed to set scrolling. Requested %.2f, got %.2f. Aborting.", scroll_y, window->Scroll.y);
-                break;
-            }
-        }
+        if (!ScrollErrorCheck(ImGuiAxis_Y, scroll_next_y, window->Scroll.y, &remaining_failures))
+            break;
 
         WindowBringToFront(window);
     }
