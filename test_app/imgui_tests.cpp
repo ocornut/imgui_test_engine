@@ -3335,6 +3335,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
         IM_CHECK_EQ(ImGui::TableSetColumnIndex(42), false);
         IM_CHECK_EQ(ImGui::TableGetColumnIsVisible(0), false);
         IM_CHECK_EQ(ImGui::TableGetColumnIsSorted(0), false);
+        IM_CHECK_EQ(ImGui::TableGetColumnName(), (const char*)NULL);
         ImGui::End();
     };
 
@@ -3970,6 +3971,108 @@ void RegisterTests_Table(ImGuiTestEngine* e)
         ctx->Yield();
         sort_specs = table_get_sort_specs(ctx, table);
         IM_CHECK(sort_specs == NULL);
+    };
+
+    // ## Test freezing of table rows and columns.
+    t = REGISTER_TEST("table", "table_freezing");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::SetNextWindowSize(ImVec2(300, 200), ImGuiCond_Appearing);
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+        memset(ctx->GenericVars.BoolArray, 0, sizeof(ctx->GenericVars.BoolArray));
+        const int column_count = 15;
+        if (ImGui::BeginTable("Table", column_count, ImGuiTableFlags_Scroll | ctx->GenericVars.Int1))
+        {
+            for (int i = 0; i < column_count; i++)
+                ImGui::TableSetupColumn(Str16f("Col%d", i).c_str());
+            ImGui::TableAutoHeaders();
+
+            for (int line = 0; line < 15; line++)
+            {
+                ImGui::TableNextRow();
+                for (int column = 0; column < column_count; column++)
+                {
+                    if (!ImGui::TableSetColumnIndex(column))
+                        continue;
+                    Str16f label("%d,%d", line, column);
+                    ImGui::Button(label.c_str(), ImVec2(40.0f, 20.0f));
+
+                    if (line < 5)
+                        ctx->GenericVars.BoolArray[line] |= ImGui::IsItemVisible();
+                }
+            }
+
+            ImGui::EndTable();
+        }
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ctx->WindowRef("Test Window");
+        ImGuiTable* table = ImGui::FindTableByID(ctx->GetID("Table"));
+
+        // Reset scroll, if any.
+        table->InnerWindow->Scroll = ImVec2(0, 0);
+        ctx->Yield();
+
+        // No initial freezing.
+        IM_CHECK(table->FreezeColumnsRequest == 0);
+        IM_CHECK(table->FreezeColumnsCount == 0);
+        IM_CHECK(table->FreezeRowsRequest == 0);
+        IM_CHECK(table->FreezeRowsCount == 0);
+
+        // First five columns and rows are visible at the start.
+        for (int i = 0; i < 5; i++)
+        {
+            IM_CHECK_EQ(table->Columns[i].IsClipped, false);
+            IM_CHECK_EQ(ctx->GenericVars.BoolArray[i], true);
+        }
+
+        // Scroll to the bottom-righ of the table.
+        table->InnerWindow->Scroll = table->InnerWindow->ScrollMax;
+        ctx->Yield();
+
+        // First five columns and rows are no longer visible
+        for (int i = 0; i < 5; i++)
+        {
+            IM_CHECK_EQ(table->Columns[i].IsClipped, true);
+            IM_CHECK_EQ(ctx->GenericVars.BoolArray[i], false);
+        }
+
+        // Test row freezing.
+        for (int freeze_count = 1; freeze_count <= 3; freeze_count++)
+        {
+            ctx->GenericVars.Int1 = ImGuiTableFlags_ScrollFreezeTopRow * freeze_count;
+            IM_ASSERT((ctx->GenericVars.Int1 & ~ImGuiTableFlags_ScrollFreezeRowsMask_) == 0);
+            ctx->Yield();
+            IM_CHECK(table->FreezeRowsRequest == freeze_count);
+            IM_CHECK(table->FreezeRowsCount == freeze_count);
+
+            // Test whether frozen rows are visible. First row is headers.
+            if (freeze_count >= 1)
+                IM_CHECK(table->IsUsingHeaders == true);
+
+            // Other rows are content.
+            if (freeze_count >= 2)
+            {
+                for (int row_n = 0; row_n < 3; row_n++)
+                    IM_CHECK_EQ(ctx->GenericVars.BoolArray[row_n], (row_n < freeze_count - 1));
+            }
+        }
+
+        // Test column freezig.
+        for (int freeze_count = 1; freeze_count <= 3; freeze_count++)
+        {
+            ctx->GenericVars.Int1 = ImGuiTableFlags_ScrollFreezeLeftColumn * freeze_count;
+            IM_ASSERT((ctx->GenericVars.Int1 & ~ImGuiTableFlags_ScrollFreezeColumnsMask_) == 0);
+            ctx->Yield();
+            IM_CHECK(table->FreezeColumnsRequest == freeze_count);
+            IM_CHECK(table->FreezeColumnsCount == freeze_count);
+
+            // Test whether frozen columns are visible.
+            for (int column_n = 0; column_n < 4; column_n++)
+                IM_CHECK_EQ(table->Columns[column_n].IsClipped, !(column_n < freeze_count));
+        }
     };
 #endif // #ifdef IMGUI_HAS_TABLE
 }
