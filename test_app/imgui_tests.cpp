@@ -4521,15 +4521,45 @@ void RegisterTests_Draw(ImGuiTestEngine* e)
 {
     ImGuiTest* t = NULL;
 
+    // ## Test AddCallback()
+    t = REGISTER_TEST("drawlist", "drawlist_callbacks");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImDrawList* draw_list = ImGui::GetWindowDrawList();
+        IM_CHECK_EQ(draw_list->CmdBuffer.Size, 2);
+        IM_CHECK_EQ(draw_list->CmdBuffer.back().ElemCount, 0u);
+        ImGui::Button("Hello");
+
+        ImDrawCallback cb = [](const ImDrawList* parent_list, const ImDrawCmd* cmd)
+        {
+            ImGuiTestContext* ctx = (ImGuiTestContext*)cmd->UserCallbackData;
+            ctx->GenericVars.Int1++;
+        };
+        draw_list->AddCallback(cb, (void*)ctx);
+        IM_CHECK_EQ(draw_list->CmdBuffer.Size, 4);
+
+        draw_list->AddCallback(cb, (void*)ctx);
+        IM_CHECK_EQ(draw_list->CmdBuffer.Size, 5);
+ 
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ctx->GenericVars.Int1 = 0;
+        ctx->Yield();
+        IM_CHECK_EQ(ctx->GenericVars.Int1, 2);
+    };
+
     // ## Test whether splitting/merging draw lists properly retains a texture id.
-    t = REGISTER_TEST("draw", "draw_splitter_texture_id");
+    t = REGISTER_TEST("drawlist", "drawlist_splitter_texture_id");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
         ImDrawList* draw_list = ImGui::GetWindowDrawList();
         ImTextureID prev_texture_id = draw_list->_TextureIdStack.back();
         const int draw_count = draw_list->CmdBuffer.Size;
-        IM_CHECK(draw_list->CmdBuffer.back().ElemCount == 0);
+        IM_CHECK_EQ(draw_list->CmdBuffer.back().ElemCount, 0u);
 
         ImVec2 p = ImGui::GetCursorScreenPos();
         ImGui::Dummy(ImVec2(100 + 10 + 100, 100));
@@ -4542,9 +4572,9 @@ void RegisterTests_Draw(ImGuiTestEngine* e)
         draw_list->AddImage((ImTextureID)200, p + ImVec2(110, 0), p + ImVec2(210, 100));
         draw_list->ChannelsMerge();
 
-        IM_CHECK_NO_RET(draw_list->CmdBuffer.Size == draw_count + 2);
-        IM_CHECK_NO_RET(draw_list->CmdBuffer.back().ElemCount == 0);
-        IM_CHECK_NO_RET(prev_texture_id == draw_list->CmdBuffer.back().TextureId);
+        IM_CHECK_EQ_NO_RET(draw_list->CmdBuffer.Size, draw_count + 2);
+        IM_CHECK_EQ_NO_RET(draw_list->CmdBuffer.back().ElemCount, 0u);
+        IM_CHECK_EQ_NO_RET(prev_texture_id, draw_list->CmdBuffer.back().TextureId);
 
         // Replace fake texture IDs with a known good ID in order to prevent graphics API crashing application.
         for (ImDrawCmd& cmd : draw_list->CmdBuffer)
