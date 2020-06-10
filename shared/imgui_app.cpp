@@ -131,13 +131,33 @@ static bool ImGuiApp_ImplNull_CaptureFramebuffer(ImGuiApp* app, int x, int y, in
     return true;
 }
 
+static void ImGuiApp_ImplNull_Render(ImGuiApp* app_opaque)
+{
+    IM_UNUSED(app_opaque);
+    ImDrawData* draw_data = ImGui::GetDrawData();
+
+    for (int n = 0; n < draw_data->CmdListsCount; n++)
+    {
+        const ImDrawList* cmd_list = draw_data->CmdLists[n];
+        for (int cmd_i = 0; cmd_i < cmd_list->CmdBuffer.Size; cmd_i++)
+        {
+            const ImDrawCmd* pcmd = &cmd_list->CmdBuffer[cmd_i];
+            if (pcmd->UserCallback != NULL)
+            {
+                if (pcmd->UserCallback != ImDrawCallback_ResetRenderState)
+                    pcmd->UserCallback(cmd_list, pcmd);
+            }
+        }
+    }
+}
+
 ImGuiApp* ImGuiApp_ImplNull_Create()
 {
     ImGuiApp_ImplNull* intf = new ImGuiApp_ImplNull();
     intf->InitCreateWindow      = ImGuiApp_ImplNull_CreateWindow;
     intf->InitBackends          = [](ImGuiApp* app) { IM_UNUSED(app); };
     intf->NewFrame              = ImGuiApp_ImplNull_NewFrame;
-    intf->Render                = [](ImGuiApp* app) { IM_UNUSED(app); };
+    intf->Render                = ImGuiApp_ImplNull_Render;
     intf->ShutdownCloseWindow   = [](ImGuiApp* app) { IM_UNUSED(app); };
     intf->ShutdownBackends      = [](ImGuiApp* app) { IM_UNUSED(app); };
     intf->CaptureFramebuffer    = ImGuiApp_ImplNull_CaptureFramebuffer;
