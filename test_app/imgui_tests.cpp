@@ -4778,7 +4778,7 @@ void RegisterTests_DrawList(ImGuiTestEngine* e)
         for (int n = 0; n < rect_count + 1; n++)
             draw_list->AddRectFilled(p_min, p_max, IM_COL32(255, 0, 0, 255));
         unsigned int vtx_offset = draw_list->CmdBuffer.back().VtxOffset;
-        IM_CHECK_GE_NO_RET(draw_list->CmdBuffer.back().VtxOffset, 0u);
+        IM_CHECK_GT_NO_RET(draw_list->CmdBuffer.back().VtxOffset, 0u);
 
         ImGui::Columns(3);
         ImGui::Text("AAA");
@@ -4856,13 +4856,21 @@ void RegisterTests_DrawList(ImGuiTestEngine* e)
         for (int n = 0; n < rect_count; n++)
         {
             draw_list->ChannelsSetCurrent(n * 2 + 1);
+            if (n == 0 || n == rect_count - 1) // Reduce check/log spam
+                IM_CHECK_EQ_NO_RET(draw_list->CmdBuffer.Size, 1);
+            if (n == 0)
+                IM_CHECK_EQ_NO_RET(draw_list->CmdBuffer.back().VtxOffset, 0u);
             draw_list->AddRectFilled(p_min, p_max, color);
             if (n == 0 || n == rect_count - 1) // Reduce check/log spam
             {
-                IM_CHECK_GE_NO_RET(draw_list->CmdBuffer.back().VtxOffset, 0u);
-                IM_CHECK_GE_NO_RET(draw_list->_CmdHeader.VtxOffset, 0u);
+                IM_CHECK_EQ_NO_RET(draw_list->CmdBuffer.Size, 1); // Confirm that VtxOffset change didn't grow CmdBuffer (at n==0, empty command gets recycled)
+                IM_CHECK_GT_NO_RET(draw_list->CmdBuffer.back().VtxOffset, 0u);
+                IM_CHECK_GT_NO_RET(draw_list->_CmdHeader.VtxOffset, 0u);
             }
         }
+
+        draw_list->ChannelsSetCurrent(0);
+        IM_CHECK_GT_NO_RET(draw_list->CmdBuffer.back().VtxOffset, 0u);
 
         draw_list->ChannelsMerge();
         IM_CHECK_EQ(draw_list->CmdBuffer.Size, expected_draw_command_count);
