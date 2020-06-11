@@ -41,6 +41,9 @@ Index of this file:
 // GOAL: Reliable performance measurement (w/ deterministic setup)
 // GOAL: Full blind version with no graphical context.
 
+// Note: Tests can't reliably use ImGuiCond_Once or ImGuiCond_FirstUseEver
+// Note: GuiFunc can't run code that yields. There is an assert for that.
+
 // FIXME-TESTS: UI to setup breakpoint (e.g. GUI func on frame X, beginning of Test func or at certain Yield/Sleep spot)
 // FIXME-TESTS: Be able to run blind within GUI
 // FIXME-TESTS: Be able to run in own contexts to avoid side-effects

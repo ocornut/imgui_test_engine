@@ -176,7 +176,7 @@ extern void     ImGuiTestEngineHook_AssertFunc(const char* expr, const char* fil
 //-------------------------------------------------------------------------
 
 // Register a new test
-#define IM_REGISTER_TEST(_ENGINE, _CAT, _NAME)    ImGuiTestEngine_RegisterTest(_ENGINE, _CAT, _NAME, __FILE__, __LINE__);
+#define IM_REGISTER_TEST(_ENGINE, _CAT, _NAME)    ImGuiTestEngine_RegisterTest(_ENGINE, _CAT, _NAME, __FILE__, __LINE__)
 
 // We embed every macro in a do {} while(0) statement as a trick to allow using them as regular single statement, e.g. if (XXX) IM_CHECK(A); else IM_CHECK(B)
 // We leave the assert call (which will trigger a debugger break) outside of the check function to step out faster.

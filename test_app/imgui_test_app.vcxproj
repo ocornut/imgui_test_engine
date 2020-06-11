@@ -169,6 +169,10 @@
     <ClCompile Include="..\..\imgui\imgui_widgets.cpp" />
     <ClCompile Include="..\shared\imgui_app.cpp" />
     <ClCompile Include="imgui_tests.cpp" />
+    <ClCompile Include="imgui_tests_docking.cpp" />
+    <ClCompile Include="imgui_tests_perf.cpp" />
+    <ClCompile Include="imgui_tests_table.cpp" />
+    <ClCompile Include="imgui_tests_widgets.cpp" />
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>

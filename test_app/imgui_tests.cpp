@@ -1,5 +1,5 @@
 // dear imgui
-// (tests)
+// (tests: main)
 
 #define _CRT_SECURE_NO_WARNINGS
 #include <limits.h>
@@ -9,19 +9,11 @@
 #include "imgui_tests.h"
 #include "shared/imgui_capture_tool.h"
 #include "shared/imgui_utils.h"
-#include "test_engine/imgui_te_core.h"
+#include "test_engine/imgui_te_core.h"      // IM_REGISTER_TEST()
 #include "test_engine/imgui_te_context.h"
-#include "test_engine/imgui_te_util.h"
 #include "libs/Str/Str.h"
 
-//-------------------------------------------------------------------------
-// NOTES (also see TODO in imgui_te_core.cpp)
-//-------------------------------------------------------------------------
-// - Tests can't reliably once ImGuiCond_Once or ImGuiCond_FirstUseEver
-// - GuiFunc can't run code that yields. There is an assert for that.
-//-------------------------------------------------------------------------
-
-// Visual Studio warnings
+// Warnings
 #ifdef _MSC_VER
 #pragma warning (disable: 4100) // unreferenced formal parameter
 #pragma warning (disable: 4127) // conditional expression is constant
@@ -31,7 +23,6 @@
 #endif
 
 // Helpers
-#define REGISTER_TEST(_CATEGORY, _NAME)                                 IM_REGISTER_TEST(e, _CATEGORY, _NAME)
 static inline bool operator==(const ImVec2& lhs, const ImVec2& rhs)     { return lhs.x == rhs.x && lhs.y == rhs.y; }    // for IM_CHECK_EQ()
 
 //-------------------------------------------------------------------------
@@ -43,7 +34,7 @@ void RegisterTests_Window(ImGuiTestEngine* e)
     ImGuiTest* t = NULL;
 
     // ## Test size of an empty window
-    t = REGISTER_TEST("window", "empty");
+    t = IM_REGISTER_TEST(e, "window", "empty");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         //ImGui::GetStyle().WindowMinSize = ImVec2(10, 10);
@@ -61,7 +52,7 @@ void RegisterTests_Window(ImGuiTestEngine* e)
     };
 
     // ## Test that a window starting collapsed performs width/contents size measurement on its first few frames.
-    t = REGISTER_TEST("window", "window_size_collapsed_1");
+    t = IM_REGISTER_TEST(e, "window", "window_size_collapsed_1");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         ImGui::SetNextWindowCollapsed(true, ImGuiCond_Appearing);
@@ -79,7 +70,7 @@ void RegisterTests_Window(ImGuiTestEngine* e)
         ImGui::End();
     };
 
-    t = REGISTER_TEST("window", "window_size_contents");
+    t = IM_REGISTER_TEST(e, "window", "window_size_contents");
     t->Flags |= ImGuiTestFlags_NoAutoFinish;
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
@@ -131,7 +122,7 @@ void RegisterTests_Window(ImGuiTestEngine* e)
     };
 
     // ## Test that non-integer size/position passed to window gets rounded down and not cause any drift.
-    t = REGISTER_TEST("window", "window_size_unrounded");
+    t = IM_REGISTER_TEST(e, "window", "window_size_unrounded");
     t->Flags |= ImGuiTestFlags_NoAutoFinish;
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
@@ -165,7 +156,7 @@ void RegisterTests_Window(ImGuiTestEngine* e)
     };
 
     // ## Test basic window auto resize
-    t = REGISTER_TEST("window", "window_auto_resize_basic");
+    t = IM_REGISTER_TEST(e, "window", "window_auto_resize_basic");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         // FIXME-TESTS: Ideally we'd like a variant with/without the if (Begin) here
@@ -184,7 +175,7 @@ void RegisterTests_Window(ImGuiTestEngine* e)
     };
 
     // ## Test that uncollapsing an auto-resizing window does not go through a frame where the window is smaller than expected
-    t = REGISTER_TEST("window", "window_auto_resize_uncollapse");
+    t = IM_REGISTER_TEST(e, "window", "window_auto_resize_uncollapse");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         // FIXME-TESTS: Ideally we'd like a variant with/without the if (Begin) here
@@ -214,7 +205,7 @@ void RegisterTests_Window(ImGuiTestEngine* e)
     };
 
     // ## Test appending multiple times to a child window (bug #2282)
-    t = REGISTER_TEST("window", "window_append");
+    t = IM_REGISTER_TEST(e, "window", "window_append");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         ImGui::SetNextWindowSize(ImVec2(200, 200));
@@ -244,7 +235,7 @@ void RegisterTests_Window(ImGuiTestEngine* e)
 
     // ## Test basic focus behavior
     // FIXME-TESTS: This in particular when combined with Docking should be tested with and without ConfigDockingTabBarOnSingleWindows
-    t = REGISTER_TEST("window", "window_focus_1");
+    t = IM_REGISTER_TEST(e, "window", "window_focus_1");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         ImGui::Begin("AAAA", NULL, ImGuiWindowFlags_NoSavedSettings);
@@ -285,7 +276,7 @@ void RegisterTests_Window(ImGuiTestEngine* e)
     };
 
     // ## Test popup focus and right-click to close popups up to a given level
-    t = REGISTER_TEST("window", "window_focus_popup");
+    t = IM_REGISTER_TEST(e, "window", "window_focus_popup");
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         ImGuiContext& g = *ctx->UiContext;
@@ -308,7 +299,7 @@ void RegisterTests_Window(ImGuiTestEngine* e)
     };
 
     // ## Test that child window correctly affect contents size based on how their size was specified.
-    t = REGISTER_TEST("window", "window_child_layout_size");
+    t = IM_REGISTER_TEST(e, "window", "window_child_layout_size");
     t->Flags |= ImGuiTestFlags_NoAutoFinish;
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
@@ -324,7 +315,7 @@ void RegisterTests_Window(ImGuiTestEngine* e)
     };
 
     // ## Test that child window outside the visible section of their parent are clipped
-    t = REGISTER_TEST("window", "window_child_clip");
+    t = IM_REGISTER_TEST(e, "window", "window_child_clip");
     t->Flags |= ImGuiTestFlags_NoAutoFinish;
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
@@ -347,7 +338,7 @@ void RegisterTests_Window(ImGuiTestEngine* e)
 
     // ## Test that basic SetScrollHereY call scrolls all the way (#1804)
     // ## Test expected value of ScrollMaxY
-    t = REGISTER_TEST("window", "window_scroll_001");
+    t = IM_REGISTER_TEST(e, "window", "window_scroll_001");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         ImGui::SetNextWindowSize(ImVec2(0.0f, 500));
@@ -380,7 +371,7 @@ void RegisterTests_Window(ImGuiTestEngine* e)
     };
 
     // ## Test that ScrollMax values are correctly zero (we had/have bugs where they are seldomly == BorderSize)
-    t = REGISTER_TEST("window", "window_scroll_002");
+    t = IM_REGISTER_TEST(e, "window", "window_scroll_002");
     t->Flags |= ImGuiTestFlags_NoAutoFinish;
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
@@ -403,7 +394,7 @@ void RegisterTests_Window(ImGuiTestEngine* e)
 
     // ## Test that SetScrollY/GetScrollY values are matching. You'd think this would be obvious! Think again!
     // FIXME-TESTS: With/without menu bars, could we easily allow for test variations that affects both GuiFunc and TestFunc
-    t = REGISTER_TEST("window", "window_scroll_003");
+    t = IM_REGISTER_TEST(e, "window", "window_scroll_003");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         ImGui::Begin("Test Scrolling 3", NULL, ImGuiWindowFlags_NoSavedSettings);
@@ -422,7 +413,7 @@ void RegisterTests_Window(ImGuiTestEngine* e)
     };
 
     // ## Test that an auto-fit window doesn't have scrollbar while resizing (FIXME-TESTS: Also test non-zero ScrollMax when implemented)
-    t = REGISTER_TEST("window", "window_scroll_while_resizing");
+    t = IM_REGISTER_TEST(e, "window", "window_scroll_while_resizing");
     t->Flags |= ImGuiTestFlags_NoAutoFinish;
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
@@ -449,7 +440,7 @@ void RegisterTests_Window(ImGuiTestEngine* e)
     };
 
     // ## Test window moving
-    t = REGISTER_TEST("window", "window_move");
+    t = IM_REGISTER_TEST(e, "window", "window_move");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         ImGui::SetNextWindowSize(ImVec2(0, 0));
@@ -470,7 +461,7 @@ void RegisterTests_Window(ImGuiTestEngine* e)
 
     // ## Test closing current popup
     // FIXME-TESTS: Test left-click/right-click forms of closing popups
-    t = REGISTER_TEST("window", "window_close_current_popup");
+    t = IM_REGISTER_TEST(e, "window", "window_close_current_popup");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         ImGui::SetNextWindowSize(ImVec2(0, 0));
@@ -515,7 +506,7 @@ void RegisterTests_Layout(ImGuiTestEngine* e)
 
     // ## Test matching LastItemRect.Max/CursorMaxPos
     // ## Test text baseline
-    t = REGISTER_TEST("layout", "layout_baseline_and_cursormax");
+    t = IM_REGISTER_TEST(e, "layout", "layout_baseline_and_cursormax");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         float y = 0.0f;
@@ -629,7 +620,7 @@ void RegisterTests_Layout(ImGuiTestEngine* e)
 
     // ## Test size of items with explicit thin size and larger label
 #if 0
-    t = REGISTER_TEST("layout", "layout_height_label");
+    t = IM_REGISTER_TEST(e, "layout", "layout_height_label");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
@@ -669,1944 +660,6 @@ void RegisterTests_Layout(ImGuiTestEngine* e)
 }
 
 //-------------------------------------------------------------------------
-// Tests: Widgets
-//-------------------------------------------------------------------------
-
-void RegisterTests_Widgets(ImGuiTestEngine* e)
-{
-    ImGuiTest* t = NULL;
-
-    // ## Test basic button presses
-    t = REGISTER_TEST("widgets", "widgets_button_press");
-    struct ButtonPressTestVars { int ButtonPressCount[6] = { 0 }; };
-    t->SetUserDataType<ButtonPressTestVars>();
-    t->GuiFunc = [](ImGuiTestContext* ctx)
-    {
-        ButtonPressTestVars& vars = ctx->GetUserData<ButtonPressTestVars>();
-
-        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
-        if (ImGui::Button("Button0"))
-            vars.ButtonPressCount[0]++;
-        if (ImGui::ButtonEx("Button1", ImVec2(0, 0), ImGuiButtonFlags_PressedOnDoubleClick))
-            vars.ButtonPressCount[1]++;
-        if (ImGui::ButtonEx("Button2", ImVec2(0, 0), ImGuiButtonFlags_PressedOnClickRelease | ImGuiButtonFlags_PressedOnDoubleClick))
-            vars.ButtonPressCount[2]++;
-        if (ImGui::ButtonEx("Button3", ImVec2(0, 0), ImGuiButtonFlags_PressedOnClickReleaseAnywhere))
-            vars.ButtonPressCount[3]++;
-        if (ImGui::ButtonEx("Button4", ImVec2(0, 0), ImGuiButtonFlags_Repeat))
-            vars.ButtonPressCount[4]++;
-        ImGui::End();
-    };
-    t->TestFunc = [](ImGuiTestContext* ctx)
-    {
-        ButtonPressTestVars& vars = ctx->GetUserData<ButtonPressTestVars>();
-
-        ctx->WindowRef("Test Window");
-        ctx->ItemClick("Button0");
-        IM_CHECK_EQ(vars.ButtonPressCount[0], 1);
-        ctx->ItemDoubleClick("Button1");
-        IM_CHECK_EQ(vars.ButtonPressCount[1], 1);
-        ctx->ItemDoubleClick("Button2");
-        IM_CHECK_EQ(vars.ButtonPressCount[2], 2);
-
-        // Test ImGuiButtonFlags_PressedOnClickRelease vs ImGuiButtonFlags_PressedOnClickReleaseAnywhere
-        vars.ButtonPressCount[2] = 0;
-        ctx->MouseMove("Button2");
-        ctx->MouseDown(0);
-        ctx->MouseMove("Button0", ImGuiTestOpFlags_NoCheckHoveredId);
-        ctx->MouseUp(0);
-        IM_CHECK_EQ(vars.ButtonPressCount[2], 0);
-        ctx->MouseMove("Button3");
-        ctx->MouseDown(0);
-        ctx->MouseMove("Button0", ImGuiTestOpFlags_NoCheckHoveredId);
-        ctx->MouseUp(0);
-        IM_CHECK_EQ(vars.ButtonPressCount[3], 1);
-
-        // Test ImGuiButtonFlags_Repeat
-        ctx->ItemClick("Button4");
-        IM_CHECK_EQ(vars.ButtonPressCount[4], 1);
-        ctx->MouseDown(0);
-        IM_CHECK_EQ(vars.ButtonPressCount[4], 1);
-        const float step = ImMin(ctx->UiContext->IO.KeyRepeatDelay, ctx->UiContext->IO.KeyRepeatRate) * 0.50f;
-        ctx->SleepNoSkip(ctx->UiContext->IO.KeyRepeatDelay, step);
-        ctx->SleepNoSkip(ctx->UiContext->IO.KeyRepeatRate, step);
-        ctx->SleepNoSkip(ctx->UiContext->IO.KeyRepeatRate, step);
-        ctx->SleepNoSkip(ctx->UiContext->IO.KeyRepeatRate, step);
-        IM_CHECK_EQ(vars.ButtonPressCount[4], 1 + 1 + 3 * 2); // FIXME: MouseRepeatRate is double KeyRepeatRate, that's not documented / or that's a bug
-        ctx->MouseUp(0);
-    };
-
-    // ## Test basic button presses
-    t = REGISTER_TEST("widgets", "widgets_button_mouse_buttons");
-    t->SetUserDataType<ButtonPressTestVars>();
-    t->GuiFunc = [](ImGuiTestContext* ctx)
-    {
-        ButtonPressTestVars& vars = ctx->GetUserData<ButtonPressTestVars>();
-
-        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
-        if (ImGui::ButtonEx("ButtonL", ImVec2(0, 0), ImGuiButtonFlags_MouseButtonLeft))
-            vars.ButtonPressCount[0]++;
-        if (ImGui::ButtonEx("ButtonR", ImVec2(0, 0), ImGuiButtonFlags_MouseButtonRight))
-            vars.ButtonPressCount[1]++;
-        if (ImGui::ButtonEx("ButtonM", ImVec2(0, 0), ImGuiButtonFlags_MouseButtonMiddle))
-            vars.ButtonPressCount[2]++;
-        if (ImGui::ButtonEx("ButtonLR", ImVec2(0, 0), ImGuiButtonFlags_MouseButtonLeft | ImGuiButtonFlags_MouseButtonRight))
-            vars.ButtonPressCount[3]++;
-
-        if (ImGui::ButtonEx("ButtonL-release", ImVec2(0, 0), ImGuiButtonFlags_MouseButtonLeft | ImGuiButtonFlags_PressedOnRelease))
-            vars.ButtonPressCount[4]++;
-        if (ImGui::ButtonEx("ButtonR-release", ImVec2(0, 0), ImGuiButtonFlags_MouseButtonRight | ImGuiButtonFlags_PressedOnRelease))
-        {
-            ctx->LogDebug("Pressed!");
-            vars.ButtonPressCount[5]++;
-        }
-        for (int n = 0; n < IM_ARRAYSIZE(vars.ButtonPressCount); n++)
-            ImGui::Text("%d: %d", n, vars.ButtonPressCount[n]);
-
-        ImGui::End();
-    };
-    t->TestFunc = [](ImGuiTestContext* ctx)
-    {
-        ButtonPressTestVars& vars = ctx->GetUserData<ButtonPressTestVars>();
-
-        ctx->WindowRef("Test Window");
-        ctx->ItemClick("ButtonL", 0);
-        IM_CHECK_EQ(vars.ButtonPressCount[0], 1);
-        ctx->ItemClick("ButtonR", 1);
-        IM_CHECK_EQ(vars.ButtonPressCount[1], 1);
-        ctx->ItemClick("ButtonM", 2);
-        IM_CHECK_EQ(vars.ButtonPressCount[2], 1);
-        ctx->ItemClick("ButtonLR", 0);
-        ctx->ItemClick("ButtonLR", 1);
-        IM_CHECK_EQ(vars.ButtonPressCount[3], 2);
-
-        vars.ButtonPressCount[3] = 0;
-        ctx->MouseMove("ButtonLR");
-        ctx->MouseDown(0);
-        ctx->MouseDown(1);
-        ctx->MouseUp(0);
-        ctx->MouseUp(1);
-        IM_CHECK_EQ(vars.ButtonPressCount[3], 1);
-
-        vars.ButtonPressCount[3] = 0;
-        ctx->MouseMove("ButtonLR");
-        ctx->MouseDown(0);
-        ctx->MouseMove("ButtonR", ImGuiTestOpFlags_NoCheckHoveredId);
-        ctx->MouseDown(1);
-        ctx->MouseUp(0);
-        ctx->MouseMove("ButtonLR");
-        ctx->MouseUp(1);
-        IM_CHECK_EQ(vars.ButtonPressCount[3], 0);
-    };
-
-    // ## Test ButtonBehavior frame by frame behaviors (see comments at the top of the ButtonBehavior() function)
-    enum ButtonStateMachineTestStep
-    {
-        ButtonStateMachineTestStep_None,
-        ButtonStateMachineTestStep_Init,
-        ButtonStateMachineTestStep_MovedOver,
-        ButtonStateMachineTestStep_MouseDown,
-        ButtonStateMachineTestStep_MovedAway,
-        ButtonStateMachineTestStep_MovedOverAgain,
-        ButtonStateMachineTestStep_MouseUp,
-        ButtonStateMachineTestStep_Done
-    };
-    t = REGISTER_TEST("widgets", "widgets_button_status");
-    struct ButtonStateTestVars
-    {
-        ButtonStateMachineTestStep NextStep;
-        ImGuiTestGenericStatus Status;
-        ButtonStateTestVars() { NextStep = ButtonStateMachineTestStep_None; }
-    };
-    t->SetUserDataType<ButtonStateTestVars>();
-    t->GuiFunc = [](ImGuiTestContext* ctx)
-    {
-        ButtonStateTestVars& vars = ctx->GetUserData<ButtonStateTestVars>();
-        ImGuiTestGenericStatus& status = vars.Status;
-
-        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
-
-        const bool pressed = ImGui::Button("Test");
-        status.QuerySet();
-        switch (vars.NextStep)
-        {
-        case ButtonStateMachineTestStep_Init:
-            IM_CHECK(0 == pressed);
-            IM_CHECK(0 == status.Hovered);
-            IM_CHECK(0 == status.Active);
-            IM_CHECK(0 == status.Activated);
-            IM_CHECK(0 == status.Deactivated);
-            break;
-        case ButtonStateMachineTestStep_MovedOver:
-            IM_CHECK(0 == pressed);
-            IM_CHECK(1 == status.Hovered);
-            IM_CHECK(0 == status.Active);
-            IM_CHECK(0 == status.Activated);
-            IM_CHECK(0 == status.Deactivated);
-            break;
-        case ButtonStateMachineTestStep_MouseDown:
-            IM_CHECK(0 == pressed);
-            IM_CHECK(1 == status.Hovered);
-            IM_CHECK(1 == status.Active);
-            IM_CHECK(1 == status.Activated);
-            IM_CHECK(0 == status.Deactivated);
-            break;
-        case ButtonStateMachineTestStep_MovedAway:
-            IM_CHECK(0 == pressed);
-            IM_CHECK(0 == status.Hovered);
-            IM_CHECK(1 == status.Active);
-            IM_CHECK(0 == status.Activated);
-            IM_CHECK(0 == status.Deactivated);
-            break;
-        case ButtonStateMachineTestStep_MovedOverAgain:
-            IM_CHECK(0 == pressed);
-            IM_CHECK(1 == status.Hovered);
-            IM_CHECK(1 == status.Active);
-            IM_CHECK(0 == status.Activated);
-            IM_CHECK(0 == status.Deactivated);
-            break;
-        case ButtonStateMachineTestStep_MouseUp:
-            IM_CHECK(1 == pressed);
-            IM_CHECK(1 == status.Hovered);
-            IM_CHECK(0 == status.Active);
-            IM_CHECK(0 == status.Activated);
-            IM_CHECK(1 == status.Deactivated);
-            break;
-        case ButtonStateMachineTestStep_Done:
-            IM_CHECK(0 == pressed);
-            IM_CHECK(0 == status.Hovered);
-            IM_CHECK(0 == status.Active);
-            IM_CHECK(0 == status.Activated);
-            IM_CHECK(0 == status.Deactivated);
-            break;
-        default:
-            break;
-        }
-        vars.NextStep = ButtonStateMachineTestStep_None;
-
-        // The "Dummy" button allows to move the mouse away from the "Test" button
-        ImGui::Button("Dummy");
-
-        ImGui::End();
-    };
-    t->TestFunc = [](ImGuiTestContext* ctx)
-    {
-        ButtonStateTestVars& vars = ctx->GetUserData<ButtonStateTestVars>();
-        vars.NextStep = ButtonStateMachineTestStep_None;
-
-        ctx->WindowRef("Test Window");
-
-        // Move mouse away from "Test" button
-        ctx->MouseMove("Dummy");
-        vars.NextStep = ButtonStateMachineTestStep_Init;
-        ctx->Yield();
-
-        ctx->MouseMove("Test");
-        vars.NextStep = ButtonStateMachineTestStep_MovedOver;
-        ctx->Yield();
-
-        vars.NextStep = ButtonStateMachineTestStep_MouseDown;
-        ctx->MouseDown();
-
-        ctx->MouseMove("Dummy", ImGuiTestOpFlags_NoCheckHoveredId);
-        vars.NextStep = ButtonStateMachineTestStep_MovedAway;
-        ctx->Yield();
-
-        ctx->MouseMove("Test");
-        vars.NextStep = ButtonStateMachineTestStep_MovedOverAgain;
-        ctx->Yield();
-
-        vars.NextStep = ButtonStateMachineTestStep_MouseUp;
-        ctx->MouseUp();
-
-        ctx->MouseMove("Dummy");
-        vars.NextStep = ButtonStateMachineTestStep_Done;
-        ctx->Yield();
-    };
-
-    // ## Test checkbox click
-    t = REGISTER_TEST("widgets", "widgets_checkbox_001");
-    t->GuiFunc = [](ImGuiTestContext* ctx)
-    {
-        ImGui::Begin("Window1", NULL, ImGuiWindowFlags_NoSavedSettings);
-        ImGui::Checkbox("Checkbox", &ctx->GenericVars.Bool1);
-        ImGui::End();
-    };
-    t->TestFunc = [](ImGuiTestContext* ctx)
-    {
-        // We use WindowRef() to ensure the window is uncollapsed.
-        IM_CHECK(ctx->GenericVars.Bool1 == false);
-        ctx->WindowRef("Window1");
-        ctx->ItemClick("Checkbox");
-        IM_CHECK(ctx->GenericVars.Bool1 == true);
-    };
-
-    // ## Test all types with DragScalar().
-    t = REGISTER_TEST("widgets", "widgets_datatype_1");
-    struct DragDatatypeVars { int widget_type = 0;  ImGuiDataType data_type = 0; char data_storage[10] = ""; char data_zero[8] = ""; };
-    t->SetUserDataType<DragDatatypeVars>();
-    t->GuiFunc = [](ImGuiTestContext* ctx)
-    {
-        DragDatatypeVars& vars = ctx->GetUserData<DragDatatypeVars>();
-        ImGui::SetNextWindowSize(ImVec2(200, 200));
-        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
-        bool ret;
-        if (vars.widget_type == 0)
-            ret = ImGui::DragScalar("Drag", vars.data_type, &vars.data_storage[1], 0.5f);
-        else
-            ret = ImGui::SliderScalar("Slider", vars.data_type, &vars.data_storage[1], &vars.data_zero, &vars.data_zero);
-        ctx->GenericVars.Status.QueryInc(ret);
-        ImGui::End();
-    };
-    t->TestFunc = [](ImGuiTestContext* ctx)
-    {
-        ImGuiContext& g = *ctx->UiContext;
-        DragDatatypeVars& vars = ctx->GetUserData<DragDatatypeVars>();
-
-        ctx->WindowRef("Test Window");
-        for (int widget_type = 0; widget_type < 2; widget_type++)
-        {
-            for (int data_type = 0; data_type < ImGuiDataType_COUNT; data_type++)
-            {
-                size_t data_size = ImGui::DataTypeGetInfo(data_type)->Size;
-                IM_ASSERT(data_size + 2 <= sizeof(vars.data_storage));
-                memset(vars.data_storage, 0, sizeof(vars.data_storage));
-                memset(vars.data_zero, 0, sizeof(vars.data_zero));
-                vars.widget_type = widget_type;
-                vars.data_type = data_type;
-                vars.data_storage[0] = vars.data_storage[1 + data_size] = 42; // Sentinel values
-                const char* widget_name = widget_type == 0 ? "Drag" : "Slider";
-
-                if (widget_type == 0)
-                {
-                    ctx->GenericVars.Status.Clear();
-                    ctx->MouseMove(widget_name);
-                    ctx->MouseDown();
-                    ctx->MouseMoveToPos(g.IO.MousePos + ImVec2(30, 0));
-                    IM_CHECK(ctx->GenericVars.Status.Edited >= 1);
-                    ctx->GenericVars.Status.Clear();
-                    ctx->MouseMoveToPos(g.IO.MousePos + ImVec2(-40, 0));
-                    IM_CHECK(ctx->GenericVars.Status.Edited >= 1);
-                    ctx->MouseUp();
-                }
-
-                ctx->GenericVars.Status.Clear();
-                ctx->ItemInput(widget_name);
-                ctx->KeyChars("123");                               // Case fixed by PR #3231
-                IM_CHECK_EQ(ctx->GenericVars.Status.Ret, 1);
-                IM_CHECK_EQ(ctx->GenericVars.Status.Edited, 1);
-                ctx->GenericVars.Status.Clear();
-                ctx->Yield();
-                IM_CHECK_EQ(ctx->GenericVars.Status.Ret, 0);        // Verify it doesn't keep returning as edited.
-                IM_CHECK_EQ(ctx->GenericVars.Status.Edited, 0);
-
-                ctx->GenericVars.Status.Clear();
-                ctx->KeyPressMap(ImGuiKey_Enter);
-                IM_CHECK(vars.data_storage[0] == 42);               // Ensure there were no oob writes.
-                IM_CHECK(vars.data_storage[1 + data_size] == 42);
-            }
-        }
-    };
-
-    // ## Test DragInt() as InputText
-    // ## Test ColorEdit4() as InputText (#2557)
-    t = REGISTER_TEST("widgets", "widgets_as_input");
-    t->GuiFunc = [](ImGuiTestContext* ctx)
-    {
-        ImGuiTestGenericVars& vars = ctx->GenericVars;
-        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
-        ImGui::DragInt("Drag", &vars.Int1);
-        ImGui::ColorEdit4("Color", &vars.Vec4.x);
-        ImGui::End();
-    };
-    t->TestFunc = [](ImGuiTestContext* ctx)
-    {
-        ImGuiTestGenericVars& vars = ctx->GenericVars;
-        ctx->WindowRef("Test Window");
-
-        IM_CHECK_EQ(vars.Int1, 0);
-        ctx->ItemInput("Drag");
-        IM_CHECK_EQ(ctx->UiContext->ActiveId, ctx->GetID("Drag"));
-        ctx->KeyCharsAppendEnter("123");
-        IM_CHECK_EQ(vars.Int1, 123);
-
-        ctx->ItemInput("Color##Y");
-        IM_CHECK_EQ(ctx->UiContext->ActiveId, ctx->GetID("Color##Y"));
-        ctx->KeyCharsAppend("123");
-        IM_CHECK(ImFloatEq(vars.Vec4.y, 123.0f / 255.0f));
-        ctx->KeyPressMap(ImGuiKey_Tab);
-        ctx->KeyCharsAppendEnter("200");
-        IM_CHECK(ImFloatEq(vars.Vec4.x,   0.0f / 255.0f));
-        IM_CHECK(ImFloatEq(vars.Vec4.y, 123.0f / 255.0f));
-        IM_CHECK(ImFloatEq(vars.Vec4.z, 200.0f / 255.0f));
-    };
-
-    // ## Test InputText widget
-    t = REGISTER_TEST("widgets", "widgets_inputtext_1");
-    t->GuiFunc = [](ImGuiTestContext* ctx)
-    {
-        ImGuiTestGenericVars& vars = ctx->GenericVars;
-        ImGui::SetNextWindowSize(ImVec2(200, 200));
-        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
-        ImGui::InputText("InputText", vars.Str1, IM_ARRAYSIZE(vars.Str1));
-        ImGui::End();
-    };
-    t->TestFunc = [](ImGuiTestContext* ctx)
-    {
-        char* buf = ctx->GenericVars.Str1;
-
-        ctx->WindowRef("Test Window");
-
-        // Insert
-        strcpy(buf, "Hello");
-        ctx->ItemClick("InputText");
-        ctx->KeyCharsAppendEnter("World123");
-        IM_CHECK_STR_EQ(buf, "HelloWorld123");
-
-        // Delete
-        ctx->ItemClick("InputText");
-        ctx->KeyPressMap(ImGuiKey_End);
-        ctx->KeyPressMap(ImGuiKey_Backspace, ImGuiKeyModFlags_None, 3);
-        ctx->KeyPressMap(ImGuiKey_Enter);
-        IM_CHECK_STR_EQ(buf, "HelloWorld");
-
-        // Insert, Cancel
-        ctx->ItemClick("InputText");
-        ctx->KeyPressMap(ImGuiKey_End);
-        ctx->KeyChars("XXXXX");
-        ctx->KeyPressMap(ImGuiKey_Escape);
-        IM_CHECK_STR_EQ(buf, "HelloWorld");
-
-        // Delete, Cancel
-        ctx->ItemClick("InputText");
-        ctx->KeyPressMap(ImGuiKey_End);
-        ctx->KeyPressMap(ImGuiKey_Backspace, ImGuiKeyModFlags_None, 5);
-        ctx->KeyPressMap(ImGuiKey_Escape);
-        IM_CHECK_STR_EQ(buf, "HelloWorld");
-    };
-
-    // ## Test InputText undo/redo ops, in particular related to issue we had with stb_textedit undo/redo buffers
-    t = REGISTER_TEST("widgets", "widgets_inputtext_2");
-    t->GuiFunc = [](ImGuiTestContext* ctx)
-    {
-        ImGuiTestGenericVars& vars = ctx->GenericVars;
-        if (vars.StrLarge.empty())
-            vars.StrLarge.resize(10000, 0);
-        ImGui::SetNextWindowSize(ImVec2(ImGui::GetFontSize() * 50, 0.0f));
-        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
-        ImGui::Text("strlen() = %d", (int)strlen(vars.StrLarge.Data));
-        ImGui::InputText("Dummy", vars.Str1, IM_ARRAYSIZE(vars.Str1), ImGuiInputTextFlags_None);
-        ImGui::InputTextMultiline("InputText", vars.StrLarge.Data, (size_t)vars.StrLarge.Size, ImVec2(-1, ImGui::GetFontSize() * 20), ImGuiInputTextFlags_None);
-        ImGui::End();
-        //DebugInputTextState();
-    };
-    t->TestFunc = [](ImGuiTestContext* ctx)
-    {
-        // https://github.com/nothings/stb/issues/321
-        ImGuiTestGenericVars& vars = ctx->GenericVars;
-
-        // Start with a 350 characters buffer.
-        // For this test we don't inject the characters via pasting or key-by-key in order to precisely control the undo/redo state.
-        char* buf = vars.StrLarge.Data;
-        IM_CHECK_EQ((int)strlen(buf), 0);
-        for (int n = 0; n < 10; n++)
-            strcat(buf, "xxxxxxx abcdefghijklmnopqrstuvwxyz\n");
-        IM_CHECK_EQ((int)strlen(buf), 350);
-
-        ctx->WindowRef("Test Window");
-        ctx->ItemClick("Dummy"); // This is to ensure stb_textedit_clear_state() gets called (clear the undo buffer, etc.)
-        ctx->ItemClick("InputText");
-
-        ImGuiInputTextState& input_text_state = GImGui->InputTextState;
-        ImStb::StbUndoState& undo_state = input_text_state.Stb.undostate;
-        IM_CHECK_EQ(input_text_state.ID, GImGui->ActiveId);
-        IM_CHECK_EQ(undo_state.undo_point, 0);
-        IM_CHECK_EQ(undo_state.undo_char_point, 0);
-        IM_CHECK_EQ(undo_state.redo_point, STB_TEXTEDIT_UNDOSTATECOUNT);
-        IM_CHECK_EQ(undo_state.redo_char_point, STB_TEXTEDIT_UNDOCHARCOUNT);
-        IM_CHECK_EQ(STB_TEXTEDIT_UNDOCHARCOUNT, 999); // Test designed for this value
-
-        // Insert 350 characters via 10 paste operations
-        // We use paste operations instead of key-by-key insertion so we know our undo buffer will contains 10 undo points.
-        //const char line_buf[26+8+1+1] = "xxxxxxx abcdefghijklmnopqrstuvwxyz\n"; // 8+26+1 = 35
-        //ImGui::SetClipboardText(line_buf);
-        //IM_CHECK(strlen(line_buf) == 35);
-        //ctx->KeyPressMap(ImGuiKey_V, ImGuiKeyModFlags_Shortcut, 10);
-
-        // Select all, copy, paste 3 times
-        ctx->KeyPressMap(ImGuiKey_A, ImGuiKeyModFlags_Shortcut);    // Select all
-        ctx->KeyPressMap(ImGuiKey_C, ImGuiKeyModFlags_Shortcut);    // Copy
-        ctx->KeyPressMap(ImGuiKey_End, ImGuiKeyModFlags_Shortcut);  // Go to end, clear selection
-        ctx->SleepShort();
-        for (int n = 0; n < 3; n++)
-        {
-            ctx->KeyPressMap(ImGuiKey_V, ImGuiKeyModFlags_Shortcut);// Paste append three times
-            ctx->SleepShort();
-        }
-        int len = (int)strlen(vars.StrLarge.Data);
-        IM_CHECK_EQ(len, 350 * 4);
-        IM_CHECK_EQ(undo_state.undo_point, 3);
-        IM_CHECK_EQ(undo_state.undo_char_point, 0);
-
-        // Undo x2
-        IM_CHECK(undo_state.redo_point == STB_TEXTEDIT_UNDOSTATECOUNT);
-        ctx->KeyPressMap(ImGuiKey_Z, ImGuiKeyModFlags_Shortcut);
-        ctx->KeyPressMap(ImGuiKey_Z, ImGuiKeyModFlags_Shortcut);
-        len = (int)strlen(vars.StrLarge.Data);
-        IM_CHECK_EQ(len, 350 * 2);
-        IM_CHECK_EQ(undo_state.undo_point, 1);
-        IM_CHECK_EQ(undo_state.redo_point, STB_TEXTEDIT_UNDOSTATECOUNT - 2);
-        IM_CHECK_EQ(undo_state.redo_char_point, STB_TEXTEDIT_UNDOCHARCOUNT - 350 * 2);
-
-        // Undo x1 should call stb_textedit_discard_redo()
-        ctx->KeyPressMap(ImGuiKey_Z, ImGuiKeyModFlags_Shortcut);
-        len = (int)strlen(vars.StrLarge.Data);
-        IM_CHECK_EQ(len, 350 * 1);
-    };
-
-    // ## Test InputText vs user ownership of data
-    t = REGISTER_TEST("widgets", "widgets_inputtext_3_text_ownership");
-    t->GuiFunc = [](ImGuiTestContext* ctx)
-    {
-        ImGuiTestGenericVars& vars = ctx->GenericVars;
-        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
-        ImGui::LogToBuffer();
-        ImGui::InputText("##InputText", vars.Str1, IM_ARRAYSIZE(vars.Str1)); // Remove label to simplify the capture/comparison
-        ImStrncpy(vars.Str2, ctx->UiContext->LogBuffer.c_str(), IM_ARRAYSIZE(vars.Str2));
-        ImGui::LogFinish();
-        ImGui::Text("Captured: \"%s\"", vars.Str2);
-        ImGui::End();
-    };
-    t->TestFunc = [](ImGuiTestContext* ctx)
-    {
-        ImGuiTestGenericVars& vars = ctx->GenericVars;
-        char* buf_user = vars.Str1;
-        char* buf_visible = vars.Str2;
-        ctx->WindowRef("Test Window");
-
-        IM_CHECK_STR_EQ(buf_visible, "");
-        strcpy(buf_user, "Hello");
-        ctx->Yield();
-        IM_CHECK_STR_EQ(buf_visible, "Hello");
-        ctx->ItemClick("##InputText");
-        ctx->KeyCharsAppend("1");
-        ctx->Yield();
-        IM_CHECK_STR_EQ(buf_user, "Hello1");
-        IM_CHECK_STR_EQ(buf_visible, "Hello1");
-
-        // Because the item is active, it owns the source data, so:
-        strcpy(buf_user, "Overwritten");
-        ctx->Yield();
-        IM_CHECK_STR_EQ(buf_user, "Hello1");
-        IM_CHECK_STR_EQ(buf_visible, "Hello1");
-
-        // Lose focus, at this point the InputTextState->ID should be holding on the last active state,
-        // so we verify that InputText() is picking up external changes.
-        ctx->KeyPressMap(ImGuiKey_Escape);
-        IM_CHECK_EQ(ctx->UiContext->ActiveId, (unsigned)0);
-        strcpy(buf_user, "Hello2");
-        ctx->Yield();
-        IM_CHECK_STR_EQ(buf_user, "Hello2");
-        IM_CHECK_STR_EQ(buf_visible, "Hello2");
-    };
-
-    // ## Test that InputText doesn't go havoc when activated via another item
-    t = REGISTER_TEST("widgets", "widgets_inputtext_4_id_conflict");
-    t->GuiFunc = [](ImGuiTestContext* ctx)
-    {
-        ImGuiTestGenericVars& vars = ctx->GenericVars;
-        ImGui::SetNextWindowSize(ImVec2(ImGui::GetFontSize() * 50, 0.0f));
-        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
-        if (ctx->FrameCount < 50)
-            ImGui::Button("Hello");
-        else
-            ImGui::InputText("Hello", vars.Str1, IM_ARRAYSIZE(vars.Str1));
-        ImGui::End();
-    };
-    t->TestFunc = [](ImGuiTestContext* ctx)
-    {
-        ctx->WindowRef("Test Window");
-        ctx->ItemHoldForFrames("Hello", 100);
-    };
-
-    // ## Test that InputText doesn't append two tab characters if the backend supplies both tab key and character
-    t = REGISTER_TEST("widgets", "widgets_inputtext_5_tab_double_insertion");
-    t->GuiFunc = [](ImGuiTestContext* ctx)
-    {
-        ImGuiTestGenericVars& vars = ctx->GenericVars;
-        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
-        ImGui::InputText("Field", vars.Str1, IM_ARRAYSIZE(vars.Str1), ImGuiInputTextFlags_AllowTabInput);
-        ImGui::End();
-    };
-    t->TestFunc = [](ImGuiTestContext* ctx)
-    {
-        ImGuiTestGenericVars& vars = ctx->GenericVars;
-        ctx->WindowRef("Test Window");
-        ctx->ItemClick("Field");
-        ctx->UiContext->IO.AddInputCharacter((ImWchar)'\t');
-        ctx->KeyPressMap(ImGuiKey_Tab);
-        IM_CHECK_STR_EQ(vars.Str1, "\t");
-    };
-
-    // ## Test input clearing action (ESC key) being undoable (#3008).
-    t = REGISTER_TEST("widgets", "widgets_inputtext_6_esc_undo");
-    t->GuiFunc = [](ImGuiTestContext* ctx)
-    {
-        ImGuiTestGenericVars& vars = ctx->GenericVars;
-        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
-        ImGui::InputText("Field", vars.Str1, IM_ARRAYSIZE(vars.Str1));
-        ImGui::End();
-
-    };
-    t->TestFunc = [](ImGuiTestContext* ctx)
-    {
-        ImGuiTestGenericVars& vars = ctx->GenericVars;
-        // FIXME-TESTS: Facilitate usage of variants
-        const int test_count = ctx->HasDock ? 2 : 1;
-        for (int test_n = 0; test_n < test_count; test_n++)
-        {
-            ctx->LogDebug("TEST CASE %d", test_n);
-            const char* initial_value = (test_n == 0) ? "" : "initial";
-            strcpy(vars.Str1, initial_value);
-            ctx->WindowRef("Test Window");
-            ctx->ItemInput("Field");
-            ctx->KeyCharsReplace("text");
-            IM_CHECK_STR_EQ(vars.Str1, "text");
-            ctx->KeyPressMap(ImGuiKey_Escape);                      // Reset input to initial value.
-            IM_CHECK_STR_EQ(vars.Str1, initial_value);
-            ctx->ItemInput("Field");
-            ctx->KeyPressMap(ImGuiKey_Z, ImGuiKeyModFlags_Shortcut);    // Undo
-            IM_CHECK_STR_EQ(vars.Str1, "text");
-            ctx->KeyPressMap(ImGuiKey_Enter);                       // Unfocus otherwise test_n==1 strcpy will fail
-        }
-    };
-
-    // ## Test resize callback (#3009, #2006, #1443, #1008)
-    t = REGISTER_TEST("widgets", "widgets_inputtext_7_resizecallback");
-    struct StrVars { Str str; };
-    t->SetUserDataType<StrVars>();
-    t->GuiFunc = [](ImGuiTestContext* ctx)
-    {
-        StrVars& vars = ctx->GetUserData<StrVars>();
-        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
-        if (ImGui::InputText("Field1", &vars.str, ImGuiInputTextFlags_EnterReturnsTrue))
-        {
-            IM_CHECK_EQ(vars.str.capacity(), 4 + 5 + 1);
-            IM_CHECK_STR_EQ(vars.str.c_str(), "abcdhello");
-        }
-        Str str_local_unsaved = "abcd";
-        if (ImGui::InputText("Field2", &str_local_unsaved, ImGuiInputTextFlags_EnterReturnsTrue))
-        {
-            IM_CHECK_EQ(str_local_unsaved.capacity(), 4 + 5 + 1);
-            IM_CHECK_STR_EQ(str_local_unsaved.c_str(), "abcdhello");
-        }
-        ImGui::End();
-
-    };
-    t->TestFunc = [](ImGuiTestContext* ctx)
-    {
-        StrVars& vars = ctx->GetUserData<StrVars>();
-        vars.str.set("abcd");
-        IM_CHECK_EQ(vars.str.capacity(), 4+1);
-        ctx->WindowRef("Test Window");
-        ctx->ItemInput("Field1");
-        ctx->KeyCharsAppendEnter("hello");
-        ctx->ItemInput("Field2");
-        ctx->KeyCharsAppendEnter("hello");
-    };
-
-    // ## Test for Nav interference
-    t = REGISTER_TEST("widgets", "widgets_inputtext_nav");
-    t->GuiFunc = [](ImGuiTestContext* ctx)
-    {
-        ImGuiTestGenericVars& vars = ctx->GenericVars;
-        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
-        ImVec2 sz(50, 0);
-        ImGui::Button("UL", sz); ImGui::SameLine();
-        ImGui::Button("U",  sz); ImGui::SameLine();
-        ImGui::Button("UR", sz);
-        ImGui::Button("L",  sz); ImGui::SameLine();
-        ImGui::SetNextItemWidth(sz.x);
-        ImGui::InputText("##Field", vars.Str1, IM_ARRAYSIZE(vars.Str1), ImGuiInputTextFlags_AllowTabInput);
-        ImGui::SameLine();
-        ImGui::Button("R", sz);
-        ImGui::Button("DL", sz); ImGui::SameLine();
-        ImGui::Button("D", sz); ImGui::SameLine();
-        ImGui::Button("DR", sz);
-        ImGui::End();
-    };
-    t->TestFunc = [](ImGuiTestContext* ctx)
-    {
-        ctx->WindowRef("Test Window");
-        ctx->ItemClick("##Field");
-        ctx->KeyPressMap(ImGuiKey_LeftArrow);
-        IM_CHECK_EQ(ctx->UiContext->NavId, ctx->GetID("##Field"));
-        ctx->KeyPressMap(ImGuiKey_RightArrow);
-        IM_CHECK_EQ(ctx->UiContext->NavId, ctx->GetID("##Field"));
-        ctx->KeyPressMap(ImGuiKey_UpArrow);
-        IM_CHECK_EQ(ctx->UiContext->NavId, ctx->GetID("U"));
-        ctx->KeyPressMap(ImGuiKey_DownArrow);
-        ctx->KeyPressMap(ImGuiKey_DownArrow);
-        IM_CHECK_EQ(ctx->UiContext->NavId, ctx->GetID("D"));
-    };
-
-    // ## Test ColorEdit4() and IsItemDeactivatedXXX() functions
-    // ## Test that IsItemActivated() doesn't trigger when clicking the color button to open picker
-    t = REGISTER_TEST("widgets", "widgets_status_coloredit");
-    t->GuiFunc = [](ImGuiTestContext* ctx)
-    {
-        ImGuiTestGenericVars& vars = ctx->GenericVars;
-        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
-        bool ret = ImGui::ColorEdit4("Field", &vars.Vec4.x, ImGuiColorEditFlags_None);
-        vars.Status.QueryInc(ret);
-        ImGui::End();
-    };
-    t->TestFunc = [](ImGuiTestContext* ctx)
-    {
-        // Accumulate return values over several frames/action into each bool
-        ImGuiTestGenericVars& vars = ctx->GenericVars;
-        ImGuiTestGenericStatus& status = vars.Status;
-
-        // Testing activation flag being set
-        ctx->WindowRef("Test Window");
-        ctx->ItemClick("Field/##ColorButton");
-        IM_CHECK(status.Ret == 0 && status.Activated == 1 && status.Deactivated == 1 && status.DeactivatedAfterEdit == 0 && status.Edited == 0);
-        status.Clear();
-
-        ctx->KeyPressMap(ImGuiKey_Escape);
-        IM_CHECK(status.Ret == 0 && status.Activated == 0 && status.Deactivated == 0 && status.DeactivatedAfterEdit == 0 && status.Edited == 0);
-        status.Clear();
-    };
-
-    // ## Test InputText() and IsItemDeactivatedXXX() functions (mentioned in #2215)
-    t = REGISTER_TEST("widgets", "widgets_status_inputtext");
-    t->GuiFunc = [](ImGuiTestContext* ctx)
-    {
-        ImGuiTestGenericVars& vars = ctx->GenericVars;
-        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
-        bool ret = ImGui::InputText("Field", vars.Str1, IM_ARRAYSIZE(vars.Str1));
-        vars.Status.QueryInc(ret);
-        ImGui::InputText("Dummy Sibling", vars.Str2, IM_ARRAYSIZE(vars.Str2));
-        ImGui::End();
-    };
-    t->TestFunc = [](ImGuiTestContext* ctx)
-    {
-        // Accumulate return values over several frames/action into each bool
-        ImGuiTestGenericVars& vars = ctx->GenericVars;
-        ImGuiTestGenericStatus& status = vars.Status;
-
-        // Testing activation flag being set
-        ctx->WindowRef("Test Window");
-        ctx->ItemClick("Field");
-        IM_CHECK(status.Ret == 0 && status.Activated == 1 && status.Deactivated == 0 && status.DeactivatedAfterEdit == 0 && status.Edited == 0);
-        status.Clear();
-
-        // Testing deactivated flag being set when canceling with Escape
-        ctx->KeyPressMap(ImGuiKey_Escape);
-        IM_CHECK(status.Ret == 0 && status.Activated == 0 && status.Deactivated == 1 && status.DeactivatedAfterEdit == 0 && status.Edited == 0);
-        status.Clear();
-
-        // Testing validation with Return after editing
-        ctx->ItemClick("Field");
-        IM_CHECK(!status.Ret && status.Activated && !status.Deactivated && !status.DeactivatedAfterEdit && status.Edited == 0);
-        status.Clear();
-        ctx->KeyCharsAppend("Hello");
-        IM_CHECK(status.Ret && !status.Activated && !status.Deactivated && !status.DeactivatedAfterEdit && status.Edited >= 1);
-        status.Clear();
-        ctx->KeyPressMap(ImGuiKey_Enter);
-        IM_CHECK(!status.Ret && !status.Activated && status.Deactivated && status.DeactivatedAfterEdit && status.Edited == 0);
-        status.Clear();
-
-        // Testing validation with Tab after editing
-        ctx->ItemClick("Field");
-        ctx->KeyCharsAppend(" World");
-        IM_CHECK(status.Ret && status.Activated && !status.Deactivated && !status.DeactivatedAfterEdit && status.Edited >= 1);
-        status.Clear();
-        ctx->KeyPressMap(ImGuiKey_Tab);
-        IM_CHECK(!status.Ret && !status.Activated && status.Deactivated && status.DeactivatedAfterEdit && status.Edited == 0);
-        status.Clear();
-    };
-
-    // ## Test the IsItemDeactivatedXXX() functions (e.g. #2550, #1875)
-    t = REGISTER_TEST("widgets", "widgets_status_multicomponent");
-    t->GuiFunc = [](ImGuiTestContext* ctx)
-    {
-        ImGuiTestGenericVars& vars = ctx->GenericVars;
-        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
-        bool ret = ImGui::InputFloat4("Field", &vars.FloatArray[0]);
-        vars.Status.QueryInc(ret);
-        ImGui::End();
-    };
-    t->TestFunc = [](ImGuiTestContext* ctx)
-    {
-        // Accumulate return values over several frames/action into each bool
-        ImGuiTestGenericVars& vars = ctx->GenericVars;
-        ImGuiTestGenericStatus& status = vars.Status;
-
-        // FIXME-TESTS: Better helper to build ids out of various type of data
-        ctx->WindowRef("Test Window");
-        int n;
-        n = 0; ImGuiID field_0 = ImHashData(&n, sizeof(n), ctx->GetID("Field"));
-        n = 1; ImGuiID field_1 = ImHashData(&n, sizeof(n), ctx->GetID("Field"));
-        //n = 2; ImGuiID field_2 = ImHashData(&n, sizeof(n), ctx->GetID("Field"));
-
-        // Testing activation/deactivation flags
-        ctx->ItemClick(field_0);
-        IM_CHECK(status.Ret == 0 && status.Activated == 1 && status.Deactivated == 0 && status.DeactivatedAfterEdit == 0);
-        status.Clear();
-        ctx->KeyPressMap(ImGuiKey_Enter);
-        IM_CHECK(status.Ret == 0 && status.Activated == 0 && status.Deactivated == 1 && status.DeactivatedAfterEdit == 0);
-        status.Clear();
-
-        // Testing validation with Return after editing
-        ctx->ItemClick(field_0);
-        status.Clear();
-        ctx->KeyCharsAppend("123");
-        IM_CHECK(status.Ret >= 1 && status.Activated == 0 && status.Deactivated == 0);
-        status.Clear();
-        ctx->KeyPressMap(ImGuiKey_Enter);
-        IM_CHECK(status.Ret == 0 && status.Activated == 0 && status.Deactivated == 1);
-        status.Clear();
-
-        // Testing validation with Tab after editing
-        ctx->ItemClick(field_0);
-        ctx->KeyCharsAppend("456");
-        status.Clear();
-        ctx->KeyPressMap(ImGuiKey_Tab);
-        IM_CHECK(status.Ret == 0 && status.Activated == 1 && status.Deactivated == 1 && status.DeactivatedAfterEdit == 1);
-
-        // Testing Edited flag on all components
-        ctx->ItemClick(field_1); // FIXME-TESTS: Should not be necessary!
-        ctx->ItemClick(field_0);
-        ctx->KeyCharsAppend("111");
-        IM_CHECK(status.Edited >= 1);
-        ctx->KeyPressMap(ImGuiKey_Tab);
-        status.Clear();
-        ctx->KeyCharsAppend("222");
-        IM_CHECK(status.Edited >= 1);
-        ctx->KeyPressMap(ImGuiKey_Tab);
-        status.Clear();
-        ctx->KeyCharsAppend("333");
-        IM_CHECK(status.Edited >= 1);
-    };
-
-    // ## Test the IsItemEdited() function when input vs output format are not matching
-    t = REGISTER_TEST("widgets", "widgets_status_inputfloat_format_mismatch");
-    t->GuiFunc = [](ImGuiTestContext* ctx)
-    {
-        ImGuiTestGenericVars& vars = ctx->GenericVars;
-        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
-        bool ret = ImGui::InputFloat("Field", &vars.Float1);
-        vars.Status.QueryInc(ret);
-        ImGui::End();
-    };
-    t->TestFunc = [](ImGuiTestContext* ctx)
-    {
-        ImGuiTestGenericVars& vars = ctx->GenericVars;
-        ImGuiTestGenericStatus& status = vars.Status;
-
-        // Input "1" which will be formatted as "1.000", make sure we don't report IsItemEdited() multiple times!
-        ctx->WindowRef("Test Window");
-        ctx->ItemClick("Field");
-        ctx->KeyCharsAppend("1");
-        IM_CHECK(status.Ret == 1 && status.Edited == 1 && status.Activated == 1 && status.Deactivated == 0 && status.DeactivatedAfterEdit == 0);
-        ctx->Yield();
-        ctx->Yield();
-        IM_CHECK(status.Edited == 1);
-    };
-
-    // ## Test that disabled Selectable has an ID but doesn't interfere with navigation
-    t = REGISTER_TEST("widgets", "widgets_selectable_disabled");
-    t->GuiFunc = [](ImGuiTestContext* ctx)
-    {
-        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
-        ImGui::Selectable("Selectable A");
-        if (ctx->FrameCount == 0)
-            IM_CHECK_EQ(ImGui::GetItemID(), ImGui::GetID("Selectable A"));
-        ImGui::Selectable("Selectable B", false, ImGuiSelectableFlags_Disabled);
-        if (ctx->FrameCount == 0)
-            IM_CHECK_EQ(ImGui::GetItemID(), ImGui::GetID("Selectable B")); // Make sure B has an ID
-        ImGui::Selectable("Selectable C");
-        ImGui::End();
-    };
-    t->TestFunc = [](ImGuiTestContext* ctx)
-    {
-        ctx->WindowRef("Test Window");
-        ctx->ItemClick("Selectable A");
-        IM_CHECK_EQ(ctx->UiContext->NavId, ctx->GetID("Selectable A"));
-        ctx->KeyPressMap(ImGuiKey_DownArrow);
-        IM_CHECK_EQ(ctx->UiContext->NavId, ctx->GetID("Selectable C")); // Make sure we have skipped B
-    };
-
-    // ## Test that tight tab bar does not create extra drawcalls
-    t = REGISTER_TEST("widgets", "widgets_tabbar_drawcalls");
-    t->GuiFunc = [](ImGuiTestContext* ctx)
-    {
-        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
-        if (ImGui::BeginTabBar("Tab Drawcalls"))
-        {
-            for (int i = 0; i < 20; i++)
-                if (ImGui::BeginTabItem(Str30f("Tab %d", i).c_str()))
-                    ImGui::EndTabItem();
-            ImGui::EndTabBar();
-        }
-        ImGui::End();
-    };
-    t->TestFunc = [](ImGuiTestContext* ctx)
-    {
-        ImGuiWindow* window = ImGui::FindWindowByName("Test Window");
-        ctx->WindowResize("Test Window", ImVec2(300, 300));
-        int draw_calls = window->DrawList->CmdBuffer.Size;
-        ctx->WindowResize("Test Window", ImVec2(1, 1));
-        IM_CHECK(draw_calls == window->DrawList->CmdBuffer.Size);
-    };
-
-    // ## Test recursing Tab Bars (Bug #2371)
-    t = REGISTER_TEST("widgets", "widgets_tabbar_recurse");
-    t->GuiFunc = [](ImGuiTestContext* ctx)
-    {
-        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
-        if (ImGui::BeginTabBar("TabBar 0"))
-        {
-            if (ImGui::BeginTabItem("TabItem"))
-            {
-                // If we have many tab bars here, it will invalidate pointers from pooled tab bars
-                for (int i = 0; i < 128; i++)
-                    if (ImGui::BeginTabBar(Str30f("Inner TabBar %d", i).c_str()))
-                    {
-                        if (ImGui::BeginTabItem("Inner TabItem"))
-                            ImGui::EndTabItem();
-                        ImGui::EndTabBar();
-                    }
-                ImGui::EndTabItem();
-            }
-            ImGui::EndTabBar();
-        }
-        ImGui::End();
-    };
-
-#ifdef IMGUI_HAS_DOCK
-    // ## Test Dockspace within a TabItem
-    t = REGISTER_TEST("widgets", "widgets_tabbar_dockspace");
-    t->GuiFunc = [](ImGuiTestContext* ctx)
-    {
-        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
-        if (ImGui::BeginTabBar("TabBar"))
-        {
-            if (ImGui::BeginTabItem("TabItem"))
-            {
-                ImGui::DockSpace(ImGui::GetID("Hello"), ImVec2(0, 0));
-                ImGui::EndTabItem();
-            }
-            ImGui::EndTabBar();
-        }
-        ImGui::End();
-    };
-#endif
-
-    // ## Test SetSelected on first frame of a TabItem
-    t = REGISTER_TEST("widgets", "widgets_tabbar_tabitem_setselected");
-    t->GuiFunc = [](ImGuiTestContext* ctx)
-    {
-        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
-        if (ImGui::BeginTabBar("tab_bar"))
-        {
-            if (ImGui::BeginTabItem("TabItem 0"))
-            {
-                ImGui::TextUnformatted("First tab content");
-                ImGui::EndTabItem();
-            }
-
-            if (ctx->FrameCount >= 0)
-            {
-                bool tab_item_visible = ImGui::BeginTabItem("TabItem 1", NULL, ctx->FrameCount == 0 ? ImGuiTabItemFlags_SetSelected : ImGuiTabItemFlags_None);
-                if (tab_item_visible)
-                {
-                    ImGui::TextUnformatted("Second tab content");
-                    ImGui::EndTabItem();
-                }
-                if (ctx->FrameCount > 0)
-                    IM_CHECK(tab_item_visible);
-            }
-            ImGui::EndTabBar();
-        }
-        ImGui::End();
-    };
-    t->TestFunc = [](ImGuiTestContext* ctx) { ctx->Yield(); };
-
-    // ## Test various TreeNode flags
-    t = REGISTER_TEST("widgets", "widgets_treenode_behaviors");
-    struct TreeNodeTestVars { bool Reset = true, IsOpen = false, IsMultiSelect = false; int ToggleCount = 0; int DragSourceCount = 0;  ImGuiTreeNodeFlags Flags = 0; };
-    t->SetUserDataType<TreeNodeTestVars>();
-    t->GuiFunc = [](ImGuiTestContext* ctx)
-    {
-        ImGui::SetNextWindowSize(ImVec2(300, 100), ImGuiCond_Always);
-        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
-
-        ImGui::ColorButton("Color", ImVec4(1.0f, 1.0f, 0.0f, 1.0f), ImGuiColorEditFlags_NoTooltip); // To test open-on-drag-hold
-
-        TreeNodeTestVars& vars = ctx->GetUserData<TreeNodeTestVars>();
-        if (vars.Reset)
-        {
-            ImGui::GetStateStorage()->SetInt(ImGui::GetID("AAA"), 0);
-            vars.ToggleCount = vars.DragSourceCount = 0;
-        }
-        vars.Reset = false;
-        ImGui::Text("Flags: 0x%08X, MultiSelect: %d", vars.Flags, vars.IsMultiSelect);
-
-#ifdef IMGUI_HAS_MULTI_SELECT
-        if (vars.IsMultiSelect)
-        {
-            ImGui::BeginMultiSelect(ImGuiMultiSelectFlags_None, NULL, false); // Dummy, won't interact properly
-            ImGui::SetNextItemSelectionData(NULL);
-        }
-#endif
-
-        vars.IsOpen = ImGui::TreeNodeEx("AAA", vars.Flags);
-        if (ImGui::IsItemToggledOpen())
-            vars.ToggleCount++;
-        if (ImGui::BeginDragDropSource())
-        {
-            vars.DragSourceCount++;
-            ImGui::SetDragDropPayload("_TREENODE", NULL, 0);
-            ImGui::Text("Drag Source Tooltip");
-            ImGui::EndDragDropSource();
-        }
-        if (vars.IsOpen)
-        {
-            ImGui::Text("Contents");
-            ImGui::TreePop();
-        }
-
-#ifdef IMGUI_HAS_MULTI_SELECT
-        if (vars.IsMultiSelect)
-            ImGui::EndMultiSelect();
-#endif
-
-        ImGui::End();
-    };
-    t->TestFunc = [](ImGuiTestContext* ctx)
-    {
-        TreeNodeTestVars& vars = ctx->GetUserData<TreeNodeTestVars>();
-        ctx->WindowRef("Test Window");
-
-#ifdef IMGUI_HAS_MULTI_SELECT
-        int loop_count = 2;
-#else
-        int loop_count = 1;
-#endif
-
-        for (int loop_n = 0; loop_n < loop_count; loop_n++)
-        {
-            vars.IsMultiSelect = (loop_n == 1);
-
-            if (!vars.IsMultiSelect) // _OpenOnArrow is implicit/automatic with MultiSelect
-            {
-                ctx->LogInfo("## ImGuiTreeNodeFlags_None, IsMultiSelect=%d", vars.IsMultiSelect);
-                vars.Reset = true;
-                vars.Flags = ImGuiTreeNodeFlags_None;
-                ctx->Yield();
-                IM_CHECK(vars.IsOpen == false && vars.ToggleCount == 0);
-
-                // Click on arrow
-                ctx->MouseMove("AAA", ImGuiTestOpFlags_MoveToEdgeL);
-                ctx->MouseDown(0);
-                IM_CHECK_EQ(vars.IsOpen, false);
-                ctx->MouseUp(0); // Toggle on Up with _OpenOnArrow (may change!)
-                IM_CHECK_EQ(vars.IsOpen, true);
-                ctx->MouseClick(0);
-                IM_CHECK_EQ(vars.IsOpen, false);
-                ctx->MouseDoubleClick(0);
-                IM_CHECK_EQ(vars.IsOpen, false);
-                IM_CHECK_EQ(vars.ToggleCount, 4);
-
-                // Click on main section
-                vars.ToggleCount = 0;
-                ctx->MouseMove("AAA");
-                ctx->MouseClick(0);
-                IM_CHECK_EQ_NO_RET(vars.IsOpen, true);
-                ctx->MouseClick(0);
-                IM_CHECK_EQ_NO_RET(vars.IsOpen, false);
-                ctx->MouseDoubleClick(0);
-                IM_CHECK_EQ_NO_RET(vars.IsOpen, false);
-                IM_CHECK_EQ_NO_RET(vars.ToggleCount, 4);
-
-                // Test TreeNode as drag source
-                IM_CHECK_EQ(vars.DragSourceCount, 0);
-                ctx->ItemDragWithDelta("AAA", ImVec2(50, 50));
-                IM_CHECK_GT(vars.DragSourceCount, 0);
-                IM_CHECK_EQ(vars.IsOpen, false);
-
-                // Test TreeNode opening on drag-hold
-                ctx->ItemDragOverAndHold("Color", "AAA");
-                IM_CHECK_EQ(vars.IsOpen, true);
-            }
-
-            if (!vars.IsMultiSelect) // _OpenOnArrow is implicit/automatic with MultiSelect
-            {
-                ctx->LogInfo("## ImGuiTreeNodeFlags_OpenOnDoubleClick, IsMultiSelect=%d", vars.IsMultiSelect);
-                vars.Reset = true;
-                vars.Flags = ImGuiTreeNodeFlags_OpenOnDoubleClick;
-                ctx->Yield();
-                IM_CHECK(vars.IsOpen == false && vars.ToggleCount == 0);
-
-                // Click on arrow
-                ctx->MouseMove("AAA", ImGuiTestOpFlags_MoveToEdgeL);
-                ctx->MouseDown(0);
-                IM_CHECK_EQ(vars.IsOpen, false);
-                ctx->MouseUp(0);
-                IM_CHECK_EQ(vars.IsOpen, false);
-                ctx->MouseClick(0);
-                IM_CHECK_EQ(vars.IsOpen, false);
-                IM_CHECK_EQ(vars.ToggleCount, 0);
-                ctx->MouseDoubleClick(0);
-                IM_CHECK_EQ(vars.IsOpen, true);
-                ctx->MouseDoubleClick(0);
-                IM_CHECK_EQ(vars.IsOpen, false);
-                IM_CHECK_EQ(vars.ToggleCount, 2);
-
-                // Click on main section
-                vars.ToggleCount = 0;
-                ctx->MouseMove("AAA");
-                ctx->MouseClick(0);
-                IM_CHECK_EQ(vars.IsOpen, false);
-                ctx->MouseClick(0);
-                IM_CHECK_EQ(vars.IsOpen, false);
-                IM_CHECK_EQ(vars.ToggleCount, 0);
-                ctx->MouseDoubleClick(0);
-                IM_CHECK_EQ(vars.IsOpen, true);
-                ctx->MouseDoubleClick(0);
-                IM_CHECK_EQ(vars.IsOpen, false);
-                IM_CHECK_EQ(vars.ToggleCount, 2);
-
-                // Test TreeNode as drag source
-                IM_CHECK_EQ(vars.DragSourceCount, 0);
-                ctx->ItemDragWithDelta("AAA", ImVec2(50, 50));
-                IM_CHECK_GT(vars.DragSourceCount, 0);
-                IM_CHECK_EQ(vars.IsOpen, false);
-
-                // Test TreeNode opening on drag-hold
-                ctx->ItemDragOverAndHold("Color", "AAA");
-                IM_CHECK_EQ(vars.IsOpen, true);
-            }
-
-            {
-                ctx->LogInfo("## ImGuiTreeNodeFlags_OpenOnArrow, IsMultiSelect=%d", vars.IsMultiSelect);
-                vars.Reset = true;
-                vars.Flags = ImGuiTreeNodeFlags_OpenOnArrow;
-                ctx->Yield();
-                IM_CHECK(vars.IsOpen == false && vars.ToggleCount == 0);
-
-                // Click on arrow
-                ctx->MouseMove("AAA", ImGuiTestOpFlags_MoveToEdgeL);
-                ctx->MouseDown(0);
-                IM_CHECK_EQ(vars.IsOpen, true);
-                ctx->MouseUp(0);
-                IM_CHECK_EQ(vars.IsOpen, true);
-                ctx->MouseClick(0);
-                IM_CHECK_EQ(vars.IsOpen, false);
-                IM_CHECK_EQ(vars.ToggleCount, 2);
-                ctx->MouseDoubleClick(0);
-                IM_CHECK_EQ(vars.IsOpen, false);
-                IM_CHECK_EQ(vars.ToggleCount, 4);
-
-                // Click on main section
-                vars.ToggleCount = 0;
-                ctx->MouseMove("AAA");
-                ctx->MouseClick(0);
-                IM_CHECK_EQ(vars.IsOpen, false);
-                ctx->MouseClick(0);
-                IM_CHECK_EQ(vars.IsOpen, false);
-                IM_CHECK_EQ(vars.ToggleCount, 0);
-                ctx->MouseDoubleClick(0);
-                IM_CHECK_EQ(vars.IsOpen, false);
-                IM_CHECK_EQ(vars.ToggleCount, 0);
-
-                // Test TreeNode as drag source
-                IM_CHECK_EQ(vars.DragSourceCount, 0);
-                ctx->ItemDragWithDelta("AAA", ImVec2(50, 50));
-                IM_CHECK_GT(vars.DragSourceCount, 0);
-                IM_CHECK_EQ(vars.IsOpen, false);
-
-                // Test TreeNode opening on drag-hold
-                ctx->ItemDragOverAndHold("Color", "AAA");
-                IM_CHECK_EQ(vars.IsOpen, true);
-            }
-
-            {
-                ctx->LogInfo("## ImGuiTreeNodeFlags_OpenOnArrow|ImGuiTreeNodeFlags_OpenOnDoubleClick, IsMultiSelect=%d", vars.IsMultiSelect);
-                vars.Reset = true;
-                vars.Flags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_OpenOnDoubleClick;
-                ctx->Yield();
-                IM_CHECK(vars.IsOpen == false && vars.ToggleCount == 0);
-
-                // Click on arrow
-                ctx->MouseMove("AAA", ImGuiTestOpFlags_MoveToEdgeL);
-                ctx->MouseDown(0);
-                IM_CHECK_EQ(vars.IsOpen, true);
-                ctx->MouseUp(0);
-                ctx->MouseClick(0);
-                IM_CHECK_EQ(vars.IsOpen, false);
-                IM_CHECK_EQ(vars.ToggleCount, 2);
-                ctx->MouseDoubleClick(0);
-                IM_CHECK_EQ(vars.IsOpen, false);
-                IM_CHECK_EQ(vars.ToggleCount, 4);
-
-                // Click on main section
-                vars.ToggleCount = 0;
-                ctx->MouseMove("AAA");
-                ctx->MouseClick(0);
-                IM_CHECK_EQ(vars.IsOpen, false);
-                ctx->MouseClick(0);
-                IM_CHECK_EQ(vars.IsOpen, false);
-                IM_CHECK_EQ(vars.ToggleCount, 0);
-                ctx->MouseDoubleClick(0);
-                IM_CHECK_EQ(vars.IsOpen, true);
-                ctx->MouseDoubleClick(0);
-                IM_CHECK_EQ(vars.IsOpen, false);
-                IM_CHECK_EQ(vars.ToggleCount, 2);
-
-                // Test TreeNode as drag source
-                IM_CHECK_EQ(vars.DragSourceCount, 0);
-                ctx->ItemDragWithDelta("AAA", ImVec2(50, 50));
-                IM_CHECK_GT(vars.DragSourceCount, 0);
-                IM_CHECK_EQ(vars.IsOpen, false);
-
-                // Test TreeNode opening on drag-hold
-                ctx->ItemDragOverAndHold("Color", "AAA");
-                IM_CHECK_EQ(vars.IsOpen, true);
-            }
-        }
-    };
-
-    // ## Test ImGuiTreeNodeFlags_SpanAvailWidth and ImGuiTreeNodeFlags_SpanFullWidth flags
-    t = REGISTER_TEST("widgets", "widgets_treenode_span_width");
-    t->GuiFunc = [](ImGuiTestContext* ctx)
-    {
-        ImGui::SetNextWindowSize(ImVec2(300, 100), ImGuiCond_Always);
-        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
-        ImGuiWindow* window = ImGui::GetCurrentWindow();
-
-        ImGui::SetNextItemOpen(true);
-        if (ImGui::TreeNodeEx("Parent"))
-        {
-            // Interaction rect does not span entire width of work area.
-            IM_CHECK(window->DC.LastItemRect.Max.x < window->WorkRect.Max.x);
-            // But it starts at very beginning of WorkRect for first tree level.
-            IM_CHECK(window->DC.LastItemRect.Min.x == window->WorkRect.Min.x);
-            ImGui::SetNextItemOpen(true);
-            if (ImGui::TreeNodeEx("Regular"))
-            {
-                // Interaction rect does not span entire width of work area.
-                IM_CHECK(window->DC.LastItemRect.Max.x < window->WorkRect.Max.x);
-                IM_CHECK(window->DC.LastItemRect.Min.x > window->WorkRect.Min.x);
-                ImGui::TreePop();
-            }
-            ImGui::SetNextItemOpen(true);
-            if (ImGui::TreeNodeEx("SpanAvailWidth", ImGuiTreeNodeFlags_SpanAvailWidth))
-            {
-                // Interaction rect matches visible frame rect
-                IM_CHECK((window->DC.LastItemStatusFlags & ImGuiItemStatusFlags_HasDisplayRect) != 0);
-                IM_CHECK(window->DC.LastItemDisplayRect.Min == window->DC.LastItemRect.Min);
-                IM_CHECK(window->DC.LastItemDisplayRect.Max == window->DC.LastItemRect.Max);
-                // Interaction rect extends to the end of the available area.
-                IM_CHECK(window->DC.LastItemRect.Max.x == window->WorkRect.Max.x);
-                ImGui::TreePop();
-            }
-            ImGui::SetNextItemOpen(true);
-            if (ImGui::TreeNodeEx("SpanFullWidth", ImGuiTreeNodeFlags_SpanFullWidth))
-            {
-                // Interaction rect matches visible frame rect
-                IM_CHECK((window->DC.LastItemStatusFlags & ImGuiItemStatusFlags_HasDisplayRect) != 0);
-                IM_CHECK(window->DC.LastItemDisplayRect.Min == window->DC.LastItemRect.Min);
-                IM_CHECK(window->DC.LastItemDisplayRect.Max == window->DC.LastItemRect.Max);
-                // Interaction rect extends to the end of the available area.
-                IM_CHECK(window->DC.LastItemRect.Max.x == window->WorkRect.Max.x);
-                // ImGuiTreeNodeFlags_SpanFullWidth also extends interaction rect to the left.
-                IM_CHECK(window->DC.LastItemRect.Min.x == window->WorkRect.Min.x);
-                ImGui::TreePop();
-            }
-            ImGui::TreePop();
-        }
-
-        ImGui::End();
-    };
-
-    // ## Test PlotLines() with a single value (#2387).
-    t = REGISTER_TEST("widgets", "widgets_plot_lines_unexpected_input");
-    t->GuiFunc = [](ImGuiTestContext* ctx)
-    {
-        float values[1] = {0.f};
-        ImGui::PlotLines("PlotLines 1", NULL, 0);
-        ImGui::PlotLines("PlotLines 2", values, 0);
-        ImGui::PlotLines("PlotLines 3", values, 1);
-        // FIXME-TESTS: If test did not crash - it passed. A better way to check this would be useful.
-    };
-
-    // ## Test ColorEdit basic Drag and Drop
-    t = REGISTER_TEST("widgets", "widgets_drag_coloredit");
-    t->GuiFunc = [](ImGuiTestContext* ctx)
-    {
-        ImGuiTestGenericVars& vars = ctx->GenericVars;
-        ImGui::SetNextWindowSize(ImVec2(300, 200));
-        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
-        ImGui::ColorEdit4("ColorEdit1", &vars.Vec4Array[0].x, ImGuiColorEditFlags_None);
-        ImGui::ColorEdit4("ColorEdit2", &vars.Vec4Array[1].x, ImGuiColorEditFlags_None);
-        ImGui::End();
-    };
-    t->TestFunc = [](ImGuiTestContext* ctx)
-    {
-        ImGuiTestGenericVars& vars = ctx->GenericVars;
-        vars.Vec4Array[0] = ImVec4(1, 0, 0, 1);
-        vars.Vec4Array[1] = ImVec4(0, 1, 0, 1);
-
-        ctx->WindowRef("Test Window");
-
-        IM_CHECK_NE(memcmp(&vars.Vec4Array[0], &vars.Vec4Array[1], sizeof(ImVec4)), 0);
-        ctx->ItemDragAndDrop("ColorEdit1/##ColorButton", "ColorEdit2/##X"); // FIXME-TESTS: Inner items
-        IM_CHECK_EQ(memcmp(&vars.Vec4Array[0], &vars.Vec4Array[1], sizeof(ImVec4)), 0);
-    };
-
-    // ## Test BeginDragDropSource() with NULL id.
-    t = REGISTER_TEST("widgets", "widgets_drag_source_null_id");
-    struct WidgetDragSourceNullIDData
-    {
-        ImVec2 Source;
-        ImVec2 Destination;
-        bool Dropped = false;
-    };
-    t->SetUserDataType<WidgetDragSourceNullIDData>();
-    t->GuiFunc = [](ImGuiTestContext* ctx)
-    {
-        WidgetDragSourceNullIDData& user_data = *(WidgetDragSourceNullIDData*)ctx->UserData;
-
-        ImGui::Begin("Null ID Test", NULL, ImGuiWindowFlags_NoSavedSettings);
-        ImGui::TextUnformatted("Null ID");
-        user_data.Source = ImRect(ImGui::GetItemRectMin(), ImGui::GetItemRectMax()).GetCenter();
-
-        if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_SourceAllowNullID))
-        {
-            int magic = 0xF00;
-            ImGui::SetDragDropPayload("MAGIC", &magic, sizeof(int));
-            ImGui::EndDragDropSource();
-        }
-        ImGui::TextUnformatted("Drop Here");
-        user_data.Destination = ImRect(ImGui::GetItemRectMin(), ImGui::GetItemRectMax()).GetCenter();
-
-        if (ImGui::BeginDragDropTarget())
-        {
-            if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("MAGIC"))
-            {
-                user_data.Dropped = true;
-                IM_CHECK_EQ(payload->DataSize, (int)sizeof(int));
-                IM_CHECK_EQ(*(int*)payload->Data, 0xF00);
-            }
-            ImGui::EndDragDropTarget();
-        }
-        ImGui::End();
-    };
-    t->TestFunc = [](ImGuiTestContext* ctx)
-    {
-        WidgetDragSourceNullIDData& user_data = *(WidgetDragSourceNullIDData*)ctx->UserData;
-
-        // ImGui::TextUnformatted() does not have an ID therefore we can not use ctx->ItemDragAndDrop() as that refers
-        // to items by their ID.
-        ctx->MouseMoveToPos(user_data.Source);
-        ctx->SleepShort();
-        ctx->MouseDown(0);
-
-        ctx->MouseMoveToPos(user_data.Destination);
-        ctx->SleepShort();
-        ctx->MouseUp(0);
-
-        IM_CHECK(user_data.Dropped);
-    };
-
-    // ## Test overlapping drag and drop targets. The drag and drop system always prioritize the smaller target.
-    t = REGISTER_TEST("widgets", "widgets_drag_overlapping_targets");
-    t->GuiFunc = [](ImGuiTestContext* ctx)
-    {
-        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
-
-        ImGui::Button("Drag");
-        if (ImGui::BeginDragDropSource())
-        {
-            int value = 0xF00D;
-            ImGui::SetDragDropPayload("_TEST_VALUE", &value, sizeof(int));
-            ImGui::EndDragDropSource();
-        }
-
-        auto render_button = [](ImGuiTestContext* ctx, const char* name, const ImVec2& pos, const ImVec2& size)
-        {
-            ImGui::SetCursorScreenPos(pos);
-            ImGui::Button(name, size);
-            if (ImGui::BeginDragDropTarget())
-            {
-                if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("_TEST_VALUE"))
-                {
-                    IM_UNUSED(payload);
-                    ctx->GenericVars.Id = ImGui::GetItemID();
-                }
-                ImGui::EndDragDropTarget();
-            }
-        };
-
-        // Render small button over big one
-        ImVec2 pos = ImGui::GetCursorScreenPos();
-        render_button(ctx, "Big1", pos, ImVec2(100, 100));
-        render_button(ctx, "Small1", pos + ImVec2(25, 25), ImVec2(50, 50));
-
-        // Render small button over small one
-        render_button(ctx, "Small2", pos + ImVec2(0, 110) + ImVec2(25, 25), ImVec2(50, 50));
-        render_button(ctx, "Big2", pos + ImVec2(0, 110), ImVec2(100, 100));
-
-        ImGui::End();
-    };
-    t->TestFunc = [](ImGuiTestContext* ctx)
-    {
-        ctx->WindowRef("Test Window");
-
-        ctx->GenericVars.Id = 0;
-        ctx->ItemDragAndDrop("Drag", "Small1");
-        IM_CHECK(ctx->GenericVars.Id == ctx->GetID("Small1"));
-
-        ctx->GenericVars.Id = 0;
-        ctx->ItemDragAndDrop("Drag", "Small2");
-        IM_CHECK(ctx->GenericVars.Id == ctx->GetID("Small2"));
-    };
-
-    // ## Test drag sources with _SourceNoPreviewTooltip flag not producing a tooltip.
-    t = REGISTER_TEST("widgets", "widgets_drag_no_preview_tooltip");
-    t->GuiFunc = [](ImGuiTestContext* ctx)
-    {
-        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
-
-        auto create_drag_drop_source = [](ImGuiDragDropFlags flags)
-        {
-            if (ImGui::BeginDragDropSource(flags))
-            {
-                int value = 0xF00D;
-                ImGui::SetDragDropPayload("_TEST_VALUE", &value, sizeof(int));
-                ImGui::EndDragDropSource();
-            }
-        };
-
-        ImGui::Button("Drag");
-        create_drag_drop_source(ImGuiDragDropFlags_SourceNoPreviewTooltip);
-
-        ImGui::Button("Drag Extern");
-        if (ImGui::IsItemClicked())
-            create_drag_drop_source(ImGuiDragDropFlags_SourceNoPreviewTooltip | ImGuiDragDropFlags_SourceExtern);
-
-        ImGui::Button("Drop");
-        if (ImGui::BeginDragDropTarget())
-        {
-            ImGui::AcceptDragDropPayload("_TEST_VALUE");
-            ImGui::EndDragDropTarget();
-        }
-
-        ImGuiContext& g = *ctx->UiContext;
-        ImGuiWindow* tooltip = ctx->GetWindowByRef(Str16f("##Tooltip_%02d", g.TooltipOverrideCount).c_str());
-        ctx->GenericVars.Bool1 |= g.TooltipOverrideCount != 0;
-        ctx->GenericVars.Bool1 |= tooltip != NULL && (tooltip->Active || tooltip->WasActive);
-
-        ImGui::End();
-    };
-    t->TestFunc = [](ImGuiTestContext* ctx)
-    {
-        ctx->WindowRef("Test Window");
-        ctx->ItemDragAndDrop("Drag", "Drop");
-        IM_CHECK(ctx->GenericVars.Bool1 == false);
-        ctx->ItemDragAndDrop("Drag Extern", "Drop");
-        IM_CHECK(ctx->GenericVars.Bool1 == false);
-    };
-
-    // ## Test long text rendering by TextUnformatted().
-    t = REGISTER_TEST("widgets", "widgets_text_unformatted_long");
-    t->TestFunc = [](ImGuiTestContext* ctx)
-    {
-        ctx->WindowRef("Dear ImGui Demo");
-        ctx->MenuCheck("Examples/Long text display");
-        ctx->WindowRef("Example: Long text display");
-        ctx->ItemClick("Add 1000 lines");
-        ctx->SleepShort();
-
-        Str64f title("/Example: Long text display\\/Log_%08X", ctx->GetID("Log"));
-        ImGuiWindow* log_panel = ctx->GetWindowByRef(title.c_str());
-        IM_CHECK(log_panel != NULL);
-        ImGui::SetScrollY(log_panel, log_panel->ScrollMax.y);
-        ctx->SleepShort();
-        ctx->ItemClick("Clear");
-        // FIXME-TESTS: A bit of extra testing that will be possible once tomato problem is solved.
-        // ctx->ComboClick("Test type/Single call to TextUnformatted()");
-        // ctx->ComboClick("Test type/Multiple calls to Text(), clipped");
-        // ctx->ComboClick("Test type/Multiple calls to Text(), not clipped (slow)");
-        ctx->WindowClose("");
-    };
-
-    // ## Test menu appending.
-    t = REGISTER_TEST("widgets", "widgets_menu_append");
-    t->GuiFunc = [](ImGuiTestContext* ctx)
-    {
-        ImGui::Begin("Append Menus", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_MenuBar);
-        ImGui::BeginMenuBar();
-
-        // Menu that we will append to.
-        if (ImGui::BeginMenu("First Menu"))
-        {
-            ImGui::MenuItem("1 First");
-            if (ImGui::BeginMenu("Second Menu"))
-            {
-                ImGui::MenuItem("2 First");
-                ImGui::EndMenu();
-            }
-            ImGui::EndMenu();
-        }
-
-        // Append to first menu.
-        if (ImGui::BeginMenu("First Menu"))
-        {
-            if (ImGui::MenuItem("1 Second"))
-                ctx->GenericVars.Bool1 = true;
-            if (ImGui::BeginMenu("Second Menu"))
-            {
-                ImGui::MenuItem("2 Second");
-                ImGui::EndMenu();
-            }
-            ImGui::EndMenu();
-        }
-
-        ImGui::EndMenuBar();
-        ImGui::End();
-    };
-    t->TestFunc = [](ImGuiTestContext* ctx)
-    {
-        ctx->WindowRef("Append Menus");
-        ctx->MenuClick("First Menu");
-        ctx->MenuClick("First Menu/1 First");
-        IM_CHECK_EQ(ctx->GenericVars.Bool1, false);
-        ctx->MenuClick("First Menu/1 Second");
-        IM_CHECK_EQ(ctx->GenericVars.Bool1, true);
-        ctx->MenuClick("First Menu/Second Menu/2 First");
-        ctx->MenuClick("First Menu/Second Menu/2 Second");
-    };
-
-    // ## Test main menubar appending.
-    t = REGISTER_TEST("widgets", "widgets_main_menubar_append");
-    t->GuiFunc = [](ImGuiTestContext* ctx)
-    {
-        // Menu that we will append to.
-        if (ImGui::BeginMainMenuBar())
-        {
-            if (ImGui::BeginMenu("First Menu"))
-                ImGui::EndMenu();
-            ImGui::EndMenuBar();
-        }
-
-        // Append to first menu.
-        if (ImGui::BeginMainMenuBar())
-        {
-            if (ImGui::BeginMenu("Second Menu"))
-            {
-                if (ImGui::MenuItem("Second"))
-                    ctx->GenericVars.Bool1 = true;
-                ImGui::EndMenu();
-            }
-            ImGui::EndMainMenuBar();
-        }
-
-        ImGui::End();
-    };
-    t->TestFunc = [](ImGuiTestContext* ctx)
-    {
-        ctx->WindowRef("##MainMenuBar");
-        ctx->MenuClick("Second Menu/Second");
-        IM_CHECK_EQ(ctx->GenericVars.Bool1, true);
-    };
-
-#ifdef IMGUI_HAS_MULTI_SELECT
-    // ## Test MultiSelect API
-    struct ExampleSelection
-    {
-        ImGuiStorage                        Storage;
-        int                                 SelectionSize;  // Number of selected items (== number of 1 in the Storage, maintained by this class)
-        int                                 RangeRef;       // Reference/pivot item (generally last clicked item)
-
-        ExampleSelection()                  { RangeRef = 0; Clear(); }
-        void Clear()                        { Storage.Clear(); SelectionSize = 0; }
-        bool GetSelected(int n) const       { return Storage.GetInt((ImGuiID)n, 0) != 0; }
-        void SetSelected(int n, bool v)     { int* p_int = Storage.GetIntRef((ImGuiID)n, 0); if (*p_int == (int)v) return; if (v) SelectionSize++; else SelectionSize--; *p_int = (bool)v; }
-        int  GetSelectionSize() const       { return SelectionSize; }
-
-        // When using SelectAll() / SetRange() we assume that our objects ID are indices.
-        // In this demo we always store selection using indices and never in another manner (e.g. object ID or pointers).
-        // If your selection system is storing selection using object ID and you want to support Shift+Click range-selection,
-        // you will need a way to iterate from one object to another given the ID you use.
-        // You are likely to need some kind of data structure to convert 'view index' <> 'object ID'.
-        // FIXME-MULTISELECT: Would be worth providing a demo of doing this.
-        // FIXME-MULTISELECT: SetRange() is currently very inefficient since it doesn't take advantage of the fact that ImGuiStorage stores sorted key.
-        void SetRange(int n1, int n2, bool v)   { if (n2 < n1) { int tmp = n2; n2 = n1; n1 = tmp; } for (int n = n1; n <= n2; n++) SetSelected(n, v); }
-        void SelectAll(int count)               { Storage.Data.resize(count); for (int idx = 0; idx < count; idx++) Storage.Data[idx] = ImGuiStorage::ImGuiStoragePair((ImGuiID)idx, 1); SelectionSize = count; } // This could be using SetRange(), but it this way is faster.
-
-        // FIXME-MULTISELECT: This itself is a good condition we could improve either our API or our demos
-        ImGuiMultiSelectData* BeginMultiSelect(ImGuiMultiSelectFlags flags, int items_count)
-        {
-            ImGuiMultiSelectData* data = ImGui::BeginMultiSelect(flags, (void*)(intptr_t)RangeRef, GetSelected(RangeRef));
-            if (data->RequestClear)     { Clear(); }
-            if (data->RequestSelectAll) { SelectAll(items_count); }
-            return data;
-        }
-        void EndMultiSelect(int items_count)
-        {
-            ImGuiMultiSelectData* data = ImGui::EndMultiSelect();
-            RangeRef = (int)(intptr_t)data->RangeSrc;
-            if (data->RequestClear)     { Clear(); }
-            if (data->RequestSelectAll) { SelectAll(items_count); }
-            if (data->RequestSetRange)  { SetRange((int)(intptr_t)data->RangeSrc, (int)(intptr_t)data->RangeDst, data->RangeValue ? 1 : 0); }
-        }
-    };
-    struct MultiSelectTestVars
-    {
-        ExampleSelection    Selection0;
-        ExampleSelection    Selection1;
-    };
-    auto multiselect_guifunc = [](ImGuiTestContext* ctx)
-    {
-        MultiSelectTestVars& vars = ctx->GetUserData<MultiSelectTestVars>();
-        ExampleSelection& selection = vars.Selection0;
-
-        const int ITEMS_COUNT = 100;
-        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
-        ImGui::Text("(Size = %3d items)", selection.SelectionSize);
-        ImGui::Text("(RangeRef = %04d)", selection.RangeRef);
-        ImGui::Separator();
-
-        ImGuiMultiSelectData* multi_select_data = selection.BeginMultiSelect(ImGuiMultiSelectFlags_None, ITEMS_COUNT);
-
-        if (ctx->Test->ArgVariant == 1)
-            ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(ImGui::GetStyle().ItemSpacing.x, 0.0f));
-
-        ImGuiListClipper clipper(ITEMS_COUNT);
-        while (clipper.Step())
-        {
-            if (clipper.DisplayStart > selection.RangeRef)
-                multi_select_data->RangeSrcPassedBy = true;
-            for (int item_n = clipper.DisplayStart; item_n < clipper.DisplayEnd; item_n++)
-            {
-                Str64f label("Object %04d", item_n);
-                bool item_is_selected = selection.GetSelected(item_n);
-
-                ImGui::SetNextItemSelectionData((void*)(intptr_t)item_n);
-                if (ctx->Test->ArgVariant == 0)
-                {
-                    ImGui::Selectable(label.c_str(), item_is_selected);
-                    bool toggled = ImGui::IsItemToggledSelection();
-                    if (toggled)
-                        selection.SetSelected(item_n, !item_is_selected);
-                }
-                else if (ctx->Test->ArgVariant == 1)
-                {
-                    ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_SpanAvailWidth;
-                    flags |= ImGuiTreeNodeFlags_OpenOnDoubleClick | ImGuiTreeNodeFlags_OpenOnArrow;
-                    if (item_is_selected)
-                        flags |= ImGuiTreeNodeFlags_Selected;
-                    if (ImGui::TreeNodeEx(label.c_str(), flags))
-                        ImGui::TreePop();
-                    if (ImGui::IsItemToggledSelection())
-                        selection.SetSelected(item_n, !item_is_selected);
-                }
-            }
-        }
-
-        if (ctx->Test->ArgVariant == 1)
-            ImGui::PopStyleVar();
-
-        selection.EndMultiSelect(ITEMS_COUNT);
-
-        ImGui::End();
-    };
-    auto multiselect_testfunc = [](ImGuiTestContext* ctx)
-    {
-        // We are using lots of MouseMove+MouseDown+MouseUp (instead of ItemClick) because we need to test precise MouseUp vs MouseDown reactions.
-        ImGuiContext& g = *ctx->UiContext;
-        MultiSelectTestVars& vars = ctx->GetUserData<MultiSelectTestVars>();
-        ExampleSelection& selection = vars.Selection0;
-
-        ctx->WindowRef("Test Window");
-
-        selection.Clear();
-        ctx->Yield();
-        IM_CHECK_EQ(selection.SelectionSize, 0);
-
-        // Single click
-        ctx->ItemClick("Object 0000");
-        IM_CHECK_EQ(selection.SelectionSize, 1);
-        IM_CHECK_EQ(selection.GetSelected(0), true);
-
-        // Verify that click on another item alter selection on MouseDown
-        ctx->MouseMove("Object 0001");
-        ctx->MouseDown(0);
-        IM_CHECK_EQ(selection.SelectionSize, 1);
-        IM_CHECK_EQ(selection.GetSelected(1), true);
-        ctx->MouseUp(0);
-
-        // CTRL-A
-        ctx->KeyPressMap(ImGuiKey_A, ImGuiKeyModFlags_Ctrl);
-        IM_CHECK_EQ(selection.SelectionSize, 100);
-
-        // Verify that click on selected item clear other items from selection on MouseUp
-        ctx->MouseMove("Object 0001");
-        ctx->MouseDown(0);
-        IM_CHECK_EQ(selection.SelectionSize, 100);
-        ctx->MouseUp(0);
-        IM_CHECK_EQ(selection.SelectionSize, 1);
-        IM_CHECK_EQ(selection.GetSelected(1), true);
-
-        // Test SHIFT+Click
-        ctx->ItemClick("Object 0001");
-        ctx->KeyDownMap(ImGuiKey_COUNT, ImGuiKeyModFlags_Shift);
-        ctx->MouseMove("Object 0006");
-        ctx->MouseDown(0);
-        IM_CHECK_EQ(selection.SelectionSize, 6);
-        ctx->MouseUp(0);
-        ctx->KeyUpMap(ImGuiKey_COUNT, ImGuiKeyModFlags_Shift);
-
-        // Test that CTRL+A preserve RangeSrc (which was 0001)
-        ctx->KeyPressMap(ImGuiKey_A, ImGuiKeyModFlags_Ctrl);
-        IM_CHECK_EQ(selection.SelectionSize, 100);
-        ctx->KeyDownMap(ImGuiKey_COUNT, ImGuiKeyModFlags_Shift);
-        ctx->ItemClick("Object 0008");
-        ctx->KeyUpMap(ImGuiKey_COUNT, ImGuiKeyModFlags_Shift);
-        IM_CHECK_EQ(selection.SelectionSize, 8);
-
-        // Test reverse clipped SHIFT+Click
-        // FIXME-TESTS: ItemInfo query could disable clipper?
-        // FIXME-TESTS: We would need to disable clipper because it conveniently rely on cliprect which is affected by actual viewport, so ScrollToBottom() is not enough...
-        //ctx->ScrollToBottom();
-        ctx->ItemClick("Object 0030");
-        ctx->ScrollToTop();
-        ctx->KeyDownMap(ImGuiKey_COUNT, ImGuiKeyModFlags_Shift);
-        ctx->ItemClick("Object 0002");
-        ctx->KeyUpMap(ImGuiKey_COUNT, ImGuiKeyModFlags_Shift);
-        IM_CHECK_EQ(selection.SelectionSize, 29);
-
-        // Test ESC to clear selection
-        // FIXME-TESTS
-#if 0
-        ctx->KeyPressMap(ImGuiKey_Escape);
-        ctx->Yield();
-        IM_CHECK_EQ(selection.SelectionSize, 0);
-#endif
-
-        // Test SHIFT+Arrow
-        ctx->ItemClick("Object 0002");
-        IM_CHECK_EQ(g.NavId, ctx->GetID("Object 0002"));
-        IM_CHECK_EQ(selection.SelectionSize, 1);
-        ctx->KeyPressMap(ImGuiKey_DownArrow, ImGuiKeyModFlags_Shift);
-        ctx->KeyPressMap(ImGuiKey_DownArrow, ImGuiKeyModFlags_Shift);
-        IM_CHECK_EQ(g.NavId, ctx->GetID("Object 0004"));
-        IM_CHECK_EQ(selection.SelectionSize, 3);
-
-        // Test CTRL+Arrow
-        ctx->KeyPressMap(ImGuiKey_DownArrow, ImGuiKeyModFlags_Ctrl);
-        ctx->KeyPressMap(ImGuiKey_DownArrow, ImGuiKeyModFlags_Ctrl);
-        IM_CHECK_EQ(g.NavId, ctx->GetID("Object 0006"));
-        IM_CHECK_EQ(selection.SelectionSize, 3);
-
-        // Test SHIFT+Arrow after a gap
-        ctx->KeyPressMap(ImGuiKey_DownArrow, ImGuiKeyModFlags_Shift);
-        IM_CHECK_EQ(g.NavId, ctx->GetID("Object 0007"));
-        IM_CHECK_EQ(selection.SelectionSize, 6);
-
-        // Test SHIFT+Arrow reducing selection
-        ctx->KeyPressMap(ImGuiKey_UpArrow, ImGuiKeyModFlags_Shift);
-        IM_CHECK_EQ(g.NavId, ctx->GetID("Object 0006"));
-        IM_CHECK_EQ(selection.SelectionSize, 5);
-
-        // Test CTRL+Shift+Arrow moving or appending without reducing selection
-        ctx->KeyPressMap(ImGuiKey_UpArrow, ImGuiKeyModFlags_Ctrl | ImGuiKeyModFlags_Shift, 4);
-        IM_CHECK_EQ(g.NavId, ctx->GetID("Object 0002"));
-        IM_CHECK_EQ(selection.SelectionSize, 5);
-
-        // Test SHIFT+Arrow replacing selection
-        ctx->KeyPressMap(ImGuiKey_UpArrow, ImGuiKeyModFlags_Shift);
-        IM_CHECK_EQ(g.NavId, ctx->GetID("Object 0001"));
-        IM_CHECK_EQ(selection.SelectionSize, 2);
-
-        // Test Arrow replacing selection
-        ctx->KeyPressMap(ImGuiKey_DownArrow);
-        IM_CHECK_EQ(g.NavId, ctx->GetID("Object 0002"));
-        IM_CHECK_EQ(selection.SelectionSize, 1);
-        IM_CHECK_EQ(selection.GetSelected(2), true);
-
-        // Test Home/End
-        ctx->KeyPressMap(ImGuiKey_Home);
-        IM_CHECK_EQ(g.NavId, ctx->GetID("Object 0000"));
-        IM_CHECK_EQ(selection.SelectionSize, 1);
-        IM_CHECK_EQ(selection.GetSelected(0), true);
-        ctx->KeyPressMap(ImGuiKey_End);
-        IM_CHECK_EQ(g.NavId, ctx->GetID("Object 0099"));
-        IM_CHECK_EQ(selection.SelectionSize, 1);
-        IM_CHECK_EQ(selection.GetSelected(99), true); // Would break if clipped by viewport
-        ctx->KeyPressMap(ImGuiKey_Home, ImGuiKeyModFlags_Ctrl);
-        IM_CHECK_EQ(g.NavId, ctx->GetID("Object 0000"));
-        IM_CHECK_EQ(selection.SelectionSize, 1);
-        IM_CHECK_EQ(selection.GetSelected(99), true);
-        ctx->KeyPressMap(ImGuiKey_Home);
-        IM_CHECK_EQ(selection.SelectionSize, 1);
-        IM_CHECK_EQ(selection.GetSelected(99), true); // FIXME: A Home/End/PageUp/PageDown leading to same target doesn't trigger JustMovedTo, may be reasonable.
-        ctx->KeyPressMap(ImGuiKey_Space);
-        IM_CHECK_EQ(selection.SelectionSize, 1);
-        IM_CHECK_EQ(selection.GetSelected(0), true);
-        ctx->KeyPressMap(ImGuiKey_End, ImGuiKeyModFlags_Shift);
-        IM_CHECK_EQ(g.NavId, ctx->GetID("Object 0099"));
-        IM_CHECK_EQ(selection.SelectionSize, 100);
-    };
-
-    t = REGISTER_TEST("widgets", "widgets_multiselect_1_selectables");
-    t->SetUserDataType<MultiSelectTestVars>();
-    t->GuiFunc = multiselect_guifunc;
-    t->TestFunc = multiselect_testfunc;
-    t->ArgVariant = 0;
-
-    t = REGISTER_TEST("widgets", "widgets_multiselect_2_treenode");
-    t->SetUserDataType<MultiSelectTestVars>();
-    t->GuiFunc = multiselect_guifunc;
-    t->TestFunc = multiselect_testfunc;
-    t->ArgVariant = 1;
-
-    t = REGISTER_TEST("widgets", "widgets_multiselect_3_multiple");
-    t->SetUserDataType<MultiSelectTestVars>();
-    t->GuiFunc = [](ImGuiTestContext* ctx)
-    {
-        MultiSelectTestVars& vars = ctx->GetUserData<MultiSelectTestVars>();
-
-        const int ITEMS_COUNT = 10;
-        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
-        for (int scope_n = 0; scope_n < 2; scope_n++)
-        {
-            ExampleSelection& selection = (scope_n == 1) ? vars.Selection1 : vars.Selection0;
-            ImGui::Text("SCOPE %d\n", scope_n);
-            ImGui::PushID(Str16f("Scope %d", scope_n).c_str());
-            selection.BeginMultiSelect(ImGuiMultiSelectFlags_None, ITEMS_COUNT);
-            for (int item_n = 0; item_n < ITEMS_COUNT; item_n++)
-            {
-                bool item_is_selected = selection.GetSelected(item_n);
-                ImGui::SetNextItemSelectionData((void*)(intptr_t)item_n);
-                ImGui::Selectable(Str16f("Object %04d", item_n).c_str(), item_is_selected);
-                if (ImGui::IsItemToggledSelection())
-                    selection.SetSelected(item_n, !item_is_selected);
-            }
-            selection.EndMultiSelect(ITEMS_COUNT);
-            ImGui::PopID();
-        }
-        ImGui::End();
-    };
-    t->TestFunc = [](ImGuiTestContext* ctx)
-    {
-        MultiSelectTestVars& vars = ctx->GetUserData<MultiSelectTestVars>();
-        ExampleSelection& selection0 = vars.Selection0;
-        ExampleSelection& selection1 = vars.Selection1;
-
-        ctx->WindowRef("Test Window");
-        selection0.Clear();
-        selection1.Clear();
-
-        ctx->ItemClick("Scope 0/Object 0001");
-        IM_CHECK_EQ(selection0.SelectionSize, 1);
-        IM_CHECK_EQ(selection1.SelectionSize, 0);
-
-        ctx->ItemClick("Scope 1/Object 0002");
-        IM_CHECK_EQ(selection0.SelectionSize, 1);
-        IM_CHECK_EQ(selection1.SelectionSize, 1);
-
-        ctx->KeyPressMap(ImGuiKey_A, ImGuiKeyModFlags_Ctrl);
-        IM_CHECK_EQ(selection0.SelectionSize, 1);
-        IM_CHECK_EQ(selection1.SelectionSize, 10);
-    };
-#endif
-
-    // ## Test Selectable() with ImGuiSelectableFlags_SpanAllColumns inside Columns()
-    t = REGISTER_TEST("widgets", "widgets_selectable_span_all_columns");
-    t->GuiFunc = [](ImGuiTestContext* ctx)
-    {
-        ImGui::SetNextWindowSize(ImVec2(300, 200), ImGuiCond_Appearing);
-        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
-
-        ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0, 0));
-        ImGui::Columns(3);
-        ImGui::Button("C1");
-        ImGui::NextColumn();
-        ImGui::Selectable("Selectable", &ctx->GenericVars.Bool1, ImGuiSelectableFlags_SpanAllColumns);
-        ctx->GenericVars.Status.QuerySet();
-        ImGui::NextColumn();
-        ImGui::Button("C3");
-        ImGui::Columns();
-        ImGui::PopStyleVar();
-
-        ImGui::End();
-    };
-    t->TestFunc = [](ImGuiTestContext* ctx)
-    {
-        ctx->WindowRef("Test Window");
-        ctx->MouseMove("C1", ImGuiTestOpFlags_NoCheckHoveredId); // Button itself won't be hovered, Selectable will!
-        IM_CHECK(ctx->GenericVars.Status.Hovered == 1);
-        ctx->MouseMove("C3", ImGuiTestOpFlags_NoCheckHoveredId); // Button itself won't be hovered, Selectable will!
-        IM_CHECK(ctx->GenericVars.Status.Hovered == 1);
-    };
-
-#if IMGUI_HAS_TABLE
-    t = REGISTER_TEST("widgets", "widgets_selectable_span_all_table");
-    t->GuiFunc = [](ImGuiTestContext* ctx)
-    {
-        ImGui::SetNextWindowSize(ImVec2(300, 200), ImGuiCond_Appearing);
-        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
-
-        const int column_count = 3;
-        ImGui::BeginTable("table", column_count, ImGuiTableFlags_NoSavedSettings | ImGuiTableFlags_Reorderable);
-        for (int i = 0; i < column_count; i++)
-            ImGui::TableSetupColumn(Str30f("%d", i + 1).c_str());
-
-        ImGui::TableAutoHeaders();
-        ImGui::TableNextRow();
-
-        ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0, 0));
-        ImGui::Button("C1");
-        ImGui::TableSetColumnIndex(1);
-        ImGui::Selectable("Selectable", &ctx->GenericVars.Bool1, ImGuiSelectableFlags_SpanAllColumns);
-        ctx->GenericVars.Status.QuerySet();
-        ImGui::TableSetColumnIndex(2);
-        ImGui::Button("C3");
-        ImGui::PopStyleVar();
-
-        ImGui::EndTable();
-
-        ImGui::End();
-    };
-    t->TestFunc = [](ImGuiTestContext* ctx)
-    {
-        ctx->WindowRef("Test Window");
-        ImGuiTable* table = ImGui::FindTableByID(ctx->GetID("table"));
-        ImGuiID seed_id = ctx->GetIDByInt((int)table->ID);
-
-        for (int i = 0; i < 2; i++)
-        {
-            ctx->MouseMove(ctx->GetID("C1", seed_id), ImGuiTestOpFlags_NoCheckHoveredId); // Button itself won't be hovered, Selectable will!
-            IM_CHECK(ctx->GenericVars.Status.Hovered == 1);
-            ctx->MouseMove(ctx->GetID("C3", seed_id), ImGuiTestOpFlags_NoCheckHoveredId); // Button itself won't be hovered, Selectable will!
-            IM_CHECK(ctx->GenericVars.Status.Hovered == 1);
-
-            // Reorder columns and test again
-            ImGuiID table_id = ctx->GetIDByInt((int)table->ID);
-            ImGuiID column_label_id1 = ctx->GetID("1", ctx->GetIDByInt(0, table_id));
-            ImGuiID column_label_id2 = ctx->GetID("2", ctx->GetIDByInt(1, table_id));
-            ctx->ItemDragAndDrop(column_label_id1, column_label_id2);
-        }
-    };
-#endif
-}
-
-//-------------------------------------------------------------------------
 // Tests: Nav
 //-------------------------------------------------------------------------
 
@@ -2616,7 +669,7 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
 
     // ## Test opening a new window from a checkbox setting the focus to the new window.
     // In 9ba2028 (2019/01/04) we fixed a bug where holding ImGuiNavInputs_Activate too long on a button would hold the focus on the wrong window.
-    t = REGISTER_TEST("nav", "nav_basic");
+    t = IM_REGISTER_TEST(e, "nav", "nav_basic");
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         ctx->SetInputMode(ImGuiInputSource_Nav);
@@ -2629,7 +682,7 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
     };
 
     // ## Test that CTRL+Tab steal active id (#2380)
-    t = REGISTER_TEST("nav", "nav_ctrl_tab_takes_activeid_away");
+    t = IM_REGISTER_TEST(e, "nav", "nav_ctrl_tab_takes_activeid_away");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         ImGuiTestGenericVars& vars = ctx->GenericVars;
@@ -2656,7 +709,7 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
     };
 
     // ## Test that ESC deactivate InputText without closing current Popup (#2321, #787)
-    t = REGISTER_TEST("nav", "nav_esc_popup");
+    t = IM_REGISTER_TEST(e, "nav", "nav_esc_popup");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         ImGuiTestGenericVars& vars = ctx->GenericVars;
@@ -2705,7 +758,7 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
     };
 
     // ## Test that Alt toggle layer, test that AltGr doesn't.
-    t = REGISTER_TEST("nav", "nav_menu_alt_key");
+    t = IM_REGISTER_TEST(e, "nav", "nav_menu_alt_key");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         ImGui::Begin("Test window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_MenuBar);
@@ -2736,7 +789,7 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
     };
 
     // ## Test navigation home and end keys
-    t = REGISTER_TEST("nav", "nav_home_end_keys");
+    t = IM_REGISTER_TEST(e, "nav", "nav_home_end_keys");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         ImGui::SetNextWindowSize(ImVec2(100, 150));
@@ -2774,7 +827,7 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
     };
 
     // ## Test vertical wrap-around in menus/popups
-    t = REGISTER_TEST("nav", "nav_menu_wraparound");
+    t = IM_REGISTER_TEST(e, "nav", "nav_menu_wraparound");
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         ctx->WindowRef("Dear ImGui Demo");
@@ -2788,7 +841,7 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
     };
 
     // ## Test CTRL+TAB window focusing
-    t = REGISTER_TEST("nav", "nav_ctrl_tab_focusing");
+    t = IM_REGISTER_TEST(e, "nav", "nav_ctrl_tab_focusing");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         ImGui::Begin("Window 1", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
@@ -2838,7 +891,7 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
     };
 
     // ## Test NavID restoration during CTRL+TAB focusing
-    t = REGISTER_TEST("nav", "nav_ctrl_tab_nav_id_restore");
+    t = IM_REGISTER_TEST(e, "nav", "nav_ctrl_tab_nav_id_restore");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         ImGui::Begin("Window 1", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
@@ -2891,7 +944,7 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
     };
 
     // ## Test NavID restoration when focusing another window or STOPPING to submit another world
-    t = REGISTER_TEST("nav", "nav_focus_restore");
+    t = IM_REGISTER_TEST(e, "nav", "nav_focus_restore");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         ImGui::Begin("Window 1", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
@@ -2939,7 +992,7 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
     };
 
     // ## Test NavID restoration after activating menu item.
-    t = REGISTER_TEST("nav", "nav_focus_restore_menu");
+    t = IM_REGISTER_TEST(e, "nav", "nav_focus_restore_menu");
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         ImGuiContext& g = *ctx->UiContext;
@@ -2970,7 +1023,7 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
     };
 
     // ## Test navigation in popups that are appended across multiple calls to BeginPopup()/EndPopup(). (#3223)
-    t = REGISTER_TEST("nav", "nav_appended_popup");
+    t = IM_REGISTER_TEST(e, "nav", "nav_appended_popup");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         if (ImGui::BeginMainMenuBar())
@@ -3015,1505 +1068,6 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
 }
 
 //-------------------------------------------------------------------------
-// Tests: Columns
-//-------------------------------------------------------------------------
-
-void RegisterTests_Columns(ImGuiTestEngine* e)
-{
-    ImGuiTest* t = NULL;
-
-    // ## Test number of draw calls used by columns
-    t = REGISTER_TEST("columns", "columns_draw_calls");
-    t->GuiFunc = [](ImGuiTestContext* ctx)
-    {
-        ImGui::Begin("Test window 1", NULL, ImGuiWindowFlags_NoSavedSettings);
-        ImGui::Text("Hello");
-        ImDrawList* draw_list = ImGui::GetWindowDrawList();
-
-        // Test: Single column don't consume draw call.
-        int cmd_count = draw_list->CmdBuffer.Size;
-        ImGui::BeginColumns("columns1", 1);
-        ImGui::Text("AAAA"); ImGui::NextColumn();
-        ImGui::Text("BBBB"); ImGui::NextColumn();
-        ImGui::EndColumns();
-        ImGui::Text("Hello");
-        IM_CHECK_EQ(draw_list->CmdBuffer.Size, cmd_count + 0);
-
-        // Test: Multi-column consume 1 draw call per column + 1 due to conservative overlap expectation (FIXME)
-        ImGui::BeginColumns("columns3", 3);
-        ImGui::Text("AAAA"); ImGui::NextColumn();
-        ImGui::Text("BBBB"); ImGui::NextColumn();
-        ImGui::Text("CCCC"); ImGui::NextColumn();
-        ImGui::EndColumns();
-        ImGui::Text("Hello");
-        IM_CHECK(draw_list->CmdBuffer.Size == cmd_count || draw_list->CmdBuffer.Size == cmd_count + 3 + 1);
-
-        // Test: Unused column don't consume a draw call
-        cmd_count = draw_list->CmdBuffer.Size;
-        ImGui::BeginColumns("columns3", 3);
-        ImGui::Text("AAAA"); ImGui::NextColumn();
-        ImGui::Text("BBBB"); ImGui::NextColumn(); // Leave one column empty
-        ImGui::EndColumns();
-        ImGui::Text("Hello");
-        IM_CHECK(draw_list->CmdBuffer.Size == cmd_count || draw_list->CmdBuffer.Size == cmd_count + 2 + 1);
-
-        // Test: Separators in columns don't consume a draw call
-        cmd_count = draw_list->CmdBuffer.Size;
-        ImGui::BeginColumns("columns3", 3);
-        ImGui::Text("AAAA"); ImGui::NextColumn();
-        ImGui::Text("BBBB"); ImGui::NextColumn();
-        ImGui::Text("CCCC"); ImGui::NextColumn();
-        ImGui::Separator();
-        ImGui::Text("1111"); ImGui::NextColumn();
-        ImGui::Text("2222"); ImGui::NextColumn();
-        ImGui::Text("3333"); ImGui::NextColumn();
-        ImGui::EndColumns();
-        ImGui::Text("Hello");
-        IM_CHECK(draw_list->CmdBuffer.Size == cmd_count || draw_list->CmdBuffer.Size == cmd_count + 3 + 1);
-
-        // Test: Selectables in columns don't consume a draw call
-        cmd_count = draw_list->CmdBuffer.Size;
-        ImGui::BeginColumns("columns3", 3);
-        ImGui::Selectable("AAAA", true, ImGuiSelectableFlags_SpanAllColumns); ImGui::NextColumn();
-        ImGui::Text("BBBB"); ImGui::NextColumn();
-        ImGui::Text("CCCC"); ImGui::NextColumn();
-        ImGui::Selectable("1111", true, ImGuiSelectableFlags_SpanAllColumns); ImGui::NextColumn();
-        ImGui::Text("2222"); ImGui::NextColumn();
-        ImGui::Text("3333"); ImGui::NextColumn();
-        ImGui::EndColumns();
-        ImGui::Text("Hello");
-        IM_CHECK(draw_list->CmdBuffer.Size == cmd_count || draw_list->CmdBuffer.Size == cmd_count + 3 + 1);
-
-        ImGui::End();
-    };
-
-    // ## Test behavior of some Column functions without Columns/BeginColumns.
-    t = REGISTER_TEST("columns", "columns_functions_without_columns");
-    t->TestFunc = [](ImGuiTestContext* ctx)
-    {
-        ImGui::Begin("Test window 1", NULL, ImGuiWindowFlags_NoSavedSettings);
-        IM_CHECK_EQ(ImGui::GetColumnsCount(), 1);
-        IM_CHECK_EQ(ImGui::GetColumnOffset(), 0.0f);
-        IM_CHECK_EQ(ImGui::GetColumnWidth(), ImGui::GetContentRegionAvail().x);
-        IM_CHECK_EQ(ImGui::GetColumnIndex(), 0);
-        ImGui::End();
-    };
-}
-
-#ifdef IMGUI_HAS_TABLE
-
-static ImGuiTableColumn* HelperTableFindColumnByName(ImGuiTable* table, const char* name)
-{
-    for (int i = 0; i < table->Columns.size(); i++)
-        if (strcmp(ImGui::TableGetColumnName(table, i), name) == 0)
-            return &table->Columns[i];
-    return NULL;
-}
-
-static void HelperTableSubmitCells(int count_w, int count_h)
-{
-    for (int line = 0; line < count_h; line++)
-    {
-        ImGui::TableNextRow();
-        for (int column = 0; column < count_w; column++)
-        {
-            if (!ImGui::TableSetColumnIndex(column))
-                continue;
-            Str16f label("%d,%d", line, column);
-            //ImGui::TextUnformatted(label.c_str());
-            ImGui::Button(label.c_str(), ImVec2(-FLT_MIN, 0.0f));
-        }
-    }
-}
-
-// columns_desc = "WWW", "FFW", "FAA" etc.
-static void HelperTableWithResizingPolicies(const char* table_id, ImGuiTableFlags table_flags, const char* columns_desc)
-{
-    table_flags |= ImGuiTableFlags_Resizable | ImGuiTableFlags_Hideable | ImGuiTableFlags_Reorderable | ImGuiTableFlags_Borders | ImGuiTableFlags_NoSavedSettings;
-
-    int columns_count = (int)strlen(columns_desc);
-    IM_ASSERT(columns_count < 26); // Because we are using alphabetical letters for names
-    if (!ImGui::BeginTable(table_id, columns_count, table_flags))
-        return;
-    for (int column = 0; column < columns_count; column++)
-    {
-        const char policy = columns_desc[column];
-        ImGuiTableColumnFlags column_flags = ImGuiTableColumnFlags_None;
-        if      (policy >= 'a' && policy <= 'z') { column_flags |= ImGuiTableColumnFlags_DefaultHide; }
-        if      (policy == 'f' || policy == 'F') { column_flags |= ImGuiTableColumnFlags_WidthFixed; }
-        else if (policy == 'w' || policy == 'W') { column_flags |= ImGuiTableColumnFlags_WidthStretch; }
-        else if (policy == 'a' || policy == 'A') { column_flags |= ImGuiTableColumnFlags_WidthAlwaysAutoResize; }
-        else IM_ASSERT(0);
-        ImGui::TableSetupColumn(Str16f("%c%d", policy, column + 1).c_str(), column_flags);
-    }
-    ImFont* font = FindFontByName("Roboto-Medium.ttf, 16px");
-    if (!font)
-        IM_CHECK_NO_RET(font != NULL);
-    ImGui::PushFont(font);
-    ImGui::TableAutoHeaders();
-    ImGui::PopFont();
-    for (int row = 0; row < 2; row++)
-    {
-        ImGui::TableNextRow();
-        for (int column = 0; column < columns_count; column++)
-        {
-            ImGui::TableSetColumnIndex(column);
-            const char* column_desc = "Unknown";
-            const char policy = columns_desc[column];
-            if (policy == 'F') { column_desc = "Fixed"; }
-            if (policy == 'W') { column_desc = "Stretch"; }
-            if (policy == 'A') { column_desc = "Auto"; }
-            ImGui::Text("%s %d,%d", column_desc, row, column);
-        }
-    }
-    ImGui::EndTable();
-}
-#endif // #ifdef IMGUI_HAS_TABLE
-
-void RegisterTests_Table(ImGuiTestEngine* e)
-{
-#ifdef IMGUI_HAS_TABLE
-    ImGuiTest* t = NULL;
-
-    t = REGISTER_TEST("table", "table_1");
-    t->GuiFunc = [](ImGuiTestContext* ctx)
-    {
-        ImGui::Begin("Test window 1", NULL, ImGuiWindowFlags_NoSavedSettings);
-        if (ImGui::BeginTable("##table0", 4))
-        {
-            ImGui::TableSetupColumn("One", ImGuiTableColumnFlags_WidthFixed, 100.0f, 0);
-            ImGui::TableSetupColumn("Two");
-            ImGui::TableSetupColumn("Three");
-            ImGui::TableSetupColumn("Four");
-            HelperTableSubmitCells(4, 5);
-            ImGuiTable* table = ctx->UiContext->CurrentTable;
-            IM_CHECK_EQ(table->Columns[0].WidthRequest, 100.0f);
-            ImGui::EndTable();
-        }
-        ImGui::End();
-    };
-
-    // ## Table: measure draw calls count
-    // FIXME-TESTS: Resize window width to e.g. ideal size first, then resize down
-    // Important: HelperTableSubmitCells uses Button() with -1 width which will CPU clip text, so we don't have interference from the contents here.
-    t = REGISTER_TEST("table", "table_2_draw_calls");
-    t->GuiFunc = [](ImGuiTestContext* ctx)
-    {
-        ImGui::Begin("Test window 1", NULL, ImGuiWindowFlags_NoSavedSettings);
-        ImDrawList* draw_list = ImGui::GetWindowDrawList();
-
-        ImGui::Text("Text before");
-        {
-            int cmd_size_before = draw_list->CmdBuffer.Size;
-            if (ImGui::BeginTable("##table1", 4, ImGuiTableFlags_NoClipX | ImGuiTableFlags_Borders, ImVec2(400, 0)))
-            {
-                HelperTableSubmitCells(4, 5);
-                ImGui::EndTable();
-            }
-            ImGui::Text("Some text");
-            int cmd_size_after = draw_list->CmdBuffer.Size;
-            IM_CHECK_EQ(cmd_size_before, cmd_size_after);
-        }
-        {
-            int cmd_size_before = draw_list->CmdBuffer.Size;
-            if (ImGui::BeginTable("##table2", 4, ImGuiTableFlags_Borders, ImVec2(400, 0)))
-            {
-                HelperTableSubmitCells(4, 4);
-                ImGui::EndTable();
-            }
-            ImGui::Text("Some text");
-            int cmd_size_after = draw_list->CmdBuffer.Size;
-            IM_CHECK_EQ(cmd_size_before, cmd_size_after);
-        }
-        {
-            int cmd_size_before = draw_list->CmdBuffer.Size;
-            if (ImGui::BeginTable("##table3", 4, ImGuiTableFlags_Borders, ImVec2(400, 0)))
-            {
-                ImGui::TableSetupColumn("One");
-                ImGui::TableSetupColumn("TwoTwo");
-                ImGui::TableSetupColumn("ThreeThreeThree");
-                ImGui::TableSetupColumn("FourFourFourFour");
-                ImGui::TableAutoHeaders();
-                HelperTableSubmitCells(4, 4);
-                ImGui::EndTable();
-            }
-            ImGui::Text("Some text");
-            int cmd_size_after = draw_list->CmdBuffer.Size;
-            IM_CHECK_EQ(cmd_size_before, cmd_size_after);
-        }
-        {
-            int cmd_size_before = draw_list->CmdBuffer.Size;
-            if (ImGui::BeginTable("##table4", 3, ImGuiTableFlags_Borders))
-            {
-                ImGui::TableSetupColumn("One");
-                ImGui::TableSetupColumn("TwoTwo");
-                ImGui::TableSetupColumn("ThreeThreeThree");
-                ImGui::TableAutoHeaders();
-                HelperTableSubmitCells(3, 4);
-                ImGui::EndTable();
-            }
-            ImGui::Text("Some text");
-            int cmd_size_after = draw_list->CmdBuffer.Size;
-            IM_CHECK_EQ(cmd_size_before, cmd_size_after);
-        }
-        ImGui::End();
-    };
-
-    // ## Table: measure equal width
-    t = REGISTER_TEST("table", "table_3_width");
-    t->GuiFunc = [](ImGuiTestContext* ctx)
-    {
-        ImGui::SetNextWindowSize(ImVec2(400, 0), ImGuiCond_Appearing);
-        ImGui::Begin("Test window 1", NULL, ImGuiWindowFlags_NoSavedSettings);
-
-        struct TestCase
-        {
-            int             ColumnCount;
-            ImGuiTableFlags Flags;
-        };
-
-        TestCase test_cases[] =
-        {
-            { 2, ImGuiTableFlags_None },
-            { 3, ImGuiTableFlags_None },
-            { 9, ImGuiTableFlags_None },
-            { 2, ImGuiTableFlags_BordersOuter },
-            { 3, ImGuiTableFlags_BordersOuter },
-            { 9, ImGuiTableFlags_BordersOuter },
-            { 2, ImGuiTableFlags_BordersV },
-            { 3, ImGuiTableFlags_BordersV },
-            { 9, ImGuiTableFlags_BordersV },
-            { 2, ImGuiTableFlags_Borders },
-            { 3, ImGuiTableFlags_Borders },
-            { 9, ImGuiTableFlags_Borders },
-        };
-
-        ImGui::Text("(width variance should be <= 1.0f)");
-        for (int test_case_n = 0; test_case_n < IM_ARRAYSIZE(test_cases); test_case_n++)
-        {
-            const TestCase& tc = test_cases[test_case_n];
-            ImGui::PushID(test_case_n);
-
-            ImGui::Spacing();
-            ImGui::Spacing();
-            if (ImGui::BeginTable("##table", tc.ColumnCount, tc.Flags, ImVec2(0, 0)))
-            {
-                ImGui::TableNextRow();
-
-                float min_w = FLT_MAX;
-                float max_w = -FLT_MAX;
-                for (int n = 0; n < tc.ColumnCount; n++)
-                {
-                    ImGui::TableSetColumnIndex(n);
-                    float w = ImGui::GetContentRegionAvail().x;
-                    min_w = ImMin(w, min_w);
-                    max_w = ImMax(w, max_w);
-                    ImGui::Text("Width %.2f", w);
-                }
-                float w_variance = max_w - min_w;
-                IM_CHECK_LE_NO_RET(w_variance, 1.0f);
-                ImGui::EndTable();
-
-                if (w_variance > 1.0f)
-                    ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(255, 100, 100, 255));
-                ImGui::Text("#%02d: Variance %.2f (min %.2f max %.2f)", test_case_n, w_variance, min_w, max_w);
-                if (w_variance > 1.0f)
-                    ImGui::PopStyleColor();
-            }
-            ImGui::PopID();
-        }
-
-        ImGui::End();
-    };
-
-    // ## Test behavior of some Table functions without BeginTable
-    t = REGISTER_TEST("table", "table_4_functions_without_table");
-    t->TestFunc = [](ImGuiTestContext* ctx)
-    {
-        ImGui::Begin("Test window 1", NULL, ImGuiWindowFlags_NoSavedSettings);
-        IM_CHECK_EQ(ImGui::TableGetColumnIndex(), 0);
-        IM_CHECK_EQ(ImGui::TableSetColumnIndex(42), false);
-        IM_CHECK_EQ(ImGui::TableGetColumnIsVisible(0), false);
-        IM_CHECK_EQ(ImGui::TableGetColumnIsSorted(0), false);
-        IM_CHECK_EQ(ImGui::TableGetColumnName(), (const char*)NULL);
-        ImGui::End();
-    };
-
-    // ## Resizing test-bed (not an actual automated test)
-    t = REGISTER_TEST("table", "table_5_resizing_behaviors");
-    t->GuiFunc = [](ImGuiTestContext* ctx)
-    {
-        ImGui::SetNextWindowPos(ctx->GetMainViewportPos() + ImVec2(20, 5), ImGuiCond_Once);
-        ImGui::SetNextWindowSize(ImVec2(400.0f, 0.0f), ImGuiCond_Once);
-        ImGui::Begin("Test window 1", NULL, ImGuiWindowFlags_NoSavedSettings);
-
-        ImGui::BulletText("OK: Resize from F1| or F2|");    // ok: alter ->WidthRequested of Fixed column. Subsequent columns will be offset.
-        ImGui::BulletText("OK: Resize from F3|");           // ok: alter ->WidthRequested of Fixed column. If active, ScrollX extent can be altered.
-        HelperTableWithResizingPolicies("table1", 0, "FFF");
-        ImGui::Spacing();
-
-        ImGui::BulletText("OK: Resize from F1| or F2|");    // ok: alter ->WidthRequested of Fixed column. If active, ScrollX extent can be altered, but it doesn't make much sense as the Weighted column will always be minimal size.
-        ImGui::BulletText("OK: Resize from W3| (off)");     // ok: no-op (disabled by Rule A)
-        HelperTableWithResizingPolicies("table2", 0, "FFW");
-        ImGui::Spacing();
-
-        ImGui::BulletText("KO: Resize from W1| or W2|");    // FIXME: not implemented
-        ImGui::BulletText("OK: Resize from W3| (off)");     // ok: no-op (disabled by Rule A)
-        HelperTableWithResizingPolicies("table3", 0, "WWWw");
-        ImGui::Spacing();
-
-        // Need F2w + F3w to be stable to avoid moving W1
-        // lock F2L
-        // move F2R
-        // move F3L
-        // lock F3R
-        ImGui::BulletText("OK: Resize from W1| (fwd)");     // ok: forward to resizing |F2. F3 will not move.
-        ImGui::BulletText("KO: Resize from F2| or F3|");    // FIXME should resize F2, F3 and not have effect on W1 (Weighted columns are _before_ the Fixed column).
-        ImGui::BulletText("OK: Resize from F4| (off)");     // ok: no-op (disabled by Rule A)
-        HelperTableWithResizingPolicies("table4", 0, "WFFF");
-        ImGui::Spacing();
-
-        ImGui::BulletText("OK: Resize from W1| (fwd)");     // ok: forward to resizing |F2
-        ImGui::BulletText("OK: Resize from F2| (off)");     // ok: no-op (disabled by Rule A)
-        HelperTableWithResizingPolicies("table5", 0, "WF");
-        ImGui::Spacing();
-
-        ImGui::BulletText("KO: Resize from W1|");           // FIXME
-        ImGui::BulletText("KO: Resize from W2|");           // FIXME
-        HelperTableWithResizingPolicies("table6", 0, "WWF");
-        ImGui::Spacing();
-
-        ImGui::BulletText("KO: Resize from W1|");           // FIXME
-        ImGui::BulletText("KO: Resize from F2|");           // FIXME
-        HelperTableWithResizingPolicies("table7", 0, "WFW");
-        ImGui::Spacing();
-
-        ImGui::BulletText("OK: Resize from W2| (fwd)");     // ok: forward
-        HelperTableWithResizingPolicies("table8", 0, "FWF");
-        ImGui::Spacing();
-
-        ImGui::BulletText("OK: Resize from ");
-        HelperTableWithResizingPolicies("table9", 0, "WWFWW");
-        ImGui::Spacing();
-
-        ImGui::End();
-    };
-    t->TestFunc = [](ImGuiTestContext* ctx)
-    {
-        ImGuiContext& g = *ctx->UiContext;
-        ImGuiTable* table = NULL;
-        ImVector<float> initial_col_size;
-
-        ctx->WindowRef("Test window 1");
-        table = ImGui::FindTableByID(ctx->GetID("table1"));    // Columns: FFF, do not span entire width of the table
-        IM_CHECK(table->ColumnsTotalWidth + 1 < table->InnerWindow->ContentRegionRect.GetWidth());
-        initial_col_size.resize(table->ColumnsCount);
-        for (int column_n = 0; column_n >= 0; column_n = table->Columns[column_n].NextVisibleColumn)
-        {
-            const ImGuiTableColumn* col_curr = &table->Columns[column_n];
-            const ImGuiTableColumn* col_prev = col_curr->PrevVisibleColumn >= 0 ? &table->Columns[col_curr->PrevVisibleColumn] : NULL;
-            const ImGuiTableColumn* col_next = col_curr->NextVisibleColumn >= 0 ? &table->Columns[col_curr->NextVisibleColumn] : NULL;
-            const float width_curr = col_curr->WidthGiven;
-            const float width_prev = col_prev ? col_prev->WidthGiven : 0;
-            const float width_next = col_next ? col_next->WidthGiven : 0;
-            const float width_total = table->ColumnsTotalWidth;
-            initial_col_size[column_n] = col_curr->WidthGiven;              // Save initial column size for next test
-
-            // Resize a column
-            // FIXME-TESTS: higher level helpers.
-            const float move_by = -30.0f;
-            ImGuiID handle_id = ImGui::TableGetColumnResizeID(table, column_n);
-            ctx->ItemDragWithDelta(handle_id, ImVec2(move_by, 0));
-
-            IM_CHECK(!col_prev || col_prev->WidthGiven == width_prev);      // Previous column width does not change
-            IM_CHECK(col_curr->WidthGiven == width_curr + move_by);         // Current column expands
-            IM_CHECK(!col_next || col_next->WidthGiven == width_next);      // Next column width does not change
-            IM_CHECK(table->ColumnsTotalWidth == width_total + move_by);    // Empty space after last column shrinks
-        }
-        IM_CHECK(table->ColumnsTotalWidth + 1 < table->InnerWindow->ContentRegionRect.GetWidth());  // All columns span entire width of the table
-
-        // Test column fitting
-        {
-            // Ensure columns are smaller than their contents due to previous tests on table1
-            for (int column_n = 0; column_n >= 0; column_n = table->Columns[column_n].NextVisibleColumn)
-                IM_CHECK(table->Columns[column_n].WidthGiven < initial_col_size[column_n]);
-
-            // Fit right-most column
-            int column_n = table->RightMostVisibleColumn;
-            const ImGuiTableColumn* col_curr = &table->Columns[column_n];
-
-            // Fit column. ID calculation from BeginTableEx() and TableAutoHeaders()
-            ImGuiID instance_id = (ImGuiID)(table->InstanceCurrent * table->ColumnsCount + column_n);   // pushed by TableAutoHeaders()
-            ImGuiID table_id = ctx->GetIDByInt((int)(table->ID + (ImGuiID)table->InstanceCurrent));     // pushed by BeginTable()
-            ImGuiID column_label_id = ctx->GetID("F3", ctx->GetIDByInt((int)instance_id, table_id));
-            ctx->ItemClick(column_label_id, ImGuiMouseButton_Right);
-            ctx->WindowRef(g.NavWindow);
-            ctx->ItemClick("Size column to fit");
-            IM_CHECK(col_curr->WidthGiven == initial_col_size[column_n]);  // Column restored original size
-
-            // Ensure columns other than right-most one were not affected
-            for (column_n = 0; column_n >= 0 && column_n < table->RightMostVisibleColumn; column_n = table->Columns[column_n].NextVisibleColumn)
-                IM_CHECK(table->Columns[column_n].WidthGiven < initial_col_size[column_n]);
-
-            // Test fitting rest of the columns
-            ctx->ItemClick(column_label_id, ImGuiMouseButton_Right);
-            ctx->WindowRef(g.NavWindow);
-            ctx->ItemClick("Size all columns to fit");
-
-            // Ensure all columns fit to contents
-            for (column_n = 0; column_n >= 0; column_n = table->Columns[column_n].NextVisibleColumn)
-                IM_CHECK(table->Columns[column_n].WidthGiven == initial_col_size[column_n]);
-
-            ctx->WindowRef("Test window 1");                    // Restore previous ref
-        }
-
-        table = ImGui::FindTableByID(ctx->GetID("table2"));     // Columns: FFW, do span entire width of the table
-        IM_CHECK(table->ColumnsTotalWidth + 1 == table->InnerWindow->ContentRegionRect.GetWidth());
-
-        // Iterate visible columns and check existence of resize handles
-        for (int column_n = 0; column_n >= 0; column_n = table->Columns[column_n].NextVisibleColumn)
-        {
-            ImGuiID handle_id = ImGui::TableGetColumnResizeID(table, column_n);
-            if (column_n == table->RightMostVisibleColumn)
-                IM_CHECK(ctx->ItemInfo(handle_id, ImGuiTestOpFlags_NoError) == NULL); // W
-            else
-                IM_CHECK(ctx->ItemInfo(handle_id, ImGuiTestOpFlags_NoError) != NULL); // FF
-        }
-        IM_CHECK(table->ColumnsTotalWidth + 1 == table->InnerWindow->ContentRegionRect.GetWidth());
-    };
-
-    // ## Test Visible flag
-    t = REGISTER_TEST("table", "table_6_clip");
-    t->Flags |= ImGuiTestFlags_NoAutoFinish;
-    t->GuiFunc = [](ImGuiTestContext* ctx)
-    {
-        ImGui::Begin("Test window 1", NULL, ImGuiWindowFlags_NoSavedSettings);
-        if (ImGui::BeginTable("table1", 4, ImGuiTableFlags_ScrollX | ImGuiTableFlags_Borders, ImVec2(200, 200)))
-        {
-            ImGui::TableSetupColumn("One", 0, 80);
-            ImGui::TableSetupColumn("Two", 0, 80);
-            ImGui::TableSetupColumn("Three", 0, 80);
-            ImGui::TableSetupColumn("Four", 0, 80);
-            for (int row = 0; row < 2; row++)
-            {
-                ImGui::TableNextRow();
-                bool visible_0 = ImGui::TableSetColumnIndex(0);
-                ImGui::Text(visible_0 ? "1" : "0");
-                bool visible_1 = ImGui::TableSetColumnIndex(1);
-                ImGui::Text(visible_1 ? "1" : "0");
-                bool visible_2 = ImGui::TableSetColumnIndex(2);
-                ImGui::Text(visible_2 ? "1" : "0");
-                bool visible_3 = ImGui::TableSetColumnIndex(3);
-                ImGui::Text(visible_3 ? "1" : "0");
-                if (ctx->FrameCount > 1)
-                {
-                    IM_CHECK_EQ(visible_0, true);
-                    IM_CHECK_EQ(visible_1, true);
-                    IM_CHECK_EQ(visible_2, true); // Half Visible
-                    IM_CHECK_EQ(visible_3, false);
-                    ctx->Finish();
-                }
-            }
-            ImGui::EndTable();
-        }
-        ImGui::End();
-    };
-
-    // ## Test that BeginTable/EndTable with no contents doesn't fail
-    t = REGISTER_TEST("table", "table_7_empty");
-    t->GuiFunc = [](ImGuiTestContext* ctx)
-    {
-        ImGui::Begin("Test window 1", NULL, ImGuiWindowFlags_NoSavedSettings);
-        ImGui::BeginTable("Table", 3);
-        ImGui::EndTable();
-        ImGui::End();
-    };
-
-    // ## Test default sort order assignment
-    t = REGISTER_TEST("table", "table_8_default_sort_order");
-    t->GuiFunc = [](ImGuiTestContext* ctx)
-    {
-        ImGui::Begin("Test window 1", NULL, ImGuiWindowFlags_NoSavedSettings);
-        ImGui::BeginTable("Table", 4, ImGuiTableFlags_MultiSortable);
-        ImGui::TableSetupColumn("0", ImGuiTableColumnFlags_None);
-        ImGui::TableSetupColumn("1", ImGuiTableColumnFlags_DefaultSort);
-        ImGui::TableSetupColumn("1", ImGuiTableColumnFlags_DefaultSort | ImGuiTableColumnFlags_PreferSortAscending);
-        ImGui::TableSetupColumn("2", ImGuiTableColumnFlags_DefaultSort | ImGuiTableColumnFlags_PreferSortDescending);
-        const ImGuiTableSortSpecs* sort_specs = ImGui::TableGetSortSpecs();
-        ImGui::TableAutoHeaders();
-        IM_CHECK_EQ(sort_specs->SpecsCount, 3);
-        IM_CHECK_EQ(sort_specs->Specs[0].ColumnIndex, 1);
-        IM_CHECK_EQ(sort_specs->Specs[1].ColumnIndex, 2);
-        IM_CHECK_EQ(sort_specs->Specs[2].ColumnIndex, 3);
-        IM_CHECK_EQ(sort_specs->Specs[0].SortDirection, ImGuiSortDirection_Ascending);
-        IM_CHECK_EQ(sort_specs->Specs[1].SortDirection, ImGuiSortDirection_Ascending);
-        IM_CHECK_EQ(sort_specs->Specs[2].SortDirection, ImGuiSortDirection_Descending);
-        //ImGuiTable* table = ctx->UiContext->CurrentTable;
-        //IM_CHECK_EQ(table->SortSpecsCount, 3);
-        ImGui::EndTable();
-        ImGui::End();
-    };
-
-    // ## Test using the maximum of 64 columns (#3058)
-    t = REGISTER_TEST("table", "table_9_max_columns");
-    t->GuiFunc = [](ImGuiTestContext* ctx)
-    {
-        ImGui::Begin("Test window 1", NULL, ImGuiWindowFlags_NoSavedSettings);
-        //ImDrawList* cmd = ImGui::GetWindowDrawList();
-        ImGui::BeginTable("Table", 64);
-        for (int n = 0; n < 64; n++)
-            ImGui::TableSetupColumn("Header");
-        ImGui::TableAutoHeaders();
-        for (int i = 0; i < 10; i++)
-        {
-            ImGui::TableNextRow();
-            for (int n = 0; n < 64; n++)
-            {
-                ImGui::Text("Data");
-                ImGui::TableNextCell();
-            }
-        }
-        ImGui::EndTable();
-        ImGui::End();
-    };
-
-    // ## Test rendering two tables with same ID.
-    t = REGISTER_TEST("table", "table_10_multi_instance");
-    t->GuiFunc = [](ImGuiTestContext* ctx)
-    {
-        ImGui::SetNextWindowSize(ImVec2(300, 400), ImGuiCond_Appearing);
-        ImGui::Begin("Test window 1", NULL, ImGuiWindowFlags_NoSavedSettings);
-
-        const int col_count = 3;
-        for (int i = 0; i < 2; i++)
-        {
-            ImGui::BeginTable("Table", col_count, ImGuiTableFlags_NoSavedSettings|ImGuiTableFlags_Resizable|ImGuiTableFlags_Borders);
-            for (int c = 0; c < col_count; c++)
-                ImGui::TableSetupColumn("Header", c ? ImGuiTableColumnFlags_WidthFixed : ImGuiTableColumnFlags_WidthStretch);
-            ImGui::TableAutoHeaders();
-            for (int r = 0; r < 10; r++)
-            {
-                ImGui::TableNextRow();
-                for (int c = 0; c < col_count; c++)
-                {
-                    // Second table contains larger data, attempting to confuse column sync.
-                    ImGui::Text(i ? "Long Data" : "Data");
-                    ImGui::TableNextCell();
-                }
-            }
-
-            if (ctx->IsFirstFrame() || ctx->GenericVars.Bool1)
-            {
-                // Perform actual test.
-                ImGuiContext& g = *ctx->UiContext;
-                ImGuiTable* table = g.CurrentTable;
-                float column_widths[col_count];
-
-                if (i == 0)
-                {
-                    // Save column widths of table during first iteration.
-                    for (int c = 0; c < col_count; c++)
-                        column_widths[c] = table->Columns[c].WidthGiven;
-                }
-                else
-                {
-                    // Verify column widths match during second iteration.
-                    for (int c = 0; c < col_count; c++)
-                        IM_CHECK(column_widths[c] == table->Columns[c].WidthGiven);
-                }
-            }
-
-            ImGui::EndTable();
-        }
-
-        ctx->GenericVars.Bool1 = false;
-        ImGui::End();
-    };
-    t->TestFunc = [](ImGuiTestContext* ctx)
-    {
-        ctx->WindowRef("Test window 1");
-        ImGuiTable* table = ImGui::FindTableByID(ctx->GetID("Table"));
-
-        for (int instance_no = 0; instance_no < 2; instance_no++)
-        {
-            // Resize a column in the second table. It is not important whether we increase or reduce column size.
-            // Changing direction ensures resize happens around the first third of the table and does not stick to
-            // either side of the table across multiple test runs.
-            float direction = (table->ColumnsTotalWidth * 0.3f) < table->Columns[0].WidthGiven ? -1.0f : 1.0f;
-            float length = 30.0f + 10.0f * instance_no; // Different length for different table instances
-            ctx->ItemDragWithDelta(ImGui::TableGetColumnResizeID(table, 0, instance_no), ImVec2(length * direction, 0.0f));
-            ctx->GenericVars.Bool1 = true;      // Retest again
-            ctx->Yield();                       // Render one more frame to retest column widths
-        }
-    };
-
-    // ## Test two tables in a tooltip continuously expanding tooltip size (#3162)
-    t = REGISTER_TEST("table", "table_two_tables_in_tooltip");
-    t->GuiFunc = [](ImGuiTestContext* ctx)
-    {
-        ImGui::Begin("Bug Report", NULL, ImGuiWindowFlags_NoSavedSettings);
-        ImGui::Button("Test Tooltip");
-        if (ImGui::IsItemHovered())
-        {
-            ImGui::BeginTooltip();
-            for (int i = 0; i < 2; i++)
-                if (ImGui::BeginTable(Str16f("Table%d", i).c_str(), 2))
-                {
-                    ImGui::TableSetupColumn("Header1");
-                    ImGui::TableSetupColumn("Header2");
-                    ImGui::TableAutoHeaders();
-                    ImGui::TableNextRow();
-                    ImGui::TableSetColumnIndex(0);
-                    ImGui::TextUnformatted("Test1");
-                    ImGui::TableSetColumnIndex(1);
-                    ImGui::TextUnformatted("Test2");
-                    ImGui::EndTable();
-                }
-            ctx->GenericVars.Float1 = ImGui::GetCurrentWindow()->Size.x;
-            ImGui::EndTooltip();
-        }
-        ImGui::End();
-    };
-    t->TestFunc = [](ImGuiTestContext* ctx)
-    {
-        ctx->WindowRef("Bug Report");
-        ctx->MouseMove("Test Tooltip");
-        ctx->SleepShort();
-        const float tooltip_width = ctx->GenericVars.Float1;
-        for (int n = 0; n < 3; n++)
-            IM_CHECK_EQ(ctx->GenericVars.Float1, tooltip_width);
-    };
-
-    // ## Test saving and loading table settings.
-    t = REGISTER_TEST("table", "table_settings");
-    struct TableSettingsVars { ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoSavedSettings; bool call_get_sort_specs = false; };
-    t->SetUserDataType<TableSettingsVars>();
-    t->GuiFunc = [](ImGuiTestContext* ctx)
-    {
-        TableSettingsVars& vars = ctx->GetUserData<TableSettingsVars>();
-
-        const int column_count = 4;
-        ImGui::SetNextWindowSize(ImVec2(300, 200), ImGuiCond_Appearing);
-        ImGui::Begin("Table Settings", NULL, vars.window_flags);
-
-        if (ImGui::BeginTable("Table", column_count, ImGuiTableFlags_Resizable | ImGuiTableFlags_Hideable | ImGuiTableFlags_Reorderable | ImGuiTableFlags_Sortable))
-        {
-            ImGui::TableSetupColumn("Col1");
-            ImGui::TableSetupColumn("Col2");
-            ImGui::TableSetupColumn("Col3", ImGuiTableColumnFlags_WidthFixed, 50.0f);
-            ImGui::TableSetupColumn("Col4", ImGuiTableColumnFlags_WidthStretch);
-            ImGui::TableAutoHeaders();
-            if (vars.call_get_sort_specs) // Test against TableGetSortSpecs() having side effects
-                ImGui::TableGetSortSpecs();
-            HelperTableSubmitCells(column_count, 3);
-            ImGui::EndTable();
-        }
-        ImGui::End();
-    };
-    t->TestFunc = [](ImGuiTestContext* ctx)
-    {
-        TableSettingsVars& vars = ctx->GetUserData<TableSettingsVars>();
-
-        ctx->WindowRef("Table Settings");
-        ImGuiID table_id = ctx->GetID("Table");
-        ImGuiTable* table = ImGui::FindTableByID(table_id);
-
-        // Number of tested settings == number of bits used in the mask for iterating all combinations.
-        const int number_of_settings = 6;
-        for (unsigned int mask = 0, end = (1 << number_of_settings); mask < end && !ctx->IsError(); mask++)
-        {
-            vars.call_get_sort_specs = ((mask >> 0) & 1) == 0;
-            const bool col0_sorted_desc = (mask >> 1) & 1;
-            const bool col1_hidden = (mask >> 2) & 1;
-            const bool col0_reordered = (mask >> 3) & 1;
-            const bool col2_resized = (mask >> 4) & 1;
-            const bool col3_resized = (mask >> 5) & 1;
-
-            // Verify that settings were indeed reset.
-            auto check_initial_settings = [](ImGuiTable* table)
-            {
-                IM_CHECK_EQ_NO_RET(table->Columns[0].SortOrder, 0);
-                IM_CHECK_EQ_NO_RET(table->Columns[1].SortOrder, -1);
-                IM_CHECK_EQ_NO_RET(table->Columns[2].SortOrder, -1);
-                IM_CHECK_EQ_NO_RET(table->Columns[3].SortOrder, -1);
-                IM_CHECK_EQ_NO_RET(table->Columns[0].SortDirection, ImGuiSortDirection_Ascending);
-
-                IM_CHECK_EQ_NO_RET(table->Columns[0].IsVisible, true);
-                IM_CHECK_EQ_NO_RET(table->Columns[1].IsVisible, true);
-                IM_CHECK_EQ_NO_RET(table->Columns[2].IsVisible, true);
-                IM_CHECK_EQ_NO_RET(table->Columns[3].IsVisible, true);
-
-                IM_CHECK_EQ_NO_RET(table->Columns[0].DisplayOrder, 0);
-                IM_CHECK_EQ_NO_RET(table->Columns[1].DisplayOrder, 1);
-                IM_CHECK_EQ_NO_RET(table->Columns[2].DisplayOrder, 2);
-                IM_CHECK_EQ_NO_RET(table->Columns[3].DisplayOrder, 3);
-
-                IM_CHECK_EQ_NO_RET(table->Columns[2].WidthGiven, 50.0f);
-                IM_CHECK_EQ_NO_RET(table->Columns[3].WidthStretchWeight, 1.0f);
-            };
-            auto check_modified_settings = [&](ImGuiTable* table)
-            {
-                IM_CHECK_EQ_NO_RET(table->Columns[0].SortOrder, 0);
-                IM_CHECK_EQ_NO_RET(table->Columns[0].SortDirection, col0_sorted_desc ? ImGuiSortDirection_Descending : ImGuiSortDirection_Ascending);
-                IM_CHECK_EQ_NO_RET(table->Columns[1].IsVisible, !col1_hidden);
-                IM_CHECK_EQ_NO_RET(table->Columns[0].DisplayOrder, col0_reordered ? (col1_hidden ? 2 : 1) : 0);
-                IM_CHECK_EQ_NO_RET(table->Columns[1].DisplayOrder, col0_reordered ? 0 : 1);
-                IM_CHECK_EQ_NO_RET(table->Columns[2].DisplayOrder, col0_reordered ? (col1_hidden ? 1 : 2) : 2);
-                IM_CHECK_EQ_NO_RET(table->Columns[2].WidthGiven, (col2_resized ? 60.0f : 50.0f));
-                IM_CHECK_EQ_NO_RET(table->Columns[3].WidthStretchWeight, col3_resized ? 0.2f : 1.0f);
-            };
-
-            // Discard previous table state.
-            table = ImGui::FindTableByID(table_id);
-            if (table)
-                ctx->TableDiscard(table);
-            ctx->Yield(); // Rebuild a table on next frame
-
-            ctx->LogInfo("Permutation %d: col0_sorted_desc:%d col1_hidden:%d col0_reordered:%d col2_resized:%d col3_resized:%d", mask,
-                col0_sorted_desc, col1_hidden, col0_reordered, col2_resized, col3_resized);
-
-            // Check initial settings
-            ctx->LogInfo("1/4 Check initial settings");
-            table = ImGui::FindTableByID(table_id);
-            check_initial_settings(table);
-
-            // Modify table. Each bit in the mask corresponds to a single tested function.
-            // Modify number_of_settings when new tests are added.
-            // Modify expected_test_states adding new test states when new tests are added.
-            if (col0_sorted_desc)
-            {
-                // FIXME-TESTS: Later we should try to simulate inputs at user level
-                table->Columns[0].SortOrder = 0;
-                table->Columns[0].SortDirection = ImGuiSortDirection_Descending;
-            }
-
-            if (col1_hidden)
-            {
-                // FIXME-TESTS: Later we should try to simulate inputs at user level
-                table->Columns[1].IsVisible = table->Columns[1].IsVisibleNextFrame = false;
-                ctx->Yield();   // Must come into effect before reordering.
-            }
-
-            if (col0_reordered)
-            {
-                // FIXME-TESTS: Later we should try to simulate inputs at user level
-                table->ReorderColumn = table->HeldHeaderColumn = 0;
-                table->ReorderColumnDir = +1;
-            }
-
-            if (col2_resized)
-            {
-                // FIXME-TESTS: Later we should try to simulate inputs at user level
-                table->Columns[2].WidthRequest = 60;
-            }
-
-            if (col3_resized)
-            {
-                // FIXME-TESTS: Later we should try to simulate inputs at user level
-                table->Columns[3].WidthStretchWeight = 0.2f;
-            }
-
-            ctx->Yield();
-
-            ctx->LogInfo("2/4 Check modified settings");
-            check_modified_settings(table);
-
-            // Save table settings and destroy the table.
-            table->Flags &= ~ImGuiTableFlags_NoSavedSettings;
-            ImGui::TableSaveSettings(table);
-            const char* all_settings = ImGui::SaveIniSettingsToMemory();
-            Str64f table_ini_section("[Table][0x%08X,%d]", table->ID, table->ColumnsCount);
-            ImVector<char> table_settings;
-            IM_CHECK_NO_RET(ImParseFindIniSection(all_settings, table_ini_section.c_str(), &table_settings) == true);
-            all_settings = NULL;
-
-            // Recreate table with no settings.
-            ctx->TableDiscard(table);
-            ctx->Yield();
-            table = ImGui::FindTableByID(table_id);
-
-            // Verify that settings were indeed reset.
-            ctx->LogInfo("3/4 Check initial settings (after clear)");
-            check_initial_settings(table);
-            if (ctx->IsError())
-                break;
-
-            // Load saved settings.
-            ImGui::LoadIniSettingsFromMemory(table_settings.Data);
-            vars.window_flags = ImGuiWindowFlags_None;              // Allow loading settings for test window and table.
-            ctx->Yield();                                           // Load settings, also a chance to mess up loaded state.
-            vars.window_flags = ImGuiWindowFlags_NoSavedSettings;   // Prevent saving settings for test window and table when testing is done.
-            ctx->Yield();                                           // One more frame, so _NoSavedSettings get saved.
-
-            // Verify that table has settings that were saved.
-            ctx->LogInfo("4/4 Check modified settings (after reload)");
-            check_modified_settings(table);
-        }
-
-        // Ensure table settings do not leak in case of errors.
-        table = ImGui::FindTableByID(table_id);
-        if (table)
-            ctx->TableDiscard(table);
-    };
-
-    // ## Test table sorting behaviors.
-    t = REGISTER_TEST("table", "table_sorting");
-    t->GuiFunc = [](ImGuiTestContext* ctx)
-    {
-        int& table_flags = ctx->GenericVars.Int1;
-        ImGui::SetNextWindowSize(ImVec2(600, 80), ImGuiCond_Appearing); // FIXME-TESTS: Why?
-        ImGui::Begin("Test window", NULL, ImGuiWindowFlags_NoSavedSettings);
-
-        if (ctx->IsFirstFrame())
-        {
-            table_flags = ImGuiTableFlags_Sortable | ImGuiTableFlags_MultiSortable;
-            if (ImGuiTable* table = ImGui::FindTableByID(ImGui::GetID("Table")))
-                ctx->TableDiscard(table);
-        }
-
-        if (ImGui::BeginTable("Table", 6, table_flags))
-        {
-            ImGui::TableSetupColumn("Default");
-            ImGui::TableSetupColumn("PreferSortAscending", ImGuiTableColumnFlags_PreferSortAscending);
-            ImGui::TableSetupColumn("PreferSortDescending", ImGuiTableColumnFlags_PreferSortDescending);
-            ImGui::TableSetupColumn("NoSort", ImGuiTableColumnFlags_NoSort);
-            ImGui::TableSetupColumn("NoSortAscending", ImGuiTableColumnFlags_NoSortAscending);
-            ImGui::TableSetupColumn("NoSortDescending", ImGuiTableColumnFlags_NoSortDescending);
-            ImGui::TableAutoHeaders();
-            HelperTableSubmitCells(6, 1);
-            ImGui::EndTable();
-        }
-        ImGui::End();
-    };
-    t->TestFunc = [](ImGuiTestContext* ctx)
-    {
-        ctx->WindowRef("Test window");
-        ImGuiTable* table = ImGui::FindTableByID(ctx->GetID("Table"));
-        const ImGuiTableSortSpecs* sort_specs = NULL;
-        int& table_flags = ctx->GenericVars.Int1;
-
-        // Clicks a column header, optionally holding a specified modifier key. Returns SortDirection of clicked column.
-        auto click_column_and_get_sort = [&](const char* label, ImGuiKeyModFlags click_mod = ImGuiKeyModFlags_None) -> ImGuiSortDirection
-        {
-            IM_ASSERT(ctx != NULL);
-            IM_ASSERT(table != NULL);
-            IM_ASSERT(label != NULL);
-
-            ImGuiTableColumn* column = HelperTableFindColumnByName(table, label);
-            IM_CHECK_RETV(column != NULL, ImGuiSortDirection_None);
-
-            int column_n = table->Columns.index_from_ptr(column);
-            ImGuiID column_header_id = ctx->GetID(label, ctx->GetIDByInt(column_n, ctx->GetIDByInt((int)table->ID))); // FIXME-TESTS: Add helpers
-            if (click_mod != ImGuiKeyModFlags_None)
-                ctx->KeyDownMap(ImGuiKey_COUNT, click_mod);
-            ctx->ItemClick(column_header_id, ImGuiMouseButton_Left);
-            if (click_mod != ImGuiKeyModFlags_None)
-                ctx->KeyUpMap(ImGuiKey_COUNT, click_mod);
-            return column->SortDirection;
-        };
-
-        // Calls ImGui::TableGetSortSpecs() and returns it's result.
-        auto table_get_sort_specs = [](ImGuiTestContext* ctx, ImGuiTable* table)
-        {
-            ImGuiContext& g = *ctx->UiContext;
-            ImSwap(table, g.CurrentTable);
-            const ImGuiTableSortSpecs* sort_specs = ImGui::TableGetSortSpecs();
-            ImSwap(table, g.CurrentTable);
-            return sort_specs;
-        };
-
-        // Table has no default sorting flags. Check for implicit default sorting.
-        sort_specs = table_get_sort_specs(ctx, table);
-        IM_CHECK(sort_specs != NULL);
-        IM_CHECK(sort_specs->SpecsCount == 1);
-        IM_CHECK(sort_specs->ColumnsMask == 0x01);
-        IM_CHECK(sort_specs->Specs[0].ColumnIndex == 0);
-        IM_CHECK(sort_specs->Specs[0].SortOrder == 0);
-        IM_CHECK(sort_specs->Specs[0].SortDirection == ImGuiSortDirection_Ascending);
-
-        IM_CHECK_EQ(click_column_and_get_sort("Default"), ImGuiSortDirection_Descending);   // Sorted implicitly by calling TableGetSortSpecs().
-        IM_CHECK_EQ(click_column_and_get_sort("Default"), ImGuiSortDirection_Ascending);
-        IM_CHECK_EQ(click_column_and_get_sort("PreferSortAscending"), ImGuiSortDirection_Ascending);
-        IM_CHECK_EQ(click_column_and_get_sort("PreferSortAscending"), ImGuiSortDirection_Descending);
-
-        // Not holding shift does not perform multi-sort.
-        sort_specs = table_get_sort_specs(ctx, table);
-        IM_CHECK(sort_specs != NULL);
-        IM_CHECK(sort_specs->SpecsCount == 1);
-
-        // Holding shift includes all sortable columns in multi-sort.
-        IM_CHECK_EQ(click_column_and_get_sort("PreferSortDescending", ImGuiKeyModFlags_Shift), ImGuiSortDirection_Descending);
-        IM_CHECK_EQ(click_column_and_get_sort("PreferSortDescending", ImGuiKeyModFlags_Shift), ImGuiSortDirection_Ascending);
-        sort_specs = table_get_sort_specs(ctx, table);
-        IM_CHECK(sort_specs && sort_specs->SpecsCount == 2);
-
-        IM_CHECK_EQ(click_column_and_get_sort("NoSort", ImGuiKeyModFlags_Shift), ImGuiSortDirection_Ascending);
-        IM_CHECK_EQ(click_column_and_get_sort("NoSort", ImGuiKeyModFlags_Shift), ImGuiSortDirection_Ascending);
-        sort_specs = table_get_sort_specs(ctx, table);
-        IM_CHECK(sort_specs&& sort_specs->SpecsCount == 2);
-
-        IM_CHECK_EQ(click_column_and_get_sort("NoSortAscending", ImGuiKeyModFlags_Shift), ImGuiSortDirection_Descending);
-        IM_CHECK_EQ(click_column_and_get_sort("NoSortAscending", ImGuiKeyModFlags_Shift), ImGuiSortDirection_Descending);
-        IM_CHECK_EQ(click_column_and_get_sort("NoSortDescending", ImGuiKeyModFlags_Shift), ImGuiSortDirection_Ascending);
-        IM_CHECK_EQ(click_column_and_get_sort("NoSortDescending", ImGuiKeyModFlags_Shift), ImGuiSortDirection_Ascending);
-        sort_specs = table_get_sort_specs(ctx, table);
-        IM_CHECK(sort_specs&& sort_specs->SpecsCount == 4);
-
-        // Disable multi-sort and ensure there is only one sorted column left.
-        table_flags = ImGuiTableFlags_Sortable;
-        ctx->Yield();
-        sort_specs = table_get_sort_specs(ctx, table);
-        IM_CHECK(sort_specs != NULL);
-        IM_CHECK(sort_specs->SpecsCount == 1);
-
-        // Disable sorting completely. Sort spec should not be returned.
-        table_flags = ImGuiTableFlags_None;
-        ctx->Yield();
-        sort_specs = table_get_sort_specs(ctx, table);
-        IM_CHECK(sort_specs == NULL);
-    };
-
-    // ## Test freezing of table rows and columns.
-    t = REGISTER_TEST("table", "table_freezing");
-    t->GuiFunc = [](ImGuiTestContext* ctx)
-    {
-        ImGui::SetNextWindowSize(ImVec2(300, 200), ImGuiCond_Appearing);
-        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
-        memset(ctx->GenericVars.BoolArray, 0, sizeof(ctx->GenericVars.BoolArray));
-        const int column_count = 15;
-        ImGuiTableFlags flags = ImGuiTableFlags_Scroll | ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg | ctx->GenericVars.Int1;
-        if (ImGui::BeginTable("Table", column_count, flags))
-        {
-            for (int i = 0; i < column_count; i++)
-                ImGui::TableSetupColumn(Str16f("Col%d", i).c_str());
-            ImGui::TableAutoHeaders();
-
-            for (int line = 0; line < 15; line++)
-            {
-                ImGui::TableNextRow();
-                for (int column = 0; column < column_count; column++)
-                {
-                    if (!ImGui::TableSetColumnIndex(column))
-                        continue;
-                    ImGui::Text(Str16f("%d,%d", line, column).c_str(), ImVec2(40.0f, 20.0f));
-                    if (line < 5)
-                        ctx->GenericVars.BoolArray[line] |= ImGui::IsItemVisible();
-                }
-            }
-
-            ImGui::EndTable();
-        }
-        ImGui::End();
-    };
-    t->TestFunc = [](ImGuiTestContext* ctx)
-    {
-        ctx->WindowRef("Test Window");
-        ImGuiTable* table = ImGui::FindTableByID(ctx->GetID("Table"));
-        ctx->WindowRef(table->InnerWindow);
-
-        // Reset scroll, if any.
-        ctx->ScrollToX(0.0f);
-        ctx->ScrollToY(0.0f);
-        ctx->Yield();
-
-        // No initial freezing.
-        IM_CHECK(table->FreezeColumnsRequest == 0);
-        IM_CHECK(table->FreezeColumnsCount == 0);
-        IM_CHECK(table->FreezeRowsRequest == 0);
-        IM_CHECK(table->FreezeRowsCount == 0);
-
-        // First five columns and rows are visible at the start.
-        for (int i = 0; i < 5; i++)
-        {
-            IM_CHECK_EQ(table->Columns[i].IsClipped, false);
-            IM_CHECK_EQ(ctx->GenericVars.BoolArray[i], true);
-        }
-
-        // Scroll to the bottom-right of the table.
-        ctx->ScrollToX(table->InnerWindow->ScrollMax.x);
-        ctx->ScrollToY(table->InnerWindow->ScrollMax.y);
-        ctx->Yield();
-
-        // First five columns and rows are no longer visible
-        for (int i = 0; i < 5; i++)
-        {
-            IM_CHECK_EQ(table->Columns[i].IsClipped, true);
-            IM_CHECK_EQ(ctx->GenericVars.BoolArray[i], false);
-        }
-
-        // Test row freezing.
-        for (int freeze_count = 1; freeze_count <= 3; freeze_count++)
-        {
-            ctx->GenericVars.Int1 = ImGuiTableFlags_ScrollFreezeTopRow * freeze_count;
-            IM_ASSERT((ctx->GenericVars.Int1 & ~ImGuiTableFlags_ScrollFreezeRowsMask_) == 0); // Make sure we don't overflow
-            ctx->Yield();
-            IM_CHECK(table->FreezeRowsRequest == freeze_count);
-            IM_CHECK(table->FreezeRowsCount == freeze_count);
-
-            // Test whether frozen rows are visible. First row is headers.
-            if (freeze_count >= 1)
-                IM_CHECK(table->IsUsingHeaders == true);
-
-            // Other rows are content.
-            if (freeze_count >= 2)
-            {
-                for (int row_n = 0; row_n < 3; row_n++)
-                    IM_CHECK_EQ(ctx->GenericVars.BoolArray[row_n], (row_n < freeze_count - 1));
-            }
-        }
-
-        // Test column freezing.
-        for (int freeze_count = 1; freeze_count <= 3; freeze_count++)
-        {
-            ctx->GenericVars.Int1 = ImGuiTableFlags_ScrollFreezeLeftColumn * freeze_count;
-            IM_ASSERT((ctx->GenericVars.Int1 & ~ImGuiTableFlags_ScrollFreezeColumnsMask_) == 0); // Make sure we don't overflow
-            ctx->Yield();
-            IM_CHECK(table->FreezeColumnsRequest == freeze_count);
-            IM_CHECK(table->FreezeColumnsCount == freeze_count);
-
-            // Test whether frozen columns are visible.
-            for (int column_n = 0; column_n < 4; column_n++)
-                IM_CHECK_EQ(table->Columns[column_n].IsClipped, !(column_n < freeze_count));
-        }
-    };
-#endif // #ifdef IMGUI_HAS_TABLE
-}
-
-//-------------------------------------------------------------------------
-// Tests: Docking
-//-------------------------------------------------------------------------
-
-void RegisterTests_Docking(ImGuiTestEngine* e)
-{
-#ifdef IMGUI_HAS_DOCK
-    ImGuiTest* t = NULL;
-
-    // FIXME-TESTS
-    // - Dock window A+B into Dockspace
-    // - Drag/extract dock node (will create new node)
-    // - Check that new dock pos/size are right
-
-    t = REGISTER_TEST("docking", "docking_basic_1");
-    t->GuiFunc = [](ImGuiTestContext* ctx)
-    {
-        ImGuiTestGenericVars& vars = ctx->GenericVars;
-
-        ImGuiID ids[3];
-        ImGui::Begin("AAAA", NULL, ImGuiWindowFlags_NoSavedSettings);
-        ids[0] = ImGui::GetWindowDockID();
-        ImGui::Text("This is AAAA");
-        ImGui::End();
-
-        ImGui::Begin("BBBB", NULL, ImGuiWindowFlags_NoSavedSettings);
-        ids[1] = ImGui::GetWindowDockID();
-        ImGui::Text("This is BBBB");
-        ImGui::End();
-
-        ImGui::Begin("CCCC", NULL, ImGuiWindowFlags_NoSavedSettings);
-        ids[2] = ImGui::GetWindowDockID();
-        ImGui::Text("This is CCCC (longer)");
-        ImGui::End();
-
-        if (ctx->FrameCount == 1)
-        {
-            IM_CHECK(ctx->DockIdIsUndockedOrStandalone(ids[0]));
-            IM_CHECK(ctx->DockIdIsUndockedOrStandalone(ids[1]));
-            IM_CHECK(ctx->DockIdIsUndockedOrStandalone(ids[2]));
-        }
-        if (ctx->FrameCount == 11)
-        {
-            IM_CHECK(vars.DockId != (ImGuiID)0);
-            IM_CHECK(ids[0] == vars.DockId);
-            IM_CHECK(ids[0] == ids[1] && ids[0] == ids[2]);
-        }
-    };
-    t->TestFunc = [](ImGuiTestContext* ctx)
-    {
-        ImGuiTestGenericVars& vars = ctx->GenericVars;
-        ctx->DockMultiClear("AAAA", "BBBB", "CCCC", NULL);
-        ctx->YieldUntil(10);
-        vars.DockId = ctx->DockMultiSetupBasic(0, "AAAA", "BBBB", "CCCC", NULL);
-        ctx->YieldUntil(20);
-    };
-
-    // ## Test SetNextWindowDockID() api
-    t = REGISTER_TEST("docking", "docking_basic_set_next_api");
-    t->Flags |= ImGuiTestFlags_NoAutoFinish;
-    t->GuiFunc = [](ImGuiTestContext* ctx)
-    {
-        ImGuiTestGenericVars& vars = ctx->GenericVars;
-
-        if (vars.Id == 0)
-            vars.Id = ImGui::DockContextGenNodeID(ctx->UiContext);
-
-        ImGui::SetNextWindowDockID(vars.Id, ImGuiCond_Always);
-        ImGui::Begin("AAAA", NULL, ImGuiWindowFlags_NoSavedSettings);
-        IM_CHECK_EQ(vars.Id, ImGui::GetWindowDockID());
-        ImGui::Text("This is AAAA");
-        ImGui::End();
-
-        ImGui::SetNextWindowDockID(vars.Id, ImGuiCond_Always);
-        ImGui::Begin("BBBB", NULL, ImGuiWindowFlags_NoSavedSettings);
-        IM_CHECK_EQ(vars.Id, ImGui::GetWindowDockID());
-        ImGui::Text("This is BBBB");
-        ImGui::End();
-
-        if (ctx->FrameCount == 3)
-            ctx->Finish();
-    };
-
-    // ## Test that initial size of new dock node is based on visible/focused window
-    // FIXME-DOCK FIXME-WIP: This is not actually reliable yet (see stashes around August 2019)
-#if 0
-    t = REGISTER_TEST("docking", "docking_basic_initial_node_size");
-    t->Flags |= ImGuiTestFlags_NoAutoFinish;
-    t->GuiFunc = [](ImGuiTestContext* ctx)
-    {
-        ImGuiTestGenericVars& vars = ctx->GenericVars;
-
-        if (vars.Id == 0)
-            vars.Id = ImGui::DockContextGenNodeID(ctx->UiContext);
-
-        ImGuiWindow* window_a = ImGui::FindWindowByName("AAAA");
-        ImGuiWindow* window_b = ImGui::FindWindowByName("BBBB");
-
-        ImGui::SetNextWindowDockID(vars.Id, ImGuiCond_Appearing);
-        ImGui::Begin("AAAA", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
-        IM_CHECK_EQ(vars.Id, ImGui::GetWindowDockID());
-        ImGui::Text("This is AAAA");
-        ImGui::End();
-
-        ImGui::SetNextWindowDockID(vars.Id, ImGuiCond_Appearing);
-        ImGui::Begin("BBBB", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
-        IM_CHECK_EQ(vars.Id, ImGui::GetWindowDockID());
-        ImGui::Text("This is BBBB... longer!");
-        ImGui::End();
-
-        if (ctx->FrameCount == 3)
-        {
-            // If the node is (200,200) here: this is the size setup by DockMultiSetupBasic() in a previous test,
-            // and we have a side-effect/leak from a previous host window.
-            ImGuiDockNode* node = window_b->DockNode;
-            IM_CHECK(window_a->DockNode == window_b->DockNode);
-            IM_CHECK(node->VisibleWindow == window_b);              // BBBB is visible
-            IM_CHECK_GE(node->Size.x, window_b->ContentSize.x);     // Therefore we expect node to be fitting BBBB
-            IM_CHECK_GE(node->Size.y, window_b->ContentSize.y);
-            ctx->Finish();
-        }
-    };
-#endif
-
-    // ## Test that docking into a parent node forwarding docking into the central node or last focused node
-    t = REGISTER_TEST("docking", "docking_into_parent_node");
-    t->Flags |= ImGuiTestFlags_NoAutoFinish;
-    t->GuiFunc = [](ImGuiTestContext* ctx)
-    {
-        ImGuiTestGenericVars& vars = ctx->GenericVars;
-
-        ImGuiID dockspace_id = ImHashStr("Dockspace");
-
-        if (ctx->IsFirstFrame())
-        {
-            ImGui::DockBuilderRemoveNode(dockspace_id);
-            ImGui::DockBuilderDockWindow("AAAA", 0);
-            ImGui::DockBuilderDockWindow("BBBB", 0);
-        }
-        if (ctx->FrameCount == 2)
-        {
-            ImGui::DockBuilderSplitNode(dockspace_id, ImGuiDir_Left, 0.5f, &vars.IdArray[0], &vars.IdArray[1]);
-            IM_CHECK(vars.IdArray[0] != 0 && vars.IdArray[1]);
-            ImGui::DockBuilderDockWindow("BBBB", dockspace_id);
-            ImGuiWindow* window = ImGui::FindWindowByName("BBBB");
-            IM_CHECK(window->DockId != dockspace_id);
-            IM_CHECK(window->DockId == vars.IdArray[1]);
-        }
-
-        ImGui::Begin("AAAA", NULL, ImGuiWindowFlags_NoSavedSettings);
-        ImGui::DockSpace(dockspace_id);
-        ImGui::End();
-
-        ImGui::Begin("BBBB", NULL, ImGuiWindowFlags_NoSavedSettings);
-        ImGui::End();
-
-        if (ctx->FrameCount == 10)
-            ctx->Finish();
-    };
-
-    // ## Test that ConfigDockingTabBarOnSingleWindows transitions doesn't break window size.
-    t = REGISTER_TEST("docking", "docking_auto_nodes_size");
-    t->GuiFunc = [](ImGuiTestContext* ctx)
-    {
-        const ImVec2 expected_sz = ImVec2(200, 200);
-        if (ctx->FrameCount == 0)
-        {
-            ImGui::SetNextWindowDockID(0);
-            ImGui::SetNextWindowSize(expected_sz);
-        }
-        ImGui::Begin("AAAA", NULL, ImGuiWindowFlags_NoSavedSettings);
-        ImGui::Text("This is AAAA");
-        const ImVec2 actual_sz = ImGui::GetWindowSize();
-        if (ctx->FrameCount >= 0)
-            IM_CHECK_EQ(actual_sz, expected_sz);
-        ImGui::End();
-    };
-    t->TestFunc = [](ImGuiTestContext* ctx)
-    {
-        bool backup_cfg = ctx->UiContext->IO.ConfigDockingAlwaysTabBar;
-        ctx->LogDebug("ConfigDockingAlwaysTabBar = false");
-        ctx->UiContext->IO.ConfigDockingAlwaysTabBar = false;
-        ctx->YieldFrames(4);
-        ctx->LogDebug("ConfigDockingAlwaysTabBar = true");
-        ctx->UiContext->IO.ConfigDockingAlwaysTabBar = true;
-        ctx->YieldFrames(4);
-        ctx->LogDebug("ConfigDockingAlwaysTabBar = false");
-        ctx->UiContext->IO.ConfigDockingAlwaysTabBar = false;
-        ctx->YieldFrames(4);
-        ctx->UiContext->IO.ConfigDockingAlwaysTabBar = backup_cfg;
-    };
-
-    // ## Test that undocking a whole _node_ doesn't lose/reset size
-    t = REGISTER_TEST("docking", "docking_undock_from_dockspace_size");
-    t->GuiFunc = [](ImGuiTestContext* ctx)
-    {
-        ImGuiID dockspace_id = ctx->GetID("/Test Window/Dockspace");
-        if (ctx->IsFirstFrame())
-        {
-            ImGui::DockBuilderRemoveNode(dockspace_id);
-            ImGui::DockBuilderAddNode(dockspace_id, ImGuiDockNodeFlags_DockSpace);
-            ImGui::DockBuilderDockWindow("AAAA", dockspace_id);
-            ImGui::DockBuilderDockWindow("BBBB", dockspace_id);
-        }
-
-        ImGui::SetNextWindowSize(ImVec2(500, 500));
-        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
-        ImGui::DockSpace(dockspace_id);
-        ImGui::End();
-
-        ImGui::Begin("AAAA", NULL, ImGuiWindowFlags_NoSavedSettings);
-        ImGui::Text("This is AAAA");
-        ImGui::End();
-
-        ImGui::Begin("BBBB", NULL, ImGuiWindowFlags_NoSavedSettings);
-        ImGui::Text("This is BBBB");
-        ImGui::End();
-    };
-    t->TestFunc = [](ImGuiTestContext* ctx)
-    {
-        ImGuiID dockspace_id = ctx->GetID("/Test Window/Dockspace");
-
-        ImGuiWindow* window_a = ImGui::FindWindowByName("AAAA");
-        ImGuiWindow* window_b = ImGui::FindWindowByName("BBBB");
-        ImVec2 window_a_size_old = window_a->Size;
-        ImVec2 window_b_size_old = window_b->Size;
-        IM_CHECK_EQ(window_a->DockNode->ID, dockspace_id);
-
-        ctx->UndockNode(dockspace_id);
-
-        IM_CHECK(window_a->DockNode != NULL);
-        IM_CHECK(window_b->DockNode != NULL);
-        IM_CHECK_EQ(window_a->DockNode, window_b->DockNode);
-        IM_CHECK_NE(window_a->DockNode->ID, dockspace_id); // Actually undocked?
-        ImVec2 window_a_size_new = window_a->Size;
-        ImVec2 window_b_size_new = window_b->Size;
-        IM_CHECK_EQ(window_a->DockNode->Size, window_b_size_new);
-        IM_CHECK_EQ(window_a_size_old, window_a_size_new);
-        IM_CHECK_EQ(window_b_size_old, window_b_size_new);
-    };
-
-    // ## Test merging windows by dragging them.
-    t = REGISTER_TEST("docking", "docking_drag_merge");
-    t->GuiFunc = [](ImGuiTestContext* ctx)
-    {
-        ImGui::Begin("AAAA", NULL, ImGuiWindowFlags_NoSavedSettings);
-        ImGui::Text("This is AAAA");
-        ImGui::End();
-
-        ImGui::Begin("BBBB", NULL, ImGuiWindowFlags_NoSavedSettings);
-        ImGui::Text("This is BBBB");
-        ImGui::End();
-    };
-    t->TestFunc = [](ImGuiTestContext* ctx)
-    {
-        ImGuiIO& io = ImGui::GetIO();
-        const bool backup_cfg_docking_always_tab_bar = io.ConfigDockingAlwaysTabBar; // FIXME-TESTS: Abstract that as a helper (e.g test case iterator)
-        for (int test_case_n = 0; test_case_n < 2; test_case_n++)
-        {
-            // FIXME-TESTS: Tests doesn't work if already docked
-            // FIXME-TESTS: DockSetMulti takes window_name not ref
-            io.ConfigDockingAlwaysTabBar = (test_case_n == 1);
-            ctx->LogDebug("## TEST CASE %d: with ConfigDockingAlwaysTabBar = %d", test_case_n, io.ConfigDockingAlwaysTabBar);
-
-            ImGuiWindow* window_aaaa = ctx->GetWindowByRef("AAAA");
-            ImGuiWindow* window_bbbb = ctx->GetWindowByRef("BBBB");
-
-            // Init state
-            ctx->DockMultiClear("AAAA", "BBBB", NULL);
-            if (ctx->UiContext->IO.ConfigDockingAlwaysTabBar)
-                IM_CHECK(window_aaaa->DockId != 0 && window_bbbb->DockId != 0 && window_aaaa->DockId != window_bbbb->DockId);
-            else
-                IM_CHECK(window_aaaa->DockId == 0 && window_bbbb->DockId == 0);
-            ctx->WindowResize("/AAAA", ImVec2(200, 200));
-            ctx->WindowMove("/AAAA", ImVec2(100, 100));
-            ctx->WindowResize("/BBBB", ImVec2(200, 200));
-            ctx->WindowMove("/BBBB", ImVec2(200, 200));
-
-            // Dock Once
-            ctx->DockWindowInto("AAAA", "BBBB");
-            IM_CHECK(window_aaaa->DockNode != NULL);
-            IM_CHECK(window_aaaa->DockNode == window_bbbb->DockNode);
-            IM_CHECK_EQ(window_aaaa->DockNode->Pos, ImVec2(200, 200));
-            IM_CHECK_EQ(window_aaaa->Pos, ImVec2(200, 200));
-            IM_CHECK_EQ(window_bbbb->Pos, ImVec2(200, 200));
-            ImGuiID dock_id = window_bbbb->DockId;
-            ctx->Sleep(0.5f);
-
-            {
-                // Undock AAAA, BBBB should still refer/dock to node.
-                ctx->DockMultiClear("AAAA", NULL);
-                IM_CHECK(ctx->DockIdIsUndockedOrStandalone(window_aaaa->DockId));
-                IM_CHECK(window_bbbb->DockId == dock_id);
-
-                // Intentionally move both floating windows away
-                ctx->WindowMove("/AAAA", ImVec2(100, 100));
-                ctx->WindowResize("/AAAA", ImVec2(100, 100));
-                ctx->WindowMove("/BBBB", ImVec2(300, 300));
-                ctx->WindowResize("/BBBB", ImVec2(200, 200)); // Should already the case
-
-                // Dock again (BBBB still refers to dock id, making this different from the first docking)
-                ctx->DockWindowInto("/AAAA", "/BBBB", ImGuiDir_None);
-                IM_CHECK_EQ(window_aaaa->DockId, dock_id);
-                IM_CHECK_EQ(window_bbbb->DockId, dock_id);
-                IM_CHECK_EQ(window_aaaa->Pos, ImVec2(300, 300));
-                IM_CHECK_EQ(window_bbbb->Pos, ImVec2(300, 300));
-                IM_CHECK_EQ(window_aaaa->Size, ImVec2(200, 200));
-                IM_CHECK_EQ(window_bbbb->Size, ImVec2(200, 200));
-                IM_CHECK_EQ(window_aaaa->DockNode->Pos, ImVec2(300, 300));
-                IM_CHECK_EQ(window_aaaa->DockNode->Size, ImVec2(200, 200));
-            }
-
-            {
-                // Undock AAAA, BBBB should still refer/dock to node.
-                ctx->DockMultiClear("AAAA", NULL);
-                IM_CHECK(ctx->DockIdIsUndockedOrStandalone(window_aaaa->DockId));
-                IM_CHECK_EQ(window_bbbb->DockId, dock_id);
-
-                // Intentionally move both floating windows away
-                ctx->WindowMove("/AAAA", ImVec2(100, 100));
-                ctx->WindowMove("/BBBB", ImVec2(200, 200));
-
-                // Dock on the side (BBBB still refers to dock id, making this different from the first docking)
-                ctx->DockWindowInto("/AAAA", "/BBBB", ImGuiDir_Left);
-                IM_CHECK_EQ(window_aaaa->DockNode->ParentNode->ID, dock_id);
-                IM_CHECK_EQ(window_bbbb->DockNode->ParentNode->ID, dock_id);
-                IM_CHECK_EQ(window_aaaa->DockNode->ParentNode->Pos, ImVec2(200, 200));
-                IM_CHECK_EQ(window_aaaa->Pos, ImVec2(200, 200));
-                IM_CHECK_GT(window_bbbb->Pos.x, window_aaaa->Pos.x);
-                IM_CHECK_EQ(window_bbbb->Pos.y, 200);
-            }
-        }
-        io.ConfigDockingAlwaysTabBar = backup_cfg_docking_always_tab_bar;
-    };
-
-    // ## Test setting focus on a docked window, and setting focus on a specific item inside. (#2453)
-    // ## In particular, while the selected tab is locked down early (causing a frame delay in the tab selection),
-    // ## the window that has requested focus should allow items to be submitted (SkipItems==false) during its hidden frame,
-    // ## mimicking the behavior of any newly appearing window.
-    t = REGISTER_TEST("docking", "docking_focus_1");
-    t->Flags |= ImGuiTestFlags_NoAutoFinish;
-    t->GuiFunc = [](ImGuiTestContext* ctx)
-    {
-        ImGuiTestGenericVars& vars = ctx->GenericVars;
-        if (ctx->FrameCount == 0)
-            vars.DockId = ctx->DockMultiSetupBasic(0, "AAAA", "BBBB", "CCCC", NULL);
-
-        if (ctx->FrameCount == 10)  ImGui::SetNextWindowFocus();
-        ImGui::Begin("AAAA", NULL, ImGuiWindowFlags_NoSavedSettings);
-        if (ctx->FrameCount == 10)  IM_CHECK(ImGui::IsWindowFocused());
-        if (ctx->FrameCount == 10)  ImGui::SetKeyboardFocusHere();
-        ImGui::InputText("Input", vars.Str1, IM_ARRAYSIZE(vars.Str1));
-        if (ctx->FrameCount == 10)  IM_CHECK(!ImGui::IsItemActive());
-        if (ctx->FrameCount == 11)  IM_CHECK(ImGui::IsItemActive());
-        ImGui::End();
-
-        if (ctx->FrameCount == 50)  ImGui::SetNextWindowFocus();
-        ImGui::Begin("BBBB", NULL, ImGuiWindowFlags_NoSavedSettings);
-        if (ctx->FrameCount == 50)  IM_CHECK(ImGui::IsWindowFocused());
-        if (ctx->FrameCount == 50)  ImGui::SetKeyboardFocusHere();
-        ImGui::InputText("Input", vars.Str2, IM_ARRAYSIZE(vars.Str2));
-        if (ctx->FrameCount == 50)  IM_CHECK(!ImGui::IsItemActive());
-        if (ctx->FrameCount == 51)  IM_CHECK(ImGui::IsItemActive());
-        ImGui::End();
-
-        if (ctx->FrameCount == 60)
-            ctx->Finish();
-    };
-
-    // ## Test window undocking.
-    t = REGISTER_TEST("docking", "docking_undock_tabs_and_nodes");
-    t->GuiFunc = [](ImGuiTestContext* ctx)
-    {
-        ImGui::SetNextWindowSize(ImVec2(300, 200), ImGuiCond_Appearing);
-        ImGui::Begin("Window 1", NULL, ImGuiWindowFlags_NoSavedSettings);
-        ImGui::End();
-
-        ImGui::SetNextWindowSize(ImVec2(300, 200), ImGuiCond_Appearing);
-        ImGui::Begin("Window 2", NULL, ImGuiWindowFlags_NoSavedSettings);
-        ImGui::End();
-    };
-    t->TestFunc = [](ImGuiTestContext* ctx)
-    {
-        ImGuiWindow* window1 = ctx->GetWindowByRef("Window 1");
-        ImGuiWindow* window2 = ctx->GetWindowByRef("Window 2");
-        ImGuiWindow* demo_window = ctx->GetWindowByRef("Dear ImGui Demo");
-        ctx->DockMultiClear("Window 1", "Window 2", "Dear ImGui Demo", NULL);
-
-        // Test undocking from tab.
-        ctx->DockWindowInto("Window 1", "Window 2");
-        IM_CHECK(window1->DockNode != NULL);
-        IM_CHECK(window1->DockNode == window2->DockNode);
-        ctx->UndockWindow("Window 1");
-        IM_CHECK(window1->DockNode == NULL || ctx->DockIdIsUndockedOrStandalone(window1->DockNode->ID));
-        IM_CHECK(window2->DockNode == NULL || ctx->DockIdIsUndockedOrStandalone(window2->DockNode->ID));
-
-        // Ensure demo window is visible.
-        ctx->WindowMoveToMakePosVisible(demo_window, demo_window->Pos);
-        ctx->WindowMoveToMakePosVisible(demo_window, demo_window->Pos + demo_window->Size);
-
-        // Test undocking from collapse button.
-        for (int direction = 0; direction < ImGuiDir_COUNT; direction++)
-        {
-            // Test undocking with one and two windows.
-            for (int n = 0; n < 2; n++)
-            {
-                ctx->DockMultiClear("Window 1", "Window 2", "Dear ImGui Demo", NULL);
-                ctx->Yield();
-                ctx->DockWindowInto("Window 1", "Dear ImGui Demo", (ImGuiDir)direction);
-                if (n)
-                    ctx->DockWindowInto("Window 2", "Window 1");
-                IM_CHECK(demo_window->DockNode != NULL);
-                IM_CHECK(demo_window->DockNode->ParentNode != NULL);
-                IM_CHECK(window1->DockNode != NULL);
-                if (n)
-                {
-                    IM_CHECK(window1->DockNode == window2->DockNode);
-                    IM_CHECK(window1->DockNode->ParentNode == window2->DockNode->ParentNode);
-                }
-                IM_CHECK(window1->DockNode->ParentNode == demo_window->DockNode->ParentNode);
-                ctx->UndockNode(window1->DockNode->ID);
-                IM_CHECK(window1->DockNode != NULL);
-                if (n)
-                {
-                    IM_CHECK(window1->DockNode == window2->DockNode);
-                    IM_CHECK(window2->DockNode->ParentNode == NULL);
-                }
-                IM_CHECK(window1->DockNode->ParentNode == NULL);
-            }
-        }
-    };
-#endif
-}
-
-//-------------------------------------------------------------------------
 // Tests: Draw, ImDrawList
 //-------------------------------------------------------------------------
 
@@ -4552,7 +1106,7 @@ void RegisterTests_DrawList(ImGuiTestEngine* e)
     ImGuiTest* t = NULL;
 
     // ## Test AddCallback()
-    t = REGISTER_TEST("drawlist", "drawlist_callbacks");
+    t = IM_REGISTER_TEST(e, "drawlist", "drawlist_callbacks");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
@@ -4586,7 +1140,7 @@ void RegisterTests_DrawList(ImGuiTestEngine* e)
     };
 
     // ## Test whether splitting/merging draw lists properly retains a texture id.
-    t = REGISTER_TEST("drawlist", "drawlist_splitter_texture_id");
+    t = IM_REGISTER_TEST(e, "drawlist", "drawlist_splitter_texture_id");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
@@ -4616,7 +1170,7 @@ void RegisterTests_DrawList(ImGuiTestEngine* e)
         ImGui::End();
     };
 
-    t = REGISTER_TEST("drawlist", "drawlist_merge_cmd");
+    t = IM_REGISTER_TEST(e, "drawlist", "drawlist_merge_cmd");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         ImGui::SetNextWindowSize(ImVec2(200, 200)); // Make sure our columns aren't clipped
@@ -4654,7 +1208,7 @@ void RegisterTests_DrawList(ImGuiTestEngine* e)
     };
 
     // ## Test VtxOffset
-    t = REGISTER_TEST("drawlist", "drawlist_vtxoffset_basic");
+    t = IM_REGISTER_TEST(e, "drawlist", "drawlist_vtxoffset_basic");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         if (CanTestVtxOffset(ctx) == false)
@@ -4709,7 +1263,7 @@ void RegisterTests_DrawList(ImGuiTestEngine* e)
     };
 
     // ## Test VtxOffset with Splitter, which should generate identical draw call pattern as test without one
-    t = REGISTER_TEST("drawlist", "drawlist_vtxoffset_splitter");
+    t = IM_REGISTER_TEST(e, "drawlist", "drawlist_vtxoffset_splitter");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         if (CanTestVtxOffset(ctx) == false)
@@ -4757,7 +1311,7 @@ void RegisterTests_DrawList(ImGuiTestEngine* e)
     };
 
     // ## Test starting Splitter when VtxOffset != 0
-    t = REGISTER_TEST("drawlist", "drawlist_vtxoffset_splitter_2");
+    t = IM_REGISTER_TEST(e, "drawlist", "drawlist_vtxoffset_splitter_2");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         if (CanTestVtxOffset(ctx) == false)
@@ -4810,7 +1364,7 @@ void RegisterTests_DrawList(ImGuiTestEngine* e)
 
     // ## Test VtxOffset with Splitter with worst case scenario
     // Draw calls are interleaved, one with VtxOffset == 0, next with VtxOffset != 0
-    t = REGISTER_TEST("drawlist", "drawlist_vtxoffset_splitter_draw_call_explosion");
+    t = IM_REGISTER_TEST(e, "drawlist", "drawlist_vtxoffset_splitter_draw_call_explosion");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         if (CanTestVtxOffset(ctx) == false)
@@ -4889,7 +1443,7 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
 
     // ## Test watchdog
 #if 0
-    t = REGISTER_TEST("misc", "misc_watchdog");
+    t = IM_REGISTER_TEST(e, "misc", "misc_watchdog");
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         while (true)
@@ -4898,7 +1452,7 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
 #endif
 
     // ## Test window data garbage collection
-    t = REGISTER_TEST("misc", "misc_gc");
+    t = IM_REGISTER_TEST(e, "misc", "misc_gc");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         // Pretend window is no longer active once we start testing.
@@ -4939,7 +1493,7 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
     };
 
     // ## Test hash functions and ##/### operators
-    t = REGISTER_TEST("misc", "misc_hash_001");
+    t = IM_REGISTER_TEST(e, "misc", "misc_hash_001");
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         // Test hash function for the property we need
@@ -4962,7 +1516,7 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
     };
 
     // ## Test ImVector functions
-    t = REGISTER_TEST("misc", "misc_vector_001");
+    t = IM_REGISTER_TEST(e, "misc", "misc_vector_001");
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         ImVector<int> v;
@@ -4986,7 +1540,7 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
 
     // ## Test ImVector functions
 #ifdef IMGUI_HAS_TABLE
-    t = REGISTER_TEST("misc", "misc_bitarray");
+    t = IM_REGISTER_TEST(e, "misc", "misc_bitarray");
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         ImBitArray<128> v128;
@@ -5012,7 +1566,7 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
 #endif
 
     // ## Test ImPool functions
-    t = REGISTER_TEST("misc", "misc_pool_001");
+    t = IM_REGISTER_TEST(e, "misc", "misc_pool_001");
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         ImPool<ImGuiTabBar> pool;
@@ -5042,7 +1596,7 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
     };
 
     // ## Test behavior of ImParseFormatTrimDecorations
-    t = REGISTER_TEST("misc", "misc_format_parse");
+    t = IM_REGISTER_TEST(e, "misc", "misc_format_parse");
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         // fmt = "blah blah"  -> return fmt
@@ -5085,7 +1639,7 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
     };
 
     // ## Test ImFontAtlas building with overlapping glyph ranges (#2353, #2233)
-    t = REGISTER_TEST("misc", "misc_atlas_build_glyph_overlap");
+    t = IM_REGISTER_TEST(e, "misc", "misc_atlas_build_glyph_overlap");
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         ImFontAtlas atlas;
@@ -5101,7 +1655,7 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
         atlas.Build();
     };
 
-    t = REGISTER_TEST("misc", "misc_atlas_ranges_builder");
+    t = IM_REGISTER_TEST(e, "misc", "misc_atlas_ranges_builder");
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         ImFontGlyphRangesBuilder builder;
@@ -5114,7 +1668,7 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
     };
 
 
-    t = REGISTER_TEST("misc", "misc_repeat_typematic");
+    t = IM_REGISTER_TEST(e, "misc", "misc_repeat_typematic");
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         ctx->LogDebug("Regular repeat delay/rate");
@@ -5147,7 +1701,7 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
     };
 
     // ## Test ImGui::InputScalar() handling overflow for different data types
-    t = REGISTER_TEST("misc", "misc_input_scalar_overflow");
+    t = IM_REGISTER_TEST(e, "misc", "misc_input_scalar_overflow");
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         {
@@ -5249,7 +1803,7 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
     };
 
     // ## Test basic clipboard, test that clipboard is empty on start
-    t = REGISTER_TEST("misc", "misc_clipboard");
+    t = IM_REGISTER_TEST(e, "misc", "misc_clipboard");
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         // By specs, the testing system should provide an empty clipboard (we don't want user clipboard leaking into tests!)
@@ -5265,7 +1819,7 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
 
     // ## Test UTF-8 encoding and decoding.
     // Note that this is ONLY testing encoding/decoding, we are not attempting to display those characters not trying to be i18n compliant
-    t = REGISTER_TEST("misc", "misc_utf8");
+    t = IM_REGISTER_TEST(e, "misc", "misc_utf8");
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         auto check_utf8 = [](const char* utf8, const ImWchar* unicode)
@@ -5444,7 +1998,7 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
     };
 
 #ifdef IMGUI_USE_WCHAR32
-    t = REGISTER_TEST("misc", "misc_utf16_surrogate");
+    t = IM_REGISTER_TEST(e, "misc", "misc_utf16_surrogate");
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         // See: http://www.russellcottrell.com/greek/utilities/SurrogatePairCalculator.htm
@@ -5462,7 +2016,7 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
 #endif
 
     // ## Test ImGuiTextFilter
-    t = REGISTER_TEST("misc", "misc_text_filter");
+    t = IM_REGISTER_TEST(e, "misc", "misc_text_filter");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         static ImGuiTextFilter filter;
@@ -5497,7 +2051,7 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
     };
 
         // ## Visual ImBezierClosestPoint test.
-    t = REGISTER_TEST("misc", "misc_bezier_closest_point");
+    t = IM_REGISTER_TEST(e, "misc", "misc_bezier_closest_point");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         // FIXME-TESTS: Store normalized?
@@ -5557,7 +2111,7 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
     };
 
     // FIXME-TESTS
-    t = REGISTER_TEST("demo", "demo_misc_001");
+    t = IM_REGISTER_TEST(e, "demo", "demo_misc_001");
     t->GuiFunc = NULL;
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
@@ -5585,7 +2139,7 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
     // ## Coverage: open everything in demo window
     // ## Extra: test for inconsistent ScrollMax.y across whole demo window
     // ## Extra: run Log/Capture api on whole demo window
-    t = REGISTER_TEST("demo", "demo_cov_auto_open");
+    t = IM_REGISTER_TEST(e, "demo", "demo_cov_auto_open");
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         ctx->WindowRef("Dear ImGui Demo");
@@ -5605,14 +2159,14 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
     };
 
     // ## Coverage: closes everything in demo window
-    t = REGISTER_TEST("demo", "demo_cov_auto_close");
+    t = IM_REGISTER_TEST(e, "demo", "demo_cov_auto_close");
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         ctx->WindowRef("Dear ImGui Demo");
         ctx->ItemCloseAll("");
     };
 
-    t = REGISTER_TEST("demo", "demo_cov_001");
+    t = IM_REGISTER_TEST(e, "demo", "demo_cov_001");
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         ctx->WindowRef("Dear ImGui Demo");
@@ -5632,7 +2186,7 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
     };
 
     // ## Open misc elements which are beneficial to coverage and not covered with ItemOpenAll
-    t = REGISTER_TEST("demo", "demo_cov_002");
+    t = IM_REGISTER_TEST(e, "demo", "demo_cov_002");
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         ctx->WindowRef("Dear ImGui Demo");
@@ -5667,7 +2221,7 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
         ctx->MenuUncheckAll("Tools");
     };
 
-    t = REGISTER_TEST("demo", "demo_cov_apps");
+    t = IM_REGISTER_TEST(e, "demo", "demo_cov_apps");
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         ctx->WindowRef("Dear ImGui Demo");
@@ -5679,7 +2233,7 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
     };
 
     // ## Coverage: select all styles via the Style Editor
-    t = REGISTER_TEST("demo", "demo_cov_styles");
+    t = IM_REGISTER_TEST(e, "demo", "demo_cov_styles");
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         ctx->WindowRef("Dear ImGui Demo");
@@ -5706,1067 +2260,6 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
 }
 
 //-------------------------------------------------------------------------
-// Tests: Performance Tests
-//-------------------------------------------------------------------------
-
-void RegisterTests_Perf(ImGuiTestEngine* e)
-{
-    ImGuiTest* t = NULL;
-
-    auto PerfCaptureFunc = [](ImGuiTestContext* ctx)
-    {
-        //ctx->KeyDownMap(ImGuiKey_COUNT, ImGuiKeyModFlags_Shift);
-        ctx->PerfCapture();
-        //ctx->KeyUpMap(ImGuiKey_COUNT, ImGuiKeyModFlags_Shift);
-    };
-
-    // ## Measure the cost all demo contents
-    t = REGISTER_TEST("perf", "perf_demo_all");
-    t->TestFunc = [](ImGuiTestContext* ctx)
-    {
-        ctx->PerfCalcRef();
-
-        ctx->WindowRef("Dear ImGui Demo");
-        ctx->ItemOpenAll("");
-        ctx->MenuCheckAll("Examples");
-        ctx->MenuCheckAll("Tools");
-
-        IM_CHECK_SILENT(ctx->UiContext->IO.DisplaySize.x > 820);
-        IM_CHECK_SILENT(ctx->UiContext->IO.DisplaySize.y > 820);
-
-        // FIXME-TESTS: Backup full layout
-        ImVec2 pos = ctx->GetMainViewportPos() + ImVec2(20, 20);
-        for (ImGuiWindow* window : ctx->UiContext->Windows)
-        {
-            window->Pos = pos;
-            window->SizeFull = ImVec2(800, 800);
-        }
-        ctx->PerfCapture();
-
-        ctx->WindowRef("Dear ImGui Demo");
-        ctx->ItemCloseAll("");
-        ctx->MenuUncheckAll("Examples");
-        ctx->MenuUncheckAll("Tools");
-    };
-
-    // ## Measure the drawing cost of various ImDrawList primitives
-    enum
-    {
-        DrawPrimFunc_RectStroke,
-        DrawPrimFunc_RectStrokeThick,
-        DrawPrimFunc_RectFilled,
-        DrawPrimFunc_RectRoundedStroke,
-        DrawPrimFunc_RectRoundedStrokeThick,
-        DrawPrimFunc_RectRoundedFilled,
-        DrawPrimFunc_CircleStroke,
-        DrawPrimFunc_CircleStrokeThick,
-        DrawPrimFunc_CircleFilled,
-        DrawPrimFunc_TriangleStroke,
-        DrawPrimFunc_TriangleStrokeThick,
-        DrawPrimFunc_LongStroke,
-        DrawPrimFunc_LongStrokeThick,
-        DrawPrimFunc_LongJaggedStroke,
-        DrawPrimFunc_LongJaggedStrokeThick,
-		DrawPrimFunc_Line,
-		DrawPrimFunc_LineAA,
-#ifdef IMGUI_HAS_TEXLINES
-        DrawPrimFunc_LineAANoTex,
-#endif
-        DrawPrimFunc_LineThick,
-		DrawPrimFunc_LineThickAA,
-#ifdef IMGUI_HAS_TEXLINES
-        DrawPrimFunc_LineThickAANoTex
-#endif
-    };
-
-    auto DrawPrimFunc = [](ImGuiTestContext* ctx)
-    {
-        ImGui::Begin("Test Func", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
-        int loop_count = 200 * ctx->PerfStressAmount;
-        ImDrawList* draw_list = ImGui::GetWindowDrawList();
-        int segments = 0;
-        ImGui::Button("##CircleFilled", ImVec2(120, 120));
-        ImVec2 bounds_min = ImGui::GetItemRectMin();
-        ImVec2 bounds_size = ImGui::GetItemRectSize();
-        ImVec2 center = bounds_min + bounds_size * 0.5f;
-        float r = (float)(int)(ImMin(bounds_size.x, bounds_size.y) * 0.8f * 0.5f);
-        float rounding = 8.0f;
-        ImU32 col = IM_COL32(255, 255, 0, 255);
-		ImDrawListFlags old_flags = draw_list->Flags; // Save old flags as some of these tests manipulate them
-        if (ctx->IsFirstFrame())
-            ctx->LogDebug("Drawing %d primitives...", loop_count);
-        switch (ctx->Test->ArgVariant)
-        {
-        case DrawPrimFunc_RectStroke:
-            for (int n = 0; n < loop_count; n++)
-                draw_list->AddRect(center - ImVec2(r,r), center + ImVec2(r,r), col, 0.0f, ~0, 1.0f);
-            break;
-        case DrawPrimFunc_RectStrokeThick:
-            for (int n = 0; n < loop_count; n++)
-                draw_list->AddRect(center - ImVec2(r, r), center + ImVec2(r, r), col, 0.0f, ~0, 4.0f);
-            break;
-        case DrawPrimFunc_RectFilled:
-            for (int n = 0; n < loop_count; n++)
-                draw_list->AddRectFilled(center - ImVec2(r, r), center + ImVec2(r, r), col, 0.0f);
-            break;
-        case DrawPrimFunc_RectRoundedStroke:
-            for (int n = 0; n < loop_count; n++)
-                draw_list->AddRect(center - ImVec2(r, r), center + ImVec2(r, r), col, rounding, ~0, 1.0f);
-            break;
-        case DrawPrimFunc_RectRoundedStrokeThick:
-            for (int n = 0; n < loop_count; n++)
-                draw_list->AddRect(center - ImVec2(r, r), center + ImVec2(r, r), col, rounding, ~0, 4.0f);
-            break;
-        case DrawPrimFunc_RectRoundedFilled:
-            for (int n = 0; n < loop_count; n++)
-                draw_list->AddRectFilled(center - ImVec2(r, r), center + ImVec2(r, r), col, rounding);
-            break;
-        case DrawPrimFunc_CircleStroke:
-            for (int n = 0; n < loop_count; n++)
-                draw_list->AddCircle(center, r, col, segments, 1.0f);
-            break;
-        case DrawPrimFunc_CircleStrokeThick:
-            for (int n = 0; n < loop_count; n++)
-                draw_list->AddCircle(center, r, col, segments, 4.0f);
-            break;
-        case DrawPrimFunc_CircleFilled:
-            for (int n = 0; n < loop_count; n++)
-                draw_list->AddCircleFilled(center, r, col, segments);
-            break;
-        case DrawPrimFunc_TriangleStroke:
-            for (int n = 0; n < loop_count; n++)
-                draw_list->AddNgon(center, r, col, 3, 1.0f);
-            break;
-        case DrawPrimFunc_TriangleStrokeThick:
-            for (int n = 0; n < loop_count; n++)
-                draw_list->AddNgon(center, r, col, 3, 4.0f);
-            break;
-        case DrawPrimFunc_LongStroke:
-            draw_list->AddNgon(center, r, col, 10 * loop_count, 1.0f);
-            break;
-        case DrawPrimFunc_LongStrokeThick:
-            draw_list->AddNgon(center, r, col, 10 * loop_count, 4.0f);
-            break;
-        case DrawPrimFunc_LongJaggedStroke:
-            for (float n = 0; n < 10 * loop_count; n += 2.51327412287f)
-                draw_list->PathLineTo(center + ImVec2(r * sinf(n), r * cosf(n)));
-            draw_list->PathStroke(col, false, 1.0);
-            break;
-        case DrawPrimFunc_LongJaggedStrokeThick:
-            for (float n = 0; n < 10 * loop_count; n += 2.51327412287f)
-                draw_list->PathLineTo(center + ImVec2(r * sinf(n), r * cosf(n)));
-            draw_list->PathStroke(col, false, 4.0);
-            break;
-		case DrawPrimFunc_Line:
-			draw_list->Flags &= ~ImDrawListFlags_AntiAliasedLines;
-			for (int n = 0; n < loop_count; n++)
-				draw_list->AddLine(center - ImVec2(r, r), center + ImVec2(r, r), col, 1.0f);
-			break;
-		case DrawPrimFunc_LineAA:
-            draw_list->Flags |= ImDrawListFlags_AntiAliasedLines;
-			for (int n = 0; n < loop_count; n++)
-				draw_list->AddLine(center - ImVec2(r, r), center + ImVec2(r, r), col, 1.0f);
-			break;
-#ifdef IMGUI_HAS_TEXLINES
-		case DrawPrimFunc_LineAANoTex:
-			draw_list->Flags |= ImDrawListFlags_AntiAliasedLines;
-			draw_list->Flags &= ~ImDrawListFlags_AntiAliasedLinesUseTex;
-			for (int n = 0; n < loop_count; n++)
-				draw_list->AddLine(center - ImVec2(r, r), center + ImVec2(r, r), col, 1.0f);
-			break;
-#endif
-		case DrawPrimFunc_LineThick:
-			draw_list->Flags &= ~ImDrawListFlags_AntiAliasedLines;
-			for (int n = 0; n < loop_count; n++)
-				draw_list->AddLine(center - ImVec2(r, r), center + ImVec2(r, r), col, 4.0f);
-			break;
-		case DrawPrimFunc_LineThickAA:
-			draw_list->Flags |= ImDrawListFlags_AntiAliasedLines;
-			for (int n = 0; n < loop_count; n++)
-				draw_list->AddLine(center - ImVec2(r, r), center + ImVec2(r, r), col, 4.0f);
-			break;
-#ifdef IMGUI_HAS_TEXLINES
-        case DrawPrimFunc_LineThickAANoTex:
-			draw_list->Flags |= ImDrawListFlags_AntiAliasedLines;
-			draw_list->Flags &= ~ImDrawListFlags_AntiAliasedLinesUseTex;
-			for (int n = 0; n < loop_count; n++)
-				draw_list->AddLine(center - ImVec2(r, r), center + ImVec2(r, r), col, 4.0f);
-			break;
-#endif
-        default:
-            IM_ASSERT(0);
-        }
-		draw_list->Flags = old_flags; // Restre flags
-        ImGui::End();
-    };
-
-    t = REGISTER_TEST("perf", "perf_draw_prim_rect_stroke");
-    t->ArgVariant = DrawPrimFunc_RectStroke;
-    t->GuiFunc = DrawPrimFunc;
-    t->TestFunc = PerfCaptureFunc;
-
-    t = REGISTER_TEST("perf", "perf_draw_prim_rect_stroke_thick");
-    t->ArgVariant = DrawPrimFunc_RectStrokeThick;
-    t->GuiFunc = DrawPrimFunc;
-    t->TestFunc = PerfCaptureFunc;
-
-    t = REGISTER_TEST("perf", "perf_draw_prim_rect_filled");
-    t->ArgVariant = DrawPrimFunc_RectFilled;
-    t->GuiFunc = DrawPrimFunc;
-    t->TestFunc = PerfCaptureFunc;
-
-    t = REGISTER_TEST("perf", "perf_draw_prim_rect_rounded_stroke");
-    t->ArgVariant = DrawPrimFunc_RectRoundedStroke;
-    t->GuiFunc = DrawPrimFunc;
-    t->TestFunc = PerfCaptureFunc;
-
-    t = REGISTER_TEST("perf", "perf_draw_prim_rect_rounded_stroke_thick");
-    t->ArgVariant = DrawPrimFunc_RectRoundedStrokeThick;
-    t->GuiFunc = DrawPrimFunc;
-    t->TestFunc = PerfCaptureFunc;
-
-    t = REGISTER_TEST("perf", "perf_draw_prim_rect_rounded_filled");
-    t->ArgVariant = DrawPrimFunc_RectRoundedFilled;
-    t->GuiFunc = DrawPrimFunc;
-    t->TestFunc = PerfCaptureFunc;
-
-    t = REGISTER_TEST("perf", "perf_draw_prim_circle_stroke");
-    t->ArgVariant = DrawPrimFunc_CircleStroke;
-    t->GuiFunc = DrawPrimFunc;
-    t->TestFunc = PerfCaptureFunc;
-
-    t = REGISTER_TEST("perf", "perf_draw_prim_circle_stroke_thick");
-    t->ArgVariant = DrawPrimFunc_CircleStrokeThick;
-    t->GuiFunc = DrawPrimFunc;
-    t->TestFunc = PerfCaptureFunc;
-
-    t = REGISTER_TEST("perf", "perf_draw_prim_circle_filled");
-    t->ArgVariant = DrawPrimFunc_CircleFilled;
-    t->GuiFunc = DrawPrimFunc;
-    t->TestFunc = PerfCaptureFunc;
-
-    t = REGISTER_TEST("perf", "perf_draw_prim_triangle_stroke");
-    t->ArgVariant = DrawPrimFunc_TriangleStroke;
-    t->GuiFunc = DrawPrimFunc;
-    t->TestFunc = PerfCaptureFunc;
-
-    t = REGISTER_TEST("perf", "perf_draw_prim_triangle_stroke_thick");
-    t->ArgVariant = DrawPrimFunc_TriangleStrokeThick;
-    t->GuiFunc = DrawPrimFunc;
-    t->TestFunc = PerfCaptureFunc;
-
-    t = REGISTER_TEST("perf", "perf_draw_prim_long_stroke");
-    t->ArgVariant = DrawPrimFunc_LongStroke;
-    t->GuiFunc = DrawPrimFunc;
-    t->TestFunc = PerfCaptureFunc;
-
-    t = REGISTER_TEST("perf", "perf_draw_prim_long_stroke_thick");
-    t->ArgVariant = DrawPrimFunc_LongStrokeThick;
-    t->GuiFunc = DrawPrimFunc;
-    t->TestFunc = PerfCaptureFunc;
-
-    t = REGISTER_TEST("perf", "perf_draw_prim_long_jagged_stroke");
-    t->ArgVariant = DrawPrimFunc_LongJaggedStroke;
-    t->GuiFunc = DrawPrimFunc;
-    t->TestFunc = PerfCaptureFunc;
-
-    t = REGISTER_TEST("perf", "perf_draw_prim_long_jagged_stroke_thick");
-    t->ArgVariant = DrawPrimFunc_LongJaggedStrokeThick;
-    t->GuiFunc = DrawPrimFunc;
-    t->TestFunc = PerfCaptureFunc;
-
-    t = REGISTER_TEST("perf", "perf_draw_prim_line");
-	t->ArgVariant = DrawPrimFunc_Line;
-	t->GuiFunc = DrawPrimFunc;
-	t->TestFunc = PerfCaptureFunc;
-
-	t = REGISTER_TEST("perf", "perf_draw_prim_line_antialiased");
-	t->ArgVariant = DrawPrimFunc_LineAA;
-	t->GuiFunc = DrawPrimFunc;
-	t->TestFunc = PerfCaptureFunc;
-
-#ifdef IMGUI_HAS_TEXLINES
-	t = REGISTER_TEST("perf", "perf_draw_prim_line_antialiased_no_tex");
-	t->ArgVariant = DrawPrimFunc_LineAANoTex;
-	t->GuiFunc = DrawPrimFunc;
-	t->TestFunc = PerfCaptureFunc;
-#endif
-
-	t = REGISTER_TEST("perf", "perf_draw_prim_line_thick");
-	t->ArgVariant = DrawPrimFunc_LineThick;
-	t->GuiFunc = DrawPrimFunc;
-	t->TestFunc = PerfCaptureFunc;
-
-	t = REGISTER_TEST("perf", "perf_draw_prim_line_thick_antialiased");
-	t->ArgVariant = DrawPrimFunc_LineThickAA;
-	t->GuiFunc = DrawPrimFunc;
-	t->TestFunc = PerfCaptureFunc;
-
-#ifdef IMGUI_HAS_TEXLINES
-	t = REGISTER_TEST("perf", "perf_draw_prim_line_thick_antialiased_no_tex");
-	t->ArgVariant = DrawPrimFunc_LineThickAANoTex;
-	t->GuiFunc = DrawPrimFunc;
-	t->TestFunc = PerfCaptureFunc;
-#endif
-
-    // ## Measure the cost of ImDrawListSplitter split/merge functions
-    auto DrawSplittedFunc = [](ImGuiTestContext* ctx)
-    {
-        ImGui::Begin("Test Func", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
-        ImDrawList* draw_list = ImGui::GetWindowDrawList();
-
-        int split_count = ctx->Test->ArgVariant;
-        int loop_count = 200 * ctx->PerfStressAmount;
-
-        ImGui::Button("##CircleFilled", ImVec2(200, 200));
-        ImVec2 bounds_min = ImGui::GetItemRectMin();
-        ImVec2 bounds_size = ImGui::GetItemRectSize();
-        ImVec2 center = bounds_min + bounds_size * 0.5f;
-        float r = (float)(int)(ImMin(bounds_size.x, bounds_size.y) * 0.8f * 0.5f);
-
-        if (ctx->FrameCount == 0)
-            ctx->LogDebug("%d primitives over %d channels", loop_count, split_count);
-        if (split_count != 1)
-        {
-            IM_CHECK_SILENT((loop_count % split_count) == 0);
-            loop_count /= split_count;
-            draw_list->ChannelsSplit(split_count);
-            for (int n = 0; n < loop_count; n++)
-                for (int ch = 0; ch < split_count; ch++)
-                {
-                    draw_list->ChannelsSetCurrent(ch);
-                    draw_list->AddCircleFilled(center, r, IM_COL32(255, 255, 0, 255), 12);
-                }
-            draw_list->ChannelsMerge();
-        }
-        else
-        {
-            for (int n = 0; n < loop_count; n++)
-                draw_list->AddCircleFilled(center, r, IM_COL32(255, 255, 0, 255), 12);
-        }
-        if (ctx->FrameCount == 0)
-            ctx->LogDebug("Vertices: %d", draw_list->VtxBuffer.Size);
-
-        ImGui::End();
-    };
-
-    t = REGISTER_TEST("perf", "perf_draw_split_1");
-    t->ArgVariant = 1;
-    t->GuiFunc = DrawSplittedFunc;
-    t->TestFunc = PerfCaptureFunc;
-
-    t = REGISTER_TEST("perf", "perf_draw_split_10");
-    t->ArgVariant = 10;
-    t->GuiFunc = DrawSplittedFunc;
-    t->TestFunc = PerfCaptureFunc;
-
-    // ## Measure the cost of simple Button() calls
-    t = REGISTER_TEST("perf", "perf_stress_button");
-    t->GuiFunc = [](ImGuiTestContext* ctx)
-    {
-        ImGui::Begin("Test Func", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
-        int loop_count = 1000 * ctx->PerfStressAmount;
-        for (int n = 0; n < loop_count; n++)
-            ImGui::Button("Hello, world");
-        ImGui::End();
-    };
-    t->TestFunc = PerfCaptureFunc;
-
-    // ## Measure the cost of simple Checkbox() calls
-    t = REGISTER_TEST("perf", "perf_stress_checkbox");
-    t->GuiFunc = [](ImGuiTestContext* ctx)
-    {
-        ImGui::Begin("Test Func", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
-        int loop_count = 1000 * ctx->PerfStressAmount;
-        bool v1 = false, v2 = true;
-        for (int n = 0; n < loop_count / 2; n++)
-        {
-            ImGui::PushID(n);
-            ImGui::Checkbox("Hello, world", &v1);
-            ImGui::Checkbox("Hello, world", &v2);
-            ImGui::PopID();
-        }
-        ImGui::End();
-    };
-    t->TestFunc = PerfCaptureFunc;
-
-    // ## Measure the cost of dumb column-like setup using SameLine()
-    t = REGISTER_TEST("perf", "perf_stress_rows_1a");
-    t->GuiFunc = [](ImGuiTestContext* ctx)
-    {
-        ImGui::SetNextWindowSize(ImVec2(400, 0));
-        ImGui::Begin("Test Func", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
-        int loop_count = 50 * 2 * ctx->PerfStressAmount;
-        for (int n = 0; n < loop_count; n++)
-        {
-            ImGui::TextUnformatted("Cell 1");
-            ImGui::SameLine(100);
-            ImGui::TextUnformatted("Cell 2");
-            ImGui::SameLine(200);
-            ImGui::TextUnformatted("Cell 3");
-        }
-        ImGui::Columns(1);
-        ImGui::End();
-    };
-    t->TestFunc = PerfCaptureFunc;
-
-    t = REGISTER_TEST("perf", "perf_stress_rows_1b");
-    t->GuiFunc = [](ImGuiTestContext* ctx)
-    {
-        ImGui::SetNextWindowSize(ImVec2(400, 0));
-        ImGui::Begin("Test Func", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
-        int loop_count = 50 * 2 * ctx->PerfStressAmount;
-        for (int n = 0; n < loop_count; n++)
-        {
-            ImGui::Text("Cell 1");
-            ImGui::SameLine(100);
-            ImGui::Text("Cell 2");
-            ImGui::SameLine(200);
-            ImGui::Text("Cell 3");
-        }
-        ImGui::Columns(1);
-        ImGui::End();
-    };
-    t->TestFunc = PerfCaptureFunc;
-
-    // ## Measure the cost of NextColumn(): one column set, many rows
-    t = REGISTER_TEST("perf", "perf_stress_columns_1");
-    t->GuiFunc = [](ImGuiTestContext* ctx)
-    {
-        ImGui::SetNextWindowSize(ImVec2(400, 0));
-        ImGui::Begin("Test Func", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
-        ImGui::Columns(3, "Columns", true);
-        int loop_count = 50 * 2 * ctx->PerfStressAmount;
-        for (int n = 0; n < loop_count; n++)
-        {
-            ImGui::Text("Cell 1,%d", n);
-            ImGui::NextColumn();
-            ImGui::TextUnformatted("Cell 2");
-            ImGui::NextColumn();
-            ImGui::TextUnformatted("Cell 3");
-            ImGui::NextColumn();
-        }
-        ImGui::Columns(1);
-        ImGui::End();
-    };
-    t->TestFunc = PerfCaptureFunc;
-
-    // ## Measure the cost of Columns(): many columns sets, few rows
-    t = REGISTER_TEST("perf", "perf_stress_columns_2");
-    t->GuiFunc = [](ImGuiTestContext* ctx)
-    {
-        ImGui::SetNextWindowSize(ImVec2(400, 0));
-        ImGui::Begin("Test Func", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
-        int loop_count = 50 * ctx->PerfStressAmount;
-        for (int n = 0; n < loop_count; n++)
-        {
-            ImGui::PushID(n);
-            ImGui::Columns(3, "Columns", true);
-            for (int row = 0; row < 2; row++)
-            {
-                ImGui::Text("Cell 1,%d", n);
-                ImGui::NextColumn();
-                ImGui::TextUnformatted("Cell 2");
-                ImGui::NextColumn();
-                ImGui::TextUnformatted("Cell 3");
-                ImGui::NextColumn();
-            }
-            ImGui::Columns(1);
-            ImGui::Separator();
-            ImGui::PopID();
-        }
-        ImGui::End();
-    };
-    t->TestFunc = PerfCaptureFunc;
-
-#ifdef IMGUI_HAS_TABLE
-    // ## Measure the cost of TableNextCell(), TableNextRow(): one table, many rows
-    t = REGISTER_TEST("perf", "perf_stress_table_1");
-    t->GuiFunc = [](ImGuiTestContext* ctx)
-    {
-        ImGui::SetNextWindowSize(ImVec2(400, 0));
-        ImGui::Begin("Test Func", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
-        int loop_count = 50 * 2 * ctx->PerfStressAmount;
-        if (ImGui::BeginTable("Table", 3, ImGuiTableFlags_BordersV))
-        {
-            for (int n = 0; n < loop_count; n++)
-            {
-                ImGui::TableNextCell();
-                ImGui::Text("Cell 1,%d", n);
-                ImGui::TableNextCell();
-                ImGui::TextUnformatted("Cell 2");
-                ImGui::TableNextCell();
-                ImGui::TextUnformatted("Cell 3");
-            }
-            ImGui::EndTable();
-        }
-        ImGui::End();
-    };
-    t->TestFunc = PerfCaptureFunc;
-
-    // ## Measure the cost of BeginTable(): many tables with few rows
-    t = REGISTER_TEST("perf", "perf_stress_table_2");
-    t->GuiFunc = [](ImGuiTestContext* ctx)
-    {
-        ImGui::SetNextWindowSize(ImVec2(400, 0));
-        ImGui::Begin("Test Func", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
-        int loop_count = 50 * ctx->PerfStressAmount;
-        for (int n = 0; n < loop_count; n++)
-        {
-            ImGui::PushID(n);
-            if (ImGui::BeginTable("Table", 3, ImGuiTableFlags_BordersV))
-            {
-                for (int row = 0; row < 2; row++)
-                {
-                    ImGui::TableNextCell();
-                    ImGui::Text("Cell 1,%d", n);
-                    ImGui::TableNextCell();
-                    ImGui::TextUnformatted("Cell 2");
-                    ImGui::TableNextCell();
-                    ImGui::TextUnformatted("Cell 3");
-                }
-                ImGui::EndTable();
-            }
-            ImGui::Separator();
-            ImGui::PopID();
-        }
-        ImGui::End();
-    };
-    t->TestFunc = PerfCaptureFunc;
-#endif // IMGUI_HAS_TABLE
-
-    // ## Measure the cost of simple ColorEdit4() calls (multi-component, group based widgets are quite heavy)
-    t = REGISTER_TEST("perf", "perf_stress_coloredit4");
-    t->GuiFunc = [](ImGuiTestContext* ctx)
-    {
-        ImGui::Begin("Test Func", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
-        int loop_count = 500 * ctx->PerfStressAmount;
-        ImVec4 col(1.0f, 0.0f, 0.0f, 1.0f);
-        for (int n = 0; n < loop_count / 2; n++)
-        {
-            ImGui::PushID(n);
-            ImGui::ColorEdit4("Color", &col.x);
-            ImGui::PopID();
-        }
-        ImGui::End();
-    };
-    t->TestFunc = PerfCaptureFunc;
-
-    // ## Measure the cost of simple InputText() calls
-    t = REGISTER_TEST("perf", "perf_stress_input_text");
-    t->GuiFunc = [](ImGuiTestContext* ctx)
-    {
-        ImGui::Begin("Test Func", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
-        int loop_count = 1000 * ctx->PerfStressAmount;
-        char buf[32] = "123";
-        for (int n = 0; n < loop_count; n++)
-        {
-            ImGui::PushID(n);
-            ImGui::InputText("InputText", buf, IM_ARRAYSIZE(buf), ImGuiInputTextFlags_None);
-            ImGui::PopID();
-        }
-        ImGui::End();
-    };
-    t->TestFunc = PerfCaptureFunc;
-
-    // ## Measure the cost of simple InputTextMultiline() calls
-    // (this is creating a child window for every non-clipped widget, so doesn't scale very well)
-    t = REGISTER_TEST("perf", "perf_stress_input_text_multiline");
-    t->GuiFunc = [](ImGuiTestContext* ctx)
-    {
-        ImGui::Begin("Test Func", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
-        int loop_count = 1000 * ctx->PerfStressAmount;
-        char buf[32] = "123";
-        for (int n = 0; n < loop_count; n++)
-        {
-            ImGui::PushID(n);
-            ImGui::InputTextMultiline("InputText", buf, IM_ARRAYSIZE(buf), ImVec2(0, ImGui::GetFrameHeightWithSpacing() * 2), ImGuiInputTextFlags_None);
-            ImGui::PopID();
-        }
-        ImGui::End();
-    };
-    t->TestFunc = PerfCaptureFunc;
-
-    // ## Measure the cost of our ImHashXXX functions
-    t = REGISTER_TEST("perf", "perf_stress_hash");
-    t->GuiFunc = [](ImGuiTestContext* ctx)
-    {
-        ImGui::Begin("Test Func", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
-        ImGui::Text("Hashing..");
-        int loop_count = 5000 * ctx->PerfStressAmount;
-        char buf[32] = { 0 };
-        ImU32 seed = 0;
-        for (int n = 0; n < loop_count; n++)
-        {
-            seed = ImHashData(buf, 32, seed);
-            seed = ImHashStr("Hash me tender", 0, seed);
-            seed = ImHashStr("Hash me true", 12, seed);
-        }
-        ImGui::End();
-    };
-    t->TestFunc = PerfCaptureFunc;
-
-    // ## Measure the cost of simple Listbox() calls
-    // (this is creating a child window for every non-clipped widget, so doesn't scale very well)
-    t = REGISTER_TEST("perf", "perf_stress_list_box");
-    t->GuiFunc = [](ImGuiTestContext* ctx)
-    {
-        ImGui::Begin("Test Func", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
-        int loop_count = 1000 * ctx->PerfStressAmount;
-        for (int n = 0; n < loop_count; n++)
-        {
-            ImGui::PushID(n);
-            if (ImGui::ListBoxHeader("ListBox", ImVec2(0, ImGui::GetFrameHeightWithSpacing() * 2)))
-            {
-                ImGui::MenuItem("Hello");
-                ImGui::MenuItem("World");
-                ImGui::ListBoxFooter();
-            }
-            ImGui::PopID();
-        }
-        ImGui::End();
-    };
-    t->TestFunc = PerfCaptureFunc;
-
-    // ## Measure the cost of simple SliderFloat() calls
-    t = REGISTER_TEST("perf", "perf_stress_slider");
-    t->GuiFunc = [](ImGuiTestContext* ctx)
-    {
-        ImGui::Begin("Test Func", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
-        int loop_count = 1000 * ctx->PerfStressAmount;
-        float f = 1.234f;
-        for (int n = 0; n < loop_count; n++)
-        {
-            ImGui::PushID(n);
-            ImGui::SliderFloat("SliderFloat", &f, 0.0f, 10.0f);
-            ImGui::PopID();
-        }
-        ImGui::End();
-    };
-    t->TestFunc = PerfCaptureFunc;
-
-    // ## Measure the cost of simple SliderFloat2() calls
-    // This at a glance by compared to SliderFloat() test shows us the overhead of group-based multi-component widgets
-    t = REGISTER_TEST("perf", "perf_stress_slider2");
-    t->GuiFunc = [](ImGuiTestContext* ctx)
-    {
-        ImGui::Begin("Test Func", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
-        int loop_count = 1000 * ctx->PerfStressAmount;
-        ImVec2 v(0.0f, 0.0f);
-        for (int n = 0; n < loop_count; n++)
-        {
-            ImGui::PushID(n);
-            ImGui::SliderFloat2("SliderFloat2", &v.x, 0.0f, 10.0f);
-            ImGui::PopID();
-        }
-        ImGui::End();
-    };
-    t->TestFunc = PerfCaptureFunc;
-
-    // ## Measure the cost of TextUnformatted() calls with relatively short text
-    t = REGISTER_TEST("perf", "perf_stress_text_unformatted_1");
-    t->GuiFunc = [](ImGuiTestContext* ctx)
-    {
-        ImGui::Begin("Test Func", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
-        const char* buf =
-            "0123456789 The quick brown fox jumps over the lazy dog.\n"
-            "0123456789   The quick brown fox jumps over the lazy dog.\n"
-            "0123456789     The quick brown fox jumps over the lazy dog.\n";
-        int loop_count = 1000 * ctx->PerfStressAmount;
-        for (int n = 0; n < loop_count; n++)
-            ImGui::TextUnformatted(buf);
-        ImGui::End();
-    };
-    t->TestFunc = PerfCaptureFunc;
-
-    // ## Measure the cost of TextUnformatted() calls with long text
-    t = REGISTER_TEST("perf", "perf_stress_text_unformatted_2");
-    t->GuiFunc = [](ImGuiTestContext* ctx)
-    {
-        ImGui::Begin("Test Func", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
-        static ImGuiTextBuffer buf;
-        if (buf.empty())
-        {
-            for (int i = 0; i < 1000; i++)
-                buf.appendf("%i The quick brown fox jumps over the lazy dog\n", i);
-        }
-        int loop_count = 100 * ctx->PerfStressAmount;
-        for (int n = 0; n < loop_count; n++)
-            ImGui::TextUnformatted(buf.begin(), buf.end());
-        ImGui::End();
-    };
-    t->TestFunc = PerfCaptureFunc;
-
-    // ## Measure the cost/overhead of creating too many windows
-    t = REGISTER_TEST("perf", "perf_stress_window");
-    t->GuiFunc = [](ImGuiTestContext* ctx)
-    {
-        ImVec2 pos = ctx->GetMainViewportPos() + ImVec2(20, 20);
-        int loop_count = 200 * ctx->PerfStressAmount;
-        for (int n = 0; n < loop_count; n++)
-        {
-            ImGui::SetNextWindowPos(pos);
-            ImGui::Begin(Str16f("Window_%05d", n + 1).c_str(), NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
-            ImGui::TextUnformatted("Opening many windows!");
-            ImGui::End();
-        }
-    };
-    t->TestFunc = PerfCaptureFunc;
-
-	// ## Circle segment count comparisons
-	t = REGISTER_TEST("perf", "perf_circle_segment_counts");
-	t->GuiFunc = [](ImGuiTestContext* ctx)
-	{
-		const int num_cols = 3; // Number of columns to draw
-		const int num_rows = 3; // Number of rows to draw
-		const float max_radius = 400.0f; // Maximum allowed radius
-
-		static ImVec2 content_size(32.0f, 32.0f); // Size of window content on last frame
-
-        // ImGui::SetNextWindowSize(ImVec2((num_cols + 0.5f) * item_spacing.x, (num_rows * item_spacing.y) + 128.0f));
-		if (ImGui::Begin("perf_circle_segment_counts", NULL, ImGuiWindowFlags_HorizontalScrollbar))
-		{
-			// Control area
-			static float line_width = 1.0f;
-			static float radius = 32.0f;
-            static int segment_count_manual = 32;
-            static bool no_aa = false;
-            static bool overdraw = false;
-            static ImVec4 color_bg = ImVec4(1.0f, 0.2f, 0.2f, 1.0f);
-            static ImVec4 color_fg = ImVec4(1.0f, 1.0f, 1.0f, 1.0f);
-            ImGui::SliderFloat("Line width", &line_width, 1.0f, 10.0f);
-            ImGui::SliderFloat("Radius", &radius, 1.0f, max_radius);
-			ImGui::SliderInt("Segments", &segment_count_manual, 1, 512);
-			ImGui::DragFloat("Circle segment Max Error", &ImGui::GetStyle().CircleSegmentMaxError, 0.01f, 0.1f, 10.0f, "%.2f", 1.0f);
-			ImGui::Checkbox("No anti-aliasing", &no_aa);
-			ImGui::SameLine();
-			ImGui::Checkbox("Overdraw", &overdraw);
-			if (ImGui::IsItemHovered())
-				ImGui::SetTooltip("Draws each primitive repeatedly so that stray low-alpha pixels are easier to spot");
-			ImGui::SameLine();
-			const char* fill_modes[] = { "Stroke", "Fill", "Stroke+Fill", "Fill+Stroke" };
-			static int fill_mode = 0;
-			ImGui::SetNextItemWidth(128.0f);
-			ImGui::Combo("Fill mode", &fill_mode, fill_modes, IM_ARRAYSIZE(fill_modes));
-
-            ImGui::ColorEdit4("Color BG", &color_bg.x);
-            ImGui::ColorEdit4("Color FG", &color_fg.x);
-
-			// Display area
-			ImGui::SetNextWindowContentSize(content_size);
-			ImGui::BeginChild("Display", ImGui::GetContentRegionAvail(), false, ImGuiWindowFlags_HorizontalScrollbar);
-			ImDrawList* draw_list = ImGui::GetWindowDrawList();
-
-			// Set up the grid layout
-			const float spacing = ImMax(96.0f, (radius * 2.0f) + line_width + 8.0f);
-			ImVec2 item_spacing(spacing, spacing); // Spacing between rows/columns
-			ImVec2 cursor_pos = ImGui::GetCursorScreenPos();
-
-			// Draw the first <n> radius/segment size pairs in a quasi-logarithmic down the side
-			for (int pair_rad = 1, step = 1; pair_rad <= 512; pair_rad += step)
-			{
-                int segment_count = IM_DRAWLIST_CIRCLE_AUTO_SEGMENT_CALC(pair_rad, draw_list->_Data->CircleSegmentMaxError);
-				ImGui::TextColored((pair_rad == (int)radius) ? color_bg : color_fg, "Rad %d = %d segs", pair_rad, segment_count);
-				if ((pair_rad >= 16) && ((pair_rad & (pair_rad - 1)) == 0))
-					step *= 2;
-			}
-
-			// Calculate the worst-case width for the size pairs
-			float max_pair_width = ImGui::CalcTextSize("Rad 0000 = 0000 segs").x;
-
-			const ImVec2 text_standoff(max_pair_width + 64.0f, 16.0f); // How much space to leave for the size list and labels
-			ImVec2 base_pos(cursor_pos.x + (item_spacing.x * 0.5f) + text_standoff.x, cursor_pos.y + text_standoff.y);
-
-			// Update content size for next frame
-			content_size = ImVec2(cursor_pos.x + (item_spacing.x * num_cols) + text_standoff.x, ImMax(cursor_pos.y + (item_spacing.y * num_rows) + text_standoff.y, ImGui::GetCursorPosY()));
-
-			// Save old flags
-			ImDrawListFlags backup_draw_list_flags = draw_list->Flags;
-			if (no_aa)
-				draw_list->Flags &= ~ImDrawListFlags_AntiAliasedLines;
-
-			// Get the suggested segment count for this radius
-			const int segment_count_suggested = IM_DRAWLIST_CIRCLE_AUTO_SEGMENT_CALC(radius, draw_list->_Data->CircleSegmentMaxError);
-            const int segment_count_by_column[3] = { segment_count_suggested, segment_count_manual, 512 };
-            const char* desc_by_column[3] = { "auto", "manual", "max" };
-
-			// Draw row/column labels
-			for (int i = 0; i < num_cols; i++)
-			{
-                Str64f name("%s\n%d segs", desc_by_column[i], segment_count_by_column[i]);
-                draw_list->AddText(
-                    ImVec2(cursor_pos.x + max_pair_width + 8.0f, cursor_pos.y + text_standoff.y + ((i + 0.5f) * item_spacing.y)),
-                    ImGui::GetColorU32(color_fg), name.c_str());
-                draw_list->AddText(
-                    ImVec2(cursor_pos.x + text_standoff.x + ((i + 0.2f) * item_spacing.x), cursor_pos.y),
-                    ImGui::GetColorU32(color_bg), name.c_str());
-			}
-
-			// Draw circles
-			for (int y = 0; y < num_rows; y++)
-			{
-				for (int x = 0; x < num_cols; x++)
-				{
-					ImVec2 center = ImVec2(base_pos.x + (item_spacing.x * x), base_pos.y + (item_spacing.y * (y + 0.5f)));
-					for (int pass = 0; pass < 2; pass++)
-					{
-                        const int type_index = (pass == 0) ? x : y;
-                        const ImU32 color = ImColor((pass == 0) ? color_bg : color_fg);
-                        const int num_segment_count = segment_count_by_column[type_index];
-                        const int num_shapes_to_draw = overdraw ? 20 : 1;
-
-                        // We fill either if fill mode was selected, or in stroke+fill mode for the first pass (so we can see what varying segment count fill+stroke looks like)
-                        const bool fill = (fill_mode == 1) || (fill_mode == 2 && pass == 1) || (fill_mode == 3 && pass == 0);
-						for (int i = 0; i < num_shapes_to_draw; i++)
-						{
-							if (fill)
-								draw_list->AddCircleFilled(center, radius, color, num_segment_count);
-							else
-								draw_list->AddCircle(center, radius, color, num_segment_count, line_width);
-						}
-					}
-				}
-			}
-
-			// Restore draw list flags
-			draw_list->Flags = backup_draw_list_flags;
-			ImGui::EndChild();
-        }
-        ImGui::End();
-    };
-    t->TestFunc = PerfCaptureFunc;
-
-    // ## Draw various AA/non-AA lines (not really a perf test, more a correctness one)
-	t = REGISTER_TEST("perf", "perf_misc_lines");
-	t->GuiFunc = [](ImGuiTestContext* ctx)
-	{
-		const int num_cols = 16; // Number of columns (line rotations) to draw
-		const int num_rows = 3; // Number of rows (line variants) to draw
-		const float line_len = 64.0f; // Length of line to draw
-		const ImVec2 line_spacing(80.0f, 96.0f); // Spacing between lines
-
-		ImGui::SetNextWindowSize(ImVec2((num_cols + 0.5f) * line_spacing.x, (num_rows * 2 * line_spacing.y) + 128.0f), ImGuiCond_Once);
-		if (ImGui::Begin("perf_misc_lines", NULL, ImGuiWindowFlags_NoSavedSettings))
-		{
-			ImDrawList* draw_list = ImGui::GetWindowDrawList();
-
-			static float base_rot = 0.0f;
-			ImGui::SliderFloat("Base rotation", &base_rot, 0.0f, 360.0f);
-			static float line_width = 1.0f;
-			ImGui::SliderFloat("Line width", &line_width, 1.0f, 10.0f);
-
-            ImGui::Text("Press SHIFT to toggle textured/non-textured rows");
-            bool tex_toggle = ImGui::GetIO().KeyShift;
-
-            // Rotating lines
-			ImVec2 cursor_pos = ImGui::GetCursorPos();
-            ImVec2 cursor_screen_pos = ImGui::GetCursorScreenPos();
-            ImVec2 base_pos(cursor_screen_pos.x + (line_spacing.x * 0.5f), cursor_screen_pos.y);
-
-#ifndef IMGUI_HAS_TEXLINES
-            const ImDrawListFlags ImDrawListFlags_AntiAliasedLinesUseTex = 0;
-#endif
-
-			for (int i = 0; i < num_rows; i++)
-			{
-                int row_idx = i;
-
-                if (tex_toggle)
-                {
-                    if (i == 1)
-                        row_idx = 2;
-                    else if (i == 2)
-                        row_idx = 1;
-                }
-
-				const char* name = "";
-				switch (row_idx)
-				{
-				case 0: name = "No AA";  draw_list->Flags &= ~ImDrawListFlags_AntiAliasedLines; break;
-				case 1: name = "AA no texturing"; draw_list->Flags |= ImDrawListFlags_AntiAliasedLines; draw_list->Flags &= ~ImDrawListFlags_AntiAliasedLinesUseTex; break;
-				case 2: name = "AA w/ texturing"; draw_list->Flags |= ImDrawListFlags_AntiAliasedLines; draw_list->Flags |= ImDrawListFlags_AntiAliasedLinesUseTex; break;
-				}
-
-				int initial_vtx_count = draw_list->VtxBuffer.Size;
-				int initial_idx_count = draw_list->IdxBuffer.Size;
-
-				for (int j = 0; j < num_cols; j++)
-				{
-					float r = (base_rot * IM_PI / 180.0f) + ((j * IM_PI * 0.5f) / (num_cols - 1));
-
-					ImVec2 center = ImVec2(base_pos.x + (line_spacing.x * j), base_pos.y + (line_spacing.y * (i + 0.5f)));
-					ImVec2 start = ImVec2(center.x + (ImSin(r) * line_len * 0.5f), center.y + (ImCos(r) * line_len * 0.5f));
-					ImVec2 end = ImVec2(center.x - (ImSin(r) * line_len * 0.5f), center.y - (ImCos(r) * line_len * 0.5f));
-
-					draw_list->AddLine(start, end, IM_COL32(255, 255, 255, 255), line_width);
-				}
-
-				ImGui::SetCursorPosY(cursor_pos.y + (i * line_spacing.y));
-				ImGui::Text("%s - %d vertices, %d indices", name, draw_list->VtxBuffer.Size - initial_vtx_count, draw_list->IdxBuffer.Size - initial_idx_count);
-			}
-
-			ImGui::SetCursorPosY(cursor_pos.y + (num_rows * line_spacing.y));
-
-            // Squares
-            cursor_pos = ImGui::GetCursorPos();
-            cursor_screen_pos = ImGui::GetCursorScreenPos();
-            base_pos = ImVec2(cursor_screen_pos.x + (line_spacing.x * 0.5f), cursor_screen_pos.y);
-
-            for (int i = 0; i < num_rows; i++)
-            {
-                int row_idx = i;
-
-                if (tex_toggle)
-                {
-                    if (i == 1)
-                        row_idx = 2;
-                    else if (i == 2)
-                        row_idx = 1;
-                }
-
-                const char* name = "";
-                switch (row_idx)
-                {
-                case 0: name = "No AA";  draw_list->Flags &= ~ImDrawListFlags_AntiAliasedLines; break;
-                case 1: name = "AA no texturing"; draw_list->Flags |= ImDrawListFlags_AntiAliasedLines; draw_list->Flags &= ~ImDrawListFlags_AntiAliasedLinesUseTex; break;
-                case 2: name = "AA w/ texturing"; draw_list->Flags |= ImDrawListFlags_AntiAliasedLines; draw_list->Flags |= ImDrawListFlags_AntiAliasedLinesUseTex; break;
-                }
-
-                int initial_vtx_count = draw_list->VtxBuffer.Size;
-                int initial_idx_count = draw_list->IdxBuffer.Size;
-
-                for (int j = 0; j < num_cols; j++)
-                {
-                    float cell_line_width = line_width + ((j * 4.0f) / (num_cols - 1));
-
-                    ImVec2 center = ImVec2(base_pos.x + (line_spacing.x * j), base_pos.y + (line_spacing.y * (i + 0.5f)));
-                    ImVec2 top_left = ImVec2(center.x - (line_len * 0.5f), center.y - (line_len * 0.5f));
-                    ImVec2 bottom_right = ImVec2(center.x + (line_len * 0.5f), center.y + (line_len * 0.5f));
-
-                    draw_list->AddRect(top_left, bottom_right, IM_COL32(255, 255, 255, 255), 0.0f, ImDrawCornerFlags_All, cell_line_width);
-
-                    ImGui::SetCursorPos(ImVec2(cursor_pos.x + ((j + 0.5f) * line_spacing.x) - 16.0f, cursor_pos.y + ((i + 0.5f) * line_spacing.y) - (ImGui::GetTextLineHeight() * 0.5f)));
-                    ImGui::Text("%.2f", cell_line_width);
-                }
-
-                ImGui::SetCursorPosY(cursor_pos.y + (i * line_spacing.y));
-                ImGui::Text("%s - %d vertices, %d indices", name, draw_list->VtxBuffer.Size - initial_vtx_count, draw_list->IdxBuffer.Size - initial_idx_count);
-            }
-		}
-		ImGui::End();
-	};
-	t->TestFunc = PerfCaptureFunc;
-
-    // ## Measure performance of drawlist text rendering
-    {
-        enum PerfTestTextFlags : int
-        {
-            PerfTestTextFlags_TextShort             = 1 << 0,
-            PerfTestTextFlags_TextLong              = 1 << 1,
-            PerfTestTextFlags_TextWayTooLong        = 1 << 2,
-            PerfTestTextFlags_NoWrapWidth           = 1 << 3,
-            PerfTestTextFlags_WithWrapWidth         = 1 << 4,
-            PerfTestTextFlags_NoCpuFineClipRect     = 1 << 5,
-            PerfTestTextFlags_WithCpuFineClipRect   = 1 << 6,
-        };
-        auto measure_text_rendering_perf = [](ImGuiTestContext* ctx)
-        {
-            ImGui::SetNextWindowSize(ImVec2(300, 120), ImGuiCond_Always);
-            ImGui::Begin("Test Func", NULL, ImGuiWindowFlags_NoSavedSettings);
-
-            ImGuiWindow* window = ImGui::GetCurrentWindow();
-            ImDrawList* draw_list = ImGui::GetWindowDrawList();
-            int test_variant = ctx->Test->ArgVariant;
-            ImVector<char>& str = ctx->GenericVars.StrLarge;
-            float wrap_width = 0.0f;
-            int& line_count = ctx->GenericVars.Int1;
-            int& line_length = ctx->GenericVars.Int2;
-            ImVec4* cpu_fine_clip_rect = NULL;
-            ImVec2& text_size = ctx->GenericVars.Vec2;
-            ImVec2 window_padding = ImGui::GetCursorScreenPos() - window->Pos;
-
-            if (test_variant & PerfTestTextFlags_WithWrapWidth)
-                wrap_width = 250.0f;
-
-            if (test_variant & PerfTestTextFlags_WithCpuFineClipRect)
-                cpu_fine_clip_rect = &ctx->GenericVars.Vec4;
-
-            // Set up test string.
-            if (ctx->GenericVars.StrLarge.empty())
-            {
-                if (test_variant & PerfTestTextFlags_TextLong)
-                {
-                    line_count = 6;
-                    line_length = 2000;
-                }
-                else if (test_variant & PerfTestTextFlags_TextWayTooLong)
-                {
-                    line_count = 1;
-                    line_length = 10000;
-                }
-                else
-                {
-                    line_count = 400;
-                    line_length = 30;
-                }
-
-                // Support variable stress.
-                line_count *= ctx->PerfStressAmount;
-
-                // Create a test string.
-                str.resize(line_length * line_count);
-                for (int i = 0; i < str.Size; i++)
-                    str.Data[i] = '0' + (char)(((2166136261 ^ i) * 16777619) & 0x7F) % ('z' - '0');
-                for (int i = 14; i < str.Size; i += 15)
-                    str.Data[i] = ' ';      // Spaces for word wrap.
-                str.back() = 0;             // Null-terminate
-
-                // Measure text size and cache result.
-                text_size = ImGui::CalcTextSize(str.begin(), str.begin() + line_length, false, wrap_width);
-
-                // Set up a cpu fine clip rect which should be about half of rect rendered text would occupy.
-                if (test_variant & PerfTestTextFlags_WithCpuFineClipRect)
-                {
-                    cpu_fine_clip_rect->x = window->Pos.x + window_padding.x;
-                    cpu_fine_clip_rect->y = window->Pos.y + window_padding.y;
-                    cpu_fine_clip_rect->z = window->Pos.x + window_padding.x + text_size.x * 0.5f;
-                    cpu_fine_clip_rect->w = window->Pos.y + window_padding.y + text_size.y * line_count * 0.5f;
-                }
-            }
-
-            // Push artificially large clip rect to prevent coarse clipping of text on CPU side.
-            ImVec2 text_pos = window->Pos + window_padding;
-            draw_list->PushClipRect(text_pos, text_pos + ImVec2(text_size.x * 1.0f, text_size.y * line_count));
-            for (int i = 0, end = line_count; i < end; i++)
-                draw_list->AddText(NULL, 0.0f, text_pos + ImVec2(0.0f, text_size.y * (float)i),
-                    IM_COL32_WHITE, str.begin() + (i * line_length), str.begin() + ((i + 1) * line_length), wrap_width, cpu_fine_clip_rect);
-            draw_list->PopClipRect();
-
-            ImGui::End();
-        };
-        const char* base_name = "perf_draw_text";
-        const char* text_suffixes[] = { "_short", "_long", "_too_long" };
-        const char* wrap_suffixes[] = { "", "_wrapped" };
-        const char* clip_suffixes[] = { "", "_clipped" };
-        for (int i = 0; i < IM_ARRAYSIZE(text_suffixes); i++)
-        {
-            for (int j = 0; j < IM_ARRAYSIZE(wrap_suffixes); j++)
-            {
-                for (int k = 0; k < IM_ARRAYSIZE(clip_suffixes); k++)
-                {
-                    Str64f test_name("%s%s%s%s", base_name, text_suffixes[i], wrap_suffixes[j], clip_suffixes[k]);
-                    t = REGISTER_TEST("perf", "");
-                    t->SetOwnedName(test_name.c_str());
-                    t->ArgVariant = (PerfTestTextFlags_TextShort << i) | (PerfTestTextFlags_NoWrapWidth << j) | (PerfTestTextFlags_NoCpuFineClipRect << k);
-                    t->GuiFunc = measure_text_rendering_perf;
-                    t->TestFunc = PerfCaptureFunc;
-                }
-            }
-        }
-    }
-}
-
-//-------------------------------------------------------------------------
 // Tests: Capture
 //-------------------------------------------------------------------------
 
@@ -6774,7 +2267,7 @@ void RegisterTests_Capture(ImGuiTestEngine* e)
 {
     ImGuiTest* t = NULL;
 
-    t = REGISTER_TEST("capture", "capture_demo_documents");
+    t = IM_REGISTER_TEST(e, "capture", "capture_demo_documents");
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         ctx->WindowRef("Dear ImGui Demo");
@@ -6796,7 +2289,7 @@ void RegisterTests_Capture(ImGuiTestEngine* e)
     // TODO: Select color picker mode
     // TODO: Flags document as "Modified"
     // TODO: InputText selection
-    t = REGISTER_TEST("capture", "capture_readme_misc");
+    t = IM_REGISTER_TEST(e, "capture", "capture_readme_misc");
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         ImGuiIO& io = ImGui::GetIO();
@@ -6882,7 +2375,7 @@ void RegisterTests_Capture(ImGuiTestEngine* e)
 #endif
 
     // ## Capture a screenshot displaying different supported styles.
-    t = REGISTER_TEST("capture", "capture_readme_styles");
+    t = IM_REGISTER_TEST(e, "capture", "capture_readme_styles");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         ImGuiIO& io = ImGui::GetIO();
@@ -6950,7 +2443,7 @@ void RegisterTests_Capture(ImGuiTestEngine* e)
             ctx->CaptureScreenshot(&args);
         }
     };
-    t = REGISTER_TEST("capture", "capture_readme_gif");
+    t = IM_REGISTER_TEST(e, "capture", "capture_readme_gif");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         ImGui::SetNextWindowSize(ImVec2(300, 160), ImGuiCond_Appearing);
@@ -6986,7 +2479,7 @@ void RegisterTests_Capture(ImGuiTestEngine* e)
 
 #ifdef IMGUI_HAS_TABLE
     // ## Capture all tables demo
-    t = REGISTER_TEST("capture", "capture_table_demo");
+    t = IM_REGISTER_TEST(e, "capture", "capture_table_demo");
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         ctx->WindowRef("Dear ImGui Demo");
@@ -7003,6 +2496,12 @@ void RegisterTests_Capture(ImGuiTestEngine* e)
 
 void RegisterTests(ImGuiTestEngine* e)
 {
+    extern void RegisterTests_Docking(ImGuiTestEngine * e);     // imgui_tests_docking.cpp
+    extern void RegisterTests_Perf(ImGuiTestEngine * e);        // imgui_tests_perf.cpp
+    extern void RegisterTests_Columns(ImGuiTestEngine * e);     // imgui_tests_table.cpp
+    extern void RegisterTests_Table(ImGuiTestEngine * e);       // imgui_tests_table.cpp
+    extern void RegisterTests_Widgets(ImGuiTestEngine * e);     // imgui_tests_widgets.cpp
+
     // Tests
     RegisterTests_Window(e);
     RegisterTests_Layout(e);

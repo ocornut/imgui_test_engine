@@ -77,6 +77,18 @@
     <ClCompile Include="..\shared\imgui_app.cpp">
       <Filter>shared</Filter>
     </ClCompile>
+    <ClCompile Include="imgui_tests_table.cpp">
+      <Filter>test_app</Filter>
+    </ClCompile>
+    <ClCompile Include="imgui_tests_docking.cpp">
+      <Filter>test_app</Filter>
+    </ClCompile>
+    <ClCompile Include="imgui_tests_perf.cpp">
+      <Filter>test_app</Filter>
+    </ClCompile>
+    <ClCompile Include="imgui_tests_widgets.cpp">
+      <Filter>test_app</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Natvis Include="..\..\imgui\misc\natvis\imgui.natvis">
