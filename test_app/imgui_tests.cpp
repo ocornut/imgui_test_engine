@@ -1195,14 +1195,18 @@ void RegisterTests_DrawList(ImGuiTestEngine* e)
         ImGui::Text("Two");
         IM_CHECK_EQ(draw_list->CmdBuffer.Size, 1); // In channel 2
 
-        ImGui::PushColumnsBackground(); // In channel 0 -> will trigger merge
-        IM_CHECK_EQ(draw_list->CmdBuffer.Size, start_cmdbuffer_size);
+        ImGui::PushColumnsBackground(); // In channel 0
+        // 2020/06/13: we don't request of PushColumnsBackground() to merge the two same commands (one created by loose AddDrawCmd())!
+        //IM_CHECK_EQ(draw_list->CmdBuffer.Size, start_cmdbuffer_size);
         ImGui::PopColumnsBackground();
 
         IM_CHECK_EQ(draw_list->CmdBuffer.Size, 1); // In channel 2
 
+        ImGui::Text("Two Two"); // FIXME-TESTS: Make sure this is visible
+        IM_CHECK_EQ(ImGui::IsItemVisible(), true);
+
         ImGui::Columns(1);
-        IM_CHECK_EQ(draw_list->CmdBuffer.Size, start_cmdbuffer_size + 2); // Channel 1 and 2 each other one Cmd
+        IM_CHECK_EQ(draw_list->CmdBuffer.Size, start_cmdbuffer_size + 1 + 2); // Channel 1 and 2 each other one Cmd
 
         ImGui::End();
     };
