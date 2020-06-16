@@ -1875,7 +1875,7 @@ void    ImGuiTestContext::WindowResize(ImGuiTestRef ref, ImVec2 size)
 
     ImVec2 delta = size - window->Size;
     MouseMoveToPos(Inputs->MousePosValue + delta);
-    Yield();
+    Yield(); // At this point we don't guarantee the final size!
 
     MouseUp();
 }

@@ -276,7 +276,7 @@ void RegisterTests_Window(ImGuiTestEngine* e)
     };
 
     // ## Test popup focus and right-click to close popups up to a given level
-    t = IM_REGISTER_TEST(e, "window", "window_focus_popup");
+    t = IM_REGISTER_TEST(e, "window", "window_popup_focus");
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         ImGuiContext& g = *ctx->UiContext;
@@ -296,6 +296,80 @@ void RegisterTests_Window(ImGuiTestEngine* e)
         IM_CHECK(popup_1->WasActive);
         IM_CHECK(!popup_2->WasActive);
         IM_CHECK(g.NavWindow == popup_1);
+    };
+
+    // ## Test an edge case of calling CloseCurrentPopup() after clicking it in the void (#2880)
+    t = IM_REGISTER_TEST(e, "window", "window_popup_focus2");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::Begin("Stacked Modal Popups");
+        if (ImGui::Button("Open Modal Popup 1"))
+            ImGui::OpenPopup("Popup1");
+        if (ImGui::BeginPopupModal("Popup1"))
+        {
+            if (ImGui::Button("Open Modal Popup 2"))
+                ImGui::OpenPopup("Popup2");
+            ImGui::SetNextWindowSize(ImVec2(100, 100));
+            if (ImGui::BeginPopupModal("Popup2"))
+            {
+                ImGui::Text("Click anywhere");
+                if (ImGui::IsMouseClicked(0))
+                    ImGui::CloseCurrentPopup();
+                ImGui::EndPopup();
+            }
+            ImGui::EndPopup();
+        }
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiContext& g = *ctx->UiContext;
+        ctx->WindowRef("Stacked Modal Popups");
+        ctx->ItemClick("Open Modal Popup 1");
+        IM_CHECK_EQ(g.NavWindow->ID, ctx->GetID("/Popup1"));
+        IM_CHECK_EQ(g.OpenPopupStack.Size, 1);
+        ctx->WindowRef("Popup1");
+        ctx->ItemClick("Open Modal Popup 2");
+        IM_CHECK_EQ(g.NavWindow->ID, ctx->GetID("/Popup2"));
+        IM_CHECK_EQ(g.OpenPopupStack.Size, 2);
+        ctx->MouseMoveToPos(g.NavWindow->Rect().GetCenter());
+        ctx->MouseClick(0);
+        IM_CHECK_EQ(g.OpenPopupStack.Size, 1);
+        IM_CHECK_EQ(g.NavWindow->ID, ctx->GetID("/Popup1"));
+    };
+
+    // ## Test closing current popup
+    t = IM_REGISTER_TEST(e, "window", "window_popup_close_current");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::SetNextWindowSize(ImVec2(0, 0));
+        ImGui::Begin("Popups", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_MenuBar);
+        if (ImGui::BeginMenuBar())
+        {
+            if (ImGui::BeginMenu("Menu"))
+            {
+                if (ImGui::BeginMenu("Submenu"))
+                {
+                    if (ImGui::MenuItem("Close"))
+                        ImGui::CloseCurrentPopup();
+                    ImGui::EndMenu();
+                }
+                ImGui::EndMenu();
+            }
+            ImGui::EndMenuBar();
+        }
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ctx->WindowRef("Popups");
+        IM_CHECK(ctx->UiContext->OpenPopupStack.Size == 0);
+        ctx->MenuClick("Menu");
+        IM_CHECK(ctx->UiContext->OpenPopupStack.Size == 1);
+        ctx->MenuClick("Menu/Submenu");
+        IM_CHECK(ctx->UiContext->OpenPopupStack.Size == 2);
+        ctx->MenuClick("Menu/Submenu/Close");
+        IM_CHECK(ctx->UiContext->OpenPopupStack.Size == 0);
     };
 
     // ## Test that child window correctly affect contents size based on how their size was specified.
@@ -457,41 +531,6 @@ void RegisterTests_Window(ImGuiTestEngine* e)
         IM_CHECK(window->Pos == ImVec2(100, 0));
         ctx->WindowMove("Movable Window", ImVec2(50, 100));
         IM_CHECK(window->Pos == ImVec2(50, 100));
-    };
-
-    // ## Test closing current popup
-    // FIXME-TESTS: Test left-click/right-click forms of closing popups
-    t = IM_REGISTER_TEST(e, "window", "window_close_current_popup");
-    t->GuiFunc = [](ImGuiTestContext* ctx)
-    {
-        ImGui::SetNextWindowSize(ImVec2(0, 0));
-        ImGui::Begin("Popups", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_MenuBar);
-        if (ImGui::BeginMenuBar())
-        {
-            if (ImGui::BeginMenu("Menu"))
-            {
-                if (ImGui::BeginMenu("Submenu"))
-                {
-                    if (ImGui::MenuItem("Close"))
-                        ImGui::CloseCurrentPopup();
-                    ImGui::EndMenu();
-                }
-                ImGui::EndMenu();
-            }
-            ImGui::EndMenuBar();
-        }
-        ImGui::End();
-    };
-    t->TestFunc = [](ImGuiTestContext* ctx)
-    {
-        ctx->WindowRef("Popups");
-        IM_CHECK(ctx->UiContext->OpenPopupStack.Size == 0);
-        ctx->MenuClick("Menu");
-        IM_CHECK(ctx->UiContext->OpenPopupStack.Size == 1);
-        ctx->MenuClick("Menu/Submenu");
-        IM_CHECK(ctx->UiContext->OpenPopupStack.Size == 2);
-        ctx->MenuClick("Menu/Submenu/Close");
-        IM_CHECK(ctx->UiContext->OpenPopupStack.Size == 0);
     };
 }
 
@@ -2306,7 +2345,7 @@ void RegisterTests_Capture(ImGuiTestEngine* e)
         ImGuiWindow* window_overlay = ctx->GetWindowByRef("");
         IM_CHECK(window_overlay != NULL);
 
-        // FIXME-TESTS: Find last newly opened window?
+        // FIXME-TESTS: Find last newly opened window? -> cannot rely on NavWindow as menu item maybe was already checked..
 
         float fh = ImGui::GetFontSize();
         float pad = fh;

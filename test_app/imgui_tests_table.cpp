@@ -183,6 +183,12 @@ void RegisterTests_Table(ImGuiTestEngine* e)
         }
         ImGui::End();
     };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        // Test with/without clipping
+        ctx->WindowResize("Test window 1", ImVec2(500, 600));
+        ctx->WindowResize("Test window 1", ImVec2(10, 600));
+    };
 
     // ## Table: measure equal width
     t = IM_REGISTER_TEST(e, "table", "table_3_width");
