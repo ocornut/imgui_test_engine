@@ -791,6 +791,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
     t = IM_REGISTER_TEST(e, "table", "table_sorting");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
+        ImGuiContext& g = *ctx->UiContext;
         int& table_flags = ctx->GenericVars.Int1;
         ImGui::SetNextWindowSize(ImVec2(600, 80), ImGuiCond_Appearing); // FIXME-TESTS: Why?
         ImGui::Begin("Test window", NULL, ImGuiWindowFlags_NoSavedSettings);
@@ -804,7 +805,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
 
         if (ImGui::BeginTable("Table", 6, table_flags))
         {
-            ImGui::TableSetupColumn("Default");
+            ImGui::TableSetupColumn("Default", g.CurrentTable->Columns[0].FlagsIn);
             ImGui::TableSetupColumn("PreferSortAscending", ImGuiTableColumnFlags_PreferSortAscending);
             ImGui::TableSetupColumn("PreferSortDescending", ImGuiTableColumnFlags_PreferSortDescending);
             ImGui::TableSetupColumn("NoSort", ImGuiTableColumnFlags_NoSort);
@@ -902,6 +903,23 @@ void RegisterTests_Table(ImGuiTestEngine* e)
         ctx->Yield();
         sort_specs = table_get_sort_specs(ctx, table);
         IM_CHECK(sort_specs == NULL);
+
+        // Test updating sorting direction on column flag change.
+        ImGuiTableColumn* col = &table->Columns[0];
+        table_flags = ImGuiTableFlags_Sortable;
+        col->FlagsIn = ImGuiTableColumnFlags_NoSortAscending | ImGuiTableColumnFlags_NoSortDescending;
+        ctx->Yield();
+        IM_CHECK((col->Flags & ImGuiTableColumnFlags_NoSort) != 0);
+
+        col->SortDirection = ImGuiSortDirection_Ascending;
+        col->FlagsIn = ImGuiTableColumnFlags_NoSortAscending;
+        ctx->Yield();
+        IM_CHECK(col->SortDirection == ImGuiSortDirection_Descending);
+
+        col->SortDirection = ImGuiSortDirection_Descending;
+        col->FlagsIn = ImGuiTableColumnFlags_NoSortDescending;
+        ctx->Yield();
+        IM_CHECK(col->SortDirection == ImGuiSortDirection_Ascending);
     };
 
     // ## Test freezing of table rows and columns.
