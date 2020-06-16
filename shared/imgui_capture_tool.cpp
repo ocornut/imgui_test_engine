@@ -141,6 +141,18 @@ ImGuiCaptureStatus ImGuiCaptureContext::CaptureUpdate(ImGuiCaptureArgs* args)
         }
     }
 
+    if (_FrameNo > 0 && (args->InFlags & ImGuiCaptureFlags_StitchFullContents) != 0)
+    {
+        // Force mouse position. Hovered window is reset in ImGui::NewFrame() based on mouse real mouse position.
+        // Mouse position lags one frame behind when CaptureUpdate() is called late (i.e. near ImGui::EndFrame()).
+        // This lag is not really important, because capture tool already waits for up to four frames each time
+        // windows are moved and _WantMouseCursorAt updated.
+        IM_ASSERT(args->InCaptureWindows.Size == 1);
+        g.IO.MousePos = args->InCaptureWindows.front()->Pos + _MouseRelativeToWindowPos;
+        g.HoveredWindow = _HoveredWindow;
+        g.HoveredRootWindow = _HoveredWindow ? _HoveredWindow->RootWindow : NULL;
+    }
+
     // Recording will be set to false when we are stopping GIF capture.
     const bool is_recording_gif = IsCapturingGif();
     const double current_time_sec = ImGui::GetTime();
@@ -221,9 +233,23 @@ ImGuiCaptureStatus ImGuiCaptureContext::CaptureUpdate(ImGuiCaptureArgs* args)
             // it's contents - keep original size.
             ImVec2 full_size;
             ImGuiWindow* window = args->InCaptureWindows.front();
-            full_size.x = ImMax(window->SizeFull.x, window->ContentSize.x + window->WindowPadding.y * 2);
-            full_size.y = ImMax(window->SizeFull.y, window->ContentSize.y + window->WindowPadding.y * 2 + window->TitleBarHeight() + window->MenuBarHeight());
+
+            // FIXME-CAPTURE: Window height to fit contents calculation may be incorrect here. When everything is opened in the demo we must increase full_size.y by 18 to make scrollbar disappear.
+            full_size.x = ImMax(window->SizeFull.x, window->ContentSize.x + (window->WindowPadding.x + window->WindowBorderSize) * 2);
+            full_size.y = ImMax(window->SizeFull.y, window->ContentSize.y + (window->WindowPadding.y + window->WindowBorderSize) * 2 + window->TitleBarHeight() + window->MenuBarHeight());
+
+            // Mouse cursor is relative to captured window even if it is not hovered, in which case cursor is kept
+            // off the window to prevent appearing in screenshot multiple times by accident.
+            // FIXME-CAPTURE: When everything is opened in demo window, window is scrolled to the bottom and mouse cursor is positioned over the window - capturing stitched image causes mouse
+            // cursor to appear +-10px higher than it was positioned at.
+            _MouseRelativeToWindowPos = io.MousePos - window->Pos + window->Scroll;
+            _HoveredWindow = g.HoveredWindow;
             ImGui::SetWindowSize(window, full_size);
+        }
+        else
+        {
+            _MouseRelativeToWindowPos = ImVec2(-FLT_MAX, -FLT_MAX);
+            _HoveredWindow = NULL;
         }
 
         _FrameNo++;
@@ -377,6 +403,8 @@ ImGuiCaptureStatus ImGuiCaptureContext::CaptureUpdate(ImGuiCaptureArgs* args)
 
             _FrameNo = _ChunkNo = 0;
             _LastRecordedFrameTimeSec = 0;
+            _MouseRelativeToWindowPos = ImVec2(-FLT_MAX, -FLT_MAX);
+            _HoveredWindow = NULL;
             g.Style.DisplayWindowPadding = _DisplayWindowPaddingBackup;
             g.Style.DisplaySafeAreaPadding = _DisplaySafeAreaPaddingBackup;
             args->_Capturing = false;

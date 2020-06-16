@@ -101,8 +101,10 @@ struct ImGuiCaptureContext
     bool                    _Recording = false;             // Flag indicating that GIF recording is in progress.
     double                  _LastRecordedFrameTimeSec = 0;  // Time when last GIF frame was recorded.
     GifWriter*              _GifWriter = NULL;              // GIF image writer state.
+    ImVec2                  _MouseRelativeToWindowPos;      // Mouse cursor position relative to captured window (when _StitchFullContents is in use).
+    ImGuiWindow*            _HoveredWindow = NULL;          // Window which was hovered at capture start.
 
-    ImGuiCaptureContext(ImGuiScreenCaptureFunc capture_func = NULL) { ScreenCaptureFunc = capture_func; }
+    ImGuiCaptureContext(ImGuiScreenCaptureFunc capture_func = NULL) { ScreenCaptureFunc = capture_func; _MouseRelativeToWindowPos = ImVec2(-FLT_MAX, -FLT_MAX); }
 
     // Capture a screenshot. If this function returns true then it should be called again with same arguments on the next frame.
     ImGuiCaptureStatus      CaptureUpdate(ImGuiCaptureArgs* args);
