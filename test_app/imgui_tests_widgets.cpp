@@ -1944,20 +1944,16 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
     {
         ctx->WindowRef("Test Window");
         ImGuiTable* table = ImGui::FindTableByID(ctx->GetID("table"));
-        ImGuiID seed_id = ctx->GetIDByInt((int)table->ID);
 
         for (int i = 0; i < 2; i++)
         {
-            ctx->MouseMove(ctx->GetID("C1", seed_id), ImGuiTestOpFlags_NoCheckHoveredId); // Button itself won't be hovered, Selectable will!
+            ctx->MouseMove("table/C1", ImGuiTestOpFlags_NoCheckHoveredId); // Button itself won't be hovered, Selectable will!
             IM_CHECK(ctx->GenericVars.Status.Hovered == 1);
-            ctx->MouseMove(ctx->GetID("C3", seed_id), ImGuiTestOpFlags_NoCheckHoveredId); // Button itself won't be hovered, Selectable will!
+            ctx->MouseMove("table/C3", ImGuiTestOpFlags_NoCheckHoveredId); // Button itself won't be hovered, Selectable will!
             IM_CHECK(ctx->GenericVars.Status.Hovered == 1);
 
             // Reorder columns and test again
-            ImGuiID table_id = ctx->GetIDByInt((int)table->ID);
-            ImGuiID column_label_id1 = ctx->GetID("1", ctx->GetIDByInt(0, table_id));
-            ImGuiID column_label_id2 = ctx->GetID("2", ctx->GetIDByInt(1, table_id));
-            ctx->ItemDragAndDrop(column_label_id1, column_label_id2);
+            ctx->ItemDragAndDrop(TableGetHeaderID(table, "1"), TableGetHeaderID(table, "2"));
         }
     };
 #endif

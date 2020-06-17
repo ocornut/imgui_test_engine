@@ -14,6 +14,8 @@ enum ImGuiKeyState
     ImGuiKeyState_Down      // Pressed/held
 };
 
+struct ImGuiTable;
+
 // Maths helpers
 static inline bool  ImFloatEq(float f1, float f2) { float d = f2 - f1; return fabsf(d) <= FLT_EPSILON; }
 
@@ -22,6 +24,7 @@ ImGuiID             ImHashDecoratedPath(const char* str, ImGuiID seed = 0);
 const char*         GetImGuiKeyName(ImGuiKey key);
 void                GetImGuiKeyModsPrefixStr(ImGuiKeyModFlags mod_flags, char* out_buf, size_t out_buf_size);
 ImFont*             FindFontByName(const char* name);
+ImGuiID             TableGetHeaderID(ImGuiTable* table, const char* column, int instance_no = 0);
 
 // Helper: maintain/calculate moving average
 template<typename TYPE>
@@ -55,4 +58,5 @@ void    PopDisabled();
 // STR + InputText bindings
 bool    InputText(const char* label, Str* str, ImGuiInputTextFlags flags = 0, ImGuiInputTextCallback callback = NULL, void* user_data = NULL);
 bool    InputTextMultiline(const char* label, Str* str, const ImVec2& size = ImVec2(0, 0), ImGuiInputTextFlags flags = 0, ImGuiInputTextCallback callback = NULL, void* user_data = NULL);
+
 }

@@ -192,3 +192,15 @@ bool ImGui::InputTextMultiline(const char* label, Str* str, const ImVec2& size, 
     cb_user_data.ChainCallbackUserData = user_data;
     return InputTextMultiline(label, (char*)str->c_str(), (size_t)str->capacity() + 1, size, flags, InputTextCallbackStr, &cb_user_data);
 }
+
+ImGuiID TableGetHeaderID(ImGuiTable* table, const char* column, int instance_no)
+{
+    IM_ASSERT(table != NULL);
+    int column_n = -1;
+    for (int n = 0; n < table->Columns.size() && column_n < 0; n++)
+        if (strcmp(ImGui::TableGetColumnName(table, n), column) == 0)
+            column_n = n;
+    IM_ASSERT(column_n != -1);
+    int column_id = instance_no * table->ColumnsCount + column_n;
+    return ImHashData(column, strlen(column), ImHashData(&column_id, sizeof(column_id), table->ID + instance_no));
+}

@@ -373,11 +373,9 @@ void RegisterTests_Table(ImGuiTestEngine* e)
             int column_n = table->RightMostVisibleColumn;
             const ImGuiTableColumn* col_curr = &table->Columns[column_n];
 
-            // Fit column. ID calculation from BeginTableEx() and TableAutoHeaders()
-            ImGuiID instance_id = (ImGuiID)(table->InstanceCurrent * table->ColumnsCount + column_n);   // pushed by TableAutoHeaders()
-            ImGuiID table_id = ctx->GetIDByInt((int)(table->ID + (ImGuiID)table->InstanceCurrent));     // pushed by BeginTable()
-            ImGuiID column_label_id = ctx->GetID("F3", ctx->GetIDByInt((int)instance_id, table_id));
-            ctx->ItemClick(column_label_id, ImGuiMouseButton_Right);
+            // Fit column.
+            ctx->WindowRef("Test window 1");
+            ctx->ItemClick(TableGetHeaderID(table, "F3"), ImGuiMouseButton_Right);
             ctx->WindowRef(g.NavWindow);
             ctx->ItemClick("Size column to fit");
             IM_CHECK(col_curr->WidthGiven == initial_col_size[column_n]);  // Column restored original size
@@ -387,17 +385,17 @@ void RegisterTests_Table(ImGuiTestEngine* e)
                 IM_CHECK(table->Columns[column_n].WidthGiven < initial_col_size[column_n]);
 
             // Test fitting rest of the columns
-            ctx->ItemClick(column_label_id, ImGuiMouseButton_Right);
+            ctx->WindowRef("Test window 1");
+            ctx->ItemClick(TableGetHeaderID(table, "F3"), ImGuiMouseButton_Right);
             ctx->WindowRef(g.NavWindow);
             ctx->ItemClick("Size all columns to fit");
 
             // Ensure all columns fit to contents
             for (column_n = 0; column_n >= 0; column_n = table->Columns[column_n].NextVisibleColumn)
                 IM_CHECK(table->Columns[column_n].WidthGiven == initial_col_size[column_n]);
-
-            ctx->WindowRef("Test window 1");                    // Restore previous ref
         }
 
+        ctx->WindowRef("Test window 1");
         table = ImGui::FindTableByID(ctx->GetID("table2"));     // Columns: FFW, do span entire width of the table
         IM_CHECK(table->ColumnsTotalWidth + 1 == table->InnerWindow->ContentRegionRect.GetWidth());
 
@@ -834,11 +832,9 @@ void RegisterTests_Table(ImGuiTestEngine* e)
             ImGuiTableColumn* column = HelperTableFindColumnByName(table, label);
             IM_CHECK_RETV(column != NULL, ImGuiSortDirection_None);
 
-            int column_n = table->Columns.index_from_ptr(column);
-            ImGuiID column_header_id = ctx->GetID(label, ctx->GetIDByInt(column_n, ctx->GetIDByInt((int)table->ID))); // FIXME-TESTS: Add helpers
             if (click_mod != ImGuiKeyModFlags_None)
                 ctx->KeyDownMap(ImGuiKey_COUNT, click_mod);
-            ctx->ItemClick(column_header_id, ImGuiMouseButton_Left);
+            ctx->ItemClick(TableGetHeaderID(table, label), ImGuiMouseButton_Left);
             if (click_mod != ImGuiKeyModFlags_None)
                 ctx->KeyUpMap(ImGuiKey_COUNT, click_mod);
             return column->SortDirection;
