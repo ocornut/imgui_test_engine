@@ -193,6 +193,7 @@ bool ImGui::InputTextMultiline(const char* label, Str* str, const ImVec2& size, 
     return InputTextMultiline(label, (char*)str->c_str(), (size_t)str->capacity() + 1, size, flags, InputTextCallbackStr, &cb_user_data);
 }
 
+#if IMGUI_HAS_TABLE
 ImGuiID TableGetHeaderID(ImGuiTable* table, const char* column, int instance_no)
 {
     IM_ASSERT(table != NULL);
@@ -204,3 +205,4 @@ ImGuiID TableGetHeaderID(ImGuiTable* table, const char* column, int instance_no)
     int column_id = instance_no * table->ColumnsCount + column_n;
     return ImHashData(column, strlen(column), ImHashData(&column_id, sizeof(column_id), table->ID + instance_no));
 }
+#endif

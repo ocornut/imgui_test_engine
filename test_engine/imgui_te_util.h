@@ -14,7 +14,9 @@ enum ImGuiKeyState
     ImGuiKeyState_Down      // Pressed/held
 };
 
+#if IMGUI_HAS_TABLE
 struct ImGuiTable;
+#endif
 
 // Maths helpers
 static inline bool  ImFloatEq(float f1, float f2) { float d = f2 - f1; return fabsf(d) <= FLT_EPSILON; }
@@ -24,7 +26,10 @@ ImGuiID             ImHashDecoratedPath(const char* str, ImGuiID seed = 0);
 const char*         GetImGuiKeyName(ImGuiKey key);
 void                GetImGuiKeyModsPrefixStr(ImGuiKeyModFlags mod_flags, char* out_buf, size_t out_buf_size);
 ImFont*             FindFontByName(const char* name);
+
+#if IMGUI_HAS_TABLE
 ImGuiID             TableGetHeaderID(ImGuiTable* table, const char* column, int instance_no = 0);
+#endif
 
 // Helper: maintain/calculate moving average
 template<typename TYPE>
