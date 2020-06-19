@@ -57,7 +57,7 @@ static inline void DebugCrtDumpLeaks()
 #include <stdio.h>
 #define IMGUI_DEFINE_MATH_OPERATORS
 #include "imgui_tests.h"
-#include "test_engine/imgui_te_core.h"
+#include "test_engine/imgui_te_engine.h"
 #include "test_engine/imgui_te_coroutine.h"
 #include "test_engine/imgui_te_util.h"
 #include "shared/imgui_app.h"

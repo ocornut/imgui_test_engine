@@ -5,7 +5,7 @@
 
 #include "imgui.h"
 #include "imgui_internal.h"
-#include "imgui_te_core.h"              // ImGuiTestRef, IM_CHECK*, enums
+#include "imgui_te_engine.h"            // ImGuiTestRef, IM_CHECK*, enums
 #include <stdint.h>                     // intptr_t
 
 // Undo some of the damage done by <windows.h>

@@ -9,7 +9,7 @@
 #include "imgui_tests.h"
 #include "shared/imgui_capture_tool.h"
 #include "shared/imgui_utils.h"
-#include "test_engine/imgui_te_core.h"      // IM_REGISTER_TEST()
+#include "test_engine/imgui_te_engine.h"      // IM_REGISTER_TEST()
 #include "test_engine/imgui_te_context.h"
 #include "libs/Str/Str.h"
 

@@ -8,7 +8,7 @@
 #define IMGUI_DEFINE_MATH_OPERATORS
 #include "imgui.h"
 #include "imgui_internal.h"
-#include "imgui_te_core.h"
+#include "imgui_te_engine.h"
 #include "imgui_te_util.h"
 #include "imgui_te_context.h"
 #include "imgui_te_internal.h"
@@ -44,6 +44,7 @@ Index of this file:
 // Note: Tests can't reliably use ImGuiCond_Once or ImGuiCond_FirstUseEver
 // Note: GuiFunc can't run code that yields. There is an assert for that.
 
+// FIXME-TESTS: Make it possible to run adhoc tests without registering/adding to a global list.
 // FIXME-TESTS: UI to setup breakpoint (e.g. GUI func on frame X, beginning of Test func or at certain Yield/Sleep spot)
 // FIXME-TESTS: Be able to run blind within GUI
 // FIXME-TESTS: Be able to run in own contexts to avoid side-effects

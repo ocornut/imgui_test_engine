@@ -9,7 +9,7 @@
 #include "shared/IconsFontAwesome5.h"
 #include "shared/imgui_capture_tool.h"
 #ifdef EDITOR_DEMO_ENABLE_TEST_ENGINE
-#include "test_engine/imgui_te_core.h"
+#include "test_engine/imgui_te_engine.h"
 #include "test_engine/imgui_te_coroutine.h"
 #endif
 

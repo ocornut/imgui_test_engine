@@ -24,7 +24,7 @@
     <ClInclude Include="..\test_engine\imgui_te_context.h">
       <Filter>test_engine</Filter>
     </ClInclude>
-    <ClInclude Include="..\test_engine\imgui_te_core.h">
+    <ClInclude Include="..\test_engine\imgui_te_engine.h">
       <Filter>test_engine</Filter>
     </ClInclude>
     <ClInclude Include="..\test_engine\imgui_te_util.h">
