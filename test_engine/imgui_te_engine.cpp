@@ -134,20 +134,22 @@ static void ImGuiTestEngine_BindImGuiContext(ImGuiTestEngine* engine, ImGuiConte
 void    ImGuiTestEngine_UnbindImGuiContext(ImGuiTestEngine* engine, ImGuiContext* imgui_context)
 {
     IM_ASSERT(engine->UiContextTarget == imgui_context);
-    IM_ASSERT(imgui_context->TestEngine == engine);
 
     ImGuiTestEngine_CoroutineStopAndJoin(engine);
+
+#if IMGUI_VERSION_NUM >= 17701
+    IM_ASSERT(imgui_context->TestEngine == engine);
+    imgui_context->TestEngine = NULL;
 
     // Remove .ini handler
     IM_ASSERT(GImGui == imgui_context);
     if (ImGuiSettingsHandler* ini_handler = ImGui::FindSettingsHandler("TestEngine"))
         imgui_context->SettingsHandlers.erase(imgui_context->SettingsHandlers.Data + imgui_context->SettingsHandlers.index_from_ptr(ini_handler));
+#endif
 
     // Remove hook
     if (GImGuiTestEngine == engine)
         GImGuiTestEngine = NULL;
-    imgui_context->TestEngine = NULL;
-
     engine->UiContextVisible = engine->UiContextBlind = engine->UiContextTarget = engine->UiContextActive = NULL;
 }
 
