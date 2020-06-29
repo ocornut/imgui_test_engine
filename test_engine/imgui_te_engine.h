@@ -162,6 +162,7 @@ struct ImGuiTestInput
 // Hooks for Core Library
 //-------------------------------------------------------------------------
 
+extern void     ImGuiTestEngineHook_Shutdown(ImGuiContext* ctx);
 extern void     ImGuiTestEngineHook_PreNewFrame(ImGuiContext* ui_ctx);
 extern void     ImGuiTestEngineHook_PostNewFrame(ImGuiContext* ui_ctx);
 extern void     ImGuiTestEngineHook_ItemAdd(ImGuiContext* ui_ctx, const ImRect& bb, ImGuiID id);

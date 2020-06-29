@@ -66,6 +66,7 @@ static ImGuiTestEngine* GImGuiTestEngine = NULL;
 //-------------------------------------------------------------------------
 
 // Private functions
+static void ImGuiTestEngine_CoroutineStopAndJoin(ImGuiTestEngine* engine);
 static void ImGuiTestEngine_StartCalcSourceLineEnds(ImGuiTestEngine* engine);
 static void ImGuiTestEngine_ClearInput(ImGuiTestEngine* engine);
 static void ImGuiTestEngine_ApplyInputToImGuiContext(ImGuiTestEngine* engine);
@@ -88,6 +89,8 @@ static void  ImGuiTestEngine_SettingsWriteAll(ImGuiContext* imgui_ctx, ImGuiSett
 // Public
 // - ImGuiTestEngine_CreateContext()
 // - ImGuiTestEngine_ShutdownContext()
+// - ImGuiTestEngine_BindImGuiContext()
+// - ImGuiTestEngine_UnbindImGuiContext()
 // - ImGuiTestEngine_GetIO()
 // - ImGuiTestEngine_Abort()
 // - ImGuiTestEngine_QueueAllTests()
@@ -103,11 +106,10 @@ static void  ImGuiTestEngine_SettingsWriteAll(ImGuiContext* imgui_ctx, ImGuiSett
 // - ImGuiTestEngine_RunTest()
 //-------------------------------------------------------------------------
 
-// Create test context and attach to imgui context
-ImGuiTestEngine*    ImGuiTestEngine_CreateContext(ImGuiContext* imgui_context)
+static void ImGuiTestEngine_BindImGuiContext(ImGuiTestEngine* engine, ImGuiContext* imgui_context)
 {
-    IM_ASSERT(imgui_context != NULL);
-    ImGuiTestEngine* engine = IM_NEW(ImGuiTestEngine)();
+    IM_ASSERT(engine->UiContextTarget == NULL);
+
     engine->UiContextVisible = imgui_context;
     engine->UiContextBlind = NULL;
     engine->UiContextTarget = engine->UiContextVisible;
@@ -127,7 +129,34 @@ ImGuiTestEngine*    ImGuiTestEngine_CreateContext(ImGuiContext* imgui_context)
     ini_handler.ReadLineFn = ImGuiTestEngine_SettingsReadLine;
     ini_handler.WriteAllFn = ImGuiTestEngine_SettingsWriteAll;
     imgui_context->SettingsHandlers.push_back(ini_handler);
+}
 
+void    ImGuiTestEngine_UnbindImGuiContext(ImGuiTestEngine* engine, ImGuiContext* imgui_context)
+{
+    IM_ASSERT(engine->UiContextTarget == imgui_context);
+    IM_ASSERT(imgui_context->TestEngine == engine);
+
+    ImGuiTestEngine_CoroutineStopAndJoin(engine);
+
+    // Remove .ini handler
+    IM_ASSERT(GImGui == imgui_context);
+    if (ImGuiSettingsHandler* ini_handler = ImGui::FindSettingsHandler("TestEngine"))
+        imgui_context->SettingsHandlers.erase(imgui_context->SettingsHandlers.Data + imgui_context->SettingsHandlers.index_from_ptr(ini_handler));
+
+    // Remove hook
+    if (GImGuiTestEngine == engine)
+        GImGuiTestEngine = NULL;
+    imgui_context->TestEngine = NULL;
+
+    engine->UiContextVisible = engine->UiContextBlind = engine->UiContextTarget = engine->UiContextActive = NULL;
+}
+
+// Create test context and attach to imgui context
+ImGuiTestEngine*    ImGuiTestEngine_CreateContext(ImGuiContext* imgui_context)
+{
+    IM_ASSERT(imgui_context != NULL);
+    ImGuiTestEngine* engine = IM_NEW(ImGuiTestEngine)();
+    ImGuiTestEngine_BindImGuiContext(engine, imgui_context);
     return engine;
 }
 
@@ -157,9 +186,8 @@ void    ImGuiTestEngine_ShutdownContext(ImGuiTestEngine* engine)
 {
     // Shutdown coroutine
     ImGuiTestEngine_CoroutineStopAndJoin(engine);
-
-    // Important: At this point the imgui context are already destroyed!
-    engine->UiContextVisible = engine->UiContextBlind = engine->UiContextTarget = engine->UiContextActive = NULL;
+    if (engine->UiContextTarget != NULL)
+        ImGuiTestEngine_UnbindImGuiContext(engine, engine->UiContextTarget);
 
     IM_FREE(engine->UserDataBuffer);
     engine->UserDataBuffer = NULL;
@@ -1086,11 +1114,21 @@ static void ImGuiTestEngine_RunTest(ImGuiTestEngine* engine, ImGuiTestContext* c
 //-------------------------------------------------------------------------
 // [SECTION] HOOKS FOR CORE LIBRARY
 //-------------------------------------------------------------------------
+// - ImGuiTestEngineHook_Shutdown()
 // - ImGuiTestEngineHook_PreNewFrame()
 // - ImGuiTestEngineHook_PostNewFrame()
 // - ImGuiTestEngineHook_ItemAdd()
 // - ImGuiTestEngineHook_ItemInfo()
+// - ImGuiTestEngineHook_Log()
+// - ImGuiTestEngineHook_IdInfo()
+// - ImGuiTestEngineHook_AssertFunc()
 //-------------------------------------------------------------------------
+
+void ImGuiTestEngineHook_Shutdown(ImGuiContext* ui_ctx)
+{
+    if (ImGuiTestEngine* engine = (ImGuiTestEngine*)ui_ctx->TestEngine)
+        ImGuiTestEngine_UnbindImGuiContext(engine, ui_ctx);
+}
 
 void ImGuiTestEngineHook_PreNewFrame(ImGuiContext* ui_ctx)
 {
