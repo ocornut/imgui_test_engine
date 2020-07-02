@@ -397,7 +397,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
 
         ctx->WindowRef("Test window 1");
         table = ImGui::FindTableByID(ctx->GetID("table2"));     // Columns: FFW, do span entire width of the table
-        IM_CHECK(table->ColumnsTotalWidth + 1 == table->InnerWindow->ContentRegionRect.GetWidth());
+        IM_CHECK(table->ColumnsTotalWidth == table->InnerWindow->ContentRegionRect.GetWidth());
 
         // Iterate visible columns and check existence of resize handles
         for (int column_n = 0; column_n >= 0; column_n = table->Columns[column_n].NextVisibleColumn)
@@ -408,7 +408,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
             else
                 IM_CHECK(ctx->ItemInfo(handle_id, ImGuiTestOpFlags_NoError) != NULL); // FF
         }
-        IM_CHECK(table->ColumnsTotalWidth + 1 == table->InnerWindow->ContentRegionRect.GetWidth());
+        IM_CHECK(table->ColumnsTotalWidth == table->InnerWindow->ContentRegionRect.GetWidth());
     };
 
     // ## Test Visible flag
