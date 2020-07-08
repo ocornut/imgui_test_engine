@@ -4,6 +4,7 @@
 #include <stdint.h> // uint64_t
 
 class Str;
+struct ImVec2;
 struct ImGuiTextBuffer;
 template<typename T> struct ImVector;
 
@@ -75,5 +76,8 @@ bool                ImParseFindIniSection(const char* ini_config, const char* he
 // Build Info helpers
 const ImBuildInfo&  ImBuildGetCompilationInfo();
 bool                ImBuildGetGitBranchName(const char* git_repo_path, Str* branch_name);
+
+// Maths/Geometry helpers
+void                ImGeomGenerateRandomConvexShape(ImVec2* points, int points_count, ImVec2 shape_center, float shape_size, unsigned int poly_seed);
 
 //-----------------------------------------------------------------------------
