@@ -25,6 +25,10 @@
 // Tests: Performances/Benchmarks
 //-------------------------------------------------------------------------
 
+#if IMGUI_VERSION_NUM >= 17703
+#define IMGUI_HAS_TEXLINES
+#endif
+
 void RegisterTests_Perf(ImGuiTestEngine* e)
 {
     ImGuiTest* t = NULL;
@@ -212,7 +216,7 @@ void RegisterTests_Perf(ImGuiTestEngine* e)
         default:
             IM_ASSERT(0);
         }
-		draw_list->Flags = old_flags; // Restre flags
+		draw_list->Flags = old_flags; // Restore flags
         ImGui::End();
     };
 
