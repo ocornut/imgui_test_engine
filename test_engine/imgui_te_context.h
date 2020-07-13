@@ -225,6 +225,7 @@ struct ImGuiTestContext
     void        WindowMove(ImGuiTestRef ref, ImVec2 pos, ImVec2 pivot = ImVec2(0.0f, 0.0f));
     void        WindowResize(ImGuiTestRef ref, ImVec2 sz);
     void        WindowMoveToMakePosVisible(ImGuiWindow* window, ImVec2 pos);
+    void        WindowsMoveToMakePosVisible(ImVec2 pos);
     bool        WindowBringToFront(ImGuiWindow* window, ImGuiTestOpFlags flags = ImGuiTestOpFlags_None);
     void        PopupClose();
     ImGuiWindow* GetWindowByRef(ImGuiTestRef ref);

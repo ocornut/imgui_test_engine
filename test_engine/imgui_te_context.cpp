@@ -919,7 +919,10 @@ void    ImGuiTestContext::WindowMoveToMakePosVisible(ImGuiWindow* window, ImVec2
     if (IsError())
         return;
 
-    ImRect visible_r(0.0f, 0.0f, g.IO.DisplaySize.x, g.IO.DisplaySize.y);   // FIXME: Viewport
+    // FIXME: Viewport
+    ImRect visible_r;
+    visible_r.Min = GetMainViewportPos();
+    visible_r.Max = visible_r.Min + g.IO.DisplaySize;
     if (!visible_r.Contains(pos))
     {
         // Fallback move window directly to make our item reachable with the mouse.
@@ -930,6 +933,20 @@ void    ImGuiTestContext::WindowMoveToMakePosVisible(ImGuiWindow* window, ImVec2
         ImGui::SetWindowPos(window, window->Pos + delta, ImGuiCond_Always);
         LogDebug("WindowMoveBypass %s delta (%.1f,%.1f)", window->Name, delta.x, delta.y);
         Yield();
+    }
+}
+void    ImGuiTestContext::WindowsMoveToMakePosVisible(ImVec2 pos)
+{
+    ImGuiContext& g = *UiContext;
+    if (IsError())
+        return;
+
+    for (ImGuiWindow* window : g.Windows)
+    {
+        if (window->RootWindow != NULL)
+            continue;
+
+        WindowMoveToMakePosVisible(window, pos);
     }
 }
 

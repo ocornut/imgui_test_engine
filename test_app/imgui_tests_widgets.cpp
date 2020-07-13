@@ -1913,6 +1913,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
     };
 
 #if IMGUI_HAS_TABLE
+    // ## Test ImGuiSelectableFlags_SpanAllColumns flag when used in a table.
     t = IM_REGISTER_TEST(e, "widgets", "widgets_selectable_span_all_table");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
@@ -1957,4 +1958,33 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         }
     };
 #endif
+
+    // ## Test loss of navigation focus when clicking on empty viewport space (#3344).
+    t = IM_REGISTER_TEST(e, "widgets", "widgets_unfocus_nav");
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiContext& g = *ctx->UiContext;
+        ctx->WindowRef("Dear ImGui Demo");
+        ctx->ItemClick("Help");
+
+        // Set navigation focus.
+        IM_CHECK_EQ(g.NavId, ctx->GetID("Help"));
+        IM_CHECK_EQ(g.NavWindow, ctx->GetWindowByRef(ctx->RefID));
+        IM_CHECK(g.IO.WantCaptureMouse == true);
+        IM_CHECK(g.IO.WantCaptureKeyboard == true);
+
+        // If any top-level window covers top-left corner - move it out of the way.
+        ctx->WindowsMoveToMakePosVisible(ctx->GetMainViewportPos());
+
+        // Click top-left corner which now is empty space.
+        ctx->MouseMoveToPos(ctx->GetMainViewportPos());
+        IM_CHECK(g.HoveredWindow == NULL);
+
+        // Clicking empty space should clear navigation focus.
+        ctx->MouseClick();
+        IM_CHECK(g.NavId == 0);
+        IM_CHECK(g.NavWindow == NULL);
+        IM_CHECK(g.IO.WantCaptureMouse == false);
+        IM_CHECK(g.IO.WantCaptureKeyboard == false);
+    };
 }
