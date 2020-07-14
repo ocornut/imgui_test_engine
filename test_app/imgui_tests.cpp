@@ -298,7 +298,8 @@ void RegisterTests_Window(ImGuiTestEngine* e)
         IM_CHECK(g.NavWindow == popup_1);
     };
 
-    // ## Test an edge case of calling CloseCurrentPopup() after clicking it in the void (#2880)
+    // ## Test an edge case of calling CloseCurrentPopup() after clicking it (#2880)
+    // Previously we would mistakenly handle the click on EndFrame() while popup is already marked as closed, doing a double close
     t = IM_REGISTER_TEST(e, "window", "window_popup_focus2");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
@@ -1059,6 +1060,28 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
             // Verify NavId was restored to initial value.
             IM_CHECK_EQ(g.NavId, ctx->GetID("Configuration"));
         }
+    };
+
+    // ## Test loss of navigation focus when clicking on empty viewport space (#3344).
+    t = IM_REGISTER_TEST(e, "nav", "nav_focus_clear_on_void");
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiContext& g = *ctx->UiContext;
+        ctx->WindowRef("Dear ImGui Demo");
+        ctx->ItemOpen("Help");
+        ctx->ItemClose("Help");
+        IM_CHECK_EQ(g.NavId, ctx->GetID("Help"));
+        IM_CHECK_EQ(g.NavWindow, ctx->GetWindowByRef(ctx->RefID));
+        IM_CHECK(g.IO.ConfigFlags & ImGuiConfigFlags_NavEnableKeyboard); // FIXME-TESTS: Should test for both cases.
+        IM_CHECK(g.IO.WantCaptureMouse == true);
+        // FIXME-TESTS: This depends on ImGuiConfigFlags_NavNoCaptureKeyboard being cleared. Should test for both cases.
+        IM_CHECK(g.IO.WantCaptureKeyboard == true);
+
+        ctx->MouseClickOnVoid(0);
+        //IM_CHECK(g.NavId == 0); // Clarify specs
+        IM_CHECK(g.NavWindow == NULL);
+        IM_CHECK(g.IO.WantCaptureMouse == false);
+        IM_CHECK(g.IO.WantCaptureKeyboard == false);
     };
 
     // ## Test navigation in popups that are appended across multiple calls to BeginPopup()/EndPopup(). (#3223)

@@ -421,8 +421,8 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
         IM_CHECK(window2->DockNode == NULL || ctx->DockIdIsUndockedOrStandalone(window2->DockNode->ID));
 
         // Ensure demo window is visible.
-        ctx->WindowMoveToMakePosVisible(demo_window, demo_window->Pos);
-        ctx->WindowMoveToMakePosVisible(demo_window, demo_window->Pos + demo_window->Size);
+        ctx->WindowTeleportToMakePosVisibleInViewport(demo_window, demo_window->Pos);
+        ctx->WindowTeleportToMakePosVisibleInViewport(demo_window, demo_window->Pos + demo_window->Size);
 
         // Test undocking from collapse button.
         for (int direction = 0; direction < ImGuiDir_COUNT; direction++)

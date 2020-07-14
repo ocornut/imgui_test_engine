@@ -224,8 +224,7 @@ struct ImGuiTestContext
     void        WindowFocus(ImGuiTestRef ref);
     void        WindowMove(ImGuiTestRef ref, ImVec2 pos, ImVec2 pivot = ImVec2(0.0f, 0.0f));
     void        WindowResize(ImGuiTestRef ref, ImVec2 sz);
-    void        WindowMoveToMakePosVisible(ImGuiWindow* window, ImVec2 pos);
-    void        WindowsMoveToMakePosVisible(ImVec2 pos);
+    bool        WindowTeleportToMakePosVisibleInViewport(ImGuiWindow* window, ImVec2 pos_in_window);
     bool        WindowBringToFront(ImGuiWindow* window, ImGuiTestOpFlags flags = ImGuiTestOpFlags_None);
     void        PopupClose();
     ImGuiWindow* GetWindowByRef(ImGuiTestRef ref);
@@ -241,6 +240,7 @@ struct ImGuiTestContext
 
     // Misc
     ImVec2      GetMainViewportPos();
+    ImVec2      GetMainViewportSize();
 
     // Capture
     void        CaptureInitArgs(ImGuiCaptureArgs* args, int capture_flags = 0);
@@ -258,6 +258,7 @@ struct ImGuiTestContext
     void        MouseDown(int button = 0);
     void        MouseUp(int button = 0);
     void        MouseLiftDragThreshold(int button = 0);
+    void        MouseClickOnVoid(int button = 0);
 
     // Keyboard inputs
     void        KeyDownMap(ImGuiKey key, int mod_flags = 0);

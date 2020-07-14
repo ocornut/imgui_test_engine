@@ -444,6 +444,15 @@ ImVec2 ImGuiTestContext::GetMainViewportPos()
 #endif
 }
 
+ImVec2 ImGuiTestContext::GetMainViewportSize()
+{
+#ifdef IMGUI_HAS_VIEWPORT
+    return ImGui::GetMainViewport()->Size;
+#else
+    return ImGui::GetIO().DisplaySize;
+#endif
+}
+
 void ImGuiTestContext::CaptureInitArgs(ImGuiCaptureArgs* args, int flags)
 {
     args->InFlags = (ImGuiCaptureFlags)flags;
@@ -872,7 +881,7 @@ void    ImGuiTestContext::MouseMove(ImGuiTestRef ref, ImGuiTestOpFlags flags)
         ScrollToItemY(ref);
 
     ImVec2 pos = item->RectFull.GetCenter();
-    WindowMoveToMakePosVisible(window, pos);
+    WindowTeleportToMakePosVisibleInViewport(window, pos);
 
     // Move toward an actually visible point
     pos = GetMouseAimingPos(item, flags);
@@ -913,16 +922,17 @@ void    ImGuiTestContext::MouseMove(ImGuiTestRef ref, ImGuiTestOpFlags flags)
     item->RefCount--;
 }
 
-void    ImGuiTestContext::WindowMoveToMakePosVisible(ImGuiWindow* window, ImVec2 pos)
+// Make the point at 'pos' (generally expected to be within window's boundaries) visible in the viewport,
+// so it can be later focused then clicked.
+bool    ImGuiTestContext::WindowTeleportToMakePosVisibleInViewport(ImGuiWindow* window, ImVec2 pos)
 {
     ImGuiContext& g = *UiContext;
     if (IsError())
-        return;
+        return false;
 
-    // FIXME: Viewport
     ImRect visible_r;
     visible_r.Min = GetMainViewportPos();
-    visible_r.Max = visible_r.Min + g.IO.DisplaySize;
+    visible_r.Max = visible_r.Min + GetMainViewportSize();
     if (!visible_r.Contains(pos))
     {
         // Fallback move window directly to make our item reachable with the mouse.
@@ -933,21 +943,9 @@ void    ImGuiTestContext::WindowMoveToMakePosVisible(ImGuiWindow* window, ImVec2
         ImGui::SetWindowPos(window, window->Pos + delta, ImGuiCond_Always);
         LogDebug("WindowMoveBypass %s delta (%.1f,%.1f)", window->Name, delta.x, delta.y);
         Yield();
+        return true;
     }
-}
-void    ImGuiTestContext::WindowsMoveToMakePosVisible(ImVec2 pos)
-{
-    ImGuiContext& g = *UiContext;
-    if (IsError())
-        return;
-
-    for (ImGuiWindow* window : g.Windows)
-    {
-        if (window->RootWindow != NULL)
-            continue;
-
-        WindowMoveToMakePosVisible(window, pos);
-    }
+    return false;
 }
 
 void	ImGuiTestContext::MouseMoveToPos(ImVec2 target)
@@ -1118,6 +1116,34 @@ void    ImGuiTestContext::MouseLiftDragThreshold(int button)
     ImGuiContext& g = *UiContext;
     g.IO.MouseDragMaxDistanceAbs[button] = ImVec2(g.IO.MouseDragThreshold, g.IO.MouseDragThreshold);
     g.IO.MouseDragMaxDistanceSqr[button] = (g.IO.MouseDragThreshold * g.IO.MouseDragThreshold) + (g.IO.MouseDragThreshold * g.IO.MouseDragThreshold);
+}
+
+void    ImGuiTestContext::MouseClickOnVoid(int mouse_button)
+{
+    ImGuiContext& g = *UiContext;
+    if (IsError())
+        return;
+
+    IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
+    LogDebug("MouseClickOnVoid %d", mouse_button);
+
+    // FIXME-TESTS: Would be nice if we could find a suitable position (e.g. by sampling points in a grid)
+    ImVec2 void_pos = GetMainViewportPos() + ImVec2(1, 1);
+    ImVec2 window_min_pos = void_pos + g.Style.TouchExtraPadding + ImVec2(4.0f, 4.0f) + ImVec2(1.0f, 1.0f); // FIXME: Should use WINDOWS_RESIZE_FROM_EDGES_HALF_THICKNESS
+
+    for (ImGuiWindow* window : g.Windows)
+        if (window->RootWindow == window)
+            if (window->Rect().Contains(window_min_pos))
+                WindowMove(window->Name, window_min_pos);
+
+    // Click top-left corner which now is empty space.
+    MouseMoveToPos(void_pos);
+    IM_CHECK(g.HoveredWindow == NULL);
+
+    // Clicking empty space should clear navigation focus.
+    MouseClick(mouse_button);
+    //IM_CHECK(g.NavId == 0); // FIXME: Clarify specs
+    IM_CHECK(g.NavWindow == NULL);
 }
 
 void    ImGuiTestContext::KeyDownMap(ImGuiKey key, int mod_flags)
@@ -1833,19 +1859,26 @@ void    ImGuiTestContext::WindowMove(ImGuiTestRef ref, ImVec2 input_pos, ImVec2 
 
     // FIXME-TESTS: Need to find a -visible- click point. drag_pos may end up being outside of main viewport.
     ImVec2 drag_pos;
+    for (int n = 0; n < 2; n++)
+    {
 #if IMGUI_HAS_DOCK
-    if (window->DockNode != NULL && window->DockNode->TabBar != NULL)
-    {
-        ImGuiTabBar* tab_bar = window->DockNode->TabBar;
-        ImGuiTabItem* tab = ImGui::TabBarFindTabByID(tab_bar, window->ID);
-        IM_ASSERT(tab != NULL);
-        drag_pos = tab_bar->BarRect.Min + ImVec2(tab->Offset + tab->Width * 0.5f, tab_bar->BarRect.GetHeight() * 0.5f);
-    }
-    else
+        if (window->DockNode != NULL && window->DockNode->TabBar != NULL)
+        {
+            ImGuiTabBar* tab_bar = window->DockNode->TabBar;
+            ImGuiTabItem* tab = ImGui::TabBarFindTabByID(tab_bar, window->ID);
+            IM_ASSERT(tab != NULL);
+            drag_pos = tab_bar->BarRect.Min + ImVec2(tab->Offset + tab->Width * 0.5f, tab_bar->BarRect.GetHeight() * 0.5f);
+        }
+        else
 #endif
-    {
-        const float h = window->TitleBarHeight();
-        drag_pos = window->Pos + ImVec2(window->Size.x, h) * 0.5f;
+        {
+            const float h = window->TitleBarHeight();
+            drag_pos = window->Pos + ImVec2(window->Size.x, h) * 0.5f;
+        }
+
+        // If we didn't have to teleport it means we can reach the position already
+        if (!WindowTeleportToMakePosVisibleInViewport(window, drag_pos))
+            break;
     }
 
     MouseMoveToPos(drag_pos);
@@ -1950,7 +1983,7 @@ void    ImGuiTestContext::DockWindowInto(const char* window_name_src, const char
     if (!drop_is_valid)
         return;
 
-    WindowMoveToMakePosVisible(window_dst, drop_pos);
+    WindowTeleportToMakePosVisibleInViewport(window_dst, drop_pos);
     drop_is_valid = ImGui::DockContextCalcDropPosForDocking(window_dst->RootWindow, window_dst->DockNode, window_src, split_dir, false, &drop_pos);
     IM_CHECK(drop_is_valid);
 
