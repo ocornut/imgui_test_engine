@@ -127,6 +127,7 @@ enum ImGuiTestActiveFunc
 // This is however totally optional. Using SetUserDataType() it is possible to store custom data on the stack and read from it as UserData.
 struct ImGuiTestGenericVars
 {
+    int             Step;
     int             Int1;
     int             Int2;
     int             IntArray[10];
@@ -152,7 +153,7 @@ struct ImGuiTestGenericVars
 
     ImGuiTestGenericVars()  { Clear(); }
     void Clear()            { StrLarge.clear(); memset(this, 0, sizeof(*this)); }
-    void ClearInts()        { Int1 = Int2 = 0; memset(IntArray, 0, sizeof(IntArray)); }
+    void ClearInts()        { Step = Int1 = Int2 = 0; memset(IntArray, 0, sizeof(IntArray)); }
     void ClearBools()       { Bool1 = Bool2 = false; memset(BoolArray, 0, sizeof(BoolArray)); }
 };
 
