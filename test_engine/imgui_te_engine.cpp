@@ -249,6 +249,11 @@ void    ImGuiTestEngine_Stop(ImGuiTestEngine* engine)
     engine->Started = false;
 }
 
+void    ImGuiTestEngine_NewFrame(ImGuiTestEngine* engine)
+{
+    engine->CaptureContext.NewFrame(engine->CurrentCaptureArgs);
+}
+
 void    ImGuiTestEngine_PostRender(ImGuiTestEngine* engine)
 {
     if (engine->IO.ConfigFixedDeltaTime != 0.0f)

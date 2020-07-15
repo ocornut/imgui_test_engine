@@ -458,6 +458,7 @@ int main(int argc, char** argv)
         }
 
         ImGui::NewFrame();
+        ImGuiTestEngine_NewFrame(engine);
         ShowUI();
         ImGui::Render();
 

@@ -87,6 +87,22 @@ void ImGuiCaptureImageBuf::BlitSubImage(int dst_x, int dst_y, int src_x, int src
         memcpy(&Data[(dst_y + y) * Width + dst_x], &source->Data[(src_y + y) * source->Width + src_x], (size_t)source->Width * 4);
 }
 
+void ImGuiCaptureContext::NewFrame(ImGuiCaptureArgs* args)
+{
+    if (args == NULL)
+        return;
+
+    ImGuiContext& g = *GImGui;
+    if (_FrameNo > 0 && (args->InFlags & ImGuiCaptureFlags_StitchFullContents) != 0)
+    {
+        // Force mouse position. Hovered window is reset in ImGui::NewFrame() based on mouse real mouse position.
+        IM_ASSERT(args->InCaptureWindows.Size == 1);
+        g.IO.MousePos = args->InCaptureWindows.front()->Pos + _MouseRelativeToWindowPos;
+        g.HoveredWindow = _HoveredWindow;
+        g.HoveredRootWindow = _HoveredWindow ? _HoveredWindow->RootWindow : NULL;
+    }
+}
+
 //-----------------------------------------------------------------------------
 // ImGuiCaptureContext
 //-----------------------------------------------------------------------------
@@ -139,18 +155,6 @@ ImGuiCaptureStatus ImGuiCaptureContext::CaptureUpdate(ImGuiCaptureArgs* args)
             window->Hidden = true;
             window->HiddenFramesCannotSkipItems = 2;
         }
-    }
-
-    if (_FrameNo > 0 && (args->InFlags & ImGuiCaptureFlags_StitchFullContents) != 0)
-    {
-        // Force mouse position. Hovered window is reset in ImGui::NewFrame() based on mouse real mouse position.
-        // Mouse position lags one frame behind when CaptureUpdate() is called late (i.e. near ImGui::EndFrame()).
-        // This lag is not really important, because capture tool already waits for up to four frames each time
-        // windows are moved and _WantMouseCursorAt updated.
-        IM_ASSERT(args->InCaptureWindows.Size == 1);
-        g.IO.MousePos = args->InCaptureWindows.front()->Pos + _MouseRelativeToWindowPos;
-        g.HoveredWindow = _HoveredWindow;
-        g.HoveredRootWindow = _HoveredWindow ? _HoveredWindow->RootWindow : NULL;
     }
 
     // Recording will be set to false when we are stopping GIF capture.

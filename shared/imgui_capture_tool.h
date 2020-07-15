@@ -106,6 +106,9 @@ struct ImGuiCaptureContext
 
     ImGuiCaptureContext(ImGuiScreenCaptureFunc capture_func = NULL) { ScreenCaptureFunc = capture_func; _MouseRelativeToWindowPos = ImVec2(-FLT_MAX, -FLT_MAX); }
 
+    // Should be called after ImGui::NewFrame() and before submitting any UI.
+    void NewFrame(ImGuiCaptureArgs* args);
+
     // Capture a screenshot. If this function returns true then it should be called again with same arguments on the next frame.
     ImGuiCaptureStatus      CaptureUpdate(ImGuiCaptureArgs* args);
 
