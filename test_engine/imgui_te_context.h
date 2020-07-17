@@ -334,11 +334,6 @@ struct ImGuiTestContext
     void        UndockWindow(const char* window_name);
 #endif
 
-    // Tables
-#ifdef IMGUI_HAS_TABLE
-    void        TableDiscard(ImGuiTable* table);
-#endif
-
     // Performances
     void        PerfCalcRef();
     void        PerfCapture();

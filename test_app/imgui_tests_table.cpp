@@ -35,8 +35,9 @@ static ImGuiTableColumn* HelperTableFindColumnByName(ImGuiTable* table, const ch
     return NULL;
 }
 
-static void HelperTableSubmitCells(int count_w, int count_h)
+static void HelperTableSubmitCellsCustom(int count_w, int count_h, void(*cell_cb)(int column, int line))
 {
+    IM_ASSERT(cell_cb != NULL);
     for (int line = 0; line < count_h; line++)
     {
         ImGui::TableNextRow();
@@ -44,11 +45,19 @@ static void HelperTableSubmitCells(int count_w, int count_h)
         {
             if (!ImGui::TableSetColumnIndex(column))
                 continue;
-            Str16f label("%d,%d", line, column);
-            //ImGui::TextUnformatted(label.c_str());
-            ImGui::Button(label.c_str(), ImVec2(-FLT_MIN, 0.0f));
+            cell_cb(column, line);
         }
     }
+}
+
+static void HelperTableSubmitCellsButtonFill(int count_w, int count_h)
+{
+    HelperTableSubmitCellsCustom(count_w, count_h, [](int column, int line) { ImGui::Button(Str16f("%d,%d", line, column).c_str(), ImVec2(-FLT_MIN, 0.0f)); });
+}
+
+static void HelperTableSubmitCellsText(int count_w, int count_h)
+{
+    HelperTableSubmitCellsCustom(count_w, count_h, [](int column, int line) { ImGui::Text("%d,%d", line, column); });
 }
 
 // columns_desc = "WWW", "FFW", "FAA" etc.
@@ -110,7 +119,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
             ImGui::TableSetupColumn("Two");
             ImGui::TableSetupColumn("Three");
             ImGui::TableSetupColumn("Four");
-            HelperTableSubmitCells(4, 5);
+            HelperTableSubmitCellsButtonFill(4, 5);
             ImGuiTable* table = ctx->UiContext->CurrentTable;
             IM_CHECK_EQ(table->Columns[0].WidthRequest, 100.0f);
             ImGui::EndTable();
@@ -132,7 +141,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
             int cmd_size_before = draw_list->CmdBuffer.Size;
             if (ImGui::BeginTable("##table1", 4, ImGuiTableFlags_NoClipX | ImGuiTableFlags_Borders, ImVec2(400, 0)))
             {
-                HelperTableSubmitCells(4, 5);
+                HelperTableSubmitCellsButtonFill(4, 5);
                 ImGui::EndTable();
             }
             ImGui::Text("Some text");
@@ -143,7 +152,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
             int cmd_size_before = draw_list->CmdBuffer.Size;
             if (ImGui::BeginTable("##table2", 4, ImGuiTableFlags_Borders, ImVec2(400, 0)))
             {
-                HelperTableSubmitCells(4, 4);
+                HelperTableSubmitCellsButtonFill(4, 4);
                 ImGui::EndTable();
             }
             ImGui::Text("Some text");
@@ -159,7 +168,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
                 ImGui::TableSetupColumn("ThreeThreeThree");
                 ImGui::TableSetupColumn("FourFourFourFour");
                 ImGui::TableAutoHeaders();
-                HelperTableSubmitCells(4, 4);
+                HelperTableSubmitCellsButtonFill(4, 4);
                 ImGui::EndTable();
             }
             ImGui::Text("Some text");
@@ -174,7 +183,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
                 ImGui::TableSetupColumn("TwoTwo");
                 ImGui::TableSetupColumn("ThreeThreeThree");
                 ImGui::TableAutoHeaders();
-                HelperTableSubmitCells(3, 4);
+                HelperTableSubmitCellsButtonFill(3, 4);
                 ImGui::EndTable();
             }
             ImGui::Text("Some text");
@@ -634,7 +643,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
             ImGui::TableAutoHeaders();
             if (vars.call_get_sort_specs) // Test against TableGetSortSpecs() having side effects
                 ImGui::TableGetSortSpecs();
-            HelperTableSubmitCells(column_count, 3);
+            HelperTableSubmitCellsButtonFill(column_count, 3);
             ImGui::EndTable();
         }
         ImGui::End();
@@ -695,7 +704,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
             // Discard previous table state.
             table = ImGui::FindTableByID(table_id);
             if (table)
-                ctx->TableDiscard(table);
+                TableDiscard(table);
             ctx->Yield(); // Rebuild a table on next frame
 
             ctx->LogInfo("Permutation %d: col0_sorted_desc:%d col1_hidden:%d col0_reordered:%d col2_resized:%d col3_resized:%d", mask,
@@ -757,7 +766,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
             all_settings = NULL;
 
             // Recreate table with no settings.
-            ctx->TableDiscard(table);
+            TableDiscard(table);
             ctx->Yield();
             table = ImGui::FindTableByID(table_id);
 
@@ -782,7 +791,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
         // Ensure table settings do not leak in case of errors.
         table = ImGui::FindTableByID(table_id);
         if (table)
-            ctx->TableDiscard(table);
+            TableDiscard(table);
     };
 
     // ## Test table sorting behaviors.
@@ -798,7 +807,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
         {
             table_flags = ImGuiTableFlags_Sortable | ImGuiTableFlags_MultiSortable;
             if (ImGuiTable* table = ImGui::FindTableByID(ImGui::GetID("Table")))
-                ctx->TableDiscard(table);
+                TableDiscard(table);
         }
 
         if (ImGui::BeginTable("Table", 6, table_flags))
@@ -810,7 +819,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
             ImGui::TableSetupColumn("NoSortAscending", ImGuiTableColumnFlags_NoSortAscending);
             ImGui::TableSetupColumn("NoSortDescending", ImGuiTableColumnFlags_NoSortDescending);
             ImGui::TableAutoHeaders();
-            HelperTableSubmitCells(6, 1);
+            HelperTableSubmitCellsButtonFill(6, 1);
             ImGui::EndTable();
         }
         ImGui::End();

@@ -205,4 +205,13 @@ ImGuiID TableGetHeaderID(ImGuiTable* table, const char* column, int instance_no)
     int column_id = instance_no * table->ColumnsCount + column_n;
     return ImHashData(column, strlen(column), ImHashData(&column_id, sizeof(column_id), table->ID + instance_no));
 }
+
+void TableDiscard(ImGuiTable* table)
+{
+    ImGuiContext& g = *GImGui;
+    IM_ASSERT(g.CurrentTable == NULL);
+    if (ImGuiTableSettings* settings = ImGui::TableGetBoundSettings(table))
+        settings->ID = 0;
+    g.Tables.Remove(table->ID, table);
+}
 #endif

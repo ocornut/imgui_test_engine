@@ -29,6 +29,7 @@ ImFont*             FindFontByName(const char* name);
 
 #if IMGUI_HAS_TABLE
 ImGuiID             TableGetHeaderID(ImGuiTable* table, const char* column, int instance_no = 0);
+void                TableDiscard(ImGuiTable* table);
 #endif
 
 // Helper: maintain/calculate moving average
