@@ -702,9 +702,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
             };
 
             // Discard previous table state.
-            table = ImGui::FindTableByID(table_id);
-            if (table)
-                TableDiscard(table);
+            TableDiscardInstanceAndSettings(table_id);
             ctx->Yield(); // Rebuild a table on next frame
 
             ctx->LogInfo("Permutation %d: col0_sorted_desc:%d col1_hidden:%d col0_reordered:%d col2_resized:%d col3_resized:%d", mask,
@@ -766,7 +764,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
             all_settings = NULL;
 
             // Recreate table with no settings.
-            TableDiscard(table);
+            TableDiscardInstanceAndSettings(table_id);
             ctx->Yield();
             table = ImGui::FindTableByID(table_id);
 
@@ -789,9 +787,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
         }
 
         // Ensure table settings do not leak in case of errors.
-        table = ImGui::FindTableByID(table_id);
-        if (table)
-            TableDiscard(table);
+        TableDiscardInstanceAndSettings(table_id);
     };
 
     // ## Test table sorting behaviors.
@@ -806,8 +802,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
         if (ctx->IsFirstFrame())
         {
             table_flags = ImGuiTableFlags_Sortable | ImGuiTableFlags_MultiSortable;
-            if (ImGuiTable* table = ImGui::FindTableByID(ImGui::GetID("Table")))
-                TableDiscard(table);
+            TableDiscardInstanceAndSettings(ImGui::GetID("Table"));
         }
 
         if (ImGui::BeginTable("Table", 6, table_flags))

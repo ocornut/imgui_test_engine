@@ -206,12 +206,13 @@ ImGuiID TableGetHeaderID(ImGuiTable* table, const char* column, int instance_no)
     return ImHashData(column, strlen(column), ImHashData(&column_id, sizeof(column_id), table->ID + instance_no));
 }
 
-void TableDiscard(ImGuiTable* table)
+void TableDiscardInstanceAndSettings(ImGuiID table_id)
 {
     ImGuiContext& g = *GImGui;
     IM_ASSERT(g.CurrentTable == NULL);
-    if (ImGuiTableSettings* settings = ImGui::TableGetBoundSettings(table))
+    if (ImGuiTableSettings* settings = ImGui::TableSettingsFindByID(table_id))
         settings->ID = 0;
-    g.Tables.Remove(table->ID, table);
+    if (ImGuiTable* table = ImGui::FindTableByID(table_id))
+        g.Tables.Remove(table->ID, table);
 }
 #endif
