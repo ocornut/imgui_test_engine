@@ -1188,6 +1188,85 @@ void RegisterTests_Table(ImGuiTestEngine* e)
         ctx->YieldFrames(2);
     };
 
+    // ## Miscellaneous
+    t = IM_REGISTER_TEST(e, "table", "table_cov_misc");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiContext& g = *ctx->UiContext;
+        ImGui::SetNextWindowSize(ImVec2(250.0f, 100.0f), ImGuiCond_Appearing);
+        ImGui::Begin("Test window 1", NULL, ImGuiWindowFlags_NoSavedSettings);
+
+        if (ctx->IsFirstGuiFrame())
+            TableDiscardInstanceAndSettings(ImGui::GetID("##table0"));
+
+        if (ImGui::BeginTable("##table0", 4, ImGuiTableFlags_ScrollX | ImGuiTableFlags_Hideable | ImGuiTableFlags_Resizable, ImVec2(0, 0), 300.0f))
+        {
+            ImGuiTable* table = g.CurrentTable;
+            if (ctx->IsFirstGuiFrame())
+                table->Columns[0].FlagsIn = ImGuiTableColumnFlags_WidthFixed;
+
+            ImGui::TableSetupColumn("One", table->Columns[0].FlagsIn, 100.0f, 0);
+            ImGui::TableSetupColumn("Two", table->Columns[1].FlagsIn);
+            ImGui::TableSetupColumn("Three", table->Columns[2].FlagsIn);
+            ImGui::TableSetupColumn(NULL, table->Columns[3].FlagsIn);
+            ImGui::TableHeadersRow();
+            HelperTableSubmitCellsText(4, 5);
+            ImGui::EndTable();
+        }
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiContext& g = *ctx->UiContext;
+        ctx->WindowRef("Test window 1");
+        ImGuiTable* table = ImGui::FindTableByID(ctx->GetID("##table0"));
+        ImGuiTableColumn* col0 = &table->Columns[0];
+        ImGuiTableColumn* col1 = &table->Columns[1];
+        IM_CHECK_EQ(col0->WidthRequest, 100.0f);
+        IM_CHECK_EQ(col0->WidthGiven, 100.0f);
+
+        // Test column naming.
+        IM_CHECK_STR_EQ(ImGui::TableGetColumnName(table, 2), "Three");
+        IM_CHECK(ImGui::TableGetColumnName(table, 3) == NULL);
+
+        // Test inner_width parameter of BeginTable().
+        IM_CHECK(table->InnerWidth == 300.0f);
+        IM_CHECK(table->InnerWidth == table->InnerWindow->ContentSize.x);   // Only true when inner window is used because of ImGuiTableFlags_ScrollX
+
+        // Test column fitting.
+        col0->WidthRequest = col0->ContentWidthHeadersIdeal + 50.0f;
+        ctx->Yield();
+        IM_CHECK_GT(col0->WidthGiven, col0->ContentWidthHeadersIdeal);
+        ctx->MouseMoveToPos(ImVec2(col0->MaxX, table->InnerWindow->Pos.y));
+        ctx->MouseDoubleClick();
+        ctx->Yield();
+        IM_CHECK_EQ(col0->WidthGiven, 100.0f);  // Resets to initial width because column os fixed.
+
+        col1->WidthRequest = col1->ContentWidthHeadersIdeal + 50.0f;
+        ctx->Yield();
+        IM_CHECK_GT(col1->WidthGiven, col1->ContentWidthHeadersIdeal);
+        ctx->MouseMoveToPos(ImVec2(col1->MaxX, table->InnerWindow->Pos.y));
+        ctx->MouseDoubleClick();
+        ctx->Yield();
+        IM_CHECK_EQ(col1->WidthGiven, col1->ContentWidthHeadersIdeal);  // Resets to ideal width because column is resizable.
+
+        // Test clearing of resizable flag when no columns are resizable.
+        IM_CHECK((table->Flags& ImGuiTableFlags_Resizable) != 0);
+        for (int i = 0; i < table->Columns.size(); i++)
+            table->Columns[i].FlagsIn |= ImGuiTableColumnFlags_NoResize;
+        ctx->Yield();
+        IM_CHECK((table->Flags & ImGuiTableFlags_Resizable) == 0);
+
+        // Test column hiding.
+        ctx->ItemClick(TableGetHeaderID(table, "One"), ImGuiMouseButton_Right);
+        ctx->WindowRef(g.NavWindow);
+        ctx->ItemClick("One");
+        IM_CHECK(col0->IsVisible == false);
+        ctx->ItemClick("One");
+        IM_CHECK(col0->IsVisible == true);
+    };
+
+
 #else // #ifdef IMGUI_HAS_TABLE
     IM_UNUSED(e);
 #endif
