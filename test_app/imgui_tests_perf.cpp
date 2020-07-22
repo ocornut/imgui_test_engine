@@ -757,7 +757,7 @@ void RegisterTests_Perf(ImGuiTestEngine* e)
             ImGui::SliderFloat("Line width", &line_width, 1.0f, 10.0f);
             ImGui::SliderFloat("Radius", &radius, 1.0f, max_radius);
 			ImGui::SliderInt("Segments", &segment_count_manual, 1, 512);
-			ImGui::DragFloat("Circle segment Max Error", &ImGui::GetStyle().CircleSegmentMaxError, 0.01f, 0.1f, 10.0f, "%.2f", 1.0f);
+			ImGui::DragFloat("Circle segment Max Error", &ImGui::GetStyle().CircleSegmentMaxError, 0.01f, 0.1f, 10.0f, "%.2f");
 			ImGui::Checkbox("No anti-aliasing", &no_aa);
 			ImGui::SameLine();
 			ImGui::Checkbox("Overdraw", &overdraw);
