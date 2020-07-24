@@ -6,8 +6,6 @@
 #include "imgui.h"
 #include "imgui_internal.h" // FIXME: We want to avoid that.
 
-#ifdef IMGUI_HAS_MULTI_SELECT
-
 // [Advanced] Helper class to simulate storage of a multi-selection state, used by the advanced multi-selection demos.
 // We use ImGuiStorage (simple key->value storage) to avoid external dependencies but it's probably not optimal.
 // To store a single-selection:
@@ -54,15 +52,17 @@ struct ExampleAssetBrowser
         IconSize = 64;
     }
 
+#ifdef IMGUI_HAS_MULTI_SELECT
     void ApplySelectionRequests(ImGuiMultiSelectData* ms_data)
     {
-        if (ms_data->RequestClear)
+            if (ms_data->RequestClear)
             Selection.Clear();
         if (ms_data->RequestSelectAll)
             Selection.SelectAll(ItemCount);
         if (ms_data->RequestSetRange)
             Selection.SetRange((int)(intptr_t)ms_data->RangeSrc, (int)(intptr_t)ms_data->RangeDst, ms_data->RangeValue);
     }
+#endif
 
     void Draw(const char *title, bool* p_open)
     {
@@ -78,11 +78,16 @@ struct ExampleAssetBrowser
         ImGui::SliderInt("Icon Size", &IconSize, 32, 128, "");
         ImGui::PopItemWidth();
 
-        ImVec2 item_size((float)IconSize, (float)IconSize);
+#ifndef IMGUI_HAS_MULTI_SELECT
+        ImGui::Text("Error: This demo is designed for branches with IMGUI_HAS_MULTI_SELECT!\nMulti-selection and range-selection with mouse and keyboard won't be functional.");
+#endif
 
         ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(8, 8));
+#ifdef IMGUI_HAS_MULTI_SELECT
         ImGui::PushStyleVar(ImGuiStyleVar_SelectableSpacing, ImVec2(2, 2)); // FIXME: Distinguish visual vs hit spacing
+#endif
 
+        ImVec2 item_size((float)IconSize, (float)IconSize);
         if (ImGui::BeginChild("entries", ImVec2(0, 0), true))
         {
             // Columns
@@ -106,8 +111,10 @@ struct ExampleAssetBrowser
             start_pos.y += style.ItemSpacing.y * 0.5f;
             ImGui::SetCursorPos(start_pos);
 
+#ifdef IMGUI_HAS_MULTI_SELECT
             ImGuiMultiSelectData* ms_data = ImGui::BeginMultiSelect(0, (void*)(intptr_t)SelectionRef, Selection.GetSelected(SelectionRef));
             ApplySelectionRequests(ms_data);
+#endif
 
             ImGuiListClipper clipper(line_count, line_height);
             while (clipper.Step())
@@ -117,8 +124,10 @@ struct ExampleAssetBrowser
                     int item_min_index_for_line = line_index * column_count;
                     int item_max_index_for_line = ImMin((line_index + 1) * column_count, ItemCount);
 
+#ifdef IMGUI_HAS_MULTI_SELECT
                     if (item_min_index_for_line >= (int)(intptr_t)ms_data->RangeSrc)
                         ms_data->RangeSrcPassedBy = true;
+#endif
 
                     for (int item_index = item_min_index_for_line; item_index < item_max_index_for_line; ++item_index)
                     {
@@ -138,7 +147,9 @@ struct ExampleAssetBrowser
                             draw_list->AddRect(box_min, box_max, IM_COL32(90, 90, 90, 255));
 
                         bool item_selected = Selection.GetSelected(item_index);
+#ifdef IMGUI_HAS_MULTI_SELECT
                         ImGui::SetNextItemSelectionData((void*)(intptr_t)item_index);
+#endif
                         if (ImGui::Selectable("##select", item_selected, selectable_flags, item_size))
                             if (ImGui::IsItemToggledSelection())
                             {
@@ -169,7 +180,7 @@ struct ExampleAssetBrowser
                             ImGui::EndPopup();
                         }
 
-                        // Thumbnail here
+                        // FIXME: Thumbnail here
                         if (visible)
                         {
                             char label[32];
@@ -190,6 +201,7 @@ struct ExampleAssetBrowser
             }
             clipper.End();
 
+#ifdef IMGUI_HAS_MULTI_SELECT
             ms_data = ImGui::EndMultiSelect(); // FIXME: Wrapping fallback would be processed here?
             SelectionRef = (int)(intptr_t)ms_data->RangeSrc;
             // FIXME-MULTISELECT
@@ -197,12 +209,16 @@ struct ExampleAssetBrowser
                 if (ImGui::IsMouseReleased(0) && !ImGui::IsMouseDragPastThreshold(0))
                     ms_data->RequestClear = true;
             ApplySelectionRequests(ms_data);
+#endif
 
             ImGui::NavMoveRequestTryWrapping(ImGui::GetCurrentWindow(), ImGuiNavMoveFlags_WrapX);
         }
 
         ImGui::EndChild();
-        ImGui::PopStyleVar(2);
+#ifdef IMGUI_HAS_MULTI_SELECT
+        ImGui::PopStyleVar();
+#endif
+        ImGui::PopStyleVar();
         ImGui::End();
     }
 };
@@ -212,14 +228,3 @@ void ShowExampleAppAssetBrowser(bool* p_open)
     static ExampleAssetBrowser asset_browser;
     asset_browser.Draw("Example: Asset Browser", p_open);
 }
-
-#else // #ifdef IMGUI_HAS_MULTI_SELECT
-
-void ShowExampleAppAssetBrowser(bool* p_open)
-{
-    ImGui::Begin("Example: Asset Browser", p_open);
-    ImGui::Text("Error: need IMGUI_HAS_MULTI_SELECT");
-    ImGui::End();
-}
-
-#endif
