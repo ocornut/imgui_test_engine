@@ -64,6 +64,9 @@
     <ClInclude Include="editor_assets_browser.h">
       <Filter>sources</Filter>
     </ClInclude>
+    <ClInclude Include="editor_styles.h">
+      <Filter>sources</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\imgui\imgui.cpp">
@@ -97,6 +100,9 @@
       <Filter>sources</Filter>
     </ClCompile>
     <ClCompile Include="editor_assets_browser.cpp">
+      <Filter>sources</Filter>
+    </ClCompile>
+    <ClCompile Include="editor_styles.cpp">
       <Filter>sources</Filter>
     </ClCompile>
   </ItemGroup>

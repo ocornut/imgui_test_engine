@@ -59,9 +59,6 @@
     <ClCompile Include="..\test_engine\imgui_te_context.cpp">
       <Filter>test_engine</Filter>
     </ClCompile>
-    <ClCompile Include="..\test_engine\imgui_te_core.cpp">
-      <Filter>test_engine</Filter>
-    </ClCompile>
     <ClCompile Include="..\test_engine\imgui_te_util.cpp">
       <Filter>test_engine</Filter>
     </ClCompile>
@@ -76,6 +73,9 @@
     </ClCompile>
     <ClCompile Include="..\shared\imgui_utils.cpp">
       <Filter>shared</Filter>
+    </ClCompile>
+    <ClCompile Include="..\test_engine\imgui_te_engine.cpp">
+      <Filter>test_engine</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

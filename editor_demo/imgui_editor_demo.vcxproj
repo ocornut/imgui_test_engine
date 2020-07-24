@@ -170,6 +170,7 @@
     <ClInclude Include="..\libs\imgui_markdown\imgui_markdown.h" />
     <ClInclude Include="editor_assets_browser.h" />
     <ClInclude Include="editor_demo_imconfig.h" />
+    <ClInclude Include="editor_styles.h" />
     <ClInclude Include="editor_widgets.h" />
   </ItemGroup>
   <ItemGroup>
@@ -181,6 +182,7 @@
     <ClCompile Include="..\..\imgui\imgui_widgets.cpp" />
     <ClCompile Include="..\shared\imgui_app.cpp" />
     <ClCompile Include="editor_assets_browser.cpp" />
+    <ClCompile Include="editor_styles.cpp" />
     <ClCompile Include="editor_tests.cpp" />
     <ClCompile Include="editor_widgets.cpp" />
     <ClCompile Include="main.cpp" />

@@ -18,12 +18,17 @@ void RenderMarkdown(const char* markdown, const char* markdown_end)
     if (!markdown_end)
         markdown_end = markdown + strlen(markdown);
 
+    // FIXME-EDITORDEMO: Standardize access to font
+    ImFontAtlas* atlas = ImGui::GetIO().Fonts;
+    ImFont* font_regular = atlas->Fonts[0];
+    ImFont* font_large = (atlas->Fonts.Size > 1) ? atlas->Fonts[1] : atlas->Fonts[0];
+
     ImGui::MarkdownConfig config;
     config.linkCallback = LinkCallback;
     config.linkIcon = ICON_FA_LINK;
-    config.headingFormats[0] = { ImGui::GetIO().Fonts->Fonts[1], true };
-    config.headingFormats[1] = { ImGui::GetIO().Fonts->Fonts[1], true };
-    config.headingFormats[2] = { ImGui::GetIO().Fonts->Fonts[0], false };
+    config.headingFormats[0] = { font_large, true };
+    config.headingFormats[1] = { font_large, true };
+    config.headingFormats[2] = { font_regular, false };
 
     // FIXME-EDITORDEMO FIXME-STYLE: Ultimately we'd need a nicer way of passing style blocks to custom.
     ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.800f, 0.656f, 0.140f, 1.000f));
