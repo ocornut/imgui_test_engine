@@ -240,10 +240,10 @@ void    ImGuiTestEngine_PostRender(ImGuiTestEngine* engine)
     {
         engine->CaptureContext.ScreenCaptureFunc = engine->IO.ScreenCaptureFunc;
         engine->CaptureContext.ScreenCaptureUserData = engine->IO.ScreenCaptureUserData;
-        ImGuiCaptureToolStatus status = engine->CaptureContext.CaptureUpdate(engine->CurrentCaptureArgs);
-        if (status != ImGuiCaptureToolStatus_InProgress)
+        ImGuiCaptureStatus status = engine->CaptureContext.CaptureUpdate(engine->CurrentCaptureArgs);
+        if (status != ImGuiCaptureStatus_InProgress)
         {
-            if (status == ImGuiCaptureToolStatus_Done)
+            if (status == ImGuiCaptureStatus_Done)
                 ImStrncpy(engine->CaptureTool.LastSaveFileName, engine->CurrentCaptureArgs->OutSavedFileName, IM_ARRAYSIZE(engine->CaptureTool.LastSaveFileName));
             //else
             //    ImFileDelete(engine->CurrentCaptureArgs->OutSavedFileName);

@@ -33,7 +33,8 @@
 #endif
 
 //-----------------------------------------------------------------------------
-// ImageBuf
+// ImGuiCaptureImageBuf
+// Helper class for simple bitmap manipulation (not particularly efficient!)
 //-----------------------------------------------------------------------------
 
 void ImGuiCaptureImageBuf::Clear()
@@ -91,7 +92,7 @@ void ImGuiCaptureImageBuf::BlitSubImage(int dst_x, int dst_y, int src_x, int src
 //-----------------------------------------------------------------------------
 
 // Returns true when capture is in progress.
-ImGuiCaptureToolStatus ImGuiCaptureContext::CaptureUpdate(ImGuiCaptureArgs* args)
+ImGuiCaptureStatus ImGuiCaptureContext::CaptureUpdate(ImGuiCaptureArgs* args)
 {
     ImGuiContext& g = *GImGui;
     ImGuiIO& io = g.IO;
@@ -112,7 +113,7 @@ ImGuiCaptureToolStatus ImGuiCaptureContext::CaptureUpdate(ImGuiCaptureArgs* args
         {
             // FIXME-VIEWPORTS: Content stitching is not possible because window would get moved out of main viewport and detach from it. We need a way to force captured windows to remain in main viewport here.
             IM_ASSERT(false);
-            return ImGuiCaptureToolStatus_Error;
+            return ImGuiCaptureStatus_Error;
         }
 #endif
 
@@ -138,19 +139,20 @@ ImGuiCaptureToolStatus ImGuiCaptureContext::CaptureUpdate(ImGuiCaptureArgs* args
     }
 
     // Recording will be set to false when we are stopping GIF capture.
-    // FIXME: Lossy time calculation, could accumulate instead of resetting.
     const bool is_recording_gif = IsCapturingGif();
     const double current_time_sec = ImGui::GetTime();
     if (is_recording_gif && _LastRecordedFrameTimeSec > 0)
     {
         double delta_sec = current_time_sec - _LastRecordedFrameTimeSec;
         if (delta_sec < 1.0 / args->InRecordFPSTarget)
-            return ImGuiCaptureToolStatus_InProgress;
+            return ImGuiCaptureStatus_InProgress;
     }
 
+    //-----------------------------------------------------------------
+    // Frame 0: Initialize capture state
+    //-----------------------------------------------------------------
     if (_FrameNo == 0)
     {
-        // Initialize capture state.
         if (args->InOutputFileTemplate[0])
         {
             size_t file_name_size = IM_ARRAYSIZE(args->OutSavedFileName);
@@ -159,7 +161,7 @@ ImGuiCaptureToolStatus ImGuiCaptureContext::CaptureUpdate(ImGuiCaptureArgs* args
             if (!ImFileCreateDirectoryChain(args->OutSavedFileName, ImPathFindFilename(args->OutSavedFileName)))
             {
                 printf("Capture Tool: unable to create directory for file '%s'.\n", args->OutSavedFileName);
-                return ImGuiCaptureToolStatus_Error;
+                return ImGuiCaptureStatus_Error;
             }
 
             // File template will most likely end with .png, but we need .gif for animated images.
@@ -191,10 +193,8 @@ ImGuiCaptureToolStatus ImGuiCaptureContext::CaptureUpdate(ImGuiCaptureArgs* args
                     // Child windows will be included by their parents.
                     if (window->ParentWindow != NULL)
                         continue;
-
                     if ((window->Flags & ImGuiWindowFlags_Popup || window->Flags & ImGuiWindowFlags_Tooltip) && !(args->InFlags & ImGuiCaptureFlags_ExpandToIncludePopups))
                         continue;
-
                     args->InCaptureWindows.push_back(window);
                 }
             }
@@ -222,8 +222,15 @@ ImGuiCaptureToolStatus ImGuiCaptureContext::CaptureUpdate(ImGuiCaptureArgs* args
             full_size.y = ImMax(window->SizeFull.y, window->ContentSize.y + window->WindowPadding.y * 2 + window->TitleBarHeight() + window->MenuBarHeight());
             ImGui::SetWindowSize(window, full_size);
         }
+
+        _FrameNo++;
+        return ImGuiCaptureStatus_InProgress;
     }
-    else if (_FrameNo == 1)
+
+    //-----------------------------------------------------------------
+    // Frame 1: Position windows, lock rectangle, create capture buffer
+    //-----------------------------------------------------------------
+    if (_FrameNo == 1)
     {
         // Move group of windows so combined rectangle position is at the top-left corner + padding and create combined
         // capture rect of entire area that will be saved to screenshot. Doing this on the second frame because when
@@ -263,8 +270,14 @@ ImGuiCaptureToolStatus ImGuiCaptureContext::CaptureUpdate(ImGuiCaptureArgs* args
         // Initialize capture buffer.
         args->OutImageSize = _CaptureRect.GetSize();
         output->CreateEmpty((int)_CaptureRect.GetWidth(), (int)_CaptureRect.GetHeight());
+        _FrameNo++;
+        return ImGuiCaptureStatus_InProgress;
     }
-    else if ((_FrameNo % 4) == 0 || is_recording_gif)
+
+    //-----------------------------------------------------------------
+    // Frame 4+N*4: Capture a frame
+    //-----------------------------------------------------------------
+    if ((_FrameNo % 4) == 0 || is_recording_gif)
     {
         // FIXME: Implement capture of regions wider than viewport.
         // Capture a portion of image. Capturing of windows wider than viewport is not implemented yet.
@@ -294,7 +307,7 @@ ImGuiCaptureToolStatus ImGuiCaptureContext::CaptureUpdate(ImGuiCaptureArgs* args
             if (!ScreenCaptureFunc(x1, y1, w, h, &output->Data[_ChunkNo * w * capture_height], ScreenCaptureUserData))
             {
                 printf("Screen capture function failed.\n");
-                return ImGuiCaptureToolStatus_Error;
+                return ImGuiCaptureStatus_Error;
             }
 
             if (args->InFlags & ImGuiCaptureFlags_StitchFullContents)
@@ -364,13 +377,13 @@ ImGuiCaptureToolStatus ImGuiCaptureContext::CaptureUpdate(ImGuiCaptureArgs* args
             g.Style.DisplayWindowPadding = _DisplayWindowPaddingBackup;
             g.Style.DisplaySafeAreaPadding = _DisplaySafeAreaPaddingBackup;
             args->_Capturing = false;
-            return ImGuiCaptureToolStatus_Done;
+            return ImGuiCaptureStatus_Done;
         }
     }
 
     // Keep going
     _FrameNo++;
-    return ImGuiCaptureToolStatus_InProgress;
+    return ImGuiCaptureStatus_InProgress;
 }
 
 void ImGuiCaptureContext::BeginGifCapture(ImGuiCaptureArgs* args)
@@ -415,11 +428,11 @@ void ImGuiCaptureTool::CaptureWindowPicker(const char* title, ImGuiCaptureArgs* 
 
     if (_CaptureState == ImGuiCaptureToolState_Capturing && args->_Capturing)
     {
-        ImGuiCaptureToolStatus status = Context.CaptureUpdate(args);
-        if (ImGui::IsKeyPressedMap(ImGuiKey_Escape) || status != ImGuiCaptureToolStatus_InProgress)
+        ImGuiCaptureStatus status = Context.CaptureUpdate(args);
+        if (ImGui::IsKeyPressedMap(ImGuiKey_Escape) || status != ImGuiCaptureStatus_InProgress)
         {
             _CaptureState = ImGuiCaptureToolState_None;
-            if (status == ImGuiCaptureToolStatus_Done)
+            if (status == ImGuiCaptureStatus_Done)
                 ImStrncpy(LastSaveFileName, args->OutSavedFileName, IM_ARRAYSIZE(LastSaveFileName));
             //else
             //    ImFileDelete(args->OutSavedFileName);
@@ -640,11 +653,11 @@ void ImGuiCaptureTool::CaptureWindowsSelector(const char* title, ImGuiCaptureArg
         if (Context.IsCapturingGif())
             args->InFlags &= ~ImGuiCaptureFlags_StitchFullContents;
 
-        ImGuiCaptureToolStatus status = Context.CaptureUpdate(args);
-        if (status != ImGuiCaptureToolStatus_InProgress)
+        ImGuiCaptureStatus status = Context.CaptureUpdate(args);
+        if (status != ImGuiCaptureStatus_InProgress)
         {
             _CaptureState = ImGuiCaptureToolState_None;
-            if (status == ImGuiCaptureToolStatus_Done)
+            if (status == ImGuiCaptureStatus_Done)
                 ImStrncpy(LastSaveFileName, args->OutSavedFileName, IM_ARRAYSIZE(LastSaveFileName));
             //else
             //    ImFileDelete(args->OutSavedFileName);
@@ -720,7 +733,7 @@ void ImGuiCaptureTool::ShowCaptureToolWindow(bool* p_open)
         ImGui::DragFloat("Padding", &Padding, 0.1f, 0, 32, "%.0f");
 
         if (ImGui::Button("Snap Windows To Grid", ImVec2(-200, 0)))
-            SnapWindowsToGrid(SnapGridSize);
+            SnapWindowsToGrid(SnapGridSize, Padding);
         ImGui::SameLine(0.0f, style.ItemInnerSpacing.x);
         ImGui::SetNextItemWidth(50.0f);
         ImGui::DragFloat("##SnapGridSize", &SnapGridSize, 1.0f, 1.0f, 128.0f, "%.0f");
@@ -781,10 +794,9 @@ void ImGuiCaptureTool::ShowCaptureToolWindow(bool* p_open)
 
 // Move/resize all windows so they are neatly aligned on a grid
 // This is an easy way of ensuring some form of alignment without specifying detailed constraints.
-void ImGuiCaptureTool::SnapWindowsToGrid(float cell_size)
+void ImGuiCaptureTool::SnapWindowsToGrid(float cell_size, float padding)
 {
     ImGuiContext& g = *GImGui;
-
     for (ImGuiWindow* window : g.Windows)
     {
         if (!window->WasActive)
@@ -801,9 +813,7 @@ void ImGuiCaptureTool::SnapWindowsToGrid(float cell_size)
         rect.Min.y = ImFloor(rect.Min.y / cell_size) * cell_size;
         rect.Max.x = ImFloor(rect.Max.x / cell_size) * cell_size;
         rect.Max.y = ImFloor(rect.Max.y / cell_size) * cell_size;
-        rect.Min += ImVec2(Padding, Padding);
-        rect.Max += ImVec2(Padding, Padding);
-        ImGui::SetWindowPos(window, rect.Min);
+        ImGui::SetWindowPos(window, rect.Min + ImVec2(padding, padding));
         ImGui::SetWindowSize(window, rect.GetSize());
     }
 }

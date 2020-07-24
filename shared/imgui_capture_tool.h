@@ -1,7 +1,7 @@
 #pragma once
 
 //-----------------------------------------------------------------------------
-// Forward declarations and basic types
+// Forward declarations
 //-----------------------------------------------------------------------------
 
 struct ImGuiCaptureArgs;
@@ -10,11 +10,10 @@ struct ImGuiCaptureImageBuf;
 struct ImGuiCaptureTool;
 typedef unsigned int ImGuiCaptureFlags;
 
-struct ImGuiWindow;
+struct ImGuiWindow; // imgui.h
+struct GifWriter;   // gif.h
 
 //-----------------------------------------------------------------------------
-
-struct GifWriter;
 
 // [Internal]
 // Helper class for simple bitmap manipulation (not particularly efficient!)
@@ -76,17 +75,17 @@ struct ImGuiCaptureArgs
     bool                    _Capturing = false;             // FIXME-TESTS: ???
 };
 
-enum ImGuiCaptureToolStatus
+enum ImGuiCaptureStatus
 {
-    ImGuiCaptureToolStatus_InProgress,
-    ImGuiCaptureToolStatus_Done,
-    ImGuiCaptureToolStatus_Error,
+    ImGuiCaptureStatus_InProgress,
+    ImGuiCaptureStatus_Done,
+    ImGuiCaptureStatus_Error
 };
 
 // Implements functionality for capturing images
 struct ImGuiCaptureContext
 {
-    ImGuiScreenCaptureFunc  ScreenCaptureFunc = NULL;       // Graphics-backend-specific function that captures specified portion of framebuffer and writes RGBA data to `pixels` buffer.
+    ImGuiScreenCaptureFunc  ScreenCaptureFunc = NULL;       // Graphics back-end specific function that captures specified portion of framebuffer and writes RGBA data to `pixels` buffer.
     void*                   ScreenCaptureUserData = NULL;   // Custom user pointer which is passed to ScreenCaptureFunc. (Optional)
 
     // [Internal]
@@ -106,7 +105,7 @@ struct ImGuiCaptureContext
     ImGuiCaptureContext(ImGuiScreenCaptureFunc capture_func = NULL) { ScreenCaptureFunc = capture_func; }
 
     // Capture a screenshot. If this function returns true then it should be called again with same arguments on the next frame.
-    ImGuiCaptureToolStatus CaptureUpdate(ImGuiCaptureArgs* args);
+    ImGuiCaptureStatus      CaptureUpdate(ImGuiCaptureArgs* args);
 
     // Begin gif capture. args->InOutputFileTemplate must be specified. Call CaptureUpdate() every frame afterwards until it returns false.
     void    BeginGifCapture(ImGuiCaptureArgs* args);
@@ -142,5 +141,5 @@ struct ImGuiCaptureTool
     void    ShowCaptureToolWindow(bool* p_open = NULL);
 
     // Snaps edges of all visible windows to a virtual grid.
-    void    SnapWindowsToGrid(float cell_size);
+    void    SnapWindowsToGrid(float cell_size, float padding);
 };
