@@ -127,34 +127,37 @@ enum ImGuiTestActiveFunc
 // This is however totally optional. Using SetUserDataType() it is possible to store custom data on the stack and read from it as UserData.
 struct ImGuiTestGenericVars
 {
-    int             Step;
-    int             Int1;
-    int             Int2;
-    int             IntArray[10];
-    float           Float1;
-    float           Float2;
-    float           FloatArray[10];
-    bool            Bool1;
-    bool            Bool2;
-    bool            BoolArray[10];
-    ImVec2          Vec2;
-    ImVec4          Vec4;
-    ImVec4          Vec4Array[10];
-    ImGuiID         Id;
-    ImGuiID         IdArray[10];
-    char            Str1[256];
-    char            Str2[256];
-    ImVector<char>  StrLarge;
-    void*           Ptr1;
-    void*           Ptr2;
-    void*           PtrArray[10];
-    ImGuiID         DockId;
+    // Generic storage with a bit of semantic to make code look neater
+    int                     Step;
+    int                     Count;
+    ImGuiID                 DockId;
+    ImGuiWindowFlags        WindowFlags;
     ImGuiTestGenericStatus  Status;
+
+    // Generic storage
+    int                     Int1;
+    int                     Int2;
+    int                     IntArray[10];
+    float                   Float1;
+    float                   Float2;
+    float                   FloatArray[10];
+    bool                    Bool1;
+    bool                    Bool2;
+    bool                    BoolArray[10];
+    ImVec2                  Vec2;
+    ImVec4                  Vec4;
+    ImVec4                  Vec4Array[10];
+    ImGuiID                 Id;
+    ImGuiID                 IdArray[10];
+    char                    Str1[256];
+    char                    Str2[256];
+    ImVector<char>          StrLarge;
+    void*                   Ptr1;
+    void*                   Ptr2;
+    void*                   PtrArray[10];
 
     ImGuiTestGenericVars()  { Clear(); }
     void Clear()            { StrLarge.clear(); memset(this, 0, sizeof(*this)); }
-    void ClearInts()        { Step = Int1 = Int2 = 0; memset(IntArray, 0, sizeof(IntArray)); }
-    void ClearBools()       { Bool1 = Bool2 = false; memset(BoolArray, 0, sizeof(BoolArray)); }
 };
 
 struct ImGuiTestContext
