@@ -157,7 +157,7 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
 
         ImGuiID dockspace_id = ImHashStr("Dockspace");
 
-        if (ctx->IsFirstFrame())
+        if (ctx->IsFirstTestFrame())
         {
             ImGui::DockBuilderRemoveNode(dockspace_id);
             ImGui::DockBuilderDockWindow("AAAA", 0);
@@ -221,7 +221,7 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         ImGuiID dockspace_id = ctx->GetID("/Test Window/Dockspace");
-        if (ctx->IsFirstFrame())
+        if (ctx->IsFirstTestFrame())
         {
             ImGui::DockBuilderRemoveNode(dockspace_id);
             ImGui::DockBuilderAddNode(dockspace_id, ImGuiDockNodeFlags_DockSpace);

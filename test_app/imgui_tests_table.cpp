@@ -540,7 +540,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
                 }
             }
 
-            if (ctx->IsFirstFrame() || ctx->GenericVars.Bool1)
+            if (ctx->IsFirstTestFrame() || ctx->GenericVars.Bool1)
             {
                 // Perform actual test.
                 ImGuiContext& g = *ctx->UiContext;
@@ -799,7 +799,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
         ImGui::SetNextWindowSize(ImVec2(600, 80), ImGuiCond_Appearing); // FIXME-TESTS: Why?
         ImGui::Begin("Test window", NULL, ImGuiWindowFlags_NoSavedSettings);
 
-        if (ctx->IsFirstFrame())
+        if (ctx->IsFirstTestFrame())
         {
             table_flags = ImGuiTableFlags_Sortable | ImGuiTableFlags_MultiSortable;
             TableDiscardInstanceAndSettings(ImGui::GetID("Table"));

@@ -629,6 +629,8 @@ static void ImGuiTestEngine_RunGuiFunc(ImGuiTestEngine* engine)
         //if (ctx->Test->Status == ImGuiTestStatus_Error)
         ctx->RecoverFromUiContextErrors();
     }
+    if (ctx)
+        ctx->FirstGuiFrame = false;
 }
 
 // Main function for the test coroutine
@@ -1026,6 +1028,7 @@ static void ImGuiTestEngine_RunTest(ImGuiTestEngine* engine, ImGuiTestContext* c
     IM_ASSERT(ctx->ActiveFunc == ImGuiTestActiveFunc_None);
     ImGuiTestActiveFunc backup_active_func = ctx->ActiveFunc;
     ctx->ActiveFunc = ImGuiTestActiveFunc_TestFunc;
+    ctx->FirstGuiFrame = (test->GuiFunc != NULL) ? true : false;
 
     // Warm up GUI
     // - We need one mandatory frame running GuiFunc before running TestFunc
@@ -1037,7 +1040,7 @@ static void ImGuiTestEngine_RunTest(ImGuiTestEngine* engine, ImGuiTestContext* c
         ctx->Yield();
         ctx->Yield();
     }
-    ctx->FirstFrameCount = ctx->FrameCount;
+    ctx->FirstTestFrameCount = ctx->FrameCount;
 
     // Call user test function (optional)
     if (ctx->RunFlags & ImGuiTestRunFlags_NoTestFunc)

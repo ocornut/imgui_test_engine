@@ -498,7 +498,7 @@ void RegisterTests_Window(ImGuiTestEngine* e)
         ImGuiWindow* child_window = ctx->UiContext->CurrentWindow;
         ImGui::EndChild();
         IM_CHECK(child_window->ScrollbarY == false);
-        if (ctx->FrameCount >= ctx->FirstFrameCount)
+        if (ctx->FrameCount >= ctx->FirstTestFrameCount)
         {
             ImGuiWindow* window = ctx->UiContext->CurrentWindow;
             IM_CHECK(window->ScrollbarY == false);

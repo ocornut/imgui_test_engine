@@ -113,7 +113,7 @@ void RegisterTests_Perf(ImGuiTestEngine* e)
         float rounding = 8.0f;
         ImU32 col = IM_COL32(255, 255, 0, 255);
 		ImDrawListFlags old_flags = draw_list->Flags; // Save old flags as some of these tests manipulate them
-        if (ctx->IsFirstFrame())
+        if (ctx->IsFirstTestFrame())
             ctx->LogDebug("Drawing %d primitives...", loop_count);
         switch (ctx->Test->ArgVariant)
         {
