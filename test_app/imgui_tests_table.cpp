@@ -43,7 +43,7 @@ static void HelperTableSubmitCellsCustom(int count_w, int count_h, void(*cell_cb
         ImGui::TableNextRow();
         for (int column = 0; column < count_w; column++)
         {
-            if (!ImGui::TableSetColumnIndex(column))
+            if (!ImGui::TableSetColumnIndex(column)) // FIXME-TABLE
                 continue;
             cell_cb(column, line);
         }
@@ -55,7 +55,13 @@ static void HelperTableSubmitCellsButtonFill(int count_w, int count_h)
     HelperTableSubmitCellsCustom(count_w, count_h, [](int column, int line) { ImGui::Button(Str16f("%d,%d", line, column).c_str(), ImVec2(-FLT_MIN, 0.0f)); });
 }
 
-static void HelperTableSubmitCellsText(int count_w, int count_h)
+static void HelperTableSubmitCellsButtonFix(int count_w, int count_h)
+{
+    HelperTableSubmitCellsCustom(count_w, count_h, [](int column, int line) { ImGui::Button(Str16f("%d,%d", line, column).c_str(), ImVec2(100.0f, 0.0f)); });
+}
+
+//static
+void HelperTableSubmitCellsText(int count_w, int count_h)
 {
     HelperTableSubmitCellsCustom(count_w, count_h, [](int column, int line) { ImGui::Text("%d,%d", line, column); });
 }
@@ -1023,6 +1029,112 @@ void RegisterTests_Table(ImGuiTestEngine* e)
             // Test whether frozen columns are visible.
             for (int column_n = 0; column_n < 4; column_n++)
                 IM_CHECK_EQ(table->Columns[column_n].IsClipped, !(column_n < freeze_count));
+        }
+    };
+
+    // ## Test window with _AlwaysAutoResize getting resized to size of a table it contains.
+    t = IM_REGISTER_TEST(e, "table", "table_auto_resize");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        auto& vars = ctx->GenericVars;
+        if (ctx->IsFirstGuiFrame())
+            vars.Count = 5;
+
+        //ImGui::SetNextWindowSize(ImVec2(20, 20), ImGuiCond_Appearing);
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | vars.WindowFlags);
+        ImGui::CheckboxFlags("ImGuiWindowFlags_AlwaysAutoResize", (unsigned int*)&vars.WindowFlags, ImGuiWindowFlags_AlwaysAutoResize);
+        ImGui::SetNextItemWidth(200.0f);
+        ImGui::SliderInt("vars.Step", &vars.Step, 0, 3);
+        ImGui::SetNextItemWidth(200.0f);
+        ImGui::SliderInt("Columns", &vars.Count, 1, 10);
+        ImGui::Text("Button width: %s", (vars.Step & 1) ? "100.0f" : "-FLT_MAX");
+        ImGui::Text("Column width: %s", (vars.Step & 2) ? "Default" : "WidthFixed=100");
+        const int col_row_count = vars.Count;
+        if (ImGui::BeginTable("Table1", col_row_count))
+        {
+            if (vars.Step == 0)
+            {
+                for (int i = 0; i < col_row_count; i++)
+                    ImGui::TableSetupColumn(Str16f("Col%d", i).c_str(), ImGuiTableColumnFlags_WidthFixed, 100.0f);
+                ImGui::TableAutoHeaders();
+                HelperTableSubmitCellsButtonFill(col_row_count, col_row_count);
+            }
+            if (vars.Step == 1)
+            {
+                for (int i = 0; i < col_row_count; i++)
+                    ImGui::TableSetupColumn(Str16f("Col%d", i).c_str(), ImGuiTableColumnFlags_WidthFixed, 100.0f);
+                ImGui::TableAutoHeaders();
+                HelperTableSubmitCellsButtonFix(col_row_count, col_row_count);
+            }
+            if (vars.Step == 2)
+            {
+                // No column width + window auto-fit + auto-fill button creates a feedback loop
+                for (int i = 0; i < col_row_count; i++)
+                    ImGui::TableSetupColumn(Str16f("Col%d", i).c_str());
+                ImGui::TableAutoHeaders();
+                HelperTableSubmitCellsButtonFill(col_row_count, col_row_count);
+            }
+            if (vars.Step == 3)
+            {
+                for (int i = 0; i < col_row_count; i++)
+                    ImGui::TableSetupColumn(Str16f("Col%d", i).c_str());
+                ImGui::TableAutoHeaders();
+                HelperTableSubmitCellsButtonFix(col_row_count, col_row_count);
+            }
+            ImGui::EndTable();
+        }
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiContext& g = *ctx->UiContext;
+        auto& vars = ctx->GenericVars;
+
+        ctx->WindowRef("Test Window");
+        ImGuiWindow* window = ctx->GetWindowByRef(ctx->RefID);
+        ImGuiTable* table = ImGui::FindTableByID(ctx->GetID("Table1"));
+
+        for (int step = 0; step < 4; step++)
+        {
+            ctx->LogDebug("Step %d", step);
+            vars.Count = 5;
+            vars.Step = step;
+            vars.WindowFlags = ImGuiWindowFlags_None;
+            ctx->Yield();
+            ctx->Yield();
+
+            // FIXME-TESTS: If width is too small we get clipped and things fail
+            ctx->WindowResize("", ImVec2(20.0f * vars.Count, 50));
+
+            for (int column_step = 0; column_step < 3; column_step++)
+            {
+                ctx->LogDebug("Step %d with %d columns", step, vars.Count);
+                vars.WindowFlags = ImGuiWindowFlags_AlwaysAutoResize;
+                ctx->Yield();
+
+                // Ensure window size is big enough to contain entire table.
+                IM_CHECK(window->Rect().Contains(window->ContentRegionRect));
+                IM_CHECK_EQ(window->ContentRegionRect.Min.x, table->OuterRect.Min.x);
+                IM_CHECK_EQ(window->ContentRegionRect.Max.x, table->OuterRect.Max.x);
+                IM_CHECK_EQ(window->ContentRegionRect.Max.y, table->OuterRect.Max.y);
+
+                float expected_table_width = vars.Count * 100.0f + (vars.Count - 1) * g.Style.CellPadding.x;
+                if (step == 2)
+                {
+                    // No columns width specs + auto-filling button = table will keep its width
+                    IM_CHECK_LT(table->OuterRect.GetWidth(), expected_table_width);
+                    IM_CHECK_LT(window->ContentSize.x, expected_table_width);
+                }
+                else
+                {
+                    IM_CHECK_EQ(table->OuterRect.GetWidth(), expected_table_width);
+                    IM_CHECK_EQ(window->ContentSize.x, expected_table_width);
+                }
+
+                vars.Count++;
+                ctx->Yield(); // Changing column count = recreate table. The whole thing will look glitchy at Step==3
+                ctx->Yield();
+            }
         }
     };
 #else // #ifdef IMGUI_HAS_TABLE
