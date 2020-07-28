@@ -472,8 +472,9 @@ void ImGuiCaptureTool::CaptureWindowPicker(const char* title, ImGuiCaptureArgs* 
     }
 
     ImGui::SetTooltip("Capture window: %s\nPress ESC to cancel.", capture_window ? capture_window->Name : "<None>");
-    if (ImGui::IsMouseClicked(0))
+    if (ImGui::IsMouseClicked(0) && capture_window)
     {
+        ImGui::FocusWindow(capture_window);
         args->InCaptureWindows.clear();
         args->InCaptureWindows.push_back(capture_window);
         _CaptureState = ImGuiCaptureToolState_Capturing;

@@ -92,7 +92,7 @@ struct ExampleAssetBrowser
         {
             // Columns
             ImDrawList* draw_list = ImGui::GetWindowDrawList();
-            const float width = ImGui::GetContentRegionAvailWidth() - item_size.x;
+            const float width = ImGui::GetContentRegionAvail().x - item_size.x;
             const int spacing_count = (int)(width / (item_size.x + style.ItemSpacing.x));
             const int column_count = 1 + spacing_count;
 
