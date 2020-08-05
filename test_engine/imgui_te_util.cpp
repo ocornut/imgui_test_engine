@@ -13,7 +13,7 @@
 //   IM_ASSERT(ImHashDecoratedPath("Hello/world")   == ImHash("Helloworld", 0));
 //   IM_ASSERT(ImHashDecoratedPath("Hello\\/world") == ImHash("Hello/world", 0));
 // Adapted from ImHash(). Not particularly fast!
-ImGuiID ImHashDecoratedPath(const char* str, ImGuiID seed)
+ImGuiID ImHashDecoratedPath(const char* str, const char* str_end, ImGuiID seed)
 {
     static ImU32 crc32_lut[256] = { 0 };
     if (!crc32_lut[1])
@@ -29,7 +29,7 @@ ImGuiID ImHashDecoratedPath(const char* str, ImGuiID seed)
     }
 
     // Prefixing the string with / ignore the seed
-    if (str[0] == '/')
+    if (str != str_end && str[0] == '/')
         seed = 0;
 
     seed = ~seed;
@@ -38,8 +38,14 @@ ImGuiID ImHashDecoratedPath(const char* str, ImGuiID seed)
     // Zero-terminated string
     bool inhibit_one = false;
     const unsigned char* current = (const unsigned char*)str;
-    while (unsigned char c = *current++)
+    while (true)
     {
+        if (str_end != NULL && current == (const unsigned char*)str_end)
+            break;
+
+        const unsigned char c = *current++;
+        if (c == 0)
+            break;
         if (c == '\\' && !inhibit_one)
         {
             inhibit_one = true;

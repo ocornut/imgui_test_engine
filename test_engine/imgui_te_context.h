@@ -210,7 +210,7 @@ struct ImGuiTestContext
     void        LogInfo(const char* fmt, ...)       IM_FMTARGS(2);  // ImGuiTestVerboseLevel_Info
     void        LogWarning(const char* fmt, ...)    IM_FMTARGS(2);  // ImGuiTestVerboseLevel_Warning
     void        LogError(const char* fmt, ...)      IM_FMTARGS(2);  // ImGuiTestVerboseLevel_Error
-    void        LogDebugInfo();
+    void        LogBasicUiState();
 
     // Yield, Timing
     void        Yield();

@@ -22,7 +22,7 @@ struct ImGuiTable;
 static inline bool  ImFloatEq(float f1, float f2) { float d = f2 - f1; return fabsf(d) <= FLT_EPSILON; }
 
 // Miscellaneous functions
-ImGuiID             ImHashDecoratedPath(const char* str, ImGuiID seed = 0);
+ImGuiID             ImHashDecoratedPath(const char* str, const char* str_end = NULL, ImGuiID seed = 0);
 const char*         GetImGuiKeyName(ImGuiKey key);
 void                GetImGuiKeyModsPrefixStr(ImGuiKeyModFlags mod_flags, char* out_buf, size_t out_buf_size);
 ImFont*             FindFontByName(const char* name);

@@ -188,7 +188,7 @@ void        ImGuiTestContext::LogToDebugger(ImGuiTestVerboseLevel level, const c
     ImOsOutputDebugString(message);
 }
 
-void    ImGuiTestContext::LogDebugInfo()
+void    ImGuiTestContext::LogBasicUiState()
 {
     ImGuiID item_hovered_id = UiContext->HoveredIdPreviousFrame;
     ImGuiID item_active_id = UiContext->ActiveId;
@@ -373,7 +373,7 @@ void ImGuiTestContext::WindowRef(ImGuiTestRef ref)
         IM_ASSERT(len < IM_ARRAYSIZE(RefStr) - 1);
 
         strcpy(RefStr, ref.Path);
-        RefID = ImHashDecoratedPath(ref.Path, 0);
+        RefID = ImHashDecoratedPath(ref.Path, NULL, 0);
     }
     else
     {
@@ -399,14 +399,14 @@ ImGuiID ImGuiTestContext::GetID(ImGuiTestRef ref)
 {
     if (ref.ID)
         return ref.ID;
-    return ImHashDecoratedPath(ref.Path, RefID);
+    return ImHashDecoratedPath(ref.Path, NULL, RefID);
 }
 
 ImGuiID ImGuiTestContext::GetID(ImGuiTestRef ref, ImGuiTestRef seed_ref)
 {
     if (ref.ID)
         return ref.ID; // FIXME: What if seed_ref != 0
-    return ImHashDecoratedPath(ref.Path, GetID(seed_ref));
+    return ImHashDecoratedPath(ref.Path, NULL, GetID(seed_ref));
 }
 
 ImGuiID ImGuiTestContext::GetIDByInt(int n)
@@ -516,14 +516,31 @@ ImGuiTestItemInfo* ImGuiTestContext::ItemInfo(ImGuiTestRef ref, ImGuiTestOpFlags
 
     ImGuiID full_id = 0;
 
-    const bool is_wildcard = ref.Path && strncmp(ref.Path, "**/", 3) == 0;
-    if (is_wildcard)
+    // Wildcard matching
+    // FIXME-TESTS: Need to verify that this is not inhibited by a \, so \**/ should not pass, but \\**/ should :)
+    // We could add a simple helpers that would iterate the strings, handling inhibitors, and let you check if a given characters is inhibited or not.
+    const char* wildcard_prefix_start = NULL;
+    const char* wildcard_prefix_end = NULL;
+    const char* wildcard_suffix_start = NULL;
+    if (ref.Path)
+        if (const char* p = strstr(ref.Path, "**/"))
+        {
+            wildcard_prefix_start = ref.Path;
+            wildcard_prefix_end = p;
+            wildcard_suffix_start = wildcard_prefix_end + 3;
+        }
+
+    if (wildcard_prefix_start)
     {
         // Wildcard matching
         ImGuiTestFindByLabelTask* task = &Engine->FindByLabelTask;
-        task->InBaseId = RefID;
-        task->InLabel = ref.Path + 3;
+        if (wildcard_prefix_start < wildcard_prefix_end)
+            task->InBaseId = ImHashDecoratedPath(wildcard_prefix_start, wildcard_prefix_end, RefID);
+        else
+            task->InBaseId = RefID;
+        task->InLabel = wildcard_suffix_start;
         task->OutItemId = 0;
+        LogDebug("Wildcard matching..");
 
         int retries = 0;
         while (retries < 2 && task->OutItemId == 0)
@@ -544,9 +561,8 @@ ImGuiTestItemInfo* ImGuiTestContext::ItemInfo(ImGuiTestRef ref, ImGuiTestOpFlags
         if (ref.ID)
             full_id = ref.ID;
         else
-            full_id = ImHashDecoratedPath(ref.Path, RefID);
+            full_id = ImHashDecoratedPath(ref.Path, NULL, RefID);
     }
-
 
     // If ui_ctx->TestEngineHooksEnabled is not already on (first ItemItem task in a while) we'll probably need an extra frame to warmup
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
@@ -1358,7 +1374,8 @@ void    ImGuiTestContext::ItemAction(ImGuiTestAction action, ImGuiTestRef ref, v
     //if (ref.ID == 0x0d4af068)
     //    printf("");
 
-    const bool is_wildcard = ref.Path != NULL && strncmp(ref.Path, "**/", 3) == 0;
+    // FIXME-TESTS: Fix that stuff
+    const bool is_wildcard = ref.Path != NULL && strstr(ref.Path, "**/") == 0;
     if (is_wildcard)
     {
         // This is a fragile way to avoid some ambiguities, we're relying on expected action to further filter by status flags.
@@ -2070,7 +2087,7 @@ void    ImGuiTestContext::UndockNode(ImGuiID dock_id)
     if (node->Windows.empty())
         return;
 
-    ImGuiID dock_button_id = ImHashDecoratedPath("#COLLAPSE", dock_id); // FIXME_TESTS
+    ImGuiID dock_button_id = ImHashDecoratedPath("#COLLAPSE", NULL, dock_id); // FIXME_TESTS
     const float h = node->Windows[0]->TitleBarHeight();
     if (!UiContext->IO.ConfigDockingWithShift)
         KeyDownMap(ImGuiKey_COUNT, ImGuiKeyModFlags_Shift);

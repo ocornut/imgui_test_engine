@@ -1578,7 +1578,7 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
         // Verify that Test Engine high-level hash wrapper works
         IM_CHECK_EQ(ImHashDecoratedPath("Hello/world"), ImHashStr("Helloworld"));            // Slashes are ignored
         IM_CHECK_EQ(ImHashDecoratedPath("Hello\\/world"), ImHashStr("Hello/world"));         // Slashes can be inhibited
-        IM_CHECK_EQ(ImHashDecoratedPath("/Hello", 42), ImHashDecoratedPath("Hello"));        // Leading / clears seed
+        IM_CHECK_EQ(ImHashDecoratedPath("/Hello", NULL, 42), ImHashDecoratedPath("Hello"));        // Leading / clears seed
     };
 
     // ## Test ImVector functions
@@ -2551,6 +2551,8 @@ void RegisterTests_Capture(ImGuiTestEngine* e)
         ctx->WindowRef("Dear ImGui Demo");
         ctx->ItemOpen("Tables & Columns");
         ctx->ItemClick("Tables/Open all");
+        ctx->ItemOpen("Tables/Advanced/Options");
+        ctx->ItemOpen("Tables/Tree view/**/Root");
 
         ImGuiCaptureArgs args;
         ctx->CaptureInitArgs(&args, ImGuiCaptureFlags_StitchFullContents);
