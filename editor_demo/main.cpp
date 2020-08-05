@@ -174,7 +174,7 @@ int main(int argc, char** argv)
         }
         ImGui::End();
 
-        // Dummy/Skeleton editor
+        // Demo/Skeleton editor
         if (ImGui::BeginMainMenuBar())
         {
             // FIXME-SAMPLE: Actual shortcut key handling

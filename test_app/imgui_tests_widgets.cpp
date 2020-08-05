@@ -241,8 +241,8 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         }
         vars.NextStep = ButtonStateMachineTestStep_None;
 
-        // The "Dummy" button allows to move the mouse away from the "Test" button
-        ImGui::Button("Dummy");
+        // The "Unused" button allows to move the mouse away from the "Test" button
+        ImGui::Button("Unused");
 
         ImGui::End();
     };
@@ -254,7 +254,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ctx->WindowRef("Test Window");
 
         // Move mouse away from "Test" button
-        ctx->MouseMove("Dummy");
+        ctx->MouseMove("Unused");
         vars.NextStep = ButtonStateMachineTestStep_Init;
         ctx->Yield();
 
@@ -265,7 +265,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         vars.NextStep = ButtonStateMachineTestStep_MouseDown;
         ctx->MouseDown();
 
-        ctx->MouseMove("Dummy", ImGuiTestOpFlags_NoCheckHoveredId);
+        ctx->MouseMove("Unused", ImGuiTestOpFlags_NoCheckHoveredId);
         vars.NextStep = ButtonStateMachineTestStep_MovedAway;
         ctx->Yield();
 
@@ -276,7 +276,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         vars.NextStep = ButtonStateMachineTestStep_MouseUp;
         ctx->MouseUp();
 
-        ctx->MouseMove("Dummy");
+        ctx->MouseMove("Unused");
         vars.NextStep = ButtonStateMachineTestStep_Done;
         ctx->Yield();
     };
@@ -452,7 +452,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ImGui::SetNextWindowSize(ImVec2(ImGui::GetFontSize() * 50, 0.0f));
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
         ImGui::Text("strlen() = %d", (int)strlen(vars.StrLarge.Data));
-        ImGui::InputText("Dummy", vars.Str1, IM_ARRAYSIZE(vars.Str1), ImGuiInputTextFlags_None);
+        ImGui::InputText("Other", vars.Str1, IM_ARRAYSIZE(vars.Str1), ImGuiInputTextFlags_None);
         ImGui::InputTextMultiline("InputText", vars.StrLarge.Data, (size_t)vars.StrLarge.Size, ImVec2(-1, ImGui::GetFontSize() * 20), ImGuiInputTextFlags_None);
         ImGui::End();
         //DebugInputTextState();
@@ -471,7 +471,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         IM_CHECK_EQ((int)strlen(buf), 350);
 
         ctx->WindowRef("Test Window");
-        ctx->ItemClick("Dummy"); // This is to ensure stb_textedit_clear_state() gets called (clear the undo buffer, etc.)
+        ctx->ItemClick("Other"); // This is to ensure stb_textedit_clear_state() gets called (clear the undo buffer, etc.)
         ctx->ItemClick("InputText");
 
         ImGuiInputTextState& input_text_state = GImGui->InputTextState;
@@ -743,7 +743,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
         bool ret = ImGui::InputText("Field", vars.Str1, IM_ARRAYSIZE(vars.Str1));
         vars.Status.QueryInc(ret);
-        ImGui::InputText("Dummy Sibling", vars.Str2, IM_ARRAYSIZE(vars.Str2));
+        ImGui::InputText("Sibling", vars.Str2, IM_ARRAYSIZE(vars.Str2));
         ImGui::End();
     };
     t->TestFunc = [](ImGuiTestContext* ctx)
@@ -1014,7 +1014,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
 #ifdef IMGUI_HAS_MULTI_SELECT
         if (vars.IsMultiSelect)
         {
-            ImGui::BeginMultiSelect(ImGuiMultiSelectFlags_None, NULL, false); // Dummy, won't interact properly
+            ImGui::BeginMultiSelect(ImGuiMultiSelectFlags_None, NULL, false); // Placeholder, won't interact properly
             ImGui::SetNextItemSelectionData(NULL);
         }
 #endif

@@ -1,6 +1,6 @@
 
 CONTENTS
-- Add some dummy visual thing that's not too distracting (nor tooooo fascinating)
+- Add some demo visual thing that's not too distracting (nor tooooo fascinating)
 - Game view when docked should fit in parent window while respecting 16:9 ratio
 
 BACKENDS

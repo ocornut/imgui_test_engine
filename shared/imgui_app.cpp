@@ -104,7 +104,6 @@ static bool ImGuiApp_ImplNull_NewFrame(ImGuiApp* app_opaque)
     ImGuiApp_ImplNull* app = (ImGuiApp_ImplNull*)app_opaque;
     ImGuiIO& io = ImGui::GetIO();
 
-    // Dummy build
     //unsigned char* pixels = NULL;
     //int width = 0;
     //int height = 0;

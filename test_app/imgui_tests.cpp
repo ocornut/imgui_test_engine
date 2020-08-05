@@ -1136,14 +1136,14 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
 struct HelpersTextureId
 {
     // Fake texture ID
-    ImTextureID DummyTex0 = (ImTextureID)100;
-    ImTextureID DummyTex1 = (ImTextureID)200;
+    ImTextureID FakeTex0 = (ImTextureID)100;
+    ImTextureID FakeTex1 = (ImTextureID)200;
 
     // Replace fake texture IDs with a known good ID in order to prevent graphics API crashing application.
-    void RemoveDummyTexFromDrawList(ImDrawList* draw_list, ImTextureID replacement_tex_id)
+    void RemoveFakeTexFromDrawList(ImDrawList* draw_list, ImTextureID replacement_tex_id)
     {
         for (ImDrawCmd& cmd : draw_list->CmdBuffer)
-            if (cmd.TextureId == DummyTex0 || cmd.TextureId == DummyTex1)
+            if (cmd.TextureId == FakeTex0 || cmd.TextureId == FakeTex1)
                 cmd.TextureId = replacement_tex_id;
     }
 };
@@ -1214,20 +1214,20 @@ void RegisterTests_DrawList(ImGuiTestEngine* e)
         ImVec2 p = ImGui::GetCursorScreenPos();
         ImGui::Dummy(ImVec2(100 + 10 + 100, 100));
 
-        HelpersTextureId dummy_tex;
+        HelpersTextureId fake_tex;
 
         draw_list->ChannelsSplit(2);
         draw_list->ChannelsSetCurrent(0);
-        draw_list->AddImage(dummy_tex.DummyTex0, p, p + ImVec2(100, 100));
+        draw_list->AddImage(fake_tex.FakeTex0, p, p + ImVec2(100, 100));
         draw_list->ChannelsSetCurrent(1);
-        draw_list->AddImage(dummy_tex.DummyTex1, p + ImVec2(110, 0), p + ImVec2(210, 100));
+        draw_list->AddImage(fake_tex.FakeTex1, p + ImVec2(110, 0), p + ImVec2(210, 100));
         draw_list->ChannelsMerge();
 
         IM_CHECK_EQ_NO_RET(draw_list->CmdBuffer.Size, start_cmdbuffer_size + 2);
         IM_CHECK_EQ_NO_RET(draw_list->CmdBuffer.back().ElemCount, 0u);
         IM_CHECK_EQ_NO_RET(prev_texture_id, draw_list->CmdBuffer.back().TextureId);
 
-        dummy_tex.RemoveDummyTexFromDrawList(draw_list, prev_texture_id);
+        fake_tex.RemoveFakeTexFromDrawList(draw_list, prev_texture_id);
 
         ImGui::End();
     };
@@ -2195,8 +2195,8 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
         ctx->SleepShort();
         ctx->PopupClose();
 
-        //ctx->ItemClick("Layout");  // FIXME: close popup
-        ctx->ItemOpen("Layout");
+        //ctx->ItemClick("Layout & Scrolling");  // FIXME: close popup
+        ctx->ItemOpen("Layout & Scrolling");
         ctx->ItemOpen("Scrolling");
         ctx->ItemHold("Scrolling/>>", 1.0f);
         ctx->SleepShort();
@@ -2240,7 +2240,7 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
         ctx->ItemOpen("Configuration");
         ctx->ItemOpen("Window options");
         ctx->ItemOpen("Widgets");
-        ctx->ItemOpen("Layout");
+        ctx->ItemOpen("Layout & Scrolling");
         ctx->ItemOpen("Popups & Modal windows");
 #if IMGUI_HAS_TABLE
         ctx->ItemOpen("Tables & Columns");
@@ -2256,7 +2256,7 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         ctx->WindowRef("Dear ImGui Demo");
-        ctx->ItemOpen("Layout");
+        ctx->ItemOpen("Layout & Scrolling");
         ctx->ItemOpen("Scrolling");
         ctx->ItemCheck("Scrolling/Show Horizontal contents size demo window");   // FIXME-TESTS: ItemXXX functions could do the recursion (e.g. Open parent)
         ctx->ItemUncheck("Scrolling/Show Horizontal contents size demo window");
@@ -2400,8 +2400,8 @@ void RegisterTests_Capture(ImGuiTestEngine* e)
         ctx->WindowResize("", ImVec2(fh * 40, fh * (34-7)));
         ctx->WindowMove("", window_custom_rendering->Pos + window_custom_rendering->Size * ImVec2(0.30f, 0.60f));
         ctx->ItemClick("Clear");
-        ctx->ItemClick("Add Dummy Text");
-        ctx->ItemClick("Add Dummy Error");
+        ctx->ItemClick("Add Debug Text");
+        ctx->ItemClick("Add Debug Error");
         ctx->ItemClick("Input");
         ctx->KeyChars("H");
         ctx->KeyPressMap(ImGuiKey_Tab);
@@ -2414,9 +2414,9 @@ void RegisterTests_Capture(ImGuiTestEngine* e)
         ctx->WindowMove("", ImVec2(io.DisplaySize.x - pad, pad), ImVec2(1.0f, 0.0f));
         ctx->ItemOpen("Widgets");
         ctx->ItemOpen("Color\\/Picker Widgets");
-        ctx->ItemOpen("Layout");
+        ctx->ItemOpen("Layout & Scrolling");
         ctx->ItemOpen("Groups");
-        ctx->ScrollToItemY("Layout", 0.8f);
+        ctx->ScrollToItemY("Layout & Scrolling", 0.8f);
 
         ctx->LogDebug("Capture screenshot...");
         ctx->WindowRef("");
