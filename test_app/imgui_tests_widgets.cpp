@@ -918,6 +918,50 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         IM_CHECK(draw_calls == window->DrawList->CmdBuffer.Size);
     };
 
+    // ## (Attempt to) Test that tab bar declares its unclipped size.
+    t = IM_REGISTER_TEST(e, "widgets", "widgets_tabbar_size");
+    struct TabBarVars { bool HasCloseButton = false; float ExpectedWidth = 0.0f; };
+    t->SetUserDataType<TabBarVars>();
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiContext& g = *ctx->UiContext;
+        auto& vars = ctx->GetUserData<TabBarVars>();
+
+        // FIXME-TESTS: Ideally we would test variation of with/without ImGuiTabBarFlags_TabListPopupButton, but we'd need to know its width...
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImGui::Checkbox("HasCloseButton", &vars.HasCloseButton);
+        if (ImGui::BeginTabBar("TabBar"))
+        {
+            vars.ExpectedWidth = 0.0f;
+            for (int i = 0; i < 3; i++)
+            {
+                Str30f label("Tab %d", i);
+                bool tab_open = true;
+                if (ImGui::BeginTabItem(label.c_str(), vars.HasCloseButton ? &tab_open : NULL))
+                    ImGui::EndTabItem();
+                if (i > 0)
+                    vars.ExpectedWidth += g.Style.ItemInnerSpacing.x;
+                vars.ExpectedWidth += ImGui::TabItemCalcSize(label.c_str(), vars.HasCloseButton).x;
+            }
+            ImGui::EndTabBar();
+        }
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiWindow* window = ImGui::FindWindowByName("Test Window");
+        auto& vars = ctx->GetUserData<TabBarVars>();
+
+        vars.HasCloseButton = false;
+        ctx->Yield(); 
+        IM_CHECK_EQ(window->DC.CursorStartPos.x + vars.ExpectedWidth, window->DC.CursorMaxPos.x);
+
+        vars.HasCloseButton = true;
+        ctx->Yield(); // BeginTabBar() will submit old size --> TabBarLayout update sizes 
+        ctx->Yield(); // BeginTabBar() will submit new size 
+        IM_CHECK_EQ(window->DC.CursorStartPos.x + vars.ExpectedWidth, window->DC.CursorMaxPos.x);
+    };
+        
     // ## Test recursing Tab Bars (Bug #2371)
     t = IM_REGISTER_TEST(e, "widgets", "widgets_tabbar_recurse");
     t->GuiFunc = [](ImGuiTestContext* ctx)
