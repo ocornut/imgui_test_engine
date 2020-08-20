@@ -1101,7 +1101,6 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         {
             vars.IsMultiSelect = (loop_n == 1);
 
-            if (!vars.IsMultiSelect) // _OpenOnArrow is implicit/automatic with MultiSelect
             {
                 ctx->LogInfo("## ImGuiTreeNodeFlags_None, IsMultiSelect=%d", vars.IsMultiSelect);
                 vars.Reset = true;
@@ -1111,9 +1110,9 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
 
                 // Click on arrow
                 ctx->MouseMove("AAA", ImGuiTestOpFlags_MoveToEdgeL);
-                ctx->MouseDown(0);
-                IM_CHECK_EQ(vars.IsOpen, false);
-                ctx->MouseUp(0); // Toggle on Up with _OpenOnArrow (may change!)
+                ctx->MouseDown(0); // Toggle on Down when hovering Arrow
+                IM_CHECK_EQ(vars.IsOpen, true);
+                ctx->MouseUp(0); 
                 IM_CHECK_EQ(vars.IsOpen, true);
                 ctx->MouseClick(0);
                 IM_CHECK_EQ(vars.IsOpen, false);
@@ -1121,16 +1120,19 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
                 IM_CHECK_EQ(vars.IsOpen, false);
                 IM_CHECK_EQ(vars.ToggleCount, 4);
 
-                // Click on main section
-                vars.ToggleCount = 0;
-                ctx->MouseMove("AAA");
-                ctx->MouseClick(0);
-                IM_CHECK_EQ_NO_RET(vars.IsOpen, true);
-                ctx->MouseClick(0);
-                IM_CHECK_EQ_NO_RET(vars.IsOpen, false);
-                ctx->MouseDoubleClick(0);
-                IM_CHECK_EQ_NO_RET(vars.IsOpen, false);
-                IM_CHECK_EQ_NO_RET(vars.ToggleCount, 4);
+                // Click on main section (_OpenOnArrow is implicit/automatic with MultiSelect, so Main Section won't react)
+                if (!vars.IsMultiSelect)
+                {
+                    vars.ToggleCount = 0;
+                    ctx->MouseMove("AAA");
+                    ctx->MouseClick(0);
+                    IM_CHECK_EQ_NO_RET(vars.IsOpen, true);
+                    ctx->MouseClick(0);
+                    IM_CHECK_EQ_NO_RET(vars.IsOpen, false);
+                    ctx->MouseDoubleClick(0);
+                    IM_CHECK_EQ_NO_RET(vars.IsOpen, false);
+                    IM_CHECK_EQ_NO_RET(vars.ToggleCount, 4);
+                }
 
                 // Test TreeNode as drag source
                 IM_CHECK_EQ(vars.DragSourceCount, 0);
@@ -1143,7 +1145,6 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
                 IM_CHECK_EQ(vars.IsOpen, true);
             }
 
-            if (!vars.IsMultiSelect) // _OpenOnArrow is implicit/automatic with MultiSelect
             {
                 ctx->LogInfo("## ImGuiTreeNodeFlags_OpenOnDoubleClick, IsMultiSelect=%d", vars.IsMultiSelect);
                 vars.Reset = true;
@@ -1151,22 +1152,25 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
                 ctx->Yield();
                 IM_CHECK(vars.IsOpen == false && vars.ToggleCount == 0);
 
-                // Click on arrow
-                ctx->MouseMove("AAA", ImGuiTestOpFlags_MoveToEdgeL);
-                ctx->MouseDown(0);
-                IM_CHECK_EQ(vars.IsOpen, false);
-                ctx->MouseUp(0);
-                IM_CHECK_EQ(vars.IsOpen, false);
-                ctx->MouseClick(0);
-                IM_CHECK_EQ(vars.IsOpen, false);
-                IM_CHECK_EQ(vars.ToggleCount, 0);
-                ctx->MouseDoubleClick(0);
-                IM_CHECK_EQ(vars.IsOpen, true);
-                ctx->MouseDoubleClick(0);
-                IM_CHECK_EQ(vars.IsOpen, false);
-                IM_CHECK_EQ(vars.ToggleCount, 2);
+                // Click on arrow (_OpenOnArrow is implicit/automatic with MultiSelect)
+                if (!vars.IsMultiSelect) 
+                {
+                    ctx->MouseMove("AAA", ImGuiTestOpFlags_MoveToEdgeL);
+                    ctx->MouseDown(0);
+                    IM_CHECK_EQ(vars.IsOpen, false);
+                    ctx->MouseUp(0);
+                    IM_CHECK_EQ(vars.IsOpen, false);
+                    ctx->MouseClick(0);
+                    IM_CHECK_EQ(vars.IsOpen, false);
+                    IM_CHECK_EQ(vars.ToggleCount, 0);
+                    ctx->MouseDoubleClick(0);
+                    IM_CHECK_EQ(vars.IsOpen, true);
+                    ctx->MouseDoubleClick(0);
+                    IM_CHECK_EQ(vars.IsOpen, false);
+                    IM_CHECK_EQ(vars.ToggleCount, 2);
+                }
 
-                // Click on main section
+                // Double-click on main section
                 vars.ToggleCount = 0;
                 ctx->MouseMove("AAA");
                 ctx->MouseClick(0);
