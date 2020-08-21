@@ -917,7 +917,13 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
 
             ctx->KeyPressMap(ImGuiKey_Tab, ImGuiKeyModFlags_Ctrl);
             IM_CHECK(g.NavWindow == ctx->GetWindowByRef("Window 1"));
-            ctx->KeyPressMap(ImGuiKey_Tab, ImGuiKeyModFlags_Ctrl);
+
+            // Intentionally perform a "SLOW" ctrl-tab to make sure the UI appears!
+            //ctx->KeyPressMap(ImGuiKey_Tab, ImGuiKeyModFlags_Ctrl); 
+            ctx->KeyDownMap(ImGuiKey_COUNT, ImGuiKeyModFlags_Ctrl);
+            ctx->KeyPressMap(ImGuiKey_Tab);
+            ctx->SleepNoSkip(0.5f, 0.1f);
+            ctx->KeyUpMap(ImGuiKey_COUNT, ImGuiKeyModFlags_Ctrl);
             IM_CHECK(g.NavWindow == ctx->GetWindowByRef("Window 2"));
 
             // Set up window focus order, focus child window.
@@ -2348,24 +2354,46 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
         ctx->ItemClick("Copy as..");
         ctx->KeyPressMap(ImGuiKey_Escape); // Close popup
 
-        for (int picker_type = 1; picker_type >= 0; picker_type--)
+        for (int picker_type = 0; picker_type < 2; picker_type++)
         {
             ctx->WindowRef("Dear ImGui Demo");
             ctx->MouseMove("Basic/color 2/##ColorButton");
             ctx->MouseClick(0); // Open color picker
-
-            ctx->WindowRef(ctx->GetFocusWindowRef());
-            if (picker_type == 1)
-                ctx->MouseMove("##picker/sv");
-            else
-                ctx->MouseMove("##picker/hsv");
-
-            ctx->MouseClick(1); // Open color picker style chooser
             ctx->Yield();
 
+            // Open color picker style chooser
+            ctx->WindowRef(ctx->GetFocusWindowRef());
+            ctx->MouseMoveToPos(ctx->GetWindowByRef("")->Rect().GetCenter());
+            ctx->MouseClick(1);
+            ctx->Yield();
+
+            // Select picker type
             ctx->WindowRef(ctx->GetFocusWindowRef());
             ctx->MouseMove(ctx->GetID("##selectable", ctx->GetIDByInt(picker_type)));
             ctx->MouseClick(0);
+
+            // Interact with picker
+            ctx->WindowRef(ctx->GetFocusWindowRef());
+            if (picker_type == 0)
+            {
+                ctx->MouseMove("##picker/sv", ImGuiTestOpFlags_MoveToEdgeU | ImGuiTestOpFlags_MoveToEdgeL);
+                ctx->MouseDown(0);
+                ctx->MouseMove("##picker/sv", ImGuiTestOpFlags_MoveToEdgeD | ImGuiTestOpFlags_MoveToEdgeR);
+                ctx->MouseMove("##picker/sv");
+                ctx->MouseUp(0);
+
+                ctx->MouseMove("##picker/hue", ImGuiTestOpFlags_MoveToEdgeU);
+                ctx->MouseDown(0);
+                ctx->MouseMove("##picker/hue", ImGuiTestOpFlags_MoveToEdgeD);
+                ctx->MouseMove("##picker/hue", ImGuiTestOpFlags_MoveToEdgeU);
+                ctx->MouseUp(0);
+            }
+            if (picker_type == 1)
+            {
+                ctx->MouseMove("##picker/hsv");
+                ctx->MouseClick(0);
+            }
+
             ctx->PopupCloseAll();
         }
     };
