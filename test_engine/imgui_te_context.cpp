@@ -1947,7 +1947,7 @@ void    ImGuiTestContext::WindowResize(ImGuiTestRef ref, ImVec2 size)
     MouseUp();
 }
 
-void    ImGuiTestContext::PopupClose()
+void    ImGuiTestContext::PopupCloseAll()
 {
     if (IsError())
         return;

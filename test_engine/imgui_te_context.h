@@ -233,7 +233,7 @@ struct ImGuiTestContext
     void        WindowResize(ImGuiTestRef ref, ImVec2 sz);
     bool        WindowTeleportToMakePosVisibleInViewport(ImGuiWindow* window, ImVec2 pos_in_window);
     bool        WindowBringToFront(ImGuiWindow* window, ImGuiTestOpFlags flags = ImGuiTestOpFlags_None);
-    void        PopupClose();
+    void        PopupCloseAll();
     ImGuiWindow* GetWindowByRef(ImGuiTestRef ref);
     ImGuiTestRef GetFocusWindowRef();
 

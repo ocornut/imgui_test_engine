@@ -2193,7 +2193,7 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
         ctx->ItemClick("Basic/color 2/##ColorButton");
         //ctx->ItemClick("##Combo/BBBB");     // id chain
         ctx->SleepShort();
-        ctx->PopupClose();
+        ctx->PopupCloseAll();
 
         //ctx->ItemClick("Layout & Scrolling");  // FIXME: close popup
         ctx->ItemOpen("Layout & Scrolling");
@@ -2322,6 +2322,52 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
             ctx->ItemClick(items[n]->ID);
         }
         ImGui::GetStyle() = style_backup;
+    };
+
+    // ## Coverage: exercice some actions in ColorEditOptionsPopup() and ColorPickerOptionsPopup(
+    t = IM_REGISTER_TEST(e, "demo", "demo_cov_color_picker");
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ctx->WindowRef("Dear ImGui Demo");
+        ctx->ItemOpen("Widgets");
+        ctx->ItemOpen("Basic");
+
+        ctx->MouseMove("Basic/color 2/##ColorButton");
+        ctx->MouseClick(1); // Open picker settings popup
+        ctx->Yield();
+
+        ctx->WindowRef(ctx->GetFocusWindowRef());
+        ctx->ItemClick("RGB");
+        ctx->ItemClick("HSV");
+        ctx->ItemClick("Hex");
+        ctx->ItemClick("RGB");
+        ctx->ItemClick("0..255");
+        ctx->ItemClick("0.00..1.00");
+        ctx->ItemClick("0..255");
+
+        ctx->ItemClick("Copy as..");
+        ctx->KeyPressMap(ImGuiKey_Escape); // Close popup
+
+        for (int picker_type = 1; picker_type >= 0; picker_type--)
+        {
+            ctx->WindowRef("Dear ImGui Demo");
+            ctx->MouseMove("Basic/color 2/##ColorButton");
+            ctx->MouseClick(0); // Open color picker
+
+            ctx->WindowRef(ctx->GetFocusWindowRef());
+            if (picker_type == 1)
+                ctx->MouseMove("##picker/sv");
+            else
+                ctx->MouseMove("##picker/hsv");
+
+            ctx->MouseClick(1); // Open color picker style chooser
+            ctx->Yield();
+
+            ctx->WindowRef(ctx->GetFocusWindowRef());
+            ctx->MouseMove(ctx->GetID("##selectable", ctx->GetIDByInt(picker_type)));
+            ctx->MouseClick(0);
+            ctx->PopupCloseAll();
+        }
     };
 }
 
