@@ -266,6 +266,7 @@ struct ImGuiTestContext
     void        MouseUp(int button = 0);
     void        MouseLiftDragThreshold(int button = 0);
     void        MouseClickOnVoid(int button = 0);
+    void        MouseDragWithDelta(ImVec2 delta, int button = 0);
 
     // Keyboard inputs
     void        KeyDownMap(ImGuiKey key, int mod_flags = 0);

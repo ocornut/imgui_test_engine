@@ -1162,6 +1162,20 @@ void    ImGuiTestContext::MouseClickOnVoid(int mouse_button)
     IM_CHECK(g.NavWindow == NULL);
 }
 
+void    ImGuiTestContext::MouseDragWithDelta(ImVec2 delta, int button)
+{
+    ImGuiContext& g = *UiContext;
+    if (IsError())
+        return;
+
+    IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
+    LogDebug("MouseDragWithDelta %d (%.1f, %.1f)", button, delta.x, delta.y);
+
+    MouseDown(button);
+    MouseMoveToPos(g.IO.MousePos + delta);
+    MouseUp(button);
+}
+
 void    ImGuiTestContext::KeyDownMap(ImGuiKey key, int mod_flags)
 {
     if (IsError())

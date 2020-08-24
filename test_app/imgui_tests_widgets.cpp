@@ -398,6 +398,120 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         IM_CHECK(ImFloatEq(vars.Vec4.z, 200.0f / 255.0f));
     };
 
+    // ## Test Sliders and Drags clamping values
+    t = IM_REGISTER_TEST(e, "widgets", "widgets_drag_slider_clamping");
+    struct ImGuiDragSliderVars { float DragValue = 0.0f; float DragMin = 0.0f; float DragMax = 1.0f; float SliderValue = 0.0f; float SliderMin = 0.0f; float SliderMax = 0.0f; ImGuiSliderFlags Flags = ImGuiSliderFlags_None; };
+    t->SetUserDataType<ImGuiDragSliderVars>();
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiDragSliderVars& vars = ctx->GetUserData<ImGuiDragSliderVars>();
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
+        const char* format = "%.3f";
+        ImGui::SliderFloat("Slider", &vars.SliderValue, vars.SliderMin, vars.SliderMax, format, vars.Flags);
+        ImGui::DragFloat("Drag", &vars.DragValue, 1.0f, vars.DragMin, vars.DragMax, format, vars.Flags);
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiContext& g = *ImGui::GetCurrentContext();
+        ImGuiDragSliderVars& vars = ctx->GetUserData<ImGuiDragSliderVars>();
+        ctx->WindowRef("Test Window");
+        ImGuiSliderFlags flags[] = { ImGuiSliderFlags_None, ImGuiSliderFlags_ClampOnInput };
+        for (int i = 0; i < IM_ARRAYSIZE(flags); ++i)
+        {
+            bool clamp_on_input = flags[i] == ImGuiSliderFlags_ClampOnInput;
+            vars.Flags = flags[i];
+
+            float slider_min_max[][2] = { {0.0f, 1.0f}, {0.0f, 0.0f} };
+            for (int j = 0; j < IM_ARRAYSIZE(slider_min_max); ++j)
+            {
+                ctx->LogInfo("## Slider %d with Flags = 0x%08X", j, flags);
+
+                vars.SliderValue = 0.0f;
+                vars.SliderMin = slider_min_max[j][0];
+                vars.SliderMax = slider_min_max[j][1];
+                ctx->Yield();
+
+                ctx->ItemInput("Slider");
+                ctx->KeyCharsReplaceEnter("2");
+                IM_CHECK_EQ(vars.SliderValue, clamp_on_input ? vars.SliderMax : 2.0f);
+
+                // Check higher bound
+                ctx->MouseMove("Slider", ImGuiTestOpFlags_MoveToEdgeR);
+                ctx->MouseDown(); // Click will update clamping
+                IM_CHECK_EQ(vars.SliderValue, vars.SliderMax);
+                ctx->MouseMoveToPos(g.IO.MousePos + ImVec2(100, 0));
+                ctx->MouseUp();
+                IM_CHECK_EQ(vars.SliderValue, vars.SliderMax);
+
+                ctx->ItemInput("Slider");
+                ctx->KeyCharsReplaceEnter("-2");
+                IM_CHECK_EQ(vars.SliderValue, clamp_on_input ? vars.SliderMin : -2.0f);
+
+                // Check lower bound
+                ctx->MouseMove("Slider", ImGuiTestOpFlags_MoveToEdgeL);
+                ctx->MouseDown(); // Click will update clamping
+                IM_CHECK_EQ(vars.SliderValue, vars.SliderMin);
+                ctx->MouseMoveToPos(g.IO.MousePos - ImVec2(100, 0));
+                ctx->MouseUp();
+                IM_CHECK_EQ(vars.SliderValue, vars.SliderMin);
+            }
+
+            float drag_min_max[][2] = { {0.0f, 1.0f}, {0.0f, 0.0f}, {-FLT_MAX, FLT_MAX} };
+            for (int j = 0; j < IM_ARRAYSIZE(drag_min_max); ++j)
+            {
+                ctx->LogDebug("Drag %d with flags = 0x%08X", j, flags);
+
+                vars.DragValue = 0.0f;
+                vars.DragMin = drag_min_max[j][0];
+                vars.DragMax = drag_min_max[j][1];
+                ctx->Yield();
+
+                // [0,0] is equivalent to [-FLT_MAX, FLT_MAX] range
+                bool unbound = (vars.DragMin == 0.0f && vars.DragMax == 0.0f) || (vars.DragMin == -FLT_MAX && vars.DragMax == FLT_MAX);
+                float value_before_click = 0.0f;
+
+                ctx->ItemInput("Drag");
+                ctx->KeyCharsReplaceEnter("-3");
+                IM_CHECK_EQ(vars.DragValue, clamp_on_input && !unbound ? vars.DragMin : -3.0f);
+
+                ctx->ItemInput("Drag");
+                ctx->KeyCharsReplaceEnter("2");
+                IM_CHECK_EQ(vars.DragValue, clamp_on_input && !unbound ? vars.DragMax : 2.0f);
+
+                // Check higher bound
+                ctx->MouseMove("Drag");
+                value_before_click = vars.DragValue;
+                ctx->MouseDown(); // Click will not update clamping value
+                IM_CHECK_EQ(vars.DragValue, value_before_click);
+                ctx->MouseMoveToPos(g.IO.MousePos + ImVec2(100, 0));
+                ctx->MouseUp();
+                if (unbound)
+                    IM_CHECK_GT(vars.DragValue, value_before_click);
+                else
+                    IM_CHECK_EQ(vars.DragValue, value_before_click);
+
+                // Check higher to lower bound
+                value_before_click = vars.DragValue;
+                ctx->MouseMove("Drag");
+                ctx->MouseDragWithDelta(ImVec2(-100, 0));
+                if (unbound)
+                    IM_CHECK_LT(vars.DragValue, value_before_click);
+                else
+                    IM_CHECK_EQ(vars.DragValue, vars.DragMin);
+
+                // Check low to high bound
+                value_before_click = vars.DragValue;
+                ctx->MouseMove("Drag");
+                ctx->MouseDragWithDelta(ImVec2(100, 0));
+                if (unbound)
+                    IM_CHECK_GT(vars.DragValue, value_before_click);
+                else
+                    IM_CHECK_EQ(vars.DragValue, vars.DragMax);
+            }
+        }
+    };
+
     // ## Test InputText widget
     t = IM_REGISTER_TEST(e, "widgets", "widgets_inputtext_1");
     t->GuiFunc = [](ImGuiTestContext* ctx)
