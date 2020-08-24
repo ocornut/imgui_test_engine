@@ -919,7 +919,7 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
             IM_CHECK(g.NavWindow == ctx->GetWindowByRef("Window 1"));
 
             // Intentionally perform a "SLOW" ctrl-tab to make sure the UI appears!
-            //ctx->KeyPressMap(ImGuiKey_Tab, ImGuiKeyModFlags_Ctrl); 
+            //ctx->KeyPressMap(ImGuiKey_Tab, ImGuiKeyModFlags_Ctrl);
             ctx->KeyDownMap(ImGuiKey_COUNT, ImGuiKeyModFlags_Ctrl);
             ctx->KeyPressMap(ImGuiKey_Tab);
             ctx->SleepNoSkip(0.5f, 0.1f);
@@ -1167,7 +1167,7 @@ static bool CanTestVtxOffset(ImGuiTestContext* ctx)
         return false;
     }
     return true;
-};
+}
 
 void RegisterTests_DrawList(ImGuiTestEngine* e)
 {
@@ -1391,11 +1391,10 @@ void RegisterTests_DrawList(ImGuiTestEngine* e)
 
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
         ImDrawList* draw_list = ImGui::GetWindowDrawList();
-      
+
         // fill up vertex buffer with rectangles
         const int start_vtxbuffer_size = draw_list->VtxBuffer.Size;
         const int rect_count = (65536 - start_vtxbuffer_size - 1) / 4;
-        const int expected_threshold = rect_count * 4 + start_vtxbuffer_size;
 
         const ImVec2 p_min = ImGui::GetCursorScreenPos();
         const ImVec2 p_max = p_min + ImVec2(50, 50);

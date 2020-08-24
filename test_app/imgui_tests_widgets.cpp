@@ -953,15 +953,15 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         auto& vars = ctx->GetUserData<TabBarVars>();
 
         vars.HasCloseButton = false;
-        ctx->Yield(); 
+        ctx->Yield();
         IM_CHECK_EQ(window->DC.CursorStartPos.x + vars.ExpectedWidth, window->DC.CursorMaxPos.x);
 
         vars.HasCloseButton = true;
-        ctx->Yield(); // BeginTabBar() will submit old size --> TabBarLayout update sizes 
-        ctx->Yield(); // BeginTabBar() will submit new size 
+        ctx->Yield(); // BeginTabBar() will submit old size --> TabBarLayout update sizes
+        ctx->Yield(); // BeginTabBar() will submit new size
         IM_CHECK_EQ(window->DC.CursorStartPos.x + vars.ExpectedWidth, window->DC.CursorMaxPos.x);
     };
-        
+
     // ## Test recursing Tab Bars (Bug #2371)
     t = IM_REGISTER_TEST(e, "widgets", "widgets_tabbar_recurse");
     t->GuiFunc = [](ImGuiTestContext* ctx)
@@ -1112,7 +1112,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
                 ctx->MouseMove("AAA", ImGuiTestOpFlags_MoveToEdgeL);
                 ctx->MouseDown(0); // Toggle on Down when hovering Arrow
                 IM_CHECK_EQ(vars.IsOpen, true);
-                ctx->MouseUp(0); 
+                ctx->MouseUp(0);
                 IM_CHECK_EQ(vars.IsOpen, true);
                 ctx->MouseClick(0);
                 IM_CHECK_EQ(vars.IsOpen, false);
@@ -1153,7 +1153,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
                 IM_CHECK(vars.IsOpen == false && vars.ToggleCount == 0);
 
                 // Click on arrow (_OpenOnArrow is implicit/automatic with MultiSelect)
-                if (!vars.IsMultiSelect) 
+                if (!vars.IsMultiSelect)
                 {
                     ctx->MouseMove("AAA", ImGuiTestOpFlags_MoveToEdgeL);
                     ctx->MouseDown(0);
