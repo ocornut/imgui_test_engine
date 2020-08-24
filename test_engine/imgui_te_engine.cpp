@@ -1234,7 +1234,11 @@ void ImGuiTestEngineHook_ItemAdd(ImGuiContext* ui_ctx, const ImRect& bb, ImGuiID
 }
 
 // label is optional
+#ifdef IMGUI_HAS_IMSTR
+void ImGuiTestEngineHook_ItemInfo(ImGuiContext* ui_ctx, ImGuiID id, ImStr label, ImGuiItemStatusFlags flags)
+#else
 void ImGuiTestEngineHook_ItemInfo(ImGuiContext* ui_ctx, ImGuiID id, const char* label, ImGuiItemStatusFlags flags)
+#endif
 {
     ImGuiTestEngine* engine = (ImGuiTestEngine*)ui_ctx->TestEngine;
 
@@ -1265,7 +1269,7 @@ void ImGuiTestEngineHook_ItemInfo(ImGuiContext* ui_ctx, ImGuiID id, const char* 
 
     // Update Find by Label Task
     ImGuiTestFindByLabelTask* label_task = &engine->FindByLabelTask;
-    if (label_task->InLabel && strcmp(label_task->InLabel, label) == 0 && label_task->OutItemId == 0)
+    if (label_task->InLabel && ImStrcmp(label_task->InLabel, label) == 0 && label_task->OutItemId == 0)
     {
         bool match = false; //(label_task->InBaseId == 0);
         if (!match)

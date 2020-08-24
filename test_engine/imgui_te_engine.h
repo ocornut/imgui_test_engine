@@ -166,7 +166,12 @@ extern void     ImGuiTestEngineHook_Shutdown(ImGuiContext* ctx);
 extern void     ImGuiTestEngineHook_PreNewFrame(ImGuiContext* ui_ctx);
 extern void     ImGuiTestEngineHook_PostNewFrame(ImGuiContext* ui_ctx);
 extern void     ImGuiTestEngineHook_ItemAdd(ImGuiContext* ui_ctx, const ImRect& bb, ImGuiID id);
+#ifdef IMGUI_HAS_IMSTR
+extern void     ImGuiTestEngineHook_ItemInfo(ImGuiContext* ui_ctx, ImGuiID id, ImStr label, ImGuiItemStatusFlags flags);
+#else
 extern void     ImGuiTestEngineHook_ItemInfo(ImGuiContext* ui_ctx, ImGuiID id, const char* label, ImGuiItemStatusFlags flags);
+static inline int ImStrcmp(const char* str1, const char* str2) { return strcmp(str1, str2); } // FIXME: to remove once this gets added in core library
+#endif
 extern void     ImGuiTestEngineHook_Log(ImGuiContext* ui_ctx, const char* fmt, ...);
 extern void     ImGuiTestEngineHook_IdInfo(ImGuiContext* ui_ctx, ImGuiDataType data_type, ImGuiID id, const void* data_id);
 extern void     ImGuiTestEngineHook_IdInfo(ImGuiContext* ui_ctx, ImGuiDataType data_type, ImGuiID id, const void* data_id, const void* data_id_end);
