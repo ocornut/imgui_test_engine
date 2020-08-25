@@ -1320,6 +1320,162 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         IM_CHECK_EQ(window->DC.CursorStartPos.x + vars.ExpectedWidth, window->DC.CursorMaxPos.x);
     };
 
+    // ## Test TabItemButton behavior
+    t = IM_REGISTER_TEST(e, "widgets", "widgets_tabbar_tabitem_button");
+    struct TabBarButtonVars { int LastClickedButton = -1; };
+    t->SetUserDataType<TabBarButtonVars>();
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        TabBarButtonVars& vars = ctx->GetUserData<TabBarButtonVars>();
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings);
+        if (ImGui::BeginTabBar("TabBar"))
+        {
+            if (ImGui::TabItemButton("1", ImGuiTabItemFlags_None))        { vars.LastClickedButton = 1; }
+            if (ImGui::TabItemButton("0", ImGuiTabItemFlags_None))        { vars.LastClickedButton = 0; }
+            if (ImGui::BeginTabItem("Tab", NULL, ImGuiTabItemFlags_None)) { ImGui::EndTabItem(); }
+            ImGui::EndTabBar();
+        }
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        TabBarButtonVars& vars = ctx->GetUserData<TabBarButtonVars>();
+        ctx->WindowRef("Test Window/TabBar");
+
+        IM_CHECK_EQ(vars.LastClickedButton, -1);
+        ctx->ItemClick("1");
+        IM_CHECK_EQ(vars.LastClickedButton, 1);
+        ctx->ItemClick("Tab");
+        IM_CHECK_EQ(vars.LastClickedButton, 1);
+        ctx->MouseMove("0");
+        ctx->MouseDown();
+        IM_CHECK_EQ(vars.LastClickedButton, 1);
+        ctx->MouseUp();
+        IM_CHECK_EQ(vars.LastClickedButton, 0);
+    };
+
+    // ## Test that tab items respects their Leading/Trailing position
+    t = IM_REGISTER_TEST(e, "widgets", "widgets_tabbar_tabitem_leading_trailing");
+    struct TabBarLeadingTrailingVars { bool WindowAutoResize = true; ImGuiTabBarFlags TabBarFlags = 0; ImGuiTabBar* TabBar = NULL; };
+    t->SetUserDataType<TabBarLeadingTrailingVars>();
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiContext& g = *ctx->UiContext;
+        TabBarLeadingTrailingVars& vars = ctx->GetUserData<TabBarLeadingTrailingVars>();
+        ImGui::Begin("Test Window", NULL, (vars.WindowAutoResize ? ImGuiWindowFlags_AlwaysAutoResize : 0) | ImGuiWindowFlags_NoSavedSettings);
+        ImGui::Checkbox("ImGuiWindowFlags_AlwaysAutoResize", &vars.WindowAutoResize);
+        if (ImGui::BeginTabBar("TabBar", vars.TabBarFlags))
+        {
+            vars.TabBar = g.CurrentTabBar;
+            if (ImGui::BeginTabItem("Trailing", NULL, ImGuiTabItemFlags_Trailing)) { ImGui::EndTabItem(); } // Intentionally submit Trailing tab early and Leading tabs at the end
+            if (ImGui::BeginTabItem("Tab 0", NULL, ImGuiTabItemFlags_None))        { ImGui::EndTabItem(); }
+            if (ImGui::BeginTabItem("Tab 1", NULL, ImGuiTabItemFlags_None))        { ImGui::EndTabItem(); }
+            if (ImGui::BeginTabItem("Tab 2", NULL, ImGuiTabItemFlags_None))        { ImGui::EndTabItem(); }
+            if (ImGui::BeginTabItem("Leading", NULL, ImGuiTabItemFlags_Leading))   { ImGui::EndTabItem(); }
+            ImGui::EndTabBar();
+        }
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiContext& g = *ctx->UiContext;
+        TabBarLeadingTrailingVars& vars = ctx->GetUserData<TabBarLeadingTrailingVars>();
+        vars.TabBarFlags = ImGuiTabBarFlags_Reorderable | ImGuiTabBarFlags_FittingPolicyResizeDown;
+        ctx->Yield();
+
+        ctx->WindowRef("Test Window/TabBar");
+        const char* tabs[] = { "Leading", "Tab 0", "Tab 1", "Tab 2", "Trailing" };
+
+        // Check that tabs relative order matches what we expect (which is not the same as submission order above)
+        float offset_x = -FLT_MAX;
+        for (int i = 0; i < IM_ARRAYSIZE(tabs); ++i)
+        {
+            ctx->MouseMove(tabs[i]);
+            IM_CHECK_GT(g.IO.MousePos.x, offset_x);
+            offset_x = g.IO.MousePos.x;
+        }
+
+        // Test that "Leading" cannot be reordered over "Tab 0" and vice-versa
+        ctx->ItemDragAndDrop("Leading", "Tab 0");
+        IM_CHECK_EQ(vars.TabBar->Tabs[0].ID, ctx->GetID("Leading"));
+        IM_CHECK_EQ(vars.TabBar->Tabs[1].ID, ctx->GetID("Tab 0"));
+        ctx->ItemDragAndDrop("Tab 0", "Leading");
+        IM_CHECK_EQ(vars.TabBar->Tabs[0].ID, ctx->GetID("Leading"));
+        IM_CHECK_EQ(vars.TabBar->Tabs[1].ID, ctx->GetID("Tab 0"));
+
+        // Test that "Trailing" cannot be reordered over "Tab 2" and vice-versa
+        ctx->ItemDragAndDrop("Trailing", "Tab 2");
+        IM_CHECK_EQ(vars.TabBar->Tabs[4].ID, ctx->GetID("Trailing"));
+        IM_CHECK_EQ(vars.TabBar->Tabs[3].ID, ctx->GetID("Tab 2"));
+        ctx->ItemDragAndDrop("Tab 2", "Trailing");
+        IM_CHECK_EQ(vars.TabBar->Tabs[4].ID, ctx->GetID("Trailing"));
+        IM_CHECK_EQ(vars.TabBar->Tabs[3].ID, ctx->GetID("Tab 2"));
+
+        // Resize down 
+        vars.WindowAutoResize = false;
+        ImGuiWindow* window = ctx->GetWindowByRef("/Test Window");
+        ctx->WindowResize("Test Window", ImVec2(window->Size.x * 0.3f, window->Size.y));
+        for (int i = 0; i < 2; ++i)
+        {
+            vars.TabBarFlags = ImGuiTabBarFlags_Reorderable | (i == 0 ? ImGuiTabBarFlags_FittingPolicyResizeDown : ImGuiTabBarFlags_FittingPolicyScroll);
+            ctx->Yield();
+            IM_CHECK_GT(ctx->ItemInfo("Leading")->RectClipped.GetWidth(), 1.0f);
+            IM_CHECK_EQ(ctx->ItemInfo("Tab 0")->RectClipped.GetWidth(), 0.0f);
+            IM_CHECK_EQ(ctx->ItemInfo("Tab 1")->RectClipped.GetWidth(), 0.0f);
+            IM_CHECK_EQ(ctx->ItemInfo("Tab 2")->RectClipped.GetWidth(), 0.0f);
+            IM_CHECK_GT(ctx->ItemInfo("Trailing")->RectClipped.GetWidth(), 1.0f);
+        }
+    };
+
+    // ## Test reordering tabs (and ImGuiTabItemFlags_NoReorder flag)
+    t = IM_REGISTER_TEST(e, "widgets", "widgets_tabbar_reorder");
+    struct TabBarReorderVars { ImGuiTabBarFlags Flags = ImGuiTabBarFlags_Reorderable; ImGuiTabBar* TabBar = NULL; };
+    t->SetUserDataType<TabBarReorderVars>();
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiContext& g = *ctx->UiContext;
+        TabBarReorderVars& vars = ctx->GetUserData<TabBarReorderVars>();
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings);
+        if (ImGui::BeginTabBar("TabBar", vars.Flags))
+        {
+            vars.TabBar = g.CurrentTabBar;
+            if (ImGui::BeginTabItem("Tab 0", NULL, ImGuiTabItemFlags_None))      { ImGui::EndTabItem(); }
+            if (ImGui::BeginTabItem("Tab 1", NULL, ImGuiTabItemFlags_None))      { ImGui::EndTabItem(); }
+            if (ImGui::BeginTabItem("Tab 2", NULL, ImGuiTabItemFlags_NoReorder)) { ImGui::EndTabItem(); }
+            if (ImGui::BeginTabItem("Tab 3", NULL, ImGuiTabItemFlags_None))      { ImGui::EndTabItem(); }
+            ImGui::EndTabBar();
+        }
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        TabBarReorderVars& vars = ctx->GetUserData<TabBarReorderVars>();
+
+        // Reset reorderable flags to ensure tabs are in their submission order
+        vars.Flags = ImGuiTabBarFlags_None;
+        ctx->Yield();
+        vars.Flags = ImGuiTabBarFlags_Reorderable;
+        ctx->Yield();
+
+        ctx->WindowRef("Test Window/TabBar");
+
+        ctx->ItemDragAndDrop("Tab 0", "Tab 1");
+        IM_CHECK_EQ(vars.TabBar->Tabs[0].ID, ctx->GetID("Tab 1"));
+        IM_CHECK_EQ(vars.TabBar->Tabs[1].ID, ctx->GetID("Tab 0"));
+
+        ctx->ItemDragAndDrop("Tab 0", "Tab 1");
+        IM_CHECK_EQ(vars.TabBar->Tabs[0].ID, ctx->GetID("Tab 0"));
+        IM_CHECK_EQ(vars.TabBar->Tabs[1].ID, ctx->GetID("Tab 1"));
+
+        ctx->ItemDragAndDrop("Tab 0", "Tab 2"); // Tab 2 has no reorder flag
+        ctx->ItemDragAndDrop("Tab 0", "Tab 3"); // Tab 2 has no reorder flag
+        ctx->ItemDragAndDrop("Tab 3", "Tab 2"); // Tab 2 has no reorder flag
+        IM_CHECK_EQ(vars.TabBar->Tabs[1].ID, ctx->GetID("Tab 0"));
+        IM_CHECK_EQ(vars.TabBar->Tabs[2].ID, ctx->GetID("Tab 2"));
+        IM_CHECK_EQ(vars.TabBar->Tabs[3].ID, ctx->GetID("Tab 3"));
+    };
+
+
     // ## Test recursing Tab Bars (Bug #2371)
     t = IM_REGISTER_TEST(e, "widgets", "widgets_tabbar_recurse");
     t->GuiFunc = [](ImGuiTestContext* ctx)
@@ -1343,6 +1499,106 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         }
         ImGui::End();
     };
+
+    // ## Test BeginTabBar in the same Begin
+    struct TabBarMultipleSubmissionVars { bool SeparateBegin = false; bool SubmitSecondTabBar = true; int Tab1TextCount = 3; ImVec2 CursorAfterActiveTab; ImVec2 CursorAfterFirstBeginTabBar; ImVec2 CursorAfterFirstWidget; ImVec2 CursorAfterSecondBeginTabBar; ImVec2 CursorAfterSecondWidget; ImVec2 CursorAfterSecondEndTabBar; ImGuiTabBar* TabBar = NULL; };
+    t = IM_REGISTER_TEST(e, "widgets", "widgets_tabbar_begin_multiple_submissions");
+    t->SetUserDataType<TabBarMultipleSubmissionVars>();
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        TabBarMultipleSubmissionVars& vars = ctx->GetUserData<TabBarMultipleSubmissionVars>();
+        ImGuiContext& g = *ctx->UiContext;
+
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
+        ImGui::Checkbox("Separate Begin", &vars.SeparateBegin);
+        ImGui::SliderInt("Tab 1 Text Count", &vars.Tab1TextCount, 1, 12);
+        ImGui::Checkbox("Submit 2nd TabBar", &vars.SubmitSecondTabBar);
+        if (ImGui::BeginTabBar("TabBar"))
+        {
+            vars.TabBar = g.CurrentTabBar;
+            vars.CursorAfterFirstBeginTabBar = g.CurrentWindow->DC.CursorPos;
+            if (ImGui::BeginTabItem("Tab 0"))
+            {
+                ImGui::Text("Tab 0");
+                ImGui::EndTabItem();
+                vars.CursorAfterActiveTab = g.CurrentWindow->DC.CursorPos;
+            }
+            if (ImGui::BeginTabItem("Tab 1"))
+            {
+                for (int i = 0; i < vars.Tab1TextCount; i++)
+                    ImGui::Text("Tab 1 Line %d", i);
+                ImGui::EndTabItem();
+                vars.CursorAfterActiveTab = g.CurrentWindow->DC.CursorPos;
+            }
+            ImGui::EndTabBar();
+        }
+        ImGui::Text("After first TabBar submission");
+
+        if (vars.SeparateBegin)
+        {
+            ImGui::End();
+            ImGui::Begin("Test Window", NULL);
+        }
+
+        vars.CursorAfterFirstWidget = g.CurrentWindow->DC.CursorPos;
+        if (vars.SubmitSecondTabBar && ImGui::BeginTabBar("TabBar"))
+        {
+            vars.CursorAfterSecondBeginTabBar = g.CurrentWindow->DC.CursorPos;
+            if (ImGui::BeginTabItem("Tab A"))
+            {
+                ImGui::Text("I'm tab A");
+                ImGui::EndTabItem();
+                vars.CursorAfterActiveTab = g.CurrentWindow->DC.CursorPos;
+            }
+            ImGui::EndTabBar();
+            vars.CursorAfterSecondEndTabBar = g.CurrentWindow->DC.CursorPos;
+        }
+        ImGui::Text("After second TabBar submission");
+        vars.CursorAfterSecondWidget = g.CurrentWindow->DC.CursorPos;
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        TabBarMultipleSubmissionVars& vars = ctx->GetUserData<TabBarMultipleSubmissionVars>();
+        ImGuiContext& g = *ctx->UiContext;
+
+        ctx->WindowRef("Test Window/TabBar");
+
+        const float text_height = g.FontSize + g.Style.ItemSpacing.y;
+        for (bool separate_begin : {false, true})
+        {
+            vars.SeparateBegin = separate_begin;
+            ctx->Yield();
+            for (bool submit_second_tab : {true, false})
+            {
+                vars.SubmitSecondTabBar = submit_second_tab;
+                ctx->Yield();
+
+                for (const char* active_tab_name : { "Tab 0", "Tab 1", "Tab A" })
+                {
+                    if (!submit_second_tab && strcmp(active_tab_name, "Tab A") == 0)
+                        continue;
+
+                    ctx->ItemClick(active_tab_name);
+                    ctx->Yield();
+
+                    float active_tab_height = text_height;
+                    if (strcmp(active_tab_name, "Tab 1") == 0)
+                        active_tab_height *= vars.Tab1TextCount;
+
+                    IM_CHECK(vars.CursorAfterActiveTab.y == vars.CursorAfterFirstBeginTabBar.y + active_tab_height);
+                    IM_CHECK(vars.CursorAfterFirstWidget.y == vars.CursorAfterActiveTab.y + text_height);
+                    if (submit_second_tab)
+                    {
+                        IM_CHECK(vars.CursorAfterSecondBeginTabBar.y == vars.CursorAfterFirstBeginTabBar.y);
+                        IM_CHECK(vars.CursorAfterSecondEndTabBar.y == vars.CursorAfterFirstWidget.y);
+                    }
+                    IM_CHECK(vars.CursorAfterSecondWidget.y == vars.CursorAfterFirstWidget.y + text_height);
+                }
+            }
+        }
+    };
+
 
 #ifdef IMGUI_HAS_DOCK
     // ## Test Dockspace within a TabItem
