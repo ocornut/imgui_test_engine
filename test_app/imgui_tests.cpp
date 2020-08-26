@@ -1134,8 +1134,8 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
         IM_CHECK_EQ(ImGui::GetFocusID(), ctx->GetID("a"));
     };
 
-    // ## Test nav from non-visible focus with gamepads. In such cases navigation resumes on the next visible item instead of next item after focused one.
-    t = IM_REGISTER_TEST(e, "nav", "nav_from_invisible_item");
+    // ## Test nav from non-visible focus with keyboard/gamepad. With gamepad, the navigation resumes on the next visible item instead of next item after focused one.
+    t = IM_REGISTER_TEST(e, "nav", "nav_from_clipped_item");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         ImGuiContext& g = *GImGui;
@@ -1151,7 +1151,7 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
 
                 // Window size is such that only 3x3 buttons are visible at a time.
                 if (ctx->GenericVars.Vec2.y == 0.0f && y == 3 && x == 2)
-                    ctx->GenericVars.Vec2 = ImGui::GetCursorScreenPos() - g.CurrentWindow->Pos + ImVec2(g.Style.ScrollbarSize, g.Style.ScrollbarSize);
+                    ctx->GenericVars.Vec2 = ImGui::GetCursorPos() + ImVec2(g.Style.ScrollbarSize, g.Style.ScrollbarSize); // FIXME: Calculate Window Size from Decoration Size
             }
         ImGui::End();
 
@@ -1159,37 +1159,55 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         ctx->WindowRef("Test Window");
-        ctx->SetInputMode(ImGuiInputSource_Nav);
-        ctx->UiContext->NavInputSource = ImGuiInputSource_NavGamepad;   // FIXME-NAV: Should be set by above ctx->SetInputMode(ImGuiInputSource_NavGamepad) call.
         ImGuiWindow* window = ctx->GetWindowByRef("");
 
-        // Down
-        ctx->NavMoveTo("Button 0,0");
-        ctx->ScrollToX(0);
-        ctx->ScrollToBottom();
-        ctx->NavKeyPress(ImGuiNavInput_DpadDown);
-        IM_CHECK_EQ(ImGui::GetFocusID(), ctx->GetID("Button 0,3"));
+        // Test keyboard & gamepad behaviors
+        for (int n = 0; n < 2; n++)
+        {
+            const ImGuiInputSource input_source = (n == 0) ? ImGuiInputSource_NavKeyboard : ImGuiInputSource_NavGamepad;
+            ctx->SetInputMode(ImGuiInputSource_Nav);
+            ctx->UiContext->NavInputSource = input_source;  // FIXME-NAV: Should be set by above ctx->SetInputMode(ImGuiInputSource_NavGamepad) call.
 
-        // Up
-        ctx->NavMoveTo("Button 0,4");
-        ctx->ScrollToX(0);
-        ctx->ScrollToTop();
-        ctx->NavKeyPress(ImGuiNavInput_DpadUp);
-        IM_CHECK_EQ(ImGui::GetFocusID(), ctx->GetID("Button 0,2"));
+            // Down
+            ctx->NavMoveTo("Button 0,0");
+            ctx->ScrollToX(0);
+            ctx->ScrollToBottom();
+            ctx->NavKeyPress(ImGuiNavInput_KeyDown_);
+            if (input_source == ImGuiInputSource_NavKeyboard)
+                IM_CHECK_EQ(ImGui::GetFocusID(), ctx->GetID("Button 0,1"));     // Started Nav from Button 0,0 (Previous NavID)
+            else
+                IM_CHECK_EQ(ImGui::GetFocusID(), ctx->GetID("Button 0,3"));     // Started Nav from Button 0,2 (Visible)
 
-        // Right
-        ctx->NavMoveTo("Button 0,0");
-        ctx->ScrollToX(window->ScrollMax.x);
-        ctx->ScrollToTop();
-        ctx->NavKeyPress(ImGuiNavInput_DpadRight);
-        IM_CHECK_EQ(ImGui::GetFocusID(), ctx->GetID("Button 3,0"));
+            // Up
+            ctx->NavMoveTo("Button 0,4");
+            ctx->ScrollToX(0);
+            ctx->ScrollToTop();
+            ctx->NavKeyPress(ImGuiNavInput_KeyUp_);
+            if (input_source == ImGuiInputSource_NavKeyboard)
+                IM_CHECK_EQ(ImGui::GetFocusID(), ctx->GetID("Button 0,3"));
+            else
+                IM_CHECK_EQ(ImGui::GetFocusID(), ctx->GetID("Button 0,2"));
 
-        // Left
-        ctx->NavMoveTo("Button 4,0");
-        ctx->ScrollToX(0);
-        ctx->ScrollToTop();
-        ctx->NavKeyPress(ImGuiNavInput_DpadLeft);
-        IM_CHECK_EQ(ImGui::GetFocusID(), ctx->GetID("Button 2,0"));
+            // Right
+            ctx->NavMoveTo("Button 0,0");
+            ctx->ScrollToX(window->ScrollMax.x);
+            ctx->ScrollToTop();
+            ctx->NavKeyPress(ImGuiNavInput_KeyRight_);
+            if (input_source == ImGuiInputSource_NavKeyboard)
+                IM_CHECK_EQ(ImGui::GetFocusID(), ctx->GetID("Button 1,0"));
+            else
+                IM_CHECK_EQ(ImGui::GetFocusID(), ctx->GetID("Button 3,0"));
+
+            // Left
+            ctx->NavMoveTo("Button 4,0");
+            ctx->ScrollToX(0);
+            ctx->ScrollToTop();
+            ctx->NavKeyPress(ImGuiNavInput_KeyLeft_);
+            if (input_source == ImGuiInputSource_NavKeyboard)
+                IM_CHECK_EQ(ImGui::GetFocusID(), ctx->GetID("Button 3,0"));
+            else
+                IM_CHECK_EQ(ImGui::GetFocusID(), ctx->GetID("Button 2,0"));
+        }
     };
 }
 

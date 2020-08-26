@@ -330,6 +330,9 @@ void    ImGuiTestContext::SleepShort()
 
 void ImGuiTestContext::SetInputMode(ImGuiInputSource input_mode)
 {
+    IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
+    LogDebug("SetInputMode %d", input_mode);
+
     IM_ASSERT(input_mode == ImGuiInputSource_Mouse || input_mode == ImGuiInputSource_Nav);
     InputMode = input_mode;
 
