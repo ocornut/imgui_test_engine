@@ -2173,10 +2173,10 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
     };
 
     // ## Test sliders with inverted ranges.
-    t = IM_REGISTER_TEST(e, "widgets", "widgets_sliders_with_inverted_ranges");
+    t = IM_REGISTER_TEST(e, "widgets", "widgets_sliders_inverted_ranges");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
-        ImGuiDataType data_type = ctx->GenericVars.Int1;
+        ImGuiDataType data_type = ctx->GenericVars.DataType;
         void* val_p = ctx->GenericVars.Str1 + 0;
         void* min_p = ctx->GenericVars.Str1 + 8;
         void* max_p = ctx->GenericVars.Str1 + 16;
@@ -2188,17 +2188,17 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
     };
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
+        IM_STATIC_ASSERT(sizeof(ImGuiDataTypeTempStorage) == 8);
         void* val_p = ctx->GenericVars.Str1 + 0;
         void* min_p = ctx->GenericVars.Str1 + 8;
         void* max_p = ctx->GenericVars.Str1 + 16;
         ctx->WindowRef("Test Window");
 
-        for (int data_type = 0; data_type < ImGuiDataType_COUNT; data_type++)
+        for (int invert_range = 0; invert_range < 2; invert_range++)
         {
-            ctx->GenericVars.Int1 = data_type;
-            for (int invert_range = 0; invert_range < 2; invert_range++)
+            for (int data_type = 0; data_type < ImGuiDataType_COUNT; data_type++)
             {
-                memset(ctx->GenericVars.Str1, 0, 24);
+                ctx->GenericVars.DataType = data_type;
                 switch (data_type)
                 {
                     case ImGuiDataType_S8:
@@ -2206,6 +2206,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
                         *(int8_t*)max_p = INT8_MAX;
                         break;
                     case ImGuiDataType_U8:
+                        *(uint8_t*)min_p = 0;
                         *(uint8_t*)max_p = UINT8_MAX;
                         break;
                     case ImGuiDataType_S16:
@@ -2213,6 +2214,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
                         *(int16_t*)max_p = INT16_MAX;
                         break;
                     case ImGuiDataType_U16:
+                        *(uint16_t*)min_p = 0;
                         *(uint16_t*)max_p = UINT16_MAX;
                         break;
                     case ImGuiDataType_S32:
@@ -2220,6 +2222,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
                         *(int32_t*)max_p = INT32_MAX / 2;
                         break;
                     case ImGuiDataType_U32:
+                        *(uint32_t*)min_p = 0;
                         *(uint32_t*)max_p = UINT32_MAX / 2;
                         break;
                     case ImGuiDataType_S64:
@@ -2227,31 +2230,52 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
                         *(int64_t*)max_p = INT64_MAX / 2;
                         break;
                     case ImGuiDataType_U64:
+                        *(uint64_t*)min_p = 0;
                         *(uint64_t*)max_p = UINT64_MAX / 2;
                         break;
                     case ImGuiDataType_Float:
-                        *(float*)min_p = -999999999.0;  // Floating point types do not use their min/max
-                        *(float*)max_p = +999999999.0;  // supported values because widget may not be able
-                        break;                          // to display them due to lossy RoundScalarWithFormatT().
+                        *(float*)min_p = -999999999.0f; // Floating point types do not use their min/max supported values because widgets
+                        *(float*)max_p = +999999999.0f; // may not be able to display them due to lossy RoundScalarWithFormatT().
+                        break;
                     case ImGuiDataType_Double:
                         *(double*)min_p = -999999999.0;
                         *(double*)max_p = +999999999.0;
                         break;
                 }
 
+                const ImGuiDataTypeInfo* data_type_info = ImGui::DataTypeGetInfo(data_type);
+
                 if (invert_range)
                     ImSwap(*(uint64_t*)min_p, *(uint64_t*)max_p);   // Binary swap
+                ctx->Yield();
 
-                ctx->Yield();                                       // Render with a new data type and ranges
+                ctx->MouseMove("Slider");
+                ctx->MouseDown();
+                ctx->MouseMove("Slider", ImGuiTestOpFlags_MoveToEdgeL);
+                ctx->MouseUp();
 
-                for (int to_right = 0; to_right < 2; to_right++)
+                char buf0[32];
+                char buf1[32];
+                char buf2[32];
                 {
-                    ctx->MouseMove("Slider");
-                    ctx->MouseDown();
-                    ctx->MouseMove("Slider", (to_right ? ImGuiTestOpFlags_MoveToEdgeR : ImGuiTestOpFlags_MoveToEdgeL));
-                    ctx->MouseUp();
-                    IM_CHECK(*(uint64_t*)val_p == (to_right ? *(uint64_t*)max_p : *(uint64_t*)min_p));
+                    ImGui::DataTypeFormatString(buf0, 32, data_type, min_p, data_type_info->PrintFmt);
+                    ImGui::DataTypeFormatString(buf1, 32, data_type, max_p, data_type_info->PrintFmt);
+                    ImGui::DataTypeFormatString(buf2, 32, data_type, val_p, data_type_info->PrintFmt);
+                    ctx->LogInfo("## DataType: %s, Inverted: %d, min = %s, max = %s, val = %s", data_type_info->Name, invert_range, buf0, buf1, buf2);
                 }
+                IM_CHECK(memcmp(val_p, min_p, data_type_info->Size) == 0);
+
+                ctx->MouseMove("Slider");
+                ctx->MouseDown();
+                ctx->MouseMove("Slider", ImGuiTestOpFlags_MoveToEdgeR);
+                ctx->MouseUp();
+                {
+                    ImGui::DataTypeFormatString(buf0, 32, data_type, min_p, data_type_info->PrintFmt);
+                    ImGui::DataTypeFormatString(buf1, 32, data_type, max_p, data_type_info->PrintFmt);
+                    ImGui::DataTypeFormatString(buf2, 32, data_type, val_p, data_type_info->PrintFmt);
+                    ctx->LogInfo("## DataType: %s, Inverted: %d, min = %s, max = %s, val = %s", data_type_info->Name, invert_range, buf0, buf1, buf2);
+                }
+                IM_CHECK(memcmp(val_p, max_p, data_type_info->Size) == 0);
             }
         }
     };
