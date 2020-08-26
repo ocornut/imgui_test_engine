@@ -1281,8 +1281,10 @@ void    ImGuiTestContext::KeyCharsReplace(const char* chars)
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
     LogDebug("KeyCharsReplace('%s')", chars);
     KeyPressMap(ImGuiKey_A, ImGuiKeyModFlags_Ctrl);
-    KeyPressMap(ImGuiKey_Delete);
-    KeyChars(chars);
+    if (chars[0])
+        KeyChars(chars);
+    else
+        KeyPressMap(ImGuiKey_Delete);
 }
 
 void    ImGuiTestContext::KeyCharsReplaceEnter(const char* chars)
@@ -1293,8 +1295,10 @@ void    ImGuiTestContext::KeyCharsReplaceEnter(const char* chars)
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
     LogDebug("KeyCharsReplaceEnter('%s')", chars);
     KeyPressMap(ImGuiKey_A, ImGuiKeyModFlags_Ctrl);
-    KeyPressMap(ImGuiKey_Delete);
-    KeyCharsReplace(chars);
+    if (chars[0])
+        KeyChars(chars);
+    else
+        KeyPressMap(ImGuiKey_Delete);
     KeyPressMap(ImGuiKey_Enter);
 }
 

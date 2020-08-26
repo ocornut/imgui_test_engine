@@ -430,7 +430,6 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
                 vars.SliderValue = 0.0f;
                 vars.SliderMin = slider_min_max[j][0];
                 vars.SliderMax = slider_min_max[j][1];
-                ctx->Yield();
 
                 ctx->ItemInput("Slider");
                 ctx->KeyCharsReplaceEnter("2");
@@ -465,7 +464,6 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
                 vars.DragValue = 0.0f;
                 vars.DragMin = drag_min_max[j][0];
                 vars.DragMax = drag_min_max[j][1];
-                ctx->Yield();
 
                 // [0,0] is equivalent to [-FLT_MAX, FLT_MAX] range
                 bool unbound = (vars.DragMin == 0.0f && vars.DragMax == 0.0f) || (vars.DragMin == -FLT_MAX && vars.DragMax == FLT_MAX);
