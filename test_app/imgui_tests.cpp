@@ -1161,6 +1161,13 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
         ctx->WindowRef("Test Window");
         ImGuiWindow* window = ctx->GetWindowByRef("");
 
+        auto get_focus_item_rect = [](ImGuiWindow* window)
+        {
+            ImRect item_rect = window->NavRectRel[ImGuiNavLayer_Main];
+            item_rect.Translate(window->Pos);
+            return item_rect;
+        };
+
         // Test keyboard & gamepad behaviors
         for (int n = 0; n < 2; n++)
         {
@@ -1178,6 +1185,9 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
             else
                 IM_CHECK_EQ(ImGui::GetFocusID(), ctx->GetID("Button 0,3"));     // Started Nav from Button 0,2 (Visible)
 
+            ctx->NavKeyPress(ImGuiNavInput_KeyUp_);                             // Move to opposite direction than previous operation in order to trigger scrolling focused item into view
+            IM_CHECK(window->InnerRect.Contains(get_focus_item_rect(window)));  // Ensure item scrolled into view is fully visible
+
             // Up
             ctx->NavMoveTo("Button 0,4");
             ctx->ScrollToX(0);
@@ -1187,6 +1197,9 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
                 IM_CHECK_EQ(ImGui::GetFocusID(), ctx->GetID("Button 0,3"));
             else
                 IM_CHECK_EQ(ImGui::GetFocusID(), ctx->GetID("Button 0,2"));
+
+            ctx->NavKeyPress(ImGuiNavInput_KeyDown_);
+            IM_CHECK(window->InnerRect.Contains(get_focus_item_rect(window)));
 
             // Right
             ctx->NavMoveTo("Button 0,0");
@@ -1198,6 +1211,9 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
             else
                 IM_CHECK_EQ(ImGui::GetFocusID(), ctx->GetID("Button 3,0"));
 
+            ctx->NavKeyPress(ImGuiNavInput_KeyLeft_);
+            IM_CHECK(window->InnerRect.Contains(get_focus_item_rect(window)));
+
             // Left
             ctx->NavMoveTo("Button 4,0");
             ctx->ScrollToX(0);
@@ -1207,6 +1223,9 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
                 IM_CHECK_EQ(ImGui::GetFocusID(), ctx->GetID("Button 3,0"));
             else
                 IM_CHECK_EQ(ImGui::GetFocusID(), ctx->GetID("Button 2,0"));
+
+            ctx->NavKeyPress(ImGuiNavInput_KeyRight_);
+            IM_CHECK(window->InnerRect.Contains(get_focus_item_rect(window)));
         }
     };
 }
