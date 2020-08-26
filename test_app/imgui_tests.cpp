@@ -1607,6 +1607,8 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
         IM_CHECK(v.Data != NULL && v.Capacity >= 3);
         v.clear();
         IM_CHECK(v.Data == NULL && v.Capacity == 0);
+        int max_size = v.max_size();
+        IM_CHECK(max_size == ~(unsigned int)0 / sizeof(int));
     };
 
     // ## Test ImVector functions
