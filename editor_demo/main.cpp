@@ -130,7 +130,9 @@ int main(int argc, char** argv)
     char* readme_md = (char*)ImFileLoadToMemory("docs/README.md", "rb", &readme_md_size, +1);
 #endif
 
-    bool show_readme = true;
+    bool show_imgui_demo = true;
+    bool show_dockspace = true;
+    bool show_markdown = true;
     bool show_capture_tool = false;
     bool show_assets_browser = false;
     bool show_test_engine = false;
@@ -160,10 +162,12 @@ int main(int argc, char** argv)
         ImGui::NewFrame();
 
 #ifdef IMGUI_HAS_DOCK
-        ImGui::DockSpaceOverViewport(NULL, ImGuiDockNodeFlags_PassthruCentralNode);
+        if (show_dockspace)
+            ImGui::DockSpaceOverViewport(NULL, ImGuiDockNodeFlags_PassthruCentralNode);
 #endif
 
-        ImGui::ShowDemoWindow();
+        if (show_imgui_demo)
+            ImGui::ShowDemoWindow();
 
         // Contents
         if (ImGui::Begin("Game", NULL, ImGuiWindowFlags_AlwaysAutoResize))
@@ -188,6 +192,18 @@ int main(int argc, char** argv)
                 }
                 if (ImGui::MenuItem("Open", "Ctrl+O"))
                 {
+                }
+                ImGui::Separator();
+                if (ImGui::BeginMenu("Options"))
+                {
+#ifdef EDITOR_DEMO_ENABLE_TEST_ENGINE
+                    bool vsync = !ImGuiTestEngine_GetIO(engine).ConfigNoThrottle;
+                    if (ImGui::MenuItem("Throttle/Vsync", NULL, &vsync))
+                        ImGuiTestEngine_GetIO(engine).ConfigNoThrottle = !vsync;
+#else
+                    ImGui::MenuItem("Throttle/Vsync", NULL, &app->Vsync);
+#endif
+                    ImGui::EndMenu();
                 }
                 ImGui::Separator();
                 if (ImGui::MenuItem("Exit", "Ctrl+W"))
@@ -220,7 +236,14 @@ int main(int argc, char** argv)
             if (ImGui::BeginMenu("View"))
             {
                 // Demo
-                ImGui::MenuItem("Assets Browser", NULL, &show_assets_browser);
+                ImGui::MenuItem("Demo: Dear ImGui Demo", NULL, &show_imgui_demo);
+#ifdef IMGUI_HAS_DOCK
+                ImGui::MenuItem("Demo: Dockspace", NULL, &show_dockspace);
+#else
+                ImGui::MenuItem("Demo: Dockspace", NULL, &show_dockspace, false);
+#endif
+                ImGui::MenuItem("Demo: Assets Browser", NULL, &show_assets_browser);
+                ImGui::MenuItem("Demo: Markdown", NULL, &show_markdown);
                 ImGui::Separator();
 
                 // Tools
@@ -235,16 +258,15 @@ int main(int argc, char** argv)
 
             if (ImGui::BeginMenu("Help"))
             {
-                ImGui::MenuItem("Readme", NULL, &show_readme);
                 ImGui::MenuItem("About Editor Demo", "", false, false);
                 ImGui::EndMenu();
             }
             ImGui::EndMainMenuBar();
         }
 
-        if (show_readme && readme_md != NULL)
+        if (show_markdown && readme_md != NULL)
         {
-            ImGui::Begin("Readme", &show_readme);
+            ImGui::Begin("Markdown", &show_markdown);
             RenderMarkdown(readme_md, readme_md + readme_md_size);
             ImGui::End();
         }
