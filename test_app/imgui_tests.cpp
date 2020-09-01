@@ -1273,6 +1273,72 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
             IM_CHECK(window->InnerRect.Contains(get_focus_item_rect(window)));
         }
     };
+
+    // ## Test PageUp/PageDown/Home/End keys.
+    t = IM_REGISTER_TEST(e, "nav", "nav_page_end_home_keys");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::SetNextWindowSize(ImVec2(100, ctx->GenericVars.Float1), ImGuiCond_Always);
+
+        // FIXME-NAV: Lack of ImGuiWindowFlags_NoCollapse breaks window scrolling without activatable items.
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysVerticalScrollbar | ImGuiWindowFlags_NoCollapse);
+        for (int i = 0; i < 20; i++)
+        {
+            if (ctx->GenericVars.Bool1)
+                ImGui::Button(Str16f("OK %d", i).c_str());
+            else
+                ImGui::TextUnformatted(Str16f("OK %d", i).c_str());
+            if (i == 2)
+                ctx->GenericVars.Float1 = ImGui::GetCursorPosY();
+        }
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ctx->WindowRef("Test Window");
+        ImGuiContext& g = *ctx->UiContext;
+        ImGuiWindow* window = ctx->GetWindowByRef("");
+
+        // Test page up/page down/home/end keys without any navigatable items.
+        ctx->GenericVars.Bool1 = false;
+        IM_CHECK(window->ScrollMax.y > 0.0f);               // We have a scrollbar
+        ImGui::SetScrollY(window, 0.0f);                    // Reset starting position.
+
+        ctx->KeyPressMap(ImGuiKey_PageDown);                // Scrolled down some, but not to the bottom.
+        IM_CHECK(0 < window->Scroll.y && window->Scroll.y < window->ScrollMax.y);
+        ctx->KeyPressMap(ImGuiKey_End);                     // Scrolled all the way to the bottom.
+        IM_CHECK(window->Scroll.y == window->ScrollMax.y);
+        float last_scroll = window->Scroll.y;               // Scrolled up some, but not all the way to the top.
+        ctx->KeyPressMap(ImGuiKey_PageUp, 0, 1);
+        IM_CHECK(0 < window->Scroll.y && window->Scroll.y < last_scroll);
+        ctx->KeyPressMap(ImGuiKey_Home);                    // Scrolled all the way to the top.
+        IM_CHECK(window->Scroll.y == 0);
+
+        // Test page up/page down/home/end keys with navigatable items.
+        ctx->GenericVars.Bool1 = true;
+        ctx->YieldFrames(2);
+        memset(window->NavRectRel, 0, sizeof(window->NavRectRel));
+        ctx->KeyPressMap(ImGuiKey_PageDown);
+        IM_CHECK(g.NavId == ctx->GetID("OK 0"));            // FIXME-NAV: Main layer had no focus, key press simply focused it. We preserve this behavior across multiple test runs in the same session by resetting window->NavRectRel.
+        ctx->KeyPressMap(ImGuiKey_PageDown);
+        IM_CHECK(g.NavId == ctx->GetID("OK 2"));            // Now focus changes to a last visible button.
+        IM_CHECK(window->Scroll.y == 0);                    // Window is not scrolled.
+        ctx->KeyPressMap(ImGuiKey_PageDown);
+        IM_CHECK(g.NavId == ctx->GetID("OK 5"));            // Focus item on the next "page".
+        IM_CHECK(window->Scroll.y > 0);
+        ctx->KeyPressMap(ImGuiKey_End);                     // Focus last item.
+        IM_CHECK(window->Scroll.y == window->ScrollMax.y);
+        IM_CHECK(g.NavId == ctx->GetID("OK 19"));
+        ctx->KeyPressMap(ImGuiKey_PageUp);
+        IM_CHECK(g.NavId == ctx->GetID("OK 17"));           // Focus first item visible in the last section.
+        IM_CHECK(window->Scroll.y == window->ScrollMax.y);  // Window is not scrolled.
+        ctx->KeyPressMap(ImGuiKey_PageUp);
+        IM_CHECK(g.NavId == ctx->GetID("OK 14"));           // Focus first item of previous "page".
+        IM_CHECK(0 < window->Scroll.y && window->Scroll.y < window->ScrollMax.y); // Window is not scrolled.
+        ctx->KeyPressMap(ImGuiKey_Home);
+        IM_CHECK(g.NavId == ctx->GetID("OK 0"));           // Focus very first item.
+        IM_CHECK(window->Scroll.y == 0);                   // Window is scrolled to the start.
+    };
 }
 
 //-------------------------------------------------------------------------
