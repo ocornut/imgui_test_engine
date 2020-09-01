@@ -995,6 +995,12 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
     {
         ImGui::Begin("Window 1", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
         ImGui::Button("Button 1");
+        ImGui::Button("Button 2");
+        ImGui::BeginChild("Child", ImVec2(100, 100));
+        ImGui::Button("Button 3");
+        ImGui::Button("Button 4");
+        ImGui::EndChild();
+        ImGui::Button("Button 5");
         ImGui::End();
 
         if (!ctx->GenericVars.Bool1)
@@ -1035,6 +1041,16 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
             ctx->YieldFrames(2);
             IM_CHECK_EQ(g.NavId, ctx->GetID("Window 1/Button 1"));
         }
+
+        // Test entering child window and leaving it.
+        ctx->WindowFocus("Window 1");
+        ctx->NavMoveTo("Window 1/Child");
+        IM_CHECK(g.NavId == ctx->GetID("Window 1/Child"));
+        ctx->NavActivate();                                 // Enter child window
+        ctx->NavKeyPress(ImGuiNavInput_KeyDown_);           // Manipulate something
+        ctx->NavActivate();
+        ctx->NavKeyPress(ImGuiNavInput_Cancel);             // Leave child window
+        IM_CHECK(g.NavId == ctx->GetID("Window 1/Child"));  // Focus resumes last location before entering child window
     };
 
     // ## Test NavID restoration after activating menu item.
