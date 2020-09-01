@@ -801,17 +801,35 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
     t = IM_REGISTER_TEST(e, "nav", "nav_menu_alt_key");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
-        ImGui::Begin("Test window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_MenuBar);
-        if (ImGui::BeginMenuBar())
+        auto window_content = []()
         {
-            if (ImGui::BeginMenu("Menu"))
+            if (ImGui::BeginMenuBar())
             {
-                ImGui::Text("Blah");
-                ImGui::EndMenu();
+                if (ImGui::BeginMenu("Menu"))
+                {
+                    ImGui::Text("Blah");
+                    ImGui::EndMenu();
+                }
+                ImGui::EndMenuBar();
             }
-            ImGui::EndMenuBar();
+        };
+
+        if (ctx->GenericVars.Bool1)
+        {
+            if (!ImGui::IsPopupOpen("Test window"))
+                ImGui::OpenPopup("Test window");
+            if (ImGui::BeginPopupModal("Test window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_MenuBar))
+            {
+                window_content();
+                ImGui::EndPopup();
+            }
         }
-        ImGui::End();
+        else
+        {
+            ImGui::Begin("Test window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_MenuBar);
+            window_content();
+            ImGui::End();
+        }
     };
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
@@ -819,13 +837,24 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
         IM_CHECK(ctx->UiContext->IO.ConfigFlags & ImGuiConfigFlags_NavEnableKeyboard);
         //ctx->SetInputMode(ImGuiInputSource_Nav);
         ctx->WindowRef("Test window");
-        IM_CHECK(ctx->UiContext->NavLayer == ImGuiNavLayer_Main);
-        ctx->KeyPressMap(ImGuiKey_COUNT, ImGuiKeyModFlags_Alt);
-        IM_CHECK(ctx->UiContext->NavLayer == ImGuiNavLayer_Menu);
-        ctx->KeyPressMap(ImGuiKey_COUNT, ImGuiKeyModFlags_Alt);
-        IM_CHECK(ctx->UiContext->NavLayer == ImGuiNavLayer_Main);
-        ctx->KeyPressMap(ImGuiKey_COUNT, ImGuiKeyModFlags_Alt | ImGuiKeyModFlags_Ctrl);
-        IM_CHECK(ctx->UiContext->NavLayer == ImGuiNavLayer_Main);
+
+        for (int n = 0; n < 2; n++)
+        {
+            // Switch to modal popup.
+            if (n == 1)
+            {
+                ctx->GenericVars.Bool1 = true;
+                ctx->Yield();
+            }
+            IM_CHECK(ctx->UiContext->OpenPopupStack.Size == n);
+            IM_CHECK(ctx->UiContext->NavLayer == ImGuiNavLayer_Main);
+            ctx->KeyPressMap(ImGuiKey_COUNT, ImGuiKeyModFlags_Alt);
+            IM_CHECK(ctx->UiContext->NavLayer == ImGuiNavLayer_Menu);
+            ctx->KeyPressMap(ImGuiKey_COUNT, ImGuiKeyModFlags_Alt);
+            IM_CHECK(ctx->UiContext->NavLayer == ImGuiNavLayer_Main);
+            ctx->KeyPressMap(ImGuiKey_COUNT, ImGuiKeyModFlags_Alt | ImGuiKeyModFlags_Ctrl);
+            IM_CHECK(ctx->UiContext->NavLayer == ImGuiNavLayer_Main);
+        }
     };
 
     // ## Test navigation home and end keys
