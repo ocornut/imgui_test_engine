@@ -425,7 +425,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
             float slider_min_max[][2] = { {0.0f, 1.0f}, {0.0f, 0.0f} };
             for (int j = 0; j < IM_ARRAYSIZE(slider_min_max); ++j)
             {
-                ctx->LogInfo("## Slider %d with Flags = 0x%08X", j, flags);
+                ctx->LogInfo("## Slider %d with Flags = 0x%08X", j, vars.Flags);
 
                 vars.SliderValue = 0.0f;
                 vars.SliderMin = slider_min_max[j][0];
@@ -459,7 +459,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
             float drag_min_max[][2] = { {0.0f, 1.0f}, {0.0f, 0.0f}, {-FLT_MAX, FLT_MAX} };
             for (int j = 0; j < IM_ARRAYSIZE(drag_min_max); ++j)
             {
-                ctx->LogDebug("Drag %d with flags = 0x%08X", j, flags);
+                ctx->LogDebug("Drag %d with flags = 0x%08X", j, vars.Flags);
 
                 vars.DragValue = 0.0f;
                 vars.DragMin = drag_min_max[j][0];

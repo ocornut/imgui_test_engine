@@ -814,8 +814,14 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
             }
         };
 
-        if (ctx->GenericVars.Bool1)
+        switch (ctx->GenericVars.Step)
         {
+        case 0:
+            ImGui::Begin("Test window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_MenuBar);
+            window_content();
+            ImGui::End();
+            break;
+        case 1:
             if (!ImGui::IsPopupOpen("Test window"))
                 ImGui::OpenPopup("Test window");
             if (ImGui::BeginPopupModal("Test window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_MenuBar))
@@ -823,37 +829,32 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
                 window_content();
                 ImGui::EndPopup();
             }
-        }
-        else
-        {
-            ImGui::Begin("Test window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_MenuBar);
-            window_content();
-            ImGui::End();
+            break;
         }
     };
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         // FIXME-TESTS: Fails if window is resized too small
-        IM_CHECK(ctx->UiContext->IO.ConfigFlags & ImGuiConfigFlags_NavEnableKeyboard);
+        ImGuiContext& g = *ctx->UiContext;
+        IM_CHECK(g.IO.ConfigFlags & ImGuiConfigFlags_NavEnableKeyboard);
         //ctx->SetInputMode(ImGuiInputSource_Nav);
         ctx->WindowRef("Test window");
 
-        for (int n = 0; n < 2; n++)
+        for (int step = 0; step < 2; step++)
         {
-            // Switch to modal popup.
-            if (n == 1)
-            {
-                ctx->GenericVars.Bool1 = true;
-                ctx->Yield();
-            }
-            IM_CHECK(ctx->UiContext->OpenPopupStack.Size == n);
-            IM_CHECK(ctx->UiContext->NavLayer == ImGuiNavLayer_Main);
+            ctx->GenericVars.Step = step; // Enable modal popup?
+            ctx->Yield();
+
+            IM_CHECK(g.OpenPopupStack.Size == step);
+            IM_CHECK(g.NavLayer == ImGuiNavLayer_Main);
             ctx->KeyPressMap(ImGuiKey_COUNT, ImGuiKeyModFlags_Alt);
-            IM_CHECK(ctx->UiContext->NavLayer == ImGuiNavLayer_Menu);
+            IM_CHECK(g.NavLayer == ImGuiNavLayer_Menu);
+            IM_CHECK(g.NavId == ctx->GetID("##menubar/Menu"));
+
             ctx->KeyPressMap(ImGuiKey_COUNT, ImGuiKeyModFlags_Alt);
-            IM_CHECK(ctx->UiContext->NavLayer == ImGuiNavLayer_Main);
+            IM_CHECK(g.NavLayer == ImGuiNavLayer_Main);
             ctx->KeyPressMap(ImGuiKey_COUNT, ImGuiKeyModFlags_Alt | ImGuiKeyModFlags_Ctrl);
-            IM_CHECK(ctx->UiContext->NavLayer == ImGuiNavLayer_Main);
+            IM_CHECK(g.NavLayer == ImGuiNavLayer_Main);
         }
     };
 
@@ -869,7 +870,8 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
     };
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
-        IM_CHECK(ctx->UiContext->IO.ConfigFlags & ImGuiConfigFlags_NavEnableKeyboard);
+        ImGuiContext& g = *ctx->UiContext;
+        IM_CHECK(g.IO.ConfigFlags & ImGuiConfigFlags_NavEnableKeyboard);
         ImGuiWindow* window = ImGui::FindWindowByName("Test Window");
         ctx->WindowRef("Test window");
         ctx->SetInputMode(ImGuiInputSource_Nav);
@@ -878,20 +880,20 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
         ctx->KeyPressMap(ImGuiKey_COUNT, ImGuiKeyModFlags_Alt);
         ctx->KeyPressMap(ImGuiKey_COUNT, ImGuiKeyModFlags_Alt);
 
-        IM_CHECK(ctx->UiContext->NavId == window->GetID("Button 0"));
+        IM_CHECK(g.NavId == window->GetID("Button 0"));
         IM_CHECK(window->Scroll.y == 0);
         // Navigate to the middle of window
         for (int i = 0; i < 5; i++)
             ctx->KeyPressMap(ImGuiKey_DownArrow);
-        IM_CHECK(ctx->UiContext->NavId == window->GetID("Button 5"));
+        IM_CHECK(g.NavId == window->GetID("Button 5"));
         IM_CHECK(window->Scroll.y > 0 && window->Scroll.y < window->ScrollMax.y);
         // From the middle to the end
         ctx->KeyPressMap(ImGuiKey_End);
-        IM_CHECK(ctx->UiContext->NavId == window->GetID("Button 9"));
+        IM_CHECK(g.NavId == window->GetID("Button 9"));
         IM_CHECK(window->Scroll.y == window->ScrollMax.y);
         // From the end to the start
         ctx->KeyPressMap(ImGuiKey_Home);
-        IM_CHECK(ctx->UiContext->NavId == window->GetID("Button 0"));
+        IM_CHECK(g.NavId == window->GetID("Button 0"));
         IM_CHECK(window->Scroll.y == 0);
     };
 
@@ -899,14 +901,15 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
     t = IM_REGISTER_TEST(e, "nav", "nav_menu_wraparound");
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
+        ImGuiContext& g = *ctx->UiContext;
         ctx->WindowRef("Dear ImGui Demo");
         ctx->MenuClick("Menu");
         ctx->KeyPressMap(ImGuiKey_COUNT, ImGuiKeyModFlags_Alt); // FIXME
-        IM_CHECK(ctx->UiContext->NavId == ctx->GetID("/##Menu_00/New"));
+        IM_CHECK(g.NavId == ctx->GetID("/##Menu_00/New"));
         ctx->NavKeyPress(ImGuiNavInput_KeyUp_);
-        IM_CHECK(ctx->UiContext->NavId == ctx->GetID("/##Menu_00/Quit"));
+        IM_CHECK(g.NavId == ctx->GetID("/##Menu_00/Quit"));
         ctx->NavKeyPress(ImGuiNavInput_KeyDown_);
-        IM_CHECK(ctx->UiContext->NavId == ctx->GetID("/##Menu_00/New"));
+        IM_CHECK(g.NavId == ctx->GetID("/##Menu_00/New"));
     };
 
     // ## Test CTRL+TAB window focusing
@@ -1025,7 +1028,7 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
         ImGui::Begin("Window 1", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
         ImGui::Button("Button 1");
         ImGui::Button("Button 2");
-        ImGui::BeginChild("Child", ImVec2(100, 100));
+        ImGui::BeginChild("Child", ImVec2(100, 100), true);
         ImGui::Button("Button 3");
         ImGui::Button("Button 4");
         ImGui::EndChild();
@@ -1075,11 +1078,16 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
         ctx->WindowFocus("Window 1");
         ctx->NavMoveTo("Window 1/Child");
         IM_CHECK(g.NavId == ctx->GetID("Window 1/Child"));
-        ctx->NavActivate();                                 // Enter child window
-        ctx->NavKeyPress(ImGuiNavInput_KeyDown_);           // Manipulate something
+        IM_CHECK((g.NavWindow->Flags & ImGuiWindowFlags_ChildWindow) == 0);
+
+        ctx->NavActivate();                                     // Enter child window
+        IM_CHECK((g.NavWindow->Flags & ImGuiWindowFlags_ChildWindow) != 0);
+        ctx->NavKeyPress(ImGuiNavInput_KeyDown_);               // Manipulate something
+        //IM_CHECK(g.NavId == ctx->ItemInfo("/**/Button 4")->ID); // Can't easily include child window name in ID because the / gets inhibited...
+        IM_CHECK(g.NavId == ctx->GetID("Button 4", g.NavWindow->ID));
         ctx->NavActivate();
-        ctx->NavKeyPress(ImGuiNavInput_Cancel);             // Leave child window
-        IM_CHECK(g.NavId == ctx->GetID("Window 1/Child"));  // Focus resumes last location before entering child window
+        ctx->NavKeyPress(ImGuiNavInput_Cancel);                 // Leave child window
+        IM_CHECK(g.NavId == ctx->GetID("Window 1/Child"));      // Focus resumes last location before entering child window
     };
 
     // ## Test NavID restoration after activating menu item.
@@ -1103,7 +1111,7 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
             // Focus item.
             ctx->NavMoveTo("Configuration");
             // Focus menu.
-            ctx->NavKeyPress(ImGuiNavInput_Menu);
+            ctx->KeyPressMap(ImGuiKey_COUNT, ImGuiKeyModFlags_Alt);
             // Open menu, focus first item in the menu.
             ctx->NavActivate();
             // Activate first item in the menu.
@@ -1280,14 +1288,14 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
     {
         ImGui::SetNextWindowSize(ImVec2(100, ctx->GenericVars.Float1), ImGuiCond_Always);
 
-        // FIXME-NAV: Lack of ImGuiWindowFlags_NoCollapse breaks window scrolling without activatable items.
+        // FIXME-NAV: Lack of ImGuiWindowFlags_NoCollapse breaks window scrolling without activable items.
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysVerticalScrollbar | ImGuiWindowFlags_NoCollapse);
         for (int i = 0; i < 20; i++)
         {
-            if (ctx->GenericVars.Bool1)
-                ImGui::Button(Str16f("OK %d", i).c_str());
-            else
+            if (ctx->GenericVars.Step == 0)
                 ImGui::TextUnformatted(Str16f("OK %d", i).c_str());
+            else
+                ImGui::Button(Str16f("OK %d", i).c_str());
             if (i == 2)
                 ctx->GenericVars.Float1 = ImGui::GetCursorPosY();
         }
@@ -1299,8 +1307,8 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
         ImGuiContext& g = *ctx->UiContext;
         ImGuiWindow* window = ctx->GetWindowByRef("");
 
-        // Test page up/page down/home/end keys without any navigatable items.
-        ctx->GenericVars.Bool1 = false;
+        // Test page up/page down/home/end keys WITHOUT any navigable items.
+        ctx->GenericVars.Step = 0;
         IM_CHECK(window->ScrollMax.y > 0.0f);               // We have a scrollbar
         ImGui::SetScrollY(window, 0.0f);                    // Reset starting position.
 
@@ -1309,23 +1317,24 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
         ctx->KeyPressMap(ImGuiKey_End);                     // Scrolled all the way to the bottom.
         IM_CHECK(window->Scroll.y == window->ScrollMax.y);
         float last_scroll = window->Scroll.y;               // Scrolled up some, but not all the way to the top.
-        ctx->KeyPressMap(ImGuiKey_PageUp, 0, 1);
+        ctx->KeyPressMap(ImGuiKey_PageUp);
         IM_CHECK(0 < window->Scroll.y && window->Scroll.y < last_scroll);
         ctx->KeyPressMap(ImGuiKey_Home);                    // Scrolled all the way to the top.
-        IM_CHECK(window->Scroll.y == 0);
+        IM_CHECK(window->Scroll.y == 0.0f);
 
-        // Test page up/page down/home/end keys with navigatable items.
-        ctx->GenericVars.Bool1 = true;
+        // Test page up/page down/home/end keys WITH navigable items.
+        ctx->GenericVars.Step = 1;
         ctx->YieldFrames(2);
+        //g.NavId = 0;
         memset(window->NavRectRel, 0, sizeof(window->NavRectRel));
         ctx->KeyPressMap(ImGuiKey_PageDown);
         IM_CHECK(g.NavId == ctx->GetID("OK 0"));            // FIXME-NAV: Main layer had no focus, key press simply focused it. We preserve this behavior across multiple test runs in the same session by resetting window->NavRectRel.
         ctx->KeyPressMap(ImGuiKey_PageDown);
         IM_CHECK(g.NavId == ctx->GetID("OK 2"));            // Now focus changes to a last visible button.
-        IM_CHECK(window->Scroll.y == 0);                    // Window is not scrolled.
+        IM_CHECK(window->Scroll.y == 0.0f);                 // Window is not scrolled.
         ctx->KeyPressMap(ImGuiKey_PageDown);
         IM_CHECK(g.NavId == ctx->GetID("OK 5"));            // Focus item on the next "page".
-        IM_CHECK(window->Scroll.y > 0);
+        IM_CHECK(window->Scroll.y > 0.0f);
         ctx->KeyPressMap(ImGuiKey_End);                     // Focus last item.
         IM_CHECK(window->Scroll.y == window->ScrollMax.y);
         IM_CHECK(g.NavId == ctx->GetID("OK 19"));
@@ -1337,7 +1346,7 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
         IM_CHECK(0 < window->Scroll.y && window->Scroll.y < window->ScrollMax.y); // Window is not scrolled.
         ctx->KeyPressMap(ImGuiKey_Home);
         IM_CHECK(g.NavId == ctx->GetID("OK 0"));           // Focus very first item.
-        IM_CHECK(window->Scroll.y == 0);                   // Window is scrolled to the start.
+        IM_CHECK(window->Scroll.y == 0.0f);                // Window is scrolled to the start.
     };
 }
 
@@ -2518,7 +2527,7 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         ctx->WindowRef("Dear ImGui Demo");
-        ctx->MenuAction(ImGuiTestAction_Check, "Tools/Style Editor");
+        ctx->MenuCheck("Tools/Style Editor");
 
         ImGuiTestRef ref_window = "Dear ImGui Style Editor";
         ctx->WindowRef(ref_window);
@@ -2620,7 +2629,7 @@ void RegisterTests_Capture(ImGuiTestEngine* e)
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         ctx->WindowRef("Dear ImGui Demo");
-        ctx->MenuAction(ImGuiTestAction_Check, "Examples/Documents");
+        ctx->MenuCheck("Examples/Documents");
 
         ctx->WindowRef("Example: Documents");
         ctx->WindowResize(ctx->RefID, ImVec2(600, 300));    // Ensure no items are clipped, because then they cant be found by item search

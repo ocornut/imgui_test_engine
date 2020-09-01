@@ -976,7 +976,7 @@ void ImGuiTestEngine_UpdateHooks(ImGuiTestEngine* engine)
 
     if (engine->InfoTasks.Size > 0)
         want_hooking = true;
-    if (engine->FindByLabelTask.InBaseId != 0)
+    if (engine->FindByLabelTask.InLabel != NULL)
         want_hooking = true;
     if (engine->GatherTask.ParentID != 0)
         want_hooking = true;
@@ -1001,6 +1001,7 @@ static void ImGuiTestEngine_RunTest(ImGuiTestEngine* engine, ImGuiTestContext* c
     ctx->FrameCount = 0;
     ctx->WindowRef("");
     ctx->SetInputMode(ImGuiInputSource_Mouse);
+    ctx->UiContext->NavInputSource = ImGuiInputSource_NavKeyboard;
     ctx->Clipboard.clear();
     ctx->GenericVars.Clear();
     test->TestLog.Clear();
@@ -1257,20 +1258,24 @@ void ImGuiTestEngineHook_ItemInfo(ImGuiContext* ui_ctx, ImGuiID id, const char* 
     ImGuiTestFindByLabelTask* label_task = &engine->FindByLabelTask;
     if (label_task->InLabel && strcmp(label_task->InLabel, label) == 0 && label_task->OutItemId == 0)
     {
-        for (ImGuiID* p_id_stack = g.CurrentWindow->IDStack.end(); p_id_stack > g.CurrentWindow->IDStack.begin();)
+        bool match = false; //(label_task->InBaseId == 0);
+        if (!match)
         {
-            p_id_stack--; // FIXME-TESTS: Depth limit
-            if (*p_id_stack == label_task->InBaseId)
-            {
-                if (ImGuiItemStatusFlags filter_flags = label_task->InFilterItemStatusFlags)
-                    if (!(filter_flags & flags))
-                        continue;
-
-                // FIXME-TESTS: Return other than final id
-                label_task->OutItemId = id;
-                break;
-            }
+            // FIXME-TESTS: Depth limit?
+            for (ImGuiID* p_id_stack = g.CurrentWindow->IDStack.end() - 1; p_id_stack >= g.CurrentWindow->IDStack.begin(); p_id_stack--)
+                if (*p_id_stack == label_task->InBaseId)
+                {
+                    if (ImGuiItemStatusFlags filter_flags = label_task->InFilterItemStatusFlags)
+                        if (!(filter_flags & flags))
+                            continue;
+                    match = true;
+                    break;
+                }
         }
+
+        // FIXME-TESTS: Return other than final id
+        if (match)
+            label_task->OutItemId = id;
     }
 }
 

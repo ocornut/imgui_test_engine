@@ -26,6 +26,7 @@ STYLE
 - Look into colorful icons. Find nice colorful icon library. How does CustomRect api would work with multi-dpi?
 
 MISC
+- Pie menu test (#434)
 - Use decorated scrollbars (#3114)
 
 IMGUI_APP
