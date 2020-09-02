@@ -522,6 +522,61 @@ void RegisterTests_Window(ImGuiTestEngine* e)
         ctx->WindowResize("Test Scrolling", ImVec2(100, 100));
     };
 
+    // ## Test window scrolling using mouse wheel.
+    t = IM_REGISTER_TEST(e, "window", "window_scroll_with_wheel");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::SetNextWindowSize(ImVec2(100, 100), ImGuiCond_Always);
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_HorizontalScrollbar);
+        ImGui::SetCursorPos(ImVec2(200, 200));
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiWindow* window = ctx->GetWindowByRef("Test Window");
+        ImGui::SetScrollX(window, 0);
+        ImGui::SetScrollY(window, 0);
+        ctx->Yield();
+
+        ctx->MouseMoveToPos(window->Rect().GetCenter());
+        IM_CHECK_EQ(window->Scroll.x, 0.0f);
+        IM_CHECK_EQ(window->Scroll.y, 0.0f);
+        ctx->MouseWheel(-5.0f);                                     // Scroll down
+        IM_CHECK_EQ(window->Scroll.x, 0.0f);
+        IM_CHECK_GT(window->Scroll.y, 0.0f);
+        ctx->MouseWheel(5.0f);                                      // Scroll up
+        IM_CHECK_EQ(window->Scroll.x, 0.0f);
+        IM_CHECK_EQ(window->Scroll.y, 0.0f);
+
+        for (int n = 0; n < 2; n++)
+        {
+            if (n == 0)
+            {
+                ctx->MouseWheel(0.0f, -5.0f);                       // Scroll right (horizontal scroll)
+            }
+            else
+            {
+                ctx->KeyDownMap(ImGuiKey_COUNT, ImGuiKeyModFlags_Shift);
+                ctx->MouseWheel(-5.0f);                             // Scroll right (shift + vertical scroll)
+                ctx->KeyUpMap(ImGuiKey_COUNT, ImGuiKeyModFlags_Shift);
+            }
+            IM_CHECK_GT(window->Scroll.x, 0.0f);
+            IM_CHECK_EQ(window->Scroll.y, 0.0f);
+            if (n == 0)
+            {
+                ctx->MouseWheel(0.0f, 5.0f);                        // Scroll left (horizontal scroll)
+            }
+            else
+            {
+                ctx->KeyDownMap(ImGuiKey_COUNT, ImGuiKeyModFlags_Shift);
+                ctx->MouseWheel(5.0f);                              // Scroll left (shift + vertical scroll)
+                ctx->KeyUpMap(ImGuiKey_COUNT, ImGuiKeyModFlags_Shift);
+            }
+            IM_CHECK_EQ(window->Scroll.x, 0.0f);
+            IM_CHECK_EQ(window->Scroll.y, 0.0f);
+        }
+    };
+
     // ## Test window moving
     t = IM_REGISTER_TEST(e, "window", "window_move");
     t->GuiFunc = [](ImGuiTestContext* ctx)
