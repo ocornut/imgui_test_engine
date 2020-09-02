@@ -412,6 +412,7 @@ void ImGuiTestEngine_ClearInput(ImGuiTestEngine* engine)
     engine->Inputs.MouseButtonsValue = 0;
     engine->Inputs.KeyMods = ImGuiKeyModFlags_None;
     engine->Inputs.Queue.clear();
+    engine->Inputs.MouseWheel = ImVec2(0, 0);
 
     ImGuiIO& simulated_io = engine->Inputs.SimulatedIO;
     simulated_io.KeyCtrl = simulated_io.KeyShift = simulated_io.KeyAlt = simulated_io.KeySuper = false;
@@ -507,6 +508,11 @@ void ImGuiTestEngine_ApplyInputToImGuiContext(ImGuiTestEngine* engine)
         //main_io.WantSetMousePos = true;
         for (int n = 0; n < IM_ARRAYSIZE(simulated_io.MouseDown); n++)
             simulated_io.MouseDown[n] = (engine->Inputs.MouseButtonsValue & (1 << n)) != 0;
+
+        // Mouse wheel
+        simulated_io.MouseWheelH = engine->Inputs.MouseWheel.x;
+        simulated_io.MouseWheel = engine->Inputs.MouseWheel.y;
+        engine->Inputs.MouseWheel = ImVec2(0, 0);
 
         // Apply keyboard mods
         simulated_io.KeyCtrl  = (engine->Inputs.KeyMods & ImGuiKeyModFlags_Ctrl) != 0;

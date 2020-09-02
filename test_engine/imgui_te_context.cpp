@@ -1334,6 +1334,46 @@ void    ImGuiTestContext::MouseDragWithDelta(ImVec2 delta, int button)
     MouseUp(button);
 }
 
+void    ImGuiTestContext::MouseWheel(float vertical, float horizontal)
+{
+    MouseWheel(ImVec2(horizontal, vertical));
+}
+
+void    ImGuiTestContext::MouseWheel(ImVec2 delta)
+{
+    if (IsError())
+        return;
+
+    IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
+
+    LogDebug("MouseWheel(%d, %d)", (int)delta.x, (int)delta.y);
+
+    float td = 0.0f;
+    const float scroll_speed = 15.0f; // Units per second.
+    while (delta.x != 0.0f || delta.y != 0.0f)
+    {
+        ImVec2 scroll;
+        if (EngineIO->ConfigRunFast)
+        {
+            scroll = delta;
+        }
+        else
+        {
+            td += UiContext->IO.DeltaTime;
+            scroll = ImFloor(delta * ImVec2(td, td) * scroll_speed);
+        }
+
+        if (scroll.x != 0.0f || scroll.y != 0.0f)
+        {
+            scroll = ImClamp(scroll, ImVec2(ImMin(delta.x, 0.0f), ImMin(delta.y, 0.0f)), ImVec2(ImMax(delta.x, 0.0f), ImMax(delta.y, 0.0f)));
+            Inputs->MouseWheel = scroll;
+            delta -= scroll;
+            td = 0;
+        }
+        Yield();
+    }
+}
+
 void    ImGuiTestContext::KeyDownMap(ImGuiKey key, int mod_flags)
 {
     if (IsError())

@@ -76,6 +76,7 @@ struct ImGuiTestInputs
     ImGuiIO                     SimulatedIO;
     int                         ApplyingSimulatedIO = 0;
     ImVec2                      MousePosValue;                  // Own non-rounded copy of MousePos in order facilitate simulating mouse movement very slow speed and high-framerate
+    ImVec2                      MouseWheel;
     ImVec2                      HostLastMousePos;
     int                         MouseButtonsValue = 0x00;       // FIXME-TESTS: Use simulated_io.MouseDown[] ?
     ImGuiKeyModFlags            KeyMods = 0x00;                 // FIXME-TESTS: Use simulated_io.KeyXXX ?

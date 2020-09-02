@@ -319,6 +319,8 @@ struct ImGuiTestContext
     void        MouseLiftDragThreshold(int button = 0);
     void        MouseClickOnVoid(int button = 0);
     void        MouseDragWithDelta(ImVec2 delta, int button = 0);
+    void        MouseWheel(float vertical, float horizontal=0.0f);
+    void        MouseWheel(ImVec2 delta);
 
     // Keyboard inputs
     void        KeyDownMap(ImGuiKey key, int mod_flags = 0);
