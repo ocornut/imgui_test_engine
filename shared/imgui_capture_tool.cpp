@@ -87,13 +87,18 @@ void ImGuiCaptureImageBuf::BlitSubImage(int dst_x, int dst_y, int src_x, int src
         memcpy(&Data[(dst_y + y) * Width + dst_x], &source->Data[(src_y + y) * source->Width + src_x], (size_t)source->Width * 4);
 }
 
-void ImGuiCaptureContext::PostNewFrame(ImGuiCaptureArgs* args)
+//-----------------------------------------------------------------------------
+// ImGuiCaptureContext
+//-----------------------------------------------------------------------------
+
+void ImGuiCaptureContext::PostNewFrame()
 {
+    ImGuiCaptureArgs* args = _CaptureArgs;
     if (args == NULL)
         return;
 
     ImGuiContext& g = *GImGui;
-    if (_FrameNo > 0 && (args->InFlags & ImGuiCaptureFlags_StitchFullContents) != 0)
+    if (_FrameNo > 2 && (args->InFlags & ImGuiCaptureFlags_StitchFullContents) != 0)
     {
         // Force mouse position. Hovered window is reset in ImGui::NewFrame() based on mouse real mouse position.
         IM_ASSERT(args->InCaptureWindows.Size == 1);
@@ -102,10 +107,6 @@ void ImGuiCaptureContext::PostNewFrame(ImGuiCaptureArgs* args)
         g.HoveredRootWindow = _HoveredWindow ? _HoveredWindow->RootWindow : NULL;
     }
 }
-
-//-----------------------------------------------------------------------------
-// ImGuiCaptureContext
-//-----------------------------------------------------------------------------
 
 // Returns true when capture is in progress.
 ImGuiCaptureStatus ImGuiCaptureContext::CaptureUpdate(ImGuiCaptureArgs* args)
@@ -189,6 +190,10 @@ ImGuiCaptureStatus ImGuiCaptureContext::CaptureUpdate(ImGuiCaptureArgs* args)
                     ImStrncpy(ext, ".gif", (size_t)(ext - args->OutSavedFileName));
         }
 
+        // When recording, same args should have been passed to BeginGifCapture().
+        IM_ASSERT(!_Recording || _CaptureArgs == args);
+
+        _CaptureArgs = args;
         _ChunkNo = 0;
         _CaptureRect = ImRect(FLT_MAX, FLT_MAX, -FLT_MAX, -FLT_MAX);
         _WindowBackupRects.clear();
@@ -233,22 +238,19 @@ ImGuiCaptureStatus ImGuiCaptureContext::CaptureUpdate(ImGuiCaptureArgs* args)
             IM_ASSERT(!is_capturing_rect && "Capture Tool: capture of full window contents is not possible when capturing specified rect.");
             IM_ASSERT(args->InCaptureWindows.Size == 1 && "Capture Tool: capture of full window contents is not possible when capturing more than one window.");
 
-            // Resize window to it's contents and capture it's entire width/height. However if window is bigger than
-            // it's contents - keep original size.
-            ImVec2 full_size;
+            // Resize window to it's contents and capture it's entire width/height. However if window is bigger than it's contents - keep original size.
             ImGuiWindow* window = args->InCaptureWindows.front();
+            ImVec2 full_size = window->SizeFull;
 
-            // FIXME-CAPTURE: Window height to fit contents calculation may be incorrect here. When everything is opened in the demo we must increase full_size.y by 18 to make scrollbar disappear.
-            full_size.x = ImMax(window->SizeFull.x, window->ContentSize.x + (window->WindowPadding.x + window->WindowBorderSize) * 2);
-            full_size.y = ImMax(window->SizeFull.y, window->ContentSize.y + (window->WindowPadding.y + window->WindowBorderSize) * 2 + window->TitleBarHeight() + window->MenuBarHeight());
-
-            // Mouse cursor is relative to captured window even if it is not hovered, in which case cursor is kept
-            // off the window to prevent appearing in screenshot multiple times by accident.
-            // FIXME-CAPTURE: When everything is opened in demo window, window is scrolled to the bottom and mouse cursor is positioned over the window - capturing stitched image causes mouse
-            // cursor to appear +-10px higher than it was positioned at.
+            // Mouse cursor is relative to captured window even if it is not hovered, in which case cursor is kept off the window to prevent appearing in screenshot multiple times by accident.
             _MouseRelativeToWindowPos = io.MousePos - window->Pos + window->Scroll;
-            _HoveredWindow = g.HoveredWindow;
+
+            // FIXME-CAPTURE: Window width change may affect vertical content size if window contains text that wraps. To accurately position mouse cursor for capture we avoid horizontal resize.
+            // Instead window width should be set manually before capture, as it is simple to do and most of the time we already have a window of desired width.
+            //full_size.x = ImMax(window->SizeFull.x, window->ContentSize.x + (window->WindowPadding.x + window->WindowBorderSize) * 2);
+            full_size.y = ImMax(window->SizeFull.y, window->ContentSize.y + (window->WindowPadding.y + window->WindowBorderSize) * 2 + window->TitleBarHeight() + window->MenuBarHeight());
             ImGui::SetWindowSize(window, full_size);
+            _HoveredWindow = g.HoveredWindow;
         }
         else
         {
@@ -259,11 +261,19 @@ ImGuiCaptureStatus ImGuiCaptureContext::CaptureUpdate(ImGuiCaptureArgs* args)
         _FrameNo++;
         return ImGuiCaptureStatus_InProgress;
     }
+    else
+    {
+        IM_ASSERT(args == _CaptureArgs); // Capture args can not change mid-capture.
+    }
 
     //-----------------------------------------------------------------
-    // Frame 1: Position windows, lock rectangle, create capture buffer
+    // Frame 1: Skipped to allow window size to update fully
     //-----------------------------------------------------------------
-    if (_FrameNo == 1)
+
+    //-----------------------------------------------------------------
+    // Frame 2: Position windows, lock rectangle, create capture buffer
+    //-----------------------------------------------------------------
+    if (_FrameNo == 2)
     {
         // Move group of windows so combined rectangle position is at the top-left corner + padding and create combined
         // capture rect of entire area that will be saved to screenshot. Doing this on the second frame because when
@@ -412,6 +422,7 @@ ImGuiCaptureStatus ImGuiCaptureContext::CaptureUpdate(ImGuiCaptureArgs* args)
             g.Style.DisplayWindowPadding = _DisplayWindowPaddingBackup;
             g.Style.DisplaySafeAreaPadding = _DisplaySafeAreaPaddingBackup;
             args->_Capturing = false;
+            _CaptureArgs = NULL;
             return ImGuiCaptureStatus_Done;
         }
     }
@@ -427,14 +438,15 @@ void ImGuiCaptureContext::BeginGifCapture(ImGuiCaptureArgs* args)
     IM_ASSERT(_Recording == false);
     IM_ASSERT(_GifWriter == NULL);
     _Recording = true;
+    _CaptureArgs = args;
     args->InOutputImageBuf = &_Output;
     IM_ASSERT(args->InRecordFPSTarget >= 1);
     IM_ASSERT(args->InRecordFPSTarget <= 100);
 }
 
-void ImGuiCaptureContext::EndGifCapture(ImGuiCaptureArgs* args)
+void ImGuiCaptureContext::EndGifCapture()
 {
-    IM_ASSERT(args != NULL);
+    IM_ASSERT(_CaptureArgs != NULL);
     IM_ASSERT(_Recording == true);
     IM_ASSERT(_GifWriter != NULL);
     _Recording = false;
@@ -667,7 +679,7 @@ void ImGuiCaptureTool::CaptureWindowsSelector(const char* title, ImGuiCaptureArg
         }
         else
         {
-            Context.EndGifCapture(args);
+            Context.EndGifCapture();
         }
     }
 

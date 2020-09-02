@@ -578,7 +578,8 @@ static void ImGuiTestEngine_PostNewFrame(ImGuiTestEngine* engine, ImGuiContext* 
         return;
     IM_ASSERT(ui_ctx == GImGui);
 
-    engine->CaptureContext.PostNewFrame(engine->CurrentCaptureArgs);
+    engine->CaptureContext.PostNewFrame();
+    engine->CaptureTool.Context.PostNewFrame();
 
     // Restore host inputs
     const bool want_simulated_inputs = engine->UiContextActive != NULL && ImGuiTestEngine_IsRunningTests(engine) && !(engine->TestContext->RunFlags & ImGuiTestRunFlags_NoTestFunc);
@@ -754,10 +755,11 @@ bool ImGuiTestEngine_BeginCaptureAnimation(ImGuiTestEngine* engine, ImGuiCapture
 
 bool ImGuiTestEngine_EndCaptureAnimation(ImGuiTestEngine* engine, ImGuiCaptureArgs* args)
 {
+    IM_UNUSED(args);
     IM_ASSERT(engine->CurrentCaptureArgs != NULL && "No capture is in progress.");
     IM_ASSERT(engine->CaptureContext.IsCapturingGif() && "No gif capture is in progress.");
 
-    engine->CaptureContext.EndGifCapture(args);
+    engine->CaptureContext.EndGifCapture();
     while (engine->CaptureContext._GifWriter != NULL)   // Wait until last frame is captured and gif is saved.
         ImGuiTestEngine_Yield(engine);
     engine->IO.ConfigRunFast = engine->BackupConfigRunFast;

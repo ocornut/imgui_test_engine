@@ -103,19 +103,20 @@ struct ImGuiCaptureContext
     GifWriter*              _GifWriter = NULL;              // GIF image writer state.
     ImVec2                  _MouseRelativeToWindowPos;      // Mouse cursor position relative to captured window (when _StitchFullContents is in use).
     ImGuiWindow*            _HoveredWindow = NULL;          // Window which was hovered at capture start.
+    ImGuiCaptureArgs*       _CaptureArgs = NULL;            // Current capture args. Set only if capture is in progress.
 
     ImGuiCaptureContext(ImGuiScreenCaptureFunc capture_func = NULL) { ScreenCaptureFunc = capture_func; _MouseRelativeToWindowPos = ImVec2(-FLT_MAX, -FLT_MAX); }
 
     // Should be called after ImGui::NewFrame() and before submitting any UI.
     // (ImGuiTestEngine automatically calls that for you, so this only apply to independently created instance)
-    void PostNewFrame(ImGuiCaptureArgs* args);
+    void PostNewFrame();
 
     // Capture a screenshot. If this function returns true then it should be called again with same arguments on the next frame.
     ImGuiCaptureStatus      CaptureUpdate(ImGuiCaptureArgs* args);
 
     // Begin gif capture. args->InOutputFileTemplate must be specified. Call CaptureUpdate() every frame afterwards until it returns false.
     void    BeginGifCapture(ImGuiCaptureArgs* args);
-    void    EndGifCapture(ImGuiCaptureArgs* args);
+    void    EndGifCapture();
     bool    IsCapturingGif();
 };
 
