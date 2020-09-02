@@ -577,6 +577,108 @@ void RegisterTests_Window(ImGuiTestEngine* e)
         }
     };
 
+    // ## Test window scrolling using mouse wheel over a child window.
+    t = IM_REGISTER_TEST(e, "window", "window_scroll_over_child");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::SetNextWindowSize(ImVec2(200.0f, 200.0f), ImGuiCond_Always);
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_HorizontalScrollbar);
+        ImGui::SetCursorPosX(ImGui::GetCurrentWindow()->Size.y * 0.5f);
+        ImGui::Button("Top");
+        ImGui::Button("Left");
+        ImGui::SameLine();
+        ImGui::BeginChild("Child", ImVec2(100.0f, 100.0f), true, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_HorizontalScrollbar);
+        ImGui::SetCursorPos(ImVec2(120.0f, 120.0f));
+        ImGui::EndChild();
+        ImGui::SameLine();
+        ImGui::SetCursorPos(ImGui::GetCursorPos() + ImVec2(80.0f, 120.0f + 80.0f));
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiWindow* window = ctx->GetWindowByRef("Test Window");
+        ImGuiWindow* child = ctx->GetWindowByRef(Str30f("Test Window\\/Child_%08X/", window->GetID("Child")).c_str());
+        ImGuiContext& g = *ctx->UiContext;
+        ImGui::SetScrollX(window, 0);
+        ImGui::SetScrollY(window, 0);
+        ImGui::SetScrollX(child, 0);
+        ImGui::SetScrollY(child, 0);
+        ctx->Yield();
+
+        ctx->SetRef("Test Window");
+        IM_CHECK_EQ(window->Scroll.y, 0.0f);
+        IM_CHECK_EQ(child->Scroll.y, 0.0f);
+
+        // Test vertical scrolling. Scroll operation goes over child window but does not scroll it.
+        ctx->MouseMove("Top");
+        IM_CHECK_EQ(g.HoveredWindow, window);                   // Not hovering child initially
+        ctx->MouseWheel(-3.0f);
+        ctx->Yield();                                           // FIXME-TESTS: g.HoveredWindow needs extra frame to update.
+        IM_CHECK_GT(window->Scroll.y, 0.0f);                    // Main window was scrolled
+        IM_CHECK_EQ(child->Scroll.y, 0.0f);                     // Child window was not scrolled
+        IM_CHECK_EQ(g.HoveredWindow, child);                    // Scroll operation happened over child
+
+        // Pause for a while and perform scroll operation when cursor is hovering child. Now child is scrolled.
+        float prev_scroll_y = window->Scroll.y;
+        ctx->SleepNoSkip(2.0f, 1.0f / 2.0f);
+        ctx->MouseWheel(-3.0f);
+        IM_CHECK_EQ(window->Scroll.y, prev_scroll_y);
+        IM_CHECK_GT(child->Scroll.y, 0.0f);
+        IM_CHECK_EQ(g.HoveredWindow, child);                    // Still hovering child
+
+        // Test horizontal scrolling. With horizontal mouse wheel input or vertical mouse wheel input + shift.
+        ImGui::SetScrollY(window, 0);
+        ImGui::SetScrollY(child, 0);
+
+        for (int n = 0; n < 2; n++)
+        {
+            ImGui::SetScrollX(window, 0);
+            ImGui::SetScrollX(child, 0);
+            ctx->Yield();
+            IM_CHECK_EQ(window->Scroll.x, 0.0f);
+            IM_CHECK_EQ(child->Scroll.x, 0.0f);
+
+            // Scroll operation goes over child window but does not scroll it.
+            ctx->MouseMoveToPos(child->Pos);                    // FIXME-TESTS: Lack of mouse movement makes child window take scroll input as if mouse hovered it.
+            ctx->MouseMove("Left");
+            IM_CHECK_EQ(g.HoveredWindow, window);               // Not hovering child initially
+            if (n == 0)
+            {
+                // Wheel (horizontal)
+                ctx->MouseWheel(0, -3.0f);
+                ctx->Yield();                                   // FIXME-TESTS: g.HoveredWindow needs extra frame to update.
+            }
+            else
+            {
+                // Wheel (vertical) + shift
+                ctx->KeyDownMap(ImGuiKey_COUNT, ImGuiKeyModFlags_Shift);
+                ctx->MouseWheel(-3.0f);
+                ctx->KeyUpMap(ImGuiKey_COUNT, ImGuiKeyModFlags_Shift);
+            }
+            float prev_scroll_x = window->Scroll.x;
+            IM_CHECK_GT(window->Scroll.x, 0.0f);                // Main window was scrolled
+            IM_CHECK_EQ(child->Scroll.x, 0.0f);                 // Child window was not scrolled
+            IM_CHECK_EQ(g.HoveredWindow, child);                // Scroll operation happened over child
+
+            // Pause for a while and perform scroll operation when cursor is hovering child. Now child is scrolled.
+            ctx->SleepNoSkip(2.0f, 1.0f / 2.0f);
+            if (n == 0)
+            {
+                ctx->MouseWheel(0, -3.0f);
+            }
+            else
+            {
+                ctx->KeyDownMap(ImGuiKey_COUNT, ImGuiKeyModFlags_Shift);
+                ctx->MouseWheel(-3.0f);
+                ctx->KeyUpMap(ImGuiKey_COUNT, ImGuiKeyModFlags_Shift);
+                ctx->Yield();
+            }
+            IM_CHECK_EQ(window->Scroll.x, prev_scroll_x);
+            IM_CHECK_GT(child->Scroll.x, 0.0f);
+            IM_CHECK_EQ(g.HoveredWindow, child);                // Still hovering child
+        }
+    };
+
     // ## Test window moving
     t = IM_REGISTER_TEST(e, "window", "window_move");
     t->GuiFunc = [](ImGuiTestContext* ctx)
