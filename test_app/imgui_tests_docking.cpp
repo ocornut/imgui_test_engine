@@ -487,6 +487,60 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
         ctx->MouseClick();
         IM_CHECK_EQ(g.NavWindow, window2);
     };
+
+    // ## Test _KeepAlive dockspace flag.
+    t = IM_REGISTER_TEST(e, "docking", "docking_dockspace_keep_alive");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiWindow* window1 = ctx->GetWindowByRef("Window A");
+        ImGui::SetNextWindowSize(ImVec2(300, 200), ImGuiCond_Always);
+        if (ctx->GenericVars.Step > 0 && !window1->Collapsed)
+            ImGui::SetNextWindowCollapsed(true, ImGuiCond_Always);
+        ImGui::Begin("Window A", NULL, ImGuiWindowFlags_NoSavedSettings);
+        if (ctx->GenericVars.Step < 2)
+            ImGui::DockSpace(ImGui::GetID("A2"), ImVec2(0, 0), ctx->GenericVars.Step == 1 ? ImGuiDockNodeFlags_KeepAliveOnly : 0);
+        ImGui::End();
+
+        ImGui::SetNextWindowSize(ImVec2(150, 100), ImGuiCond_Always);
+        ImGui::Begin("Window B", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiWindow* window1 = ctx->GetWindowByRef("Window A");
+        ImGuiWindow* window2 = ctx->GetWindowByRef("Window B");
+        ImGuiID dock_id = ctx->GetID("Window A/A2");
+
+        ctx->WindowAutoUncollapse(window1);
+        ctx->WindowAutoUncollapse(window2);
+        ctx->DockMultiClear("Window B", "Window A", NULL);
+        ctx->DockWindowInto("Window B", "Window A");
+        IM_CHECK_EQ(window1->DockId, (ImGuiID)0);                       // Window A is not docked
+        IM_CHECK_EQ(window1->DockNode, (ImGuiDockNode*)NULL);
+        IM_CHECK_EQ(window2->DockId, dock_id);                          // Window B was docked into a dockspace
+        ctx->GenericVars.Step = 1;                                      // Start collapse window and start submitting  _KeepAliveOnly flag
+        ctx->Yield();
+        IM_CHECK_EQ(window1->Collapsed, true);                          // Window A got collapsed
+        IM_CHECK_EQ(window1->DockIsActive, false);                      // and remains undocked
+        IM_CHECK_EQ(window1->DockId, (ImGuiID)0);
+        IM_CHECK_EQ(window1->DockNode, (ImGuiDockNode*)NULL);
+        IM_CHECK_EQ(window2->Collapsed, false);                         // Window B was not collapsed
+        IM_CHECK_EQ(window2->DockIsActive, true);                       // Dockspace is being kept alive
+        IM_CHECK_EQ(window2->DockId, dock_id);                          // window remains docked
+        IM_CHECK_NE(window2->DockNode, (ImGuiDockNode*)NULL);
+        IM_CHECK_EQ(window2->Hidden, true);                             // but invisible
+        ctx->GenericVars.Step = 2;                                      // Stop submitting dockspace
+        ctx->Yield();
+        IM_CHECK_EQ(window1->Collapsed, true);                          // Window A got collapsed
+        IM_CHECK_EQ(window1->DockIsActive, false);                      // and remains undocked
+        IM_CHECK_EQ(window1->DockId, (ImGuiID)0);
+        IM_CHECK_EQ(window1->DockNode, (ImGuiDockNode*)NULL);
+        IM_CHECK_EQ(window2->Collapsed, false);                         // Window B was not collapsed
+        IM_CHECK_EQ(window2->DockIsActive, false);                      // Dockspace is no longer kept alive
+        IM_CHECK_EQ(window2->DockId, (ImGuiID)0);                       // and window gets undocked
+        IM_CHECK_EQ(window2->DockNode, (ImGuiDockNode*)NULL);
+        IM_CHECK_EQ(window2->Hidden, false);                            // Window B shows up
+    };
 #else
     IM_UNUSED(e);
 #endif
