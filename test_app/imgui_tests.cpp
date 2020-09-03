@@ -537,6 +537,32 @@ void RegisterTests_Window(ImGuiTestEngine* e)
         ctx->WindowMove("Movable Window", ImVec2(50, 100));
         IM_CHECK(window->Pos == ImVec2(50, 100));
     };
+
+    // ## Test explicit window positioning
+    t = IM_REGISTER_TEST(e, "window", "window_pos_pivot");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        auto& vars = ctx->GenericVars;
+        ImGui::SetNextWindowSize(ImVec2(0, 0));
+        ImGui::SetNextWindowPos(vars.Pos, ImGuiCond_Always, vars.Pivot);
+        ImGui::Begin("Movable Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImGui::TextUnformatted("Lorem ipsum dolor sit amet");
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        auto& vars = ctx->GenericVars;
+        ImGuiWindow* window = ctx->GetWindowByRef("Movable Window");
+        for (int n = 0; n < 4; n++)     // Test all pivot combinations.
+            for (int c = 0; c < 2; c++) // Test collapsed and uncollapsed windows.
+            {
+                ctx->WindowCollapse(window, c != 0);
+                vars.Pos = ctx->GetMainViewportPos() + window->Size; // Ensure window is tested within a visible viewport.
+                vars.Pivot = ImVec2(1.0f * ((n & 1) != 0 ? 1 : 0), 1.0f * ((n & 2) != 0 ? 1 : 0));
+                ctx->Yield();
+                IM_CHECK_EQ(window->Pos, vars.Pos - (window->Size * vars.Pivot));
+            }
+    };
 }
 
 

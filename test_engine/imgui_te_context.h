@@ -134,6 +134,9 @@ struct ImGuiTestGenericVars
     ImGuiWindowFlags        WindowFlags;
     ImGuiTestGenericStatus  Status;
     float                   Width;
+    ImVec2                  Pos;
+    ImVec2                  Size;
+    ImVec2                  Pivot;
 
     // Generic storage
     int                     Int1;
