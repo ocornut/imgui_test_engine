@@ -1907,7 +1907,7 @@ void    ImGuiTestContext::WindowMove(ImGuiTestRef ref, ImVec2 input_pos, ImVec2 
 #endif
         {
             const float h = window->TitleBarHeight();
-            drag_pos = window->Pos + ImVec2(window->Size.x, h) * 0.5f;
+            drag_pos = ImFloor(window->Pos + ImVec2(window->Size.x, h) * 0.5f);
         }
 
         // If we didn't have to teleport it means we can reach the position already
