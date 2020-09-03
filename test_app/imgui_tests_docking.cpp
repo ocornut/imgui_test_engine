@@ -457,6 +457,36 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
             }
         }
     };
+
+    // ## Test passthrough docking node.
+    t = IM_REGISTER_TEST(e, "docking", "docking_hover_passthru_node");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::SetNextWindowPos(ImVec2(100, 100), ImGuiCond_Appearing);
+        ImGui::SetNextWindowSize(ImVec2(300, 200), ImGuiCond_Appearing);
+        ImGui::Begin("Window 1", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImGui::DockSpace(ImGui::GetID("Dock"), ImVec2(0, 0), ImGuiDockNodeFlags_PassthruCentralNode);
+        ImGui::End();
+
+        ImGui::SetNextWindowPos(ImVec2(100, 100), ImGuiCond_Appearing);
+        ImGui::SetNextWindowSize(ImVec2(300, 200), ImGuiCond_Appearing);
+        ImGui::Begin("Window 2", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImGui::End();
+
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiContext& g = *ctx->UiContext;
+        ImGuiWindow* window1 = ctx->GetWindowByRef("Window 1");
+        ImGuiWindow* window2 = ctx->GetWindowByRef("Window 2");
+        ctx->WindowFocus("Window 1");
+        ctx->MouseMoveToPos(window1->Rect().GetCenter());
+        IM_CHECK_EQ(g.NavWindow, window1);
+        IM_CHECK_EQ(g.HoveredWindow, window2);
+        IM_CHECK_EQ(g.HoveredDockNode, (ImGuiDockNode*)NULL);
+        ctx->MouseClick();
+        IM_CHECK_EQ(g.NavWindow, window2);
+    };
 #else
     IM_UNUSED(e);
 #endif
