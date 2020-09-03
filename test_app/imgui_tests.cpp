@@ -563,6 +563,49 @@ void RegisterTests_Window(ImGuiTestEngine* e)
                 IM_CHECK_EQ(window->Pos, vars.Pos - (window->Size * vars.Pivot));
             }
     };
+
+    // ## Test window resizing from edges and corners.
+    t = IM_REGISTER_TEST(e, "window", "window_resizing");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoCollapse);
+        ImGui::TextUnformatted("Lorem ipsum dolor sit amet");
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        struct TestData
+        {
+            ImVec2 grab_pos;        // window->Pos + window->Size * grab_pos
+            ImVec2 drag_dir;
+            ImVec2 expect_pos;
+            ImVec2 expect_size;
+        };
+
+        const TestData test_datas[] =
+        {
+            { ImVec2(0.5,   0), ImVec2(  0, -10), ImVec2(100,  90), ImVec2(200, 60) },    // From top edge go up
+            { ImVec2(  1,   0), ImVec2( 10, -10), ImVec2(110,  90), ImVec2(200, 50) },    // From top-right corner, no resize, window is moved
+            { ImVec2(  1, 0.5), ImVec2( 10,   0), ImVec2(100, 100), ImVec2(210, 50) },    // From right edge go right
+            { ImVec2(  1,   1), ImVec2( 10,  10), ImVec2(100, 100), ImVec2(210, 60) },    // From bottom-right corner go right-down
+            { ImVec2(0.5,   1), ImVec2(  0,  10), ImVec2(100, 100), ImVec2(200, 60) },    // From bottom edge go down
+            { ImVec2(  0,   1), ImVec2(-10,  10), ImVec2( 90, 100), ImVec2(210, 60) },    // From bottom-left corner go left-down
+            { ImVec2(  0, 0.5), ImVec2(-10,   0), ImVec2( 90, 100), ImVec2(210, 50) },    // From left edge go left
+            { ImVec2(  0,   0), ImVec2(-10, -10), ImVec2( 90,  90), ImVec2(200, 50) },    // From left-top edge, no resize, window is moved
+        };
+
+        ImGuiWindow* window = ctx->GetWindowByRef("Test Window");
+        for (auto& test_data : test_datas)
+        {
+            ImGui::SetWindowPos(window, ImVec2(100, 100));
+            ImGui::SetWindowSize(window, ImVec2(200, 50));
+            ctx->Yield();
+            ctx->MouseMoveToPos(window->Pos + ((window->Size - ImVec2(1.0f, 1.0f)) * test_data.grab_pos));
+            ctx->MouseDragWithDelta(test_data.drag_dir);
+            IM_CHECK_EQ(window->Size, test_data.expect_size);
+            IM_CHECK_EQ(window->Pos, test_data.expect_pos);
+        }
+    };
 }
 
 
