@@ -601,6 +601,47 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
         if (!g.IO.ConfigDockingWithShift)
             ctx->KeyUpMap(ImGuiKey_COUNT, ImGuiKeyModFlags_Shift);
     };
+
+    // ## Test simple undocking of two-way split.
+    t = IM_REGISTER_TEST(e, "docking", "docking_hide_tabbar");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::SetNextWindowSize(ImVec2(200, 100));
+        ImGui::Begin("Window A", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImGui::TextUnformatted("lorem ipsum");
+        ImGui::End();
+
+        ImGui::SetNextWindowSize(ImVec2(200, 100));
+        ImGui::Begin("Window B", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImGui::TextUnformatted("lorem ipsum");
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiWindow* windows[] = { ctx->GetWindowByRef("Window A"), ctx->GetWindowByRef("Window B") };
+
+        for (int i = 0; i < IM_ARRAYSIZE(windows); i++)
+        {
+            ImGuiWindow* window = windows[i];
+            ctx->DockMultiClear("Window B", "Window A", NULL);
+            ctx->DockWindowInto("Window B", "Window A", ImGuiDir_Right);
+
+            // Two way split. Ensure window is docked and tab bar is visible.
+            IM_CHECK(window->DockIsActive);
+            IM_CHECK(!window->DockNode->IsHiddenTabBar());
+
+            // Hide tab bar.
+            ctx->WindowRef(window->DockNode->HostWindow->Name);
+            ctx->ItemClick(ImHashDecoratedPath("#COLLAPSE", NULL, window->DockNode->ID));
+            ctx->ItemClick(Str16f("/##Popup_%08x/Hide tab bar", ctx->GetID("#WindowMenu", window->DockNode->ID)).c_str());
+            IM_CHECK(window->DockNode->IsHiddenTabBar());
+
+            // Unhide tab bar.
+            ctx->WindowRef(window->Name);
+            ctx->ItemClick("#UNHIDE", 0, ImGuiTestOpFlags_MoveToEdgeD | ImGuiTestOpFlags_MoveToEdgeR);
+            IM_CHECK(!window->DockNode->IsHiddenTabBar());
+        }
+    };
 #else
     IM_UNUSED(e);
 #endif
