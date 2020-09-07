@@ -739,6 +739,31 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
     t->GuiFunc = docking_split_undocking_gui;
     t->TestFunc = docking_split_undocking_test;
     t->ArgVariant = 2;
+
+    // ## Test dock node retention when second window in two-way split is undocked.
+    t = IM_REGISTER_TEST(e, "docking", "docking_undock_simple");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        for (int i = 0; i < 2; i++)
+        {
+            ImGui::Begin(Str16f("Window %d", i).c_str(), NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
+            ImGui::TextUnformatted("lorem ipsum");
+            ImGui::End();
+        }
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiWindow* window0 = ctx->GetWindowByRef("Window 0");
+        ImGuiWindow* window1 = ctx->GetWindowByRef("Window 1");
+        ctx->DockMultiClear("Window 0", "Window 1", NULL);
+        ctx->DockWindowInto("Window 1", "Window 0", ImGuiDir_Right);
+        IM_CHECK_NE(window0->DockNode, (ImGuiDockNode*)NULL);
+        IM_CHECK_NE(window1->DockNode, (ImGuiDockNode*)NULL);
+        ImGuiDockNode* original_node = window0->DockNode->ParentNode;
+        ctx->UndockWindow("Window 1");
+        IM_CHECK_EQ(window0->DockNode, original_node);          // Undocking Window 1 keeps a parent dock node in Window 0
+        IM_CHECK_EQ(window1->DockNode, (ImGuiDockNode*)NULL);   // Undocked window has it's dock node cleared
+    };
 #else
     IM_UNUSED(e);
 #endif
