@@ -541,6 +541,66 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
         IM_CHECK_EQ(window2->DockNode, (ImGuiDockNode*)NULL);
         IM_CHECK_EQ(window2->Hidden, false);                            // Window B shows up
     };
+
+    // ## Test focus retention during undocking when new window appears.
+    t = IM_REGISTER_TEST(e, "docking", "docking_undock_focus_retention");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::SetNextWindowSize(ImVec2(200, 100));
+        if (ImGui::Begin("Window A", NULL, ImGuiWindowFlags_NoSavedSettings))
+        {
+            ImGui::TextUnformatted("lorem ipsum");
+            ImGui::SetNextWindowSize(ImVec2(200, 100));
+            ImGui::Begin("Window A2", NULL, ImGuiWindowFlags_NoSavedSettings);
+            ImGui::TextUnformatted("lorem ipsum");
+            ImGui::End();
+        }
+        ImGui::End();
+
+        ImGui::SetNextWindowSize(ImVec2(200, 100));
+        ImGui::Begin("Window B", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImGui::TextUnformatted("lorem ipsum");
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiContext& g = *ctx->UiContext;
+        ctx->DockMultiClear("Window A", "Window B", NULL);
+        ctx->WindowAutoUncollapse(ctx->GetWindowByRef("Window A"));
+        ctx->WindowAutoUncollapse(ctx->GetWindowByRef("Window B"));
+        ImGuiWindow* windowB = ctx->GetWindowByRef("Window B");
+        ImGuiWindow* windowA2 = ctx->GetWindowByRef("Window A2");
+
+        // Window A2 is visible when all windows are undocked.
+        IM_CHECK(windowA2->Active);
+        ctx->WindowFocus("Window A");
+        ctx->DockWindowInto("Window B", "Window A");
+
+        // Window A2 gets hidden when Window B is docked and becomes active window in the dock.
+        IM_CHECK(!windowA2->Active);
+
+        // Undock Window B.
+        if (!g.IO.ConfigDockingWithShift)
+            ctx->KeyDownMap(ImGuiKey_COUNT, ImGuiKeyModFlags_Shift);
+
+        ctx->MouseMove(windowB->Name, ImGuiTestOpFlags_NoCheckHoveredId);
+        ctx->SleepShort();
+        ctx->MouseDown(0);
+
+        const float h = windowB->TitleBarHeight();
+        ctx->MouseMoveToPos(g.IO.MousePos + (ImVec2(h, h) * -2));
+        ctx->SleepShort();
+
+        // Window A2 becomes visible during undock operation, but does not capture focus.
+        IM_CHECK(windowA2->Active);
+        IM_CHECK_EQ(g.MovingWindow, windowB);
+        IM_CHECK_EQ(g.WindowsFocusOrder[g.WindowsFocusOrder.Size - 1], windowB);
+
+        ctx->MouseUp(0);
+
+        if (!g.IO.ConfigDockingWithShift)
+            ctx->KeyUpMap(ImGuiKey_COUNT, ImGuiKeyModFlags_Shift);
+    };
 #else
     IM_UNUSED(e);
 #endif
