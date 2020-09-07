@@ -648,6 +648,97 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
             ctx->DockNodeHideTabBar(window->DockNode, false);
         }
     };
+
+    auto docking_split_undocking_gui = [](ImGuiTestContext* ctx)
+    {
+        for (int i = 0; i < 4; i++)
+        {
+            ImGui::SetNextWindowSize(ImVec2(400, 200));
+            ImGui::Begin(Str16f("Window %d", i).c_str(), NULL, ImGuiWindowFlags_NoSavedSettings);
+            ImGui::TextUnformatted("lorem ipsum");
+            ImGui::End();
+        }
+    };
+    auto docking_split_undocking_test = [](ImGuiTestContext* ctx)
+    {
+        ImGuiWindow* window0 = ctx->GetWindowByRef("Window 0");
+        ImGuiWindow* window1 = ctx->GetWindowByRef("Window 1");
+        ImGuiWindow* window2 = ctx->GetWindowByRef("Window 2");
+        ImGuiWindow* window3 = ctx->GetWindowByRef("Window 3");
+        const float h = window0->TitleBarHeight();
+        ImVec2 pos;
+
+        ctx->DockMultiClear("Window 0", "Window 1", "Window 2", "Window 3", NULL);
+        ctx->DockWindowInto("Window 1", "Window 0");
+        ctx->DockWindowInto("Window 2", "Window 1", ImGuiDir_Right);
+        ctx->DockWindowInto("Window 3", "Window 2");
+
+        ImGuiDockNode* node0 = window0->DockNode;
+        ImGuiDockNode* node1 = window1->DockNode;
+        ImGuiDockNode* node2 = window2->DockNode;
+        ImGuiDockNode* node3 = window3->DockNode;
+        IM_CHECK(node0 != NULL);
+        IM_CHECK(node1 != NULL);
+        IM_CHECK(node2 != NULL);
+        IM_CHECK(node3 != NULL);
+
+        switch (ctx->Test->ArgVariant)
+        {
+        case 0:
+            ctx->UndockWindow("Window 3");
+            IM_CHECK(window3->DockNode == NULL);                                        // Dragged window got undocked
+            IM_CHECK(window0->DockNode == node0);                                       // Dock nodes of other windows remain same
+            IM_CHECK(window1->DockNode == node1);
+            IM_CHECK(window2->DockNode == node2);
+            IM_CHECK(window1->DockNode->HostWindow == window0->DockNode->HostWindow);
+            IM_CHECK(window2->DockNode->HostWindow == window0->DockNode->HostWindow);
+            break;
+        case 1:
+            ctx->ItemDragWithDelta(ImHashDecoratedPath("#COLLAPSE", NULL, window3->DockNode->ID), ImVec2(h, h) * -2);
+            IM_CHECK(window0->DockNode != NULL);                                       // Dock nodes may have changed, but no window was undocked
+            IM_CHECK(window1->DockNode != NULL);
+            IM_CHECK(window2->DockNode != NULL);
+            IM_CHECK(window3->DockNode != NULL);
+            IM_CHECK(window0->DockNode->HostWindow == window1->DockNode->HostWindow);   // Window 0 and Window 1 are in one dock tree
+            IM_CHECK(window2->DockNode->HostWindow == window3->DockNode->HostWindow);   // Window 2 and Window 3 are in one dock tree
+            IM_CHECK(window0->DockNode->HostWindow != window2->DockNode->HostWindow);   // And both window groups belong to separate trees
+            break;
+        case 2:
+            // Dock state of all windows did not change
+            IM_CHECK(window0->DockNode == node0);
+            IM_CHECK(window1->DockNode == node1);
+            IM_CHECK(window2->DockNode == node2);
+            IM_CHECK(window3->DockNode == node3);
+            IM_CHECK(window0->DockNode->HostWindow == window1->DockNode->HostWindow);
+            IM_CHECK(window2->DockNode->HostWindow == window3->DockNode->HostWindow);
+            IM_CHECK(window0->DockNode->HostWindow == window2->DockNode->HostWindow);
+            pos = window3->DockNode->HostWindow->Pos;
+            ctx->MouseMoveToPos(window3->DockNode->TabBar->BarRect.Max - ImVec2(1, h * 0.5f));
+            ctx->MouseDragWithDelta(ImVec2(10, 10));
+            IM_CHECK_EQ(window3->DockNode->HostWindow->Pos, pos + ImVec2(10, 10));      // Entire dock tree was moved
+            break;
+        default:
+            assert(false);
+        }
+    };
+
+    // ## Test dragging right-most tab of two way split of two tabs each.
+    t = IM_REGISTER_TEST(e, "docking", "docking_undock_one_tab");
+    t->GuiFunc = docking_split_undocking_gui;
+    t->TestFunc = docking_split_undocking_test;
+    t->ArgVariant = 0;
+
+    // ## Test dragging right dock node by collapse button.
+    t = IM_REGISTER_TEST(e, "docking", "docking_undock_whole_node");
+    t->GuiFunc = docking_split_undocking_gui;
+    t->TestFunc = docking_split_undocking_test;
+    t->ArgVariant = 1;
+
+    // ## Test dragging from dock titlebar (moves docked windows)
+    t = IM_REGISTER_TEST(e, "docking", "docking_split_move_docked");
+    t->GuiFunc = docking_split_undocking_gui;
+    t->TestFunc = docking_split_undocking_test;
+    t->ArgVariant = 2;
 #else
     IM_UNUSED(e);
 #endif
