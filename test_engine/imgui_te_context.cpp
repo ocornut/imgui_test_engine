@@ -1384,7 +1384,7 @@ void    ImGuiTestContext::GatherItems(ImGuiTestItemList* out_list, ImGuiTestRef 
     GatherTask->LastItemInfo = NULL;
 }
 
-void    ImGuiTestContext::ItemAction(ImGuiTestAction action, ImGuiTestRef ref, void* action_arg)
+void    ImGuiTestContext::ItemAction(ImGuiTestAction action, ImGuiTestRef ref, void* action_arg, ImGuiTestOpFlags flags)
 {
     if (IsError())
         return;
@@ -1425,7 +1425,7 @@ void    ImGuiTestContext::ItemAction(ImGuiTestAction action, ImGuiTestRef ref, v
         {
             const int mouse_button = (int)(intptr_t)action_arg;
             IM_ASSERT(mouse_button >= 0 && mouse_button < ImGuiMouseButton_COUNT);
-            MouseMove(ref);
+            MouseMove(ref, flags);
             if (!EngineIO->ConfigRunFast)
                 Sleep(0.05f);
             if (action == ImGuiTestAction_DoubleClick)
@@ -1452,7 +1452,7 @@ void    ImGuiTestContext::ItemAction(ImGuiTestAction action, ImGuiTestRef ref, v
         IM_ASSERT(action_arg == NULL); // Unused
         if (InputMode == ImGuiInputSource_Mouse)
         {
-            MouseMove(ref);
+            MouseMove(ref, flags);
             KeyDownMap(ImGuiKey_COUNT, ImGuiKeyModFlags_Ctrl);
             MouseClick(0);
             KeyUpMap(ImGuiKey_COUNT, ImGuiKeyModFlags_Ctrl);
@@ -1469,15 +1469,15 @@ void    ImGuiTestContext::ItemAction(ImGuiTestAction action, ImGuiTestRef ref, v
         if ((item->StatusFlags & ImGuiItemStatusFlags_Opened) == 0)
         {
             item->RefCount++;
-            MouseMove(ref);
+            MouseMove(ref, flags);
 
             // Some item may open just by hovering, give them that chance
             if ((item->StatusFlags & ImGuiItemStatusFlags_Opened) == 0)
             {
-                ItemClick(ref);
+                ItemClick(ref, 0, flags);
                 if ((item->StatusFlags & ImGuiItemStatusFlags_Opened) == 0)
                 {
-                    ItemDoubleClick(ref); // Attempt a double-click // FIXME-TESTS: let's not start doing those fuzzy things..
+                    ItemDoubleClick(ref, flags); // Attempt a double-click // FIXME-TESTS: let's not start doing those fuzzy things..
                     if ((item->StatusFlags & ImGuiItemStatusFlags_Opened) == 0)
                         IM_ERRORF_NOHDR("Unable to Open item: %s", ImGuiTestRefDesc(ref, item).c_str());
                 }
@@ -1492,10 +1492,10 @@ void    ImGuiTestContext::ItemAction(ImGuiTestAction action, ImGuiTestRef ref, v
         if ((item->StatusFlags & ImGuiItemStatusFlags_Opened) != 0)
         {
             item->RefCount++;
-            ItemClick(ref);
+            ItemClick(ref, 0, flags);
             if ((item->StatusFlags & ImGuiItemStatusFlags_Opened) != 0)
             {
-                ItemDoubleClick(ref); // Attempt a double-click // FIXME-TESTS: let's not start doing those fuzzy things..
+                ItemDoubleClick(ref, flags); // Attempt a double-click // FIXME-TESTS: let's not start doing those fuzzy things..
                 if ((item->StatusFlags & ImGuiItemStatusFlags_Opened) != 0)
                     IM_ERRORF_NOHDR("Unable to Close item: %s", ImGuiTestRefDesc(ref, item).c_str());
             }
@@ -1508,7 +1508,7 @@ void    ImGuiTestContext::ItemAction(ImGuiTestAction action, ImGuiTestRef ref, v
         IM_ASSERT(action_arg == NULL); // Unused
         if ((item->StatusFlags & ImGuiItemStatusFlags_Checkable) && !(item->StatusFlags & ImGuiItemStatusFlags_Checked))
         {
-            ItemClick(ref);
+            ItemClick(ref, 0, flags);
             Yield();
         }
         ItemVerifyCheckedIfAlive(ref, true); // We can't just IM_ASSERT(ItemIsChecked()) because the item may disappear and never update its StatusFlags any more!
@@ -1518,7 +1518,7 @@ void    ImGuiTestContext::ItemAction(ImGuiTestAction action, ImGuiTestRef ref, v
         IM_ASSERT(action_arg == NULL); // Unused
         if ((item->StatusFlags & ImGuiItemStatusFlags_Checkable) && (item->StatusFlags & ImGuiItemStatusFlags_Checked))
         {
-            ItemClick(ref);
+            ItemClick(ref, 0, flags);
             Yield();
         }
         ItemVerifyCheckedIfAlive(ref, false); // We can't just IM_ASSERT(ItemIsChecked()) because the item may disappear and never update its StatusFlags any more!
