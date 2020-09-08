@@ -133,7 +133,6 @@ struct ImGuiTestGenericVars
     ImGuiID                 DockId;
     ImGuiWindowFlags        WindowFlags;
     ImGuiTestGenericStatus  Status;
-    ImGuiDataType           DataType;
     float                   Width;
 
     // Generic storage
