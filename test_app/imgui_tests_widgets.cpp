@@ -25,15 +25,8 @@
 // Helpers
 static inline bool operator==(const ImVec2& lhs, const ImVec2& rhs)     { return lhs.x == rhs.x && lhs.y == rhs.y; }    // for IM_CHECK_EQ()
 
-namespace ImGui
-{
-
-extern template float ScaleRatioFromValueT<ImS32, ImS32, float>(ImGuiDataType data_type, ImS32 v, ImS32 v_min, ImS32 v_max, bool is_logarithmic, float logarithmic_zero_epsilon, float zero_deadzone_size);
-extern template float ScaleRatioFromValueT<ImU32, ImS32, float>(ImGuiDataType data_type, ImU32 v, ImU32 v_min, ImU32 v_max, bool is_logarithmic, float logarithmic_zero_epsilon, float zero_deadzone_size);
-
-}
-
-void GetDataTypeRanges(ImGuiDataType data_type, bool invert, void* min_p, void* max_p)
+typedef ImGuiDataTypeTempStorage ImGuiDataTypeStorage; // Will rename in imgui/ later
+void GetSliderTestRanges(ImGuiDataType data_type, ImGuiDataTypeStorage* min_p, ImGuiDataTypeStorage* max_p)
 {
     switch (data_type)
     {
@@ -79,12 +72,6 @@ void GetDataTypeRanges(ImGuiDataType data_type, bool invert, void* min_p, void* 
         break;
     default:
         assert(false);
-    }
-    if (invert)
-    {
-        static_assert(sizeof(ImS64) == 8, "Weird data size.");
-        static_assert(sizeof(double) == 8, "Weird data size.");
-        ImSwap(*(uint64_t*)min_p, *(uint64_t*)max_p);
     }
 }
 
@@ -2237,101 +2224,83 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
 
     // ## Test sliders with inverted ranges.
     t = IM_REGISTER_TEST(e, "widgets", "widgets_slider_ranges");
+    struct SliderRangeVars { struct { ImGuiDataTypeStorage Cur, Min, Max; int ResultFlags; } Values[ImGuiDataType_COUNT]; SliderRangeVars() { memset(this, 0, sizeof(*this)); } };
+    t->SetUserDataType<SliderRangeVars>();
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
-        auto slider_scalar = [](const char* label, ImGuiTestContext* ctx, ImGuiDataType data_type, bool invert, void* val_p)
-        {
-            char min_max[16];
-            void* min_p = min_max;
-            void* max_p = min_max + 8;
-            int& range_flags = ctx->GenericVars.IntArray[data_type];
-            GetDataTypeRanges(data_type, invert, min_p, max_p);
-            ImGui::SliderScalar(label, data_type, val_p, min_p, max_p);
-            if (invert)
-                ImSwap(*(uint64_t*)min_p, *(uint64_t*)max_p); // Swap back
-            if (ImGui::DataTypeCompare(data_type, val_p, min_p) < 0 || ImGui::DataTypeCompare(data_type, val_p, max_p) > 0)
-                range_flags |= 1; // Out of range
-            if (ImGui::DataTypeCompare(data_type, val_p, min_p) > 0 && ImGui::DataTypeCompare(data_type, val_p, max_p) < 0)
-                range_flags |= 2; // Middle of range
-        };
-        char* p = ctx->GenericVars.Str1;
+        SliderRangeVars& vars = ctx->GetUserData<SliderRangeVars>();
+        const int OUT_OF_RANGE_FLAG = 1;
+        const int MID_OF_RANGE_FLAG = 2;
+
+        // Submit sliders for each data type, with and without inverted range
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
-        slider_scalar("S8+", ctx, ImGuiDataType_S8, false, p + 0);
-        slider_scalar("S8-", ctx, ImGuiDataType_S8, true, p + 0);
-        slider_scalar("U8+", ctx, ImGuiDataType_U8, false, p + 1);
-        slider_scalar("U8-", ctx, ImGuiDataType_U8, true, p + 1);
-        slider_scalar("S16+", ctx, ImGuiDataType_S16, false, p + 2);
-        slider_scalar("S16-", ctx, ImGuiDataType_S16, true, p + 2);
-        slider_scalar("U16+", ctx, ImGuiDataType_U16, false, p + 4);
-        slider_scalar("U16-", ctx, ImGuiDataType_U16, true, p + 4);
-        slider_scalar("S32+", ctx, ImGuiDataType_S32, false, p + 6);
-        slider_scalar("S32-", ctx, ImGuiDataType_S32, true, p + 6);
-        slider_scalar("U32+", ctx, ImGuiDataType_U32, false, p + 10);
-        slider_scalar("U32-", ctx, ImGuiDataType_U32, true, p + 10);
-        slider_scalar("S64+", ctx, ImGuiDataType_S64, false, p + 14);
-        slider_scalar("S64-", ctx, ImGuiDataType_S64, true, p + 14);
-        slider_scalar("U64+", ctx, ImGuiDataType_U64, false, p + 22);
-        slider_scalar("U64-", ctx, ImGuiDataType_U64, true, p + 22);
-        slider_scalar("float+", ctx, ImGuiDataType_Float, false, p + 30);
-        slider_scalar("float-", ctx, ImGuiDataType_Float, true, p + 30);
-        slider_scalar("double+", ctx, ImGuiDataType_Double, false, p + 38);
-        slider_scalar("double-", ctx, ImGuiDataType_Double, true, p + 38);
+        for (ImGuiDataType data_type = 0; data_type < ImGuiDataType_COUNT; data_type++)
+        {
+            const ImGuiDataTypeInfo* data_type_info = ImGui::DataTypeGetInfo(data_type);
+            for (int invert_range = 0; invert_range < 2; invert_range++)
+            {
+                auto& v = vars.Values[data_type];
+                GetSliderTestRanges(data_type, &v.Min, &v.Max);
+                Str30f label("%s%c", data_type_info->Name, invert_range == 0 ? '+' : '-');
+                if (invert_range)
+                    ImGui::SliderScalar(label.c_str(), data_type, &v.Cur, &v.Max, &v.Min);
+                else
+                    ImGui::SliderScalar(label.c_str(), data_type, &v.Cur, &v.Min, &v.Max);
+
+                v.ResultFlags = 0;
+                if (ImGui::DataTypeCompare(data_type, &v.Cur, &v.Min) < 0 || ImGui::DataTypeCompare(data_type, &v.Cur, &v.Max) > 0)
+                    v.ResultFlags |= OUT_OF_RANGE_FLAG;
+                if (ImGui::DataTypeCompare(data_type, &v.Cur, &v.Min) > 0 && ImGui::DataTypeCompare(data_type, &v.Cur, &v.Max) < 0)
+                    v.ResultFlags |= MID_OF_RANGE_FLAG;
+                ImGui::SameLine();
+                ImGui::Text("R:%d", v.ResultFlags); // Doesn't make sense to display if not reset
+            }
+        }
         ImGui::End();
     };
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
-        IM_STATIC_ASSERT(sizeof(ImGuiDataTypeTempStorage) == 8);
-        char* p = ctx->GenericVars.Str1;
-        char min_max[16];
-        void* min_p = min_max;
-        void* max_p = min_max + 8;
-        const int data_offsets[] = { 0, 1, 2, 4, 6, 10, 14, 22, 30, 38 };
-        const int out_of_range_flag = 1;
-        const int mid_of_range_flag = 2;
-        ctx->WindowRef("Test Window");
+        SliderRangeVars& vars = ctx->GetUserData<SliderRangeVars>();
+        const int OUT_OF_RANGE_FLAG = 1;
+        const int MID_OF_RANGE_FLAG = 2;
 
+        ctx->WindowRef("Test Window");
         for (int data_type = 0; data_type < ImGuiDataType_COUNT; data_type++)
         {
             for (int invert_range = 0; invert_range < 2; invert_range++)
             {
+                auto& v = vars.Values[data_type];
+                ImGuiDataTypeStorage v_left = invert_range ? v.Max : v.Min;
+                ImGuiDataTypeStorage v_right = invert_range ? v.Min : v.Max;
+
                 const ImGuiDataTypeInfo* data_type_info = ImGui::DataTypeGetInfo(data_type);
-                int& range_flags = ctx->GenericVars.IntArray[data_type];
-                void* val_p = p + data_offsets[data_type];
-                char label[32];
-                GetDataTypeRanges(data_type, invert_range != 0, min_p, max_p);
-                ImFormatString(label, IM_ARRAYSIZE(label), "%s%c", data_type_info->Name, invert_range == 0 ? '+' : '-');
+                Str30f label("%s%c", data_type_info->Name, invert_range == 0 ? '+' : '-');
 
-                ctx->MouseMove(label);
-                ctx->MouseDown();
-                ctx->MouseMove(label, ImGuiTestOpFlags_MoveToEdgeL);
-                ctx->MouseUp();
-
-                char buf0[32];
-                char buf1[32];
-                char buf2[32];
+                for (int side = 0; side < 2; side++)
                 {
-                    ImGui::DataTypeFormatString(buf0, 32, data_type, min_p, data_type_info->PrintFmt);
-                    ImGui::DataTypeFormatString(buf1, 32, data_type, max_p, data_type_info->PrintFmt);
-                    ImGui::DataTypeFormatString(buf2, 32, data_type, val_p, data_type_info->PrintFmt);
-                    ctx->LogInfo("## DataType: %s, Inverted: %d, min = %s, max = %s, val = %s", data_type_info->Name, invert_range, buf0, buf1, buf2);
-                }
-                IM_CHECK((range_flags & out_of_range_flag) == 0); // Widget value does not fall out of range
-                IM_CHECK((range_flags & mid_of_range_flag) != 0); // Widget value was between min and max (does not just snap to either end of range)
-                IM_CHECK(ImGui::DataTypeCompare(data_type, val_p, min_p) == 0);
+                    // Click on center
+                    ctx->MouseMove(label.c_str());
+                    ctx->MouseDown();
+                    IM_CHECK((v.ResultFlags & OUT_OF_RANGE_FLAG) == 0); // Widget value does not fall out of range
+                    IM_CHECK((v.ResultFlags & MID_OF_RANGE_FLAG) != 0); // Widget value is between min and max
 
-                ctx->MouseMove(label);
-                ctx->MouseDown();
-                ctx->MouseMove(label, ImGuiTestOpFlags_MoveToEdgeR);
-                ctx->MouseUp();
-                {
-                    ImGui::DataTypeFormatString(buf0, 32, data_type, min_p, data_type_info->PrintFmt);
-                    ImGui::DataTypeFormatString(buf1, 32, data_type, max_p, data_type_info->PrintFmt);
-                    ImGui::DataTypeFormatString(buf2, 32, data_type, val_p, data_type_info->PrintFmt);
-                    ctx->LogInfo("## DataType: %s, Inverted: %d, min = %s, max = %s, val = %s", data_type_info->Name, invert_range, buf0, buf1, buf2);
+                    // Drag to left/right edge
+                    ctx->MouseMove(label.c_str(), side ? ImGuiTestOpFlags_MoveToEdgeR : ImGuiTestOpFlags_MoveToEdgeL);
+                    ctx->MouseUp();
+
+                    // Print values and compare
+                    char buf0[32], buf1[32], buf2[32];
+                    ImGui::DataTypeFormatString(buf0, 32, data_type, &v.Cur, data_type_info->PrintFmt);
+                    ImGui::DataTypeFormatString(buf1, 32, data_type, &v.Min, data_type_info->PrintFmt);
+                    ImGui::DataTypeFormatString(buf2, 32, data_type, &v.Max, data_type_info->PrintFmt);
+                    ctx->LogInfo("## DataType: %s, Inverted: %d, cur = %s, min = %s, max = %s", data_type_info->Name, invert_range, buf0, buf1, buf2);
+                    IM_CHECK((v.ResultFlags & OUT_OF_RANGE_FLAG) == 0); // Widget value does not fall out of range
+                    IM_CHECK((v.ResultFlags & MID_OF_RANGE_FLAG) == 0); // Widget value is not between min and max
+                    if (side == 0)
+                        IM_CHECK(ImGui::DataTypeCompare(data_type, &v.Cur, &v_left) == 0);
+                    else
+                        IM_CHECK(ImGui::DataTypeCompare(data_type, &v.Cur, &v_right) == 0);
                 }
-                IM_CHECK((range_flags & out_of_range_flag) == 0);
-                IM_CHECK((range_flags & mid_of_range_flag) != 0);
-                IM_CHECK(ImGui::DataTypeCompare(data_type, val_p, max_p) == 0);
             }
         }
 
