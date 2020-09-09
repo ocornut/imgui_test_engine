@@ -133,28 +133,29 @@ void RegisterTests_Window(ImGuiTestEngine* e)
     t->Flags |= ImGuiTestFlags_NoAutoFinish;
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
+        ImVec2 viewport_pos = ctx->GetMainViewportPos();
         // #2067
         {
-            ImGui::SetNextWindowPos(ImVec2(901.0f, 103.0f), ImGuiCond_Once);
+            ImGui::SetNextWindowPos(viewport_pos + ImVec2(401.0f, 103.0f), ImGuiCond_Once);
             ImGui::SetNextWindowSize(ImVec2(348.48f, 400.0f), ImGuiCond_Once);
             ImGui::Begin("Issue 2067", NULL, ImGuiWindowFlags_NoSavedSettings);
-            ImVec2 pos = ImGui::GetWindowPos();
+            ImVec2 pos = ImGui::GetWindowPos() - viewport_pos;
             ImVec2 size = ImGui::GetWindowSize();
             //ctx->LogDebug("%f %f, %f %f", pos.x, pos.y, size.x, size.y);
-            IM_CHECK_NO_RET(pos.x == 901.0f && pos.y == 103.0f);
+            IM_CHECK_NO_RET(pos.x == 401.0f && pos.y == 103.0f);
             IM_CHECK_NO_RET(size.x == 348.0f && size.y == 400.0f);
             ImGui::End();
         }
         // Test that non-rounded size constraint are not altering pos/size (#2530)
         {
-            ImGui::SetNextWindowPos(ImVec2(901.0f, 103.0f), ImGuiCond_Once);
+            ImGui::SetNextWindowPos(viewport_pos + ImVec2(401.0f, 103.0f), ImGuiCond_Once);
             ImGui::SetNextWindowSize(ImVec2(348.48f, 400.0f), ImGuiCond_Once);
             ImGui::SetNextWindowSizeConstraints(ImVec2(475.200012f, 0.0f), ImVec2(475.200012f, 100.4f));
             ImGui::Begin("Issue 2530", NULL, ImGuiWindowFlags_NoSavedSettings);
             ImVec2 pos = ImGui::GetWindowPos();
             ImVec2 size = ImGui::GetWindowSize();
             //ctx->LogDebug("%f %f, %f %f", pos.x, pos.y, size.x, size.y);
-            IM_CHECK_EQ(pos, ImVec2(901.0f, 103.0f));
+            IM_CHECK_EQ(pos, viewport_pos + ImVec2(401.0f, 103.0f));
             IM_CHECK_EQ(size, ImVec2(475.0f, 100.0f));
             ImGui::End();
         }
@@ -982,13 +983,14 @@ void RegisterTests_Window(ImGuiTestEngine* e)
     };
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
+        ImVec2 viewport_pos = ctx->GetMainViewportPos();
         ImGuiWindow* window = ctx->GetWindowByRef("Movable Window");
-        ctx->WindowMove("Movable Window", ImVec2(0, 0));
-        IM_CHECK(window->Pos == ImVec2(0, 0));
-        ctx->WindowMove("Movable Window", ImVec2(100, 0));
-        IM_CHECK(window->Pos == ImVec2(100, 0));
-        ctx->WindowMove("Movable Window", ImVec2(50, 100));
-        IM_CHECK(window->Pos == ImVec2(50, 100));
+        ctx->WindowMove("Movable Window", viewport_pos + ImVec2(0, 0));
+        IM_CHECK(window->Pos == viewport_pos + ImVec2(0, 0));
+        ctx->WindowMove("Movable Window", viewport_pos + ImVec2(100, 0));
+        IM_CHECK(window->Pos == viewport_pos + ImVec2(100, 0));
+        ctx->WindowMove("Movable Window", viewport_pos + ImVec2(50, 100));
+        IM_CHECK(window->Pos == viewport_pos + ImVec2(50, 100));
     };
 
     // ## Test explicit window positioning
@@ -3307,9 +3309,6 @@ void RegisterTests_Capture(ImGuiTestEngine* e)
     t = IM_REGISTER_TEST(e, "capture", "capture_readme_misc");
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
-        ImGuiIO& io = ImGui::GetIO();
-        //ImGuiStyle& style = ImGui::GetStyle();
-
         ctx->SetRef("Dear ImGui Demo");
         ctx->ItemCloseAll("");
         ctx->MenuCheck("Examples/Simple overlay");
@@ -3319,6 +3318,8 @@ void RegisterTests_Capture(ImGuiTestEngine* e)
 
         // FIXME-TESTS: Find last newly opened window? -> cannot rely on NavWindow as menu item maybe was already checked..
 
+        ImVec2 viewport_pos = ctx->GetMainViewportPos();
+        ImVec2 viewport_size = ctx->GetMainViewportSize();
         float fh = ImGui::GetFontSize();
         float pad = fh;
 
@@ -3334,13 +3335,13 @@ void RegisterTests_Capture(ImGuiTestEngine* e)
         ctx->MenuCheck("Examples/Simple layout");
         ctx->SetRef("Example: Simple layout");
         ctx->WindowResize("", ImVec2(fh * 50, fh * 15));
-        ctx->WindowMove("", ImVec2(pad, io.DisplaySize.y - pad), ImVec2(0.0f, 1.0f));
+        ctx->WindowMove("", viewport_pos + ImVec2(pad, viewport_size.y - pad), ImVec2(0.0f, 1.0f));
 
         ctx->SetRef("Dear ImGui Demo");
         ctx->MenuCheck("Examples/Documents");
         ctx->SetRef("Example: Documents");
         ctx->WindowResize("", ImVec2(fh * 20, fh * 27));
-        ctx->WindowMove("", ImVec2(window_custom_rendering->Pos.x + window_custom_rendering->Size.x + pad, pad));
+        ctx->WindowMove("", ImVec2(window_custom_rendering->Pos.x + window_custom_rendering->Size.x + pad, window_custom_rendering->Pos.y + pad));
 
         ctx->LogDebug("Setup Console window...");
         ctx->SetRef("Dear ImGui Demo");
@@ -3359,8 +3360,8 @@ void RegisterTests_Capture(ImGuiTestEngine* e)
 
         ctx->LogDebug("Setup Demo window...");
         ctx->SetRef("Dear ImGui Demo");
-        ctx->WindowResize("", ImVec2(fh * 35, io.DisplaySize.y - pad * 2.0f));
-        ctx->WindowMove("", ImVec2(io.DisplaySize.x - pad, pad), ImVec2(1.0f, 0.0f));
+        ctx->WindowResize("", ImVec2(fh * 35, viewport_size.y - pad * 2.0f));
+        ctx->WindowMove("", viewport_pos + ImVec2(viewport_size.x - pad, pad), ImVec2(1.0f, 0.0f));
         ctx->ItemOpen("Widgets");
         ctx->ItemOpen("Color\\/Picker Widgets");
         ctx->ItemOpen("Layout & Scrolling");

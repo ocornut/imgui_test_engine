@@ -153,6 +153,7 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
 
             ImGuiWindow* window_aaa = ctx->GetWindowByRef("AAA");
             ImGuiWindow* window_bbb = ctx->GetWindowByRef("BBB");
+            ImVec2 viewport_pos = ctx->GetMainViewportPos();
 
             // Init state
             ctx->DockClear("AAA", "BBB", NULL);
@@ -161,17 +162,17 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
             else
                 IM_CHECK(window_aaa->DockId == 0 && window_bbb->DockId == 0);
             ctx->WindowResize("/AAA", ImVec2(200, 200));
-            ctx->WindowMove("/AAA", ImVec2(100, 100));
+            ctx->WindowMove("/AAA", viewport_pos + ImVec2(100, 100));
             ctx->WindowResize("/BBB", ImVec2(200, 200));
-            ctx->WindowMove("/BBB", ImVec2(200, 200));
+            ctx->WindowMove("/BBB", viewport_pos + ImVec2(200, 200));
 
             // Dock Once
             ctx->DockInto("AAA", "BBB");
             IM_CHECK(window_aaa->DockNode != NULL);
             IM_CHECK(window_aaa->DockNode == window_bbb->DockNode);
-            IM_CHECK_EQ(window_aaa->DockNode->Pos, ImVec2(200, 200));
-            IM_CHECK_EQ(window_aaa->Pos, ImVec2(200, 200));
-            IM_CHECK_EQ(window_bbb->Pos, ImVec2(200, 200));
+            IM_CHECK_EQ(window_aaa->DockNode->Pos, viewport_pos + ImVec2(200, 200));
+            IM_CHECK_EQ(window_aaa->Pos, viewport_pos + ImVec2(200, 200));
+            IM_CHECK_EQ(window_bbb->Pos, viewport_pos + ImVec2(200, 200));
             ImGuiID dock_id = window_bbb->DockId;
             ctx->Sleep(0.5f);
 
@@ -182,20 +183,20 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
                 IM_CHECK(window_bbb->DockId == dock_id);
 
                 // Intentionally move both floating windows away
-                ctx->WindowMove("/AAA", ImVec2(100, 100));
+                ctx->WindowMove("/AAA", viewport_pos + ImVec2(100, 100));
                 ctx->WindowResize("/AAA", ImVec2(100, 100));
-                ctx->WindowMove("/BBB", ImVec2(300, 300));
+                ctx->WindowMove("/BBB", viewport_pos + ImVec2(300, 300));
                 ctx->WindowResize("/BBB", ImVec2(200, 200)); // Should already the case
 
                 // Dock again (BBB still refers to dock id, making this different from the first docking)
                 ctx->DockInto("/AAA", "/BBB", ImGuiDir_None);
                 IM_CHECK_EQ(window_aaa->DockId, dock_id);
                 IM_CHECK_EQ(window_bbb->DockId, dock_id);
-                IM_CHECK_EQ(window_aaa->Pos, ImVec2(300, 300));
-                IM_CHECK_EQ(window_bbb->Pos, ImVec2(300, 300));
+                IM_CHECK_EQ(window_aaa->Pos, viewport_pos + ImVec2(300, 300));
+                IM_CHECK_EQ(window_bbb->Pos, viewport_pos + ImVec2(300, 300));
                 IM_CHECK_EQ(window_aaa->Size, ImVec2(200, 200));
                 IM_CHECK_EQ(window_bbb->Size, ImVec2(200, 200));
-                IM_CHECK_EQ(window_aaa->DockNode->Pos, ImVec2(300, 300));
+                IM_CHECK_EQ(window_aaa->DockNode->Pos, viewport_pos + ImVec2(300, 300));
                 IM_CHECK_EQ(window_aaa->DockNode->Size, ImVec2(200, 200));
             }
 
@@ -206,18 +207,18 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
                 IM_CHECK_EQ(window_bbb->DockId, dock_id);
 
                 // Intentionally move both floating windows away
-                ctx->WindowMove("/AAA", ImVec2(100, 100));
-                ctx->WindowMove("/BBB", ImVec2(200, 200));
+                ctx->WindowMove("/AAA", viewport_pos + ImVec2(100, 100));
+                ctx->WindowMove("/BBB", viewport_pos + ImVec2(200, 200));
 
-                // Dock on the side (BBB still refers to dock id, making this different from the first docking)
+                // Dock on the side (BBBB still refers to dock id, making this different from the first docking)
                 ctx->DockInto("/AAA", "/BBB", ImGuiDir_Left);
                 IM_CHECK(window_aaa->DockNode != NULL);
                 IM_CHECK_EQ(window_aaa->DockNode->ParentNode->ID, dock_id);
                 IM_CHECK_EQ(window_bbb->DockNode->ParentNode->ID, dock_id);
-                IM_CHECK_EQ(window_aaa->DockNode->ParentNode->Pos, ImVec2(200, 200));
-                IM_CHECK_EQ(window_aaa->Pos, ImVec2(200, 200));
+                IM_CHECK_EQ(window_aaa->DockNode->ParentNode->Pos, viewport_pos + ImVec2(200, 200));
+                IM_CHECK_EQ(window_aaa->Pos, viewport_pos + ImVec2(200, 200));
                 IM_CHECK_GT(window_bbb->Pos.x, window_aaa->Pos.x);
-                IM_CHECK_EQ(window_bbb->Pos.y, 200);
+                IM_CHECK_EQ(window_bbb->Pos.y, viewport_pos.y + 200);
             }
         }
     };
@@ -460,13 +461,18 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
     };
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
+        ImVec2 viewport_pos = ctx->GetMainViewportPos();
+        ImVec2 viewport_size = ctx->GetMainViewportSize();
         ImGuiWindow* window1 = ctx->GetWindowByRef("Window 1");
         ImGuiWindow* window2 = ctx->GetWindowByRef("Window 2");
         ImGuiWindow* window3 = ctx->GetWindowByRef("Window 3");
         ImGuiWindow* window4 = ctx->GetWindowByRef("Window 4");
         ImGuiWindow* demo_window = ctx->GetWindowByRef("Dear ImGui Demo");
-        ctx->DockClear("Window 1", "Window 2", "Dear ImGui Demo", NULL);
 
+        ctx->DockClear("Window 1", "Window 2", "Dear ImGui Demo", NULL);
+        ctx->WindowMove("Dear ImGui Demo", viewport_pos + viewport_size * 0.5f, ImVec2(0.5f, 0.5f));
+        ctx->WindowMove("Window 1", viewport_pos + viewport_size * 0.5f, ImVec2(0.5f, 0.5f));
+        ctx->WindowMove("Window 2", viewport_pos + viewport_size * 0.5f, ImVec2(0.5f, 0.5f));
         //IM_DEBUG_HALT_TESTFUNC();
 
         // Test undocking from tab.
@@ -617,11 +623,14 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
         default:
             IM_ASSERT(false);
         }
+
         ImGui::End();
         ImGui::PopStyleVar();
 
-        ImGui::SetNextWindowSize(ImVec2(100, 200));
-        ImGui::Begin("Dock Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImVec2 viewport_pos = ctx->GetMainViewportPos();
+        ImGui::SetNextWindowPos(viewport_pos + ImVec2(100, 100), ImGuiCond_Appearing);
+        ImGui::SetNextWindowSize(ImVec2(300, 200), ImGuiCond_Appearing);
+        ImGui::Begin("Dock Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoDocking);
         ImGui::End();
     };
 
