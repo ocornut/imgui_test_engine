@@ -765,6 +765,66 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
         IM_CHECK_EQ(window1->DockNode, (ImGuiDockNode*)NULL);   // Undocked window has it's dock node cleared
     };
 
+    auto test_docking_over_gui = [](ImGuiTestContext* ctx)
+    {
+        ImGui::SetNextWindowSize(ImVec2(300, 200));
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+        switch (ctx->Test->ArgVariant)
+        {
+        case 0:
+            ImGui::BeginChild("Child", ImVec2(300, 200 - ImGui::GetCurrentWindow()->TitleBarHeight()));
+            ImGui::EndChild();
+            break;
+        case 1:
+            ImGui::DockSpace(123);
+            break;
+        default:
+            assert(false);
+        }
+        ImGui::End();
+        ImGui::PopStyleVar();
+
+        ImGui::SetNextWindowSize(ImVec2(100, 200));
+        ImGui::Begin("Dock Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImGui::End();
+    };
+
+    auto test_docking_over_test = [](ImGuiTestContext* ctx)
+    {
+        ImGuiWindow* dock_window = ctx->GetWindowByRef("Dock Window");
+        ImGuiWindow* test_window = ctx->GetWindowByRef("Test Window");
+        ctx->DockMultiClear("Dock Window", "Test Window", NULL);
+        ctx->DockWindowInto("Dock Window", "Test Window");
+        IM_CHECK(dock_window->DockNode != NULL);
+        switch (ctx->Test->ArgVariant)
+        {
+        case 0:
+            IM_CHECK(test_window->DockNode != NULL);
+            IM_CHECK(test_window->DockNode->HostWindow == dock_window->DockNode->HostWindow);
+            break;
+        case 1:
+            IM_CHECK(test_window->DockNode == NULL);
+            IM_CHECK(dock_window->DockNode != NULL);
+            IM_CHECK(dock_window->DockNode->ID == 123);
+            break;
+        default:
+            assert(false);
+        }
+    };
+
+    // ## Test docking into a window which is entirely covered by a child window.
+    t = IM_REGISTER_TEST(e, "docking", "docking_over_child");
+    t->GuiFunc = test_docking_over_gui;
+    t->TestFunc = test_docking_over_test;
+    t->ArgVariant = 0;
+
+    // ## Test docking into a floating dockspace.
+    t = IM_REGISTER_TEST(e, "docking", "docking_over_dockspace");
+    t->GuiFunc = test_docking_over_gui;
+    t->TestFunc = test_docking_over_test;
+    t->ArgVariant = 1;
+
     // ## Test whether docked window tabs are in right order.
     t = IM_REGISTER_TEST(e, "docking", "docking_tab_order");
     t->GuiFunc = [](ImGuiTestContext* ctx)
