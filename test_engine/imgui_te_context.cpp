@@ -361,7 +361,7 @@ void ImGuiTestContext::WindowRef(ImGuiWindow* window)
 
     // Automatically uncollapse by default
     if (!(OpFlags & ImGuiTestOpFlags_NoAutoUncollapse))
-        WindowAutoUncollapse(window);
+        WindowCollapse(window, false);
 }
 
 // FIXME-TESTS: May be to focus window when docked? Otherwise locate request won't even see an item?
@@ -387,7 +387,7 @@ void ImGuiTestContext::WindowRef(ImGuiTestRef ref)
     // Automatically uncollapse by default
     if (!(OpFlags & ImGuiTestOpFlags_NoAutoUncollapse))
         if (ImGuiWindow* window = GetWindowByRef(""))
-            WindowAutoUncollapse(window);
+            WindowCollapse(window, false);
 }
 
 // Turn ref into a root ref unless ref is empty
@@ -1417,7 +1417,7 @@ void    ImGuiTestContext::ItemAction(ImGuiTestAction action, ImGuiTestRef ref, v
 
     // Automatically uncollapse by default
     if (item->Window && !(OpFlags & ImGuiTestOpFlags_NoAutoUncollapse))
-        WindowAutoUncollapse(item->Window);
+        WindowCollapse(item->Window, false);
 
     if (action == ImGuiTestAction_Click || action == ImGuiTestAction_DoubleClick)
     {
@@ -1831,33 +1831,15 @@ void    ImGuiTestContext::WindowCollapse(ImGuiWindow* window, bool collapsed)
         return;
 
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
-    LogDebug("WindowSetCollapsed %d", collapsed);
-    //ImGuiWindow* window = GetWindowByRef(ref);
-    //if (window == NULL)
-    //{
-    //    IM_ERRORF_NOHDR("Unable to find Ref window: %s / %08X", RefStr, RefID);
-    //    return;
-    //}
-
     if (window->Collapsed != collapsed)
     {
+        LogDebug("WindowCollapse %d", collapsed);
         ImGuiTestOpFlags backup_op_flags = OpFlags;
         OpFlags |= ImGuiTestOpFlags_NoAutoUncollapse;
         ItemClick(GetID("#COLLAPSE", window->ID));
         OpFlags = backup_op_flags;
         Yield();
         IM_CHECK(window->Collapsed == collapsed);
-    }
-}
-
-void    ImGuiTestContext::WindowAutoUncollapse(ImGuiWindow* window)
-{
-    if (window->Collapsed)
-    {
-        IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
-        LogDebug("Uncollapse window '%s'", window->Name);
-        WindowCollapse(window, false);
-        IM_CHECK_EQ(window->Collapsed, false);
     }
 }
 
@@ -2096,6 +2078,29 @@ bool    ImGuiTestContext::DockIdIsUndockedOrStandalone(ImGuiID dock_id)
         if (node->IsRootNode() && node->IsLeafNode() && node->Windows.Size == 1)
             return true;
     return false;
+}
+
+void    ImGuiTestContext::DockNodeHideTabBar(ImGuiDockNode* node, bool hidden)
+{
+    IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
+    LogDebug("DockNodeHideTabBar %d", hidden);
+
+    // FIXME-TEST: Alter WindowRef
+    if (hidden)
+    {
+        WindowRef(node->HostWindow->Name);
+        ItemClick(ImHashDecoratedPath("#COLLAPSE", NULL, node->ID));
+        ItemClick(Str16f("/##Popup_%08x/Hide tab bar", GetID("#WindowMenu", node->ID)).c_str());
+        IM_CHECK_SILENT(node->IsHiddenTabBar());
+
+    }
+    else
+    {
+        IM_CHECK_SILENT(node->VisibleWindow != NULL);
+        WindowRef(node->VisibleWindow->Name);
+        ItemClick("#UNHIDE", 0, ImGuiTestOpFlags_MoveToEdgeD | ImGuiTestOpFlags_MoveToEdgeR);
+        IM_CHECK_SILENT(!node->IsHiddenTabBar());
+    }
 }
 
 void    ImGuiTestContext::UndockNode(ImGuiID dock_id)

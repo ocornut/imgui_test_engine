@@ -227,7 +227,6 @@ struct ImGuiTestContext
     void        WindowRef(ImGuiTestRef ref);
     void        WindowClose(ImGuiTestRef ref);
     void        WindowCollapse(ImGuiWindow* window, bool collapsed);
-    void        WindowAutoUncollapse(ImGuiWindow* window);
     void        WindowFocus(ImGuiTestRef ref);
     void        WindowMove(ImGuiTestRef ref, ImVec2 pos, ImVec2 pivot = ImVec2(0.0f, 0.0f));
     void        WindowResize(ImGuiTestRef ref, ImVec2 sz);
@@ -337,6 +336,7 @@ struct ImGuiTestContext
     void        DockMultiSet(ImGuiID dock_id, const char* window_name, ...);
     ImGuiID     DockMultiSetupBasic(ImGuiID dock_id, const char* window_name, ...);
     bool        DockIdIsUndockedOrStandalone(ImGuiID dock_id);
+    void        DockNodeHideTabBar(ImGuiDockNode* node, bool hidden);
     void        UndockNode(ImGuiID dock_id);
     void        UndockWindow(const char* window_name);
 #endif
