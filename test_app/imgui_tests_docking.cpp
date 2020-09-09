@@ -764,6 +764,39 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
         IM_CHECK_EQ(window0->DockNode, original_node);          // Undocking Window 1 keeps a parent dock node in Window 0
         IM_CHECK_EQ(window1->DockNode, (ImGuiDockNode*)NULL);   // Undocked window has it's dock node cleared
     };
+
+    // ## Test whether docked window tabs are in right order.
+    t = IM_REGISTER_TEST(e, "docking", "docking_tab_order");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::Begin("Dockspace", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImGuiID dockspace_id = ImGui::GetID("dockspace");
+        ImGui::DockSpace(dockspace_id);
+        ImGui::End();
+        ImGui::SetNextWindowDockID(dockspace_id);
+        ImGui::Begin("AAA", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImGui::End();
+        ImGui::SetNextWindowDockID(dockspace_id);
+        ImGui::Begin("BBB", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImGui::End();
+        ImGui::SetNextWindowDockID(dockspace_id);
+        ImGui::Begin("CCC", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiWindow* window = ctx->GetWindowByRef("AAA");
+        IM_CHECK(window->DockNode != NULL);
+        ImGuiTabBar* tab_bar = window->DockNode->TabBar;
+        IM_CHECK(tab_bar != NULL);
+        IM_CHECK(tab_bar->Tabs.Size == 3);
+        const char* tab_order[] = { "AAA", "BBB", "CCC" };
+        for (int i = 0; i < IM_ARRAYSIZE(tab_order); i++)
+        {
+            IM_CHECK(tab_bar->Tabs[i].Window != NULL);
+            IM_CHECK_STR_EQ(tab_bar->Tabs[i].Window->Name, tab_order[i]);
+        }
+    };
 #else
     IM_UNUSED(e);
 #endif
