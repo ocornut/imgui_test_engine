@@ -131,6 +131,9 @@ ImGuiCaptureStatus ImGuiCaptureContext::CaptureUpdate(ImGuiCaptureArgs* args)
                 }
             }
 #endif
+        else if ((window->Flags & ImGuiWindowFlags_Popup) != 0 && (args->InFlags & ImGuiCaptureFlags_ExpandToIncludePopups) != 0)
+            is_window_hidden = false;
+
         if (is_window_hidden)
         {
             window->Hidden = true;
