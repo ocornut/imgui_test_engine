@@ -96,6 +96,7 @@ struct TestApp
     ImGuiTestVerboseLevel   OptVerboseLevelError = ImGuiTestVerboseLevel_COUNT; // "
     bool                    OptNoThrottle = false;
     bool                    OptPauseOnExit = true;
+    bool                    OptViewport = false;
     int                     OptStressAmount = 5;
     char*                   OptFileOpener = NULL;
     ImVector<char*>         TestsToRun;
@@ -199,6 +200,10 @@ static bool ParseCommandLineOptions(int argc, char** argv)
             else if (strcmp(argv[n], "-nopause") == 0)
             {
                 g_App.OptPauseOnExit = false;
+            }
+            else if (strcmp(argv[n], "-viewport") == 0)
+            {
+                g_App.OptViewport = true;
             }
             else if (strcmp(argv[n], "-stressamount") == 0 && n+1 < argc)
             {
@@ -395,7 +400,8 @@ int main(int argc, char** argv)
     //style.FrameBorderSize = 1.0f;
     //style.FrameRounding = 5.0f;
 #ifdef IMGUI_HAS_VIEWPORT
-    //io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
+    if (g_App.OptViewport)
+        io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
 #endif
 #ifdef IMGUI_HAS_DOCK
     io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
