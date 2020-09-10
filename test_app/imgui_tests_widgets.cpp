@@ -400,8 +400,8 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
                 ctx->GenericVars.Status.Clear();
                 ctx->ItemInput(widget_name);
                 ctx->KeyChars("123");                               // Case fixed by PR #3231
-                IM_CHECK_EQ(ctx->GenericVars.Status.Ret, 1);
-                IM_CHECK_EQ(ctx->GenericVars.Status.Edited, 1);
+                IM_CHECK_GE(ctx->GenericVars.Status.Ret, 1);
+                IM_CHECK_GE(ctx->GenericVars.Status.Edited, 1);
                 ctx->GenericVars.Status.Clear();
                 ctx->Yield();
                 IM_CHECK_EQ(ctx->GenericVars.Status.Ret, 0);        // Verify it doesn't keep returning as edited.

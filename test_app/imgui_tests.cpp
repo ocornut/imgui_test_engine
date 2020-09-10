@@ -160,6 +160,10 @@ void RegisterTests_Window(ImGuiTestEngine* e)
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         // FIXME-TESTS: Ideally we'd like a variant with/without the if (Begin) here
+        // FIXME: BeginChild() auto-resizes horizontally, this width is calculated by using data from previous frame.
+        //  If window was wider on previous frame child would permanently assume new width and that creates a feedback
+        //  loop keeping new size.
+        ImGui::SetNextWindowSize(ImVec2(1, 1), ImGuiCond_Appearing); // Fixes test failing due to side-effects caused by other tests using window with same name.
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
         ImGui::Text("Hello World");
         ImGui::BeginChild("Child", ImVec2(0, 200));
@@ -306,12 +310,12 @@ void RegisterTests_Window(ImGuiTestEngine* e)
         ImGui::Begin("Stacked Modal Popups");
         if (ImGui::Button("Open Modal Popup 1"))
             ImGui::OpenPopup("Popup1");
-        if (ImGui::BeginPopupModal("Popup1"))
+        if (ImGui::BeginPopupModal("Popup1", NULL, ImGuiWindowFlags_NoSavedSettings))
         {
             if (ImGui::Button("Open Modal Popup 2"))
                 ImGui::OpenPopup("Popup2");
             ImGui::SetNextWindowSize(ImVec2(100, 100));
-            if (ImGui::BeginPopupModal("Popup2"))
+            if (ImGui::BeginPopupModal("Popup2", NULL, ImGuiWindowFlags_NoSavedSettings))
             {
                 ImGui::Text("Click anywhere");
                 if (ImGui::IsMouseClicked(0))
@@ -761,7 +765,7 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
         if (ImGui::Button("Open Popup"))
             ImGui::OpenPopup("Popup");
 
-        b_popup_open = ImGui::BeginPopup("Popup");
+        b_popup_open = ImGui::BeginPopup("Popup", ImGuiWindowFlags_NoSavedSettings);
         if (b_popup_open)
         {
             popup_id = ImGui::GetCurrentWindow()->ID;
