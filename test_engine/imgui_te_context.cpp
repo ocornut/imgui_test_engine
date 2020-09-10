@@ -1151,7 +1151,7 @@ void    ImGuiTestContext::MouseClickOnVoid(int mouse_button)
     ImVec2 window_min_pos = void_pos + g.Style.TouchExtraPadding + ImVec2(4.0f, 4.0f) + ImVec2(1.0f, 1.0f); // FIXME: Should use WINDOWS_RESIZE_FROM_EDGES_HALF_THICKNESS
 
     for (ImGuiWindow* window : g.Windows)
-        if (window->RootWindow == window)
+        if (window->RootWindow == window && window->WasActive)
             if (window->Rect().Contains(window_min_pos))
                 WindowMove(window->Name, window_min_pos);
 
