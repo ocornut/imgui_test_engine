@@ -834,6 +834,152 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ctx->KeyCharsAppendEnter("hello");
     };
 
+    // ## Test input text multiline cursor movement: left, up, right, down, origin, end, ctrl+origin, ctrl+end, page up, page down
+    t = IM_REGISTER_TEST(e, "widgets", "widgets_inputtext_8_cursor");
+    struct InputTextCursorVars { Str str; int Cursor; int LineCount = 10; };
+    t->SetUserDataType<InputTextCursorVars>();
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        InputTextCursorVars& vars = ctx->GetUserData<InputTextCursorVars>();
+
+        float height = vars.LineCount * 0.5f * GImGui->FontSize;
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
+        ImGui::InputTextMultiline("Field", &vars.str, ImVec2(300, height), ImGuiInputTextFlags_EnterReturnsTrue);
+        if (ImGuiInputTextState* state = ImGui::GetInputTextState(ctx->GetID("/Test Window/Field")))
+            ImGui::Text("Stb Cursor: %d", state->Stb.cursor);
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        InputTextCursorVars& vars = ctx->GetUserData<InputTextCursorVars>();
+        ctx->WindowRef("Test Window");
+
+        vars.str.clear();
+        const int char_count_per_line = 10;
+        for (int n = 0; n < vars.LineCount; n++)
+        {
+            for (int c = 0; c < char_count_per_line - 1; c++) // \n is part of our char_count_per_line
+                vars.str.appendf("%d", n);
+            if (n < vars.LineCount - 1)
+                vars.str.append("\n");
+        }
+        ctx->ItemInput("Field");
+
+        ImGuiInputTextState* state = ImGui::GetInputTextState(ctx->GetID("Field"));
+        ImStb::STB_TexteditState& stb = state->Stb;
+        vars.Cursor = stb.cursor;
+
+        const int page_size = (vars.LineCount / 2) - 1;
+
+        const int cursor_pos_begin_of_first_line = 0;
+        const int cursor_pos_end_of_first_line = char_count_per_line - 1;
+        const int cursor_pos_middle_of_first_line = char_count_per_line / 2;
+        const int cursor_pos_end_of_last_line = vars.str.length();
+        const int cursor_pos_begin_of_last_line = cursor_pos_end_of_last_line - char_count_per_line + 1;
+        const int cursor_pos_middle_of_last_line = cursor_pos_end_of_last_line - char_count_per_line / 2;
+        const int cursor_pos_middle = vars.str.length() / 2;
+
+        auto SetCursorPosition = [&ctx, &stb, &state](int cursor) { stb.cursor = cursor; stb.has_preferred_x = 0; };
+
+        // Do all the test twice: with no trailing \n, and with.
+        for (int i = 0; i < 2; i++)
+        {
+            bool has_trailing_line_feed = (i == 1);
+            if (has_trailing_line_feed)
+            {
+                SetCursorPosition(cursor_pos_end_of_last_line);
+                ctx->KeyCharsAppend("\n");
+            }
+            int eof = vars.str.length();
+
+            // Begin of File
+            SetCursorPosition(0); ctx->KeyPressMap(ImGuiKey_UpArrow);
+            IM_CHECK_EQ(stb.cursor, 0);
+            SetCursorPosition(0); ctx->KeyPressMap(ImGuiKey_LeftArrow);
+            IM_CHECK_EQ(stb.cursor, 0);
+            SetCursorPosition(0); ctx->KeyPressMap(ImGuiKey_DownArrow);
+            IM_CHECK_EQ(stb.cursor, char_count_per_line);
+            SetCursorPosition(0); ctx->KeyPressMap(ImGuiKey_RightArrow);
+            IM_CHECK_EQ(stb.cursor, 1);
+
+            // End of first line
+            SetCursorPosition(cursor_pos_end_of_first_line); ctx->KeyPressMap(ImGuiKey_UpArrow);
+            IM_CHECK_EQ(stb.cursor, cursor_pos_end_of_first_line);
+            SetCursorPosition(cursor_pos_end_of_first_line); ctx->KeyPressMap(ImGuiKey_LeftArrow);
+            IM_CHECK_EQ(stb.cursor, cursor_pos_end_of_first_line - 1);
+            SetCursorPosition(cursor_pos_end_of_first_line); ctx->KeyPressMap(ImGuiKey_DownArrow);
+            IM_CHECK_EQ(stb.cursor, cursor_pos_end_of_first_line + char_count_per_line);
+            SetCursorPosition(cursor_pos_end_of_first_line); ctx->KeyPressMap(ImGuiKey_RightArrow);
+            IM_CHECK_EQ(stb.cursor, cursor_pos_end_of_first_line + 1);
+
+            // Begin of last line
+            SetCursorPosition(cursor_pos_begin_of_last_line); ctx->KeyPressMap(ImGuiKey_UpArrow);
+            IM_CHECK_EQ(stb.cursor, cursor_pos_begin_of_last_line - char_count_per_line);
+            SetCursorPosition(cursor_pos_begin_of_last_line); ctx->KeyPressMap(ImGuiKey_LeftArrow);
+            IM_CHECK_EQ(stb.cursor, cursor_pos_begin_of_last_line - 1);
+            SetCursorPosition(cursor_pos_begin_of_last_line); ctx->KeyPressMap(ImGuiKey_DownArrow);
+            IM_CHECK_EQ(stb.cursor, has_trailing_line_feed ? eof : cursor_pos_begin_of_last_line);
+            SetCursorPosition(cursor_pos_begin_of_last_line); ctx->KeyPressMap(ImGuiKey_RightArrow);
+            IM_CHECK_EQ(stb.cursor, cursor_pos_begin_of_last_line + 1);
+
+            // End of last line
+            SetCursorPosition(cursor_pos_end_of_last_line); ctx->KeyPressMap(ImGuiKey_UpArrow);
+            //IM_CHECK_EQ(stb.cursor, cursor_pos_end_of_last_line - char_count_per_line); // FIXME: This one is broken even on master
+            SetCursorPosition(cursor_pos_end_of_last_line); ctx->KeyPressMap(ImGuiKey_LeftArrow);
+            IM_CHECK_EQ(stb.cursor, cursor_pos_end_of_last_line - 1);
+            SetCursorPosition(cursor_pos_end_of_last_line); ctx->KeyPressMap(ImGuiKey_DownArrow);
+            IM_CHECK_EQ(stb.cursor, has_trailing_line_feed ? eof : cursor_pos_end_of_last_line);
+            SetCursorPosition(cursor_pos_end_of_last_line); ctx->KeyPressMap(ImGuiKey_RightArrow);
+            IM_CHECK_EQ(stb.cursor, cursor_pos_end_of_last_line + (has_trailing_line_feed ? 1 : 0));
+
+            // In the middle of the content
+            SetCursorPosition(cursor_pos_middle); ctx->KeyPressMap(ImGuiKey_UpArrow);
+            IM_CHECK_EQ(stb.cursor, cursor_pos_middle - char_count_per_line);
+            SetCursorPosition(cursor_pos_middle); ctx->KeyPressMap(ImGuiKey_LeftArrow);
+            IM_CHECK_EQ(stb.cursor, cursor_pos_middle - 1);
+            SetCursorPosition(cursor_pos_middle); ctx->KeyPressMap(ImGuiKey_DownArrow);
+            IM_CHECK_EQ(stb.cursor, cursor_pos_middle + char_count_per_line);
+            SetCursorPosition(cursor_pos_middle); ctx->KeyPressMap(ImGuiKey_RightArrow);
+            IM_CHECK_EQ(stb.cursor, cursor_pos_middle + 1);
+
+            // Home/End to go to beginning/end of the line
+            SetCursorPosition(cursor_pos_middle); ctx->KeyPressMap(ImGuiKey_Home);
+            IM_CHECK_EQ(stb.cursor, ((vars.LineCount / 2) - 1) * char_count_per_line);
+            SetCursorPosition(cursor_pos_middle); ctx->KeyPressMap(ImGuiKey_End);
+            IM_CHECK_EQ(stb.cursor, (vars.LineCount / 2) * char_count_per_line - 1);
+
+            // Ctrl+Home/End to go to beginning/end of the text
+            SetCursorPosition(cursor_pos_middle); ctx->KeyPressMap(ImGuiKey_Home, ImGuiKeyModFlags_Ctrl);
+            IM_CHECK_EQ(stb.cursor, 0);
+            SetCursorPosition(cursor_pos_middle); ctx->KeyPressMap(ImGuiKey_End, ImGuiKeyModFlags_Ctrl);
+            IM_CHECK_EQ(stb.cursor, cursor_pos_end_of_last_line + (has_trailing_line_feed ? 1 : 0));
+
+            // PageUp/PageDown
+            SetCursorPosition(cursor_pos_begin_of_first_line); ctx->KeyPressMap(ImGuiKey_PageDown);
+            IM_CHECK_EQ(stb.cursor, cursor_pos_begin_of_first_line + char_count_per_line * page_size);
+            ctx->KeyPressMap(ImGuiKey_PageUp);
+            IM_CHECK_EQ(stb.cursor, cursor_pos_begin_of_first_line);
+
+            SetCursorPosition(cursor_pos_middle_of_first_line);
+            ctx->KeyPressMap(ImGuiKey_PageDown);
+            IM_CHECK_EQ(stb.cursor, cursor_pos_middle_of_first_line + char_count_per_line * page_size);
+            ctx->KeyPressMap(ImGuiKey_PageDown);
+            IM_CHECK_EQ(stb.cursor, cursor_pos_middle_of_first_line + char_count_per_line * page_size * 2);
+            ctx->KeyPressMap(ImGuiKey_PageDown);
+            IM_CHECK_EQ(stb.cursor, has_trailing_line_feed ? eof : eof - (char_count_per_line / 2) + 1);
+
+            // We started PageDown from the middle of a line, so even if we're at the end (with X = 0),
+            // PageUp should bring us one page up to the middle of the line
+            int cursor_pos_begin_current_line = (stb.cursor / char_count_per_line) * char_count_per_line; // Round up cursor position to decimal only
+            ctx->KeyPressMap(ImGuiKey_PageUp);
+            IM_CHECK_EQ(stb.cursor, cursor_pos_begin_current_line - (page_size * char_count_per_line) + (char_count_per_line / 2));
+                //eof - (char_count_per_line * page_size) + (char_count_per_line / 2) + (has_trailing_line_feed ? 0 : 1));
+        }
+    };
+    // ## Test input text multiline cursor with selection: left, up, right, down, origin, end, ctrl+origin, ctrl+end, page up, page down
+    // ## Test input text multiline scroll movement only: ctrl + (left, up, right, down)
+    // ## Test input text multiline page up/page down history ?
+
     // ## Test for Nav interference
     t = IM_REGISTER_TEST(e, "widgets", "widgets_inputtext_nav");
     t->GuiFunc = [](ImGuiTestContext* ctx)
