@@ -1264,6 +1264,50 @@ void RegisterTests_Window(ImGuiTestEngine* e)
         IM_CHECK_EQ(g.NavWindow, window->RootWindowDockTree);
 #endif
     };
+
+    // ## Test focusing a window that is appearing.
+    t = IM_REGISTER_TEST(e, "window", "window_appearing_focus");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        auto& vars = ctx->GenericVars;
+        if (vars.Step != 2)
+        {
+            ImVec2 window_pos = ctx->GetMainViewportPos();
+            if (vars.UseViewports == 0)
+                window_pos += ImVec2(10, 10); // Inside main viewport
+            else
+                window_pos -= ImVec2(10, 10); // Outside main viewport
+            ImGui::SetNextWindowPos(window_pos, ImGuiCond_Appearing);
+            ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
+            ImGui::End();
+        }
+        //ImGuiWindow* window = ImGui::FindWindowByName("Test Window");
+        //window->Hidden = true;
+        //window->HiddenFramesCanSkipItems = 1;
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiContext& g = *ctx->UiContext;
+        auto& vars = ctx->GenericVars;
+        int num_variants = 1;
+#ifdef IMGUI_HAS_VIEWPORT
+        // Perform same test with a viewport window.
+        if (ctx->UiContext->IO.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
+            num_variants = 2;
+#endif
+        for (int variant = 0; variant < num_variants; variant++)
+        {
+            // This sequence also creates a situation where g.ViewportToPlatformFocus is set to a window with no viewport created and verifies that it is handled correctly.
+            vars.UseViewports = (variant == 1);
+            vars.Step = 1; // 1. Submit window.
+            ctx->Yield();
+            vars.Step = 2; // 2. Stop submitting.
+            ctx->Yield();
+            vars.Step = 3; // 3. Submit again.
+            ctx->Yield();
+            IM_CHECK(g.NavWindow == ctx->GetWindowByRef("Test Window"));
+        }
+    };
 }
 
 

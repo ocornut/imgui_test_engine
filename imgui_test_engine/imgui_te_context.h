@@ -116,6 +116,7 @@ struct ImGuiTestGenericVars
     ImGuiTestGenericItemStatus  Status;
     bool                    ShowWindows;
     bool                    UseClipper;
+    bool                    UseViewports;
     float                   Width;
     ImVec2                  Pos;
     ImVec2                  Size;
