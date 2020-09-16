@@ -2318,18 +2318,30 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
 
     // ## Test tooltip positioning in various conditions.
     t = IM_REGISTER_TEST(e, "widgets", "widgets_tooltip_positioning");
+    struct TooltipPosVars { ImVec2 Size = ImVec2(50, 50); };
+    t->SetUserDataType<TooltipPosVars>();
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
-        // Initialized here to prevent crash when running GuiFunc only.
-        if (ctx->IsFirstGuiFrame())
-            ctx->GenericVars.Vec2 = ImVec2(50, 50);
+        TooltipPosVars& vars = ctx->GetUserData<TooltipPosVars>();
 
-        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
-        ImGui::Button("Ok", ImVec2(100, 0));
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoNav);
+        if (ctx->RunFlags & ImGuiTestRunFlags_NoTestFunc)
+            ImGui::DragFloat2("Tooltip Size", &vars.Size.x);
+        ImGui::Button("HoverMe", ImVec2(100, 0));
         if (ImGui::IsItemHovered())
         {
             ImGui::BeginTooltip();
-            ImGui::InvisibleButton("Space", ctx->GenericVars.Vec2);
+            ImGui::InvisibleButton("Space", vars.Size);
+
+            // Debug Controls
+            if (ctx->RunFlags & ImGuiTestRunFlags_NoTestFunc)
+            {
+                float step = ctx->UiContext->IO.DeltaTime * 500.0f;
+                if (ImGui::IsKeyDown(ImGui::GetKeyIndex(ImGuiKey_UpArrow))) vars.Size.y -= step;
+                if (ImGui::IsKeyDown(ImGui::GetKeyIndex(ImGuiKey_DownArrow))) vars.Size.y += step;
+                if (ImGui::IsKeyDown(ImGui::GetKeyIndex(ImGuiKey_LeftArrow))) vars.Size.x -= step;
+                if (ImGui::IsKeyDown(ImGui::GetKeyIndex(ImGuiKey_RightArrow))) vars.Size.x += step;
+            }
             ImGui::EndTooltip();
         }
         ImGui::End();
@@ -2337,14 +2349,16 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         ImGuiContext& g = *ctx->UiContext;
+        TooltipPosVars& vars = ctx->GetUserData<TooltipPosVars>();
+
         ctx->WindowRef("Test Window");
-        ctx->MouseMove("Ok");       // Force tooltip creation
+        ctx->MouseMove("HoverMe");  // Force tooltip creation so we can grab the pointer
         ImGuiWindow* tooltip = ctx->GetWindowByRef("##Tooltip_00");
 
         ImVec2 viewport_pos = ctx->GetMainViewportPos();
-        ImVec2 viewport_size = g.IO.DisplaySize;
+        ImVec2 viewport_size = ctx->GetMainViewportSize();
 
-        struct WindowTestData
+        struct TestCase
         {
             ImVec2 Pos;             // Window position
             ImVec2 Pivot;           // Window position pivot
@@ -2354,9 +2368,9 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         };
 
         // Test tooltip positioning around viewport corners
-        static WindowTestData corner_test_data[] =
+        static TestCase test_cases[] =
         {
-            // Top-left corner
+            // [0] Top-left corner
             {
                 viewport_pos,
                 ImVec2(0.0f, 0.0f),
@@ -2364,7 +2378,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
                 ImGuiDir_Down,
                 ImGuiDir_Right,
             },
-            // Top edge
+            // [1] Top edge
             {
                 viewport_pos + ImVec2(viewport_size.x * 0.5f, 0.0f),
                 ImVec2(0.5f, 0.0f),
@@ -2372,7 +2386,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
                 ImGuiDir_Down,
                 ImGuiDir_Right,
             },
-            // Top-right corner
+            // [2] Top-right corner
             {
                 viewport_pos + ImVec2(viewport_size.x, 0.0f),
                 ImVec2(1.0f, 0.0f),
@@ -2380,7 +2394,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
                 ImGuiDir_Down,
                 ImGuiDir_Left,
             },
-            // Right edge
+            // [3] Right edge
             {
                 viewport_pos + ImVec2(viewport_size.x, viewport_size.y * 0.5f),
                 ImVec2(1.0f, 0.5f),
@@ -2388,7 +2402,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
                 ImGuiDir_Down,
                 ImGuiDir_Left,
             },
-            // Bottom-right corner
+            // [4] Bottom-right corner
             {
                 viewport_pos + viewport_size,
                 ImVec2(1.0f, 1.0f),
@@ -2396,7 +2410,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
                 ImGuiDir_Up,
                 ImGuiDir_Left,
             },
-            // Bottom edge
+            // [5] Bottom edge
             {
                 viewport_pos + ImVec2(viewport_size.x * 0.5f, viewport_size.y),
                 ImVec2(0.5f, 1.0f),
@@ -2404,7 +2418,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
                 ImGuiDir_Up,
                 ImGuiDir_Right,
             },
-            // Bottom-left corner
+            // [6] Bottom-left corner
             {
                 viewport_pos + ImVec2(0.0f, viewport_size.y),
                 ImVec2(0.0f, 1.0f),
@@ -2412,7 +2426,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
                 ImGuiDir_Up,
                 ImGuiDir_Right,
             },
-            // Left edge
+            // [7] Left edge
             {
                 viewport_pos + ImVec2(0.0f, viewport_size.y * 0.5f),
                 ImVec2(0.0f, 0.5f),
@@ -2422,35 +2436,38 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
             },
         };
 
-        for (int i = 0; i < IM_ARRAYSIZE(corner_test_data); i++)
+        for (auto& test_case : test_cases)
         {
-            WindowTestData* data = &corner_test_data[i];
-            ctx->GenericVars.Vec2 = ImVec2(50, 50);
-            ctx->WindowMove(ctx->RefID, data->Pos, data->Pivot);
-            ctx->MouseMove("Ok");
+            ctx->LogInfo("## Test case %d", (int)(&test_case - test_cases));
+            vars.Size = ImVec2(50, 50);
+            ctx->WindowMove(ctx->RefID, test_case.Pos, test_case.Pivot);
+            ctx->MouseMove("HoverMe");
 
             // Check default tooltip location
-            IM_CHECK(tooltip->AutoPosLastDirection == data->DirSmall);
+            IM_CHECK_EQ(g.HoveredIdPreviousFrame, ctx->GetID("HoverMe"));
+            IM_CHECK_EQ(tooltip->AutoPosLastDirection, test_case.DirSmall);
 
-            // Check tooltip location when it is real wide and verify that location does not change when it is too wide
+            // Check tooltip location when it is real wide and verify that location does not change once it becomes too wide
             // First iteration: tooltip is just wide enough to fit within viewport
             // First iteration: tooltip is wider than viewport
             for (int j = 0; j < 2; j++)
             {
-                ctx->GenericVars.Vec2 = ImVec2((j * 0.25f * viewport_size.x) + (viewport_size.x - (g.Style.WindowPadding.x + g.Style.DisplaySafeAreaPadding.x) * 2), 50);
+                vars.Size = ImVec2((j * 0.25f * viewport_size.x) + (viewport_size.x - (g.Style.WindowPadding.x + g.Style.DisplaySafeAreaPadding.x) * 2), 50);
                 ctx->SleepNoSkip(0.1f, 1.0f / 60.0f);
-                IM_CHECK(tooltip->AutoPosLastDirection == data->DirBigH);
+                IM_CHECK(tooltip->AutoPosLastDirection == test_case.DirBigH);
             }
 
-            // Check tooltip location when it is real tall and verify that location does not change when it is too tall
+            // Check tooltip location when it is real tall and verify that location does not change once it becomes too tall
             // First iteration: tooltip is just tall enough to fit within viewport
             // First iteration: tooltip is taller than viewport
             for (int j = 0; j < 2; j++)
             {
-                ctx->GenericVars.Vec2 = ImVec2(50, (j * 0.25f * viewport_size.x) + (viewport_size.y - (g.Style.WindowPadding.y + g.Style.DisplaySafeAreaPadding.y) * 2));
+                vars.Size = ImVec2(50, (j * 0.25f * viewport_size.x) + (viewport_size.y - (g.Style.WindowPadding.y + g.Style.DisplaySafeAreaPadding.y) * 2));
                 ctx->SleepNoSkip(0.1f, 1.0f / 60.0f);
-                IM_CHECK(tooltip->AutoPosLastDirection == data->DirBigV);
+                IM_CHECK(tooltip->AutoPosLastDirection == test_case.DirBigV);
             }
+
+            IM_CHECK_EQ(g.HoveredIdPreviousFrame, ctx->GetID("HoverMe"));
         }
     };
 }
