@@ -1,5 +1,7 @@
 #include "editor_widgets.h"
 #include "imgui.h"
+#define IMGUI_DEFINE_MATH_OPERATORS
+#include "imgui_internal.h"
 #include "shared/imgui_utils.h"
 #include "shared/IconsFontAwesome5.h"
 #include "libs/Str/Str.h"
@@ -35,4 +37,53 @@ void RenderMarkdown(const char* markdown, const char* markdown_end)
     ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(1.000f, 0.656f, 0.140f, 1.000f));
     ImGui::Markdown(markdown, markdown_end - markdown, config);
     ImGui::PopStyleColor(2);
+}
+
+void ImGui::BeginButtonGroup()
+{
+    auto* storage = ImGui::GetStateStorage();
+    auto* lists = ImGui::GetWindowDrawList();
+    ImVec2 pos = ImGui::GetCursorScreenPos();
+    ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 5.0f);
+    storage->SetFloat(ImGui::GetID("button-group-x"), pos.x);
+    storage->SetFloat(ImGui::GetID("button-group-y"), pos.y);
+    lists->ChannelsSplit(2);
+    lists->ChannelsSetCurrent(1);
+}
+
+void ImGui::EndButtonGroup()
+{
+    auto& style = ImGui::GetStyle();
+    auto* lists = ImGui::GetWindowDrawList();
+    auto* storage = ImGui::GetStateStorage();
+    ImVec2 min(
+        storage->GetFloat(ImGui::GetID("button-group-x")),
+        storage->GetFloat(ImGui::GetID("button-group-y"))
+    );
+    lists->ChannelsSetCurrent(0);
+    lists->AddRectFilled(min, ImGui::GetItemRectMax(), ImColor(style.Colors[ImGuiCol_Button]), style.FrameRounding);
+    lists->ChannelsMerge();
+    ImGui::PopStyleVar();
+}
+
+bool ImGui::SquareButton(const char* label)
+{
+    ImGuiContext& g = *GImGui;
+    float dimension = g.FontSize + g.Style.ItemInnerSpacing.y * 2.0f;
+    return ImGui::ButtonEx(label, ImVec2(dimension, dimension), ImGuiButtonFlags_PressedOnClick);
+}
+
+bool ImGui::ToggleButton(const char* text, const char* tooltip, bool active)
+{
+    const auto& style = ImGui::GetStyle();
+    if (active)
+        ImGui::PushStyleColor(ImGuiCol_Button, style.Colors[ImGuiCol_ButtonActive]);
+    else
+        ImGui::PushStyleColor(ImGuiCol_Button, style.Colors[ImGuiCol_Button]);
+    bool result = SquareButton(text);
+    ImGui::PopStyleColor();
+    ImGui::SameLine(0, 0);
+    if (ImGui::IsItemHovered() && tooltip)
+        ImGui::SetTooltip("%s", tooltip);
+    return result;
 }

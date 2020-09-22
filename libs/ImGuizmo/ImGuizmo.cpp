@@ -234,7 +234,7 @@ namespace ImGuizmo
 
       float& operator [] (size_t index) { return ((float*)&x)[index]; }
       const float& operator [] (size_t index) const { return ((float*)&x)[index]; }
-      bool operator!=(const vec_t& other) const { return memcmp(this, &other, sizeof(vec_t)); }
+      bool operator!=(const vec_t& other) const { return memcmp(this, &other, sizeof(vec_t)) != 0; }
    };
 
    vec_t makeVect(float _x, float _y, float _z = 0.f, float _w = 0.f) { vec_t res; res.x = _x; res.y = _y; res.z = _z; res.w = _w; return res; }
@@ -1330,7 +1330,7 @@ namespace ImGuizmo
 
    static bool CanActivate()
    {
-      if (ImGui::IsMouseClicked(0) && !ImGui::IsAnyItemHovered() && !ImGui::IsAnyItemActive())
+      if (ImGui::IsMouseClicked(0) && /*!ImGui::IsAnyItemHovered() && !ImGui::IsAnyItemActive()*/ ImGui::IsItemActive())    // Dear ImGui: fix manipulating gizmo only if we clicked InvisibleButton.
       {
          return true;
       }
@@ -2466,7 +2466,7 @@ namespace ImGuizmo
                const ImVec2 panelCorners[2] = { panelPosition[iPanel], panelPosition[iPanel] + panelSize[iPanel] };
                bool insidePanel = localx > panelCorners[0].x&& localx < panelCorners[1].x && localy > panelCorners[0].y&& localy < panelCorners[1].y;
                int boxCoordInt = int(boxCoord.x * 9.f + boxCoord.y * 3.f + boxCoord.z);
-               assert(boxCoordInt < 27);
+               //assert(boxCoordInt < 27);
                boxes[boxCoordInt] |= insidePanel && (!isDraging);
 
                // draw face with lighter color

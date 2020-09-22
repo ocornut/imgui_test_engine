@@ -23,6 +23,9 @@
     <Filter Include="shared">
       <UniqueIdentifier>{9e5548de-99f5-4e89-b4a9-7cb34eecc6f2}</UniqueIdentifier>
     </Filter>
+    <Filter Include="libs\ImGuizmo">
+      <UniqueIdentifier>{c9105b8f-4a21-440b-a300-cec8b547f13b}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\imgui\imconfig.h">
@@ -67,6 +70,9 @@
     <ClInclude Include="editor_styles.h">
       <Filter>sources</Filter>
     </ClInclude>
+    <ClInclude Include="..\libs\ImGuizmo\ImGuizmo.h">
+      <Filter>libs\ImGuizmo</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\imgui\imgui.cpp">
@@ -104,6 +110,12 @@
     </ClCompile>
     <ClCompile Include="editor_styles.cpp">
       <Filter>sources</Filter>
+    </ClCompile>
+    <ClCompile Include="editor_scene.cpp">
+      <Filter>sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libs\ImGuizmo\ImGuizmo.cpp">
+      <Filter>libs\ImGuizmo</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

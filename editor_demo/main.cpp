@@ -14,6 +14,8 @@
 #include "test_engine/imgui_te_coroutine.h"
 #endif
 
+void EditorRenderScene();
+
 // FIXME-SAMPLE FIXME-FONT: This is looking very poor with DpiScale == 1.0f, switch to FreeType?
 static void LoadFonts(ImGuiApp* app)
 {
@@ -170,14 +172,8 @@ int main(int argc, char** argv)
             ImGui::ShowDemoWindow();
 
         // Contents
-        if (ImGui::Begin("Game", NULL, ImGuiWindowFlags_AlwaysAutoResize))
-        {
-            float scale = app->DpiScale / 4.0f;
-            ImVec2 pos = ImGui::GetCursorScreenPos();
-            ImVec2 size = ImFloor(ImVec2(1920, 1080) * scale);
-            ImGui::InvisibleButton("##gamescreen", size);
-            ImGui::GetWindowDrawList()->AddRectFilled(pos, pos + size, IM_COL32(0, 0, 0, 255));
-        }
+        if (ImGui::Begin("Game"))
+            EditorRenderScene();
         ImGui::End();
 
         // Demo/Skeleton editor
