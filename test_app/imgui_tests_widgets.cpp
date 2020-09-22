@@ -1226,6 +1226,56 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         IM_CHECK(draw_calls == window->DrawList->CmdBuffer.Size);
     };
 
+    // ## Test order of tabs in a tab bar
+    t = IM_REGISTER_TEST(e, "widgets", "widgets_tabbar_order");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        auto& vars = ctx->GenericVars;
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
+        for (int n = 0; n < 4; n++)
+            ImGui::Checkbox(Str30f("Open Tab %d", n).c_str(), &vars.BoolArray[n]);
+        if (ImGui::BeginTabBar("TabBar", ImGuiTabBarFlags_Reorderable))
+        {
+            for (int n = 0; n < 4; n++)
+                if (vars.BoolArray[n] && ImGui::BeginTabItem(Str30f("Tab %d", n).c_str(), &vars.BoolArray[n]))
+                    ImGui::EndTabItem();
+            ImGui::EndTabBar();
+        }
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiContext& g = *ctx->UiContext;
+        auto& vars = ctx->GenericVars;
+        ctx->WindowRef("Test Window");
+        ImGuiTabBar* tab_bar = g.TabBars.GetOrAddByKey(ctx->GetID("TabBar")); // FIXME-TESTS: Helper function?
+        IM_CHECK(tab_bar != NULL);
+        IM_CHECK(tab_bar->Tabs.Size == 0);
+
+        vars.BoolArray[0] = vars.BoolArray[1] = vars.BoolArray[2] = true;
+        ctx->Yield();
+        ctx->Yield(); // Important: so tab layout are correct for TabClose()
+        IM_CHECK(tab_bar->Tabs.Size == 3);
+        IM_CHECK_STR_EQ(tab_bar->GetTabName(&tab_bar->Tabs[0]), "Tab 0");
+        IM_CHECK_STR_EQ(tab_bar->GetTabName(&tab_bar->Tabs[1]), "Tab 1");
+        IM_CHECK_STR_EQ(tab_bar->GetTabName(&tab_bar->Tabs[2]), "Tab 2");
+
+        ctx->TabClose("TabBar/Tab 1");
+        ctx->Yield();
+        ctx->Yield();
+        IM_CHECK(vars.BoolArray[1] == false);
+        IM_CHECK(tab_bar->Tabs.Size == 2);
+        IM_CHECK_STR_EQ(tab_bar->GetTabName(&tab_bar->Tabs[0]), "Tab 0");
+        IM_CHECK_STR_EQ(tab_bar->GetTabName(&tab_bar->Tabs[1]), "Tab 2");
+
+        vars.BoolArray[1] = true;
+        ctx->Yield();
+        IM_CHECK(tab_bar->Tabs.Size == 3);
+        IM_CHECK_STR_EQ(tab_bar->GetTabName(&tab_bar->Tabs[0]), "Tab 0");
+        IM_CHECK_STR_EQ(tab_bar->GetTabName(&tab_bar->Tabs[1]), "Tab 2");
+        IM_CHECK_STR_EQ(tab_bar->GetTabName(&tab_bar->Tabs[2]), "Tab 1");
+    };
+
     // ## (Attempt to) Test that tab bar declares its unclipped size.
     t = IM_REGISTER_TEST(e, "widgets", "widgets_tabbar_size");
     struct TabBarVars { bool HasCloseButton = false; float ExpectedWidth = 0.0f; };

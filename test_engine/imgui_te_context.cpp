@@ -1495,7 +1495,8 @@ void    ImGuiTestContext::ItemAction(ImGuiTestAction action, ImGuiTestRef ref, v
             ItemClick(ref, 0, flags);
             if ((item->StatusFlags & ImGuiItemStatusFlags_Opened) != 0)
             {
-                ItemDoubleClick(ref, flags); // Attempt a double-click // FIXME-TESTS: let's not start doing those fuzzy things.. widget should give direction of how to close/open
+                ItemDoubleClick(ref, flags); // Attempt a double-click
+                // FIXME-TESTS: let's not start doing those fuzzy things.. widget should give direction of how to close/open... e.g. do you we close a TabItem?
                 if ((item->StatusFlags & ImGuiItemStatusFlags_Opened) != 0)
                     IM_ERRORF_NOHDR("Unable to Close item: %s", ImGuiTestRefDesc(ref, item).c_str());
             }
@@ -1736,6 +1737,19 @@ void    ImGuiTestContext::ItemVerifyCheckedIfAlive(ImGuiTestRef ref, bool checke
     {
         IM_CHECK(((item->StatusFlags & ImGuiItemStatusFlags_Checked) != 0) == checked);
     }
+}
+
+void    ImGuiTestContext::TabClose(ImGuiTestRef ref)
+{
+    if (IsError())
+        return;
+
+    IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
+    LogDebug("TabClose '%s' %08X", ref.Path ? ref.Path : "NULL", ref.ID);
+
+    // Move into first, then click close button as it appears
+    MouseMove(ref);
+    ItemClick(GetID("#CLOSE", ref));
 }
 
 void    ImGuiTestContext::MenuAction(ImGuiTestAction action, ImGuiTestRef ref)

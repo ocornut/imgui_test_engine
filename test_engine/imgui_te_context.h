@@ -320,6 +320,9 @@ struct ImGuiTestContext
     void        ItemDragWithDelta(ImGuiTestRef ref_src, ImVec2 pos_delta);
     void        ItemVerifyCheckedIfAlive(ImGuiTestRef ref, bool checked);
 
+    // Tab Bars
+    void        TabClose(ImGuiTestRef ref);
+
     // Menus
     void        MenuAction(ImGuiTestAction action, ImGuiTestRef ref);
     void        MenuActionAll(ImGuiTestAction action, ImGuiTestRef ref_parent);
