@@ -1175,6 +1175,7 @@ void ImGuiTestEngineHook_ItemAdd(ImGuiContext* ui_ctx, const ImRect& bb, ImGuiID
     }
 
     // Stack ID query
+    // (Note: this assume that the ID was computed with the current ID stack, which tends to be the case for our widget)
     if (engine->StackTool.QueryStackId == id && engine->StackTool.QueryStep == 0)
     {
         //IM_ASSERT(engine->StackTool.Results.Size == 0); // double query OR id conflict?

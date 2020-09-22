@@ -1396,7 +1396,7 @@ void    ImGuiTestContext::ItemAction(ImGuiTestAction action, ImGuiTestRef ref, v
     //    printf("");
 
     // FIXME-TESTS: Fix that stuff
-    const bool is_wildcard = ref.Path != NULL && strstr(ref.Path, "**/") == 0;
+    const bool is_wildcard = ref.Path != NULL && strstr(ref.Path, "**/") != 0;
     if (is_wildcard)
     {
         // This is a fragile way to avoid some ambiguities, we're relying on expected action to further filter by status flags.
@@ -1495,7 +1495,7 @@ void    ImGuiTestContext::ItemAction(ImGuiTestAction action, ImGuiTestRef ref, v
             ItemClick(ref, 0, flags);
             if ((item->StatusFlags & ImGuiItemStatusFlags_Opened) != 0)
             {
-                ItemDoubleClick(ref, flags); // Attempt a double-click // FIXME-TESTS: let's not start doing those fuzzy things..
+                ItemDoubleClick(ref, flags); // Attempt a double-click // FIXME-TESTS: let's not start doing those fuzzy things.. widget should give direction of how to close/open
                 if ((item->StatusFlags & ImGuiItemStatusFlags_Opened) != 0)
                     IM_ERRORF_NOHDR("Unable to Close item: %s", ImGuiTestRefDesc(ref, item).c_str());
             }
