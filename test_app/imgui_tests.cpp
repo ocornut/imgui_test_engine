@@ -2271,20 +2271,29 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
             IM_FREE(reconverted);
             return success;
         };
-        auto get_first_codepoint = [](const char* str)
-        {
-            unsigned int code_point = 0;
-            ImTextCharFromUtf8(&code_point, str, str + strlen(str));
-            return code_point;
-        };
+
+#define IM_FIRST_CODEPOINT_OP(str, expect, op)                          \
+        do                                                              \
+        {                                                               \
+            unsigned int codepoint1 = 0;                                \
+            unsigned int codepoint2 = 0;                                \
+            const char* end = str + strlen(str);                        \
+            int consumed1 = ImTextCharFromUtf8(&codepoint1, str, end);  \
+            int consumed2 = ImTextCharFromUtf8(&codepoint2, str, NULL); \
+            IM_CHECK_EQ_NO_RET(consumed1, consumed2);                   \
+            IM_CHECK_LE_NO_RET(str + consumed1, end);                   \
+            IM_CHECK_LE_NO_RET(str + consumed2, end);                   \
+            IM_CHECK_OP_NO_RET(codepoint1, (unsigned int)expect, op);   \
+        } while (0)
+
 #ifdef IMGUI_USE_WCHAR32
-        #define IM_CHECK_UTF8(_TEXT)   (check_utf8(u8##_TEXT, (ImWchar*)U##_TEXT))
+#define IM_CHECK_UTF8(_TEXT)   (check_utf8(u8##_TEXT, (ImWchar*)U##_TEXT))
         // Test whether 32bit codepoints are correctly decoded.
-        IM_CHECK_NO_RET(get_first_codepoint((const char*)u8"\U0001f60d") == 0x0001f60d);
+        IM_FIRST_CODEPOINT_OP((const char*)u8"\U0001f60d", 0x0001f60d, ==);
 #else
-        #define IM_CHECK_UTF8(_TEXT)   (check_utf8(u8##_TEXT, (ImWchar*)u##_TEXT))
+#define IM_CHECK_UTF8(_TEXT)   (check_utf8(u8##_TEXT, (ImWchar*)u##_TEXT))
         // Test whether 32bit codepoints are correctly discarded.
-        IM_CHECK_NO_RET(get_first_codepoint((const char*)u8"\U0001f60d") == IM_UNICODE_CODEPOINT_INVALID);
+        IM_FIRST_CODEPOINT_OP((const char*)u8"\U0001f60d", IM_UNICODE_CODEPOINT_INVALID, ==);
 #endif
 
         // Test data taken from https://bitbucket.org/knight666/utf8rewind/src/default/testdata/big-list-of-naughty-strings-master/blns.txt
@@ -2424,8 +2433,8 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
 
         // Invalid inputs
         // FIXME-MISC: ImTextCharFromUtf8() returns 0 codepoint when first byte is not valid utf-8. If first byte is valid utf-8 but codepoint is still invalid - IM_UNICODE_CODEPOINT_INVALID is returned.
-        IM_CHECK_NO_RET(get_first_codepoint("\x80") == 0);         // U+0000 - U+007F   00-7F
-        IM_CHECK_NO_RET(get_first_codepoint("\xFF") == 0);
+        IM_FIRST_CODEPOINT_OP("\x80", IM_UNICODE_CODEPOINT_INVALID, ==);         // U+0000 - U+007F   00-7F
+        IM_FIRST_CODEPOINT_OP("\xFF", IM_UNICODE_CODEPOINT_INVALID, ==);
         unsigned char valid_ranges[][8] = {
             { 0xC2, 0xDF,  0x80, 0xBF                           }, // U+0080   - U+07FF   C2-DF  80-BF
             { 0xE0, 0xE0,  0xA0, 0xBF,  0x80, 0xBF              }, // U+0800   - U+0FFF   E0     A0-BF  80-BF
@@ -2472,20 +2481,22 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
                 //ctx->LogDebug("%02X%02X%02X%02X %d %d", seq[0], seq[1], seq[2], seq[3], range_n, mask);
                 const unsigned in_range_mask = (seq[1] ? 0b01 : 0) | (seq[2] ? 0b0100 : 0) | (seq[3] ? 0b010000 : 0);
                 if ((mask & in_range_mask) == in_range_mask) // All bytes were in a valid range.
-                    IM_CHECK_NE_NO_RET(get_first_codepoint((const char*)seq), (unsigned int)IM_UNICODE_CODEPOINT_INVALID);
+                    IM_FIRST_CODEPOINT_OP((const char*)seq, IM_UNICODE_CODEPOINT_INVALID, !=);
                 else
-                    IM_CHECK_EQ_NO_RET(get_first_codepoint((const char*)seq), (unsigned int)IM_UNICODE_CODEPOINT_INVALID);
+                    IM_FIRST_CODEPOINT_OP((const char*)seq, IM_UNICODE_CODEPOINT_INVALID, ==);
             }
         }
-        IM_CHECK_EQ_NO_RET(get_first_codepoint("\xC1\x80"), (unsigned int)IM_UNICODE_CODEPOINT_INVALID);         // Two byte sequence, first byte before valid range.
-        IM_CHECK_EQ_NO_RET(get_first_codepoint("\xF5\x80\x80\x80"), (unsigned int)IM_UNICODE_CODEPOINT_INVALID); // Four byte sequence, first byte after valid range.
+        IM_FIRST_CODEPOINT_OP("\xC1\x80", IM_UNICODE_CODEPOINT_INVALID, ==);         // Two byte sequence, first byte before valid range.
+        IM_FIRST_CODEPOINT_OP("\xF5\x80\x80\x80", IM_UNICODE_CODEPOINT_INVALID, ==); // Four byte sequence, first byte after valid range.
 
         // Incomplete inputs
-        IM_CHECK_NO_RET(get_first_codepoint("\xE0\xA0") == IM_UNICODE_CODEPOINT_INVALID);
+        IM_FIRST_CODEPOINT_OP("\xE0\xA0", IM_UNICODE_CODEPOINT_INVALID, ==);
 #ifdef IMGUI_USE_WCHAR32
-        IM_CHECK_NO_RET(get_first_codepoint("\xF0\x90\x80") == IM_UNICODE_CODEPOINT_INVALID);
-        IM_CHECK_NO_RET(get_first_codepoint("\xED\xA0\x80") == IM_UNICODE_CODEPOINT_INVALID);
+        IM_FIRST_CODEPOINT_OP("\xF0\x90\x80", IM_UNICODE_CODEPOINT_INVALID, ==);
+        IM_FIRST_CODEPOINT_OP("\xED\xA0\x80", IM_UNICODE_CODEPOINT_INVALID, ==);
 #endif
+#undef IM_FIRST_CODEPOINT_OP
+#undef IM_CHECK_UTF8
     };
 
 #ifdef IMGUI_USE_WCHAR32
