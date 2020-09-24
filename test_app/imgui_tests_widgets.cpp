@@ -2501,6 +2501,8 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         }
 
         // Test case where slider knob position calculation would snap to either end of the widget in some cases.
+        // Breaks linking with GCC Release mode as those functions in imgui_widgets.cpp gets inlined.
+#if 0
         const float s8_ratio_half = ImGui::ScaleRatioFromValueT<ImS32, ImS32, float>(ImGuiDataType_S8, 0, INT8_MIN, INT8_MAX, false, false, false);
         const float u8_ratio_half = ImGui::ScaleRatioFromValueT<ImU32, ImS32, float>(ImGuiDataType_U8, UINT8_MAX / 2, 0, UINT8_MAX, false, false, false);
         const float s8_ratio_half_inv = ImGui::ScaleRatioFromValueT<ImS32, ImS32, float>(ImGuiDataType_S8, 0, INT8_MAX, INT8_MIN, false, false, false);
@@ -2509,6 +2511,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         IM_CHECK(ImAbs(u8_ratio_half - 0.5f) < 0.01f);
         IM_CHECK(ImAbs(s8_ratio_half_inv - 0.5f) < 0.01f);
         IM_CHECK(ImAbs(u8_ratio_half_inv - 0.5f) < 0.01f);
+#endif
     };
 
 
