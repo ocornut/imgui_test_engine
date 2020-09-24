@@ -30,6 +30,7 @@
 #define _malloca(x) alloca(x)
 #endif
 #include <stdlib.h>
+#include <malloc.h>
 
 // includes patches for multiview from
 // https://github.com/CedricGuillemet/ImGuizmo/issues/15

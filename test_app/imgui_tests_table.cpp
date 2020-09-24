@@ -90,7 +90,7 @@ static void HelperTableWithResizingPolicies(const char* table_id, ImGuiTableFlag
     if (!font)
         IM_CHECK_NO_RET(font != NULL);
     ImGui::PushFont(font);
-    ImGui::TableAutoHeaders();
+    ImGui::TableHeadersRow();
     ImGui::PopFont();
     for (int row = 0; row < 2; row++)
     {
@@ -173,7 +173,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
                 ImGui::TableSetupColumn("TwoTwo");
                 ImGui::TableSetupColumn("ThreeThreeThree");
                 ImGui::TableSetupColumn("FourFourFourFour");
-                ImGui::TableAutoHeaders();
+                ImGui::TableHeadersRow();
                 HelperTableSubmitCellsButtonFill(4, 4);
                 ImGui::EndTable();
             }
@@ -188,7 +188,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
                 ImGui::TableSetupColumn("One");
                 ImGui::TableSetupColumn("TwoTwo");
                 ImGui::TableSetupColumn("ThreeThreeThree");
-                ImGui::TableAutoHeaders();
+                ImGui::TableHeadersRow();
                 HelperTableSubmitCellsButtonFill(3, 4);
                 ImGui::EndTable();
             }
@@ -484,7 +484,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
         ImGui::TableSetupColumn("1", ImGuiTableColumnFlags_DefaultSort | ImGuiTableColumnFlags_PreferSortAscending);
         ImGui::TableSetupColumn("2", ImGuiTableColumnFlags_DefaultSort | ImGuiTableColumnFlags_PreferSortDescending);
         const ImGuiTableSortSpecs* sort_specs = ImGui::TableGetSortSpecs();
-        ImGui::TableAutoHeaders();
+        ImGui::TableHeadersRow();
         IM_CHECK_EQ(sort_specs->SpecsCount, 3);
         IM_CHECK_EQ(sort_specs->Specs[0].ColumnIndex, 1);
         IM_CHECK_EQ(sort_specs->Specs[1].ColumnIndex, 2);
@@ -507,7 +507,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
         ImGui::BeginTable("Table", 64);
         for (int n = 0; n < 64; n++)
             ImGui::TableSetupColumn("Header");
-        ImGui::TableAutoHeaders();
+        ImGui::TableHeadersRow();
         for (int i = 0; i < 10; i++)
         {
             ImGui::TableNextRow();
@@ -534,7 +534,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
             ImGui::BeginTable("Table", col_count, ImGuiTableFlags_NoSavedSettings|ImGuiTableFlags_Resizable|ImGuiTableFlags_Borders);
             for (int c = 0; c < col_count; c++)
                 ImGui::TableSetupColumn("Header", c ? ImGuiTableColumnFlags_WidthFixed : ImGuiTableColumnFlags_WidthStretch);
-            ImGui::TableAutoHeaders();
+            ImGui::TableHeadersRow();
             for (int r = 0; r < 10; r++)
             {
                 ImGui::TableNextRow();
@@ -605,7 +605,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
                 {
                     ImGui::TableSetupColumn("Header1");
                     ImGui::TableSetupColumn("Header2");
-                    ImGui::TableAutoHeaders();
+                    ImGui::TableHeadersRow();
                     ImGui::TableNextRow();
                     ImGui::TableSetColumnIndex(0);
                     ImGui::TextUnformatted("Test1");
@@ -646,7 +646,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
             ImGui::TableSetupColumn("Col2");
             ImGui::TableSetupColumn("Col3", ImGuiTableColumnFlags_WidthFixed, 50.0f);
             ImGui::TableSetupColumn("Col4", ImGuiTableColumnFlags_WidthStretch);
-            ImGui::TableAutoHeaders();
+            ImGui::TableHeadersRow();
             if (vars.call_get_sort_specs) // Test against TableGetSortSpecs() having side effects
                 ImGui::TableGetSortSpecs();
             HelperTableSubmitCellsButtonFill(column_count, 3);
@@ -819,7 +819,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
             ImGui::TableSetupColumn("NoSort", ImGuiTableColumnFlags_NoSort);
             ImGui::TableSetupColumn("NoSortAscending", ImGuiTableColumnFlags_NoSortAscending);
             ImGui::TableSetupColumn("NoSortDescending", ImGuiTableColumnFlags_NoSortDescending);
-            ImGui::TableAutoHeaders();
+            ImGui::TableHeadersRow();
             HelperTableSubmitCellsButtonFill(6, 1);
             ImGui::EndTable();
         }
@@ -936,12 +936,13 @@ void RegisterTests_Table(ImGuiTestEngine* e)
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
         memset(ctx->GenericVars.BoolArray, 0, sizeof(ctx->GenericVars.BoolArray));
         const int column_count = 15;
-        ImGuiTableFlags flags = ImGuiTableFlags_Scroll | ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg | ctx->GenericVars.Int1;
+        ImGuiTableFlags flags = ImGuiTableFlags_Scroll | ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg;
         if (ImGui::BeginTable("Table", column_count, flags))
         {
+            ImGui::TableSetupScrollFreeze(ctx->GenericVars.Int1, ctx->GenericVars.Int2);
             for (int i = 0; i < column_count; i++)
                 ImGui::TableSetupColumn(Str16f("Col%d", i).c_str());
-            ImGui::TableAutoHeaders();
+            ImGui::TableHeadersRow();
 
             for (int line = 0; line < 15; line++)
             {
@@ -999,8 +1000,8 @@ void RegisterTests_Table(ImGuiTestEngine* e)
         // Test row freezing.
         for (int freeze_count = 1; freeze_count <= 3; freeze_count++)
         {
-            ctx->GenericVars.Int1 = ImGuiTableFlags_ScrollFreezeTopRow * freeze_count;
-            IM_ASSERT((ctx->GenericVars.Int1 & ~ImGuiTableFlags_ScrollFreezeRowsMask_) == 0); // Make sure we don't overflow
+            ctx->GenericVars.Int1 = 0;
+            ctx->GenericVars.Int2 = freeze_count;
             ctx->Yield();
             IM_CHECK(table->FreezeRowsRequest == freeze_count);
             IM_CHECK(table->FreezeRowsCount == freeze_count);
@@ -1020,8 +1021,8 @@ void RegisterTests_Table(ImGuiTestEngine* e)
         // Test column freezing.
         for (int freeze_count = 1; freeze_count <= 3; freeze_count++)
         {
-            ctx->GenericVars.Int1 = ImGuiTableFlags_ScrollFreezeLeftColumn * freeze_count;
-            IM_ASSERT((ctx->GenericVars.Int1 & ~ImGuiTableFlags_ScrollFreezeColumnsMask_) == 0); // Make sure we don't overflow
+            ctx->GenericVars.Int1 = freeze_count;
+            ctx->GenericVars.Int2 = 0;
             ctx->Yield();
             IM_CHECK(table->FreezeColumnsRequest == freeze_count);
             IM_CHECK(table->FreezeColumnsCount == freeze_count);
@@ -1056,14 +1057,14 @@ void RegisterTests_Table(ImGuiTestEngine* e)
             {
                 for (int i = 0; i < col_row_count; i++)
                     ImGui::TableSetupColumn(Str16f("Col%d", i).c_str(), ImGuiTableColumnFlags_WidthFixed, 100.0f);
-                ImGui::TableAutoHeaders();
+                ImGui::TableHeadersRow();
                 HelperTableSubmitCellsButtonFill(col_row_count, col_row_count);
             }
             if (vars.Step == 1)
             {
                 for (int i = 0; i < col_row_count; i++)
                     ImGui::TableSetupColumn(Str16f("Col%d", i).c_str(), ImGuiTableColumnFlags_WidthFixed, 100.0f);
-                ImGui::TableAutoHeaders();
+                ImGui::TableHeadersRow();
                 HelperTableSubmitCellsButtonFix(col_row_count, col_row_count);
             }
             if (vars.Step == 2)
@@ -1071,14 +1072,14 @@ void RegisterTests_Table(ImGuiTestEngine* e)
                 // No column width + window auto-fit + auto-fill button creates a feedback loop
                 for (int i = 0; i < col_row_count; i++)
                     ImGui::TableSetupColumn(Str16f("Col%d", i).c_str());
-                ImGui::TableAutoHeaders();
+                ImGui::TableHeadersRow();
                 HelperTableSubmitCellsButtonFill(col_row_count, col_row_count);
             }
             if (vars.Step == 3)
             {
                 for (int i = 0; i < col_row_count; i++)
                     ImGui::TableSetupColumn(Str16f("Col%d", i).c_str());
-                ImGui::TableAutoHeaders();
+                ImGui::TableHeadersRow();
                 HelperTableSubmitCellsButtonFix(col_row_count, col_row_count);
             }
             ImGui::EndTable();

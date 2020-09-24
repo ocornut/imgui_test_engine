@@ -116,7 +116,8 @@ struct ExampleAssetBrowser
             ApplySelectionRequests(ms_data);
 #endif
 
-            ImGuiListClipper clipper(line_count, line_height);
+            ImGuiListClipper clipper;
+            clipper.Begin(line_count, line_height);
             while (clipper.Step())
             {
                 for (int line_index = clipper.DisplayStart; line_index < clipper.DisplayEnd; line_index++)

@@ -2331,7 +2331,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         for (int i = 0; i < column_count; i++)
             ImGui::TableSetupColumn(Str30f("%d", i + 1).c_str());
 
-        ImGui::TableAutoHeaders();
+        ImGui::TableHeadersRow();
         ImGui::TableNextRow();
 
         ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0, 0));
