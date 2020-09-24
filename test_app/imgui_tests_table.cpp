@@ -145,7 +145,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
         ImGui::Text("Text before");
         {
             int cmd_size_before = draw_list->CmdBuffer.Size;
-            if (ImGui::BeginTable("##table1", 4, ImGuiTableFlags_NoClipX | ImGuiTableFlags_Borders, ImVec2(400, 0)))
+            if (ImGui::BeginTable("##table1", 4, ImGuiTableFlags_NoClip | ImGuiTableFlags_Borders, ImVec2(400, 0)))
             {
                 HelperTableSubmitCellsButtonFill(4, 5);
                 ImGui::EndTable();
