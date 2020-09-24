@@ -1932,6 +1932,114 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
         IM_CHECK(strcmp(out, "%f") == 0);
     };
 
+    // ## Test ImGuiListClipper basic behavior
+    // ## Test ImGuiListClipper with table frozen rows
+    t = IM_REGISTER_TEST(e, "misc", "misc_clipper");
+    struct ClipperTestVars { ImGuiWindow* WindowOut = NULL;  float WindowHeightInItems = 10.0f; int ItemsIn = 100; int ItemsOut = 0; float OffsetY; ImBitVector ItemsOutMask; bool TableEnable = false; int TableFreezeRows = 0; };
+    t->SetUserDataType<ClipperTestVars>();
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        auto& vars = ctx->GetUserData<ClipperTestVars>();
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0)); // Simpler to use remove padding and decoration
+        ImGui::SetNextWindowSize(ImVec2(300, ImGui::GetTextLineHeightWithSpacing()* vars.WindowHeightInItems));
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoSavedSettings);
+
+        bool open = true;
+#ifdef IMGUI_HAS_TABLE
+        if (vars.TableEnable)
+        {
+            open = ImGui::BeginTable("table", 2, ImGuiTableFlags_ScrollY);
+            if (open)
+                ImGui::TableSetupScrollFreeze(0, vars.TableFreezeRows);
+        }
+#endif
+        if (open)
+        {
+            vars.WindowOut = ImGui::GetCurrentWindow();
+            vars.ItemsOut = 0;
+            vars.ItemsOutMask.Create(vars.ItemsIn);
+
+            float start_y = ImGui::GetCursorScreenPos().y;
+            ImGuiListClipper clipper;
+            clipper.Begin(vars.ItemsIn);
+            while (clipper.Step())
+            {
+                for (int n = clipper.DisplayStart; n < clipper.DisplayEnd; n++)
+                {
+#ifdef IMGUI_HAS_TABLE
+                    if (vars.TableEnable)
+                        ImGui::TableNextRow();
+#endif
+                    ImGui::Text("Item %04d", n);
+                    vars.ItemsOut++;
+                    vars.ItemsOutMask.SetBit(n);
+                }
+            }
+            vars.OffsetY = ImGui::GetCursorScreenPos().y - start_y;
+
+#ifdef IMGUI_HAS_TABLE
+            if (vars.TableEnable)
+                ImGui::EndTable();
+#endif
+        }
+        ImGui::End();
+        ImGui::PopStyleVar();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        auto& vars = ctx->GetUserData<ClipperTestVars>();
+        float item_height = ImGui::GetTextLineHeightWithSpacing(); // EXPECTED item height
+
+#ifdef IMGUI_HAS_TABLE
+        int step_count = 3;
+#else
+        int step_count = 1;
+#endif
+        for (int step = 0; step < step_count; step++)
+        {
+            ctx->LogInfo("## Step %d", step);
+            vars.TableEnable = (step > 0);
+            vars.TableFreezeRows = (step == 2) ? 1 : (step == 3) ? 2 : 0;
+
+            ctx->Yield();
+            ctx->Yield();
+            ctx->WindowRef(vars.WindowOut->ID); // FIXME-TESTS: Can't use ->Name as the / would be ignored
+            ctx->WindowFocus("");
+
+            // Test only rendering items 0->9
+            vars.WindowHeightInItems = 10.0f;
+            vars.ItemsIn = 100;
+            ctx->ScrollToTop();
+            ctx->Yield();
+            IM_CHECK_EQ(vars.ItemsOut, 10);
+            IM_CHECK_EQ(vars.OffsetY, vars.ItemsIn * item_height);
+
+            // Test only rendering items 0->10 (window slightly taller)
+            vars.WindowHeightInItems = 10.5f;
+            vars.ItemsIn = 100;
+            ctx->Yield();
+            IM_CHECK_EQ(vars.ItemsOut, 11);
+            IM_CHECK_EQ(vars.OffsetY, vars.ItemsIn * item_height);
+
+            // Test rendering 0 + trailing items (window scrolled)
+            vars.WindowHeightInItems = 10.0f;
+            vars.ItemsIn = 100;
+            ctx->Yield();
+            ctx->KeyPressMap(ImGuiKey_PageDown);
+            ctx->Yield();
+            IM_CHECK_EQ(vars.ItemsOut, 11); // Hmm, may vary?
+            IM_CHECK_EQ(vars.OffsetY, vars.ItemsIn * item_height);
+            ctx->ScrollToBottom();
+            IM_CHECK_EQ(vars.ItemsOut, 1 + 10);
+            IM_CHECK_EQ(vars.OffsetY, vars.ItemsIn * item_height);
+            IM_CHECK(vars.ItemsOutMask.TestBit(0) == true);
+            IM_CHECK(vars.ItemsOutMask.TestBit(1) == false);
+            IM_CHECK(vars.ItemsOutMask.TestBit(89) == false);
+            IM_CHECK(vars.ItemsOutMask.TestBit(90) == true);
+            IM_CHECK(vars.ItemsOutMask.TestBit(99) == true);
+        }
+    };
+
     // ## Test ImFontAtlas building with overlapping glyph ranges (#2353, #2233)
     t = IM_REGISTER_TEST(e, "misc", "misc_atlas_build_glyph_overlap");
     t->TestFunc = [](ImGuiTestContext* ctx)
