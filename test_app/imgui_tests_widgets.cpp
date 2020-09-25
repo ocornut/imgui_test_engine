@@ -466,10 +466,10 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ImGuiContext& g = *ImGui::GetCurrentContext();
         ImGuiDragSliderVars& vars = ctx->GetUserData<ImGuiDragSliderVars>();
         ctx->WindowRef("Test Window");
-        ImGuiSliderFlags flags[] = { ImGuiSliderFlags_None, ImGuiSliderFlags_ClampOnInput };
+        ImGuiSliderFlags flags[] = { ImGuiSliderFlags_None, ImGuiSliderFlags_AlwaysClamp };
         for (int i = 0; i < IM_ARRAYSIZE(flags); ++i)
         {
-            bool clamp_on_input = flags[i] == ImGuiSliderFlags_ClampOnInput;
+            bool clamp_on_input = flags[i] == ImGuiSliderFlags_AlwaysClamp;
             vars.Flags = flags[i];
 
             float slider_min_max[][2] = { {0.0f, 1.0f}, {0.0f, 0.0f} };
