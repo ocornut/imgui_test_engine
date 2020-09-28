@@ -1935,13 +1935,13 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
     // ## Test ImGuiListClipper basic behavior
     // ## Test ImGuiListClipper with table frozen rows
     t = IM_REGISTER_TEST(e, "misc", "misc_clipper");
-    struct ClipperTestVars { ImGuiWindow* WindowOut = NULL;  float WindowHeightInItems = 10.0f; int ItemsIn = 100; int ItemsOut = 0; float OffsetY; ImBitVector ItemsOutMask; bool TableEnable = false; int TableFreezeRows = 0; };
+    struct ClipperTestVars { ImGuiWindow* WindowOut = NULL; float WindowHeightInItems = 10.0f; int ItemsIn = 100; int ItemsOut = 0; float OffsetY; ImBitVector ItemsOutMask; bool ClipperManualItemHeight = true; bool TableEnable = false; int TableFreezeRows = 0; };
     t->SetUserDataType<ClipperTestVars>();
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         auto& vars = ctx->GetUserData<ClipperTestVars>();
         ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0)); // Simpler to use remove padding and decoration
-        ImGui::SetNextWindowSize(ImVec2(300, ImGui::GetTextLineHeightWithSpacing()* vars.WindowHeightInItems));
+        ImGui::SetNextWindowSize(ImVec2(300, ImGui::GetTextLineHeightWithSpacing() * vars.WindowHeightInItems));
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoSavedSettings);
 
         bool open = true;
@@ -1961,7 +1961,10 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
 
             float start_y = ImGui::GetCursorScreenPos().y;
             ImGuiListClipper clipper;
-            clipper.Begin(vars.ItemsIn);
+            if (vars.ClipperManualItemHeight)
+                clipper.Begin(vars.ItemsIn, ImGui::GetTextLineHeightWithSpacing());
+            else
+                clipper.Begin(vars.ItemsIn);
             while (clipper.Step())
             {
                 for (int n = clipper.DisplayStart; n < clipper.DisplayEnd; n++)
@@ -1991,53 +1994,71 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
         float item_height = ImGui::GetTextLineHeightWithSpacing(); // EXPECTED item height
 
 #ifdef IMGUI_HAS_TABLE
-        int step_count = 3;
+        int step_count = 4;
 #else
         int step_count = 1;
 #endif
-        for (int step = 0; step < step_count; step++)
-        {
-            ctx->LogInfo("## Step %d", step);
-            vars.TableEnable = (step > 0);
-            vars.TableFreezeRows = (step == 2) ? 1 : (step == 3) ? 2 : 0;
+        for (int clipper_step = 0; clipper_step < 2; clipper_step++)
+            for (int step = 0; step < step_count; step++)
+            {
+                vars.ClipperManualItemHeight = (clipper_step == 1);
+                vars.TableEnable = (step > 0);
+                vars.TableFreezeRows = (step == 2) ? 1 : (step == 3) ? 2 : 0;
+                ctx->LogInfo("## Step %d, Table=%d, TableFreezeRows=%d, ClipperManualItemHeight=%d", step, vars.TableEnable, vars.TableFreezeRows, vars.ClipperManualItemHeight);
 
-            ctx->Yield();
-            ctx->Yield();
-            ctx->WindowRef(vars.WindowOut->ID); // FIXME-TESTS: Can't use ->Name as the / would be ignored
-            ctx->WindowFocus("");
+                ctx->Yield();
+                ctx->Yield();
+                ctx->WindowRef(vars.WindowOut->ID); // FIXME-TESTS: Can't use ->Name as the / would be ignored
+                ctx->WindowFocus("");
 
-            // Test only rendering items 0->9
-            vars.WindowHeightInItems = 10.0f;
-            vars.ItemsIn = 100;
-            ctx->ScrollToTop();
-            ctx->Yield();
-            IM_CHECK_EQ(vars.ItemsOut, 10);
-            IM_CHECK_EQ(vars.OffsetY, vars.ItemsIn * item_height);
+                // Test only rendering items 0->9
+                vars.WindowHeightInItems = 10.0f;
+                vars.ItemsIn = 100;
+                ctx->ScrollToTop();
+                ctx->Yield();
+                IM_CHECK_EQ(vars.OffsetY, vars.ItemsIn * item_height);
+                IM_CHECK_EQ(vars.ItemsOut, 10);
 
-            // Test only rendering items 0->10 (window slightly taller)
-            vars.WindowHeightInItems = 10.5f;
-            vars.ItemsIn = 100;
-            ctx->Yield();
-            IM_CHECK_EQ(vars.ItemsOut, 11);
-            IM_CHECK_EQ(vars.OffsetY, vars.ItemsIn * item_height);
+                // Test only rendering items 0->10 (window slightly taller)
+                vars.WindowHeightInItems = 10.5f;
+                vars.ItemsIn = 100;
+                ctx->Yield();
+                IM_CHECK_EQ(vars.OffsetY, vars.ItemsIn * item_height);
+                IM_CHECK_EQ(vars.ItemsOut, 11);
 
-            // Test rendering 0 + trailing items (window scrolled)
-            vars.WindowHeightInItems = 10.0f;
-            vars.ItemsIn = 100;
-            ctx->Yield();
-            ctx->KeyPressMap(ImGuiKey_PageDown);
-            ctx->Yield();
-            IM_CHECK_EQ(vars.ItemsOut, 11); // Hmm, may vary?
-            IM_CHECK_EQ(vars.OffsetY, vars.ItemsIn * item_height);
-            ctx->ScrollToBottom();
-            IM_CHECK_EQ(vars.ItemsOut, 1 + 10);
-            IM_CHECK_EQ(vars.OffsetY, vars.ItemsIn * item_height);
-            IM_CHECK(vars.ItemsOutMask.TestBit(0) == true);
-            IM_CHECK(vars.ItemsOutMask.TestBit(1) == false);
-            IM_CHECK(vars.ItemsOutMask.TestBit(89) == false);
-            IM_CHECK(vars.ItemsOutMask.TestBit(90) == true);
-            IM_CHECK(vars.ItemsOutMask.TestBit(99) == true);
-        }
+                // Test rendering 0 + trailing items (window scrolled)
+                vars.WindowHeightInItems = 10.0f;
+                vars.ItemsIn = 100;
+                ctx->Yield();
+                ctx->KeyPressMap(ImGuiKey_PageDown);
+                ctx->Yield();
+                IM_CHECK_EQ(vars.OffsetY, vars.ItemsIn * item_height);
+                if (vars.ClipperManualItemHeight)
+                    IM_CHECK_EQ(vars.ItemsOut, 10);
+                else
+                    IM_CHECK_EQ(vars.ItemsOut, 1 + 10);
+                if (vars.ClipperManualItemHeight && vars.TableFreezeRows == 0)
+                    IM_CHECK(vars.ItemsOutMask.TestBit(0) == false);
+                else
+                    IM_CHECK(vars.ItemsOutMask.TestBit(0) == true);
+                ctx->ScrollToBottom();
+
+                IM_CHECK_EQ(vars.OffsetY, vars.ItemsIn * item_height);
+                if (vars.ClipperManualItemHeight)
+                    IM_CHECK_EQ(vars.ItemsOut, 10);
+                else
+                    IM_CHECK_EQ(vars.ItemsOut, 1 + 10);
+                if (vars.ClipperManualItemHeight && vars.TableFreezeRows == 0)
+                    IM_CHECK(vars.ItemsOutMask.TestBit(0) == false);
+                else
+                    IM_CHECK(vars.ItemsOutMask.TestBit(0) == true);
+                //IM_CHECK(vars.ItemsOutMask.TestBit(0 + vars.TableFreezeRows) == true);
+                IM_CHECK(vars.ItemsOutMask.TestBit(1 + vars.TableFreezeRows) == false);
+
+                //IM_CHECK(vars.ItemsOutMask.TestBit(89 + vars.TableFreezeRows) == false);
+                IM_CHECK(vars.ItemsOutMask.TestBit(90 + vars.TableFreezeRows) == true);
+                IM_CHECK(vars.ItemsOutMask.TestBit(99) == true);
+            }
     };
 
     // ## Test ImFontAtlas building with overlapping glyph ranges (#2353, #2233)

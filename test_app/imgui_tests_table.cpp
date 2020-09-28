@@ -965,9 +965,13 @@ void RegisterTests_Table(ImGuiTestEngine* e)
     {
         ctx->WindowRef("Test Window");
         ImGuiTable* table = ImGui::FindTableByID(ctx->GetID("Table"));
-        ctx->WindowRef(table->InnerWindow);
 
         // Reset scroll, if any.
+        // FIXME-TESTS: 2020/09/28 running nav_from_clipped_item followed by this breaks if we don't reset scroll of outer window
+        ctx->WindowRef(table->OuterWindow);
+        ctx->ScrollToX(0.0f);
+        ctx->ScrollToY(0.0f);
+        ctx->WindowRef(table->InnerWindow);
         ctx->ScrollToX(0.0f);
         ctx->ScrollToY(0.0f);
         ctx->Yield();
