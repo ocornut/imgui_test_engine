@@ -159,8 +159,10 @@ void EditorDemoScene::Render()
 {
     ImGuiStyle& style = ImGui::GetStyle();
     ImGuiWindow* window = ImGui::GetCurrentWindow();
-    ImVec2 pos = ImGui::GetWindowPos() + ImVec2(style.WindowPadding.x, style.WindowPadding.y + window->TitleBarHeight());
-    ImVec2 size = ImGui::GetWindowSize() - ImVec2(style.WindowPadding.x * 2, style.WindowPadding.y * 2 + window->TitleBarHeight());
+    ImVec2 pos = ImGui::GetWindowPos() + ImVec2(style.WindowPadding.x, style.WindowPadding.y + window->TitleBarHeight()); // FIXME: ClientPos/StartPos
+    ImVec2 size = ImGui::GetWindowSize() - ImVec2(style.WindowPadding.x * 2, style.WindowPadding.y * 2 + window->TitleBarHeight()); // FIXME: ClientRect
+    if (size.x <= 0.0f || size.y <= 0.0f)
+        return;
     if (IsPerspective)
     {
         Perspective(FOV, size.x / size.y, 0.1f, 100.f, CameraProjection);
