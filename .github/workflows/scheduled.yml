@@ -48,6 +48,14 @@ jobs:
           make -C test_app/ clean
           make -C test_app/ BACKEND_LIB=glfw3
 
+      - uses: sarisia/actions-status-discord@v1
+        if: failure()
+        with:
+          webhook: ${{ secrets.DISCORD_CI_WEBHOOK }}
+          username: GitHub Actions
+          color: 0xFF0000
+          title: ${{ github.job }}
+
   MacOS:
     runs-on: macos-latest
 
@@ -75,6 +83,14 @@ jobs:
       - name: Run Tests
         run: |
           test_app/imgui_test_app -nogui -nopause -v2 -ve4 tests
+
+      - uses: sarisia/actions-status-discord@v1
+        if: failure()
+        with:
+          webhook: ${{ secrets.DISCORD_CI_WEBHOOK }}
+          username: GitHub Actions
+          color: 0xFF0000
+          title: ${{ github.job }}
 
   Windows:
     runs-on: windows-latest
@@ -116,6 +132,14 @@ jobs:
         shell: cmd
         run: '"%MSBUILD_PATH%\MSBuild.exe" test_app/imgui_test_app.vcxproj /p:Platform=${{ matrix.arch }} /p:Configuration=Release'
 
-      - name: Test
+      - name: Run Tests
         run: |
           test_app/Release/imgui_test_app.exe -nogui -nopause -v2 -ve4 tests
+
+      - uses: sarisia/actions-status-discord@v1
+        if: failure()
+        with:
+          webhook: ${{ secrets.DISCORD_CI_WEBHOOK }}
+          username: GitHub Actions
+          color: 0xFF0000
+          title: ${{ github.job }}

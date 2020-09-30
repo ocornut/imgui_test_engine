@@ -28,6 +28,15 @@ jobs:
       run: |
         CXX=clang make -C test_app/
 
-    - name: Test
+    - name: Run Tests
       run: |
         timeout 300 test_app/imgui_test_app -nogui -nopause -v2 -ve4 tests
+
+    - uses: sarisia/actions-status-discord@v1
+      if: failure()
+      with:
+        webhook: ${{ secrets.DISCORD_CI_WEBHOOK }}
+        username: GitHub Actions
+        color: 0xFF0000
+        title: ${{ github.job }}
+
