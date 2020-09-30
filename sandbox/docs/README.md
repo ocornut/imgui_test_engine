@@ -1,4 +1,4 @@
-# Editor Demo
+# Sandbox
 You can add [links like this one to imgui/actions](https://github.com/ocornut/imgui/actions) and lines will wrap well.
 
 ## H2 Header: indented text

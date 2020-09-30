@@ -61,7 +61,7 @@
     <ClInclude Include="..\shared\imgui_app.h">
       <Filter>shared</Filter>
     </ClInclude>
-    <ClInclude Include="editor_demo_imconfig.h">
+    <ClInclude Include="sandbox_imconfig.h">
       <Filter>sources</Filter>
     </ClInclude>
     <ClInclude Include="editor_assets_browser.h">

@@ -95,7 +95,7 @@ int main(int argc, char** argv)
     app->DpiAware = true;
     app->SrgbFramebuffer = false;
     app->ClearColor = ImVec4(0.120f, 0.120f, 0.120f, 1.000f);
-    app->InitCreateWindow(app, "Dear ImGui: Editor Demo", ImVec2(1600, 1000));
+    app->InitCreateWindow(app, "Dear ImGui: Sandbox", ImVec2(1600, 1000));
     app->InitBackends(app);
 
 #ifdef EDITOR_DEMO_ENABLE_TEST_ENGINE
@@ -254,7 +254,7 @@ int main(int argc, char** argv)
 
             if (ImGui::BeginMenu("Help"))
             {
-                ImGui::MenuItem("About Editor Demo", "", false, false);
+                ImGui::MenuItem("About Sandbox", "", false, false);
                 ImGui::EndMenu();
             }
             ImGui::EndMainMenuBar();
@@ -266,11 +266,6 @@ int main(int argc, char** argv)
             RenderMarkdown(readme_md, readme_md + readme_md_size);
             ImGui::End();
         }
-
-        ImGui::Begin("Editor Demo");
-        ImGui::Text(ICON_FA_SEARCH " Search");
-        ImGui::ColorEdit4("ClearColor", &app->ClearColor.x);
-        ImGui::End();
 
         if (show_assets_browser)
             ShowExampleAppAssetBrowser(&show_assets_browser);

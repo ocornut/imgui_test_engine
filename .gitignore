@@ -9,7 +9,7 @@ build_scripts/pvs_studio/output
 build_scripts/config/build_config.bat
 
 ## Application artifacts
-editor_demo/captures/*
+sandbox/captures/*
 test_app/captures/*
 imgui.ini
 imgui_perflog.csv
@@ -18,6 +18,10 @@ imgui_perflog.csv
 *.o
 *.obj
 *.exe
+sandbox/build/*
+sandbox/Debug/*
+sandbox/Release/*
+sandbox/x64/*
 test_app/build/*
 test_app/Debug/*
 test_app/Release/*
@@ -27,10 +31,6 @@ test_engine/build/*
 test_engine/Debug/*
 test_engine/Release/*
 test_engine/x64/*
-editor_demo/build/*
-editor_demo/Debug/*
-editor_demo/Release/*
-editor_demo/x64/*
 
 ## Visual Studio artifacts
 .vs/*
