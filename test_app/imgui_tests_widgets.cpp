@@ -879,7 +879,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         const int cursor_pos_middle_of_last_line = cursor_pos_end_of_last_line - char_count_per_line / 2;
         const int cursor_pos_middle = vars.str.length() / 2;
 
-        auto SetCursorPosition = [&ctx, &stb, &state](int cursor) { stb.cursor = cursor; stb.has_preferred_x = 0; };
+        auto SetCursorPosition = [&stb](int cursor) { stb.cursor = cursor; stb.has_preferred_x = 0; };
 
         // Do all the test twice: with no trailing \n, and with.
         for (int i = 0; i < 2; i++)
@@ -2318,7 +2318,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         IM_CHECK(ctx->GenericVars.Status.Hovered == 1);
     };
 
-#if IMGUI_HAS_TABLE
+#ifdef IMGUI_HAS_TABLE
     // ## Test ImGuiSelectableFlags_SpanAllColumns flag when used in a table.
     t = IM_REGISTER_TEST(e, "widgets", "widgets_selectable_span_all_table");
     t->GuiFunc = [](ImGuiTestContext* ctx)

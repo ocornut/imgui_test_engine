@@ -199,7 +199,7 @@ bool ImGui::InputTextMultiline(const char* label, Str* str, const ImVec2& size, 
     return InputTextMultiline(label, (char*)str->c_str(), (size_t)str->capacity() + 1, size, flags, InputTextCallbackStr, &cb_user_data);
 }
 
-#if IMGUI_HAS_TABLE
+#ifdef IMGUI_HAS_TABLE
 ImGuiID TableGetHeaderID(ImGuiTable* table, const char* column, int instance_no)
 {
     IM_ASSERT(table != NULL);

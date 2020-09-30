@@ -1895,7 +1895,7 @@ void    ImGuiTestContext::WindowMove(ImGuiTestRef ref, ImVec2 input_pos, ImVec2 
     ImVec2 drag_pos;
     for (int n = 0; n < 2; n++)
     {
-#if IMGUI_HAS_DOCK
+#ifdef IMGUI_HAS_DOCK
         if (window->DockNode != NULL && window->DockNode->TabBar != NULL)
         {
             ImGuiTabBar* tab_bar = window->DockNode->TabBar;
@@ -1920,7 +1920,7 @@ void    ImGuiTestContext::WindowMove(ImGuiTestRef ref, ImVec2 input_pos, ImVec2 
     MouseDown(0);
 
     // Disable docking
-#if IMGUI_HAS_DOCK
+#ifdef IMGUI_HAS_DOCK
     if (UiContext->IO.ConfigDockingWithShift)
         KeyUpMap(ImGuiKey_COUNT, ImGuiKeyModFlags_Shift);
     else
@@ -1932,7 +1932,7 @@ void    ImGuiTestContext::WindowMove(ImGuiTestRef ref, ImVec2 input_pos, ImVec2 
     Yield();
 
     MouseUp();
-#if IMGUI_HAS_DOCK
+#ifdef IMGUI_HAS_DOCK
     KeyUpMap(ImGuiKey_COUNT, ImGuiKeyModFlags_Shift);
 #endif
 }

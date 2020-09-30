@@ -2599,7 +2599,7 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
         ctx->ItemOpen("Widgets");
         ctx->ItemOpen("Layout & Scrolling");
         ctx->ItemOpen("Popups & Modal windows");
-#if IMGUI_HAS_TABLE
+#ifdef IMGUI_HAS_TABLE
         ctx->ItemOpen("Tables & Columns");
 #else
         ctx->ItemOpen("Columns");
