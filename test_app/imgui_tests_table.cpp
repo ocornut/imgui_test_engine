@@ -951,7 +951,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
                 {
                     if (!ImGui::TableSetColumnIndex(column))
                         continue;
-                    ImGui::Text(Str16f("%d,%d", line, column).c_str(), ImVec2(40.0f, 20.0f));
+                    ImGui::Text(Str16f("%d,%d", line, column).c_str());
                     if (line < 5)
                         ctx->GenericVars.BoolArray[line] |= ImGui::IsItemVisible();
                 }
@@ -983,6 +983,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
         IM_CHECK(table->FreezeRowsCount == 0);
 
         // First five columns and rows are visible at the start.
+        const float column_0_width = table->Columns[0].WidthGiven;
         for (int i = 0; i < 5; i++)
         {
             IM_CHECK_EQ(table->Columns[i].IsClipped, false);
@@ -1001,14 +1002,17 @@ void RegisterTests_Table(ImGuiTestEngine* e)
             IM_CHECK_EQ(ctx->GenericVars.BoolArray[i], false);
         }
 
+        // Check that clipped column 0 didn't resize down
+        IM_CHECK_EQ(column_0_width, table->Columns[0].WidthGiven);
+
         // Test row freezing.
         for (int freeze_count = 1; freeze_count <= 3; freeze_count++)
         {
             ctx->GenericVars.Int1 = 0;
             ctx->GenericVars.Int2 = freeze_count;
             ctx->Yield();
-            IM_CHECK(table->FreezeRowsRequest == freeze_count);
-            IM_CHECK(table->FreezeRowsCount == freeze_count);
+            IM_CHECK_EQ(table->FreezeRowsRequest, freeze_count);
+            IM_CHECK_EQ(table->FreezeRowsCount, freeze_count);
 
             // Test whether frozen rows are visible. First row is headers.
             if (freeze_count >= 1)
@@ -1028,8 +1032,10 @@ void RegisterTests_Table(ImGuiTestEngine* e)
             ctx->GenericVars.Int1 = freeze_count;
             ctx->GenericVars.Int2 = 0;
             ctx->Yield();
-            IM_CHECK(table->FreezeColumnsRequest == freeze_count);
-            IM_CHECK(table->FreezeColumnsCount == freeze_count);
+            IM_CHECK_EQ(table->FreezeColumnsRequest, freeze_count);
+            IM_CHECK_EQ(table->FreezeColumnsCount, freeze_count);
+            ctx->Yield();
+            IM_CHECK_EQ(column_0_width, table->Columns[0].WidthGiven);
 
             // Test whether frozen columns are visible.
             for (int column_n = 0; column_n < 4; column_n++)
