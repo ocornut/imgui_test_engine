@@ -9,14 +9,17 @@
 #include "shared/imgui_app.h"
 #include "shared/IconsFontAwesome5.h"
 #include "shared/imgui_capture_tool.h"
-#ifdef EDITOR_DEMO_ENABLE_TEST_ENGINE
+
+// Includes: Test Engine Suppot
+#ifdef IMGUI_SANDBOX_ENABLE_TEST_ENGINE
 #include "test_engine/imgui_te_engine.h"
 #include "test_engine/imgui_te_coroutine.h"
 #endif
 
 void EditorRenderScene();
 
-// FIXME-SAMPLE FIXME-FONT: This is looking very poor with DpiScale == 1.0f, switch to FreeType?
+// FIXME-SANDBOX FIXME-FONT: This is looking very poor with DpiScale == 1.0f, switch to FreeType?
+// FIXME-SANDBOX FIXME-FONT: This is looking very poor with DpiScale == 1.0f, switch to FreeType?
 static void LoadFonts(ImGuiApp* app)
 {
     ImGuiIO& io = ImGui::GetIO();
@@ -34,8 +37,8 @@ static void LoadFonts(ImGuiApp* app)
     font_cfg_icons.GlyphMinAdvanceX = 18.0f * app->DpiScale; // Make icon font more monospace looking to simplify alignment
     font_cfg_icons.GlyphRanges = icon_fa_ranges;
 
-    // FIXME-SAMPLE FIXME-FONT: Font size should be rounded?
-    // FIXME-SAMPLE FIXME-FONT: FontAwesome5 is rasterized multiple times needlessly!
+    // FIXME-SANDBOX FIXME-FONT: Font size should be rounded?
+    // FIXME-SANDBOX FIXME-FONT: FontAwesome5 is rasterized multiple times needlessly!
 #if 0
     // Default font
     font_cfg.SizePixels = 13.0f * app->DpiScale;
@@ -98,7 +101,7 @@ int main(int argc, char** argv)
     app->InitCreateWindow(app, "Dear ImGui: Sandbox", ImVec2(1600, 1000));
     app->InitBackends(app);
 
-#ifdef EDITOR_DEMO_ENABLE_TEST_ENGINE
+#ifdef IMGUI_SANDBOX_ENABLE_TEST_ENGINE
     // Initialize test engine
     ImGuiTestEngine* engine = ImGuiTestEngine_CreateContext(ImGui::GetCurrentContext());
     ImGuiTestEngineIO& test_io = ImGuiTestEngine_GetIO(engine);
@@ -112,7 +115,7 @@ int main(int argc, char** argv)
 #endif
 
     // Setup style, load fonts
-    // FIXME-SAMPLE FIXME-DPI: Reload at runtime according to changing DPI.
+    // FIXME-SANDBOX FIXME-DPI: Reload at runtime according to changing DPI.
     ImGuiStyle& style = ImGui::GetStyle();
     ImGui::StyleColorsDark();
     DarkTheme(&style);
@@ -121,7 +124,7 @@ int main(int argc, char** argv)
     style.ScaleAllSizes(app->DpiScale);
     LoadFonts(app);
 
-    // Load Readme
+    // Load README
 #if 0
     Str64 imgui_folder;
     ImFileFindInParents("imgui/", 4, &imgui_folder);
@@ -151,7 +154,7 @@ int main(int argc, char** argv)
         if (app->Quit)
             aborted = true;
 
-#ifdef EDITOR_DEMO_ENABLE_TEST_ENGINE
+#ifdef IMGUI_SANDBOX_ENABLE_TEST_ENGINE
         if (aborted)
         {
             ImGuiTestEngine_Abort(engine);
@@ -179,8 +182,8 @@ int main(int argc, char** argv)
         // Demo/Skeleton editor
         if (ImGui::BeginMainMenuBar())
         {
-            // FIXME-SAMPLE: Actual shortcut key handling
-            // FIXME-SAMPLE: Input dispatching with multiple levels of focus (e.g. selected window could want to use Ctrl+O)
+            // FIXME-SANDBOX: Actual shortcut key handling
+            // FIXME-SANDBOX: Input dispatching with multiple levels of focus (e.g. selected window could want to use Ctrl+O)
             if (ImGui::BeginMenu("File"))
             {
                 if (ImGui::MenuItem("New", "Ctrl+N"))
@@ -192,7 +195,7 @@ int main(int argc, char** argv)
                 ImGui::Separator();
                 if (ImGui::BeginMenu("Options"))
                 {
-#ifdef EDITOR_DEMO_ENABLE_TEST_ENGINE
+#ifdef IMGUI_SANDBOX_ENABLE_TEST_ENGINE
                     bool vsync = !ImGuiTestEngine_GetIO(engine).ConfigNoThrottle;
                     if (ImGui::MenuItem("Throttle/Vsync", NULL, &vsync))
                         ImGuiTestEngine_GetIO(engine).ConfigNoThrottle = !vsync;
@@ -244,7 +247,7 @@ int main(int argc, char** argv)
 
                 // Tools
                 ImGui::MenuItem("Capture Tool", NULL, &show_capture_tool);
-#ifdef EDITOR_DEMO_ENABLE_TEST_ENGINE
+#ifdef IMGUI_SANDBOX_ENABLE_TEST_ENGINE
                 ImGui::MenuItem("Test Engine", NULL, &show_test_engine);
 #else
                 ImGui::MenuItem("Test Engine", NULL, &show_test_engine, false);
@@ -273,7 +276,7 @@ int main(int argc, char** argv)
         if (show_capture_tool)
             capture_tool.ShowCaptureToolWindow(&show_capture_tool);
 
-#ifdef EDITOR_DEMO_ENABLE_TEST_ENGINE
+#ifdef IMGUI_SANDBOX_ENABLE_TEST_ENGINE
         if (show_test_engine)
             ImGuiTestEngine_ShowTestWindow(engine, &show_test_engine);
         app->Vsync = test_io.RenderWantMaxSpeed ? false : true;
@@ -283,19 +286,19 @@ int main(int argc, char** argv)
 
         app->Render(app);
 
-#ifdef EDITOR_DEMO_ENABLE_TEST_ENGINE
+#ifdef IMGUI_SANDBOX_ENABLE_TEST_ENGINE
         ImGuiTestEngine_PostRender(engine);
 #endif
     }
 
     // Shutdown
-#ifdef EDITOR_DEMO_ENABLE_TEST_ENGINE
+#ifdef IMGUI_SANDBOX_ENABLE_TEST_ENGINE
     ImGuiTestEngine_Stop(engine);
 #endif
     app->ShutdownBackends(app);
     app->ShutdownCloseWindow(app);
     ImGui::DestroyContext();
-#ifdef EDITOR_DEMO_ENABLE_TEST_ENGINE
+#ifdef IMGUI_SANDBOX_ENABLE_TEST_ENGINE
     ImGuiTestEngine_ShutdownContext(engine);
 #endif
     app->Destroy(app);

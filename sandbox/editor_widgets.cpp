@@ -13,14 +13,14 @@ static void LinkCallback(ImGui::MarkdownLinkCallbackData data)
     ImOsOpenInShell(link.c_str());
 }
 
-// FXIME-EDITORDEMO: Support texture fetching/rendering
-// FXIME-EDITORDEMO: Generally it looks that imgui_markdown needs some polish.
+// FIXME-SANDBOX: Support texture fetching/rendering
+// FIXME-SANDBOX: Generally it looks that imgui_markdown needs some polish.
 void RenderMarkdown(const char* markdown, const char* markdown_end)
 {
     if (!markdown_end)
         markdown_end = markdown + strlen(markdown);
 
-    // FIXME-EDITORDEMO: Standardize access to font
+    // FIXME-SANDBOX: Standardize access to font
     ImFontAtlas* atlas = ImGui::GetIO().Fonts;
     ImFont* font_regular = atlas->Fonts[0];
     ImFont* font_large = (atlas->Fonts.Size > 1) ? atlas->Fonts[1] : atlas->Fonts[0];
@@ -32,7 +32,7 @@ void RenderMarkdown(const char* markdown, const char* markdown_end)
     config.headingFormats[1] = { font_large, true };
     config.headingFormats[2] = { font_regular, false };
 
-    // FIXME-EDITORDEMO FIXME-STYLE: Ultimately we'd need a nicer way of passing style blocks to custom.
+    // FIXME-SANDBOX FIXME-STYLE: Ultimately we'd need a nicer way of passing style blocks to custom.
     ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.800f, 0.656f, 0.140f, 1.000f));
     ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(1.000f, 0.656f, 0.140f, 1.000f));
     ImGui::Markdown(markdown, markdown_end - markdown, config);
@@ -41,49 +41,50 @@ void RenderMarkdown(const char* markdown, const char* markdown_end)
 
 void ImGui::BeginButtonGroup()
 {
-    auto* storage = ImGui::GetStateStorage();
-    auto* lists = ImGui::GetWindowDrawList();
-    ImVec2 pos = ImGui::GetCursorScreenPos();
-    ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 5.0f);
-    storage->SetFloat(ImGui::GetID("button-group-x"), pos.x);
-    storage->SetFloat(ImGui::GetID("button-group-y"), pos.y);
-    lists->ChannelsSplit(2);
-    lists->ChannelsSetCurrent(1);
+    ImDrawList* draw_list = ImGui::GetWindowDrawList();
+    ImGuiStorage* storage = ImGui::GetStateStorage();
+
+    ImVec2 pos = GetCursorScreenPos();
+    PushStyleVar(ImGuiStyleVar_FrameRounding, 5.0f);    // FIXME-SANDBOX: Scaling
+    storage->SetFloat(GetID("button-group-x"), pos.x);  // FIXME-SANDBOX: Not sure we want to promote using this..
+    storage->SetFloat(GetID("button-group-y"), pos.y);
+    draw_list->ChannelsSplit(2);
+    draw_list->ChannelsSetCurrent(1);
 }
 
 void ImGui::EndButtonGroup()
 {
-    auto& style = ImGui::GetStyle();
-    auto* lists = ImGui::GetWindowDrawList();
-    auto* storage = ImGui::GetStateStorage();
+    ImGuiStyle& style = GetStyle();
+    ImDrawList* draw_list = GetWindowDrawList();
+    ImGuiStorage* storage = GetStateStorage();
+
     ImVec2 min(
-        storage->GetFloat(ImGui::GetID("button-group-x")),
-        storage->GetFloat(ImGui::GetID("button-group-y"))
+        storage->GetFloat(GetID("button-group-x")),
+        storage->GetFloat(GetID("button-group-y"))
     );
-    lists->ChannelsSetCurrent(0);
-    lists->AddRectFilled(min, ImGui::GetItemRectMax(), ImColor(style.Colors[ImGuiCol_Button]), style.FrameRounding);
-    lists->ChannelsMerge();
-    ImGui::PopStyleVar();
+    draw_list->ChannelsSetCurrent(0);
+    draw_list->AddRectFilled(min, GetItemRectMax(), GetColorU32(ImGuiCol_Button), style.FrameRounding);
+    draw_list->ChannelsMerge();
+    PopStyleVar();
 }
 
 bool ImGui::SquareButton(const char* label)
 {
     ImGuiContext& g = *GImGui;
     float dimension = g.FontSize + g.Style.ItemInnerSpacing.y * 2.0f;
-    return ImGui::ButtonEx(label, ImVec2(dimension, dimension), ImGuiButtonFlags_PressedOnClick);
+    return ButtonEx(label, ImVec2(dimension, dimension), ImGuiButtonFlags_PressedOnClick);
 }
 
 bool ImGui::ToggleButton(const char* text, const char* tooltip, bool active)
 {
     const auto& style = ImGui::GetStyle();
     if (active)
-        ImGui::PushStyleColor(ImGuiCol_Button, style.Colors[ImGuiCol_ButtonActive]);
-    else
-        ImGui::PushStyleColor(ImGuiCol_Button, style.Colors[ImGuiCol_Button]);
+        PushStyleColor(ImGuiCol_Button, style.Colors[ImGuiCol_ButtonActive]);
     bool result = SquareButton(text);
-    ImGui::PopStyleColor();
-    ImGui::SameLine(0, 0);
-    if (ImGui::IsItemHovered() && tooltip)
-        ImGui::SetTooltip("%s", tooltip);
+    if (active)
+        PopStyleColor();
+    SameLine(0, 0);
+    if (IsItemHovered() && tooltip)
+        SetTooltip("%s", tooltip);
     return result;
 }
