@@ -513,8 +513,8 @@ void RegisterTests_Table(ImGuiTestEngine* e)
             ImGui::TableNextRow();
             for (int n = 0; n < 64; n++)
             {
+                ImGui::TableNextColumn();
                 ImGui::Text("Data");
-                ImGui::TableNextCell();
             }
         }
         ImGui::EndTable();
@@ -541,8 +541,8 @@ void RegisterTests_Table(ImGuiTestEngine* e)
                 for (int c = 0; c < col_count; c++)
                 {
                     // Second table contains larger data, attempting to confuse column sync.
+                    ImGui::TableNextColumn();
                     ImGui::Text(i ? "Long Data" : "Data");
-                    ImGui::TableNextCell();
                 }
             }
 

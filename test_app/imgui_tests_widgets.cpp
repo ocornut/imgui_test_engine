@@ -2335,6 +2335,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ImGui::TableNextRow();
 
         ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0, 0));
+        ImGui::TableSetColumnIndex(0);
         ImGui::Button("C1");
         ImGui::TableSetColumnIndex(1);
         ImGui::Selectable("Selectable", &ctx->GenericVars.Bool1, ImGuiSelectableFlags_SpanAllColumns);

@@ -511,11 +511,11 @@ void RegisterTests_Perf(ImGuiTestEngine* e)
         {
             for (int n = 0; n < loop_count; n++)
             {
-                ImGui::TableNextCell();
+                ImGui::TableNextColumn();
                 ImGui::Text("Cell 1,%d", n);
-                ImGui::TableNextCell();
+                ImGui::TableNextColumn();
                 ImGui::TextUnformatted("Cell 2");
-                ImGui::TableNextCell();
+                ImGui::TableNextColumn();
                 ImGui::TextUnformatted("Cell 3");
             }
             ImGui::EndTable();
@@ -538,11 +538,11 @@ void RegisterTests_Perf(ImGuiTestEngine* e)
             {
                 for (int row = 0; row < 2; row++)
                 {
-                    ImGui::TableNextCell();
+                    ImGui::TableNextColumn();
                     ImGui::Text("Cell 1,%d", n);
-                    ImGui::TableNextCell();
+                    ImGui::TableNextColumn();
                     ImGui::TextUnformatted("Cell 2");
-                    ImGui::TableNextCell();
+                    ImGui::TableNextColumn();
                     ImGui::TextUnformatted("Cell 3");
                 }
                 ImGui::EndTable();

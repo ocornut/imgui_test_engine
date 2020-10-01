@@ -1971,7 +1971,10 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
                 {
 #ifdef IMGUI_HAS_TABLE
                     if (vars.TableEnable)
+                    {
                         ImGui::TableNextRow();
+                        ImGui::TableNextColumn();
+                    }
 #endif
                     ImGui::Text("Item %04d", n);
                     vars.ItemsOut++;
