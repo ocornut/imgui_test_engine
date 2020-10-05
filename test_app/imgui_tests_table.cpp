@@ -35,7 +35,7 @@ static ImGuiTableColumn* HelperTableFindColumnByName(ImGuiTable* table, const ch
     return NULL;
 }
 
-static void HelperTableSubmitCellsCustom(int count_w, int count_h, void(*cell_cb)(int column, int line))
+static void HelperTableSubmitCellsCustom(ImGuiTestContext* ctx, int count_w, int count_h, void(*cell_cb)(ImGuiTestContext* ctx, int column, int line))
 {
     IM_ASSERT(cell_cb != NULL);
     for (int line = 0; line < count_h; line++)
@@ -45,25 +45,25 @@ static void HelperTableSubmitCellsCustom(int count_w, int count_h, void(*cell_cb
         {
             if (!ImGui::TableSetColumnIndex(column)) // FIXME-TABLE
                 continue;
-            cell_cb(column, line);
+            cell_cb(ctx, column, line);
         }
     }
 }
 
 static void HelperTableSubmitCellsButtonFill(int count_w, int count_h)
 {
-    HelperTableSubmitCellsCustom(count_w, count_h, [](int column, int line) { ImGui::Button(Str16f("%d,%d", line, column).c_str(), ImVec2(-FLT_MIN, 0.0f)); });
+    HelperTableSubmitCellsCustom(NULL, count_w, count_h, [](ImGuiTestContext*, int column, int line) { ImGui::Button(Str16f("%d,%d", line, column).c_str(), ImVec2(-FLT_MIN, 0.0f)); });
 }
 
 static void HelperTableSubmitCellsButtonFix(int count_w, int count_h)
 {
-    HelperTableSubmitCellsCustom(count_w, count_h, [](int column, int line) { ImGui::Button(Str16f("%d,%d", line, column).c_str(), ImVec2(100.0f, 0.0f)); });
+    HelperTableSubmitCellsCustom(NULL, count_w, count_h, [](ImGuiTestContext*, int column, int line) { ImGui::Button(Str16f("%d,%d", line, column).c_str(), ImVec2(100.0f, 0.0f)); });
 }
 
 //static
 void HelperTableSubmitCellsText(int count_w, int count_h)
 {
-    HelperTableSubmitCellsCustom(count_w, count_h, [](int column, int line) { ImGui::Text("%d,%d", line, column); });
+    HelperTableSubmitCellsCustom(NULL, count_w, count_h, [](ImGuiTestContext*, int column, int line) { ImGui::Text("%d,%d", line, column); });
 }
 
 // columns_desc = "WWW", "FFW", "FAA" etc.
@@ -1148,6 +1148,45 @@ void RegisterTests_Table(ImGuiTestEngine* e)
             }
         }
     };
+
+    // ## Test NavLayer in frozen cells
+    t = IM_REGISTER_TEST(e, "table", "table_nav_layer");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
+        if (ImGui::BeginTable("Table", 6, ImGuiTableFlags_Scroll, ImVec2(400, ImGui::GetTextLineHeightWithSpacing() * 5)))
+        {
+            ImGui::TableSetupScrollFreeze(2, 2);
+            HelperTableSubmitCellsCustom(ctx, 6, 20,
+                [](ImGuiTestContext* ctx, int column, int line)
+                {
+                    ImGuiWindow* window = ImGui::GetCurrentWindow();
+                    ImGuiNavLayer layer = window->DC.NavLayerCurrent;
+                    if ((column < 2 && window->Scroll.x > 0.0f) || (line < 2 && window->Scroll.y > 0.0f))
+                        IM_CHECK_NO_RET(layer == 1);
+                    else
+                        IM_CHECK_NO_RET(layer == 0);
+                    ImGui::Text("%d ............", layer);
+                }
+            );
+            ImGui::EndTable();
+        }
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ctx->WindowRef("Test Window");
+        ImGuiTable* table = ImGui::FindTableByID(ctx->GetID("Table"));
+
+        ctx->WindowRef(table->InnerWindow);
+        ctx->ScrollToX(0.0f);
+        ctx->ScrollToY(0.0f);
+        ctx->YieldFrames(2);
+        ctx->ScrollToX(table->InnerWindow->ScrollMax.x);
+        ctx->ScrollToY(table->InnerWindow->ScrollMax.y);
+        ctx->YieldFrames(2);
+    };
+
 #else // #ifdef IMGUI_HAS_TABLE
     IM_UNUSED(e);
 #endif
