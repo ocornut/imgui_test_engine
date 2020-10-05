@@ -26,6 +26,9 @@
     <Filter Include="libs\ImGuizmo">
       <UniqueIdentifier>{c9105b8f-4a21-440b-a300-cec8b547f13b}</UniqueIdentifier>
     </Filter>
+    <Filter Include="libs\imgui_memory_editor">
+      <UniqueIdentifier>{f82349da-abb1-4ea3-90e3-3fac36ce0672}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\imgui\imconfig.h">
@@ -72,6 +75,9 @@
     </ClInclude>
     <ClInclude Include="..\libs\ImGuizmo\ImGuizmo.h">
       <Filter>libs\ImGuizmo</Filter>
+    </ClInclude>
+    <ClInclude Include="..\libs\imgui_memory_editor\imgui_memory_editor.h">
+      <Filter>libs\imgui_memory_editor</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

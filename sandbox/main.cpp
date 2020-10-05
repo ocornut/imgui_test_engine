@@ -6,6 +6,7 @@
 #include "editor_tests.h"
 #include "editor_widgets.h"
 #include "libs/Str/Str.h"
+#include "libs/imgui_memory_editor/imgui_memory_editor.h"
 #include "shared/imgui_app.h"
 #include "shared/IconsFontAwesome5.h"
 #include "shared/imgui_capture_tool.h"
@@ -137,9 +138,10 @@ int main(int argc, char** argv)
 
     bool show_imgui_demo = true;
     bool show_dockspace = true;
-    bool show_markdown = true;
     bool show_capture_tool = false;
     bool show_assets_browser = false;
+    bool show_markdown = true;
+    bool show_memory_editor = false;
     bool show_test_engine = false;
     ImGuiCaptureTool capture_tool;
     capture_tool.Context.ScreenCaptureFunc = [](int x, int y, int w, int h, unsigned int* pixels, void* user_data) { ImGuiApp* app = (ImGuiApp*)user_data; return app->CaptureFramebuffer(app, x, y, w, h, pixels, NULL); };
@@ -243,6 +245,7 @@ int main(int argc, char** argv)
 #endif
                 ImGui::MenuItem("Demo: Assets Browser", NULL, &show_assets_browser);
                 ImGui::MenuItem("Demo: Markdown", NULL, &show_markdown);
+                ImGui::MenuItem("Demo: Memory Editor", NULL, &show_memory_editor);
                 ImGui::Separator();
 
                 // Tools
@@ -263,15 +266,23 @@ int main(int argc, char** argv)
             ImGui::EndMainMenuBar();
         }
 
-        if (show_markdown && readme_md != NULL)
+        if (show_assets_browser)
+            ShowExampleAppAssetBrowser(&show_assets_browser);
+
+        if (show_markdown)
         {
             ImGui::Begin("Markdown", &show_markdown);
-            RenderMarkdown(readme_md, readme_md + readme_md_size);
+            if (readme_md)
+                RenderMarkdown(readme_md, readme_md + readme_md_size);
             ImGui::End();
         }
 
-        if (show_assets_browser)
-            ShowExampleAppAssetBrowser(&show_assets_browser);
+        if (show_memory_editor)
+        {
+            static MemoryEditor me;
+            static char buf[0x10000];
+            me.DrawWindow("Memory Editor", buf, sizeof(buf));
+        }
 
         if (show_capture_tool)
             capture_tool.ShowCaptureToolWindow(&show_capture_tool);

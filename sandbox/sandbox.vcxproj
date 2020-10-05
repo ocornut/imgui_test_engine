@@ -167,6 +167,7 @@
     <ClInclude Include="..\..\imgui\imstb_textedit.h" />
     <ClInclude Include="..\..\imgui\imstb_truetype.h" />
     <ClInclude Include="..\libs\ImGuizmo\ImGuizmo.h" />
+    <ClInclude Include="..\libs\imgui_memory_editor\imgui_memory_editor.h" />
     <ClInclude Include="..\shared\imgui_app.h" />
     <ClInclude Include="..\libs\imgui_markdown\imgui_markdown.h" />
     <ClInclude Include="editor_assets_browser.h" />
