@@ -1,8 +1,6 @@
 name: Tests
 
-on:
-  push: {}
-  pull_request: {}
+on: [push, pull_request]
 
 jobs:
   Linux:
@@ -32,11 +30,33 @@ jobs:
       run: |
         timeout 300 test_app/imgui_test_app -nogui -nopause -v2 -ve4 tests
 
-    - uses: sarisia/actions-status-discord@v1
-      if: failure()
+  Discord-CI:
+    runs-on: ubuntu-latest
+    if: always()
+    needs: [Linux]
+    steps:
+    - uses: dearimgui/github_discord_notifier@latest
       with:
-        webhook: ${{ secrets.DISCORD_CI_WEBHOOK }}
-        username: GitHub Actions
-        color: 0xFF0000
-        title: ${{ github.job }}
-
+        discord-webhook: ${{ secrets.DISCORD_CI_WEBHOOK }}
+        github-token: ${{ github.token }}
+        action-task: discord-jobs
+        discord-filter: "'{{ github.branch }}' == 'master' && '{{ run.conclusion }}' != '{{ last_run.conclusion }}'"
+        discord-username: GitHub Actions
+        discord-job-new-failure-message: ''
+        discord-job-fixed-failure-message: ''
+        discord-job-new-failure-embed: |
+          {
+            "title": "`{{ job.name }}` job is failing on `{{ github.branch }}`!",
+            "description": "Commit [{{ github.context.payload.head_commit.title }}]({{ github.context.payload.head_commit.url }}) pushed to [{{ github.branch }}]({{ github.branch_url }}) broke [{{ job.name }}]({{ job.url }}) CI job.\nFailing steps: {{ failing_steps }}",
+            "url": "{{ job.url }}",
+            "color": "0xFF0000",
+            "timestamp": "{{ run.updated_at }}"
+          }
+        discord-job-fixed-failure-embed: |
+          {
+            "title": "`{{ github.branch }}` branch is no longer failing!",
+            "description": "Build failures were fixed on [{{ github.branch }}]({{ github.branch_url }}) branch.",
+            "color": "0x00FF00",
+            "url": "{{ github.context.payload.head_commit.url }}",
+            "timestamp": "{{ run.completed_at }}"
+          }
