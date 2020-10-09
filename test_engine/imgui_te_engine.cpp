@@ -106,11 +106,11 @@ static void  ImGuiTestEngine_SettingsWriteAll(ImGuiContext* imgui_ctx, ImGuiSett
 // - ImGuiTestEngine_RunTest()
 //-------------------------------------------------------------------------
 
-static void ImGuiTestEngine_BindImGuiContext(ImGuiTestEngine* engine, ImGuiContext* imgui_context)
+static void ImGuiTestEngine_BindImGuiContext(ImGuiTestEngine* engine, ImGuiContext* ui_ctx)
 {
     IM_ASSERT(engine->UiContextTarget == NULL);
 
-    engine->UiContextVisible = imgui_context;
+    engine->UiContextVisible = ui_ctx;
     engine->UiContextBlind = NULL;
     engine->UiContextTarget = engine->UiContextVisible;
     engine->UiContextActive = NULL;
@@ -118,8 +118,8 @@ static void ImGuiTestEngine_BindImGuiContext(ImGuiTestEngine* engine, ImGuiConte
     // Setup hook
     if (GImGuiTestEngine == NULL)
         GImGuiTestEngine = engine;
-    IM_ASSERT(imgui_context->TestEngine == NULL);
-    imgui_context->TestEngine = engine;
+    IM_ASSERT(ui_ctx->TestEngine == NULL);
+    ui_ctx->TestEngine = engine;
 
     // Add .ini handle for ImGuiWindow type
     ImGuiSettingsHandler ini_handler;
@@ -128,23 +128,23 @@ static void ImGuiTestEngine_BindImGuiContext(ImGuiTestEngine* engine, ImGuiConte
     ini_handler.ReadOpenFn = ImGuiTestEngine_SettingsReadOpen;
     ini_handler.ReadLineFn = ImGuiTestEngine_SettingsReadLine;
     ini_handler.WriteAllFn = ImGuiTestEngine_SettingsWriteAll;
-    imgui_context->SettingsHandlers.push_back(ini_handler);
+    ui_ctx->SettingsHandlers.push_back(ini_handler);
 }
 
-void    ImGuiTestEngine_UnbindImGuiContext(ImGuiTestEngine* engine, ImGuiContext* imgui_context)
+static void    ImGuiTestEngine_UnbindImGuiContext(ImGuiTestEngine* engine, ImGuiContext* ui_ctx)
 {
-    IM_ASSERT(engine->UiContextTarget == imgui_context);
+    IM_ASSERT(engine->UiContextTarget == ui_ctx);
 
     ImGuiTestEngine_CoroutineStopAndJoin(engine);
 
 #if IMGUI_VERSION_NUM >= 17701
-    IM_ASSERT(imgui_context->TestEngine == engine);
-    imgui_context->TestEngine = NULL;
+    IM_ASSERT(ui_ctx->TestEngine == engine);
+    ui_ctx->TestEngine = NULL;
 
     // Remove .ini handler
-    IM_ASSERT(GImGui == imgui_context);
+    IM_ASSERT(GImGui == ui_ctx);
     if (ImGuiSettingsHandler* ini_handler = ImGui::FindSettingsHandler("TestEngine"))
-        imgui_context->SettingsHandlers.erase(imgui_context->SettingsHandlers.Data + imgui_context->SettingsHandlers.index_from_ptr(ini_handler));
+        ui_ctx->SettingsHandlers.erase(ui_ctx->SettingsHandlers.Data + ui_ctx->SettingsHandlers.index_from_ptr(ini_handler));
 #endif
 
     // Remove hook
@@ -154,11 +154,11 @@ void    ImGuiTestEngine_UnbindImGuiContext(ImGuiTestEngine* engine, ImGuiContext
 }
 
 // Create test context and attach to imgui context
-ImGuiTestEngine*    ImGuiTestEngine_CreateContext(ImGuiContext* imgui_context)
+ImGuiTestEngine*    ImGuiTestEngine_CreateContext(ImGuiContext* ui_ctx)
 {
-    IM_ASSERT(imgui_context != NULL);
+    IM_ASSERT(ui_ctx != NULL);
     ImGuiTestEngine* engine = IM_NEW(ImGuiTestEngine)();
-    ImGuiTestEngine_BindImGuiContext(engine, imgui_context);
+    ImGuiTestEngine_BindImGuiContext(engine, ui_ctx);
     return engine;
 }
 
@@ -983,6 +983,7 @@ void ImGuiTestEngine_UpdateHooks(ImGuiTestEngine* engine)
     if (engine->StackTool.QueryStackId != 0)
         want_hooking = true;
 
+    // Update test engine specific hooks
     ImGuiContext* ui_ctx = engine->UiContextTarget;
     IM_ASSERT(ui_ctx->TestEngine == engine);
     ui_ctx->TestEngineHookItems = want_hooking;

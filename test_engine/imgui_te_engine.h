@@ -274,7 +274,7 @@ bool    ImGuiTestEngineHook_Error(const char* file, const char* func, int line, 
 //-------------------------------------------------------------------------
 
 // Functions: Initialization
-ImGuiTestEngine*    ImGuiTestEngine_CreateContext(ImGuiContext* imgui_context);     // Create test engine
+ImGuiTestEngine*    ImGuiTestEngine_CreateContext(ImGuiContext* ui_ctx);            // Create test engine
 void                ImGuiTestEngine_ShutdownContext(ImGuiTestEngine* engine);       // Destroy test engine. Call after ImGui::DestroyContext() so test engine specific ini data gets saved.
 void                ImGuiTestEngine_Start(ImGuiTestEngine* engine);
 void                ImGuiTestEngine_Stop(ImGuiTestEngine* engine);
