@@ -106,6 +106,8 @@ static void  ImGuiTestEngine_SettingsWriteAll(ImGuiContext* imgui_ctx, ImGuiSett
 // - ImGuiTestEngine_RunTest()
 //-------------------------------------------------------------------------
 
+static void ImGuiTestEngine_UnbindImGuiContext(ImGuiTestEngine* engine, ImGuiContext* imgui_context);
+
 static void ImGuiTestEngine_BindImGuiContext(ImGuiTestEngine* engine, ImGuiContext* ui_ctx)
 {
     IM_ASSERT(engine->UiContextTarget == NULL);
@@ -115,12 +117,6 @@ static void ImGuiTestEngine_BindImGuiContext(ImGuiTestEngine* engine, ImGuiConte
     engine->UiContextTarget = engine->UiContextVisible;
     engine->UiContextActive = NULL;
 
-    // Setup hook
-    if (GImGuiTestEngine == NULL)
-        GImGuiTestEngine = engine;
-    IM_ASSERT(ui_ctx->TestEngine == NULL);
-    ui_ctx->TestEngine = engine;
-
     // Add .ini handle for ImGuiWindow type
     ImGuiSettingsHandler ini_handler;
     ini_handler.TypeName = "TestEngine";
@@ -129,6 +125,29 @@ static void ImGuiTestEngine_BindImGuiContext(ImGuiTestEngine* engine, ImGuiConte
     ini_handler.ReadLineFn = ImGuiTestEngine_SettingsReadLine;
     ini_handler.WriteAllFn = ImGuiTestEngine_SettingsWriteAll;
     ui_ctx->SettingsHandlers.push_back(ini_handler);
+
+    // Install generic context hooks facility
+    ImGuiContextHook hook;
+    hook.Type = ImGuiContextHookType_Shutdown;
+    hook.Callback = [](ImGuiContext* ui_ctx, ImGuiContextHook* hook) { ImGuiTestEngine_UnbindImGuiContext((ImGuiTestEngine*)hook->UserData, ui_ctx); };
+    hook.UserData = (void*)engine;
+    ImGui::AddContextHook(ui_ctx, &hook);
+
+    hook.Type = ImGuiContextHookType_NewFramePre;
+    hook.Callback = [](ImGuiContext* ui_ctx, ImGuiContextHook* hook) { ImGuiTestEngine_PreNewFrame((ImGuiTestEngine*)hook->UserData, ui_ctx); };
+    hook.UserData = (void*)engine;
+    ImGui::AddContextHook(ui_ctx, &hook);
+
+    hook.Type = ImGuiContextHookType_NewFramePost;
+    hook.Callback = [](ImGuiContext* ui_ctx, ImGuiContextHook* hook) { ImGuiTestEngine_PostNewFrame((ImGuiTestEngine*)hook->UserData, ui_ctx); };
+    hook.UserData = (void*)engine;
+    ImGui::AddContextHook(ui_ctx, &hook);
+
+    // Install custom test engine hook data
+    if (GImGuiTestEngine == NULL)
+        GImGuiTestEngine = engine;
+    IM_ASSERT(ui_ctx->TestEngine == NULL);
+    ui_ctx->TestEngine = engine;
 }
 
 static void    ImGuiTestEngine_UnbindImGuiContext(ImGuiTestEngine* engine, ImGuiContext* ui_ctx)
@@ -1121,33 +1140,12 @@ static void ImGuiTestEngine_RunTest(ImGuiTestEngine* engine, ImGuiTestContext* c
 //-------------------------------------------------------------------------
 // [SECTION] HOOKS FOR CORE LIBRARY
 //-------------------------------------------------------------------------
-// - ImGuiTestEngineHook_Shutdown()
-// - ImGuiTestEngineHook_PreNewFrame()
-// - ImGuiTestEngineHook_PostNewFrame()
 // - ImGuiTestEngineHook_ItemAdd()
 // - ImGuiTestEngineHook_ItemInfo()
 // - ImGuiTestEngineHook_Log()
 // - ImGuiTestEngineHook_IdInfo()
 // - ImGuiTestEngineHook_AssertFunc()
 //-------------------------------------------------------------------------
-
-void ImGuiTestEngineHook_Shutdown(ImGuiContext* ui_ctx)
-{
-    if (ImGuiTestEngine* engine = (ImGuiTestEngine*)ui_ctx->TestEngine)
-        ImGuiTestEngine_UnbindImGuiContext(engine, ui_ctx);
-}
-
-void ImGuiTestEngineHook_PreNewFrame(ImGuiContext* ui_ctx)
-{
-    if (ImGuiTestEngine* engine = (ImGuiTestEngine*)ui_ctx->TestEngine)
-        ImGuiTestEngine_PreNewFrame(engine, ui_ctx);
-}
-
-void ImGuiTestEngineHook_PostNewFrame(ImGuiContext* ui_ctx)
-{
-    if (ImGuiTestEngine* engine = (ImGuiTestEngine*)ui_ctx->TestEngine)
-        ImGuiTestEngine_PostNewFrame(engine, ui_ctx);
-}
 
 void ImGuiTestEngineHook_ItemAdd(ImGuiContext* ui_ctx, const ImRect& bb, ImGuiID id)
 {
