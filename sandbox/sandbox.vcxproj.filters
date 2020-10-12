@@ -29,6 +29,9 @@
     <Filter Include="libs\imgui_memory_editor">
       <UniqueIdentifier>{f82349da-abb1-4ea3-90e3-3fac36ce0672}</UniqueIdentifier>
     </Filter>
+    <Filter Include="libs\implot">
+      <UniqueIdentifier>{ba5cb1e9-0ab7-439d-9cf1-dc8a8ace037f}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\imgui\imconfig.h">
@@ -79,6 +82,12 @@
     <ClInclude Include="..\libs\imgui_memory_editor\imgui_memory_editor.h">
       <Filter>libs\imgui_memory_editor</Filter>
     </ClInclude>
+    <ClInclude Include="..\libs\implot\implot.h">
+      <Filter>libs\implot</Filter>
+    </ClInclude>
+    <ClInclude Include="..\libs\implot\implot_internal.h">
+      <Filter>libs\implot</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\imgui\imgui.cpp">
@@ -122,6 +131,15 @@
     </ClCompile>
     <ClCompile Include="..\libs\ImGuizmo\ImGuizmo.cpp">
       <Filter>libs\ImGuizmo</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libs\implot\implot.cpp">
+      <Filter>libs\implot</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libs\implot\implot_demo.cpp">
+      <Filter>libs\implot</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libs\implot\implot_items.cpp">
+      <Filter>libs\implot</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

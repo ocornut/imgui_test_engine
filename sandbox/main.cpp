@@ -7,6 +7,7 @@
 #include "editor_widgets.h"
 #include "libs/Str/Str.h"
 #include "libs/imgui_memory_editor/imgui_memory_editor.h"
+#include "libs/implot/implot.h"
 #include "shared/imgui_app.h"
 #include "shared/IconsFontAwesome5.h"
 #include "shared/imgui_capture_tool.h"
@@ -85,6 +86,7 @@ int main(int argc, char** argv)
     // Setup Dear ImGui context
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
+    ImPlot::CreateContext();
     ImGuiIO& io = ImGui::GetIO();
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
@@ -142,6 +144,7 @@ int main(int argc, char** argv)
     bool show_assets_browser = false;
     bool show_markdown = true;
     bool show_memory_editor = false;
+    bool show_implot_demo = false;
     bool show_test_engine = false;
     ImGuiCaptureTool capture_tool;
     capture_tool.Context.ScreenCaptureFunc = [](int x, int y, int w, int h, unsigned int* pixels, void* user_data) { ImGuiApp* app = (ImGuiApp*)user_data; return app->CaptureFramebuffer(app, x, y, w, h, pixels, NULL); };
@@ -246,6 +249,7 @@ int main(int argc, char** argv)
                 ImGui::MenuItem("Demo: Assets Browser", NULL, &show_assets_browser);
                 ImGui::MenuItem("Demo: Markdown", NULL, &show_markdown);
                 ImGui::MenuItem("Demo: Memory Editor", NULL, &show_memory_editor);
+                ImGui::MenuItem("Demo: ImPlot", NULL, &show_implot_demo);
                 ImGui::Separator();
 
                 // Tools
@@ -293,6 +297,9 @@ int main(int argc, char** argv)
         app->Vsync = test_io.RenderWantMaxSpeed ? false : true;
 #endif
 
+        if (show_implot_demo)
+            ImPlot::ShowDemoWindow(NULL);
+
         ImGui::Render();
 
         app->Render(app);
@@ -308,6 +315,7 @@ int main(int argc, char** argv)
 #endif
     app->ShutdownBackends(app);
     app->ShutdownCloseWindow(app);
+    ImPlot::DestroyContext();
     ImGui::DestroyContext();
 #ifdef IMGUI_SANDBOX_ENABLE_TEST_ENGINE
     ImGuiTestEngine_ShutdownContext(engine);
