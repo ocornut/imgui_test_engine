@@ -1,5 +1,4 @@
 // dear imgui - Standalone GUI/command-line app for Test Engine
-// If you are new to dear imgui, see examples/README.txt and documentation at the top of imgui.cpp.
 
 // Interactive mode, e.g.
 //   main.exe [tests]

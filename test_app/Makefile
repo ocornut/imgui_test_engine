@@ -4,18 +4,18 @@
 #
 
 EXE = imgui_test_app
-IMGUI_PATH = ../../imgui
+IMGUI_DIR = ../../imgui
 SOURCES = main.cpp
 # FIXME: The paths look wrong here??
 SOURCES += ../imgui_tests.cpp ../imgui_tests_docking.cpp ../imgui_tests_perf.cpp ../imgui_tests_table.cpp ../imgui_tests_widgets.cpp
 SOURCES += ../imgui_te_context.cpp ../imgui_te_coroutine.cpp ../imgui_te_engine.cpp ../imgui_te_ui.cpp ../imgui_te_util.cpp
-SOURCES += $(IMGUI_PATH)/imgui.cpp $(IMGUI_PATH)/imgui_demo.cpp $(IMGUI_PATH)/imgui_draw.cpp $(IMGUI_PATH)/imgui_widgets.cpp
+SOURCES += $(IMGUI_DIR)/imgui.cpp $(IMGUI_DIR)/imgui_demo.cpp $(IMGUI_DIR)/imgui_draw.cpp $(IMGUI_DIR)/imgui_widgets.cpp
 SOURCES += ../shared/imgui_app.cpp ../shared/imgui_capture_tool.cpp ../shared/imgui_utils.cpp
 OBJS = $(addsuffix .o, $(basename $(notdir $(SOURCES))))
 UNAME_S := $(shell uname -s)
 
 CXXFLAGS = -std=c++11
-CFLAGS = -I../ -I$(IMGUI_PATH) -I$(IMGUI_PATH)/examples
+CFLAGS = -I../ -I$(IMGUI_DIR) -I$(IMGUI_DIR)/backends
 CFLAGS += -DIMGUI_USER_CONFIG=\"test_app/test_app_imconfig.h\"
 CFLAGS += -g -Wall -Wformat
 
@@ -34,17 +34,17 @@ endif
 ifneq ($(BACKEND_LIB),)
 	ifeq ($(BACKEND_LIB), sdl2)
 		CFLAGS += -DIMGUI_APP_SDL_GL3
-		SOURCES += $(IMGUI_PATH)/examples/imgui_impl_sdl.cpp
+		SOURCES += $(IMGUI_DIR)/backends/imgui_impl_sdl.cpp
 	endif
 	ifeq ($(BACKEND_LIB), glfw3)
 		CFLAGS += -DIMGUI_APP_GLFW_GL3
-		SOURCES += $(IMGUI_PATH)/examples/imgui_impl_glfw.cpp
+		SOURCES += $(IMGUI_DIR)/backends/imgui_impl_glfw.cpp
 	endif
 	LIBS = $(shell pkg-config --libs $(BACKEND_LIB))
 	CFLAGS += $(shell pkg-config --cflags $(BACKEND_LIB))
-	CFLAGS += -I$(IMGUI_PATH)/examples/libs/gl3w
+	CFLAGS += -I$(IMGUI_DIR)/examples/libs/gl3w
 	CFLAGS += -DIMGUI_IMPL_OPENGL_LOADER_GL3W
-	SOURCES += $(IMGUI_PATH)/examples/imgui_impl_opengl3.cpp $(IMGUI_PATH)/examples/libs/gl3w/GL/gl3w.c
+	SOURCES += $(IMGUI_DIR)/backends/imgui_impl_opengl3.cpp $(IMGUI_DIR)/examples/libs/gl3w/GL/gl3w.c
 endif
 
 LIBS += -lpthread
@@ -97,13 +97,13 @@ endif
 %.o:../libs/Str/%.cpp
 	$(CXX) $(CFLAGS) $(CXXFLAGS) -c -o $@ $<
 
-%.o:../../imgui/%.cpp
+%.o:$(IMGUI_DIR)/%.cpp
 	$(CXX) $(CFLAGS) $(CXXFLAGS) -c -o $@ $<
 
-%.o:../../imgui/examples/%.cpp
+%.o:$(IMGUI_DIR)/backends/%.cpp
 	$(CXX) $(CFLAGS) $(CXXFLAGS) -c -o $@ $<
 
-%.o:../../imgui/examples/libs/gl3w/GL/%.c
+%.o:$(IMGUI_DIR)/examples/libs/gl3w/GL/%.c
 	$(CC) $(CFLAGS) -c -o $@ $<
 
 all: $(EXE)
