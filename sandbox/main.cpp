@@ -126,6 +126,7 @@ int main(int argc, char** argv)
     style.WindowRounding = 0.0f;
     style.ScaleAllSizes(app->DpiScale);
     LoadFonts(app);
+    ImFont* font_monospace = ImGui::GetIO().Fonts->Fonts[2]; // FIXME-SANDBOX: store in a structure
 
     // Load README
 #if 0
@@ -285,7 +286,9 @@ int main(int argc, char** argv)
         {
             static MemoryEditor me;
             static char buf[0x10000];
+            ImGui::PushFont(font_monospace);
             me.DrawWindow("Memory Editor", buf, sizeof(buf));
+            ImGui::PopFont();
         }
 
         if (show_capture_tool)
