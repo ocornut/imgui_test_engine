@@ -284,7 +284,7 @@ ImGuiTestEngineIO&  ImGuiTestEngine_GetIO(ImGuiTestEngine* engine);
 // Functions: Main
 ImGuiTest*          ImGuiTestEngine_RegisterTest(ImGuiTestEngine* engine, const char* category, const char* name, const char* src_file = NULL, int src_line = 0);
 void                ImGuiTestEngine_QueueTests(ImGuiTestEngine* engine, ImGuiTestGroup group, const char* filter = NULL, ImGuiTestRunFlags run_flags = 0);
-void                ImGuiTestEngine_QueueTest(ImGuiTestEngine* engine, ImGuiTest* test, ImGuiTestRunFlags run_flags);
+void                ImGuiTestEngine_QueueTest(ImGuiTestEngine* engine, ImGuiTest* test, ImGuiTestRunFlags run_flags = 0);
 void                ImGuiTestEngine_Abort(ImGuiTestEngine* engine);
 bool                ImGuiTestEngine_IsRunningTests(ImGuiTestEngine* engine);        // FIXME: Clarify difference between this and io.RunningTests
 void                ImGuiTestEngine_CoroutineStopRequest(ImGuiTestEngine* engine);

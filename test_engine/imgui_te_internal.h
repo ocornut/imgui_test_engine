@@ -115,6 +115,7 @@ struct ImGuiTestEngine
     ImGuiTest*                  UiSelectedTest = NULL;
     ImGuiTextFilter             UiFilterTests;
     ImGuiTextFilter             UiFilterPerfs;
+    bool                        UiFilterFailingOnly = false;
     float                       UiLogHeight = 150.0f;
 
     // Performance Monitor

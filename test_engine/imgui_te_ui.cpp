@@ -168,14 +168,44 @@ static void HelpTooltip(const char* desc)
         ImGui::SetTooltip("%s", desc);
 }
 
+static bool ShowTestGroupFilterTest(ImGuiTestEngine* e, ImGuiTestGroup group, ImGuiTextFilter* filter, ImGuiTest* test)
+{
+    if (test->Group != group)
+        return false;
+    if (!filter->PassFilter(test->Name) && !filter->PassFilter(test->Category))
+        return false;
+    if (e->UiFilterFailingOnly && test->Status == ImGuiTestStatus_Success)
+        return false;
+    return true;
+}
+
 static void ShowTestGroup(ImGuiTestEngine* e, ImGuiTestGroup group, ImGuiTextFilter* filter)
 {
     ImGuiStyle& style = ImGui::GetStyle();
     ImGuiTestEngineIO& e_io = ImGuiTestEngine_GetIO(e);
 
+    ImGui::SetNextItemWidth(ImGui::GetFontSize() * 6.0f);
+    if (ImGui::BeginCombo("##filterbystatus", e->UiFilterFailingOnly ? "Not OK" : "All"))
+    {
+        if (ImGui::Selectable("All", e->UiFilterFailingOnly == false))
+            e->UiFilterFailingOnly = false;
+        if (ImGui::Selectable("Not OK", e->UiFilterFailingOnly == true))
+            e->UiFilterFailingOnly = true;
+        ImGui::EndCombo();
+    }
+    ImGui::SameLine();
+
     //ImGui::Text("TESTS (%d)", engine->TestsAll.Size);
-    if (ImGui::Button("Run All"))
-        ImGuiTestEngine_QueueTests(e, group, filter->InputBuf); // FIXME: Filter func differs
+    if (ImGui::Button("Run"))
+    {
+        for (int n = 0; n < e->TestsAll.Size; n++)
+        {
+            ImGuiTest* test = e->TestsAll[n];
+            if (!ShowTestGroupFilterTest(e, group, filter, test))
+                continue;
+            ImGuiTestEngine_QueueTest(e, test, ImGuiTestRunFlags_None);
+        }
+    }
 
     ImGui::SameLine();
     filter->Draw("##filter", -1.0f);
@@ -188,9 +218,7 @@ static void ShowTestGroup(ImGuiTestEngine* e, ImGuiTestGroup group, ImGuiTextFil
         for (int n = 0; n < e->TestsAll.Size; n++)
         {
             ImGuiTest* test = e->TestsAll[n];
-            if (test->Group != group)
-                continue;
-            if (!filter->PassFilter(test->Name) && !filter->PassFilter(test->Category))
+            if (!ShowTestGroupFilterTest(e, group, filter, test))
                 continue;
 
             ImGuiTestContext* test_context = (e->TestContext && e->TestContext->Test == test) ? e->TestContext : NULL;
