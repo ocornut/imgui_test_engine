@@ -115,28 +115,10 @@ void RegisterTests_Table(ImGuiTestEngine* e)
 #ifdef IMGUI_HAS_TABLE
     ImGuiTest* t = NULL;
 
-    t = IM_REGISTER_TEST(e, "table", "table_1");
-    t->GuiFunc = [](ImGuiTestContext* ctx)
-    {
-        ImGui::Begin("Test window 1", NULL, ImGuiWindowFlags_NoSavedSettings);
-        if (ImGui::BeginTable("##table0", 4))
-        {
-            ImGui::TableSetupColumn("One", ImGuiTableColumnFlags_WidthFixed, 100.0f, 0);
-            ImGui::TableSetupColumn("Two");
-            ImGui::TableSetupColumn("Three");
-            ImGui::TableSetupColumn("Four");
-            HelperTableSubmitCellsButtonFill(4, 5);
-            ImGuiTable* table = ctx->UiContext->CurrentTable;
-            IM_CHECK_EQ(table->Columns[0].WidthRequest, 100.0f);
-            ImGui::EndTable();
-        }
-        ImGui::End();
-    };
-
     // ## Table: measure draw calls count
     // FIXME-TESTS: Resize window width to e.g. ideal size first, then resize down
     // Important: HelperTableSubmitCells uses Button() with -1 width which will CPU clip text, so we don't have interference from the contents here.
-    t = IM_REGISTER_TEST(e, "table", "table_2_draw_calls");
+    t = IM_REGISTER_TEST(e, "table", "table_draw_calls");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         ImGui::Begin("Test window 1", NULL, ImGuiWindowFlags_NoSavedSettings);
@@ -205,8 +187,27 @@ void RegisterTests_Table(ImGuiTestEngine* e)
         ctx->WindowResize("Test window 1", ImVec2(10, 600));
     };
 
+    // ## Table: test effect of specifying a width in TableSetupColumn()
+    t = IM_REGISTER_TEST(e, "table", "table_width_explicit");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::Begin("Test window 1", NULL, ImGuiWindowFlags_NoSavedSettings);
+        if (ImGui::BeginTable("##table0", 4))
+        {
+            ImGui::TableSetupColumn("One", ImGuiTableColumnFlags_WidthFixed, 100.0f, 0);
+            ImGui::TableSetupColumn("Two");
+            ImGui::TableSetupColumn("Three");
+            ImGui::TableSetupColumn("Four");
+            HelperTableSubmitCellsButtonFill(4, 5);
+            ImGuiTable* table = ctx->UiContext->CurrentTable;
+            IM_CHECK_EQ(table->Columns[0].WidthRequest, 100.0f);
+            ImGui::EndTable();
+        }
+        ImGui::End();
+    };
+
     // ## Table: measure equal width
-    t = IM_REGISTER_TEST(e, "table", "table_3_width");
+    t = IM_REGISTER_TEST(e, "table", "table_width_distrib");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         ImGui::SetNextWindowSize(ImVec2(400, 0), ImGuiCond_Appearing);
@@ -273,7 +274,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
     };
 
     // ## Test behavior of some Table functions without BeginTable
-    t = IM_REGISTER_TEST(e, "table", "table_4_functions_without_table");
+    t = IM_REGISTER_TEST(e, "table", "table_functions_without_table");
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         ImGui::Begin("Test window 1", NULL, ImGuiWindowFlags_NoSavedSettings);
@@ -286,7 +287,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
     };
 
     // ## Resizing test-bed (not an actual automated test)
-    t = IM_REGISTER_TEST(e, "table", "table_5_resizing_behaviors");
+    t = IM_REGISTER_TEST(e, "table", "table_resizing_behaviors");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         ImGui::SetNextWindowPos(ctx->GetMainViewportPos() + ImVec2(20, 5), ImGuiCond_Once);
@@ -427,7 +428,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
     };
 
     // ## Test Visible flag
-    t = IM_REGISTER_TEST(e, "table", "table_6_clip");
+    t = IM_REGISTER_TEST(e, "table", "table_clip");
     t->Flags |= ImGuiTestFlags_NoAutoFinish;
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
@@ -464,7 +465,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
     };
 
     // ## Test that BeginTable/EndTable with no contents doesn't fail
-    t = IM_REGISTER_TEST(e, "table", "table_7_empty");
+    t = IM_REGISTER_TEST(e, "table", "table_empty");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         ImGui::Begin("Test window 1", NULL, ImGuiWindowFlags_NoSavedSettings);
@@ -474,7 +475,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
     };
 
     // ## Test default sort order assignment
-    t = IM_REGISTER_TEST(e, "table", "table_8_default_sort_order");
+    t = IM_REGISTER_TEST(e, "table", "table_default_sort_order");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         ImGui::Begin("Test window 1", NULL, ImGuiWindowFlags_NoSavedSettings);
@@ -499,7 +500,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
     };
 
     // ## Test using the maximum of 64 columns (#3058)
-    t = IM_REGISTER_TEST(e, "table", "table_9_max_columns");
+    t = IM_REGISTER_TEST(e, "table", "table_max_columns");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         ImGui::Begin("Test window 1", NULL, ImGuiWindowFlags_NoSavedSettings);
@@ -522,7 +523,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
     };
 
     // ## Test rendering two tables with same ID.
-    t = IM_REGISTER_TEST(e, "table", "table_10_multi_instance");
+    t = IM_REGISTER_TEST(e, "table", "table_multi_instances");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         ImGui::SetNextWindowSize(ImVec2(300, 400), ImGuiCond_Appearing);

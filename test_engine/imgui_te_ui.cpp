@@ -184,17 +184,6 @@ static void ShowTestGroup(ImGuiTestEngine* e, ImGuiTestGroup group, ImGuiTextFil
     ImGuiStyle& style = ImGui::GetStyle();
     ImGuiTestEngineIO& e_io = ImGuiTestEngine_GetIO(e);
 
-    ImGui::SetNextItemWidth(ImGui::GetFontSize() * 6.0f);
-    if (ImGui::BeginCombo("##filterbystatus", e->UiFilterFailingOnly ? "Not OK" : "All"))
-    {
-        if (ImGui::Selectable("All", e->UiFilterFailingOnly == false))
-            e->UiFilterFailingOnly = false;
-        if (ImGui::Selectable("Not OK", e->UiFilterFailingOnly == true))
-            e->UiFilterFailingOnly = true;
-        ImGui::EndCombo();
-    }
-    ImGui::SameLine();
-
     //ImGui::Text("TESTS (%d)", engine->TestsAll.Size);
     if (ImGui::Button("Run"))
     {
@@ -206,9 +195,20 @@ static void ShowTestGroup(ImGuiTestEngine* e, ImGuiTestGroup group, ImGuiTextFil
             ImGuiTestEngine_QueueTest(e, test, ImGuiTestRunFlags_None);
         }
     }
+    ImGui::SameLine();
+
+    ImGui::SetNextItemWidth(ImGui::GetFontSize() * 6.0f);
+    if (ImGui::BeginCombo("##filterbystatus", e->UiFilterFailingOnly ? "Not OK" : "All"))
+    {
+        if (ImGui::Selectable("All", e->UiFilterFailingOnly == false))
+            e->UiFilterFailingOnly = false;
+        if (ImGui::Selectable("Not OK", e->UiFilterFailingOnly == true))
+            e->UiFilterFailingOnly = true;
+        ImGui::EndCombo();
+    }
 
     ImGui::SameLine();
-    filter->Draw("##filter", -1.0f);
+    filter->Draw("##filter", -FLT_MIN);
     ImGui::Separator();
 
     if (ImGui::BeginChild("Tests", ImVec2(0, 0)))
