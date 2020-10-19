@@ -84,7 +84,7 @@ static bool ImGuiApp_ImplNull_CreateWindow(ImGuiApp* app, const char*, ImVec2 si
     IM_UNUSED(app);
     ImGuiIO& io = ImGui::GetIO();
     io.DisplaySize = size;
-    io.BackendFlags |= ImGuiBackendFlags_RendererHasVtxOffset;
+    io.BackendFlags |= ImGuiBackendFlags_RendererHasVtxOffset | ImGuiBackendFlags_HasMouseCursors;
     //io.Fonts->Build();
     for (int n = 0; n < ImGuiKey_COUNT; n++)
         io.KeyMap[n] = n;
