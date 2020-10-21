@@ -412,6 +412,67 @@ void RegisterTests_Window(ImGuiTestEngine* e)
         IM_CHECK(ctx->GenericVars.Bool1 == false);
     };
 
+    // ## Test menus in a popup window (PR #3496).
+#if IMGUI_BROKEN_TESTS
+    t = IM_REGISTER_TEST(e, "window", "window_popup_menu");
+    struct WindowPopupMenuTestVars { bool FirstOpen = false; bool SecondOpen = false; };
+    t->SetUserDataType<WindowPopupMenuTestVars>();
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        auto& vars = ctx->GetUserData<WindowPopupMenuTestVars>();
+        vars.FirstOpen = vars.SecondOpen = false;
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+        if (ctx->IsFirstGuiFrame())
+            ImGui::OpenPopup("Menu Popup");
+        if (ImGui::BeginPopupModal("Menu Popup", NULL, ImGuiWindowFlags_MenuBar))
+        {
+            if (ImGui::BeginMenuBar())
+            {
+                if (ImGui::BeginMenu("First"))
+                {
+                    vars.FirstOpen = true;
+                    ImGui::MenuItem("Lorem");
+                    ImGui::EndMenu();
+                }
+                if (ImGui::BeginMenu("Second"))
+                {
+                    vars.SecondOpen = true;
+                    ImGui::MenuItem("Ipsum");
+                    ImGui::EndMenu();
+                }
+                ImGui::EndMenuBar();
+            }
+            if (ImGui::IsKeyPressedMap(ImGuiKey_Escape))
+                ImGui::CloseCurrentPopup();
+            ImGui::EndPopup();
+        }
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiWindow* window = ctx->GetWindowByRef("Menu Popup");
+        auto& vars = ctx->GetUserData<WindowPopupMenuTestVars>();
+        ctx->SetRef(window->Name);
+        IM_CHECK_EQ(vars.FirstOpen, false);                                     // Nothing is open.
+        IM_CHECK_EQ(vars.SecondOpen, false);
+        ctx->ItemClick("##menubar/First");                                      // Click and open first menu.
+        IM_CHECK_EQ(vars.FirstOpen, true);
+        IM_CHECK_EQ(vars.SecondOpen, false);
+        ctx->MouseMove("##menubar/Second", ImGuiTestOpFlags_NoFocusWindow);     // Hover and open second menu.
+        IM_CHECK_EQ(vars.FirstOpen, false);
+        IM_CHECK_EQ(vars.SecondOpen, true);
+        ctx->MouseMove("##menubar/First", ImGuiTestOpFlags_NoFocusWindow);      // Hover and open first menu again.
+        IM_CHECK_EQ(vars.FirstOpen, true);
+        IM_CHECK_EQ(vars.SecondOpen, false);
+        ctx->MouseMoveToPos(window->Pos + ImVec2(10.0f, 10.0f));                // Clicking window outside of menu closes it.
+        ctx->MouseClick();
+        ctx->ItemClick("##menubar/First");                                      // Click and reopen first menu.
+        ctx->MouseClickOnVoid();                                                // Clicking outside of menu closes it.
+        IM_CHECK_EQ(vars.FirstOpen, false);
+        IM_CHECK_EQ(vars.SecondOpen, false);
+    };
+#endif
+
     // ## Test that child window correctly affect contents size based on how their size was specified.
     t = IM_REGISTER_TEST(e, "window", "window_child_layout_size");
     t->Flags |= ImGuiTestFlags_NoAutoFinish;
