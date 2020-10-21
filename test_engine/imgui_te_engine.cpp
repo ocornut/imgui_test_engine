@@ -1360,7 +1360,7 @@ void ImGuiTestEngineHook_AssertFunc(const char* expr, const char* file, const ch
 //-------------------------------------------------------------------------
 
 // Return true to request a debugger break
-bool ImGuiTestEngineHook_Check(const char* file, const char* func, int line, ImGuiTestCheckFlags flags, bool result, const char* expr, const char* value_expr)
+bool ImGuiTestEngineHook_Check(const char* file, const char* func, int line, ImGuiTestCheckFlags flags, bool result, const char* expr)
 {
     ImGuiTestEngine* engine = GImGuiTestEngine;
     (void)func;
@@ -1377,20 +1377,13 @@ bool ImGuiTestEngineHook_Check(const char* file, const char* func, int line, ImG
             if (!(ctx->RunFlags & ImGuiTestRunFlags_NoTestFunc))
                 test->Status = ImGuiTestStatus_Error;
 
-            bool display_value_expr = (value_expr != NULL) && (result == false);
             if (file)
             {
-                if (display_value_expr)
-                    ctx->LogError("KO %s:%d '%s' -> '%s'", file_without_path, line, expr, value_expr);
-                else
-                    ctx->LogError("KO %s:%d '%s'", file_without_path, line, expr);
+                ctx->LogError("KO %s:%d '%s'", file_without_path, line, expr);
             }
             else
             {
-                if (display_value_expr)
-                    ctx->LogError("KO '%s' -> '%s'", expr, value_expr);
-                else
-                    ctx->LogError("KO '%s'", expr);
+                ctx->LogError("KO '%s'", expr);
             }
 
             // In case test failed without finishing gif capture - finish it here. It has to happen here because capture

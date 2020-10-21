@@ -197,9 +197,9 @@ template<> inline void ImGuiTestEngineUtil_AppendStrValue(ImGuiTextBuffer& buf, 
 template<> inline void ImGuiTestEngineUtil_AppendStrValue(ImGuiTextBuffer& buf, ImU8 value)         { buf.appendf("%u", value); }
 template<> inline void ImGuiTestEngineUtil_AppendStrValue(ImGuiTextBuffer& buf, ImS16 value)        { buf.appendf("%hd", value); }
 template<> inline void ImGuiTestEngineUtil_AppendStrValue(ImGuiTextBuffer& buf, ImU16 value)        { buf.appendf("%hu", value); }
-template<> inline void ImGuiTestEngineUtil_AppendStrValue(ImGuiTextBuffer& buf, float value)        { buf.appendf("%f", value); }
+template<> inline void ImGuiTestEngineUtil_AppendStrValue(ImGuiTextBuffer& buf, float value)        { buf.appendf("%.3f", value); }
 template<> inline void ImGuiTestEngineUtil_AppendStrValue(ImGuiTextBuffer& buf, double value)       { buf.appendf("%f", value); }
-template<> inline void ImGuiTestEngineUtil_AppendStrValue(ImGuiTextBuffer& buf, ImVec2 value)       { buf.appendf("(%f, %f)", value.x, value.y); }
+template<> inline void ImGuiTestEngineUtil_AppendStrValue(ImGuiTextBuffer& buf, ImVec2 value)       { buf.appendf("(%.3f, %.3f)", value.x, value.y); }
 template<> inline void ImGuiTestEngineUtil_AppendStrValue(ImGuiTextBuffer& buf, const void* value)  { buf.appendf("%p", value); }
 
 // Those macros allow us to print out the values of both lhs and rhs expressions involved in a check.
@@ -209,14 +209,13 @@ template<> inline void ImGuiTestEngineUtil_AppendStrValue(ImGuiTextBuffer& buf, 
         auto __lhs = _LHS;  /* Cache in variables to avoid side effects */  \
         auto __rhs = _RHS;                                                  \
         bool __res = __lhs _OP __rhs;                                       \
-        ImGuiTextBuffer value_expr_buf;                                     \
-        if (!__res)                                                         \
-        {                                                                   \
-            ImGuiTestEngineUtil_AppendStrValue(value_expr_buf, __lhs);      \
-            value_expr_buf.append(" " #_OP " ");                            \
-            ImGuiTestEngineUtil_AppendStrValue(value_expr_buf, __rhs);      \
-        }                                                                   \
-        if (ImGuiTestEngineHook_Check(__FILE__, __func__, __LINE__, ImGuiTestCheckFlags_None, __res, #_LHS " " #_OP " " #_RHS, value_expr_buf.c_str())) \
+        ImGuiTextBuffer expr_buf;                                           \
+        expr_buf.appendf("%s [", #_LHS);                                    \
+        ImGuiTestEngineUtil_AppendStrValue(expr_buf, __lhs);                \
+        expr_buf.appendf("] " #_OP " %s [", #_RHS);                         \
+        ImGuiTestEngineUtil_AppendStrValue(expr_buf, __rhs);                \
+        expr_buf.append("]");                                               \
+        if (ImGuiTestEngineHook_Check(__FILE__, __func__, __LINE__, ImGuiTestCheckFlags_None, __res, expr_buf.c_str())) \
             IM_ASSERT(__res);                                               \
     } while (0)
 
@@ -226,14 +225,13 @@ template<> inline void ImGuiTestEngineUtil_AppendStrValue(ImGuiTextBuffer& buf, 
         auto __lhs = _LHS;  /* Cache in variables to avoid side effects */  \
         auto __rhs = _RHS;                                                  \
         bool __res = __lhs _OP __rhs;                                       \
-        ImGuiTextBuffer value_expr_buf;                                     \
-        if (!__res)                                                         \
-        {                                                                   \
-            ImGuiTestEngineUtil_AppendStrValue(value_expr_buf, __lhs);      \
-            value_expr_buf.append(" " #_OP " ");                            \
-            ImGuiTestEngineUtil_AppendStrValue(value_expr_buf, __rhs);      \
-        }                                                                   \
-        if (ImGuiTestEngineHook_Check(__FILE__, __func__, __LINE__, ImGuiTestCheckFlags_None, __res, #_LHS " " #_OP " " #_RHS, value_expr_buf.c_str())) \
+        ImGuiTextBuffer expr_buf;                                           \
+        expr_buf.appendf("%s [", #_LHS);                                    \
+        ImGuiTestEngineUtil_AppendStrValue(expr_buf, __lhs);                \
+        expr_buf.appendf("] " #_OP " %s [", #_RHS);                         \
+        ImGuiTestEngineUtil_AppendStrValue(expr_buf, __rhs);                \
+        expr_buf.append("]");                                               \
+        if (ImGuiTestEngineHook_Check(__FILE__, __func__, __LINE__, ImGuiTestCheckFlags_None, __res, expr_buf.c_str())) \
             IM_ASSERT(__res);                                               \
         if (!__res)                                                         \
             return;                                                         \
@@ -243,10 +241,9 @@ template<> inline void ImGuiTestEngineUtil_AppendStrValue(ImGuiTextBuffer& buf, 
     do                                                                      \
     {                                                                       \
         bool __res = strcmp(_LHS, _RHS) == 0;                               \
-        ImGuiTextBuffer value_expr_buf;                                     \
-        if (!__res)                                                         \
-            value_expr_buf.appendf("\"%s\" == \"%s\"", _LHS, _RHS);         \
-        if (ImGuiTestEngineHook_Check(__FILE__, __func__, __LINE__, ImGuiTestCheckFlags_None, __res, #_LHS " == " #_RHS, value_expr_buf.c_str())) \
+        ImGuiTextBuffer expr_buf;                                           \
+        expr_buf.appendf("%s [%s] == %s [%s]", "", _LHS, "", _RHS);         \
+        if (ImGuiTestEngineHook_Check(__FILE__, __func__, __LINE__, ImGuiTestCheckFlags_None, __res, expr_buf.c_str())) \
             IM_ASSERT(__res);                                               \
         if (!__res)                                                         \
             return;                                                         \
@@ -266,7 +263,7 @@ template<> inline void ImGuiTestEngineUtil_AppendStrValue(ImGuiTextBuffer& buf, 
 #define IM_CHECK_GT_NO_RET(_LHS, _RHS)  IM_CHECK_OP_NO_RET(_LHS, _RHS, >)   // Greater Than
 #define IM_CHECK_GE_NO_RET(_LHS, _RHS)  IM_CHECK_OP_NO_RET(_LHS, _RHS, >=)  // Greater or Equal
 
-bool    ImGuiTestEngineHook_Check(const char* file, const char* func, int line, ImGuiTestCheckFlags flags, bool result, const char* expr, char const* value_expr = NULL);
+bool    ImGuiTestEngineHook_Check(const char* file, const char* func, int line, ImGuiTestCheckFlags flags, bool result, const char* expr);
 bool    ImGuiTestEngineHook_Error(const char* file, const char* func, int line, ImGuiTestCheckFlags flags, const char* fmt, ...);
 
 //-------------------------------------------------------------------------
