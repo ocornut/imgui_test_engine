@@ -171,7 +171,7 @@
     <ClCompile Include="imgui_tests.cpp" />
     <ClCompile Include="imgui_tests_docking.cpp" />
     <ClCompile Include="imgui_tests_perf.cpp" />
-    <ClCompile Include="imgui_tests_table.cpp" />
+    <ClCompile Include="imgui_tests_tables.cpp" />
     <ClCompile Include="imgui_tests_widgets.cpp" />
     <ClCompile Include="main.cpp" />
   </ItemGroup>

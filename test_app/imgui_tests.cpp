@@ -3131,6 +3131,8 @@ void RegisterTests_Capture(ImGuiTestEngine* e)
         ctx->CaptureInitArgs(&args, ImGuiCaptureFlags_StitchFullContents);
         ctx->CaptureAddWindow(&args, "");
         ctx->CaptureScreenshot(&args);
+
+        ctx->ItemClick("Tables/Close all");
     };
 #endif
 }
@@ -3139,8 +3141,8 @@ void RegisterTests(ImGuiTestEngine* e)
 {
     extern void RegisterTests_Docking(ImGuiTestEngine * e);     // imgui_tests_docking.cpp
     extern void RegisterTests_Perf(ImGuiTestEngine * e);        // imgui_tests_perf.cpp
-    extern void RegisterTests_Columns(ImGuiTestEngine * e);     // imgui_tests_table.cpp
-    extern void RegisterTests_Table(ImGuiTestEngine * e);       // imgui_tests_table.cpp
+    extern void RegisterTests_Columns(ImGuiTestEngine * e);     // imgui_tests_tables.cpp
+    extern void RegisterTests_Table(ImGuiTestEngine * e);       // imgui_tests_tables.cpp
     extern void RegisterTests_Widgets(ImGuiTestEngine * e);     // imgui_tests_widgets.cpp
 
     // Tests

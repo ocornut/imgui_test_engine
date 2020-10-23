@@ -77,7 +77,7 @@
     <ClCompile Include="..\shared\imgui_app.cpp">
       <Filter>shared</Filter>
     </ClCompile>
-    <ClCompile Include="imgui_tests_table.cpp">
+    <ClCompile Include="imgui_tests_tables.cpp">
       <Filter>test_app</Filter>
     </ClCompile>
     <ClCompile Include="imgui_tests_docking.cpp">
