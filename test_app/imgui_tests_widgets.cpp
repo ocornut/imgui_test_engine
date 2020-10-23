@@ -1379,7 +1379,8 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         ImGuiContext& g = *ctx->UiContext;
-        TabBarLeadingTrailingVars& vars = ctx->GetUserData<TabBarLeadingTrailingVars>();
+        auto& vars = ctx->GetUserData<TabBarLeadingTrailingVars>();
+
         vars.TabBarFlags = ImGuiTabBarFlags_Reorderable | ImGuiTabBarFlags_FittingPolicyResizeDown;
         ctx->Yield();
 
@@ -1434,7 +1435,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         ImGuiContext& g = *ctx->UiContext;
-        TabBarReorderVars& vars = ctx->GetUserData<TabBarReorderVars>();
+        auto& vars = ctx->GetUserData<TabBarReorderVars>();
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings);
         if (ImGui::BeginTabBar("TabBar", vars.Flags))
         {
@@ -1500,22 +1501,19 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ImGui::End();
     };
 
-    // ## Test BeginTabBar in the same Begin
-    struct TabBarMultipleSubmissionVars { bool SeparateBegin = false; bool SubmitSecondTabBar = true; int Tab1TextCount = 3; ImVec2 CursorAfterActiveTab; ImVec2 CursorAfterFirstBeginTabBar; ImVec2 CursorAfterFirstWidget; ImVec2 CursorAfterSecondBeginTabBar; ImVec2 CursorAfterSecondWidget; ImVec2 CursorAfterSecondEndTabBar; ImGuiTabBar* TabBar = NULL; };
-    t = IM_REGISTER_TEST(e, "widgets", "widgets_tabbar_begin_multiple_submissions");
+    // ## Test BeginTabBar() append
+    struct TabBarMultipleSubmissionVars { bool AppendToTabBar = true; ImVec2 CursorAfterActiveTab; ImVec2 CursorAfterFirstBeginTabBar; ImVec2 CursorAfterFirstWidget; ImVec2 CursorAfterSecondBeginTabBar; ImVec2 CursorAfterSecondWidget; ImVec2 CursorAfterSecondEndTabBar; };
+    t = IM_REGISTER_TEST(e, "widgets", "widgets_tabbar_append");
     t->SetUserDataType<TabBarMultipleSubmissionVars>();
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
-        TabBarMultipleSubmissionVars& vars = ctx->GetUserData<TabBarMultipleSubmissionVars>();
         ImGuiContext& g = *ctx->UiContext;
+        auto& vars = ctx->GetUserData<TabBarMultipleSubmissionVars>();
 
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
-        ImGui::Checkbox("Separate Begin", &vars.SeparateBegin);
-        ImGui::SliderInt("Tab 1 Text Count", &vars.Tab1TextCount, 1, 12);
-        ImGui::Checkbox("Submit 2nd TabBar", &vars.SubmitSecondTabBar);
+        ImGui::Checkbox("AppendToTabBar", &vars.AppendToTabBar);
         if (ImGui::BeginTabBar("TabBar"))
         {
-            vars.TabBar = g.CurrentTabBar;
             vars.CursorAfterFirstBeginTabBar = g.CurrentWindow->DC.CursorPos;
             if (ImGui::BeginTabItem("Tab 0"))
             {
@@ -1525,7 +1523,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
             }
             if (ImGui::BeginTabItem("Tab 1"))
             {
-                for (int i = 0; i < vars.Tab1TextCount; i++)
+                for (int i = 0; i < 3; i++)
                     ImGui::Text("Tab 1 Line %d", i);
                 ImGui::EndTabItem();
                 vars.CursorAfterActiveTab = g.CurrentWindow->DC.CursorPos;
@@ -1533,15 +1531,9 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
             ImGui::EndTabBar();
         }
         ImGui::Text("After first TabBar submission");
-
-        if (vars.SeparateBegin)
-        {
-            ImGui::End();
-            ImGui::Begin("Test Window", NULL);
-        }
-
         vars.CursorAfterFirstWidget = g.CurrentWindow->DC.CursorPos;
-        if (vars.SubmitSecondTabBar && ImGui::BeginTabBar("TabBar"))
+
+        if (vars.AppendToTabBar && ImGui::BeginTabBar("TabBar"))
         {
             vars.CursorAfterSecondBeginTabBar = g.CurrentWindow->DC.CursorPos;
             if (ImGui::BeginTabItem("Tab A"))
@@ -1555,46 +1547,42 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         }
         ImGui::Text("After second TabBar submission");
         vars.CursorAfterSecondWidget = g.CurrentWindow->DC.CursorPos;
+
         ImGui::End();
     };
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
-        TabBarMultipleSubmissionVars& vars = ctx->GetUserData<TabBarMultipleSubmissionVars>();
         ImGuiContext& g = *ctx->UiContext;
+        auto& vars = ctx->GetUserData<TabBarMultipleSubmissionVars>();
 
         ctx->WindowRef("Test Window/TabBar");
 
-        const float text_height = g.FontSize + g.Style.ItemSpacing.y;
-        for (bool separate_begin : {false, true})
+        const float line_height = g.FontSize + g.Style.ItemSpacing.y;
+        for (bool append_to_tab_bar : { false, true })
         {
-            vars.SeparateBegin = separate_begin;
+            vars.AppendToTabBar = append_to_tab_bar;
             ctx->Yield();
-            for (bool submit_second_tab : {true, false})
+
+            for (const char* tab_name : { "Tab 0", "Tab 1", "Tab A" })
             {
-                vars.SubmitSecondTabBar = submit_second_tab;
+                if (!append_to_tab_bar && strcmp(tab_name, "Tab A") == 0)
+                    continue;
+
+                ctx->ItemClick(tab_name);
                 ctx->Yield();
 
-                for (const char* active_tab_name : { "Tab 0", "Tab 1", "Tab A" })
+                float active_tab_height = line_height;
+                if (strcmp(tab_name, "Tab 1") == 0)
+                    active_tab_height *= 3;
+
+                IM_CHECK(vars.CursorAfterActiveTab.y == vars.CursorAfterFirstBeginTabBar.y + active_tab_height);
+                IM_CHECK(vars.CursorAfterFirstWidget.y == vars.CursorAfterActiveTab.y + line_height);
+                if (append_to_tab_bar)
                 {
-                    if (!submit_second_tab && strcmp(active_tab_name, "Tab A") == 0)
-                        continue;
-
-                    ctx->ItemClick(active_tab_name);
-                    ctx->Yield();
-
-                    float active_tab_height = text_height;
-                    if (strcmp(active_tab_name, "Tab 1") == 0)
-                        active_tab_height *= vars.Tab1TextCount;
-
-                    IM_CHECK(vars.CursorAfterActiveTab.y == vars.CursorAfterFirstBeginTabBar.y + active_tab_height);
-                    IM_CHECK(vars.CursorAfterFirstWidget.y == vars.CursorAfterActiveTab.y + text_height);
-                    if (submit_second_tab)
-                    {
-                        IM_CHECK(vars.CursorAfterSecondBeginTabBar.y == vars.CursorAfterFirstBeginTabBar.y);
-                        IM_CHECK(vars.CursorAfterSecondEndTabBar.y == vars.CursorAfterFirstWidget.y);
-                    }
-                    IM_CHECK(vars.CursorAfterSecondWidget.y == vars.CursorAfterFirstWidget.y + text_height);
+                    IM_CHECK(vars.CursorAfterSecondBeginTabBar.y == vars.CursorAfterFirstBeginTabBar.y);
+                    IM_CHECK(vars.CursorAfterSecondEndTabBar.y == vars.CursorAfterFirstWidget.y);
                 }
+                IM_CHECK(vars.CursorAfterSecondWidget.y == vars.CursorAfterFirstWidget.y + line_height);
             }
         }
     };
