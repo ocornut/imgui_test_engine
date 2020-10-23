@@ -275,7 +275,6 @@ ImGuiTestEngine*    ImGuiTestEngine_CreateContext(ImGuiContext* ui_ctx);        
 void                ImGuiTestEngine_ShutdownContext(ImGuiTestEngine* engine);       // Destroy test engine. Call after ImGui::DestroyContext() so test engine specific ini data gets saved.
 void                ImGuiTestEngine_Start(ImGuiTestEngine* engine);
 void                ImGuiTestEngine_Stop(ImGuiTestEngine* engine);
-void                ImGuiTestEngine_NewFrame(ImGuiTestEngine* engine);              // Call every frame after ImGui::NewFrame() and before submitting any UI.
 void                ImGuiTestEngine_PostRender(ImGuiTestEngine* engine);            // Call every frame after framebuffer swap, will process screen capture.
 ImGuiTestEngineIO&  ImGuiTestEngine_GetIO(ImGuiTestEngine* engine);
 

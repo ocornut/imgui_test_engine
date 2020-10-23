@@ -172,10 +172,6 @@ int main(int argc, char** argv)
 
         ImGui::NewFrame();
 
-#ifdef EDITOR_DEMO_ENABLE_TEST_ENGINE
-        ImGuiTestEngine_NewFrame(engine);
-#endif
-
 #ifdef IMGUI_HAS_DOCK
         if (show_dockspace)
             ImGui::DockSpaceOverViewport(NULL, ImGuiDockNodeFlags_PassthruCentralNode);

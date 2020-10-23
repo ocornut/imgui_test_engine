@@ -87,7 +87,7 @@ void ImGuiCaptureImageBuf::BlitSubImage(int dst_x, int dst_y, int src_x, int src
         memcpy(&Data[(dst_y + y) * Width + dst_x], &source->Data[(src_y + y) * source->Width + src_x], (size_t)source->Width * 4);
 }
 
-void ImGuiCaptureContext::NewFrame(ImGuiCaptureArgs* args)
+void ImGuiCaptureContext::PostNewFrame(ImGuiCaptureArgs* args)
 {
     if (args == NULL)
         return;

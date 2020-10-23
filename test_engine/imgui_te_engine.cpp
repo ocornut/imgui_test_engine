@@ -249,11 +249,6 @@ void    ImGuiTestEngine_Stop(ImGuiTestEngine* engine)
     engine->Started = false;
 }
 
-void    ImGuiTestEngine_NewFrame(ImGuiTestEngine* engine)
-{
-    engine->CaptureContext.NewFrame(engine->CurrentCaptureArgs);
-}
-
 void    ImGuiTestEngine_PostRender(ImGuiTestEngine* engine)
 {
     if (engine->IO.ConfigFixedDeltaTime != 0.0f)
@@ -582,6 +577,8 @@ static void ImGuiTestEngine_PostNewFrame(ImGuiTestEngine* engine, ImGuiContext* 
     if (engine->UiContextTarget != ui_ctx)
         return;
     IM_ASSERT(ui_ctx == GImGui);
+
+    engine->CaptureContext.PostNewFrame(engine->CurrentCaptureArgs);
 
     // Restore host inputs
     const bool want_simulated_inputs = engine->UiContextActive != NULL && ImGuiTestEngine_IsRunningTests(engine) && !(engine->TestContext->RunFlags & ImGuiTestRunFlags_NoTestFunc);
