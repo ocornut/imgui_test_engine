@@ -2326,7 +2326,7 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
             char* reconverted = (char*)IM_ALLOC((size_t)max_chars * sizeof(char));
 
             // Convert UTF-8 text to unicode codepoints and check against expected value.
-            int result_bytes = ImTextStrFromUtf8(converted, max_chars, utf8, NULL);
+            int result_bytes = ImTextStrFromUtf8(converted, max_chars, utf8, utf8 + utf8_len);
             bool success = ImStrlenW((ImWchar*)unicode) == result_bytes && memcmp(converted, unicode, (size_t)result_bytes * sizeof(ImWchar)) == 0;
 
             // Convert resulting unicode codepoints back to UTF-8 and check them against initial UTF-8 input value.
@@ -2533,7 +2533,7 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
                     // Bit 0 - 0: test out of range, 1: test in range.
                     // Bit 1 - 0: test end of range, 1: test start of range.
                     int shift = ((n - 1) * 2);
-                    int b = (mask & (0b000011 << shift)) >> shift;
+                    int b = (mask & (3 << shift)) >> shift;
                     int byte_n = n * 2;
                     if (range[byte_n + 0])
                     {
@@ -2548,7 +2548,7 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
                 }
 
                 //ctx->LogDebug("%02X%02X%02X%02X %d %d", seq[0], seq[1], seq[2], seq[3], range_n, mask);
-                const unsigned in_range_mask = (seq[1] ? 0b01 : 0) | (seq[2] ? 0b0100 : 0) | (seq[3] ? 0b010000 : 0);
+                const unsigned in_range_mask = (seq[1] ? 1 : 0) | (seq[2] ? 4 : 0) | (seq[3] ? 16 : 0);
                 if ((mask & in_range_mask) == in_range_mask) // All bytes were in a valid range.
                     IM_FIRST_CODEPOINT_OP((const char*)seq, IM_UNICODE_CODEPOINT_INVALID, !=);
                 else
