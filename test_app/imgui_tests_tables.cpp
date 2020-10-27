@@ -619,6 +619,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
         ImGui::Begin("Test window 1", NULL, ImGuiWindowFlags_NoSavedSettings);
 
         const int col_count = 3;
+        float column_widths[col_count] = {};
         for (int i = 0; i < 2; i++)
         {
             ImGui::BeginTable("Table", col_count, ImGuiTableFlags_NoSavedSettings|ImGuiTableFlags_Resizable|ImGuiTableFlags_Borders);
@@ -641,7 +642,6 @@ void RegisterTests_Table(ImGuiTestEngine* e)
                 // Perform actual test.
                 ImGuiContext& g = *ctx->UiContext;
                 ImGuiTable* table = g.CurrentTable;
-                float column_widths[col_count];
 
                 if (i == 0)
                 {
@@ -1028,7 +1028,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
         memset(ctx->GenericVars.BoolArray, 0, sizeof(ctx->GenericVars.BoolArray));
         const int column_count = 15;
-        ImGuiTableFlags flags = ImGuiTableFlags_Scroll | ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg;
+        ImGuiTableFlags flags = ImGuiTableFlags_ScrollX | ImGuiTableFlags_ScrollY | ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg;
         if (ImGui::BeginTable("Table", column_count, flags))
         {
             ImGui::TableSetupScrollFreeze(ctx->GenericVars.Int1, ctx->GenericVars.Int2);
@@ -1250,7 +1250,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
-        if (ImGui::BeginTable("Table", 6, ImGuiTableFlags_Scroll, ImVec2(400, ImGui::GetTextLineHeightWithSpacing() * 5)))
+        if (ImGui::BeginTable("Table", 6, ImGuiTableFlags_ScrollX | ImGuiTableFlags_ScrollY, ImVec2(400, ImGui::GetTextLineHeightWithSpacing() * 5)))
         {
             ImGui::TableSetupScrollFreeze(2, 2);
             HelperTableSubmitCellsCustom(ctx, 6, 20,
