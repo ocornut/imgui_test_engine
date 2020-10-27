@@ -38,10 +38,11 @@ typedef bool (*ImGuiScreenCaptureFunc)(int x, int y, int w, int h, unsigned int*
 
 enum ImGuiCaptureFlags_ : unsigned int
 {
-    ImGuiCaptureFlags_None                      = 0,        //
-    ImGuiCaptureFlags_StitchFullContents        = 1 << 1,   // Expand window to it's content size and capture its full height.
-    ImGuiCaptureFlags_HideCaptureToolWindow     = 1 << 2,   // Current window will not appear in screenshots or helper UI.
-    ImGuiCaptureFlags_ExpandToIncludePopups     = 1 << 3,   // Expand capture area to automatically include visible popups and tooltips.
+    ImGuiCaptureFlags_None                      = 0,
+    ImGuiCaptureFlags_StitchFullContents        = 1 << 0,   // Expand window to it's content size and capture its full height.
+    ImGuiCaptureFlags_HideCaptureToolWindow     = 1 << 1,   // Current window will not appear in screenshots or helper UI.
+    ImGuiCaptureFlags_ExpandToIncludePopups     = 1 << 2,   // Expand capture area to automatically include visible popups and tooltips.
+    ImGuiCaptureFlags_HideMouseCursor           = 1 << 3,   // Do not render software mouse cursor during capture.
     ImGuiCaptureFlags_Default_                  = ImGuiCaptureFlags_StitchFullContents | ImGuiCaptureFlags_HideCaptureToolWindow
 };
 
@@ -104,6 +105,7 @@ struct ImGuiCaptureContext
     ImVec2                  _MouseRelativeToWindowPos;      // Mouse cursor position relative to captured window (when _StitchFullContents is in use).
     ImGuiWindow*            _HoveredWindow = NULL;          // Window which was hovered at capture start.
     ImGuiCaptureArgs*       _CaptureArgs = NULL;            // Current capture args. Set only if capture is in progress.
+    bool                    _MouseDrawCursorBackup = false; // Initial value of g.IO.MouseDrawCursor.
 
     ImGuiCaptureContext(ImGuiScreenCaptureFunc capture_func = NULL) { ScreenCaptureFunc = capture_func; _MouseRelativeToWindowPos = ImVec2(-FLT_MAX, -FLT_MAX); }
 

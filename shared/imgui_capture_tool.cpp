@@ -98,6 +98,15 @@ void ImGuiCaptureContext::PostNewFrame()
         return;
 
     ImGuiContext& g = *GImGui;
+
+    if (args->InFlags & ImGuiCaptureFlags_HideMouseCursor)
+    {
+        if (_FrameNo == 0)
+            _MouseDrawCursorBackup = g.IO.MouseDrawCursor;
+
+        g.IO.MouseDrawCursor = false;
+    }
+
     if (_FrameNo > 2 && (args->InFlags & ImGuiCaptureFlags_StitchFullContents) != 0)
     {
         // Force mouse position. Hovered window is reset in ImGui::NewFrame() based on mouse real mouse position.
@@ -414,6 +423,9 @@ ImGuiCaptureStatus ImGuiCaptureContext::CaptureUpdate(ImGuiCaptureArgs* args)
                 ImGui::SetWindowPos(window, rect.Min, ImGuiCond_Always);
                 ImGui::SetWindowSize(window, rect.GetSize(), ImGuiCond_Always);
             }
+
+            if (args->InFlags & ImGuiCaptureFlags_HideMouseCursor)
+                g.IO.MouseDrawCursor = _MouseDrawCursorBackup;
 
             _FrameNo = _ChunkNo = 0;
             _LastRecordedFrameTimeSec = 0;
