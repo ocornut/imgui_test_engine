@@ -2896,6 +2896,36 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
             ctx->PopupCloseAll();
         }
     };
+
+    // ## Coverage: open everything in metrics window
+    t = IM_REGISTER_TEST(e, "demo", "demo_cov_metrics");
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        // Ensure Metrics windows is closed when beginning the test
+        ctx->WindowRef("/Dear ImGui Demo");
+        ctx->MenuUncheck("Tools/Metrics");
+        ctx->MenuCheck("Tools/Metrics");
+        ctx->Yield();
+
+        ctx->WindowRef("/Dear ImGui Metrics");
+        ctx->ItemCloseAll("");
+
+        // FIXME-TESTS: because "Windows" and "Active DrawLists" DrawCmd sub-items are updated when hovering items,
+        //              they make the tests fail because some "MouseOver" can't find gathered items and make the whole test stop.
+        for (const char* ref : { "Tools", /*"Windows", "DrawLists",*/ "Popups", "TabBars", "Settings", "Internal state" })
+        {
+            ctx->ItemOpen(ref);
+            ctx->ItemOpenAll(ref);
+        }
+        ctx->ItemOpen("Windows");
+        ctx->ItemOpenAll("Windows", 3);
+        ctx->ItemOpen("DrawLists");
+        ctx->ItemOpenAll("DrawLists", 1);
+
+        ctx->WindowRef("/Dear ImGui Demo");
+        ctx->MenuUncheck("Tools/Metrics");
+        ctx->Yield();
+    };
 }
 
 //-------------------------------------------------------------------------
