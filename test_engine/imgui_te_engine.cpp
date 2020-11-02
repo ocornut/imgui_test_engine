@@ -1023,7 +1023,7 @@ static void ImGuiTestEngine_RunTest(ImGuiTestEngine* engine, ImGuiTestContext* c
 
     ImGuiTest* test = ctx->Test;
     ctx->FrameCount = 0;
-    ctx->WindowRef("");
+    ctx->SetRef("");
     ctx->SetInputMode(ImGuiInputSource_Mouse);
     ctx->UiContext->NavInputSource = ImGuiInputSource_NavKeyboard;
     ctx->Clipboard.clear();

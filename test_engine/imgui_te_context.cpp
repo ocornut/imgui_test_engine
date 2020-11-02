@@ -364,7 +364,7 @@ void ImGuiTestContext::SetInputMode(ImGuiInputSource input_mode)
     }
 }
 
-void ImGuiTestContext::WindowRef(ImGuiWindow* window)
+void ImGuiTestContext::SetRef(ImGuiWindow* window)
 {
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
     LogDebug("WindowRef '%s' %08X", window->Name, window->ID);
@@ -381,7 +381,7 @@ void ImGuiTestContext::WindowRef(ImGuiWindow* window)
 }
 
 // FIXME-TESTS: May be to focus window when docked? Otherwise locate request won't even see an item?
-void ImGuiTestContext::WindowRef(ImGuiTestRef ref)
+void ImGuiTestContext::SetRef(ImGuiTestRef ref)
 {
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
     LogDebug("WindowRef '%s' %08X", ref.Path ? ref.Path : "NULL", ref.ID);
@@ -716,7 +716,7 @@ void    ImGuiTestContext::ScrollToItemY(ImGuiTestRef ref, float scroll_ratio_y)
         return;
     ImGuiWindow* window = item->Window;
 
-    int remaining_failures = 0;
+    int remaining_failures = 1;
     while (!Abort)
     {
         // result->Rect fields will be updated after each iteration.
@@ -2125,7 +2125,7 @@ void    ImGuiTestContext::DockNodeHideTabBar(ImGuiDockNode* node, bool hidden)
     // FIXME-TEST: Alter WindowRef
     if (hidden)
     {
-        WindowRef(node->HostWindow->Name);
+        SetRef(node->HostWindow);
         ItemClick(ImHashDecoratedPath("#COLLAPSE", NULL, node->ID));
         ItemClick(Str16f("/##Popup_%08x/Hide tab bar", GetID("#WindowMenu", node->ID)).c_str());
         IM_CHECK_SILENT(node->IsHiddenTabBar());
@@ -2134,7 +2134,7 @@ void    ImGuiTestContext::DockNodeHideTabBar(ImGuiDockNode* node, bool hidden)
     else
     {
         IM_CHECK_SILENT(node->VisibleWindow != NULL);
-        WindowRef(node->VisibleWindow->Name);
+        SetRef(node->VisibleWindow);
         ItemClick("#UNHIDE", 0, ImGuiTestOpFlags_MoveToEdgeD | ImGuiTestOpFlags_MoveToEdgeR);
         IM_CHECK_SILENT(!node->IsHiddenTabBar());
     }

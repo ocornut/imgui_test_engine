@@ -346,7 +346,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         auto& vars = ctx->GenericVars;
-        ctx->WindowRef("Test window 1");
+        ctx->SetRef("Test window 1");
         ImGuiWindow* window = ctx->GetWindowByRef("");
         ImGuiTable* table = ImGui::FindTableByID(ctx->GetID("table1"));
         for (int step = 0; step < 4; step++)
@@ -440,7 +440,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
         ImGuiTable* table = NULL;
         ImVector<float> initial_column_width;
 
-        ctx->WindowRef("Test window 1");
+        ctx->SetRef("Test window 1");
         table = ImGui::FindTableByID(ctx->GetID("table1"));    // Columns: FFF, do not span entire width of the table
         IM_CHECK_LT(table->ColumnsTotalWidth + 1.0f, table->InnerWindow->ContentRegionRect.GetWidth());
         initial_column_width.resize(table->ColumnsCount);
@@ -479,9 +479,9 @@ void RegisterTests_Table(ImGuiTestEngine* e)
             const ImGuiTableColumn* col_curr = &table->Columns[column_n];
 
             // Fit column.
-            ctx->WindowRef("Test window 1");
+            ctx->SetRef("Test window 1");
             ctx->ItemClick(TableGetHeaderID(table, "F3"), ImGuiMouseButton_Right);
-            ctx->WindowRef(g.NavWindow);
+            ctx->SetRef(g.NavWindow);
             ctx->ItemClick("Size column to fit");
             IM_CHECK(col_curr->WidthGiven == initial_column_width[column_n]);  // Column restored original size
 
@@ -490,9 +490,9 @@ void RegisterTests_Table(ImGuiTestEngine* e)
                 IM_CHECK(table->Columns[column_n].WidthGiven < initial_column_width[column_n]);
 
             // Test fitting rest of the columns
-            ctx->WindowRef("Test window 1");
+            ctx->SetRef("Test window 1");
             ctx->ItemClick(TableGetHeaderID(table, "F3"), ImGuiMouseButton_Right);
-            ctx->WindowRef(g.NavWindow);
+            ctx->SetRef(g.NavWindow);
             ctx->ItemClick("Size all columns to fit");
 
             // Ensure all columns fit to contents
@@ -500,7 +500,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
                 IM_CHECK(table->Columns[column_n].WidthGiven == initial_column_width[column_n]);
         }
 
-        ctx->WindowRef("Test window 1");
+        ctx->SetRef("Test window 1");
         table = ImGui::FindTableByID(ctx->GetID("table2"));     // Columns: FFW, do span entire width of the table
         IM_CHECK(table->ColumnsTotalWidth == table->InnerWindow->ContentRegionRect.GetWidth());
 
@@ -665,7 +665,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
     };
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
-        ctx->WindowRef("Test window 1");
+        ctx->SetRef("Test window 1");
         ImGuiTable* table = ImGui::FindTableByID(ctx->GetID("Table"));
 
         for (int instance_no = 0; instance_no < 2; instance_no++)
@@ -710,7 +710,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
     };
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
-        ctx->WindowRef("Bug Report");
+        ctx->SetRef("Bug Report");
         ctx->MouseMove("Test Tooltip");
         ctx->SleepShort();
         const float tooltip_width = ctx->GenericVars.Float1;
@@ -748,7 +748,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
     {
         TableSettingsVars& vars = ctx->GetUserData<TableSettingsVars>();
 
-        ctx->WindowRef("Table Settings");
+        ctx->SetRef("Table Settings");
         ImGuiID table_id = ctx->GetID("Table");
         ImGuiTable* table = ImGui::FindTableByID(table_id);
 
@@ -919,7 +919,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
     };
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
-        ctx->WindowRef("Test window");
+        ctx->SetRef("Test window");
         ImGuiTable* table = ImGui::FindTableByID(ctx->GetID("Table"));
         const ImGuiTableSortSpecs* sort_specs = NULL;
         int& table_flags = ctx->GenericVars.Int1;
@@ -1055,15 +1055,15 @@ void RegisterTests_Table(ImGuiTestEngine* e)
     };
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
-        ctx->WindowRef("Test Window");
+        ctx->SetRef("Test Window");
         ImGuiTable* table = ImGui::FindTableByID(ctx->GetID("Table"));
 
         // Reset scroll, if any.
         // FIXME-TESTS: 2020/09/28 running nav_from_clipped_item followed by this breaks if we don't reset scroll of outer window
-        ctx->WindowRef(table->OuterWindow);
+        ctx->SetRef(table->OuterWindow);
         ctx->ScrollToX(0.0f);
         ctx->ScrollToY(0.0f);
-        ctx->WindowRef(table->InnerWindow);
+        ctx->SetRef(table->InnerWindow);
         ctx->ScrollToX(0.0f);
         ctx->ScrollToY(0.0f);
         ctx->Yield();
@@ -1197,7 +1197,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
         ImGuiContext& g = *ctx->UiContext;
         auto& vars = ctx->GenericVars;
 
-        ctx->WindowRef("Test Window");
+        ctx->SetRef("Test Window");
         ImGuiWindow* window = ctx->GetWindowByRef(ctx->RefID);
         ImGuiTable* table = ImGui::FindTableByID(ctx->GetID("Table1"));
 
@@ -1271,10 +1271,10 @@ void RegisterTests_Table(ImGuiTestEngine* e)
     };
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
-        ctx->WindowRef("Test Window");
+        ctx->SetRef("Test Window");
         ImGuiTable* table = ImGui::FindTableByID(ctx->GetID("Table"));
 
-        ctx->WindowRef(table->InnerWindow);
+        ctx->SetRef(table->InnerWindow);
         ctx->ScrollToX(0.0f);
         ctx->ScrollToY(0.0f);
         ctx->YieldFrames(2);
@@ -1313,7 +1313,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         ImGuiContext& g = *ctx->UiContext;
-        ctx->WindowRef("Test window 1");
+        ctx->SetRef("Test window 1");
         ImGuiTable* table = ImGui::FindTableByID(ctx->GetID("##table0"));
         ImGuiTableColumn* col0 = &table->Columns[0];
         ImGuiTableColumn* col1 = &table->Columns[1];
@@ -1354,7 +1354,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
 
         // Test column hiding.
         ctx->ItemClick(TableGetHeaderID(table, "One"), ImGuiMouseButton_Right);
-        ctx->WindowRef(g.NavWindow);
+        ctx->SetRef(g.NavWindow);
         ctx->ItemClick("One");
         IM_CHECK(col0->IsVisible == false);
         ctx->ItemClick("One");

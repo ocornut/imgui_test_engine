@@ -108,7 +108,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
     {
         ButtonPressTestVars& vars = ctx->GetUserData<ButtonPressTestVars>();
 
-        ctx->WindowRef("Test Window");
+        ctx->SetRef("Test Window");
         ctx->ItemClick("Button0");
         IM_CHECK_EQ(vars.ButtonPressCount[0], 1);
         ctx->ItemDoubleClick("Button1");
@@ -176,7 +176,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
     {
         ButtonPressTestVars& vars = ctx->GetUserData<ButtonPressTestVars>();
 
-        ctx->WindowRef("Test Window");
+        ctx->SetRef("Test Window");
         ctx->ItemClick("ButtonL", 0);
         IM_CHECK_EQ(vars.ButtonPressCount[0], 1);
         ctx->ItemClick("ButtonR", 1);
@@ -301,7 +301,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ButtonStateTestVars& vars = ctx->GetUserData<ButtonStateTestVars>();
         vars.NextStep = ButtonStateMachineTestStep_None;
 
-        ctx->WindowRef("Test Window");
+        ctx->SetRef("Test Window");
 
         // Move mouse away from "Test" button
         ctx->MouseMove("Unused");
@@ -343,7 +343,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
     {
         // We use WindowRef() to ensure the window is uncollapsed.
         IM_CHECK(ctx->GenericVars.Bool1 == false);
-        ctx->WindowRef("Window1");
+        ctx->SetRef("Window1");
         ctx->ItemClick("Checkbox");
         IM_CHECK(ctx->GenericVars.Bool1 == true);
     };
@@ -370,7 +370,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ImGuiContext& g = *ctx->UiContext;
         DragDatatypeVars& vars = ctx->GetUserData<DragDatatypeVars>();
 
-        ctx->WindowRef("Test Window");
+        ctx->SetRef("Test Window");
         for (int widget_type = 0; widget_type < 2; widget_type++)
         {
             for (int data_type = 0; data_type < ImGuiDataType_COUNT; data_type++)
@@ -429,7 +429,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         ImGuiTestGenericVars& vars = ctx->GenericVars;
-        ctx->WindowRef("Test Window");
+        ctx->SetRef("Test Window");
 
         IM_CHECK_EQ(vars.Int1, 0);
         ctx->ItemInput("Drag");
@@ -465,7 +465,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
     {
         ImGuiContext& g = *ImGui::GetCurrentContext();
         ImGuiDragSliderVars& vars = ctx->GetUserData<ImGuiDragSliderVars>();
-        ctx->WindowRef("Test Window");
+        ctx->SetRef("Test Window");
         ImGuiSliderFlags flags[] = { ImGuiSliderFlags_None, ImGuiSliderFlags_AlwaysClamp };
         for (int i = 0; i < IM_ARRAYSIZE(flags); ++i)
         {
@@ -574,7 +574,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
     {
         char* buf = ctx->GenericVars.Str1;
 
-        ctx->WindowRef("Test Window");
+        ctx->SetRef("Test Window");
 
         // Insert
         strcpy(buf, "Hello");
@@ -632,7 +632,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
             strcat(buf, "xxxxxxx abcdefghijklmnopqrstuvwxyz\n");
         IM_CHECK_EQ((int)strlen(buf), 350);
 
-        ctx->WindowRef("Test Window");
+        ctx->SetRef("Test Window");
         ctx->ItemClick("Other"); // This is to ensure stb_textedit_clear_state() gets called (clear the undo buffer, etc.)
         ctx->ItemClick("InputText");
 
@@ -701,7 +701,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ImGuiTestGenericVars& vars = ctx->GenericVars;
         char* buf_user = vars.Str1;
         char* buf_visible = vars.Str2;
-        ctx->WindowRef("Test Window");
+        ctx->SetRef("Test Window");
 
         IM_CHECK_STR_EQ(buf_visible, "");
         strcpy(buf_user, "Hello");
@@ -744,7 +744,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
     };
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
-        ctx->WindowRef("Test Window");
+        ctx->SetRef("Test Window");
         ctx->ItemHoldForFrames("Hello", 100);
     };
 
@@ -760,7 +760,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         ImGuiTestGenericVars& vars = ctx->GenericVars;
-        ctx->WindowRef("Test Window");
+        ctx->SetRef("Test Window");
         ctx->ItemClick("Field");
         ctx->UiContext->IO.AddInputCharacter((ImWchar)'\t');
         ctx->KeyPressMap(ImGuiKey_Tab);
@@ -787,7 +787,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
             ctx->LogDebug("TEST CASE %d", test_n);
             const char* initial_value = (test_n == 0) ? "" : "initial";
             strcpy(vars.Str1, initial_value);
-            ctx->WindowRef("Test Window");
+            ctx->SetRef("Test Window");
             ctx->ItemInput("Field");
             ctx->KeyCharsReplace("text");
             IM_CHECK_STR_EQ(vars.Str1, "text");
@@ -827,7 +827,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         StrVars& vars = ctx->GetUserData<StrVars>();
         vars.str.set("abcd");
         IM_CHECK_EQ(vars.str.capacity(), 4+1);
-        ctx->WindowRef("Test Window");
+        ctx->SetRef("Test Window");
         ctx->ItemInput("Field1");
         ctx->KeyCharsAppendEnter("hello");
         ctx->ItemInput("Field2");
@@ -852,7 +852,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         InputTextCursorVars& vars = ctx->GetUserData<InputTextCursorVars>();
-        ctx->WindowRef("Test Window");
+        ctx->SetRef("Test Window");
 
         vars.str.clear();
         const int char_count_per_line = 10;
@@ -1002,7 +1002,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
     };
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
-        ctx->WindowRef("Test Window");
+        ctx->SetRef("Test Window");
         ctx->ItemClick("##Field");
         ctx->KeyPressMap(ImGuiKey_LeftArrow);
         IM_CHECK_EQ(ctx->UiContext->NavId, ctx->GetID("##Field"));
@@ -1033,7 +1033,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ImGuiTestGenericStatus& status = vars.Status;
 
         // Testing activation flag being set
-        ctx->WindowRef("Test Window");
+        ctx->SetRef("Test Window");
         ctx->ItemClick("Field/##ColorButton");
         IM_CHECK(status.Ret == 0 && status.Activated == 1 && status.Deactivated == 1 && status.DeactivatedAfterEdit == 0 && status.Edited == 0);
         status.Clear();
@@ -1061,7 +1061,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ImGuiTestGenericStatus& status = vars.Status;
 
         // Testing activation flag being set
-        ctx->WindowRef("Test Window");
+        ctx->SetRef("Test Window");
         ctx->ItemClick("Field");
         IM_CHECK(status.Ret == 0 && status.Activated == 1 && status.Deactivated == 0 && status.DeactivatedAfterEdit == 0 && status.Edited == 0);
         status.Clear();
@@ -1109,7 +1109,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ImGuiTestGenericStatus& status = vars.Status;
 
         // FIXME-TESTS: Better helper to build ids out of various type of data
-        ctx->WindowRef("Test Window");
+        ctx->SetRef("Test Window");
         int n;
         n = 0; ImGuiID field_0 = ImHashData(&n, sizeof(n), ctx->GetID("Field"));
         n = 1; ImGuiID field_1 = ImHashData(&n, sizeof(n), ctx->GetID("Field"));
@@ -1171,7 +1171,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ImGuiTestGenericStatus& status = vars.Status;
 
         // Input "1" which will be formatted as "1.000", make sure we don't report IsItemEdited() multiple times!
-        ctx->WindowRef("Test Window");
+        ctx->SetRef("Test Window");
         ctx->ItemClick("Field");
         ctx->KeyCharsAppend("1");
         IM_CHECK(status.Ret == 1 && status.Edited == 1 && status.Activated == 1 && status.Deactivated == 0 && status.DeactivatedAfterEdit == 0);
@@ -1196,7 +1196,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
     };
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
-        ctx->WindowRef("Test Window");
+        ctx->SetRef("Test Window");
         ctx->ItemClick("Selectable A");
         IM_CHECK_EQ(ctx->UiContext->NavId, ctx->GetID("Selectable A"));
         ctx->KeyPressMap(ImGuiKey_DownArrow);
@@ -1247,7 +1247,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
     {
         ImGuiContext& g = *ctx->UiContext;
         auto& vars = ctx->GenericVars;
-        ctx->WindowRef("Test Window");
+        ctx->SetRef("Test Window");
         ImGuiTabBar* tab_bar = g.TabBars.GetOrAddByKey(ctx->GetID("TabBar")); // FIXME-TESTS: Helper function?
         IM_CHECK(tab_bar != NULL);
         IM_CHECK(tab_bar->Tabs.Size == 0);
@@ -1340,7 +1340,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         TabBarButtonVars& vars = ctx->GetUserData<TabBarButtonVars>();
-        ctx->WindowRef("Test Window/TabBar");
+        ctx->SetRef("Test Window/TabBar");
 
         IM_CHECK_EQ(vars.LastClickedButton, -1);
         ctx->ItemClick("1");
@@ -1384,7 +1384,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         vars.TabBarFlags = ImGuiTabBarFlags_Reorderable | ImGuiTabBarFlags_FittingPolicyResizeDown;
         ctx->Yield();
 
-        ctx->WindowRef("Test Window/TabBar");
+        ctx->SetRef("Test Window/TabBar");
         const char* tabs[] = { "Leading", "Tab 0", "Tab 1", "Tab 2", "Trailing" };
 
         // Check that tabs relative order matches what we expect (which is not the same as submission order above)
@@ -1458,7 +1458,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         vars.Flags = ImGuiTabBarFlags_Reorderable;
         ctx->Yield();
 
-        ctx->WindowRef("Test Window/TabBar");
+        ctx->SetRef("Test Window/TabBar");
 
         ctx->ItemDragAndDrop("Tab 0", "Tab 1");
         IM_CHECK_EQ(vars.TabBar->Tabs[0].ID, ctx->GetID("Tab 1"));
@@ -1555,7 +1555,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ImGuiContext& g = *ctx->UiContext;
         auto& vars = ctx->GetUserData<TabBarMultipleSubmissionVars>();
 
-        ctx->WindowRef("Test Window/TabBar");
+        ctx->SetRef("Test Window/TabBar");
 
         const float line_height = g.FontSize + g.Style.ItemSpacing.y;
         for (bool append_to_tab_bar : { false, true })
@@ -1691,7 +1691,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         TreeNodeTestVars& vars = ctx->GetUserData<TreeNodeTestVars>();
-        ctx->WindowRef("Test Window");
+        ctx->SetRef("Test Window");
 
 #ifdef IMGUI_HAS_MULTI_SELECT
         int loop_count = 2;
@@ -1967,7 +1967,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         vars.Vec4Array[0] = ImVec4(1, 0, 0, 1);
         vars.Vec4Array[1] = ImVec4(0, 1, 0, 1);
 
-        ctx->WindowRef("Test Window");
+        ctx->SetRef("Test Window");
 
         IM_CHECK_NE(memcmp(&vars.Vec4Array[0], &vars.Vec4Array[1], sizeof(ImVec4)), 0);
         ctx->ItemDragAndDrop("ColorEdit1/##ColorButton", "ColorEdit2/##X"); // FIXME-TESTS: Inner items
@@ -2071,7 +2071,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
     };
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
-        ctx->WindowRef("Test Window");
+        ctx->SetRef("Test Window");
 
         ctx->GenericVars.Id = 0;
         ctx->ItemDragAndDrop("Drag", "Small1");
@@ -2121,7 +2121,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
     };
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
-        ctx->WindowRef("Test Window");
+        ctx->SetRef("Test Window");
         ctx->ItemDragAndDrop("Drag", "Drop");
         IM_CHECK(ctx->GenericVars.Bool1 == false);
         ctx->ItemDragAndDrop("Drag Extern", "Drop");
@@ -2132,9 +2132,9 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
     t = IM_REGISTER_TEST(e, "widgets", "widgets_text_unformatted_long");
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
-        ctx->WindowRef("Dear ImGui Demo");
+        ctx->SetRef("Dear ImGui Demo");
         ctx->MenuCheck("Examples/Long text display");
-        ctx->WindowRef("Example: Long text display");
+        ctx->SetRef("Example: Long text display");
         ctx->ItemClick("Add 1000 lines");
         ctx->SleepShort();
 
@@ -2188,7 +2188,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
     };
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
-        ctx->WindowRef("Append Menus");
+        ctx->SetRef("Append Menus");
         ctx->MenuClick("First Menu");
         ctx->MenuClick("First Menu/1 First");
         IM_CHECK_EQ(ctx->GenericVars.Bool1, false);
@@ -2226,7 +2226,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
     };
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
-        ctx->WindowRef("##MainMenuBar");
+        ctx->SetRef("##MainMenuBar");
         ctx->MenuClick("Second Menu/Second");
         IM_CHECK_EQ(ctx->GenericVars.Bool1, true);
     };
@@ -2339,7 +2339,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         MultiSelectTestVars& vars = ctx->GetUserData<MultiSelectTestVars>();
         ExampleSelection& selection = vars.Selection0;
 
-        ctx->WindowRef("Test Window");
+        ctx->SetRef("Test Window");
 
         selection.Clear();
         ctx->Yield();
@@ -2515,7 +2515,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ExampleSelection& selection0 = vars.Selection0;
         ExampleSelection& selection1 = vars.Selection1;
 
-        ctx->WindowRef("Test Window");
+        ctx->SetRef("Test Window");
         selection0.Clear();
         selection1.Clear();
 
@@ -2555,7 +2555,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
     };
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
-        ctx->WindowRef("Test Window");
+        ctx->SetRef("Test Window");
         ctx->MouseMove("C1", ImGuiTestOpFlags_NoCheckHoveredId); // Button itself won't be hovered, Selectable will!
         IM_CHECK(ctx->GenericVars.Status.Hovered == 1);
         ctx->MouseMove("C3", ImGuiTestOpFlags_NoCheckHoveredId); // Button itself won't be hovered, Selectable will!
@@ -2594,7 +2594,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
     };
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
-        ctx->WindowRef("Test Window");
+        ctx->SetRef("Test Window");
         ImGuiTable* table = ImGui::FindTableByID(ctx->GetID("table"));
 
         for (int i = 0; i < 2; i++)
@@ -2635,7 +2635,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         ImGuiContext& g = *ctx->UiContext;
-        ctx->WindowRef("Test Window");
+        ctx->SetRef("Test Window");
 
         // Test focusing next item with SetKeyboardFocusHere(0)
         ImGuiTestGenericVars& vars = ctx->GenericVars;
@@ -2705,7 +2705,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         const int OUT_OF_RANGE_FLAG = 1;
         const int MID_OF_RANGE_FLAG = 2;
 
-        ctx->WindowRef("Test Window");
+        ctx->SetRef("Test Window");
         for (int data_type = 0; data_type < ImGuiDataType_COUNT; data_type++)
         {
             for (int invert_range = 0; invert_range < 2; invert_range++)
@@ -2795,7 +2795,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ImGuiContext& g = *ctx->UiContext;
         TooltipPosVars& vars = ctx->GetUserData<TooltipPosVars>();
 
-        ctx->WindowRef("Test Window");
+        ctx->SetRef("Test Window");
         ctx->MouseMove("HoverMe");  // Force tooltip creation so we can grab the pointer
         ImGuiWindow* tooltip = ctx->GetWindowByRef("##Tooltip_00");
 

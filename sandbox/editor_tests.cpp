@@ -12,7 +12,7 @@ void RegisterTests(ImGuiTestEngine* e)
     t = IM_REGISTER_TEST(e, "window", "open_capture_tool");
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
-        ctx->WindowRef("##MainMenuBar");
+        ctx->SetRef("##MainMenuBar");
         ctx->MenuCheck("View/Capture Tool");
     };
 }

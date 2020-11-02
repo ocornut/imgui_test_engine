@@ -46,7 +46,7 @@ void RegisterTests_Perf(ImGuiTestEngine* e)
     {
         ctx->PerfCalcRef();
 
-        ctx->WindowRef("Dear ImGui Demo");
+        ctx->SetRef("Dear ImGui Demo");
         ctx->ItemOpenAll("");
         ctx->MenuCheckAll("Examples");
         ctx->MenuCheckAll("Tools");
@@ -63,7 +63,7 @@ void RegisterTests_Perf(ImGuiTestEngine* e)
         }
         ctx->PerfCapture();
 
-        ctx->WindowRef("Dear ImGui Demo");
+        ctx->SetRef("Dear ImGui Demo");
         ctx->ItemCloseAll("");
         ctx->MenuUncheckAll("Examples");
         ctx->MenuUncheckAll("Tools");
