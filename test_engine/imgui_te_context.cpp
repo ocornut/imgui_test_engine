@@ -1391,6 +1391,9 @@ void    ImGuiTestContext::GatherItems(ImGuiTestItemList* out_list, ImGuiTestRef 
     }
     const int end_gather_size = out_list->GetSize();
 
+    // FIXME-TESTS: To support filter we'd need to process the list here,
+    // Because ImGuiTestItemList is a pool (ImVector + map ID->index) we'll need to filter, rewrite, rebuild map
+
     ImGuiTestItemInfo* parent_item = ItemInfo(parent, ImGuiTestOpFlags_NoError);
     LogDebug("GatherItems from %s, %d deep: found %d items.", ImGuiTestRefDesc(parent, parent_item).c_str(), depth, end_gather_size - begin_gather_size);
 
@@ -1566,14 +1569,9 @@ void    ImGuiTestContext::ItemActionAll(ImGuiTestAction action, ImGuiTestRef ref
         // Find deep most items
         int highest_depth = -1;
         if (action == ImGuiTestAction_Close)
-        {
-            for (int n = 0; n < items.GetSize(); n++)
-            {
-                const ImGuiTestItemInfo* info = items[n];
-                if ((info->StatusFlags & ImGuiItemStatusFlags_Openable) && (info->StatusFlags & ImGuiItemStatusFlags_Opened))
-                    highest_depth = ImMax(highest_depth, info->Depth);
-            }
-        }
+            for (auto& item : items)
+                if ((item.StatusFlags & ImGuiItemStatusFlags_Openable) && (item.StatusFlags & ImGuiItemStatusFlags_Opened))
+                    highest_depth = ImMax(highest_depth, item.Depth);
 
         const int actioned_total_at_beginning_of_pass = actioned_total;
 
@@ -1596,42 +1594,42 @@ void    ImGuiTestContext::ItemActionAll(ImGuiTestAction action, ImGuiTestRef ref
             if (IsError())
                 break;
 
-            const ImGuiTestItemInfo* info = items[n];
+            const ImGuiTestItemInfo& item = *items[n];
             switch (action)
             {
             case ImGuiTestAction_Hover:
-                ItemAction(action, info->ID);
+                ItemAction(action, item.ID);
                 actioned_total++;
                 break;
             case ImGuiTestAction_Click:
-                ItemAction(action, info->ID);
+                ItemAction(action, item.ID);
                 actioned_total++;
                 break;
             case ImGuiTestAction_Check:
-                if ((info->StatusFlags & ImGuiItemStatusFlags_Checkable) && !(info->StatusFlags & ImGuiItemStatusFlags_Checked))
+                if ((item.StatusFlags & ImGuiItemStatusFlags_Checkable) && !(item.StatusFlags & ImGuiItemStatusFlags_Checked))
                 {
-                    ItemAction(action, info->ID);
+                    ItemAction(action, item.ID);
                     actioned_total++;
                 }
                 break;
             case ImGuiTestAction_Uncheck:
-                if ((info->StatusFlags & ImGuiItemStatusFlags_Checkable) && (info->StatusFlags & ImGuiItemStatusFlags_Checked))
+                if ((item.StatusFlags & ImGuiItemStatusFlags_Checkable) && (item.StatusFlags & ImGuiItemStatusFlags_Checked))
                 {
-                    ItemAction(action, info->ID);
+                    ItemAction(action, item.ID);
                     actioned_total++;
                 }
                 break;
             case ImGuiTestAction_Open:
-                if ((info->StatusFlags & ImGuiItemStatusFlags_Openable) && !(info->StatusFlags & ImGuiItemStatusFlags_Opened))
+                if ((item.StatusFlags & ImGuiItemStatusFlags_Openable) && !(item.StatusFlags & ImGuiItemStatusFlags_Opened))
                 {
-                    ItemAction(action, info->ID);
+                    ItemAction(action, item.ID);
                     actioned_total++;
                 }
                 break;
             case ImGuiTestAction_Close:
-                if (info->Depth == highest_depth && (info->StatusFlags & ImGuiItemStatusFlags_Openable) && (info->StatusFlags & ImGuiItemStatusFlags_Opened))
+                if (item.Depth == highest_depth && (item.StatusFlags & ImGuiItemStatusFlags_Openable) && (item.StatusFlags & ImGuiItemStatusFlags_Opened))
                 {
-                    ItemClose(info->ID);
+                    ItemClose(item.ID);
                     actioned_total++;
                 }
                 break;
@@ -1845,11 +1843,10 @@ void    ImGuiTestContext::MenuActionAll(ImGuiTestAction action, ImGuiTestRef ref
     ImGuiTestItemList items;
     MenuAction(ImGuiTestAction_Open, ref_parent);
     GatherItems(&items, GetFocusWindowRef(), 1);
-    for (int n = 0; n < items.GetSize(); n++)
+    for (auto item : items)
     {
-        const ImGuiTestItemInfo* item = items[n];
         MenuAction(ImGuiTestAction_Open, ref_parent); // We assume that every interaction will close the menu again
-        ItemAction(action, item->ID);
+        ItemAction(action, item.ID);
     }
 }
 

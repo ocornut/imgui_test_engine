@@ -2819,12 +2819,12 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
         ImGuiStyle style_backup = ImGui::GetStyle();
         ImGuiTestItemList items;
         ctx->GatherItems(&items, ref_popup);
-        for (int n = 0; n < items.GetSize(); n++)
+        for (auto item : items)
         {
             ctx->WindowRef(ref_window);
             ctx->ItemClick("Colors##Selector");
             ctx->WindowRef(ref_popup);
-            ctx->ItemClick(items[n]->ID);
+            ctx->ItemClick(item.ID);
         }
         ImGui::GetStyle() = style_backup;
     };
@@ -2910,48 +2910,45 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
         // FIXME-TESTS: Maybe add status flags filter to GatherItems() ?
         ImGuiTestItemList items;
         ctx->GatherItems(&items, "", 1);
-        for (int n = 0; n < items.GetSize(); n++)
+        for (const ImGuiTestItemInfo& item : items)
         {
-            const ImGuiTestItemInfo* info = items[n];
-            if ((info->StatusFlags & ImGuiItemStatusFlags_Openable) == 0)
+            if ((item.StatusFlags & ImGuiItemStatusFlags_Openable) == 0)
                 continue;
-            ctx->ItemOpen(info->ID);
+            ctx->ItemOpen(item.ID);
 
             // FIXME-TESTS: Anything and "DrawLists" DrawCmd sub-items are updated when hovering items,
             // they make the tests fail because some "MouseOver" can't find gathered items and make the whole test stop.
             // Maybe make it easier to perform some filtering, aka OpenAll except "XXX"
             // Maybe could add support for ImGuiTestOpFlags_NoError in the ItemOpenAll() path?
             int max_depth = -1;
-            if (info->ID == ctx->GetID("Windows") || info->ID == ctx->GetID("Viewports"))
+            if (item.ID == ctx->GetID("Windows") || item.ID == ctx->GetID("Viewport") || item.ID == ctx->GetID("Viewports"))
                 max_depth = 2;
-            else if (info->ID == ctx->GetID("DrawLists"))
+            else if (item.ID == ctx->GetID("DrawLists"))
                 max_depth = 1;
-            ctx->ItemOpenAll(info->ID, max_depth);
+            ctx->ItemOpenAll(item.ID, max_depth);
 
             // Toggle all tools and restore their initial state.
-            if (info->ID == ctx->GetID("Tools"))
+            if (item.ID == ctx->GetID("Tools"))
             {
                 ImGuiTestItemList checkables;
                 ctx->GatherItems(&checkables, "Tools", 1);
-                for (int checkable_n = 0; checkable_n < checkables.GetSize(); checkable_n++)
-                {
-                    const ImGuiTestItemInfo* checkable_info = checkables[n];
-                    if ((checkable_info->StatusFlags & ImGuiItemStatusFlags_Checkable) == 0)
-                        continue;
-                    ctx->ItemAction(ImGuiTestAction_Click, checkable_info->ID);
-                    ctx->ItemAction(ImGuiTestAction_Click, checkable_info->ID);
-                }
+                for (const ImGuiTestItemInfo& checkable : checkables)
+                    if (checkable.StatusFlags & ImGuiItemStatusFlags_Checkable)
+                    {
+                        ctx->ItemAction(ImGuiTestAction_Click, checkable.ID);
+                        ctx->ItemAction(ImGuiTestAction_Click, checkable.ID);
+                    }
             }
 
             // FIXME-TESTS: in docking branch this is under Viewports
-            if (info->ID == ctx->GetID("DrawLists"))
+            if (item.ID == ctx->GetID("DrawLists"))
             {
                 ctx->ItemActionAll(ImGuiTestAction_Hover, "DrawLists", 2);
             }
 
             // Close
-            ctx->ItemCloseAll(info->ID);
-            ctx->ItemClose(info->ID);
+            ctx->ItemCloseAll(item.ID);
+            ctx->ItemClose(item.ID);
         }
         ctx->WindowClose("");
     };

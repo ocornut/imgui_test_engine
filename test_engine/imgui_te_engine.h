@@ -366,9 +366,14 @@ struct ImGuiTestItemList
     void                        Clear()                 { Pool.Clear(); }
     void                        Reserve(int capacity)   { Pool.Reserve(capacity); }
     int                         GetSize() const         { return Pool.GetSize(); }
-    const ImGuiTestItemInfo*    operator[] (size_t n)   { return Pool.GetByIndex((int)n); }
     const ImGuiTestItemInfo*    GetByIndex(int n)       { return Pool.GetByIndex(n); }
     const ImGuiTestItemInfo*    GetByID(ImGuiID id)     { return Pool.GetByKey(id); }
+
+    // For range-for
+    size_t                      size() const            { return (size_t)Pool.GetSize(); }
+    const ImGuiTestItemInfo*    begin() const           { return Pool.Buf.begin(); }
+    const ImGuiTestItemInfo*    end() const             { return Pool.Buf.end(); }
+    const ImGuiTestItemInfo*    operator[] (size_t n)   { return &Pool.Buf[(int)n]; }
 };
 
 // Weak reference to an Item/Window given an ID or ID path.
