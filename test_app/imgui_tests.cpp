@@ -2903,28 +2903,43 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
     {
         // Ensure Metrics windows is closed when beginning the test
         ctx->WindowRef("/Dear ImGui Demo");
-        ctx->MenuUncheck("Tools/Metrics");
         ctx->MenuCheck("Tools/Metrics");
-        ctx->Yield();
-
         ctx->WindowRef("/Dear ImGui Metrics");
         ctx->ItemCloseAll("");
 
-        // FIXME-TESTS: because "Windows" and "Active DrawLists" DrawCmd sub-items are updated when hovering items,
-        //              they make the tests fail because some "MouseOver" can't find gathered items and make the whole test stop.
-        for (const char* ref : { "Tools", /*"Windows", "DrawLists",*/ "Popups", "TabBars", "Settings", "Internal state" })
+        // FIXME-TESTS: Maybe add status flags filter to GatherItems() ?
+        ImGuiTestItemList items;
+        ctx->GatherItems(&items, "", 1);
+        for (int n = 0; n < items.GetSize(); n++)
         {
-            ctx->ItemOpen(ref);
-            ctx->ItemOpenAll(ref);
-        }
-        ctx->ItemOpen("Windows");
-        ctx->ItemOpenAll("Windows", 3);
-        ctx->ItemOpen("DrawLists");
-        ctx->ItemOpenAll("DrawLists", 1);
+            const ImGuiTestItemInfo* info = items[n];
+            if ((info->StatusFlags & ImGuiItemStatusFlags_Openable) == 0)
+                continue;
+            ctx->ItemOpen(info->ID);
 
-        ctx->WindowRef("/Dear ImGui Demo");
-        ctx->MenuUncheck("Tools/Metrics");
-        ctx->Yield();
+            // FIXME-TESTS: Anything and "DrawLists" DrawCmd sub-items are updated when hovering items,
+            // they make the tests fail because some "MouseOver" can't find gathered items and make the whole test stop.
+            // Maybe could add support for ImGuiTestOpFlags_NoError in the ItemOpenAll() path?
+            int max_depth = -1;
+            if (info->ID == ctx->GetID("Windows") || info->ID == ctx->GetID("Viewports"))
+                max_depth = 2;
+            else if (info->ID == ctx->GetID("DrawLists"))
+                max_depth = 1;
+            ctx->ItemOpenAll(info->ID, max_depth);
+
+            // Activate tools
+            // FIXME-TESTS: Design a way to easily backup and restore Checked/Opened state, would be useful.
+            if (info->ID == ctx->GetID("Tools"))
+            {
+                ctx->ItemActionAll(ImGuiTestAction_Check, "Tools", 1, 1);
+                ctx->ItemActionAll(ImGuiTestAction_Uncheck, "Tools", 1, 1);
+            }
+
+            // Close
+            ctx->ItemCloseAll(info->ID);
+            ctx->ItemClose(info->ID);
+        }
+        ctx->WindowClose("");
     };
 }
 
