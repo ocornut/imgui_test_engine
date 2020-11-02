@@ -23,8 +23,8 @@ struct ImGuiTestInfoTask
 struct ImGuiTestGatherTask
 {
     // Input
-    ImGuiID                 ParentID = 0;
-    int                     Depth = 0;
+    ImGuiID                 InParentID = 0;
+    int                     InDepth = 0;
 
     // Output/Temp
     ImGuiTestItemList*      OutList = NULL;

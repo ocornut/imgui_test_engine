@@ -2621,7 +2621,7 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
         IM_CHECK(filter.PassFilter("cartender") == false);
     };
 
-        // ## Visual ImBezierClosestPoint test.
+    // ## Visual ImBezierClosestPoint test.
     t = IM_REGISTER_TEST(e, "misc", "misc_bezier_closest_point");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
@@ -2919,6 +2919,7 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
 
             // FIXME-TESTS: Anything and "DrawLists" DrawCmd sub-items are updated when hovering items,
             // they make the tests fail because some "MouseOver" can't find gathered items and make the whole test stop.
+            // Maybe make it easier to perform some filtering, aka OpenAll except "XXX"
             // Maybe could add support for ImGuiTestOpFlags_NoError in the ItemOpenAll() path?
             int max_depth = -1;
             if (info->ID == ctx->GetID("Windows") || info->ID == ctx->GetID("Viewports"))
@@ -2927,12 +2928,25 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
                 max_depth = 1;
             ctx->ItemOpenAll(info->ID, max_depth);
 
-            // Activate tools
-            // FIXME-TESTS: Design a way to easily backup and restore Checked/Opened state, would be useful.
+            // Toggle all tools and restore their initial state.
             if (info->ID == ctx->GetID("Tools"))
             {
-                ctx->ItemActionAll(ImGuiTestAction_Check, "Tools", 1, 1);
-                ctx->ItemActionAll(ImGuiTestAction_Uncheck, "Tools", 1, 1);
+                ImGuiTestItemList checkables;
+                ctx->GatherItems(&checkables, "Tools", 1);
+                for (int checkable_n = 0; checkable_n < checkables.GetSize(); checkable_n++)
+                {
+                    const ImGuiTestItemInfo* checkable_info = checkables[n];
+                    if ((checkable_info->StatusFlags & ImGuiItemStatusFlags_Checkable) == 0)
+                        continue;
+                    ctx->ItemAction(ImGuiTestAction_Click, checkable_info->ID);
+                    ctx->ItemAction(ImGuiTestAction_Click, checkable_info->ID);
+                }
+            }
+
+            // FIXME-TESTS: in docking branch this is under Viewports
+            if (info->ID == ctx->GetID("DrawLists"))
+            {
+                ctx->ItemActionAll(ImGuiTestAction_Hover, "DrawLists", 2);
             }
 
             // Close

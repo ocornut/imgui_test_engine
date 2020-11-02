@@ -36,6 +36,7 @@ struct ImGuiTestGatherTask;
 enum ImGuiTestAction
 {
     ImGuiTestAction_Unknown = 0,
+    ImGuiTestAction_Hover,
     ImGuiTestAction_Click,
     ImGuiTestAction_DoubleClick,
     ImGuiTestAction_Check,
@@ -52,6 +53,7 @@ inline const char* GetActionName(ImGuiTestAction action)
     switch (action)
     {
     case ImGuiTestAction_Unknown:       return "Unknown";
+    case ImGuiTestAction_Hover:         return "Hover";
     case ImGuiTestAction_Click:         return "Click";
     case ImGuiTestAction_DoubleClick:   return "DoubleClick";
     case ImGuiTestAction_Check:         return "Check";
@@ -70,6 +72,7 @@ inline const char*  GetActionVerb(ImGuiTestAction action)
     switch (action)
     {
     case ImGuiTestAction_Unknown:       return "Unknown";
+    case ImGuiTestAction_Hover:         return "Hovered";
     case ImGuiTestAction_Click:         return "Clicked";
     case ImGuiTestAction_DoubleClick:   return "DoubleClicked";
     case ImGuiTestAction_Check:         return "Checked";
@@ -313,8 +316,8 @@ struct ImGuiTestContext
     void        ItemNavActivate(ImGuiTestRef ref, ImGuiTestOpFlags flags = 0)           { ItemAction(ImGuiTestAction_NavActivate, ref, NULL, flags); }
 
     void        ItemActionAll(ImGuiTestAction action, ImGuiTestRef ref_parent, int depth = -1, int passes = -1);
-    void        ItemOpenAll(ImGuiTestRef ref_parent, int depth = -1, int passes = -1)    { ItemActionAll(ImGuiTestAction_Open, ref_parent, depth, passes); }
-    void        ItemCloseAll(ImGuiTestRef ref_parent, int depth = -1, int passes = -1)   { ItemActionAll(ImGuiTestAction_Close, ref_parent, depth, passes); }
+    void        ItemOpenAll(ImGuiTestRef ref_parent, int depth = -1, int passes = -1)   { ItemActionAll(ImGuiTestAction_Open, ref_parent, depth, passes); }
+    void        ItemCloseAll(ImGuiTestRef ref_parent, int depth = -1, int passes = -1)  { ItemActionAll(ImGuiTestAction_Close, ref_parent, depth, passes); }
 
     void        ItemHold(ImGuiTestRef ref, float time);
     void        ItemHoldForFrames(ImGuiTestRef ref, int frames);

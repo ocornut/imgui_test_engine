@@ -1364,7 +1364,7 @@ void    ImGuiTestContext::GatherItems(ImGuiTestItemList* out_list, ImGuiTestRef 
 {
     IM_ASSERT(out_list != NULL);
     IM_ASSERT(depth > 0 || depth == -1);
-    IM_ASSERT(GatherTask->ParentID == 0);
+    IM_ASSERT(GatherTask->InParentID == 0);
     IM_ASSERT(GatherTask->LastItemInfo == NULL);
 
     if (IsError())
@@ -1375,8 +1375,8 @@ void    ImGuiTestContext::GatherItems(ImGuiTestItemList* out_list, ImGuiTestRef 
         depth = 99;
     if (parent.ID == 0)
         parent.ID = GetID(parent);
-    GatherTask->ParentID = parent.ID;
-    GatherTask->Depth = depth;
+    GatherTask->InParentID = parent.ID;
+    GatherTask->InDepth = depth;
     GatherTask->OutList = out_list;
 
     // Keep running while gathering
@@ -1394,8 +1394,8 @@ void    ImGuiTestContext::GatherItems(ImGuiTestItemList* out_list, ImGuiTestRef 
     ImGuiTestItemInfo* parent_item = ItemInfo(parent, ImGuiTestOpFlags_NoError);
     LogDebug("GatherItems from %s, %d deep: found %d items.", ImGuiTestRefDesc(parent, parent_item).c_str(), depth, end_gather_size - begin_gather_size);
 
-    GatherTask->ParentID = 0;
-    GatherTask->Depth = 0;
+    GatherTask->InParentID = 0;
+    GatherTask->InDepth = 0;
     GatherTask->OutList = NULL;
     GatherTask->LastItemInfo = NULL;
 }
@@ -1435,6 +1435,10 @@ void    ImGuiTestContext::ItemAction(ImGuiTestAction action, ImGuiTestRef ref, v
     if (item->Window && !(OpFlags & ImGuiTestOpFlags_NoAutoUncollapse))
         WindowCollapse(item->Window, false);
 
+    if (action == ImGuiTestAction_Hover)
+    {
+        MouseMove(ref, flags);
+    }
     if (action == ImGuiTestAction_Click || action == ImGuiTestAction_DoubleClick)
     {
         if (InputMode == ImGuiInputSource_Mouse)
@@ -1595,6 +1599,10 @@ void    ImGuiTestContext::ItemActionAll(ImGuiTestAction action, ImGuiTestRef ref
             const ImGuiTestItemInfo* info = items[n];
             switch (action)
             {
+            case ImGuiTestAction_Hover:
+                ItemAction(action, info->ID);
+                actioned_total++;
+                break;
             case ImGuiTestAction_Click:
                 ItemAction(action, info->ID);
                 actioned_total++;
@@ -1635,6 +1643,8 @@ void    ImGuiTestContext::ItemActionAll(ImGuiTestAction action, ImGuiTestRef ref
         if (IsError())
             break;
 
+        if (action == ImGuiTestAction_Hover)
+            break;
         if (actioned_total_at_beginning_of_pass == actioned_total)
             break;
     }

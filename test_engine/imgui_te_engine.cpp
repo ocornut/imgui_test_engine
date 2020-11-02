@@ -1001,7 +1001,7 @@ void ImGuiTestEngine_UpdateHooks(ImGuiTestEngine* engine)
         want_hooking = true;
     if (engine->FindByLabelTask.InLabel != NULL)
         want_hooking = true;
-    if (engine->GatherTask.ParentID != 0)
+    if (engine->GatherTask.InParentID != 0)
         want_hooking = true;
     if (engine->StackTool.QueryStackId != 0)
         want_hooking = true;
@@ -1193,9 +1193,9 @@ void ImGuiTestEngineHook_ItemAdd(ImGuiContext* ui_ctx, const ImRect& bb, ImGuiID
     }
 
     // Gather Task (only 1 can be active)
-    if (engine->GatherTask.ParentID != 0 && window->DC.NavLayerCurrent == ImGuiNavLayer_Main) // FIXME: Layer filter?
+    if (engine->GatherTask.InParentID != 0 && window->DC.NavLayerCurrent == ImGuiNavLayer_Main) // FIXME: Layer filter?
     {
-        const ImGuiID gather_parent_id = engine->GatherTask.ParentID;
+        const ImGuiID gather_parent_id = engine->GatherTask.InParentID;
         int depth = -1;
         if (gather_parent_id == window->IDStack.back())
         {
@@ -1203,7 +1203,7 @@ void ImGuiTestEngineHook_ItemAdd(ImGuiContext* ui_ctx, const ImRect& bb, ImGuiID
         }
         else
         {
-            int max_depth = ImMin(window->IDStack.Size, engine->GatherTask.Depth);
+            int max_depth = ImMin(window->IDStack.Size, engine->GatherTask.InDepth);
             for (int n_depth = 1; n_depth < max_depth; n_depth++)
                 if (window->IDStack[window->IDStack.Size - 1 - n_depth] == gather_parent_id)
                 {
