@@ -507,7 +507,7 @@ void RegisterTests_Perf(ImGuiTestEngine* e)
         ImGui::SetNextWindowSize(ImVec2(400, 0));
         ImGui::Begin("Test Func", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
         int loop_count = 50 * 2 * ctx->PerfStressAmount;
-        if (ImGui::BeginTable("Table", 3, ImGuiTableFlags_BordersV))
+        if (ImGui::BeginTable("table1", 3, ImGuiTableFlags_BordersV))
         {
             for (int n = 0; n < loop_count; n++)
             {
@@ -534,7 +534,7 @@ void RegisterTests_Perf(ImGuiTestEngine* e)
         for (int n = 0; n < loop_count; n++)
         {
             ImGui::PushID(n);
-            if (ImGui::BeginTable("Table", 3, ImGuiTableFlags_BordersV))
+            if (ImGui::BeginTable("table1", 3, ImGuiTableFlags_BordersV))
             {
                 for (int row = 0; row < 2; row++)
                 {

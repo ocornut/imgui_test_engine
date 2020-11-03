@@ -2159,7 +2159,11 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
         ImVector<ImWchar> out_ranges;
         builder.BuildRanges(&out_ranges);
         builder.Clear();
-        IM_CHECK_EQ(out_ranges.Size, 5);
+        IM_CHECK_EQ(out_ranges.Size, 2*2+1);
+        builder.AddText("\xe6\x97\xa5\xe6\x9c\xac\xe8\xaa\x9e"); // "Ni-hon-go"
+        out_ranges.clear();
+        builder.BuildRanges(&out_ranges);
+        IM_CHECK_EQ(out_ranges.Size, 3*2+1);
     };
 
 

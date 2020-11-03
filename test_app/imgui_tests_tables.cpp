@@ -131,7 +131,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
         ImGui::Text("Text before");
         {
             int cmd_size_before = draw_list->CmdBuffer.Size;
-            if (ImGui::BeginTable("##table1", 4, ImGuiTableFlags_NoClip | ImGuiTableFlags_Borders, ImVec2(400, 0)))
+            if (ImGui::BeginTable("table1", 4, ImGuiTableFlags_NoClip | ImGuiTableFlags_Borders, ImVec2(400, 0)))
             {
                 HelperTableSubmitCellsButtonFill(4, 5);
                 ImGui::EndTable();
@@ -143,7 +143,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
         }
         {
             int cmd_size_before = draw_list->CmdBuffer.Size;
-            if (ImGui::BeginTable("##table2", 4, ImGuiTableFlags_Borders, ImVec2(400, 0)))
+            if (ImGui::BeginTable("table2", 4, ImGuiTableFlags_Borders, ImVec2(400, 0)))
             {
                 HelperTableSubmitCellsButtonFill(4, 4);
                 ImGui::EndTable();
@@ -155,7 +155,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
         }
         {
             int cmd_size_before = draw_list->CmdBuffer.Size;
-            if (ImGui::BeginTable("##table3", 4, ImGuiTableFlags_Borders, ImVec2(400, 0)))
+            if (ImGui::BeginTable("table3", 4, ImGuiTableFlags_Borders, ImVec2(400, 0)))
             {
                 ImGui::TableSetupColumn("One");
                 ImGui::TableSetupColumn("TwoTwo");
@@ -172,7 +172,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
         }
         {
             int cmd_size_before = draw_list->CmdBuffer.Size;
-            if (ImGui::BeginTable("##table4", 3, ImGuiTableFlags_Borders))
+            if (ImGui::BeginTable("table4", 3, ImGuiTableFlags_Borders))
             {
                 ImGui::TableSetupColumn("One");
                 ImGui::TableSetupColumn("TwoTwo");
@@ -209,7 +209,9 @@ void RegisterTests_Table(ImGuiTestEngine* e)
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         ImGui::Begin("Test window 1", NULL, ImGuiWindowFlags_NoSavedSettings);
-        if (ImGui::BeginTable("##table0", 4))
+        if (ctx->IsFirstGuiFrame())
+            TableDiscardInstanceAndSettings(ImGui::GetID("table1"));
+        if (ImGui::BeginTable("table1", 4))
         {
             ImGui::TableSetupColumn("One", ImGuiTableColumnFlags_WidthFixed, 100.0f, 0);
             ImGui::TableSetupColumn("Two");
@@ -260,7 +262,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
 
             ImGui::Spacing();
             ImGui::Spacing();
-            if (ImGui::BeginTable("##table", tc.ColumnCount, tc.Flags, ImVec2(0, 0)))
+            if (ImGui::BeginTable("table1", tc.ColumnCount, tc.Flags, ImVec2(0, 0)))
             {
                 ImGui::TableNextRow();
 
@@ -558,7 +560,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         ImGui::Begin("Test window 1", NULL, ImGuiWindowFlags_NoSavedSettings);
-        ImGui::BeginTable("Table", 3);
+        ImGui::BeginTable("table1", 3);
         ImGui::EndTable();
         ImGui::End();
     };
@@ -568,7 +570,9 @@ void RegisterTests_Table(ImGuiTestEngine* e)
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         ImGui::Begin("Test window 1", NULL, ImGuiWindowFlags_NoSavedSettings);
-        ImGui::BeginTable("Table", 4, ImGuiTableFlags_MultiSortable);
+        if (ctx->IsFirstGuiFrame())
+            TableDiscardInstanceAndSettings(ImGui::GetID("table1"));
+        ImGui::BeginTable("table1", 4, ImGuiTableFlags_MultiSortable);
         ImGui::TableSetupColumn("0", ImGuiTableColumnFlags_None);
         ImGui::TableSetupColumn("1", ImGuiTableColumnFlags_DefaultSort);
         ImGui::TableSetupColumn("1", ImGuiTableColumnFlags_DefaultSort | ImGuiTableColumnFlags_PreferSortAscending);
@@ -594,7 +598,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
     {
         ImGui::Begin("Test window 1", NULL, ImGuiWindowFlags_NoSavedSettings);
         //ImDrawList* cmd = ImGui::GetWindowDrawList();
-        ImGui::BeginTable("Table", 64);
+        ImGui::BeginTable("table1", 64);
         for (int n = 0; n < 64; n++)
             ImGui::TableSetupColumn("Header");
         ImGui::TableHeadersRow();
@@ -622,7 +626,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
         float column_widths[col_count] = {};
         for (int i = 0; i < 2; i++)
         {
-            ImGui::BeginTable("Table", col_count, ImGuiTableFlags_NoSavedSettings|ImGuiTableFlags_Resizable|ImGuiTableFlags_Borders);
+            ImGui::BeginTable("table1", col_count, ImGuiTableFlags_NoSavedSettings|ImGuiTableFlags_Resizable|ImGuiTableFlags_Borders);
             for (int c = 0; c < col_count; c++)
                 ImGui::TableSetupColumn("Header", c ? ImGuiTableColumnFlags_WidthFixed : ImGuiTableColumnFlags_WidthStretch);
             ImGui::TableHeadersRow();
@@ -666,7 +670,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         ctx->SetRef("Test window 1");
-        ImGuiTable* table = ImGui::TableFindByID(ctx->GetID("Table"));
+        ImGuiTable* table = ImGui::TableFindByID(ctx->GetID("table1"));
 
         for (int instance_no = 0; instance_no < 2; instance_no++)
         {
@@ -691,7 +695,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
         {
             ImGui::BeginTooltip();
             for (int i = 0; i < 2; i++)
-                if (ImGui::BeginTable(Str16f("Table%d", i).c_str(), 2))
+                if (ImGui::BeginTable(Str16f("table%d", i).c_str(), 2))
                 {
                     ImGui::TableSetupColumn("Header1");
                     ImGui::TableSetupColumn("Header2");
@@ -730,7 +734,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
         ImGui::SetNextWindowSize(ImVec2(300, 200), ImGuiCond_Appearing);
         ImGui::Begin("Table Settings", NULL, vars.window_flags);
 
-        if (ImGui::BeginTable("Table", column_count, ImGuiTableFlags_Resizable | ImGuiTableFlags_Hideable | ImGuiTableFlags_Reorderable | ImGuiTableFlags_Sortable))
+        if (ImGui::BeginTable("table1", column_count, ImGuiTableFlags_Resizable | ImGuiTableFlags_Hideable | ImGuiTableFlags_Reorderable | ImGuiTableFlags_Sortable))
         {
             ImGui::TableSetupColumn("Col1");
             ImGui::TableSetupColumn("Col2");
@@ -751,7 +755,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
         ImGui::TableGcCompactSettings();
 
         ctx->SetRef("Table Settings");
-        ImGuiID table_id = ctx->GetID("Table");
+        ImGuiID table_id = ctx->GetID("table1");
         ImGuiTable* table = ImGui::TableFindByID(table_id);
 
         // Number of tested settings == number of bits used in the mask for iterating all combinations.
@@ -903,10 +907,10 @@ void RegisterTests_Table(ImGuiTestEngine* e)
         if (ctx->IsFirstTestFrame())
         {
             table_flags = ImGuiTableFlags_Sortable | ImGuiTableFlags_MultiSortable;
-            TableDiscardInstanceAndSettings(ImGui::GetID("Table"));
+            TableDiscardInstanceAndSettings(ImGui::GetID("table1"));
         }
 
-        if (ImGui::BeginTable("Table", 6, table_flags))
+        if (ImGui::BeginTable("table1", 6, table_flags))
         {
             ImGui::TableSetupColumn("Default", g.CurrentTable->Columns[0].FlagsIn);
             ImGui::TableSetupColumn("PreferSortAscending", ImGuiTableColumnFlags_PreferSortAscending);
@@ -923,7 +927,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         ctx->SetRef("Test window");
-        ImGuiTable* table = ImGui::TableFindByID(ctx->GetID("Table"));
+        ImGuiTable* table = ImGui::TableFindByID(ctx->GetID("table1"));
         const ImGuiTableSortSpecs* sort_specs = NULL;
         int& table_flags = ctx->GenericVars.Int1;
 
@@ -958,11 +962,11 @@ void RegisterTests_Table(ImGuiTestEngine* e)
         // Table has no default sorting flags. Check for implicit default sorting.
         sort_specs = table_get_sort_specs(ctx, table);
         IM_CHECK(sort_specs != NULL);
-        IM_CHECK(sort_specs->SpecsCount == 1);
-        IM_CHECK(sort_specs->ColumnsMask == 0x01);
-        IM_CHECK(sort_specs->Specs[0].ColumnIndex == 0);
-        IM_CHECK(sort_specs->Specs[0].SortOrder == 0);
-        IM_CHECK(sort_specs->Specs[0].SortDirection == ImGuiSortDirection_Ascending);
+        IM_CHECK_EQ(sort_specs->SpecsCount, 1);
+        IM_CHECK_EQ(sort_specs->ColumnsMask, 0x01);
+        IM_CHECK_EQ(sort_specs->Specs[0].ColumnIndex, 0);
+        IM_CHECK_EQ(sort_specs->Specs[0].SortOrder, 0);
+        IM_CHECK_EQ(sort_specs->Specs[0].SortDirection, ImGuiSortDirection_Ascending);
 
         IM_CHECK_EQ(click_column_and_get_sort("Default"), ImGuiSortDirection_Descending);   // Sorted implicitly by calling TableGetSortSpecs().
         IM_CHECK_EQ(click_column_and_get_sort("Default"), ImGuiSortDirection_Ascending);
@@ -972,7 +976,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
         // Not holding shift does not perform multi-sort.
         sort_specs = table_get_sort_specs(ctx, table);
         IM_CHECK(sort_specs != NULL);
-        IM_CHECK(sort_specs->SpecsCount == 1);
+        IM_CHECK_EQ(sort_specs->SpecsCount, 1);
 
         // Holding shift includes all sortable columns in multi-sort.
         IM_CHECK_EQ(click_column_and_get_sort("PreferSortDescending", ImGuiKeyModFlags_Shift), ImGuiSortDirection_Descending);
@@ -983,21 +987,21 @@ void RegisterTests_Table(ImGuiTestEngine* e)
         IM_CHECK_EQ(click_column_and_get_sort("NoSort", ImGuiKeyModFlags_Shift), ImGuiSortDirection_Ascending);
         IM_CHECK_EQ(click_column_and_get_sort("NoSort", ImGuiKeyModFlags_Shift), ImGuiSortDirection_Ascending);
         sort_specs = table_get_sort_specs(ctx, table);
-        IM_CHECK(sort_specs&& sort_specs->SpecsCount == 2);
+        IM_CHECK(sort_specs && sort_specs->SpecsCount == 2);
 
         IM_CHECK_EQ(click_column_and_get_sort("NoSortAscending", ImGuiKeyModFlags_Shift), ImGuiSortDirection_Descending);
         IM_CHECK_EQ(click_column_and_get_sort("NoSortAscending", ImGuiKeyModFlags_Shift), ImGuiSortDirection_Descending);
         IM_CHECK_EQ(click_column_and_get_sort("NoSortDescending", ImGuiKeyModFlags_Shift), ImGuiSortDirection_Ascending);
         IM_CHECK_EQ(click_column_and_get_sort("NoSortDescending", ImGuiKeyModFlags_Shift), ImGuiSortDirection_Ascending);
         sort_specs = table_get_sort_specs(ctx, table);
-        IM_CHECK(sort_specs&& sort_specs->SpecsCount == 4);
+        IM_CHECK(sort_specs && sort_specs->SpecsCount == 4);
 
         // Disable multi-sort and ensure there is only one sorted column left.
         table_flags = ImGuiTableFlags_Sortable;
         ctx->Yield();
         sort_specs = table_get_sort_specs(ctx, table);
         IM_CHECK(sort_specs != NULL);
-        IM_CHECK(sort_specs->SpecsCount == 1);
+        IM_CHECK_EQ(sort_specs->SpecsCount, 1);
 
         // Disable sorting completely. Sort spec should not be returned.
         table_flags = ImGuiTableFlags_None;
@@ -1015,12 +1019,12 @@ void RegisterTests_Table(ImGuiTestEngine* e)
         col->SortDirection = ImGuiSortDirection_Ascending;
         col->FlagsIn = ImGuiTableColumnFlags_NoSortAscending;
         ctx->Yield();
-        IM_CHECK(col->SortDirection == ImGuiSortDirection_Descending);
+        IM_CHECK_EQ(col->SortDirection, ImGuiSortDirection_Descending);
 
         col->SortDirection = ImGuiSortDirection_Descending;
         col->FlagsIn = ImGuiTableColumnFlags_NoSortDescending;
         ctx->Yield();
-        IM_CHECK(col->SortDirection == ImGuiSortDirection_Ascending);
+        IM_CHECK_EQ(col->SortDirection, ImGuiSortDirection_Ascending);
     };
 
     // ## Test freezing of table rows and columns.
@@ -1032,7 +1036,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
         memset(ctx->GenericVars.BoolArray, 0, sizeof(ctx->GenericVars.BoolArray));
         const int column_count = 15;
         ImGuiTableFlags flags = ImGuiTableFlags_ScrollX | ImGuiTableFlags_ScrollY | ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg;
-        if (ImGui::BeginTable("Table", column_count, flags))
+        if (ImGui::BeginTable("table1", column_count, flags))
         {
             ImGui::TableSetupScrollFreeze(ctx->GenericVars.Int1, ctx->GenericVars.Int2);
             for (int i = 0; i < column_count; i++)
@@ -1059,7 +1063,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         ctx->SetRef("Test Window");
-        ImGuiTable* table = ImGui::TableFindByID(ctx->GetID("Table"));
+        ImGuiTable* table = ImGui::TableFindByID(ctx->GetID("table1"));
 
         // Reset scroll, if any.
         // FIXME-TESTS: 2020/09/28 running nav_from_clipped_item followed by this breaks if we don't reset scroll of outer window
@@ -1159,7 +1163,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
         ImGui::Text("table->OuterRect.GetWidth(): %.2f", vars.Width);
         ImGui::Text("window->ContentSize.x: %.2f", g.CurrentWindow->ContentSize.x);
         const int col_row_count = vars.Count;
-        if (ImGui::BeginTable("Table1", col_row_count))
+        if (ImGui::BeginTable("table1", col_row_count))
         {
             if (vars.Step == 0)
             {
@@ -1202,7 +1206,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
 
         ctx->SetRef("Test Window");
         ImGuiWindow* window = ctx->GetWindowByRef(ctx->RefID);
-        ImGuiTable* table = ImGui::TableFindByID(ctx->GetID("Table1"));
+        ImGuiTable* table = ImGui::TableFindByID(ctx->GetID("table1"));
 
         for (int step = 0; step < 4; step++)
         {
@@ -1253,7 +1257,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
-        if (ImGui::BeginTable("Table", 6, ImGuiTableFlags_ScrollX | ImGuiTableFlags_ScrollY, ImVec2(400, ImGui::GetTextLineHeightWithSpacing() * 5)))
+        if (ImGui::BeginTable("table1", 6, ImGuiTableFlags_ScrollX | ImGuiTableFlags_ScrollY, ImVec2(400, ImGui::GetTextLineHeightWithSpacing() * 5)))
         {
             ImGui::TableSetupScrollFreeze(2, 2);
             HelperTableSubmitCellsCustom(ctx, 6, 20,
@@ -1275,7 +1279,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         ctx->SetRef("Test Window");
-        ImGuiTable* table = ImGui::TableFindByID(ctx->GetID("Table"));
+        ImGuiTable* table = ImGui::TableFindByID(ctx->GetID("table1"));
 
         ctx->SetRef(table->InnerWindow);
         ctx->ScrollToX(0.0f);
@@ -1295,9 +1299,9 @@ void RegisterTests_Table(ImGuiTestEngine* e)
         ImGui::Begin("Test window 1", NULL, ImGuiWindowFlags_NoSavedSettings);
 
         if (ctx->IsFirstGuiFrame())
-            TableDiscardInstanceAndSettings(ImGui::GetID("##table0"));
+            TableDiscardInstanceAndSettings(ImGui::GetID("table1"));
 
-        if (ImGui::BeginTable("##table0", 4, ImGuiTableFlags_ScrollX | ImGuiTableFlags_Hideable | ImGuiTableFlags_Resizable, ImVec2(0, 0), 300.0f))
+        if (ImGui::BeginTable("table1", 4, ImGuiTableFlags_ScrollX | ImGuiTableFlags_Hideable | ImGuiTableFlags_Resizable, ImVec2(0, 0), 300.0f))
         {
             ImGuiTable* table = g.CurrentTable;
             if (ctx->IsFirstGuiFrame())
@@ -1317,7 +1321,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
     {
         ImGuiContext& g = *ctx->UiContext;
         ctx->SetRef("Test window 1");
-        ImGuiTable* table = ImGui::TableFindByID(ctx->GetID("##table0"));
+        ImGuiTable* table = ImGui::TableFindByID(ctx->GetID("table1"));
         ImGuiTableColumn* col0 = &table->Columns[0];
         ImGuiTableColumn* col1 = &table->Columns[1];
         IM_CHECK_EQ(col0->WidthRequest, 100.0f);
