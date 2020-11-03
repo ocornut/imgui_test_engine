@@ -17,8 +17,12 @@
 #ifdef _MSC_VER
 #pragma warning (disable: 4100) // unreferenced formal parameter
 #pragma warning (disable: 4127) // conditional expression is constant
-#else
-#pragma GCC diagnostic push
+#endif
+
+#if defined(__clang__)
+#pragma clang diagnostic ignored "-Wstring-plus-int"                    // warning: adding 'int' to a string does not append to the string
+#pragma clang diagnostic ignored "-Wunused-parameter"                   // warning: unused parameter 'XXX'
+#elif defined(__GNUC__)
 #pragma GCC diagnostic ignored "-Wunused-parameter"
 #endif
 

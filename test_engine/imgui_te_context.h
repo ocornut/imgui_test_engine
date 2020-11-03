@@ -88,7 +88,7 @@ inline const char*  GetActionVerb(ImGuiTestAction action)
 
 struct ImGuiTestActionFilter
 {
-    int                     MaxDepth;;
+    int                     MaxDepth;
     int                     MaxPasses;
     const int*              MaxItemCountPerDepth;
     ImGuiItemStatusFlags    RequireAllStatusFlags;

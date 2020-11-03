@@ -876,7 +876,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         const int cursor_pos_middle_of_first_line = char_count_per_line / 2;
         const int cursor_pos_end_of_last_line = vars.str.length();
         const int cursor_pos_begin_of_last_line = cursor_pos_end_of_last_line - char_count_per_line + 1;
-        const int cursor_pos_middle_of_last_line = cursor_pos_end_of_last_line - char_count_per_line / 2;
+        //const int cursor_pos_middle_of_last_line = cursor_pos_end_of_last_line - char_count_per_line / 2;
         const int cursor_pos_middle = vars.str.length() / 2;
 
         auto SetCursorPosition = [&stb](int cursor) { stb.cursor = cursor; stb.has_preferred_x = 0; };

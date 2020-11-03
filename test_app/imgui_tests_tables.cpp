@@ -963,7 +963,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
         sort_specs = table_get_sort_specs(ctx, table);
         IM_CHECK(sort_specs != NULL);
         IM_CHECK_EQ(sort_specs->SpecsCount, 1);
-        IM_CHECK_EQ(sort_specs->ColumnsMask, 0x01);
+        IM_CHECK_EQ(sort_specs->ColumnsMask, 0x01u);
         IM_CHECK_EQ(sort_specs->Specs[0].ColumnIndex, 0);
         IM_CHECK_EQ(sort_specs->Specs[0].SortOrder, 0);
         IM_CHECK_EQ(sort_specs->Specs[0].SortDirection, ImGuiSortDirection_Ascending);
@@ -1050,7 +1050,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
                 {
                     if (!ImGui::TableSetColumnIndex(column))
                         continue;
-                    ImGui::Text(Str16f("%d,%d", line, column).c_str());
+                    ImGui::TextUnformatted(Str16f("%d,%d", line, column).c_str());
                     if (line < 5)
                         ctx->GenericVars.BoolArray[line] |= ImGui::IsItemVisible();
                 }
