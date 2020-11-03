@@ -1839,7 +1839,7 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
         }
 
         float backup_timer = 0.0f;
-        ImSwap(ctx->UiContext->IO.ConfigWindowsMemoryCompactTimer, backup_timer);
+        ImSwap(ctx->UiContext->IO.ConfigMemoryCompactTimer, backup_timer);
 
         ctx->YieldFrames(3); // Give time to perform GC
         ctx->LogDebug("Check GC-ed state");
@@ -1850,7 +1850,7 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
             IM_CHECK(window->IDStack.empty());
             IM_CHECK(window->DrawList->CmdBuffer.empty());
         }
-        ImSwap(ctx->UiContext->IO.ConfigWindowsMemoryCompactTimer, backup_timer);
+        ImSwap(ctx->UiContext->IO.ConfigMemoryCompactTimer, backup_timer);
     };
 
     // ## Test hash functions and ##/### operators
