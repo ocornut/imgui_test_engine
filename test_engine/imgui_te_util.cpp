@@ -218,7 +218,7 @@ void TableDiscardInstanceAndSettings(ImGuiID table_id)
     IM_ASSERT(g.CurrentTable == NULL);
     if (ImGuiTableSettings* settings = ImGui::TableSettingsFindByID(table_id))
         settings->ID = 0;
-    if (ImGuiTable* table = ImGui::FindTableByID(table_id))
-        g.Tables.Remove(table->ID, table);
+    if (ImGuiTable* table = ImGui::TableFindByID(table_id))
+        ImGui::TableRemove(table);
 }
 #endif

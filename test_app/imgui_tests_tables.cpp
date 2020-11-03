@@ -348,7 +348,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
         auto& vars = ctx->GenericVars;
         ctx->SetRef("Test window 1");
         ImGuiWindow* window = ctx->GetWindowByRef("");
-        ImGuiTable* table = ImGui::FindTableByID(ctx->GetID("table1"));
+        ImGuiTable* table = ImGui::TableFindByID(ctx->GetID("table1"));
         for (int step = 0; step < 4; step++)
         {
             ctx->LogDebug("Step %d", step);
@@ -441,7 +441,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
         ImVector<float> initial_column_width;
 
         ctx->SetRef("Test window 1");
-        table = ImGui::FindTableByID(ctx->GetID("table1"));    // Columns: FFF, do not span entire width of the table
+        table = ImGui::TableFindByID(ctx->GetID("table1"));    // Columns: FFF, do not span entire width of the table
         IM_CHECK_LT(table->ColumnsTotalWidth + 1.0f, table->InnerWindow->ContentRegionRect.GetWidth());
         initial_column_width.resize(table->ColumnsCount);
         for (int column_n = 0; column_n >= 0; column_n = table->Columns[column_n].NextVisibleColumn)
@@ -501,7 +501,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
         }
 
         ctx->SetRef("Test window 1");
-        table = ImGui::FindTableByID(ctx->GetID("table2"));     // Columns: FFW, do span entire width of the table
+        table = ImGui::TableFindByID(ctx->GetID("table2"));     // Columns: FFW, do span entire width of the table
         IM_CHECK(table->ColumnsTotalWidth == table->InnerWindow->ContentRegionRect.GetWidth());
 
         // Iterate visible columns and check existence of resize handles
@@ -666,7 +666,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         ctx->SetRef("Test window 1");
-        ImGuiTable* table = ImGui::FindTableByID(ctx->GetID("Table"));
+        ImGuiTable* table = ImGui::TableFindByID(ctx->GetID("Table"));
 
         for (int instance_no = 0; instance_no < 2; instance_no++)
         {
@@ -748,9 +748,11 @@ void RegisterTests_Table(ImGuiTestEngine* e)
     {
         TableSettingsVars& vars = ctx->GetUserData<TableSettingsVars>();
 
+        ImGui::TableGcCompactSettings();
+
         ctx->SetRef("Table Settings");
         ImGuiID table_id = ctx->GetID("Table");
-        ImGuiTable* table = ImGui::FindTableByID(table_id);
+        ImGuiTable* table = ImGui::TableFindByID(table_id);
 
         // Number of tested settings == number of bits used in the mask for iterating all combinations.
         const int number_of_settings = 6;
@@ -808,7 +810,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
 
             // Check initial settings
             ctx->LogInfo("1/4 Check initial settings");
-            table = ImGui::FindTableByID(table_id);
+            table = ImGui::TableFindByID(table_id);
             check_initial_settings(table);
 
             // Modify table. Each bit in the mask corresponds to a single tested function.
@@ -864,7 +866,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
             // Recreate table with no settings.
             TableDiscardInstanceAndSettings(table_id);
             ctx->Yield();
-            table = ImGui::FindTableByID(table_id);
+            table = ImGui::TableFindByID(table_id);
 
             // Verify that settings were indeed reset.
             ctx->LogInfo("3/4 Check initial settings (after clear)");
@@ -885,6 +887,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
         }
 
         // Ensure table settings do not leak in case of errors.
+        ImGui::TableGcCompactSettings();
         TableDiscardInstanceAndSettings(table_id);
     };
 
@@ -920,7 +923,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         ctx->SetRef("Test window");
-        ImGuiTable* table = ImGui::FindTableByID(ctx->GetID("Table"));
+        ImGuiTable* table = ImGui::TableFindByID(ctx->GetID("Table"));
         const ImGuiTableSortSpecs* sort_specs = NULL;
         int& table_flags = ctx->GenericVars.Int1;
 
@@ -1056,7 +1059,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         ctx->SetRef("Test Window");
-        ImGuiTable* table = ImGui::FindTableByID(ctx->GetID("Table"));
+        ImGuiTable* table = ImGui::TableFindByID(ctx->GetID("Table"));
 
         // Reset scroll, if any.
         // FIXME-TESTS: 2020/09/28 running nav_from_clipped_item followed by this breaks if we don't reset scroll of outer window
@@ -1199,7 +1202,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
 
         ctx->SetRef("Test Window");
         ImGuiWindow* window = ctx->GetWindowByRef(ctx->RefID);
-        ImGuiTable* table = ImGui::FindTableByID(ctx->GetID("Table1"));
+        ImGuiTable* table = ImGui::TableFindByID(ctx->GetID("Table1"));
 
         for (int step = 0; step < 4; step++)
         {
@@ -1272,7 +1275,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         ctx->SetRef("Test Window");
-        ImGuiTable* table = ImGui::FindTableByID(ctx->GetID("Table"));
+        ImGuiTable* table = ImGui::TableFindByID(ctx->GetID("Table"));
 
         ctx->SetRef(table->InnerWindow);
         ctx->ScrollToX(0.0f);
@@ -1314,7 +1317,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
     {
         ImGuiContext& g = *ctx->UiContext;
         ctx->SetRef("Test window 1");
-        ImGuiTable* table = ImGui::FindTableByID(ctx->GetID("##table0"));
+        ImGuiTable* table = ImGui::TableFindByID(ctx->GetID("##table0"));
         ImGuiTableColumn* col0 = &table->Columns[0];
         ImGuiTableColumn* col1 = &table->Columns[1];
         IM_CHECK_EQ(col0->WidthRequest, 100.0f);

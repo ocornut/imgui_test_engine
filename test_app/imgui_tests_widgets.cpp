@@ -2595,7 +2595,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         ctx->SetRef("Test Window");
-        ImGuiTable* table = ImGui::FindTableByID(ctx->GetID("table"));
+        ImGuiTable* table = ImGui::TableFindByID(ctx->GetID("table"));
 
         for (int i = 0; i < 2; i++)
         {
