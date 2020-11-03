@@ -1487,7 +1487,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
             if (ImGui::BeginTabItem("TabItem"))
             {
                 // If we have many tab bars here, it will invalidate pointers from pooled tab bars
-                for (int i = 0; i < 128; i++)
+                for (int i = 0; i < 10; i++)
                     if (ImGui::BeginTabBar(Str30f("Inner TabBar %d", i).c_str()))
                     {
                         if (ImGui::BeginTabItem("Inner TabItem"))

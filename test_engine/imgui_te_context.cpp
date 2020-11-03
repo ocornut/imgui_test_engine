@@ -947,10 +947,13 @@ void    ImGuiTestContext::MouseMove(ImGuiTestRef ref, ImGuiTestOpFlags flags)
                 }
             }
 
-            IM_ERRORF_NOHDR("Unable to Hover %s. Expected %08X in '%s', HoveredId was %08X in '%s'. Targeted position (%.1f,%.1f)",
-                desc.c_str(), item->ID, item->Window ? item->Window->Name : "<NULL>",
-                hovered_id, g.HoveredWindow ? g.HoveredWindow->Name : "",
-                pos.x, pos.y);
+            IM_ERRORF_NOHDR(
+                "Unable to Hover %s:\n"
+                "- Expected item %08X in window '%s', targeted position: (%.1f,%.1f)'\n"
+                "- Hovered id was %08X in '%s'.",
+                desc.c_str(),
+                item->ID, item->Window ? item->Window->Name : "<NULL>", pos.x, pos.y,
+                hovered_id, g.HoveredWindow ? g.HoveredWindow->Name : "");
         }
     }
 
@@ -1552,10 +1555,12 @@ void    ImGuiTestContext::ItemAction(ImGuiTestAction action, ImGuiTestRef ref, v
         Engine->FindByLabelTask.InFilterItemStatusFlags = ImGuiItemStatusFlags_None;
 }
 
-void    ImGuiTestContext::ItemActionAll(ImGuiTestAction action, ImGuiTestRef ref_parent, int max_depth, int max_passes)
+void    ImGuiTestContext::ItemActionAll(ImGuiTestAction action, ImGuiTestRef ref_parent, const ImGuiTestActionFilter* filter)
 {
+    int max_depth = filter->MaxDepth;
     if (max_depth == -1)
         max_depth = 99;
+    int max_passes = filter->MaxPasses;
     if (max_passes == -1)
         max_passes = 99;
     IM_ASSERT(max_depth > 0 && max_passes > 0);
@@ -1589,12 +1594,34 @@ void    ImGuiTestContext::ItemActionAll(ImGuiTestAction action, ImGuiTestRef ref
             scan_dir = -1;
         }
 
+        int processed_count_per_depth[8];
+        memset(processed_count_per_depth, 0, sizeof(processed_count_per_depth));
+
         for (int n = scan_start; n != scan_end; n += scan_dir)
         {
             if (IsError())
                 break;
 
             const ImGuiTestItemInfo& item = *items[n];
+
+            if (filter->RequireAllStatusFlags != 0)
+                if ((item.StatusFlags & filter->RequireAllStatusFlags) != filter->RequireAllStatusFlags)
+                    continue;
+
+            if (filter->RequireAnyStatusFlags != 0)
+                if ((item.StatusFlags & filter->RequireAnyStatusFlags) != 0)
+                    continue;
+
+            if (filter->MaxItemCountPerDepth != NULL)
+            {
+                if (item.Depth < IM_ARRAYSIZE(processed_count_per_depth))
+                {
+                    if (processed_count_per_depth[item.Depth] >= filter->MaxItemCountPerDepth[item.Depth])
+                        continue;
+                    processed_count_per_depth[item.Depth]++;
+                }
+            }
+
             switch (action)
             {
             case ImGuiTestAction_Hover:
@@ -1647,6 +1674,22 @@ void    ImGuiTestContext::ItemActionAll(ImGuiTestAction action, ImGuiTestRef ref
             break;
     }
     LogDebug("%s %d items in total!", GetActionVerb(action), actioned_total);
+}
+
+void    ImGuiTestContext::ItemOpenAll(ImGuiTestRef ref_parent, int max_depth, int max_passes)
+{
+    ImGuiTestActionFilter filter;
+    filter.MaxDepth = max_depth;
+    filter.MaxPasses = max_passes;
+    ItemActionAll(ImGuiTestAction_Open, ref_parent, &filter);
+}
+
+void    ImGuiTestContext::ItemCloseAll(ImGuiTestRef ref_parent, int max_depth, int max_passes)
+{
+    ImGuiTestActionFilter filter;
+    filter.MaxDepth = max_depth;
+    filter.MaxPasses = max_passes;
+    ItemActionAll(ImGuiTestAction_Close, ref_parent, &filter);
 }
 
 void    ImGuiTestContext::ItemHold(ImGuiTestRef ref, float time)

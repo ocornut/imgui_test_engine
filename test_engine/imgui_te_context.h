@@ -86,6 +86,17 @@ inline const char*  GetActionVerb(ImGuiTestAction action)
     }
 }
 
+struct ImGuiTestActionFilter
+{
+    int                     MaxDepth;;
+    int                     MaxPasses;
+    const int*              MaxItemCountPerDepth;
+    ImGuiItemStatusFlags    RequireAllStatusFlags;
+    ImGuiItemStatusFlags    RequireAnyStatusFlags;
+
+    ImGuiTestActionFilter() { MaxDepth = -1; MaxPasses = -1; MaxItemCountPerDepth = NULL; RequireAllStatusFlags = RequireAnyStatusFlags = 0; }
+};
+
 // Helper struct to store various query-able state of an item.
 // This facilitate interactions between GuiFunc <> TestFunc, since those state are frequently used.
 struct ImGuiTestGenericStatus
@@ -315,9 +326,9 @@ struct ImGuiTestContext
     void        ItemInput(ImGuiTestRef ref, ImGuiTestOpFlags flags = 0)                 { ItemAction(ImGuiTestAction_Input, ref, NULL, flags); }
     void        ItemNavActivate(ImGuiTestRef ref, ImGuiTestOpFlags flags = 0)           { ItemAction(ImGuiTestAction_NavActivate, ref, NULL, flags); }
 
-    void        ItemActionAll(ImGuiTestAction action, ImGuiTestRef ref_parent, int depth = -1, int passes = -1);
-    void        ItemOpenAll(ImGuiTestRef ref_parent, int depth = -1, int passes = -1)   { ItemActionAll(ImGuiTestAction_Open, ref_parent, depth, passes); }
-    void        ItemCloseAll(ImGuiTestRef ref_parent, int depth = -1, int passes = -1)  { ItemActionAll(ImGuiTestAction_Close, ref_parent, depth, passes); }
+    void        ItemActionAll(ImGuiTestAction action, ImGuiTestRef ref_parent, const ImGuiTestActionFilter* filter);
+    void        ItemOpenAll(ImGuiTestRef ref_parent, int depth = -1, int passes = -1);
+    void        ItemCloseAll(ImGuiTestRef ref_parent, int depth = -1, int passes = -1);
 
     void        ItemHold(ImGuiTestRef ref, float time);
     void        ItemHoldForFrames(ImGuiTestRef ref, int frames);
