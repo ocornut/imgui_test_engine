@@ -3155,6 +3155,7 @@ void RegisterTests_Capture(ImGuiTestEngine* e)
             ctx->CaptureScreenshot(&args);
         }
     };
+
     t = IM_REGISTER_TEST(e, "capture", "capture_readme_gif");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
@@ -3187,6 +3188,84 @@ void RegisterTests_Capture(ImGuiTestEngine* e)
         ctx->ItemClick("Save");
         ctx->SleepShort();
         ctx->EndCaptureGif(&args);
+    };
+
+    // ## Capture
+    t = IM_REGISTER_TEST(e, "capture", "capture_readme_my_first_tool");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::SetNextWindowSize(ImVec2(440, 330));
+        ImFont* font = FindFontByName("Roboto-Medium.ttf, 16px"); // FIXME-TESTS
+        IM_CHECK_SILENT(font != NULL);
+        ImGui::PushFont(font);
+
+        // State
+        static bool my_tool_active = true;
+        static float my_color[4] = { 0.8f, 0.0f, 0.0f, 1.0f };
+
+        if (my_tool_active)
+        {
+            // Create a window called "My First Tool", with a menu bar.
+            ImGui::Begin("My First Tool", &my_tool_active, ImGuiWindowFlags_MenuBar);
+            if (ImGui::BeginMenuBar())
+            {
+                if (ImGui::BeginMenu("File"))
+                {
+                    if (ImGui::MenuItem("Open..", "Ctrl+O")) { /* Do stuff */ }
+                    if (ImGui::MenuItem("Save", "Ctrl+S")) { /* Do stuff */ }
+                    if (ImGui::MenuItem("Close", "Ctrl+W")) { my_tool_active = false; }
+                    ImGui::EndMenu();
+                }
+                ImGui::EndMenuBar();
+            }
+
+            // Edit a color (stored as ~4 floats)
+            ImGui::ColorEdit4("Color", my_color);
+
+            // Plot some values
+            const float my_values[] = { 0.2f, 0.1f, 1.0f, 0.5f, 0.9f, 2.2f };
+            ImGui::PlotLines("Frame Times", my_values, IM_ARRAYSIZE(my_values));
+
+            // Display contents in a scrolling region
+            ImGui::TextColored(ImVec4(1, 1, 0, 1), "Important Stuff");
+            ImGui::BeginChild("Scrolling", ImVec2(0, 0), true);
+            for (int n = 0; n < 50; n++)
+                ImGui::Text("%04d: Some text", n);
+            ImGui::EndChild();
+            ImGui::End();
+        }
+
+        ImGui::PopFont();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        // FIXME-TODO: try to match https://raw.githubusercontent.com/wiki/ocornut/imgui/web/v180/code_sample_04_color.gif 
+        // - maybe we could control timing scale when gif recording
+        // - need scroll via scrollbar
+
+        ctx->SetRef("My First Tool");
+        ImGuiWindow* window = ctx->GetWindowByRef("");
+        ctx->MouseMoveToPos(window->Rect().GetBR() + ImVec2(50, 50));
+
+        ctx->Sleep(0.5f);
+        ctx->MenuClick("File/Save");
+        ctx->Sleep(0.5f);
+        ctx->MouseMove("Color##X");
+        ctx->Sleep(0.5f);
+        ctx->MouseMove("Color##Y");
+        ctx->Sleep(0.5f);
+        ctx->MouseMove("Color##Z");
+        ctx->Sleep(0.5f);
+        ctx->MouseMove("Color##Y");
+        ctx->ItemInput("Color##Y");
+        ctx->KeyCharsReplaceEnter("200");
+
+        ctx->Sleep(1.0f);
+        ctx->ItemClick("Color##ColorButton");
+
+        ctx->SetRef(ctx->GetFocusWindowRef());
+        ctx->Sleep(2.0f);
+        ctx->PopupCloseAll();
     };
 
 #ifdef IMGUI_HAS_TABLE

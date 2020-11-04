@@ -131,7 +131,7 @@ struct ImGuiCaptureTool
     float                   Padding = 10.0f;                // Extra padding around captured area.
     char                    SaveFileName[256];              // File name where screenshots will be saved. May contain directories or variation of %d format.
     float                   SnapGridSize = 32.0f;           // Size of the grid cell for "snap to grid" functionality.
-    char                    LastSaveFileName[256];          // File name of last captured file.
+    char                    LastSaveFileName[256] = "";     // File name of last captured file.
 
     ImGuiCaptureArgs        _CaptureArgsPicker;             // Capture args for single window picker widget.
     ImGuiCaptureArgs        _CaptureArgsSelector;           // Capture args for multiple window selector widget.

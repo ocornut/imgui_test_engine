@@ -123,7 +123,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
     {
         auto& vars = ctx->GenericVars;
 
-        ImGui::PushStyleVar(ImGuiStyleVar_WindowMinSize, ImVec2(3, 3));
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowMinSize, ImVec2(8, 8));
         ImGui::Begin("Test window 1", NULL, ImGuiWindowFlags_NoSavedSettings);
         ImGui::Checkbox("Enable checks", &vars.Bool1);
         ImDrawList* draw_list = ImGui::GetWindowDrawList();
@@ -136,8 +136,9 @@ void RegisterTests_Table(ImGuiTestEngine* e)
                 HelperTableSubmitCellsButtonFill(4, 5);
                 ImGui::EndTable();
             }
-            ImGui::Text("Some text");
+            ImGui::Text("Some text after");
             int cmd_size_after = draw_list->CmdBuffer.Size;
+            ImGui::Text("%d -> %d", cmd_size_before, cmd_size_after);
             if (vars.Bool1)
                 IM_CHECK_EQ(cmd_size_before, cmd_size_after);
         }
@@ -148,8 +149,8 @@ void RegisterTests_Table(ImGuiTestEngine* e)
                 HelperTableSubmitCellsButtonFill(4, 4);
                 ImGui::EndTable();
             }
-            ImGui::Text("Some text");
             int cmd_size_after = draw_list->CmdBuffer.Size;
+            ImGui::Text("%d -> %d", cmd_size_before, cmd_size_after);
             if (vars.Bool1)
                 IM_CHECK_EQ(cmd_size_before, cmd_size_after);
         }
@@ -165,8 +166,8 @@ void RegisterTests_Table(ImGuiTestEngine* e)
                 HelperTableSubmitCellsButtonFill(4, 4);
                 ImGui::EndTable();
             }
-            ImGui::Text("Some text");
             int cmd_size_after = draw_list->CmdBuffer.Size;
+            ImGui::Text("%d -> %d", cmd_size_before, cmd_size_after);
             if (vars.Bool1)
                 IM_CHECK_EQ(cmd_size_before, cmd_size_after);
         }
@@ -177,12 +178,37 @@ void RegisterTests_Table(ImGuiTestEngine* e)
                 ImGui::TableSetupColumn("One");
                 ImGui::TableSetupColumn("TwoTwo");
                 ImGui::TableSetupColumn("ThreeThreeThree");
-                //ImGui::TableHeadersRow();
+                ImGui::TableHeadersRow();
                 HelperTableSubmitCellsButtonFill(3, 4);
                 ImGui::EndTable();
             }
-            ImGui::Text("Some text");;
             int cmd_size_after = draw_list->CmdBuffer.Size;
+            ImGui::Text("%d -> %d", cmd_size_before, cmd_size_after);
+            if (vars.Bool1)
+                IM_CHECK_EQ(cmd_size_before, cmd_size_after);
+        }
+        {
+            int cmd_size_before = draw_list->CmdBuffer.Size;
+            if (ImGui::BeginTable("table5", 3, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg))
+            {
+                ImGui::TableSetupColumn("One");
+                ImGui::TableSetupColumn("TwoTwo");
+                ImGui::TableSetupColumn("ThreeThreeThree");
+                ImGui::TableHeadersRow();
+                for (int line = 0; line < 4; line++)
+                {
+                    ImGui::TableNextRow();
+                    ImGui::TableSetColumnIndex(0);
+                    ImGui::Selectable("Selectable Spanning", false, ImGuiSelectableFlags_SpanAllColumns);
+                    ImGui::TableSetColumnIndex(1);
+                    ImGui::Text("Column 1");
+                    ImGui::TableSetColumnIndex(2);
+                    ImGui::Text("Column 2");
+                }
+                ImGui::EndTable();
+            }
+            int cmd_size_after = draw_list->CmdBuffer.Size;
+            ImGui::Text("%d -> %d", cmd_size_before, cmd_size_after);
             if (vars.Bool1)
                 IM_CHECK_EQ(cmd_size_before, cmd_size_after);
         }
@@ -194,12 +220,12 @@ void RegisterTests_Table(ImGuiTestEngine* e)
         // Test with/without clipping
         auto& vars = ctx->GenericVars;
         vars.Bool1 = false;
-        ctx->WindowResize("Test window 1", ImVec2(500, 600));
+        ctx->WindowResize("Test window 1", ImVec2(500, 800));
         vars.Bool1 = true;
         ctx->Yield();
         ctx->Yield();
         vars.Bool1 = false;
-        ctx->WindowResize("Test window 1", ImVec2(10, 600));
+        ctx->WindowResize("Test window 1", ImVec2(10, 800));
         vars.Bool1 = true;
         ctx->Yield();
     };

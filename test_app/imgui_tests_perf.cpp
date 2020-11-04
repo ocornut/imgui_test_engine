@@ -499,6 +499,28 @@ void RegisterTests_Perf(ImGuiTestEngine* e)
     };
     t->TestFunc = PerfCaptureFunc;
 
+    // ## Measure the cost of Columns() + Selectable() spanning all columns.
+    t = IM_REGISTER_TEST(e, "perf", "perf_stress_columns_3_selectable");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::SetNextWindowSize(ImVec2(400, 0));
+        ImGui::Begin("Test Func", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
+        ImGui::Columns(3, "Columns", true);
+        int loop_count = 50 * 2 * ctx->PerfStressAmount;
+        for (int n = 0; n < loop_count; n++)
+        {
+            ImGui::Selectable("Hello", true, ImGuiSelectableFlags_SpanAllColumns);
+            ImGui::NextColumn();
+            ImGui::TextUnformatted("Cell 2");
+            ImGui::NextColumn();
+            ImGui::TextUnformatted("Cell 3");
+            ImGui::NextColumn();
+        }
+        ImGui::Columns(1);
+        ImGui::End();
+    };
+    t->TestFunc = PerfCaptureFunc;
+
 #ifdef IMGUI_HAS_TABLE
     // ## Measure the cost of TableNextCell(), TableNextRow(): one table, many rows
     t = IM_REGISTER_TEST(e, "perf", "perf_stress_table_1");
