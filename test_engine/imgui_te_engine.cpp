@@ -372,7 +372,7 @@ static bool ImGuiTestEngine_UseSimulatedInputs(ImGuiTestEngine* engine)
 {
     if (engine->UiContextActive)
         if (ImGuiTestEngine_IsRunningTests(engine))
-            if (!(engine->TestContext->RunFlags & ImGuiTestRunFlags_NoTestFunc))
+            if (!(engine->TestContext->RunFlags & ImGuiTestRunFlags_GuiFuncOnly))
                 return true;
     return false;
 }
@@ -582,7 +582,7 @@ static void ImGuiTestEngine_PostNewFrame(ImGuiTestEngine* engine, ImGuiContext* 
     engine->CaptureTool.Context.PostNewFrame();
 
     // Restore host inputs
-    const bool want_simulated_inputs = engine->UiContextActive != NULL && ImGuiTestEngine_IsRunningTests(engine) && !(engine->TestContext->RunFlags & ImGuiTestRunFlags_NoTestFunc);
+    const bool want_simulated_inputs = engine->UiContextActive != NULL && ImGuiTestEngine_IsRunningTests(engine) && !(engine->TestContext->RunFlags & ImGuiTestRunFlags_GuiFuncOnly);
     if (!want_simulated_inputs)
     {
         ImGuiIO& main_io = ui_ctx->IO;
@@ -630,7 +630,11 @@ static void ImGuiTestEngine_PostNewFrame(ImGuiTestEngine* engine, ImGuiContext* 
 
     // Update hooks and output flags
     ImGuiTestEngine_UpdateHooks(engine);
-    engine->IO.RenderWantMaxSpeed = (engine->IO.RunningTests && engine->IO.ConfigRunFast) || engine->IO.ConfigNoThrottle;
+
+    // Disable vsync
+    engine->IO.RenderWantMaxSpeed = engine->IO.ConfigNoThrottle;
+    if (engine->IO.ConfigRunFast && engine->IO.RunningTests && engine->TestContext && (engine->TestContext->RunFlags & ImGuiTestRunFlags_GuiFuncOnly) == 0)
+        engine->IO.RenderWantMaxSpeed = true;
 }
 
 static void ImGuiTestEngine_RunGuiFunc(ImGuiTestEngine* engine)
@@ -639,7 +643,7 @@ static void ImGuiTestEngine_RunGuiFunc(ImGuiTestEngine* engine)
     if (ctx && ctx->Test->GuiFunc)
     {
         ctx->Test->GuiFuncLastFrame = ctx->UiContext->FrameCount;
-        if (!(ctx->RunFlags & ImGuiTestRunFlags_NoGuiFunc))
+        if (!(ctx->RunFlags & ImGuiTestRunFlags_GuiFuncDisable))
         {
             ImGuiTestActiveFunc backup_active_func = ctx->ActiveFunc;
             ctx->ActiveFunc = ImGuiTestActiveFunc_GuiFunc;
@@ -1068,7 +1072,7 @@ static void ImGuiTestEngine_RunTest(ImGuiTestEngine* engine, ImGuiTestContext* c
     ctx->FirstTestFrameCount = ctx->FrameCount;
 
     // Call user test function (optional)
-    if (ctx->RunFlags & ImGuiTestRunFlags_NoTestFunc)
+    if (ctx->RunFlags & ImGuiTestRunFlags_GuiFuncOnly)
     {
         // No test function
         while (!engine->Abort && test->Status == ImGuiTestStatus_Running)
@@ -1101,7 +1105,7 @@ static void ImGuiTestEngine_RunTest(ImGuiTestEngine* engine, ImGuiTestContext* c
 
         while (engine->IO.ConfigKeepGuiFunc && !engine->Abort)
         {
-            ctx->RunFlags |= ImGuiTestRunFlags_NoTestFunc;
+            ctx->RunFlags |= ImGuiTestRunFlags_GuiFuncOnly;
             ctx->Yield();
         }
     }
@@ -1128,7 +1132,7 @@ static void ImGuiTestEngine_RunTest(ImGuiTestEngine* engine, ImGuiTestContext* c
         ctx->LogWarning("Unknown status.");
 
     // Additional yields to avoid consecutive tests who may share identifiers from missing their window/item activation.
-    ctx->RunFlags |= ImGuiTestRunFlags_NoGuiFunc;
+    ctx->SetGuiFuncEnabled(false);
     ctx->Yield();
     ctx->Yield();
 
@@ -1378,7 +1382,7 @@ bool ImGuiTestEngineHook_Check(const char* file, const char* func, int line, ImG
         //ctx->LogDebug("IM_CHECK(%s)", expr);
         if (!result)
         {
-            if (!(ctx->RunFlags & ImGuiTestRunFlags_NoTestFunc))
+            if (!(ctx->RunFlags & ImGuiTestRunFlags_GuiFuncOnly))
                 test->Status = ImGuiTestStatus_Error;
 
             if (file)

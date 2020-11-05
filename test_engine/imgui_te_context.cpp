@@ -201,7 +201,7 @@ void    ImGuiTestContext::LogBasicUiState()
 
 void    ImGuiTestContext::Finish()
 {
-    if (RunFlags & ImGuiTestRunFlags_NoTestFunc)
+    if (RunFlags & ImGuiTestRunFlags_GuiFuncOnly)
         return;
     ImGuiTest* test = Test;
     if (test->Status == ImGuiTestStatus_Running)

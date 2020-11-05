@@ -2769,7 +2769,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         TooltipPosVars& vars = ctx->GetUserData<TooltipPosVars>();
 
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoNav);
-        if (ctx->RunFlags & ImGuiTestRunFlags_NoTestFunc)
+        if (ctx->RunFlags & ImGuiTestRunFlags_GuiFuncOnly)
             ImGui::DragFloat2("Tooltip Size", &vars.Size.x);
         ImGui::Button("HoverMe", ImVec2(100, 0));
         if (ImGui::IsItemHovered())
@@ -2778,7 +2778,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
             ImGui::InvisibleButton("Space", vars.Size);
 
             // Debug Controls
-            if (ctx->RunFlags & ImGuiTestRunFlags_NoTestFunc)
+            if (ctx->RunFlags & ImGuiTestRunFlags_GuiFuncOnly)
             {
                 float step = ctx->UiContext->IO.DeltaTime * 500.0f;
                 if (ImGui::IsKeyDown(ImGui::GetKeyIndex(ImGuiKey_UpArrow))) vars.Size.y -= step;

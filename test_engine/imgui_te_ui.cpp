@@ -236,7 +236,7 @@ static void ShowTestGroup(ImGuiTestEngine* e, ImGuiTestGroup group, ImGuiTextFil
                 break;
             case ImGuiTestStatus_Queued:
             case ImGuiTestStatus_Running:
-                if (test_context && (test_context->RunFlags & ImGuiTestRunFlags_NoTestFunc))
+                if (test_context && (test_context->RunFlags & ImGuiTestRunFlags_GuiFuncOnly))
                     status_color = ImVec4(0.8f, 0.0f, 0.8f, 1.0f);
                 else
                     status_color = ImVec4(0.8f, 0.4f, 0.1f, 1.0f);
@@ -265,7 +265,7 @@ static void ShowTestGroup(ImGuiTestEngine* e, ImGuiTestGroup group, ImGuiTextFil
                 select_test = true;
 
             // Double-click to run test, CTRL+Double-click to run GUI function
-            const bool is_running_gui_func = (test_context && (test_context->RunFlags & ImGuiTestRunFlags_NoTestFunc));
+            const bool is_running_gui_func = (test_context && (test_context->RunFlags & ImGuiTestRunFlags_GuiFuncOnly));
             if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(0))
             {
                 if (ImGui::GetIO().KeyCtrl)
@@ -363,7 +363,7 @@ static void ShowTestGroup(ImGuiTestEngine* e, ImGuiTestGroup group, ImGuiTextFil
             if (queue_gui_func_toggle && is_running_gui_func)
                 ImGuiTestEngine_Abort(e);
             else if (queue_gui_func_toggle && !e->IO.RunningTests)
-                ImGuiTestEngine_QueueTest(e, test, ImGuiTestRunFlags_ManualRun | ImGuiTestRunFlags_NoTestFunc);
+                ImGuiTestEngine_QueueTest(e, test, ImGuiTestRunFlags_ManualRun | ImGuiTestRunFlags_GuiFuncOnly);
             if (queue_test && !e->IO.RunningTests)
                 ImGuiTestEngine_QueueTest(e, test, ImGuiTestRunFlags_ManualRun);
 

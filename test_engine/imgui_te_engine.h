@@ -104,8 +104,8 @@ enum ImGuiTestOpFlags_
 enum ImGuiTestRunFlags_
 {
     ImGuiTestRunFlags_None              = 0,
-    ImGuiTestRunFlags_NoGuiFunc         = 1 << 0,
-    ImGuiTestRunFlags_NoTestFunc        = 1 << 1,
+    ImGuiTestRunFlags_GuiFuncDisable    = 1 << 0,   // Used internally to temporarily disable the GUI func (at the end of a test, etc)
+    ImGuiTestRunFlags_GuiFuncOnly       = 1 << 1,   // Set when user selects "Run GUI func"
     ImGuiTestRunFlags_NoSuccessMsg      = 1 << 2,
     ImGuiTestRunFlags_NoStopOnError     = 1 << 3,
     ImGuiTestRunFlags_NoBreakOnError    = 1 << 4,
@@ -321,7 +321,7 @@ struct ImGuiTestEngineIO
     bool                        ConfigLogToTTY = false;
     bool                        ConfigLogToDebugger = false;
     bool                        ConfigTakeFocusBackAfterTests = true;
-    bool                        ConfigNoThrottle = false;       // Disable vsync for performance measurement
+    bool                        ConfigNoThrottle = false;       // Disable vsync for performance measurement or fast test running
     float                       ConfigFixedDeltaTime = 0.0f;    // Use fixed delta time instead of calculating it from wall clock
     float                       DpiScale = 1.0f;
     float                       MouseSpeed = 800.0f;            // Mouse speed (pixel/second) when not running in fast mode
