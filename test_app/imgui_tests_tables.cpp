@@ -318,6 +318,65 @@ void RegisterTests_Table(ImGuiTestEngine* e)
         ImGui::End();
     };
 
+    // ## Table: test code keeping columns visible keep visible
+    t = IM_REGISTER_TEST(e, "table", "table_width_keep_visible");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        auto& vars = ctx->GenericVars;
+        if (vars.Width == 0.0f)
+            vars.Width = 150.0f;
+
+        ImGui::Begin("Test window 1", NULL, ImGuiWindowFlags_NoSavedSettings);
+        if (ctx->IsFirstGuiFrame())
+            TableDiscardInstanceAndSettings(ImGui::GetID("table1"));
+
+        // First test is duplicate of table_width_distrib
+        ctx->LogDebug("TEST CASE 0");
+        if (ImGui::BeginTable("table0", 2))
+        {
+            for (int row = 0; row < 2; row++)
+            {
+                ImGui::TableNextColumn();
+                ImGui::Text("Width %.2f", ImGui::GetContentRegionAvail().x);
+                ImVec2 p;
+                p = ImGui::GetCursorScreenPos();
+                ImGui::GetForegroundDrawList()->AddLine(p, p + ImVec2(ImGui::GetContentRegionAvail().x, 0.0f), IM_COL32(0, 200, 0, 128));
+                //ImGui::TableSetBgColor(row == 0 ? ImGuiTableBgTarget_CellBg : ImGuiTableBgTarget_RowBg0, IM_COL32(0, 128, 0, 100));
+                ImGui::TableNextColumn();
+                ImGui::Text("Width %.2f", ImGui::GetContentRegionAvail().x);
+                p = ImGui::GetCursorScreenPos();
+                ImGui::GetForegroundDrawList()->AddLine(p, p + ImVec2(ImGui::GetContentRegionAvail().x, 0.0f), IM_COL32(0, 200, 0, 128));
+                //ImGui::TableSetBgColor(row == 0 ? ImGuiTableBgTarget_CellBg : ImGuiTableBgTarget_RowBg0, IM_COL32(0, 128, 0, 100));
+            }
+            ImGuiTable* table = ctx->UiContext->CurrentTable;
+            IM_CHECK_LE_NO_RET(ImAbs(table->Columns[0].WidthGiven - table->Columns[1].WidthGiven), 1.0f);
+            ImGui::EndTable();
+        }
+
+        ImGui::DragFloat("Width", &vars.Width, 1.0f, 10.0f, 500.0f);
+        const ImGuiTableFlags test_flags[4] = { ImGuiTableFlags_Borders, ImGuiTableFlags_BordersOuter, ImGuiTableFlags_BordersInner, ImGuiTableFlags_None };
+        for (int test_n = 0; test_n < 4; test_n++)
+            if (ImGui::BeginTable(Str16f("table%d", test_n + 1).c_str(), 4, test_flags[test_n], ImVec2(vars.Width, 100))) // Total width smaller than sum of all columns width
+            {
+                ctx->LogDebug("TEST CASE %d", test_n + 1);
+                ImGui::TableSetupColumn("One", ImGuiTableColumnFlags_WidthFixed, 200.0f);
+                ImGui::TableSetupColumn("Two", ImGuiTableColumnFlags_WidthFixed, 50.0f);
+                ImGui::TableSetupColumn("Three", ImGuiTableColumnFlags_WidthFixed, 70.0f);
+                ImGui::TableSetupColumn("Four", ImGuiTableColumnFlags_WidthFixed, 80.0f);
+                HelperTableSubmitCellsText(4, 4);
+                ImGuiTable* table = ctx->UiContext->CurrentTable;
+                for (int n = 0; n < 4; n++)                                                                         // Check that all allocated width are smaller than requested
+                    if ((table->Columns[n].WidthGiven < table->Columns[n].WidthRequest) == false)
+                        IM_CHECK_LT_NO_RET(table->Columns[n].WidthGiven, table->Columns[n].WidthRequest);
+                IM_CHECK_EQ_NO_RET(table->Columns[1].WidthGiven, table->Columns[2].WidthGiven);                    // Check that widths are equals for columns 1-3
+                IM_CHECK_EQ_NO_RET(table->Columns[1].ClipRect.GetWidth(), table->Columns[2].ClipRect.GetWidth());  // But also that visible areas width will match for columns 1-3
+                IM_CHECK_EQ_NO_RET(table->Columns[1].WidthGiven, table->Columns[3].WidthGiven);
+                IM_CHECK_EQ_NO_RET(table->Columns[1].ClipRect.GetWidth(), table->Columns[3].ClipRect.GetWidth());
+                ImGui::EndTable();
+            }
+        ImGui::End();
+    };
+
     // ## Test Padding
     t = IM_REGISTER_TEST(e, "table", "table_padding");
     t->GuiFunc = [](ImGuiTestContext* ctx)
@@ -383,8 +442,8 @@ void RegisterTests_Table(ImGuiTestEngine* e)
             vars.Step = step;
             ctx->Yield();
             ctx->Yield();
-            IM_CHECK_EQ(table->Columns[0].ContentMaxXUnfrozen - table->Columns[0].ContentMinX, 50.0f);
-            IM_CHECK_EQ(table->Columns[1].ContentMaxXUnfrozen - table->Columns[1].ContentMinX, 100.0f);
+            IM_CHECK_EQ(table->Columns[0].ContentMaxXUnfrozen - table->Columns[0].WorkMinX, 50.0f);
+            IM_CHECK_EQ(table->Columns[1].ContentMaxXUnfrozen - table->Columns[1].WorkMinX, 100.0f);
             IM_CHECK_EQ(table->ColumnsAutoFitWidth, vars.Width);
             IM_CHECK_EQ(window->ContentSize.x, vars.Width);
         }
@@ -1362,21 +1421,21 @@ void RegisterTests_Table(ImGuiTestEngine* e)
         IM_CHECK(table->InnerWidth == table->InnerWindow->ContentSize.x);   // Only true when inner window is used because of ImGuiTableFlags_ScrollX
 
         // Test column fitting.
-        col0->WidthRequest = (col0->ContentMaxXHeadersIdeal - col0->ContentMinX) + 50.0f;
+        col0->WidthRequest = (col0->ContentMaxXHeadersIdeal - col0->WorkMinX) + 50.0f;
         ctx->Yield();
-        IM_CHECK_GT(col0->WidthGiven, col0->ContentMaxXHeadersIdeal - col0->ContentMinX);
+        IM_CHECK_GT(col0->WidthGiven, col0->ContentMaxXHeadersIdeal - col0->WorkMinX);
         ctx->MouseMoveToPos(ImVec2(col0->MaxX, table->InnerWindow->Pos.y));
         ctx->MouseDoubleClick();
         ctx->Yield();
         IM_CHECK_EQ(col0->WidthGiven, 100.0f);  // Resets to initial width because column os fixed.
 
-        col1->WidthRequest = (col1->ContentMaxXHeadersIdeal - col1->ContentMinX) + 50.0f;
+        col1->WidthRequest = (col1->ContentMaxXHeadersIdeal - col1->WorkMinX) + 50.0f;
         ctx->Yield();
-        IM_CHECK_GT(col1->WidthGiven, col1->ContentMaxXHeadersIdeal - col1->ContentMinX);
+        IM_CHECK_GT(col1->WidthGiven, col1->ContentMaxXHeadersIdeal - col1->WorkMinX);
         ctx->MouseMoveToPos(ImVec2(col1->MaxX, table->InnerWindow->Pos.y));
         ctx->MouseDoubleClick();
         ctx->Yield();
-        IM_CHECK_EQ(col1->WidthGiven, col1->ContentMaxXHeadersIdeal - col1->ContentMinX);  // Resets to ideal width because column is resizable.
+        IM_CHECK_EQ(col1->WidthGiven, col1->ContentMaxXHeadersIdeal - col1->WorkMinX);  // Resets to ideal width because column is resizable.
 
         // Test clearing of resizable flag when no columns are resizable.
         IM_CHECK((table->Flags & ImGuiTableFlags_Resizable) != 0);
