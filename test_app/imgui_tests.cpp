@@ -2392,7 +2392,6 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
         IM_CHECK_NO_RET(IM_CHECK_UTF8("\u0152\u201e\u00b4\u2030\u02c7\u00c1\u00a8\u02c6\u00d8\u220f\u201d\u2019"));
         IM_CHECK_NO_RET(IM_CHECK_UTF8("`\u2044\u20ac\u2039\u203a\ufb01\ufb02\u2021\u00b0\u00b7\u201a\u2014\u00b1"));
         IM_CHECK_NO_RET(IM_CHECK_UTF8("\u215b\u215c\u215d\u215e"));
-        IM_CHECK_NO_RET(IM_CHECK_UTF8("\u0401\u0402\u0403\u0404\u0405\u0406\u0407\u0408\u0409\u040a\u040b\u040c\u040d\u040e\u040f\u0410\u0411\u0412\u0413\u0414\u0415\u0416\u0417\u0418\u0419\u041a\u041b\u041c\u041d\u041e\u041f\u0420\u0421\u0422\u0423\u0424\u0425\u0426\u0427\u0428\u0429\u042a\u042b\u042c\u042d\u042e\u042f\u0430\u0431\u0432\u0433\u0434\u0435\u0436\u0437\u0438\u0439\u043a\u043b\u043c\u043d\u043e\u043f\u0440\u0441\u0442\u0443\u0444\u0445\u0446\u0447\u0448\u0449\u044a\u044b\u044c\u044d\u044e\u044f"));
         IM_CHECK_NO_RET(IM_CHECK_UTF8("\u0660\u0661\u0662\u0663\u0664\u0665\u0666\u0667\u0668\u0669"));
 
         // Unicode Subscript/Superscript
@@ -2400,16 +2399,6 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
         IM_CHECK_NO_RET(IM_CHECK_UTF8("\u2070\u2074\u2075"));
         IM_CHECK_NO_RET(IM_CHECK_UTF8("\u2080\u2081\u2082"));
         IM_CHECK_NO_RET(IM_CHECK_UTF8("\u2070\u2074\u2075\u2080\u2081\u2082"));
-
-        // Quotation Marks
-        // Strings which contain misplaced quotation marks; can cause encoding errors
-        IM_CHECK_NO_RET(IM_CHECK_UTF8("'"));
-        IM_CHECK_NO_RET(IM_CHECK_UTF8("\""));
-        IM_CHECK_NO_RET(IM_CHECK_UTF8("''"));
-        IM_CHECK_NO_RET(IM_CHECK_UTF8("\"\""));
-        IM_CHECK_NO_RET(IM_CHECK_UTF8("'\"'"));
-        IM_CHECK_NO_RET(IM_CHECK_UTF8("\"''''\"'\""));
-        IM_CHECK_NO_RET(IM_CHECK_UTF8("\"'\"'\"''''\""));
 
         // Two-Byte Characters
         // Strings which contain two-byte characters: can cause rendering issues or character-length issues
@@ -2422,19 +2411,6 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
         IM_CHECK_NO_RET(IM_CHECK_UTF8("\u793e\u6703\u79d1\u5b78\u9662\u8a9e\u5b78\u7814\u7a76\u6240"));
         IM_CHECK_NO_RET(IM_CHECK_UTF8("\uc6b8\ub780\ubc14\ud1a0\ub974"));
         // IM_CHECK_NO_RET(IM_CHECK_UTF8_CP32("\U0002070e\U00020731\U00020779\U00020c53\U00020c78\U00020c96\U00020ccf"));
-
-        // Japanese Emoticons
-        // Strings which consists of Japanese-style emoticons which are popular on the web
-        IM_CHECK_NO_RET(IM_CHECK_UTF8("\u30fd\u0f3c\u0e88\u0644\u035c\u0e88\u0f3d\uff89 \u30fd\u0f3c\u0e88\u0644\u035c\u0e88\u0f3d\uff89"));
-        IM_CHECK_NO_RET(IM_CHECK_UTF8("(\uff61\u25d5 \u2200 \u25d5\uff61)"));
-        IM_CHECK_NO_RET(IM_CHECK_UTF8("\uff40\uff68(\u00b4\u2200\uff40\u2229"));
-        IM_CHECK_NO_RET(IM_CHECK_UTF8("__\uff9b(,_,*)"));
-        IM_CHECK_NO_RET(IM_CHECK_UTF8("\u30fb(\uffe3\u2200\uffe3)\u30fb:*:"));
-        IM_CHECK_NO_RET(IM_CHECK_UTF8("\uff9f\uff65\u273f\u30fe\u2572(\uff61\u25d5\u203f\u25d5\uff61)\u2571\u273f\uff65\uff9f"));
-        IM_CHECK_NO_RET(IM_CHECK_UTF8(",\u3002\u30fb:*:\u30fb\u309c\u2019( \u263b \u03c9 \u263b )\u3002\u30fb:*:\u30fb\u309c\u2019"));
-        IM_CHECK_NO_RET(IM_CHECK_UTF8("(\u256f\u00b0\u25a1\u00b0\uff09\u256f\ufe35 \u253b\u2501\u253b)"));
-        IM_CHECK_NO_RET(IM_CHECK_UTF8("(\uff89\u0ca5\u76ca\u0ca5\uff09\uff89\ufeff \u253b\u2501\u253b"));
-        IM_CHECK_NO_RET(IM_CHECK_UTF8("( \u0361\u00b0 \u035c\u0296 \u0361\u00b0)"));
 
 #ifdef IMGUI_USE_WCHAR32
         // Emoji
@@ -2453,14 +2429,6 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
         IM_CHECK_NO_RET(IM_CHECK_UTF8("\uff11\uff12\uff13"));
         IM_CHECK_NO_RET(IM_CHECK_UTF8("\u0661\u0662\u0663"));
 
-        // Right-To-Left Strings
-        // Strings which contain text that should be rendered RTL if possible (e.g. Arabic, Hebrew)
-        IM_CHECK_NO_RET(IM_CHECK_UTF8("\u062b\u0645 \u0646\u0641\u0633 \u0633\u0642\u0637\u062a \u0648\u0628\u0627\u0644\u062a\u062d\u062f\u064a\u062f\u060c, \u062c\u0632\u064a\u0631\u062a\u064a \u0628\u0627\u0633\u062a\u062e\u062f\u0627\u0645 \u0623\u0646 \u062f\u0646\u0648. \u0625\u0630 \u0647\u0646\u0627\u061f \u0627\u0644\u0633\u062a\u0627\u0631 \u0648\u062a\u0646\u0635\u064a\u0628 \u0643\u0627\u0646. \u0623\u0647\u0651\u0644 \u0627\u064a\u0637\u0627\u0644\u064a\u0627\u060c \u0628\u0631\u064a\u0637\u0627\u0646\u064a\u0627-\u0641\u0631\u0646\u0633\u0627 \u0642\u062f \u0623\u062e\u0630. \u0633\u0644\u064a\u0645\u0627\u0646\u060c \u0625\u062a\u0641\u0627\u0642\u064a\u0629 \u0628\u064a\u0646 \u0645\u0627, \u064a\u0630\u0643\u0631 \u0627\u0644\u062d\u062f\u0648\u062f \u0623\u064a \u0628\u0639\u062f, \u0645\u0639\u0627\u0645\u0644\u0629 \u0628\u0648\u0644\u0646\u062f\u0627\u060c \u0627\u0644\u0625\u0637\u0644\u0627\u0642 \u0639\u0644 \u0625\u064a\u0648."));
-        IM_CHECK_NO_RET(IM_CHECK_UTF8("\u05d1\u05b0\u05bc\u05e8\u05b5\u05d0\u05e9\u05b4\u05c1\u05d9\u05ea, \u05d1\u05b8\u05bc\u05e8\u05b8\u05d0 \u05d0\u05b1\u05dc\u05b9\u05d4\u05b4\u05d9\u05dd, \u05d0\u05b5\u05ea \u05d4\u05b7\u05e9\u05b8\u05bc\u05c1\u05de\u05b7\u05d9\u05b4\u05dd, \u05d5\u05b0\u05d0\u05b5\u05ea \u05d4\u05b8\u05d0\u05b8\u05e8\u05b6\u05e5"));
-        IM_CHECK_NO_RET(IM_CHECK_UTF8("\u05d4\u05b8\u05d9\u05b0\u05ea\u05b8\u05d4test\u0627\u0644\u0635\u0641\u062d\u0627\u062a \u0627\u0644\u062a\u0651\u062d\u0648\u0644"));
-        IM_CHECK_NO_RET(IM_CHECK_UTF8("\ufdfd"));
-        IM_CHECK_NO_RET(IM_CHECK_UTF8("\ufdfa"));
-
         // Unicode Spaces
         // Strings which contain unicode space characters with special properties (c.f. https://www.cs.tut.fi/~jkorpela/chars/spaces.html)
         IM_CHECK_NO_RET(IM_CHECK_UTF8("\u200b"));
@@ -2478,19 +2446,6 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
         IM_CHECK_NO_RET(IM_CHECK_UTF8("test\u2060test\u202b"));
         IM_CHECK_NO_RET(IM_CHECK_UTF8("\u2066test\u2067"));
 
-        // Zalgo Text
-        // Strings which contain "corrupted" text. The corruption will not appear in non-HTML text, however. (via http://www.eeemo.net)
-        IM_CHECK_NO_RET(IM_CHECK_UTF8("\u1e70\u033a\u033a\u0315o\u035e \u0337i\u0332\u032c\u0347\u032a\u0359n\u031d\u0317\u0355v\u031f\u031c\u0318\u0326\u035fo\u0336\u0319\u0330\u0320k\u00e8\u035a\u032e\u033a\u032a\u0339\u0331\u0324 \u0316t\u031d\u0355\u0333\u0323\u033b\u032a\u035eh\u033c\u0353\u0332\u0326\u0333\u0318\u0332e\u0347\u0323\u0330\u0326\u032c\u034e \u0322\u033c\u033b\u0331\u0318h\u035a\u034e\u0359\u031c\u0323\u0332\u0345i\u0326\u0332\u0323\u0330\u0324v\u033b\u034de\u033a\u032d\u0333\u032a\u0330-m\u0322i\u0345n\u0316\u033a\u031e\u0332\u032f\u0330d\u0335\u033c\u031f\u0359\u0329\u033c\u0318\u0333 \u031e\u0325\u0331\u0333\u032dr\u031b\u0317\u0318e\u0359p\u0360r\u033c\u031e\u033b\u032d\u0317e\u033a\u0320\u0323\u035fs\u0318\u0347\u0333\u034d\u031d\u0349e\u0349\u0325\u032f\u031e\u0332\u035a\u032c\u035c\u01f9\u032c\u034e\u034e\u031f\u0316\u0347\u0324t\u034d\u032c\u0324\u0353\u033c\u032d\u0358\u0345i\u032a\u0331n\u0360g\u0334\u0349 \u034f\u0349\u0345c\u032c\u031fh\u0361a\u032b\u033b\u032f\u0358o\u032b\u031f\u0316\u034d\u0319\u031d\u0349s\u0317\u0326\u0332.\u0328\u0339\u0348\u0323"));
-        IM_CHECK_NO_RET(IM_CHECK_UTF8("\u0321\u0353\u031e\u0345I\u0317\u0318\u0326\u035dn\u0347\u0347\u0359v\u032e\u032bok\u0332\u032b\u0319\u0348i\u0316\u0359\u032d\u0339\u0320\u031en\u0321\u033b\u032e\u0323\u033ag\u0332\u0348\u0359\u032d\u0359\u032c\u034e \u0330t\u0354\u0326h\u031e\u0332e\u0322\u0324 \u034d\u032c\u0332\u0356f\u0334\u0318\u0355\u0323\u00e8\u0356\u1eb9\u0325\u0329l\u0356\u0354\u035ai\u0353\u035a\u0326\u0360n\u0356\u034d\u0317\u0353\u0333\u032eg\u034d \u0328o\u035a\u032a\u0361f\u0318\u0323\u032c \u0316\u0318\u0356\u031f\u0359\u032ec\u0489\u0354\u032b\u0356\u0353\u0347\u0356\u0345h\u0335\u0324\u0323\u035a\u0354\u00e1\u0317\u033c\u0355\u0345o\u033c\u0323\u0325s\u0331\u0348\u033a\u0316\u0326\u033b\u0362.\u031b\u0316\u031e\u0320\u032b\u0330"));
-        IM_CHECK_NO_RET(IM_CHECK_UTF8("\u0317\u033a\u0356\u0339\u032f\u0353\u1e6e\u0324\u034d\u0325\u0347\u0348h\u0332\u0301e\u034f\u0353\u033c\u0317\u0319\u033c\u0323\u0354 \u0347\u031c\u0331\u0320\u0353\u034d\u0345N\u0355\u0360e\u0317\u0331z\u0318\u031d\u031c\u033a\u0359p\u0324\u033a\u0339\u034d\u032f\u035ae\u0320\u033b\u0320\u035cr\u0328\u0324\u034d\u033a\u0316\u0354\u0316\u0316d\u0320\u031f\u032d\u032c\u031d\u035fi\u0326\u0356\u0329\u0353\u0354\u0324a\u0320\u0317\u032c\u0349\u0319n\u035a\u035c \u033b\u031e\u0330\u035a\u0345h\u0335\u0349i\u0333\u031ev\u0322\u0347\u1e19\u034e\u035f-\u0489\u032d\u0329\u033c\u0354m\u0324\u032d\u032bi\u0355\u0347\u031d\u0326n\u0317\u0359\u1e0d\u031f \u032f\u0332\u0355\u035e\u01eb\u031f\u032f\u0330\u0332\u0359\u033b\u031df \u032a\u0330\u0330\u0317\u0316\u032d\u0318\u0358c\u0326\u034d\u0332\u031e\u034d\u0329\u0319\u1e25\u035aa\u032e\u034e\u031f\u0319\u035c\u01a1\u0329\u0339\u034es\u0324.\u031d\u031d \u0489Z\u0321\u0316\u031c\u0356\u0330\u0323\u0349\u031ca\u0356\u0330\u0359\u032c\u0361l\u0332\u032b\u0333\u034d\u0329g\u0321\u031f\u033c\u0331\u035a\u031e\u032c\u0345o\u0317\u035c.\u031f"));
-        IM_CHECK_NO_RET(IM_CHECK_UTF8("\u0326H\u032c\u0324\u0317\u0324\u035de\u035c \u031c\u0325\u031d\u033b\u034d\u031f\u0301w\u0315h\u0316\u032f\u0353o\u031d\u0359\u0316\u034e\u0331\u032e \u0489\u033a\u0319\u031e\u031f\u0348W\u0337\u033c\u032da\u033a\u032a\u034d\u012f\u0348\u0355\u032d\u0359\u032f\u031ct\u0336\u033c\u032es\u0318\u0359\u0356\u0315 \u0320\u032b\u0320B\u033b\u034d\u0359\u0349\u0333\u0345e\u0335h\u0335\u032c\u0347\u032b\u0359i\u0339\u0353\u0333\u0333\u032e\u034e\u032b\u0315n\u035fd\u0334\u032a\u031c\u0316 \u0330\u0349\u0329\u0347\u0359\u0332\u035e\u0345T\u0356\u033c\u0353\u032a\u0362h\u034f\u0353\u032e\u033be\u032c\u031d\u031f\u0345 \u0324\u0339\u031dW\u0359\u031e\u031d\u0354\u0347\u035d\u0345a\u034f\u0353\u0354\u0339\u033c\u0323l\u0334\u0354\u0330\u0324\u031f\u0354\u1e3d\u032b.\u0355"));
-        IM_CHECK_NO_RET(IM_CHECK_UTF8("Z\u032e\u031e\u0320\u0359\u0354\u0345\u1e00\u0317\u031e\u0348\u033b\u0317\u1e36\u0359\u034e\u032f\u0339\u031e\u0353G\u033bO\u032d\u0317\u032e"));
-
-        // Unicode Upsidedown
-        // Strings which contain unicode with an "upsidedown" effect (via http://www.upsidedowntext.com)
-        IM_CHECK_NO_RET(IM_CHECK_UTF8("\u02d9\u0250nb\u1d09l\u0250 \u0250u\u0183\u0250\u026f \u01dd\u0279olop \u0287\u01dd \u01dd\u0279oq\u0250l \u0287n \u0287unp\u1d09p\u1d09\u0254u\u1d09 \u0279od\u026f\u01dd\u0287 po\u026fsn\u1d09\u01dd op p\u01dds '\u0287\u1d09l\u01dd \u0183u\u1d09\u0254s\u1d09d\u1d09p\u0250 \u0279n\u0287\u01dd\u0287\u0254\u01ddsuo\u0254 '\u0287\u01dd\u026f\u0250 \u0287\u1d09s \u0279olop \u026fnsd\u1d09 \u026f\u01dd\u0279o\u02e5"));
-        IM_CHECK_NO_RET(IM_CHECK_UTF8("00\u02d9\u0196$-"));
-
         // Unicode font
         // Strings which contain bold/italic/etc. versions of normal characters
         IM_CHECK_NO_RET(IM_CHECK_UTF8("\uff34\uff48\uff45 \uff51\uff55\uff49\uff43\uff4b \uff42\uff52\uff4f\uff57\uff4e \uff46\uff4f\uff58 \uff4a\uff55\uff4d\uff50\uff53 \uff4f\uff56\uff45\uff52 \uff54\uff48\uff45 \uff4c\uff41\uff5a\uff59 \uff44\uff4f\uff47"));
@@ -2504,9 +2459,13 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
 #endif
         IM_CHECK_NO_RET(IM_CHECK_UTF8("\u24af\u24a3\u24a0 \u24ac\u24b0\u24a4\u249e\u24a6 \u249d\u24ad\u24aa\u24b2\u24a9 \u24a1\u24aa\u24b3 \u24a5\u24b0\u24a8\u24ab\u24ae \u24aa\u24b1\u24a0\u24ad \u24af\u24a3\u24a0 \u24a7\u249c\u24b5\u24b4 \u249f\u24aa\u24a2"));
 
-        // iOS Vulnerability
-        // Strings which crashed iMessage in iOS versions 8.3 and earlier
-        IM_CHECK_NO_RET(IM_CHECK_UTF8("Power\u0644\u064f\u0644\u064f\u0635\u0651\u0628\u064f\u0644\u064f\u0644\u0635\u0651\u0628\u064f\u0631\u0631\u064b \u0963 \u0963h \u0963 \u0963\u5197"));
+        // Removed most of them from this codebase on 2020-11-05 because misleading (we're testing UTF-8 encoding/decoding, not actual contents handling)
+        // **Removed** Quotation Marks (Strings which contain misplaced quotation marks; can cause encoding errors)
+        // **Removed** Japanese Emoticons (Strings which consists of Japanese-style emoticons which are popular on the web)
+        // **Removed** Right-To-Left Strings (Strings which contain text that should be rendered RTL if possible (e.g. Arabic, Hebrew))
+        // **Removed** Zalgo Text (Strings which contain "corrupted" text. The corruption will not appear in non-HTML text, however. (via http://www.eeemo.net))
+        // **Removed** Unicode Upsidedown (Strings which contain unicode with an "upsidedown" effect (via http://www.upsidedowntext.com))
+        // **Removed** iOS Vulnerability (Strings which crashed iMessage in iOS versions 8.3 and earlier)
 
         // Invalid inputs
         // FIXME-MISC: ImTextCharFromUtf8() returns 0 codepoint when first byte is not valid utf-8. If first byte is valid utf-8 but codepoint is still invalid - IM_UNICODE_CODEPOINT_INVALID is returned.
