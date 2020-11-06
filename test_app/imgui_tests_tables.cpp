@@ -280,7 +280,12 @@ void RegisterTests_Table(ImGuiTestEngine* e)
             { 9, ImGuiTableFlags_Borders },
         };
 
-        ImGui::Text("(width variance should be <= 1.0f)");
+        auto& vars = ctx->GenericVars;
+        ImGui::Checkbox("ImGuiTableFlags_PreciseStretchWidths", &vars.Bool1);
+
+        const float max_variance = vars.Bool1 ? 0.0f : 1.0f;
+
+        ImGui::Text("(width variance should be <= %.2f)", max_variance);
         for (int test_case_n = 0; test_case_n < IM_ARRAYSIZE(test_cases); test_case_n++)
         {
             const TestCase& tc = test_cases[test_case_n];
@@ -288,7 +293,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
 
             ImGui::Spacing();
             ImGui::Spacing();
-            if (ImGui::BeginTable("table1", tc.ColumnCount, tc.Flags, ImVec2(0, 0)))
+            if (ImGui::BeginTable("table1", tc.ColumnCount, tc.Flags | (vars.Bool1 ? ImGuiTableFlags_PreciseStretchWidths : 0), ImVec2(0, 0)))
             {
                 ImGui::TableNextRow();
 
@@ -303,19 +308,26 @@ void RegisterTests_Table(ImGuiTestEngine* e)
                     ImGui::Text("Width %.2f", w);
                 }
                 float w_variance = max_w - min_w;
-                IM_CHECK_LE_NO_RET(w_variance, 1.0f);
+                IM_CHECK_LE_NO_RET(w_variance, max_variance);
                 ImGui::EndTable();
 
-                if (w_variance > 1.0f)
+                if (w_variance > max_variance)
                     ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(255, 100, 100, 255));
                 ImGui::Text("#%02d: Variance %.2f (min %.2f max %.2f)", test_case_n, w_variance, min_w, max_w);
-                if (w_variance > 1.0f)
+                if (w_variance > max_variance)
                     ImGui::PopStyleColor();
             }
             ImGui::PopID();
         }
 
         ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ctx->GenericVars.Bool1 = false;
+        ctx->Yield(2);
+        ctx->GenericVars.Bool1 = true;
+        ctx->Yield(2);
     };
 
     // ## Table: test code keeping columns visible keep visible
@@ -1369,10 +1381,10 @@ void RegisterTests_Table(ImGuiTestEngine* e)
         ctx->SetRef(table->InnerWindow);
         ctx->ScrollToX(0.0f);
         ctx->ScrollToY(0.0f);
-        ctx->YieldFrames(2);
+        ctx->Yield(2);
         ctx->ScrollToX(table->InnerWindow->ScrollMax.x);
         ctx->ScrollToY(table->InnerWindow->ScrollMax.y);
-        ctx->YieldFrames(2);
+        ctx->Yield(2);
     };
 
     // ## Miscellaneous

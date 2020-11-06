@@ -1128,7 +1128,7 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
         {
             ctx->LogDebug("TEST CASE %d", test_n);
             ctx->GenericVars.Bool1 = true;
-            ctx->YieldFrames(2);
+            ctx->Yield(2);
 #ifdef IMGUI_HAS_DOCK
             ctx->DockMultiClear("Window 1", "Window 2", NULL);
             if (test_n == 1)
@@ -1147,7 +1147,7 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
             IM_CHECK_EQ(g.NavId, ctx->GetID("Window 2/Button 2"));
 
             ctx->GenericVars.Bool1 = false;
-            ctx->YieldFrames(2);
+            ctx->Yield(2);
             IM_CHECK_EQ(g.NavId, ctx->GetID("Window 1/Button 1"));
         }
 
@@ -1401,7 +1401,7 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
 
         // Test page up/page down/home/end keys WITH navigable items.
         ctx->GenericVars.Step = 1;
-        ctx->YieldFrames(2);
+        ctx->Yield(2);
         //g.NavId = 0;
         memset(window->NavRectRel, 0, sizeof(window->NavRectRel));
         ctx->KeyPressMap(ImGuiKey_PageDown);
@@ -1845,7 +1845,7 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
         float backup_timer = 0.0f;
         ImSwap(ctx->UiContext->IO.ConfigMemoryCompactTimer, backup_timer);
 
-        ctx->YieldFrames(3); // Give time to perform GC
+        ctx->Yield(3); // Give time to perform GC
         ctx->LogDebug("Check GC-ed state");
         for (int i = 0; i < 3; i++)
         {

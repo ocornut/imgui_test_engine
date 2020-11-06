@@ -677,7 +677,7 @@ void ImGuiTestEngine_Yield(ImGuiTestEngine* engine)
 
     // Can only yield in the test func!
     if (ctx)
-        IM_ASSERT(ctx->ActiveFunc == ImGuiTestActiveFunc_TestFunc);
+        IM_ASSERT(ctx->ActiveFunc == ImGuiTestActiveFunc_TestFunc && "Can only yield inside TestFunc()!");
 
     engine->IO.CoroutineFuncs->YieldFunc();
 }

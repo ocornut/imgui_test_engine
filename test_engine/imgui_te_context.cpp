@@ -285,13 +285,9 @@ void    ImGuiTestContext::RecoverFromUiContextErrors()
     }
 }
 
-void    ImGuiTestContext::Yield()
+void    ImGuiTestContext::Yield(int count)
 {
-    ImGuiTestEngine_Yield(Engine);
-}
-
-void    ImGuiTestContext::YieldFrames(int count = 0)
-{
+    IM_ASSERT(count > 0);
     while (count > 0)
     {
         ImGuiTestEngine_Yield(Engine);
@@ -1720,7 +1716,7 @@ void    ImGuiTestContext::ItemHoldForFrames(ImGuiTestRef ref, int frames)
     MouseMove(ref);
     Yield();
     Inputs->MouseButtonsValue = (1 << 0);
-    YieldFrames(frames);
+    Yield(frames);
     Inputs->MouseButtonsValue = 0;
     Yield();
 }

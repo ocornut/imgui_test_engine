@@ -304,13 +304,13 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
         bool backup_cfg = ctx->UiContext->IO.ConfigDockingAlwaysTabBar;
         ctx->LogDebug("ConfigDockingAlwaysTabBar = false");
         ctx->UiContext->IO.ConfigDockingAlwaysTabBar = false;
-        ctx->YieldFrames(4);
+        ctx->Yield(4);
         ctx->LogDebug("ConfigDockingAlwaysTabBar = true");
         ctx->UiContext->IO.ConfigDockingAlwaysTabBar = true;
-        ctx->YieldFrames(4);
+        ctx->Yield(4);
         ctx->LogDebug("ConfigDockingAlwaysTabBar = false");
         ctx->UiContext->IO.ConfigDockingAlwaysTabBar = false;
-        ctx->YieldFrames(4);
+        ctx->Yield(4);
         ctx->UiContext->IO.ConfigDockingAlwaysTabBar = backup_cfg;
     };
 
