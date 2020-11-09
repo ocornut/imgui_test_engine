@@ -2281,6 +2281,49 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         IM_CHECK(user_data.Dropped);
     };
 
+    // ## Test preserving g.ActiveId during drag operation opening tree items.
+    t = IM_REGISTER_TEST(e, "widgets", "widgets_drag_hold_to_open");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        if (ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings))
+        {
+            ImGui::Button("Drag");
+            if (ImGui::BeginDragDropSource())
+            {
+                int magic = 0xF00;
+                ImGui::SetDragDropPayload("MAGIC", &magic, sizeof(int));
+                ImGui::EndDragDropSource();
+            }
+        }
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiContext& g = *ctx->UiContext;
+
+        ctx->SetRef("Dear ImGui Demo");
+        ctx->ItemCloseAll("");
+
+        ctx->SetRef("Test Window");
+        ImGuiID active_id = ctx->GetID("Drag");
+        ctx->MouseMove("Drag");
+        ctx->SleepShort();
+        ctx->MouseDown();
+        ctx->MouseLiftDragThreshold();
+        IM_CHECK_EQ(g.ActiveId, active_id);
+
+        ctx->SetRef("Dear ImGui Demo");
+        ctx->MouseMove("Widgets", ImGuiTestOpFlags_NoFocusWindow);
+        ctx->SleepNoSkip(1.0f, 1.0f / 60.0f);
+        IM_CHECK((ctx->ItemInfo("Widgets")->StatusFlags & ImGuiItemStatusFlags_Opened) != 0);
+        IM_CHECK_EQ(g.ActiveId, active_id);
+        ctx->MouseMove("Trees", ImGuiTestOpFlags_NoFocusWindow);
+        ctx->SleepNoSkip(1.0f, 1.0f / 60.0f);
+        IM_CHECK((ctx->ItemInfo("Trees")->StatusFlags & ImGuiItemStatusFlags_Opened) != 0);
+        IM_CHECK_EQ(g.ActiveId, active_id);
+        ctx->MouseUp(0);
+    };
+
     // ## Test overlapping drag and drop targets. The drag and drop system always prioritize the smaller target.
     t = IM_REGISTER_TEST(e, "widgets", "widgets_drag_overlapping_targets");
     t->GuiFunc = [](ImGuiTestContext* ctx)
