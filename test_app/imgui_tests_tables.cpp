@@ -1398,6 +1398,49 @@ void RegisterTests_Table(ImGuiTestEngine* e)
         ctx->Yield(2);
     };
 
+    // ## Test rendering into hidden/clipped cells.
+    t = IM_REGISTER_TEST(e, "table", "table_hidden_output");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::SetNextWindowSize(ImVec2(200.0f, 100.0f), ImGuiCond_Appearing);
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+
+        if (ctx->IsFirstGuiFrame())
+            TableDiscardInstanceAndSettings(ImGui::GetID("table1"));    // Ensure there is no horizontal scroll cached from manual run.
+
+        if (ImGui::BeginTable("table1", 30, ImGuiTableFlags_ScrollY | ImGuiTableFlags_ScrollX))
+        {
+            ImGuiWindow* window = ImGui::GetCurrentWindow();
+            for (int line = 0; line < 40; line++)
+            {
+                ImGui::TableNextRow();
+                for (int column = 0; column < 30; column++)
+                {
+                    bool column_visible = ImGui::TableSetColumnIndex(column);
+
+                    if (line == 0 && column == 29 && ctx->FrameCount == 2)
+                    {
+                        IM_CHECK(!column_visible);  // Last column scrolled out of view.
+                        //IM_CHECK_EQ_NO_RET(window->SkipItems, true);     // FIXME-TABLE: This should be set to true, still working things out.
+                        IM_CHECK_NO_RET(window->ClipRect.GetWidth() == 0);
+                    }
+
+                    if (!column_visible)
+                    {
+                        // FIXME-TABLE: Actually test for this.
+                        window->DrawList->AddCircle(ImGui::GetCursorScreenPos(), 100.0f, IM_COL32_WHITE);
+                        continue;
+                    }
+
+                    ImGui::TextUnformatted("eek");
+                }
+            }
+            ImGui::EndTable();
+        }
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx) { ctx->Yield(2); };
+
     // ## Test changing column count of existing table.
     t = IM_REGISTER_TEST(e, "table", "table_varying_columns_count");
     t->GuiFunc = [](ImGuiTestContext* ctx)
