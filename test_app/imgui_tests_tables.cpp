@@ -693,23 +693,34 @@ void RegisterTests_Table(ImGuiTestEngine* e)
     t = IM_REGISTER_TEST(e, "table", "table_max_columns");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
+        ImGui::SetNextWindowSize(ImVec2(300, 400));
         ImGui::Begin("Test window 1", NULL, ImGuiWindowFlags_NoSavedSettings);
-        //ImDrawList* cmd = ImGui::GetWindowDrawList();
-        ImGui::BeginTable("table1", 64);
-        for (int n = 0; n < 64; n++)
+        ImGui::BeginTable("table1", IMGUI_TABLE_MAX_COLUMNS, ImGuiTableFlags_ScrollY);
+        ImGui::TableSetupScrollFreeze(0, 10);
+        for (int n = 0; n < IMGUI_TABLE_MAX_COLUMNS; n++)
             ImGui::TableSetupColumn("Header");
         ImGui::TableHeadersRow();
-        for (int i = 0; i < 10; i++)
+        for (int i = 0; i < 128; i++)
         {
             ImGui::TableNextRow();
-            for (int n = 0; n < 64; n++)
+            for (int n = 0; n < IMGUI_TABLE_MAX_COLUMNS; n++)
             {
                 ImGui::TableNextColumn();
                 ImGui::Text("Data");
             }
         }
+
+        if (ctx->FrameCount < 1)
+            ImGui::SetScrollHereY(1.0f);
         ImGui::EndTable();
         ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ctx->SetRef("Test window 1");
+        ImGuiTable* table = ImGui::TableFindByID(ctx->GetID("table1"));
+        ctx->Yield(2);
+        IM_CHECK_EQ(table->DrawSplitter._Channels.Size, IMGUI_TABLE_MAX_DRAW_CHANNELS);
     };
 
     // ## Test rendering two tables with same ID.
@@ -1387,6 +1398,33 @@ void RegisterTests_Table(ImGuiTestEngine* e)
         ctx->Yield(2);
     };
 
+    // ## Test changing column count of existing table.
+    t = IM_REGISTER_TEST(e, "table", "table_varying_columns_count");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ctx->GenericVars.Count = ImMax(ctx->GenericVars.Count, 1);
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+        if (ImGui::BeginTable("table1", ctx->GenericVars.Count, ImGuiTableFlags_ScrollY))
+        {
+            HelperTableSubmitCellsButtonFix(ctx->GenericVars.Count, 10);
+            ImGui::EndTable();
+        }
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ctx->SetRef("Test Window");
+        ImGuiTable* table = ImGui::TableFindByID(ctx->GetID("table1"));
+
+        int column_count[] = { 10, 15, 13, 18, 12, 20, 19 };
+        for (int i = 0; i < IM_ARRAYSIZE(column_count); i++)
+        {
+            ctx->GenericVars.Count = column_count[i];
+            ctx->Yield();
+            IM_CHECK_EQ(table->ColumnsCount, column_count[i]);
+        }
+    };
+
     // ## Miscellaneous
     t = IM_REGISTER_TEST(e, "table", "table_cov_misc");
     t->GuiFunc = [](ImGuiTestContext* ctx)
@@ -1464,6 +1502,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
         ctx->ItemClick("One");
         IM_CHECK(col0->IsVisible == true);
     };
+
 
 
 #else // #ifdef IMGUI_HAS_TABLE
