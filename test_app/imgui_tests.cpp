@@ -2929,6 +2929,30 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
         ctx->SetRef("Dear ImGui Demo");
         ctx->ItemClose("Modals");
         ctx->ItemClose("Popups & Modal windows");
+
+        // TODO: We could add more in-depth tests instead of just click-coverage
+        ctx->ItemOpen("Widgets");
+        ctx->ItemOpen("Text Input");
+        ctx->ItemOpen("Text Input/Completion, History, Edit Callbacks");
+        ctx->SetRef("Dear ImGui Demo/Text Input/Completion, History, Edit Callbacks");
+        ctx->ItemClick("Completion");
+        ctx->ItemClick("History");
+        ctx->ItemClick("Edit");
+
+        ctx->SetRef("Dear ImGui Demo");
+        ctx->ItemOpen("Text Input/Resize Callback");
+        ctx->SetRef("Dear ImGui Demo/Text Input/Resize Callback");
+        ctx->ItemClick("##MyStr");
+
+        // Ensure X scrolling is working
+        ImGuiWindow* window = ctx->GetWindowByRef("Dear ImGui Demo");
+        ImVec2 backup_size = window->Rect().GetSize();
+        ctx->SetRef("Dear ImGui Demo");
+        ctx->WindowResize("Dear ImGui Demo", ImVec2(200, backup_size.y));
+        ctx->ItemOpen("Widgets");
+        ctx->ItemOpen("Basic");
+        ctx->ItemClick("Basic/radio c");
+        ctx->WindowResize("Dear ImGui Demo", backup_size);
     };
 
     t = IM_REGISTER_TEST(e, "demo", "demo_cov_apps");

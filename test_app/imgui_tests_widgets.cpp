@@ -1929,23 +1929,39 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         auto& vars = ctx->GetUserData<TabBarCoveragePopupScrolling>();
-        ctx->ItemClick("Test Window/TabBar/Tab 0"); // Ensure first tab is selected
+        ctx->SetRef("Test Window");
+        ctx->ItemClick("TabBar/Tab 0"); // Ensure first tab is selected
 
         for (int i = 0; i < vars.TabCount; i++)
         {
-            ctx->ItemClick("Test Window/TabBar/##<");
+            ctx->ItemClick("TabBar/##<");
             ctx->Yield();
             IM_CHECK_EQ(vars.Selected, i == 0 ? 0 : i - 1);
 
-            ctx->ItemClick("Test Window/TabBar/##v");
-            Str64f tab_name = { "##Combo_00/Tab %d", i };
-            ctx->ItemClick(tab_name.c_str());
+            ctx->ItemClick("TabBar/##v");
+            ctx->ItemClick(Str64f("/##Combo_00/Tab %d", i).c_str());
             ctx->Yield();
             IM_CHECK_EQ(vars.Selected, i);
 
-            ctx->ItemClick("Test Window/TabBar/##>");
+            ctx->ItemClick("TabBar/##>");
             ctx->Yield();
             IM_CHECK_EQ(vars.Selected, i == vars.TabCount - 1 ? vars.TabCount - 1 : i + 1);
+        }
+
+        // Click on all even tab
+        for (int i = 0; i < vars.TabCount / 2; i++)
+        {
+            const int even_i = i * 2;
+            ctx->ItemClick(Str64f("TabBar/Tab %d", even_i).c_str());
+            IM_CHECK_EQ(vars.Selected, even_i);
+        }
+
+        // Click on all odd tab
+        for (int i = 0; i < vars.TabCount / 2; i++)
+        {
+            const int odd_i = i * 2 + 1;
+            ctx->ItemClick(Str64f("TabBar/Tab %d", odd_i).c_str());
+            IM_CHECK_EQ(vars.Selected, odd_i);
         }
     };
 
@@ -2582,6 +2598,75 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ctx->SetRef("##MainMenuBar");
         ctx->MenuClick("Second Menu/Second");
         IM_CHECK_EQ(ctx->GenericVars.Bool1, true);
+    };
+
+    // ## Test main menubar navigation
+    t = IM_REGISTER_TEST(e, "widgets", "widgets_main_menubar_navigation");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        if (ImGui::BeginMainMenuBar())
+        {
+            if (ImGui::BeginMenu("Menu 1"))
+            {
+                if (ImGui::BeginMenu("Sub Menu 1"))
+                {
+                    ImGui::MenuItem("Item 1");
+                    ImGui::EndMenu();
+                }
+                ImGui::EndMenu();
+            }
+            if (ImGui::BeginMenu("Menu 2"))
+            {
+                if (ImGui::BeginMenu("Sub Menu 2-1"))
+                {
+                    ImGui::MenuItem("Item 2");
+                    ImGui::EndMenu();
+                }
+                if (ImGui::BeginMenu("Sub Menu 2-2"))
+                {
+                    ImGui::MenuItem("Item 3");
+                    ImGui::EndMenu();
+                }
+                ImGui::EndMenu();
+            }
+            ImGui::EndMenuBar();
+        }
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiContext& g = *ImGui::GetCurrentContext();
+
+        ctx->ItemClick("##MainMenuBar##menubar/Menu 1");
+        // Click doesn't affet g.NavId which is null at this point
+        // Key Navigation
+        ctx->NavKeyPress(ImGuiNavInput_KeyDown_);
+        IM_CHECK_EQ(g.NavId, ctx->GetID("##Menu_00/Sub Menu 1"));
+        ctx->NavKeyPress(ImGuiNavInput_KeyRight_);
+        IM_CHECK_EQ(g.NavId, ctx->GetID("##Menu_01/Item 1"));
+        ctx->NavKeyPress(ImGuiNavInput_KeyLeft_);
+        IM_CHECK_EQ(g.NavId, ctx->GetID("##Menu_00/Sub Menu 1"));
+        ctx->NavKeyPress(ImGuiNavInput_KeyLeft_);
+        IM_CHECK_EQ(g.NavId, ctx->GetID("##MainMenuBar##menubar/Menu 1"));
+
+        ctx->MouseMove("##MainMenuBar##menubar/Menu 2"); // Workaround so TestEngine can find again Menu 1
+        // From Menu 1/Sub Menu 1/Item 1 to Menu 2
+        ctx->ItemClick("##MainMenuBar##menubar/Menu 1");
+        ctx->NavKeyPress(ImGuiNavInput_KeyDown_);
+        ctx->NavKeyPress(ImGuiNavInput_KeyRight_);
+        ctx->NavKeyPress(ImGuiNavInput_KeyRight_);
+        IM_CHECK_EQ(g.NavId, ctx->GetID("##MainMenuBar##menubar/Menu 2"));
+
+        ctx->NavKeyPress(ImGuiNavInput_KeyDown_);
+        IM_CHECK_EQ(g.NavId, ctx->GetID("##Menu_00/Sub Menu 2-1"));
+        ctx->NavKeyPress(ImGuiNavInput_KeyRight_);
+        IM_CHECK_EQ(g.NavId, ctx->GetID("##Menu_01/Item 2"));
+
+        ctx->NavKeyPress(ImGuiNavInput_KeyLeft_);
+        ctx->NavKeyPress(ImGuiNavInput_KeyDown_);
+        IM_CHECK_EQ(g.NavId, ctx->GetID("##Menu_00/Sub Menu 2-2"));
+        ctx->NavKeyPress(ImGuiNavInput_KeyRight_);
+        IM_CHECK_EQ(g.NavId, ctx->GetID("##Menu_01/Item 3"));
     };
 
 #ifdef IMGUI_HAS_MULTI_SELECT
