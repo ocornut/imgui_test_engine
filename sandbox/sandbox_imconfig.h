@@ -10,3 +10,7 @@
 #include "../test_engine/imgui_te_imconfig.h"
 #endif
 
+// Enforce a back-end to use
+//#define IMGUI_APP_WIN32_DX11
+//#define IMGUI_APP_SDL_GL3
+//#define IMGUI_APP_GLFW_GL3
