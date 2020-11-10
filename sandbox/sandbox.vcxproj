@@ -170,6 +170,9 @@
     <ClInclude Include="..\libs\imgui_memory_editor\imgui_memory_editor.h" />
     <ClInclude Include="..\libs\implot\implot.h" />
     <ClInclude Include="..\libs\implot\implot_internal.h" />
+    <ClInclude Include="..\libs\nativefiledialog\common.h" />
+    <ClInclude Include="..\libs\nativefiledialog\nfd.h" />
+    <ClInclude Include="..\libs\nativefiledialog\nfd_common.h" />
     <ClInclude Include="..\shared\imgui_app.h" />
     <ClInclude Include="..\libs\imgui_markdown\imgui_markdown.h" />
     <ClInclude Include="editor_assets_browser.h" />
@@ -188,6 +191,8 @@
     <ClCompile Include="..\libs\implot\implot.cpp" />
     <ClCompile Include="..\libs\implot\implot_demo.cpp" />
     <ClCompile Include="..\libs\implot\implot_items.cpp" />
+    <ClCompile Include="..\libs\nativefiledialog\nfd_common.c" />
+    <ClCompile Include="..\libs\nativefiledialog\nfd_win.cpp" />
     <ClCompile Include="..\shared\imgui_app.cpp" />
     <ClCompile Include="editor_assets_browser.cpp" />
     <ClCompile Include="editor_scene.cpp" />

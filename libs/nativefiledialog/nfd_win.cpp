@@ -11,6 +11,11 @@
 #define _WIN32_WINNT _WIN32_WINNT_VISTA
 #endif
 
+// Disable warning using strncat()
+#ifndef _CRT_SECURE_NO_WARNINGS
+#define _CRT_SECURE_NO_WARNINGS
+#endif
+
 #define _CRTDBG_MAP_ALLOC
 #include <stdlib.h>
 #include <crtdbg.h>

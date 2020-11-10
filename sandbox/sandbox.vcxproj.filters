@@ -32,6 +32,9 @@
     <Filter Include="libs\implot">
       <UniqueIdentifier>{ba5cb1e9-0ab7-439d-9cf1-dc8a8ace037f}</UniqueIdentifier>
     </Filter>
+    <Filter Include="libs\nativefiledialog">
+      <UniqueIdentifier>{bee55434-6707-4f7e-bdeb-5a1f3aef5954}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\imgui\imconfig.h">
@@ -88,6 +91,15 @@
     <ClInclude Include="..\libs\implot\implot_internal.h">
       <Filter>libs\implot</Filter>
     </ClInclude>
+    <ClInclude Include="..\libs\nativefiledialog\common.h">
+      <Filter>libs\nativefiledialog</Filter>
+    </ClInclude>
+    <ClInclude Include="..\libs\nativefiledialog\nfd.h">
+      <Filter>libs\nativefiledialog</Filter>
+    </ClInclude>
+    <ClInclude Include="..\libs\nativefiledialog\nfd_common.h">
+      <Filter>libs\nativefiledialog</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\imgui\imgui.cpp">
@@ -140,6 +152,12 @@
     </ClCompile>
     <ClCompile Include="..\libs\implot\implot_items.cpp">
       <Filter>libs\implot</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libs\nativefiledialog\nfd_common.c">
+      <Filter>libs\nativefiledialog</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libs\nativefiledialog\nfd_win.cpp">
+      <Filter>libs\nativefiledialog</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

@@ -12,7 +12,10 @@
 #include "shared/IconsFontAwesome5.h"
 #include "shared/imgui_capture_tool.h"
 
-// Includes: Test Engine Suppot
+#ifdef IMGUI_SANDBOX_ENABLE_NATIVE_FILE_DIALOG
+#include "libs/nativefiledialog/nfd.h"
+#endif
+
 #ifdef IMGUI_SANDBOX_ENABLE_TEST_ENGINE
 #include "test_engine/imgui_te_engine.h"
 #include "test_engine/imgui_te_coroutine.h"
@@ -197,6 +200,14 @@ int main(int argc, char** argv)
                 }
                 if (ImGui::MenuItem("Open", "Ctrl+O"))
                 {
+#ifdef IMGUI_SANDBOX_ENABLE_NATIVE_FILE_DIALOG
+                    // Testing https://github.com/mlabbe/nativefiledialog
+                    // in order to test a long blocking call mid-frame, trying to repro problem discussed in #3575 (currently cannot repro)
+                    nfdchar_t* outPath = NULL;
+                    nfdresult_t result = NFD_OpenDialog(NULL, NULL, &outPath);
+                    if (result == NFD_OKAY)
+                        free(outPath);
+#endif
                 }
                 ImGui::Separator();
                 if (ImGui::BeginMenu("Options"))
