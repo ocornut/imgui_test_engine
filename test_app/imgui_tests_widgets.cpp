@@ -980,6 +980,48 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
     // ## Test input text multiline scroll movement only: ctrl + (left, up, right, down)
     // ## Test input text multiline page up/page down history ?
 
+    // ## Test character replacement in callback (inspired by https://github.com/ocornut/imgui/pull/3587)
+    t = IM_REGISTER_TEST(e, "widgets", "widgets_inputtext_callback_replace");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiTestGenericVars& vars = ctx->GenericVars;
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+        auto callback = [](ImGuiInputTextCallbackData* data)
+        {
+            if (data->CursorPos >= 3 && strcmp(data->Buf + data->CursorPos - 3, "abc") == 0)
+            {
+                data->DeleteChars(data->CursorPos - 3, 3);
+                data->InsertChars(data->CursorPos, "\xE5\xA5\xBD"); // HAO
+                data->SelectionStart = data->CursorPos - 3;
+                data->SelectionEnd = data->CursorPos;
+                return 1;
+            }
+            return 0;
+        };
+        ImGui::InputText("Hello", vars.Str1, IM_ARRAYSIZE(vars.Str1), ImGuiInputTextFlags_CallbackAlways, callback);
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ctx->SetRef("Test Window");
+        ctx->ItemInput("Hello");
+        ImGuiInputTextState* state = &ctx->UiContext->InputTextState;
+        IM_CHECK(state && state->ID == ctx->GetID("Hello"));
+        ctx->KeyCharsAppend("ab");
+        IM_CHECK(state->CurLenA == 2);
+        IM_CHECK(state->CurLenW == 2);
+        IM_CHECK(strcmp(state->TextA.Data, "ab") == 0);
+        IM_CHECK(state->Stb.cursor == 2);
+        ctx->KeyCharsAppend("c");
+        IM_CHECK(state->CurLenA == 3);
+        IM_CHECK(state->CurLenW == 1);
+        IM_CHECK(strcmp(state->TextA.Data, "\xE5\xA5\xBD") == 0);
+        IM_CHECK(state->TextW.Data[0] == 0x597D);
+        IM_CHECK(state->TextW.Data[1] == 0);
+        IM_CHECK(state->Stb.cursor == 1);
+        IM_CHECK(state->Stb.select_start == 0 && state->Stb.select_end == 1);
+    };
+
     // ## Test for Nav interference
     t = IM_REGISTER_TEST(e, "widgets", "widgets_inputtext_nav");
     t->GuiFunc = [](ImGuiTestContext* ctx)
