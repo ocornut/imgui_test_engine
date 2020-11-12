@@ -1220,6 +1220,45 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
         IM_CHECK(g.IO.WantCaptureKeyboard == false);
     };
 
+    // ## Test inheritance (and lack of) of FocusScope
+    // FIXME-TESTS: could test for actual propagation of focus scope from<>into nav data
+    t = IM_REGISTER_TEST(e, "nav", "nav_focus_scope");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+
+        ImGuiID focus_scope_id = ImGui::GetID("MyScope");
+
+        IM_CHECK_EQ(ImGui::GetFocusScope(), 0u);
+        ImGui::BeginChild("Child 1", ImVec2(100, 100));
+        IM_CHECK_EQ(ImGui::GetFocusScope(), 0u);
+        ImGui::EndChild();
+
+        ImGui::PushFocusScope(focus_scope_id);
+        IM_CHECK_EQ(ImGui::GetFocusScope(), focus_scope_id);
+        ImGui::BeginChild("Child 1", ImVec2(100, 100));
+        IM_CHECK_EQ(ImGui::GetFocusScope(), focus_scope_id); // Append
+        ImGui::EndChild();
+        ImGui::BeginChild("Child 2", ImVec2(100, 100));
+        IM_CHECK_EQ(ImGui::GetFocusScope(), focus_scope_id); // New child
+        ImGui::EndChild();
+        IM_CHECK_EQ(ImGui::GetFocusScope(), focus_scope_id);
+
+        // Should not inherit
+        ImGui::Begin("Test Window 2", NULL, ImGuiWindowFlags_NoSavedSettings);
+        IM_CHECK_EQ(ImGui::GetFocusScope(), 0u);
+        ImGui::End();
+
+        ImGui::PopFocusScope();
+
+        IM_CHECK_EQ(ImGui::GetFocusScope(), 0u);
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ctx->SetRef("Test Window");
+    };
+
     // ## Test navigation in popups that are appended across multiple calls to BeginPopup()/EndPopup(). (#3223)
     t = IM_REGISTER_TEST(e, "nav", "nav_appended_popup");
     t->GuiFunc = [](ImGuiTestContext* ctx)
@@ -1922,10 +1961,14 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
         v128.SetBitRange(1, 32);
         IM_CHECK(v128.Storage[0] == 0xFFFFFFFE && v128.Storage[1] == 0x00000001 && v128.Storage[2] == 0x00000000);
         v128.ClearBits();
+        v128.SetBitRange(2, 32);
+        IM_CHECK(v128.Storage[0] == 0xFFFFFFFC && v128.Storage[1] == 0x00000001 && v128.Storage[2] == 0x00000000);
+        v128.ClearBits();
         v128.SetBitRange(0, 64);
         IM_CHECK(v128.Storage[0] == 0xFFFFFFFF && v128.Storage[1] == 0xFFFFFFFF && v128.Storage[2] == 0x00000001);
 
         ImBitArray<129> v129;
+        v129.ClearBits();
         IM_CHECK_EQ((int)sizeof(v129), 20);
         v129.SetBit(128);
         IM_CHECK(v129.TestBit(128) == true);

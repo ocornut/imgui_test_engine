@@ -1057,6 +1057,31 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         IM_CHECK_EQ(ctx->UiContext->NavId, ctx->GetID("D"));
     };
 
+    // ## Test inheritance of ItemFlags
+    t = IM_REGISTER_TEST(e, "widgets", "widgets_item_flags_stack");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+        IM_CHECK_EQ(ImGui::GetItemsFlags(), 0);
+        ImGui::BeginChild("child1", ImVec2(100, 100));
+        IM_CHECK_EQ(ImGui::GetItemsFlags(), 0);
+        ImGui::Button("enable button in child1");
+        ImGui::EndChild();
+        ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
+        ImGui::Button("disabled button in parent");
+        IM_CHECK_EQ(ImGui::GetItemsFlags(), ImGuiItemFlags_Disabled);
+        ImGui::BeginChild("child1"); // Append
+        IM_CHECK_EQ(ImGui::GetItemsFlags(), ImGuiItemFlags_Disabled);
+        ImGui::Button("disabled button in child1");
+        ImGui::EndChild();
+        ImGui::BeginChild("child2", ImVec2(100, 100)); // New 
+        IM_CHECK_EQ(ImGui::GetItemsFlags(), ImGuiItemFlags_Disabled);
+        ImGui::Button("disabled button in child2");
+        ImGui::EndChild();
+        ImGui::PopItemFlag();
+        ImGui::End();
+    };
+
     // ## Test ColorEdit4() and IsItemDeactivatedXXX() functions
     // ## Test that IsItemActivated() doesn't trigger when clicking the color button to open picker
     t = IM_REGISTER_TEST(e, "widgets", "widgets_status_coloredit");

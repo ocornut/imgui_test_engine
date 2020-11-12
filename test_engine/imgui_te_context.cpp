@@ -242,28 +242,32 @@ void    ImGuiTestContext::RecoverFromUiContextErrors()
             ImGui::TreePop();
         }
 
-        // FIXME: StackSizesBackup[] indices..
-        while (g.CurrentWindow->DC.GroupStack.Size > g.CurrentWindow->DC.StackSizesBackup[1])
+        while (g.GroupStack.Size > g.CurrentWindow->DC.StackSizesOnBegin.SizeOfGroupStack)
         {
             if (verbose) LogWarning("Recovered from missing EndGroup() call.");
             ImGui::EndGroup();
         }
 
-        while (g.CurrentWindow->IDStack.Size > g.CurrentWindow->DC.StackSizesBackup[0])
+        while (g.CurrentWindow->IDStack.Size > 1)
         {
             if (verbose) LogWarning("Recovered from missing PopID() call.");
             ImGui::PopID();
         }
 
-        while (g.ColorModifiers.Size > g.CurrentWindow->DC.StackSizesBackup[3])
+        while (g.ColorStack.Size > g.CurrentWindow->DC.StackSizesOnBegin.SizeOfColorStack)
         {
-            if (verbose) LogWarning("Recovered from missing PopStyleColor() for '%s'", ImGui::GetStyleColorName(g.ColorModifiers.back().Col));
+            if (verbose) LogWarning("Recovered from missing PopStyleColor() for '%s'", ImGui::GetStyleColorName(g.ColorStack.back().Col));
             ImGui::PopStyleColor();
         }
-        while (g.StyleModifiers.Size > g.CurrentWindow->DC.StackSizesBackup[4])
+        while (g.StyleVarStack.Size > g.CurrentWindow->DC.StackSizesOnBegin.SizeOfStyleVarStack)
         {
             if (verbose) LogWarning("Recovered from missing PopStyleVar().");
             ImGui::PopStyleVar();
+        }
+        while (g.FocusScopeStack.Size > g.CurrentWindow->DC.StackSizesOnBegin.SizeOfFocusScopeStack)
+        {
+            if (verbose) LogWarning("Recovered from missing PopFocusScope().");
+            ImGui::PopFocusScope();
         }
 
         if (g.CurrentWindowStack.Size == 1)
