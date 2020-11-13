@@ -3023,6 +3023,44 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
 #endif
     };
 
+    // ## Test logarithmic slider, and by using the keyboard navigation path.
+    t = IM_REGISTER_TEST(e, "widgets", "widgets_slider_logarithmic");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
+        ImGui::SetNextItemWidth(400);
+        ImGui::SliderFloat("slider", &ctx->GenericVars.Float1, -10.0f, 10.0f, "%.2f", ImGuiSliderFlags_Logarithmic);
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ctx->SetRef("Test Window");
+        ctx->ItemClick("slider", 0);
+        ctx->Yield();
+        IM_CHECK_EQ(ctx->GenericVars.Float1, 0.f);
+
+        ctx->ItemClick("slider", 0, ImGuiTestOpFlags_MoveToEdgeR);
+        ctx->Yield();
+        IM_CHECK_EQ(ctx->GenericVars.Float1, 10.f);
+
+        ctx->ItemClick("slider", 0, ImGuiTestOpFlags_MoveToEdgeL);
+        ctx->Yield();
+        IM_CHECK_EQ(ctx->GenericVars.Float1, -10.f);
+
+        // Drag a bit
+        ctx->ItemClick("slider", 0);
+        float x_offset[] = {50.f,   100.f,  150.f,  190.f};
+        float slider_v[] = {0.06f,  0.35f,  2.11f,  8.97f};
+        for (float sign : {-1.f, 1.f})
+            for (int i = 0; i < IM_ARRAYSIZE(x_offset); i++)
+            {
+                ctx->ItemDragWithDelta("slider", ImVec2(sign * x_offset[i], 0.f));
+                IM_CHECK_EQ(ctx->GenericVars.Float1, sign * slider_v[i]);
+            }
+
+        // Navigation
+        // TODO, seems broken ?
+    };
 
     // ## Test tooltip positioning in various conditions.
     t = IM_REGISTER_TEST(e, "widgets", "widgets_tooltip_positioning");
