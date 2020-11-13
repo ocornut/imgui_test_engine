@@ -1909,6 +1909,46 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
     };
     t->TestFunc = [](ImGuiTestContext* ctx) { ctx->Yield(); };
 
+    // ## Tests: Coverage: TabBar: TabBarTabListPopupButton() and TabBarScrollingButtons()
+    t = IM_REGISTER_TEST(e, "widgets", "widgets_tabbar_popup_scrolling_button");
+    struct TabBarCoveragePopupScrolling { int TabCount = 12; int Selected = -1; };
+    t->SetUserDataType<TabBarCoveragePopupScrolling>();
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        auto& vars = ctx->GetUserData<TabBarCoveragePopupScrolling>();
+        ImGui::SetNextWindowSize(ImVec2(300, 100));
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+        if (ImGui::BeginTabBar("TabBar", ImGuiTabItemFlags_NoReorder | ImGuiTabBarFlags_TabListPopupButton | ImGuiTabBarFlags_FittingPolicyScroll))
+        {
+            for (int i = 0; i < vars.TabCount; i++)
+                if (ImGui::BeginTabItem(Str16f{ "Tab %d", i }.c_str(), NULL)) { vars.Selected = i; ImGui::EndTabItem(); }
+            ImGui::EndTabBar();
+        }
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        auto& vars = ctx->GetUserData<TabBarCoveragePopupScrolling>();
+        ctx->ItemClick("Test Window/TabBar/Tab 0"); // Ensure first tab is selected
+
+        for (int i = 0; i < vars.TabCount; i++)
+        {
+            ctx->ItemClick("Test Window/TabBar/##<");
+            ctx->Yield();
+            IM_CHECK_EQ(vars.Selected, i == 0 ? 0 : i - 1);
+
+            ctx->ItemClick("Test Window/TabBar/##v");
+            Str64f tab_name = { "##Combo_00/Tab %d", i };
+            ctx->ItemClick(tab_name.c_str());
+            ctx->Yield();
+            IM_CHECK_EQ(vars.Selected, i);
+
+            ctx->ItemClick("Test Window/TabBar/##>");
+            ctx->Yield();
+            IM_CHECK_EQ(vars.Selected, i == vars.TabCount - 1 ? vars.TabCount - 1 : i + 1);
+        }
+    };
+
     // ## Test various TreeNode flags
     t = IM_REGISTER_TEST(e, "widgets", "widgets_treenode_behaviors");
     struct TreeNodeTestVars { bool Reset = true, IsOpen = false, IsMultiSelect = false; int ToggleCount = 0; int DragSourceCount = 0;  ImGuiTreeNodeFlags Flags = 0; };
