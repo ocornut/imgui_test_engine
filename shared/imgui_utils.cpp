@@ -274,6 +274,27 @@ bool ImFileLoadSourceBlurb(const char* file_name, int line_no_start, int line_no
 }
 
 //-----------------------------------------------------------------------------
+// String handling helpers (strictly string manipulation!)
+//-----------------------------------------------------------------------------
+
+const char* ImStrchrRangeWithEscaping(const char* str, const char* str_end, char find_c)
+{
+    while (str < str_end)
+    {
+        const char c = *str;
+        if (c == '\\')
+        {
+            str += 2;
+            continue;
+        }
+        if (c == find_c)
+            return str;
+        str++;
+    }
+    return NULL;
+}
+
+//-----------------------------------------------------------------------------
 // Path handling helpers (strictly string manipulation!)
 //-----------------------------------------------------------------------------
 // - ImPathFindFilename()

@@ -1835,7 +1835,7 @@ void    ImGuiTestContext::MenuAction(ImGuiTestAction action, ImGuiTestRef ref)
     Str128 buf;
     while (path < path_end)
     {
-        const char* p = ImStrchrRange(path, path_end, '/');
+        const char* p = ImStrchrRangeWithEscaping(path, path_end, '/');
         if (p == NULL)
             p = path_end;
         const bool is_target_item = (p == path_end);

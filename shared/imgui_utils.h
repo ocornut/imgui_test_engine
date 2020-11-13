@@ -57,6 +57,9 @@ bool                ImFileCreateDirectoryChain(const char* path, const char* pat
 bool                ImFileFindInParents(const char* sub_path, int max_parent_count, Str* output);
 bool                ImFileLoadSourceBlurb(const char* filename, int line_no_start, int line_no_end, ImGuiTextBuffer* out_buf);
 
+// String helpers
+const char*         ImStrchrRangeWithEscaping(const char* str, const char* str_end, char find_c);
+
 // Path helpers (strictly string manipulation!)
 const char*         ImPathFindFilename(const char* path, const char* path_end = NULL);
 const char*         ImPathFindExtension(const char* path, const char* path_end = NULL);

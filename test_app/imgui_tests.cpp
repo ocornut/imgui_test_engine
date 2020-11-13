@@ -2913,8 +2913,8 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
     {
         // Ensure Metrics windows is closed when beginning the test
         ctx->SetRef("/Dear ImGui Demo");
-        ctx->MenuCheck("Tools/Metrics");
-        ctx->SetRef("/Dear ImGui Metrics");
+        ctx->MenuCheck("Tools/Metrics\\/Debugger");
+        ctx->SetRef("/Dear ImGui Metrics\\/Debugger");
         ctx->ItemCloseAll("");
 
         // FIXME-TESTS: Maybe add status flags filter to GatherItems() ?
