@@ -567,7 +567,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ImGuiTestGenericVars& vars = ctx->GenericVars;
         ImGui::SetNextWindowSize(ImVec2(200, 200));
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
-        ImGui::InputText("InputText", vars.Str1, IM_ARRAYSIZE(vars.Str1));
+        ImGui::InputText("InputText", vars.Str1, IM_ARRAYSIZE(vars.Str1), vars.Bool1 ? ImGuiInputTextFlags_ReadOnly : ImGuiInputTextFlags_None);
         ImGui::End();
     };
     t->TestFunc = [](ImGuiTestContext* ctx)
@@ -602,6 +602,17 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ctx->KeyPressMap(ImGuiKey_Backspace, ImGuiKeyModFlags_None, 5);
         ctx->KeyPressMap(ImGuiKey_Escape);
         IM_CHECK_STR_EQ(buf, "HelloWorld");
+
+        // Readonly mode
+        ImGuiTestGenericVars& vars = ctx->GenericVars;
+        strcpy(buf, "Some read-only text.");
+        vars.Bool1 = true;
+        ctx->Yield();
+
+        ctx->ItemClick("InputText");
+        ctx->KeyCharsAppendEnter("World123");
+        IM_CHECK_STR_EQ(buf, vars.Str1);
+
     };
 
     // ## Test InputText undo/redo ops, in particular related to issue we had with stb_textedit undo/redo buffers
@@ -979,6 +990,67 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
     // ## Test input text multiline cursor with selection: left, up, right, down, origin, end, ctrl+origin, ctrl+end, page up, page down
     // ## Test input text multiline scroll movement only: ctrl + (left, up, right, down)
     // ## Test input text multiline page up/page down history ?
+
+    t = IM_REGISTER_TEST(e, "widgets", "widgets_inputtext_filters");
+    struct InputTextFilterVars { Str64 Default; Str64 Decimal; Str64 Scientific;  Str64 Hex; Str64 Uppercase; Str64 NoBlank; Str64 Custom; };
+    t->SetUserDataType<InputTextFilterVars>();
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        InputTextFilterVars& vars = ctx->GetUserData<InputTextFilterVars>();
+        struct TextFilters
+        {
+            // Return 0 (pass) if the character is 'i' or 'm' or 'g' or 'u' or 'i'
+            static int FilterImGuiLetters(ImGuiInputTextCallbackData* data)
+            {
+                if (data->EventChar < 256 && strchr("imgui", (char)data->EventChar))
+                    return 0;
+                return 1;
+            }
+        };
+
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImGui::InputText("default", &vars.Default);
+        ImGui::InputText("decimal", &vars.Decimal, ImGuiInputTextFlags_CharsDecimal);
+        ImGui::InputText("scientific", &vars.Scientific, ImGuiInputTextFlags_CharsScientific);
+        ImGui::InputText("hexadecimal", &vars.Hex, ImGuiInputTextFlags_CharsHexadecimal | ImGuiInputTextFlags_CharsUppercase);
+        ImGui::InputText("uppercase", &vars.Uppercase, ImGuiInputTextFlags_CharsUppercase);
+        ImGui::InputText("no blank", &vars.NoBlank, ImGuiInputTextFlags_CharsNoBlank);
+        ImGui::InputText("\"imgui\" letters", &vars.Custom, ImGuiInputTextFlags_CallbackCharFilter, TextFilters::FilterImGuiLetters);
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        InputTextFilterVars& vars = ctx->GetUserData<InputTextFilterVars>();
+        const char* input_text = "Some fancy Input Text in 0.., 1.., 2.., 3!";
+        ctx->SetRef("Test Window");
+        ctx->ItemClick("default");
+        ctx->KeyCharsAppendEnter(input_text);
+        IM_CHECK_STR_EQ(vars.Default.c_str(), input_text);
+
+        ctx->ItemClick("decimal");
+        ctx->KeyCharsAppendEnter(input_text);
+        IM_CHECK_STR_EQ(vars.Decimal.c_str(), "0..1..2..3");
+
+        ctx->ItemClick("scientific");
+        ctx->KeyCharsAppendEnter(input_text);
+        IM_CHECK_STR_EQ(vars.Scientific.c_str(), "ee0..1..2..3");
+
+        ctx->ItemClick("hexadecimal");
+        ctx->KeyCharsAppendEnter(input_text);
+        IM_CHECK_STR_EQ(vars.Hex.c_str(), "EFACE0123");
+
+        ctx->ItemClick("uppercase");
+        ctx->KeyCharsAppendEnter(input_text);
+        IM_CHECK_STR_EQ(vars.Uppercase.c_str(), "SOME FANCY INPUT TEXT IN 0.., 1.., 2.., 3!");
+
+        ctx->ItemClick("no blank");
+        ctx->KeyCharsAppendEnter(input_text);
+        IM_CHECK_STR_EQ(vars.NoBlank.c_str(), "SomefancyInputTextin0..,1..,2..,3!");
+
+        ctx->ItemClick("\"imgui\" letters");
+        ctx->KeyCharsAppendEnter(input_text);
+        IM_CHECK_STR_EQ(vars.Custom.c_str(), "mui");
+    };
 
     // ## Test character replacement in callback (inspired by https://github.com/ocornut/imgui/pull/3587)
     t = IM_REGISTER_TEST(e, "widgets", "widgets_inputtext_callback_replace");
