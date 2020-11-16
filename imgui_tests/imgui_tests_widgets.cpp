@@ -4129,8 +4129,8 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
     {
         ImGuiContext& g = *ctx->UiContext;
         TooltipPosVars& vars = ctx->GetVars<TooltipPosVars>();
-        ImVec2 viewport_pos = ImGui::GetMainViewport()->Pos;
-        ImVec2 viewport_size = ImGui::GetMainViewport()->Size;
+        ImVec2 viewport_pos = ctx->GetMainMonitorWorkPos();
+        ImVec2 viewport_size = ctx->GetMainMonitorWorkSize();
 
         struct TestCase
         {

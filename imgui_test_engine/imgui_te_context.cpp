@@ -626,6 +626,30 @@ ImGuiID ImGuiTestContext::GetChildWindowID(ImGuiTestRef parent_ref, ImGuiID chil
     return GetID(Str128f("/%s\\/%08X", parent_name.c_str(), child_id).c_str());
 }
 
+ImVec2 ImGuiTestContext::GetMainMonitorWorkPos()
+{
+#ifdef IMGUI_HAS_VIEWPORT
+    if (UiContext->IO.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
+    {
+        const ImGuiPlatformMonitor* monitor = ImGui::GetViewportPlatformMonitor(ImGui::GetMainViewport());
+        return monitor->WorkPos;
+    }
+#endif
+    return ImGui::GetMainViewport()->WorkPos;
+}
+
+ImVec2 ImGuiTestContext::GetMainMonitorWorkSize()
+{
+#ifdef IMGUI_HAS_VIEWPORT
+    if (UiContext->IO.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
+    {
+        const ImGuiPlatformMonitor* monitor = ImGui::GetViewportPlatformMonitor(ImGui::GetMainViewport());
+        return monitor->WorkSize;
+    }
+#endif
+    return ImGui::GetMainViewport()->WorkSize;
+}
+
 static bool ImGuiTestContext_CanCapture(ImGuiTestContext* ctx)
 {
     ImGuiTestEngineIO* io = ctx->EngineIO;

@@ -276,6 +276,8 @@ struct ImGuiTestContext
     // Misc
     ImVec2      GetPosOnVoid();                                                     // Find a point that has no windows
     ImVec2      GetWindowTitlebarPoint(ImGuiTestRef window_ref);                    // Return a clickable point on window title-bar (window tab for docked windows).
+    ImVec2      GetMainMonitorWorkPos();                                            // Work pos and size of main viewport when viewports are disabled, or work pos and size of monitor containing main viewport when viewports are enabled.
+    ImVec2      GetMainMonitorWorkSize();
 
     // Screen/GIF capture
     // - Simple API
