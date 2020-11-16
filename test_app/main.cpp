@@ -81,7 +81,7 @@ struct TestApp
     // Command-line options
     bool                    OptGui = false;
     bool                    OptFast = true;
-    bool                    OptGuiFunc = true;
+    bool                    OptGuiFunc = false;
     ImGuiTestVerboseLevel   OptVerboseLevelBasic = ImGuiTestVerboseLevel_COUNT; // Default is set in main.cpp depending on -gui/-nogui
     ImGuiTestVerboseLevel   OptVerboseLevelError = ImGuiTestVerboseLevel_COUNT; // "
     bool                    OptNoThrottle = false;
