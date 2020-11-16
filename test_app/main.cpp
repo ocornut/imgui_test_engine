@@ -79,8 +79,9 @@ struct TestApp
     ImVec4                  ClearColor = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
 
     // Command-line options
-    bool                    OptGUI = false;
+    bool                    OptGui = false;
     bool                    OptFast = true;
+    bool                    OptGuiFunc = true;
     ImGuiTestVerboseLevel   OptVerboseLevelBasic = ImGuiTestVerboseLevel_COUNT; // Default is set in main.cpp depending on -gui/-nogui
     ImGuiTestVerboseLevel   OptVerboseLevelError = ImGuiTestVerboseLevel_COUNT; // "
     bool                    OptNoThrottle = false;
@@ -161,11 +162,15 @@ static bool ParseCommandLineOptions(int argc, char** argv)
             else if (strcmp(argv[n], "-ve4") == 0)  { g_App.OptVerboseLevelError = ImGuiTestVerboseLevel_Debug; }
             else if (strcmp(argv[n], "-gui") == 0)
             {
-                g_App.OptGUI = true;
+                g_App.OptGui = true;
             }
             else if (strcmp(argv[n], "-nogui") == 0)
             {
-                g_App.OptGUI = false;
+                g_App.OptGui = false;
+            }
+            else if (strcmp(argv[n], "-guifunc") == 0)
+            {
+                g_App.OptGuiFunc = true;
             }
             else if (strcmp(argv[n], "-fast") == 0)
             {
@@ -204,7 +209,8 @@ static bool ParseCommandLineOptions(int argc, char** argv)
                 printf("  -v                       : verbose mode (same as -v3 -ve4)\n");
                 printf("  -v0/-v1/-v2/-v3/-v4      : verbose level [v0: silent, v1: errors, v2: headers & warnings, v3: info, v4: debug]\n");
                 printf("  -ve0/-ve1/-ve2/-ve3/-ve4 : verbose level for errored tests [same as above]\n");
-                printf("  -gui/-nogui              : enable interactive mode.\n");
+                printf("  -gui/-nogui              : enable gui/interactive mode.\n");
+                printf("  -guifunc                 : run test GuiFunc only (no TestFunc).\n");
                 printf("  -slow                    : run automation at feeble human speed.\n");
                 printf("  -nothrottle              : run GUI app without throttling/vsync by default.\n");
                 printf("  -nopause                 : don't pause application on exit.\n");
@@ -281,24 +287,27 @@ static void LoadFonts(float dpi_scale)
 static void QueueTests(ImGuiTestEngine* engine)
 {
     // Non-interactive mode queue all tests by default
-    if (!g_App.OptGUI && g_App.TestsToRun.empty())
+    if (!g_App.OptGui && g_App.TestsToRun.empty())
         g_App.TestsToRun.push_back(strdup("tests"));
 
     // Queue requested tests
     // FIXME: Maybe need some cleanup to not hard-coded groups.
+    ImGuiTestRunFlags run_flags = ImGuiTestRunFlags_CommandLine;
+    if (g_App.OptGuiFunc)
+        run_flags |= ImGuiTestRunFlags_GuiFuncOnly;
     for (int n = 0; n < g_App.TestsToRun.Size; n++)
     {
         char* test_spec = g_App.TestsToRun[n];
         if (strcmp(test_spec, "tests") == 0)
-            ImGuiTestEngine_QueueTests(engine, ImGuiTestGroup_Tests, NULL, ImGuiTestRunFlags_CommandLine);
+            ImGuiTestEngine_QueueTests(engine, ImGuiTestGroup_Tests, NULL, run_flags);
         else if (strcmp(test_spec, "perf") == 0)
-            ImGuiTestEngine_QueueTests(engine, ImGuiTestGroup_Perfs, NULL, ImGuiTestRunFlags_CommandLine);
+            ImGuiTestEngine_QueueTests(engine, ImGuiTestGroup_Perfs, NULL, run_flags);
         else
         {
             if (strcmp(test_spec, "all") == 0)
                 test_spec = NULL;
             for (int group = 0; group < ImGuiTestGroup_COUNT; group++)
-                ImGuiTestEngine_QueueTests(engine, (ImGuiTestGroup)group, test_spec, ImGuiTestRunFlags_CommandLine);
+                ImGuiTestEngine_QueueTests(engine, (ImGuiTestGroup)group, test_spec, run_flags);
         }
         IM_FREE(test_spec);
     }
@@ -313,7 +322,7 @@ int main(int argc, char** argv)
 
     // Parse command-line arguments
 #if defined(IMGUI_APP_WIN32_DX11) || defined(IMGUI_APP_SDL_GL3) || defined(IMGUI_APP_GLFW_GL3)
-    g_App.OptGUI = true;
+    g_App.OptGui = true;
 #endif
 
 #ifdef CMDLINE_ARGS
@@ -334,7 +343,7 @@ int main(int argc, char** argv)
     argv = NULL;
 
     // Default verbose levels differs whether we are in in GUI or Command-Line mode
-    if (g_App.OptGUI)
+    if (g_App.OptGui)
     {
         // Default -v4 -ve4
         if (g_App.OptVerboseLevelBasic == ImGuiTestVerboseLevel_COUNT)
@@ -371,7 +380,7 @@ int main(int argc, char** argv)
 #endif
 
     // Creates window
-    if (g_App.OptGUI)
+    if (g_App.OptGui)
     {
 #ifdef IMGUI_APP_WIN32_DX11
         g_App.AppWindow = ImGuiApp_ImplWin32DX11_Create();
@@ -392,15 +401,15 @@ int main(int argc, char** argv)
 
     // Apply options
     ImGuiTestEngineIO& test_io = ImGuiTestEngine_GetIO(engine);
-    test_io.ConfigRunWithGui = g_App.OptGUI;
+    test_io.ConfigRunWithGui = g_App.OptGui;
     test_io.ConfigRunFast = g_App.OptFast;
     test_io.ConfigVerboseLevel = g_App.OptVerboseLevelBasic;
     test_io.ConfigVerboseLevelOnError = g_App.OptVerboseLevelError;
     test_io.ConfigNoThrottle = g_App.OptNoThrottle;
     test_io.PerfStressAmount = g_App.OptStressAmount;
-    if (!g_App.OptGUI)
+    if (!g_App.OptGui)
         test_io.ConfigLogToTTY = true;
-    if (!g_App.OptGUI && ImOsIsDebuggerPresent())
+    if (!g_App.OptGui && ImOsIsDebuggerPresent())
     {
         test_io.ConfigLogToDebugger = true;
         test_io.ConfigBreakOnError = true;
@@ -461,7 +470,7 @@ int main(int argc, char** argv)
         ShowUI();
         ImGui::Render();
 
-        if (!g_App.OptGUI && !test_io.RunningTests)
+        if (!g_App.OptGui && !test_io.RunningTests)
             break;
 
         app_window->Vsync = test_io.RenderWantMaxSpeed ? false : true;
@@ -498,7 +507,7 @@ int main(int argc, char** argv)
     if (g_App.OptFileOpener)
         free(g_App.OptFileOpener);
 
-    if (g_App.OptPauseOnExit && !g_App.OptGUI)
+    if (g_App.OptPauseOnExit && !g_App.OptGui)
     {
         printf("Press Enter to exit.\n");
         getc(stdin);

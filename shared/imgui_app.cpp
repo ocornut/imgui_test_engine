@@ -209,11 +209,20 @@ static bool ImGuiApp_ImplWin32DX11_InitCreateWindow(ImGuiApp* app_opaque, const 
     app->WC = { sizeof(WNDCLASSEXA), CS_CLASSDC, ImGuiApp_ImplWin32_WndProc, 0L, 0L, ::GetModuleHandle(NULL), NULL, NULL, NULL, NULL, L"ImGuiApp", NULL };
     ::RegisterClassEx(&app->WC);
 
-    POINT pos = { 100, 100 };
+    POINT pos = { 1, 1 };
     HMONITOR monitor = ::MonitorFromPoint(pos, 0);
     float dpi_scale = app->DpiAware ? ImGui_ImplWin32_GetDpiScaleForMonitor(monitor) : 1.0f;
     window_size.x = ImFloor(window_size.x * dpi_scale);
     window_size.y = ImFloor(window_size.y * dpi_scale);
+
+    // Center in monitor
+    MONITORINFO monitor_info = { 0 };
+    monitor_info.cbSize = sizeof(MONITORINFO);
+    if (::GetMonitorInfo(monitor, &monitor_info))
+    {
+        pos.x = monitor_info.rcWork.left + ImMax((LONG)0, ((monitor_info.rcWork.right - monitor_info.rcWork.left) - (LONG)window_size.x) / 2);
+        pos.y = monitor_info.rcWork.top + ImMax((LONG)0, ((monitor_info.rcWork.bottom - monitor_info.rcWork.top) - (LONG)window_size.y) / 2);
+    }
 
 #ifdef UNICODE
     const int count = ::MultiByteToWideChar(CP_UTF8, 0, window_title_a, -1, NULL, 0);
