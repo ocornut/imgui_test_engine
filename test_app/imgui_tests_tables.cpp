@@ -255,6 +255,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
     t = IM_REGISTER_TEST(e, "table", "table_width_distrib");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
+        ImGui::SetNextWindowPos(ctx->GetMainViewportPos() + ImVec2(10, 10), ImGuiCond_FirstUseEver);
         ImGui::SetNextWindowSize(ImVec2(400, 0), ImGuiCond_Appearing);
         ImGui::Begin("Test window 1", NULL, ImGuiWindowFlags_NoSavedSettings);
 
@@ -266,15 +267,17 @@ void RegisterTests_Table(ImGuiTestEngine* e)
 
         TestCase test_cases[] =
         {
+            { 1, ImGuiTableFlags_None },
             { 2, ImGuiTableFlags_None },
             { 3, ImGuiTableFlags_None },
             { 9, ImGuiTableFlags_None },
-            { 2, ImGuiTableFlags_BordersOuter },
-            { 3, ImGuiTableFlags_BordersOuter },
-            { 9, ImGuiTableFlags_BordersOuter },
-            { 2, ImGuiTableFlags_BordersV },
-            { 3, ImGuiTableFlags_BordersV },
-            { 9, ImGuiTableFlags_BordersV },
+            { 1, ImGuiTableFlags_BordersInnerV },
+            { 2, ImGuiTableFlags_BordersInnerV },
+            { 3, ImGuiTableFlags_BordersInnerV },
+            { 1, ImGuiTableFlags_BordersOuterV },
+            { 2, ImGuiTableFlags_BordersOuterV },
+            { 3, ImGuiTableFlags_BordersOuterV },
+            { 1, ImGuiTableFlags_Borders },
             { 2, ImGuiTableFlags_Borders },
             { 3, ImGuiTableFlags_Borders },
             { 9, ImGuiTableFlags_Borders },
@@ -286,14 +289,19 @@ void RegisterTests_Table(ImGuiTestEngine* e)
         const float max_variance = vars.Bool1 ? 0.0f : 1.0f;
 
         ImGui::Text("(width variance should be <= %.2f)", max_variance);
+        ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(ImGui::GetStyle().ItemSpacing.x, IM_FLOOR(ImGui::GetStyle().ItemSpacing.y * 0.80f)));
         for (int test_case_n = 0; test_case_n < IM_ARRAYSIZE(test_cases); test_case_n++)
         {
             const TestCase& tc = test_cases[test_case_n];
             ImGui::PushID(test_case_n);
 
             ImGui::Spacing();
-            ImGui::Spacing();
-            if (ImGui::BeginTable("table1", tc.ColumnCount, tc.Flags | (vars.Bool1 ? ImGuiTableFlags_PreciseStretchWidths : 0), ImVec2(0, 0)))
+            //ImGui::Spacing();
+            ImGui::Button("..", ImVec2(-FLT_MIN, 5.0f));
+            ImGuiTableFlags table_flags = tc.Flags | ImGuiTableFlags_BordersOuterH;
+            if (vars.Bool1)
+                table_flags |= ImGuiTableFlags_PreciseStretchWidths;
+            if (ImGui::BeginTable("table1", tc.ColumnCount, table_flags, ImVec2(0, 0)))
             {
                 ImGui::TableNextRow();
 
@@ -305,7 +313,9 @@ void RegisterTests_Table(ImGuiTestEngine* e)
                     float w = ImGui::GetContentRegionAvail().x;
                     min_w = ImMin(w, min_w);
                     max_w = ImMax(w, max_w);
+                    ImGui::AlignTextToFramePadding();
                     ImGui::Text("Width %.2f", w);
+                    ImGui::Button("..", ImVec2(-FLT_MIN, 5.0f));
                 }
                 float w_variance = max_w - min_w;
                 IM_CHECK_LE_NO_RET(w_variance, max_variance);
@@ -313,12 +323,15 @@ void RegisterTests_Table(ImGuiTestEngine* e)
 
                 if (w_variance > max_variance)
                     ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(255, 100, 100, 255));
-                ImGui::Text("#%02d: Variance %.2f (min %.2f max %.2f)", test_case_n, w_variance, min_w, max_w);
+                ImGui::Text("#%02d: variance %.2f (min %.2f max %.2f)%s%s",
+                    test_case_n, w_variance, min_w, max_w,
+                    (tc.Flags & ImGuiTableFlags_BordersOuterV) ? " OuterV" : "", (tc.Flags & ImGuiTableFlags_BordersInnerV) ? " InnerV" : "");
                 if (w_variance > max_variance)
                     ImGui::PopStyleColor();
             }
             ImGui::PopID();
         }
+        ImGui::PopStyleVar();
 
         ImGui::End();
     };
@@ -340,7 +353,8 @@ void RegisterTests_Table(ImGuiTestEngine* e)
 
         ImGui::Begin("Test window 1", NULL, ImGuiWindowFlags_NoSavedSettings);
         if (ctx->IsFirstGuiFrame())
-            TableDiscardInstanceAndSettings(ImGui::GetID("table1"));
+            for (int test_n = 0; test_n < 4; test_n++)
+                TableDiscardInstanceAndSettings(ImGui::GetID(Str16f("table%d", test_n).c_str()));
 
         // First test is duplicate of table_width_distrib
         ctx->LogDebug("TEST CASE 0");
@@ -383,7 +397,9 @@ void RegisterTests_Table(ImGuiTestEngine* e)
                 IM_CHECK_EQ_NO_RET(table->Columns[1].WidthGiven, table->Columns[2].WidthGiven);                    // Check that widths are equals for columns 1-3
                 IM_CHECK_EQ_NO_RET(table->Columns[1].ClipRect.GetWidth(), table->Columns[2].ClipRect.GetWidth());  // But also that visible areas width will match for columns 1-3
                 IM_CHECK_EQ_NO_RET(table->Columns[1].WidthGiven, table->Columns[3].WidthGiven);
+#if 0
                 IM_CHECK_EQ_NO_RET(table->Columns[1].ClipRect.GetWidth(), table->Columns[3].ClipRect.GetWidth());
+#endif
                 ImGui::EndTable();
             }
         ImGui::End();
@@ -953,12 +969,14 @@ void RegisterTests_Table(ImGuiTestEngine* e)
             {
                 // FIXME-TESTS: Later we should try to simulate inputs at user level
                 table->Columns[2].WidthRequest = 60;
+                table->Columns[2].AutoFitQueue = 0x00;
             }
 
             if (col3_resized)
             {
                 // FIXME-TESTS: Later we should try to simulate inputs at user level
                 table->Columns[3].StretchWeight = 0.2f;
+                table->Columns[3].AutoFitQueue = 0x00;
             }
 
             ctx->Yield();
