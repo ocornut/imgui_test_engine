@@ -1039,6 +1039,110 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         IM_CHECK_STR_EQ(vars.Custom.c_str(), "mui");
     };
 
+    // ## Test completion and history
+    t = IM_REGISTER_TEST(e, "widgets", "widgets_inputtext_10_callback_history");
+    struct InputTextCallbackHistoryVars { Str CompletionBuffer; Str HistoryBuffer; Str EditBuffer; int EditCount = 0; };
+    t->SetUserDataType<InputTextCallbackHistoryVars>();
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        struct Funcs
+        {
+            static int MyCallback(ImGuiInputTextCallbackData* data)
+            {
+                if (data->EventFlag == ImGuiInputTextFlags_CallbackCompletion)
+                {
+                    data->InsertChars(data->CursorPos, "..");
+                }
+                else if (data->EventFlag == ImGuiInputTextFlags_CallbackHistory)
+                {
+                    if (data->EventKey == ImGuiKey_UpArrow)
+                    {
+                        data->DeleteChars(0, data->BufTextLen);
+                        data->InsertChars(0, "Pressed Up!");
+                        data->SelectAll();
+                    }
+                    else if (data->EventKey == ImGuiKey_DownArrow)
+                    {
+                        data->DeleteChars(0, data->BufTextLen);
+                        data->InsertChars(0, "Pressed Down!");
+                        data->SelectAll();
+                    }
+                }
+                else if (data->EventFlag == ImGuiInputTextFlags_CallbackEdit)
+                {
+                    // Toggle casing of first character
+                    char c = data->Buf[0];
+                    if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')) data->Buf[0] ^= 32;
+                    data->BufDirty = true;
+
+                    // Increment a counter
+                    int* p_int = (int*)data->UserData;
+                    *p_int = *p_int + 1;
+                }
+                return 0;
+            }
+        };
+
+        InputTextCallbackHistoryVars& vars = ctx->GetUserData<InputTextCallbackHistoryVars>();
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
+        ImGui::InputText("Completion", &vars.CompletionBuffer, ImGuiInputTextFlags_CallbackCompletion, Funcs::MyCallback);
+        ImGui::InputText("History", &vars.HistoryBuffer, ImGuiInputTextFlags_CallbackHistory, Funcs::MyCallback);
+        ImGui::InputText("Edit", &vars.EditBuffer, ImGuiInputTextFlags_CallbackEdit, Funcs::MyCallback, (void*)&vars.EditCount);
+        ImGui::SameLine(); ImGui::Text("(%d)", vars.EditCount);
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        InputTextCallbackHistoryVars& vars = ctx->GetUserData<InputTextCallbackHistoryVars>();
+
+        ctx->SetRef("Test Window");
+        ctx->ItemClick("Completion");
+        ctx->KeyCharsAppend("Hello World");
+        ctx->Yield();
+        IM_CHECK_STR_EQ(vars.CompletionBuffer.c_str(), "Hello World");
+        ctx->KeyPressMap(ImGuiKey_Tab);
+        ctx->Yield();
+        IM_CHECK_STR_EQ(vars.CompletionBuffer.c_str(), "Hello World..");
+
+        ctx->ItemClick("History");
+        ctx->KeyCharsAppend("ABCDEF");
+        ctx->KeyPressMap(ImGuiKey_Z, ImGuiKeyModFlags_Ctrl);
+        ctx->Yield();
+        IM_CHECK_STR_EQ(vars.HistoryBuffer.c_str(), "ABCDE");
+        ctx->KeyPressMap(ImGuiKey_Z, ImGuiKeyModFlags_Ctrl);
+        ctx->KeyPressMap(ImGuiKey_Z, ImGuiKeyModFlags_Ctrl);
+        ctx->Yield();
+        IM_CHECK_STR_EQ(vars.HistoryBuffer.c_str(), "ABC");
+        ctx->KeyPressMap(ImGuiKey_Y, ImGuiKeyModFlags_Ctrl);
+        ctx->Yield();
+        IM_CHECK_STR_EQ(vars.HistoryBuffer.c_str(), "ABCD");
+        ctx->KeyPressMap(ImGuiKey_UpArrow);
+        IM_CHECK_STR_EQ(vars.HistoryBuffer.c_str(), "Pressed Up!");
+        ctx->KeyPressMap(ImGuiKey_DownArrow);
+        IM_CHECK_STR_EQ(vars.HistoryBuffer.c_str(), "Pressed Down!");
+
+        ctx->ItemClick("Edit");
+        IM_CHECK_STR_EQ(vars.EditBuffer.c_str(), "");
+        IM_CHECK_EQ(vars.EditCount, 0);
+        ctx->KeyCharsAppend("h");
+        ctx->Yield();
+        IM_CHECK_STR_EQ(vars.EditBuffer.c_str(), "H");
+        IM_CHECK_EQ(vars.EditCount, 1);
+        ctx->KeyCharsAppend("e");
+        ctx->Yield();
+        IM_CHECK_STR_EQ(vars.EditBuffer.c_str(), "he");
+        IM_CHECK_EQ(vars.EditCount, 2);
+        // Can't use this while "fast" because all chars will be inserted "as one",
+        // making the EditCount only increase by one
+        // ctx->KeyCharsAppend("llo");
+        ctx->KeyCharsAppend("l");
+        ctx->KeyCharsAppend("l");
+        ctx->KeyCharsAppend("o");
+        ctx->Yield();
+        IM_CHECK_STR_EQ(vars.EditBuffer.c_str(), "Hello");
+        IM_CHECK_LE(vars.EditCount, ctx->EngineIO->ConfigRunFast ? 3 : 5); // If running fast, "llo" will be considered as one edit only
+    };
+
     // ## Test character replacement in callback (inspired by https://github.com/ocornut/imgui/pull/3587)
     t = IM_REGISTER_TEST(e, "widgets", "widgets_inputtext_callback_replace");
     t->GuiFunc = [](ImGuiTestContext* ctx)
