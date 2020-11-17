@@ -2814,8 +2814,40 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
         ctx->ItemClick("##TabBar/BG\\/FG draw lists");
 
         ctx->SetRef("Dear ImGui Demo");
+        ctx->MenuCheck("Examples/Console");
+        ctx->SetRef("Example: Console");
+        ctx->ItemClick("Input");
+        ctx->KeyCharsAppend("h");
+        ctx->KeyPressMap(ImGuiKey_Tab);
+        ctx->KeyCharsReplace("cl");
+        ctx->KeyPressMap(ImGuiKey_Tab);
+        ctx->KeyCharsReplace("cla");
+        ctx->KeyPressMap(ImGuiKey_Tab);
+        ctx->KeyCharsReplace("zzZZzz");
+        ctx->KeyPressMap(ImGuiKey_Tab);
+        ctx->KeyCharsReplaceEnter("HELP");
+        ctx->KeyCharsReplaceEnter("HISTORY");
+        ctx->KeyCharsReplaceEnter("CLEAR");
+
+        ctx->SetRef("Dear ImGui Demo");
         ctx->MenuUncheckAll("Examples");
         ctx->MenuUncheckAll("Tools");
+
+        ctx->SetRef("Dear ImGui Demo");
+        ctx->ItemOpen("Widgets");
+        ctx->ItemOpen("Color\\/Picker Widgets");
+        ctx->ItemClick("Color\\/Picker Widgets/Palette");
+        ctx->ItemClose("Widgets");
+
+        ctx->SetRef("Dear ImGui Demo");
+        ctx->ItemOpen("Popups & Modal windows");
+        ctx->ItemOpen("Modals");
+        ctx->ItemClick("Modals/Delete..");
+        ctx->SetRef("");
+        ctx->ItemClick("Delete?/OK");
+        ctx->SetRef("Dear ImGui Demo");
+        ctx->ItemClose("Modals");
+        ctx->ItemClose("Popups & Modal windows");
     };
 
     t = IM_REGISTER_TEST(e, "demo", "demo_cov_apps");
