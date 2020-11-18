@@ -1831,6 +1831,41 @@ void    ImGuiTestContext::MenuActionAll(ImGuiTestAction action, ImGuiTestRef ref
     }
 }
 
+void    ImGuiTestContext::ComboClick(ImGuiTestRef ref)
+{
+    if (IsError())
+        return;
+
+    IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
+    LogDebug("ComboClick '%s' %08X", ref.Path ? ref.Path : "NULL", ref.ID);
+
+    IM_ASSERT(ref.Path != NULL);
+
+    const char* path = ref.Path;
+    const char* path_end = path + strlen(path);
+
+    const char* p = ImStrchrRangeWithEscaping(path, path_end, '/');
+    Str128f combo_popup_buf = Str128f("%.*s", (int)(p-path), path);
+    ItemClick(combo_popup_buf.c_str());
+    ImGuiTestRef combo_popup_ref = GetFocusWindowRef();
+
+    Str128f combo_item_buf = Str128f("/##Combo_00/**/%s", p + 1);
+    ItemClick(combo_item_buf.c_str());
+}
+
+void    ImGuiTestContext::ComboClickAll(ImGuiTestRef ref_parent)
+{
+    ItemClick(ref_parent);
+    ImGuiTestRef popup_ref = GetFocusWindowRef();
+    ImGuiTestItemList items;
+    GatherItems(&items, popup_ref);
+    for (auto item : items)
+    {
+        ItemClick(ref_parent); // We assume that every interaction will close the combo again
+        ItemClick(item.ID);
+    }
+}
+
 void    ImGuiTestContext::WindowClose(ImGuiTestRef ref)
 {
     if (IsError())

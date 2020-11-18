@@ -2894,22 +2894,15 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
         ctx->SetRef("Dear ImGui Demo");
         ctx->MenuCheck("Tools/Style Editor");
 
+        ImFont* font_backup = ImGui::GetFont();
         ImGuiTestRef ref_window = "Dear ImGui Style Editor";
         ctx->SetRef(ref_window);
-        ctx->ItemClick("Colors##Selector");
-        ctx->Yield();
-        ImGuiTestRef ref_popup = ctx->GetFocusWindowRef();
+        ctx->ComboClickAll("Fonts##Selector");
+        ImGui::GetIO().FontDefault = font_backup;
 
         ImGuiStyle style_backup = ImGui::GetStyle();
-        ImGuiTestItemList items;
-        ctx->GatherItems(&items, ref_popup);
-        for (auto item : items)
-        {
-            ctx->SetRef(ref_window);
-            ctx->ItemClick("Colors##Selector");
-            ctx->SetRef(ref_popup);
-            ctx->ItemClick(item.ID);
-        }
+        ctx->SetRef(ref_window);
+        ctx->ComboClickAll("Colors##Selector");
         ImGui::GetStyle() = style_backup;
     };
 

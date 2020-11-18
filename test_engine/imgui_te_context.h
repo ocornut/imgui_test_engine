@@ -348,6 +348,12 @@ struct ImGuiTestContext
     void        MenuCheckAll(ImGuiTestRef ref_parent)       { MenuActionAll(ImGuiTestAction_Check, ref_parent); }
     void        MenuUncheckAll(ImGuiTestRef ref_parent)     { MenuActionAll(ImGuiTestAction_Uncheck, ref_parent); }
 
+    // Combo
+    void        ComboClick(ImGuiTestRef ref);
+    void        ComboClickAll(ImGuiTestRef ref);
+
+
+
     // Docking
 #ifdef IMGUI_HAS_DOCK
     void        DockWindowInto(const char* window_src, const char* window_dst, ImGuiDir split_dir = ImGuiDir_None);
