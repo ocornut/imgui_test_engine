@@ -2869,6 +2869,24 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
         ctx->MenuUncheckAll("Tools");
     };
 
+    t = IM_REGISTER_TEST(e, "demo", "demo_cov_examples");
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ctx->SetRef("Dear ImGui Demo");
+        ctx->MenuCheck("Examples/Documents");
+
+        ctx->SetRef("Example: Documents");
+        ctx->ItemClick("##tabs/Lettuce/**/Modify");
+        ctx->MenuClick("File");
+        ctx->SetRef("");
+        ctx->ItemClick("##Menu_00/Close All Documents");
+        ctx->ItemClick("Save?/Yes");
+
+        // Reopen the Lettuce document in case we re-run the test
+        ctx->SetRef("Example: Documents");
+        ctx->MenuClick("File/Open/Lettuce");
+    };
+
     // ## Coverage: select all styles via the Style Editor
     t = IM_REGISTER_TEST(e, "demo", "demo_cov_styles");
     t->TestFunc = [](ImGuiTestContext* ctx)
