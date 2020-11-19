@@ -1855,6 +1855,22 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
     };
 #endif
 
+    // ## Test DebugRecoverFromErrors() FIXME-TESTS
+    t = IM_REGISTER_TEST(e, "misc", "misc_recover");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::Begin("Test window", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImGui::PushFocusScope(ImGui::GetID("focusscope1"));
+        ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2());
+        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4());
+        ImGui::PushID("hello");
+        ImGui::BeginGroup();
+        ImGui::SetNextItemOpen(true);
+        ImGui::TreeNode("node");
+        ImGui::BeginTabBar("tabbar");
+        ctx->Finish();
+    };
+
     // ## Test window data garbage collection
     t = IM_REGISTER_TEST(e, "misc", "misc_gc");
     t->GuiFunc = [](ImGuiTestContext* ctx)

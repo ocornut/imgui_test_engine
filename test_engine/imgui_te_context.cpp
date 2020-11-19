@@ -208,85 +208,24 @@ void    ImGuiTestContext::Finish()
         test->Status = ImGuiTestStatus_Success;
 }
 
-// FIXME-ERRORHANDLING: Can't recover from inside BeginTabItem/EndTabItem yet.
-// FIXME-ERRORHANDLING: Can't recover from interleaved BeginTabBar/Begin
-// FIXME-ERRORHANDLING: Once this function is amazingly sturdy, we should make it a ImGui:: function.. See #1651
-// FIXME-ERRORHANDLING: This is flawed as we are not necessarily End/Popping things in the right order, could we somehow store that data...
 void    ImGuiTestContext::RecoverFromUiContextErrors()
 {
-    ImGuiContext& g = *UiContext;
     IM_ASSERT(Test != NULL);
 
     // If we are _already_ in a test error state, recovering is normal so we'll hide the log.
     const bool verbose = (Test->Status != ImGuiTestStatus_Error) || (EngineIO->ConfigVerboseLevel >= ImGuiTestVerboseLevel_Debug);
-
-    while (g.CurrentWindowStack.Size > 0)
+    auto verbose_func = [](void* user_data, const char* fmt, ...)
     {
-#ifdef IMGUI_HAS_TABLE
-        while (g.CurrentTable && (g.CurrentTable->OuterWindow == g.CurrentWindow || g.CurrentTable->InnerWindow == g.CurrentWindow))
-        {
-            if (verbose) LogWarning("Recovered from missing EndTable() call.");
-            ImGui::EndTable();
-        }
-#endif
-
-        while (g.CurrentTabBar != NULL)
-        {
-            if (verbose) LogWarning("Recovered from missing EndTabBar() call.");
-            ImGui::EndTabBar();
-        }
-
-        while (g.CurrentWindow->DC.TreeDepth > 0)
-        {
-            if (verbose) LogWarning("Recovered from missing TreePop() call.");
-            ImGui::TreePop();
-        }
-
-        while (g.GroupStack.Size > g.CurrentWindow->DC.StackSizesOnBegin.SizeOfGroupStack)
-        {
-            if (verbose) LogWarning("Recovered from missing EndGroup() call.");
-            ImGui::EndGroup();
-        }
-
-        while (g.CurrentWindow->IDStack.Size > 1)
-        {
-            if (verbose) LogWarning("Recovered from missing PopID() call.");
-            ImGui::PopID();
-        }
-
-        while (g.ColorStack.Size > g.CurrentWindow->DC.StackSizesOnBegin.SizeOfColorStack)
-        {
-            if (verbose) LogWarning("Recovered from missing PopStyleColor() for '%s'", ImGui::GetStyleColorName(g.ColorStack.back().Col));
-            ImGui::PopStyleColor();
-        }
-        while (g.StyleVarStack.Size > g.CurrentWindow->DC.StackSizesOnBegin.SizeOfStyleVarStack)
-        {
-            if (verbose) LogWarning("Recovered from missing PopStyleVar().");
-            ImGui::PopStyleVar();
-        }
-        while (g.FocusScopeStack.Size > g.CurrentWindow->DC.StackSizesOnBegin.SizeOfFocusScopeStack)
-        {
-            if (verbose) LogWarning("Recovered from missing PopFocusScope().");
-            ImGui::PopFocusScope();
-        }
-
-        if (g.CurrentWindowStack.Size == 1)
-        {
-            IM_ASSERT(g.CurrentWindow->IsFallbackWindow);
-            break;
-        }
-
-        if (g.CurrentWindow->Flags & ImGuiWindowFlags_ChildWindow)
-        {
-            if (verbose) LogWarning("Recovered from missing EndChild() call.");
-            ImGui::EndChild();
-        }
-        else
-        {
-            if (verbose) LogWarning("Recovered from missing End() call.");
-            ImGui::End();
-        }
-    }
+        ImGuiTestContext* ctx = (ImGuiTestContext*)user_data;
+        va_list args;
+        va_start(args, fmt);
+        ctx->LogExV(ImGuiTestVerboseLevel_Warning, ImGuiTestLogFlags_None, fmt, args);
+        va_end(args);
+    };
+    if (verbose)
+        ImGui::ErrorCheckEndFrameRecover(verbose_func, this);
+    else
+        ImGui::ErrorCheckEndFrameRecover(NULL, NULL);
 }
 
 void    ImGuiTestContext::Yield(int count)
