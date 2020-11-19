@@ -1831,6 +1831,15 @@ void    ImGuiTestContext::MenuActionAll(ImGuiTestAction action, ImGuiTestRef ref
     }
 }
 
+static bool IsWindowACombo(ImGuiWindow* window)
+{
+    if ((window->Flags & ImGuiWindowFlags_Popup) == 0)
+        return false;
+    if (strncmp(window->Name, "##Combo_", strlen("##Combo_")) != 0)
+        return false;
+    return true;
+}
+
 void    ImGuiTestContext::ComboClick(ImGuiTestRef ref)
 {
     if (IsError())
@@ -1847,16 +1856,23 @@ void    ImGuiTestContext::ComboClick(ImGuiTestRef ref)
     const char* p = ImStrchrRangeWithEscaping(path, path_end, '/');
     Str128f combo_popup_buf = Str128f("%.*s", (int)(p-path), path);
     ItemClick(combo_popup_buf.c_str());
-    ImGuiTestRef combo_popup_ref = GetFocusWindowRef();
 
-    Str128f combo_item_buf = Str128f("/##Combo_00/**/%s", p + 1);
+    ImGuiTestRef popup_ref = GetFocusWindowRef();
+    ImGuiWindow* popup = GetWindowByRef(popup_ref);
+    IM_CHECK_SILENT(popup && IsWindowACombo(popup));
+
+    Str128f combo_item_buf = Str128f("/%s/**/%s", popup->Name, p + 1);
     ItemClick(combo_item_buf.c_str());
 }
 
 void    ImGuiTestContext::ComboClickAll(ImGuiTestRef ref_parent)
 {
     ItemClick(ref_parent);
+
     ImGuiTestRef popup_ref = GetFocusWindowRef();
+    ImGuiWindow* popup = GetWindowByRef(popup_ref);
+    IM_CHECK_SILENT(popup && IsWindowACombo(popup));
+
     ImGuiTestItemList items;
     GatherItems(&items, popup_ref);
     for (auto item : items)

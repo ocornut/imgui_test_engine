@@ -1040,7 +1040,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
     };
 
     // ## Test completion and history
-    t = IM_REGISTER_TEST(e, "widgets", "widgets_inputtext_10_callback_history");
+    t = IM_REGISTER_TEST(e, "widgets", "widgets_inputtext_callback_misc");
     struct InputTextCallbackHistoryVars { Str CompletionBuffer; Str HistoryBuffer; Str EditBuffer; int EditCount = 0; };
     t->SetUserDataType<InputTextCallbackHistoryVars>();
     t->GuiFunc = [](ImGuiTestContext* ctx)
@@ -1076,8 +1076,8 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
                     data->BufDirty = true;
 
                     // Increment a counter
-                    int* p_int = (int*)data->UserData;
-                    *p_int = *p_int + 1;
+                    int* p_edit_count = (int*)data->UserData;
+                    *p_edit_count = *p_edit_count + 1;
                 }
                 return 0;
             }
@@ -1098,23 +1098,19 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ctx->SetRef("Test Window");
         ctx->ItemClick("Completion");
         ctx->KeyCharsAppend("Hello World");
-        ctx->Yield();
         IM_CHECK_STR_EQ(vars.CompletionBuffer.c_str(), "Hello World");
         ctx->KeyPressMap(ImGuiKey_Tab);
-        ctx->Yield();
         IM_CHECK_STR_EQ(vars.CompletionBuffer.c_str(), "Hello World..");
 
+        // FIXME: Not testing History callback :)
         ctx->ItemClick("History");
         ctx->KeyCharsAppend("ABCDEF");
         ctx->KeyPressMap(ImGuiKey_Z, ImGuiKeyModFlags_Ctrl);
-        ctx->Yield();
         IM_CHECK_STR_EQ(vars.HistoryBuffer.c_str(), "ABCDE");
         ctx->KeyPressMap(ImGuiKey_Z, ImGuiKeyModFlags_Ctrl);
         ctx->KeyPressMap(ImGuiKey_Z, ImGuiKeyModFlags_Ctrl);
-        ctx->Yield();
         IM_CHECK_STR_EQ(vars.HistoryBuffer.c_str(), "ABC");
         ctx->KeyPressMap(ImGuiKey_Y, ImGuiKeyModFlags_Ctrl);
-        ctx->Yield();
         IM_CHECK_STR_EQ(vars.HistoryBuffer.c_str(), "ABCD");
         ctx->KeyPressMap(ImGuiKey_UpArrow);
         IM_CHECK_STR_EQ(vars.HistoryBuffer.c_str(), "Pressed Up!");
@@ -1125,20 +1121,12 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         IM_CHECK_STR_EQ(vars.EditBuffer.c_str(), "");
         IM_CHECK_EQ(vars.EditCount, 0);
         ctx->KeyCharsAppend("h");
-        ctx->Yield();
         IM_CHECK_STR_EQ(vars.EditBuffer.c_str(), "H");
         IM_CHECK_EQ(vars.EditCount, 1);
         ctx->KeyCharsAppend("e");
-        ctx->Yield();
         IM_CHECK_STR_EQ(vars.EditBuffer.c_str(), "he");
         IM_CHECK_EQ(vars.EditCount, 2);
-        // Can't use this while "fast" because all chars will be inserted "as one",
-        // making the EditCount only increase by one
-        // ctx->KeyCharsAppend("llo");
-        ctx->KeyCharsAppend("l");
-        ctx->KeyCharsAppend("l");
-        ctx->KeyCharsAppend("o");
-        ctx->Yield();
+        ctx->KeyCharsAppend("llo");
         IM_CHECK_STR_EQ(vars.EditBuffer.c_str(), "Hello");
         IM_CHECK_LE(vars.EditCount, ctx->EngineIO->ConfigRunFast ? 3 : 5); // If running fast, "llo" will be considered as one edit only
     };
