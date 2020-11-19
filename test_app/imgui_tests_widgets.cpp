@@ -561,7 +561,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
     };
 
     // ## Test InputText widget
-    t = IM_REGISTER_TEST(e, "widgets", "widgets_inputtext_1");
+    t = IM_REGISTER_TEST(e, "widgets", "widgets_inputtext_basic");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         ImGuiTestGenericVars& vars = ctx->GenericVars;
@@ -616,7 +616,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
     };
 
     // ## Test InputText undo/redo ops, in particular related to issue we had with stb_textedit undo/redo buffers
-    t = IM_REGISTER_TEST(e, "widgets", "widgets_inputtext_2");
+    t = IM_REGISTER_TEST(e, "widgets", "widgets_inputtext_undo_redo");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         ImGuiTestGenericVars& vars = ctx->GenericVars;
@@ -634,6 +634,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
     {
         // https://github.com/nothings/stb/issues/321
         ImGuiTestGenericVars& vars = ctx->GenericVars;
+        ImGuiContext& g = *ctx->UiContext;
 
         // Start with a 350 characters buffer.
         // For this test we don't inject the characters via pasting or key-by-key in order to precisely control the undo/redo state.
@@ -647,9 +648,9 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ctx->ItemClick("Other"); // This is to ensure stb_textedit_clear_state() gets called (clear the undo buffer, etc.)
         ctx->ItemClick("InputText");
 
-        ImGuiInputTextState& input_text_state = GImGui->InputTextState;
+        ImGuiInputTextState& input_text_state = g.InputTextState;
         ImStb::StbUndoState& undo_state = input_text_state.Stb.undostate;
-        IM_CHECK_EQ(input_text_state.ID, GImGui->ActiveId);
+        IM_CHECK_EQ(input_text_state.ID, g.ActiveId);
         IM_CHECK_EQ(undo_state.undo_point, 0);
         IM_CHECK_EQ(undo_state.undo_char_point, 0);
         IM_CHECK_EQ(undo_state.redo_point, STB_TEXTEDIT_UNDOSTATECOUNT);
@@ -695,7 +696,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
     };
 
     // ## Test InputText vs user ownership of data
-    t = IM_REGISTER_TEST(e, "widgets", "widgets_inputtext_3_text_ownership");
+    t = IM_REGISTER_TEST(e, "widgets", "widgets_inputtext_text_ownership");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         ImGuiTestGenericVars& vars = ctx->GenericVars;
@@ -741,26 +742,45 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
     };
 
     // ## Test that InputText doesn't go havoc when activated via another item
-    t = IM_REGISTER_TEST(e, "widgets", "widgets_inputtext_4_id_conflict");
+    t = IM_REGISTER_TEST(e, "widgets", "widgets_inputtext_id_conflict");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         ImGuiTestGenericVars& vars = ctx->GenericVars;
         ImGui::SetNextWindowSize(ImVec2(ImGui::GetFontSize() * 50, 0.0f));
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
-        if (ctx->FrameCount < 50)
-            ImGui::Button("Hello");
+        if (vars.Step == 0)
+        {
+            if (ctx->FrameCount < 50)
+                ImGui::Button("Hello");
+            else
+                ImGui::InputText("Hello", vars.Str1, IM_ARRAYSIZE(vars.Str1));
+        }
         else
-            ImGui::InputText("Hello", vars.Str1, IM_ARRAYSIZE(vars.Str1));
+        {
+            ImGui::InputTextMultiline("Hello", vars.Str1, IM_ARRAYSIZE(vars.Str1));
+        }
         ImGui::End();
     };
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         ctx->SetRef("Test Window");
         ctx->ItemHoldForFrames("Hello", 100);
+        ctx->ItemClick("Hello");
+        ImGuiInputTextState* state = ImGui::GetInputTextState(ctx->GetID("Hello"));
+        IM_CHECK(state != NULL);
+        IM_CHECK(state->Stb.single_line == 1);
+
+        // Toggling from single to multiline is a little bit ill-defined
+        ctx->GenericVars.Step = 1;
+        ctx->Yield();
+        ctx->ItemClick("Hello");
+        state = ImGui::GetInputTextState(ctx->GetID("Hello"));
+        IM_CHECK(state != NULL);
+        IM_CHECK(state->Stb.single_line == 0);
     };
 
     // ## Test that InputText doesn't append two tab characters if the backend supplies both tab key and character
-    t = IM_REGISTER_TEST(e, "widgets", "widgets_inputtext_5_tab_double_insertion");
+    t = IM_REGISTER_TEST(e, "widgets", "widgets_inputtext_tab_double_insertion");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         ImGuiTestGenericVars& vars = ctx->GenericVars;
@@ -779,7 +799,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
     };
 
     // ## Test input clearing action (ESC key) being undoable (#3008).
-    t = IM_REGISTER_TEST(e, "widgets", "widgets_inputtext_6_esc_undo");
+    t = IM_REGISTER_TEST(e, "widgets", "widgets_inputtext_esc_undo");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         ImGuiTestGenericVars& vars = ctx->GenericVars;
@@ -811,49 +831,15 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         }
     };
 
-    // ## Test resize callback (#3009, #2006, #1443, #1008)
-    t = IM_REGISTER_TEST(e, "widgets", "widgets_inputtext_7_resizecallback");
-    struct StrVars { Str str; };
-    t->SetUserDataType<StrVars>();
-    t->GuiFunc = [](ImGuiTestContext* ctx)
-    {
-        StrVars& vars = ctx->GetUserData<StrVars>();
-        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
-        if (ImGui::InputText("Field1", &vars.str, ImGuiInputTextFlags_EnterReturnsTrue))
-        {
-            IM_CHECK_EQ(vars.str.capacity(), 4 + 5 + 1);
-            IM_CHECK_STR_EQ(vars.str.c_str(), "abcdhello");
-        }
-        Str str_local_unsaved = "abcd";
-        if (ImGui::InputText("Field2", &str_local_unsaved, ImGuiInputTextFlags_EnterReturnsTrue))
-        {
-            IM_CHECK_EQ(str_local_unsaved.capacity(), 4 + 5 + 1);
-            IM_CHECK_STR_EQ(str_local_unsaved.c_str(), "abcdhello");
-        }
-        ImGui::End();
-
-    };
-    t->TestFunc = [](ImGuiTestContext* ctx)
-    {
-        StrVars& vars = ctx->GetUserData<StrVars>();
-        vars.str.set("abcd");
-        IM_CHECK_EQ(vars.str.capacity(), 4+1);
-        ctx->SetRef("Test Window");
-        ctx->ItemInput("Field1");
-        ctx->KeyCharsAppendEnter("hello");
-        ctx->ItemInput("Field2");
-        ctx->KeyCharsAppendEnter("hello");
-    };
-
     // ## Test input text multiline cursor movement: left, up, right, down, origin, end, ctrl+origin, ctrl+end, page up, page down
-    t = IM_REGISTER_TEST(e, "widgets", "widgets_inputtext_8_cursor");
+    t = IM_REGISTER_TEST(e, "widgets", "widgets_inputtext_cursor");
     struct InputTextCursorVars { Str str; int Cursor; int LineCount = 10; };
     t->SetUserDataType<InputTextCursorVars>();
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         InputTextCursorVars& vars = ctx->GetUserData<InputTextCursorVars>();
 
-        float height = vars.LineCount * 0.5f * GImGui->FontSize;
+        float height = vars.LineCount * 0.5f * ImGui::GetFontSize();
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
         ImGui::InputTextMultiline("Field", &vars.str, ImVec2(300, height), ImGuiInputTextFlags_EnterReturnsTrue);
         if (ImGuiInputTextState* state = ImGui::GetInputTextState(ctx->GetID("/Test Window/Field")))
@@ -877,6 +863,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ctx->ItemInput("Field");
 
         ImGuiInputTextState* state = ImGui::GetInputTextState(ctx->GetID("Field"));
+        IM_CHECK(state != NULL);
         ImStb::STB_TexteditState& stb = state->Stb;
         vars.Cursor = stb.cursor;
 
@@ -1092,6 +1079,40 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         IM_CHECK(state->TextW.Data[1] == 0);
         IM_CHECK(state->Stb.cursor == 1);
         IM_CHECK(state->Stb.select_start == 0 && state->Stb.select_end == 1);
+    };
+
+    // ## Test resize callback (#3009, #2006, #1443, #1008)
+    t = IM_REGISTER_TEST(e, "widgets", "widgets_inputtext_callback_resize");
+    struct StrVars { Str str; };
+    t->SetUserDataType<StrVars>();
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        StrVars& vars = ctx->GetUserData<StrVars>();
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+        if (ImGui::InputText("Field1", &vars.str, ImGuiInputTextFlags_EnterReturnsTrue))
+        {
+            IM_CHECK_EQ(vars.str.capacity(), 4 + 5 + 1);
+            IM_CHECK_STR_EQ(vars.str.c_str(), "abcdhello");
+        }
+        Str str_local_unsaved = "abcd";
+        if (ImGui::InputText("Field2", &str_local_unsaved, ImGuiInputTextFlags_EnterReturnsTrue))
+        {
+            IM_CHECK_EQ(str_local_unsaved.capacity(), 4 + 5 + 1);
+            IM_CHECK_STR_EQ(str_local_unsaved.c_str(), "abcdhello");
+        }
+        ImGui::End();
+
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        StrVars& vars = ctx->GetUserData<StrVars>();
+        vars.str.set("abcd");
+        IM_CHECK_EQ(vars.str.capacity(), 4 + 1);
+        ctx->SetRef("Test Window");
+        ctx->ItemInput("Field1");
+        ctx->KeyCharsAppendEnter("hello");
+        ctx->ItemInput("Field2");
+        ctx->KeyCharsAppendEnter("hello");
     };
 
     // ## Test for Nav interference
