@@ -2446,7 +2446,10 @@ void    ImGuiTestContext::WindowMove(ImGuiTestRef ref, ImVec2 input_pos, ImVec2 
     LogDebug("WindowMove %s (%.1f,%.1f) ", window->Name, input_pos.x, input_pos.y);
     ImVec2 target_pos = ImFloor(input_pos - pivot * window->Size);
     if (ImLengthSqr(target_pos - window->Pos) < 0.001f)
+    {
+        //MouseMoveToPos(window->Pos); //??
         return;
+    }
 
     WindowBringToFront(window);
     WindowCollapse(window, false);

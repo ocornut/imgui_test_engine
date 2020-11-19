@@ -986,10 +986,24 @@ void RegisterTests_Window(ImGuiTestEngine* e)
         ImVec2 viewport_pos = ctx->GetMainViewportPos();
         ImGuiWindow* window = ctx->GetWindowByRef("Movable Window");
         ctx->WindowMove("Movable Window", viewport_pos + ImVec2(0, 0));
+#ifdef IMGUI_HAS_VIEWPORT
+        ImGuiIO& io = ImGui::GetIO();
+        const bool has_mouse_hovered_viewports = (io.BackendFlags & ImGuiBackendFlags_HasMouseHoveredViewport) != 0;
+        if (has_mouse_hovered_viewports)
+            IM_CHECK(window->Viewport->ID == io.MouseHoveredViewport);
+#endif
         IM_CHECK(window->Pos == viewport_pos + ImVec2(0, 0));
         ctx->WindowMove("Movable Window", viewport_pos + ImVec2(100, 0));
+#ifdef IMGUI_HAS_VIEWPORT
+        if (has_mouse_hovered_viewports)
+            IM_CHECK(window->Viewport->ID == io.MouseHoveredViewport);
+#endif
         IM_CHECK(window->Pos == viewport_pos + ImVec2(100, 0));
         ctx->WindowMove("Movable Window", viewport_pos + ImVec2(50, 100));
+#ifdef IMGUI_HAS_VIEWPORT
+        if (has_mouse_hovered_viewports)
+            IM_CHECK(window->Viewport->ID == io.MouseHoveredViewport);
+#endif
         IM_CHECK(window->Pos == viewport_pos + ImVec2(50, 100));
     };
 
