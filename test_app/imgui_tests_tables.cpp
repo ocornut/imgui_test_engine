@@ -1021,6 +1021,41 @@ void RegisterTests_Table(ImGuiTestEngine* e)
         TableDiscardInstanceAndSettings(table_id);
     };
 
+    // ## Test table behavior with ItemWidth
+    t = IM_REGISTER_TEST(e, "table", "table_item_width");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::SetNextWindowSize(ImVec2(300, 200));
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImGuiWindow* window = ImGui::GetCurrentWindow();
+        ImGui::PushItemWidth(50.0f);
+        IM_CHECK_EQ(window->DC.ItemWidth, 50.0f);
+        if (ImGui::BeginTable("table1", 2, ImGuiTableFlags_Borders))
+        {
+            ImGui::TableNextRow();
+            ImGui::TableSetColumnIndex(0);
+            float column_width = ImGui::GetContentRegionAvail().x;
+            ImGui::DragInt("row 1 item 1", &ctx->GenericVars.Int1);
+            ImGui::PushItemWidth(-FLT_MIN);
+            IM_CHECK_EQ(ImGui::CalcItemWidth(), column_width);
+            ImGui::DragInt("##row 1 item 2", &ctx->GenericVars.Int1);
+            IM_CHECK_EQ(window->DC.LastItemRect.GetWidth(), column_width);
+
+            ImGui::TableNextRow();
+            ImGui::TableSetColumnIndex(0);
+            ImGui::DragInt("##row 1 item 1", &ctx->GenericVars.Int1);
+            IM_CHECK_EQ(ImGui::CalcItemWidth(), column_width);
+            IM_CHECK_EQ(window->DC.LastItemRect.GetWidth(), column_width);
+            //ImGui::PopItemWidth(); // Intentionally left out as we currently allow this to be ignored
+
+            ImGui::EndTable();
+        }
+        IM_CHECK_EQ(window->DC.ItemWidth, 50.0f);
+        IM_CHECK_EQ(window->DC.ItemWidthStack.Size, 1);
+        ImGui::PopItemWidth();
+        ImGui::End();
+    };
+
     // ## Test table sorting behaviors.
     t = IM_REGISTER_TEST(e, "table", "table_sorting");
     t->GuiFunc = [](ImGuiTestContext* ctx)
@@ -1270,6 +1305,34 @@ void RegisterTests_Table(ImGuiTestEngine* e)
 
     // ## Test window with _AlwaysAutoResize getting resized to size of a table it contains.
     t = IM_REGISTER_TEST(e, "table", "table_auto_resize");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiContext& g = *ctx->UiContext;
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
+        if (ImGui::BeginTable("table1", 2, ImGuiTableFlags_ColumnsWidthFixed))
+        {
+            ImGui::TableNextRow();
+            ImGui::TableNextColumn();
+            ImGui::Button("test", ImVec2(50, 0));
+            ImGui::TableNextColumn();
+            ImGui::Button("test", ImVec2(101, 0));
+            if (!ctx->IsFirstGuiFrame())
+            {
+                ImGuiTable* table = g.CurrentTable;
+                IM_CHECK_EQ(table->Columns[0].WidthAuto, 50.0f);
+                IM_CHECK_EQ(table->Columns[0].WidthRequest, 50.0f);
+                IM_CHECK_LE(table->Columns[0].WidthGiven, 50.0f);
+                IM_CHECK_EQ(table->Columns[1].WidthAuto, 101.0f);
+                IM_CHECK_EQ(table->Columns[1].WidthRequest, 101.0f);
+                IM_CHECK_LE(table->Columns[1].WidthGiven, 101.0f);
+            }
+            ImGui::EndTable();
+        }
+        ImGui::End();
+    };
+
+    // ## Test window with _AlwaysAutoResize getting resized to size of a table it contains.
+    t = IM_REGISTER_TEST(e, "table", "table_reported_size");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         ImGuiContext& g = *ctx->UiContext;
