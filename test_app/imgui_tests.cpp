@@ -1564,7 +1564,7 @@ void RegisterTests_DrawList(ImGuiTestEngine* e)
 
         IM_CHECK_EQ_NO_RET(draw_list->CmdBuffer.Size, start_cmdbuffer_size + 2);
         IM_CHECK_EQ_NO_RET(draw_list->CmdBuffer.back().ElemCount, 0u);
-        IM_CHECK_EQ_NO_RET(prev_texture_id, draw_list->CmdBuffer.back().TextureId);
+        IM_CHECK_NO_RET(prev_texture_id == draw_list->CmdBuffer.back().TextureId);
 
         fake_tex.RemoveFakeTexFromDrawList(draw_list, prev_texture_id);
 

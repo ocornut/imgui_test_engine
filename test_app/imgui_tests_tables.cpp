@@ -1093,7 +1093,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
         int& table_flags = ctx->GenericVars.Int1;
 
         // Clicks a column header, optionally holding a specified modifier key. Returns SortDirection of clicked column.
-        auto click_column_and_get_sort = [&](const char* label, ImGuiKeyModFlags click_mod = ImGuiKeyModFlags_None) -> ImGuiSortDirection
+        auto click_column_and_get_sort = [](ImGuiTestContext* ctx, ImGuiTable* table, const char* label, ImGuiKeyModFlags click_mod) -> ImGuiSortDirection_
         {
             IM_ASSERT(ctx != NULL);
             IM_ASSERT(table != NULL);
@@ -1107,7 +1107,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
             ctx->ItemClick(TableGetHeaderID(table, label), ImGuiMouseButton_Left);
             if (click_mod != ImGuiKeyModFlags_None)
                 ctx->KeyUpMap(ImGuiKey_COUNT, click_mod);
-            return column->SortDirection;
+            return (ImGuiSortDirection_)column->SortDirection;
         };
 
         // Calls ImGui::TableGetSortSpecs() and returns it's result.
@@ -1129,10 +1129,10 @@ void RegisterTests_Table(ImGuiTestEngine* e)
         IM_CHECK_EQ(sort_specs->Specs[0].SortOrder, 0);
         IM_CHECK_EQ(sort_specs->Specs[0].SortDirection, ImGuiSortDirection_Ascending);
 
-        IM_CHECK_EQ(click_column_and_get_sort("Default"), ImGuiSortDirection_Descending);   // Sorted implicitly by calling TableGetSortSpecs().
-        IM_CHECK_EQ(click_column_and_get_sort("Default"), ImGuiSortDirection_Ascending);
-        IM_CHECK_EQ(click_column_and_get_sort("PreferSortAscending"), ImGuiSortDirection_Ascending);
-        IM_CHECK_EQ(click_column_and_get_sort("PreferSortAscending"), ImGuiSortDirection_Descending);
+        IM_CHECK_EQ(click_column_and_get_sort(ctx, table, "Default", 0), ImGuiSortDirection_Descending);   // Sorted implicitly by calling TableGetSortSpecs().
+        IM_CHECK_EQ(click_column_and_get_sort(ctx, table, "Default", 0), ImGuiSortDirection_Ascending);
+        IM_CHECK_EQ(click_column_and_get_sort(ctx, table, "PreferSortAscending", 0), ImGuiSortDirection_Ascending);
+        IM_CHECK_EQ(click_column_and_get_sort(ctx, table, "PreferSortAscending", 0), ImGuiSortDirection_Descending);
 
         // Not holding shift does not perform multi-sort.
         sort_specs = table_get_sort_specs(ctx, table);
@@ -1140,20 +1140,20 @@ void RegisterTests_Table(ImGuiTestEngine* e)
         IM_CHECK_EQ(sort_specs->SpecsCount, 1);
 
         // Holding shift includes all sortable columns in multi-sort.
-        IM_CHECK_EQ(click_column_and_get_sort("PreferSortDescending", ImGuiKeyModFlags_Shift), ImGuiSortDirection_Descending);
-        IM_CHECK_EQ(click_column_and_get_sort("PreferSortDescending", ImGuiKeyModFlags_Shift), ImGuiSortDirection_Ascending);
+        IM_CHECK_EQ(click_column_and_get_sort(ctx, table, "PreferSortDescending", ImGuiKeyModFlags_Shift), ImGuiSortDirection_Descending);
+        IM_CHECK_EQ(click_column_and_get_sort(ctx, table, "PreferSortDescending", ImGuiKeyModFlags_Shift), ImGuiSortDirection_Ascending);
         sort_specs = table_get_sort_specs(ctx, table);
         IM_CHECK(sort_specs && sort_specs->SpecsCount == 2);
 
-        IM_CHECK_EQ(click_column_and_get_sort("NoSort", ImGuiKeyModFlags_Shift), ImGuiSortDirection_Ascending);
-        IM_CHECK_EQ(click_column_and_get_sort("NoSort", ImGuiKeyModFlags_Shift), ImGuiSortDirection_Ascending);
+        IM_CHECK_EQ(click_column_and_get_sort(ctx, table, "NoSort", ImGuiKeyModFlags_Shift), ImGuiSortDirection_Ascending);
+        IM_CHECK_EQ(click_column_and_get_sort(ctx, table, "NoSort", ImGuiKeyModFlags_Shift), ImGuiSortDirection_Ascending);
         sort_specs = table_get_sort_specs(ctx, table);
         IM_CHECK(sort_specs && sort_specs->SpecsCount == 2);
 
-        IM_CHECK_EQ(click_column_and_get_sort("NoSortAscending", ImGuiKeyModFlags_Shift), ImGuiSortDirection_Descending);
-        IM_CHECK_EQ(click_column_and_get_sort("NoSortAscending", ImGuiKeyModFlags_Shift), ImGuiSortDirection_Descending);
-        IM_CHECK_EQ(click_column_and_get_sort("NoSortDescending", ImGuiKeyModFlags_Shift), ImGuiSortDirection_Ascending);
-        IM_CHECK_EQ(click_column_and_get_sort("NoSortDescending", ImGuiKeyModFlags_Shift), ImGuiSortDirection_Ascending);
+        IM_CHECK_EQ(click_column_and_get_sort(ctx, table, "NoSortAscending", ImGuiKeyModFlags_Shift), ImGuiSortDirection_Descending);
+        IM_CHECK_EQ(click_column_and_get_sort(ctx, table, "NoSortAscending", ImGuiKeyModFlags_Shift), ImGuiSortDirection_Descending);
+        IM_CHECK_EQ(click_column_and_get_sort(ctx, table, "NoSortDescending", ImGuiKeyModFlags_Shift), ImGuiSortDirection_Ascending);
+        IM_CHECK_EQ(click_column_and_get_sort(ctx, table, "NoSortDescending", ImGuiKeyModFlags_Shift), ImGuiSortDirection_Ascending);
         sort_specs = table_get_sort_specs(ctx, table);
         IM_CHECK(sort_specs && sort_specs->SpecsCount == 4);
 

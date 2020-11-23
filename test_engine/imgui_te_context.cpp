@@ -208,22 +208,23 @@ void    ImGuiTestContext::Finish()
         test->Status = ImGuiTestStatus_Success;
 }
 
+static void LogWarningFunc(void* user_data, const char* fmt, ...)
+{
+    ImGuiTestContext* ctx = (ImGuiTestContext*)user_data;
+    va_list args;
+    va_start(args, fmt);
+    ctx->LogExV(ImGuiTestVerboseLevel_Warning, ImGuiTestLogFlags_None, fmt, args);
+    va_end(args);
+};
+
 void    ImGuiTestContext::RecoverFromUiContextErrors()
 {
     IM_ASSERT(Test != NULL);
 
     // If we are _already_ in a test error state, recovering is normal so we'll hide the log.
     const bool verbose = (Test->Status != ImGuiTestStatus_Error) || (EngineIO->ConfigVerboseLevel >= ImGuiTestVerboseLevel_Debug);
-    auto verbose_func = [](void* user_data, const char* fmt, ...)
-    {
-        ImGuiTestContext* ctx = (ImGuiTestContext*)user_data;
-        va_list args;
-        va_start(args, fmt);
-        ctx->LogExV(ImGuiTestVerboseLevel_Warning, ImGuiTestLogFlags_None, fmt, args);
-        va_end(args);
-    };
     if (verbose)
-        ImGui::ErrorCheckEndFrameRecover(verbose_func, this);
+        ImGui::ErrorCheckEndFrameRecover(LogWarningFunc, this);
     else
         ImGui::ErrorCheckEndFrameRecover(NULL, NULL);
 }
