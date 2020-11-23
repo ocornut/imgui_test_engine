@@ -86,7 +86,7 @@ enum ImGuiCaptureStatus
 // Implements functionality for capturing images
 struct ImGuiCaptureContext
 {
-    ImGuiScreenCaptureFunc  ScreenCaptureFunc = NULL;       // Graphics back-end specific function that captures specified portion of framebuffer and writes RGBA data to `pixels` buffer.
+    ImGuiScreenCaptureFunc  ScreenCaptureFunc = NULL;       // Graphics backend specific function that captures specified portion of framebuffer and writes RGBA data to `pixels` buffer.
     void*                   ScreenCaptureUserData = NULL;   // Custom user pointer which is passed to ScreenCaptureFunc. (Optional)
 
     // [Internal]

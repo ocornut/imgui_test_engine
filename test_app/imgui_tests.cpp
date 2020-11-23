@@ -1489,7 +1489,7 @@ static bool CanTestVtxOffset(ImGuiTestContext* ctx)
 {
     if ((ctx->UiContext->IO.BackendFlags & ImGuiBackendFlags_RendererHasVtxOffset) == 0)
     {
-        ctx->LogInfo("Skipping: back-end does not support RendererHasVtxOffset!");
+        ctx->LogInfo("Skipping: backend does not support RendererHasVtxOffset!");
         return false;
     }
     if (sizeof(ImDrawIdx) != 2)

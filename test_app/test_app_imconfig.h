@@ -1,6 +1,6 @@
 #include "imconfig.h"
 
-// Enable graphics back-ends
+// Enable graphics backends
 #ifdef _WIN32
 #define IMGUI_APP_WIN32_DX11 1
 #endif

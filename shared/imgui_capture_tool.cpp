@@ -759,7 +759,7 @@ void ImGuiCaptureTool::ShowCaptureToolWindow(bool* p_open)
 
     if (Context.ScreenCaptureFunc == NULL)
     {
-        ImGui::TextColored(ImVec4(1, 0, 0, 1), "Back-end is missing ScreenCaptureFunc!");
+        ImGui::TextColored(ImVec4(1, 0, 0, 1), "Backend is missing ScreenCaptureFunc!");
         ImGui::End();
         return;
     }

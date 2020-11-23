@@ -1140,7 +1140,7 @@ static void ImGuiTestEngine_RunTest(ImGuiTestEngine* engine, ImGuiTestContext* c
     // Restore active func
     ctx->ActiveFunc = backup_active_func;
 
-    // Restore back-end clipboard functions
+    // Restore backend clipboard functions
     ctx->UiContext->IO.GetClipboardTextFn = backup_get_clipboard_text_fn;
     ctx->UiContext->IO.SetClipboardTextFn = backup_set_clipboard_text_fn;
     ctx->UiContext->IO.ClipboardUserData = backup_clipboard_user_data;

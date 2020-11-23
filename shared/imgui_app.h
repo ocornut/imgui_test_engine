@@ -1,7 +1,7 @@
 //-----------------------------------------------------------------------------
 // Simple Dear ImGui App Framework (using standard bindings)
 //-----------------------------------------------------------------------------
-// To use graphics back-ends, define one of the following in your project:
+// To use graphics backends, define one of the following in your project:
 //   #define IMGUI_APP_WIN32_DX11   1
 //   #define IMGUI_APP_SDL_GL3      1
 //   #define IMGUI_APP_GLFW_GL3     1

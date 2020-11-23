@@ -77,7 +77,7 @@ int main(int argc, char** argv)
 {
     IM_UNUSED(argc);
     IM_UNUSED(argv);
-    // Setup application back-end
+    // Setup application backend
 #ifdef IMGUI_APP_WIN32_DX11
     ImGuiApp* app = ImGuiApp_ImplWin32DX11_Create();
 #elif IMGUI_APP_SDL_GL3
