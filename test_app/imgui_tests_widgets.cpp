@@ -3387,6 +3387,27 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         IM_CHECK_EQ(g.NavId, ctx->GetID("Slider 1"));
     };
 
+    // ## Test whether numbers after format specifier do not influence widget value.
+    t = IM_REGISTER_TEST(e, "widgets", "widgets_slider_format");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
+        ImGui::SliderInt("Int", &ctx->GenericVars.Int1, 10, 100, "22%d00");
+        ImGui::SliderInt("Int2", &ctx->GenericVars.Int2, 10, 100, "22%'d"); // May not display correct with all printf implementation, but our test stands
+        ImGui::SliderFloat("Float", &ctx->GenericVars.Float1, 10.0f, 100.0f, "22%.0f00");
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ctx->SetRef("Test Window");
+        ctx->ItemClick("Int", 0, ImGuiTestOpFlags_MoveToEdgeR);
+        IM_CHECK_EQ(ctx->GenericVars.Int1, 100);
+        ctx->ItemClick("Int2", 0, ImGuiTestOpFlags_MoveToEdgeR);
+        IM_CHECK_EQ(ctx->GenericVars.Int2, 100);
+        ctx->ItemClick("Float", 0, ImGuiTestOpFlags_MoveToEdgeR);
+        IM_CHECK_EQ(ctx->GenericVars.Float1, 100.0f);
+    };
+
     // ## Test tooltip positioning in various conditions.
     t = IM_REGISTER_TEST(e, "widgets", "widgets_tooltip_positioning");
     struct TooltipPosVars { ImVec2 Size = ImVec2(50, 50); };
