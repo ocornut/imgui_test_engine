@@ -484,7 +484,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
         ImGui::Begin("Test window 1", NULL, ImGuiWindowFlags_NoSavedSettings);
         IM_CHECK_EQ(ImGui::TableGetColumnIndex(), 0);
         IM_CHECK_EQ(ImGui::TableSetColumnIndex(42), false);
-        IM_CHECK_EQ(ImGui::TableGetColumnIsVisible(0), false);
+        IM_CHECK_EQ(ImGui::TableGetColumnIsHidden(0), false);
         IM_CHECK_EQ(ImGui::TableGetColumnIsSorted(0), false);
         IM_CHECK_EQ(ImGui::TableGetColumnName(), (const char*)NULL);
         ImGui::End();
@@ -1124,7 +1124,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
         sort_specs = table_get_sort_specs(ctx, table);
         IM_CHECK(sort_specs != NULL);
         IM_CHECK_EQ(sort_specs->SpecsCount, 1);
-        IM_CHECK_EQ(sort_specs->ColumnsMask, 0x01u);
+        //IM_CHECK_EQ(sort_specs->ColumnsMask, 0x01u);
         IM_CHECK_EQ(sort_specs->Specs[0].ColumnIndex, 0);
         IM_CHECK_EQ(sort_specs->Specs[0].SortOrder, 0);
         IM_CHECK_EQ(sort_specs->Specs[0].SortDirection, ImGuiSortDirection_Ascending);
