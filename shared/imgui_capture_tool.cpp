@@ -91,6 +91,19 @@ void ImGuiCaptureImageBuf::BlitSubImage(int dst_x, int dst_y, int src_x, int src
 // ImGuiCaptureContext
 //-----------------------------------------------------------------------------
 
+static void HideWindow(ImGuiWindow* window)
+{
+    // FIXME: We cannot just set ->Hidden because not sure of timing where this is called relative to other windows.
+    // two call sites for HideWindow() one in CaptureUpdate() which timing is not defined by specs, one in UI code (WHY?)
+    window->Hidden = true;
+
+    // FIXME: 2020/11/30 changed from overwriting HiddenFramesCannotSkipItems which has too many side-effects...
+    // Overwriting HiddenFramesCanSkipItems has less side effects.
+    // e.g. reopening Combo box after a capture pass it would be marked as "window_just_appearing_after_hidden_for_resize" in Begin(),
+    // leading to auto-positioning in Begin() using regular popup policy, which leads BeginCombo() on N+1 to use a wrong value for AutoPosLastDirection.
+    window->HiddenFramesCanSkipItems = 2;
+}
+
 void ImGuiCaptureContext::PostNewFrame()
 {
     ImGuiCaptureArgs* args = _CaptureArgs;
@@ -161,10 +174,7 @@ ImGuiCaptureStatus ImGuiCaptureContext::CaptureUpdate(ImGuiCaptureArgs* args)
             is_window_hidden = false;
 
         if (is_window_hidden)
-        {
-            window->Hidden = true;
-            window->HiddenFramesCannotSkipItems = 2;
-        }
+            HideWindow(window);
     }
 
     // Recording will be set to false when we are stopping GIF capture.
@@ -841,8 +851,7 @@ void ImGuiCaptureTool::ShowCaptureToolWindow(bool* p_open)
         if (_CaptureState == ImGuiCaptureToolState_Capturing || _CaptureState == ImGuiCaptureToolState_PickingSingleWindow)
         {
             ImGuiWindow* window = ImGui::GetCurrentWindow();
-            window->Hidden = true;
-            window->HiddenFramesCannotSkipItems = 2;
+            HideWindow(window);
         }
 
     CaptureWindowPicker("Capture Window", &_CaptureArgsPicker);
