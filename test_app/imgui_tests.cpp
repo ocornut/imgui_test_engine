@@ -2876,6 +2876,8 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
         ctx->MenuCheck("Examples/Documents");
 
         ctx->SetRef("Example: Documents");
+        ctx->ItemCheck("**/Lettuce");
+        ctx->ItemClick("##tabs/Lettuce");
         ctx->ItemClick("##tabs/Lettuce/**/Modify");
         ctx->MenuClick("File");
         ctx->SetRef("");
@@ -3057,6 +3059,7 @@ void RegisterTests_Capture(ImGuiTestEngine* e)
         ctx->SetRef("Example: Documents");
         ctx->WindowResize(ctx->RefID, ImVec2(600, 300));    // Ensure no items are clipped, because then they cant be found by item search
         ctx->ItemCheck("**/Tomato");
+        ctx->ItemCheck("**/Eggplant");
         ctx->ItemCheck("**/A Rather Long Title");
         ctx->ItemClick("##tabs/Eggplant");
         ctx->SetRef(ctx->GetID("##tabs/Eggplant"));
