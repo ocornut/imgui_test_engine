@@ -656,7 +656,7 @@ void    ImGuiTestContext::ScrollToItemY(ImGuiTestRef ref, float scroll_ratio_y)
         return;
     ImGuiWindow* window = item->Window;
 
-    int remaining_failures = 1;
+    int remaining_failures = 2;
     while (!Abort)
     {
         // result->Rect fields will be updated after each iteration.
@@ -1440,16 +1440,16 @@ void    ImGuiTestContext::ItemAction(ImGuiTestAction action, ImGuiTestRef ref, v
             // Some item may open just by hovering, give them that chance
             if ((item->StatusFlags & ImGuiItemStatusFlags_Opened) == 0)
             {
-                ItemClick(ref, 0, flags);
+                MouseClick(0);
                 if ((item->StatusFlags & ImGuiItemStatusFlags_Opened) == 0)
                 {
-                    ItemDoubleClick(ref, flags); // Attempt a double-click // FIXME-TESTS: let's not start doing those fuzzy things..
+                    MouseDoubleClick(0); // Attempt a double-click // FIXME-TESTS: let's not start doing those fuzzy things..
                     if ((item->StatusFlags & ImGuiItemStatusFlags_Opened) == 0)
                         IM_ERRORF_NOHDR("Unable to Open item: %s", ImGuiTestRefDesc(ref, item).c_str());
                 }
             }
             item->RefCount--;
-            Yield();
+            //Yield();
         }
     }
     else if (action == ImGuiTestAction_Close)
@@ -1467,7 +1467,6 @@ void    ImGuiTestContext::ItemAction(ImGuiTestAction action, ImGuiTestRef ref, v
                     IM_ERRORF_NOHDR("Unable to Close item: %s", ImGuiTestRefDesc(ref, item).c_str());
             }
             item->RefCount--;
-            Yield();
         }
     }
     else if (action == ImGuiTestAction_Check)
@@ -1476,7 +1475,7 @@ void    ImGuiTestContext::ItemAction(ImGuiTestAction action, ImGuiTestRef ref, v
         if ((item->StatusFlags & ImGuiItemStatusFlags_Checkable) && !(item->StatusFlags & ImGuiItemStatusFlags_Checked))
         {
             ItemClick(ref, 0, flags);
-            Yield();
+            //Yield();
         }
         ItemVerifyCheckedIfAlive(ref, true); // We can't just IM_ASSERT(ItemIsChecked()) because the item may disappear and never update its StatusFlags any more!
     }
@@ -1486,7 +1485,6 @@ void    ImGuiTestContext::ItemAction(ImGuiTestAction action, ImGuiTestRef ref, v
         if ((item->StatusFlags & ImGuiItemStatusFlags_Checkable) && (item->StatusFlags & ImGuiItemStatusFlags_Checked))
         {
             ItemClick(ref, 0, flags);
-            Yield();
         }
         ItemVerifyCheckedIfAlive(ref, false); // We can't just IM_ASSERT(ItemIsChecked()) because the item may disappear and never update its StatusFlags any more!
     }
