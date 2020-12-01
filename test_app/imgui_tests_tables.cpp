@@ -484,7 +484,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
         ImGui::Begin("Test window 1", NULL, ImGuiWindowFlags_NoSavedSettings);
         IM_CHECK_EQ(ImGui::TableGetColumnIndex(), 0);
         IM_CHECK_EQ(ImGui::TableSetColumnIndex(42), false);
-        IM_CHECK_EQ(ImGui::TableGetColumnIsHidden(0), false);
+        IM_CHECK_EQ(ImGui::TableGetColumnIsEnabled(0), false);
         IM_CHECK_EQ(ImGui::TableGetColumnIsSorted(0), false);
         IM_CHECK_EQ(ImGui::TableGetColumnName(), (const char*)NULL);
         ImGui::End();
@@ -559,11 +559,11 @@ void RegisterTests_Table(ImGuiTestEngine* e)
         table = ImGui::TableFindByID(ctx->GetID("table1"));    // Columns: FFF, do not span entire width of the table
         IM_CHECK_LT(table->ColumnsTotalWidth + 1.0f, table->InnerWindow->ContentRegionRect.GetWidth());
         initial_column_width.resize(table->ColumnsCount);
-        for (int column_n = 0; column_n >= 0; column_n = table->Columns[column_n].NextVisibleColumn)
+        for (int column_n = 0; column_n >= 0; column_n = table->Columns[column_n].NextEnabledColumn)
         {
             const ImGuiTableColumn* col_curr = &table->Columns[column_n];
-            const ImGuiTableColumn* col_prev = col_curr->PrevVisibleColumn >= 0 ? &table->Columns[col_curr->PrevVisibleColumn] : NULL;
-            const ImGuiTableColumn* col_next = col_curr->NextVisibleColumn >= 0 ? &table->Columns[col_curr->NextVisibleColumn] : NULL;
+            const ImGuiTableColumn* col_prev = col_curr->PrevEnabledColumn >= 0 ? &table->Columns[col_curr->PrevEnabledColumn] : NULL;
+            const ImGuiTableColumn* col_next = col_curr->NextEnabledColumn >= 0 ? &table->Columns[col_curr->NextEnabledColumn] : NULL;
             const float width_curr = col_curr->WidthGiven;
             const float width_prev = col_prev ? col_prev->WidthGiven : 0;
             const float width_next = col_next ? col_next->WidthGiven : 0;
@@ -586,11 +586,11 @@ void RegisterTests_Table(ImGuiTestEngine* e)
         // Test column fitting
         {
             // Ensure columns are smaller than their contents due to previous tests on table1
-            for (int column_n = 0; column_n >= 0; column_n = table->Columns[column_n].NextVisibleColumn)
+            for (int column_n = 0; column_n >= 0; column_n = table->Columns[column_n].NextEnabledColumn)
                 IM_CHECK(table->Columns[column_n].WidthGiven < initial_column_width[column_n]);
 
             // Fit right-most column
-            int column_n = table->RightMostVisibleColumn;
+            int column_n = table->RightMostEnabledColumn;
             const ImGuiTableColumn* col_curr = &table->Columns[column_n];
 
             // Fit column.
@@ -601,7 +601,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
             IM_CHECK(col_curr->WidthGiven == initial_column_width[column_n]);  // Column restored original size
 
             // Ensure columns other than right-most one were not affected
-            for (column_n = 0; column_n >= 0 && column_n < table->RightMostVisibleColumn; column_n = table->Columns[column_n].NextVisibleColumn)
+            for (column_n = 0; column_n >= 0 && column_n < table->RightMostEnabledColumn; column_n = table->Columns[column_n].NextEnabledColumn)
                 IM_CHECK(table->Columns[column_n].WidthGiven < initial_column_width[column_n]);
 
             // Test fitting rest of the columns
@@ -611,7 +611,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
             ctx->ItemClick("Size all columns to fit");
 
             // Ensure all columns fit to contents
-            for (column_n = 0; column_n >= 0; column_n = table->Columns[column_n].NextVisibleColumn)
+            for (column_n = 0; column_n >= 0; column_n = table->Columns[column_n].NextEnabledColumn)
                 IM_CHECK(table->Columns[column_n].WidthGiven == initial_column_width[column_n]);
         }
 
@@ -620,10 +620,10 @@ void RegisterTests_Table(ImGuiTestEngine* e)
         IM_CHECK(table->ColumnsTotalWidth == table->InnerWindow->ContentRegionRect.GetWidth());
 
         // Iterate visible columns and check existence of resize handles
-        for (int column_n = 0; column_n >= 0; column_n = table->Columns[column_n].NextVisibleColumn)
+        for (int column_n = 0; column_n >= 0; column_n = table->Columns[column_n].NextEnabledColumn)
         {
             ImGuiID handle_id = ImGui::TableGetColumnResizeID(table, column_n);
-            if (column_n == table->RightMostVisibleColumn)
+            if (column_n == table->RightMostEnabledColumn)
                 IM_CHECK(ctx->ItemInfo(handle_id, ImGuiTestOpFlags_NoError) == NULL); // W
             else
                 IM_CHECK(ctx->ItemInfo(handle_id, ImGuiTestOpFlags_NoError) != NULL); // FF
@@ -902,10 +902,10 @@ void RegisterTests_Table(ImGuiTestEngine* e)
                 IM_CHECK_EQ_NO_RET(table->Columns[3].SortOrder, -1);
                 IM_CHECK_EQ_NO_RET(table->Columns[0].SortDirection, ImGuiSortDirection_Ascending);
 
-                IM_CHECK_EQ_NO_RET(table->Columns[0].IsVisible, true);
-                IM_CHECK_EQ_NO_RET(table->Columns[1].IsVisible, true);
-                IM_CHECK_EQ_NO_RET(table->Columns[2].IsVisible, true);
-                IM_CHECK_EQ_NO_RET(table->Columns[3].IsVisible, true);
+                IM_CHECK_EQ_NO_RET(table->Columns[0].IsEnabled, true);
+                IM_CHECK_EQ_NO_RET(table->Columns[1].IsEnabled, true);
+                IM_CHECK_EQ_NO_RET(table->Columns[2].IsEnabled, true);
+                IM_CHECK_EQ_NO_RET(table->Columns[3].IsEnabled, true);
 
                 IM_CHECK_EQ_NO_RET(table->Columns[0].DisplayOrder, 0);
                 IM_CHECK_EQ_NO_RET(table->Columns[1].DisplayOrder, 1);
@@ -920,7 +920,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
             {
                 IM_CHECK_EQ_NO_RET(table->Columns[0].SortOrder, 0);
                 IM_CHECK_EQ_NO_RET(table->Columns[0].SortDirection, col0_sorted_desc ? ImGuiSortDirection_Descending : ImGuiSortDirection_Ascending);
-                IM_CHECK_EQ_NO_RET(table->Columns[1].IsVisible, !col1_hidden);
+                IM_CHECK_EQ_NO_RET(table->Columns[1].IsEnabled, !col1_hidden);
                 IM_CHECK_EQ_NO_RET(table->Columns[0].DisplayOrder, col0_reordered ? (col1_hidden ? 2 : 1) : 0);
                 IM_CHECK_EQ_NO_RET(table->Columns[1].DisplayOrder, col0_reordered ? 0 : 1);
                 IM_CHECK_EQ_NO_RET(table->Columns[2].DisplayOrder, col0_reordered ? (col1_hidden ? 1 : 2) : 2);
@@ -954,7 +954,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
             if (col1_hidden)
             {
                 // FIXME-TESTS: Later we should try to simulate inputs at user level
-                table->Columns[1].IsVisible = table->Columns[1].IsVisibleNextFrame = false;
+                table->Columns[1].IsEnabled = table->Columns[1].IsEnabledNextFrame = false;
                 ctx->Yield();   // Must come into effect before reordering.
             }
 
@@ -1622,9 +1622,9 @@ void RegisterTests_Table(ImGuiTestEngine* e)
         ctx->ItemClick(TableGetHeaderID(table, "One"), ImGuiMouseButton_Right);
         ctx->SetRef(g.NavWindow);
         ctx->ItemClick("One");
-        IM_CHECK(col0->IsVisible == false);
+        IM_CHECK(col0->IsEnabled == false);
         ctx->ItemClick("One");
-        IM_CHECK(col0->IsVisible == true);
+        IM_CHECK(col0->IsEnabled == true);
     };
 
 
