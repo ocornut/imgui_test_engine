@@ -405,6 +405,17 @@ void    ImGuiTestEngine_ShowTestWindow(ImGuiTestEngine* engine, bool* p_open)
 
     // Options
     ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0, 0));
+    if (ImGui::SmallButton(" TOOLS "))
+        ImGui::OpenPopup("Tools");
+    ImGui::SameLine();
+    if (ImGui::BeginPopup("Tools"))
+    {
+        if (ImGui::Checkbox("Metrics", &engine->UiMetricsOpen)) ImGui::CloseCurrentPopup(); // FIXME: duplicate with Demo one... use macros to activate in demo?
+        if (ImGui::Checkbox("Stack Tool", &engine->StackTool.Visible)) ImGui::CloseCurrentPopup();
+        if (ImGui::Checkbox("Capture Tool", &engine->CaptureTool.Visible)) ImGui::CloseCurrentPopup();
+        ImGui::EndPopup();
+    }
+
     ImGui::Checkbox("Fast", &engine->IO.ConfigRunFast); HelpTooltip("Run tests as fast as possible (no vsync, no delay, teleport mouse, etc.).");
     ImGui::SameLine();
     ImGui::PushDisabled();
@@ -496,16 +507,14 @@ void    ImGuiTestEngine_ShowTestWindow(ImGuiTestEngine* engine, bool* p_open)
             ImGui::EndTabItem();
         }
 
-        // Tools
-        if (ImGui::BeginTabItem("TOOLS"))
+        // Misc
+        if (ImGui::BeginTabItem("MISC"))
         {
             ImGuiIO& io = ImGui::GetIO();
             ImGui::Text("%.3f ms/frame (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
             ImGui::Text("TestEngine: HookItems: %d, HookPushId: %d, InfoTasks: %d", g.TestEngineHookItems, g.TestEngineHookIdInfo != 0, engine->InfoTasks.Size);
             ImGui::Separator();
 
-            ImGui::Checkbox("Stack Tool", &engine->StackTool.Visible);
-            ImGui::Checkbox("Capture Tool", &engine->CaptureTool.Visible);
             ImGui::Checkbox("Slow down whole app", &engine->ToolSlowDown);
             ImGui::SameLine(); ImGui::SetNextItemWidth(70 * engine->IO.DpiScale);
             ImGui::SliderInt("##ms", &engine->ToolSlowDownMs, 0, 400, "%d ms");
@@ -519,12 +528,9 @@ void    ImGuiTestEngine_ShowTestWindow(ImGuiTestEngine* engine, bool* p_open)
             ImGui::DragFloat("DpiScale", &engine->IO.DpiScale, 0.005f, 0.0f, 0.0f, "%.2f");
             const ImGuiInputTextCallback filter_callback = [](ImGuiInputTextCallbackData* data) { return (data->EventChar == ',' || data->EventChar == ';') ? 1 : 0; };
             ImGui::InputText("Branch/Annotation", engine->IO.GitBranchName, IM_ARRAYSIZE(engine->IO.GitBranchName), ImGuiInputTextFlags_CallbackCharFilter, filter_callback, NULL);
-            ImGui::EndTabItem();
-        }
 
-        // FIXME-TESTS: Need to be visualizing the samples/spikes.
-        if (ImGui::BeginTabItem("PERFS"))
-        {
+            // Perfs
+            // FIXME-TESTS: Need to be visualizing the samples/spikes.
             double dt_1 = 1.0 / ImGui::GetIO().Framerate;
             double fps_now = 1.0 / dt_1;
             double dt_100 = engine->PerfDeltaTime100.GetAverage();
@@ -573,6 +579,11 @@ void    ImGuiTestEngine_ShowTestWindow(ImGuiTestEngine* engine, bool* p_open)
     capture_tool.Context.ScreenCaptureUserData = engine->IO.ScreenCaptureUserData;
     if (capture_tool.Visible)
         capture_tool.ShowCaptureToolWindow(&capture_tool.Visible);
+
+    // Metrics window
+    // FIXME
+    if (engine->UiMetricsOpen)
+        ImGui::ShowMetricsWindow(&engine->UiMetricsOpen);
 }
 
 //-------------------------------------------------------------------------

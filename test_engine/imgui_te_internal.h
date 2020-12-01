@@ -116,6 +116,7 @@ struct ImGuiTestEngine
     ImGuiTextFilter             UiFilterTests;
     ImGuiTextFilter             UiFilterPerfs;
     bool                        UiFilterFailingOnly = false;
+    bool                        UiMetricsOpen = false; // FIXME
     float                       UiLogHeight = 150.0f;
 
     // Performance Monitor
