@@ -13,6 +13,12 @@
     <Filter Include="test_app">
       <UniqueIdentifier>{08e36723-ce4f-4cff-9662-c40801cf1acf}</UniqueIdentifier>
     </Filter>
+    <Filter Include="libs">
+      <UniqueIdentifier>{eee3ce6a-c593-41b7-92b8-531d5d956f3c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="libs\implot">
+      <UniqueIdentifier>{a4ab2be6-f030-4e79-acdf-49a4a8a9884c}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\imgui\imgui.h">
@@ -47,6 +53,12 @@
     </ClInclude>
     <ClInclude Include="test_app_imconfig.h">
       <Filter>test_app</Filter>
+    </ClInclude>
+    <ClInclude Include="..\libs\implot\implot_internal.h">
+      <Filter>libs\implot</Filter>
+    </ClInclude>
+    <ClInclude Include="..\libs\implot\implot.h">
+      <Filter>libs\implot</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -94,6 +106,15 @@
     </ClCompile>
     <ClCompile Include="imgui_tests_nav.cpp">
       <Filter>test_app</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libs\implot\implot_demo.cpp">
+      <Filter>libs\implot</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libs\implot\implot_items.cpp">
+      <Filter>libs\implot</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libs\implot\implot.cpp">
+      <Filter>libs\implot</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

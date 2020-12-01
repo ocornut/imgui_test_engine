@@ -7,6 +7,7 @@
 // Use relative path as this file may be compiled with different settings
 #ifdef IMGUI_SANDBOX_ENABLE_TEST_ENGINE
 #define IMGUI_TEST_ENGINE_ENABLE_COROUTINE_STDTHREAD_IMPL
+#define IMGUI_TEST_ENGINE_ENABLE_IMPLOT
 #include "../test_engine/imgui_te_imconfig.h"
 #endif
 

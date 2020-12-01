@@ -3,6 +3,10 @@
 // Compile Dear ImGui with test engine hooks
 #define IMGUI_ENABLE_TEST_ENGINE
 
+// [Optional] Enable plotting of perflog data for comparing performance of different runs.
+// This feature requires ImPlot to be linked in the application.
+//#define IMGUI_TEST_ENGINE_ENABLE_IMPLOT
+
 // Bind assert macro
 extern void ImGuiTestEngineHook_AssertFunc(const char* expr, const char* file, const char* func, int line);
 #define IM_ASSERT(_EXPR)    do { !!(_EXPR) || (ImGuiTestEngineHook_AssertFunc(#_EXPR, __FILE__, __func__, __LINE__), true); } while (0)

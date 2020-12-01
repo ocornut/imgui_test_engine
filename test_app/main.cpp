@@ -63,6 +63,9 @@ static inline void DebugCrtDumpLeaks()
 #include "shared/imgui_capture_tool.h"
 #include "shared/imgui_utils.h"
 #include "libs/Str/Str.h"
+#ifdef IMGUI_TEST_ENGINE_ENABLE_IMPLOT
+#include "libs/implot/implot.h"
+#endif
 
 //-------------------------------------------------------------------------
 // Test Application
@@ -363,6 +366,9 @@ int main(int argc, char** argv)
     // Setup Dear ImGui binding
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
+#ifdef IMGUI_TEST_ENGINE_ENABLE_IMPLOT
+    ImPlot::CreateContext();
+#endif
     ImGui::StyleColorsDark();
     ImGuiIO& io = ImGui::GetIO();
     io.IniFilename = "imgui.ini";
@@ -500,6 +506,9 @@ int main(int argc, char** argv)
 
     // Shutdown
     // We shutdown the Dear ImGui context _before_ the test engine context, so .ini data may be saved.
+#ifdef IMGUI_TEST_ENGINE_ENABLE_IMPLOT
+    ImPlot::DestroyContext();
+#endif
     ImGui::DestroyContext();
     ImGuiTestEngine_ShutdownContext(g_App.TestEngine);
     app_window->Destroy(app_window);

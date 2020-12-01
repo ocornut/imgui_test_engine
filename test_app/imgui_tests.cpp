@@ -12,6 +12,9 @@
 #include "test_engine/imgui_te_engine.h"      // IM_REGISTER_TEST()
 #include "test_engine/imgui_te_context.h"
 #include "libs/Str/Str.h"
+#ifdef IMGUI_TEST_ENGINE_ENABLE_IMPLOT
+#include "libs/implot/implot.h"
+#endif
 
 // Warnings
 #ifdef _MSC_VER
@@ -3329,6 +3332,21 @@ void RegisterTests_Capture(ImGuiTestEngine* e)
         ctx->CaptureScreenshotWindow("", ImGuiCaptureFlags_StitchFullContents | ImGuiCaptureFlags_HideMouseCursor);
 
         ctx->ItemClick("Tables/Close all");
+    };
+#endif
+
+#ifdef IMGUI_TEST_ENGINE_ENABLE_IMPLOT
+    // ## Capture all tables demo
+    t = IM_REGISTER_TEST(e, "capture", "capture_implot_demo");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImPlot::ShowDemoWindow();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ctx->SetRef("ImPlot Demo");
+        ctx->ItemOpenAll("");
+        ctx->CaptureScreenshotWindow("ImPlot Demo", ImGuiCaptureFlags_StitchFullContents | ImGuiCaptureFlags_HideMouseCursor);
     };
 #endif
 }
