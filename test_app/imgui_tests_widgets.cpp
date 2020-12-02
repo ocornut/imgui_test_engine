@@ -560,6 +560,26 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         }
     };
 
+#if 0
+    // ## Testing Scroll on Window with Test Engine helpers 
+    t = IM_REGISTER_TEST(e, "widgets", "widgets_scrollbar");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::SetNextWindowSize(ImVec2(200, 200));
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysHorizontalScrollbar);
+        ImGui::BeginChild("##Child", ImVec2(800, 800), true);
+        ImGui::Text("This is some text");
+        ImGui::EndChild();
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ctx->SetRef("Test Window");
+        ctx->ScrollTo(ImGuiAxis_Y, 60);
+        ctx->ScrollTo(ImGuiAxis_X, 80);
+    };
+#endif
+
     // ## Test InputText widget
     t = IM_REGISTER_TEST(e, "widgets", "widgets_inputtext_basic");
     t->GuiFunc = [](ImGuiTestContext* ctx)

@@ -621,8 +621,38 @@ bool    ImGuiTestContext::ScrollErrorCheck(ImGuiAxis axis, float expected, float
     }
 }
 
+ImVec2        GetWindowScrollbarMousePositionForScroll(ImGuiWindow* window, ImGuiAxis axis, float scroll_v)
+{
+    // Mostly the same code as ScrollbarEx
+
+    ImGuiContext& g = *GImGui;
+    ImRect bb = ImGui::GetWindowScrollbarRect(window, axis);
+
+    //float* scroll_v = &window->Scroll[axis];
+    float size_avail_v = window->InnerRect.Max[axis] - window->InnerRect.Min[axis];
+    float size_contents_v = window->ContentSize[axis] + window->WindowPadding[axis] * 2.0f;
+
+    // V denote the main, longer axis of the scrollbar (= height for a vertical scrollbar)
+    const float scrollbar_size_v = bb.Max[axis] - bb.Min[axis];
+
+    // Calculate the height of our grabbable box. It generally represent the amount visible (vs the total scrollable amount)
+    // But we maintain a minimum size in pixel to allow for the user to still aim inside.
+    const float win_size_v = ImMax(ImMax(size_contents_v, size_avail_v), 1.0f);
+    const float grab_h_pixels = ImClamp(scrollbar_size_v * (size_avail_v / win_size_v), g.Style.GrabMinSize, scrollbar_size_v);
+    const float grab_h_norm = grab_h_pixels / scrollbar_size_v;
+
+    float scroll_max = ImMax(1.0f, size_contents_v - size_avail_v);
+    float scroll_ratio = ImSaturate(scroll_v / scroll_max);
+    float grab_v = scroll_ratio * (scrollbar_size_v - grab_h_pixels)  ; // Grab position
+
+    ImVec2 position = (axis == ImGuiAxis_X ? ImVec2(bb.Min.x, bb.GetCenter().y) : ImVec2(bb.GetCenter().x, bb.Min.y));
+    position[axis] += grab_v + grab_h_pixels * 0.5f;
+    return position;
+}
+
 void    ImGuiTestContext::ScrollTo(ImGuiAxis axis, float scroll_target)
 {
+    ImGuiContext& g = *UiContext;
     if (IsError())
         return;
 
@@ -635,31 +665,48 @@ void    ImGuiTestContext::ScrollTo(ImGuiAxis axis, float scroll_target)
         return;
     }
 
-    ImGuiContext& g = *UiContext;
     LogDebug("ScrollTo%c %.1f/%.1f", axis_c, scroll_target, window->ScrollMax[axis]);
     WindowBringToFront(window);
 
-    int remaining_failures = 3;
-    while (!Abort)
+   Yield();
+
+    Str30f scrollbar_ref = Str30f("#SCROLL%c", axis_c);
+    const ImGuiTestItemInfo* scrollbar_item = ItemInfo(scrollbar_ref.c_str(), ImGuiTestOpFlags_NoError);
+    if (scrollbar_item == NULL)
+        return;
+
+    ImRect scrollbar_rect = ImGui::GetWindowScrollbarRect(window, axis);
+    const float scrollbar_size_v = scrollbar_rect.Max[axis] - scrollbar_rect.Min[axis];
+    const float window_resize_grip_size = IM_FLOOR(ImMax(g.FontSize * 1.35f, window->WindowRounding + 1.0f + g.FontSize * 0.2f));
+    const float scroll_target_clamp = ImMax(0.0f, ImMin(scroll_target, window->ScrollMax[axis]));
+
+    // In case of a very small window, directly use SetScroll.. function to prevent resizing it
+    bool use_set_scroll_function = scrollbar_size_v < window_resize_grip_size;
+    if (!use_set_scroll_function)
     {
-        if (ImFabs(window->Scroll[axis] - scroll_target) < 1.0f)
-            break;
+        // Make sure we don't hover the window resize grip
+        ImVec2 scrollbar_src_pos = GetWindowScrollbarMousePositionForScroll(window, axis, window->Scroll[axis]);
+        scrollbar_src_pos[axis] = ImMin(scrollbar_src_pos[axis], scrollbar_rect.Min[axis] + scrollbar_size_v - window_resize_grip_size);
+        MouseMoveToPos(scrollbar_src_pos);
 
-        float scroll_speed = EngineIO->ConfigRunFast ? FLT_MAX : ImFloor(EngineIO->ScrollSpeed * g.IO.DeltaTime + 0.99f);
-        float scroll_next = ImLinearSweep(window->Scroll[axis], scroll_target, scroll_speed);
-        if (axis == ImGuiAxis_X)
-            ImGui::SetScrollX(window, scroll_next);
-        else
-            ImGui::SetScrollY(window, scroll_next);
-        Yield();
-
-        // Error handling to avoid getting stuck in this function.
-        if (!ScrollErrorCheck(axis, scroll_next, window->Scroll[axis], &remaining_failures))
-            break;
+        if (!use_set_scroll_function)
+        {
+            ImVec2 scrollbar_dst_pos = GetWindowScrollbarMousePositionForScroll(window, axis, scroll_target_clamp);
+            MouseDown(0);
+            MouseMoveToPos(scrollbar_dst_pos);
+            MouseUp(0);
+        }
     }
 
-    // Need another frame for the result->Rect to stabilize
-    Yield();
+    // FIXME: GetWindowScrollbarMousePositionForScroll doesn't return the exact value when scrollbar grip is too small
+    if(use_set_scroll_function || window->Scroll[axis] != scroll_target_clamp)
+    {
+        if (axis == ImGuiAxis_X)
+            ImGui::SetScrollX(window, scroll_target_clamp);
+        else
+            ImGui::SetScrollY(window, scroll_target_clamp);
+        Yield();
+    }
 }
 
 // FIXME-TESTS: scroll_ratio_y unsupported
@@ -672,7 +719,6 @@ void    ImGuiTestContext::ScrollToItemY(ImGuiTestRef ref, float scroll_ratio_y)
 
     // If the item is not currently visible, scroll to get it in the center of our window
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
-    ImGuiContext& g = *UiContext;
     ImGuiTestItemInfo* item = ItemInfo(ref);
     ImGuiTestRefDesc desc(ref, item);
     LogDebug("ScrollToItemY %s", desc.c_str());
@@ -681,38 +727,17 @@ void    ImGuiTestContext::ScrollToItemY(ImGuiTestRef ref, float scroll_ratio_y)
         return;
     ImGuiWindow* window = item->Window;
 
-    int remaining_failures = 2;
-    while (!Abort)
-    {
-        // result->Rect fields will be updated after each iteration.
-        float item_curr_y = ImFloor(item->RectFull.GetCenter().y);
-        float item_target_y = ImFloor(window->InnerClipRect.GetCenter().y);
-        float scroll_delta_y = item_target_y - item_curr_y;
-        float scroll_target_y = ImClamp(window->Scroll.y - scroll_delta_y, 0.0f, window->ScrollMax.y);
-        if (ImFabs(window->Scroll.y - scroll_target_y) < 1.0f)
-            break;
-
-        // FIXME-TESTS: Scroll snap on edge can make this function loops forever.
-        // [20191014: Repro is to resize e.g. widgets_checkbox_001 window to be small vertically]
-
-        // FIXME-TESTS: There's a bug which can be repro by moving #RESIZE grips to Layer 0, making window small and trying to resize a dock node host.
-        // Somehow SizeContents.y keeps increase and we never reach our desired (but faulty) scroll target.
-        float scroll_speed = EngineIO->ConfigRunFast ? FLT_MAX : ImFloor(EngineIO->ScrollSpeed * g.IO.DeltaTime + 0.99f);
-        float scroll_next_y = ImLinearSweep(window->Scroll.y, scroll_target_y, scroll_speed);
-        //printf("[%03d] window->Scroll.y %f + %f\n", FrameCount, window->Scroll.y, scroll_speed);
-        //window->Scroll.y = scroll_next_y;
-        ImGui::SetScrollY(window, scroll_next_y);
-        Yield();
-
-        // Error handling to avoid getting stuck in this function.
-        if (!ScrollErrorCheck(ImGuiAxis_Y, scroll_next_y, window->Scroll.y, &remaining_failures))
-            break;
-
-        WindowBringToFront(window);
-    }
-
-    // Need another frame for the result->Rect to stabilize
+    // Ensure window size is up-to-date
     Yield();
+
+    float item_curr_y = ImFloor(item->RectFull.GetCenter().y);
+    float item_target_y = ImFloor(window->InnerClipRect.GetCenter().y);
+    float scroll_delta_y = item_target_y - item_curr_y;
+    float scroll_target_y = ImClamp(window->Scroll.y - scroll_delta_y, 0.0f, window->ScrollMax.y);
+    if (ImFabs(window->Scroll.y - scroll_target_y) < 1.0f)
+        return;
+
+    ScrollTo(ImGuiAxis_Y, scroll_target_y);
 }
 
 // Verify that ScrollMax is stable regardless of scrolling position
@@ -1493,6 +1518,7 @@ void    ImGuiTestContext::ItemAction(ImGuiTestAction action, ImGuiTestRef ref, v
                     IM_ERRORF_NOHDR("Unable to Close item: %s", ImGuiTestRefDesc(ref, item).c_str());
             }
             item->RefCount--;
+            Yield();
         }
     }
     else if (action == ImGuiTestAction_Check)
