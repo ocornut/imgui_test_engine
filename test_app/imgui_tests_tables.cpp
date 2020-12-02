@@ -484,6 +484,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
         ImGui::Begin("Test window 1", NULL, ImGuiWindowFlags_NoSavedSettings);
         IM_CHECK_EQ(ImGui::TableGetColumnIndex(), 0);
         IM_CHECK_EQ(ImGui::TableSetColumnIndex(42), false);
+        IM_CHECK_EQ(ImGui::TableNextColumn(), false);
         IM_CHECK_EQ(ImGui::TableGetColumnIsEnabled(0), false);
         IM_CHECK_EQ(ImGui::TableGetColumnIsSorted(0), false);
         IM_CHECK_EQ(ImGui::TableGetColumnName(), (const char*)NULL);
@@ -608,7 +609,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
             ctx->SetRef("Test window 1");
             ctx->ItemClick(TableGetHeaderID(table, "F3"), ImGuiMouseButton_Right);
             ctx->SetRef(g.NavWindow);
-            ctx->ItemClick("Size all columns to fit");
+            ctx->ItemClick("Size all columns to fit###SizeAll");
 
             // Ensure all columns fit to contents
             for (column_n = 0; column_n >= 0; column_n = table->Columns[column_n].NextEnabledColumn)
@@ -953,7 +954,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
 
             if (col1_hidden)
             {
-                // FIXME-TESTS: Later we should try to simulate inputs at user level
+                // FIXME-TESTS: Later we should try to simulate inputs at user level.. Cannot use TableSetColumnIsEnabled() from pointer.
                 table->Columns[1].IsEnabled = table->Columns[1].IsEnabledNextFrame = false;
                 ctx->Yield();   // Must come into effect before reordering.
             }

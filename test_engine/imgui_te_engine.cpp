@@ -1104,6 +1104,15 @@ static void ImGuiTestEngine_RunTest(ImGuiTestEngine* engine, ImGuiTestContext* c
         if (!engine->IO.ConfigRunFast)
             ctx->SleepShort();
 
+        // Position mouse cursor
+        if (engine->IO.ConfigKeepGuiFunc && ctx->IsError())
+        {
+            ctx->UiContext->IO.WantSetMousePos = true;
+            ctx->UiContext->IO.MousePos = engine->Inputs.MousePosValue;
+        }
+
+        // Keep GuiFunc spinning
+        // FIXME-TESTS: after an error, this is not visible in the UI because status is not _Running anymore...
         while (engine->IO.ConfigKeepGuiFunc && !engine->Abort)
         {
             ctx->RunFlags |= ImGuiTestRunFlags_GuiFuncOnly;
