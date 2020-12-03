@@ -2459,7 +2459,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         {
             if (ImGui::BeginMenu("First Menu"))
                 ImGui::EndMenu();
-            ImGui::EndMenuBar();
+            ImGui::EndMainMenuBar();
         }
 
         // Append to first menu.
@@ -2473,8 +2473,6 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
             }
             ImGui::EndMainMenuBar();
         }
-
-        ImGui::End();
     };
     t->TestFunc = [](ImGuiTestContext* ctx)
     {

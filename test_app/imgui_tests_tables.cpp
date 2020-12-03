@@ -485,8 +485,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
         IM_CHECK_EQ(ImGui::TableGetColumnIndex(), 0);
         IM_CHECK_EQ(ImGui::TableSetColumnIndex(42), false);
         IM_CHECK_EQ(ImGui::TableNextColumn(), false);
-        IM_CHECK_EQ(ImGui::TableGetColumnIsEnabled(0), false);
-        IM_CHECK_EQ(ImGui::TableGetColumnIsSorted(0), false);
+        IM_CHECK_EQ(ImGui::TableGetColumnFlags(0), 0);
         IM_CHECK_EQ(ImGui::TableGetColumnName(), (const char*)NULL);
         ImGui::End();
     };
