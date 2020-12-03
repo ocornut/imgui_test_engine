@@ -268,6 +268,7 @@ struct ImGuiTestContext
     void        CaptureInitArgs(ImGuiCaptureArgs* args, int capture_flags = 0);
     bool        CaptureAddWindow(ImGuiCaptureArgs* args, ImGuiTestRef ref);
     bool        CaptureScreenshot(ImGuiCaptureArgs* args);
+    void        CaptureScreenshotSimple(ImGuiTestRef ref, int capture_flags = 0); // Simple api
     bool        BeginCaptureGif(ImGuiCaptureArgs* args);
     bool        EndCaptureGif(ImGuiCaptureArgs* args);
 

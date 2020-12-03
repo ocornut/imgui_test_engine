@@ -724,8 +724,10 @@ bool ImGuiTestEngine_CaptureScreenshot(ImGuiTestEngine* engine, ImGuiCaptureArgs
 
     // Because we rely on window->ContentSize for stitching, let 1 extra frame elapse to make sure any
     // windows which contents have changed in the last frame get a correct window->ContentSize value.
+    // FIXME: Can remove this yield is not stitching
     ImGuiTestEngine_Yield(engine);
 
+    // FIXME: Figure out how to guarantee immediate capture (single yield) to be useful for problem inspection.
     engine->CurrentCaptureArgs = args;
     while (engine->CurrentCaptureArgs != NULL)
         ImGuiTestEngine_Yield(engine);

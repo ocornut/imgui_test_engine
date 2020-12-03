@@ -441,6 +441,18 @@ bool ImGuiTestContext::CaptureScreenshot(ImGuiCaptureArgs* args)
     return ret;
 }
 
+// FIXME-TESTS: Figure how to get capturing to have zero delay (only 1 yield)
+// FIXME-TESTS: Add ImGuiCaptureFlags_NoHideOtherWindows
+void ImGuiTestContext::CaptureScreenshotSimple(ImGuiTestRef ref, int capture_flags)
+{
+    //int frame_count = this->FrameCount;
+    ImGuiCaptureArgs args;
+    CaptureInitArgs(&args, capture_flags);
+    CaptureAddWindow(&args, ref);
+    CaptureScreenshot(&args);
+    //IM_ASSERT(frame_count == FrameCount);
+}
+
 bool ImGuiTestContext::BeginCaptureGif(ImGuiCaptureArgs* args)
 {
     if (IsError())

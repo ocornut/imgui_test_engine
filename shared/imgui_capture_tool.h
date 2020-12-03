@@ -8,7 +8,7 @@ struct ImGuiCaptureArgs;
 struct ImGuiCaptureContext;
 struct ImGuiCaptureImageBuf;
 struct ImGuiCaptureTool;
-typedef unsigned int ImGuiCaptureFlags;
+typedef unsigned int ImGuiCaptureFlags; // ImGuiCaptureFlags_
 
 struct ImGuiWindow; // imgui.h
 struct GifWriter;   // gif.h

@@ -41,11 +41,11 @@ static void HelperTableSubmitCellsCustom(ImGuiTestContext* ctx, int count_w, int
     for (int line = 0; line < count_h; line++)
     {
         ImGui::TableNextRow();
-        for (int column = 0; column < count_w; column++)
+        for (int column_n = 0; column_n < count_w; column_n++)
         {
-            if (!ImGui::TableSetColumnIndex(column)) // FIXME-TABLE
+            if (!ImGui::TableSetColumnIndex(column_n) && column_n > 0)
                 continue;
-            cell_cb(ctx, column, line);
+            cell_cb(ctx, column_n, line);
         }
     }
 }
@@ -1247,7 +1247,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
         const float column_0_width = table->Columns[0].WidthGiven;
         for (int i = 0; i < 5; i++)
         {
-            IM_CHECK_EQ(table->Columns[i].IsClipped, false);
+            IM_CHECK_EQ(table->Columns[i].IsVisibleX, true);
             IM_CHECK_EQ(ctx->GenericVars.BoolArray[i], true);
         }
 
@@ -1259,7 +1259,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
         // First five columns and rows are no longer visible
         for (int i = 0; i < 5; i++)
         {
-            IM_CHECK_EQ(table->Columns[i].IsClipped, true);
+            IM_CHECK_EQ(table->Columns[i].IsVisibleX, false);
             IM_CHECK_EQ(ctx->GenericVars.BoolArray[i], false);
         }
 
@@ -1300,7 +1300,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
 
             // Test whether frozen columns are visible.
             for (int column_n = 0; column_n < 4; column_n++)
-                IM_CHECK_EQ(table->Columns[column_n].IsClipped, !(column_n < freeze_count));
+                IM_CHECK_EQ(table->Columns[column_n].IsVisibleX, (column_n < freeze_count));
         }
     };
 
@@ -1423,6 +1423,9 @@ void RegisterTests_Table(ImGuiTestEngine* e)
                 IM_CHECK_EQ(window->ContentRegionRect.Max.y, table->OuterRect.Max.y);
 
                 float expected_table_width = vars.Count * 100.0f + (vars.Count - 1) * g.Style.CellPadding.x;
+                float expected_table_height = vars.Count * ImGui::GetFrameHeightWithSpacing() + ImGui::GetTextLineHeightWithSpacing();
+                IM_CHECK_EQ(table->OuterRect.GetHeight(), expected_table_height);
+
                 if (step == 2)
                 {
                     // No columns width specs + auto-filling button = table will keep its width
