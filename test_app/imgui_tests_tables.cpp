@@ -847,18 +847,16 @@ void RegisterTests_Table(ImGuiTestEngine* e)
     };
 
     // ## Test saving and loading table settings.
-    t = IM_REGISTER_TEST(e, "table", "table_settings");
+    t = IM_REGISTER_TEST(e, "table", "table_settings_1");
     struct TableSettingsVars { ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoSavedSettings; bool call_get_sort_specs = false; };
     t->SetUserDataType<TableSettingsVars>();
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         TableSettingsVars& vars = ctx->GetUserData<TableSettingsVars>();
 
-        const int column_count = 4;
         ImGui::SetNextWindowSize(ImVec2(300, 200), ImGuiCond_Appearing);
         ImGui::Begin("Table Settings", NULL, vars.window_flags);
-
-        if (ImGui::BeginTable("table1", column_count, ImGuiTableFlags_Resizable | ImGuiTableFlags_Hideable | ImGuiTableFlags_Reorderable | ImGuiTableFlags_Sortable))
+        if (ImGui::BeginTable("table1", 4, ImGuiTableFlags_Resizable | ImGuiTableFlags_Hideable | ImGuiTableFlags_Reorderable | ImGuiTableFlags_Sortable))
         {
             ImGui::TableSetupColumn("Col1");
             ImGui::TableSetupColumn("Col2");
@@ -867,7 +865,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
             ImGui::TableHeadersRow();
             if (vars.call_get_sort_specs) // Test against TableGetSortSpecs() having side effects
                 ImGui::TableGetSortSpecs();
-            HelperTableSubmitCellsButtonFill(column_count, 3);
+            HelperTableSubmitCellsButtonFill(4, 3);
             ImGui::EndTable();
         }
         ImGui::End();
@@ -1019,6 +1017,69 @@ void RegisterTests_Table(ImGuiTestEngine* e)
         // Ensure table settings do not leak in case of errors.
         ImGui::TableGcCompactSettings();
         TableDiscardInstanceAndSettings(table_id);
+    };
+
+
+    // ## Test saving and loading table settings (more)
+    t = IM_REGISTER_TEST(e, "table", "table_settings_2");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::SetNextWindowSize(ImVec2(300, 200), ImGuiCond_Appearing);
+        ImGui::Begin("Table Settings", NULL, ImGuiWindowFlags_NoSavedSettings);
+        if (ImGui::BeginTable("table1", 3, ImGuiTableFlags_Resizable | ImGuiTableFlags_Hideable | ImGuiTableFlags_Reorderable | ImGuiTableFlags_Sortable))
+        {
+            ImGui::TableSetupColumn("Col1");
+            ImGui::TableSetupColumn("Col2");
+            ImGui::TableSetupColumn("Col3", ImGuiTableColumnFlags_DefaultHide);
+            ImGui::TableHeadersRow();
+            HelperTableSubmitCellsButtonFix(3, 3);
+            ImGui::EndTable();
+        }
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ctx->SetRef("Table Settings");
+        ImGuiID table_id = ctx->GetID("table1");
+
+        TableDiscardInstanceAndSettings(table_id);
+        ctx->Yield();
+        ImGuiTable* table = ImGui::TableFindByID(table_id);
+        IM_CHECK_EQ(table->Columns[0].IsEnabled, true);
+        IM_CHECK_EQ(table->Columns[1].IsEnabled, true);
+        IM_CHECK_EQ(table->Columns[2].IsEnabled, false);
+        ctx->Yield();
+        IM_CHECK_EQ(table->Columns[0].WidthAuto, 100.0f);
+        IM_CHECK_EQ(table->Columns[1].WidthAuto, 100.0f);
+        IM_CHECK_LE(table->Columns[2].WidthRequest, 0.0f);
+        IM_CHECK_LE(table->Columns[2].WidthAuto, 0.0f);
+        table->Columns[2].IsEnabledNextFrame = true;
+        ctx->Yield();
+        IM_CHECK_LE(table->Columns[2].WidthAuto, 0.0f);
+        ctx->Yield();
+        IM_CHECK_EQ(table->Columns[2].WidthAuto, 100.0f);
+
+        // Check that WidthAuto is preserved on Reset
+        ImGui::TableResetSettings(table);
+        ctx->Yield();
+        IM_CHECK_EQ(table->Columns[2].IsEnabled, false);
+        IM_CHECK_EQ(table->Columns[2].WidthAuto, 100.0f);
+        table->Columns[2].IsEnabledNextFrame = true;
+        ctx->Yield();
+        IM_CHECK_EQ(table->Columns[2].WidthAuto, 100.0f);
+
+        // Full discard: WidthAuto is lost but AutoFit should kick-in as soon as columns is re-enabled
+        TableDiscardInstanceAndSettings(table_id);
+        ctx->Yield(10); // Make sure we are way past traces of auto-fitting
+        table = ImGui::TableFindByID(table_id);
+        IM_CHECK_EQ(table->Columns[2].IsEnabled, false);
+        IM_CHECK_LT(table->Columns[2].WidthRequest, 0.0f);
+        IM_CHECK_EQ(table->Columns[2].WidthAuto, 0.0f);
+        table->Columns[2].IsEnabledNextFrame = true;
+        ctx->Yield();
+        IM_CHECK_LE(table->Columns[2].WidthAuto, 0.0f);
+        ctx->Yield();
+        IM_CHECK_EQ(table->Columns[2].WidthAuto, 100.0f);
     };
 
     // ## Test table behavior with ItemWidth
@@ -1305,6 +1366,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
 
     // ## Test window with _AlwaysAutoResize getting resized to size of a table it contains.
     t = IM_REGISTER_TEST(e, "table", "table_auto_resize");
+    t->Flags |= ImGuiTestFlags_NoAutoFinish;
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         ImGuiContext& g = *ctx->UiContext;
@@ -1316,15 +1378,21 @@ void RegisterTests_Table(ImGuiTestEngine* e)
             ImGui::Button("test", ImVec2(50, 0));
             ImGui::TableNextColumn();
             ImGui::Button("test", ImVec2(101, 0));
+            ImGuiTable* table = g.CurrentTable;
+            ImGuiWindow* window = g.CurrentWindow;
             if (!ctx->IsFirstGuiFrame())
             {
-                ImGuiTable* table = g.CurrentTable;
                 IM_CHECK_EQ(table->Columns[0].WidthAuto, 50.0f);
                 IM_CHECK_EQ(table->Columns[0].WidthRequest, 50.0f);
                 IM_CHECK_LE(table->Columns[0].WidthGiven, 50.0f);
                 IM_CHECK_EQ(table->Columns[1].WidthAuto, 101.0f);
                 IM_CHECK_EQ(table->Columns[1].WidthRequest, 101.0f);
                 IM_CHECK_LE(table->Columns[1].WidthGiven, 101.0f);
+            }
+            if (ctx->FrameCount == 1)
+            {
+                IM_CHECK_EQ(window->ContentSize.x, table->ColumnsAutoFitWidth);
+                ctx->Finish();
             }
             ImGui::EndTable();
         }
@@ -1529,11 +1597,13 @@ void RegisterTests_Table(ImGuiTestEngine* e)
     t = IM_REGISTER_TEST(e, "table", "table_varying_columns_count");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
         ctx->GenericVars.Count = ImMax(ctx->GenericVars.Count, 1);
-        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
-        if (ImGui::BeginTable("table1", ctx->GenericVars.Count, ImGuiTableFlags_ScrollY))
+        ImGui::SliderInt("Count", &ctx->GenericVars.Count, 1, 30);
+        ImGui::CheckboxFlags("ImGuiTableFlags_Resizable", &ctx->GenericVars.Int1, ImGuiTableFlags_Resizable);
+        if (ImGui::BeginTable("table1", ctx->GenericVars.Count, ctx->GenericVars.Int1))
         {
-            HelperTableSubmitCellsButtonFix(ctx->GenericVars.Count, 10);
+            HelperTableSubmitCellsButtonFill(ctx->GenericVars.Count, 7);
             ImGui::EndTable();
         }
         ImGui::End();
@@ -1604,7 +1674,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
         ctx->MouseMoveToPos(ImVec2(col0->MaxX, table->InnerWindow->Pos.y));
         ctx->MouseDoubleClick();
         ctx->Yield();
-        IM_CHECK_EQ(col0->WidthGiven, 100.0f);  // Resets to initial width because column os fixed.
+        IM_CHECK_EQ(col0->WidthGiven, col0->WidthAuto); // Resets to auto width
 
         col1->WidthRequest = (col1->ContentMaxXHeadersIdeal - col1->WorkMinX) + 50.0f;
         ctx->Yield();

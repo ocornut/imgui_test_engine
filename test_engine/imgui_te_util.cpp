@@ -218,7 +218,10 @@ void TableDiscardInstanceAndSettings(ImGuiID table_id)
     IM_ASSERT(g.CurrentTable == NULL);
     if (ImGuiTableSettings* settings = ImGui::TableSettingsFindByID(table_id))
         settings->ID = 0;
+
     if (ImGuiTable* table = ImGui::TableFindByID(table_id))
         ImGui::TableRemove(table);
+    // FIXME-TABLE: We should be able to use TableResetSettings() instead of TableRemove()! Maybe less of a clean slate but would be good to check that it does the job
+    //ImGui::TableResetSettings(table);
 }
 #endif
