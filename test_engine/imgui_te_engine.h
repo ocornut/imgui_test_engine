@@ -317,7 +317,7 @@ void                ImGuiTestEngine_ShowTestWindow(ImGuiTestEngine* engine, bool
 // Function pointers for IO structure
 // (also see imgui_te_coroutine.h for coroutine functions)
 typedef void        (*ImGuiTestEngineSrcFileOpenFunc)(const char* filename, int line, void* user_data);
-typedef bool        (*ImGuiTestEngineScreenCaptureFunc)(int x, int y, int w, int h, unsigned int* pixels, void* user_data);
+typedef bool        (*ImGuiTestEngineScreenCaptureFunc)(ImGuiID viewport_id, int x, int y, int w, int h, unsigned int* pixels, void* user_data);
 
 // IO structure
 struct ImGuiTestEngineIO

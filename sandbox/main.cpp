@@ -73,6 +73,13 @@ static void LoadFonts(ImGuiApp* app)
     //io.Fonts->AddFontFromFileTTF("../data/fonts/fa5-solid-900.otf", 14.0f * app->DpiScale, &font_cfg_icons);
 }
 
+static bool AppScreenCaptureFunc(ImGuiID viewport_id, int x, int y, int w, int h, unsigned int* pixels, void* user_data)
+{
+    IM_UNUSED(viewport_id); // FIXME: Unsupported
+    ImGuiApp* app = (ImGuiApp*)user_data;
+    return app->CaptureFramebuffer(app, x, y, w, h, pixels, NULL);
+};
+
 int main(int argc, char** argv)
 {
     IM_UNUSED(argc);
@@ -113,7 +120,7 @@ int main(int argc, char** argv)
     ImGuiTestEngineIO& test_io = ImGuiTestEngine_GetIO(engine);
     test_io.ConfigVerboseLevel = ImGuiTestVerboseLevel_Info;
     test_io.ConfigVerboseLevelOnError = ImGuiTestVerboseLevel_Debug;
-    test_io.ScreenCaptureFunc = [](int x, int y, int w, int h, unsigned int* pixels, void* user_data) { ImGuiApp* app = (ImGuiApp*)user_data; return app->CaptureFramebuffer(app, x, y, w, h, pixels, NULL); };
+    test_io.ScreenCaptureFunc = AppScreenCaptureFunc;
     test_io.ScreenCaptureUserData = (void*)app;
     test_io.CoroutineFuncs = Coroutine_ImplStdThread_GetInterface();
 
@@ -146,14 +153,16 @@ int main(int argc, char** argv)
 
     bool show_imgui_demo = true;
     bool show_dockspace = true;
-    bool show_capture_tool = false;
     bool show_assets_browser = false;
     bool show_markdown = true;
     bool show_memory_editor = false;
     bool show_implot_demo = false;
     bool show_test_engine = false;
+
+    // Spawn a capture tool independent of ImGuiTestEngine's own instance (as you may use capture tool without the test engine)
+    bool show_capture_tool = false;
     ImGuiCaptureTool capture_tool;
-    capture_tool.Context.ScreenCaptureFunc = [](int x, int y, int w, int h, unsigned int* pixels, void* user_data) { ImGuiApp* app = (ImGuiApp*)user_data; return app->CaptureFramebuffer(app, x, y, w, h, pixels, NULL); };
+    capture_tool.Context.ScreenCaptureFunc = AppScreenCaptureFunc;
     capture_tool.Context.ScreenCaptureUserData = app;
 
     // Main loop

@@ -61,8 +61,8 @@ bool                ImFileLoadSourceBlurb(const char* filename, int line_no_star
 const char*         ImStrchrRangeWithEscaping(const char* str, const char* str_end, char find_c);
 
 // Path helpers (strictly string manipulation!)
-const char*         ImPathFindFilename(const char* path, const char* path_end = NULL);
-const char*         ImPathFindExtension(const char* path, const char* path_end = NULL);
+const char*         ImPathFindFilename(const char* path, const char* path_end = NULL);      // Return value always between path and path_end
+const char*         ImPathFindExtension(const char* path, const char* path_end = NULL);     // Return value always between path and path_end
 void                ImPathFixSeparatorsForCurrentOS(char* buf);
 
 // Time helpers

@@ -434,21 +434,19 @@ bool ImGuiTestContext::CaptureScreenshotEx(ImGuiCaptureArgs* args)
         return false;
 
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
-    LogInfo("CaptureScreenshot()");
+    LogDebug("CaptureScreenshot()");
     bool ret = ImGuiTestEngine_CaptureScreenshot(Engine, args);
-    LogDebug("Saved '%s' (%d*%d pixels)", args->OutSavedFileName, (int)args->OutImageSize.x, (int)args->OutImageSize.y);
+    LogInfo("Saved '%s' (%d*%d pixels)", args->OutSavedFileName, (int)args->OutImageSize.x, (int)args->OutImageSize.y);
     return ret;
 }
 
 // FIXME-TESTS: Add ImGuiCaptureFlags_NoHideOtherWindows
 void ImGuiTestContext::CaptureScreenshotWindow(ImGuiTestRef ref, int capture_flags)
 {
-    //int frame_count = this->FrameCount;
     ImGuiCaptureArgs args;
     CaptureInitArgs(&args, capture_flags);
     CaptureAddWindow(&args, ref);
     CaptureScreenshotEx(&args);
-    //IM_ASSERT(frame_count == FrameCount);
 }
 
 bool ImGuiTestContext::BeginCaptureGif(ImGuiCaptureArgs* args)

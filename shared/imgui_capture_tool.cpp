@@ -2,7 +2,9 @@
 // This is usable as a standalone applet or controlled by the test engine.
 // (code)
 
-// FIXME: This desperately need a full rewrite.
+// FIXME: This desperately needs rewrite.
+// FIXME: This currently depends on imgui_dev/shared/imgui_utils.cpp
+// FIXME: GIF compression are substandard with current gif.h. May be simpler to pipe to ffmpeg?
 
 /*
 
@@ -27,7 +29,7 @@ Index of this file:
 #define IMGUI_DEFINE_MATH_OPERATORS
 #include "imgui_internal.h"
 #include "imgui_capture_tool.h"
-#include "../shared/imgui_utils.h"
+#include "../shared/imgui_utils.h"  // ImPathFindFilename, ImPathFindExtension, ImPathFixSeparatorsForCurrentOS, ImFileCreateDirectoryChain, ImOsOpenInShell
 
 // stb_image_write
 #ifdef _MSC_VER
@@ -90,7 +92,7 @@ void ImGuiCaptureImageBuf::RemoveAlpha()
     int n = Width * Height;
     while (n-- > 0)
     {
-        *p |= 0xFF000000;
+        *p |= IM_COL32_A_MASK;
         p++;
     }
 }
@@ -114,24 +116,26 @@ void ImGuiCaptureImageBuf::BlitSubImage(int dst_x, int dst_y, int src_x, int src
 static void HideOtherWindows(const ImGuiCaptureArgs* args)
 {
     ImGuiContext& g = *GImGui;
+    ImGuiIO& io = g.IO;
+    IM_UNUSED(io);
+
     for (ImGuiWindow* window : g.Windows)
     {
 #ifdef IMGUI_HAS_VIEWPORT
-        if ((io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable) && (args->InFlags & ImGuiCaptureFlags_StitchFullContents))
-        {
-            // FIXME-VIEWPORTS: Content stitching is not possible because window would get moved out of main viewport and detach from it. We need a way to force captured windows to remain in main viewport here.
-            IM_ASSERT(false);
-            return ImGuiCaptureStatus_Error;
-        }
+        // FIXME-VIEWPORTS: Content stitching is not possible because window would get moved out of main viewport and detach from it. We need a way to force captured windows to remain in main viewport here.
+        //if ((io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable) && (args->InFlags & ImGuiCaptureFlags_StitchFullContents))
+        //    IM_ASSERT(false);
 #endif
-
-        bool should_hide_window = !args->InCaptureWindows.contains(window);
+        if (args->InCaptureWindows.contains(window))
+            continue;
         if (window->Flags & ImGuiWindowFlags_ChildWindow)
-            should_hide_window = false;
-        else if ((window->Flags & ImGuiWindowFlags_Popup) != 0 && (args->InFlags & ImGuiCaptureFlags_ExpandToIncludePopups) != 0)
-            should_hide_window = false;
+            continue;
+        if ((window->Flags & ImGuiWindowFlags_Popup) != 0 && (args->InFlags & ImGuiCaptureFlags_ExpandToIncludePopups) != 0)
+            continue;
+
 #if IMGUI_HAS_DOCK
-        else if ((window->Flags & ImGuiWindowFlags_DockNodeHost))
+        bool should_hide_window = true;
+        if ((window->Flags & ImGuiWindowFlags_DockNodeHost))
             for (ImGuiWindow* capture_window : args->InCaptureWindows)
             {
                 if (capture_window->DockNode != NULL && capture_window->DockNode->HostWindow == window)
@@ -140,44 +144,57 @@ static void HideOtherWindows(const ImGuiCaptureArgs* args)
                     break;
                 }
             }
+        if (!should_hide_window)
+            continue;
 #endif
 
-        if (should_hide_window)
-        {
-            // FIXME: We cannot just set ->Hidden because not sure of timing where this is called relative to other windows.
-            // two call sites for HideWindow() one in CaptureUpdate() which timing is not defined by specs, one in UI code (WHY?)
-            window->Hidden = true;
+        // FIXME: We cannot just set ->Hidden because not sure of timing where this is called relative to other windows.
+        window->Hidden = true;
 
-            // FIXME: 2020/11/30 changed from overwriting HiddenFramesCannotSkipItems which has too many side-effects...
-            // Overwriting HiddenFramesCanSkipItems has less side effects.
-            // e.g. reopening Combo box after a capture pass it would be marked as "window_just_appearing_after_hidden_for_resize" in Begin(),
-            // leading to auto-positioning in Begin() using regular popup policy, which leads BeginCombo() on N+1 to use a wrong value for AutoPosLastDirection.
-            window->HiddenFramesCanSkipItems = 2;
-        }
+        // FIXME: 2020/11/30 changed from overwriting HiddenFramesCannotSkipItems which has too many side-effects...
+        // Overwriting HiddenFramesCanSkipItems has less side effects.
+        // e.g. reopening Combo box after a capture pass it would be marked as "window_just_appearing_after_hidden_for_resize" in Begin(),
+        // leading to auto-positioning in Begin() using regular popup policy, which leads BeginCombo() on N+1 to use a wrong value for AutoPosLastDirection.
+        window->HiddenFramesCanSkipItems = 2;
     }
+}
+
+static ImRect GetMainViewportRect()
+{
+    ImGuiContext& g = *GImGui;
+#ifdef IMGUI_HAS_VIEWPORT
+    if (g.IO.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
+    {
+        ImGuiViewport* main_viewport = ImGui::GetMainViewport();
+        return ImRect(main_viewport->Pos, main_viewport->Pos + main_viewport->Size);
+    }
+#endif
+    return ImRect(ImVec2(0, 0), g.IO.DisplaySize);
 }
 
 void ImGuiCaptureContext::PostNewFrame()
 {
-    ImGuiCaptureArgs* args = _CaptureArgs;
+    const ImGuiCaptureArgs* args = _CaptureArgs;
     if (args == NULL)
         return;
 
     ImGuiContext& g = *GImGui;
 
+    // Override mouse cursor
+    // FIXME: Could override in Pre+Post Render() hooks to avoid doing a backup.
     if (args->InFlags & ImGuiCaptureFlags_HideMouseCursor)
     {
         if (_FrameNo == 0)
             _MouseDrawCursorBackup = g.IO.MouseDrawCursor;
-
         g.IO.MouseDrawCursor = false;
     }
 
+    // Force mouse position. Hovered window is reset in ImGui::NewFrame() based on mouse real mouse position.
+    // FIXME: Would be saner to override io.MousePos in Pre NewFrame() hook.
     if (_FrameNo > 2 && (args->InFlags & ImGuiCaptureFlags_StitchFullContents) != 0)
     {
-        // Force mouse position. Hovered window is reset in ImGui::NewFrame() based on mouse real mouse position.
         IM_ASSERT(args->InCaptureWindows.Size == 1);
-        g.IO.MousePos = args->InCaptureWindows.front()->Pos + _MouseRelativeToWindowPos;
+        g.IO.MousePos = args->InCaptureWindows[0]->Pos + _MouseRelativeToWindowPos;
         g.HoveredWindow = _HoveredWindow;
         g.HoveredRootWindow = _HoveredWindow ? _HoveredWindow->RootWindow : NULL;
     }
@@ -192,10 +209,16 @@ ImGuiCaptureStatus ImGuiCaptureContext::CaptureUpdate(ImGuiCaptureArgs* args)
     IM_ASSERT(ScreenCaptureFunc != NULL);
     IM_ASSERT(args->InOutputImageBuf != NULL || args->InOutputFileTemplate[0]);
     IM_ASSERT(args->InRecordFPSTarget != 0);
-    IM_ASSERT((!_Recording || args->InOutputFileTemplate[0]) && "Output file must be specified when recording gif.");
-    IM_ASSERT((!_Recording || !(args->InFlags & ImGuiCaptureFlags_StitchFullContents)) && "Image stitching is not supported when recording gifs.");
 
-    ImGuiCaptureImageBuf* output = args->InOutputImageBuf ? args->InOutputImageBuf : &_Output;
+    if (_GifRecording)
+    {
+        IM_ASSERT(args->InOutputFileTemplate[0] && "Output filename must be specified when recording gifs.");
+        IM_ASSERT(args->InOutputImageBuf == NULL && "Output buffer cannot be specified when recording gifs.");
+        IM_ASSERT(!(args->InFlags & ImGuiCaptureFlags_StitchFullContents) && "Image stitching is not supported when recording gifs.");
+    }
+
+    ImGuiCaptureImageBuf* output = args->InOutputImageBuf ? args->InOutputImageBuf : &_CaptureBuf;
+    ImRect viewport_rect = GetMainViewportRect();
 
     // Hide other windows so they can't be seen visible behind captured window
     if (!args->InCaptureWindows.empty())
@@ -204,17 +227,17 @@ ImGuiCaptureStatus ImGuiCaptureContext::CaptureUpdate(ImGuiCaptureArgs* args)
     // Recording will be set to false when we are stopping GIF capture.
     const bool is_recording_gif = IsCapturingGif();
     const double current_time_sec = ImGui::GetTime();
-    if (is_recording_gif && _LastRecordedFrameTimeSec > 0)
+    if (is_recording_gif && _GifLastFrameTime > 0)
     {
-        double delta_sec = current_time_sec - _LastRecordedFrameTimeSec;
+        double delta_sec = current_time_sec - _GifLastFrameTime;
         if (delta_sec < 1.0 / args->InRecordFPSTarget)
             return ImGuiCaptureStatus_InProgress;
     }
 
     // Capture can be performed in single frame if we are capturing a rect.
-    const bool single_frame_capture = (args->InFlags & ImGuiCaptureFlags_Instant) != 0;
+    const bool instant_capture = (args->InFlags & ImGuiCaptureFlags_Instant) != 0;
     const bool is_capturing_rect = args->InCaptureRect.GetWidth() > 0 && args->InCaptureRect.GetHeight() > 0;
-    if (single_frame_capture)
+    if (instant_capture)
     {
         IM_ASSERT(args->InCaptureWindows.empty());
         IM_ASSERT(is_capturing_rect);
@@ -235,7 +258,7 @@ ImGuiCaptureStatus ImGuiCaptureContext::CaptureUpdate(ImGuiCaptureArgs* args)
             ImPathFixSeparatorsForCurrentOS(args->OutSavedFileName);
             if (!ImFileCreateDirectoryChain(args->OutSavedFileName, ImPathFindFilename(args->OutSavedFileName)))
             {
-                printf("Capture Tool: unable to create directory for file '%s'.\n", args->OutSavedFileName);
+                printf("ImGuiCaptureContext: unable to create directory for file '%s'.\n", args->OutSavedFileName);
                 return ImGuiCaptureStatus_Error;
             }
 
@@ -246,24 +269,23 @@ ImGuiCaptureStatus ImGuiCaptureContext::CaptureUpdate(ImGuiCaptureArgs* args)
         }
 
         // When recording, same args should have been passed to BeginGifCapture().
-        IM_ASSERT(!_Recording || _CaptureArgs == args);
+        IM_ASSERT(!_GifRecording || _CaptureArgs == args);
 
         _CaptureArgs = args;
         _ChunkNo = 0;
-        _CaptureRect = ImRect(FLT_MAX, FLT_MAX, -FLT_MAX, -FLT_MAX);
+        _CaptureRect = _CapturedWindowRect = ImRect(FLT_MAX, FLT_MAX, -FLT_MAX, -FLT_MAX);
         _WindowBackupRects.clear();
-        _CombinedWindowRectPos = ImVec2(FLT_MAX, FLT_MAX);
+        _WindowBackupRectsWindows.clear();
         _DisplayWindowPaddingBackup = g.Style.DisplayWindowPadding;
         _DisplaySafeAreaPaddingBackup = g.Style.DisplaySafeAreaPadding;
-        g.Style.DisplayWindowPadding = ImVec2(0, 0);                    // Allow window to be positioned fully outside
-        g.Style.DisplaySafeAreaPadding = ImVec2(0, 0);                  // of visible viewport.
-        args->_Capturing = true;
+        g.Style.DisplayWindowPadding = ImVec2(0, 0);    // Allow windows to be positioned fully outside of visible viewport.
+        g.Style.DisplaySafeAreaPadding = ImVec2(0, 0);
 
         if (is_capturing_rect)
         {
             // Capture arbitrary rectangle. If any windows are specified in this mode only they will appear in captured region.
             _CaptureRect = args->InCaptureRect;
-            if (args->InCaptureWindows.empty() && !single_frame_capture)
+            if (args->InCaptureWindows.empty() && !instant_capture)
             {
                 // Gather all top level windows. We will need to move them in order to capture regions larger than viewport.
                 for (ImGuiWindow* window : g.Windows)
@@ -282,18 +304,18 @@ ImGuiCaptureStatus ImGuiCaptureContext::CaptureUpdate(ImGuiCaptureArgs* args)
         // translate this group of windows to top-left corner of the screen.
         for (ImGuiWindow* window : args->InCaptureWindows)
         {
+            _CapturedWindowRect.Add(window->Rect());
             _WindowBackupRects.push_back(window->Rect());
             _WindowBackupRectsWindows.push_back(window);
-            _CombinedWindowRectPos = ImVec2(ImMin(_CombinedWindowRectPos.x, window->Pos.x), ImMin(_CombinedWindowRectPos.y, window->Pos.y));
         }
 
         if (args->InFlags & ImGuiCaptureFlags_StitchFullContents)
         {
-            IM_ASSERT(!is_capturing_rect && "Capture Tool: capture of full window contents is not possible when capturing specified rect.");
-            IM_ASSERT(args->InCaptureWindows.Size == 1 && "Capture Tool: capture of full window contents is not possible when capturing more than one window.");
+            IM_ASSERT(is_capturing_rect == false && "ImGuiCaptureContext: capture of full window contents is not possible when capturing specified rect.");
+            IM_ASSERT(args->InCaptureWindows.Size == 1 && "ImGuiCaptureContext: capture of full window contents is not possible when capturing more than one window.");
 
             // Resize window to it's contents and capture it's entire width/height. However if window is bigger than it's contents - keep original size.
-            ImGuiWindow* window = args->InCaptureWindows.front();
+            ImGuiWindow* window = args->InCaptureWindows[0];
             ImVec2 full_size = window->SizeFull;
 
             // Mouse cursor is relative to captured window even if it is not hovered, in which case cursor is kept off the window to prevent appearing in screenshot multiple times by accident.
@@ -324,19 +346,12 @@ ImGuiCaptureStatus ImGuiCaptureContext::CaptureUpdate(ImGuiCaptureArgs* args)
     //-----------------------------------------------------------------
     // Frame 2: Position windows, lock rectangle, create capture buffer
     //-----------------------------------------------------------------
-    if (_FrameNo == 2 || single_frame_capture)
+    if (_FrameNo == 2 || instant_capture)
     {
         // Move group of windows so combined rectangle position is at the top-left corner + padding and create combined
         // capture rect of entire area that will be saved to screenshot. Doing this on the second frame because when
         // ImGuiCaptureToolFlags_StitchFullContents flag is used we need to allow window to reposition.
-        ImVec2 move_offset = ImVec2(args->InPadding, args->InPadding) - _CombinedWindowRectPos;
-#ifdef IMGUI_HAS_VIEWPORT
-        if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
-        {
-            ImGuiViewport* main_viewport = ImGui::GetMainViewport();
-            move_offset += main_viewport->Pos;
-        }
-#endif
+        ImVec2 move_offset = ImVec2(args->InPadding, args->InPadding) - _CapturedWindowRect.Min + viewport_rect.Min;
         for (ImGuiWindow* window : args->InCaptureWindows)
         {
             // Repositioning of a window may take multiple frames, depending on whether window was already rendered or not.
@@ -349,14 +364,7 @@ ImGuiCaptureStatus ImGuiCaptureContext::CaptureUpdate(ImGuiCaptureArgs* args)
         if (!is_capturing_rect)
             _CaptureRect.Expand(args->InPadding);
 
-        ImRect clip_rect(ImVec2(0, 0), io.DisplaySize);
-#ifdef IMGUI_HAS_VIEWPORT
-        if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
-        {
-            ImGuiViewport* main_viewport = ImGui::GetMainViewport();
-            clip_rect = ImRect(main_viewport->Pos, main_viewport->Pos + main_viewport->Size);
-        }
-#endif
+        const ImRect clip_rect = viewport_rect;
         if (args->InFlags & ImGuiCaptureFlags_StitchFullContents)
             IM_ASSERT(_CaptureRect.Min.x >= clip_rect.Min.x && _CaptureRect.Max.x <= clip_rect.Max.x);  // Horizontal stitching is not implemented. Do not allow capture that does not fit into viewport horizontally.
         else
@@ -370,19 +378,12 @@ ImGuiCaptureStatus ImGuiCaptureContext::CaptureUpdate(ImGuiCaptureArgs* args)
     //-----------------------------------------------------------------
     // Frame 4+N*4: Capture a frame
     //-----------------------------------------------------------------
-    if ((_FrameNo % 4) == 0 || (is_recording_gif && _FrameNo > 2) || single_frame_capture)
+    if (((_FrameNo > 2) && (_FrameNo % 4) == 0) || (is_recording_gif && _FrameNo > 2) || instant_capture)
     {
         // FIXME: Implement capture of regions wider than viewport.
         // Capture a portion of image. Capturing of windows wider than viewport is not implemented yet.
+        const ImRect clip_rect = viewport_rect;
         ImRect capture_rect = _CaptureRect;
-        ImRect clip_rect(ImVec2(0, 0), io.DisplaySize);
-#ifdef IMGUI_HAS_VIEWPORT
-        if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
-        {
-            ImGuiViewport* main_viewport = ImGui::GetMainViewport();
-            clip_rect = ImRect(main_viewport->Pos, main_viewport->Pos + main_viewport->Size);
-        }
-#endif
         capture_rect.ClipWith(clip_rect);
         const int capture_height = ImMin((int)io.DisplaySize.y, (int)_CaptureRect.GetHeight());
         const int x1 = (int)(capture_rect.Min.x - clip_rect.Min.x);
@@ -397,7 +398,8 @@ ImGuiCaptureStatus ImGuiCaptureContext::CaptureUpdate(ImGuiCaptureArgs* args)
             else
                 IM_ASSERT(h == output->Height);
 
-            if (!ScreenCaptureFunc(x1, y1, w, h, &output->Data[_ChunkNo * w * capture_height], ScreenCaptureUserData))
+            const ImGuiID viewport_id = 0;
+            if (!ScreenCaptureFunc(viewport_id, x1, y1, w, h, &output->Data[_ChunkNo * w * capture_height], ScreenCaptureUserData))
             {
                 printf("Screen capture function failed.\n");
                 return ImGuiCaptureStatus_Error;
@@ -419,8 +421,8 @@ ImGuiCaptureStatus ImGuiCaptureContext::CaptureUpdate(ImGuiCaptureArgs* args)
                 if (_GifWriter == NULL)
                 {
                     // First GIF frame, initialize now that dimensions are known.
-                    unsigned int width = (unsigned int)capture_rect.GetWidth();
-                    unsigned int height = (unsigned int)capture_rect.GetHeight();
+                    const unsigned int width = (unsigned int)capture_rect.GetWidth();
+                    const unsigned int height = (unsigned int)capture_rect.GetHeight();
                     IM_ASSERT(_GifWriter == NULL);
                     _GifWriter = IM_NEW(GifWriter)();
                     GifBegin(_GifWriter, args->OutSavedFileName, width, height, (uint32_t)gif_frame_interval);
@@ -429,12 +431,12 @@ ImGuiCaptureStatus ImGuiCaptureContext::CaptureUpdate(ImGuiCaptureArgs* args)
                 // Save new GIF frame
                 // FIXME: Not optimal at all (e.g. compare to gifsicle -O3 output)
                 GifWriteFrame(_GifWriter, (const uint8_t*)output->Data, (uint32_t)output->Width, (uint32_t)output->Height, (uint32_t)gif_frame_interval, 8, false);
-                _LastRecordedFrameTimeSec = current_time_sec;
+                _GifLastFrameTime = current_time_sec;
             }
         }
 
         // Image is finalized immediately when we are not stitching. Otherwise image is finalized when we have captured and stitched all frames.
-        if (!_Recording && (!(args->InFlags & ImGuiCaptureFlags_StitchFullContents) || h <= 0))
+        if (!_GifRecording && (!(args->InFlags & ImGuiCaptureFlags_StitchFullContents) || h <= 0))
         {
             output->RemoveAlpha();
 
@@ -459,23 +461,20 @@ ImGuiCaptureStatus ImGuiCaptureContext::CaptureUpdate(ImGuiCaptureArgs* args)
                 ImGuiWindow* window = _WindowBackupRectsWindows[i];
                 if (window->Hidden)
                     continue;
-
-                ImRect rect = _WindowBackupRects[i];
-                ImGui::SetWindowPos(window, rect.Min, ImGuiCond_Always);
-                ImGui::SetWindowSize(window, rect.GetSize(), ImGuiCond_Always);
+                ImGui::SetWindowPos(window, _WindowBackupRects[i].Min, ImGuiCond_Always);
+                ImGui::SetWindowSize(window, _WindowBackupRects[i].GetSize(), ImGuiCond_Always);
             }
-
             if (args->InFlags & ImGuiCaptureFlags_HideMouseCursor)
                 g.IO.MouseDrawCursor = _MouseDrawCursorBackup;
-
-            _FrameNo = _ChunkNo = 0;
-            _LastRecordedFrameTimeSec = 0;
-            _MouseRelativeToWindowPos = ImVec2(-FLT_MAX, -FLT_MAX);
-            _HoveredWindow = NULL;
             g.Style.DisplayWindowPadding = _DisplayWindowPaddingBackup;
             g.Style.DisplaySafeAreaPadding = _DisplaySafeAreaPaddingBackup;
-            args->_Capturing = false;
+
+            _FrameNo = _ChunkNo = 0;
+            _GifLastFrameTime = 0;
+            _MouseRelativeToWindowPos = ImVec2(-FLT_MAX, -FLT_MAX);
+            _HoveredWindow = NULL;
             _CaptureArgs = NULL;
+
             return ImGuiCaptureStatus_Done;
         }
     }
@@ -488,11 +487,10 @@ ImGuiCaptureStatus ImGuiCaptureContext::CaptureUpdate(ImGuiCaptureArgs* args)
 void ImGuiCaptureContext::BeginGifCapture(ImGuiCaptureArgs* args)
 {
     IM_ASSERT(args != NULL);
-    IM_ASSERT(_Recording == false);
+    IM_ASSERT(_GifRecording == false);
     IM_ASSERT(_GifWriter == NULL);
-    _Recording = true;
+    _GifRecording = true;
     _CaptureArgs = args;
-    args->InOutputImageBuf = &_Output;
     IM_ASSERT(args->InRecordFPSTarget >= 1);
     IM_ASSERT(args->InRecordFPSTarget <= 100);
 }
@@ -500,275 +498,19 @@ void ImGuiCaptureContext::BeginGifCapture(ImGuiCaptureArgs* args)
 void ImGuiCaptureContext::EndGifCapture()
 {
     IM_ASSERT(_CaptureArgs != NULL);
-    IM_ASSERT(_Recording == true);
+    IM_ASSERT(_GifRecording == true);
     IM_ASSERT(_GifWriter != NULL);
-    _Recording = false;
+    _GifRecording = false;
 }
 
 bool ImGuiCaptureContext::IsCapturingGif()
 {
-    return _Recording || _GifWriter;
+    return _GifRecording || _GifWriter;
 }
 
 //-----------------------------------------------------------------------------
 // ImGuiCaptureTool
 //-----------------------------------------------------------------------------
-
-ImGuiCaptureTool::ImGuiCaptureTool()
-{
-    ImStrncpy(SaveFileName, "captures/imgui_capture_%04d.png", (size_t)IM_ARRAYSIZE(SaveFileName));
-}
-
-void ImGuiCaptureTool::SetCaptureFunc(ImGuiScreenCaptureFunc capture_func)
-{
-    Context.ScreenCaptureFunc = capture_func;
-}
-
-// Interactively pick a single window
-void ImGuiCaptureTool::CaptureWindowPicker(const char* title, ImGuiCaptureArgs* args)
-{
-    ImGuiContext& g = *GImGui;
-    ImGuiIO& io = g.IO;
-
-    if (_CaptureState == ImGuiCaptureToolState_Capturing && args->_Capturing)
-    {
-        ImGuiCaptureStatus status = Context.CaptureUpdate(args);
-        if (ImGui::IsKeyPressedMap(ImGuiKey_Escape) || status != ImGuiCaptureStatus_InProgress)
-        {
-            _CaptureState = ImGuiCaptureToolState_None;
-            if (status == ImGuiCaptureStatus_Done)
-                ImStrncpy(LastSaveFileName, args->OutSavedFileName, IM_ARRAYSIZE(LastSaveFileName));
-            //else
-            //    ImFileDelete(args->OutSavedFileName);
-       }
-    }
-
-    const ImVec2 button_sz = ImVec2(ImGui::CalcTextSize("M").x * 30, 0.0f);
-    ImGuiID picking_id = ImGui::GetID("##picking");
-    if (ImGui::Button(title, button_sz))
-        _CaptureState = ImGuiCaptureToolState_PickingSingleWindow;
-
-    if (_CaptureState != ImGuiCaptureToolState_PickingSingleWindow)
-    {
-        if (ImGui::GetActiveID() == picking_id)
-            ImGui::ClearActiveID();
-        return;
-    }
-
-    // Picking a window
-    ImDrawList* fg_draw_list = ImGui::GetForegroundDrawList();
-    ImGui::SetActiveID(picking_id, g.CurrentWindow);    // Steal active ID so our click won't interact with something else.
-    ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
-
-    ImGuiWindow* capture_window = g.HoveredRootWindow;
-    if (capture_window)
-    {
-        if (Flags & ImGuiCaptureFlags_HideCaptureToolWindow)
-            if (capture_window == ImGui::GetCurrentWindow())
-                return;
-
-        // Draw rect that is about to be captured
-        ImRect r = capture_window->Rect();
-        r.Expand(args->InPadding);
-        r.ClipWith(ImRect(ImVec2(0, 0), io.DisplaySize));
-        r.Expand(1.0f);
-        fg_draw_list->AddRect(r.Min, r.Max, IM_COL32_WHITE, 0.0f, ~0, 2.0f);
-    }
-
-    ImGui::SetTooltip("Capture window: %s\nPress ESC to cancel.", capture_window ? capture_window->Name : "<None>");
-    if (ImGui::IsMouseClicked(0) && capture_window)
-    {
-        ImGui::FocusWindow(capture_window);
-        args->InCaptureWindows.clear();
-        args->InCaptureWindows.push_back(capture_window);
-        _CaptureState = ImGuiCaptureToolState_Capturing;
-        // We cheat a little. args->_Capturing is set to true when Capture.CaptureUpdate(args), but we use this
-        // field to differentiate which capture is in progress (windows picker or selector), therefore we set it to true
-        // in advance and execute Capture.CaptureUpdate(args) only when args->_Capturing is true.
-        args->_Capturing = true;
-    }
-}
-
-void ImGuiCaptureTool::CaptureWindowsSelector(const char* title, ImGuiCaptureArgs* args)
-{
-    ImGuiContext& g = *GImGui;
-    ImGuiIO& io = g.IO;
-    const ImVec2 button_sz = ImVec2(ImGui::CalcTextSize("M").x * 30, 0.0f);
-
-    // Capture Button
-    bool do_capture = ImGui::Button(title, button_sz);
-    do_capture |= io.KeyAlt && ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_C));
-    if (_CaptureState == ImGuiCaptureToolState_SelectRectUpdate && !ImGui::IsMouseDown(0))
-    {
-        // Exit rect-capture even if selection is invalid and capture does not execute.
-        _CaptureState = ImGuiCaptureToolState_None;
-        do_capture = true;
-    }
-
-    if (ImGui::Button("Rect-Select Windows", button_sz))
-        _CaptureState = ImGuiCaptureToolState_SelectRectStart;
-    if (_CaptureState == ImGuiCaptureToolState_SelectRectStart || _CaptureState == ImGuiCaptureToolState_SelectRectUpdate)
-    {
-        ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
-        if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("Select multiple windows by pressing left mouse button and dragging.");
-    }
-    ImGui::Separator();
-
-    // Show window list and update rectangles
-    ImRect select_rect;
-    if (_CaptureState == ImGuiCaptureToolState_SelectRectStart && ImGui::IsMouseDown(0))
-    {
-        if (ImGui::IsWindowHovered(ImGuiHoveredFlags_AnyWindow))
-            _CaptureState = ImGuiCaptureToolState_None;
-        else
-        {
-            args->InCaptureRect.Min = io.MousePos;
-            _CaptureState = ImGuiCaptureToolState_SelectRectUpdate;
-        }
-    }
-    else if (_CaptureState == ImGuiCaptureToolState_SelectRectUpdate)
-    {
-        // Avoid inverted-rect issue
-        select_rect.Min = ImMin(args->InCaptureRect.Min, io.MousePos);
-        select_rect.Max = ImMax(args->InCaptureRect.Min, io.MousePos);
-    }
-
-    args->InCaptureWindows.clear();
-
-    float max_window_name_x = 0.0f;
-    ImRect capture_rect(FLT_MAX, FLT_MAX, -FLT_MAX, -FLT_MAX);
-    ImGui::Text("Windows:");
-    for (ImGuiWindow* window : g.Windows)
-    {
-        if (!window->WasActive)
-            continue;
-
-        const bool is_popup = (window->Flags & ImGuiWindowFlags_Popup) || (window->Flags & ImGuiWindowFlags_Tooltip);
-        if (args->InFlags & ImGuiCaptureFlags_ExpandToIncludePopups && is_popup)
-        {
-            capture_rect.Add(window->Rect());
-            args->InCaptureWindows.push_back(window);
-            continue;
-        }
-
-        if (is_popup)
-            continue;
-
-        if (window->Flags & ImGuiWindowFlags_ChildWindow)
-            continue;
-
-        if (args->InFlags & ImGuiCaptureFlags_HideCaptureToolWindow && window == ImGui::GetCurrentWindow())
-            continue;
-
-        ImGui::PushID(window);
-        bool* p_selected = (bool*)g.CurrentWindow->StateStorage.GetIntRef(window->RootWindow->ID, 0);
-
-        if (_CaptureState == ImGuiCaptureToolState_SelectRectUpdate)
-            *p_selected = select_rect.Contains(window->Rect());
-
-        // Ensure that text after the ## is actually displayed to the user (FIXME: won't be able to check/uncheck from that portion of the text)
-        ImGui::Checkbox(window->Name, p_selected);
-        if (const char* remaining_text = ImGui::FindRenderedTextEnd(window->Name))
-            if (remaining_text[0] != 0)
-            {
-                if (remaining_text > window->Name)
-                    ImGui::SameLine(0, 1);
-                else
-                    ImGui::SameLine(0, ImGui::GetStyle().ItemInnerSpacing.x);
-                ImGui::TextUnformatted(remaining_text);
-            }
-
-        max_window_name_x = ImMax(max_window_name_x, g.CurrentWindow->DC.CursorPosPrevLine.x - g.CurrentWindow->Pos.x);
-        if (*p_selected)
-        {
-            capture_rect.Add(window->Rect());
-            args->InCaptureWindows.push_back(window);
-        }
-        ImGui::SameLine(_WindowNameMaxPosX + g.Style.ItemSpacing.x);
-        ImGui::SetNextItemWidth(100);
-        ImGui::DragFloat2("Pos", &window->Pos.x, 0.05f, 0.0f, 0.0f, "%.0f");
-        ImGui::SameLine();
-        ImGui::SetNextItemWidth(100);
-        ImGui::DragFloat2("Size", &window->SizeFull.x, 0.05f, 0.0f, 0.0f, "%.0f");
-        ImGui::PopID();
-    }
-    _WindowNameMaxPosX = max_window_name_x;
-
-    // Draw capture rectangle
-    ImDrawList* draw_list = ImGui::GetForegroundDrawList();
-    const bool can_capture = !capture_rect.IsInverted() && !args->InCaptureWindows.empty();
-    if (can_capture && (_CaptureState == ImGuiCaptureToolState_None || _CaptureState == ImGuiCaptureToolState_SelectRectUpdate))
-    {
-        IM_ASSERT(capture_rect.GetWidth() > 0);
-        IM_ASSERT(capture_rect.GetHeight() > 0);
-        capture_rect.Expand(args->InPadding);
-        ImVec2 display_pos(0, 0);
-        ImVec2 display_size = io.DisplaySize;
-#ifdef IMGUI_HAS_VIEWPORT
-        if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
-        {
-            ImGuiViewport* main_viewport = ImGui::GetMainViewport();
-            display_pos = main_viewport->Pos;
-            display_size = main_viewport->Size;
-        }
-#endif
-        capture_rect.ClipWith(ImRect(display_pos, display_pos + display_size));
-        draw_list->AddRect(capture_rect.Min - ImVec2(1.0f, 1.0f), capture_rect.Max + ImVec2(1.0f, 1.0f), IM_COL32_WHITE);
-    }
-
-    if (_CaptureState == ImGuiCaptureToolState_SelectRectUpdate)
-        draw_list->AddRect(select_rect.Min - ImVec2(1.0f, 1.0f), select_rect.Max + ImVec2(1.0f, 1.0f), IM_COL32_WHITE);
-
-    // Draw GIF recording controls
-    // (Prefer 100/FPS to be an integer)
-    ImGui::DragInt("##FPS", &args->InRecordFPSTarget, 0.1f, 10, 100, "FPS=%d");
-    ImGui::SameLine();
-    if (ImGui::Button(Context.IsCapturingGif() ? "Stop###StopRecord" : "Record###StopRecord") || (Context._Recording && ImGui::IsKeyPressedMap(ImGuiKey_Escape)))
-    {
-        if (!Context.IsCapturingGif())
-        {
-            if (can_capture)
-            {
-                Context.BeginGifCapture(args);
-                do_capture = true;
-            }
-        }
-        else
-        {
-            Context.EndGifCapture();
-        }
-    }
-
-    // Process capture
-    if (can_capture && do_capture)
-    {
-        // We cheat a little. args->_Capturing is set to true when Capture.CaptureUpdate(args), but we use this
-        // field to differentiate which capture is in progress (windows picker or selector), therefore we set it to true
-        // in advance and execute Capture.CaptureUpdate(args) only when args->_Capturing is true.
-        args->_Capturing = true;
-        _CaptureState = ImGuiCaptureToolState_Capturing;
-    }
-
-    if (ImGui::IsItemHovered())
-        ImGui::SetTooltip("Alternatively press Alt+C to capture selection.");
-
-    if (_CaptureState == ImGuiCaptureToolState_Capturing && args->_Capturing)
-    {
-        if (Context.IsCapturingGif())
-            args->InFlags &= ~ImGuiCaptureFlags_StitchFullContents;
-
-        ImGuiCaptureStatus status = Context.CaptureUpdate(args);
-        if (status != ImGuiCaptureStatus_InProgress)
-        {
-            _CaptureState = ImGuiCaptureToolState_None;
-            if (status == ImGuiCaptureStatus_Done)
-                ImStrncpy(LastSaveFileName, args->OutSavedFileName, IM_ARRAYSIZE(LastSaveFileName));
-            //else
-            //    ImFileDelete(args->OutSavedFileName);
-        }
-    }
-}
 
 static void PushDisabled()
 {
@@ -784,14 +526,248 @@ static void PopDisabled()
     ImGui::PopItemFlag();
 }
 
+ImGuiCaptureTool::ImGuiCaptureTool()
+{
+    // Filename template for where screenshots will be saved. May contain directories or variation of %d format.
+    strcpy(_CaptureArgs.InOutputFileTemplate, "captures/imgui_capture_%04d.png");
+}
+
+void ImGuiCaptureTool::SetCaptureFunc(ImGuiScreenCaptureFunc capture_func)
+{
+    Context.ScreenCaptureFunc = capture_func;
+}
+
+// Interactively pick a single window
+void ImGuiCaptureTool::CaptureWindowPicker(ImGuiCaptureArgs* args)
+{
+    ImGuiContext& g = *GImGui;
+    ImGuiIO& io = g.IO;
+
+    const float TEXT_BASE_WIDTH = ImGui::CalcTextSize("A").x;
+    const ImVec2 button_sz = ImVec2(TEXT_BASE_WIDTH * 30, 0.0f);
+    const ImGuiID picking_id = ImGui::GetID("##picking");
+
+    if (ImGui::Button("Capture Single Window..", button_sz))
+        _CaptureState = ImGuiCaptureToolState_PickingSingleWindow;
+
+    if (_CaptureState == ImGuiCaptureToolState_PickingSingleWindow)
+    {
+        // Picking a window
+        ImGuiWindow* capture_window = g.HoveredRootWindow;
+        ImDrawList* fg_draw_list = ImGui::GetForegroundDrawList();
+        ImGui::SetActiveID(picking_id, g.CurrentWindow);    // Steal active ID so our click won't interact with something else.
+        ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
+        ImGui::SetTooltip("Capture window: '%s'\nPress ESC to cancel.", capture_window ? capture_window->Name : "<None>");
+
+        // FIXME: Would be nice to have a way to enforce front-most windows. Perhaps make this Render() feature more generic.
+        //if (capture_window)
+        //    g.NavWindowingTarget = capture_window;
+
+        // Draw rect that is about to be captured
+        const ImRect viewport_rect = GetMainViewportRect();
+        const ImU32 col_dim_overlay = IM_COL32(0, 0, 0, 40);
+        if (capture_window)
+        {
+            ImRect r = capture_window->Rect();
+            r.Expand(args->InPadding);
+            r.ClipWith(ImRect(ImVec2(0, 0), io.DisplaySize));
+            r.Expand(1.0f);
+            fg_draw_list->AddRect(r.Min, r.Max, IM_COL32_WHITE, 0.0f, ~0, 2.0f);
+            ImGui::RenderRectFilledWithHole(fg_draw_list, viewport_rect, r, col_dim_overlay, 0.0f);
+        }
+        else
+        {
+            fg_draw_list->AddRectFilled(viewport_rect.Min, viewport_rect.Max, col_dim_overlay);
+        }
+
+        if (ImGui::IsMouseClicked(0) && capture_window)
+        {
+            ImGui::FocusWindow(capture_window);
+            _SelectedWindows.resize(0);
+            _CaptureState = ImGuiCaptureToolState_Capturing;
+            args->InCaptureWindows.clear();
+            args->InCaptureWindows.push_back(capture_window);
+        }
+        if (ImGui::IsKeyPressedMap(ImGuiKey_Escape))
+            _CaptureState = ImGuiCaptureToolState_None;
+    }
+    else
+    {
+        if (ImGui::GetActiveID() == picking_id)
+            ImGui::ClearActiveID();
+    }
+}
+
+void ImGuiCaptureTool::CaptureWindowsSelector(ImGuiCaptureArgs* args)
+{
+    ImGuiContext& g = *GImGui;
+    ImGuiIO& io = g.IO;
+
+    // Gather selected windows
+    ImRect capture_rect(FLT_MAX, FLT_MAX, -FLT_MAX, -FLT_MAX);
+    for (ImGuiWindow* window : g.Windows)
+    {
+        if (window->WasActive == false)
+            continue;
+        if (window->Flags & ImGuiWindowFlags_ChildWindow)
+            continue;
+        const bool is_popup = (window->Flags & ImGuiWindowFlags_Popup) || (window->Flags & ImGuiWindowFlags_Tooltip);
+        if ((args->InFlags & ImGuiCaptureFlags_ExpandToIncludePopups) && is_popup)
+        {
+            capture_rect.Add(window->Rect());
+            args->InCaptureWindows.push_back(window);
+            continue;
+        }
+        if (is_popup)
+            continue;
+        if (_SelectedWindows.contains(window->RootWindow->ID))
+        {
+            capture_rect.Add(window->Rect());
+            args->InCaptureWindows.push_back(window);
+        }
+    }
+    const bool allow_capture = !capture_rect.IsInverted() && args->InCaptureWindows.Size > 0;
+
+    const float TEXT_BASE_WIDTH = ImGui::CalcTextSize("A").x;
+    const ImVec2 button_sz = ImVec2(TEXT_BASE_WIDTH * 30, 0.0f);
+
+    // Capture Multiple Button
+    {
+        char label[64];
+        ImFormatString(label, 64, "Capture Multiple (%d)###CaptureMultiple", args->InCaptureWindows.Size);
+
+        if (!allow_capture)
+            PushDisabled();
+        bool do_capture = ImGui::Button(label, button_sz);
+        do_capture |= io.KeyAlt && ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_C));
+        if (!allow_capture)
+            PopDisabled();
+        if (ImGui::IsItemHovered())
+            ImGui::SetTooltip("Alternatively press Alt+C to capture selection.");
+        if (do_capture)
+            _CaptureState = ImGuiCaptureToolState_Capturing;
+    }
+
+    // Record GIF button
+    // (Prefer 100/FPS to be an integer)
+    {
+        const bool is_capturing_gif = Context.IsCapturingGif();
+        if (is_capturing_gif)
+        {
+            if (ImGui::Button("Stop capturing gif###CaptureGif", button_sz))
+                Context.EndGifCapture();
+        }
+        else
+        {
+            char label[64];
+            ImFormatString(label, 64, "Capture Gif (%d)###CaptureGif", args->InCaptureWindows.Size);
+            if (!allow_capture)
+                PushDisabled();
+            if (ImGui::Button(label, button_sz))
+            {
+                _CaptureState = ImGuiCaptureToolState_Capturing;
+                Context.BeginGifCapture(args);
+            }
+            if (!allow_capture)
+                PopDisabled();
+        }
+    }
+
+    // Draw capture rectangle
+    ImDrawList* draw_list = ImGui::GetForegroundDrawList();
+    if (allow_capture && _CaptureState == ImGuiCaptureToolState_None)
+    {
+        IM_ASSERT(capture_rect.GetWidth() > 0);
+        IM_ASSERT(capture_rect.GetHeight() > 0);
+        const ImRect viewport_rect = GetMainViewportRect();
+        capture_rect.Expand(args->InPadding);
+        capture_rect.ClipWith(viewport_rect);
+        draw_list->AddRect(capture_rect.Min - ImVec2(1.0f, 1.0f), capture_rect.Max + ImVec2(1.0f, 1.0f), IM_COL32_WHITE);
+    }
+
+    ImGui::Separator();
+
+    // Show window list and update rectangles
+    ImGui::Text("Windows:");
+    if (ImGui::BeginTable("split", 2))
+    {
+        ImGui::TableSetupColumn(NULL, ImGuiTableColumnFlags_WidthFixed);
+        ImGui::TableSetupColumn(NULL, ImGuiTableColumnFlags_WidthStretch);
+        for (ImGuiWindow* window : g.Windows)
+        {
+            if (!window->WasActive)
+                continue;
+
+            const bool is_popup = (window->Flags & ImGuiWindowFlags_Popup) || (window->Flags & ImGuiWindowFlags_Tooltip);
+            if (is_popup)
+                continue;
+
+            if (window->Flags & ImGuiWindowFlags_ChildWindow)
+                continue;
+
+            ImGui::TableNextRow();
+            ImGui::TableSetColumnIndex(0);
+            ImGui::PushID(window);
+
+            // Ensure that text after the ## is actually displayed to the user (FIXME: won't be able to check/uncheck from that portion of the text)
+            bool is_selected = _SelectedWindows.contains(window->RootWindow->ID);
+            if (ImGui::Checkbox(window->Name, &is_selected))
+            {
+                if (is_selected)
+                    _SelectedWindows.push_back(window->RootWindow->ID);
+                else
+                    _SelectedWindows.find_erase_unsorted(window->RootWindow->ID);
+            }
+
+            if (const char* remaining_text = ImGui::FindRenderedTextEnd(window->Name))
+                if (remaining_text[0] != 0)
+                {
+                    if (remaining_text > window->Name)
+                        ImGui::SameLine(0, 1);
+                    else
+                        ImGui::SameLine(0, ImGui::GetStyle().ItemInnerSpacing.x);
+                    ImGui::TextUnformatted(remaining_text);
+                }
+
+            ImGui::TableSetColumnIndex(1);
+            ImGui::SetNextItemWidth(TEXT_BASE_WIDTH * 9.0f);
+            ImGui::DragFloat2("Pos", &window->Pos.x, 0.05f, 0.0f, 0.0f, "%.0f");
+            ImGui::SameLine();
+            ImGui::SetNextItemWidth(TEXT_BASE_WIDTH * 9.0f);
+            ImGui::DragFloat2("Size", &window->SizeFull.x, 0.05f, 0.0f, 0.0f, "%.0f");
+            ImGui::PopID();
+        }
+        ImGui::EndTable();
+    }
+}
+
 void ImGuiCaptureTool::ShowCaptureToolWindow(bool* p_open)
 {
+    // Update capturing
+    if (_CaptureState == ImGuiCaptureToolState_Capturing)
+    {
+        ImGuiCaptureArgs* args = &_CaptureArgs;
+        if (Context.IsCapturingGif() || args->InCaptureWindows.Size > 1)
+            args->InFlags &= ~ImGuiCaptureFlags_StitchFullContents;
+
+        if (Context._GifRecording && ImGui::IsKeyPressedMap(ImGuiKey_Escape))
+            Context.EndGifCapture();
+
+        ImGuiCaptureStatus status = Context.CaptureUpdate(args);
+        if (status != ImGuiCaptureStatus_InProgress)
+        {
+            if (status == ImGuiCaptureStatus_Done)
+                ImFormatString(LastOutputFileName, IM_ARRAYSIZE(LastOutputFileName), "%s", args->OutSavedFileName);
+            _CaptureState = ImGuiCaptureToolState_None;
+        }
+    }
+
+    // Update UI
     if (!ImGui::Begin("Dear ImGui Capture Tool", p_open))
     {
         ImGui::End();
         return;
     }
-
     if (Context.ScreenCaptureFunc == NULL)
     {
         ImGui::TextColored(ImVec4(1, 0, 0, 1), "Backend is missing ScreenCaptureFunc!");
@@ -806,65 +782,63 @@ void ImGuiCaptureTool::ShowCaptureToolWindow(bool* p_open)
     ImGui::SetNextItemOpen(true, ImGuiCond_Once);
     if (ImGui::TreeNode("Options"))
     {
-        const bool has_last_file_name = (LastSaveFileName[0] != 0);
-        if (!has_last_file_name)
-            PushDisabled();
-        if (ImGui::Button("Open Last"))             // FIXME-CAPTURE: Running tests changes last captured file name.
-            ImOsOpenInShell(LastSaveFileName);
-        if (!has_last_file_name)
-            PopDisabled();
-        if (has_last_file_name && ImGui::IsItemHovered())
-            ImGui::SetTooltip("Open %s", LastSaveFileName);
-        ImGui::SameLine();
+        // Open Last
+        {
+            const bool has_last_file_name = (LastOutputFileName[0] != 0);
+            if (!has_last_file_name)
+                PushDisabled();
+            if (ImGui::Button("Open Last"))
+                ImOsOpenInShell(LastOutputFileName);
+            if (!has_last_file_name)
+                PopDisabled();
+            if (has_last_file_name && ImGui::IsItemHovered())
+                ImGui::SetTooltip("Open %s", LastOutputFileName);
+            ImGui::SameLine(0.0f, style.ItemInnerSpacing.x);
+        }
 
-        char save_file_dir[256];
-        strcpy(save_file_dir, SaveFileName);
-        if (!save_file_dir[0])
-            PushDisabled();
-
-        char* save_file_name = (char*)ImPathFindFilename(save_file_dir);
-        if (save_file_name > save_file_dir)
-            save_file_name[-1] = 0;         // Remove file name
-        else
-            strcpy(save_file_dir, ".");     // Only filename is present, open current directory.
-
-        if (ImGui::Button("Open Directory"))
-            ImOsOpenInShell(save_file_dir);
-        if (save_file_dir[0] && ImGui::IsItemHovered())
-            ImGui::SetTooltip("Open %s/", save_file_dir);
-        if (!save_file_dir[0])
-            PopDisabled();
+        // Open Directory
+        {
+            char save_file_dir[256];
+            strcpy(save_file_dir, _CaptureArgs.InOutputFileTemplate);
+            char* save_file_name = (char*)ImPathFindFilename(save_file_dir);
+            if (save_file_name > save_file_dir)
+                save_file_name[-1] = 0;
+            else
+                strcpy(save_file_dir, ".");
+            if (ImGui::Button("Open Directory"))
+                ImOsOpenInShell(save_file_dir);
+            if (ImGui::IsItemHovered())
+                ImGui::SetTooltip("Open %s/", save_file_dir);
+        }
 
         ImGui::PushItemWidth(-200.0f);
-
-        ImGui::InputText("Out filename template", SaveFileName, IM_ARRAYSIZE(SaveFileName));
-        ImGui::DragFloat("Padding", &Padding, 0.1f, 0, 32, "%.0f");
+        ImGui::InputText("Output template", _CaptureArgs.InOutputFileTemplate, IM_ARRAYSIZE(_CaptureArgs.InOutputFileTemplate));
+        ImGui::DragFloat("Padding", &_CaptureArgs.InPadding, 0.1f, 0, 32, "%.0f");
+        ImGui::DragInt("Gif FPS", &_CaptureArgs.InRecordFPSTarget, 0.1f, 10, 100, "%d fps");
 
         if (ImGui::Button("Snap Windows To Grid", ImVec2(-200, 0)))
-            SnapWindowsToGrid(SnapGridSize, Padding);
+            SnapWindowsToGrid(SnapGridSize, _CaptureArgs.InPadding);
         ImGui::SameLine(0.0f, style.ItemInnerSpacing.x);
         ImGui::SetNextItemWidth(50.0f);
         ImGui::DragFloat("##SnapGridSize", &SnapGridSize, 1.0f, 1.0f, 128.0f, "%.0f");
 
         ImGui::Checkbox("Software Mouse Cursor", &io.MouseDrawCursor);  // FIXME-TESTS: Test engine always resets this value.
 
-        bool content_stitching_available = _CaptureArgsSelector.InCaptureWindows.size() <= 1;
+        bool content_stitching_available = _CaptureArgs.InCaptureWindows.Size <= 1;
 #ifdef IMGUI_HAS_VIEWPORT
         content_stitching_available &= !(io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable);
 #endif
         if (!content_stitching_available)
             PushDisabled();
-        ImGui::CheckboxFlags("Stitch and capture full contents height", &Flags, ImGuiCaptureFlags_StitchFullContents);
+        ImGui::CheckboxFlags("Stitch full contents height", &_CaptureArgs.InFlags, ImGuiCaptureFlags_StitchFullContents);
         if (!content_stitching_available)
         {
-            Flags &= ~ImGuiCaptureFlags_StitchFullContents;
             PopDisabled();
             if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
                 ImGui::SetTooltip("Content stitching is not possible when using viewports.");
         }
 
-        ImGui::CheckboxFlags("Hide capture tool window", &Flags, ImGuiCaptureFlags_HideCaptureToolWindow);
-        ImGui::CheckboxFlags("Include tooltips", &Flags, ImGuiCaptureFlags_ExpandToIncludePopups);
+        ImGui::CheckboxFlags("Include tooltips", &_CaptureArgs.InFlags, ImGuiCaptureFlags_ExpandToIncludePopups);
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Capture area will be expanded to include visible tooltips.");
 
@@ -874,23 +848,10 @@ void ImGuiCaptureTool::ShowCaptureToolWindow(bool* p_open)
 
     ImGui::Separator();
 
-    // Ensure that use of different contexts use same file counter and don't overwrite previously created files.
-    _CaptureArgsPicker.InFileCounter = _CaptureArgsSelector.InFileCounter = ImMax(_CaptureArgsPicker.InFileCounter, _CaptureArgsSelector.InFileCounter);
-    // Propagate settings from UI to args.
-    _CaptureArgsPicker.InPadding = _CaptureArgsSelector.InPadding = Padding;
-    _CaptureArgsPicker.InFlags = _CaptureArgsSelector.InFlags = Flags;
-    ImStrncpy(_CaptureArgsPicker.InOutputFileTemplate, SaveFileName, (size_t)IM_ARRAYSIZE(_CaptureArgsPicker.InOutputFileTemplate));
-    ImStrncpy(_CaptureArgsSelector.InOutputFileTemplate, SaveFileName, (size_t)IM_ARRAYSIZE(_CaptureArgsSelector.InOutputFileTemplate));
-
-    // Hide tool window unconditionally.
-    if (Flags & ImGuiCaptureFlags_HideCaptureToolWindow)
-        if (_CaptureState == ImGuiCaptureToolState_Capturing || _CaptureState == ImGuiCaptureToolState_PickingSingleWindow)
-        {
-            ImGuiWindow* window = ImGui::GetCurrentWindow();
-            HideWindow(window);
-        }
-    CaptureWindowPicker("Capture Window..", &_CaptureArgsPicker);
-    CaptureWindowsSelector("Capture Selected", &_CaptureArgsSelector);
+    if (_CaptureState != ImGuiCaptureToolState_Capturing)
+        _CaptureArgs.InCaptureWindows.clear();
+    CaptureWindowPicker(&_CaptureArgs);
+    CaptureWindowsSelector(&_CaptureArgs);
     ImGui::Separator();
 
     ImGui::End();

@@ -263,9 +263,7 @@ void    ImGuiTestEngine_PostRender(ImGuiTestEngine* engine)
         if (status != ImGuiCaptureStatus_InProgress)
         {
             if (status == ImGuiCaptureStatus_Done)
-                ImStrncpy(engine->CaptureTool.LastSaveFileName, engine->CurrentCaptureArgs->OutSavedFileName, IM_ARRAYSIZE(engine->CaptureTool.LastSaveFileName));
-            //else
-            //    ImFileDelete(engine->CurrentCaptureArgs->OutSavedFileName);
+                ImStrncpy(engine->CaptureTool.LastOutputFileName, engine->CurrentCaptureArgs->OutSavedFileName, IM_ARRAYSIZE(engine->CaptureTool.LastOutputFileName));
             engine->CurrentCaptureArgs = NULL;
         }
     }
@@ -722,16 +720,22 @@ bool ImGuiTestEngine_CaptureScreenshot(ImGuiTestEngine* engine, ImGuiCaptureArgs
     const bool backup_fast = engine->IO.ConfigRunFast;
     engine->IO.ConfigRunFast = false;
 
+    const int frame_count = engine->FrameCount;
+
     // Because we rely on window->ContentSize for stitching, let 1 extra frame elapse to make sure any
     // windows which contents have changed in the last frame get a correct window->ContentSize value.
     // FIXME: Can remove this yield if not stitching
-    if ((args->InFlags & ImGuiCaptureFlags_Instant) != 0)
+    if ((args->InFlags & ImGuiCaptureFlags_Instant) == 0)
         ImGuiTestEngine_Yield(engine);
 
     // This will yield until ImGui::Render() -> ImGuiTestEngine_PostRender() -> ImGuiCaptureContext::CaptureUpdate() return false.
     engine->CurrentCaptureArgs = args;
     while (engine->CurrentCaptureArgs != NULL)
         ImGuiTestEngine_Yield(engine);
+
+    // Verify that the ImGuiCaptureFlags_Instant flag got honored
+    if (args->InFlags & ImGuiCaptureFlags_Instant)
+        IM_ASSERT(frame_count + 1== engine->FrameCount);
 
     engine->IO.ConfigRunFast = backup_fast;
     return true;

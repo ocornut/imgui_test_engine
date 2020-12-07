@@ -518,7 +518,7 @@ void    ImGuiTestEngine_ShowTestWindow(ImGuiTestEngine* engine, bool* p_open)
             ImGui::Checkbox("Slow down whole app", &engine->ToolSlowDown);
             ImGui::SameLine(); ImGui::SetNextItemWidth(70 * engine->IO.DpiScale);
             ImGui::SliderInt("##ms", &engine->ToolSlowDownMs, 0, 400, "%d ms");
-            ImGui::Checkbox("Capture Errors", &engine->IO.CaptureOnError); HelpTooltip("Capture a screenshot on test failure.");
+            ImGui::Checkbox("Screen capture on error", &engine->IO.CaptureOnError); HelpTooltip("Capture a screenshot on test failure.");
 
             ImGui::CheckboxFlags("io.ConfigFlags: NavEnableKeyboard", (unsigned int*)&io.ConfigFlags, ImGuiConfigFlags_NavEnableKeyboard);
             ImGui::CheckboxFlags("io.ConfigFlags: NavEnableGamepad", (unsigned int*)&io.ConfigFlags, ImGuiConfigFlags_NavEnableGamepad);
