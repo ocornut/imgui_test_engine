@@ -43,6 +43,7 @@ enum ImGuiCaptureFlags_ : unsigned int
     ImGuiCaptureFlags_HideCaptureToolWindow     = 1 << 1,   // Current window will not appear in screenshots or helper UI.
     ImGuiCaptureFlags_ExpandToIncludePopups     = 1 << 2,   // Expand capture area to automatically include visible popups and tooltips.
     ImGuiCaptureFlags_HideMouseCursor           = 1 << 3,   // Do not render software mouse cursor during capture.
+    ImGuiCaptureFlags_Instant                   = 1 << 4,   // Perform capture on very same frame. Only works when capturing a rectangular region. Unsupported features: content stitching, window hiding, window relocation.
     ImGuiCaptureFlags_Default_                  = ImGuiCaptureFlags_StitchFullContents | ImGuiCaptureFlags_HideCaptureToolWindow
 };
 

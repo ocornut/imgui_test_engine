@@ -724,10 +724,10 @@ bool ImGuiTestEngine_CaptureScreenshot(ImGuiTestEngine* engine, ImGuiCaptureArgs
 
     // Because we rely on window->ContentSize for stitching, let 1 extra frame elapse to make sure any
     // windows which contents have changed in the last frame get a correct window->ContentSize value.
-    // FIXME: Can remove this yield is not stitching
-    ImGuiTestEngine_Yield(engine);
+    // FIXME: Can remove this yield if not stitching
+    if ((args->InFlags & ImGuiCaptureFlags_Instant) != 0)
+        ImGuiTestEngine_Yield(engine);
 
-    // FIXME: Figure out how to guarantee immediate capture (single yield) to be useful for problem inspection.
     engine->CurrentCaptureArgs = args;
     while (engine->CurrentCaptureArgs != NULL)
         ImGuiTestEngine_Yield(engine);
@@ -1029,6 +1029,7 @@ static void ImGuiTestEngine_RunTest(ImGuiTestEngine* engine, ImGuiTestContext* c
 
     ImGuiTest* test = ctx->Test;
     ctx->FrameCount = 0;
+    ctx->ErrorCounter = 0;
     ctx->SetRef("");
     ctx->SetInputMode(ImGuiInputSource_Mouse);
     ctx->UiContext->NavInputSource = ImGuiInputSource_NavKeyboard;
@@ -1418,6 +1419,20 @@ bool ImGuiTestEngineHook_Check(const char* file, const char* func, int line, ImG
                 ImGuiTestEngine_EndCaptureAnimation(engine, args);
                 //ImFileDelete(args->OutSavedFileName);
             }
+
+            // Capture failure screenshot.
+            if (engine->IO.CaptureOnError)
+            {
+                // FIXME-VIEWPORT: Tested windows may be in their own viewport. This only captures everything in main viewport. Capture tool may be extended to capture viewport windows as well. This would leave out OS windows which may be a cause of failure.
+                ImGuiCaptureArgs args;
+                args.InCaptureRect.Min = ctx->GetMainViewportPos();
+                args.InCaptureRect.Max = args.InCaptureRect.Min + ctx->GetMainViewportSize();
+                ctx->CaptureInitArgs(&args, ImGuiCaptureFlags_Instant);
+                ImFormatString(args.InOutputFileTemplate, IM_ARRAYSIZE(args.InOutputFileTemplate), "captures/failures/%s_%04d.png", test->Name, ctx->ErrorCounter);
+                if (ImGuiTestEngine_CaptureScreenshot(engine, &args))
+                    ctx->LogDebug("Saved '%s' (%d*%d pixels)", args.OutSavedFileName, (int)args.OutImageSize.x, (int)args.OutImageSize.y);
+            }
+            ctx->ErrorCounter++;
         }
         else if (!(flags & ImGuiTestCheckFlags_SilentSuccess))
         {

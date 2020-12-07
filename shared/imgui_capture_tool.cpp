@@ -145,37 +145,38 @@ ImGuiCaptureStatus ImGuiCaptureContext::CaptureUpdate(ImGuiCaptureArgs* args)
     ImGuiCaptureImageBuf* output = args->InOutputImageBuf ? args->InOutputImageBuf : &_Output;
 
     // Hide other windows so they can't be seen visible behind captured window
-    for (ImGuiWindow* window : g.Windows)
-    {
-#ifdef IMGUI_HAS_VIEWPORT
-        if ((io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable) && (args->InFlags & ImGuiCaptureFlags_StitchFullContents))
+    if (!args->InCaptureWindows.empty())
+        for (ImGuiWindow* window : g.Windows)
         {
-            // FIXME-VIEWPORTS: Content stitching is not possible because window would get moved out of main viewport and detach from it. We need a way to force captured windows to remain in main viewport here.
-            IM_ASSERT(false);
-            return ImGuiCaptureStatus_Error;
-        }
-#endif
-
-        bool is_window_hidden = !args->InCaptureWindows.contains(window);
-        if (window->Flags & ImGuiWindowFlags_ChildWindow)
-            is_window_hidden = false;
-#if IMGUI_HAS_DOCK
-        else if ((window->Flags & ImGuiWindowFlags_DockNodeHost))
-            for (ImGuiWindow* capture_window : args->InCaptureWindows)
+#ifdef IMGUI_HAS_VIEWPORT
+            if ((io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable) && (args->InFlags & ImGuiCaptureFlags_StitchFullContents))
             {
-                if (capture_window->DockNode != NULL && capture_window->DockNode->HostWindow == window)
-                {
-                    is_window_hidden = false;
-                    break;
-                }
+                // FIXME-VIEWPORTS: Content stitching is not possible because window would get moved out of main viewport and detach from it. We need a way to force captured windows to remain in main viewport here.
+                IM_ASSERT(false);
+                return ImGuiCaptureStatus_Error;
             }
 #endif
-        else if ((window->Flags & ImGuiWindowFlags_Popup) != 0 && (args->InFlags & ImGuiCaptureFlags_ExpandToIncludePopups) != 0)
-            is_window_hidden = false;
 
-        if (is_window_hidden)
-            HideWindow(window);
-    }
+            bool is_window_hidden = !args->InCaptureWindows.contains(window);
+            if (window->Flags & ImGuiWindowFlags_ChildWindow)
+                is_window_hidden = false;
+#if IMGUI_HAS_DOCK
+            else if ((window->Flags & ImGuiWindowFlags_DockNodeHost))
+                for (ImGuiWindow* capture_window : args->InCaptureWindows)
+                {
+                    if (capture_window->DockNode != NULL && capture_window->DockNode->HostWindow == window)
+                    {
+                        is_window_hidden = false;
+                        break;
+                    }
+                }
+#endif
+            else if ((window->Flags & ImGuiWindowFlags_Popup) != 0 && (args->InFlags & ImGuiCaptureFlags_ExpandToIncludePopups) != 0)
+                is_window_hidden = false;
+
+            if (is_window_hidden)
+                HideWindow(window);
+        }
 
     // Recording will be set to false when we are stopping GIF capture.
     const bool is_recording_gif = IsCapturingGif();
@@ -185,6 +186,17 @@ ImGuiCaptureStatus ImGuiCaptureContext::CaptureUpdate(ImGuiCaptureArgs* args)
         double delta_sec = current_time_sec - _LastRecordedFrameTimeSec;
         if (delta_sec < 1.0 / args->InRecordFPSTarget)
             return ImGuiCaptureStatus_InProgress;
+    }
+
+    // Capture can be performed in single frame if we are capturing a rect.
+    bool single_frame_capture = (args->InFlags & ImGuiCaptureFlags_Instant) != 0;
+    bool is_capturing_rect = args->InCaptureRect.GetWidth() > 0 && args->InCaptureRect.GetHeight() > 0;
+    if (single_frame_capture)
+    {
+        IM_ASSERT(args->InCaptureWindows.empty());
+        IM_ASSERT(is_capturing_rect);
+        IM_ASSERT(!is_recording_gif);
+        IM_ASSERT((args->InFlags & ImGuiCaptureFlags_StitchFullContents) == 0);
     }
 
     //-----------------------------------------------------------------
@@ -223,12 +235,11 @@ ImGuiCaptureStatus ImGuiCaptureContext::CaptureUpdate(ImGuiCaptureArgs* args)
         g.Style.DisplaySafeAreaPadding = ImVec2(0, 0);                  // of visible viewport.
         args->_Capturing = true;
 
-        bool is_capturing_rect = args->InCaptureRect.GetWidth() > 0 && args->InCaptureRect.GetHeight() > 0;
         if (is_capturing_rect)
         {
             // Capture arbitrary rectangle. If any windows are specified in this mode only they will appear in captured region.
             _CaptureRect = args->InCaptureRect;
-            if (args->InCaptureWindows.empty())
+            if (args->InCaptureWindows.empty() && !single_frame_capture)
             {
                 // Gather all top level windows. We will need to move them in order to capture regions larger than viewport.
                 for (ImGuiWindow* window : g.Windows)
@@ -276,9 +287,6 @@ ImGuiCaptureStatus ImGuiCaptureContext::CaptureUpdate(ImGuiCaptureArgs* args)
             _MouseRelativeToWindowPos = ImVec2(-FLT_MAX, -FLT_MAX);
             _HoveredWindow = NULL;
         }
-
-        _FrameNo++;
-        return ImGuiCaptureStatus_InProgress;
     }
     else
     {
@@ -292,7 +300,7 @@ ImGuiCaptureStatus ImGuiCaptureContext::CaptureUpdate(ImGuiCaptureArgs* args)
     //-----------------------------------------------------------------
     // Frame 2: Position windows, lock rectangle, create capture buffer
     //-----------------------------------------------------------------
-    if (_FrameNo == 2)
+    if (_FrameNo == 2 || single_frame_capture)
     {
         // Move group of windows so combined rectangle position is at the top-left corner + padding and create combined
         // capture rect of entire area that will be saved to screenshot. Doing this on the second frame because when
@@ -314,7 +322,8 @@ ImGuiCaptureStatus ImGuiCaptureContext::CaptureUpdate(ImGuiCaptureArgs* args)
         }
 
         // Include padding in capture.
-        _CaptureRect.Expand(args->InPadding);
+        if (!is_capturing_rect)
+            _CaptureRect.Expand(args->InPadding);
 
         ImRect clip_rect(ImVec2(0, 0), io.DisplaySize);
 #ifdef IMGUI_HAS_VIEWPORT
@@ -332,14 +341,12 @@ ImGuiCaptureStatus ImGuiCaptureContext::CaptureUpdate(ImGuiCaptureArgs* args)
         // Initialize capture buffer.
         args->OutImageSize = _CaptureRect.GetSize();
         output->CreateEmpty((int)_CaptureRect.GetWidth(), (int)_CaptureRect.GetHeight());
-        _FrameNo++;
-        return ImGuiCaptureStatus_InProgress;
     }
 
     //-----------------------------------------------------------------
     // Frame 4+N*4: Capture a frame
     //-----------------------------------------------------------------
-    if ((_FrameNo % 4) == 0 || is_recording_gif)
+    if ((_FrameNo % 4) == 0 || (is_recording_gif && _FrameNo > 2) || single_frame_capture)
     {
         // FIXME: Implement capture of regions wider than viewport.
         // Capture a portion of image. Capturing of windows wider than viewport is not implemented yet.

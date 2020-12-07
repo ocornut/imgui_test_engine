@@ -341,6 +341,7 @@ struct ImGuiTestEngineIO
     bool                        ConfigLogToTTY = false;
     bool                        ConfigLogToDebugger = false;
     bool                        ConfigTakeFocusBackAfterTests = true;
+    bool                        CaptureOnError = false;
     bool                        ConfigNoThrottle = false;       // Disable vsync for performance measurement or fast test running
     float                       ConfigFixedDeltaTime = 0.0f;    // Use fixed delta time instead of calculating it from wall clock
     float                       DpiScale = 1.0f;
