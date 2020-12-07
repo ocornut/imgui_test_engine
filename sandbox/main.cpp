@@ -113,6 +113,8 @@ int main(int argc, char** argv)
     ImGuiTestEngineIO& test_io = ImGuiTestEngine_GetIO(engine);
     test_io.ConfigVerboseLevel = ImGuiTestVerboseLevel_Info;
     test_io.ConfigVerboseLevelOnError = ImGuiTestVerboseLevel_Debug;
+    test_io.ScreenCaptureFunc = [](int x, int y, int w, int h, unsigned int* pixels, void* user_data) { ImGuiApp* app = (ImGuiApp*)user_data; return app->CaptureFramebuffer(app, x, y, w, h, pixels, NULL); };
+    test_io.ScreenCaptureUserData = (void*)app;
     test_io.CoroutineFuncs = Coroutine_ImplStdThread_GetInterface();
 
     // Register tests
