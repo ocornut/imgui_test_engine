@@ -2,9 +2,9 @@
 #define IMGUI_DEFINE_MATH_OPERATORS
 #include "imgui_internal.h"
 #include "editor_assets_browser.h"
-#include "editor_styles.h"
-#include "editor_tests.h"
 #include "editor_widgets.h"
+#include "sandbox_styles.h"
+#include "sandbox_tests.h"
 #include "libs/Str/Str.h"
 #include "libs/imgui_memory_editor/imgui_memory_editor.h"
 #include "libs/implot/implot.h"
@@ -125,7 +125,7 @@ int main(int argc, char** argv)
     test_io.CoroutineFuncs = Coroutine_ImplStdThread_GetInterface();
 
     // Register tests
-    RegisterTests(engine);
+    RegisterSandboxTests(engine);
     ImGuiTestEngine_Start(engine);
 #endif
 

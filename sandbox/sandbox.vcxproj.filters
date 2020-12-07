@@ -76,9 +76,6 @@
     <ClInclude Include="editor_assets_browser.h">
       <Filter>sources</Filter>
     </ClInclude>
-    <ClInclude Include="editor_styles.h">
-      <Filter>sources</Filter>
-    </ClInclude>
     <ClInclude Include="..\libs\ImGuizmo\ImGuizmo.h">
       <Filter>libs\ImGuizmo</Filter>
     </ClInclude>
@@ -99,6 +96,12 @@
     </ClInclude>
     <ClInclude Include="..\libs\nativefiledialog\nfd_common.h">
       <Filter>libs\nativefiledialog</Filter>
+    </ClInclude>
+    <ClInclude Include="sandbox_tests.h">
+      <Filter>sources</Filter>
+    </ClInclude>
+    <ClInclude Include="sandbox_styles.h">
+      <Filter>sources</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -129,13 +132,7 @@
     <ClCompile Include="..\shared\imgui_app.cpp">
       <Filter>shared</Filter>
     </ClCompile>
-    <ClCompile Include="editor_tests.cpp">
-      <Filter>sources</Filter>
-    </ClCompile>
     <ClCompile Include="editor_assets_browser.cpp">
-      <Filter>sources</Filter>
-    </ClCompile>
-    <ClCompile Include="editor_styles.cpp">
       <Filter>sources</Filter>
     </ClCompile>
     <ClCompile Include="editor_scene.cpp">
@@ -158,6 +155,12 @@
     </ClCompile>
     <ClCompile Include="..\libs\nativefiledialog\nfd_win.cpp">
       <Filter>libs\nativefiledialog</Filter>
+    </ClCompile>
+    <ClCompile Include="sandbox_tests.cpp">
+      <Filter>sources</Filter>
+    </ClCompile>
+    <ClCompile Include="sandbox_styles.cpp">
+      <Filter>sources</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

@@ -1,11 +1,11 @@
-// dear imgui editor demo
+// dear imgui sandbox
 // (tests)
 
 #include "imgui.h"
 #include "test_engine/imgui_te_context.h"
 #include "shared/imgui_capture_tool.h"
 
-void RegisterTests(ImGuiTestEngine* e)
+void RegisterSandboxTests(ImGuiTestEngine* e)
 {
     ImGuiTest* t = NULL;
 

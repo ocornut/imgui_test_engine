@@ -176,9 +176,10 @@
     <ClInclude Include="..\shared\imgui_app.h" />
     <ClInclude Include="..\libs\imgui_markdown\imgui_markdown.h" />
     <ClInclude Include="editor_assets_browser.h" />
-    <ClInclude Include="editor_styles.h" />
+    <ClInclude Include="sandbox_styles.h" />
     <ClInclude Include="editor_widgets.h" />
     <ClInclude Include="sandbox_imconfig.h" />
+    <ClInclude Include="sandbox_tests.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\imgui\backends\imgui_impl_dx11.cpp" />
@@ -196,8 +197,8 @@
     <ClCompile Include="..\shared\imgui_app.cpp" />
     <ClCompile Include="editor_assets_browser.cpp" />
     <ClCompile Include="editor_scene.cpp" />
-    <ClCompile Include="editor_styles.cpp" />
-    <ClCompile Include="editor_tests.cpp" />
+    <ClCompile Include="sandbox_styles.cpp" />
+    <ClCompile Include="sandbox_tests.cpp" />
     <ClCompile Include="editor_widgets.cpp" />
     <ClCompile Include="main.cpp" />
   </ItemGroup>
