@@ -610,6 +610,31 @@ void RegisterTests_Window(ImGuiTestEngine* e)
             IM_CHECK_EQ(window->Pos, test_data.expect_pos);
         }
     };
+
+    // ## Test animated window title.
+    t = IM_REGISTER_TEST(e, "window", "window_title_animation");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::Begin(Str30f("Frame %d###Test Window", ImGui::GetFrameCount()).c_str(), NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImGui::TextUnformatted("Lorem ipsum dolor sit amet");
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiContext& g = *ctx->UiContext;
+        ImGuiWindow* window = ctx->GetWindowByRef("###Test Window");
+
+        // Open window switcher (CTRL+TAB).
+        ctx->KeyDownMap(ImGuiKey_COUNT, ImGuiKeyModFlags_Shortcut);                     // Hold CTRL down
+        ctx->KeyPressMap(ImGuiKey_Tab, 0);
+        ctx->SleepNoSkip(0.3f, 1.0f / 60.0f);
+        for (int i = 0; i < 2; i++)
+        {
+            IM_CHECK_STR_EQ_NO_RET(window->Name, Str30f("Frame %d###Test Window", g.FrameCount).c_str());    // Verify window->Name gets updated.
+            ctx->Yield();
+        }
+        ctx->KeyUpMap(ImGuiKey_COUNT, ImGuiKeyModFlags_Shortcut);
+    };
 }
 
 
@@ -3311,7 +3336,7 @@ void RegisterTests_Capture(ImGuiTestEngine* e)
     };
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
-        // FIXME-TODO: try to match https://raw.githubusercontent.com/wiki/ocornut/imgui/web/v180/code_sample_04_color.gif 
+        // FIXME-TODO: try to match https://raw.githubusercontent.com/wiki/ocornut/imgui/web/v180/code_sample_04_color.gif
         // - maybe we could control timing scale when gif recording
         // - need scroll via scrollbar
 

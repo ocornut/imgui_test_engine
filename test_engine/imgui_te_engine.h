@@ -244,10 +244,10 @@ template<> inline void ImGuiTestEngineUtil_AppendStrValue(ImGuiTextBuffer& buf, 
             return;                                                         \
     } while (0)
 
-#define IM_CHECK_STR_EQ(_LHS, _RHS)                                         \
+#define IM_CHECK_STR_OP(_LHS, _RHS, _OP)                                    \
     do                                                                      \
     {                                                                       \
-        bool __res = strcmp(_LHS, _RHS) == 0;                               \
+        bool __res = strcmp(_LHS, _RHS) _OP 0;                              \
         ImGuiTextBuffer expr_buf;                                           \
         expr_buf.appendf("%s [%s] == %s [%s]", "", _LHS, "", _RHS);         \
         if (ImGuiTestEngineHook_Check(__FILE__, __func__, __LINE__, ImGuiTestCheckFlags_None, __res, expr_buf.c_str())) \
@@ -255,6 +255,21 @@ template<> inline void ImGuiTestEngineUtil_AppendStrValue(ImGuiTextBuffer& buf, 
         if (!__res)                                                         \
             return;                                                         \
     } while (0)
+
+#define IM_CHECK_STR_OP_NO_RET(_LHS, _RHS, _OP)                             \
+    do                                                                      \
+    {                                                                       \
+        bool __res = strcmp(_LHS, _RHS) _OP 0;                              \
+        ImGuiTextBuffer expr_buf;                                           \
+        expr_buf.appendf("%s [%s] == %s [%s]", "", _LHS, "", _RHS);         \
+        if (ImGuiTestEngineHook_Check(__FILE__, __func__, __LINE__, ImGuiTestCheckFlags_None, __res, expr_buf.c_str())) \
+            IM_ASSERT(__res);                                               \
+    } while (0)
+
+#define IM_CHECK_STR_EQ(_LHS, _RHS)     IM_CHECK_STR_OP(_LHS, _RHS, ==)
+#define IM_CHECK_STR_NE(_LHS, _RHS)     IM_CHECK_STR_OP(_LHS, _RHS, !=)
+#define IM_CHECK_STR_EQ_NO_RET(_LHS, _RHS) IM_CHECK_STR_OP_NO_RET(_LHS, _RHS, ==)
+#define IM_CHECK_STR_NE_NO_RET(_LHS, _RHS) IM_CHECK_STR_OP_NO_RET(_LHS, _RHS, !=)
 
 #define IM_CHECK_EQ(_LHS, _RHS)         IM_CHECK_OP(_LHS, _RHS, ==)         // Equal
 #define IM_CHECK_NE(_LHS, _RHS)         IM_CHECK_OP(_LHS, _RHS, !=)         // Not Equal
