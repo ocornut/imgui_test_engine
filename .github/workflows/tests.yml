@@ -9,7 +9,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        branch: [master, docking, tables, features/range_select]
+        branch: [master, docking, features/range_select]
 
     steps:
     - uses: actions/checkout@v1
