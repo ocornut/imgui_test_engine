@@ -1105,12 +1105,12 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         // FIXME: Not testing History callback :)
         ctx->ItemClick("History");
         ctx->KeyCharsAppend("ABCDEF");
-        ctx->KeyPressMap(ImGuiKey_Z, ImGuiKeyModFlags_Ctrl);
+        ctx->KeyPressMap(ImGuiKey_Z, ImGuiKeyModFlags_Shortcut);
         IM_CHECK_STR_EQ(vars.HistoryBuffer.c_str(), "ABCDE");
-        ctx->KeyPressMap(ImGuiKey_Z, ImGuiKeyModFlags_Ctrl);
-        ctx->KeyPressMap(ImGuiKey_Z, ImGuiKeyModFlags_Ctrl);
+        ctx->KeyPressMap(ImGuiKey_Z, ImGuiKeyModFlags_Shortcut);
+        ctx->KeyPressMap(ImGuiKey_Z, ImGuiKeyModFlags_Shortcut);
         IM_CHECK_STR_EQ(vars.HistoryBuffer.c_str(), "ABC");
-        ctx->KeyPressMap(ImGuiKey_Y, ImGuiKeyModFlags_Ctrl);
+        ctx->KeyPressMap(ImGuiKey_Y, ImGuiKeyModFlags_Shortcut);
         IM_CHECK_STR_EQ(vars.HistoryBuffer.c_str(), "ABCD");
         ctx->KeyPressMap(ImGuiKey_UpArrow);
         IM_CHECK_STR_EQ(vars.HistoryBuffer.c_str(), "Pressed Up!");
@@ -1259,7 +1259,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         IM_CHECK_EQ(ImGui::GetItemsFlags(), ImGuiItemFlags_Disabled);
         ImGui::Button("disabled button in child1");
         ImGui::EndChild();
-        ImGui::BeginChild("child2", ImVec2(100, 100)); // New 
+        ImGui::BeginChild("child2", ImVec2(100, 100)); // New
         IM_CHECK_EQ(ImGui::GetItemsFlags(), ImGuiItemFlags_Disabled);
         ImGui::Button("disabled button in child2");
         ImGui::EndChild();
@@ -1664,7 +1664,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         IM_CHECK_EQ(vars.TabBar->Tabs[4].ID, ctx->GetID("Trailing"));
         IM_CHECK_EQ(vars.TabBar->Tabs[3].ID, ctx->GetID("Tab 2"));
 
-        // Resize down 
+        // Resize down
         vars.WindowAutoResize = false;
         ImGuiWindow* window = ctx->GetWindowByRef("/Test Window");
         ctx->WindowResize("Test Window", ImVec2(window->Size.x * 0.3f, window->Size.y));

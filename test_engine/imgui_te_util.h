@@ -1,6 +1,7 @@
 #pragma once
 #include <math.h>   // fabsf
 
+// FIXME: Setting IO.ConfigMacOSXBehaviors to non-default value breaks this assumption.
 #if defined(__APPLE__)
 #define ImGuiKeyModFlags_Shortcut   ImGuiKeyModFlags_Super
 #else
