@@ -265,11 +265,14 @@ struct ImGuiTestContext
     ImVec2      GetMainViewportPos();
     ImVec2      GetMainViewportSize();
 
-    // Capture
+    // Screen captures
+    // - Simple API
+    void        CaptureScreenshotWindow(ImGuiTestRef ref, int capture_flags = 0);
+    // - Advanced API
     void        CaptureInitArgs(ImGuiCaptureArgs* args, int capture_flags = 0);
     bool        CaptureAddWindow(ImGuiCaptureArgs* args, ImGuiTestRef ref);
-    bool        CaptureScreenshot(ImGuiCaptureArgs* args);
-    void        CaptureScreenshotSimple(ImGuiTestRef ref, int capture_flags = 0); // Simple api
+    bool        CaptureScreenshotEx(ImGuiCaptureArgs* args);
+    // - Animation capturing API
     bool        BeginCaptureGif(ImGuiCaptureArgs* args);
     bool        EndCaptureGif(ImGuiCaptureArgs* args);
 

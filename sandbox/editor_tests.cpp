@@ -25,11 +25,8 @@ void RegisterTests(ImGuiTestEngine* e)
         ctx->MenuCheck("View/Demo: Dear ImGui Demo");
         ctx->SetRef("Dear ImGui Demo");
         ctx->ItemOpenAll("");
-        ImGuiCaptureArgs args;
-        ctx->CaptureInitArgs(&args, ImGuiCaptureFlags_StitchFullContents | ImGuiCaptureFlags_HideMouseCursor | ImGuiCaptureFlags_HideCaptureToolWindow);
-        args.InPadding = 16.0f;
-        ctx->CaptureAddWindow(&args, "Dear ImGui Demo");
-        ctx->CaptureScreenshot(&args);
+
+        ctx->CaptureScreenshotWindow("Dear ImGui Demo", ImGuiCaptureFlags_StitchFullContents | ImGuiCaptureFlags_HideMouseCursor);
     };
 
     // ## Capture entire ImPlot Demo window.
@@ -40,10 +37,7 @@ void RegisterTests(ImGuiTestEngine* e)
         ctx->MenuCheck("View/Demo: ImPlot");
         ctx->SetRef("ImPlot Demo");
         ctx->ItemOpenAll("");
-        ImGuiCaptureArgs args;
-        ctx->CaptureInitArgs(&args, ImGuiCaptureFlags_StitchFullContents | ImGuiCaptureFlags_HideMouseCursor | ImGuiCaptureFlags_HideCaptureToolWindow);
-        args.InPadding = 16.0f;
-        ctx->CaptureAddWindow(&args, "ImPlot Demo");
-        ctx->CaptureScreenshot(&args);
+
+        ctx->CaptureScreenshotWindow("ImPlot Demo", ImGuiCaptureFlags_StitchFullContents | ImGuiCaptureFlags_HideMouseCursor);
     };
 }

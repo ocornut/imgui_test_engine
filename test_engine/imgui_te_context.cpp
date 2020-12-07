@@ -415,7 +415,6 @@ ImVec2 ImGuiTestContext::GetMainViewportSize()
 void ImGuiTestContext::CaptureInitArgs(ImGuiCaptureArgs* args, int flags)
 {
     args->InFlags = (ImGuiCaptureFlags)flags;
-    args->InPadding = 13.0f;
     ImFormatString(args->InOutputFileTemplate, IM_ARRAYSIZE(args->InOutputFileTemplate), "captures/%s_%04d.png", Test->Name, CaptureCounter);
     CaptureCounter++;
 }
@@ -429,7 +428,7 @@ bool ImGuiTestContext::CaptureAddWindow(ImGuiCaptureArgs* args, ImGuiTestRef ref
     return window != NULL;
 }
 
-bool ImGuiTestContext::CaptureScreenshot(ImGuiCaptureArgs* args)
+bool ImGuiTestContext::CaptureScreenshotEx(ImGuiCaptureArgs* args)
 {
     if (IsError())
         return false;
@@ -441,15 +440,14 @@ bool ImGuiTestContext::CaptureScreenshot(ImGuiCaptureArgs* args)
     return ret;
 }
 
-// FIXME-TESTS: Figure how to get capturing to have zero delay (only 1 yield)
 // FIXME-TESTS: Add ImGuiCaptureFlags_NoHideOtherWindows
-void ImGuiTestContext::CaptureScreenshotSimple(ImGuiTestRef ref, int capture_flags)
+void ImGuiTestContext::CaptureScreenshotWindow(ImGuiTestRef ref, int capture_flags)
 {
     //int frame_count = this->FrameCount;
     ImGuiCaptureArgs args;
     CaptureInitArgs(&args, capture_flags);
     CaptureAddWindow(&args, ref);
-    CaptureScreenshot(&args);
+    CaptureScreenshotEx(&args);
     //IM_ASSERT(frame_count == FrameCount);
 }
 

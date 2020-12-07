@@ -728,6 +728,7 @@ bool ImGuiTestEngine_CaptureScreenshot(ImGuiTestEngine* engine, ImGuiCaptureArgs
     if ((args->InFlags & ImGuiCaptureFlags_Instant) != 0)
         ImGuiTestEngine_Yield(engine);
 
+    // This will yield until ImGui::Render() -> ImGuiTestEngine_PostRender() -> ImGuiCaptureContext::CaptureUpdate() return false.
     engine->CurrentCaptureArgs = args;
     while (engine->CurrentCaptureArgs != NULL)
         ImGuiTestEngine_Yield(engine);

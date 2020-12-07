@@ -2780,11 +2780,7 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
         IM_CHECK_GT(clipboard_len, 15000); // This is going to vary (as of 2019-11-18 on Master this 22766)
 
 #if 0
-        ImGuiCaptureArgs args;
-        ctx->CaptureInitArgs(&args, ImGuiCaptureFlags_StitchFullContents);
-        args.InPadding = 16.0f;
-        ctx->CaptureAddWindow(&args, "Dear ImGui Demo");
-        ctx->CaptureScreenshot(&args);
+        ctx->CaptureScreenshotWindow("Dear ImGui Demo", ImGuiCaptureFlags_StitchFullContents);
 #endif
     };
 
@@ -3166,14 +3162,13 @@ void RegisterTests_Capture(ImGuiTestEngine* e)
 
         ImGuiCaptureArgs args;
         ctx->CaptureInitArgs(&args);
-        args.InPadding = pad;
         ctx->CaptureAddWindow(&args, "Dear ImGui Demo");
         ctx->CaptureAddWindow(&args, "Example: Simple overlay");
         ctx->CaptureAddWindow(&args, "Example: Custom rendering");
         ctx->CaptureAddWindow(&args, "Example: Simple layout");
         ctx->CaptureAddWindow(&args, "Example: Documents");
         ctx->CaptureAddWindow(&args, "Example: Console");
-        ctx->CaptureScreenshot(&args);
+        ctx->CaptureScreenshotEx(&args);
 
         // Close everything
         ctx->SetRef("Dear ImGui Demo");
@@ -3246,10 +3241,7 @@ void RegisterTests_Capture(ImGuiTestEngine* e)
             ctx->MouseMove("float");
             ctx->MouseMoveToPos(g.IO.MousePos + ImVec2(30, -10));
 
-            ImGuiCaptureArgs args;
-            ctx->CaptureInitArgs(&args);
-            ctx->CaptureAddWindow(&args, window->Name);
-            ctx->CaptureScreenshot(&args);
+            ctx->CaptureScreenshotWindow(window->Name);
         }
     };
 
@@ -3376,10 +3368,7 @@ void RegisterTests_Capture(ImGuiTestEngine* e)
         ctx->ItemOpen("Tables/Advanced/Options");
         ctx->ItemOpen("Tables/Tree view/**/Root");
 
-        ImGuiCaptureArgs args;
-        ctx->CaptureInitArgs(&args, ImGuiCaptureFlags_StitchFullContents | ImGuiCaptureFlags_HideMouseCursor);
-        ctx->CaptureAddWindow(&args, "");
-        ctx->CaptureScreenshot(&args);
+        ctx->CaptureScreenshotWindow("", ImGuiCaptureFlags_StitchFullContents | ImGuiCaptureFlags_HideMouseCursor);
 
         ctx->ItemClick("Tables/Close all");
     };

@@ -1,15 +1,22 @@
+// Dear ImGui Screen/Video Capture Tool
+// This is usable as a standalone applet or controlled by the test engine.
+// (headers)
+
 #pragma once
 
 //-----------------------------------------------------------------------------
 // Forward declarations
 //-----------------------------------------------------------------------------
 
-struct ImGuiCaptureArgs;
+// Our types
+struct ImGuiCaptureArgs;                // Parameters for Capture
 struct ImGuiCaptureContext;
 struct ImGuiCaptureImageBuf;
-struct ImGuiCaptureTool;
-typedef unsigned int ImGuiCaptureFlags; // ImGuiCaptureFlags_
+struct ImGuiCaptureTool;                // Capture tool UI window
 
+typedef unsigned int ImGuiCaptureFlags; // See enum: ImGuiCaptureFlags_
+
+// External types
 struct ImGuiWindow; // imgui.h
 struct GifWriter;   // gif.h
 
@@ -29,7 +36,7 @@ struct ImGuiCaptureImageBuf
     void Clear();                                           // Free allocated memory buffer if such exists.
     void CreateEmpty(int w, int h);                         // Reallocate buffer for pixel data, and zero it.
     void CreateEmptyNoMemClear(int w, int h);               // Reallocate buffer for pixel data, but do not zero memory buffer.
-    bool SaveFile(const char* filename);                    // Save pixel data to specified file.
+    bool SaveFile(const char* filename);                    // Save pixel data to specified image file.
     void RemoveAlpha();                                     // Clear alpha channel from all pixels.
     void BlitSubImage(int dst_x, int dst_y, int src_x, int src_y, int w, int h, const ImGuiCaptureImageBuf* source);
 };
@@ -63,7 +70,7 @@ struct ImGuiCaptureArgs
     ImGuiCaptureFlags       InFlags = 0;                    // Flags for customizing behavior of screenshot tool.
     ImVector<ImGuiWindow*>  InCaptureWindows;               // Windows to capture. All other windows will be hidden. May be used with InCaptureRect to capture only some windows in specified rect.
     ImRect                  InCaptureRect;                  // Screen rect to capture. Does not include padding.
-    float                   InPadding = 10.0f;              // Extra padding at the edges of the screenshot. Ensure that there is available space around capture rect horizontally, also vertically if ImGuiCaptureFlags_StitchFullContents is not used.
+    float                   InPadding = 16.0f;              // Extra padding at the edges of the screenshot. Ensure that there is available space around capture rect horizontally, also vertically if ImGuiCaptureFlags_StitchFullContents is not used.
     int                     InFileCounter = 0;              // Counter which may be appended to file name when saving. By default counting starts from 1. When done this field holds number of saved files.
     ImGuiCaptureImageBuf*   InOutputImageBuf = NULL;        // Output will be saved to image buffer if specified.
     char                    InOutputFileTemplate[256] = ""; // Output will be saved to a file if InOutputImageBuf is NULL.
@@ -74,7 +81,7 @@ struct ImGuiCaptureArgs
     char                    OutSavedFileName[256] = "";     // Saved file name, if any.
 
     // [Internal]
-    bool                    _Capturing = false;             // FIXME-TESTS: ???
+    bool                    _Capturing = false;             // FIXME: Why is this here??!
 };
 
 enum ImGuiCaptureStatus
@@ -124,32 +131,29 @@ struct ImGuiCaptureContext
 };
 
 // Implements UI for capturing images
+// (when using ImGuiTestEngine scripting API you may not need to use this at all)
 struct ImGuiCaptureTool
 {
-    ImGuiCaptureContext     Context;                        // Screenshot capture context.
+    ImGuiCaptureContext     Context;                            // Screenshot capture context.
     ImGuiCaptureFlags       Flags = ImGuiCaptureFlags_Default_; // Customize behavior of screenshot capture process. Flags are used by both ImGuiCaptureTool and ImGuiCaptureContext.
-    bool                    Visible = false;                // Tool visibility state.
-    float                   Padding = 10.0f;                // Extra padding around captured area.
-    char                    SaveFileName[256];              // File name where screenshots will be saved. May contain directories or variation of %d format.
-    float                   SnapGridSize = 32.0f;           // Size of the grid cell for "snap to grid" functionality.
-    char                    LastSaveFileName[256] = "";     // File name of last captured file.
+    bool                    Visible = false;                    // Tool visibility state.
+    float                   Padding = 16.0f;                    // Extra padding around captured area.
+    char                    SaveFileName[256];                  // File name where screenshots will be saved. May contain directories or variation of %d format.
+    float                   SnapGridSize = 32.0f;               // Size of the grid cell for "snap to grid" functionality.
+    char                    LastSaveFileName[256] = "";         // File name of last captured file.
 
-    ImGuiCaptureArgs        _CaptureArgsPicker;             // Capture args for single window picker widget.
-    ImGuiCaptureArgs        _CaptureArgsSelector;           // Capture args for multiple window selector widget.
+    ImGuiCaptureArgs        _CaptureArgsPicker;                 // Capture args for single window picker widget.
+    ImGuiCaptureArgs        _CaptureArgsSelector;               // Capture args for multiple window selector widget.
     ImGuiCaptureToolState   _CaptureState = ImGuiCaptureToolState_None; // Which capture function is in progress.
-    float                   _WindowNameMaxPosX = 170.0f;    // X post after longest window name in CaptureWindowsSelector().
+    float                   _WindowNameMaxPosX = 170.0f;        // X post after longest window name in CaptureWindowsSelector().
 
-    ImGuiCaptureTool(ImGuiScreenCaptureFunc capture_func = NULL);
+    // Public
+    ImGuiCaptureTool();
+    void    ShowCaptureToolWindow(bool* p_open = NULL);                         // Render a capture tool window with various options and utilities.
+    void    SetCaptureFunc(ImGuiScreenCaptureFunc capture_func);
 
-    // Render a window picker that captures picked window to file specified in file_name.
-    void    CaptureWindowPicker(const char* title, ImGuiCaptureArgs* args);
-
-    // Render a selector for selecting multiple windows for capture.
-    void    CaptureWindowsSelector(const char* title, ImGuiCaptureArgs* args);
-
-    // Render a capture tool window with various options and utilities.
-    void    ShowCaptureToolWindow(bool* p_open = NULL);
-
-    // Snaps edges of all visible windows to a virtual grid.
-    void    SnapWindowsToGrid(float cell_size, float padding);
+    // [Internal] 
+    void    CaptureWindowPicker(const char* title, ImGuiCaptureArgs* args);     // Render a window picker that captures picked window to file specified in file_name.
+    void    CaptureWindowsSelector(const char* title, ImGuiCaptureArgs* args);  // Render a selector for selecting multiple windows for capture.
+    void    SnapWindowsToGrid(float cell_size, float padding);                  // Snaps edges of all visible windows to a virtual grid.
 };
