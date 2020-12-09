@@ -2818,7 +2818,7 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
         ctx->SetRef("Dear ImGui Demo");
         ctx->ItemOpen("Layout & Scrolling");
         ctx->ItemOpen("Scrolling");
-        ctx->ItemCheck("Scrolling/Show Horizontal contents size demo window");   // FIXME-TESTS: ItemXXX functions could do the recursion (e.g. Open parent)
+        ctx->ItemCheck("Scrolling/Show Horizontal contents size demo window");   // FIXME-TESTS: maybe ItemXXX functions could do the recursion (e.g. Open all parents first)
         ctx->ItemUncheck("Scrolling/Show Horizontal contents size demo window");
 
         ctx->SetRef("Dear ImGui Demo");

@@ -422,7 +422,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
         ImGuiTableFlags table_flags = ImGuiTableFlags_ColumnsWidthFixed;
         if (vars.Step == 0)
         {
-            vars.Width = 50.0f + 100.0f + cell_padding;
+            vars.Width = 50.0f + 100.0f + cell_padding * 2.0f;
         }
         if (vars.Step == 1)
         {
@@ -432,7 +432,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
         if (vars.Step == 2)
         {
             table_flags |= ImGuiTableFlags_BordersOuterV;
-            vars.Width = 50.0f + 100.0f + cell_padding * 3.0f + border_size * 2.0f;
+            vars.Width = 50.0f + 100.0f + cell_padding * 4.0f + border_size * 2.0f;
         }
         if (vars.Step == 3)
         {
@@ -1427,14 +1427,14 @@ void RegisterTests_Table(ImGuiTestEngine* e)
                 for (int i = 0; i < col_row_count; i++)
                     ImGui::TableSetupColumn(Str16f("Col%d", i).c_str(), ImGuiTableColumnFlags_WidthFixed, 100.0f);
                 ImGui::TableHeadersRow();
-                HelperTableSubmitCellsButtonFill(col_row_count, col_row_count);
+                //HelperTableSubmitCellsButtonFill(col_row_count, col_row_count);
             }
             if (vars.Step == 1)
             {
                 for (int i = 0; i < col_row_count; i++)
                     ImGui::TableSetupColumn(Str16f("Col%d", i).c_str(), ImGuiTableColumnFlags_WidthFixed, 100.0f);
                 ImGui::TableHeadersRow();
-                HelperTableSubmitCellsButtonFix(col_row_count, col_row_count);
+                //HelperTableSubmitCellsButtonFix(col_row_count, col_row_count);
             }
             if (vars.Step == 2)
             {
@@ -1442,15 +1442,30 @@ void RegisterTests_Table(ImGuiTestEngine* e)
                 for (int i = 0; i < col_row_count; i++)
                     ImGui::TableSetupColumn(Str16f("Col%d", i).c_str());
                 ImGui::TableHeadersRow();
-                HelperTableSubmitCellsButtonFill(col_row_count, col_row_count);
+                //HelperTableSubmitCellsButtonFill(col_row_count, col_row_count);
             }
             if (vars.Step == 3)
             {
                 for (int i = 0; i < col_row_count; i++)
                     ImGui::TableSetupColumn(Str16f("Col%d", i).c_str());
                 ImGui::TableHeadersRow();
-                HelperTableSubmitCellsButtonFix(col_row_count, col_row_count);
+                //HelperTableSubmitCellsButtonFix(col_row_count, col_row_count);
             }
+
+            for (int row = 0; row < col_row_count; row++)
+            {
+                ImGui::TableNextRow();
+                for (int column = 0; column < col_row_count; column++)
+                {
+                    ImGui::TableSetColumnIndex(column);
+                    float w = ImGui::GetContentRegionAvail().x;
+                    if (vars.Step == 0 || vars.Step == 2)
+                        ImGui::Button(Str16f("%.0f %d,%d", w, row, column).c_str(), ImVec2(-FLT_MIN, 0.0f));
+                    else
+                        ImGui::Button(Str16f("%.0f %d,%d", w, row, column).c_str(), ImVec2(100.0f, 0.0f));
+                }
+            }
+
             vars.Width = g.CurrentTable->OuterRect.GetWidth();
             ImGui::EndTable();
         }
@@ -1489,8 +1504,8 @@ void RegisterTests_Table(ImGuiTestEngine* e)
                 IM_CHECK_EQ(window->ContentRegionRect.Max.x, table->OuterRect.Max.x);
                 IM_CHECK_EQ(window->ContentRegionRect.Max.y, table->OuterRect.Max.y);
 
-                float expected_table_width = vars.Count * 100.0f + (vars.Count - 1) * g.Style.CellPadding.x;
-                float expected_table_height = vars.Count * ImGui::GetFrameHeightWithSpacing() + ImGui::GetTextLineHeightWithSpacing();
+                float expected_table_width = vars.Count * 100.0f + (vars.Count - 1) * (g.Style.CellPadding.x * 2.0f);
+                float expected_table_height = vars.Count * (ImGui::GetFrameHeight() + g.Style.CellPadding.y * 2.0f) + (ImGui::GetTextLineHeight() + g.Style.CellPadding.y * 2.0f);
                 IM_CHECK_EQ(table->OuterRect.GetHeight(), expected_table_height);
 
                 if (step == 2)
