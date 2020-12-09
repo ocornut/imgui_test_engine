@@ -349,8 +349,3 @@ int main(int argc, char** argv)
 
     return 0;
 }
-
-// FIXME-TABLES
-#if defined(IMGUI_HAS_TABLE)
-#include "imgui_tables.cpp"
-#endif
