@@ -27,6 +27,12 @@
 
 #ifdef IMGUI_HAS_TABLE
 
+struct TableTestingVars
+{
+    ImGuiTableFlags TableFlags = ImGuiTableFlags_None;
+    ImGuiTableColumnFlags ColumnFlags[6] = {};
+};
+
 static ImGuiTableColumn* HelperTableFindColumnByName(ImGuiTable* table, const char* name)
 {
     for (int i = 0; i < table->Columns.size(); i++)
@@ -402,6 +408,60 @@ void RegisterTests_Table(ImGuiTestEngine* e)
 #endif
                 ImGui::EndTable();
             }
+        ImGui::End();
+    };
+
+    // ## Table: test ImGuiTableFlags_SameWidths
+    t = IM_REGISTER_TEST(e, "table", "table_width_same");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::SetNextWindowSize(ImVec2(500, 300), ImGuiCond_Once);
+        ImGui::Begin("Test window 1", NULL, ImGuiWindowFlags_NoSavedSettings);
+
+        for (int test_n = 0; test_n < 3; test_n++)
+        {
+            ImGuiTableFlags table_flags = ImGuiTableFlags_Borders | ImGuiTableFlags_SameWidths | ImGuiTableFlags_Resizable * 0;
+            if (test_n == 0)
+                table_flags |= ImGuiTableFlags_ColumnsWidthFixed;
+            if (test_n == 1)
+                table_flags |= ImGuiTableFlags_ColumnsWidthStretch;
+
+            ImGui::Text("TEST CASE %d", test_n);
+            if (ImGui::BeginTable(Str16f("table%d", test_n).c_str(), 4, table_flags))
+            {
+                if (test_n == 2)
+                {
+                    ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthFixed);
+                    ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthStretch);
+                    ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthFixed);
+                    ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthStretch);
+                }
+
+                ImGui::TableNextColumn();
+                ImGui::Text("AA");
+                ImGui::TableNextColumn();
+                ImGui::Text("AAAA");
+                ImGui::TableNextColumn();
+                ImGui::TableNextColumn();
+                ImGui::Text("AAA");
+
+                // FIXME-TESTS: Should WidthAuto be set as well?
+                ImGuiTable* table = ctx->UiContext->CurrentTable;
+                if (!ctx->IsFirstGuiFrame())
+                {
+                    if (test_n == 0 || test_n == 2)
+                        for (int n = 0; n < 4; n++)
+                            IM_CHECK_EQ(table->Columns[n].WidthGiven, ImGui::CalcTextSize("AAAA").x);
+
+                    for (int n = 1; n < 4; n++)
+                        IM_CHECK_LE((ImAbs(table->Columns[0].WidthGiven - table->Columns[n].WidthGiven)), 1.0f);
+                }
+
+                ImGui::EndTable();
+                ImGui::Spacing();
+            }
+        }
+
         ImGui::End();
     };
 
@@ -1119,22 +1179,22 @@ void RegisterTests_Table(ImGuiTestEngine* e)
 
     // ## Test table sorting behaviors.
     t = IM_REGISTER_TEST(e, "table", "table_sorting");
+    t->SetUserDataType<TableTestingVars>();
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
-        ImGuiContext& g = *ctx->UiContext;
-        int& table_flags = ctx->GenericVars.Int1;
+        TableTestingVars& vars = ctx->GetUserData<TableTestingVars>();
+
         ImGui::SetNextWindowSize(ImVec2(600, 80), ImGuiCond_Appearing); // FIXME-TESTS: Why?
         ImGui::Begin("Test window", NULL, ImGuiWindowFlags_NoSavedSettings);
-
         if (ctx->IsFirstTestFrame())
         {
-            table_flags = ImGuiTableFlags_Sortable | ImGuiTableFlags_MultiSortable;
+            vars.TableFlags = ImGuiTableFlags_Sortable | ImGuiTableFlags_MultiSortable;
             TableDiscardInstanceAndSettings(ImGui::GetID("table1"));
         }
 
-        if (ImGui::BeginTable("table1", 6, table_flags))
+        if (ImGui::BeginTable("table1", 6, vars.TableFlags))
         {
-            ImGui::TableSetupColumn("Default", g.CurrentTable->Columns[0].FlagsIn);
+            ImGui::TableSetupColumn("Default", vars.ColumnFlags[0]);
             ImGui::TableSetupColumn("PreferSortAscending", ImGuiTableColumnFlags_PreferSortAscending);
             ImGui::TableSetupColumn("PreferSortDescending", ImGuiTableColumnFlags_PreferSortDescending);
             ImGui::TableSetupColumn("NoSort", ImGuiTableColumnFlags_NoSort);
@@ -1149,9 +1209,10 @@ void RegisterTests_Table(ImGuiTestEngine* e)
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         ctx->SetRef("Test window");
+
         ImGuiTable* table = ImGui::TableFindByID(ctx->GetID("table1"));
+        TableTestingVars& vars = ctx->GetUserData<TableTestingVars>();
         const ImGuiTableSortSpecs* sort_specs = NULL;
-        int& table_flags = ctx->GenericVars.Int1;
 
         // Clicks a column header, optionally holding a specified modifier key. Returns SortDirection of clicked column.
         auto click_column_and_get_sort = [](ImGuiTestContext* ctx, ImGuiTable* table, const char* label, ImGuiKeyModFlags click_mod) -> ImGuiSortDirection_
@@ -1219,32 +1280,33 @@ void RegisterTests_Table(ImGuiTestEngine* e)
         IM_CHECK(sort_specs && sort_specs->SpecsCount == 4);
 
         // Disable multi-sort and ensure there is only one sorted column left.
-        table_flags = ImGuiTableFlags_Sortable;
+        vars.TableFlags = ImGuiTableFlags_Sortable;
         ctx->Yield();
         sort_specs = table_get_sort_specs(ctx, table);
         IM_CHECK(sort_specs != NULL);
         IM_CHECK_EQ(sort_specs->SpecsCount, 1);
 
         // Disable sorting completely. Sort spec should not be returned.
-        table_flags = ImGuiTableFlags_None;
+        vars.TableFlags = ImGuiTableFlags_None;
         ctx->Yield();
         sort_specs = table_get_sort_specs(ctx, table);
         IM_CHECK(sort_specs == NULL);
 
         // Test updating sorting direction on column flag change.
         ImGuiTableColumn* col = &table->Columns[0];
-        table_flags = ImGuiTableFlags_Sortable;
-        col->FlagsIn = ImGuiTableColumnFlags_NoSortAscending | ImGuiTableColumnFlags_NoSortDescending;
+        vars.TableFlags = ImGuiTableFlags_Sortable;
+        IM_CHECK((col->Flags & ImGuiTableColumnFlags_NoSort) == 0);
+        vars.ColumnFlags[0] = ImGuiTableColumnFlags_NoSortAscending | ImGuiTableColumnFlags_NoSortDescending;
         ctx->Yield();
         IM_CHECK((col->Flags & ImGuiTableColumnFlags_NoSort) != 0);
 
         col->SortDirection = ImGuiSortDirection_Ascending;
-        col->FlagsIn = ImGuiTableColumnFlags_NoSortAscending;
+        vars.ColumnFlags[0] = ImGuiTableColumnFlags_NoSortAscending;
         ctx->Yield();
         IM_CHECK_EQ(col->SortDirection, ImGuiSortDirection_Descending);
 
         col->SortDirection = ImGuiSortDirection_Descending;
-        col->FlagsIn = ImGuiTableColumnFlags_NoSortDescending;
+        vars.ColumnFlags[0] = ImGuiTableColumnFlags_NoSortDescending;
         ctx->Yield();
         IM_CHECK_EQ(col->SortDirection, ImGuiSortDirection_Ascending);
     };
@@ -1639,9 +1701,11 @@ void RegisterTests_Table(ImGuiTestEngine* e)
 
     // ## Miscellaneous
     t = IM_REGISTER_TEST(e, "table", "table_cov_misc");
+    t->SetUserDataType<TableTestingVars>();
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
-        ImGuiContext& g = *ctx->UiContext;
+        TableTestingVars& vars = ctx->GetUserData<TableTestingVars>();
+
         ImGui::SetNextWindowSize(ImVec2(250.0f, 100.0f), ImGuiCond_Appearing);
         ImGui::Begin("Test window 1", NULL, ImGuiWindowFlags_NoSavedSettings);
 
@@ -1650,14 +1714,13 @@ void RegisterTests_Table(ImGuiTestEngine* e)
 
         if (ImGui::BeginTable("table1", 4, ImGuiTableFlags_ScrollX | ImGuiTableFlags_Hideable | ImGuiTableFlags_Resizable, ImVec2(0, 0), 300.0f))
         {
-            ImGuiTable* table = g.CurrentTable;
             if (ctx->IsFirstGuiFrame())
-                table->Columns[0].FlagsIn = ImGuiTableColumnFlags_WidthFixed;
+                vars.ColumnFlags[0] = ImGuiTableColumnFlags_WidthFixed;
 
-            ImGui::TableSetupColumn("One", table->Columns[0].FlagsIn, 100.0f, 0);
-            ImGui::TableSetupColumn("Two", table->Columns[1].FlagsIn);
-            ImGui::TableSetupColumn("Three", table->Columns[2].FlagsIn);
-            ImGui::TableSetupColumn(NULL, table->Columns[3].FlagsIn);
+            ImGui::TableSetupColumn("One", vars.ColumnFlags[0], 100.0f, 0);
+            ImGui::TableSetupColumn("Two", vars.ColumnFlags[1]);
+            ImGui::TableSetupColumn("Three", vars.ColumnFlags[2]);
+            ImGui::TableSetupColumn(NULL, vars.ColumnFlags[3]);
             ImGui::TableHeadersRow();
             HelperTableSubmitCellsText(4, 5);
             ImGui::EndTable();
@@ -1667,6 +1730,8 @@ void RegisterTests_Table(ImGuiTestEngine* e)
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         ImGuiContext& g = *ctx->UiContext;
+        TableTestingVars& vars = ctx->GetUserData<TableTestingVars>();
+
         ctx->SetRef("Test window 1");
         ImGuiTable* table = ImGui::TableFindByID(ctx->GetID("table1"));
         ImGuiTableColumn* col0 = &table->Columns[0];
@@ -1702,7 +1767,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
         // Test clearing of resizable flag when no columns are resizable.
         IM_CHECK((table->Flags & ImGuiTableFlags_Resizable) != 0);
         for (int i = 0; i < table->Columns.size(); i++)
-            table->Columns[i].FlagsIn |= ImGuiTableColumnFlags_NoResize;
+            vars.ColumnFlags[i] |= ImGuiTableColumnFlags_NoResize;
         ctx->Yield();
         IM_CHECK((table->Flags & ImGuiTableFlags_Resizable) == 0);
 
