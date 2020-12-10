@@ -5,18 +5,30 @@
 #define _CRT_SECURE_NO_WARNINGS
 #endif
 
-#ifndef _WIN32
-#include <unistd.h>     // usleep
-#endif
-
-#include "imgui.h"
 #define IMGUI_DEFINE_MATH_OPERATORS
-#include "imgui_te_engine.h"
 #include "imgui_te_context.h"
+#include "imgui.h"
+#include "imgui_te_engine.h"
 #include "imgui_te_internal.h"
 #include "imgui_te_util.h"
 #include "shared/imgui_utils.h"
 #include "libs/Str/Str.h"
+
+#ifndef _WIN32
+#include <unistd.h>     // usleep
+#endif
+
+//-------------------------------------------------------------------------
+// [SECTION] ImGuiTestRefDesc
+//-------------------------------------------------------------------------
+
+ImGuiTestRefDesc::ImGuiTestRefDesc(const ImGuiTestRef& ref, const ImGuiTestItemInfo* item)
+{
+    if (ref.Path)
+        ImFormatString(Buf, IM_ARRAYSIZE(Buf), "'%s' > %08X", ref.Path, ref.ID);
+    else
+        ImFormatString(Buf, IM_ARRAYSIZE(Buf), "%08X > '%s'", ref.ID, item ? item->DebugLabel : "NULL");
+}
 
 //-------------------------------------------------------------------------
 // [SECTION] ImGuiTestContext

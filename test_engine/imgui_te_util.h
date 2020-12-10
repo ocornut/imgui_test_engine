@@ -1,5 +1,7 @@
 #pragma once
+
 #include <math.h>   // fabsf
+#include "imgui.h"  // ImGuiID, ImGuiKey, ImFont
 
 // FIXME: Setting IO.ConfigMacOSXBehaviors to non-default value breaks this assumption.
 #if defined(__APPLE__)
@@ -20,7 +22,7 @@ struct ImGuiTable;
 #endif
 
 // Maths helpers
-static inline bool  ImFloatEq(float f1, float f2) { float d = f2 - f1; return fabsf(d) <= FLT_EPSILON; }
+static inline bool  ImFloatEq(float f1, float f2) { float d = f2 - f1; return fabsf(d) <= 1.192092896e-07F; }
 
 // Miscellaneous functions
 ImGuiID             ImHashDecoratedPath(const char* str, const char* str_end = NULL, ImGuiID seed = 0);

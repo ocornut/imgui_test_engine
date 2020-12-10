@@ -3,6 +3,7 @@
 #endif
 
 #define IMGUI_DEFINE_MATH_OPERATORS
+#include "imgui_te_ui.h"
 #include "imgui.h"
 #include "imgui_internal.h"
 #include "imgui_te_engine.h"

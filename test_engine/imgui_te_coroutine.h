@@ -21,9 +21,9 @@ typedef void (*ImGuiTestCoroutineMainFunc)(void* data);
 struct ImGuiTestCoroutineInterface
 {
     ImGuiTestCoroutineHandle (*CreateFunc)(ImGuiTestCoroutineMainFunc func, const char* name, void* data);  // Create a new coroutine
-    void                    (*DestroyFunc)(ImGuiTestCoroutineHandle handle);                                // Destroy a coroutine (which must have completed first)
-    bool                    (*RunFunc)(ImGuiTestCoroutineHandle handle);                                    // Run a coroutine until it yields or finishes, returning false if finished
-    void                    (*YieldFunc)();                                                                 // Yield from a coroutine back to the caller, preserving coroutine state
+    void                     (*DestroyFunc)(ImGuiTestCoroutineHandle handle);                               // Destroy a coroutine (which must have completed first)
+    bool                     (*RunFunc)(ImGuiTestCoroutineHandle handle);                                   // Run a coroutine until it yields or finishes, returning false if finished
+    void                     (*YieldFunc)();                                                                // Yield from a coroutine back to the caller, preserving coroutine state
 };
 
 //------------------------------------------------------------------------

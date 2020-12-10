@@ -2,8 +2,8 @@
 #define _CRT_SECURE_NO_WARNINGS
 #endif
 
-#include "imgui.h"
 #include "imgui_te_util.h"
+#include "imgui.h"
 #include "imgui_internal.h"
 #define STR_IMPLEMENTATION
 #include "libs/Str/Str.h"

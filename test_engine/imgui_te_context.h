@@ -5,7 +5,7 @@
 
 #include "imgui.h"
 #include "imgui_internal.h"
-#include "imgui_te_engine.h"            // ImGuiTestRef, IM_CHECK*, enums
+#include "imgui_te_engine.h"            // IM_CHECK*, various flags, enums
 #include <stdint.h>                     // intptr_t
 
 // Undo some of the damage done by <windows.h>
@@ -24,8 +24,34 @@ struct ImGuiCaptureArgs;
 struct ImGuiTest;
 struct ImGuiTestEngine;
 struct ImGuiTestEngineIO;
+struct ImGuiTestItemInfo;
 struct ImGuiTestInputs;
 struct ImGuiTestGatherTask;
+
+//-------------------------------------------------------------------------
+// ImGuiTestRef
+//-------------------------------------------------------------------------
+
+// Weak reference to an Item/Window given an ID or ID path.
+struct ImGuiTestRef
+{
+    ImGuiID         ID;
+    const char*     Path;
+
+    ImGuiTestRef()                  { ID = 0; Path = NULL; }
+    ImGuiTestRef(ImGuiID id)        { ID = id; Path = NULL; }
+    ImGuiTestRef(const char* p)     { ID = 0; Path = p; }
+    bool IsEmpty() const            { return ID == 0 && (Path == NULL || Path[0] == 0); }
+};
+
+// Helper to output a string showing the Path, ID or Debug Label based on what is available (some items only have ID as we couldn't find/store a Path)
+struct ImGuiTestRefDesc
+{
+    char            Buf[80];
+
+    const char* c_str()             { return Buf; }
+    ImGuiTestRefDesc(const ImGuiTestRef& ref, const ImGuiTestItemInfo* item = NULL);
+};
 
 //-------------------------------------------------------------------------
 // ImGuiTestContext

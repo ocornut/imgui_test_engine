@@ -54,6 +54,9 @@
     <ClInclude Include="..\libs\gif-h\gif.h">
       <Filter>libs\gif-h</Filter>
     </ClInclude>
+    <ClInclude Include="imgui_te_ui.h">
+      <Filter>test_engine</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\test_engine\imgui_te_context.cpp">

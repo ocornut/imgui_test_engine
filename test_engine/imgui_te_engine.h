@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include "imgui.h"
 #include "imgui_internal.h"         // ImPool<>, ImGuiItemStatusFlags, ImFormatString
 #include "imgui_te_util.h"
 
@@ -397,33 +398,6 @@ struct ImGuiTestItemList
     const ImGuiTestItemInfo*    begin() const           { return Pool.Buf.begin(); }
     const ImGuiTestItemInfo*    end() const             { return Pool.Buf.end(); }
     const ImGuiTestItemInfo*    operator[] (size_t n)   { return &Pool.Buf[(int)n]; }
-};
-
-// Weak reference to an Item/Window given an ID or ID path.
-struct ImGuiTestRef
-{
-    ImGuiID         ID;
-    const char*     Path;
-
-    ImGuiTestRef()              { ID = 0; Path = NULL; }
-    ImGuiTestRef(ImGuiID id)    { ID = id; Path = NULL; }
-    ImGuiTestRef(const char* p) { ID = 0; Path = p; }
-    bool IsEmpty() const        { return ID == 0 && (Path == NULL || Path[0] == 0); }
-};
-
-// Helper to output a string showing the Path, ID or Debug Label based on what is available (some items only have ID as we couldn't find/store a Path)
-struct ImGuiTestRefDesc
-{
-    char            Buf[80];
-
-    const char* c_str()     { return Buf; }
-    ImGuiTestRefDesc(const ImGuiTestRef& ref, const ImGuiTestItemInfo* item = NULL)
-    {
-        if (ref.Path)
-            ImFormatString(Buf, IM_ARRAYSIZE(Buf), "'%s' > %08X", ref.Path, ref.ID);
-        else
-            ImFormatString(Buf, IM_ARRAYSIZE(Buf), "%08X > '%s'", ref.ID, item ? item->DebugLabel : "NULL");
-    }
 };
 
 //-------------------------------------------------------------------------
