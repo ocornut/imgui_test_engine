@@ -148,14 +148,9 @@ static void HideOtherWindows(const ImGuiCaptureArgs* args)
             continue;
 #endif
 
-        // FIXME: We cannot just set ->Hidden because not sure of timing where this is called relative to other windows.
-        window->Hidden = true;
-
-        // FIXME: 2020/11/30 changed from overwriting HiddenFramesCannotSkipItems which has too many side-effects...
-        // Overwriting HiddenFramesCanSkipItems has less side effects.
-        // e.g. reopening Combo box after a capture pass it would be marked as "window_just_appearing_after_hidden_for_resize" in Begin(),
-        // leading to auto-positioning in Begin() using regular popup policy, which leads BeginCombo() on N+1 to use a wrong value for AutoPosLastDirection.
-        window->HiddenFramesCanSkipItems = 2;
+        // Not overwriting HiddenFramesCanSkipItems or HiddenFramesCannotSkipItems since they have side-effects (e.g. preserving ContentsSize)
+        if (window->WasActive || window->Active)
+            window->HiddenFramesForRenderOnly = 2;
     }
 }
 

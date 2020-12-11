@@ -733,8 +733,8 @@ void RegisterTests_Table(ImGuiTestEngine* e)
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         ImGui::Begin("Test window 1", NULL, ImGuiWindowFlags_NoSavedSettings);
-        ImGui::BeginTable("table1", 3);
-        ImGui::EndTable();
+        if (ImGui::BeginTable("table1", 3))
+            ImGui::EndTable();
         ImGui::End();
     };
 

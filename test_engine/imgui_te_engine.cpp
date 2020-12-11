@@ -249,7 +249,7 @@ void    ImGuiTestEngine_Stop(ImGuiTestEngine* engine)
     engine->Started = false;
 }
 
-void    ImGuiTestEngine_PostRender(ImGuiTestEngine* engine)
+void    ImGuiTestEngine_PostSwap(ImGuiTestEngine* engine)
 {
     if (engine->IO.ConfigFixedDeltaTime != 0.0f)
         ImGuiTestEngine_SetDeltaTime(engine, engine->IO.ConfigFixedDeltaTime);
@@ -728,7 +728,7 @@ bool ImGuiTestEngine_CaptureScreenshot(ImGuiTestEngine* engine, ImGuiCaptureArgs
     if ((args->InFlags & ImGuiCaptureFlags_Instant) == 0)
         ImGuiTestEngine_Yield(engine);
 
-    // This will yield until ImGui::Render() -> ImGuiTestEngine_PostRender() -> ImGuiCaptureContext::CaptureUpdate() return false.
+    // This will yield until ImGui::Render() -> ImGuiTestEngine_PostSwap() -> ImGuiCaptureContext::CaptureUpdate() return false.
     engine->CurrentCaptureArgs = args;
     while (engine->CurrentCaptureArgs != NULL)
         ImGuiTestEngine_Yield(engine);

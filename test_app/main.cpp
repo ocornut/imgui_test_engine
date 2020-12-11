@@ -477,7 +477,7 @@ int main(int argc, char** argv)
         app_window->ClearColor = g_App.ClearColor;
         app_window->Render(app_window);
 
-        ImGuiTestEngine_PostRender(engine);
+        ImGuiTestEngine_PostSwap(engine);
     }
 
     ImGuiTestEngine_Stop(engine);

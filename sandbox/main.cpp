@@ -330,7 +330,7 @@ int main(int argc, char** argv)
         app->Render(app);
 
 #ifdef IMGUI_SANDBOX_ENABLE_TEST_ENGINE
-        ImGuiTestEngine_PostRender(engine);
+        ImGuiTestEngine_PostSwap(engine);
 #endif
     }
 
