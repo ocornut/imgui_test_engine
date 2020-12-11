@@ -33,14 +33,6 @@ struct TableTestingVars
     ImGuiTableColumnFlags ColumnFlags[6] = {};
 };
 
-static ImGuiTableColumn* HelperTableFindColumnByName(ImGuiTable* table, const char* name)
-{
-    for (int i = 0; i < table->Columns.size(); i++)
-        if (strcmp(ImGui::TableGetColumnName(table, i), name) == 0)
-            return &table->Columns[i];
-    return NULL;
-}
-
 static void HelperTableSubmitCellsCustom(ImGuiTestContext* ctx, int count_w, int count_h, void(*cell_cb)(ImGuiTestContext* ctx, int column, int line))
 {
     IM_ASSERT(cell_cb != NULL);
@@ -745,7 +737,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
         ImGui::Begin("Test window 1", NULL, ImGuiWindowFlags_NoSavedSettings);
         if (ctx->IsFirstGuiFrame())
             TableDiscardInstanceAndSettings(ImGui::GetID("table1"));
-        ImGui::BeginTable("table1", 4, ImGuiTableFlags_MultiSortable);
+        ImGui::BeginTable("table1", 4, ImGuiTableFlags_Sortable | ImGuiTableFlags_SortMulti);
         ImGui::TableSetupColumn("0", ImGuiTableColumnFlags_None);
         ImGui::TableSetupColumn("1", ImGuiTableColumnFlags_DefaultSort);
         ImGui::TableSetupColumn("1", ImGuiTableColumnFlags_DefaultSort | ImGuiTableColumnFlags_PreferSortAscending);
@@ -1188,7 +1180,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
         ImGui::Begin("Test window", NULL, ImGuiWindowFlags_NoSavedSettings);
         if (ctx->IsFirstTestFrame())
         {
-            vars.TableFlags = ImGuiTableFlags_Sortable | ImGuiTableFlags_MultiSortable;
+            vars.TableFlags = ImGuiTableFlags_Sortable | ImGuiTableFlags_SortMulti;
             TableDiscardInstanceAndSettings(ImGui::GetID("table1"));
         }
 
@@ -1210,105 +1202,149 @@ void RegisterTests_Table(ImGuiTestEngine* e)
     {
         ctx->SetRef("Test window");
 
-        ImGuiTable* table = ImGui::TableFindByID(ctx->GetID("table1"));
+        ImGuiTestRef table_ref("table1");
+        ImGuiTable* table = ImGui::TableFindByID(ctx->GetID(table_ref));
         TableTestingVars& vars = ctx->GetUserData<TableTestingVars>();
+        vars.TableFlags = ImGuiTableFlags_Sortable | ImGuiTableFlags_SortMulti;
+        ctx->Yield();
+
         const ImGuiTableSortSpecs* sort_specs = NULL;
 
-        // Clicks a column header, optionally holding a specified modifier key. Returns SortDirection of clicked column.
-        auto click_column_and_get_sort = [](ImGuiTestContext* ctx, ImGuiTable* table, const char* label, ImGuiKeyModFlags click_mod) -> ImGuiSortDirection_
-        {
-            IM_ASSERT(ctx != NULL);
-            IM_ASSERT(table != NULL);
-            IM_ASSERT(label != NULL);
-
-            ImGuiTableColumn* column = HelperTableFindColumnByName(table, label);
-            IM_CHECK_RETV(column != NULL, ImGuiSortDirection_None);
-
-            if (click_mod != ImGuiKeyModFlags_None)
-                ctx->KeyDownMap(ImGuiKey_COUNT, click_mod);
-            ctx->ItemClick(TableGetHeaderID(table, label), ImGuiMouseButton_Left);
-            if (click_mod != ImGuiKeyModFlags_None)
-                ctx->KeyUpMap(ImGuiKey_COUNT, click_mod);
-            return (ImGuiSortDirection_)column->SortDirection;
-        };
-
-        // Calls ImGui::TableGetSortSpecs() and returns it's result.
-        auto table_get_sort_specs = [](ImGuiTestContext* ctx, ImGuiTable* table)
-        {
-            ImGuiContext& g = *ctx->UiContext;
-            ImSwap(table, g.CurrentTable);
-            const ImGuiTableSortSpecs* sort_specs = ImGui::TableGetSortSpecs();
-            ImSwap(table, g.CurrentTable);
-            return sort_specs;
-        };
-
         // Table has no default sorting flags. Check for implicit default sorting.
-        sort_specs = table_get_sort_specs(ctx, table);
+        sort_specs = ctx->TableGetSortSpecs(table_ref);
         IM_CHECK(sort_specs != NULL);
         IM_CHECK_EQ(sort_specs->SpecsCount, 1);
-        //IM_CHECK_EQ(sort_specs->ColumnsMask, 0x01u);
         IM_CHECK_EQ(sort_specs->Specs[0].ColumnIndex, 0);
         IM_CHECK_EQ(sort_specs->Specs[0].SortOrder, 0);
         IM_CHECK_EQ(sort_specs->Specs[0].SortDirection, ImGuiSortDirection_Ascending);
 
-        IM_CHECK_EQ(click_column_and_get_sort(ctx, table, "Default", 0), ImGuiSortDirection_Descending);   // Sorted implicitly by calling TableGetSortSpecs().
-        IM_CHECK_EQ(click_column_and_get_sort(ctx, table, "Default", 0), ImGuiSortDirection_Ascending);
-        IM_CHECK_EQ(click_column_and_get_sort(ctx, table, "PreferSortAscending", 0), ImGuiSortDirection_Ascending);
-        IM_CHECK_EQ(click_column_and_get_sort(ctx, table, "PreferSortAscending", 0), ImGuiSortDirection_Descending);
+        IM_CHECK_EQ(ctx->TableClickHeader(table_ref, "Default"), ImGuiSortDirection_Descending);   // Sorted implicitly by calling TableGetSortSpecs().
+        IM_CHECK_EQ(ctx->TableClickHeader(table_ref, "Default"), ImGuiSortDirection_Ascending);
+        IM_CHECK_EQ(ctx->TableClickHeader(table_ref, "PreferSortAscending"), ImGuiSortDirection_Ascending);
+        IM_CHECK_EQ(ctx->TableClickHeader(table_ref, "PreferSortAscending"), ImGuiSortDirection_Descending);
 
         // Not holding shift does not perform multi-sort.
-        sort_specs = table_get_sort_specs(ctx, table);
+        sort_specs = ctx->TableGetSortSpecs(table_ref);
         IM_CHECK(sort_specs != NULL);
         IM_CHECK_EQ(sort_specs->SpecsCount, 1);
 
         // Holding shift includes all sortable columns in multi-sort.
-        IM_CHECK_EQ(click_column_and_get_sort(ctx, table, "PreferSortDescending", ImGuiKeyModFlags_Shift), ImGuiSortDirection_Descending);
-        IM_CHECK_EQ(click_column_and_get_sort(ctx, table, "PreferSortDescending", ImGuiKeyModFlags_Shift), ImGuiSortDirection_Ascending);
-        sort_specs = table_get_sort_specs(ctx, table);
+        IM_CHECK_EQ(ctx->TableClickHeader(table_ref, "PreferSortDescending", ImGuiKeyModFlags_Shift), ImGuiSortDirection_Descending);
+        IM_CHECK_EQ(ctx->TableClickHeader(table_ref, "PreferSortDescending", ImGuiKeyModFlags_Shift), ImGuiSortDirection_Ascending);
+        sort_specs = ctx->TableGetSortSpecs(table_ref);
         IM_CHECK(sort_specs && sort_specs->SpecsCount == 2);
 
-        IM_CHECK_EQ(click_column_and_get_sort(ctx, table, "NoSort", ImGuiKeyModFlags_Shift), ImGuiSortDirection_Ascending);
-        IM_CHECK_EQ(click_column_and_get_sort(ctx, table, "NoSort", ImGuiKeyModFlags_Shift), ImGuiSortDirection_Ascending);
-        sort_specs = table_get_sort_specs(ctx, table);
+        IM_CHECK_EQ(ctx->TableClickHeader(table_ref, "NoSort", ImGuiKeyModFlags_Shift), ImGuiSortDirection_None);
+        IM_CHECK_EQ(ctx->TableClickHeader(table_ref, "NoSort", ImGuiKeyModFlags_Shift), ImGuiSortDirection_None);
+        sort_specs = ctx->TableGetSortSpecs(table_ref);
         IM_CHECK(sort_specs && sort_specs->SpecsCount == 2);
 
-        IM_CHECK_EQ(click_column_and_get_sort(ctx, table, "NoSortAscending", ImGuiKeyModFlags_Shift), ImGuiSortDirection_Descending);
-        IM_CHECK_EQ(click_column_and_get_sort(ctx, table, "NoSortAscending", ImGuiKeyModFlags_Shift), ImGuiSortDirection_Descending);
-        IM_CHECK_EQ(click_column_and_get_sort(ctx, table, "NoSortDescending", ImGuiKeyModFlags_Shift), ImGuiSortDirection_Ascending);
-        IM_CHECK_EQ(click_column_and_get_sort(ctx, table, "NoSortDescending", ImGuiKeyModFlags_Shift), ImGuiSortDirection_Ascending);
-        sort_specs = table_get_sort_specs(ctx, table);
+        IM_CHECK_EQ(ctx->TableClickHeader(table_ref, "NoSortAscending", ImGuiKeyModFlags_Shift), ImGuiSortDirection_Descending);
+        IM_CHECK_EQ(ctx->TableClickHeader(table_ref, "NoSortAscending", ImGuiKeyModFlags_Shift), ImGuiSortDirection_Descending);
+        IM_CHECK_EQ(ctx->TableClickHeader(table_ref, "NoSortDescending", ImGuiKeyModFlags_Shift), ImGuiSortDirection_Ascending);
+        IM_CHECK_EQ(ctx->TableClickHeader(table_ref, "NoSortDescending", ImGuiKeyModFlags_Shift), ImGuiSortDirection_Ascending);
+        sort_specs = ctx->TableGetSortSpecs(table_ref);
         IM_CHECK(sort_specs && sort_specs->SpecsCount == 4);
 
         // Disable multi-sort and ensure there is only one sorted column left.
         vars.TableFlags = ImGuiTableFlags_Sortable;
         ctx->Yield();
-        sort_specs = table_get_sort_specs(ctx, table);
-        IM_CHECK(sort_specs != NULL);
-        IM_CHECK_EQ(sort_specs->SpecsCount, 1);
+        sort_specs = ctx->TableGetSortSpecs(table_ref);
+        IM_CHECK(sort_specs && sort_specs->SpecsCount == 1);
 
         // Disable sorting completely. Sort spec should not be returned.
         vars.TableFlags = ImGuiTableFlags_None;
         ctx->Yield();
-        sort_specs = table_get_sort_specs(ctx, table);
+        sort_specs = ctx->TableGetSortSpecs(table_ref);
         IM_CHECK(sort_specs == NULL);
 
-        // Test updating sorting direction on column flag change.
-        ImGuiTableColumn* col = &table->Columns[0];
-        vars.TableFlags = ImGuiTableFlags_Sortable;
-        IM_CHECK((col->Flags & ImGuiTableColumnFlags_NoSort) == 0);
-        vars.ColumnFlags[0] = ImGuiTableColumnFlags_NoSortAscending | ImGuiTableColumnFlags_NoSortDescending;
+        // Test SortTristate mode
+        vars.TableFlags = ImGuiTableFlags_Sortable | ImGuiTableFlags_SortTristate;
         ctx->Yield();
-        IM_CHECK((col->Flags & ImGuiTableColumnFlags_NoSort) != 0);
+        sort_specs = ctx->TableGetSortSpecs(table_ref); 
+        //IM_CHECK(sort_specs == NULL); // We don't test for this because settings are preserved in columns so restored on the _None -> _Sortable transition
+        IM_CHECK_EQ(ctx->TableClickHeader(table_ref, "Default"), ImGuiSortDirection_Ascending);
+        IM_CHECK_EQ(ctx->TableClickHeader(table_ref, "Default"), ImGuiSortDirection_Descending);
+        IM_CHECK_EQ(ctx->TableClickHeader(table_ref, "Default"), ImGuiSortDirection_None);
+        IM_CHECK_EQ(ctx->TableClickHeader(table_ref, "Default"), ImGuiSortDirection_Ascending);
 
-        col->SortDirection = ImGuiSortDirection_Ascending;
+        vars.TableFlags = ImGuiTableFlags_Sortable | ImGuiTableFlags_SortTristate | ImGuiTableFlags_SortMulti;
+        ctx->Yield();
+
+        IM_CHECK_EQ(ctx->TableClickHeader(table_ref, "PreferSortAscending"), ImGuiSortDirection_Ascending);
+        sort_specs = ctx->TableGetSortSpecs(table_ref);
+        IM_CHECK(sort_specs && sort_specs->SpecsCount == 1);
+
+        // Shift + triple-click to turn a second column back into non-sorting
+        IM_CHECK_EQ(ctx->TableClickHeader(table_ref, "Default", ImGuiKeyModFlags_Shift), ImGuiSortDirection_Ascending);
+        IM_CHECK_EQ(ctx->TableClickHeader(table_ref, "Default", ImGuiKeyModFlags_Shift), ImGuiSortDirection_Descending);
+        sort_specs = ctx->TableGetSortSpecs(table_ref);
+        IM_CHECK(sort_specs && sort_specs->SpecsCount == 2);
+        IM_CHECK(sort_specs->Specs[0].ColumnIndex == 1);
+        IM_CHECK(sort_specs->Specs[1].ColumnIndex == 0);
+        IM_CHECK_EQ(ctx->TableClickHeader(table_ref, "Default", ImGuiKeyModFlags_Shift), ImGuiSortDirection_None);
+        sort_specs = ctx->TableGetSortSpecs(table_ref);
+        IM_CHECK(sort_specs && sort_specs->SpecsCount == 1);
+        IM_CHECK(sort_specs->Specs[0].ColumnIndex == 1);
+
+        // Shift + triple-click to turn a first column back into non-sorting, while preserving second (making it first)
+        IM_CHECK_EQ(ctx->TableClickHeader(table_ref, "Default", ImGuiKeyModFlags_Shift), ImGuiSortDirection_Ascending);
+        IM_CHECK_EQ(ctx->TableClickHeader(table_ref, "PreferSortAscending", ImGuiKeyModFlags_Shift), ImGuiSortDirection_Descending);
+        sort_specs = ctx->TableGetSortSpecs(table_ref);
+        IM_CHECK_EQ(sort_specs->SpecsCount, 2);
+        IM_CHECK_EQ(sort_specs->Specs[0].ColumnIndex, 1);
+        IM_CHECK_EQ(sort_specs->Specs[1].ColumnIndex, 0);
+        IM_CHECK_EQ(ctx->TableClickHeader(table_ref, "PreferSortAscending", ImGuiKeyModFlags_Shift), ImGuiSortDirection_None);
+        sort_specs = ctx->TableGetSortSpecs(table_ref);
+        IM_CHECK_EQ(sort_specs->SpecsCount, 1);
+        IM_CHECK_EQ(sort_specs->Specs[0].ColumnIndex, 0);
+
+        // Test Tristate with per-column ImGuiTableColumnFlags_NoSortAscending / ImGuiTableColumnFlags_NoSortDescending
         vars.ColumnFlags[0] = ImGuiTableColumnFlags_NoSortAscending;
         ctx->Yield();
-        IM_CHECK_EQ(col->SortDirection, ImGuiSortDirection_Descending);
-
-        col->SortDirection = ImGuiSortDirection_Descending;
+        sort_specs = ctx->TableGetSortSpecs(table_ref);
+        IM_CHECK_EQ(sort_specs->Specs[0].ColumnIndex, 0);
+        IM_CHECK_EQ(sort_specs->Specs[0].SortDirection, ImGuiSortDirection_Descending);
+        IM_CHECK_EQ(ctx->TableClickHeader(table_ref, "Default"), ImGuiSortDirection_None);
+        IM_CHECK_EQ(ctx->TableClickHeader(table_ref, "Default"), ImGuiSortDirection_Descending);
         vars.ColumnFlags[0] = ImGuiTableColumnFlags_NoSortDescending;
         ctx->Yield();
-        IM_CHECK_EQ(col->SortDirection, ImGuiSortDirection_Ascending);
+        sort_specs = ctx->TableGetSortSpecs(table_ref);
+        IM_CHECK_EQ(sort_specs->Specs[0].ColumnIndex, 0);
+        IM_CHECK_EQ(sort_specs->Specs[0].SortDirection, ImGuiSortDirection_Ascending);
+        IM_CHECK_EQ(ctx->TableClickHeader(table_ref, "Default"), ImGuiSortDirection_None);
+        IM_CHECK_EQ(ctx->TableClickHeader(table_ref, "Default"), ImGuiSortDirection_Ascending);
+
+        // Disable all sorting
+        vars.ColumnFlags[0] = ImGuiTableColumnFlags_None;
+        IM_CHECK_EQ(ctx->TableClickHeader(table_ref, "Default"), ImGuiSortDirection_Descending);
+        IM_CHECK_EQ(ctx->TableClickHeader(table_ref, "Default"), ImGuiSortDirection_None);
+        sort_specs = ctx->TableGetSortSpecs(table_ref);
+        IM_CHECK(sort_specs && sort_specs->SpecsCount == 0);
+
+        // Disable SortTristate flag
+        vars.TableFlags &= ~ImGuiTableFlags_SortTristate;
+        ctx->Yield();
+        sort_specs = ctx->TableGetSortSpecs(table_ref);
+        IM_CHECK(sort_specs && sort_specs->SpecsCount == 1);
+
+        // Test updating sorting direction on column flag change.
+        ImGuiTableColumn* col0 = &table->Columns[0];
+        vars.TableFlags = ImGuiTableFlags_Sortable;
+        IM_CHECK((col0->Flags & ImGuiTableColumnFlags_NoSort) == 0);
+        vars.ColumnFlags[0] = ImGuiTableColumnFlags_NoSortAscending | ImGuiTableColumnFlags_NoSortDescending;
+        ctx->Yield();
+        IM_CHECK((col0->Flags & ImGuiTableColumnFlags_NoSort) != 0);
+
+        col0->SortDirection = ImGuiSortDirection_Ascending;
+        vars.ColumnFlags[0] = ImGuiTableColumnFlags_NoSortAscending;
+        ctx->Yield();
+        IM_CHECK_EQ(col0->SortDirection, ImGuiSortDirection_Descending);
+
+        col0->SortDirection = ImGuiSortDirection_Descending;
+        vars.ColumnFlags[0] = ImGuiTableColumnFlags_NoSortDescending;
+        ctx->Yield();
+        IM_CHECK_EQ(col0->SortDirection, ImGuiSortDirection_Ascending);
     };
 
     // ## Test freezing of table rows and columns.

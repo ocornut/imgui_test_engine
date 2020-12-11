@@ -133,7 +133,7 @@ static void HideOtherWindows(const ImGuiCaptureArgs* args)
         if ((window->Flags & ImGuiWindowFlags_Popup) != 0 && (args->InFlags & ImGuiCaptureFlags_ExpandToIncludePopups) != 0)
             continue;
 
-#if IMGUI_HAS_DOCK
+#ifdef IMGUI_HAS_DOCK
         bool should_hide_window = true;
         if ((window->Flags & ImGuiWindowFlags_DockNodeHost))
             for (ImGuiWindow* capture_window : args->InCaptureWindows)

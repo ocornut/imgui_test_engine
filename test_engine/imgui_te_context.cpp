@@ -1902,6 +1902,44 @@ void    ImGuiTestContext::ComboClickAll(ImGuiTestRef ref_parent)
     }
 }
 
+static ImGuiTableColumn* HelperTableFindColumnByName(ImGuiTable* table, const char* name)
+{
+    for (int i = 0; i < table->Columns.size(); i++)
+        if (strcmp(ImGui::TableGetColumnName(table, i), name) == 0)
+            return &table->Columns[i];
+    return NULL;
+}
+
+ImGuiSortDirection ImGuiTestContext::TableClickHeader(ImGuiTestRef ref, const char* label, ImGuiKeyModFlags keys_mod)
+{
+    ImGuiTable* table = ImGui::TableFindByID(GetID(ref));
+    IM_CHECK_RETV(table != NULL, ImGuiSortDirection_None);
+
+    ImGuiTableColumn* column = HelperTableFindColumnByName(table, label);
+    IM_CHECK_RETV(column != NULL, ImGuiSortDirection_None);
+
+    if (keys_mod != ImGuiKeyModFlags_None)
+        KeyDownMap(ImGuiKey_COUNT, keys_mod);
+
+    ItemClick(TableGetHeaderID(table, label), ImGuiMouseButton_Left);
+
+    if (keys_mod != ImGuiKeyModFlags_None)
+        KeyUpMap(ImGuiKey_COUNT, keys_mod);
+    return (ImGuiSortDirection_)column->SortDirection;
+}
+
+const ImGuiTableSortSpecs* ImGuiTestContext::TableGetSortSpecs(ImGuiTestRef ref)
+{
+    ImGuiTable* table = ImGui::TableFindByID(GetID(ref));
+    IM_CHECK_RETV(table != NULL, NULL);
+
+    ImGuiContext& g = *UiContext;
+    ImSwap(table, g.CurrentTable);
+    const ImGuiTableSortSpecs* sort_specs = ImGui::TableGetSortSpecs();
+    ImSwap(table, g.CurrentTable);
+    return sort_specs;
+}
+
 void    ImGuiTestContext::WindowClose(ImGuiTestRef ref)
 {
     if (IsError())

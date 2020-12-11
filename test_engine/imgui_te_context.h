@@ -383,6 +383,10 @@ struct ImGuiTestContext
     void        ComboClick(ImGuiTestRef ref);
     void        ComboClickAll(ImGuiTestRef ref);
 
+    // Tables
+    ImGuiSortDirection  TableClickHeader(ImGuiTestRef ref, const char* label, ImGuiKeyModFlags keys_mod = ImGuiKeyModFlags_None);
+    const ImGuiTableSortSpecs* TableGetSortSpecs(ImGuiTestRef ref);
+
     // Docking
 #ifdef IMGUI_HAS_DOCK
     void        DockWindowInto(const char* window_src, const char* window_dst, ImGuiDir split_dir = ImGuiDir_None);
