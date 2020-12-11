@@ -340,6 +340,7 @@ struct ImGuiTestContext
     void        ScrollToTop();
     void        ScrollToBottom();
     void        ScrollToItemY(ImGuiTestRef ref, float scroll_ratio_y = 0.5f);
+    void        ScrollToItemX(ImGuiTestRef ref);
     bool        ScrollErrorCheck(ImGuiAxis axis, float expected, float actual, int* remaining_attempts);
     void        ScrollVerifyScrollMax(ImGuiWindow* window);
 

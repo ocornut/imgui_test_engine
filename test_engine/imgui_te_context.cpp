@@ -672,29 +672,31 @@ void    ImGuiTestContext::ScrollTo(ImGuiAxis axis, float scroll_target)
 
     Str30f scrollbar_ref = Str30f("#SCROLL%c", axis_c);
     const ImGuiTestItemInfo* scrollbar_item = ItemInfo(scrollbar_ref.c_str(), ImGuiTestOpFlags_NoError);
-    if (scrollbar_item == NULL)
-        return;
-
-    ImRect scrollbar_rect = ImGui::GetWindowScrollbarRect(window, axis);
-    const float scrollbar_size_v = scrollbar_rect.Max[axis] - scrollbar_rect.Min[axis];
-    const float window_resize_grip_size = IM_FLOOR(ImMax(g.FontSize * 1.35f, window->WindowRounding + 1.0f + g.FontSize * 0.2f));
     const float scroll_target_clamp = ImMax(0.0f, ImMin(scroll_target, window->ScrollMax[axis]));
+    bool use_set_scroll_function = EngineIO->ConfigRunFast;
 
-    // In case of a very small window, directly use SetScroll.. function to prevent resizing it
-    bool use_set_scroll_function = scrollbar_size_v < window_resize_grip_size;
-    if (!use_set_scroll_function)
+    if (scrollbar_item != NULL)
     {
-        // Make sure we don't hover the window resize grip
-        ImVec2 scrollbar_src_pos = GetWindowScrollbarMousePositionForScroll(window, axis, window->Scroll[axis]);
-        scrollbar_src_pos[axis] = ImMin(scrollbar_src_pos[axis], scrollbar_rect.Min[axis] + scrollbar_size_v - window_resize_grip_size);
-        MouseMoveToPos(scrollbar_src_pos);
+        ImRect scrollbar_rect = ImGui::GetWindowScrollbarRect(window, axis);
+        const float scrollbar_size_v = scrollbar_rect.Max[axis] - scrollbar_rect.Min[axis];
+        const float window_resize_grip_size = IM_FLOOR(ImMax(g.FontSize * 1.35f, window->WindowRounding + 1.0f + g.FontSize * 0.2f));
 
+        // In case of a very small window, directly use SetScrollX/Y function to prevent resizing it
+        use_set_scroll_function |= scrollbar_size_v < window_resize_grip_size;
         if (!use_set_scroll_function)
         {
-            ImVec2 scrollbar_dst_pos = GetWindowScrollbarMousePositionForScroll(window, axis, scroll_target_clamp);
-            MouseDown(0);
-            MouseMoveToPos(scrollbar_dst_pos);
-            MouseUp(0);
+            // Make sure we don't hover the window resize grip
+            ImVec2 scrollbar_src_pos = GetWindowScrollbarMousePositionForScroll(window, axis, window->Scroll[axis]);
+            scrollbar_src_pos[axis] = ImMin(scrollbar_src_pos[axis], scrollbar_rect.Min[axis] + scrollbar_size_v - window_resize_grip_size);
+            MouseMoveToPos(scrollbar_src_pos);
+
+            if (!use_set_scroll_function)
+            {
+                ImVec2 scrollbar_dst_pos = GetWindowScrollbarMousePositionForScroll(window, axis, scroll_target_clamp);
+                MouseDown(0);
+                MouseMoveToPos(scrollbar_dst_pos);
+                MouseUp(0);
+            }
         }
     }
 
@@ -738,6 +740,75 @@ void    ImGuiTestContext::ScrollToItemY(ImGuiTestRef ref, float scroll_ratio_y)
         return;
 
     ScrollTo(ImGuiAxis_Y, scroll_target_y);
+}
+
+void   ImGuiTestContext::ScrollToItemX(ImGuiTestRef ref)
+{
+    ImGuiContext& g = *UiContext;
+    if (IsError())
+        return;
+
+    // If the item is not currently visible, scroll to get it in the center of our window
+    IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
+    ImGuiTestItemInfo* item = ItemInfo(ref);
+    ImGuiTestRefDesc desc(ref, item);
+    LogDebug("ScrollToItemX %s", desc.c_str());
+
+    if (item == NULL)
+        return;
+
+    // Ensure window size is up-to-date
+    Yield();
+
+    // TabBar are a special case because they have no scrollbar and rely on Scrollbutton "<" and ">"
+    if (ImGuiTabBar* tab_bar = g.TabBars.GetByKey(item->ParentID))
+    {
+        // Cancel if "##v", because it's outside the tab_bar rect, and will be considered as "not visible" even if it is!
+        if (GetID("##v") == item->ID)
+            return;
+
+        struct ImGuiTestRefScoped
+        {
+            ImGuiID InitialRefID;
+            ImGuiTestContext* Context;
+            ImGuiTestRefScoped(ImGuiTestContext* ctx, const ImGuiTestRef& new_ref) : Context(ctx), InitialRefID(ctx->RefID) { ctx->SetRef(new_ref); }
+            ~ImGuiTestRefScoped() { Context->SetRef(InitialRefID); }
+        };
+        ImGuiTestRefScoped scoped_ref(this, item->ParentID);
+
+        const ImGuiTabItem* selected_tab_item = ImGui::TabBarFindTabByID(tab_bar, tab_bar->SelectedTabId);
+        const ImGuiTabItem* target_tab_item = ImGui::TabBarFindTabByID(tab_bar, item->ID);
+        if (target_tab_item == NULL)
+            return;
+
+        int selected_tab_index = tab_bar->Tabs.index_from_ptr(selected_tab_item);
+        int target_tab_index = tab_bar->Tabs.index_from_ptr(target_tab_item);
+
+        Str16f scroll_button_ref("##%c", selected_tab_index > target_tab_index ? '<' : '>');
+        MouseMove(scroll_button_ref.c_str());
+
+        int click_count = selected_tab_index > target_tab_index ? selected_tab_index - target_tab_index : target_tab_index - selected_tab_index;
+        for (int i = 0; i < click_count; ++i)
+            MouseClick(0);
+
+        // Make sure that even in Fast, wait for the scroll animation to proceed.
+        // We're "loosing" some frames but there is no easy way to force a "tab visibility teleportation"
+        if (EngineIO->ConfigRunFast)
+            while (tab_bar->ScrollingAnim != tab_bar->ScrollingTarget)
+                Yield();
+    }
+    else
+    {
+        ImGuiWindow* window = item->Window;
+        float item_curr_x = ImFloor(item->RectFull.GetCenter().x);
+        float item_target_x = ImFloor(window->InnerClipRect.GetCenter().x);
+        float scroll_delta_x = item_target_x - item_curr_x;
+        float scroll_target_x = ImClamp(window->Scroll.x - scroll_delta_x, 0.0f, window->ScrollMax.x);
+        if (ImFabs(window->Scroll.x - scroll_target_x) < 1.0f)
+            return;
+
+        ScrollTo(ImGuiAxis_X, scroll_target_x);
+    }
 }
 
 // Verify that ScrollMax is stable regardless of scrolling position
@@ -903,8 +974,15 @@ void    ImGuiTestContext::MouseMove(ImGuiTestRef ref, ImGuiTestOpFlags flags)
     ImGuiWindow* window = item->Window;
     ImRect window_inner_r_padded = window->InnerClipRect;
     window_inner_r_padded.Expand(-4.0f); // == WINDOWS_RESIZE_FROM_EDGES_HALF_THICKNESS
-    if (item->NavLayer == ImGuiNavLayer_Main && !window_inner_r_padded.Contains(item->RectClipped))
-        ScrollToItemY(ref);
+    if (item->NavLayer == ImGuiNavLayer_Main)
+    {
+        bool contains_y = (item->RectClipped.Min.y >= window_inner_r_padded.Min.y && item->RectClipped.Max.y <= window_inner_r_padded.Max.y);
+        bool contains_x = (item->RectClipped.Min.x >= window_inner_r_padded.Min.x && item->RectClipped.Max.x <= window_inner_r_padded.Max.x);
+        if (!contains_y)
+            ScrollToItemY(ref);
+        if(!contains_x)
+            ScrollToItemX(ref);
+    }
 
     ImVec2 pos = item->RectFull.GetCenter();
     WindowTeleportToMakePosVisibleInViewport(window, pos);
