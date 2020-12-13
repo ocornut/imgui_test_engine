@@ -625,7 +625,7 @@ void RegisterTests_Window(ImGuiTestEngine* e)
         ImGuiWindow* window = ctx->GetWindowByRef("###Test Window");
 
         // Open window switcher (CTRL+TAB).
-        ctx->KeyDownMap(ImGuiKey_COUNT, ImGuiKeyModFlags_Shortcut);                     // Hold CTRL down
+        ctx->KeyDownMap(ImGuiKey_COUNT, ImGuiKeyModFlags_Ctrl); // Hold CTRL down
         ctx->KeyPressMap(ImGuiKey_Tab, 0);
         ctx->SleepNoSkip(0.3f, 1.0f / 60.0f);
         for (int i = 0; i < 2; i++)
@@ -633,7 +633,7 @@ void RegisterTests_Window(ImGuiTestEngine* e)
             IM_CHECK_STR_EQ_NO_RET(window->Name, Str30f("Frame %d###Test Window", g.FrameCount).c_str());    // Verify window->Name gets updated.
             ctx->Yield();
         }
-        ctx->KeyUpMap(ImGuiKey_COUNT, ImGuiKeyModFlags_Shortcut);
+        ctx->KeyUpMap(ImGuiKey_COUNT, ImGuiKeyModFlags_Ctrl);
     };
 }
 
