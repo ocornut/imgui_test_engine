@@ -358,6 +358,11 @@ void ImGuiTestContext::SetRef(ImGuiTestRef ref)
             WindowCollapse(window, false);
 }
 
+ImGuiTestRef ImGuiTestContext::GetRef()
+{
+    return RefID;
+}
+
 // Turn ref into a root ref unless ref is empty
 ImGuiWindow* ImGuiTestContext::GetWindowByRef(ImGuiTestRef ref)
 {
@@ -1910,6 +1915,19 @@ static ImGuiTableColumn* HelperTableFindColumnByName(ImGuiTable* table, const ch
     return NULL;
 }
 
+void ImGuiTestContext::TableOpenContextMenu(ImGuiTestRef ref)
+{
+    if (IsError())
+        return;
+
+    IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
+    LogDebug("TableOpenContextMenu '%s' %08X", ref.Path ? ref.Path : "NULL", ref.ID);
+
+    ImGuiTable* table = ImGui::TableFindByID(GetID(ref));
+    IM_CHECK(table != NULL);
+    ItemClick(TableGetHeaderID(table, table->RightMostEnabledColumn), ImGuiMouseButton_Right);
+}
+
 ImGuiSortDirection ImGuiTestContext::TableClickHeader(ImGuiTestRef ref, const char* label, ImGuiKeyModFlags keys_mod)
 {
     ImGuiTable* table = ImGui::TableFindByID(GetID(ref));
@@ -1926,6 +1944,26 @@ ImGuiSortDirection ImGuiTestContext::TableClickHeader(ImGuiTestRef ref, const ch
     if (keys_mod != ImGuiKeyModFlags_None)
         KeyUpMap(ImGuiKey_COUNT, keys_mod);
     return (ImGuiSortDirection_)column->SortDirection;
+}
+
+void ImGuiTestContext::TableSetColumnEnabled(ImGuiTestRef ref, const char* label, bool enabled)
+{
+    if (IsError())
+        return;
+
+    IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
+    LogDebug("TableSetColumnEnabled '%s' %08X = %d", ref.Path ? ref.Path : "NULL", ref.ID, enabled);
+
+    TableOpenContextMenu(ref);
+
+    ImGuiTestRef backup_ref = GetRef();
+    SetRef(GetFocusWindowRef());
+    if (enabled)
+        ItemCheck(label);
+    else
+        ItemUncheck(label);
+    PopupCloseOne();
+    SetRef(backup_ref);
 }
 
 const ImGuiTableSortSpecs* ImGuiTestContext::TableGetSortSpecs(ImGuiTestRef ref)
@@ -2077,13 +2115,24 @@ void    ImGuiTestContext::WindowResize(ImGuiTestRef ref, ImVec2 size)
     MouseUp();
 }
 
+void    ImGuiTestContext::PopupCloseOne()
+{
+    if (IsError())
+        return;
+
+    IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
+    LogDebug("PopupCloseOne");
+    ImGuiContext& g = *UiContext;
+    ImGui::ClosePopupToLevel(g.OpenPopupStack.Size - 1, true);    // FIXME
+}
+
 void    ImGuiTestContext::PopupCloseAll()
 {
     if (IsError())
         return;
 
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
-    LogDebug("PopupClose");
+    LogDebug("PopupCloseAll");
     ImGui::ClosePopupToLevel(0, true);    // FIXME
 }
 

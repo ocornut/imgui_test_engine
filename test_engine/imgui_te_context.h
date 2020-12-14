@@ -268,6 +268,7 @@ struct ImGuiTestContext
     // FIXME-TESTS: Refactor this horrible mess... perhaps all functions should have a ImGuiTestRef defaulting to empty?
     void        SetRef(ImGuiTestRef ref);
     void        SetRef(ImGuiWindow* window); // Shortcut to SetRef(window->Name) which works for ChildWindow (see code)
+    ImGuiTestRef GetRef();
     void        WindowClose(ImGuiTestRef ref);
     void        WindowCollapse(ImGuiWindow* window, bool collapsed);
     void        WindowFocus(ImGuiTestRef ref);
@@ -275,6 +276,7 @@ struct ImGuiTestContext
     void        WindowResize(ImGuiTestRef ref, ImVec2 sz);
     bool        WindowTeleportToMakePosVisibleInViewport(ImGuiWindow* window, ImVec2 pos_in_window);
     bool        WindowBringToFront(ImGuiWindow* window, ImGuiTestOpFlags flags = ImGuiTestOpFlags_None);
+    void        PopupCloseOne();
     void        PopupCloseAll();
     ImGuiWindow* GetWindowByRef(ImGuiTestRef ref);
     ImGuiTestRef GetFocusWindowRef();
@@ -384,8 +386,10 @@ struct ImGuiTestContext
     void        ComboClickAll(ImGuiTestRef ref);
 
     // Tables
-    ImGuiSortDirection  TableClickHeader(ImGuiTestRef ref, const char* label, ImGuiKeyModFlags keys_mod = ImGuiKeyModFlags_None);
-    const ImGuiTableSortSpecs* TableGetSortSpecs(ImGuiTestRef ref);
+    void                        TableOpenContextMenu(ImGuiTestRef ref);
+    ImGuiSortDirection          TableClickHeader(ImGuiTestRef ref, const char* label, ImGuiKeyModFlags keys_mod = ImGuiKeyModFlags_None);
+    void                        TableSetColumnEnabled(ImGuiTestRef ref, const char* label, bool enabled);
+    const ImGuiTableSortSpecs*  TableGetSortSpecs(ImGuiTestRef ref);
 
     // Docking
 #ifdef IMGUI_HAS_DOCK

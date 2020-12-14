@@ -32,6 +32,7 @@ ImFont*             FindFontByName(const char* name);
 
 #ifdef IMGUI_HAS_TABLE
 ImGuiID             TableGetHeaderID(ImGuiTable* table, const char* column, int instance_no = 0);
+ImGuiID             TableGetHeaderID(ImGuiTable* table, int column_n, int instance_no = 0);
 void                TableDiscardInstanceAndSettings(ImGuiID table_id);
 #endif
 

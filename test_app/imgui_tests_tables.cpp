@@ -1765,7 +1765,6 @@ void RegisterTests_Table(ImGuiTestEngine* e)
     };
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
-        ImGuiContext& g = *ctx->UiContext;
         TableTestingVars& vars = ctx->GetUserData<TableTestingVars>();
 
         ctx->SetRef("Test window 1");
@@ -1808,11 +1807,13 @@ void RegisterTests_Table(ImGuiTestEngine* e)
         IM_CHECK((table->Flags & ImGuiTableFlags_Resizable) == 0);
 
         // Test column hiding.
-        ctx->ItemClick(TableGetHeaderID(table, "One"), ImGuiMouseButton_Right);
-        ctx->SetRef(g.NavWindow);
-        ctx->ItemClick("One");
+        ctx->TableSetColumnEnabled("table1", "One", false);
+        //ctx->ItemClick(TableGetHeaderID(table, "One"), ImGuiMouseButton_Right);
+        //ctx->SetRef(g.NavWindow);
+        //ctx->ItemUncheck("One");
         IM_CHECK(col0->IsEnabled == false);
-        ctx->ItemClick("One");
+        ctx->TableSetColumnEnabled("table1", "One", true);
+        //ctx->ItemCheck("One");
         IM_CHECK(col0->IsEnabled == true);
     };
 

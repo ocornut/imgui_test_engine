@@ -212,6 +212,14 @@ ImGuiID TableGetHeaderID(ImGuiTable* table, const char* column, int instance_no)
     return ImHashData(column, strlen(column), ImHashData(&column_id, sizeof(column_id), table->ID + instance_no));
 }
 
+ImGuiID TableGetHeaderID(ImGuiTable* table, int column_n, int instance_no)
+{
+    IM_ASSERT(column_n >= 0 && column_n < table->ColumnsCount);
+    int column_id = instance_no * table->ColumnsCount + column_n;
+    const char* column_name = ImGui::TableGetColumnName(table, column_n);
+    return ImHashData(column_name, strlen(column_name), ImHashData(&column_id, sizeof(column_id), table->ID + instance_no));
+}
+
 void TableDiscardInstanceAndSettings(ImGuiID table_id)
 {
     ImGuiContext& g = *GImGui;
