@@ -386,7 +386,7 @@ struct ImGuiTestContext
     void        ComboClickAll(ImGuiTestRef ref);
 
     // Tables
-    void                        TableOpenContextMenu(ImGuiTestRef ref);
+    void                        TableOpenContextMenu(ImGuiTestRef ref, int column_n = -1);
     ImGuiSortDirection          TableClickHeader(ImGuiTestRef ref, const char* label, ImGuiKeyModFlags keys_mod = ImGuiKeyModFlags_None);
     void                        TableSetColumnEnabled(ImGuiTestRef ref, const char* label, bool enabled);
     const ImGuiTableSortSpecs*  TableGetSortSpecs(ImGuiTestRef ref);

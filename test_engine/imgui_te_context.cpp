@@ -1915,7 +1915,7 @@ static ImGuiTableColumn* HelperTableFindColumnByName(ImGuiTable* table, const ch
     return NULL;
 }
 
-void ImGuiTestContext::TableOpenContextMenu(ImGuiTestRef ref)
+void ImGuiTestContext::TableOpenContextMenu(ImGuiTestRef ref, int column_n)
 {
     if (IsError())
         return;
@@ -1925,7 +1925,10 @@ void ImGuiTestContext::TableOpenContextMenu(ImGuiTestRef ref)
 
     ImGuiTable* table = ImGui::TableFindByID(GetID(ref));
     IM_CHECK(table != NULL);
-    ItemClick(TableGetHeaderID(table, table->RightMostEnabledColumn), ImGuiMouseButton_Right);
+
+    if (column_n == -1)
+        column_n = table->RightMostEnabledColumn;
+    ItemClick(TableGetHeaderID(table, column_n), ImGuiMouseButton_Right);
 }
 
 ImGuiSortDirection ImGuiTestContext::TableClickHeader(ImGuiTestRef ref, const char* label, ImGuiKeyModFlags keys_mod)
