@@ -1365,7 +1365,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
         // Test SortTristate mode
         vars.TableFlags = ImGuiTableFlags_Sortable | ImGuiTableFlags_SortTristate;
         ctx->Yield();
-        sort_specs = ctx->TableGetSortSpecs(table_ref); 
+        sort_specs = ctx->TableGetSortSpecs(table_ref);
         //IM_CHECK(sort_specs == NULL); // We don't test for this because settings are preserved in columns so restored on the _None -> _Sortable transition
         IM_CHECK_EQ(ctx->TableClickHeader(table_ref, "Default"), ImGuiSortDirection_Ascending);
         IM_CHECK_EQ(ctx->TableClickHeader(table_ref, "Default"), ImGuiSortDirection_Descending);
@@ -1874,7 +1874,6 @@ void RegisterTests_Table(ImGuiTestEngine* e)
         ctx->SetRef("Test window 1");
         ImGuiTable* table = ImGui::TableFindByID(ctx->GetID("table1"));
         ImGuiTableColumn* col0 = &table->Columns[0];
-        ImGuiTableColumn* col1 = &table->Columns[1];
         IM_CHECK_EQ(col0->WidthRequest, 100.0f);
         IM_CHECK_EQ(col0->WidthGiven, 100.0f);
 
@@ -1902,6 +1901,61 @@ void RegisterTests_Table(ImGuiTestEngine* e)
         ctx->TableSetColumnEnabled("table1", "One", true);
         //ctx->ItemCheck("One");
         IM_CHECK(col0->IsEnabled == true);
+    };
+
+    // ## Test column reordering and resetting to default order.
+    t = IM_REGISTER_TEST(e, "table", "table_reorder");
+    t->SetUserDataType<TableTestingVars>();
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::SetNextWindowSize(ImVec2(250.0f, 100.0f), ImGuiCond_Appearing);
+        ImGui::Begin("Test window 1", NULL, ImGuiWindowFlags_NoSavedSettings);
+
+        if (ctx->IsFirstGuiFrame())
+            TableDiscardInstanceAndSettings(ImGui::GetID("table1"));
+
+        if (ImGui::BeginTable("table1", 4, ImGuiTableFlags_Reorderable))
+        {
+            ImGui::TableSetupColumn("One");
+            ImGui::TableSetupColumn("Two");
+            ImGui::TableSetupColumn("Three");
+            ImGui::TableSetupColumn("Four");
+            ImGui::TableHeadersRow();
+            HelperTableSubmitCellsButtonFix(4, 4);
+            ImGui::EndTable();
+        }
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiContext& g = *ctx->UiContext;
+        ctx->SetRef("Test window 1");
+        ImGuiTable* table = ImGui::TableFindByID(ctx->GetID("table1"));
+
+        // Ensure default order is set initially.
+        IM_CHECK(table->IsDefaultDisplayOrder);
+        for (int i = 0; i < table->ColumnsCount; i++)
+            IM_CHECK_EQ(table->DisplayOrderToIndex[i], i);
+
+        // Swap two columns.
+        ctx->ItemDragAndDrop(TableGetHeaderID(table, "Two"), TableGetHeaderID(table, "Three"));
+
+        // Verify new order.
+        IM_CHECK(!table->IsDefaultDisplayOrder);
+        IM_CHECK_EQ(table->DisplayOrderToIndex[0], 0);
+        IM_CHECK_EQ(table->DisplayOrderToIndex[1], 2);
+        IM_CHECK_EQ(table->DisplayOrderToIndex[2], 1);
+        IM_CHECK_EQ(table->DisplayOrderToIndex[3], 3);
+
+        // Reset order.
+        ctx->ItemClick(TableGetHeaderID(table, "Three"), ImGuiMouseButton_Right);
+        ctx->SetRef(g.NavWindow);
+        ctx->ItemClick("Reset order");
+
+        // Verify default order.
+        IM_CHECK(table->IsDefaultDisplayOrder);
+        for (int i = 0; i < table->ColumnsCount; i++)
+            IM_CHECK_EQ(table->DisplayOrderToIndex[i], i);
     };
 
 #else // #ifdef IMGUI_HAS_TABLE
