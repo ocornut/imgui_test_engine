@@ -2049,6 +2049,55 @@ void RegisterTests_Table(ImGuiTestEngine* e)
         IM_CHECK(window->ClipRect.Contains(item_info->RectFull));                               // Button should remain visible when end of drag operation scrolls it into the view.
     };
 
+    // ## Test LastItemId and LastItemStatusFlags being unset in hidden columns.
+    t = IM_REGISTER_TEST(e, "table", "table_hidden_columns");
+    t->SetUserDataType<TableTestingVars>();
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiContext& g = *ctx->UiContext;
+        ImGui::SetNextWindowSize(ImVec2(250.0f, 100.0f), ImGuiCond_Appearing);
+        ImGui::Begin("Test window 1", NULL, ImGuiWindowFlags_NoSavedSettings);
+
+        if (ctx->IsFirstGuiFrame())
+            TableDiscardInstanceAndSettings(ImGui::GetID("table1"));
+
+        const int columns_count = 2;
+        if (ImGui::BeginTable("table1", columns_count, ImGuiTableFlags_Hideable))
+        {
+            ImGui::TableSetupColumn("One");
+            ImGui::TableSetupColumn("Two", ImGuiTableColumnFlags_DefaultHide);
+            ImGui::TableHeadersRow();
+            ImGui::TableNextRow();
+            for (int column_n = 0; column_n < columns_count; column_n++)
+            {
+                ImGui::TableSetColumnIndex(column_n);
+                ImGui::Button(Str16f("%d", column_n).c_str());
+                if (ctx->GenericVars.Bool1)
+                {
+                    if (column_n == 0)          // Visible column.
+                    {
+                        IM_CHECK(g.CurrentWindow->DC.LastItemId == ImGui::GetID("0"));
+                        IM_CHECK(g.CurrentWindow->DC.LastItemStatusFlags & ImGuiItemStatusFlags_HoveredRect);
+                    }
+                    else if (column_n == 1)     // Hidden column.
+                    {
+                        IM_CHECK(g.CurrentWindow->DC.LastItemId == 0);
+                        IM_CHECK(g.CurrentWindow->DC.LastItemStatusFlags == 0);
+                    }
+                }
+            };
+            ImGui::EndTable();
+        }
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ctx->SetRef("Test window 1");
+        ctx->MouseMove("table1/0");             // Ensure LastItemStatusFlags has _HoveredRect flag.
+        ctx->GenericVars.Bool1 = true;          // Perform a test.
+        ctx->Yield();                           // Do one more frame so tests in GuiFunc can run.
+    };
+
 #else // #ifdef IMGUI_HAS_TABLE
     IM_UNUSED(e);
 #endif
