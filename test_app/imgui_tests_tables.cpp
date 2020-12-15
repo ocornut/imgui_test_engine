@@ -1958,6 +1958,97 @@ void RegisterTests_Table(ImGuiTestEngine* e)
             IM_CHECK_EQ(table->DisplayOrderToIndex[i], i);
     };
 
+    // ## Test whether widgets in a custom table header can be clicked.
+    t = IM_REGISTER_TEST(e, "table", "table_custom_header");
+    t->SetUserDataType<TableTestingVars>();
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::SetNextWindowSize(ImVec2(250.0f, 100.0f), ImGuiCond_Appearing);
+        ImGui::Begin("Test window 1", NULL, ImGuiWindowFlags_NoSavedSettings);
+
+        if (ctx->IsFirstGuiFrame())
+            TableDiscardInstanceAndSettings(ImGui::GetID("table1"));
+
+        const int columns_count = 1;
+        if (ImGui::BeginTable("table1", columns_count))
+        {
+            ImGui::TableSetupColumn("One");
+            ImGui::TableNextRow(ImGuiTableRowFlags_Headers);
+            ImGui::TableSetColumnIndex(0);
+            ImGui::TableHeader(ImGui::TableGetColumnName(0));
+            bool ret = ImGui::Checkbox("##checkall", &ctx->GenericVars.Bool1);
+            ctx->GenericVars.Status.QueryInc(ret);
+            ImGui::TableNextRow();
+            HelperTableSubmitCellsButtonFix(columns_count, 1);
+            ImGui::EndTable();
+        }
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ctx->SetRef("Test window 1");
+        IM_CHECK(ctx->GenericVars.Status.Ret == 0);
+        IM_CHECK(ctx->GenericVars.Status.Hovered == 0);
+        IM_CHECK(ctx->GenericVars.Status.Clicked == 0);
+        ctx->ItemClick(ctx->GetID("##checkall", ctx->GetID("table1")));
+        IM_CHECK(ctx->GenericVars.Status.Ret > 0);
+        IM_CHECK(ctx->GenericVars.Status.Hovered > 0);
+        IM_CHECK(ctx->GenericVars.Status.Clicked > 0);
+    };
+
+    // ## Test keeping columns visible after column resize.
+    t = IM_REGISTER_TEST(e, "table", "table_scroll_on_resize");
+    t->SetUserDataType<TableTestingVars>();
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiContext& g = *ctx->UiContext;
+        ImGui::SetNextWindowSize(ImVec2(250.0f, 100.0f), ImGuiCond_Appearing);
+        ImGui::Begin("Test window 1", NULL, ImGuiWindowFlags_NoSavedSettings);
+
+        if (ctx->IsFirstGuiFrame())
+            TableDiscardInstanceAndSettings(ImGui::GetID("table1"));
+
+        const int columns_count = 3;
+        if (ImGui::BeginTable("table1", columns_count, ImGuiTableFlags_Resizable | ImGuiTableFlags_ScrollX))
+        {
+            ImGui::TableSetupColumn("One");
+            ImGui::TableSetupColumn("Two");
+            ImGui::TableSetupColumn("Three");
+            ImGui::TableHeadersRow();
+            ImGui::TableNextRow();
+            for (int column_n = 0; column_n < columns_count; column_n++)
+            {
+                ImGui::TableSetColumnIndex(column_n);
+                Str16f name("%d", column_n);
+                float x = ImGui::GetCursorPosX() + g.CurrentTable->Columns[g.CurrentTable->CurrentColumn].WidthGiven - g.Style.FramePadding.x * 2 - g.Style.ItemSpacing.x;
+                if (x > ImGui::GetCursorPosX())
+                    ImGui::SetCursorPosX(x);    // Align button to the right side.
+                ImGui::Button(name.c_str());
+            };
+            ImGui::EndTable();
+        }
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ctx->SetRef("Test window 1");
+        ImGuiWindow* window = ctx->GetWindowByRef(ctx->RefID);
+        ImGuiTable* table = ImGui::TableFindByID(ctx->GetID("table1"));
+        ImGuiID resize_id = ImGui::TableGetColumnResizeID(table, 0);
+
+        // Left to right.
+        ctx->ItemDragWithDelta(resize_id, ImVec2(window->InnerRect.GetWidth() * 2.0f, 0.0f));   // Resize column to the right, so that button sticking to the right size of column goes out of view.
+        ImGuiTestItemInfo* item_info = ctx->ItemInfo("table1/0");
+        IM_CHECK(item_info != NULL);
+        IM_CHECK(window->ClipRect.Contains(item_info->RectFull));                               // Button should remain visible when end of drag operation scrolls it into the view.
+
+        // Right to left.
+        ctx->ItemDragWithDelta(resize_id, ImVec2(-window->InnerRect.GetWidth() * 2.0f, 0.0f));  // Resize column to the right, so that button sticking to the right size of column goes out of view.
+        item_info = ctx->ItemInfo("table1/0");
+        IM_CHECK(item_info != NULL);
+        IM_CHECK(window->ClipRect.Contains(item_info->RectFull));                               // Button should remain visible when end of drag operation scrolls it into the view.
+    };
+
 #else // #ifdef IMGUI_HAS_TABLE
     IM_UNUSED(e);
 #endif
