@@ -98,9 +98,9 @@ static void HelperTableWithResizingPolicies(const char* table_id, ImGuiTableFlag
             ImGui::TableSetColumnIndex(column);
             const char* column_desc = "Unknown";
             const char policy = columns_desc[column];
-            if (policy == 'F') { column_desc = "Fixed"; }
-            if (policy == 'W') { column_desc = "Stretch"; }
-            if (policy == 'A') { column_desc = "Auto"; }
+            if (policy == 'F' || policy == 'f') { column_desc = "Fixed"; }
+            if (policy == 'W' || policy == 'w') { column_desc = "Stretch"; }
+            if (policy == 'A' || policy == 'a') { column_desc = "Auto"; }
             ImGui::Text("%s %d,%d", column_desc, row, column);
         }
     }
@@ -656,7 +656,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
 
         ImGui::BulletText("OK: Resize from F1| or F2|");    // ok: alter ->WidthRequested of Fixed column. Subsequent columns will be offset.
         ImGui::BulletText("OK: Resize from F3|");           // ok: alter ->WidthRequested of Fixed column. If active, ScrollX extent can be altered.
-        HelperTableWithResizingPolicies("table1", 0, "FFF");
+        HelperTableWithResizingPolicies("table1", 0, "FFFff");
         ImGui::Spacing();
 
         ImGui::BulletText("OK: Resize from F1| or F2|");    // ok: alter ->WidthRequested of Fixed column. If active, ScrollX extent can be altered, but it doesn't make much sense as the Weighted column will always be minimal size.
@@ -699,8 +699,8 @@ void RegisterTests_Table(ImGuiTestEngine* e)
         HelperTableWithResizingPolicies("table8", 0, "FWF");
         ImGui::Spacing();
 
-        ImGui::BulletText("OK: Resize from ");
-        HelperTableWithResizingPolicies("table9", 0, "WWFWW");
+        ImGui::BulletText("OK: Resize from ?");
+        HelperTableWithResizingPolicies("table9", 0, "WWWFFWWW");
         ImGui::Spacing();
 
         ImGui::End();
@@ -2001,29 +2001,23 @@ void RegisterTests_Table(ImGuiTestEngine* e)
     t->SetUserDataType<TableTestingVars>();
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
-        ImGuiContext& g = *ctx->UiContext;
         ImGui::SetNextWindowSize(ImVec2(250.0f, 100.0f), ImGuiCond_Appearing);
         ImGui::Begin("Test window 1", NULL, ImGuiWindowFlags_NoSavedSettings);
 
         if (ctx->IsFirstGuiFrame())
             TableDiscardInstanceAndSettings(ImGui::GetID("table1"));
 
-        const int columns_count = 3;
-        if (ImGui::BeginTable("table1", columns_count, ImGuiTableFlags_Resizable | ImGuiTableFlags_ScrollX))
+        if (ImGui::BeginTable("table1", 3, ImGuiTableFlags_Resizable | ImGuiTableFlags_ScrollX))
         {
             ImGui::TableSetupColumn("One");
             ImGui::TableSetupColumn("Two");
             ImGui::TableSetupColumn("Three");
             ImGui::TableHeadersRow();
             ImGui::TableNextRow();
-            for (int column_n = 0; column_n < columns_count; column_n++)
+            for (int column_n = 0; column_n < ImGui::TableGetColumnCount(); column_n++)
             {
                 ImGui::TableSetColumnIndex(column_n);
-                Str16f name("%d", column_n);
-                float x = ImGui::GetCursorPosX() + g.CurrentTable->Columns[g.CurrentTable->CurrentColumn].WidthGiven - g.Style.FramePadding.x * 2 - g.Style.ItemSpacing.x;
-                if (x > ImGui::GetCursorPosX())
-                    ImGui::SetCursorPosX(x);    // Align button to the right side.
-                ImGui::Button(name.c_str());
+                ImGui::Button(Str16f("%d", column_n).c_str());
             };
             ImGui::EndTable();
         }
@@ -2036,54 +2030,55 @@ void RegisterTests_Table(ImGuiTestEngine* e)
         ImGuiTable* table = ImGui::TableFindByID(ctx->GetID("table1"));
         ImGuiID resize_id = ImGui::TableGetColumnResizeID(table, 0);
 
-        // Left to right.
-        ctx->ItemDragWithDelta(resize_id, ImVec2(window->InnerRect.GetWidth() * 2.0f, 0.0f));   // Resize column to the right, so that button sticking to the right size of column goes out of view.
+        // Left to right, verify that column is still fully visible at the end of resize
+        ctx->ItemDragWithDelta(resize_id, ImVec2(window->InnerRect.GetWidth() * 2.0f, 0.0f));
         ImGuiTestItemInfo* item_info = ctx->ItemInfo("table1/0");
         IM_CHECK(item_info != NULL);
-        IM_CHECK(window->ClipRect.Contains(item_info->RectFull));                               // Button should remain visible when end of drag operation scrolls it into the view.
+        IM_CHECK(window->ClipRect.Min.x <= table->Columns[0].ClipRect.Min.x && window->ClipRect.Max.x >= table->Columns[0].ClipRect.Max.x);
 
-        // Right to left.
-        ctx->ItemDragWithDelta(resize_id, ImVec2(-window->InnerRect.GetWidth() * 2.0f, 0.0f));  // Resize column to the right, so that button sticking to the right size of column goes out of view.
+        // Right to left, verify that column is still fully visible at the end of resize
+        ctx->ItemDragWithDelta(resize_id, ImVec2(-window->InnerRect.GetWidth() * 2.0f, 0.0f));
         item_info = ctx->ItemInfo("table1/0");
         IM_CHECK(item_info != NULL);
-        IM_CHECK(window->ClipRect.Contains(item_info->RectFull));                               // Button should remain visible when end of drag operation scrolls it into the view.
+        IM_CHECK(window->ClipRect.Min.x <= table->Columns[0].ClipRect.Min.x && window->ClipRect.Max.x >= table->Columns[0].ClipRect.Max.x);
     };
 
     // ## Test LastItemId and LastItemStatusFlags being unset in hidden columns.
     t = IM_REGISTER_TEST(e, "table", "table_hidden_columns");
-    t->SetUserDataType<TableTestingVars>();
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
-        ImGuiContext& g = *ctx->UiContext;
         ImGui::SetNextWindowSize(ImVec2(250.0f, 100.0f), ImGuiCond_Appearing);
         ImGui::Begin("Test window 1", NULL, ImGuiWindowFlags_NoSavedSettings);
 
         if (ctx->IsFirstGuiFrame())
             TableDiscardInstanceAndSettings(ImGui::GetID("table1"));
 
-        const int columns_count = 2;
-        if (ImGui::BeginTable("table1", columns_count, ImGuiTableFlags_Hideable))
+        if (ImGui::BeginTable("table1", 2, ImGuiTableFlags_Hideable))
         {
+            ImGuiWindow* window = ImGui::GetCurrentWindow();
             ImGui::TableSetupColumn("One");
             ImGui::TableSetupColumn("Two", ImGuiTableColumnFlags_DefaultHide);
             ImGui::TableHeadersRow();
-            ImGui::TableNextRow();
-            for (int column_n = 0; column_n < columns_count; column_n++)
+            for (int column_n = 0; column_n < 2; column_n++)
             {
-                ImGui::TableSetColumnIndex(column_n);
+                ImGui::TableNextColumn();
+                IM_CHECK_EQ(window->DC.LastItemId, 0u);
+                IM_CHECK_EQ(window->DC.LastItemStatusFlags, 0);
+
                 ImGui::Button(Str16f("%d", column_n).c_str());
-                if (ctx->GenericVars.Bool1)
+                if (column_n == 0)
                 {
-                    if (column_n == 0)          // Visible column.
-                    {
-                        IM_CHECK(g.CurrentWindow->DC.LastItemId == ImGui::GetID("0"));
-                        IM_CHECK(g.CurrentWindow->DC.LastItemStatusFlags & ImGuiItemStatusFlags_HoveredRect);
-                    }
-                    else if (column_n == 1)     // Hidden column.
-                    {
-                        IM_CHECK(g.CurrentWindow->DC.LastItemId == 0);
-                        IM_CHECK(g.CurrentWindow->DC.LastItemStatusFlags == 0);
-                    }
+                    // Visible column
+                    IM_CHECK_EQ(window->DC.LastItemId, ImGui::GetID("0"));
+                    if (ImGui::IsItemHovered())
+                        IM_CHECK(window->DC.LastItemStatusFlags & ImGuiItemStatusFlags_HoveredRect);
+                }
+
+                if (column_n == 1)
+                {
+                    // Hidden column
+                    IM_CHECK_EQ(window->DC.LastItemId, 0u);
+                    IM_CHECK_EQ(window->DC.LastItemStatusFlags, 0);
                 }
             };
             ImGui::EndTable();
@@ -2093,9 +2088,8 @@ void RegisterTests_Table(ImGuiTestEngine* e)
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         ctx->SetRef("Test window 1");
-        ctx->MouseMove("table1/0");             // Ensure LastItemStatusFlags has _HoveredRect flag.
-        ctx->GenericVars.Bool1 = true;          // Perform a test.
-        ctx->Yield();                           // Do one more frame so tests in GuiFunc can run.
+        ctx->MouseMove("table1/0");     // Ensure LastItemStatusFlags has _HoveredRect flag.
+        ctx->Yield(2);                  // Do one more frame so tests in GuiFunc can run.
     };
 
 #else // #ifdef IMGUI_HAS_TABLE
