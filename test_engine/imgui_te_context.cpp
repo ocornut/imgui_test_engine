@@ -621,16 +621,18 @@ bool    ImGuiTestContext::ScrollErrorCheck(ImGuiAxis axis, float expected, float
     }
 }
 
-ImVec2        GetWindowScrollbarMousePositionForScroll(ImGuiWindow* window, ImGuiAxis axis, float scroll_v)
+// FIXME-TESTS: Mostly the same code as ScrollbarEx()
+static ImVec2 GetWindowScrollbarMousePositionForScroll(ImGuiWindow* window, ImGuiAxis axis, float scroll_v)
 {
-    // Mostly the same code as ScrollbarEx
-
     ImGuiContext& g = *GImGui;
     ImRect bb = ImGui::GetWindowScrollbarRect(window, axis);
 
+    // From Scrollbar():
     //float* scroll_v = &window->Scroll[axis];
-    float size_avail_v = window->InnerRect.Max[axis] - window->InnerRect.Min[axis];
-    float size_contents_v = window->ContentSize[axis] + window->WindowPadding[axis] * 2.0f;
+    const float size_avail_v = window->InnerRect.Max[axis] - window->InnerRect.Min[axis];
+    const float size_contents_v = window->ContentSize[axis] + window->WindowPadding[axis] * 2.0f;
+
+    // From ScrollbarEx() onward:
 
     // V denote the main, longer axis of the scrollbar (= height for a vertical scrollbar)
     const float scrollbar_size_v = bb.Max[axis] - bb.Min[axis];
@@ -641,74 +643,92 @@ ImVec2        GetWindowScrollbarMousePositionForScroll(ImGuiWindow* window, ImGu
     const float grab_h_pixels = ImClamp(scrollbar_size_v * (size_avail_v / win_size_v), g.Style.GrabMinSize, scrollbar_size_v);
     const float grab_h_norm = grab_h_pixels / scrollbar_size_v;
 
-    float scroll_max = ImMax(1.0f, size_contents_v - size_avail_v);
-    float scroll_ratio = ImSaturate(scroll_v / scroll_max);
-    float grab_v = scroll_ratio * (scrollbar_size_v - grab_h_pixels)  ; // Grab position
+    const float scroll_max = ImMax(1.0f, size_contents_v - size_avail_v);
+    const float scroll_ratio = ImSaturate(scroll_v / scroll_max);
+    const float grab_v = scroll_ratio * (scrollbar_size_v - grab_h_pixels); // Grab position
 
-    ImVec2 position = (axis == ImGuiAxis_X ? ImVec2(bb.Min.x, bb.GetCenter().y) : ImVec2(bb.GetCenter().x, bb.Min.y));
-    position[axis] += grab_v + grab_h_pixels * 0.5f;
+    ImVec2 position;
+    position[axis] = bb.Min[axis] + grab_v + grab_h_pixels * 0.5f;
+    position[axis ^ 1] = bb.GetCenter()[axis ^ 1];
+
     return position;
 }
 
-void    ImGuiTestContext::ScrollTo(ImGuiAxis axis, float scroll_target)
+void    ImGuiTestContext::ScrollTo(ImGuiWindow* window, ImGuiAxis axis, float scroll_target)
 {
     ImGuiContext& g = *UiContext;
     if (IsError())
         return;
 
-    IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
-    ImGuiWindow* window = GetWindowByRef("");
-    const char axis_c = (char)('X' + axis);
-    if (!window)
-    {
-        LogError("ScrollTo%c: failed to get window", axis_c);
+    // Early out
+    const float scroll_target_clamp = ImClamp(scroll_target, 0.0f, window->ScrollMax[axis]);
+    if (ImFabs(window->Scroll[axis] - scroll_target_clamp) < 1.0f)
         return;
-    }
 
-    LogDebug("ScrollTo%c %.1f/%.1f", axis_c, scroll_target, window->ScrollMax[axis]);
+    IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
+    const char axis_c = (char)('X' + axis);
+    LogDebug("ScrollTo %c %.1f/%.1f", axis_c, scroll_target, window->ScrollMax[axis]);
+
     WindowBringToFront(window);
+    //Yield();
 
-   Yield();
-
-    Str30f scrollbar_ref = Str30f("#SCROLL%c", axis_c);
-    const ImGuiTestItemInfo* scrollbar_item = ItemInfo(scrollbar_ref.c_str(), ImGuiTestOpFlags_NoError);
-    const float scroll_target_clamp = ImMax(0.0f, ImMin(scroll_target, window->ScrollMax[axis]));
-    bool use_set_scroll_function = EngineIO->ConfigRunFast;
-
-    if (scrollbar_item != NULL)
+    // Try to use Scrollbar if available
+    const ImGuiTestItemInfo* scrollbar_item = ItemInfo(ImGui::GetWindowScrollbarID(window, axis), ImGuiTestOpFlags_NoError);
+    if (scrollbar_item != NULL && !EngineIO->ConfigRunFast)
     {
-        ImRect scrollbar_rect = ImGui::GetWindowScrollbarRect(window, axis);
+        const ImRect scrollbar_rect = ImGui::GetWindowScrollbarRect(window, axis);
         const float scrollbar_size_v = scrollbar_rect.Max[axis] - scrollbar_rect.Min[axis];
         const float window_resize_grip_size = IM_FLOOR(ImMax(g.FontSize * 1.35f, window->WindowRounding + 1.0f + g.FontSize * 0.2f));
 
         // In case of a very small window, directly use SetScrollX/Y function to prevent resizing it
-        use_set_scroll_function |= scrollbar_size_v < window_resize_grip_size;
-        if (!use_set_scroll_function)
+        // FIXME-TESTS: GetWindowScrollbarMousePositionForScroll doesn't return the exact value when scrollbar grip is too small
+        if (scrollbar_size_v >= window_resize_grip_size)
         {
-            // Make sure we don't hover the window resize grip
-            ImVec2 scrollbar_src_pos = GetWindowScrollbarMousePositionForScroll(window, axis, window->Scroll[axis]);
+            const float scroll_src = window->Scroll[axis];
+            ImVec2 scrollbar_src_pos = GetWindowScrollbarMousePositionForScroll(window, axis, scroll_src);
             scrollbar_src_pos[axis] = ImMin(scrollbar_src_pos[axis], scrollbar_rect.Min[axis] + scrollbar_size_v - window_resize_grip_size);
             MouseMoveToPos(scrollbar_src_pos);
+            MouseDown(0);
+            SleepShort();
 
-            if (!use_set_scroll_function)
-            {
-                ImVec2 scrollbar_dst_pos = GetWindowScrollbarMousePositionForScroll(window, axis, scroll_target_clamp);
-                MouseDown(0);
-                MouseMoveToPos(scrollbar_dst_pos);
-                MouseUp(0);
-            }
+            ImVec2 scrollbar_dst_pos = GetWindowScrollbarMousePositionForScroll(window, axis, scroll_target_clamp);
+            MouseMoveToPos(scrollbar_dst_pos);
+            MouseUp(0);
+            SleepShort();
+
+            // Verify that things worked
+            const float scroll_result = window->Scroll[axis];
+            if (ImFabs(scroll_result - scroll_target_clamp) < 1.0f)
+                return;
+
+            // FIXME-TESTS: Investigate
+            LogWarning("Failed to set Scroll%c. Requested %.2f, got %.2f.", 'X' + axis, scroll_target_clamp, scroll_result);
         }
     }
 
-    // FIXME: GetWindowScrollbarMousePositionForScroll doesn't return the exact value when scrollbar grip is too small
-    if(use_set_scroll_function || window->Scroll[axis] != scroll_target_clamp)
+    // Fallback: manual slow scroll
+    // FIXME-TESTS: Consider using mouse wheel
+    int remaining_failures = 3;
+    while (!Abort)
     {
+        if (ImFabs(window->Scroll[axis] - scroll_target_clamp) < 1.0f)
+            break;
+
+        const float scroll_speed = EngineIO->ConfigRunFast ? FLT_MAX : ImFloor(EngineIO->ScrollSpeed * g.IO.DeltaTime + 0.99f);
+        const float scroll_next = ImLinearSweep(window->Scroll[axis], scroll_target, scroll_speed);
         if (axis == ImGuiAxis_X)
-            ImGui::SetScrollX(window, scroll_target_clamp);
+            ImGui::SetScrollX(window, scroll_next);
         else
-            ImGui::SetScrollY(window, scroll_target_clamp);
+            ImGui::SetScrollY(window, scroll_next);
+
+        // Error handling to avoid getting stuck in this function.
         Yield();
+        if (!ScrollErrorCheck(axis, scroll_next, window->Scroll[axis], &remaining_failures))
+            break;
     }
+
+    // Need another frame for the result->Rect to stabilize
+    Yield();
 }
 
 // FIXME-TESTS: scroll_ratio_y unsupported
@@ -727,19 +747,17 @@ void    ImGuiTestContext::ScrollToItemY(ImGuiTestRef ref, float scroll_ratio_y)
 
     if (item == NULL)
         return;
-    ImGuiWindow* window = item->Window;
 
     // Ensure window size is up-to-date
-    Yield();
+    //Yield();
 
+    ImGuiWindow* window = item->Window;
     float item_curr_y = ImFloor(item->RectFull.GetCenter().y);
     float item_target_y = ImFloor(window->InnerClipRect.GetCenter().y);
     float scroll_delta_y = item_target_y - item_curr_y;
     float scroll_target_y = ImClamp(window->Scroll.y - scroll_delta_y, 0.0f, window->ScrollMax.y);
-    if (ImFabs(window->Scroll.y - scroll_target_y) < 1.0f)
-        return;
 
-    ScrollTo(ImGuiAxis_Y, scroll_target_y);
+    ScrollTo(window, ImGuiAxis_Y, scroll_target_y);
 }
 
 void   ImGuiTestContext::ScrollToItemX(ImGuiTestRef ref)
@@ -753,28 +771,19 @@ void   ImGuiTestContext::ScrollToItemX(ImGuiTestRef ref)
     ImGuiTestItemInfo* item = ItemInfo(ref);
     ImGuiTestRefDesc desc(ref, item);
     LogDebug("ScrollToItemX %s", desc.c_str());
-
     if (item == NULL)
         return;
 
     // Ensure window size is up-to-date
-    Yield();
+    //Yield();
 
-    // TabBar are a special case because they have no scrollbar and rely on Scrollbutton "<" and ">"
+    // TabBar are a special case because they have no scrollbar and rely on ScrollButton "<" and ">"
+    // FIXME-TESTS: Consider moving to its own function.
     if (ImGuiTabBar* tab_bar = g.TabBars.GetByKey(item->ParentID))
     {
         // Cancel if "##v", because it's outside the tab_bar rect, and will be considered as "not visible" even if it is!
-        if (GetID("##v") == item->ID)
-            return;
-
-        struct ImGuiTestRefScoped
-        {
-            ImGuiID InitialRefID;
-            ImGuiTestContext* Context;
-            ImGuiTestRefScoped(ImGuiTestContext* ctx, const ImGuiTestRef& new_ref) : Context(ctx), InitialRefID(ctx->RefID) { ctx->SetRef(new_ref); }
-            ~ImGuiTestRefScoped() { Context->SetRef(InitialRefID); }
-        };
-        ImGuiTestRefScoped scoped_ref(this, item->ParentID);
+        //if (GetID("##v") == item->ID)
+        //    return;
 
         const ImGuiTabItem* selected_tab_item = ImGui::TabBarFindTabByID(tab_bar, tab_bar->SelectedTabId);
         const ImGuiTabItem* target_tab_item = ImGui::TabBarFindTabByID(tab_bar, item->ID);
@@ -784,18 +793,30 @@ void   ImGuiTestContext::ScrollToItemX(ImGuiTestRef ref)
         int selected_tab_index = tab_bar->Tabs.index_from_ptr(selected_tab_item);
         int target_tab_index = tab_bar->Tabs.index_from_ptr(target_tab_item);
 
-        Str16f scroll_button_ref("##%c", selected_tab_index > target_tab_index ? '<' : '>');
-        MouseMove(scroll_button_ref.c_str());
+        ImGuiTestRef backup_ref = GetRef();
+        //SetRef(tab_bar->ID);
+        SetRef(item->ParentID);
 
-        int click_count = selected_tab_index > target_tab_index ? selected_tab_index - target_tab_index : target_tab_index - selected_tab_index;
-        for (int i = 0; i < click_count; ++i)
-            MouseClick(0);
+        if (selected_tab_index > target_tab_index)
+        {
+            MouseMove("##<");
+            for (int i = 0; i < selected_tab_index - target_tab_index; ++i)
+                MouseClick(0);
+        }
+        else
+        {
+            MouseMove("##>");
+            for (int i = 0; i < target_tab_index - selected_tab_index; ++i)
+                MouseClick(0);
+        }
 
-        // Make sure that even in Fast, wait for the scroll animation to proceed.
+        // Wait for the scroll animation to proceed.
         // We're "loosing" some frames but there is no easy way to force a "tab visibility teleportation"
         if (EngineIO->ConfigRunFast)
             while (tab_bar->ScrollingAnim != tab_bar->ScrollingTarget)
                 Yield();
+
+        SetRef(backup_ref);
     }
     else
     {
@@ -804,10 +825,8 @@ void   ImGuiTestContext::ScrollToItemX(ImGuiTestRef ref)
         float item_target_x = ImFloor(window->InnerClipRect.GetCenter().x);
         float scroll_delta_x = item_target_x - item_curr_x;
         float scroll_target_x = ImClamp(window->Scroll.x - scroll_delta_x, 0.0f, window->ScrollMax.x);
-        if (ImFabs(window->Scroll.x - scroll_target_x) < 1.0f)
-            return;
 
-        ScrollTo(ImGuiAxis_X, scroll_target_x);
+        ScrollTo(window, ImGuiAxis_X, scroll_target_x);
     }
 }
 
@@ -980,7 +999,7 @@ void    ImGuiTestContext::MouseMove(ImGuiTestRef ref, ImGuiTestOpFlags flags)
         bool contains_x = (item->RectClipped.Min.x >= window_inner_r_padded.Min.x && item->RectClipped.Max.x <= window_inner_r_padded.Max.x);
         if (!contains_y)
             ScrollToItemY(ref);
-        if(!contains_x)
+        if (!contains_x)
             ScrollToItemX(ref);
     }
 
