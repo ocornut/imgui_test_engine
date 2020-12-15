@@ -2954,5 +2954,64 @@ void RegisterTests_Columns(ImGuiTestEngine* e)
         IM_CHECK_EQ(ImGui::GetColumnIndex(), 0);
         ImGui::End();
     };
+
+    // ## Test column reordering and resetting to default order.
+    t = IM_REGISTER_TEST(e, "columns", "columns_cov_legacy_columns");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        auto& vars = ctx->GenericVars;
+
+        ImGui::SetNextWindowSize(ImVec2(300.0f, 60.0f), ImGuiCond_Appearing);
+        ImGui::Begin("Test window", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImGui::BeginColumns("Legacy Columns", 5, vars.ColumnsFlags);
+
+        // Flex column offset/width functions.
+        vars.Count++;
+        if (vars.Count == 1)
+        {
+            for (int i = 0; i < 5; i++)
+                ImGui::SetColumnWidth(i, 50.0f);
+        }
+        else if (vars.Count == 3)
+        {
+            for (int i = 0; i < 5; i++)
+                IM_CHECK_EQ(ImGui::GetColumnWidth(0), 50.0f);
+        }
+
+        for (int i = 0; i < 5; i++)
+        {
+            ImGui::Button(Str16f("Button %d", i).c_str());
+            ImGui::NextColumn();
+        }
+
+        ImGui::EndColumns();
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        auto& vars = ctx->GenericVars;
+
+        ctx->SetRef("Test window");
+        ImGuiWindow* window = ctx->GetWindowByRef(ctx->RefID);
+        ImGuiOldColumns* columns = ImGui::FindOrCreateColumns(window, ctx->GetID("Legacy Columns", ctx->GetIDByInt(0x11223347)));
+
+        vars.ColumnsFlags = ImGuiOldColumnFlags_None;
+        vars.Count = -1;
+        ctx->Yield(5);        // Run tests in GuiFunc.
+        float w0 = columns->Columns[0].ClipRect.GetWidth();
+        float w1 = columns->Columns[1].ClipRect.GetWidth();
+        ctx->ItemDragWithDelta(columns->ID + 1, ImVec2(10.0f, 0.0f)); // Resizing
+        IM_CHECK_EQ(columns->Columns[0].ClipRect.GetWidth(), w0 + 10.0f);
+        IM_CHECK_EQ(columns->Columns[1].ClipRect.GetWidth(), w1);
+
+        vars.ColumnsFlags = ImGuiOldColumnFlags_NoPreserveWidths;
+        vars.Count = -1;
+        ctx->Yield(5);        // Run tests in GuiFunc.
+        w0 = columns->Columns[0].ClipRect.GetWidth();
+        w1 = columns->Columns[1].ClipRect.GetWidth();
+        ctx->ItemDragWithDelta(columns->ID + 1, ImVec2(10.0f, 0.0f)); // Resizing
+        IM_CHECK_EQ(columns->Columns[0].ClipRect.GetWidth(), w0 + 10.0f);
+        IM_CHECK_EQ(columns->Columns[1].ClipRect.GetWidth(), w1 - 10.0f);
+    };
 }
 

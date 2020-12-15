@@ -173,6 +173,7 @@ struct ImGuiTestGenericVars
     ImGuiID                 DockId;
     ImGuiWindowFlags        WindowFlags;
     ImGuiTableFlags         TableFlags;
+    ImGuiOldColumnFlags     ColumnsFlags;
     ImGuiTestGenericStatus  Status;
     float                   Width;
     ImVec2                  Pos;
