@@ -1882,6 +1882,7 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
 
     // ## Test DebugRecoverFromErrors() FIXME-TESTS
     t = IM_REGISTER_TEST(e, "misc", "misc_recover");
+    t->Flags |= ImGuiTestFlags_NoRecoverWarnings;
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         ImGui::Begin("Test window", NULL, ImGuiWindowFlags_NoSavedSettings);

@@ -235,7 +235,7 @@ void    ImGuiTestContext::RecoverFromUiContextErrors()
 
     // If we are _already_ in a test error state, recovering is normal so we'll hide the log.
     const bool verbose = (Test->Status != ImGuiTestStatus_Error) || (EngineIO->ConfigVerboseLevel >= ImGuiTestVerboseLevel_Debug);
-    if (verbose)
+    if (verbose && (Test->Flags & ImGuiTestFlags_NoRecoverWarnings) == 0)
         ImGui::ErrorCheckEndFrameRecover(LogWarningFunc, this);
     else
         ImGui::ErrorCheckEndFrameRecover(NULL, NULL);
@@ -579,11 +579,12 @@ void    ImGuiTestContext::ScrollToTop()
 {
     if (IsError())
         return;
+
     ImGuiWindow* window = GetWindowByRef("");
-    if (window)
-        ScrollToY(0.0f);
-    else
-        LogError("ScrollToTop: failed to get window");
+    IM_CHECK_SILENT(window != NULL);
+    if (window->Scroll.y == 0.0f)
+        return;
+    ScrollToY(0.0f);
     Yield();
 }
 
@@ -591,11 +592,12 @@ void    ImGuiTestContext::ScrollToBottom()
 {
     if (IsError())
         return;
+
     ImGuiWindow* window = GetWindowByRef("");
-    if (window)
-        ScrollToY(window->ScrollMax.y);
-    else
-        LogError("ScrollToBottom: failed to get window");
+    IM_CHECK_SILENT(window != NULL);
+    if (window->Scroll.y == window->ScrollMax.y)
+        return;
+    ScrollToY(window->ScrollMax.y);
     Yield();
 }
 
@@ -748,8 +750,8 @@ void    ImGuiTestContext::ScrollToItemY(ImGuiTestRef ref, float scroll_ratio_y)
     if (item == NULL)
         return;
 
-    // Ensure window size is up-to-date
-    //Yield();
+    // Ensure window size and ScrollMax are up-to-date
+    Yield();
 
     ImGuiWindow* window = item->Window;
     float item_curr_y = ImFloor(item->RectFull.GetCenter().y);
@@ -774,8 +776,8 @@ void   ImGuiTestContext::ScrollToItemX(ImGuiTestRef ref)
     if (item == NULL)
         return;
 
-    // Ensure window size is up-to-date
-    //Yield();
+    // Ensure window size and ScrollMax are up-to-date
+    Yield();
 
     // TabBar are a special case because they have no scrollbar and rely on ScrollButton "<" and ">"
     // FIXME-TESTS: Consider moving to its own function.
@@ -876,6 +878,7 @@ void    ImGuiTestContext::NavMoveTo(ImGuiTestRef ref)
     ImGui::ScrollToBringRectIntoView(item->Window, item->RectFull);
     while (g.NavMoveRequest)
         Yield();
+    Yield();
 
     if (!Abort)
     {
@@ -2048,20 +2051,21 @@ void ImGuiTestContext::TableOpenContextMenu(ImGuiTestRef ref, int column_n)
     LogDebug("TableOpenContextMenu '%s' %08X", ref.Path ? ref.Path : "NULL", ref.ID);
 
     ImGuiTable* table = ImGui::TableFindByID(GetID(ref));
-    IM_CHECK(table != NULL);
+    IM_CHECK_SILENT(table != NULL);
 
     if (column_n == -1)
         column_n = table->RightMostEnabledColumn;
     ItemClick(TableGetHeaderID(table, column_n), ImGuiMouseButton_Right);
+    Yield();
 }
 
 ImGuiSortDirection ImGuiTestContext::TableClickHeader(ImGuiTestRef ref, const char* label, ImGuiKeyModFlags keys_mod)
 {
     ImGuiTable* table = ImGui::TableFindByID(GetID(ref));
-    IM_CHECK_RETV(table != NULL, ImGuiSortDirection_None);
+    IM_CHECK_SILENT_RETV(table != NULL, ImGuiSortDirection_None);
 
     ImGuiTableColumn* column = HelperTableFindColumnByName(table, label);
-    IM_CHECK_RETV(column != NULL, ImGuiSortDirection_None);
+    IM_CHECK_SILENT_RETV(column != NULL, ImGuiSortDirection_None);
 
     if (keys_mod != ImGuiKeyModFlags_None)
         KeyDownMap(ImGuiKey_COUNT, keys_mod);
@@ -2096,7 +2100,7 @@ void ImGuiTestContext::TableSetColumnEnabled(ImGuiTestRef ref, const char* label
 const ImGuiTableSortSpecs* ImGuiTestContext::TableGetSortSpecs(ImGuiTestRef ref)
 {
     ImGuiTable* table = ImGui::TableFindByID(GetID(ref));
-    IM_CHECK_RETV(table != NULL, NULL);
+    IM_CHECK_SILENT_RETV(table != NULL, NULL);
 
     ImGuiContext& g = *UiContext;
     ImSwap(table, g.CurrentTable);
