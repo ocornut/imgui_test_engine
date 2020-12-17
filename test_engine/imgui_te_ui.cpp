@@ -9,6 +9,7 @@
 #include "imgui_te_engine.h"
 #include "imgui_te_context.h"
 #include "imgui_te_internal.h"
+#include "imgui_te_perflog.h"
 #include "shared/imgui_utils.h"
 #include "libs/Str/Str.h"
 
@@ -210,7 +211,21 @@ static void ShowTestGroup(ImGuiTestEngine* e, ImGuiTestGroup group, ImGuiTextFil
     }
 
     ImGui::SameLine();
-    filter->Draw("##filter", -FLT_MIN);
+#ifdef IMGUI_TEST_ENGINE_ENABLE_IMPLOT
+    const char* perflog_label = "Perflog >>";
+    float filter_width = ImGui::GetWindowContentRegionMax().x - ImGui::GetCursorPos().x;
+    if (group == ImGuiTestGroup_Perfs)
+        filter_width -= style.ItemSpacing.x + style.FramePadding.x * 2 + ImGui::CalcTextSize(perflog_label).x;
+    filter->Draw("##filter", ImMax(20.0f, filter_width));
+    if (group == ImGuiTestGroup_Perfs)
+    {
+        ImGui::SameLine();
+        if (ImGui::Button(perflog_label))
+            e->UiShowPerflog = true;
+    }
+#else
+    filter->Draw("##filter", -1);
+#endif
     ImGui::Separator();
 
     if (ImGui::BeginChild("Tests", ImVec2(0, 0)))
@@ -325,6 +340,12 @@ static void ShowTestGroup(ImGuiTestEngine* e, ImGuiTestGroup group, ImGuiTextFil
                 {
                     ImGui::MenuItem("Open source", NULL, false, false);
                     ImGui::MenuItem("View source", NULL, false, false);
+                }
+
+                if (group == ImGuiTestGroup_Perfs && ImGui::MenuItem("View perflog"))
+                {
+                    e->PerfLog->ViewOnly(test->Name);
+                    e->UiShowPerflog = true;
                 }
 
                 ImGui::Separator();
@@ -487,7 +508,6 @@ static void ImGuiTestEngine_ShowLogAndTools(ImGuiTestEngine* engine)
 static void ImGuiTestEngine_ShowTestTool(ImGuiTestEngine* engine, bool* p_open)
 {
     ImGuiContext& g = *GImGui;
-    ImGuiStyle& style = g.Style;
 
     if (engine->UiFocus)
     {
@@ -552,22 +572,9 @@ static void ImGuiTestEngine_ShowTestTool(ImGuiTestEngine* engine, bool* p_open)
     ImGui::PopStyleVar();
     ImGui::Separator();
 
-    // FIXME-DOGFOODING: It would be about time that we made it easier to create splitters, current low-level splitter behavior is not easy to use properly.
-    // FIXME-SCROLL: When resizing either we'd like to keep scroll focus on something (e.g. last clicked item for list, bottom for log)
-    // See https://github.com/ocornut/imgui/issues/319
-    const float avail_y = ImGui::GetContentRegionAvail().y - style.ItemSpacing.y;
-    const float min_size_0 = ImGui::GetFrameHeight() * 1.2f;
-    const float min_size_1 = ImGui::GetFrameHeight() * 1;
-    float log_height = engine->UiLogHeight;
-    float list_height = ImMax(avail_y - engine->UiLogHeight, min_size_0);
-    {
-        ImGuiWindow* window = ImGui::GetCurrentWindow();
-        float y = ImGui::GetCursorScreenPos().y + list_height + IM_ROUND(style.ItemSpacing.y * 0.5f);
-        ImRect splitter_bb = ImRect(window->WorkRect.Min.x, y - 1, window->WorkRect.Max.x, y + 1);
-        ImGui::SplitterBehavior(splitter_bb, ImGui::GetID("splitter"), ImGuiAxis_Y, &list_height, &log_height, min_size_0, min_size_1, 3.0f);
-        engine->UiLogHeight = log_height;
-        //ImGui::DebugDrawItemRect();
-    }
+    float list_height;
+    float& log_height = engine->UiLogHeight;
+    ImGui::Splitter("splitter", &list_height, &log_height, ImGuiAxis_Y, +1);
 
     // TESTS
     ImGui::BeginChild("List", ImVec2(0, list_height), false, ImGuiWindowFlags_NoScrollbar);
@@ -580,10 +587,14 @@ static void ImGuiTestEngine_ShowTestTool(ImGuiTestEngine* engine, bool* p_open)
         }
         if (ImGui::BeginTabItem("PERFS"))
         {
-            ShowTestGroup(engine, ImGuiTestGroup_Perfs, &engine->UiFilterPerfs);
+#ifdef IMGUI_TEST_ENGINE_ENABLE_IMPLOT
+            if (engine->UiShowPerflog)
+                engine->PerfLog->ShowUI(engine);
+            else
+#endif
+                ShowTestGroup(engine, ImGuiTestGroup_Perfs, &engine->UiFilterPerfs);
             ImGui::EndTabItem();
         }
-
         ImGui::EndTabBar();
     }
     ImGui::EndChild();

@@ -1,7 +1,15 @@
 #pragma once
 
 #include "imgui_te_coroutine.h"
+#include "imgui_te_engine.h"
 #include "shared/imgui_capture_tool.h"  // ImGuiCaptureTool  // FIXME
+
+//-------------------------------------------------------------------------
+// FORWARD DECLARATIONS
+//-------------------------------------------------------------------------
+
+struct ImGuiPerfLog;
+struct ImGuiPerflogEntry;
 
 //-------------------------------------------------------------------------
 // DATA STRUCTURES
@@ -120,6 +128,7 @@ struct ImGuiTestEngine
     bool                        UiCaptureToolOpen = false;
     bool                        UiStackToolOpen = false;
     float                       UiLogHeight = 150.0f;
+    bool                        UiShowPerflog = false;
 
     // Performance Monitor
     double                      PerfRefDeltaTime;
@@ -127,6 +136,7 @@ struct ImGuiTestEngine
     ImMovingAverage<double>     PerfDeltaTime500;
     ImMovingAverage<double>     PerfDeltaTime1000;
     ImMovingAverage<double>     PerfDeltaTime2000;
+    ImGuiPerfLog*               PerfLog = NULL;
 
     // Tools
     bool                        ToolDebugRebootUiContext = false;   // Completely shutdown and recreate the dear imgui context in place
@@ -140,20 +150,8 @@ struct ImGuiTestEngine
     bool                        BackupConfigNoThrottle = false;
 
     // Functions
-    ImGuiTestEngine()
-    {
-        PerfRefDeltaTime = 0.0f;
-        PerfDeltaTime100.Init(100);
-        PerfDeltaTime500.Init(500);
-        PerfDeltaTime1000.Init(1000);
-        PerfDeltaTime2000.Init(2000);
-    }
-    ~ImGuiTestEngine()
-    {
-        IM_ASSERT(TestQueueCoroutine == NULL);
-        if (UiContextBlind != NULL)
-            ImGui::DestroyContext(UiContextBlind);
-    }
+    ImGuiTestEngine();
+    ~ImGuiTestEngine();
 };
 
 //-------------------------------------------------------------------------
@@ -170,5 +168,8 @@ const char*         ImGuiTestEngine_GetVerboseLevelName(ImGuiTestVerboseLevel v)
 bool                ImGuiTestEngine_CaptureScreenshot(ImGuiTestEngine* engine, ImGuiCaptureArgs* args);
 bool                ImGuiTestEngine_BeginCaptureAnimation(ImGuiTestEngine* engine, ImGuiCaptureArgs* args);
 bool                ImGuiTestEngine_EndCaptureAnimation(ImGuiTestEngine* engine, ImGuiCaptureArgs* args);
+bool                ImGuiTestEngine_PerflogLoad(ImGuiTestEngine* engine);
+bool                ImGuiTestEngine_PerflogSave(ImGuiTestEngine* engine);
+void                ImGuiTestEngine_PerflogAppend(ImGuiTestEngine* engine, ImGuiPerflogEntry* entry);                   // Append to last perflog batch, or open a new batch if BatchTitle is different.
 
 //-------------------------------------------------------------------------

@@ -19,6 +19,9 @@
     <Filter Include="libs\gif-h">
       <UniqueIdentifier>{7b7e388b-c887-40d1-a34a-b41ca0b5a4d4}</UniqueIdentifier>
     </Filter>
+    <Filter Include="libs\implot">
+      <UniqueIdentifier>{9c41ec59-db42-46e1-b95a-e5e0a8f34309}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\test_engine\imgui_te_context.h">
@@ -53,8 +56,16 @@
     </ClInclude>
     <ClInclude Include="..\libs\gif-h\gif.h">
       <Filter>libs\gif-h</Filter>
+    </ClInclude>    <ClInclude Include="imgui_te_ui.h">
+      <Filter>test_engine</Filter>
     </ClInclude>
-    <ClInclude Include="imgui_te_ui.h">
+    <ClInclude Include="..\libs\implot\implot_internal.h">
+      <Filter>libs\implot</Filter>
+    </ClInclude>
+    <ClInclude Include="..\libs\implot\implot.h">
+      <Filter>libs\implot</Filter>
+    </ClInclude>
+    <ClInclude Include="imgui_te_perflog.h">
       <Filter>test_engine</Filter>
     </ClInclude>
   </ItemGroup>
@@ -78,6 +89,15 @@
       <Filter>shared</Filter>
     </ClCompile>
     <ClCompile Include="..\test_engine\imgui_te_engine.cpp">
+      <Filter>test_engine</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libs\implot\implot_items.cpp">
+      <Filter>libs\implot</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libs\implot\implot.cpp">
+      <Filter>libs\implot</Filter>
+    </ClCompile>
+    <ClCompile Include="imgui_te_perflog.cpp">
       <Filter>test_engine</Filter>
     </ClCompile>
   </ItemGroup>

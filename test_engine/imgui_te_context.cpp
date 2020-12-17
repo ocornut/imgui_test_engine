@@ -10,6 +10,7 @@
 #include "imgui.h"
 #include "imgui_te_engine.h"
 #include "imgui_te_internal.h"
+#include "imgui_te_perflog.h"
 #include "imgui_te_util.h"
 #include "shared/imgui_utils.h"
 #include "libs/Str/Str.h"
@@ -2769,21 +2770,19 @@ void    ImGuiTestContext::PerfCapture()
         PerfStressAmount, build_info.Type, build_info.Cpu, build_info.OS, build_info.Compiler, build_info.Date);
     LogInfo("[PERF] Result: %+6.3f ms (from ref %+6.3f)", dt_delta_ms, dt_ref_ms);
 
-    // Log to .csv
-    FILE* f = fopen("imgui_perflog.csv", "a+t");
-    if (f == NULL)
-    {
-        LogError("Failed to log to CSV file!");
-    }
-    else
-    {
-        fprintf(f,
-            "%s,%s,%.3f,x%d,%s,%s,%s,%s,%s,%s\n",
-            Test->Category, Test->Name, dt_delta_ms,
-            PerfStressAmount, EngineIO->GitBranchName, build_info.Type, build_info.Cpu, build_info.OS, build_info.Compiler, build_info.Date);
-        fflush(f);
-        fclose(f);
-    }
+    ImGuiPerflogEntry entry;
+    entry.Timestamp = (ImU64)EngineIO->RunStartTime;
+    entry.Category = Test->Category;
+    entry.TestName = Test->Name;
+    entry.DtDeltaMs = dt_delta_ms;
+    entry.PerfStressAmount = PerfStressAmount;
+    entry.GitBranchName = EngineIO->GitBranchName;
+    entry.BuildType = build_info.Type;
+    entry.Cpu = build_info.Cpu;
+    entry.OS = build_info.OS;
+    entry.Compiler = build_info.Compiler;
+    entry.Date = build_info.Date;
+    ImGuiTestEngine_PerflogAppend(Engine, &entry);
 
     // Disable the "Success" message
     RunFlags |= ImGuiTestRunFlags_NoSuccessMsg;

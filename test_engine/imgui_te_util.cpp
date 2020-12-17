@@ -169,6 +169,18 @@ bool ImGui::InputText(const char* label, Str* str, ImGuiInputTextFlags flags, Im
     return InputText(label, (char*)str->c_str(), (size_t)str->capacity() + 1, flags, InputTextCallbackStr, &cb_user_data);
 }
 
+bool ImGui::InputTextWithHint(const char* label, const char* hint, Str* str, ImGuiInputTextFlags flags, ImGuiInputTextCallback callback, void* user_data)
+{
+    IM_ASSERT((flags & ImGuiInputTextFlags_CallbackResize) == 0);
+    flags |= ImGuiInputTextFlags_CallbackResize;
+
+    InputTextCallbackStr_UserData cb_user_data;
+    cb_user_data.StrObj = str;
+    cb_user_data.ChainCallback = callback;
+    cb_user_data.ChainCallbackUserData = user_data;
+    return InputTextWithHint(label, hint, (char*)str->c_str(), (size_t)str->capacity() + 1, flags, InputTextCallbackStr, &cb_user_data);
+}
+
 bool ImGui::InputTextMultiline(const char* label, Str* str, const ImVec2& size, ImGuiInputTextFlags flags, ImGuiInputTextCallback callback, void* user_data)
 {
     IM_ASSERT((flags & ImGuiInputTextFlags_CallbackResize) == 0);
@@ -179,6 +191,54 @@ bool ImGui::InputTextMultiline(const char* label, Str* str, const ImVec2& size, 
     cb_user_data.ChainCallback = callback;
     cb_user_data.ChainCallbackUserData = user_data;
     return InputTextMultiline(label, (char*)str->c_str(), (size_t)str->capacity() + 1, size, flags, InputTextCallbackStr, &cb_user_data);
+}
+
+// anchor parameter indicates which split would retain it's constant size.
+// anchor = 0 - both splits resize when parent container size changes. Both value_1 and value_2 should be persistent.
+// anchor = -1 - top/left split would have a constant size. bottom/right split would resize when parent container size changes. value_1 should be persistent, value_2 will always be recalculated from value_1.
+// anchor = +1 - bottom/right split would have a constant size. top/left split would resize when parent container size changes. value_2 should be persistent, value_1 will always be recalculated from value_2.
+bool ImGui::Splitter(const char* id, float* value_1, float* value_2, ImGuiAxis dir, int anchor, float min_size_0, float min_size_1)
+{
+    // FIXME-DOGFOODING: This needs further refining.
+    // FIXME-SCROLL: When resizing either we'd like to keep scroll focus on something (e.g. last clicked item for list, bottom for log)
+    // See https://github.com/ocornut/imgui/issues/319
+    ImGuiContext& g = *GImGui;
+    ImGuiStyle& style = g.Style;
+    ImGuiWindow* window = ImGui::GetCurrentWindow();
+    if (min_size_0 < 0)
+        min_size_0 = ImGui::GetFrameHeight();
+    if (min_size_1)
+        min_size_1 = ImGui::GetFrameHeight();
+
+    float& v_1 = *value_1;
+    float& v_2 = *value_2;
+    ImRect splitter_bb;
+    const float avail = dir == ImGuiAxis_X ? ImGui::GetContentRegionAvail().x - style.ItemSpacing.x : ImGui::GetContentRegionAvail().y - style.ItemSpacing.y;
+    if (anchor < 0)
+    {
+        v_2 = ImMax(avail - v_1, min_size_1);   // First split is constant size.
+    }
+    else if (anchor > 0)
+    {
+        v_1 = ImMax(avail - v_2, min_size_0);   // Second split is constant size.
+    }
+    else
+    {
+        float r = v_1 / (v_1 + v_2);            // Both splits maintain same relative size to parent.
+        v_1 = IM_ROUND(avail * r) - 1;
+        v_2 = IM_ROUND(avail * (1.0f - r)) - 1;
+    }
+    if (dir == ImGuiAxis_X)
+    {
+        float x = window->DC.CursorPos.x + v_1 + IM_ROUND(style.ItemSpacing.x * 0.5f);
+        splitter_bb = ImRect(x - 1, window->WorkRect.Min.y, x + 1, window->WorkRect.Max.y);
+    }
+    else if (dir == ImGuiAxis_Y)
+    {
+        float y = window->DC.CursorPos.y + v_1 + IM_ROUND(style.ItemSpacing.y * 0.5f);
+        splitter_bb = ImRect(window->WorkRect.Min.x, y - 1, window->WorkRect.Max.x, y + 1);
+    }
+    return ImGui::SplitterBehavior(splitter_bb, ImGui::GetID(id), dir, &v_1, &v_2, min_size_0, min_size_1, 3.0f);
 }
 
 #ifdef IMGUI_HAS_TABLE
@@ -215,3 +275,60 @@ void TableDiscardInstanceAndSettings(ImGuiID table_id)
     //ImGui::TableResetSettings(table);
 }
 #endif
+
+bool ImGuiCSVParser::Load(const char* file_name)
+{
+    size_t len = 0;
+    _Data = (char*)ImFileLoadToMemory(file_name, "rb", &len, 1);
+    if (_Data == NULL)
+        return false;
+
+    // Count columns. Quoted columns with commas are not supported.
+    Columns = 1;
+    for (const char* c = _Data; *c != '\n' && *c != '\0'; c++)
+        if (*c == ',')
+            Columns++;
+
+    // Count rows. Extra new lines anywhere in the file are ignored.
+    for (const char* c = _Data, *end = c + len; c < end; c++)
+        if ((*c == '\n' && c[1] != '\r' && c[1] != '\n') || *c == '\0')
+            Rows++;
+
+    if (Columns == 0 || Rows == 0)
+        return false;
+
+    // Create index
+    _Index.resize(Columns * Rows);
+
+    int row = 0, col = 0;
+    char* col_data = _Data;
+    for (char* c = _Data; *c != '\0'; c++)
+    {
+        if (*c == ',' || (*c == '\n' && c[1] != '\r' && c[1] != '\n') || *c == '\0')
+        {
+            _Index[row * Columns + col] = col_data;
+            col_data = c + 1;
+            if (*c == ',')
+            {
+                col++;
+            }
+            else
+            {
+                row++;
+                col = 0;
+            }
+            *c = 0;
+        }
+    }
+
+    return true;
+}
+
+void ImGuiCSVParser::Clear()
+{
+    Rows = Columns = 0;
+    if (_Data != NULL)
+        IM_FREE(_Data);
+    _Data = NULL;
+    _Index.clear();
+}

@@ -1,7 +1,8 @@
 #pragma once
 
-#include <math.h>   // fabsf
-#include "imgui.h"  // ImGuiID, ImGuiKey, ImFont
+#include <math.h>           // fabsf
+#include "imgui.h"          // ImGuiID, ImGuiKey, ImFont
+#include "imgui_internal.h" // ImGuiAxis
 
 // FIXME: Setting IO.ConfigMacOSXBehaviors to non-default value breaks this assumption.
 #if defined(__APPLE__)
@@ -64,6 +65,22 @@ namespace ImGui
 
 // STR + InputText bindings
 bool    InputText(const char* label, Str* str, ImGuiInputTextFlags flags = 0, ImGuiInputTextCallback callback = NULL, void* user_data = NULL);
+bool    InputTextWithHint(const char* label, const char* hint, Str* str, ImGuiInputTextFlags flags = 0, ImGuiInputTextCallback callback = NULL, void* user_data = NULL);
 bool    InputTextMultiline(const char* label, Str* str, const ImVec2& size = ImVec2(0, 0), ImGuiInputTextFlags flags = 0, ImGuiInputTextCallback callback = NULL, void* user_data = NULL);
+bool    Splitter(const char* id, float* value_1, float* value_2, ImGuiAxis dir, int anchor = 0, float min_size_0 = -1.0f, float min_size_1 = -1.0f);
 
 }
+
+struct ImGuiCSVParser
+{
+    int                         Columns = 0;                    // Number of columns in CSV file.
+    int                         Rows = 0;                       // Number of rows in CSV file.
+
+    char*                       _Data = NULL;                   // CSV file data.
+    ImVector<char*>             _Index;                         // CSV table: _Index[row * _Columns + col].
+
+    ~ImGuiCSVParser()                                           { Clear(); }
+    bool        Load(const char* file_name);                    // Open and parse a CSV file.
+    void        Clear();                                        // Free allocated buffers.
+    const char* GetCell(int row, int col)                       { IM_ASSERT(0 <= row && row < Rows && 0 <= col && col < Columns); return _Index[row * Columns + col]; }
+};

@@ -383,6 +383,7 @@ struct ImGuiTestEngineIO
     // Outputs: State
     bool                        RunningTests = false;
     bool                        RenderWantMaxSpeed = false;
+    ImU64                       RunStartTime = 0;               // Test batch start time. Used to differentiate different perf runs.
 };
 
 // Result of an ItemInfo query

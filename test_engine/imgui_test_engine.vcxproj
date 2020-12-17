@@ -69,18 +69,22 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <OutDir>$(ProjectDir)$(Configuration)\</OutDir>
     <IntDir>$(ProjectDir)$(Configuration)\</IntDir>
+    <IncludePath>$(SolutionDir)libs;$(VC_IncludePath);$(WindowsSDK_IncludePath);</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <OutDir>$(ProjectDir)$(Configuration)\</OutDir>
     <IntDir>$(ProjectDir)$(Configuration)\</IntDir>
+    <IncludePath>$(SolutionDir)libs;$(VC_IncludePath);$(WindowsSDK_IncludePath);</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <OutDir>$(ProjectDir)$(Configuration)\</OutDir>
     <IntDir>$(ProjectDir)$(Configuration)\</IntDir>
+    <IncludePath>$(SolutionDir)libs;$(VC_IncludePath);$(WindowsSDK_IncludePath);</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <OutDir>$(ProjectDir)$(Configuration)\</OutDir>
     <IntDir>$(ProjectDir)$(Configuration)\</IntDir>
+    <IncludePath>$(SolutionDir)libs;$(VC_IncludePath);$(WindowsSDK_IncludePath);</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -161,6 +165,7 @@
     <ClInclude Include="..\test_engine\imgui_te_internal.h" />
     <ClInclude Include="..\test_engine\imgui_te_util.h" />
     <ClInclude Include="imgui_te_ui.h" />
+    <ClInclude Include="imgui_te_perflog.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\shared\imgui_capture_tool.cpp" />
@@ -170,6 +175,7 @@
     <ClCompile Include="..\test_engine\imgui_te_engine.cpp" />
     <ClCompile Include="..\test_engine\imgui_te_ui.cpp" />
     <ClCompile Include="..\test_engine\imgui_te_util.cpp" />
+    <ClCompile Include="imgui_te_perflog.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Natvis Include="..\libs\Str\Str.natvis" />

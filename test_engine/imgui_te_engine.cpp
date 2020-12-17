@@ -12,6 +12,7 @@
 #include "imgui_te_util.h"
 #include "imgui_te_context.h"
 #include "imgui_te_internal.h"
+#include "imgui_te_perflog.h"
 #include "shared/imgui_utils.h"
 #include "libs/Str/Str.h"
 
@@ -105,6 +106,24 @@ static void  ImGuiTestEngine_SettingsWriteAll(ImGuiContext* imgui_ctx, ImGuiSett
 // - ImGuiTestEngine_QueueTest()
 // - ImGuiTestEngine_RunTest()
 //-------------------------------------------------------------------------
+
+ImGuiTestEngine::ImGuiTestEngine()
+{
+    PerfRefDeltaTime = 0.0f;
+    PerfDeltaTime100.Init(100);
+    PerfDeltaTime500.Init(500);
+    PerfDeltaTime1000.Init(1000);
+    PerfDeltaTime2000.Init(2000);
+    PerfLog = IM_NEW(ImGuiPerfLog);
+}
+
+ImGuiTestEngine::~ImGuiTestEngine()
+{
+    IM_ASSERT(TestQueueCoroutine == NULL);
+    if (UiContextBlind != NULL)
+        ImGui::DestroyContext(UiContextBlind);
+    IM_DELETE(PerfLog);
+}
 
 static void ImGuiTestEngine_UnbindImGuiContext(ImGuiTestEngine* engine, ImGuiContext* imgui_context);
 
@@ -243,6 +262,7 @@ void    ImGuiTestEngine_Start(ImGuiTestEngine* engine)
     if (!engine->TestQueueCoroutine)
         engine->TestQueueCoroutine = engine->IO.CoroutineFuncs->CreateFunc(ImGuiTestEngine_TestQueueCoroutineMain, "Main Dear ImGui Test Thread", engine);
 
+    ImGuiTestEngine_PerflogLoad(engine);
     engine->Started = true;
 }
 
@@ -251,6 +271,8 @@ void    ImGuiTestEngine_Stop(ImGuiTestEngine* engine)
     IM_ASSERT(engine->Started);
 
     ImGuiTestEngine_CoroutineStopAndJoin(engine);
+    if (!ImGuiTestEngine_PerflogSave(engine))
+        printf("Failed to log to CSV file!\n");
     engine->Started = false;
 }
 
@@ -881,6 +903,7 @@ static void ImGuiTestEngine_ProcessTestQueue(ImGuiTestEngine* engine)
 
     int ran_tests = 0;
     engine->IO.RunningTests = true;
+    engine->IO.RunStartTime = ImTimeGetInMicroseconds();
     for (int n = 0; n < engine->TestsQueue.Size; n++)
     {
         ImGuiTestRunTask* run_task = &engine->TestsQueue[n];
@@ -961,6 +984,7 @@ static void ImGuiTestEngine_ProcessTestQueue(ImGuiTestEngine* engine)
         //        engine->UiSelectedTest = test;
     }
     engine->IO.RunningTests = false;
+    engine->IO.RunStartTime = 0;
 
     engine->Abort = false;
     engine->TestsQueue.clear();
@@ -1624,6 +1648,25 @@ static void     ImGuiTestEngine_SettingsWriteAll(ImGuiContext* ui_ctx, ImGuiSett
     buf->appendf("CaptureTool=%d\n", engine->UiCaptureToolOpen);
     buf->appendf("StackTool=%d\n", engine->UiStackToolOpen);
     buf->appendf("\n");
+}
+
+//-------------------------------------------------------------------------
+// [SECTION] imgui_perflog.csv
+//-------------------------------------------------------------------------
+
+bool            ImGuiTestEngine_PerflogLoad(ImGuiTestEngine* engine)
+{
+    return engine->PerfLog->Load("imgui_perflog.csv");
+}
+
+bool            ImGuiTestEngine_PerflogSave(ImGuiTestEngine* engine)
+{
+    return engine->PerfLog->Save("imgui_perflog.csv");
+}
+
+void            ImGuiTestEngine_PerflogAppend(ImGuiTestEngine* engine, ImGuiPerflogEntry* entry)
+{
+    engine->PerfLog->AddEntry(entry);
 }
 
 //-------------------------------------------------------------------------
