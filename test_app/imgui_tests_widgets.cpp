@@ -1918,7 +1918,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         auto& vars = ctx->GetUserData<TabBarCoveragePopupScrolling>();
         ImGui::SetNextWindowSize(ImVec2(300, 100));
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
-        if (ImGui::BeginTabBar("TabBar", ImGuiTabItemFlags_NoReorder | ImGuiTabBarFlags_TabListPopupButton | ImGuiTabBarFlags_FittingPolicyScroll))
+        if (ImGui::BeginTabBar("TabBar", ImGuiTabBarFlags_TabListPopupButton | ImGuiTabBarFlags_FittingPolicyScroll))
         {
             for (int i = 0; i < vars.TabCount; i++)
                 if (ImGui::BeginTabItem(Str16f{ "Tab %d", i }.c_str(), NULL)) { vars.Selected = i; ImGui::EndTabItem(); }

@@ -643,7 +643,6 @@ static ImVec2 GetWindowScrollbarMousePositionForScroll(ImGuiWindow* window, ImGu
     // But we maintain a minimum size in pixel to allow for the user to still aim inside.
     const float win_size_v = ImMax(ImMax(size_contents_v, size_avail_v), 1.0f);
     const float grab_h_pixels = ImClamp(scrollbar_size_v * (size_avail_v / win_size_v), g.Style.GrabMinSize, scrollbar_size_v);
-    const float grab_h_norm = grab_h_pixels / scrollbar_size_v;
 
     const float scroll_max = ImMax(1.0f, size_contents_v - size_avail_v);
     const float scroll_ratio = ImSaturate(scroll_v / scroll_max);

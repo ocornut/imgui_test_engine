@@ -337,7 +337,6 @@ struct ImGuiTestContext
     void        ScrollTo(ImGuiWindow* window, ImGuiAxis axis, float scroll_v);
     void        ScrollToX(float scroll_x) { ScrollTo(GetWindowByRef(""), ImGuiAxis_X, scroll_x); }
     void        ScrollToY(float scroll_y) { ScrollTo(GetWindowByRef(""), ImGuiAxis_Y, scroll_y); }
-    void        ScrollToLeft();
     void        ScrollToTop();
     void        ScrollToBottom();
     void        ScrollToItemY(ImGuiTestRef ref, float scroll_ratio_y = 0.5f);
