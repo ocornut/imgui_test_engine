@@ -299,7 +299,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
             ImGuiTableFlags table_flags = tc.Flags | ImGuiTableFlags_BordersOuterH;
             if (vars.Bool1)
                 table_flags |= ImGuiTableFlags_PreciseWidths;
-            if (ImGui::BeginTable("table1", tc.ColumnCount, table_flags, ImVec2(0, 0)))
+            if (ImGui::BeginTable("table1", tc.ColumnCount, table_flags))
             {
                 ImGui::TableNextRow();
 

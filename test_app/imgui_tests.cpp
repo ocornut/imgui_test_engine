@@ -2219,7 +2219,58 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
                 //IM_CHECK(vars.ItemsOutMask.TestBit(89 + vars.TableFreezeRows) == false);
                 IM_CHECK(vars.ItemsOutMask.TestBit(90 + vars.TableFreezeRows) == true);
                 IM_CHECK(vars.ItemsOutMask.TestBit(99) == true);
+
+                // Test some edges cases
+                vars.ItemsIn = 1;
+                ctx->Yield();
+                ctx->Yield();
+                IM_CHECK_EQ(vars.OffsetY, vars.ItemsIn * item_height);
+                IM_CHECK_EQ(vars.ItemsOut, 1);
+                IM_CHECK_EQ(vars.ItemsOutMask.TestBit(0), true);
+
+                // Test some edges cases
+                vars.ItemsIn = 0;
+                ctx->Yield();
+                IM_CHECK_EQ(vars.OffsetY, vars.ItemsIn* item_height);
+                IM_CHECK_EQ(vars.ItemsOut, 0);
             }
+    };
+
+    // Test edge cases with single item or zero items clipper
+    t = IM_REGISTER_TEST(e, "misc", "misc_clipper_single");
+    t->SetUserDataType<ClipperTestVars>();
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        auto& vars = ctx->GetUserData<ClipperTestVars>();
+
+        vars.WindowOut = ImGui::GetCurrentWindow();
+        vars.ItemsOut = 0;
+        vars.ItemsOutMask.Create(vars.ItemsIn);
+
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoSavedSettings);
+        const int section[] = { 5, 1, 5, 0, 2 };
+        for (int section_n = 0; section_n < IM_ARRAYSIZE(section); section_n++)
+        {
+            const int item_count = section[section_n];
+            ctx->LogDebug("item_count = %d", item_count);
+            ImGui::Text("Begin");
+
+            const float start_y = ImGui::GetCursorScreenPos().y;
+            ImGuiListClipper clipper;
+            clipper.Begin(item_count);
+            while (clipper.Step())
+            {
+                for (auto item_n = clipper.DisplayStart; item_n < clipper.DisplayEnd; item_n++)
+                    ImGui::Button(Str30f("Section %d Button %d", section_n, item_n).c_str(), ImVec2(-FLT_MIN, 0.0f));
+            }
+
+            vars.OffsetY = ImGui::GetCursorScreenPos().y - start_y;
+            IM_CHECK_EQ(vars.OffsetY, ImGui::GetFrameHeightWithSpacing() * item_count);
+
+            ImGui::Text("End");
+            ImGui::Separator();
+        }
+        ImGui::End();
     };
 
     // ## Test ImFontAtlas building with overlapping glyph ranges (#2353, #2233)
