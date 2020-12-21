@@ -1143,7 +1143,7 @@ void	ImGuiTestContext::MouseMoveToPos(ImVec2 target)
         else
         {
             // Use a bezier curve through the wobble points
-            Inputs->MousePosValue = ImBezierCalc(start_pos, intermediate_pos_a, intermediate_pos_b, target, t);
+            Inputs->MousePosValue = ImBezierCubicCalc(start_pos, intermediate_pos_a, intermediate_pos_b, target, t);
             //ImGui::GetOverlayDrawList()->AddBezierCurve(start_pos, intermediate_pos_a, intermediate_pos_b, target, IM_COL32(255,0,0,255), 1.0f);
             ImGuiTestEngine_Yield(Engine);
         }

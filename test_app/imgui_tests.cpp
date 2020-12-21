@@ -2776,9 +2776,9 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
         // Draw point closest to the mouse cursor
         ImVec2 point;
         if (num_segments == 0)
-            point = ImBezierClosestPointCasteljau(wp + points[0], wp + points[1], wp + points[2], wp + points[3], mouse_pos, style.CurveTessellationTol);
+            point = ImBezierCubicClosestPointCasteljau(wp + points[0], wp + points[1], wp + points[2], wp + points[3], mouse_pos, style.CurveTessellationTol);
         else
-            point = ImBezierClosestPoint(wp + points[0], wp + points[1], wp + points[2], wp + points[3], mouse_pos, num_segments);
+            point = ImBezierCubicClosestPoint(wp + points[0], wp + points[1], wp + points[2], wp + points[3], mouse_pos, num_segments);
         draw_list->AddCircleFilled(point, 4.0f, IM_COL32(255,0,0,255));
 
         ImGui::End();
