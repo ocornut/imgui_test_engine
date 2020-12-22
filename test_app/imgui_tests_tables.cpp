@@ -558,11 +558,12 @@ void RegisterTests_Table(ImGuiTestEngine* e)
             TableDiscardInstanceAndSettings(ImGui::GetID("table1"));
         }
 
-        if (ImGui::BeginTable("table0", 3, ImGuiTableFlags_Borders | ImGuiTableFlags_Resizable | ImGuiTableFlags_ColumnsWidthFixed))
+        if (ImGui::BeginTable("table0", 4, ImGuiTableFlags_Borders | ImGuiTableFlags_Resizable | ImGuiTableFlags_ColumnsWidthFixed))
         {
             ImGui::TableSetupColumn("A");
             ImGui::TableSetupColumn("B");
             ImGui::TableSetupColumn("C");
+            ImGui::TableSetupColumn("D", ImGuiTableColumnFlags_WidthFixed, 99.0f); // Initial width
             ImGui::TableHeadersRow();
             ImGui::TableNextColumn();
             ImGui::Text("AA");
@@ -570,14 +571,17 @@ void RegisterTests_Table(ImGuiTestEngine* e)
             ImGui::Text("AAAA");
             ImGui::TableNextColumn();
             ImGui::Text("AAAAAA");
+            ImGui::TableNextColumn();
+            ImGui::Text("AAAAAAAA");
             ImGui::EndTable();
         }
 
-        if (ImGui::BeginTable("table1", 3, ImGuiTableFlags_Borders | ImGuiTableFlags_Resizable | ImGuiTableFlags_ColumnsWidthStretch))
+        if (ImGui::BeginTable("table1", 4, ImGuiTableFlags_Borders | ImGuiTableFlags_Resizable | ImGuiTableFlags_ColumnsWidthStretch))
         {
             ImGui::TableSetupColumn("A");
             ImGui::TableSetupColumn("B");
             ImGui::TableSetupColumn("C");
+            ImGui::TableSetupColumn("D", ImGuiTableColumnFlags_WidthFixed, 99.0f); // Initial width
             ImGui::TableHeadersRow();
             ImGui::TableNextColumn();
             ImGui::Text("AA");
@@ -585,6 +589,8 @@ void RegisterTests_Table(ImGuiTestEngine* e)
             ImGui::Text("AAAA");
             ImGui::TableNextColumn();
             ImGui::Text("AAAAAA");
+            ImGui::TableNextColumn();
+            ImGui::Text("AAAAAAAA");
             ImGui::EndTable();
         }
 
@@ -599,6 +605,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
         {
             ctx->SetRef("Test window 1");
             ImGuiTable* table = ImGui::TableFindByID(ctx->GetID("table0"));
+            IM_CHECK_EQ(table->Columns[3].WidthGiven, 99.0f);
             ctx->ItemDragWithDelta(ImGui::TableGetColumnResizeID(table, 0), ImVec2(+50.0f, 0));
             ctx->ItemDragWithDelta(ImGui::TableGetColumnResizeID(table, 1), ImVec2(-20.0f, 0));
             ctx->ItemDragWithDelta(ImGui::TableGetColumnResizeID(table, 2), ImVec2(+20.0f, 0));
@@ -608,6 +615,8 @@ void RegisterTests_Table(ImGuiTestEngine* e)
             IM_CHECK_EQ(table->Columns[0].WidthGiven, ImGui::CalcTextSize("AA").x);
             IM_CHECK_EQ(table->Columns[1].WidthGiven, ImGui::CalcTextSize("AAAA").x);
             IM_CHECK_EQ(table->Columns[2].WidthGiven, ImGui::CalcTextSize("AAAAAA").x);
+            //IM_CHECK_EQ(table->Columns[3].WidthGiven, 99.0f); // SizeAll here is a best-fit size, not a revert to default
+            IM_CHECK_EQ(table->Columns[3].WidthGiven, ImGui::CalcTextSize("AAAAAAAA").x);
 
             // Test double click
             ctx->ItemDragWithDelta(ImGui::TableGetColumnResizeID(table, 0), ImVec2(+50.0f, 0));
@@ -619,7 +628,8 @@ void RegisterTests_Table(ImGuiTestEngine* e)
         {
             ctx->SetRef("Test window 1");
             ImGuiTable* table = ImGui::TableFindByID(ctx->GetID("table1"));
-            IM_CHECK(ImAbs(table->Columns[0].WidthGiven - table->Columns[2].WidthGiven) <= 1.0f);
+            IM_CHECK_LE(ImAbs(table->Columns[0].WidthGiven - table->Columns[2].WidthGiven), 1.0f);
+            IM_CHECK_EQ(table->Columns[3].WidthGiven, 99.0f);
             ctx->ItemDragWithDelta(ImGui::TableGetColumnResizeID(table, 0), ImVec2(+50.0f, 0));
             ctx->ItemDragWithDelta(ImGui::TableGetColumnResizeID(table, 1), ImVec2(-20.0f, 0));
 
@@ -628,12 +638,14 @@ void RegisterTests_Table(ImGuiTestEngine* e)
             ctx->SetRef(ctx->GetFocusWindowRef());
             ctx->ItemClick("###SizeOne");
             IM_CHECK_EQ(table->Columns[0].WidthGiven, ImGui::CalcTextSize("AA").x);
+            IM_CHECK_EQ(table->Columns[3].WidthGiven, 99.0f);
 
             ctx->SetRef("Test window 1");
             ctx->TableOpenContextMenu("table1", 1);
             ctx->SetRef(ctx->GetFocusWindowRef());
             ctx->ItemClick("###SizeOne");
             IM_CHECK_EQ(table->Columns[1].WidthGiven, ImGui::CalcTextSize("AAAA").x);
+            IM_CHECK_EQ(table->Columns[3].WidthGiven, 99.0f);
 
             ctx->SetRef("Test window 1");
             ctx->TableOpenContextMenu("table1", 2);
@@ -648,6 +660,8 @@ void RegisterTests_Table(ImGuiTestEngine* e)
             IM_CHECK_EQ(table->Columns[0].StretchWeight, 1.0f);
             IM_CHECK_EQ(table->Columns[1].StretchWeight, 1.0f);
             IM_CHECK_EQ(table->Columns[2].StretchWeight, 1.0f);
+            //IM_CHECK_EQ(table->Columns[3].WidthGiven, 99.0f); // FIXME: SizeAll mixed is a best-fit size, not a revert to default
+            IM_CHECK_EQ(table->Columns[3].WidthGiven, ImGui::CalcTextSize("AAAAAAAA").x);
         }
     };
 
@@ -754,7 +768,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
         HelperTableWithResizingPolicies("table2", 0, "FFW");
         ImGui::Spacing();
 
-        ImGui::BulletText("KO: Resize from W1| or W2|");    // FIXME: not implemented
+        ImGui::BulletText("ok: Resize from W1| or W2|");    // ok-ish
         ImGui::BulletText("OK: Resize from W3| (off)");     // ok: no-op (disabled by Rule A)
         HelperTableWithResizingPolicies("table3", 0, "WWWw");
         ImGui::Spacing();
