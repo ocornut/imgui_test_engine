@@ -80,7 +80,7 @@ static void HelperTableWithResizingPolicies(const char* table_id, ImGuiTableFlag
         if      (policy >= 'a' && policy <= 'z') { column_flags |= ImGuiTableColumnFlags_DefaultHide; }
         if      (policy == 'f' || policy == 'F') { column_flags |= ImGuiTableColumnFlags_WidthFixed; }
         else if (policy == 'w' || policy == 'W') { column_flags |= ImGuiTableColumnFlags_WidthStretch; }
-        else if (policy == 'a' || policy == 'A') { column_flags |= ImGuiTableColumnFlags_WidthAutoResize; }
+        else if (policy == 'a' || policy == 'A') { column_flags |= ImGuiTableColumnFlags_WidthAuto; }
         else IM_ASSERT(0);
         ImGui::TableSetupColumn(Str16f("%c%d", policy, column + 1).c_str(), column_flags);
     }
@@ -228,25 +228,115 @@ void RegisterTests_Table(ImGuiTestEngine* e)
         ctx->Yield();
     };
 
-    // ## Table: test effect of specifying a width in TableSetupColumn()
+    // ## Table: test effect of specifying or not a width in TableSetupColumn(), the effect of toggling _Resizable or setting _Fixed/_Auto widths.
     t = IM_REGISTER_TEST(e, "table", "table_width_explicit");
+    t->SetUserDataType<TableTestingVars>();
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
+        auto& vars = ctx->GetUserData<TableTestingVars>();
+        ImGui::SetNextWindowSize(ImVec2(600.0f, 0.0f), ImGuiCond_Once);
         ImGui::Begin("Test window 1", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImGui::CheckboxFlags("ImGuiTableFlags_Resizable", &vars.TableFlags, ImGuiTableFlags_Resizable);
         if (ctx->IsFirstGuiFrame())
             TableDiscardInstanceAndSettings(ImGui::GetID("table1"));
-        if (ImGui::BeginTable("table1", 4))
+        if (ImGui::BeginTable("table1", 5, vars.TableFlags | ImGuiTableFlags_ColumnsWidthFixed | ImGuiTableFlags_BordersV))
         {
-            ImGui::TableSetupColumn("One", ImGuiTableColumnFlags_WidthFixed, 100.0f, 0);
-            ImGui::TableSetupColumn("Two");
-            ImGui::TableSetupColumn("Three");
-            ImGui::TableSetupColumn("Four");
-            HelperTableSubmitCellsButtonFill(4, 5);
-            ImGuiTable* table = ctx->UiContext->CurrentTable;
-            IM_CHECK_EQ(table->Columns[0].WidthRequest, 100.0f);
+            ImGui::TableSetupColumn("Set100", 0, 100.0f);                       // Contents: 50.0f
+            ImGui::TableSetupColumn("Def");                                     // Contents: 60.0f
+            ImGui::TableSetupColumn("Fix", ImGuiTableColumnFlags_WidthFixed);   // Contents: 70.0f
+            ImGui::TableSetupColumn("Auto", vars.ColumnFlags[3] ? vars.ColumnFlags[3] : ImGuiTableColumnFlags_WidthAuto); // Contents: 80.0f
+            ImGui::TableSetupColumn("Stretch", ImGuiTableColumnFlags_WidthStretch);
+            ImGui::TableHeadersRow();
+            for (int row_n = 0; row_n < 5; row_n++)
+            {
+                ImGui::TableNextRow();
+
+                for (int column_n = 0; column_n < 4; column_n++)
+                {
+                    ImGui::TableNextColumn();
+                    if (row_n == 0)
+                        ImGui::Text("%.1f", ImGui::GetContentRegionAvail().x);
+                    else if (column_n == 4)
+                        ImGui::Button(Str16f("Fill %d,%d", row_n, column_n).c_str(), ImVec2(-FLT_MIN, 0.0f));
+                    else
+                        ImGui::Button(Str16f("Width %d", 50 + column_n * 10).c_str(), ImVec2(50.0f + column_n * 10.0f, 0.0f));
+                }
+            }
             ImGui::EndTable();
         }
         ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        auto& vars = ctx->GetUserData<TableTestingVars>();
+        ctx->SetRef("Test window 1");
+        ImGuiTable* table = ImGui::TableFindByID(ctx->GetID("table1"));
+
+        for (int n = 0; n < 2; n++)
+        {
+            if (n == 0)
+                vars.TableFlags = ImGuiTableFlags_None;
+            else if (n == 1)
+                vars.TableFlags |= ImGuiTableFlags_Resizable;
+            ctx->Yield();
+            IM_CHECK_EQ(table->Columns[0].WidthRequest, 100.0f);
+            if (vars.TableFlags & ImGuiTableFlags_Resizable)
+                IM_CHECK_EQ(table->Columns[0].WidthAuto, 50.0f);
+            else
+                IM_CHECK_EQ(table->Columns[0].WidthAuto, 100.0f);
+            IM_CHECK_EQ(table->Columns[0].WidthGiven, 100.0f);
+            IM_CHECK_EQ(table->Columns[1].WidthAuto, 60.0f);
+            IM_CHECK_EQ(table->Columns[1].WidthGiven, 60.0f);
+            IM_CHECK_EQ(table->Columns[2].WidthAuto, 70.0f);
+            IM_CHECK_EQ(table->Columns[2].WidthGiven, 70.0f);
+            IM_CHECK_EQ(table->Columns[3].WidthAuto, 80.0f);
+            IM_CHECK_EQ(table->Columns[3].WidthGiven, 80.0f);
+            IM_CHECK_GT(table->Columns[4].WidthAuto, 1.0f);
+        }
+
+        // Resize down, check for restored widths after clearing the _Resizable flag
+        vars.ColumnFlags[3] = ImGuiTableColumnFlags_WidthFixed;
+        ctx->ItemDragWithDelta(ImGui::TableGetColumnResizeID(table, 0), ImVec2(-20.0f, 0));
+        ctx->ItemDragWithDelta(ImGui::TableGetColumnResizeID(table, 1), ImVec2(-30.0f, 0));
+        ctx->ItemDragWithDelta(ImGui::TableGetColumnResizeID(table, 2), ImVec2(-40.0f, 0));
+        ctx->ItemDragWithDelta(ImGui::TableGetColumnResizeID(table, 3), ImVec2(-50.0f, 0));
+        IM_CHECK_EQ(table->Columns[0].WidthRequest, 100.0f - 20.0f);// Verify resizes
+        IM_CHECK_EQ(table->Columns[1].WidthRequest, 60.0f - 30.0f);
+        IM_CHECK_EQ(table->Columns[2].WidthRequest, 70.0f - 40.0f);
+        IM_CHECK_EQ(table->Columns[3].WidthRequest, 80.0f - 50.0f);
+        vars.ColumnFlags[3] = ImGuiTableColumnFlags_WidthAuto;
+        ctx->Yield();
+        IM_CHECK_EQ_NO_RET(table->Columns[3].WidthGiven, 80.0f);           // Auto: restore
+        vars.TableFlags &= ~ImGuiTableFlags_Resizable;
+        ctx->Yield();
+        IM_CHECK_EQ_NO_RET(table->Columns[0].WidthGiven, 100.0f);          // Explicit: restore
+        IM_CHECK_EQ_NO_RET(table->Columns[1].WidthGiven, 60.0f);           // Default: restore
+        IM_CHECK_EQ_NO_RET(table->Columns[2].WidthGiven, 70.0f - 40.0f);   // Fixed: keep whatever width it had (would allow e.g. explicit call to TableSetColumnWidth)
+        IM_CHECK_EQ_NO_RET(table->Columns[3].WidthGiven, 80.0f);           // Auto: restore
+
+        // Resize up, check for restored widths after clearing the _Resizable flag
+        vars.TableFlags |= ImGuiTableFlags_Resizable;
+        vars.ColumnFlags[3] = ImGuiTableColumnFlags_WidthFixed;
+        ctx->Yield();
+        ctx->ItemDoubleClick(ImGui::TableGetColumnResizeID(table, 2));
+        IM_CHECK_EQ(table->Columns[2].WidthGiven, 70.0f);           // Fixed: restore
+        ctx->ItemDragWithDelta(ImGui::TableGetColumnResizeID(table, 0), ImVec2(+20.0f, 0));
+        ctx->ItemDragWithDelta(ImGui::TableGetColumnResizeID(table, 1), ImVec2(+30.0f, 0));
+        ctx->ItemDragWithDelta(ImGui::TableGetColumnResizeID(table, 2), ImVec2(+40.0f, 0));
+        ctx->ItemDragWithDelta(ImGui::TableGetColumnResizeID(table, 3), ImVec2(+50.0f, 0));
+        IM_CHECK_EQ(table->Columns[0].WidthRequest, 100.0f + 20.0f);// Verify resizes
+        IM_CHECK_EQ(table->Columns[1].WidthRequest, 60.0f + 30.0f);
+        IM_CHECK_EQ(table->Columns[2].WidthRequest, 70.0f + 40.0f);
+        IM_CHECK_EQ(table->Columns[3].WidthRequest, 80.0f + 50.0f);
+        vars.ColumnFlags[3] = ImGuiTableColumnFlags_WidthAuto;
+        ctx->Yield();
+        IM_CHECK_EQ_NO_RET(table->Columns[3].WidthGiven, 80.0f);           // Auto: restore
+        vars.TableFlags &= ~ImGuiTableFlags_Resizable;
+        ctx->Yield();
+        IM_CHECK_EQ_NO_RET(table->Columns[0].WidthGiven, 100.0f);          // Explicit: restore
+        IM_CHECK_EQ_NO_RET(table->Columns[1].WidthGiven, 60.0f);           // Default: restore
+        IM_CHECK_EQ_NO_RET(table->Columns[2].WidthGiven, 70.0f + 40.0f);   // Fixed: keep whatever width it had (would allow e.g. explicit call to TableSetColumnWidth)
+        IM_CHECK_EQ_NO_RET(table->Columns[3].WidthGiven, 80.0f);           // Auto: restore
     };
 
     // ## Table: measure equal width
