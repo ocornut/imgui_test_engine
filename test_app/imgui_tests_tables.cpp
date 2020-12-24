@@ -234,12 +234,12 @@ void RegisterTests_Table(ImGuiTestEngine* e)
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         auto& vars = ctx->GetUserData<TableTestingVars>();
-        ImGui::SetNextWindowSize(ImVec2(600.0f, 0.0f), ImGuiCond_Once);
+        ImGui::SetNextWindowSize(ImVec2(600.0f, 0.0f), ImGuiCond_Appearing);
         ImGui::Begin("Test window 1", NULL, ImGuiWindowFlags_NoSavedSettings);
         ImGui::CheckboxFlags("ImGuiTableFlags_Resizable", &vars.TableFlags, ImGuiTableFlags_Resizable);
         if (ctx->IsFirstGuiFrame())
             TableDiscardInstanceAndSettings(ImGui::GetID("table1"));
-        if (ImGui::BeginTable("table1", 5, vars.TableFlags | ImGuiTableFlags_ColumnsWidthFixed | ImGuiTableFlags_BordersV))
+        if (ImGui::BeginTable("table1", 5, vars.TableFlags | ImGuiTableFlags_SizingPolicyFixed | ImGuiTableFlags_BordersV))
         {
             ImGui::TableSetupColumn("Set100", 0, 100.0f);                       // Contents: 50.0f
             ImGui::TableSetupColumn("Def");                                     // Contents: 60.0f
@@ -504,9 +504,9 @@ void RegisterTests_Table(ImGuiTestEngine* e)
         {
             ImGuiTableFlags table_flags = ImGuiTableFlags_Borders | ImGuiTableFlags_SameWidths | ImGuiTableFlags_Resizable * 0;
             if (test_n == 0)
-                table_flags |= ImGuiTableFlags_ColumnsWidthFixed;
+                table_flags |= ImGuiTableFlags_SizingPolicyFixed;
             if (test_n == 1)
-                table_flags |= ImGuiTableFlags_ColumnsWidthStretch;
+                table_flags |= ImGuiTableFlags_SizingPolicyStretch;
 
             ImGui::Text("TEST CASE %d", test_n);
             if (ImGui::BeginTable(Str16f("table%d", test_n).c_str(), 4, table_flags))
@@ -558,7 +558,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
             TableDiscardInstanceAndSettings(ImGui::GetID("table1"));
         }
 
-        if (ImGui::BeginTable("table0", 4, ImGuiTableFlags_Borders | ImGuiTableFlags_Resizable | ImGuiTableFlags_ColumnsWidthFixed))
+        if (ImGui::BeginTable("table0", 4, ImGuiTableFlags_Borders | ImGuiTableFlags_Resizable | ImGuiTableFlags_SizingPolicyFixed))
         {
             ImGui::TableSetupColumn("A");
             ImGui::TableSetupColumn("B");
@@ -576,7 +576,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
             ImGui::EndTable();
         }
 
-        if (ImGui::BeginTable("table1", 4, ImGuiTableFlags_Borders | ImGuiTableFlags_Resizable | ImGuiTableFlags_ColumnsWidthStretch))
+        if (ImGui::BeginTable("table1", 4, ImGuiTableFlags_Borders | ImGuiTableFlags_Resizable | ImGuiTableFlags_SizingPolicyStretch))
         {
             ImGui::TableSetupColumn("A");
             ImGui::TableSetupColumn("B");
@@ -679,7 +679,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
         ImGui::SetNextItemWidth(30.0f);
         ImGui::SliderInt("Step", &vars.Step, 0, 3);
 
-        ImGuiTableFlags table_flags = ImGuiTableFlags_ColumnsWidthFixed;
+        ImGuiTableFlags table_flags = ImGuiTableFlags_SizingPolicyFixed;
         if (vars.Step == 0)
         {
             vars.Width = 50.0f + 100.0f + cell_padding * 2.0f;
@@ -817,7 +817,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
 
         ctx->SetRef("Test window 1");
         table = ImGui::TableFindByID(ctx->GetID("table1"));    // Columns: FFF, do not span entire width of the table
-        IM_CHECK_LT(table->ColumnsTotalWidth + 1.0f, table->InnerWindow->ContentRegionRect.GetWidth());
+        IM_CHECK_LT(table->ColumnsGivenWidth + 1.0f, table->InnerWindow->ContentRegionRect.GetWidth());
         initial_column_width.resize(table->ColumnsCount);
         for (int column_n = 0; column_n >= 0; column_n = table->Columns[column_n].NextEnabledColumn)
         {
@@ -827,7 +827,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
             const float width_curr = col_curr->WidthGiven;
             const float width_prev = col_prev ? col_prev->WidthGiven : 0;
             const float width_next = col_next ? col_next->WidthGiven : 0;
-            const float width_total = table->ColumnsTotalWidth;
+            const float width_total = table->ColumnsGivenWidth;
             initial_column_width[column_n] = col_curr->WidthGiven;              // Save initial column size for next test
 
             // Resize a column
@@ -839,9 +839,9 @@ void RegisterTests_Table(ImGuiTestEngine* e)
             IM_CHECK(!col_prev || col_prev->WidthGiven == width_prev);      // Previous column width does not change
             IM_CHECK(col_curr->WidthGiven == width_curr + move_by);         // Current column expands
             IM_CHECK(!col_next || col_next->WidthGiven == width_next);      // Next column width does not change
-            IM_CHECK(table->ColumnsTotalWidth == width_total + move_by);    // Empty space after last column shrinks
+            IM_CHECK(table->ColumnsGivenWidth == width_total + move_by);    // Empty space after last column shrinks
         }
-        IM_CHECK(table->ColumnsTotalWidth + 1 < table->InnerWindow->ContentRegionRect.GetWidth());  // All columns span entire width of the table
+        IM_CHECK(table->ColumnsGivenWidth + 1 < table->InnerWindow->ContentRegionRect.GetWidth());  // All columns span entire width of the table
 
         // Test column fitting
         {
@@ -877,7 +877,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
 
         ctx->SetRef("Test window 1");
         table = ImGui::TableFindByID(ctx->GetID("table2"));     // Columns: FFW, do span entire width of the table
-        IM_CHECK(table->ColumnsTotalWidth == table->InnerWindow->ContentRegionRect.GetWidth());
+        IM_CHECK(table->ColumnsGivenWidth == table->InnerWindow->ContentRegionRect.GetWidth());
 
         // Iterate visible columns and check existence of resize handles
         for (int column_n = 0; column_n >= 0; column_n = table->Columns[column_n].NextEnabledColumn)
@@ -888,7 +888,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
             else
                 IM_CHECK(ctx->ItemInfo(handle_id, ImGuiTestOpFlags_NoError) != NULL); // FF
         }
-        IM_CHECK(table->ColumnsTotalWidth == table->InnerWindow->ContentRegionRect.GetWidth());
+        IM_CHECK(table->ColumnsGivenWidth == table->InnerWindow->ContentRegionRect.GetWidth());
     };
 
     // ## Test Visible flag
@@ -1061,7 +1061,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
             // Resize a column in the second table. It is not important whether we increase or reduce column size.
             // Changing direction ensures resize happens around the first third of the table and does not stick to
             // either side of the table across multiple test runs.
-            float direction = (table->ColumnsTotalWidth * 0.3f) < table->Columns[0].WidthGiven ? -1.0f : 1.0f;
+            float direction = (table->ColumnsGivenWidth * 0.3f) < table->Columns[0].WidthGiven ? -1.0f : 1.0f;
             float length = 30.0f + 10.0f * instance_no; // Different length for different table instances
             ctx->ItemDragWithDelta(ImGui::TableGetColumnResizeID(table, 0, instance_no), ImVec2(length * direction, 0.0f));
             ctx->GenericVars.Bool1 = true;      // Retest again
@@ -1677,7 +1677,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
     {
         ImGuiContext& g = *ctx->UiContext;
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
-        if (ImGui::BeginTable("table1", 2, ImGuiTableFlags_ColumnsWidthFixed))
+        if (ImGui::BeginTable("table1", 2, ImGuiTableFlags_SizingPolicyFixed))
         {
             ImGui::TableNextRow();
             ImGui::TableNextColumn();
