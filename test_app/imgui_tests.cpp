@@ -2771,7 +2771,7 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
         draw_list->AddLine(wp + points[2], wp + points[3], IM_COL32(0,255,0,100));
 
         // Draw curve itself
-        draw_list->AddBezierCurve(wp + points[0], wp + points[1], wp + points[2], wp + points[3], IM_COL32_WHITE, 2.0f, num_segments);
+        draw_list->AddBezierCubic(wp + points[0], wp + points[1], wp + points[2], wp + points[3], IM_COL32_WHITE, 2.0f, num_segments);
 
         // Draw point closest to the mouse cursor
         ImVec2 point;
