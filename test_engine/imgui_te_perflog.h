@@ -17,14 +17,16 @@ struct ImGuiPerflogEntry
     double                      DtDeltaMsMax = -FLT_MAX;        // May be used by perflog.
     int                         NumSamples = 1;                 // Number aggregated samples.
     int                         PerfStressAmount = 0;           //
-    const char*                 GitBranchName = NULL;           // Build information
+    const char*                 GitBranchName = NULL;           // Build information.
     const char*                 BuildType = NULL;               //
     const char*                 Cpu = NULL;                     //
     const char*                 OS = NULL;                      //
     const char*                 Compiler = NULL;                //
     const char*                 Date = NULL;                    //
+    float                       VsBaseline;                     // Percent difference vs baseline.
 };
 
+struct ImGuiPerfLogColumnInfo;
 
 struct ImGuiPerfLog
 {
@@ -48,6 +50,9 @@ struct ImGuiPerfLog
     int                         _AlignOs = 0;
     int                         _AlignCompiler = 0;
     int                         _AlignBranch = 0;
+    ImVector<int>               _InfoTableSort;                 // _InfoTableSort[_Legend.Size]. Contains indices into _Legend vector.
+    const ImGuiPerfLogColumnInfo*_InfoTableSortColInfo = NULL;  // Offset in a ImGuiPerflogEntry pointing to sort element.
+    const ImGuiTableSortSpecs*  _InfoTableSortSpecs = NULL;
 
     struct
     {
