@@ -371,7 +371,7 @@ bool ImGuiPerfLog::Load(const char* file_name)
 bool ImGuiPerfLog::Save(const char* file_name)
 {
     // Log to .csv
-    FILE* f = fopen(file_name, "w+t");
+    FILE* f = fopen(file_name, "wb");
     if (f == NULL)
         return false;
 
@@ -548,9 +548,9 @@ void ImGuiPerfLog::ShowUI(ImGuiTestEngine* engine)
     bool date_changed = Date("##date-from", _FilterDateFrom, IM_ARRAYSIZE(_FilterDateFrom), strcmp(_FilterDateFrom, _FilterDateTo) <= 0);
     if (ImGui::IsItemHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Right))
         ImGui::OpenPopup("Date From Menu");
-    ImGui::SameLine();
-    ImGui::TextUnformatted("-");
-    ImGui::SameLine();
+    ImGui::SameLine(0, 0.0f);
+    ImGui::TextUnformatted("..");
+    ImGui::SameLine(0, 0.0f);
     date_changed |= Date("##date-to", _FilterDateTo, IM_ARRAYSIZE(_FilterDateTo), strcmp(_FilterDateFrom, _FilterDateTo) <= 0);
     _Dirty = date_changed && IsDateValid(_FilterDateFrom) && IsDateValid(_FilterDateTo) && strcmp(_FilterDateFrom, _FilterDateTo) <= 0;
     if (ImGui::IsItemHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Right))
@@ -630,7 +630,7 @@ void ImGuiPerfLog::ShowUI(ImGuiTestEngine* engine)
         ImGui::OpenPopup("Clear All");
     ImGui::SameLine();
 
-    if (ImGui::Button(Str128f("Info Table: %s", _Labels.empty() ? "???" : _Labels[_SelectedTest]->TestName).c_str()))
+    if (ImGui::Button(Str128f("Info Table: %s", _SelectedTest < _Labels.Size ? _Labels[_SelectedTest]->TestName : "NULL").c_str()))
         ImGui::OpenPopup("Select Test");
     if (ImGui::IsItemHovered())
         ImGui::SetTooltip("Select a test for display of additional information in table below the plot.");

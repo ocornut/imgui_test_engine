@@ -304,11 +304,14 @@ bool ImGuiCSVParser::Load(const char* file_name)
     char* col_data = _Data;
     for (char* c = _Data; *c != '\0'; c++)
     {
-        if (*c == ',' || (*c == '\n' && c[1] != '\r' && c[1] != '\n') || *c == '\0')
+        const bool is_comma = (*c == ',');
+        const bool is_eol = (*c == '\n' || *c == '\r');
+        const bool is_eof = (*c == '\0');
+        if (is_comma || is_eol || is_eof)
         {
             _Index[row * Columns + col] = col_data;
             col_data = c + 1;
-            if (*c == ',')
+            if (is_comma)
             {
                 col++;
             }
@@ -318,6 +321,11 @@ bool ImGuiCSVParser::Load(const char* file_name)
                 col = 0;
             }
             *c = 0;
+            if (is_eol)
+            {
+                while (c[1] == '\r' || c[1] == '\n')
+                    c++;
+            }
         }
     }
 

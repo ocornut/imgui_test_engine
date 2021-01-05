@@ -59,7 +59,7 @@ struct ImGuiPerfLog
         ImGuiStorage            Visibility;
         ImU64                   BaselineTimestamp;
 
-        void    Clear()         { Visibility.Clear(); BaselineTimestamp = -1; }
+        void    Clear()         { Visibility.Clear(); BaselineTimestamp = (ImU64)-1; }
     } _Settings;
 
                 ImGuiPerfLog();
