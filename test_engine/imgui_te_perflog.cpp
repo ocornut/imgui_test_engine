@@ -32,10 +32,20 @@ static int IMGUI_CDECL PerflogComparerByTimestampAndTestName(const void* lhs, co
 {
     const ImGuiPerflogEntry* a = (const ImGuiPerflogEntry*)lhs;
     const ImGuiPerflogEntry* b = (const ImGuiPerflogEntry*)rhs;
+
+    // Sort batches by branch
+    if (strcmp(a->GitBranchName, b->GitBranchName) < 0)
+        return -1;
+    if (strcmp(a->GitBranchName, b->GitBranchName) > 0)
+        return +1;
+
+    // Keep batches together
     if ((ImS64)b->Timestamp - (ImS64)a->Timestamp < 0)
         return -1;
     if ((ImS64)b->Timestamp - (ImS64)a->Timestamp > 0)
         return +1;
+
+    // And sort entries within a batch by name
     return strcmp(a->TestName, b->TestName);
 }
 
@@ -151,7 +161,7 @@ static ImPlotPoint GetPlotPoint(void* data, int idx)
 {
     GetPlotPointData* d = (GetPlotPointData*)data;
     ImGuiPerfLog* perf = d->Perf;
-    ImGuiPerflogEntry* entry = perf->GetEntryByBatchIdx(d->BatchIndex, perf->_VisibleLabelPointers[idx]);
+    ImGuiPerflogEntry* entry = perf->GetEntryByBatchIdx(d->BatchIndex, perf->_VisibleLabelPointers.Data[idx]);
     ImPlotPoint pt;
     pt.x = entry ? entry->DtDeltaMs : 0.0;
     pt.y = idx + d->Shift;
@@ -167,6 +177,7 @@ static void RenderFilterInput(ImGuiPerfLog* perf, const char* hint)
     }
     ImGui::SetNextItemWidth(perf->_FilterInputWidth);
     ImGui::InputTextWithHint("##filter", hint, &perf->_Filter);
+    ImGui::SetKeyboardFocusHere();
     if (perf->_FilterInputWidth < 1.0f)
         perf->_FilterInputWidth = ImGui::GetItemRectSize().x;
 }
@@ -180,7 +191,7 @@ static bool RenderMultiSelectFilter(ImGuiPerfLog* perf, const char* filter_hint,
     RenderFilterInput(perf, filter_hint);
 
     // Keep popup open for multiple actions if SHIFT is pressed.
-    if (g.IO.KeyShift)
+    if (!g.IO.KeyShift)
         ImGui::PushItemFlag(ImGuiItemFlags_SelectableDontClosePopup, true);
 
     if (ImGui::MenuItem("Show All"))
@@ -275,10 +286,11 @@ static void PerflogSettingsHandler_ReadLine(ImGuiContext*, ImGuiSettingsHandler*
     ImGuiPerfLog* perflog = (ImGuiPerfLog*)ini_handler->UserData;
     char buf[128];
     ImU64 timestamp;
-    int visible, combine;
-         if (sscanf(line, "DateFrom=%10s", perflog->_FilterDateFrom))               { }
+    int visible, combine, branch_colors;
+    /**/ if (sscanf(line, "DateFrom=%10s", perflog->_FilterDateFrom))               { }
     else if (sscanf(line, "DateTo=%10s", perflog->_FilterDateTo))                   { }
     else if (sscanf(line, "CombineByBuildInfo=%d", &combine))                       { perflog->_CombineByBuildInfo = !!combine; }
+    else if (sscanf(line, "PerBranchColors=%d", &branch_colors))                    { perflog->_PerBranchColors = !!branch_colors; }
     else if (sscanf(line, "Baseline=%llu", &perflog->_Settings.BaselineTimestamp))  { }
     else if (sscanf(line, "TestVisibility=%[^=]=%d", buf, &visible))                { perflog->_Settings.Visibility.SetBool(ImHashStr(buf), !!visible); }
     else if (sscanf(line, "BuildVisibility=%llu=%d", &timestamp, &visible))         { perflog->_Settings.Visibility.SetBool(ImHashData(&timestamp, sizeof(timestamp)), !!visible); }
@@ -300,6 +312,7 @@ static void PerflogSettingsHandler_WriteAll(ImGuiContext*, ImGuiSettingsHandler*
     buf->appendf("DateFrom=%s\n", perflog->_FilterDateFrom);
     buf->appendf("DateTo=%s\n", perflog->_FilterDateTo);
     buf->appendf("CombineByBuildInfo=%d\n", perflog->_CombineByBuildInfo);
+    buf->appendf("PerBranchColors=%d\n", perflog->_PerBranchColors);
     if (perflog->_BaselineBatchIndex >= 0)
         buf->appendf("Baseline=%llu\n", perflog->_Legend[perflog->_BaselineBatchIndex]->Timestamp);
     for (ImGuiPerflogEntry* entry : perflog->_Labels)
@@ -528,6 +541,7 @@ void ImGuiPerfLog::ShowUI(ImGuiTestEngine* engine)
 #ifdef IMGUI_TEST_ENGINE_ENABLE_IMPLOT
     ImGuiContext& g = *GImGui;
     Str256f label("");
+    Str256f display_Label("");
 
     if (_Dirty)
         _Rebuild();
@@ -625,6 +639,10 @@ void ImGuiPerfLog::ShowUI(ImGuiTestEngine* engine)
     if (ImGui::IsItemHovered())
         ImGui::SetTooltip("Combine multiple runs with same build info into one averaged build entry.");
     ImGui::SameLine();
+    ImGui::Checkbox("Per Branch colors", &_PerBranchColors);
+    if (ImGui::IsItemHovered())
+        ImGui::SetTooltip("Use one color per branch.");
+    ImGui::SameLine();
 
     if (ImGui::Button("Clear All"))
         ImGui::OpenPopup("Clear All");
@@ -661,6 +679,7 @@ void ImGuiPerfLog::ShowUI(ImGuiTestEngine* engine)
     if (ImGui::BeginPopup("Select Test"))
     {
         RenderSingleSelectFilter(this, "Filter Tests", &_Labels, &_SelectedTest, PerflogFormatTestName);
+        _ClosePopupMaybe();
         ImGui::EndPopup();
     }
 
@@ -674,7 +693,7 @@ void ImGuiPerfLog::ShowUI(ImGuiTestEngine* engine)
         ImGui::TextUnformatted("Extra information tooltip will display min/max delta values as well as number of samples.");
         ImGui::TextUnformatted("Data may be filtered by enabling or disabling individual builds or perf tests.");
         ImGui::TextUnformatted("Hold CTRL when toggling build info or perf test visibility in order to invert visibility or other items.");
-        ImGui::TextUnformatted("Hold SHIFT when toggling build info or perf test visibility in order to keep popup open.");
+        ImGui::TextUnformatted("Hold SHIFT when toggling build info or perf test visibility in order to close popup instantly.");
         ImGui::TextUnformatted("Double-click plot to fit plot into available area.");
         ImGui::EndPopup();
     }
@@ -683,12 +702,14 @@ void ImGuiPerfLog::ShowUI(ImGuiTestEngine* engine)
     {
         if (RenderMultiSelectFilter(this, "Filter by build info", &_Legend, PerflogHashBuildInfo, PerflogFormatBuildInfo))
             _CalculateLegendAlignment();
+        _ClosePopupMaybe();
         ImGui::EndPopup();
     }
 
     if (ImGui::BeginPopup("Filter perfs"))
     {
         RenderMultiSelectFilter(this, "Filter by perf test", &_Labels, PerflogHashTestName, PerflogFormatTestName);
+        _ClosePopupMaybe();
         ImGui::EndPopup();
     }
 
@@ -731,19 +752,55 @@ void ImGuiPerfLog::ShowUI(ImGuiTestEngine* engine)
 
             // Plot bars.
             label.clear();
+            display_Label.clear();
             PerflogFormatBuildInfo(this, &label, entry);
-            label.appendf("%s###%08X", _BaselineBatchIndex == batch_index ? " *" : "", entry->Timestamp);
+            display_Label.append(label.c_str());
+            display_Label.appendf("%s###%08X", _BaselineBatchIndex == batch_index ? " *" : "", entry->Timestamp);
             GetPlotPointData data;
             data.Shift = -h * bar_index + (float) (num_visible_builds - 1) * 0.5f * h;
             data.Perf = this;
             data.BatchIndex = batch_index;
-            ImPlot::PlotBarsHG(label.c_str(), &GetPlotPoint, &data, _VisibleLabelPointers.Size, h);
+            ImGuiID color_id;
+            if (_PerBranchColors)
+                color_id = ImHashStr(entry->GitBranchName);
+            else
+                color_id = g.CurrentWindow->GetID(batch_index);
+            ImPlot::SetNextFillStyle(ImPlot::GetColormapColor(color_id & INT_MAX));
+            ImPlot::PlotBarsHG(display_Label.c_str(), &GetPlotPoint, &data, _VisibleLabelPointers.Size, h);
 
             // Set baseline.
-            if (ImPlot::IsLegendEntryHovered(label.c_str()) && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
+            if (ImPlot::IsLegendEntryHovered(display_Label.c_str()))
             {
-                _BaselineBatchIndex = batch_index;
-                _Dirty = true;
+                if (ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
+                {
+                    _BaselineBatchIndex = batch_index;
+                    _Dirty = true;
+                }
+            }
+            else if (g.IO.KeyShift)
+            {
+                // Info tooltip with delta times of each batch for a hovered test.
+                int test_index = IM_ROUND(ImPlot::GetPlotMousePos().y);
+                if (0 <= test_index && test_index < _VisibleLabelPointers.Size)
+                {
+                    const char* test_name = _VisibleLabelPointers.Data[test_index];
+                    ImGuiPerflogEntry* hovered_entry = GetEntryByBatchIdx(batch_index, test_name);
+
+                    ImGui::BeginTooltip();
+                    if (bar_index == 0)
+                    {
+                        float w = ImGui::CalcTextSize(test_name).x;
+                        float total_w = ImGui::GetContentRegionAvail().x;
+                        if (total_w > w)
+                            ImGui::SetCursorPosX(ImGui::GetCursorPosX() + (total_w - w) * 0.5f);
+                        ImGui::TextUnformatted(test_name);
+                    }
+                    if (hovered_entry)
+                        ImGui::Text("%s %.3fms", label.c_str(), hovered_entry->DtDeltaMs);
+                    else
+                        ImGui::Text("%s --", label.c_str());
+                    ImGui::EndTooltip();
+                }
             }
 
             bar_index++;
@@ -927,4 +984,11 @@ void ImGuiPerfLog::_CalculateLegendAlignment()
         _AlignCompiler = ImMax(_AlignCompiler, (int)strlen(entry->Compiler));
         _AlignBranch = ImMax(_AlignBranch, (int)strlen(entry->GitBranchName));
     }
+}
+
+void ImGuiPerfLog::_ClosePopupMaybe()
+{
+    ImGuiContext& g = *GImGui;
+    if (ImGui::IsKeyPressedMap(ImGuiKey_Escape) || (ImGui::IsMouseClicked(0) && g.HoveredWindow != g.CurrentWindow))
+        ImGui::CloseCurrentPopup();
 }
