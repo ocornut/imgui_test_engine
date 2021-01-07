@@ -330,6 +330,8 @@ struct ImGuiTestContext
     // Navigation inputs
     void        SetInputMode(ImGuiInputSource input_mode);
     void        NavKeyPress(ImGuiNavInput input);
+    void        NavKeyDown(ImGuiNavInput input);
+    void        NavKeyUp(ImGuiNavInput input);
     void        NavMoveTo(ImGuiTestRef ref);
     void        NavActivate();  // Activate current selected item. Same as pressing [space].
     void        NavInput();     // Press ImGuiNavInput_Input (e.g. Triangle) to turn a widget into a text input

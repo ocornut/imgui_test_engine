@@ -890,15 +890,32 @@ void    ImGuiTestContext::NavMoveTo(ImGuiTestRef ref)
 
 void    ImGuiTestContext::NavKeyPress(ImGuiNavInput input)
 {
+    NavKeyDown(input);
+    NavKeyUp(input);
+}
+
+void    ImGuiTestContext::NavKeyDown(ImGuiNavInput input)
+{
     IM_ASSERT(input >= 0 && input < ImGuiNavInput_COUNT);
     if (IsError())
         return;
 
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
-    LogDebug("NavInput %d", (int)input);
+    LogDebug("NavInput Down %d", (int)input);
 
     ImGuiTestEngine_PushInput(Engine, ImGuiTestInput::FromNav(input, ImGuiKeyState_Down));
     Yield();
+}
+
+void    ImGuiTestContext::NavKeyUp(ImGuiNavInput input)
+{
+    IM_ASSERT(input >= 0 && input < ImGuiNavInput_COUNT);
+    if (IsError())
+        return;
+
+    IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
+    LogDebug("NavInput Up %d", (int)input);
+
     ImGuiTestEngine_PushInput(Engine, ImGuiTestInput::FromNav(input, ImGuiKeyState_Up));
     Yield();
     Yield(); // For nav code to react e.g. run a query
@@ -922,6 +939,7 @@ void    ImGuiTestContext::NavActivate()
         ImGuiTestEngine_PushInput(Engine, ImGuiTestInput::FromNav(ImGuiNavInput_Activate, ImGuiKeyState_Down));
         Yield();
     }
+    ImGuiTestEngine_PushInput(Engine, ImGuiTestInput::FromNav(ImGuiNavInput_Activate, ImGuiKeyState_Up));
     Yield();
 #else
     // Feed keyboard keys
@@ -948,6 +966,7 @@ void    ImGuiTestContext::NavInput()
         ImGuiTestEngine_PushInput(Engine, ImGuiTestInput::FromNav(ImGuiNavInput_Input, ImGuiKeyState_Down));
         Yield();
     }
+    ImGuiTestEngine_PushInput(Engine, ImGuiTestInput::FromNav(ImGuiNavInput_Input, ImGuiKeyState_Up));
     Yield();
 }
 

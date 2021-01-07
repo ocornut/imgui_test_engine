@@ -468,8 +468,6 @@ void ImGuiTestEngine_ApplyInputToImGuiContext(ImGuiTestEngine* engine)
         COPY_FIELD(NavInputs);
         #undef COPY_FIELD
 
-        // FIXME-TESTS: This is a bit of a mess, ideally we should be able to swap/copy/isolate IO without all that fuss..
-        memset(simulated_io.NavInputs, 0, sizeof(simulated_io.NavInputs));
         simulated_io.ClearInputCharacters();
     }
     else

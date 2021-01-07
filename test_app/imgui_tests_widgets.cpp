@@ -3197,7 +3197,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
 #endif
     };
 
-    // ## Test logarithmic slider, and by using the keyboard navigation path.
+    // ## Test logarithmic slider
     t = IM_REGISTER_TEST(e, "widgets", "widgets_slider_logarithmic");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
@@ -3231,9 +3231,53 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
                 ctx->ItemDragWithDelta("slider", ImVec2(sign * x_offset[i], 0.f));
                 IM_CHECK_EQ(ctx->GenericVars.Float1, sign * slider_v[i]);
             }
+    };
 
-        // Navigation
-        // TODO, seems broken ?
+    // ## Test slider navigation path using keyboard.
+    t = IM_REGISTER_TEST(e, "widgets", "widgets_slider_navigation_edit_value");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
+        ImGui::SliderFloat("Slider 1", &ctx->GenericVars.Float1, -100.0f, 100.0f, "%.2f");
+        ImGui::SliderInt("Slider 2", &ctx->GenericVars.Int1, 0, 100);
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiContext& g = *ImGui::GetCurrentContext();
+        ctx->SetRef("Test Window");
+
+        ctx->ItemNavActivate("Slider 1");
+        IM_CHECK_EQ(ctx->GenericVars.Float1, 0.f);
+        IM_CHECK_EQ(ctx->GenericVars.Int1, 0);
+        IM_CHECK_EQ(g.NavId, ctx->GetID("Slider 1"));
+
+        const float slider_float_step = 2.0f;
+        const float slider_float_step_slow = 0.2f;
+        float slider_float_value = ctx->GenericVars.Float1;
+        ctx->NavKeyPress(ImGuiNavInput_DpadLeft);
+        IM_CHECK_EQ(ctx->GenericVars.Float1, slider_float_value - slider_float_step);
+        ctx->NavKeyDown(ImGuiNavInput_TweakSlow);
+        ctx->NavKeyPress(ImGuiNavInput_DpadRight);
+        ctx->NavKeyUp(ImGuiNavInput_TweakSlow);
+        IM_CHECK_EQ(ctx->GenericVars.Float1, slider_float_value - slider_float_step + slider_float_step_slow);
+
+        ctx->NavKeyPress(ImGuiNavInput_DpadDown);
+        ctx->NavKeyPress(ImGuiNavInput_Activate);
+        IM_CHECK_EQ(g.NavId, ctx->GetID("Slider 2"));;
+
+        const int slider_int_step = 1;
+        const int slider_int_step_slow = 1;
+        int slider_int_value = ctx->GenericVars.Int1;
+        ctx->NavKeyPress(ImGuiNavInput_DpadRight);
+        IM_CHECK_EQ(ctx->GenericVars.Int1, slider_float_value + slider_int_step);
+        ctx->NavKeyDown(ImGuiNavInput_TweakSlow);
+        ctx->NavKeyPress(ImGuiNavInput_DpadLeft);
+        ctx->NavKeyUp(ImGuiNavInput_TweakSlow);
+        IM_CHECK_EQ(ctx->GenericVars.Int1, slider_int_value + slider_int_step - slider_int_step_slow);
+
+        ctx->NavKeyPress(ImGuiNavInput_DpadUp);
+        IM_CHECK_EQ(g.NavId, ctx->GetID("Slider 1"));
     };
 
     // ## Test tooltip positioning in various conditions.
