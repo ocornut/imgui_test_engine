@@ -270,24 +270,26 @@ template<> inline void ImGuiTestEngineUtil_AppendStrValue(ImGuiTextBuffer& buf, 
             IM_ASSERT(__res);                                               \
     } while (0)
 
-#define IM_CHECK_STR_EQ(_LHS, _RHS)     IM_CHECK_STR_OP(_LHS, _RHS, ==)
-#define IM_CHECK_STR_NE(_LHS, _RHS)     IM_CHECK_STR_OP(_LHS, _RHS, !=)
-#define IM_CHECK_STR_EQ_NO_RET(_LHS, _RHS) IM_CHECK_STR_OP_NO_RET(_LHS, _RHS, ==)
-#define IM_CHECK_STR_NE_NO_RET(_LHS, _RHS) IM_CHECK_STR_OP_NO_RET(_LHS, _RHS, !=)
+#define IM_CHECK_STR_EQ(_LHS, _RHS)         IM_CHECK_STR_OP(_LHS, _RHS, ==)
+#define IM_CHECK_STR_NE(_LHS, _RHS)         IM_CHECK_STR_OP(_LHS, _RHS, !=)
+#define IM_CHECK_STR_EQ_NO_RET(_LHS, _RHS)  IM_CHECK_STR_OP_NO_RET(_LHS, _RHS, ==)
+#define IM_CHECK_STR_NE_NO_RET(_LHS, _RHS)  IM_CHECK_STR_OP_NO_RET(_LHS, _RHS, !=)
 
-#define IM_CHECK_EQ(_LHS, _RHS)         IM_CHECK_OP(_LHS, _RHS, ==)         // Equal
-#define IM_CHECK_NE(_LHS, _RHS)         IM_CHECK_OP(_LHS, _RHS, !=)         // Not Equal
-#define IM_CHECK_LT(_LHS, _RHS)         IM_CHECK_OP(_LHS, _RHS, <)          // Less Than
-#define IM_CHECK_LE(_LHS, _RHS)         IM_CHECK_OP(_LHS, _RHS, <=)         // Less or Equal
-#define IM_CHECK_GT(_LHS, _RHS)         IM_CHECK_OP(_LHS, _RHS, >)          // Greater Than
-#define IM_CHECK_GE(_LHS, _RHS)         IM_CHECK_OP(_LHS, _RHS, >=)         // Greater or Equal
+#define IM_CHECK_EQ(_LHS, _RHS)             IM_CHECK_OP(_LHS, _RHS, ==)         // Equal
+#define IM_CHECK_NE(_LHS, _RHS)             IM_CHECK_OP(_LHS, _RHS, !=)         // Not Equal
+#define IM_CHECK_LT(_LHS, _RHS)             IM_CHECK_OP(_LHS, _RHS, <)          // Less Than
+#define IM_CHECK_LE(_LHS, _RHS)             IM_CHECK_OP(_LHS, _RHS, <=)         // Less or Equal
+#define IM_CHECK_GT(_LHS, _RHS)             IM_CHECK_OP(_LHS, _RHS, >)          // Greater Than
+#define IM_CHECK_GE(_LHS, _RHS)             IM_CHECK_OP(_LHS, _RHS, >=)         // Greater or Equal
 
-#define IM_CHECK_EQ_NO_RET(_LHS, _RHS)  IM_CHECK_OP_NO_RET(_LHS, _RHS, ==)  // Equal
-#define IM_CHECK_NE_NO_RET(_LHS, _RHS)  IM_CHECK_OP_NO_RET(_LHS, _RHS, !=)  // Not Equal
-#define IM_CHECK_LT_NO_RET(_LHS, _RHS)  IM_CHECK_OP_NO_RET(_LHS, _RHS, <)   // Less Than
-#define IM_CHECK_LE_NO_RET(_LHS, _RHS)  IM_CHECK_OP_NO_RET(_LHS, _RHS, <=)  // Less or Equal
-#define IM_CHECK_GT_NO_RET(_LHS, _RHS)  IM_CHECK_OP_NO_RET(_LHS, _RHS, >)   // Greater Than
-#define IM_CHECK_GE_NO_RET(_LHS, _RHS)  IM_CHECK_OP_NO_RET(_LHS, _RHS, >=)  // Greater or Equal
+#define IM_CHECK_EQ_NO_RET(_LHS, _RHS)      IM_CHECK_OP_NO_RET(_LHS, _RHS, ==)  // Equal
+#define IM_CHECK_NE_NO_RET(_LHS, _RHS)      IM_CHECK_OP_NO_RET(_LHS, _RHS, !=)  // Not Equal
+#define IM_CHECK_LT_NO_RET(_LHS, _RHS)      IM_CHECK_OP_NO_RET(_LHS, _RHS, <)   // Less Than
+#define IM_CHECK_LE_NO_RET(_LHS, _RHS)      IM_CHECK_OP_NO_RET(_LHS, _RHS, <=)  // Less or Equal
+#define IM_CHECK_GT_NO_RET(_LHS, _RHS)      IM_CHECK_OP_NO_RET(_LHS, _RHS, >)   // Greater Than
+#define IM_CHECK_GE_NO_RET(_LHS, _RHS)      IM_CHECK_OP_NO_RET(_LHS, _RHS, >=)  // Greater or Equal
+
+#define IM_CHECK_FLOAT_EQ_EPS(_LHS, _RHS)   IM_CHECK_LE(ImFabs(_LHS - _RHS), FLT_EPSILON)   // Float Equal
 
 bool    ImGuiTestEngineHook_Check(const char* file, const char* func, int line, ImGuiTestCheckFlags flags, bool result, const char* expr);
 bool    ImGuiTestEngineHook_Error(const char* file, const char* func, int line, ImGuiTestCheckFlags flags, const char* fmt, ...);

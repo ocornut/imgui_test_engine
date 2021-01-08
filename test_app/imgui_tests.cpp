@@ -3417,7 +3417,9 @@ void RegisterTests_Capture(ImGuiTestEngine* e)
         ctx->SetRef("Dear ImGui Demo");
         ctx->ItemOpen("Tables & Columns");
         ctx->ItemClick("Tables/Open all");
+        ctx->ItemOpen("Tables/Synced instances", 1);
         ctx->ItemOpen("Tables/Advanced/Options");
+        ctx->ItemOpenAll("Tables/Advanced/Options", 1);
         ctx->ItemOpen("Tables/Tree view/**/Root");
 
         ctx->CaptureScreenshotWindow("", ImGuiCaptureFlags_StitchFullContents | ImGuiCaptureFlags_HideMouseCursor);
