@@ -351,7 +351,7 @@ struct ImGuiTestEngineIO
     bool                        ConfigNoThrottle = false;       // Disable vsync for performance measurement or fast test running
     float                       ConfigFixedDeltaTime = 0.0f;    // Use fixed delta time instead of calculating it from wall clock
     float                       DpiScale = 1.0f;
-    float                       MouseSpeed = 800.0f;            // Mouse speed (pixel/second) when not running in fast mode
+    float                       MouseSpeed = 1000.0f;           // Mouse speed (pixel/second) when not running in fast mode
     float                       MouseWobble = 0.25f;            // How much wobble to apply to the mouse (pixels per pixel of move distance) when not running in fast mode
     float                       ScrollSpeed = 1600.0f;          // Scroll speed (pixel/second) when not running in fast mode
     float                       TypingSpeed = 30.0f;            // Char input speed (characters/second) when not running in fast mode

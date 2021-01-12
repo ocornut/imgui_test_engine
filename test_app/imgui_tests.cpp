@@ -2871,6 +2871,11 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
         ctx->ItemOpen("Layout & Scrolling");
         ctx->ItemOpen("Scrolling");
         ctx->ItemCheck("Scrolling/Show Horizontal contents size demo window");   // FIXME-TESTS: maybe ItemXXX functions could do the recursion (e.g. Open all parents first)
+        ImGuiTestActionFilter filter;
+        filter.MaxPasses = filter.MaxDepth = 1;
+        filter.RequireAllStatusFlags = ImGuiItemStatusFlags_Checkable;
+        ctx->ItemActionAll(ImGuiTestAction_Click, "/Horizontal contents size demo window", &filter);    // Toggle
+        ctx->ItemActionAll(ImGuiTestAction_Click, "/Horizontal contents size demo window", &filter);    // Toggle
         ctx->ItemUncheck("Scrolling/Show Horizontal contents size demo window");
 
         ctx->SetRef("Dear ImGui Demo");
@@ -2944,11 +2949,11 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
         ctx->SetRef("Dear ImGui Demo/Text Input/Resize Callback");
         ctx->ItemClick("##MyStr");
 
-        // Ensure X scrolling is working
+        // Ensure X scrolling is working in TestContext
         ImGuiWindow* window = ctx->GetWindowByRef("Dear ImGui Demo");
         ImVec2 backup_size = window->Rect().GetSize();
         ctx->SetRef("Dear ImGui Demo");
-        ctx->WindowResize("Dear ImGui Demo", ImVec2(200, backup_size.y));
+        ctx->WindowResize("Dear ImGui Demo", ImVec2(100, backup_size.y));
         ctx->ItemOpen("Widgets");
         ctx->ItemOpen("Basic");
         ctx->ItemClick("Basic/radio c");

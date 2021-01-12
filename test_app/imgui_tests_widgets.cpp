@@ -2638,8 +2638,10 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ImGuiContext& g = *ImGui::GetCurrentContext();
 
         ctx->ItemClick("##MainMenuBar##menubar/Menu 1");
-        // Click doesn't affet g.NavId which is null at this point
-        // Key Navigation
+
+        // Click doesn't affect g.NavId which is null at this point
+
+        // Test basic key Navigation
         ctx->NavKeyPress(ImGuiNavInput_KeyDown_);
         IM_CHECK_EQ(g.NavId, ctx->GetID("##Menu_00/Sub Menu 1"));
         ctx->NavKeyPress(ImGuiNavInput_KeyRight_);
@@ -2649,11 +2651,14 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ctx->NavKeyPress(ImGuiNavInput_KeyLeft_);
         IM_CHECK_EQ(g.NavId, ctx->GetID("##MainMenuBar##menubar/Menu 1"));
 
-        ctx->MouseMove("##MainMenuBar##menubar/Menu 2"); // Workaround so TestEngine can find again Menu 1
-        // From Menu 1/Sub Menu 1/Item 1 to Menu 2
+        ctx->MouseMove("##MainMenuBar##menubar/Menu 2"); // FIXME-TESTS: Workaround so TestEngine can find again Menu 1
+
+        // Test forwarding of nav event to parent when there's no match in the current menu
+        // Going from "Menu 1/Sub Menu 1/Item 1" to "Menu 2"
         ctx->ItemClick("##MainMenuBar##menubar/Menu 1");
         ctx->NavKeyPress(ImGuiNavInput_KeyDown_);
         ctx->NavKeyPress(ImGuiNavInput_KeyRight_);
+        IM_CHECK_EQ(g.NavId, ctx->GetID("##Menu_01/Item 1"));
         ctx->NavKeyPress(ImGuiNavInput_KeyRight_);
         IM_CHECK_EQ(g.NavId, ctx->GetID("##MainMenuBar##menubar/Menu 2"));
 
@@ -3234,7 +3239,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
     };
 
     // ## Test slider navigation path using keyboard.
-    t = IM_REGISTER_TEST(e, "widgets", "widgets_slider_navigation_edit_value");
+    t = IM_REGISTER_TEST(e, "widgets", "widgets_slider_nav");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
@@ -3252,6 +3257,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         IM_CHECK_EQ(ctx->GenericVars.Int1, 0);
         IM_CHECK_EQ(g.NavId, ctx->GetID("Slider 1"));
 
+        // FIXME-TESTS: the step/slow value are technically not exposed and bounds to change. Perhaps this test should only compare the respective magnitude of changes.
         const float slider_float_step = 2.0f;
         const float slider_float_step_slow = 0.2f;
         float slider_float_value = ctx->GenericVars.Float1;

@@ -901,7 +901,7 @@ void    ImGuiTestContext::NavKeyDown(ImGuiNavInput input)
         return;
 
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
-    LogDebug("NavInput Down %d", (int)input);
+    LogDebug("NavKeyDown %d", (int)input);
 
     ImGuiTestEngine_PushInput(Engine, ImGuiTestInput::FromNav(input, ImGuiKeyState_Down));
     Yield();
@@ -914,7 +914,7 @@ void    ImGuiTestContext::NavKeyUp(ImGuiNavInput input)
         return;
 
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
-    LogDebug("NavInput Up %d", (int)input);
+    LogDebug("NavKeyUp %d", (int)input);
 
     ImGuiTestEngine_PushInput(Engine, ImGuiTestInput::FromNav(input, ImGuiKeyState_Up));
     Yield();
@@ -1665,10 +1665,10 @@ void    ImGuiTestContext::ItemAction(ImGuiTestAction action, ImGuiTestRef ref, v
 
 void    ImGuiTestContext::ItemActionAll(ImGuiTestAction action, ImGuiTestRef ref_parent, const ImGuiTestActionFilter* filter)
 {
-    int max_depth = filter->MaxDepth;
+    int max_depth = filter ? filter->MaxDepth : -1;
     if (max_depth == -1)
         max_depth = 99;
-    int max_passes = filter->MaxPasses;
+    int max_passes = filter ? filter->MaxPasses : -1;
     if (max_passes == -1)
         max_passes = 99;
     IM_ASSERT(max_depth > 0 && max_passes > 0);
@@ -1712,15 +1712,15 @@ void    ImGuiTestContext::ItemActionAll(ImGuiTestAction action, ImGuiTestRef ref
 
             const ImGuiTestItemInfo& item = *items[n];
 
-            if (filter->RequireAllStatusFlags != 0)
+            if (filter && filter->RequireAllStatusFlags != 0)
                 if ((item.StatusFlags & filter->RequireAllStatusFlags) != filter->RequireAllStatusFlags)
                     continue;
 
-            if (filter->RequireAnyStatusFlags != 0)
+            if (filter && filter->RequireAnyStatusFlags != 0)
                 if ((item.StatusFlags & filter->RequireAnyStatusFlags) != 0)
                     continue;
 
-            if (filter->MaxItemCountPerDepth != NULL)
+            if (filter && filter->MaxItemCountPerDepth != NULL)
             {
                 if (item.Depth < IM_ARRAYSIZE(processed_count_per_depth))
                 {

@@ -362,7 +362,7 @@ struct ImGuiTestContext
     void        ItemInput(ImGuiTestRef ref, ImGuiTestOpFlags flags = 0)                 { ItemAction(ImGuiTestAction_Input, ref, NULL, flags); }
     void        ItemNavActivate(ImGuiTestRef ref, ImGuiTestOpFlags flags = 0)           { ItemAction(ImGuiTestAction_NavActivate, ref, NULL, flags); }
 
-    void        ItemActionAll(ImGuiTestAction action, ImGuiTestRef ref_parent, const ImGuiTestActionFilter* filter);
+    void        ItemActionAll(ImGuiTestAction action, ImGuiTestRef ref_parent, const ImGuiTestActionFilter* filter = NULL);
     void        ItemOpenAll(ImGuiTestRef ref_parent, int depth = -1, int passes = -1);
     void        ItemCloseAll(ImGuiTestRef ref_parent, int depth = -1, int passes = -1);
 
