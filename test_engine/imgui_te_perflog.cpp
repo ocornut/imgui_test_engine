@@ -243,7 +243,7 @@ static bool RenderMultiSelectFilter(ImGuiPerfLog* perf, const char* filter_hint,
         }
     }
 
-    if (g.IO.KeyShift)
+    if (!g.IO.KeyShift)
         ImGui::PopItemFlag();
 
     return modified;
@@ -519,7 +519,7 @@ void ImGuiPerfLog::_Rebuild()
             {
                 double percent_vs_first = 100.0 / baseline_entry->DtDeltaMs * entry->DtDeltaMs;
                 double dt_change = -(100.0 - percent_vs_first);
-                entry->VsBaseline = dt_change;
+                entry->VsBaseline = (float)dt_change;
             }
         }
     }
@@ -556,7 +556,7 @@ void ImGuiPerfLog::ShowUI(ImGuiTestEngine* engine)
 
     // Date filter
     ImGui::AlignTextToFramePadding();
-    ImGui::TextUnformatted("Filter by date:");
+    ImGui::TextUnformatted("Date:");
     ImGui::SameLine();
 
     bool date_changed = Date("##date-from", _FilterDateFrom, IM_ARRAYSIZE(_FilterDateFrom), strcmp(_FilterDateFrom, _FilterDateTo) <= 0);
@@ -644,14 +644,8 @@ void ImGuiPerfLog::ShowUI(ImGuiTestEngine* engine)
         ImGui::SetTooltip("Use one color per branch.");
     ImGui::SameLine();
 
-    if (ImGui::Button("Clear All"))
-        ImGui::OpenPopup("Clear All");
-    ImGui::SameLine();
-
-    if (ImGui::Button(Str128f("Info Table: %s", _SelectedTest < _Labels.Size ? _Labels[_SelectedTest]->TestName : "NULL").c_str()))
-        ImGui::OpenPopup("Select Test");
-    if (ImGui::IsItemHovered())
-        ImGui::SetTooltip("Select a test for display of additional information in table below the plot.");
+    if (ImGui::Button("Delete Data"))
+        ImGui::OpenPopup("Delete Data");
     ImGui::SameLine();
 
     // Align help button to the right.
@@ -661,7 +655,7 @@ void ImGuiPerfLog::ShowUI(ImGuiTestEngine* engine)
     if (ImGui::Button("Help"))
         ImGui::OpenPopup("Help");
 
-    if (ImGui::BeginPopup("Clear All"))
+    if (ImGui::BeginPopup("Delete Data"))
     {
         ImGui::TextUnformatted("Permanently remove all perflog data?");
         ImGui::TextUnformatted("This action _CAN NOT_ be undone!");
@@ -674,13 +668,6 @@ void ImGuiPerfLog::ShowUI(ImGuiTestEngine* engine)
 
         if (_CSVData.empty())
             return;
-    }
-
-    if (ImGui::BeginPopup("Select Test"))
-    {
-        RenderSingleSelectFilter(this, "Filter Tests", &_Labels, &_SelectedTest, PerflogFormatTestName);
-        _ClosePopupMaybe();
-        ImGui::EndPopup();
     }
 
     if (ImGui::BeginPopup("Help"))
@@ -780,7 +767,7 @@ void ImGuiPerfLog::ShowUI(ImGuiTestEngine* engine)
             else if (g.IO.KeyShift)
             {
                 // Info tooltip with delta times of each batch for a hovered test.
-                int test_index = IM_ROUND(ImPlot::GetPlotMousePos().y);
+                int test_index = (int)IM_ROUND(ImPlot::GetPlotMousePos().y);
                 if (0 <= test_index && test_index < _VisibleLabelPointers.Size)
                 {
                     const char* test_name = _VisibleLabelPointers.Data[test_index];
@@ -814,6 +801,18 @@ void ImGuiPerfLog::ShowUI(ImGuiTestEngine* engine)
     // -----------------------------------------------------------------------------------------------------------------
     if (ImGui::BeginChild(ImGui::GetID("info-table"), ImVec2(0, _InfoTableHeight)))
     {
+        ImGui::AlignTextToFramePadding();
+        ImGui::Text("Test:");
+        ImGui::SameLine();
+        if (ImGui::Button(Str128f("%s###SelectTest", _SelectedTest < _Labels.Size ? _Labels[_SelectedTest]->TestName : "").c_str()))
+            ImGui::OpenPopup("Select Test");
+        if (ImGui::BeginPopup("Select Test"))
+        {
+            RenderSingleSelectFilter(this, "Filter Tests", &_Labels, &_SelectedTest, PerflogFormatTestName);
+            _ClosePopupMaybe();
+            ImGui::EndPopup();
+        }
+
         static const ImGuiPerfLogColumnInfo columns_combined[] = {
             { /* 00 */ "Branch", IM_OFFSETOF(ImGuiPerflogEntry, GitBranchName), ImGuiDataType_COUNT },
             { /* 01 */ "Compiler", IM_OFFSETOF(ImGuiPerflogEntry, Compiler), ImGuiDataType_COUNT },
@@ -828,23 +827,26 @@ void ImGuiPerfLog::ShowUI(ImGuiTestEngine* engine)
             { /* 10 */ "VS Baseline", IM_OFFSETOF(ImGuiPerflogEntry, VsBaseline), ImGuiDataType_Float },
         };
         // Same as above, except we skip "Min ms", "Max ms" and "Num samples".
-        static const ImGuiPerfLogColumnInfo columns_separate[] = {
+        static const ImGuiPerfLogColumnInfo columns_separate[] =
+        {
             columns_combined[0], columns_combined[1], columns_combined[2], columns_combined[3], columns_combined[4],
             columns_combined[5], columns_combined[6], columns_combined[10],
         };
         const ImGuiPerfLogColumnInfo* columns = _CombineByBuildInfo ? columns_combined : columns_separate;
         int columns_num = _CombineByBuildInfo ? IM_ARRAYSIZE(columns_combined) : IM_ARRAYSIZE(columns_separate);
-        if (!ImGui::BeginTable("PerfInfo", columns_num, ImGuiTableFlags_Borders | ImGuiTableFlags_Sortable | ImGuiTableFlags_SortTristate))
+        if (!ImGui::BeginTable("PerfInfo", columns_num, ImGuiTableFlags_Borders | ImGuiTableFlags_Sortable | ImGuiTableFlags_SortTristate | ImGuiTableFlags_SizingFixedFit))
             return;
 
         for (int i = 0; i < columns_num; i++)
-            ImGui::TableSetupColumn(columns[i].Title, ImGuiTableColumnFlags_WidthAuto, -1.0f);
+            ImGui::TableSetupColumn(columns[i].Title);
         ImGui::TableHeadersRow();
 
         if (ImGuiTableSortSpecs* sorts_specs = ImGui::TableGetSortSpecs())
+        {
             if (sorts_specs->SpecsDirty)
             {
                 // Fill sort table with unsorted indices.
+                sorts_specs->SpecsDirty = false;
                 _InfoTableSort.resize(0);
                 for (int i = 0; i < _Legend.Size; i++)
                     _InfoTableSort.push_back(i);
@@ -860,6 +862,7 @@ void ImGuiPerfLog::ShowUI(ImGuiTestEngine* engine)
                     PerfLogInstance = NULL;
                 }
             }
+        }
 
         for (int batch_index = 0; batch_index < _Legend.Size; batch_index++)
         {
@@ -867,44 +870,43 @@ void ImGuiPerfLog::ShowUI(ImGuiTestEngine* engine)
             if (entry == NULL || !_IsVisibleBuild(entry))
                 continue;
 
-            int column = 0;
             ImGui::TableNextRow();
 
             // Build info
-            ImGui::TableSetColumnIndex(column++);
+            ImGui::TableNextColumn();
             ImGui::TextUnformatted(entry->GitBranchName);
-            ImGui::TableSetColumnIndex(column++);
+            ImGui::TableNextColumn();
             ImGui::TextUnformatted(entry->Compiler);
-            ImGui::TableSetColumnIndex(column++);
+            ImGui::TableNextColumn();
             ImGui::TextUnformatted(entry->OS);
-            ImGui::TableSetColumnIndex(column++);
+            ImGui::TableNextColumn();
             ImGui::TextUnformatted(entry->Cpu);
-            ImGui::TableSetColumnIndex(column++);
+            ImGui::TableNextColumn();
             ImGui::TextUnformatted(entry->BuildType);
-            ImGui::TableSetColumnIndex(column++);
+            ImGui::TableNextColumn();
             ImGui::Text("x%d", entry->PerfStressAmount);
 
             // Avg ms
-            ImGui::TableSetColumnIndex(column++);
+            ImGui::TableNextColumn();
             ImGui::Text("%.3lfms", entry->DtDeltaMs);
 
             if (_CombineByBuildInfo)
             {
                 // Min ms
-                ImGui::TableSetColumnIndex(column++);
+                ImGui::TableNextColumn();
                 ImGui::Text("%.3lfms", entry->DtDeltaMsMin);
 
                 // Max ms
-                ImGui::TableSetColumnIndex(column++);
+                ImGui::TableNextColumn();
                 ImGui::Text("%.3lfms", entry->DtDeltaMsMax);
 
                 // Num samples
-                ImGui::TableSetColumnIndex(column++);
+                ImGui::TableNextColumn();
                 ImGui::Text("%d", entry->NumSamples);
             }
 
             // VS Baseline
-            ImGui::TableSetColumnIndex(column++);
+            ImGui::TableNextColumn();
             if (entry->VsBaseline == -1.0f)
                 ImGui::TextUnformatted("baseline");
             else if (entry->VsBaseline == +FLT_MAX)
