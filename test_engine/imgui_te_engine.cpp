@@ -979,7 +979,9 @@ void ImGuiTestEngine_PrintResultSummary(ImGuiTestEngine* engine)
     int count_tested = 0;
     int count_success = 0;
     ImGuiTestEngine_GetResult(engine, count_tested, count_success);
+    ImOsConsoleSetTextColor(ImOsConsoleStream_StandardOutput, (count_success == count_tested) ? ImOsConsoleTextColor_BrightGreen : ImOsConsoleTextColor_BrightRed);
     printf("\nTests Result: %s\n(%d/%d tests passed)\n", (count_success == count_tested) ? "OK" : "KO", count_success, count_tested);
+    ImOsConsoleSetTextColor(ImOsConsoleStream_StandardOutput, ImOsConsoleTextColor_White);
 }
 
 void ImGuiTestEngine_GetResult(ImGuiTestEngine* engine, int& count_tested, int& count_success)
