@@ -1911,12 +1911,12 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
 
     // ## Tests: Coverage: TabBar: TabBarTabListPopupButton() and TabBarScrollingButtons()
     t = IM_REGISTER_TEST(e, "widgets", "widgets_tabbar_popup_scrolling_button");
-    struct TabBarCoveragePopupScrolling { int TabCount = 12; int Selected = -1; };
+    struct TabBarCoveragePopupScrolling { int TabCount = 9; int Selected = -1; };
     t->SetUserDataType<TabBarCoveragePopupScrolling>();
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         auto& vars = ctx->GetUserData<TabBarCoveragePopupScrolling>();
-        ImGui::SetNextWindowSize(ImVec2(300, 100));
+        ImGui::SetNextWindowSize(ImVec2(200, 100));
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
         if (ImGui::BeginTabBar("TabBar", ImGuiTabBarFlags_TabListPopupButton | ImGuiTabBarFlags_FittingPolicyScroll))
         {

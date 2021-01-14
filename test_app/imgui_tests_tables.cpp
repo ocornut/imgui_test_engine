@@ -80,7 +80,7 @@ static void HelperTableWithResizingPolicies(const char* table_id, ImGuiTableFlag
         if      (policy >= 'a' && policy <= 'z') { column_flags |= ImGuiTableColumnFlags_DefaultHide; }
         if      (policy == 'f' || policy == 'F') { column_flags |= ImGuiTableColumnFlags_WidthFixed; }
         else if (policy == 'w' || policy == 'W') { column_flags |= ImGuiTableColumnFlags_WidthStretch; }
-        else if (policy == 'a' || policy == 'A') { column_flags |= ImGuiTableColumnFlags_WidthAuto; }
+        //else if (policy == 'a' || policy == 'A') { column_flags |= ImGuiTableColumnFlags_WidthAuto; }
         else IM_ASSERT(0);
         ImGui::TableSetupColumn(Str16f("%c%d", policy, column + 1).c_str(), column_flags);
     }
@@ -100,7 +100,7 @@ static void HelperTableWithResizingPolicies(const char* table_id, ImGuiTableFlag
             const char policy = columns_desc[column];
             if (policy == 'F' || policy == 'f') { column_desc = "Fixed"; }
             if (policy == 'W' || policy == 'w') { column_desc = "Stretch"; }
-            if (policy == 'A' || policy == 'a') { column_desc = "Auto"; }
+            //if (policy == 'A' || policy == 'a') { column_desc = "Auto"; }
             ImGui::Text("%s %d,%d", column_desc, row, column);
         }
     }
@@ -244,7 +244,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
             ImGui::TableSetupColumn("Set100", 0, 100.0f);                       // Contents: 50.0f
             ImGui::TableSetupColumn("Def");                                     // Contents: 60.0f
             ImGui::TableSetupColumn("Fix", ImGuiTableColumnFlags_WidthFixed);   // Contents: 70.0f
-            ImGui::TableSetupColumn("Auto", vars.ColumnFlags[3] ? vars.ColumnFlags[3] : ImGuiTableColumnFlags_WidthAuto); // Contents: 80.0f
+            ImGui::TableSetupColumn("Auto", vars.ColumnFlags[3] ? vars.ColumnFlags[3] : ImGuiTableColumnFlags_NoResize); // Contents: 80.0f
             ImGui::TableSetupColumn("Stretch", ImGuiTableColumnFlags_WidthStretch);
             ImGui::TableHeadersRow();
             for (int row_n = 0; row_n < 5; row_n++)
@@ -304,7 +304,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
         IM_CHECK_EQ(table->Columns[1].WidthRequest, 60.0f - 30.0f);
         IM_CHECK_EQ(table->Columns[2].WidthRequest, 70.0f - 40.0f);
         IM_CHECK_EQ(table->Columns[3].WidthRequest, 80.0f - 50.0f);
-        vars.ColumnFlags[3] = ImGuiTableColumnFlags_WidthAuto;
+        vars.ColumnFlags[3] = ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoResize;
         ctx->Yield();
         IM_CHECK_EQ_NO_RET(table->Columns[3].WidthGiven, 80.0f);        // Auto: restore
         vars.TableFlags &= ~ImGuiTableFlags_Resizable;
@@ -329,7 +329,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
         IM_CHECK_EQ(table->Columns[1].WidthRequest, 60.0f + 30.0f);
         IM_CHECK_EQ(table->Columns[2].WidthRequest, 70.0f + 40.0f);
         IM_CHECK_EQ(table->Columns[3].WidthRequest, 80.0f + 50.0f);
-        vars.ColumnFlags[3] = ImGuiTableColumnFlags_WidthAuto;
+        vars.ColumnFlags[3] = ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoResize;
         ctx->Yield();
         IM_CHECK_EQ_NO_RET(table->Columns[3].WidthGiven, 80.0f);        // Auto: restore
         vars.TableFlags &= ~ImGuiTableFlags_Resizable;

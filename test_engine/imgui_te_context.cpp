@@ -811,11 +811,12 @@ void   ImGuiTestContext::ScrollToItemX(ImGuiTestRef ref)
                 MouseClick(0);
         }
 
-        // Wait for the scroll animation to proceed.
-        // We're "loosing" some frames but there is no easy way to force a "tab visibility teleportation"
+        // Skip the scroll animation
         if (EngineIO->ConfigRunFast)
-            while (tab_bar->ScrollingAnim != tab_bar->ScrollingTarget)
-                Yield();
+        {
+            tab_bar->ScrollingAnim = tab_bar->ScrollingTarget;
+            Yield();
+        }
 
         SetRef(backup_ref);
     }
