@@ -295,6 +295,12 @@ bool    ImGuiTestEngineHook_Check(const char* file, const char* func, int line, 
 bool    ImGuiTestEngineHook_Error(const char* file, const char* func, int line, ImGuiTestCheckFlags flags, const char* fmt, ...);
 
 //-------------------------------------------------------------------------
+// Macros for Debug / Control Flow
+//-------------------------------------------------------------------------
+
+#define IM_DEBUG_HALT_TESTFUNC()            do { if (ctx->DebugHaltTestFunc(__FILE__, __LINE__)) return; } while (0)
+
+//-------------------------------------------------------------------------
 // ImGuiTestEngine API
 //-------------------------------------------------------------------------
 

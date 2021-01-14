@@ -277,6 +277,21 @@ void    ImGuiTestContext::Sleep(float time)
     }
 }
 
+// Return true to request aborting TestFunc
+bool    ImGuiTestContext::DebugHaltTestFunc(const char* file, int line)
+{
+    IM_UNUSED(file);
+    IM_UNUSED(line);
+
+    file = ImPathFindFilename(file);
+    LogError("DebugHaltTestFunc at %s:%d", file, line);
+    RunFlags |= ImGuiTestRunFlags_GuiFuncOnly;
+    while (!Abort)
+        Yield();
+
+    return true;
+}
+
 // Sleep for a given clock time from the point of view of the imgui context, without affecting wall clock time of the running application.
 void    ImGuiTestContext::SleepNoSkip(float time, float frame_time_step)
 {

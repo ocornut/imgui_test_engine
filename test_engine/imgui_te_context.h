@@ -247,6 +247,9 @@ struct ImGuiTestContext
     void        RecoverFromUiContextErrors();
     template <typename T> T& GetUserData()  { IM_ASSERT(UserData != NULL); return *(T*)(UserData); } // FIXME: Assert to compare sizes
 
+    // Debug Control Flow
+    bool        DebugHaltTestFunc(const char* file, int line);
+
     // Logging
     void        LogEx(ImGuiTestVerboseLevel level, ImGuiTestLogFlags flags, const char* fmt, ...) IM_FMTARGS(4);
     void        LogExV(ImGuiTestVerboseLevel level, ImGuiTestLogFlags flags, const char* fmt, va_list args) IM_FMTLIST(4);
