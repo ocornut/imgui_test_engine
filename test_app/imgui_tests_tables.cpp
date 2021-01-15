@@ -31,9 +31,44 @@ struct TableTestingVars
 {
     ImGuiTableFlags         TableFlags = ImGuiTableFlags_None;
     ImVec2                  OuterSize = ImVec2(-FLT_MIN, 0.0f);
+    ImGuiWindowFlags        WindowFlags = ImGuiWindowFlags_None;
+    ImVec2                  WindowSize = ImVec2(0.0f, 0.0f);
+    ImVec2                  ItemSize = ImVec2(0.0f, 0.0f);
     ImGuiTableColumnFlags   ColumnFlags[6] = {};
+
+    ImRect                  OutTableItemRect;
+    ImVec2                  OutTableLayoutSize;
+    ImVec2                  OutOuterCursorMaxPosOnEndTable;
+    ImVec2                  OutOuterIdealMaxPosOnEndTable;
+    bool                    OutTableIsItemHovered;
+
     int                     Step = 0;
 };
+
+static void HelperDrawAndFillBounds(TableTestingVars* vars)
+{
+    ImGuiWindow* outer_window = ImGui::GetCurrentWindow();
+
+    const ImU32 COL_CURSOR_MAX_POS = IM_COL32(255, 0, 255, 200);
+    const ImU32 COL_IDEAL_MAX_POS = IM_COL32(0, 255, 0, 200);
+    const ImU32 COL_ITEM_RECT = IM_COL32(255, 255, 0, 255);
+    const ImU32 COL_ROW_BG = IM_COL32(0, 255, 0, 20);
+
+    // Display item rect, output cursor position and last line position
+    vars->OutTableIsItemHovered = ImGui::IsItemHovered();
+    vars->OutTableItemRect.Min = ImGui::GetItemRectMin();
+    vars->OutTableItemRect.Max = ImGui::GetItemRectMax();
+    vars->OutTableLayoutSize = vars->OutTableItemRect.GetSize();
+    vars->OutOuterCursorMaxPosOnEndTable = outer_window->DC.CursorMaxPos;
+    vars->OutOuterIdealMaxPosOnEndTable = ImMax(outer_window->DC.CursorMaxPos, outer_window->DC.IdealMaxPos);
+
+    ImGui::GetForegroundDrawList()->AddRect(ImGui::GetItemRectMin(), vars->OutOuterIdealMaxPosOnEndTable, COL_IDEAL_MAX_POS, 0.0f, ~0, 7.0f);
+    ImGui::GetForegroundDrawList()->AddRect(ImGui::GetItemRectMin(), vars->OutOuterCursorMaxPosOnEndTable, COL_CURSOR_MAX_POS, 0.0f, ~0, 4.0f);
+    ImGui::GetForegroundDrawList()->AddRect(ImGui::GetItemRectMin(), ImGui::GetItemRectMax(), COL_ITEM_RECT, 0.0f, ~0, 1.0f);
+
+    ImGui::GetForegroundDrawList()->AddCircleFilled(ImGui::GetCursorScreenPos(), 3.0f, COL_ITEM_RECT);
+    ImGui::GetForegroundDrawList()->AddCircleFilled(ImGui::GetCurrentWindow()->DC.CursorPosPrevLine, 3.0f, COL_ITEM_RECT);
+}
 
 static void HelperTableSubmitCellsCustom(ImGuiTestContext* ctx, int count_w, int count_h, void(*cell_cb)(ImGuiTestContext* ctx, int column, int line))
 {
@@ -107,6 +142,31 @@ static void HelperTableWithResizingPolicies(const char* table_id, ImGuiTableFlag
     ImGui::EndTable();
 }
 #endif // #ifdef IMGUI_HAS_TABLE
+
+static void EditTableSizingFlags(ImGuiTableFlags* p_flags)
+{
+    struct EnumDesc { ImGuiTableFlags Value; const char* Name; const char* Tooltip; };
+    static const EnumDesc policies[] =
+    {
+        { ImGuiTableFlags_None,               "Default",                            "Use default sizing policy:\n- ImGuiTableFlags_SizingFixedFit if ScrollX is on or if host window has ImGuiWindowFlags_AlwaysAutoResize.\n- ImGuiTableFlags_SizingStretchSame otherwise." },
+        { ImGuiTableFlags_SizingFixedFit,     "ImGuiTableFlags_SizingFixedFit",     "Columns default to _WidthFixed (if resizable) or _WidthAuto (if not resizable), matching contents width." },
+        { ImGuiTableFlags_SizingFixedSame,    "ImGuiTableFlags_SizingFixedSame",    "Columns are all the same width, matching the maximum contents width.\nImplicitly disable ImGuiTableFlags_Resizable and enable ImGuiTableFlags_NoKeepColumnsVisible." },
+        { ImGuiTableFlags_SizingStretchProp,  "ImGuiTableFlags_SizingStretchProp",  "Columns default to _WidthStretch with weights proportional to their widths." },
+        { ImGuiTableFlags_SizingStretchSame,  "ImGuiTableFlags_SizingStretchSame",  "Columns default to _WidthStretch with same weights." }
+    };
+    int idx;
+    for (idx = 0; idx < IM_ARRAYSIZE(policies); idx++)
+        if (policies[idx].Value == (*p_flags & ImGuiTableFlags_SizingMask_))
+            break;
+    const char* preview_text = (idx < IM_ARRAYSIZE(policies)) ? policies[idx].Name + (idx > 0 ? strlen("ImGuiTableFlags") : 0) : "";
+    if (ImGui::BeginCombo("Sizing Policy", preview_text))
+    {
+        for (int n = 0; n < IM_ARRAYSIZE(policies); n++)
+            if (ImGui::Selectable(policies[n].Name, idx == n))
+                *p_flags = (*p_flags & ~ImGuiTableFlags_SizingMask_) | policies[n].Value;
+        ImGui::EndCombo();
+    }
+}
 
 void RegisterTests_Table(ImGuiTestEngine* e)
 {
@@ -775,6 +835,8 @@ void RegisterTests_Table(ImGuiTestEngine* e)
 
             ImGui::EndTable();
         }
+        //IMGUI_DEBUG_LOG("%f\n", ImGui::GetWindowContentRegionWidth());
+
         ImGui::End();
     };
     t->TestFunc = [](ImGuiTestContext* ctx)
@@ -787,11 +849,13 @@ void RegisterTests_Table(ImGuiTestEngine* e)
         {
             ctx->LogDebug("Step %d", step);
             vars.Step = step;
-            ctx->Yield();
-            ctx->Yield();
+            ctx->Yield(); // previous step previously submitted, window contents width reflect old step, outer rect reflects old step, reported ideal width reflects new step
             IM_CHECK_EQ(table->Columns[0].ContentMaxXUnfrozen - table->Columns[0].WorkMinX, 50.0f);
             IM_CHECK_EQ(table->Columns[1].ContentMaxXUnfrozen - table->Columns[1].WorkMinX, 100.0f);
             IM_CHECK_EQ(table->ColumnsAutoFitWidth, vars.Width);
+            ctx->Yield(); // inner-window update to correct ideal width and auto-resize to it
+            IM_CHECK_EQ(window->ContentSizeIdeal.x, vars.Width);
+            ctx->Yield(); // inner-window update to correct contents width
             IM_CHECK_EQ(window->ContentSize.x, vars.Width);
         }
     };
@@ -816,7 +880,22 @@ void RegisterTests_Table(ImGuiTestEngine* e)
         auto& vars = ctx->GetUserData<TableTestingVars>();
         ImGui::SetNextWindowSize(ImVec2(500.0f, 500.0f), ImGuiCond_Appearing);
         ImGui::Begin("Test window 1", NULL, ImGuiWindowFlags_NoSavedSettings);
-        ImGui::Text("Step %d (%s)", vars.Step, vars.Step == 1 ? "Column 1 Fixed to 99.0f" : "");
+
+        {
+            ImGui::Begin("Table Options");
+            ImGui::SetNextItemWidth(200.0f);
+            ImGui::SliderInt("Step", &vars.Step, 0, 1, "%d");
+            ImGui::SetNextItemWidth(200.0f);
+            EditTableSizingFlags(&vars.TableFlags);
+            //vars.TableFlags = ImGuiTableFlags_SizingFixedFit;
+            if (vars.Step == 1)
+            {
+                ImGui::SameLine();
+                ImGui::Text("Column 1 Fixed to 99.0f");
+            }
+            ImGui::End();
+        }
+
         if (ImGui::BeginTable("table1", 3, vars.TableFlags, vars.OuterSize))
         {
             if (vars.Step == 1)
@@ -833,6 +912,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
                 ImGui::TableNextColumn(); ImGui::Text("Oh dear");
             }
             ImGui::EndTable();
+            //HelperDrawAndFillBounds(&vars);
         }
         if (ImGui::BeginTable("table2", 3, vars.TableFlags, vars.OuterSize))
         {
@@ -850,6 +930,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
                 ImGui::TableNextColumn(); ImGui::Text("CCCCCCCCCCCC");
             }
             ImGui::EndTable();
+            //HelperDrawAndFillBounds(&vars);
         }
         ImGui::End();
     };
@@ -1086,7 +1167,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         ImGui::Begin("Test window 1", NULL, ImGuiWindowFlags_NoSavedSettings);
-        if (ImGui::BeginTable("table1", 4, ImGuiTableFlags_ScrollX | ImGuiTableFlags_Borders, ImVec2(200, 200)))
+        if (ImGui::BeginTable("table1", 4, ImGuiTableFlags_ScrollX | ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_Borders, ImVec2(200, 200)))
         {
             ImGui::TableSetupColumn("One", 0, 80);
             ImGui::TableSetupColumn("Two", 0, 80);
@@ -1992,12 +2073,12 @@ void RegisterTests_Table(ImGuiTestEngine* e)
                 {
                     // No columns width specs + auto-filling button = table will keep its width
                     IM_CHECK_LT(table->OuterRect.GetWidth(), expected_table_width);
-                    IM_CHECK_LT(window->ContentSize.x, expected_table_width);
+                    IM_CHECK_LT(window->ContentSizeIdeal.x, expected_table_width);
                 }
                 else
                 {
                     IM_CHECK_EQ(table->OuterRect.GetWidth(), expected_table_width);
-                    IM_CHECK_EQ(window->ContentSize.x, expected_table_width);
+                    IM_CHECK_EQ(window->ContentSizeIdeal.x, expected_table_width);
                 }
 
                 vars.Count++;
@@ -2043,6 +2124,311 @@ void RegisterTests_Table(ImGuiTestEngine* e)
         ctx->TableResizeColumn("table1", 1, 80.0f);
         IM_CHECK_EQ(table->OuterWindow->ContentSize.x, 50.0f + 80.0f + 50.0f + w_extra);
     };
+
+    // ## Test reported size
+ #if IMGUI_VERSION_NUM >= 17913
+    t = IM_REGISTER_TEST(e, "table", "table_reported_size_outer");
+    t->SetUserDataType<TableTestingVars>();
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        auto& vars = ctx->GetUserData<TableTestingVars>();
+        ImGuiStyle& style = ImGui::GetStyle();
+        ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0.0f, 0.0f));
+        ImGui::PushStyleVar(ImGuiStyleVar_CellPadding, ImVec2(0.0f, 0.0f));
+
+        if (ctx->IsFirstGuiFrame())
+        {
+            vars.WindowSize = ImVec2(300.0f, 300.0f);
+            vars.ItemSize = ImVec2(100.0f, 200.0f);
+            vars.TableFlags |= ImGuiTableFlags_SizingFixedFit;
+        }
+
+        if (vars.WindowSize.x != 0.0f && vars.WindowSize.y != 0.0f)
+            ImGui::SetNextWindowSize(vars.WindowSize, (ctx->RunFlags & ImGuiTestRunFlags_GuiFuncOnly) ? ImGuiCond_Appearing : ImGuiCond_Always);
+
+        const ImU32 COL_CURSOR_MAX_POS = IM_COL32(255, 0, 255, 200);
+        const ImU32 COL_IDEAL_MAX_POS = IM_COL32(0, 255, 0, 200);
+        const ImU32 COL_ITEM_RECT = IM_COL32(255, 255, 0, 255);
+        const ImU32 COL_ROW_BG = IM_COL32(0, 255, 0, 20);
+
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
+        ImGui::Begin("Test Window", NULL, vars.WindowFlags | ImGuiWindowFlags_HorizontalScrollbar | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoTitleBar);
+        ImGui::PopStyleVar();
+        vars.OutTableLayoutSize = ImVec2(0.0f, 0.0f);
+        vars.OutTableIsItemHovered = false;
+        if (ImGui::BeginTable("table1", 1, vars.TableFlags, vars.OuterSize))
+        {
+            //ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthFixed);
+
+            ImGui::TableNextColumn();
+            ImGui::TableSetBgColor(ImGuiTableBgTarget_RowBg0, COL_ROW_BG);
+            ImGui::Button(Str30f("%dx%d", (int)vars.ItemSize.x, (int)vars.ItemSize.y).c_str(), vars.ItemSize);
+            ImGui::EndTable();
+
+            HelperDrawAndFillBounds(&vars);
+        }
+        ImGui::End();
+        ImGui::PopStyleVar(2);
+
+        ImGuiTable* table = ImGui::TableFindByID(ctx->GetID("/Test Window/table1"));
+        ImGui::Begin("Options");
+
+        //if (ctx->FrameCount < 3) { ImGui::LogToTTY(); ImGui::LogText("[%05d]\n", ctx->FrameCount); }
+
+        ImGui::CheckboxFlags("ImGuiTableFlags_Borders", &vars.TableFlags, ImGuiTableFlags_Borders);
+        ImGui::CheckboxFlags("ImGuiTableFlags_Resizable", &vars.TableFlags, ImGuiTableFlags_Resizable);
+        ImGui::CheckboxFlags("ImGuiTableFlags_NoHostExtendY", &vars.TableFlags, ImGuiTableFlags_NoHostExtendY);
+        ImGui::CheckboxFlags("ImGuiTableFlags_ScrollX", &vars.TableFlags, ImGuiTableFlags_ScrollX);
+        ImGui::CheckboxFlags("ImGuiTableFlags_ScrollY", &vars.TableFlags, ImGuiTableFlags_ScrollY);
+        ImGui::CheckboxFlags("ImGuiTableFlags_SizingFixedFit", &vars.TableFlags, ImGuiTableFlags_SizingFixedFit);
+        ImGui::CheckboxFlags("ImGuiWindowFlags_HorizontalScrollbar", &vars.WindowFlags, ImGuiWindowFlags_HorizontalScrollbar);
+        ImGui::DragFloat2("WindowSize", &vars.WindowSize.x, 1.0f, 0.0f, FLT_MAX);
+        ImGui::DragFloat2("ItemSize", &vars.ItemSize.x, 1.0f, 0.0f, FLT_MAX);
+        ImGui::DragFloat2("TableOuterSize", &vars.OuterSize.x, 1.0f, -FLT_MAX, FLT_MAX);
+        ImGui::Text("Out: TableLayoutSize: (%.1f, %.1f)", vars.OutTableLayoutSize.x, vars.OutTableLayoutSize.y);
+        if (table->InnerWindow != table->OuterWindow)
+        {
+            ImGui::Text("InnerWindow->ContentSize.x = %.1f", table->InnerWindow->ContentSize.x);
+            ImGui::Text("InnerWindow->ContentSize.y = %.1f", table->InnerWindow->ContentSize.y);
+            ImGui::Text("InnerWindow->ContentSizeIdeal.x = %.1f", table->InnerWindow->ContentSizeIdeal.x);
+            ImGui::Text("InnerWindow->ContentSizeIdeal.y = %.1f", table->InnerWindow->ContentSizeIdeal.y);
+        }
+        ImGui::Text("OuterWindow->ContentSize.x = %.1f", table->OuterWindow->ContentSize.x);
+        ImGui::Text("OuterWindow->ContentSize.y = %.1f", table->OuterWindow->ContentSize.y);
+        ImGui::Text("OuterWindow->ContentSizeIdeal.x = %.1f", table->OuterWindow->ContentSizeIdeal.x);
+        ImGui::Text("OuterWindow->ContentSizeIdeal.y = %.1f", table->OuterWindow->ContentSizeIdeal.y);
+        ImGui::Text("IsItemHovered() = %d", vars.OutTableIsItemHovered);
+
+        //if (ctx->FrameCount < 3) { ImGui::LogFinish(); }
+
+        ImGui::Separator();
+        ImGui::Text("Legend:");
+        ImGui::ColorButton("ItemRect", ImColor(COL_ITEM_RECT), ImGuiColorEditFlags_NoTooltip); ImGui::SameLine(0.f, style.ItemInnerSpacing.x); ImGui::Text("ItemRect");
+        ImGui::ColorButton("CursorMaxPos", ImColor(COL_CURSOR_MAX_POS), ImGuiColorEditFlags_NoTooltip); ImGui::SameLine(0.f, style.ItemInnerSpacing.x); ImGui::Text("CursorMaxPos");
+        ImGui::ColorButton("IdealMaxPos", ImColor(COL_IDEAL_MAX_POS), ImGuiColorEditFlags_NoTooltip); ImGui::SameLine(0.f, style.ItemInnerSpacing.x); ImGui::Text("IdealMaxPos");
+
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        auto& vars = ctx->GetUserData<TableTestingVars>();
+
+        ctx->SetRef("Test Window");
+        ImGuiTable* table = ImGui::TableFindByID(ctx->GetID("table1"));
+
+        // [1] Widths, Non-Scrolling
+        if (1)
+        {
+            ctx->LogInfo("[1] Widths, Non-Scrolling");
+            vars.ItemSize = ImVec2(200.0f, 100.0f);
+
+            // Use horizontal borders only to not interfere with widths
+            vars.TableFlags = ImGuiTableFlags_NoSavedSettings | ImGuiTableFlags_BordersOuterH | ImGuiTableFlags_SizingFixedFit;
+            vars.WindowSize = ImVec2(300.0f, 300.0f);
+            vars.OuterSize = ImVec2(0.0f, 0.0f);
+            ctx->Yield(3);
+            IM_CHECK_EQ(table->OuterWindow->ContentSize.x, 200.0f);
+            IM_CHECK_EQ(table->OuterWindow->ContentSizeIdeal.x, 200.0f);
+            vars.WindowSize = ImVec2(50.0f, 300.0f);
+            ctx->Yield(2);
+            IM_CHECK_EQ(table->OuterWindow->ContentSize.x, 200.0f);
+            IM_CHECK_EQ(table->OuterWindow->ContentSizeIdeal.x, 200.0f);
+
+            vars.TableFlags = ImGuiTableFlags_NoSavedSettings | ImGuiTableFlags_BordersOuterH | ImGuiTableFlags_SizingFixedFit;
+            vars.WindowSize = ImVec2(300.0f, 300.0f);
+            vars.OuterSize = ImVec2(-FLT_MIN, 0.0f);
+            ctx->Yield(2);
+            IM_CHECK_EQ(table->OuterWindow->ContentSize.x, 200.0f); // We want 200.0f not 300.0f (outer_size.x <= 0.0f -> report best-fit width)
+            IM_CHECK_EQ(table->OuterWindow->ContentSizeIdeal.x, 200.0f);
+            vars.WindowSize = ImVec2(50.0f, 300.0f);
+            ctx->Yield(2);
+            IM_CHECK_EQ(table->OuterWindow->ContentSize.x, 50.0f);
+            IM_CHECK_EQ(table->OuterWindow->ContentSizeIdeal.x, 200.0f);
+
+            vars.TableFlags = ImGuiTableFlags_NoSavedSettings | ImGuiTableFlags_BordersOuterH | ImGuiTableFlags_SizingFixedFit;
+            vars.WindowSize = ImVec2(300.0f, 300.0f);
+            vars.OuterSize = ImVec2(-30.0f, 0.0f);
+            ctx->Yield(2);
+            IM_CHECK_EQ(table->OuterWindow->ContentSize.x, 200.0f); // We want 200.0f not 300.0f (outer_size.x <= 0.0f -> report best-fit width)
+            IM_CHECK_EQ(table->OuterWindow->ContentSizeIdeal.x, 200.0f + 30.0f);
+            vars.WindowSize = ImVec2(50.0f, 300.0f);
+            ctx->Yield(2);
+            IM_CHECK_EQ(table->OuterWindow->ContentSize.x, 50.0f - 30.0f);
+            IM_CHECK_EQ(table->OuterWindow->ContentSizeIdeal.x, 200.0f + 30.0f);
+
+            vars.TableFlags = ImGuiTableFlags_NoSavedSettings | ImGuiTableFlags_BordersOuterH | ImGuiTableFlags_SizingFixedFit;
+            vars.WindowSize = ImVec2(300.0f, 300.0f);
+            vars.OuterSize = ImVec2(100.0f, 0.0f);
+            ctx->Yield(2);
+            IM_CHECK_EQ(table->OuterWindow->ContentSize.x, 100.0f);
+            IM_CHECK_EQ(table->OuterWindow->ContentSizeIdeal.x, 100.0f);
+
+            vars.TableFlags = ImGuiTableFlags_NoSavedSettings | ImGuiTableFlags_BordersOuterH | ImGuiTableFlags_SizingFixedFit;
+            vars.WindowSize = ImVec2(300.0f, 300.0f);
+            vars.OuterSize = ImVec2(300.0f, 0.0f);
+            ctx->Yield(2);
+            IM_CHECK_EQ(table->OuterWindow->ContentSize.x, 300.0f);
+            IM_CHECK_EQ(table->OuterWindow->ContentSizeIdeal.x, 300.0f);
+            vars.WindowSize = ImVec2(100.0f, 300.0f);
+            ctx->Yield(2);
+            IM_CHECK_EQ(table->OuterWindow->ContentSize.x, 300.0f);
+            IM_CHECK_EQ(table->OuterWindow->ContentSizeIdeal.x, 300.0f);
+        }
+
+        // [2] Height, Non-Scrolling
+        // FIXME-TESTS: those tests were written earlier, differently than the Width tests.... consider making them the same (perhaps with a loop on Axis..)
+        if (1)
+        {
+            ctx->LogInfo("[2] Heights, Non-scrolling");
+
+            // outer_size -FLT_MIN, button 200, window 300 -> layout 300, ideal 200
+            vars.TableFlags = ImGuiTableFlags_NoSavedSettings | ImGuiTableFlags_Borders;
+            vars.ItemSize = ImVec2(100.0f, 200.0f);
+            vars.OuterSize = ImVec2(0.0f, -FLT_MIN);
+            vars.WindowSize = ImVec2(300.0f, 300.0f);
+            ctx->Yield(2);
+            IM_CHECK_EQ(vars.OutTableLayoutSize.y, 300.0f);
+            IM_CHECK_EQ(table->OuterWindow->ContentSize.y, 200.0f);
+            //IM_DEBUG_HALT_TESTFUNC();
+
+            // outer_size -FLT_MIN, button 200, window 100 -> layout 200, ideal 200
+            vars.TableFlags &= ~ImGuiTableFlags_NoHostExtendY;
+            vars.OuterSize = ImVec2(0.0f, -FLT_MIN);
+            vars.WindowSize = ImVec2(300.0f, 100.0f);
+            ctx->Yield(2);
+            IM_CHECK_EQ(vars.OutTableLayoutSize.y, 200.0f);
+            IM_CHECK_EQ(table->OuterWindow->ContentSize.y, 200.0f);
+
+            // w/ ImGuiTableFlags_NoHostExtendY -> layout 1, ideal 200
+            vars.TableFlags |= ImGuiTableFlags_NoHostExtendY;
+            vars.OuterSize = ImVec2(0.0f, -FLT_MIN);
+            vars.WindowSize = ImVec2(300.0f, 100.0f);
+            ctx->Yield(2);
+            IM_CHECK_EQ(vars.OutTableLayoutSize.y, 100.0f);
+            IM_CHECK_EQ(table->OuterWindow->ContentSize.y, 100.0f);
+            IM_CHECK_EQ(table->OuterWindow->ContentSizeIdeal.y, 200.0f);
+
+            // outer_size 0, button 200, window 300 -> layout 200, ideal 200
+            vars.TableFlags &= ~ImGuiTableFlags_NoHostExtendY;
+            vars.OuterSize = ImVec2(0.0f, 0.0f);
+            vars.WindowSize = ImVec2(300.0f, 300.0f);
+            ctx->Yield(2);
+            IM_CHECK_EQ(vars.OutTableLayoutSize.y, 200.0f);
+            IM_CHECK_EQ(table->OuterWindow->ContentSize.y, 200.0f);
+            IM_CHECK_EQ(table->OuterWindow->ScrollbarY, false);
+
+            // outer_size 0, button 200, window 100 -> layout 200, ideal 200 (scroll)
+            vars.OuterSize = ImVec2(0.0f, 0.0f);
+            vars.WindowSize = ImVec2(300.0f, 100.0f);
+            ctx->Yield(2);
+            IM_CHECK_EQ(vars.OutTableLayoutSize.y, 200.0f);
+            IM_CHECK_EQ(table->OuterWindow->ContentSize.y, 200.0f);
+            IM_CHECK_EQ(table->OuterWindow->ScrollbarY, true);
+
+            // outer_size 100, button 200, window 300 -> layout 200, ideal 200
+            vars.OuterSize = ImVec2(0.0f, 100.0f);
+            vars.WindowSize = ImVec2(300.0f, 300.0f);
+            ctx->Yield(2);
+            IM_CHECK_EQ(vars.OutTableLayoutSize.y, 200.0f);
+            IM_CHECK_EQ(table->OuterWindow->ContentSize.y, 200.0f);
+            IM_CHECK_EQ(table->OuterWindow->ScrollbarY, false);
+
+            // outer_size 100, button 200, window 300, NoHostExtend -> layout 100, ideal 200
+            vars.TableFlags |= ImGuiTableFlags_NoHostExtendY;
+            vars.OuterSize = ImVec2(0.0f, 100.0f);
+            vars.WindowSize = ImVec2(300.0f, 300.0f);
+            ctx->Yield(2);
+            IM_CHECK_EQ(vars.OutTableLayoutSize.y, 100.0f);
+            IM_CHECK_EQ(table->OuterWindow->ContentSize.y, 100.0f);
+            IM_CHECK_EQ(table->OuterWindow->ScrollbarY, false);
+
+            // outer_size 300, button 200, window 100 -> layout 300, ideal 300 (scroll)
+            vars.TableFlags |= ImGuiTableFlags_NoHostExtendY;
+            vars.OuterSize = ImVec2(0.0f, 300.0f);
+            vars.WindowSize = ImVec2(300.0f, 100.0f);
+            ctx->Yield(2);
+            IM_CHECK_EQ(vars.OutTableLayoutSize.y, 300.0f);
+            IM_CHECK_EQ(table->OuterWindow->ContentSize.y, 300.0f);
+            IM_CHECK_EQ(table->OuterWindow->ScrollbarY, true);
+        }
+
+        // Widths, Height + Scrolling
+        for (ImGuiAxis axis = ImGuiAxis_X; axis <= ImGuiAxis_Y; axis = (ImGuiAxis)(axis + 1))
+        {
+            if (axis == ImGuiAxis_X)
+                ctx->LogInfo("[3] Width + Scrolling");
+            else
+                ctx->LogInfo("[4] Height + Scrolling");
+
+            vars.ItemSize[axis] = 200.0f;
+            vars.ItemSize[axis ^ 1] = 100.0f;
+
+            vars.TableFlags = ImGuiTableFlags_NoSavedSettings | ImGuiTableFlags_ScrollX;
+            vars.WindowSize = ImVec2(300.0f, 300.0f);
+            vars.OuterSize[axis] = 0.0f; // right/bottom align
+            vars.OuterSize[axis ^ 1] = 220.0f;
+            ctx->Yield(3);
+            IM_CHECK_EQ(table->OuterRect.GetSize()[axis], 300.0f);
+            IM_CHECK_EQ(table->InnerWindow->ContentSize[axis], 200.0f);
+            IM_CHECK_EQ(table->InnerWindow->ContentSizeIdeal[axis], 200.0f);
+            IM_CHECK_EQ(table->OuterWindow->ContentSize[axis], 200.0f); // We want 200.0f not 300.0f (outer_size.x <= 0.0f -> report best-fit width)
+            IM_CHECK_EQ(table->OuterWindow->ContentSizeIdeal[axis], 200.0f);
+            vars.WindowSize[axis] = 100.0f;
+            ctx->Yield(2);
+            IM_CHECK_EQ(table->InnerWindow->ContentSize[axis], 200.0f);
+            IM_CHECK_EQ(table->InnerWindow->ContentSizeIdeal[axis], 200.0f);
+            IM_CHECK_EQ(table->OuterWindow->ContentSize[axis], 100.0f);
+            IM_CHECK_EQ(axis == ImGuiAxis_X ? table->OuterWindow->ScrollbarX : table->OuterWindow->ScrollbarY, false);
+            IM_CHECK_EQ(table->OuterWindow->ContentSizeIdeal[axis], 200.0f);
+            //IM_DEBUG_HALT_TESTFUNC();
+
+            vars.TableFlags = ImGuiTableFlags_NoSavedSettings | ImGuiTableFlags_ScrollX;
+            vars.WindowSize = ImVec2(300.0f, 300.0f);
+            vars.OuterSize[axis] = -FLT_MIN; // right/bottom align
+            vars.OuterSize[axis ^ 1] = 0.0f;
+            ctx->Yield(2);
+            IM_CHECK_EQ(table->InnerWindow->ContentSize[axis], 200.0f);
+            IM_CHECK_EQ(table->InnerWindow->ContentSizeIdeal[axis], 200.0f);
+            IM_CHECK_EQ(table->OuterWindow->ContentSize[axis], 200.0f); // We want 200.0f not 300.0f (outer_size.x <= 0.0f -> report best-fit width)
+            IM_CHECK_EQ(table->OuterWindow->ContentSizeIdeal[axis], 200.0f);
+            vars.WindowSize[axis] = 100.0f;
+            ctx->Yield(2);
+            IM_CHECK_EQ(table->InnerWindow->ContentSize[axis], 200.0f);
+            IM_CHECK_EQ(table->InnerWindow->ContentSizeIdeal[axis], 200.0f);
+            IM_CHECK_EQ(table->OuterWindow->ContentSize[axis], 100.0f);
+            IM_CHECK_EQ(axis == ImGuiAxis_X ? table->OuterWindow->ScrollbarX : table->OuterWindow->ScrollbarY, false);
+            IM_CHECK_EQ(table->OuterWindow->ContentSizeIdeal[axis], 200.0f);
+            //IM_DEBUG_HALT_TESTFUNC();
+
+            vars.TableFlags = ImGuiTableFlags_NoSavedSettings | ImGuiTableFlags_ScrollX;
+            vars.WindowSize = ImVec2(300.0f, 300.0f);
+            vars.OuterSize[axis] = 100.0f;
+            vars.OuterSize[axis ^ 1] = 0.0f;
+            ctx->Yield(); // small item-size previously submitted, columns[0] is min-width, reported to inner window
+            ctx->Yield(); // inner-window update to small contents width, columns[0] resize to fit, reported to inner window
+            ctx->Yield(); // inner-window update to correct contents width
+            IM_CHECK_EQ(table->InnerWindow->ContentSize[axis], 200.0f);
+            IM_CHECK_EQ(table->InnerWindow->ContentSizeIdeal[axis], 200.0f);
+            IM_CHECK_EQ(table->OuterWindow->ContentSize[axis], 100.0f);
+            IM_CHECK_EQ(table->OuterWindow->ContentSizeIdeal[axis], 100.0f);
+            //IM_DEBUG_HALT_TESTFUNC();
+
+            vars.TableFlags = ImGuiTableFlags_NoSavedSettings | ImGuiTableFlags_ScrollX;
+            vars.WindowSize = ImVec2(300.0f, 300.0f);
+            vars.OuterSize[axis] = 300.0f;
+            vars.OuterSize[axis ^ 1] = 0.0f;
+            ctx->Yield(2);
+            IM_CHECK_EQ(table->InnerWindow->ContentSize[axis], 200.0f);
+            IM_CHECK_EQ(table->OuterWindow->ContentSize[axis], 300.0f);
+            vars.WindowSize[axis] = 100.0f;
+            vars.WindowSize[axis ^ 1] = 300.0f;
+            ctx->Yield(2);
+            IM_CHECK_EQ(table->InnerWindow->ContentSize[axis], 200.0f);
+            IM_CHECK_EQ(table->OuterWindow->ContentSize[axis], 300.0f);
+        }
+    };
+#endif
+
     // ## Test NavLayer in frozen cells
     t = IM_REGISTER_TEST(e, "table", "table_nav_layer");
     t->GuiFunc = [](ImGuiTestContext* ctx)
