@@ -799,6 +799,25 @@ void RegisterTests_Layout(ImGuiTestEngine* e)
     };
 #endif
 
+    t = IM_REGISTER_TEST(e, "layout", "layout_cursor_max");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImGuiWindow* window = ImGui::GetCurrentWindow();
+
+        IM_CHECK_EQ(window->DC.CursorMaxPos.x, window->DC.CursorStartPos.x);
+        IM_CHECK_EQ(window->DC.CursorMaxPos.y, window->DC.CursorStartPos.y);
+
+        ImGui::SetCursorPos(ImVec2(200.0f, 100.0f));
+        IM_CHECK_EQ(window->DC.CursorMaxPos.x, window->Pos.x + 200.0f);
+        IM_CHECK_EQ(window->DC.CursorMaxPos.y, window->Pos.y + 100.0f);
+
+        ImGui::NewLine();
+        IM_CHECK_EQ(window->DC.CursorMaxPos.x, window->Pos.x + 200.0f);
+        IM_CHECK_EQ(window->DC.CursorMaxPos.y, window->Pos.y + 100.0f + ImGui::GetTextLineHeight());
+
+        ImGui::End();
+    };
 }
 
 //-------------------------------------------------------------------------
