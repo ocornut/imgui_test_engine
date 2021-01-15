@@ -1905,7 +1905,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
 
         //ImGui::SetNextWindowSize(ImVec2(20, 20), ImGuiCond_Appearing);
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | vars.WindowFlags);
-        ImGui::CheckboxFlags("ImGuiWindowFlags_AlwaysAutoResize", (unsigned int*)&vars.WindowFlags, ImGuiWindowFlags_AlwaysAutoResize);
+        ImGui::CheckboxFlags("ImGuiWindowFlags_AlwaysAutoResize", &vars.WindowFlags, ImGuiWindowFlags_AlwaysAutoResize);
         ImGui::SetNextItemWidth(200.0f);
         ImGui::SliderInt("vars.Step", &vars.Step, 0, 3);
         ImGui::SetNextItemWidth(200.0f);
@@ -1917,21 +1917,14 @@ void RegisterTests_Table(ImGuiTestEngine* e)
         const int col_row_count = vars.Count;
         if (ImGui::BeginTable("table1", col_row_count))
         {
-            if (vars.Step == 0)
+            if (vars.Step == 0 || vars.Step == 1)
             {
                 for (int i = 0; i < col_row_count; i++)
                     ImGui::TableSetupColumn(Str16f("Col%d", i).c_str(), ImGuiTableColumnFlags_WidthFixed, 100.0f);
                 ImGui::TableHeadersRow();
                 //HelperTableSubmitCellsButtonFill(col_row_count, col_row_count);
             }
-            if (vars.Step == 1)
-            {
-                for (int i = 0; i < col_row_count; i++)
-                    ImGui::TableSetupColumn(Str16f("Col%d", i).c_str(), ImGuiTableColumnFlags_WidthFixed, 100.0f);
-                ImGui::TableHeadersRow();
-                //HelperTableSubmitCellsButtonFix(col_row_count, col_row_count);
-            }
-            if (vars.Step == 2)
+            if (vars.Step == 2 || vars.Step == 3)
             {
                 // No column width + window auto-fit + auto-fill button creates a feedback loop
                 for (int i = 0; i < col_row_count; i++)
@@ -1939,14 +1932,6 @@ void RegisterTests_Table(ImGuiTestEngine* e)
                 ImGui::TableHeadersRow();
                 //HelperTableSubmitCellsButtonFill(col_row_count, col_row_count);
             }
-            if (vars.Step == 3)
-            {
-                for (int i = 0; i < col_row_count; i++)
-                    ImGui::TableSetupColumn(Str16f("Col%d", i).c_str());
-                ImGui::TableHeadersRow();
-                //HelperTableSubmitCellsButtonFix(col_row_count, col_row_count);
-            }
-
             for (int row = 0; row < col_row_count; row++)
             {
                 ImGui::TableNextRow();
@@ -2022,6 +2007,42 @@ void RegisterTests_Table(ImGuiTestEngine* e)
         }
     };
 
+    // ## Test that resizable column report their current size
+    t = IM_REGISTER_TEST(e, "table", "table_reported_size_2");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImGui::PushStyleVar(ImGuiStyleVar_CellPadding, ImVec2(0.0f, 0.0f));
+        if (ctx->IsFirstGuiFrame())
+            TableDiscardInstanceAndSettings(ImGui::GetID("table1"));
+        if (ImGui::BeginTable("table1", 3, ImGuiTableFlags_Resizable | ImGuiTableFlags_SizingFixedFit))
+        {
+            ImGui::TableSetupColumn("", 0, 50.0f);
+            ImGui::TableSetupColumn("", 0, 100.0f);
+            ImGui::TableSetupColumn("", 0, 50.0f);
+            ImGui::TableNextColumn();
+            ImGui::Text("Hello");
+            ImGui::TableSetBgColor(ImGuiTableBgTarget_CellBg, IM_COL32(255, 0, 0, 50), 0);
+            ImGui::TableSetBgColor(ImGuiTableBgTarget_CellBg, IM_COL32(0, 255, 0, 50), 1);
+            ImGui::TableSetBgColor(ImGuiTableBgTarget_CellBg, IM_COL32(0, 0, 255, 50), 2);
+            ImGui::EndTable();
+        }
+        ImGui::PopStyleVar();
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ctx->SetRef("Test Window");
+        ImGuiTable* table = ImGui::TableFindByID(ctx->GetID("table1"));
+
+        // FIXME: Expose nicer helpers?
+        const float w_extra = (table->OuterPaddingX * 2.0f) + (table->CellSpacingX1 + table->CellSpacingX2) * (table->ColumnsEnabledCount - 1) + (table->CellPaddingX * 2.0f) * table->ColumnsEnabledCount;
+        ctx->TableResizeColumn("table1", 1, 100.0f);
+        IM_CHECK_EQ(table->OuterWindow->ContentSize.x, 50.0f + 100.0f + 50.0f + w_extra);
+
+        ctx->TableResizeColumn("table1", 1, 80.0f);
+        IM_CHECK_EQ(table->OuterWindow->ContentSize.x, 50.0f + 80.0f + 50.0f + w_extra);
+    };
     // ## Test NavLayer in frozen cells
     t = IM_REGISTER_TEST(e, "table", "table_nav_layer");
     t->GuiFunc = [](ImGuiTestContext* ctx)

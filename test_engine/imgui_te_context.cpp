@@ -2131,6 +2131,24 @@ void ImGuiTestContext::TableSetColumnEnabled(ImGuiTestRef ref, const char* label
     SetRef(backup_ref);
 }
 
+void ImGuiTestContext::TableResizeColumn(ImGuiTestRef ref, int column_n, float width)
+{
+    if (IsError())
+        return;
+
+    IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
+    LogDebug("TableResizeColumn '%s' %08X column %d width %.2f", ref.Path ? ref.Path : "NULL", ref.ID, column_n, width);
+
+    ImGuiTable* table = ImGui::TableFindByID(GetID(ref));
+    IM_CHECK_SILENT(table != NULL);
+
+    ImGuiID resize_id = ImGui::TableGetColumnResizeID(table, column_n);
+    float old_width = table->Columns[column_n].WidthGiven;
+    ItemDragWithDelta(resize_id, ImVec2(width - old_width, 0));
+
+    IM_CHECK_EQ(table->Columns[column_n].WidthRequest, width);
+}
+
 const ImGuiTableSortSpecs* ImGuiTestContext::TableGetSortSpecs(ImGuiTestRef ref)
 {
     ImGuiTable* table = ImGui::TableFindByID(GetID(ref));

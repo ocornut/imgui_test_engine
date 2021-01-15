@@ -396,6 +396,7 @@ struct ImGuiTestContext
     void                        TableOpenContextMenu(ImGuiTestRef ref, int column_n = -1);
     ImGuiSortDirection          TableClickHeader(ImGuiTestRef ref, const char* label, ImGuiKeyModFlags keys_mod = ImGuiKeyModFlags_None);
     void                        TableSetColumnEnabled(ImGuiTestRef ref, const char* label, bool enabled);
+    void                        TableResizeColumn(ImGuiTestRef ref, int column_n, float width);
     const ImGuiTableSortSpecs*  TableGetSortSpecs(ImGuiTestRef ref);
 
     // Docking
