@@ -2803,6 +2803,124 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
         ImGui::End();
     };
 
+    // ## Ensure Logging as Text output correctly formatted widget
+    t = IM_REGISTER_TEST(e, "misc", "misc_log_to_clipboard");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
+
+        // Widgets currently not logging correctly:
+        // FIXME: TODO: ArrowButton (they're not displayed)
+        // FIXME: TODO: ListBox
+        // FIXME: Tabs could be improved (content of focused tab could be aligned)
+
+        // Button
+        ImGui::LogToClipboard();
+        ImGui::Button("Button");
+        ImGui::LogFinish();
+        IM_CHECK_STR_EQ(ImGui::GetClipboardText(), "[ Button ]" IM_NEWLINE);
+
+        // Checkbox
+        {
+            bool b = false;
+            ImGui::LogToClipboard();
+            ImGui::Checkbox("Checkbox", &b);
+            ImGui::LogFinish();
+            IM_CHECK_STR_EQ(ImGui::GetClipboardText(), "[ ] Checkbox" IM_NEWLINE);
+
+            b = true;
+            ImGui::LogToClipboard();
+            ImGui::Checkbox("Checkbox", &b);
+            ImGui::LogFinish();
+            IM_CHECK_STR_EQ(ImGui::GetClipboardText(), "[x] Checkbox" IM_NEWLINE);
+
+            int i = 1;
+            ImGui::LogToClipboard();
+            ImGui::CheckboxFlags("Checkbox Flags", &i, 3);
+            ImGui::LogFinish();
+            IM_CHECK_STR_EQ(ImGui::GetClipboardText(), "[~] Checkbox Flags" IM_NEWLINE);
+        }
+
+        // RadioButton
+        {
+            ImGui::LogToClipboard();
+            ImGui::RadioButton("Radio", false);
+            ImGui::LogFinish();
+            IM_CHECK_STR_EQ(ImGui::GetClipboardText(), "( ) Radio" IM_NEWLINE);
+
+            ImGui::LogToClipboard();
+            ImGui::RadioButton("Radio", true);
+            ImGui::LogFinish();
+            IM_CHECK_STR_EQ(ImGui::GetClipboardText(), "(x) Radio" IM_NEWLINE);
+        }
+
+        // Sliders/Drags
+        {
+            float f = 42.42f;
+            ImGui::LogToClipboard();
+            ImGui::SliderFloat("Slider Float", &f, 0.0f, 100.0f);
+            ImGui::LogFinish();
+            IM_CHECK_STR_EQ(ImGui::GetClipboardText(), "42.420 Slider Float" IM_NEWLINE);
+
+            int i = 64;
+            ImGui::LogToClipboard();
+            ImGui::DragInt("Drag Int", &i, 0, 100);
+            ImGui::LogFinish();
+            IM_CHECK_STR_EQ(ImGui::GetClipboardText(), "64 Drag Int" IM_NEWLINE);
+        }
+
+        // Separator
+        {
+            ImGui::LogToClipboard();
+            ImGui::Separator();
+            ImGui::Text("Hello World");
+            ImGui::LogFinish();
+            IM_CHECK_STR_EQ(ImGui::GetClipboardText(), "--------------------------------" IM_NEWLINE "Hello World" IM_NEWLINE);
+        }
+
+        // CollapsingHeader
+        {
+            ImGui::LogToClipboard();
+            ImGui::SetNextItemOpen(false);
+            if (ImGui::CollapsingHeader("Collapsing Header", ImGuiTreeNodeFlags_NoAutoOpenOnLog))
+                ImGui::Text("Closed Header Content");
+            ImGui::LogFinish();
+            IM_CHECK_STR_EQ(ImGui::GetClipboardText(), "## Collapsing Header ##" IM_NEWLINE);
+
+            ImGui::LogToClipboard();
+            ImGui::SetNextItemOpen(true);
+            if (ImGui::CollapsingHeader("Collapsing Header"))
+                ImGui::Text("Open Header Content");
+            ImGui::LogFinish();
+            IM_CHECK_STR_EQ(ImGui::GetClipboardText(), "## Collapsing Header ##" IM_NEWLINE "Open Header Content" IM_NEWLINE);
+        }
+
+        // TreeNode
+        {
+            ImGui::LogToClipboard();
+            ImGui::SetNextItemOpen(false);
+            if (ImGui::TreeNodeEx("TreeNode", ImGuiTreeNodeFlags_NoAutoOpenOnLog))
+            {
+                ImGui::Text("Closed TreeNode Content");
+                ImGui::TreePop();
+            }
+            ImGui::LogFinish();
+            IM_CHECK_STR_EQ(ImGui::GetClipboardText(), "> TreeNode" IM_NEWLINE);
+
+            ImGui::LogToClipboard();
+            ImGui::SetNextItemOpen(true);
+            if (ImGui::TreeNode("TreeNode"))
+            {
+                ImGui::Text("Open TreeNode Content");
+                ImGui::TreePop();
+            }
+            ImGui::LogFinish();
+            IM_CHECK_STR_EQ(ImGui::GetClipboardText(), "> TreeNode" IM_NEWLINE "    Open TreeNode Content" IM_NEWLINE);
+        }
+
+        ImGui::End();
+    };
+
     // FIXME-TESTS
     t = IM_REGISTER_TEST(e, "demo", "demo_misc_001");
     t->GuiFunc = NULL;
