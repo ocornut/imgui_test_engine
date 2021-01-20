@@ -35,6 +35,7 @@ struct TableTestingVars
     ImVec2                  WindowSize = ImVec2(0.0f, 0.0f);
     ImVec2                  ItemSize = ImVec2(0.0f, 0.0f);
     ImGuiTableColumnFlags   ColumnFlags[6] = {};
+    bool                    DebugShowBounds = true;
 
     ImRect                  OutTableItemRect;
     ImVec2                  OutTableLayoutSize;
@@ -62,12 +63,14 @@ static void HelperDrawAndFillBounds(TableTestingVars* vars)
     vars->OutOuterCursorMaxPosOnEndTable = outer_window->DC.CursorMaxPos;
     vars->OutOuterIdealMaxPosOnEndTable = ImMax(outer_window->DC.CursorMaxPos, outer_window->DC.IdealMaxPos);
 
-    ImGui::GetForegroundDrawList()->AddRect(ImGui::GetItemRectMin(), vars->OutOuterIdealMaxPosOnEndTable, COL_IDEAL_MAX_POS, 0.0f, ~0, 7.0f);
-    ImGui::GetForegroundDrawList()->AddRect(ImGui::GetItemRectMin(), vars->OutOuterCursorMaxPosOnEndTable, COL_CURSOR_MAX_POS, 0.0f, ~0, 4.0f);
-    ImGui::GetForegroundDrawList()->AddRect(ImGui::GetItemRectMin(), ImGui::GetItemRectMax(), COL_ITEM_RECT, 0.0f, ~0, 1.0f);
-
-    ImGui::GetForegroundDrawList()->AddCircleFilled(ImGui::GetCursorScreenPos(), 3.0f, COL_ITEM_RECT);
-    ImGui::GetForegroundDrawList()->AddCircleFilled(ImGui::GetCurrentWindow()->DC.CursorPosPrevLine, 3.0f, COL_ITEM_RECT);
+    if (vars->DebugShowBounds)
+    {
+        ImGui::GetForegroundDrawList()->AddRect(ImGui::GetItemRectMin(), vars->OutOuterIdealMaxPosOnEndTable, COL_IDEAL_MAX_POS, 0.0f, ~0, 7.0f);
+        ImGui::GetForegroundDrawList()->AddRect(ImGui::GetItemRectMin(), vars->OutOuterCursorMaxPosOnEndTable, COL_CURSOR_MAX_POS, 0.0f, ~0, 4.0f);
+        ImGui::GetForegroundDrawList()->AddRect(ImGui::GetItemRectMin(), ImGui::GetItemRectMax(), COL_ITEM_RECT, 0.0f, ~0, 1.0f);
+        ImGui::GetForegroundDrawList()->AddCircleFilled(ImGui::GetCursorScreenPos(), 3.0f, COL_ITEM_RECT);
+        ImGui::GetForegroundDrawList()->AddCircleFilled(ImGui::GetCurrentWindow()->DC.CursorPosPrevLine, 3.0f, COL_ITEM_RECT);
+    }
 }
 
 static void HelperTableSubmitCellsCustom(ImGuiTestContext* ctx, int count_w, int count_h, void(*cell_cb)(ImGuiTestContext* ctx, int column, int line))
@@ -2181,6 +2184,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
         ImGui::CheckboxFlags("ImGuiTableFlags_ScrollX", &vars.TableFlags, ImGuiTableFlags_ScrollX);
         ImGui::CheckboxFlags("ImGuiTableFlags_ScrollY", &vars.TableFlags, ImGuiTableFlags_ScrollY);
         ImGui::CheckboxFlags("ImGuiTableFlags_SizingFixedFit", &vars.TableFlags, ImGuiTableFlags_SizingFixedFit);
+        ImGui::CheckboxFlags("ImGuiTableFlags_NoKeepColumnsVisible", &vars.TableFlags, ImGuiTableFlags_NoKeepColumnsVisible);
         ImGui::CheckboxFlags("ImGuiWindowFlags_HorizontalScrollbar", &vars.WindowFlags, ImGuiWindowFlags_HorizontalScrollbar);
         ImGui::DragFloat2("WindowSize", &vars.WindowSize.x, 1.0f, 0.0f, FLT_MAX);
         ImGui::DragFloat2("ItemSize", &vars.ItemSize.x, 1.0f, 0.0f, FLT_MAX);
@@ -2203,6 +2207,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
 
         ImGui::Separator();
         ImGui::Text("Legend:");
+        ImGui::Checkbox("Show bounds", &vars.DebugShowBounds);
         ImGui::ColorButton("ItemRect", ImColor(COL_ITEM_RECT), ImGuiColorEditFlags_NoTooltip); ImGui::SameLine(0.f, style.ItemInnerSpacing.x); ImGui::Text("ItemRect");
         ImGui::ColorButton("CursorMaxPos", ImColor(COL_CURSOR_MAX_POS), ImGuiColorEditFlags_NoTooltip); ImGui::SameLine(0.f, style.ItemInnerSpacing.x); ImGui::Text("CursorMaxPos");
         ImGui::ColorButton("IdealMaxPos", ImColor(COL_IDEAL_MAX_POS), ImGuiColorEditFlags_NoTooltip); ImGui::SameLine(0.f, style.ItemInnerSpacing.x); ImGui::Text("IdealMaxPos");
@@ -2223,6 +2228,8 @@ void RegisterTests_Table(ImGuiTestEngine* e)
             vars.ItemSize = ImVec2(200.0f, 100.0f);
 
             // Use horizontal borders only to not interfere with widths
+
+            // Special case: outer_size.x == 0.0f + no scroll + no stretch = MinFitX
             vars.TableFlags = ImGuiTableFlags_NoSavedSettings | ImGuiTableFlags_BordersOuterH | ImGuiTableFlags_SizingFixedFit;
             vars.WindowSize = ImVec2(300.0f, 300.0f);
             vars.OuterSize = ImVec2(0.0f, 0.0f);

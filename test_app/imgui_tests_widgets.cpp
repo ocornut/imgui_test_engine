@@ -1565,7 +1565,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
             vars.ExpectedWidth = 0.0f;
             for (int i = 0; i < 3; i++)
             {
-                Str30f label("Tab %d", i);
+                Str30f label("TabItem %d", i);
                 bool tab_open = true;
                 if (ImGui::BeginTabItem(label.c_str(), vars.HasCloseButton ? &tab_open : NULL))
                     ImGui::EndTabItem();
@@ -1584,12 +1584,12 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
 
         vars.HasCloseButton = false;
         ctx->Yield();
-        IM_CHECK_EQ(window->DC.CursorStartPos.x + vars.ExpectedWidth, window->DC.CursorMaxPos.x);
+        IM_CHECK_EQ(window->DC.CursorStartPos.x + vars.ExpectedWidth, window->DC.IdealMaxPos.x);
 
         vars.HasCloseButton = true;
         ctx->Yield(); // BeginTabBar() will submit old size --> TabBarLayout update sizes
         ctx->Yield(); // BeginTabBar() will submit new size
-        IM_CHECK_EQ(window->DC.CursorStartPos.x + vars.ExpectedWidth, window->DC.CursorMaxPos.x);
+        IM_CHECK_EQ(window->DC.CursorStartPos.x + vars.ExpectedWidth, window->DC.IdealMaxPos.x);
     };
 
     // ## Test TabItemButton behavior
