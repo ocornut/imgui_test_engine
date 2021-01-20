@@ -2012,24 +2012,24 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
     {
         ImBitArray<128> v128;
         IM_CHECK_EQ((int)sizeof(v128), 16);
-        v128.ClearBits();
-        v128.SetBitRange(1, 1);
+        v128.ClearAllBits();
+        v128.SetBitRange(1, 2);
         IM_CHECK(v128.Storage[0] == 0x00000002 && v128.Storage[1] == 0x00000000 && v128.Storage[2] == 0x00000000);
-        v128.ClearBits();
-        v128.SetBitRange(1, 31);
-        IM_CHECK(v128.Storage[0] == 0xFFFFFFFE && v128.Storage[1] == 0x00000000 && v128.Storage[2] == 0x00000000);
-        v128.ClearBits();
+        v128.ClearAllBits();
         v128.SetBitRange(1, 32);
+        IM_CHECK(v128.Storage[0] == 0xFFFFFFFE && v128.Storage[1] == 0x00000000 && v128.Storage[2] == 0x00000000);
+        v128.ClearAllBits();
+        v128.SetBitRange(1, 33);
         IM_CHECK(v128.Storage[0] == 0xFFFFFFFE && v128.Storage[1] == 0x00000001 && v128.Storage[2] == 0x00000000);
-        v128.ClearBits();
-        v128.SetBitRange(2, 32);
+        v128.ClearAllBits();
+        v128.SetBitRange(2, 33);
         IM_CHECK(v128.Storage[0] == 0xFFFFFFFC && v128.Storage[1] == 0x00000001 && v128.Storage[2] == 0x00000000);
-        v128.ClearBits();
-        v128.SetBitRange(0, 64);
+        v128.ClearAllBits();
+        v128.SetBitRange(0, 65);
         IM_CHECK(v128.Storage[0] == 0xFFFFFFFF && v128.Storage[1] == 0xFFFFFFFF && v128.Storage[2] == 0x00000001);
 
         ImBitArray<129> v129;
-        v129.ClearBits();
+        v129.ClearAllBits();
         IM_CHECK_EQ((int)sizeof(v129), 20);
         v129.SetBit(128);
         IM_CHECK(v129.TestBit(128) == true);
