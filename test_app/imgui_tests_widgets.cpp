@@ -2379,6 +2379,8 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
 
         ctx->SetRef("Dear ImGui Demo");
         ctx->ItemCloseAll("");
+        ctx->WindowFocus(""); // So it's under TestWindow
+        // FIXME-TESTS: This can still fail if "Test Window" covers "Dear ImGui Demo"
 
         ctx->SetRef("Test Window");
         ImGuiID active_id = ctx->GetID("Drag");
@@ -2391,6 +2393,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ctx->SetRef("Dear ImGui Demo");
         ctx->MouseMove("Widgets", ImGuiTestOpFlags_NoFocusWindow);
         ctx->SleepNoSkip(1.0f, 1.0f / 60.0f);
+
         IM_CHECK((ctx->ItemInfo("Widgets")->StatusFlags & ImGuiItemStatusFlags_Opened) != 0);
         IM_CHECK_EQ(g.ActiveId, active_id);
         ctx->MouseMove("Trees", ImGuiTestOpFlags_NoFocusWindow);
