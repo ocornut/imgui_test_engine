@@ -1749,8 +1749,8 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
     };
 
 
-    // ## Test recursing Tab Bars (Bug #2371)
-    t = IM_REGISTER_TEST(e, "widgets", "widgets_tabbar_recurse");
+    // ## Test nested/recursing Tab Bars (Bug #2371)
+    t = IM_REGISTER_TEST(e, "widgets", "widgets_tabbar_nested");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);

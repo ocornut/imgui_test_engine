@@ -2750,6 +2750,48 @@ void RegisterTests_Table(ImGuiTestEngine* e)
         IM_CHECK(window->ClipRect.Min.x <= table->Columns[0].ClipRect.Min.x && window->ClipRect.Max.x >= table->Columns[0].ClipRect.Max.x);
     };
 
+    // ## Test nested/recursing tables. Also effectively stress nested child windows.
+    t = IM_REGISTER_TEST(e, "table", "table_nested");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
+        auto& vars = ctx->GenericVars;
+        if (vars.Int1 == 0)
+            vars.Int1 = 16;
+        ImGui::SliderInt("Levels", &vars.Int1, 1, 30);
+        int table_beginned_into = 0;
+        for (int n = 0; n < vars.Int1; n++)
+        {
+            int column_count = 3;
+            ImGuiTableFlags flags = ImGuiTableFlags_Borders | ImGuiTableFlags_SizingStretchSame;
+            if (n & 1)
+                flags |= ImGuiTableFlags_ScrollX;
+            else if (n & 2)
+                flags |= ImGuiTableFlags_ScrollY;
+            ImVec2 outer_size(800.f - n * 16.0f, 800.f - n * 16.0f);
+            if (ImGui::BeginTable(Str30f("table %d", n).c_str(), column_count, flags, outer_size))
+            {
+                table_beginned_into++;
+                ImGui::TableSetupColumn(Str30f("head %d", n).c_str());
+                ImGui::TableSetupColumn(NULL, ImGuiTableColumnFlags_WidthFixed, 20.0f);
+                ImGui::TableSetupColumn(NULL, ImGuiTableColumnFlags_WidthFixed, 20.0f);
+                ImGui::TableHeadersRow();
+                if (n + 1 < vars.Int1)
+                {
+                    ImGui::TableNextRow();
+                    ImGui::TableNextColumn();
+                }
+            }
+            else
+            {
+                break;
+            }
+        }
+        for (int n = 0; n < table_beginned_into; n++)
+            ImGui::EndTable();
+        ImGui::End();
+    };
+
     // ## Test LastItemId and LastItemStatusFlags being unset in hidden columns.
     t = IM_REGISTER_TEST(e, "table", "table_hidden_columns");
     t->GuiFunc = [](ImGuiTestContext* ctx)
