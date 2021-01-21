@@ -1283,7 +1283,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
         float column_widths[col_count] = {};
         for (int i = 0; i < 2; i++)
         {
-            ImGui::BeginTable("table1", col_count, ImGuiTableFlags_NoSavedSettings|ImGuiTableFlags_Resizable|ImGuiTableFlags_Borders);
+            ImGui::BeginTable("table1", col_count, ImGuiTableFlags_NoSavedSettings | ImGuiTableFlags_Resizable | ImGuiTableFlags_Borders);
             for (int c = 0; c < col_count; c++)
                 ImGui::TableSetupColumn("Header", c ? ImGuiTableColumnFlags_WidthFixed : ImGuiTableColumnFlags_WidthStretch);
             ImGui::TableHeadersRow();
@@ -2229,8 +2229,8 @@ void RegisterTests_Table(ImGuiTestEngine* e)
 
             // Use horizontal borders only to not interfere with widths
 
-            // Special case: outer_size.x == 0.0f + no scroll + no stretch = MinFitX
-            vars.TableFlags = ImGuiTableFlags_NoSavedSettings | ImGuiTableFlags_BordersOuterH | ImGuiTableFlags_SizingFixedFit;
+            // Special case: ImGuiTableFlags_NoHostExtendX (was outer_size.x == 0.0f) + no scroll + no stretch = MinFitX
+            vars.TableFlags = ImGuiTableFlags_NoSavedSettings | ImGuiTableFlags_BordersOuterH | ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_NoHostExtendX;
             vars.WindowSize = ImVec2(300.0f, 300.0f);
             vars.OuterSize = ImVec2(0.0f, 0.0f);
             ctx->Yield(3);
@@ -2564,7 +2564,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
             if (ctx->IsFirstGuiFrame())
                 vars.ColumnFlags[0] = ImGuiTableColumnFlags_WidthFixed;
 
-            ImGui::TableSetupColumn("One", vars.ColumnFlags[0], 100.0f, 0);
+            ImGui::TableSetupColumn("One", vars.ColumnFlags[0], (vars.ColumnFlags[0] & ImGuiTableColumnFlags_WidthFixed) ? 100.0f : 0, 0);
             ImGui::TableSetupColumn("Two", vars.ColumnFlags[1]);
             ImGui::TableSetupColumn("Three", vars.ColumnFlags[2]);
             ImGui::TableSetupColumn(NULL, vars.ColumnFlags[3]);

@@ -3469,6 +3469,10 @@ void RegisterTests_Capture(ImGuiTestEngine* e)
         ctx->ItemOpen("Tables/Advanced/Options");
         ctx->ItemOpenAll("Tables/Advanced/Options", 1);
         ctx->ItemOpen("Tables/Tree view/**/Root");
+        ctx->ItemInput("Tables/Advanced/Options/Other:/items_count");
+
+        ctx->KeyCharsReplaceEnter("50000"); // Fancy
+        //ctx->TableOpenContextMenu("Tables/Reorderable, hideable, with headers/##table1", 1);
 
         ctx->CaptureScreenshotWindow("", ImGuiCaptureFlags_StitchFullContents | ImGuiCaptureFlags_HideMouseCursor);
 
