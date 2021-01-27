@@ -1647,6 +1647,29 @@ void RegisterTests_Table(ImGuiTestEngine* e)
         IM_CHECK_EQ(window->DC.ItemWidth, 50.0f);
         IM_CHECK_EQ(window->DC.ItemWidthStack.Size, 1);
         ImGui::PopItemWidth();
+
+        // Test for #3760 that PopItemWidth() on bottom of the stack doesn't restore a wrong default
+        if (ImGui::BeginTable("table2", 2, ImGuiTableFlags_Borders))
+        {
+            ImGui::TableNextRow();
+            ImGui::TableSetColumnIndex(0);
+
+            float default_column_width = window->DC.ItemWidth;
+
+            ImGui::PushItemWidth(60.0f);
+            IM_CHECK_EQ(ImGui::CalcItemWidth(), 60.0f);
+            ImGui::DragInt2("##row 1 item 1", &ctx->GenericVars.IntArray[0]);
+            IM_CHECK_EQ(window->DC.LastItemRect.GetWidth(), 60.0f);
+            IM_CHECK_EQ(window->DC.ItemWidth, 60.0f);
+
+            ImGui::TableNextRow();
+            ImGui::TableSetColumnIndex(0);
+            IM_CHECK_EQ(window->DC.ItemWidth, 60.0f);
+            ImGui::PopItemWidth();
+            IM_CHECK_EQ(default_column_width, window->DC.ItemWidth);
+
+            ImGui::EndTable();
+        }
         ImGui::End();
     };
 
