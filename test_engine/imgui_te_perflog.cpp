@@ -53,25 +53,36 @@ static ImGuiPerfLog* PerfLogInstance = NULL;
 static int IMGUI_CDECL CompareWithSortSpecs(const void* lhs, const void* rhs)
 {
     const ImGuiTableSortSpecs* sort_specs = PerfLogInstance->_InfoTableSortSpecs;
-    IM_ASSERT(sort_specs->SpecsCount == 1);
-    const ImGuiPerfLogColumnInfo& col_info = PerfLogInstance->_InfoTableSortColInfo[sort_specs->Specs[0].ColumnIndex];
-    const ImGuiPerflogEntry* a = PerfLogInstance->_Legend[*(int*)lhs];
-    const ImGuiPerflogEntry* b = PerfLogInstance->_Legend[*(int*)rhs];
-    if (sort_specs->Specs[0].SortDirection == ImGuiSortDirection_Ascending)
-        ImSwap(a, b);
 
-    switch (col_info.Type)
+    for (int i = 0; i < sort_specs->SpecsCount; i++)
     {
-    case ImGuiDataType_S32:
-        return col_info.GetValue<int>(a) < col_info.GetValue<int>(b);
-    case ImGuiDataType_Float:
-        return col_info.GetValue<float>(a) < col_info.GetValue<float>(b);
-    case ImGuiDataType_Double:
-        return col_info.GetValue<double>(a) < col_info.GetValue<double>(b);
-    case ImGuiDataType_COUNT:
-        return strcmp(col_info.GetValue<const char*>(a), col_info.GetValue<const char*>(b));
-    default:
-        IM_ASSERT(false);
+        const ImGuiTableColumnSortSpecs* specs = &sort_specs->Specs[i];
+        const ImGuiPerfLogColumnInfo& col_info = PerfLogInstance->_InfoTableSortColInfo[specs->ColumnIndex];
+        const ImGuiPerflogEntry* a = PerfLogInstance->_Legend[*(int*) lhs];
+        const ImGuiPerflogEntry* b = PerfLogInstance->_Legend[*(int*) rhs];
+        if (specs->SortDirection == ImGuiSortDirection_Ascending)
+            ImSwap(a, b);
+
+        int result = 0;
+        switch (col_info.Type)
+        {
+        case ImGuiDataType_S32:
+            result = col_info.GetValue<int>(a) < col_info.GetValue<int>(b) ? +1 : -1;
+            break;
+        case ImGuiDataType_Float:
+            result = col_info.GetValue<float>(a) < col_info.GetValue<float>(b) ? +1 : -1;
+            break;
+        case ImGuiDataType_Double:
+            result = col_info.GetValue<double>(a) < col_info.GetValue<double>(b) ? +1 : -1;
+            break;
+        case ImGuiDataType_COUNT:
+            result = strcmp(col_info.GetValue<const char*>(a), col_info.GetValue<const char*>(b));
+            break;
+        default:
+            IM_ASSERT(false);
+        }
+        if (result != 0)
+            return result;
     }
     return 0;
 }
@@ -842,7 +853,7 @@ void ImGuiPerfLog::ShowUI(ImGuiTestEngine* engine)
         };
         const ImGuiPerfLogColumnInfo* columns = _CombineByBuildInfo ? columns_combined : columns_separate;
         int columns_num = _CombineByBuildInfo ? IM_ARRAYSIZE(columns_combined) : IM_ARRAYSIZE(columns_separate);
-        if (!ImGui::BeginTable("PerfInfo", columns_num, ImGuiTableFlags_Borders | ImGuiTableFlags_Sortable | ImGuiTableFlags_SortTristate | ImGuiTableFlags_SizingFixedFit))
+        if (!ImGui::BeginTable("PerfInfo", columns_num, ImGuiTableFlags_Borders | ImGuiTableFlags_Sortable | ImGuiTableFlags_SortMulti | ImGuiTableFlags_SortTristate | ImGuiTableFlags_SizingFixedFit))
             return;
 
         for (int i = 0; i < columns_num; i++)
@@ -857,13 +868,12 @@ void ImGuiPerfLog::ShowUI(ImGuiTestEngine* engine)
                 _InfoTableSort.resize(0);
                 for (int i = 0; i < _Legend.Size; i++)
                     _InfoTableSort.push_back(i);
-                if (sorts_specs->SpecsCount > 0)
+                if (sorts_specs->SpecsCount > 0 && _InfoTableSort.Size > 1)
                 {
                     _InfoTableSortColInfo = columns;
                     _InfoTableSortSpecs = sorts_specs;
                     PerfLogInstance = this;
-                    if (_InfoTableSort.Size > 1)
-                        qsort(&_InfoTableSort[0], (size_t)_InfoTableSort.Size, sizeof(_InfoTableSort[0]), CompareWithSortSpecs);
+                    ImQsort(&_InfoTableSort[0], (size_t)_InfoTableSort.Size, sizeof(_InfoTableSort[0]), CompareWithSortSpecs);
                     _InfoTableSortColInfo = NULL;
                     _InfoTableSortSpecs = NULL;
                     PerfLogInstance = NULL;
