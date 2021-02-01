@@ -696,16 +696,16 @@ void ImGuiPerfLog::ShowUI(ImGuiTestEngine* engine)
 
     if (ImGui::BeginPopup("Help"))
     {
-        ImGui::TextUnformatted("Plot displays perf test delta time of each build (bars) per perf test (left).");
-        ImGui::TextUnformatted("Extra information is displayed when hovering bars of a particular perf test and holding SHIFT.");
-        ImGui::TextUnformatted("This information tooltip displays performance change compared to baseline build.");
-        ImGui::TextUnformatted("To change baseline build, double-click desired build in the legend.");
-        ImGui::TextUnformatted("Data of different runs may be combined together based on build information and averaged.");
-        ImGui::TextUnformatted("Extra information tooltip will display min/max delta values as well as number of samples.");
-        ImGui::TextUnformatted("Data may be filtered by enabling or disabling individual builds or perf tests.");
-        ImGui::TextUnformatted("Hold CTRL when toggling build info or perf test visibility in order to invert visibility or other items.");
-        ImGui::TextUnformatted("Hold SHIFT when toggling build info or perf test visibility in order to close popup instantly.");
-        ImGui::TextUnformatted("Double-click plot to fit plot into available area.");
+        ImGui::BulletText("Data may be filtered by enabling or disabling individual builds or perf tests.");
+        ImGui::BulletText("Hold CTRL when toggling build info or perf test visibility in order to invert visibility or other items.");
+        ImGui::BulletText("Hold SHIFT when toggling build info or perf test visibility in order to close popup instantly.");
+        ImGui::BulletText("Data of different runs may be combined together based on build information and averaged.");
+        ImGui::BulletText("To change baseline build, double-click desired build in the legend.");
+        ImGui::BulletText("Plot displays perf test delta time of each build (bars) per perf test (left).");
+        ImGui::BulletText("Extra information is displayed when hovering bars of a particular perf test and holding SHIFT.");
+        ImGui::BulletText("This information tooltip displays performance change compared to baseline build.");
+        ImGui::BulletText("Extra information tooltip will display min/max delta values as well as number of samples.");
+        ImGui::BulletText("Double-click plot to fit plot into available area.");
         ImGui::EndPopup();
     }
 
