@@ -479,6 +479,8 @@ void ImGuiPerfLog::_Rebuild()
 
     // Index data for a convenient access.
     ImGuiStorage label_index;
+    ImGuiStorage branch_index;
+    int branch_index_last = 0;
     _Legend.resize(0);
     _Labels.resize(0);
     ImU64 last_timestamp = UINT64_MAX;
@@ -499,6 +501,16 @@ void ImGuiPerfLog::_Rebuild()
             label_index.SetInt(name_id, _Labels.Size);
             _Labels.push_back(entry);
         }
+
+        // Index branches. Unique branch index is used for per-branch colors.
+        ImGuiID branch_hash = ImHashStr(entry->GitBranchName);
+        int unique_branch_index = branch_index.GetInt(branch_hash, -1);
+        if (unique_branch_index < 0)
+        {
+            unique_branch_index = branch_index_last++;
+            branch_index.SetInt(branch_hash, unique_branch_index);
+        }
+        entry->BranchIndex = unique_branch_index;
     }
     _SelectedTest = ImClamp(_SelectedTest, 0, _Labels.Size - 1);
     _BaselineBatchIndex = ImClamp(_BaselineBatchIndex, 0, _Legend.Size - 1);
@@ -748,12 +760,7 @@ void ImGuiPerfLog::ShowUI(ImGuiTestEngine* engine)
             data.Shift = -h * bar_index + (float) (num_visible_builds - 1) * 0.5f * h;
             data.Perf = this;
             data.BatchIndex = batch_index;
-            ImGuiID color_id;
-            if (_PerBranchColors)
-                color_id = ImHashStr(entry->GitBranchName);
-            else
-                color_id = g.CurrentWindow->GetID(batch_index);
-            ImPlot::SetNextFillStyle(ImPlot::GetColormapColor(color_id & INT_MAX));
+            ImPlot::SetNextFillStyle(ImPlot::GetColormapColor(_PerBranchColors ? entry->BranchIndex : batch_index));
             ImPlot::PlotBarsHG(display_Label.c_str(), &GetPlotPoint, &data, _VisibleLabelPointers.Size, h);
 
             // Set baseline.

@@ -23,7 +23,8 @@ struct ImGuiPerflogEntry
     const char*                 OS = NULL;                      //
     const char*                 Compiler = NULL;                //
     const char*                 Date = NULL;                    //
-    float                       VsBaseline;                     // Percent difference vs baseline.
+    float                       VsBaseline = 0.0f;              // Percent difference vs baseline.
+    int                         BranchIndex = 0;                // Unique linear branch index.
 };
 
 struct ImGuiPerfLogColumnInfo;
@@ -36,8 +37,8 @@ struct ImGuiPerfLog
     ImVector<ImGuiPerflogEntry*> _Labels;                       // A list of labels (left of the plot).
     ImVector<ImGuiPerflogEntry*> _Legend;                       // _Legend[idx] = first batch element.
     ImVector<const char*>       _VisibleLabelPointers;          // ImPlot requires a pointer of all labels beforehand.
-    bool                        _CombineByBuildInfo = false;    // Entries with same build information will be averaged.
-    bool                        _PerBranchColors = false;       // Use one bar color per branch.
+    bool                        _CombineByBuildInfo = true;     // Entries with same build information will be averaged.
+    bool                        _PerBranchColors = true;        // Use one bar color per branch.
     int                         _BaselineBatchIndex = 0;        // Index of baseline build.
     int                         _SelectedTest = 0;
     Str64                       _Filter;                        // Context menu filtering substring.
