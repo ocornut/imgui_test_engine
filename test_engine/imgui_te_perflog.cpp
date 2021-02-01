@@ -410,6 +410,7 @@ void ImGuiPerfLog::_Rebuild()
 
     _Dirty = false;
     _Data.clear();
+    _InfoTableSort.clear();
 
     // FIXME: What if entries have a varying timestep?
     if (_CombineByBuildInfo)
@@ -842,8 +843,7 @@ void ImGuiPerfLog::ShowUI(ImGuiTestEngine* engine)
         ImGui::TableHeadersRow();
 
         if (ImGuiTableSortSpecs* sorts_specs = ImGui::TableGetSortSpecs())
-        {
-            if (sorts_specs->SpecsDirty)
+            if (sorts_specs->SpecsDirty || _InfoTableSort.empty())
             {
                 // Fill sort table with unsorted indices.
                 sorts_specs->SpecsDirty = false;
@@ -862,7 +862,6 @@ void ImGuiPerfLog::ShowUI(ImGuiTestEngine* engine)
                     PerfLogInstance = NULL;
                 }
             }
-        }
 
         for (int batch_index = 0; batch_index < _Legend.Size; batch_index++)
         {
