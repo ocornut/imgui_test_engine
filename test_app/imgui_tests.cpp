@@ -2804,15 +2804,12 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
     };
 
     // ## Ensure Logging as Text output correctly formatted widget
-    t = IM_REGISTER_TEST(e, "misc", "misc_log_to_clipboard");
+    // FIXME-TESTS: Test/document edge of popping out of initial tree depth.
+    // FIXME-TESTS: Add more thorough tests that logging output is not affected by clipping.
+    t = IM_REGISTER_TEST(e, "misc", "misc_log_functions");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
-
-        // Widgets currently not logging correctly:
-        // FIXME: TODO: ArrowButton (they're not displayed)
-        // FIXME: TODO: ListBox
-        // FIXME: Tabs could be improved (content of focused tab could be aligned)
 
         // Button
         ImGui::LogToClipboard();
@@ -2860,13 +2857,13 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
             ImGui::LogToClipboard();
             ImGui::SliderFloat("Slider Float", &f, 0.0f, 100.0f);
             ImGui::LogFinish();
-            IM_CHECK_STR_EQ(ImGui::GetClipboardText(), "42.420 Slider Float" IM_NEWLINE);
+            IM_CHECK_STR_EQ(ImGui::GetClipboardText(), "{ 42.420 } Slider Float" IM_NEWLINE);
 
             int i = 64;
             ImGui::LogToClipboard();
             ImGui::DragInt("Drag Int", &i, 0, 100);
             ImGui::LogFinish();
-            IM_CHECK_STR_EQ(ImGui::GetClipboardText(), "64 Drag Int" IM_NEWLINE);
+            IM_CHECK_STR_EQ(ImGui::GetClipboardText(), "{ 64 } Drag Int" IM_NEWLINE);
         }
 
         // Separator
@@ -2885,14 +2882,14 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
             if (ImGui::CollapsingHeader("Collapsing Header", ImGuiTreeNodeFlags_NoAutoOpenOnLog))
                 ImGui::Text("Closed Header Content");
             ImGui::LogFinish();
-            IM_CHECK_STR_EQ(ImGui::GetClipboardText(), "## Collapsing Header ##" IM_NEWLINE);
+            IM_CHECK_STR_EQ(ImGui::GetClipboardText(), "### Collapsing Header ###" IM_NEWLINE);
 
             ImGui::LogToClipboard();
             ImGui::SetNextItemOpen(true);
             if (ImGui::CollapsingHeader("Collapsing Header"))
                 ImGui::Text("Open Header Content");
             ImGui::LogFinish();
-            IM_CHECK_STR_EQ(ImGui::GetClipboardText(), "## Collapsing Header ##" IM_NEWLINE "Open Header Content" IM_NEWLINE);
+            IM_CHECK_STR_EQ(ImGui::GetClipboardText(), "### Collapsing Header ###" IM_NEWLINE "Open Header Content" IM_NEWLINE);
         }
 
         // TreeNode
@@ -2916,6 +2913,74 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
             }
             ImGui::LogFinish();
             IM_CHECK_STR_EQ(ImGui::GetClipboardText(), "> TreeNode" IM_NEWLINE "    Open TreeNode Content" IM_NEWLINE);
+
+            ImGui::LogToClipboard();
+            ImGui::SetNextItemOpen(true);
+            bool open = ImGui::TreeNode("TreeNode2");
+            ImGui::SameLine();
+            ImGui::SmallButton("Button");
+            if (open)
+            {
+                ImGui::Text("Open TreeNode Content");
+                ImGui::TreePop();
+            }
+            ImGui::LogFinish();
+            IM_CHECK_STR_EQ(ImGui::GetClipboardText(), "> TreeNode2 [ Button ]" IM_NEWLINE "    Open TreeNode Content" IM_NEWLINE);
+        }
+
+        // Advanced / new line behaviors
+        {
+            ImVec2 p0(100, 100);
+            ImVec2 p1(100, 200);
+
+            // (1)
+            ImGui::LogToClipboard();
+            ImGui::LogRenderedText(NULL, "Hello\nWorld");
+            ImGui::LogFinish();
+            IM_CHECK_STR_EQ(ImGui::GetClipboardText(), "Hello" IM_NEWLINE "World" IM_NEWLINE);
+
+            ImGui::LogToClipboard();
+            ImGui::LogRenderedText(&p0, "Hello\nWorld");
+            ImGui::LogFinish();
+            IM_CHECK_STR_EQ(ImGui::GetClipboardText(), "Hello" IM_NEWLINE "World" IM_NEWLINE);
+
+            // (2)
+            ImGui::LogToClipboard();
+            ImGui::LogRenderedText(NULL, "Hello");
+            ImGui::LogRenderedText(NULL, "World");
+            ImGui::LogFinish();
+            IM_CHECK_STR_EQ(ImGui::GetClipboardText(), "Hello World" IM_NEWLINE);
+
+            ImGui::LogToClipboard();
+            ImGui::LogRenderedText(&p0, "Hello");
+            ImGui::LogRenderedText(&p0, "World");
+            ImGui::LogFinish();
+            IM_CHECK_STR_EQ(ImGui::GetClipboardText(), "Hello World" IM_NEWLINE);
+
+            ImGui::LogToClipboard();
+            ImGui::LogRenderedText(&p0, "Hello");
+            ImGui::LogRenderedText(&p1, "World");
+            ImGui::LogFinish();
+            IM_CHECK_STR_EQ(ImGui::GetClipboardText(), "Hello" IM_NEWLINE "World" IM_NEWLINE);
+
+            // (3) Trailing \n in strings
+            ImGui::LogToClipboard();
+            ImGui::LogRenderedText(&p0, "Hello\n");
+            ImGui::LogRenderedText(&p0, "World");
+            ImGui::LogFinish();
+            IM_CHECK_STR_EQ(ImGui::GetClipboardText(), "Hello" IM_NEWLINE "World" IM_NEWLINE);
+
+            ImGui::LogToClipboard();
+            ImGui::LogRenderedText(&p0, "Hello\n");
+            ImGui::LogRenderedText(&p1, "World");
+            ImGui::LogFinish();
+            IM_CHECK_STR_EQ(ImGui::GetClipboardText(), "Hello" IM_NEWLINE IM_NEWLINE "World" IM_NEWLINE);
+
+            ImGui::LogToClipboard();
+            ImGui::LogRenderedText(NULL, "Hello\n");
+            ImGui::LogRenderedText(NULL, "World");
+            ImGui::LogFinish();
+            IM_CHECK_STR_EQ(ImGui::GetClipboardText(), "Hello" IM_NEWLINE "World" IM_NEWLINE);
         }
 
         ImGui::End();

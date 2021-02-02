@@ -735,21 +735,21 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         char* buf_visible = vars.Str2;
         ctx->SetRef("Test Window");
 
-        IM_CHECK_STR_EQ(buf_visible, "");
+        IM_CHECK_STR_EQ(buf_visible, "{ }");
         strcpy(buf_user, "Hello");
         ctx->Yield();
-        IM_CHECK_STR_EQ(buf_visible, "Hello");
+        IM_CHECK_STR_EQ(buf_visible, "{ Hello }");
         ctx->ItemClick("##InputText");
         ctx->KeyCharsAppend("1");
         ctx->Yield();
         IM_CHECK_STR_EQ(buf_user, "Hello1");
-        IM_CHECK_STR_EQ(buf_visible, "Hello1");
+        IM_CHECK_STR_EQ(buf_visible, "{ Hello1 }");
 
         // Because the item is active, it owns the source data, so:
         strcpy(buf_user, "Overwritten");
         ctx->Yield();
         IM_CHECK_STR_EQ(buf_user, "Hello1");
-        IM_CHECK_STR_EQ(buf_visible, "Hello1");
+        IM_CHECK_STR_EQ(buf_visible, "{ Hello1 }");
 
         // Lose focus, at this point the InputTextState->ID should be holding on the last active state,
         // so we verify that InputText() is picking up external changes.
@@ -758,7 +758,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         strcpy(buf_user, "Hello2");
         ctx->Yield();
         IM_CHECK_STR_EQ(buf_user, "Hello2");
-        IM_CHECK_STR_EQ(buf_visible, "Hello2");
+        IM_CHECK_STR_EQ(buf_visible, "{ Hello2 }");
     };
 
     // ## Test that InputText doesn't go havoc when activated via another item
