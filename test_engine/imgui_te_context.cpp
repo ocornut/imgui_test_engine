@@ -2382,6 +2382,8 @@ void    ImGuiTestContext::DockWindowInto(const char* window_name_src, const char
 
     ImGuiWindow* window_src = GetWindowByRef(window_name_src);
     ImGuiWindow* window_dst = GetWindowByRef(window_name_dst);
+
+    // FIXME-TESTS: is_outer_docking should be a parameter of alternative (and more flexible) DockWindowInto() that takes ImGuiDockNode* instead of window names as parameters. Value of this parameter is inferred for the most common case when using window names.
     bool is_outer_docking = window_dst->DockNodeAsHost != NULL;     // Specified window is actually a child window produced by DockNode(). Alternate rules apply.
     IM_CHECK_SILENT(window_src != NULL);
     IM_CHECK_SILENT(window_dst != NULL);

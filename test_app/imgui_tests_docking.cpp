@@ -876,6 +876,60 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
         IM_CHECK_LT(window->HitTestHoleOffset.x + window->HitTestHoleSize.x, right_window->Pos.x);
         IM_CHECK_LT(window->HitTestHoleOffset.y + window->HitTestHoleSize.y, down_window->Pos.y);
     };
+
+    // ## Test preserving docking information of closed windows. (#3716)
+    t = IM_REGISTER_TEST(e, "docking", "docking_preserve_docking_info");
+    struct TestLostDockingInfoVars { bool OpenWindow1 = true; bool OpenWindow2 = true; bool OpenWindow3 = true; };
+    t->SetUserDataType<TestLostDockingInfoVars>();
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        TestLostDockingInfoVars& vars = ctx->GetUserData<TestLostDockingInfoVars>();
+        ImGui::SetNextWindowSize(ImVec2(500,500), ImGuiCond_Appearing);
+        ImGui::Begin("Host", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImGui::Checkbox("1", &vars.OpenWindow1); ImGui::SameLine();
+        ImGui::Checkbox("2", &vars.OpenWindow2); ImGui::SameLine();
+        ImGui::Checkbox("3", &vars.OpenWindow3);
+        ImGui::DockSpace(ImGui::GetID("Dockspace"));
+        ImGui::End();
+
+        if (vars.OpenWindow1)
+        {
+            ImGui::SetNextWindowSize(ImVec2(300.0f, 200.0f), ImGuiCond_Appearing);
+            ImGui::Begin("Window 1", &vars.OpenWindow1, ImGuiWindowFlags_NoSavedSettings);
+            ImGui::Text("This is window 1");
+            ImGui::End();
+        }
+        if (vars.OpenWindow2)
+        {
+            ImGui::SetNextWindowSize(ImVec2(300.0f, 200.0f), ImGuiCond_Appearing);
+            ImGui::Begin("Window 2", &vars.OpenWindow2, ImGuiWindowFlags_NoSavedSettings);
+            ImGui::Text("This is window 2");
+            ImGui::End();
+        }
+        if (vars.OpenWindow3)
+        {
+            ImGui::SetNextWindowSize(ImVec2(300.0f, 200.0f), ImGuiCond_Appearing);
+            ImGui::Begin("Window 3", &vars.OpenWindow3, ImGuiWindowFlags_NoSavedSettings);
+            ImGui::Text("This is window 3");
+            ImGui::End();
+        }
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        TestLostDockingInfoVars& vars = ctx->GetUserData<TestLostDockingInfoVars>();
+        ImGuiWindow* window1 = ctx->GetWindowByRef("Window 1");
+        ImGuiWindow* window2 = ctx->GetWindowByRef("Window 2");
+        ctx->DockMultiClear("Window 1", "Window 2", "Window 3", NULL);
+        ctx->DockWindowInto("Window 1", Str30f("Host\\/DockSpace_%08X", ctx->GetID("Host/Dockspace")).c_str(), ImGuiDir_Left);
+        ctx->DockWindowInto("Window 2", "Window 1");
+        vars.OpenWindow1 = false;
+        ctx->Yield(3);
+        ctx->DockWindowInto("Window 3", "Window 2", ImGuiDir_Down);
+        vars.OpenWindow1 = true;
+        ctx->Yield(3);
+        IM_CHECK(window1->DockId != 0);
+        IM_CHECK(window1->DockId == window2->DockId);
+    };
 #else
     IM_UNUSED(e);
 #endif
