@@ -2515,7 +2515,7 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
             IM_CHECK_EQ_NO_RET(consumed1, consumed2);                   \
             IM_CHECK_LE_NO_RET(str + consumed1, end);                   \
             IM_CHECK_LE_NO_RET(str + consumed2, end);                   \
-            IM_CHECK_OP_NO_RET(codepoint1, (unsigned int)expect, op);   \
+            IM_CHECK_OP(codepoint1, (unsigned int)expect, op, false);   \
         } while (0)
 
 #ifdef IMGUI_USE_WCHAR32
