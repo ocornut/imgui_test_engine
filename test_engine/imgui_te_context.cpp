@@ -2382,17 +2382,20 @@ void    ImGuiTestContext::DockWindowInto(const char* window_name_src, const char
 
     ImGuiWindow* window_src = GetWindowByRef(window_name_src);
     ImGuiWindow* window_dst = GetWindowByRef(window_name_dst);
+    bool is_outer_docking = window_dst->DockNodeAsHost != NULL;     // Specified window is actually a child window produced by DockNode(). Alternate rules apply.
     IM_CHECK_SILENT(window_src != NULL);
     IM_CHECK_SILENT(window_dst != NULL);
+    if (is_outer_docking)
+        IM_ASSERT(split_dir != ImGuiDir_None);
     if (!window_src || !window_dst)
         return;
 
     ImGuiTestRef ref_src(window_src->DockIsActive ? window_src->ID : window_src->MoveId);   // FIXME-TESTS FIXME-DOCKING: Identify tab
-    ImGuiTestRef ref_dst(window_dst->DockIsActive ? window_dst->ID : window_dst->MoveId);
+    //ImGuiTestRef ref_dst(window_dst->DockIsActive ? window_dst->ID : window_dst->MoveId);
     ImGuiTestItemInfo* item_src = ItemInfo(ref_src);
-    ImGuiTestItemInfo* item_dst = ItemInfo(ref_dst);
+    //ImGuiTestItemInfo* item_dst = ItemInfo(ref_dst);
     ImGuiTestRefDesc desc_src(ref_src, item_src);
-    ImGuiTestRefDesc desc_dst(ref_dst, item_dst);
+    //ImGuiTestRefDesc desc_dst(ref_dst, item_dst);
 
     // Avoid focusing if we don't need it (this facilitate avoiding focus flashing when recording animated gifs)
     if (g.Windows[g.Windows.Size - 2] != window_dst)
@@ -2408,20 +2411,29 @@ void    ImGuiTestContext::DockWindowInto(const char* window_name_src, const char
     //  ImGui::DockContextQueueDock(&g, window_dst->RootWindowDockTree, window_dst->DockNode, window_src, split_dir, 0.5f, false);
 
     ImVec2 drop_pos;
-    bool drop_is_valid = ImGui::DockContextCalcDropPosForDocking(window_dst->RootWindowDockTree, window_dst->DockNode, window_src, split_dir, false, &drop_pos);
+    ImGuiDockNode* dock_node_dst = is_outer_docking ? window_dst->DockNodeAsHost : window_dst->DockNode;
+    ImGuiWindow* host_window_dst = window_dst->RootWindowDockTree;
+    if (dock_node_dst && dock_node_dst->HostWindow)
+        host_window_dst = dock_node_dst->HostWindow;
+    bool drop_is_valid = ImGui::DockContextCalcDropPosForDocking(host_window_dst, dock_node_dst, window_src, split_dir, is_outer_docking, &drop_pos);
     IM_CHECK_SILENT(drop_is_valid);
     if (!drop_is_valid)
         return;
 
     WindowTeleportToMakePosVisibleInViewport(window_dst, drop_pos);
-    drop_is_valid = ImGui::DockContextCalcDropPosForDocking(window_dst->RootWindowDockTree, window_dst->DockNode, window_src, split_dir, false, &drop_pos);
+    drop_is_valid = ImGui::DockContextCalcDropPosForDocking(host_window_dst, dock_node_dst, window_src, split_dir, is_outer_docking, &drop_pos);
     IM_CHECK(drop_is_valid);
 
     MouseDown(0);
     MouseLiftDragThreshold();
     MouseMoveToPos(drop_pos);
     IM_CHECK_SILENT(g.MovingWindow == window_src);
+#ifdef IMGUI_HAS_DOCK
+    Yield();    // Docking to dockspace over viewport fails in fast mode without this.
+    IM_CHECK_SILENT(g.HoveredWindowUnderMovingWindow && g.HoveredWindowUnderMovingWindow->RootWindow== (is_outer_docking ? host_window_dst->RootWindow : window_dst));
+#else
     IM_CHECK_SILENT(g.HoveredWindowUnderMovingWindow && g.HoveredWindowUnderMovingWindow->RootWindow == window_dst);
+#endif
     SleepShort();
 
     MouseUp(0);
