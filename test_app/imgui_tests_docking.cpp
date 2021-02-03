@@ -832,6 +832,50 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
             IM_CHECK_STR_EQ(tab_bar->Tabs[i].Window->Name, tab_order[i]);
         }
     };
+
+    // ## Test dockspace padding. (#3733)
+    t = IM_REGISTER_TEST(e, "docking", "docking_dockspace_over_viewport_padding");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::DockSpaceOverViewport(ImGui::GetMainViewport(), ImGuiDockNodeFlags_PassthruCentralNode);
+        ImGui::SetNextWindowSize(ImVec2(300, 200), ImGuiCond_Appearing);
+        ImGui::Begin("Left", NULL, ImGuiWindowFlags_NoSavedSettings);ImGui::End();
+        ImGui::SetNextWindowSize(ImVec2(300, 200), ImGuiCond_Appearing);
+        ImGui::Begin("Right", NULL, ImGuiWindowFlags_NoSavedSettings);ImGui::End();
+        ImGui::SetNextWindowSize(ImVec2(300, 200), ImGuiCond_Appearing);
+        ImGui::Begin("Up", NULL, ImGuiWindowFlags_NoSavedSettings);ImGui::End();
+        ImGui::SetNextWindowSize(ImVec2(300, 200), ImGuiCond_Appearing);
+        ImGui::Begin("Down", NULL, ImGuiWindowFlags_NoSavedSettings);ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiViewport* viewport = ImGui::GetMainViewport();
+        ImGuiWindow* window = ctx->GetWindowByRef(Str30f("DockSpaceViewport_%08X", viewport->ID).c_str());
+        ctx->DockMultiClear("Left", "Up", "Right", "Down", NULL);
+
+        // Empty dockspace has no padding.
+        IM_CHECK_EQ(window->HitTestHoleOffset.x, 0);
+        IM_CHECK_EQ(window->HitTestHoleOffset.y, 0);
+        IM_CHECK_EQ(window->HitTestHoleSize.x, viewport->Size.x);
+        IM_CHECK_EQ(window->HitTestHoleSize.y, viewport->Size.y);
+
+        ImGuiID dockspace_id = ctx->GetID(Str16f("%s/DockSpace", window->Name).c_str());
+        ctx->DockWindowInto("Left", Str30f("%s\\/DockSpace_%08X", window->Name, dockspace_id).c_str(), ImGuiDir_Left);
+        ctx->DockWindowInto("Up", Str30f("%s\\/DockSpace_%08X", window->Name, dockspace_id).c_str(), ImGuiDir_Up);
+        ctx->DockWindowInto("Right", Str30f("%s\\/DockSpace_%08X", window->Name, dockspace_id).c_str(), ImGuiDir_Right);
+        ctx->DockWindowInto("Down", Str30f("%s\\/DockSpace_%08X", window->Name, dockspace_id).c_str(), ImGuiDir_Down);
+        ctx->Yield();
+
+        // Dockspace with windows docked around it reduces central hole by their size + some padding.
+        ImGuiWindow* left_window = ctx->GetWindowByRef("Left");
+        ImGuiWindow* up_window = ctx->GetWindowByRef("Up");
+        ImGuiWindow* right_window = ctx->GetWindowByRef("Right");
+        ImGuiWindow* down_window = ctx->GetWindowByRef("Down");
+        IM_CHECK_GT(window->HitTestHoleOffset.x, left_window->Pos.x + left_window->Size.x);
+        IM_CHECK_GT(window->HitTestHoleOffset.y, up_window->Pos.y + up_window->Size.y);
+        IM_CHECK_LT(window->HitTestHoleOffset.x + window->HitTestHoleSize.x, right_window->Pos.x);
+        IM_CHECK_LT(window->HitTestHoleOffset.y + window->HitTestHoleSize.y, down_window->Pos.y);
+    };
 #else
     IM_UNUSED(e);
 #endif
