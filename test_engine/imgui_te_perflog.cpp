@@ -106,11 +106,6 @@ static ImGuiID PerflogHashTestName(ImGuiPerflogEntry* entry)
     return ImHashStr(entry->TestName);
 }
 
-static ImGuiID PerflogHashBuildInfo(ImGuiPerflogEntry* entry)
-{
-    return ImHashData(&entry->Timestamp, sizeof(entry->Timestamp));
-}
-
 static void PerflogFormatTestName(ImGuiPerfLog* perflog, Str256f* result, ImGuiPerflogEntry* entry)
 {
     IM_UNUSED(perflog);
@@ -296,7 +291,6 @@ static void PerflogSettingsHandler_ReadLine(ImGuiContext*, ImGuiSettingsHandler*
 {
     ImGuiPerfLog* perflog = (ImGuiPerfLog*)ini_handler->UserData;
     char buf[128];
-    ImU64 timestamp;
     int visible, combine, branch_colors;
     /**/ if (sscanf(line, "DateFrom=%10s", perflog->_FilterDateFrom))               { }
     else if (sscanf(line, "DateTo=%10s", perflog->_FilterDateTo))                   { }
@@ -304,7 +298,7 @@ static void PerflogSettingsHandler_ReadLine(ImGuiContext*, ImGuiSettingsHandler*
     else if (sscanf(line, "PerBranchColors=%d", &branch_colors))                    { perflog->_PerBranchColors = !!branch_colors; }
     else if (sscanf(line, "Baseline=%llu", &perflog->_Settings.BaselineTimestamp))  { }
     else if (sscanf(line, "TestVisibility=%[^=]=%d", buf, &visible))                { perflog->_Settings.Visibility.SetBool(ImHashStr(buf), !!visible); }
-    else if (sscanf(line, "BuildVisibility=%llu=%d", &timestamp, &visible))         { perflog->_Settings.Visibility.SetBool(ImHashData(&timestamp, sizeof(timestamp)), !!visible); }
+    else if (sscanf(line, "BuildVisibility=%[^=]=%d", buf, &visible))               { perflog->_Settings.Visibility.SetBool(ImHashStr(buf), !!visible); }
 }
 
 static void PerflogSettingsHandler_ApplyAll(ImGuiContext*, ImGuiSettingsHandler* ini_handler)
@@ -328,8 +322,22 @@ static void PerflogSettingsHandler_WriteAll(ImGuiContext*, ImGuiSettingsHandler*
         buf->appendf("Baseline=%llu\n", perflog->_Legend[perflog->_BaselineBatchIndex]->Timestamp);
     for (ImGuiPerflogEntry* entry : perflog->_Labels)
         buf->appendf("TestVisibility=%s=%d\n", entry->TestName, perflog->_Settings.Visibility.GetBool(PerflogHashTestName(entry), true));
+
+    ImGuiStorage& temp_set = perflog->_TempSet;
+    temp_set.Data.clear();
     for (ImGuiPerflogEntry* entry : perflog->_Legend)
-        buf->appendf("BuildVisibility=%llu=%d\n", entry->Timestamp, perflog->_Settings.Visibility.GetBool(PerflogHashBuildInfo(entry), true));
+    {
+        const char* properties[] = { entry->GitBranchName, entry->BuildType, entry->Cpu, entry->OS, entry->Compiler };
+        for (int i = 0; i < IM_ARRAYSIZE(properties); i++)
+        {
+            ImGuiID hash = ImHashStr(properties[i]);
+            if (!temp_set.GetBool(hash))
+            {
+                temp_set.SetBool(hash, true);
+                buf->appendf("BuildVisibility=%s=%d\n", properties[i], perflog->_Settings.Visibility.GetBool(hash, true));
+            }
+        }
+    }
     buf->append("\n");
 }
 
@@ -711,8 +719,43 @@ void ImGuiPerfLog::ShowUI(ImGuiTestEngine* engine)
 
     if (ImGui::BeginPopup("Filter builds"))
     {
-        if (RenderMultiSelectFilter(this, "Filter by build info", &_Legend, PerflogHashBuildInfo, PerflogFormatBuildInfo))
-            _CalculateLegendAlignment();
+        ImGuiStorage& temp_set = _TempSet;
+        temp_set.Data.resize(0);
+
+        static const char* columns[] = { "Branch", "Build", "CPU", "OS", "Compiler" };
+        bool show_all = ImGui::Button("Show All");
+        ImGui::SameLine();
+        bool hide_all = ImGui::Button("Hide All");
+        if (ImGui::BeginTable("PerfInfo", IM_ARRAYSIZE(columns), ImGuiTableFlags_Borders | ImGuiTableFlags_SizingFixedFit))
+        {
+            for (int i = 0; i < IM_ARRAYSIZE(columns); i++)
+                ImGui::TableSetupColumn(columns[i]);
+            ImGui::TableHeadersRow();
+
+            bool visible = true;
+            for (ImGuiPerflogEntry* entry : _Legend)
+            {
+                ImGui::TableNextRow();  // FIXME: Temp, move out of the loop when appending to table column is fixed.
+                ImGuiID hash;
+                const char* properties[] = { entry->GitBranchName, entry->BuildType, entry->Cpu, entry->OS, entry->Compiler };
+                for (int i = 0; i < IM_ARRAYSIZE(properties); i++)
+                {
+                    ImGui::TableSetColumnIndex(i);
+                    hash = ImHashStr(properties[i]);
+                    if (!temp_set.GetBool(hash))
+                    {
+                        visible = _Settings.Visibility.GetBool(hash, true) || show_all;
+                        if (hide_all)
+                            visible = false;
+                        temp_set.SetBool(hash, true);
+                        if (ImGui::Checkbox(properties[i], &visible) || show_all || hide_all)
+                            _CalculateLegendAlignment();
+                        _Settings.Visibility.SetBool(hash, visible);
+                    }
+                }
+            }
+            ImGui::EndTable();
+        }
         _ClosePopupMaybe();
         ImGui::EndPopup();
     }
@@ -980,7 +1023,11 @@ ImGuiPerflogEntry* ImGuiPerfLog::GetEntryByBatchIdx(int idx, const char* perf_na
 
 bool ImGuiPerfLog::_IsVisibleBuild(ImGuiPerflogEntry* entry)
 {
-    return _Settings.Visibility.GetBool(PerflogHashBuildInfo(entry), true);
+    return _Settings.Visibility.GetBool(ImHashStr(entry->GitBranchName), true) &&
+        _Settings.Visibility.GetBool(ImHashStr(entry->Compiler), true) &&
+        _Settings.Visibility.GetBool(ImHashStr(entry->Cpu), true) &&
+        _Settings.Visibility.GetBool(ImHashStr(entry->OS), true) &&
+        _Settings.Visibility.GetBool(ImHashStr(entry->BuildType), true);
 }
 
 bool ImGuiPerfLog::_IsVisibleTest(ImGuiPerflogEntry* entry)
@@ -994,7 +1041,7 @@ void ImGuiPerfLog::_CalculateLegendAlignment()
     _AlignStress = _AlignType = _AlignOs = _AlignCompiler = _AlignBranch = 0;
     for (ImGuiPerflogEntry* entry : _Legend)
     {
-        if (!_Settings.Visibility.GetBool(PerflogHashBuildInfo(entry), true))
+        if (!_IsVisibleBuild(entry))
             continue;
         _AlignStress = ImMax(_AlignStress, (int)ceil(log10(entry->PerfStressAmount)));
         _AlignType = ImMax(_AlignType, (int)strlen(entry->BuildType));
