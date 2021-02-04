@@ -419,6 +419,8 @@ void ImGuiPerfLog::_Rebuild()
     if (_CSVData.empty())
         return;
 
+    ImGuiStorage& temp_set = _TempSet;
+    temp_set.Data.resize(0);
     _Dirty = false;
     _Data.clear();
     _InfoTableSort.clear();
@@ -427,7 +429,6 @@ void ImGuiPerfLog::_Rebuild()
     if (_CombineByBuildInfo)
     {
         // Combine similar runs by build config.
-        ImGuiStorage index;
         ImVector<int> counts;
         for (ImGuiPerflogEntry& entry : _CSVData)
         {
@@ -443,14 +444,14 @@ void ImGuiPerfLog::_Rebuild()
             build_id = ImHashStr(entry.GitBranchName, 0, build_id);
             build_id = ImHashStr(entry.TestName, 0, build_id);
 
-            int i = index.GetInt(build_id, -1);
+            int i = temp_set.GetInt(build_id, -1);
             if (i < 0)
             {
                 _Data.push_back(entry);
                 _Data.back().DtDeltaMs = 0.0;
                 counts.push_back(0);
                 i = _Data.Size - 1;
-                index.SetInt(build_id, i);
+                temp_set.SetInt(build_id, i);
                 IM_ASSERT(_Data.Size == counts.Size);
             }
 
@@ -489,13 +490,12 @@ void ImGuiPerfLog::_Rebuild()
     ImQsort(_Data.Data, _Data.Size, sizeof(ImGuiPerflogEntry), &PerflogComparerByTimestampAndTestName);
 
     // Index data for a convenient access.
-    ImGuiStorage label_index;
-    ImGuiStorage branch_index;
     int branch_index_last = 0;
     _Legend.resize(0);
     _Labels.resize(0);
     ImU64 last_timestamp = UINT64_MAX;
     int batch_size = 0;
+    temp_set.Data.resize(0);
     for (int i = 0; i < _Data.Size; i++)
     {
         ImGuiPerflogEntry* entry = &_Data[i];
@@ -507,19 +507,19 @@ void ImGuiPerfLog::_Rebuild()
         }
         batch_size++;
         ImGuiID name_id = ImHashStr(entry->TestName);
-        if (label_index.GetInt(name_id, -1) < 0)
+        if (temp_set.GetInt(name_id, -1) < 0)
         {
-            label_index.SetInt(name_id, _Labels.Size);
+            temp_set.SetInt(name_id, _Labels.Size);
             _Labels.push_back(entry);
         }
 
         // Index branches. Unique branch index is used for per-branch colors.
         ImGuiID branch_hash = ImHashStr(entry->GitBranchName);
-        int unique_branch_index = branch_index.GetInt(branch_hash, -1);
+        int unique_branch_index = temp_set.GetInt(branch_hash, -1);
         if (unique_branch_index < 0)
         {
             unique_branch_index = branch_index_last++;
-            branch_index.SetInt(branch_hash, unique_branch_index);
+            temp_set.SetInt(branch_hash, unique_branch_index);
         }
         entry->BranchIndex = unique_branch_index;
     }
