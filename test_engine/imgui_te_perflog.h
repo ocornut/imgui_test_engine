@@ -52,6 +52,7 @@ struct ImGuiPerfLog
     int                         _AlignOs = 0;
     int                         _AlignCompiler = 0;
     int                         _AlignBranch = 0;
+    int                         _AlignSamples = 0;
     ImVector<int>               _InfoTableSort;                 // _InfoTableSort[_Legend.Size]. Contains indices into _Legend vector.
     const ImGuiPerfLogColumnInfo*_InfoTableSortColInfo = NULL;  // Current Table column information.
     const ImGuiTableSortSpecs*  _InfoTableSortSpecs = NULL;     // Current table sort specs.

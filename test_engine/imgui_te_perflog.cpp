@@ -651,7 +651,7 @@ void ImGuiPerfLog::ShowUI(ImGuiTestEngine* engine)
         if (_IsVisibleBuild(entry))
             num_visible_builds++;
 
-    // Gather pointers of visible labels. ImPloit requires such array for rendering.
+    // Gather pointers of visible labels. ImPlot requires such array for rendering.
     _VisibleLabelPointers.resize(0);
     for (ImGuiPerflogEntry* entry : _Labels)
         if (_IsVisibleTest(entry))
@@ -809,6 +809,8 @@ void ImGuiPerfLog::ShowUI(ImGuiTestEngine* engine)
             display_Label.clear();
             PerflogFormatBuildInfo(this, &label, entry);
             display_Label.append(label.c_str());
+            if (_CombineByBuildInfo)
+                display_Label.appendf(Str16f(" (%%-%dd samples)", _AlignSamples).c_str(), entry->NumSamples);
             display_Label.appendf("%s###%08X", _BaselineBatchIndex == batch_index ? " *" : "", entry->Timestamp);
             GetPlotPointData data;
             data.Shift = -h * bar_index + (float) (num_visible_builds - 1) * 0.5f * h;
@@ -1038,7 +1040,7 @@ bool ImGuiPerfLog::_IsVisibleTest(ImGuiPerflogEntry* entry)
 void ImGuiPerfLog::_CalculateLegendAlignment()
 {
     // Estimate paddings for legend format so it looks nice and aligned.
-    _AlignStress = _AlignType = _AlignOs = _AlignCompiler = _AlignBranch = 0;
+    _AlignStress = _AlignType = _AlignOs = _AlignCompiler = _AlignBranch = _AlignSamples = 0;
     for (ImGuiPerflogEntry* entry : _Legend)
     {
         if (!_IsVisibleBuild(entry))
@@ -1048,6 +1050,7 @@ void ImGuiPerfLog::_CalculateLegendAlignment()
         _AlignOs = ImMax(_AlignOs, (int)strlen(entry->OS));
         _AlignCompiler = ImMax(_AlignCompiler, (int)strlen(entry->Compiler));
         _AlignBranch = ImMax(_AlignBranch, (int)strlen(entry->GitBranchName));
+        _AlignSamples = ImMax(_AlignSamples, (int)Str16f("%d", entry->NumSamples).length());
     }
 }
 
