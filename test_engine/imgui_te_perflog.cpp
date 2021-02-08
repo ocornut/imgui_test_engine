@@ -341,6 +341,26 @@ static void PerflogSettingsHandler_WriteAll(ImGuiContext*, ImGuiSettingsHandler*
     buf->append("\n");
 }
 
+// Copied from ImPlot::BeginPlot().
+static ImRect ImPlotGetYTickRect(int t, int y = 0)
+{
+    ImPlotContext& gp = *GImPlot;
+    ImPlotPlot& plot = *gp.CurrentPlot;
+    ImDrawList& DrawList = *ImGui::GetCurrentWindow()->DrawList;
+    ImRect result(1.0f, 1.0f, -1.0f, -1.0f);
+    if (gp.Y[y].Present && !ImHasFlag(plot.YAxis[y].Flags, ImPlotAxisFlags_NoTickLabels))
+    {
+        const float x_start = gp.YAxisReference[y] + (y == 0 ? (-gp.Style.LabelPadding.x - gp.YTicks[y].Ticks[t].LabelSize.x) : gp.Style.LabelPadding.x);
+        ImPlotTick *yt = &gp.YTicks[y].Ticks[t];
+        if (yt->ShowLabel && yt->PixelPos >= gp.BB_Plot.Min.y - 1 && yt->PixelPos <= gp.BB_Plot.Max.y + 1)
+        {
+            result.Min = ImVec2(x_start, yt->PixelPos - 0.5f * yt->LabelSize.y);
+            result.Max = result.Min + ImGui::CalcTextSize(gp.YTicks[y].GetText(t));
+        }
+    }
+    return result;
+}
+
 ImGuiPerfLog::ImGuiPerfLog()
 {
     ImGuiContext& g = *GImGui;
@@ -531,7 +551,6 @@ void ImGuiPerfLog::_Rebuild()
         }
         entry->BranchIndex = unique_branch_index;
     }
-    _SelectedTest = ImClamp(_SelectedTest, 0, _Labels.Size - 1);
     _BaselineBatchIndex = ImClamp(_BaselineBatchIndex, 0, _Legend.Size - 1);
 
     // Recalculate entry time difference vs baseline
@@ -781,6 +800,7 @@ void ImGuiPerfLog::ShowUI(ImGuiTestEngine* engine)
     // -----------------------------------------------------------------------------------------------------------------
     // Render a plot
     // -----------------------------------------------------------------------------------------------------------------
+    int scroll_to_test = -1;
     if (ImGui::BeginChild(ImGui::GetID("plot"), ImVec2(0, plot_height)))
     {
         // A workaround for ImPlot requiring at least two labels.
@@ -793,10 +813,26 @@ void ImGuiPerfLog::ShowUI(ImGuiTestEngine* engine)
         if (!ImPlot::BeginPlot("Perflog", "Delta milliseconds", "Test", ImVec2(-1, -1)))
             return;
 
+        // Clickable test names
+        for (int t = 0; t < _VisibleLabelPointers.Size; t++)
+        {
+            ImRect label_rect = ImPlotGetYTickRect(t);
+            if (label_rect.IsInverted())
+                continue;
+
+            if (label_rect.Contains(g.IO.MousePos))
+            {
+                ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
+                g.CurrentWindow->DrawList->AddLine(ImFloor(label_rect.GetBL()), ImFloor(label_rect.GetBR()), ImColor(g.Style.Colors[ImGuiCol_Text]));
+                if (ImGui::IsMouseClicked(ImGuiMouseButton_Left))
+                    scroll_to_test = t;
+            }
+        }
+
+        // Plot bars
         const float occupy_h = 0.8f;
         const float h = occupy_h / num_visible_builds;
 
-        // Plot bars
         int bar_index = 0;
         for (ImGuiPerflogEntry*& entry : _Legend)
         {
@@ -865,36 +901,25 @@ void ImGuiPerfLog::ShowUI(ImGuiTestEngine* engine)
     // -----------------------------------------------------------------------------------------------------------------
     if (ImGui::BeginChild(ImGui::GetID("info-table"), ImVec2(0, _InfoTableHeight)))
     {
-        ImGui::AlignTextToFramePadding();
-        ImGui::Text("Test:");
-        ImGui::SameLine();
-        if (ImGui::Button(Str128f("%s###SelectTest", _SelectedTest < _Labels.Size ? _Labels[_SelectedTest]->TestName : "").c_str()))
-            ImGui::OpenPopup("Select Test");
-        if (ImGui::BeginPopup("Select Test"))
-        {
-            RenderSingleSelectFilter(this, "Filter Tests", &_Labels, &_SelectedTest, PerflogFormatTestName);
-            _ClosePopupMaybe();
-            ImGui::EndPopup();
-        }
-
         static const ImGuiPerfLogColumnInfo columns_combined[] = {
-            { /* 00 */ "Branch", IM_OFFSETOF(ImGuiPerflogEntry, GitBranchName), ImGuiDataType_COUNT },
-            { /* 01 */ "Compiler", IM_OFFSETOF(ImGuiPerflogEntry, Compiler), ImGuiDataType_COUNT },
-            { /* 02 */ "OS", IM_OFFSETOF(ImGuiPerflogEntry, OS), ImGuiDataType_COUNT },
-            { /* 03 */ "CPU", IM_OFFSETOF(ImGuiPerflogEntry, Cpu), ImGuiDataType_COUNT },
-            { /* 04 */ "Build", IM_OFFSETOF(ImGuiPerflogEntry, BuildType), ImGuiDataType_COUNT },
-            { /* 05 */ "Stress", IM_OFFSETOF(ImGuiPerflogEntry, PerfStressAmount), ImGuiDataType_S32 },
-            { /* 06 */ "Avg ms", IM_OFFSETOF(ImGuiPerflogEntry, DtDeltaMs), ImGuiDataType_Double },
-            { /* 07 */ "Min ms", IM_OFFSETOF(ImGuiPerflogEntry, DtDeltaMsMin), ImGuiDataType_Double },
-            { /* 08 */ "Max ms", IM_OFFSETOF(ImGuiPerflogEntry, DtDeltaMsMax), ImGuiDataType_Double },
-            { /* 09 */ "Num samples", IM_OFFSETOF(ImGuiPerflogEntry, NumSamples), ImGuiDataType_S32 },
-            { /* 10 */ "VS Baseline", IM_OFFSETOF(ImGuiPerflogEntry, VsBaseline), ImGuiDataType_Float },
+            { /* 00 */ "Test Name", IM_OFFSETOF(ImGuiPerflogEntry, TestName), ImGuiDataType_COUNT },
+            { /* 01 */ "Branch", IM_OFFSETOF(ImGuiPerflogEntry, GitBranchName), ImGuiDataType_COUNT },
+            { /* 02 */ "Compiler", IM_OFFSETOF(ImGuiPerflogEntry, Compiler), ImGuiDataType_COUNT },
+            { /* 03 */ "OS", IM_OFFSETOF(ImGuiPerflogEntry, OS), ImGuiDataType_COUNT },
+            { /* 04 */ "CPU", IM_OFFSETOF(ImGuiPerflogEntry, Cpu), ImGuiDataType_COUNT },
+            { /* 05 */ "Build", IM_OFFSETOF(ImGuiPerflogEntry, BuildType), ImGuiDataType_COUNT },
+            { /* 06 */ "Stress", IM_OFFSETOF(ImGuiPerflogEntry, PerfStressAmount), ImGuiDataType_S32 },
+            { /* 07 */ "Avg ms", IM_OFFSETOF(ImGuiPerflogEntry, DtDeltaMs), ImGuiDataType_Double },
+            { /* 08 */ "Min ms", IM_OFFSETOF(ImGuiPerflogEntry, DtDeltaMsMin), ImGuiDataType_Double },
+            { /* 09 */ "Max ms", IM_OFFSETOF(ImGuiPerflogEntry, DtDeltaMsMax), ImGuiDataType_Double },
+            { /* 10 */ "Num samples", IM_OFFSETOF(ImGuiPerflogEntry, NumSamples), ImGuiDataType_S32 },
+            { /* 11 */ "VS Baseline", IM_OFFSETOF(ImGuiPerflogEntry, VsBaseline), ImGuiDataType_Float },
         };
         // Same as above, except we skip "Min ms", "Max ms" and "Num samples".
         static const ImGuiPerfLogColumnInfo columns_separate[] =
         {
             columns_combined[0], columns_combined[1], columns_combined[2], columns_combined[3], columns_combined[4],
-            columns_combined[5], columns_combined[6], columns_combined[10],
+            columns_combined[5], columns_combined[6], columns_combined[7], columns_combined[11],
         };
         const ImGuiPerfLogColumnInfo* columns = _CombineByBuildInfo ? columns_combined : columns_separate;
         int columns_num = _CombineByBuildInfo ? IM_ARRAYSIZE(columns_combined) : IM_ARRAYSIZE(columns_separate);
@@ -903,7 +928,6 @@ void ImGuiPerfLog::ShowUI(ImGuiTestEngine* engine)
 
         for (int i = 0; i < columns_num; i++)
             ImGui::TableSetupColumn(columns[i].Title);
-        ImGui::TableHeadersRow();
 
         if (ImGuiTableSortSpecs* sorts_specs = ImGui::TableGetSortSpecs())
             if (sorts_specs->SpecsDirty || _InfoTableSort.empty())
@@ -925,57 +949,65 @@ void ImGuiPerfLog::ShowUI(ImGuiTestEngine* engine)
                 }
             }
 
-        for (int batch_index = 0; batch_index < _Legend.Size; batch_index++)
+        for (int label_index = 0; label_index < _Labels.Size; label_index++)
         {
-            ImGuiPerflogEntry* entry = GetEntryByBatchIdx(_InfoTableSort[batch_index], _Labels[_SelectedTest]->TestName);
-            if (entry == NULL || !_IsVisibleBuild(entry))
-                continue;
-
-            ImGui::TableNextRow();
-
-            // Build info
-            ImGui::TableNextColumn();
-            ImGui::TextUnformatted(entry->GitBranchName);
-            ImGui::TableNextColumn();
-            ImGui::TextUnformatted(entry->Compiler);
-            ImGui::TableNextColumn();
-            ImGui::TextUnformatted(entry->OS);
-            ImGui::TableNextColumn();
-            ImGui::TextUnformatted(entry->Cpu);
-            ImGui::TableNextColumn();
-            ImGui::TextUnformatted(entry->BuildType);
-            ImGui::TableNextColumn();
-            ImGui::Text("x%d", entry->PerfStressAmount);
-
-            // Avg ms
-            ImGui::TableNextColumn();
-            ImGui::Text("%.3lfms", entry->DtDeltaMs);
-
-            if (_CombineByBuildInfo)
+            ImGui::TableHeadersRow();
+            if (scroll_to_test == label_index)
+                ImGui::SetScrollHereY();
+            for (int batch_index = 0; batch_index < _Legend.Size; batch_index++)
             {
-                // Min ms
-                ImGui::TableNextColumn();
-                ImGui::Text("%.3lfms", entry->DtDeltaMsMin);
+                ImGuiPerflogEntry* entry = GetEntryByBatchIdx(_InfoTableSort[batch_index], _Labels[label_index]->TestName);
+                if (entry == NULL || !_IsVisibleBuild(entry))
+                    continue;
 
-                // Max ms
-                ImGui::TableNextColumn();
-                ImGui::Text("%.3lfms", entry->DtDeltaMsMax);
+                ImGui::TableNextRow();
 
-                // Num samples
+                // Build info
                 ImGui::TableNextColumn();
-                ImGui::Text("%d", entry->NumSamples);
+                ImGui::TextUnformatted(entry->TestName);
+                ImGui::TableNextColumn();
+                ImGui::TextUnformatted(entry->GitBranchName);
+                ImGui::TableNextColumn();
+                ImGui::TextUnformatted(entry->Compiler);
+                ImGui::TableNextColumn();
+                ImGui::TextUnformatted(entry->OS);
+                ImGui::TableNextColumn();
+                ImGui::TextUnformatted(entry->Cpu);
+                ImGui::TableNextColumn();
+                ImGui::TextUnformatted(entry->BuildType);
+                ImGui::TableNextColumn();
+                ImGui::Text("x%d", entry->PerfStressAmount);
+
+                // Avg ms
+                ImGui::TableNextColumn();
+                ImGui::Text("%.3lfms", entry->DtDeltaMs);
+
+                if (_CombineByBuildInfo)
+                {
+                    // Min ms
+                    ImGui::TableNextColumn();
+                    ImGui::Text("%.3lfms", entry->DtDeltaMsMin);
+
+                    // Max ms
+                    ImGui::TableNextColumn();
+                    ImGui::Text("%.3lfms", entry->DtDeltaMsMax);
+
+                    // Num samples
+                    ImGui::TableNextColumn();
+                    ImGui::Text("%d", entry->NumSamples);
+                }
+
+                // VS Baseline
+                ImGui::TableNextColumn();
+                if (entry->VsBaseline == -1.0f)
+                    ImGui::TextUnformatted("baseline");
+                else if (entry->VsBaseline == +FLT_MAX)
+                    ImGui::TextUnformatted("--");
+                else if (ImAbs(entry->VsBaseline) > 0.001f)
+                    ImGui::Text("%+.2lf%% (%s)", entry->VsBaseline, entry->VsBaseline < 0.0f ? "faster" : "slower");
+                else
+                    ImGui::TextUnformatted("==");
             }
-
-            // VS Baseline
-            ImGui::TableNextColumn();
-            if (entry->VsBaseline == -1.0f)
-                ImGui::TextUnformatted("baseline");
-            else if (entry->VsBaseline == +FLT_MAX)
-                ImGui::TextUnformatted("--");
-            else if (ImAbs(entry->VsBaseline) > 0.001f)
-                ImGui::Text("%+.2lf%% (%s)", entry->VsBaseline, entry->VsBaseline < 0.0f ? "faster" : "slower");
-            else
-                ImGui::TextUnformatted("==");
         }
         ImGui::EndTable();
     }

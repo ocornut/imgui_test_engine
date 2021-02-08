@@ -40,7 +40,6 @@ struct ImGuiPerfLog
     bool                        _CombineByBuildInfo = true;     // Entries with same build information will be averaged.
     bool                        _PerBranchColors = true;        // Use one bar color per branch.
     int                         _BaselineBatchIndex = 0;        // Index of baseline build.
-    int                         _SelectedTest = 0;
     Str64                       _Filter;                        // Context menu filtering substring.
     float                       _FilterInputWidth = -1;
     char                        _FilterDateFrom[11];
