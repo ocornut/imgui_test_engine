@@ -23,7 +23,7 @@ struct ImGuiPerflogEntry
     const char*                 OS = NULL;                      //
     const char*                 Compiler = NULL;                //
     const char*                 Date = NULL;                    //
-    float                       VsBaseline = 0.0f;              // Percent difference vs baseline.
+    double                      VsBaseline = 0.0;               // Percent difference vs baseline.
     int                         BranchIndex = 0;                // Unique linear branch index.
 };
 
@@ -52,6 +52,7 @@ struct ImGuiPerfLog
     int                         _AlignCompiler = 0;
     int                         _AlignBranch = 0;
     int                         _AlignSamples = 0;
+    bool                        _InfoTableSortDirty = false;
     ImVector<int>               _InfoTableSort;                 // _InfoTableSort[_Legend.Size]. Contains indices into _Legend vector.
     const ImGuiPerfLogColumnInfo*_InfoTableSortColInfo = NULL;  // Current Table column information.
     const ImGuiTableSortSpecs*  _InfoTableSortSpecs = NULL;     // Current table sort specs.

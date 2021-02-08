@@ -255,27 +255,6 @@ static bool RenderMultiSelectFilter(ImGuiPerfLog* perf, const char* filter_hint,
     return modified;
 }
 
-static bool RenderSingleSelectFilter(ImGuiPerfLog* perf, const char* filter_hint, ImVector<ImGuiPerflogEntry*>* entries, int* index, FormatEntryLabelFn format)
-{
-    Str256f buf("");
-    int prev_index = *index;
-    RenderFilterInput(perf, filter_hint);
-    for (ImGuiPerflogEntry*& entry : *entries)
-    {
-        buf.clear();
-        format(perf, &buf, entry);
-        if (strstr(buf.c_str(), perf->_Filter.c_str()) == NULL)   // Filter out entries not matching a filter query
-            continue;
-
-        int current_index = entries->index_from_ptr(&entry);
-        bool is_selected = current_index == *index;
-        if (ImGui::MenuItem(buf.c_str(), NULL, &is_selected) && is_selected)
-            *index = current_index;
-    }
-
-    return prev_index != *index;
-}
-
 static void PerflogSettingsHandler_ClearAll(ImGuiContext*, ImGuiSettingsHandler* ini_handler)
 {
     ImGuiPerfLog* perflog = (ImGuiPerfLog*)ini_handler->UserData;
@@ -346,7 +325,6 @@ static ImRect ImPlotGetYTickRect(int t, int y = 0)
 {
     ImPlotContext& gp = *GImPlot;
     ImPlotPlot& plot = *gp.CurrentPlot;
-    ImDrawList& DrawList = *ImGui::GetCurrentWindow()->DrawList;
     ImRect result(1.0f, 1.0f, -1.0f, -1.0f);
     if (gp.Y[y].Present && !ImHasFlag(plot.YAxis[y].Flags, ImPlotAxisFlags_NoTickLabels))
     {
@@ -452,6 +430,7 @@ void ImGuiPerfLog::_Rebuild()
     _Dirty = false;
     _Data.clear();
     _InfoTableSort.clear();
+    _InfoTableSortDirty = true;
 
     // FIXME: What if entries have a varying timestep?
     if (_CombineByBuildInfo)
@@ -552,29 +531,6 @@ void ImGuiPerfLog::_Rebuild()
         entry->BranchIndex = unique_branch_index;
     }
     _BaselineBatchIndex = ImClamp(_BaselineBatchIndex, 0, _Legend.Size - 1);
-
-    // Recalculate entry time difference vs baseline
-    for (int test_index = 0; test_index < _Labels.Size; test_index++)
-    {
-        ImGuiPerflogEntry* baseline_entry = GetEntryByBatchIdx(_BaselineBatchIndex, _Labels[test_index]->TestName);
-        for (int batch_index = 0; batch_index < _Legend.Size; batch_index++)
-        {
-            ImGuiPerflogEntry* entry = GetEntryByBatchIdx(batch_index, _Labels[test_index]->TestName);
-            if (entry == NULL)
-                continue;
-            if (baseline_entry == NULL)
-                entry->VsBaseline = -2.0f;
-            else if (entry == baseline_entry)
-                entry->VsBaseline = -1.0f;
-            else
-            {
-                double percent_vs_first = 100.0 / baseline_entry->DtDeltaMs * entry->DtDeltaMs;
-                double dt_change = -(100.0 - percent_vs_first);
-                entry->VsBaseline = (float)dt_change;
-            }
-        }
-    }
-
     _CalculateLegendAlignment();
 }
 
@@ -926,14 +882,16 @@ void ImGuiPerfLog::ShowUI(ImGuiTestEngine* engine)
         if (!ImGui::BeginTable("PerfInfo", columns_num, ImGuiTableFlags_Borders | ImGuiTableFlags_Sortable | ImGuiTableFlags_SortMulti | ImGuiTableFlags_SortTristate | ImGuiTableFlags_SizingFixedFit))
             return;
 
+        // Test name column is not sorted because we do sorting only within perf runs of a particular tests, so as far
+        // as sorting function is concerned all items in first column are identical.
         for (int i = 0; i < columns_num; i++)
-            ImGui::TableSetupColumn(columns[i].Title);
+            ImGui::TableSetupColumn(columns[i].Title, i ? 0 : ImGuiTableColumnFlags_NoSort);
 
         if (ImGuiTableSortSpecs* sorts_specs = ImGui::TableGetSortSpecs())
-            if (sorts_specs->SpecsDirty || _InfoTableSort.empty())
+            if (sorts_specs->SpecsDirty || _InfoTableSortDirty)
             {
                 // Fill sort table with unsorted indices.
-                sorts_specs->SpecsDirty = false;
+                sorts_specs->SpecsDirty = _InfoTableSortDirty = false;
                 _InfoTableSort.resize(0);
                 for (int i = 0; i < _Legend.Size; i++)
                     _InfoTableSort.push_back(i);
@@ -999,14 +957,29 @@ void ImGuiPerfLog::ShowUI(ImGuiTestEngine* engine)
 
                 // VS Baseline
                 ImGui::TableNextColumn();
-                if (entry->VsBaseline == -1.0f)
-                    ImGui::TextUnformatted("baseline");
-                else if (entry->VsBaseline == +FLT_MAX)
+                ImGuiPerflogEntry* baseline_entry = GetEntryByBatchIdx(_BaselineBatchIndex, _Labels[label_index]->TestName);
+                if (baseline_entry == NULL)
+                {
                     ImGui::TextUnformatted("--");
-                else if (ImAbs(entry->VsBaseline) > 0.001f)
-                    ImGui::Text("%+.2lf%% (%s)", entry->VsBaseline, entry->VsBaseline < 0.0f ? "faster" : "slower");
+                }
+                else if (entry == baseline_entry)
+                {
+                    ImGui::TextUnformatted("baseline");
+                }
                 else
-                    ImGui::TextUnformatted("==");
+                {
+                    double percent_vs_first = 100.0 / baseline_entry->DtDeltaMs * entry->DtDeltaMs;
+                    double dt_change = -(100.0 - percent_vs_first);
+                    if (ImAbs(dt_change) > 0.001f)
+                        ImGui::Text("%+.2lf%% (%s)", dt_change, dt_change < 0.0f ? "faster" : "slower");
+                    else
+                        ImGui::TextUnformatted("==");
+                    if (dt_change != entry->VsBaseline)
+                    {
+                        entry->VsBaseline = dt_change;
+                        _InfoTableSortDirty = true;             // Force re-sorting.
+                    }
+                }
             }
         }
         ImGui::EndTable();
