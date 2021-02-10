@@ -156,15 +156,8 @@ static void HideOtherWindows(const ImGuiCaptureArgs* args)
 
 static ImRect GetMainViewportRect()
 {
-    ImGuiContext& g = *GImGui;
-#ifdef IMGUI_HAS_VIEWPORT
-    if (g.IO.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
-    {
-        ImGuiViewport* main_viewport = ImGui::GetMainViewport();
-        return ImRect(main_viewport->Pos, main_viewport->Pos + main_viewport->Size);
-    }
-#endif
-    return ImRect(ImVec2(0, 0), g.IO.DisplaySize);
+    ImGuiViewport* viewport = ImGui::GetMainViewport();
+    return ImRect(viewport->Pos, viewport->Pos + viewport->Size);
 }
 
 void ImGuiCaptureContext::PostNewFrame()

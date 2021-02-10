@@ -428,20 +428,12 @@ ImGuiTestRef ImGuiTestContext::GetFocusWindowRef()
 
 ImVec2 ImGuiTestContext::GetMainViewportPos()
 {
-#ifdef IMGUI_HAS_VIEWPORT
     return ImGui::GetMainViewport()->Pos;
-#else
-    return ImVec2(0, 0);
-#endif
 }
 
 ImVec2 ImGuiTestContext::GetMainViewportSize()
 {
-#ifdef IMGUI_HAS_VIEWPORT
     return ImGui::GetMainViewport()->Size;
-#else
-    return ImGui::GetIO().DisplaySize;
-#endif
 }
 
 void ImGuiTestContext::CaptureInitArgs(ImGuiCaptureArgs* args, int flags)
