@@ -658,11 +658,11 @@ void RegisterTests_Perf(ImGuiTestEngine* e)
         for (int n = 0; n < loop_count; n++)
         {
             ImGui::PushID(n);
-            if (ImGui::ListBoxHeader("ListBox", ImVec2(0, ImGui::GetFrameHeightWithSpacing() * 2)))
+            if (ImGui::BeginListBox("ListBox", ImVec2(0, ImGui::GetFrameHeightWithSpacing() * 2)))
             {
                 ImGui::MenuItem("Hello");
                 ImGui::MenuItem("World");
-                ImGui::ListBoxFooter();
+                ImGui::EndListBox();
             }
             ImGui::PopID();
         }
