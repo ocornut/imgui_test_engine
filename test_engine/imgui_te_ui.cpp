@@ -237,6 +237,7 @@ static void ShowTestGroup(ImGuiTestEngine* e, ImGuiTestGroup group, ImGuiTextFil
                 break;
             case ImGuiTestStatus_Queued:
             case ImGuiTestStatus_Running:
+            case ImGuiTestStatus_Suspended:
                 if (test_context && (test_context->RunFlags & ImGuiTestRunFlags_GuiFuncOnly))
                     status_color = ImVec4(0.8f, 0.0f, 0.8f, 1.0f);
                 else
@@ -250,15 +251,23 @@ static void ShowTestGroup(ImGuiTestEngine* e, ImGuiTestGroup group, ImGuiTextFil
             ImVec2 p = ImGui::GetCursorScreenPos();
             ImGui::ColorButton("status", status_color, ImGuiColorEditFlags_NoTooltip);
             ImGui::SameLine();
-            if (test->Status == ImGuiTestStatus_Running)
+            if (test->Status == ImGuiTestStatus_Running || test->Status == ImGuiTestStatus_Suspended)
                 ImGui::RenderText(p + style.FramePadding + ImVec2(0, 0), &"|\0/\0-\0\\"[(((ImGui::GetFrameCount() / 5) & 3) << 1)], NULL);
 
             bool queue_test = false;
             bool queue_gui_func_toggle = false;
             bool select_test = false;
 
-            if (ImGui::Button("Run"))
-                queue_test = select_test = true;
+            if (test->Status == ImGuiTestStatus_Suspended)
+            {
+                if (ImGui::Button("Con###Run"))
+                    test->Status = ImGuiTestStatus_Running;
+            }
+            else
+            {
+                if (ImGui::Button("Run###Run"))
+                   queue_test = select_test = true;
+            }
             ImGui::SameLine();
 
             Str128f buf("%-*s - %s", 10, test->Category, test->Name);

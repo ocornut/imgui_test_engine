@@ -55,6 +55,7 @@ enum ImGuiTestStatus
     ImGuiTestStatus_Queued      = 1,
     ImGuiTestStatus_Running     = 2,
     ImGuiTestStatus_Error       = 3,
+    ImGuiTestStatus_Suspended   = 4,
 };
 
 enum ImGuiTestGroup

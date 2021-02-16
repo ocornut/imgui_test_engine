@@ -280,16 +280,17 @@ void    ImGuiTestContext::Sleep(float time)
 // Return true to request aborting TestFunc
 bool    ImGuiTestContext::DebugHaltTestFunc(const char* file, int line)
 {
-    IM_UNUSED(file);
-    IM_UNUSED(line);
+    if (IsError())
+        return false;
 
     file = ImPathFindFilename(file);
     LogError("DebugHaltTestFunc at %s:%d", file, line);
     RunFlags |= ImGuiTestRunFlags_GuiFuncOnly;
-    while (!Abort)
+    Test->Status = ImGuiTestStatus_Suspended;
+    while (Test->Status == ImGuiTestStatus_Suspended && !Abort)
         Yield();
-
-    return true;
+    Test->Status = ImGuiTestStatus_Running;
+    return Abort;   // Terminate TestFunc on abort, continue otherwise.
 }
 
 // Sleep for a given clock time from the point of view of the imgui context, without affecting wall clock time of the running application.
