@@ -285,12 +285,24 @@ bool    ImGuiTestContext::DebugHaltTestFunc(const char* file, int line)
 
     file = ImPathFindFilename(file);
     LogError("DebugHaltTestFunc at %s:%d", file, line);
+
+    // Save relevant state.
+    // FIXME-TESTS: Saving/restoring window z-order could be desirable.
+    ImVec2 mouse_pos = Inputs->MousePosValue;
+    ImGuiTestRunFlags run_flags = RunFlags;
+
     RunFlags |= ImGuiTestRunFlags_GuiFuncOnly;
     Test->Status = ImGuiTestStatus_Suspended;
     while (Test->Status == ImGuiTestStatus_Suspended && !Abort)
         Yield();
     Test->Status = ImGuiTestStatus_Running;
-    return Abort;   // Terminate TestFunc on abort, continue otherwise.
+
+    // Restore relevant state.
+    RunFlags = run_flags;
+    Inputs->MousePosValue = mouse_pos;
+
+    // Terminate TestFunc on abort, continue otherwise.
+    return Abort;
 }
 
 // Sleep for a given clock time from the point of view of the imgui context, without affecting wall clock time of the running application.
