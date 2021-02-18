@@ -779,7 +779,7 @@ void RegisterTests_Perf(ImGuiTestEngine* e)
             ImGui::SliderFloat("Line width", &line_width, 1.0f, 10.0f);
             ImGui::SliderFloat("Radius", &radius, 1.0f, max_radius);
 			ImGui::SliderInt("Segments", &segment_count_manual, 1, 512);
-			ImGui::DragFloat("Circle segment Max Error", &ImGui::GetStyle().CircleSegmentMaxError, 0.01f, 0.1f, 10.0f, "%.2f");
+			ImGui::DragFloat("Circle Max Error", &ImGui::GetStyle().CircleTessellationMaxError, 0.005f, 0.1f, 5.0f, "%.2f");
 			ImGui::Checkbox("No anti-aliasing", &no_aa);
 			ImGui::SameLine();
 			ImGui::Checkbox("Overdraw", &overdraw);
@@ -807,7 +807,7 @@ void RegisterTests_Perf(ImGuiTestEngine* e)
 			// Draw the first <n> radius/segment size pairs in a quasi-logarithmic down the side
 			for (int pair_rad = 1, step = 1; pair_rad <= 512; pair_rad += step)
 			{
-                int segment_count = IM_DRAWLIST_CIRCLE_AUTO_SEGMENT_CALC(pair_rad, draw_list->_Data->CircleSegmentMaxError);
+                int segment_count = IM_DRAWLIST_CIRCLE_AUTO_SEGMENT_CALC((float)pair_rad, draw_list->_Data->CircleSegmentMaxError);
 				ImGui::TextColored((pair_rad == (int)radius) ? color_bg : color_fg, "Rad %d = %d segs", pair_rad, segment_count);
 				if ((pair_rad >= 16) && ((pair_rad & (pair_rad - 1)) == 0))
 					step *= 2;
