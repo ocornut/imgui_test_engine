@@ -325,6 +325,7 @@ void                ImGuiTestEngine_Start(ImGuiTestEngine* engine);
 void                ImGuiTestEngine_Stop(ImGuiTestEngine* engine);
 void                ImGuiTestEngine_PostSwap(ImGuiTestEngine* engine);              // Call every frame after framebuffer swap, will process screen capture.
 ImGuiTestEngineIO&  ImGuiTestEngine_GetIO(ImGuiTestEngine* engine);
+void                ImGuiTestEngine_RebootUiContext(ImGuiTestEngine* engine);
 
 // Functions: Main
 ImGuiTest*          ImGuiTestEngine_RegisterTest(ImGuiTestEngine* engine, const char* category, const char* name, const char* src_file = NULL, int src_line = 0);

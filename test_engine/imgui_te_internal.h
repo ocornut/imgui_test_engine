@@ -127,6 +127,7 @@ struct ImGuiTestEngine
     ImMovingAverage<double>     PerfDeltaTime2000;
 
     // Tools
+    bool                        ToolDebugRebootUiContext = false;   // Completely shutdown and recreate the dear imgui context in place
     bool                        ToolSlowDown = false;
     int                         ToolSlowDownMs = 100;
     ImGuiStackTool              StackTool;

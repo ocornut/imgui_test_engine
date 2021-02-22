@@ -154,6 +154,11 @@ static void    ImGuiTestEngine_UnbindImGuiContext(ImGuiTestEngine* engine, ImGui
 {
     IM_ASSERT(engine->UiContextTarget == ui_ctx);
 
+    // FIXME: Could use ImGui::RemoveContextHook() if we stored our hook ids
+    for (int hook_n = 0; hook_n < ui_ctx->Hooks.Size; hook_n++)
+        if (ui_ctx->Hooks[hook_n].UserData == engine)
+            ImGui::RemoveContextHook(ui_ctx, ui_ctx->Hooks[hook_n].HookId);
+
     ImGuiTestEngine_CoroutineStopAndJoin(engine);
 
 #if IMGUI_VERSION_NUM >= 17701
@@ -247,6 +252,63 @@ void    ImGuiTestEngine_Stop(ImGuiTestEngine* engine)
 
     ImGuiTestEngine_CoroutineStopAndJoin(engine);
     engine->Started = false;
+}
+
+// [EXPERIMENTAL] Destroy and recreate ImGui context
+// This potentially allow us to test issues related to handling new windows, restoring settings etc.
+// This also gets us once inch closer to more dynamic management of context (e.g. jail tests in their own context)
+// FIXME: This is currently called by ImGuiTestEngine_PreNewFrame() in hook but may end up needing to be called
+// by main application loop in order to facilitate letting app know of the new pointers. For now none of our backends
+// preserve the pointer so may be fine.
+void    ImGuiTestEngine_RebootUiContext(ImGuiTestEngine* engine)
+{
+    IM_ASSERT(engine->Started);
+    ImGuiContext* ctx = engine->UiContextTarget;
+    ImGuiTestEngine_Stop(engine);
+    ImGuiTestEngine_UnbindImGuiContext(engine, ctx);
+
+    // Backup
+    bool backup_atlas_owned_by_context = ctx->FontAtlasOwnedByContext;
+    ImFontAtlas* backup_atlas = ctx->IO.Fonts;
+    ImGuiIO backup_io = ctx->IO;
+#ifdef IMGUI_HAS_VIEWPORT
+    // FIXME: Break with multi-viewports as we don't preserve user windowing data properly.
+    // Backend tend to store e.g. HWND data in viewport 0.
+    if (ctx->IO.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
+        IM_ASSERT(0);
+    //ImGuiViewport backup_viewport0 = *(ImGuiViewport*)ctx->Viewports[0];
+    //ImGuiPlatformIO backup_platform_io = ctx->PlatformIO;
+    //ImGui::DestroyPlatformWindows();
+#endif
+
+    // Recreate
+    ctx->FontAtlasOwnedByContext = false;
+#if 1
+    ImGui::DestroyContext();
+    ImGui::CreateContext(backup_atlas);
+#else
+    // Preserve same context pointer, which is probably misleading and not even necessary.
+    ImGui::Shutdown(ctx);
+    ctx->~ImGuiContext();
+    IM_PLACEMENT_NEW(ctx) ImGuiContext(backup_atlas);
+    ImGui::Initialize(ctx);
+#endif
+
+    // Restore
+    ctx->FontAtlasOwnedByContext = backup_atlas_owned_by_context;
+    ctx->IO = backup_io;
+#ifdef IMGUI_HAS_VIEWPORT
+    //backup_platform_io.Viewports.swap(ctx->PlatformIO.Viewports);
+    //ctx->PlatformIO = backup_platform_io;
+    //ctx->Viewports[0]->RendererUserData = backup_viewport0.RendererUserData;
+    //ctx->Viewports[0]->PlatformUserData = backup_viewport0.PlatformUserData;
+    //ctx->Viewports[0]->PlatformHandle = backup_viewport0.PlatformHandle;
+    //ctx->Viewports[0]->PlatformHandleRaw = backup_viewport0.PlatformHandleRaw;
+    //memset(&backup_viewport0, 0, sizeof(backup_viewport0));
+#endif
+
+    ImGuiTestEngine_BindImGuiContext(engine, ctx);
+    ImGuiTestEngine_Start(engine);
 }
 
 void    ImGuiTestEngine_PostSwap(ImGuiTestEngine* engine)
@@ -518,6 +580,13 @@ static void ImGuiTestEngine_PreNewFrame(ImGuiTestEngine* engine, ImGuiContext* u
         return;
     IM_ASSERT(ui_ctx == GImGui);
     ImGuiContext& g = *ui_ctx;
+
+    if (engine->ToolDebugRebootUiContext)
+    {
+        ImGuiTestEngine_RebootUiContext(engine);
+        ui_ctx = engine->UiContextTarget;
+        engine->ToolDebugRebootUiContext = false;
+    }
 
     // Inject extra time into the imgui context
     if (engine->OverrideDeltaTime >= 0.0f)
