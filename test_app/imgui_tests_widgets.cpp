@@ -450,7 +450,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
 
     // ## Test Sliders and Drags clamping values
     t = IM_REGISTER_TEST(e, "widgets", "widgets_drag_slider_clamping");
-    struct ImGuiDragSliderVars { float DragValue = 0.0f; float DragMin = 0.0f; float DragMax = 1.0f; float SliderValue = 0.0f; float SliderMin = 0.0f; float SliderMax = 0.0f; ImGuiSliderFlags Flags = ImGuiSliderFlags_None; };
+    struct ImGuiDragSliderVars { float DragValue = 0.0f; float DragMin = 0.0f; float DragMax = 1.0f; float SliderValue = 0.0f; float SliderMin = 0.0f; float SliderMax = 0.0f; float ScalarValue = 0.0f; void* ScalarMinP = NULL; void* ScalarMaxP = NULL; ImGuiSliderFlags Flags = ImGuiSliderFlags_None; };
     t->SetUserDataType<ImGuiDragSliderVars>();
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
@@ -459,6 +459,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         const char* format = "%.3f";
         ImGui::SliderFloat("Slider", &vars.SliderValue, vars.SliderMin, vars.SliderMax, format, vars.Flags);
         ImGui::DragFloat("Drag", &vars.DragValue, 1.0f, vars.DragMin, vars.DragMax, format, vars.Flags);
+        ImGui::DragScalar("Scalar", ImGuiDataType_Float, &vars.ScalarValue, 1.0f, vars.ScalarMinP, vars.ScalarMaxP, NULL, vars.Flags);
         ImGui::End();
     };
     t->TestFunc = [](ImGuiTestContext* ctx)
@@ -557,11 +558,65 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
                 else
                     IM_CHECK_EQ(vars.DragValue, vars.DragMax);
             }
+
+            float scalar_min_max[][2] = { {-FLT_MAX, 1.0f}, {0.0f, FLT_MAX} };
+            for (int j = 0; j < IM_ARRAYSIZE(scalar_min_max); ++j)
+            {
+                ctx->LogDebug("Scalar %d with flags = 0x%08X", j, vars.Flags);
+
+                vars.ScalarValue = 0.0f;
+                vars.DragMin = scalar_min_max[j][0];    // No harm in reusing DragMin/DragMax.
+                vars.DragMax = scalar_min_max[j][1];
+                vars.ScalarMinP = (vars.DragMin == -FLT_MAX || vars.DragMin == +FLT_MAX) ? NULL : &vars.DragMin;
+                vars.ScalarMaxP = (vars.DragMax == -FLT_MAX || vars.DragMax == +FLT_MAX) ? NULL : &vars.DragMax;
+
+                bool unbound_min = vars.ScalarMinP == NULL;
+                bool unbound_max = vars.ScalarMaxP == NULL;
+                float value_before_click = 0.0f;
+
+                ctx->ItemInput("Scalar");
+                ctx->KeyCharsReplaceEnter("-3");
+                IM_CHECK_EQ(vars.ScalarValue, clamp_on_input && !unbound_min ? vars.DragMin : -3.0f);
+
+                ctx->ItemInput("Scalar");
+                ctx->KeyCharsReplaceEnter("2");
+                IM_CHECK_EQ(vars.ScalarValue, clamp_on_input && !unbound_max ? vars.DragMax : 2.0f);
+
+                // Check higher bound
+                ctx->MouseMove("Scalar");
+                value_before_click = vars.ScalarValue;
+                ctx->MouseDown(); // Click will not update clamping value
+                IM_CHECK_EQ(vars.ScalarValue, value_before_click);
+                ctx->MouseMoveToPos(g.IO.MousePos + ImVec2(100, 0));
+                ctx->MouseUp();
+                if (unbound_max)
+                    IM_CHECK_GT(vars.ScalarValue, value_before_click);
+                else
+                    IM_CHECK_EQ(vars.ScalarValue, value_before_click);
+
+                // Check higher to lower bound
+                value_before_click = vars.ScalarValue = 50.0f;
+                ctx->MouseMove("Scalar");
+                ctx->MouseDragWithDelta(ImVec2(-100, 0));
+                if (unbound_min)
+                    IM_CHECK_LT(vars.ScalarValue, value_before_click);
+                else
+                    IM_CHECK_EQ(vars.ScalarValue, vars.DragMin);
+
+                // Check low to high bound
+                value_before_click = vars.ScalarValue = 0.0f;
+                ctx->MouseMove("Scalar");
+                ctx->MouseDragWithDelta(ImVec2(100, 0));
+                if (unbound_max)
+                    IM_CHECK_GT(vars.ScalarValue, value_before_click);
+                else
+                    IM_CHECK_EQ(vars.ScalarValue, vars.DragMax);
+            }
         }
     };
 
 #if 0
-    // ## Testing Scroll on Window with Test Engine helpers 
+    // ## Testing Scroll on Window with Test Engine helpers
     t = IM_REGISTER_TEST(e, "widgets", "widgets_scrollbar");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
