@@ -1100,6 +1100,10 @@ bool    ImGuiTestContext::WindowTeleportToMakePosVisibleInViewport(ImGuiWindow* 
     if (IsError())
         return false;
 
+    // This is particularly useful for docked windows, as we have to move root dockspace window instead of docket window
+    // itself. As a side effect this also adds support for child windows.
+    window = window->RootWindow;
+
     ImRect visible_r;
     visible_r.Min = GetMainViewportPos();
     visible_r.Max = visible_r.Min + GetMainViewportSize();
