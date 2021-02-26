@@ -234,6 +234,7 @@ struct ImGuiTestContext
     ImGuiInputSource        InputMode = ImGuiInputSource_Mouse;
     ImGuiTestOpFlags        OpFlags = ImGuiTestOpFlags_None;
     ImVector<char>          Clipboard;
+    ImVector<ImGuiWindow*>  ForeignWindowsToHide;
 
     // Performance
     double                  PerfRefDt = -1.0;
@@ -285,6 +286,9 @@ struct ImGuiTestContext
     void        PopupCloseAll();
     ImGuiWindow* GetWindowByRef(ImGuiTestRef ref);
     ImGuiTestRef GetFocusWindowRef();
+
+    void        ForeignWindowsHideOverPos(ImVec2 pos, ImGuiWindow** ignore_list);
+    void        ForeignWindowsUnhideAll();
 
     // ID
     ImGuiID     GetID(ImGuiTestRef ref);

@@ -1122,6 +1122,40 @@ bool    ImGuiTestContext::WindowTeleportToMakePosVisibleInViewport(ImGuiWindow* 
     return false;
 }
 
+// ignore_list is a NULL-terminated list of pointers
+void ImGuiTestContext::ForeignWindowsHideOverPos(ImVec2 pos, ImGuiWindow** ignore_list)
+{
+    ImGuiContext& g = *UiContext;
+    if (IsError())
+        return;
+
+    IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
+    LogDebug("ForeignWindowsHideOverPos (%.0f,%.0f)", pos.x, pos.y);
+    IM_CHECK_SILENT(ignore_list != NULL); // It makes little sense to call this function with an empty list.
+    IM_CHECK_SILENT(ignore_list[0] != NULL);
+
+    for (int i = 0; i < g.Windows.Size; i++)
+    {
+        ImGuiWindow* other_window = g.Windows[i];
+        if (other_window->RootWindow == other_window)
+            if (other_window->WasActive && other_window->Rect().Contains(pos))
+            {
+                for (int j = 0; ignore_list[j]; j++)
+                    if (ignore_list[j]->RootWindow == other_window)
+                        other_window = NULL;
+                if (other_window)
+                    ForeignWindowsToHide.push_back(other_window);
+            }
+    }
+    Yield();
+}
+
+void ImGuiTestContext::ForeignWindowsUnhideAll()
+{
+    ForeignWindowsToHide.clear();
+    Yield();
+}
+
 void	ImGuiTestContext::MouseMoveToPos(ImVec2 target)
 {
     ImGuiContext& g = *UiContext;
@@ -2427,6 +2461,9 @@ void    ImGuiTestContext::DockWindowInto(const char* window_name_src, const char
         return;
 
     WindowTeleportToMakePosVisibleInViewport(window_dst, drop_pos);
+    ImGuiWindow* friend_windows[] = { window_src, window_dst, host_window_dst->RootWindowDockTree, NULL };
+    ForeignWindowsHideOverPos(drop_pos, friend_windows);
+
     drop_is_valid = ImGui::DockContextCalcDropPosForDocking(host_window_dst, dock_node_dst, window_src, split_dir, is_outer_docking, &drop_pos);
     IM_CHECK(drop_is_valid);
 
@@ -2436,13 +2473,14 @@ void    ImGuiTestContext::DockWindowInto(const char* window_name_src, const char
     IM_CHECK_SILENT(g.MovingWindow == window_src);
 #ifdef IMGUI_HAS_DOCK
     Yield();    // Docking to dockspace over viewport fails in fast mode without this.
-    IM_CHECK_SILENT(g.HoveredWindowUnderMovingWindow && g.HoveredWindowUnderMovingWindow->RootWindow== (is_outer_docking ? host_window_dst->RootWindow : window_dst));
+    IM_CHECK_SILENT(g.HoveredWindowUnderMovingWindow && g.HoveredWindowUnderMovingWindow->RootWindow == (is_outer_docking ? host_window_dst->RootWindow : window_dst));
 #else
     IM_CHECK_SILENT(g.HoveredWindowUnderMovingWindow && g.HoveredWindowUnderMovingWindow->RootWindow == window_dst);
 #endif
     SleepShort();
 
     MouseUp(0);
+    ForeignWindowsUnhideAll();
     Yield();
     Yield();
 }

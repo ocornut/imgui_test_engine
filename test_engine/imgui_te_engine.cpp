@@ -741,6 +741,13 @@ static void ImGuiTestEngine_TestQueueCoroutineMain(void* engine_opaque)
     }
 }
 
+static void ImGuiTestEngine_DisableWindowInputs(ImGuiWindow* window)
+{
+    window->DisableInputsFrames = 1;
+    for (ImGuiWindow* child_window : window->DC.ChildWindows)
+        ImGuiTestEngine_DisableWindowInputs(child_window);
+}
+
 // Yield control back from the TestFunc to the main update + GuiFunc, for one frame.
 void ImGuiTestEngine_Yield(ImGuiTestEngine* engine)
 {
@@ -748,7 +755,14 @@ void ImGuiTestEngine_Yield(ImGuiTestEngine* engine)
 
     // Can only yield in the test func!
     if (ctx)
+    {
         IM_ASSERT(ctx->ActiveFunc == ImGuiTestActiveFunc_TestFunc && "Can only yield inside TestFunc()!");
+        for (ImGuiWindow* window : ctx->ForeignWindowsToHide)
+        {
+            window->HiddenFramesForRenderOnly = 2;          // Hide root window
+            ImGuiTestEngine_DisableWindowInputs(window);    // Disable inputs for root window and all it's children recursively
+        }
+    }
 
     engine->IO.CoroutineFuncs->YieldFunc();
 }
