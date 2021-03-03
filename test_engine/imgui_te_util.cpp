@@ -317,6 +317,7 @@ bool ImGuiCSVParser::Load(const char* file_name)
             }
             else
             {
+                IM_ASSERT(col + 1 == Columns && "Non-uniform number of columns!");
                 row++;
                 col = 0;
             }
