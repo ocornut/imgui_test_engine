@@ -630,7 +630,8 @@ void RegisterTests_Window(ImGuiTestEngine* e)
         ctx->SleepNoSkip(0.3f, 1.0f / 60.0f);
         for (int i = 0; i < 2; i++)
         {
-            IM_CHECK_STR_EQ_NO_RET(window->Name, Str30f("Frame %d###Test Window", g.FrameCount).c_str());    // Verify window->Name gets updated.
+            Str30f window_name("Frame %d###Test Window", g.FrameCount);
+            IM_CHECK_STR_EQ_NO_RET(window->Name, window_name.c_str());    // Verify window->Name gets updated.
             ctx->Yield();
         }
         ctx->KeyUpMap(ImGuiKey_COUNT, ImGuiKeyModFlags_Ctrl);

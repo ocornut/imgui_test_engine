@@ -736,7 +736,7 @@ ImGuiApp* ImGuiApp_ImplSdlGL3_Create()
     intf->ShutdownCloseWindow   = ImGuiApp_ImplSdlGL3_ShutdownCloseWindow;
     intf->ShutdownBackends      = ImGuiApp_ImplSdlGL3_ShutdownBackends;
     intf->CaptureFramebuffer    = ImGuiApp_ImplGL_CaptureFramebuffer;
-    intf->Destroy               = [](ImGuiApp* app) { delete (ImGuiApp_ImplSdlGL3*)app; };
+    intf->Destroy               = [](ImGuiApp* app) { SDL_Quit(); delete (ImGuiApp_ImplSdlGL3*)app; };
     return intf;
 }
 
