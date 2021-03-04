@@ -1,6 +1,19 @@
-name: Tests
+name: tests
 
-on: [push, pull_request]
+on:
+  push:
+  pull_request:
+  workflow_run:
+    # Use a workflow as a trigger of scheduled builds. Forked repositories can disable scheduled builds by disabling
+    # "scheduled" workflow, while maintaining ability to perform local CI builds.
+    workflows:
+      - scheduled
+    branches:
+      - master
+      - docking
+      - features/range_select
+    types:
+      - requested
 
 jobs:
   Linux:
@@ -9,32 +22,129 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        branch: [master, docking, features/range_select]
+        branch:
+          - master
+          - docking
+          - features/range_select
 
     steps:
-    - uses: actions/checkout@v1
-      with:
-        fetch-depth: 1
-        submodules: recursive
+      - uses: actions/checkout@v1
+        with:
+          fetch-depth: 1
+          submodules: recursive
 
-    - uses: actions/checkout@v1
-      with:
-        fetch-depth: 1
-        repository: ocornut/imgui
-        ref: ${{ matrix.branch }}
+      - uses: actions/checkout@v1
+        with:
+          fetch-depth: 1
+          repository: ocornut/imgui
+          ref: ${{ matrix.branch }}
 
-    - name: Build
-      run: |
-        CXX=clang make -C test_app/
+      - name: Install Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libglfw3-dev libsdl2-dev
 
-    - name: Run Tests
-      run: |
-        timeout 300 test_app/imgui_test_app -nogui -nopause -v2 -ve4 tests
+      - name: Build (with SDL2)
+        if: github.event_name == 'workflow_run'     # Run only on schedule
+        run: |
+          make -C test_app/ clean
+          make -C test_app/ BACKEND_LIB=sdl2
+
+      - name: Build (with GLFW3)
+        if: github.event_name == 'workflow_run'     # Run only on schedule
+        run: |
+          make -C test_app/ clean
+          make -C test_app/ BACKEND_LIB=glfw3
+
+      - name: Build
+        run: |
+          make -C test_app/ clean
+          make -C test_app/ ASAN=1
+
+      - name: Run Tests
+        run: |
+          timeout 300 test_app/imgui_test_app -nogui -nopause -v2 -ve4 tests
+
+  MacOS:
+    runs-on: macos-latest
+    if: github.event_name == 'workflow_run'     # Run only on schedule
+
+    strategy:
+      fail-fast: false
+      matrix:
+        # MacOS minutes are expensive (x10) for private repo so reduce the amount of tests running there for now.
+        branch: [docking]
+
+    steps:
+      - uses: actions/checkout@v1
+        with:
+          fetch-depth: 1
+          submodules: recursive
+
+      - uses: actions/checkout@v1
+        with:
+          fetch-depth: 1
+          repository: ocornut/imgui
+          ref: ${{ matrix.branch }}
+
+      - name: Build
+        run: |
+          make -C test_app/ ASAN=1
+
+      - name: Run Tests
+        run: |
+          test_app/imgui_test_app -nogui -nopause -v2 -ve4 tests
+
+  Windows:
+    if: github.event_name == 'workflow_run'     # Run only on schedule
+    runs-on: windows-latest
+    env:
+      VS_PATH: C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\
+      MSBUILD_PATH: C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\MSBuild\Current\Bin\
+
+    strategy:
+      fail-fast: false
+      matrix:
+        branch: [docking]
+        arch: [Win32, x64]
+
+    steps:
+      - uses: actions/checkout@v1
+        with:
+          fetch-depth: 1
+          submodules: recursive
+
+      - uses: actions/checkout@v1
+        with:
+          fetch-depth: 1
+          repository: ocornut/imgui
+          ref: ${{ matrix.branch }}
+
+      - name: Fix Projects
+        shell: powershell
+        run: |
+          # WARNING: This will need updating if toolset/sdk change in project files!
+          gci -recurse -filter "*.vcxproj" | ForEach-Object {
+            # Fix SDK and toolset for most samples.
+            (Get-Content $_.FullName) -Replace "<PlatformToolset>v110</PlatformToolset>","<PlatformToolset>v142</PlatformToolset>" | Set-Content -Path $_.FullName
+            (Get-Content $_.FullName) -Replace "<WindowsTargetPlatformVersion>8.1</WindowsTargetPlatformVersion>","<WindowsTargetPlatformVersion>10.0.18362.0</WindowsTargetPlatformVersion>" | Set-Content -Path $_.FullName
+            # Fix SDK and toolset for samples that require newer SDK/toolset. At the moment it is only dx12.
+            (Get-Content $_.FullName) -Replace "<PlatformToolset>v140</PlatformToolset>","<PlatformToolset>v142</PlatformToolset>" | Set-Content -Path $_.FullName
+            (Get-Content $_.FullName) -Replace "<WindowsTargetPlatformVersion>10.0.14393.0</WindowsTargetPlatformVersion>","<WindowsTargetPlatformVersion>10.0.18362.0</WindowsTargetPlatformVersion>" | Set-Content -Path $_.FullName
+          }
+
+      - name: Build ${{ matrix.arch }} test_app
+        shell: cmd
+        run: '"%MSBUILD_PATH%\MSBuild.exe" test_app/imgui_test_app.vcxproj /p:Platform=${{ matrix.arch }} /p:Configuration=Release'
+
+      - name: Run Tests
+        run: |
+          test_app/Release/imgui_test_app.exe -nogui -nopause -v2 -ve4 tests
 
   Discord-CI:
     runs-on: ubuntu-latest
     if: always()
-    needs: [Linux]
+    needs: [Windows, Linux, MacOS]
     steps:
     - uses: dearimgui/github_discord_notifier@latest
       with:
