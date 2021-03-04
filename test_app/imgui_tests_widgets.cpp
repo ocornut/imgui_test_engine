@@ -635,6 +635,48 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
     };
 #endif
 
+    // ## Test for IsItemHovered() on BeginChild() and InputMultiLine() (#1370, #3851)
+    t = IM_REGISTER_TEST(e, "widgets", "widgets_hover");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiTestGenericVars& vars = ctx->GenericVars;
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+
+        ImGui::BeginChild("Child", ImVec2(100, 100), true);
+        vars.Pos = ImGui::GetCursorScreenPos();
+        ImGui::Dummy(ImVec2(10, 10));
+        ImGui::Button("button");
+        vars.Id = ImGui::GetItemID();
+        ImGui::EndChild();
+        vars.Bool1 = ImGui::IsItemHovered();
+        ImGui::Text("hovered: %d", vars.Bool1);
+
+        ImGui::InputTextMultiline("##Field", vars.Str1, IM_ARRAYSIZE(vars.Str1), ImVec2(-FLT_MIN, 0.0f));
+        vars.Bool2 = ImGui::IsItemHovered();
+        ImGui::Text("hovered: %d", vars.Bool2);
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiTestGenericVars& vars = ctx->GenericVars;
+        ctx->SetRef("Test Window");
+
+        // move on child's void
+        ctx->MouseMoveToPos(vars.Pos);
+        IM_CHECK(vars.Bool1 == true);
+        IM_CHECK(vars.Bool2 == false);
+
+        // move on child's item
+        ctx->MouseMove(vars.Id);
+        IM_CHECK(vars.Bool1 == true);
+        IM_CHECK(vars.Bool2 == false);
+
+        // move on InputTextMultiline() = child embedded in group
+        ctx->MouseMove("##Field");
+        IM_CHECK(vars.Bool1 == false);
+        IM_CHECK(vars.Bool2 == true);
+    };
+
     // ## Test InputText widget
     t = IM_REGISTER_TEST(e, "widgets", "widgets_inputtext_basic");
     t->GuiFunc = [](ImGuiTestContext* ctx)
@@ -2449,6 +2491,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ctx->MouseMove("Widgets", ImGuiTestOpFlags_NoFocusWindow);
         ctx->SleepNoSkip(1.0f, 1.0f / 60.0f);
 
+        IM_CHECK(ctx->ItemInfo("Widgets") != NULL);
         IM_CHECK((ctx->ItemInfo("Widgets")->StatusFlags & ImGuiItemStatusFlags_Opened) != 0);
         IM_CHECK_EQ(g.ActiveId, active_id);
         ctx->MouseMove("Trees", ImGuiTestOpFlags_NoFocusWindow);
