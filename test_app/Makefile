@@ -60,6 +60,7 @@ ifeq ($(UNAME_S), Linux) #LINUX
 		LIBS += -lGL
 	endif
 	CFLAGS += -Wextra -Wpedantic
+	CXXFLAGS += -Wno-class-memaccess
 	ifeq ($(shell $(CXX) -v 2>&1 | grep -c "clang version"), 1)
 		CFLAGS += -Wshadow
 		LIBS += -lstdc++ -lm
@@ -72,6 +73,11 @@ ifeq ($(UNAME_S), Darwin) #APPLE
 	ifeq ($(HAS_SDL2), 1)
 		LIBS += -framework OpenGL
 	endif
+endif
+
+ifeq ($(ASAN),1)
+	CFLAGS += -g -fsanitize=address -fno-omit-frame-pointer -fno-optimize-sibling-calls
+	LIBS += -g -fsanitize=address
 endif
 
 ifeq ($(findstring MINGW,$(UNAME_S)),MINGW)
@@ -104,7 +110,7 @@ endif
 	$(CXX) $(CFLAGS) $(CXXFLAGS) -c -o $@ $<
 
 %.o:$(IMGUI_DIR)/examples/libs/gl3w/GL/%.c
-	$(CC) $(CFLAGS) -c -o $@ $<
+	$(CC) $(CFLAGS) -w -c -o $@ $<
 
 all: $(EXE)
 	@echo Build complete for $(ECHO_MESSAGE)
