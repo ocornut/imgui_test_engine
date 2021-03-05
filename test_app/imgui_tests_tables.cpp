@@ -53,7 +53,7 @@ static void HelperDrawAndFillBounds(TableTestingVars* vars)
     const ImU32 COL_CURSOR_MAX_POS = IM_COL32(255, 0, 255, 200);
     const ImU32 COL_IDEAL_MAX_POS = IM_COL32(0, 255, 0, 200);
     const ImU32 COL_ITEM_RECT = IM_COL32(255, 255, 0, 255);
-    const ImU32 COL_ROW_BG = IM_COL32(0, 255, 0, 20);
+    //const ImU32 COL_ROW_BG = IM_COL32(0, 255, 0, 20);
 
     // Display item rect, output cursor position and last line position
     vars->OutTableIsItemHovered = ImGui::IsItemHovered();

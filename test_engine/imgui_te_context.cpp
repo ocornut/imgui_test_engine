@@ -1477,7 +1477,7 @@ bool    ImGuiTestContext::WindowBringToFront(ImGuiWindow* window, ImGuiTestOpFla
         Yield();
         //IM_CHECK(g.NavWindow == window);
     }
-    else if (window->RootWindowDockTree != g.Windows.back()->RootWindowDockTree)
+    else if (window->RootWindow != g.Windows.back()->RootWindow)
     {
         IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
         LogDebug("BringWindowToDisplayFront('%s') (window.back=%s)", window->Name, g.Windows.back()->Name);
