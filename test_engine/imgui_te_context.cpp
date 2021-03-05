@@ -1300,7 +1300,11 @@ void    ImGuiTestContext::MouseClickOnVoid(int mouse_button)
     ImVec2 window_min_pos = void_pos + g.Style.TouchExtraPadding + ImVec2(4.0f, 4.0f) + ImVec2(1.0f, 1.0f); // FIXME: Should use WINDOWS_RESIZE_FROM_EDGES_HALF_THICKNESS
 
     for (ImGuiWindow* window : g.Windows)
+#ifdef IMGUI_HAS_DOCK
+        if (window->RootWindowDockTree == window && window->WasActive)
+#else
         if (window->RootWindow == window && window->WasActive)
+#endif
             if (window->Rect().Contains(window_min_pos))
                 WindowMove(window->Name, window_min_pos);
 
@@ -1473,7 +1477,7 @@ bool    ImGuiTestContext::WindowBringToFront(ImGuiWindow* window, ImGuiTestOpFla
         Yield();
         //IM_CHECK(g.NavWindow == window);
     }
-    else if (window->RootWindow != g.Windows.back()->RootWindow)
+    else if (window->RootWindowDockTree != g.Windows.back()->RootWindowDockTree)
     {
         IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
         LogDebug("BringWindowToDisplayFront('%s') (window.back=%s)", window->Name, g.Windows.back()->Name);
@@ -2359,27 +2363,23 @@ void    ImGuiTestContext::DockWindowInto(const char* window_name_src, const char
 
     //// FIXME-TESTS: Not handling the operation at user's level.
     //if (split_dir != ImGuiDir_None)
-    //  ImGui::DockContextQueueDock(&g, window_dst->RootWindow, window_dst->DockNode, window_src, split_dir, 0.5f, false);
+    //  ImGui::DockContextQueueDock(&g, window_dst->RootWindowDockTree, window_dst->DockNode, window_src, split_dir, 0.5f, false);
 
     ImVec2 drop_pos;
-    bool drop_is_valid = ImGui::DockContextCalcDropPosForDocking(window_dst->RootWindow, window_dst->DockNode, window_src, split_dir, false, &drop_pos);
+    bool drop_is_valid = ImGui::DockContextCalcDropPosForDocking(window_dst->RootWindowDockTree, window_dst->DockNode, window_src, split_dir, false, &drop_pos);
     IM_CHECK_SILENT(drop_is_valid);
     if (!drop_is_valid)
         return;
 
     WindowTeleportToMakePosVisibleInViewport(window_dst, drop_pos);
-    drop_is_valid = ImGui::DockContextCalcDropPosForDocking(window_dst->RootWindow, window_dst->DockNode, window_src, split_dir, false, &drop_pos);
+    drop_is_valid = ImGui::DockContextCalcDropPosForDocking(window_dst->RootWindowDockTree, window_dst->DockNode, window_src, split_dir, false, &drop_pos);
     IM_CHECK(drop_is_valid);
 
     MouseDown(0);
     MouseLiftDragThreshold();
     MouseMoveToPos(drop_pos);
     IM_CHECK_SILENT(g.MovingWindow == window_src);
-#ifdef IMGUI_HAS_DOCK
-    IM_CHECK_SILENT(g.HoveredWindowUnderMovingWindow && g.HoveredWindowUnderMovingWindow->RootWindowDockStop == window_dst);
-#else
     IM_CHECK_SILENT(g.HoveredWindowUnderMovingWindow && g.HoveredWindowUnderMovingWindow->RootWindow == window_dst);
-#endif
     SleepShort();
 
     MouseUp(0);

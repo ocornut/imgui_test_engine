@@ -184,7 +184,6 @@ void ImGuiCaptureContext::PostNewFrame()
         IM_ASSERT(args->InCaptureWindows.Size == 1);
         g.IO.MousePos = args->InCaptureWindows[0]->Pos + _MouseRelativeToWindowPos;
         g.HoveredWindow = _HoveredWindow;
-        g.HoveredRootWindow = _HoveredWindow ? _HoveredWindow->RootWindow : NULL;
     }
 }
 
@@ -541,7 +540,7 @@ void ImGuiCaptureTool::CaptureWindowPicker(ImGuiCaptureArgs* args)
     if (_CaptureState == ImGuiCaptureToolState_PickingSingleWindow)
     {
         // Picking a window
-        ImGuiWindow* capture_window = g.HoveredRootWindow;
+        ImGuiWindow* capture_window = g.HoveredWindow ? g.HoveredWindow->RootWindow : NULL;
         ImDrawList* fg_draw_list = ImGui::GetForegroundDrawList();
         ImGui::SetActiveID(picking_id, g.CurrentWindow);    // Steal active ID so our click won't interact with something else.
         ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
