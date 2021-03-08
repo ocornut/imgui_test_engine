@@ -9,9 +9,7 @@ on:
     workflows:
       - scheduled
     branches:
-      - master
-      - docking
-      - features/range_select
+      - main
     types:
       - requested
 
