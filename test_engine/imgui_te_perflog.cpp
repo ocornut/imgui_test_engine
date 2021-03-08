@@ -909,9 +909,12 @@ void ImGuiPerfLog::ShowUI(ImGuiTestEngine* engine)
 
         for (int label_index = 0; label_index < _Labels.Size; label_index++)
         {
-            ImGui::TableHeadersRow();
             if (scroll_to_test == label_index)
-                ImGui::SetScrollHereY();
+            {
+                ImGuiWindow* window = g.CurrentWindow;
+                ImGui::SetScrollFromPosY(window->DC.CursorPos.y - window->Pos.y, 0.0f);
+            }
+            ImGui::TableHeadersRow();
             for (int batch_index = 0; batch_index < _Legend.Size; batch_index++)
             {
                 ImGuiPerflogEntry* entry = GetEntryByBatchIdx(_InfoTableSort[batch_index], _Labels[label_index]->TestName);
