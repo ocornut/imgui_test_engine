@@ -127,7 +127,12 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
         {
             if (ImGui::BeginMenuBar())
             {
-                if (ImGui::BeginMenu("Menu"))
+                if (ImGui::BeginMenu("File"))
+                {
+                    ImGui::Text("Blah");
+                    ImGui::EndMenu();
+                }
+                if (ImGui::BeginMenu("Edit"))
                 {
                     ImGui::Text("Blah");
                     ImGui::EndMenu();
@@ -171,12 +176,17 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
             IM_CHECK(g.NavLayer == ImGuiNavLayer_Main);
             ctx->KeyPressMap(ImGuiKey_COUNT, ImGuiKeyModFlags_Alt);
             IM_CHECK(g.NavLayer == ImGuiNavLayer_Menu);
-            IM_CHECK(g.NavId == ctx->GetID("##menubar/Menu"));
+            IM_CHECK(g.NavId == ctx->GetID("##menubar/File"));
+            ctx->KeyPressMap(ImGuiKey_RightArrow);
+            IM_CHECK(g.NavId == ctx->GetID("##menubar/Edit"));
 
             ctx->KeyPressMap(ImGuiKey_COUNT, ImGuiKeyModFlags_Alt);
             IM_CHECK(g.NavLayer == ImGuiNavLayer_Main);
             ctx->KeyPressMap(ImGuiKey_COUNT, ImGuiKeyModFlags_Alt | ImGuiKeyModFlags_Ctrl);
             IM_CHECK(g.NavLayer == ImGuiNavLayer_Main);
+            ctx->KeyPressMap(ImGuiKey_COUNT, ImGuiKeyModFlags_Alt); // Verify nav id is reset for menu layer
+            IM_CHECK(g.NavId == ctx->GetID("##menubar/File"));
+            ctx->KeyPressMap(ImGuiKey_COUNT, ImGuiKeyModFlags_Alt);
         }
     };
 
