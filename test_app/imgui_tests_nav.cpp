@@ -585,16 +585,16 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
         // Test keyboard & gamepad behaviors
         for (int n = 0; n < 2; n++)
         {
-            const ImGuiInputSource input_source = (n == 0) ? ImGuiInputSource_NavKeyboard : ImGuiInputSource_NavGamepad;
+            const ImGuiInputSource input_source = (n == 0) ? ImGuiInputSource_Keyboard : ImGuiInputSource_Gamepad;
             ctx->SetInputMode(ImGuiInputSource_Nav);
-            ctx->UiContext->NavInputSource = input_source;  // FIXME-NAV: Should be set by above ctx->SetInputMode(ImGuiInputSource_NavGamepad) call.
+            ctx->UiContext->NavInputSource = input_source;  // FIXME-NAV: Should be set by above ctx->SetInputMode(ImGuiInputSource_Gamepad) call, but those states are a mess.
 
             // Down
             ctx->NavMoveTo("Button 0,0");
             ctx->ScrollToX(0);
             ctx->ScrollToBottom();
             ctx->NavKeyPress(ImGuiNavInput_KeyDown_);
-            if (input_source == ImGuiInputSource_NavKeyboard)
+            if (input_source == ImGuiInputSource_Keyboard)
                 IM_CHECK_EQ(ImGui::GetFocusID(), ctx->GetID("Button 0,1"));     // Started Nav from Button 0,0 (Previous NavID)
             else
                 IM_CHECK_EQ(ImGui::GetFocusID(), ctx->GetID("Button 0,3"));     // Started Nav from Button 0,2 (Visible)
@@ -607,7 +607,7 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
             ctx->ScrollToX(0);
             ctx->ScrollToTop();
             ctx->NavKeyPress(ImGuiNavInput_KeyUp_);
-            if (input_source == ImGuiInputSource_NavKeyboard)
+            if (input_source == ImGuiInputSource_Keyboard)
                 IM_CHECK_EQ(ImGui::GetFocusID(), ctx->GetID("Button 0,3"));
             else
                 IM_CHECK_EQ(ImGui::GetFocusID(), ctx->GetID("Button 0,2"));
@@ -620,7 +620,7 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
             ctx->ScrollToX(window->ScrollMax.x);
             ctx->ScrollToTop();
             ctx->NavKeyPress(ImGuiNavInput_KeyRight_);
-            if (input_source == ImGuiInputSource_NavKeyboard)
+            if (input_source == ImGuiInputSource_Keyboard)
                 IM_CHECK_EQ(ImGui::GetFocusID(), ctx->GetID("Button 1,0"));
             else
                 IM_CHECK_EQ(ImGui::GetFocusID(), ctx->GetID("Button 3,0"));
@@ -633,7 +633,7 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
             ctx->ScrollToX(0);
             ctx->ScrollToTop();
             ctx->NavKeyPress(ImGuiNavInput_KeyLeft_);
-            if (input_source == ImGuiInputSource_NavKeyboard)
+            if (input_source == ImGuiInputSource_Keyboard)
                 IM_CHECK_EQ(ImGui::GetFocusID(), ctx->GetID("Button 3,0"));
             else
                 IM_CHECK_EQ(ImGui::GetFocusID(), ctx->GetID("Button 2,0"));

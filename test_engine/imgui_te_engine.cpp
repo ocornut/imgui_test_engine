@@ -1106,7 +1106,7 @@ static void ImGuiTestEngine_RunTest(ImGuiTestEngine* engine, ImGuiTestContext* c
     ctx->ErrorCounter = 0;
     ctx->SetRef("");
     ctx->SetInputMode(ImGuiInputSource_Mouse);
-    ctx->UiContext->NavInputSource = ImGuiInputSource_NavKeyboard;
+    ctx->UiContext->NavInputSource = ImGuiInputSource_Keyboard;
     ctx->Clipboard.clear();
     ctx->GenericVars.Clear();
     test->TestLog.Clear();
