@@ -344,7 +344,7 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
     };
 
     // ## Test NavID restoration when focusing another window or STOPPING to submit another world
-    t = IM_REGISTER_TEST(e, "nav", "nav_focus_restore");
+    t = IM_REGISTER_TEST(e, "nav", "nav_focus_restore_on_missing_window");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         ImGui::Begin("Window 1", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
@@ -417,6 +417,7 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         ImGuiContext& g = *ctx->UiContext;
+        ImGuiWindow* demo_window = ctx->GetWindowByRef("Dear ImGui Demo");
 
         // FIXME-TESTS: Facilitate usage of variants
         const int test_count = ctx->HasDock ? 2 : 1;
@@ -430,16 +431,30 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
                 ctx->DockWindowInto("Dear ImGui Demo", "Hello, world!");
 #endif
             ctx->SetRef("Dear ImGui Demo");
-            // Focus item.
-            ctx->NavMoveTo("Configuration");
-            // Focus menu.
-            ctx->KeyPressMap(ImGuiKey_COUNT, ImGuiKeyModFlags_Alt);
-            // Open menu, focus first item in the menu.
+            ctx->ItemCloseAll("");
+
+            // Test simple focus restoration.
+            ctx->NavMoveTo("Configuration");                            // Focus item.
+            ctx->KeyPressMap(ImGuiKey_COUNT, ImGuiKeyModFlags_Alt);     // Focus menu.
+            ctx->NavActivate();                                         // Open menu, focus first item in the menu.
+            ctx->NavActivate();                                         // Activate first item in the menu.
+            IM_CHECK_EQ(g.NavId, ctx->GetID("Configuration"));          // Verify NavId was restored to initial value.
+
+            // Test focus restoration to the item within a child window.
+            // FIXME-TESTS: Feels like this would be simpler with our own GuiFunc.
+            ctx->NavMoveTo("Layout & Scrolling");                       // Navigate to the child window.
             ctx->NavActivate();
-            // Activate first item in the menu.
-            ctx->NavActivate();
-            // Verify NavId was restored to initial value.
-            IM_CHECK_EQ(g.NavId, ctx->GetID("Configuration"));
+            ctx->NavMoveTo("Scrolling");
+            ctx->NavActivate(); // FIXME-TESTS: Could query current g.NavWindow instead of making names?
+            Str30f child_window_name("/Dear ImGui Demo\\/scrolling_%08X", ctx->GetID("Scrolling/scrolling"));
+            ImGuiWindow* child_window = ctx->GetWindowByRef(child_window_name.c_str());
+            ctx->SetRef(child_window_name.c_str());
+            ctx->ScrollTo(demo_window, ImGuiAxis_Y, (child_window->Pos - demo_window->Pos).y);  // Required because buttons do not register their IDs when out of view (SkipItems == true).
+            ctx->NavMoveTo(ctx->GetID("1", ctx->GetIDByInt(1)));        // Focus item within a child window.
+            ctx->KeyPressMap(ImGuiKey_COUNT, ImGuiKeyModFlags_Alt);     // Focus menu.
+            ctx->NavActivate();                                         // Open menu, focus first item in the menu.
+            ctx->NavActivate();                                         // Activate first item in the menu.
+            IM_CHECK_EQ(g.NavId, ctx->GetID("1", ctx->GetIDByInt(1)));  // Verify NavId was restored to initial value.
         }
     };
 
