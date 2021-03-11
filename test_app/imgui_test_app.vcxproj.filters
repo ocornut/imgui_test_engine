@@ -97,7 +97,7 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <Natvis Include="..\..\imgui\misc\natvis\imgui.natvis">
+    <Natvis Include="..\..\imgui\misc\debuggers\imgui.natvis">
       <Filter>imgui</Filter>
     </Natvis>
   </ItemGroup>

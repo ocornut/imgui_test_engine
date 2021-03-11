@@ -167,13 +167,13 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <Natvis Include="..\..\imgui\misc\natvis\imgui.natvis">
-      <Filter>imgui</Filter>
-    </Natvis>
-  </ItemGroup>
-  <ItemGroup>
     <Text Include="docs\TODO.txt">
       <Filter>docs</Filter>
     </Text>
+  </ItemGroup>
+  <ItemGroup>
+    <Natvis Include="..\..\imgui\misc\debuggers\imgui.natvis">
+      <Filter>imgui</Filter>
+    </Natvis>
   </ItemGroup>
 </Project>
