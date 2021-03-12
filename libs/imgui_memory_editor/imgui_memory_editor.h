@@ -4,7 +4,7 @@
 // Right-click anywhere to access the Options menu!
 // You can adjust the keyboard repeat delay/rate in ImGuiIO.
 // The code assume a mono-space font for simplicity!
-// If you don't use the default font, use ImGui::PushFont()/PopFont() to switch to a mono-space font before caling this.
+// If you don't use the default font, use ImGui::PushFont()/PopFont() to switch to a mono-space font before calling this.
 //
 // Usage:
 //   // Create a window and draw memory editor inside it:
@@ -35,6 +35,9 @@
 // - v0.36 (2020/05/05): minor tweaks, minor refactor.
 // - v0.40 (2020/10/04): fix misuse of ImGuiListClipper API, broke with Dear ImGui 1.79. made cursor position appears on left-side of edit box. option popup appears on mouse release. fix MSVC warnings where _CRT_SECURE_NO_WARNINGS wasn't working in recent versions.
 // - v0.41 (2020/10/05): fix when using with keyboard/gamepad navigation enabled.
+// - v0.42 (2020/10/14): fix for . character in ASCII view always being greyed out.
+// - v0.43 (2021/03/12): added OptFooterExtraHeight to allow for custom drawing at the bottom of the editor [@leiradel]
+// - v0.44 (2021/03/12): use ImGuiInputTextFlags_AlwaysOverwrite in 1.82 + fix hardcoded width.
 //
 // Todo/Bugs:
 // - This is generally old code, it should work but please don't use this as reference!
@@ -81,6 +84,7 @@ struct MemoryEditor
     bool            OptUpperCaseHex;                            // = true   // display hexadecimal values as "FF" instead of "ff".
     int             OptMidColsCount;                            // = 8      // set to 0 to disable extra spacing between every mid-cols.
     int             OptAddrDigitsCount;                         // = 0      // number of addr digits to display (default calculated based on maximum displayed addr).
+    float           OptFooterExtraHeight;                       // = 0      // space to reserve at the bottom of the widget to add custom widgets
     ImU32           HighlightColor;                             //          // background color of highlighted bytes.
     ImU8            (*ReadFn)(const ImU8* data, size_t off);    // = 0      // optional handler to read bytes.
     void            (*WriteFn)(ImU8* data, size_t off, ImU8 d); // = 0      // optional handler to write bytes.
@@ -112,6 +116,7 @@ struct MemoryEditor
         OptUpperCaseHex = true;
         OptMidColsCount = 8;
         OptAddrDigitsCount = 0;
+        OptFooterExtraHeight = 0.0f;
         HighlightColor = IM_COL32(255, 255, 255, 50);
         ReadFn = NULL;
         WriteFn = NULL;
@@ -212,7 +217,7 @@ struct MemoryEditor
         // We begin into our scrolling region with the 'ImGuiWindowFlags_NoMove' in order to prevent click from moving the window.
         // This is used as a facility since our main click detection code doesn't assign an ActiveId so the click would normally be caught as a window-move.
         const float height_separator = style.ItemSpacing.y;
-        float footer_height = 0;
+        float footer_height = OptFooterExtraHeight;
         if (OptShowOptions)
             footer_height += height_separator + ImGui::GetFrameHeightWithSpacing() * 1;
         if (OptShowDataPreview)
@@ -315,7 +320,6 @@ struct MemoryEditor
                         sprintf(AddrInputBuf, format_data, s.AddrDigitsCount, base_display_addr + addr);
                         sprintf(DataInputBuf, format_byte, ReadFn ? ReadFn(mem_data, addr) : mem_data[addr]);
                     }
-                    ImGui::PushItemWidth(s.GlyphWidth * 2);
                     struct UserData
                     {
                         // FIXME: We should have a way to retrieve the text edit cursor position more easily in the API, this is rather tedious. This is such a ugly mess we may be better off not using InputText() at all here.
@@ -341,13 +345,18 @@ struct MemoryEditor
                     UserData user_data;
                     user_data.CursorPos = -1;
                     sprintf(user_data.CurrentBufOverwrite, format_byte, ReadFn ? ReadFn(mem_data, addr) : mem_data[addr]);
-                    ImGuiInputTextFlags flags = ImGuiInputTextFlags_CharsHexadecimal | ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_AutoSelectAll | ImGuiInputTextFlags_NoHorizontalScroll | ImGuiInputTextFlags_AlwaysInsertMode | ImGuiInputTextFlags_CallbackAlways;
-                    if (ImGui::InputText("##data", DataInputBuf, 32, flags, UserData::Callback, &user_data))
+                    ImGuiInputTextFlags flags = ImGuiInputTextFlags_CharsHexadecimal | ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_AutoSelectAll | ImGuiInputTextFlags_NoHorizontalScroll | ImGuiInputTextFlags_CallbackAlways;
+#if IMGUI_VERSION_NUM >= 18104
+                    flags |= ImGuiInputTextFlags_AlwaysOverwrite;
+#else
+                    flags |= ImGuiInputTextFlags_AlwaysInsertMode;
+#endif
+                    ImGui::SetNextItemWidth(s.GlyphWidth * 2);
+                    if (ImGui::InputText("##data", DataInputBuf, IM_ARRAYSIZE(DataInputBuf), flags, UserData::Callback, &user_data))
                         data_write = data_next = true;
                     else if (!DataEditingTakeFocus && !ImGui::IsItemActive())
                         DataEditingAddr = data_editing_addr_next = (size_t)-1;
                     DataEditingTakeFocus = false;
-                    ImGui::PopItemWidth();
                     if (user_data.CursorPos >= 2)
                         data_write = data_next = true;
                     if (data_editing_addr_next != (size_t)-1)
@@ -415,7 +424,7 @@ struct MemoryEditor
                     }
                     unsigned char c = ReadFn ? ReadFn(mem_data, addr) : mem_data[addr];
                     char display_c = (c < 32 || c >= 128) ? '.' : c;
-                    draw_list->AddText(pos, (display_c == '.') ? color_disabled : color_text, &display_c, &display_c + 1);
+                    draw_list->AddText(pos, (display_c == c) ? color_text : color_disabled, &display_c, &display_c + 1);
                     pos.x += s.GlyphWidth;
                 }
             }
@@ -424,6 +433,9 @@ struct MemoryEditor
         clipper.End();
         ImGui::PopStyleVar(2);
         ImGui::EndChild();
+
+        // Notify the main window of our ideal child content size (FIXME: we are missing an API to get the contents size from the child)
+        ImGui::SetCursorPosX(s.WindowWidth);
 
         if (data_next && DataEditingAddr < mem_size)
         {
@@ -447,9 +459,6 @@ struct MemoryEditor
             ImGui::Separator();
             DrawPreviewLine(s, mem_data, mem_size, base_display_addr);
         }
-
-        // Notify the main window of our ideal child content size (FIXME: we are missing an API to get the contents size from the child)
-        ImGui::SetCursorPosX(s.WindowWidth);
     }
 
     void DrawOptionsLine(const Sizes& s, void* mem_data, size_t mem_size, size_t base_display_addr)
@@ -463,9 +472,8 @@ struct MemoryEditor
             ImGui::OpenPopup("context");
         if (ImGui::BeginPopup("context"))
         {
-            ImGui::PushItemWidth(56);
+            ImGui::SetNextItemWidth(s.GlyphWidth * 7 + style.FramePadding.x * 2.0f);
             if (ImGui::DragInt("##cols", &Cols, 0.2f, 4, 32, "%d cols")) { ContentsWidthChanged = true; if (Cols < 1) Cols = 1; }
-            ImGui::PopItemWidth();
             ImGui::Checkbox("Show Data Preview", &OptShowDataPreview);
             ImGui::Checkbox("Show HexII", &OptShowHexII);
             if (ImGui::Checkbox("Show Ascii", &OptShowAscii)) { ContentsWidthChanged = true; }
@@ -478,8 +486,8 @@ struct MemoryEditor
         ImGui::SameLine();
         ImGui::Text(format_range, s.AddrDigitsCount, base_display_addr, s.AddrDigitsCount, base_display_addr + mem_size - 1);
         ImGui::SameLine();
-        ImGui::PushItemWidth((s.AddrDigitsCount + 1) * s.GlyphWidth + style.FramePadding.x * 2.0f);
-        if (ImGui::InputText("##addr", AddrInputBuf, 32, ImGuiInputTextFlags_CharsHexadecimal | ImGuiInputTextFlags_EnterReturnsTrue))
+        ImGui::SetNextItemWidth((s.AddrDigitsCount + 1) * s.GlyphWidth + style.FramePadding.x * 2.0f);
+        if (ImGui::InputText("##addr", AddrInputBuf, IM_ARRAYSIZE(AddrInputBuf), ImGuiInputTextFlags_CharsHexadecimal | ImGuiInputTextFlags_EnterReturnsTrue))
         {
             size_t goto_addr;
             if (sscanf(AddrInputBuf, "%" _PRISizeT "X", &goto_addr) == 1)
@@ -488,7 +496,6 @@ struct MemoryEditor
                 HighlightMin = HighlightMax = (size_t)-1;
             }
         }
-        ImGui::PopItemWidth();
 
         if (GotoAddr != (size_t)-1)
         {
@@ -512,7 +519,7 @@ struct MemoryEditor
         ImGui::AlignTextToFramePadding();
         ImGui::Text("Preview as:");
         ImGui::SameLine();
-        ImGui::PushItemWidth((s.GlyphWidth * 10.0f) + style.FramePadding.x * 2.0f + style.ItemInnerSpacing.x);
+        ImGui::SetNextItemWidth((s.GlyphWidth * 10.0f) + style.FramePadding.x * 2.0f + style.ItemInnerSpacing.x);
         if (ImGui::BeginCombo("##combo_type", DataTypeGetDesc(PreviewDataType), ImGuiComboFlags_HeightLargest))
         {
             for (int n = 0; n < ImGuiDataType_COUNT; n++)
@@ -520,11 +527,9 @@ struct MemoryEditor
                     PreviewDataType = (ImGuiDataType)n;
             ImGui::EndCombo();
         }
-        ImGui::PopItemWidth();
         ImGui::SameLine();
-        ImGui::PushItemWidth((s.GlyphWidth * 6.0f) + style.FramePadding.x * 2.0f + style.ItemInnerSpacing.x);
+        ImGui::SetNextItemWidth((s.GlyphWidth * 6.0f) + style.FramePadding.x * 2.0f + style.ItemInnerSpacing.x);
         ImGui::Combo("##combo_endianess", &PreviewEndianess, "LE\0BE\0\0");
-        ImGui::PopItemWidth();
 
         char buf[128] = "";
         float x = s.GlyphWidth * 6.0f;
