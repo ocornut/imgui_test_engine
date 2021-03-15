@@ -559,7 +559,7 @@ void ImGuiCaptureTool::CaptureWindowPicker(ImGuiCaptureArgs* args)
             r.Expand(args->InPadding);
             r.ClipWith(ImRect(ImVec2(0, 0), io.DisplaySize));
             r.Expand(1.0f);
-            fg_draw_list->AddRect(r.Min, r.Max, IM_COL32_WHITE, 0.0f, ~0, 2.0f);
+            fg_draw_list->AddRect(r.Min, r.Max, IM_COL32_WHITE, 0.0f, 0, 2.0f);
             ImGui::RenderRectFilledWithHole(fg_draw_list, viewport_rect, r, col_dim_overlay, 0.0f);
         }
         else

@@ -65,9 +65,9 @@ static void HelperDrawAndFillBounds(TableTestingVars* vars)
 
     if (vars->DebugShowBounds)
     {
-        ImGui::GetForegroundDrawList()->AddRect(ImGui::GetItemRectMin(), vars->OutOuterIdealMaxPosOnEndTable, COL_IDEAL_MAX_POS, 0.0f, ~0, 7.0f);
-        ImGui::GetForegroundDrawList()->AddRect(ImGui::GetItemRectMin(), vars->OutOuterCursorMaxPosOnEndTable, COL_CURSOR_MAX_POS, 0.0f, ~0, 4.0f);
-        ImGui::GetForegroundDrawList()->AddRect(ImGui::GetItemRectMin(), ImGui::GetItemRectMax(), COL_ITEM_RECT, 0.0f, ~0, 1.0f);
+        ImGui::GetForegroundDrawList()->AddRect(ImGui::GetItemRectMin(), vars->OutOuterIdealMaxPosOnEndTable, COL_IDEAL_MAX_POS, 0.0f, 0, 7.0f);
+        ImGui::GetForegroundDrawList()->AddRect(ImGui::GetItemRectMin(), vars->OutOuterCursorMaxPosOnEndTable, COL_CURSOR_MAX_POS, 0.0f, 0, 4.0f);
+        ImGui::GetForegroundDrawList()->AddRect(ImGui::GetItemRectMin(), ImGui::GetItemRectMax(), COL_ITEM_RECT, 0.0f, 0, 1.0f);
         ImGui::GetForegroundDrawList()->AddCircleFilled(ImGui::GetCursorScreenPos(), 3.0f, COL_ITEM_RECT);
         ImGui::GetForegroundDrawList()->AddCircleFilled(ImGui::GetCurrentWindow()->DC.CursorPosPrevLine, 3.0f, COL_ITEM_RECT);
     }
