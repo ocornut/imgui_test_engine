@@ -31,47 +31,47 @@ void GetSliderTestRanges(ImGuiDataType data_type, ImGuiDataTypeStorage* min_p, I
     switch (data_type)
     {
     case ImGuiDataType_S8:
-        *(int8_t*)min_p = INT8_MIN;
-        *(int8_t*)max_p = INT8_MAX;
+        *(int8_t*)(void*)min_p = INT8_MIN;
+        *(int8_t*)(void*)max_p = INT8_MAX;
         break;
     case ImGuiDataType_U8:
-        *(uint8_t*)min_p = 0;
-        *(uint8_t*)max_p = UINT8_MAX;
+        *(uint8_t*)(void*)min_p = 0;
+        *(uint8_t*)(void*)max_p = UINT8_MAX;
         break;
     case ImGuiDataType_S16:
-        *(int16_t*)min_p = INT16_MIN;
-        *(int16_t*)max_p = INT16_MAX;
+        *(int16_t*)(void*)min_p = INT16_MIN;
+        *(int16_t*)(void*)max_p = INT16_MAX;
         break;
     case ImGuiDataType_U16:
-        *(uint16_t*)min_p = 0;
-        *(uint16_t*)max_p = UINT16_MAX;
+        *(uint16_t*)(void*)min_p = 0;
+        *(uint16_t*)(void*)max_p = UINT16_MAX;
         break;
     case ImGuiDataType_S32:
-        *(int32_t*)min_p = INT32_MIN / 2;
-        *(int32_t*)max_p = INT32_MAX / 2;
+        *(int32_t*)(void*)min_p = INT32_MIN / 2;
+        *(int32_t*)(void*)max_p = INT32_MAX / 2;
         break;
     case ImGuiDataType_U32:
-        *(uint32_t*)min_p = 0;
-        *(uint32_t*)max_p = UINT32_MAX / 2;
+        *(uint32_t*)(void*)min_p = 0;
+        *(uint32_t*)(void*)max_p = UINT32_MAX / 2;
         break;
     case ImGuiDataType_S64:
-        *(int64_t*)min_p = INT64_MIN / 2;
-        *(int64_t*)max_p = INT64_MAX / 2;
+        *(int64_t*)(void*)min_p = INT64_MIN / 2;
+        *(int64_t*)(void*)max_p = INT64_MAX / 2;
         break;
     case ImGuiDataType_U64:
-        *(uint64_t*)min_p = 0;
-        *(uint64_t*)max_p = UINT64_MAX / 2;
+        *(uint64_t*)(void*)min_p = 0;
+        *(uint64_t*)(void*)max_p = UINT64_MAX / 2;
         break;
     case ImGuiDataType_Float:
-        *(float*)min_p = -1000000000.0f; // Floating point types do not use their min/max supported values because widgets
-        *(float*)max_p = +1000000000.0f; // may not be able to display them due to lossy RoundScalarWithFormatT().
+        *(float*)(void*)min_p = -1000000000.0f; // Floating point types do not use their min/max supported values because widgets
+        *(float*)(void*)max_p = +1000000000.0f; // may not be able to display them due to lossy RoundScalarWithFormatT().
         break;
     case ImGuiDataType_Double:
-        *(double*)min_p = -1000000000.0;
-        *(double*)max_p = +1000000000.0;
+        *(double*)(void*)min_p = -1000000000.0;
+        *(double*)(void*)max_p = +1000000000.0;
         break;
     default:
-        assert(false);
+        IM_ASSERT(0);
     }
 }
 
@@ -950,7 +950,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
 
     // ## Test input text multiline cursor movement: left, up, right, down, origin, end, ctrl+origin, ctrl+end, page up, page down
     t = IM_REGISTER_TEST(e, "widgets", "widgets_inputtext_cursor");
-    struct InputTextCursorVars { Str str; int Cursor; int LineCount = 10; };
+    struct InputTextCursorVars { Str str; int Cursor = 0; int LineCount = 10; };
     t->SetUserDataType<InputTextCursorVars>();
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {

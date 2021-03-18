@@ -391,9 +391,10 @@ void RegisterTests_Window(ImGuiTestEngine* e)
         ImGui::BeginChild("Child 1", ImVec2(100, 100), true);
         ImGui::EndChild();
         if (ctx->FrameCount == 2)
+        {
             IM_CHECK_EQ(ctx->UiContext->CurrentWindow->ContentSize, ImVec2(100, 100 + ImGui::GetTextLineHeightWithSpacing()));
-        if (ctx->FrameCount == 2)
             ctx->Finish();
+        }
         ImGui::End();
     };
 
@@ -1580,7 +1581,7 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
     // ## Test ImGuiListClipper basic behavior
     // ## Test ImGuiListClipper with table frozen rows
     t = IM_REGISTER_TEST(e, "misc", "misc_clipper");
-    struct ClipperTestVars { ImGuiWindow* WindowOut = NULL; float WindowHeightInItems = 10.0f; int ItemsIn = 100; int ItemsOut = 0; float OffsetY; ImBitVector ItemsOutMask; bool ClipperManualItemHeight = true; bool TableEnable = false; int TableFreezeRows = 0; };
+    struct ClipperTestVars { ImGuiWindow* WindowOut = NULL; float WindowHeightInItems = 10.0f; int ItemsIn = 100; int ItemsOut = 0; float OffsetY = 0.0f; ImBitVector ItemsOutMask; bool ClipperManualItemHeight = true; bool TableEnable = false; int TableFreezeRows = 0; };
     t->SetUserDataType<ClipperTestVars>();
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {

@@ -471,6 +471,7 @@ void    ImParseSplitCommandLine(int* out_argc, char const*** out_argv, const cha
 
     int argc = n;
     char const** argv = (char const**)malloc(sizeof(char*) * ((size_t)argc + 1) + (cmd_line_len + 1));
+    IM_ASSERT(argv != NULL);
     char* cmd_line_dup = (char*)argv + sizeof(char*) * ((size_t)argc + 1);
     strcpy(cmd_line_dup, cmd_line);
 
@@ -541,7 +542,7 @@ static void ImBuildParseDateFromCompilerIntoYMD(const char* in_date, char* out_b
 {
     char month_str[5];
     int year, month, day;
-    sscanf(in_date, "%s %d %d", month_str, &day, &year);
+    sscanf(in_date, "%3s %d %d", month_str, &day, &year);
     const char month_names[] = "JanFebMarAprMayJunJulAugSepOctNovDec";
     const char* p = strstr(month_names, month_str);
     month = p ? (int)(1 + (p - month_names) / 3) : 0;

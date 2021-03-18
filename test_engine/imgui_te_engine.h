@@ -127,7 +127,7 @@ enum ImGuiTestInputType
 
 struct ImGuiTestInput
 {
-    ImGuiTestInputType      Type;
+    ImGuiTestInputType      Type = ImGuiTestInputType_None;
     ImGuiKey                Key = ImGuiKey_COUNT;
     ImGuiKeyModFlags        KeyMods = ImGuiKeyModFlags_None;
     ImGuiNavInput           NavInput = ImGuiNavInput_COUNT;

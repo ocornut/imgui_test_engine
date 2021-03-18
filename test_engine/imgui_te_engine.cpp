@@ -486,7 +486,7 @@ void ImGuiTestEngine_ApplyInputToImGuiContext(ImGuiTestEngine* engine)
                 case ImGuiTestInputType_Nav:
                 {
                     IM_ASSERT(input.NavInput >= 0 && input.NavInput < ImGuiNavInput_COUNT);
-                    simulated_io.NavInputs[input.NavInput] = (input.State == ImGuiKeyState_Down);
+                    simulated_io.NavInputs[input.NavInput] = (input.State == ImGuiKeyState_Down) ? 1.0f : 0.0f;
                     break;
                 }
                 case ImGuiTestInputType_Char:
@@ -1538,8 +1538,7 @@ bool ImGuiTestEngineHook_Check(const char* file, const char* func, int line, ImG
     }
     else
     {
-        ctx->LogError("Error: no active test!\n");
-        IM_ASSERT(0);
+        IM_ASSERT(0 && "No active tests!");
     }
 
     if (result == false && engine->IO.ConfigStopOnError && !engine->Abort)

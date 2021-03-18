@@ -459,10 +459,9 @@ void ImGuiTestContext::CaptureInitArgs(ImGuiCaptureArgs* args, int flags)
 bool ImGuiTestContext::CaptureAddWindow(ImGuiCaptureArgs* args, ImGuiTestRef ref)
 {
     ImGuiWindow* window = GetWindowByRef(ref);
-    if (window == NULL)
-        IM_CHECK_RETV(window != NULL, false);
+    IM_CHECK_SILENT_RETV(window != NULL, false);
     args->InCaptureWindows.push_back(window);
-    return window != NULL;
+    return true;
 }
 
 bool ImGuiTestContext::CaptureScreenshotEx(ImGuiCaptureArgs* args)
@@ -557,7 +556,7 @@ ImGuiTestItemInfo* ImGuiTestContext::ItemInfo(ImGuiTestRef ref, ImGuiTestOpFlags
         // FIXME: InFilterItemStatusFlags is not clear here intentionally, because it is set in ItemAction() and reused in later calls to ItemInfo() to resolve ambiguities.
         task->InBaseId = 0;
         task->InLabel = NULL;
-        task->OutItemId = 0;
+        task->OutItemId = 0;    // -V1048   // Variable 'OutItemId' was assigned the same value. False-positive, because value of OutItemId could be modified from other thread during ImGuiTestEngine_Yield() call.
     }
     else
     {
@@ -1838,9 +1837,6 @@ void    ImGuiTestContext::ItemActionAll(ImGuiTestAction action, ImGuiTestRef ref
             switch (action)
             {
             case ImGuiTestAction_Hover:
-                ItemAction(action, item.ID);
-                actioned_total++;
-                break;
             case ImGuiTestAction_Click:
                 ItemAction(action, item.ID);
                 actioned_total++;
