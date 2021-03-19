@@ -496,6 +496,90 @@ void RegisterTests_Window(ImGuiTestEngine* e)
         IM_CHECK_EQ(sy, 100.0f);
     };
 
+    // ## Test that SetScrollHereXX functions make items fully visible
+    // Regardless of WindowPadding and ItemSpacing values
+#if IMGUI_VERSION_NUM >= 18202
+    t = IM_REGISTER_TEST(e, "window", "window_scroll_tracking");
+    struct ScrollTestVars { int Variant = 0; bool FullyVisible[30][30] = {}; int TrackX = 0; int TrackY = 0; };
+    t->SetUserDataType<ScrollTestVars>();
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        auto& vars = ctx->GetUserData<ScrollTestVars>();
+
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
+        if (ImGui::Button("Track 0,0")) { vars.TrackX = 0; vars.TrackY = 0; }
+        if (ImGui::Button("Track 29,0")) { vars.TrackX = 29; vars.TrackY = 0; }
+        if (ImGui::Button("Track 0,29")) { vars.TrackX = 0; vars.TrackY = 29; }
+        if (ImGui::Button("Track 29,29")) { vars.TrackX = 29; vars.TrackY = 29; }
+
+        if (vars.Variant & 1)
+            ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(1, 1));
+        if (vars.Variant & 2)
+            ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(1, 1));
+        ImGui::BeginChild("Scrolling", ImVec2(500, 500), true, ImGuiWindowFlags_AlwaysHorizontalScrollbar | ImGuiWindowFlags_HorizontalScrollbar);
+
+        for (int y = 0; y < 30; y++)
+        {
+            for (int x = 0; x < 30; x++)
+            {
+                if (x > 0)
+                    ImGui::SameLine();
+                ImGui::Button(Str30f("%d Item %d,%d###%d,%d", vars.FullyVisible[y][x], y, x, y, x).c_str());
+                if (vars.TrackX == x)
+                    ImGui::SetScrollHereX(vars.TrackX / 29.0f);
+                if (vars.TrackY == y)
+                    ImGui::SetScrollHereY(vars.TrackY / 29.0f);
+
+                ImRect clip_rect = ImGui::GetCurrentWindow()->ClipRect;
+                ImRect item_rect = ImGui::GetCurrentWindow()->DC.LastItemRect;
+                vars.FullyVisible[y][x] = clip_rect.Contains(item_rect);
+            }
+        }
+        vars.TrackX = vars.TrackY = -1;
+
+        ImGui::EndChild();
+        if (vars.Variant & 1)
+            ImGui::PopStyleVar();
+        if (vars.Variant & 2)
+            ImGui::PopStyleVar();
+
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        auto& vars = ctx->GetUserData<ScrollTestVars>();
+        ctx->SetRef("Test Window");
+        ImGuiWindow* window = ctx->GetWindowByRef("");
+
+        for (int variant = 0; variant < 4; variant++)
+        {
+            vars.Variant = variant;
+            ctx->Yield();
+
+            ctx->ItemClick("Track 29,29");
+            IM_CHECK_EQ(vars.FullyVisible[29][29], true);
+            IM_CHECK_EQ(vars.FullyVisible[0][0], false);
+            IM_CHECK_EQ(window->Scroll.x, window->ScrollMax.x);
+            IM_CHECK_EQ(window->Scroll.y, window->ScrollMax.y);
+
+            ctx->ItemClick("Track 0,29");
+            IM_CHECK_EQ(vars.FullyVisible[29][0], true);
+            IM_CHECK_EQ(window->Scroll.x, 0.0f);
+            IM_CHECK_EQ(window->Scroll.y, window->ScrollMax.y);
+
+            ctx->ItemClick("Track 29,0");
+            IM_CHECK_EQ(vars.FullyVisible[0][29], true);
+            IM_CHECK_EQ(window->Scroll.y, 0.0f);
+
+            ctx->ItemClick("Track 0,0");
+            IM_CHECK_EQ(vars.FullyVisible[0][0], true);
+            IM_CHECK_EQ(vars.FullyVisible[29][29], false);
+            IM_CHECK_EQ(window->Scroll.x, 0.0f);
+            IM_CHECK_EQ(window->Scroll.y, 0.0f);
+        }
+    };
+#endif
+
     // ## Test that an auto-fit window doesn't have scrollbar while resizing (FIXME-TESTS: Also test non-zero ScrollMax when implemented)
     t = IM_REGISTER_TEST(e, "window", "window_scroll_while_resizing");
     t->Flags |= ImGuiTestFlags_NoAutoFinish;
