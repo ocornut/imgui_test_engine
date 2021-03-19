@@ -1959,7 +1959,7 @@ void    ImGuiTestContext::ItemDragOverAndHold(ImGuiTestRef ref_src, ImGuiTestRef
     MouseUp(0);
 }
 
-void    ImGuiTestContext::ItemDragAndDrop(ImGuiTestRef ref_src, ImGuiTestRef ref_dst)
+void    ImGuiTestContext::ItemDragAndDrop(ImGuiTestRef ref_src, ImGuiTestRef ref_dst, ImGuiMouseButton button)
 {
     if (IsError())
         return;
@@ -1973,14 +1973,14 @@ void    ImGuiTestContext::ItemDragAndDrop(ImGuiTestRef ref_src, ImGuiTestRef ref
 
     MouseMove(ref_src, ImGuiTestOpFlags_NoCheckHoveredId);
     SleepShort();
-    MouseDown(0);
+    MouseDown(button);
 
     // Enforce lifting drag threshold even if both item are exactly at the same location.
     MouseLiftDragThreshold();
 
     MouseMove(ref_dst, ImGuiTestOpFlags_NoCheckHoveredId);
     SleepShort();
-    MouseUp(0);
+    MouseUp(button);
 }
 
 void    ImGuiTestContext::ItemDragWithDelta(ImGuiTestRef ref_src, ImVec2 pos_delta)

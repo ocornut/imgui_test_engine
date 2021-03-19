@@ -3562,4 +3562,63 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
             IM_CHECK_EQ(g.HoveredIdPreviousFrame, ctx->GetID("HoverMe"));
         }
     };
+
+    // ## Test drag & drop using three main mouse buttons.
+    t = IM_REGISTER_TEST(e, "widgets", "widgets_drag_mouse_buttons");
+    struct DragMouseButtonsVars { bool Pressed = false; bool Dropped = false; };
+    t->SetUserDataType<DragMouseButtonsVars>();
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        DragMouseButtonsVars& vars = ctx->GetUserData<DragMouseButtonsVars>();
+        ImGui::SetNextWindowSize(ImVec2(0, 0), ImGuiCond_Appearing);
+        if (ImGui::Begin("Window", NULL, ImGuiWindowFlags_NoSavedSettings))
+        {
+            vars.Pressed |= ImGui::Button("Button");
+
+            // This is a workaround for button widget not reacting to mouse clicks other than the left one.
+            // See https://github.com/ocornut/imgui/issues/3885 for more details.
+            ImGuiWindow* window = ImGui::GetCurrentWindow();
+            ImGui::ButtonBehavior(window->DC.LastItemRect, window->DC.LastItemId, NULL, NULL, ImGuiButtonFlags_MouseButtonLeft | ImGuiButtonFlags_MouseButtonMiddle | ImGuiButtonFlags_MouseButtonRight);
+
+            if (ImGui::BeginDragDropSource())
+            {
+                for (int button = 0; button < ImGuiMouseButton_COUNT; button++)
+                    if (ImGui::IsMouseDown(button))
+                        ImGui::Text("Dragged by button %d", button);
+                ImGui::SetDragDropPayload("Button", "Works", 6);
+                ImGui::EndDragDropSource();
+            }
+
+            ImGui::Button("Drop Here");
+            if (ImGui::BeginDragDropTarget())
+            {
+                if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("Button"))
+                    vars.Dropped = payload->Data != NULL && strcmp((const char*)payload->Data, "Works") == 0;
+                ImGui::EndDragDropTarget();
+            }
+        }
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        DragMouseButtonsVars& vars = ctx->GetUserData<DragMouseButtonsVars>();
+        ctx->SetRef("Window");
+
+        // Clicking still works.
+        for (int button = 0; button < 3; button++)
+        {
+            vars.Pressed = false;
+            ctx->ItemClick("Button", button);
+            IM_CHECK(vars.Pressed);
+        }
+
+        // Drag & drop using all mouse buttons work.
+        // FIXME: At this time only left, right and middle mouse buttons are supported for this usecase.
+        for (ImGuiMouseButton button = 0; button < 3; button++)
+        {
+            vars.Dropped = false;
+            ctx->ItemDragAndDrop("Button", "Drop Here", button);
+            IM_CHECK(vars.Dropped);
+        }
+    };
 }
