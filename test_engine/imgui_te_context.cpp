@@ -1971,6 +1971,11 @@ void    ImGuiTestContext::ItemDragAndDrop(ImGuiTestRef ref_src, ImGuiTestRef ref
     ImGuiTestRefDesc desc_dst(ref_dst, item_dst);
     LogDebug("ItemDragAndDrop %s to %s", desc_src.c_str(), desc_dst.c_str());
 
+    // Try to keep destination window above other windows. MouseMove() operation will avoid focusing destination window
+    // as that may steal ActiveID and break operation.
+    // FIXME-TESTS: This does not handle a case where source and destination windows overlap.
+    WindowBringToFront(item_dst->Window);
+
     MouseMove(ref_src, ImGuiTestOpFlags_NoCheckHoveredId);
     SleepShort();
     MouseDown(button);
@@ -1978,7 +1983,7 @@ void    ImGuiTestContext::ItemDragAndDrop(ImGuiTestRef ref_src, ImGuiTestRef ref
     // Enforce lifting drag threshold even if both item are exactly at the same location.
     MouseLiftDragThreshold();
 
-    MouseMove(ref_dst, ImGuiTestOpFlags_NoCheckHoveredId);
+    MouseMove(ref_dst, ImGuiTestOpFlags_NoCheckHoveredId | ImGuiTestOpFlags_NoFocusWindow);
     SleepShort();
     MouseUp(button);
 }
