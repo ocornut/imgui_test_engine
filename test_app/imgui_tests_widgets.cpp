@@ -1837,14 +1837,13 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         IM_CHECK_EQ(vars.TabBar->Tabs[0].ID, ctx->GetID("Tab 0"));
         IM_CHECK_EQ(vars.TabBar->Tabs[1].ID, ctx->GetID("Tab 1"));
 
-        ctx->ItemDragAndDrop("Tab 0", "Tab 2"); // Tab 2 has no reorder flag
-        ctx->ItemDragAndDrop("Tab 0", "Tab 3"); // Tab 2 has no reorder flag
-        ctx->ItemDragAndDrop("Tab 3", "Tab 2"); // Tab 2 has no reorder flag
+        ctx->ItemDragAndDrop("Tab 0", "Tab 2"); // Tab 2 has NoReorder flag
+        ctx->ItemDragAndDrop("Tab 0", "Tab 3"); // Tab 2 has NoReorder flag
+        ctx->ItemDragAndDrop("Tab 3", "Tab 2"); // Tab 2 has NoReorder flag
         IM_CHECK_EQ(vars.TabBar->Tabs[1].ID, ctx->GetID("Tab 0"));
         IM_CHECK_EQ(vars.TabBar->Tabs[2].ID, ctx->GetID("Tab 2"));
         IM_CHECK_EQ(vars.TabBar->Tabs[3].ID, ctx->GetID("Tab 3"));
     };
-
 
     // ## Test nested/recursing Tab Bars (Bug #2371)
     t = IM_REGISTER_TEST(e, "widgets", "widgets_tabbar_nested");

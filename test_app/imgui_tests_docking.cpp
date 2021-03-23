@@ -800,35 +800,109 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
 
     // ## Test whether docked window tabs are in right order.
     t = IM_REGISTER_TEST(e, "docking", "docking_tab_order");
+    struct DockingTabOrderVars { bool ShowWindow[3] = { true, true, true }; };
+    t->SetUserDataType<DockingTabOrderVars>();
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
+        DockingTabOrderVars& vars = ctx->GetUserData<DockingTabOrderVars>();
+        ImGui::SetNextWindowSize(ImVec2(200, 100), ImGuiCond_Appearing);
         ImGui::Begin("Dockspace", NULL, ImGuiWindowFlags_NoSavedSettings);
         ImGuiID dockspace_id = ImGui::GetID("dockspace");
         ImGui::DockSpace(dockspace_id);
         ImGui::End();
-        ImGui::SetNextWindowDockID(dockspace_id);
-        ImGui::Begin("AAA", NULL, ImGuiWindowFlags_NoSavedSettings);
-        ImGui::End();
-        ImGui::SetNextWindowDockID(dockspace_id);
-        ImGui::Begin("BBB", NULL, ImGuiWindowFlags_NoSavedSettings);
-        ImGui::End();
-        ImGui::SetNextWindowDockID(dockspace_id);
-        ImGui::Begin("CCC", NULL, ImGuiWindowFlags_NoSavedSettings);
-        ImGui::End();
+        if (vars.ShowWindow[0])
+        {
+            ImGui::SetNextWindowDockID(dockspace_id, ImGuiCond_Once);
+            ImGui::Begin("AAA", NULL, ImGuiWindowFlags_NoSavedSettings);
+            ImGui::End();
+        }
+        if (vars.ShowWindow[1])
+        {
+            ImGui::SetNextWindowDockID(dockspace_id, ImGuiCond_Once);
+            ImGui::Begin("BBB", NULL, ImGuiWindowFlags_NoSavedSettings);
+            ImGui::End();
+        }
+        if (vars.ShowWindow[2])
+        {
+            ImGui::SetNextWindowDockID(dockspace_id, ImGuiCond_Once);
+            ImGui::Begin("CCC", NULL, ImGuiWindowFlags_NoSavedSettings);
+            ImGui::End();
+        }
     };
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
+        ImGuiContext& g = *ctx->UiContext;
+        DockingTabOrderVars& vars = ctx->GetUserData<DockingTabOrderVars>();
+
+        // Consistent state on test start.
+        ctx->DockMultiClear("AAA", "BBB", "CCC", NULL);
+        ctx->DockWindowInto("AAA", "Dockspace");
+        ctx->DockWindowInto("BBB", "Dockspace");
+        ctx->DockWindowInto("CCC", "Dockspace");
+
         ImGuiWindow* window = ctx->GetWindowByRef("AAA");
         IM_CHECK(window->DockNode != NULL);
         ImGuiTabBar* tab_bar = window->DockNode->TabBar;
         IM_CHECK(tab_bar != NULL);
+
+        // Check initial tab order.
         IM_CHECK(tab_bar->Tabs.Size == 3);
-        const char* tab_order[] = { "AAA", "BBB", "CCC" };
-        for (int i = 0; i < IM_ARRAYSIZE(tab_order); i++)
+
+        auto verify_tab_order = [tab_bar](const char** tab_order)
         {
-            IM_CHECK(tab_bar->Tabs[i].Window != NULL);
-            IM_CHECK_STR_EQ(tab_bar->Tabs[i].Window->Name, tab_order[i]);
-        }
+            for (int i = 0; tab_order[i] != NULL; i++)
+            {
+                IM_CHECK(tab_bar->Tabs[i].Window != NULL);
+                IM_CHECK_STR_EQ(tab_bar->Tabs[i].Window->Name, tab_order[i]);
+            }
+        };
+
+        // Verify initial tab order.
+        const char* tab_order_initial[] = { "AAA", "BBB", "CCC", NULL };
+        verify_tab_order(tab_order_initial);
+
+        // Verify that drag operation past edge of the tab, but not entering other tab does not trigger reorder.
+        ctx->ItemDragWithDelta("AAA", ImVec2((tab_bar->Tabs[0].Width + g.Style.ItemInnerSpacing.x) * +0.5f, 0.0f));
+        verify_tab_order(tab_order_initial);
+        ctx->ItemDragWithDelta("BBB", ImVec2((tab_bar->Tabs[0].Width + g.Style.ItemInnerSpacing.x) * -0.5f, 0.0f));
+        verify_tab_order(tab_order_initial);
+        ImGuiID ccc_id = tab_bar->Tabs[2].ID;
+
+        // Mix tabs, expected order becomes CCC, BBB, AAA. This also verifies drag operations way beyond tab bar rect.
+        ctx->ItemDragWithDelta("AAA", ImVec2(+400.0f, 0.0f));
+        ctx->ItemDragWithDelta("CCC", ImVec2(-400.0f, 0.0f));
+        const char* tab_order_rearranged[] = { "CCC", "BBB", "AAA", NULL };
+        verify_tab_order(tab_order_rearranged);
+
+        // Hide CCC and BBB and show them together on the same frame.
+        vars.ShowWindow[1] = vars.ShowWindow[2] = false;
+        ctx->Yield(2);
+        vars.ShowWindow[1] = vars.ShowWindow[2] = true;
+        ctx->Yield(2);
+
+        // After reappearing windows that were hidden maintain same order relative to each other, and go to the end of tab bar together.
+        // FIXME-TESTS: This check would fail due to a bug.
+        const char* tab_order_reappeared[] = { "AAA", "CCC", "BBB", NULL };
+        IM_UNUSED(tab_order_reappeared);
+#if 0
+        verify_tab_order(tab_order_reappeared);
+#endif
+
+        // Focus CCC tab.
+        ctx->ItemClick("CCC");
+
+        // Hide all tabs and show them together on the same frame.
+        vars.ShowWindow[1] = vars.ShowWindow[2] = false;
+        ctx->Yield(2);
+        vars.ShowWindow[1] = vars.ShowWindow[2] = true;
+        ctx->Yield(2);
+
+        // CCC should maintain focus.
+        // FIXME-TESTS: This check would fail due to a missing feature (#2304)
+        IM_UNUSED(ccc_id);
+#if 0
+        IM_CHECK_EQ(tab_bar->SelectedTabId, ccc_id);
+#endif
     };
 
     // ## Test dockspace padding. (#3733)
