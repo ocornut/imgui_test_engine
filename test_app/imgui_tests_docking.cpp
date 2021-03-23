@@ -1002,6 +1002,71 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
         IM_CHECK(window1->DockId != 0);
         IM_CHECK(window1->DockId == window2->DockId);
     };
+
+    // ## Test docked window focusing.
+    t = IM_REGISTER_TEST(e, "docking", "docking_focus_from_host");
+    t->SetUserDataType<TestLostDockingInfoVars>();
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::SetNextWindowSize(ImVec2(200, 100));
+        ImGui::Begin("AAA", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImGui::End();
+        ImGui::SetNextWindowSize(ImVec2(200, 100));
+        ImGui::Begin("BBB", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiContext& g = *ctx->UiContext;
+        ImGuiWindow* windows[2] = { ctx->GetWindowByRef("AAA"), ctx->GetWindowByRef("BBB") };
+        ctx->DockMultiClear("AAA", "BBB", NULL);
+        ctx->DockWindowInto("BBB", "AAA", ImGuiDir_Right);
+
+        // Test focusing window by clicking on it.
+        for (int i = 0; i < IM_ARRAYSIZE(windows); i++)
+        {
+            ctx->MouseMoveToPos(windows[i]->Rect().GetCenter());
+            ctx->MouseClick();
+            IM_CHECK(g.NavWindow == windows[i]);
+        }
+
+        // Test focusing window by clicking it's tab.
+        for (int i = 0; i < IM_ARRAYSIZE(windows); i++)
+        {
+            ctx->ItemClick(windows[i]->Name);
+            IM_CHECK(g.NavWindow == windows[i]);
+        }
+
+        // Test focusing window by clicking empty space in it's tab bar.
+        for (int i = 0; i < IM_ARRAYSIZE(windows); i++)
+        {
+            ImRect bar_rect = windows[i]->DockNode->TabBar->BarRect;
+            ctx->MouseMoveToPos(bar_rect.GetCenter() + ImVec2(bar_rect.GetWidth() * 0.4f, 0.0f));
+            ctx->MouseDragWithDelta(ImVec2(3.0f * (i % 2 == 0 ? -1.0f : +1.0f), 0.0f));
+            IM_CHECK(g.NavWindow == windows[i]);
+        }
+
+        // Check whether collapse button interaction focuses window.
+        for (int i = 0; i < IM_ARRAYSIZE(windows); i++)
+        {
+            ctx->ItemClick(ImHashDecoratedPath("#COLLAPSE", NULL, windows[i]->DockNode->ID));
+            ctx->KeyPressMap(ImGuiKey_Escape);
+            // FIXME-TESTS: This check would fail due to a bug.
+            //IM_CHECK(g.NavWindow == windows[i]);
+        }
+
+        // Check whether focus is maintained after splitter interaction.
+        ImGuiWindow* last_focused_window = g.NavWindow;
+
+        ImGuiWindow* root_dock = last_focused_window->RootWindowDockTree;
+        ImGuiID splitter_id = ctx->GetID("##Splitter", ctx->GetIDByInt(root_dock->DockNodeAsHost->ID, ctx->GetID(root_dock->Name)));
+        ctx->MouseMove(splitter_id);
+        ctx->MouseDragWithDelta(ImVec2(0.0f, 10.0f));
+        // FIXME-TESTS: This would fail due to a bug.
+        //IM_CHECK(g.NavWindow == last_focused_window);
+        IM_UNUSED(last_focused_window);
+    };
+
 #else
     IM_UNUSED(e);
 #endif
