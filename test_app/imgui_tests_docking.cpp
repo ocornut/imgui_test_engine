@@ -1003,6 +1003,37 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
         IM_CHECK(window1->DockId == window2->DockId);
     };
 
+    // ## Test docked window focusing from the menu.
+    t = IM_REGISTER_TEST(e, "docking", "docking_focus_from_menu");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::SetNextWindowSize(ImVec2(200, 100));
+        ImGui::Begin("AAA", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImGui::End();
+        ImGui::SetNextWindowSize(ImVec2(200, 100));
+        ImGui::Begin("BBB", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImGui::End();
+        ImGui::SetNextWindowSize(ImVec2(200, 100));
+        ImGui::Begin("CCC", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiContext& g = *ctx->UiContext;
+        ImGuiWindow* windows[] = { ctx->GetWindowByRef("AAA"), ctx->GetWindowByRef("BBB"), ctx->GetWindowByRef("CCC") };
+        ctx->DockMultiClear("AAA", "BBB", "CCC", NULL);
+        ctx->DockWindowInto("BBB", "AAA");
+        ctx->DockWindowInto("CCC", "BBB");
+
+        for (int i = 0; i < IM_ARRAYSIZE(windows); i++)
+        {
+            ctx->ItemClick(ImHashDecoratedPath("#COLLAPSE", NULL, windows[i]->RootWindowDockTree->DockNodeAsHost->ID));
+            ctx->SetRef(g.NavWindow);
+            ctx->ItemClick(windows[i]->Name);
+            IM_CHECK(g.NavWindow == windows[i]);
+        }
+    };
+
     // ## Test docked window focusing.
     t = IM_REGISTER_TEST(e, "docking", "docking_focus_from_host");
     t->SetUserDataType<TestLostDockingInfoVars>();
