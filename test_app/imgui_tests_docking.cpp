@@ -1181,6 +1181,34 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
 #endif
         }
     };
+
+    // ## Test undocking window from dockspace covering entire window.
+    t = IM_REGISTER_TEST(e, "docking", "docking_undock_large");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiID dockspace_id = ImGui::DockSpaceOverViewport(ImGui::GetMainViewport(), ImGuiDockNodeFlags_PassthruCentralNode);
+        ImGui::SetNextWindowDockID(dockspace_id, ImGuiCond_Appearing);
+        ImGui::Begin("Window 1", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImGui::Text("This is window 1");
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiWindow* window = ctx->GetWindowByRef("Window 1");
+        IM_CHECK(window->DockNode != NULL);
+
+        ImVec2 expect_size = ImGui::GetMainViewport()->Size;
+        IM_CHECK(window->Size.x == expect_size.x);
+        IM_CHECK(window->Size.y == expect_size.y);
+
+        ctx->ItemDragWithDelta("Window 1", ImVec2(50.0f, 50.0f));
+        IM_CHECK(window->DockNode == NULL);
+
+        expect_size = ImGui::GetMainViewport()->Size * ImVec2(0.90f, 0.90f);
+        IM_CHECK(window->Size.x <= expect_size.x);
+        IM_CHECK(window->Size.y <= expect_size.y);
+    };
+
 #else
     IM_UNUSED(e);
 #endif
