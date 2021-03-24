@@ -26,6 +26,15 @@
 static inline bool operator==(const ImVec2& lhs, const ImVec2& rhs) { return lhs.x == rhs.x && lhs.y == rhs.y; }    // for IM_CHECK_EQ()
 #endif
 
+static void VerifyTabBarOrder(ImGuiTabBar* tab_bar, const char** tab_order)
+{
+    for (int i = 0; tab_order[i] != NULL; i++)
+    {
+        IM_CHECK(tab_bar->Tabs[i].Window != NULL);
+        IM_CHECK_STR_EQ(tab_bar->Tabs[i].Window->Name, tab_order[i]);
+    }
+}
+
 //-------------------------------------------------------------------------
 // Tests: Docking
 //-------------------------------------------------------------------------
@@ -848,31 +857,23 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
         // Check initial tab order.
         IM_CHECK(tab_bar->Tabs.Size == 3);
 
-        auto verify_tab_order = [tab_bar](const char** tab_order)
-        {
-            for (int i = 0; tab_order[i] != NULL; i++)
-            {
-                IM_CHECK(tab_bar->Tabs[i].Window != NULL);
-                IM_CHECK_STR_EQ(tab_bar->Tabs[i].Window->Name, tab_order[i]);
-            }
-        };
-
         // Verify initial tab order.
         const char* tab_order_initial[] = { "AAA", "BBB", "CCC", NULL };
-        verify_tab_order(tab_order_initial);
+        VerifyTabBarOrder(tab_bar, tab_order_initial);
 
         // Verify that drag operation past edge of the tab, but not entering other tab does not trigger reorder.
         ctx->ItemDragWithDelta("AAA", ImVec2((tab_bar->Tabs[0].Width + g.Style.ItemInnerSpacing.x) * +0.5f, 0.0f));
-        verify_tab_order(tab_order_initial);
+        VerifyTabBarOrder(tab_bar, tab_order_initial);
         ctx->ItemDragWithDelta("BBB", ImVec2((tab_bar->Tabs[0].Width + g.Style.ItemInnerSpacing.x) * -0.5f, 0.0f));
-        verify_tab_order(tab_order_initial);
+        VerifyTabBarOrder(tab_bar, tab_order_initial);
+
         ImGuiID ccc_id = tab_bar->Tabs[2].ID;
 
         // Mix tabs, expected order becomes CCC, BBB, AAA. This also verifies drag operations way beyond tab bar rect.
         ctx->ItemDragWithDelta("AAA", ImVec2(+400.0f, 0.0f));
         ctx->ItemDragWithDelta("CCC", ImVec2(-400.0f, 0.0f));
         const char* tab_order_rearranged[] = { "CCC", "BBB", "AAA", NULL };
-        verify_tab_order(tab_order_rearranged);
+        VerifyTabBarOrder(tab_bar, tab_order_rearranged);
 
         // Hide CCC and BBB and show them together on the same frame.
         vars.ShowWindow[1] = vars.ShowWindow[2] = false;
@@ -884,9 +885,7 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
         // FIXME-TESTS: This check would fail due to a bug.
         const char* tab_order_reappeared[] = { "AAA", "CCC", "BBB", NULL };
         IM_UNUSED(tab_order_reappeared);
-#if 0
-        verify_tab_order(tab_order_reappeared);
-#endif
+        //VerifyTabBarOrder(tab_bar, tab_order_reappeared);
 
         // Focus CCC tab.
         ctx->ItemClick("CCC");
@@ -1098,6 +1097,90 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
         IM_UNUSED(last_focused_window);
     };
 
+    // ## Test restoring dock tab state in independent and split windows.
+    t = IM_REGISTER_TEST(e, "docking", "docking_tab_state");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        bool& hide_all = ctx->GenericVars.Bool1;
+        if (hide_all)
+            return;
+
+        ImVec2 size = ImVec2(300, 150);
+        ImGui::SetNextWindowSize(size);
+        ImGui::Begin("AAA", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImGui::End();
+        ImGui::SetNextWindowSize(size);
+        ImGui::Begin("BBB", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImGui::End();
+        ImGui::SetNextWindowSize(size);
+        ImGui::Begin("CCC", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImGui::End();
+        ImGui::SetNextWindowSize(size);
+        ImGui::Begin("DDD", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImGui::End();
+        ImGui::SetNextWindowSize(size);
+        ImGui::Begin("EEE", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImGui::End();
+        ImGui::SetNextWindowSize(size);
+        ImGui::Begin("FFF", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        bool& hide_all = ctx->GenericVars.Bool1;
+        ImGuiWindow* window_aaa = ctx->GetWindowByRef("AAA");
+        ImGuiWindow* window_ddd = ctx->GetWindowByRef("DDD");
+
+        for (int variant = 0; variant < 2; variant++)
+        {
+            ctx->LogDebug("Variant %d", variant);
+            ctx->DockMultiClear("AAA", "BBB", "CCC", "DDD", "EEE", "FFF", NULL);
+
+            if (variant == 1)
+                ctx->DockWindowInto("DDD", "AAA", ImGuiDir_Right);
+            ctx->DockWindowInto("BBB", "AAA");
+            ctx->DockWindowInto("CCC", "BBB");
+            ctx->DockWindowInto("EEE", "DDD");
+            ctx->DockWindowInto("FFF", "EEE");
+
+            // Rearrange tabs and set active tab.
+            ctx->ItemDragAndDrop("CCC", "AAA");
+            ctx->ItemDragAndDrop("DDD", "FFF");
+            ctx->ItemClick("AAA");
+            ctx->ItemClick("FFF");
+
+            ImGuiTabBar* tab_bar_aaa = window_aaa->DockNode->TabBar;
+            ImGuiTabBar* tab_bar_ddd = window_ddd->DockNode->TabBar;
+
+            // Verify initial order.
+            const char* tab_order_1[] = { "CCC", "AAA", "BBB", NULL };
+            const char* tab_order_2[] = { "EEE", "FFF", "DDD", NULL };
+            VerifyTabBarOrder(tab_bar_aaa, tab_order_1);
+            VerifyTabBarOrder(tab_bar_ddd, tab_order_2);
+
+            IM_CHECK(tab_bar_aaa->VisibleTabId == tab_bar_aaa->Tabs[1].ID);
+            IM_CHECK(tab_bar_ddd->VisibleTabId == tab_bar_ddd->Tabs[1].ID);
+
+            // Hide and show all windows.
+            hide_all = true;
+            ctx->Yield(2);
+            hide_all = false;
+            ctx->Yield(2);
+
+            // Verify tab order is preserved.
+            tab_bar_aaa = window_aaa->DockNode->TabBar;
+            tab_bar_ddd = window_ddd->DockNode->TabBar;
+            VerifyTabBarOrder(tab_bar_aaa, tab_order_1);
+            VerifyTabBarOrder(tab_bar_ddd, tab_order_2);
+
+            // Verify active window is preserved.
+            // FIXME-TESTS: This fails due to a bug.
+#if IMGUI_BROKEN_TESTS
+            IM_CHECK(tab_bar_aaa->VisibleTabId == tab_bar_aaa->Tabs[1].ID);
+            IM_CHECK(tab_bar_ddd->VisibleTabId == tab_bar_ddd->Tabs[1].ID);
+#endif
+        }
+    };
 #else
     IM_UNUSED(e);
 #endif
