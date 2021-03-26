@@ -861,8 +861,8 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
         ctx->DockWindowInto("CCC", dockspace_host_window_name.c_str());
 
         ImGuiWindow* window_aaa = ctx->GetWindowByRef("AAA");
-        ImGuiWindow* window_bbb = ctx->GetWindowByRef("BBB");
-        ImGuiWindow* window_ccc = ctx->GetWindowByRef("CCC");
+        ImGuiWindow* window_bbb = ctx->GetWindowByRef("BBB"); IM_UNUSED(window_bbb);
+        ImGuiWindow* window_ccc = ctx->GetWindowByRef("CCC"); IM_UNUSED(window_ccc);
         IM_CHECK(window_aaa->DockNode != NULL);
         ImGuiTabBar* tab_bar = window_aaa->DockNode->TabBar;
         IM_CHECK(tab_bar != NULL);
@@ -1124,6 +1124,16 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
         bool& hide_all = ctx->GenericVars.Bool1;
         if (hide_all)
             return;
+
+        // FIXME-DOCKING
+#if IMGUI_BROKEN_TESTS
+        // Very interestingly, without the DockMultiClear() and with io.ConfigDockingAlwaysTabBar=true,
+        // we get a crash when running a "docking_tab_state", "docking_focus_from_host", "docking_tab_state" sequence.
+        // Begin("CCC") -> BeginDocked() binds CCC to an HostWindow which wasn't active at beginning of the frame, and it asserts in Begin()
+        // Need to clarify into a simpler repro
+#endif
+        if (ctx->IsFirstGuiFrame())
+            ctx->DockMultiClear("AAA", "BBB", "CCC", "DDD", "EEE", "FFF", NULL);
 
         ImVec2 size = ImVec2(300, 150);
         ImGui::SetNextWindowSize(size);

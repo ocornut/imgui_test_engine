@@ -2501,7 +2501,9 @@ void    ImGuiTestContext::DockMultiClear(const char* window_name, ...)
         window_name = va_arg(args, const char*);
     }
     va_end(args);
-    Yield(2); // Give time to rebuild dock in case io.ConfigDockingAlwaysTabBar is set
+
+    if (ActiveFunc == ImGuiTestActiveFunc_TestFunc)
+        Yield(2); // Give time to rebuild dock in case io.ConfigDockingAlwaysTabBar is set
 }
 
 void    ImGuiTestContext::DockMultiSet(ImGuiID dock_id, const char* window_name, ...)
