@@ -24,8 +24,6 @@
 // Helpers
 #ifdef IMGUI_HAS_DOCK
 static inline bool operator==(const ImVec2& lhs, const ImVec2& rhs) { return lhs.x == rhs.x && lhs.y == rhs.y; }    // for IM_CHECK_EQ()
-#endif
-
 static void VerifyTabBarOrder(ImGuiTabBar* tab_bar, const char** tab_order)
 {
     for (int i = 0; tab_order[i] != NULL; i++)
@@ -34,6 +32,7 @@ static void VerifyTabBarOrder(ImGuiTabBar* tab_bar, const char** tab_order)
         IM_CHECK_STR_EQ(tab_bar->Tabs[i].Window->Name, tab_order[i]);
     }
 }
+#endif
 
 //-------------------------------------------------------------------------
 // Tests: Docking
