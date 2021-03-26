@@ -2432,10 +2432,10 @@ void    ImGuiTestContext::DockWindowInto(const char* window_name_src, const char
         return;
 
     ImGuiTestRef ref_src(window_src->DockIsActive ? window_src->ID : window_src->MoveId);   // FIXME-TESTS FIXME-DOCKING: Identify tab
-    //ImGuiTestRef ref_dst(window_dst->DockIsActive ? window_dst->ID : window_dst->MoveId);
     ImGuiTestItemInfo* item_src = ItemInfo(ref_src);
-    //ImGuiTestItemInfo* item_dst = ItemInfo(ref_dst);
     ImGuiTestRefDesc desc_src(ref_src, item_src);
+    //ImGuiTestRef ref_dst(window_dst->DockIsActive ? window_dst->ID : window_dst->MoveId);
+    //ImGuiTestItemInfo* item_dst = ItemInfo(ref_dst);
     //ImGuiTestRefDesc desc_dst(ref_dst, item_dst);
 
     // Avoid focusing if we don't need it (this facilitate avoiding focus flashing when recording animated gifs)
@@ -2538,7 +2538,7 @@ bool    ImGuiTestContext::DockIdIsUndockedOrStandalone(ImGuiID dock_id)
     if (dock_id == 0)
         return true;
     if (ImGuiDockNode* node = ImGui::DockBuilderGetNode(dock_id))
-        if (node->IsRootNode() && node->IsLeafNode() && node->Windows.Size == 1)
+        if (node->IsFloatingNode() && node->IsLeafNode() && node->Windows.Size == 1)
             return true;
     return false;
 }
@@ -2549,6 +2549,7 @@ void    ImGuiTestContext::DockNodeHideTabBar(ImGuiDockNode* node, bool hidden)
     LogDebug("DockNodeHideTabBar %d", hidden);
 
     // FIXME-TEST: Alter WindowRef
+    ImGuiTestRef backup_ref = GetRef();
     if (hidden)
     {
         SetRef(node->HostWindow);
@@ -2564,6 +2565,7 @@ void    ImGuiTestContext::DockNodeHideTabBar(ImGuiDockNode* node, bool hidden)
         ItemClick("#UNHIDE", 0, ImGuiTestOpFlags_MoveToEdgeD | ImGuiTestOpFlags_MoveToEdgeR);
         IM_CHECK_SILENT(!node->IsHiddenTabBar());
     }
+    SetRef(backup_ref);
 }
 
 void    ImGuiTestContext::UndockNode(ImGuiID dock_id)
