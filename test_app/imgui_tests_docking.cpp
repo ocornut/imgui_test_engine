@@ -216,7 +216,7 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
 
     // ## Test that initial size of new dock node is based on visible/focused window
     // FIXME-DOCK FIXME-WIP: This is not actually reliable yet (see stashes around August 2019)
-#if 0
+#if IMGUI_BROKEN_TESTS
     t = IM_REGISTER_TEST(e, "docking", "docking_basic_initial_node_size");
     t->Flags |= ImGuiTestFlags_NoAutoFinish;
     t->GuiFunc = [](ImGuiTestContext* ctx)
@@ -885,7 +885,9 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
         // FIXME-TESTS: This check would fail due to a bug.
         const char* tab_order_reappeared[] = { "AAA", "CCC", "BBB", NULL };
         IM_UNUSED(tab_order_reappeared);
-        //VerifyTabBarOrder(tab_bar, tab_order_reappeared);
+#if IMGUI_BROKEN_TESTS
+        VerifyTabBarOrder(tab_bar, tab_order_reappeared);
+#endif
 
         // Focus CCC tab.
         ctx->ItemClick("CCC");
@@ -899,7 +901,7 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
         // CCC should maintain focus.
         // FIXME-TESTS: This check would fail due to a missing feature (#2304)
         IM_UNUSED(ccc_id);
-#if 0
+#if IMGUI_BROKEN_TESTS
         IM_CHECK_EQ(tab_bar->SelectedTabId, ccc_id);
 #endif
     };
@@ -1060,29 +1062,30 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
             IM_CHECK(g.NavWindow == windows[i]);
         }
 
-        // Test focusing window by clicking it's tab.
+        // Test focusing window by clicking its tab.
         for (int i = 0; i < IM_ARRAYSIZE(windows); i++)
         {
             ctx->ItemClick(windows[i]->Name);
             IM_CHECK(g.NavWindow == windows[i]);
         }
 
-        // Test focusing window by clicking empty space in it's tab bar.
+        // Test focusing window by clicking empty space in its tab bar.
         for (int i = 0; i < IM_ARRAYSIZE(windows); i++)
         {
             ImRect bar_rect = windows[i]->DockNode->TabBar->BarRect;
             ctx->MouseMoveToPos(bar_rect.GetCenter() + ImVec2(bar_rect.GetWidth() * 0.4f, 0.0f));
-            ctx->MouseDragWithDelta(ImVec2(3.0f * (i % 2 == 0 ? -1.0f : +1.0f), 0.0f));
+            ctx->MouseClick();
+            //ctx->MouseDragWithDelta(ImVec2(3.0f * (i % 2 == 0 ? -1.0f : +1.0f), 0.0f));
             IM_CHECK(g.NavWindow == windows[i]);
         }
 
         // Check whether collapse button interaction focuses window.
         for (int i = 0; i < IM_ARRAYSIZE(windows); i++)
         {
+            // FIXME-TESTS: Standardize access to window/collapse menu ID (there are 6 instances in tests)
             ctx->ItemClick(ImHashDecoratedPath("#COLLAPSE", NULL, windows[i]->DockNode->ID));
             ctx->KeyPressMap(ImGuiKey_Escape);
-            // FIXME-TESTS: This check would fail due to a bug.
-            //IM_CHECK(g.NavWindow == windows[i]);
+            IM_CHECK(g.NavWindow == windows[i]);
         }
 
         // Check whether focus is maintained after splitter interaction.
@@ -1092,8 +1095,10 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
         ImGuiID splitter_id = ctx->GetID("##Splitter", ctx->GetIDByInt(root_dock->DockNodeAsHost->ID, ctx->GetID(root_dock->Name)));
         ctx->MouseMove(splitter_id);
         ctx->MouseDragWithDelta(ImVec2(0.0f, 10.0f));
-        // FIXME-TESTS: This would fail due to a bug.
-        //IM_CHECK(g.NavWindow == last_focused_window);
+        // FIXME-TESTS: This would fail due to a bug (#3820)
+#if IMGUI_BROKEN_TESTS
+        IM_CHECK(g.NavWindow == last_focused_window);
+#endif
         IM_UNUSED(last_focused_window);
     };
 

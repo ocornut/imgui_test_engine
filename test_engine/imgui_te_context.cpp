@@ -2576,7 +2576,7 @@ void    ImGuiTestContext::UndockNode(ImGuiID dock_id)
     if (node->Windows.empty())
         return;
 
-    ImGuiID dock_button_id = ImHashDecoratedPath("#COLLAPSE", NULL, dock_id); // FIXME_TESTS
+    ImGuiID dock_button_id = ImHashDecoratedPath("#COLLAPSE", NULL, dock_id); // FIXME-TESTS
     const float h = node->Windows[0]->TitleBarHeight();
     if (!UiContext->IO.ConfigDockingWithShift)
         KeyDownMap(ImGuiKey_COUNT, ImGuiKeyModFlags_Shift);

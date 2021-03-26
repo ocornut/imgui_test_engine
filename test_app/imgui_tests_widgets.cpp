@@ -2941,8 +2941,8 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         IM_CHECK_EQ(selection.SelectionSize, 29);
 
         // Test ESC to clear selection
-        // FIXME-TESTS
-#if 0
+        // FIXME-TESTS: Feature not implemented
+#if IMGUI_BROKEN_TESTS
         ctx->KeyPressMap(ImGuiKey_Escape);
         ctx->Yield();
         IM_CHECK_EQ(selection.SelectionSize, 0);
@@ -3544,7 +3544,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
             for (int j = 0; j < 2; j++)
             {
                 vars.Size = ImVec2((j * 0.25f * viewport_size.x) + (viewport_size.x - (g.Style.WindowPadding.x + g.Style.DisplaySafeAreaPadding.x) * 2), 50);
-                ctx->SleepNoSkip(0.1f, 1.0f / 60.0f);
+                ctx->Yield(2);
                 IM_CHECK(tooltip->AutoPosLastDirection == test_case.DirBigH);
             }
 
@@ -3554,7 +3554,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
             for (int j = 0; j < 2; j++)
             {
                 vars.Size = ImVec2(50, (j * 0.25f * viewport_size.x) + (viewport_size.y - (g.Style.WindowPadding.y + g.Style.DisplaySafeAreaPadding.y) * 2));
-                ctx->SleepNoSkip(0.1f, 1.0f / 60.0f);
+                ctx->Yield(2);
                 IM_CHECK(tooltip->AutoPosLastDirection == test_case.DirBigV);
             }
 
