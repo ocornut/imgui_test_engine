@@ -3446,8 +3446,8 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ctx->MouseMove("HoverMe");  // Force tooltip creation so we can grab the pointer
         ImGuiWindow* tooltip = ctx->GetWindowByRef("##Tooltip_00");
 
-        ImVec2 viewport_pos = ctx->GetMainViewportPos();
-        ImVec2 viewport_size = ctx->GetMainViewportSize();
+        ImVec2 viewport_pos = ImGui::GetMainViewport()->Pos;
+        ImVec2 viewport_size = ImGui::GetMainViewport()->Size;
 
         struct TestCase
         {

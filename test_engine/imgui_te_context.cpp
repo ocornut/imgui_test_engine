@@ -1101,11 +1101,11 @@ bool    ImGuiTestContext::WindowTeleportToMakePosVisibleInViewport(ImGuiWindow* 
 
     // This is particularly useful for docked windows, as we have to move root dockspace window instead of docket window
     // itself. As a side effect this also adds support for child windows.
-    window = window->RootWindow;
+    window = window->RootWindowDockTree;
 
     ImRect visible_r;
-    visible_r.Min = GetMainViewportPos();
-    visible_r.Max = visible_r.Min + GetMainViewportSize();
+    visible_r.Min = ImGui::GetMainViewport()->Pos;
+    visible_r.Max = visible_r.Min + ImGui::GetMainViewport()->Size;
     if (!visible_r.Contains(pos))
     {
         // Fallback move window directly to make our item reachable with the mouse.
@@ -1140,7 +1140,7 @@ void ImGuiTestContext::ForeignWindowsHideOverPos(ImVec2 pos, ImGuiWindow** ignor
             if (other_window->WasActive && other_window->Rect().Contains(pos))
             {
                 for (int j = 0; ignore_list[j]; j++)
-                    if (ignore_list[j]->RootWindow == other_window)
+                    if (ignore_list[j]->RootWindowDockTree == other_window)
                         other_window = NULL;
                 if (other_window)
                     ForeignWindowsToHide.push_back(other_window);
@@ -2462,7 +2462,7 @@ void    ImGuiTestContext::DockWindowInto(const char* window_name_src, const char
         return;
 
     WindowTeleportToMakePosVisibleInViewport(window_dst, drop_pos);
-    ImGuiWindow* friend_windows[] = { window_src, window_dst, host_window_dst->RootWindowDockTree, NULL };
+    ImGuiWindow* friend_windows[] = { window_src, window_dst, NULL };
     ForeignWindowsHideOverPos(drop_pos, friend_windows);
 
     drop_is_valid = ImGui::DockContextCalcDropPosForDocking(host_window_dst, dock_node_dst, window_src, split_dir, is_outer_docking, &drop_pos);

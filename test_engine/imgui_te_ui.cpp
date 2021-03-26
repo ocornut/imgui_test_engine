@@ -446,7 +446,7 @@ void    ImGuiTestEngine_ShowTestWindow(ImGuiTestEngine* engine, bool* p_open)
         engine->IO.ConfigVerboseLevelOnError = engine->IO.ConfigVerboseLevel;
     ImGui::SameLine();
     ImGui::SetNextItemWidth(30 * engine->IO.DpiScale);
-    ImGui::DragInt("Perf Stress Amount", &engine->IO.PerfStressAmount, 0.1f, 1, 20); HelpTooltip("Increase workload of performance tests (higher means longer run).");
+    ImGui::DragInt("PerfStress", &engine->IO.PerfStressAmount, 0.1f, 1, 20); HelpTooltip("Increase workload of performance tests (higher means longer run).");
     ImGui::PopStyleVar();
     ImGui::Separator();
 
