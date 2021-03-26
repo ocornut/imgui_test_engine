@@ -1140,8 +1140,11 @@ void ImGuiTestContext::ForeignWindowsHideOverPos(ImVec2 pos, ImGuiWindow** ignor
             if (other_window->WasActive && other_window->Rect().Contains(pos))
             {
                 for (int j = 0; ignore_list[j]; j++)
-                    if (ignore_list[j]->RootWindowDockTree == other_window)
+                    if (ignore_list[j]->RootWindowDockTree == other_window->RootWindowDockTree)
+                    {
                         other_window = NULL;
+                        break;
+                    }
                 if (other_window)
                     ForeignWindowsToHide.push_back(other_window);
             }
@@ -2410,24 +2413,23 @@ void    ImGuiTestContext::PopupCloseAll()
 }
 
 #ifdef IMGUI_HAS_DOCK
-void    ImGuiTestContext::DockWindowInto(const char* window_name_src, const char* window_name_dst, ImGuiDir split_dir)
+void    ImGuiTestContext::DockWindowInto(ImGuiTestRef window_name_src, ImGuiTestRef window_name_dst, ImGuiDir split_dir)
 {
     ImGuiContext& g = *UiContext;
     if (IsError())
         return;
 
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
-    LogDebug("DockWindowInto '%s' to '%s'", window_name_src, window_name_dst);
+    LogDebug("DockWindowInto '%s' (0x%08X) to '%s' (0x%08X)", window_name_src.Path, window_name_src.ID, window_name_dst.Path, window_name_dst.ID);
 
     ImGuiWindow* window_src = GetWindowByRef(window_name_src);
     ImGuiWindow* window_dst = GetWindowByRef(window_name_dst);
 
-    // FIXME-TESTS: is_outer_docking should be a parameter of alternative (and more flexible) DockWindowInto() that takes ImGuiDockNode* instead of window names as parameters. Value of this parameter is inferred for the most common case when using window names.
-    bool is_outer_docking = window_dst->DockNodeAsHost != NULL;     // Specified window is actually a child window produced by DockNode(). Alternate rules apply.
+    // FIXME-TESTS: is_outer_docking should be a parameter of alternative (and more flexible) DockWindowInto() that takes ImGuiDockNode* instead of window names as parameters.
+    // Value of this parameter is inferred for the most common case when using window names.
+    bool is_outer_docking = window_dst->DockNodeAsHost != NULL && split_dir != ImGuiDir_None;
     IM_CHECK_SILENT(window_src != NULL);
     IM_CHECK_SILENT(window_dst != NULL);
-    if (is_outer_docking)
-        IM_ASSERT(split_dir != ImGuiDir_None);
     if (!window_src || !window_dst)
         return;
 
@@ -2474,7 +2476,7 @@ void    ImGuiTestContext::DockWindowInto(const char* window_name_src, const char
     IM_CHECK_SILENT(g.MovingWindow == window_src);
 #ifdef IMGUI_HAS_DOCK
     Yield();    // Docking to dockspace over viewport fails in fast mode without this.
-    IM_CHECK_SILENT(g.HoveredWindowUnderMovingWindow && g.HoveredWindowUnderMovingWindow->RootWindow == (is_outer_docking ? host_window_dst->RootWindow : window_dst));
+    IM_CHECK_SILENT(g.HoveredWindowUnderMovingWindow && g.HoveredWindowUnderMovingWindow->RootWindowDockTree == (is_outer_docking ? host_window_dst->RootWindowDockTree : window_dst->RootWindowDockTree));
 #else
     IM_CHECK_SILENT(g.HoveredWindowUnderMovingWindow && g.HoveredWindowUnderMovingWindow->RootWindow == window_dst);
 #endif
@@ -2531,6 +2533,13 @@ ImGuiID ImGuiTestContext::DockMultiSetupBasic(ImGuiID dock_id, const char* windo
         window_name = va_arg(args, const char*);
     }
     return dock_id;
+}
+
+bool    ImGuiTestContext::WindowIsUndockedOrStandalone(ImGuiWindow* window)
+{
+    if (window->DockNode == NULL)
+        return true;
+    return DockIdIsUndockedOrStandalone(window->DockId);
 }
 
 bool    ImGuiTestContext::DockIdIsUndockedOrStandalone(ImGuiID dock_id)

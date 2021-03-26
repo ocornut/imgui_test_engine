@@ -98,7 +98,7 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
             {
                 // Undock AAAA, BBBB should still refer/dock to node.
                 ctx->DockMultiClear("AAAA", NULL);
-                IM_CHECK(ctx->DockIdIsUndockedOrStandalone(window_aaaa->DockId));
+                IM_CHECK(ctx->WindowIsUndockedOrStandalone(window_aaaa));
                 IM_CHECK(window_bbbb->DockId == dock_id);
 
                 // Intentionally move both floating windows away
@@ -122,7 +122,7 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
             {
                 // Undock AAAA, BBBB should still refer/dock to node.
                 ctx->DockMultiClear("AAAA", NULL);
-                IM_CHECK(ctx->DockIdIsUndockedOrStandalone(window_aaaa->DockId));
+                IM_CHECK(ctx->WindowIsUndockedOrStandalone(window_aaaa));
                 IM_CHECK_EQ(window_bbbb->DockId, dock_id);
 
                 // Intentionally move both floating windows away
@@ -426,13 +426,15 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
         ImGuiWindow* demo_window = ctx->GetWindowByRef("Dear ImGui Demo");
         ctx->DockMultiClear("Window 1", "Window 2", "Dear ImGui Demo", NULL);
 
+        //IM_DEBUG_HALT_TESTFUNC();
+
         // Test undocking from tab.
         ctx->DockWindowInto("Window 1", "Window 2");
         IM_CHECK(window1->DockNode != NULL);
         IM_CHECK(window1->DockNode == window2->DockNode);
         ctx->UndockWindow("Window 1");
-        IM_CHECK(window1->DockNode == NULL || ctx->DockIdIsUndockedOrStandalone(window1->DockNode->ID));
-        IM_CHECK(window2->DockNode == NULL || ctx->DockIdIsUndockedOrStandalone(window2->DockNode->ID));
+        IM_CHECK(ctx->WindowIsUndockedOrStandalone(window1));
+        IM_CHECK(ctx->WindowIsUndockedOrStandalone(window2));
 
         // Test undocking from collapse button.
         for (int direction = 0; direction < ImGuiDir_COUNT; direction++)
@@ -489,8 +491,8 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
             case 0:
                 ctx->LogDebug("Undocking one tab...");
                 ctx->UndockWindow("Window 4");
-                IM_CHECK(window4->DockNode == NULL);                                        // Dragged window got undocked
-                IM_CHECK(window1->DockNode == node1);                                       // Dock nodes of other windows remain same
+                IM_CHECK(ctx->WindowIsUndockedOrStandalone(window4));   // Dragged window got undocked
+                IM_CHECK(window1->DockNode == node1);                   // Dock nodes of other windows remain same
                 IM_CHECK(window2->DockNode == node2);
                 IM_CHECK(window3->DockNode == node3);
                 IM_CHECK(window2->DockNode->HostWindow == window1->DockNode->HostWindow);
@@ -586,13 +588,18 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
         ImGuiWindow* window2 = ctx->GetWindowByRef("Window B");
         ImGuiID dock_id = ctx->GetID("Window A/A2");
 
+        if (ImGui::GetIO().ConfigDockingAlwaysTabBar)
+        {
+            ctx->LogWarning("Cannot run test with io.ConfigDockingAlwaysTabBar == true");
+            return;
+        }
+
         ctx->OpFlags |= ImGuiTestOpFlags_NoAutoUncollapse;
         ctx->WindowCollapse(window1, false);
         ctx->WindowCollapse(window2, false);
         ctx->DockMultiClear("Window B", "Window A", NULL);
-        ctx->DockWindowInto("Window B", "Window A");
-        IM_CHECK_EQ(window1->DockId, (ImGuiID)0);                       // Window A is not docked
-        IM_CHECK_EQ(window1->DockNode, (ImGuiDockNode*)NULL);
+        ctx->DockWindowInto("Window B", Str64f("Window A\\/DockSpace_%08X", dock_id).c_str());
+        IM_CHECK(ctx->WindowIsUndockedOrStandalone(window1));           // Window A is not docked
         IM_CHECK_EQ(window2->DockId, dock_id);                          // Window B was docked into a dockspace
 
         // Start collapse window and start submitting  _KeepAliveOnly flag
@@ -601,8 +608,7 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
         ctx->Yield();
         IM_CHECK_EQ(window1->Collapsed, true);                          // Window A got collapsed
         IM_CHECK_EQ(window1->DockIsActive, false);                      // and remains undocked
-        IM_CHECK_EQ(window1->DockId, (ImGuiID)0);
-        IM_CHECK_EQ(window1->DockNode, (ImGuiDockNode*)NULL);
+        IM_CHECK(ctx->WindowIsUndockedOrStandalone(window1));           //
         IM_CHECK_EQ(window2->Collapsed, false);                         // Window B was not collapsed
         IM_CHECK_EQ(window2->DockIsActive, true);                       // Dockspace is being kept alive
         IM_CHECK_EQ(window2->DockId, dock_id);                          // window remains docked
@@ -613,12 +619,10 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
         ctx->Yield();
         IM_CHECK_EQ(window1->Collapsed, true);                          // Window A got collapsed
         IM_CHECK_EQ(window1->DockIsActive, false);                      // and remains undocked
-        IM_CHECK_EQ(window1->DockId, (ImGuiID)0);
-        IM_CHECK_EQ(window1->DockNode, (ImGuiDockNode*)NULL);
+        IM_CHECK(ctx->WindowIsUndockedOrStandalone(window1));           //
         IM_CHECK_EQ(window2->Collapsed, false);                         // Window B was not collapsed
         IM_CHECK_EQ(window2->DockIsActive, false);                      // Dockspace is no longer kept alive
-        IM_CHECK_EQ(window2->DockId, (ImGuiID)0);                       // and window gets undocked
-        IM_CHECK_EQ(window2->DockNode, (ImGuiDockNode*)NULL);
+        IM_CHECK(ctx->WindowIsUndockedOrStandalone(window2));           // and window gets undocked
         IM_CHECK_EQ(window2->Hidden, false);                            // Window B shows up
     };
 
@@ -743,7 +747,7 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
         ImGuiDockNode* original_node = window0->DockNode->ParentNode;
         ctx->UndockWindow("Window 1");
         IM_CHECK_EQ(window0->DockNode, original_node);          // Undocking Window 1 keeps a parent dock node in Window 0
-        IM_CHECK_EQ(window1->DockNode, (ImGuiDockNode*)NULL);   // Undocked window has it's dock node cleared
+        IM_CHECK(ctx->WindowIsUndockedOrStandalone(window1));   // Undocked window
     };
 
     auto test_docking_over_gui = [](ImGuiTestContext* ctx)
@@ -758,7 +762,7 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
             ImGui::EndChild();
             break;
         case 1:
-            ImGui::DockSpace(123);
+            ctx->GenericVars.DockId = ImGui::DockSpace(ImGui::GetID("TestDockspace"));
             break;
         default:
             IM_ASSERT(false);
@@ -775,20 +779,27 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
     {
         ImGuiWindow* dock_window = ctx->GetWindowByRef("Dock Window");
         ImGuiWindow* test_window = ctx->GetWindowByRef("Test Window");
+
         ctx->DockMultiClear("Dock Window", "Test Window", NULL);
-        ctx->DockWindowInto("Dock Window", "Test Window");
-        IM_CHECK(dock_window->DockNode != NULL);
         switch (ctx->Test->ArgVariant)
         {
         case 0:
+            ctx->DockWindowInto("Dock Window", "Test Window");
+            IM_CHECK(dock_window->DockNode != NULL);
             IM_CHECK(test_window->DockNode != NULL);
             IM_CHECK(test_window->DockNode->HostWindow == dock_window->DockNode->HostWindow);
             break;
         case 1:
-            IM_CHECK(test_window->DockNode == NULL);
+        {
+            ImGuiID dock_id = ctx->GenericVars.DockId;
+            ImGuiDockNode* dock_node = ImGui::DockBuilderGetNode(dock_id);
+            ctx->DockWindowInto("Dock Window", dock_node->HostWindow->ID);
             IM_CHECK(dock_window->DockNode != NULL);
-            IM_CHECK(dock_window->DockNode->ID == 123);
+            IM_CHECK(ctx->WindowIsUndockedOrStandalone(test_window));
+            IM_CHECK(!ctx->WindowIsUndockedOrStandalone(dock_window));
+            IM_CHECK(dock_window->DockNode->ID == dock_id);
             break;
+        }
         default:
             IM_ASSERT(false);
         }
@@ -808,31 +819,31 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
 
     // ## Test whether docked window tabs are in right order.
     t = IM_REGISTER_TEST(e, "docking", "docking_tab_order");
-    struct DockingTabOrderVars { bool ShowWindow[3] = { true, true, true }; };
+    struct DockingTabOrderVars { bool ShowWindow[3] = { true, true, true }; ImGuiID DockspaceID = 0; };
     t->SetUserDataType<DockingTabOrderVars>();
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         DockingTabOrderVars& vars = ctx->GetUserData<DockingTabOrderVars>();
         ImGui::SetNextWindowSize(ImVec2(200, 100), ImGuiCond_Appearing);
-        ImGui::Begin("Dockspace", NULL, ImGuiWindowFlags_NoSavedSettings);
-        ImGuiID dockspace_id = ImGui::GetID("dockspace");
-        ImGui::DockSpace(dockspace_id);
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+        vars.DockspaceID = ImGui::GetID("dockspace");
+        ImGui::DockSpace(vars.DockspaceID);
         ImGui::End();
         if (vars.ShowWindow[0])
         {
-            ImGui::SetNextWindowDockID(dockspace_id, ImGuiCond_Once);
+            ImGui::SetNextWindowDockID(vars.DockspaceID, ImGuiCond_Once);
             ImGui::Begin("AAA", NULL, ImGuiWindowFlags_NoSavedSettings);
             ImGui::End();
         }
         if (vars.ShowWindow[1])
         {
-            ImGui::SetNextWindowDockID(dockspace_id, ImGuiCond_Once);
+            ImGui::SetNextWindowDockID(vars.DockspaceID, ImGuiCond_Once);
             ImGui::Begin("BBB", NULL, ImGuiWindowFlags_NoSavedSettings);
             ImGui::End();
         }
         if (vars.ShowWindow[2])
         {
-            ImGui::SetNextWindowDockID(dockspace_id, ImGuiCond_Once);
+            ImGui::SetNextWindowDockID(vars.DockspaceID, ImGuiCond_Once);
             ImGui::Begin("CCC", NULL, ImGuiWindowFlags_NoSavedSettings);
             ImGui::End();
         }
@@ -844,13 +855,16 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
 
         // Consistent state on test start.
         ctx->DockMultiClear("AAA", "BBB", "CCC", NULL);
-        ctx->DockWindowInto("AAA", "Dockspace");
-        ctx->DockWindowInto("BBB", "Dockspace");
-        ctx->DockWindowInto("CCC", "Dockspace");
+        Str64f dockspace_host_window_name("Test Window\\/DockSpace_%08X", vars.DockspaceID);
+        ctx->DockWindowInto("AAA", dockspace_host_window_name.c_str());
+        ctx->DockWindowInto("BBB", dockspace_host_window_name.c_str());
+        ctx->DockWindowInto("CCC", dockspace_host_window_name.c_str());
 
-        ImGuiWindow* window = ctx->GetWindowByRef("AAA");
-        IM_CHECK(window->DockNode != NULL);
-        ImGuiTabBar* tab_bar = window->DockNode->TabBar;
+        ImGuiWindow* window_aaa = ctx->GetWindowByRef("AAA");
+        ImGuiWindow* window_bbb = ctx->GetWindowByRef("BBB");
+        ImGuiWindow* window_ccc = ctx->GetWindowByRef("CCC");
+        IM_CHECK(window_aaa->DockNode != NULL);
+        ImGuiTabBar* tab_bar = window_aaa->DockNode->TabBar;
         IM_CHECK(tab_bar != NULL);
 
         // Check initial tab order.
@@ -878,7 +892,8 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
         vars.ShowWindow[1] = vars.ShowWindow[2] = false;
         ctx->Yield(2);
         vars.ShowWindow[1] = vars.ShowWindow[2] = true;
-        ctx->Yield(2);
+        ctx->Yield();
+        ctx->Yield();
 
         // After reappearing windows that were hidden maintain same order relative to each other, and go to the end of tab bar together.
         // FIXME-TESTS: This check would fail due to a bug.
@@ -902,6 +917,7 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
         IM_UNUSED(ccc_id);
 #if IMGUI_BROKEN_TESTS
         IM_CHECK_EQ(tab_bar->SelectedTabId, ccc_id);
+        //IM_CHECK_EQ(g.NavWindow, ....);
 #endif
     };
 
@@ -1162,6 +1178,7 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
             VerifyTabBarOrder(tab_bar_aaa, tab_order_1);
             VerifyTabBarOrder(tab_bar_ddd, tab_order_2);
 
+            IM_CHECK(tab_bar_aaa->Tabs.Size >= 2);
             IM_CHECK(tab_bar_aaa->VisibleTabId == tab_bar_aaa->Tabs[1].ID);
             IM_CHECK(tab_bar_ddd->VisibleTabId == tab_bar_ddd->Tabs[1].ID);
 
@@ -1206,7 +1223,7 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
         IM_CHECK(window->Size.y == expect_size.y);
 
         ctx->ItemDragWithDelta("Window 1", ImVec2(50.0f, 50.0f));
-        IM_CHECK(window->DockNode == NULL);
+        IM_CHECK(ctx->WindowIsUndockedOrStandalone(window));
 
         expect_size = ImGui::GetMainViewport()->Size * ImVec2(0.90f, 0.90f);
         IM_CHECK(window->Size.x <= expect_size.x);

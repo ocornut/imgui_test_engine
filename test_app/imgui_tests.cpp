@@ -351,7 +351,7 @@ void RegisterTests_Window(ImGuiTestEngine* e)
     t = IM_REGISTER_TEST(e, "window", "window_popup_close_current");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
-        ImGui::SetNextWindowSize(ImVec2(0, 0));
+        //ImGui::SetNextWindowSize(ImVec2(0, 0)); // FIXME: break with io.ConfigDockingAlwaysTabBar
         ImGui::Begin("Popups", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_MenuBar);
         if (ImGui::BeginMenuBar())
         {
@@ -371,14 +371,15 @@ void RegisterTests_Window(ImGuiTestEngine* e)
     };
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
+        ImGuiContext& g = *ctx->UiContext;
         ctx->SetRef("Popups");
-        IM_CHECK(ctx->UiContext->OpenPopupStack.Size == 0);
+        IM_CHECK(g.OpenPopupStack.Size == 0);
         ctx->MenuClick("Menu");
-        IM_CHECK(ctx->UiContext->OpenPopupStack.Size == 1);
+        IM_CHECK(g.OpenPopupStack.Size == 1);
         ctx->MenuClick("Menu/Submenu");
-        IM_CHECK(ctx->UiContext->OpenPopupStack.Size == 2);
+        IM_CHECK(g.OpenPopupStack.Size == 2);
         ctx->MenuClick("Menu/Submenu/Close");
-        IM_CHECK(ctx->UiContext->OpenPopupStack.Size == 0);
+        IM_CHECK(g.OpenPopupStack.Size == 0);
     };
 
     // ## Test that child window correctly affect contents size based on how their size was specified.

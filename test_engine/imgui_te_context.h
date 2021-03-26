@@ -408,10 +408,11 @@ struct ImGuiTestContext
 
     // Docking
 #ifdef IMGUI_HAS_DOCK
-    void        DockWindowInto(const char* window_src, const char* window_dst, ImGuiDir split_dir = ImGuiDir_None);
+    void        DockWindowInto(ImGuiTestRef window_src, ImGuiTestRef window_dst, ImGuiDir split_dir = ImGuiDir_None);
     void        DockMultiClear(const char* window_name, ...);
     void        DockMultiSet(ImGuiID dock_id, const char* window_name, ...);
     ImGuiID     DockMultiSetupBasic(ImGuiID dock_id, const char* window_name, ...);
+    bool        WindowIsUndockedOrStandalone(ImGuiWindow* window);
     bool        DockIdIsUndockedOrStandalone(ImGuiID dock_id);
     void        DockNodeHideTabBar(ImGuiDockNode* node, bool hidden);
     void        UndockNode(ImGuiID dock_id);
