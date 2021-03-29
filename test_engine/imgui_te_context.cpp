@@ -1099,9 +1099,11 @@ bool    ImGuiTestContext::WindowTeleportToMakePosVisibleInViewport(ImGuiWindow* 
     if (IsError())
         return false;
 
+#ifdef IMGUI_HAS_DOCK
     // This is particularly useful for docked windows, as we have to move root dockspace window instead of docket window
     // itself. As a side effect this also adds support for child windows.
     window = window->RootWindowDockTree;
+#endif
 
     ImRect visible_r;
     visible_r.Min = ImGui::GetMainViewport()->Pos;
@@ -1140,7 +1142,11 @@ void ImGuiTestContext::ForeignWindowsHideOverPos(ImVec2 pos, ImGuiWindow** ignor
             if (other_window->WasActive && other_window->Rect().Contains(pos))
             {
                 for (int j = 0; ignore_list[j]; j++)
+#ifdef IMGUI_HAS_DOCK
                     if (ignore_list[j]->RootWindowDockTree == other_window->RootWindowDockTree)
+#else
+                    if (ignore_list[j] == other_window)
+#endif
                     {
                         other_window = NULL;
                         break;
