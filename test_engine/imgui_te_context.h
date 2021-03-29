@@ -317,15 +317,16 @@ struct ImGuiTestContext
     void        MouseMove(ImGuiTestRef ref, ImGuiTestOpFlags flags = ImGuiTestOpFlags_None);
     void        MouseMoveToPos(ImVec2 pos);
     void        MouseTeleportToPos(ImVec2 pos);
-    void        MouseClick(int button = 0);
-    void        MouseDoubleClick(int button = 0);
-    void        MouseDown(int button = 0);
-    void        MouseUp(int button = 0);
-    void        MouseLiftDragThreshold(int button = 0);
-    void        MouseClickOnVoid(int button = 0);
-    void        MouseDragWithDelta(ImVec2 delta, int button = 0);
+    void        MouseClick(ImGuiMouseButton button = 0);
+    void        MouseDoubleClick(ImGuiMouseButton button = 0);
+    void        MouseDown(ImGuiMouseButton button = 0);
+    void        MouseUp(ImGuiMouseButton button = 0);
+    void        MouseLiftDragThreshold(ImGuiMouseButton button = 0);
+    void        MouseClickOnVoid(ImGuiMouseButton button = 0);
+    void        MouseDragWithDelta(ImVec2 delta, ImGuiMouseButton button = 0);
     void        MouseWheel(float vertical, float horizontal=0.0f);
     void        MouseWheel(ImVec2 delta);
+    bool        FindExistingVoidPosOnViewport(ImGuiViewport* viewport, ImVec2* out);
 
     // Keyboard inputs
     void        KeyDownMap(ImGuiKey key, int mod_flags = 0);
@@ -363,7 +364,7 @@ struct ImGuiTestContext
 
     // Item/Widgets manipulation
     void        ItemAction(ImGuiTestAction action, ImGuiTestRef ref, void* action_arg = NULL, ImGuiTestOpFlags flags = 0);
-    void        ItemClick(ImGuiTestRef ref, int button = 0, ImGuiTestOpFlags flags = 0) { ItemAction(ImGuiTestAction_Click, ref, (void*)(intptr_t)button, flags); }
+    void        ItemClick(ImGuiTestRef ref, ImGuiMouseButton button = 0, ImGuiTestOpFlags flags = 0) { ItemAction(ImGuiTestAction_Click, ref, (void*)(intptr_t)button, flags); }
     void        ItemDoubleClick(ImGuiTestRef ref, ImGuiTestOpFlags flags = 0)           { ItemAction(ImGuiTestAction_DoubleClick, ref, NULL, flags); }
     void        ItemCheck(ImGuiTestRef ref, ImGuiTestOpFlags flags = 0)                 { ItemAction(ImGuiTestAction_Check, ref, NULL, flags); }
     void        ItemUncheck(ImGuiTestRef ref, ImGuiTestOpFlags flags = 0)               { ItemAction(ImGuiTestAction_Uncheck, ref, NULL, flags); }

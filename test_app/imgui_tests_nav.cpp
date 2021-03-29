@@ -474,20 +474,27 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
     {
         ImGuiContext& g = *ctx->UiContext;
         ctx->SetRef("Dear ImGui Demo");
-        ctx->ItemOpen("Help");
-        ctx->ItemClose("Help");
-        IM_CHECK_EQ(g.NavId, ctx->GetID("Help"));
-        IM_CHECK_EQ(g.NavWindow, ctx->GetWindowByRef(ctx->RefID));
-        IM_CHECK(g.IO.ConfigFlags & ImGuiConfigFlags_NavEnableKeyboard); // FIXME-TESTS: Should test for both cases.
-        IM_CHECK(g.IO.WantCaptureMouse == true);
-        // FIXME-TESTS: This depends on ImGuiConfigFlags_NavNoCaptureKeyboard being cleared. Should test for both cases.
-        IM_CHECK(g.IO.WantCaptureKeyboard == true);
 
-        ctx->MouseClickOnVoid(0);
-        //IM_CHECK(g.NavId == 0); // Clarify specs
-        IM_CHECK(g.NavWindow == NULL);
-        IM_CHECK(g.IO.WantCaptureMouse == false);
-        IM_CHECK(g.IO.WantCaptureKeyboard == false);
+        for (int mouse_button = 0; mouse_button < 2; mouse_button++)
+        {
+            ctx->ItemOpen("Help");
+            ctx->ItemClose("Help");
+            IM_CHECK_EQ(g.NavId, ctx->GetID("Help"));
+            IM_CHECK_EQ(g.NavWindow, ctx->GetWindowByRef(ctx->RefID));
+            IM_CHECK(g.IO.ConfigFlags & ImGuiConfigFlags_NavEnableKeyboard); // FIXME-TESTS: Should test for both cases.
+            IM_CHECK(g.IO.WantCaptureMouse == true);
+            // FIXME-TESTS: This depends on ImGuiConfigFlags_NavNoCaptureKeyboard being cleared. Should test for both cases.
+            IM_CHECK(g.IO.WantCaptureKeyboard == true);
+
+            ctx->MouseClickOnVoid(mouse_button);
+            if (mouse_button == 0)
+            {
+                //IM_CHECK(g.NavId == 0); // Clarify specs
+                IM_CHECK(g.NavWindow == NULL);
+                IM_CHECK(g.IO.WantCaptureMouse == false);
+                IM_CHECK(g.IO.WantCaptureKeyboard == false);
+            }
+        }
     };
 
     // ## Test inheritance (and lack of) of FocusScope

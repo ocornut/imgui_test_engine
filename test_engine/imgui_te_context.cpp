@@ -1252,7 +1252,7 @@ void	ImGuiTestContext::MouseTeleportToPos(ImVec2 target)
     ImGuiTestEngine_Yield(Engine);
 }
 
-void    ImGuiTestContext::MouseDown(int button)
+void    ImGuiTestContext::MouseDown(ImGuiMouseButton button)
 {
     if (IsError())
         return;
@@ -1265,7 +1265,7 @@ void    ImGuiTestContext::MouseDown(int button)
     Yield();
 }
 
-void    ImGuiTestContext::MouseUp(int button)
+void    ImGuiTestContext::MouseUp(ImGuiMouseButton button)
 {
     if (IsError())
         return;
@@ -1278,7 +1278,7 @@ void    ImGuiTestContext::MouseUp(int button)
 }
 
 // TODO: click time argument (seconds and/or frames)
-void    ImGuiTestContext::MouseClick(int button)
+void    ImGuiTestContext::MouseClick(ImGuiMouseButton button)
 {
     if (IsError())
         return;
@@ -1304,7 +1304,7 @@ void    ImGuiTestContext::MouseClick(int button)
 }
 
 // TODO: click time argument (seconds and/or frames)
-void    ImGuiTestContext::MouseDoubleClick(int button)
+void    ImGuiTestContext::MouseDoubleClick(ImGuiMouseButton button)
 {
     if (IsError())
         return;
@@ -1324,7 +1324,7 @@ void    ImGuiTestContext::MouseDoubleClick(int button)
     Yield(); // Give a frame for items to react
 }
 
-void    ImGuiTestContext::MouseLiftDragThreshold(int button)
+void    ImGuiTestContext::MouseLiftDragThreshold(ImGuiMouseButton button)
 {
     if (IsError())
         return;
@@ -1332,6 +1332,43 @@ void    ImGuiTestContext::MouseLiftDragThreshold(int button)
     ImGuiContext& g = *UiContext;
     g.IO.MouseDragMaxDistanceAbs[button] = ImVec2(g.IO.MouseDragThreshold, g.IO.MouseDragThreshold);
     g.IO.MouseDragMaxDistanceSqr[button] = (g.IO.MouseDragThreshold * g.IO.MouseDragThreshold) + (g.IO.MouseDragThreshold * g.IO.MouseDragThreshold);
+}
+
+static bool IsPosOnVoid(ImGuiContext& g, const ImVec2& pos)
+{
+    for (ImGuiWindow* window : g.Windows)
+#ifdef IMGUI_HAS_DOCK
+        if (window->RootWindowDockTree == window && window->WasActive)
+#else
+        if (window->RootWindow == window && window->WasActive)
+#endif
+            if (window->Rect().Contains(pos))
+                return false;
+    return true;
+}
+
+// Sample viewport for an easy location with nothing on it.
+// FIXME-OPT: If ever any problematic:
+// - (1) could iterate g.WindowsFocusOrder[] once we make the switch of it only containing root windows
+// - (2) increase steps iteratively
+// - (3) remember last answer and tries it first.
+// - (4) shortcut negative if a window covers the whole viewport
+bool    ImGuiTestContext::FindExistingVoidPosOnViewport(ImGuiViewport* viewport, ImVec2* out)
+{
+    ImGuiContext& g = *UiContext;
+    if (IsError())
+        return false;
+
+    for (int yn = 0; yn < 20; yn++)
+        for (int xn = 0; xn < 20; xn++)
+        {
+            ImVec2 pos = viewport->Pos + viewport->Size * ImVec2(xn / 20.0f, yn / 20.0f);
+            if (!IsPosOnVoid(g, pos))
+                continue;
+            *out = pos;
+            return true;
+        }
+    return false;
 }
 
 void    ImGuiTestContext::MouseClickOnVoid(int mouse_button)
@@ -1343,30 +1380,32 @@ void    ImGuiTestContext::MouseClickOnVoid(int mouse_button)
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
     LogDebug("MouseClickOnVoid %d", mouse_button);
 
-    // FIXME-TESTS: Would be nice if we could find a suitable position (e.g. by sampling points in a grid)
-    ImVec2 void_pos = GetMainViewportPos() + ImVec2(1, 1);
-    ImVec2 window_min_pos = void_pos + g.Style.TouchExtraPadding + ImVec2(4.0f, 4.0f) + ImVec2(1.0f, 1.0f); // FIXME: Should use WINDOWS_RESIZE_FROM_EDGES_HALF_THICKNESS
+    ImVec2 void_pos;
+    ImGuiViewport* viewport = ImGui::GetMainViewport();
+    bool found_existing_void_pos = FindExistingVoidPosOnViewport(viewport, &void_pos);
 
-    for (ImGuiWindow* window : g.Windows)
+    // Move windows away
+    if (!found_existing_void_pos)
+    {
+        void_pos = viewport->Pos + ImVec2(1, 1);
+        ImVec2 window_min_pos = void_pos + g.Style.TouchExtraPadding + ImVec2(4.0f, 4.0f) + ImVec2(1.0f, 1.0f); // FIXME: Should use WINDOWS_RESIZE_FROM_EDGES_HALF_THICKNESS
+        for (ImGuiWindow* window : g.Windows)
 #ifdef IMGUI_HAS_DOCK
-        if (window->RootWindowDockTree == window && window->WasActive)
+            if (window->RootWindowDockTree == window && window->WasActive)
 #else
-        if (window->RootWindow == window && window->WasActive)
+            if (window->RootWindow == window && window->WasActive)
 #endif
-            if (window->Rect().Contains(window_min_pos))
-                WindowMove(window->Name, window_min_pos);
+                if (window->Rect().Contains(window_min_pos))
+                    WindowMove(window->Name, window_min_pos);
+    }
 
-    // Click top-left corner which now is empty space.
+    // Click position which should now be empty space.
     MouseMoveToPos(void_pos);
     IM_CHECK(g.HoveredWindow == NULL);
-
-    // Clicking empty space should clear navigation focus.
     MouseClick(mouse_button);
-    //IM_CHECK(g.NavId == 0); // FIXME: Clarify specs
-    IM_CHECK(g.NavWindow == NULL);
 }
 
-void    ImGuiTestContext::MouseDragWithDelta(ImVec2 delta, int button)
+void    ImGuiTestContext::MouseDragWithDelta(ImVec2 delta, ImGuiMouseButton button)
 {
     ImGuiContext& g = *UiContext;
     if (IsError())

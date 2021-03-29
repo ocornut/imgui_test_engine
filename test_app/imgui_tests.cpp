@@ -382,6 +382,33 @@ void RegisterTests_Window(ImGuiTestEngine* e)
         IM_CHECK(g.OpenPopupStack.Size == 0);
     };
 
+    // ## Test BeginPopupContextVoid()
+    t = IM_REGISTER_TEST(e, "window", "window_popup_on_void");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ctx->GenericVars.Bool1 = false;
+        if (ImGui::BeginPopupContextVoid("testpopup", ctx->GenericVars.Int1))
+        {
+            ctx->GenericVars.Bool1 = true;
+            ImGui::Selectable("Close");
+            ImGui::EndPopup();
+        }
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ctx->GenericVars.Int1 = 1;
+        ctx->MouseClickOnVoid(1);
+        IM_CHECK(ctx->GenericVars.Bool1 == true);
+        ctx->MouseClickOnVoid(0);
+        IM_CHECK(ctx->GenericVars.Bool1 == false);
+
+        ctx->GenericVars.Int1 = 0;
+        ctx->MouseClickOnVoid(0);
+        IM_CHECK(ctx->GenericVars.Bool1 == true);
+        ctx->MouseClickOnVoid(1);
+        IM_CHECK(ctx->GenericVars.Bool1 == false);
+    };
+
     // ## Test that child window correctly affect contents size based on how their size was specified.
     t = IM_REGISTER_TEST(e, "window", "window_child_layout_size");
     t->Flags |= ImGuiTestFlags_NoAutoFinish;
