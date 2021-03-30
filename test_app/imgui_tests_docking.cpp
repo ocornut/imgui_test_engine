@@ -879,8 +879,9 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
         ImGuiID ccc_id = tab_bar->Tabs[2].ID;
 
         // Mix tabs, expected order becomes CCC, BBB, AAA. This also verifies drag operations way beyond tab bar rect.
-        ctx->ItemDragWithDelta("AAA", ImVec2(+400.0f, 0.0f));
-        ctx->ItemDragWithDelta("CCC", ImVec2(-400.0f, 0.0f));
+        ctx->ItemDragWithDelta("AAA", ImVec2(+tab_bar->Tabs[2].Offset + tab_bar->Tabs[2].Width, 0.0f));
+        ctx->ItemDragWithDelta("CCC", ImVec2(-tab_bar->Tabs[1].Offset - tab_bar->Tabs[1].Width, 0.0f));
+        IM_CHECK(window_aaa->DockNode != NULL);     // Avoid crashes if tab gets undocked.
         const char* tab_order_rearranged[] = { "CCC", "BBB", "AAA", NULL };
         VerifyTabBarOrder(tab_bar, tab_order_rearranged);
 
@@ -888,8 +889,7 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
         vars.ShowWindow[1] = vars.ShowWindow[2] = false;
         ctx->Yield(2);
         vars.ShowWindow[1] = vars.ShowWindow[2] = true;
-        ctx->Yield();
-        ctx->Yield();
+        ctx->Yield(2);
 
         // After reappearing windows that were hidden maintain same order relative to each other, and go to the end of tab bar together.
         // FIXME-TESTS: This check would fail due to a bug.
