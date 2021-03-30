@@ -1065,8 +1065,13 @@ void    ImGuiTestContext::MouseMove(ImGuiTestRef ref, ImGuiTestOpFlags flags)
             if (!(window->Flags & ImGuiWindowFlags_NoResize) && !(flags & ImGuiTestOpFlags_IsSecondAttempt))
             {
                 bool is_resize_corner = false;
+#if IMGUI_VERSION_NUM < 18203
                 for (int n = 0; n < 2; n++)
                     is_resize_corner |= (hovered_id == ImGui::GetWindowResizeID(window, n));
+#else
+                for (int n = 0; n < 2; n++)
+                    is_resize_corner |= (hovered_id == ImGui::GetWindowResizeCornerID(window, n));
+#endif
                 if (is_resize_corner)
                 {
                     LogDebug("Obstructed by ResizeGrip, trying to resize window and trying again..");
@@ -2421,7 +2426,11 @@ void    ImGuiTestContext::WindowResize(ImGuiTestRef ref, ImVec2 size)
     WindowBringToFront(window);
     WindowCollapse(window, false);
 
+#if IMGUI_VERSION_NUM < 18203
     ImGuiID id = ImGui::GetWindowResizeID(window, 0);
+#else
+    ImGuiID id = ImGui::GetWindowResizeCornerID(window, 0);
+#endif
     MouseMove(id);
     MouseDown(0);
 
