@@ -1486,6 +1486,7 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         ImGui::Begin("Test window", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImGui::BeginChild("Child");
         ImGui::PushFocusScope(ImGui::GetID("focusscope1"));
         ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2());
         ImGui::PushStyleColor(ImGuiCol_Text, ImVec4());
@@ -1494,6 +1495,7 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
         ImGui::SetNextItemOpen(true);
         ImGui::TreeNode("node");
         ImGui::BeginTabBar("tabbar");
+        ImGui::BeginTable("table", 4);
         ctx->Finish();
     };
 
@@ -1536,6 +1538,10 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
             IM_CHECK(window->DrawList->CmdBuffer.empty());
         }
         ImSwap(ctx->UiContext->IO.ConfigMemoryCompactTimer, backup_timer);
+
+        // Perform an additional fuller GC
+        ctx->UiContext->GcCompactAll = true;
+        ctx->Yield();
     };
 
     // ## Test hash functions and ##/### operators
@@ -2673,6 +2679,8 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
         ctx->ItemClick("##tabs/Sizes");
         ctx->ItemClick("##tabs/Colors");
         ctx->ItemClick("##tabs/Fonts");
+        ctx->ItemOpenAll("##tabs/Fonts", 2);
+        ctx->ItemCloseAll("##tabs/Fonts");
         ctx->ItemClick("##tabs/Rendering");
 
         ctx->SetRef("Dear ImGui Demo");

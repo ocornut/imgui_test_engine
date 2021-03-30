@@ -1161,14 +1161,14 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
             ctx->DockWindowInto("EEE", "DDD");
             ctx->DockWindowInto("FFF", "EEE");
 
+            ImGuiTabBar* tab_bar_aaa = window_aaa->DockNode->TabBar;
+            ImGuiTabBar* tab_bar_ddd = window_ddd->DockNode->TabBar;
+
             // Rearrange tabs and set active tab.
             ctx->ItemDragAndDrop("CCC", "AAA");
             ctx->ItemDragAndDrop("DDD", "FFF");
             ctx->ItemClick("AAA");
             ctx->ItemClick("FFF");
-
-            ImGuiTabBar* tab_bar_aaa = window_aaa->DockNode->TabBar;
-            ImGuiTabBar* tab_bar_ddd = window_ddd->DockNode->TabBar;
 
             // Verify initial order.
             const char* tab_order_1[] = { "CCC", "AAA", "BBB", NULL };

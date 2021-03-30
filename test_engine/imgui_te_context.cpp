@@ -229,6 +229,15 @@ static void LogWarningFunc(void* user_data, const char* fmt, ...)
     va_end(args);
 }
 
+static void LogNotAsWarningFunc(void* user_data, const char* fmt, ...)
+{
+    ImGuiTestContext* ctx = (ImGuiTestContext*)user_data;
+    va_list args;
+    va_start(args, fmt);
+    ctx->LogExV(ImGuiTestVerboseLevel_Debug, ImGuiTestLogFlags_None, fmt, args);
+    va_end(args);
+}
+
 void    ImGuiTestContext::RecoverFromUiContextErrors()
 {
     IM_ASSERT(Test != NULL);
@@ -238,7 +247,7 @@ void    ImGuiTestContext::RecoverFromUiContextErrors()
     if (verbose && (Test->Flags & ImGuiTestFlags_NoRecoverWarnings) == 0)
         ImGui::ErrorCheckEndFrameRecover(LogWarningFunc, this);
     else
-        ImGui::ErrorCheckEndFrameRecover(NULL, NULL);
+        ImGui::ErrorCheckEndFrameRecover(LogNotAsWarningFunc, this);
 }
 
 void    ImGuiTestContext::Yield(int count)
