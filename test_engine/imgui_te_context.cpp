@@ -2463,80 +2463,88 @@ void    ImGuiTestContext::PopupCloseAll()
 }
 
 #ifdef IMGUI_HAS_DOCK
-void    ImGuiTestContext::DockWindowInto(ImGuiTestRef window_name_src, ImGuiTestRef window_name_dst, ImGuiDir split_dir)
+void    ImGuiTestContext::DockWindowIntoEx(ImGuiTestRef window_name_src, ImGuiTestRef window_name_dst, ImGuiDockNode* node_dst, ImGuiDir split_dir, bool split_outer)
 {
     ImGuiContext& g = *UiContext;
     if (IsError())
         return;
 
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
-    LogDebug("DockWindowInto '%s' (0x%08X) to '%s' (0x%08X)", window_name_src.Path, window_name_src.ID, window_name_dst.Path, window_name_dst.ID);
+    IM_ASSERT(window_name_dst.IsEmpty() == false || node_dst != NULL);
+    LogDebug("DockWindowInto '%s' (0x%08X) to Window '%s' (0x%08X), Node 0x%08X", window_name_src.Path, window_name_src.ID, window_name_dst.Path, window_name_dst.ID, node_dst ? node_dst->ID : 0);
 
     ImGuiWindow* window_src = GetWindowByRef(window_name_src);
-    ImGuiWindow* window_dst = GetWindowByRef(window_name_dst);
-
-    // FIXME-TESTS: is_outer_docking should be a parameter of alternative (and more flexible) DockWindowInto() that takes ImGuiDockNode* instead of window names as parameters.
-    // Value of this parameter is inferred for the most common case when using window names.
+    ImGuiWindow* window_dst = (node_dst && node_dst->HostWindow) ? node_dst->HostWindow : GetWindowByRef(window_name_dst);
     IM_CHECK_SILENT(window_src != NULL);
     IM_CHECK_SILENT(window_dst != NULL);
-    if (!window_src || !window_dst)
-        return;
-
-    bool is_outer_docking = window_dst->DockNodeAsHost != NULL && split_dir != ImGuiDir_None;
-
-    ImGuiTestRef ref_src(window_src->DockIsActive ? window_src->ID : window_src->MoveId);   // FIXME-TESTS FIXME-DOCKING: Identify tab
-    ImGuiTestItemInfo* item_src = ItemInfo(ref_src);
-    ImGuiTestRefDesc desc_src(ref_src, item_src);
-    //ImGuiTestRef ref_dst(window_dst->DockIsActive ? window_dst->ID : window_dst->MoveId);
-    //ImGuiTestItemInfo* item_dst = ItemInfo(ref_dst);
-    //ImGuiTestRefDesc desc_dst(ref_dst, item_dst);
+    IM_CHECK_SILENT(window_src->WasActive);
+    IM_CHECK_SILENT(window_dst->WasActive);
 
     // Avoid focusing if we don't need it (this facilitate avoiding focus flashing when recording animated gifs)
     if (g.Windows[g.Windows.Size - 2] != window_dst)
-        WindowFocus(window_name_dst);
+        WindowFocus(window_dst->ID);
     if (g.Windows[g.Windows.Size - 1] != window_src)
         WindowFocus(window_name_src);
 
+    // Aim at title bar or tab
+    ImGuiTestRef ref_src(window_src->DockIsActive ? window_src->ID : window_src->MoveId); // FIXME-TESTS FIXME-DOCKING: Identify tab
     MouseMove(ref_src, ImGuiTestOpFlags_NoCheckHoveredId);
     SleepShort();
 
-    //// FIXME-TESTS: Not handling the operation at user's level.
-    //if (split_dir != ImGuiDir_None)
-    //  ImGui::DockContextQueueDock(&g, window_dst->RootWindowDockTree, window_dst->DockNode, window_src, split_dir, 0.5f, false);
-
+    // Locate target
     ImVec2 drop_pos;
-    ImGuiDockNode* dock_node_dst = is_outer_docking ? window_dst->DockNodeAsHost : window_dst->DockNode;
-    ImGuiWindow* host_window_dst = window_dst->RootWindowDockTree;
-    if (dock_node_dst && dock_node_dst->HostWindow)
-        host_window_dst = dock_node_dst->HostWindow;
-    bool drop_is_valid = ImGui::DockContextCalcDropPosForDocking(host_window_dst, dock_node_dst, window_src, split_dir, is_outer_docking, &drop_pos);
+    bool drop_is_valid = ImGui::DockContextCalcDropPosForDocking(window_dst, node_dst, window_src, split_dir, split_outer, &drop_pos);
     IM_CHECK_SILENT(drop_is_valid);
     if (!drop_is_valid)
         return;
 
+    // Ensure we can reach target
     WindowTeleportToMakePosVisibleInViewport(window_dst, drop_pos);
     ImGuiWindow* friend_windows[] = { window_src, window_dst, NULL };
     ForeignWindowsHideOverPos(drop_pos, friend_windows);
 
-    drop_is_valid = ImGui::DockContextCalcDropPosForDocking(host_window_dst, dock_node_dst, window_src, split_dir, is_outer_docking, &drop_pos);
+    // Drag
+    drop_is_valid = ImGui::DockContextCalcDropPosForDocking(window_dst, node_dst, window_src, split_dir, split_outer, &drop_pos);
     IM_CHECK(drop_is_valid);
-
     MouseDown(0);
     MouseLiftDragThreshold();
     MouseMoveToPos(drop_pos);
     IM_CHECK_SILENT(g.MovingWindow == window_src);
 #ifdef IMGUI_HAS_DOCK
     Yield();    // Docking to dockspace over viewport fails in fast mode without this.
-    IM_CHECK_SILENT(g.HoveredWindowUnderMovingWindow && g.HoveredWindowUnderMovingWindow->RootWindowDockTree == (is_outer_docking ? host_window_dst->RootWindowDockTree : window_dst->RootWindowDockTree));
+    IM_CHECK_SILENT(g.HoveredWindowUnderMovingWindow && g.HoveredWindowUnderMovingWindow->RootWindowDockTree == window_dst->RootWindowDockTree);
 #else
     IM_CHECK_SILENT(g.HoveredWindowUnderMovingWindow && g.HoveredWindowUnderMovingWindow->RootWindow == window_dst);
 #endif
-    SleepShort();
 
     MouseUp(0);
     ForeignWindowsUnhideAll();
     Yield();
     Yield();
+}
+
+void    ImGuiTestContext::DockWindowIntoEx(ImGuiTestRef window_name_src, ImGuiTestRef window_name_dst, ImGuiID node_id, ImGuiDir split_dir, bool split_outer)
+{
+    ImGuiDockNode* node = ImGui::DockBuilderGetNode(node_id);
+    DockWindowIntoEx(window_name_src, window_name_dst, node, split_dir, split_outer);
+}
+
+void    ImGuiTestContext::DockWindowInto(ImGuiTestRef window_name_src, ImGuiTestRef window_name_dst, ImGuiDir split_dir)
+{
+    IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
+    LogDebug("DockWindowInto '%s' (0x%08X) to '%s' (0x%08X)", window_name_src.Path, window_name_src.ID, window_name_dst.Path, window_name_dst.ID);
+
+    ImGuiWindow* window_src = GetWindowByRef(window_name_src);
+    ImGuiWindow* window_dst = GetWindowByRef(window_name_dst);
+
+    IM_CHECK_SILENT(window_src != NULL);
+    IM_CHECK_SILENT(window_dst != NULL);
+    if (!window_src || !window_dst)
+        return;
+
+    bool split_outer = window_dst->DockNodeAsHost != NULL && split_dir != ImGuiDir_None; // FIXME: This is arbitrary
+    ImGuiDockNode* dock_node_dst = window_dst->DockNodeAsHost ? window_dst->DockNodeAsHost : window_dst->DockNode; // May be NULL (for single floating window)
+    DockWindowIntoEx(window_name_src, window_name_dst, dock_node_dst, split_dir, split_outer);
 }
 
 void    ImGuiTestContext::DockMultiClear(const char* window_name, ...)

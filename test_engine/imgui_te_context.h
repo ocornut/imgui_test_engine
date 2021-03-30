@@ -410,6 +410,8 @@ struct ImGuiTestContext
     // Docking
 #ifdef IMGUI_HAS_DOCK
     void        DockWindowInto(ImGuiTestRef window_src, ImGuiTestRef window_dst, ImGuiDir split_dir = ImGuiDir_None);
+    void        DockWindowIntoEx(ImGuiTestRef window_src, ImGuiTestRef window_dst, ImGuiID node_id, ImGuiDir split_dir = ImGuiDir_None, bool is_outer_docking = false);
+    void        DockWindowIntoEx(ImGuiTestRef window_src, ImGuiTestRef window_dst, ImGuiDockNode* node_dst, ImGuiDir split_dir = ImGuiDir_None, bool is_outer_docking = false);
     void        DockMultiClear(const char* window_name, ...);
     void        DockMultiSet(ImGuiID dock_id, const char* window_name, ...);
     ImGuiID     DockMultiSetupBasic(ImGuiID dock_id, const char* window_name, ...);
