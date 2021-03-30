@@ -2391,12 +2391,8 @@ void    ImGuiTestContext::WindowMove(ImGuiTestRef ref, ImVec2 input_pos, ImVec2 
     //IM_CHECK_SILENT(UiContext->HoveredWindow == window);
     MouseDown(0);
 
-    // Disable docking
 #ifdef IMGUI_HAS_DOCK
-    if (UiContext->IO.ConfigDockingWithShift)
-        KeyUpMap(ImGuiKey_COUNT, ImGuiKeyModFlags_Shift);
-    else
-        KeyDownMap(ImGuiKey_COUNT, ImGuiKeyModFlags_Shift);
+    KeyDownMap(ImGuiKey_COUNT, ImGuiKeyModFlags_Shift); // Disable docking
 #endif
 
     ImVec2 delta = target_pos - window->Pos;
@@ -2636,11 +2632,9 @@ void    ImGuiTestContext::UndockNode(ImGuiID dock_id)
 
     ImGuiID dock_button_id = ImHashDecoratedPath("#COLLAPSE", NULL, dock_id); // FIXME-TESTS
     const float h = node->Windows[0]->TitleBarHeight();
-    if (!UiContext->IO.ConfigDockingWithShift)
-        KeyDownMap(ImGuiKey_COUNT, ImGuiKeyModFlags_Shift);
+    KeyDownMap(ImGuiKey_COUNT, ImGuiKeyModFlags_Shift); // Disable docking
     ItemDragWithDelta(dock_button_id, ImVec2(h, h) * -2);
-    if (!UiContext->IO.ConfigDockingWithShift)
-        KeyUpMap(ImGuiKey_COUNT, ImGuiKeyModFlags_Shift);
+    KeyUpMap(ImGuiKey_COUNT, ImGuiKeyModFlags_Shift);
     MouseUp();
 }
 
@@ -2653,11 +2647,9 @@ void    ImGuiTestContext::UndockWindow(const char* window_name)
         return;
 
     const float h = window->TitleBarHeight();
-    if (!UiContext->IO.ConfigDockingWithShift)
-        KeyDownMap(ImGuiKey_COUNT, ImGuiKeyModFlags_Shift);
+    KeyDownMap(ImGuiKey_COUNT, ImGuiKeyModFlags_Shift); // Disable docking
     ItemDragWithDelta(window_name, ImVec2(h, h) * -2);
-    if (!UiContext->IO.ConfigDockingWithShift)
-        KeyUpMap(ImGuiKey_COUNT, ImGuiKeyModFlags_Shift);
+    KeyUpMap(ImGuiKey_COUNT, ImGuiKeyModFlags_Shift);
     Yield();
 }
 
