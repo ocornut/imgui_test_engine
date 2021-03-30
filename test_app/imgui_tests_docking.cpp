@@ -24,14 +24,15 @@
 // Helpers
 #ifdef IMGUI_HAS_DOCK
 static inline bool operator==(const ImVec2& lhs, const ImVec2& rhs) { return lhs.x == rhs.x && lhs.y == rhs.y; }    // for IM_CHECK_EQ()
-static void VerifyTabBarOrder(ImGuiTabBar* tab_bar, const char** tab_order)
-{
-    for (int i = 0; tab_order[i] != NULL; i++)
-    {
-        IM_CHECK(tab_bar->Tabs[i].Window != NULL);
-        IM_CHECK_STR_EQ(tab_bar->Tabs[i].Window->Name, tab_order[i]);
+
+// This is a macro to make error reporting give a better callstack report on failure.
+#define VERIFY_TAB_ORDER(tab_bar, tab_order)                           \
+    for (int i = 0; tab_order[i] != NULL; i++)                         \
+    {                                                                  \
+        IM_CHECK_SILENT(i < tab_bar->Tabs.Size);                       \
+        IM_CHECK_SILENT(tab_bar->Tabs[i].Window != NULL);              \
+        IM_CHECK_STR_EQ(tab_bar->Tabs[i].Window->Name, tab_order[i]);  \
     }
-}
 #endif
 
 //-------------------------------------------------------------------------
@@ -868,13 +869,13 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
 
         // Verify initial tab order.
         const char* tab_order_initial[] = { "AAA", "BBB", "CCC", NULL };
-        VerifyTabBarOrder(tab_bar, tab_order_initial);
+        VERIFY_TAB_ORDER(tab_bar, tab_order_initial);
 
         // Verify that drag operation past edge of the tab, but not entering other tab does not trigger reorder.
         ctx->ItemDragWithDelta("AAA", ImVec2((tab_bar->Tabs[0].Width + g.Style.ItemInnerSpacing.x) * +0.5f, 0.0f));
-        VerifyTabBarOrder(tab_bar, tab_order_initial);
+        VERIFY_TAB_ORDER(tab_bar, tab_order_initial);
         ctx->ItemDragWithDelta("BBB", ImVec2((tab_bar->Tabs[0].Width + g.Style.ItemInnerSpacing.x) * -0.5f, 0.0f));
-        VerifyTabBarOrder(tab_bar, tab_order_initial);
+        VERIFY_TAB_ORDER(tab_bar, tab_order_initial);
 
         ImGuiID ccc_id = tab_bar->Tabs[2].ID;
 
@@ -883,7 +884,7 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
         ctx->ItemDragWithDelta("CCC", ImVec2(-tab_bar->Tabs[1].Offset - tab_bar->Tabs[1].Width, 0.0f));
         IM_CHECK(window_aaa->DockNode != NULL);     // Avoid crashes if tab gets undocked.
         const char* tab_order_rearranged[] = { "CCC", "BBB", "AAA", NULL };
-        VerifyTabBarOrder(tab_bar, tab_order_rearranged);
+        VERIFY_TAB_ORDER(tab_bar, tab_order_rearranged);
 
         // Hide CCC and BBB and show them together on the same frame.
         vars.ShowWindow[1] = vars.ShowWindow[2] = false;
@@ -1181,8 +1182,8 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
             // Verify initial order.
             const char* tab_order_1[] = { "CCC", "AAA", "BBB", NULL };
             const char* tab_order_2[] = { "EEE", "FFF", "DDD", NULL };
-            VerifyTabBarOrder(tab_bar_aaa, tab_order_1);
-            VerifyTabBarOrder(tab_bar_ddd, tab_order_2);
+            VERIFY_TAB_ORDER(tab_bar_aaa, tab_order_1);
+            VERIFY_TAB_ORDER(tab_bar_ddd, tab_order_2);
 
             IM_CHECK(tab_bar_aaa->Tabs.Size >= 2);
             IM_CHECK(tab_bar_aaa->VisibleTabId == tab_bar_aaa->Tabs[1].ID);
@@ -1197,8 +1198,8 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
             // Verify tab order is preserved.
             tab_bar_aaa = window_aaa->DockNode->TabBar;
             tab_bar_ddd = window_ddd->DockNode->TabBar;
-            VerifyTabBarOrder(tab_bar_aaa, tab_order_1);
-            VerifyTabBarOrder(tab_bar_ddd, tab_order_2);
+            VERIFY_TAB_ORDER(tab_bar_aaa, tab_order_1);
+            VERIFY_TAB_ORDER(tab_bar_ddd, tab_order_2);
 
             // Verify active window is preserved.
             // FIXME-TESTS: This fails due to a bug.
