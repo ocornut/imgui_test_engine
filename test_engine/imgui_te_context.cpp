@@ -2477,11 +2477,12 @@ void    ImGuiTestContext::DockWindowInto(ImGuiTestRef window_name_src, ImGuiTest
 
     // FIXME-TESTS: is_outer_docking should be a parameter of alternative (and more flexible) DockWindowInto() that takes ImGuiDockNode* instead of window names as parameters.
     // Value of this parameter is inferred for the most common case when using window names.
-    bool is_outer_docking = window_dst->DockNodeAsHost != NULL && split_dir != ImGuiDir_None;
     IM_CHECK_SILENT(window_src != NULL);
     IM_CHECK_SILENT(window_dst != NULL);
     if (!window_src || !window_dst)
         return;
+
+    bool is_outer_docking = window_dst->DockNodeAsHost != NULL && split_dir != ImGuiDir_None;
 
     ImGuiTestRef ref_src(window_src->DockIsActive ? window_src->ID : window_src->MoveId);   // FIXME-TESTS FIXME-DOCKING: Identify tab
     ImGuiTestItemInfo* item_src = ItemInfo(ref_src);
