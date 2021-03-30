@@ -2086,6 +2086,42 @@ void    ImGuiTestContext::TabClose(ImGuiTestRef ref)
     ItemClick(GetID("#CLOSE", ref));
 }
 
+bool    ImGuiTestContext::TabBarCompareOrder(ImGuiTabBar* tab_bar, const char** tab_order)
+{
+    if (IsError())
+        return false;
+
+    IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
+    LogDebug("TabBarCompareOrder");
+
+    // Display
+    char buf[256];
+    char* buf_end = buf + IM_ARRAYSIZE(buf);
+
+    char* p = buf;
+    for (int i = 0; i < tab_bar->Tabs.Size; i++)
+        p += ImFormatString(p, buf_end - p, "%s\"%s\"", i ? ", " : " ", tab_bar->GetTabName(&tab_bar->Tabs[i]));
+    LogDebug("  Current  {%s }", buf);
+
+    p = buf;
+    for (int i = 0; tab_order[i] != NULL; i++)
+        p += ImFormatString(p, buf_end - p, "%s\"%s\"", i ? ", " : " ", tab_order[i]);
+    LogDebug("  Expected {%s }", buf);
+
+    // Compare
+    for (int i = 0; tab_order[i] != NULL; i++)
+    {
+        if (i >= tab_bar->Tabs.Size)
+            return false;
+        const char* current = tab_bar->GetTabName(&tab_bar->Tabs[i]);
+        const char* expected = tab_order[i];
+        if (strcmp(current, expected) != 0)
+            return false;
+    }
+    return true;
+}
+
+
 void    ImGuiTestContext::MenuAction(ImGuiTestAction action, ImGuiTestRef ref)
 {
     if (IsError())
@@ -2505,7 +2541,7 @@ void    ImGuiTestContext::DockWindowIntoEx(ImGuiTestRef window_name_src, ImGuiTe
 
     // Drag
     drop_is_valid = ImGui::DockContextCalcDropPosForDocking(window_dst, node_dst, window_src, split_dir, split_outer, &drop_pos);
-    IM_CHECK(drop_is_valid);
+    IM_CHECK_SILENT(drop_is_valid);
     MouseDown(0);
     MouseLiftDragThreshold();
     MouseMoveToPos(drop_pos);

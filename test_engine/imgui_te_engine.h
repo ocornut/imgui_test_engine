@@ -270,7 +270,7 @@ static inline void ImGuiTestEngineUtil_AppendStrCompareOp(ImGuiTextBuffer& buf, 
             return;                                                 \
     } while (0)
 
-#define IM_CHECK_STR_OP(_LHS, _RHS, _OP, _RETURN)                   \
+#define IM_CHECK_STR_OP(_LHS, _RHS, _OP, _RETURN, _FLAGS)           \
     do                                                              \
     {                                                               \
         auto __lhs = _LHS;  /* Cache to avoid side effects */       \
@@ -278,16 +278,17 @@ static inline void ImGuiTestEngineUtil_AppendStrCompareOp(ImGuiTextBuffer& buf, 
         bool __res = strcmp(__lhs, __rhs) _OP 0;                    \
         ImGuiTextBuffer expr_buf;                                   \
         ImGuiTestEngineUtil_AppendStrCompareOp(expr_buf, #_LHS, __lhs, #_OP, #_RHS, __rhs); \
-        if (ImGuiTestEngineHook_Check(__FILE__, __func__, __LINE__, ImGuiTestCheckFlags_None, __res, expr_buf.c_str())) \
+        if (ImGuiTestEngineHook_Check(__FILE__, __func__, __LINE__, _FLAGS, __res, expr_buf.c_str())) \
             IM_ASSERT(__res);                                               \
         if (_RETURN && !__res)                                              \
             return;                                                         \
     } while (0)
 
-#define IM_CHECK_STR_EQ(_LHS, _RHS)         IM_CHECK_STR_OP(_LHS, _RHS, ==, true)
-#define IM_CHECK_STR_NE(_LHS, _RHS)         IM_CHECK_STR_OP(_LHS, _RHS, !=, true)
-#define IM_CHECK_STR_EQ_NO_RET(_LHS, _RHS)  IM_CHECK_STR_OP(_LHS, _RHS, ==, false)
-#define IM_CHECK_STR_NE_NO_RET(_LHS, _RHS)  IM_CHECK_STR_OP(_LHS, _RHS, !=, false)
+#define IM_CHECK_STR_EQ(_LHS, _RHS)         IM_CHECK_STR_OP(_LHS, _RHS, ==, true, ImGuiTestCheckFlags_None)
+#define IM_CHECK_STR_NE(_LHS, _RHS)         IM_CHECK_STR_OP(_LHS, _RHS, !=, true, ImGuiTestCheckFlags_None)
+#define IM_CHECK_STR_EQ_NO_RET(_LHS, _RHS)  IM_CHECK_STR_OP(_LHS, _RHS, ==, false, ImGuiTestCheckFlags_None)
+#define IM_CHECK_STR_NE_NO_RET(_LHS, _RHS)  IM_CHECK_STR_OP(_LHS, _RHS, !=, false, ImGuiTestCheckFlags_None)
+#define IM_CHECK_STR_EQ_SILENT(_LHS, _RHS)  IM_CHECK_STR_OP(_LHS, _RHS, ==, true, ImGuiTestCheckFlags_SilentSuccess)
 
 #define IM_CHECK_EQ(_LHS, _RHS)             IM_CHECK_OP(_LHS, _RHS, ==, true)   // Equal
 #define IM_CHECK_NE(_LHS, _RHS)             IM_CHECK_OP(_LHS, _RHS, !=, true)   // Not Equal

@@ -386,6 +386,7 @@ struct ImGuiTestContext
 
     // Tab Bars
     void        TabClose(ImGuiTestRef ref);
+    bool        TabBarCompareOrder(ImGuiTabBar* tab_bar, const char** tab_order);
 
     // Menus
     void        MenuAction(ImGuiTestAction action, ImGuiTestRef ref);
