@@ -1044,7 +1044,7 @@ void    ImGuiTestContext::MouseMove(ImGuiTestRef ref, ImGuiTestOpFlags flags)
 
     ImGuiWindow* window = item->Window;
     ImRect window_inner_r_padded = window->InnerClipRect;
-    window_inner_r_padded.Expand(-4.0f); // == WINDOWS_RESIZE_FROM_EDGES_HALF_THICKNESS
+    window_inner_r_padded.Expand(ImVec2(-g.WindowsHoverPadding.x, -g.WindowsHoverPadding.y));
     if (item->NavLayer == ImGuiNavLayer_Main)
     {
         bool contains_y = (item->RectClipped.Min.y >= window_inner_r_padded.Min.y && item->RectClipped.Max.y <= window_inner_r_padded.Max.y);
@@ -1152,8 +1152,11 @@ void ImGuiTestContext::ForeignWindowsHideOverPos(ImVec2 pos, ImGuiWindow** ignor
     for (int i = 0; i < g.Windows.Size; i++)
     {
         ImGuiWindow* other_window = g.Windows[i];
-        if (other_window->RootWindow == other_window)
-            if (other_window->WasActive && other_window->Rect().Contains(pos))
+        if (other_window->RootWindow == other_window && other_window->WasActive)
+        {
+            ImRect r = other_window->Rect();
+            r.Expand(g.WindowsHoverPadding);
+            if (r.Contains(pos))
             {
                 for (int j = 0; ignore_list[j]; j++)
 #ifdef IMGUI_HAS_DOCK
@@ -1168,6 +1171,7 @@ void ImGuiTestContext::ForeignWindowsHideOverPos(ImVec2 pos, ImGuiWindow** ignor
                 if (other_window)
                     ForeignWindowsToHide.push_back(other_window);
             }
+        }
     }
     Yield();
 }
@@ -1356,8 +1360,12 @@ static bool IsPosOnVoid(ImGuiContext& g, const ImVec2& pos)
 #else
         if (window->RootWindow == window && window->WasActive)
 #endif
-            if (window->Rect().Contains(pos))
+        {
+            ImRect r = window->Rect();
+            r.Expand(g.WindowsHoverPadding);
+            if (r.Contains(pos))
                 return false;
+        }
     return true;
 }
 
@@ -1402,7 +1410,7 @@ void    ImGuiTestContext::MouseClickOnVoid(int mouse_button)
     if (!found_existing_void_pos)
     {
         void_pos = viewport->Pos + ImVec2(1, 1);
-        ImVec2 window_min_pos = void_pos + g.Style.TouchExtraPadding + ImVec2(4.0f, 4.0f) + ImVec2(1.0f, 1.0f); // FIXME: Should use WINDOWS_RESIZE_FROM_EDGES_HALF_THICKNESS
+        ImVec2 window_min_pos = void_pos + g.WindowsHoverPadding + ImVec2(1.0f, 1.0f);
         for (ImGuiWindow* window : g.Windows)
 #ifdef IMGUI_HAS_DOCK
             if (window->RootWindowDockTree == window && window->WasActive)
