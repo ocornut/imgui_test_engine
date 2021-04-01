@@ -3408,23 +3408,15 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
     };
 
     // ## Test tooltip positioning in various conditions.
-    t = IM_REGISTER_TEST(e, "widgets", "widgets_tooltip_positioning");
+    t = IM_REGISTER_TEST(e, "widgets", "widgets_popup_positioning");
     struct TooltipPosVars { ImVec2 Size = ImVec2(50, 50); };
     t->SetUserDataType<TooltipPosVars>();
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         TooltipPosVars& vars = ctx->GetUserData<TooltipPosVars>();
 
-        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoNav);
-        if (ctx->RunFlags & ImGuiTestRunFlags_GuiFuncOnly)
-            ImGui::DragFloat2("Tooltip Size", &vars.Size.x);
-        ImGui::Button("HoverMe", ImVec2(100, 0));
-        if (ImGui::IsItemHovered())
+        auto popup_debug_controls = [&]()
         {
-            ImGui::BeginTooltip();
-            ImGui::InvisibleButton("Space", vars.Size);
-
-            // Debug Controls
             if (ctx->RunFlags & ImGuiTestRunFlags_GuiFuncOnly)
             {
                 float step = ctx->UiContext->IO.DeltaTime * 500.0f;
@@ -3433,7 +3425,26 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
                 if (ImGui::IsKeyDown(ImGui::GetKeyIndex(ImGuiKey_LeftArrow))) vars.Size.x -= step;
                 if (ImGui::IsKeyDown(ImGui::GetKeyIndex(ImGuiKey_RightArrow))) vars.Size.x += step;
             }
+        };
+
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoNav);
+        if (ctx->RunFlags & ImGuiTestRunFlags_GuiFuncOnly)
+            ImGui::DragFloat2("Tooltip Size", &vars.Size.x);
+        ImGui::Button("Tooltip", ImVec2(100, 0));
+        if (ImGui::IsItemHovered())
+        {
+            ImGui::BeginTooltip();
+            ImGui::InvisibleButton("Space", vars.Size);
+            popup_debug_controls();
             ImGui::EndTooltip();
+        }
+        if (ImGui::Button("Popup", ImVec2(100, 0)))
+            ImGui::OpenPopup("Popup");
+        if (ImGui::BeginPopup("Popup"))
+        {
+            ImGui::InvisibleButton("Space", vars.Size);
+            popup_debug_controls();
+            ImGui::EndPopup();
         }
         ImGui::End();
     };
@@ -3441,11 +3452,6 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
     {
         ImGuiContext& g = *ctx->UiContext;
         TooltipPosVars& vars = ctx->GetUserData<TooltipPosVars>();
-
-        ctx->SetRef("Test Window");
-        ctx->MouseMove("HoverMe");  // Force tooltip creation so we can grab the pointer
-        ImGuiWindow* tooltip = ctx->GetWindowByRef("##Tooltip_00");
-
         ImVec2 viewport_pos = ImGui::GetMainViewport()->Pos;
         ImVec2 viewport_size = ImGui::GetMainViewport()->Size;
 
@@ -3527,38 +3533,48 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
             },
         };
 
-        for (auto& test_case : test_cases)
+        ctx->SetRef("Test Window");
+
+        for (int variant = 0; variant < 2; variant++)
         {
-            ctx->LogInfo("## Test case %d", (int)(&test_case - test_cases));
-            vars.Size = ImVec2(50, 50);
-            ctx->WindowMove(ctx->RefID, test_case.Pos, test_case.Pivot);
-            ctx->MouseMove("HoverMe");
+            const char* button_name = variant ? "Popup" : "Tooltip";
+            ctx->LogInfo("## Test variant: %s", button_name);
+            ctx->ItemClick(button_name);        // Force tooltip creation so we can grab the pointer
+            ImGuiWindow* tooltip = variant ? g.NavWindow : ctx->GetWindowByRef("##Tooltip_00");
 
-            // Check default tooltip location
-            IM_CHECK_EQ(g.HoveredIdPreviousFrame, ctx->GetID("HoverMe"));
-            IM_CHECK_EQ(tooltip->AutoPosLastDirection, test_case.DirSmall);
-
-            // Check tooltip location when it is real wide and verify that location does not change once it becomes too wide
-            // First iteration: tooltip is just wide enough to fit within viewport
-            // First iteration: tooltip is wider than viewport
-            for (int j = 0; j < 2; j++)
+            for (auto& test_case : test_cases)
             {
-                vars.Size = ImVec2((j * 0.25f * viewport_size.x) + (viewport_size.x - (g.Style.WindowPadding.x + g.Style.DisplaySafeAreaPadding.x) * 2), 50);
-                ctx->Yield(2);
-                IM_CHECK(tooltip->AutoPosLastDirection == test_case.DirBigH);
-            }
+                ctx->LogInfo("## Test case %d", (int)(&test_case - test_cases));
+                vars.Size = ImVec2(50, 50);
+                ctx->WindowMove(ctx->RefID, test_case.Pos, test_case.Pivot);
+                ctx->ItemClick(button_name);
 
-            // Check tooltip location when it is real tall and verify that location does not change once it becomes too tall
-            // First iteration: tooltip is just tall enough to fit within viewport
-            // First iteration: tooltip is taller than viewport
-            for (int j = 0; j < 2; j++)
-            {
-                vars.Size = ImVec2(50, (j * 0.25f * viewport_size.x) + (viewport_size.y - (g.Style.WindowPadding.y + g.Style.DisplaySafeAreaPadding.y) * 2));
-                ctx->Yield(2);
-                IM_CHECK(tooltip->AutoPosLastDirection == test_case.DirBigV);
-            }
+                // Check default tooltip location
+                IM_CHECK_EQ(g.HoveredIdPreviousFrame, ctx->GetID(button_name));
+                IM_CHECK_EQ(tooltip->AutoPosLastDirection, test_case.DirSmall);
 
-            IM_CHECK_EQ(g.HoveredIdPreviousFrame, ctx->GetID("HoverMe"));
+                // Check tooltip location when it is real wide and verify that location does not change once it becomes too wide
+                // First iteration: tooltip is just wide enough to fit within viewport
+                // First iteration: tooltip is wider than viewport
+                for (int j = 0; j < 2; j++)
+                {
+                    vars.Size = ImVec2((j * 0.25f * viewport_size.x) + (viewport_size.x - (g.Style.WindowPadding.x + g.Style.DisplaySafeAreaPadding.x) * 2), 50);
+                    ctx->ItemClick(button_name);
+                    IM_CHECK(tooltip->AutoPosLastDirection == test_case.DirBigH);
+                }
+
+                // Check tooltip location when it is real tall and verify that location does not change once it becomes too tall
+                // First iteration: tooltip is just tall enough to fit within viewport
+                // First iteration: tooltip is taller than viewport
+                for (int j = 0; j < 2; j++)
+                {
+                    vars.Size = ImVec2(50, (j * 0.25f * viewport_size.x) + (viewport_size.y - (g.Style.WindowPadding.y + g.Style.DisplaySafeAreaPadding.y) * 2));
+                    ctx->ItemClick(button_name);
+                    IM_CHECK(tooltip->AutoPosLastDirection == test_case.DirBigV);
+                }
+
+                IM_CHECK_EQ(g.HoveredIdPreviousFrame, ctx->GetID(button_name));
+            }
         }
     };
 
