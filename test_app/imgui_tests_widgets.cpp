@@ -2622,6 +2622,29 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ctx->WindowClose("");
     };
 
+    // ## Test LabelText() variants layout (#4004)
+    t = IM_REGISTER_TEST(e, "widgets", "widgets_label_text");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::SetNextWindowSize(ImVec2(500, 500), ImGuiCond_Appearing);
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImGuiWindow* window = ImGui::GetCurrentWindow();
+
+        ImGui::Separator();
+        ImGui::LabelText("Single line label", "Single line text");
+        IM_CHECK_EQ(window->DC.LastItemRect.GetHeight(), ImGui::GetFrameHeight());
+
+        ImGui::Separator();
+        ImGui::LabelText("Multi\n line\n label", "Single line text");
+        IM_CHECK_EQ(window->DC.LastItemRect.GetHeight(), ImGui::GetTextLineHeight() * 3.0f + ImGui::GetStyle().FramePadding.y * 2.0f);
+
+        ImGui::Separator();
+        ImGui::LabelText("Single line label", "Multi\n line\n text");
+        IM_CHECK_EQ(window->DC.LastItemRect.GetHeight(), ImGui::GetTextLineHeight() * 3.0f + ImGui::GetStyle().FramePadding.y * 2.0f);
+
+        ImGui::End();
+    };
+
     // ## Test menu appending.
     t = IM_REGISTER_TEST(e, "widgets", "widgets_menu_append");
     t->GuiFunc = [](ImGuiTestContext* ctx)
