@@ -235,10 +235,10 @@ static inline void ImGuiTestEngineUtil_AppendStrCompareOp(ImGuiTextBuffer& buf, 
             "%.*s\n"
             "----------------------------------------\n",
             lhs_is_literal ? "literal" : lhs_var,
-            lhs_val_len, lhs_val,
+            (int)lhs_val_len, lhs_val,
             rhs_is_literal ? "literal" : rhs_var,
             op,
-            rhs_val_len, rhs_val);
+            (int)rhs_val_len, rhs_val);
     }
     else
     {
