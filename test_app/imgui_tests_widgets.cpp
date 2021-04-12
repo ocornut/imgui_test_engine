@@ -2567,6 +2567,151 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         IM_CHECK(equal(vars.Vec4Array[0], ImVec4(ImColor(0x11, 0x22, 0x33, 0x44))));
     };
 
+    // ## Test preserving hue and saturation for certain colors having these components undefined.
+    t = IM_REGISTER_TEST(e, "widgets", "widgets_coloredit_hue_sat");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        auto& vars = ctx->GenericVars;
+        int& rgbi = vars.Int1;
+        ImVec4& rgbf = vars.Vec4;
+        ImVec4 color = (vars.Step == 0) ? rgbf : ImGui::ColorConvertU32ToFloat4(rgbi);
+        ImGui::SetNextWindowSize(ImVec2(300, 100), ImGuiCond_Appearing);
+        if (ImGui::Begin("Window", NULL, ImGuiWindowFlags_NoSavedSettings))
+        {
+            bool use_int = (vars.Step == 1);
+            if (ImGui::Checkbox("Use int", &use_int))
+                vars.Step = use_int ? 1 : 0;
+            if (ImGui::ColorEdit4("Color", &color.x, ImGuiColorEditFlags_PickerHueBar))
+            {
+                if (vars.Step == 0)
+                    rgbf = color;
+                else
+                    rgbi = ImGui::ColorConvertFloat4ToU32(color);
+            }
+        }
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        auto& vars = ctx->GenericVars;
+        int& rgbi = vars.Int1;
+        ImVec4& rgbf = vars.Vec4;
+
+        struct Color
+        {
+            float R, G, B;
+            float H, S, V;
+        };
+
+        auto read_color = [&]()
+        {
+            ImVec4 rgb = vars.Step == 0 ? rgbf : ImGui::ColorConvertU32ToFloat4(rgbi);
+            Color color;
+            color.R = rgb.x;
+            color.G = rgb.y;
+            color.B = rgb.z;
+            ImGui::ColorConvertRGBtoHSV(color.R, color.G, color.B, color.H, color.S, color.V);
+            return color;
+        };
+
+        ImGuiContext& g = *ctx->UiContext;
+        ctx->ItemClick("Window/Color/##ColorButton");
+        ctx->SetRef(ctx->GetFocusWindowRef());
+        ImGuiWindow* popup = g.NavWindow;
+
+        // Variant 0: use float RGB.
+        // Variant 1: use int32 RGB.
+        for (int variant = 0; variant < 2; variant++)
+        {
+            vars.Step = variant;
+            ctx->LogDebug("Test variant: %d", variant);
+
+            ctx->ItemClick("##picker/sv");                  // Set initial color
+            ctx->ItemClick("##picker/hue");
+
+            Color color_start = read_color();
+            IM_CHECK_NE(color_start.H, 0.0f);
+            IM_CHECK_NE(color_start.S, 0.0f);
+            IM_CHECK_NE(color_start.V, 0.0f);
+
+            // Set saturation to 0, hue must be preserved.
+            // Since we are testing edgecases, these explicit values are filled in manually, to avoid unpredictable
+            // values arising from imprecision of floating point calculations and/or unpredictable resulting color
+            // from simulated input.
+            //ctx->ItemDragWithDelta("##picker/sv", ImVec2(-popup->Size.x * 0.5f, 0));
+            rgbf = ImVec4(0.5, 0.5, 0.5, 0);
+            rgbi = 0x00808080;
+            ctx->Yield();
+
+            Color color = read_color();
+            IM_CHECK_EQ(color.S, 0.0f);
+            IM_CHECK_EQ(color.H, 0.0f);                     // Hue undefined
+            IM_CHECK_EQ(color_start.H, g.ColorEditLastHue); // Preserved hue matches original color
+
+            // Test saturation preservation during mouse input.
+            ctx->ItemClick("##picker/sv");
+            ctx->ItemClick("##picker/hue");
+            IM_CHECK_NE(read_color().S, 0.0f);
+            color_start = read_color();
+            ctx->MouseDown();
+
+            // Move mouse across hue slider (extremes)
+            ctx->MouseMoveToPos(g.IO.MousePos + ImVec2(0.0f, +popup->Size.y * 0.5f));  // Bottom
+            ctx->MouseMoveToPos(g.IO.MousePos + ImVec2(0.0f, -popup->Size.y * 1.0f));  // Top
+            ctx->MouseUp();
+            IM_CHECK_EQ(read_color().S, color_start.S);
+            IM_CHECK_EQ(g.ColorEditLastSat, color_start.H);
+
+            ctx->ItemClick("##picker/sv");                  // Reset color
+            ctx->ItemClick("##picker/hue");
+            color_start = read_color();
+
+            // Set value to 0, saturation must be preserved.
+            //ctx->ItemDragWithDelta("##picker/sv", ImVec2(0, +popup->Size.y * 0.5f));
+            rgbf = ImVec4(0, 0, 0, 0);
+            rgbi = 0x00000000;
+            ctx->Yield();
+            color = read_color();
+            IM_CHECK_EQ(color.V, 0.0f);
+            IM_CHECK_EQ(color.S, 0.0f);                     // Saturation undefined
+            IM_CHECK_EQ(color_start.S, g.ColorEditLastSat); // Preserved saturation matches original color
+
+            // Set color to pure white and verify it can reach (1.0f, 1.0f, 1.0f).
+            //ctx->ItemDragWithDelta("##picker/sv", ImVec2(-popup->Size.x * 0.5f, -popup->Size.y * 0.5f));
+            rgbf = ImVec4(1.0f, 1.0f, 1.0f, 0);
+            rgbi = 0x00FFFFFF;
+            ctx->Yield();
+            color = read_color();
+            IM_CHECK_EQ(color.R, 1.0f);
+            IM_CHECK_EQ(color.G, 1.0f);
+            IM_CHECK_EQ(color.B, 1.0f);
+
+            // Move hue to extreme ends, see if it does not wrap around.
+            ctx->ItemDragWithDelta("##picker/hue", ImVec2(0, +popup->Size.y * 0.5f));
+            IM_CHECK_EQ(read_color().H, 0.0f);              // Hue undefined
+            IM_CHECK_EQ(g.ColorEditLastHue, 1.0f);          // Preserved hue matches just set value
+            ctx->ItemDragWithDelta("##picker/hue", ImVec2(0, -popup->Size.y * 0.5f));
+            IM_CHECK_EQ(read_color().H, 0.0f);              // Hue undefined
+            IM_CHECK_EQ(g.ColorEditLastHue, 0.0f);          // Preserved hue matches just set value
+
+            // Test hue preservation during mouse input.
+            ctx->ItemClick("##picker/hue");
+            ctx->ItemClick("##picker/sv");
+            IM_CHECK_NE(read_color().H, 0.0f);              // Hue defined
+            color_start = read_color();
+            ctx->MouseDown();
+
+            // Move mouse across all edges (extremes)
+            ctx->MouseMoveToPos(g.IO.MousePos + ImVec2(-popup->Size.x * 0.5f, -popup->Size.y * 0.5f));  // TL
+            ctx->MouseMoveToPos(g.IO.MousePos + ImVec2(+popup->Size.x * 1.0f, 0.0f));  // TR
+            ctx->MouseMoveToPos(g.IO.MousePos + ImVec2(0.0f, +popup->Size.y * 1.0f));  // BR
+            ctx->MouseMoveToPos(g.IO.MousePos + ImVec2(-popup->Size.x * 1.0f, 0.0f));  // BL
+            ctx->MouseMoveToPos(g.IO.MousePos + ImVec2(0.0f, -popup->Size.y * 1.0f));  // TL
+            ctx->MouseUp();
+            IM_CHECK_EQ(color_start.H, g.ColorEditLastHue); // Hue remains unchanged during all operations
+        }
+    };
+
     // ## Test ColorEdit basic Drag and Drop
     t = IM_REGISTER_TEST(e, "widgets", "widgets_drag_coloredit");
     t->GuiFunc = [](ImGuiTestContext* ctx)
