@@ -919,6 +919,89 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
         }
     };
 
+#if 1//IMGUI_BROKEN_TESTS
+    // Test focus order restore (#2304)
+    t = IM_REGISTER_TEST(e, "docking", "docking_tab_focus_restore");
+    t->SetUserDataType<DockingTestingVars>();
+    t->GuiFunc = gui_func_docking_generic;
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiContext& g = *ctx->UiContext;
+        DockingTestingVars& vars = ctx->GetUserData<DockingTestingVars>();
+        vars.ShowWindow[0] = vars.ShowWindow[1] = vars.ShowWindow[2] = vars.ShowWindow[3] = true;
+
+        for (int step = 0; step < 3; step++)
+        {
+            vars.Step = step;
+            vars.ShowDockspace = (vars.Step == 1);
+
+            ctx->DockMultiClear("Test Window", "AAA", "BBB", "CCC", NULL);
+            ctx->WindowResize("Test Window", ImVec2(300, 200));
+            ctx->WindowResize("AAA", ImVec2(300, 200));
+            ctx->LogInfo("STEP %d", step);
+
+            // All into a dockspace
+            if (step == 1)
+                ctx->DockWindowIntoEx("AAA", (ImGuiID)0, vars.DockSpaceID);
+
+            // All into a split node of Test Window
+            if (step == 2)
+                ctx->DockWindowInto("AAA", "Test Window", ImGuiDir_Right);
+
+            ctx->DockWindowInto("BBB", "AAA");
+            ctx->DockWindowInto("CCC", "AAA");
+
+            ImGuiWindow* window_aaa = ctx->GetWindowByRef("AAA");
+            ImGuiWindow* window_bbb = ctx->GetWindowByRef("BBB"); IM_UNUSED(window_bbb);
+            ImGuiWindow* window_ccc = ctx->GetWindowByRef("CCC"); IM_UNUSED(window_ccc);
+            ImGuiDockNode* node = window_aaa->DockNode; IM_UNUSED(node);
+            IM_CHECK(window_aaa->DockNode != NULL);
+
+            ctx->ItemClick("BBB");
+            ImGuiTabBar* tab_bar = window_aaa->DockNode->TabBar;
+            IM_CHECK_EQ(node->SelectedTabId, window_bbb->ID);
+            IM_CHECK_EQ(tab_bar->SelectedTabId, window_bbb->ID);
+            IM_CHECK(g.NavWindow == window_bbb);
+
+            IM_CHECK(window_aaa->Hidden == true);
+            IM_CHECK(window_bbb->Hidden == false);
+            IM_CHECK(window_ccc->Hidden == true);
+
+            // Hide all tabs and show them together on the same frame.
+            vars.ShowWindow[0] = vars.ShowWindow[1] = vars.ShowWindow[2] = false;
+            ctx->Yield();
+            IM_CHECK(window_aaa->Active == false);
+            IM_CHECK(window_bbb->Active == false);
+            IM_CHECK(window_ccc->Active == false);
+            ctx->Yield();
+
+            vars.ShowWindow[0] = vars.ShowWindow[1] = vars.ShowWindow[2] = true;
+            ctx->Yield();
+            IM_CHECK(window_aaa->Active == true);
+            IM_CHECK(window_bbb->Active == true);
+            IM_CHECK(window_ccc->Active == true);
+            IM_CHECK(window_aaa->Hidden == true);
+            IM_CHECK(window_bbb->Hidden == true);
+            IM_CHECK(window_ccc->Hidden == true);
+            ctx->Yield();
+
+            // BBB should have focus.
+            // FIXME-TESTS: This check would fail due to a missing feature (#2304)
+#if IMGUI_BROKEN_TESTS
+            tab_bar = window_aaa->DockNode->TabBar;
+            IM_CHECK_EQ(node->SelectedTabId, window_bbb->ID);
+            IM_CHECK_EQ(tab_bar->SelectedTabId, window_bbb->ID);
+            IM_CHECK(window_aaa->Hidden == true);
+            IM_CHECK(window_bbb->Hidden == false);
+            IM_CHECK(window_ccc->Hidden == true);
+            IM_CHECK(g.NavWindow == window_bbb);
+#endif
+
+            // FIXME-TESTS: Now close CCC and verify the focused windows (should be "AAA" or "BBB" depending on which we last focused before "CCC": should test both cases!)
+        }
+    };
+#endif
+
     // ## Test dockspace padding. (#3733)
     t = IM_REGISTER_TEST(e, "docking", "docking_dockspace_over_viewport_padding");
     t->GuiFunc = [](ImGuiTestContext* ctx)
