@@ -2469,6 +2469,7 @@ void    ImGuiTestContext::WindowResize(ImGuiTestRef ref, ImVec2 size)
         return;
 
     ImGuiWindow* window = GetWindowByRef(ref);
+    IM_CHECK_SILENT(window != NULL);
     size = ImFloor(size);
 
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
@@ -2618,6 +2619,7 @@ void    ImGuiTestContext::DockMultiClear(const char* window_name, ...)
         Yield(2); // Give time to rebuild dock in case io.ConfigDockingAlwaysTabBar is set
 }
 
+// FIXME: Unused
 void    ImGuiTestContext::DockMultiSet(ImGuiID dock_id, const char* window_name, ...)
 {
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
@@ -2634,11 +2636,12 @@ void    ImGuiTestContext::DockMultiSet(ImGuiID dock_id, const char* window_name,
     Yield();
 }
 
+// FIXME: rename and clarify this is using DockBuilder (or remove, let tests use DockBuilderAddNode + DockBuilderDockWindow)
 ImGuiID ImGuiTestContext::DockMultiSetupBasic(ImGuiID dock_id, const char* window_name, ...)
 {
     va_list args;
     va_start(args, window_name);
-    dock_id = ImGui::DockBuilderAddNode(0, ImGuiDockNodeFlags_None);
+    dock_id = ImGui::DockBuilderAddNode(dock_id, ImGuiDockNodeFlags_None);
     ImGui::DockBuilderSetNodePos(dock_id, ImGui::GetMainViewport()->Pos + ImVec2(100, 100));
     ImGui::DockBuilderSetNodeSize(dock_id, ImVec2(200, 200));
     while (window_name != NULL)

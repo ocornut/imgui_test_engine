@@ -31,7 +31,7 @@ struct DockingTestingVars
     bool        ShowDockspace = true;
     bool        ShowWindow[10];
 
-    DockingTestingVars() { for (int n = 0; n < IM_ARRAYSIZE(ShowWindow); n++) ShowWindow[n] = true; }
+    DockingTestingVars() { for (int n = 0; n < IM_ARRAYSIZE(ShowWindow); n++) ShowWindow[n] = false; }
 };
 
 static inline bool operator==(const ImVec2& lhs, const ImVec2& rhs) { return lhs.x == rhs.x && lhs.y == rhs.y; }    // for IM_CHECK_EQ()
@@ -146,7 +146,7 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
         io.ConfigDockingAlwaysTabBar = backup_cfg_docking_always_tab_bar;
     };
 
-    // ## Test dock with DocKBuilder - via ctx->DockMultiSetupBasic() helper.
+    // ## Test dock with DockBuilder - via ctx->DockMultiSetupBasic() helper.
     t = IM_REGISTER_TEST(e, "docking", "docking_builder_1");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
@@ -820,7 +820,7 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
     // ## Test whether docked window tabs are in right order.
     t = IM_REGISTER_TEST(e, "docking", "docking_tab_order");
     t->SetUserDataType<DockingTestingVars>();
-    t->GuiFunc = [](ImGuiTestContext* ctx)
+    auto gui_func_docking_generic = [](ImGuiTestContext* ctx)
     {
         DockingTestingVars& vars = ctx->GetUserData<DockingTestingVars>();
 
@@ -833,26 +833,27 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
         }
         ImGui::End();
 
-        if (vars.ShowWindow[0])
-        {
-            ImGui::Begin("AAA", NULL, ImGuiWindowFlags_NoSavedSettings);
-            ImGui::End();
-        }
-        if (vars.ShowWindow[1])
-        {
-            ImGui::Begin("BBB", NULL, ImGuiWindowFlags_NoSavedSettings);
-            ImGui::End();
-        }
-        if (vars.ShowWindow[2])
-        {
-            ImGui::Begin("CCC", NULL, ImGuiWindowFlags_NoSavedSettings);
-            ImGui::End();
-        }
+        for (int n = 0; n < IM_ARRAYSIZE(vars.ShowWindow); n++)
+            if (vars.ShowWindow[n])
+            {
+                ImGui::SetNextWindowSize(ImVec2(300.0f, 200.0f), ImGuiCond_Appearing);
+
+                char window_name[4];
+                window_name[0] = window_name[1] = window_name[2] = (char)('A' + n);
+                window_name[3] = 0;
+
+                ImGui::Begin(window_name, NULL, ImGuiWindowFlags_NoSavedSettings);
+                ImGui::Text("This is '%s'", window_name);
+                ImGui::Text("ID = %08X, DockID = %08X", ImGui::GetCurrentWindow()->ID, ImGui::GetWindowDockID());
+                ImGui::End();
+            }
     };
+    t->GuiFunc = gui_func_docking_generic;
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         ImGuiContext& g = *ctx->UiContext;
         DockingTestingVars& vars = ctx->GetUserData<DockingTestingVars>();
+        vars.ShowWindow[0] = vars.ShowWindow[1] = vars.ShowWindow[2] = true;
 
         for (int step = 0; step < 3; step++)
         {
@@ -893,8 +894,7 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
             ctx->ItemDragWithDelta("BBB", ImVec2((tab_bar->Tabs[0].Width + g.Style.ItemInnerSpacing.x) * -0.5f, 0.0f));
             tab_bar = window_aaa->DockNode->TabBar;
             IM_CHECK(ctx->TabBarCompareOrder(tab_bar, tab_order_initial));
-
-            ImGuiID ccc_id = tab_bar->Tabs[2].ID;
+            IM_CHECK(tab_bar->Tabs[2].ID == window_ccc->ID);
 
             // Mix tabs, expected order becomes CCC, BBB, AAA. This also verifies drag operations way beyond tab bar rect.
             ctx->ItemDragWithDelta("AAA", ImVec2(+tab_bar->Tabs[2].Offset + tab_bar->Tabs[2].Width, 0.0f));
@@ -914,33 +914,8 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
             // FIXME-TESTS: This check would fail due to a bug.
             const char* tab_order_reappeared[] = { "AAA", "CCC", "BBB", NULL };
             IM_UNUSED(tab_order_reappeared);
-#if IMGUI_BROKEN_TESTS
-            if (true)
-#else
-            if (step == 0)
-#endif
-            {
-                tab_bar = window_aaa->DockNode->TabBar;
-                IM_CHECK(ctx->TabBarCompareOrder(tab_bar, tab_order_reappeared));
-            }
-
-            // Focus CCC tab.
-            ctx->ItemClick("CCC");
-
-            // Hide all tabs and show them together on the same frame.
-            vars.ShowWindow[1] = vars.ShowWindow[2] = false;
-            ctx->Yield(2);
-            vars.ShowWindow[1] = vars.ShowWindow[2] = true;
-            ctx->Yield(2);
-
-            // CCC should maintain focus.
-            // FIXME-TESTS: This check would fail due to a missing feature (#2304)
-            IM_UNUSED(ccc_id);
-#if IMGUI_BROKEN_TESTS
             tab_bar = window_aaa->DockNode->TabBar;
-            IM_CHECK_EQ(tab_bar->SelectedTabId, ccc_id);
-            //IM_CHECK_EQ(g.NavWindow, ....);
-#endif
+            IM_CHECK(ctx->TabBarCompareOrder(tab_bar, tab_order_reappeared));
         }
     };
 
@@ -994,6 +969,7 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         DockingTestingVars& vars = ctx->GetUserData<DockingTestingVars>();
+
         ImGui::SetNextWindowSize(ImVec2(500,500), ImGuiCond_Appearing);
         ImGui::Begin("Host", NULL, ImGuiWindowFlags_NoSavedSettings);
         ImGui::Checkbox("1", &vars.ShowWindow[1]); ImGui::SameLine();
@@ -1027,6 +1003,8 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         DockingTestingVars& vars = ctx->GetUserData<DockingTestingVars>();
+        vars.ShowWindow[0] = vars.ShowWindow[1] = vars.ShowWindow[2] = vars.ShowWindow[3] = true;
+
         ImGuiWindow* window1 = ctx->GetWindowByRef("Window 1");
         ImGuiWindow* window2 = ctx->GetWindowByRef("Window 2");
         ctx->DockMultiClear("Window 1", "Window 2", "Window 3", NULL);
