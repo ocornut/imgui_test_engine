@@ -386,7 +386,7 @@ static void ShowTestGroup(ImGuiTestEngine* e, ImGuiTestGroup group, ImGuiTextFil
     ImGui::EndChild();
 }
 
-void    ImGuiTestEngine_ShowTestWindow(ImGuiTestEngine* engine, bool* p_open)
+static void ImGuiTestEngine_ShowTestTool(ImGuiTestEngine* engine, bool* p_open)
 {
     ImGuiContext& g = *GImGui;
     ImGuiStyle& style = g.Style;
@@ -396,7 +396,11 @@ void    ImGuiTestEngine_ShowTestWindow(ImGuiTestEngine* engine, bool* p_open)
         ImGui::SetNextWindowFocus();
         engine->UiFocus = false;
     }
-    ImGui::Begin("Dear ImGui Test Engine", p_open);// , ImGuiWindowFlags_MenuBar);
+    if (!ImGui::Begin("Dear ImGui Test Engine", p_open))// , ImGuiWindowFlags_MenuBar);
+    {
+        ImGui::End();
+        return;
+    }
 
 #if 0
     if (0 && ImGui::BeginMenuBar())
@@ -580,6 +584,12 @@ void    ImGuiTestEngine_ShowTestWindow(ImGuiTestEngine* engine, bool* p_open)
     ImGui::EndChild();
 
     ImGui::End();
+}
+
+void    ImGuiTestEngine_ShowTestWindows(ImGuiTestEngine* engine, bool* p_open)
+{
+    // Test Tool
+    ImGuiTestEngine_ShowTestTool(engine, p_open);
 
     // Stack Tool
     ImGuiStackTool& stack_tool = engine->StackTool;

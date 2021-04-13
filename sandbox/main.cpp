@@ -318,7 +318,7 @@ int main(int argc, char** argv)
 
 #ifdef IMGUI_SANDBOX_ENABLE_TEST_ENGINE
         if (show_test_engine)
-            ImGuiTestEngine_ShowTestWindow(engine, &show_test_engine);
+            ImGuiTestEngine_ShowTestWindows(engine, &show_test_engine);
         app->Vsync = test_io.RenderWantMaxSpeed ? false : true;
 #endif
 

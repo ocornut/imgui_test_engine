@@ -95,7 +95,7 @@ TestApp g_App;
 
 static void ShowUI()
 {
-    ImGuiTestEngine_ShowTestWindow(g_App.TestEngine, NULL);
+    ImGuiTestEngine_ShowTestWindows(g_App.TestEngine, NULL);
 
     static bool show_demo_window = true;
     static bool show_another_window = false;

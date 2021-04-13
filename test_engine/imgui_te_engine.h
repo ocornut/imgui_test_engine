@@ -340,7 +340,7 @@ void                ImGuiTestEngine_GetResult(ImGuiTestEngine* engine, int& coun
 void                ImGuiTestEngine_PrintResultSummary(ImGuiTestEngine* engine);
 
 // Functions: UI
-void                ImGuiTestEngine_ShowTestWindow(ImGuiTestEngine* engine, bool* p_open);
+void                ImGuiTestEngine_ShowTestWindows(ImGuiTestEngine* engine, bool* p_open);
 
 // Function pointers for IO structure
 // (also see imgui_te_coroutine.h for coroutine functions)
