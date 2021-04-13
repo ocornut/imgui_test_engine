@@ -272,7 +272,7 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
 #ifdef IMGUI_HAS_DOCK
             ctx->DockClear("Window 1", "Window 2", NULL);
             if (test_n == 1)
-                ctx->DockWindowInto("Window 1", "Window 2");
+                ctx->DockInto("Window 1", "Window 2");
 #endif
 
             // Set up window focus order.
@@ -326,7 +326,7 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
 #ifdef IMGUI_HAS_DOCK
             ctx->DockClear("Window 1", "Window 2", NULL);
             if (test_n == 1)
-                ctx->DockWindowInto("Window 2", "Window 1");
+                ctx->DockInto("Window 2", "Window 1");
 #endif
 
             ImGuiWindow* window2 = ctx->GetWindowByRef("Window 2");
@@ -387,7 +387,7 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
 #ifdef IMGUI_HAS_DOCK
             ctx->DockClear("Window 1", "Window 2", NULL);
             if (test_n == 1)
-                ctx->DockWindowInto("Window 2", "Window 1");
+                ctx->DockInto("Window 2", "Window 1");
 #endif
             ctx->WindowFocus("Window 1");
             ctx->NavMoveTo("Window 1/Button 1");
@@ -438,7 +438,7 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
             ctx->SetRef(ImGuiTestRef());
             ctx->DockClear("Dear ImGui Demo", "Hello, world!", NULL);
             if (test_n == 0)
-                ctx->DockWindowInto("Dear ImGui Demo", "Hello, world!");
+                ctx->DockInto("Dear ImGui Demo", "Hello, world!");
 #endif
             ctx->SetRef("Dear ImGui Demo");
             ctx->ItemCloseAll("");

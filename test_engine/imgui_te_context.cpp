@@ -2523,7 +2523,7 @@ void    ImGuiTestContext::PopupCloseAll()
 
 #ifdef IMGUI_HAS_DOCK
 // Note: unlike DockBuilder functions, for _nodes_ this require the node to be visible.
-void    ImGuiTestContext::DockWindowInto(ImGuiTestRef src_id, ImGuiTestRef dst_id, ImGuiDir split_dir, bool split_outer)
+void    ImGuiTestContext::DockInto(ImGuiTestRef src_id, ImGuiTestRef dst_id, ImGuiDir split_dir, bool split_outer)
 {
     ImGuiContext& g = *UiContext;
     if (IsError())

@@ -96,7 +96,7 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
             ctx->WindowMove("/BBBB", ImVec2(200, 200));
 
             // Dock Once
-            ctx->DockWindowInto("AAAA", "BBBB");
+            ctx->DockInto("AAAA", "BBBB");
             IM_CHECK(window_aaaa->DockNode != NULL);
             IM_CHECK(window_aaaa->DockNode == window_bbbb->DockNode);
             IM_CHECK_EQ(window_aaaa->DockNode->Pos, ImVec2(200, 200));
@@ -118,7 +118,7 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
                 ctx->WindowResize("/BBBB", ImVec2(200, 200)); // Should already the case
 
                 // Dock again (BBBB still refers to dock id, making this different from the first docking)
-                ctx->DockWindowInto("/AAAA", "/BBBB", ImGuiDir_None);
+                ctx->DockInto("/AAAA", "/BBBB", ImGuiDir_None);
                 IM_CHECK_EQ(window_aaaa->DockId, dock_id);
                 IM_CHECK_EQ(window_bbbb->DockId, dock_id);
                 IM_CHECK_EQ(window_aaaa->Pos, ImVec2(300, 300));
@@ -140,7 +140,7 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
                 ctx->WindowMove("/BBBB", ImVec2(200, 200));
 
                 // Dock on the side (BBBB still refers to dock id, making this different from the first docking)
-                ctx->DockWindowInto("/AAAA", "/BBBB", ImGuiDir_Left);
+                ctx->DockInto("/AAAA", "/BBBB", ImGuiDir_Left);
                 IM_CHECK(window_aaaa->DockNode != NULL);
                 IM_CHECK_EQ(window_aaaa->DockNode->ParentNode->ID, dock_id);
                 IM_CHECK_EQ(window_bbbb->DockNode->ParentNode->ID, dock_id);
@@ -452,7 +452,7 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
         //IM_DEBUG_HALT_TESTFUNC();
 
         // Test undocking from tab.
-        ctx->DockWindowInto("Window 1", "Window 2");
+        ctx->DockInto("Window 1", "Window 2");
         IM_CHECK(window1->DockNode != NULL);
         IM_CHECK(window1->DockNode == window2->DockNode);
         ctx->UndockWindow("Window 1");
@@ -467,9 +467,9 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
             {
                 ctx->DockClear("Window 1", "Window 2", "Dear ImGui Demo", NULL);
                 ctx->Yield();
-                ctx->DockWindowInto("Window 1", "Dear ImGui Demo", (ImGuiDir)direction);
+                ctx->DockInto("Window 1", "Dear ImGui Demo", (ImGuiDir)direction);
                 if (n)
-                    ctx->DockWindowInto("Window 2", "Window 1");
+                    ctx->DockInto("Window 2", "Window 1");
                 IM_CHECK(demo_window->DockNode != NULL);
                 IM_CHECK(demo_window->DockNode->ParentNode != NULL);
                 IM_CHECK(window1->DockNode != NULL);
@@ -496,9 +496,9 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
         for (int n = 0; n < 3; n++)
         {
             ctx->DockClear("Window 1", "Window 2", "Window 3", "Window 4", NULL);
-            ctx->DockWindowInto("Window 2", "Window 1");
-            ctx->DockWindowInto("Window 3", "Window 2", ImGuiDir_Right);
-            ctx->DockWindowInto("Window 4", "Window 3");
+            ctx->DockInto("Window 2", "Window 1");
+            ctx->DockInto("Window 3", "Window 2", ImGuiDir_Right);
+            ctx->DockInto("Window 4", "Window 3");
 
             ImGuiDockNode* node1 = window1->DockNode;
             ImGuiDockNode* node2 = window2->DockNode;
@@ -622,7 +622,7 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
         ctx->WindowCollapse(window1, false);
         ctx->WindowCollapse(window2, false);
         ctx->DockClear("Window B", "Window A", NULL);
-        ctx->DockWindowInto("Window B", dock_id);
+        ctx->DockInto("Window B", dock_id);
         IM_CHECK(ctx->WindowIsUndockedOrStandalone(window1));           // Window A is not docked
         IM_CHECK_EQ(window2->DockId, dock_id);                          // Window B was docked into a dockspace
 
@@ -683,7 +683,7 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
         // Window A2 is visible when all windows are undocked.
         IM_CHECK(windowA2->Active);
         ctx->WindowFocus("Window A");
-        ctx->DockWindowInto("Window B", "Window A");
+        ctx->DockInto("Window B", "Window A");
 
         // Window A2 gets hidden when Window B is docked as it becomes the active window in the dock.
         IM_CHECK(!windowA2->Active);
@@ -731,7 +731,7 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
         {
             ImGuiWindow* window = windows[i];
             ctx->DockClear("Window B", "Window A", NULL);
-            ctx->DockWindowInto("Window B", "Window A", ImGuiDir_Right);
+            ctx->DockInto("Window B", "Window A", ImGuiDir_Right);
 
             // Two way split. Ensure window is docked and tab bar is visible.
             IM_CHECK(window->DockIsActive);
@@ -761,7 +761,7 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
         ImGuiWindow* window0 = ctx->GetWindowByRef("Window 0");
         ImGuiWindow* window1 = ctx->GetWindowByRef("Window 1");
         ctx->DockClear("Window 0", "Window 1", NULL);
-        ctx->DockWindowInto("Window 1", "Window 0", ImGuiDir_Right);
+        ctx->DockInto("Window 1", "Window 0", ImGuiDir_Right);
         IM_CHECK_NE(window0->DockNode, (ImGuiDockNode*)NULL);
         IM_CHECK_NE(window1->DockNode, (ImGuiDockNode*)NULL);
         ImGuiDockNode* original_node = window0->DockNode->ParentNode;
@@ -804,7 +804,7 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
         switch (ctx->Test->ArgVariant)
         {
         case 0:
-            ctx->DockWindowInto("Dock Window", "Test Window");
+            ctx->DockInto("Dock Window", "Test Window");
             IM_CHECK(dock_window->DockNode != NULL);
             IM_CHECK(test_window->DockNode != NULL);
             IM_CHECK(test_window->DockNode->HostWindow == dock_window->DockNode->HostWindow);
@@ -813,7 +813,7 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
         {
             ImGuiID dock_id = ctx->GenericVars.DockId;
             ImGuiDockNode* dock_node = ImGui::DockBuilderGetNode(dock_id);
-            ctx->DockWindowInto("Dock Window", dock_node->ID);
+            ctx->DockInto("Dock Window", dock_node->ID);
             IM_CHECK(dock_window->DockNode != NULL);
             IM_CHECK(ctx->WindowIsUndockedOrStandalone(test_window));
             IM_CHECK(!ctx->WindowIsUndockedOrStandalone(dock_window));
@@ -908,14 +908,14 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
 
             // All into a dockspace
             if (step == 1)
-                ctx->DockWindowInto("AAA", vars.DockSpaceID);
+                ctx->DockInto("AAA", vars.DockSpaceID);
 
             // All into a split node of Test Window
             if (step == 2)
-                ctx->DockWindowInto("AAA", "Test Window", ImGuiDir_Right);
+                ctx->DockInto("AAA", "Test Window", ImGuiDir_Right);
 
-            ctx->DockWindowInto("BBB", "AAA");
-            ctx->DockWindowInto("CCC", "AAA");
+            ctx->DockInto("BBB", "AAA");
+            ctx->DockInto("CCC", "AAA");
 
             ImGuiWindow* window_aaa = ctx->GetWindowByRef("AAA");
             ImGuiWindow* window_bbb = ctx->GetWindowByRef("BBB"); IM_UNUSED(window_bbb);
@@ -970,8 +970,8 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
         vars.ShowDockspace = false;
         vars.ShowWindow[0] = vars.ShowWindow[1] = vars.ShowWindow[2] = vars.ShowWindow[3] = true;
         ctx->DockClear("AAA", "BBB", "CCC", "DDD", NULL);
-        ctx->DockWindowInto("BBB", "AAA");
-        ctx->DockWindowInto("DDD", "CCC");
+        ctx->DockInto("BBB", "AAA");
+        ctx->DockInto("DDD", "CCC");
         vars.ShowWindow[3] = false;
         ctx->Yield();
 
@@ -981,7 +981,7 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
         IM_CHECK(window_ccc->DockId != 0);
         IM_CHECK(window_ccc->DockNode != NULL);
         IM_CHECK(window_ccc->DockId != window_aaa->DockId);
-        ctx->DockWindowInto(window_aaa->DockNode->ID, window_ccc->ID);
+        ctx->DockInto(window_aaa->DockNode->ID, window_ccc->ID);
         IM_CHECK(window_aaa->DockNode == window_ccc->DockNode);
 
         const char* expected_tab_order[] = { "CCC", "AAA", "BBB", NULL };
@@ -1012,14 +1012,14 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
 
             // All into a dockspace
             if (step == 1)
-                ctx->DockWindowInto("AAA", vars.DockSpaceID);
+                ctx->DockInto("AAA", vars.DockSpaceID);
 
             // All into a split node of Test Window
             if (step == 2)
-                ctx->DockWindowInto("AAA", "Test Window", ImGuiDir_Right);
+                ctx->DockInto("AAA", "Test Window", ImGuiDir_Right);
 
-            ctx->DockWindowInto("BBB", "AAA");
-            ctx->DockWindowInto("CCC", "AAA");
+            ctx->DockInto("BBB", "AAA");
+            ctx->DockInto("CCC", "AAA");
 
             ImGuiWindow* window_aaa = ctx->GetWindowByRef("AAA");
             ImGuiWindow* window_bbb = ctx->GetWindowByRef("BBB"); IM_UNUSED(window_bbb);
@@ -1103,10 +1103,10 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
         IM_CHECK_EQ(window->HitTestHoleSize.x, viewport->Size.x);
         IM_CHECK_EQ(window->HitTestHoleSize.y, viewport->Size.y);
 
-        ctx->DockWindowInto("Left", vars.DockId, ImGuiDir_Left, true);
-        ctx->DockWindowInto("Up", vars.DockId, ImGuiDir_Up, true);
-        ctx->DockWindowInto("Right", vars.DockId, ImGuiDir_Right, true);
-        ctx->DockWindowInto("Down", vars.DockId, ImGuiDir_Down, true);
+        ctx->DockInto("Left", vars.DockId, ImGuiDir_Left, true);
+        ctx->DockInto("Up", vars.DockId, ImGuiDir_Up, true);
+        ctx->DockInto("Right", vars.DockId, ImGuiDir_Right, true);
+        ctx->DockInto("Down", vars.DockId, ImGuiDir_Down, true);
         ctx->Yield();
 
         // Dockspace with windows docked around it reduces central hole by their size + some padding.
@@ -1165,11 +1165,11 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
         ImGuiWindow* window1 = ctx->GetWindowByRef("Window 1");
         ImGuiWindow* window2 = ctx->GetWindowByRef("Window 2");
         ctx->DockClear("Window 1", "Window 2", "Window 3", NULL);
-        ctx->DockWindowInto("Window 1", vars.DockSpaceID, ImGuiDir_Left);
-        ctx->DockWindowInto("Window 2", "Window 1");
+        ctx->DockInto("Window 1", vars.DockSpaceID, ImGuiDir_Left);
+        ctx->DockInto("Window 2", "Window 1");
         vars.ShowWindow[1] = false;
         ctx->Yield(3);
-        ctx->DockWindowInto("Window 3", "Window 2", ImGuiDir_Down);
+        ctx->DockInto("Window 3", "Window 2", ImGuiDir_Down);
         vars.ShowWindow[1] = true;
         ctx->Yield(3);
         IM_CHECK(window1->DockId != 0);
@@ -1195,8 +1195,8 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
         ImGuiContext& g = *ctx->UiContext;
         ImGuiWindow* windows[] = { ctx->GetWindowByRef("AAA"), ctx->GetWindowByRef("BBB"), ctx->GetWindowByRef("CCC") };
         ctx->DockClear("AAA", "BBB", "CCC", NULL);
-        ctx->DockWindowInto("BBB", "AAA");
-        ctx->DockWindowInto("CCC", "BBB");
+        ctx->DockInto("BBB", "AAA");
+        ctx->DockInto("CCC", "BBB");
 
         for (int i = 0; i < IM_ARRAYSIZE(windows); i++)
         {
@@ -1224,7 +1224,7 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
         ImGuiContext& g = *ctx->UiContext;
         ImGuiWindow* windows[2] = { ctx->GetWindowByRef("AAA"), ctx->GetWindowByRef("BBB") };
         ctx->DockClear("AAA", "BBB", NULL);
-        ctx->DockWindowInto("BBB", "AAA", ImGuiDir_Right);
+        ctx->DockInto("BBB", "AAA", ImGuiDir_Right);
 
         // Test focusing window by clicking on it.
         for (int i = 0; i < IM_ARRAYSIZE(windows); i++)
@@ -1324,11 +1324,11 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
             ctx->DockClear("AAA", "BBB", "CCC", "DDD", "EEE", "FFF", NULL);
 
             if (variant == 1)
-                ctx->DockWindowInto("DDD", "AAA", ImGuiDir_Right);
-            ctx->DockWindowInto("BBB", "AAA");
-            ctx->DockWindowInto("CCC", "BBB");
-            ctx->DockWindowInto("EEE", "DDD");
-            ctx->DockWindowInto("FFF", "EEE");
+                ctx->DockInto("DDD", "AAA", ImGuiDir_Right);
+            ctx->DockInto("BBB", "AAA");
+            ctx->DockInto("CCC", "BBB");
+            ctx->DockInto("EEE", "DDD");
+            ctx->DockInto("FFF", "EEE");
 
             ImGuiTabBar* tab_bar_aaa = window_aaa->DockNode->TabBar;
             ImGuiTabBar* tab_bar_ddd = window_ddd->DockNode->TabBar;
