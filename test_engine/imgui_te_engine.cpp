@@ -1201,11 +1201,17 @@ static void ImGuiTestEngine_RunTest(ImGuiTestEngine* engine, ImGuiTestContext* c
         if (!engine->IO.ConfigRunFast)
             ctx->SleepShort();
 
-        // Position mouse cursor
+        // Stop in GuiFunc mode
         if (engine->IO.ConfigKeepGuiFunc && ctx->IsError())
         {
+            // Position mouse cursor
             ctx->UiContext->IO.WantSetMousePos = true;
             ctx->UiContext->IO.MousePos = engine->Inputs.MousePosValue;
+
+            // Restore backend clipboard functions
+            ctx->UiContext->IO.GetClipboardTextFn = backup_get_clipboard_text_fn;
+            ctx->UiContext->IO.SetClipboardTextFn = backup_set_clipboard_text_fn;
+            ctx->UiContext->IO.ClipboardUserData = backup_clipboard_user_data;
         }
 
         // Keep GuiFunc spinning
