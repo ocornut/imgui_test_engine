@@ -270,7 +270,7 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
         {
             ctx->LogDebug("TEST CASE %d", test_n);
 #ifdef IMGUI_HAS_DOCK
-            ctx->DockMultiClear("Window 1", "Window 2", NULL);
+            ctx->DockClear("Window 1", "Window 2", NULL);
             if (test_n == 1)
                 ctx->DockWindowInto("Window 1", "Window 2");
 #endif
@@ -324,7 +324,7 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
         {
             ctx->LogDebug("TEST CASE %d", test_n);
 #ifdef IMGUI_HAS_DOCK
-            ctx->DockMultiClear("Window 1", "Window 2", NULL);
+            ctx->DockClear("Window 1", "Window 2", NULL);
             if (test_n == 1)
                 ctx->DockWindowInto("Window 2", "Window 1");
 #endif
@@ -385,7 +385,7 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
             ctx->GenericVars.Bool1 = true;
             ctx->Yield(2);
 #ifdef IMGUI_HAS_DOCK
-            ctx->DockMultiClear("Window 1", "Window 2", NULL);
+            ctx->DockClear("Window 1", "Window 2", NULL);
             if (test_n == 1)
                 ctx->DockWindowInto("Window 2", "Window 1");
 #endif
@@ -436,7 +436,7 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
             ctx->LogDebug("TEST CASE %d", test_n);
 #ifdef IMGUI_HAS_DOCK
             ctx->SetRef(ImGuiTestRef());
-            ctx->DockMultiClear("Dear ImGui Demo", "Hello, world!", NULL);
+            ctx->DockClear("Dear ImGui Demo", "Hello, world!", NULL);
             if (test_n == 0)
                 ctx->DockWindowInto("Dear ImGui Demo", "Hello, world!");
 #endif

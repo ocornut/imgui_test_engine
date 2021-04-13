@@ -2624,10 +2624,10 @@ void    ImGuiTestContext::DockNodeInto(ImGuiDockNode* node_src, ImGuiTestRef win
     DockWindowIntoEx(ImGuiTestRef(), node_src, window_name_dst, dock_node_dst, split_dir, split_outer);
 }
 
-void    ImGuiTestContext::DockMultiClear(const char* window_name, ...)
+void    ImGuiTestContext::DockClear(const char* window_name, ...)
 {
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
-    LogDebug("DockMultiClear");
+    LogDebug("DockClear");
 
     va_list args;
     va_start(args, window_name);
@@ -2640,39 +2640,6 @@ void    ImGuiTestContext::DockMultiClear(const char* window_name, ...)
 
     if (ActiveFunc == ImGuiTestActiveFunc_TestFunc)
         Yield(2); // Give time to rebuild dock in case io.ConfigDockingAlwaysTabBar is set
-}
-
-// FIXME: Unused
-void    ImGuiTestContext::DockMultiSet(ImGuiID dock_id, const char* window_name, ...)
-{
-    IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
-    LogDebug("DockMultiSet %08X", dock_id);
-
-    va_list args;
-    va_start(args, window_name);
-    while (window_name != NULL)
-    {
-        ImGui::DockBuilderDockWindow(window_name, dock_id);
-        window_name = va_arg(args, const char*);
-    }
-    va_end(args);
-    Yield();
-}
-
-// FIXME: rename and clarify this is using DockBuilder (or remove, let tests use DockBuilderAddNode + DockBuilderDockWindow)
-ImGuiID ImGuiTestContext::DockMultiSetupBasic(ImGuiID dock_id, const char* window_name, ...)
-{
-    va_list args;
-    va_start(args, window_name);
-    dock_id = ImGui::DockBuilderAddNode(dock_id, ImGuiDockNodeFlags_None);
-    ImGui::DockBuilderSetNodePos(dock_id, ImGui::GetMainViewport()->Pos + ImVec2(100, 100));
-    ImGui::DockBuilderSetNodeSize(dock_id, ImVec2(200, 200));
-    while (window_name != NULL)
-    {
-        ImGui::DockBuilderDockWindow(window_name, dock_id);
-        window_name = va_arg(args, const char*);
-    }
-    return dock_id;
 }
 
 bool    ImGuiTestContext::WindowIsUndockedOrStandalone(ImGuiWindow* window)
