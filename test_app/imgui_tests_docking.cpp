@@ -30,8 +30,15 @@ struct DockingTestingVars
     ImGuiID     DockSpaceID = 0;
     bool        ShowDockspace = true;
     bool        ShowWindow[10];
+    bool        ShowWindowGroups[2];    // One per 5 windows
 
-    DockingTestingVars() { for (int n = 0; n < IM_ARRAYSIZE(ShowWindow); n++) ShowWindow[n] = false; }
+    DockingTestingVars()
+    {
+        for (int n = 0; n < IM_ARRAYSIZE(ShowWindow); n++)
+            ShowWindow[n] = false;
+        for (int n = 0; n < IM_ARRAYSIZE(ShowWindowGroups); n++)
+            ShowWindowGroups[n] = true;
+    }
 };
 
 static inline bool operator==(const ImVec2& lhs, const ImVec2& rhs) { return lhs.x == rhs.x && lhs.y == rhs.y; }    // for IM_CHECK_EQ()
@@ -823,8 +830,29 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
     auto gui_func_docking_generic = [](ImGuiTestContext* ctx)
     {
         DockingTestingVars& vars = ctx->GetUserData<DockingTestingVars>();
-
         ImGui::SetNextWindowSize(ImVec2(200, 100), ImGuiCond_Appearing);
+
+        if (ctx->RunFlags & ImGuiTestRunFlags_GuiFuncOnly)
+        {
+            ImGui::Begin("Test Config");
+            ImGui::Checkbox("Show Dockspace", &vars.ShowDockspace);
+            for (int n = 0; n < IM_ARRAYSIZE(vars.ShowWindow); n++)
+            {
+                if ((n % 5) == 0)
+                {
+                    int group_n = n / 5;
+                    Str16f group_name("Group %d", group_n);
+                    ImGui::Checkbox(group_name.c_str(), &vars.ShowWindowGroups[group_n]);
+                }
+                char window_name[4];
+                window_name[0] = window_name[1] = window_name[2] = (char)('A' + n);
+                window_name[3] = 0;
+                ImGui::SetCursorPosX(ImGui::GetCursorPosX() + 20);
+                ImGui::Checkbox(window_name, &vars.ShowWindow[n]);
+            }
+            ImGui::End();
+        }
+
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
         if (vars.ShowDockspace)
         {
@@ -834,7 +862,7 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
         ImGui::End();
 
         for (int n = 0; n < IM_ARRAYSIZE(vars.ShowWindow); n++)
-            if (vars.ShowWindow[n])
+            if (vars.ShowWindow[n] && vars.ShowWindowGroups[n / 5])
             {
                 ImGui::SetNextWindowSize(ImVec2(300.0f, 200.0f), ImGuiCond_Appearing);
 
@@ -919,7 +947,36 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
         }
     };
 
-#if 1//IMGUI_BROKEN_TESTS
+    // ## Test tab order related to edge case with 1 window node which don't have a tab bar
+    t = IM_REGISTER_TEST(e, "docking", "docking_tab_order_hidden_tabbar");
+    t->SetUserDataType<DockingTestingVars>();
+    t->GuiFunc = gui_func_docking_generic;
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        DockingTestingVars& vars = ctx->GetUserData<DockingTestingVars>();
+        vars.ShowDockspace = false;
+        vars.ShowWindow[0] = vars.ShowWindow[1] = vars.ShowWindow[2] = vars.ShowWindow[3] = true;
+        ctx->DockMultiClear("AAA", "BBB", "CCC", "DDD", NULL);
+        ctx->DockWindowInto("BBB", "AAA");
+        ctx->DockWindowInto("DDD", "CCC");
+        vars.ShowWindow[3] = false;
+        ctx->Yield();
+
+        ImGuiWindow* window_aaa = ctx->GetWindowByRef("AAA");
+        ImGuiWindow* window_bbb = ctx->GetWindowByRef("BBB"); IM_UNUSED(window_bbb);
+        ImGuiWindow* window_ccc = ctx->GetWindowByRef("CCC"); IM_UNUSED(window_ccc);
+        IM_CHECK(window_ccc->DockId != 0);
+        IM_CHECK(window_ccc->DockNode != NULL);
+        IM_CHECK(window_ccc->DockId != window_aaa->DockId);
+        ctx->DockNodeInto(window_aaa->DockNode, window_ccc->ID);
+        IM_CHECK(window_aaa->DockNode == window_ccc->DockNode);
+
+        const char* expected_tab_order[] = { "CCC", "AAA", "BBB", NULL };
+        IM_UNUSED(expected_tab_order);
+        ImGuiTabBar* tab_bar = window_ccc->DockNode->TabBar;
+        IM_CHECK(ctx->TabBarCompareOrder(tab_bar, expected_tab_order));
+    };
+
     // Test focus order restore (#2304)
     t = IM_REGISTER_TEST(e, "docking", "docking_tab_focus_restore");
     t->SetUserDataType<DockingTestingVars>();
@@ -966,6 +1023,7 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
             IM_CHECK(window_aaa->Hidden == true);
             IM_CHECK(window_bbb->Hidden == false);
             IM_CHECK(window_ccc->Hidden == true);
+            const float w = tab_bar->WidthAllTabs;
 
             // Hide all tabs and show them together on the same frame.
             vars.ShowWindow[0] = vars.ShowWindow[1] = vars.ShowWindow[2] = false;
@@ -987,8 +1045,11 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
 
             // BBB should have focus.
             // FIXME-TESTS: This check would fail due to a missing feature (#2304)
-#if IMGUI_BROKEN_TESTS
             tab_bar = window_aaa->DockNode->TabBar;
+            IM_CHECK_EQ(tab_bar->WidthAllTabs, w);
+
+            // Test focus restore (#2304)
+#if IMGUI_BROKEN_TESTS
             IM_CHECK_EQ(node->SelectedTabId, window_bbb->ID);
             IM_CHECK_EQ(tab_bar->SelectedTabId, window_bbb->ID);
             IM_CHECK(window_aaa->Hidden == true);
@@ -1000,7 +1061,6 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
             // FIXME-TESTS: Now close CCC and verify the focused windows (should be "AAA" or "BBB" depending on which we last focused before "CCC": should test both cases!)
         }
     };
-#endif
 
     // ## Test dockspace padding. (#3733)
     t = IM_REGISTER_TEST(e, "docking", "docking_dockspace_over_viewport_padding");
