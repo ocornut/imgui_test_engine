@@ -1212,6 +1212,9 @@ static void ImGuiTestEngine_RunTest(ImGuiTestEngine* engine, ImGuiTestContext* c
             ctx->UiContext->IO.GetClipboardTextFn = backup_get_clipboard_text_fn;
             ctx->UiContext->IO.SetClipboardTextFn = backup_set_clipboard_text_fn;
             ctx->UiContext->IO.ClipboardUserData = backup_clipboard_user_data;
+
+            // Unhide foreign windows (may be useful sometimes to inspect GuiFunc state... sometimes not)
+            //ctx->ForeignWindowsUnhideAll();
         }
 
         // Keep GuiFunc spinning

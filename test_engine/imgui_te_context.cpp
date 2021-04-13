@@ -1149,6 +1149,7 @@ void ImGuiTestContext::ForeignWindowsHideOverPos(ImVec2 pos, ImGuiWindow** ignor
     IM_CHECK_SILENT(ignore_list != NULL); // It makes little sense to call this function with an empty list.
     IM_CHECK_SILENT(ignore_list[0] != NULL);
 
+    bool hidden_windows = false;
     for (int i = 0; i < g.Windows.Size; i++)
     {
         ImGuiWindow* other_window = g.Windows[i];
@@ -1169,11 +1170,15 @@ void ImGuiTestContext::ForeignWindowsHideOverPos(ImVec2 pos, ImGuiWindow** ignor
                         break;
                     }
                 if (other_window)
+                {
                     ForeignWindowsToHide.push_back(other_window);
+                    hidden_windows = true;
+                }
             }
         }
     }
-    Yield();
+    if (hidden_windows)
+        Yield();
 }
 
 void ImGuiTestContext::ForeignWindowsUnhideAll()
@@ -2517,7 +2522,7 @@ void    ImGuiTestContext::PopupCloseAll()
 }
 
 #ifdef IMGUI_HAS_DOCK
-void    ImGuiTestContext::DockWindowIntoEx(ImGuiTestRef window_name_src, ImGuiTestRef window_name_dst, ImGuiDockNode* node_dst, ImGuiDir split_dir, bool split_outer)
+void    ImGuiTestContext::DockWindowIntoEx(ImGuiTestRef window_name_src, ImGuiDockNode* node_src, ImGuiTestRef window_name_dst, ImGuiDockNode* node_dst, ImGuiDir split_dir, bool split_outer)
 {
     ImGuiContext& g = *UiContext;
     if (IsError())
@@ -2527,7 +2532,9 @@ void    ImGuiTestContext::DockWindowIntoEx(ImGuiTestRef window_name_src, ImGuiTe
     IM_ASSERT(window_name_dst.IsEmpty() == false || node_dst != NULL);
     LogDebug("DockWindowInto '%s' (0x%08X) to Window '%s' (0x%08X), Node 0x%08X", window_name_src.Path, window_name_src.ID, window_name_dst.Path, window_name_dst.ID, node_dst ? node_dst->ID : 0);
 
-    ImGuiWindow* window_src = GetWindowByRef(window_name_src);
+    IM_CHECK_SILENT(!window_name_src.IsEmpty() || node_src != NULL);
+
+    ImGuiWindow* window_src = window_name_src.IsEmpty() ? node_src->HostWindow : GetWindowByRef(window_name_src);
     ImGuiWindow* window_dst = (node_dst && node_dst->HostWindow) ? node_dst->HostWindow : GetWindowByRef(window_name_dst);
     IM_CHECK_SILENT(window_src != NULL);
     IM_CHECK_SILENT(window_dst != NULL);
@@ -2538,10 +2545,14 @@ void    ImGuiTestContext::DockWindowIntoEx(ImGuiTestRef window_name_src, ImGuiTe
     if (g.Windows[g.Windows.Size - 2] != window_dst)
         WindowFocus(window_dst->ID);
     if (g.Windows[g.Windows.Size - 1] != window_src)
-        WindowFocus(window_name_src);
+        WindowFocus(window_src->ID);
 
-    // Aim at title bar or tab
-    ImGuiTestRef ref_src(window_src->DockIsActive ? window_src->ID : window_src->MoveId); // FIXME-TESTS FIXME-DOCKING: Identify tab
+    // Aim at title bar or tab or node grab
+    ImGuiTestRef ref_src;
+    if (node_src)
+        ref_src = node_src->WindowMenuButtonId; // Whole node grab
+    else
+        ref_src = (window_src->DockIsActive ? window_src->ID : window_src->MoveId); // FIXME-TESTS FIXME-DOCKING: Identify tab
     MouseMove(ref_src, ImGuiTestOpFlags_NoCheckHoveredId);
     SleepShort();
 
@@ -2580,7 +2591,7 @@ void    ImGuiTestContext::DockWindowIntoEx(ImGuiTestRef window_name_src, ImGuiTe
 void    ImGuiTestContext::DockWindowIntoEx(ImGuiTestRef window_name_src, ImGuiTestRef window_name_dst, ImGuiID node_id, ImGuiDir split_dir, bool split_outer)
 {
     ImGuiDockNode* node = ImGui::DockBuilderGetNode(node_id);
-    DockWindowIntoEx(window_name_src, window_name_dst, node, split_dir, split_outer);
+    DockWindowIntoEx(window_name_src, NULL, window_name_dst, node, split_dir, split_outer);
 }
 
 void    ImGuiTestContext::DockWindowInto(ImGuiTestRef window_name_src, ImGuiTestRef window_name_dst, ImGuiDir split_dir)
@@ -2593,12 +2604,24 @@ void    ImGuiTestContext::DockWindowInto(ImGuiTestRef window_name_src, ImGuiTest
 
     IM_CHECK_SILENT(window_src != NULL);
     IM_CHECK_SILENT(window_dst != NULL);
-    if (!window_src || !window_dst)
-        return;
 
     bool split_outer = window_dst->DockNodeAsHost != NULL && split_dir != ImGuiDir_None; // FIXME: This is arbitrary
-    ImGuiDockNode* dock_node_dst = window_dst->DockNodeAsHost ? window_dst->DockNodeAsHost : window_dst->DockNode; // May be NULL (for single floating window)
-    DockWindowIntoEx(window_name_src, window_name_dst, dock_node_dst, split_dir, split_outer);
+    ImGuiDockNode* dock_node_dst = window_dst->DockNodeAsHost ? window_dst->DockNodeAsHost : NULL;// window_dst->DockNode; // May be NULL (for single floating window)
+    DockWindowIntoEx(window_name_src, NULL, window_name_dst, dock_node_dst, split_dir, split_outer);
+}
+
+void    ImGuiTestContext::DockNodeInto(ImGuiDockNode* node_src, ImGuiTestRef window_name_dst, ImGuiDir split_dir)
+{
+    IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
+    IM_CHECK_SILENT(node_src != NULL);
+    LogDebug("DockNodeInto 0x%08X to '%s' (0x%08X)", node_src->ID, window_name_dst.Path, window_name_dst.ID);
+
+    ImGuiWindow* window_dst = GetWindowByRef(window_name_dst);
+    IM_CHECK_SILENT(window_dst != NULL);
+
+    bool split_outer = window_dst->DockNodeAsHost != NULL && split_dir != ImGuiDir_None; // FIXME: This is arbitrary
+    ImGuiDockNode* dock_node_dst = window_dst->DockNodeAsHost ? window_dst->DockNodeAsHost : NULL;// window_dst->DockNode; //// May be NULL (for single floating window)
+    DockWindowIntoEx(ImGuiTestRef(), node_src, window_name_dst, dock_node_dst, split_dir, split_outer);
 }
 
 void    ImGuiTestContext::DockMultiClear(const char* window_name, ...)
@@ -2679,7 +2702,7 @@ void    ImGuiTestContext::DockNodeHideTabBar(ImGuiDockNode* node, bool hidden)
     if (hidden)
     {
         SetRef(node->HostWindow);
-        ItemClick(ImHashDecoratedPath("#COLLAPSE", NULL, node->ID));
+        ItemClick(node->WindowMenuButtonId);
         ItemClick(Str16f("/##Popup_%08x/Hide tab bar", GetID("#WindowMenu", node->ID)).c_str());
         IM_CHECK_SILENT(node->IsHiddenTabBar());
 
@@ -2704,10 +2727,9 @@ void    ImGuiTestContext::UndockNode(ImGuiID dock_id)
     if (node->Windows.empty())
         return;
 
-    ImGuiID dock_button_id = ImHashDecoratedPath("#COLLAPSE", NULL, dock_id); // FIXME-TESTS
     const float h = node->Windows[0]->TitleBarHeight();
     KeyDownMap(ImGuiKey_COUNT, ImGuiKeyModFlags_Shift); // Disable docking
-    ItemDragWithDelta(dock_button_id, ImVec2(h, h) * -2);
+    ItemDragWithDelta(node->WindowMenuButtonId, ImVec2(h, h) * -2);
     KeyUpMap(ImGuiKey_COUNT, ImGuiKeyModFlags_Shift);
     MouseUp();
 }

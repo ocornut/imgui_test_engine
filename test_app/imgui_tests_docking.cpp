@@ -503,7 +503,7 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
                 break;
             case 1:
                 ctx->LogDebug("Undocking entire node...");
-                ctx->ItemDragWithDelta(ImHashDecoratedPath("#COLLAPSE", NULL, window4->DockNode->ID), ImVec2(h, h) * -2);
+                ctx->ItemDragWithDelta(window4->DockNode->WindowMenuButtonId, ImVec2(h, h) * -2);
                 IM_CHECK(window1->DockNode != NULL);                                       // Dock nodes may have changed, but no window was undocked
                 IM_CHECK(window2->DockNode != NULL);
                 IM_CHECK(window3->DockNode != NULL);
@@ -1126,7 +1126,7 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
 
         for (int i = 0; i < IM_ARRAYSIZE(windows); i++)
         {
-            ctx->ItemClick(ImHashDecoratedPath("#COLLAPSE", NULL, windows[i]->RootWindowDockTree->DockNodeAsHost->ID));
+            ctx->ItemClick(windows[i]->RootWindowDockTree->DockNodeAsHost->WindowMenuButtonId);
             ctx->SetRef(g.NavWindow);
             ctx->ItemClick(windows[i]->Name);
             IM_CHECK(g.NavWindow == windows[i]);
@@ -1181,7 +1181,7 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
         for (int i = 0; i < IM_ARRAYSIZE(windows); i++)
         {
             // FIXME-TESTS: Standardize access to window/collapse menu ID (there are 6 instances in tests)
-            ctx->ItemClick(ImHashDecoratedPath("#COLLAPSE", NULL, windows[i]->DockNode->ID));
+            ctx->ItemClick(windows[i]->DockNode->WindowMenuButtonId);
             ctx->KeyPressMap(ImGuiKey_Escape);
             IM_CHECK(g.NavWindow == windows[i]);
         }
