@@ -622,7 +622,7 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
         ctx->WindowCollapse(window1, false);
         ctx->WindowCollapse(window2, false);
         ctx->DockClear("Window B", "Window A", NULL);
-        ctx->DockWindowInto("Window B", Str64f("Window A\\/DockSpace_%08X", dock_id).c_str());
+        ctx->DockWindowInto("Window B", dock_id);
         IM_CHECK(ctx->WindowIsUndockedOrStandalone(window1));           // Window A is not docked
         IM_CHECK_EQ(window2->DockId, dock_id);                          // Window B was docked into a dockspace
 
@@ -813,7 +813,7 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
         {
             ImGuiID dock_id = ctx->GenericVars.DockId;
             ImGuiDockNode* dock_node = ImGui::DockBuilderGetNode(dock_id);
-            ctx->DockWindowInto("Dock Window", dock_node->HostWindow->ID);
+            ctx->DockWindowInto("Dock Window", dock_node->ID);
             IM_CHECK(dock_window->DockNode != NULL);
             IM_CHECK(ctx->WindowIsUndockedOrStandalone(test_window));
             IM_CHECK(!ctx->WindowIsUndockedOrStandalone(dock_window));
@@ -908,7 +908,7 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
 
             // All into a dockspace
             if (step == 1)
-                ctx->DockWindowIntoEx("AAA", (ImGuiID)0, vars.DockSpaceID);
+                ctx->DockWindowInto("AAA", vars.DockSpaceID);
 
             // All into a split node of Test Window
             if (step == 2)
@@ -981,7 +981,7 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
         IM_CHECK(window_ccc->DockId != 0);
         IM_CHECK(window_ccc->DockNode != NULL);
         IM_CHECK(window_ccc->DockId != window_aaa->DockId);
-        ctx->DockNodeInto(window_aaa->DockNode, window_ccc->ID);
+        ctx->DockWindowInto(window_aaa->DockNode->ID, window_ccc->ID);
         IM_CHECK(window_aaa->DockNode == window_ccc->DockNode);
 
         const char* expected_tab_order[] = { "CCC", "AAA", "BBB", NULL };
@@ -1012,7 +1012,7 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
 
             // All into a dockspace
             if (step == 1)
-                ctx->DockWindowIntoEx("AAA", (ImGuiID)0, vars.DockSpaceID);
+                ctx->DockWindowInto("AAA", vars.DockSpaceID);
 
             // All into a split node of Test Window
             if (step == 2)
@@ -1079,18 +1079,20 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
     t = IM_REGISTER_TEST(e, "docking", "docking_dockspace_over_viewport_padding");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
-        ImGui::DockSpaceOverViewport(ImGui::GetMainViewport(), ImGuiDockNodeFlags_PassthruCentralNode);
+        auto& vars = ctx->GenericVars;
+        vars.DockId = ImGui::DockSpaceOverViewport(ImGui::GetMainViewport(), ImGuiDockNodeFlags_PassthruCentralNode);
         ImGui::SetNextWindowSize(ImVec2(300, 200), ImGuiCond_Appearing);
-        ImGui::Begin("Left", NULL, ImGuiWindowFlags_NoSavedSettings);ImGui::End();
+        ImGui::Begin("Left", NULL, ImGuiWindowFlags_NoSavedSettings); ImGui::End();
         ImGui::SetNextWindowSize(ImVec2(300, 200), ImGuiCond_Appearing);
-        ImGui::Begin("Right", NULL, ImGuiWindowFlags_NoSavedSettings);ImGui::End();
+        ImGui::Begin("Right", NULL, ImGuiWindowFlags_NoSavedSettings); ImGui::End();
         ImGui::SetNextWindowSize(ImVec2(300, 200), ImGuiCond_Appearing);
-        ImGui::Begin("Up", NULL, ImGuiWindowFlags_NoSavedSettings);ImGui::End();
+        ImGui::Begin("Up", NULL, ImGuiWindowFlags_NoSavedSettings); ImGui::End();
         ImGui::SetNextWindowSize(ImVec2(300, 200), ImGuiCond_Appearing);
-        ImGui::Begin("Down", NULL, ImGuiWindowFlags_NoSavedSettings);ImGui::End();
+        ImGui::Begin("Down", NULL, ImGuiWindowFlags_NoSavedSettings); ImGui::End();
     };
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
+        auto& vars = ctx->GenericVars;
         ImGuiViewport* viewport = ImGui::GetMainViewport();
         ImGuiWindow* window = ctx->GetWindowByRef(Str30f("DockSpaceViewport_%08X", viewport->ID).c_str());
         ctx->DockClear("Left", "Up", "Right", "Down", NULL);
@@ -1101,11 +1103,10 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
         IM_CHECK_EQ(window->HitTestHoleSize.x, viewport->Size.x);
         IM_CHECK_EQ(window->HitTestHoleSize.y, viewport->Size.y);
 
-        ImGuiID dockspace_id = ctx->GetID(Str16f("%s/DockSpace", window->Name).c_str());
-        ctx->DockWindowInto("Left", Str30f("%s\\/DockSpace_%08X", window->Name, dockspace_id).c_str(), ImGuiDir_Left);
-        ctx->DockWindowInto("Up", Str30f("%s\\/DockSpace_%08X", window->Name, dockspace_id).c_str(), ImGuiDir_Up);
-        ctx->DockWindowInto("Right", Str30f("%s\\/DockSpace_%08X", window->Name, dockspace_id).c_str(), ImGuiDir_Right);
-        ctx->DockWindowInto("Down", Str30f("%s\\/DockSpace_%08X", window->Name, dockspace_id).c_str(), ImGuiDir_Down);
+        ctx->DockWindowInto("Left", vars.DockId, ImGuiDir_Left, true);
+        ctx->DockWindowInto("Up", vars.DockId, ImGuiDir_Up, true);
+        ctx->DockWindowInto("Right", vars.DockId, ImGuiDir_Right, true);
+        ctx->DockWindowInto("Down", vars.DockId, ImGuiDir_Down, true);
         ctx->Yield();
 
         // Dockspace with windows docked around it reduces central hole by their size + some padding.
@@ -1131,7 +1132,7 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
         ImGui::Checkbox("1", &vars.ShowWindow[1]); ImGui::SameLine();
         ImGui::Checkbox("2", &vars.ShowWindow[2]); ImGui::SameLine();
         ImGui::Checkbox("3", &vars.ShowWindow[3]);
-        ImGui::DockSpace(ImGui::GetID("Dockspace"));
+        vars.DockSpaceID = ImGui::DockSpace(ImGui::GetID("Dockspace"));
         ImGui::End();
 
         if (vars.ShowWindow[1])
@@ -1164,7 +1165,7 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
         ImGuiWindow* window1 = ctx->GetWindowByRef("Window 1");
         ImGuiWindow* window2 = ctx->GetWindowByRef("Window 2");
         ctx->DockClear("Window 1", "Window 2", "Window 3", NULL);
-        ctx->DockWindowInto("Window 1", Str30f("Host\\/DockSpace_%08X", ctx->GetID("Host/Dockspace")).c_str(), ImGuiDir_Left);
+        ctx->DockWindowInto("Window 1", vars.DockSpaceID, ImGuiDir_Left);
         ctx->DockWindowInto("Window 2", "Window 1");
         vars.ShowWindow[1] = false;
         ctx->Yield(3);

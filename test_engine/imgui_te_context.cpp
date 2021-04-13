@@ -2522,20 +2522,32 @@ void    ImGuiTestContext::PopupCloseAll()
 }
 
 #ifdef IMGUI_HAS_DOCK
-void    ImGuiTestContext::DockWindowIntoEx(ImGuiTestRef window_name_src, ImGuiDockNode* node_src, ImGuiTestRef window_name_dst, ImGuiDockNode* node_dst, ImGuiDir split_dir, bool split_outer)
+// Note: unlike DockBuilder functions, for _nodes_ this require the node to be visible.
+void    ImGuiTestContext::DockWindowInto(ImGuiTestRef src_id, ImGuiTestRef dst_id, ImGuiDir split_dir, bool split_outer)
 {
     ImGuiContext& g = *UiContext;
     if (IsError())
         return;
 
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
-    IM_ASSERT(window_name_dst.IsEmpty() == false || node_dst != NULL);
-    LogDebug("DockWindowInto '%s' (0x%08X) to Window '%s' (0x%08X), Node 0x%08X", window_name_src.Path, window_name_src.ID, window_name_dst.Path, window_name_dst.ID, node_dst ? node_dst->ID : 0);
 
-    IM_CHECK_SILENT(!window_name_src.IsEmpty() || node_src != NULL);
+    ImGuiWindow* window_src = GetWindowByRef(src_id);
+    ImGuiWindow* window_dst = GetWindowByRef(dst_id);
+    ImGuiDockNode* node_src = ImGui::DockBuilderGetNode(src_id.ID);
+    ImGuiDockNode* node_dst = ImGui::DockBuilderGetNode(dst_id.ID);
+    IM_CHECK_SILENT((window_src != NULL) != (node_src != NULL)); // Src must be either a window either a node
+    IM_CHECK_SILENT((window_dst != NULL) != (node_dst != NULL)); // Dst must be either a window either a node
 
-    ImGuiWindow* window_src = window_name_src.IsEmpty() ? node_src->HostWindow : GetWindowByRef(window_name_src);
-    ImGuiWindow* window_dst = (node_dst && node_dst->HostWindow) ? node_dst->HostWindow : GetWindowByRef(window_name_dst);
+    if (node_src)
+        window_src = node_src->HostWindow;
+    if (node_dst)
+        window_dst = node_dst->HostWindow;
+
+    Str128f log("DockWindowInto() Src: %s '%s' (0x%08X), Dst: %s '%s' (0x%08X)",
+        node_src ? "node" : "window", node_src ? "" : window_src->Name, node_src ? node_src->ID : window_src->ID,
+        node_dst ? "node" : "window", node_dst ? "" : window_dst->Name, node_dst ? node_dst->ID : window_dst->ID);
+    LogDebug("%s", log.c_str());
+
     IM_CHECK_SILENT(window_src != NULL);
     IM_CHECK_SILENT(window_dst != NULL);
     IM_CHECK_SILENT(window_src->WasActive);
@@ -2586,42 +2598,6 @@ void    ImGuiTestContext::DockWindowIntoEx(ImGuiTestRef window_name_src, ImGuiDo
     ForeignWindowsUnhideAll();
     Yield();
     Yield();
-}
-
-void    ImGuiTestContext::DockWindowIntoEx(ImGuiTestRef window_name_src, ImGuiTestRef window_name_dst, ImGuiID node_id, ImGuiDir split_dir, bool split_outer)
-{
-    ImGuiDockNode* node = ImGui::DockBuilderGetNode(node_id);
-    DockWindowIntoEx(window_name_src, NULL, window_name_dst, node, split_dir, split_outer);
-}
-
-void    ImGuiTestContext::DockWindowInto(ImGuiTestRef window_name_src, ImGuiTestRef window_name_dst, ImGuiDir split_dir)
-{
-    IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
-    LogDebug("DockWindowInto '%s' (0x%08X) to '%s' (0x%08X)", window_name_src.Path, window_name_src.ID, window_name_dst.Path, window_name_dst.ID);
-
-    ImGuiWindow* window_src = GetWindowByRef(window_name_src);
-    ImGuiWindow* window_dst = GetWindowByRef(window_name_dst);
-
-    IM_CHECK_SILENT(window_src != NULL);
-    IM_CHECK_SILENT(window_dst != NULL);
-
-    bool split_outer = window_dst->DockNodeAsHost != NULL && split_dir != ImGuiDir_None; // FIXME: This is arbitrary
-    ImGuiDockNode* dock_node_dst = window_dst->DockNodeAsHost ? window_dst->DockNodeAsHost : NULL;// window_dst->DockNode; // May be NULL (for single floating window)
-    DockWindowIntoEx(window_name_src, NULL, window_name_dst, dock_node_dst, split_dir, split_outer);
-}
-
-void    ImGuiTestContext::DockNodeInto(ImGuiDockNode* node_src, ImGuiTestRef window_name_dst, ImGuiDir split_dir)
-{
-    IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
-    IM_CHECK_SILENT(node_src != NULL);
-    LogDebug("DockNodeInto 0x%08X to '%s' (0x%08X)", node_src->ID, window_name_dst.Path, window_name_dst.ID);
-
-    ImGuiWindow* window_dst = GetWindowByRef(window_name_dst);
-    IM_CHECK_SILENT(window_dst != NULL);
-
-    bool split_outer = window_dst->DockNodeAsHost != NULL && split_dir != ImGuiDir_None; // FIXME: This is arbitrary
-    ImGuiDockNode* dock_node_dst = window_dst->DockNodeAsHost ? window_dst->DockNodeAsHost : NULL;// window_dst->DockNode; //// May be NULL (for single floating window)
-    DockWindowIntoEx(ImGuiTestRef(), node_src, window_name_dst, dock_node_dst, split_dir, split_outer);
 }
 
 void    ImGuiTestContext::DockClear(const char* window_name, ...)
