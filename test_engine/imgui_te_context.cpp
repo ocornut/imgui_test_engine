@@ -2562,7 +2562,7 @@ void    ImGuiTestContext::DockInto(ImGuiTestRef src_id, ImGuiTestRef dst_id, ImG
     // Aim at title bar or tab or node grab
     ImGuiTestRef ref_src;
     if (node_src)
-        ref_src = node_src->WindowMenuButtonId; // Whole node grab
+        ref_src = ImGui::DockNodeGetWindowMenuButtonId(node_src); // Whole node grab
     else
         ref_src = (window_src->DockIsActive ? window_src->ID : window_src->MoveId); // FIXME-TESTS FIXME-DOCKING: Identify tab
     MouseMove(ref_src, ImGuiTestOpFlags_NoCheckHoveredId);
@@ -2645,7 +2645,7 @@ void    ImGuiTestContext::DockNodeHideTabBar(ImGuiDockNode* node, bool hidden)
     if (hidden)
     {
         SetRef(node->HostWindow);
-        ItemClick(node->WindowMenuButtonId);
+        ItemClick(ImGui::DockNodeGetWindowMenuButtonId(node));
         ItemClick(Str16f("/##Popup_%08x/Hide tab bar", GetID("#WindowMenu", node->ID)).c_str());
         IM_CHECK_SILENT(node->IsHiddenTabBar());
 
@@ -2672,7 +2672,7 @@ void    ImGuiTestContext::UndockNode(ImGuiID dock_id)
 
     const float h = node->Windows[0]->TitleBarHeight();
     KeyDownMap(ImGuiKey_COUNT, ImGuiKeyModFlags_Shift); // Disable docking
-    ItemDragWithDelta(node->WindowMenuButtonId, ImVec2(h, h) * -2);
+    ItemDragWithDelta(ImGui::DockNodeGetWindowMenuButtonId(node), ImVec2(h, h) * -2);
     KeyUpMap(ImGuiKey_COUNT, ImGuiKeyModFlags_Shift);
     MouseUp();
 }
