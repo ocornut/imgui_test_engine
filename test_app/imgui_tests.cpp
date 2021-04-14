@@ -906,6 +906,64 @@ void RegisterTests_Window(ImGuiTestEngine* e)
         }
         ctx->KeyUpMap(ImGuiKey_COUNT, ImGuiKeyModFlags_Ctrl);
     };
+
+    // ## Test window appearing state.
+    t = IM_REGISTER_TEST(e, "window", "window_appearing");
+    struct WindowAppearingVars { enum TestState { Hidden, ShowWindow, ShowTooltip, ShowPopup, ShowMax } State = Hidden; int ShowFrame = 0; int AppearingFrame = 0; int AppearingCount = 0; };
+    t->SetUserDataType<WindowAppearingVars>();
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        WindowAppearingVars& vars = ctx->GetUserData<WindowAppearingVars>();
+
+        if (vars.State == WindowAppearingVars::ShowWindow)
+        {
+            ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
+        }
+        else if (vars.State == WindowAppearingVars::ShowTooltip)
+        {
+            ImGui::BeginTooltip();
+        }
+        else if (vars.State == WindowAppearingVars::ShowPopup)
+        {
+            if (vars.ShowFrame == 0)
+                ImGui::OpenPopup("##popup");
+            ImGui::BeginPopup("##popup");
+        }
+        else
+        {
+            return;        // FIXME-TESTS: Starts with test UI hidden. Can not run GuiFunc of this test alone.
+        }
+
+        if (vars.ShowFrame == 0)
+            vars.ShowFrame = ImGui::GetFrameCount();
+
+        if (ImGui::IsWindowAppearing())
+        {
+            vars.AppearingCount++;
+            vars.AppearingFrame = ImGui::GetFrameCount();
+        }
+
+        if (vars.State == WindowAppearingVars::ShowPopup)
+            ImGui::EndPopup();
+        else
+            ImGui::End();   // EndTooltip() is just a thin wrapper over End() anyway.
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        WindowAppearingVars& vars = ctx->GetUserData<WindowAppearingVars>();
+
+        // FIXME-TESTS: Test using a viewport window.
+        const char* variant_names[] = { NULL, "window", "tooltip", "popup" };
+        for (int variant = WindowAppearingVars::Hidden + 1; variant < WindowAppearingVars::ShowMax; variant++)
+        {
+            ctx->LogDebug("Test variant: %s", variant_names[variant]);
+            vars.State = (WindowAppearingVars::TestState)variant;
+            vars.ShowFrame = vars.AppearingFrame = vars.AppearingCount = 0;
+            ctx->Yield(2);  // Verify that IsWindowAppearing() only triggers on very first frame.
+            IM_CHECK_EQ(vars.AppearingCount, 1);
+            IM_CHECK_EQ(vars.ShowFrame, vars.AppearingFrame);
+        }
+    };
 }
 
 
