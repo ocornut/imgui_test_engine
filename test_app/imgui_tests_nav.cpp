@@ -741,6 +741,55 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
         IM_CHECK(g.NavId == ctx->GetID("OK 0"));           // Focus very first item.
         IM_CHECK(window->Scroll.y == 0.0f);                // Window is scrolled to the start.
     };
+
+    // ## Check setting default focus.
+    t = IM_REGISTER_TEST(e, "nav", "nav_default_focus");
+    struct DefaultFocusVars { bool ShowWindow = true; bool SetFocus = false; };
+    t->SetUserDataType<DefaultFocusVars>();
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        DefaultFocusVars& vars = ctx->GetUserData<DefaultFocusVars>();
+        if (!vars.ShowWindow)
+            return;
+
+        ImGui::SetNextWindowSize(ImVec2(100, 50));
+        ImGui::Begin("Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+        static char buf[32];
+        ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 100);
+        ImGui::InputText("##1", buf, IM_ARRAYSIZE(buf));
+        ImGui::InputText("##2", buf, IM_ARRAYSIZE(buf));
+        if (vars.SetFocus)
+            ImGui::SetItemDefaultFocus();
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiContext& g = *ctx->UiContext;
+        DefaultFocusVars& vars = ctx->GetUserData<DefaultFocusVars>();
+        ImGuiWindow* window = ctx->GetWindowByRef("Window");
+
+        // Variant 0: verify ##2 is not scrolled into view and ##1 is focused (SetItemDefaultFocus() not used).
+        // Variant 1: verify ##2 is scrolled into view and focused (SetItemDefaultFocus() is used).
+        for (int variant = 0; variant < 2; variant++)
+        {
+            ctx->LogDebug("Test variant: %s focus", variant ? "with" : "without");
+            vars.SetFocus = variant == 1;
+            vars.ShowWindow = true;
+            ctx->Yield(2);
+            ctx->KeyPressMap(ImGuiKey_COUNT, ImGuiKeyModFlags_Alt);
+            ctx->KeyPressMap(ImGuiKey_COUNT, ImGuiKeyModFlags_Alt);
+            IM_CHECK(g.NavLayer == ImGuiNavLayer_Main);
+            if (!vars.SetFocus)
+                IM_CHECK_EQ(g.NavId, ctx->GetID("Window/##1"));
+            else
+                IM_CHECK_EQ(g.NavId, ctx->GetID("Window/##2"));
+            ImGuiTestItemInfo* input = ctx->ItemInfo("Window/##2");
+            IM_CHECK_EQ(window->InnerClipRect.Contains(input->RectFull), vars.SetFocus);
+            ImGui::SetScrollY(window, 0);   // Reset scrolling.
+            vars.ShowWindow = false;
+            ctx->Yield(2);
+        }
+    };
 }
 
 //-------------------------------------------------------------------------
