@@ -154,7 +154,7 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
     };
 
     // ## Test basic use of DockBuilder api
-    t = IM_REGISTER_TEST(e, "docking", "docking_builder_1");
+    t = IM_REGISTER_TEST(e, "docking", "docking_api_builder_1");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         ImGuiTestGenericVars& vars = ctx->GenericVars;
@@ -338,55 +338,6 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
         ctx->UiContext->IO.ConfigDockingAlwaysTabBar = backup_cfg;
     };
 
-    // ## Test that undocking a whole _node_ doesn't lose/reset size
-    t = IM_REGISTER_TEST(e, "docking", "docking_undock_from_dockspace_size");
-    t->GuiFunc = [](ImGuiTestContext* ctx)
-    {
-        ImGuiID dockspace_id = ctx->GetID("/Test Window/Dockspace");
-        if (ctx->IsFirstTestFrame())
-        {
-            ImGui::DockBuilderRemoveNode(dockspace_id);
-            ImGui::DockBuilderAddNode(dockspace_id, ImGuiDockNodeFlags_DockSpace);
-            ImGui::DockBuilderDockWindow("AAAA", dockspace_id);
-            ImGui::DockBuilderDockWindow("BBBB", dockspace_id);
-        }
-
-        ImGui::SetNextWindowSize(ImVec2(500, 500));
-        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
-        ImGui::DockSpace(dockspace_id);
-        ImGui::End();
-
-        ImGui::Begin("AAAA", NULL, ImGuiWindowFlags_NoSavedSettings);
-        ImGui::Text("This is AAAA");
-        ImGui::End();
-
-        ImGui::Begin("BBBB", NULL, ImGuiWindowFlags_NoSavedSettings);
-        ImGui::Text("This is BBBB");
-        ImGui::End();
-    };
-    t->TestFunc = [](ImGuiTestContext* ctx)
-    {
-        ImGuiID dockspace_id = ctx->GetID("/Test Window/Dockspace");
-
-        ImGuiWindow* window_a = ImGui::FindWindowByName("AAAA");
-        ImGuiWindow* window_b = ImGui::FindWindowByName("BBBB");
-        ImVec2 window_a_size_old = window_a->Size;
-        ImVec2 window_b_size_old = window_b->Size;
-        IM_CHECK_EQ(window_a->DockNode->ID, dockspace_id);
-
-        ctx->UndockNode(dockspace_id);
-
-        IM_CHECK(window_a->DockNode != NULL);
-        IM_CHECK(window_b->DockNode != NULL);
-        IM_CHECK_EQ(window_a->DockNode, window_b->DockNode);
-        IM_CHECK_NE(window_a->DockNode->ID, dockspace_id); // Actually undocked?
-        ImVec2 window_a_size_new = window_a->Size;
-        ImVec2 window_b_size_new = window_b->Size;
-        IM_CHECK_EQ(window_a->DockNode->Size, window_b_size_new);
-        IM_CHECK_EQ(window_a_size_old, window_a_size_new);
-        IM_CHECK_EQ(window_b_size_old, window_b_size_new);
-    };
-
     // ## Test setting focus on a docked window, and setting focus on a specific item inside. (#2453)
     // ## In particular, while the selected tab is locked down early (causing a frame delay in the tab selection),
     // ## the window that has requested focus should allow items to be submitted (SkipItems==false) during its hidden frame,
@@ -555,161 +506,6 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
         }
     };
 
-    // ## Test passthrough docking node.
-    t = IM_REGISTER_TEST(e, "docking", "docking_hover_passthru_node");
-    t->GuiFunc = [](ImGuiTestContext* ctx)
-    {
-        ImGui::SetNextWindowPos(ImVec2(100, 100), ImGuiCond_Appearing);
-        ImGui::SetNextWindowSize(ImVec2(300, 200), ImGuiCond_Appearing);
-        ImGui::SetNextWindowBgAlpha(0.1f); // Not technically necessary but helps understand the purpose of this test
-        ImGui::Begin("Window 1", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoDocking);
-        ImGui::DockSpace(ImGui::GetID("DockSpace"), ImVec2(0, 0), ImGuiDockNodeFlags_PassthruCentralNode);
-        ImGui::End();
-
-        ImGui::SetNextWindowPos(ImVec2(100, 100), ImGuiCond_Appearing);
-        ImGui::SetNextWindowSize(ImVec2(300, 200), ImGuiCond_Appearing);
-        ImGui::Begin("Window 2", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoDocking);
-        ImGui::End();
-
-    };
-    t->TestFunc = [](ImGuiTestContext* ctx)
-    {
-        ImGuiContext& g = *ctx->UiContext;
-        ImGuiWindow* window1 = ctx->GetWindowByRef("Window 1");
-        ImGuiWindow* window2 = ctx->GetWindowByRef("Window 2");
-        ctx->WindowFocus("Window 1");
-        ctx->MouseMoveToPos(window1->Rect().GetCenter());
-        IM_CHECK_EQ(g.NavWindow, window1);
-        IM_CHECK_EQ(g.HoveredWindow, window2);
-        IM_CHECK_EQ(g.HoveredDockNode, (ImGuiDockNode*)NULL);
-        ctx->MouseClick();
-        IM_CHECK_EQ(g.NavWindow, window2);
-    };
-
-    // ## Test _KeepAlive dockspace flag.
-    //  "Step 1: Window A has dockspace A2. Dock window B into A2.
-    //  "Step 2: Window A code call DockSpace with _KeepAlive only when collapsed. Verify that window B is still docked into A2 (and verify that both are HIDDEN at this point).
-    //  "Step 3: window A stop submitting the DockSpace() A2. verify that window B is now undocked."
-    t = IM_REGISTER_TEST(e, "docking", "docking_dockspace_keep_alive");
-    t->GuiFunc = [](ImGuiTestContext* ctx)
-    {
-        ImGuiTestGenericVars& vars = ctx->GenericVars;
-        ImGui::SetNextWindowSize(ImVec2(300, 200), ImGuiCond_Always);
-        ImGui::Begin("Window A", NULL, ImGuiWindowFlags_NoSavedSettings);
-        if (vars.Step == 0)
-            ImGui::DockSpace(ImGui::GetID("A2"), ImVec2(0, 0), 0);
-        else if (vars.Step == 1)
-            ImGui::DockSpace(ImGui::GetID("A2"), ImVec2(0, 0), ImGuiDockNodeFlags_KeepAliveOnly);
-        ImGui::End();
-
-        ImGui::SetNextWindowSize(ImVec2(150, 100), ImGuiCond_Always);
-        ImGui::Begin("Window B", NULL, ImGuiWindowFlags_NoSavedSettings);
-        ImGui::End();
-    };
-    t->TestFunc = [](ImGuiTestContext* ctx)
-    {
-        ImGuiWindow* window1 = ctx->GetWindowByRef("Window A");
-        ImGuiWindow* window2 = ctx->GetWindowByRef("Window B");
-        ImGuiID dock_id = ctx->GetID("Window A/A2");
-
-        if (ImGui::GetIO().ConfigDockingAlwaysTabBar)
-        {
-            ctx->LogWarning("Cannot run test with io.ConfigDockingAlwaysTabBar == true");
-            return;
-        }
-
-        ctx->OpFlags |= ImGuiTestOpFlags_NoAutoUncollapse;
-        ctx->WindowCollapse(window1, false);
-        ctx->WindowCollapse(window2, false);
-        ctx->DockClear("Window B", "Window A", NULL);
-        ctx->DockInto("Window B", dock_id);
-        IM_CHECK(ctx->WindowIsUndockedOrStandalone(window1));           // Window A is not docked
-        IM_CHECK_EQ(window2->DockId, dock_id);                          // Window B was docked into a dockspace
-
-        // Start collapse window and start submitting  _KeepAliveOnly flag
-        ctx->WindowCollapse(window1, true);
-        ctx->GenericVars.Step = 1;
-        ctx->Yield();
-        IM_CHECK_EQ(window1->Collapsed, true);                          // Window A got collapsed
-        IM_CHECK_EQ(window1->DockIsActive, false);                      // and remains undocked
-        IM_CHECK(ctx->WindowIsUndockedOrStandalone(window1));           //
-        IM_CHECK_EQ(window2->Collapsed, false);                         // Window B was not collapsed
-        IM_CHECK_EQ(window2->DockIsActive, true);                       // Dockspace is being kept alive
-        IM_CHECK_EQ(window2->DockId, dock_id);                          // window remains docked
-        IM_CHECK_NE(window2->DockNode, (ImGuiDockNode*)NULL);
-        IM_CHECK_EQ(window2->Hidden, true);                             // but invisible
-                                                                        // Stop submitting dockspace
-        ctx->GenericVars.Step = 2;
-        ctx->Yield();
-        IM_CHECK_EQ(window1->Collapsed, true);                          // Window A got collapsed
-        IM_CHECK_EQ(window1->DockIsActive, false);                      // and remains undocked
-        IM_CHECK(ctx->WindowIsUndockedOrStandalone(window1));           //
-        IM_CHECK_EQ(window2->Collapsed, false);                         // Window B was not collapsed
-        IM_CHECK_EQ(window2->DockIsActive, false);                      // Dockspace is no longer kept alive
-        IM_CHECK(ctx->WindowIsUndockedOrStandalone(window2));           // and window gets undocked
-        IM_CHECK_EQ(window2->Hidden, false);                            // Window B shows up
-    };
-
-    // ## Test focus retention during undocking when new window appears.
-    //  "Dock A and B, when A is visible it also shows NON-child A2.
-    //  "Focus B, undock B -> verify that while dragging B it stays focused, even thought A2 just appears. (#3392)"
-    t = IM_REGISTER_TEST(e, "docking", "docking_undock_focus_retention");
-    t->GuiFunc = [](ImGuiTestContext* ctx)
-    {
-        ImGui::SetNextWindowSize(ImVec2(200, 100));
-        if (ImGui::Begin("Window A", NULL, ImGuiWindowFlags_NoSavedSettings))
-        {
-            ImGui::TextUnformatted("lorem ipsum");
-
-            ImGui::Begin("Window A2", NULL, ImGuiWindowFlags_NoSavedSettings);
-            ImGui::TextUnformatted("lorem ipsum");
-            ImGui::End();
-        }
-        ImGui::End();
-
-        ImGui::SetNextWindowSize(ImVec2(200, 100));
-        ImGui::Begin("Window B", NULL, ImGuiWindowFlags_NoSavedSettings);
-        ImGui::TextUnformatted("lorem ipsum");
-        ImGui::End();
-    };
-    t->TestFunc = [](ImGuiTestContext* ctx)
-    {
-        ImGuiContext& g = *ctx->UiContext;
-        ctx->WindowCollapse(ctx->GetWindowByRef("Window A"), false);
-        ctx->DockClear("Window A", "Window B", NULL);
-        ImGuiWindow* windowB = ctx->GetWindowByRef("Window B");
-        ImGuiWindow* windowA2 = ctx->GetWindowByRef("Window A2");
-
-        // Window A2 is visible when all windows are undocked.
-        IM_CHECK(windowA2->Active);
-        ctx->WindowFocus("Window A");
-        ctx->DockInto("Window B", "Window A");
-
-        // Window A2 gets hidden when Window B is docked as it becomes the active window in the dock.
-        IM_CHECK(!windowA2->Active);
-
-        // Undock Window B.
-        // FIXME-TESTS: This block is a slightly modified version of the UndockWindow() code which itself is using ItemDragWithDelta(),
-        // we cannot use UndockWindow() only because we perform our checks in the middle of the operation.
-        {
-            ctx->KeyDownMap(ImGuiKey_COUNT, ImGuiKeyModFlags_Shift); // Disable docking
-            ctx->MouseMove(windowB->Name, ImGuiTestOpFlags_NoCheckHoveredId);
-            ctx->MouseDown(0);
-
-            const float h = windowB->TitleBarHeight();
-            ctx->MouseMoveToPos(g.IO.MousePos + (ImVec2(h, h) * -2));
-            ctx->Yield();
-
-            // Window A2 becomes visible during undock operation, but does not capture focus.
-            IM_CHECK(windowA2->Active);
-            IM_CHECK_EQ(g.MovingWindow, windowB);
-            IM_CHECK_EQ(g.WindowsFocusOrder[g.WindowsFocusOrder.Size - 1], windowB);
-
-            ctx->MouseUp(0);
-            ctx->KeyUpMap(ImGuiKey_COUNT, ImGuiKeyModFlags_Shift);
-        }
-    };
-
     // ## Test hide/unhiding tab bar
     // "On a 2-way split, test using Hide Tab Bar on both node, then unhiding the tab bar."
     t = IM_REGISTER_TEST(e, "docking", "docking_hide_tabbar");
@@ -743,31 +539,6 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
             // Unhide tab bar.
             ctx->DockNodeHideTabBar(window->DockNode, false);
         }
-    };
-
-    // ## Test dock node retention when second window in two-way split is undocked.
-    t = IM_REGISTER_TEST(e, "docking", "docking_undock_simple");
-    t->GuiFunc = [](ImGuiTestContext* ctx)
-    {
-        for (int i = 0; i < 2; i++)
-        {
-            ImGui::Begin(Str16f("Window %d", i).c_str(), NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
-            ImGui::TextUnformatted("lorem ipsum");
-            ImGui::End();
-        }
-    };
-    t->TestFunc = [](ImGuiTestContext* ctx)
-    {
-        ImGuiWindow* window0 = ctx->GetWindowByRef("Window 0");
-        ImGuiWindow* window1 = ctx->GetWindowByRef("Window 1");
-        ctx->DockClear("Window 0", "Window 1", NULL);
-        ctx->DockInto("Window 1", "Window 0", ImGuiDir_Right);
-        IM_CHECK_NE(window0->DockNode, (ImGuiDockNode*)NULL);
-        IM_CHECK_NE(window1->DockNode, (ImGuiDockNode*)NULL);
-        ImGuiDockNode* original_node = window0->DockNode->ParentNode;
-        ctx->UndockWindow("Window 1");
-        IM_CHECK_EQ(window0->DockNode, original_node);          // Undocking Window 1 keeps a parent dock node in Window 0
-        IM_CHECK(ctx->WindowIsUndockedOrStandalone(window1));   // Undocked window
     };
 
     auto test_docking_over_gui = [](ImGuiTestContext* ctx)
@@ -1075,8 +846,103 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
         }
     };
 
+    // ## Test _KeepAlive dockspace flag.
+//  "Step 1: Window A has dockspace A2. Dock window B into A2.
+//  "Step 2: Window A code call DockSpace with _KeepAlive only when collapsed. Verify that window B is still docked into A2 (and verify that both are HIDDEN at this point).
+//  "Step 3: window A stop submitting the DockSpace() A2. verify that window B is now undocked."
+    t = IM_REGISTER_TEST(e, "docking", "docking_dockspace_keep_alive");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiTestGenericVars& vars = ctx->GenericVars;
+        ImGui::SetNextWindowSize(ImVec2(300, 200), ImGuiCond_Always);
+        ImGui::Begin("Window A", NULL, ImGuiWindowFlags_NoSavedSettings);
+        if (vars.Step == 0)
+            ImGui::DockSpace(ImGui::GetID("A2"), ImVec2(0, 0), 0);
+        else if (vars.Step == 1)
+            ImGui::DockSpace(ImGui::GetID("A2"), ImVec2(0, 0), ImGuiDockNodeFlags_KeepAliveOnly);
+        ImGui::End();
+
+        ImGui::SetNextWindowSize(ImVec2(150, 100), ImGuiCond_Always);
+        ImGui::Begin("Window B", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiWindow* window1 = ctx->GetWindowByRef("Window A");
+        ImGuiWindow* window2 = ctx->GetWindowByRef("Window B");
+        ImGuiID dock_id = ctx->GetID("Window A/A2");
+
+        if (ImGui::GetIO().ConfigDockingAlwaysTabBar)
+        {
+            ctx->LogWarning("Cannot run test with io.ConfigDockingAlwaysTabBar == true");
+            return;
+        }
+
+        ctx->OpFlags |= ImGuiTestOpFlags_NoAutoUncollapse;
+        ctx->WindowCollapse(window1, false);
+        ctx->WindowCollapse(window2, false);
+        ctx->DockClear("Window B", "Window A", NULL);
+        ctx->DockInto("Window B", dock_id);
+        IM_CHECK(ctx->WindowIsUndockedOrStandalone(window1));           // Window A is not docked
+        IM_CHECK_EQ(window2->DockId, dock_id);                          // Window B was docked into a dockspace
+
+        // Start collapse window and start submitting  _KeepAliveOnly flag
+        ctx->WindowCollapse(window1, true);
+        ctx->GenericVars.Step = 1;
+        ctx->Yield();
+        IM_CHECK_EQ(window1->Collapsed, true);                          // Window A got collapsed
+        IM_CHECK_EQ(window1->DockIsActive, false);                      // and remains undocked
+        IM_CHECK(ctx->WindowIsUndockedOrStandalone(window1));           //
+        IM_CHECK_EQ(window2->Collapsed, false);                         // Window B was not collapsed
+        IM_CHECK_EQ(window2->DockIsActive, true);                       // Dockspace is being kept alive
+        IM_CHECK_EQ(window2->DockId, dock_id);                          // window remains docked
+        IM_CHECK_NE(window2->DockNode, (ImGuiDockNode*)NULL);
+        IM_CHECK_EQ(window2->Hidden, true);                             // but invisible
+                                                                        // Stop submitting dockspace
+        ctx->GenericVars.Step = 2;
+        ctx->Yield();
+        IM_CHECK_EQ(window1->Collapsed, true);                          // Window A got collapsed
+        IM_CHECK_EQ(window1->DockIsActive, false);                      // and remains undocked
+        IM_CHECK(ctx->WindowIsUndockedOrStandalone(window1));           //
+        IM_CHECK_EQ(window2->Collapsed, false);                         // Window B was not collapsed
+        IM_CHECK_EQ(window2->DockIsActive, false);                      // Dockspace is no longer kept alive
+        IM_CHECK(ctx->WindowIsUndockedOrStandalone(window2));           // and window gets undocked
+        IM_CHECK_EQ(window2->Hidden, false);                            // Window B shows up
+    };
+
+    // ## Test passthrough docking node.
+    t = IM_REGISTER_TEST(e, "docking", "docking_dockspace_passthru_hover");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::SetNextWindowPos(ImVec2(100, 100), ImGuiCond_Appearing);
+        ImGui::SetNextWindowSize(ImVec2(300, 200), ImGuiCond_Appearing);
+        ImGui::SetNextWindowBgAlpha(0.1f); // Not technically necessary but helps understand the purpose of this test
+        ImGui::Begin("Window 1", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoDocking);
+        ImGui::DockSpace(ImGui::GetID("DockSpace"), ImVec2(0, 0), ImGuiDockNodeFlags_PassthruCentralNode);
+        ImGui::End();
+
+        ImGui::SetNextWindowPos(ImVec2(100, 100), ImGuiCond_Appearing);
+        ImGui::SetNextWindowSize(ImVec2(300, 200), ImGuiCond_Appearing);
+        ImGui::Begin("Window 2", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoDocking);
+        ImGui::End();
+
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiContext& g = *ctx->UiContext;
+        ImGuiWindow* window1 = ctx->GetWindowByRef("Window 1");
+        ImGuiWindow* window2 = ctx->GetWindowByRef("Window 2");
+        ctx->WindowFocus("Window 1");
+        ctx->MouseMoveToPos(window1->Rect().GetCenter());
+        IM_CHECK_EQ(g.NavWindow, window1);
+        IM_CHECK_EQ(g.HoveredWindow, window2);
+        IM_CHECK_EQ(g.HoveredDockNode, (ImGuiDockNode*)NULL);
+        ctx->MouseClick();
+        IM_CHECK_EQ(g.NavWindow, window2);
+    };
+
     // ## Test dockspace padding. (#3733)
-    t = IM_REGISTER_TEST(e, "docking", "docking_dockspace_over_viewport_padding");
+    t = IM_REGISTER_TEST(e, "docking", "docking_dockspace_passthru_padding");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         auto& vars = ctx->GenericVars;
@@ -1370,6 +1236,31 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
         }
     };
 
+    // ## Test dock node retention when second window in two-way split is undocked.
+    t = IM_REGISTER_TEST(e, "docking", "docking_undock_simple");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        for (int i = 0; i < 2; i++)
+        {
+            ImGui::Begin(Str16f("Window %d", i).c_str(), NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
+            ImGui::TextUnformatted("lorem ipsum");
+            ImGui::End();
+        }
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiWindow* window0 = ctx->GetWindowByRef("Window 0");
+        ImGuiWindow* window1 = ctx->GetWindowByRef("Window 1");
+        ctx->DockClear("Window 0", "Window 1", NULL);
+        ctx->DockInto("Window 1", "Window 0", ImGuiDir_Right);
+        IM_CHECK_NE(window0->DockNode, (ImGuiDockNode*)NULL);
+        IM_CHECK_NE(window1->DockNode, (ImGuiDockNode*)NULL);
+        ImGuiDockNode* original_node = window0->DockNode->ParentNode;
+        ctx->UndockWindow("Window 1");
+        IM_CHECK_EQ(window0->DockNode, original_node);          // Undocking Window 1 keeps a parent dock node in Window 0
+        IM_CHECK(ctx->WindowIsUndockedOrStandalone(window1));   // Undocked window
+    };
+
     // ## Test undocking window from dockspace covering entire window.
     t = IM_REGISTER_TEST(e, "docking", "docking_undock_large");
     t->GuiFunc = [](ImGuiTestContext* ctx)
@@ -1395,6 +1286,115 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
         expect_size = ImGui::GetMainViewport()->Size * ImVec2(0.90f, 0.90f);
         IM_CHECK(window->Size.x <= expect_size.x);
         IM_CHECK(window->Size.y <= expect_size.y);
+    };
+
+    // ## Test that undocking a whole _node_ doesn't lose/reset size
+    t = IM_REGISTER_TEST(e, "docking", "docking_undock_from_dockspace_size");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiID dockspace_id = ctx->GetID("/Test Window/Dockspace");
+        if (ctx->IsFirstTestFrame())
+        {
+            ImGui::DockBuilderRemoveNode(dockspace_id);
+            ImGui::DockBuilderAddNode(dockspace_id, ImGuiDockNodeFlags_DockSpace);
+            ImGui::DockBuilderDockWindow("AAAA", dockspace_id);
+            ImGui::DockBuilderDockWindow("BBBB", dockspace_id);
+        }
+
+        ImGui::SetNextWindowSize(ImVec2(500, 500));
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImGui::DockSpace(dockspace_id);
+        ImGui::End();
+
+        ImGui::Begin("AAAA", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImGui::Text("This is AAAA");
+        ImGui::End();
+
+        ImGui::Begin("BBBB", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImGui::Text("This is BBBB");
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiID dockspace_id = ctx->GetID("/Test Window/Dockspace");
+
+        ImGuiWindow* window_a = ImGui::FindWindowByName("AAAA");
+        ImGuiWindow* window_b = ImGui::FindWindowByName("BBBB");
+        ImVec2 window_a_size_old = window_a->Size;
+        ImVec2 window_b_size_old = window_b->Size;
+        IM_CHECK_EQ(window_a->DockNode->ID, dockspace_id);
+
+        ctx->UndockNode(dockspace_id);
+
+        IM_CHECK(window_a->DockNode != NULL);
+        IM_CHECK(window_b->DockNode != NULL);
+        IM_CHECK_EQ(window_a->DockNode, window_b->DockNode);
+        IM_CHECK_NE(window_a->DockNode->ID, dockspace_id); // Actually undocked?
+        ImVec2 window_a_size_new = window_a->Size;
+        ImVec2 window_b_size_new = window_b->Size;
+        IM_CHECK_EQ(window_a->DockNode->Size, window_b_size_new);
+        IM_CHECK_EQ(window_a_size_old, window_a_size_new);
+        IM_CHECK_EQ(window_b_size_old, window_b_size_new);
+    };
+
+    // ## Test focus retention during undocking when new window appears.
+    //  "Dock A and B, when A is visible it also shows NON-child A2.
+    //  "Focus B, undock B -> verify that while dragging B it stays focused, even thought A2 just appears. (#3392)"
+    t = IM_REGISTER_TEST(e, "docking", "docking_undock_focus_retention");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::SetNextWindowSize(ImVec2(200, 100));
+        if (ImGui::Begin("Window A", NULL, ImGuiWindowFlags_NoSavedSettings))
+        {
+            ImGui::TextUnformatted("lorem ipsum");
+
+            ImGui::Begin("Window A2", NULL, ImGuiWindowFlags_NoSavedSettings);
+            ImGui::TextUnformatted("lorem ipsum");
+            ImGui::End();
+        }
+        ImGui::End();
+
+        ImGui::SetNextWindowSize(ImVec2(200, 100));
+        ImGui::Begin("Window B", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImGui::TextUnformatted("lorem ipsum");
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiContext& g = *ctx->UiContext;
+        ctx->WindowCollapse(ctx->GetWindowByRef("Window A"), false);
+        ctx->DockClear("Window A", "Window B", NULL);
+        ImGuiWindow* windowB = ctx->GetWindowByRef("Window B");
+        ImGuiWindow* windowA2 = ctx->GetWindowByRef("Window A2");
+
+        // Window A2 is visible when all windows are undocked.
+        IM_CHECK(windowA2->Active);
+        ctx->WindowFocus("Window A");
+        ctx->DockInto("Window B", "Window A");
+
+        // Window A2 gets hidden when Window B is docked as it becomes the active window in the dock.
+        IM_CHECK(!windowA2->Active);
+
+        // Undock Window B.
+        // FIXME-TESTS: This block is a slightly modified version of the UndockWindow() code which itself is using ItemDragWithDelta(),
+        // we cannot use UndockWindow() only because we perform our checks in the middle of the operation.
+        {
+            ctx->KeyDownMap(ImGuiKey_COUNT, ImGuiKeyModFlags_Shift); // Disable docking
+            ctx->MouseMove(windowB->Name, ImGuiTestOpFlags_NoCheckHoveredId);
+            ctx->MouseDown(0);
+
+            const float h = windowB->TitleBarHeight();
+            ctx->MouseMoveToPos(g.IO.MousePos + (ImVec2(h, h) * -2));
+            ctx->Yield();
+
+            // Window A2 becomes visible during undock operation, but does not capture focus.
+            IM_CHECK(windowA2->Active);
+            IM_CHECK_EQ(g.MovingWindow, windowB);
+            IM_CHECK_EQ(g.WindowsFocusOrder[g.WindowsFocusOrder.Size - 1], windowB);
+
+            ctx->MouseUp(0);
+            ctx->KeyUpMap(ImGuiKey_COUNT, ImGuiKeyModFlags_Shift);
+        }
     };
 
 #else
