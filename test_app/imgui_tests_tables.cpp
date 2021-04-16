@@ -34,6 +34,7 @@ struct TableTestingVars
     ImGuiWindowFlags        WindowFlags = ImGuiWindowFlags_None;
     ImVec2                  WindowSize = ImVec2(0.0f, 0.0f);
     ImVec2                  ItemSize = ImVec2(0.0f, 0.0f);
+    int                     ColumnsCount = 3;
     ImGuiTableColumnFlags   ColumnFlags[6] = {};
     bool                    DebugShowBounds = true;
 
@@ -553,7 +554,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
 
         ImGui::Begin("Test window 1", NULL, ImGuiWindowFlags_NoSavedSettings);
         if (ctx->IsFirstGuiFrame())
-            for (int test_n = 0; test_n < 4; test_n++)
+            for (int test_n = 0; test_n < 5; test_n++)
                 TableDiscardInstanceAndSettings(ImGui::GetID(Str16f("table%d", test_n).c_str()));
 
         // First test is duplicate of table_width_distrib
@@ -1021,12 +1022,16 @@ void RegisterTests_Table(ImGuiTestEngine* e)
     t = IM_REGISTER_TEST(e, "table", "table_resizing_behaviors");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
-        if (ctx->IsFirstGuiFrame())
-            ctx->GenericVars.TableFlags = ImGuiTableFlags_Resizable | ImGuiTableFlags_Hideable | ImGuiTableFlags_Reorderable | ImGuiTableFlags_Borders | ImGuiTableFlags_NoSavedSettings;
-
         ImGui::SetNextWindowPos(ImGui::GetMainViewport()->Pos + ImVec2(20, 5), ImGuiCond_Appearing);
         ImGui::SetNextWindowSize(ImVec2(400.0f, 0.0f), ImGuiCond_Appearing);
         ImGui::Begin("Test window 1", NULL, ImGuiWindowFlags_NoSavedSettings);
+
+        if (ctx->IsFirstGuiFrame())
+        {
+            for (int n = 0; n < 10; n++)
+                TableDiscardInstanceAndSettings(ImGui::GetID(Str16f("table%d", n).c_str()));
+            ctx->GenericVars.TableFlags = ImGuiTableFlags_Resizable | ImGuiTableFlags_Hideable | ImGuiTableFlags_Reorderable | ImGuiTableFlags_Borders | ImGuiTableFlags_NoSavedSettings;
+        }
 
         ImGui::CheckboxFlags("ImGuiTableFlags_Resizable", &ctx->GenericVars.TableFlags, ImGuiTableFlags_Resizable);
         ImGuiTableFlags flags = ctx->GenericVars.TableFlags;
@@ -2542,30 +2547,53 @@ void RegisterTests_Table(ImGuiTestEngine* e)
 
     // ## Test changing column count of existing table.
     t = IM_REGISTER_TEST(e, "table", "table_varying_columns_count");
+    t->SetUserDataType<TableTestingVars>();
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
-        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
-        ctx->GenericVars.Count = ImMax(ctx->GenericVars.Count, 1);
-        ImGui::SliderInt("Count", &ctx->GenericVars.Count, 1, 30);
-        ImGui::CheckboxFlags("ImGuiTableFlags_Resizable", &ctx->GenericVars.Int1, ImGuiTableFlags_Resizable);
-        if (ImGui::BeginTable("table1", ctx->GenericVars.Count, ctx->GenericVars.Int1))
+        auto& vars = ctx->GetUserData<TableTestingVars>();
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | vars.WindowFlags);
+        vars.ColumnsCount = ImMax(vars.ColumnsCount, 1);
+        ImGui::SliderInt("Count", &vars.ColumnsCount, 1, 30);
+        ImGui::CheckboxFlags("ImGuiWindowFlags_AlwaysAutoResize", &vars.WindowFlags, ImGuiWindowFlags_AlwaysAutoResize);
+        ImGui::CheckboxFlags("ImGuiTableFlags_Resizable", &vars.TableFlags, ImGuiTableFlags_Resizable);
+        if (ImGui::BeginTable("table1", vars.ColumnsCount, vars.TableFlags))
         {
-            HelperTableSubmitCellsButtonFill(ctx->GenericVars.Count, 7);
+            HelperTableSubmitCellsButtonFix(vars.ColumnsCount, 7);
             ImGui::EndTable();
         }
         ImGui::End();
     };
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
+        auto& vars = ctx->GetUserData<TableTestingVars>();
+        vars.WindowFlags = ImGuiWindowFlags_AlwaysAutoResize;
+        ctx->Yield();
         ctx->SetRef("Test Window");
         ImGuiTable* table = ImGui::TableFindByID(ctx->GetID("table1"));
-
-        int column_count[] = { 10, 15, 13, 18, 12, 20, 19 };
+        const int column_count[] = { 10, 15, 13, 18, 12, 20, 19 };
         for (int i = 0; i < IM_ARRAYSIZE(column_count); i++)
         {
-            ctx->GenericVars.Count = column_count[i];
+            vars.ColumnsCount = column_count[i];
+#if IMGUI_VERSION_NUM >= 18204
+            int old_count = table->ColumnsCount;
+            float w0 = old_count >= 2 ? table->Columns[0].WidthGiven : -1.0f;
+            float w1 = old_count >= 2 ? table->Columns[1].WidthGiven : -1.0f;
+#endif
             ctx->Yield();
             IM_CHECK_EQ(table->ColumnsCount, column_count[i]);
+#if IMGUI_VERSION_NUM >= 18204
+            if (old_count >= 2)
+            {
+                IM_CHECK_EQ(w0, table->Columns[0].WidthGiven);
+                IM_CHECK_EQ(w1, table->Columns[1].WidthGiven);
+            }
+            ctx->Yield();
+            if (old_count >= 2)
+            {
+                IM_CHECK_EQ(w0, table->Columns[0].WidthGiven);
+                IM_CHECK_EQ(w1, table->Columns[1].WidthGiven);
+            }
+#endif
         }
     };
 
