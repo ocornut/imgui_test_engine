@@ -844,10 +844,47 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
         }
     };
 
+    // ## Test appending to dock tab bar.
+    t = IM_REGISTER_TEST(e, "docking", "docking_tab_amend");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiContext& g = *ctx->UiContext;
+        int& button_clicks = ctx->GenericVars.Int1;
+        ImGui::SetNextWindowSize(ImVec2(200, 100), ImGuiCond_Appearing);
+        ImGui::Begin("AAA", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImGui::TextUnformatted("Not empty.");
+        ImGuiWindow* window = g.CurrentWindow;
+        if (window->DockNode != NULL)
+        {
+            if (ImGui::DockNodeBeginAmendTabBar(window->DockNode))
+            {
+                if (ImGui::TabItemButton("+", ImGuiTabItemFlags_Trailing))
+                    button_clicks++;
+                ImGui::DockNodeEndAmendTabBar();
+            }
+        }
+        ImGui::End();
+
+        ImGui::SetNextWindowSize(ImVec2(200, 100), ImGuiCond_Appearing);
+        ImGui::Begin("BBB", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImGui::TextUnformatted("Not empty.");
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        int& button_clicks = ctx->GenericVars.Int1;
+        ImGuiWindow* window = ctx->GetWindowByRef("AAA");
+        ctx->DockClear("AAA", "BBB", NULL);
+        ctx->DockInto("BBB", "AAA");
+        IM_CHECK_EQ(button_clicks, 0);
+        ctx->ItemClick(ctx->GetID("+", window->DockId));
+        IM_CHECK_EQ(button_clicks, 1);
+    };
+
     // ## Test _KeepAlive dockspace flag.
-//  "Step 1: Window A has dockspace A2. Dock window B into A2.
-//  "Step 2: Window A code call DockSpace with _KeepAlive only when collapsed. Verify that window B is still docked into A2 (and verify that both are HIDDEN at this point).
-//  "Step 3: window A stop submitting the DockSpace() A2. verify that window B is now undocked."
+    //  "Step 1: Window A has dockspace A2. Dock window B into A2.
+    //  "Step 2: Window A code call DockSpace with _KeepAlive only when collapsed. Verify that window B is still docked into A2 (and verify that both are HIDDEN at this point).
+    //  "Step 3: window A stop submitting the DockSpace() A2. verify that window B is now undocked."
     t = IM_REGISTER_TEST(e, "docking", "docking_dockspace_keep_alive");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
