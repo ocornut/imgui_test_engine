@@ -105,6 +105,11 @@ static inline bool operator==(const ImVec2& lhs, const ImVec2& rhs) { return lhs
 //-------------------------------------------------------------------------
 // Tests: Docking
 //-------------------------------------------------------------------------
+// Test comment conventions:
+// AAA | BBB - two windows in a split dock node (vertical or horizontal).
+// AAA + BBB - two separate floating windows.
+// AAA, BBB  - two windows docked as tabs.
+// AAA, BBB | CCC + DDD - AAA and BBB are docked as tabs on the left side, CCC window on the right side of the split. DDD is independent floating window.
 
 void RegisterTests_Docking(ImGuiTestEngine* e)
 {
@@ -1347,6 +1352,78 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
         }
     };
 
+    // ## Test transferring full node payload, even with hidden windows.
+    t = IM_REGISTER_TEST(e, "docking", "docking_split_payload");
+    t->SetUserDataType<DockingTestsGenericVars>([](DockingTestsGenericVars& vars) {
+        vars.SetShowWindows(3, true);
+    });
+    t->GuiFunc = DockingTestsGenericGuiFunc;
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        DockingTestsGenericVars& vars = ctx->GetUserData<DockingTestsGenericVars>();
+        ImGuiWindow* window_aaa = ctx->GetWindowByRef("AAA");
+        ImGuiWindow* window_bbb = ctx->GetWindowByRef("BBB");
+        ImGuiWindow* window_ccc = ctx->GetWindowByRef("CCC");
+
+        for (int variant = 0; variant < 2; variant++)
+        {
+            ctx->Test->ArgVariant = variant;
+            vars.ShowDockspace = variant == 1;
+            ctx->LogDebug("Test variant: %d", variant);
+            ctx->DockClear("AAA", "BBB", "CCC", NULL);
+            ctx->DockInto("BBB", "CCC", ImGuiDir_Left);                         // BBB | CCC
+            vars.ShowWindow[1] = false;                                         // Hide BBB
+            ctx->Yield();
+
+            ImGuiID dock_dest = variant == 0 ? window_aaa->ID : vars.DockSpaceID;
+#if IMGUI_BROKEN_TESTS
+            // FIXME-TESTS: Docking from single visible tab (part of a hidden iceberg of node) and docking from collapse button do not behave the same the moment.
+            // This currently will undock CCC away from the hidden nodes, which is incorrect but desirable as currently single-window-in-node have various regression compared to single-window.
+            ctx->DockInto("CCC", dock_dest);                                    // Dock CCC into AAA
+#else
+            ctx->DockInto(window_ccc->DockId, dock_dest);
+#endif
+            vars.ShowWindow[1] = true;                                          // Show BBB
+            ctx->Yield();
+
+            // Result: BBB | AAA, CCC
+            ImGuiDockNode* root_node = NULL;
+            switch (variant)
+            {
+            case 0:
+                IM_CHECK(window_aaa->RootWindowDockTree != NULL && window_aaa->RootWindowDockTree->DockNodeAsHost != NULL);
+                root_node = window_aaa->RootWindowDockTree->DockNodeAsHost;     // DockNode of AAA
+                break;
+            case 1:
+                root_node = ImGui::DockBuilderGetNode(dock_dest);               // DockNode of dockspace
+                break;
+            default:
+                IM_ASSERT(0);
+            }
+
+            IM_CHECK(root_node != NULL);
+            IM_CHECK(root_node->ChildNodes[0] != NULL);                         // BBB in the left split
+            IM_CHECK_EQ(root_node->ChildNodes[0]->Windows.Size, 1);
+            IM_CHECK_EQ(root_node->ChildNodes[0]->Windows[0], window_bbb);
+            IM_CHECK(root_node->ChildNodes[1] != NULL);
+            switch (variant)
+            {
+            case 0:
+                IM_CHECK_EQ(root_node->ChildNodes[1]->Windows.Size, 2);         // AAA and CCC in right split
+                IM_CHECK_EQ(root_node->ChildNodes[1]->Windows[0], window_aaa);
+                IM_CHECK_EQ(root_node->ChildNodes[1]->Windows[1], window_ccc);
+                break;
+            case 1:
+                IM_CHECK_EQ(root_node->ChildNodes[1]->Windows.Size, 1);         // CCC in the right split of dockspace
+                IM_CHECK_EQ(root_node->ChildNodes[1]->Windows[0], window_ccc);
+                IM_CHECK(!root_node->IsCentralNode());                          // Central node is in the right split
+                IM_CHECK(!root_node->ChildNodes[0]->IsCentralNode());
+                IM_CHECK(root_node->ChildNodes[1]->IsCentralNode());
+                break;
+            }
+        }
+        ctx->DockClear("AAA", "BBB", "CCC", NULL);  // Fix SetNextWindowSize() on next test run. // FIXME-TESTS
+    };
 #else
     IM_UNUSED(e);
 #endif
