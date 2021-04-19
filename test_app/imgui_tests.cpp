@@ -937,6 +937,9 @@ void RegisterTests_Window(ImGuiTestEngine* e)
                 ImGui::OpenPopup("##popup");
             ImGui::BeginPopup("##popup");
             break;
+        default:
+            IM_ASSERT(0);
+            break;
         }
 
         ImGui::Text("Some text");
@@ -960,6 +963,9 @@ void RegisterTests_Window(ImGuiTestEngine* e)
             break;
         case WindowAppearingVars::ShowPopup:
             ImGui::EndPopup();
+            break;
+        default:
+            IM_ASSERT(0);
             break;
         }
     };

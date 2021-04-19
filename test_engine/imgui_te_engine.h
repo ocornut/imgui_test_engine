@@ -493,6 +493,7 @@ typedef void    (*ImGuiTestTestFunc)(ImGuiTestContext* ctx);
 
 // Wraps a placement new of a given type (where 'buffer' is the allocated memory)
 typedef void    (*ImGuiTestUserDataConstructor)(void* buffer);
+typedef void    (*ImGuiTestUserDataPostConstructor)(void* ptr, void* fn);
 typedef void    (*ImGuiTestUserDataDestructor)(void* ptr);
 
 // Storage for one test
@@ -509,6 +510,8 @@ struct ImGuiTest
     int                             ArgVariant;         // User parameter, for use by GuiFunc/TestFunc. Generally we use it to run variations of a same test.
     size_t                          UserDataSize;       // When SetUserDataType() is used, we create an instance of user structure so we can be used by GuiFunc/TestFunc.
     ImGuiTestUserDataConstructor    UserDataConstructor;
+    ImGuiTestUserDataPostConstructor UserDataPostConstructor;
+    void*                           UserDataPostConstructorFn;
     ImGuiTestUserDataDestructor     UserDataDestructor;
     ImGuiTestStatus                 Status;
     ImGuiTestFlags                  Flags;              // See ImGuiTestFlags_
@@ -528,6 +531,8 @@ struct ImGuiTest
         ArgVariant = 0;
         UserDataSize = 0;
         UserDataConstructor = NULL;
+        UserDataPostConstructor = NULL;
+        UserDataPostConstructorFn = NULL;
         UserDataDestructor = NULL;
         Status = ImGuiTestStatus_Unknown;
         Flags = ImGuiTestFlags_None;
@@ -540,10 +545,15 @@ struct ImGuiTest
     void SetOwnedName(const char* name);
 
     template <typename T>
-    void SetUserDataType()
+    void SetUserDataType(void(*post_initialize)(T& vars) = NULL)
     {
         UserDataSize = sizeof(T);
         UserDataConstructor = [](void* ptr) { IM_PLACEMENT_NEW(ptr) T; };
         UserDataDestructor = [](void* ptr) { IM_UNUSED(ptr); reinterpret_cast<T*>(ptr)->~T(); };
+        if (post_initialize != NULL)
+        {
+            UserDataPostConstructorFn = (void*)post_initialize;
+            UserDataPostConstructor = [](void* ptr, void* fn) { ((void (*)(T&))(fn))(*(T*)ptr); };
+        }
     }
 };

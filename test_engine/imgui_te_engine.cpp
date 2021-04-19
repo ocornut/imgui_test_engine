@@ -933,6 +933,8 @@ static void ImGuiTestEngine_ProcessTestQueue(ImGuiTestEngine* engine)
             // Run test with a custom data type in the stack
             ctx.UserData = engine->UserDataBuffer;
             test->UserDataConstructor(engine->UserDataBuffer);
+            if (test->UserDataPostConstructor != NULL && test->UserDataPostConstructorFn != NULL)
+                test->UserDataPostConstructor(engine->UserDataBuffer, test->UserDataPostConstructorFn);
             ImGuiTestEngine_RunTest(engine, &ctx);
             test->UserDataDestructor(engine->UserDataBuffer);
         }
