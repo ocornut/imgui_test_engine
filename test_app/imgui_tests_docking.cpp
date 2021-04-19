@@ -24,7 +24,7 @@
 // Helpers
 #ifdef IMGUI_HAS_DOCK
 
-struct DockingTestingVars
+struct DockingTestsGenericVars
 {
     int         Step = 0;
     ImGuiID     DockSpaceID = 0;
@@ -32,13 +32,64 @@ struct DockingTestingVars
     bool        ShowWindow[10];
     bool        ShowWindowGroups[2];    // One per 5 windows
 
-    DockingTestingVars()
+    DockingTestsGenericVars()
     {
         for (int n = 0; n < IM_ARRAYSIZE(ShowWindow); n++)
             ShowWindow[n] = false;
         for (int n = 0; n < IM_ARRAYSIZE(ShowWindowGroups); n++)
             ShowWindowGroups[n] = true;
     }
+};
+
+static void DockingTestsGenericGuiFunc(ImGuiTestContext* ctx)
+{
+    DockingTestsGenericVars& vars = ctx->GetUserData<DockingTestsGenericVars>();
+    ImGui::SetNextWindowSize(ImVec2(200, 100), ImGuiCond_Appearing);
+
+    if (ctx->RunFlags & ImGuiTestRunFlags_GuiFuncOnly)
+    {
+        ImGui::Begin("Test Config");
+        ImGui::Checkbox("Show Dockspace", &vars.ShowDockspace);
+        for (int n = 0; n < IM_ARRAYSIZE(vars.ShowWindow); n++)
+        {
+            if ((n % 5) == 0)
+            {
+                // Toggling group UI to toggle visibility of multiple windows simultaneously
+                int group_n = n / 5;
+                Str16f group_name("Group %d", group_n);
+                ImGui::Checkbox(group_name.c_str(), &vars.ShowWindowGroups[group_n]);
+            }
+            char window_name[4];
+            window_name[0] = window_name[1] = window_name[2] = (char)('A' + n);
+            window_name[3] = 0;
+            ImGui::SetCursorPosX(ImGui::GetCursorPosX() + 20);
+            ImGui::Checkbox(window_name, &vars.ShowWindow[n]);
+        }
+        ImGui::End();
+    }
+
+    ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+    if (vars.ShowDockspace)
+    {
+        vars.DockSpaceID = ImGui::GetID("dockspace");
+        ImGui::DockSpace(vars.DockSpaceID);
+    }
+    ImGui::End();
+
+    for (int n = 0; n < IM_ARRAYSIZE(vars.ShowWindow); n++)
+        if (vars.ShowWindow[n] && vars.ShowWindowGroups[n / 5])
+        {
+            ImGui::SetNextWindowSize(ImVec2(300.0f, 200.0f), ImGuiCond_Appearing);
+
+            char window_name[4];
+            window_name[0] = window_name[1] = window_name[2] = (char)('A' + n);
+            window_name[3] = 0;
+
+            ImGui::Begin(window_name, NULL, ImGuiWindowFlags_NoSavedSettings);
+            ImGui::Text("This is '%s'", window_name);
+            ImGui::Text("ID = %08X, DockID = %08X", ImGui::GetCurrentWindow()->ID, ImGui::GetWindowDockID());
+            ImGui::End();
+        }
 };
 
 static inline bool operator==(const ImVec2& lhs, const ImVec2& rhs) { return lhs.x == rhs.x && lhs.y == rhs.y; }    // for IM_CHECK_EQ()
@@ -610,61 +661,12 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
 
     // ## Test whether docked window tabs are in right order.
     t = IM_REGISTER_TEST(e, "docking", "docking_tab_order");
-    t->SetUserDataType<DockingTestingVars>();
-    auto gui_func_docking_generic = [](ImGuiTestContext* ctx)
-    {
-        DockingTestingVars& vars = ctx->GetUserData<DockingTestingVars>();
-        ImGui::SetNextWindowSize(ImVec2(200, 100), ImGuiCond_Appearing);
-
-        if (ctx->RunFlags & ImGuiTestRunFlags_GuiFuncOnly)
-        {
-            ImGui::Begin("Test Config");
-            ImGui::Checkbox("Show Dockspace", &vars.ShowDockspace);
-            for (int n = 0; n < IM_ARRAYSIZE(vars.ShowWindow); n++)
-            {
-                if ((n % 5) == 0)
-                {
-                    int group_n = n / 5;
-                    Str16f group_name("Group %d", group_n);
-                    ImGui::Checkbox(group_name.c_str(), &vars.ShowWindowGroups[group_n]);
-                }
-                char window_name[4];
-                window_name[0] = window_name[1] = window_name[2] = (char)('A' + n);
-                window_name[3] = 0;
-                ImGui::SetCursorPosX(ImGui::GetCursorPosX() + 20);
-                ImGui::Checkbox(window_name, &vars.ShowWindow[n]);
-            }
-            ImGui::End();
-        }
-
-        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
-        if (vars.ShowDockspace)
-        {
-            vars.DockSpaceID = ImGui::GetID("dockspace");
-            ImGui::DockSpace(vars.DockSpaceID);
-        }
-        ImGui::End();
-
-        for (int n = 0; n < IM_ARRAYSIZE(vars.ShowWindow); n++)
-            if (vars.ShowWindow[n] && vars.ShowWindowGroups[n / 5])
-            {
-                ImGui::SetNextWindowSize(ImVec2(300.0f, 200.0f), ImGuiCond_Appearing);
-
-                char window_name[4];
-                window_name[0] = window_name[1] = window_name[2] = (char)('A' + n);
-                window_name[3] = 0;
-
-                ImGui::Begin(window_name, NULL, ImGuiWindowFlags_NoSavedSettings);
-                ImGui::Text("This is '%s'", window_name);
-                ImGui::Text("ID = %08X, DockID = %08X", ImGui::GetCurrentWindow()->ID, ImGui::GetWindowDockID());
-                ImGui::End();
-            }
-    };
-    t->GuiFunc = gui_func_docking_generic;
+    t->SetUserDataType<DockingTestsGenericVars>();
+    t->GuiFunc = DockingTestsGenericGuiFunc;
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         ImGuiContext& g = *ctx->UiContext;
-        DockingTestingVars& vars = ctx->GetUserData<DockingTestingVars>();
+        DockingTestsGenericVars& vars = ctx->GetUserData<DockingTestsGenericVars>();
         vars.ShowWindow[0] = vars.ShowWindow[1] = vars.ShowWindow[2] = true;
 
         for (int step = 0; step < 3; step++)
@@ -733,11 +735,11 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
 
     // ## Test tab order related to edge case with 1 window node which don't have a tab bar
     t = IM_REGISTER_TEST(e, "docking", "docking_tab_order_hidden_tabbar");
-    t->SetUserDataType<DockingTestingVars>();
-    t->GuiFunc = gui_func_docking_generic;
+    t->SetUserDataType<DockingTestsGenericVars>();
+    t->GuiFunc = DockingTestsGenericGuiFunc;
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
-        DockingTestingVars& vars = ctx->GetUserData<DockingTestingVars>();
+        DockingTestsGenericVars& vars = ctx->GetUserData<DockingTestsGenericVars>();
         vars.ShowDockspace = false;
         vars.ShowWindow[0] = vars.ShowWindow[1] = vars.ShowWindow[2] = vars.ShowWindow[3] = true;
         ctx->DockClear("AAA", "BBB", "CCC", "DDD", NULL);
@@ -763,12 +765,12 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
 
     // Test focus order restore (#2304)
     t = IM_REGISTER_TEST(e, "docking", "docking_tab_focus_restore");
-    t->SetUserDataType<DockingTestingVars>();
-    t->GuiFunc = gui_func_docking_generic;
+    t->SetUserDataType<DockingTestsGenericVars>();
+    t->GuiFunc = DockingTestsGenericGuiFunc;
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         ImGuiContext& g = *ctx->UiContext;
-        DockingTestingVars& vars = ctx->GetUserData<DockingTestingVars>();
+        DockingTestsGenericVars& vars = ctx->GetUserData<DockingTestsGenericVars>();
         vars.ShowWindow[0] = vars.ShowWindow[1] = vars.ShowWindow[2] = vars.ShowWindow[3] = true;
 
         for (int step = 0; step < 3; step++)
@@ -988,10 +990,10 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
 
     // ## Test preserving docking information of closed windows. (#3716)
     t = IM_REGISTER_TEST(e, "docking", "docking_preserve_docking_info");
-    t->SetUserDataType<DockingTestingVars>();
+    t->SetUserDataType<DockingTestsGenericVars>();
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
-        DockingTestingVars& vars = ctx->GetUserData<DockingTestingVars>();
+        DockingTestsGenericVars& vars = ctx->GetUserData<DockingTestsGenericVars>();
 
         ImGui::SetNextWindowSize(ImVec2(500,500), ImGuiCond_Appearing);
         ImGui::Begin("Host", NULL, ImGuiWindowFlags_NoSavedSettings);
@@ -1025,7 +1027,7 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
     };
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
-        DockingTestingVars& vars = ctx->GetUserData<DockingTestingVars>();
+        DockingTestsGenericVars& vars = ctx->GetUserData<DockingTestsGenericVars>();
         vars.ShowWindow[0] = vars.ShowWindow[1] = vars.ShowWindow[2] = vars.ShowWindow[3] = true;
 
         ImGuiWindow* window1 = ctx->GetWindowByRef("Window 1");
@@ -1075,7 +1077,7 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
 
     // ## Test docked window focusing.
     t = IM_REGISTER_TEST(e, "docking", "docking_focus_from_host");
-    t->SetUserDataType<DockingTestingVars>();
+    t->SetUserDataType<DockingTestsGenericVars>();
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         ImGui::SetNextWindowSize(ImVec2(200, 100));
