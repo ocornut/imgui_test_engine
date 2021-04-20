@@ -39,6 +39,13 @@ struct DockingTestsGenericVars
         for (int n = 0; n < IM_ARRAYSIZE(ShowWindowGroups); n++)
             ShowWindowGroups[n] = true;
     }
+
+    void SetShowWindows(int count, bool show)
+    {
+        IM_ASSERT(count < IM_ARRAYSIZE(ShowWindow));
+        for (int i = 0; i < count; i++)
+            ShowWindow[i] = show;
+    }
 };
 
 static void DockingTestsGenericGuiFunc(ImGuiTestContext* ctx)
@@ -111,16 +118,8 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
 
     // ## Test merging windows by dragging them.
     t = IM_REGISTER_TEST(e, "docking", "docking_basic_1");
-    t->GuiFunc = [](ImGuiTestContext* ctx)
-    {
-        ImGui::Begin("AAAA", NULL, ImGuiWindowFlags_NoSavedSettings);
-        ImGui::Text("This is AAAA");
-        ImGui::End();
-
-        ImGui::Begin("BBBB", NULL, ImGuiWindowFlags_NoSavedSettings);
-        ImGui::Text("This is BBBB");
-        ImGui::End();
-    };
+    t->SetUserDataType<DockingTestsGenericVars>([](auto& vars) { vars.SetShowWindows(2, true); });
+    t->GuiFunc = DockingTestsGenericGuiFunc;
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         ImGuiIO& io = ImGui::GetIO();
@@ -131,73 +130,73 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
             io.ConfigDockingAlwaysTabBar = (test_case_n == 1);
             ctx->LogDebug("## TEST CASE %d: with ConfigDockingAlwaysTabBar = %d", test_case_n, io.ConfigDockingAlwaysTabBar);
 
-            ImGuiWindow* window_aaaa = ctx->GetWindowByRef("AAAA");
-            ImGuiWindow* window_bbbb = ctx->GetWindowByRef("BBBB");
+            ImGuiWindow* window_aaa = ctx->GetWindowByRef("AAA");
+            ImGuiWindow* window_bbb = ctx->GetWindowByRef("BBB");
 
             // Init state
-            ctx->DockClear("AAAA", "BBBB", NULL);
+            ctx->DockClear("AAA", "BBB", NULL);
             if (ctx->UiContext->IO.ConfigDockingAlwaysTabBar)
-                IM_CHECK(window_aaaa->DockId != 0 && window_bbbb->DockId != 0 && window_aaaa->DockId != window_bbbb->DockId);
+                IM_CHECK(window_aaa->DockId != 0 && window_bbb->DockId != 0 && window_aaa->DockId != window_bbb->DockId);
             else
-                IM_CHECK(window_aaaa->DockId == 0 && window_bbbb->DockId == 0);
-            ctx->WindowResize("/AAAA", ImVec2(200, 200));
-            ctx->WindowMove("/AAAA", ImVec2(100, 100));
-            ctx->WindowResize("/BBBB", ImVec2(200, 200));
-            ctx->WindowMove("/BBBB", ImVec2(200, 200));
+                IM_CHECK(window_aaa->DockId == 0 && window_bbb->DockId == 0);
+            ctx->WindowResize("/AAA", ImVec2(200, 200));
+            ctx->WindowMove("/AAA", ImVec2(100, 100));
+            ctx->WindowResize("/BBB", ImVec2(200, 200));
+            ctx->WindowMove("/BBB", ImVec2(200, 200));
 
             // Dock Once
-            ctx->DockInto("AAAA", "BBBB");
-            IM_CHECK(window_aaaa->DockNode != NULL);
-            IM_CHECK(window_aaaa->DockNode == window_bbbb->DockNode);
-            IM_CHECK_EQ(window_aaaa->DockNode->Pos, ImVec2(200, 200));
-            IM_CHECK_EQ(window_aaaa->Pos, ImVec2(200, 200));
-            IM_CHECK_EQ(window_bbbb->Pos, ImVec2(200, 200));
-            ImGuiID dock_id = window_bbbb->DockId;
+            ctx->DockInto("AAA", "BBB");
+            IM_CHECK(window_aaa->DockNode != NULL);
+            IM_CHECK(window_aaa->DockNode == window_bbb->DockNode);
+            IM_CHECK_EQ(window_aaa->DockNode->Pos, ImVec2(200, 200));
+            IM_CHECK_EQ(window_aaa->Pos, ImVec2(200, 200));
+            IM_CHECK_EQ(window_bbb->Pos, ImVec2(200, 200));
+            ImGuiID dock_id = window_bbb->DockId;
             ctx->Sleep(0.5f);
 
             {
-                // Undock AAAA, BBBB should still refer/dock to node.
-                ctx->DockClear("AAAA", NULL);
-                IM_CHECK(ctx->WindowIsUndockedOrStandalone(window_aaaa));
-                IM_CHECK(window_bbbb->DockId == dock_id);
+                // Undock AAA, BBB should still refer/dock to node.
+                ctx->DockClear("AAA", NULL);
+                IM_CHECK(ctx->WindowIsUndockedOrStandalone(window_aaa));
+                IM_CHECK(window_bbb->DockId == dock_id);
 
                 // Intentionally move both floating windows away
-                ctx->WindowMove("/AAAA", ImVec2(100, 100));
-                ctx->WindowResize("/AAAA", ImVec2(100, 100));
-                ctx->WindowMove("/BBBB", ImVec2(300, 300));
-                ctx->WindowResize("/BBBB", ImVec2(200, 200)); // Should already the case
+                ctx->WindowMove("/AAA", ImVec2(100, 100));
+                ctx->WindowResize("/AAA", ImVec2(100, 100));
+                ctx->WindowMove("/BBB", ImVec2(300, 300));
+                ctx->WindowResize("/BBB", ImVec2(200, 200)); // Should already the case
 
-                // Dock again (BBBB still refers to dock id, making this different from the first docking)
-                ctx->DockInto("/AAAA", "/BBBB", ImGuiDir_None);
-                IM_CHECK_EQ(window_aaaa->DockId, dock_id);
-                IM_CHECK_EQ(window_bbbb->DockId, dock_id);
-                IM_CHECK_EQ(window_aaaa->Pos, ImVec2(300, 300));
-                IM_CHECK_EQ(window_bbbb->Pos, ImVec2(300, 300));
-                IM_CHECK_EQ(window_aaaa->Size, ImVec2(200, 200));
-                IM_CHECK_EQ(window_bbbb->Size, ImVec2(200, 200));
-                IM_CHECK_EQ(window_aaaa->DockNode->Pos, ImVec2(300, 300));
-                IM_CHECK_EQ(window_aaaa->DockNode->Size, ImVec2(200, 200));
+                // Dock again (BBB still refers to dock id, making this different from the first docking)
+                ctx->DockInto("/AAA", "/BBB", ImGuiDir_None);
+                IM_CHECK_EQ(window_aaa->DockId, dock_id);
+                IM_CHECK_EQ(window_bbb->DockId, dock_id);
+                IM_CHECK_EQ(window_aaa->Pos, ImVec2(300, 300));
+                IM_CHECK_EQ(window_bbb->Pos, ImVec2(300, 300));
+                IM_CHECK_EQ(window_aaa->Size, ImVec2(200, 200));
+                IM_CHECK_EQ(window_bbb->Size, ImVec2(200, 200));
+                IM_CHECK_EQ(window_aaa->DockNode->Pos, ImVec2(300, 300));
+                IM_CHECK_EQ(window_aaa->DockNode->Size, ImVec2(200, 200));
             }
 
             {
-                // Undock AAAA, BBBB should still refer/dock to node.
-                ctx->DockClear("AAAA", NULL);
-                IM_CHECK(ctx->WindowIsUndockedOrStandalone(window_aaaa));
-                IM_CHECK_EQ(window_bbbb->DockId, dock_id);
+                // Undock AAA, BBB should still refer/dock to node.
+                ctx->DockClear("AAA", NULL);
+                IM_CHECK(ctx->WindowIsUndockedOrStandalone(window_aaa));
+                IM_CHECK_EQ(window_bbb->DockId, dock_id);
 
                 // Intentionally move both floating windows away
-                ctx->WindowMove("/AAAA", ImVec2(100, 100));
-                ctx->WindowMove("/BBBB", ImVec2(200, 200));
+                ctx->WindowMove("/AAA", ImVec2(100, 100));
+                ctx->WindowMove("/BBB", ImVec2(200, 200));
 
-                // Dock on the side (BBBB still refers to dock id, making this different from the first docking)
-                ctx->DockInto("/AAAA", "/BBBB", ImGuiDir_Left);
-                IM_CHECK(window_aaaa->DockNode != NULL);
-                IM_CHECK_EQ(window_aaaa->DockNode->ParentNode->ID, dock_id);
-                IM_CHECK_EQ(window_bbbb->DockNode->ParentNode->ID, dock_id);
-                IM_CHECK_EQ(window_aaaa->DockNode->ParentNode->Pos, ImVec2(200, 200));
-                IM_CHECK_EQ(window_aaaa->Pos, ImVec2(200, 200));
-                IM_CHECK_GT(window_bbbb->Pos.x, window_aaaa->Pos.x);
-                IM_CHECK_EQ(window_bbbb->Pos.y, 200);
+                // Dock on the side (BBB still refers to dock id, making this different from the first docking)
+                ctx->DockInto("/AAA", "/BBB", ImGuiDir_Left);
+                IM_CHECK(window_aaa->DockNode != NULL);
+                IM_CHECK_EQ(window_aaa->DockNode->ParentNode->ID, dock_id);
+                IM_CHECK_EQ(window_bbb->DockNode->ParentNode->ID, dock_id);
+                IM_CHECK_EQ(window_aaa->DockNode->ParentNode->Pos, ImVec2(200, 200));
+                IM_CHECK_EQ(window_aaa->Pos, ImVec2(200, 200));
+                IM_CHECK_GT(window_bbb->Pos.x, window_aaa->Pos.x);
+                IM_CHECK_EQ(window_bbb->Pos.y, 200);
             }
         }
     };
@@ -556,25 +555,17 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
     // ## Test hide/unhiding tab bar
     // "On a 2-way split, test using Hide Tab Bar on both node, then unhiding the tab bar."
     t = IM_REGISTER_TEST(e, "docking", "docking_hide_tabbar");
-    t->GuiFunc = [](ImGuiTestContext* ctx)
-    {
-        ImGui::Begin("Window A", NULL, ImGuiWindowFlags_NoSavedSettings);
-        ImGui::TextUnformatted("lorem ipsum");
-        ImGui::End();
-
-        ImGui::Begin("Window B", NULL, ImGuiWindowFlags_NoSavedSettings);
-        ImGui::TextUnformatted("lorem ipsum");
-        ImGui::End();
-    };
+    t->SetUserDataType<DockingTestsGenericVars>([](auto& vars) { vars.SetShowWindows(2, true); });
+    t->GuiFunc = DockingTestsGenericGuiFunc;
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
-        ImGuiWindow* windows[] = { ctx->GetWindowByRef("Window A"), ctx->GetWindowByRef("Window B") };
+        ImGuiWindow* windows[] = { ctx->GetWindowByRef("AAA"), ctx->GetWindowByRef("BBB") };
 
         for (int i = 0; i < IM_ARRAYSIZE(windows); i++)
         {
             ImGuiWindow* window = windows[i];
-            ctx->DockClear("Window B", "Window A", NULL);
-            ctx->DockInto("Window B", "Window A", ImGuiDir_Right);
+            ctx->DockClear("BBB", "AAA", NULL);
+            ctx->DockInto("BBB", "AAA", ImGuiDir_Right);
 
             // Two way split. Ensure window is docked and tab bar is visible.
             IM_CHECK(window->DockIsActive);
@@ -657,13 +648,12 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
 
     // ## Test whether docked window tabs are in right order.
     t = IM_REGISTER_TEST(e, "docking", "docking_tab_order");
-    t->SetUserDataType<DockingTestsGenericVars>();
+    t->SetUserDataType<DockingTestsGenericVars>([](auto& vars) { vars.SetShowWindows(3, true); });
     t->GuiFunc = DockingTestsGenericGuiFunc;
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         ImGuiContext& g = *ctx->UiContext;
         DockingTestsGenericVars& vars = ctx->GetUserData<DockingTestsGenericVars>();
-        vars.ShowWindow[0] = vars.ShowWindow[1] = vars.ShowWindow[2] = true;
 
         for (int step = 0; step < 3; step++)
         {
@@ -731,13 +721,15 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
 
     // ## Test tab order related to edge case with 1 window node which don't have a tab bar
     t = IM_REGISTER_TEST(e, "docking", "docking_tab_order_hidden_tabbar");
-    t->SetUserDataType<DockingTestsGenericVars>();
+    t->SetUserDataType<DockingTestsGenericVars>([](auto& vars)
+    {
+        vars.ShowDockspace = false;
+        vars.SetShowWindows(4, true);
+    });
     t->GuiFunc = DockingTestsGenericGuiFunc;
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         DockingTestsGenericVars& vars = ctx->GetUserData<DockingTestsGenericVars>();
-        vars.ShowDockspace = false;
-        vars.ShowWindow[0] = vars.ShowWindow[1] = vars.ShowWindow[2] = vars.ShowWindow[3] = true;
         ctx->DockClear("AAA", "BBB", "CCC", "DDD", NULL);
         ctx->DockInto("BBB", "AAA");
         ctx->DockInto("DDD", "CCC");
@@ -761,13 +753,14 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
 
     // Test focus order restore (#2304)
     t = IM_REGISTER_TEST(e, "docking", "docking_tab_focus_restore");
-    t->SetUserDataType<DockingTestsGenericVars>();
+    t->SetUserDataType<DockingTestsGenericVars>([](auto& vars) {
+        vars.SetShowWindows(4, true);
+    });
     t->GuiFunc = DockingTestsGenericGuiFunc;
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         ImGuiContext& g = *ctx->UiContext;
         DockingTestsGenericVars& vars = ctx->GetUserData<DockingTestsGenericVars>();
-        vars.ShowWindow[0] = vars.ShowWindow[1] = vars.ShowWindow[2] = vars.ShowWindow[3] = true;
 
         for (int step = 0; step < 3; step++)
         {
@@ -808,14 +801,14 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
             const float w = tab_bar->WidthAllTabs;
 
             // Hide all tabs and show them together on the same frame.
-            vars.ShowWindow[0] = vars.ShowWindow[1] = vars.ShowWindow[2] = false;
+            vars.SetShowWindows(3, false);
             ctx->Yield();
             IM_CHECK(window_aaa->Active == false);
             IM_CHECK(window_bbb->Active == false);
             IM_CHECK(window_ccc->Active == false);
             ctx->Yield();
 
-            vars.ShowWindow[0] = vars.ShowWindow[1] = vars.ShowWindow[2] = true;
+            vars.SetShowWindows(3, true);
             ctx->Yield();
             IM_CHECK(window_aaa->Active == true);
             IM_CHECK(window_bbb->Active == true);
@@ -1023,55 +1016,23 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
 
     // ## Test preserving docking information of closed windows. (#3716)
     t = IM_REGISTER_TEST(e, "docking", "docking_preserve_docking_info");
-    t->SetUserDataType<DockingTestsGenericVars>();
-    t->GuiFunc = [](ImGuiTestContext* ctx)
-    {
-        DockingTestsGenericVars& vars = ctx->GetUserData<DockingTestsGenericVars>();
-
-        ImGui::SetNextWindowSize(ImVec2(500,500), ImGuiCond_Appearing);
-        ImGui::Begin("Host", NULL, ImGuiWindowFlags_NoSavedSettings);
-        ImGui::Checkbox("1", &vars.ShowWindow[1]); ImGui::SameLine();
-        ImGui::Checkbox("2", &vars.ShowWindow[2]); ImGui::SameLine();
-        ImGui::Checkbox("3", &vars.ShowWindow[3]);
-        vars.DockSpaceID = ImGui::DockSpace(ImGui::GetID("Dockspace"));
-        ImGui::End();
-
-        if (vars.ShowWindow[1])
-        {
-            ImGui::SetNextWindowSize(ImVec2(300.0f, 200.0f), ImGuiCond_Appearing);
-            ImGui::Begin("Window 1", &vars.ShowWindow[1], ImGuiWindowFlags_NoSavedSettings);
-            ImGui::Text("This is window 1");
-            ImGui::End();
-        }
-        if (vars.ShowWindow[2])
-        {
-            ImGui::SetNextWindowSize(ImVec2(300.0f, 200.0f), ImGuiCond_Appearing);
-            ImGui::Begin("Window 2", &vars.ShowWindow[2], ImGuiWindowFlags_NoSavedSettings);
-            ImGui::Text("This is window 2");
-            ImGui::End();
-        }
-        if (vars.ShowWindow[3])
-        {
-            ImGui::SetNextWindowSize(ImVec2(300.0f, 200.0f), ImGuiCond_Appearing);
-            ImGui::Begin("Window 3", &vars.ShowWindow[3], ImGuiWindowFlags_NoSavedSettings);
-            ImGui::Text("This is window 3");
-            ImGui::End();
-        }
-    };
+    t->SetUserDataType<DockingTestsGenericVars>([](auto& vars) {
+        vars.SetShowWindows(3, true);
+    });
+    t->GuiFunc = DockingTestsGenericGuiFunc;
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         DockingTestsGenericVars& vars = ctx->GetUserData<DockingTestsGenericVars>();
-        vars.ShowWindow[0] = vars.ShowWindow[1] = vars.ShowWindow[2] = vars.ShowWindow[3] = true;
 
-        ImGuiWindow* window1 = ctx->GetWindowByRef("Window 1");
-        ImGuiWindow* window2 = ctx->GetWindowByRef("Window 2");
-        ctx->DockClear("Window 1", "Window 2", "Window 3", NULL);
-        ctx->DockInto("Window 1", vars.DockSpaceID, ImGuiDir_Left);
-        ctx->DockInto("Window 2", "Window 1");
-        vars.ShowWindow[1] = false;
+        ImGuiWindow* window1 = ctx->GetWindowByRef("AAA");
+        ImGuiWindow* window2 = ctx->GetWindowByRef("BBB");
+        ctx->DockClear("AAA", "BBB", "CCC", NULL);
+        ctx->DockInto("AAA", vars.DockSpaceID, ImGuiDir_Left);
+        ctx->DockInto("BBB", "AAA");
+        vars.ShowWindow[0] = false;
         ctx->Yield(3);
-        ctx->DockInto("Window 3", "Window 2", ImGuiDir_Down);
-        vars.ShowWindow[1] = true;
+        ctx->DockInto("CCC", "BBB", ImGuiDir_Down);
+        vars.ShowWindow[0] = true;
         ctx->Yield(3);
         IM_CHECK(window1->DockId != 0);
         IM_CHECK(window1->DockId == window2->DockId);
@@ -1079,18 +1040,10 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
 
     // ## Test docked window focusing from the menu.
     t = IM_REGISTER_TEST(e, "docking", "docking_focus_from_menu");
-    t->GuiFunc = [](ImGuiTestContext* ctx)
-    {
-        ImGui::SetNextWindowSize(ImVec2(200, 100));
-        ImGui::Begin("AAA", NULL, ImGuiWindowFlags_NoSavedSettings);
-        ImGui::End();
-        ImGui::SetNextWindowSize(ImVec2(200, 100));
-        ImGui::Begin("BBB", NULL, ImGuiWindowFlags_NoSavedSettings);
-        ImGui::End();
-        ImGui::SetNextWindowSize(ImVec2(200, 100));
-        ImGui::Begin("CCC", NULL, ImGuiWindowFlags_NoSavedSettings);
-        ImGui::End();
-    };
+    t->SetUserDataType<DockingTestsGenericVars>([](auto& vars) {
+        vars.SetShowWindows(3, true);
+    });
+    t->GuiFunc = DockingTestsGenericGuiFunc;
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         ImGuiContext& g = *ctx->UiContext;
@@ -1111,15 +1064,10 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
     // ## Test docked window focusing.
     t = IM_REGISTER_TEST(e, "docking", "docking_focus_from_host");
     t->SetUserDataType<DockingTestsGenericVars>();
-    t->GuiFunc = [](ImGuiTestContext* ctx)
-    {
-        ImGui::SetNextWindowSize(ImVec2(200, 100));
-        ImGui::Begin("AAA", NULL, ImGuiWindowFlags_NoSavedSettings);
-        ImGui::End();
-        ImGui::SetNextWindowSize(ImVec2(200, 100));
-        ImGui::Begin("BBB", NULL, ImGuiWindowFlags_NoSavedSettings);
-        ImGui::End();
-    };
+    t->SetUserDataType<DockingTestsGenericVars>([](auto& vars) {
+        vars.SetShowWindows(2, true);
+    });
+    t->GuiFunc = DockingTestsGenericGuiFunc;
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         ImGuiContext& g = *ctx->UiContext;
@@ -1177,12 +1125,11 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
 
     // ## Test restoring dock tab state in independent and split windows.
     t = IM_REGISTER_TEST(e, "docking", "docking_tab_state");
+    t->SetUserDataType<DockingTestsGenericVars>([](auto& vars) {
+        vars.SetShowWindows(6, true);
+    });
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
-        bool& hide_all = ctx->GenericVars.Bool1;
-        if (hide_all)
-            return;
-
         // FIXME-DOCKING
 #if IMGUI_BROKEN_TESTS
         // Very interestingly, without the DockMultiClear() and with io.ConfigDockingAlwaysTabBar=true,
@@ -1193,29 +1140,11 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
         if (ctx->IsFirstGuiFrame())
             ctx->DockClear("AAA", "BBB", "CCC", "DDD", "EEE", "FFF", NULL);
 
-        ImVec2 size = ImVec2(300, 150);
-        ImGui::SetNextWindowSize(size);
-        ImGui::Begin("AAA", NULL, ImGuiWindowFlags_NoSavedSettings);
-        ImGui::End();
-        ImGui::SetNextWindowSize(size);
-        ImGui::Begin("BBB", NULL, ImGuiWindowFlags_NoSavedSettings);
-        ImGui::End();
-        ImGui::SetNextWindowSize(size);
-        ImGui::Begin("CCC", NULL, ImGuiWindowFlags_NoSavedSettings);
-        ImGui::End();
-        ImGui::SetNextWindowSize(size);
-        ImGui::Begin("DDD", NULL, ImGuiWindowFlags_NoSavedSettings);
-        ImGui::End();
-        ImGui::SetNextWindowSize(size);
-        ImGui::Begin("EEE", NULL, ImGuiWindowFlags_NoSavedSettings);
-        ImGui::End();
-        ImGui::SetNextWindowSize(size);
-        ImGui::Begin("FFF", NULL, ImGuiWindowFlags_NoSavedSettings);
-        ImGui::End();
+        DockingTestsGenericGuiFunc(ctx);
     };
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
-        bool& hide_all = ctx->GenericVars.Bool1;
+        DockingTestsGenericVars& vars = ctx->GetUserData<DockingTestsGenericVars>();
         ImGuiWindow* window_aaa = ctx->GetWindowByRef("AAA");
         ImGuiWindow* window_ddd = ctx->GetWindowByRef("DDD");
 
@@ -1251,9 +1180,9 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
             IM_CHECK(tab_bar_ddd->VisibleTabId == tab_bar_ddd->Tabs[1].ID);
 
             // Hide and show all windows.
-            hide_all = true;
+            vars.SetShowWindows(7, false);
             ctx->Yield(2);
-            hide_all = false;
+            vars.SetShowWindows(7, true);
             ctx->Yield(2);
 
             // Verify tab order is preserved.
@@ -1273,26 +1202,21 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
 
     // ## Test dock node retention when second window in two-way split is undocked.
     t = IM_REGISTER_TEST(e, "docking", "docking_undock_simple");
-    t->GuiFunc = [](ImGuiTestContext* ctx)
-    {
-        for (int i = 0; i < 2; i++)
-        {
-            ImGui::Begin(Str16f("Window %d", i).c_str(), NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
-            ImGui::TextUnformatted("lorem ipsum");
-            ImGui::End();
-        }
-    };
+    t->SetUserDataType<DockingTestsGenericVars>([](auto& vars) {
+        vars.SetShowWindows(2, true);
+    });
+    t->GuiFunc = DockingTestsGenericGuiFunc;
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
-        ImGuiWindow* window0 = ctx->GetWindowByRef("Window 0");
-        ImGuiWindow* window1 = ctx->GetWindowByRef("Window 1");
-        ctx->DockClear("Window 0", "Window 1", NULL);
-        ctx->DockInto("Window 1", "Window 0", ImGuiDir_Right);
+        ImGuiWindow* window0 = ctx->GetWindowByRef("AAA");
+        ImGuiWindow* window1 = ctx->GetWindowByRef("BBB");
+        ctx->DockClear("AAA", "BBB", NULL);
+        ctx->DockInto("BBB", "AAA", ImGuiDir_Right);
         IM_CHECK_NE(window0->DockNode, (ImGuiDockNode*)NULL);
         IM_CHECK_NE(window1->DockNode, (ImGuiDockNode*)NULL);
         ImGuiDockNode* original_node = window0->DockNode->ParentNode;
-        ctx->UndockWindow("Window 1");
-        IM_CHECK_EQ(window0->DockNode, original_node);          // Undocking Window 1 keeps a parent dock node in Window 0
+        ctx->UndockWindow("BBB");
+        IM_CHECK_EQ(window0->DockNode, original_node);          // Undocking BBB keeps a parent dock node in AAA
         IM_CHECK(ctx->WindowIsUndockedOrStandalone(window1));   // Undocked window
     };
 
@@ -1325,36 +1249,27 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
 
     // ## Test that undocking a whole _node_ doesn't lose/reset size
     t = IM_REGISTER_TEST(e, "docking", "docking_undock_from_dockspace_size");
+    t->SetUserDataType<DockingTestsGenericVars>([](auto& vars) {
+        vars.SetShowWindows(2, true);
+    });
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
-        ImGuiID dockspace_id = ctx->GetID("/Test Window/Dockspace");
         if (ctx->IsFirstTestFrame())
         {
+            ImGuiID dockspace_id = ctx->GetID("/Test Window/dockspace");
             ImGui::DockBuilderRemoveNode(dockspace_id);
             ImGui::DockBuilderAddNode(dockspace_id, ImGuiDockNodeFlags_DockSpace);
-            ImGui::DockBuilderDockWindow("AAAA", dockspace_id);
-            ImGui::DockBuilderDockWindow("BBBB", dockspace_id);
+            ImGui::DockBuilderDockWindow("AAA", dockspace_id);
+            ImGui::DockBuilderDockWindow("BBB", dockspace_id);
         }
-
-        ImGui::SetNextWindowSize(ImVec2(500, 500));
-        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
-        ImGui::DockSpace(dockspace_id);
-        ImGui::End();
-
-        ImGui::Begin("AAAA", NULL, ImGuiWindowFlags_NoSavedSettings);
-        ImGui::Text("This is AAAA");
-        ImGui::End();
-
-        ImGui::Begin("BBBB", NULL, ImGuiWindowFlags_NoSavedSettings);
-        ImGui::Text("This is BBBB");
-        ImGui::End();
+        DockingTestsGenericGuiFunc(ctx);
     };
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
-        ImGuiID dockspace_id = ctx->GetID("/Test Window/Dockspace");
+        ImGuiID dockspace_id = ctx->GetID("/Test Window/dockspace");
 
-        ImGuiWindow* window_a = ImGui::FindWindowByName("AAAA");
-        ImGuiWindow* window_b = ImGui::FindWindowByName("BBBB");
+        ImGuiWindow* window_a = ImGui::FindWindowByName("AAA");
+        ImGuiWindow* window_b = ImGui::FindWindowByName("BBB");
         ImVec2 window_a_size_old = window_a->Size;
         ImVec2 window_b_size_old = window_b->Size;
         IM_CHECK_EQ(window_a->DockNode->ID, dockspace_id);
