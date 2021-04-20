@@ -1133,12 +1133,13 @@ static void ImGuiTestEngine_RunTest(ImGuiTestEngine* engine, ImGuiTestContext* c
     ctx->GenericVars.Clear();
     test->TestLog.Clear();
 
+    // Back entire IO and style. Allows tests modifying them and not caring about restoring state.
+    ImGuiIO backup_io = ctx->UiContext->IO;
+    ImGuiStyle backup_style = ctx->UiContext->Style;
+    memset(backup_io.MouseDown, 0, sizeof(backup_io.MouseDown));
+    memset(backup_io.KeysDown, 0, sizeof(backup_io.KeysDown));
+
     // Setup buffered clipboard
-    typedef const char* (*ImGuiGetClipboardTextFn)(void* user_data);
-    typedef void        (*ImGuiSetClipboardTextFn)(void* user_data, const char* text);
-    ImGuiGetClipboardTextFn backup_get_clipboard_text_fn = ctx->UiContext->IO.GetClipboardTextFn;
-    ImGuiSetClipboardTextFn backup_set_clipboard_text_fn = ctx->UiContext->IO.SetClipboardTextFn;
-    void*                   backup_clipboard_user_data   = ctx->UiContext->IO.ClipboardUserData;
     ctx->UiContext->IO.GetClipboardTextFn = [](void* user_data) -> const char*
     {
         ImGuiTestContext* ctx = (ImGuiTestContext*)user_data;
@@ -1211,9 +1212,9 @@ static void ImGuiTestEngine_RunTest(ImGuiTestEngine* engine, ImGuiTestContext* c
             ctx->UiContext->IO.MousePos = engine->Inputs.MousePosValue;
 
             // Restore backend clipboard functions
-            ctx->UiContext->IO.GetClipboardTextFn = backup_get_clipboard_text_fn;
-            ctx->UiContext->IO.SetClipboardTextFn = backup_set_clipboard_text_fn;
-            ctx->UiContext->IO.ClipboardUserData = backup_clipboard_user_data;
+            ctx->UiContext->IO.GetClipboardTextFn = backup_io.GetClipboardTextFn;
+            ctx->UiContext->IO.SetClipboardTextFn = backup_io.SetClipboardTextFn;
+            ctx->UiContext->IO.ClipboardUserData = backup_io.ClipboardUserData;
 
             // Unhide foreign windows (may be useful sometimes to inspect GuiFunc state... sometimes not)
             //ctx->ForeignWindowsUnhideAll();
@@ -1257,10 +1258,9 @@ static void ImGuiTestEngine_RunTest(ImGuiTestEngine* engine, ImGuiTestContext* c
     // Restore active func
     ctx->ActiveFunc = backup_active_func;
 
-    // Restore backend clipboard functions
-    ctx->UiContext->IO.GetClipboardTextFn = backup_get_clipboard_text_fn;
-    ctx->UiContext->IO.SetClipboardTextFn = backup_set_clipboard_text_fn;
-    ctx->UiContext->IO.ClipboardUserData = backup_clipboard_user_data;
+    // Restore backed up IO and style
+    ctx->UiContext->IO = backup_io;
+    ctx->UiContext->Style = backup_style;
 }
 
 //-------------------------------------------------------------------------

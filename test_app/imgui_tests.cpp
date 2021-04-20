@@ -1612,9 +1612,7 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
             IM_CHECK(!window->DrawList->CmdBuffer.empty());
         }
 
-        float backup_timer = 0.0f;
-        ImSwap(ctx->UiContext->IO.ConfigMemoryCompactTimer, backup_timer);
-
+        ctx->UiContext->IO.ConfigMemoryCompactTimer = 0.0f;
         ctx->Yield(3); // Give time to perform GC
         ctx->LogDebug("Check GC-ed state");
         for (int i = 0; i < 3; i++)
@@ -1624,7 +1622,6 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
             IM_CHECK(window->IDStack.empty());
             IM_CHECK(window->DrawList->CmdBuffer.empty());
         }
-        ImSwap(ctx->UiContext->IO.ConfigMemoryCompactTimer, backup_timer);
 
         // Perform an additional fuller GC
         ctx->UiContext->GcCompactAll = true;
@@ -3143,8 +3140,6 @@ void RegisterTests_Capture(ImGuiTestEngine* e)
     {
         ImGuiIO& io = ImGui::GetIO();
         ImGuiStyle& style = ImGui::GetStyle();
-        const ImGuiStyle backup_style = style;
-        const bool backup_cursor_blink = io.ConfigInputTextCursorBlink;
 
         // Setup style
         // FIXME-TESTS: Ideally we'd want to be able to manipulate fonts
@@ -3181,10 +3176,6 @@ void RegisterTests_Capture(ImGuiTestEngine* e)
             ImGui::End();
         }
         ImGui::PopFont();
-
-        // Restore style
-        style = backup_style;
-        io.ConfigInputTextCursorBlink = backup_cursor_blink;
     };
     t->TestFunc = [](ImGuiTestContext* ctx)
     {

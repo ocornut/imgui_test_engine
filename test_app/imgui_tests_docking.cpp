@@ -90,7 +90,7 @@ static void DockingTestsGenericGuiFunc(ImGuiTestContext* ctx)
             ImGui::Text("ID = %08X, DockID = %08X", ImGui::GetCurrentWindow()->ID, ImGui::GetWindowDockID());
             ImGui::End();
         }
-};
+}
 
 static inline bool operator==(const ImVec2& lhs, const ImVec2& rhs) { return lhs.x == rhs.x && lhs.y == rhs.y; }    // for IM_CHECK_EQ()
 #endif
@@ -124,7 +124,6 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         ImGuiIO& io = ImGui::GetIO();
-        const bool backup_cfg_docking_always_tab_bar = io.ConfigDockingAlwaysTabBar; // FIXME-TESTS: Abstract that as a helper (e.g test case iterator)
         for (int test_case_n = 0; test_case_n < 2; test_case_n++)
         {
             // FIXME-TESTS: Tests doesn't work if already docked
@@ -201,7 +200,6 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
                 IM_CHECK_EQ(window_bbbb->Pos.y, 200);
             }
         }
-        io.ConfigDockingAlwaysTabBar = backup_cfg_docking_always_tab_bar;
     };
 
     // ## Test basic use of DockBuilder api
@@ -376,7 +374,6 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
     };
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
-        bool backup_cfg = ctx->UiContext->IO.ConfigDockingAlwaysTabBar;
         ctx->LogDebug("ConfigDockingAlwaysTabBar = false");
         ctx->UiContext->IO.ConfigDockingAlwaysTabBar = false;
         ctx->Yield(4);
@@ -386,7 +383,6 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
         ctx->LogDebug("ConfigDockingAlwaysTabBar = false");
         ctx->UiContext->IO.ConfigDockingAlwaysTabBar = false;
         ctx->Yield(4);
-        ctx->UiContext->IO.ConfigDockingAlwaysTabBar = backup_cfg;
     };
 
     // ## Test setting focus on a docked window, and setting focus on a specific item inside. (#2453)
