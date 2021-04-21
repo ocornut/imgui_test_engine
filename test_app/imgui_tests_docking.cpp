@@ -1,6 +1,13 @@
 // dear imgui
 // (tests: docking)
 
+// Test comment conventions:
+//   AAA, BBB               two windows docked in same node (same tab bar)
+//   AAA | BBB              two windows in a split dock node (vertical or horizontal).
+//   AAA + BBB              two separate floating windows.
+// [ AAA | BBB ]            two windows in a split dock node in a dockspace
+//   AAA, BBB | CCC + DDD   four windows, AAA and BBB are docked together the left side, CCC window on the right side of the split. DDD is independent floating window.
+
 #define _CRT_SECURE_NO_WARNINGS
 #include <limits.h>
 #include "imgui.h"
@@ -48,10 +55,24 @@ struct DockingTestsGenericVars
     }
 };
 
+static Str16 DockingTestsGetWindowName(int n)
+{
+    IM_ASSERT(n <= 26);
+    Str16 name;
+    name[0] = name[1] = name[2] = (char)('A' + n);
+    name[3] = 0;
+    return name;
+}
+
 static void DockingTestsGenericGuiFunc(ImGuiTestContext* ctx)
 {
     DockingTestsGenericVars& vars = ctx->GetUserData<DockingTestsGenericVars>();
     ImGui::SetNextWindowSize(ImVec2(200, 100), ImGuiCond_Appearing);
+
+    if (ctx->IsFirstGuiFrame())
+    {
+        ctx->DockClear("AAA", "BBB", "CCC", NULL);  // Fix SetNextWindowSize() on next test run. // FIXME-TESTS
+    }
 
     if (ctx->RunFlags & ImGuiTestRunFlags_GuiFuncOnly)
     {
@@ -66,11 +87,8 @@ static void DockingTestsGenericGuiFunc(ImGuiTestContext* ctx)
                 Str16f group_name("Group %d", group_n);
                 ImGui::Checkbox(group_name.c_str(), &vars.ShowWindowGroups[group_n]);
             }
-            char window_name[4];
-            window_name[0] = window_name[1] = window_name[2] = (char)('A' + n);
-            window_name[3] = 0;
             ImGui::SetCursorPosX(ImGui::GetCursorPosX() + 20);
-            ImGui::Checkbox(window_name, &vars.ShowWindow[n]);
+            ImGui::Checkbox(DockingTestsGetWindowName(n).c_str(), &vars.ShowWindow[n]);
         }
         ImGui::End();
     }
@@ -88,12 +106,9 @@ static void DockingTestsGenericGuiFunc(ImGuiTestContext* ctx)
         {
             ImGui::SetNextWindowSize(ImVec2(300.0f, 200.0f), ImGuiCond_Appearing);
 
-            char window_name[4];
-            window_name[0] = window_name[1] = window_name[2] = (char)('A' + n);
-            window_name[3] = 0;
-
-            ImGui::Begin(window_name, NULL, ImGuiWindowFlags_NoSavedSettings);
-            ImGui::Text("This is '%s'", window_name);
+            Str16 window_name = DockingTestsGetWindowName(n);
+            ImGui::Begin(window_name.c_str(), NULL, ImGuiWindowFlags_NoSavedSettings);
+            ImGui::Text("This is '%s'", window_name.c_str());
             ImGui::Text("ID = %08X, DockID = %08X", ImGui::GetCurrentWindow()->ID, ImGui::GetWindowDockID());
             ImGui::End();
         }
@@ -105,11 +120,6 @@ static inline bool operator==(const ImVec2& lhs, const ImVec2& rhs) { return lhs
 //-------------------------------------------------------------------------
 // Tests: Docking
 //-------------------------------------------------------------------------
-// Test comment conventions:
-// AAA | BBB - two windows in a split dock node (vertical or horizontal).
-// AAA + BBB - two separate floating windows.
-// AAA, BBB  - two windows docked as tabs.
-// AAA, BBB | CCC + DDD - AAA and BBB are docked as tabs on the left side, CCC window on the right side of the split. DDD is independent floating window.
 
 void RegisterTests_Docking(ImGuiTestEngine* e)
 {
@@ -1366,24 +1376,16 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
         ImGuiWindow* window_ccc = ctx->GetWindowByRef("CCC");
 
         // Test variants:
-        // AAA + BBB | CCC
+        // BBB | CCC
         // Hide BBB
         // Dock CCC into AAA (0) or dockspace (1)
         // Undock CCC (2, 3)
         // Show BBB
-        // Test results:
-        // 0 - BBB | AAA, CCC
-        // 1 - BBB | CCC in dockspace, right dockspace node is central
-        // 2 - BBB | CCC + AAA
-        // 3 - BBB | CCC + Dockspace
         for (int variant = 0; variant < 4; variant++)
         {
-#if IMGUI_BROKEN_TESTS
-            if (variant > 1)
-                continue;
-#endif
             ctx->Test->ArgVariant = variant;
-            vars.ShowDockspace = (variant % 2) != 0;
+            vars.ShowDockspace = (variant & 1) != 0;
+            vars.SetShowWindows(3, true);
             ctx->LogDebug("Test variant: %d", variant);
             ctx->DockClear("AAA", "BBB", "CCC", NULL);
             ctx->DockInto("BBB", "CCC", ImGuiDir_Left);                         // BBB | CCC
@@ -1400,70 +1402,66 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
 #endif
 
             // Undock CCC with hidden BBB.
-            if (variant > 1)
+            if (variant >= 2)
                 ctx->UndockWindow("CCC");
 
-            vars.ShowWindow[1] = true;                                          // Show BBB
+            // variant 0: (BBB) | AAA
+            // variant 1: [ (BBB) | CCC ]   node CCC is central
+            // variant 2: (BBB) | AAA + CCC
+            // variant 3: [ ]  + (BBB) | CCC  desirable but currently BBB is simply undocked
+            vars.ShowWindow[1] = true; // Show BBB
             ctx->Yield();
 
-            // Result: BBB | AAA, CCC
             ImGuiDockNode* root_node = NULL;
             switch (variant)
             {
             case 0:
-                IM_CHECK(window_aaa->RootWindowDockTree != NULL && window_aaa->RootWindowDockTree->DockNodeAsHost != NULL);
-                root_node = window_aaa->RootWindowDockTree->DockNodeAsHost;     // DockNode of AAA
+                // variant 0: (BBB) | AAA, CCC ----> BBB | AAA, CCC
+                root_node = ImGui::DockNodeGetRootNode(window_aaa->DockNode);
+                IM_CHECK_EQ(root_node->ChildNodes[0]->Windows.Size, 1);
+                IM_CHECK_EQ(root_node->ChildNodes[0]->ID, window_bbb->DockId);
+                IM_CHECK_EQ(root_node->ChildNodes[1]->Windows.Size, 2);
+                IM_CHECK_EQ(root_node->ChildNodes[1]->ID, window_aaa->DockId);
+                IM_CHECK_EQ(root_node->ChildNodes[1]->ID, window_ccc->DockId);
                 break;
             case 1:
-                root_node = ImGui::DockBuilderGetNode(dock_dest);               // DockNode of dockspace
+                // variant 1: [ (BBB) | CCC ] ----> [ BBB | CCC ]
+                root_node = ImGui::DockNodeGetRootNode(window_ccc->DockNode);
+                IM_CHECK(root_node->IsDockSpace());
+                IM_CHECK_EQ(root_node->ChildNodes[0]->Windows.Size, 1);
+                IM_CHECK_EQ(root_node->ChildNodes[0]->ID, window_bbb->DockId);
+                IM_CHECK_EQ(root_node->ChildNodes[1]->Windows.Size, 1);
+                IM_CHECK_EQ(root_node->ChildNodes[1]->ID, window_ccc->DockId);
+                IM_CHECK(root_node->ChildNodes[1]->IsCentralNode());
                 break;
             case 2:
-                IM_CHECK(window_aaa->RootWindowDockTree != NULL);               // AAA preserves it's dock node, but is docked alone there
-                IM_CHECK_EQ(window_aaa->RootWindowDockTree->DockNode->Windows.Size, 1);
-                IM_CHECK_EQ(window_aaa->RootWindowDockTree->DockNode->Windows[0], window_aaa);
-                IM_CHECK(window_ccc->RootWindowDockTree != NULL && window_ccc->RootWindowDockTree->DockNodeAsHost != NULL);
-                root_node = window_ccc->RootWindowDockTree->DockNodeAsHost;     // DockNode of CCC
+                // variant 2: (BBB) | AAA + CCC ----> BBB | AAA + CCC
+                root_node = ImGui::DockNodeGetRootNode(window_aaa->DockNode);
+                IM_CHECK_EQ(root_node->ChildNodes[0]->ID, window_bbb->DockId);
+                IM_CHECK_EQ(root_node->ChildNodes[1]->ID, window_aaa->DockId);
+                IM_CHECK_NE(root_node->ChildNodes[1]->ID, window_ccc->DockId);  // !=
                 break;
             case 3:
+                // variant 3: [ ]  + BBB | CCC  desirable but current [ BBB | ... ] + CCC
                 root_node = ImGui::DockBuilderGetNode(dock_dest);               // DockNode of dockspace is left empty
-                IM_CHECK(root_node->ChildNodes[0] == NULL);
-                IM_CHECK(root_node->ChildNodes[1] == NULL);
-                IM_CHECK(root_node->IsCentralNode());
-                root_node = window_ccc->RootWindowDockTree->DockNodeAsHost;     // DockNode of CCC
+                IM_CHECK(root_node->IsDockSpace());
+#if IMGUI_BROKEN_TESTS
+                // Expected
+                IM_CHECK(root_node->IsEmpty());
+                root_node = ImGui::DockNodeGetRootNode(window_ccc->DockNode);
+                IM_CHECK_EQ(root_node->ChildNodes[0]->Windows.Size, 1);
+                IM_CHECK_EQ(root_node->ChildNodes[0]->ID, window_bbb->DockId);
+                IM_CHECK_EQ(root_node->ChildNodes[1]->Windows.Size, 1);
+                IM_CHECK_EQ(root_node->ChildNodes[1]->ID, window_ccc->DockId);
+#else
+                // Current
+                IM_CHECK(root_node->ChildNodes[0] != NULL);
+                IM_CHECK(root_node->ChildNodes[0]->ID == window_bbb->DockId);
+                IM_CHECK(window_ccc->DockId == 0);
+#endif
                 break;
-            default:
-                IM_ASSERT(0);
-            }
-
-            IM_CHECK(root_node != NULL);
-            IM_CHECK(root_node->ChildNodes[0] != NULL);                         // BBB in the left split
-            IM_CHECK_EQ(root_node->ChildNodes[0]->Windows.Size, 1);
-            IM_CHECK_EQ(root_node->ChildNodes[0]->Windows[0], window_bbb);
-            IM_CHECK(root_node->ChildNodes[1] != NULL);
-            switch (variant)
-            {
-            case 0:
-                IM_CHECK_EQ(root_node->ChildNodes[1]->Windows.Size, 2);         // AAA and CCC in right split
-                IM_CHECK_EQ(root_node->ChildNodes[1]->Windows[0], window_aaa);
-                IM_CHECK_EQ(root_node->ChildNodes[1]->Windows[1], window_ccc);
-                break;
-            case 1:
-                IM_CHECK(root_node->ChildNodes[1]->IsCentralNode());            // Right node is central
-                IM_CHECK(!root_node->ChildNodes[0]->IsCentralNode());
-            case 3:
-                IM_CHECK_EQ(root_node->ChildNodes[1]->Windows.Size, 1);         // CCC in the right split of dockspace
-                IM_CHECK_EQ(root_node->ChildNodes[1]->Windows[0], window_ccc);
-                IM_CHECK(!root_node->IsCentralNode());                          // Central node is in the right split
-                break;
-            case 2:
-                IM_CHECK_EQ(root_node->ChildNodes[1]->Windows.Size, 1);         // CCC in right split
-                IM_CHECK_EQ(root_node->ChildNodes[1]->Windows[0], window_ccc);
-                break;
-            default:
-                IM_ASSERT(0);
             }
         }
-        ctx->DockClear("AAA", "BBB", "CCC", NULL);  // Fix SetNextWindowSize() on next test run. // FIXME-TESTS
     };
 #else
     IM_UNUSED(e);
