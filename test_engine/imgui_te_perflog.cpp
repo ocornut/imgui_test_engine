@@ -141,13 +141,13 @@ static int CompareEntryName(const ImGuiPerflogEntry& val, const void* data)
 static bool Date(const char* label, char* date, int date_len, bool valid)
 {
     ImGui::SetNextItemWidth(80.0f);
-    bool date_valid = IsDateValid(date) && valid/*strcmp(_FilterDateFrom, _FilterDateTo) <= 0*/;
+    bool date_valid = *date == 0 || (IsDateValid(date) && valid/*strcmp(_FilterDateFrom, _FilterDateTo) <= 0*/);
     if (!date_valid)
     {
         ImGui::PushStyleColor(ImGuiCol_Border, IM_COL32(255, 0, 0, 255));
         ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 1);
     }
-    bool date_changed = ImGui::InputText(label, date, date_len);
+    bool date_changed = ImGui::InputTextWithHint(label, "YYYY-MM-DD", date, date_len);
     if (!date_valid)
     {
         ImGui::PopStyleVar();
@@ -326,11 +326,11 @@ static ImRect ImPlotGetYTickRect(int t, int y = 0)
     ImPlotContext& gp = *GImPlot;
     ImPlotPlot& plot = *gp.CurrentPlot;
     ImRect result(1.0f, 1.0f, -1.0f, -1.0f);
-    if (gp.Y[y].Present && !ImHasFlag(plot.YAxis[y].Flags, ImPlotAxisFlags_NoTickLabels))
+    if (plot.YAxis[y].Present && !ImHasFlag(plot.YAxis[y].Flags, ImPlotAxisFlags_NoTickLabels))
     {
         const float x_start = gp.YAxisReference[y] + (y == 0 ? (-gp.Style.LabelPadding.x - gp.YTicks[y].Ticks[t].LabelSize.x) : gp.Style.LabelPadding.x);
         ImPlotTick *yt = &gp.YTicks[y].Ticks[t];
-        if (yt->ShowLabel && yt->PixelPos >= gp.BB_Plot.Min.y - 1 && yt->PixelPos <= gp.BB_Plot.Max.y + 1)
+        if (yt->ShowLabel && yt->PixelPos >= plot.PlotRect.Min.y - 1 && yt->PixelPos <= plot.PlotRect.Max.y + 1)
         {
             result.Min = ImVec2(x_start, yt->PixelPos - 0.5f * yt->LabelSize.y);
             result.Max = result.Min + ImGui::CalcTextSize(gp.YTicks[y].GetText(t));
@@ -439,9 +439,9 @@ void ImGuiPerfLog::_Rebuild()
         ImVector<int> counts;
         for (ImGuiPerflogEntry& entry : _CSVData)
         {
-            if (strcmp(entry.Date, _FilterDateFrom) < 0)
+            if (_FilterDateFrom[0] && strcmp(entry.Date, _FilterDateFrom) < 0)
                 continue;
-            if (strcmp(entry.Date, _FilterDateTo) > 0)
+            if (_FilterDateTo[0] && strcmp(entry.Date, _FilterDateTo) > 0)
                 continue;
 
             ImGuiID build_id = ImHashStr(entry.BuildType);
@@ -566,14 +566,19 @@ void ImGuiPerfLog::ShowUI(ImGuiTestEngine* engine)
     ImGui::TextUnformatted("Date:");
     ImGui::SameLine();
 
-    bool date_changed = Date("##date-from", _FilterDateFrom, IM_ARRAYSIZE(_FilterDateFrom), strcmp(_FilterDateFrom, _FilterDateTo) <= 0);
+    bool date_changed = Date("##date-from", _FilterDateFrom, IM_ARRAYSIZE(_FilterDateFrom), (strcmp(_FilterDateFrom, _FilterDateTo) <= 0 || !*_FilterDateTo));
     if (ImGui::IsItemHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Right))
         ImGui::OpenPopup("Date From Menu");
     ImGui::SameLine(0, 0.0f);
     ImGui::TextUnformatted("..");
     ImGui::SameLine(0, 0.0f);
-    date_changed |= Date("##date-to", _FilterDateTo, IM_ARRAYSIZE(_FilterDateTo), strcmp(_FilterDateFrom, _FilterDateTo) <= 0);
-    _Dirty = date_changed && IsDateValid(_FilterDateFrom) && IsDateValid(_FilterDateTo) && strcmp(_FilterDateFrom, _FilterDateTo) <= 0;
+    date_changed |= Date("##date-to", _FilterDateTo, IM_ARRAYSIZE(_FilterDateTo), (strcmp(_FilterDateFrom, _FilterDateTo) <= 0 || !*_FilterDateFrom));
+    if (date_changed)
+    {
+        _Dirty = (!_FilterDateFrom[0] || IsDateValid(_FilterDateFrom)) && (!_FilterDateTo[0] || IsDateValid(_FilterDateTo));
+        if (_FilterDateFrom[0] && _FilterDateTo[0])
+            _Dirty &= strcmp(_FilterDateFrom, _FilterDateTo) <= 0;
+    }
     if (ImGui::IsItemHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Right))
         ImGui::OpenPopup("Date To Menu");
     ImGui::SameLine();

@@ -42,8 +42,8 @@ struct ImGuiPerfLog
     int                         _BaselineBatchIndex = 0;        // Index of baseline build.
     Str64                       _Filter;                        // Context menu filtering substring.
     float                       _FilterInputWidth = -1;
-    char                        _FilterDateFrom[11];
-    char                        _FilterDateTo[11];
+    char                        _FilterDateFrom[11] = {};
+    char                        _FilterDateTo[11] = {};
     float                       _InfoTableHeight = 180.0f;
     bool                        _Dirty = true;                  // Flag indicating that data rebuild is necessary. It is only set when new perf data is added by running tests or "Combine by build info" option is toggled.
     int                         _AlignStress = 0;               // Alignment values for build info components, so they look aligned in the legend.
