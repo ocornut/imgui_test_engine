@@ -1365,17 +1365,32 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
         ImGuiWindow* window_bbb = ctx->GetWindowByRef("BBB");
         ImGuiWindow* window_ccc = ctx->GetWindowByRef("CCC");
 
-        for (int variant = 0; variant < 2; variant++)
+        // Test variants:
+        // AAA + BBB | CCC
+        // Hide BBB
+        // Dock CCC into AAA (0) or dockspace (1)
+        // Undock CCC (2, 3)
+        // Show BBB
+        // Test results:
+        // 0 - BBB | AAA, CCC
+        // 1 - BBB | CCC in dockspace, right dockspace node is central
+        // 2 - BBB | CCC + AAA
+        // 3 - BBB | CCC + Dockspace
+        for (int variant = 0; variant < 4; variant++)
         {
+#if IMGUI_BROKEN_TESTS
+            if (variant > 1)
+                continue;
+#endif
             ctx->Test->ArgVariant = variant;
-            vars.ShowDockspace = variant == 1;
+            vars.ShowDockspace = (variant % 2) != 0;
             ctx->LogDebug("Test variant: %d", variant);
             ctx->DockClear("AAA", "BBB", "CCC", NULL);
             ctx->DockInto("BBB", "CCC", ImGuiDir_Left);                         // BBB | CCC
             vars.ShowWindow[1] = false;                                         // Hide BBB
             ctx->Yield();
 
-            ImGuiID dock_dest = variant == 0 ? window_aaa->ID : vars.DockSpaceID;
+            ImGuiID dock_dest = vars.ShowDockspace ? vars.DockSpaceID : window_aaa->ID;
 #if IMGUI_BROKEN_TESTS
             // FIXME-TESTS: Docking from single visible tab (part of a hidden iceberg of node) and docking from collapse button do not behave the same the moment.
             // This currently will undock CCC away from the hidden nodes, which is incorrect but desirable as currently single-window-in-node have various regression compared to single-window.
@@ -1383,6 +1398,11 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
 #else
             ctx->DockInto(window_ccc->DockId, dock_dest);
 #endif
+
+            // Undock CCC with hidden BBB.
+            if (variant > 1)
+                ctx->UndockWindow("CCC");
+
             vars.ShowWindow[1] = true;                                          // Show BBB
             ctx->Yield();
 
@@ -1396,6 +1416,20 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
                 break;
             case 1:
                 root_node = ImGui::DockBuilderGetNode(dock_dest);               // DockNode of dockspace
+                break;
+            case 2:
+                IM_CHECK(window_aaa->RootWindowDockTree != NULL);               // AAA preserves it's dock node, but is docked alone there
+                IM_CHECK_EQ(window_aaa->RootWindowDockTree->DockNode->Windows.Size, 1);
+                IM_CHECK_EQ(window_aaa->RootWindowDockTree->DockNode->Windows[0], window_aaa);
+                IM_CHECK(window_ccc->RootWindowDockTree != NULL && window_ccc->RootWindowDockTree->DockNodeAsHost != NULL);
+                root_node = window_ccc->RootWindowDockTree->DockNodeAsHost;     // DockNode of CCC
+                break;
+            case 3:
+                root_node = ImGui::DockBuilderGetNode(dock_dest);               // DockNode of dockspace is left empty
+                IM_CHECK(root_node->ChildNodes[0] == NULL);
+                IM_CHECK(root_node->ChildNodes[1] == NULL);
+                IM_CHECK(root_node->IsCentralNode());
+                root_node = window_ccc->RootWindowDockTree->DockNodeAsHost;     // DockNode of CCC
                 break;
             default:
                 IM_ASSERT(0);
@@ -1414,12 +1448,19 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
                 IM_CHECK_EQ(root_node->ChildNodes[1]->Windows[1], window_ccc);
                 break;
             case 1:
+                IM_CHECK(root_node->ChildNodes[1]->IsCentralNode());            // Right node is central
+                IM_CHECK(!root_node->ChildNodes[0]->IsCentralNode());
+            case 3:
                 IM_CHECK_EQ(root_node->ChildNodes[1]->Windows.Size, 1);         // CCC in the right split of dockspace
                 IM_CHECK_EQ(root_node->ChildNodes[1]->Windows[0], window_ccc);
                 IM_CHECK(!root_node->IsCentralNode());                          // Central node is in the right split
-                IM_CHECK(!root_node->ChildNodes[0]->IsCentralNode());
-                IM_CHECK(root_node->ChildNodes[1]->IsCentralNode());
                 break;
+            case 2:
+                IM_CHECK_EQ(root_node->ChildNodes[1]->Windows.Size, 1);         // CCC in right split
+                IM_CHECK_EQ(root_node->ChildNodes[1]->Windows[0], window_ccc);
+                break;
+            default:
+                IM_ASSERT(0);
             }
         }
         ctx->DockClear("AAA", "BBB", "CCC", NULL);  // Fix SetNextWindowSize() on next test run. // FIXME-TESTS
