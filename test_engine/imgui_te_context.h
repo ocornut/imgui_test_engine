@@ -297,6 +297,7 @@ struct ImGuiTestContext
     ImGuiID     GetIDByInt(int n, ImGuiTestRef seed_ref);
     ImGuiID     GetIDByPtr(void* p);
     ImGuiID     GetIDByPtr(void* p, ImGuiTestRef seed_ref);
+    ImGuiID     GetChildWindowID(const char* parent_name, const char* child_name);
 
     // Misc
     ImVec2      GetMainViewportPos();

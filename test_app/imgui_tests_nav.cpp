@@ -584,6 +584,117 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
         }
     };
 
+    // ## Check setting default focus for multiple windows simultaneously.
+    t = IM_REGISTER_TEST(e, "nav", "nav_focus_default_multi");
+    t->SetUserDataType<DefaultFocusVars>();
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        DefaultFocusVars& vars = ctx->GetUserData<DefaultFocusVars>();
+        if (!vars.ShowWindow)
+            return;
+
+        for (int n = 0; n < 4; n++)
+        {
+            ImGui::Begin(Str16f("Window %d", n + 1).c_str(), NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
+            if (n < 3)
+            {
+                ImGui::Button("Button 1");
+                ImGui::Button("Button 2");
+                if (n >= 1)
+                    ImGui::SetItemDefaultFocus();
+                ImGui::Button("Button 3");
+            }
+            ImGui::End();
+        }
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        DefaultFocusVars& vars = ctx->GetUserData<DefaultFocusVars>();
+
+        ctx->NavEnableForWindow();
+        vars.ShowWindow = true;
+        ctx->Yield(2);
+#if IMGUI_BROKEN_TESTS
+        ImGuiWindow* window1 = ctx->GetWindowByRef("Window 1");
+        ImGuiWindow* window2 = ctx->GetWindowByRef("Window 2");
+        ImGuiWindow* window3 = ctx->GetWindowByRef("Window 3");
+        IM_CHECK_EQ_NO_RET(window1->NavLastIds[0], ctx->GetID("Window 1/Button 1"));
+        IM_CHECK_EQ_NO_RET(window2->NavLastIds[0], ctx->GetID("Window 2/Button 2"));
+        IM_CHECK_EQ_NO_RET(window3->NavLastIds[0], ctx->GetID("Window 3/Button 3"));
+#endif
+        ImGuiWindow* window4 = ctx->GetWindowByRef("Window 4");
+        IM_CHECK_EQ_NO_RET(window4->NavLastIds[0], (ImGuiID)0);
+    };
+
+    // ## Check usage of _NavFlattened flag
+    t = IM_REGISTER_TEST(e, "nav", "nav_flattened");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::Begin("Window 1", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
+
+        ImGui::BeginGroup();
+        ImGui::Button("Button 1");
+        ImGui::Button("Button 2");
+        ImGui::Button("Button 3");
+        ImGui::EndGroup();
+
+        ImGui::SameLine();
+        ImGui::BeginChild("Child 1", ImVec2(200, 200), false, ImGuiWindowFlags_NavFlattened);
+        ImGui::Button("Child 1 Button 1");
+        ImGui::Button("Child 1 Button 2");
+        ImGui::Button("Child 1 Button 3");
+        ImGui::EndChild();
+
+        ImGui::SameLine();
+        ImGui::BeginChild("Child 2", ImVec2(200, 200), false, ImGuiWindowFlags_NavFlattened);
+        ImGui::Button("Child 2 Button 1");
+        ImGui::Button("Child 2 Button 2");
+        ImGui::Button("Child 2 Button 3");
+        ImGui::EndChild();
+
+        ImGui::SameLine();
+        ImGui::BeginChild("Child 3", ImVec2(200, 200), false, ImGuiWindowFlags_NavFlattened);
+        ImGui::BeginChild("Child 3B", ImVec2(0, 0), false, ImGuiWindowFlags_NavFlattened);
+        ImGui::Button("Child 3B Button 1");
+        ImGui::Button("Child 3B Button 2");
+        ImGui::Button("Child 3B Button 3");
+        ImGui::EndChild();
+        ImGui::EndChild();
+
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiContext& g = *ctx->UiContext;
+        ctx->NavEnableForWindow();
+
+        // Navigating in child
+        IM_CHECK_EQ(g.NavId, ctx->GetID("Window 1/Button 1"));
+        ctx->KeyPressMap(ImGuiKey_DownArrow);
+        IM_CHECK_EQ(g.NavId, ctx->GetID("Window 1/Button 2"));
+        ctx->KeyPressMap(ImGuiKey_RightArrow);
+
+        // Parent -> Child
+        IM_CHECK_EQ(g.NavId, ctx->GetID("Child 1 Button 2", g.NavWindow->ID));
+        ctx->KeyPressMap(ImGuiKey_UpArrow);
+        IM_CHECK_EQ(g.NavId, ctx->GetID("Child 1 Button 1", g.NavWindow->ID));
+
+        // Child -> Parent
+        ctx->KeyPressMap(ImGuiKey_LeftArrow);
+        ctx->KeyPressMap(ImGuiKey_DownArrow);
+        IM_CHECK_EQ(g.NavId, ctx->GetID("Window 1/Button 2"));
+
+        // Parent -> Child -> Child
+        ctx->KeyPressMap(ImGuiKey_RightArrow);
+        ctx->KeyPressMap(ImGuiKey_RightArrow);
+        IM_CHECK_EQ(g.NavId, ctx->GetID("Child 2 Button 2", g.NavWindow->ID));
+
+        // Child -> nested Child
+        ctx->KeyPressMap(ImGuiKey_RightArrow);
+        IM_CHECK_EQ(g.NavId, ctx->GetID("Child 3B Button 2", g.NavWindow->ID));
+    };
+
+
     // ## Test navigation in popups that are appended across multiple calls to BeginPopup()/EndPopup(). (#3223)
     t = IM_REGISTER_TEST(e, "nav", "nav_appended_popup");
     t->GuiFunc = [](ImGuiTestContext* ctx)

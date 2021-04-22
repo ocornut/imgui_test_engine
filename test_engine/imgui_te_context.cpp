@@ -442,6 +442,14 @@ ImGuiID ImGuiTestContext::GetIDByPtr(void* p, ImGuiTestRef seed_ref)
     return ImHashData(&p, sizeof(p), GetID(seed_ref));
 }
 
+// Mimic logic of BeginChildEx(), ASSUMING child is output in root of parent
+ImGuiID ImGuiTestContext::GetChildWindowID(const char* parent_name, const char* child_name)
+{
+    ImGuiID child_item_id = GetID(child_name, parent_name);
+    ImGuiID child_window_id = GetID(Str128f("/%s\\/%s_%08X", parent_name, child_name, child_item_id).c_str());
+    return child_window_id;
+}
+
 ImGuiTestRef ImGuiTestContext::GetFocusWindowRef()
 {
     ImGuiContext& g = *UiContext;
