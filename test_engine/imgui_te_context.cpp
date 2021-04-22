@@ -1001,6 +1001,13 @@ void    ImGuiTestContext::NavInput()
     Yield();
 }
 
+void    ImGuiTestContext::NavEnableForWindow()
+{
+    // FIXME-TESTS: this shouldn't be required, currently used as a kludge
+    KeyPressMap(ImGuiKey_COUNT, ImGuiKeyModFlags_Alt);
+    KeyPressMap(ImGuiKey_COUNT, ImGuiKeyModFlags_Alt);
+}
+
 static ImVec2 GetMouseAimingPos(ImGuiTestItemInfo* item, ImGuiTestOpFlags flags)
 {
     ImRect r = item->RectClipped;
