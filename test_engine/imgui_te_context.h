@@ -175,6 +175,7 @@ struct ImGuiTestGenericVars
     ImGuiTableFlags         TableFlags;
     ImGuiOldColumnFlags     ColumnsFlags;
     ImGuiTestGenericStatus  Status;
+    bool                    ShowWindows;
     float                   Width;
     ImVec2                  Pos;
     ImVec2                  Size;

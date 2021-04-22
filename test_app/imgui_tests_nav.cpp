@@ -352,6 +352,38 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
         }
     };
 
+    // ## Test that CTRL+Tabbing into a window select its nav layer if it is the only one available
+    // FIXME: window appearing currently doesn't do the same
+    t = IM_REGISTER_TEST(e, "nav", "nav_ctrl_tab_auto_menu_layer");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::Begin("Window 1", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_MenuBar);
+        if (ImGui::BeginMenuBar())
+        {
+            if (ImGui::BeginMenu("File"))
+                ImGui::EndMenu();
+            if (ImGui::BeginMenu("Edit"))
+                ImGui::EndMenu();
+            ImGui::EndMenuBar();
+        }
+        ImGui::Text("Hello");
+        ImGui::End();
+
+        ImGui::Begin("Window 2", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImGui::Button("Hello");
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiContext& g = *ctx->UiContext;
+        ctx->WindowFocus("Window 1");
+        ctx->WindowFocus("Window 2");
+        ctx->KeyPressMap(ImGuiKey_Tab, ImGuiKeyModFlags_Ctrl);
+        IM_CHECK_EQ(g.NavLayer, ImGuiNavLayer_Menu);
+        ctx->KeyPressMap(ImGuiKey_Tab, ImGuiKeyModFlags_Ctrl);
+        IM_CHECK_EQ(g.NavLayer, ImGuiNavLayer_Main);
+    };
+
     // ## Test NavID restoration when focusing another window or STOPPING to submit another world
     t = IM_REGISTER_TEST(e, "nav", "nav_focus_restore_on_missing_window");
     t->GuiFunc = [](ImGuiTestContext* ctx)
@@ -538,21 +570,29 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
 
     // ## Check setting default focus.
     t = IM_REGISTER_TEST(e, "nav", "nav_focus_default");
-    struct DefaultFocusVars { bool ShowWindow = true; bool SetFocus = false; };
+    struct DefaultFocusVars { bool ShowWindows = true; bool SetFocus = false; bool MenuLayer = false; };
     t->SetUserDataType<DefaultFocusVars>();
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         DefaultFocusVars& vars = ctx->GetUserData<DefaultFocusVars>();
-        if (!vars.ShowWindow)
+        if (!vars.ShowWindows)
             return;
 
-        ImGui::SetNextWindowSize(ImVec2(100, 50));
-        ImGui::Begin("Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImGui::SetNextWindowSize(ImVec2(100, 100));
+        ImGui::Begin("Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_MenuBar);
+        if (ImGui::BeginMenuBar())
+        {
+            ImGui::MenuItem("Item 1");
+            ImGui::MenuItem("Item 2");
+            if (vars.SetFocus && vars.MenuLayer)
+                ImGui::SetItemDefaultFocus();
+            ImGui::EndMenuBar();
+        }
         static char buf[32];
-        ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 100);
+        ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 200);
         ImGui::InputText("##1", buf, IM_ARRAYSIZE(buf));
         ImGui::InputText("##2", buf, IM_ARRAYSIZE(buf));
-        if (vars.SetFocus)
+        if (vars.SetFocus && !vars.MenuLayer)
             ImGui::SetItemDefaultFocus();
         ImGui::End();
     };
@@ -566,9 +606,9 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
         // Variant 1: verify ##2 is scrolled into view and focused (SetItemDefaultFocus() is used).
         for (int variant = 0; variant < 2; variant++)
         {
-            ctx->LogDebug("Test variant: %s focus", variant ? "with" : "without");
+            ctx->LogDebug("Test variant: %s default focus override", variant ? "with" : "without");
             vars.SetFocus = (variant == 1);
-            vars.ShowWindow = true;
+            vars.ShowWindows = true;
             ctx->Yield(2);
             ctx->NavEnableForWindow();
             IM_CHECK(g.NavLayer == ImGuiNavLayer_Main);
@@ -579,9 +619,18 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
             ImGuiTestItemInfo* input = ctx->ItemInfo("Window/##2");
             IM_CHECK_EQ(window->InnerClipRect.Contains(input->RectFull), vars.SetFocus);
             ImGui::SetScrollY(window, 0);   // Reset scrolling.
-            vars.ShowWindow = false;
+            vars.ShowWindows = false;
             ctx->Yield(2);
         }
+
+#if IMGUI_BROKEN_TESTS
+        // Verify that SetItemDefaultFocus() works in menu layer
+        ctx->LogDebug("Test variant: in menu");
+        vars.ShowWindows = vars.SetFocus = vars.MenuLayer = true;
+        ctx->Yield(2);
+        IM_CHECK_EQ(g.NavId, ctx->GetID("Window/##menubar/Item 2"));
+        IM_CHECK(g.NavLayer == ImGuiNavLayer_Menu);
+#endif
     };
 
     // ## Check setting default focus for multiple windows simultaneously.
@@ -590,7 +639,7 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         DefaultFocusVars& vars = ctx->GetUserData<DefaultFocusVars>();
-        if (!vars.ShowWindow)
+        if (!vars.ShowWindows)
             return;
 
         for (int n = 0; n < 4; n++)
@@ -612,7 +661,7 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
         DefaultFocusVars& vars = ctx->GetUserData<DefaultFocusVars>();
 
         ctx->NavEnableForWindow();
-        vars.ShowWindow = true;
+        vars.ShowWindows = true;
         ctx->Yield(2);
 #if IMGUI_BROKEN_TESTS
         ImGuiWindow* window1 = ctx->GetWindowByRef("Window 1");
@@ -694,6 +743,63 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
         IM_CHECK_EQ(g.NavId, ctx->GetID("Child 3B Button 2", g.NavWindow->ID));
     };
 
+    // ## Check default focus with _NavFlattened flag
+    t = IM_REGISTER_TEST(e, "nav", "nav_flattened_focus_default");
+    t->SetUserDataType<DefaultFocusVars>();
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        DefaultFocusVars& vars = ctx->GetUserData<DefaultFocusVars>();
+        if (!vars.ShowWindows)
+            return;
+
+        ImGui::Begin("Window 1", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
+
+        ImGui::BeginChild("Child 0", ImVec2(200, 200), false, ImGuiWindowFlags_NavFlattened);
+        ImGui::Button("Child 0 Button 1");
+        ImGui::Button("Child 0 Button 2");
+        ImGui::Button("Child 0 Button 3");
+        ImGui::EndChild();
+
+        ImGui::SameLine();
+        ImGui::BeginGroup();
+        ImGui::Button("Button 1");
+        ImGui::Button("Button 2");
+        ImGui::Button("Button 3");
+        ImGui::EndGroup();
+
+        ImGui::SameLine();
+        ImGui::BeginChild("Child 1", ImVec2(200, 200), false, ImGuiWindowFlags_NavFlattened);
+        ImGui::Button("Child 1 Button 1");
+        ImGui::Button("Child 1 Button 2");
+        if (vars.SetFocus)
+            ImGui::SetItemDefaultFocus();
+        ImGui::Button("Child 1 Button 3");
+        ImGui::EndChild();
+
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiContext& g = *ctx->UiContext;
+        DefaultFocusVars& vars = ctx->GetUserData<DefaultFocusVars>();
+        ctx->NavEnableForWindow();
+
+        // Test implicit default init on flattened window
+        vars.ShowWindows = true;
+        vars.SetFocus = false;
+        ctx->Yield(2);
+        IM_CHECK_EQ(g.NavId, ctx->GetID("Child 0 Button 1", ctx->GetChildWindowID("Window 1", "Child 0")));
+        vars.ShowWindows = false;
+        ctx->Yield(2);
+
+        // Test using SetItemDefaultFocus() on flattened window
+        vars.ShowWindows = true;
+        vars.SetFocus = true;
+        ctx->Yield(2);
+#if IMGUI_VERSION_NUM >= 18205
+        IM_CHECK_EQ(g.NavId, ctx->GetID("Child 1 Button 2", ctx->GetChildWindowID("Window 1", "Child 1")));
+#endif
+    };
 
     // ## Test navigation in popups that are appended across multiple calls to BeginPopup()/EndPopup(). (#3223)
     t = IM_REGISTER_TEST(e, "nav", "nav_appended_popup");
