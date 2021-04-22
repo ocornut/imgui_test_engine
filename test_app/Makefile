@@ -14,7 +14,7 @@ SOURCES += ../shared/imgui_app.cpp ../shared/imgui_capture_tool.cpp ../shared/im
 OBJS = $(addsuffix .o, $(basename $(notdir $(SOURCES))))
 UNAME_S := $(shell uname -s)
 
-CXXFLAGS = -std=c++11
+CXXFLAGS = -std=c++14
 CFLAGS = -I../ -I$(IMGUI_DIR) -I$(IMGUI_DIR)/backends
 CFLAGS += -DIMGUI_USER_CONFIG=\"test_app/test_app_imconfig.h\"
 CFLAGS += -g -Wall -Wformat
