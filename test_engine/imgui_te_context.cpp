@@ -910,7 +910,7 @@ void    ImGuiTestContext::NavMoveTo(ImGuiTestRef ref)
     IM_ASSERT(g.NavMoveRequest == false);
     ImRect rect_rel = item->RectFull;
     rect_rel.Translate(ImVec2(-item->Window->Pos.x, -item->Window->Pos.y));
-    ImGui::SetNavID(item->ID, item->NavLayer, 0, rect_rel);
+    ImGui::SetNavID(item->ID, (ImGuiNavLayer)item->NavLayer, 0, rect_rel);
     g.NavDisableHighlight = false;
     g.NavDisableMouseHover = g.NavMousePosDirty = true;
     ImGui::ScrollToBringRectIntoView(item->Window, item->RectFull);

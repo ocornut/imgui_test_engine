@@ -43,33 +43,6 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
         IM_CHECK(g.NavWindow && g.NavWindow->ID == ctx->GetID("/Dear ImGui Demo"));
     };
 
-    // ## Test that CTRL+Tab steal active id (#2380)
-    t = IM_REGISTER_TEST(e, "nav", "nav_ctrl_tab_takes_activeid_away");
-    t->GuiFunc = [](ImGuiTestContext* ctx)
-    {
-        ImGuiTestGenericVars& vars = ctx->GenericVars;
-        ImGui::Begin("Test window 1", NULL, ImGuiWindowFlags_NoSavedSettings);
-        ImGui::Text("This is test window 1");
-        ImGui::InputText("InputText", vars.Str1, IM_ARRAYSIZE(vars.Str1));
-        ImGui::End();
-        ImGui::Begin("Test window 2", NULL, ImGuiWindowFlags_NoSavedSettings);
-        ImGui::Text("This is test window 2");
-        ImGui::InputText("InputText", vars.Str2, IM_ARRAYSIZE(vars.Str2));
-        ImGui::End();
-    };
-    t->TestFunc = [](ImGuiTestContext* ctx)
-    {
-        // FIXME-TESTS: Fails if window is resized too small
-        ctx->SetInputMode(ImGuiInputSource_Nav);
-        ctx->SetRef("Test window 1");
-        ctx->ItemInput("InputText");
-        ctx->KeyCharsAppend("123");
-        IM_CHECK_EQ(ctx->UiContext->ActiveId, ctx->GetID("InputText"));
-        ctx->KeyPressMap(ImGuiKey_Tab, ImGuiKeyModFlags_Ctrl);
-        IM_CHECK_EQ(ctx->UiContext->ActiveId, (ImGuiID)0);
-        ctx->Sleep(1.0f);
-    };
-
     // ## Test that ESC deactivate InputText without closing current Popup (#2321, #787)
     t = IM_REGISTER_TEST(e, "nav", "nav_esc_popup");
     t->GuiFunc = [](ImGuiTestContext* ctx)
@@ -120,10 +93,13 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
     };
 
     // ## Test that Alt toggle layer, test that AltGr doesn't.
+    // ## Test that toggling layer steals active id.
+    // ## Test that toggling layer is canceled by character typing (#370)
+    // All those are performed on child and popups windows as well.
     t = IM_REGISTER_TEST(e, "nav", "nav_menu_alt_key");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
-        auto window_content = []()
+        auto menu_content = [ctx]()
         {
             if (ImGui::BeginMenuBar())
             {
@@ -140,19 +116,34 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
                 ImGui::EndMenuBar();
             }
         };
+        auto window_content = [ctx]()
+        {
+            ImGui::InputText("Input", ctx->GenericVars.Str1, IM_ARRAYSIZE(ctx->GenericVars.Str1));
+            ctx->GenericVars.Id = ImGui::GetItemID();
+        };
 
         switch (ctx->GenericVars.Step)
         {
         case 0:
             ImGui::Begin("Test window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_MenuBar);
+            menu_content();
             window_content();
             ImGui::End();
             break;
         case 1:
+            ImGui::Begin("Test window", NULL, ImGuiWindowFlags_NoSavedSettings);
+            ImGui::BeginChild("Child", ImVec2(500, 500), true, ImGuiWindowFlags_MenuBar);
+            menu_content();
+            window_content();
+            ImGui::EndChild();
+            ImGui::End();
+            break;
+        case 2:
             if (!ImGui::IsPopupOpen("Test window"))
                 ImGui::OpenPopup("Test window");
             if (ImGui::BeginPopupModal("Test window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_MenuBar))
             {
+                menu_content();
                 window_content();
                 ImGui::EndPopup();
             }
@@ -165,14 +156,19 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
         ImGuiContext& g = *ctx->UiContext;
         IM_CHECK(g.IO.ConfigFlags & ImGuiConfigFlags_NavEnableKeyboard);
         //ctx->SetInputMode(ImGuiInputSource_Nav);
-        ctx->SetRef("Test window");
+        //ctx->SetRef("Test window");
 
-        for (int step = 0; step < 2; step++)
+        for (int step = 0; step < 3; step++)
         {
+            ctx->LogDebug("Step %d", step);
             ctx->GenericVars.Step = step; // Enable modal popup?
             ctx->Yield();
 
-            IM_CHECK(g.OpenPopupStack.Size == step);
+            const ImGuiID input_id = ctx->GenericVars.Id; // "Input"
+            ctx->NavMoveTo(input_id);
+            ctx->SetRef(g.NavWindow->ID);
+
+            IM_CHECK(g.OpenPopupStack.Size == (step == 2));
             IM_CHECK(g.NavLayer == ImGuiNavLayer_Main);
             ctx->KeyPressMap(ImGuiKey_COUNT, ImGuiKeyModFlags_Alt);
             IM_CHECK(g.NavLayer == ImGuiNavLayer_Menu);
@@ -187,8 +183,31 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
             ctx->KeyPressMap(ImGuiKey_COUNT, ImGuiKeyModFlags_Alt); // Verify nav id is reset for menu layer
             IM_CHECK(g.NavId == ctx->GetID("##menubar/File"));
             ctx->KeyPressMap(ImGuiKey_COUNT, ImGuiKeyModFlags_Alt);
+
+            // Test that toggling layer steals active id.
+#if IMGUI_VERSION_NUM >= 18206
+            ctx->NavMoveTo(input_id);
+            ctx->NavInput();
+            IM_CHECK_EQ(g.ActiveId, input_id);
+            ctx->KeyPressMap(ImGuiKey_COUNT, ImGuiKeyModFlags_Alt);
+            IM_CHECK_EQ(g.ActiveId, (ImGuiID)0);
+            IM_CHECK(g.NavLayer == ImGuiNavLayer_Menu);
+            ctx->KeyPressMap(ImGuiKey_Escape); // ESC to leave layer
+            IM_CHECK(g.NavLayer == ImGuiNavLayer_Main);
+            IM_CHECK(g.NavId == input_id);
+
+            // Test that toggling layer is canceled by character typing (#370)
+            ctx->NavMoveTo(input_id);
+            ctx->NavInput();
+            ctx->KeyDownMap(ImGuiKey_COUNT, ImGuiKeyModFlags_Alt);
+            ctx->KeyChars("ABC");
+            ctx->KeyUpMap(ImGuiKey_COUNT, ImGuiKeyModFlags_Alt);
+            IM_CHECK(g.NavLayer == ImGuiNavLayer_Main);
+            IM_CHECK_EQ(g.ActiveId, input_id);
+#endif
         }
     };
+
 
     // ## Test navigation home and end keys
     t = IM_REGISTER_TEST(e, "nav", "nav_home_end_keys");
@@ -382,6 +401,33 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
         IM_CHECK_EQ(g.NavLayer, ImGuiNavLayer_Menu);
         ctx->KeyPressMap(ImGuiKey_Tab, ImGuiKeyModFlags_Ctrl);
         IM_CHECK_EQ(g.NavLayer, ImGuiNavLayer_Main);
+    };
+
+    // ## Test that CTRL+Tab steal active id (#2380)
+    t = IM_REGISTER_TEST(e, "nav", "nav_ctrl_tab_takes_activeid_away");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiTestGenericVars& vars = ctx->GenericVars;
+        ImGui::Begin("Test window 1", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImGui::Text("This is test window 1");
+        ImGui::InputText("InputText", vars.Str1, IM_ARRAYSIZE(vars.Str1));
+        ImGui::End();
+        ImGui::Begin("Test window 2", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImGui::Text("This is test window 2");
+        ImGui::InputText("InputText", vars.Str2, IM_ARRAYSIZE(vars.Str2));
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        // FIXME-TESTS: Fails if window is resized too small
+        ctx->SetInputMode(ImGuiInputSource_Nav);
+        ctx->SetRef("Test window 1");
+        ctx->ItemInput("InputText");
+        ctx->KeyCharsAppend("123");
+        IM_CHECK_EQ(ctx->UiContext->ActiveId, ctx->GetID("InputText"));
+        ctx->KeyPressMap(ImGuiKey_Tab, ImGuiKeyModFlags_Ctrl);
+        IM_CHECK_EQ(ctx->UiContext->ActiveId, (ImGuiID)0);
+        ctx->Sleep(1.0f);
     };
 
     // ## Test NavID restoration when focusing another window or STOPPING to submit another world
