@@ -1052,6 +1052,59 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
         IM_CHECK(g.NavId == ctx->GetID("OK 0"));           // Focus very first item.
         IM_CHECK(window->Scroll.y == 0.0f);                // Window is scrolled to the start.
     };
+    // ## Test SetKeyboardFocusHere()
+    t = IM_REGISTER_TEST(e, "nav", "nav_tabbing_set_focus");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::SetNextWindowSize(ImVec2(300, 200), ImGuiCond_Appearing);
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+
+        ImGuiTestGenericVars& vars = ctx->GenericVars;
+        if (vars.Step == 1)
+        {
+            ImGui::SetKeyboardFocusHere();
+            ImGui::InputText("Text1", vars.Str1, IM_ARRAYSIZE(vars.Str1));
+            vars.Status.QuerySet();
+        }
+        else if (vars.Step == 2)
+        {
+            ImGui::InputText("Text2", vars.Str1, IM_ARRAYSIZE(vars.Str1));
+            vars.Status.QuerySet();
+            ImGui::SetKeyboardFocusHere(-1);
+        }
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiContext& g = *ctx->UiContext;
+        ctx->SetRef("Test Window");
+
+        // Test focusing next item with SetKeyboardFocusHere(0)
+        ImGuiTestGenericVars& vars = ctx->GenericVars;
+        vars.Step = 1;
+        ctx->Yield();
+        IM_CHECK(g.ActiveId == 0);
+        IM_CHECK(vars.Status.Activated == 0);
+        ctx->Yield();
+        IM_CHECK(g.ActiveId == ctx->GetID("Text1"));
+        IM_CHECK(vars.Status.Activated == 1);
+
+        // Test that ActiveID gets cleared when not alive
+        vars.Step = 0;
+        ctx->Yield();
+        ctx->Yield();
+        IM_CHECK(g.ActiveId == 0);
+
+        // Test focusing previous item with SetKeyboardFocusHere(-1)
+        vars.Step = 2;
+        ctx->Yield();
+        IM_CHECK(g.ActiveId == 0);
+        IM_CHECK(vars.Status.Activated == 0);
+        ctx->Yield();
+        IM_CHECK(g.ActiveId == ctx->GetID("Text2"));
+        IM_CHECK(vars.Status.Activated == 1);
+    };
+
 }
 
 //-------------------------------------------------------------------------
