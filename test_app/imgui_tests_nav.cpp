@@ -1052,6 +1052,95 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
         IM_CHECK(g.NavId == ctx->GetID("OK 0"));           // Focus very first item.
         IM_CHECK(window->Scroll.y == 0.0f);                // Window is scrolled to the start.
     };
+
+    // ## Test using TAB to cycle through items
+    t = IM_REGISTER_TEST(e, "nav", "nav_tabbing_basic");
+    struct TabbingVars { int Step = 0; int WidgetType = 0; float Floats[5] = { 0, 0, 0, 0, 0 }; char Bufs[256][5] = { "buf0", "buf1", "buf2", "buf3", "buf4" }; };
+    t->SetUserDataType<TabbingVars>();
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        auto& vars = ctx->GetUserData<TabbingVars>();
+
+        ImGuiWindowFlags flags = ImGuiWindowFlags_NoSavedSettings;
+        if (vars.Step == 0)
+            flags |= ImGuiWindowFlags_AlwaysAutoResize;
+        if (vars.Step == 1)
+            ImGui::SetNextWindowSize(ImVec2(100, 1)); // Ensure items are clipped
+        ImGui::Begin("Test Window", NULL, flags);
+
+        for (int n = 0; n < 10; n++)
+            ImGui::Text("Filler");
+
+        auto out_widget = [&vars](const char* label, int n)
+        {
+            if (vars.WidgetType == 0)
+                ImGui::InputText(label, vars.Bufs[n], IM_ARRAYSIZE(vars.Bufs[n]));
+            if (vars.WidgetType == 1)
+                ImGui::SliderFloat(label, &vars.Floats[n], 0.0f, 1.0f);
+            if (vars.WidgetType == 2)
+                ImGui::DragFloat(label, &vars.Floats[n], 0.1f, 0.0f, 1.0f);
+        };
+
+        out_widget("Item0", 0);
+        out_widget("Item1", 1);
+        if (vars.Step == 1)
+            IM_CHECK(!ImGui::IsItemVisible());
+        ImGui::PushAllowKeyboardFocus(false);
+        out_widget("Item2", 2);
+        ImGui::PopAllowKeyboardFocus();
+        out_widget("Item3", 3);
+        out_widget("Item4", 4);
+
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiContext& g = *ctx->UiContext;
+        auto& vars = ctx->GetUserData<TabbingVars>();
+
+        ctx->SetRef("Test Window");
+        for (vars.WidgetType = 0; vars.WidgetType < 3; vars.WidgetType++)
+            for (vars.Step = 0; vars.Step < 2; vars.Step++)
+            {
+#if !IMGUI_BROKEN_TESTS
+                if (vars.Step == 1) // Tabbing through clipped items is yet unsupported
+                    continue;
+#endif
+
+                // Step 0: Make sure tabbing works on unclipped widgets
+                // Step 1: Make sure tabbing works on clipped widgets
+                ctx->LogDebug("STEP %d WIDGET %d", vars.Step, vars.WidgetType);
+
+                IM_CHECK_EQ(g.ActiveId, (ImGuiID)0);
+#if IMGUI_VERSION_NUM >= 18208
+                ctx->KeyPressMap(ImGuiKey_Tab);
+                IM_CHECK_EQ(g.ActiveId, ctx->GetID("Item0"));
+#endif
+                ctx->KeyPressMap(ImGuiKey_Tab);
+                IM_CHECK_EQ(g.ActiveId, ctx->GetID("Item1"));
+                ctx->KeyPressMap(ImGuiKey_Tab);
+                IM_CHECK_EQ(g.ActiveId, ctx->GetID("Item3"));
+                ctx->KeyPressMap(ImGuiKey_Tab);
+                IM_CHECK_EQ(g.ActiveId, ctx->GetID("Item4"));
+
+                // Test wrapping
+                ctx->KeyPressMap(ImGuiKey_Tab);
+                IM_CHECK_EQ(g.ActiveId, ctx->GetID("Item0"));
+
+                // Test Shift+Tab
+                ctx->KeyPressMap(ImGuiKey_Tab, ImGuiKeyModFlags_Shift);
+                IM_CHECK_EQ(g.ActiveId, ctx->GetID("Item4"));
+                ctx->KeyPressMap(ImGuiKey_Tab, ImGuiKeyModFlags_Shift);
+                IM_CHECK_EQ(g.ActiveId, ctx->GetID("Item3"));
+                ctx->KeyPressMap(ImGuiKey_Tab, ImGuiKeyModFlags_Shift);
+                IM_CHECK_EQ(g.ActiveId, ctx->GetID("Item1"));
+                ctx->KeyPressMap(ImGuiKey_Tab, ImGuiKeyModFlags_Shift);
+                IM_CHECK_EQ(g.ActiveId, ctx->GetID("Item0"));
+
+                ctx->KeyPressMap(ImGuiKey_Escape);
+            }
+    };
+
     // ## Test SetKeyboardFocusHere()
     t = IM_REGISTER_TEST(e, "nav", "nav_tabbing_set_focus");
     t->GuiFunc = [](ImGuiTestContext* ctx)

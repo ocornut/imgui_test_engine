@@ -1364,23 +1364,39 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
-        IM_CHECK_EQ(ImGui::GetItemsFlags(), 0);
+        IM_CHECK_EQ(ImGui::GetItemFlags(), 0);
+
         ImGui::BeginChild("child1", ImVec2(100, 100));
-        IM_CHECK_EQ(ImGui::GetItemsFlags(), 0);
+        IM_CHECK_EQ(ImGui::GetItemFlags(), 0);
         ImGui::Button("enable button in child1");
         ImGui::EndChild();
+
         ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
         ImGui::Button("disabled button in parent");
-        IM_CHECK_EQ(ImGui::GetItemsFlags(), ImGuiItemFlags_Disabled);
+
+        IM_CHECK_EQ(ImGui::GetItemFlags(), ImGuiItemFlags_Disabled);
         ImGui::BeginChild("child1"); // Append
-        IM_CHECK_EQ(ImGui::GetItemsFlags(), ImGuiItemFlags_Disabled);
+        IM_CHECK_EQ(ImGui::GetItemFlags(), ImGuiItemFlags_Disabled);
         ImGui::Button("disabled button in child1");
         ImGui::EndChild();
+
         ImGui::BeginChild("child2", ImVec2(100, 100)); // New
-        IM_CHECK_EQ(ImGui::GetItemsFlags(), ImGuiItemFlags_Disabled);
+        IM_CHECK_EQ(ImGui::GetItemFlags(), ImGuiItemFlags_Disabled);
         ImGui::Button("disabled button in child2");
         ImGui::EndChild();
+
         ImGui::PopItemFlag();
+
+#if IMGUI_VERSION_NUM >= 18207
+        IM_CHECK_EQ(ImGui::GetItemFlags(), 0);
+        ImGui::Begin("Test Window 2", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
+        ImGui::End();
+        IM_CHECK_EQ(ImGui::GetItemFlags(), ImGuiItemFlags_Disabled);
+        ImGui::PopItemFlag();
+        IM_CHECK_EQ(ImGui::GetItemFlags(), 0);
+#endif
+
         ImGui::End();
     };
 
