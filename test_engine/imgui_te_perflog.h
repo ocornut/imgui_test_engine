@@ -9,7 +9,7 @@ struct ImGuiTestEngine;
 // [Internal] Perf log entry. Changes to this struct should be reflected in ImGuiTestContext::PerfCapture() and ImGuiTestEngine_Start().
 struct ImGuiPerflogEntry
 {
-    ImU64                       Timestamp;                      // Title of a particular batch of perflog entries.
+    ImU64                       Timestamp = 0;                  // Title of a particular batch of perflog entries.
     const char*                 Category = NULL;                // Name of category perf test is in.
     const char*                 TestName = NULL;                // Name of perf test.
     double                      DtDeltaMs = 0.0;                // Result of perf test.

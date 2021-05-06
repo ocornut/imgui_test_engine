@@ -52,6 +52,7 @@ static int IMGUI_CDECL PerflogComparerByTimestampAndTestName(const void* lhs, co
 static ImGuiPerfLog* PerfLogInstance = NULL;
 static int IMGUI_CDECL CompareWithSortSpecs(const void* lhs, const void* rhs)
 {
+    IM_ASSERT(PerfLogInstance != NULL);
     const ImGuiTableSortSpecs* sort_specs = PerfLogInstance->_InfoTableSortSpecs;
 
     for (int i = 0; i < sort_specs->SpecsCount; i++)
@@ -428,8 +429,8 @@ void ImGuiPerfLog::_Rebuild()
     ImGuiStorage& temp_set = _TempSet;
     temp_set.Data.resize(0);
     _Dirty = false;
-    _Data.clear();
-    _InfoTableSort.clear();
+    _Data.resize(0);
+    _InfoTableSort.resize(0);
     _InfoTableSortDirty = true;
 
     // FIXME: What if entries have a varying timestep?
@@ -482,9 +483,9 @@ void ImGuiPerfLog::_Rebuild()
         // Copy to a new buffer that we are going to modify.
         for (ImGuiPerflogEntry& entry : _CSVData)
         {
-            if (strcmp(entry.Date, _FilterDateFrom) < 0)
+            if (_FilterDateFrom[0] && strcmp(entry.Date, _FilterDateFrom) < 0)
                 continue;
-            if (strcmp(entry.Date, _FilterDateTo) > 0)
+            if (_FilterDateTo[0] && strcmp(entry.Date, _FilterDateTo) > 0)
                 continue;
             _Data.push_back(entry);
         }
@@ -1023,13 +1024,14 @@ void ImGuiPerfLog::ViewOnly(const char* perf_name)
 ImGuiPerflogEntry* ImGuiPerfLog::GetEntryByBatchIdx(int idx, const char* perf_name)
 {
     IM_ASSERT(idx < _Legend.Size);
-    ImGuiPerflogEntry* first = _Legend[idx];
+    ImGuiPerflogEntry* first = _Legend[idx];    // _Legend contains pointers to first entry in the batch.
+    ImGuiPerflogEntry* last = &_Data.back();    // Entries themselves are stored in _Data vector.
     if (perf_name == NULL)
         return first;
 
     // Find a specific perf test.
     int batch_size = 0;
-    for (ImGuiPerflogEntry* entry = first; entry->Timestamp == first->Timestamp; entry++, batch_size++);
+    for (ImGuiPerflogEntry* entry = first; entry <= last && entry->Timestamp == first->Timestamp; entry++, batch_size++);
     int test_idx = BinarySearch(first, 0, batch_size - 1, perf_name, CompareEntryName);
     if (test_idx < 0)
         return nullptr;
