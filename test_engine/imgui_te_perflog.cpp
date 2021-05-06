@@ -654,7 +654,7 @@ void ImGuiPerfLog::ShowUI(ImGuiTestEngine* engine)
     ImGui::SameLine();
     ImGui::Checkbox("Per Branch colors", &_PerBranchColors);
     if (ImGui::IsItemHovered())
-        ImGui::SetTooltip("Use one color per branch.");
+        ImGui::SetTooltip("Use one color per branch. Disables baseline comparisons!");
     ImGui::SameLine();
 
     if (ImGui::Button("Delete Data"))
@@ -807,9 +807,14 @@ void ImGuiPerfLog::ShowUI(ImGuiTestEngine* engine)
             display_Label.clear();
             PerflogFormatBuildInfo(this, &label, entry);
             display_Label.append(label.c_str());
+            ImGuiID label_id;
             if (_CombineByBuildInfo)
                 display_Label.appendf(Str16f(" (%%-%dd samples)", _AlignSamples).c_str(), entry->NumSamples);
-            display_Label.appendf("%s###%08X", _BaselineBatchIndex == batch_index ? " *" : "", entry->Timestamp);
+            if (!_CombineByBuildInfo && !_PerBranchColors)  // Use per-run hash when each run has unique color.
+                label_id = ImHashData(&entry->Timestamp, sizeof(entry->Timestamp));
+            else
+                label_id = ImHashStr(label.c_str());        // Otherwise using label hash allows them to collapse in the legend.
+            display_Label.appendf("%s###%08X", !_PerBranchColors && _BaselineBatchIndex == batch_index ? " *" : "", label_id);
             GetPlotPointData data;
             data.Shift = -h * bar_index + (float) (num_visible_builds - 1) * 0.5f * h;
             data.Perf = this;
@@ -820,7 +825,7 @@ void ImGuiPerfLog::ShowUI(ImGuiTestEngine* engine)
             // Set baseline.
             if (ImPlot::IsLegendEntryHovered(display_Label.c_str()))
             {
-                if (ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
+                if (ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left) && !_PerBranchColors)
                 {
                     _BaselineBatchIndex = batch_index;
                     _Dirty = true;
@@ -966,7 +971,7 @@ void ImGuiPerfLog::ShowUI(ImGuiTestEngine* engine)
 
                 // VS Baseline
                 ImGui::TableNextColumn();
-                ImGuiPerflogEntry* baseline_entry = GetEntryByBatchIdx(_BaselineBatchIndex, _Labels[label_index]->TestName);
+                ImGuiPerflogEntry* baseline_entry = _PerBranchColors ? NULL : GetEntryByBatchIdx(_BaselineBatchIndex, _Labels[label_index]->TestName);
                 if (baseline_entry == NULL)
                 {
                     ImGui::TextUnformatted("--");
