@@ -1259,6 +1259,7 @@ static void ImGuiTestEngine_RunTest(ImGuiTestEngine* engine, ImGuiTestContext* c
     ctx->ActiveFunc = backup_active_func;
 
     // Restore backed up IO and style
+    backup_io.MetricsActiveAllocations = ctx->UiContext->IO.MetricsActiveAllocations;
     ctx->UiContext->IO = backup_io;
     ctx->UiContext->Style = backup_style;
 }
