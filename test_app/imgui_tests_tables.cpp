@@ -1245,6 +1245,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
 
     // ## Test using the maximum of 64 columns (#3058)
     t = IM_REGISTER_TEST(e, "table", "table_max_columns");
+    t->Flags |= ImGuiTestFlags_NoAutoFinish;
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         ImGui::SetNextWindowSize(ImVec2(300, 400));
@@ -1266,15 +1267,13 @@ void RegisterTests_Table(ImGuiTestEngine* e)
 
         if (ctx->FrameCount < 1)
             ImGui::SetScrollHereY(1.0f);
+        if (ctx->FrameCount == 2)
+        {
+            IM_CHECK_EQ(ImGui::GetCurrentTable()->DrawSplitter->_Channels.Size, IMGUI_TABLE_MAX_DRAW_CHANNELS);
+            ctx->Finish();
+        }
         ImGui::EndTable();
         ImGui::End();
-    };
-    t->TestFunc = [](ImGuiTestContext* ctx)
-    {
-        ctx->SetRef("Test window 1");
-        ImGuiTable* table = ImGui::TableFindByID(ctx->GetID("table1"));
-        ctx->Yield(2);
-        IM_CHECK_EQ(table->DrawSplitter->_Channels.Size, IMGUI_TABLE_MAX_DRAW_CHANNELS);
     };
 
     // ## Test rendering two tables with same ID.
