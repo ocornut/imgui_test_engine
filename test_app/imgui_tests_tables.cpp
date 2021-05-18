@@ -1274,7 +1274,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
         ctx->SetRef("Test window 1");
         ImGuiTable* table = ImGui::TableFindByID(ctx->GetID("table1"));
         ctx->Yield(2);
-        IM_CHECK_EQ(table->DrawSplitter._Channels.Size, IMGUI_TABLE_MAX_DRAW_CHANNELS);
+        IM_CHECK_EQ(table->DrawSplitter->_Channels.Size, IMGUI_TABLE_MAX_DRAW_CHANNELS);
     };
 
     // ## Test rendering two tables with same ID.
