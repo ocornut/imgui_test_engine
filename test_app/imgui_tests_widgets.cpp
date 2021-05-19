@@ -689,6 +689,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
     };
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
+        ImGuiInputTextState& state = ctx->UiContext->InputTextState;
         char* buf = ctx->GenericVars.Str1;
 
         ctx->SetRef("Test Window");
@@ -696,15 +697,20 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         // Insert
         strcpy(buf, "Hello");
         ctx->ItemClick("InputText");
-        ctx->KeyCharsAppendEnter("World123");
-        IM_CHECK_STR_EQ(buf, "HelloWorld123");
+        ctx->KeyCharsAppendEnter(u8"World123\u00A9");
+        IM_CHECK_STR_EQ(buf, u8"HelloWorld123\u00A9");
+        IM_CHECK_EQ(state.CurLenA, 15);
+        IM_CHECK_EQ(state.CurLenW, 14);
 
         // Delete
         ctx->ItemClick("InputText");
         ctx->KeyPressMap(ImGuiKey_End);
-        ctx->KeyPressMap(ImGuiKey_Backspace, ImGuiKeyModFlags_None, 3);
+        ctx->KeyPressMap(ImGuiKey_LeftArrow, ImGuiKeyModFlags_Shift, 2);    // Select last two characters
+        ctx->KeyPressMap(ImGuiKey_Backspace, ImGuiKeyModFlags_None, 3);     // Delete selection and two more characters
         ctx->KeyPressMap(ImGuiKey_Enter);
         IM_CHECK_STR_EQ(buf, "HelloWorld");
+        IM_CHECK_EQ(state.CurLenA, 10);
+        IM_CHECK_EQ(state.CurLenW, 10);
 
         // Insert, Cancel
         ctx->ItemClick("InputText");
@@ -712,6 +718,8 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ctx->KeyChars("XXXXX");
         ctx->KeyPressMap(ImGuiKey_Escape);
         IM_CHECK_STR_EQ(buf, "HelloWorld");
+        IM_CHECK_EQ(state.CurLenA, 10);
+        IM_CHECK_EQ(state.CurLenW, 10);
 
         // Delete, Cancel
         ctx->ItemClick("InputText");
@@ -719,6 +727,8 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ctx->KeyPressMap(ImGuiKey_Backspace, ImGuiKeyModFlags_None, 5);
         ctx->KeyPressMap(ImGuiKey_Escape);
         IM_CHECK_STR_EQ(buf, "HelloWorld");
+        IM_CHECK_EQ(state.CurLenA, 10);
+        IM_CHECK_EQ(state.CurLenW, 10);
 
         // Readonly mode
         ImGuiTestGenericVars& vars = ctx->GenericVars;
@@ -729,7 +739,8 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ctx->ItemClick("InputText");
         ctx->KeyCharsAppendEnter("World123");
         IM_CHECK_STR_EQ(buf, vars.Str1);
-
+        IM_CHECK_EQ(state.CurLenA, 20);
+        IM_CHECK_EQ(state.CurLenW, 20);
     };
 
     // ## Test InputText undo/redo ops, in particular related to issue we had with stb_textedit undo/redo buffers
@@ -1090,6 +1101,10 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
             IM_CHECK_EQ(stb.cursor, cursor_pos_begin_current_line - (page_size * char_count_per_line) + (char_count_per_line / 2));
                 //eof - (char_count_per_line * page_size) + (char_count_per_line / 2) + (has_trailing_line_feed ? 0 : 1));
         }
+
+        // Cursor positioning after new line. Broken line indexing may produce incorrect results in such case.
+        ctx->KeyCharsReplaceEnter("foo");
+        IM_CHECK_EQ(stb.cursor, 4);
     };
     // ## Test input text multiline cursor with selection: left, up, right, down, origin, end, ctrl+origin, ctrl+end, page up, page down
     // ## Test input text multiline scroll movement only: ctrl + (left, up, right, down)
