@@ -1374,6 +1374,26 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         IM_CHECK_EQ(ctx->UiContext->NavId, ctx->GetID("D"));
     };
 
+    // ## Test InputText widget with user a buffer on stack, reading/writing past end of buffer.
+    t = IM_REGISTER_TEST(e, "widgets", "widgets_inputtext_temp_buffer");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+        char buf[10] = "foo\0xxxxx";
+        if (ImGui::InputText("Field", buf, 7, ImGuiInputTextFlags_EnterReturnsTrue))
+        {
+            IM_CHECK_STR_EQ(buf, "foobar");
+            IM_CHECK_STR_EQ(buf + 7, "xx"); // Buffer padding not overwritten
+        }
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ctx->SetRef("Test Window");
+        ctx->ItemClick("Field");
+        ctx->KeyCharsAppendEnter("barrr");
+    };
+
     // ## Test inheritance of ItemFlags
     t = IM_REGISTER_TEST(e, "widgets", "widgets_item_flags_stack");
     t->GuiFunc = [](ImGuiTestContext* ctx)
