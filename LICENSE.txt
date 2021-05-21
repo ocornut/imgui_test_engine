@@ -1,0 +1,23 @@
+Copyright (c) 2018-2021 Omar Cornut
+
+THIS IS A TEMPORARY LICENSE. This software is expected to be published and
+relicensed with more permissive licensing terms in the future. Different portions
+of this software may end up using different licensing terms.
+
+You may have been granted another, overriding license for your project/company,
+in which case this license does not apply.
+Contact us to obtain a license for your project/company (contact@dearimgui.com)
+
+Permission is hereby granted to use this for non-commercial or evaluation-only purpose.
+You may NOT publish, distribute, sublicense, and/or sell copies of the Software.
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
