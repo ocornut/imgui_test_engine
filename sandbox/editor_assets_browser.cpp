@@ -84,7 +84,7 @@ struct ExampleAssetBrowser
 
         ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(8, 8));
 #ifdef IMGUI_HAS_MULTI_SELECT
-        ImGui::PushStyleVar(ImGuiStyleVar_SelectableSpacing, ImVec2(2, 2)); // FIXME: Distinguish visual vs hit spacing
+        //ImGui::PushStyleVar(ImGuiStyleVar_SelectableSpacing, ImVec2(2, 2)); // FIXME: Distinguish visual vs hit spacing
 #endif
 
         ImVec2 item_size((float)IconSize, (float)IconSize);
@@ -217,7 +217,7 @@ struct ExampleAssetBrowser
 
         ImGui::EndChild();
 #ifdef IMGUI_HAS_MULTI_SELECT
-        ImGui::PopStyleVar();
+        //ImGui::PopStyleVar();
 #endif
         ImGui::PopStyleVar();
         ImGui::End();
