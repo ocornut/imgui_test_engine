@@ -2650,6 +2650,47 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         IM_CHECK(ctx->GenericVars.Bool1 == false);
     };
 
+    // ## Test using default context menu along with a combo (#4167)
+#if IMGUI_VERSION_NUM >= 18211
+    t = IM_REGISTER_TEST(e, "widgets", "widgets_combo_context_menu");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
+
+        if (ImGui::BeginCombo("Combo", "Preview"))
+        {
+            ctx->GenericVars.Bool1 = true;
+            ImGui::Selectable("Close");
+            ImGui::EndCombo();
+        }
+        if (ImGui::BeginPopupContextItem())
+        {
+            if (ImGui::Button("Close"))
+                ImGui::CloseCurrentPopup();
+            ctx->GenericVars.Bool2 = true;
+            ImGui::EndPopup();
+        }
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ctx->SetRef("Test Window");
+        ctx->MouseMove("Combo");
+        ctx->MouseClick(ImGuiMouseButton_Right);
+        IM_CHECK(ctx->GenericVars.Bool1 == false && ctx->GenericVars.Bool2 == true);
+        ctx->SetRef(ctx->GetFocusWindowRef());
+        ctx->ItemClick("Close");
+        ctx->GenericVars.Bool1 = ctx->GenericVars.Bool2 = false;
+
+        ctx->SetRef("Test Window");
+        ctx->ItemClick("Combo");
+        IM_CHECK(ctx->GenericVars.Bool1 == true && ctx->GenericVars.Bool2 == false);
+        ctx->SetRef(ctx->GetFocusWindowRef());
+        ctx->ItemClick("Close");
+        ctx->GenericVars.Bool1 = ctx->GenericVars.Bool2 = false;
+    };
+#endif
+
     // ## Test long text rendering by TextUnformatted().
     t = IM_REGISTER_TEST(e, "widgets", "widgets_text_unformatted_long");
     t->TestFunc = [](ImGuiTestContext* ctx)

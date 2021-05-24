@@ -398,8 +398,10 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
         ctx->WindowFocus("Window 1");
         ctx->WindowFocus("Window 2");
         ctx->KeyPressMap(ImGuiKey_Tab, ImGuiKeyModFlags_Ctrl);
+        IM_CHECK_STR_EQ(g.NavWindow->Name, "Window 1");
         IM_CHECK_EQ(g.NavLayer, ImGuiNavLayer_Menu);
         ctx->KeyPressMap(ImGuiKey_Tab, ImGuiKeyModFlags_Ctrl);
+        IM_CHECK_STR_EQ(g.NavWindow->Name, "Window 2");
         IM_CHECK_EQ(g.NavLayer, ImGuiNavLayer_Main);
     };
 
