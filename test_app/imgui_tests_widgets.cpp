@@ -960,8 +960,9 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
     };
 
     // ## Test input text multiline cursor movement: left, up, right, down, origin, end, ctrl+origin, ctrl+end, page up, page down
+    // ## Verify that text selection does not leak spaces in password fields. (#4155)
     t = IM_REGISTER_TEST(e, "widgets", "widgets_inputtext_cursor");
-    struct InputTextCursorVars { Str str; int Cursor = 0; int LineCount = 10; };
+    struct InputTextCursorVars { Str str; int Cursor = 0; int LineCount = 10; Str64 Password; };
     t->SetUserDataType<InputTextCursorVars>();
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
@@ -970,6 +971,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         float height = vars.LineCount * 0.5f * ImGui::GetFontSize();
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
         ImGui::InputTextMultiline("Field", &vars.str, ImVec2(300, height), ImGuiInputTextFlags_EnterReturnsTrue);
+        ImGui::InputText("Password", &vars.Password, ImGuiInputTextFlags_Password);
         if (ImGuiInputTextState* state = ImGui::GetInputTextState(ctx->GetID("/Test Window/Field")))
             ImGui::Text("Stb Cursor: %d", state->Stb.cursor);
         ImGui::End();
@@ -1105,6 +1107,18 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         // Cursor positioning after new line. Broken line indexing may produce incorrect results in such case.
         ctx->KeyCharsReplaceEnter("foo");
         IM_CHECK_EQ(stb.cursor, 4);
+
+        // Verify that cursor placement does not leak spaces in password field. (#4155)
+        ctx->ItemClick("Password");
+        ctx->KeyCharsAppendEnter("Totally not Password123");
+        ctx->ItemDoubleClick("Password");
+        IM_CHECK_EQ(stb.select_start, 0);
+        IM_CHECK_EQ(stb.select_end, 23);
+        IM_CHECK_EQ(stb.cursor, 23);
+        ctx->KeyPressMap(ImGuiKey_LeftArrow, ImGuiKeyModFlags_Ctrl);
+        IM_CHECK_EQ(stb.cursor, 0);
+        ctx->KeyPressMap(ImGuiKey_RightArrow, ImGuiKeyModFlags_Ctrl);
+        IM_CHECK_EQ(stb.cursor, 23);
     };
     // ## Test input text multiline cursor with selection: left, up, right, down, origin, end, ctrl+origin, ctrl+end, page up, page down
     // ## Test input text multiline scroll movement only: ctrl + (left, up, right, down)
