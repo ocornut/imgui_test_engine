@@ -1469,6 +1469,91 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
             }
         }
     };
+
+    // ## Test transferring full node payload, even with hidden windows.
+    t = IM_REGISTER_TEST(e, "docking", "docking_window_appearing");
+    struct DockingWindowAppearingVars { bool ShowAAA = false; bool ShowBBB = false; int AppearingAAA = 0; int AppearingBBB = 0; ImGuiID SetNextBBBDockID = 0; };
+    t->SetUserDataType<DockingWindowAppearingVars>();
+    t->GuiFunc =  [](ImGuiTestContext* ctx)
+    {
+        DockingWindowAppearingVars& vars = ctx->GetUserData<DockingWindowAppearingVars>();
+        if (vars.ShowAAA)
+        {
+            ImGui::SetNextWindowSize(ImVec2(300, 100), ImGuiCond_Appearing);
+            if (ImGui::Begin("AAA"))
+            {
+                ImGui::TextUnformatted("AAA");
+                vars.AppearingAAA += ImGui::IsWindowAppearing();
+            }
+            ImGui::End();
+        }
+        if (vars.ShowBBB)
+        {
+            if (vars.SetNextBBBDockID != 0)
+            {
+                ImGui::SetNextWindowDockID(vars.SetNextBBBDockID, ImGuiCond_Appearing);
+                vars.SetNextBBBDockID = 0;
+            }
+            ImGui::SetNextWindowSize(ImVec2(300, 100), ImGuiCond_Appearing);
+            if (ImGui::Begin("BBB")) {} // FIXME: Try with and without
+            {
+                ImGui::TextUnformatted("BBB");
+                vars.AppearingBBB += ImGui::IsWindowAppearing();
+            }
+            ImGui::End();
+        }
+        ImGui::SetNextWindowSize(ImVec2(300, 100), ImGuiCond_Appearing);
+        ImGui::Begin("CCC");
+        ImGui::TextUnformatted("CCC");
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        DockingWindowAppearingVars& vars = ctx->GetUserData<DockingWindowAppearingVars>();
+        ctx->DockClear("AAA", "BBB", "CCC", NULL);
+        vars.AppearingAAA = vars.AppearingBBB = 0;
+
+        auto reappear_window = [](ImGuiTestContext* ctx, bool* show_window)
+        {
+            *show_window = false;
+            ctx->Yield(2);
+            *show_window = true;
+            ctx->Yield(2);
+        };
+
+        // Not docked
+        vars.ShowAAA = true;
+        ctx->Yield(2);
+        IM_CHECK_EQ(vars.AppearingAAA, 1);
+        vars.ShowBBB = true;
+        ctx->Yield(2);
+        IM_CHECK_EQ(vars.AppearingBBB, 1);
+
+        // Docked as tabs
+        ctx->DockInto("BBB", "AAA");
+        reappear_window(ctx, &vars.ShowBBB);
+        IM_CHECK_EQ(vars.AppearingBBB, 2);
+
+        // Docked as splits
+        ctx->DockClear("AAA", "BBB", NULL);
+        ctx->DockInto("BBB", "AAA", ImGuiDir_Right);
+        reappear_window(ctx, &vars.ShowBBB);
+        IM_CHECK_EQ(vars.AppearingBBB, 3);
+
+        // Docked using SetNextWindowDockID()
+        ImGuiWindow* window_aaa = ctx->GetWindowByRef("AAA");
+        vars.SetNextBBBDockID = window_aaa->DockId;
+        vars.ShowBBB = false;
+        ctx->DockClear("AAA", "BBB", "CCC", NULL);
+        ctx->DockInto("CCC", "AAA");
+        reappear_window(ctx, &vars.ShowBBB);
+        IM_CHECK_EQ(vars.AppearingBBB, 4);
+
+        // Switching tabs
+        ctx->WindowFocus("AAA");
+        ctx->Yield();
+        IM_CHECK_EQ(vars.AppearingAAA, 2);
+    };
 #else
     IM_UNUSED(e);
 #endif
