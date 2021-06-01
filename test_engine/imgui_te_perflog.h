@@ -41,7 +41,6 @@ struct ImGuiPerfLog
     bool                        _PerBranchColors = true;        // Use one bar color per branch.
     int                         _BaselineBatchIndex = 0;        // Index of baseline build.
     Str64                       _Filter;                        // Context menu filtering substring.
-    float                       _FilterInputWidth = -1;
     char                        _FilterDateFrom[11] = {};
     char                        _FilterDateTo[11] = {};
     float                       _InfoTableHeight = 180.0f;

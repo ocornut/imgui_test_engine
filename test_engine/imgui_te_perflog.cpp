@@ -2,10 +2,7 @@
 #define _CRT_SECURE_NO_WARNINGS
 #endif
 
-#ifndef IMGUI_DEFINE_MATH_OPERATORS
-#   define IMGUI_DEFINE_MATH_OPERATORS
-#endif
-
+#define IMGUI_DEFINE_MATH_OPERATORS
 #include "imgui.h"
 #include "imgui_internal.h"
 #include "imgui_te_perflog.h"
@@ -14,9 +11,12 @@
 #include "libs/implot/implot.h"
 #include "libs/implot/implot_internal.h"
 
+//-------------------------------------------------------------------------
+// Types
+//-------------------------------------------------------------------------
 
-using HashEntryFn = ImGuiID(*)(ImGuiPerflogEntry* entry);
-using FormatEntryLabelFn = void(*)(ImGuiPerfLog* perflog, Str256f* result, ImGuiPerflogEntry* entry);
+typedef ImGuiID(*HashEntryFn)(ImGuiPerflogEntry* entry);
+typedef void(*FormatEntryLabelFn)(ImGuiPerfLog* perflog, Str256f* result, ImGuiPerflogEntry* entry);
 
 struct ImGuiPerfLogColumnInfo
 {
@@ -88,6 +88,7 @@ static int IMGUI_CDECL CompareWithSortSpecs(const void* lhs, const void* rhs)
     return 0;
 }
 
+// Dates are in format "YYYY-MM-DD"
 static bool IsDateValid(const char* date)
 {
     if (date[4] != '-' || date[7] != '-')
@@ -159,9 +160,9 @@ static bool Date(const char* label, char* date, int date_len, bool valid)
 
 struct GetPlotPointData
 {
-    ImGuiPerfLog* Perf;
-    double Shift;
-    int BatchIndex;
+    ImGuiPerfLog*   Perf;
+    double          Shift;
+    int             BatchIndex;
 };
 
 static ImPlotPoint GetPlotPoint(void* data, int idx)
@@ -178,15 +179,10 @@ static ImPlotPoint GetPlotPoint(void* data, int idx)
 static void RenderFilterInput(ImGuiPerfLog* perf, const char* hint)
 {
     if (ImGui::IsWindowAppearing())
-    {
-        perf->_FilterInputWidth = -1;
         perf->_Filter.clear();
-    }
-    ImGui::SetNextItemWidth(perf->_FilterInputWidth);
+    ImGui::SetNextItemWidth(-FLT_MIN);
     ImGui::InputTextWithHint("##filter", hint, &perf->_Filter);
     ImGui::SetKeyboardFocusHere();
-    if (perf->_FilterInputWidth < 1.0f)
-        perf->_FilterInputWidth = ImGui::GetItemRectSize().x;
 }
 
 static bool RenderMultiSelectFilter(ImGuiPerfLog* perf, const char* filter_hint, ImVector<ImGuiPerflogEntry*>* entries, HashEntryFn hash, FormatEntryLabelFn format)
@@ -223,12 +219,16 @@ static bool RenderMultiSelectFilter(ImGuiPerfLog* perf, const char* filter_hint,
         }
     }
 
+    int filtered_entries = 0;
     for (ImGuiPerflogEntry* entry : *entries)
     {
         buf.clear();
         format(perf, &buf, entry);
         if (strstr(buf.c_str(), perf->_Filter.c_str()) == NULL)   // Filter out entries not matching a filter query
             continue;
+
+        if (filtered_entries == 0)
+            ImGui::Separator();
 
         ImGuiID build_id = hash(entry);
         bool visible = visibility.GetBool(build_id, true);
@@ -248,6 +248,7 @@ static bool RenderMultiSelectFilter(ImGuiPerfLog* perf, const char* filter_hint,
                 visibility.SetBool(build_id, !visibility.GetBool(build_id, true));
             }
         }
+        filtered_entries++;
     }
 
     if (!g.IO.KeyShift)
@@ -277,8 +278,8 @@ static void PerflogSettingsHandler_ReadLine(ImGuiContext*, ImGuiSettingsHandler*
     else if (sscanf(line, "CombineByBuildInfo=%d", &combine))                       { perflog->_CombineByBuildInfo = !!combine; }
     else if (sscanf(line, "PerBranchColors=%d", &branch_colors))                    { perflog->_PerBranchColors = !!branch_colors; }
     else if (sscanf(line, "Baseline=%llu", &perflog->_Settings.BaselineTimestamp))  { }
-    else if (sscanf(line, "TestVisibility=%[^=]=%d", buf, &visible))                { perflog->_Settings.Visibility.SetBool(ImHashStr(buf), !!visible); }
-    else if (sscanf(line, "BuildVisibility=%[^=]=%d", buf, &visible))               { perflog->_Settings.Visibility.SetBool(ImHashStr(buf), !!visible); }
+    else if (sscanf(line, "TestVisibility=%[^,]=%d", buf, &visible))                { perflog->_Settings.Visibility.SetBool(ImHashStr(buf), !!visible); }
+    else if (sscanf(line, "BuildVisibility=%[^,]=%d", buf, &visible))               { perflog->_Settings.Visibility.SetBool(ImHashStr(buf), !!visible); }
 }
 
 static void PerflogSettingsHandler_ApplyAll(ImGuiContext*, ImGuiSettingsHandler* ini_handler)
@@ -301,7 +302,7 @@ static void PerflogSettingsHandler_WriteAll(ImGuiContext*, ImGuiSettingsHandler*
     if (perflog->_BaselineBatchIndex >= 0)
         buf->appendf("Baseline=%llu\n", perflog->_Legend[perflog->_BaselineBatchIndex]->Timestamp);
     for (ImGuiPerflogEntry* entry : perflog->_Labels)
-        buf->appendf("TestVisibility=%s=%d\n", entry->TestName, perflog->_Settings.Visibility.GetBool(PerflogHashTestName(entry), true));
+        buf->appendf("TestVisibility=%s,%d\n", entry->TestName, perflog->_Settings.Visibility.GetBool(PerflogHashTestName(entry), true));
 
     ImGuiStorage& temp_set = perflog->_TempSet;
     temp_set.Data.clear();
@@ -314,7 +315,7 @@ static void PerflogSettingsHandler_WriteAll(ImGuiContext*, ImGuiSettingsHandler*
             if (!temp_set.GetBool(hash))
             {
                 temp_set.SetBool(hash, true);
-                buf->appendf("BuildVisibility=%s=%d\n", properties[i], perflog->_Settings.Visibility.GetBool(hash, true));
+                buf->appendf("BuildVisibility=%s,%d\n", properties[i], perflog->_Settings.Visibility.GetBool(hash, true));
             }
         }
     }
@@ -584,6 +585,7 @@ void ImGuiPerfLog::ShowUI(ImGuiTestEngine* engine)
         ImGui::OpenPopup("Date To Menu");
     ImGui::SameLine();
 
+    // FIXME-PERFLOG: Share "Set Today" code and expose Set Min/Set Max for both (as "Max" for both can be useful)
     if (ImGui::BeginPopup("Date From Menu"))
     {
         if (ImGui::MenuItem("Set Min"))
@@ -683,6 +685,7 @@ void ImGuiPerfLog::ShowUI(ImGuiTestEngine* engine)
             return;
     }
 
+    // FIXME-PERFLOG: Move more of this to its more suitable location.
     if (ImGui::BeginPopup("Help"))
     {
         ImGui::BulletText("Data may be filtered by enabling or disabling individual builds or perf tests.");
@@ -716,23 +719,27 @@ void ImGuiPerfLog::ShowUI(ImGuiTestEngine* engine)
             bool visible = true;
             for (ImGuiPerflogEntry* entry : _Legend)
             {
-                ImGui::TableNextRow();  // FIXME: Temp, move out of the loop when appending to table column is fixed.
+                bool new_row = true;
                 ImGuiID hash;
                 const char* properties[] = { entry->GitBranchName, entry->BuildType, entry->Cpu, entry->OS, entry->Compiler };
                 for (int i = 0; i < IM_ARRAYSIZE(properties); i++)
                 {
-                    ImGui::TableSetColumnIndex(i);
                     hash = ImHashStr(properties[i]);
-                    if (!temp_set.GetBool(hash))
-                    {
-                        visible = _Settings.Visibility.GetBool(hash, true) || show_all;
-                        if (hide_all)
-                            visible = false;
-                        temp_set.SetBool(hash, true);
-                        if (ImGui::Checkbox(properties[i], &visible) || show_all || hide_all)
-                            _CalculateLegendAlignment();
-                        _Settings.Visibility.SetBool(hash, visible);
-                    }
+                    if (temp_set.GetBool(hash))
+                        continue;
+                    temp_set.SetBool(hash, true);
+
+                    if (new_row)
+                        ImGui::TableNextRow();
+                    new_row = false;
+
+                    ImGui::TableSetColumnIndex(i);
+                    visible = _Settings.Visibility.GetBool(hash, true) || show_all;
+                    if (hide_all)
+                        visible = false;
+                    if (ImGui::Checkbox(properties[i], &visible) || show_all || hide_all)
+                        _CalculateLegendAlignment();
+                    _Settings.Visibility.SetBool(hash, visible);
                 }
             }
             ImGui::EndTable();
