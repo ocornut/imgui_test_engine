@@ -43,13 +43,13 @@ jobs:
           sudo apt-get install -y libglfw3-dev libsdl2-dev
 
       - name: Build (with SDL2)
-        if: github.event_name == 'workflow_run'     # Run only on schedule
+        if: github.event_name == 'workflow_run'
         run: |
           make -C test_app/ clean
           make -C test_app/ BACKEND_LIB=sdl2
 
       - name: Build (with GLFW3)
-        if: github.event_name == 'workflow_run'     # Run only on schedule
+        if: github.event_name == 'workflow_run'
         run: |
           make -C test_app/ clean
           make -C test_app/ BACKEND_LIB=glfw3
@@ -65,7 +65,10 @@ jobs:
 
   MacOS:
     runs-on: macos-latest
-    if: github.event_name == 'workflow_run'     # Run only on schedule
+    if: |
+      contains(github.event.head_commit.message, 'Build all') ||
+      contains(github.event.head_commit.message, 'Build MacOS') ||
+      github.event_name == 'workflow_run'
 
     strategy:
       fail-fast: false
@@ -94,7 +97,10 @@ jobs:
           test_app/imgui_test_app -nogui -nopause -v2 -ve4 tests
 
   Windows:
-    if: github.event_name == 'workflow_run'     # Run only on schedule
+    if: |
+      contains(github.event.head_commit.message, 'Build all') ||
+      contains(github.event.head_commit.message, 'Build Windows') ||
+      github.event_name == 'workflow_run'
     runs-on: windows-latest
     env:
       VS_PATH: C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\
