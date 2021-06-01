@@ -183,6 +183,7 @@ static bool ShowTestGroupFilterTest(ImGuiTestEngine* e, ImGuiTestGroup group, Im
 static void ShowTestGroup(ImGuiTestEngine* e, ImGuiTestGroup group, ImGuiTextFilter* filter)
 {
     ImGuiStyle& style = ImGui::GetStyle();
+    ImGuiIO& io = ImGui::GetIO();
     ImGuiTestEngineIO& e_io = ImGuiTestEngine_GetIO(e);
 
     //ImGui::Text("TESTS (%d)", engine->TestsAll.Size);
@@ -261,6 +262,8 @@ static void ShowTestGroup(ImGuiTestEngine* e, ImGuiTestGroup group, ImGuiTextFil
             if (test->Status == ImGuiTestStatus_Suspended)
             {
                 if (ImGui::Button("Con###Run"))
+                    test->Status = ImGuiTestStatus_Running;
+                if (ImGui::IsKeyPressedMap(ImGuiKey_Space) && io.KeyCtrl)
                     test->Status = ImGuiTestStatus_Running;
             }
             else
