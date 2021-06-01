@@ -509,17 +509,21 @@ void ImGuiTestEngine_ApplyInputToImGuiContext(ImGuiTestEngine* engine)
         for (int n = 0; n < IM_ARRAYSIZE(simulated_io.MouseDown); n++)
             simulated_io.MouseDown[n] = (engine->Inputs.MouseButtonsValue & (1 << n)) != 0;
 
-        // Mouse wheel
-        simulated_io.MouseWheelH = engine->Inputs.MouseWheel.x;
-        simulated_io.MouseWheel = engine->Inputs.MouseWheel.y;
-        engine->Inputs.MouseWheel = ImVec2(0, 0);
-
         // Apply keyboard mods
         simulated_io.KeyCtrl  = (engine->Inputs.KeyMods & ImGuiKeyModFlags_Ctrl) != 0;
         simulated_io.KeyAlt   = (engine->Inputs.KeyMods & ImGuiKeyModFlags_Alt) != 0;
         simulated_io.KeyShift = (engine->Inputs.KeyMods & ImGuiKeyModFlags_Shift) != 0;
         simulated_io.KeySuper = (engine->Inputs.KeyMods & ImGuiKeyModFlags_Super) != 0;
         simulated_io.KeyMods  = (engine->Inputs.KeyMods);
+
+        // Mouse wheel
+        // [OSX] Simulate OSX behavior of automatically swapping mouse wheel axis when SHIFT is held.
+        // This is working in conjonction with the fact that ImGuiTestContext::MouseWheel() assume Windows-style behavior.
+        simulated_io.MouseWheelH = engine->Inputs.MouseWheel.x;
+        simulated_io.MouseWheel = engine->Inputs.MouseWheel.y;
+        if (simulated_io.ConfigMacOSXBehaviors && simulated_io.KeyShift)
+            ImSwap(simulated_io.MouseWheelH, simulated_io.MouseWheel);
+        engine->Inputs.MouseWheel = ImVec2(0, 0);
 
         // Apply to real IO
         #define COPY_FIELD(_FIELD)  { memcpy(&main_io._FIELD, &simulated_io._FIELD, sizeof(simulated_io._FIELD)); }

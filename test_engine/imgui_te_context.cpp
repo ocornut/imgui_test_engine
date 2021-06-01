@@ -1481,6 +1481,10 @@ void    ImGuiTestContext::MouseWheel(float vertical, float horizontal)
     MouseWheel(ImVec2(horizontal, vertical));
 }
 
+// Important: always call MouseWheel() with an understand that holding Shift will swap axises.
+// - On Windows/Linux, this swap is done in ImGui::NewFrame()
+// - On OSX, this swap is generally done by the backends
+// - In simulated test engine, always assume Windows/Linux behavior as we will swap in ImGuiTestEngine_ApplyInputToImGuiContext()
 void    ImGuiTestContext::MouseWheel(ImVec2 delta)
 {
     if (IsError())
