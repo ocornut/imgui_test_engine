@@ -550,7 +550,7 @@ void ImGuiPerfLog::ShowUI(ImGuiTestEngine*)
 #ifdef IMGUI_TEST_ENGINE_ENABLE_IMPLOT
     ImGuiContext& g = *GImGui;
     Str256f label("");
-    Str256f display_Label("");
+    Str256f display_label("");
 
     if (_Dirty)
         _Rebuild();
@@ -778,14 +778,16 @@ void ImGuiPerfLog::ShowUI(ImGuiTestEngine*)
             return;
 
         // Clickable test names
+        bool test_name_hovered = false;
         for (int t = 0; t < _VisibleLabelPointers.Size; t++)
         {
             ImRect label_rect = ImPlotGetYTickRect(t);
             if (label_rect.IsInverted())
                 continue;
 
-            if (label_rect.Contains(g.IO.MousePos))
+            if (!test_name_hovered && label_rect.Contains(g.IO.MousePos))
             {
+                test_name_hovered = true;   // Ensure only one test name is hovered when they are overlapping due to zoom level.
                 ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
                 g.CurrentWindow->DrawList->AddLine(ImFloor(label_rect.GetBL()), ImFloor(label_rect.GetBR()), ImColor(g.Style.Colors[ImGuiCol_Text]));
                 if (ImGui::IsMouseClicked(ImGuiMouseButton_Left))
@@ -796,6 +798,7 @@ void ImGuiPerfLog::ShowUI(ImGuiTestEngine*)
         // Plot bars
         const float occupy_h = 0.8f;
         const float h = occupy_h / num_visible_builds;
+        const bool combine_by_build_info = _CombineByBuildInfo && !_Dirty;
 
         int bar_index = 0;
         for (ImGuiPerflogEntry*& entry : _Legend)
@@ -806,26 +809,42 @@ void ImGuiPerfLog::ShowUI(ImGuiTestEngine*)
 
             // Plot bars.
             label.clear();
-            display_Label.clear();
+            display_label.clear();
             PerflogFormatBuildInfo(this, &label, entry);
-            display_Label.append(label.c_str());
+            display_label.append(label.c_str());
             ImGuiID label_id;
-            if (_CombineByBuildInfo)
-                display_Label.appendf(Str16f(" (%%-%dd samples)", _AlignSamples).c_str(), entry->NumSamples);
-            if (!_CombineByBuildInfo && !_PerBranchColors)  // Use per-run hash when each run has unique color.
+            if (combine_by_build_info)
+                display_label.appendf(Str16f(" (%%-%dd samples)", _AlignSamples).c_str(), entry->NumSamples);
+            if (!combine_by_build_info && !_PerBranchColors)  // Use per-run hash when each run has unique color.
                 label_id = ImHashData(&entry->Timestamp, sizeof(entry->Timestamp));
             else
                 label_id = ImHashStr(label.c_str());        // Otherwise using label hash allows them to collapse in the legend.
-            display_Label.appendf("%s###%08X", !_PerBranchColors && _BaselineBatchIndex == batch_index ? " *" : "", label_id);
+            display_label.appendf("%s###%08X", !_PerBranchColors && _BaselineBatchIndex == batch_index ? " *" : "", label_id);
+            float shift = (float)(num_visible_builds - 1) * 0.5f * h;
+
+            // Highlight background behind bar when hovering test entry in info table.
+            if (_TableHoveredTest >= 0)
+            {
+                ImPlotContext& gp = *GImPlot;
+                ImPlotPlot& plot = *gp.CurrentPlot;
+                ImRect test_bars_rect;
+                float bar_min = -h * _TableHoveredBatch + shift;
+                test_bars_rect.Min.x = plot.PlotRect.Min.x;
+                test_bars_rect.Max.x = plot.PlotRect.Max.x;
+                test_bars_rect.Min.y = ImPlot::PlotToPixels(0, (float)_TableHoveredTest + bar_min - h * 0.5f).y;
+                test_bars_rect.Max.y = ImPlot::PlotToPixels(0, (float)_TableHoveredTest + bar_min + h * 0.5f).y;
+                ImPlot::GetPlotDrawList()->AddRectFilled(test_bars_rect.Min, test_bars_rect.Max, ImColor(g.Style.Colors[ImGuiCol_TableRowBgAlt]));
+            }
+
             GetPlotPointData data;
-            data.Shift = -h * bar_index + (float) (num_visible_builds - 1) * 0.5f * h;
+            data.Shift = -h * bar_index + shift;
             data.Perf = this;
             data.BatchIndex = batch_index;
             ImPlot::SetNextFillStyle(ImPlot::GetColormapColor(_PerBranchColors ? entry->BranchIndex : batch_index));
-            ImPlot::PlotBarsHG(display_Label.c_str(), &GetPlotPoint, &data, _VisibleLabelPointers.Size, h);
+            ImPlot::PlotBarsHG(display_label.c_str(), &GetPlotPoint, &data, _VisibleLabelPointers.Size, h);
 
             // Set baseline.
-            if (ImPlot::IsLegendEntryHovered(display_Label.c_str()))
+            if (ImPlot::IsLegendEntryHovered(display_label.c_str()))
             {
                 if (ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left) && !_PerBranchColors)
                 {
@@ -871,18 +890,18 @@ void ImGuiPerfLog::ShowUI(ImGuiTestEngine*)
     if (ImGui::BeginChild(ImGui::GetID("info-table"), ImVec2(0, _InfoTableHeight)))
     {
         static const ImGuiPerfLogColumnInfo columns_combined[] = {
-            { /* 00 */ "Test Name", IM_OFFSETOF(ImGuiPerflogEntry, TestName), ImGuiDataType_COUNT },
-            { /* 01 */ "Branch", IM_OFFSETOF(ImGuiPerflogEntry, GitBranchName), ImGuiDataType_COUNT },
-            { /* 02 */ "Compiler", IM_OFFSETOF(ImGuiPerflogEntry, Compiler), ImGuiDataType_COUNT },
-            { /* 03 */ "OS", IM_OFFSETOF(ImGuiPerflogEntry, OS), ImGuiDataType_COUNT },
-            { /* 04 */ "CPU", IM_OFFSETOF(ImGuiPerflogEntry, Cpu), ImGuiDataType_COUNT },
-            { /* 05 */ "Build", IM_OFFSETOF(ImGuiPerflogEntry, BuildType), ImGuiDataType_COUNT },
-            { /* 06 */ "Stress", IM_OFFSETOF(ImGuiPerflogEntry, PerfStressAmount), ImGuiDataType_S32 },
-            { /* 07 */ "Avg ms", IM_OFFSETOF(ImGuiPerflogEntry, DtDeltaMs), ImGuiDataType_Double },
-            { /* 08 */ "Min ms", IM_OFFSETOF(ImGuiPerflogEntry, DtDeltaMsMin), ImGuiDataType_Double },
-            { /* 09 */ "Max ms", IM_OFFSETOF(ImGuiPerflogEntry, DtDeltaMsMax), ImGuiDataType_Double },
-            { /* 10 */ "Num samples", IM_OFFSETOF(ImGuiPerflogEntry, NumSamples), ImGuiDataType_S32 },
-            { /* 11 */ "VS Baseline", IM_OFFSETOF(ImGuiPerflogEntry, VsBaseline), ImGuiDataType_Float },
+            { /* 00 */ "Test Name",   IM_OFFSETOF(ImGuiPerflogEntry, TestName),         ImGuiDataType_COUNT  },
+            { /* 01 */ "Branch",      IM_OFFSETOF(ImGuiPerflogEntry, GitBranchName),    ImGuiDataType_COUNT  },
+            { /* 02 */ "Compiler",    IM_OFFSETOF(ImGuiPerflogEntry, Compiler),         ImGuiDataType_COUNT  },
+            { /* 03 */ "OS",          IM_OFFSETOF(ImGuiPerflogEntry, OS),               ImGuiDataType_COUNT  },
+            { /* 04 */ "CPU",         IM_OFFSETOF(ImGuiPerflogEntry, Cpu),              ImGuiDataType_COUNT  },
+            { /* 05 */ "Build",       IM_OFFSETOF(ImGuiPerflogEntry, BuildType),        ImGuiDataType_COUNT  },
+            { /* 06 */ "Stress",      IM_OFFSETOF(ImGuiPerflogEntry, PerfStressAmount), ImGuiDataType_S32    },
+            { /* 07 */ "Avg ms",      IM_OFFSETOF(ImGuiPerflogEntry, DtDeltaMs),        ImGuiDataType_Double },
+            { /* 08 */ "Min ms",      IM_OFFSETOF(ImGuiPerflogEntry, DtDeltaMsMin),     ImGuiDataType_Double },
+            { /* 09 */ "Max ms",      IM_OFFSETOF(ImGuiPerflogEntry, DtDeltaMsMax),     ImGuiDataType_Double },
+            { /* 10 */ "Num samples", IM_OFFSETOF(ImGuiPerflogEntry, NumSamples),       ImGuiDataType_S32    },
+            { /* 11 */ "VS Baseline", IM_OFFSETOF(ImGuiPerflogEntry, VsBaseline),       ImGuiDataType_Float  },
         };
         // Same as above, except we skip "Min ms", "Max ms" and "Num samples".
         static const ImGuiPerfLogColumnInfo columns_separate[] =
@@ -890,8 +909,9 @@ void ImGuiPerfLog::ShowUI(ImGuiTestEngine*)
             columns_combined[0], columns_combined[1], columns_combined[2], columns_combined[3], columns_combined[4],
             columns_combined[5], columns_combined[6], columns_combined[7], columns_combined[11],
         };
-        const ImGuiPerfLogColumnInfo* columns = _CombineByBuildInfo ? columns_combined : columns_separate;
-        int columns_num = _CombineByBuildInfo ? IM_ARRAYSIZE(columns_combined) : IM_ARRAYSIZE(columns_separate);
+        const bool combine_by_build_info = _CombineByBuildInfo && !_Dirty;
+        const ImGuiPerfLogColumnInfo* columns = combine_by_build_info ? columns_combined : columns_separate;
+        int columns_num = combine_by_build_info ? IM_ARRAYSIZE(columns_combined) : IM_ARRAYSIZE(columns_separate);
         if (!ImGui::BeginTable("PerfInfo", columns_num, ImGuiTableFlags_Borders | ImGuiTableFlags_Sortable | ImGuiTableFlags_SortMulti | ImGuiTableFlags_SortTristate | ImGuiTableFlags_SizingFixedFit))
             return;
 
@@ -920,6 +940,9 @@ void ImGuiPerfLog::ShowUI(ImGuiTestEngine*)
                 }
             }
 
+        ImGuiTable* table = g.CurrentTable;
+        _TableHoveredTest = -1;
+        _TableHoveredBatch = -1;
         for (int label_index = 0; label_index < _Labels.Size; label_index++)
         {
             if (scroll_to_test == label_index)
@@ -956,7 +979,7 @@ void ImGuiPerfLog::ShowUI(ImGuiTestEngine*)
                 ImGui::TableNextColumn();
                 ImGui::Text("%.3lfms", entry->DtDeltaMs);
 
-                if (_CombineByBuildInfo)
+                if (combine_by_build_info)
                 {
                     // Min ms
                     ImGui::TableNextColumn();
@@ -996,6 +1019,14 @@ void ImGuiPerfLog::ShowUI(ImGuiTestEngine*)
                         _InfoTableSortDirty = true;             // Force re-sorting.
                     }
                 }
+
+                if (table->InnerClipRect.Contains(g.IO.MousePos))
+                    if (table->RowPosY1 < g.IO.MousePos.y && g.IO.MousePos.y < table->RowPosY2 - 1) // FIXME-OPT: RowPosY1/RowPosY2 may overlap between adjacent rows. Compensate for that.
+                    {
+                        ImGui::TableSetBgColor(ImGuiTableBgTarget_RowBg0, ImColor(g.Style.Colors[ImGuiCol_TableRowBgAlt]));
+                        _TableHoveredTest = label_index;
+                        _TableHoveredBatch = batch_index;
+                    }
             }
         }
         ImGui::EndTable();

@@ -56,6 +56,8 @@ struct ImGuiPerfLog
     const ImGuiPerfLogColumnInfo*_InfoTableSortColInfo = NULL;  // Current Table column information.
     const ImGuiTableSortSpecs*  _InfoTableSortSpecs = NULL;     // Current table sort specs.
     ImGuiStorage                _TempSet;                       // Used as a set
+    int                         _TableHoveredTest = -1;
+    int                         _TableHoveredBatch = -1;
 
     struct
     {
