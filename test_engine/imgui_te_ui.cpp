@@ -211,21 +211,7 @@ static void ShowTestGroup(ImGuiTestEngine* e, ImGuiTestGroup group, ImGuiTextFil
     }
 
     ImGui::SameLine();
-#ifdef IMGUI_TEST_ENGINE_ENABLE_IMPLOT
-    const char* perflog_label = "Perflog >>";
-    float filter_width = ImGui::GetWindowContentRegionMax().x - ImGui::GetCursorPos().x;
-    if (group == ImGuiTestGroup_Perfs)
-        filter_width -= style.ItemSpacing.x + style.FramePadding.x * 2 + ImGui::CalcTextSize(perflog_label).x;
-    filter->Draw("##filter", ImMax(20.0f, filter_width));
-    if (group == ImGuiTestGroup_Perfs)
-    {
-        ImGui::SameLine();
-        if (ImGui::Button(perflog_label))
-            e->UiShowPerflog = true;
-    }
-#else
     filter->Draw("##filter", -1);
-#endif
     ImGui::Separator();
 
     if (ImGui::BeginChild("Tests", ImVec2(0, 0)))
@@ -507,8 +493,6 @@ static void ImGuiTestEngine_ShowLogAndTools(ImGuiTestEngine* engine)
 
 static void ImGuiTestEngine_ShowTestTool(ImGuiTestEngine* engine, bool* p_open)
 {
-    ImGuiContext& g = *GImGui;
-
     if (engine->UiFocus)
     {
         ImGui::SetNextWindowFocus();
@@ -574,37 +558,52 @@ static void ImGuiTestEngine_ShowTestTool(ImGuiTestEngine* engine, bool* p_open)
 
     float list_height;
     float& log_height = engine->UiLogHeight;
-    ImGui::Splitter("splitter", &list_height, &log_height, ImGuiAxis_Y, +1);
 
     // TESTS
-    ImGui::BeginChild("List", ImVec2(0, list_height), false, ImGuiWindowFlags_NoScrollbar);
     if (ImGui::BeginTabBar("##Tests", ImGuiTabBarFlags_NoTooltip))
     {
         if (ImGui::BeginTabItem("TESTS"))
         {
+            // FIXME-OPT: A better splitter API supporting arbitrary number of splits would be useful.
+            ImGui::Splitter("splitter", &list_height, &log_height, ImGuiAxis_Y, +1);
+            ImGui::BeginChild("List", ImVec2(0, list_height), false, ImGuiWindowFlags_NoScrollbar);
             ShowTestGroup(engine, ImGuiTestGroup_Tests, &engine->UiFilterTests);
+            ImGui::EndChild();
+
+            // LOG & TOOLS
+            ImGui::BeginChild("Log", ImVec2(0, log_height));
+            ImGuiTestEngine_ShowLogAndTools(engine);
+            ImGui::EndChild();
             ImGui::EndTabItem();
         }
         if (ImGui::BeginTabItem("PERFS"))
         {
-#ifdef IMGUI_TEST_ENGINE_ENABLE_IMPLOT
-            if (engine->UiShowPerflog)
-                engine->PerfLog->ShowUI(engine);
-            else
-#endif
-                ShowTestGroup(engine, ImGuiTestGroup_Perfs, &engine->UiFilterPerfs);
+            ImGui::Splitter("splitter", &list_height, &log_height, ImGuiAxis_Y, +1);
+            ImGui::BeginChild("List", ImVec2(0, list_height), false, ImGuiWindowFlags_NoScrollbar);
+            ShowTestGroup(engine, ImGuiTestGroup_Perfs, &engine->UiFilterPerfs);
+            ImGui::EndChild();
+
+            // LOG & TOOLS
+            ImGui::BeginChild("Log", ImVec2(0, log_height));
+            ImGuiTestEngine_ShowLogAndTools(engine);
+            ImGui::EndChild();
             ImGui::EndTabItem();
         }
+#ifdef IMGUI_TEST_ENGINE_ENABLE_IMPLOT
+        if (engine->UiShowPerflog)
+        {
+            ImGui::ActivateItem(ImGui::GetID("PERFLOG"));
+            engine->UiShowPerflog = false;
+        }
+        if (ImGui::BeginTabItem("PERFLOG"))
+        {
+            engine->PerfLog->ShowUI(engine);
+            ImGui::EndTabItem();
+        }
+#endif
         ImGui::EndTabBar();
     }
-    ImGui::EndChild();
     engine->UiSelectAndScrollToTest = NULL;
-
-    // LOG & TOOLS
-    ImGui::BeginChild("Log", ImVec2(0, log_height));
-    ImGuiTestEngine_ShowLogAndTools(engine);
-    ImGui::EndChild();
-
     ImGui::End();
 }
 

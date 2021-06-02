@@ -545,7 +545,7 @@ void ImGuiPerfLog::Clear()
     _Settings.Clear();
 }
 
-void ImGuiPerfLog::ShowUI(ImGuiTestEngine* engine)
+void ImGuiPerfLog::ShowUI(ImGuiTestEngine*)
 {
 #ifdef IMGUI_TEST_ENGINE_ENABLE_IMPLOT
     ImGuiContext& g = *GImGui;
@@ -558,11 +558,6 @@ void ImGuiPerfLog::ShowUI(ImGuiTestEngine* engine)
     // -----------------------------------------------------------------------------------------------------------------
     // Render utility buttons
     // -----------------------------------------------------------------------------------------------------------------
-    // Back to perf test list.
-    if (ImGui::Button("<< Back"))
-        engine->UiShowPerflog = false;
-    ImGui::SameLine();
-
     // Date filter
     ImGui::AlignTextToFramePadding();
     ImGui::TextUnformatted("Date:");
