@@ -416,12 +416,12 @@ struct ImGuiTestItemList
 
     void                        Clear()                 { Pool.Clear(); }
     void                        Reserve(int capacity)   { Pool.Reserve(capacity); }
-    int                         GetSize() const         { return Pool.GetSize(); }
+    int                         GetSize() const         { return Pool.GetBufSize(); }
     const ImGuiTestItemInfo*    GetByIndex(int n)       { return Pool.GetByIndex(n); }
     const ImGuiTestItemInfo*    GetByID(ImGuiID id)     { return Pool.GetByKey(id); }
 
     // For range-for
-    size_t                      size() const            { return (size_t)Pool.GetSize(); }
+    size_t                      size() const            { return (size_t)Pool.GetBufSize(); }
     const ImGuiTestItemInfo*    begin() const           { return Pool.Buf.begin(); }
     const ImGuiTestItemInfo*    end() const             { return Pool.Buf.end(); }
     const ImGuiTestItemInfo*    operator[] (size_t n)   { return &Pool.Buf[(int)n]; }
