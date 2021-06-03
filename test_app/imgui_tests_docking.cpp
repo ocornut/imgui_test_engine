@@ -38,6 +38,7 @@ struct DockingTestsGenericVars
     bool        ShowDockspace = true;
     bool        ShowWindow[10];
     bool        ShowWindowGroups[2];    // One per 5 windows
+    int         AppearingCount[10];
 
     DockingTestsGenericVars()
     {
@@ -45,6 +46,8 @@ struct DockingTestsGenericVars
             ShowWindow[n] = false;
         for (int n = 0; n < IM_ARRAYSIZE(ShowWindowGroups); n++)
             ShowWindowGroups[n] = true;
+        for (int n = 0; n < IM_ARRAYSIZE(ShowWindow); n++)
+            AppearingCount[n] = false;
     }
 
     void SetShowWindows(int count, bool show)
@@ -108,8 +111,11 @@ static void DockingTestsGenericGuiFunc(ImGuiTestContext* ctx)
 
             Str16 window_name = DockingTestsGetWindowName(n);
             ImGui::Begin(window_name.c_str(), NULL, ImGuiWindowFlags_NoSavedSettings);
+            vars.AppearingCount[n] += ImGui::IsWindowAppearing();
+
             ImGui::Text("This is '%s'", window_name.c_str());
             ImGui::Text("ID = %08X, DockID = %08X", ImGui::GetCurrentWindow()->ID, ImGui::GetWindowDockID());
+            ImGui::Text("AppearingCount = %d", vars.AppearingCount[n]);
             ImGui::End();
         }
 }

@@ -261,8 +261,11 @@ static void ShowTestGroup(ImGuiTestEngine* e, ImGuiTestGroup group, ImGuiTextFil
 
             if (test->Status == ImGuiTestStatus_Suspended)
             {
+                // Resume IM_DEBUG_HALT_TESTFUNC
                 if (ImGui::Button("Con###Run"))
                     test->Status = ImGuiTestStatus_Running;
+                if (ImGui::IsItemHovered())
+                    ImGui::SetTooltip("CTRL+Space to continue.");
                 if (ImGui::IsKeyPressedMap(ImGuiKey_Space) && io.KeyCtrl)
                     test->Status = ImGuiTestStatus_Running;
             }
