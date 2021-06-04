@@ -3,9 +3,9 @@
 #endif
 
 #define IMGUI_DEFINE_MATH_OPERATORS
+#include "imgui_te_perflog.h"
 #include "imgui.h"
 #include "imgui_internal.h"
-#include "imgui_te_perflog.h"
 #include "imgui_te_internal.h"
 #include "libs/Str/Str.h"
 #include "libs/implot/implot.h"
@@ -344,6 +344,8 @@ static ImRect ImPlotGetYTickRect(int t, int y = 0)
 ImGuiPerfLog::ImGuiPerfLog()
 {
     ImGuiContext& g = *GImGui;
+    _CSVParser = IM_NEW(ImGuiCSVParser)();
+
     ImGuiSettingsHandler ini_handler;
     ini_handler.TypeName = "Perflog";
     ini_handler.TypeHash = ImHashStr("Perflog");
@@ -356,12 +358,19 @@ ImGuiPerfLog::ImGuiPerfLog()
     g.SettingsHandlers.push_back(ini_handler);
 }
 
+ImGuiPerfLog::~ImGuiPerfLog()
+{
+    IM_DELETE(_CSVParser);
+}
+
 bool ImGuiPerfLog::Load(const char* file_name)
 {
-    if (!_CSVParser.Load(file_name))
+    ImGuiCSVParser* csv = _CSVParser;
+
+    if (!csv->Load(file_name))
         return false;
 
-    if (_CSVParser.Columns != 11)
+    if (csv->Columns != 11)
     {
         IM_ASSERT(0 && "Invalid number of columns.");
         return false;
@@ -371,21 +380,21 @@ bool ImGuiPerfLog::Load(const char* file_name)
     ImStrncpy(_FilterDateTo, "0000-00-00", IM_ARRAYSIZE(_FilterDateFrom));
 
     // Read perf test entries from CSV
-    for (int row = 0; row < _CSVParser.Rows; row++)
+    for (int row = 0; row < csv->Rows; row++)
     {
         ImGuiPerflogEntry entry;
         int col = 0;
-        sscanf(_CSVParser.GetCell(row, col++), "%llu", &entry.Timestamp);
-        entry.Category = _CSVParser.GetCell(row, col++);
-        entry.TestName = _CSVParser.GetCell(row, col++);
-        sscanf(_CSVParser.GetCell(row, col++), "%lf", &entry.DtDeltaMs);
-        sscanf(_CSVParser.GetCell(row, col++), "x%d", &entry.PerfStressAmount);
-        entry.GitBranchName = _CSVParser.GetCell(row, col++);
-        entry.BuildType = _CSVParser.GetCell(row, col++);
-        entry.Cpu = _CSVParser.GetCell(row, col++);
-        entry.OS = _CSVParser.GetCell(row, col++);
-        entry.Compiler = _CSVParser.GetCell(row, col++);
-        entry.Date = _CSVParser.GetCell(row, col++);
+        sscanf(csv->GetCell(row, col++), "%llu", &entry.Timestamp);
+        entry.Category = csv->GetCell(row, col++);
+        entry.TestName = csv->GetCell(row, col++);
+        sscanf(csv->GetCell(row, col++), "%lf", &entry.DtDeltaMs);
+        sscanf(csv->GetCell(row, col++), "x%d", &entry.PerfStressAmount);
+        entry.GitBranchName = csv->GetCell(row, col++);
+        entry.BuildType = csv->GetCell(row, col++);
+        entry.Cpu = csv->GetCell(row, col++);
+        entry.OS = csv->GetCell(row, col++);
+        entry.Compiler = csv->GetCell(row, col++);
+        entry.Date = csv->GetCell(row, col++);
         _CSVData.push_back(entry);
 
         if (strcmp(_FilterDateFrom, entry.Date) > 0)
@@ -774,8 +783,10 @@ void ImGuiPerfLog::ShowUI(ImGuiTestEngine*)
         ImPlot::SetNextPlotTicksY(0, _VisibleLabelPointers.Size - 1, _VisibleLabelPointers.Size, _VisibleLabelPointers.Data);
         if (ImPlot::GetCurrentContext()->Plots.GetByKey(ImGui::GetID("Perflog")) == NULL)
             ImPlot::FitNextPlotAxes();   // Fit plot when appearing.
-        if (!ImPlot::BeginPlot("Perflog", "Delta milliseconds", "Test", ImVec2(-1, -1)))
+        if (!ImPlot::BeginPlot("Perflog", NULL, NULL, ImVec2(-1, -1)))
             return;
+        //if (!ImPlot::BeginPlot("Perflog", "Delta milliseconds", "Test", ImVec2(-1, -1)))
+        //    return;
 
         // Clickable test names
         bool test_name_hovered = false;

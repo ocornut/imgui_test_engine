@@ -2,8 +2,8 @@
 
 #include <Str/Str.h>
 #include "imgui.h"
-#include "imgui_te_util.h"
 
+struct ImGuiCSVParser;
 struct ImGuiTestEngine;
 
 // [Internal] Perf log entry. Changes to this struct should be reflected in ImGuiTestContext::PerfCapture() and ImGuiTestEngine_Start().
@@ -31,7 +31,7 @@ struct ImGuiPerfLogColumnInfo;
 
 struct ImGuiPerfLog
 {
-    ImGuiCSVParser              _CSVParser;                     // CSV parser.
+    ImGuiCSVParser*             _CSVParser;                     // CSV parser.
     ImVector<ImGuiPerflogEntry> _CSVData;                       // Raw entries from CSV file (with string pointer into CSV data).
     ImVector<ImGuiPerflogEntry> _Data;                          // Data used to render plots. This is not necessarily same as Entries. Sorted by Timestamp and TestName.
     ImVector<ImGuiPerflogEntry*> _Labels;                       // A list of labels (left of the plot).
@@ -67,7 +67,8 @@ struct ImGuiPerfLog
         void    Clear()         { Visibility.Clear(); BaselineTimestamp = (ImU64)-1; }
     } _Settings;
 
-                ImGuiPerfLog();
+    ImGuiPerfLog();
+    ~ImGuiPerfLog();
     bool        Load(const char* file_name);
     bool        Save(const char* file_name);
     void        AddEntry(ImGuiPerflogEntry* entry);
