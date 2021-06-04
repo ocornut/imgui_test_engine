@@ -95,6 +95,7 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
     // ## Test that Alt toggle layer, test that AltGr doesn't.
     // ## Test that toggling layer steals active id.
     // ## Test that toggling layer is canceled by character typing (#370)
+    // ## Test that ESC closes a menu
     // All those are performed on child and popups windows as well.
     t = IM_REGISTER_TEST(e, "nav", "nav_menu_alt_key");
     t->GuiFunc = [](ImGuiTestContext* ctx)

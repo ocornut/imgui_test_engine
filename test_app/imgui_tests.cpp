@@ -1727,15 +1727,16 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
         IM_CHECK(pool.GetByIndex(pool.GetIndex(t2)) == t2);
         ImGuiTabBar* t3 = pool.GetOrAddByKey(0x33);
         IM_CHECK(pool.GetIndex(t3) == 2);
-        IM_CHECK(pool.GetBufSize() == 3);
+        IM_CHECK(pool.GetMapSize() == 3);
         pool.Remove(0x22, pool.GetByKey(0x22));
         IM_CHECK(pool.GetByKey(0x22) == NULL);
-        IM_CHECK(pool.GetBufSize() == 3);
+        IM_CHECK(pool.GetMapSize() == 3);
         ImGuiTabBar* t4 = pool.GetOrAddByKey(0x40);
         IM_CHECK(pool.GetIndex(t4) == 1);
         IM_CHECK(pool.GetBufSize() == 3);
+        IM_CHECK(pool.GetMapSize() == 4);
         pool.Clear();
-        IM_CHECK(pool.GetBufSize() == 0);
+        IM_CHECK(pool.GetMapSize() == 0);
     };
 
     // ## Test behavior of ImParseFormatTrimDecorations
