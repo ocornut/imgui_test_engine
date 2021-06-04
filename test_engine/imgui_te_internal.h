@@ -127,8 +127,8 @@ struct ImGuiTestEngine
     bool                        UiMetricsOpen = false; // FIXME
     bool                        UiCaptureToolOpen = false;
     bool                        UiStackToolOpen = false;
+    bool                        UiPerfToolOpen = false;
     float                       UiLogHeight = 150.0f;
-    bool                        UiShowPerflog = false;
 
     // Performance Monitor
     double                      PerfRefDeltaTime;

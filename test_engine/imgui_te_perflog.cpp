@@ -556,7 +556,6 @@ void ImGuiPerfLog::Clear()
 
 void ImGuiPerfLog::ShowUI(ImGuiTestEngine*)
 {
-#ifdef IMGUI_TEST_ENGINE_ENABLE_IMPLOT
     ImGuiContext& g = *GImGui;
     Str256f label("");
     Str256f display_label("");
@@ -773,9 +772,11 @@ void ImGuiPerfLog::ShowUI(ImGuiTestEngine*)
     // -----------------------------------------------------------------------------------------------------------------
     // Render a plot
     // -----------------------------------------------------------------------------------------------------------------
+
     int scroll_to_test = -1;
     if (ImGui::BeginChild(ImGui::GetID("plot"), ImVec2(0, plot_height)))
     {
+#ifdef IMGUI_TEST_ENGINE_ENABLE_IMPLOT
         // A workaround for ImPlot requiring at least two labels.
         if (_VisibleLabelPointers.Size < 2)
             _VisibleLabelPointers.push_back("");
@@ -784,7 +785,10 @@ void ImGuiPerfLog::ShowUI(ImGuiTestEngine*)
         if (ImPlot::GetCurrentContext()->Plots.GetByKey(ImGui::GetID("Perflog")) == NULL)
             ImPlot::FitNextPlotAxes();   // Fit plot when appearing.
         if (!ImPlot::BeginPlot("Perflog", NULL, NULL, ImVec2(-1, -1)))
+        {
+            ImGui::EndChild();
             return;
+        }
         //if (!ImPlot::BeginPlot("Perflog", "Delta milliseconds", "Test", ImVec2(-1, -1)))
         //    return;
 
@@ -892,6 +896,9 @@ void ImGuiPerfLog::ShowUI(ImGuiTestEngine*)
             bar_index++;
         }
         ImPlot::EndPlot();
+#else
+        ImGui::TextUnformatted("Not enabled because ImPlot is not available (IMGUI_TEST_ENGINE_ENABLE_IMPLOT is not defined).");
+#endif
     }
     ImGui::EndChild();
 
@@ -911,7 +918,7 @@ void ImGuiPerfLog::ShowUI(ImGuiTestEngine*)
             { /* 07 */ "Avg ms",      IM_OFFSETOF(ImGuiPerflogEntry, DtDeltaMs),        ImGuiDataType_Double },
             { /* 08 */ "Min ms",      IM_OFFSETOF(ImGuiPerflogEntry, DtDeltaMsMin),     ImGuiDataType_Double },
             { /* 09 */ "Max ms",      IM_OFFSETOF(ImGuiPerflogEntry, DtDeltaMsMax),     ImGuiDataType_Double },
-            { /* 10 */ "Num samples", IM_OFFSETOF(ImGuiPerflogEntry, NumSamples),       ImGuiDataType_S32    },
+            { /* 10 */ "Samples",     IM_OFFSETOF(ImGuiPerflogEntry, NumSamples),       ImGuiDataType_S32    },
             { /* 11 */ "VS Baseline", IM_OFFSETOF(ImGuiPerflogEntry, VsBaseline),       ImGuiDataType_Float  },
         };
         // Same as above, except we skip "Min ms", "Max ms" and "Num samples".
@@ -1043,9 +1050,6 @@ void ImGuiPerfLog::ShowUI(ImGuiTestEngine*)
         ImGui::EndTable();
     }
     ImGui::EndChild();
-#else
-    IM_ASSERT(0 && "Perflog UI is not enabled, because ImPlot is not available (IMGUI_TEST_ENGINE_ENABLE_IMPLOT is not defined).");
-#endif
 }
 
 void ImGuiPerfLog::ViewOnly(const char** perf_names)

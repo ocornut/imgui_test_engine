@@ -331,7 +331,7 @@ static void ShowTestGroup(ImGuiTestEngine* e, ImGuiTestGroup group, ImGuiTextFil
                 if (group == ImGuiTestGroup_Perfs && ImGui::MenuItem("View perflog"))
                 {
                     e->PerfLog->ViewOnly(test->Name);
-                    e->UiShowPerflog = true;
+                    e->UiPerfToolOpen = true;
                 }
 
                 ImGui::Separator();
@@ -529,6 +529,7 @@ static void ImGuiTestEngine_ShowTestTool(ImGuiTestEngine* engine, bool* p_open)
         if (ImGui::Checkbox("Metrics", &engine->UiMetricsOpen)) ImGui::CloseCurrentPopup(); // FIXME: duplicate with Demo one... use macros to activate in demo?
         if (ImGui::Checkbox("Stack Tool", &engine->UiStackToolOpen)) ImGui::CloseCurrentPopup();
         if (ImGui::Checkbox("Capture Tool", &engine->UiCaptureToolOpen)) ImGui::CloseCurrentPopup();
+        if (ImGui::Checkbox("Perf Tool", &engine->UiPerfToolOpen)) ImGui::CloseCurrentPopup();
         ImGui::EndPopup();
     }
 
@@ -552,7 +553,7 @@ static void ImGuiTestEngine_ShowTestTool(ImGuiTestEngine* engine, bool* p_open)
         engine->IO.ConfigVerboseLevelOnError = engine->IO.ConfigVerboseLevel;
     ImGui::SameLine();
     ImGui::SetNextItemWidth(30 * engine->IO.DpiScale);
-    ImGui::DragInt("PerfStress", &engine->IO.PerfStressAmount, 0.1f, 1, 20); HelpTooltip("Increase workload of performance tests (higher means longer run).");
+    ImGui::DragInt("PerfStress", &engine->IO.PerfStressAmount, 0.1f, 1, 20); HelpTooltip("Increase workload of performance tests (higher means longer run)."); // FIXME: Move?
     ImGui::PopStyleVar();
     ImGui::Separator();
 
@@ -589,18 +590,6 @@ static void ImGuiTestEngine_ShowTestTool(ImGuiTestEngine* engine, bool* p_open)
             ImGui::EndChild();
             ImGui::EndTabItem();
         }
-#ifdef IMGUI_TEST_ENGINE_ENABLE_IMPLOT
-        if (engine->UiShowPerflog)
-        {
-            ImGui::ActivateItem(ImGui::GetID("PERFLOG"));
-            engine->UiShowPerflog = false;
-        }
-        if (ImGui::BeginTabItem("PERFLOG"))
-        {
-            engine->PerfLog->ShowUI(engine);
-            ImGui::EndTabItem();
-        }
-#endif
         ImGui::EndTabBar();
     }
     engine->UiSelectAndScrollToTest = NULL;
@@ -623,6 +612,14 @@ void    ImGuiTestEngine_ShowTestWindows(ImGuiTestEngine* e, bool* p_open)
     capture_tool.Context.ScreenCaptureUserData = e->IO.ScreenCaptureUserData;
     if (e->UiCaptureToolOpen)
         capture_tool.ShowCaptureToolWindow(&e->UiCaptureToolOpen);
+
+    // Perf tool
+    if (e->UiPerfToolOpen)
+    {
+        ImGui::Begin("Dear ImGui Perf Tool", &e->UiPerfToolOpen);
+        e->PerfLog->ShowUI(e);
+        ImGui::End();
+    }
 
     // Metrics window
     // FIXME
