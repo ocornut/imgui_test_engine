@@ -657,7 +657,7 @@ void ImGuiPerfLog::ShowUI(ImGuiTestEngine*)
     // Gather pointers of visible labels. ImPlot requires such array for rendering.
     _VisibleLabelPointers.resize(0);
     for (ImGuiPerflogEntry* entry : _Labels)
-        if (_IsVisibleTest(entry))
+        if (_IsVisibleTest(entry) && _IsVisibleBuild(entry))
             _VisibleLabelPointers.push_back(entry->TestName);
 
     if (ImGui::Button(Str16f("Filter builds (%d/%d)", num_visible_builds, _Legend.Size).c_str()))
@@ -801,7 +801,7 @@ void ImGuiPerfLog::ShowUI(ImGuiTestEngine*)
         ImPlot::SetNextPlotTicksY(0, _VisibleLabelPointers.Size - 1, _VisibleLabelPointers.Size, _VisibleLabelPointers.Data);
         if (ImPlot::GetCurrentContext()->Plots.GetByKey(ImGui::GetID("Perflog")) == NULL)
             ImPlot::FitNextPlotAxes();   // Fit plot when appearing.
-        if (!ImPlot::BeginPlot("Perflog", NULL, NULL, ImVec2(-1, -1)))
+        if (!ImPlot::BeginPlot("Perflog", NULL, NULL, ImVec2(-1, -1), ImPlotFlags_NoTitle, ImPlotAxisFlags_NoTickLabels))
         {
             ImGui::EndChild();
             return;
