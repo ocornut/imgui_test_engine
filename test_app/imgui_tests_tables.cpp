@@ -21,6 +21,10 @@
 #pragma GCC diagnostic ignored "-Wunused-parameter"
 #endif
 
+#if IMGUI_VERSION_NUM < 18305
+#define IsUserEnabledNextFrame IsEnabledNextFrame
+#endif
+
 //-------------------------------------------------------------------------
 // Tests: Tables
 //-------------------------------------------------------------------------
@@ -1489,7 +1493,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
             if (col1_hidden)
             {
                 // FIXME-TESTS: Later we should try to simulate inputs at user level.. Cannot use TableSetColumnIsEnabled() from pointer.
-                table->Columns[1].IsEnabled = table->Columns[1].IsEnabledNextFrame = false;
+                table->Columns[1].IsEnabled = table->Columns[1].IsUserEnabledNextFrame = false;
                 ctx->Yield();   // Must come into effect before reordering.
             }
 
@@ -1590,7 +1594,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
         IM_CHECK_EQ(table->Columns[1].WidthAuto, 100.0f);
         IM_CHECK_LE(table->Columns[2].WidthRequest, 0.0f);
         IM_CHECK_LE(table->Columns[2].WidthAuto, 0.0f);
-        table->Columns[2].IsEnabledNextFrame = true;
+        table->Columns[2].IsUserEnabledNextFrame = true;
         ctx->Yield();
         IM_CHECK_LE(table->Columns[2].WidthAuto, 0.0f);
         ctx->Yield();
@@ -1601,7 +1605,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
         ctx->Yield();
         IM_CHECK_EQ(table->Columns[2].IsEnabled, false);
         IM_CHECK_EQ(table->Columns[2].WidthAuto, 100.0f);
-        table->Columns[2].IsEnabledNextFrame = true;
+        table->Columns[2].IsUserEnabledNextFrame = true;
         ctx->Yield();
         IM_CHECK_EQ(table->Columns[2].WidthAuto, 100.0f);
 
@@ -1612,7 +1616,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
         IM_CHECK_EQ(table->Columns[2].IsEnabled, false);
         IM_CHECK_LT(table->Columns[2].WidthRequest, 0.0f);
         IM_CHECK_EQ(table->Columns[2].WidthAuto, 0.0f);
-        table->Columns[2].IsEnabledNextFrame = true;
+        table->Columns[2].IsUserEnabledNextFrame = true;
         ctx->Yield();
         IM_CHECK_LE(table->Columns[2].WidthAuto, 0.0f);
         ctx->Yield();
