@@ -23,9 +23,25 @@ struct ImGuiPerfLogColumnInfo
     const char*     Title;
     int             Offset;
     ImGuiDataType   Type;
+    bool            ShowAlways;
 
     template<typename T>
     T GetValue(const ImGuiPerflogEntry* entry) const { return *(T*)((const char*)entry + Offset); }
+};
+
+static const ImGuiPerfLogColumnInfo PerfLogColumnInfo[] = {
+    { /* 00 */ "Test Name",   IM_OFFSETOF(ImGuiPerflogEntry, TestName),         ImGuiDataType_COUNT,  true  },
+    { /* 01 */ "Branch",      IM_OFFSETOF(ImGuiPerflogEntry, GitBranchName),    ImGuiDataType_COUNT,  true  },
+    { /* 02 */ "Compiler",    IM_OFFSETOF(ImGuiPerflogEntry, Compiler),         ImGuiDataType_COUNT,  true  },
+    { /* 03 */ "OS",          IM_OFFSETOF(ImGuiPerflogEntry, OS),               ImGuiDataType_COUNT,  true  },
+    { /* 04 */ "CPU",         IM_OFFSETOF(ImGuiPerflogEntry, Cpu),              ImGuiDataType_COUNT,  true  },
+    { /* 05 */ "Build",       IM_OFFSETOF(ImGuiPerflogEntry, BuildType),        ImGuiDataType_COUNT,  true  },
+    { /* 06 */ "Stress",      IM_OFFSETOF(ImGuiPerflogEntry, PerfStressAmount), ImGuiDataType_S32,    true  },
+    { /* 07 */ "Avg ms",      IM_OFFSETOF(ImGuiPerflogEntry, DtDeltaMs),        ImGuiDataType_Double, false },
+    { /* 08 */ "Min ms",      IM_OFFSETOF(ImGuiPerflogEntry, DtDeltaMsMin),     ImGuiDataType_Double, false },
+    { /* 09 */ "Max ms",      IM_OFFSETOF(ImGuiPerflogEntry, DtDeltaMsMax),     ImGuiDataType_Double, false },
+    { /* 10 */ "Samples",     IM_OFFSETOF(ImGuiPerflogEntry, NumSamples),       ImGuiDataType_S32,    false },
+    { /* 11 */ "VS Baseline", IM_OFFSETOF(ImGuiPerflogEntry, VsBaseline),       ImGuiDataType_Float,  true  },
 };
 
 static int IMGUI_CDECL PerflogComparerByTimestampAndTestName(const void* lhs, const void* rhs)
@@ -58,7 +74,7 @@ static int IMGUI_CDECL CompareWithSortSpecs(const void* lhs, const void* rhs)
     for (int i = 0; i < sort_specs->SpecsCount; i++)
     {
         const ImGuiTableColumnSortSpecs* specs = &sort_specs->Specs[i];
-        const ImGuiPerfLogColumnInfo& col_info = PerfLogInstance->_InfoTableSortColInfo[specs->ColumnIndex];
+        const ImGuiPerfLogColumnInfo& col_info = PerfLogColumnInfo[specs->ColumnIndex];
         const ImGuiPerflogEntry* a = PerfLogInstance->_Legend[*(int*) lhs];
         const ImGuiPerflogEntry* b = PerfLogInstance->_Legend[*(int*) rhs];
         if (specs->SortDirection == ImGuiSortDirection_Ascending)
@@ -816,7 +832,6 @@ void ImGuiPerfLog::ShowUI(ImGuiTestEngine*)
     // Render a plot
     // -----------------------------------------------------------------------------------------------------------------
 
-    int scroll_to_test = -1;
     if (ImGui::BeginChild(ImGui::GetID("plot"), ImVec2(0, plot_height)))
     {
 #ifdef IMGUI_TEST_ENGINE_ENABLE_IMPLOT
@@ -849,7 +864,10 @@ void ImGuiPerfLog::ShowUI(ImGuiTestEngine*)
                 ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
                 g.CurrentWindow->DrawList->AddLine(ImFloor(label_rect.GetBL()), ImFloor(label_rect.GetBR()), ImColor(g.Style.Colors[ImGuiCol_Text]));
                 if (ImGui::IsMouseClicked(ImGuiMouseButton_Left))
-                    scroll_to_test = t;
+                {
+                    _TableScrollToTest = _VisibleLabelPointers.Data[t];
+                    _TableHighlightAnimTime = 0.0f;
+                }
             }
         }
 
@@ -944,35 +962,16 @@ void ImGuiPerfLog::ShowUI(ImGuiTestEngine*)
     // -----------------------------------------------------------------------------------------------------------------
     if (ImGui::BeginChild(ImGui::GetID("info-table"), ImVec2(0, _InfoTableHeight)))
     {
-        static const ImGuiPerfLogColumnInfo columns_combined[] = {
-            { /* 00 */ "Test Name",   IM_OFFSETOF(ImGuiPerflogEntry, TestName),         ImGuiDataType_COUNT  },
-            { /* 01 */ "Branch",      IM_OFFSETOF(ImGuiPerflogEntry, GitBranchName),    ImGuiDataType_COUNT  },
-            { /* 02 */ "Compiler",    IM_OFFSETOF(ImGuiPerflogEntry, Compiler),         ImGuiDataType_COUNT  },
-            { /* 03 */ "OS",          IM_OFFSETOF(ImGuiPerflogEntry, OS),               ImGuiDataType_COUNT  },
-            { /* 04 */ "CPU",         IM_OFFSETOF(ImGuiPerflogEntry, Cpu),              ImGuiDataType_COUNT  },
-            { /* 05 */ "Build",       IM_OFFSETOF(ImGuiPerflogEntry, BuildType),        ImGuiDataType_COUNT  },
-            { /* 06 */ "Stress",      IM_OFFSETOF(ImGuiPerflogEntry, PerfStressAmount), ImGuiDataType_S32    },
-            { /* 07 */ "Avg ms",      IM_OFFSETOF(ImGuiPerflogEntry, DtDeltaMs),        ImGuiDataType_Double },
-            { /* 08 */ "Min ms",      IM_OFFSETOF(ImGuiPerflogEntry, DtDeltaMsMin),     ImGuiDataType_Double },
-            { /* 09 */ "Max ms",      IM_OFFSETOF(ImGuiPerflogEntry, DtDeltaMsMax),     ImGuiDataType_Double },
-            { /* 10 */ "Samples",     IM_OFFSETOF(ImGuiPerflogEntry, NumSamples),       ImGuiDataType_S32    },
-            { /* 11 */ "VS Baseline", IM_OFFSETOF(ImGuiPerflogEntry, VsBaseline),       ImGuiDataType_Float  },
-        };
-        // Same as above, except we skip "Min ms", "Max ms" and "Num samples".
-        static const ImGuiPerfLogColumnInfo columns_separate[] =
-        {
-            columns_combined[0], columns_combined[1], columns_combined[2], columns_combined[3], columns_combined[4],
-            columns_combined[5], columns_combined[6], columns_combined[7], columns_combined[11],
-        };
-        const ImGuiPerfLogColumnInfo* columns = _CombineByBuildInfo ? columns_combined : columns_separate;
-        int columns_num = _CombineByBuildInfo ? IM_ARRAYSIZE(columns_combined) : IM_ARRAYSIZE(columns_separate);
-        if (!ImGui::BeginTable("PerfInfo", columns_num, ImGuiTableFlags_Borders | ImGuiTableFlags_Sortable | ImGuiTableFlags_SortMulti | ImGuiTableFlags_SortTristate | ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_ScrollY))
+        if (!ImGui::BeginTable("PerfInfo", IM_ARRAYSIZE(PerfLogColumnInfo), ImGuiTableFlags_Hideable | ImGuiTableFlags_Borders | ImGuiTableFlags_Sortable | ImGuiTableFlags_SortMulti | ImGuiTableFlags_SortTristate | ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_ScrollY))
             return;
 
         // Test name column is not sorted because we do sorting only within perf runs of a particular tests, so as far
         // as sorting function is concerned all items in first column are identical.
-        for (int i = 0; i < columns_num; i++)
-            ImGui::TableSetupColumn(columns[i].Title, i ? 0 : ImGuiTableColumnFlags_NoSort);
+        for (int i = 0; i < IM_ARRAYSIZE(PerfLogColumnInfo); i++)
+        {
+            ImGui::TableSetupColumn(PerfLogColumnInfo[i].Title, i ? 0 : ImGuiTableColumnFlags_NoSort);
+            ImGui::TableSetColumnEnabled(i, PerfLogColumnInfo[i].ShowAlways || _CombineByBuildInfo);
+        }
         ImGui::TableSetupScrollFreeze(0, 1);
 
         if (ImGuiTableSortSpecs* sorts_specs = ImGui::TableGetSortSpecs())
@@ -985,11 +984,9 @@ void ImGuiPerfLog::ShowUI(ImGuiTestEngine*)
                     _InfoTableSort.push_back(i);
                 if (sorts_specs->SpecsCount > 0 && _InfoTableSort.Size > 1)
                 {
-                    _InfoTableSortColInfo = columns;
                     _InfoTableSortSpecs = sorts_specs;
                     PerfLogInstance = this;
                     ImQsort(&_InfoTableSort[0], (size_t)_InfoTableSort.Size, sizeof(_InfoTableSort[0]), CompareWithSortSpecs);
-                    _InfoTableSortColInfo = NULL;
                     _InfoTableSortSpecs = NULL;
                     PerfLogInstance = NULL;
                 }
@@ -1002,11 +999,7 @@ void ImGuiPerfLog::ShowUI(ImGuiTestEngine*)
         _TableHoveredBatch = -1;
         for (int label_index = 0; label_index < _Labels.Size; label_index++)
         {
-            if (scroll_to_test == label_index)
-            {
-                ImGuiWindow* window = g.CurrentWindow;
-                ImGui::SetScrollFromPosY(window->DC.CursorPos.y - window->Pos.y, 0.0f);
-            }
+            bool scrolled_to = false;
             for (int batch_index = 0; batch_index < _Legend.Size; batch_index++)
             {
                 ImGuiPerflogEntry* entry = GetEntryByBatchIdx(_InfoTableSort[batch_index], _Labels[label_index]->TestName);
@@ -1015,64 +1008,75 @@ void ImGuiPerfLog::ShowUI(ImGuiTestEngine*)
 
                 ImGui::TableNextRow();
 
+                if (_TableScrollToTest != NULL && _TableHighlightAnimTime < 1.0f && strcmp(_Labels.Data[label_index]->TestName, _TableScrollToTest) == 0)
+                {
+                    if (!scrolled_to)
+                    {
+                        ImGui::SetScrollHereY(0);
+                        scrolled_to = true;
+                    }
+                    ImColor bg_color;
+                    bg_color.Value = ImLerp(g.Style.Colors[ImGuiCol_TableRowBgAlt], g.Style.Colors[ImGuiCol_TableRowBg], _TableHighlightAnimTime);
+                    ImGui::TableSetBgColor(ImGuiTableBgTarget_RowBg0, bg_color);
+                }
+
                 // Build info
-                ImGui::TableNextColumn();
-                ImGui::TextUnformatted(entry->TestName);
-                ImGui::TableNextColumn();
-                ImGui::TextUnformatted(entry->GitBranchName);
-                ImGui::TableNextColumn();
-                ImGui::TextUnformatted(entry->Compiler);
-                ImGui::TableNextColumn();
-                ImGui::TextUnformatted(entry->OS);
-                ImGui::TableNextColumn();
-                ImGui::TextUnformatted(entry->Cpu);
-                ImGui::TableNextColumn();
-                ImGui::TextUnformatted(entry->BuildType);
-                ImGui::TableNextColumn();
-                ImGui::Text("x%d", entry->PerfStressAmount);
+                if (ImGui::TableNextColumn())
+                    ImGui::TextUnformatted(entry->TestName);
+                if (ImGui::TableNextColumn())
+                    ImGui::TextUnformatted(entry->GitBranchName);
+                if (ImGui::TableNextColumn())
+                    ImGui::TextUnformatted(entry->Compiler);
+                if (ImGui::TableNextColumn())
+                    ImGui::TextUnformatted(entry->OS);
+                if (ImGui::TableNextColumn())
+                    ImGui::TextUnformatted(entry->Cpu);
+                if (ImGui::TableNextColumn())
+                    ImGui::TextUnformatted(entry->BuildType);
+                if (ImGui::TableNextColumn())
+                    ImGui::Text("x%d", entry->PerfStressAmount);
 
                 // Avg ms
-                ImGui::TableNextColumn();
-                ImGui::Text("%.3lfms", entry->DtDeltaMs);
+                if (ImGui::TableNextColumn())
+                    ImGui::Text("%.3lfms", entry->DtDeltaMs);
 
-                if (_CombineByBuildInfo)
-                {
-                    // Min ms
-                    ImGui::TableNextColumn();
+                // Min ms
+                if (ImGui::TableNextColumn())
                     ImGui::Text("%.3lfms", entry->DtDeltaMsMin);
 
-                    // Max ms
-                    ImGui::TableNextColumn();
+                // Max ms
+                if (ImGui::TableNextColumn())
                     ImGui::Text("%.3lfms", entry->DtDeltaMsMax);
 
                     // Num samples
-                    ImGui::TableNextColumn();
+                if (ImGui::TableNextColumn())
                     ImGui::Text("%d", entry->NumSamples);
-                }
 
                 // VS Baseline
-                ImGui::TableNextColumn();
-                ImGuiPerflogEntry* baseline_entry = GetEntryByBatchIdx(_BaselineBatchIndex, _Labels[label_index]->TestName);
-                if (baseline_entry == NULL)
+                if (ImGui::TableNextColumn())
                 {
-                    ImGui::TextUnformatted("--");
-                }
-                else if (entry == baseline_entry)
-                {
-                    ImGui::TextUnformatted("baseline");
-                }
-                else
-                {
-                    double percent_vs_first = 100.0 / baseline_entry->DtDeltaMs * entry->DtDeltaMs;
-                    double dt_change = -(100.0 - percent_vs_first);
-                    if (ImAbs(dt_change) > 0.001f)
-                        ImGui::Text("%+.2lf%% (%s)", dt_change, dt_change < 0.0f ? "faster" : "slower");
-                    else
-                        ImGui::TextUnformatted("==");
-                    if (dt_change != entry->VsBaseline)
+                    ImGuiPerflogEntry* baseline_entry = GetEntryByBatchIdx(_BaselineBatchIndex, _Labels[label_index]->TestName);
+                    if (baseline_entry == NULL)
                     {
-                        entry->VsBaseline = dt_change;
-                        _InfoTableSortDirty = true;             // Force re-sorting.
+                        ImGui::TextUnformatted("--");
+                    }
+                    else if (entry == baseline_entry)
+                    {
+                        ImGui::TextUnformatted("baseline");
+                    }
+                    else
+                    {
+                        double percent_vs_first = 100.0 / baseline_entry->DtDeltaMs * entry->DtDeltaMs;
+                        double dt_change = -(100.0 - percent_vs_first);
+                        if (ImAbs(dt_change) > 0.001f)
+                            ImGui::Text("%+.2lf%% (%s)", dt_change, dt_change < 0.0f ? "faster" : "slower");
+                        else
+                            ImGui::TextUnformatted("==");
+                        if (dt_change != entry->VsBaseline)
+                        {
+                            entry->VsBaseline = dt_change;
+                            _InfoTableSortDirty = true;             // Force re-sorting.
+                        }
                     }
                 }
 
@@ -1088,6 +1092,7 @@ void ImGuiPerfLog::ShowUI(ImGuiTestEngine*)
         ImGui::EndTable();
     }
     ImGui::EndChild();
+    _TableHighlightAnimTime += g.IO.DeltaTime;
 }
 
 void ImGuiPerfLog::ViewOnly(const char** perf_names)
