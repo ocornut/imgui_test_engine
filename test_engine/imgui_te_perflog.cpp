@@ -945,13 +945,14 @@ void ImGuiPerfLog::ShowUI(ImGuiTestEngine*)
         const bool combine_by_build_info = _CombineByBuildInfo && !_Dirty;
         const ImGuiPerfLogColumnInfo* columns = combine_by_build_info ? columns_combined : columns_separate;
         int columns_num = combine_by_build_info ? IM_ARRAYSIZE(columns_combined) : IM_ARRAYSIZE(columns_separate);
-        if (!ImGui::BeginTable("PerfInfo", columns_num, ImGuiTableFlags_Borders | ImGuiTableFlags_Sortable | ImGuiTableFlags_SortMulti | ImGuiTableFlags_SortTristate | ImGuiTableFlags_SizingFixedFit))
+        if (!ImGui::BeginTable("PerfInfo", columns_num, ImGuiTableFlags_Borders | ImGuiTableFlags_Sortable | ImGuiTableFlags_SortMulti | ImGuiTableFlags_SortTristate | ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_ScrollY))
             return;
 
         // Test name column is not sorted because we do sorting only within perf runs of a particular tests, so as far
         // as sorting function is concerned all items in first column are identical.
         for (int i = 0; i < columns_num; i++)
             ImGui::TableSetupColumn(columns[i].Title, i ? 0 : ImGuiTableColumnFlags_NoSort);
+        ImGui::TableSetupScrollFreeze(0, 1);
 
         if (ImGuiTableSortSpecs* sorts_specs = ImGui::TableGetSortSpecs())
             if (sorts_specs->SpecsDirty || _InfoTableSortDirty)
@@ -973,6 +974,8 @@ void ImGuiPerfLog::ShowUI(ImGuiTestEngine*)
                 }
             }
 
+        ImGui::TableHeadersRow();
+
         ImGuiTable* table = g.CurrentTable;
         _TableHoveredTest = -1;
         _TableHoveredBatch = -1;
@@ -983,7 +986,6 @@ void ImGuiPerfLog::ShowUI(ImGuiTestEngine*)
                 ImGuiWindow* window = g.CurrentWindow;
                 ImGui::SetScrollFromPosY(window->DC.CursorPos.y - window->Pos.y, 0.0f);
             }
-            ImGui::TableHeadersRow();
             for (int batch_index = 0; batch_index < _Legend.Size; batch_index++)
             {
                 ImGuiPerflogEntry* entry = GetEntryByBatchIdx(_InfoTableSort[batch_index], _Labels[label_index]->TestName);
