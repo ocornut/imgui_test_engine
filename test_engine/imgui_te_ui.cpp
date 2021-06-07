@@ -211,7 +211,24 @@ static void ShowTestGroup(ImGuiTestEngine* e, ImGuiTestGroup group, ImGuiTextFil
     }
 
     ImGui::SameLine();
+#ifdef IMGUI_TEST_ENGINE_ENABLE_IMPLOT
+    const char* perflog_label = "Perf Tool";
+    float filter_width = ImGui::GetWindowContentRegionMax().x - ImGui::GetCursorPos().x;
+    if (group == ImGuiTestGroup_Perfs)
+        filter_width -= style.ItemSpacing.x + style.FramePadding.x * 2 + ImGui::CalcTextSize(perflog_label).x;
+    filter->Draw("##filter", ImMax(20.0f, filter_width));
+    if (group == ImGuiTestGroup_Perfs)
+    {
+        ImGui::SameLine();
+        if (ImGui::Button(perflog_label))
+        {
+            e->UiPerfToolOpen = true;
+            ImGui::FocusWindow(ImGui::FindWindowByName("Dear ImGui Perf Tool"));
+        }
+    }
+#else
     filter->Draw("##filter", -1);
+#endif
     ImGui::Separator();
 
     if (ImGui::BeginChild("Tests", ImVec2(0, 0)))
