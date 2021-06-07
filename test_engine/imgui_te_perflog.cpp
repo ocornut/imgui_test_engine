@@ -868,7 +868,7 @@ void ImGuiPerfLog::ShowUI(ImGuiTestEngine*)
                 label_id = ImHashData(&entry->Timestamp, sizeof(entry->Timestamp));
             else
                 label_id = ImHashStr(label.c_str());        // Otherwise using label hash allows them to collapse in the legend.
-            display_label.appendf("%s###%08X", !_PerBranchColors && _BaselineBatchIndex == batch_index ? " *" : "", label_id);
+            display_label.appendf("%s###%08X", _BaselineBatchIndex == batch_index ? " *" : "", label_id);
             float shift = (float)(num_visible_builds - 1) * 0.5f * h;
 
             // Highlight background behind bar when hovering test entry in info table.
@@ -895,7 +895,7 @@ void ImGuiPerfLog::ShowUI(ImGuiTestEngine*)
             // Set baseline.
             if (ImPlot::IsLegendEntryHovered(display_label.c_str()))
             {
-                if (ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left) && !_PerBranchColors)
+                if (ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
                 {
                     _BaselineBatchIndex = batch_index;
                     _Dirty = true;
@@ -1050,7 +1050,7 @@ void ImGuiPerfLog::ShowUI(ImGuiTestEngine*)
 
                 // VS Baseline
                 ImGui::TableNextColumn();
-                ImGuiPerflogEntry* baseline_entry = _PerBranchColors ? NULL : GetEntryByBatchIdx(_BaselineBatchIndex, _Labels[label_index]->TestName);
+                ImGuiPerflogEntry* baseline_entry = GetEntryByBatchIdx(_BaselineBatchIndex, _Labels[label_index]->TestName);
                 if (baseline_entry == NULL)
                 {
                     ImGui::TextUnformatted("--");
