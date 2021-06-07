@@ -116,8 +116,19 @@ static void PerflogFormatTestName(ImGuiPerfLog* perflog, Str256f* result, ImGuiP
 
 static void PerflogFormatBuildInfo(ImGuiPerfLog* perflog, Str256f* result, ImGuiPerflogEntry* entry)
 {
-    Str64f legend_format("x%%-%dd %%-%ds %%s %%-%ds %%-%ds %%s %%-%ds (%%-%dd samples)", perflog->_AlignStress, perflog->_AlignType, perflog->_AlignOs, perflog->_AlignCompiler, perflog->_AlignBranch, perflog->_AlignSamples);
-    result->appendf(legend_format.c_str(), entry->PerfStressAmount, entry->BuildType, entry->Cpu, entry->OS, entry->Compiler, entry->Date, entry->GitBranchName, entry->NumSamples);
+    Str64f legend_format("x%%-%dd %%-%ds %%-%ds %%-%ds %%s %%-%ds %%s%%s%%s%%s(%%-%dd sample%%s)%%s",
+        perflog->_AlignStress, perflog->_AlignType, perflog->_AlignOs, perflog->_AlignCompiler, perflog->_AlignBranch,
+        perflog->_AlignSamples);
+    result->appendf(legend_format.c_str(), entry->PerfStressAmount, entry->BuildType, entry->Cpu, entry->OS,
+        entry->Compiler, entry->GitBranchName, entry->Date,
+#if 0
+        // Show min-max dates.
+        perflog->_CombineByBuildInfo ? " - " : "", entry->DateMax ? entry->DateMax : "",
+#else
+        "", "",
+#endif
+        *entry->Date ? " " : "", entry->NumSamples,
+        entry->NumSamples > 1 ? "s" : "", entry->NumSamples > 1 || perflog->_AlignSamples == 1 ? "" : " ");
 }
 
 // Copied from implot_demo.cpp and modified.
@@ -479,7 +490,15 @@ void ImGuiPerfLog::_Rebuild()
             }
 
             ImGuiPerflogEntry& new_entry = _Data[i];
+#if 0
+            // Find min-max dates.
+            if (new_entry.DateMax == NULL || strcmp(entry.Date, new_entry.DateMax) > 0)
+                new_entry.DateMax = entry.Date;
+            if (strcmp(entry.Date, new_entry.Date) < 0)
+                new_entry.Date = entry.Date;
+#else
             new_entry.Date = "";
+#endif
             new_entry.DtDeltaMs += entry.DtDeltaMs;
             new_entry.DtDeltaMsMin = ImMin(new_entry.DtDeltaMsMin, entry.DtDeltaMs);
             new_entry.DtDeltaMsMax = ImMax(new_entry.DtDeltaMsMax, entry.DtDeltaMs);

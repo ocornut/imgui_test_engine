@@ -22,7 +22,8 @@ struct ImGuiPerflogEntry
     const char*                 Cpu = NULL;                     //
     const char*                 OS = NULL;                      //
     const char*                 Compiler = NULL;                //
-    const char*                 Date = NULL;                    //
+    const char*                 Date = NULL;                    // Date of this entry or min date of combined entries.
+    //const char*                 DateMax = NULL;               // Max date of combined entries, or NULL.
     double                      VsBaseline = 0.0;               // Percent difference vs baseline.
     int                         BranchIndex = 0;                // Unique linear branch index.
 };
