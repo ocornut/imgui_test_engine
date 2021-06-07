@@ -116,8 +116,8 @@ static void PerflogFormatTestName(ImGuiPerfLog* perflog, Str256f* result, ImGuiP
 
 static void PerflogFormatBuildInfo(ImGuiPerfLog* perflog, Str256f* result, ImGuiPerflogEntry* entry)
 {
-    Str64f legend_format("x%%-%dd %%-%ds %%s %%-%ds %%-%ds %%s %%-%ds", perflog->_AlignStress, perflog->_AlignType, perflog->_AlignOs, perflog->_AlignCompiler, perflog->_AlignBranch);
-    result->appendf(legend_format.c_str(), entry->PerfStressAmount, entry->BuildType, entry->Cpu, entry->OS, entry->Compiler, entry->Date, entry->GitBranchName);
+    Str64f legend_format("x%%-%dd %%-%ds %%s %%-%ds %%-%ds %%s %%-%ds (%%-%dd samples)", perflog->_AlignStress, perflog->_AlignType, perflog->_AlignOs, perflog->_AlignCompiler, perflog->_AlignBranch, perflog->_AlignSamples);
+    result->appendf(legend_format.c_str(), entry->PerfStressAmount, entry->BuildType, entry->Cpu, entry->OS, entry->Compiler, entry->Date, entry->GitBranchName, entry->NumSamples);
 }
 
 // Copied from implot_demo.cpp and modified.
@@ -133,6 +133,17 @@ int BinarySearch(const T* arr, int l, int r, const void* data, int (*compare)(co
     if (cmp > 0)
         return BinarySearch(arr, l, mid - 1, data, compare);
     return BinarySearch(arr, mid + 1, r, data, compare);
+}
+
+static ImGuiID GetBuildID(ImGuiPerflogEntry* entry)
+{
+    ImGuiID build_id = ImHashStr(entry->BuildType);
+    build_id = ImHashStr(entry->OS, 0, build_id);
+    build_id = ImHashStr(entry->Cpu, 0, build_id);
+    build_id = ImHashStr(entry->Compiler, 0, build_id);
+    build_id = ImHashStr(entry->GitBranchName, 0, build_id);
+    build_id = ImHashStr(entry->TestName, 0, build_id);
+    return build_id;
 }
 
 static int CompareEntryName(const ImGuiPerflogEntry& val, const void* data)
@@ -455,13 +466,7 @@ void ImGuiPerfLog::_Rebuild()
             if (_FilterDateTo[0] && strcmp(entry.Date, _FilterDateTo) > 0)
                 continue;
 
-            ImGuiID build_id = ImHashStr(entry.BuildType);
-            build_id = ImHashStr(entry.OS, 0, build_id);
-            build_id = ImHashStr(entry.Cpu, 0, build_id);
-            build_id = ImHashStr(entry.Compiler, 0, build_id);
-            build_id = ImHashStr(entry.GitBranchName, 0, build_id);
-            build_id = ImHashStr(entry.TestName, 0, build_id);
-
+            ImGuiID build_id = GetBuildID(&entry);
             int i = temp_set.GetInt(build_id, -1);
             if (i < 0)
             {
@@ -499,6 +504,18 @@ void ImGuiPerfLog::_Rebuild()
                 continue;
             _Data.push_back(entry);
         }
+
+        // Calculate number of matching build samples for display, when ImPlot collapses these builds into a single legend entry.
+        ImGuiStorage& counts = _TempSet;
+        counts.Data.resize(0);
+        for (ImGuiPerflogEntry& entry : _Data)
+        {
+            ImGuiID build_id = GetBuildID(&entry);
+            counts.SetInt(build_id, counts.GetInt(build_id, 0) + 1);
+        }
+
+        for (ImGuiPerflogEntry& entry : _Data)
+            entry.NumSamples = counts.GetInt(GetBuildID(&entry), 0);
     }
 
     if (_Data.empty())
@@ -828,8 +845,6 @@ void ImGuiPerfLog::ShowUI(ImGuiTestEngine*)
             PerflogFormatBuildInfo(this, &label, entry);
             display_label.append(label.c_str());
             ImGuiID label_id;
-            if (combine_by_build_info)
-                display_label.appendf(Str16f(" (%%-%dd samples)", _AlignSamples).c_str(), entry->NumSamples);
             if (!combine_by_build_info && !_PerBranchColors)  // Use per-run hash when each run has unique color.
                 label_id = ImHashData(&entry->Timestamp, sizeof(entry->Timestamp));
             else
