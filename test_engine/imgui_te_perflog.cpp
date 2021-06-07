@@ -654,47 +654,39 @@ void ImGuiPerfLog::ShowUI(ImGuiTestEngine*)
         ImGui::OpenPopup("Date To Menu");
     ImGui::SameLine();
 
-    // FIXME-PERFLOG: Share "Set Today" code and expose Set Min/Set Max for both (as "Max" for both can be useful)
-    if (ImGui::BeginPopup("Date From Menu"))
+    for (int i = 0; i < 2; i++)
     {
-        if (ImGui::MenuItem("Set Min"))
+        if (ImGui::BeginPopup(i == 0 ? "Date From Menu" : "Date To Menu"))
         {
-            for (ImGuiPerflogEntry& entry : _CSVData)
-                if (strcmp(_FilterDateFrom, entry.Date) > 0)
-                {
-                    ImStrncpy(_FilterDateFrom, entry.Date, IM_ARRAYSIZE(_FilterDateFrom));
-                    dirty = true;
-                }
+            char* date = i == 0 ? _FilterDateFrom : _FilterDateTo;
+            int date_size = i == 0 ? IM_ARRAYSIZE(_FilterDateFrom) : IM_ARRAYSIZE(_FilterDateTo);
+            if (i == 0 && ImGui::MenuItem("Set Min"))
+            {
+                for (ImGuiPerflogEntry& entry : _CSVData)
+                    if (strcmp(date, entry.Date) > 0)
+                    {
+                        ImStrncpy(date, entry.Date, date_size);
+                        dirty = true;
+                    }
+            }
+            if (ImGui::MenuItem("Set Max"))
+            {
+                for (ImGuiPerflogEntry& entry : _CSVData)
+                    if (strcmp(date, entry.Date) < 0)
+                    {
+                        ImStrncpy(date, entry.Date, date_size);
+                        dirty = true;
+                    }
+            }
+            if (ImGui::MenuItem("Set Today"))
+            {
+                time_t now = time(NULL);
+                struct tm* tm = localtime(&now);
+                ImFormatString(date, date_size, "%d-%02d-%02d", tm->tm_year + 1900, tm->tm_mon + 1, tm->tm_mday);
+                dirty = true;
+            }
+            ImGui::EndPopup();
         }
-        if (ImGui::MenuItem("Set Today"))
-        {
-            time_t now = time(NULL);
-            struct tm* tm = localtime(&now);
-            ImFormatString(_FilterDateFrom, IM_ARRAYSIZE(_FilterDateFrom), "%d-%02d-%02d", tm->tm_year + 1900, tm->tm_mon + 1, tm->tm_mday);
-            dirty = true;
-        }
-        ImGui::EndPopup();
-    }
-
-    if (ImGui::BeginPopup("Date To Menu"))
-    {
-        if (ImGui::MenuItem("Set Max"))
-        {
-            for (ImGuiPerflogEntry& entry : _CSVData)
-                if (strcmp(_FilterDateTo, entry.Date) < 0)
-                {
-                    ImStrncpy(_FilterDateTo, entry.Date, IM_ARRAYSIZE(_FilterDateTo));
-                    dirty = true;
-                }
-        }
-        if (ImGui::MenuItem("Set Today"))
-        {
-            time_t now = time(NULL);
-            struct tm* tm = localtime(&now);
-            ImFormatString(_FilterDateTo, IM_ARRAYSIZE(_FilterDateTo), "%d-%02d-%02d", tm->tm_year + 1900, tm->tm_mon + 1, tm->tm_mday);
-            dirty = true;
-        }
-        ImGui::EndPopup();
     }
 
     if (ImGui::Button(Str16f("Filter builds (%d/%d)", _NumVisibleBuilds, _Legend.Size).c_str()))
@@ -745,15 +737,10 @@ void ImGuiPerfLog::ShowUI(ImGuiTestEngine*)
     // FIXME-PERFLOG: Move more of this to its more suitable location.
     if (ImGui::BeginPopup("Help"))
     {
-        ImGui::BulletText("Data may be filtered by enabling or disabling individual builds or perf tests.");
-        ImGui::BulletText("Hold CTRL when toggling build info or perf test visibility in order to invert visibility or other items.");
-        ImGui::BulletText("Hold SHIFT when toggling build info or perf test visibility in order to close popup instantly.");
-        ImGui::BulletText("Data of different runs may be combined together based on build information and averaged.");
+        ImGui::BulletText("Hold CTRL when toggling perf test visibility in order to invert visibility or other items.");
+        ImGui::BulletText("Hold SHIFT when toggling perf test visibility in order to close popup instantly.");
         ImGui::BulletText("To change baseline build, double-click desired build in the legend.");
-        ImGui::BulletText("Plot displays perf test delta time of each build (bars) per perf test (left).");
         ImGui::BulletText("Extra information is displayed when hovering bars of a particular perf test and holding SHIFT.");
-        ImGui::BulletText("This information tooltip displays performance change compared to baseline build.");
-        ImGui::BulletText("Extra information tooltip will display min/max delta values as well as number of samples.");
         ImGui::BulletText("Double-click plot to fit plot into available area.");
         ImGui::EndPopup();
     }
