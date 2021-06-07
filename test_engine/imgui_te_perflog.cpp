@@ -161,7 +161,7 @@ static void LogUpdateVisibleLabels(ImGuiPerfLog* perflog)
     perflog->_VisibleLabelPointers.resize(0);
     for (ImGuiPerflogEntry* entry : perflog->_Labels)
         if (perflog->_IsVisibleTest(entry) && perflog->_IsVisibleBuild(entry))
-            perflog->_VisibleLabelPointers.push_back(entry->TestName);
+            perflog->_VisibleLabelPointers.push_front(entry->TestName);
 }
 
 // Copied from implot_demo.cpp and modified.
@@ -1000,15 +1000,16 @@ void ImGuiPerfLog::ShowUI(ImGuiTestEngine*)
         for (int label_index = 0; label_index < _Labels.Size; label_index++)
         {
             bool scrolled_to = false;
+            const char* test_name = _Labels.Data[label_index]->TestName;
             for (int batch_index = 0; batch_index < _Legend.Size; batch_index++)
             {
-                ImGuiPerflogEntry* entry = GetEntryByBatchIdx(_InfoTableSort[batch_index], _Labels[label_index]->TestName);
+                ImGuiPerflogEntry* entry = GetEntryByBatchIdx(_InfoTableSort[batch_index], test_name);
                 if (entry == NULL || !_IsVisibleBuild(entry))
                     continue;
 
                 ImGui::TableNextRow();
 
-                if (_TableScrollToTest != NULL && _TableHighlightAnimTime < 1.0f && strcmp(_Labels.Data[label_index]->TestName, _TableScrollToTest) == 0)
+                if (_TableScrollToTest != NULL && _TableHighlightAnimTime < 1.0f && strcmp(test_name, _TableScrollToTest) == 0)
                 {
                     if (!scrolled_to)
                     {
@@ -1055,7 +1056,7 @@ void ImGuiPerfLog::ShowUI(ImGuiTestEngine*)
                 // VS Baseline
                 if (ImGui::TableNextColumn())
                 {
-                    ImGuiPerflogEntry* baseline_entry = GetEntryByBatchIdx(_BaselineBatchIndex, _Labels[label_index]->TestName);
+                    ImGuiPerflogEntry* baseline_entry = GetEntryByBatchIdx(_BaselineBatchIndex, test_name);
                     if (baseline_entry == NULL)
                     {
                         ImGui::TextUnformatted("--");
@@ -1084,7 +1085,9 @@ void ImGuiPerfLog::ShowUI(ImGuiTestEngine*)
                     if (table->RowPosY1 < g.IO.MousePos.y && g.IO.MousePos.y < table->RowPosY2 - 1) // FIXME-OPT: RowPosY1/RowPosY2 may overlap between adjacent rows. Compensate for that.
                     {
                         ImGui::TableSetBgColor(ImGuiTableBgTarget_RowBg0, ImColor(g.Style.Colors[ImGuiCol_TableRowBgAlt]));
-                        _TableHoveredTest = label_index;
+                        for (int i = 0; i < _VisibleLabelPointers.Size && _TableHoveredTest == -1; i++)
+                            if (strcmp(_VisibleLabelPointers.Data[i], test_name) == 0)
+                                _TableHoveredTest = i;
                         _TableHoveredBatch = batch_index;
                     }
             }

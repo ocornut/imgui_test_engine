@@ -56,7 +56,7 @@ struct ImGuiPerfLog
     ImVector<int>               _InfoTableSort;                 // _InfoTableSort[_Legend.Size]. Contains indices into _Legend vector.
     const ImGuiTableSortSpecs*  _InfoTableSortSpecs = NULL;     // Current table sort specs.
     ImGuiStorage                _TempSet;                       // Used as a set
-    int                         _TableHoveredTest = -1;
+    int                         _TableHoveredTest = -1;         // Index within _VisibleLabelPointers array.
     int                         _TableHoveredBatch = -1;
     float                       _TableHighlightAnimTime = 1.0f; // Remaining time to display highlight of focused table row.
     const char*                 _TableScrollToTest = NULL;
