@@ -38,6 +38,7 @@ struct ImGuiPerfLog
     ImVector<ImGuiPerflogEntry*> _Labels;                       // A list of labels (left of the plot).
     ImVector<ImGuiPerflogEntry*> _Legend;                       // _Legend[idx] = first batch element.
     ImVector<const char*>       _VisibleLabelPointers;          // ImPlot requires a pointer of all labels beforehand.
+    int                         _NumVisibleBuilds = 0;          // Cached number of visible builds.
     bool                        _CombineByBuildInfo = true;     // Entries with same build information will be averaged.
     bool                        _PerBranchColors = true;        // Use one bar color per branch.
     int                         _BaselineBatchIndex = 0;        // Index of baseline build.
@@ -45,7 +46,6 @@ struct ImGuiPerfLog
     char                        _FilterDateFrom[11] = {};
     char                        _FilterDateTo[11] = {};
     float                       _InfoTableHeight = 180.0f;
-    bool                        _Dirty = true;                  // Flag indicating that data rebuild is necessary. It is only set when new perf data is added by running tests or "Combine by build info" option is toggled.
     int                         _AlignStress = 0;               // Alignment values for build info components, so they look aligned in the legend.
     int                         _AlignType = 0;
     int                         _AlignOs = 0;

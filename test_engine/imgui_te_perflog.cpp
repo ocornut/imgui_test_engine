@@ -131,6 +131,23 @@ static void PerflogFormatBuildInfo(ImGuiPerfLog* perflog, Str256f* result, ImGui
         entry->NumSamples > 1 ? "s" : "", entry->NumSamples > 1 || perflog->_AlignSamples == 1 ? "" : " ");
 }
 
+static int PerfLogCountVisibleBuilds(ImGuiPerfLog* perflog)
+{
+    int num_visible_builds = 0;
+    for (ImGuiPerflogEntry* entry : perflog->_Legend)
+        if (perflog->_IsVisibleBuild(entry))
+            num_visible_builds++;
+    return num_visible_builds;
+}
+
+static void LogUpdateVisibleLabels(ImGuiPerfLog* perflog)
+{
+    perflog->_VisibleLabelPointers.resize(0);
+    for (ImGuiPerflogEntry* entry : perflog->_Labels)
+        if (perflog->_IsVisibleTest(entry) && perflog->_IsVisibleBuild(entry))
+            perflog->_VisibleLabelPointers.push_back(entry->TestName);
+}
+
 // Copied from implot_demo.cpp and modified.
 template <typename T>
 int BinarySearch(const T* arr, int l, int r, const void* data, int (*compare)(const T&, const void*))
@@ -307,7 +324,7 @@ static void PerflogSettingsHandler_ReadLine(ImGuiContext*, ImGuiSettingsHandler*
 static void PerflogSettingsHandler_ApplyAll(ImGuiContext*, ImGuiSettingsHandler* ini_handler)
 {
     ImGuiPerfLog* perflog = (ImGuiPerfLog*)ini_handler->UserData;
-    perflog->_Dirty = true;
+    perflog->_Data.resize(0);
     perflog->_BaselineBatchIndex = -1;  // Index will be re-discovered from _Settings.BaselineTimestamp in _Rebuild().
 }
 
@@ -450,7 +467,7 @@ bool ImGuiPerfLog::Save(const char* file_name)
 void ImGuiPerfLog::AddEntry(ImGuiPerflogEntry* entry)
 {
     _CSVData.push_back(*entry);
-    _Dirty = true;
+    _Data.resize(0);
 }
 
 void ImGuiPerfLog::_Rebuild()
@@ -460,7 +477,6 @@ void ImGuiPerfLog::_Rebuild()
 
     ImGuiStorage& temp_set = _TempSet;
     temp_set.Data.resize(0);
-    _Dirty = false;
     _Data.resize(0);
     _InfoTableSort.resize(0);
     _InfoTableSortDirty = true;
@@ -596,9 +612,6 @@ void ImGuiPerfLog::ShowUI(ImGuiTestEngine*)
     Str256f label("");
     Str256f display_label("");
 
-    if (_Dirty)
-        _Rebuild();
-
     // -----------------------------------------------------------------------------------------------------------------
     // Render utility buttons
     // -----------------------------------------------------------------------------------------------------------------
@@ -607,6 +620,7 @@ void ImGuiPerfLog::ShowUI(ImGuiTestEngine*)
     ImGui::TextUnformatted("Date:");
     ImGui::SameLine();
 
+    bool dirty = _Data.empty();
     bool date_changed = Date("##date-from", _FilterDateFrom, IM_ARRAYSIZE(_FilterDateFrom), (strcmp(_FilterDateFrom, _FilterDateTo) <= 0 || !*_FilterDateTo));
     if (ImGui::IsItemHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Right))
         ImGui::OpenPopup("Date From Menu");
@@ -616,9 +630,9 @@ void ImGuiPerfLog::ShowUI(ImGuiTestEngine*)
     date_changed |= Date("##date-to", _FilterDateTo, IM_ARRAYSIZE(_FilterDateTo), (strcmp(_FilterDateFrom, _FilterDateTo) <= 0 || !*_FilterDateFrom));
     if (date_changed)
     {
-        _Dirty = (!_FilterDateFrom[0] || IsDateValid(_FilterDateFrom)) && (!_FilterDateTo[0] || IsDateValid(_FilterDateTo));
+        dirty = (!_FilterDateFrom[0] || IsDateValid(_FilterDateFrom)) && (!_FilterDateTo[0] || IsDateValid(_FilterDateTo));
         if (_FilterDateFrom[0] && _FilterDateTo[0])
-            _Dirty &= strcmp(_FilterDateFrom, _FilterDateTo) <= 0;
+            dirty &= strcmp(_FilterDateFrom, _FilterDateTo) <= 0;
     }
     if (ImGui::IsItemHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Right))
         ImGui::OpenPopup("Date To Menu");
@@ -633,7 +647,7 @@ void ImGuiPerfLog::ShowUI(ImGuiTestEngine*)
                 if (strcmp(_FilterDateFrom, entry.Date) > 0)
                 {
                     ImStrncpy(_FilterDateFrom, entry.Date, IM_ARRAYSIZE(_FilterDateFrom));
-                    _Dirty = true;
+                    dirty = true;
                 }
         }
         if (ImGui::MenuItem("Set Today"))
@@ -641,7 +655,7 @@ void ImGuiPerfLog::ShowUI(ImGuiTestEngine*)
             time_t now = time(NULL);
             struct tm* tm = localtime(&now);
             ImFormatString(_FilterDateFrom, IM_ARRAYSIZE(_FilterDateFrom), "%d-%02d-%02d", tm->tm_year + 1900, tm->tm_mon + 1, tm->tm_mday);
-            _Dirty = true;
+            dirty = true;
         }
         ImGui::EndPopup();
     }
@@ -654,7 +668,7 @@ void ImGuiPerfLog::ShowUI(ImGuiTestEngine*)
                 if (strcmp(_FilterDateTo, entry.Date) < 0)
                 {
                     ImStrncpy(_FilterDateTo, entry.Date, IM_ARRAYSIZE(_FilterDateTo));
-                    _Dirty = true;
+                    dirty = true;
                 }
         }
         if (ImGui::MenuItem("Set Today"))
@@ -662,24 +676,12 @@ void ImGuiPerfLog::ShowUI(ImGuiTestEngine*)
             time_t now = time(NULL);
             struct tm* tm = localtime(&now);
             ImFormatString(_FilterDateTo, IM_ARRAYSIZE(_FilterDateTo), "%d-%02d-%02d", tm->tm_year + 1900, tm->tm_mon + 1, tm->tm_mday);
-            _Dirty = true;
+            dirty = true;
         }
         ImGui::EndPopup();
     }
 
-    // Total visible builds.
-    int num_visible_builds = 0;
-    for (ImGuiPerflogEntry* entry : _Legend)
-        if (_IsVisibleBuild(entry))
-            num_visible_builds++;
-
-    // Gather pointers of visible labels. ImPlot requires such array for rendering.
-    _VisibleLabelPointers.resize(0);
-    for (ImGuiPerflogEntry* entry : _Labels)
-        if (_IsVisibleTest(entry) && _IsVisibleBuild(entry))
-            _VisibleLabelPointers.push_back(entry->TestName);
-
-    if (ImGui::Button(Str16f("Filter builds (%d/%d)", num_visible_builds, _Legend.Size).c_str()))
+    if (ImGui::Button(Str16f("Filter builds (%d/%d)", _NumVisibleBuilds, _Legend.Size).c_str()))
         ImGui::OpenPopup("Filter builds");
     if (ImGui::IsItemHovered())
         ImGui::SetTooltip("Hide or show individual builds.");
@@ -689,7 +691,7 @@ void ImGuiPerfLog::ShowUI(ImGuiTestEngine*)
     if (ImGui::IsItemHovered())
         ImGui::SetTooltip("Hide or show individual tests.");
     ImGui::SameLine();
-    _Dirty |= ImGui::Checkbox("Combine by build info", &_CombineByBuildInfo);
+    dirty |= ImGui::Checkbox("Combine by build info", &_CombineByBuildInfo);
     if (ImGui::IsItemHovered())
         ImGui::SetTooltip("Combine multiple runs with same build info into one averaged build entry.");
     ImGui::SameLine();
@@ -794,8 +796,13 @@ void ImGuiPerfLog::ShowUI(ImGuiTestEngine*)
         ImGui::EndPopup();
     }
 
+    if (dirty)
+        _Rebuild();
+    _NumVisibleBuilds = PerfLogCountVisibleBuilds(this);
+    LogUpdateVisibleLabels(this);
+
     // Rendering a plot of empty dataset is not possible.
-    if (_Data.empty() || _VisibleLabelPointers.empty() || num_visible_builds == 0)
+    if (_Data.empty() || _VisibleLabelPointers.empty() || _NumVisibleBuilds == 0)
     {
         ImGui::TextUnformatted("No data is available. Run some perf tests or adjust filter settings.");
         return;
@@ -848,8 +855,7 @@ void ImGuiPerfLog::ShowUI(ImGuiTestEngine*)
 
         // Plot bars
         const float occupy_h = 0.8f;
-        const float h = occupy_h / num_visible_builds;
-        const bool combine_by_build_info = _CombineByBuildInfo && !_Dirty;
+        const float h = occupy_h / _NumVisibleBuilds;
 
         int bar_index = 0;
         for (ImGuiPerflogEntry*& entry : _Legend)
@@ -864,12 +870,12 @@ void ImGuiPerfLog::ShowUI(ImGuiTestEngine*)
             PerflogFormatBuildInfo(this, &label, entry);
             display_label.append(label.c_str());
             ImGuiID label_id;
-            if (!combine_by_build_info && !_PerBranchColors)  // Use per-run hash when each run has unique color.
+            if (!_CombineByBuildInfo && !_PerBranchColors)  // Use per-run hash when each run has unique color.
                 label_id = ImHashData(&entry->Timestamp, sizeof(entry->Timestamp));
             else
                 label_id = ImHashStr(label.c_str());        // Otherwise using label hash allows them to collapse in the legend.
             display_label.appendf("%s###%08X", _BaselineBatchIndex == batch_index ? " *" : "", label_id);
-            float shift = (float)(num_visible_builds - 1) * 0.5f * h;
+            float shift = (float)(_NumVisibleBuilds - 1) * 0.5f * h;
 
             // Highlight background behind bar when hovering test entry in info table.
             if (_TableHoveredTest >= 0)
@@ -896,10 +902,7 @@ void ImGuiPerfLog::ShowUI(ImGuiTestEngine*)
             if (ImPlot::IsLegendEntryHovered(display_label.c_str()))
             {
                 if (ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
-                {
                     _BaselineBatchIndex = batch_index;
-                    _Dirty = true;
-                }
             }
             else if (g.IO.KeyShift)
             {
@@ -961,9 +964,8 @@ void ImGuiPerfLog::ShowUI(ImGuiTestEngine*)
             columns_combined[0], columns_combined[1], columns_combined[2], columns_combined[3], columns_combined[4],
             columns_combined[5], columns_combined[6], columns_combined[7], columns_combined[11],
         };
-        const bool combine_by_build_info = _CombineByBuildInfo && !_Dirty;
-        const ImGuiPerfLogColumnInfo* columns = combine_by_build_info ? columns_combined : columns_separate;
-        int columns_num = combine_by_build_info ? IM_ARRAYSIZE(columns_combined) : IM_ARRAYSIZE(columns_separate);
+        const ImGuiPerfLogColumnInfo* columns = _CombineByBuildInfo ? columns_combined : columns_separate;
+        int columns_num = _CombineByBuildInfo ? IM_ARRAYSIZE(columns_combined) : IM_ARRAYSIZE(columns_separate);
         if (!ImGui::BeginTable("PerfInfo", columns_num, ImGuiTableFlags_Borders | ImGuiTableFlags_Sortable | ImGuiTableFlags_SortMulti | ImGuiTableFlags_SortTristate | ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_ScrollY))
             return;
 
@@ -1033,7 +1035,7 @@ void ImGuiPerfLog::ShowUI(ImGuiTestEngine*)
                 ImGui::TableNextColumn();
                 ImGui::Text("%.3lfms", entry->DtDeltaMs);
 
-                if (combine_by_build_info)
+                if (_CombineByBuildInfo)
                 {
                     // Min ms
                     ImGui::TableNextColumn();
