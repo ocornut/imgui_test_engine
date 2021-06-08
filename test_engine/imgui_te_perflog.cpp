@@ -181,12 +181,19 @@ static void PerflogFormatBuildInfo(ImGuiPerfLog* perflog, Str* result, ImGuiPerf
         entry->NumSamples > 1 ? "s" : "", entry->NumSamples > 1 || perflog->_AlignSamples == 1 ? "" : " ");
 }
 
-static int PerfLogCountVisibleBuilds(ImGuiPerfLog* perflog)
+static int PerfLogCountVisibleBuilds(ImGuiPerfLog* perflog, const char* perf_test_name = NULL)
 {
     int num_visible_builds = 0;
-    for (ImGuiPerflogEntry* entry : perflog->_Legend)
-        if (perflog->_IsVisibleBuild(entry))
+    for (int batch_idx = 0; batch_idx < perflog->_Legend.Size; batch_idx++)
+    {
+        ImGuiPerflogEntry* entry;
+        if (perf_test_name == NULL)
+            entry = perflog->_Legend.Data[batch_idx];
+        else
+            entry = perflog->GetEntryByBatchIdx(batch_idx, perf_test_name);
+        if (entry && perflog->_IsVisibleBuild(entry))
             num_visible_builds++;
+    }
     return num_visible_builds;
 }
 
@@ -255,18 +262,59 @@ static bool Date(const char* label, char* date, int date_len, bool valid)
 struct GetPlotPointData
 {
     ImGuiPerfLog*   Perf;
-    double          Shift;
+    float           BarHeight;
     int             BatchIndex;
 };
 
-static ImPlotPoint GetPlotPoint(void* data, int idx)
+static int PerflogGetGetMaxVisibleBuildsPerTest(ImGuiPerfLog* perf)
+{
+    int max_visible = 0;
+    for (int i = 0; i < perf->_VisibleLabelPointers.Size; i++)
+        max_visible = ImMax(PerfLogCountVisibleBuilds(perf, perf->_VisibleLabelPointers.Data[i]), max_visible);
+    return max_visible;
+}
+
+// Convert global batch index to visible batch index for a particular test.
+static int PerfLogBatchToVisibleIdx(ImGuiPerfLog* perf, int batch_idx, const char* perf_test_name)
+{
+    IM_ASSERT(batch_idx < perf->_Legend.Size);
+    int visible_idx = 0;
+    for (int i = 0; i < perf->_Legend.Size; i++)
+    {
+        if (i == batch_idx)
+            return visible_idx;
+        if (perf->GetEntryByBatchIdx(i, perf_test_name) != NULL && perf->_IsVisibleBuild(perf->_Legend.Data[i]))
+            visible_idx++;
+    }
+    IM_ASSERT(0);
+    return 0;
+}
+
+// Return Y in plot coordinates for a particular bar.
+static float PerflogGetBarY(ImGuiPerfLog* perf, int batch_idx, int perf_idx, float bar_height)
+{
+    IM_ASSERT(batch_idx < perf->_Legend.Size);
+    IM_ASSERT(perf_idx < perf->_VisibleLabelPointers.Size);
+    const char* perf_test_name = perf->_VisibleLabelPointers.Data[perf_idx];
+    int num_visible_builds = PerfLogCountVisibleBuilds(perf, perf_test_name);
+    batch_idx = PerfLogBatchToVisibleIdx(perf, batch_idx, perf_test_name);
+    IM_ASSERT(num_visible_builds > 0);
+    float shift;
+    shift = (float)(num_visible_builds - 1) * bar_height;
+    if (num_visible_builds > 0 && (num_visible_builds % 2) == 0)
+        shift -= bar_height * 0.5f;
+    return (float)perf_idx - bar_height * (float)batch_idx + shift;
+}
+
+static ImPlotPoint PerflogGetPlotPoint(void* data, int idx)
 {
     GetPlotPointData* d = (GetPlotPointData*)data;
     ImGuiPerfLog* perf = d->Perf;
-    ImGuiPerflogEntry* entry = perf->GetEntryByBatchIdx(d->BatchIndex, perf->_VisibleLabelPointers.Data[idx]);
+    const char* perf_test_name = perf->_VisibleLabelPointers.Data[idx];
+    ImGuiPerflogEntry* entry = perf->GetEntryByBatchIdx(d->BatchIndex, perf_test_name);
     ImPlotPoint pt;
     pt.x = entry ? entry->DtDeltaMs : 0.0;
-    pt.y = idx + d->Shift;
+    pt.y = PerflogGetBarY(perf, d->BatchIndex, idx, d->BarHeight);
     return pt;
 }
 
@@ -784,6 +832,7 @@ void ImGuiPerfLog::ShowUI()
                     _Settings.Visibility.SetBool(hash, visible);
                     if (!checked_any[i])
                     {
+                        ImGuiContext& g = *GImGui;
                         ImGui::TableSetBgColor(ImGuiTableBgTarget_CellBg, ImColor(1.0f, 0.0f, 0.0f, 0.2f));
                         ImRect cell_rect = ImGui::TableGetCellBgRect(g.CurrentTable, i);
                         if (cell_rect.Max.y < ImGui::GetItemRectMax().y)
@@ -878,8 +927,9 @@ void ImGuiPerfLog::_ShowEntriesPlot()
     }
 
     // Plot bars
+    const int max_visibler_builds = PerflogGetGetMaxVisibleBuildsPerTest(this);
     const float occupy_h = 0.8f;
-    const float h = occupy_h / _NumVisibleBuilds;
+    const float h = occupy_h / max_visibler_builds;
 
     int bar_index = 0;
     for (ImGuiPerflogEntry*& entry : _Legend)
@@ -899,7 +949,6 @@ void ImGuiPerfLog::_ShowEntriesPlot()
         else
             label_id = ImHashStr(label.c_str());        // Otherwise using label hash allows them to collapse in the legend.
         display_label.appendf("%s###%08X", _BaselineBatchIndex == batch_index ? " *" : "", label_id);
-        float shift = (float)(_NumVisibleBuilds - 1) * 0.5f * h;
 
         // Highlight background behind bar when hovering test entry in info table.
         if (_TableHoveredTest >= 0)
@@ -907,20 +956,20 @@ void ImGuiPerfLog::_ShowEntriesPlot()
             ImPlotContext& gp = *GImPlot;
             ImPlotPlot& plot = *gp.CurrentPlot;
             ImRect test_bars_rect;
-            float bar_min = -h * _TableHoveredBatch + shift;
+            float bar_min = PerflogGetBarY(this, _TableHoveredBatch, _TableHoveredTest, h);
             test_bars_rect.Min.x = plot.PlotRect.Min.x;
             test_bars_rect.Max.x = plot.PlotRect.Max.x;
-            test_bars_rect.Min.y = ImPlot::PlotToPixels(0, (float)_TableHoveredTest + bar_min - h * 0.5f).y;
-            test_bars_rect.Max.y = ImPlot::PlotToPixels(0, (float)_TableHoveredTest + bar_min + h * 0.5f).y;
+            test_bars_rect.Min.y = ImPlot::PlotToPixels(0, bar_min - h * 0.5f).y;
+            test_bars_rect.Max.y = ImPlot::PlotToPixels(0, bar_min + h * 0.5f).y;
             ImPlot::GetPlotDrawList()->AddRectFilled(test_bars_rect.Min, test_bars_rect.Max, ImColor(g.Style.Colors[ImGuiCol_TableRowBgAlt]));
         }
 
         GetPlotPointData data;
-        data.Shift = -h * bar_index + shift;
+        data.BarHeight = h;
         data.Perf = this;
         data.BatchIndex = batch_index;
         ImPlot::SetNextFillStyle(ImPlot::GetColormapColor(_PerBranchColors ? entry->BranchIndex : batch_index));
-        ImPlot::PlotBarsHG(display_label.c_str(), &GetPlotPoint, &data, _VisibleLabelPointers.Size, h);
+        ImPlot::PlotBarsHG(display_label.c_str(), &PerflogGetPlotPoint, &data, _VisibleLabelPointers.Size, h);
 
         // Set baseline.
         if (ImPlot::IsLegendEntryHovered(display_label.c_str()))
