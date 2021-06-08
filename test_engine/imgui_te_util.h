@@ -79,6 +79,7 @@ struct ImGuiCSVParser
     char*                       _Data = NULL;                   // CSV file data.
     ImVector<char*>             _Index;                         // CSV table: _Index[row * _Columns + col].
 
+    ImGuiCSVParser(int columns = -1)                            { Columns = columns; }
     ~ImGuiCSVParser()                                           { Clear(); }
     bool        Load(const char* file_name);                    // Open and parse a CSV file.
     void        Clear();                                        // Free allocated buffers.

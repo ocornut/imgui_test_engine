@@ -261,8 +261,6 @@ void    ImGuiTestEngine_Start(ImGuiTestEngine* engine)
     // (we include the word "Main" in the name to facilitate filtering for both this thread and the "Main Thread" in debuggers)
     if (!engine->TestQueueCoroutine)
         engine->TestQueueCoroutine = engine->IO.CoroutineFuncs->CreateFunc(ImGuiTestEngine_TestQueueCoroutineMain, "Main Dear ImGui Test Thread", engine);
-
-    ImGuiTestEngine_PerflogLoad(engine);
     engine->Started = true;
 }
 
@@ -271,8 +269,6 @@ void    ImGuiTestEngine_Stop(ImGuiTestEngine* engine)
     IM_ASSERT(engine->Started);
 
     ImGuiTestEngine_CoroutineStopAndJoin(engine);
-    if (!ImGuiTestEngine_PerflogSave(engine))
-        printf("Failed to log to CSV file!\n");
     engine->Started = false;
 }
 
@@ -1656,16 +1652,47 @@ static void     ImGuiTestEngine_SettingsWriteAll(ImGuiContext* ui_ctx, ImGuiSett
 
 bool            ImGuiTestEngine_PerflogLoad(ImGuiTestEngine* engine)
 {
-    return engine->PerfLog->Load("imgui_perflog.csv");
-}
+    ImGuiCSVParser csv(11);
+    if (!csv.Load("imgui_perflog.csv"))
+        return false;
 
-bool            ImGuiTestEngine_PerflogSave(ImGuiTestEngine* engine)
-{
-    return engine->PerfLog->Save("imgui_perflog.csv");
+    engine->PerfLog->Clear();
+
+    // Read perf test entries from CSV
+    for (int row = 0; row < csv.Rows; row++)
+    {
+        ImGuiPerflogEntry entry;
+        int col = 0;
+        sscanf(csv.GetCell(row, col++), "%llu", &entry.Timestamp);
+        entry.Category = csv.GetCell(row, col++);
+        entry.TestName = csv.GetCell(row, col++);
+        sscanf(csv.GetCell(row, col++), "%lf", &entry.DtDeltaMs);
+        sscanf(csv.GetCell(row, col++), "x%d", &entry.PerfStressAmount);
+        entry.GitBranchName = csv.GetCell(row, col++);
+        entry.BuildType = csv.GetCell(row, col++);
+        entry.Cpu = csv.GetCell(row, col++);
+        entry.OS = csv.GetCell(row, col++);
+        entry.Compiler = csv.GetCell(row, col++);
+        entry.Date = csv.GetCell(row, col++);
+        engine->PerfLog->AddEntry(&entry);
+    }
+    return true;
 }
 
 void            ImGuiTestEngine_PerflogAppend(ImGuiTestEngine* engine, ImGuiPerflogEntry* entry)
 {
+    // Log to .csv
+    FILE* f = fopen("imgui_perflog.csv", "a+b");
+    if (f == NULL)
+    {
+        fprintf(stderr, "Unable to open imgui_perflog.csv, perflog entry was not saved.\n");
+        return;
+    }
+    fprintf(f, "%llu,%s,%s,%.3f,x%d,%s,%s,%s,%s,%s,%s\n", entry->Timestamp, entry->Category, entry->TestName,
+            entry->DtDeltaMs, entry->PerfStressAmount, entry->GitBranchName, entry->BuildType, entry->Cpu, entry->OS,
+            entry->Compiler, entry->Date);
+    fflush(f);
+    fclose(f);
     engine->PerfLog->AddEntry(entry);
 }
 

@@ -169,7 +169,6 @@ bool                ImGuiTestEngine_CaptureScreenshot(ImGuiTestEngine* engine, I
 bool                ImGuiTestEngine_BeginCaptureAnimation(ImGuiTestEngine* engine, ImGuiCaptureArgs* args);
 bool                ImGuiTestEngine_EndCaptureAnimation(ImGuiTestEngine* engine, ImGuiCaptureArgs* args);
 bool                ImGuiTestEngine_PerflogLoad(ImGuiTestEngine* engine);
-bool                ImGuiTestEngine_PerflogSave(ImGuiTestEngine* engine);
 void                ImGuiTestEngine_PerflogAppend(ImGuiTestEngine* engine, ImGuiPerflogEntry* entry);                   // Append to last perflog batch, or open a new batch if BatchTitle is different.
 
 //-------------------------------------------------------------------------

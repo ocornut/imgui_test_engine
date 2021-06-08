@@ -283,24 +283,27 @@ bool ImGuiCSVParser::Load(const char* file_name)
     if (_Data == NULL)
         return false;
 
-    // Count columns. Quoted columns with commas are not supported.
-    Columns = 1;
-    for (const char* c = _Data; *c != '\n' && *c != '\0'; c++)
-        if (*c == ',')
-            Columns++;
+    int columns = 1;
+    if (Columns > 0)
+        columns = Columns;                                          // User-proivided expected column count.
+    else
+        for (const char* c = _Data; *c != '\n' && *c != '\0'; c++)  // Count columns. Quoted columns with commas are not supported.
+            if (*c == ',')
+                columns++;
 
     // Count rows. Extra new lines anywhere in the file are ignored.
+    int max_rows = 0;
     for (const char* c = _Data, *end = c + len; c < end; c++)
         if ((*c == '\n' && c[1] != '\r' && c[1] != '\n') || *c == '\0')
-            Rows++;
+            max_rows++;
 
-    if (Columns == 0 || Rows == 0)
+    if (columns == 0 || max_rows == 0)
         return false;
 
     // Create index
-    _Index.resize(Columns * Rows);
+    _Index.resize(columns * max_rows);
 
-    int row = 0, col = 0;
+    int col = 0;
     char* col_data = _Data;
     for (char* c = _Data; *c != '\0'; c++)
     {
@@ -309,7 +312,7 @@ bool ImGuiCSVParser::Load(const char* file_name)
         const bool is_eof = (*c == '\0');
         if (is_comma || is_eol || is_eof)
         {
-            _Index[row * Columns + col] = col_data;
+            _Index[Rows * columns + col] = col_data;
             col_data = c + 1;
             if (is_comma)
             {
@@ -317,19 +320,20 @@ bool ImGuiCSVParser::Load(const char* file_name)
             }
             else
             {
-                IM_ASSERT(col + 1 == Columns && "Non-uniform number of columns!");
-                row++;
+                if (col + 1 == columns)
+                    Rows++;
+                else
+                    fprintf(stderr, "%s: Unexpected number of columns on line %d, ignoring.\n", file_name, Rows + 1);
                 col = 0;
             }
             *c = 0;
             if (is_eol)
-            {
                 while (c[1] == '\r' || c[1] == '\n')
                     c++;
-            }
         }
     }
 
+    Columns = columns;
     return true;
 }
 

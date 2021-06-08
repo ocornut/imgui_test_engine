@@ -633,8 +633,16 @@ void    ImGuiTestEngine_ShowTestWindows(ImGuiTestEngine* e, bool* p_open)
     // Perf tool
     if (e->UiPerfToolOpen)
     {
-        ImGui::Begin("Dear ImGui Perf Tool", &e->UiPerfToolOpen);
-        e->PerfLog->ShowUI(e);
+        if (ImGui::Begin("Dear ImGui Perf Tool", &e->UiPerfToolOpen))
+        {
+            static bool perflog_data_loaded = false;
+            if (ImGui::IsWindowAppearing() && !perflog_data_loaded)
+            {
+                ImGuiTestEngine_PerflogLoad(e);
+                perflog_data_loaded = true;
+            }
+            e->PerfLog->ShowUI(e);
+        }
         ImGui::End();
     }
 

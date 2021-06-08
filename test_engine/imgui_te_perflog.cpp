@@ -10,6 +10,7 @@
 #include "libs/Str/Str.h"
 #include "libs/implot/implot.h"
 #include "libs/implot/implot_internal.h"
+#include "shared/imgui_utils.h"
 
 //-------------------------------------------------------------------------
 // Types
@@ -399,7 +400,6 @@ static ImRect ImPlotGetYTickRect(int t, int y = 0)
 ImGuiPerfLog::ImGuiPerfLog()
 {
     ImGuiContext& g = *GImGui;
-    _CSVParser = IM_NEW(ImGuiCSVParser)();
 
     ImGuiSettingsHandler ini_handler;
     ini_handler.TypeName = "Perflog";
@@ -411,78 +411,19 @@ ImGuiPerfLog::ImGuiPerfLog()
     ini_handler.WriteAllFn = PerflogSettingsHandler_WriteAll;
     ini_handler.UserData = this;
     g.SettingsHandlers.push_back(ini_handler);
-}
 
-ImGuiPerfLog::~ImGuiPerfLog()
-{
-    IM_DELETE(_CSVParser);
-}
-
-bool ImGuiPerfLog::Load(const char* file_name)
-{
-    ImGuiCSVParser* csv = _CSVParser;
-
-    if (!csv->Load(file_name))
-        return false;
-
-    if (csv->Columns != 11)
-    {
-        IM_ASSERT(0 && "Invalid number of columns.");
-        return false;
-    }
-
-    ImStrncpy(_FilterDateFrom, "9999-99-99", IM_ARRAYSIZE(_FilterDateFrom));
-    ImStrncpy(_FilterDateTo, "0000-00-00", IM_ARRAYSIZE(_FilterDateFrom));
-
-    // Read perf test entries from CSV
-    for (int row = 0; row < csv->Rows; row++)
-    {
-        ImGuiPerflogEntry entry;
-        int col = 0;
-        sscanf(csv->GetCell(row, col++), "%llu", &entry.Timestamp);
-        entry.Category = csv->GetCell(row, col++);
-        entry.TestName = csv->GetCell(row, col++);
-        sscanf(csv->GetCell(row, col++), "%lf", &entry.DtDeltaMs);
-        sscanf(csv->GetCell(row, col++), "x%d", &entry.PerfStressAmount);
-        entry.GitBranchName = csv->GetCell(row, col++);
-        entry.BuildType = csv->GetCell(row, col++);
-        entry.Cpu = csv->GetCell(row, col++);
-        entry.OS = csv->GetCell(row, col++);
-        entry.Compiler = csv->GetCell(row, col++);
-        entry.Date = csv->GetCell(row, col++);
-        _CSVData.push_back(entry);
-
-        if (strcmp(_FilterDateFrom, entry.Date) > 0)
-            ImStrncpy(_FilterDateFrom, entry.Date, IM_ARRAYSIZE(_FilterDateFrom));
-        if (strcmp(_FilterDateTo, entry.Date) < 0)
-            ImStrncpy(_FilterDateTo, entry.Date, IM_ARRAYSIZE(_FilterDateTo));
-    }
-
-    _Labels.resize(0);
-    _Legend.resize(0);
-
-    return true;
-}
-
-bool ImGuiPerfLog::Save(const char* file_name)
-{
-    // Log to .csv
-    FILE* f = fopen(file_name, "wb");
-    if (f == NULL)
-        return false;
-
-    for (ImGuiPerflogEntry& entry : _CSVData)
-        fprintf(f, "%llu,%s,%s,%.3f,x%d,%s,%s,%s,%s,%s,%s\n", entry.Timestamp, entry.Category, entry.TestName,
-            entry.DtDeltaMs, entry.PerfStressAmount, entry.GitBranchName, entry.BuildType, entry.Cpu, entry.OS,
-            entry.Compiler, entry.Date);
-    fflush(f);
-    fclose(f);
-    return true;
+    Clear();
 }
 
 void ImGuiPerfLog::AddEntry(ImGuiPerflogEntry* entry)
 {
+    if (strcmp(_FilterDateFrom, entry->Date) > 0)
+        ImStrncpy(_FilterDateFrom, entry->Date, IM_ARRAYSIZE(_FilterDateFrom));
+    if (strcmp(_FilterDateTo, entry->Date) < 0)
+        ImStrncpy(_FilterDateTo, entry->Date, IM_ARRAYSIZE(_FilterDateTo));
+
     _CSVData.push_back(*entry);
+    _CSVData.back().TakeDataOwnership();
     _Data.resize(0);
 }
 
@@ -585,6 +526,7 @@ void ImGuiPerfLog::_Rebuild()
     for (int i = 0; i < _Data.Size; i++)
     {
         ImGuiPerflogEntry* entry = &_Data[i];
+        entry->DataOwner = false;
         if (entry->Timestamp != last_timestamp)
         {
             _Legend.push_back(entry);
@@ -615,11 +557,16 @@ void ImGuiPerfLog::_Rebuild()
 
 void ImGuiPerfLog::Clear()
 {
-    _CSVData.clear();
-    _Data.clear();
     _Labels.clear();
     _Legend.clear();
     _Settings.Clear();
+    _Data.clear();
+    for (ImGuiPerflogEntry& entry : _CSVData)
+        entry.~ImGuiPerflogEntry();
+    _CSVData.clear();
+
+    ImStrncpy(_FilterDateFrom, "9999-99-99", IM_ARRAYSIZE(_FilterDateFrom));
+    ImStrncpy(_FilterDateTo, "0000-00-00", IM_ARRAYSIZE(_FilterDateFrom));
 }
 
 void ImGuiPerfLog::ShowUI(ImGuiTestEngine*)
@@ -727,6 +674,7 @@ void ImGuiPerfLog::ShowUI(ImGuiTestEngine*)
         {
             ImGui::CloseCurrentPopup();
             Clear();
+            ImFileDelete("imgui_perflog.csv");
         }
         ImGui::EndPopup();
 

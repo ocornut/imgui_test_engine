@@ -26,13 +26,42 @@ struct ImGuiPerflogEntry
     //const char*                 DateMax = NULL;               // Max date of combined entries, or NULL.
     double                      VsBaseline = 0.0;               // Percent difference vs baseline.
     int                         BranchIndex = 0;                // Unique linear branch index.
+    bool                        DataOwner = false;              // Owns lifetime of pointers when set to true.
+
+    void TakeDataOwnership()
+    {
+        if (DataOwner)
+            return;
+        DataOwner = true;
+        Category = strdup(Category);
+        TestName = strdup(TestName);
+        GitBranchName = strdup(GitBranchName);
+        BuildType = strdup(BuildType);
+        Cpu = strdup(Cpu);
+        OS = strdup(OS);
+        Compiler = strdup(Compiler);
+        Date = strdup(Date);
+    }
+
+    ~ImGuiPerflogEntry()
+    {
+        if (!DataOwner)
+            return;
+        IM_FREE((void*)Category);       Category = NULL;
+        IM_FREE((void*)TestName);       TestName = NULL;
+        IM_FREE((void*)GitBranchName);  GitBranchName = NULL;
+        IM_FREE((void*)BuildType);      BuildType = NULL;
+        IM_FREE((void*)Cpu);            Cpu = NULL;
+        IM_FREE((void*)OS);             OS = NULL;
+        IM_FREE((void*)Compiler);       Compiler = NULL;
+        IM_FREE((void*)Date);           Date = NULL;
+    }
 };
 
 struct ImGuiPerfLogColumnInfo;
 
 struct ImGuiPerfLog
 {
-    ImGuiCSVParser*             _CSVParser;                     // CSV parser.
     ImVector<ImGuiPerflogEntry> _CSVData;                       // Raw entries from CSV file (with string pointer into CSV data).
     ImVector<ImGuiPerflogEntry> _Data;                          // Data used to render plots. This is not necessarily same as Entries. Sorted by Timestamp and TestName.
     ImVector<ImGuiPerflogEntry*> _Labels;                       // A list of labels (left of the plot).
@@ -70,9 +99,6 @@ struct ImGuiPerfLog
     } _Settings;
 
     ImGuiPerfLog();
-    ~ImGuiPerfLog();
-    bool        Load(const char* file_name);
-    bool        Save(const char* file_name);
     void        AddEntry(ImGuiPerflogEntry* entry);
     void        Clear();
     void        ShowUI(ImGuiTestEngine* engine);
