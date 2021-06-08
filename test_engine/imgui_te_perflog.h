@@ -82,4 +82,6 @@ struct ImGuiPerfLog
     bool        _IsVisibleTest(ImGuiPerflogEntry* entry);
     void        _CalculateLegendAlignment();
     void        _ClosePopupMaybe();
+    void        _ShowEntriesPlot();
+    void        _ShowEntriesTable();
 };

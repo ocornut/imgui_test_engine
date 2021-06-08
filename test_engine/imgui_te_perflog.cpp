@@ -604,13 +604,13 @@ void ImGuiPerfLog::Clear()
 
 void ImGuiPerfLog::ShowUI()
 {
-    ImGuiContext& g = *GImGui;
-    Str256 label;
-    Str256 display_label;
+    ImGuiIO& io = ImGui::GetIO();
+    ImGuiStyle& style = ImGui::GetStyle();
 
     // -----------------------------------------------------------------------------------------------------------------
     // Render utility buttons
     // -----------------------------------------------------------------------------------------------------------------
+
     // Date filter
     ImGui::AlignTextToFramePadding();
     ImGui::TextUnformatted("Date:");
@@ -693,7 +693,7 @@ void ImGuiPerfLog::ShowUI()
     ImGui::SameLine();
 
     // Align help button to the right.
-    float help_pos = ImGui::GetWindowContentRegionMax().x - g.Style.FramePadding.x * 2 - ImGui::CalcTextSize("Help").x;
+    float help_pos = ImGui::GetWindowContentRegionMax().x - style.FramePadding.x * 2 - ImGui::CalcTextSize("Help").x;
     if (help_pos > ImGui::GetCursorPosX())
         ImGui::SetCursorPosX(help_pos);
     if (ImGui::Button("Help"))
@@ -796,277 +796,278 @@ void ImGuiPerfLog::ShowUI()
     float plot_height;
     ImGui::Splitter("splitter", &plot_height, &_InfoTableHeight, ImGuiAxis_Y, +1);
 
-    // -----------------------------------------------------------------------------------------------------------------
-    // Render a plot
-    // -----------------------------------------------------------------------------------------------------------------
-
+    // Render entries plot
     if (ImGui::BeginChild(ImGui::GetID("plot"), ImVec2(0, plot_height)))
-    {
-#ifdef IMGUI_TEST_ENGINE_ENABLE_IMPLOT
-        // A workaround for ImPlot requiring at least two labels.
-        if (_VisibleLabelPointers.Size < 2)
-            _VisibleLabelPointers.push_back("");
-
-        ImPlot::SetNextPlotTicksY(0, _VisibleLabelPointers.Size - 1, _VisibleLabelPointers.Size, _VisibleLabelPointers.Data);
-        if (ImPlot::GetCurrentContext()->Plots.GetByKey(ImGui::GetID("Perflog")) == NULL)
-            ImPlot::FitNextPlotAxes();   // Fit plot when appearing.
-        if (!ImPlot::BeginPlot("Perflog", NULL, NULL, ImVec2(-1, -1), ImPlotFlags_NoTitle, ImPlotAxisFlags_NoTickLabels))
-        {
-            ImGui::EndChild();
-            return;
-        }
-        //if (!ImPlot::BeginPlot("Perflog", "Delta milliseconds", "Test", ImVec2(-1, -1)))
-        //    return;
-
-        // Clickable test names
-        bool test_name_hovered = false;
-        for (int t = 0; t < _VisibleLabelPointers.Size; t++)
-        {
-            ImRect label_rect = ImPlotGetYTickRect(t);
-            if (label_rect.IsInverted())
-                continue;
-
-            if (!test_name_hovered && label_rect.Contains(g.IO.MousePos))
-            {
-                test_name_hovered = true;   // Ensure only one test name is hovered when they are overlapping due to zoom level.
-                ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
-                g.CurrentWindow->DrawList->AddLine(ImFloor(label_rect.GetBL()), ImFloor(label_rect.GetBR()), ImColor(g.Style.Colors[ImGuiCol_Text]));
-                if (ImGui::IsMouseClicked(ImGuiMouseButton_Left))
-                {
-                    _TableScrollToTest = _VisibleLabelPointers.Data[t];
-                    _TableHighlightAnimTime = 0.0f;
-                }
-            }
-        }
-
-        // Plot bars
-        const float occupy_h = 0.8f;
-        const float h = occupy_h / _NumVisibleBuilds;
-
-        int bar_index = 0;
-        for (ImGuiPerflogEntry*& entry : _Legend)
-        {
-            int batch_index = _Legend.index_from_ptr(&entry);
-            if (!_IsVisibleBuild(entry))
-                continue;
-
-            // Plot bars.
-            label.clear();
-            display_label.clear();
-            PerflogFormatBuildInfo(this, &label, entry);
-            display_label.append(label.c_str());
-            ImGuiID label_id;
-            if (!_CombineByBuildInfo && !_PerBranchColors)  // Use per-run hash when each run has unique color.
-                label_id = ImHashData(&entry->Timestamp, sizeof(entry->Timestamp));
-            else
-                label_id = ImHashStr(label.c_str());        // Otherwise using label hash allows them to collapse in the legend.
-            display_label.appendf("%s###%08X", _BaselineBatchIndex == batch_index ? " *" : "", label_id);
-            float shift = (float)(_NumVisibleBuilds - 1) * 0.5f * h;
-
-            // Highlight background behind bar when hovering test entry in info table.
-            if (_TableHoveredTest >= 0)
-            {
-                ImPlotContext& gp = *GImPlot;
-                ImPlotPlot& plot = *gp.CurrentPlot;
-                ImRect test_bars_rect;
-                float bar_min = -h * _TableHoveredBatch + shift;
-                test_bars_rect.Min.x = plot.PlotRect.Min.x;
-                test_bars_rect.Max.x = plot.PlotRect.Max.x;
-                test_bars_rect.Min.y = ImPlot::PlotToPixels(0, (float)_TableHoveredTest + bar_min - h * 0.5f).y;
-                test_bars_rect.Max.y = ImPlot::PlotToPixels(0, (float)_TableHoveredTest + bar_min + h * 0.5f).y;
-                ImPlot::GetPlotDrawList()->AddRectFilled(test_bars_rect.Min, test_bars_rect.Max, ImColor(g.Style.Colors[ImGuiCol_TableRowBgAlt]));
-            }
-
-            GetPlotPointData data;
-            data.Shift = -h * bar_index + shift;
-            data.Perf = this;
-            data.BatchIndex = batch_index;
-            ImPlot::SetNextFillStyle(ImPlot::GetColormapColor(_PerBranchColors ? entry->BranchIndex : batch_index));
-            ImPlot::PlotBarsHG(display_label.c_str(), &GetPlotPoint, &data, _VisibleLabelPointers.Size, h);
-
-            // Set baseline.
-            if (ImPlot::IsLegendEntryHovered(display_label.c_str()))
-            {
-                if (ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
-                    _BaselineBatchIndex = batch_index;
-            }
-            else if (g.IO.KeyShift)
-            {
-                // Info tooltip with delta times of each batch for a hovered test.
-                int test_index = (int)IM_ROUND(ImPlot::GetPlotMousePos().y);
-                if (0 <= test_index && test_index < _VisibleLabelPointers.Size)
-                {
-                    const char* test_name = _VisibleLabelPointers.Data[test_index];
-                    ImGuiPerflogEntry* hovered_entry = GetEntryByBatchIdx(batch_index, test_name);
-
-                    ImGui::BeginTooltip();
-                    if (bar_index == 0)
-                    {
-                        float w = ImGui::CalcTextSize(test_name).x;
-                        float total_w = ImGui::GetContentRegionAvail().x;
-                        if (total_w > w)
-                            ImGui::SetCursorPosX(ImGui::GetCursorPosX() + (total_w - w) * 0.5f);
-                        ImGui::TextUnformatted(test_name);
-                    }
-                    if (hovered_entry)
-                        ImGui::Text("%s %.3fms", label.c_str(), hovered_entry->DtDeltaMs);
-                    else
-                        ImGui::Text("%s --", label.c_str());
-                    ImGui::EndTooltip();
-                }
-            }
-
-            bar_index++;
-        }
-        ImPlot::EndPlot();
-#else
-        ImGui::TextUnformatted("Not enabled because ImPlot is not available (IMGUI_TEST_ENGINE_ENABLE_IMPLOT is not defined).");
-#endif
-    }
+        _ShowEntriesPlot();
     ImGui::EndChild();
 
-    // -----------------------------------------------------------------------------------------------------------------
-    // Render perf test info table
-    // -----------------------------------------------------------------------------------------------------------------
+    // Render entries tables
     if (ImGui::BeginChild(ImGui::GetID("info-table"), ImVec2(0, _InfoTableHeight)))
-    {
-        if (!ImGui::BeginTable("PerfInfo", IM_ARRAYSIZE(PerfLogColumnInfo), ImGuiTableFlags_Hideable | ImGuiTableFlags_Borders | ImGuiTableFlags_Sortable | ImGuiTableFlags_SortMulti | ImGuiTableFlags_SortTristate | ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_ScrollY))
-        {
-            ImGui::EndChild();
-            return;
-        }
-
-        // Test name column is not sorted because we do sorting only within perf runs of a particular tests, so as far
-        // as sorting function is concerned all items in first column are identical.
-        for (int i = 0; i < IM_ARRAYSIZE(PerfLogColumnInfo); i++)
-        {
-            ImGui::TableSetupColumn(PerfLogColumnInfo[i].Title, i ? 0 : ImGuiTableColumnFlags_NoSort);
-            ImGui::TableSetColumnEnabled(i, PerfLogColumnInfo[i].ShowAlways || _CombineByBuildInfo);
-        }
-        ImGui::TableSetupScrollFreeze(0, 1);
-
-        if (ImGuiTableSortSpecs* sorts_specs = ImGui::TableGetSortSpecs())
-            if (sorts_specs->SpecsDirty || _InfoTableSortDirty)
-            {
-                // Fill sort table with unsorted indices.
-                sorts_specs->SpecsDirty = _InfoTableSortDirty = false;
-                _InfoTableSort.resize(0);
-                for (int i = 0; i < _Legend.Size; i++)
-                    _InfoTableSort.push_back(i);
-                if (sorts_specs->SpecsCount > 0 && _InfoTableSort.Size > 1)
-                {
-                    _InfoTableSortSpecs = sorts_specs;
-                    PerfLogInstance = this;
-                    ImQsort(&_InfoTableSort[0], (size_t)_InfoTableSort.Size, sizeof(_InfoTableSort[0]), CompareWithSortSpecs);
-                    _InfoTableSortSpecs = NULL;
-                    PerfLogInstance = NULL;
-                }
-            }
-
-        ImGui::TableHeadersRow();
-
-        ImGuiTable* table = g.CurrentTable;
-        _TableHoveredTest = -1;
-        _TableHoveredBatch = -1;
-        for (int label_index = 0; label_index < _Labels.Size; label_index++)
-        {
-            bool scrolled_to = false;
-            const char* test_name = _Labels.Data[label_index]->TestName;
-            for (int batch_index = 0; batch_index < _Legend.Size; batch_index++)
-            {
-                ImGuiPerflogEntry* entry = GetEntryByBatchIdx(_InfoTableSort[batch_index], test_name);
-                if (entry == NULL || !_IsVisibleBuild(entry))
-                    continue;
-
-                ImGui::TableNextRow();
-
-                if (_TableScrollToTest != NULL && _TableHighlightAnimTime < 1.0f && strcmp(test_name, _TableScrollToTest) == 0)
-                {
-                    if (!scrolled_to)
-                    {
-                        ImGui::SetScrollHereY(0);
-                        scrolled_to = true;
-                    }
-                    ImColor bg_color;
-                    bg_color.Value = ImLerp(g.Style.Colors[ImGuiCol_TableRowBgAlt], g.Style.Colors[ImGuiCol_TableRowBg], _TableHighlightAnimTime);
-                    ImGui::TableSetBgColor(ImGuiTableBgTarget_RowBg0, bg_color);
-                }
-
-                // Build info
-                if (ImGui::TableNextColumn())
-                    ImGui::TextUnformatted(entry->TestName);
-                if (ImGui::TableNextColumn())
-                    ImGui::TextUnformatted(entry->GitBranchName);
-                if (ImGui::TableNextColumn())
-                    ImGui::TextUnformatted(entry->Compiler);
-                if (ImGui::TableNextColumn())
-                    ImGui::TextUnformatted(entry->OS);
-                if (ImGui::TableNextColumn())
-                    ImGui::TextUnformatted(entry->Cpu);
-                if (ImGui::TableNextColumn())
-                    ImGui::TextUnformatted(entry->BuildType);
-                if (ImGui::TableNextColumn())
-                    ImGui::Text("x%d", entry->PerfStressAmount);
-
-                // Avg ms
-                if (ImGui::TableNextColumn())
-                    ImGui::Text("%.3lfms", entry->DtDeltaMs);
-
-                // Min ms
-                if (ImGui::TableNextColumn())
-                    ImGui::Text("%.3lfms", entry->DtDeltaMsMin);
-
-                // Max ms
-                if (ImGui::TableNextColumn())
-                    ImGui::Text("%.3lfms", entry->DtDeltaMsMax);
-
-                    // Num samples
-                if (ImGui::TableNextColumn())
-                    ImGui::Text("%d", entry->NumSamples);
-
-                // VS Baseline
-                if (ImGui::TableNextColumn())
-                {
-                    ImGuiPerflogEntry* baseline_entry = GetEntryByBatchIdx(_BaselineBatchIndex, test_name);
-                    if (baseline_entry == NULL)
-                    {
-                        ImGui::TextUnformatted("--");
-                    }
-                    else if (entry == baseline_entry)
-                    {
-                        ImGui::TextUnformatted("baseline");
-                    }
-                    else
-                    {
-                        double percent_vs_first = 100.0 / baseline_entry->DtDeltaMs * entry->DtDeltaMs;
-                        double dt_change = -(100.0 - percent_vs_first);
-                        if (ImAbs(dt_change) > 0.001f)
-                            ImGui::Text("%+.2lf%% (%s)", dt_change, dt_change < 0.0f ? "faster" : "slower");
-                        else
-                            ImGui::TextUnformatted("==");
-                        if (dt_change != entry->VsBaseline)
-                        {
-                            entry->VsBaseline = dt_change;
-                            _InfoTableSortDirty = true;             // Force re-sorting.
-                        }
-                    }
-                }
-
-                if (table->InnerClipRect.Contains(g.IO.MousePos))
-                    if (table->RowPosY1 < g.IO.MousePos.y && g.IO.MousePos.y < table->RowPosY2 - 1) // FIXME-OPT: RowPosY1/RowPosY2 may overlap between adjacent rows. Compensate for that.
-                    {
-                        ImGui::TableSetBgColor(ImGuiTableBgTarget_RowBg0, ImColor(g.Style.Colors[ImGuiCol_TableRowBgAlt]));
-                        for (int i = 0; i < _VisibleLabelPointers.Size && _TableHoveredTest == -1; i++)
-                            if (strcmp(_VisibleLabelPointers.Data[i], test_name) == 0)
-                                _TableHoveredTest = i;
-                        _TableHoveredBatch = batch_index;
-                    }
-            }
-        }
-        ImGui::EndTable();
-    }
+        _ShowEntriesTable();
     ImGui::EndChild();
-    _TableHighlightAnimTime += g.IO.DeltaTime;
+
+    _TableHighlightAnimTime += io.DeltaTime;
+}
+
+void ImGuiPerfLog::_ShowEntriesPlot()
+{
+#ifdef IMGUI_TEST_ENGINE_ENABLE_IMPLOT
+    ImGuiContext& g = *GImGui;
+    Str256 label;
+    Str256 display_label;
+
+    // A workaround for ImPlot requiring at least two labels.
+    if (_VisibleLabelPointers.Size < 2)
+        _VisibleLabelPointers.push_back("");
+
+    ImPlot::SetNextPlotTicksY(0, _VisibleLabelPointers.Size - 1, _VisibleLabelPointers.Size, _VisibleLabelPointers.Data);
+    if (ImPlot::GetCurrentContext()->Plots.GetByKey(ImGui::GetID("Perflog")) == NULL)
+        ImPlot::FitNextPlotAxes();   // Fit plot when appearing.
+    if (!ImPlot::BeginPlot("Perflog", NULL, NULL, ImVec2(-1, -1), ImPlotFlags_NoTitle, ImPlotAxisFlags_NoTickLabels))
+        return;
+
+    // Clickable test names
+    bool test_name_hovered = false;
+    for (int t = 0; t < _VisibleLabelPointers.Size; t++)
+    {
+        ImRect label_rect = ImPlotGetYTickRect(t);
+        if (label_rect.IsInverted())
+            continue;
+
+        if (!test_name_hovered && label_rect.Contains(g.IO.MousePos))
+        {
+            test_name_hovered = true;   // Ensure only one test name is hovered when they are overlapping due to zoom level.
+            ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
+            g.CurrentWindow->DrawList->AddLine(ImFloor(label_rect.GetBL()), ImFloor(label_rect.GetBR()), ImColor(g.Style.Colors[ImGuiCol_Text]));
+            if (ImGui::IsMouseClicked(ImGuiMouseButton_Left))
+            {
+                _TableScrollToTest = _VisibleLabelPointers.Data[t];
+                _TableHighlightAnimTime = 0.0f;
+            }
+        }
+    }
+
+    // Plot bars
+    const float occupy_h = 0.8f;
+    const float h = occupy_h / _NumVisibleBuilds;
+
+    int bar_index = 0;
+    for (ImGuiPerflogEntry*& entry : _Legend)
+    {
+        int batch_index = _Legend.index_from_ptr(&entry);
+        if (!_IsVisibleBuild(entry))
+            continue;
+
+        // Plot bars.
+        label.clear();
+        display_label.clear();
+        PerflogFormatBuildInfo(this, &label, entry);
+        display_label.append(label.c_str());
+        ImGuiID label_id;
+        if (!_CombineByBuildInfo && !_PerBranchColors)  // Use per-run hash when each run has unique color.
+            label_id = ImHashData(&entry->Timestamp, sizeof(entry->Timestamp));
+        else
+            label_id = ImHashStr(label.c_str());        // Otherwise using label hash allows them to collapse in the legend.
+        display_label.appendf("%s###%08X", _BaselineBatchIndex == batch_index ? " *" : "", label_id);
+        float shift = (float)(_NumVisibleBuilds - 1) * 0.5f * h;
+
+        // Highlight background behind bar when hovering test entry in info table.
+        if (_TableHoveredTest >= 0)
+        {
+            ImPlotContext& gp = *GImPlot;
+            ImPlotPlot& plot = *gp.CurrentPlot;
+            ImRect test_bars_rect;
+            float bar_min = -h * _TableHoveredBatch + shift;
+            test_bars_rect.Min.x = plot.PlotRect.Min.x;
+            test_bars_rect.Max.x = plot.PlotRect.Max.x;
+            test_bars_rect.Min.y = ImPlot::PlotToPixels(0, (float)_TableHoveredTest + bar_min - h * 0.5f).y;
+            test_bars_rect.Max.y = ImPlot::PlotToPixels(0, (float)_TableHoveredTest + bar_min + h * 0.5f).y;
+            ImPlot::GetPlotDrawList()->AddRectFilled(test_bars_rect.Min, test_bars_rect.Max, ImColor(g.Style.Colors[ImGuiCol_TableRowBgAlt]));
+        }
+
+        GetPlotPointData data;
+        data.Shift = -h * bar_index + shift;
+        data.Perf = this;
+        data.BatchIndex = batch_index;
+        ImPlot::SetNextFillStyle(ImPlot::GetColormapColor(_PerBranchColors ? entry->BranchIndex : batch_index));
+        ImPlot::PlotBarsHG(display_label.c_str(), &GetPlotPoint, &data, _VisibleLabelPointers.Size, h);
+
+        // Set baseline.
+        if (ImPlot::IsLegendEntryHovered(display_label.c_str()))
+        {
+            if (ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
+                _BaselineBatchIndex = batch_index;
+        }
+        else if (g.IO.KeyShift)
+        {
+            // Info tooltip with delta times of each batch for a hovered test.
+            int test_index = (int)IM_ROUND(ImPlot::GetPlotMousePos().y);
+            if (0 <= test_index && test_index < _VisibleLabelPointers.Size)
+            {
+                const char* test_name = _VisibleLabelPointers.Data[test_index];
+                ImGuiPerflogEntry* hovered_entry = GetEntryByBatchIdx(batch_index, test_name);
+
+                ImGui::BeginTooltip();
+                if (bar_index == 0)
+                {
+                    float w = ImGui::CalcTextSize(test_name).x;
+                    float total_w = ImGui::GetContentRegionAvail().x;
+                    if (total_w > w)
+                        ImGui::SetCursorPosX(ImGui::GetCursorPosX() + (total_w - w) * 0.5f);
+                    ImGui::TextUnformatted(test_name);
+                }
+                if (hovered_entry)
+                    ImGui::Text("%s %.3fms", label.c_str(), hovered_entry->DtDeltaMs);
+                else
+                    ImGui::Text("%s --", label.c_str());
+                ImGui::EndTooltip();
+            }
+        }
+
+        bar_index++;
+    }
+    ImPlot::EndPlot();
+#else
+    ImGui::TextUnformatted("Not enabled because ImPlot is not available (IMGUI_TEST_ENGINE_ENABLE_IMPLOT is not defined).");
+#endif
+}
+
+void ImGuiPerfLog::_ShowEntriesTable()
+{
+    if (!ImGui::BeginTable("PerfInfo", IM_ARRAYSIZE(PerfLogColumnInfo), ImGuiTableFlags_Hideable | ImGuiTableFlags_Borders | ImGuiTableFlags_Sortable | ImGuiTableFlags_SortMulti | ImGuiTableFlags_SortTristate | ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_ScrollY))
+        return;
+    ImGuiContext& g = *GImGui;
+    ImGuiStyle& style = ImGui::GetStyle();
+
+    // Test name column is not sorted because we do sorting only within perf runs of a particular tests, so as far
+    // as sorting function is concerned all items in first column are identical.
+    for (int i = 0; i < IM_ARRAYSIZE(PerfLogColumnInfo); i++)
+    {
+        ImGui::TableSetupColumn(PerfLogColumnInfo[i].Title, i ? 0 : ImGuiTableColumnFlags_NoSort);
+        ImGui::TableSetColumnEnabled(i, PerfLogColumnInfo[i].ShowAlways || _CombineByBuildInfo);
+    }
+    ImGui::TableSetupScrollFreeze(0, 1);
+
+    if (ImGuiTableSortSpecs* sorts_specs = ImGui::TableGetSortSpecs())
+        if (sorts_specs->SpecsDirty || _InfoTableSortDirty)
+        {
+            // Fill sort table with unsorted indices.
+            sorts_specs->SpecsDirty = _InfoTableSortDirty = false;
+            _InfoTableSort.resize(0);
+            for (int i = 0; i < _Legend.Size; i++)
+                _InfoTableSort.push_back(i);
+            if (sorts_specs->SpecsCount > 0 && _InfoTableSort.Size > 1)
+            {
+                _InfoTableSortSpecs = sorts_specs;
+                PerfLogInstance = this;
+                ImQsort(&_InfoTableSort[0], (size_t)_InfoTableSort.Size, sizeof(_InfoTableSort[0]), CompareWithSortSpecs);
+                _InfoTableSortSpecs = NULL;
+                PerfLogInstance = NULL;
+            }
+        }
+
+    ImGui::TableHeadersRow();
+
+    _TableHoveredTest = -1;
+    _TableHoveredBatch = -1;
+    for (int label_index = 0; label_index < _Labels.Size; label_index++)
+    {
+        bool scrolled_to = false;
+        const char* test_name = _Labels.Data[label_index]->TestName;
+        for (int batch_index = 0; batch_index < _Legend.Size; batch_index++)
+        {
+            ImGuiPerflogEntry* entry = GetEntryByBatchIdx(_InfoTableSort[batch_index], test_name);
+            if (entry == NULL || !_IsVisibleBuild(entry))
+                continue;
+
+            ImGui::TableNextRow();
+
+            if (_TableScrollToTest != NULL && _TableHighlightAnimTime < 1.0f && strcmp(test_name, _TableScrollToTest) == 0)
+            {
+                if (!scrolled_to)
+                {
+                    ImGui::SetScrollHereY(0);
+                    scrolled_to = true;
+                }
+                ImColor bg_color;
+                bg_color.Value = ImLerp(style.Colors[ImGuiCol_TableRowBgAlt], style.Colors[ImGuiCol_TableRowBg], _TableHighlightAnimTime);
+                ImGui::TableSetBgColor(ImGuiTableBgTarget_RowBg0, bg_color);
+            }
+
+            // Build info
+            if (ImGui::TableNextColumn())
+                ImGui::TextUnformatted(entry->TestName);
+            if (ImGui::TableNextColumn())
+                ImGui::TextUnformatted(entry->GitBranchName);
+            if (ImGui::TableNextColumn())
+                ImGui::TextUnformatted(entry->Compiler);
+            if (ImGui::TableNextColumn())
+                ImGui::TextUnformatted(entry->OS);
+            if (ImGui::TableNextColumn())
+                ImGui::TextUnformatted(entry->Cpu);
+            if (ImGui::TableNextColumn())
+                ImGui::TextUnformatted(entry->BuildType);
+            if (ImGui::TableNextColumn())
+                ImGui::Text("x%d", entry->PerfStressAmount);
+
+            // Avg ms
+            if (ImGui::TableNextColumn())
+                ImGui::Text("%.3lfms", entry->DtDeltaMs);
+
+            // Min ms
+            if (ImGui::TableNextColumn())
+                ImGui::Text("%.3lfms", entry->DtDeltaMsMin);
+
+            // Max ms
+            if (ImGui::TableNextColumn())
+                ImGui::Text("%.3lfms", entry->DtDeltaMsMax);
+
+                // Num samples
+            if (ImGui::TableNextColumn())
+                ImGui::Text("%d", entry->NumSamples);
+
+            // VS Baseline
+            if (ImGui::TableNextColumn())
+            {
+                ImGuiPerflogEntry* baseline_entry = GetEntryByBatchIdx(_BaselineBatchIndex, test_name);
+                if (baseline_entry == NULL)
+                {
+                    ImGui::TextUnformatted("--");
+                }
+                else if (entry == baseline_entry)
+                {
+                    ImGui::TextUnformatted("baseline");
+                }
+                else
+                {
+                    double percent_vs_first = 100.0 / baseline_entry->DtDeltaMs * entry->DtDeltaMs;
+                    double dt_change = -(100.0 - percent_vs_first);
+                    if (ImAbs(dt_change) > 0.001f)
+                        ImGui::Text("%+.2lf%% (%s)", dt_change, dt_change < 0.0f ? "faster" : "slower");
+                    else
+                        ImGui::TextUnformatted("==");
+                    if (dt_change != entry->VsBaseline)
+                    {
+                        entry->VsBaseline = dt_change;
+                        _InfoTableSortDirty = true;             // Force re-sorting.
+                    }
+                }
+            }
+
+            // FIXME: Aim to remove that direct access to table.... could use a selectable on first column?
+            ImGuiTable* table = g.CurrentTable;
+            if (table->InnerClipRect.Contains(g.IO.MousePos))
+                if (table->RowPosY1 < g.IO.MousePos.y && g.IO.MousePos.y < table->RowPosY2 - 1) // FIXME-OPT: RowPosY1/RowPosY2 may overlap between adjacent rows. Compensate for that.
+                {
+                    ImGui::TableSetBgColor(ImGuiTableBgTarget_RowBg0, ImColor(style.Colors[ImGuiCol_TableRowBgAlt]));
+                    for (int i = 0; i < _VisibleLabelPointers.Size && _TableHoveredTest == -1; i++)
+                        if (strcmp(_VisibleLabelPointers.Data[i], test_name) == 0)
+                            _TableHoveredTest = i;
+                    _TableHoveredBatch = batch_index;
+                }
+        }
+    }
+    ImGui::EndTable();
 }
 
 void ImGuiPerfLog::ViewOnly(const char** perf_names)
