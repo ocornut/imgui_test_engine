@@ -641,7 +641,7 @@ void    ImGuiTestEngine_ShowTestWindows(ImGuiTestEngine* e, bool* p_open)
                 ImGuiTestEngine_PerflogLoad(e);
                 perflog_data_loaded = true;
             }
-            e->PerfLog->ShowUI(e);
+            e->PerfLog->ShowUI();
         }
         ImGui::End();
     }

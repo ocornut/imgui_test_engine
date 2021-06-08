@@ -3,9 +3,6 @@
 #include <Str/Str.h>
 #include "imgui.h"
 
-struct ImGuiCSVParser;
-struct ImGuiTestEngine;
-
 // [Internal] Perf log entry. Changes to this struct should be reflected in ImGuiTestContext::PerfCapture() and ImGuiTestEngine_Start().
 struct ImGuiPerflogEntry
 {
@@ -28,34 +25,8 @@ struct ImGuiPerflogEntry
     int                         BranchIndex = 0;                // Unique linear branch index.
     bool                        DataOwner = false;              // Owns lifetime of pointers when set to true.
 
-    void TakeDataOwnership()
-    {
-        if (DataOwner)
-            return;
-        DataOwner = true;
-        Category = strdup(Category);
-        TestName = strdup(TestName);
-        GitBranchName = strdup(GitBranchName);
-        BuildType = strdup(BuildType);
-        Cpu = strdup(Cpu);
-        OS = strdup(OS);
-        Compiler = strdup(Compiler);
-        Date = strdup(Date);
-    }
-
-    ~ImGuiPerflogEntry()
-    {
-        if (!DataOwner)
-            return;
-        IM_FREE((void*)Category);       Category = NULL;
-        IM_FREE((void*)TestName);       TestName = NULL;
-        IM_FREE((void*)GitBranchName);  GitBranchName = NULL;
-        IM_FREE((void*)BuildType);      BuildType = NULL;
-        IM_FREE((void*)Cpu);            Cpu = NULL;
-        IM_FREE((void*)OS);             OS = NULL;
-        IM_FREE((void*)Compiler);       Compiler = NULL;
-        IM_FREE((void*)Date);           Date = NULL;
-    }
+    ~ImGuiPerflogEntry();
+    void TakeDataOwnership();
 };
 
 struct ImGuiPerfLogColumnInfo;
@@ -101,7 +72,7 @@ struct ImGuiPerfLog
     ImGuiPerfLog();
     void        AddEntry(ImGuiPerflogEntry* entry);
     void        Clear();
-    void        ShowUI(ImGuiTestEngine* engine);
+    void        ShowUI();
     void        ViewOnly(const char* perf_name);
     void        ViewOnly(const char** perf_names);
     ImGuiPerflogEntry* GetEntryByBatchIdx(int idx, const char* perf_name=NULL);

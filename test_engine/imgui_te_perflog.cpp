@@ -6,18 +6,51 @@
 #include "imgui_te_perflog.h"
 #include "imgui.h"
 #include "imgui_internal.h"
-#include "imgui_te_internal.h"
+#include "imgui_te_util.h"
 #include "libs/Str/Str.h"
 #include "libs/implot/implot.h"
 #include "libs/implot/implot_internal.h"
 #include "shared/imgui_utils.h"
 
 //-------------------------------------------------------------------------
+// ImGuiPerflogEntry
+//-------------------------------------------------------------------------
+
+void ImGuiPerflogEntry::TakeDataOwnership()
+{
+    if (DataOwner)
+        return;
+    DataOwner = true;
+    Category = ImStrdup(Category);
+    TestName = ImStrdup(TestName);
+    GitBranchName = ImStrdup(GitBranchName);
+    BuildType = ImStrdup(BuildType);
+    Cpu = ImStrdup(Cpu);
+    OS = ImStrdup(OS);
+    Compiler = ImStrdup(Compiler);
+    Date = ImStrdup(Date);
+}
+
+ImGuiPerflogEntry::~ImGuiPerflogEntry()
+{
+    if (!DataOwner)
+        return;
+    IM_FREE((void*)Category);       Category = NULL;
+    IM_FREE((void*)TestName);       TestName = NULL;
+    IM_FREE((void*)GitBranchName);  GitBranchName = NULL;
+    IM_FREE((void*)BuildType);      BuildType = NULL;
+    IM_FREE((void*)Cpu);            Cpu = NULL;
+    IM_FREE((void*)OS);             OS = NULL;
+    IM_FREE((void*)Compiler);       Compiler = NULL;
+    IM_FREE((void*)Date);           Date = NULL;
+}
+
+//-------------------------------------------------------------------------
 // Types
 //-------------------------------------------------------------------------
 
 typedef ImGuiID(*HashEntryFn)(ImGuiPerflogEntry* entry);
-typedef void(*FormatEntryLabelFn)(ImGuiPerfLog* perflog, Str256f* result, ImGuiPerflogEntry* entry);
+typedef void(*FormatEntryLabelFn)(ImGuiPerfLog* perflog, Str* result, ImGuiPerflogEntry* entry);
 
 struct ImGuiPerfLogColumnInfo
 {
@@ -125,13 +158,13 @@ static ImGuiID PerflogHashTestName(ImGuiPerflogEntry* entry)
     return ImHashStr(entry->TestName);
 }
 
-static void PerflogFormatTestName(ImGuiPerfLog* perflog, Str256f* result, ImGuiPerflogEntry* entry)
+static void PerflogFormatTestName(ImGuiPerfLog* perflog, Str* result, ImGuiPerflogEntry* entry)
 {
     IM_UNUSED(perflog);
     result->set_ref(entry->TestName);
 }
 
-static void PerflogFormatBuildInfo(ImGuiPerfLog* perflog, Str256f* result, ImGuiPerflogEntry* entry)
+static void PerflogFormatBuildInfo(ImGuiPerfLog* perflog, Str* result, ImGuiPerflogEntry* entry)
 {
     Str64f legend_format("x%%-%dd %%-%ds %%-%ds %%-%ds %%s %%-%ds %%s%%s%%s%%s(%%-%dd sample%%s)%%s",
         perflog->_AlignStress, perflog->_AlignType, perflog->_AlignOs, perflog->_AlignCompiler, perflog->_AlignBranch,
@@ -243,14 +276,14 @@ static void RenderFilterInput(ImGuiPerfLog* perf, const char* hint)
 
 static bool RenderMultiSelectFilter(ImGuiPerfLog* perf, const char* filter_hint, ImVector<ImGuiPerflogEntry*>* entries, HashEntryFn hash, FormatEntryLabelFn format)
 {
-    ImGuiContext& g = *GImGui;
-    Str256f buf("");
+    ImGuiIO& io = ImGui::GetIO();
+    Str256 buf;
     ImGuiStorage& visibility = perf->_Settings.Visibility;
     bool modified = false;
     RenderFilterInput(perf, filter_hint);
 
     // Keep popup open for multiple actions if SHIFT is pressed.
-    if (!g.IO.KeyShift)
+    if (!io.KeyShift)
         ImGui::PushItemFlag(ImGuiItemFlags_SelectableDontClosePopup, true);
 
     if (ImGui::MenuItem("Show All"))
@@ -291,7 +324,7 @@ static bool RenderMultiSelectFilter(ImGuiPerfLog* perf, const char* filter_hint,
         if (ImGui::MenuItem(buf.c_str(), NULL, &visible))
         {
             modified = true;
-            if (g.IO.KeyCtrl)
+            if (io.KeyCtrl)
             {
                 for (ImGuiPerflogEntry* entry2 : *entries)
                 {
@@ -307,7 +340,7 @@ static bool RenderMultiSelectFilter(ImGuiPerfLog* perf, const char* filter_hint,
         filtered_entries++;
     }
 
-    if (!g.IO.KeyShift)
+    if (!io.KeyShift)
         ImGui::PopItemFlag();
 
     return modified;
@@ -569,11 +602,11 @@ void ImGuiPerfLog::Clear()
     ImStrncpy(_FilterDateTo, "0000-00-00", IM_ARRAYSIZE(_FilterDateFrom));
 }
 
-void ImGuiPerfLog::ShowUI(ImGuiTestEngine*)
+void ImGuiPerfLog::ShowUI()
 {
     ImGuiContext& g = *GImGui;
-    Str256f label("");
-    Str256f display_label("");
+    Str256 label;
+    Str256 display_label;
 
     // -----------------------------------------------------------------------------------------------------------------
     // Render utility buttons
@@ -898,7 +931,10 @@ void ImGuiPerfLog::ShowUI(ImGuiTestEngine*)
     if (ImGui::BeginChild(ImGui::GetID("info-table"), ImVec2(0, _InfoTableHeight)))
     {
         if (!ImGui::BeginTable("PerfInfo", IM_ARRAYSIZE(PerfLogColumnInfo), ImGuiTableFlags_Hideable | ImGuiTableFlags_Borders | ImGuiTableFlags_Sortable | ImGuiTableFlags_SortMulti | ImGuiTableFlags_SortTristate | ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_ScrollY))
+        {
+            ImGui::EndChild();
             return;
+        }
 
         // Test name column is not sorted because we do sorting only within perf runs of a particular tests, so as far
         // as sorting function is concerned all items in first column are identical.
@@ -1088,7 +1124,8 @@ bool ImGuiPerfLog::_IsVisibleTest(ImGuiPerflogEntry* entry)
 
 void ImGuiPerfLog::_CalculateLegendAlignment()
 {
-    // Estimate paddings for legend format so it looks nice and aligned.
+    // Estimate paddings for legend format so it looks nice and aligned
+    // FIXME: Rely on font being monospace. May need to recalculate every frame on a per-need basis based on font?
     _AlignStress = _AlignType = _AlignOs = _AlignCompiler = _AlignBranch = _AlignSamples = 0;
     for (ImGuiPerflogEntry* entry : _Legend)
     {
