@@ -746,6 +746,18 @@ void ImGuiPerfLog::ShowUI()
                 ImGui::TableSetupColumn(columns[i]);
             ImGui::TableHeadersRow();
 
+            // Find columns with nothing checked.
+            bool checked_any[] = { false, false, false, false, false };
+            for (ImGuiPerflogEntry* entry : _Legend)
+            {
+                const char* properties[] = { entry->GitBranchName, entry->BuildType, entry->Cpu, entry->OS, entry->Compiler };
+                for (int i = 0; i < IM_ARRAYSIZE(properties); i++)
+                {
+                    ImGuiID hash = ImHashStr(properties[i]);
+                    checked_any[i] |= _Settings.Visibility.GetBool(hash, true);
+                }
+            }
+
             bool visible = true;
             for (ImGuiPerflogEntry* entry : _Legend)
             {
@@ -770,6 +782,19 @@ void ImGuiPerfLog::ShowUI()
                     if (ImGui::Checkbox(properties[i], &visible) || show_all || hide_all)
                         _CalculateLegendAlignment();
                     _Settings.Visibility.SetBool(hash, visible);
+                    if (!checked_any[i])
+                    {
+                        ImGui::TableSetBgColor(ImGuiTableBgTarget_CellBg, ImColor(1.0f, 0.0f, 0.0f, 0.2f));
+                        ImRect cell_rect = ImGui::TableGetCellBgRect(g.CurrentTable, i);
+                        if (cell_rect.Max.y < ImGui::GetItemRectMax().y)
+                            cell_rect.Max.y = ImGui::GetItemRectMax().y + g.Style.CellPadding.y;    // FIXME-OPT: First table column does not return proper cell rect. Use item height as a workaround.
+                        if (ImGui::IsMouseHoveringRect(cell_rect.Min, cell_rect.Max))
+                        {
+                            ImGui::BeginTooltip();
+                            ImGui::TextUnformatted("Check at least one item in each column to see any data.");
+                            ImGui::EndTooltip();
+                        }
+                    }
                 }
             }
             ImGui::EndTable();
