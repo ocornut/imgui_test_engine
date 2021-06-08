@@ -194,8 +194,13 @@ static void LogUpdateVisibleLabels(ImGuiPerfLog* perflog)
 {
     perflog->_VisibleLabelPointers.resize(0);
     for (ImGuiPerflogEntry* entry : perflog->_Labels)
-        if (perflog->_IsVisibleTest(entry) && perflog->_IsVisibleBuild(entry))
-            perflog->_VisibleLabelPointers.push_front(entry->TestName);
+        if (perflog->_IsVisibleTest(entry))
+            for (int batch_idx = 0; batch_idx < perflog->_Legend.Size; batch_idx++)
+                if (perflog->GetEntryByBatchIdx(batch_idx, entry->TestName) != NULL && perflog->_IsVisibleBuild(perflog->_Legend.Data[batch_idx]))
+                {
+                    perflog->_VisibleLabelPointers.push_front(entry->TestName);
+                    break;
+                }
 }
 
 // Copied from implot_demo.cpp and modified.
