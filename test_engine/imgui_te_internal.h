@@ -60,7 +60,6 @@ struct ImGuiStackLevelInfo
 
 struct ImGuiStackTool
 {
-    bool                    Visible = false;
     ImGuiID                 QueryStackId = 0;           // Stack id to query details for
     int                     QueryStep = -1;
     ImGuiStackLevelInfo*    QueryIdInfoOutput = NULL;   // Current stack level we're hooking PushID for
@@ -118,6 +117,8 @@ struct ImGuiTestEngine
     ImGuiTextFilter             UiFilterPerfs;
     bool                        UiFilterFailingOnly = false;
     bool                        UiMetricsOpen = false; // FIXME
+    bool                        UiCaptureToolOpen = false;
+    bool                        UiStackToolOpen = false;
     float                       UiLogHeight = 150.0f;
 
     // Performance Monitor

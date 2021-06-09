@@ -132,7 +132,6 @@ struct ImGuiCaptureContext
 struct ImGuiCaptureTool
 {
     ImGuiCaptureContext     Context;                                // Screenshot capture context.
-    bool                    Visible = false;                        // Tool visibility state (as a convenience for user)
     float                   SnapGridSize = 32.0f;                   // Size of the grid cell for "snap to grid" functionality.
     char                    LastOutputFileName[256] = "";           // File name of last captured file.
 
@@ -145,7 +144,7 @@ struct ImGuiCaptureTool
     void    ShowCaptureToolWindow(bool* p_open = NULL);             // Render a capture tool window with various options and utilities.
     void    SetCaptureFunc(ImGuiScreenCaptureFunc capture_func);
 
-    // [Internal] 
+    // [Internal]
     void    CaptureWindowPicker(ImGuiCaptureArgs* args);            // Render a window picker that captures picked window to file specified in file_name.
     void    CaptureWindowsSelector(ImGuiCaptureArgs* args);         // Render a selector for selecting multiple windows for capture.
     void    SnapWindowsToGrid(float cell_size, float padding);      // Snaps edges of all visible windows to a virtual grid.

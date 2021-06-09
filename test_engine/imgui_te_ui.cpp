@@ -431,8 +431,8 @@ static void ImGuiTestEngine_ShowTestTool(ImGuiTestEngine* engine, bool* p_open)
     if (ImGui::BeginPopup("Tools"))
     {
         if (ImGui::Checkbox("Metrics", &engine->UiMetricsOpen)) ImGui::CloseCurrentPopup(); // FIXME: duplicate with Demo one... use macros to activate in demo?
-        if (ImGui::Checkbox("Stack Tool", &engine->StackTool.Visible)) ImGui::CloseCurrentPopup();
-        if (ImGui::Checkbox("Capture Tool", &engine->CaptureTool.Visible)) ImGui::CloseCurrentPopup();
+        if (ImGui::Checkbox("Stack Tool", &engine->UiStackToolOpen)) ImGui::CloseCurrentPopup();
+        if (ImGui::Checkbox("Capture Tool", &engine->UiCaptureToolOpen)) ImGui::CloseCurrentPopup();
         ImGui::EndPopup();
     }
 
@@ -592,27 +592,27 @@ static void ImGuiTestEngine_ShowTestTool(ImGuiTestEngine* engine, bool* p_open)
     ImGui::End();
 }
 
-void    ImGuiTestEngine_ShowTestWindows(ImGuiTestEngine* engine, bool* p_open)
+void    ImGuiTestEngine_ShowTestWindows(ImGuiTestEngine* e, bool* p_open)
 {
     // Test Tool
-    ImGuiTestEngine_ShowTestTool(engine, p_open);
+    ImGuiTestEngine_ShowTestTool(e, p_open);
 
     // Stack Tool
-    ImGuiStackTool& stack_tool = engine->StackTool;
-    if (stack_tool.Visible)
-        stack_tool.ShowStackToolWindow(engine, &stack_tool.Visible);
+    ImGuiStackTool& stack_tool = e->StackTool;
+    if (e->UiStackToolOpen)
+        stack_tool.ShowStackToolWindow(e, &e->UiStackToolOpen);
 
     // Capture Tool
-    ImGuiCaptureTool& capture_tool = engine->CaptureTool;
-    capture_tool.Context.ScreenCaptureFunc = engine->IO.ScreenCaptureFunc;
-    capture_tool.Context.ScreenCaptureUserData = engine->IO.ScreenCaptureUserData;
-    if (capture_tool.Visible)
-        capture_tool.ShowCaptureToolWindow(&capture_tool.Visible);
+    ImGuiCaptureTool& capture_tool = e->CaptureTool;
+    capture_tool.Context.ScreenCaptureFunc = e->IO.ScreenCaptureFunc;
+    capture_tool.Context.ScreenCaptureUserData = e->IO.ScreenCaptureUserData;
+    if (e->UiCaptureToolOpen)
+        capture_tool.ShowCaptureToolWindow(&e->UiCaptureToolOpen);
 
     // Metrics window
     // FIXME
-    if (engine->UiMetricsOpen)
-        ImGui::ShowMetricsWindow(&engine->UiMetricsOpen);
+    if (e->UiMetricsOpen)
+        ImGui::ShowMetricsWindow(&e->UiMetricsOpen);
 }
 
 //-------------------------------------------------------------------------

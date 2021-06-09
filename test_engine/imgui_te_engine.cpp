@@ -1603,8 +1603,8 @@ static void     ImGuiTestEngine_SettingsReadLine(ImGuiContext* ui_ctx, ImGuiSett
     /**/ if (sscanf(line, "FilterTests=%s", engine->UiFilterTests.InputBuf) == 1)   { engine->UiFilterTests.Build(); }
     else if (sscanf(line, "FilterPerfs=%s", engine->UiFilterPerfs.InputBuf) == 1)   { engine->UiFilterPerfs.Build(); }
     else if (sscanf(line, "LogHeight=%f", &engine->UiLogHeight) == 1)               { }
-    else if (sscanf(line, "StackTool=%d", &n) == 1)                                 { engine->StackTool.Visible = (n != 0); }
-    else if (sscanf(line, "CaptureTool=%d", &n) == 1)                               { engine->CaptureTool.Visible = (n != 0); }
+    else if (sscanf(line, "CaptureTool=%d", &n) == 1)                               { engine->UiCaptureToolOpen = (n != 0); }
+    else if (sscanf(line, "StackTool=%d", &n) == 1)                                 { engine->UiStackToolOpen = (n != 0); }
 }
 
 static void     ImGuiTestEngine_SettingsWriteAll(ImGuiContext* ui_ctx, ImGuiSettingsHandler* handler, ImGuiTextBuffer* buf)
@@ -1617,8 +1617,8 @@ static void     ImGuiTestEngine_SettingsWriteAll(ImGuiContext* ui_ctx, ImGuiSett
     buf->appendf("FilterTests=%s\n", engine->UiFilterTests.InputBuf);
     buf->appendf("FilterPerfs=%s\n", engine->UiFilterPerfs.InputBuf);
     buf->appendf("LogHeight=%.0f\n", engine->UiLogHeight);
-    buf->appendf("StackTool=%d\n", engine->StackTool.Visible);
-    buf->appendf("CaptureTool=%d\n", engine->CaptureTool.Visible);
+    buf->appendf("CaptureTool=%d\n", engine->UiCaptureToolOpen);
+    buf->appendf("StackTool=%d\n", engine->UiStackToolOpen);
     buf->appendf("\n");
 }
 
