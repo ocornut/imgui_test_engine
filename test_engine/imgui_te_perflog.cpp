@@ -35,14 +35,14 @@ ImGuiPerflogEntry::~ImGuiPerflogEntry()
 {
     if (!DataOwner)
         return;
-    IM_FREE((void*)Category);       Category = NULL;
-    IM_FREE((void*)TestName);       TestName = NULL;
-    IM_FREE((void*)GitBranchName);  GitBranchName = NULL;
-    IM_FREE((void*)BuildType);      BuildType = NULL;
-    IM_FREE((void*)Cpu);            Cpu = NULL;
-    IM_FREE((void*)OS);             OS = NULL;
-    IM_FREE((void*)Compiler);       Compiler = NULL;
-    IM_FREE((void*)Date);           Date = NULL;
+    IM_FREE((void*)Category);
+    IM_FREE((void*)TestName);
+    IM_FREE((void*)GitBranchName);
+    IM_FREE((void*)BuildType);
+    IM_FREE((void*)Cpu);
+    IM_FREE((void*)OS);
+    IM_FREE((void*)Compiler);
+    IM_FREE((void*)Date);
 }
 
 //-------------------------------------------------------------------------
@@ -63,7 +63,8 @@ struct ImGuiPerfLogColumnInfo
     T GetValue(const ImGuiPerflogEntry* entry) const { return *(T*)((const char*)entry + Offset); }
 };
 
-static const ImGuiPerfLogColumnInfo PerfLogColumnInfo[] = {
+static const ImGuiPerfLogColumnInfo PerfLogColumnInfo[] =
+{
     { /* 00 */ "Test Name",   IM_OFFSETOF(ImGuiPerflogEntry, TestName),         ImGuiDataType_COUNT,  true  },
     { /* 01 */ "Branch",      IM_OFFSETOF(ImGuiPerflogEntry, GitBranchName),    ImGuiDataType_COUNT,  true  },
     { /* 02 */ "Compiler",    IM_OFFSETOF(ImGuiPerflogEntry, Compiler),         ImGuiDataType_COUNT,  true  },
@@ -324,7 +325,8 @@ static void RenderFilterInput(ImGuiPerfLog* perf, const char* hint)
         perf->_Filter.clear();
     ImGui::SetNextItemWidth(-FLT_MIN);
     ImGui::InputTextWithHint("##filter", hint, &perf->_Filter);
-    ImGui::SetKeyboardFocusHere();
+    if (ImGui::IsWindowAppearing())
+        ImGui::SetKeyboardFocusHere();
 }
 
 static bool RenderMultiSelectFilter(ImGuiPerfLog* perf, const char* filter_hint, ImVector<ImGuiPerflogEntry*>* entries, HashEntryFn hash, FormatEntryLabelFn format)
@@ -499,6 +501,12 @@ ImGuiPerfLog::ImGuiPerfLog()
     g.SettingsHandlers.push_back(ini_handler);
 
     Clear();
+}
+
+ImGuiPerfLog::~ImGuiPerfLog()
+{
+    _SrcData.clear_destruct();
+    _FilteredData.clear_destruct();
 }
 
 void ImGuiPerfLog::AddEntry(ImGuiPerflogEntry* entry)
@@ -832,30 +840,22 @@ void ImGuiPerfLog::ShowUI()
                     _Settings.Visibility.SetBool(hash, visible);
                     if (!checked_any[i])
                     {
-                        ImGuiContext& g = *GImGui;
                         ImGui::TableSetBgColor(ImGuiTableBgTarget_CellBg, ImColor(1.0f, 0.0f, 0.0f, 0.2f));
-                        ImRect cell_rect = ImGui::TableGetCellBgRect(g.CurrentTable, i);
-                        if (cell_rect.Max.y < ImGui::GetItemRectMax().y)
-                            cell_rect.Max.y = ImGui::GetItemRectMax().y + g.Style.CellPadding.y;    // FIXME-OPT: First table column does not return proper cell rect. Use item height as a workaround.
-                        if (ImGui::IsMouseHoveringRect(cell_rect.Min, cell_rect.Max))
-                        {
-                            ImGui::BeginTooltip();
-                            ImGui::TextUnformatted("Check at least one item in each column to see any data.");
-                            ImGui::EndTooltip();
-                        }
+                        if (ImGui::TableGetColumnFlags() & ImGuiTableColumnFlags_IsHovered)
+                            ImGui::SetTooltip("Check at least one item in each column to see any data.");
                     }
                 }
             }
             ImGui::EndTable();
         }
-        _ClosePopupMaybe();
         ImGui::EndPopup();
     }
 
     if (ImGui::BeginPopup("Filter perfs"))
     {
         RenderMultiSelectFilter(this, "Filter by perf test", &_Labels, PerflogHashTestName, PerflogFormatTestName);
-        _ClosePopupMaybe();
+        if (ImGui::IsKeyPressedMap(ImGuiKey_Escape))
+            ImGui::CloseCurrentPopup();
         ImGui::EndPopup();
     }
 
@@ -891,7 +891,8 @@ void ImGuiPerfLog::ShowUI()
 void ImGuiPerfLog::_ShowEntriesPlot()
 {
 #ifdef IMGUI_TEST_ENGINE_ENABLE_IMPLOT
-    ImGuiContext& g = *GImGui;
+    ImGuiIO& io = ImGui::GetIO();
+    ImGuiStyle& style = ImGui::GetStyle();
     Str256 label;
     Str256 display_label;
 
@@ -913,11 +914,11 @@ void ImGuiPerfLog::_ShowEntriesPlot()
         if (label_rect.IsInverted())
             continue;
 
-        if (!test_name_hovered && label_rect.Contains(g.IO.MousePos))
+        if (!test_name_hovered && label_rect.Contains(io.MousePos))
         {
             test_name_hovered = true;   // Ensure only one test name is hovered when they are overlapping due to zoom level.
             ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
-            g.CurrentWindow->DrawList->AddLine(ImFloor(label_rect.GetBL()), ImFloor(label_rect.GetBR()), ImColor(g.Style.Colors[ImGuiCol_Text]));
+            ImPlot::GetPlotDrawList()->AddLine(ImFloor(label_rect.GetBL()), ImFloor(label_rect.GetBR()), ImColor(style.Colors[ImGuiCol_Text]));
             if (ImGui::IsMouseClicked(ImGuiMouseButton_Left))
             {
                 _TableScrollToTest = _VisibleLabelPointers.Data[t];
@@ -961,7 +962,7 @@ void ImGuiPerfLog::_ShowEntriesPlot()
             test_bars_rect.Max.x = plot.PlotRect.Max.x;
             test_bars_rect.Min.y = ImPlot::PlotToPixels(0, bar_min - h * 0.5f).y;
             test_bars_rect.Max.y = ImPlot::PlotToPixels(0, bar_min + h * 0.5f).y;
-            ImPlot::GetPlotDrawList()->AddRectFilled(test_bars_rect.Min, test_bars_rect.Max, ImColor(g.Style.Colors[ImGuiCol_TableRowBgAlt]));
+            ImPlot::GetPlotDrawList()->AddRectFilled(test_bars_rect.Min, test_bars_rect.Max, ImColor(style.Colors[ImGuiCol_TableRowBgAlt]));
         }
 
         GetPlotPointData data;
@@ -977,7 +978,7 @@ void ImGuiPerfLog::_ShowEntriesPlot()
             if (ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
                 _BaselineBatchIndex = batch_index;
         }
-        else if (g.IO.KeyShift)
+        else if (io.KeyShift)
         {
             // Info tooltip with delta times of each batch for a hovered test.
             int test_index = (int)IM_ROUND(ImPlot::GetPlotMousePos().y);
@@ -1013,17 +1014,22 @@ void ImGuiPerfLog::_ShowEntriesPlot()
 
 void ImGuiPerfLog::_ShowEntriesTable()
 {
-    if (!ImGui::BeginTable("PerfInfo", IM_ARRAYSIZE(PerfLogColumnInfo), ImGuiTableFlags_Hideable | ImGuiTableFlags_Borders | ImGuiTableFlags_Sortable | ImGuiTableFlags_SortMulti | ImGuiTableFlags_SortTristate | ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_ScrollY))
+    if (!ImGui::BeginTable("PerfInfo", IM_ARRAYSIZE(PerfLogColumnInfo), ImGuiTableFlags_Hideable | ImGuiTableFlags_Borders | ImGuiTableFlags_Sortable | ImGuiTableFlags_SortMulti | ImGuiTableFlags_SortTristate | ImGuiTableFlags_Resizable | ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_ScrollY))
         return;
-    ImGuiContext& g = *GImGui;
+
+    ImGuiIO& io = ImGui::GetIO();
     ImGuiStyle& style = ImGui::GetStyle();
 
-    // Test name column is not sorted because we do sorting only within perf runs of a particular tests, so as far
-    // as sorting function is concerned all items in first column are identical.
+    // Test name column is not sorted because we do sorting only within perf runs of a particular tests,
+    // so as far as sorting function is concerned all items in first column are identical.
     for (int i = 0; i < IM_ARRAYSIZE(PerfLogColumnInfo); i++)
     {
-        ImGui::TableSetupColumn(PerfLogColumnInfo[i].Title, i ? 0 : ImGuiTableColumnFlags_NoSort);
-        ImGui::TableSetColumnEnabled(i, PerfLogColumnInfo[i].ShowAlways || _CombineByBuildInfo);
+        ImGuiTableColumnFlags column_flags = ImGuiTableColumnFlags_None;
+        if (i == 0)
+            column_flags |= ImGuiTableColumnFlags_NoSort;
+        if (!PerfLogColumnInfo[i].ShowAlways && !_CombineByBuildInfo)
+            column_flags |= ImGuiTableColumnFlags_Disabled;
+        ImGui::TableSetupColumn(PerfLogColumnInfo[i].Title, column_flags);
     }
     ImGui::TableSetupScrollFreeze(0, 1);
 
@@ -1060,6 +1066,10 @@ void ImGuiPerfLog::_ShowEntriesTable()
                 continue;
 
             ImGui::TableNextRow();
+            if (label_index & 1)
+                ImGui::TableSetBgColor(ImGuiTableBgTarget_RowBg0, ImGui::GetColorU32(ImGuiCol_TableRowBgAlt, 0.5f));
+            else
+                ImGui::TableSetBgColor(ImGuiTableBgTarget_RowBg0, ImGui::GetColorU32(ImGuiCol_TableRowBg, 0.5f));
 
             if (_TableScrollToTest != NULL && _TableHighlightAnimTime < 1.0f && strcmp(test_name, _TableScrollToTest) == 0)
             {
@@ -1091,15 +1101,15 @@ void ImGuiPerfLog::_ShowEntriesTable()
 
             // Avg ms
             if (ImGui::TableNextColumn())
-                ImGui::Text("%.3lfms", entry->DtDeltaMs);
+                ImGui::Text("%.3lf", entry->DtDeltaMs);
 
             // Min ms
             if (ImGui::TableNextColumn())
-                ImGui::Text("%.3lfms", entry->DtDeltaMsMin);
+                ImGui::Text("%.3lf", entry->DtDeltaMsMin);
 
             // Max ms
             if (ImGui::TableNextColumn())
-                ImGui::Text("%.3lfms", entry->DtDeltaMsMax);
+                ImGui::Text("%.3lf", entry->DtDeltaMsMax);
 
                 // Num samples
             if (ImGui::TableNextColumn())
@@ -1134,11 +1144,11 @@ void ImGuiPerfLog::_ShowEntriesTable()
             }
 
             // FIXME: Aim to remove that direct access to table.... could use a selectable on first column?
-            ImGuiTable* table = g.CurrentTable;
-            if (table->InnerClipRect.Contains(g.IO.MousePos))
-                if (table->RowPosY1 < g.IO.MousePos.y && g.IO.MousePos.y < table->RowPosY2 - 1) // FIXME-OPT: RowPosY1/RowPosY2 may overlap between adjacent rows. Compensate for that.
+            ImGuiTable* table = ImGui::GetCurrentTable();
+            if (table->InnerClipRect.Contains(io.MousePos))
+                if (table->RowPosY1 < io.MousePos.y && io.MousePos.y < table->RowPosY2 - 1) // FIXME-OPT: RowPosY1/RowPosY2 may overlap between adjacent rows. Compensate for that.
                 {
-                    ImGui::TableSetBgColor(ImGuiTableBgTarget_RowBg0, ImColor(style.Colors[ImGuiCol_TableRowBgAlt]));
+                    ImGui::TableSetBgColor(ImGuiTableBgTarget_RowBg0, ImGui::GetColorU32(ImGuiCol_Header));
                     for (int i = 0; i < _VisibleLabelPointers.Size && _TableHoveredTest == -1; i++)
                         if (strcmp(_VisibleLabelPointers.Data[i], test_name) == 0)
                             _TableHoveredTest = i;
@@ -1218,11 +1228,4 @@ void ImGuiPerfLog::_CalculateLegendAlignment()
         _AlignBranch = ImMax(_AlignBranch, (int)strlen(entry->GitBranchName));
         _AlignSamples = ImMax(_AlignSamples, (int)Str16f("%d", entry->NumSamples).length());
     }
-}
-
-void ImGuiPerfLog::_ClosePopupMaybe()
-{
-    ImGuiContext& g = *GImGui;
-    if (ImGui::IsKeyPressedMap(ImGuiKey_Escape) || (ImGui::IsMouseClicked(0) && g.HoveredWindow != g.CurrentWindow))
-        ImGui::CloseCurrentPopup();
 }

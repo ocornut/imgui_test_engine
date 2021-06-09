@@ -20,7 +20,7 @@ struct ImGuiPerflogEntry
     const char*                 OS = NULL;                      //
     const char*                 Compiler = NULL;                //
     const char*                 Date = NULL;                    // Date of this entry or min date of combined entries.
-    //const char*                 DateMax = NULL;               // Max date of combined entries, or NULL.
+    //const char*               DateMax = NULL;                 // Max date of combined entries, or NULL.
     double                      VsBaseline = 0.0;               // Percent difference vs baseline.
     int                         BranchIndex = 0;                // Unique linear branch index.
     bool                        DataOwner = false;              // Owns lifetime of pointers when set to true.
@@ -70,6 +70,8 @@ struct ImGuiPerfLog
     } _Settings;
 
     ImGuiPerfLog();
+    ~ImGuiPerfLog();
+
     void        AddEntry(ImGuiPerflogEntry* entry);
     void        Clear();
     void        ShowUI();
@@ -81,7 +83,6 @@ struct ImGuiPerfLog
     bool        _IsVisibleBuild(ImGuiPerflogEntry* entry);
     bool        _IsVisibleTest(ImGuiPerflogEntry* entry);
     void        _CalculateLegendAlignment();
-    void        _ClosePopupMaybe();
     void        _ShowEntriesPlot();
     void        _ShowEntriesTable();
 };

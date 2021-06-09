@@ -1628,6 +1628,7 @@ static void     ImGuiTestEngine_SettingsReadLine(ImGuiContext* ui_ctx, ImGuiSett
     else if (sscanf(line, "FilterPerfs=%s", engine->UiFilterPerfs.InputBuf) == 1)   { engine->UiFilterPerfs.Build(); }
     else if (sscanf(line, "LogHeight=%f", &engine->UiLogHeight) == 1)               { }
     else if (sscanf(line, "CaptureTool=%d", &n) == 1)                               { engine->UiCaptureToolOpen = (n != 0); }
+    else if (sscanf(line, "PerfTool=%d", &n) == 1)                                  { engine->UiPerfToolOpen = (n != 0); }
     else if (sscanf(line, "StackTool=%d", &n) == 1)                                 { engine->UiStackToolOpen = (n != 0); }
 }
 
@@ -1642,6 +1643,7 @@ static void     ImGuiTestEngine_SettingsWriteAll(ImGuiContext* ui_ctx, ImGuiSett
     buf->appendf("FilterPerfs=%s\n", engine->UiFilterPerfs.InputBuf);
     buf->appendf("LogHeight=%.0f\n", engine->UiLogHeight);
     buf->appendf("CaptureTool=%d\n", engine->UiCaptureToolOpen);
+    buf->appendf("PerfTool=%d\n", engine->UiPerfToolOpen);
     buf->appendf("StackTool=%d\n", engine->UiStackToolOpen);
     buf->appendf("\n");
 }
