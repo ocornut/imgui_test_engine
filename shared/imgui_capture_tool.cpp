@@ -499,20 +499,6 @@ bool ImGuiCaptureContext::IsCapturingGif()
 // ImGuiCaptureTool
 //-----------------------------------------------------------------------------
 
-static void PushDisabled()
-{
-    ImGuiStyle& style = ImGui::GetStyle();
-    ImVec4 col = style.Colors[ImGuiCol_Text];
-    ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
-    ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(col.x, col.y, col.z, col.w * 0.5f));
-}
-
-static void PopDisabled()
-{
-    ImGui::PopStyleColor();
-    ImGui::PopItemFlag();
-}
-
 ImGuiCaptureTool::ImGuiCaptureTool()
 {
     // Filename template for where screenshots will be saved. May contain directories or variation of %d format.
@@ -624,11 +610,11 @@ void ImGuiCaptureTool::CaptureWindowsSelector(ImGuiCaptureArgs* args)
         ImFormatString(label, 64, "Capture Multiple (%d)###CaptureMultiple", args->InCaptureWindows.Size);
 
         if (!allow_capture)
-            PushDisabled();
+            ImGui::PushDisabled();
         bool do_capture = ImGui::Button(label, button_sz);
         do_capture |= io.KeyAlt && ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_C));
         if (!allow_capture)
-            PopDisabled();
+            ImGui::PopDisabled();
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Alternatively press Alt+C to capture selection.");
         if (do_capture)
@@ -649,14 +635,14 @@ void ImGuiCaptureTool::CaptureWindowsSelector(ImGuiCaptureArgs* args)
             char label[64];
             ImFormatString(label, 64, "Capture Gif (%d)###CaptureGif", args->InCaptureWindows.Size);
             if (!allow_capture)
-                PushDisabled();
+                ImGui::PushDisabled();
             if (ImGui::Button(label, button_sz))
             {
                 _CaptureState = ImGuiCaptureToolState_Capturing;
                 Context.BeginGifCapture(args);
             }
             if (!allow_capture)
-                PopDisabled();
+                ImGui::PopDisabled();
         }
     }
 
@@ -773,11 +759,11 @@ void ImGuiCaptureTool::ShowCaptureToolWindow(bool* p_open)
         {
             const bool has_last_file_name = (LastOutputFileName[0] != 0);
             if (!has_last_file_name)
-                PushDisabled();
+                ImGui::PushDisabled();
             if (ImGui::Button("Open Last"))
                 ImOsOpenInShell(LastOutputFileName);
             if (!has_last_file_name)
-                PopDisabled();
+                ImGui::PopDisabled();
             if (has_last_file_name && ImGui::IsItemHovered())
                 ImGui::SetTooltip("Open %s", LastOutputFileName);
             ImGui::SameLine(0.0f, style.ItemInnerSpacing.x);
@@ -816,11 +802,11 @@ void ImGuiCaptureTool::ShowCaptureToolWindow(bool* p_open)
         content_stitching_available &= !(io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable);
 #endif
         if (!content_stitching_available)
-            PushDisabled();
+            ImGui::PushDisabled();
         ImGui::CheckboxFlags("Stitch full contents height", &_CaptureArgs.InFlags, ImGuiCaptureFlags_StitchFullContents);
         if (!content_stitching_available)
         {
-            PopDisabled();
+            ImGui::PopDisabled();
             if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
                 ImGui::SetTooltip("Content stitching is not possible when using viewports.");
         }

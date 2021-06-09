@@ -126,24 +126,6 @@ ImFont* FindFontByName(const char* name)
 }
 
 //-----------------------------------------------------------------------------
-// Misc ImGui extensions
-//-----------------------------------------------------------------------------
-
-void ImGui::PushDisabled()
-{
-    ImGuiStyle& style = ImGui::GetStyle();
-    ImVec4 col = style.Colors[ImGuiCol_Text];
-    ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
-    ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(col.x, col.y, col.z, col.w * 0.5f));
-}
-
-void ImGui::PopDisabled()
-{
-    ImGui::PopStyleColor();
-    ImGui::PopItemFlag();
-}
-
-//-----------------------------------------------------------------------------
 // STR + InputText bindings
 //-----------------------------------------------------------------------------
 
