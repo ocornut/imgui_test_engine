@@ -2771,7 +2771,7 @@ void    ImGuiTestContext::PerfCapture()
     LogInfo("[PERF] Result: %+6.3f ms (from ref %+6.3f)", dt_delta_ms, dt_ref_ms);
 
     ImGuiPerflogEntry entry;
-    entry.Timestamp = (ImU64)EngineIO->RunStartTime;
+    entry.Timestamp = BatchStartTime;
     entry.Category = Test->Category;
     entry.TestName = Test->Name;
     entry.DtDeltaMs = dt_delta_ms;

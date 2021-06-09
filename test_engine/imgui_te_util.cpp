@@ -197,7 +197,7 @@ bool ImGui::InputTextMultiline(const char* label, Str* str, const ImVec2& size, 
 // anchor = 0 - both splits resize when parent container size changes. Both value_1 and value_2 should be persistent.
 // anchor = -1 - top/left split would have a constant size. bottom/right split would resize when parent container size changes. value_1 should be persistent, value_2 will always be recalculated from value_1.
 // anchor = +1 - bottom/right split would have a constant size. top/left split would resize when parent container size changes. value_2 should be persistent, value_1 will always be recalculated from value_2.
-bool ImGui::Splitter(const char* id, float* value_1, float* value_2, ImGuiAxis dir, int anchor, float min_size_0, float min_size_1)
+bool ImGui::Splitter(const char* id, float* value_1, float* value_2, int axis, int anchor, float min_size_0, float min_size_1)
 {
     // FIXME-DOGFOODING: This needs further refining.
     // FIXME-SCROLL: When resizing either we'd like to keep scroll focus on something (e.g. last clicked item for list, bottom for log)
@@ -210,10 +210,12 @@ bool ImGui::Splitter(const char* id, float* value_1, float* value_2, ImGuiAxis d
     if (min_size_1)
         min_size_1 = ImGui::GetFrameHeight();
 
+    IM_ASSERT(axis == ImGuiAxis_X || axis == ImGuiAxis_Y);
+
     float& v_1 = *value_1;
     float& v_2 = *value_2;
     ImRect splitter_bb;
-    const float avail = dir == ImGuiAxis_X ? ImGui::GetContentRegionAvail().x - style.ItemSpacing.x : ImGui::GetContentRegionAvail().y - style.ItemSpacing.y;
+    const float avail = axis == ImGuiAxis_X ? ImGui::GetContentRegionAvail().x - style.ItemSpacing.x : ImGui::GetContentRegionAvail().y - style.ItemSpacing.y;
     if (anchor < 0)
     {
         v_2 = ImMax(avail - v_1, min_size_1);   // First split is constant size.
@@ -228,17 +230,17 @@ bool ImGui::Splitter(const char* id, float* value_1, float* value_2, ImGuiAxis d
         v_1 = IM_ROUND(avail * r) - 1;
         v_2 = IM_ROUND(avail * (1.0f - r)) - 1;
     }
-    if (dir == ImGuiAxis_X)
+    if (axis == ImGuiAxis_X)
     {
         float x = window->DC.CursorPos.x + v_1 + IM_ROUND(style.ItemSpacing.x * 0.5f);
         splitter_bb = ImRect(x - 1, window->WorkRect.Min.y, x + 1, window->WorkRect.Max.y);
     }
-    else if (dir == ImGuiAxis_Y)
+    else if (axis == ImGuiAxis_Y)
     {
         float y = window->DC.CursorPos.y + v_1 + IM_ROUND(style.ItemSpacing.y * 0.5f);
         splitter_bb = ImRect(window->WorkRect.Min.x, y - 1, window->WorkRect.Max.x, y + 1);
     }
-    return ImGui::SplitterBehavior(splitter_bb, ImGui::GetID(id), dir, &v_1, &v_2, min_size_0, min_size_1, 3.0f);
+    return ImGui::SplitterBehavior(splitter_bb, ImGui::GetID(id), (ImGuiAxis)axis, &v_1, &v_2, min_size_0, min_size_1, 3.0f);
 }
 
 #ifdef IMGUI_HAS_TABLE
@@ -276,20 +278,37 @@ void TableDiscardInstanceAndSettings(ImGuiID table_id)
 }
 #endif
 
-bool ImGuiCSVParser::Load(const char* file_name)
+//-----------------------------------------------------------------------------
+// Simple CSV parser
+//-----------------------------------------------------------------------------
+
+void ImGuiCSVParser::Clear()
+{
+    Rows = Columns = 0;
+    if (_Data != NULL)
+        IM_FREE(_Data);
+    _Data = NULL;
+    _Index.clear();
+}
+
+bool ImGuiCSVParser::Load(const char* filename)
 {
     size_t len = 0;
-    _Data = (char*)ImFileLoadToMemory(file_name, "rb", &len, 1);
+    _Data = (char*)ImFileLoadToMemory(filename, "rb", &len, 1);
     if (_Data == NULL)
         return false;
 
     int columns = 1;
     if (Columns > 0)
-        columns = Columns;                                          // User-proivided expected column count.
+    {
+        columns = Columns;                                          // User-provided expected column count.
+    }
     else
+    {
         for (const char* c = _Data; *c != '\n' && *c != '\0'; c++)  // Count columns. Quoted columns with commas are not supported.
             if (*c == ',')
                 columns++;
+    }
 
     // Count rows. Extra new lines anywhere in the file are ignored.
     int max_rows = 0;
@@ -323,7 +342,7 @@ bool ImGuiCSVParser::Load(const char* file_name)
                 if (col + 1 == columns)
                     Rows++;
                 else
-                    fprintf(stderr, "%s: Unexpected number of columns on line %d, ignoring.\n", file_name, Rows + 1);
+                    fprintf(stderr, "%s: Unexpected number of columns on line %d, ignoring.\n", filename, Rows + 1); // FIXME
                 col = 0;
             }
             *c = 0;
@@ -337,11 +356,4 @@ bool ImGuiCSVParser::Load(const char* file_name)
     return true;
 }
 
-void ImGuiCSVParser::Clear()
-{
-    Rows = Columns = 0;
-    if (_Data != NULL)
-        IM_FREE(_Data);
-    _Data = NULL;
-    _Index.clear();
-}
+//-----------------------------------------------------------------------------

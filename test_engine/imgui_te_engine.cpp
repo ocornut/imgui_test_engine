@@ -897,9 +897,9 @@ static void ImGuiTestEngine_ProcessTestQueue(ImGuiTestEngine* engine)
     const char* settings_ini_backup = io.IniFilename;
     io.IniFilename = NULL;
 
+    ImU64 batch_start_time = ImTimeGetInMicroseconds();
     int ran_tests = 0;
     engine->IO.RunningTests = true;
-    engine->IO.RunStartTime = ImTimeGetInMicroseconds();
     for (int n = 0; n < engine->TestsQueue.Size; n++)
     {
         ImGuiTestRunTask* run_task = &engine->TestsQueue[n];
@@ -929,6 +929,7 @@ static void ImGuiTestEngine_ProcessTestQueue(ImGuiTestEngine* engine)
         ctx.UiContext = engine->UiContextActive;
         ctx.PerfStressAmount = engine->IO.PerfStressAmount;
         ctx.RunFlags = run_task->RunFlags;
+        ctx.BatchStartTime = batch_start_time;
 #ifdef IMGUI_HAS_DOCK
         ctx.HasDock = true;
 #else
@@ -980,7 +981,6 @@ static void ImGuiTestEngine_ProcessTestQueue(ImGuiTestEngine* engine)
         //        engine->UiSelectedTest = test;
     }
     engine->IO.RunningTests = false;
-    engine->IO.RunStartTime = 0;
 
     engine->Abort = false;
     engine->TestsQueue.clear();

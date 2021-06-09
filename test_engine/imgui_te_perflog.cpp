@@ -165,6 +165,7 @@ static void PerflogFormatTestName(ImGuiPerfLog* perflog, Str* result, ImGuiPerfl
     result->set_ref(entry->TestName);
 }
 
+#ifdef IMGUI_TEST_ENGINE_ENABLE_IMPLOT
 static void PerflogFormatBuildInfo(ImGuiPerfLog* perflog, Str* result, ImGuiPerflogEntry* entry)
 {
     Str64f legend_format("x%%-%dd %%-%ds %%-%ds %%-%ds %%s %%-%ds %%s%%s%%s%%s(%%-%dd sample%%s)%%s",
@@ -181,6 +182,7 @@ static void PerflogFormatBuildInfo(ImGuiPerfLog* perflog, Str* result, ImGuiPerf
         *entry->Date ? " " : "", entry->NumSamples,
         entry->NumSamples > 1 ? "s" : "", entry->NumSamples > 1 || perflog->_AlignSamples == 1 ? "" : " ");
 }
+#endif
 
 static int PerfLogCountVisibleBuilds(ImGuiPerfLog* perflog, const char* perf_test_name = NULL)
 {
@@ -267,6 +269,8 @@ struct GetPlotPointData
     int             BatchIndex;
 };
 
+#ifdef IMGUI_TEST_ENGINE_ENABLE_IMPLOT
+
 static int PerflogGetGetMaxVisibleBuildsPerTest(ImGuiPerfLog* perf)
 {
     int max_visible = 0;
@@ -318,6 +322,7 @@ static ImPlotPoint PerflogGetPlotPoint(void* data, int idx)
     pt.y = PerflogGetBarY(perf, d->BatchIndex, idx, d->BarHeight);
     return pt;
 }
+#endif
 
 static void RenderFilterInput(ImGuiPerfLog* perf, const char* hint)
 {
@@ -467,6 +472,7 @@ static void PerflogSettingsHandler_WriteAll(ImGuiContext*, ImGuiSettingsHandler*
 }
 
 // Copied from ImPlot::BeginPlot().
+#ifdef IMGUI_TEST_ENGINE_ENABLE_IMPLOT
 static ImRect ImPlotGetYTickRect(int t, int y = 0)
 {
     ImPlotContext& gp = *GImPlot;
@@ -484,6 +490,7 @@ static ImRect ImPlotGetYTickRect(int t, int y = 0)
     }
     return result;
 }
+#endif
 
 ImGuiPerfLog::ImGuiPerfLog()
 {
@@ -871,9 +878,11 @@ void ImGuiPerfLog::ShowUI()
         return;
     }
 
+#ifdef IMGUI_TEST_ENGINE_ENABLE_IMPLOT
     // Splitter between two following child windows is rendered first.
     float plot_height;
-    ImGui::Splitter("splitter", &plot_height, &_InfoTableHeight, ImGuiAxis_Y, +1);
+    float& table_height = _InfoTableHeight;
+    ImGui::Splitter("splitter", &plot_height, &table_height, ImGuiAxis_Y, +1);
 
     // Render entries plot
     if (ImGui::BeginChild(ImGui::GetID("plot"), ImVec2(0, plot_height)))
@@ -881,9 +890,12 @@ void ImGuiPerfLog::ShowUI()
     ImGui::EndChild();
 
     // Render entries tables
-    if (ImGui::BeginChild(ImGui::GetID("info-table"), ImVec2(0, _InfoTableHeight)))
+    if (ImGui::BeginChild(ImGui::GetID("info-table"), ImVec2(0, table_height)))
         _ShowEntriesTable();
     ImGui::EndChild();
+#else
+    _ShowEntriesTable();
+#endif
 
     _TableHighlightAnimTime += io.DeltaTime;
 }

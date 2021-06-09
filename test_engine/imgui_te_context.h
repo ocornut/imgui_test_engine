@@ -221,6 +221,7 @@ struct ImGuiTestContext
     int                     FrameCount = 0;                         // Test frame count (restarts from zero every time)
     int                     FirstTestFrameCount = 0;                // First frame where TestFunc is running (after warm-up frame). This is generally -1 or 0 depending on whether we have warm up enabled
     double                  RunningTime = 0.0f;                     // Amount of wall clock time the Test has been running. Used by safety watchdog.
+    ImU64                   BatchStartTime = 0;
     int                     ActionDepth = 0;
     int                     CaptureCounter = 0;
     int                     ErrorCounter = 0;
