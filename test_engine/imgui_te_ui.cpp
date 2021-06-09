@@ -392,6 +392,98 @@ static void ShowTestGroup(ImGuiTestEngine* e, ImGuiTestGroup group, ImGuiTextFil
     ImGui::EndChild();
 }
 
+static void ImGuiTestEngine_ShowLogAndTools(ImGuiTestEngine* engine)
+{
+    ImGuiContext& g = *GImGui;
+    if (!ImGui::BeginTabBar("##tools"))
+        return;
+
+    if (ImGui::BeginTabItem("LOG"))
+    {
+        if (engine->UiSelectedTest)
+            ImGui::Text("Log for %s: %s", engine->UiSelectedTest->Category, engine->UiSelectedTest->Name);
+        else
+            ImGui::Text("N/A");
+        if (ImGui::SmallButton("Clear"))
+            if (engine->UiSelectedTest)
+                engine->UiSelectedTest->TestLog.Clear();
+        ImGui::SameLine();
+        if (ImGui::SmallButton("Copy to clipboard"))
+            if (engine->UiSelectedTest)
+                ImGui::SetClipboardText(engine->UiSelectedTest->TestLog.Buffer.c_str());
+        ImGui::Separator();
+
+        ImGui::BeginChild("Log");
+        if (engine->UiSelectedTest)
+        {
+            DrawTestLog(engine, engine->UiSelectedTest);
+            if (ImGui::GetScrollY() >= ImGui::GetScrollMaxY())
+                ImGui::SetScrollHereY();
+        }
+        ImGui::EndChild();
+        ImGui::EndTabItem();
+    }
+
+    // Misc
+    if (ImGui::BeginTabItem("MISC"))
+    {
+        ImGuiIO& io = ImGui::GetIO();
+        ImGui::Text("%.3f ms/frame (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
+        ImGui::Text("TestEngine: HookItems: %d, HookPushId: %d, InfoTasks: %d", g.TestEngineHookItems, g.TestEngineHookIdInfo != 0, engine->InfoTasks.Size);
+        ImGui::Separator();
+
+        ImGui::Checkbox("Slow down whole app", &engine->ToolSlowDown);
+        ImGui::SameLine(); ImGui::SetNextItemWidth(70 * engine->IO.DpiScale);
+        ImGui::SliderInt("##ms", &engine->ToolSlowDownMs, 0, 400, "%d ms");
+        ImGui::Checkbox("Screen capture on error", &engine->IO.CaptureOnError); HelpTooltip("Capture a screenshot on test failure.");
+
+        ImGui::CheckboxFlags("io.ConfigFlags: NavEnableKeyboard", &io.ConfigFlags, ImGuiConfigFlags_NavEnableKeyboard);
+        ImGui::CheckboxFlags("io.ConfigFlags: NavEnableGamepad", &io.ConfigFlags, ImGuiConfigFlags_NavEnableGamepad);
+#ifdef IMGUI_HAS_DOCK
+        ImGui::Checkbox("io.ConfigDockingAlwaysTabBar", &io.ConfigDockingAlwaysTabBar);
+#endif
+        if (ImGui::Button("Reboot UI context"))
+            engine->ToolDebugRebootUiContext = true;
+
+        ImGui::DragFloat("DpiScale", &engine->IO.DpiScale, 0.005f, 0.0f, 0.0f, "%.2f");
+        const ImGuiInputTextCallback filter_callback = [](ImGuiInputTextCallbackData* data) { return (data->EventChar == ',' || data->EventChar == ';') ? 1 : 0; };
+        ImGui::InputText("Branch/Annotation", engine->IO.GitBranchName, IM_ARRAYSIZE(engine->IO.GitBranchName), ImGuiInputTextFlags_CallbackCharFilter, filter_callback, NULL);
+
+        // Perfs
+        // FIXME-TESTS: Need to be visualizing the samples/spikes.
+        double dt_1 = 1.0 / ImGui::GetIO().Framerate;
+        double fps_now = 1.0 / dt_1;
+        double dt_100 = engine->PerfDeltaTime100.GetAverage();
+        double dt_1000 = engine->PerfDeltaTime1000.GetAverage();
+        double dt_2000 = engine->PerfDeltaTime2000.GetAverage();
+
+        //if (engine->PerfRefDeltaTime <= 0.0 && engine->PerfRefDeltaTime.IsFull())
+        //    engine->PerfRefDeltaTime = dt_2000;
+
+        ImGui::Checkbox("Unthrolled", &engine->IO.ConfigNoThrottle);
+        ImGui::SameLine();
+        if (ImGui::Button("Pick ref dt"))
+            engine->PerfRefDeltaTime = dt_2000;
+
+        double dt_ref = engine->PerfRefDeltaTime;
+        ImGui::Text("[ref dt]    %6.3f ms", engine->PerfRefDeltaTime * 1000);
+        ImGui::Text("[last 0001] %6.3f ms (%.1f FPS) ++ %6.3f ms", dt_1 * 1000.0, 1.0 / dt_1, (dt_1 - dt_ref) * 1000);
+        ImGui::Text("[last 0100] %6.3f ms (%.1f FPS) ++ %6.3f ms ~ converging in %.1f secs", dt_100 * 1000.0, 1.0 / dt_100, (dt_1 - dt_ref) * 1000, 100.0 / fps_now);
+        ImGui::Text("[last 1000] %6.3f ms (%.1f FPS) ++ %6.3f ms ~ converging in %.1f secs", dt_1000 * 1000.0, 1.0 / dt_1000, (dt_1 - dt_ref) * 1000, 1000.0 / fps_now);
+        ImGui::Text("[last 2000] %6.3f ms (%.1f FPS) ++ %6.3f ms ~ converging in %.1f secs", dt_2000 * 1000.0, 1.0 / dt_2000, (dt_1 - dt_ref) * 1000, 2000.0 / fps_now);
+
+        //ImGui::PlotLines("Last 100", &engine->PerfDeltaTime100.Samples.Data, engine->PerfDeltaTime100.Samples.Size, engine->PerfDeltaTime100.Idx, NULL, 0.0f, dt_1000 * 1.10f, ImVec2(0.0f, ImGui::GetFontSize()));
+        ImVec2 plot_size(0.0f, ImGui::GetFrameHeight() * 3);
+        ImMovingAverage<double>* ma = &engine->PerfDeltaTime500;
+        ImGui::PlotLines("Last 500",
+            [](void* data, int n) { ImMovingAverage<double>* ma = (ImMovingAverage<double>*)data; return (float)(ma->Samples[n] * 1000); },
+            ma, ma->Samples.Size, 0 * ma->Idx, NULL, 0.0f, (float)(ImMax(dt_100, dt_1000) * 1000.0 * 1.2f), plot_size);
+
+        ImGui::EndTabItem();
+    }
+    ImGui::EndTabBar();
+}
+
 static void ImGuiTestEngine_ShowTestTool(ImGuiTestEngine* engine, bool* p_open)
 {
     ImGuiContext& g = *GImGui;
@@ -497,96 +589,9 @@ static void ImGuiTestEngine_ShowTestTool(ImGuiTestEngine* engine, bool* p_open)
     ImGui::EndChild();
     engine->UiSelectAndScrollToTest = NULL;
 
-    // LOG
+    // LOG & TOOLS
     ImGui::BeginChild("Log", ImVec2(0, log_height));
-    if (ImGui::BeginTabBar("##tools"))
-    {
-        if (ImGui::BeginTabItem("LOG"))
-        {
-            if (engine->UiSelectedTest)
-                ImGui::Text("Log for %s: %s", engine->UiSelectedTest->Category, engine->UiSelectedTest->Name);
-            else
-                ImGui::Text("N/A");
-            if (ImGui::SmallButton("Clear"))
-                if (engine->UiSelectedTest)
-                    engine->UiSelectedTest->TestLog.Clear();
-            ImGui::SameLine();
-            if (ImGui::SmallButton("Copy to clipboard"))
-                if (engine->UiSelectedTest)
-                    ImGui::SetClipboardText(engine->UiSelectedTest->TestLog.Buffer.c_str());
-            ImGui::Separator();
-
-            ImGui::BeginChild("Log");
-            if (engine->UiSelectedTest)
-            {
-                DrawTestLog(engine, engine->UiSelectedTest);
-                if (ImGui::GetScrollY() >= ImGui::GetScrollMaxY())
-                    ImGui::SetScrollHereY();
-            }
-            ImGui::EndChild();
-            ImGui::EndTabItem();
-        }
-
-        // Misc
-        if (ImGui::BeginTabItem("MISC"))
-        {
-            ImGuiIO& io = ImGui::GetIO();
-            ImGui::Text("%.3f ms/frame (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
-            ImGui::Text("TestEngine: HookItems: %d, HookPushId: %d, InfoTasks: %d", g.TestEngineHookItems, g.TestEngineHookIdInfo != 0, engine->InfoTasks.Size);
-            ImGui::Separator();
-
-            ImGui::Checkbox("Slow down whole app", &engine->ToolSlowDown);
-            ImGui::SameLine(); ImGui::SetNextItemWidth(70 * engine->IO.DpiScale);
-            ImGui::SliderInt("##ms", &engine->ToolSlowDownMs, 0, 400, "%d ms");
-            ImGui::Checkbox("Screen capture on error", &engine->IO.CaptureOnError); HelpTooltip("Capture a screenshot on test failure.");
-
-            ImGui::CheckboxFlags("io.ConfigFlags: NavEnableKeyboard", &io.ConfigFlags, ImGuiConfigFlags_NavEnableKeyboard);
-            ImGui::CheckboxFlags("io.ConfigFlags: NavEnableGamepad", &io.ConfigFlags, ImGuiConfigFlags_NavEnableGamepad);
-#ifdef IMGUI_HAS_DOCK
-            ImGui::Checkbox("io.ConfigDockingAlwaysTabBar", &io.ConfigDockingAlwaysTabBar);
-#endif
-            if (ImGui::Button("Reboot UI context"))
-                engine->ToolDebugRebootUiContext = true;
-
-            ImGui::DragFloat("DpiScale", &engine->IO.DpiScale, 0.005f, 0.0f, 0.0f, "%.2f");
-            const ImGuiInputTextCallback filter_callback = [](ImGuiInputTextCallbackData* data) { return (data->EventChar == ',' || data->EventChar == ';') ? 1 : 0; };
-            ImGui::InputText("Branch/Annotation", engine->IO.GitBranchName, IM_ARRAYSIZE(engine->IO.GitBranchName), ImGuiInputTextFlags_CallbackCharFilter, filter_callback, NULL);
-
-            // Perfs
-            // FIXME-TESTS: Need to be visualizing the samples/spikes.
-            double dt_1 = 1.0 / ImGui::GetIO().Framerate;
-            double fps_now = 1.0 / dt_1;
-            double dt_100 = engine->PerfDeltaTime100.GetAverage();
-            double dt_1000 = engine->PerfDeltaTime1000.GetAverage();
-            double dt_2000 = engine->PerfDeltaTime2000.GetAverage();
-
-            //if (engine->PerfRefDeltaTime <= 0.0 && engine->PerfRefDeltaTime.IsFull())
-            //    engine->PerfRefDeltaTime = dt_2000;
-
-            ImGui::Checkbox("Unthrolled", &engine->IO.ConfigNoThrottle);
-            ImGui::SameLine();
-            if (ImGui::Button("Pick ref dt"))
-                engine->PerfRefDeltaTime = dt_2000;
-
-            double dt_ref = engine->PerfRefDeltaTime;
-            ImGui::Text("[ref dt]    %6.3f ms", engine->PerfRefDeltaTime * 1000);
-            ImGui::Text("[last 0001] %6.3f ms (%.1f FPS) ++ %6.3f ms", dt_1 * 1000.0, 1.0 / dt_1, (dt_1 - dt_ref) * 1000);
-            ImGui::Text("[last 0100] %6.3f ms (%.1f FPS) ++ %6.3f ms ~ converging in %.1f secs", dt_100 * 1000.0, 1.0 / dt_100, (dt_1 - dt_ref) * 1000, 100.0 / fps_now);
-            ImGui::Text("[last 1000] %6.3f ms (%.1f FPS) ++ %6.3f ms ~ converging in %.1f secs", dt_1000 * 1000.0, 1.0 / dt_1000, (dt_1 - dt_ref) * 1000, 1000.0 / fps_now);
-            ImGui::Text("[last 2000] %6.3f ms (%.1f FPS) ++ %6.3f ms ~ converging in %.1f secs", dt_2000 * 1000.0, 1.0 / dt_2000, (dt_1 - dt_ref) * 1000, 2000.0 / fps_now);
-
-            //ImGui::PlotLines("Last 100", &engine->PerfDeltaTime100.Samples.Data, engine->PerfDeltaTime100.Samples.Size, engine->PerfDeltaTime100.Idx, NULL, 0.0f, dt_1000 * 1.10f, ImVec2(0.0f, ImGui::GetFontSize()));
-            ImVec2 plot_size(0.0f, ImGui::GetFrameHeight() * 3);
-            ImMovingAverage<double>* ma = &engine->PerfDeltaTime500;
-            ImGui::PlotLines("Last 500",
-                [](void* data, int n) { ImMovingAverage<double>* ma = (ImMovingAverage<double>*)data; return (float)(ma->Samples[n] * 1000); },
-                ma, ma->Samples.Size, 0 * ma->Idx, NULL, 0.0f, (float)(ImMax(dt_100, dt_1000) * 1000.0 * 1.2f), plot_size);
-
-            ImGui::EndTabItem();
-        }
-
-        ImGui::EndTabBar();
-    }
+    ImGuiTestEngine_ShowLogAndTools(engine);
     ImGui::EndChild();
 
     ImGui::End();
