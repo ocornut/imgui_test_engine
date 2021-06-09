@@ -2782,7 +2782,7 @@ void    ImGuiTestContext::PerfCapture()
     entry.OS = build_info.OS;
     entry.Compiler = build_info.Compiler;
     entry.Date = build_info.Date;
-    ImGuiTestEngine_PerflogAppend(Engine, &entry);
+    ImGuiTestEngine_PerflogAppendToCSV(Engine->PerfLog, IMGUI_PERFLOG_FILENAME, &entry);
 
     // Disable the "Success" message
     RunFlags |= ImGuiTestRunFlags_NoSuccessMsg;

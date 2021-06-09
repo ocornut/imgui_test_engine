@@ -670,6 +670,56 @@ void ImGuiPerfLog::Clear()
     ImStrncpy(_FilterDateTo, "0000-00-00", IM_ARRAYSIZE(_FilterDateFrom));
 }
 
+bool ImGuiPerfLog::LoadCSV(const char* filename)
+{
+    ImGuiCSVParser csv(11);
+    if (!csv.Load(filename))
+        return false;
+
+    // Read perf test entries from CSV
+    Clear();
+    for (int row = 0; row < csv.Rows; row++)
+    {
+        ImGuiPerflogEntry entry;
+        int col = 0;
+        sscanf(csv.GetCell(row, col++), "%llu", &entry.Timestamp);
+        entry.Category = csv.GetCell(row, col++);
+        entry.TestName = csv.GetCell(row, col++);
+        sscanf(csv.GetCell(row, col++), "%lf", &entry.DtDeltaMs);
+        sscanf(csv.GetCell(row, col++), "x%d", &entry.PerfStressAmount);
+        entry.GitBranchName = csv.GetCell(row, col++);
+        entry.BuildType = csv.GetCell(row, col++);
+        entry.Cpu = csv.GetCell(row, col++);
+        entry.OS = csv.GetCell(row, col++);
+        entry.Compiler = csv.GetCell(row, col++);
+        entry.Date = csv.GetCell(row, col++);
+        AddEntry(&entry);
+    }
+
+    return true;
+}
+
+// This is declared as a standalone function in order to run without a Perflog instance
+void ImGuiTestEngine_PerflogAppendToCSV(ImGuiPerfLog* perf_log, const char* filename, ImGuiPerflogEntry* entry)
+{
+    // Appends to .csv
+    FILE* f = fopen(filename, "a+b");
+    if (f == NULL)
+    {
+        fprintf(stderr, "Unable to open '%s', perflog entry was not saved.\n", filename);
+        return;
+    }
+    fprintf(f, "%llu,%s,%s,%.3f,x%d,%s,%s,%s,%s,%s,%s\n", entry->Timestamp, entry->Category, entry->TestName,
+        entry->DtDeltaMs, entry->PerfStressAmount, entry->GitBranchName, entry->BuildType, entry->Cpu, entry->OS,
+        entry->Compiler, entry->Date);
+    fflush(f);
+    fclose(f);
+
+    // Register to runtime perf tool if any
+    if (perf_log != NULL)
+        perf_log->AddEntry(entry);
+}
+
 void ImGuiPerfLog::ShowUI()
 {
     ImGuiIO& io = ImGui::GetIO();
@@ -775,7 +825,7 @@ void ImGuiPerfLog::ShowUI()
         {
             ImGui::CloseCurrentPopup();
             Clear();
-            ImFileDelete("imgui_perflog.csv");
+            ImFileDelete(IMGUI_PERFLOG_FILENAME);
         }
         ImGui::EndPopup();
 

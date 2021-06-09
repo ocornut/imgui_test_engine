@@ -3,6 +3,8 @@
 #include <Str/Str.h>
 #include "imgui.h"
 
+#define IMGUI_PERFLOG_FILENAME  "imgui_perflog.csv"
+
 // [Internal] Perf log entry. Changes to this struct should be reflected in ImGuiTestContext::PerfCapture() and ImGuiTestEngine_Start().
 struct ImGuiPerflogEntry
 {
@@ -72,8 +74,10 @@ struct ImGuiPerfLog
     ImGuiPerfLog();
     ~ImGuiPerfLog();
 
-    void        AddEntry(ImGuiPerflogEntry* entry);
     void        Clear();
+    bool        LoadCSV(const char* filename);
+    void        AddEntry(ImGuiPerflogEntry* entry);
+
     void        ShowUI();
     void        ViewOnly(const char* perf_name);
     void        ViewOnly(const char** perf_names);
@@ -86,3 +90,5 @@ struct ImGuiPerfLog
     void        _ShowEntriesPlot();
     void        _ShowEntriesTable();
 };
+
+void    ImGuiTestEngine_PerflogAppendToCSV(ImGuiPerfLog* perf_log, const char* filename, ImGuiPerflogEntry* entry);

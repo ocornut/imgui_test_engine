@@ -1649,56 +1649,6 @@ static void     ImGuiTestEngine_SettingsWriteAll(ImGuiContext* ui_ctx, ImGuiSett
 }
 
 //-------------------------------------------------------------------------
-// [SECTION] imgui_perflog.csv
-//-------------------------------------------------------------------------
-
-bool            ImGuiTestEngine_PerflogLoad(ImGuiTestEngine* engine)
-{
-    ImGuiCSVParser csv(11);
-    if (!csv.Load("imgui_perflog.csv"))
-        return false;
-
-    engine->PerfLog->Clear();
-
-    // Read perf test entries from CSV
-    for (int row = 0; row < csv.Rows; row++)
-    {
-        ImGuiPerflogEntry entry;
-        int col = 0;
-        sscanf(csv.GetCell(row, col++), "%llu", &entry.Timestamp);
-        entry.Category = csv.GetCell(row, col++);
-        entry.TestName = csv.GetCell(row, col++);
-        sscanf(csv.GetCell(row, col++), "%lf", &entry.DtDeltaMs);
-        sscanf(csv.GetCell(row, col++), "x%d", &entry.PerfStressAmount);
-        entry.GitBranchName = csv.GetCell(row, col++);
-        entry.BuildType = csv.GetCell(row, col++);
-        entry.Cpu = csv.GetCell(row, col++);
-        entry.OS = csv.GetCell(row, col++);
-        entry.Compiler = csv.GetCell(row, col++);
-        entry.Date = csv.GetCell(row, col++);
-        engine->PerfLog->AddEntry(&entry);
-    }
-    return true;
-}
-
-void            ImGuiTestEngine_PerflogAppend(ImGuiTestEngine* engine, ImGuiPerflogEntry* entry)
-{
-    // Log to .csv
-    FILE* f = fopen("imgui_perflog.csv", "a+b");
-    if (f == NULL)
-    {
-        fprintf(stderr, "Unable to open imgui_perflog.csv, perflog entry was not saved.\n");
-        return;
-    }
-    fprintf(f, "%llu,%s,%s,%.3f,x%d,%s,%s,%s,%s,%s,%s\n", entry->Timestamp, entry->Category, entry->TestName,
-            entry->DtDeltaMs, entry->PerfStressAmount, entry->GitBranchName, entry->BuildType, entry->Cpu, entry->OS,
-            entry->Compiler, entry->Date);
-    fflush(f);
-    fclose(f);
-    engine->PerfLog->AddEntry(entry);
-}
-
-//-------------------------------------------------------------------------
 // [SECTION] ImGuiTest
 //-------------------------------------------------------------------------
 

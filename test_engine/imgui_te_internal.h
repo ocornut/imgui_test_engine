@@ -8,7 +8,6 @@
 //-------------------------------------------------------------------------
 
 struct ImGuiPerfLog;
-struct ImGuiPerflogEntry;
 
 //-------------------------------------------------------------------------
 // DATA STRUCTURES
@@ -167,7 +166,5 @@ const char*         ImGuiTestEngine_GetVerboseLevelName(ImGuiTestVerboseLevel v)
 bool                ImGuiTestEngine_CaptureScreenshot(ImGuiTestEngine* engine, ImGuiCaptureArgs* args);
 bool                ImGuiTestEngine_BeginCaptureAnimation(ImGuiTestEngine* engine, ImGuiCaptureArgs* args);
 bool                ImGuiTestEngine_EndCaptureAnimation(ImGuiTestEngine* engine, ImGuiCaptureArgs* args);
-bool                ImGuiTestEngine_PerflogLoad(ImGuiTestEngine* engine);
-void                ImGuiTestEngine_PerflogAppend(ImGuiTestEngine* engine, ImGuiPerflogEntry* entry);                   // Append to last perflog batch, or open a new batch if BatchTitle is different.
 
 //-------------------------------------------------------------------------

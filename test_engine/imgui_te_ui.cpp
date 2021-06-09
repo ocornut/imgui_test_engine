@@ -628,7 +628,7 @@ void    ImGuiTestEngine_ShowTestWindows(ImGuiTestEngine* e, bool* p_open)
             static bool perflog_data_loaded = false;
             if (ImGui::IsWindowAppearing() && !perflog_data_loaded)
             {
-                ImGuiTestEngine_PerflogLoad(e);
+                e->PerfLog->LoadCSV(IMGUI_PERFLOG_FILENAME);
                 perflog_data_loaded = true;
             }
             e->PerfLog->ShowUI();
