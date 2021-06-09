@@ -33,8 +33,8 @@ struct ImGuiPerfLogColumnInfo;
 
 struct ImGuiPerfLog
 {
-    ImVector<ImGuiPerflogEntry> _CSVData;                       // Raw entries from CSV file (with string pointer into CSV data).
-    ImVector<ImGuiPerflogEntry> _Data;                          // Data used to render plots. This is not necessarily same as Entries. Sorted by Timestamp and TestName.
+    ImVector<ImGuiPerflogEntry> _SrcData;                       // Raw entries from CSV file (with string pointer into CSV data).
+    ImVector<ImGuiPerflogEntry> _FilteredData;                  // Data used to render plots. This is not necessarily same as Entries. Sorted by Timestamp and TestName.
     ImVector<ImGuiPerflogEntry*> _Labels;                       // A list of labels (left of the plot).
     ImVector<ImGuiPerflogEntry*> _Legend;                       // _Legend[idx] = first batch element.
     ImVector<const char*>       _VisibleLabelPointers;          // ImPlot requires a pointer of all labels beforehand.

@@ -427,14 +427,14 @@ static void PerflogSettingsHandler_ReadLine(ImGuiContext*, ImGuiSettingsHandler*
 static void PerflogSettingsHandler_ApplyAll(ImGuiContext*, ImGuiSettingsHandler* ini_handler)
 {
     ImGuiPerfLog* perflog = (ImGuiPerfLog*)ini_handler->UserData;
-    perflog->_Data.resize(0);
+    perflog->_FilteredData.resize(0);
     perflog->_BaselineBatchIndex = -1;  // Index will be re-discovered from _Settings.BaselineTimestamp in _Rebuild().
 }
 
 static void PerflogSettingsHandler_WriteAll(ImGuiContext*, ImGuiSettingsHandler* ini_handler, ImGuiTextBuffer* buf)
 {
     ImGuiPerfLog* perflog = (ImGuiPerfLog*)ini_handler->UserData;
-    if (perflog->_Data.empty())
+    if (perflog->_FilteredData.empty())
         return;
     buf->appendf("[%s][Data]\n", ini_handler->TypeName);
     buf->appendf("DateFrom=%s\n", perflog->_FilterDateFrom);
@@ -508,19 +508,19 @@ void ImGuiPerfLog::AddEntry(ImGuiPerflogEntry* entry)
     if (strcmp(_FilterDateTo, entry->Date) < 0)
         ImStrncpy(_FilterDateTo, entry->Date, IM_ARRAYSIZE(_FilterDateTo));
 
-    _CSVData.push_back(*entry);
-    _CSVData.back().TakeDataOwnership();
-    _Data.resize(0);
+    _SrcData.push_back(*entry);
+    _SrcData.back().TakeDataOwnership();
+    _FilteredData.resize(0);
 }
 
 void ImGuiPerfLog::_Rebuild()
 {
-    if (_CSVData.empty())
+    if (_SrcData.empty())
         return;
 
     ImGuiStorage& temp_set = _TempSet;
     temp_set.Data.resize(0);
-    _Data.resize(0);
+    _FilteredData.resize(0);
     _InfoTableSort.resize(0);
     _InfoTableSortDirty = true;
 
@@ -529,7 +529,7 @@ void ImGuiPerfLog::_Rebuild()
     {
         // Combine similar runs by build config.
         ImVector<int> counts;
-        for (ImGuiPerflogEntry& entry : _CSVData)
+        for (ImGuiPerflogEntry& entry : _SrcData)
         {
             if (_FilterDateFrom[0] && strcmp(entry.Date, _FilterDateFrom) < 0)
                 continue;
@@ -540,15 +540,15 @@ void ImGuiPerfLog::_Rebuild()
             int i = temp_set.GetInt(build_id, -1);
             if (i < 0)
             {
-                _Data.push_back(entry);
-                _Data.back().DtDeltaMs = 0.0;
+                _FilteredData.push_back(entry);
+                _FilteredData.back().DtDeltaMs = 0.0;
                 counts.push_back(0);
-                i = _Data.Size - 1;
+                i = _FilteredData.Size - 1;
                 temp_set.SetInt(build_id, i);
-                IM_ASSERT(_Data.Size == counts.Size);
+                IM_ASSERT(_FilteredData.Size == counts.Size);
             }
 
-            ImGuiPerflogEntry& new_entry = _Data[i];
+            ImGuiPerflogEntry& new_entry = _FilteredData[i];
 #if 0
             // Find min-max dates.
             if (new_entry.DateMax == NULL || strcmp(entry.Date, new_entry.DateMax) > 0)
@@ -565,42 +565,42 @@ void ImGuiPerfLog::_Rebuild()
         }
 
         // Average data
-        for (int i = 0; i < _Data.Size; i++)
+        for (int i = 0; i < _FilteredData.Size; i++)
         {
-            _Data[i].NumSamples = counts[i];
-            _Data[i].DtDeltaMs /= counts[i];
+            _FilteredData[i].NumSamples = counts[i];
+            _FilteredData[i].DtDeltaMs /= counts[i];
         }
     }
     else
     {
         // Copy to a new buffer that we are going to modify.
-        for (ImGuiPerflogEntry& entry : _CSVData)
+        for (ImGuiPerflogEntry& entry : _SrcData)
         {
             if (_FilterDateFrom[0] && strcmp(entry.Date, _FilterDateFrom) < 0)
                 continue;
             if (_FilterDateTo[0] && strcmp(entry.Date, _FilterDateTo) > 0)
                 continue;
-            _Data.push_back(entry);
+            _FilteredData.push_back(entry);
         }
 
         // Calculate number of matching build samples for display, when ImPlot collapses these builds into a single legend entry.
         ImGuiStorage& counts = _TempSet;
         counts.Data.resize(0);
-        for (ImGuiPerflogEntry& entry : _Data)
+        for (ImGuiPerflogEntry& entry : _FilteredData)
         {
             ImGuiID build_id = GetBuildID(&entry);
             counts.SetInt(build_id, counts.GetInt(build_id, 0) + 1);
         }
 
-        for (ImGuiPerflogEntry& entry : _Data)
+        for (ImGuiPerflogEntry& entry : _FilteredData)
             entry.NumSamples = counts.GetInt(GetBuildID(&entry), 0);
     }
 
-    if (_Data.empty())
+    if (_FilteredData.empty())
         return;
 
     // Sort entries by timestamp and test name, so all tests are grouped by batch and have a consistent entry order.
-    ImQsort(_Data.Data, _Data.Size, sizeof(ImGuiPerflogEntry), &PerflogComparerByTimestampAndTestName);
+    ImQsort(_FilteredData.Data, _FilteredData.Size, sizeof(ImGuiPerflogEntry), &PerflogComparerByTimestampAndTestName);
 
     // Index data for a convenient access.
     int branch_index_last = 0;
@@ -609,9 +609,9 @@ void ImGuiPerfLog::_Rebuild()
     ImU64 last_timestamp = UINT64_MAX;
     int batch_size = 0;
     temp_set.Data.resize(0);
-    for (int i = 0; i < _Data.Size; i++)
+    for (int i = 0; i < _FilteredData.Size; i++)
     {
-        ImGuiPerflogEntry* entry = &_Data[i];
+        ImGuiPerflogEntry* entry = &_FilteredData[i];
         entry->DataOwner = false;
         if (entry->Timestamp != last_timestamp)
         {
@@ -646,10 +646,10 @@ void ImGuiPerfLog::Clear()
     _Labels.clear();
     _Legend.clear();
     _Settings.Clear();
-    _Data.clear();
-    for (ImGuiPerflogEntry& entry : _CSVData)
+    _FilteredData.clear();
+    for (ImGuiPerflogEntry& entry : _SrcData)
         entry.~ImGuiPerflogEntry();
-    _CSVData.clear();
+    _SrcData.clear();
 
     ImStrncpy(_FilterDateFrom, "9999-99-99", IM_ARRAYSIZE(_FilterDateFrom));
     ImStrncpy(_FilterDateTo, "0000-00-00", IM_ARRAYSIZE(_FilterDateFrom));
@@ -669,7 +669,7 @@ void ImGuiPerfLog::ShowUI()
     ImGui::TextUnformatted("Date:");
     ImGui::SameLine();
 
-    bool dirty = _Data.empty();
+    bool dirty = _FilteredData.empty();
     bool date_changed = Date("##date-from", _FilterDateFrom, IM_ARRAYSIZE(_FilterDateFrom), (strcmp(_FilterDateFrom, _FilterDateTo) <= 0 || !*_FilterDateTo));
     if (ImGui::IsItemHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Right))
         ImGui::OpenPopup("Date From Menu");
@@ -695,7 +695,7 @@ void ImGuiPerfLog::ShowUI()
             int date_size = i == 0 ? IM_ARRAYSIZE(_FilterDateFrom) : IM_ARRAYSIZE(_FilterDateTo);
             if (i == 0 && ImGui::MenuItem("Set Min"))
             {
-                for (ImGuiPerflogEntry& entry : _CSVData)
+                for (ImGuiPerflogEntry& entry : _SrcData)
                     if (strcmp(date, entry.Date) > 0)
                     {
                         ImStrncpy(date, entry.Date, date_size);
@@ -704,7 +704,7 @@ void ImGuiPerfLog::ShowUI()
             }
             if (ImGui::MenuItem("Set Max"))
             {
-                for (ImGuiPerflogEntry& entry : _CSVData)
+                for (ImGuiPerflogEntry& entry : _SrcData)
                     if (strcmp(date, entry.Date) < 0)
                     {
                         ImStrncpy(date, entry.Date, date_size);
@@ -764,7 +764,7 @@ void ImGuiPerfLog::ShowUI()
         }
         ImGui::EndPopup();
 
-        if (_CSVData.empty())
+        if (_SrcData.empty())
             return;
     }
 
@@ -865,7 +865,7 @@ void ImGuiPerfLog::ShowUI()
     LogUpdateVisibleLabels(this);
 
     // Rendering a plot of empty dataset is not possible.
-    if (_Data.empty() || _VisibleLabelPointers.empty() || _NumVisibleBuilds == 0)
+    if (_FilteredData.empty() || _VisibleLabelPointers.empty() || _NumVisibleBuilds == 0)
     {
         ImGui::TextUnformatted("No data is available. Run some perf tests or adjust filter settings.");
         return;
@@ -1152,7 +1152,7 @@ void ImGuiPerfLog::_ShowEntriesTable()
 void ImGuiPerfLog::ViewOnly(const char** perf_names)
 {
     // Data would not be built if we tried to view perflog of a particular test without first opening perflog via button. We need data to be built to hide perf tests.
-    if (_Data.empty())
+    if (_FilteredData.empty())
         _Rebuild();
 
     // Hide other perf tests.
@@ -1175,7 +1175,7 @@ ImGuiPerflogEntry* ImGuiPerfLog::GetEntryByBatchIdx(int idx, const char* perf_na
 {
     IM_ASSERT(idx < _Legend.Size);
     ImGuiPerflogEntry* first = _Legend[idx];    // _Legend contains pointers to first entry in the batch.
-    ImGuiPerflogEntry* last = &_Data.back();    // Entries themselves are stored in _Data vector.
+    ImGuiPerflogEntry* last = &_FilteredData.back();    // Entries themselves are stored in _Data vector.
     if (perf_name == NULL)
         return first;
 
