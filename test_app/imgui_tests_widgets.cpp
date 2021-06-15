@@ -2691,6 +2691,68 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
     };
 #endif
 
+    // ## Test BeginComboPreview() and ImGuiComboFlags_CustomPreview
+    t = IM_REGISTER_TEST(e, "widgets", "widgets_combo_custom_preview");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        const char* items[] = { "AAAA", "BBBB", "CCCC", "DDDD", "EEEE" };
+
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImGui::Text("Custom preview:");
+
+        if (ctx->GenericVars.Step == 2)
+            ImGui::SetNextItemWidth(ImGui::GetFrameHeight() * 2.0f);
+
+        const ImVec2 color_square_size = ImVec2(ImGui::GetFontSize(), ImGui::GetFontSize());
+        if (ImGui::BeginCombo("combo custom", "", ImGuiComboFlags_CustomPreview))
+        {
+            for (int n = 0; n < 5; n++)
+            {
+                ImGui::PushID(n);
+                ImGui::ColorButton("##color", ImVec4(1.0f, 0.5f, 0.5f, 1.0f), ImGuiColorEditFlags_NoTooltip | ImGuiColorEditFlags_NoDragDrop, color_square_size);
+                ImGui::SameLine();
+                ImGui::Selectable(items[n]);
+                ImGui::PopID();
+            }
+            ImGui::EndCombo();
+        }
+        ImGuiWindow* window = ImGui::GetCurrentWindow();
+        int old_cmd_buffer_size = window->DrawList->CmdBuffer.Size;
+
+        ImRect combo_r = window->DC.LastItemRect;
+        if (ImGui::BeginComboPreview())
+        {
+            ImGui::ColorButton("##color", ImVec4(1.0f, 0.5f, 0.5f, 1.0f), ImGuiColorEditFlags_NoTooltip | ImGuiColorEditFlags_NoDragDrop, color_square_size);
+            ImGui::TextUnformatted(items[0]);
+            ImGui::EndComboPreview();
+        }
+
+        // Test sameline restore behavior
+        ImGui::SameLine();
+        IM_CHECK_EQ(combo_r.Min.y, window->DC.CursorPos.y);
+        IM_CHECK_EQ(ImGui::GetStyle().FramePadding.y, window->DC.CurrLineTextBaseOffset);
+        ImGui::Text("HELLO");
+
+        // Test draw call merging behavior
+        if (ctx->GenericVars.Step == 1)
+            IM_CHECK_EQ(old_cmd_buffer_size, window->DrawList->CmdBuffer.Size);
+        if (ctx->GenericVars.Step == 2)
+            IM_CHECK_EQ(old_cmd_buffer_size + 2, window->DrawList->CmdBuffer.Size);
+
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ctx->SetRef("Test Window");
+
+        ctx->GenericVars.Step = 0;
+        ctx->WindowResize("", ImVec2(400, 400));
+        ctx->GenericVars.Step = 1;
+        ctx->Yield(2);
+        ctx->GenericVars.Step = 2;
+        ctx->Yield(2);
+    };
+
     // ## Test long text rendering by TextUnformatted().
     t = IM_REGISTER_TEST(e, "widgets", "widgets_text_unformatted_long");
     t->TestFunc = [](ImGuiTestContext* ctx)
