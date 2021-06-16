@@ -890,7 +890,7 @@ void RegisterTests_Window(ImGuiTestEngine* e)
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         ImGuiWindow* window = ctx->GetWindowByRef("Test Window");
-        ImGuiWindow* child = ctx->GetWindowByRef(Str30f("Test Window\\/Child_%08X/", window->GetID("Child")).c_str());
+        ImGuiWindow* child = ctx->GetWindowByRef(ctx->GetChildWindowID(window->Name, "Child"));
         ImGuiContext& g = *ctx->UiContext;
         ImGui::SetScrollX(window, 0);
         ImGui::SetScrollY(window, 0);

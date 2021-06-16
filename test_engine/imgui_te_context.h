@@ -299,7 +299,10 @@ struct ImGuiTestContext
     ImGuiID     GetIDByInt(int n, ImGuiTestRef seed_ref);
     ImGuiID     GetIDByPtr(void* p);
     ImGuiID     GetIDByPtr(void* p, ImGuiTestRef seed_ref);
-    ImGuiID     GetChildWindowID(const char* parent_name, const char* child_name);
+    ImGuiID     GetChildWindowID(const char* child_name);                           // Name created by BeginChild("name", ...), using current Ref as parent.
+    ImGuiID     GetChildWindowID(ImGuiID child_id);                                 // Name created by BeginChild(id, ...), using current Ref as parent.
+    ImGuiID     GetChildWindowID(ImGuiTestRef parent_name, const char* child_name); // Name created by BeginChild("name", ...)
+    ImGuiID     GetChildWindowID(ImGuiTestRef parent_name, ImGuiID child_id);       // Name created by BeginChild(id, ...)
 
     // Misc
     ImVec2      GetMainViewportPos();

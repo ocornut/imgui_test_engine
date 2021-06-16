@@ -125,6 +125,71 @@ ImFont* FindFontByName(const char* name)
     return NULL;
 }
 
+static const char* ImStrStr(const char* haystack, size_t hlen, const char* needle, int nlen)
+{
+    const char* end = haystack + hlen;
+    const char* p = haystack;
+    while ((p = (const char*)memchr(p, *needle, end - p)) != NULL)
+    {
+        if (end - p < nlen)
+            return NULL;
+        if (memcmp(p, needle, nlen) == 0)
+            return p;
+        p++;
+    }
+    return NULL;
+}
+
+void ImStrReplace(Str* s, const char* find, const char* repl)
+{
+    IM_ASSERT(find != NULL && *find);
+    IM_ASSERT(repl != NULL);
+    int find_len = (int)strlen(find);
+    int repl_len = (int)strlen(repl);
+    int repl_diff = repl_len - find_len;
+
+    // Estimate required length of new buffer if string size increases.
+    int need_capacity = s->capacity();
+    int num_matches = INT_MAX;
+    if (repl_diff > 0)
+    {
+        num_matches = 0;
+        need_capacity = s->length() + 1;
+        for (char* p = s->c_str(), *end = s->c_str() + s->length(); p != NULL && p < end;)
+        {
+            p = (char*)ImStrStr(p, end - p, find, find_len);
+            if (p)
+            {
+                need_capacity += repl_diff;
+                p += find_len;
+                num_matches++;
+            }
+        }
+    }
+
+    if (num_matches == 0)
+        return;
+
+    const char* not_owned_data = s->owned() ? NULL : s->c_str();
+    if (!s->owned() || need_capacity > s->capacity())
+        s->reserve(need_capacity);
+    if (not_owned_data != NULL)
+        s->set(not_owned_data);
+
+    // Replace data.
+    for (char* p = s->c_str(), *end = s->c_str() + s->length(); p != NULL && p < end && num_matches--;)
+    {
+        p = (char*)ImStrStr(p, end - p, find, find_len);
+        if (p)
+        {
+            memmove(p + repl_len, p + find_len, end - p - find_len + 1);
+            memcpy(p, repl, repl_len);
+            p += repl_len;
+            end += repl_diff;
+        }
+    }
+}
+
 //-----------------------------------------------------------------------------
 // STR + InputText bindings
 //-----------------------------------------------------------------------------

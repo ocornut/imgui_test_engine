@@ -3003,8 +3003,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ctx->ItemClick("Add 1000 lines");
         ctx->SleepShort();
 
-        Str64f title("/Example: Long text display\\/Log_%08X", ctx->GetID("Log"));
-        ImGuiWindow* log_panel = ctx->GetWindowByRef(title.c_str());
+        ImGuiWindow* log_panel = ctx->GetWindowByRef(ctx->GetChildWindowID("Example: Long text display", "Log"));
         IM_CHECK(log_panel != NULL);
         ImGui::SetScrollY(log_panel, log_panel->ScrollMax.y);
         ctx->SleepShort();

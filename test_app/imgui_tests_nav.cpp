@@ -352,7 +352,6 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         ImGuiContext& g = *ctx->UiContext;
-        ImGuiWindow* window2 = ctx->GetWindowByRef("Window 2");
 
         // FIXME-TESTS: Facilitate usage of variants
         const int test_count = ctx->HasDock ? 2 : 1;
@@ -383,7 +382,7 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
             // Set up window focus order, focus child window.
             ctx->WindowFocus("Window 1");
             ctx->WindowFocus("Window 2"); // FIXME: Needed for case when docked
-            ctx->ItemClick(Str30f("Window 2\\/Child_%08X/Button In", window2->GetID("Child")).c_str());
+            ctx->ItemClick(ctx->GetID("Button In", ctx->GetChildWindowID("Window 2", "Child")));
 
             ctx->KeyPressMap(ImGuiKey_Tab, ImGuiKeyModFlags_Ctrl);
             IM_CHECK(g.NavWindow == ctx->GetWindowByRef("Window 1"));
@@ -419,27 +418,25 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
                 ctx->DockInto("Window 2", "Window 1");
 #endif
 
-            ImGuiWindow* window2 = ctx->GetWindowByRef("Window 2");
-
-            Str30  win1_button_ref("Window 1/Button 1");
-            Str30f win2_button_ref("Window 2\\/Child_%08X/Button 2", window2->GetID("Child"));
+            ImGuiTestRef win1_button_ref("Window 1/Button 1");
+            ImGuiTestRef win2_button_ref(ctx->GetID("Button 2", ctx->GetChildWindowID("Window 2", "Child")));
 
             // Focus Window 1, navigate to the button
             ctx->WindowFocus("Window 1");
-            ctx->NavMoveTo(win1_button_ref.c_str());
+            ctx->NavMoveTo(win1_button_ref);
 
             // Focus Window 2, ensure nav id was changed, navigate to the button
             ctx->WindowFocus("Window 2");
-            IM_CHECK_NE(ctx->GetID(win1_button_ref.c_str()), g.NavId);
-            ctx->NavMoveTo(win2_button_ref.c_str());
+            IM_CHECK_NE(ctx->GetID(win1_button_ref), g.NavId);
+            ctx->NavMoveTo(win2_button_ref);
 
             // Ctrl+Tab back to previous window, check if nav id was restored
             ctx->KeyPressMap(ImGuiKey_Tab, ImGuiKeyModFlags_Ctrl);
-            IM_CHECK_EQ(ctx->GetID(win1_button_ref.c_str()), g.NavId);
+            IM_CHECK_EQ(ctx->GetID(win1_button_ref), g.NavId);
 
             // Ctrl+Tab back to previous window, check if nav id was restored
             ctx->KeyPressMap(ImGuiKey_Tab, ImGuiKeyModFlags_Ctrl);
-            IM_CHECK_EQ(ctx->GetID(win2_button_ref.c_str()), g.NavId);
+            IM_CHECK_EQ(ctx->GetID(win2_button_ref), g.NavId);
         }
     };
 
@@ -722,9 +719,8 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
             ctx->NavActivate();
             ctx->NavMoveTo("Scrolling");
             ctx->NavActivate(); // FIXME-TESTS: Could query current g.NavWindow instead of making names?
-            Str30f child_window_name("/Dear ImGui Demo\\/scrolling_%08X", ctx->GetID("Scrolling/scrolling"));
-            ImGuiWindow* child_window = ctx->GetWindowByRef(child_window_name.c_str());
-            ctx->SetRef(child_window_name.c_str());
+            ImGuiWindow* child_window = ctx->GetWindowByRef(ctx->GetChildWindowID("Scrolling/scrolling"));
+            ctx->SetRef(child_window->ID);
             ctx->ScrollTo(demo_window, ImGuiAxis_Y, (child_window->Pos - demo_window->Pos).y);  // Required because buttons do not register their IDs when out of view (SkipItems == true).
             ctx->NavMoveTo(ctx->GetID("1", ctx->GetIDByInt(1)));        // Focus item within a child window.
             ctx->KeyPressMap(ImGuiKey_COUNT, ImGuiKeyModFlags_Alt);     // Focus menu.

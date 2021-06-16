@@ -443,13 +443,49 @@ ImGuiID ImGuiTestContext::GetIDByPtr(void* p, ImGuiTestRef seed_ref)
     return ImHashData(&p, sizeof(p), GetID(seed_ref));
 }
 
-// Mimic logic of BeginChildEx(), ASSUMING child is output in root of parent
-ImGuiID ImGuiTestContext::GetChildWindowID(const char* parent_name, const char* child_name)
+ImGuiID ImGuiTestContext::GetChildWindowID(const char* child_name)
 {
-    ImGuiID child_item_id = GetID(child_name, parent_name);
-    Str128f child_window_name("/%s\\/%s_%08X", parent_name, child_name, child_item_id);
-    ImGuiID child_window_id = GetID(child_window_name.c_str());
-    return child_window_id;
+    // Use SetRef() before calling a function that depends on current ref.
+    IM_ASSERT(RefID != 0);
+    return GetChildWindowID(RefID, child_name);
+}
+
+ImGuiID ImGuiTestContext::GetChildWindowID(ImGuiID child_id)
+{
+    // Use SetRef() before calling a function that depends on current ref.
+    IM_ASSERT(RefID != 0);
+    return GetChildWindowID(RefID, child_id);
+}
+
+// Mimic logic of BeginChildEx(), ASSUMING child is output in root of parent
+ImGuiID ImGuiTestContext::GetChildWindowID(ImGuiTestRef parent_name, const char* child_name)
+{
+    IM_ASSERT(!parent_name.IsEmpty());
+    IM_ASSERT(child_name != NULL);
+    ImGuiWindow* parent_window = GetWindowByRef(parent_name);
+    if (parent_window == NULL)
+        return 0;
+    ImGuiID child_item_id = GetID(child_name, parent_window->ID);
+    Str256 parent_name_fixed(parent_window->Name);
+    ImStrReplace(&parent_name_fixed, "/", "\\/");
+    if (const char* last_slash = strrchr(child_name, '/'))
+    {
+        child_name = last_slash + 1;
+        IM_ASSERT(*child_name != 0);    // child_name should not end with slash.
+    }
+    return GetID(Str128f("/%s\\/%s_%08X", parent_name_fixed.c_str(), child_name, child_item_id).c_str());
+}
+
+ImGuiID ImGuiTestContext::GetChildWindowID(ImGuiTestRef parent_name, ImGuiID child_id)
+{
+    IM_ASSERT(!parent_name.IsEmpty());
+    IM_ASSERT(child_id != 0);
+    ImGuiWindow* parent_window = GetWindowByRef(parent_name);
+    if (parent_window == NULL)
+        return 0;
+    Str256 parent_name_fixed(parent_window->Name);
+    ImStrReplace(&parent_name_fixed, "/", "\\/");
+    return GetID(Str128f("/%s\\/%08X", parent_name_fixed.c_str(), child_id).c_str());
 }
 
 ImGuiTestRef ImGuiTestContext::GetFocusWindowRef()
