@@ -301,6 +301,8 @@ static float PerflogGetBarY(ImGuiPerfLog* perf, int batch_idx, int perf_idx, flo
     IM_ASSERT(batch_idx < perf->_Legend.Size);
     IM_ASSERT(perf_idx < perf->_VisibleLabelPointers.Size);
     const char* perf_test_name = perf->_VisibleLabelPointers.Data[perf_idx];
+    if (!*perf_test_name)
+        return 0;
     int num_visible_builds = PerfLogCountVisibleBuilds(perf, perf_test_name);
     batch_idx = PerfLogBatchToVisibleIdx(perf, batch_idx, perf_test_name);
     IM_ASSERT(num_visible_builds > 0);
