@@ -803,7 +803,7 @@ void ImGuiPerfLog::ShowUI()
     if (ImGui::IsItemHovered())
         ImGui::SetTooltip("Combine multiple runs with same build info into one averaged build entry.");
     ImGui::SameLine();
-    ImGui::Checkbox("Per Branch colors", &_PerBranchColors);
+    ImGui::Checkbox("Per branch colors", &_PerBranchColors);
     if (ImGui::IsItemHovered())
         ImGui::SetTooltip("Use one color per branch. Disables baseline comparisons!");
     ImGui::SameLine();
@@ -932,9 +932,17 @@ void ImGuiPerfLog::ShowUI()
 
 #ifdef IMGUI_TEST_ENGINE_ENABLE_IMPLOT
     // Splitter between two following child windows is rendered first.
-    float plot_height;
+    float plot_height = 0.0f;
     float& table_height = _InfoTableHeight;
     ImGui::Splitter("splitter", &plot_height, &table_height, ImGuiAxis_Y, +1);
+
+    // Double-click to move splitter to bottom
+    if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
+    {
+        table_height = 0;
+        plot_height = ImGui::GetContentRegionAvail().y - style.ItemSpacing.y;
+        ImGui::ClearActiveID();
+    }
 
     // Render entries plot
     if (ImGui::BeginChild(ImGui::GetID("plot"), ImVec2(0, plot_height)))
@@ -942,9 +950,12 @@ void ImGuiPerfLog::ShowUI()
     ImGui::EndChild();
 
     // Render entries tables
-    if (ImGui::BeginChild(ImGui::GetID("info-table"), ImVec2(0, table_height)))
-        _ShowEntriesTable();
-    ImGui::EndChild();
+    if (table_height > 0.0f)
+    {
+        if (ImGui::BeginChild(ImGui::GetID("info-table"), ImVec2(0, table_height)))
+            _ShowEntriesTable();
+        ImGui::EndChild();
+    }
 #else
     _ShowEntriesTable();
 #endif
