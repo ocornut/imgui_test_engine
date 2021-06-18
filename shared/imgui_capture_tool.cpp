@@ -344,7 +344,8 @@ ImGuiCaptureStatus ImGuiCaptureContext::CaptureUpdate(ImGuiCaptureArgs* args)
             // Repositioning of a window may take multiple frames, depending on whether window was already rendered or not.
             if (args->InFlags & ImGuiCaptureFlags_StitchFullContents)
                 ImGui::SetWindowPos(window, window->Pos + move_offset);
-            _CaptureRect.Add(window->Rect());
+            if (!is_capturing_rect)
+                _CaptureRect.Add(window->Rect());
         }
 
         // Include padding in capture.
