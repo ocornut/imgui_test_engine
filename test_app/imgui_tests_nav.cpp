@@ -585,11 +585,16 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
     {
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
 
+#if IMGUI_VERSION_NUM >= 18308
+        ImGuiID unset_scope_id = ImGui::GetID("#FOCUSSCOPE");
+#else
+        ImGuiID unset_scope_id = 0u;
+#endif
         ImGuiID focus_scope_id = ImGui::GetID("MyScope");
 
-        IM_CHECK_EQ(ImGui::GetFocusScope(), 0u);
+        IM_CHECK_EQ(ImGui::GetFocusScope(), unset_scope_id);
         ImGui::BeginChild("Child 1", ImVec2(100, 100));
-        IM_CHECK_EQ(ImGui::GetFocusScope(), 0u);
+        IM_CHECK_EQ(ImGui::GetFocusScope(), unset_scope_id);
         ImGui::EndChild();
 
         ImGui::PushFocusScope(focus_scope_id);
@@ -604,12 +609,12 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
 
         // Should not inherit
         ImGui::Begin("Test Window 2", NULL, ImGuiWindowFlags_NoSavedSettings);
-        IM_CHECK_EQ(ImGui::GetFocusScope(), 0u);
+        IM_CHECK_EQ(ImGui::GetFocusScope(), ImGui::GetID("#FOCUSSCOPE"));
         ImGui::End();
 
         ImGui::PopFocusScope();
 
-        IM_CHECK_EQ(ImGui::GetFocusScope(), 0u);
+        IM_CHECK_EQ(ImGui::GetFocusScope(), unset_scope_id);
         ImGui::End();
     };
     t->TestFunc = [](ImGuiTestContext* ctx)
