@@ -2691,6 +2691,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
     };
 #endif
 
+#if IMGUI_VERSION_NUM >= 18308
     // ## Test BeginComboPreview() and ImGuiComboFlags_CustomPreview
     t = IM_REGISTER_TEST(e, "widgets", "widgets_combo_custom_preview");
     t->GuiFunc = [](ImGuiTestContext* ctx)
@@ -2752,6 +2753,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ctx->GenericVars.Step = 2;
         ctx->Yield(2);
     };
+#endif
 
     // ## Test long text rendering by TextUnformatted().
     t = IM_REGISTER_TEST(e, "widgets", "widgets_text_unformatted_long");
