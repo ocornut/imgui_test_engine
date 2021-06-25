@@ -12,6 +12,8 @@
 #endif
 
 // Enforce a backend to use
-//#define IMGUI_APP_WIN32_DX11
+#ifdef _WIN32
+#define IMGUI_APP_WIN32_DX11
+#endif
 //#define IMGUI_APP_SDL_GL3
 //#define IMGUI_APP_GLFW_GL3

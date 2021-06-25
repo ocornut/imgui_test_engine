@@ -324,7 +324,7 @@ int main(int argc, char** argv)
 #endif
 
     // Parse command-line arguments
-#if defined(IMGUI_APP_WIN32_DX11) || defined(IMGUI_APP_SDL_GL3) || defined(IMGUI_APP_GLFW_GL3)
+#if defined(IMGUI_APP_WIN32_DX11) || defined(IMGUI_APP_SDL_GL2) || defined(IMGUI_APP_SDL_GL3) || defined(IMGUI_APP_GLFW_GL3)
     g_App.OptGui = true;
 #endif
 
@@ -390,6 +390,8 @@ int main(int argc, char** argv)
     {
 #ifdef IMGUI_APP_WIN32_DX11
         g_App.AppWindow = ImGuiApp_ImplWin32DX11_Create();
+#elif IMGUI_APP_SDL_GL2
+        g_App.AppWindow = ImGuiApp_ImplSdlGL2_Create();
 #elif IMGUI_APP_SDL_GL3
         g_App.AppWindow = ImGuiApp_ImplSdlGL3_Create();
 #elif IMGUI_APP_GLFW_GL3

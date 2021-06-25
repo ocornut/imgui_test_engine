@@ -2,15 +2,16 @@
 // Simple Dear ImGui App Framework (using standard bindings)
 //-----------------------------------------------------------------------------
 // To use graphics backends, define one of the following in your project:
-//   #define IMGUI_APP_WIN32_DX11   1
-//   #define IMGUI_APP_SDL_GL3      1
-//   #define IMGUI_APP_GLFW_GL3     1
+//   #define IMGUI_APP_WIN32_DX11
+//   #define IMGUI_APP_SDL_GL2
+//   #define IMGUI_APP_SDL_GL3
+//   #define IMGUI_APP_GLFW_GL3
 //-----------------------------------------------------------------------------
 
 #pragma once
 
 //#if defined(_WIN32) && !defined(IMGUI_APP_WIN32_DX11)
-//#define IMGUI_APP_WIN32_DX11 1
+//#define IMGUI_APP_WIN32_DX11
 //#endif
 
 #include "imgui.h"
@@ -41,6 +42,10 @@ ImGuiApp*     ImGuiApp_ImplNull_Create();
 
 #ifdef IMGUI_APP_WIN32_DX11
 ImGuiApp*     ImGuiApp_ImplWin32DX11_Create();
+#endif
+
+#ifdef IMGUI_APP_SDL_GL2
+ImGuiApp*     ImGuiApp_ImplSdlGL2_Create();
 #endif
 
 #ifdef IMGUI_APP_SDL_GL3

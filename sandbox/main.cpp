@@ -21,6 +21,16 @@
 #include "test_engine/imgui_te_coroutine.h"
 #endif
 
+#ifdef IMGUI_APP_SDL_GL2
+#include "imgui_impl_sdl.cpp"
+#include "imgui_impl_opengl2.cpp"
+#endif
+
+#ifdef IMGUI_APP_SDL_GL3
+#include "imgui_impl_sdl.cpp"
+#include "imgui_impl_opengl3.cpp"
+#endif
+
 void EditorRenderScene();
 
 // FIXME-SANDBOX FIXME-FONT: This is looking very poor with DpiScale == 1.0f, switch to FreeType?
@@ -85,11 +95,13 @@ int main(int argc, char** argv)
     IM_UNUSED(argc);
     IM_UNUSED(argv);
     // Setup application backend
-#ifdef IMGUI_APP_WIN32_DX11
+#if defined(IMGUI_APP_WIN32_DX11)
     ImGuiApp* app = ImGuiApp_ImplWin32DX11_Create();
-#elif IMGUI_APP_SDL_GL3
+#elif defined(IMGUI_APP_SDL_GL2)
+    ImGuiApp* app = ImGuiApp_ImplSdlGL2_Create();
+#elif defined(IMGUI_APP_SDL_GL3)
     ImGuiApp* app = ImGuiApp_ImplSdlGL3_Create();
-#elif IMGUI_APP_GLFW_GL3
+#elif defined(IMGUI_APP_GLFW_GL3)
     ImGuiApp* app = ImGuiApp_ImplGlfwGL3_Create();
 #endif
 
