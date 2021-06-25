@@ -4,12 +4,15 @@
 @set PROJ_DIR=%IMGUI_DIR%\examples\example_win32_directx11
 @set PROJ_NAME=example_win32_directx11
 
+@REM // warning: V1071 Consider inspecting the 'TreeNodeEx' function. The return value is not always used. Total calls: 10, discarded results: 1.
+@set EXCLUDED_CODES=-d V1071
+
 @echo ---- Running PVS Studio
 @"%PVS_DIR%\PVS-Studio_Cmd.exe" -r -t "%PROJ_DIR%\%PROJ_NAME%.vcxproj"
 
 @echo ---- Filtering
 @mkdir "%WORK_DIR%\output"
-@"%PVS_DIR%\PlogConverter.exe" -a GA:1,2;OP:1 -t Html,FullHtml,Txt,Totals "%PROJ_DIR%\%PROJ_NAME%.plog" -o "%WORK_DIR%\output"
+@"%PVS_DIR%\PlogConverter.exe" -a GA:1,2;OP:1 %EXCLUDED_CODES% -t Html,FullHtml,Txt,Totals "%PROJ_DIR%\%PROJ_NAME%.plog" -o "%WORK_DIR%\output"
 @del "%PROJ_DIR%\%PROJ_NAME%.plog"
 
 @echo ---- Totals:
