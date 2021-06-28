@@ -329,9 +329,9 @@ static ImPlotPoint PerflogGetPlotPoint(void* data, int idx)
 static void RenderFilterInput(ImGuiPerfLog* perf, const char* hint)
 {
     if (ImGui::IsWindowAppearing())
-        perf->_Filter.clear();
+        strcpy(perf->_Filter, "");
     ImGui::SetNextItemWidth(-FLT_MIN);
-    ImGui::InputTextWithHint("##filter", hint, &perf->_Filter);
+    ImGui::InputTextWithHint("##filter", hint, perf->_Filter, IM_ARRAYSIZE(perf->_Filter));
     if (ImGui::IsWindowAppearing())
         ImGui::SetKeyboardFocusHere();
 }
@@ -354,7 +354,7 @@ static bool RenderMultiSelectFilter(ImGuiPerfLog* perf, const char* filter_hint,
         {
             buf.clear();
             format(perf, &buf, entry);
-            if (strstr(buf.c_str(), perf->_Filter.c_str()) != NULL)
+            if (strstr(buf.c_str(), perf->_Filter) != NULL)
                 visibility.SetBool(hash(entry), true);
         }
     }
@@ -365,7 +365,7 @@ static bool RenderMultiSelectFilter(ImGuiPerfLog* perf, const char* filter_hint,
         {
             buf.clear();
             format(perf, &buf, entry);
-            if (strstr(buf.c_str(), perf->_Filter.c_str()) != NULL)
+            if (strstr(buf.c_str(), perf->_Filter) != NULL)
                 visibility.SetBool(hash(entry), false);
         }
     }
@@ -375,7 +375,7 @@ static bool RenderMultiSelectFilter(ImGuiPerfLog* perf, const char* filter_hint,
     {
         buf.clear();
         format(perf, &buf, entry);
-        if (strstr(buf.c_str(), perf->_Filter.c_str()) == NULL)   // Filter out entries not matching a filter query
+        if (strstr(buf.c_str(), perf->_Filter) == NULL)   // Filter out entries not matching a filter query
             continue;
 
         if (filtered_entries == 0)

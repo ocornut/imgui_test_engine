@@ -1,6 +1,5 @@
 #pragma once
 
-#include <Str/Str.h>
 #include "imgui.h"
 
 #define IMGUI_PERFLOG_FILENAME  "imgui_perflog.csv"
@@ -44,7 +43,7 @@ struct ImGuiPerfLog
     bool                        _CombineByBuildInfo = true;     // Entries with same build information will be averaged.
     bool                        _PerBranchColors = true;        // Use one bar color per branch.
     int                         _BaselineBatchIndex = 0;        // Index of baseline build.
-    Str64                       _Filter;                        // Context menu filtering substring.
+    char                        _Filter[128];                   // Context menu filtering substring.
     char                        _FilterDateFrom[11] = {};
     char                        _FilterDateTo[11] = {};
     float                       _InfoTableHeight = 180.0f;
