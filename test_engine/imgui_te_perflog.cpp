@@ -808,32 +808,12 @@ void ImGuiPerfLog::ShowUI()
         ImGui::SetTooltip("Use one color per branch. Disables baseline comparisons!");
     ImGui::SameLine();
 
-    if (ImGui::Button("Delete Data"))
-        ImGui::OpenPopup("Delete Data");
-    ImGui::SameLine();
-
     // Align help button to the right.
     float help_pos = ImGui::GetWindowContentRegionMax().x - style.FramePadding.x * 2 - ImGui::CalcTextSize("Help").x;
     if (help_pos > ImGui::GetCursorPosX())
         ImGui::SetCursorPosX(help_pos);
     if (ImGui::Button("Help"))
         ImGui::OpenPopup("Help");
-
-    if (ImGui::BeginPopup("Delete Data"))
-    {
-        ImGui::TextUnformatted("Permanently remove all perflog data?");
-        ImGui::TextUnformatted("This action _CAN NOT_ be undone!");
-        if (ImGui::Button("Yes, I am sure"))
-        {
-            ImGui::CloseCurrentPopup();
-            Clear();
-            ImFileDelete(IMGUI_PERFLOG_FILENAME);
-        }
-        ImGui::EndPopup();
-
-        if (_SrcData.empty())
-            return;
-    }
 
     // FIXME-PERFLOG: Move more of this to its more suitable location.
     if (ImGui::BeginPopup("Help"))
@@ -1137,7 +1117,7 @@ void ImGuiPerfLog::_ShowEntriesTable()
         for (int batch_index = 0; batch_index < _Legend.Size; batch_index++)
         {
             ImGuiPerflogEntry* entry = GetEntryByBatchIdx(_InfoTableSort[batch_index], test_name);
-            if (entry == NULL || !_IsVisibleBuild(entry))
+            if (entry == NULL || !_IsVisibleBuild(entry) || !_IsVisibleTest(entry))
                 continue;
 
             ImGui::TableNextRow();
