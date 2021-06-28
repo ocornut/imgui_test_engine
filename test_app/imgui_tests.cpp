@@ -3279,10 +3279,9 @@ void RegisterTests_Capture(ImGuiTestEngine* e)
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         ctx->SetRef("CaptureGif");
-        ImGuiWindow* window = ctx->GetWindowByRef("/CaptureGif");
         ImGuiCaptureArgs args;
         ctx->CaptureInitArgs(&args);
-        ctx->CaptureAddWindow(&args, window->Name);
+        ctx->CaptureAddWindow(&args, "CaptureGif");
         ctx->BeginCaptureGif(&args);
         ctx->ItemInput("string");
         ctx->KeyCharsReplace("Dear ImGui: Now with gif animations \\o/");

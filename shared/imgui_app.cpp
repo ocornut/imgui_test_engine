@@ -699,6 +699,7 @@ static bool ImGuiApp_ImplSdlGL2_NewFrame(ImGuiApp* app_opaque)
                 return false;
         }
     }
+    SDL_GL_MakeCurrent(app->window, app->gl_context);
     ImGui_ImplOpenGL2_NewFrame();
     ImGui_ImplSDL2_NewFrame(app->window);
     return true;
@@ -718,6 +719,7 @@ static void ImGuiApp_ImplSdlGL2_Render(ImGuiApp* app_opaque)
         SDL_GL_MakeCurrent(backup_current_window, backup_current_context);
     }
 #endif
+    SDL_GL_MakeCurrent(app->window, app->gl_context);
     SDL_GL_SetSwapInterval(app->Vsync ? 1 : 0);
     glViewport(0, 0, (int)io.DisplaySize.x, (int)io.DisplaySize.y);
     glClearColor(app->ClearColor.x, app->ClearColor.y, app->ClearColor.z, app->ClearColor.w);
@@ -841,6 +843,7 @@ static bool ImGuiApp_ImplSdlGL3_NewFrame(ImGuiApp* app_opaque)
                 return false;
         }
     }
+    SDL_GL_MakeCurrent(app->window, app->gl_context);
     ImGui_ImplOpenGL3_NewFrame();
     ImGui_ImplSDL2_NewFrame(app->window);
     return true;
@@ -860,6 +863,7 @@ static void ImGuiApp_ImplSdlGL3_Render(ImGuiApp* app_opaque)
         SDL_GL_MakeCurrent(backup_current_window, backup_current_context);
     }
 #endif
+    SDL_GL_MakeCurrent(app->window, app->gl_context);
     SDL_GL_SetSwapInterval(app->Vsync ? 1 : 0);
     glViewport(0, 0, (int)io.DisplaySize.x, (int)io.DisplaySize.y);
     glClearColor(app->ClearColor.x, app->ClearColor.y, app->ClearColor.z, app->ClearColor.w);
@@ -911,7 +915,7 @@ ImGuiApp* ImGuiApp_ImplSdlGL3_Create()
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_opengl3.h"
 #if _WIN32
-#include "imgui_impl_win32.cpp"
+//#include "imgui_impl_win32.cpp"
 #endif
 #define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
@@ -1035,6 +1039,7 @@ static bool ImGuiApp_ImplGlfwGL3_NewFrame(ImGuiApp* app_opaque)
     // - When io.WantCaptureMouse is true, do not dispatch mouse input data to your main application.
     // - When io.WantCaptureKeyboard is true, do not dispatch keyboard input data to your main application.
     // Generally you may always pass all inputs to dear imgui, and hide them from your application based on those two flags.
+    glfwMakeContextCurrent(app->window);
     glfwPollEvents();
     if (glfwWindowShouldClose(app->window))
         return false;
@@ -1061,6 +1066,7 @@ static void ImGuiApp_ImplGlfwGL3_Render(ImGuiApp* app_opaque)
         glfwMakeContextCurrent(backup_current_context);
     }
 #endif
+    glfwMakeContextCurrent(app->window);
     glfwSwapInterval(app->Vsync ? 1 : 0);
     glViewport(0, 0, (int)io.DisplaySize.x, (int)io.DisplaySize.y);
     glClearColor(app->ClearColor.x, app->ClearColor.y, app->ClearColor.z, app->ClearColor.w);
