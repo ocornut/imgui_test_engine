@@ -845,7 +845,7 @@ static bool ImGuiApp_ImplSdlGL3_NewFrame(ImGuiApp* app_opaque)
     }
     SDL_GL_MakeCurrent(app->window, app->gl_context);
     ImGui_ImplOpenGL3_NewFrame();
-    ImGui_ImplSDL2_NewFrame(app->window);
+    ImGui_ImplSDL2_NewFrame();
     return true;
 }
 
