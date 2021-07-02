@@ -1130,6 +1130,7 @@ void ImGuiPerfLog::_ShowEntriesTable()
             if (entry == NULL || !_IsVisibleBuild(entry) || !_IsVisibleTest(entry))
                 continue;
 
+            ImGui::PushID(entry);
             ImGui::TableNextRow();
             if (label_index & 1)
                 ImGui::TableSetBgColor(ImGuiTableBgTarget_RowBg0, ImGui::GetColorU32(ImGuiCol_TableRowBgAlt, 0.5f));
@@ -1148,9 +1149,27 @@ void ImGuiPerfLog::_ShowEntriesTable()
                 }
             }
 
+            ImGuiPerflogEntry* baseline_entry = GetEntryByBatchIdx(_BaselineBatchIndex, test_name);
+
             // Build info
             if (ImGui::TableNextColumn())
-                ImGui::TextUnformatted(entry->TestName);
+            {
+                // ImGuiSelectableFlags_Disabled + changing ImGuiCol_TextDisabled color prevents selectable from overriding table highlight behavior.
+                ImGui::PushStyleColor(ImGuiCol_TextDisabled, style.Colors[ImGuiCol_Text]);
+                ImGui::Selectable(entry->TestName, false, ImGuiSelectableFlags_SpanAllColumns | ImGuiSelectableFlags_Disabled);
+                ImGui::PopStyleColor();
+
+                if (ImGui::BeginPopupContextItem())
+                {
+                    if (entry == baseline_entry)
+                        ImGui::PushDisabled();
+                    if (ImGui::MenuItem("Set as baseline"))
+                        _BaselineBatchIndex = batch_index;
+                    if (entry == baseline_entry)
+                        ImGui::PopDisabled();
+                    ImGui::EndPopup();
+                }
+            }
             if (ImGui::TableNextColumn())
                 ImGui::TextUnformatted(entry->GitBranchName);
             if (ImGui::TableNextColumn())
@@ -1183,7 +1202,6 @@ void ImGuiPerfLog::_ShowEntriesTable()
             // VS Baseline
             if (ImGui::TableNextColumn())
             {
-                ImGuiPerflogEntry* baseline_entry = GetEntryByBatchIdx(_BaselineBatchIndex, test_name);
                 if (baseline_entry == NULL)
                 {
                     ImGui::TextUnformatted("--");
@@ -1211,7 +1229,7 @@ void ImGuiPerfLog::_ShowEntriesTable()
             // FIXME: Aim to remove that direct access to table.... could use a selectable on first column?
             ImGuiTable* table = ImGui::GetCurrentTable();
             if (table->InnerClipRect.Contains(io.MousePos))
-                if (table->RowPosY1 < io.MousePos.y && io.MousePos.y < table->RowPosY2 - 1) // FIXME-OPT: RowPosY1/RowPosY2 may overlap between adjacent rows. Compensate for that.
+                if (table->RowPosY1 < io.MousePos.y && io.MousePos.y < table->RowPosY2 - 1) // FIXME: RowPosY1/RowPosY2 may overlap between adjacent rows. Compensate for that.
                 {
                     ImGui::TableSetBgColor(ImGuiTableBgTarget_RowBg0, ImGui::GetColorU32(ImGuiCol_Header));
                     for (int i = 0; i < _VisibleLabelPointers.Size && _TableHoveredTest == -1; i++)
@@ -1219,6 +1237,8 @@ void ImGuiPerfLog::_ShowEntriesTable()
                             _TableHoveredTest = i;
                     _TableHoveredBatch = batch_index;
                 }
+
+            ImGui::PopID();
         }
     }
     ImGui::EndTable();
