@@ -994,11 +994,13 @@ void ImGuiPerfLog::_ShowEntriesPlot()
         ImRect test_bars_rect;
         for (int i = 0; i < _VisibleLabelPointers.Size; i++)
         {
+            float pad_min = batch_index == 0                ? h * 0.25f : 0;
+            float pad_max = batch_index == _Legend.Size - 1 ? h * 0.25f : 0;
             float bar_min = PerflogGetBarY(this, batch_index, i, h);
             test_bars_rect.Min.x = plot.PlotRect.Min.x;
             test_bars_rect.Max.x = plot.PlotRect.Max.x;
-            test_bars_rect.Min.y = ImPlot::PlotToPixels(0, bar_min + h * 0.5f).y;
-            test_bars_rect.Max.y = ImPlot::PlotToPixels(0, bar_min - h * 0.5f).y;
+            test_bars_rect.Min.y = ImPlot::PlotToPixels(0, bar_min + h * 0.5f + pad_min).y;
+            test_bars_rect.Max.y = ImPlot::PlotToPixels(0, bar_min - h * 0.5f - pad_max).y;
 
             // Mouse is hovering a row in info table - highlight relevant bars on the plot.
             if (_TableHoveredTest == i && _TableHoveredBatch == batch_index)
@@ -1046,34 +1048,30 @@ void ImGuiPerfLog::_ShowEntriesPlot()
             if (ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
                 _BaselineBatchIndex = batch_index;
         }
-        else if (io.KeyShift)
-        {
-            // Info tooltip with delta times of each batch for a hovered test.
-            int test_index = (int)IM_ROUND(ImPlot::GetPlotMousePos().y);
-            if (0 <= test_index && test_index < _VisibleLabelPointers.Size)
-            {
-                const char* test_name = _VisibleLabelPointers.Data[test_index];
-                ImGuiPerflogEntry* hovered_entry = GetEntryByBatchIdx(batch_index, test_name);
-
-                ImGui::BeginTooltip();
-                if (bar_index == 0)
-                {
-                    float w = ImGui::CalcTextSize(test_name).x;
-                    float total_w = ImGui::GetContentRegionAvail().x;
-                    if (total_w > w)
-                        ImGui::SetCursorPosX(ImGui::GetCursorPosX() + (total_w - w) * 0.5f);
-                    ImGui::TextUnformatted(test_name);
-                }
-                if (hovered_entry)
-                    ImGui::Text("%s %.3fms", label.c_str(), hovered_entry->DtDeltaMs);
-                else
-                    ImGui::Text("%s --", label.c_str());
-                ImGui::EndTooltip();
-            }
-        }
-
         bar_index++;
     }
+
+    if (io.KeyShift && _PlotHoverTest >= 0)
+    {
+        // Info tooltip with delta times of each batch for a hovered test.
+        const char* test_name = _Labels.Data[_PlotHoverTest]->TestName;
+        ImGui::BeginTooltip();
+        float w = ImGui::CalcTextSize(test_name).x;
+        float total_w = ImGui::GetContentRegionAvail().x;
+        if (total_w > w)
+            ImGui::SetCursorPosX(ImGui::GetCursorPosX() + (total_w - w) * 0.5f);
+        ImGui::TextUnformatted(test_name);
+
+        for (int i = 0; i < _Legend.Size; i++)
+        {
+            if (ImGuiPerflogEntry* hovered_entry = GetEntryByBatchIdx(i, test_name))
+                ImGui::Text("%s %.3fms", label.c_str(), hovered_entry->DtDeltaMs);
+            else
+                ImGui::Text("%s --", label.c_str());
+        }
+        ImGui::EndTooltip();
+    }
+
     ImPlot::EndPlot();
 #else
     ImGui::TextUnformatted("Not enabled because ImPlot is not available (IMGUI_TEST_ENGINE_ENABLE_IMPLOT is not defined).");
