@@ -59,8 +59,9 @@ struct ImGuiPerfLog
     ImGuiStorage                _TempSet;                       // Used as a set
     int                         _TableHoveredTest = -1;         // Index within _VisibleLabelPointers array.
     int                         _TableHoveredBatch = -1;
-    float                       _TableHighlightAnimTime = 1.0f; // Remaining time to display highlight of focused table row.
-    const char*                 _TableScrollToTest = NULL;
+    int                         _PlotHoverTest = -1;
+    int                         _PlotHoverBatch = -1;
+    bool                        _PlotHoverTestLabel = false;
 
     struct
     {

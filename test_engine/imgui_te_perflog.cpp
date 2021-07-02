@@ -729,7 +729,6 @@ void ImGuiTestEngine_PerflogAppendToCSV(ImGuiPerfLog* perf_log, const char* file
 
 void ImGuiPerfLog::ShowUI()
 {
-    ImGuiIO& io = ImGui::GetIO();
     ImGuiStyle& style = ImGui::GetStyle();
 
     // -----------------------------------------------------------------------------------------------------------------
@@ -942,8 +941,6 @@ void ImGuiPerfLog::ShowUI()
 #else
     _ShowEntriesTable();
 #endif
-
-    _TableHighlightAnimTime += io.DeltaTime;
 }
 
 void ImGuiPerfLog::_ShowEntriesPlot()
@@ -964,33 +961,15 @@ void ImGuiPerfLog::_ShowEntriesPlot()
     if (!ImPlot::BeginPlot("Perflog", NULL, NULL, ImVec2(-1, -1), ImPlotFlags_NoTitle, ImPlotAxisFlags_NoTickLabels))
         return;
 
-    // Clickable test names
-    bool test_name_hovered = false;
-    for (int t = 0; t < _VisibleLabelPointers.Size; t++)
-    {
-        ImRect label_rect = ImPlotGetYTickRect(t);
-        if (label_rect.IsInverted())
-            continue;
-
-        if (!test_name_hovered && label_rect.Contains(io.MousePos))
-        {
-            test_name_hovered = true;   // Ensure only one test name is hovered when they are overlapping due to zoom level.
-            ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
-            ImPlot::GetPlotDrawList()->AddLine(ImFloor(label_rect.GetBL()), ImFloor(label_rect.GetBR()), ImColor(style.Colors[ImGuiCol_Text]));
-            if (ImGui::IsMouseClicked(ImGuiMouseButton_Left))
-            {
-                _TableScrollToTest = _VisibleLabelPointers.Data[t];
-                _TableHighlightAnimTime = 0.0f;
-            }
-        }
-    }
-
     // Plot bars
     const int max_visibler_builds = PerflogGetGetMaxVisibleBuildsPerTest(this);
     const float occupy_h = 0.8f;
-    const float h = occupy_h / max_visibler_builds;
+    const float h = occupy_h / (float)max_visibler_builds;
 
     int bar_index = 0;
+    _PlotHoverTest = -1;
+    _PlotHoverBatch = -1;
+    _PlotHoverTestLabel = false;
     for (ImGuiPerflogEntry*& entry : _Legend)
     {
         int batch_index = _Legend.index_from_ptr(&entry);
@@ -1010,20 +989,51 @@ void ImGuiPerfLog::_ShowEntriesPlot()
         display_label.appendf("%s###%08X", _BaselineBatchIndex == batch_index ? " *" : "", label_id);
 
         // Highlight background behind bar when hovering test entry in info table.
-        if (_TableHoveredTest >= 0)
+        ImPlotContext& gp = *GImPlot;
+        ImPlotPlot& plot = *gp.CurrentPlot;
+        ImRect test_bars_rect;
+        for (int i = 0; i < _VisibleLabelPointers.Size; i++)
         {
-            ImPlotContext& gp = *GImPlot;
-            ImPlotPlot& plot = *gp.CurrentPlot;
-            ImRect test_bars_rect;
-            float bar_min = PerflogGetBarY(this, _TableHoveredBatch, _TableHoveredTest, h);
+            float bar_min = PerflogGetBarY(this, batch_index, i, h);
             test_bars_rect.Min.x = plot.PlotRect.Min.x;
             test_bars_rect.Max.x = plot.PlotRect.Max.x;
-            test_bars_rect.Min.y = ImPlot::PlotToPixels(0, bar_min - h * 0.5f).y;
-            test_bars_rect.Max.y = ImPlot::PlotToPixels(0, bar_min + h * 0.5f).y;
-            ImPlot::GetPlotDrawList()->AddRectFilled(test_bars_rect.Min, test_bars_rect.Max, ImColor(style.Colors[ImGuiCol_TableRowBgAlt]));
+            test_bars_rect.Min.y = ImPlot::PlotToPixels(0, bar_min + h * 0.5f).y;
+            test_bars_rect.Max.y = ImPlot::PlotToPixels(0, bar_min - h * 0.5f).y;
+
+            // Mouse is hovering a row in info table - highlight relevant bars on the plot.
+            if (_TableHoveredTest == i && _TableHoveredBatch == batch_index)
+                ImPlot::GetPlotDrawList()->AddRectFilled(test_bars_rect.Min, test_bars_rect.Max, ImColor(style.Colors[ImGuiCol_TableRowBgAlt]));
+
+            if (_PlotHoverTest >= 0)
+                continue;   // Already set.
+
+            // Mouse is hovering label or bars of a perf test - highlight them in info table.
+            if (test_bars_rect.Min.y <= io.MousePos.y && io.MousePos.y < test_bars_rect.Max.y)
+            {
+                _PlotHoverTest = _VisibleLabelPointers.Size - i - 1;    // _VisibleLabelPointers is inverted to make perf test order match info table order. Revert it back.
+                _PlotHoverBatch = batch_index;
+            }
+
+            if (_PlotHoverTestLabel)
+                continue;
+
+            // Use label rect for rendering underlines.
+            ImRect label_rect = ImPlotGetYTickRect(i);
+            if (label_rect.IsInverted())
+                continue;
+
+            // Mouse hovers perf label - render underline signaling it is clickable. Clicks are handled when rendering info table.
+            if (label_rect.Contains(io.MousePos))
+            {
+                ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
+                ImPlot::GetPlotDrawList()->AddLine(ImFloor(label_rect.GetBL()), ImFloor(label_rect.GetBR()),
+                                                   ImColor(style.Colors[ImGuiCol_Text]));
+            }
+            label_rect.Min.x = plot.CanvasRect.Min.x;
+            _PlotHoverTestLabel = label_rect.Contains(io.MousePos);
         }
 
-        GetPlotPointData data;
+        GetPlotPointData data = {};
         data.BarHeight = h;
         data.Perf = this;
         data.BatchIndex = batch_index;
@@ -1115,7 +1125,6 @@ void ImGuiPerfLog::_ShowEntriesTable()
     _TableHoveredBatch = -1;
     for (int label_index = 0; label_index < _Labels.Size; label_index++)
     {
-        bool scrolled_to = false;
         const char* test_name = _Labels.Data[label_index]->TestName;
         for (int batch_index = 0; batch_index < _Legend.Size; batch_index++)
         {
@@ -1129,16 +1138,16 @@ void ImGuiPerfLog::_ShowEntriesTable()
             else
                 ImGui::TableSetBgColor(ImGuiTableBgTarget_RowBg0, ImGui::GetColorU32(ImGuiCol_TableRowBg, 0.5f));
 
-            if (_TableScrollToTest != NULL && _TableHighlightAnimTime < 1.0f && strcmp(test_name, _TableScrollToTest) == 0)
+            if (_PlotHoverTest == label_index)
             {
-                if (!scrolled_to)
+                // Highlight a row that corresponds to hovered bar, or all rows that correspond to hovered perf test label.
+                if (_PlotHoverBatch == batch_index || _PlotHoverTestLabel)
+                    ImGui::TableSetBgColor(ImGuiTableBgTarget_RowBg0, ImColor(style.Colors[ImGuiCol_TableRowBgAlt]));
+                if (_PlotHoverTestLabel && ImGui::IsMouseClicked(ImGuiMouseButton_Left))
                 {
                     ImGui::SetScrollHereY(0);
-                    scrolled_to = true;
+                    _PlotHoverTestLabel = false;
                 }
-                ImColor bg_color;
-                bg_color.Value = ImLerp(style.Colors[ImGuiCol_TableRowBgAlt], style.Colors[ImGuiCol_TableRowBg], _TableHighlightAnimTime);
-                ImGui::TableSetBgColor(ImGuiTableBgTarget_RowBg0, bg_color);
             }
 
             // Build info
