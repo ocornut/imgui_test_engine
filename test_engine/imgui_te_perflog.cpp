@@ -326,11 +326,11 @@ static ImPlotPoint PerflogGetPlotPoint(void* data, int idx)
 }
 #endif
 
-static void RenderFilterInput(ImGuiPerfLog* perf, const char* hint)
+static void RenderFilterInput(ImGuiPerfLog* perf, const char* hint, float width = -FLT_MIN)
 {
     if (ImGui::IsWindowAppearing())
         strcpy(perf->_Filter, "");
-    ImGui::SetNextItemWidth(-FLT_MIN);
+    ImGui::SetNextItemWidth(width);
     ImGui::InputTextWithHint("##filter", hint, perf->_Filter, IM_ARRAYSIZE(perf->_Filter));
     if (ImGui::IsWindowAppearing())
         ImGui::SetKeyboardFocusHere();
@@ -338,11 +338,16 @@ static void RenderFilterInput(ImGuiPerfLog* perf, const char* hint)
 
 static bool RenderMultiSelectFilter(ImGuiPerfLog* perf, const char* filter_hint, ImVector<ImGuiPerflogEntry*>* entries, HashEntryFn hash, FormatEntryLabelFn format)
 {
+    ImGuiContext& g = *ImGui::GetCurrentContext();
     ImGuiIO& io = ImGui::GetIO();
     Str256 buf;
     ImGuiStorage& visibility = perf->_Settings.Visibility;
     bool modified = false;
-    RenderFilterInput(perf, filter_hint);
+    RenderFilterInput(perf, filter_hint, -ImGui::CalcTextSize("?").x - g.Style.ItemSpacing.x);
+    ImGui::SameLine();
+    ImGui::TextDisabled("?");
+    if (ImGui::IsItemHovered())
+        ImGui::SetTooltip("Hold CTRL to invert other items.\nHold SHIFT to close popup instantly.");
 
     // Keep popup open for multiple actions if SHIFT is pressed.
     if (!io.KeyShift)
@@ -818,8 +823,6 @@ void ImGuiPerfLog::ShowUI()
     // FIXME-PERFLOG: Move more of this to its more suitable location.
     if (ImGui::BeginPopup("Help"))
     {
-        ImGui::BulletText("Hold CTRL when toggling perf test visibility in order to invert visibility or other items.");
-        ImGui::BulletText("Hold SHIFT when toggling perf test visibility in order to close popup instantly.");
         ImGui::BulletText("To change baseline build, double-click desired build in the legend.");
         ImGui::BulletText("Extra information is displayed when hovering bars of a particular perf test and holding SHIFT.");
         ImGui::BulletText("Double-click plot to fit plot into available area.");
