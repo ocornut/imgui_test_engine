@@ -2215,6 +2215,7 @@ void    ImGuiTestContext::MenuAction(ImGuiTestAction action, ImGuiTestRef ref)
 
     IM_ASSERT(ref.Path != NULL);
 
+    ImGuiContext& g = *UiContext;
     int depth = 0;
     const char* path = ref.Path;
     const char* path_end = path + strlen(path);
@@ -2229,7 +2230,15 @@ void    ImGuiTestContext::MenuAction(ImGuiTestAction action, ImGuiTestRef ref)
         {
             // Click menu in menu bar
             IM_ASSERT(RefStr[0] != 0); // Unsupported: window needs to be in Ref
-            buf.setf("##menubar/%.*s", (int)(p - path), path);
+            if (g.NavWindow != NULL && strncmp(g.NavWindow->Name, "##Popup_", 8) == 0)
+            {
+                buf.setf("/%s/%.*s", g.NavWindow->Name, (int)(p - path), path);
+                depth++;
+            }
+            else
+            {
+                buf.setf("##menubar/%.*s", (int)(p - path), path);
+            }
         }
         else
         {
