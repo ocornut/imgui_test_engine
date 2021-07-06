@@ -15,6 +15,7 @@
 // For tests
 #include "imgui_te_engine.h"
 #include "imgui_te_context.h"
+#include "shared/imgui_capture_tool.h"
 
 //-------------------------------------------------------------------------
 // ImGuiPerflogEntry
@@ -1553,5 +1554,71 @@ void RegisterTests_PerfLog(ImGuiTestEngine* e)
         ImStrncpy(perflog->_FilterDateFrom, min_date_bkp.c_str(), IM_ARRAYSIZE(perflog->_FilterDateFrom));
         ImStrncpy(perflog->_FilterDateTo, max_date_bkp.c_str(), IM_ARRAYSIZE(perflog->_FilterDateTo));
         SetPerfLogWindowOpen(ctx, perf_was_open);                   // Restore window visibility
+    };
+
+    // ## Capture perf tool graph.
+    t = IM_REGISTER_TEST(e, "capture", "capture_perf_report");
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiContext& g = *ctx->UiContext;
+        ImGuiPerfLog* perflog = ImGuiTestEngine_GetPerfTool(ctx->Engine);
+        const char* perf_report_image = NULL;
+        if (!ImFileExist(IMGUI_PERFLOG_FILENAME))
+        {
+            ctx->LogWarning("Perf tool has no data. Perf report generation was aborted.");
+            return;
+        }
+
+        bool combine_by_build_bkp = perflog->_CombineByBuildInfo;
+        bool per_branch_colors_bkp = perflog->_PerBranchColors;
+        char min_date_bkp[sizeof(perflog->_FilterDateFrom)], max_date_bkp[sizeof(perflog->_FilterDateTo)];
+        ImStrncpy(min_date_bkp, perflog->_FilterDateFrom, IM_ARRAYSIZE(min_date_bkp));
+        ImStrncpy(max_date_bkp, perflog->_FilterDateTo, IM_ARRAYSIZE(max_date_bkp));
+        bool perf_was_open = SetPerfLogWindowOpen(ctx, true);
+        ctx->Yield();
+
+        ctx->SetRef("Dear ImGui Perf Tool");
+        ctx->WindowMove("", ImVec2(50, 50));
+        ctx->WindowResize("", ImVec2(1400, 900));
+#ifdef IMGUI_TEST_ENGINE_ENABLE_IMPLOT
+        ctx->ItemDoubleClick("splitter");   // Hide info table
+
+        ImGuiWindow* plot_child = ctx->GetWindowByRef(ctx->GetChildWindowID(ctx->GetChildWindowID(ctx->GetID("plot")), "Perflog"));
+        IM_CHECK_NO_RET(plot_child != NULL);
+
+        // Move legend to right side.
+        ctx->MouseMoveToPos(plot_child->Rect().GetCenter());
+        ctx->MouseDoubleClick(ImGuiMouseButton_Left);               // Auto-size plots while at it
+        ctx->MouseClick(ImGuiMouseButton_Right);
+        ctx->MenuClick("Settings/Legend/##NE");
+#endif
+        // Click some stuff for more coverage.
+        ctx->ItemClick("##date-from", ImGuiMouseButton_Right);
+        ctx->ItemClick(ctx->GetID("Set Min", g.NavWindow->ID));
+        ctx->ItemClick("##date-to", ImGuiMouseButton_Right);
+        ctx->ItemClick(ctx->GetID("Set Max", g.NavWindow->ID));
+        ctx->ItemCheck("Combine by build info");
+        ctx->ItemCheck("Per branch colors");
+#ifdef IMGUI_TEST_ENGINE_ENABLE_IMPLOT
+        // Take a screenshot.
+        perf_report_image = "captures/capture_perf_report_0000.png";
+        ImGuiCaptureArgs args;
+        ctx->CaptureInitArgs(&args);
+        args.InCaptureRect = plot_child->Rect();
+        args.InFlags |= ImGuiCaptureFlags_HideMouseCursor;
+        ctx->CaptureAddWindow(&args, "Dear ImGui Perf Tool");
+        ctx->CaptureScreenshotEx(&args);
+        ctx->ItemDragWithDelta("splitter", ImVec2(0, -180));        // Show info table
+#endif
+        ImStrncpy(perflog->_FilterDateFrom, min_date_bkp, IM_ARRAYSIZE(min_date_bkp));
+        ImStrncpy(perflog->_FilterDateTo, max_date_bkp, IM_ARRAYSIZE(max_date_bkp));
+        perflog->_CombineByBuildInfo = combine_by_build_bkp;
+        perflog->_PerBranchColors = per_branch_colors_bkp;
+        SetPerfLogWindowOpen(ctx, perf_was_open);                   // Restore window visibility
+
+        const char* perf_report_output = getenv("CAPTURE_PERF_REPORT_OUTPUT");
+        if (perf_report_output == NULL)
+            perf_report_output = "capture_perf_report.html";
+        perflog->SaveReport(perf_report_output, perf_report_image);
     };
 }
