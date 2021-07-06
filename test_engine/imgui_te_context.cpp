@@ -2785,7 +2785,7 @@ void    ImGuiTestContext::PerfCalcRef()
     SetGuiFuncEnabled(true);
 }
 
-void    ImGuiTestContext::PerfCapture()
+void    ImGuiTestContext::PerfCapture(const char* category, const char* test_name, const char* csv_file)
 {
     // Calculate reference average DeltaTime if it wasn't explicitly called by TestFunc
     if (PerfRefDt < 0.0)
@@ -2813,8 +2813,8 @@ void    ImGuiTestContext::PerfCapture()
 
     ImGuiPerflogEntry entry;
     entry.Timestamp = BatchStartTime;
-    entry.Category = Test->Category;
-    entry.TestName = Test->Name;
+    entry.Category = category ? category : Test->Category;
+    entry.TestName = test_name ? test_name : Test->Name;
     entry.DtDeltaMs = dt_delta_ms;
     entry.PerfStressAmount = PerfStressAmount;
     entry.GitBranchName = EngineIO->GitBranchName;
@@ -2823,7 +2823,7 @@ void    ImGuiTestContext::PerfCapture()
     entry.OS = build_info.OS;
     entry.Compiler = build_info.Compiler;
     entry.Date = build_info.Date;
-    ImGuiTestEngine_PerflogAppendToCSV(Engine->PerfLog, IMGUI_PERFLOG_FILENAME, &entry);
+    ImGuiTestEngine_PerflogAppendToCSV(Engine->PerfLog, &entry, csv_file);
 
     // Disable the "Success" message
     RunFlags |= ImGuiTestRunFlags_NoSuccessMsg;

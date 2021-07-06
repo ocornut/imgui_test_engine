@@ -1076,6 +1076,11 @@ ImGuiTest* ImGuiTestEngine_RegisterTest(ImGuiTestEngine* engine, const char* cat
     return t;
 }
 
+ImGuiPerfLog* ImGuiTestEngine_GetPerfTool(ImGuiTestEngine* engine)
+{
+    return engine->PerfLog;
+}
+
 void ImGuiTestEngine_QueueTests(ImGuiTestEngine* engine, ImGuiTestGroup group, const char* filter_str, ImGuiTestRunFlags run_flags)
 {
     IM_ASSERT(group >= 0 && group < ImGuiTestGroup_COUNT);

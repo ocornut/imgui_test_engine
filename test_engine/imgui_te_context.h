@@ -430,7 +430,7 @@ struct ImGuiTestContext
 
     // Performances
     void        PerfCalcRef();
-    void        PerfCapture();
+    void        PerfCapture(const char* category = NULL, const char* test_name = NULL, const char* csv_file = NULL);
 };
 
 // Helper to increment/decrement the function depth (so our log entry can be padded accordingly)

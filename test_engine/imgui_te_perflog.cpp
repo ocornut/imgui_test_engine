@@ -12,6 +12,10 @@
 #include "libs/implot/implot_internal.h"
 #include "shared/imgui_utils.h"
 
+// For tests
+#include "imgui_te_engine.h"
+#include "imgui_te_context.h"
+
 //-------------------------------------------------------------------------
 // ImGuiPerflogEntry
 //-------------------------------------------------------------------------
@@ -679,6 +683,9 @@ void ImGuiPerfLog::Clear()
 
 bool ImGuiPerfLog::LoadCSV(const char* filename)
 {
+    if (filename == NULL)
+        filename = IMGUI_PERFLOG_FILENAME;
+
     ImGuiCSVParser csv(11);
     if (!csv.Load(filename))
         return false;
@@ -707,8 +714,11 @@ bool ImGuiPerfLog::LoadCSV(const char* filename)
 }
 
 // This is declared as a standalone function in order to run without a Perflog instance
-void ImGuiTestEngine_PerflogAppendToCSV(ImGuiPerfLog* perf_log, const char* filename, ImGuiPerflogEntry* entry)
+void ImGuiTestEngine_PerflogAppendToCSV(ImGuiPerfLog* perf_log, ImGuiPerflogEntry* entry, const char* filename)
 {
+    if (filename == NULL)
+        filename = IMGUI_PERFLOG_FILENAME;
+
     // Appends to .csv
     FILE* f = fopen(filename, "a+b");
     if (f == NULL)
@@ -793,12 +803,12 @@ void ImGuiPerfLog::ShowUI()
         }
     }
 
-    if (ImGui::Button(Str16f("Filter builds (%d/%d)", _NumVisibleBuilds, _Legend.Size).c_str()))
+    if (ImGui::Button(Str16f("Filter builds (%d/%d)###Filter builds", _NumVisibleBuilds, _Legend.Size).c_str()))
         ImGui::OpenPopup("Filter builds");
     if (ImGui::IsItemHovered())
         ImGui::SetTooltip("Hide or show individual builds.");
     ImGui::SameLine();
-    if (ImGui::Button(Str16f("Filter tests (%d/%d)", _VisibleLabelPointers.Size, _Labels.Size).c_str()))
+    if (ImGui::Button(Str16f("Filter tests (%d/%d)###Filter tests", _VisibleLabelPointers.Size, _Labels.Size).c_str()))
         ImGui::OpenPopup("Filter perfs");
     if (ImGui::IsItemHovered())
         ImGui::SetTooltip("Hide or show individual tests.");
@@ -1336,4 +1346,103 @@ void ImGuiPerfLog::_CalculateLegendAlignment()
         _AlignBranch = ImMax(_AlignBranch, (int)strlen(entry->GitBranchName));
         _AlignSamples = ImMax(_AlignSamples, (int)Str16f("%d", entry->NumSamples).length());
     }
+}
+
+static bool SetPerfLogWindowOpen(ImGuiTestContext* ctx, bool is_open)
+{
+    ImGuiContext& g = *ImGui::GetCurrentContext();
+    ctx->WindowFocus("/Dear ImGui Test Engine");
+    ctx->ItemClick("/Dear ImGui Test Engine/ TOOLS ");
+    Str30f perf_tool_checkbox("/%s/Perf Tool", g.NavWindow->Name);
+    if (ImGuiTestItemInfo* checkbox_info = ctx->ItemInfo(perf_tool_checkbox.c_str()))
+    {
+        bool is_checked = (checkbox_info->StatusFlags & ImGuiItemStatusFlags_Checked) != 0;
+        if (is_checked != is_open)
+            ctx->ItemClick(perf_tool_checkbox.c_str());
+        return is_checked;
+    }
+    return false;
+}
+
+void RegisterTests_PerfLog(ImGuiTestEngine* e)
+{
+    ImGuiTest* t = NULL;
+
+    // ## Flex perf tool code.
+    t = IM_REGISTER_TEST(e, "misc", "misc_cov_perf_tool");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        IM_UNUSED(ctx);
+        ImGui::Begin("Test Func", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
+        int loop_count = 1000;
+        bool v1 = false, v2 = true;
+        for (int n = 0; n < loop_count / 2; n++)
+        {
+            ImGui::PushID(n);
+            ImGui::Checkbox("Hello, world", &v1);
+            ImGui::Checkbox("Hello, world", &v2);
+            ImGui::PopID();
+        }
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiContext& g = *ctx->UiContext;
+        ImGuiPerfLog* perflog = ImGuiTestEngine_GetPerfTool(ctx->Engine);
+        const char* temp_perf_csv = "misc_cov_perf_tool.csv";
+
+        Str16f min_date_bkp = perflog->_FilterDateFrom;
+        Str16f max_date_bkp = perflog->_FilterDateTo;
+
+        // Execute few perf tests, serialize them to temporary csv file.
+        ctx->PerfCapture("perf", "misc_cov_perf_tool_1", temp_perf_csv);
+        ctx->PerfCapture("perf", "misc_cov_perf_tool_2", temp_perf_csv);
+
+        // Load perf data from csv file and open perf tool.
+        perflog->Clear();
+        perflog->LoadCSV(temp_perf_csv);
+        bool perf_was_open = SetPerfLogWindowOpen(ctx, true);
+        ctx->Yield();
+
+        ctx->SetRef("Dear ImGui Perf Tool");
+        ctx->WindowMove("", ImVec2(50, 50));
+        ctx->WindowResize("", ImVec2(1400, 900));
+#ifdef IMGUI_TEST_ENGINE_ENABLE_IMPLOT
+        ImGuiWindow* plot_child = ctx->GetWindowByRef(ctx->GetChildWindowID(ctx->GetChildWindowID(ctx->GetID("plot")), "Perflog"));
+        IM_CHECK_NO_RET(plot_child != NULL);
+
+        // Move legend to right side.
+        ctx->MouseMoveToPos(plot_child->Rect().GetCenter());
+        ctx->MouseDoubleClick(ImGuiMouseButton_Left);               // Auto-size plots while at it
+        ctx->MouseClick(ImGuiMouseButton_Right);
+        ctx->MenuClick("Settings/Legend/##NE");
+
+        // Click some stuff for more coverage.
+        ctx->MouseMoveToPos(plot_child->Rect().GetCenter());
+        ctx->KeyPressMap(ImGuiKey_COUNT, ImGuiKeyModFlags_Shift);
+#endif
+        ctx->ItemClick("##date-from", ImGuiMouseButton_Right);
+        ctx->ItemClick(ctx->GetID("Set Min", g.NavWindow->ID));
+        ctx->ItemClick("##date-to", ImGuiMouseButton_Right);
+        ctx->ItemClick(ctx->GetID("Set Max", g.NavWindow->ID));
+        ctx->ItemClick("###Filter builds");
+        ctx->ItemClick("###Filter tests");
+        ctx->ItemClick("Combine by build info");                    // Toggle twice to leave state unchanged
+        ctx->ItemClick("Combine by build info");
+        ctx->ItemClick("Per branch colors");
+        ctx->ItemClick("Per branch colors");
+
+        // Restore original state.
+        perflog->Clear();                                           // Clear test data and load original data
+        ImFileDelete(temp_perf_csv);
+        perflog->LoadCSV();
+        ctx->Yield();
+#ifdef IMGUI_TEST_ENGINE_ENABLE_IMPLOT
+        ctx->MouseMoveToPos(plot_child->Rect().GetCenter());
+        ctx->MouseDoubleClick(ImGuiMouseButton_Left);               // Fit plot to original data
+#endif
+        ImStrncpy(perflog->_FilterDateFrom, min_date_bkp.c_str(), IM_ARRAYSIZE(perflog->_FilterDateFrom));
+        ImStrncpy(perflog->_FilterDateTo, max_date_bkp.c_str(), IM_ARRAYSIZE(perflog->_FilterDateTo));
+        SetPerfLogWindowOpen(ctx, perf_was_open);                   // Restore window visibility
+    };
 }

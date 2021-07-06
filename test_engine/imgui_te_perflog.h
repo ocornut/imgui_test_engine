@@ -75,7 +75,7 @@ struct ImGuiPerfLog
     ~ImGuiPerfLog();
 
     void        Clear();
-    bool        LoadCSV(const char* filename);
+    bool        LoadCSV(const char* filename = NULL);
     void        AddEntry(ImGuiPerflogEntry* entry);
 
     void        ShowUI();
@@ -91,4 +91,4 @@ struct ImGuiPerfLog
     void        _ShowEntriesTable();
 };
 
-void    ImGuiTestEngine_PerflogAppendToCSV(ImGuiPerfLog* perf_log, const char* filename, ImGuiPerflogEntry* entry);
+void    ImGuiTestEngine_PerflogAppendToCSV(ImGuiPerfLog* perf_log, ImGuiPerflogEntry* entry, const char* filename = NULL);
