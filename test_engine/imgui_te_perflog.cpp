@@ -67,6 +67,7 @@ struct ImGuiPerfLogColumnInfo
     T GetValue(const ImGuiPerflogEntry* entry) const { return *(T*)((const char*)entry + Offset); }
 };
 
+// Update _ShowEntriesTable() and SaveReport() when adding new entries.
 static const ImGuiPerfLogColumnInfo PerfLogColumnInfo[] =
 {
     { /* 00 */ "Test Name",   IM_OFFSETOF(ImGuiPerflogEntry, TestName),         ImGuiDataType_COUNT,  true  },
@@ -156,6 +157,29 @@ static bool IsDateValid(const char* date)
             return false;
     }
     return true;
+}
+
+static float FormatVsBaseline(ImGuiPerflogEntry* entry, ImGuiPerflogEntry* baseline_entry, Str30f& out_label)
+{
+    if (baseline_entry == NULL)
+    {
+        out_label.appendf("--");
+        return FLT_MAX;
+    }
+
+    if (entry == baseline_entry)
+    {
+        out_label.append("baseline");
+        return FLT_MAX;
+    }
+
+    double percent_vs_first = 100.0 / baseline_entry->DtDeltaMs * entry->DtDeltaMs;
+    double dt_change = -(100.0 - percent_vs_first);
+    if (ImAbs(dt_change) > 0.001f)
+        out_label.appendf("%+.2lf%% (%s)", dt_change, dt_change < 0.0f ? "faster" : "slower");
+    else
+        out_label.appendf("==");
+    return (float)dt_change;
 }
 
 static ImGuiID PerflogHashTestName(ImGuiPerflogEntry* entry)
@@ -1235,27 +1259,14 @@ void ImGuiPerfLog::_ShowEntriesTable()
             // VS Baseline
             if (ImGui::TableNextColumn())
             {
-                if (baseline_entry == NULL)
+                Str30f label("");
+                ImGuiPerflogEntry* baseline_entry = GetEntryByBatchIdx(_BaselineBatchIndex, test_name);
+                float dt_change = FormatVsBaseline(entry, baseline_entry, label);
+                ImGui::TextUnformatted(label.c_str());
+                if (dt_change != entry->VsBaseline)
                 {
-                    ImGui::TextUnformatted("--");
-                }
-                else if (entry == baseline_entry)
-                {
-                    ImGui::TextUnformatted("baseline");
-                }
-                else
-                {
-                    double percent_vs_first = 100.0 / baseline_entry->DtDeltaMs * entry->DtDeltaMs;
-                    double dt_change = -(100.0 - percent_vs_first);
-                    if (ImAbs(dt_change) > 0.001f)
-                        ImGui::Text("%+.2lf%% (%s)", dt_change, dt_change < 0.0f ? "faster" : "slower");
-                    else
-                        ImGui::TextUnformatted("==");
-                    if (dt_change != entry->VsBaseline)
-                    {
-                        entry->VsBaseline = dt_change;
-                        _InfoTableSortDirty = true;             // Force re-sorting.
-                    }
+                    entry->VsBaseline = dt_change;
+                    _InfoTableSortDirty = true;             // Force re-sorting.
                 }
             }
 
@@ -1346,6 +1357,104 @@ void ImGuiPerfLog::_CalculateLegendAlignment()
         _AlignBranch = ImMax(_AlignBranch, (int)strlen(entry->GitBranchName));
         _AlignSamples = ImMax(_AlignSamples, (int)Str16f("%d", entry->NumSamples).length());
     }
+}
+
+bool ImGuiPerfLog::SaveReport(const char* file_name, const char* image_file)
+{
+    FILE* fp = fopen(file_name, "w+");
+    if (fp == NULL)
+        return false;
+
+    fprintf(fp, "<!doctype html>\n"
+                "<html>\n"
+                "<head>\n"
+                "  <meta charset=\"utf-8\"/>\n"
+                "  <title>Dear ImGui perf report</title>\n"
+                "</head>\n"
+                "<body>\n"
+                "  <pre id=\"content\">\n");
+
+    // Embed performance chart.
+    fprintf(fp, "## Dear ImGui perf report\n\n");
+
+    if (image_file != NULL)
+    {
+        FILE* fp_img = fopen(image_file, "rb");
+        if (fp_img != NULL)
+        {
+            ImVector<char> image_buffer;
+            ImVector<char> base64_buffer;
+            fseek(fp_img, 0, SEEK_END);
+            image_buffer.resize((int)ftell(fp_img));
+            base64_buffer.resize(((image_buffer.Size / 3) + 1) * 4 + 1);
+            rewind(fp_img);
+            fread(image_buffer.Data, 1, image_buffer.Size, fp_img);
+            fclose(fp_img);
+            int len = ImBase64Encode((unsigned char*)image_buffer.Data, base64_buffer.Data, image_buffer.Size);
+            base64_buffer.Data[len] = 0;
+            fprintf(fp, "![](data:image/png;base64,%s)\n\n", base64_buffer.Data);
+        }
+    }
+
+    // Print info table.
+    for (const auto& column_info : PerfLogColumnInfo)
+        if (column_info.ShowAlways || _CombineByBuildInfo)
+            fprintf(fp, "| %s ", column_info.Title);
+    fprintf(fp, "|\n");
+    for (const auto& column_info : PerfLogColumnInfo)
+        if (column_info.ShowAlways || _CombineByBuildInfo)
+            fprintf(fp, "| -- ");
+    fprintf(fp, "|\n");
+
+    for (int label_index = 0; label_index < _Labels.Size; label_index++)
+    {
+        const char* test_name = _Labels.Data[label_index]->TestName;
+        for (int batch_index = 0; batch_index < _Legend.Size; batch_index++)
+        {
+            ImGuiPerflogEntry* entry = GetEntryByBatchIdx(_InfoTableSort[batch_index], test_name);
+            if (entry == NULL || !_IsVisibleBuild(entry))
+                continue;
+
+            ImGuiPerflogEntry* baseline_entry = GetEntryByBatchIdx(_BaselineBatchIndex, test_name);
+            for (int i = 0; i < IM_ARRAYSIZE(PerfLogColumnInfo); i++)
+            {
+                Str30f label("");
+                const ImGuiPerfLogColumnInfo& column_info = PerfLogColumnInfo[i];
+                if (column_info.ShowAlways || _CombineByBuildInfo)
+                {
+                    switch (i)
+                    {
+                    case 0:  fprintf(fp, "| %s ", entry->TestName);             break;
+                    case 1:  fprintf(fp, "| %s ", entry->GitBranchName);        break;
+                    case 2:  fprintf(fp, "| %s ", entry->Compiler);             break;
+                    case 3:  fprintf(fp, "| %s ", entry->OS);                   break;
+                    case 4:  fprintf(fp, "| %s ", entry->Cpu);                  break;
+                    case 5:  fprintf(fp, "| %s ", entry->BuildType);            break;
+                    case 6:  fprintf(fp, "| x%d ", entry->PerfStressAmount);    break;
+                    case 7:  fprintf(fp, "| %.2f ", entry->DtDeltaMs);          break;
+                    case 8:  fprintf(fp, "| %.2f ", entry->DtDeltaMsMin);       break;
+                    case 9:  fprintf(fp, "| %.2f ", entry->DtDeltaMsMax);       break;
+                    case 10: fprintf(fp, "| %d ", entry->NumSamples);           break;
+                    case 11: FormatVsBaseline(entry, baseline_entry, label); fprintf(fp, "| %s ", label.c_str()); break;
+                    default: IM_ASSERT(0); break;
+                    }
+                }
+            }
+            fprintf(fp, "|\n");
+        }
+    }
+
+    fprintf(fp, "</pre>\n"
+                "  <script src=\"https://cdn.jsdelivr.net/npm/marked/marked.min.js\"></script>\n"
+                "  <script>\n"
+                "    var content = document.getElementById('content');\n"
+                "    content.innerHTML = marked(content.innerText);\n"
+                "  </script>\n"
+                "</body>\n"
+                "</html>\n");
+
+    fclose(fp);
+    return true;
 }
 
 static bool SetPerfLogWindowOpen(ImGuiTestContext* ctx, bool is_open)

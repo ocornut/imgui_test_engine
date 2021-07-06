@@ -190,6 +190,47 @@ void ImStrReplace(Str* s, const char* find, const char* repl)
     }
 }
 
+// Based on code from https://github.com/EddieBreeg/C_b64 by @EddieBreeg.
+int ImBase64Encode(const unsigned char* src, char* dst, int length)
+{
+    static const char* b64Table = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
+    int i, j, k, l, encoded_len = 0;
+
+    while (length > 0)
+    {
+        switch (length)
+        {
+        case 1:
+            i = src[0] >> 2;
+            j = (src[0] & 3) << 4;
+            k = 64;
+            l = 64;
+            break;
+        case 2:
+            i = src[0] >> 2;
+            j = ((src[0] & 3) << 4) | (src[1] >> 4);
+            k = (src[1] & 15) << 2;
+            l = 64;
+            break;
+        default:
+            i = src[0] >> 2;
+            j = ((src[0] & 3) << 4) | (src[1] >> 4);
+            k = ((src[1] & 0xf) << 2) | (src[2] >> 6 & 3);
+            l = src[2] & 0x3f;
+            break;
+        }
+        dst[0] = b64Table[i];
+        dst[1] = b64Table[j];
+        dst[2] = b64Table[k];
+        dst[3] = b64Table[l];
+        src += 3;
+        dst += 4;
+        length -= 3;
+        encoded_len += 4;
+    }
+    return encoded_len;
+}
+
 //-----------------------------------------------------------------------------
 // STR + InputText bindings
 //-----------------------------------------------------------------------------

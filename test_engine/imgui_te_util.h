@@ -30,6 +30,7 @@ const char*         GetImGuiKeyName(ImGuiKey key);
 void                GetImGuiKeyModsPrefixStr(ImGuiKeyModFlags mod_flags, char* out_buf, size_t out_buf_size);
 ImFont*             FindFontByName(const char* name);
 void                ImStrReplace(Str* s, const char* find, const char* repl);
+int                 ImBase64Encode(const unsigned char* src, char* dst, int length);
 
 ImGuiID             TableGetHeaderID(ImGuiTable* table, const char* column, int instance_no = 0);
 ImGuiID             TableGetHeaderID(ImGuiTable* table, int column_n, int instance_no = 0);

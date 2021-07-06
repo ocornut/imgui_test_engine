@@ -81,7 +81,8 @@ struct ImGuiPerfLog
     void        ShowUI();
     void        ViewOnly(const char* perf_name);
     void        ViewOnly(const char** perf_names);
-    ImGuiPerflogEntry* GetEntryByBatchIdx(int idx, const char* perf_name=NULL);
+    ImGuiPerflogEntry* GetEntryByBatchIdx(int idx, const char* perf_name = NULL);
+    bool        SaveReport(const char* file_name, const char* image_file = NULL);
 
     void        _Rebuild();
     bool        _IsVisibleBuild(ImGuiPerflogEntry* entry);
