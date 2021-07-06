@@ -1,4 +1,4 @@
-// Str v0.30
+// Str v0.32
 // Simple C++ string type with an optional local buffer, by Omar Cornut
 // https://github.com/ocornut/str
 
@@ -70,6 +70,8 @@ All StrXXX types derives from Str and instance hold the local buffer capacity. S
 
 /*
  CHANGELOG
+  0.32 - added owned() accessor.
+  0.31 - fixed various warnings.
   0.30 - turned into a single header file, removed Str.cpp.
   0.29 - fixed bug when calling reserve on non-owned strings (ie. when using StrRef or set_ref), and fixed <string> include.
   0.28 - breaking change: replaced Str32 by Str30 to avoid collision with Str32 from MacTypes.h .
@@ -146,6 +148,7 @@ public:
     inline bool         empty() const                           { return Data[0] == 0; }
     inline int          length() const                          { return (int)strlen(Data); }    // by design, allow user to write into the buffer at any time
     inline int          capacity() const                        { return Capacity; }
+    inline bool         owned() const                           { return Owned ? true : false; }
 
     inline void         set_ref(const char* src);
     int                 setf(const char* fmt, ...);
@@ -340,6 +343,9 @@ public:                                                                         
 
 #endif
 
+// Disable PVS-Studio warning V730: Not all members of a class are initialized inside the constructor (local_buf is not initialized and that is fine)
+// -V:STR_DEFINETYPE:730
+
 // Helper to define StrXXXf constructors
 #define STR_DEFINETYPE_F(TYPENAME, TYPENAME_F)                                      \
 class TYPENAME_F : public TYPENAME                                                  \
@@ -385,11 +391,6 @@ STR_DEFINETYPE_F(Str32, Str32f)
 //-------------------------------------------------------------------------
 
 #ifdef STR_IMPLEMENTATION
-
-
-#if defined(_MSC_VER) && !defined(_CRT_SECURE_NO_WARNINGS)
-#define _CRT_SECURE_NO_WARNINGS
-#endif
 
 #include <stdio.h> // for vsnprintf
 
@@ -443,7 +444,11 @@ void    Str::reserve(int new_capacity)
     }
 
     // string in Data might be longer than new_capacity if it wasn't owned, don't copy too much
+#ifdef _MSC_VER
+    strncpy_s(new_data, (size_t)new_capacity, Data, (size_t)new_capacity - 1);
+#else
     strncpy(new_data, Data, (size_t)new_capacity - 1);
+#endif
     new_data[new_capacity - 1] = 0;
 
     if (Owned && !is_using_local_buf())
