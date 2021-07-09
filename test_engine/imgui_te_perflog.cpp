@@ -961,6 +961,14 @@ void ImGuiPerfLog::_ShowEntriesPlot()
     if (!ImPlot::BeginPlot("Perflog", NULL, NULL, ImVec2(-1, -1), ImPlotFlags_NoTitle, ImPlotAxisFlags_NoTickLabels))
         return;
 
+    static bool plot_initialized = false;
+    if (!plot_initialized)
+    {
+        plot_initialized = true;
+        ImPlotPlot& plot = *ImPlot::GetCurrentPlot();
+        plot.LegendLocation = ImPlotLocation_NorthEast;
+    }
+
     // Plot bars
     const int max_visibler_builds = PerflogGetGetMaxVisibleBuildsPerTest(this);
     const float occupy_h = 0.8f;
