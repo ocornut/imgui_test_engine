@@ -1293,9 +1293,9 @@ ImGuiPerflogEntry* ImGuiPerfLog::GetEntryByBatchIdx(int idx, const char* perf_na
 {
     IM_ASSERT(idx < _Legend.Size);
     ImGuiPerflogEntry* first = _Legend[idx];    // _Legend contains pointers to first entry in the batch.
-    ImGuiPerflogEntry* last = &_FilteredData.back();    // Entries themselves are stored in _Data vector.
-    if (perf_name == NULL)
+    if (perf_name == NULL || _FilteredData.empty())
         return first;
+    ImGuiPerflogEntry* last = &_FilteredData.back();    // Entries themselves are stored in _Data vector.
 
     // Find a specific perf test.
     int batch_size = 0;
