@@ -1445,46 +1445,45 @@ void ImGuiTestEngineHook_Log(ImGuiContext* ui_ctx, const char* fmt, ...)
     va_end(args);
 }
 
-void ImGuiTestEngineHook_IdInfo(ImGuiContext* ui_ctx, ImGuiDataType data_type, ImGuiID id, const void* data_id)
-{
-    ImGuiTestEngine* engine = (ImGuiTestEngine*)ui_ctx->TestEngine;
-    ImGuiStackLevelInfo* info = engine->StackTool.QueryIdInfoOutput;
-    IM_ASSERT(engine->StackTool.Results.index_from_ptr(info) != -1);
-    IM_ASSERT(info->ID == id);
-
-    if (data_type == ImGuiDataType_S32)
-        ImFormatString(info->Desc, IM_ARRAYSIZE(info->Desc), "int %d", (int)(intptr_t)data_id);
-    else if (data_type == ImGuiDataType_String)
-        ImFormatString(info->Desc, IM_ARRAYSIZE(info->Desc), "str \"%s\"", (const char*)data_id);
-    else if (data_type == ImGuiDataType_Pointer)
-        ImFormatString(info->Desc, IM_ARRAYSIZE(info->Desc), "ptr %p", data_id);
-    else if (data_type == ImGuiDataType_ID)
-    {
-        if (!info->QuerySuccess)
-            ImFormatString(info->Desc, IM_ARRAYSIZE(info->Desc), "ovr 0x%08X", id);
-    }
-    else
-        IM_ASSERT(0);
-    info->QuerySuccess = true;
-}
-
 void ImGuiTestEngineHook_IdInfo(ImGuiContext* ui_ctx, ImGuiDataType data_type, ImGuiID id, const void* data_id, const void* data_id_end)
 {
     ImGuiTestEngine* engine = (ImGuiTestEngine*)ui_ctx->TestEngine;
     ImGuiStackLevelInfo* info = engine->StackTool.QueryIdInfoOutput;
-    IM_ASSERT(engine->StackTool.Results.index_from_ptr(info) != -1);
     IM_ASSERT(info->ID == id);
 
-    if (data_type == ImGuiDataType_String)
+    const int requested_stack_level = engine->StackTool.Results.index_from_ptr(info);
+    const int current_stack_level = ui_ctx->CurrentWindow->IDStack.Size;
+    IM_ASSERT(requested_stack_level != -1);
+    if (requested_stack_level != current_stack_level)
+        return;
+
+    switch (data_type)
     {
+    case ImGuiDataType_S32:
+        ImFormatString(info->Desc, IM_ARRAYSIZE(info->Desc), "int %d", (int)(intptr_t)data_id);
+        break;
+    case ImGuiDataType_String:
         if (data_id_end)
             ImFormatString(info->Desc, IM_ARRAYSIZE(info->Desc), "str \"%.*s\"", (int)((const char*)data_id_end - (const char*)data_id), (const char*)data_id);
         else
             ImFormatString(info->Desc, IM_ARRAYSIZE(info->Desc), "str \"%s\"", (const char*)data_id);
-    }
-    else
+        break;
+    case ImGuiDataType_Pointer:
+        ImFormatString(info->Desc, IM_ARRAYSIZE(info->Desc), "ptr %p", data_id);
+        break;
+    case ImGuiDataType_ID:
+        if (!info->QuerySuccess)
+            ImFormatString(info->Desc, IM_ARRAYSIZE(info->Desc), "ovr 0x%08X", id);
+        break;
+    default:
         IM_ASSERT(0);
+    }
     info->QuerySuccess = true;
+}
+
+void ImGuiTestEngineHook_IdInfo(ImGuiContext* ui_ctx, ImGuiDataType data_type, ImGuiID id, const void* data_id)
+{
+    ImGuiTestEngineHook_IdInfo(ui_ctx, data_type, id, data_id, 0);
 }
 
 void ImGuiTestEngineHook_AssertFunc(const char* expr, const char* file, const char* function, int line)

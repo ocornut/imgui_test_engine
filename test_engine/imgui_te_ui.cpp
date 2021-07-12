@@ -690,6 +690,12 @@ void    ImGuiStackTool::ShowStackToolWindow(ImGuiTestEngine* engine, bool* p_ope
             continue;
         }
 
+        if (!QueryAllFinished)
+        {
+            ImGui::NewLine();
+            continue;
+        }
+
         // Source: ItemInfo()
         // FIXME: Ambiguity between empty label (which is a string) and custom ID (which is no)
 #if 1
@@ -720,6 +726,7 @@ void    ImGuiStackTool::UpdateQueries(ImGuiTestEngine* engine)
     {
         QueryStackId = query_id;
         QueryStep = 0;
+        QueryAllFinished = false;
         Results.resize(0);
     }
 
@@ -748,6 +755,7 @@ void    ImGuiStackTool::UpdateQueries(ImGuiTestEngine* engine)
         {
             QueryIdInfoOutput = NULL;
             QueryIdInfoTimestamp = -1;
+            QueryAllFinished = true;
         }
     }
     ImGuiTestEngine_UpdateHooks(engine);

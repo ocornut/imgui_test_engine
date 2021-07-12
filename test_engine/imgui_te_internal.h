@@ -68,6 +68,7 @@ struct ImGuiStackTool
 {
     ImGuiID                 QueryStackId = 0;           // Stack id to query details for
     int                     QueryStep = -1;
+    bool                    QueryAllFinished = false;
     ImGuiStackLevelInfo*    QueryIdInfoOutput = NULL;   // Current stack level we're hooking PushID for
     int                     QueryIdInfoTimestamp = -1;
     ImVector<ImGuiStackLevelInfo> Results;
