@@ -1343,14 +1343,15 @@ void ImGuiTestEngineHook_ItemAdd(ImGuiContext* ui_ctx, const ImRect& bb, ImGuiID
     if (engine->GatherTask.InParentID != 0 && window->DC.NavLayerCurrent == ImGuiNavLayer_Main) // FIXME: Layer filter?
     {
         const ImGuiID gather_parent_id = engine->GatherTask.InParentID;
+        const ImGuiID stack_top_id = window->IDStack.back();
         int depth = -1;
-        if (gather_parent_id == window->IDStack.back())
+        if (gather_parent_id == stack_top_id)
         {
             depth = 0;
         }
         else
         {
-            int max_depth = ImMin(window->IDStack.Size, engine->GatherTask.InDepth);
+            int max_depth = ImMin(window->IDStack.Size, engine->GatherTask.InDepth + ((id == stack_top_id) ? 1 : 0));
             for (int n_depth = 1; n_depth < max_depth; n_depth++)
                 if (window->IDStack[window->IDStack.Size - 1 - n_depth] == gather_parent_id)
                 {
