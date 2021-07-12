@@ -3746,9 +3746,9 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
     struct WidgetsDisabledVars
     {
         bool WidgetsDisabled;
-        bool Activated[3];
-        bool Hovered[3];
-        bool HoveredDisabled[3];
+        bool Activated[4];
+        bool Hovered[4];
+        bool HoveredDisabled[4];
         void Reset() { memset(this, 0, sizeof(*this)); }
         WidgetsDisabledVars() { Reset(); }
     };
