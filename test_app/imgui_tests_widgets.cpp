@@ -1600,29 +1600,6 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         IM_CHECK(status.Edited == 1);
     };
 
-    // ## Test that disabled Selectable has an ID but doesn't interfere with navigation
-    t = IM_REGISTER_TEST(e, "widgets", "widgets_selectable_disabled");
-    t->GuiFunc = [](ImGuiTestContext* ctx)
-    {
-        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
-        ImGui::Selectable("Selectable A");
-        if (ctx->FrameCount == 0)
-            IM_CHECK_EQ(ImGui::GetItemID(), ImGui::GetID("Selectable A"));
-        ImGui::Selectable("Selectable B", false, ImGuiSelectableFlags_Disabled);
-        if (ctx->FrameCount == 0)
-            IM_CHECK_EQ(ImGui::GetItemID(), ImGui::GetID("Selectable B")); // Make sure B has an ID
-        ImGui::Selectable("Selectable C");
-        ImGui::End();
-    };
-    t->TestFunc = [](ImGuiTestContext* ctx)
-    {
-        ctx->SetRef("Test Window");
-        ctx->ItemClick("Selectable A");
-        IM_CHECK_EQ(ctx->UiContext->NavId, ctx->GetID("Selectable A"));
-        ctx->KeyPressMap(ImGuiKey_DownArrow);
-        IM_CHECK_EQ(ctx->UiContext->NavId, ctx->GetID("Selectable C")); // Make sure we have skipped B
-    };
-
     // ## Test that tight tab bar does not create extra drawcalls
     t = IM_REGISTER_TEST(e, "widgets", "widgets_tabbar_drawcalls");
     t->GuiFunc = [](ImGuiTestContext* ctx)
@@ -3764,31 +3741,145 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
     };
 
     // ## Test disabled items setting g.HoveredId and taking clicks.
+#if (IMGUI_VERSION_NUM >= 18310)
     t = IM_REGISTER_TEST(e, "widgets", "widgets_disabled");
+    struct WidgetsDisabledVars
+    {
+        bool WidgetsDisabled;
+        bool Activated[3];
+        bool Hovered[3];
+        bool HoveredDisabled[3];
+        void Reset() { memset(this, 0, sizeof(*this)); }
+        WidgetsDisabledVars() { Reset(); }
+    };
+    t->SetUserDataType<WidgetsDisabledVars>();
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
-        ImGuiContext& g = *ctx->UiContext;
-        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
-        ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
-        ctx->GenericVars.BoolArray[0] |= ImGui::Button("Disabled");
-        ctx->GenericVars.BoolArray[1] |= ImGui::IsItemHovered();
-        ctx->GenericVars.BoolArray[2] |= ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled);
-        ctx->GenericVars.BoolArray[3] |= g.HoveredId == g.CurrentWindow->DC.LastItemId;
-        ImGui::PopItemFlag();
+        WidgetsDisabledVars& vars = ctx->GetUserData<WidgetsDisabledVars>();
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_MenuBar);
+        if (ImGui::BeginMenuBar())
+        {
+            if (ImGui::BeginMenu("Menu 1"))
+            {
+                if (ImGui::BeginMenu("Menu Enabled"))
+                {
+                    ImGui::MenuItem("Item");
+                    ImGui::EndMenu();
+                }
+                if (ImGui::BeginMenu("Menu Disabled", false))
+                {
+                    ImGui::MenuItem("Item");
+                    ImGui::EndMenu();
+                }
+                ImGui::EndMenu();
+            }
+            ImGui::EndMenuBar();
+        }
+
+        ImGui::Selectable("Enabled A");
+        int index = 0;
+
+        if (vars.WidgetsDisabled)
+            ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
+
+        vars.Activated[index] |= ImGui::Button("Button");
+        vars.Hovered[index] |= ImGui::IsItemHovered();
+        vars.HoveredDisabled[index] |= ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled);
+        if (ctx->FrameCount == 0)
+            IM_CHECK_EQ(ImGui::GetItemID(), ImGui::GetID("Button"));      // Make sure widget has an ID
+        index++;
+
+        float f = 0.0f;
+        vars.Activated[index] |= ImGui::DragFloat("DragFloat", &f);
+        vars.Hovered[index] |= ImGui::IsItemHovered();
+        vars.HoveredDisabled[index] |= ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled);
+        if (ctx->FrameCount == 0)
+            IM_CHECK_EQ(ImGui::GetItemID(), ImGui::GetID("DragFloat"));     // Make sure widget has an ID
+        index++;
+
+        vars.Activated[index] |= ImGui::Selectable("Selectable", false, 0);
+        vars.Hovered[index] |= ImGui::IsItemHovered();
+        vars.HoveredDisabled[index] |= ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled);
+        if (ctx->FrameCount == 0)
+            IM_CHECK_EQ(ImGui::GetItemID(), ImGui::GetID("Selectable"));    // Make sure widget has an ID
+        index++;
+
+        if (vars.WidgetsDisabled)
+            ImGui::PopItemFlag();
+
+        vars.Activated[index] |= ImGui::Selectable("SelectableFlag", false, vars.WidgetsDisabled ? ImGuiSelectableFlags_Disabled : 0);
+        vars.Hovered[index] |= ImGui::IsItemHovered();
+        vars.HoveredDisabled[index] |= ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled);
+        if (ctx->FrameCount == 0)
+            IM_CHECK_EQ(ImGui::GetItemID(), ImGui::GetID("SelectableFlag"));    // Make sure widget has an ID
+        index++;
+
+        ImGui::Selectable("Enabled B");
+
         ImGui::End();
     };
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
+        ImGuiContext& g = *ctx->UiContext;
+        WidgetsDisabledVars& vars = ctx->GetUserData<WidgetsDisabledVars>();
+        const char* disabled_items[] = { "Button", "DragFloat", "Selectable", "SelectableFlag" }; // Matches order of arrays in WidgetsDisabledVars.
+
         ImGuiWindow* window = ctx->GetWindowByRef("Test Window");
         ctx->SetRef("Test Window");
-        ctx->ItemClick("Disabled");
-        IM_CHECK(ctx->GenericVars.BoolArray[0] == false);   // Was not clicked because button is disabled.
-        IM_CHECK(ctx->GenericVars.BoolArray[1] == false);   // Wont report as being hovered because button is disabled.
-        IM_CHECK(ctx->GenericVars.BoolArray[2] == true);
-        IM_CHECK(ctx->GenericVars.BoolArray[3] == true);    // Will set HoveredId even when disabled.
+        vars.WidgetsDisabled = true;
 
+        // Navigating over disabled menu.
+        ctx->MenuAction(ImGuiTestAction_Hover, "Menu 1/Menu Enabled/Item");
+        IM_CHECK(g.NavWindow != NULL);
+        IM_CHECK_STR_EQ(g.NavWindow->Name, "##Menu_01");
+        ctx->MenuAction(ImGuiTestAction_Hover, "Menu 1/Menu Disabled");
+        IM_CHECK(g.NavWindow != NULL);
+        IM_CHECK_STR_EQ(g.NavWindow->Name, "##Menu_00");
+
+        // Navigating over a disabled item.
+        ctx->ItemClick("Enabled A");
+        IM_CHECK_EQ(g.NavId, ctx->GetID("Enabled A"));
+        ctx->KeyPressMap(ImGuiKey_DownArrow);
+        IM_CHECK_EQ(g.NavId, ctx->GetID("Enabled B"));              // Make sure we have skipped disabled items.
+        ctx->KeyPressMap(ImGuiKey_Escape);
+
+        // Clicking a disabled item.
+        for (int i = 0; i < IM_ARRAYSIZE(disabled_items); i++)
+        {
+            ctx->MouseMove(disabled_items[i]);
+            vars.Reset();
+            vars.WidgetsDisabled = true;
+            ctx->ItemClick(disabled_items[i]);
+            IM_CHECK(vars.Activated[i] == false);                   // Was not clicked because button is disabled.
+            IM_CHECK(vars.Hovered[i] == false);                     // Wont report as being hovered because button is disabled.
+            IM_CHECK(vars.HoveredDisabled[i] == true);              // IsItemHovered with ImGuiHoveredFlags_AllowWhenDisabled.
+            IM_CHECK(g.HoveredId == ctx->GetID(disabled_items[i])); // Will set HoveredId even when disabled.
+        }
+
+        // Dragging a disabled item.
         ImVec2 window_pos = window->Pos;
-        ctx->ItemDragWithDelta("Disabled", ImVec2(30, 0));
-        IM_CHECK(window_pos == window->Pos);                // Disabled items consume click events
+        for (int i = 0; i < IM_ARRAYSIZE(disabled_items); i++)
+        {
+            ctx->MouseMove(disabled_items[i]);
+            vars.Reset();
+            vars.WidgetsDisabled = true;
+            ctx->ItemDragWithDelta(disabled_items[i], ImVec2(30, 0));
+            IM_CHECK(window_pos == window->Pos);                    // Disabled items consume click events.
+        }
+
+        // Disable active ID when widget gets disabled while held.
+        for (int i = 0; i < IM_ARRAYSIZE(disabled_items); i++)
+        {
+            vars.WidgetsDisabled = false;
+            ctx->MouseMove(disabled_items[i]);
+            ctx->MouseDown();
+            IM_CHECK(g.ActiveId == ctx->GetID(disabled_items[i]));  // Enabled item is active.
+            vars.WidgetsDisabled = true;
+            ctx->Yield();
+            IM_CHECK(g.ActiveId == 0);                              // Disabling item while it is active deactivates it.
+            ctx->MouseUp();
+        }
     };
+#endif
+
 }
