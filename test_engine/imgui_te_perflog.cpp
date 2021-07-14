@@ -1026,6 +1026,7 @@ void ImGuiPerfLog::_ShowEntriesPlot()
     const float h = occupy_h / (float)max_visibler_builds;
 
     int bar_index = 0;
+    bool legend_hovered = false;
     for (ImGuiPerflogEntry*& entry : _Legend)
     {
         int batch_index = _Legend.index_from_ptr(&entry);
@@ -1050,6 +1051,7 @@ void ImGuiPerfLog::_ShowEntriesPlot()
         data.BatchIndex = batch_index;
         ImPlot::SetNextFillStyle(ImPlot::GetColormapColor(_PerBranchColors ? entry->BranchIndex : batch_index));
         ImPlot::PlotBarsHG(display_label.c_str(), &PerflogGetPlotPoint, &data, _VisibleLabelPointers.Size, h);
+        legend_hovered |= ImPlot::IsLegendEntryHovered(display_label.c_str());
 
         // Set baseline.
         if (ImPlot::IsLegendEntryHovered(display_label.c_str()))
@@ -1067,12 +1069,16 @@ void ImGuiPerfLog::_ShowEntriesPlot()
     _PlotHoverTest = -1;
     _PlotHoverBatch = -1;
     _PlotHoverTestLabel = false;
+    bool can_highlight = !legend_hovered && ImGui::IsWindowHovered(ImGuiHoveredFlags_RootAndChildWindows);
     for (int i = 0; i < _VisibleLabelPointers.Size; i++)
     {
         ImRect label_rect = ImPlotGetYTickRect(i);
         ImRect label_rect_hover = label_rect;
         label_rect_hover.Min.x = plot.CanvasRect.Min.x;
         ImRect bars_rect_combined(+FLT_MAX, +FLT_MAX, -FLT_MAX, -FLT_MAX);
+
+        if (!can_highlight)
+            continue;
 
         for (ImGuiPerflogEntry*& entry : _Legend)
         {
@@ -1111,7 +1117,7 @@ void ImGuiPerfLog::_ShowEntriesPlot()
         }
 
         // Mouse hovers perf label.
-        if (label_rect_hover.Contains(io.MousePos))
+        if (can_highlight && label_rect_hover.Contains(io.MousePos))
         {
             // Render underline signaling it is clickable. Clicks are handled when rendering info table.
             ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
@@ -1157,7 +1163,6 @@ void ImGuiPerfLog::_ShowEntriesTable()
     if (!ImGui::BeginTable("PerfInfo", IM_ARRAYSIZE(PerfLogColumnInfo), ImGuiTableFlags_Hideable | ImGuiTableFlags_Borders | ImGuiTableFlags_Sortable | ImGuiTableFlags_SortMulti | ImGuiTableFlags_SortTristate | ImGuiTableFlags_Resizable | ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_ScrollY))
         return;
 
-    ImGuiIO& io = ImGui::GetIO();
     ImGuiStyle& style = ImGui::GetStyle();
 
     // Test name column is not sorted because we do sorting only within perf runs of a particular tests,
@@ -1200,7 +1205,8 @@ void ImGuiPerfLog::_ShowEntriesTable()
         const char* test_name = _Labels.Data[label_index]->TestName;
         for (int batch_index = 0; batch_index < _Legend.Size; batch_index++)
         {
-            ImGuiPerflogEntry* entry = GetEntryByBatchIdx(_InfoTableSort[batch_index], test_name);
+            int batch_index_sorted = _InfoTableSort[batch_index];
+            ImGuiPerflogEntry* entry = GetEntryByBatchIdx(batch_index_sorted, test_name);
             if (entry == NULL || !_IsVisibleBuild(entry) || !_IsVisibleTest(entry))
                 continue;
 
@@ -1214,7 +1220,7 @@ void ImGuiPerfLog::_ShowEntriesTable()
             if (_PlotHoverTest == label_index)
             {
                 // Highlight a row that corresponds to hovered bar, or all rows that correspond to hovered perf test label.
-                if (_PlotHoverBatch == batch_index || _PlotHoverTestLabel)
+                if (_PlotHoverBatch == batch_index_sorted || _PlotHoverTestLabel)
                     ImGui::TableSetBgColor(ImGuiTableBgTarget_RowBg0, ImColor(style.Colors[ImGuiCol_TableRowBgAlt]));
                 if (_PlotHoverTestLabel && ImGui::IsMouseClicked(ImGuiMouseButton_Left))
                 {
@@ -1229,16 +1235,25 @@ void ImGuiPerfLog::_ShowEntriesTable()
             if (ImGui::TableNextColumn())
             {
                 // ImGuiSelectableFlags_Disabled + changing ImGuiCol_TextDisabled color prevents selectable from overriding table highlight behavior.
-                ImGui::PushStyleColor(ImGuiCol_TextDisabled, style.Colors[ImGuiCol_Text]);
-                ImGui::Selectable(entry->TestName, false, ImGuiSelectableFlags_SpanAllColumns | ImGuiSelectableFlags_Disabled);
-                ImGui::PopStyleColor();
+                ImGui::PushStyleColor(ImGuiCol_Header, style.Colors[ImGuiCol_Text]);
+                ImGui::PushStyleColor(ImGuiCol_HeaderHovered, style.Colors[ImGuiCol_TableRowBgAlt]);
+                ImGui::PushStyleColor(ImGuiCol_HeaderActive, style.Colors[ImGuiCol_TableRowBgAlt]);
+                ImGui::Selectable(entry->TestName, false, ImGuiSelectableFlags_SpanAllColumns);
+                ImGui::PopStyleColor(3);
+                if (ImGui::IsItemHovered())
+                {
+                    for (int i = 0; i < _VisibleLabelPointers.Size && _TableHoveredTest == -1; i++)
+                        if (strcmp(_VisibleLabelPointers.Data[i], test_name) == 0)
+                            _TableHoveredTest = i;
+                    _TableHoveredBatch = batch_index_sorted;
+                }
 
                 if (ImGui::BeginPopupContextItem())
                 {
                     if (entry == baseline_entry)
                         ImGui::BeginDisabled();
                     if (ImGui::MenuItem("Set as baseline"))
-                        _BaselineBatchIndex = batch_index;
+                        _BaselineBatchIndex = batch_index_sorted;
                     if (entry == baseline_entry)
                         ImGui::EndDisabled();
                     ImGui::EndPopup();
@@ -1286,19 +1301,6 @@ void ImGuiPerfLog::_ShowEntriesTable()
                     _InfoTableSortDirty = true;             // Force re-sorting.
                 }
             }
-
-            // FIXME: Aim to remove that direct access to table.... could use a selectable on first column?
-            ImGuiTable* table = ImGui::GetCurrentTable();
-            if (table->InnerClipRect.Contains(io.MousePos))
-                if (table->RowPosY1 < io.MousePos.y && io.MousePos.y < table->RowPosY2 - 1) // FIXME: RowPosY1/RowPosY2 may overlap between adjacent rows. Compensate for that.
-                {
-                    ImGui::TableSetBgColor(ImGuiTableBgTarget_RowBg0, ImGui::GetColorU32(ImGuiCol_Header));
-                    for (int i = 0; i < _VisibleLabelPointers.Size && _TableHoveredTest == -1; i++)
-                        if (strcmp(_VisibleLabelPointers.Data[i], test_name) == 0)
-                            _TableHoveredTest = i;
-                    _TableHoveredBatch = batch_index;
-                }
-
             ImGui::PopID();
         }
     }
