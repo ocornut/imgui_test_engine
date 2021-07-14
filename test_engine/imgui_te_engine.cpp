@@ -1170,7 +1170,8 @@ void ImGuiTestEngine_UpdateHooks(ImGuiTestEngine* engine)
     IM_ASSERT(ui_ctx->TestEngine == engine);
     ui_ctx->TestEngineHookItems = want_hooking;
 
-    ui_ctx->TestEngineHookIdInfo = 0;
+    if (engine->StackTool.QueryStackId != ui_ctx->TestEngineHookIdInfo)
+        ui_ctx->TestEngineHookIdInfo = 0;
     if (engine->StackTool.QueryIdInfoOutput != NULL)
         ui_ctx->TestEngineHookIdInfo = engine->StackTool.QueryIdInfoOutput->ID;
 }
@@ -1357,21 +1358,6 @@ void ImGuiTestEngineHook_ItemAdd(ImGuiContext* ui_ctx, const ImRect& bb, ImGuiID
         item->StatusFlags = (g.LastItemData.ID == id) ? g.LastItemData.StatusFlags : ImGuiItemStatusFlags_None;
     }
 
-    // Stack ID query
-    // (Note: this assume that the ID was computed with the current ID stack, which tends to be the case for our widget)
-    if (engine->StackTool.QueryStackId == id && engine->StackTool.QueryStep == 0)
-    {
-        //IM_ASSERT(engine->StackTool.Results.Size == 0); // double query OR id conflict?
-        engine->StackTool.QueryStep++;
-        engine->StackTool.Results.resize(window->IDStack.Size + 1);
-        for (int n = 0; n < window->IDStack.Size + 1; n++)
-        {
-            ImGuiStackLevelInfo info;
-            info.ID = (n < window->IDStack.Size) ? window->IDStack[n] : id;
-            engine->StackTool.Results[n] = info;
-        }
-    }
-
     // Gather Task (only 1 can be active)
     if (engine->GatherTask.InParentID != 0 && window->DC.NavLayerCurrent == ImGuiNavLayer_Main) // FIXME: Layer filter?
     {
@@ -1481,8 +1467,28 @@ void ImGuiTestEngineHook_Log(ImGuiContext* ui_ctx, const char* fmt, ...)
 
 void ImGuiTestEngineHook_IdInfo(ImGuiContext* ui_ctx, ImGuiDataType data_type, ImGuiID id, const void* data_id, const void* data_id_end)
 {
+    ImGuiContext& g = *ui_ctx;
     ImGuiTestEngine* engine = (ImGuiTestEngine*)ui_ctx->TestEngine;
+
+    // Stack ID query
+    // (Note: this assume that the ID was computed with the current ID stack, which tends to be the case for our widget)
+    ImGuiWindow* window = g.CurrentWindow;
+    if (engine->StackTool.QueryStackId == id && engine->StackTool.QueryStep == 0)
+    {
+        //IM_ASSERT(engine->StackTool.Results.Size == 0); // double query OR id conflict?
+        engine->StackTool.QueryStep++;
+        engine->StackTool.Results.resize(window->IDStack.Size + 1);
+        for (int n = 0; n < window->IDStack.Size + 1; n++)
+        {
+            ImGuiStackLevelInfo info;
+            info.ID = (n < window->IDStack.Size) ? window->IDStack[n] : id;
+            engine->StackTool.Results[n] = info;
+        }
+    }
+
     ImGuiStackLevelInfo* info = engine->StackTool.QueryIdInfoOutput;
+    if (info == NULL)
+        return;
     IM_ASSERT(info->ID == id);
 
     const int requested_stack_level = engine->StackTool.Results.index_from_ptr(info);

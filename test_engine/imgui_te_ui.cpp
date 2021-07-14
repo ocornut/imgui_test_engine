@@ -735,7 +735,7 @@ void    ImGuiStackTool::UpdateQueries(ImGuiTestEngine* engine)
     ImGuiID query_id = g.ActiveId ? g.ActiveId : g.HoveredIdPreviousFrame;
     if (QueryStackId != query_id)
     {
-        QueryStackId = query_id;
+        QueryStackId = g.TestEngineHookIdInfo = query_id;
         QueryStep = 0;
         QueryAllFinished = false;
         Results.resize(0);
