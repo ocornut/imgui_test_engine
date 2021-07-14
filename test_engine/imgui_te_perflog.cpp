@@ -848,19 +848,18 @@ void ImGuiPerfLog::ShowUI()
     ImGui::SameLine();
 
     // Align help button to the right.
-    float help_pos = ImGui::GetWindowContentRegionMax().x - style.FramePadding.x * 2 - ImGui::CalcTextSize("Help").x;
+    float help_pos = ImGui::GetWindowContentRegionMax().x - style.FramePadding.x * 2 - ImGui::CalcTextSize("?").x;
     if (help_pos > ImGui::GetCursorPosX())
         ImGui::SetCursorPosX(help_pos);
-    if (ImGui::Button("Help"))
-        ImGui::OpenPopup("Help");
 
-    // FIXME-PERFLOG: Move more of this to its more suitable location.
-    if (ImGui::BeginPopup("Help"))
+    ImGui::TextDisabled("?");
+    if (ImGui::IsItemHovered())
     {
+        ImGui::BeginTooltip();
         ImGui::BulletText("To change baseline build, double-click desired build in the legend.");
         ImGui::BulletText("Extra information is displayed when hovering bars of a particular perf test and holding SHIFT.");
         ImGui::BulletText("Double-click plot to fit plot into available area.");
-        ImGui::EndPopup();
+        ImGui::EndTooltip();
     }
 
     if (ImGui::BeginPopup("Filter builds"))
