@@ -31,6 +31,7 @@ struct ImGuiPerflogEntry
 };
 
 struct ImGuiPerfLogColumnInfo;
+struct ImGuiTestEngine;
 
 struct ImGuiPerfLog
 {
@@ -62,6 +63,7 @@ struct ImGuiPerfLog
     int                         _PlotHoverTest = -1;
     int                         _PlotHoverBatch = -1;
     bool                        _PlotHoverTestLabel = false;
+    bool                        _ReportGenerating = false;
 
     struct
     {
@@ -78,7 +80,7 @@ struct ImGuiPerfLog
     bool        LoadCSV(const char* filename = NULL);
     void        AddEntry(ImGuiPerflogEntry* entry);
 
-    void        ShowUI();
+    void        ShowUI(ImGuiTestEngine* engine);
     void        ViewOnly(const char* perf_name);
     void        ViewOnly(const char** perf_names);
     ImGuiPerflogEntry* GetEntryByBatchIdx(int idx, const char* perf_name = NULL);

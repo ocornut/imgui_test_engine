@@ -762,7 +762,7 @@ void ImGuiTestEngine_PerflogAppendToCSV(ImGuiPerfLog* perf_log, ImGuiPerflogEntr
         perf_log->AddEntry(entry);
 }
 
-void ImGuiPerfLog::ShowUI()
+void ImGuiPerfLog::ShowUI(ImGuiTestEngine* engine)
 {
     ImGuiStyle& style = ImGui::GetStyle();
 
@@ -846,6 +846,23 @@ void ImGuiPerfLog::ShowUI()
     if (ImGui::IsItemHovered())
         ImGui::SetTooltip("Use one color per branch. Disables baseline comparisons!");
     ImGui::SameLine();
+    if (_ReportGenerating && !ImGuiTestEngine_IsRunningTests(engine))
+    {
+        _ReportGenerating = false;
+        ImOsOpenInShell("capture_perf_report.html");
+    }
+    if (_FilteredData.empty())
+        ImGui::BeginDisabled();
+    if (ImGui::Button("Report"))
+    {
+        _ReportGenerating = true;
+        ImGuiTestEngine_QueueTests(engine, ImGuiTestGroup_Tests, "capture_perf_report");
+    }
+    if (_FilteredData.empty())
+        ImGui::BeginDisabled();
+    ImGui::SameLine();
+    if (ImGui::IsItemHovered())
+        ImGui::SetTooltip("Generate a report and open it in the browser.");
 
     // Align help button to the right.
     float help_pos = ImGui::GetWindowContentRegionMax().x - style.FramePadding.x * 2 - ImGui::CalcTextSize("?").x;
