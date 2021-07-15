@@ -412,6 +412,30 @@ void RegisterTests_Window(ImGuiTestEngine* e)
         IM_CHECK(ctx->GenericVars.Bool1 == false);
     };
 
+    // ## Test opening a popup after BeginPopup(), while window is out of focus. (#4308)
+    t = IM_REGISTER_TEST(e, "window", "window_popup_open_after");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::Begin("Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+        if (ImGui::BeginPopup("Popup"))
+        {
+            ImGui::Text("...");
+            ImGui::EndPopup();
+        }
+        ImGui::Button("Open");
+        ImGui::OpenPopupOnItemClick("Popup", ImGuiPopupFlags_MouseButtonRight);
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiContext& g = *ctx->UiContext;
+        ctx->SetRef("Window");
+        ctx->MouseClickOnVoid();                                                        // Ensure no window is focused.
+        ctx->ItemClick("Open", ImGuiMouseButton_Right, ImGuiTestOpFlags_NoFocusWindow); // Open popup without focusing window.
+        IM_CHECK(g.OpenPopupStack.Size == 1);
+        IM_CHECK_STR_EQ(g.OpenPopupStack[0].Window->Name, Str30f("##Popup_%08x", ctx->GetID("Popup")).c_str());
+    };
+
     // ## Test menus in a popup window (PR #3496).
 #if IMGUI_BROKEN_TESTS
     t = IM_REGISTER_TEST(e, "window", "window_popup_menu");
