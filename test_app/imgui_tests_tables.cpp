@@ -1627,6 +1627,8 @@ void RegisterTests_Table(ImGuiTestEngine* e)
     t = IM_REGISTER_TEST(e, "table", "table_item_width");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
+        ImGuiContext& g = *ctx->UiContext;
+
         ImGui::SetNextWindowSize(ImVec2(300, 200));
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
         ImGuiWindow* window = ImGui::GetCurrentWindow();
@@ -1641,13 +1643,13 @@ void RegisterTests_Table(ImGuiTestEngine* e)
             ImGui::PushItemWidth(-FLT_MIN);
             IM_CHECK_EQ(ImGui::CalcItemWidth(), column_width);
             ImGui::DragInt("##row 1 item 2", &ctx->GenericVars.Int1);
-            IM_CHECK_EQ(window->DC.LastItemRect.GetWidth(), column_width);
+            IM_CHECK_EQ(g.LastItemData.Rect.GetWidth(), column_width);
 
             ImGui::TableNextRow();
             ImGui::TableSetColumnIndex(0);
             ImGui::DragInt("##row 1 item 1", &ctx->GenericVars.Int1);
             IM_CHECK_EQ(ImGui::CalcItemWidth(), column_width);
-            IM_CHECK_EQ(window->DC.LastItemRect.GetWidth(), column_width);
+            IM_CHECK_EQ(g.LastItemData.Rect.GetWidth(), column_width);
             //ImGui::PopItemWidth(); // Intentionally left out as we currently allow this to be ignored
 
             ImGui::EndTable();
@@ -1667,7 +1669,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
             ImGui::PushItemWidth(60.0f);
             IM_CHECK_EQ(ImGui::CalcItemWidth(), 60.0f);
             ImGui::DragInt2("##row 1 item 1", &ctx->GenericVars.IntArray[0]);
-            IM_CHECK_EQ(window->DC.LastItemRect.GetWidth(), 60.0f);
+            IM_CHECK_EQ(g.LastItemData.Rect.GetWidth(), 60.0f);
             IM_CHECK_EQ(window->DC.ItemWidth, 60.0f);
 
             ImGui::TableNextRow();
@@ -2858,30 +2860,30 @@ void RegisterTests_Table(ImGuiTestEngine* e)
 
         if (ImGui::BeginTable("table1", 2, ImGuiTableFlags_Hideable))
         {
-            ImGuiWindow* window = ImGui::GetCurrentWindow();
+            ImGuiContext& g = *ctx->UiContext;
             ImGui::TableSetupColumn("One");
             ImGui::TableSetupColumn("Two", ImGuiTableColumnFlags_DefaultHide);
             ImGui::TableHeadersRow();
             for (int column_n = 0; column_n < 2; column_n++)
             {
                 ImGui::TableNextColumn();
-                IM_CHECK_EQ(window->DC.LastItemId, 0u);
-                IM_CHECK_EQ(window->DC.LastItemStatusFlags, 0);
+                IM_CHECK_EQ(g.LastItemData.ID, 0u);
+                IM_CHECK_EQ(g.LastItemData.StatusFlags, 0);
 
                 ImGui::Button(Str16f("%d", column_n).c_str());
                 if (column_n == 0)
                 {
                     // Visible column
-                    IM_CHECK_EQ(window->DC.LastItemId, ImGui::GetID("0"));
+                    IM_CHECK_EQ(g.LastItemData.ID, ImGui::GetID("0"));
                     if (ImGui::IsItemHovered())
-                        IM_CHECK(window->DC.LastItemStatusFlags & ImGuiItemStatusFlags_HoveredRect);
+                        IM_CHECK(g.LastItemData.StatusFlags & ImGuiItemStatusFlags_HoveredRect);
                 }
 
                 if (column_n == 1)
                 {
                     // Hidden column
-                    IM_CHECK_EQ(window->DC.LastItemId, 0u);
-                    IM_CHECK_EQ(window->DC.LastItemStatusFlags, 0);
+                    IM_CHECK_EQ(g.LastItemData.ID, 0u);
+                    IM_CHECK_EQ(g.LastItemData.StatusFlags, 0);
                 }
             };
             ImGui::EndTable();

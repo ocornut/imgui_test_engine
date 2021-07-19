@@ -1321,7 +1321,7 @@ void ImGuiTestEngineHook_ItemAdd(ImGuiContext* ui_ctx, const ImRect& bb, ImGuiID
         item->RectClipped.ClipWithFull(item->RectFull);
         item->NavLayer = window->DC.NavLayerCurrent;
         item->Depth = 0;
-        item->StatusFlags = (window->DC.LastItemId == id) ? window->DC.LastItemStatusFlags : ImGuiItemStatusFlags_None;
+        item->StatusFlags = (g.LastItemData.ID == id) ? g.LastItemData.StatusFlags : ImGuiItemStatusFlags_None;
     }
 
     // Stack ID query

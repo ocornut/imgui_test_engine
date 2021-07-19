@@ -623,7 +623,7 @@ void RegisterTests_Window(ImGuiTestEngine* e)
                     ImGui::SetScrollHereY(vars.TrackY / 29.0f);
 
                 ImRect clip_rect = ImGui::GetCurrentWindow()->ClipRect;
-                ImRect item_rect = ImGui::GetCurrentWindow()->DC.LastItemRect;
+                ImRect item_rect = ImGui::GetCurrentContext()->LastItemData.Rect;
                 vars.FullyVisible[y][x] = clip_rect.Contains(item_rect);
             }
         }
@@ -1167,9 +1167,9 @@ void RegisterTests_Layout(ImGuiTestEngine* e)
                 ImGui::DebugDrawItemRect(IM_COL32(255, 0, 0, 200));
                 draw_list->AddLine(ImVec2(window->Pos.x, window->DC.CursorMaxPos.y), ImVec2(window->Pos.x + window->Size.x, window->DC.CursorMaxPos.y), IM_COL32(255, 255, 0, 100));
                 if (label_line_count > 1)
-                    IM_CHECK_EQ_NO_RET(window->DC.CursorMaxPos.y, window->DC.LastItemRect.Max.y);
+                    IM_CHECK_EQ_NO_RET(window->DC.CursorMaxPos.y, g.LastItemData.Rect.Max.y);
 
-                const float current_height = window->DC.LastItemRect.Max.y - y;
+                const float current_height = g.LastItemData.Rect.Max.y - y;
                 const float expected_height = g.FontSize * label_line_count + expected_padding;
                 IM_CHECK_EQ_NO_RET(current_height, expected_height);
             }

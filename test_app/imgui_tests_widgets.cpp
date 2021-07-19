@@ -1398,38 +1398,39 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
     t = IM_REGISTER_TEST(e, "widgets", "widgets_item_flags_stack");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
+        ImGuiContext& g = *ctx->UiContext;
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
-        IM_CHECK_EQ(ImGui::GetItemFlags(), 0);
+        IM_CHECK_EQ(g.CurrentItemFlags, 0);
 
         ImGui::BeginChild("child1", ImVec2(100, 100));
-        IM_CHECK_EQ(ImGui::GetItemFlags(), 0);
+        IM_CHECK_EQ(g.CurrentItemFlags, 0);
         ImGui::Button("enable button in child1");
         ImGui::EndChild();
 
         ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
         ImGui::Button("disabled button in parent");
 
-        IM_CHECK_EQ(ImGui::GetItemFlags(), ImGuiItemFlags_Disabled);
+        IM_CHECK_EQ(g.CurrentItemFlags, ImGuiItemFlags_Disabled);
         ImGui::BeginChild("child1"); // Append
-        IM_CHECK_EQ(ImGui::GetItemFlags(), ImGuiItemFlags_Disabled);
+        IM_CHECK_EQ(g.CurrentItemFlags, ImGuiItemFlags_Disabled);
         ImGui::Button("disabled button in child1");
         ImGui::EndChild();
 
         ImGui::BeginChild("child2", ImVec2(100, 100)); // New
-        IM_CHECK_EQ(ImGui::GetItemFlags(), ImGuiItemFlags_Disabled);
+        IM_CHECK_EQ(g.CurrentItemFlags, ImGuiItemFlags_Disabled);
         ImGui::Button("disabled button in child2");
         ImGui::EndChild();
 
         ImGui::PopItemFlag();
 
 #if IMGUI_VERSION_NUM >= 18207
-        IM_CHECK_EQ(ImGui::GetItemFlags(), 0);
+        IM_CHECK_EQ(g.CurrentItemFlags, 0);
         ImGui::Begin("Test Window 2", NULL, ImGuiWindowFlags_NoSavedSettings);
         ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
         ImGui::End();
-        IM_CHECK_EQ(ImGui::GetItemFlags(), ImGuiItemFlags_Disabled);
+        IM_CHECK_EQ(g.CurrentItemFlags, ImGuiItemFlags_Disabled);
         ImGui::PopItemFlag();
-        IM_CHECK_EQ(ImGui::GetItemFlags(), 0);
+        IM_CHECK_EQ(g.CurrentItemFlags, 0);
 #endif
 
         ImGui::End();
@@ -2344,45 +2345,47 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
     {
         ImGui::SetNextWindowSize(ImVec2(300, 100), ImGuiCond_Always);
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+
+        ImGuiContext& g = *ImGui::GetCurrentContext();
         ImGuiWindow* window = ImGui::GetCurrentWindow();
 
         ImGui::SetNextItemOpen(true);
         if (ImGui::TreeNodeEx("Parent"))
         {
-            // Interaction rect does not span entire width of work area.
-            IM_CHECK(window->DC.LastItemRect.Max.x < window->WorkRect.Max.x);
+            // Interaction rect zoes not span entire width of work area.
+            IM_CHECK(g.LastItemData.Rect.Max.x < window->WorkRect.Max.x);
             // But it starts at very beginning of WorkRect for first tree level.
-            IM_CHECK(window->DC.LastItemRect.Min.x == window->WorkRect.Min.x);
+            IM_CHECK(g.LastItemData.Rect.Min.x == window->WorkRect.Min.x);
             ImGui::SetNextItemOpen(true);
             if (ImGui::TreeNodeEx("Regular"))
             {
                 // Interaction rect does not span entire width of work area.
-                IM_CHECK(window->DC.LastItemRect.Max.x < window->WorkRect.Max.x);
-                IM_CHECK(window->DC.LastItemRect.Min.x > window->WorkRect.Min.x);
+                IM_CHECK(g.LastItemData.Rect.Max.x < window->WorkRect.Max.x);
+                IM_CHECK(g.LastItemData.Rect.Min.x > window->WorkRect.Min.x);
                 ImGui::TreePop();
             }
             ImGui::SetNextItemOpen(true);
             if (ImGui::TreeNodeEx("SpanAvailWidth", ImGuiTreeNodeFlags_SpanAvailWidth))
             {
                 // Interaction rect matches visible frame rect
-                IM_CHECK((window->DC.LastItemStatusFlags & ImGuiItemStatusFlags_HasDisplayRect) != 0);
-                IM_CHECK(window->DC.LastItemDisplayRect.Min == window->DC.LastItemRect.Min);
-                IM_CHECK(window->DC.LastItemDisplayRect.Max == window->DC.LastItemRect.Max);
+                IM_CHECK((g.LastItemData.StatusFlags & ImGuiItemStatusFlags_HasDisplayRect) != 0);
+                IM_CHECK(g.LastItemData.DisplayRect.Min == g.LastItemData.Rect.Min);
+                IM_CHECK(g.LastItemData.DisplayRect.Max == g.LastItemData.Rect.Max);
                 // Interaction rect extends to the end of the available area.
-                IM_CHECK(window->DC.LastItemRect.Max.x == window->WorkRect.Max.x);
+                IM_CHECK(g.LastItemData.Rect.Max.x == window->WorkRect.Max.x);
                 ImGui::TreePop();
             }
             ImGui::SetNextItemOpen(true);
             if (ImGui::TreeNodeEx("SpanFullWidth", ImGuiTreeNodeFlags_SpanFullWidth))
             {
                 // Interaction rect matches visible frame rect
-                IM_CHECK((window->DC.LastItemStatusFlags & ImGuiItemStatusFlags_HasDisplayRect) != 0);
-                IM_CHECK(window->DC.LastItemDisplayRect.Min == window->DC.LastItemRect.Min);
-                IM_CHECK(window->DC.LastItemDisplayRect.Max == window->DC.LastItemRect.Max);
+                IM_CHECK((g.LastItemData.StatusFlags & ImGuiItemStatusFlags_HasDisplayRect) != 0);
+                IM_CHECK(g.LastItemData.DisplayRect.Min == g.LastItemData.Rect.Min);
+                IM_CHECK(g.LastItemData.DisplayRect.Max == g.LastItemData.Rect.Max);
                 // Interaction rect extends to the end of the available area.
-                IM_CHECK(window->DC.LastItemRect.Max.x == window->WorkRect.Max.x);
+                IM_CHECK(g.LastItemData.Rect.Max.x == window->WorkRect.Max.x);
                 // ImGuiTreeNodeFlags_SpanFullWidth also extends interaction rect to the left.
-                IM_CHECK(window->DC.LastItemRect.Min.x == window->WorkRect.Min.x);
+                IM_CHECK(g.LastItemData.Rect.Min.x == window->WorkRect.Min.x);
                 ImGui::TreePop();
             }
             ImGui::TreePop();
@@ -2675,6 +2678,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
     {
         const char* items[] = { "AAAA", "BBBB", "CCCC", "DDDD", "EEEE" };
 
+        ImGuiContext& g = *ImGui::GetCurrentContext();
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
         ImGui::Text("Custom preview:");
 
@@ -2682,7 +2686,9 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
             ImGui::SetNextItemWidth(ImGui::GetFrameHeight() * 2.0f);
 
         const ImVec2 color_square_size = ImVec2(ImGui::GetFontSize(), ImGui::GetFontSize());
-        if (ImGui::BeginCombo("combo custom", "", ImGuiComboFlags_CustomPreview))
+        bool open = ImGui::BeginCombo("combo custom", "", ImGuiComboFlags_CustomPreview);
+        ImRect combo_r = g.LastItemData.Rect;
+        if (open)
         {
             for (int n = 0; n < 5; n++)
             {
@@ -2697,7 +2703,6 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ImGuiWindow* window = ImGui::GetCurrentWindow();
         int old_cmd_buffer_size = window->DrawList->CmdBuffer.Size;
 
-        ImRect combo_r = window->DC.LastItemRect;
         if (ImGui::BeginComboPreview())
         {
             ImGui::ColorButton("##color", ImVec4(1.0f, 0.5f, 0.5f, 1.0f), ImGuiColorEditFlags_NoTooltip | ImGuiColorEditFlags_NoDragDrop, color_square_size);
@@ -2759,21 +2764,22 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
     t = IM_REGISTER_TEST(e, "widgets", "widgets_label_text");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
+        ImGuiContext& g = *ImGui::GetCurrentContext();
+
         ImGui::SetNextWindowSize(ImVec2(500, 500), ImGuiCond_Appearing);
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
-        ImGuiWindow* window = ImGui::GetCurrentWindow();
 
         ImGui::Separator();
         ImGui::LabelText("Single line label", "Single line text");
-        IM_CHECK_EQ(window->DC.LastItemRect.GetHeight(), ImGui::GetFrameHeight());
+        IM_CHECK_EQ(g.LastItemData.Rect.GetHeight(), ImGui::GetFrameHeight());
 
         ImGui::Separator();
         ImGui::LabelText("Multi\n line\n label", "Single line text");
-        IM_CHECK_EQ(window->DC.LastItemRect.GetHeight(), ImGui::GetTextLineHeight() * 3.0f + ImGui::GetStyle().FramePadding.y * 2.0f);
+        IM_CHECK_EQ(g.LastItemData.Rect.GetHeight(), ImGui::GetTextLineHeight() * 3.0f + ImGui::GetStyle().FramePadding.y * 2.0f);
 
         ImGui::Separator();
         ImGui::LabelText("Single line label", "Multi\n line\n text");
-        IM_CHECK_EQ(window->DC.LastItemRect.GetHeight(), ImGui::GetTextLineHeight() * 3.0f + ImGui::GetStyle().FramePadding.y * 2.0f);
+        IM_CHECK_EQ(g.LastItemData.Rect.GetHeight(), ImGui::GetTextLineHeight() * 3.0f + ImGui::GetStyle().FramePadding.y * 2.0f);
 
         ImGui::End();
     };
@@ -3687,6 +3693,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
     t->SetUserDataType<DragMouseButtonsVars>();
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
+        ImGuiContext& g = *ImGui::GetCurrentContext();
         DragMouseButtonsVars& vars = ctx->GetUserData<DragMouseButtonsVars>();
         ImGui::SetNextWindowSize(ImVec2(0, 0), ImGuiCond_Appearing);
         if (ImGui::Begin("Window", NULL, ImGuiWindowFlags_NoSavedSettings))
@@ -3695,8 +3702,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
 
             // This is a workaround for button widget not reacting to mouse clicks other than the left one.
             // See https://github.com/ocornut/imgui/issues/3885 for more details.
-            ImGuiWindow* window = ImGui::GetCurrentWindow();
-            ImGui::ButtonBehavior(window->DC.LastItemRect, window->DC.LastItemId, NULL, NULL, ImGuiButtonFlags_MouseButtonLeft | ImGuiButtonFlags_MouseButtonMiddle | ImGuiButtonFlags_MouseButtonRight);
+            ImGui::ButtonBehavior(g.LastItemData.Rect, g.LastItemData.ID, NULL, NULL, ImGuiButtonFlags_MouseButtonLeft | ImGuiButtonFlags_MouseButtonMiddle | ImGuiButtonFlags_MouseButtonRight);
 
             if (ImGui::BeginDragDropSource())
             {

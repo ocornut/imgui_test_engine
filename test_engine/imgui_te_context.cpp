@@ -1081,7 +1081,7 @@ void    ImGuiTestContext::MouseMove(ImGuiTestRef ref, ImGuiTestOpFlags flags)
     // Focus again in case something made us lost focus (which could happen on a simple hover)
     if (!(flags & ImGuiTestOpFlags_NoFocusWindow))
     {
-        LogDebug("Window '%s' not focused anymore, focusing again", window->Name);
+        //LogDebug("Window '%s' not focused anymore, focusing again", window->Name);
         WindowBringToFront(window);// , ImGuiTestOpFlags_Verbose);
 
         // Some windows are refusing to get focused.... e.g. MainMenuBar will relinguish focus... need to hide other windows.
