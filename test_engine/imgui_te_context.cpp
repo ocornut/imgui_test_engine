@@ -2543,7 +2543,8 @@ void    ImGuiTestContext::PopupCloseOne()
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
     LogDebug("PopupCloseOne");
     ImGuiContext& g = *UiContext;
-    ImGui::ClosePopupToLevel(g.OpenPopupStack.Size - 1, true);    // FIXME
+    if (g.OpenPopupStack.Size > 0)
+        ImGui::ClosePopupToLevel(g.OpenPopupStack.Size - 1, true);    // FIXME
 }
 
 void    ImGuiTestContext::PopupCloseAll()
@@ -2553,7 +2554,9 @@ void    ImGuiTestContext::PopupCloseAll()
 
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
     LogDebug("PopupCloseAll");
-    ImGui::ClosePopupToLevel(0, true);    // FIXME
+    ImGuiContext& g = *UiContext;
+    if (g.OpenPopupStack.Size > 0)
+        ImGui::ClosePopupToLevel(0, true);    // FIXME
 }
 
 #ifdef IMGUI_HAS_DOCK
