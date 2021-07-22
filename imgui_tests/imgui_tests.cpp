@@ -31,6 +31,7 @@
 
 // Helpers
 static inline bool operator==(const ImVec2& lhs, const ImVec2& rhs)     { return lhs.x == rhs.x && lhs.y == rhs.y; }    // for IM_CHECK_EQ()
+static inline bool operator!=(const ImVec2& lhs, const ImVec2& rhs)     { return lhs.x != rhs.x || lhs.y != rhs.y; }    // for IM_CHECK_NE()
 
 //-------------------------------------------------------------------------
 // Ideas/Specs for future tests
@@ -600,6 +601,279 @@ void RegisterTests_Window(ImGuiTestEngine* e)
         IM_CHECK(io.WantCaptureMouseUnlessPopupClose == true);
 
         ctx->PopupCloseAll();
+    };
+#endif
+
+#if IMGUI_VERSION_NUM >= 18517
+    // ## Test popups not being interrupted by various appearing elements. (#4317)
+    t = IM_REGISTER_TEST(e, "window", "window_popup_interruptions");
+    struct WindowPopupWithWindowsVars { bool IsModalPopup[2] = { 0, 0 }; bool OpenPopup[2] = { 0, 0 }; int Variant = 0; };
+    t->SetVarsDataType<WindowPopupWithWindowsVars>();
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiContext& g = *ctx->UiContext;
+        WindowPopupWithWindowsVars& vars = ctx->GetVars<WindowPopupWithWindowsVars>();
+
+        if (g.IO.KeyShift)
+            switch (vars.Variant)
+            {
+            case 1:
+                // Remain open when main menu bar is appearing.
+                ImGui::BeginMainMenuBar();
+                ImGui::EndMainMenuBar();
+                break;
+            case 2:
+                // Modal remains open when unrelated window is appearing, popup closes.
+                ImGui::Begin("FocusOnAppearing", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
+                ImGui::TextUnformatted("...");
+                ImGui::End();
+                break;
+            case 3:
+                // Remain open when unrelated no-focus window is appearing.
+                ImGui::Begin("NoFocusOnAppearing", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoFocusOnAppearing);
+                ImGui::TextUnformatted("...");
+                ImGui::End();
+                break;
+            case 4:
+                // Remain open when tooltip is appearing.
+                ImGui::SetTooltip("...");
+                break;
+            default:
+                break;
+            }
+
+        ImGui::Begin("Interrupts", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
+
+        if (ctx->IsGuiFuncOnly())
+        {
+            static const char* interrupt_kind[] = {
+                "0. Nested Windows from Popup/Modal",
+                "1. MainMenuBar",
+                "2. Window without _NoFocusOnAppearing",
+                "3. Window with _NoFocusOnAppearing",
+                "4. Tooltip",
+            };
+            ImGui::Checkbox("Popup1 is modal", &vars.IsModalPopup[0]);
+            ImGui::Checkbox("Popup2 is modal", &vars.IsModalPopup[1]);
+            ImGui::Combo("Interrupt Kind", &vars.Variant, interrupt_kind, IM_ARRAYSIZE(interrupt_kind));
+            ImGui::Text("(Hold SHIFT to display interrupting window)");
+        }
+
+        float spacing = ImFloor(ImGui::GetFontSize() * 2.0f);
+        ImVec2 pos = ImGui::GetWindowPos() + ImVec2(spacing, ImGui::GetWindowSize().y + spacing);
+        ImGui::SetNextWindowPos(pos, ImGuiCond_Appearing);
+
+        bool is_open = false;
+        if (vars.IsModalPopup[0])
+            is_open = ImGui::BeginPopupModal("Popup1", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
+        else
+            is_open = ImGui::BeginPopup("Popup1", ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
+        if (is_open)
+        {
+            ImGui::Text("This is Popup1%s", vars.IsModalPopup[0] ? " (modal)" : "");
+
+            if (ImGui::Button("Close") || ImGui::IsKeyPressedMap(ImGuiKey_Escape))
+                ImGui::CloseCurrentPopup();
+
+            if (ImGui::Button("Open Popup2") || vars.OpenPopup[1])
+            {
+                vars.OpenPopup[1] = false;
+                ImGui::OpenPopup("Popup2");
+            }
+
+            if (vars.Variant == 0)
+            {
+                // Newly appearing windows should appear above this window.
+                pos += ImVec2(spacing, spacing);
+                ImGui::SetNextWindowPos(pos, ImGuiCond_Appearing);
+
+                ImGui::Begin("Window0");
+                ImGui::TextUnformatted("Another window.");
+                ImGui::End();
+
+                // Remain open when one or more windows are created from within a popup. Windows also are movable.
+                if (g.IO.KeyShift)
+                {
+                    pos += ImVec2(spacing, spacing);
+                    ImGui::SetNextWindowPos(pos, ImGuiCond_Appearing);
+                    //ImGui::SetNextWindowPos(ImGui::GetMainViewport()->Pos + ImVec2(100, 100), ImGuiCond_Appearing);
+                    ImGui::Begin("Window1", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
+                    ImGui::BeginChild("C", ImVec2(100, 10));
+
+                    // A window nested inside of a child window.
+                    pos += ImVec2(spacing, spacing);
+                    ImGui::SetNextWindowPos(pos, ImGuiCond_Appearing);
+                    //ImGui::SetNextWindowPos(ImGui::GetMainViewport()->Pos + ImVec2(200, 200), ImGuiCond_Appearing);
+                    ImGui::Begin("Window2", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
+                    ImGui::SetCursorPosX(100);  // Make full title visible.
+                    ImGui::End();
+
+                    ImGui::EndChild();
+                    ImGui::End();
+                }
+            }
+
+            // A second popup layer. Another popup is opened, one
+            pos += ImVec2(spacing, spacing);
+            ImGui::SetNextWindowPos(pos, ImGuiCond_Appearing);
+
+            if (vars.IsModalPopup[1])
+                is_open = ImGui::BeginPopupModal("Popup2", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
+            else
+                is_open = ImGui::BeginPopup("Popup2", ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
+            if (is_open)
+            {
+                ImGui::Text("This is Popup2%s", vars.IsModalPopup[1] ? " (modal)" : "");
+                if (ImGui::Button("Close Popup2") || ImGui::IsKeyPressedMap(ImGuiKey_Escape))
+                    ImGui::CloseCurrentPopup();
+                ImGui::EndPopup();
+            }
+
+            ImGui::EndPopup();
+        }
+
+        if (ImGui::Button("Open Popup1") || vars.OpenPopup[0])
+        {
+            vars.OpenPopup[0] = false;
+            ImGui::OpenPopup("Popup1");
+        }
+
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiContext& g = *ctx->UiContext;
+        WindowPopupWithWindowsVars& vars = ctx->GetVars<WindowPopupWithWindowsVars>();
+        ImVec2 window_move_dest = ctx->GetMainViewportPos() + ImVec2(300.0f, 300.0f);
+        ctx->SetRef("Interrupts");
+
+        auto FindWindowDisplayIndex = [ctx](ImGuiTestRef window_ref)
+        {
+            ImGuiWindow* window = ctx->GetWindowByRef(window_ref);
+            IM_ASSERT(window != NULL);
+            return ImGui::FindWindowDisplayIndex(window);
+        };
+
+        auto OpenPopup = [ctx, &vars](int n) { IM_ASSERT(n < IM_ARRAYSIZE(vars.OpenPopup)); vars.OpenPopup[n] = true; ctx->Yield(2); };
+
+        for (int popup_kind = 0; popup_kind < 4; popup_kind++)
+        {
+            vars.IsModalPopup[0] = (popup_kind & 1) != 0;
+            vars.IsModalPopup[1] = (popup_kind & 2) != 0;
+            vars.Variant = 0;
+
+            // .
+            // └── Popup1                                                   // Remains open on interaction with nested window
+            //     ├── Window0                                              // Newly appearing windows must appear above this window
+            //     └── Window1                                              // Appears, is freely interactable with
+            //         └── C                                                // Child window
+            //             └── Window2                                      // Appears, is freely interactable with
+            OpenPopup(0);
+            ImGuiWindow* popup1 = ctx->GetWindowByRef(vars.IsModalPopup[0] ? "Popup1" : Str30f("##Popup_%08x", ctx->GetID("Popup1")).c_str());
+            ImGuiWindow* window0 = ctx->GetWindowByRef("Window0");
+            IM_CHECK_EQ(g.NavWindow, window0);
+            IM_CHECK_EQ(popup1->Active, true);
+            ctx->KeyDownMap(ImGuiKey_COUNT, ImGuiKeyModFlags_Shift);            // "Window1" and "Window2" appear
+            IM_CHECK_LT(FindWindowDisplayIndex(popup1->Name), FindWindowDisplayIndex("Window0"));
+            IM_CHECK_LT(FindWindowDisplayIndex("Window0"), FindWindowDisplayIndex("Window1"));
+            IM_CHECK_LT(FindWindowDisplayIndex("Window1"), FindWindowDisplayIndex("Window2"));
+            IM_CHECK_NE(ctx->GetWindowByRef("Window1")->Pos, window_move_dest);
+            IM_CHECK_NE(ctx->GetWindowByRef("Window2")->Pos, window_move_dest);
+            ctx->WindowMove("Window1", window_move_dest, ImVec2(0.0f, 0.0f), ImGuiTestOpFlags_NoFocusWindow); // Avoid forceful FocusWindow()
+            ctx->WindowMove("Window2", window_move_dest, ImVec2(0.0f, 0.0f), ImGuiTestOpFlags_NoFocusWindow); // Avoid forceful FocusWindow()
+            IM_CHECK_EQ(ctx->GetWindowByRef("Window1")->Pos, window_move_dest); // Window can move
+            IM_CHECK_EQ(ctx->GetWindowByRef("Window2")->Pos, window_move_dest); // Window can move
+            IM_CHECK_EQ(popup1->Active, true);                                  // Popup/modal remains active
+            ctx->KeyUpMap(ImGuiKey_COUNT, ImGuiKeyModFlags_Shift);
+            ctx->PopupCloseAll();
+
+            // .
+            // └── Popup1                                                   // Remains open on interaction with nested window
+            //     ├── Window0                                              // Newly appearing windows must appear above this window
+            //     ├── Window1                                              // Appears
+            //     │   └── C                                                // Child window
+            //     │       └── Window2                                      // Appears
+            //     └── Popup2                                               // Blocks interactions with appearing windows when its a modal, or closes when its a popup
+            OpenPopup(0);
+            IM_CHECK_EQ(g.NavWindow, window0);
+            IM_CHECK_EQ(popup1->Active, true);
+            OpenPopup(1);
+            ImGuiWindow* popup2 = g.NavWindow;
+            IM_CHECK_EQ(g.NavWindow, popup2);
+            IM_CHECK_EQ(popup2->Active, true);
+            ctx->KeyDownMap(ImGuiKey_COUNT, ImGuiKeyModFlags_Shift);        // "Window1" and "Window2" appear
+            IM_CHECK_LT(FindWindowDisplayIndex(popup1->Name), FindWindowDisplayIndex("Window0"));
+            IM_CHECK_LT(FindWindowDisplayIndex("Window0"), FindWindowDisplayIndex("Window1"));
+            IM_CHECK_LT(FindWindowDisplayIndex("Window1"), FindWindowDisplayIndex("Window2"));
+            if (vars.IsModalPopup[1])
+                IM_CHECK_LT(FindWindowDisplayIndex("Window2"), FindWindowDisplayIndex(popup2->Name)); // Appearing windows go below a modal
+            else
+                IM_CHECK_GT(FindWindowDisplayIndex("Window2"), FindWindowDisplayIndex(popup2->Name)); // but above a popup (which gets deactivated)
+            ctx->WindowMove("Window1", window_move_dest, ImVec2(0.0f, 0.0f), ImGuiTestOpFlags_NoFocusWindow);
+            ctx->WindowMove("Window2", window_move_dest, ImVec2(0.0f, 0.0f), ImGuiTestOpFlags_NoFocusWindow);
+            if (vars.IsModalPopup[1])                                       // Window interactions blocked by modal
+            {
+                IM_CHECK_NE(ctx->GetWindowByRef("Window1")->Pos, window_move_dest);
+                IM_CHECK_NE(ctx->GetWindowByRef("Window2")->Pos, window_move_dest);
+                IM_CHECK_EQ(popup2->Active, true);                          // Modal remains active
+            }
+            else                                                            // Windows can move
+            {
+                IM_CHECK_EQ(ctx->GetWindowByRef("Window1")->Pos, window_move_dest);
+                IM_CHECK_EQ(ctx->GetWindowByRef("Window2")->Pos, window_move_dest);
+                IM_CHECK_EQ(popup2->Active, false);                         // Popup is closed
+            }
+            IM_CHECK_EQ(popup1->Active, true);                              // Popup/modal remains active
+            ctx->KeyUpMap(ImGuiKey_COUNT, ImGuiKeyModFlags_Shift);
+            ctx->PopupCloseAll();
+
+            // .
+            // ├── MainMenuBar|FocusOnAppearing                             // Appears
+            // └── Popup1                                                   // Remains open when modal, gets closed when popup
+            for (int i = 0; i < 2; i++)
+            {
+                // 1. MainMenuBar appears
+                // 2. Unrelated window without _NoFocusOnAppearing flag appears
+                vars.Variant++;
+                OpenPopup(0);
+                IM_CHECK_EQ(g.NavWindow, popup1);
+                IM_CHECK_EQ(popup1->Active, true);
+                ctx->KeyDownMap(ImGuiKey_COUNT, ImGuiKeyModFlags_Shift);    // Window appears
+                if (vars.IsModalPopup[0])
+                {
+                    IM_CHECK_EQ(g.NavWindow, popup1);                       // Modal state remains unchanged
+                    IM_CHECK_EQ(popup1->Active, true);
+                }
+                else
+                {
+                    if (vars.Variant == 1)
+                        IM_CHECK_STR_EQ(g.NavWindow->Name, "Interrupts");  // Popup closes as window does not have _NoFocus flag
+                    else
+                        IM_CHECK_STR_EQ(g.NavWindow->Name, "FocusOnAppearing");
+                    IM_CHECK_EQ(popup1->Active, false);
+                }
+                ctx->KeyUpMap(ImGuiKey_COUNT, ImGuiKeyModFlags_Shift);
+                ctx->PopupCloseAll();
+            }
+
+            // .
+            // ├── NoFocusOnAppearing|Tooltip                               // Appears
+            // └── Popup1                                                   // Remains open when modal, gets closed when popup
+            for (int i = 0; i < 2; i++)
+            {
+                // 3. Unrelated window with _NoFocusOnAppearing flag appears
+                // 4. Tooltip appears
+                vars.Variant++;
+                OpenPopup(0);
+                IM_CHECK_EQ(g.NavWindow, popup1);
+                IM_CHECK_EQ(popup1->Active, true);
+                ctx->KeyDownMap(ImGuiKey_COUNT, ImGuiKeyModFlags_Shift);    // _NoFocusOnAppearing window appears
+                IM_CHECK_EQ(g.NavWindow, popup1);                           // Popup/modal state remains unchanged
+                IM_CHECK_EQ(popup1->Active, true);
+                ctx->KeyUpMap(ImGuiKey_COUNT, ImGuiKeyModFlags_Shift);
+                ctx->PopupCloseAll();
+            }
+        }
     };
 #endif
 
