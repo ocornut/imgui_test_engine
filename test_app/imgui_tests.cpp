@@ -433,7 +433,8 @@ void RegisterTests_Window(ImGuiTestEngine* e)
         ctx->MouseClickOnVoid();                                                        // Ensure no window is focused.
         ctx->ItemClick("Open", ImGuiMouseButton_Right, ImGuiTestOpFlags_NoFocusWindow); // Open popup without focusing window.
         IM_CHECK(g.OpenPopupStack.Size == 1);
-        IM_CHECK_STR_EQ(g.OpenPopupStack[0].Window->Name, Str30f("##Popup_%08x", ctx->GetID("Popup")).c_str());
+        Str30f popup_name("##Popup_%08x", ctx->GetID("Popup"));
+        IM_CHECK_STR_EQ(g.OpenPopupStack[0].Window->Name, popup_name.c_str());
     };
 
     // ## Test menus in a popup window (PR #3496).
