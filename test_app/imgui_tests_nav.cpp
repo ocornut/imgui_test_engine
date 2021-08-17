@@ -1087,6 +1087,8 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
                 ImGui::SliderFloat(label, &vars.Floats[n], 0.0f, 1.0f);
             if (vars.WidgetType == 2)
                 ImGui::DragFloat(label, &vars.Floats[n], 0.1f, 0.0f, 1.0f);
+            if (vars.WidgetType == 3)
+                ImGui::InputTextMultiline(label, vars.Bufs[n], IM_ARRAYSIZE(vars.Bufs[n]));
         };
 
         out_widget("Item0", 0);
@@ -1107,7 +1109,7 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
         auto& vars = ctx->GetUserData<TabbingVars>();
 
         ctx->SetRef("Test Window");
-        for (vars.WidgetType = 0; vars.WidgetType < 3; vars.WidgetType++)
+        for (vars.WidgetType = 0; vars.WidgetType < 4; vars.WidgetType++)
             for (vars.Step = 0; vars.Step < 2; vars.Step++)
             {
 #if !IMGUI_BROKEN_TESTS
