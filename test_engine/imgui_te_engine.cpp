@@ -435,6 +435,9 @@ void ImGuiTestEngine_ClearInput(ImGuiTestEngine* engine)
     ImGuiIO& simulated_io = engine->Inputs.SimulatedIO;
     simulated_io.KeyCtrl = simulated_io.KeyShift = simulated_io.KeyAlt = simulated_io.KeySuper = false;
     simulated_io.KeyMods = ImGuiKeyModFlags_None;
+#if IMGUI_VERSION_NUM >= 18314
+    simulated_io.KeyModsPrev = ImGuiKeyModFlags_None;
+#endif
     memset(simulated_io.MouseDown, 0, sizeof(simulated_io.MouseDown));
     memset(simulated_io.KeysDown, 0, sizeof(simulated_io.KeysDown));
     memset(simulated_io.NavInputs, 0, sizeof(simulated_io.NavInputs));
@@ -532,7 +535,7 @@ void ImGuiTestEngine_ApplyInputToImGuiContext(ImGuiTestEngine* engine)
         simulated_io.KeyAlt   = (engine->Inputs.KeyMods & ImGuiKeyModFlags_Alt) != 0;
         simulated_io.KeyShift = (engine->Inputs.KeyMods & ImGuiKeyModFlags_Shift) != 0;
         simulated_io.KeySuper = (engine->Inputs.KeyMods & ImGuiKeyModFlags_Super) != 0;
-        simulated_io.KeyMods  = (engine->Inputs.KeyMods);
+        //simulated_io.KeyMods  = (engine->Inputs.KeyMods);
 
         // Mouse wheel
         // [OSX] Simulate OSX behavior of automatically swapping mouse wheel axis when SHIFT is held.
@@ -553,7 +556,7 @@ void ImGuiTestEngine_ApplyInputToImGuiContext(ImGuiTestEngine* engine)
         COPY_FIELD(KeyShift);
         COPY_FIELD(KeyAlt);
         COPY_FIELD(KeySuper);
-        COPY_FIELD(KeyMods);
+        //COPY_FIELD(KeyMods);
         COPY_FIELD(KeysDown);
         COPY_FIELD(NavInputs);
         #undef COPY_FIELD
