@@ -1185,11 +1185,11 @@ void ImGuiPerfLog::_ShowEntriesTable()
                 if (ImGui::BeginPopupContextItem())
                 {
                     if (entry == baseline_entry)
-                        ImGui::PushDisabled();
+                        ImGui::BeginDisabled();
                     if (ImGui::MenuItem("Set as baseline"))
                         _BaselineBatchIndex = batch_index;
                     if (entry == baseline_entry)
-                        ImGui::PopDisabled();
+                        ImGui::EndDisabled();
                     ImGui::EndPopup();
                 }
             }
