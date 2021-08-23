@@ -1071,11 +1071,16 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
 
         ImGuiWindowFlags flags = ImGuiWindowFlags_NoSavedSettings;
         if (vars.Step == 0)
+        {
+            ImGui::SetNextWindowPos(ImGui::GetMainViewport()->WorkPos + ImVec2(10, 10));
             flags |= ImGuiWindowFlags_AlwaysAutoResize;
+        }
         if (vars.Step == 1)
             ImGui::SetNextWindowSize(ImVec2(100, 1)); // Ensure items are clipped
         ImGui::Begin("Test Window", NULL, flags);
 
+        //ImGui::SetNextItemWidth(50);
+        //ImGui::SliderInt("WidgetType", &vars.WidgetType, 0, 3);
         for (int n = 0; n < 10; n++)
             ImGui::Text("Filler");
 
@@ -1088,7 +1093,7 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
             if (vars.WidgetType == 2)
                 ImGui::DragFloat(label, &vars.Floats[n], 0.1f, 0.0f, 1.0f);
             if (vars.WidgetType == 3)
-                ImGui::InputTextMultiline(label, vars.Bufs[n], IM_ARRAYSIZE(vars.Bufs[n]));
+                ImGui::InputTextMultiline(label, vars.Bufs[n], IM_ARRAYSIZE(vars.Bufs[n]), ImVec2(0, ImGui::GetTextLineHeight() * 2));
         };
 
         out_widget("Item0", 0);
