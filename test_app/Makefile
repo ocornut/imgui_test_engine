@@ -43,9 +43,7 @@ ifneq ($(BACKEND_LIB),)
 	endif
 	LIBS = $(shell pkg-config --libs $(BACKEND_LIB))
 	CFLAGS += $(shell pkg-config --cflags $(BACKEND_LIB))
-	CFLAGS += -I$(IMGUI_DIR)/examples/libs/gl3w
-	CFLAGS += -DIMGUI_IMPL_OPENGL_LOADER_GL3W
-	SOURCES += $(IMGUI_DIR)/backends/imgui_impl_opengl3.cpp $(IMGUI_DIR)/examples/libs/gl3w/GL/gl3w.c
+	SOURCES += $(IMGUI_DIR)/backends/imgui_impl_opengl3.cpp
 endif
 
 LIBS += -lpthread
@@ -112,9 +110,6 @@ endif
 
 %.o:$(IMGUI_DIR)/backends/%.cpp
 	$(CXX) $(CFLAGS) $(CXXFLAGS) -c -o $@ $<
-
-%.o:$(IMGUI_DIR)/examples/libs/gl3w/GL/%.c
-	$(CC) $(CFLAGS) -w -c -o $@ $<
 
 all: $(EXE)
 	@echo Build complete for $(ECHO_MESSAGE)

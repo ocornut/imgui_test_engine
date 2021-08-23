@@ -550,58 +550,8 @@ static LRESULT WINAPI ImGuiApp_ImplWin32_WndProc(HWND hWnd, UINT msg, WPARAM wPa
 #include <GLES3/gl3.h>          // Use GL ES 3
 #endif
 #else
-// About Desktop OpenGL function loaders:
-//  Modern desktop OpenGL doesn't have a standard portable header file to load OpenGL function pointers.
-//  Helper libraries are often used for this purpose! Here we are supporting a few common ones (gl3w, glew, glad).
-//  You may use another loader/header of your choice (glext, glLoadGen, etc.), or chose to manually implement your own.
-#if defined(IMGUI_IMPL_OPENGL_LOADER_GL3W)
-#include <GL/gl3w.h>            // Needs to be initialized with gl3wInit() in user's code
-#elif defined(IMGUI_IMPL_OPENGL_LOADER_GLEW)
-#include <GL/glew.h>            // Needs to be initialized with glewInit() in user's code.
-#elif defined(IMGUI_IMPL_OPENGL_LOADER_GLAD)
-#include <glad/glad.h>          // Needs to be initialized with gladLoadGL() in user's code.
-#elif defined(IMGUI_IMPL_OPENGL_LOADER_GLAD2)
-#include <glad/gl.h>            // Needs to be initialized with gladLoadGL(...) or gladLoaderLoadGL() in user's code.
-#elif defined(IMGUI_IMPL_OPENGL_LOADER_GLBINDING2)
-#ifndef GLFW_INCLUDE_NONE
-#define GLFW_INCLUDE_NONE       // GLFW including OpenGL headers causes ambiguity or multiple definition errors.
+#include "imgui_impl_opengl3_loader.h"
 #endif
-#include <glbinding/Binding.h>  // Needs to be initialized with glbinding::Binding::initialize() in user's code.
-#include <glbinding/gl/gl.h>
-using namespace gl;
-#elif defined(IMGUI_IMPL_OPENGL_LOADER_GLBINDING3)
-#ifndef GLFW_INCLUDE_NONE
-#define GLFW_INCLUDE_NONE       // GLFW including OpenGL headers causes ambiguity or multiple definition errors.
-#endif
-#include <glbinding/glbinding.h>// Needs to be initialized with glbinding::initialize() in user's code.
-#include <glbinding/gl/gl.h>
-using namespace gl;
-#else
-#include IMGUI_IMPL_OPENGL_LOADER_CUSTOM
-#endif
-#endif
-
-static bool ImGuiApp_ImplOpenGL3_InitializeLoader()
-{
-#if defined(IMGUI_IMPL_OPENGL_LOADER_GL3W)
-    bool err = gl3wInit() != 0;
-#elif defined(IMGUI_IMPL_OPENGL_LOADER_GLEW)
-    bool err = glewInit() != GLEW_OK;
-#elif defined(IMGUI_IMPL_OPENGL_LOADER_GLAD)
-    bool err = gladLoadGL() == 0;
-#elif defined(IMGUI_IMPL_OPENGL_LOADER_GLAD2)
-    bool err = gladLoadGL(glfwGetProcAddress) == 0; // glad2 recommend using the windowing library loader instead of the (optionally) bundled one.
-#elif defined(IMGUI_IMPL_OPENGL_LOADER_GLBINDING2)
-    bool err = false;
-    glbinding::Binding::initialize();
-#elif defined(IMGUI_IMPL_OPENGL_LOADER_GLBINDING3)
-    bool err = false;
-    glbinding::initialize([](const char* name) { return (glbinding::ProcAddress)glfwGetProcAddress(name); });
-#else
-    bool err = false; // If you use IMGUI_IMPL_OPENGL_LOADER_CUSTOM, your loader is likely to requires some form of initialization.
-#endif
-    return err;
-}
 
 #endif
 
@@ -803,14 +753,6 @@ static bool ImGuiApp_ImplSdlGL3_CreateWindow(ImGuiApp* app_opaque, const char* w
     app->window = SDL_CreateWindow(window_title, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, (int)window_size.x, (int)window_size.y, window_flags);
     app->gl_context = SDL_GL_CreateContext(app->window);
     SDL_GL_MakeCurrent(app->window, app->gl_context);
-
-    // Initialize OpenGL loader
-    bool err = ImGuiApp_ImplOpenGL3_InitializeLoader();
-    if (err)
-    {
-        fprintf(stderr, "Failed to initialize OpenGL loader!\n");
-        return false;
-    }
     return true;
 }
 
@@ -1013,14 +955,6 @@ static bool ImGuiApp_ImplGlfw_CreateWindow(ImGuiApp* app_opaque, const char* win
     if (app->window == NULL)
         return false;
     glfwMakeContextCurrent(app->window);
-
-    // Initialize OpenGL loader
-    bool err = ImGuiApp_ImplOpenGL3_InitializeLoader();
-    if (err)
-    {
-        fprintf(stderr, "Failed to initialize OpenGL loader!\n");
-        return false;
-    }
     return true;
 }
 
