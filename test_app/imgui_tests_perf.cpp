@@ -392,6 +392,22 @@ void RegisterTests_Perf(ImGuiTestEngine* e)
     };
     t->TestFunc = PerfCaptureFunc;
 
+    // ## Measure the cost of simple Button() calls + BeginDisabled()/EndDisabled()
+    t = IM_REGISTER_TEST(e, "perf", "perf_stress_button_disabled");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::Begin("Test Func", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
+        int loop_count = 1000 * ctx->PerfStressAmount;
+        for (int n = 0; n < loop_count; n++)
+        {
+            ImGui::BeginDisabled();
+            ImGui::Button("Hello, world");
+            ImGui::EndDisabled();
+        }
+        ImGui::End();
+    };
+    t->TestFunc = PerfCaptureFunc;
+
     // ## Measure the cost of simple Checkbox() calls
     t = IM_REGISTER_TEST(e, "perf", "perf_stress_checkbox");
     t->GuiFunc = [](ImGuiTestContext* ctx)
