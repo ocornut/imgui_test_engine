@@ -2599,9 +2599,14 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
     };
 
     // ## Test drag sources with _SourceNoPreviewTooltip flag not producing a tooltip.
+    // ## Test drag target/accept with ImGuiDragDropFlags_AcceptNoPreviewTooltip
     t = IM_REGISTER_TEST(e, "widgets", "widgets_drag_no_preview_tooltip");
+    struct DragNoPreviewTooltipVars { bool TooltipWasVisible = false; bool TooltipIsVisible = false; ImGuiDragDropFlags AcceptFlags = 0; };
+    t->SetUserDataType<DragNoPreviewTooltipVars>();
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
+        DragNoPreviewTooltipVars& vars = ctx->GetUserData<DragNoPreviewTooltipVars>();
+
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
 
         auto create_drag_drop_source = [](ImGuiDragDropFlags flags)
@@ -2621,27 +2626,48 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         if (ImGui::IsItemClicked())
             create_drag_drop_source(ImGuiDragDropFlags_SourceNoPreviewTooltip | ImGuiDragDropFlags_SourceExtern);
 
+        ImGui::Button("Drag Accept");
+        create_drag_drop_source(0);
+
         ImGui::Button("Drop");
         if (ImGui::BeginDragDropTarget())
         {
-            ImGui::AcceptDragDropPayload("_TEST_VALUE");
+            ImGui::AcceptDragDropPayload("_TEST_VALUE", vars.AcceptFlags);
             ImGui::EndDragDropTarget();
         }
 
         ImGuiContext& g = *ctx->UiContext;
         ImGuiWindow* tooltip = ctx->GetWindowByRef(Str16f("##Tooltip_%02d", g.TooltipOverrideCount).c_str());
-        ctx->GenericVars.Bool1 |= g.TooltipOverrideCount != 0;
-        ctx->GenericVars.Bool1 |= tooltip != NULL && (tooltip->Active || tooltip->WasActive);
+        vars.TooltipIsVisible = g.TooltipOverrideCount != 0 || (tooltip != NULL && (tooltip->Active || tooltip->WasActive));
+        vars.TooltipWasVisible |= vars.TooltipIsVisible;
 
         ImGui::End();
     };
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
+        DragNoPreviewTooltipVars& vars = ctx->GetUserData<DragNoPreviewTooltipVars>();
         ctx->SetRef("Test Window");
         ctx->ItemDragAndDrop("Drag", "Drop");
-        IM_CHECK(ctx->GenericVars.Bool1 == false);
+        IM_CHECK(vars.TooltipWasVisible == false);
+        vars.TooltipWasVisible = false;
         ctx->ItemDragAndDrop("Drag Extern", "Drop");
-        IM_CHECK(ctx->GenericVars.Bool1 == false);
+        IM_CHECK(vars.TooltipWasVisible == false);
+        vars.TooltipWasVisible = false;
+
+        vars.AcceptFlags = 0;
+        ctx->ItemDragOverAndHold("Drag Accept", "Drop");
+        //ctx->Yield();   // A visible tooltip window gets hidden with one frame delay. (due to how we test for Active || WasActive)
+        IM_CHECK(vars.TooltipWasVisible == true);
+        IM_CHECK(vars.TooltipIsVisible == true);
+        ctx->MouseUp();
+        vars.TooltipWasVisible = false;
+
+        vars.AcceptFlags = ImGuiDragDropFlags_AcceptNoPreviewTooltip;
+        ctx->ItemDragOverAndHold("Drag Accept", "Drop");
+        ctx->Yield();   // A visible tooltip window gets hidden with one frame delay (due to how we test for Active || WasActive)
+        IM_CHECK(vars.TooltipWasVisible == true);
+        IM_CHECK(vars.TooltipIsVisible == false);
+        ctx->MouseUp();
     };
 
     // ## Test using default context menu along with a combo (#4167)
