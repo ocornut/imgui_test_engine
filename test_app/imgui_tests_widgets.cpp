@@ -3928,4 +3928,94 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
     };
 #endif
 
+    // ## Test BeginDisabled()/EndDisabled()
+#if (IMGUI_VERSION_NUM >= 18405)
+    t = IM_REGISTER_TEST(e, "widgets", "widgets_disabled_2");
+    struct BeginDisabledVars
+    {
+        struct BeginDisabledItemInfo
+        {
+            const char* Name = NULL;
+            ImGuiTestGenericStatus Status = {};
+            ImGuiItemFlags FlagsBegin = 0;
+            ImGuiItemFlags FlagsEnd = 0;
+            float AlphaBegin = 0;
+            float AlphaEnd = 0;
+
+            BeginDisabledItemInfo(const char* name) { Name = name; }
+        };
+        BeginDisabledItemInfo ButtonInfo[6] = { "A", "B", "C", "D", "E", "F" };
+    };
+    t->SetUserDataType<BeginDisabledVars>();
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiContext& g = *ctx->UiContext;
+        BeginDisabledVars& vars = ctx->GetUserData<BeginDisabledVars>();
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_MenuBar);
+
+        int index = 0;
+        auto begin_disabled = [&](bool disabled = true)
+        {
+            auto& button_info = vars.ButtonInfo[index];
+            button_info.FlagsBegin = g.CurrentItemFlags;
+            button_info.AlphaBegin = g.DisabledAlphaBackup;
+            ImGui::BeginDisabled(disabled);
+            bool flag_enabled = (index % 2) == 0;
+            ImGui::PushItemFlag(ImGuiItemFlags_NoNav, flag_enabled);    // Add a random flag to try mix things up.
+            index++;
+        };
+        auto end_disabled = [&]()
+        {
+            index--;
+            auto& button_info = vars.ButtonInfo[index];
+            ImGui::PopItemFlag();                                       // ImGuiItemFlags_NoNav
+            ImGui::EndDisabled();
+            button_info.FlagsEnd = g.CurrentItemFlags;
+            button_info.AlphaEnd = g.DisabledAlphaBackup;
+        };
+
+        begin_disabled();
+        vars.ButtonInfo[index].Status.QueryInc(ImGui::Button("A"));
+        begin_disabled();
+        vars.ButtonInfo[index].Status.QueryInc(ImGui::Button("B"));
+        end_disabled();
+        begin_disabled(false);
+        vars.ButtonInfo[index].Status.QueryInc(ImGui::Button("C"));
+        end_disabled();
+        vars.ButtonInfo[index].Status.QueryInc(ImGui::Button("D"));
+        end_disabled();
+
+        begin_disabled();
+        bool ret = ImGui::Button("E");
+        end_disabled();
+        vars.ButtonInfo[4].Status.QueryInc(ret);
+
+        ImGui::BeginDisabled(false);
+        vars.ButtonInfo[5].Status.QueryInc(ImGui::Button("F"));
+        ImGui::EndDisabled();
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiContext& g = *ctx->UiContext;
+        BeginDisabledVars& vars = ctx->GetUserData<BeginDisabledVars>();
+        ctx->SetRef("Test Window");
+        for (int i = 0; i < 5; i++)
+        {
+            auto& button_info = vars.ButtonInfo[i];
+            ctx->LogDebug("Button %s", button_info.Name);
+            ctx->ItemClick(button_info.Name);
+            IM_CHECK(button_info.Status.Ret == 0);                      // No clicks
+            IM_CHECK(button_info.Status.Clicked == 0);
+            IM_CHECK(g.HoveredId == ctx->GetID(button_info.Name));      // HoveredId is set
+            IM_CHECK(button_info.FlagsBegin == button_info.FlagsEnd);   // Flags and Alpha match between Begin/End calls
+            IM_CHECK(button_info.AlphaBegin == button_info.AlphaEnd);
+        }
+        ctx->ItemClick("E");
+        IM_CHECK(vars.ButtonInfo[4].Status.Hovered == 0);               // Ensure we rely on last item storage, not current state
+        ctx->ItemClick("F");
+        IM_CHECK(vars.ButtonInfo[5].Status.Ret == 1);                   // BeginDisabled(false) does not prevent clicks
+        IM_CHECK(vars.ButtonInfo[5].Status.Clicked == 1);
+    };
+#endif
 }
