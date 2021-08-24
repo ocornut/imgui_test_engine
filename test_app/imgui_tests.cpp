@@ -2054,6 +2054,31 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
         ImGui::End();
     };
 
+    // ## Test ImFontAtlas clearing of input data (#4455, #3487)
+    t = IM_REGISTER_TEST(e, "misc", "misc_atlas_clear");
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ImFontAtlas atlas;
+        atlas.Build();
+        IM_ASSERT(atlas.IsBuilt());
+
+        atlas.ClearTexData();
+        IM_ASSERT(atlas.IsBuilt());
+
+        atlas.ClearInputData();
+        IM_ASSERT(atlas.Fonts.Size > 0);
+#if IMGUI_VERSION_NUM > 18407
+        IM_ASSERT(atlas.IsBuilt());
+#endif
+
+        atlas.ClearFonts();
+        IM_ASSERT(atlas.Fonts.Size == 0);
+        IM_ASSERT(!atlas.IsBuilt());
+
+        atlas.Build();  // Build after clear
+        atlas.Build();  // Build too many times
+    };
+
     // ## Test ImFontAtlas building with overlapping glyph ranges (#2353, #2233)
     t = IM_REGISTER_TEST(e, "misc", "misc_atlas_build_glyph_overlap");
     t->TestFunc = [](ImGuiTestContext* ctx)
