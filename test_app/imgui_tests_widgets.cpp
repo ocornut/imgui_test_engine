@@ -1115,9 +1115,9 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         IM_CHECK_EQ(stb.select_start, 0);
         IM_CHECK_EQ(stb.select_end, 23);
         IM_CHECK_EQ(stb.cursor, 23);
-        ctx->KeyPressMap(ImGuiKey_LeftArrow, ImGuiKeyModFlags_Ctrl);
+        ctx->KeyPressMap(ImGuiKey_LeftArrow, ImGuiKeyModFlags_Shortcut);
         IM_CHECK_EQ(stb.cursor, 0);
-        ctx->KeyPressMap(ImGuiKey_RightArrow, ImGuiKeyModFlags_Ctrl);
+        ctx->KeyPressMap(ImGuiKey_RightArrow, ImGuiKeyModFlags_Shortcut);
         IM_CHECK_EQ(stb.cursor, 23);
     };
     // ## Test input text multiline cursor with selection: left, up, right, down, origin, end, ctrl+origin, ctrl+end, page up, page down
