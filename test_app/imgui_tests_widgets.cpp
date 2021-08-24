@@ -2777,8 +2777,25 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
     };
 #endif
 
-    // ## Test long text rendering by TextUnformatted().
-    t = IM_REGISTER_TEST(e, "widgets", "widgets_text_unformatted_long");
+#if IMGUI_VERSION_NUM >= 18408
+    // ## Test null range in TextUnformatted() (#3615)
+    t = IM_REGISTER_TEST(e, "widgets", "widgets_text_null");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        const char* str = "hello world";
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImVec2 p0 = ImGui::GetCursorPos();
+        ImGui::TextUnformatted(str, str + 5);
+        ImGui::TextUnformatted(str + 1, str + 1);
+        ImGui::TextUnformatted(NULL);
+        ImVec2 p1 = ImGui::GetCursorPos();
+        IM_CHECK_EQ(p0.y + ImGui::GetTextLineHeightWithSpacing() * 3, p1.y);
+        ImGui::End();
+    };
+#endif
+
+    // ## Test long text rendering in TextUnformatted()
+    t = IM_REGISTER_TEST(e, "widgets", "widgets_text_long");
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         ctx->SetRef("Dear ImGui Demo");
