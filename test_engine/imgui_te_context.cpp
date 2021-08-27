@@ -1227,6 +1227,13 @@ void	ImGuiTestContext::MouseMoveToPos(ImVec2 target)
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
     LogDebug("MouseMoveToPos from (%.0f,%.0f) to (%.0f,%.0f)", Inputs->MousePosValue.x, Inputs->MousePosValue.y, target.x, target.y);
 
+    // Enforce a mouse move if we are already at destination, to enforce g.NavDisableMouseHover gets cleared.
+    if (g.NavDisableMouseHover && ImLengthSqr(Inputs->MousePosValue - target) < 1.0f)
+    {
+        Inputs->MousePosValue = target + ImVec2(1.0f, 0.0f);
+        ImGuiTestEngine_Yield(Engine);
+    }
+
     if (EngineIO->ConfigRunFast)
     {
         Inputs->MousePosValue = target;

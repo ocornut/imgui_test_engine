@@ -1209,6 +1209,81 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
         IM_CHECK(vars.Status.Activated == 1);
     };
 
+    // ## Test wrapping behavior
+    t = IM_REGISTER_TEST(e, "nav", "nav_wrapping");
+    struct NavWrappingWars { ImGuiNavMoveFlags WrapFlags = ImGuiNavMoveFlags_WrapX; };
+    t->SetUserDataType<NavWrappingWars>();
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::SetNextWindowSize(ImVec2(300, 300), ImGuiCond_Appearing);
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+
+        auto& vars = ctx->GetUserData<NavWrappingWars>();
+        for (int ny = 0; ny < 4; ny++)
+        {
+            for (int nx = 0; nx < 4; nx++)
+            {
+                if (ny == 3 && nx >= 2)
+                    continue;
+                if (nx > 0)
+                    ImGui::SameLine();
+                ImGui::Selectable(Str30f("%d,%d", ny, nx).c_str(), true, 0, ImVec2(40,40));
+            }
+        }
+        if (vars.WrapFlags != 0)
+            ImGui::NavMoveRequestTryWrapping(ImGui::GetCurrentWindow(), vars.WrapFlags);
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiContext& g = *ctx->UiContext;
+        auto& vars = ctx->GetUserData<NavWrappingWars>();
+        ctx->SetRef("Test Window");
+
+        vars.WrapFlags = ImGuiNavMoveFlags_None;
+        ctx->ItemClick("0,0");
+        ctx->KeyPressMap(ImGuiKey_RightArrow);
+        IM_CHECK(g.NavId == ctx->GetID("0,1"));
+        ctx->KeyPressMap(ImGuiKey_RightArrow);
+        ctx->KeyPressMap(ImGuiKey_RightArrow);
+        IM_CHECK(g.NavId == ctx->GetID("0,3"));
+        ctx->KeyPressMap(ImGuiKey_RightArrow);
+        IM_CHECK(g.NavId == ctx->GetID("0,3"));
+
+        vars.WrapFlags = ImGuiNavMoveFlags_WrapX;
+        ctx->ItemClick("0,0");
+        ctx->KeyPressMap(ImGuiKey_RightArrow);
+        IM_CHECK(g.NavId == ctx->GetID("0,1"));
+        ctx->KeyPressMap(ImGuiKey_RightArrow);
+        ctx->KeyPressMap(ImGuiKey_RightArrow);
+        IM_CHECK(g.NavId == ctx->GetID("0,3"));
+        ctx->KeyPressMap(ImGuiKey_RightArrow);
+        IM_CHECK(g.NavId == ctx->GetID("1,0"));
+        for (int n = 0; n < 50; n++) // Mash to get to the end of list
+            ctx->KeyPressMap(ImGuiKey_RightArrow);
+        IM_CHECK(g.NavId == ctx->GetID("3,1"));
+
+        vars.WrapFlags = ImGuiNavMoveFlags_LoopX;
+        ctx->ItemClick("0,0");
+        ctx->KeyPressMap(ImGuiKey_RightArrow);
+        IM_CHECK(g.NavId == ctx->GetID("0,1"));
+        ctx->KeyPressMap(ImGuiKey_RightArrow);
+        ctx->KeyPressMap(ImGuiKey_RightArrow);
+        IM_CHECK(g.NavId == ctx->GetID("0,3"));
+        ctx->KeyPressMap(ImGuiKey_RightArrow);
+        IM_CHECK(g.NavId == ctx->GetID("0,0"));
+
+        vars.WrapFlags = ImGuiNavMoveFlags_LoopY;
+        ctx->ItemClick("0,0");
+        ctx->KeyPressMap(ImGuiKey_RightArrow);
+        IM_CHECK(g.NavId == ctx->GetID("0,1"));
+        ctx->KeyPressMap(ImGuiKey_DownArrow);
+        ctx->KeyPressMap(ImGuiKey_DownArrow);
+        ctx->KeyPressMap(ImGuiKey_DownArrow);
+        IM_CHECK(g.NavId == ctx->GetID("3,1"));
+        ctx->KeyPressMap(ImGuiKey_DownArrow);
+        IM_CHECK(g.NavId == ctx->GetID("0,1"));
+    };
 }
 
 //-------------------------------------------------------------------------
