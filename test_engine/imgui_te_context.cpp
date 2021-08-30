@@ -1436,14 +1436,11 @@ bool    ImGuiTestContext::FindExistingVoidPosOnViewport(ImGuiViewport* viewport,
     return false;
 }
 
-void    ImGuiTestContext::MouseClickOnVoid(int mouse_button)
+ImVec2   ImGuiTestContext::GetVoidPos()
 {
     ImGuiContext& g = *UiContext;
     if (IsError())
-        return;
-
-    IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
-    LogDebug("MouseClickOnVoid %d", mouse_button);
+        return ImVec2();
 
     ImVec2 void_pos;
     ImGuiViewport* viewport = ImGui::GetMainViewport();
@@ -1464,8 +1461,20 @@ void    ImGuiTestContext::MouseClickOnVoid(int mouse_button)
                     WindowMove(window->Name, window_min_pos);
     }
 
+    return void_pos;
+}
+
+void    ImGuiTestContext::MouseClickOnVoid(int mouse_button)
+{
+    ImGuiContext& g = *UiContext;
+    if (IsError())
+        return;
+
+    IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
+    LogDebug("MouseClickOnVoid %d", mouse_button);
+
     // Click position which should now be empty space.
-    MouseMoveToPos(void_pos);
+    MouseMoveToPos(GetVoidPos());
     IM_CHECK(g.HoveredWindow == NULL);
     MouseClick(mouse_button);
 }

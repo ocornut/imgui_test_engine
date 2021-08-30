@@ -498,6 +498,55 @@ void RegisterTests_Window(ImGuiTestEngine* e)
     };
 #endif
 
+    // ## Test behavior of io.WantCaptureMouse and io.WantCaptureMouseUnlessPopupClose with popups. (#4480)
+#if IMGUI_VERSION_NUM >= 18410
+    t = IM_REGISTER_TEST(e, "window", "window_popup_want_capture");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+        if (ImGui::Button("Open Popup"))
+            ImGui::OpenPopup("Popup");
+        if (ImGui::Button("Open Modal"))
+            ImGui::OpenPopup("Modal");
+        if (ImGui::BeginPopup("Popup"))
+        {
+            ImGui::TextUnformatted("...");
+            ImGui::EndPopup();
+        }
+        if (ImGui::BeginPopupModal("Modal"))
+        {
+            ImGui::TextUnformatted("...");
+            ImGui::EndPopup();
+        }
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiContext& g = *ctx->UiContext;
+        ImGuiIO& io = g.IO;
+        ctx->SetRef("Test Window");
+        ctx->ItemClick("Open Popup");
+        IM_CHECK(g.NavWindow != NULL);
+        ctx->MouseMoveToPos(g.NavWindow->Pos + ImVec2(10, 10));
+        IM_CHECK(io.WantCaptureMouse == true);
+        IM_CHECK(io.WantCaptureMouseUnlessPopupClose == true);
+        ctx->MouseMoveToPos(ctx->GetVoidPos());
+        IM_CHECK(io.WantCaptureMouse == true);
+        IM_CHECK(io.WantCaptureMouseUnlessPopupClose == false);
+        ctx->PopupCloseAll();
+
+        ctx->ItemClick("Open Modal");
+        IM_CHECK(g.NavWindow != NULL);
+        ctx->MouseMoveToPos(g.NavWindow->Pos + ImVec2(10, 10));
+        IM_CHECK(io.WantCaptureMouse == true);
+        IM_CHECK(io.WantCaptureMouseUnlessPopupClose == true);
+        ctx->MouseMoveToPos(ctx->GetVoidPos());
+        IM_CHECK(io.WantCaptureMouse == true);
+        IM_CHECK(io.WantCaptureMouseUnlessPopupClose == true);
+        ctx->PopupCloseAll();
+    };
+#endif
+
     // ## Test that child window correctly affect contents size based on how their size was specified.
     t = IM_REGISTER_TEST(e, "window", "window_child_layout_size");
     t->Flags |= ImGuiTestFlags_NoAutoFinish;

@@ -304,6 +304,7 @@ struct ImGuiTestContext
     // Misc
     ImVec2      GetMainViewportPos();
     ImVec2      GetMainViewportSize();
+    ImVec2      GetVoidPos();
 
     // Screen captures
     // - Simple API
