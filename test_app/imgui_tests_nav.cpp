@@ -764,6 +764,13 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
         ImGui::EndChild();
         ImGui::EndChild();
 
+        // FIXME-NAV: To test PageUp/PageDown/Home/End later
+        //ImGui::BeginChild("Child 4", ImVec2(200, 200), false, ImGuiWindowFlags_NavFlattened);
+        //ImGui::Button("Child 4 Button 1");
+        //ImGui::Button("Child 4 Button 2");
+        //ImGui::Button("Child 4 Button 3");
+        //ImGui::EndChild();
+
         ImGui::End();
     };
     t->TestFunc = [](ImGuiTestContext* ctx)
@@ -795,6 +802,8 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
         // Child -> nested Child
         ctx->KeyPressMap(ImGuiKey_RightArrow);
         IM_CHECK_EQ(g.NavId, ctx->GetID("Child 3B Button 2", g.NavWindow->ID));
+
+        // FIXME: test PageUp/PageDown on child
     };
 
     // ## Check default focus with _NavFlattened flag
@@ -853,6 +862,31 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
 #if IMGUI_VERSION_NUM >= 18205
         IM_CHECK_EQ(g.NavId, ctx->GetID("Child 1 Button 2", ctx->GetChildWindowID("Window 1", "Child 1")));
 #endif
+    };
+
+    // ## Check nav keyboard/mouse highlight flags
+    t = IM_REGISTER_TEST(e, "nav", "nav_highlight");
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiContext& g = *ctx->UiContext;
+        ctx->SetRef("Dear ImGui Demo");
+        ctx->MouseMove("Help");
+        IM_CHECK(g.NavDisableHighlight == true);
+        IM_CHECK(g.NavDisableMouseHover == false);
+        ctx->NavMoveTo("Configuration");
+        IM_CHECK(g.NavDisableHighlight == false);
+        IM_CHECK(g.NavDisableMouseHover == true);
+        ctx->NavKeyPress(ImGuiNavInput_KeyUp_);
+        IM_CHECK(g.NavId == ctx->GetID("Help"));
+        IM_CHECK(g.NavDisableHighlight == false);
+        IM_CHECK(g.NavDisableMouseHover == true);
+        ctx->MouseMove("Help");
+        IM_CHECK(g.NavDisableHighlight == false); // Moving mouse doesn't set this to true: rect will be visible but NavId not marked as "hovered"
+        IM_CHECK(g.NavDisableMouseHover == false);
+
+        ctx->KeyPressMap(ImGuiKey_COUNT, ImGuiKeyModFlags_Alt);
+        IM_CHECK(g.NavDisableHighlight == false);
+        IM_CHECK(g.NavDisableMouseHover == true);
     };
 
     // ## Test navigation in popups that are appended across multiple calls to BeginPopup()/EndPopup(). (#3223)
@@ -1176,6 +1210,19 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
             vars.Status.QuerySet();
             ImGui::SetKeyboardFocusHere(-1);
         }
+        else if (vars.Step == 3)
+        {
+            ImGui::SetKeyboardFocusHere();
+            ImGui::InputText("Text1", vars.Str1, IM_ARRAYSIZE(vars.Str1));
+            ImGui::SetKeyboardFocusHere();
+            ImGui::InputText("Text2", vars.Str1, IM_ARRAYSIZE(vars.Str1));
+        }
+        else if (vars.Step == 4)
+        {
+            // Sub-component
+            ImGui::SetKeyboardFocusHere(2);
+            ImGui::SliderFloat4("Float4", &vars.FloatArray[0], 0.0f, 1.0f);
+        }
         ImGui::End();
     };
     t->TestFunc = [](ImGuiTestContext* ctx)
@@ -1190,13 +1237,12 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
         IM_CHECK(g.ActiveId == 0);
         IM_CHECK(vars.Status.Activated == 0);
         ctx->Yield();
-        IM_CHECK(g.ActiveId == ctx->GetID("Text1"));
+        IM_CHECK_EQ(g.ActiveId, ctx->GetID("Text1"));
         IM_CHECK(vars.Status.Activated == 1);
 
         // Test that ActiveID gets cleared when not alive
         vars.Step = 0;
-        ctx->Yield();
-        ctx->Yield();
+        ctx->Yield(2);
         IM_CHECK(g.ActiveId == 0);
 
         // Test focusing previous item with SetKeyboardFocusHere(-1)
@@ -1205,8 +1251,23 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
         IM_CHECK(g.ActiveId == 0);
         IM_CHECK(vars.Status.Activated == 0);
         ctx->Yield();
-        IM_CHECK(g.ActiveId == ctx->GetID("Text2"));
-        IM_CHECK(vars.Status.Activated == 1);
+        IM_CHECK_EQ(g.ActiveId, ctx->GetID("Text2"));
+        IM_CHECK_EQ(vars.Status.Activated, 1);
+
+        // Test multiple calls to SetKeyboardFocusHere()
+        vars.Step = 0;
+        ctx->Yield(2);
+        vars.Step = 3;
+        ctx->Yield(2);
+        IM_CHECK_EQ(g.ActiveId, ctx->GetID("Text2"));
+
+        // Test accessing a sub-component
+        vars.Step = 0;
+        ctx->Yield(2);
+        vars.Step = 4;
+        ctx->Yield(2);
+        int field_idx = 2;
+        IM_CHECK_EQ(g.ActiveId, ImHashData(&field_idx, sizeof(int), ctx->GetID("Float4")));
     };
 
     // ## Test wrapping behavior
