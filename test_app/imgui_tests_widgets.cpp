@@ -4120,4 +4120,28 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ctx->MouseWheel(ImVec2(0.0f, -10.0f));
         IM_CHECK(window->Scroll.y == 0.0f);
     };
+
+    // ## Test text capture of separator in a menu.
+    t = IM_REGISTER_TEST(e, "widgets", "widgets_menu_separator");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_MenuBar);
+        if (ImGui::BeginMenuBar())
+        {
+            ImGui::LogToBuffer();
+            if (ImGui::BeginMenu("File"))
+                ImGui::EndMenu();
+            ImGui::Separator();
+            if (ImGui::BeginMenu("Edit"))
+                ImGui::EndMenu();
+            ImGui::EndMenuBar();
+            ImStrncpy(ctx->GenericVars.Str1, ctx->UiContext->LogBuffer.c_str(), IM_ARRAYSIZE(ctx->GenericVars.Str1));
+            ImGui::LogFinish();
+        }
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        IM_CHECK_STR_EQ(ctx->GenericVars.Str1, "File | Edit");
+    };
 }
