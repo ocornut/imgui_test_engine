@@ -4097,4 +4097,27 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         IM_CHECK(vars.ButtonInfo[5].Status.Clicked == 1);
     };
 #endif
+
+    // ## Test SetItemUsingMouseWheel() preventing scrolling.
+    t = IM_REGISTER_TEST(e, "widgets", "widgets_item_using_mouse_wheel");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::SetNextWindowSize(ImVec2(0, 100), ImGuiCond_Always);
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysVerticalScrollbar);
+        ImGui::Button("You! Shall! Not! Scroll!");
+        ImGui::SetItemUsingMouseWheel();
+        for (int i = 0; i < 10; i++)
+            ImGui::Text("Line %d", i + 1);
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ctx->SetRef("Test Window");
+        ImGuiWindow* window = ctx->GetWindowByRef("");
+        ctx->ScrollToTop();
+        IM_CHECK(window->Scroll.y == 0.0f);
+        ctx->MouseMove("You! Shall! Not! Scroll!");
+        ctx->MouseWheel(ImVec2(0.0f, -10.0f));
+        IM_CHECK(window->Scroll.y == 0.0f);
+    };
 }
