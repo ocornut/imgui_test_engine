@@ -2667,6 +2667,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
     };
 
     // ## Test column reordering and resetting to default order.
+    // ## Test ImGuiTableFlags_ContextMenuInBody
     t = IM_REGISTER_TEST(e, "table", "table_reorder");
     t->SetUserDataType<TableTestingVars>();
     t->GuiFunc = [](ImGuiTestContext* ctx)
@@ -2677,14 +2678,14 @@ void RegisterTests_Table(ImGuiTestEngine* e)
         if (ctx->IsFirstGuiFrame())
             TableDiscardInstanceAndSettings(ImGui::GetID("table1"));
 
-        if (ImGui::BeginTable("table1", 4, ImGuiTableFlags_Reorderable))
+        if (ImGui::BeginTable("table1", 4, ImGuiTableFlags_Reorderable | ImGuiTableFlags_ContextMenuInBody))
         {
             ImGui::TableSetupColumn("One");
             ImGui::TableSetupColumn("Two");
             ImGui::TableSetupColumn("Three");
             ImGui::TableSetupColumn("Four");
             ImGui::TableHeadersRow();
-            HelperTableSubmitCellsButtonFix(4, 4);
+            HelperTableSubmitCellsText(4, 4);
             ImGui::EndTable();
         }
         ImGui::End();
@@ -2710,8 +2711,9 @@ void RegisterTests_Table(ImGuiTestEngine* e)
         IM_CHECK_EQ(table->DisplayOrderToIndex[2], 1);
         IM_CHECK_EQ(table->DisplayOrderToIndex[3], 3);
 
-        // Reset order.
-        ctx->ItemClick(TableGetHeaderID(table, "Three"), ImGuiMouseButton_Right);
+        // Reset order using the ImGuiTableFlags_ContextMenuInBody location
+        ctx->MouseMoveToPos(table->InnerClipRect.GetCenter());
+        ctx->MouseClick(ImGuiMouseButton_Right);
         ctx->SetRef(g.NavWindow);
         ctx->ItemClick("Reset order");
 
