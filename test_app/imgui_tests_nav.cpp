@@ -433,6 +433,60 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
         ctx->Sleep(1.0f);
     };
 
+    // ## Test remote ActivateItem()
+    t = IM_REGISTER_TEST(e, "nav", "nav_activate");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        auto& vars = ctx->GenericVars;
+
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+
+        ImGuiID activate_target = ctx->GetID((vars.Step == 0) ? "/Test Window/Button" : "/Test Window/InputText");
+
+        if (ImGui::Button("Activate Src 0"))
+            ImGui::ActivateItem(activate_target);
+        if (ImGui::Button("Button"))
+            vars.Int1++;
+        ImGui::SameLine();
+        ImGui::Text("%d", vars.Int1);
+        ImGui::InputText("InputText", vars.Str1, IM_ARRAYSIZE(vars.Str1));
+        if (ImGui::Button("Activate Src 1"))
+            ImGui::ActivateItem(activate_target);
+        ImGui::End();
+
+        ImGui::Begin("Window 2", NULL, ImGuiWindowFlags_NoSavedSettings);
+        if (ImGui::Button("Activate Src 2"))
+            ImGui::ActivateItem(activate_target);
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiContext& g = *ctx->UiContext;
+        auto& vars = ctx->GenericVars;
+        IM_CHECK(vars.Int1 == 0);
+        ctx->SetRef("Test Window");
+
+        vars.Step = 0;
+        ctx->Yield();
+        ctx->ItemClick("Activate Src 0");
+        IM_CHECK(vars.Int1 == 1);
+        ctx->ItemClick("Activate Src 1");
+        IM_CHECK(vars.Int1 == 2);
+        ctx->ItemClick("/Window 2/Activate Src 2");
+        IM_CHECK(vars.Int1 == 3);
+
+        vars.Step = 1;
+        ctx->Yield();
+        ctx->ItemClick("Activate Src 0");
+        IM_CHECK(g.NavId == ctx->GetID("/Test Window/InputText"));
+        IM_CHECK(g.ActiveId == ctx->GetID("/Test Window/InputText"));
+        ctx->KeyPressMap(ImGuiKey_Escape);
+        IM_CHECK(g.ActiveId == 0);
+        ctx->ItemClick("/Window 2/Activate Src 2");
+        IM_CHECK(g.NavId == ctx->GetID("/Test Window/InputText"));
+        IM_CHECK(g.ActiveId == ctx->GetID("/Test Window/InputText"));
+    };
+
     // ## Test NavID restoration when focusing another window or STOPPING to submit another world
     t = IM_REGISTER_TEST(e, "nav", "nav_focus_restore_on_missing_window");
     t->GuiFunc = [](ImGuiTestContext* ctx)
