@@ -648,7 +648,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
     };
 #endif
 
-    // ## Test for IsItemHovered() on BeginChild() and InputMultiLine() (#1370, #3851)
+    // ## Test for IsItemHovered() on BeginChild() and InputTextMultiLine() (#1370, #3851)
     t = IM_REGISTER_TEST(e, "widgets", "widgets_hover");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
@@ -974,6 +974,9 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
 
     // ## Test input text multiline cursor movement: left, up, right, down, origin, end, ctrl+origin, ctrl+end, page up, page down
     // ## Verify that text selection does not leak spaces in password fields. (#4155)
+    // TODO ## Test input text multiline cursor with selection: left, up, right, down, origin, end, ctrl+origin, ctrl+end, page up, page down
+    // TODO ## Test input text multiline scroll movement only: ctrl + (left, up, right, down)
+    // TODO ## Test input text multiline page up/page down history ?
     t = IM_REGISTER_TEST(e, "widgets", "widgets_inputtext_cursor");
     struct InputTextCursorVars { Str str; int Cursor = 0; int LineCount = 10; Str64 Password; };
     t->SetUserDataType<InputTextCursorVars>();
@@ -1133,10 +1136,56 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ctx->KeyPressMap(ImGuiKey_RightArrow, ImGuiKeyModFlags_Shortcut);
         IM_CHECK_EQ(stb.cursor, 23);
     };
-    // ## Test input text multiline cursor with selection: left, up, right, down, origin, end, ctrl+origin, ctrl+end, page up, page down
-    // ## Test input text multiline scroll movement only: ctrl + (left, up, right, down)
-    // ## Test input text multiline page up/page down history ?
 
+    // ## Test that scrolling preserve cursor and selection
+    t = IM_REGISTER_TEST(e, "widgets", "widgets_inputtext_scrolling");
+    t->SetUserDataType<InputTextCursorVars>();
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        InputTextCursorVars& vars = ctx->GetUserData<InputTextCursorVars>();
+
+        float height = 5 * ImGui::GetFontSize();
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
+        ImGui::InputTextMultiline("Field", &vars.str, ImVec2(300, height), ImGuiInputTextFlags_EnterReturnsTrue);
+        if (ImGuiInputTextState* state = ImGui::GetInputTextState(ctx->GetID("/Test Window/Field")))
+            ImGui::Text("Stb Cursor: %d", state->Stb.cursor);
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ctx->SetRef("Test Window");
+        ctx->ItemInput("Field");
+        for (int n = 0; n < 10; n++)
+            ctx->KeyCharsAppendEnter(Str16f("Line %d", n).c_str());
+        ctx->KeyDownMap(ImGuiKey_COUNT, ImGuiKeyModFlags_Shift);
+        ctx->KeyPressMap(ImGuiKey_UpArrow);
+        ctx->KeyUpMap(ImGuiKey_COUNT, ImGuiKeyModFlags_Shift);
+
+        ImGuiID child_id = ctx->GetChildWindowID("/Test Window", "Field");
+        ImGuiWindow* child_window = ctx->GetWindowByRef(child_id);
+        IM_CHECK(child_window != NULL);
+        const size_t selection_len = strlen("Line 9\n");
+
+        for (int n = 0; n < 3; n++)
+        {
+            ImGuiInputTextState* state = ImGui::GetInputTextState(ctx->GetID("Field"));
+            IM_CHECK(state != NULL);
+            IM_CHECK(state->HasSelection());
+            IM_CHECK(ImAbs(state->Stb.select_end - state->Stb.select_start) == selection_len);
+            IM_CHECK(state->Stb.select_end == state->Stb.cursor);
+            IM_CHECK(state->Stb.cursor == state->CurLenW - selection_len);
+            ctx->ScrollTo(child_window, ImGuiAxis_Y, n == 1 ? child_window->ScrollMax.y : 0.0f);
+        }
+
+        ImGuiInputTextState* state = ImGui::GetInputTextState(ctx->GetID("Field"));
+        IM_CHECK(state != NULL);
+        IM_CHECK(child_window->Scroll.y == 0.0f);
+        ctx->KeyPressMap(ImGuiKey_RightArrow);
+        IM_CHECK_EQ(state->Stb.cursor, state->CurLenW);
+        IM_CHECK_EQ(child_window->Scroll.y, child_window->ScrollMax.y);
+    };
+
+    // ## Test named filters
     t = IM_REGISTER_TEST(e, "widgets", "widgets_inputtext_filters");
     struct InputTextFilterVars { Str64 Default; Str64 Decimal; Str64 Scientific;  Str64 Hex; Str64 Uppercase; Str64 NoBlank; Str64 Custom; };
     t->SetUserDataType<InputTextFilterVars>();

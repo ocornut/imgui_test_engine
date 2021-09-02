@@ -447,7 +447,8 @@ ImGuiID ImGuiTestContext::GetIDByPtr(void* p, ImGuiTestRef seed_ref)
 ImGuiID ImGuiTestContext::GetChildWindowID(const char* parent_name, const char* child_name)
 {
     ImGuiID child_item_id = GetID(child_name, parent_name);
-    ImGuiID child_window_id = GetID(Str128f("/%s\\/%s_%08X", parent_name, child_name, child_item_id).c_str());
+    Str128f child_window_name("/%s\\/%s_%08X", parent_name, child_name, child_item_id);
+    ImGuiID child_window_id = GetID(child_window_name.c_str());
     return child_window_id;
 }
 
