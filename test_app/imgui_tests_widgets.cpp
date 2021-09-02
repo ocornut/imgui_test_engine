@@ -130,17 +130,30 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         IM_CHECK_EQ(vars.ButtonPressCount[3], 1);
 
         // Test ImGuiButtonFlags_Repeat
+        const float step = ImMin(ctx->UiContext->IO.KeyRepeatDelay, ctx->UiContext->IO.KeyRepeatRate) * 0.50f;
         ctx->ItemClick("Button4");
         IM_CHECK_EQ(vars.ButtonPressCount[4], 1);
         ctx->MouseDown(0);
         IM_CHECK_EQ(vars.ButtonPressCount[4], 1);
-        const float step = ImMin(ctx->UiContext->IO.KeyRepeatDelay, ctx->UiContext->IO.KeyRepeatRate) * 0.50f;
         ctx->SleepNoSkip(ctx->UiContext->IO.KeyRepeatDelay, step);
         ctx->SleepNoSkip(ctx->UiContext->IO.KeyRepeatRate, step);
         ctx->SleepNoSkip(ctx->UiContext->IO.KeyRepeatRate, step);
         ctx->SleepNoSkip(ctx->UiContext->IO.KeyRepeatRate, step);
         IM_CHECK_EQ(vars.ButtonPressCount[4], 1 + 1 + 3 * 2); // FIXME: MouseRepeatRate is double KeyRepeatRate, that's not documented / or that's a bug
         ctx->MouseUp(0);
+
+        // Test ImGuiButtonFlags_Repeat with Nav
+        ctx->NavEnableForWindow();
+        ctx->NavMoveTo("Button4");
+        vars.ButtonPressCount[4] = 0;
+        ctx->NavKeyDown(ImGuiNavInput_Activate);
+        IM_CHECK_EQ(vars.ButtonPressCount[4], 1);
+        ctx->SleepNoSkip(ctx->UiContext->IO.KeyRepeatDelay, step);
+        ctx->SleepNoSkip(ctx->UiContext->IO.KeyRepeatRate, step);
+        ctx->SleepNoSkip(ctx->UiContext->IO.KeyRepeatRate, step);
+        ctx->SleepNoSkip(ctx->UiContext->IO.KeyRepeatRate, step);
+        IM_CHECK_EQ(vars.ButtonPressCount[4], 1 + 3 * 2); // FIXME: MouseRepeatRate is double KeyRepeatRate, that's not documented / or that's a bug
+        ctx->NavKeyUp(ImGuiNavInput_Activate);
     };
 
     // ## Test basic button presses
