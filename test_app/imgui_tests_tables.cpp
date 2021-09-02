@@ -1976,6 +1976,55 @@ void RegisterTests_Table(ImGuiTestEngine* e)
         }
     };
 
+    // ## Test whether freezing works with swapped columns.
+    t = IM_REGISTER_TEST(e, "table", "table_freezing_column_swap");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::SetNextWindowSize(ImVec2(250.0f, 100.0f), ImGuiCond_Appearing);
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+
+        if (ctx->IsFirstGuiFrame())
+            TableDiscardInstanceAndSettings(ImGui::GetID("table1"));
+
+        if (ImGui::BeginTable("table1", 4, ImGuiTableFlags_Reorderable | ImGuiTableFlags_ScrollX))
+        {
+            ImGui::TableSetupScrollFreeze(ctx->GenericVars.Int1, 0);
+            ImGui::TableSetupColumn("1");
+            ImGui::TableSetupColumn("2");
+            ImGui::TableSetupColumn("3");
+            ImGui::TableSetupColumn("4");
+            ImGui::TableHeadersRow();
+            HelperTableSubmitCellsText(4, 5);
+            ImGui::EndTable();
+        }
+        ImGui::End();
+
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ctx->SetRef("Test Window");
+        ImGuiTable* table = ImGui::TableFindByID(ctx->GetID("table1"));
+
+        // Ensure default order is set initially.
+        IM_CHECK(table->IsDefaultDisplayOrder);
+        for (int i = 0; i < table->ColumnsCount; i++)
+            IM_CHECK_EQ(table->DisplayOrderToIndex[i], i);
+
+        // FIXME-TESTS: Column reorder fails in fast mode. Technically it doesn't affect this test since they are next to each others.
+        ctx->ItemDragAndDrop(TableGetHeaderID(table, "1"), TableGetHeaderID(table, "2"));
+        ctx->ItemDragAndDrop(TableGetHeaderID(table, "3"), TableGetHeaderID(table, "4"));
+        IM_CHECK_EQ(table->DisplayOrderToIndex[0], 1);
+        IM_CHECK_EQ(table->DisplayOrderToIndex[1], 0);
+        IM_CHECK_EQ(table->DisplayOrderToIndex[2], 3);
+        IM_CHECK_EQ(table->DisplayOrderToIndex[3], 2);
+        ctx->GenericVars.Int1 = 2;
+        ctx->Yield();
+        IM_CHECK_EQ(table->DisplayOrderToIndex[0], 1);
+        IM_CHECK_EQ(table->DisplayOrderToIndex[1], 0);
+        IM_CHECK_EQ(table->DisplayOrderToIndex[2], 3);
+        IM_CHECK_EQ(table->DisplayOrderToIndex[3], 2);
+    };
+
     // ## Test window with _AlwaysAutoResize getting resized to size of a table it contains.
     t = IM_REGISTER_TEST(e, "table", "table_auto_resize");
     t->Flags |= ImGuiTestFlags_NoAutoFinish;
