@@ -1677,6 +1677,43 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         IM_CHECK(status.Edited == 1);
     };
 
+    // ## Check step buttons of InputScalar().
+    t = IM_REGISTER_TEST(e, "widgets", "widgets_inputscalar_step");
+    struct InputScalarStepVars { int Int = 0; float Float = 0.0f; double Double = 0.0; };
+    t->SetUserDataType<InputScalarStepVars>();
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        InputScalarStepVars& vars = ctx->GetUserData<InputScalarStepVars>();
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
+        ImGui::InputInt("Int", &vars.Int, 2);
+        ImGui::InputFloat("Float", &vars.Float, 1.5f);
+        ImGui::InputDouble("Double", &vars.Double, 1.5);
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        InputScalarStepVars& vars = ctx->GetUserData<InputScalarStepVars>();
+        ctx->SetRef("Test Window");
+
+        ctx->ItemClick("Int/+");
+        IM_CHECK(vars.Int == +2);
+        ctx->ItemClick("Int/-");
+        ctx->ItemClick("Int/-");
+        IM_CHECK(vars.Int == -2);
+
+        ctx->ItemClick("Float/+");
+        IM_CHECK(vars.Float == +1.5f);
+        ctx->ItemClick("Float/-");
+        ctx->ItemClick("Float/-");
+        IM_CHECK(vars.Float == -1.5f);
+
+        ctx->ItemClick("Double/+");
+        IM_CHECK(vars.Double == +1.5);
+        ctx->ItemClick("Double/-");
+        ctx->ItemClick("Double/-");
+        IM_CHECK(vars.Double == -1.5);
+    };
+
     // ## Test that tight tab bar does not create extra drawcalls
     t = IM_REGISTER_TEST(e, "widgets", "widgets_tabbar_drawcalls");
     t->GuiFunc = [](ImGuiTestContext* ctx)
