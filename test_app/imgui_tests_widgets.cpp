@@ -4181,4 +4181,44 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
     {
         IM_CHECK_STR_EQ(ctx->GenericVars.Str1, "File | Edit");
     };
+
+    // ## Test Splitter().
+    t = IM_REGISTER_TEST(e, "widgets", "widgets_splitter");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::SetNextWindowSize(ImVec2(300, 200), ImGuiCond_Always);
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImVec2& child_size = ctx->GenericVars.Size;
+        ImGuiAxis axis = (ImGuiAxis)ctx->Test->ArgVariant;
+
+        ImGui::Splitter("splitter", &child_size.x, &child_size.y, axis, +1);
+
+        if (ImGui::BeginChild("Child 1", ImVec2(axis == ImGuiAxis_X ? child_size.x : 0.0f, axis == ImGuiAxis_Y ? child_size.x : 0.0f)))
+            ImGui::TextUnformatted("Child 1");
+        ImGui::EndChild();
+
+        if (ImGui::BeginChild("Child 2", ImVec2(axis == ImGuiAxis_X ? child_size.y : 0.0f, axis == ImGuiAxis_Y ? child_size.y : 0.0f)))
+            ImGui::TextUnformatted("Child 1");
+        ImGui::EndChild();
+
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiWindow* child1 = ctx->GetWindowByRef(ctx->GetChildWindowID("Test Window", "Child 1"));
+        ImGuiWindow* child2 = ctx->GetWindowByRef(ctx->GetChildWindowID("Test Window", "Child 2"));
+        ctx->SetRef("Test Window");
+        ImVec2& child_size = ctx->GenericVars.Size;
+        for (int axis = 0; axis < 2; axis++)
+        {
+            ctx->LogDebug("Axis: ImGuiAxis_%s", axis ? "Y" : "X");
+            ctx->Test->ArgVariant = axis;
+            child_size = ImVec2(100, 100);
+            for (int i = -1; i < 1; i++)
+            {
+                ctx->ItemDragWithDelta("splitter", ImVec2(50.0f * i, 50.0f * i));
+                IM_CHECK_EQ(axis == ImGuiAxis_X ? child1->Size.x + child2->Size.x : child1->Size.y + child2->Size.y, child_size.x + child_size.y);
+            }
+        }
+    };
 }
