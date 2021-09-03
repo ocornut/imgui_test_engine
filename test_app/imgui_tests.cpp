@@ -162,8 +162,41 @@ void RegisterTests_Window(ImGuiTestEngine* e)
             ctx->Finish();
     };
 
+    // ## Test window size constraints.
+    t = IM_REGISTER_TEST(e, "window", "window_size_constraints");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        auto constraints = [](ImGuiSizeCallbackData* data)
+        {
+            IM_ASSERT(data != NULL);
+            ImGuiTestContext* ctx = (ImGuiTestContext*)data->UserData;
+            if (ctx->IsFirstGuiFrame())
+            {
+                ImGuiWindow* window = ImGui::GetCurrentWindow();
+                IM_CHECK_EQ(data->Pos, window->Pos);
+                IM_CHECK_EQ(data->CurrentSize, window->SizeFull);
+            }
+            data->DesiredSize.x = ImMax(data->DesiredSize.x, data->DesiredSize.y);
+            data->DesiredSize.y = ImMax(data->DesiredSize.x, data->DesiredSize.y);
+        };
+        ImGui::SetNextWindowSizeConstraints(ImVec2(0, 0), ImVec2(500, 500), constraints, ctx);
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImGui::TextUnformatted("Lorem ipsum dolor sit amet");
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiWindow* window = ctx->GetWindowByRef("Test Window");
+        for (int i = 0; i < 2; i++)
+        {
+            ctx->WindowResize("Test Window", ImVec2(200.0f + i * 100.0f, 100.0f));
+            IM_CHECK_EQ(window->SizeFull.x, 200.0f + i * 100.0f);
+            IM_CHECK_EQ(window->SizeFull.y, 200.0f + i * 100.0f);
+        }
+    };
+
     // ## Test basic window auto resize
-    t = IM_REGISTER_TEST(e, "window", "window_auto_resize_basic");
+    t = IM_REGISTER_TEST(e, "window", "window_size_auto_basic");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         // FIXME-TESTS: Ideally we'd like a variant with/without the if (Begin) here
@@ -186,7 +219,7 @@ void RegisterTests_Window(ImGuiTestEngine* e)
     };
 
     // ## Test that uncollapsing an auto-resizing window does not go through a frame where the window is smaller than expected
-    t = IM_REGISTER_TEST(e, "window", "window_auto_resize_uncollapse");
+    t = IM_REGISTER_TEST(e, "window", "window_size_auto_uncollapse");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         // FIXME-TESTS: Ideally we'd like a variant with/without the if (Begin) here
