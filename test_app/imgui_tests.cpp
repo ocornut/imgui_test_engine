@@ -41,7 +41,7 @@ void RegisterTests_Window(ImGuiTestEngine* e)
     ImGuiTest* t = NULL;
 
     // ## Test size of an empty window
-    t = IM_REGISTER_TEST(e, "window", "empty");
+    t = IM_REGISTER_TEST(e, "window", "window_empty");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         //ImGui::GetStyle().WindowMinSize = ImVec2(10, 10);
@@ -1053,10 +1053,11 @@ void RegisterTests_Window(ImGuiTestEngine* e)
     };
 
     // ## Test animated window title.
+    // ## Use ImGuiWindowFlags_UnsavedDocument for dumb coverage purpose only.
     t = IM_REGISTER_TEST(e, "window", "window_title_animation");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
-        ImGui::Begin(Str30f("Frame %d###Test Window", ImGui::GetFrameCount()).c_str(), NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImGui::Begin(Str30f("Frame %d###Test Window", ImGui::GetFrameCount()).c_str(), NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_UnsavedDocument);
         ImGui::TextUnformatted("Lorem ipsum dolor sit amet");
         ImGui::End();
     };
@@ -3031,6 +3032,15 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
         ctx->ItemOpen("Basic");
         ctx->ItemClick("Basic/radio c");
         ctx->WindowResize("Dear ImGui Demo", backup_size);
+
+        // Flex the popup showing in "Circle Tessellation Max Error" (note that style modifications are restored at end of test)
+        ctx->ItemOpen("Configuration");
+        ctx->ItemOpen("Style");
+        ctx->ItemClick("**/Rendering");
+        ctx->ItemDoubleClick("**/Circle Tessellation Max Error");
+        ctx->KeyCharsReplaceEnter("1.5");
+        ctx->ItemDoubleClick("**/Circle Tessellation Max Error");
+        ctx->KeyCharsReplaceEnter("1.25");
     };
 
     t = IM_REGISTER_TEST(e, "demo", "demo_cov_apps");
