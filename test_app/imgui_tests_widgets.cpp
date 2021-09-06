@@ -2916,6 +2916,20 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ctx->WindowClose("");
     };
 
+    // ## Flex code paths that try to avoid formatting when "%s" is used as format.
+    t = IM_REGISTER_TEST(e, "widgets", "widgets_text_unformatted_shortcut");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImGui::Text("%s", "HELLO"); // FIXME: Maybe change this to add the shortcut?
+        ImGui::TextDisabled("%s", "...");
+        ImGui::TextColored(ImColor(IM_COL32_WHITE), "%s", "...");
+        ImGui::TextWrapped("%s", "...");
+        ImGuiContext& g = *ImGui::GetCurrentContext();
+        IM_CHECK_STR_EQ(g.TempBuffer, "HELLO");
+        ImGui::End();
+    };
+
     // ## Test LabelText() variants layout (#4004)
     t = IM_REGISTER_TEST(e, "widgets", "widgets_label_text");
     t->GuiFunc = [](ImGuiTestContext* ctx)
