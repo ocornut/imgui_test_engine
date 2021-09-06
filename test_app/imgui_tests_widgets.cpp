@@ -24,6 +24,8 @@
 
 // Helpers
 static inline bool operator==(const ImVec2& lhs, const ImVec2& rhs)     { return lhs.x == rhs.x && lhs.y == rhs.y; }    // for IM_CHECK_EQ()
+static inline bool operator==(const ImVec4& lhs, const ImVec4& rhs)     { return lhs.x == rhs.x && lhs.y == rhs.y && lhs.z == rhs.z && lhs.w == rhs.w; }
+static inline bool operator!=(const ImVec4& lhs, const ImVec4& rhs)     { return lhs.x != rhs.x || lhs.y != rhs.y || lhs.z != rhs.z || lhs.w != rhs.w; }
 
 typedef ImGuiDataTypeTempStorage ImGuiDataTypeStorage; // Will rename in imgui/ later
 void GetSliderTestRanges(ImGuiDataType data_type, ImGuiDataTypeStorage* min_p, ImGuiDataTypeStorage* max_p)
@@ -2518,6 +2520,45 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         // FIXME-TESTS: If test did not crash - it passed. A better way to check this would be useful.
     };
 
+    // ## Test ColorEdit hex input
+    t = IM_REGISTER_TEST(e, "widgets", "widgets_coloredit_hexinput");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiTestGenericVars& vars = ctx->GenericVars;
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
+        ImGui::ColorEdit4("ColorEdit1", &vars.Vec4Array[0].x, ImGuiColorEditFlags_DisplayHex);
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiContext& g = *ctx->UiContext;
+        ImGuiTestGenericVars& vars = ctx->GenericVars;
+        vars.Vec4Array[0] = ImVec4(1, 0, 0, 1);
+
+        ctx->SetRef("Test Window");
+
+        // Compare with epsilon.
+#define IM_EQUAL_EPS(a, b) (ImAbs(a - b) < 0.0000001f)
+        auto equal = [](const ImVec4& a, const ImVec4& b) { return IM_EQUAL_EPS(a.x, b.x) && IM_EQUAL_EPS(a.y, b.y) && IM_EQUAL_EPS(a.z, b.z) && IM_EQUAL_EPS(a.w, b.w); };
+#undef IM_EQUAL_EPS
+
+        // Test hex inputs.
+        ctx->ItemClick("ColorEdit1/##ColorButton");
+        ctx->SetRef(g.NavWindow);
+        ctx->ItemClick("##picker/##hex/##Text");
+        ctx->KeyCharsReplaceEnter("112233");
+        IM_CHECK(equal(vars.Vec4Array[0], ImVec4(ImColor(0x11, 0x22, 0x33, 0xFF))));
+        ctx->ItemClick("##picker/##hex/##Text");
+        ctx->KeyCharsReplaceEnter("11223344");
+        IM_CHECK(equal(vars.Vec4Array[0], ImVec4(ImColor(0x11, 0x22, 0x33, 0x44))));
+        ctx->ItemClick("##picker/##hex/##Text");
+        ctx->KeyCharsReplaceEnter("#112233");
+        IM_CHECK(equal(vars.Vec4Array[0], ImVec4(ImColor(0x11, 0x22, 0x33, 0xFF))));
+        ctx->ItemClick("##picker/##hex/##Text");
+        ctx->KeyCharsReplaceEnter("#11223344");
+        IM_CHECK(equal(vars.Vec4Array[0], ImVec4(ImColor(0x11, 0x22, 0x33, 0x44))));
+    };
+
     // ## Test ColorEdit basic Drag and Drop
     t = IM_REGISTER_TEST(e, "widgets", "widgets_drag_coloredit");
     t->GuiFunc = [](ImGuiTestContext* ctx)
@@ -2537,9 +2578,9 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
 
         ctx->SetRef("Test Window");
 
-        IM_CHECK_NE(memcmp(&vars.Vec4Array[0], &vars.Vec4Array[1], sizeof(ImVec4)), 0);
+        IM_CHECK_NE(vars.Vec4Array[0], vars.Vec4Array[1]);
         ctx->ItemDragAndDrop("ColorEdit1/##ColorButton", "ColorEdit2/##X"); // FIXME-TESTS: Inner items
-        IM_CHECK_EQ(memcmp(&vars.Vec4Array[0], &vars.Vec4Array[1], sizeof(ImVec4)), 0);
+        IM_CHECK_EQ(vars.Vec4Array[0], vars.Vec4Array[1]);
     };
 
     // ## Test BeginDragDropSource() with NULL id.
