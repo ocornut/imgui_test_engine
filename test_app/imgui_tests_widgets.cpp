@@ -4221,4 +4221,27 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
             }
         }
     };
+
+#ifndef IMGUI_DISABLE_OBSOLETE_FUNCTIONS
+    // ## Test legacy float format string patching in DragInt().
+    t = IM_REGISTER_TEST(e, "widgets", "widgets_dragint_float_format");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        auto& vars = ctx->GenericVars;
+        if (ctx->IsFirstGuiFrame())
+            vars.Int1 = 123;
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
+        ImGui::LogToBuffer();
+        ImGui::DragInt("%f", &vars.Int1, 1, 0, 0, "%f");
+        ImGui::DragInt("%.0f", &vars.Int1, 1, 0, 0, "%.0f");
+        ImGui::DragInt("%.3f", &vars.Int1, 1, 0, 0, "%.3f");
+        ImStrncpy(vars.Str1, ctx->UiContext->LogBuffer.c_str(), IM_ARRAYSIZE(vars.Str2));
+        ImGui::LogFinish();
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        IM_CHECK_STR_EQ(ctx->GenericVars.Str1, "{ 123 } %f" IM_NEWLINE "{ 123 } %.0f" IM_NEWLINE "{ 123 } %.3f");
+    };
+#endif
 }
