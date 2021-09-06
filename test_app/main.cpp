@@ -68,6 +68,13 @@ static inline void DebugCrtDumpLeaks()
 #endif
 
 //-------------------------------------------------------------------------
+// Allocators
+//-------------------------------------------------------------------------
+
+static void*   MallocWrapper(size_t size, void* user_data)    { IM_UNUSED(user_data); return malloc(size); }
+static void    FreeWrapper(void* ptr, void* user_data)        { IM_UNUSED(user_data); free(ptr); }
+
+//-------------------------------------------------------------------------
 // Test Application
 //-------------------------------------------------------------------------
 
@@ -362,6 +369,16 @@ int main(int argc, char** argv)
         if (g_App.OptVerboseLevelError == ImGuiTestVerboseLevel_COUNT)
             g_App.OptVerboseLevelError = ImGuiTestVerboseLevel_Debug;
     }
+
+    // Custom allocator functions, only to test overriding of allocators.
+    ImGui::SetAllocatorFunctions(&MallocWrapper, &FreeWrapper, &g_App);
+    ImGuiMemAllocFunc alloc_func;
+    ImGuiMemFreeFunc free_func;
+    void* alloc_user_data;
+    ImGui::GetAllocatorFunctions(&alloc_func, &free_func, &alloc_user_data);
+    IM_ASSERT(alloc_func == &MallocWrapper);
+    IM_ASSERT(free_func == &FreeWrapper);
+    IM_ASSERT(alloc_user_data == &g_App);
 
     // Setup Dear ImGui binding
     IMGUI_CHECKVERSION();
