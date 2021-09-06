@@ -487,6 +487,66 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
         IM_CHECK(g.ActiveId == ctx->GetID("/Test Window/InputText"));
     };
 
+#if IMGUI_VERSION_NUM >= 18412
+    // ## Test NavInput (#2321 and many others)
+    t = IM_REGISTER_TEST(e, "nav", "nav_input");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        auto& vars = ctx->GenericVars;
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImGui::InputText("InputText", vars.Str1, IM_ARRAYSIZE(vars.Str1));
+        if (ImGui::Button("Button"))
+            vars.Int1++;
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiContext& g = *ctx->UiContext;
+        auto& vars = ctx->GenericVars;
+
+        ctx->SetRef("Test Window");
+        ctx->NavMoveTo("InputText");
+
+        // Cross/Activate to apply + release ActiveId
+        ctx->NavInput();
+        IM_CHECK(g.ActiveId == ctx->GetID("/Test Window/InputText"));
+        ctx->KeyCharsReplaceEnter("0");
+        IM_CHECK_STR_EQ(vars.Str1, "0");
+        ctx->NavInput();
+        ctx->KeyCharsReplace("123");
+        IM_CHECK_STR_EQ(vars.Str1, "123");
+        ctx->NavKeyPress(ImGuiNavInput_Activate);
+        IM_CHECK(g.ActiveId == 0);
+        IM_CHECK_STR_EQ(vars.Str1, "123");
+
+        // Circle/Cancel to revert + release ActiveId
+        ctx->NavInput();
+        ctx->KeyCharsReplaceEnter("0");
+        IM_CHECK_STR_EQ(vars.Str1, "0");
+        ctx->NavInput();
+        ctx->KeyCharsReplace("123");
+        ctx->NavKeyPress(ImGuiNavInput_Cancel);
+        IM_CHECK(g.ActiveId == 0);
+        IM_CHECK_STR_EQ(vars.Str1, "0");
+
+        // Triangle/Input again to release active id + apply?
+        ctx->NavInput();
+        ctx->KeyCharsReplaceEnter("0");
+        IM_CHECK_STR_EQ(vars.Str1, "0");
+        ctx->NavInput();
+        ctx->KeyCharsReplace("123");
+        ctx->NavInput();
+        IM_CHECK(g.ActiveId == 0);
+        IM_CHECK_STR_EQ(vars.Str1, "123");
+
+        // Verify that NavInput doesn't trigger other fields
+        vars.Int1 = 0;
+        ctx->NavMoveTo("Button");
+        ctx->NavInput();
+        IM_CHECK(vars.Int1 == 0);
+    };
+#endif
+
     // ## Test NavID restoration when focusing another window or STOPPING to submit another world
     t = IM_REGISTER_TEST(e, "nav", "nav_focus_restore_on_missing_window");
     t->GuiFunc = [](ImGuiTestContext* ctx)

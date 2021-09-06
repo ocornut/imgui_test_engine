@@ -970,27 +970,8 @@ void    ImGuiTestContext::NavActivate()
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
     LogDebug("NavActivate");
 
-    Yield();
-
-    int frames_to_hold = 2; // FIXME-TESTS: <-- number of frames could be fuzzed here
-#if 1
-    // Feed gamepad nav inputs
-    for (int n = 0; n < frames_to_hold; n++)
-    {
-        ImGuiTestEngine_PushInput(Engine, ImGuiTestInput::FromNav(ImGuiNavInput_Activate, ImGuiKeyState_Down));
-        Yield();
-    }
-    ImGuiTestEngine_PushInput(Engine, ImGuiTestInput::FromNav(ImGuiNavInput_Activate, ImGuiKeyState_Up));
-    Yield();
-#else
-    // Feed keyboard keys
-    ImGuiTestEngine_PushInput(Engine, ImGuiTestInput::FromKey(ImGuiKey_Space, ImGuiKeyState_Down));
-    for (int n = 0; n < frames_to_hold; n++)
-        Yield();
-    ImGuiTestEngine_PushInput(Engine, ImGuiTestInput::FromKey(ImGuiKey_Space, ImGuiKeyState_Up));
-    Yield();
-    Yield();
-#endif
+    Yield(); // ?
+    NavKeyPress(ImGuiNavInput_Activate);
 }
 
 void    ImGuiTestContext::NavInput()
@@ -1000,15 +981,7 @@ void    ImGuiTestContext::NavInput()
 
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
     LogDebug("NavInput");
-
-    int frames_to_hold = 2; // FIXME-TESTS: <-- number of frames could be fuzzed here
-    for (int n = 0; n < frames_to_hold; n++)
-    {
-        ImGuiTestEngine_PushInput(Engine, ImGuiTestInput::FromNav(ImGuiNavInput_Input, ImGuiKeyState_Down));
-        Yield();
-    }
-    ImGuiTestEngine_PushInput(Engine, ImGuiTestInput::FromNav(ImGuiNavInput_Input, ImGuiKeyState_Up));
-    Yield();
+    NavKeyPress(ImGuiNavInput_Input);
 }
 
 void    ImGuiTestContext::NavEnableForWindow()
