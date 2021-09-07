@@ -430,7 +430,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
 
     // ## Test DragInt() as InputText
     // ## Test ColorEdit4() as InputText (#2557)
-    t = IM_REGISTER_TEST(e, "widgets", "widgets_as_input");
+    t = IM_REGISTER_TEST(e, "widgets", "widgets_dragslider_as_input");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         ImGuiTestGenericVars& vars = ctx->GenericVars;
@@ -462,7 +462,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
     };
 
     // ## Test Sliders and Drags clamping values
-    t = IM_REGISTER_TEST(e, "widgets", "widgets_drag_slider_clamping");
+    t = IM_REGISTER_TEST(e, "widgets", "widgets_dragslider_clamping");
     struct ImGuiDragSliderVars { float DragValue = 0.0f; float DragMin = 0.0f; float DragMax = 1.0f; float SliderValue = 0.0f; float SliderMin = 0.0f; float SliderMax = 0.0f; float ScalarValue = 0.0f; void* ScalarMinP = NULL; void* ScalarMaxP = NULL; ImGuiSliderFlags Flags = ImGuiSliderFlags_None; };
     t->SetUserDataType<ImGuiDragSliderVars>();
     t->GuiFunc = [](ImGuiTestContext* ctx)
@@ -2769,6 +2769,65 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ctx->MouseUp();
     };
 
+    // ## Test drag & drop using three main mouse buttons.
+    t = IM_REGISTER_TEST(e, "widgets", "widgets_drag_mouse_buttons");
+    struct DragMouseButtonsVars { bool Pressed = false; bool Dropped = false; };
+    t->SetUserDataType<DragMouseButtonsVars>();
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiContext& g = *ImGui::GetCurrentContext();
+        DragMouseButtonsVars& vars = ctx->GetUserData<DragMouseButtonsVars>();
+        ImGui::SetNextWindowSize(ImVec2(0, 0), ImGuiCond_Appearing);
+        if (ImGui::Begin("Window", NULL, ImGuiWindowFlags_NoSavedSettings))
+        {
+            vars.Pressed |= ImGui::Button("Button");
+
+            // This is a workaround for button widget not reacting to mouse clicks other than the left one.
+            // See https://github.com/ocornut/imgui/issues/3885 for more details.
+            ImGui::ButtonBehavior(g.LastItemData.Rect, g.LastItemData.ID, NULL, NULL, ImGuiButtonFlags_MouseButtonLeft | ImGuiButtonFlags_MouseButtonMiddle | ImGuiButtonFlags_MouseButtonRight);
+
+            if (ImGui::BeginDragDropSource())
+            {
+                for (int button = 0; button < ImGuiMouseButton_COUNT; button++)
+                    if (ImGui::IsMouseDown(button))
+                        ImGui::Text("Dragged by button %d", button);
+                ImGui::SetDragDropPayload("Button", "Works", 6);
+                ImGui::EndDragDropSource();
+            }
+
+            ImGui::Button("Drop Here");
+            if (ImGui::BeginDragDropTarget())
+            {
+                if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("Button"))
+                    vars.Dropped = payload->Data != NULL && strcmp((const char*)payload->Data, "Works") == 0;
+                ImGui::EndDragDropTarget();
+            }
+        }
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        DragMouseButtonsVars& vars = ctx->GetUserData<DragMouseButtonsVars>();
+        ctx->SetRef("Window");
+
+        // Clicking still works.
+        for (int button = 0; button < 3; button++)
+        {
+            vars.Pressed = false;
+            ctx->ItemClick("Button", button);
+            IM_CHECK(vars.Pressed);
+        }
+
+        // Drag & drop using all mouse buttons work.
+        // FIXME: At this time only left, right and middle mouse buttons are supported for this usecase.
+        for (ImGuiMouseButton button = 0; button < 3; button++)
+        {
+            vars.Dropped = false;
+            ctx->ItemDragAndDrop("Button", "Drop Here", button);
+            IM_CHECK(vars.Dropped);
+        }
+    };
+
     // ## Test using default context menu along with a combo (#4167)
 #if IMGUI_VERSION_NUM >= 18211
     t = IM_REGISTER_TEST(e, "widgets", "widgets_combo_context_menu");
@@ -3001,8 +3060,32 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ctx->MenuClick("First Menu/Second Menu/2 Second");
     };
 
+    // ## Test text capture of separator in a menu.
+    t = IM_REGISTER_TEST(e, "widgets", "widgets_menu_separator");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_MenuBar);
+        if (ImGui::BeginMenuBar())
+        {
+            ImGui::LogToBuffer();
+            if (ImGui::BeginMenu("File"))
+                ImGui::EndMenu();
+            ImGui::Separator();
+            if (ImGui::BeginMenu("Edit"))
+                ImGui::EndMenu();
+            ImGui::EndMenuBar();
+            ImStrncpy(ctx->GenericVars.Str1, ctx->UiContext->LogBuffer.c_str(), IM_ARRAYSIZE(ctx->GenericVars.Str1));
+            ImGui::LogFinish();
+        }
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        IM_CHECK_STR_EQ(ctx->GenericVars.Str1, "File | Edit");
+    };
+
     // ## Test main menubar appending.
-    t = IM_REGISTER_TEST(e, "widgets", "widgets_main_menubar_append");
+    t = IM_REGISTER_TEST(e, "widgets", "widgets_menu_mainmenubar_append");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         // Menu that we will append to.
@@ -3033,7 +3116,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
     };
 
     // ## Test main menubar navigation
-    t = IM_REGISTER_TEST(e, "widgets", "widgets_main_menubar_navigation");
+    t = IM_REGISTER_TEST(e, "widgets", "widgets_menu_mainmenubar_navigation");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         if (ImGui::BeginMainMenuBar())
@@ -3857,65 +3940,6 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         }
     };
 
-    // ## Test drag & drop using three main mouse buttons.
-    t = IM_REGISTER_TEST(e, "widgets", "widgets_drag_mouse_buttons");
-    struct DragMouseButtonsVars { bool Pressed = false; bool Dropped = false; };
-    t->SetUserDataType<DragMouseButtonsVars>();
-    t->GuiFunc = [](ImGuiTestContext* ctx)
-    {
-        ImGuiContext& g = *ImGui::GetCurrentContext();
-        DragMouseButtonsVars& vars = ctx->GetUserData<DragMouseButtonsVars>();
-        ImGui::SetNextWindowSize(ImVec2(0, 0), ImGuiCond_Appearing);
-        if (ImGui::Begin("Window", NULL, ImGuiWindowFlags_NoSavedSettings))
-        {
-            vars.Pressed |= ImGui::Button("Button");
-
-            // This is a workaround for button widget not reacting to mouse clicks other than the left one.
-            // See https://github.com/ocornut/imgui/issues/3885 for more details.
-            ImGui::ButtonBehavior(g.LastItemData.Rect, g.LastItemData.ID, NULL, NULL, ImGuiButtonFlags_MouseButtonLeft | ImGuiButtonFlags_MouseButtonMiddle | ImGuiButtonFlags_MouseButtonRight);
-
-            if (ImGui::BeginDragDropSource())
-            {
-                for (int button = 0; button < ImGuiMouseButton_COUNT; button++)
-                    if (ImGui::IsMouseDown(button))
-                        ImGui::Text("Dragged by button %d", button);
-                ImGui::SetDragDropPayload("Button", "Works", 6);
-                ImGui::EndDragDropSource();
-            }
-
-            ImGui::Button("Drop Here");
-            if (ImGui::BeginDragDropTarget())
-            {
-                if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("Button"))
-                    vars.Dropped = payload->Data != NULL && strcmp((const char*)payload->Data, "Works") == 0;
-                ImGui::EndDragDropTarget();
-            }
-        }
-        ImGui::End();
-    };
-    t->TestFunc = [](ImGuiTestContext* ctx)
-    {
-        DragMouseButtonsVars& vars = ctx->GetUserData<DragMouseButtonsVars>();
-        ctx->SetRef("Window");
-
-        // Clicking still works.
-        for (int button = 0; button < 3; button++)
-        {
-            vars.Pressed = false;
-            ctx->ItemClick("Button", button);
-            IM_CHECK(vars.Pressed);
-        }
-
-        // Drag & drop using all mouse buttons work.
-        // FIXME: At this time only left, right and middle mouse buttons are supported for this usecase.
-        for (ImGuiMouseButton button = 0; button < 3; button++)
-        {
-            vars.Dropped = false;
-            ctx->ItemDragAndDrop("Button", "Drop Here", button);
-            IM_CHECK(vars.Dropped);
-        }
-    };
-
     // ## Test disabled items setting g.HoveredId and taking clicks.
 #if (IMGUI_VERSION_NUM >= 18310)
     t = IM_REGISTER_TEST(e, "widgets", "widgets_disabled");
@@ -4170,30 +4194,6 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ctx->MouseMove("You! Shall! Not! Scroll!");
         ctx->MouseWheel(ImVec2(0.0f, -10.0f));
         IM_CHECK(window->Scroll.y == 0.0f);
-    };
-
-    // ## Test text capture of separator in a menu.
-    t = IM_REGISTER_TEST(e, "widgets", "widgets_menu_separator");
-    t->GuiFunc = [](ImGuiTestContext* ctx)
-    {
-        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_MenuBar);
-        if (ImGui::BeginMenuBar())
-        {
-            ImGui::LogToBuffer();
-            if (ImGui::BeginMenu("File"))
-                ImGui::EndMenu();
-            ImGui::Separator();
-            if (ImGui::BeginMenu("Edit"))
-                ImGui::EndMenu();
-            ImGui::EndMenuBar();
-            ImStrncpy(ctx->GenericVars.Str1, ctx->UiContext->LogBuffer.c_str(), IM_ARRAYSIZE(ctx->GenericVars.Str1));
-            ImGui::LogFinish();
-        }
-        ImGui::End();
-    };
-    t->TestFunc = [](ImGuiTestContext* ctx)
-    {
-        IM_CHECK_STR_EQ(ctx->GenericVars.Str1, "File | Edit");
     };
 
     // ## Test Splitter().
