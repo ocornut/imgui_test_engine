@@ -3168,6 +3168,11 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
         // Ensure Metrics windows is closed when beginning the test
         ctx->SetRef("/Dear ImGui Demo");
         ctx->MenuCheck("Tools/Metrics\\/Debugger");
+
+        // Make tables visible to exercice more of metrics paths
+        ctx->ItemOpen("Tables & Columns");
+        ctx->ItemOpen("Tables/Advanced");
+
         ctx->SetRef("/Dear ImGui Metrics\\/Debugger");
         ctx->ItemCloseAll("");
 
@@ -3187,10 +3192,10 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
             // they make the tests fail because some "MouseOver" can't find gathered items and make the whole test stop.
             // Maybe make it easier to perform some filtering, aka OpenAll except "XXX"
             // Maybe could add support for ImGuiTestOpFlags_NoError in the ItemOpenAll() path?
-            const int max_count_per_depth[] = { 4, 4, 0 };
             {
+                const int max_count_per_depth[] = { 3, 3, 1, 0 };
                 ImGuiTestActionFilter filter;
-                filter.MaxDepth = 2;
+                filter.MaxDepth = 3;
                 filter.MaxItemCountPerDepth = max_count_per_depth;
                 filter.RequireAllStatusFlags = ImGuiItemStatusFlags_Openable;
                 if (item.ID == ctx->GetID("Windows") || item.ID == ctx->GetID("Viewport") || item.ID == ctx->GetID("Viewports"))
@@ -3200,30 +3205,63 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
                 ctx->ItemActionAll(ImGuiTestAction_Open, item.ID, &filter);
             }
 
+            if (item.ID == ctx->GetID("Windows"))
+            {
+                const int max_count_per_depth[] = { 1, 1, 0 };
+                ImGuiTestActionFilter filter;
+                filter.RequireAllStatusFlags = ImGuiItemStatusFlags_Openable;
+                filter.MaxDepth = 2;
+                filter.MaxPasses = 1;
+                filter.MaxItemCountPerDepth = max_count_per_depth;
+                ctx->ItemActionAll(ImGuiTestAction_Open, "Windows", &filter);
+                ctx->ItemActionAll(ImGuiTestAction_Close, "Windows", &filter);
+            }
+
             // Toggle all tools (to enable/disable them, then restore their initial state)
             if (item.ID == ctx->GetID("Tools"))
             {
                 ImGuiTestActionFilter filter;
                 filter.RequireAllStatusFlags = ImGuiItemStatusFlags_Checkable;
                 filter.MaxDepth = filter.MaxPasses = 1;
+
+                ctx->WindowFocus("/Dear ImGui Demo"); // To exercible "Show Tables Rects"
                 ctx->ItemActionAll(ImGuiTestAction_Click, "Tools", &filter);
+                ctx->WindowFocus("/Dear ImGui Demo"); // To exercible "Show Tables Rects"
                 ctx->ItemActionAll(ImGuiTestAction_Click, "Tools", &filter);
+            }
+
+            // Open fonts/glyphs
+            if (item.ID == ctx->GetID("Fonts"))
+            {
+                ImGuiTestActionFilter filter;
+                filter.RequireAllStatusFlags = ImGuiItemStatusFlags_Openable;
+                filter.MaxDepth = filter.MaxPasses = 4;
+                ctx->ItemActionAll(ImGuiTestAction_Open, "Fonts", &filter);
+                ctx->ItemActionAll(ImGuiTestAction_Close, "Fonts", &filter);
             }
 
             // FIXME-TESTS: in docking branch this is under Viewports
             if (item.ID == ctx->GetID("DrawLists"))
             {
+                const int max_count_per_depth[] = { 3, 3, 0 };
                 ImGuiTestActionFilter filter;
                 filter.MaxDepth = 2;
                 filter.MaxItemCountPerDepth = max_count_per_depth;
-                ctx->ItemActionAll(ImGuiTestAction_Hover, "DrawLists", &filter);
+                ctx->ItemActionAll(ImGuiTestAction_Open, item.ID, &filter);
+                //IM_DEBUG_HALT_TESTFUNC();
+                ctx->ItemActionAll(ImGuiTestAction_Hover, item.ID, &filter);
             }
 
             // Close
             ctx->ItemCloseAll(item.ID);
             ctx->ItemClose(item.ID);
         }
+
         ctx->WindowClose("");
+
+        ctx->SetRef("/Dear ImGui Demo");
+        ctx->ItemClose("Tables/Advanced");
+        ctx->ItemClose("Tables & Columns");
     };
 }
 
