@@ -263,6 +263,77 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
         IM_CHECK(g.NavId == ctx->GetID("/##Menu_00/New"));
     };
 
+    // ## Test menu closing with left arrow key. (#4510)
+    t = IM_REGISTER_TEST(e, "nav", "nav_menu_close");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::SetNextWindowSize(ImVec2(600, 600));
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_MenuBar);
+        if (ImGui::BeginMenuBar())
+        {
+            if (ImGui::BeginMenu("Menu"))
+            {
+                if (ImGui::BeginMenu("Submenu"))
+                {
+                    bool use_child = ctx->Test->ArgVariant == 1;
+                    if (!use_child || ImGui::BeginChild("Child", ImVec2(100.f, 30.f), true))
+                    {
+                        if (ImGui::BeginTabBar("Tabs"))
+                        {
+                            if (ImGui::BeginTabItem("Tab 1"))
+                                ImGui::EndTabItem();
+                            if (ImGui::BeginTabItem("Tab 2"))
+                                ImGui::EndTabItem();
+                            ImGui::EndTabBar();
+                        }
+                    }
+                    if (use_child)
+                        ImGui::EndChild();
+                    ImGui::EndMenu();
+                }
+                ImGui::EndMenu();
+            }
+            ImGui::EndMenuBar();
+        }
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiContext& g = *ctx->UiContext;
+        ImGuiID child_id = ctx->GetChildWindowID("##Menu_01", "Child");
+
+        for (int variant = 0; variant < 2; variant++)
+        {
+            ctx->Test->ArgVariant = variant;
+            ctx->LogDebug("Variant: %d", variant);
+            ctx->SetRef("Test Window");
+            ctx->MenuClick("Menu/Submenu");
+            if (variant == 0)
+                ctx->SetRef("##Menu_01");
+            else
+                ctx->SetRef(child_id);
+            ctx->ItemClick("Tabs/Tab 1");
+            ctx->NavKeyPress(ImGuiNavInput_KeyRight_);          // Activate nav, navigate to next tab
+#if IMGUI_VERSION_NUM < 18414
+            if (g.NavId == ctx->GetID("Tabs/Tab 1"))
+                ctx->NavKeyPress(ImGuiNavInput_KeyRight_);      // FIXME-NAV: NavInit() prevents navigation to Tab 2 on the very first try.
+#endif
+            IM_CHECK(g.NavId == ctx->GetID("Tabs/Tab 2"));
+            ctx->NavKeyPress(ImGuiNavInput_KeyLeft_);           // Navigate to first tab, not closing menu
+            IM_CHECK(g.NavId == ctx->GetID("Tabs/Tab 1"));
+            if (variant == 1)
+            {
+                ctx->NavKeyPress(ImGuiNavInput_KeyLeft_);       // Navigation fails, not closing menu
+                IM_CHECK(g.NavId == ctx->GetID("Tabs/Tab 1"));
+                ctx->KeyPressMap(ImGuiKey_Escape);              // Exit child window nav
+            }
+            ctx->NavKeyPress(ImGuiNavInput_KeyLeft_);           // Close 2nd level menu
+            IM_CHECK_STR_EQ(g.NavWindow->Name, "##Menu_00");
+            ctx->NavKeyPress(ImGuiNavInput_KeyLeft_);           // Close 1st level menu
+            IM_CHECK_STR_EQ(g.NavWindow->Name, "Test Window");
+        }
+    };
+
     // ## Test CTRL+TAB window focusing
     t = IM_REGISTER_TEST(e, "nav", "nav_ctrl_tab_focusing");
     t->GuiFunc = [](ImGuiTestContext* ctx)
