@@ -116,6 +116,9 @@
     <ClCompile Include="..\libs\implot\implot.cpp">
       <Filter>libs\implot</Filter>
     </ClCompile>
+    <ClCompile Include="imgui_tests_viewports.cpp">
+      <Filter>test_app</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Natvis Include="..\..\imgui\misc\debuggers\imgui.natvis">

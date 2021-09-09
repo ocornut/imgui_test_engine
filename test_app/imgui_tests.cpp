@@ -3606,6 +3606,7 @@ void RegisterTests(ImGuiTestEngine* e)
     extern void RegisterTests_Perf(ImGuiTestEngine * e);        // imgui_tests_perf.cpp
     extern void RegisterTests_Columns(ImGuiTestEngine * e);     // imgui_tests_tables.cpp
     extern void RegisterTests_Table(ImGuiTestEngine * e);       // imgui_tests_tables.cpp
+    extern void RegisterTests_Viewports(ImGuiTestEngine * e);   // imgui_tests_viewports.cpp
     extern void RegisterTests_Widgets(ImGuiTestEngine * e);     // imgui_tests_widgets.cpp
 
     // Tests
@@ -3616,6 +3617,7 @@ void RegisterTests(ImGuiTestEngine* e)
     RegisterTests_Columns(e);
     RegisterTests_Table(e);
     RegisterTests_Docking(e);
+    RegisterTests_Viewports(e);
     RegisterTests_DrawList(e);
     RegisterTests_Misc(e);
 

@@ -179,6 +179,7 @@
     <ClCompile Include="imgui_tests_nav.cpp" />
     <ClCompile Include="imgui_tests_perf.cpp" />
     <ClCompile Include="imgui_tests_tables.cpp" />
+    <ClCompile Include="imgui_tests_viewports.cpp" />
     <ClCompile Include="imgui_tests_widgets.cpp" />
     <ClCompile Include="main.cpp" />
   </ItemGroup>
