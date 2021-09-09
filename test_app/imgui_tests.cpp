@@ -574,8 +574,16 @@ void RegisterTests_Window(ImGuiTestEngine* e)
         IM_CHECK(io.WantCaptureMouse == true);
         IM_CHECK(io.WantCaptureMouseUnlessPopupClose == true);
         ctx->MouseMoveToPos(ctx->GetVoidPos());
+        IM_CHECK(g.HoveredWindow == NULL);
         IM_CHECK(io.WantCaptureMouse == true);
         IM_CHECK(io.WantCaptureMouseUnlessPopupClose == true);
+
+        // Move to button behind, verify it is inhibited
+        ctx->MouseMove("/Test Window/Open Modal", ImGuiTestOpFlags_NoFocusWindow | ImGuiTestOpFlags_NoCheckHoveredId);
+        IM_CHECK(g.HoveredWindow == NULL);
+        IM_CHECK(io.WantCaptureMouse == true);
+        IM_CHECK(io.WantCaptureMouseUnlessPopupClose == true);
+
         ctx->PopupCloseAll();
     };
 #endif
