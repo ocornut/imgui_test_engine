@@ -1446,7 +1446,7 @@ void ImGuiTestEngineHook_ItemInfo(ImGuiContext* ui_ctx, ImGuiID id, const char* 
 
     // Update Find by Label Task
     ImGuiTestFindByLabelTask* label_task = &engine->FindByLabelTask;
-    if (label_task->InLabel && ImStrcmp(label_task->InLabel, label) == 0 && label_task->OutItemId == 0)
+    if (label && label_task->OutItemId == 0 && label_task->InLabel && ImStrcmp(label_task->InLabel, label) == 0)
     {
         bool match = false; //(label_task->InBaseId == 0);
         if (!match)
@@ -1463,9 +1463,17 @@ void ImGuiTestEngineHook_ItemInfo(ImGuiContext* ui_ctx, ImGuiID id, const char* 
                 }
         }
 
-        // FIXME-TESTS: Return other than final id
         if (match)
-            label_task->OutItemId = id;
+        {
+            int id_stack_size = g.CurrentWindow->IDStack.Size;
+            if (label_task->InLabelCount < id_stack_size)
+            {
+                ImGuiID base_id = g.CurrentWindow->IDStack.Data[id_stack_size - label_task->InLabelCount - 1];
+                ImGuiID find_id = ImHashDecoratedPath(label_task->InLabelFull, NULL, base_id);
+                if (id == find_id)
+                    label_task->OutItemId = id;
+            }
+        }
     }
 }
 

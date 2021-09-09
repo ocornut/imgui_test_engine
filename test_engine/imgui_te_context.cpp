@@ -671,8 +671,20 @@ ImGuiTestItemInfo* ImGuiTestContext::ItemInfo(ImGuiTestRef ref, ImGuiTestOpFlags
             task->InBaseId = ImHashDecoratedPath(wildcard_prefix_start, wildcard_prefix_end, RefID);
         else
             task->InBaseId = RefID;
-        task->InLabel = wildcard_suffix_start;
+        task->InLabelCount = 0;
         task->OutItemId = 0;
+
+        // Advance pointer to point it to the last label
+        task->InLabel = task->InLabelFull = wildcard_suffix_start;
+        for (const char* c = task->InLabel; *c; c++)
+            if (*c == '/')
+                task->InLabel = c + 1;
+
+        // Count number of labels
+        for (const char* c = wildcard_suffix_start; *c; c++)
+            if (*c == '/')
+                task->InLabelCount++;
+
         LogDebug("Wildcard matching..");
 
         int retries = 0;
@@ -685,7 +697,7 @@ ImGuiTestItemInfo* ImGuiTestContext::ItemInfo(ImGuiTestRef ref, ImGuiTestOpFlags
 
         // FIXME: InFilterItemStatusFlags is not clear here intentionally, because it is set in ItemAction() and reused in later calls to ItemInfo() to resolve ambiguities.
         task->InBaseId = 0;
-        task->InLabel = NULL;
+        task->InLabel = task->InLabelFull = NULL;
         task->OutItemId = 0;    // -V1048   // Variable 'OutItemId' was assigned the same value. False-positive, because value of OutItemId could be modified from other thread during ImGuiTestEngine_Yield() call.
     }
     else
