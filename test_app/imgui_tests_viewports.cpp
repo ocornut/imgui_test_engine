@@ -19,6 +19,10 @@
 #pragma GCC diagnostic ignored "-Wunused-parameter"
 #endif
 
+// Operators
+static inline bool operator==(const ImVec2& lhs, const ImVec2& rhs) { return lhs.x == rhs.x && lhs.y == rhs.y; }    // for IM_CHECK_EQ()
+static inline bool operator!=(const ImVec2& lhs, const ImVec2& rhs) { return lhs.x != rhs.x || lhs.y != rhs.y; }    // for IM_CHECK_NE()
+
 //-------------------------------------------------------------------------
 // Tests: Viewports
 //-------------------------------------------------------------------------
@@ -45,6 +49,16 @@ void RegisterTests_Viewports(ImGuiTestEngine* e)
             ImGui::SetNextWindowSize(ImVec2(200, 200));
             ImGui::SetNextWindowPos(main_viewport->WorkPos + ImVec2(20, 20));
         }
+
+        if (vars.Step == 2)
+        {
+            ImGuiWindow* window = ImGui::FindWindowByName("Test Window");
+            if (ctx->UiContext->MovingWindow == window)
+                vars.Count++;
+            if (vars.Count >= 1)
+                return;
+        }
+
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
         ImGui::Text("hello!");
         ImGui::End();
@@ -68,6 +82,14 @@ void RegisterTests_Viewports(ImGuiTestEngine* e)
         ctx->WindowMove("", main_viewport->WorkPos + ImVec2(20.0f, 20.0f));
         IM_CHECK(window->Viewport == main_viewport);
         IM_CHECK(window->Viewport->Window == NULL);
+        IM_CHECK_EQ(window->Pos, main_viewport->WorkPos + ImVec2(20.0f, 20.0f));
+
+        // Test viewport disappearing while moving
+        ctx->WindowMove("", main_viewport->Pos - ImVec2(20.0f, 20.0f));
+        vars.Step = 2;
+        vars.Count = 0;
+        ctx->WindowMove("", main_viewport->WorkPos + ImVec2(100.0f, 100.0f));
+        IM_CHECK_NE(window->Pos, main_viewport->WorkPos + ImVec2(100.0f, 100.0f));
     };
 
 #else
