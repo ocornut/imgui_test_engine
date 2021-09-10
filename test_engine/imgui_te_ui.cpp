@@ -397,7 +397,7 @@ static void ShowTestGroup(ImGuiTestEngine* e, ImGuiTestGroup group, ImGuiTextFil
 
             // Process queuing
             if (queue_gui_func_toggle && is_running_gui_func)
-                ImGuiTestEngine_Abort(e);
+                ImGuiTestEngine_AbortTest(e);
             else if (queue_gui_func_toggle && !e->IO.RunningTests)
                 ImGuiTestEngine_QueueTest(e, test, ImGuiTestRunFlags_ManualRun | ImGuiTestRunFlags_GuiFuncOnly);
             if (queue_test && !e->IO.RunningTests)

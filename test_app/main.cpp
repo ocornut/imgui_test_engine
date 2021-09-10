@@ -488,15 +488,14 @@ int main(int argc, char** argv)
     bool aborted = false;
     while (true)
     {
-        if (!app_window->NewFrame(app_window))
+        // Backend update
+        // (stop updating them once we started aborting, as e.g. closed windows will have zero size etc.)
+        if (!aborted && !app_window->NewFrame(app_window))
             aborted = true;
-        if (aborted)
-        {
-            ImGuiTestEngine_Abort(engine);
-            ImGuiTestEngine_CoroutineStopRequest(engine);
-            if (!ImGuiTestEngine_IsRunningTests(engine))
-                break;
-        }
+
+        // Abort logic
+        if (aborted && ImGuiTestEngine_TryAbortEngine(engine))
+            break;
 
         if (exit_after_tests && !ImGuiTestEngine_IsRunningTests(engine))
             break;

@@ -332,7 +332,8 @@ void                ImGuiTestEngine_RebootUiContext(ImGuiTestEngine* engine);
 ImGuiTest*          ImGuiTestEngine_RegisterTest(ImGuiTestEngine* engine, const char* category, const char* name, const char* src_file = NULL, int src_line = 0);
 void                ImGuiTestEngine_QueueTests(ImGuiTestEngine* engine, ImGuiTestGroup group, const char* filter = NULL, ImGuiTestRunFlags run_flags = 0);
 void                ImGuiTestEngine_QueueTest(ImGuiTestEngine* engine, ImGuiTest* test, ImGuiTestRunFlags run_flags = 0);
-void                ImGuiTestEngine_Abort(ImGuiTestEngine* engine);
+void                ImGuiTestEngine_AbortTest(ImGuiTestEngine* engine);
+bool                ImGuiTestEngine_TryAbortEngine(ImGuiTestEngine* engine);
 bool                ImGuiTestEngine_IsRunningTests(ImGuiTestEngine* engine);        // FIXME: Clarify difference between this and io.RunningTests
 void                ImGuiTestEngine_CoroutineStopRequest(ImGuiTestEngine* engine);
 void                ImGuiTestEngine_UpdateHooks(ImGuiTestEngine* engine);

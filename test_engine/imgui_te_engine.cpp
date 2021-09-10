@@ -354,11 +354,20 @@ ImGuiTestEngineIO&  ImGuiTestEngine_GetIO(ImGuiTestEngine* engine)
     return engine->IO;
 }
 
-void    ImGuiTestEngine_Abort(ImGuiTestEngine* engine)
+void    ImGuiTestEngine_AbortTest(ImGuiTestEngine* engine)
 {
     engine->Abort = true;
     if (ImGuiTestContext* test_context = engine->TestContext)
         test_context->Abort = true;
+}
+
+bool    ImGuiTestEngine_TryAbortEngine(ImGuiTestEngine* engine)
+{
+    ImGuiTestEngine_AbortTest(engine);
+    ImGuiTestEngine_CoroutineStopRequest(engine);
+    if (!ImGuiTestEngine_IsRunningTests(engine))
+        return true;
+    return false; // Still running coroutine
 }
 
 // FIXME-OPT
@@ -660,7 +669,7 @@ static void ImGuiTestEngine_PreNewFrame(ImGuiTestEngine* engine, ImGuiContext* u
         {
             if (engine->TestContext)
                 engine->TestContext->LogWarning("KO: User aborted (pressed ESC)");
-            ImGuiTestEngine_Abort(engine);
+            ImGuiTestEngine_AbortTest(engine);
         }
     }
 
@@ -1016,7 +1025,7 @@ void ImGuiTestEngine_QueueTest(ImGuiTestEngine* engine, ImGuiTest* test, ImGuiTe
     // Detect lack of signal from imgui context, most likely not compiled with IMGUI_ENABLE_TEST_ENGINE=1
     if (engine->FrameCount < engine->UiContextTarget->FrameCount - 2)
     {
-        ImGuiTestEngine_Abort(engine);
+        ImGuiTestEngine_AbortTest(engine);
         IM_ASSERT(0 && "Not receiving signal from core library. Did you call ImGuiTestEngine_CreateContext() with the correct context? Did you compile imgui/ with IMGUI_ENABLE_TEST_ENGINE=1?");
         test->Status = ImGuiTestStatus_Error;
         return;

@@ -181,19 +181,14 @@ int main(int argc, char** argv)
     bool aborted = false;
     while (!aborted)
     {
-        if (!app->NewFrame(app))
+        if (!aborted && !app->NewFrame(app))
             aborted = true;
         if (app->Quit)
             aborted = true;
 
 #ifdef IMGUI_SANDBOX_ENABLE_TEST_ENGINE
-        if (aborted)
-        {
-            ImGuiTestEngine_Abort(engine);
-            ImGuiTestEngine_CoroutineStopRequest(engine);
-            if (!ImGuiTestEngine_IsRunningTests(engine))
-                break;
-        }
+        if (aborted && ImGuiTestEngine_TryAbortEngine(engine))
+            break;
 #endif
 
         ImGui::NewFrame();
