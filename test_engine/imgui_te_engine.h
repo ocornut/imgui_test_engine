@@ -72,7 +72,7 @@ enum ImGuiTestFlags_
     ImGuiTestFlags_NoWarmUp             = 1 << 0,   // By default, we run the GUI func twice before starting the test code
     ImGuiTestFlags_NoAutoFinish         = 1 << 1,   // By default, tests with no test func end on Frame 0 (after the warm up). Setting this require test to call ctx->Finish().
     ImGuiTestFlags_NoRecoverWarnings    = 1 << 2
-
+    //ImGuiTestFlags_RequireViewports   = 1 << 10
 };
 
 // Flags for IM_CHECK* macros.
