@@ -218,6 +218,9 @@
   <ItemGroup>
     <Natvis Include="..\..\imgui\misc\debuggers\imgui.natvis" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="..\..\imgui\misc\debuggers\imgui.natstepfilter" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

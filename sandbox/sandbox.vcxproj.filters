@@ -176,4 +176,9 @@
       <Filter>imgui</Filter>
     </Natvis>
   </ItemGroup>
+  <ItemGroup>
+    <None Include="..\..\imgui\misc\debuggers\imgui.natstepfilter">
+      <Filter>imgui</Filter>
+    </None>
+  </ItemGroup>
 </Project>
