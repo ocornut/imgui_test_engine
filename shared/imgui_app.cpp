@@ -83,6 +83,71 @@ static bool ImGuiApp_ImplGL_CaptureFramebuffer(ImGuiApp* app, int x, int y, int 
 #pragma comment(lib, "opengl32")  // Link with opengl32.lib. MinGW will require linking with '-lopengl32'
 #endif
 
+static ImVec2 (*PlatformGetWindowPosBkp)(ImGuiViewport* vp) = NULL;
+static ImVec2 (*PlatformGetWindowSizeBkp)(ImGuiViewport* vp) = NULL;
+
+static void ImGuiApp_InstallMockPlatformBackend(ImGuiApp*)
+{
+    ImGuiIO& io = ImGui::GetIO();
+    ImGuiPlatformIO& platform_io = ImGui::GetPlatformIO();
+    io.BackendFlags |= ImGuiBackendFlags_PlatformHasViewports | ImGuiBackendFlags_RendererHasViewports;
+
+    // This data may be filled in already, in case we use a mock viewports with a gui backend like glfw/sdl.
+    ImGuiViewport* main_viewport = ImGui::GetMainViewport();
+    if (main_viewport->PlatformUserData == NULL && main_viewport->PlatformHandle == NULL)
+    {
+        platform_io.Monitors.resize(1);
+        ImGuiPlatformMonitor& monitor = platform_io.Monitors.back();
+        monitor.DpiScale = 1;
+        monitor.MainPos = ImVec2(0, 0);
+        monitor.MainSize = ImVec2(1920, 1080);
+        monitor.WorkPos = ImVec2(0, 0);
+        monitor.WorkSize = ImVec2(1920, 1000);
+
+        main_viewport->PlatformUserData = main_viewport->PlatformHandle = (void*)1;
+        main_viewport->Pos = main_viewport->WorkPos = ImVec2(100.0f, 100.0f);
+    }
+
+    PlatformGetWindowPosBkp = platform_io.Platform_GetWindowPos;
+    PlatformGetWindowSizeBkp = platform_io.Platform_GetWindowSize;
+    platform_io.Platform_CreateWindow = [](ImGuiViewport* vp)
+    {
+        ImGuiViewport* mvp = ImGui::GetMainViewport();
+        vp->PlatformUserData = mvp->PlatformUserData;
+        vp->PlatformHandle = mvp->PlatformHandle;
+        vp->PlatformHandleRaw = mvp->PlatformHandleRaw;
+    };
+    platform_io.Platform_DestroyWindow = [](ImGuiViewport* vp) { vp->PlatformUserData = vp->PlatformHandle = vp->PlatformHandleRaw = NULL; };
+    platform_io.Platform_ShowWindow = [](ImGuiViewport*) { };
+    platform_io.Platform_SetWindowPos = [](ImGuiViewport* vp, ImVec2 pos) { vp->Pos = vp->WorkPos = pos; };
+    platform_io.Platform_GetWindowPos = [](ImGuiViewport* vp)
+    {
+        ImVec2 pos = vp->Pos;
+        if (vp == ImGui::GetMainViewport())
+        {
+            // Mock monitor follows main viewport.
+            if (PlatformGetWindowPosBkp)
+            {
+                pos = PlatformGetWindowPosBkp(vp);
+                ImGuiPlatformIO& platform_io = ImGui::GetPlatformIO();
+                platform_io.Monitors[0].MainPos = pos;
+                platform_io.Monitors[0].WorkPos = pos;
+            }
+        }
+        return pos;
+    };
+    platform_io.Platform_SetWindowSize = [](ImGuiViewport* vp, ImVec2 size) { vp->Size = vp->WorkSize = size; };
+    platform_io.Platform_GetWindowSize = [](ImGuiViewport* vp) { return vp != ImGui::GetMainViewport() || PlatformGetWindowSizeBkp == NULL ? vp->Size : PlatformGetWindowSizeBkp(vp); };
+    platform_io.Platform_SetWindowFocus = [](ImGuiViewport* vp) { ImGuiViewportP* vpp = (ImGuiViewportP*)vp; if (vpp->Window) ImGui::FocusWindow(vpp->Window); };    // FIXME-VIEWPORT: Should be adjusted for multiple main viewport support.
+    platform_io.Platform_GetWindowFocus = [](ImGuiViewport* vp) { ImGuiContext& g = *GImGui; return g.Windows.back()->Viewport == vp; };                             //
+    platform_io.Platform_GetWindowMinimized = [](ImGuiViewport*) { return false; };
+    platform_io.Platform_SetWindowTitle = [](ImGuiViewport*, const char*) { };
+    platform_io.Platform_RenderWindow = [](ImGuiViewport*, void*) { };
+    platform_io.Platform_SwapBuffers = [](ImGuiViewport*, void*) { };
+    platform_io.Platform_SetWindowAlpha = [](ImGuiViewport*, float) { };
+    //platform_io.Platform_CreateVkSurface = NULL;
+}
+
 //-----------------------------------------------------------------------------
 // [SECTION] Helper stub to store directly in ImGuiTestEngineIO::ScreenCaptureFunc when using test engine (prototype is same as ImGuiTestEngineScreenCaptureFunc)
 //-----------------------------------------------------------------------------
@@ -107,6 +172,13 @@ struct ImGuiApp_ImplNull : public ImGuiApp
 };
 
 // Functions
+static void ImGuiApp_ImplNull_InitBackends(ImGuiApp* app)
+{
+    ImGuiIO& io = ImGui::GetIO();
+    if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
+        ImGuiApp_InstallMockPlatformBackend(app);
+}
+
 static bool ImGuiApp_ImplNull_CreateWindow(ImGuiApp* app, const char*, ImVec2 size)
 {
     IM_UNUSED(app);
@@ -163,6 +235,15 @@ static void ImGuiApp_ImplNull_Render(ImGuiApp* app_opaque)
     IM_UNUSED(app_opaque);
     ImDrawData* draw_data = ImGui::GetDrawData();
 
+#ifdef IMGUI_HAS_VIEWPORT
+    ImGuiIO& io = ImGui::GetIO();
+    if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
+    {
+        ImGui::UpdatePlatformWindows();
+        ImGui::RenderPlatformWindowsDefault();
+    }
+#endif
+
     for (int n = 0; n < draw_data->CmdListsCount; n++)
     {
         const ImDrawList* cmd_list = draw_data->CmdLists[n];
@@ -182,7 +263,7 @@ ImGuiApp* ImGuiApp_ImplNull_Create()
 {
     ImGuiApp_ImplNull* intf = new ImGuiApp_ImplNull();
     intf->InitCreateWindow      = ImGuiApp_ImplNull_CreateWindow;
-    intf->InitBackends          = [](ImGuiApp* app) { IM_UNUSED(app); };
+    intf->InitBackends          = ImGuiApp_ImplNull_InitBackends;
     intf->NewFrame              = ImGuiApp_ImplNull_NewFrame;
     intf->Render                = ImGuiApp_ImplNull_Render;
     intf->ShutdownCloseWindow   = [](ImGuiApp* app) { IM_UNUSED(app); };
@@ -296,8 +377,11 @@ static void ImGuiApp_ImplWin32DX11_ShutdownCloseWindow(ImGuiApp* app_opaque)
 
 static void ImGuiApp_ImplWin32DX11_InitBackends(ImGuiApp* app_opaque)
 {
+    ImGuiIO& io = ImGui::GetIO();
     ImGuiApp_ImplWin32DX11* app = (ImGuiApp_ImplWin32DX11*)app_opaque;
     ImGui_ImplWin32_Init(app->Hwnd);
+    if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable && app->Viewport > 1)
+        ImGuiApp_InstallMockPlatformBackend(app);
     ImGui_ImplDX11_Init(app->pd3dDevice, app->pd3dDeviceContext);
 }
 
@@ -640,8 +724,11 @@ static bool ImGuiApp_ImplSdlGL2_CreateWindow(ImGuiApp* app_opaque, const char* w
 
 static void ImGuiApp_ImplSdlGL2_InitBackends(ImGuiApp* app_opaque)
 {
+    ImGuiIO& io = ImGui::GetIO();
     ImGuiApp_ImplSdlGLX* app = (ImGuiApp_ImplSdlGLX*)app_opaque;
     ImGui_ImplSDL2_InitForOpenGL(app->window, app->gl_context);
+    if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable && app->Viewport > 1)
+        ImGuiApp_InstallMockPlatformBackend(app);
     ImGui_ImplOpenGL2_Init();
 }
 
@@ -771,8 +858,11 @@ static bool ImGuiApp_ImplSdlGL3_CreateWindow(ImGuiApp* app_opaque, const char* w
 
 static void ImGuiApp_ImplSdlGL3_InitBackends(ImGuiApp* app_opaque)
 {
+    ImGuiIO& io = ImGui::GetIO();
     ImGuiApp_ImplSdlGLX* app = (ImGuiApp_ImplSdlGLX*)app_opaque;
     ImGui_ImplSDL2_InitForOpenGL(app->window, app->gl_context);
+    if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable && app->Viewport > 1)
+        ImGuiApp_InstallMockPlatformBackend(app);
     ImGui_ImplOpenGL3_Init(app->glsl_version);
 }
 
@@ -973,8 +1063,11 @@ static bool ImGuiApp_ImplGlfw_CreateWindow(ImGuiApp* app_opaque, const char* win
 
 static void ImGuiApp_ImplGlfw_InitBackends(ImGuiApp* app_opaque)
 {
+    ImGuiIO& io = ImGui::GetIO();
     ImGuiApp_ImplGlfwGL3* app = (ImGuiApp_ImplGlfwGL3*)app_opaque;
     ImGui_ImplGlfw_InitForOpenGL(app->window, true);
+    if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable && app->Viewport > 1)
+        ImGuiApp_InstallMockPlatformBackend(app);
     ImGui_ImplOpenGL3_Init(app->glsl_version);
 }
 
@@ -1004,6 +1097,12 @@ static void ImGuiApp_ImplGlfwGL3_Render(ImGuiApp* app_opaque)
 {
     ImGuiApp_ImplGlfwGL3* app = (ImGuiApp_ImplGlfwGL3*)app_opaque;
     ImGuiIO& io = ImGui::GetIO();
+    glfwMakeContextCurrent(app->window);
+    glfwSwapInterval(app->Vsync ? 1 : 0);
+    glViewport(0, 0, (int)io.DisplaySize.x, (int)io.DisplaySize.y);
+    glClearColor(app->ClearColor.x, app->ClearColor.y, app->ClearColor.z, app->ClearColor.w);
+    glClear(GL_COLOR_BUFFER_BIT);
+    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 #ifdef IMGUI_HAS_VIEWPORT
     if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
     {
@@ -1013,12 +1112,6 @@ static void ImGuiApp_ImplGlfwGL3_Render(ImGuiApp* app_opaque)
         glfwMakeContextCurrent(backup_current_context);
     }
 #endif
-    glfwMakeContextCurrent(app->window);
-    glfwSwapInterval(app->Vsync ? 1 : 0);
-    glViewport(0, 0, (int)io.DisplaySize.x, (int)io.DisplaySize.y);
-    glClearColor(app->ClearColor.x, app->ClearColor.y, app->ClearColor.z, app->ClearColor.w);
-    glClear(GL_COLOR_BUFFER_BIT);
-    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
     glfwSwapBuffers(app->window);
 }
 

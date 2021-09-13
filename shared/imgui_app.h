@@ -27,6 +27,7 @@ struct ImGuiApp
     ImVec4  ClearColor = { 0.f, 0.f, 0.f, 1.f };        // [In]  Render()
     float   DpiScale = 1.0f;                            // [Out] InitCreateWindow() / NewFrame()
     bool    Vsync = true;                               // [Out] Render()
+    int     Viewport = 0;                               // [In]  InitBackends()
 
     bool    (*InitCreateWindow)(ImGuiApp* app, const char* window_title, ImVec2 window_size) = nullptr;
     void    (*InitBackends)(ImGuiApp* app) = nullptr;

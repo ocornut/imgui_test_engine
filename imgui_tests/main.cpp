@@ -104,7 +104,7 @@ struct TestApp
     ImGuiTestVerboseLevel   OptVerboseLevelError = ImGuiTestVerboseLevel_COUNT; // "
     bool                    OptNoThrottle = false;
     bool                    OptPauseOnExit = true;
-    bool                    OptViewport = false;
+    int                     OptViewport = 0;                                    // 0 - disabled, 1 - enabled, 2 - force mocked viewports
     int                     OptStressAmount = 5;
     char*                   OptFileOpener = NULL;
     ImVector<char*>         TestsToRun;
@@ -211,7 +211,11 @@ static bool ParseCommandLineOptions(int argc, char** argv)
             }
             else if (strcmp(argv[n], "-viewport") == 0)
             {
-                g_App.OptViewport = true;
+                g_App.OptViewport = 1;
+            }
+            else if (strcmp(argv[n], "-viewport-mock") == 0)
+            {
+                g_App.OptViewport = 2;
             }
             else if (strcmp(argv[n], "-stressamount") == 0 && n+1 < argc)
             {
@@ -422,6 +426,7 @@ int main(int argc, char** argv)
     if (g_App.AppWindow == NULL)
         g_App.AppWindow = ImGuiApp_ImplNull_Create();
     g_App.AppWindow->DpiAware = false;
+    g_App.AppWindow->Viewport = g_App.OptViewport;
 
     // Create TestEngine context
     IM_ASSERT(g_App.TestEngine == NULL);
