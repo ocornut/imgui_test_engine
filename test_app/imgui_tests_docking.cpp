@@ -630,7 +630,7 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
         ImVec2 viewport_pos = ctx->GetMainViewportPos();
         ImGui::SetNextWindowPos(viewport_pos + ImVec2(100, 100), ImGuiCond_Appearing);
         ImGui::SetNextWindowSize(ImVec2(300, 200), ImGuiCond_Appearing);
-        ImGui::Begin("Dock Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoDocking);
+        ImGui::Begin("Dock Window", NULL, ImGuiWindowFlags_NoSavedSettings);
         ImGui::End();
     };
 
