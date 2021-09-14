@@ -246,7 +246,7 @@ static int CompareEntryName(const ImGuiPerflogEntry& val, const void* data)
 
 static bool Date(const char* label, char* date, int date_len, bool valid)
 {
-    ImGui::SetNextItemWidth(80.0f);
+    ImGui::SetNextItemWidth(ImGui::CalcTextSize("YYYY-MM-DD").x);
     bool date_valid = *date == 0 || (IsDateValid(date) && valid/*strcmp(_FilterDateFrom, _FilterDateTo) <= 0*/);
     if (!date_valid)
     {

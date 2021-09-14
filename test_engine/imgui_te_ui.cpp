@@ -18,8 +18,8 @@
 //-------------------------------------------------------------------------
 // - DrawTestLog() [internal]
 // - GetVerboseLevelName() [internal]
-// - ImGuiTestEngine_ShowTestGroup() [Internal]
-// - ImGuiTestEngine_ShowTestWindow()
+// - ShowTestGroup() [Internal]
+// - ImGuiTestEngine_ShowTestWindows()
 //-------------------------------------------------------------------------
 
 // Look for " filename:number " in the string and add menu option to open source.
@@ -225,12 +225,18 @@ static void ShowTestGroup(ImGuiTestEngine* e, ImGuiTestGroup group, ImGuiTextFil
             ImGui::FocusWindow(ImGui::FindWindowByName("Dear ImGui Perf Tool"));
         }
     }
-    ImGui::Separator();
 
-    if (ImGui::BeginChild("Tests", ImVec2(0, 0)))
+    if (ImGui::BeginTable("Tests", 3, ImGuiTableFlags_ScrollY | ImGuiTableFlags_Resizable | ImGuiTableFlags_NoBordersInBody | ImGuiTableFlags_SizingFixedFit))
     {
-        ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(6, 3) * e_io.DpiScale);
-        ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(4, 1) * e_io.DpiScale);
+        ImGui::TableSetupScrollFreeze(0, 1);
+        ImGui::TableSetupColumn("Status");
+        ImGui::TableSetupColumn("Group");
+        ImGui::TableSetupColumn("Test", ImGuiTableColumnFlags_WidthStretch);
+        ImGui::TableHeadersRow();
+
+        ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(6, 4) * e_io.DpiScale);
+        ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(4, 0) * e_io.DpiScale);
+        //ImGui::PushStyleVar(ImGuiStyleVar_CellPadding, ImVec2(100, 10) * e_io.DpiScale);
         for (int n = 0; n < e->TestsAll.Size; n++)
         {
             ImGuiTest* test = e->TestsAll[n];
@@ -239,6 +245,7 @@ static void ShowTestGroup(ImGuiTestEngine* e, ImGuiTestGroup group, ImGuiTextFil
 
             ImGuiTestContext* test_context = (e->TestContext && e->TestContext->Test == test) ? e->TestContext : NULL;
 
+            ImGui::TableNextRow();
             ImGui::PushID(n);
 
             ImVec4 status_color;
@@ -263,6 +270,7 @@ static void ShowTestGroup(ImGuiTestEngine* e, ImGuiTestGroup group, ImGuiTextFil
                 break;
             }
 
+            ImGui::TableNextColumn();
             ImVec2 p = ImGui::GetCursorScreenPos();
             ImGui::ColorButton("status", status_color, ImGuiColorEditFlags_NoTooltip);
             ImGui::SameLine();
@@ -288,10 +296,9 @@ static void ShowTestGroup(ImGuiTestEngine* e, ImGuiTestGroup group, ImGuiTextFil
                 if (ImGui::Button("Run###Run"))
                    queue_test = select_test = true;
             }
-            ImGui::SameLine();
 
-            Str128f buf("%-*s - %s", 10, test->Category, test->Name);
-            if (ImGui::Selectable(buf.c_str(), test == e->UiSelectedTest))
+            ImGui::TableNextColumn();
+            if (ImGui::Selectable(test->Category, test == e->UiSelectedTest, ImGuiSelectableFlags_SpanAllColumns))
                 select_test = true;
 
             // Double-click to run test, CTRL+Double-click to run GUI function
@@ -329,7 +336,7 @@ static void ShowTestGroup(ImGuiTestEngine* e, ImGuiTestGroup group, ImGuiTextFil
                 const bool open_source_available = (test->SourceFile != NULL) && (e->IO.SrcFileOpenFunc != NULL);
                 if (open_source_available)
                 {
-                    buf.setf("Open source (%s:%d)", test->SourceFileShort, test->SourceLine);
+                    Str128f buf("Open source (%s:%d)", test->SourceFileShort, test->SourceLine);
                     if (ImGui::MenuItem(buf.c_str()))
                         e->IO.SrcFileOpenFunc(test->SourceFile, test->SourceLine, e->IO.SrcFileOpenUserData);
                     if (ImGui::MenuItem("View source..."))
@@ -391,6 +398,9 @@ static void ShowTestGroup(ImGuiTestEngine* e, ImGuiTestGroup group, ImGuiTextFil
                 ImGui::EndPopup();
             }
 
+            ImGui::TableNextColumn();
+            ImGui::TextUnformatted(test->Name);
+
             // Process selection
             if (select_test)
                 e->UiSelectedTest = test;
@@ -406,10 +416,9 @@ static void ShowTestGroup(ImGuiTestEngine* e, ImGuiTestGroup group, ImGuiTextFil
             ImGui::PopID();
         }
         ImGui::Spacing();
-        ImGui::PopStyleVar();
-        ImGui::PopStyleVar();
+        ImGui::PopStyleVar(2);
+        ImGui::EndTable();
     }
-    ImGui::EndChild();
 }
 
 static void ImGuiTestEngine_ShowLogAndTools(ImGuiTestEngine* engine)
@@ -578,14 +587,14 @@ static void ImGuiTestEngine_ShowTestTool(ImGuiTestEngine* engine, bool* p_open)
 
     // TESTS
     ImGui::BeginChild("List", ImVec2(0, list_height), false, ImGuiWindowFlags_NoScrollbar);
-    if (ImGui::BeginTabBar("##Tests", ImGuiTabBarFlags_NoTooltip))
+    if (ImGui::BeginTabBar("##Tests", ImGuiTabBarFlags_NoTooltip))  // Add _NoPushId flag in TabBar?
     {
-        if (ImGui::BeginTabItem("TESTS"))
+        if (ImGui::BeginTabItem("TESTS", NULL, ImGuiTabItemFlags_NoPushId))
         {
             ShowTestGroup(engine, ImGuiTestGroup_Tests, &engine->UiFilterTests);
             ImGui::EndTabItem();
         }
-        if (ImGui::BeginTabItem("PERFS"))
+        if (ImGui::BeginTabItem("PERFS", NULL, ImGuiTabItemFlags_NoPushId))
         {
             ShowTestGroup(engine, ImGuiTestGroup_Perfs, &engine->UiFilterPerfs);
             ImGui::EndTabItem();
