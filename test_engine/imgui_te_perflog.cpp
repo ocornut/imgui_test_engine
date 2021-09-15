@@ -848,9 +848,9 @@ void ImGuiPerfLog::ShowUI(ImGuiTestEngine* engine)
     if (ImGui::IsItemHovered())
     {
         ImGui::BeginTooltip();
-        ImGui::Text("%s Display each run separately",                                               combine == 0 ? "*" : " ");
-        ImGui::Text("%s Use one color per branch. Disables baseline comparisons!",                  combine == 1 ? "*" : " ");
-        ImGui::Text("%s Combine multiple runs with same build info into one averaged build entry.", combine == 2 ? "*" : " ");
+        ImGui::RadioButton("Display each run separately",                                               combine == 0);
+        ImGui::RadioButton("Use one color per branch. Disables baseline comparisons!",                  combine == 1);
+        ImGui::RadioButton("Combine multiple runs with same build info into one averaged build entry.", combine == 2);
         ImGui::EndTooltip();
     }
 
@@ -868,7 +868,7 @@ void ImGuiPerfLog::ShowUI(ImGuiTestEngine* engine)
         ImGuiTestEngine_QueueTests(engine, ImGuiTestGroup_Tests, "capture_perf_report");
     }
     if (_Batches.empty())
-        ImGui::BeginDisabled();
+        ImGui::EndDisabled();
     ImGui::SameLine();
     if (ImGui::IsItemHovered())
         ImGui::SetTooltip("Generate a report and open it in the browser.");
@@ -1122,7 +1122,7 @@ void ImGuiPerfLog::_ShowEntriesPlot()
         {
             ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
             plot_draw_list->AddLine(ImFloor(label_rect_loose.GetBL()), ImFloor(label_rect_loose.GetBR()),
-                                               ImColor(style.Colors[ImGuiCol_Text]));
+                ImColor(style.Colors[ImGuiCol_Text]));
         }
 
         // Highlight bars belonging to hovered label.
