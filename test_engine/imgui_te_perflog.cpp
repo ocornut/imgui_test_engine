@@ -175,7 +175,7 @@ static int IMGUI_CDECL PerflogComparerByEntryInfo(const void* lhs, const void* r
 
     // Now that we have groups of branches - sort individual builds within those groups.
     if (result == 0)
-        result = (int)ImClamp<ImGuiID>((ImS64)GetBuildID(a) - (ImS64)GetBuildID(b), -1, +1);
+        result = (int)ImClamp<ImGuiID>((ImGuiID)((ImS64)GetBuildID(a) - (ImS64)GetBuildID(b)), (ImGuiID)-1, (ImGuiID)+1);
 
     // Group individual runs together within build groups.
     if (result == 0)
@@ -244,7 +244,7 @@ static bool IsDateValid(const char* date)
     return true;
 }
 
-static float FormatVsBaseline(ImGuiPerflogEntry* entry, ImGuiPerflogEntry* baseline_entry, Str30f& out_label)
+static float FormatVsBaseline(ImGuiPerflogEntry* entry, ImGuiPerflogEntry* baseline_entry, Str& out_label)
 {
     if (baseline_entry == NULL)
     {
@@ -1097,7 +1097,7 @@ void ImGuiPerfLog::_ShowEntriesPlot()
     _PlotHoverTest = -1;
     _PlotHoverBatch = -1;
     _PlotHoverTestLabel = false;
-    bool can_highlight = !legend_hovered && ImGui::IsWindowHovered(ImGuiHoveredFlags_RootAndChildWindows);
+    bool can_highlight = !legend_hovered && ImPlot::IsPlotHovered();
     ImDrawList* plot_draw_list = ImPlot::GetPlotDrawList();
 
     // Highlight bars when hovering a label.
@@ -1351,8 +1351,7 @@ void ImGuiPerfLog::_ShowEntriesTable()
             // VS Baseline
             if (ImGui::TableNextColumn())
             {
-                Str30f label("");
-                ImGuiPerflogEntry* baseline_entry = GetEntryByBatchIdx(_BaselineBatchIndex, test_name);
+                Str30 label;
                 float dt_change = FormatVsBaseline(entry, baseline_entry, label);
                 ImGui::TextUnformatted(label.c_str());
                 if (dt_change != entry->VsBaseline)
