@@ -35,6 +35,7 @@ struct DockingTestsGenericVars
 {
     int         Step = 0;
     ImGuiID     DockSpaceID = 0;
+    ImGuiID     NodesId[10];
     bool        ShowDockspace = true;
     bool        ShowWindow[10];
     bool        ShowWindowGroups[2];    // One per 5 windows
@@ -42,6 +43,8 @@ struct DockingTestsGenericVars
 
     DockingTestsGenericVars()
     {
+        for (int n = 0; n < IM_ARRAYSIZE(NodesId); n++)
+            NodesId[n] = 0;
         for (int n = 0; n < IM_ARRAYSIZE(ShowWindow); n++)
             ShowWindow[n] = false;
         for (int n = 0; n < IM_ARRAYSIZE(ShowWindowGroups); n++)
@@ -1375,6 +1378,136 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
             ctx->MouseUp(0);
             ctx->KeyUpMap(ImGuiKey_COUNT, ImGuiKeyModFlags_Shift);
         }
+    };
+
+    // ## Test resizing
+    t = IM_REGISTER_TEST(e, "docking", "docking_sizing_1");
+    t->SetUserDataType<DockingTestsGenericVars>();
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        auto& vars = ctx->GetUserData<DockingTestsGenericVars>();
+
+        ImGuiID& dockMainId = vars.NodesId[0];
+        ImGuiID& dockTopRightId = vars.NodesId[1];
+        ImGuiID& dockTopLeftId = vars.NodesId[2];
+        ImGuiID& dockDownId = vars.NodesId[3];
+
+        if (ctx->FirstGuiFrame)
+        {
+            ImGuiID root_id;
+            root_id = dockMainId = ImGui::GetID("Test Node");
+            ImGui::DockBuilderRemoveNode(dockMainId);
+            ImGui::DockBuilderAddNode(dockMainId, ImGuiDockNodeFlags_CentralNode);
+            ImGui::DockBuilderSetNodePos(dockMainId, ImGui::GetMainViewport()->Pos + ImVec2(20, 20));
+            ImGui::DockBuilderSetNodeSize(dockMainId, ImVec2(1000, 500));
+
+            ImGui::DockBuilderSplitNode(dockMainId, ImGuiDir_Right, 0.20f, &dockTopRightId, &dockMainId);
+            ImGui::DockBuilderSplitNode(dockMainId, ImGuiDir_Left, 0.20f / 0.80f + 0.002f, &dockTopLeftId, &dockMainId);
+            ImGui::DockBuilderSplitNode(dockMainId, ImGuiDir_Down, 0.20f, &dockDownId, &dockMainId);
+            ImGui::DockBuilderDockWindow("dockMainId", dockMainId);
+            ImGui::DockBuilderDockWindow("dockTopRightId", dockTopRightId);
+            ImGui::DockBuilderDockWindow("dockTopLeftId", dockTopLeftId);
+            ImGui::DockBuilderDockWindow("dockDownId", dockDownId);
+            ImGui::DockBuilderFinish(root_id);
+        }
+
+        // FIXME-TESTS: DockBuilderDockWindow() doesn't work on windows that haven't been created and use ImGuiWindowFlags_NoSavedSettings
+        static const float DOCKING_SPLITTER_SIZE = 2.0f; // FIXME-TESTS
+        {
+            ImGui::Begin("dockMainId", NULL, ImGuiWindowFlags_NoSavedSettings * 0);
+            ImVec2 sz = ImGui::GetWindowSize();
+            //if (ctx->FirstGuiFrame) // FIXME-DOCK: window size will be pulled from last settings until node appears
+            if (vars.Step == 1)
+            {
+                IM_CHECK(ImGui::GetWindowDockID() == dockMainId);
+                IM_CHECK_FLOAT_NEAR_NO_RET(sz.x, 1000 - 200 - 200, DOCKING_SPLITTER_SIZE * 2);
+                IM_CHECK_FLOAT_NEAR_NO_RET(sz.y, 500 - 100, DOCKING_SPLITTER_SIZE * 2);
+            }
+            if (vars.Step == 2)
+            {
+                IM_CHECK_FLOAT_NEAR_NO_RET(sz.x, 1000 - 300 - 300, DOCKING_SPLITTER_SIZE * 2);
+                IM_CHECK_FLOAT_NEAR_NO_RET(sz.y, 400 - 100, DOCKING_SPLITTER_SIZE * 2);
+            }
+            ImGui::Text("(%.1f,%.1f)", sz.x, sz.y);
+            ImGui::End();
+        }
+        {
+            ImGui::Begin("dockTopRightId", NULL, ImGuiWindowFlags_NoSavedSettings * 0);
+            ImVec2 sz = ImGui::GetWindowSize();
+            //if (ctx->FirstGuiFrame) // FIXME-DOCK: window size will be pulled from last settings until node appears
+            if (vars.Step == 1)
+            {
+                IM_CHECK(ImGui::GetWindowDockID() == dockTopRightId);
+                IM_CHECK_FLOAT_NEAR_NO_RET(sz.x, 200, DOCKING_SPLITTER_SIZE * 2);
+                IM_CHECK_FLOAT_NEAR_NO_RET(sz.y, 500, DOCKING_SPLITTER_SIZE * 2);
+            }
+            if (vars.Step == 2)
+            {
+#if IMGUI_BROKEN_TESTS
+                IM_CHECK_FLOAT_NEAR_NO_RET(sz.x, 100, DOCKING_SPLITTER_SIZE * 2); // Docking size application is depth-first, so L|C|R will not resize neatly yet
+#endif
+                IM_CHECK_FLOAT_NEAR_NO_RET(sz.y, 400, DOCKING_SPLITTER_SIZE * 2);
+            }
+            ImGui::Text("(%.1f,%.1f)", sz.x, sz.y);
+            ImGui::End();
+        }
+        {
+            ImGui::Begin("dockTopLeftId", NULL, ImGuiWindowFlags_NoSavedSettings * 0);
+            ImVec2 sz = ImGui::GetWindowSize();
+            //if (ctx->FirstGuiFrame) // FIXME-DOCK: window size will be pulled from last settings until node appears
+            if (vars.Step == 1)
+            {
+                IM_CHECK(ImGui::GetWindowDockID() == dockTopLeftId);
+                IM_CHECK_FLOAT_NEAR_NO_RET(sz.x, 200, DOCKING_SPLITTER_SIZE * 2);
+                IM_CHECK_FLOAT_NEAR_NO_RET(sz.y, 500, DOCKING_SPLITTER_SIZE * 2);
+            }
+            if (vars.Step == 2)
+            {
+#if IMGUI_BROKEN_TESTS
+                IM_CHECK_FLOAT_NEAR_NO_RET(sz.x, 100, DOCKING_SPLITTER_SIZE * 2); // Docking size application is depth-first, so L|C|R will not resize neatly yet
+#endif
+                IM_CHECK_FLOAT_NEAR_NO_RET(sz.y, 400, DOCKING_SPLITTER_SIZE * 2);
+            }
+            ImGui::Text("(%.1f,%.1f)", sz.x, sz.y);
+            ImGui::End();
+        }
+        {
+            ImGui::Begin("dockDownId", NULL, ImGuiWindowFlags_NoSavedSettings * 0);
+            ImVec2 sz = ImGui::GetWindowSize();
+            //if (ctx->FirstGuiFrame) // FIXME-DOCK: window size will be pulled from last settings until node appears
+            if (vars.Step == 1)
+            {
+                IM_CHECK(ImGui::GetWindowDockID() == dockDownId);
+                IM_CHECK_FLOAT_NEAR_NO_RET(sz.y, 100, DOCKING_SPLITTER_SIZE * 2);
+            }
+            if (vars.Step == 2)
+            {
+                IM_CHECK_FLOAT_NEAR_NO_RET(sz.y, 100, DOCKING_SPLITTER_SIZE * 2);
+            }
+
+            ImGui::Text("(%.1f,%.1f)", sz.x, sz.y);
+            ImGui::End();
+        }
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        auto& vars = ctx->GetUserData<DockingTestsGenericVars>();
+        vars.Step = 0;
+        ctx->Yield(2);
+
+        vars.Step = 1;
+        ImGuiDockNode* root_node = ImGui::DockNodeGetRootNode(ImGui::DockBuilderGetNode(vars.NodesId[0]));
+        IM_CHECK(root_node != NULL);
+        ImGuiWindow* host_window = root_node->HostWindow;
+        IM_CHECK(host_window != NULL);
+        IM_CHECK_EQ(host_window->Size, ImVec2(1000, 500));
+        ctx->Yield(2);
+
+        vars.Step = 0;
+        ctx->SetRef(host_window->Name);
+        ctx->WindowResize("", ImVec2(800, 400));
+        vars.Step = 2;
+        ctx->Yield(2);
     };
 
     // ## Test transferring full node payload, even with hidden windows.
