@@ -1768,12 +1768,18 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
     t->Flags |= ImGuiTestFlags_NoRecoverWarnings;
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
+#if IMGUI_VERSION_NUM >= 18415
+        ImGui::BeginDisabled();
+#endif
         ImGui::Begin("Test window", NULL, ImGuiWindowFlags_NoSavedSettings);
         ImGui::BeginChild("Child");
         ImGui::PushFocusScope(ImGui::GetID("focusscope1"));
         ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2());
         ImGui::PushStyleColor(ImGuiCol_Text, ImVec4());
         ImGui::PushID("hello");
+#if IMGUI_VERSION_NUM >= 18415
+        ImGui::PushItemFlag(ImGuiItemFlags_ButtonRepeat, true);
+#endif
         ImGui::BeginGroup();
         ImGui::SetNextItemOpen(true);
         ImGui::TreeNode("node");

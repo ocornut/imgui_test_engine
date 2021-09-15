@@ -1501,7 +1501,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
 
         ImGui::PopItemFlag();
 
-#if IMGUI_VERSION_NUM >= 18207
+#if IMGUI_VERSION_NUM >= 18207 && IMGUI_VERSION_NUM < 18415
         IM_CHECK_EQ(g.CurrentItemFlags, 0);
         ImGui::Begin("Test Window 2", NULL, ImGuiWindowFlags_NoSavedSettings);
         ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
