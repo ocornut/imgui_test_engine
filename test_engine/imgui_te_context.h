@@ -339,6 +339,7 @@ struct ImGuiTestContext
     void        KeyDownMap(ImGuiKey key, int mod_flags = 0);
     void        KeyUpMap(ImGuiKey key, int mod_flags = 0);
     void        KeyPressMap(ImGuiKey key, int mod_flags = 0, int count = 1);
+    void        KeyHoldMap(ImGuiKey key, int mod_flags, float time);
     void        KeyChars(const char* chars);
     void        KeyCharsAppend(const char* chars);
     void        KeyCharsAppendEnter(const char* chars);

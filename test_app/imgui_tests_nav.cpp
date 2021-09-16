@@ -1245,26 +1245,26 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
         ImGui::SetScrollY(window, 0.0f);                    // Reset starting position.
         ImGui::SetScrollX(window, 0.0f);
 
-        ctx->KeyPressMap(ImGuiKey_PageDown);                // Scrolled down some, but not to the bottom.
+        ctx->KeyHoldMap(ImGuiKey_PageDown, 0, 0.1f);        // Scrolled down some, but not to the bottom.
         IM_CHECK(0 < window->Scroll.y && window->Scroll.y < window->ScrollMax.y);
         ctx->KeyPressMap(ImGuiKey_End);                     // Scrolled all the way to the bottom.
-        IM_CHECK(window->Scroll.y == window->ScrollMax.y);
+        IM_CHECK_EQ(window->Scroll.y, window->ScrollMax.y);
         float last_scroll = window->Scroll.y;               // Scrolled up some, but not all the way to the top.
-        ctx->KeyPressMap(ImGuiKey_PageUp);
+        ctx->KeyHoldMap(ImGuiKey_PageUp, 0, 0.1f);
         IM_CHECK(0 < window->Scroll.y && window->Scroll.y < last_scroll);
         ctx->KeyPressMap(ImGuiKey_Home);                    // Scrolled all the way to the top.
-        IM_CHECK(window->Scroll.y == 0.0f);
+        IM_CHECK_EQ(window->Scroll.y, 0.0f);
 
         // Test arrows keys WITHOUT any navigable items
-        ctx->KeyPressMap(ImGuiKey_DownArrow);               // Scrolled window down by one tick.
-        IM_CHECK(window->Scroll.y > 0.0f);
-        ctx->KeyPressMap(ImGuiKey_UpArrow);                 // Scrolled window up by one tick (back to the top).
-        IM_CHECK(window->Scroll.y == 0.0f);
-        IM_CHECK(window->Scroll.x == 0.0f);
-        ctx->KeyPressMap(ImGuiKey_RightArrow);              // Scrolled window right by one tick.
-        IM_CHECK(window->Scroll.x > 0.0f);
-        ctx->KeyPressMap(ImGuiKey_LeftArrow);               // Scrolled window left by one tick (back to the start).
-        IM_CHECK(window->Scroll.x == 0.0f);
+        ctx->KeyHoldMap(ImGuiKey_DownArrow, 0, 0.1f);       // Scrolled window down by one tick.
+        IM_CHECK_GT(window->Scroll.y, 0.0f);
+        ctx->KeyHoldMap(ImGuiKey_UpArrow, 0, 0.1f);         // Scrolled window up by one tick (back to the top).
+        IM_CHECK_EQ(window->Scroll.y, 0.0f);
+        IM_CHECK_EQ(window->Scroll.x, 0.0f);
+        ctx->KeyHoldMap(ImGuiKey_RightArrow, 0, 0.1f);      // Scrolled window right by one tick.
+        IM_CHECK_GT(window->Scroll.x, 0.0f);
+        ctx->KeyHoldMap(ImGuiKey_LeftArrow, 0, 0.1f);       // Scrolled window left by one tick (back to the start).
+        IM_CHECK_EQ(window->Scroll.x, 0.0f);
 
         // Test page up/page down/home/end keys WITH navigable items.
         ctx->GenericVars.Step = 1;
@@ -1289,8 +1289,8 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
         IM_CHECK(g.NavId == ctx->GetID("OK 14"));           // Focus first item of previous "page".
         IM_CHECK(0 < window->Scroll.y && window->Scroll.y < window->ScrollMax.y); // Window is not scrolled.
         ctx->KeyPressMap(ImGuiKey_Home);
-        IM_CHECK(g.NavId == ctx->GetID("OK 0"));            // Focus very first item.
-        IM_CHECK(window->Scroll.y == 0.0f);                 // Window is scrolled to the start.
+        IM_CHECK_EQ(g.NavId, ctx->GetID("OK 0"));            // Focus very first item.
+        IM_CHECK_EQ(window->Scroll.y, 0.0f);                 // Window is scrolled to the start.
 
         // Test arrows keys WITH navigable items.
         // (This is a duplicate of most basic nav tests)
@@ -1305,8 +1305,8 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
         IM_CHECK(window->Scroll.x > 0.0f);
         IM_CHECK(g.NavId == ctx->GetID("OK 50"));           // Focus first item in a second column, scrollbar moves.
         ctx->KeyPressMap(ImGuiKey_LeftArrow);
-        IM_CHECK(window->Scroll.x == 0.0f);
-        IM_CHECK(g.NavId == ctx->GetID("OK 0"));            // Focurs first item in first column, scrollbar moves back.
+        IM_CHECK_EQ(window->Scroll.x, 0.0f);
+        IM_CHECK_EQ(g.NavId, ctx->GetID("OK 0"));            // Focus first item in first column, scrollbar moves back.
     };
 
     // ## Test using TAB to cycle through items

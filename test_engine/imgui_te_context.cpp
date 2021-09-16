@@ -687,7 +687,7 @@ bool    ImGuiTestContext::ScrollErrorCheck(ImGuiAxis axis, float expected, float
     (*remaining_attempts)--;
     if (*remaining_attempts > 0)
     {
-        LogWarning("Failed to set Scroll%c. Requested %.2f, got %.2f. Will try again.", 'X' + axis, expected, actual);
+        LogInfo("Failed to set Scroll%c. Requested %.2f, got %.2f. Will try again.", 'X' + axis, expected, actual);
         return true;
     }
     else
@@ -1595,6 +1595,22 @@ void    ImGuiTestContext::KeyPressMap(ImGuiKey key, int mod_flags, int count)
         // Give a frame for items to react
         Yield();
     }
+}
+
+void    ImGuiTestContext::KeyHoldMap(ImGuiKey key, int mod_flags, float time)
+{
+    if (IsError())
+        return;
+
+    IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
+    char mod_flags_str[32];
+    GetImGuiKeyModsPrefixStr(mod_flags, mod_flags_str, IM_ARRAYSIZE(mod_flags_str));
+    LogDebug("KeyHoldMap(%s%s, %.2f sec)", mod_flags_str, (key != ImGuiKey_COUNT) ? GetImGuiKeyName(key) : "", time);
+
+    Inputs->Queue.push_back(ImGuiTestInput::FromKey(key, ImGuiKeyState_Down, mod_flags));
+    SleepNoSkip(time, 1 / 100.0f);
+    Inputs->Queue.push_back(ImGuiTestInput::FromKey(key, ImGuiKeyState_Up, mod_flags));
+    Yield(); // Give a frame for items to react
 }
 
 void    ImGuiTestContext::KeyChars(const char* chars)
