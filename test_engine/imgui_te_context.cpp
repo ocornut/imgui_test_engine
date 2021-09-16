@@ -129,9 +129,9 @@ void    ImGuiTestContext::LogToTTY(ImGuiTestVerboseLevel level, const char* mess
         {
             // Print current message and all previous logged messages.
             log->CachedLinesPrintedToTTY = true;
-            for (int i = 0; i < log->LineInfo.Size; i++)
+            for (int i = 0; i < log->LineInfoError.Size; i++)
             {
-                ImGuiTestLogLineInfo& line_info = log->LineInfo[i];
+                ImGuiTestLogLineInfo& line_info = log->LineInfoError[i];
                 char* line_beg = log->Buffer.Buf.Data + line_info.LineOffset;
                 char* line_end = strchr(line_beg, '\n');
                 char line_end_bkp = *(line_end + 1);
