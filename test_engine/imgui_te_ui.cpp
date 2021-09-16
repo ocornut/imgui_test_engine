@@ -174,7 +174,8 @@ static bool ShowTestGroupFilterTest(ImGuiTestEngine* e, ImGuiTestGroup group, Im
 {
     if (test->Group != group)
         return false;
-    if (!filter->PassFilter(test->Name) && !filter->PassFilter(test->Category))
+    // FIXME: We cannot combine filters when used with "-remove" need to rework filtering system
+    if (!filter->PassFilter(test->Name))// && !filter->PassFilter(test->Category))
         return false;
     if (e->UiFilterFailingOnly && test->Status == ImGuiTestStatus_Success)
         return false;

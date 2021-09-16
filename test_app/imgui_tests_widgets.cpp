@@ -1166,7 +1166,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ImGuiID child_id = ctx->GetChildWindowID("/Test Window", "Field");
         ImGuiWindow* child_window = ctx->GetWindowByRef(child_id);
         IM_CHECK(child_window != NULL);
-        const size_t selection_len = strlen("Line 9\n");
+        const int selection_len = (int)strlen("Line 9\n");
 
         for (int n = 0; n < 3; n++)
         {
