@@ -413,12 +413,14 @@ ImGuiCaptureStatus ImGuiCaptureContext::CaptureUpdate(ImGuiCaptureArgs* args)
                     const unsigned int height = (unsigned int)capture_rect.GetHeight();
                     IM_ASSERT(_GifWriter == NULL);
                     _GifWriter = IM_NEW(GifWriter)();
-                    GifBegin(_GifWriter, args->OutSavedFileName, width, height, (uint32_t)gif_frame_interval);
+                    if ((args->InFlags & ImGuiCaptureFlags_NoSave) == 0)
+                        GifBegin(_GifWriter, args->OutSavedFileName, width, height, (uint32_t)gif_frame_interval);
                 }
 
                 // Save new GIF frame
                 // FIXME: Not optimal at all (e.g. compare to gifsicle -O3 output)
-                GifWriteFrame(_GifWriter, (const uint8_t*)output->Data, (uint32_t)output->Width, (uint32_t)output->Height, (uint32_t)gif_frame_interval, 8, false);
+                if ((args->InFlags & ImGuiCaptureFlags_NoSave) == 0)
+                    GifWriteFrame(_GifWriter, (const uint8_t*)output->Data, (uint32_t)output->Width, (uint32_t)output->Height, (uint32_t)gif_frame_interval, 8, false);
                 _GifLastFrameTime = current_time_sec;
             }
         }
@@ -431,15 +433,19 @@ ImGuiCaptureStatus ImGuiCaptureContext::CaptureUpdate(ImGuiCaptureArgs* args)
             if (_GifWriter != NULL)
             {
                 // At this point _Recording is false, but we know we were recording because _GifWriter is not NULL. Finalize gif animation here.
-                GifEnd(_GifWriter);
+                if ((args->InFlags & ImGuiCaptureFlags_NoSave) == 0)
+                    GifEnd(_GifWriter);
                 IM_DELETE(_GifWriter);
                 _GifWriter = NULL;
             }
             else if (args->InOutputImageBuf == NULL)
             {
                 // Save single frame.
-                args->InFileCounter++;
-                output->SaveFile(args->OutSavedFileName);
+                if ((args->InFlags & ImGuiCaptureFlags_NoSave) == 0)
+                {
+                    args->InFileCounter++;
+                    output->SaveFile(args->OutSavedFileName);
+                }
                 output->Clear();
             }
 

@@ -1663,6 +1663,8 @@ static void     ImGuiTestEngine_SettingsReadLine(ImGuiContext* ui_ctx, ImGuiSett
     else if (sscanf(line, "CaptureTool=%d", &n) == 1)                               { engine->UiCaptureToolOpen = (n != 0); }
     else if (sscanf(line, "PerfTool=%d", &n) == 1)                                  { engine->UiPerfToolOpen = (n != 0); }
     else if (sscanf(line, "StackTool=%d", &n) == 1)                                 { engine->UiStackToolOpen = (n != 0); }
+    else if (sscanf(line, "CaptureEnabled=%d", &n) == 1)                            { engine->IO.CaptureEnabled = (n != 0); }
+    else if (sscanf(line, "CaptureOnError=%d", &n) == 1)                            { engine->IO.CaptureOnError = (n != 0); }
 }
 
 static void     ImGuiTestEngine_SettingsWriteAll(ImGuiContext* ui_ctx, ImGuiSettingsHandler* handler, ImGuiTextBuffer* buf)
@@ -1678,6 +1680,8 @@ static void     ImGuiTestEngine_SettingsWriteAll(ImGuiContext* ui_ctx, ImGuiSett
     buf->appendf("CaptureTool=%d\n", engine->UiCaptureToolOpen);
     buf->appendf("PerfTool=%d\n", engine->UiPerfToolOpen);
     buf->appendf("StackTool=%d\n", engine->UiStackToolOpen);
+    buf->appendf("CaptureEnabled=%d\n", engine->IO.CaptureEnabled);
+    buf->appendf("CaptureOnError=%d\n", engine->IO.CaptureOnError);
     buf->appendf("\n");
 }
 

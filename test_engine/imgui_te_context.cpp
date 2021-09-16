@@ -585,8 +585,14 @@ bool ImGuiTestContext::CaptureScreenshotEx(ImGuiCaptureArgs* args)
 
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
     LogDebug("CaptureScreenshot()");
+    if (!EngineIO->CaptureEnabled)
+        args->InFlags |= ImGuiCaptureFlags_NoSave;
     bool ret = ImGuiTestEngine_CaptureScreenshot(Engine, args);
-    LogInfo("Saved '%s' (%d*%d pixels)", args->OutSavedFileName, (int)args->OutImageSize.x, (int)args->OutImageSize.y);
+    if (EngineIO->CaptureEnabled)
+        LogInfo("Saved '%s' (%d*%d pixels)", args->OutSavedFileName, (int)args->OutImageSize.x, (int)args->OutImageSize.y);
+    else
+        LogWarning("Skipped saving '%s' (%d*%d pixels) (enable in 'Misc->Options')", args->OutSavedFileName, (int)args->OutImageSize.x, (int)args->OutImageSize.y);
+
     return ret;
 }
 
@@ -606,6 +612,8 @@ bool ImGuiTestContext::BeginCaptureGif(ImGuiCaptureArgs* args)
 
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
     LogInfo("BeginCaptureGif()");
+    if (!EngineIO->CaptureEnabled)
+        args->InFlags |= ImGuiCaptureFlags_NoSave;
     return ImGuiTestEngine_BeginCaptureAnimation(Engine, args);
 }
 
@@ -620,8 +628,10 @@ bool ImGuiTestContext::EndCaptureGif(ImGuiCaptureArgs* args)
             //ImFileDelete(args->OutSavedFileName);
             return false;
         }
-
-        LogDebug("Saved '%s' (%d*%d pixels)", args->OutSavedFileName, (int)args->OutImageSize.x, (int)args->OutImageSize.y);
+        if (EngineIO->CaptureEnabled)
+            LogDebug("Saved '%s' (%d*%d pixels)", args->OutSavedFileName, (int)args->OutImageSize.x, (int)args->OutImageSize.y);
+        else
+            LogWarning("Skipped saving '%s' (%d*%d pixels) (enable in 'Misc->Options')", args->OutSavedFileName, (int)args->OutImageSize.x, (int)args->OutImageSize.y);
     }
     return ret;
 }
