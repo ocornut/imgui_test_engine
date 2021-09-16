@@ -693,6 +693,37 @@ ImGuiTestItemInfo* ImGuiTestContext::ItemInfo(ImGuiTestRef ref, ImGuiTestOpFlags
             ImGuiTestEngine_Yield(Engine);
             retries++;
         }
+
+        // FIXME-TESTS: Wildcard matching requires item to be visible, because clipped items are unaware of their labels. Try panning through entire window, searching for target item.
+        // FIXME-TESTS: Scrollbar position restoration may be desirable, however it interferes with using found item.
+        if (task->OutItemId == 0)
+        {
+            ImGuiTestItemInfo* base_item = ItemInfo(task->InBaseId, ImGuiTestOpFlags_NoError);
+            ImGuiWindow* window = base_item ? base_item->Window : GetWindowByRef(task->InBaseId);
+            if (window)
+            {
+                ImVec2 rect_size = window->InnerRect.GetSize();
+                for (float scroll_x = 0.0f; task->OutItemId == 0; scroll_x += rect_size.x)
+                {
+                    for (float scroll_y = 0.0f; task->OutItemId == 0; scroll_y += rect_size.y)
+                    {
+                        window->Scroll.x = scroll_x;
+                        window->Scroll.y = scroll_y;
+
+                        retries = 0;
+                        while (retries < 2 && task->OutItemId == 0)
+                        {
+                            ImGuiTestEngine_Yield(Engine);
+                            retries++;
+                        }
+                        if (window->Scroll.y >= window->ScrollMax.y)
+                            break;
+                    }
+                    if (window->Scroll.x >= window->ScrollMax.x)
+                        break;
+                }
+            }
+        }
         full_id = task->OutItemId;
 
         // FIXME: InFilterItemStatusFlags is not clear here intentionally, because it is set in ItemAction() and reused in later calls to ItemInfo() to resolve ambiguities.
