@@ -3067,9 +3067,15 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
         ctx->ItemOpen("Configuration");
         ctx->ItemOpen("Style");
         ctx->ItemClick("**/Rendering");
-        ctx->ItemDoubleClick("**/Circle Tessellation Max Error");
+#if IMGUI_BROKEN_TESTS
+        // FIXME-TESTS: ** currently requires item visibility
+        ImGuiTestRef ref("**/Circle Tessellation Max Error");
+#else
+        ImGuiTestRef ref("Style/##tabs/Rendering/Circle Tessellation Max Error");
+#endif
+        ctx->ItemDoubleClick(ref);
         ctx->KeyCharsReplaceEnter("1.5");
-        ctx->ItemDoubleClick("**/Circle Tessellation Max Error");
+        ctx->ItemDoubleClick(ref);
         ctx->KeyCharsReplaceEnter("1.25");
     };
 
