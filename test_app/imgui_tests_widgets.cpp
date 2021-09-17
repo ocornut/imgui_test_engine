@@ -750,12 +750,20 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         strcpy(buf, "Some read-only text.");
         vars.Bool1 = true;
         ctx->Yield();
-
         ctx->ItemClick("InputText");
         ctx->KeyCharsAppendEnter("World123");
         IM_CHECK_STR_EQ(buf, vars.Str1);
         IM_CHECK_EQ(state.CurLenA, 20);
         IM_CHECK_EQ(state.CurLenW, 20);
+
+        // Space as key (instead of Space as character) -> check not conflicting with Nav Activate (#4552)
+        vars.Bool1 = false;
+        ctx->ItemClick("InputText");
+        ctx->KeyCharsReplace("Hello");
+        IM_CHECK(ImGui::GetActiveID() == ctx->GetID("InputText"));
+        ctx->KeyPressMap(ImGuiKey_Space); // Should not add text, should not validate
+        IM_CHECK(ImGui::GetActiveID() == ctx->GetID("InputText"));
+        IM_CHECK_STR_EQ(vars.Str1, "Hello");
     };
 
     // ## Test InputText undo/redo ops, in particular related to issue we had with stb_textedit undo/redo buffers
