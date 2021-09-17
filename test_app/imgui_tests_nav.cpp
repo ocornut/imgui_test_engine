@@ -300,7 +300,6 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         ImGuiContext& g = *ctx->UiContext;
-        ImGuiID child_id = ctx->GetChildWindowID("##Menu_01", "Child");
 
         for (int variant = 0; variant < 2; variant++)
         {
@@ -308,6 +307,7 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
             ctx->LogDebug("Variant: %d", variant);
             ctx->SetRef("Test Window");
             ctx->MenuClick("Menu/Submenu");
+            ImGuiID child_id = ctx->GetChildWindowID("##Menu_01", "Child"); // FIXME-TESTS
             if (variant == 0)
                 ctx->SetRef("##Menu_01");
             else
