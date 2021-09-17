@@ -1504,7 +1504,7 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
         IM_CHECK_EQ(g.ActiveId, ImHashData(&field_idx, sizeof(int), ctx->GetID("Float4")));
 
 #if IMGUI_VERSION_NUM >= 18420
-        // Test focusing next item when it disappears.
+        // Test focusing next item when it disappears (#432)
         vars.Step = 5;
         vars.Bool1 = true;
         ctx->Yield(2);
@@ -1528,6 +1528,86 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
         IM_CHECK_EQ(vars.Status.Activated, 0);
 #endif
     };
+
+#if IMGUI_VERSION_NUM >= 18420
+    // ## Test SetKeyboardFocusHere() on clipped items (#343, #4079, #2352)
+    t = IM_REGISTER_TEST(e, "nav", "nav_focus_api_clipped");
+    struct SetFocusVars { char Str1[256] = ""; int Step = 0; ImGuiTestGenericStatus Status[3]; };
+    t->SetUserDataType<SetFocusVars>();
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::SetNextWindowSize(ImVec2(300, 200), ImGuiCond_Appearing);
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+
+        SetFocusVars& vars = ctx->GetUserData<SetFocusVars>();
+        for (int n = 0; n < 50; n++)
+            ImGui::Text("Dummy %d", n);
+
+        ImGui::InputText("Text1", vars.Str1, IM_ARRAYSIZE(vars.Str1));
+        vars.Status[0].QuerySet(false);
+        if (vars.Step == 1)
+            ImGui::SetKeyboardFocusHere(-1);
+
+        for (int n = 0; n < 50; n++)
+            ImGui::Text("Dummy %d", n);
+
+        ImGui::InputText("Text2", vars.Str1, IM_ARRAYSIZE(vars.Str1));
+        vars.Status[1].QuerySet(false);
+        if (vars.Step == 2)
+            ImGui::SetKeyboardFocusHere(-1);
+
+        for (int n = 0; n < 50; n++)
+            ImGui::Text("Dummy %d", n);
+
+        ImGui::InputText("Text3", vars.Str1, IM_ARRAYSIZE(vars.Str1));
+        vars.Status[2].QuerySet(false);
+        if (vars.Step == 3)
+            ImGui::SetKeyboardFocusHere(-1);
+
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiContext& g = *ctx->UiContext;
+        ctx->SetRef("Test Window");
+
+        SetFocusVars& vars = ctx->GetUserData<SetFocusVars>();
+
+        IM_CHECK(g.ActiveId == 0);
+        vars.Step = 1;
+        ctx->Yield(); // Takes two frame
+        IM_CHECK(g.ActiveId == 0);
+        ctx->Yield();
+        IM_CHECK(g.ActiveId == ctx->GetID("Text1"));
+        IM_CHECK(vars.Status[0].Visible == 1);
+        IM_CHECK(vars.Status[1].Visible == 0);
+        IM_CHECK(vars.Status[2].Visible == 0);
+        ctx->Yield(2);
+
+        vars.Step = 2;
+        ctx->Yield(2);
+        IM_CHECK(g.ActiveId == ctx->GetID("Text2"));
+        IM_CHECK(vars.Status[0].Visible == 0);
+        IM_CHECK(vars.Status[1].Visible == 1);
+        IM_CHECK(vars.Status[2].Visible == 0);
+
+        vars.Step = 3;
+        ctx->Yield(2);
+        IM_CHECK(g.ActiveId == ctx->GetID("Text3"));
+        IM_CHECK(vars.Status[0].Visible == 0);
+        IM_CHECK(vars.Status[1].Visible == 0);
+        IM_CHECK(vars.Status[2].Visible == 1);
+
+        vars.Step = 1;
+        ctx->Yield();
+        vars.Step = 0;
+        ctx->Yield();
+        IM_CHECK(g.ActiveId == ctx->GetID("Text1"));
+        IM_CHECK(vars.Status[0].Visible == 1);
+        IM_CHECK(vars.Status[1].Visible == 0);
+        IM_CHECK(vars.Status[2].Visible == 0);
+    };
+#endif
 
     // ## Test wrapping behavior
     t = IM_REGISTER_TEST(e, "nav", "nav_wrapping");
