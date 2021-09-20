@@ -457,35 +457,94 @@ ImGuiID ImGuiTestContext::GetChildWindowID(ImGuiID child_id)
     return GetChildWindowID(RefID, child_id);
 }
 
-// Mimic logic of BeginChildEx(), ASSUMING child is output in root of parent
-ImGuiID ImGuiTestContext::GetChildWindowID(ImGuiTestRef parent_name, const char* child_name)
+// Helper function for GetChildWindowID().
+static bool GetWindowInformation(ImGuiTestContext* ctx, ImGuiTestRef window_ref, Str* out_name, ImGuiID* out_id)
 {
-    IM_ASSERT(!parent_name.IsEmpty());
+    IM_ASSERT(out_name != NULL || out_id != NULL);
+    if (window_ref.Path)
+    {
+        Str256 tmp;
+        if (out_name == NULL)
+            out_name = &tmp;
+
+        // Assume window_ref follows ImGuiTestRef conventions (unescaped slash resets ID counter).
+        const char* name = window_ref.Path;
+        if (*name == '/')   // Skip initial /, indicating we arent using RefID as ID base.
+            name++;
+
+        // Ensure there are no unescaped slashes remaining, since this is just a window name, not a hashable path.
+        // Valid: "Window", "/Window", "/Window\\/Foo".
+        // Invalid: "/Window/Foo", "Window/Foo".
+        for (int i = 1; i < name[i]; i++)
+            if (name[i] == '/' && name[i - 1] != '\\')
+            {
+                IM_ASSERT(0);
+                return false;
+            }
+
+        out_name->set(name);
+        ImStrReplace(out_name, "\\/", "/"); // Unescape slashes.
+
+        if (out_id)
+            *out_id = ImHashStr(name);
+    }
+    else
+    {
+        // Parent window specified by ID, it must exist.
+        ImGuiWindow* window = ctx->GetWindowByRef(window_ref);
+        for (int retries = 2; window == NULL && retries > 0; retries--)
+        {
+            ctx->Yield();
+            window = ctx->GetWindowByRef(window_ref);
+        }
+        if (window == NULL)
+            return false;
+        if (out_name)
+            out_name->set(window->Name);
+        if (out_id)
+            *out_id = window->ID;
+    }
+    return true;
+}
+
+// Mimic logic of BeginChildEx(), ASSUMING child is output in root of parent
+ImGuiID ImGuiTestContext::GetChildWindowID(ImGuiTestRef parent_ref, const char* child_name)
+{
+    IM_ASSERT(!parent_ref.IsEmpty());
     IM_ASSERT(child_name != NULL);
-    ImGuiWindow* parent_window = GetWindowByRef(parent_name);
-    if (parent_window == NULL)
+
+    ImGuiID parent_id = 0;
+    Str256 parent_name;
+    if (!GetWindowInformation(this, parent_ref, &parent_name, &parent_id))
+    {
+        LogError("GetChildWindowID: parent window should exist, when specifying by ID(0x%08X).", parent_ref.ID);
         return 0;
-    ImGuiID child_item_id = GetID(child_name, parent_window->ID);
-    Str256 parent_name_fixed(parent_window->Name);
-    ImStrReplace(&parent_name_fixed, "/", "\\/");
+    }
+
+    ImGuiID child_item_id = GetID(child_name, parent_id);
+    ImStrReplace(&parent_name, "/", "\\/");
     if (const char* last_slash = strrchr(child_name, '/'))
     {
         child_name = last_slash + 1;
-        IM_ASSERT(*child_name != 0);    // child_name should not end with slash.
+        IM_ASSERT(*child_name != 0);    // child_name should not end with a slash.
     }
-    return GetID(Str128f("/%s\\/%s_%08X", parent_name_fixed.c_str(), child_name, child_item_id).c_str());
+    return GetID(Str128f("/%s\\/%s_%08X", parent_name.c_str(), child_name, child_item_id).c_str());
 }
 
-ImGuiID ImGuiTestContext::GetChildWindowID(ImGuiTestRef parent_name, ImGuiID child_id)
+ImGuiID ImGuiTestContext::GetChildWindowID(ImGuiTestRef parent_ref, ImGuiID child_id)
 {
-    IM_ASSERT(!parent_name.IsEmpty());
+    IM_ASSERT(!parent_ref.IsEmpty());
     IM_ASSERT(child_id != 0);
-    ImGuiWindow* parent_window = GetWindowByRef(parent_name);
-    if (parent_window == NULL)
+
+    Str256 parent_name;
+    if (!GetWindowInformation(this, parent_ref, &parent_name, NULL))
+    {
+        LogError("GetChildWindowID: parent window should exist, when specifying by ID(0x%08X).", parent_ref.ID);
         return 0;
-    Str256 parent_name_fixed(parent_window->Name);
-    ImStrReplace(&parent_name_fixed, "/", "\\/");
-    return GetID(Str128f("/%s\\/%08X", parent_name_fixed.c_str(), child_id).c_str());
+    }
+
+    ImStrReplace(&parent_name, "/", "\\/");
+    return GetID(Str128f("/%s\\/%08X", parent_name.c_str(), child_id).c_str());
 }
 
 ImGuiTestRef ImGuiTestContext::GetFocusWindowRef()
