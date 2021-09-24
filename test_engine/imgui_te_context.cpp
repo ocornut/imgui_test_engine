@@ -1543,6 +1543,52 @@ ImVec2   ImGuiTestContext::GetVoidPos()
     return void_pos;
 }
 
+ImVec2  ImGuiTestContext::GetWindowTitlebarPoint(ImGuiTestRef window_ref)
+{
+    // FIXME-TESTS: Need to find a -visible- click point. drag_pos may end up being outside of main viewport.
+
+    if (IsError())
+        return ImVec2();
+
+    ImGuiWindow* window = NULL;
+    if (!window_ref.IsEmpty())
+        window = GetWindowByRef(window_ref);
+
+    if (window == NULL)
+        if (ImGuiTestItemInfo* item_info = ItemInfo(RefID))
+            window = item_info->Window;
+
+    if (window == NULL)
+    {
+        IM_ERRORF_NOHDR("Unable to locate ref window: '%s'", window_ref.Path);
+        return ImVec2();
+    }
+
+    ImVec2 drag_pos;
+    for (int n = 0; n < 2; n++)
+    {
+#ifdef IMGUI_HAS_DOCK
+        if (window->DockNode != NULL && window->DockNode->TabBar != NULL)
+        {
+            ImGuiTabBar* tab_bar = window->DockNode->TabBar;
+            ImGuiTabItem* tab = ImGui::TabBarFindTabByID(tab_bar, window->ID);
+            IM_ASSERT(tab != NULL);
+            drag_pos = tab_bar->BarRect.Min + ImVec2(tab->Offset + tab->Width * 0.5f, tab_bar->BarRect.GetHeight() * 0.5f);
+        }
+        else
+#endif
+        {
+            const float h = window->TitleBarHeight();
+            drag_pos = ImFloor(window->Pos + ImVec2(window->Size.x, h) * 0.5f);
+        }
+
+        // If we didn't have to teleport it means we can reach the position already
+        if (!WindowTeleportToMakePosVisibleInViewport(window, drag_pos))
+            break;
+    }
+    return drag_pos;
+}
+
 void    ImGuiTestContext::MouseClickOnVoid(int mouse_button)
 {
     ImGuiContext& g = *UiContext;
@@ -2584,31 +2630,7 @@ void    ImGuiTestContext::WindowMove(ImGuiTestRef ref, ImVec2 input_pos, ImVec2 
     WindowBringToFront(window);
     WindowCollapse(window, false);
 
-    // FIXME-TESTS: Need to find a -visible- click point. drag_pos may end up being outside of main viewport.
-    ImVec2 drag_pos;
-    for (int n = 0; n < 2; n++)
-    {
-#ifdef IMGUI_HAS_DOCK
-        if (window->DockNode != NULL && window->DockNode->TabBar != NULL)
-        {
-            ImGuiTabBar* tab_bar = window->DockNode->TabBar;
-            ImGuiTabItem* tab = ImGui::TabBarFindTabByID(tab_bar, window->ID);
-            IM_ASSERT(tab != NULL);
-            drag_pos = tab_bar->BarRect.Min + ImVec2(tab->Offset + tab->Width * 0.5f, tab_bar->BarRect.GetHeight() * 0.5f);
-        }
-        else
-#endif
-        {
-            const float h = window->TitleBarHeight();
-            drag_pos = ImFloor(window->Pos + ImVec2(window->Size.x, h) * 0.5f);
-        }
-
-        // If we didn't have to teleport it means we can reach the position already
-        if (!WindowTeleportToMakePosVisibleInViewport(window, drag_pos))
-            break;
-    }
-
-    MouseMoveToPos(drag_pos);
+    MouseMoveToPos(GetWindowTitlebarPoint(ref));
     //IM_CHECK_SILENT(UiContext->HoveredWindow == window);
     MouseDown(0);
 

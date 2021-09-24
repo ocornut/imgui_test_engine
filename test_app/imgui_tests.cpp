@@ -1189,6 +1189,79 @@ void RegisterTests_Window(ImGuiTestEngine* e)
             ctx->Yield();
         }
     };
+
+    // ## Test context menus on window titlebar/docked window tab.
+    t = IM_REGISTER_TEST(e, "window", "window_title_ctx_menu");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        auto& vars = ctx->GenericVars;
+        ImGui::SetNextWindowSize(ImVec2(300, 200), ImGuiCond_Appearing);
+        ImGui::Begin("Window A", &vars.BoolArray[0], ImGuiWindowFlags_NoSavedSettings);
+        if (ImGui::BeginPopupContextItem("Popup A"))
+            ImGui::EndPopup();
+        ImGui::TextUnformatted("Window A");
+        ImGui::End();
+#ifdef IMGUI_HAS_DOCK
+        ImGui::SetNextWindowSize(ImVec2(300, 200), ImGuiCond_Appearing);
+        ImGui::Begin("Window B", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImGui::TextUnformatted("Window B");
+        ImGui::End();
+#endif
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiContext& g = *ctx->UiContext;
+        Str30f popup_name("##Popup_%08x", ctx->GetID("Window A/Popup A"));
+        ImGuiWindow* window = ctx->GetWindowByRef("Window A");
+        ctx->SetRef("Window A");
+#ifdef IMGUI_HAS_DOCK
+        ctx->DockClear("Window A", "Window B", NULL);
+#endif
+        ctx->WindowBringToFront(window);
+
+        // Titlebar of undocked window
+        ctx->MouseMoveToPos(ctx->GetWindowTitlebarPoint("/Window A"));
+        ctx->MouseClick(ImGuiMouseButton_Right);
+        IM_CHECK_NE(g.NavWindow, (ImGuiWindow*)NULL);
+        IM_CHECK_STR_EQ(g.NavWindow->Name, popup_name.c_str());
+        ctx->PopupCloseAll();
+
+        // Close button of undocked window
+        ctx->ItemClick(ctx->GetID("#CLOSE"), ImGuiMouseButton_Right);
+        IM_CHECK_NE(g.NavWindow, (ImGuiWindow*)NULL);
+        IM_CHECK_STR_EQ(g.NavWindow->Name, popup_name.c_str());
+
+        // Collapse button of undocked window
+        ctx->ItemClick(ctx->GetID("#COLLAPSE"), ImGuiMouseButton_Right);
+        IM_CHECK_NE(g.NavWindow, (ImGuiWindow*)NULL);
+        IM_CHECK_STR_EQ(g.NavWindow->Name, popup_name.c_str());
+
+#ifdef IMGUI_HAS_DOCK
+        ctx->DockInto("Window B", "Window A");
+
+        // Tab of docked window
+        ctx->MouseMoveToPos(ctx->GetWindowTitlebarPoint("/Window A"));
+        ctx->MouseClick(ImGuiMouseButton_Right);
+        IM_CHECK_NE(g.NavWindow, (ImGuiWindow*)NULL);
+        IM_CHECK_STR_EQ(g.NavWindow->Name, popup_name.c_str());
+        ctx->PopupCloseAll();
+
+        // Collapse button of docked window tab
+        ctx->ItemClick(ctx->GetID("#CLOSE"), ImGuiMouseButton_Right);
+        IM_CHECK_NE(g.NavWindow, (ImGuiWindow*)NULL);
+        IM_CHECK_STR_EQ(g.NavWindow->Name, popup_name.c_str());
+        ctx->PopupCloseAll();
+
+        // Close button of dock node
+        ctx->ItemClick(ctx->GetID("#CLOSE", window->DockNode->ID), ImGuiMouseButton_Right);
+        IM_CHECK_EQ(g.NavWindow, window->RootWindowDockTree);
+        ctx->PopupCloseAll();
+
+        // Collapse button of dock node
+        ctx->ItemClick(ctx->GetID("#COLLAPSE", window->DockNode->ID), ImGuiMouseButton_Right);
+        IM_CHECK_EQ(g.NavWindow, window->RootWindowDockTree);
+#endif
+    };
 }
 
 

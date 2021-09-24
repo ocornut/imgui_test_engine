@@ -308,6 +308,7 @@ struct ImGuiTestContext
     ImVec2      GetMainViewportPos();
     ImVec2      GetMainViewportSize();
     ImVec2      GetVoidPos();
+    ImVec2      GetWindowTitlebarPoint(ImGuiTestRef window_ref);                    // Return a clickable point on window titlebar (window tab for docked windows).
 
     // Screen captures
     // - Simple API
