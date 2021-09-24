@@ -2594,8 +2594,6 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         auto& vars = ctx->GenericVars;
-        int& rgbi = vars.Int1;
-        ImVec4& rgbf = vars.Vec4;
 
         struct Color
         {
@@ -2605,6 +2603,8 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
 
         auto read_color = [&]()
         {
+            int& rgbi = vars.Int1;
+            ImVec4& rgbf = vars.Vec4;
             ImVec4 rgb = vars.Step == 0 ? rgbf : ImGui::ColorConvertU32ToFloat4(rgbi);
             Color color;
             color.R = rgb.x;
@@ -2635,13 +2635,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
             IM_CHECK_NE(color_start.V, 0.0f);
 
             // Set saturation to 0, hue must be preserved.
-            // Since we are testing edgecases, these explicit values are filled in manually, to avoid unpredictable
-            // values arising from imprecision of floating point calculations and/or unpredictable resulting color
-            // from simulated input.
-            //ctx->ItemDragWithDelta("##picker/sv", ImVec2(-popup->Size.x * 0.5f, 0));
-            rgbf = ImVec4(0.5, 0.5, 0.5, 0);
-            rgbi = 0x00808080;
-            ctx->Yield();
+            ctx->ItemDragWithDelta("##picker/sv", ImVec2(-popup->Size.x * 0.5f, 0));
 
             Color color = read_color();
             IM_CHECK_EQ(color.S, 0.0f);
@@ -2667,20 +2661,14 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
             color_start = read_color();
 
             // Set value to 0, saturation must be preserved.
-            //ctx->ItemDragWithDelta("##picker/sv", ImVec2(0, +popup->Size.y * 0.5f));
-            rgbf = ImVec4(0, 0, 0, 0);
-            rgbi = 0x00000000;
-            ctx->Yield();
+            ctx->ItemDragWithDelta("##picker/sv", ImVec2(0, +popup->Size.y * 0.5f));
             color = read_color();
             IM_CHECK_EQ(color.V, 0.0f);
             IM_CHECK_EQ(color.S, 0.0f);                     // Saturation undefined
             IM_CHECK_EQ(color_start.S, g.ColorEditLastSat); // Preserved saturation matches original color
 
             // Set color to pure white and verify it can reach (1.0f, 1.0f, 1.0f).
-            //ctx->ItemDragWithDelta("##picker/sv", ImVec2(-popup->Size.x * 0.5f, -popup->Size.y * 0.5f));
-            rgbf = ImVec4(1.0f, 1.0f, 1.0f, 0);
-            rgbi = 0x00FFFFFF;
-            ctx->Yield();
+            ctx->ItemDragWithDelta("##picker/sv", ImVec2(-popup->Size.x * 0.5f, -popup->Size.y * 0.5f));
             color = read_color();
             IM_CHECK_EQ(color.R, 1.0f);
             IM_CHECK_EQ(color.G, 1.0f);
