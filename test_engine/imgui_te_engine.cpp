@@ -1151,6 +1151,8 @@ void ImGuiTestEngine_GetResult(ImGuiTestEngine* engine, int& count_tested, int& 
 
 void ImGuiTestEngine_UpdateHooks(ImGuiTestEngine* engine)
 {
+    ImGuiContext* ui_ctx = engine->UiContextTarget;
+    IM_ASSERT(ui_ctx->TestEngine == engine);
     bool want_hooking = false;
 
     //if (engine->TestContext != NULL)
@@ -1162,18 +1164,9 @@ void ImGuiTestEngine_UpdateHooks(ImGuiTestEngine* engine)
         want_hooking = true;
     if (engine->GatherTask.InParentID != 0)
         want_hooking = true;
-    if (engine->StackTool.QueryStackId != 0)
-        want_hooking = true;
 
     // Update test engine specific hooks
-    ImGuiContext* ui_ctx = engine->UiContextTarget;
-    IM_ASSERT(ui_ctx->TestEngine == engine);
     ui_ctx->TestEngineHookItems = want_hooking;
-
-    if (engine->StackTool.QueryStackId != ui_ctx->TestEngineHookIdInfo)
-        ui_ctx->TestEngineHookIdInfo = 0;
-    if (engine->StackTool.QueryIdInfoOutput != NULL)
-        ui_ctx->TestEngineHookIdInfo = engine->StackTool.QueryIdInfoOutput->ID;
 }
 
 static void ImGuiTestEngine_RunTest(ImGuiTestEngine* engine, ImGuiTestContext* ctx)
@@ -1328,7 +1321,6 @@ static void ImGuiTestEngine_RunTest(ImGuiTestEngine* engine, ImGuiTestContext* c
 // - ImGuiTestEngineHook_ItemAdd()
 // - ImGuiTestEngineHook_ItemInfo()
 // - ImGuiTestEngineHook_Log()
-// - ImGuiTestEngineHook_IdInfo()
 // - ImGuiTestEngineHook_AssertFunc()
 //-------------------------------------------------------------------------
 
@@ -1465,67 +1457,6 @@ void ImGuiTestEngineHook_Log(ImGuiContext* ui_ctx, const char* fmt, ...)
     va_end(args);
 }
 
-void ImGuiTestEngineHook_IdInfo(ImGuiContext* ui_ctx, ImGuiDataType data_type, ImGuiID id, const void* data_id, const void* data_id_end)
-{
-    ImGuiContext& g = *ui_ctx;
-    ImGuiTestEngine* engine = (ImGuiTestEngine*)ui_ctx->TestEngine;
-
-    // Stack ID query
-    // (Note: this assume that the ID was computed with the current ID stack, which tends to be the case for our widget)
-    ImGuiWindow* window = g.CurrentWindow;
-    if (engine->StackTool.QueryStackId == id && engine->StackTool.QueryStep == 0)
-    {
-        //IM_ASSERT(engine->StackTool.Results.Size == 0); // double query OR id conflict?
-        engine->StackTool.QueryStep++;
-        engine->StackTool.Results.resize(window->IDStack.Size + 1);
-        for (int n = 0; n < window->IDStack.Size + 1; n++)
-        {
-            ImGuiStackLevelInfo info;
-            info.ID = (n < window->IDStack.Size) ? window->IDStack[n] : id;
-            engine->StackTool.Results[n] = info;
-        }
-    }
-
-    ImGuiStackLevelInfo* info = engine->StackTool.QueryIdInfoOutput;
-    if (info == NULL)
-        return;
-    IM_ASSERT(info->ID == id);
-
-    const int requested_stack_level = engine->StackTool.Results.index_from_ptr(info);
-    const int current_stack_level = ui_ctx->CurrentWindow->IDStack.Size;
-    IM_ASSERT(requested_stack_level != -1);
-    if (requested_stack_level != current_stack_level)
-        return;
-
-    switch (data_type)
-    {
-    case ImGuiDataType_S32:
-        ImFormatString(info->Desc, IM_ARRAYSIZE(info->Desc), "int %d", (int)(intptr_t)data_id);
-        break;
-    case ImGuiDataType_String:
-        if (data_id_end)
-            ImFormatString(info->Desc, IM_ARRAYSIZE(info->Desc), "str \"%.*s\"", (int)((const char*)data_id_end - (const char*)data_id), (const char*)data_id);
-        else
-            ImFormatString(info->Desc, IM_ARRAYSIZE(info->Desc), "str \"%s\"", (const char*)data_id);
-        break;
-    case ImGuiDataType_Pointer:
-        ImFormatString(info->Desc, IM_ARRAYSIZE(info->Desc), "ptr %p", data_id);
-        break;
-    case ImGuiDataType_ID:
-        if (!info->QuerySuccess)
-            ImFormatString(info->Desc, IM_ARRAYSIZE(info->Desc), "ovr 0x%08X", id);
-        break;
-    default:
-        IM_ASSERT(0);
-    }
-    info->QuerySuccess = true;
-}
-
-void ImGuiTestEngineHook_IdInfo(ImGuiContext* ui_ctx, ImGuiDataType data_type, ImGuiID id, const void* data_id)
-{
-    ImGuiTestEngineHook_IdInfo(ui_ctx, data_type, id, data_id, 0);
-}
-
 void ImGuiTestEngineHook_AssertFunc(const char* expr, const char* file, const char* function, int line)
 {
     ImGuiTestEngine* engine = GImGuiTestEngine;
@@ -1544,6 +1475,16 @@ void ImGuiTestEngineHook_AssertFunc(const char* expr, const char* file, const ch
 #else
     IM_DEBUG_BREAK();
 #endif
+}
+
+const char* ImGuiTestEngine_FindItemDebugLabel(ImGuiContext* ui_ctx, ImGuiID id)
+{
+    IM_ASSERT(ui_ctx->TestEngine != NULL);
+    if (id == 0)
+        return NULL;
+    if (ImGuiTestItemInfo* id_info = ImGuiTestEngine_FindItemInfo((ImGuiTestEngine*)ui_ctx->TestEngine, id, ""))
+        return id_info->DebugLabel;
+    return NULL;
 }
 
 //-------------------------------------------------------------------------

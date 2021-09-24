@@ -56,27 +56,6 @@ struct ImGuiTestRunTask
     ImGuiTestRunFlags       RunFlags = ImGuiTestRunFlags_None;
 };
 
-struct ImGuiStackLevelInfo
-{
-    ImGuiID                 ID = 0;
-    bool                    QueryStarted = false;
-    bool                    QuerySuccess = false;       // Obtained infos from PushID() hook
-    char                    Desc[59] = "";
-};
-
-struct ImGuiStackTool
-{
-    ImGuiID                 QueryStackId = 0;           // Stack id to query details for
-    int                     QueryStep = -1;
-    bool                    QueryAllFinished = false;
-    ImGuiStackLevelInfo*    QueryIdInfoOutput = NULL;   // Current stack level we're hooking PushID for
-    int                     QueryIdInfoTimestamp = -1;
-    ImVector<ImGuiStackLevelInfo> Results;
-
-    void    ShowStackToolWindow(ImGuiTestEngine* engine, bool* p_open = NULL);
-    void    UpdateQueries(ImGuiTestEngine* engine);
-};
-
 struct ImGuiTestInputs
 {
     ImGuiIO                     SimulatedIO;
@@ -141,7 +120,6 @@ struct ImGuiTestEngine
     bool                        ToolDebugRebootUiContext = false;   // Completely shutdown and recreate the dear imgui context in place
     bool                        ToolSlowDown = false;
     int                         ToolSlowDownMs = 100;
-    ImGuiStackTool              StackTool;
     ImGuiCaptureTool            CaptureTool;
     ImGuiCaptureContext         CaptureContext;
     ImGuiCaptureArgs*           CurrentCaptureArgs = NULL;

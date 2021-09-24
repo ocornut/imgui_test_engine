@@ -459,7 +459,7 @@ static void ImGuiTestEngine_ShowLogAndTools(ImGuiTestEngine* engine)
     {
         ImGuiIO& io = ImGui::GetIO();
         ImGui::Text("%.3f ms/frame (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
-        ImGui::Text("TestEngine: HookItems: %d, HookPushId: %d, InfoTasks: %d", g.TestEngineHookItems, g.TestEngineHookIdInfo != 0, engine->InfoTasks.Size);
+        ImGui::Text("TestEngine: HookItems: %d, HookPushId: %d, InfoTasks: %d", g.TestEngineHookItems, g.DebugHookIdInfo != 0, engine->InfoTasks.Size);
         ImGui::Separator();
 
         ImGui::Checkbox("Slow down whole app", &engine->ToolSlowDown);
@@ -620,9 +620,8 @@ void    ImGuiTestEngine_ShowTestWindows(ImGuiTestEngine* e, bool* p_open)
     ImGuiTestEngine_ShowTestTool(e, p_open);
 
     // Stack Tool
-    ImGuiStackTool& stack_tool = e->StackTool;
     if (e->UiStackToolOpen)
-        stack_tool.ShowStackToolWindow(e, &e->UiStackToolOpen);
+        ImGui::ShowStackToolWindow(&e->UiStackToolOpen);
 
     // Capture Tool
     ImGuiCaptureTool& capture_tool = e->CaptureTool;
@@ -651,123 +650,4 @@ void    ImGuiTestEngine_ShowTestWindows(ImGuiTestEngine* e, bool* p_open)
     // FIXME
     if (e->UiMetricsOpen)
         ImGui::ShowMetricsWindow(&e->UiMetricsOpen);
-}
-
-//-------------------------------------------------------------------------
-// ImGuiStackTool
-//-------------------------------------------------------------------------
-
-void    ImGuiStackTool::ShowStackToolWindow(ImGuiTestEngine* engine, bool* p_open)
-{
-    ImGuiContext& g = *engine->UiContextVisible;
-    if (!ImGui::Begin("Stack Tool", p_open))
-    {
-        ImGui::End();
-        return;
-    }
-
-    // Quick status
-    ImGuiID hovered_id = g.HoveredIdPreviousFrame;
-    ImGuiID active_id = g.ActiveId;
-    ImGuiTestItemInfo* hovered_id_info = hovered_id ? ImGuiTestEngine_FindItemInfo(engine, hovered_id, "") : NULL;
-    ImGuiTestItemInfo* active_id_info = active_id ? ImGuiTestEngine_FindItemInfo(engine, active_id, "") : NULL;
-    ImGui::Text("HoveredId: 0x%08X (\"%s\")", hovered_id, hovered_id_info ? hovered_id_info->DebugLabel : "");
-    ImGui::Text("ActiveId:  0x%08X (\"%s\")", active_id, active_id_info ? active_id_info->DebugLabel : "");
-    if (ImGui::Button("Item Picker..."))
-        ImGui::DebugStartItemPicker();
-    ImGui::Separator();
-
-    // Display decorated stack
-    for (int n = 0; n < Results.Size; n++)
-    {
-        ImGuiStackLevelInfo* info = &Results[n];
-
-        ImGui::Text("0x%08X", info->ID);
-        ImGui::SameLine(ImGui::CalcTextSize("0xDDDDDDDD  ").x);
-
-        // Source: window name (because the root ID don't call GetID() and so doesn't get hooked)
-        if (info->Desc[0] == 0 && n == 0)
-            if (ImGuiWindow* window = ImGui::FindWindowByID(info->ID))
-            {
-                ImGui::Text("str \"%s\"", window->Name);
-                continue;
-            }
-
-        // Source: GetD() hooks
-        // Priority over ItemInfo() because we frequently use patterns like: PushID(str), Button("") (same id)
-        if (info->QuerySuccess)
-        {
-            ImGui::Text("%s", info->Desc);
-            continue;
-        }
-
-        if (!QueryAllFinished)
-        {
-            ImGui::NewLine();
-            continue;
-        }
-
-        // Source: ItemInfo()
-        // FIXME: Ambiguity between empty label (which is a string) and custom ID (which is no)
-#if 1
-        if (ImGuiTestItemInfo* new_info = ImGuiTestEngine_FindItemInfo(engine, info->ID, ""))
-        {
-            ImGui::Text("??? \"%s\"", new_info->DebugLabel);
-            continue;
-        }
-#endif
-
-        ImGui::Text("???");
-    }
-
-    ImGui::End();
-
-    UpdateQueries(engine);
-}
-
-void    ImGuiStackTool::UpdateQueries(ImGuiTestEngine* engine)
-{
-    // Steps
-    // -1 Idle
-    //  0 Query stack
-    //  + Query each stack level
-    ImGuiContext& g = *engine->UiContextVisible;
-    ImGuiID query_id = g.ActiveId ? g.ActiveId : g.HoveredIdPreviousFrame;
-    if (QueryStackId != query_id)
-    {
-        QueryStackId = g.TestEngineHookIdInfo = query_id;
-        QueryStep = 0;
-        QueryAllFinished = false;
-        Results.resize(0);
-    }
-
-    // We can only perform 1 ID Info query every frame.
-    // This is designed so the ImGui:: doesn't have to pay a non-trivial cost.
-    if (QueryIdInfoOutput != NULL)
-    {
-        if (QueryIdInfoOutput->QuerySuccess)
-            QueryStep++;
-        else if (g.FrameCount + 2 >= QueryIdInfoTimestamp)
-            QueryStep++; // Drop query for this level (e.g. level 0 doesn't have a result)
-    }
-
-    if (QueryStep >= 1)
-    {
-        int level = QueryStep - 1;
-        if (level >= 0 && level < Results.Size)
-        {
-            // Start query for one level of the ID stack
-            QueryIdInfoOutput = &Results[level];
-            QueryIdInfoTimestamp = g.FrameCount;
-            QueryIdInfoOutput->QueryStarted = true;
-            IM_ASSERT(QueryIdInfoOutput->QuerySuccess == false);
-        }
-        else
-        {
-            QueryIdInfoOutput = NULL;
-            QueryIdInfoTimestamp = -1;
-            QueryAllFinished = true;
-        }
-    }
-    ImGuiTestEngine_UpdateHooks(engine);
 }
