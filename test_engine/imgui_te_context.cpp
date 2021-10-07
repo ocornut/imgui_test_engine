@@ -1550,14 +1550,7 @@ ImVec2  ImGuiTestContext::GetWindowTitlebarPoint(ImGuiTestRef window_ref)
     if (IsError())
         return ImVec2();
 
-    ImGuiWindow* window = NULL;
-    if (!window_ref.IsEmpty())
-        window = GetWindowByRef(window_ref);
-
-    if (window == NULL)
-        if (ImGuiTestItemInfo* item_info = ItemInfo(RefID))
-            window = item_info->Window;
-
+    ImGuiWindow* window = GetWindowByRef(window_ref);
     if (window == NULL)
     {
         IM_ERRORF_NOHDR("Unable to locate ref window: '%s'", window_ref.Path);
