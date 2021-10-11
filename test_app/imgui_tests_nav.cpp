@@ -1457,6 +1457,14 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
             ImGui::InputText("NoFocus1", vars.Str2, IM_ARRAYSIZE(vars.Str2));
             vars.Status.QuerySet();
         }
+        else if (vars.Step == 7)
+        {
+            ImGui::PushAllowKeyboardFocus(false);
+            ImGui::SetKeyboardFocusHere();
+            ImGui::InputText("Text1", vars.Str1, IM_ARRAYSIZE(vars.Str1));
+            vars.Status.QuerySet();
+            ImGui::PopAllowKeyboardFocus();
+        }
         ImGui::End();
     };
     t->TestFunc = [](ImGuiTestContext* ctx)
@@ -1527,6 +1535,12 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
         IM_CHECK_EQ(g.ActiveId, 0u);
         IM_CHECK_EQ(vars.Status.Activated, 0);
 #endif
+
+        // Test API focusing an item that has PushAllowKeyboardFocus(false)
+        vars.Step = 7;
+        ctx->Yield(2);
+        IM_CHECK_EQ(g.ActiveId, ctx->GetID("Text1"));
+        IM_CHECK_EQ(vars.Status.Activated, 1);
     };
 
 #if IMGUI_VERSION_NUM >= 18420
@@ -1683,6 +1697,41 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
         IM_CHECK(g.NavId == ctx->GetID("3,1"));
         ctx->KeyPressMap(ImGuiKey_DownArrow);
         IM_CHECK(g.NavId == ctx->GetID("0,1"));
+    };
+
+    // ## Test wrapping behavior with clipper (test modeled after "nav_focus_api_clipped")
+    // This works because CalcListClipping() adds NavScoringRect but is currently not super efficient.
+    t = IM_REGISTER_TEST(e, "nav", "nav_wrapping_clipped");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::SetNextWindowSize(ImVec2(300, 300), ImGuiCond_Appearing);
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+        auto& vars = ctx->GenericVars;
+        ImGuiListClipper clipper;
+        clipper.Begin(50);
+        while (clipper.Step())
+        {
+            for (int n = clipper.DisplayStart; n < clipper.DisplayEnd; n++)
+                ImGui::InputInt(Str30f("Input%d", n).c_str(), &vars.Int1, 0, 0);
+        }
+        ImGui::NavMoveRequestTryWrapping(ImGui::GetCurrentWindow(), ImGuiNavMoveFlags_LoopY);
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiContext& g = *ctx->UiContext;
+        ctx->SetRef("Test Window");
+        for (int n = 0; n < 52; n++)
+        {
+            ctx->KeyPressMap(ImGuiKey_DownArrow);
+            IM_CHECK_EQ(g.NavId, ctx->GetID(Str30f("Input%d", (n + 1) % 50).c_str()));
+        }
+        // Should be on 51
+        for (int n = 0; n < 4; n++)
+        {
+            ctx->KeyPressMap(ImGuiKey_UpArrow);
+            IM_CHECK_EQ(g.NavId, ctx->GetID(Str30f("Input%d", (51 - n) % 50).c_str()));
+        }
     };
 }
 
