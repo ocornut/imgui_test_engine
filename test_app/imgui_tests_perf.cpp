@@ -537,7 +537,6 @@ void RegisterTests_Perf(ImGuiTestEngine* e)
     };
     t->TestFunc = PerfCaptureFunc;
 
-#ifdef IMGUI_HAS_TABLE
     // ## Measure the cost of TableNextCell(), TableNextRow(): one table, many rows
     t = IM_REGISTER_TEST(e, "perf", "perf_stress_table_1");
     t->GuiFunc = [](ImGuiTestContext* ctx)
@@ -591,7 +590,6 @@ void RegisterTests_Perf(ImGuiTestEngine* e)
         ImGui::End();
     };
     t->TestFunc = PerfCaptureFunc;
-#endif // IMGUI_HAS_TABLE
 
     // ## Measure the cost of simple ColorEdit4() calls (multi-component, group based widgets are quite heavy)
     t = IM_REGISTER_TEST(e, "perf", "perf_stress_coloredit4");

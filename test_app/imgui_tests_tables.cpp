@@ -29,8 +29,6 @@
 // Tests: Tables
 //-------------------------------------------------------------------------
 
-#ifdef IMGUI_HAS_TABLE
-
 struct TableTestingVars
 {
     ImGuiTableFlags         TableFlags = ImGuiTableFlags_None;
@@ -149,7 +147,6 @@ static void HelperTableWithResizingPolicies(const char* table_id, ImGuiTableFlag
     }
     ImGui::EndTable();
 }
-#endif // #ifdef IMGUI_HAS_TABLE
 
 static void EditTableSizingFlags(ImGuiTableFlags* p_flags)
 {
@@ -178,7 +175,6 @@ static void EditTableSizingFlags(ImGuiTableFlags* p_flags)
 
 void RegisterTests_Table(ImGuiTestEngine* e)
 {
-#ifdef IMGUI_HAS_TABLE
     ImGuiTest* t = NULL;
 
     // ## Table: measure draw calls count
@@ -2947,10 +2943,6 @@ void RegisterTests_Table(ImGuiTestEngine* e)
         ctx->MouseMove("table1/0");     // Ensure LastItemStatusFlags has _HoveredRect flag.
         ctx->Yield(2);                  // Do one more frame so tests in GuiFunc can run.
     };
-
-#else // #ifdef IMGUI_HAS_TABLE
-    IM_UNUSED(e);
-#endif
 }
 
 //-------------------------------------------------------------------------

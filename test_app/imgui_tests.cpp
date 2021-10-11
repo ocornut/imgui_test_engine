@@ -1953,7 +1953,6 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
     };
 
     // ## Test ImVector functions
-#ifdef IMGUI_HAS_TABLE
     t = IM_REGISTER_TEST(e, "misc", "misc_bitarray");
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
@@ -1981,7 +1980,6 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
         v129.SetBit(128);
         IM_CHECK(v129.TestBit(128) == true);
     };
-#endif
 
     // ## Test ImPool functions
     t = IM_REGISTER_TEST(e, "misc", "misc_pool_001");
@@ -2070,14 +2068,12 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoSavedSettings);
 
         bool open = true;
-#ifdef IMGUI_HAS_TABLE
         if (vars.TableEnable)
         {
             open = ImGui::BeginTable("table", 2, ImGuiTableFlags_ScrollY);
             if (open)
                 ImGui::TableSetupScrollFreeze(0, vars.TableFreezeRows);
         }
-#endif
         if (open)
         {
             vars.WindowOut = ImGui::GetCurrentWindow();
@@ -2094,13 +2090,11 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
             {
                 for (int n = clipper.DisplayStart; n < clipper.DisplayEnd; n++)
                 {
-#ifdef IMGUI_HAS_TABLE
                     if (vars.TableEnable)
                     {
                         ImGui::TableNextRow();
                         ImGui::TableNextColumn();
                     }
-#endif
                     ImGui::Text("Item %04d", n);
                     vars.ItemsOut++;
                     vars.ItemsOutMask.SetBit(n);
@@ -2108,10 +2102,8 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
             }
             vars.OffsetY = ImGui::GetCursorScreenPos().y - start_y;
 
-#ifdef IMGUI_HAS_TABLE
             if (vars.TableEnable)
                 ImGui::EndTable();
-#endif
         }
         ImGui::End();
         ImGui::PopStyleVar();
@@ -2121,11 +2113,7 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
         auto& vars = ctx->GetUserData<ClipperTestVars>();
         float item_height = ImGui::GetTextLineHeightWithSpacing(); // EXPECTED item height
 
-#ifdef IMGUI_HAS_TABLE
         int step_count = 4;
-#else
-        int step_count = 1;
-#endif
         for (int clipper_step = 0; clipper_step < 2; clipper_step++)
             for (int step = 0; step < step_count; step++)
             {
@@ -3029,11 +3017,7 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
         ctx->ItemOpen("Widgets");
         ctx->ItemOpen("Layout & Scrolling");
         ctx->ItemOpen("Popups & Modal windows");
-#ifdef IMGUI_HAS_TABLE
         ctx->ItemOpen("Tables & Columns");
-#else
-        ctx->ItemOpen("Columns");
-#endif
         ctx->ItemOpen("Filtering");
         ctx->ItemOpen("Inputs, Navigation & Focus");
     };
@@ -3660,7 +3644,6 @@ void RegisterTests_Capture(ImGuiTestEngine* e)
         ctx->PopupCloseAll();
     };
 
-#ifdef IMGUI_HAS_TABLE
     // ## Capture all tables demo
     t = IM_REGISTER_TEST(e, "capture", "capture_table_demo");
     t->TestFunc = [](ImGuiTestContext* ctx)
@@ -3681,7 +3664,6 @@ void RegisterTests_Capture(ImGuiTestEngine* e)
 
         ctx->ItemClick("Tables/Close all");
     };
-#endif
 
 #ifdef IMGUI_TEST_ENGINE_ENABLE_IMPLOT
     // ## Capture all tables demo

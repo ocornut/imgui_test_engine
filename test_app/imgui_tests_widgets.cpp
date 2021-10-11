@@ -3701,7 +3701,6 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         IM_CHECK(ctx->GenericVars.Status.Hovered == 1);
     };
 
-#ifdef IMGUI_HAS_TABLE
     // ## Test ImGuiSelectableFlags_SpanAllColumns flag when used in a table.
     t = IM_REGISTER_TEST(e, "widgets", "widgets_selectable_span_all_table");
     t->GuiFunc = [](ImGuiTestContext* ctx)
@@ -3747,7 +3746,6 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
             ctx->ItemDragAndDrop(TableGetHeaderID(table, "1"), TableGetHeaderID(table, "2"));
         }
     };
-#endif
 
     // ## Test sliders with inverted ranges.
     t = IM_REGISTER_TEST(e, "widgets", "widgets_slider_ranges");

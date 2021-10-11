@@ -308,7 +308,6 @@ bool ImGui::Splitter(const char* id, float* value_1, float* value_2, int axis, i
     return ImGui::SplitterBehavior(splitter_bb, ImGui::GetID(id), (ImGuiAxis)axis, &v_1, &v_2, min_size_0, min_size_1, 3.0f);
 }
 
-#ifdef IMGUI_HAS_TABLE
 ImGuiID TableGetHeaderID(ImGuiTable* table, const char* column, int instance_no)
 {
     IM_ASSERT(table != NULL);
@@ -341,7 +340,6 @@ void TableDiscardInstanceAndSettings(ImGuiID table_id)
     // FIXME-TABLE: We should be able to use TableResetSettings() instead of TableRemove()! Maybe less of a clean slate but would be good to check that it does the job
     //ImGui::TableResetSettings(table);
 }
-#endif
 
 //-----------------------------------------------------------------------------
 // Simple CSV parser
