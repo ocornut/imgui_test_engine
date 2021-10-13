@@ -563,6 +563,12 @@ ImVec2 ImGuiTestContext::GetMainViewportSize()
     return ImGui::GetMainViewport()->Size;
 }
 
+static bool ImGuiTestContext_CanCapture(ImGuiTestContext* ctx)
+{
+    ImGuiTestEngineIO* io = ctx->EngineIO;
+    return io->ConfigCaptureEnabled && io->ConfigRunWithGui;
+}
+
 void ImGuiTestContext::CaptureInitArgs(ImGuiCaptureArgs* args, int flags)
 {
     args->InFlags = (ImGuiCaptureFlags)flags;
@@ -585,10 +591,10 @@ bool ImGuiTestContext::CaptureScreenshotEx(ImGuiCaptureArgs* args)
 
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
     LogDebug("CaptureScreenshot()");
-    if (!EngineIO->CaptureEnabled)
+    if (!ImGuiTestContext_CanCapture(this))
         args->InFlags |= ImGuiCaptureFlags_NoSave;
     bool ret = ImGuiTestEngine_CaptureScreenshot(Engine, args);
-    if (EngineIO->CaptureEnabled)
+    if (ImGuiTestContext_CanCapture(this))
         LogInfo("Saved '%s' (%d*%d pixels)", args->OutSavedFileName, (int)args->OutImageSize.x, (int)args->OutImageSize.y);
     else
         LogWarning("Skipped saving '%s' (%d*%d pixels) (enable in 'Misc->Options')", args->OutSavedFileName, (int)args->OutImageSize.x, (int)args->OutImageSize.y);
@@ -612,7 +618,7 @@ bool ImGuiTestContext::BeginCaptureGif(ImGuiCaptureArgs* args)
 
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
     LogInfo("BeginCaptureGif()");
-    if (!EngineIO->CaptureEnabled)
+    if (!ImGuiTestContext_CanCapture(this))
         args->InFlags |= ImGuiCaptureFlags_NoSave;
     return ImGuiTestEngine_BeginCaptureAnimation(Engine, args);
 }
@@ -628,7 +634,7 @@ bool ImGuiTestContext::EndCaptureGif(ImGuiCaptureArgs* args)
             //ImFileDelete(args->OutSavedFileName);
             return false;
         }
-        if (EngineIO->CaptureEnabled)
+        if (ImGuiTestContext_CanCapture(this))
             LogDebug("Saved '%s' (%d*%d pixels)", args->OutSavedFileName, (int)args->OutImageSize.x, (int)args->OutImageSize.y);
         else
             LogWarning("Skipped saving '%s' (%d*%d pixels) (enable in 'Misc->Options')", args->OutSavedFileName, (int)args->OutImageSize.x, (int)args->OutImageSize.y);

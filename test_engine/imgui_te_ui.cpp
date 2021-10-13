@@ -465,8 +465,8 @@ static void ImGuiTestEngine_ShowLogAndTools(ImGuiTestEngine* engine)
         ImGui::Checkbox("Slow down whole app", &engine->ToolSlowDown);
         ImGui::SameLine(); ImGui::SetNextItemWidth(70 * engine->IO.DpiScale);
         ImGui::SliderInt("##ms", &engine->ToolSlowDownMs, 0, 400, "%d ms");
-        ImGui::Checkbox("Capture when requested by API", &engine->IO.CaptureEnabled); HelpTooltip("Enable or disable screen capture.");
-        ImGui::Checkbox("Capture screen on error", &engine->IO.CaptureOnError); HelpTooltip("Capture a screenshot on test failure.");
+        ImGui::Checkbox("Capture when requested by API", &engine->IO.ConfigCaptureEnabled); HelpTooltip("Enable or disable screen capture.");
+        ImGui::Checkbox("Capture screen on error", &engine->IO.ConfigCaptureOnError); HelpTooltip("Capture a screenshot on test failure.");
 
         ImGui::CheckboxFlags("io.ConfigFlags: NavEnableKeyboard", &io.ConfigFlags, ImGuiConfigFlags_NavEnableKeyboard);
         ImGui::CheckboxFlags("io.ConfigFlags: NavEnableGamepad", &io.ConfigFlags, ImGuiConfigFlags_NavEnableGamepad);
