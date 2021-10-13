@@ -123,6 +123,23 @@ bool    ImOsIsDebuggerPresent()
 {
 #ifdef _WIN32
     return ::IsDebuggerPresent() != 0;
+#elif defined(__linux__)
+    int debugger_pid = 0;
+    char buf[2048];                                 // TracerPid is located near the start of the file. If end of the buffer gets cut off thats fine.
+    FILE* fp = fopen("/proc/self/status", "rb");    // Can not use ImFileLoadToMemory because size detection of /proc/self/status would fail.
+    if (fp == NULL)
+        return false;
+    fread(buf, 1, IM_ARRAYSIZE(buf), fp);
+    fclose(fp);
+    buf[IM_ARRAYSIZE(buf) - 1] = 0;
+    if (char* tracer_pid = strstr(buf, "TracerPid:"))
+    {
+        tracer_pid += 10;   // Skip label
+        while (isspace(*tracer_pid))
+            tracer_pid++;
+        debugger_pid = atoi(tracer_pid);
+    }
+    return debugger_pid != 0;
 #else
     // FIXME
     return false;
