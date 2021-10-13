@@ -1081,10 +1081,10 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
         ImGuiWindow* up_window = ctx->GetWindowByRef("Up");
         ImGuiWindow* right_window = ctx->GetWindowByRef("Right");
         ImGuiWindow* down_window = ctx->GetWindowByRef("Down");
-        IM_CHECK_GT(window->HitTestHoleOffset.x, left_window->Pos.x + left_window->Size.x);
-        IM_CHECK_GT(window->HitTestHoleOffset.y, up_window->Pos.y + up_window->Size.y);
-        IM_CHECK_LT(window->HitTestHoleOffset.x + window->HitTestHoleSize.x, right_window->Pos.x);
-        IM_CHECK_LT(window->HitTestHoleOffset.y + window->HitTestHoleSize.y, down_window->Pos.y);
+        IM_CHECK_GT(viewport->Pos.x + window->HitTestHoleOffset.x, left_window->Pos.x + left_window->Size.x);
+        IM_CHECK_GT(viewport->Pos.y + window->HitTestHoleOffset.y, up_window->Pos.y + up_window->Size.y);
+        IM_CHECK_LT(viewport->Pos.x + window->HitTestHoleOffset.x + window->HitTestHoleSize.x, right_window->Pos.x);
+        IM_CHECK_LT(viewport->Pos.y + window->HitTestHoleOffset.y + window->HitTestHoleSize.y, down_window->Pos.y);
     };
 
     // ## Test preserving docking information of closed windows. (#3716)
@@ -1305,17 +1305,25 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
     };
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
+        ImGuiViewport* main_viewport = ImGui::GetMainViewport();
+        const ImGuiPlatformMonitor* monitor = ImGui::GetViewportPlatformMonitor(main_viewport);
         ImGuiWindow* window = ctx->GetWindowByRef("Window 1");
         IM_CHECK(window->DockNode != NULL);
 
-        ImVec2 expect_size = ImGui::GetMainViewport()->Size;
-        IM_CHECK(window->Size.x == expect_size.x);
-        IM_CHECK(window->Size.y == expect_size.y);
+        ImVec2 initial_size = main_viewport->Size;
+        IM_CHECK(window->Size.x == initial_size.x);
+        IM_CHECK(window->Size.y == initial_size.y);
 
         ctx->ItemDragWithDelta("Window 1", ImVec2(50.0f, 50.0f));
         IM_CHECK(ctx->WindowIsUndockedOrStandalone(window));
 
-        expect_size = ImGui::GetMainViewport()->Size * ImVec2(0.90f, 0.90f);
+        ImVec2 expect_size;
+        ImVec2 min_size = main_viewport->Size * ImVec2(0.90f, 0.90f);
+        if (ctx->UiContext->IO.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
+            expect_size = ImMin(ImMax(window->Size, min_size), monitor->WorkSize);  // Viewport can be bigger than main viewport, but no larger than containing monitor
+        else
+            expect_size = min_size;                                                 // Always smaller than main viewport
+
         IM_CHECK(window->Size.x <= expect_size.x);
         IM_CHECK(window->Size.y <= expect_size.y);
     };
