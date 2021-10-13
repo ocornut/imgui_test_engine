@@ -40,8 +40,18 @@ Index of this file:
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wsign-conversion"
 #endif
+
+#ifndef STB_IMAGE_WRITE_IMPLEMENTATION                       // in case the user already have an implementation in the _same_ compilation unit (e.g. unity builds)
+#ifndef IMGUI_DISABLE_STB_IMAGE_WRITE_IMPLEMENTATION         // in case the user already have an implementation in another compilation unit
 #define STB_IMAGE_WRITE_IMPLEMENTATION
+#endif
+#ifdef IMGUI_STB_IMAGE_WRITE_FILENAME
+#include IMGUI_STB_IMAGE_WRITE_FILENAME
+#else
 #include "../libs/stb/stb_image_write.h"
+#endif  // #ifdef IMGUI_STB_IMAGE_WRITE_FILENAME
+#endif  // #ifndef STB_IMAGE_WRITE_IMPLEMENTATION
+
 #define GIF_TEMP_MALLOC IM_ALLOC
 #define GIF_TEMP_FREE IM_FREE
 #define GIF_MALLOC IM_ALLOC
