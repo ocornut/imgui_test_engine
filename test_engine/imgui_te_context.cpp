@@ -2633,8 +2633,12 @@ void    ImGuiTestContext::WindowMove(ImGuiTestRef ref, ImVec2 input_pos, ImVec2 
     //IM_CHECK_SILENT(UiContext->HoveredWindow == window);
     MouseDown(0);
 
+    // Disable docking
 #ifdef IMGUI_HAS_DOCK
-    KeyDownMap(ImGuiKey_COUNT, ImGuiKeyModFlags_Shift); // Disable docking
+    if (UiContext->IO.ConfigDockingWithShift)
+        KeyUpMap(ImGuiKey_COUNT, ImGuiKeyModFlags_Shift);
+    else
+        KeyDownMap(ImGuiKey_COUNT, ImGuiKeyModFlags_Shift);
 #endif
 
     ImVec2 delta = target_pos - window->Pos;
@@ -2766,6 +2770,8 @@ void    ImGuiTestContext::DockInto(ImGuiTestRef src_id, ImGuiTestRef dst_id, ImG
     drop_is_valid = ImGui::DockContextCalcDropPosForDocking(window_dst, node_dst, window_src, split_dir, split_outer, &drop_pos);
     IM_CHECK_SILENT(drop_is_valid);
     MouseDown(0);
+    if (g.IO.ConfigDockingWithShift)
+        KeyDownMap(ImGuiKey_COUNT, ImGuiKeyModFlags_Shift);
     MouseLiftDragThreshold();
     MouseMoveToPos(drop_pos);
     IM_CHECK_SILENT(g.MovingWindow == window_src);
@@ -2777,6 +2783,8 @@ void    ImGuiTestContext::DockInto(ImGuiTestRef src_id, ImGuiTestRef dst_id, ImG
 #endif
 
     MouseUp(0);
+    if (g.IO.ConfigDockingWithShift)
+        KeyUpMap(ImGuiKey_COUNT, ImGuiKeyModFlags_Shift);
     ForeignWindowsUnhideAll();
     Yield();
     Yield();
@@ -2853,9 +2861,11 @@ void    ImGuiTestContext::UndockNode(ImGuiID dock_id)
         return;
 
     const float h = node->Windows[0]->TitleBarHeight();
-    KeyDownMap(ImGuiKey_COUNT, ImGuiKeyModFlags_Shift); // Disable docking
+    if (!UiContext->IO.ConfigDockingWithShift)
+        KeyDownMap(ImGuiKey_COUNT, ImGuiKeyModFlags_Shift); // Disable docking
     ItemDragWithDelta(ImGui::DockNodeGetWindowMenuButtonId(node), ImVec2(h, h) * -2);
-    KeyUpMap(ImGuiKey_COUNT, ImGuiKeyModFlags_Shift);
+    if (!UiContext->IO.ConfigDockingWithShift)
+        KeyUpMap(ImGuiKey_COUNT, ImGuiKeyModFlags_Shift);
     MouseUp();
 }
 
@@ -2868,9 +2878,11 @@ void    ImGuiTestContext::UndockWindow(const char* window_name)
         return;
 
     const float h = window->TitleBarHeight();
-    KeyDownMap(ImGuiKey_COUNT, ImGuiKeyModFlags_Shift); // Disable docking
+    if (!UiContext->IO.ConfigDockingWithShift)
+        KeyDownMap(ImGuiKey_COUNT, ImGuiKeyModFlags_Shift);
     ItemDragWithDelta(window_name, ImVec2(h, h) * -2);
-    KeyUpMap(ImGuiKey_COUNT, ImGuiKeyModFlags_Shift);
+    if (!UiContext->IO.ConfigDockingWithShift)
+        KeyUpMap(ImGuiKey_COUNT, ImGuiKeyModFlags_Shift);
     Yield();
 }
 

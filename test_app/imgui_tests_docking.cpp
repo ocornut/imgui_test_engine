@@ -903,6 +903,7 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
         ctx->DockClear("AAA", "BBB", NULL);
         ctx->DockInto("BBB", "AAA");
         IM_CHECK_EQ(button_clicks, 0);
+        IM_CHECK(window->DockId != 0);
         ctx->ItemClick(ctx->GetID("+", window->DockId));
         IM_CHECK_EQ(button_clicks, 1);
     };
@@ -1362,7 +1363,8 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
         // FIXME-TESTS: This block is a slightly modified version of the UndockWindow() code which itself is using ItemDragWithDelta(),
         // we cannot use UndockWindow() only because we perform our checks in the middle of the operation.
         {
-            ctx->KeyDownMap(ImGuiKey_COUNT, ImGuiKeyModFlags_Shift); // Disable docking
+            if (!g.IO.ConfigDockingWithShift)
+                ctx->KeyDownMap(ImGuiKey_COUNT, ImGuiKeyModFlags_Shift); // Disable docking
             ctx->MouseMove(windowB->Name, ImGuiTestOpFlags_NoCheckHoveredId);
             ctx->MouseDown(0);
 
@@ -1376,7 +1378,8 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
             IM_CHECK_EQ(g.WindowsFocusOrder[g.WindowsFocusOrder.Size - 1], windowB);
 
             ctx->MouseUp(0);
-            ctx->KeyUpMap(ImGuiKey_COUNT, ImGuiKeyModFlags_Shift);
+            if (!g.IO.ConfigDockingWithShift)
+                ctx->KeyUpMap(ImGuiKey_COUNT, ImGuiKeyModFlags_Shift);
         }
     };
 
