@@ -1127,8 +1127,18 @@ void ImGuiTestEngine_PrintResultSummary(ImGuiTestEngine* engine)
     int count_tested = 0;
     int count_success = 0;
     ImGuiTestEngine_GetResult(engine, count_tested, count_success);
+
+    if (count_success < count_tested)
+    {
+        printf("\nFailing tests:\n");
+        for (ImGuiTest* test : engine->TestsAll)
+            if (test->Status == ImGuiTestStatus_Error)
+                printf("- %s\n", test->Name);
+    }
+
     ImOsConsoleSetTextColor(ImOsConsoleStream_StandardOutput, (count_success == count_tested) ? ImOsConsoleTextColor_BrightGreen : ImOsConsoleTextColor_BrightRed);
-    printf("\nTests Result: %s\n(%d/%d tests passed)\n", (count_success == count_tested) ? "OK" : "KO", count_success, count_tested);
+    printf("\nTests Result: %s\n", (count_success == count_tested) ? "OK" : "KO");
+    printf("(%d/%d tests passed)\n", count_success, count_tested);
     ImOsConsoleSetTextColor(ImOsConsoleStream_StandardOutput, ImOsConsoleTextColor_White);
 }
 
