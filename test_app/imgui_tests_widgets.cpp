@@ -4159,7 +4159,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         int index = 0;
 
         if (vars.WidgetsDisabled)
-            ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
+            ImGui::BeginDisabled();
 
         vars.Activated[index] |= ImGui::Button("Button");
         vars.Hovered[index] |= ImGui::IsItemHovered();
@@ -4184,7 +4184,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         index++;
 
         if (vars.WidgetsDisabled)
-            ImGui::PopItemFlag();
+            ImGui::EndDisabled();
 
         vars.Activated[index] |= ImGui::Selectable("SelectableFlag", false, vars.WidgetsDisabled ? ImGuiSelectableFlags_Disabled : 0);
         vars.Hovered[index] |= ImGui::IsItemHovered();
@@ -4194,6 +4194,18 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         index++;
 
         ImGui::Selectable("Enabled B");
+
+        // Simple nested check (#4655)
+        ImGuiStyle& style = ImGui::GetStyle();
+        const float alpha0 = style.Alpha;
+        ImGui::BeginDisabled();
+        IM_CHECK_EQ(alpha0 * style.DisabledAlpha, style.Alpha);
+        ImGui::BeginDisabled();
+        IM_CHECK_EQ(alpha0 * style.DisabledAlpha, style.Alpha);
+        ImGui::EndDisabled();
+        IM_CHECK_EQ(alpha0 * style.DisabledAlpha, style.Alpha);
+        ImGui::EndDisabled();
+        IM_CHECK_EQ(alpha0, style.Alpha);
 
         ImGui::End();
     };
