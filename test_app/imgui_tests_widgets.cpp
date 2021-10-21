@@ -1498,7 +1498,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
 
         // Copying without selection.
         ctx->ItemClick("Field");
-        ctx->KeyPressMap(ImGuiKey_C, ImGuiKeyModFlags_Ctrl);
+        ctx->KeyPressMap(ImGuiKey_C, ImGuiKeyModFlags_Shortcut);
         clipboard_text = ImGui::GetClipboardText();
         IM_CHECK_STR_EQ(clipboard_text, "Hello, world!");
 
@@ -1507,7 +1507,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ctx->KeyPressMap(ImGuiKey_Home);
         for (int i = 0; i < 5; i++) // Seek to and select first word
             ctx->KeyPressMap(ImGuiKey_RightArrow, ImGuiKeyModFlags_Shift);
-        ctx->KeyPressMap(ImGuiKey_X, ImGuiKeyModFlags_Ctrl);
+        ctx->KeyPressMap(ImGuiKey_X, ImGuiKeyModFlags_Shortcut);
         clipboard_text = ImGui::GetClipboardText();
         IM_CHECK_STR_EQ(clipboard_text, "Hello");
         IM_CHECK_STR_EQ(text, ", world!");
@@ -1516,7 +1516,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ctx->ItemClick("Field");
         ImGui::SetClipboardText("h\xc9\x99\xcb\x88l\xc5\x8d");  // həˈlō
         ctx->KeyPressMap(ImGuiKey_Home);
-        ctx->KeyPressMap(ImGuiKey_V, ImGuiKeyModFlags_Ctrl);
+        ctx->KeyPressMap(ImGuiKey_V, ImGuiKeyModFlags_Shortcut);
         IM_CHECK_STR_EQ(text, "h\xc9\x99\xcb\x88l\xc5\x8d, world!");
     };
 
