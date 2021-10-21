@@ -327,6 +327,7 @@ struct ImGuiTestContext
     void        MouseMoveToPos(ImVec2 pos);
     void        MouseTeleportToPos(ImVec2 pos);
     void        MouseClick(ImGuiMouseButton button = 0);
+    void        MouseClickMulti(ImGuiMouseButton button, int count);
     void        MouseDoubleClick(ImGuiMouseButton button = 0);
     void        MouseDown(ImGuiMouseButton button = 0);
     void        MouseUp(ImGuiMouseButton button = 0);

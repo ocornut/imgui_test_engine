@@ -1428,22 +1428,36 @@ void    ImGuiTestContext::MouseClick(ImGuiMouseButton button)
 {
     if (IsError())
         return;
+    MouseClickMulti(button, 1);
+}
+
+// TODO: click time argument (seconds and/or frames)
+void    ImGuiTestContext::MouseClickMulti(ImGuiMouseButton button, int count)
+{
+    if (IsError())
+        return;
 
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
-    LogDebug("MouseClick %d", button);
+    if (count > 1)
+        LogDebug("MouseClickMulti %d x%d", button, count);
+    else
+        LogDebug("MouseClick %d", button, count);
 
     // Make sure mouse buttons are released
+    IM_ASSERT(count >= 1);
     IM_ASSERT(Inputs->MouseButtonsValue == 0);
-
     Yield();
 
     // Press
     UiContext->IO.MouseClickedTime[button] = -FLT_MAX; // Prevent accidental double-click from happening ever
-    Inputs->MouseButtonsValue = (1 << button);
-    Yield();
-    Inputs->MouseButtonsValue = 0;
 
-    Yield(); // Let the imgui frame finish, start a new frame.
+    for (int n = 0; n < count; n++)
+    {
+        Inputs->MouseButtonsValue = (1 << button);
+        Yield();
+        Inputs->MouseButtonsValue = 0;
+        Yield(); // Let the imgui frame finish, start a new frame.
+    }
     // Now NewFrame() has seen the mouse release.
     Yield(); // Let the imgui frame finish, now e.g. Button() function will return true. Start a new frame.
     // At this point, we are in a new frame but our windows haven't been Begin()-ed into, so anything processed by Begin() is not valid yet.
@@ -1452,22 +1466,7 @@ void    ImGuiTestContext::MouseClick(ImGuiMouseButton button)
 // TODO: click time argument (seconds and/or frames)
 void    ImGuiTestContext::MouseDoubleClick(ImGuiMouseButton button)
 {
-    if (IsError())
-        return;
-
-    IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
-    LogDebug("MouseDoubleClick %d", button);
-
-    Yield();
-    UiContext->IO.MouseClickedTime[button] = -FLT_MAX; // Prevent accidental double-click followed by single click
-    for (int n = 0; n < 2; n++)
-    {
-        Inputs->MouseButtonsValue = (1 << button);
-        Yield();
-        Inputs->MouseButtonsValue = 0;
-        Yield();
-    }
-    Yield(); // Give a frame for items to react
+    MouseClickMulti(button, 2);
 }
 
 void    ImGuiTestContext::MouseLiftDragThreshold(ImGuiMouseButton button)
