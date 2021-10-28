@@ -21,12 +21,13 @@
 #include "test_engine/imgui_te_coroutine.h"
 #endif
 
-#ifdef IMGUI_APP_SDL_GL2
+#ifdef IMGUI_APP_NO_BACKEND_INCLUDES
+// Define IMGUI_APP_NO_BACKEND_INCLUDES to avoid inclusion of backend cpp files
+// if build system already compiles and links this code.
+#elif defined(IMGUI_APP_SDL_GL2)
 #include "imgui_impl_sdl.cpp"
 #include "imgui_impl_opengl2.cpp"
-#endif
-
-#ifdef IMGUI_APP_SDL_GL3
+#elif defined(IMGUI_APP_SDL_GL3)
 #include "imgui_impl_sdl.cpp"
 #include "imgui_impl_opengl3.cpp"
 #endif
