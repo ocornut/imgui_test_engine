@@ -2967,6 +2967,99 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
         ImGui::End();
     };
 
+#if IMGUI_VERSION_NUM > 18503
+    // ## Test multiple click tracking
+    t = IM_REGISTER_TEST(e, "misc", "misc_mouse_clicks");
+    struct MouseClicksVars
+    {
+        ImU16 MouseClickedCount[IM_ARRAYSIZE(ImGuiIO::MouseClickedCount)];
+        float MouseDownDuration[IM_ARRAYSIZE(ImGuiIO::MouseDownDuration)];
+    };
+    t->SetUserDataType<MouseClicksVars>();
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiContext& g = *ctx->UiContext;
+        MouseClicksVars& vars = ctx->GetUserData<MouseClicksVars>();
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImGui::Button("Button");
+        for (int btn = 0; btn < ImGuiMouseButton_COUNT; btn++)
+        {
+            vars.MouseClickedCount[btn] = ImMax(vars.MouseClickedCount[btn], g.IO.MouseClickedCount[btn]);
+            vars.MouseDownDuration[btn] = ImMax(vars.MouseDownDuration[btn], g.IO.MouseDownDuration[btn]);
+        }
+        if (ImGui::Button("Popup"))
+            ImGui::OpenPopup("Popup");
+        if (ImGui::BeginPopup("Popup"))
+        {
+            ImGui::TextUnformatted("...");
+            ImGui::EndPopup();
+        }
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiContext& g = *ctx->UiContext;
+        MouseClicksVars& vars = ctx->GetUserData<MouseClicksVars>();
+        ctx->SetRef("Test Window");
+
+        // MouseDownOwned, MouseDownOwnedUnlessPopupClose
+        for (int btn = 0; btn <= ImGuiMouseButton_Middle; btn++)
+        {
+            ctx->MouseClickOnVoid(btn);
+            IM_CHECK_EQ(g.IO.MouseDownOwned[btn], false);
+            IM_CHECK_EQ(g.IO.MouseDownOwnedUnlessPopupClose[btn], false);
+            ctx->ItemClick("Button", btn);
+            IM_CHECK_EQ(g.IO.MouseDownOwned[btn], true);
+            IM_CHECK_EQ(g.IO.MouseDownOwnedUnlessPopupClose[btn], true);
+            ctx->ItemClick("Popup");
+            ctx->MouseClickOnVoid(btn);
+            IM_CHECK_EQ(g.IO.MouseDownOwned[btn], true);
+            IM_CHECK_EQ(g.IO.MouseDownOwnedUnlessPopupClose[btn], false);
+        }
+
+        // MouseDragMaxDistanceAbs, MouseDragMaxDistanceSqr
+        for (int btn = 0; btn <= ImGuiMouseButton_Middle; btn++)
+        {
+            ctx->MouseMove("Button");
+            ctx->MouseDown(btn);
+            ctx->MouseMoveToPos(g.IO.MousePos + ImVec2(10.0f, 10.0f));
+            ctx->MouseUp(btn);
+            IM_CHECK_EQ(g.IO.MouseDragMaxDistanceAbs[btn], ImVec2(10.0f, 10.0f));
+            IM_CHECK_EQ(g.IO.MouseDragMaxDistanceSqr[btn], 10.0f*10.0f + 10.0f*10.0f);
+        }
+
+        // Multi-click tracking
+        ctx->MouseMove("Button");
+        for (int clicks = 1; clicks < 6; clicks++)
+        {
+            for (int btn = 0; btn <= ImGuiMouseButton_Middle; btn++)
+            {
+                vars.MouseClickedCount[btn] = 0;
+                ctx->MouseClickMulti(btn, clicks);
+                IM_CHECK_EQ(vars.MouseClickedCount[btn], clicks);
+                IM_CHECK_EQ(g.IO.MouseClickedCount[btn], 0);
+                IM_CHECK_EQ(g.IO.MouseClickedLastCount[btn], clicks);
+            }
+        }
+
+        // Mouse-down time tracking
+        ctx->MouseMove("Button");
+        for (int delay = 1; delay < 3; delay++)
+        {
+            for (int btn = 0; btn <= ImGuiMouseButton_Middle; btn++)
+            {
+                vars.MouseDownDuration[btn] = 0;
+                ctx->MouseDown(btn);
+                ctx->SleepNoSkip(delay * 0.1f, 1.0f / 60.0f);
+                ctx->MouseUp(btn);
+                IM_CHECK_LE(vars.MouseDownDuration[btn] - delay * 0.1f, 0.02f);
+                IM_CHECK_LE(g.IO.MouseDownDuration[btn], 0);
+                IM_CHECK_LE(g.IO.MouseDownDurationPrev[btn] - delay * 0.1f, 0.02f);   // Actual delay is a bit longer than delay * 0.1 due to execution of other code.
+            }
+        }
+    };
+#endif
+
     // FIXME-TESTS
     t = IM_REGISTER_TEST(e, "demo", "demo_misc_001");
     t->GuiFunc = NULL;
