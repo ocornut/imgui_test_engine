@@ -1213,17 +1213,34 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
     t = IM_REGISTER_TEST(e, "nav", "nav_page_end_home_arrows");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
-        ImGui::SetNextWindowSize(ImVec2(100, ctx->GenericVars.Float1), ImGuiCond_Always);
+        ImGuiTestGenericVars& vars = ctx->GenericVars;
+        ImGui::SetNextWindowSize(ImVec2(100, ctx->GenericVars.Size.y), ImGuiCond_Always);
 
         // FIXME-NAV: Lack of ImGuiWindowFlags_NoCollapse breaks window scrolling without activable items.
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysVerticalScrollbar | ImGuiWindowFlags_AlwaysHorizontalScrollbar | ImGuiWindowFlags_NoCollapse);
-        for (int i = 0; i < 20; i++)
+        ctx->GenericVars.Size.y = ImGui::GetCursorPosY() + ImGui::GetFrameHeightWithSpacing() * 3.0f + ImGui::GetStyle().ScrollbarSize;
+        if (vars.UseClipper)
         {
-            ImGui::Button(Str16f("OK %d", i).c_str());
-            ImGui::SameLine();
-            ImGui::Button(Str16f("OK 5%d", i).c_str());
-            if (i == 2)
-                ctx->GenericVars.Float1 = ImGui::GetCursorPosY() + ImGui::GetStyle().ScrollbarSize;
+            ImGuiListClipper clipper;
+            clipper.Begin(20);
+            while (clipper.Step())
+            {
+                for (int i = clipper.DisplayStart; i < clipper.DisplayEnd; i++)
+                {
+                    ImGui::Button(Str16f("OK %d", i).c_str());
+                    ImGui::SameLine();
+                    ImGui::Button(Str16f("OK 5%d", i).c_str());
+                }
+            }
+        }
+        else
+        {
+            for (int i = 0; i < 20; i++)
+            {
+                ImGui::Button(Str16f("OK %d", i).c_str());
+                ImGui::SameLine();
+                ImGui::Button(Str16f("OK 5%d", i).c_str());
+            }
         }
         ImGui::End();
     };
@@ -1279,50 +1296,73 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
     t = IM_REGISTER_TEST(e, "nav", "nav_page_end_home_arrows_scroll_only");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
-        ImGui::SetNextWindowSize(ImVec2(100, ctx->GenericVars.Float1), ImGuiCond_Always);
+        ImGuiTestGenericVars& vars = ctx->GenericVars;
+        ImGui::SetNextWindowSize(ImVec2(100, ctx->GenericVars.Size.y), ImGuiCond_Always);
 
         // FIXME-NAV: Lack of ImGuiWindowFlags_NoCollapse breaks window scrolling without activable items.
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysVerticalScrollbar | ImGuiWindowFlags_AlwaysHorizontalScrollbar | ImGuiWindowFlags_NoCollapse);
-        for (int i = 0; i < 20; i++)
+        ctx->GenericVars.Size.y = ImGui::GetCursorPosY() + ImGui::GetFrameHeightWithSpacing() * 3.0f + ImGui::GetStyle().ScrollbarSize;
+        if (vars.UseClipper)
         {
-            ImGui::TextUnformatted(Str16f("OK %d", i).c_str());
-            ImGui::SameLine();
-            ImGui::TextUnformatted(Str16f("OK 5%d", i).c_str());
-            if (i == 2)
-                ctx->GenericVars.Float1 = ImGui::GetCursorPosY() + ImGui::GetStyle().ScrollbarSize;
+            ImGuiListClipper clipper;
+            clipper.Begin(20);
+            while (clipper.Step())
+            {
+                for (int i = clipper.DisplayStart; i < clipper.DisplayEnd; i++)
+                {
+                    ImGui::TextUnformatted(Str16f("OK %d", i).c_str());
+                    ImGui::SameLine();
+                    ImGui::TextUnformatted(Str16f("OK 5%d", i).c_str());
+                }
+            }
+        }
+        else
+        {
+            for (int i = 0; i < 20; i++)
+            {
+                ImGui::TextUnformatted(Str16f("OK %d", i).c_str());
+                ImGui::SameLine();
+                ImGui::TextUnformatted(Str16f("OK 5%d", i).c_str());
+            }
         }
         ImGui::End();
     };
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         ctx->SetRef("Test Window");
+        ImGuiTestGenericVars& vars = ctx->GenericVars;
         ImGuiWindow* window = ctx->GetWindowByRef("");
 
-        // Test page up/page down/home/end keys WITHOUT any navigable items.
-        IM_CHECK(window->ScrollMax.y > 0.0f);               // We have a scrollbar
-        ImGui::SetScrollY(window, 0.0f);                    // Reset starting position.
-        ImGui::SetScrollX(window, 0.0f);
+        for (int step = 0; step < 2; step++)
+        {
+            vars.UseClipper = (step == 1);
 
-        ctx->KeyHoldMap(ImGuiKey_PageDown, 0, 0.1f);        // Scrolled down some, but not to the bottom.
-        IM_CHECK(0 < window->Scroll.y && window->Scroll.y < window->ScrollMax.y);
-        ctx->KeyPressMap(ImGuiKey_End);                     // Scrolled all the way to the bottom.
-        IM_CHECK_EQ(window->Scroll.y, window->ScrollMax.y);
-        float last_scroll = window->Scroll.y;               // Scrolled up some, but not all the way to the top.
-        ctx->KeyHoldMap(ImGuiKey_PageUp, 0, 0.1f);
-        IM_CHECK(0 < window->Scroll.y && window->Scroll.y < last_scroll);
-        ctx->KeyPressMap(ImGuiKey_Home);                    // Scrolled all the way to the top.
-        IM_CHECK_EQ(window->Scroll.y, 0.0f);
+            // Test page up/page down/home/end keys WITHOUT any navigable items.
+            IM_CHECK(window->ScrollMax.y > 0.0f);               // We have a scrollbar
+            ImGui::SetScrollY(window, 0.0f);                    // Reset starting position.
+            ImGui::SetScrollX(window, 0.0f);
 
-        // Test arrows keys WITHOUT any navigable items
-        ctx->KeyHoldMap(ImGuiKey_DownArrow, 0, 0.1f);       // Scrolled window down by one tick.
-        IM_CHECK_GT(window->Scroll.y, 0.0f);
-        ctx->KeyHoldMap(ImGuiKey_UpArrow, 0, 0.1f);         // Scrolled window up by one tick (back to the top).
-        IM_CHECK_EQ(window->Scroll.y, 0.0f);
-        IM_CHECK_EQ(window->Scroll.x, 0.0f);
-        ctx->KeyHoldMap(ImGuiKey_RightArrow, 0, 0.1f);      // Scrolled window right by one tick.
-        IM_CHECK_GT(window->Scroll.x, 0.0f);
-        ctx->KeyHoldMap(ImGuiKey_LeftArrow, 0, 0.1f);       // Scrolled window left by one tick (back to the start).
-        IM_CHECK_EQ(window->Scroll.x, 0.0f);
+            ctx->KeyHoldMap(ImGuiKey_PageDown, 0, 0.1f);        // Scrolled down some, but not to the bottom.
+            IM_CHECK(0 < window->Scroll.y && window->Scroll.y < window->ScrollMax.y);
+            ctx->KeyPressMap(ImGuiKey_End);                     // Scrolled all the way to the bottom.
+            IM_CHECK_EQ(window->Scroll.y, window->ScrollMax.y);
+            float last_scroll = window->Scroll.y;               // Scrolled up some, but not all the way to the top.
+            ctx->KeyHoldMap(ImGuiKey_PageUp, 0, 0.1f);
+            IM_CHECK(0 < window->Scroll.y && window->Scroll.y < last_scroll);
+            ctx->KeyPressMap(ImGuiKey_Home);                    // Scrolled all the way to the top.
+            IM_CHECK_EQ(window->Scroll.y, 0.0f);
+
+            // Test arrows keys WITHOUT any navigable items
+            ctx->KeyHoldMap(ImGuiKey_DownArrow, 0, 0.1f);       // Scrolled window down by one tick.
+            IM_CHECK_GT(window->Scroll.y, 0.0f);
+            ctx->KeyHoldMap(ImGuiKey_UpArrow, 0, 0.1f);         // Scrolled window up by one tick (back to the top).
+            IM_CHECK_EQ(window->Scroll.y, 0.0f);
+            IM_CHECK_EQ(window->Scroll.x, 0.0f);
+            ctx->KeyHoldMap(ImGuiKey_RightArrow, 0, 0.1f);      // Scrolled window right by one tick.
+            IM_CHECK_GT(window->Scroll.x, 0.0f);
+            ctx->KeyHoldMap(ImGuiKey_LeftArrow, 0, 0.1f);       // Scrolled window left by one tick (back to the start).
+            IM_CHECK_EQ(window->Scroll.x, 0.0f);
+        }
     };
 
     // ## Test using TAB to cycle through items

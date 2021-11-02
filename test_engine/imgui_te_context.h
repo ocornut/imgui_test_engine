@@ -176,6 +176,7 @@ struct ImGuiTestGenericVars
     ImGuiOldColumnFlags     ColumnsFlags;
     ImGuiTestGenericStatus  Status;
     bool                    ShowWindows;
+    bool                    UseClipper;
     float                   Width;
     ImVec2                  Pos;
     ImVec2                  Size;
