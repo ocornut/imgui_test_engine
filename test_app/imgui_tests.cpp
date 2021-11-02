@@ -2228,6 +2228,26 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
         ImGui::End();
     };
 
+    t = IM_REGISTER_TEST(e, "misc", "misc_clipper_log");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoSavedSettings);
+        ImGui::LogToClipboard();
+        ImGuiListClipper clipper;
+        clipper.Begin(100);
+        while (clipper.Step())
+            for (int n = clipper.DisplayStart; n < clipper.DisplayEnd; n++)
+                ImGui::Text("%d", n);
+        ImGui::LogFinish();
+        const char* clipboard = ImGui::GetClipboardText();
+        int count_lines = 0;
+        while (char c = *clipboard++)
+            if (c == '\n')
+                count_lines++;
+        IM_CHECK_EQ(count_lines, 100);
+        ImGui::End();
+    };
+
     // ## Test ImFontAtlas clearing of input data (#4455, #3487)
     t = IM_REGISTER_TEST(e, "misc", "misc_atlas_clear");
     t->TestFunc = [](ImGuiTestContext* ctx)

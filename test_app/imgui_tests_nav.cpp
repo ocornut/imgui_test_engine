@@ -1214,7 +1214,7 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
     };
 
     // ## Test PageUp/PageDown/Home/End/arrow keys
-    t = IM_REGISTER_TEST(e, "nav", "nav_page_end_home_arrows");
+    t = IM_REGISTER_TEST(e, "nav", "nav_page_home_end_arrows");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         ImGuiTestGenericVars& vars = ctx->GenericVars;
@@ -1299,7 +1299,7 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
     };
 
     // ## Test PageUp/PageDown/Home/End/arrow keys
-    t = IM_REGISTER_TEST(e, "nav", "nav_page_end_home_arrows_scroll_only");
+    t = IM_REGISTER_TEST(e, "nav", "nav_page_home_end_arrows_scroll_only");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         ImGuiTestGenericVars& vars = ctx->GenericVars;
