@@ -1143,9 +1143,13 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
 
         auto get_focus_item_rect = [](ImGuiWindow* window)
         {
+#if IMGUI_VERSION_NUM < 18504
             ImRect item_rect = window->NavRectRel[ImGuiNavLayer_Main];
             item_rect.Translate(window->Pos);
             return item_rect;
+#else
+            return ImGui::WindowRectRelToAbs(window, window->NavRectRel[ImGuiNavLayer_Main]);
+#endif
         };
 
         // Test keyboard & gamepad behaviors
@@ -1254,8 +1258,10 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
         ctx->Yield(2);
         //g.NavId = 0;
         memset(window->NavRectRel, 0, sizeof(window->NavRectRel));
+#if IMGUI_VERSION_NUM < 18503
         ctx->KeyPressMap(ImGuiKey_PageDown);
         IM_CHECK(g.NavId == ctx->GetID("OK 0"));            // FIXME-NAV: Main layer had no focus, key press simply focused it. We preserve this behavior across multiple test runs in the same session by resetting window->NavRectRel.
+#endif
         ctx->KeyPressMap(ImGuiKey_PageDown);
         IM_CHECK(g.NavId == ctx->GetID("OK 2"));            // Now focus changes to a last visible button.
         IM_CHECK(window->Scroll.y == 0.0f);                 // Window is not scrolled.
