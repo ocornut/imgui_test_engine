@@ -1520,6 +1520,25 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         IM_CHECK_STR_EQ(text, "h\xc9\x99\xcb\x88l\xc5\x8d, world!");
     };
 
+    // ## Test for IsItemHovered() on InputTextMultiline() (#1370, #3851)
+    t = IM_REGISTER_TEST(e, "widgets", "widgets_inputtext_hover");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiTestGenericVars& vars = ctx->GenericVars;
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImGui::InputTextMultiline("Field", vars.Str1, IM_ARRAYSIZE(vars.Str1));
+        vars.Bool1 = ImGui::IsItemHovered();
+        ImGui::Text("hovered: %d", vars.Bool1);
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiTestGenericVars& vars = ctx->GenericVars;
+        ctx->SetRef("Test Window");
+        ctx->MouseMove("Field");
+        IM_CHECK(vars.Bool1 == true);
+    };
+
     // ## Test inheritance of ItemFlags
     t = IM_REGISTER_TEST(e, "widgets", "widgets_item_flags_stack");
     t->GuiFunc = [](ImGuiTestContext* ctx)
@@ -3164,12 +3183,21 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
     {
         const char* str = "hello world";
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
-        ImVec2 p0 = ImGui::GetCursorPos();
-        ImGui::TextUnformatted(str, str + 5);
-        ImGui::TextUnformatted(str + 1, str + 1);
-        ImGui::TextUnformatted(NULL);
-        ImVec2 p1 = ImGui::GetCursorPos();
-        IM_CHECK_EQ(p0.y + ImGui::GetTextLineHeightWithSpacing() * 3, p1.y);
+        {
+            ImVec2 p0 = ImGui::GetCursorPos();
+            ImGui::TextUnformatted(str, str + 5);
+            ImGui::TextUnformatted(str + 1, str + 1);
+            ImGui::TextUnformatted(NULL);
+            ImVec2 p1 = ImGui::GetCursorPos();
+            IM_CHECK_EQ(p0.y + ImGui::GetTextLineHeightWithSpacing() * 3, p1.y);
+        }
+        {
+            ImVec2 p0 = ImGui::GetCursorScreenPos();
+            ImGui::TextUnformatted("");
+            ImGui::SameLine(0.0f, 0.0f);
+            ImVec2 p1 = ImGui::GetCursorScreenPos();
+            IM_CHECK_EQ(p0, p1);
+        }
         ImGui::End();
     };
 #endif
