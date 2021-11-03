@@ -92,6 +92,8 @@ static const ImGuiPerfLogColumnInfo PerfLogColumnInfo[] =
     { /* 11 */ "VS Baseline", IM_OFFSETOF(ImGuiPerflogEntry, VsBaseline),       ImGuiDataType_Float,  true  },
 };
 
+static const char* PerfLogReportDefaultOutputPath = "./output/capture_perf_report.html";
+
 // Tri-state button. Copied and modified ButtonEx().
 static bool Button3(const char* label, int* value)
 {
@@ -260,7 +262,9 @@ static float FormatVsBaseline(ImGuiPerflogEntry* entry, ImGuiPerflogEntry* basel
 
     double percent_vs_first = 100.0 / baseline_entry->DtDeltaMs * entry->DtDeltaMs;
     double dt_change = -(100.0 - percent_vs_first);
-    if (ImAbs(dt_change) > 0.001f)
+    if (dt_change == INFINITY)
+        out_label.appendf("--");
+    else if (ImAbs(dt_change) > 0.001f)
         out_label.appendf("%+.2lf%% (%s)", dt_change, dt_change < 0.0f ? "faster" : "slower");
     else
         out_label.appendf("==");
@@ -413,11 +417,10 @@ static void PerflogSettingsHandler_ReadLine(ImGuiContext*, ImGuiSettingsHandler*
 {
     ImGuiPerfLog* perflog = (ImGuiPerfLog*)ini_handler->UserData;
     char buf[128];
-    int visible, combine, branch_colors;
+    int visible, display_type;
     /**/ if (sscanf(line, "DateFrom=%10s", perflog->_FilterDateFrom))               { }
     else if (sscanf(line, "DateTo=%10s", perflog->_FilterDateTo))                   { }
-    else if (sscanf(line, "CombineByBuildInfo=%d", &combine))                       { perflog->_CombineByBuildInfo = !!combine; }
-    else if (sscanf(line, "PerBranchColors=%d", &branch_colors))                    { perflog->_PerBranchColors = !!branch_colors; }
+    else if (sscanf(line, "DisplayType=%d", &display_type))                         { perflog->_DisplayType = display_type; }
     else if (sscanf(line, "BaselineBuildId=%llu", &perflog->_BaselineBuildId))      { }
     else if (sscanf(line, "BaselineTimestamp=%llu", &perflog->_BaselineTimestamp))  { }
     else if (sscanf(line, "TestVisibility=%[^,]=%d", buf, &visible))                { perflog->_Visibility.SetBool(ImHashStr(buf), !!visible); }
@@ -439,8 +442,7 @@ static void PerflogSettingsHandler_WriteAll(ImGuiContext*, ImGuiSettingsHandler*
     buf->appendf("[%s][Data]\n", ini_handler->TypeName);
     buf->appendf("DateFrom=%s\n", perflog->_FilterDateFrom);
     buf->appendf("DateTo=%s\n", perflog->_FilterDateTo);
-    buf->appendf("CombineByBuildInfo=%d\n", perflog->_CombineByBuildInfo);
-    buf->appendf("PerBranchColors=%d\n", perflog->_PerBranchColors);
+    buf->appendf("DisplayType=%d\n", perflog->_DisplayType);
     buf->appendf("BaselineBuildId=%llu\n", perflog->_BaselineBuildId);
     buf->appendf("BaselineTimestamp=%llu\n", perflog->_BaselineTimestamp);
     for (const char* label : perflog->_Labels)
@@ -559,6 +561,7 @@ void ImGuiPerfLog::_Rebuild()
     // Sorting _SrcData is OK, because it is only ever appended to and never written out to disk.
     ImQsort(_SrcData.Data, _SrcData.Size, sizeof(ImGuiPerflogEntry), &PerflogComparerByEntryInfo);
 
+    const bool combine_by_build_info = _DisplayType == ImGuiPerflogDisplayType_CombineByBuildInfo;
     _LabelBarCounts.Data.resize(0);
     for (ImGuiPerflogEntry* entry = _SrcData.begin(); entry < _SrcData.end();)
     {
@@ -570,7 +573,7 @@ void ImGuiPerfLog::_Rebuild()
         _Batches.resize(_Batches.Size + 1);
         ImGuiPerflogBatch& batch = _Batches.back();
         memset(&batch, 0, sizeof(batch));
-        if (_CombineByBuildInfo)
+        if (combine_by_build_info)
             batch.BatchID = GetBuildID(entry);
         else
             batch.BatchID = entry->Timestamp;
@@ -593,7 +596,7 @@ void ImGuiPerfLog::_Rebuild()
         for (int i = 0; i < num_visible_labels; i++)
         {
             ImGuiPerflogEntry* aggregate = &batch.Entries.Data[i];
-            for (ImGuiPerflogEntry* e = entry; e < _SrcData.end() && (_CombineByBuildInfo ? GetBuildID(e) : e->Timestamp) == batch.BatchID; e++)
+            for (ImGuiPerflogEntry* e = entry; e < _SrcData.end() && (combine_by_build_info ? GetBuildID(e) : e->Timestamp) == batch.BatchID; e++)
             {
                 if (strcmp(e->TestName, aggregate->TestName) != 0)
                     continue;
@@ -622,7 +625,7 @@ void ImGuiPerfLog::_Rebuild()
 
         // Advance to the next batch.
         batch.NumSamples = 1;
-        if (_CombineByBuildInfo)
+        if (combine_by_build_info)
         {
             ImU64 last_timestamp = entry->Timestamp;
             for (ImGuiID build_id = GetBuildID(entry); entry < _SrcData.end() && build_id == GetBuildID(entry);)
@@ -659,13 +662,14 @@ void ImGuiPerfLog::_Rebuild()
         }
 
         if (_BaselineBatchIndex < 0)
-            if ((_CombineByBuildInfo && GetBuildID(entry) == _BaselineBuildId) || _BaselineTimestamp == entry->Timestamp)
+            if ((combine_by_build_info && GetBuildID(entry) == _BaselineBuildId) || _BaselineTimestamp == entry->Timestamp)
                 _BaselineBatchIndex = _Batches.index_from_ptr(&batch);
     }
 
     // When per-branch colors are enabled we aggregate sample counts and set them to all batches with identical build info.
     temp_set.Data.resize(0);    // build_id:TotalSamples
-    if (_PerBranchColors)
+    if (_DisplayType == ImGuiPerflogDisplayType_PerBranchColors)
+    //if (combine_by_build_info)
     {
         // Aggregate totals to temp_set.
         for (ImGuiPerflogBatch& batch : _Batches)
@@ -836,21 +840,13 @@ void ImGuiPerfLog::ShowUI(ImGuiTestEngine* engine)
         ImGui::SetTooltip("Hide or show individual tests.");
     ImGui::SameLine();
 
-    int combine = _CombineByBuildInfo + _PerBranchColors;
-    if (Button3("Combine", &combine))
-    {
-        dirty = true;
-        _PerBranchColors = combine >= 1;
-        _CombineByBuildInfo = combine >= 2;
-        if (_CombineByBuildInfo)
-            _BaselineBatchIndex = -1;
-    }
+    dirty |= Button3("Combine", &_DisplayType);
     if (ImGui::IsItemHovered())
     {
         ImGui::BeginTooltip();
-        ImGui::RadioButton("Display each run separately",                                               combine == 0);
-        ImGui::RadioButton("Use one color per branch. Disables baseline comparisons!",                  combine == 1);
-        ImGui::RadioButton("Combine multiple runs with same build info into one averaged build entry.", combine == 2);
+        ImGui::RadioButton("Display each run separately",                                               _DisplayType == ImGuiPerflogDisplayType_Simple);
+        ImGui::RadioButton("Use one color per branch. Disables baseline comparisons!",                  _DisplayType == ImGuiPerflogDisplayType_PerBranchColors);
+        ImGui::RadioButton("Combine multiple runs with same build info into one averaged build entry.", _DisplayType == ImGuiPerflogDisplayType_CombineByBuildInfo);
         ImGui::EndTooltip();
     }
 
@@ -858,7 +854,7 @@ void ImGuiPerfLog::ShowUI(ImGuiTestEngine* engine)
     if (_ReportGenerating && !ImGuiTestEngine_IsRunningTests(engine))
     {
         _ReportGenerating = false;
-        ImOsOpenInShell("capture_perf_report.html");
+        ImOsOpenInShell(PerfLogReportDefaultOutputPath);
     }
     if (_Batches.empty())
         ImGui::BeginDisabled();
@@ -1059,13 +1055,17 @@ void ImGuiPerfLog::_ShowEntriesPlot()
         PerflogFormatBuildInfo(this, &label, &batch);
         display_label.append(label.c_str());
         ImGuiID batch_label_id;
-        if (!_CombineByBuildInfo && !_PerBranchColors)  // Use per-run hash when each run has unique color.
-            batch_label_id = ImHashData(&batch.BatchID, sizeof(batch.BatchID));
+        bool baseline_match = false;
+        if (_DisplayType == ImGuiPerflogDisplayType_PerBranchColors)
+        {
+            // No "vs baseline" comparison for per-branch colors, because runs are combined in the legend, but not in the info table.
+            batch_label_id = GetBuildID(&batch);
+        }
         else
-            batch_label_id = ImHashStr(label.c_str());  // Otherwise, using label hash allows them to collapse in the legend.
-        bool baseline_match = current_baseline_batch_index == batch_index;
-        if (!_CombineByBuildInfo && _PerBranchColors)
-            baseline_match = batch.BranchIndex == _Batches.Data[current_baseline_batch_index].BranchIndex;
+        {
+            batch_label_id = ImHashData(&batch.BatchID, sizeof(batch.BatchID));
+            baseline_match = current_baseline_batch_index == batch_index;
+        }
         display_label.appendf("%s###%08X", baseline_match ? " *" : "", batch_label_id);
 
         // Plot all bars one by one, so batches with varying number of bars would not contain empty holes.
@@ -1078,7 +1078,7 @@ void ImGuiPerfLog::_ShowEntriesPlot()
             const int now_visible_builds = temp_set.GetInt(label_id);
             temp_set.SetInt(label_id, now_visible_builds + 1);
             double y_pos = (double)entry.LabelIndex + GetLabelVerticalOffset(occupy_h, max_visible_builds, now_visible_builds);
-            ImPlot::SetNextFillStyle(ImPlot::GetColormapColor(_PerBranchColors ? batch.BranchIndex : batch_index));
+            ImPlot::SetNextFillStyle(ImPlot::GetColormapColor(_DisplayType == ImGuiPerflogDisplayType_PerBranchColors ? batch.BranchIndex : batch_index));
             ImPlot::PlotBarsH<double>(display_label.c_str(), &entry.DtDeltaMs, &y_pos, 1, occupy_h / (double)max_visible_builds);
         }
         legend_hovered |= ImPlot::IsLegendEntryHovered(display_label.c_str());
@@ -1224,7 +1224,7 @@ void ImGuiPerfLog::_ShowEntriesTable()
         ImGuiTableColumnFlags column_flags = ImGuiTableColumnFlags_None;
         if (i == 0)
             column_flags |= ImGuiTableColumnFlags_NoSort;
-        if (!PerfLogColumnInfo[i].ShowAlways && !_CombineByBuildInfo)
+        if (!PerfLogColumnInfo[i].ShowAlways && _DisplayType != ImGuiPerflogDisplayType_CombineByBuildInfo)
             column_flags |= ImGuiTableColumnFlags_Disabled;
         ImGui::TableSetupColumn(PerfLogColumnInfo[i].Title, column_flags);
     }
@@ -1352,12 +1352,20 @@ void ImGuiPerfLog::_ShowEntriesTable()
             if (ImGui::TableNextColumn())
             {
                 Str30 label;
-                float dt_change = FormatVsBaseline(entry, baseline_entry, label);
-                ImGui::TextUnformatted(label.c_str());
-                if (dt_change != entry->VsBaseline)
+                float dt_change = entry->VsBaseline;
+                if (_DisplayType == ImGuiPerflogDisplayType_PerBranchColors)
                 {
-                    entry->VsBaseline = dt_change;
-                    _InfoTableSortDirty = true;             // Force re-sorting.
+                    ImGui::TextUnformatted("--");
+                }
+                else
+                {
+                    dt_change = FormatVsBaseline(entry, baseline_entry, label);
+                    ImGui::TextUnformatted(label.c_str());
+                    if (dt_change != entry->VsBaseline)
+                    {
+                        entry->VsBaseline = dt_change;
+                        _InfoTableSortDirty = true;             // Force re-sorting.
+                    }
                 }
             }
             ImGui::PopID();
@@ -1443,6 +1451,9 @@ void ImGuiPerfLog::_CalculateLegendAlignment()
 
 bool ImGuiPerfLog::SaveReport(const char* file_name, const char* image_file)
 {
+    if (!ImFileCreateDirectoryChain(file_name, ImPathFindFilename(file_name)))
+        return false;
+
     FILE* fp = fopen(file_name, "w+");
     if (fp == NULL)
         return false;
@@ -1479,12 +1490,13 @@ bool ImGuiPerfLog::SaveReport(const char* file_name, const char* image_file)
     }
 
     // Print info table.
+    const bool combine_by_build_info = _DisplayType == ImGuiPerflogDisplayType_CombineByBuildInfo;
     for (const auto& column_info : PerfLogColumnInfo)
-        if (column_info.ShowAlways || _CombineByBuildInfo)
+        if (column_info.ShowAlways || combine_by_build_info)
             fprintf(fp, "| %s ", column_info.Title);
     fprintf(fp, "|\n");
     for (const auto& column_info : PerfLogColumnInfo)
-        if (column_info.ShowAlways || _CombineByBuildInfo)
+        if (column_info.ShowAlways || combine_by_build_info)
             fprintf(fp, "| -- ");
     fprintf(fp, "|\n");
 
@@ -1502,7 +1514,7 @@ bool ImGuiPerfLog::SaveReport(const char* file_name, const char* image_file)
             {
                 Str30f label("");
                 const ImGuiPerfLogColumnInfo& column_info = PerfLogColumnInfo[i];
-                if (column_info.ShowAlways || _CombineByBuildInfo)
+                if (column_info.ShowAlways || combine_by_build_info)
                 {
                     switch (i)
                     {
@@ -1527,10 +1539,10 @@ bool ImGuiPerfLog::SaveReport(const char* file_name, const char* image_file)
     }
 
     fprintf(fp, "</pre>\n"
-                "  <script src=\"https://cdn.jsdelivr.net/npm/marked/marked.min.js\"></script>\n"
+                "  <script src=\"https://cdn.jsdelivr.net/npm/marked@4.0.0/marked.min.js\"></script>\n"
                 "  <script>\n"
                 "    var content = document.getElementById('content');\n"
-                "    content.innerHTML = marked(content.innerText);\n"
+                "    content.innerHTML = marked.parse(content.innerText);\n"
                 "  </script>\n"
                 "</body>\n"
                 "</html>\n");
@@ -1629,8 +1641,9 @@ void RegisterTests_PerfLog(ImGuiTestEngine* e)
         ctx->ItemClick(ctx->GetID("Set Max", g.NavWindow->ID));
         ctx->ItemClick("###Filter builds");
         ctx->ItemClick("###Filter tests");
-        ctx->ItemClick("Combine by build info");                    // Toggle twice to leave state unchanged
-        ctx->ItemClick("Combine by build info");
+        ctx->ItemClick("Combine");                                  // Toggle thrice to leave state unchanged
+        ctx->ItemClick("Combine");
+        ctx->ItemClick("Combine");
         ctx->ItemClick("Per branch colors");
         ctx->ItemClick("Per branch colors");
 
@@ -1661,8 +1674,6 @@ void RegisterTests_PerfLog(ImGuiTestEngine* e)
             return;
         }
 
-        bool combine_by_build_bkp = perflog->_CombineByBuildInfo;
-        bool per_branch_colors_bkp = perflog->_PerBranchColors;
         char min_date_bkp[sizeof(perflog->_FilterDateFrom)], max_date_bkp[sizeof(perflog->_FilterDateTo)];
         ImStrncpy(min_date_bkp, perflog->_FilterDateFrom, IM_ARRAYSIZE(min_date_bkp));
         ImStrncpy(max_date_bkp, perflog->_FilterDateTo, IM_ARRAYSIZE(max_date_bkp));
@@ -1689,8 +1700,6 @@ void RegisterTests_PerfLog(ImGuiTestEngine* e)
         ctx->ItemClick(ctx->GetID("Set Min", g.NavWindow->ID));
         ctx->ItemClick("##date-to", ImGuiMouseButton_Right);
         ctx->ItemClick(ctx->GetID("Set Max", g.NavWindow->ID));
-        ctx->ItemCheck("Combine by build info");
-        ctx->ItemCheck("Per branch colors");
 #ifdef IMGUI_TEST_ENGINE_ENABLE_IMPLOT
         // Take a screenshot.
         perf_report_image = "captures/capture_perf_report_0000.png";
@@ -1704,13 +1713,11 @@ void RegisterTests_PerfLog(ImGuiTestEngine* e)
 #endif
         ImStrncpy(perflog->_FilterDateFrom, min_date_bkp, IM_ARRAYSIZE(min_date_bkp));
         ImStrncpy(perflog->_FilterDateTo, max_date_bkp, IM_ARRAYSIZE(max_date_bkp));
-        perflog->_CombineByBuildInfo = combine_by_build_bkp;
-        perflog->_PerBranchColors = per_branch_colors_bkp;
         SetPerfLogWindowOpen(ctx, perf_was_open);                   // Restore window visibility
 
         const char* perf_report_output = getenv("CAPTURE_PERF_REPORT_OUTPUT");
         if (perf_report_output == NULL)
-            perf_report_output = "capture_perf_report.html";
+            perf_report_output = PerfLogReportDefaultOutputPath;
         perflog->SaveReport(perf_report_output, perf_report_image);
     };
 }

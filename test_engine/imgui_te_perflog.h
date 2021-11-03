@@ -43,6 +43,14 @@ struct ImGuiPerflogBatch
     ~ImGuiPerflogBatch()        { Entries.clear_destruct(); }
 };
 
+enum ImGuiPerflogDisplayType_
+{
+    ImGuiPerflogDisplayType_Simple,                             // Each run will be displayed individually.
+    ImGuiPerflogDisplayType_PerBranchColors,                    // Use one bar color per branch.
+    ImGuiPerflogDisplayType_CombineByBuildInfo,                 // Entries with same build information will be averaged.
+};
+typedef int ImGuiPerflogDisplayType;
+
 struct ImGuiPerfLog
 {
     ImVector<ImGuiPerflogEntry> _SrcData;                       // Raw entries from CSV file (with string pointer into CSV data).
@@ -52,8 +60,7 @@ struct ImGuiPerfLog
     ImGuiStorage                _LabelBarCounts;                // Number bars each label will render.
     int                         _NumVisibleBuilds = 0;          // Cached number of visible builds.
     int                         _NumUniqueBuilds = 0;           // Cached number of unique builds.
-    bool                        _CombineByBuildInfo = true;     // Entries with same build information will be averaged.
-    bool                        _PerBranchColors = true;        // Use one bar color per branch.
+    ImGuiPerflogDisplayType     _DisplayType = ImGuiPerflogDisplayType_CombineByBuildInfo;
     int                         _BaselineBatchIndex = 0;        // Index of baseline build.
     ImU64                       _BaselineTimestamp = 0;
     ImU64                       _BaselineBuildId = 0;
