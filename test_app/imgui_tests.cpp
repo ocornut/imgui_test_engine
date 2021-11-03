@@ -2191,6 +2191,42 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
             }
     };
 
+    // ## Test that ImGuiListClippr effect on layout is correct
+    t = IM_REGISTER_TEST(e, "misc", "misc_clipper_layout");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::Begin("Test Window 1", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImVec2 w0c = ImGui::GetCurrentWindow()->ContentSize;
+        ImGui::Text("ContentHeight %f", w0c.y);
+
+        for (int n = 0; n < 99; n++)
+            ImGui::Text("%d", n);
+        ImVec2 w0a = ImGui::GetCursorPos();
+        ImGui::SameLine();
+        ImVec2 w0b = ImGui::GetCursorPos();
+        ImGui::End();
+
+        ImGui::Begin("Test Window 2", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImVec2 w1c = ImGui::GetCurrentWindow()->ContentSize;
+        ImGui::Text("ContentHeight %f", w1c.y);
+
+        ImGuiListClipper clipper;
+        clipper.Begin(99);
+        while (clipper.Step())
+            for (int n = clipper.DisplayStart; n < clipper.DisplayEnd; n++)
+                ImGui::Text("%d", n);
+        ImVec2 w1a = ImGui::GetCursorPos();
+        ImGui::SameLine();
+        ImVec2 w1b = ImGui::GetCursorPos();
+        ImGui::End();
+
+        IM_CHECK_EQ(w0a, w1a);
+        IM_CHECK_EQ(w0b.y, w1b.y);
+#if IMGUI_VERSION_NUM >= 18505
+        IM_CHECK_EQ(w0c.y, w1c.y);
+#endif
+    };
+
     // Test edge cases with single item or zero items clipper
     t = IM_REGISTER_TEST(e, "misc", "misc_clipper_single");
     t->SetUserDataType<ClipperTestVars>();
