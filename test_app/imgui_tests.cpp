@@ -2063,13 +2063,23 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         auto& vars = ctx->GetUserData<ClipperTestVars>();
+
+        if (ctx->RunFlags & ImGuiTestRunFlags_GuiFuncOnly)
+        {
+            ImGui::Begin("Config", NULL, ImGuiWindowFlags_NoSavedSettings);
+            ImGui::Checkbox("TableEnable", &vars.TableEnable);
+            ImGui::Checkbox("ClipperManualItemHeight", &vars.ClipperManualItemHeight);
+            ImGui::End();
+        }
+
         ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0)); // Simpler to use remove padding and decoration
-        ImGui::SetNextWindowSize(ImVec2(300, ImGui::GetTextLineHeightWithSpacing() * vars.WindowHeightInItems));
+        ImGui::SetNextWindowSize(ImVec2(300, ImGui::GetTextLineHeightWithSpacing()* vars.WindowHeightInItems));
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoSavedSettings);
 
         bool open = true;
         if (vars.TableEnable)
         {
+            //ImGui::SetCursorPosY(ImGui::GetCursorPosY() - ImGui::GetStyle().CellPadding.y); // Undo table offset
             open = ImGui::BeginTable("table", 2, ImGuiTableFlags_ScrollY);
             if (open)
                 ImGui::TableSetupScrollFreeze(0, vars.TableFreezeRows);
@@ -2096,6 +2106,7 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
                         ImGui::TableNextColumn();
                     }
                     ImGui::Text("Item %04d", n);
+                    //ImGui::GetForegroundDrawList()->AddRect(ImGui::GetItemRectMin(), ImGui::GetItemRectMax(), IM_COL32(255, 255, 0, 255));
                     vars.ItemsOut++;
                     vars.ItemsOutMask.SetBit(n);
                 }
@@ -2157,13 +2168,18 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
                     IM_CHECK(vars.ItemsOutMask.TestBit(0) == false);
                 else
                     IM_CHECK(vars.ItemsOutMask.TestBit(0) == true);
-                ctx->ScrollToBottom();
 
+                ctx->ScrollToBottom();
                 IM_CHECK_EQ(vars.OffsetY, vars.ItemsIn * item_height);
+#if IMGUI_VERSION_NUM >= 18505
+                const int extra_at_top_of_visibility_line = vars.TableEnable ? 0 : 1; // Slight artifact of our size/alignment, item 89 is flagged as visible
+#else
+                const int extra_at_top_of_visibility_line = 0;
+#endif
                 if (vars.ClipperManualItemHeight)
-                    IM_CHECK_EQ(vars.ItemsOut, 10);
+                    IM_CHECK_EQ(vars.ItemsOut, extra_at_top_of_visibility_line + 10);
                 else
-                    IM_CHECK_EQ(vars.ItemsOut, 1 + 10);
+                    IM_CHECK_EQ(vars.ItemsOut, 1 + extra_at_top_of_visibility_line + 10);
                 if (vars.ClipperManualItemHeight && vars.TableFreezeRows == 0)
                     IM_CHECK(vars.ItemsOutMask.TestBit(0) == false);
                 else
