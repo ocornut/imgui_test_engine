@@ -2153,7 +2153,8 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
                 IM_CHECK_EQ(vars.OffsetY, vars.ItemsIn * item_height);
                 IM_CHECK_EQ(vars.ItemsOut, 11);
 
-                // Test rendering 0 + trailing items (window scrolled)
+                // Test rendering 0 + trailing items (window scrolled one page down)
+                // The forced item 15,16 are on page 2 so on this page here
                 vars.WindowHeightInItems = 10.0f;
                 vars.ItemsIn = 100;
                 ctx->Yield();
@@ -2169,6 +2170,7 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
                 else
                     IM_CHECK(vars.ItemsOutMask.TestBit(0) == true);
 
+                // Scroll to bottom
                 ctx->ScrollToBottom();
                 IM_CHECK_EQ(vars.OffsetY, vars.ItemsIn * item_height);
 #if IMGUI_VERSION_NUM >= 18505

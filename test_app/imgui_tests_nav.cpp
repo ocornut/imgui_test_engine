@@ -1218,11 +1218,19 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         ImGuiTestGenericVars& vars = ctx->GenericVars;
-        ImGui::SetNextWindowSize(ImVec2(100, ctx->GenericVars.Size.y), ImGuiCond_Always);
+
+        if (ctx->RunFlags & ImGuiTestRunFlags_GuiFuncOnly)
+        {
+            ImGui::Begin("Config", NULL, ImGuiWindowFlags_NoSavedSettings);
+            ImGui::Checkbox("UseClipper", &vars.UseClipper);
+            ImGui::End();
+        }
+
+        ImGui::SetNextWindowSize(ImVec2(100, vars.Size.y), ImGuiCond_Always);
 
         // FIXME-NAV: Lack of ImGuiWindowFlags_NoCollapse breaks window scrolling without activable items.
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysVerticalScrollbar | ImGuiWindowFlags_AlwaysHorizontalScrollbar | ImGuiWindowFlags_NoCollapse);
-        ctx->GenericVars.Size.y = ImFloor(ImGui::GetCursorPosY() + ImGui::GetTextLineHeightWithSpacing() * 20.8f + ImGui::GetStyle().ScrollbarSize);
+        vars.Size.y = ImFloor(ImGui::GetCursorPosY() + ImGui::GetTextLineHeightWithSpacing() * 20.8f + ImGui::GetStyle().ScrollbarSize);
         if (vars.UseClipper)
         {
             ImGuiListClipper clipper;
@@ -1250,59 +1258,67 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
     };
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
-        ctx->SetRef("Test Window");
         ImGuiContext& g = *ctx->UiContext;
+        ImGuiTestGenericVars& vars = ctx->GenericVars;
+
+        ctx->SetRef("Test Window");
         ImGuiWindow* window = ctx->GetWindowByRef("");
 
-        // Test page up/page down/home/end keys WITH navigable items.
-        ctx->Yield(2);
-        g.NavId = 0;
-        //memset(window->NavRectRel, 0, sizeof(window->NavRectRel));
-        ctx->ScrollToTop();
+        for (int step = 0; step < 2; step++)
+        {
+            vars.UseClipper = (step == 1);
+            ctx->LogInfo("STEP %d", step);
+
+            // Test page up/page down/home/end keys WITH navigable items.
+            ctx->Yield(2);
+            g.NavId = 0;
+            //memset(window->NavRectRel, 0, sizeof(window->NavRectRel));
+            ctx->ScrollToTop();
 
 #if IMGUI_VERSION_NUM < 18503
-        ctx->KeyPressMap(ImGuiKey_PageDown);
-        IM_CHECK(g.NavId == ctx->GetID("OK 0"));            // FIXME-NAV: Main layer had no focus, key press simply focused it. We preserve this behavior across multiple test runs in the same session by resetting window->NavRectRel.
+            ctx->KeyPressMap(ImGuiKey_PageDown);
+            IM_CHECK(g.NavId == ctx->GetID("OK 0"));            // FIXME-NAV: Main layer had no focus, key press simply focused it. We preserve this behavior across multiple test runs in the same session by resetting window->NavRectRel.
 #endif
-        ctx->KeyPressMap(ImGuiKey_PageDown);
-        IM_CHECK_EQ(g.NavId, ctx->GetID("OK 20"));          // Now focus changes to a last visible button.
-        IM_CHECK(window->Scroll.y == 0.0f);                 // Window is not scrolled.
-        ctx->KeyPressMap(ImGuiKey_PageDown);
-        IM_CHECK_EQ(g.NavId, ctx->GetID("OK 40"));          // Focus item on the next "page".
-        IM_CHECK(window->Scroll.y > 0.0f);
-        ctx->KeyPressMap(ImGuiKey_End);                     // Focus last item.
-        IM_CHECK(window->Scroll.y == window->ScrollMax.y);
-        IM_CHECK_EQ(g.NavId, ctx->GetID("OK 199"));
-        ctx->KeyPressMap(ImGuiKey_PageUp);
-        IM_CHECK_EQ(g.NavId, ctx->GetID("OK 179"));         // Focus first item visible in the last section.
-        IM_CHECK(window->Scroll.y == window->ScrollMax.y);  // Window is not scrolled.
-        ctx->KeyPressMap(ImGuiKey_PageUp);
-        IM_CHECK_EQ(g.NavId, ctx->GetID("OK 159"));         // Focus first item of previous "page".
-        IM_CHECK(0 < window->Scroll.y && window->Scroll.y < window->ScrollMax.y); // Window is not scrolled.
-        ctx->KeyPressMap(ImGuiKey_RightArrow);
-        IM_CHECK(window->Scroll.x > 0.0f);
-        IM_CHECK_EQ(g.NavId, ctx->GetID("OK B159"));        // Focus first item in a second column, scrollbar moves.
-        ctx->KeyPressMap(ImGuiKey_LeftArrow);
-        IM_CHECK_EQ(g.NavId, ctx->GetID("OK 159"));         // Focus first item in a second column, scrollbar moves.
-        ctx->KeyPressMap(ImGuiKey_Home);
-        IM_CHECK_EQ(g.NavId, ctx->GetID("OK 0"));           // Focus very first item.
-        IM_CHECK_EQ(window->Scroll.y, 0.0f);                // Window is scrolled to the start.
+            ctx->KeyPressMap(ImGuiKey_PageDown);
+            IM_CHECK_EQ(g.NavId, ctx->GetID("OK 20"));          // Now focus changes to a last visible button.
+            IM_CHECK(window->Scroll.y == 0.0f);                 // Window is not scrolled.
+            ctx->KeyPressMap(ImGuiKey_PageDown);
+            IM_CHECK_EQ(g.NavId, ctx->GetID("OK 40"));          // Focus item on the next "page".
+            IM_CHECK(window->Scroll.y > 0.0f);
+            ctx->KeyPressMap(ImGuiKey_End);                     // Focus last item.
+            IM_CHECK(window->Scroll.y == window->ScrollMax.y);
+            IM_CHECK_EQ(g.NavId, ctx->GetID("OK 199"));
+            ctx->KeyPressMap(ImGuiKey_PageUp);
+            IM_CHECK_EQ(g.NavId, ctx->GetID("OK 179"));         // Focus first item visible in the last section.
+            IM_CHECK(window->Scroll.y == window->ScrollMax.y);  // Window is not scrolled.
+            ctx->KeyPressMap(ImGuiKey_PageUp);
+            IM_CHECK_EQ(g.NavId, ctx->GetID("OK 159"));         // Focus first item of previous "page".
+            IM_CHECK(0 < window->Scroll.y && window->Scroll.y < window->ScrollMax.y); // Window is not scrolled.
+            ctx->KeyPressMap(ImGuiKey_RightArrow);
+            IM_CHECK(window->Scroll.x > 0.0f);
+            IM_CHECK_EQ(g.NavId, ctx->GetID("OK B159"));        // Focus first item in a second column, scrollbar moves.
+            ctx->KeyPressMap(ImGuiKey_LeftArrow);
+            IM_CHECK_EQ(g.NavId, ctx->GetID("OK 159"));         // Focus first item in a second column, scrollbar moves.
+            ctx->KeyPressMap(ImGuiKey_Home);
+            IM_CHECK_EQ(g.NavId, ctx->GetID("OK 0"));           // Focus very first item.
+            IM_CHECK_EQ(window->Scroll.y, 0.0f);                // Window is scrolled to the start.
 
-        // Test arrows keys WITH navigable items.
-        // (This is a duplicate of most basic nav tests)
-        ctx->KeyPressMap(ImGuiKey_DownArrow);
-        IM_CHECK(window->Scroll.y == 0.0f);
-        IM_CHECK(g.NavId == ctx->GetID("OK 1"));            // Focus second item without moving scrollbar.
-        ctx->KeyPressMap(ImGuiKey_UpArrow);
-        IM_CHECK(window->Scroll.y == 0.0f);
-        IM_CHECK(g.NavId == ctx->GetID("OK 0"));            // Focus first item without moving scrollbar.
-        IM_CHECK(window->Scroll.x == 0.0f);
-        ctx->KeyPressMap(ImGuiKey_RightArrow);
-        IM_CHECK(window->Scroll.x > 0.0f);
-        IM_CHECK(g.NavId == ctx->GetID("OK B0"));           // Focus first item in a second column, scrollbar moves.
-        ctx->KeyPressMap(ImGuiKey_LeftArrow);
-        IM_CHECK_EQ(window->Scroll.x, 0.0f);
-        IM_CHECK_EQ(g.NavId, ctx->GetID("OK 0"));           // Focus first item in first column, scrollbar moves back.
+            // Test arrows keys WITH navigable items.
+            // (This is a duplicate of most basic nav tests)
+            ctx->KeyPressMap(ImGuiKey_DownArrow);
+            IM_CHECK(window->Scroll.y == 0.0f);
+            IM_CHECK(g.NavId == ctx->GetID("OK 1"));            // Focus second item without moving scrollbar.
+            ctx->KeyPressMap(ImGuiKey_UpArrow);
+            IM_CHECK(window->Scroll.y == 0.0f);
+            IM_CHECK(g.NavId == ctx->GetID("OK 0"));            // Focus first item without moving scrollbar.
+            IM_CHECK(window->Scroll.x == 0.0f);
+            ctx->KeyPressMap(ImGuiKey_RightArrow);
+            IM_CHECK(window->Scroll.x > 0.0f);
+            IM_CHECK(g.NavId == ctx->GetID("OK B0"));           // Focus first item in a second column, scrollbar moves.
+            ctx->KeyPressMap(ImGuiKey_LeftArrow);
+            IM_CHECK_EQ(window->Scroll.x, 0.0f);
+            IM_CHECK_EQ(g.NavId, ctx->GetID("OK 0"));           // Focus first item in first column, scrollbar moves back.
+        }
     };
 
     // ## Test PageUp/PageDown/Home/End/arrow keys
@@ -1310,11 +1326,18 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         ImGuiTestGenericVars& vars = ctx->GenericVars;
-        ImGui::SetNextWindowSize(ImVec2(100, ctx->GenericVars.Size.y), ImGuiCond_Always);
+
+        if (ctx->RunFlags & ImGuiTestRunFlags_GuiFuncOnly)
+        {
+            ImGui::Begin("Config", NULL, ImGuiWindowFlags_NoSavedSettings);
+            ImGui::Checkbox("UseClipper", &vars.UseClipper);
+            ImGui::End();
+        }
 
         // FIXME-NAV: Lack of ImGuiWindowFlags_NoCollapse breaks window scrolling without activable items.
+        ImGui::SetNextWindowSize(ImVec2(100, vars.Size.y), ImGuiCond_Always);
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysVerticalScrollbar | ImGuiWindowFlags_AlwaysHorizontalScrollbar | ImGuiWindowFlags_NoCollapse);
-        ctx->GenericVars.Size.y = ImFloor(ImGui::GetCursorPosY() + ImGui::GetFrameHeightWithSpacing() * 3.0f + ImGui::GetStyle().ScrollbarSize);
+        vars.Size.y = ImFloor(ImGui::GetCursorPosY() + ImGui::GetFrameHeightWithSpacing() * 3.0f + ImGui::GetStyle().ScrollbarSize);
         if (vars.UseClipper)
         {
             ImGuiListClipper clipper;
@@ -1349,6 +1372,7 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
         for (int step = 0; step < 2; step++)
         {
             vars.UseClipper = (step == 1);
+            ctx->LogInfo("STEP %d", step);
 
             // Test page up/page down/home/end keys WITHOUT any navigable items.
             IM_CHECK(window->ScrollMax.y > 0.0f);               // We have a scrollbar
