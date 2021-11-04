@@ -1519,6 +1519,7 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
         }
         else if (vars.Step == 3)
         {
+            // Multiple overriding calls in same frame (last gets it)
             ImGui::SetKeyboardFocusHere();
             ImGui::InputText("Text1", vars.Str1, IM_ARRAYSIZE(vars.Str1));
             ImGui::SetKeyboardFocusHere();
@@ -1589,7 +1590,7 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
         IM_CHECK_EQ(g.ActiveId, ctx->GetID("Text2"));
         IM_CHECK_EQ(vars.Status.Activated, 1);
 
-        // Test multiple calls to SetKeyboardFocusHere()
+        // Test multiple overriding calls to SetKeyboardFocusHere() in same frame (last gets it)
         vars.Step = 0;
         ctx->Yield(2);
         vars.Step = 3;
@@ -1625,6 +1626,9 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
         IM_CHECK_EQ(vars.Status.Activated, 0);
         vars.Bool1 = false;
         ctx->Yield();
+#if IMGUI_VERSION_NUM >= 18507
+        ctx->Yield();
+#endif
         IM_CHECK_EQ(g.ActiveId, 0u);
         IM_CHECK_EQ(vars.Status.Activated, 0);
 #endif
@@ -1634,6 +1638,17 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
         ctx->Yield(2);
         IM_CHECK_EQ(g.ActiveId, ctx->GetID("Text1"));
         IM_CHECK_EQ(vars.Status.Activated, 1);
+
+        // While we are there verify that we can use the InputText() while repeatedly refocusing it (issue #4682)
+#if IMGUI_VERSION_NUM >= 18507
+        vars.Str1[0] = 0;
+        //ctx->ItemNavActivate("Text1"); // Unnecessary and anyway will assert as focus request already in progress, conflicting
+        ctx->KeyCharsReplaceEnter("Hello");
+        IM_CHECK_STR_EQ(vars.Str1, "Hello");
+        //ctx->ItemNavActivate("Text1");
+        ctx->KeyCharsReplaceEnter("");
+        IM_CHECK_STR_EQ(vars.Str1, "");
+#endif
     };
 
 #if IMGUI_VERSION_NUM >= 18420
