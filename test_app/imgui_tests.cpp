@@ -2058,7 +2058,7 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
     // ## Test ImGuiListClipper basic behavior
     // ## Test ImGuiListClipper with table frozen rows
     t = IM_REGISTER_TEST(e, "misc", "misc_clipper");
-    struct ClipperTestVars { ImGuiWindow* WindowOut = NULL; float WindowHeightInItems = 10.0f; int ItemsIn = 100; int ItemsOut = 0; float OffsetY = 0.0f; ImBitVector ItemsOutMask; bool ClipperManualItemHeight = true; bool TableEnable = false; int TableFreezeRows = 0; };
+    struct ClipperTestVars { ImGuiWindow* WindowOut = NULL; float WindowHeightInItems = 10.0f; int ItemsIn = 100; int ItemsOut = 0; int ForceDisplayStart = 0, ForceDisplayEnd = 0; float OffsetY = 0.0f; ImBitVector ItemsOutMask; bool ClipperManualItemHeight = true; bool TableEnable = false; int TableFreezeRows = 0; };
     t->SetUserDataType<ClipperTestVars>();
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
@@ -2096,6 +2096,10 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
                 clipper.Begin(vars.ItemsIn, ImGui::GetTextLineHeightWithSpacing());
             else
                 clipper.Begin(vars.ItemsIn);
+#if IMGUI_VERSION_NUM >= 18509
+            if (vars.ForceDisplayStart != vars.ForceDisplayEnd)
+                clipper.ForceDisplayRangeByIndices(vars.ForceDisplayStart, vars.ForceDisplayEnd);
+#endif
             while (clipper.Step())
             {
                 for (int n = clipper.DisplayStart; n < clipper.DisplayEnd; n++)
@@ -2126,13 +2130,24 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
         auto& vars = ctx->GetUserData<ClipperTestVars>();
         float item_height = ImGui::GetTextLineHeightWithSpacing(); // EXPECTED item height
 
-        int step_count = 4;
+        int step_count = 5;
         for (int clipper_step = 0; clipper_step < 2; clipper_step++)
             for (int step = 0; step < step_count; step++)
             {
-                vars.ClipperManualItemHeight = (clipper_step == 1);
-                vars.TableEnable = (step > 0);
-                vars.TableFreezeRows = (step == 2) ? 1 : (step == 3) ? 2 : 0;
+                vars.ClipperManualItemHeight = (clipper_step == 2);
+                vars.TableEnable = (step > 1);
+                vars.TableFreezeRows = (step == 3) ? 1 : (step == 4) ? 2 : 0;
+                vars.ForceDisplayStart = vars.ForceDisplayEnd = 0;
+                vars.ItemsIn = 100;
+                int extra_forced_items = 0;
+#if IMGUI_VERSION_NUM >= 18509
+                if (step == 1)
+                {
+                    extra_forced_items = 2;
+                    vars.ForceDisplayStart = 15;
+                    vars.ForceDisplayEnd = 15 + extra_forced_items;
+                }
+#endif
                 ctx->LogInfo("## Step %d, Table=%d, TableFreezeRows=%d, ClipperManualItemHeight=%d", step, vars.TableEnable, vars.TableFreezeRows, vars.ClipperManualItemHeight);
 
                 ctx->Yield();
@@ -2146,14 +2161,21 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
                 ctx->ScrollToTop();
                 ctx->Yield();
                 IM_CHECK_EQ(vars.OffsetY, vars.ItemsIn * item_height);
-                IM_CHECK_EQ(vars.ItemsOut, 10);
-
+                IM_CHECK_EQ(vars.ItemsOut, 10 + extra_forced_items);
+#if IMGUI_VERSION_NUM >= 18509
+                if (extra_forced_items > 0)
+                {
+                    IM_CHECK(vars.ItemsOutMask.TestBit(vars.ForceDisplayStart) == true);
+                    IM_CHECK(vars.ItemsOutMask.TestBit(vars.ForceDisplayStart - 1) == false);
+                    IM_CHECK(vars.ItemsOutMask.TestBit(vars.ForceDisplayEnd) == false);
+                }
+#endif
                 // Test only rendering items 0->10 (window slightly taller)
                 vars.WindowHeightInItems = 10.5f;
                 vars.ItemsIn = 100;
                 ctx->Yield();
                 IM_CHECK_EQ(vars.OffsetY, vars.ItemsIn * item_height);
-                IM_CHECK_EQ(vars.ItemsOut, 11);
+                IM_CHECK_EQ(vars.ItemsOut, 11 + extra_forced_items);
 
                 // Test rendering 0 + trailing items (window scrolled one page down)
                 // The forced item 15,16 are on page 2 so on this page here
@@ -2181,9 +2203,9 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
                 const int extra_at_top_of_visibility_line = 0;
 #endif
                 if (vars.ClipperManualItemHeight)
-                    IM_CHECK_EQ(vars.ItemsOut, extra_at_top_of_visibility_line + 10);
+                    IM_CHECK_EQ(vars.ItemsOut, extra_at_top_of_visibility_line + 10 + extra_forced_items);
                 else
-                    IM_CHECK_EQ(vars.ItemsOut, 1 + extra_at_top_of_visibility_line + 10);
+                    IM_CHECK_EQ(vars.ItemsOut, 1 + extra_at_top_of_visibility_line + 10 + extra_forced_items);
                 if (vars.ClipperManualItemHeight && vars.TableFreezeRows == 0)
                     IM_CHECK(vars.ItemsOutMask.TestBit(0) == false);
                 else
@@ -2194,6 +2216,14 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
                 //IM_CHECK(vars.ItemsOutMask.TestBit(89 + vars.TableFreezeRows) == false);
                 IM_CHECK(vars.ItemsOutMask.TestBit(90 + vars.TableFreezeRows) == true);
                 IM_CHECK(vars.ItemsOutMask.TestBit(99) == true);
+#if IMGUI_VERSION_NUM >= 18509
+                if (extra_forced_items > 0)
+                {
+                    IM_CHECK(vars.ItemsOutMask.TestBit(vars.ForceDisplayStart) == true);
+                    IM_CHECK(vars.ItemsOutMask.TestBit(vars.ForceDisplayStart - 1) == false);
+                    IM_CHECK(vars.ItemsOutMask.TestBit(vars.ForceDisplayEnd) == false);
+                }
+#endif
 
                 // Test some edges cases
                 vars.ItemsIn = 1;
@@ -2206,7 +2236,7 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
                 // Test some edges cases
                 vars.ItemsIn = 0;
                 ctx->Yield();
-                IM_CHECK_EQ(vars.OffsetY, vars.ItemsIn* item_height);
+                IM_CHECK_EQ(vars.OffsetY, vars.ItemsIn * item_height);
                 IM_CHECK_EQ(vars.ItemsOut, 0);
             }
     };
