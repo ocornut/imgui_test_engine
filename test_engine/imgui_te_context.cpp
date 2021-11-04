@@ -572,7 +572,7 @@ static bool ImGuiTestContext_CanCapture(ImGuiTestContext* ctx)
 void ImGuiTestContext::CaptureInitArgs(ImGuiCaptureArgs* args, int flags)
 {
     args->InFlags = (ImGuiCaptureFlags)flags;
-    ImFormatString(args->InOutputFileTemplate, IM_ARRAYSIZE(args->InOutputFileTemplate), "captures/%s_%04d.png", Test->Name, CaptureCounter);
+    ImFormatString(args->InOutputFileTemplate, IM_ARRAYSIZE(args->InOutputFileTemplate), "output/captures/%s_%04d.png", Test->Name, CaptureCounter);
     CaptureCounter++;
 }
 

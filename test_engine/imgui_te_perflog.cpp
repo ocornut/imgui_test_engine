@@ -1389,7 +1389,7 @@ void RegisterTests_PerfLog(ImGuiTestEngine* e)
     {
         ImGuiContext& g = *ctx->UiContext;
         ImGuiPerfLog* perflog = ImGuiTestEngine_GetPerfTool(ctx->Engine);
-        const char* temp_perf_csv = "misc_cov_perf_tool.csv";
+        const char* temp_perf_csv = "output/misc_cov_perf_tool.csv";
 
         Str16f min_date_bkp = perflog->_FilterDateFrom;
         Str16f max_date_bkp = perflog->_FilterDateTo;

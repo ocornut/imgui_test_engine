@@ -2,7 +2,7 @@
 
 #include "imgui.h"
 
-#define IMGUI_PERFLOG_FILENAME  "imgui_perflog.csv"
+#define IMGUI_PERFLOG_FILENAME  "output/imgui_perflog.csv"
 
 // [Internal] Perf log entry. Changes to this struct should be reflected in ImGuiTestContext::PerfCapture() and ImGuiTestEngine_Start().
 struct ImGuiPerflogEntry
