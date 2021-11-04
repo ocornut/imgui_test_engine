@@ -2113,6 +2113,8 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
             }
             vars.OffsetY = ImGui::GetCursorScreenPos().y - start_y;
 
+            clipper.End(); // Extraneous call
+
             if (vars.TableEnable)
                 ImGui::EndTable();
         }

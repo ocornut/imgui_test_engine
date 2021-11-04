@@ -1497,6 +1497,53 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
             }
     };
 
+    // ## Test tabbing through clipped/non-visible items (#4449) + using ImGuiListClipper
+#if IMGUI_VERSION_NUM >= 18508
+    t = IM_REGISTER_TEST(e, "nav", "nav_tabbing_clipped");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        auto& vars = ctx->GenericVars;
+
+        ImGui::SetNextWindowSize(ImVec2(400, 100)); // Ensure items are clipped
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+
+        /*if (vars.Step == 0)
+        {
+            for (int n = 0; n < 50; n++)
+                ImGui::InputInt(Str30f("Input%d", n).c_str(), &vars.Int1, 0, 0);
+        }
+        else*/
+        {
+            ImGuiListClipper clipper;
+            clipper.Begin(50);
+            while (clipper.Step())
+            {
+                for (int n = clipper.DisplayStart; n < clipper.DisplayEnd; n++)
+                    ImGui::InputInt(Str30f("Input%d", n).c_str(), &vars.Int1, 0, 0);
+            }
+
+        }
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiContext& g = *ctx->UiContext;
+        ctx->SetRef("Test Window");
+        for (int n = 0; n < 52; n++)
+        {
+            ctx->KeyPressMap(ImGuiKey_Tab);
+            IM_CHECK_EQ(g.ActiveId, ctx->GetID(Str30f("Input%d", n % 50).c_str()));
+        }
+        // Should be on 51
+        for (int n = 0; n < 4; n++)
+        {
+            IM_CHECK_EQ(g.ActiveId, ctx->GetID(Str30f("Input%d", (51 - n) % 50).c_str()));
+            ctx->KeyPressMap(ImGuiKey_Tab, ImGuiKeyModFlags_Shift);
+            IM_CHECK_EQ(g.ActiveId, ctx->GetID(Str30f("Input%d", (50 - n) % 50).c_str()));
+        }
+    };
+#endif
+
     // ## Test SetKeyboardFocusHere()
     t = IM_REGISTER_TEST(e, "nav", "nav_focus_api");
     t->GuiFunc = [](ImGuiTestContext* ctx)
@@ -1558,6 +1605,12 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
             ImGui::InputText("Text1", vars.Str1, IM_ARRAYSIZE(vars.Str1));
             vars.Status.QuerySet();
             ImGui::PopAllowKeyboardFocus();
+        }
+        else if (vars.Step == 8)
+        {
+            ImGui::SetKeyboardFocusHere();
+            ImGui::Button("Button1");
+            vars.Status.QuerySet();
         }
         ImGui::End();
     };
@@ -1648,6 +1701,15 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
         //ctx->ItemNavActivate("Text1");
         ctx->KeyCharsReplaceEnter("");
         IM_CHECK_STR_EQ(vars.Str1, "");
+#endif
+
+        // Test that SetKeyboardFocusHere() on a Button() does not triggers clear.
+#if IMGUI_VERSION_NUM >= 18508
+        vars.Step = 8;
+        vars.Bool1 = true;
+        ctx->Yield(2);
+        IM_CHECK_EQ(g.NavId, ctx->GetID("Button1"));
+        IM_CHECK_EQ(vars.Status.Activated, 0);
 #endif
     };
 
@@ -1836,12 +1898,14 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
         ctx->SetRef("Test Window");
         for (int n = 0; n < 52; n++)
         {
+            IM_CHECK_EQ(g.NavId, ctx->GetID(Str30f("Input%d", (n) % 50).c_str()));
             ctx->KeyPressMap(ImGuiKey_DownArrow);
             IM_CHECK_EQ(g.NavId, ctx->GetID(Str30f("Input%d", (n + 1) % 50).c_str()));
         }
         // Should be on 51
         for (int n = 0; n < 4; n++)
         {
+            IM_CHECK_EQ(g.NavId, ctx->GetID(Str30f("Input%d", (52 - n) % 50).c_str()));
             ctx->KeyPressMap(ImGuiKey_UpArrow);
             IM_CHECK_EQ(g.NavId, ctx->GetID(Str30f("Input%d", (51 - n) % 50).c_str()));
         }
