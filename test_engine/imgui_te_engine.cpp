@@ -1259,6 +1259,19 @@ static void ImGuiTestEngine_RunTest(ImGuiTestEngine* engine, ImGuiTestContext* c
                     ctx->Yield();
         }
 
+        // Capture failure screenshot.
+        if (ctx->IsError() && engine->IO.ConfigCaptureOnError)
+        {
+            // FIXME-VIEWPORT: Tested windows may be in their own viewport. This only captures everything in main viewport. Capture tool may be extended to capture viewport windows as well. This would leave out OS windows which may be a cause of failure.
+            ImGuiCaptureArgs args;
+            args.InCaptureRect.Min = ctx->GetMainViewportPos();
+            args.InCaptureRect.Max = args.InCaptureRect.Min + ctx->GetMainViewportSize();
+            ctx->CaptureInitArgs(&args, ImGuiCaptureFlags_Instant);
+            ImFormatString(args.InOutputFileTemplate, IM_ARRAYSIZE(args.InOutputFileTemplate), "output/failures/%s_%04d.png", ctx->Test->Name, ctx->ErrorCounter);
+            if (ImGuiTestEngine_CaptureScreenshot(engine, &args))
+                ctx->LogDebug("Saved '%s' (%d*%d pixels)", args.OutSavedFileName, (int)args.OutImageSize.x, (int)args.OutImageSize.y);
+        }
+
         // Recover missing End*/Pop* calls.
         ctx->RecoverFromUiContextErrors();
 
@@ -1538,19 +1551,6 @@ bool ImGuiTestEngineHook_Check(const char* file, const char* func, int line, ImG
                 ImGuiCaptureArgs* args = engine->CurrentCaptureArgs;
                 ImGuiTestEngine_EndCaptureAnimation(engine, args);
                 //ImFileDelete(args->OutSavedFileName);
-            }
-
-            // Capture failure screenshot.
-            if (engine->IO.ConfigCaptureOnError)
-            {
-                // FIXME-VIEWPORT: Tested windows may be in their own viewport. This only captures everything in main viewport. Capture tool may be extended to capture viewport windows as well. This would leave out OS windows which may be a cause of failure.
-                ImGuiCaptureArgs args;
-                args.InCaptureRect.Min = ctx->GetMainViewportPos();
-                args.InCaptureRect.Max = args.InCaptureRect.Min + ctx->GetMainViewportSize();
-                ctx->CaptureInitArgs(&args, ImGuiCaptureFlags_Instant);
-                ImFormatString(args.InOutputFileTemplate, IM_ARRAYSIZE(args.InOutputFileTemplate), "captures/failures/%s_%04d.png", test->Name, ctx->ErrorCounter);
-                if (ImGuiTestEngine_CaptureScreenshot(engine, &args))
-                    ctx->LogDebug("Saved '%s' (%d*%d pixels)", args.OutSavedFileName, (int)args.OutImageSize.x, (int)args.OutImageSize.y);
             }
             ctx->ErrorCounter++;
         }

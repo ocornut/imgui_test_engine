@@ -1441,7 +1441,7 @@ void    ImGuiTestContext::MouseClickMulti(ImGuiMouseButton button, int count)
     if (count > 1)
         LogDebug("MouseClickMulti %d x%d", button, count);
     else
-        LogDebug("MouseClick %d", button, count);
+        LogDebug("MouseClick %d", button);
 
     // Make sure mouse buttons are released
     IM_ASSERT(count >= 1);
