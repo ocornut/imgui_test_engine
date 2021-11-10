@@ -916,40 +916,43 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
     {
         ImGui::Begin("Window 1", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
 
+        const auto& output_item = [](const char* label) { ImGui::Button(label); };
+        //const auto& output_item = [](const char* label) { static char buf[32]; ImGui::SetNextItemWidth(ImGui::GetFontSize() * 5); ImGui::InputText(label, buf, 32); };
+
         ImGui::BeginGroup();
-        ImGui::Button("Button 1");
-        ImGui::Button("Button 2");
-        ImGui::Button("Button 3");
+        output_item("Button 1");
+        output_item("Button 2");
+        output_item("Button 3");
         ImGui::EndGroup();
 
         ImGui::SameLine();
         ImGui::BeginChild("Child 1", ImVec2(200, 200), false, ImGuiWindowFlags_NavFlattened);
-        ImGui::Button("Child 1 Button 1");
-        ImGui::Button("Child 1 Button 2");
-        ImGui::Button("Child 1 Button 3");
+        output_item("Child 1 Button 1");
+        output_item("Child 1 Button 2");
+        output_item("Child 1 Button 3");
         ImGui::EndChild();
 
         ImGui::SameLine();
         ImGui::BeginChild("Child 2", ImVec2(200, 200), false, ImGuiWindowFlags_NavFlattened);
-        ImGui::Button("Child 2 Button 1");
-        ImGui::Button("Child 2 Button 2");
-        ImGui::Button("Child 2 Button 3");
+        output_item("Child 2 Button 1");
+        output_item("Child 2 Button 2");
+        output_item("Child 2 Button 3");
         ImGui::EndChild();
 
         ImGui::SameLine();
         ImGui::BeginChild("Child 3", ImVec2(200, 200), false, ImGuiWindowFlags_NavFlattened);
         ImGui::BeginChild("Child 3B", ImVec2(0, 0), false, ImGuiWindowFlags_NavFlattened);
-        ImGui::Button("Child 3B Button 1");
-        ImGui::Button("Child 3B Button 2");
-        ImGui::Button("Child 3B Button 3");
+        output_item("Child 3B Button 1");
+        output_item("Child 3B Button 2");
+        output_item("Child 3B Button 3");
         ImGui::EndChild();
         ImGui::EndChild();
 
         // FIXME-NAV: To test PageUp/PageDown/Home/End later
         //ImGui::BeginChild("Child 4", ImVec2(200, 200), false, ImGuiWindowFlags_NavFlattened);
-        //ImGui::Button("Child 4 Button 1");
-        //ImGui::Button("Child 4 Button 2");
-        //ImGui::Button("Child 4 Button 3");
+        //output_item("Child 4 Button 1");
+        //output_item("Child 4 Button 2");
+        //output_item("Child 4 Button 3");
         //ImGui::EndChild();
 
         ImGui::End();
@@ -1540,6 +1543,66 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
             IM_CHECK_EQ(g.ActiveId, ctx->GetID(Str30f("Input%d", (51 - n) % 50).c_str()));
             ctx->KeyPressMap(ImGuiKey_Tab, ImGuiKeyModFlags_Shift);
             IM_CHECK_EQ(g.ActiveId, ctx->GetID(Str30f("Input%d", (50 - n) % 50).c_str()));
+        }
+    };
+#endif
+
+    // ## Test tabbing through flattened windows (cad790d4)
+    // ## Also test for clipped windows item not being clipped when tabbing through a normally clipped child (e790fc0e)
+#if IMGUI_VERSION_NUM >= 18510
+    t = IM_REGISTER_TEST(e, "nav", "nav_tabbing_flattened");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        auto& vars = ctx->GenericVars;
+
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+        for (int n = 0; n < 4; n++)
+            ImGui::InputInt(Str30f("Input%d", n).c_str(), &vars.Int1, 0, 0);
+
+        ImGui::BeginChild("Child 1", ImVec2(0, ImGui::GetFrameHeightWithSpacing() * 3), true, ImGuiWindowFlags_NavFlattened);
+        for (int n = 4; n < 8; n++)
+            ImGui::InputInt(Str30f("Input%d", n).c_str(), &vars.Int1, 0, 0);
+        ImGui::EndChild();
+
+        for (int n = 8; n < 10; n++)
+            ImGui::InputInt(Str30f("Input%d", n).c_str(), &vars.Int1, 0, 0);
+
+        ImGui::BeginChild("Child 2", ImVec2(0, ImGui::GetFrameHeightWithSpacing() * 3), true, ImGuiWindowFlags_NavFlattened);
+        for (int n = 10; n < 14; n++)
+            ImGui::InputInt(Str30f("Input%d", n).c_str(), &vars.Int1, 0, 0);
+        ImGui::BeginChild("Child 3", ImVec2(0, ImGui::GetFrameHeightWithSpacing() * 3), true, ImGuiWindowFlags_NavFlattened);
+        for (int n = 14; n < 18; n++)
+            ImGui::InputInt(Str30f("Input%d", n).c_str(), &vars.Int1, 0, 0);
+        ImGui::EndChild();
+        for (int n = 18; n < 20; n++)
+            ImGui::InputInt(Str30f("Input%d", n).c_str(), &vars.Int1, 0, 0);
+        ImGui::EndChild();
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiContext& g = *ctx->UiContext;
+        ImGuiTestItemInfo* item_info = NULL;
+        ctx->SetRef("Test Window");
+        for (int n = 0; n < 22; n++)
+        {
+            ctx->KeyPressMap(ImGuiKey_Tab);
+            item_info = ctx->ItemInfo(g.ActiveId);
+            IM_CHECK(item_info != NULL);
+            IM_CHECK_STR_EQ(item_info->DebugLabel, Str30f("Input%d", n % 20).c_str());
+        }
+        // Should be on 21
+        for (int n = 0; n < 4; n++)
+        {
+            item_info = ctx->ItemInfo(g.ActiveId);
+            IM_CHECK(item_info != NULL);
+            IM_CHECK_STR_EQ(item_info->DebugLabel, Str30f("Input%d", (21 - n) % 20).c_str());
+
+            ctx->KeyPressMap(ImGuiKey_Tab, ImGuiKeyModFlags_Shift);
+
+            item_info = ctx->ItemInfo(g.ActiveId);
+            IM_CHECK(item_info != NULL);
+            IM_CHECK_STR_EQ(item_info->DebugLabel, Str30f("Input%d", (20 - n) % 20).c_str());
         }
     };
 #endif
