@@ -71,6 +71,7 @@ struct ImGuiPerfLog
     int                         _AlignStress = 0;               // Alignment values for build info components, so they look aligned in the legend.
     int                         _AlignType = 0;
     int                         _AlignOs = 0;
+    int                         _AlignCpu = 0;
     int                         _AlignCompiler = 0;
     int                         _AlignBranch = 0;
     int                         _AlignSamples = 0;

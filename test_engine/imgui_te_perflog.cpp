@@ -161,6 +161,17 @@ static ImGuiID GetBuildID(const ImGuiPerflogBatch* batch)
     return GetBuildID(&batch->Entries.Data[0]);
 }
 
+// Batch ID depends on display type. It is either a build ID (when combinding by build type) or batch timestamp otherwise.
+static ImGuiID GetBatchID(const ImGuiPerfLog* perflog, const ImGuiPerflogEntry* entry)
+{
+    IM_ASSERT(perflog != NULL);
+    IM_ASSERT(entry != NULL);
+    if (perflog->_DisplayType == ImGuiPerflogDisplayType_CombineByBuildInfo)
+        return GetBuildID(entry);
+    else
+        return entry->Timestamp;
+}
+
 static int PerflogComparerStr(const void* a, const void* b)
 {
     return strcmp(*(const char**)b, *(const char**)a);
@@ -177,7 +188,7 @@ static int IMGUI_CDECL PerflogComparerByEntryInfo(const void* lhs, const void* r
 
     // Now that we have groups of branches - sort individual builds within those groups.
     if (result == 0)
-        result = (int)ImClamp<ImGuiID>((ImGuiID)((ImS64)GetBuildID(a) - (ImS64)GetBuildID(b)), (ImGuiID)-1, (ImGuiID)+1);
+        result = ImClamp<int>((int)((ImS64)GetBuildID(a) - (ImS64)GetBuildID(b)), -1, +1);
 
     // Group individual runs together within build groups.
     if (result == 0)
@@ -279,19 +290,23 @@ static void PerflogFormatBuildInfo(ImGuiPerfLog* perflog, Str* result, ImGuiPerf
     IM_ASSERT(batch != NULL);
     IM_ASSERT(batch->Entries.Size > 0);
     ImGuiPerflogEntry* entry = &batch->Entries.Data[0];
-    Str64f legend_format("x%%-%dd %%-%ds %%-%ds %%-%ds %%s %%-%ds %%s%%s%%s%%s(%%-%dd sample%%s)%%s",
-        perflog->_AlignStress, perflog->_AlignType, perflog->_AlignOs, perflog->_AlignCompiler, perflog->_AlignBranch,
+    Str64f legend_format("x%%-%dd %%-%ds %%-%ds %%-%ds %%-%ds %%-%ds %%s%%s%%s%%s(%%-%dd sample%%s)%%s",
+        perflog->_AlignStress, perflog->_AlignType, perflog->_AlignCpu, perflog->_AlignOs, perflog->_AlignCompiler, perflog->_AlignBranch,
         perflog->_AlignSamples);
     result->appendf(legend_format.c_str(), entry->PerfStressAmount, entry->BuildType, entry->Cpu, entry->OS,
         entry->Compiler, entry->GitBranchName, entry->Date,
 #if 0
         // Show min-max dates.
-        perflog->_CombineByBuildInfo ? " - " : "", entry->DateMax ? entry->DateMax : "",
+        perflog->_CombineByBuildInfo ? " - " : "",
+        entry->DateMax ? entry->DateMax : "",
 #else
         "", "",
 #endif
-        *entry->Date ? " " : "", batch->NumSamples,
-        batch->NumSamples > 1 ? "s" : "", batch->NumSamples > 1 || perflog->_AlignSamples == 1 ? "" : " ");
+        *entry->Date ? " " : "",
+        batch->NumSamples,
+        batch->NumSamples > 1 ? "s" : "",                               // Singular/plural form of "sample(s)"
+        batch->NumSamples > 1 || perflog->_AlignSamples == 1 ? "" : " " // Space after legend entry to separate * marking baseline
+    );
 }
 #endif
 
@@ -573,10 +588,7 @@ void ImGuiPerfLog::_Rebuild()
         _Batches.resize(_Batches.Size + 1);
         ImGuiPerflogBatch& batch = _Batches.back();
         memset(&batch, 0, sizeof(batch));
-        if (combine_by_build_info)
-            batch.BatchID = GetBuildID(entry);
-        else
-            batch.BatchID = entry->Timestamp;
+        batch.BatchID = GetBatchID(this, entry);
         batch.Entries.resize(num_visible_labels);
 
         // Fill in defaults. Done once before data aggregation loop, because same entry may be touched multiple times in
@@ -596,7 +608,7 @@ void ImGuiPerfLog::_Rebuild()
         for (int i = 0; i < num_visible_labels; i++)
         {
             ImGuiPerflogEntry* aggregate = &batch.Entries.Data[i];
-            for (ImGuiPerflogEntry* e = entry; e < _SrcData.end() && (combine_by_build_info ? GetBuildID(e) : e->Timestamp) == batch.BatchID; e++)
+            for (ImGuiPerflogEntry* e = entry; e < _SrcData.end() && GetBatchID(this, e) == batch.BatchID; e++)
             {
                 if (strcmp(e->TestName, aggregate->TestName) != 0)
                     continue;
@@ -1434,7 +1446,7 @@ void ImGuiPerfLog::_CalculateLegendAlignment()
 {
     // Estimate paddings for legend format so it looks nice and aligned
     // FIXME: Rely on font being monospace. May need to recalculate every frame on a per-need basis based on font?
-    _AlignStress = _AlignType = _AlignOs = _AlignCompiler = _AlignBranch = _AlignSamples = 0;
+    _AlignStress = _AlignType = _AlignCpu = _AlignOs = _AlignCompiler = _AlignBranch = _AlignSamples = 0;
     for (ImGuiPerflogBatch& batch : _Batches)
     {
         ImGuiPerflogEntry* entry = &batch.Entries.Data[0];
@@ -1442,6 +1454,7 @@ void ImGuiPerfLog::_CalculateLegendAlignment()
             continue;
         _AlignStress = ImMax(_AlignStress, (int)ceil(log10(entry->PerfStressAmount)));
         _AlignType = ImMax(_AlignType, (int)strlen(entry->BuildType));
+        _AlignCpu = ImMax(_AlignCpu, (int)strlen(entry->Cpu));
         _AlignOs = ImMax(_AlignOs, (int)strlen(entry->OS));
         _AlignCompiler = ImMax(_AlignCompiler, (int)strlen(entry->Compiler));
         _AlignBranch = ImMax(_AlignBranch, (int)strlen(entry->GitBranchName));
