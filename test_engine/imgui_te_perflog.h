@@ -29,6 +29,8 @@ struct ImGuiPerflogEntry
     bool                        DataOwner = false;              // Owns lifetime of pointers when set to true.
     int                         LabelIndex = 0;                 // Index of TestName in ImGuiPerfLog::_LabelsVisible.
 
+    ImGuiPerflogEntry()         { }
+    ImGuiPerflogEntry(const ImGuiPerflogEntry& other);
     ~ImGuiPerflogEntry();
     void TakeDataOwnership();
 };

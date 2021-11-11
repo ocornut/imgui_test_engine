@@ -43,6 +43,30 @@ void ImGuiPerflogEntry::TakeDataOwnership()
     Date = ImStrdup(Date);
 }
 
+ImGuiPerflogEntry::ImGuiPerflogEntry(const ImGuiPerflogEntry& other)
+{
+    Timestamp = other.Timestamp;
+    Category = other.Category;
+    TestName = other.TestName;
+    DtDeltaMs = other.DtDeltaMs;
+    DtDeltaMsMin = other.DtDeltaMsMin;
+    DtDeltaMsMax = other.DtDeltaMsMax;
+    NumSamples = other.NumSamples;
+    PerfStressAmount = other.PerfStressAmount;
+    GitBranchName = other.GitBranchName;
+    BuildType = other.BuildType;
+    Cpu = other.Cpu;
+    OS = other.OS;
+    Compiler = other.Compiler;
+    Date = other.Date;
+    //DateMax = ...
+    VsBaseline = other.VsBaseline;
+    DataOwner = other.DataOwner;
+    LabelIndex = other.LabelIndex;
+    if (other.DataOwner)
+        TakeDataOwnership();
+}
+
 ImGuiPerflogEntry::~ImGuiPerflogEntry()
 {
     if (!DataOwner)
@@ -552,9 +576,6 @@ void ImGuiPerfLog::_Rebuild()
     _InfoTableSortDirty = true;
 
     // Gather all labels. Legend batches will store data in this order.
-    // ImPlot will assert if there is just one visible label, so keep a dummy one in _LabelsVisible for clarity all the time.
-    // Whenever _LabelsVisible is looped we always skip last item.
-    _LabelsVisible.push_back("");
     temp_set.Data.resize(0);    // name_id:IsLabelSeen
     for (ImGuiPerflogEntry& entry : _SrcData)
     {
@@ -567,7 +588,7 @@ void ImGuiPerfLog::_Rebuild()
                 _LabelsVisible.push_front(entry.TestName);
         }
     }
-    int num_visible_labels = _LabelsVisible.Size - 1;
+    int num_visible_labels = _LabelsVisible.Size;
 
     // Labels are sorted in reverse order so they appear to be oredered from top down.
     ImQsort(_Labels.Data, _Labels.Size, sizeof(const char*), &PerflogComparerStr);
@@ -576,6 +597,7 @@ void ImGuiPerfLog::_Rebuild()
     // Sorting _SrcData is OK, because it is only ever appended to and never written out to disk.
     ImQsort(_SrcData.Data, _SrcData.Size, sizeof(ImGuiPerflogEntry), &PerflogComparerByEntryInfo);
 
+    // Sort groups of entries into batches.
     const bool combine_by_build_info = _DisplayType == ImGuiPerflogDisplayType_CombineByBuildInfo;
     _LabelBarCounts.Data.resize(0);
     for (ImGuiPerflogEntry* entry = _SrcData.begin(); entry < _SrcData.end();)
@@ -627,12 +649,6 @@ void ImGuiPerfLog::_Rebuild()
 
             // Calculate average when combining.
             aggregate->DtDeltaMs /= aggregate->NumSamples;
-
-            // Find number of bars (batches) each label will render.
-            ImGuiID label_id = ImHashStr(aggregate->TestName);
-            int num_bars = _LabelBarCounts.GetInt(label_id) + 1;
-            if (_IsVisibleBuild(&batch))
-                _LabelBarCounts.SetInt(label_id, num_bars);
         }
 
         // Advance to the next batch.
@@ -655,6 +671,60 @@ void ImGuiPerfLog::_Rebuild()
         {
             for (ImU64 timestamp = entry->Timestamp; entry < _SrcData.end() && timestamp == entry->Timestamp;)
                 entry++;
+        }
+    }
+
+    // Create man entries for every batch.
+    // Pushed after sorting so they are always at the start of the chart.
+    _LabelsVisible.push_back("harmonic mean");
+    _LabelsVisible.push_back("arithmetic mean");
+    _LabelsVisible.push_back("geometric mean");
+    for (ImGuiPerflogBatch& batch : _Batches)
+    {
+        batch.Entries.push_back(ImGuiPerflogEntry());
+        batch.Entries.push_back(ImGuiPerflogEntry());
+        batch.Entries.push_back(ImGuiPerflogEntry());
+
+        ImGuiPerflogEntry* geometric_mean = &batch.Entries.Data[batch.Entries.Size - 1];
+        *geometric_mean = batch.Entries.Data[0];
+        geometric_mean->LabelIndex = _LabelsVisible.Size - 1;
+        geometric_mean->TestName = _LabelsVisible.Data[geometric_mean->LabelIndex];
+
+        ImGuiPerflogEntry* arithmetic_mean = &batch.Entries.Data[batch.Entries.Size - 2];
+        *arithmetic_mean = batch.Entries.Data[0];
+        arithmetic_mean->LabelIndex = _LabelsVisible.Size - 2;
+        arithmetic_mean->TestName = _LabelsVisible.Data[arithmetic_mean->LabelIndex];
+
+        ImGuiPerflogEntry* harmonic_mean = &batch.Entries.Data[batch.Entries.Size - 3];
+        *harmonic_mean = batch.Entries.Data[0];
+        harmonic_mean->LabelIndex = _LabelsVisible.Size - 3;
+        harmonic_mean->TestName = _LabelsVisible.Data[harmonic_mean->LabelIndex];
+
+        double delta_sum = 0.0;
+        double delta_prd = 1.0;
+        double delta_rec = 0.0;
+        for (int i = 0; i < batch.Entries.Size - 3; i++)
+        {
+            ImGuiPerflogEntry* entry = &batch.Entries.Data[i];
+            delta_sum += entry->DtDeltaMs;
+            delta_prd *= entry->DtDeltaMs;
+            delta_rec += 1 / entry->DtDeltaMs;
+        }
+        arithmetic_mean->DtDeltaMs = delta_sum / num_visible_labels;
+        geometric_mean->DtDeltaMs = pow(delta_prd, 1.0 / num_visible_labels);
+        harmonic_mean->DtDeltaMs = num_visible_labels / delta_rec;
+    }
+
+    // Find number of bars (batches) each label will render.
+    for (ImGuiPerflogBatch& batch : _Batches)
+    {
+        for (int i = 0; i < _LabelsVisible.Size; i++)
+        {
+            ImGuiPerflogEntry* aggregate = &batch.Entries.Data[i];
+            ImGuiID label_id = ImHashStr(aggregate->TestName);
+            int num_bars = _LabelBarCounts.GetInt(label_id) + 1;
+            if (_IsVisibleBuild(&batch))
+                _LabelBarCounts.SetInt(label_id, num_bars);
         }
     }
 
@@ -681,7 +751,6 @@ void ImGuiPerfLog::_Rebuild()
     // When per-branch colors are enabled we aggregate sample counts and set them to all batches with identical build info.
     temp_set.Data.resize(0);    // build_id:TotalSamples
     if (_DisplayType == ImGuiPerflogDisplayType_PerBranchColors)
-    //if (combine_by_build_info)
     {
         // Aggregate totals to temp_set.
         for (ImGuiPerflogBatch& batch : _Batches)
@@ -703,6 +772,12 @@ void ImGuiPerfLog::_Rebuild()
 
     _CalculateLegendAlignment();
     temp_set.Data.resize(0);
+
+    // ImPlot will assert if there is just one visible label, so keep a dummy one in _LabelsVisible for clarity all the time.
+    // Whenever _LabelsVisible is looped we always skip last item.
+    // FIXME: In theory this is not needed any more, because of added synthetic mean entries. Removing this hack would touch
+    // more places therefore it is left for a later time.
+    _LabelsVisible.push_back("");
 }
 
 void ImGuiPerfLog::Clear()
