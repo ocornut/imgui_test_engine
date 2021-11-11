@@ -193,7 +193,7 @@ static ImGuiID GetBatchID(const ImGuiPerfLog* perflog, const ImGuiPerflogEntry* 
     if (perflog->_DisplayType == ImGuiPerflogDisplayType_CombineByBuildInfo)
         return GetBuildID(entry);
     else
-        return entry->Timestamp;
+        return (ImU32)entry->Timestamp;
 }
 
 static int PerflogComparerStr(const void* a, const void* b)
@@ -350,7 +350,7 @@ static int PerfLogCountBuilds(ImGuiPerfLog* perflog, bool only_visible)
 
 static bool Date(const char* label, char* date, int date_len, bool valid)
 {
-    ImGui::SetNextItemWidth(ImGui::CalcTextSize("YYYY-MM-DD").x);
+    ImGui::SetNextItemWidth(ImGui::CalcTextSize("YYYY-MM-DD").x + ImGui::GetStyle().FramePadding.x * 2.0f);
     bool date_valid = *date == 0 || (IsDateValid(date) && valid/*strcmp(_FilterDateFrom, _FilterDateTo) <= 0*/);
     if (!date_valid)
     {
@@ -575,7 +575,7 @@ void ImGuiPerfLog::_Rebuild()
     _Batches.clear_destruct();
     _InfoTableSortDirty = true;
 
-    // Gather all labels. Legend batches will store data in this order.
+    // Gather all visible labels. Legend batches will store data in this order.
     temp_set.Data.resize(0);    // name_id:IsLabelSeen
     for (ImGuiPerflogEntry& entry : _SrcData)
     {
@@ -594,14 +594,29 @@ void ImGuiPerfLog::_Rebuild()
     ImQsort(_Labels.Data, _Labels.Size, sizeof(const char*), &PerflogComparerStr);
     ImQsort(_LabelsVisible.Data, num_visible_labels, sizeof(const char*), &PerflogComparerStr);
 
-    // Sorting _SrcData is OK, because it is only ever appended to and never written out to disk.
+    // _SrcData vector stores sorted raw entries of imgui_perflog.csv. Sorting is very important,
+    // algorithm depends on data being correctly sorted. Sorting _SrcData is OK, because it is only
+    // ever appended to and never written out to disk. Entries are sorted by multiple criteria,
+    // in specified order:
+    // 1. By branch name
+    // 2. By build ID
+    // 3. By run timestamp
+    // 4. By test name
+    // This results in a neatly partitioned dataset where similar data is grouped together and where perf test order
+    // is consistent in all batches. Sorting by build ID _before_ timestamp is also important as we will be aggregating
+    // entries by build ID instead of timestamp, when appropriate display mode is enabled.
     ImQsort(_SrcData.Data, _SrcData.Size, sizeof(ImGuiPerflogEntry), &PerflogComparerByEntryInfo);
 
     // Sort groups of entries into batches.
     const bool combine_by_build_info = _DisplayType == ImGuiPerflogDisplayType_CombineByBuildInfo;
     _LabelBarCounts.Data.resize(0);
+
+    // Process all batches. `entry` is always a first batch element (guaranteed by _SrcData being sorted by timestamp).
+    // At the end of this loop we fast-forward until next batch (first entry having different batch id (which is a
+    // timestamp or build info)).
     for (ImGuiPerflogEntry* entry = _SrcData.begin(); entry < _SrcData.end();)
     {
+        // Filtered out entries can be safely ignored.
         if (_FilterDateFrom[0] && strcmp(entry->Date, _FilterDateFrom) < 0)
             continue;
         if (_FilterDateTo[0] && strcmp(entry->Date, _FilterDateTo) > 0)
@@ -629,6 +644,9 @@ void ImGuiPerfLog::_Rebuild()
         // Find perf test runs for this particular batch and accumulate them.
         for (int i = 0; i < num_visible_labels; i++)
         {
+            // This inner loop walks all antries that belong to current batch. Due to sorting we are sure that batch
+            // always starts with `entry`, and all entries that belong to a batch (whether we combine by build info or not)
+            // will be grouped in _SrcData.
             ImGuiPerflogEntry* aggregate = &batch.Entries.Data[i];
             for (ImGuiPerflogEntry* e = entry; e < _SrcData.end() && GetBatchID(this, e) == batch.BatchID; e++)
             {
@@ -641,15 +659,14 @@ void ImGuiPerfLog::_Rebuild()
             }
         }
 
-        for (int i = 0; i < num_visible_labels; i++)
-        {
-            ImGuiPerflogEntry* aggregate = &batch.Entries.Data[i];
-            if (aggregate->NumSamples == 0)
-                continue;
-
-            // Calculate average when combining.
-            aggregate->DtDeltaMs /= aggregate->NumSamples;
-        }
+        // In case data is combined by build info, DtDeltaMs will be a sum of all combined entries. Average it out.
+        if (combine_by_build_info)
+            for (int i = 0; i < num_visible_labels; i++)
+            {
+                ImGuiPerflogEntry* aggregate = &batch.Entries.Data[i];
+                if (aggregate->NumSamples > 0)
+                    aggregate->DtDeltaMs /= aggregate->NumSamples;
+            }
 
         // Advance to the next batch.
         batch.NumSamples = 1;
@@ -1438,14 +1455,14 @@ void ImGuiPerfLog::_ShowEntriesTable()
             // VS Baseline
             if (ImGui::TableNextColumn())
             {
-                Str30 label;
-                float dt_change = entry->VsBaseline;
+                float dt_change = (float)entry->VsBaseline;
                 if (_DisplayType == ImGuiPerflogDisplayType_PerBranchColors)
                 {
                     ImGui::TextUnformatted("--");
                 }
                 else
                 {
+                    Str30 label;
                     dt_change = FormatVsBaseline(entry, baseline_entry, label);
                     ImGui::TextUnformatted(label.c_str());
                     if (dt_change != entry->VsBaseline)
