@@ -38,13 +38,14 @@ struct ImGuiTestGatherTask
 };
 
 // Find item ID given a label and a parent id
+// Usually used by queries with wildcards such as ItemInfo("hello/**/foo/bar")
 struct ImGuiTestFindByLabelTask
 {
     // Input
-    ImGuiID                 InBaseId = 0;                   // A known base ID which appears before wildcard ID(s)
-    const char*             InLabel = NULL;                 // A last label string
-    const char*             InLabelFull = NULL;             // A label string which appears on ID stack after unknown ID(s)
-    int                     InLabelCount = 0;               // Number of labels in a path, after unknown ID(s)
+    ImGuiID                 InPrefixId = 0;                 // A known base ID which appears BEFORE the wildcard ID (for "hello/**/foo/bar" it would be hash of "hello")
+    int                     InSuffixDepth = 0;              // Number of labels in a path, after unknown base ID (for "hello/**/foo/bar" it would be 2)
+    const char*             InSuffix = NULL;                // A label string which appears on ID stack after unknown base ID (for "hello/**/foo/bar" it would be "foo/bar")
+    const char*             InSuffixLastItem = NULL;        // A last label string (for "hello/**/foo/bar" it would be "bar")
     ImGuiItemStatusFlags    InFilterItemStatusFlags = 0;    // Flags required for item to be returned
 
     // Output

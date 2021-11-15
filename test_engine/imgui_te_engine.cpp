@@ -1170,7 +1170,7 @@ void ImGuiTestEngine_UpdateHooks(ImGuiTestEngine* engine)
 
     if (engine->InfoTasks.Size > 0)
         want_hooking = true;
-    if (engine->FindByLabelTask.InLabel != NULL)
+    if (engine->FindByLabelTask.InSuffix != NULL)
         want_hooking = true;
     if (engine->GatherTask.InParentID != 0)
         want_hooking = true;
@@ -1446,14 +1446,15 @@ void ImGuiTestEngineHook_ItemInfo(ImGuiContext* ui_ctx, ImGuiID id, const char* 
 
     // Update Find by Label Task
     ImGuiTestFindByLabelTask* label_task = &engine->FindByLabelTask;
-    if (label && label_task->OutItemId == 0 && label_task->InLabel && ImStrcmp(label_task->InLabel, label) == 0)
+    if (label && label_task->InSuffixLastItem && label_task->OutItemId == 0 && ImStrcmp(label_task->InSuffixLastItem, label) == 0)
     {
         bool match = false; //(label_task->InBaseId == 0);
+        ImGuiWindow* window = g.CurrentWindow;
         if (!match)
         {
             // FIXME-TESTS: Depth limit?
-            for (ImGuiID* p_id_stack = g.CurrentWindow->IDStack.end() - 1; p_id_stack >= g.CurrentWindow->IDStack.begin(); p_id_stack--)
-                if (*p_id_stack == label_task->InBaseId)
+            for (ImGuiID* p_id_stack = window->IDStack.end() - 1; p_id_stack >= window->IDStack.begin(); p_id_stack--)
+                if (*p_id_stack == label_task->InPrefixId)
                 {
                     if (ImGuiItemStatusFlags filter_flags = label_task->InFilterItemStatusFlags)
                         if (!(filter_flags & flags))
@@ -1463,13 +1464,14 @@ void ImGuiTestEngineHook_ItemInfo(ImGuiContext* ui_ctx, ImGuiID id, const char* 
                 }
         }
 
+        // We matched the "bar" of "**/foo/bar"
         if (match)
         {
-            int id_stack_size = g.CurrentWindow->IDStack.Size;
-            if (label_task->InLabelCount < id_stack_size)
+            int id_stack_size = window->IDStack.Size;
+            if (label_task->InSuffixDepth < id_stack_size)
             {
-                ImGuiID base_id = g.CurrentWindow->IDStack.Data[id_stack_size - label_task->InLabelCount - 1];
-                ImGuiID find_id = ImHashDecoratedPath(label_task->InLabelFull, NULL, base_id);
+                ImGuiID base_id = window->IDStack.Data[id_stack_size - label_task->InSuffixDepth - 1]; // base_id correspond to the "**"
+                ImGuiID find_id = ImHashDecoratedPath(label_task->InSuffix, NULL, base_id);            // essentially compare the whole "foo/bar" thing.
                 if (id == find_id)
                     label_task->OutItemId = id;
             }

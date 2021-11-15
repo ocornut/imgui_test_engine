@@ -668,22 +668,22 @@ ImGuiTestItemInfo* ImGuiTestContext::ItemInfo(ImGuiTestRef ref, ImGuiTestOpFlags
         // Wildcard matching
         ImGuiTestFindByLabelTask* task = &Engine->FindByLabelTask;
         if (wildcard_prefix_start < wildcard_prefix_end)
-            task->InBaseId = ImHashDecoratedPath(wildcard_prefix_start, wildcard_prefix_end, RefID);
+            task->InPrefixId = ImHashDecoratedPath(wildcard_prefix_start, wildcard_prefix_end, RefID);
         else
-            task->InBaseId = RefID;
-        task->InLabelCount = 0;
+            task->InPrefixId = RefID;
         task->OutItemId = 0;
 
         // Advance pointer to point it to the last label
-        task->InLabel = task->InLabelFull = wildcard_suffix_start;
-        for (const char* c = task->InLabel; *c; c++)
+        task->InSuffix = task->InSuffixLastItem = wildcard_suffix_start;
+        for (const char* c = task->InSuffix; *c; c++)
             if (*c == '/')
-                task->InLabel = c + 1;
+                task->InSuffixLastItem = c + 1;
 
         // Count number of labels
+        task->InSuffixDepth = 0;
         for (const char* c = wildcard_suffix_start; *c; c++)
             if (*c == '/')
-                task->InLabelCount++;
+                task->InSuffixDepth++;
 
         LogDebug("Wildcard matching..");
 
@@ -698,8 +698,8 @@ ImGuiTestItemInfo* ImGuiTestContext::ItemInfo(ImGuiTestRef ref, ImGuiTestOpFlags
         // FIXME-TESTS: Scrollbar position restoration may be desirable, however it interferes with using found item.
         if (task->OutItemId == 0)
         {
-            ImGuiTestItemInfo* base_item = ItemInfo(task->InBaseId, ImGuiTestOpFlags_NoError);
-            ImGuiWindow* window = base_item ? base_item->Window : GetWindowByRef(task->InBaseId);
+            ImGuiTestItemInfo* base_item = ItemInfo(task->InPrefixId, ImGuiTestOpFlags_NoError);
+            ImGuiWindow* window = base_item ? base_item->Window : GetWindowByRef(task->InPrefixId);
             if (window)
             {
                 ImVec2 rect_size = window->InnerRect.GetSize();
@@ -727,8 +727,9 @@ ImGuiTestItemInfo* ImGuiTestContext::ItemInfo(ImGuiTestRef ref, ImGuiTestOpFlags
         full_id = task->OutItemId;
 
         // FIXME: InFilterItemStatusFlags is not clear here intentionally, because it is set in ItemAction() and reused in later calls to ItemInfo() to resolve ambiguities.
-        task->InBaseId = 0;
-        task->InLabel = task->InLabelFull = NULL;
+        task->InPrefixId = 0;
+        task->InSuffix = task->InSuffixLastItem = NULL;
+        task->InSuffixDepth = 0;
         task->OutItemId = 0;    // -V1048   // Variable 'OutItemId' was assigned the same value. False-positive, because value of OutItemId could be modified from other thread during ImGuiTestEngine_Yield() call.
     }
     else
