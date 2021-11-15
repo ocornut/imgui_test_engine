@@ -12,7 +12,7 @@
 #include "imgui_te_util.h"
 #include "imgui_te_context.h"
 #include "imgui_te_internal.h"
-#include "imgui_te_perflog.h"
+#include "imgui_te_perftool.h"
 #include "shared/imgui_utils.h"
 #include "libs/Str/Str.h"
 
