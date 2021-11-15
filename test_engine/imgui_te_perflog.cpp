@@ -1366,6 +1366,9 @@ void ImGuiPerfLog::_ShowEntriesTable()
     // labels and batches in reverse order.
     _TableHoveredTest = -1;
     _TableHoveredBatch = -1;
+    const bool scroll_into_view = _PlotHoverTestLabel && ImGui::IsMouseClicked(ImGuiMouseButton_Left);
+    const float header_row_height = ImGui::TableGetCellBgRect(ImGui::GetCurrentTable(), 0).GetHeight();
+    ImRect scroll_into_view_rect(FLT_MAX, FLT_MAX, -FLT_MAX, -FLT_MAX);
     for (int label_index = num_visible_labels - 1; label_index >= 0; label_index--)
     {
         const char* test_name = _LabelsVisible.Data[label_index];
@@ -1388,11 +1391,6 @@ void ImGuiPerfLog::_ShowEntriesTable()
                 // Highlight a row that corresponds to hovered bar, or all rows that correspond to hovered perf test label.
                 if (_PlotHoverBatch == batch_index_sorted || _PlotHoverTestLabel)
                     ImGui::TableSetBgColor(ImGuiTableBgTarget_RowBg0, ImColor(style.Colors[ImGuiCol_TextSelectedBg]));
-                if (_PlotHoverTestLabel && ImGui::IsMouseClicked(ImGuiMouseButton_Left))
-                {
-                    ImGui::SetScrollHereY(0);
-                    _PlotHoverTestLabel = false;
-                }
             }
 
             ImGuiPerflogEntry* baseline_entry = GetEntryByBatchIdx(_BaselineBatchIndex, test_name);
@@ -1472,9 +1470,23 @@ void ImGuiPerfLog::_ShowEntriesTable()
                     }
                 }
             }
+
+            if (_PlotHoverTest == label_index && scroll_into_view)
+            {
+                ImGuiTable* table = ImGui::GetCurrentTable();
+                scroll_into_view_rect.Add(ImGui::TableGetCellBgRect(table, 0));
+            }
+
             ImGui::PopID();
         }
     }
+
+    if (scroll_into_view)
+    {
+        scroll_into_view_rect.Min.y -= header_row_height;   // FIXME-TABLE: Compensate for frozen header row covering a first content row scrolled into view.
+        ImGui::ScrollToRect(ImGui::GetCurrentWindow(), scroll_into_view_rect, ImGuiScrollFlags_NoScrollParent);
+    }
+
     ImGui::EndTable();
 }
 
