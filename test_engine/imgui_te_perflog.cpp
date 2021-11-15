@@ -506,21 +506,25 @@ static void PerflogSettingsHandler_WriteAll(ImGuiContext*, ImGuiSettingsHandler*
     buf->append("\n");
 }
 
-// Copied from ImPlot::BeginPlot().
+// Copied from ImPlot::SetupFinish().
 #ifdef IMGUI_TEST_ENGINE_ENABLE_IMPLOT
 static ImRect ImPlotGetYTickRect(int t, int y = 0)
 {
     ImPlotContext& gp = *GImPlot;
     ImPlotPlot& plot = *gp.CurrentPlot;
+    ImPlotAxis& ax = plot.YAxis(y);
+    const ImPlotTickCollection& tkc = ax.Ticks;
+    const bool opp = ax.IsOpposite();
     ImRect result(1.0f, 1.0f, -1.0f, -1.0f);
-    if (plot.YAxis[y].Present && !ImHasFlag(plot.YAxis[y].Flags, ImPlotAxisFlags_NoTickLabels))
+    if (ax.HasTickLabels())
     {
-        const float x_start = gp.YAxisReference[y] + (y == 0 ? (-gp.Style.LabelPadding.x - gp.YTicks[y].Ticks[t].LabelSize.x) : gp.Style.LabelPadding.x);
-        ImPlotTick *yt = &gp.YTicks[y].Ticks[t];
-        if (yt->ShowLabel && yt->PixelPos >= plot.PlotRect.Min.y - 1 && yt->PixelPos <= plot.PlotRect.Max.y + 1)
+        const ImPlotTick& tk = tkc.Ticks[t];
+        const float datum = ax.Datum1 + (opp ? gp.Style.LabelPadding.x : (-gp.Style.LabelPadding.x - tk.LabelSize.x));
+        if (tk.ShowLabel && tk.PixelPos >= plot.PlotRect.Min.y - 1 && tk.PixelPos <= plot.PlotRect.Max.y + 1)
         {
-            result.Min = ImVec2(x_start, yt->PixelPos - 0.5f * yt->LabelSize.y);
-            result.Max = result.Min + ImGui::CalcTextSize(gp.YTicks[y].GetText(t));
+            ImVec2 start(datum, tk.PixelPos - 0.5f * tk.LabelSize.y);
+            result.Min = start;
+            result.Max = start + tk.LabelSize;
         }
     }
     return result;
@@ -1125,19 +1129,14 @@ void ImGuiPerfLog::_ShowEntriesPlot()
     Str256 label;
     Str256 display_label;
 
-    ImPlot::SetNextPlotTicksY(0, _LabelsVisible.Size - 1, _LabelsVisible.Size, _LabelsVisible.Data);
-    if (ImPlot::GetCurrentContext()->Plots.GetByKey(ImGui::GetID("Perflog")) == NULL)
-        ImPlot::FitNextPlotAxes();   // Fit plot when appearing.
-    if (!ImPlot::BeginPlot("Perflog", NULL, NULL, ImVec2(-1, -1), ImPlotFlags_NoTitle, ImPlotAxisFlags_NoTickLabels))
+    ImPlot::PushStyleColor(ImPlotCol_AxisBgHovered, IM_COL32(0, 0, 0, 0));
+    ImPlot::PushStyleColor(ImPlotCol_AxisBgActive, IM_COL32(0, 0, 0, 0));
+    if (!ImPlot::BeginPlot("Perflog", ImVec2(-1, -1), ImPlotFlags_NoTitle))
         return;
 
-    static bool plot_initialized = false;
-    if (!plot_initialized)
-    {
-        plot_initialized = true;
-        ImPlotPlot& plot = *ImPlot::GetCurrentPlot();
-        plot.LegendLocation = ImPlotLocation_NorthEast;
-    }
+    ImPlot::SetupAxis(ImAxis_X1, NULL, ImPlotAxisFlags_NoTickLabels);
+    ImPlot::SetupAxisTicks(ImAxis_Y1, 0, _LabelsVisible.Size - 1, _LabelsVisible.Size, _LabelsVisible.Data);
+    ImPlot::SetupLegend(ImPlotLocation_NorthEast);
 
     // Amount of vertical space bars of one label will occupy. 1.0 would leave no space between bars of adjacent labels.
     const float occupy_h = 0.8f;
@@ -1201,7 +1200,7 @@ void ImGuiPerfLog::_ShowEntriesPlot()
     _PlotHoverTest = -1;
     _PlotHoverBatch = -1;
     _PlotHoverTestLabel = false;
-    bool can_highlight = !legend_hovered && ImPlot::IsPlotHovered();
+    bool can_highlight = !legend_hovered && (ImPlot::IsPlotHovered() || ImPlot::IsAxisHovered(ImAxis_Y1));
     ImDrawList* plot_draw_list = ImPlot::GetPlotDrawList();
 
     // Highlight bars when hovering a label.
@@ -1308,6 +1307,7 @@ void ImGuiPerfLog::_ShowEntriesPlot()
     }
 
     ImPlot::EndPlot();
+    ImPlot::PopStyleColor(2);
 #else
     ImGui::TextUnformatted("Not enabled because ImPlot is not available (IMGUI_TEST_ENGINE_ENABLE_IMPLOT is not defined).");
 #endif
