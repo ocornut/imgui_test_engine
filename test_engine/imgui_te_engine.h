@@ -273,11 +273,11 @@ static inline void ImGuiTestEngineUtil_AppendStrCompareOp(ImGuiTextBuffer& buf, 
 #define IM_CHECK_STR_OP(_LHS, _RHS, _OP, _RETURN, _FLAGS)           \
     do                                                              \
     {                                                               \
-        auto __lhs = _LHS;  /* Cache to avoid side effects */       \
-        auto __rhs = _RHS;                                          \
-        bool __res = strcmp(__lhs, __rhs) _OP 0;                    \
+        Str256 __lhs(_LHS);  /* Cache to avoid side effects */      \
+        Str256 __rhs(_RHS);                                         \
+        bool __res = strcmp(__lhs.c_str(), __rhs.c_str()) _OP 0;    \
         ImGuiTextBuffer expr_buf;                                   \
-        ImGuiTestEngineUtil_AppendStrCompareOp(expr_buf, #_LHS, __lhs, #_OP, #_RHS, __rhs); \
+        ImGuiTestEngineUtil_AppendStrCompareOp(expr_buf, #_LHS, __lhs.c_str(), #_OP, #_RHS, __rhs.c_str()); \
         if (ImGuiTestEngineHook_Check(__FILE__, __func__, __LINE__, _FLAGS, __res, expr_buf.c_str())) \
             IM_ASSERT(__res);                                               \
         if (_RETURN && !__res)                                              \
