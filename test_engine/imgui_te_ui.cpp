@@ -351,7 +351,7 @@ static void ShowTestGroup(ImGuiTestEngine* e, ImGuiTestGroup group, ImGuiTextFil
 
                 if (group == ImGuiTestGroup_Perfs && ImGui::MenuItem("View perflog"))
                 {
-                    e->PerfLog->ViewOnly(test->Name);
+                    e->PerfTool->ViewOnly(test->Name);
                     e->UiPerfToolOpen = true;
                 }
 
@@ -638,10 +638,10 @@ void    ImGuiTestEngine_ShowTestWindows(ImGuiTestEngine* e, bool* p_open)
             static bool perflog_data_loaded = false;
             if (ImGui::IsWindowAppearing() && !perflog_data_loaded)
             {
-                e->PerfLog->LoadCSV();
+                e->PerfTool->LoadCSV();
                 perflog_data_loaded = true;
             }
-            e->PerfLog->ShowUI(e);
+            e->PerfTool->ShowUI(e);
         }
         ImGui::End();
     }

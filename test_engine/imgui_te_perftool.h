@@ -4,18 +4,18 @@
 
 #define IMGUI_PERFLOG_FILENAME  "output/imgui_perflog.csv"
 
-struct ImGuiPerfLogColumnInfo;
+struct ImGuiPerfToolColumnInfo;
 struct ImGuiTestEngine;
 
 // [Internal] Perf log entry. Changes to this struct should be reflected in ImGuiTestContext::PerfCapture() and ImGuiTestEngine_Start().
-struct ImGuiPerflogEntry
+struct ImGuiPerfToolEntry
 {
-    ImU64                       Timestamp = 0;                  // Title of a particular batch of perflog entries.
+    ImU64                       Timestamp = 0;                  // Title of a particular batch of perftool entries.
     const char*                 Category = NULL;                // Name of category perf test is in.
     const char*                 TestName = NULL;                // Name of perf test.
     double                      DtDeltaMs = 0.0;                // Result of perf test.
-    double                      DtDeltaMsMin = +FLT_MAX;        // May be used by perflog.
-    double                      DtDeltaMsMax = -FLT_MAX;        // May be used by perflog.
+    double                      DtDeltaMsMin = +FLT_MAX;        // May be used by perftool.
+    double                      DtDeltaMsMax = -FLT_MAX;        // May be used by perftool.
     int                         NumSamples = 1;                 // Number aggregated samples.
     int                         PerfStressAmount = 0;           //
     const char*                 GitBranchName = NULL;           // Build information.
@@ -27,42 +27,42 @@ struct ImGuiPerflogEntry
     //const char*               DateMax = NULL;                 // Max date of combined entries, or NULL.
     double                      VsBaseline = 0.0;               // Percent difference vs baseline.
     bool                        DataOwner = false;              // Owns lifetime of pointers when set to true.
-    int                         LabelIndex = 0;                 // Index of TestName in ImGuiPerfLog::_LabelsVisible.
+    int                         LabelIndex = 0;                 // Index of TestName in ImGuiPerfTool::_LabelsVisible.
 
-    ImGuiPerflogEntry()         { }
-    ImGuiPerflogEntry(const ImGuiPerflogEntry& other);
-    ~ImGuiPerflogEntry();
+    ImGuiPerfToolEntry()        { }
+    ImGuiPerfToolEntry(const ImGuiPerfToolEntry& other);
+    ~ImGuiPerfToolEntry();
     void TakeDataOwnership();
 };
 
 // [Internal] Perf log batch.
-struct ImGuiPerflogBatch
+struct ImGuiPerfToolBatch
 {
     ImU64                       BatchID = 0;                    // Timestamp of the batch, or unique ID of the build in combined mode.
     int                         NumSamples = 0;                 // A number of unique batches aggregated.
     int                         BranchIndex = 0;                // For per-branch color mapping.
-    ImVector<ImGuiPerflogEntry> Entries;                        // Aggregated perf test entries. Order follows ImGuiPerfLog::_LabelsVisible order.
-    ~ImGuiPerflogBatch()        { Entries.clear_destruct(); }
+    ImVector<ImGuiPerfToolEntry> Entries;                       // Aggregated perf test entries. Order follows ImGuiPerfTool::_LabelsVisible order.
+    ~ImGuiPerfToolBatch()       { Entries.clear_destruct(); }
 };
 
-enum ImGuiPerflogDisplayType_
+enum ImGuiPerfToolDisplayType_
 {
-    ImGuiPerflogDisplayType_Simple,                             // Each run will be displayed individually.
-    ImGuiPerflogDisplayType_PerBranchColors,                    // Use one bar color per branch.
-    ImGuiPerflogDisplayType_CombineByBuildInfo,                 // Entries with same build information will be averaged.
+    ImGuiPerfToolDisplayType_Simple,                            // Each run will be displayed individually.
+    ImGuiPerfToolDisplayType_PerBranchColors,                   // Use one bar color per branch.
+    ImGuiPerfToolDisplayType_CombineByBuildInfo,                // Entries with same build information will be averaged.
 };
-typedef int ImGuiPerflogDisplayType;
+typedef int ImGuiPerfToolDisplayType;
 
-struct ImGuiPerfLog
+struct ImGuiPerfTool
 {
-    ImVector<ImGuiPerflogEntry> _SrcData;                       // Raw entries from CSV file (with string pointer into CSV data).
+    ImVector<ImGuiPerfToolEntry> _SrcData;                       // Raw entries from CSV file (with string pointer into CSV data).
     ImVector<const char*>       _Labels;
     ImVector<const char*>       _LabelsVisible;                 // ImPlot requires a pointer of all labels beforehand. Always contains a dummy "" entry at the end!
-    ImVector<ImGuiPerflogBatch> _Batches;
+    ImVector<ImGuiPerfToolBatch> _Batches;
     ImGuiStorage                _LabelBarCounts;                // Number bars each label will render.
     int                         _NumVisibleBuilds = 0;          // Cached number of visible builds.
     int                         _NumUniqueBuilds = 0;           // Cached number of unique builds.
-    ImGuiPerflogDisplayType     _DisplayType = ImGuiPerflogDisplayType_CombineByBuildInfo;
+    ImGuiPerfToolDisplayType    _DisplayType = ImGuiPerfToolDisplayType_CombineByBuildInfo;
     int                         _BaselineBatchIndex = 0;        // Index of baseline build.
     ImU64                       _BaselineTimestamp = 0;
     ImU64                       _BaselineBuildId = 0;
@@ -90,27 +90,27 @@ struct ImGuiPerfLog
     bool                        _ReportGenerating = false;
     ImGuiStorage                _Visibility;
 
-    ImGuiPerfLog();
-    ~ImGuiPerfLog();
+    ImGuiPerfTool();
+    ~ImGuiPerfTool();
 
     void        Clear();
     bool        LoadCSV(const char* filename = NULL);
-    void        AddEntry(ImGuiPerflogEntry* entry);
+    void        AddEntry(ImGuiPerfToolEntry* entry);
 
     void        ShowUI(ImGuiTestEngine* engine);
     void        ViewOnly(const char* perf_name);
     void        ViewOnly(const char** perf_names);
-    ImGuiPerflogEntry* GetEntryByBatchIdx(int idx, const char* perf_name = NULL);
+    ImGuiPerfToolEntry* GetEntryByBatchIdx(int idx, const char* perf_name = NULL);
     bool        SaveReport(const char* file_name, const char* image_file = NULL);
 
     void        _Rebuild();
-    bool        _IsVisibleBuild(ImGuiPerflogBatch* batch);
-    bool        _IsVisibleBuild(ImGuiPerflogEntry* batch);
-    bool        _IsVisibleTest(ImGuiPerflogEntry* entry);
+    bool        _IsVisibleBuild(ImGuiPerfToolBatch* batch);
+    bool        _IsVisibleBuild(ImGuiPerfToolEntry* batch);
+    bool        _IsVisibleTest(ImGuiPerfToolEntry* entry);
     void        _CalculateLegendAlignment();
     void        _ShowEntriesPlot();
     void        _ShowEntriesTable();
     void        _SetBaseline(int batch_index);
 };
 
-void    ImGuiTestEngine_PerflogAppendToCSV(ImGuiPerfLog* perf_log, ImGuiPerflogEntry* entry, const char* filename = NULL);
+void    ImGuiTestEngine_PerfToolAppendToCSV(ImGuiPerfTool* perf_log, ImGuiPerfToolEntry* entry, const char* filename = NULL);

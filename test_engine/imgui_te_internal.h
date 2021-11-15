@@ -7,7 +7,7 @@
 // FORWARD DECLARATIONS
 //-------------------------------------------------------------------------
 
-struct ImGuiPerfLog;
+struct ImGuiPerfTool;
 
 //-------------------------------------------------------------------------
 // DATA STRUCTURES
@@ -117,7 +117,7 @@ struct ImGuiTestEngine
     ImMovingAverage<double>     PerfDeltaTime500;
     ImMovingAverage<double>     PerfDeltaTime1000;
     ImMovingAverage<double>     PerfDeltaTime2000;
-    ImGuiPerfLog*               PerfLog = NULL;
+    ImGuiPerfTool*              PerfTool = NULL;
 
     // Tools
     bool                        ToolDebugRebootUiContext = false;   // Completely shutdown and recreate the dear imgui context in place

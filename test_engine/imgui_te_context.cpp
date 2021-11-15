@@ -2972,7 +2972,7 @@ void    ImGuiTestContext::PerfCapture(const char* category, const char* test_nam
         PerfStressAmount, build_info.Type, build_info.Cpu, build_info.OS, build_info.Compiler, build_info.Date);
     LogInfo("[PERF] Result: %+6.3f ms (from ref %+6.3f)", dt_delta_ms, dt_ref_ms);
 
-    ImGuiPerflogEntry entry;
+    ImGuiPerfToolEntry entry;
     entry.Timestamp = BatchStartTime;
     entry.Category = category ? category : Test->Category;
     entry.TestName = test_name ? test_name : Test->Name;
@@ -2984,7 +2984,7 @@ void    ImGuiTestContext::PerfCapture(const char* category, const char* test_nam
     entry.OS = build_info.OS;
     entry.Compiler = build_info.Compiler;
     entry.Date = build_info.Date;
-    ImGuiTestEngine_PerflogAppendToCSV(Engine->PerfLog, &entry, csv_file);
+    ImGuiTestEngine_PerfToolAppendToCSV(Engine->PerfTool, &entry, csv_file);
 
     // Disable the "Success" message
     RunFlags |= ImGuiTestRunFlags_NoSuccessMsg;

@@ -25,7 +25,7 @@ struct ImGuiTestInfoTask;
 struct ImGuiTestRunTask;
 
 struct ImGuiCaptureArgs;
-struct ImGuiPerfLog;
+struct ImGuiPerfTool;
 struct ImRect;
 
 typedef int ImGuiTestFlags;         // Flags: See ImGuiTestFlags_
@@ -341,7 +341,7 @@ void                ImGuiTestEngine_CoroutineStopRequest(ImGuiTestEngine* engine
 void                ImGuiTestEngine_UpdateHooks(ImGuiTestEngine* engine);
 void                ImGuiTestEngine_GetResult(ImGuiTestEngine* engine, int& count_tested, int& success_count);
 void                ImGuiTestEngine_PrintResultSummary(ImGuiTestEngine* engine);
-ImGuiPerfLog*       ImGuiTestEngine_GetPerfTool(ImGuiTestEngine* engine);
+ImGuiPerfTool*      ImGuiTestEngine_GetPerfTool(ImGuiTestEngine* engine);
 
 // Functions: UI
 void                ImGuiTestEngine_ShowTestWindows(ImGuiTestEngine* engine, bool* p_open);

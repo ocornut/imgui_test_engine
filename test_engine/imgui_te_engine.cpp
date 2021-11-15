@@ -114,7 +114,7 @@ ImGuiTestEngine::ImGuiTestEngine()
     PerfDeltaTime500.Init(500);
     PerfDeltaTime1000.Init(1000);
     PerfDeltaTime2000.Init(2000);
-    PerfLog = IM_NEW(ImGuiPerfLog);
+    PerfTool = IM_NEW(ImGuiPerfTool);
 }
 
 ImGuiTestEngine::~ImGuiTestEngine()
@@ -122,7 +122,7 @@ ImGuiTestEngine::~ImGuiTestEngine()
     IM_ASSERT(TestQueueCoroutine == NULL);
     if (UiContextBlind != NULL)
         ImGui::DestroyContext(UiContextBlind);
-    IM_DELETE(PerfLog);
+    IM_DELETE(PerfTool);
 }
 
 static void ImGuiTestEngine_UnbindImGuiContext(ImGuiTestEngine* engine, ImGuiContext* imgui_context);
@@ -1076,9 +1076,9 @@ ImGuiTest* ImGuiTestEngine_RegisterTest(ImGuiTestEngine* engine, const char* cat
     return t;
 }
 
-ImGuiPerfLog* ImGuiTestEngine_GetPerfTool(ImGuiTestEngine* engine)
+ImGuiPerfTool* ImGuiTestEngine_GetPerfTool(ImGuiTestEngine* engine)
 {
-    return engine->PerfLog;
+    return engine->PerfTool;
 }
 
 void ImGuiTestEngine_QueueTests(ImGuiTestEngine* engine, ImGuiTestGroup group, const char* filter_str, ImGuiTestRunFlags run_flags)

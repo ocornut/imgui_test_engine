@@ -28,7 +28,7 @@
 // ImGuiPerflogEntry
 //-------------------------------------------------------------------------
 
-void ImGuiPerflogEntry::TakeDataOwnership()
+void ImGuiPerfToolEntry::TakeDataOwnership()
 {
     if (DataOwner)
         return;
@@ -43,7 +43,7 @@ void ImGuiPerflogEntry::TakeDataOwnership()
     Date = ImStrdup(Date);
 }
 
-ImGuiPerflogEntry::ImGuiPerflogEntry(const ImGuiPerflogEntry& other)
+ImGuiPerfToolEntry::ImGuiPerfToolEntry(const ImGuiPerfToolEntry& other)
 {
     Timestamp = other.Timestamp;
     Category = other.Category;
@@ -67,7 +67,7 @@ ImGuiPerflogEntry::ImGuiPerflogEntry(const ImGuiPerflogEntry& other)
         TakeDataOwnership();
 }
 
-ImGuiPerflogEntry::~ImGuiPerflogEntry()
+ImGuiPerfToolEntry::~ImGuiPerfToolEntry()
 {
     if (!DataOwner)
         return;
@@ -85,10 +85,10 @@ ImGuiPerflogEntry::~ImGuiPerflogEntry()
 // Types
 //-------------------------------------------------------------------------
 
-typedef ImGuiID(*HashEntryFn)(ImGuiPerflogEntry* entry);
-typedef void(*FormatEntryLabelFn)(ImGuiPerfLog* perflog, Str* result, ImGuiPerflogEntry* entry);
+typedef ImGuiID(*HashEntryFn)(ImGuiPerfToolEntry* entry);
+typedef void(*FormatEntryLabelFn)(ImGuiPerfTool* perftool, Str* result, ImGuiPerfToolEntry* entry);
 
-struct ImGuiPerfLogColumnInfo
+struct ImGuiPerfToolColumnInfo
 {
     const char*     Title;
     int             Offset;
@@ -96,27 +96,27 @@ struct ImGuiPerfLogColumnInfo
     bool            ShowAlways;
 
     template<typename T>
-    T GetValue(const ImGuiPerflogEntry* entry) const { return *(T*)((const char*)entry + Offset); }
+    T GetValue(const ImGuiPerfToolEntry* entry) const { return *(T*)((const char*)entry + Offset); }
 };
 
 // Update _ShowEntriesTable() and SaveReport() when adding new entries.
-static const ImGuiPerfLogColumnInfo PerfLogColumnInfo[] =
+static const ImGuiPerfToolColumnInfo PerfToolColumnInfo[] =
 {
-    { /* 00 */ "Test Name",   IM_OFFSETOF(ImGuiPerflogEntry, TestName),         ImGuiDataType_COUNT,  true  },
-    { /* 01 */ "Branch",      IM_OFFSETOF(ImGuiPerflogEntry, GitBranchName),    ImGuiDataType_COUNT,  true  },
-    { /* 02 */ "Compiler",    IM_OFFSETOF(ImGuiPerflogEntry, Compiler),         ImGuiDataType_COUNT,  true  },
-    { /* 03 */ "OS",          IM_OFFSETOF(ImGuiPerflogEntry, OS),               ImGuiDataType_COUNT,  true  },
-    { /* 04 */ "CPU",         IM_OFFSETOF(ImGuiPerflogEntry, Cpu),              ImGuiDataType_COUNT,  true  },
-    { /* 05 */ "Build",       IM_OFFSETOF(ImGuiPerflogEntry, BuildType),        ImGuiDataType_COUNT,  true  },
-    { /* 06 */ "Stress",      IM_OFFSETOF(ImGuiPerflogEntry, PerfStressAmount), ImGuiDataType_S32,    true  },
-    { /* 07 */ "Avg ms",      IM_OFFSETOF(ImGuiPerflogEntry, DtDeltaMs),        ImGuiDataType_Double, true  },
-    { /* 08 */ "Min ms",      IM_OFFSETOF(ImGuiPerflogEntry, DtDeltaMsMin),     ImGuiDataType_Double, false },
-    { /* 09 */ "Max ms",      IM_OFFSETOF(ImGuiPerflogEntry, DtDeltaMsMax),     ImGuiDataType_Double, false },
-    { /* 10 */ "Samples",     IM_OFFSETOF(ImGuiPerflogEntry, NumSamples),       ImGuiDataType_S32,    false },
-    { /* 11 */ "VS Baseline", IM_OFFSETOF(ImGuiPerflogEntry, VsBaseline),       ImGuiDataType_Float,  true  },
+    { /* 00 */ "Test Name",   IM_OFFSETOF(ImGuiPerfToolEntry, TestName),         ImGuiDataType_COUNT,  true  },
+    { /* 01 */ "Branch",      IM_OFFSETOF(ImGuiPerfToolEntry, GitBranchName),    ImGuiDataType_COUNT,  true  },
+    { /* 02 */ "Compiler",    IM_OFFSETOF(ImGuiPerfToolEntry, Compiler),         ImGuiDataType_COUNT,  true  },
+    { /* 03 */ "OS",          IM_OFFSETOF(ImGuiPerfToolEntry, OS),               ImGuiDataType_COUNT,  true  },
+    { /* 04 */ "CPU",         IM_OFFSETOF(ImGuiPerfToolEntry, Cpu),              ImGuiDataType_COUNT,  true  },
+    { /* 05 */ "Build",       IM_OFFSETOF(ImGuiPerfToolEntry, BuildType),        ImGuiDataType_COUNT,  true  },
+    { /* 06 */ "Stress",      IM_OFFSETOF(ImGuiPerfToolEntry, PerfStressAmount), ImGuiDataType_S32,    true  },
+    { /* 07 */ "Avg ms",      IM_OFFSETOF(ImGuiPerfToolEntry, DtDeltaMs),        ImGuiDataType_Double, true  },
+    { /* 08 */ "Min ms",      IM_OFFSETOF(ImGuiPerfToolEntry, DtDeltaMsMin),     ImGuiDataType_Double, false },
+    { /* 09 */ "Max ms",      IM_OFFSETOF(ImGuiPerfToolEntry, DtDeltaMsMax),     ImGuiDataType_Double, false },
+    { /* 10 */ "Samples",     IM_OFFSETOF(ImGuiPerfToolEntry, NumSamples),       ImGuiDataType_S32,    false },
+    { /* 11 */ "VS Baseline", IM_OFFSETOF(ImGuiPerfToolEntry, VsBaseline),       ImGuiDataType_Float,  true  },
 };
 
-static const char* PerfLogReportDefaultOutputPath = "./output/capture_perf_report.html";
+static const char* PerfToolReportDefaultOutputPath = "./output/capture_perf_report.html";
 
 // Tri-state button. Copied and modified ButtonEx().
 static bool Button3(const char* label, int* value)
@@ -167,7 +167,7 @@ static bool Button3(const char* label, int* value)
     return pressed;
 }
 
-static ImGuiID GetBuildID(const ImGuiPerflogEntry* entry)
+static ImGuiID GetBuildID(const ImGuiPerfToolEntry* entry)
 {
     IM_ASSERT(entry != NULL);
     ImGuiID build_id = ImHashStr(entry->BuildType);
@@ -178,7 +178,7 @@ static ImGuiID GetBuildID(const ImGuiPerflogEntry* entry)
     return build_id;
 }
 
-static ImGuiID GetBuildID(const ImGuiPerflogBatch* batch)
+static ImGuiID GetBuildID(const ImGuiPerfToolBatch* batch)
 {
     IM_ASSERT(batch != NULL);
     IM_ASSERT(!batch->Entries.empty());
@@ -186,25 +186,25 @@ static ImGuiID GetBuildID(const ImGuiPerflogBatch* batch)
 }
 
 // Batch ID depends on display type. It is either a build ID (when combinding by build type) or batch timestamp otherwise.
-static ImGuiID GetBatchID(const ImGuiPerfLog* perflog, const ImGuiPerflogEntry* entry)
+static ImGuiID GetBatchID(const ImGuiPerfTool* perftool, const ImGuiPerfToolEntry* entry)
 {
-    IM_ASSERT(perflog != NULL);
+    IM_ASSERT(perftool != NULL);
     IM_ASSERT(entry != NULL);
-    if (perflog->_DisplayType == ImGuiPerflogDisplayType_CombineByBuildInfo)
+    if (perftool->_DisplayType == ImGuiPerfToolDisplayType_CombineByBuildInfo)
         return GetBuildID(entry);
     else
         return (ImU32)entry->Timestamp;
 }
 
-static int PerflogComparerStr(const void* a, const void* b)
+static int PerfToolComparerStr(const void* a, const void* b)
 {
     return strcmp(*(const char**)b, *(const char**)a);
 }
 
-static int IMGUI_CDECL PerflogComparerByEntryInfo(const void* lhs, const void* rhs)
+static int IMGUI_CDECL PerfToolComparerByEntryInfo(const void* lhs, const void* rhs)
 {
-    const ImGuiPerflogEntry* a = (const ImGuiPerflogEntry*)lhs;
-    const ImGuiPerflogEntry* b = (const ImGuiPerflogEntry*)rhs;
+    const ImGuiPerfToolEntry* a = (const ImGuiPerfToolEntry*)lhs;
+    const ImGuiPerfToolEntry* b = (const ImGuiPerfToolEntry*)rhs;
 
     // While build ID does include git branch it wont ensure branches are grouped together, therefore we do branch
     // sorting manually.
@@ -225,20 +225,20 @@ static int IMGUI_CDECL PerflogComparerByEntryInfo(const void* lhs, const void* r
     return result;
 }
 
-static ImGuiPerfLog* PerfLogInstance = NULL;
+static ImGuiPerfTool* PerfToolInstance = NULL;
 static int IMGUI_CDECL CompareWithSortSpecs(const void* lhs, const void* rhs)
 {
-    IM_ASSERT(PerfLogInstance != NULL);
-    const ImGuiTableSortSpecs* sort_specs = PerfLogInstance->_InfoTableSortSpecs;
+    IM_ASSERT(PerfToolInstance != NULL);
+    const ImGuiTableSortSpecs* sort_specs = PerfToolInstance->_InfoTableSortSpecs;
 
     for (int i = 0; i < sort_specs->SpecsCount; i++)
     {
         const ImGuiTableColumnSortSpecs* specs = &sort_specs->Specs[i];
-        const ImGuiPerfLogColumnInfo& col_info = PerfLogColumnInfo[specs->ColumnIndex];
-        const ImGuiPerflogBatch* batch_a = &PerfLogInstance->_Batches[*(int*)lhs];
-        const ImGuiPerflogBatch* batch_b = &PerfLogInstance->_Batches[*(int*)rhs];
-        ImGuiPerflogEntry* a = &batch_a->Entries.Data[PerfLogInstance->_InfoTableNowSortingLabelIdx];
-        ImGuiPerflogEntry* b = &batch_b->Entries.Data[PerfLogInstance->_InfoTableNowSortingLabelIdx];
+        const ImGuiPerfToolColumnInfo& col_info = PerfToolColumnInfo[specs->ColumnIndex];
+        const ImGuiPerfToolBatch* batch_a = &PerfToolInstance->_Batches[*(int*)lhs];
+        const ImGuiPerfToolBatch* batch_b = &PerfToolInstance->_Batches[*(int*)rhs];
+        ImGuiPerfToolEntry* a = &batch_a->Entries.Data[PerfToolInstance->_InfoTableNowSortingLabelIdx];
+        ImGuiPerfToolEntry* b = &batch_b->Entries.Data[PerfToolInstance->_InfoTableNowSortingLabelIdx];
         if (specs->SortDirection == ImGuiSortDirection_Ascending)
             ImSwap(a, b);
 
@@ -281,7 +281,7 @@ static bool IsDateValid(const char* date)
     return true;
 }
 
-static float FormatVsBaseline(ImGuiPerflogEntry* entry, ImGuiPerflogEntry* baseline_entry, Str& out_label)
+static float FormatVsBaseline(ImGuiPerfToolEntry* entry, ImGuiPerfToolEntry* baseline_entry, Str& out_label)
 {
     if (baseline_entry == NULL)
     {
@@ -307,21 +307,21 @@ static float FormatVsBaseline(ImGuiPerflogEntry* entry, ImGuiPerflogEntry* basel
 }
 
 #ifdef IMGUI_TEST_ENGINE_ENABLE_IMPLOT
-static void PerflogFormatBuildInfo(ImGuiPerfLog* perflog, Str* result, ImGuiPerflogBatch* batch)
+static void PerfToolFormatBuildInfo(ImGuiPerfTool* perftool, Str* result, ImGuiPerfToolBatch* batch)
 {
-    IM_ASSERT(perflog != NULL);
+    IM_ASSERT(perftool != NULL);
     IM_ASSERT(result != NULL);
     IM_ASSERT(batch != NULL);
     IM_ASSERT(batch->Entries.Size > 0);
-    ImGuiPerflogEntry* entry = &batch->Entries.Data[0];
+    ImGuiPerfToolEntry* entry = &batch->Entries.Data[0];
     Str64f legend_format("x%%-%dd %%-%ds %%-%ds %%-%ds %%-%ds %%-%ds %%s%%s%%s%%s(%%-%dd sample%%s)%%s",
-        perflog->_AlignStress, perflog->_AlignType, perflog->_AlignCpu, perflog->_AlignOs, perflog->_AlignCompiler, perflog->_AlignBranch,
-        perflog->_AlignSamples);
+        perftool->_AlignStress, perftool->_AlignType, perftool->_AlignCpu, perftool->_AlignOs, perftool->_AlignCompiler,
+        perftool->_AlignBranch, perftool->_AlignSamples);
     result->appendf(legend_format.c_str(), entry->PerfStressAmount, entry->BuildType, entry->Cpu, entry->OS,
         entry->Compiler, entry->GitBranchName, entry->Date,
 #if 0
         // Show min-max dates.
-        perflog->_CombineByBuildInfo ? " - " : "",
+        perftool->_CombineByBuildInfo ? " - " : "",
         entry->DateMax ? entry->DateMax : "",
 #else
         "", "",
@@ -329,19 +329,19 @@ static void PerflogFormatBuildInfo(ImGuiPerfLog* perflog, Str* result, ImGuiPerf
         *entry->Date ? " " : "",
         batch->NumSamples,
         batch->NumSamples > 1 ? "s" : "",                               // Singular/plural form of "sample(s)"
-        batch->NumSamples > 1 || perflog->_AlignSamples == 1 ? "" : " " // Space after legend entry to separate * marking baseline
+        batch->NumSamples > 1 || perftool->_AlignSamples == 1 ? "" : " " // Space after legend entry to separate * marking baseline
     );
 }
 #endif
 
-static int PerfLogCountBuilds(ImGuiPerfLog* perflog, bool only_visible)
+static int PerfToolCountBuilds(ImGuiPerfTool* perftool, bool only_visible)
 {
     int num_builds = 0;
     ImU64 build_id = 0;
-    for (ImGuiPerflogBatch& batch : perflog->_Batches)
+    for (ImGuiPerfToolBatch& batch : perftool->_Batches)
         if (build_id != GetBuildID(&batch))
         {
-            if (!only_visible || perflog->_IsVisibleBuild(&batch))
+            if (!only_visible || perftool->_IsVisibleBuild(&batch))
                 num_builds++;
             build_id = GetBuildID(&batch);
         }
@@ -366,7 +366,7 @@ static bool Date(const char* label, char* date, int date_len, bool valid)
     return date_changed;
 }
 
-static void RenderFilterInput(ImGuiPerfLog* perf, const char* hint, float width = -FLT_MIN)
+static void RenderFilterInput(ImGuiPerfTool* perf, const char* hint, float width = -FLT_MIN)
 {
     if (ImGui::IsWindowAppearing())
         strcpy(perf->_Filter, "");
@@ -376,7 +376,7 @@ static void RenderFilterInput(ImGuiPerfLog* perf, const char* hint, float width 
         ImGui::SetKeyboardFocusHere();
 }
 
-static bool RenderMultiSelectFilter(ImGuiPerfLog* perf, const char* filter_hint, ImVector<const char*>* labels)
+static bool RenderMultiSelectFilter(ImGuiPerfTool* perf, const char* filter_hint, ImVector<const char*>* labels)
 {
     ImGuiContext& g = *ImGui::GetCurrentContext();
     ImGuiIO& io = ImGui::GetIO();
@@ -443,8 +443,8 @@ static bool RenderMultiSelectFilter(ImGuiPerfLog* perf, const char* filter_hint,
 
 static void PerflogSettingsHandler_ClearAll(ImGuiContext*, ImGuiSettingsHandler* ini_handler)
 {
-    ImGuiPerfLog* perflog = (ImGuiPerfLog*)ini_handler->UserData;
-    perflog->_Visibility.Clear();
+    ImGuiPerfTool* perftool = (ImGuiPerfTool*)ini_handler->UserData;
+    perftool->_Visibility.Clear();
 }
 
 static void* PerflogSettingsHandler_ReadOpen(ImGuiContext*, ImGuiSettingsHandler*, const char*)
@@ -454,44 +454,44 @@ static void* PerflogSettingsHandler_ReadOpen(ImGuiContext*, ImGuiSettingsHandler
 
 static void PerflogSettingsHandler_ReadLine(ImGuiContext*, ImGuiSettingsHandler* ini_handler, void*, const char* line)
 {
-    ImGuiPerfLog* perflog = (ImGuiPerfLog*)ini_handler->UserData;
+    ImGuiPerfTool* perftool = (ImGuiPerfTool*)ini_handler->UserData;
     char buf[128];
     int visible, display_type;
-    /**/ if (sscanf(line, "DateFrom=%10s", perflog->_FilterDateFrom))               { }
-    else if (sscanf(line, "DateTo=%10s", perflog->_FilterDateTo))                   { }
-    else if (sscanf(line, "DisplayType=%d", &display_type))                         { perflog->_DisplayType = display_type; }
-    else if (sscanf(line, "BaselineBuildId=%llu", &perflog->_BaselineBuildId))      { }
-    else if (sscanf(line, "BaselineTimestamp=%llu", &perflog->_BaselineTimestamp))  { }
-    else if (sscanf(line, "TestVisibility=%[^,]=%d", buf, &visible))                { perflog->_Visibility.SetBool(ImHashStr(buf), !!visible); }
-    else if (sscanf(line, "BuildVisibility=%[^,]=%d", buf, &visible))               { perflog->_Visibility.SetBool(ImHashStr(buf), !!visible); }
+    /**/ if (sscanf(line, "DateFrom=%10s", perftool->_FilterDateFrom))               { }
+    else if (sscanf(line, "DateTo=%10s", perftool->_FilterDateTo))                   { }
+    else if (sscanf(line, "DisplayType=%d", &display_type))                         { perftool->_DisplayType = display_type; }
+    else if (sscanf(line, "BaselineBuildId=%llu", &perftool->_BaselineBuildId))      { }
+    else if (sscanf(line, "BaselineTimestamp=%llu", &perftool->_BaselineTimestamp))  { }
+    else if (sscanf(line, "TestVisibility=%[^,]=%d", buf, &visible))                { perftool->_Visibility.SetBool(ImHashStr(buf), !!visible); }
+    else if (sscanf(line, "BuildVisibility=%[^,]=%d", buf, &visible))               { perftool->_Visibility.SetBool(ImHashStr(buf), !!visible); }
 }
 
 static void PerflogSettingsHandler_ApplyAll(ImGuiContext*, ImGuiSettingsHandler* ini_handler)
 {
-    ImGuiPerfLog* perflog = (ImGuiPerfLog*)ini_handler->UserData;
-    perflog->_Batches.resize(0);
-    perflog->_SetBaseline(-1);
+    ImGuiPerfTool* perftool = (ImGuiPerfTool*)ini_handler->UserData;
+    perftool->_Batches.resize(0);
+    perftool->_SetBaseline(-1);
 }
 
 static void PerflogSettingsHandler_WriteAll(ImGuiContext*, ImGuiSettingsHandler* ini_handler, ImGuiTextBuffer* buf)
 {
-    ImGuiPerfLog* perflog = (ImGuiPerfLog*)ini_handler->UserData;
-    if (perflog->_Batches.empty())
+    ImGuiPerfTool* perftool = (ImGuiPerfTool*)ini_handler->UserData;
+    if (perftool->_Batches.empty())
         return;
     buf->appendf("[%s][Data]\n", ini_handler->TypeName);
-    buf->appendf("DateFrom=%s\n", perflog->_FilterDateFrom);
-    buf->appendf("DateTo=%s\n", perflog->_FilterDateTo);
-    buf->appendf("DisplayType=%d\n", perflog->_DisplayType);
-    buf->appendf("BaselineBuildId=%llu\n", perflog->_BaselineBuildId);
-    buf->appendf("BaselineTimestamp=%llu\n", perflog->_BaselineTimestamp);
-    for (const char* label : perflog->_Labels)
-        buf->appendf("TestVisibility=%s,%d\n", label, perflog->_Visibility.GetBool(ImHashStr(label), true));
+    buf->appendf("DateFrom=%s\n", perftool->_FilterDateFrom);
+    buf->appendf("DateTo=%s\n", perftool->_FilterDateTo);
+    buf->appendf("DisplayType=%d\n", perftool->_DisplayType);
+    buf->appendf("BaselineBuildId=%llu\n", perftool->_BaselineBuildId);
+    buf->appendf("BaselineTimestamp=%llu\n", perftool->_BaselineTimestamp);
+    for (const char* label : perftool->_Labels)
+        buf->appendf("TestVisibility=%s,%d\n", label, perftool->_Visibility.GetBool(ImHashStr(label), true));
 
-    ImGuiStorage& temp_set = perflog->_TempSet;
+    ImGuiStorage& temp_set = perftool->_TempSet;
     temp_set.Data.clear();
-    for (ImGuiPerflogBatch& batch : perflog->_Batches)
+    for (ImGuiPerfToolBatch& batch : perftool->_Batches)
     {
-        ImGuiPerflogEntry* entry = &batch.Entries.Data[0];
+        ImGuiPerfToolEntry* entry = &batch.Entries.Data[0];
         const char* properties[] = { entry->GitBranchName, entry->BuildType, entry->Cpu, entry->OS, entry->Compiler };
         for (int i = 0; i < IM_ARRAYSIZE(properties); i++)
         {
@@ -499,7 +499,7 @@ static void PerflogSettingsHandler_WriteAll(ImGuiContext*, ImGuiSettingsHandler*
             if (!temp_set.GetBool(hash))
             {
                 temp_set.SetBool(hash, true);
-                buf->appendf("BuildVisibility=%s,%d\n", properties[i], perflog->_Visibility.GetBool(hash, true));
+                buf->appendf("BuildVisibility=%s,%d\n", properties[i], perftool->_Visibility.GetBool(hash, true));
             }
         }
     }
@@ -531,7 +531,7 @@ static ImRect ImPlotGetYTickRect(int t, int y = 0)
 }
 #endif
 
-ImGuiPerfLog::ImGuiPerfLog()
+ImGuiPerfTool::ImGuiPerfTool()
 {
     ImGuiContext& g = *GImGui;
 
@@ -549,13 +549,13 @@ ImGuiPerfLog::ImGuiPerfLog()
     Clear();
 }
 
-ImGuiPerfLog::~ImGuiPerfLog()
+ImGuiPerfTool::~ImGuiPerfTool()
 {
     _SrcData.clear_destruct();
     _Batches.clear_destruct();
 }
 
-void ImGuiPerfLog::AddEntry(ImGuiPerflogEntry* entry)
+void ImGuiPerfTool::AddEntry(ImGuiPerfToolEntry* entry)
 {
     if (strcmp(_FilterDateFrom, entry->Date) > 0)
         ImStrncpy(_FilterDateFrom, entry->Date, IM_ARRAYSIZE(_FilterDateFrom));
@@ -567,7 +567,7 @@ void ImGuiPerfLog::AddEntry(ImGuiPerflogEntry* entry)
     _Batches.clear_destruct();
 }
 
-void ImGuiPerfLog::_Rebuild()
+void ImGuiPerfTool::_Rebuild()
 {
     if (_SrcData.empty())
         return;
@@ -581,7 +581,7 @@ void ImGuiPerfLog::_Rebuild()
 
     // Gather all visible labels. Legend batches will store data in this order.
     temp_set.Data.resize(0);    // name_id:IsLabelSeen
-    for (ImGuiPerflogEntry& entry : _SrcData)
+    for (ImGuiPerfToolEntry& entry : _SrcData)
     {
         ImGuiID name_id = ImHashStr(entry.TestName);
         if (!temp_set.GetBool(name_id))
@@ -595,8 +595,8 @@ void ImGuiPerfLog::_Rebuild()
     int num_visible_labels = _LabelsVisible.Size;
 
     // Labels are sorted in reverse order so they appear to be oredered from top down.
-    ImQsort(_Labels.Data, _Labels.Size, sizeof(const char*), &PerflogComparerStr);
-    ImQsort(_LabelsVisible.Data, num_visible_labels, sizeof(const char*), &PerflogComparerStr);
+    ImQsort(_Labels.Data, _Labels.Size, sizeof(const char*), &PerfToolComparerStr);
+    ImQsort(_LabelsVisible.Data, num_visible_labels, sizeof(const char*), &PerfToolComparerStr);
 
     // _SrcData vector stores sorted raw entries of imgui_perflog.csv. Sorting is very important,
     // algorithm depends on data being correctly sorted. Sorting _SrcData is OK, because it is only
@@ -609,16 +609,16 @@ void ImGuiPerfLog::_Rebuild()
     // This results in a neatly partitioned dataset where similar data is grouped together and where perf test order
     // is consistent in all batches. Sorting by build ID _before_ timestamp is also important as we will be aggregating
     // entries by build ID instead of timestamp, when appropriate display mode is enabled.
-    ImQsort(_SrcData.Data, _SrcData.Size, sizeof(ImGuiPerflogEntry), &PerflogComparerByEntryInfo);
+    ImQsort(_SrcData.Data, _SrcData.Size, sizeof(ImGuiPerfToolEntry), &PerfToolComparerByEntryInfo);
 
     // Sort groups of entries into batches.
-    const bool combine_by_build_info = _DisplayType == ImGuiPerflogDisplayType_CombineByBuildInfo;
+    const bool combine_by_build_info = _DisplayType == ImGuiPerfToolDisplayType_CombineByBuildInfo;
     _LabelBarCounts.Data.resize(0);
 
     // Process all batches. `entry` is always a first batch element (guaranteed by _SrcData being sorted by timestamp).
     // At the end of this loop we fast-forward until next batch (first entry having different batch id (which is a
     // timestamp or build info)).
-    for (ImGuiPerflogEntry* entry = _SrcData.begin(); entry < _SrcData.end();)
+    for (ImGuiPerfToolEntry* entry = _SrcData.begin(); entry < _SrcData.end();)
     {
         // Filtered out entries can be safely ignored.
         if (_FilterDateFrom[0] && strcmp(entry->Date, _FilterDateFrom) < 0)
@@ -627,7 +627,7 @@ void ImGuiPerfLog::_Rebuild()
             continue;
 
         _Batches.resize(_Batches.Size + 1);
-        ImGuiPerflogBatch& batch = _Batches.back();
+        ImGuiPerfToolBatch& batch = _Batches.back();
         memset(&batch, 0, sizeof(batch));
         batch.BatchID = GetBatchID(this, entry);
         batch.Entries.resize(num_visible_labels);
@@ -636,7 +636,7 @@ void ImGuiPerfLog::_Rebuild()
         // the following loop when entries are being combined by build info.
         for (int i = 0; i < num_visible_labels; i++)
         {
-            ImGuiPerflogEntry* e = &batch.Entries.Data[i];
+            ImGuiPerfToolEntry* e = &batch.Entries.Data[i];
             *e = *entry;
             e->DtDeltaMs = 0;
             e->NumSamples = 0;
@@ -651,8 +651,8 @@ void ImGuiPerfLog::_Rebuild()
             // This inner loop walks all antries that belong to current batch. Due to sorting we are sure that batch
             // always starts with `entry`, and all entries that belong to a batch (whether we combine by build info or not)
             // will be grouped in _SrcData.
-            ImGuiPerflogEntry* aggregate = &batch.Entries.Data[i];
-            for (ImGuiPerflogEntry* e = entry; e < _SrcData.end() && GetBatchID(this, e) == batch.BatchID; e++)
+            ImGuiPerfToolEntry* aggregate = &batch.Entries.Data[i];
+            for (ImGuiPerfToolEntry* e = entry; e < _SrcData.end() && GetBatchID(this, e) == batch.BatchID; e++)
             {
                 if (strcmp(e->TestName, aggregate->TestName) != 0)
                     continue;
@@ -667,7 +667,7 @@ void ImGuiPerfLog::_Rebuild()
         if (combine_by_build_info)
             for (int i = 0; i < num_visible_labels; i++)
             {
-                ImGuiPerflogEntry* aggregate = &batch.Entries.Data[i];
+                ImGuiPerfToolEntry* aggregate = &batch.Entries.Data[i];
                 if (aggregate->NumSamples > 0)
                     aggregate->DtDeltaMs /= aggregate->NumSamples;
             }
@@ -700,23 +700,23 @@ void ImGuiPerfLog::_Rebuild()
     _LabelsVisible.push_back("harmonic mean");
     _LabelsVisible.push_back("arithmetic mean");
     _LabelsVisible.push_back("geometric mean");
-    for (ImGuiPerflogBatch& batch : _Batches)
+    for (ImGuiPerfToolBatch& batch : _Batches)
     {
-        batch.Entries.push_back(ImGuiPerflogEntry());
-        batch.Entries.push_back(ImGuiPerflogEntry());
-        batch.Entries.push_back(ImGuiPerflogEntry());
+        batch.Entries.push_back(ImGuiPerfToolEntry());
+        batch.Entries.push_back(ImGuiPerfToolEntry());
+        batch.Entries.push_back(ImGuiPerfToolEntry());
 
-        ImGuiPerflogEntry* geometric_mean = &batch.Entries.Data[batch.Entries.Size - 1];
+        ImGuiPerfToolEntry* geometric_mean = &batch.Entries.Data[batch.Entries.Size - 1];
         *geometric_mean = batch.Entries.Data[0];
         geometric_mean->LabelIndex = _LabelsVisible.Size - 1;
         geometric_mean->TestName = _LabelsVisible.Data[geometric_mean->LabelIndex];
 
-        ImGuiPerflogEntry* arithmetic_mean = &batch.Entries.Data[batch.Entries.Size - 2];
+        ImGuiPerfToolEntry* arithmetic_mean = &batch.Entries.Data[batch.Entries.Size - 2];
         *arithmetic_mean = batch.Entries.Data[0];
         arithmetic_mean->LabelIndex = _LabelsVisible.Size - 2;
         arithmetic_mean->TestName = _LabelsVisible.Data[arithmetic_mean->LabelIndex];
 
-        ImGuiPerflogEntry* harmonic_mean = &batch.Entries.Data[batch.Entries.Size - 3];
+        ImGuiPerfToolEntry* harmonic_mean = &batch.Entries.Data[batch.Entries.Size - 3];
         *harmonic_mean = batch.Entries.Data[0];
         harmonic_mean->LabelIndex = _LabelsVisible.Size - 3;
         harmonic_mean->TestName = _LabelsVisible.Data[harmonic_mean->LabelIndex];
@@ -726,7 +726,7 @@ void ImGuiPerfLog::_Rebuild()
         double delta_rec = 0.0;
         for (int i = 0; i < batch.Entries.Size - 3; i++)
         {
-            ImGuiPerflogEntry* entry = &batch.Entries.Data[i];
+            ImGuiPerfToolEntry* entry = &batch.Entries.Data[i];
             delta_sum += entry->DtDeltaMs;
             delta_prd *= entry->DtDeltaMs;
             delta_rec += 1 / entry->DtDeltaMs;
@@ -737,11 +737,11 @@ void ImGuiPerfLog::_Rebuild()
     }
 
     // Find number of bars (batches) each label will render.
-    for (ImGuiPerflogBatch& batch : _Batches)
+    for (ImGuiPerfToolBatch& batch : _Batches)
     {
         for (int i = 0; i < _LabelsVisible.Size; i++)
         {
-            ImGuiPerflogEntry* aggregate = &batch.Entries.Data[i];
+            ImGuiPerfToolEntry* aggregate = &batch.Entries.Data[i];
             ImGuiID label_id = ImHashStr(aggregate->TestName);
             int num_bars = _LabelBarCounts.GetInt(label_id) + 1;
             if (_IsVisibleBuild(&batch))
@@ -753,9 +753,9 @@ void ImGuiPerfLog::_Rebuild()
     temp_set.Data.resize(0);    // ImHashStr(branch_name):linear_index
     int branch_index_last = 0;
     _BaselineBatchIndex = -1;
-    for (ImGuiPerflogBatch& batch : _Batches)
+    for (ImGuiPerfToolBatch& batch : _Batches)
     {
-        ImGuiPerflogEntry* entry = &batch.Entries.Data[0];
+        ImGuiPerfToolEntry* entry = &batch.Entries.Data[0];
         ImGuiID branch_hash = ImHashStr(entry->GitBranchName);
         batch.BranchIndex = temp_set.GetInt(branch_hash, -1);
         if (batch.BranchIndex < 0)
@@ -771,25 +771,25 @@ void ImGuiPerfLog::_Rebuild()
 
     // When per-branch colors are enabled we aggregate sample counts and set them to all batches with identical build info.
     temp_set.Data.resize(0);    // build_id:TotalSamples
-    if (_DisplayType == ImGuiPerflogDisplayType_PerBranchColors)
+    if (_DisplayType == ImGuiPerfToolDisplayType_PerBranchColors)
     {
         // Aggregate totals to temp_set.
-        for (ImGuiPerflogBatch& batch : _Batches)
+        for (ImGuiPerfToolBatch& batch : _Batches)
         {
             ImGuiID build_id = GetBuildID(&batch);
             temp_set.SetInt(build_id, temp_set.GetInt(build_id, 0) + batch.NumSamples);
         }
 
         // Fill in batch sample counts.
-        for (ImGuiPerflogBatch& batch : _Batches)
+        for (ImGuiPerfToolBatch& batch : _Batches)
         {
             ImGuiID build_id = GetBuildID(&batch);
             batch.NumSamples = temp_set.GetInt(build_id, 1);
         }
     }
 
-    _NumVisibleBuilds = PerfLogCountBuilds(this, true);
-    _NumUniqueBuilds = PerfLogCountBuilds(this, false);
+    _NumVisibleBuilds = PerfToolCountBuilds(this, true);
+    _NumUniqueBuilds = PerfToolCountBuilds(this, false);
 
     _CalculateLegendAlignment();
     temp_set.Data.resize(0);
@@ -801,21 +801,21 @@ void ImGuiPerfLog::_Rebuild()
     _LabelsVisible.push_back("");
 }
 
-void ImGuiPerfLog::Clear()
+void ImGuiPerfTool::Clear()
 {
     _Labels.clear();
     _LabelsVisible.clear();
     _Batches.clear();
     _Visibility.Clear();
-    for (ImGuiPerflogEntry& entry : _SrcData)
-        entry.~ImGuiPerflogEntry();
+    for (ImGuiPerfToolEntry& entry : _SrcData)
+        entry.~ImGuiPerfToolEntry();
     _SrcData.clear();
 
     ImStrncpy(_FilterDateFrom, "9999-99-99", IM_ARRAYSIZE(_FilterDateFrom));
     ImStrncpy(_FilterDateTo, "0000-00-00", IM_ARRAYSIZE(_FilterDateFrom));
 }
 
-bool ImGuiPerfLog::LoadCSV(const char* filename)
+bool ImGuiPerfTool::LoadCSV(const char* filename)
 {
     if (filename == NULL)
         filename = IMGUI_PERFLOG_FILENAME;
@@ -828,7 +828,7 @@ bool ImGuiPerfLog::LoadCSV(const char* filename)
     Clear();
     for (int row = 0; row < csv.Rows; row++)
     {
-        ImGuiPerflogEntry entry;
+        ImGuiPerfToolEntry entry;
         int col = 0;
         sscanf(csv.GetCell(row, col++), "%llu", &entry.Timestamp);
         entry.Category = csv.GetCell(row, col++);
@@ -847,8 +847,8 @@ bool ImGuiPerfLog::LoadCSV(const char* filename)
     return true;
 }
 
-// This is declared as a standalone function in order to run without a Perflog instance
-void ImGuiTestEngine_PerflogAppendToCSV(ImGuiPerfLog* perf_log, ImGuiPerflogEntry* entry, const char* filename)
+// This is declared as a standalone function in order to run without a PerfTool instance
+void ImGuiTestEngine_PerfToolAppendToCSV(ImGuiPerfTool* perf_log, ImGuiPerfToolEntry* entry, const char* filename)
 {
     if (filename == NULL)
         filename = IMGUI_PERFLOG_FILENAME;
@@ -857,7 +857,7 @@ void ImGuiTestEngine_PerflogAppendToCSV(ImGuiPerfLog* perf_log, ImGuiPerflogEntr
     FILE* f = fopen(filename, "a+b");
     if (f == NULL)
     {
-        fprintf(stderr, "Unable to open '%s', perflog entry was not saved.\n", filename);
+        fprintf(stderr, "Unable to open '%s', perftool entry was not saved.\n", filename);
         return;
     }
     fprintf(f, "%llu,%s,%s,%.3f,x%d,%s,%s,%s,%s,%s,%s\n", entry->Timestamp, entry->Category, entry->TestName,
@@ -871,7 +871,7 @@ void ImGuiTestEngine_PerflogAppendToCSV(ImGuiPerfLog* perf_log, ImGuiPerflogEntr
         perf_log->AddEntry(entry);
 }
 
-void ImGuiPerfLog::ShowUI(ImGuiTestEngine* engine)
+void ImGuiPerfTool::ShowUI(ImGuiTestEngine* engine)
 {
     ImGuiStyle& style = ImGui::GetStyle();
 
@@ -910,7 +910,7 @@ void ImGuiPerfLog::ShowUI(ImGuiTestEngine* engine)
             int date_size = i == 0 ? IM_ARRAYSIZE(_FilterDateFrom) : IM_ARRAYSIZE(_FilterDateTo);
             if (i == 0 && ImGui::MenuItem("Set Min"))
             {
-                for (ImGuiPerflogEntry& entry : _SrcData)
+                for (ImGuiPerfToolEntry& entry : _SrcData)
                     if (strcmp(date, entry.Date) > 0)
                     {
                         ImStrncpy(date, entry.Date, date_size);
@@ -919,7 +919,7 @@ void ImGuiPerfLog::ShowUI(ImGuiTestEngine* engine)
             }
             if (ImGui::MenuItem("Set Max"))
             {
-                for (ImGuiPerflogEntry& entry : _SrcData)
+                for (ImGuiPerfToolEntry& entry : _SrcData)
                     if (strcmp(date, entry.Date) < 0)
                     {
                         ImStrncpy(date, entry.Date, date_size);
@@ -952,9 +952,9 @@ void ImGuiPerfLog::ShowUI(ImGuiTestEngine* engine)
     if (ImGui::IsItemHovered())
     {
         ImGui::BeginTooltip();
-        ImGui::RadioButton("Display each run separately",                                               _DisplayType == ImGuiPerflogDisplayType_Simple);
-        ImGui::RadioButton("Use one color per branch. Disables baseline comparisons!",                  _DisplayType == ImGuiPerflogDisplayType_PerBranchColors);
-        ImGui::RadioButton("Combine multiple runs with same build info into one averaged build entry.", _DisplayType == ImGuiPerflogDisplayType_CombineByBuildInfo);
+        ImGui::RadioButton("Display each run separately", _DisplayType == ImGuiPerfToolDisplayType_Simple);
+        ImGui::RadioButton("Use one color per branch. Disables baseline comparisons!", _DisplayType == ImGuiPerfToolDisplayType_PerBranchColors);
+        ImGui::RadioButton("Combine multiple runs with same build info into one averaged build entry.", _DisplayType == ImGuiPerfToolDisplayType_CombineByBuildInfo);
         ImGui::EndTooltip();
     }
 
@@ -962,7 +962,7 @@ void ImGuiPerfLog::ShowUI(ImGuiTestEngine* engine)
     if (_ReportGenerating && !ImGuiTestEngine_IsRunningTests(engine))
     {
         _ReportGenerating = false;
-        ImOsOpenInShell(PerfLogReportDefaultOutputPath);
+        ImOsOpenInShell(PerfToolReportDefaultOutputPath);
     }
     if (_Batches.empty())
         ImGui::BeginDisabled();
@@ -1009,10 +1009,10 @@ void ImGuiPerfLog::ShowUI(ImGuiTestEngine* engine)
 
             // Find columns with nothing checked.
             bool checked_any[] = { false, false, false, false, false };
-            for (ImGuiPerflogBatch& batch : _Batches)
+            for (ImGuiPerfToolBatch& batch : _Batches)
             {
                 IM_ASSERT(!batch.Entries.empty());
-                ImGuiPerflogEntry* entry = &batch.Entries.Data[0];
+                ImGuiPerfToolEntry* entry = &batch.Entries.Data[0];
                 const char* properties[] = { entry->GitBranchName, entry->BuildType, entry->Cpu, entry->OS, entry->Compiler };
                 for (int i = 0; i < IM_ARRAYSIZE(properties); i++)
                 {
@@ -1022,10 +1022,10 @@ void ImGuiPerfLog::ShowUI(ImGuiTestEngine* engine)
             }
 
             bool visible = true;
-            for (ImGuiPerflogBatch& batch : _Batches)
+            for (ImGuiPerfToolBatch& batch : _Batches)
             {
                 IM_ASSERT(!batch.Entries.empty());
-                ImGuiPerflogEntry* entry = &batch.Entries.Data[0];
+                ImGuiPerfToolEntry* entry = &batch.Entries.Data[0];
                 bool new_row = true;
                 ImGuiID hash;
                 const char* properties[] = { entry->GitBranchName, entry->BuildType, entry->Cpu, entry->OS, entry->Compiler };
@@ -1049,7 +1049,7 @@ void ImGuiPerfLog::ShowUI(ImGuiTestEngine* engine)
                     if (modified)
                     {
                         _CalculateLegendAlignment();
-                        _NumVisibleBuilds = PerfLogCountBuilds(this, true);
+                        _NumVisibleBuilds = PerfToolCountBuilds(this, true);
                         dirty = true;
                     }
                     if (!checked_any[i])
@@ -1121,7 +1121,7 @@ static double GetLabelVerticalOffset(double occupy_h, int max_visible_builds, in
     return (double)now_visible_builds * h + offset;
 }
 
-void ImGuiPerfLog::_ShowEntriesPlot()
+void ImGuiPerfTool::_ShowEntriesPlot()
 {
 #ifdef IMGUI_TEST_ENGINE_ENABLE_IMPLOT
     ImGuiIO& io = ImGui::GetIO();
@@ -1131,7 +1131,7 @@ void ImGuiPerfLog::_ShowEntriesPlot()
 
     ImPlot::PushStyleColor(ImPlotCol_AxisBgHovered, IM_COL32(0, 0, 0, 0));
     ImPlot::PushStyleColor(ImPlotCol_AxisBgActive, IM_COL32(0, 0, 0, 0));
-    if (!ImPlot::BeginPlot("Perflog", ImVec2(-1, -1), ImPlotFlags_NoTitle))
+    if (!ImPlot::BeginPlot("PerfTool", ImVec2(-1, -1), ImPlotFlags_NoTitle))
         return;
 
     ImPlot::SetupAxis(ImAxis_X1, NULL, ImPlotAxisFlags_NoTickLabels);
@@ -1148,18 +1148,18 @@ void ImGuiPerfLog::_ShowEntriesPlot()
     int current_baseline_batch_index = _BaselineBatchIndex; // Cache this value before loop, so toggling it does not create flicker.
     for (int batch_index = 0; batch_index < _Batches.Size; batch_index++)
     {
-        ImGuiPerflogBatch& batch = _Batches[batch_index];
+        ImGuiPerfToolBatch& batch = _Batches[batch_index];
         if (!_IsVisibleBuild(&batch.Entries.Data[0]))
             continue;
 
         // Plot bars.
         label.clear();
         display_label.clear();
-        PerflogFormatBuildInfo(this, &label, &batch);
+        PerfToolFormatBuildInfo(this, &label, &batch);
         display_label.append(label.c_str());
         ImGuiID batch_label_id;
         bool baseline_match = false;
-        if (_DisplayType == ImGuiPerflogDisplayType_PerBranchColors)
+        if (_DisplayType == ImGuiPerfToolDisplayType_PerBranchColors)
         {
             // No "vs baseline" comparison for per-branch colors, because runs are combined in the legend, but not in the info table.
             batch_label_id = GetBuildID(&batch);
@@ -1172,7 +1172,7 @@ void ImGuiPerfLog::_ShowEntriesPlot()
         display_label.appendf("%s###%08X", baseline_match ? " *" : "", batch_label_id);
 
         // Plot all bars one by one, so batches with varying number of bars would not contain empty holes.
-        for (ImGuiPerflogEntry& entry : batch.Entries)
+        for (ImGuiPerfToolEntry& entry : batch.Entries)
         {
             if (entry.NumSamples == 0)
                 continue;   // Dummy entry, perf did not run for this test in this batch.
@@ -1181,7 +1181,7 @@ void ImGuiPerfLog::_ShowEntriesPlot()
             const int now_visible_builds = temp_set.GetInt(label_id);
             temp_set.SetInt(label_id, now_visible_builds + 1);
             double y_pos = (double)entry.LabelIndex + GetLabelVerticalOffset(occupy_h, max_visible_builds, now_visible_builds);
-            ImPlot::SetNextFillStyle(ImPlot::GetColormapColor(_DisplayType == ImGuiPerflogDisplayType_PerBranchColors ? batch.BranchIndex : batch_index));
+            ImPlot::SetNextFillStyle(ImPlot::GetColormapColor(_DisplayType == ImGuiPerfToolDisplayType_PerBranchColors ? batch.BranchIndex : batch_index));
             ImPlot::PlotBarsH<double>(display_label.c_str(), &entry.DtDeltaMs, &y_pos, 1, occupy_h / (double)max_visible_builds);
         }
         legend_hovered |= ImPlot::IsLegendEntryHovered(display_label.c_str());
@@ -1248,13 +1248,13 @@ void ImGuiPerfLog::_ShowEntriesPlot()
     {
         const char* hovered_label = _LabelsVisible.Data[hovered_label_index];
         ImGuiID label_id = ImHashStr(hovered_label);
-        for (ImGuiPerflogBatch& batch : _Batches)
+        for (ImGuiPerfToolBatch& batch : _Batches)
         {
             int batch_index = _Batches.index_from_ptr(&batch);
             if (!_IsVisibleBuild(&batch))
                 continue;
 
-            ImGuiPerflogEntry* entry = &batch.Entries.Data[hovered_label_index];
+            ImGuiPerfToolEntry* entry = &batch.Entries.Data[hovered_label_index];
             if (entry->NumSamples == 0)
                 continue;   // Dummy entry, perf did not run for this test in this batch.
 
@@ -1298,7 +1298,7 @@ void ImGuiPerfLog::_ShowEntriesPlot()
 
         for (int i = 0; i < _Batches.Size; i++)
         {
-            if (ImGuiPerflogEntry* hovered_entry = GetEntryByBatchIdx(i, test_name))
+            if (ImGuiPerfToolEntry* hovered_entry = GetEntryByBatchIdx(i, test_name))
                 ImGui::Text("%s %.3fms", label.c_str(), hovered_entry->DtDeltaMs);
             else
                 ImGui::Text("%s --", label.c_str());
@@ -1313,9 +1313,9 @@ void ImGuiPerfLog::_ShowEntriesPlot()
 #endif
 }
 
-void ImGuiPerfLog::_ShowEntriesTable()
+void ImGuiPerfTool::_ShowEntriesTable()
 {
-    if (!ImGui::BeginTable("PerfInfo", IM_ARRAYSIZE(PerfLogColumnInfo), ImGuiTableFlags_Hideable | ImGuiTableFlags_Borders | ImGuiTableFlags_Sortable | ImGuiTableFlags_SortMulti | ImGuiTableFlags_SortTristate | ImGuiTableFlags_Resizable | ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_ScrollY))
+    if (!ImGui::BeginTable("PerfInfo", IM_ARRAYSIZE(PerfToolColumnInfo), ImGuiTableFlags_Hideable | ImGuiTableFlags_Borders | ImGuiTableFlags_Sortable | ImGuiTableFlags_SortMulti | ImGuiTableFlags_SortTristate | ImGuiTableFlags_Resizable | ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_ScrollY))
         return;
 
     ImGuiStyle& style = ImGui::GetStyle();
@@ -1323,14 +1323,14 @@ void ImGuiPerfLog::_ShowEntriesTable()
 
     // Test name column is not sorted because we do sorting only within perf runs of a particular tests,
     // so as far as sorting function is concerned all items in first column are identical.
-    for (int i = 0; i < IM_ARRAYSIZE(PerfLogColumnInfo); i++)
+    for (int i = 0; i < IM_ARRAYSIZE(PerfToolColumnInfo); i++)
     {
         ImGuiTableColumnFlags column_flags = ImGuiTableColumnFlags_None;
         if (i == 0)
             column_flags |= ImGuiTableColumnFlags_NoSort;
-        if (!PerfLogColumnInfo[i].ShowAlways && _DisplayType != ImGuiPerflogDisplayType_CombineByBuildInfo)
+        if (!PerfToolColumnInfo[i].ShowAlways && _DisplayType != ImGuiPerfToolDisplayType_CombineByBuildInfo)
             column_flags |= ImGuiTableColumnFlags_Disabled;
-        ImGui::TableSetupColumn(PerfLogColumnInfo[i].Title, column_flags);
+        ImGui::TableSetupColumn(PerfToolColumnInfo[i].Title, column_flags);
     }
     ImGui::TableSetupScrollFreeze(0, 1);
 
@@ -1353,10 +1353,10 @@ void ImGuiPerfLog::_ShowEntriesTable()
                     int* label_batch_indices = &_InfoTableSort.Data[i * _Batches.Size];
                     _InfoTableSortSpecs = sorts_specs;
                     _InfoTableNowSortingLabelIdx = i;
-                    PerfLogInstance = this;
+                    PerfToolInstance = this;
                     ImQsort(label_batch_indices, (size_t)_Batches.Size, sizeof(label_batch_indices[0]), CompareWithSortSpecs);
                     _InfoTableSortSpecs = NULL;
-                    PerfLogInstance = NULL;
+                    PerfToolInstance = NULL;
                 }
         }
 
@@ -1375,7 +1375,7 @@ void ImGuiPerfLog::_ShowEntriesTable()
         for (int batch_index = _Batches.Size - 1; batch_index >= 0; batch_index--)
         {
             int batch_index_sorted = _InfoTableSort[label_index * _Batches.Size + batch_index];
-            ImGuiPerflogEntry* entry = GetEntryByBatchIdx(batch_index_sorted, test_name);
+            ImGuiPerfToolEntry* entry = GetEntryByBatchIdx(batch_index_sorted, test_name);
             if (entry == NULL || !_IsVisibleBuild(entry) || !_IsVisibleTest(entry) || entry->NumSamples == 0)
                 continue;
 
@@ -1393,7 +1393,7 @@ void ImGuiPerfLog::_ShowEntriesTable()
                     ImGui::TableSetBgColor(ImGuiTableBgTarget_RowBg0, ImColor(style.Colors[ImGuiCol_TextSelectedBg]));
             }
 
-            ImGuiPerflogEntry* baseline_entry = GetEntryByBatchIdx(_BaselineBatchIndex, test_name);
+            ImGuiPerfToolEntry* baseline_entry = GetEntryByBatchIdx(_BaselineBatchIndex, test_name);
 
             // Build info
             if (ImGui::TableNextColumn())
@@ -1454,7 +1454,7 @@ void ImGuiPerfLog::_ShowEntriesTable()
             if (ImGui::TableNextColumn())
             {
                 float dt_change = (float)entry->VsBaseline;
-                if (_DisplayType == ImGuiPerflogDisplayType_PerBranchColors)
+                if (_DisplayType == ImGuiPerfToolDisplayType_PerBranchColors)
                 {
                     ImGui::TextUnformatted("--");
                 }
@@ -1490,9 +1490,9 @@ void ImGuiPerfLog::_ShowEntriesTable()
     ImGui::EndTable();
 }
 
-void ImGuiPerfLog::ViewOnly(const char** perf_names)
+void ImGuiPerfTool::ViewOnly(const char** perf_names)
 {
-    // Data would not be built if we tried to view perflog of a particular test without first opening perflog via button. We need data to be built to hide perf tests.
+    // Data would not be built if we tried to view perftool of a particular test without first opening perftool via button. We need data to be built to hide perf tests.
     if (_Batches.empty())
         _Rebuild();
 
@@ -1506,33 +1506,33 @@ void ImGuiPerfLog::ViewOnly(const char** perf_names)
     }
 }
 
-void ImGuiPerfLog::ViewOnly(const char* perf_name)
+void ImGuiPerfTool::ViewOnly(const char* perf_name)
 {
     const char* names[] = { perf_name, NULL };
     ViewOnly(names);
 }
 
-ImGuiPerflogEntry* ImGuiPerfLog::GetEntryByBatchIdx(int idx, const char* perf_name)
+ImGuiPerfToolEntry* ImGuiPerfTool::GetEntryByBatchIdx(int idx, const char* perf_name)
 {
     if (idx < 0)
         return NULL;
     IM_ASSERT(idx < _Batches.Size);
-    ImGuiPerflogBatch& batch = _Batches.Data[idx];
+    ImGuiPerfToolBatch& batch = _Batches.Data[idx];
     for (int i = 0; i < batch.Entries.Size; i++)
-        if (ImGuiPerflogEntry* entry = &batch.Entries.Data[i])
+        if (ImGuiPerfToolEntry* entry = &batch.Entries.Data[i])
             if (strcmp(entry->TestName, perf_name) == 0)
                 return entry;
     return NULL;
 }
 
-bool ImGuiPerfLog::_IsVisibleBuild(ImGuiPerflogBatch* batch)
+bool ImGuiPerfTool::_IsVisibleBuild(ImGuiPerfToolBatch* batch)
 {
     IM_ASSERT(batch != NULL);
     IM_ASSERT(!batch->Entries.empty());
     return _IsVisibleBuild(&batch->Entries.Data[0]);
 }
 
-bool ImGuiPerfLog::_IsVisibleBuild(ImGuiPerflogEntry* entry)
+bool ImGuiPerfTool::_IsVisibleBuild(ImGuiPerfToolEntry* entry)
 {
     return _Visibility.GetBool(ImHashStr(entry->GitBranchName), true) &&
         _Visibility.GetBool(ImHashStr(entry->Compiler), true) &&
@@ -1541,19 +1541,19 @@ bool ImGuiPerfLog::_IsVisibleBuild(ImGuiPerflogEntry* entry)
         _Visibility.GetBool(ImHashStr(entry->BuildType), true);
 }
 
-bool ImGuiPerfLog::_IsVisibleTest(ImGuiPerflogEntry* entry)
+bool ImGuiPerfTool::_IsVisibleTest(ImGuiPerfToolEntry* entry)
 {
     return _Visibility.GetBool(ImHashStr(entry->TestName), true);
 }
 
-void ImGuiPerfLog::_CalculateLegendAlignment()
+void ImGuiPerfTool::_CalculateLegendAlignment()
 {
     // Estimate paddings for legend format so it looks nice and aligned
     // FIXME: Rely on font being monospace. May need to recalculate every frame on a per-need basis based on font?
     _AlignStress = _AlignType = _AlignCpu = _AlignOs = _AlignCompiler = _AlignBranch = _AlignSamples = 0;
-    for (ImGuiPerflogBatch& batch : _Batches)
+    for (ImGuiPerfToolBatch& batch : _Batches)
     {
-        ImGuiPerflogEntry* entry = &batch.Entries.Data[0];
+        ImGuiPerfToolEntry* entry = &batch.Entries.Data[0];
         if (!_IsVisibleBuild(entry))
             continue;
         _AlignStress = ImMax(_AlignStress, (int)ceil(log10(entry->PerfStressAmount)));
@@ -1566,7 +1566,7 @@ void ImGuiPerfLog::_CalculateLegendAlignment()
     }
 }
 
-bool ImGuiPerfLog::SaveReport(const char* file_name, const char* image_file)
+bool ImGuiPerfTool::SaveReport(const char* file_name, const char* image_file)
 {
     if (!ImFileCreateDirectoryChain(file_name, ImPathFindFilename(file_name)))
         return false;
@@ -1607,12 +1607,12 @@ bool ImGuiPerfLog::SaveReport(const char* file_name, const char* image_file)
     }
 
     // Print info table.
-    const bool combine_by_build_info = _DisplayType == ImGuiPerflogDisplayType_CombineByBuildInfo;
-    for (const auto& column_info : PerfLogColumnInfo)
+    const bool combine_by_build_info = _DisplayType == ImGuiPerfToolDisplayType_CombineByBuildInfo;
+    for (const auto& column_info : PerfToolColumnInfo)
         if (column_info.ShowAlways || combine_by_build_info)
             fprintf(fp, "| %s ", column_info.Title);
     fprintf(fp, "|\n");
-    for (const auto& column_info : PerfLogColumnInfo)
+    for (const auto& column_info : PerfToolColumnInfo)
         if (column_info.ShowAlways || combine_by_build_info)
             fprintf(fp, "| -- ");
     fprintf(fp, "|\n");
@@ -1622,15 +1622,15 @@ bool ImGuiPerfLog::SaveReport(const char* file_name, const char* image_file)
         const char* test_name = _LabelsVisible.Data[label_index];
         for (int batch_index = 0; batch_index < _Batches.Size; batch_index++)
         {
-            ImGuiPerflogEntry* entry = GetEntryByBatchIdx(_InfoTableSort[label_index * _Batches.Size + batch_index], test_name);
+            ImGuiPerfToolEntry* entry = GetEntryByBatchIdx(_InfoTableSort[label_index * _Batches.Size + batch_index], test_name);
             if (entry == NULL || !_IsVisibleBuild(entry) || entry->NumSamples == 0)
                 continue;
 
-            ImGuiPerflogEntry* baseline_entry = GetEntryByBatchIdx(_BaselineBatchIndex, test_name);
-            for (int i = 0; i < IM_ARRAYSIZE(PerfLogColumnInfo); i++)
+            ImGuiPerfToolEntry* baseline_entry = GetEntryByBatchIdx(_BaselineBatchIndex, test_name);
+            for (int i = 0; i < IM_ARRAYSIZE(PerfToolColumnInfo); i++)
             {
                 Str30f label("");
-                const ImGuiPerfLogColumnInfo& column_info = PerfLogColumnInfo[i];
+                const ImGuiPerfToolColumnInfo& column_info = PerfToolColumnInfo[i];
                 if (column_info.ShowAlways || combine_by_build_info)
                 {
                     switch (i)
@@ -1668,7 +1668,7 @@ bool ImGuiPerfLog::SaveReport(const char* file_name, const char* image_file)
     return true;
 }
 
-void ImGuiPerfLog::_SetBaseline(int batch_index)
+void ImGuiPerfTool::_SetBaseline(int batch_index)
 {
     IM_ASSERT(batch_index < _Batches.Size);
     _BaselineBatchIndex = batch_index;
@@ -1679,7 +1679,7 @@ void ImGuiPerfLog::_SetBaseline(int batch_index)
     }
 }
 
-static bool SetPerfLogWindowOpen(ImGuiTestContext* ctx, bool is_open)
+static bool SetPerfToolWindowOpen(ImGuiTestContext* ctx, bool is_open)
 {
     ImGuiContext& g = *ImGui::GetCurrentContext();
     ctx->WindowFocus("/Dear ImGui Test Engine");
@@ -1695,7 +1695,7 @@ static bool SetPerfLogWindowOpen(ImGuiTestContext* ctx, bool is_open)
     return false;
 }
 
-void RegisterTests_PerfLog(ImGuiTestEngine* e)
+void RegisterTests_PerfTool(ImGuiTestEngine* e)
 {
     ImGuiTest* t = NULL;
 
@@ -1719,27 +1719,27 @@ void RegisterTests_PerfLog(ImGuiTestEngine* e)
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         ImGuiContext& g = *ctx->UiContext;
-        ImGuiPerfLog* perflog = ImGuiTestEngine_GetPerfTool(ctx->Engine);
+        ImGuiPerfTool* perftool = ImGuiTestEngine_GetPerfTool(ctx->Engine);
         const char* temp_perf_csv = "output/misc_cov_perf_tool.csv";
 
-        Str16f min_date_bkp = perflog->_FilterDateFrom;
-        Str16f max_date_bkp = perflog->_FilterDateTo;
+        Str16f min_date_bkp = perftool->_FilterDateFrom;
+        Str16f max_date_bkp = perftool->_FilterDateTo;
 
         // Execute few perf tests, serialize them to temporary csv file.
         ctx->PerfCapture("perf", "misc_cov_perf_tool_1", temp_perf_csv);
         ctx->PerfCapture("perf", "misc_cov_perf_tool_2", temp_perf_csv);
 
         // Load perf data from csv file and open perf tool.
-        perflog->Clear();
-        perflog->LoadCSV(temp_perf_csv);
-        bool perf_was_open = SetPerfLogWindowOpen(ctx, true);
+        perftool->Clear();
+        perftool->LoadCSV(temp_perf_csv);
+        bool perf_was_open = SetPerfToolWindowOpen(ctx, true);
         ctx->Yield();
 
         ctx->SetRef("Dear ImGui Perf Tool");
         ctx->WindowMove("", ImVec2(50, 50));
         ctx->WindowResize("", ImVec2(1400, 900));
 #ifdef IMGUI_TEST_ENGINE_ENABLE_IMPLOT
-        ImGuiWindow* plot_child = ctx->GetWindowByRef(ctx->GetChildWindowID(ctx->GetChildWindowID(ctx->GetID("plot")), "Perflog"));
+        ImGuiWindow* plot_child = ctx->GetWindowByRef(ctx->GetChildWindowID(ctx->GetChildWindowID(ctx->GetID("plot")), "PerfTool"));
         IM_CHECK_NO_RET(plot_child != NULL);
 
         // Move legend to right side.
@@ -1765,17 +1765,17 @@ void RegisterTests_PerfLog(ImGuiTestEngine* e)
         ctx->ItemClick("Per branch colors");
 
         // Restore original state.
-        perflog->Clear();                                           // Clear test data and load original data
+        perftool->Clear();                                           // Clear test data and load original data
         ImFileDelete(temp_perf_csv);
-        perflog->LoadCSV();
+        perftool->LoadCSV();
         ctx->Yield();
 #ifdef IMGUI_TEST_ENGINE_ENABLE_IMPLOT
         ctx->MouseMoveToPos(plot_child->Rect().GetCenter());
         ctx->MouseDoubleClick(ImGuiMouseButton_Left);               // Fit plot to original data
 #endif
-        ImStrncpy(perflog->_FilterDateFrom, min_date_bkp.c_str(), IM_ARRAYSIZE(perflog->_FilterDateFrom));
-        ImStrncpy(perflog->_FilterDateTo, max_date_bkp.c_str(), IM_ARRAYSIZE(perflog->_FilterDateTo));
-        SetPerfLogWindowOpen(ctx, perf_was_open);                   // Restore window visibility
+        ImStrncpy(perftool->_FilterDateFrom, min_date_bkp.c_str(), IM_ARRAYSIZE(perftool->_FilterDateFrom));
+        ImStrncpy(perftool->_FilterDateTo, max_date_bkp.c_str(), IM_ARRAYSIZE(perftool->_FilterDateTo));
+        SetPerfToolWindowOpen(ctx, perf_was_open);                   // Restore window visibility
     };
 
     // ## Capture perf tool graph.
@@ -1783,7 +1783,7 @@ void RegisterTests_PerfLog(ImGuiTestEngine* e)
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         ImGuiContext& g = *ctx->UiContext;
-        ImGuiPerfLog* perflog = ImGuiTestEngine_GetPerfTool(ctx->Engine);
+        ImGuiPerfTool* perftool = ImGuiTestEngine_GetPerfTool(ctx->Engine);
         const char* perf_report_image = NULL;
         if (!ImFileExist(IMGUI_PERFLOG_FILENAME))
         {
@@ -1791,10 +1791,10 @@ void RegisterTests_PerfLog(ImGuiTestEngine* e)
             return;
         }
 
-        char min_date_bkp[sizeof(perflog->_FilterDateFrom)], max_date_bkp[sizeof(perflog->_FilterDateTo)];
-        ImStrncpy(min_date_bkp, perflog->_FilterDateFrom, IM_ARRAYSIZE(min_date_bkp));
-        ImStrncpy(max_date_bkp, perflog->_FilterDateTo, IM_ARRAYSIZE(max_date_bkp));
-        bool perf_was_open = SetPerfLogWindowOpen(ctx, true);
+        char min_date_bkp[sizeof(perftool->_FilterDateFrom)], max_date_bkp[sizeof(perftool->_FilterDateTo)];
+        ImStrncpy(min_date_bkp, perftool->_FilterDateFrom, IM_ARRAYSIZE(min_date_bkp));
+        ImStrncpy(max_date_bkp, perftool->_FilterDateTo, IM_ARRAYSIZE(max_date_bkp));
+        bool perf_was_open = SetPerfToolWindowOpen(ctx, true);
         ctx->Yield();
 
         ctx->SetRef("Dear ImGui Perf Tool");
@@ -1803,7 +1803,7 @@ void RegisterTests_PerfLog(ImGuiTestEngine* e)
 #ifdef IMGUI_TEST_ENGINE_ENABLE_IMPLOT
         ctx->ItemDoubleClick("splitter");   // Hide info table
 
-        ImGuiWindow* plot_child = ctx->GetWindowByRef(ctx->GetChildWindowID(ctx->GetChildWindowID(ctx->GetID("plot")), "Perflog"));
+        ImGuiWindow* plot_child = ctx->GetWindowByRef(ctx->GetChildWindowID(ctx->GetChildWindowID(ctx->GetID("plot")), "PerfTool"));
         IM_CHECK_NO_RET(plot_child != NULL);
 
         // Move legend to right side.
@@ -1828,13 +1828,13 @@ void RegisterTests_PerfLog(ImGuiTestEngine* e)
         ctx->CaptureScreenshotEx(&args);
         ctx->ItemDragWithDelta("splitter", ImVec2(0, -180));        // Show info table
 #endif
-        ImStrncpy(perflog->_FilterDateFrom, min_date_bkp, IM_ARRAYSIZE(min_date_bkp));
-        ImStrncpy(perflog->_FilterDateTo, max_date_bkp, IM_ARRAYSIZE(max_date_bkp));
-        SetPerfLogWindowOpen(ctx, perf_was_open);                   // Restore window visibility
+        ImStrncpy(perftool->_FilterDateFrom, min_date_bkp, IM_ARRAYSIZE(min_date_bkp));
+        ImStrncpy(perftool->_FilterDateTo, max_date_bkp, IM_ARRAYSIZE(max_date_bkp));
+        SetPerfToolWindowOpen(ctx, perf_was_open);                   // Restore window visibility
 
         const char* perf_report_output = getenv("CAPTURE_PERF_REPORT_OUTPUT");
         if (perf_report_output == NULL)
-            perf_report_output = PerfLogReportDefaultOutputPath;
-        perflog->SaveReport(perf_report_output, perf_report_image);
+            perf_report_output = PerfToolReportDefaultOutputPath;
+        perftool->SaveReport(perf_report_output, perf_report_image);
     };
 }
