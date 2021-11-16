@@ -1738,6 +1738,7 @@ void RegisterTests_PerfTool(ImGuiTestEngine* e)
         ctx->SetRef("Dear ImGui Perf Tool");
         ctx->WindowMove("", ImVec2(50, 50));
         ctx->WindowResize("", ImVec2(1400, 900));
+        ctx->WindowBringToFront(ctx->GetWindowByRef(""));
 #ifdef IMGUI_TEST_ENGINE_ENABLE_IMPLOT
         ImGuiWindow* plot_child = ctx->GetWindowByRef(ctx->GetChildWindowID(ctx->GetChildWindowID(ctx->GetID("plot")), "PerfTool"));
         IM_CHECK_NO_RET(plot_child != NULL);
@@ -1746,7 +1747,7 @@ void RegisterTests_PerfTool(ImGuiTestEngine* e)
         ctx->MouseMoveToPos(plot_child->Rect().GetCenter());
         ctx->MouseDoubleClick(ImGuiMouseButton_Left);               // Auto-size plots while at it
         ctx->MouseClick(ImGuiMouseButton_Right);
-        ctx->MenuClick("Settings/Legend/##NE");
+        ctx->MenuClick("Legend/NE");
 
         // Click some stuff for more coverage.
         ctx->MouseMoveToPos(plot_child->Rect().GetCenter());
@@ -1758,11 +1759,9 @@ void RegisterTests_PerfTool(ImGuiTestEngine* e)
         ctx->ItemClick(ctx->GetID("Set Max", g.NavWindow->ID));
         ctx->ItemClick("###Filter builds");
         ctx->ItemClick("###Filter tests");
-        ctx->ItemClick("Combine");                                  // Toggle thrice to leave state unchanged
-        ctx->ItemClick("Combine");
-        ctx->ItemClick("Combine");
-        ctx->ItemClick("Per branch colors");
-        ctx->ItemClick("Per branch colors");
+        ctx->ItemClick("Combine", 0, ImGuiTestOpFlags_MoveToEdgeL); // Toggle thrice to leave state unchanged
+        ctx->ItemClick("Combine", 0, ImGuiTestOpFlags_MoveToEdgeL);
+        ctx->ItemClick("Combine", 0, ImGuiTestOpFlags_MoveToEdgeL);
 
         // Restore original state.
         perftool->Clear();                                           // Clear test data and load original data
@@ -1800,6 +1799,7 @@ void RegisterTests_PerfTool(ImGuiTestEngine* e)
         ctx->SetRef("Dear ImGui Perf Tool");
         ctx->WindowMove("", ImVec2(50, 50));
         ctx->WindowResize("", ImVec2(1400, 900));
+        ctx->WindowBringToFront(ctx->GetWindowByRef(""));
 #ifdef IMGUI_TEST_ENGINE_ENABLE_IMPLOT
         ctx->ItemDoubleClick("splitter");   // Hide info table
 
@@ -1810,7 +1810,7 @@ void RegisterTests_PerfTool(ImGuiTestEngine* e)
         ctx->MouseMoveToPos(plot_child->Rect().GetCenter());
         ctx->MouseDoubleClick(ImGuiMouseButton_Left);               // Auto-size plots while at it
         ctx->MouseClick(ImGuiMouseButton_Right);
-        ctx->MenuClick("Settings/Legend/##NE");
+        ctx->MenuClick("Legend/NE");
 #endif
         // Click some stuff for more coverage.
         ctx->ItemClick("##date-from", ImGuiMouseButton_Right);
