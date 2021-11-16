@@ -106,7 +106,7 @@ struct ImGuiPerfTool
     void        _Rebuild();
     bool        _IsVisibleBuild(ImGuiPerfToolBatch* batch);
     bool        _IsVisibleBuild(ImGuiPerfToolEntry* batch);
-    bool        _IsVisibleTest(ImGuiPerfToolEntry* entry);
+    bool        _IsVisibleTest(const char* test_name);
     void        _CalculateLegendAlignment();
     void        _ShowEntriesPlot();
     void        _ShowEntriesTable();

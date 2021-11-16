@@ -588,7 +588,7 @@ void ImGuiPerfTool::_Rebuild()
         {
             temp_set.SetBool(name_id, true);
             _Labels.push_back(entry.TestName);
-            if (_IsVisibleTest(&entry))
+            if (_IsVisibleTest(entry.TestName))
                 _LabelsVisible.push_front(entry.TestName);
         }
     }
@@ -696,55 +696,65 @@ void ImGuiPerfTool::_Rebuild()
 
     // Create man entries for every batch.
     // Pushed after sorting so they are always at the start of the chart.
-    _LabelsVisible.push_back("harmonic mean");
-    _LabelsVisible.push_back("arithmetic mean");
-    _LabelsVisible.push_back("geometric mean");
+    const char* mean_labels[] = { "harmonic mean", "arithmetic mean", "geometric mean" };
+    int num_visible_mean_labels = 0;
+    for (const char* label : mean_labels)
+    {
+        _Labels.push_back(label);
+        if (_IsVisibleTest(label))
+        {
+           _LabelsVisible.push_back(label);
+           num_visible_mean_labels++;
+        }
+    }
     for (ImGuiPerfToolBatch& batch : _Batches)
     {
-        batch.Entries.push_back(ImGuiPerfToolEntry());
-        batch.Entries.push_back(ImGuiPerfToolEntry());
-        batch.Entries.push_back(ImGuiPerfToolEntry());
-
-        ImGuiPerfToolEntry* geometric_mean = &batch.Entries.Data[batch.Entries.Size - 1];
-        *geometric_mean = batch.Entries.Data[0];
-        geometric_mean->LabelIndex = _LabelsVisible.Size - 1;
-        geometric_mean->TestName = _LabelsVisible.Data[geometric_mean->LabelIndex];
-
-        ImGuiPerfToolEntry* arithmetic_mean = &batch.Entries.Data[batch.Entries.Size - 2];
-        *arithmetic_mean = batch.Entries.Data[0];
-        arithmetic_mean->LabelIndex = _LabelsVisible.Size - 2;
-        arithmetic_mean->TestName = _LabelsVisible.Data[arithmetic_mean->LabelIndex];
-
-        ImGuiPerfToolEntry* harmonic_mean = &batch.Entries.Data[batch.Entries.Size - 3];
-        *harmonic_mean = batch.Entries.Data[0];
-        harmonic_mean->LabelIndex = _LabelsVisible.Size - 3;
-        harmonic_mean->TestName = _LabelsVisible.Data[harmonic_mean->LabelIndex];
-
         double delta_sum = 0.0;
         double delta_prd = 1.0;
         double delta_rec = 0.0;
-        for (int i = 0; i < batch.Entries.Size - 3; i++)
+        for (int i = 0; i < batch.Entries.Size; i++)
         {
             ImGuiPerfToolEntry* entry = &batch.Entries.Data[i];
             delta_sum += entry->DtDeltaMs;
             delta_prd *= entry->DtDeltaMs;
             delta_rec += 1 / entry->DtDeltaMs;
         }
-        arithmetic_mean->DtDeltaMs = delta_sum / num_visible_labels;
-        geometric_mean->DtDeltaMs = pow(delta_prd, 1.0 / num_visible_labels);
-        harmonic_mean->DtDeltaMs = num_visible_labels / delta_rec;
+
+        int visible_label_i = 0;
+        for (int i = 0; i < IM_ARRAYSIZE(mean_labels); i++)
+        {
+            if (!_IsVisibleTest(mean_labels[i]))
+                continue;
+
+            batch.Entries.push_back(ImGuiPerfToolEntry());
+            ImGuiPerfToolEntry* mean_entry = &batch.Entries.back();
+            *mean_entry = batch.Entries.Data[0];
+            mean_entry->LabelIndex = _LabelsVisible.Size - num_visible_mean_labels + visible_label_i;
+            mean_entry->TestName = _LabelsVisible.Data[mean_entry->LabelIndex];
+            visible_label_i++;
+            if (i == 0)
+                mean_entry->DtDeltaMs = num_visible_labels / delta_rec;
+            else if (i == 1)
+                mean_entry->DtDeltaMs = delta_sum / num_visible_labels;
+            else if (i == 2)
+                mean_entry->DtDeltaMs = pow(delta_prd, 1.0 / num_visible_labels);
+            else
+                IM_ASSERT(0);
+        }
+        IM_ASSERT(batch.Entries.Size == _LabelsVisible.Size);
     }
 
     // Find number of bars (batches) each label will render.
     for (ImGuiPerfToolBatch& batch : _Batches)
     {
-        for (int i = 0; i < _LabelsVisible.Size; i++)
+        if (!_IsVisibleBuild(&batch))
+            continue;
+
+        for (ImGuiPerfToolEntry& entry : batch.Entries)
         {
-            ImGuiPerfToolEntry* aggregate = &batch.Entries.Data[i];
-            ImGuiID label_id = ImHashStr(aggregate->TestName);
+            ImGuiID label_id = ImHashStr(entry.TestName);
             int num_bars = _LabelBarCounts.GetInt(label_id) + 1;
-            if (_IsVisibleBuild(&batch))
-                _LabelBarCounts.SetInt(label_id, num_bars);
+            _LabelBarCounts.SetInt(label_id, num_bars);
         }
     }
 
@@ -1374,7 +1384,7 @@ void ImGuiPerfTool::_ShowEntriesTable()
         {
             int batch_index_sorted = _InfoTableSort[label_index * _Batches.Size + batch_index];
             ImGuiPerfToolEntry* entry = GetEntryByBatchIdx(batch_index_sorted, test_name);
-            if (entry == NULL || !_IsVisibleBuild(entry) || !_IsVisibleTest(entry) || entry->NumSamples == 0)
+            if (entry == NULL || !_IsVisibleBuild(entry) || !_IsVisibleTest(entry->TestName) || entry->NumSamples == 0)
                 continue;
 
             ImGui::PushID(entry);
@@ -1539,9 +1549,9 @@ bool ImGuiPerfTool::_IsVisibleBuild(ImGuiPerfToolEntry* entry)
         _Visibility.GetBool(ImHashStr(entry->BuildType), true);
 }
 
-bool ImGuiPerfTool::_IsVisibleTest(ImGuiPerfToolEntry* entry)
+bool ImGuiPerfTool::_IsVisibleTest(const char* test_name)
 {
-    return _Visibility.GetBool(ImHashStr(entry->TestName), true);
+    return _Visibility.GetBool(ImHashStr(test_name), true);
 }
 
 void ImGuiPerfTool::_CalculateLegendAlignment()
