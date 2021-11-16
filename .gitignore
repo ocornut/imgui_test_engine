@@ -8,7 +8,7 @@ build_scripts/config/build_config.bat
 
 ## Application artifacts
 output/
-sandbox/output/
+app_sandbox/output/
 test_app/output/
 imgui.ini
 
@@ -16,10 +16,10 @@ imgui.ini
 *.o
 *.obj
 *.exe
-sandbox/build/*
-sandbox/Debug/*
-sandbox/Release/*
-sandbox/x64/*
+app_sandbox/build/*
+app_sandbox/Debug/*
+app_sandbox/Release/*
+app_sandbox/x64/*
 test_app/build/*
 test_app/Debug/*
 test_app/Release/*
