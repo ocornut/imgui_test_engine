@@ -469,7 +469,7 @@ static void PerflogSettingsHandler_ReadLine(ImGuiContext*, ImGuiSettingsHandler*
 static void PerflogSettingsHandler_ApplyAll(ImGuiContext*, ImGuiSettingsHandler* ini_handler)
 {
     ImGuiPerfTool* perftool = (ImGuiPerfTool*)ini_handler->UserData;
-    perftool->_Batches.resize(0);
+    perftool->_Batches.clear_destruct();
     perftool->_SetBaseline(-1);
 }
 
@@ -626,9 +626,8 @@ void ImGuiPerfTool::_Rebuild()
         if (_FilterDateTo[0] && strcmp(entry->Date, _FilterDateTo) > 0)
             continue;
 
-        _Batches.resize(_Batches.Size + 1);
+        _Batches.push_back(ImGuiPerfToolBatch());
         ImGuiPerfToolBatch& batch = _Batches.back();
-        memset(&batch, 0, sizeof(batch));
         batch.BatchID = GetBatchID(this, entry);
         batch.Entries.resize(num_visible_labels);
 
@@ -805,10 +804,9 @@ void ImGuiPerfTool::Clear()
 {
     _Labels.clear();
     _LabelsVisible.clear();
-    _Batches.clear();
+    _Batches.clear_destruct();
     _Visibility.Clear();
-    for (ImGuiPerfToolEntry& entry : _SrcData)
-        entry.~ImGuiPerfToolEntry();
+    _SrcData.clear_destruct();
     _SrcData.clear();
 
     ImStrncpy(_FilterDateFrom, "9999-99-99", IM_ARRAYSIZE(_FilterDateFrom));
