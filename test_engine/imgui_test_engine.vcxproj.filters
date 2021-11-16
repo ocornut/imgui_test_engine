@@ -24,24 +24,6 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\test_engine\imgui_te_context.h">
-      <Filter>test_engine</Filter>
-    </ClInclude>
-    <ClInclude Include="..\test_engine\imgui_te_engine.h">
-      <Filter>test_engine</Filter>
-    </ClInclude>
-    <ClInclude Include="..\test_engine\imgui_te_util.h">
-      <Filter>test_engine</Filter>
-    </ClInclude>
-    <ClInclude Include="..\test_engine\imgui_te_imconfig.h">
-      <Filter>test_engine</Filter>
-    </ClInclude>
-    <ClInclude Include="..\test_engine\imgui_te_internal.h">
-      <Filter>test_engine</Filter>
-    </ClInclude>
-    <ClInclude Include="..\test_engine\imgui_te_coroutine.h">
-      <Filter>test_engine</Filter>
-    </ClInclude>
     <ClInclude Include="..\shared\imgui_capture_tool.h">
       <Filter>shared</Filter>
     </ClInclude>
@@ -56,30 +38,43 @@
     </ClInclude>
     <ClInclude Include="..\libs\gif-h\gif.h">
       <Filter>libs\gif-h</Filter>
-    </ClInclude>    <ClInclude Include="imgui_te_ui.h">
+    </ClInclude>
+    <ClInclude Include="imgui_te_ui.h">
       <Filter>test_engine</Filter>
     </ClInclude>
-    <ClInclude Include="..\libs\implot\implot_internal.h">
-      <Filter>libs\implot</Filter>
+    <ClInclude Include="imgui_te_perftool.h">
+      <Filter>test_engine</Filter>
     </ClInclude>
-    <ClInclude Include="..\libs\implot\implot.h">
-      <Filter>libs\implot</Filter>
+    <ClInclude Include="test_engine\imgui_te_context.h">
+      <Filter>test_engine</Filter>
     </ClInclude>
-    <ClInclude Include="imgui_te_perflog.h">
+    <ClInclude Include="test_engine\imgui_te_coroutine.h">
+      <Filter>test_engine</Filter>
+    </ClInclude>
+    <ClInclude Include="test_engine\imgui_te_engine.h">
+      <Filter>test_engine</Filter>
+    </ClInclude>
+    <ClInclude Include="test_engine\imgui_te_imconfig.h">
+      <Filter>test_engine</Filter>
+    </ClInclude>
+    <ClInclude Include="test_engine\imgui_te_internal.h">
+      <Filter>test_engine</Filter>
+    </ClInclude>
+    <ClInclude Include="test_engine\imgui_te_util.h">
       <Filter>test_engine</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\test_engine\imgui_te_context.cpp">
+    <ClCompile Include="imgui_te_context.cpp">
       <Filter>test_engine</Filter>
     </ClCompile>
-    <ClCompile Include="..\test_engine\imgui_te_util.cpp">
+    <ClCompile Include="imgui_te_util.cpp">
       <Filter>test_engine</Filter>
     </ClCompile>
-    <ClCompile Include="..\test_engine\imgui_te_ui.cpp">
+    <ClCompile Include="imgui_te_ui.cpp">
       <Filter>test_engine</Filter>
     </ClCompile>
-    <ClCompile Include="..\test_engine\imgui_te_coroutine.cpp">
+    <ClCompile Include="imgui_te_coroutine.cpp">
       <Filter>test_engine</Filter>
     </ClCompile>
     <ClCompile Include="..\shared\imgui_capture_tool.cpp">
@@ -88,16 +83,10 @@
     <ClCompile Include="..\shared\imgui_utils.cpp">
       <Filter>shared</Filter>
     </ClCompile>
-    <ClCompile Include="..\test_engine\imgui_te_engine.cpp">
+    <ClCompile Include="imgui_te_engine.cpp">
       <Filter>test_engine</Filter>
     </ClCompile>
-    <ClCompile Include="..\libs\implot\implot_items.cpp">
-      <Filter>libs\implot</Filter>
-    </ClCompile>
-    <ClCompile Include="..\libs\implot\implot.cpp">
-      <Filter>libs\implot</Filter>
-    </ClCompile>
-    <ClCompile Include="imgui_te_perflog.cpp">
+    <ClCompile Include="imgui_te_perftool.cpp">
       <Filter>test_engine</Filter>
     </ClCompile>
   </ItemGroup>

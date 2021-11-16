@@ -158,24 +158,24 @@
     <ClInclude Include="..\libs\Str\Str.h" />
     <ClInclude Include="..\shared\imgui_capture_tool.h" />
     <ClInclude Include="..\shared\imgui_utils.h" />
-    <ClInclude Include="..\test_engine\imgui_te_context.h" />
-    <ClInclude Include="..\test_engine\imgui_te_coroutine.h" />
-    <ClInclude Include="..\test_engine\imgui_te_engine.h" />
-    <ClInclude Include="..\test_engine\imgui_te_imconfig.h" />
-    <ClInclude Include="..\test_engine\imgui_te_internal.h" />
-    <ClInclude Include="..\test_engine\imgui_te_util.h" />
+    <ClInclude Include="test_engine\imgui_te_context.h" />
+    <ClInclude Include="test_engine\imgui_te_coroutine.h" />
+    <ClInclude Include="test_engine\imgui_te_engine.h" />
+    <ClInclude Include="test_engine\imgui_te_imconfig.h" />
+    <ClInclude Include="test_engine\imgui_te_internal.h" />
+    <ClInclude Include="test_engine\imgui_te_util.h" />
+    <ClInclude Include="imgui_te_perftool.h" />
     <ClInclude Include="imgui_te_ui.h" />
-    <ClInclude Include="imgui_te_perflog.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\shared\imgui_capture_tool.cpp" />
     <ClCompile Include="..\shared\imgui_utils.cpp" />
-    <ClCompile Include="..\test_engine\imgui_te_context.cpp" />
-    <ClCompile Include="..\test_engine\imgui_te_coroutine.cpp" />
-    <ClCompile Include="..\test_engine\imgui_te_engine.cpp" />
-    <ClCompile Include="..\test_engine\imgui_te_ui.cpp" />
-    <ClCompile Include="..\test_engine\imgui_te_util.cpp" />
-    <ClCompile Include="imgui_te_perflog.cpp" />
+    <ClCompile Include="imgui_te_context.cpp" />
+    <ClCompile Include="imgui_te_coroutine.cpp" />
+    <ClCompile Include="imgui_te_engine.cpp" />
+    <ClCompile Include="imgui_te_ui.cpp" />
+    <ClCompile Include="imgui_te_util.cpp" />
+    <ClCompile Include="imgui_te_perftool.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Natvis Include="..\libs\Str\Str.natvis" />

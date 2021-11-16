@@ -3883,7 +3883,7 @@ void RegisterTests(ImGuiTestEngine* e)
     extern void RegisterTests_Table(ImGuiTestEngine * e);       // imgui_tests_tables.cpp
     extern void RegisterTests_Viewports(ImGuiTestEngine * e);   // imgui_tests_viewports.cpp
     extern void RegisterTests_Widgets(ImGuiTestEngine * e);     // imgui_tests_widgets.cpp
-    extern void RegisterTests_PerfTool(ImGuiTestEngine* e);      // imgui_te_perflog.cpp
+    extern void RegisterTests_PerfTool(ImGuiTestEngine* e);     // imgui_te_perftool.cpp
 
     // Tests
     RegisterTests_Window(e);
