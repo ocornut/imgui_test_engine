@@ -1122,12 +1122,14 @@ void ImGuiPerfTool::ShowUI(ImGuiTestEngine* engine)
 #endif
 }
 
+#ifdef IMGUI_TEST_ENGINE_ENABLE_IMPLOT
 static double GetLabelVerticalOffset(double occupy_h, int max_visible_builds, int now_visible_builds)
 {
     const double h = occupy_h / (float)max_visible_builds;
     double offset = -h * ((max_visible_builds - 1) * 0.5);
     return (double)now_visible_builds * h + offset;
 }
+#endif
 
 void ImGuiPerfTool::_ShowEntriesPlot()
 {

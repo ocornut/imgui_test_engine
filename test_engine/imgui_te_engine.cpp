@@ -419,6 +419,8 @@ ImGuiTestItemInfo* ImGuiTestEngine_FindItemInfo(ImGuiTestEngine* engine, ImGuiID
             ImFormatString(task->DebugName, IM_ARRAYSIZE(task->DebugName), "%.*s..%.*s", (int)header_sz, debug_id, (int)footer_sz, debug_id + debug_id_sz - footer_sz);
         }
     }
+#else
+    IM_UNUSED(debug_id);
 #endif
     engine->InfoTasks.push_back(task);
 
