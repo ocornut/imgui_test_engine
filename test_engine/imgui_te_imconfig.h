@@ -7,7 +7,12 @@
 // This feature requires ImPlot to be linked in the application.
 //#define IMGUI_TEST_ENGINE_ENABLE_IMPLOT
 
-// Bind assert macro
+// Test Engine Assert
 extern void ImGuiTestEngineHook_AssertFunc(const char* expr, const char* file, const char* func, int line);
-#define IM_ASSERT(_EXPR)    do { !!(_EXPR) || (ImGuiTestEngineHook_AssertFunc(#_EXPR, __FILE__, __func__, __LINE__), true); } while (0)
+#define IMGUI_TEST_ENGINE_ASSERT(_EXPR)     ImGuiTestEngineHook_AssertFunc(#_EXPR, __FILE__, __func__, __LINE__)
+
+// Bind main assert macro
+// FIXME: Make it possible to combine a user-defined IM_ASSERT() macros with what we need for test engine.
+// Maybe we don't redefine this if IM_ASSERT() is already defined, and require user to call IMGUI_TEST_ENGINE_ASSERT() ?
+#define IM_ASSERT(_EXPR)    do { !!(_EXPR) || (IMGUI_TEST_ENGINE_ASSERT(_EXPR), true); } while (0)
 // V_ASSERT_CONTRACT, assertMacro:IM_ASSERT

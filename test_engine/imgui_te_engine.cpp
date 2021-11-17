@@ -1504,6 +1504,8 @@ void ImGuiTestEngineHook_AssertFunc(const char* expr, const char* file, const ch
     }
 
     // Consider using github.com/scottt/debugbreak
+    // FIXME: This should probably not happen in a user app?
+    // FIXME: In our test app ideally we should break without an extra layer in call-stack.
 #if __GNUC__
     // __builtin_trap() is not part of IM_DEBUG_BREAK() because GCC optimizes away everything that comes after.
     __builtin_trap();
