@@ -4,7 +4,7 @@
 // Example usage:
 /*
     #include "imgui_app.h"
-    ImGuiApp* app = ImGuiApp_ImplWin32DX11_Create();
+    ImGuiApp* app = ImGuiApp_ImplDefault_Create();
     app->DpiAware = true;
     app->Vsync = true;
     app->InitCreateWindow(app, "My Application", ImVec2(1600, 1200));

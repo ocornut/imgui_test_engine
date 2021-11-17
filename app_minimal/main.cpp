@@ -30,16 +30,9 @@ int main(int argc, char** argv)
 {
     IM_UNUSED(argc);
     IM_UNUSED(argv);
+
     // Setup application backend
-#if defined(IMGUI_APP_WIN32_DX11)
-    ImGuiApp* app = ImGuiApp_ImplWin32DX11_Create();
-#elif defined(IMGUI_APP_SDL_GL2)
-    ImGuiApp* app = ImGuiApp_ImplSdlGL2_Create();
-#elif defined(IMGUI_APP_SDL_GL3)
-    ImGuiApp* app = ImGuiApp_ImplSdlGL3_Create();
-#elif defined(IMGUI_APP_GLFW_GL3)
-    ImGuiApp* app = ImGuiApp_ImplGlfwGL3_Create();
-#endif
+    ImGuiApp* app = ImGuiApp_ImplDefault_Create();
 
     // Setup Dear ImGui context
     IMGUI_CHECKVERSION();

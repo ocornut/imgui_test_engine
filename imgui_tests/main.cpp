@@ -418,17 +418,7 @@ int main(int argc, char** argv)
 
     // Creates window
     if (g_App.OptGui)
-    {
-#ifdef IMGUI_APP_WIN32_DX11
-        g_App.AppWindow = ImGuiApp_ImplWin32DX11_Create();
-#elif IMGUI_APP_SDL_GL2
-        g_App.AppWindow = ImGuiApp_ImplSdlGL2_Create();
-#elif IMGUI_APP_SDL_GL3
-        g_App.AppWindow = ImGuiApp_ImplSdlGL3_Create();
-#elif IMGUI_APP_GLFW_GL3
-        g_App.AppWindow = ImGuiApp_ImplGlfwGL3_Create();
-#endif
-    }
+        g_App.AppWindow = ImGuiApp_ImplDefault_Create();
     if (g_App.AppWindow == NULL)
         g_App.AppWindow = ImGuiApp_ImplNull_Create();
     g_App.AppWindow->DpiAware = false;

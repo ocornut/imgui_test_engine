@@ -38,22 +38,40 @@ struct ImGuiApp
     bool    (*CaptureFramebuffer)(ImGuiApp* app, int x, int y, int w, int h, unsigned int* pixels_rgba, void* user_data) = nullptr;
 };
 
+//-----------------------------------------------------------------------------
+// Create function for each Backends
+// - In most case you can use the shortcut ImGuiApp_ImplCreate() which will be defined to the first available backend.
+// - It is technically possible to compile with multiple backends simultaneously (very few users will care/need this).
+//-----------------------------------------------------------------------------
+
 ImGuiApp*     ImGuiApp_ImplNull_Create();
 
 #ifdef IMGUI_APP_WIN32_DX11
-ImGuiApp*     ImGuiApp_ImplWin32DX11_Create();
+ImGuiApp*                   ImGuiApp_ImplWin32DX11_Create();
+#ifndef ImGuiApp_ImplCreate
+#define ImGuiApp_ImplDefault_Create ImGuiApp_ImplWin32DX11_Create
+#endif
 #endif
 
 #ifdef IMGUI_APP_SDL_GL2
-ImGuiApp*     ImGuiApp_ImplSdlGL2_Create();
+ImGuiApp*                   ImGuiApp_ImplSdlGL2_Create();
+#ifndef ImGuiApp_ImplCreate
+#define ImGuiApp_ImplDefault_Create ImGuiApp_ImplSdlGL2_Create
+#endif
 #endif
 
 #ifdef IMGUI_APP_SDL_GL3
-ImGuiApp*     ImGuiApp_ImplSdlGL3_Create();
+ImGuiApp*                   ImGuiApp_ImplSdlGL3_Create();
+#ifndef ImGuiApp_ImplCreate
+#define ImGuiApp_ImplDefault_Create ImGuiApp_ImplSdlGL3_Create
+#endif
 #endif
 
 #ifdef IMGUI_APP_GLFW_GL3
-ImGuiApp*     ImGuiApp_ImplGlfwGL3_Create();
+ImGuiApp*                   ImGuiApp_ImplGlfwGL3_Create();
+#ifndef ImGuiApp_ImplCreate
+#define ImGuiApp_ImplDefault_Create ImGuiApp_ImplGlfwGL3_Create
+#endif
 #endif
 
 //-----------------------------------------------------------------------------
@@ -61,19 +79,28 @@ ImGuiApp*     ImGuiApp_ImplGlfwGL3_Create();
 //-----------------------------------------------------------------------------
 
 #if IMGUI_APP_IMPLEMENTATION
+
 #if defined(IMGUI_APP_WIN32_DX11)
 #include "imgui_impl_win32.cpp"
 #include "imgui_impl_dx11.cpp"
-#elif defined(IMGUI_APP_SDL_GL2)
+#endif
+
+#if defined(IMGUI_APP_SDL_GL2) || defined(IMGUI_APP_SDL_GL3)
 #include "imgui_impl_sdl.cpp"
-#include "imgui_impl_opengl2.cpp"
-#elif defined(IMGUI_APP_SDL_GL3)
-#include "imgui_impl_sdl.cpp"
-#include "imgui_impl_opengl3.cpp"
-#elif defined(IMGUI_APP_GLFW_GL3)
+#endif
+
+#if defined(IMGUI_APP_GLFW_GL3)
 #include "imgui_impl_glfw.cpp"
+#endif
+
+#if defined(IMGUI_APP_SDL_GL2) || defined(IMGUI_APP_GLFW_GL3)
+#include "imgui_impl_opengl2.cpp"
+#endif
+
+#if defined(IMGUI_APP_SDL_GL3) || defined(IMGUI_APP_GLFW_GL3)
 #include "imgui_impl_opengl3.cpp"
 #endif
+
 #endif
 
 //-----------------------------------------------------------------------------
