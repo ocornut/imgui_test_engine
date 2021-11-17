@@ -8,9 +8,6 @@
     <Filter Include="imgui">
       <UniqueIdentifier>{dde86bc5-15df-4c9f-aef1-72b689ce5875}</UniqueIdentifier>
     </Filter>
-    <Filter Include="imgui_backends">
-      <UniqueIdentifier>{cd2f5d3c-4165-43ac-97c2-235df2be986a}</UniqueIdentifier>
-    </Filter>
     <Filter Include="docs">
       <UniqueIdentifier>{f6fc3c16-99ff-4353-a8c9-3adc35dae6ce}</UniqueIdentifier>
     </Filter>
@@ -54,12 +51,6 @@
     </ClInclude>
     <ClInclude Include="..\..\imgui\imstb_truetype.h">
       <Filter>imgui</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\imgui\backends\imgui_impl_dx11.h">
-      <Filter>imgui_backends</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\imgui\backends\imgui_impl_win32.h">
-      <Filter>imgui_backends</Filter>
     </ClInclude>
     <ClInclude Include="editor_widgets.h">
       <Filter>sources</Filter>
@@ -119,12 +110,6 @@
     </ClCompile>
     <ClCompile Include="main.cpp">
       <Filter>sources</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\imgui\backends\imgui_impl_dx11.cpp">
-      <Filter>imgui_backends</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\imgui\backends\imgui_impl_win32.cpp">
-      <Filter>imgui_backends</Filter>
     </ClCompile>
     <ClCompile Include="editor_widgets.cpp">
       <Filter>sources</Filter>

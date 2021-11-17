@@ -3,24 +3,19 @@
 #include "imgui.h"
 #define IMGUI_DEFINE_MATH_OPERATORS
 #include "imgui_internal.h"
-#include "shared/imgui_app.h"       // This is a helper to wrap platform/renderer backends
+
+// imgui_app is a helper to wrap multiple Dear ImGui platform/renderer backends
+#ifndef IMGUI_APP_IMPLEMENTATION
+#define IMGUI_APP_IMPLEMENTATION 1  // Include the backend .cpp files
+#endif
+#include "shared/imgui_app.h"
+
 #include "libs/implot/implot.h"     // FIXME: Remove or make optional -> need to remove implot from imgui_test_engine_imconfig
 
 #include "imgui_test_engine/imgui_te_engine.h"
 #include "imgui_test_engine/imgui_te_context.h"
 #include "imgui_test_engine/imgui_te_ui.h"
 #include "imgui_test_engine/imgui_capture_tool.h"
-
-#ifdef IMGUI_APP_NO_BACKEND_IMPL
-// Define IMGUI_APP_NO_BACKEND_IMPL to avoid inclusion of backend cpp files
-// if build system already compiles and links this code.
-#elif defined(IMGUI_APP_SDL_GL2)
-#include "imgui_impl_sdl.cpp"
-#include "imgui_impl_opengl2.cpp"
-#elif defined(IMGUI_APP_SDL_GL3)
-#include "imgui_impl_sdl.cpp"
-#include "imgui_impl_opengl3.cpp"
-#endif
 
 static bool AppScreenCaptureFunc(ImGuiID viewport_id, int x, int y, int w, int h, unsigned int* pixels, void* user_data)
 {

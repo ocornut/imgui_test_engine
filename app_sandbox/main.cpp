@@ -10,8 +10,13 @@
 #include "libs/Str/Str.h"
 #include "thirdparty/imgui_memory_editor/imgui_memory_editor.h"
 #include "libs/implot/implot.h"
-#include "shared/imgui_app.h"
 #include "shared/IconsFontAwesome5.h"
+
+// imgui_app is a helper to wrap multiple Dear ImGui platform/renderer backends
+#ifndef IMGUI_APP_IMPLEMENTATION
+#define IMGUI_APP_IMPLEMENTATION 1  // Include the backend .cpp files
+#endif
+#include "shared/imgui_app.h"
 
 #ifdef IMGUI_SANDBOX_ENABLE_NATIVE_FILE_DIALOG
 #include "thirdparty/nativefiledialog/nfd.h"
@@ -22,17 +27,6 @@
 #include "imgui_test_engine/imgui_te_coroutine.h"
 #include "imgui_test_engine/imgui_te_ui.h"
 #include "imgui_test_engine/imgui_capture_tool.h"
-#endif
-
-#ifdef IMGUI_APP_NO_BACKEND_IMPL
-// Define IMGUI_APP_NO_BACKEND_IMPL to avoid inclusion of backend cpp files
-// if build system already compiles and links this code.
-#elif defined(IMGUI_APP_SDL_GL2)
-#include "imgui_impl_sdl.cpp"
-#include "imgui_impl_opengl2.cpp"
-#elif defined(IMGUI_APP_SDL_GL3)
-#include "imgui_impl_sdl.cpp"
-#include "imgui_impl_opengl3.cpp"
 #endif
 
 void EditorRenderScene();

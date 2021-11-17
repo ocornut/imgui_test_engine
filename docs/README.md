@@ -1,6 +1,6 @@
 ## Contents
 
-- `app_sandbox/` dummy editor, experiments, showcase of third party extensions
+- `app_sandbox/` experiments, showcase of third party extensions
 - `build_scripts/` helpers scripts to build with various compilers and create packages.
 - `libs/` libs for sandbox and imgui_test_engine
 - `shared/` shared helpers

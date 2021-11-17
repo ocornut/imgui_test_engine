@@ -7,6 +7,9 @@
 //   #define IMGUI_APP_SDL_GL3
 //   #define IMGUI_APP_GLFW_GL3
 //-----------------------------------------------------------------------------
+// To automatically include the backends .cpp, define in exactly one of your source file:
+//   #define IMGUI_APP_IMPLEMENTATION 1
+//-----------------------------------------------------------------------------
 
 #pragma once
 
@@ -52,3 +55,25 @@ ImGuiApp*     ImGuiApp_ImplSdlGL3_Create();
 #ifdef IMGUI_APP_GLFW_GL3
 ImGuiApp*     ImGuiApp_ImplGlfwGL3_Create();
 #endif
+
+//-----------------------------------------------------------------------------
+// Backend Implementations
+//-----------------------------------------------------------------------------
+
+#if IMGUI_APP_IMPLEMENTATION
+#if defined(IMGUI_APP_WIN32_DX11)
+#include "imgui_impl_win32.cpp"
+#include "imgui_impl_dx11.cpp"
+#elif defined(IMGUI_APP_SDL_GL2)
+#include "imgui_impl_sdl.cpp"
+#include "imgui_impl_opengl2.cpp"
+#elif defined(IMGUI_APP_SDL_GL3)
+#include "imgui_impl_sdl.cpp"
+#include "imgui_impl_opengl3.cpp"
+#elif defined(IMGUI_APP_GLFW_GL3)
+#include "imgui_impl_glfw.cpp"
+#include "imgui_impl_opengl3.cpp"
+#endif
+#endif
+
+//-----------------------------------------------------------------------------
