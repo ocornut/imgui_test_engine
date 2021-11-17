@@ -158,14 +158,13 @@
     <ClInclude Include="..\libs\Str\Str.h" />
     <ClInclude Include="..\shared\imgui_capture_tool.h" />
     <ClInclude Include="..\shared\imgui_utils.h" />
+    <ClInclude Include="imgui_te_context.h" />
+    <ClInclude Include="imgui_te_coroutine.h" />
+    <ClInclude Include="imgui_te_engine.h" />
     <ClInclude Include="imgui_te_imconfig.h" />
-    <ClInclude Include="imgui_test_engine\imgui_te_context.h" />
-    <ClInclude Include="imgui_test_engine\imgui_te_coroutine.h" />
-    <ClInclude Include="imgui_test_engine\imgui_te_engine.h" />
-    <ClInclude Include="imgui_test_engine\imgui_te_internal.h" />
-    <ClInclude Include="imgui_test_engine\imgui_te_util.h" />
     <ClInclude Include="imgui_te_perftool.h" />
     <ClInclude Include="imgui_te_ui.h" />
+    <ClInclude Include="imgui_te_util.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\shared\imgui_capture_tool.cpp" />

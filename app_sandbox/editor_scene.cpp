@@ -2,7 +2,7 @@
 #define IMGUI_DEFINE_MATH_OPERATORS
 #include "imgui_internal.h"
 #include <math.h>
-#include "../libs/ImGuizmo/ImGuizmo.h"
+#include "thirdparty/ImGuizmo/ImGuizmo.h"
 #include "../shared/IconsFontAwesome5.h"
 #include "editor_widgets.h"
 

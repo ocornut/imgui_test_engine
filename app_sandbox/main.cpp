@@ -6,14 +6,14 @@
 #include "sandbox_styles.h"
 #include "sandbox_tests.h"
 #include "libs/Str/Str.h"
-#include "libs/imgui_memory_editor/imgui_memory_editor.h"
+#include "thirdparty/imgui_memory_editor/imgui_memory_editor.h"
 #include "libs/implot/implot.h"
 #include "shared/imgui_app.h"
 #include "shared/IconsFontAwesome5.h"
 #include "shared/imgui_capture_tool.h"
 
 #ifdef IMGUI_SANDBOX_ENABLE_NATIVE_FILE_DIALOG
-#include "libs/nativefiledialog/nfd.h"
+#include "thirdparty/nativefiledialog/nfd.h"
 #endif
 
 #ifdef IMGUI_SANDBOX_ENABLE_TEST_ENGINE

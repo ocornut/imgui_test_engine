@@ -170,20 +170,20 @@
     <ClInclude Include="..\..\imgui\imstb_rectpack.h" />
     <ClInclude Include="..\..\imgui\imstb_textedit.h" />
     <ClInclude Include="..\..\imgui\imstb_truetype.h" />
-    <ClInclude Include="..\libs\ImGuizmo\ImGuizmo.h" />
-    <ClInclude Include="..\libs\imgui_memory_editor\imgui_memory_editor.h" />
     <ClInclude Include="..\libs\implot\implot.h" />
     <ClInclude Include="..\libs\implot\implot_internal.h" />
-    <ClInclude Include="..\libs\nativefiledialog\common.h" />
-    <ClInclude Include="..\libs\nativefiledialog\nfd.h" />
-    <ClInclude Include="..\libs\nativefiledialog\nfd_common.h" />
     <ClInclude Include="..\shared\imgui_app.h" />
-    <ClInclude Include="..\libs\imgui_markdown\imgui_markdown.h" />
     <ClInclude Include="editor_assets_browser.h" />
     <ClInclude Include="editor_widgets.h" />
     <ClInclude Include="sandbox_styles.h" />
     <ClInclude Include="sandbox_imconfig.h" />
     <ClInclude Include="sandbox_tests.h" />
+    <ClInclude Include="thirdparty\ImGuizmo\ImGuizmo.h" />
+    <ClInclude Include="thirdparty\imgui_markdown\imgui_markdown.h" />
+    <ClInclude Include="thirdparty\imgui_memory_editor\imgui_memory_editor.h" />
+    <ClInclude Include="thirdparty\nativefiledialog\common.h" />
+    <ClInclude Include="thirdparty\nativefiledialog\nfd.h" />
+    <ClInclude Include="thirdparty\nativefiledialog\nfd_common.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\imgui\backends\imgui_impl_dx11.cpp" />
@@ -193,12 +193,9 @@
     <ClCompile Include="..\..\imgui\imgui_draw.cpp" />
     <ClCompile Include="..\..\imgui\imgui_tables.cpp" />
     <ClCompile Include="..\..\imgui\imgui_widgets.cpp" />
-    <ClCompile Include="..\libs\ImGuizmo\ImGuizmo.cpp" />
     <ClCompile Include="..\libs\implot\implot.cpp" />
     <ClCompile Include="..\libs\implot\implot_demo.cpp" />
     <ClCompile Include="..\libs\implot\implot_items.cpp" />
-    <ClCompile Include="..\libs\nativefiledialog\nfd_common.c" />
-    <ClCompile Include="..\libs\nativefiledialog\nfd_win.cpp" />
     <ClCompile Include="..\shared\imgui_app.cpp" />
     <ClCompile Include="editor_assets_browser.cpp" />
     <ClCompile Include="editor_scene.cpp" />
@@ -206,6 +203,9 @@
     <ClCompile Include="sandbox_tests.cpp" />
     <ClCompile Include="editor_widgets.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="thirdparty\ImGuizmo\ImGuizmo.cpp" />
+    <ClCompile Include="thirdparty\nativefiledialog\nfd_common.c" />
+    <ClCompile Include="thirdparty\nativefiledialog\nfd_win.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="docs\TODO.txt" />

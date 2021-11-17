@@ -8,32 +8,32 @@
     <Filter Include="imgui">
       <UniqueIdentifier>{dde86bc5-15df-4c9f-aef1-72b689ce5875}</UniqueIdentifier>
     </Filter>
-    <Filter Include="libs">
-      <UniqueIdentifier>{ae52ecae-4354-4c59-b06b-cda499312915}</UniqueIdentifier>
-    </Filter>
     <Filter Include="imgui_backends">
       <UniqueIdentifier>{cd2f5d3c-4165-43ac-97c2-235df2be986a}</UniqueIdentifier>
     </Filter>
     <Filter Include="docs">
       <UniqueIdentifier>{f6fc3c16-99ff-4353-a8c9-3adc35dae6ce}</UniqueIdentifier>
     </Filter>
-    <Filter Include="libs\imgui_markdown">
-      <UniqueIdentifier>{21881388-fa50-4fa2-a5fb-e0debecd003b}</UniqueIdentifier>
-    </Filter>
     <Filter Include="shared">
       <UniqueIdentifier>{9e5548de-99f5-4e89-b4a9-7cb34eecc6f2}</UniqueIdentifier>
     </Filter>
-    <Filter Include="libs\ImGuizmo">
-      <UniqueIdentifier>{c9105b8f-4a21-440b-a300-cec8b547f13b}</UniqueIdentifier>
+    <Filter Include="thirdparty">
+      <UniqueIdentifier>{088d9c0b-65a8-4c80-8442-b378d33e5ab5}</UniqueIdentifier>
     </Filter>
-    <Filter Include="libs\imgui_memory_editor">
-      <UniqueIdentifier>{f82349da-abb1-4ea3-90e3-3fac36ce0672}</UniqueIdentifier>
+    <Filter Include="thirdparty\nativefiledialog">
+      <UniqueIdentifier>{681339c6-6c88-44ba-a345-0dab815489dc}</UniqueIdentifier>
     </Filter>
-    <Filter Include="libs\implot">
+    <Filter Include="thirdparty\imguizmo">
+      <UniqueIdentifier>{ffb7f50e-891f-496f-b64f-a4f400132244}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="thirdparty\imgui_markdown">
+      <UniqueIdentifier>{f7a806d9-bd37-4b41-abf7-af705d8bbdb6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="thirdparty\imgui_memory_editor">
+      <UniqueIdentifier>{0d136b7a-5fd1-446a-a424-ba26cecc491d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="thirdparty\implot">
       <UniqueIdentifier>{ba5cb1e9-0ab7-439d-9cf1-dc8a8ace037f}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="libs\nativefiledialog">
-      <UniqueIdentifier>{bee55434-6707-4f7e-bdeb-5a1f3aef5954}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -61,9 +61,6 @@
     <ClInclude Include="..\..\imgui\backends\imgui_impl_win32.h">
       <Filter>imgui_backends</Filter>
     </ClInclude>
-    <ClInclude Include="..\libs\imgui_markdown\imgui_markdown.h">
-      <Filter>libs\imgui_markdown</Filter>
-    </ClInclude>
     <ClInclude Include="editor_widgets.h">
       <Filter>sources</Filter>
     </ClInclude>
@@ -76,32 +73,35 @@
     <ClInclude Include="editor_assets_browser.h">
       <Filter>sources</Filter>
     </ClInclude>
-    <ClInclude Include="..\libs\ImGuizmo\ImGuizmo.h">
-      <Filter>libs\ImGuizmo</Filter>
-    </ClInclude>
-    <ClInclude Include="..\libs\imgui_memory_editor\imgui_memory_editor.h">
-      <Filter>libs\imgui_memory_editor</Filter>
-    </ClInclude>
     <ClInclude Include="..\libs\implot\implot.h">
-      <Filter>libs\implot</Filter>
+      <Filter>thirdparty\implot</Filter>
     </ClInclude>
     <ClInclude Include="..\libs\implot\implot_internal.h">
-      <Filter>libs\implot</Filter>
-    </ClInclude>
-    <ClInclude Include="..\libs\nativefiledialog\common.h">
-      <Filter>libs\nativefiledialog</Filter>
-    </ClInclude>
-    <ClInclude Include="..\libs\nativefiledialog\nfd.h">
-      <Filter>libs\nativefiledialog</Filter>
-    </ClInclude>
-    <ClInclude Include="..\libs\nativefiledialog\nfd_common.h">
-      <Filter>libs\nativefiledialog</Filter>
+      <Filter>thirdparty\implot</Filter>
     </ClInclude>
     <ClInclude Include="sandbox_tests.h">
       <Filter>sources</Filter>
     </ClInclude>
     <ClInclude Include="sandbox_styles.h">
       <Filter>sources</Filter>
+    </ClInclude>
+    <ClInclude Include="thirdparty\nativefiledialog\nfd.h">
+      <Filter>thirdparty\nativefiledialog</Filter>
+    </ClInclude>
+    <ClInclude Include="thirdparty\nativefiledialog\nfd_common.h">
+      <Filter>thirdparty\nativefiledialog</Filter>
+    </ClInclude>
+    <ClInclude Include="thirdparty\nativefiledialog\common.h">
+      <Filter>thirdparty\nativefiledialog</Filter>
+    </ClInclude>
+    <ClInclude Include="thirdparty\ImGuizmo\ImGuizmo.h">
+      <Filter>thirdparty\imguizmo</Filter>
+    </ClInclude>
+    <ClInclude Include="thirdparty\imgui_memory_editor\imgui_memory_editor.h">
+      <Filter>thirdparty\imgui_memory_editor</Filter>
+    </ClInclude>
+    <ClInclude Include="thirdparty\imgui_markdown\imgui_markdown.h">
+      <Filter>thirdparty\imgui_markdown</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -138,23 +138,14 @@
     <ClCompile Include="editor_scene.cpp">
       <Filter>sources</Filter>
     </ClCompile>
-    <ClCompile Include="..\libs\ImGuizmo\ImGuizmo.cpp">
-      <Filter>libs\ImGuizmo</Filter>
-    </ClCompile>
     <ClCompile Include="..\libs\implot\implot.cpp">
-      <Filter>libs\implot</Filter>
+      <Filter>thirdparty\implot</Filter>
     </ClCompile>
     <ClCompile Include="..\libs\implot\implot_demo.cpp">
-      <Filter>libs\implot</Filter>
+      <Filter>thirdparty\implot</Filter>
     </ClCompile>
     <ClCompile Include="..\libs\implot\implot_items.cpp">
-      <Filter>libs\implot</Filter>
-    </ClCompile>
-    <ClCompile Include="..\libs\nativefiledialog\nfd_common.c">
-      <Filter>libs\nativefiledialog</Filter>
-    </ClCompile>
-    <ClCompile Include="..\libs\nativefiledialog\nfd_win.cpp">
-      <Filter>libs\nativefiledialog</Filter>
+      <Filter>thirdparty\implot</Filter>
     </ClCompile>
     <ClCompile Include="sandbox_tests.cpp">
       <Filter>sources</Filter>
@@ -164,6 +155,15 @@
     </ClCompile>
     <ClCompile Include="..\..\imgui\imgui_tables.cpp">
       <Filter>imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="thirdparty\nativefiledialog\nfd_win.cpp">
+      <Filter>thirdparty\nativefiledialog</Filter>
+    </ClCompile>
+    <ClCompile Include="thirdparty\nativefiledialog\nfd_common.c">
+      <Filter>thirdparty\nativefiledialog</Filter>
+    </ClCompile>
+    <ClCompile Include="thirdparty\ImGuizmo\ImGuizmo.cpp">
+      <Filter>thirdparty\imguizmo</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

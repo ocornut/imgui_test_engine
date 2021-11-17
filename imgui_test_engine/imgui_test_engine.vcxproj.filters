@@ -19,9 +19,6 @@
     <Filter Include="libs\gif-h">
       <UniqueIdentifier>{7b7e388b-c887-40d1-a34a-b41ca0b5a4d4}</UniqueIdentifier>
     </Filter>
-    <Filter Include="libs\implot">
-      <UniqueIdentifier>{9c41ec59-db42-46e1-b95a-e5e0a8f34309}</UniqueIdentifier>
-    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\shared\imgui_capture_tool.h">
@@ -45,22 +42,19 @@
     <ClInclude Include="imgui_te_perftool.h">
       <Filter>imgui_test_engine</Filter>
     </ClInclude>
-    <ClInclude Include="imgui_test_engine\imgui_te_context.h">
-      <Filter>imgui_test_engine</Filter>
-    </ClInclude>
-    <ClInclude Include="imgui_test_engine\imgui_te_coroutine.h">
-      <Filter>imgui_test_engine</Filter>
-    </ClInclude>
-    <ClInclude Include="imgui_test_engine\imgui_te_engine.h">
-      <Filter>imgui_test_engine</Filter>
-    </ClInclude>
-    <ClInclude Include="imgui_test_engine\imgui_te_internal.h">
-      <Filter>imgui_test_engine</Filter>
-    </ClInclude>
-    <ClInclude Include="imgui_test_engine\imgui_te_util.h">
-      <Filter>imgui_test_engine</Filter>
-    </ClInclude>
     <ClInclude Include="imgui_te_imconfig.h">
+      <Filter>imgui_test_engine</Filter>
+    </ClInclude>
+    <ClInclude Include="imgui_te_context.h">
+      <Filter>imgui_test_engine</Filter>
+    </ClInclude>
+    <ClInclude Include="imgui_te_coroutine.h">
+      <Filter>imgui_test_engine</Filter>
+    </ClInclude>
+    <ClInclude Include="imgui_te_engine.h">
+      <Filter>imgui_test_engine</Filter>
+    </ClInclude>
+    <ClInclude Include="imgui_te_util.h">
       <Filter>imgui_test_engine</Filter>
     </ClInclude>
   </ItemGroup>
