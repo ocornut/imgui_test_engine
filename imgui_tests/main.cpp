@@ -59,8 +59,9 @@ static inline void DebugCrtDumpLeaks()
 #include "imgui_test_engine/imgui_te_engine.h"
 #include "imgui_test_engine/imgui_te_coroutine.h"
 #include "imgui_test_engine/imgui_te_util.h"
+#include "imgui_test_engine/imgui_te_ui.h"
+#include "imgui_test_engine/imgui_capture_tool.h"
 #include "shared/imgui_app.h"
-#include "shared/imgui_capture_tool.h"
 #include "shared/imgui_utils.h"
 #include "libs/Str/Str.h"
 #ifdef IMGUI_TEST_ENGINE_ENABLE_IMPLOT

@@ -41,13 +41,13 @@ bool    ImOsCreateProcess(const char* cmd_line)
     PROCESS_INFORMATION piProcInfo;
     ZeroMemory(&siStartInfo, sizeof(STARTUPINFOA));
     char* cmd_line_copy = ImStrdup(cmd_line);
-    BOOL ret = CreateProcessA(NULL, cmd_line_copy, NULL, NULL, FALSE, 0, NULL, NULL, &siStartInfo, &piProcInfo);
+    BOOL ret = ::CreateProcessA(NULL, cmd_line_copy, NULL, NULL, FALSE, 0, NULL, NULL, &siStartInfo, &piProcInfo);
     free(cmd_line_copy);
-    CloseHandle(siStartInfo.hStdInput);
-    CloseHandle(siStartInfo.hStdOutput);
-    CloseHandle(siStartInfo.hStdError);
-    CloseHandle(piProcInfo.hProcess);
-    CloseHandle(piProcInfo.hThread);
+    ::CloseHandle(siStartInfo.hStdInput);
+    ::CloseHandle(siStartInfo.hStdOutput);
+    ::CloseHandle(siStartInfo.hStdError);
+    ::CloseHandle(piProcInfo.hProcess);
+    ::CloseHandle(piProcInfo.hThread);
     return ret != 0;
 #else
     IM_UNUSED(cmd_line);

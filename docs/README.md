@@ -2,7 +2,7 @@
 
 - `app_sandbox/` dummy editor, experiments, showcase of third party extensions
 - `build_scripts/` helpers scripts to build with various compilers and create packages.
-- `libs/` libs for app_sandbox and imgui_test_engine
+- `libs/` libs for sandbox and imgui_test_engine
 - `shared/` shared helpers
 - `imgui_tests/` test suite (app)
 - `imgui_test_engine/` test engine (library)

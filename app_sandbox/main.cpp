@@ -10,7 +10,6 @@
 #include "libs/implot/implot.h"
 #include "shared/imgui_app.h"
 #include "shared/IconsFontAwesome5.h"
-#include "shared/imgui_capture_tool.h"
 
 #ifdef IMGUI_SANDBOX_ENABLE_NATIVE_FILE_DIALOG
 #include "thirdparty/nativefiledialog/nfd.h"
@@ -19,6 +18,8 @@
 #ifdef IMGUI_SANDBOX_ENABLE_TEST_ENGINE
 #include "imgui_test_engine/imgui_te_engine.h"
 #include "imgui_test_engine/imgui_te_coroutine.h"
+#include "imgui_test_engine/imgui_te_ui.h"
+#include "imgui_test_engine/imgui_capture_tool.h"
 #endif
 
 #ifdef IMGUI_APP_NO_BACKEND_IMPL
@@ -161,7 +162,7 @@ int main(int argc, char** argv)
     char* readme_md = (char*)ImFileLoadToMemory(Str128f("%s/docs/README.md", imgui_folder.c_str()).c_str(), "rb", &readme_md_size, +1);
 #else
     size_t readme_md_size = 0;
-    char* readme_md = (char*)ImFileLoadToMemory("docs/README.md", "rb", &readme_md_size, +1);
+    char* readme_md = (char*)ImFileLoadToMemory("docs/MarkdownTest.md", "rb", &readme_md_size, +1);
 #endif
 
     bool show_imgui_demo = true;

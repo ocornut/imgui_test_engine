@@ -156,8 +156,8 @@
     <ClInclude Include="..\libs\gif-h\gif.h" />
     <ClInclude Include="..\libs\stb\stb_image_write.h" />
     <ClInclude Include="..\libs\Str\Str.h" />
-    <ClInclude Include="..\shared\imgui_capture_tool.h" />
     <ClInclude Include="..\shared\imgui_utils.h" />
+    <ClInclude Include="imgui_capture_tool.h" />
     <ClInclude Include="imgui_te_context.h" />
     <ClInclude Include="imgui_te_coroutine.h" />
     <ClInclude Include="imgui_te_engine.h" />
@@ -167,8 +167,8 @@
     <ClInclude Include="imgui_te_util.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\shared\imgui_capture_tool.cpp" />
     <ClCompile Include="..\shared\imgui_utils.cpp" />
+    <ClCompile Include="imgui_capture_tool.cpp" />
     <ClCompile Include="imgui_te_context.cpp" />
     <ClCompile Include="imgui_te_coroutine.cpp" />
     <ClCompile Include="imgui_te_engine.cpp" />

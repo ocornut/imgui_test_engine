@@ -15,7 +15,7 @@
 // For tests
 #include "imgui_te_engine.h"
 #include "imgui_te_context.h"
-#include "shared/imgui_capture_tool.h"
+#include "imgui_capture_tool.h"
 
 // Terminology:
 // * Entry: information about execution of a single perf test. This corresponds to one line in CSV file.

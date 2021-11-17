@@ -18,7 +18,7 @@
 //-------------------------------------------------------------------------
 // - DrawTestLog() [internal]
 // - GetVerboseLevelName() [internal]
-// - ShowTestGroup() [Internal]
+// - ShowTestGroup() [internal]
 // - ImGuiTestEngine_ShowTestWindows()
 //-------------------------------------------------------------------------
 
