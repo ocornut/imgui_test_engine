@@ -8,7 +8,7 @@
 #ifdef IMGUI_SANDBOX_ENABLE_TEST_ENGINE
 #define IMGUI_TEST_ENGINE_ENABLE_COROUTINE_STDTHREAD_IMPL
 #define IMGUI_TEST_ENGINE_ENABLE_IMPLOT
-#include "../test_engine/imgui_te_imconfig.h"
+#include "../imgui_test_engine/imgui_te_imconfig.h"
 #endif
 
 // Enforce a backend to use

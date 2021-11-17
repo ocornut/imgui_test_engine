@@ -184,7 +184,7 @@
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\test_engine\imgui_test_engine.vcxproj">
+    <ProjectReference Include="..\imgui_test_engine\imgui_test_engine.vcxproj">
       <Project>{e6fac6ef-4b54-45c4-9e76-3b063b51d4b9}</Project>
     </ProjectReference>
   </ItemGroup>

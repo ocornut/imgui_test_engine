@@ -21,7 +21,7 @@
 #define IMGUI_TEST_ENGINE_ENABLE_IMPLOT
 
 // Use relative path as this file may be compiled with different settings
-#include "../test_engine/imgui_te_imconfig.h"
+#include "../imgui_test_engine/imgui_te_imconfig.h"
 
 // Extra warnings
 #ifdef _MSC_VER

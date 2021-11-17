@@ -93,7 +93,7 @@ endif
 %.o:%.cpp
 	$(CXX) $(CFLAGS) $(CXXFLAGS) -c -o $@ $<
 
-%.o:../test_engine/%.cpp
+%.o:../imgui_test_engine/%.cpp
 	$(CXX) $(CFLAGS) $(CXXFLAGS) -c -o $@ $<
 
 %.o:../shared/%.cpp

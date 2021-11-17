@@ -20,15 +20,15 @@ app_sandbox/build/*
 app_sandbox/Debug/*
 app_sandbox/Release/*
 app_sandbox/x64/*
+imgui_test_engine/build/*
+imgui_test_engine/Debug/*
+imgui_test_engine/Release/*
+imgui_test_engine/x64/*
 imgui_tests/build/*
 imgui_tests/Debug/*
 imgui_tests/Release/*
 imgui_tests/x64/*
 imgui_tests/imgui_tests
-test_engine/build/*
-test_engine/Debug/*
-test_engine/Release/*
-test_engine/x64/*
 
 ## Visual Studio artifacts
 .vs/*

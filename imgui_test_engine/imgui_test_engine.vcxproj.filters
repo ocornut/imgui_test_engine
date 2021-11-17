@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <Filter Include="test_engine">
+    <Filter Include="imgui_test_engine">
       <UniqueIdentifier>{ea1f9e76-839d-4813-b11f-d4b3b610727a}</UniqueIdentifier>
     </Filter>
     <Filter Include="shared">
@@ -40,42 +40,42 @@
       <Filter>libs\gif-h</Filter>
     </ClInclude>
     <ClInclude Include="imgui_te_ui.h">
-      <Filter>test_engine</Filter>
+      <Filter>imgui_test_engine</Filter>
     </ClInclude>
     <ClInclude Include="imgui_te_perftool.h">
-      <Filter>test_engine</Filter>
+      <Filter>imgui_test_engine</Filter>
     </ClInclude>
-    <ClInclude Include="test_engine\imgui_te_context.h">
-      <Filter>test_engine</Filter>
+    <ClInclude Include="imgui_test_engine\imgui_te_context.h">
+      <Filter>imgui_test_engine</Filter>
     </ClInclude>
-    <ClInclude Include="test_engine\imgui_te_coroutine.h">
-      <Filter>test_engine</Filter>
+    <ClInclude Include="imgui_test_engine\imgui_te_coroutine.h">
+      <Filter>imgui_test_engine</Filter>
     </ClInclude>
-    <ClInclude Include="test_engine\imgui_te_engine.h">
-      <Filter>test_engine</Filter>
+    <ClInclude Include="imgui_test_engine\imgui_te_engine.h">
+      <Filter>imgui_test_engine</Filter>
     </ClInclude>
-    <ClInclude Include="test_engine\imgui_te_internal.h">
-      <Filter>test_engine</Filter>
+    <ClInclude Include="imgui_test_engine\imgui_te_internal.h">
+      <Filter>imgui_test_engine</Filter>
     </ClInclude>
-    <ClInclude Include="test_engine\imgui_te_util.h">
-      <Filter>test_engine</Filter>
+    <ClInclude Include="imgui_test_engine\imgui_te_util.h">
+      <Filter>imgui_test_engine</Filter>
     </ClInclude>
     <ClInclude Include="imgui_te_imconfig.h">
-      <Filter>test_engine</Filter>
+      <Filter>imgui_test_engine</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="imgui_te_context.cpp">
-      <Filter>test_engine</Filter>
+      <Filter>imgui_test_engine</Filter>
     </ClCompile>
     <ClCompile Include="imgui_te_util.cpp">
-      <Filter>test_engine</Filter>
+      <Filter>imgui_test_engine</Filter>
     </ClCompile>
     <ClCompile Include="imgui_te_ui.cpp">
-      <Filter>test_engine</Filter>
+      <Filter>imgui_test_engine</Filter>
     </ClCompile>
     <ClCompile Include="imgui_te_coroutine.cpp">
-      <Filter>test_engine</Filter>
+      <Filter>imgui_test_engine</Filter>
     </ClCompile>
     <ClCompile Include="..\shared\imgui_capture_tool.cpp">
       <Filter>shared</Filter>
@@ -84,10 +84,10 @@
       <Filter>shared</Filter>
     </ClCompile>
     <ClCompile Include="imgui_te_engine.cpp">
-      <Filter>test_engine</Filter>
+      <Filter>imgui_test_engine</Filter>
     </ClCompile>
     <ClCompile Include="imgui_te_perftool.cpp">
-      <Filter>test_engine</Filter>
+      <Filter>imgui_test_engine</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

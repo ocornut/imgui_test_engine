@@ -2,7 +2,7 @@
 // (tests)
 
 #include "imgui.h"
-#include "test_engine/imgui_te_context.h"
+#include "imgui_test_engine/imgui_te_context.h"
 #include "shared/imgui_capture_tool.h"
 
 void RegisterSandboxTests(ImGuiTestEngine* e)

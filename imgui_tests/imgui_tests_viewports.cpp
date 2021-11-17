@@ -7,8 +7,8 @@
 #define IMGUI_DEFINE_MATH_OPERATORS
 #include "imgui_internal.h"
 #include "imgui_tests.h"
-#include "test_engine/imgui_te_engine.h"      // IM_REGISTER_TEST()
-#include "test_engine/imgui_te_context.h"
+#include "imgui_test_engine/imgui_te_engine.h"      // IM_REGISTER_TEST()
+#include "imgui_test_engine/imgui_te_context.h"
 
 // Warnings
 #ifdef _MSC_VER

@@ -17,8 +17,8 @@
 #endif
 
 #ifdef IMGUI_SANDBOX_ENABLE_TEST_ENGINE
-#include "test_engine/imgui_te_engine.h"
-#include "test_engine/imgui_te_coroutine.h"
+#include "imgui_test_engine/imgui_te_engine.h"
+#include "imgui_test_engine/imgui_te_coroutine.h"
 #endif
 
 #ifdef IMGUI_APP_NO_BACKEND_IMPL
