@@ -304,6 +304,7 @@ static void ShowTestGroup(ImGuiTestEngine* e, ImGuiTestGroup group, ImGuiTextFil
 
             // Double-click to run test, CTRL+Double-click to run GUI function
             const bool is_running_gui_func = (test_context && (test_context->RunFlags & ImGuiTestRunFlags_GuiFuncOnly));
+            const bool has_gui_func = (test->GuiFunc != NULL);
             if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(0))
             {
                 if (ImGui::GetIO().KeyCtrl)
@@ -329,7 +330,7 @@ static void ShowTestGroup(ImGuiTestEngine* e, ImGuiTestGroup group, ImGuiTextFil
 
                 if (ImGui::MenuItem("Run test"))
                     queue_test = true;
-                if (ImGui::MenuItem("Run GUI func", "Ctrl+DblClick", is_running_gui_func))
+                if (ImGui::MenuItem("Run GUI func", "Ctrl+DblClick", is_running_gui_func, has_gui_func))
                     queue_gui_func_toggle = true;
 
                 ImGui::Separator();

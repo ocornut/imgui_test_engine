@@ -1,3 +1,5 @@
+// dear imgui - Sandbox: experiments, showcase of third party extensions
+
 #include "imgui.h"
 #define IMGUI_DEFINE_MATH_OPERATORS
 #include "imgui_internal.h"
@@ -136,7 +138,6 @@ int main(int argc, char** argv)
     test_io.ConfigVerboseLevelOnError = ImGuiTestVerboseLevel_Debug;
     test_io.ScreenCaptureFunc = AppScreenCaptureFunc;
     test_io.ScreenCaptureUserData = (void*)app;
-    test_io.CoroutineFuncs = Coroutine_ImplStdThread_GetInterface();
 
     // Register tests
     RegisterSandboxTests(engine);

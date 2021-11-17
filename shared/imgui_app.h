@@ -14,28 +14,25 @@
 //#define IMGUI_APP_WIN32_DX11
 //#endif
 
-#include "imgui.h"
-
-struct ImVec2;
+#include "imgui.h"  // for ImVec4 only
 
 struct ImGuiApp
 {
-    bool            DpiAware = true;                                // [In]  InitCreateWindow()
-    bool            SrgbFramebuffer = false;                        // [In]  InitCreateWindow() FIXME-WIP
-    bool            Quit = false;                                   // [In]  NewFrame()
-    float           DpiScale = 1.0f;                                // [Out] InitCreateWindow() / NewFrame()
-    ImVec4          ClearColor = ImVec4(0.0f, 0.0f, 0.0f, 1.0f);    // [In]  Render()
-    bool            Vsync = true;                                   // [Out] Render()
+    bool    DpiAware = true;                            // [In]  InitCreateWindow()
+    bool    SrgbFramebuffer = false;                    // [In]  InitCreateWindow() FIXME-WIP
+    bool    Quit = false;                               // [In]  NewFrame()
+    ImVec4  ClearColor = { 0.f, 0.f, 0.f, 1.f };        // [In]  Render()
+    float   DpiScale = 1.0f;                            // [Out] InitCreateWindow() / NewFrame()
+    bool    Vsync = true;                               // [Out] Render()
 
-    bool            (*InitCreateWindow)(ImGuiApp* app, const char* window_title, ImVec2 window_size) = NULL;
-    void            (*InitBackends)(ImGuiApp* app) = NULL;
-    bool            (*NewFrame)(ImGuiApp* app) = NULL;
-    void            (*Render)(ImGuiApp* app) = NULL;
-    void            (*ShutdownCloseWindow)(ImGuiApp* app) = NULL;
-    void            (*ShutdownBackends)(ImGuiApp* app) = NULL;
-    void            (*Destroy)(ImGuiApp* app) = NULL;
-    bool            (*CaptureFramebuffer)(ImGuiApp* app, int x, int y, int w, int h, unsigned int* pixels_rgba, void* user_data) = NULL;
-
+    bool    (*InitCreateWindow)(ImGuiApp* app, const char* window_title, ImVec2 window_size) = nullptr;
+    void    (*InitBackends)(ImGuiApp* app) = nullptr;
+    bool    (*NewFrame)(ImGuiApp* app) = nullptr;
+    void    (*Render)(ImGuiApp* app) = nullptr;
+    void    (*ShutdownCloseWindow)(ImGuiApp* app) = nullptr;
+    void    (*ShutdownBackends)(ImGuiApp* app) = nullptr;
+    void    (*Destroy)(ImGuiApp* app) = nullptr;
+    bool    (*CaptureFramebuffer)(ImGuiApp* app, int x, int y, int w, int h, unsigned int* pixels_rgba, void* user_data) = nullptr;
 };
 
 ImGuiApp*     ImGuiApp_ImplNull_Create();

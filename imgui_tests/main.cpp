@@ -1,4 +1,4 @@
-// dear imgui - Standalone GUI/command-line app for Test Engine
+// dear imgui - Standalone GUI/command-line app for Test Engine + all regression tests for Dear ImGui
 
 // Interactive mode, e.g.
 //   main.exe [tests]
@@ -452,7 +452,6 @@ int main(int argc, char** argv)
     test_io.SrcFileOpenUserData = NULL;
     test_io.ScreenCaptureFunc = [](ImGuiID, int x, int y, int w, int h, unsigned int* pixels, void* user_data) { ImGuiApp* app = (ImGuiApp*)user_data; return app->CaptureFramebuffer(app, x, y, w, h, pixels, NULL); };
     test_io.ScreenCaptureUserData = (void*)g_App.AppWindow;
-    test_io.CoroutineFuncs = Coroutine_ImplStdThread_GetInterface();
 
     // Register and queue our tests
     RegisterTests(engine);

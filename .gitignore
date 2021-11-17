@@ -16,6 +16,10 @@ imgui.ini
 *.o
 *.obj
 *.exe
+app_minimal/build/*
+app_minimal/Debug/*
+app_minimal/Release/*
+app_minimal/x64/*
 app_sandbox/build/*
 app_sandbox/Debug/*
 app_sandbox/Release/*

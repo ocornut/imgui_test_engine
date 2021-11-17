@@ -115,6 +115,11 @@ ImGuiTestEngine::ImGuiTestEngine()
     PerfDeltaTime1000.Init(1000);
     PerfDeltaTime2000.Init(2000);
     PerfTool = IM_NEW(ImGuiPerfTool);
+
+    // Initialize std::thread based coroutine implementation if requested
+#ifdef IMGUI_TEST_ENGINE_ENABLE_COROUTINE_STDTHREAD_IMPL
+    IO.CoroutineFuncs = Coroutine_ImplStdThread_GetInterface();
+#endif
 }
 
 ImGuiTestEngine::~ImGuiTestEngine()
