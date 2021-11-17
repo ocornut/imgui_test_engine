@@ -17,7 +17,7 @@ UNAME_S := $(shell uname -s)
 
 CXXFLAGS = -std=c++14
 CFLAGS = -I../ -I$(IMGUI_DIR) -I$(IMGUI_DIR)/backends -I../libs
-CFLAGS += -DIMGUI_USER_CONFIG=\"test_app/imgui_tests_imconfig.h\"
+CFLAGS += -DIMGUI_USER_CONFIG=\"imgui_tests/imgui_tests_imconfig.h\"
 CFLAGS += -g -Wall -Wformat
 
 ifeq ($(BACKEND_LIB),)

@@ -7,7 +7,7 @@ if "%TEST_RUN_OPTIONS%"=="" set TEST_RUN_OPTIONS=-nogui -nopause
 
 set BUILD_OPTIONS=/nologo /verbosity:minimal
 set LOCAL_DIR=%~dp0
-set IMGUI_TESTS_APP_DIR=%LOCAL_DIR%..\test_app
+set IMGUI_TESTS_APP_DIR=%LOCAL_DIR%..\imgui_tests
 
 call utils\hMSBuild.bat %BUILD_OPTIONS% /p:PlatformToolset=%TOOLSET% /t:imgui_tests /p:Platform=%PLATFORM% /p:Configuration=%CONFIGURATION% %IMGUI_TESTS_APP_DIR%\..\imgui_dev.sln
 echo imgui_tests.exe %TEST_RUN_OPTIONS%

@@ -36,7 +36,7 @@ def main():
     parser.add_argument('-r', '--run', nargs='?', const='perf', required=False, metavar='MASK',
                         help='Run tests matching specified mask (eg. perf_draw,perf_misc). Not specifying a mask will '
                              'run all perf tests.')
-    parser.add_argument('-p', '--preview', action='store_true', help='Preview results in test_app after executing '
+    parser.add_argument('-p', '--preview', action='store_true', help='Preview results in imgui_tests after executing '
                                                                      'tests of each branch.')
     parser.add_argument('-o', '--output', nargs='?', const='capture_perf_report.html',
                         help='Report file name. Default: capture_perf_report.html')
@@ -44,9 +44,9 @@ def main():
     args = parser.parse_args()
 
     if os.name == 'nt':
-        imgui_tests_exe = '../test_app/Release/imgui_tests.exe'
+        imgui_tests_exe = '../imgui_tests/Release/imgui_tests.exe'
     else:
-        imgui_tests_exe = '../test_app/imgui_tests'
+        imgui_tests_exe = '../imgui_tests/imgui_tests'
     initial_branch = get_git_branch()
 
     if args.clean:
@@ -70,15 +70,15 @@ def main():
             try:
                 if os.name == 'nt':
                     msbuild = os.environ['WINDIR'] + '/Microsoft.NET/Framework/v4.0.30319/MSBuild.exe'
-                    subprocess.call([msbuild, '../test_app/imgui_tests.vcxproj', '/t:Clean',
+                    subprocess.call([msbuild, '../imgui_tests/imgui_tests.vcxproj', '/t:Clean',
                                      '/p:Configuration=Release'])
-                    subprocess.call([msbuild, '../test_app/imgui_tests.vcxproj', '/p:Configuration=Release',
+                    subprocess.call([msbuild, '../imgui_tests/imgui_tests.vcxproj', '/p:Configuration=Release',
                                      '/m:'+str(multiprocessing.cpu_count())])
                 else:
-                    subprocess.call(['make', '-C', '../test_app', 'clean'])
-                    subprocess.call(['make', '-C', '../test_app', '-j'+str(multiprocessing.cpu_count())])
+                    subprocess.call(['make', '-C', '../imgui_tests', 'clean'])
+                    subprocess.call(['make', '-C', '../imgui_tests', '-j'+str(multiprocessing.cpu_count())])
             except subprocess.CalledProcessError:
-                logging.error('Building test_app on branch {} failed'.format(branch))
+                logging.error('Building imgui_tests on branch {} failed'.format(branch))
                 return -1
 
             try:

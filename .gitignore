@@ -9,7 +9,7 @@ build_scripts/config/build_config.bat
 ## Application artifacts
 output/
 app_sandbox/output/
-test_app/output/
+imgui_tests/output/
 imgui.ini
 
 ## Build artifacts
@@ -20,11 +20,11 @@ app_sandbox/build/*
 app_sandbox/Debug/*
 app_sandbox/Release/*
 app_sandbox/x64/*
-test_app/build/*
-test_app/Debug/*
-test_app/Release/*
-test_app/x64/*
-test_app/test_app
+imgui_tests/build/*
+imgui_tests/Debug/*
+imgui_tests/Release/*
+imgui_tests/x64/*
+imgui_tests/imgui_tests
 test_engine/build/*
 test_engine/Debug/*
 test_engine/Release/*

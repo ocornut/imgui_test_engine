@@ -10,7 +10,7 @@
     <Filter Include="shared">
       <UniqueIdentifier>{67f74698-0094-4ad4-b787-ab144bdfd6a2}</UniqueIdentifier>
     </Filter>
-    <Filter Include="test_app">
+    <Filter Include="imgui_tests">
       <UniqueIdentifier>{08e36723-ce4f-4cff-9662-c40801cf1acf}</UniqueIdentifier>
     </Filter>
     <Filter Include="libs">
@@ -40,7 +40,7 @@
       <Filter>imgui</Filter>
     </ClInclude>
     <ClInclude Include="imgui_tests.h">
-      <Filter>test_app</Filter>
+      <Filter>imgui_tests</Filter>
     </ClInclude>
     <ClInclude Include="..\..\imgui\backends\imgui_impl_dx11.h">
       <Filter>imgui_backends</Filter>
@@ -52,7 +52,7 @@
       <Filter>shared</Filter>
     </ClInclude>
     <ClInclude Include="imgui_tests_imconfig.h">
-      <Filter>test_app</Filter>
+      <Filter>imgui_tests</Filter>
     </ClInclude>
     <ClInclude Include="..\libs\implot\implot_internal.h">
       <Filter>libs\implot</Filter>
@@ -75,10 +75,10 @@
       <Filter>imgui</Filter>
     </ClCompile>
     <ClCompile Include="imgui_tests.cpp">
-      <Filter>test_app</Filter>
+      <Filter>imgui_tests</Filter>
     </ClCompile>
     <ClCompile Include="main.cpp">
-      <Filter>test_app</Filter>
+      <Filter>imgui_tests</Filter>
     </ClCompile>
     <ClCompile Include="..\..\imgui\backends\imgui_impl_dx11.cpp">
       <Filter>imgui_backends</Filter>
@@ -90,22 +90,22 @@
       <Filter>shared</Filter>
     </ClCompile>
     <ClCompile Include="imgui_tests_tables.cpp">
-      <Filter>test_app</Filter>
+      <Filter>imgui_tests</Filter>
     </ClCompile>
     <ClCompile Include="imgui_tests_docking.cpp">
-      <Filter>test_app</Filter>
+      <Filter>imgui_tests</Filter>
     </ClCompile>
     <ClCompile Include="imgui_tests_perf.cpp">
-      <Filter>test_app</Filter>
+      <Filter>imgui_tests</Filter>
     </ClCompile>
     <ClCompile Include="imgui_tests_widgets.cpp">
-      <Filter>test_app</Filter>
+      <Filter>imgui_tests</Filter>
     </ClCompile>
     <ClCompile Include="..\..\imgui\imgui_tables.cpp">
       <Filter>imgui</Filter>
     </ClCompile>
     <ClCompile Include="imgui_tests_nav.cpp">
-      <Filter>test_app</Filter>
+      <Filter>imgui_tests</Filter>
     </ClCompile>
     <ClCompile Include="..\libs\implot\implot_demo.cpp">
       <Filter>libs\implot</Filter>
@@ -117,7 +117,7 @@
       <Filter>libs\implot</Filter>
     </ClCompile>
     <ClCompile Include="imgui_tests_viewports.cpp">
-      <Filter>test_app</Filter>
+      <Filter>imgui_tests</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

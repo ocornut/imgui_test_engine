@@ -45,23 +45,23 @@ jobs:
       - name: Build (with SDL2)
         if: github.event_name == 'workflow_run'
         run: |
-          make -C test_app/ clean
-          make -C test_app/ BACKEND_LIB=sdl2
+          make -C imgui_tests/ clean
+          make -C imgui_tests/ BACKEND_LIB=sdl2
 
       - name: Build (with GLFW3)
         if: github.event_name == 'workflow_run'
         run: |
-          make -C test_app/ clean
-          make -C test_app/ BACKEND_LIB=glfw3
+          make -C imgui_tests/ clean
+          make -C imgui_tests/ BACKEND_LIB=glfw3
 
       - name: Build
         run: |
-          make -C test_app/ clean
-          make -C test_app/ ASAN=1
+          make -C imgui_tests/ clean
+          make -C imgui_tests/ ASAN=1
 
       - name: Run Tests
         run: |
-          timeout 300 test_app/imgui_test_app -nogui -nopause -v2 -ve4 tests
+          timeout 300 imgui_tests/imgui_tests -nogui -nopause -v2 -ve4 tests
 
   MacOS:
     runs-on: macos-latest
@@ -90,11 +90,11 @@ jobs:
 
       - name: Build
         run: |
-          make -C test_app/ ASAN=1
+          make -C imgui_tests/ ASAN=1
 
       - name: Run Tests
         run: |
-          test_app/imgui_test_app -nogui -nopause -v2 -ve4 tests
+          imgui_tests/imgui_tests -nogui -nopause -v2 -ve4 tests
 
   Windows:
     if: |
@@ -137,13 +137,13 @@ jobs:
             (Get-Content $_.FullName) -Replace "<WindowsTargetPlatformVersion>10.0.14393.0</WindowsTargetPlatformVersion>","<WindowsTargetPlatformVersion>10.0.18362.0</WindowsTargetPlatformVersion>" | Set-Content -Path $_.FullName
           }
 
-      - name: Build ${{ matrix.arch }} test_app
+      - name: Build ${{ matrix.arch }} imgui_tests
         shell: cmd
-        run: '"%MSBUILD_PATH%\MSBuild.exe" test_app/imgui_test_app.vcxproj /p:Platform=${{ matrix.arch }} /p:Configuration=Release'
+        run: '"%MSBUILD_PATH%\MSBuild.exe" imgui_tests/imgui_tests.vcxproj /p:Platform=${{ matrix.arch }} /p:Configuration=Release'
 
       - name: Run Tests
         run: |
-          test_app/Release/imgui_test_app.exe -nogui -nopause -v2 -ve4 tests
+          imgui_tests/Release/imgui_tests.exe -nogui -nopause -v2 -ve4 tests
 
   Discord-CI:
     runs-on: ubuntu-latest
