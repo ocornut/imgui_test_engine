@@ -3,7 +3,7 @@
 # Compatible with MSYS2/MINGW, Ubuntu 14.04.1 and Mac OS X
 #
 
-EXE = imgui_test_app
+EXE = imgui_tests
 IMGUI_DIR = ../../imgui
 SOURCES = main.cpp
 # FIXME: The paths look wrong here??
@@ -17,7 +17,7 @@ UNAME_S := $(shell uname -s)
 
 CXXFLAGS = -std=c++14
 CFLAGS = -I../ -I$(IMGUI_DIR) -I$(IMGUI_DIR)/backends -I../libs
-CFLAGS += -DIMGUI_USER_CONFIG=\"test_app/test_app_imconfig.h\"
+CFLAGS += -DIMGUI_USER_CONFIG=\"test_app/imgui_tests_imconfig.h\"
 CFLAGS += -g -Wall -Wformat
 
 ifeq ($(BACKEND_LIB),)

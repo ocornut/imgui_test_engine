@@ -51,7 +51,7 @@
     <ClInclude Include="..\shared\imgui_app.h">
       <Filter>shared</Filter>
     </ClInclude>
-    <ClInclude Include="test_app_imconfig.h">
+    <ClInclude Include="imgui_tests_imconfig.h">
       <Filter>test_app</Filter>
     </ClInclude>
     <ClInclude Include="..\libs\implot\implot_internal.h">

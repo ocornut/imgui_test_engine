@@ -9,8 +9,8 @@ set BUILD_OPTIONS=/nologo /verbosity:minimal
 set LOCAL_DIR=%~dp0
 set IMGUI_TESTS_APP_DIR=%LOCAL_DIR%..\test_app
 
-call utils\hMSBuild.bat %BUILD_OPTIONS% /p:PlatformToolset=%TOOLSET% /t:imgui_test_app /p:Platform=%PLATFORM% /p:Configuration=%CONFIGURATION% %IMGUI_TESTS_APP_DIR%\..\imgui_dev.sln
-echo imgui_test_app.exe %TEST_RUN_OPTIONS%
-%IMGUI_TESTS_APP_DIR%\%CONFIGURATION%\imgui_test_app.exe %TEST_RUN_OPTIONS%
+call utils\hMSBuild.bat %BUILD_OPTIONS% /p:PlatformToolset=%TOOLSET% /t:imgui_tests /p:Platform=%PLATFORM% /p:Configuration=%CONFIGURATION% %IMGUI_TESTS_APP_DIR%\..\imgui_dev.sln
+echo imgui_tests.exe %TEST_RUN_OPTIONS%
+%IMGUI_TESTS_APP_DIR%\%CONFIGURATION%\imgui_tests.exe %TEST_RUN_OPTIONS%
 
 pause

@@ -44,9 +44,9 @@ def main():
     args = parser.parse_args()
 
     if os.name == 'nt':
-        imgui_test_app = '../test_app/Release/imgui_test_app.exe'
+        imgui_tests_exe = '../test_app/Release/imgui_tests.exe'
     else:
-        imgui_test_app = '../test_app/imgui_test_app'
+        imgui_tests_exe = '../test_app/imgui_tests'
     initial_branch = get_git_branch()
 
     if args.clean:
@@ -70,9 +70,9 @@ def main():
             try:
                 if os.name == 'nt':
                     msbuild = os.environ['WINDIR'] + '/Microsoft.NET/Framework/v4.0.30319/MSBuild.exe'
-                    subprocess.call([msbuild, '../test_app/imgui_test_app.vcxproj', '/t:Clean',
+                    subprocess.call([msbuild, '../test_app/imgui_tests.vcxproj', '/t:Clean',
                                      '/p:Configuration=Release'])
-                    subprocess.call([msbuild, '../test_app/imgui_test_app.vcxproj', '/p:Configuration=Release',
+                    subprocess.call([msbuild, '../test_app/imgui_tests.vcxproj', '/p:Configuration=Release',
                                      '/m:'+str(multiprocessing.cpu_count())])
                 else:
                     subprocess.call(['make', '-C', '../test_app', 'clean'])
@@ -82,19 +82,19 @@ def main():
                 return -1
 
             try:
-                subprocess.call([imgui_test_app, '-nogui', '-nopause', '-v2', '-ve4', '-stressamount', str(args.stress),
+                subprocess.call([imgui_tests_exe, '-nogui', '-nopause', '-v2', '-ve4', '-stressamount', str(args.stress),
                                  args.run])
             except subprocess.CalledProcessError:
-                logging.error('imgui_test_app returned an error when executing tests.')
+                logging.error('imgui_tests returned an error when executing tests.')
                 return -1
 
             if args.preview:
-                logging.info('Opening imgui_test_app for result preview. Close the window to continue.')
+                logging.info('Opening imgui_tests for result preview. Close the window to continue.')
                 try:
                     # FIXME: This could open perf tool from the start.
-                    subprocess.call([imgui_test_app, '-gui', '-v2', '-ve4', '-stressamount', str(args.stress)])
+                    subprocess.call([imgui_tests_exe, '-gui', '-v2', '-ve4', '-stressamount', str(args.stress)])
                 except subprocess.CalledProcessError:
-                    logging.error('imgui_test_app returned an error when previewing results.')
+                    logging.error('imgui_tests returned an error when previewing results.')
                     return -1
 
     if args.output:
@@ -105,9 +105,9 @@ def main():
         try:
             env = dict(os.environ)
             env['CAPTURE_PERF_REPORT_OUTPUT'] = args.output
-            subprocess.call([imgui_test_app, '-gui', '-nopause', '-v2', '-ve4', 'capture_perf_report'], env=env)
+            subprocess.call([imgui_tests_exe, '-gui', '-nopause', '-v2', '-ve4', 'capture_perf_report'], env=env)
         except subprocess.CalledProcessError:
-            logging.error('imgui_test_app returned an error when generating a performance report.')
+            logging.error('imgui_tests returned an error when generating a performance report.')
             return -1
         else:
             if args.show:

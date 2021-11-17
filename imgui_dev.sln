@@ -8,7 +8,7 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "sandbox", "app_sandbox\sand
 		{E6FAC6EF-4B54-45C4-9E76-3B063B51D4B9} = {E6FAC6EF-4B54-45C4-9E76-3B063B51D4B9}
 	EndProjectSection
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "imgui_test_app", "test_app\imgui_test_app.vcxproj", "{9F316E83-5AE5-4939-A723-305A94F48005}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "imgui_tests", "test_app\imgui_tests.vcxproj", "{9F316E83-5AE5-4939-A723-305A94F48005}"
 	ProjectSection(ProjectDependencies) = postProject
 		{E6FAC6EF-4B54-45C4-9E76-3B063B51D4B9} = {E6FAC6EF-4B54-45C4-9E76-3B063B51D4B9}
 	EndProjectSection
