@@ -96,13 +96,10 @@ endif
 %.o:../imgui_test_engine/%.cpp
 	$(CXX) $(CFLAGS) $(CXXFLAGS) -c -o $@ $<
 
+%.o:../imgui_test_engine/thirdparty/implot/%.cpp
+	$(CXX) $(CFLAGS) $(CXXFLAGS) -c -o $@ $<
+
 %.o:../shared/%.cpp
-	$(CXX) $(CFLAGS) $(CXXFLAGS) -c -o $@ $<
-
-%.o:../thirdparty/Str/%.cpp
-	$(CXX) $(CFLAGS) $(CXXFLAGS) -c -o $@ $<
-
-%.o:../thirdparty/implot/%.cpp
 	$(CXX) $(CFLAGS) $(CXXFLAGS) -c -o $@ $<
 
 %.o:$(IMGUI_DIR)/%.cpp

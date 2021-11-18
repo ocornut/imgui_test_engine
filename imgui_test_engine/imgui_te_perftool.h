@@ -30,8 +30,10 @@ struct ImGuiPerfToolEntry
     int                         LabelIndex = 0;                 // Index of TestName in ImGuiPerfTool::_LabelsVisible.
 
     ImGuiPerfToolEntry()        { }
-    ImGuiPerfToolEntry(const ImGuiPerfToolEntry& other);
+	ImGuiPerfToolEntry(const ImGuiPerfToolEntry& rhs)           { Set(rhs); }
+    ImGuiPerfToolEntry& operator=(const ImGuiPerfToolEntry& rhs){ Set(rhs); return *this; }
     ~ImGuiPerfToolEntry();
+    void Set(const ImGuiPerfToolEntry& rhs);
     void TakeDataOwnership();
 };
 

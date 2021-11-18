@@ -43,7 +43,7 @@ void ImGuiPerfToolEntry::TakeDataOwnership()
     Date = ImStrdup(Date);
 }
 
-ImGuiPerfToolEntry::ImGuiPerfToolEntry(const ImGuiPerfToolEntry& other)
+void ImGuiPerfToolEntry::Set(const ImGuiPerfToolEntry& other)
 {
     Timestamp = other.Timestamp;
     Category = other.Category;
