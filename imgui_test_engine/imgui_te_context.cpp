@@ -649,6 +649,7 @@ bool ImGuiTestContext::CaptureScreenshotEx(ImGuiCaptureArgs* args)
 
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
     LogDebug("CaptureScreenshot()");
+#ifndef IMGUI_TEST_ENGINE_DISABLE_CAPTURE
     if (!ImGuiTestContext_CanCapture(this))
         args->InFlags |= ImGuiCaptureFlags_NoSave;
     bool ret = ImGuiTestEngine_CaptureScreenshot(Engine, args);
@@ -656,8 +657,12 @@ bool ImGuiTestContext::CaptureScreenshotEx(ImGuiCaptureArgs* args)
         LogInfo("Saved '%s' (%d*%d pixels)", args->OutSavedFileName, (int)args->OutImageSize.x, (int)args->OutImageSize.y);
     else
         LogWarning("Skipped saving '%s' (%d*%d pixels) (enable in 'Misc->Options')", args->OutSavedFileName, (int)args->OutImageSize.x, (int)args->OutImageSize.y);
-
     return ret;
+#else
+    IM_UNUSED(args);
+    LogWarning("Skipped capturing screenshot: capture disabled by IMGUI_TEST_ENGINE_DISABLE_CAPTURE.");
+    return false;
+#endif
 }
 
 // FIXME-TESTS: Add ImGuiCaptureFlags_NoHideOtherWindows
@@ -676,9 +681,15 @@ bool ImGuiTestContext::BeginCaptureGif(ImGuiCaptureArgs* args)
 
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
     LogInfo("BeginCaptureGif()");
+#ifndef IMGUI_TEST_ENGINE_DISABLE_CAPTURE
     if (!ImGuiTestContext_CanCapture(this))
         args->InFlags |= ImGuiCaptureFlags_NoSave;
     return ImGuiTestEngine_BeginCaptureAnimation(Engine, args);
+#else
+    IM_UNUSED(args);
+    LogWarning("Skipped recording GIF: capture disabled by IMGUI_TEST_ENGINE_DISABLE_CAPTURE.");
+    return false;
+#endif
 }
 
 bool ImGuiTestContext::EndCaptureGif(ImGuiCaptureArgs* args)

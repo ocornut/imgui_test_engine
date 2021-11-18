@@ -7,6 +7,10 @@
 // This feature requires ImPlot to be linked in the application.
 //#define IMGUI_TEST_ENGINE_ENABLE_IMPLOT
 
+// [Optional] Disable screen capture and PNG/GIF saving functionalities
+// There's not much point to disable this but we provide it to reassure user that the dependencies on stb_image_write.h and gif.h are technically optional.
+//#define IMGUI_TEST_ENGINE_DISABLE_CAPTURE
+
 // Test Engine Assert
 extern void ImGuiTestEngineHook_AssertFunc(const char* expr, const char* file, const char* func, int line);
 #define IMGUI_TEST_ENGINE_ASSERT(_EXPR)     ImGuiTestEngineHook_AssertFunc(#_EXPR, __FILE__, __func__, __LINE__)

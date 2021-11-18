@@ -31,6 +31,12 @@ Index of this file:
 #include "imgui_capture_tool.h"
 #include "../shared/imgui_utils.h"    // ImPathFindFilename, ImPathFindExtension, ImPathFixSeparatorsForCurrentOS, ImFileCreateDirectoryChain, ImOsOpenInShell
 
+//-----------------------------------------------------------------------------
+// [SECTION] Link stb_image_write.h + gif.h
+//-----------------------------------------------------------------------------
+
+#ifndef IMGUI_TEST_ENGINE_DISABLE_CAPTURE
+
 // stb_image_write
 #ifdef _MSC_VER
 #pragma warning (push)
@@ -63,6 +69,8 @@ Index of this file:
 #pragma GCC diagnostic pop
 #endif
 
+#endif // #ifndef IMGUI_TEST_ENGINE_DISABLE_CAPTURE
+
 //-----------------------------------------------------------------------------
 // [SECTION] ImGuiCaptureImageBuf
 // Helper class for simple bitmap manipulation (not particularly efficient!)
@@ -91,9 +99,14 @@ void ImGuiCaptureImageBuf::CreateEmptyNoMemClear(int w, int h)
 
 bool ImGuiCaptureImageBuf::SaveFile(const char* filename)
 {
+#ifndef IMGUI_TEST_ENGINE_DISABLE_CAPTURE
     IM_ASSERT(Data != NULL);
     int ret = stbi_write_png(filename, Width, Height, 4, Data, Width * 4);
     return ret != 0;
+#else
+    IM_UNUSED(filename);
+    return false;
+#endif
 }
 
 void ImGuiCaptureImageBuf::RemoveAlpha()
@@ -123,6 +136,7 @@ void ImGuiCaptureImageBuf::BlitSubImage(int dst_x, int dst_y, int src_x, int src
 // [SECTION] ImGuiCaptureContext
 //-----------------------------------------------------------------------------
 
+#ifndef IMGUI_TEST_ENGINE_DISABLE_CAPTURE
 static void HideOtherWindows(const ImGuiCaptureArgs* args)
 {
     ImGuiContext& g = *GImGui;
@@ -163,6 +177,7 @@ static void HideOtherWindows(const ImGuiCaptureArgs* args)
             window->HiddenFramesForRenderOnly = 2;
     }
 }
+#endif
 
 static ImRect GetMainViewportRect()
 {
@@ -200,6 +215,7 @@ void ImGuiCaptureContext::PostNewFrame()
 // Returns true when capture is in progress.
 ImGuiCaptureStatus ImGuiCaptureContext::CaptureUpdate(ImGuiCaptureArgs* args)
 {
+#ifndef IMGUI_TEST_ENGINE_DISABLE_CAPTURE
     ImGuiContext& g = *GImGui;
     ImGuiIO& io = g.IO;
     IM_ASSERT(args != NULL);
@@ -486,6 +502,10 @@ ImGuiCaptureStatus ImGuiCaptureContext::CaptureUpdate(ImGuiCaptureArgs* args)
     // Keep going
     _FrameNo++;
     return ImGuiCaptureStatus_InProgress;
+#else
+    IM_UNUSED(args);
+    return ImGuiCaptureStatus_Done;
+#endif
 }
 
 void ImGuiCaptureContext::BeginGifCapture(ImGuiCaptureArgs* args)
