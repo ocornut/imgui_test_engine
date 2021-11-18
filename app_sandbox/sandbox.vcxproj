@@ -198,7 +198,7 @@
     <ClCompile Include="sandbox_styles.cpp" />
     <ClCompile Include="sandbox_tests.cpp" />
     <ClCompile Include="editor_widgets.cpp" />
-    <ClCompile Include="main.cpp" />
+    <ClCompile Include="sandbox_main.cpp" />
     <ClCompile Include="thirdparty\ImGuizmo\ImGuizmo.cpp" />
     <ClCompile Include="thirdparty\nativefiledialog\nfd_common.c" />
     <ClCompile Include="thirdparty\nativefiledialog\nfd_win.cpp" />

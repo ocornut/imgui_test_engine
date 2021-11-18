@@ -22,7 +22,7 @@
 #include "thirdparty/nativefiledialog/nfd.h"
 #endif
 
-#ifdef IMGUI_SANDBOX_ENABLE_TEST_ENGINE
+#ifdef IMGUI_ENABLE_TEST_ENGINE
 #include "imgui_test_engine/imgui_te_engine.h"
 #include "imgui_test_engine/imgui_te_coroutine.h"
 #include "imgui_test_engine/imgui_te_ui.h"
@@ -117,7 +117,7 @@ int main(int argc, char** argv)
     app->InitCreateWindow(app, "Dear ImGui: Sandbox", ImVec2(1600, 1000));
     app->InitBackends(app);
 
-#ifdef IMGUI_SANDBOX_ENABLE_TEST_ENGINE
+#ifdef IMGUI_ENABLE_TEST_ENGINE
     // Initialize test engine
     ImGuiTestEngine* engine = ImGuiTestEngine_CreateContext(ImGui::GetCurrentContext());
     ImGuiTestEngineIO& test_io = ImGuiTestEngine_GetIO(engine);
@@ -176,7 +176,7 @@ int main(int argc, char** argv)
         if (app->Quit)
             aborted = true;
 
-#ifdef IMGUI_SANDBOX_ENABLE_TEST_ENGINE
+#ifdef IMGUI_ENABLE_TEST_ENGINE
         if (aborted && ImGuiTestEngine_TryAbortEngine(engine))
             break;
 #endif
@@ -220,7 +220,7 @@ int main(int argc, char** argv)
                 ImGui::Separator();
                 if (ImGui::BeginMenu("Options"))
                 {
-#ifdef IMGUI_SANDBOX_ENABLE_TEST_ENGINE
+#ifdef IMGUI_ENABLE_TEST_ENGINE
                     bool vsync = !ImGuiTestEngine_GetIO(engine).ConfigNoThrottle;
                     if (ImGui::MenuItem("Throttle/Vsync", NULL, &vsync))
                         ImGuiTestEngine_GetIO(engine).ConfigNoThrottle = !vsync;
@@ -274,7 +274,7 @@ int main(int argc, char** argv)
 
                 // Tools
                 ImGui::MenuItem("Capture Tool", NULL, &show_capture_tool);
-#ifdef IMGUI_SANDBOX_ENABLE_TEST_ENGINE
+#ifdef IMGUI_ENABLE_TEST_ENGINE
                 ImGui::MenuItem("Test Engine", NULL, &show_test_engine);
 #else
                 ImGui::MenuItem("Test Engine", NULL, &show_test_engine, false);
@@ -313,7 +313,7 @@ int main(int argc, char** argv)
         if (show_capture_tool)
             capture_tool.ShowCaptureToolWindow(&show_capture_tool);
 
-#ifdef IMGUI_SANDBOX_ENABLE_TEST_ENGINE
+#ifdef IMGUI_ENABLE_TEST_ENGINE
         if (show_test_engine)
             ImGuiTestEngine_ShowTestWindows(engine, &show_test_engine);
         app->Vsync = test_io.RenderWantMaxSpeed ? false : true;
@@ -326,20 +326,20 @@ int main(int argc, char** argv)
 
         app->Render(app);
 
-#ifdef IMGUI_SANDBOX_ENABLE_TEST_ENGINE
+#ifdef IMGUI_ENABLE_TEST_ENGINE
         ImGuiTestEngine_PostSwap(engine);
 #endif
     }
 
     // Shutdown
-#ifdef IMGUI_SANDBOX_ENABLE_TEST_ENGINE
+#ifdef IMGUI_ENABLE_TEST_ENGINE
     ImGuiTestEngine_Stop(engine);
 #endif
     app->ShutdownBackends(app);
     app->ShutdownCloseWindow(app);
     ImPlot::DestroyContext();
     ImGui::DestroyContext();
-#ifdef IMGUI_SANDBOX_ENABLE_TEST_ENGINE
+#ifdef IMGUI_ENABLE_TEST_ENGINE
     ImGuiTestEngine_ShutdownContext(engine);
 #endif
     app->Destroy(app);

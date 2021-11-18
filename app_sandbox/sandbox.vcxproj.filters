@@ -108,7 +108,7 @@
     <ClCompile Include="..\..\imgui\imgui_widgets.cpp">
       <Filter>imgui</Filter>
     </ClCompile>
-    <ClCompile Include="main.cpp">
+    <ClCompile Include="sandbox_main.cpp">
       <Filter>sources</Filter>
     </ClCompile>
     <ClCompile Include="editor_widgets.cpp">

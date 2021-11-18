@@ -15,7 +15,7 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "imgui_tests", "imgui_tests\
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "imgui_test_engine", "imgui_test_engine\imgui_test_engine.vcxproj", "{E6FAC6EF-4B54-45C4-9E76-3B063B51D4B9}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "app_mininal", "app_minimal\app_mininal.vcxproj", "{16BDE790-9418-4217-9D2B-D51D56C15706}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "app_minimal", "app_minimal\app_minimal.vcxproj", "{16BDE790-9418-4217-9D2B-D51D56C15706}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

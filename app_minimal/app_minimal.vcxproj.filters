@@ -63,7 +63,7 @@
     <ClCompile Include="..\..\imgui\imgui_widgets.cpp">
       <Filter>imgui</Filter>
     </ClCompile>
-    <ClCompile Include="main.cpp">
+    <ClCompile Include="app_minimal_main.cpp">
       <Filter>sources</Filter>
     </ClCompile>
     <ClCompile Include="..\shared\imgui_app.cpp">
