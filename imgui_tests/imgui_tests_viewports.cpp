@@ -41,7 +41,7 @@ void RegisterTests_Viewports(ImGuiTestEngine* e)
     //t->Flags |= ImGuiTestFlags_RequireViewports;
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
-        auto& vars = ctx->GenericVars;
+        ImGuiTestGenericVars& vars = ctx->GenericVars;
         ImGuiViewport* main_viewport = ImGui::GetMainViewport();
 
         if (vars.Step == 0)
@@ -68,7 +68,7 @@ void RegisterTests_Viewports(ImGuiTestEngine* e)
         ctx->SetRef("Test Window");
         ImGuiWindow* window = ctx->GetWindowByRef("");
         ImGuiViewport* main_viewport = ImGui::GetMainViewport();
-        auto& vars = ctx->GenericVars;
+        ImGuiTestGenericVars& vars = ctx->GenericVars;
         vars.Step = 0;
         ctx->Yield();
         IM_CHECK(window->Viewport == main_viewport);

@@ -1038,14 +1038,14 @@ void RegisterTests_Perf(ImGuiTestEngine* e)
             int& line_count = ctx->GenericVars.Int1;
             int& line_length = ctx->GenericVars.Int2;
             ImVec4* cpu_fine_clip_rect = NULL;
-            ImVec2& text_size = ctx->GenericVars.Vec2;
+            ImVec2& text_size = ctx->GenericVars.Size;
             ImVec2 window_padding = ImGui::GetCursorScreenPos() - window->Pos;
 
             if (test_variant & PerfTestTextFlags_WithWrapWidth)
                 wrap_width = 250.0f;
 
             if (test_variant & PerfTestTextFlags_WithCpuFineClipRect)
-                cpu_fine_clip_rect = &ctx->GenericVars.Vec4;
+                cpu_fine_clip_rect = &ctx->GenericVars.Color1; // :)
 
             // Set up test string.
             if (ctx->GenericVars.StrLarge.empty())

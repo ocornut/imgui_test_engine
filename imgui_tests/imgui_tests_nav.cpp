@@ -505,7 +505,7 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
     t = IM_REGISTER_TEST(e, "nav", "nav_activate");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
-        auto& vars = ctx->GenericVars;
+        ImGuiTestGenericVars& vars = ctx->GenericVars;
 
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
 
@@ -530,7 +530,7 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         ImGuiContext& g = *ctx->UiContext;
-        auto& vars = ctx->GenericVars;
+        ImGuiTestGenericVars& vars = ctx->GenericVars;
         IM_CHECK(vars.Int1 == 0);
         ctx->SetRef("Test Window");
 
@@ -560,7 +560,7 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
     t = IM_REGISTER_TEST(e, "nav", "nav_input");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
-        auto& vars = ctx->GenericVars;
+        ImGuiTestGenericVars& vars = ctx->GenericVars;
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
         ImGui::InputText("InputText", vars.Str1, IM_ARRAYSIZE(vars.Str1));
         if (ImGui::Button("Button"))
@@ -570,7 +570,7 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         ImGuiContext& g = *ctx->UiContext;
-        auto& vars = ctx->GenericVars;
+        ImGuiTestGenericVars& vars = ctx->GenericVars;
 
         ctx->SetRef("Test Window");
         ctx->NavMoveTo("InputText");
@@ -806,10 +806,10 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
     // ## Check setting default focus.
     t = IM_REGISTER_TEST(e, "nav", "nav_focus_default");
     struct DefaultFocusVars { bool ShowWindows = true; bool SetFocus = false; bool MenuLayer = false; };
-    t->SetUserDataType<DefaultFocusVars>();
+    t->SetVarsDataType<DefaultFocusVars>();
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
-        DefaultFocusVars& vars = ctx->GetUserData<DefaultFocusVars>();
+        DefaultFocusVars& vars = ctx->GetVars<DefaultFocusVars>();
         if (!vars.ShowWindows)
             return;
 
@@ -834,7 +834,7 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         ImGuiContext& g = *ctx->UiContext;
-        DefaultFocusVars& vars = ctx->GetUserData<DefaultFocusVars>();
+        DefaultFocusVars& vars = ctx->GetVars<DefaultFocusVars>();
         ImGuiWindow* window = ctx->GetWindowByRef("Window");
 
         // Variant 0: verify ##2 is not scrolled into view and ##1 is focused (SetItemDefaultFocus() not used).
@@ -870,10 +870,10 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
 
     // ## Check setting default focus for multiple windows simultaneously.
     t = IM_REGISTER_TEST(e, "nav", "nav_focus_default_multi");
-    t->SetUserDataType<DefaultFocusVars>();
+    t->SetVarsDataType<DefaultFocusVars>();
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
-        DefaultFocusVars& vars = ctx->GetUserData<DefaultFocusVars>();
+        DefaultFocusVars& vars = ctx->GetVars<DefaultFocusVars>();
         if (!vars.ShowWindows)
             return;
 
@@ -893,7 +893,7 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
     };
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
-        DefaultFocusVars& vars = ctx->GetUserData<DefaultFocusVars>();
+        DefaultFocusVars& vars = ctx->GetVars<DefaultFocusVars>();
 
         ctx->NavEnableForWindow();
         vars.ShowWindows = true;
@@ -992,10 +992,10 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
 
     // ## Check default focus with _NavFlattened flag
     t = IM_REGISTER_TEST(e, "nav", "nav_flattened_focus_default");
-    t->SetUserDataType<DefaultFocusVars>();
+    t->SetVarsDataType<DefaultFocusVars>();
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
-        DefaultFocusVars& vars = ctx->GetUserData<DefaultFocusVars>();
+        DefaultFocusVars& vars = ctx->GetVars<DefaultFocusVars>();
         if (!vars.ShowWindows)
             return;
 
@@ -1028,7 +1028,7 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         ImGuiContext& g = *ctx->UiContext;
-        DefaultFocusVars& vars = ctx->GetUserData<DefaultFocusVars>();
+        DefaultFocusVars& vars = ctx->GetVars<DefaultFocusVars>();
         ctx->NavEnableForWindow();
 
         // Test implicit default init on flattened window
@@ -1123,7 +1123,7 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
     {
         ImGuiContext& g = *GImGui;
 
-        ImGui::SetNextWindowSize(ctx->GenericVars.Vec2, ImGuiCond_Always);
+        ImGui::SetNextWindowSize(ctx->GenericVars.Size, ImGuiCond_Always);
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysVerticalScrollbar | ImGuiWindowFlags_AlwaysHorizontalScrollbar);
         for (int y = 0; y < 6; y++)
             for (int x = 0; x < 6; x++)
@@ -1133,8 +1133,8 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
                     ImGui::SameLine();
 
                 // Window size is such that only 3x3 buttons are visible at a time.
-                if (ctx->GenericVars.Vec2.y == 0.0f && y == 3 && x == 2)
-                    ctx->GenericVars.Vec2 = ImGui::GetCursorPos() + ImVec2(g.Style.ScrollbarSize, g.Style.ScrollbarSize); // FIXME: Calculate Window Size from Decoration Size
+                if (ctx->GenericVars.Size.y == 0.0f && y == 3 && x == 2)
+                    ctx->GenericVars.Size = ImGui::GetCursorPos() + ImVec2(g.Style.ScrollbarSize, g.Style.ScrollbarSize); // FIXME: Calculate Window Size from Decoration Size
             }
         ImGui::End();
 
@@ -1408,10 +1408,10 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
     // ## Test using TAB to cycle through items
     t = IM_REGISTER_TEST(e, "nav", "nav_tabbing_basic");
     struct TabbingVars { int Step = 0; int WidgetType = 0; float Floats[5] = { 0, 0, 0, 0, 0 }; char Bufs[256][5] = { "buf0", "buf1", "buf2", "buf3", "buf4" }; };
-    t->SetUserDataType<TabbingVars>();
+    t->SetVarsDataType<TabbingVars>();
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
-        auto& vars = ctx->GetUserData<TabbingVars>();
+        auto& vars = ctx->GetVars<TabbingVars>();
 
         ImGuiWindowFlags flags = ImGuiWindowFlags_NoSavedSettings;
         if (vars.Step == 0)
@@ -1455,7 +1455,7 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         ImGuiContext& g = *ctx->UiContext;
-        auto& vars = ctx->GetUserData<TabbingVars>();
+        auto& vars = ctx->GetVars<TabbingVars>();
 
         ctx->SetRef("Test Window");
         for (vars.WidgetType = 0; vars.WidgetType < 4; vars.WidgetType++)
@@ -1505,7 +1505,7 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
     t = IM_REGISTER_TEST(e, "nav", "nav_tabbing_clipped");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
-        auto& vars = ctx->GenericVars;
+        ImGuiTestGenericVars& vars = ctx->GenericVars;
 
         ImGui::SetNextWindowSize(ImVec2(400, 100)); // Ensure items are clipped
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
@@ -1553,7 +1553,7 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
     t = IM_REGISTER_TEST(e, "nav", "nav_tabbing_flattened");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
-        auto& vars = ctx->GenericVars;
+        ImGuiTestGenericVars& vars = ctx->GenericVars;
 
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
         for (int n = 0; n < 4; n++)
@@ -1780,13 +1780,13 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
     // ## Test SetKeyboardFocusHere() on clipped items (#343, #4079, #2352)
     t = IM_REGISTER_TEST(e, "nav", "nav_focus_api_clipped");
     struct SetFocusVars { char Str1[256] = ""; int Step = 0; ImGuiTestGenericItemStatus Status[3]; };
-    t->SetUserDataType<SetFocusVars>();
+    t->SetVarsDataType<SetFocusVars>();
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         ImGui::SetNextWindowSize(ImVec2(300, 200), ImGuiCond_Appearing);
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
 
-        SetFocusVars& vars = ctx->GetUserData<SetFocusVars>();
+        SetFocusVars& vars = ctx->GetVars<SetFocusVars>();
         for (int n = 0; n < 50; n++)
             ImGui::Text("Dummy %d", n);
 
@@ -1818,7 +1818,7 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
         ImGuiContext& g = *ctx->UiContext;
         ctx->SetRef("Test Window");
 
-        SetFocusVars& vars = ctx->GetUserData<SetFocusVars>();
+        SetFocusVars& vars = ctx->GetVars<SetFocusVars>();
 
         IM_CHECK(g.ActiveId == 0);
         vars.Step = 1;
@@ -1859,13 +1859,13 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
     // ## Test wrapping behavior
     t = IM_REGISTER_TEST(e, "nav", "nav_wrapping");
     struct NavWrappingWars { ImGuiNavMoveFlags WrapFlags = ImGuiNavMoveFlags_WrapY; };
-    t->SetUserDataType<NavWrappingWars>();
+    t->SetVarsDataType<NavWrappingWars>();
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         ImGui::SetNextWindowSize(ImVec2(300, 300), ImGuiCond_Appearing);
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
 
-        auto& vars = ctx->GetUserData<NavWrappingWars>();
+        auto& vars = ctx->GetVars<NavWrappingWars>();
         for (int ny = 0; ny < 4; ny++)
         {
             for (int nx = 0; nx < 4; nx++)
@@ -1884,7 +1884,7 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         ImGuiContext& g = *ctx->UiContext;
-        auto& vars = ctx->GetUserData<NavWrappingWars>();
+        auto& vars = ctx->GetVars<NavWrappingWars>();
         ctx->SetRef("Test Window");
 
         vars.WrapFlags = ImGuiNavMoveFlags_None;
@@ -1944,7 +1944,7 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
     {
         ImGui::SetNextWindowSize(ImVec2(300, 300), ImGuiCond_Appearing);
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
-        auto& vars = ctx->GenericVars;
+        ImGuiTestGenericVars& vars = ctx->GenericVars;
         ImGuiListClipper clipper;
         clipper.Begin(50);
         while (clipper.Step())

@@ -510,7 +510,7 @@ struct ImGuiTest
     int                             SourceLine;         // __LINE__
     int                             SourceLineEnd;      //
     int                             ArgVariant;         // User parameter, for use by GuiFunc/TestFunc. Generally we use it to run variations of a same test.
-    size_t                          UserDataSize;       // When SetUserDataType() is used, we create an instance of user structure so we can be used by GuiFunc/TestFunc.
+    size_t                          UserDataSize;       // When SetVarsDataType() is used, we create an instance of user structure so we can be used by GuiFunc/TestFunc.
     ImGuiTestUserDataConstructor    UserDataConstructor;
     ImGuiTestUserDataPostConstructor UserDataPostConstructor;
     void*                           UserDataPostConstructorFn;
@@ -547,7 +547,7 @@ struct ImGuiTest
     void SetOwnedName(const char* name);
 
     template <typename T>
-    void SetUserDataType(void(*post_initialize)(T& vars) = NULL)
+    void SetVarsDataType(void(*post_initialize)(T& vars) = NULL)
     {
         UserDataSize = sizeof(T);
         UserDataConstructor = [](void* ptr) { IM_PLACEMENT_NEW(ptr) T; };

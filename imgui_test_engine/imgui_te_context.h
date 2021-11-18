@@ -103,7 +103,7 @@ struct ImGuiTestGenericItemStatus
 
 // Generic structure with various storage fields.
 // This is useful for tests to quickly share data between GuiFunc and TestFunc.
-// If those fields are not enough: using ctx->SetUserDataType<>() and ctx->GetUserData<>() it is possible to store custom data on the stack.
+// If those fields are not enough: using ctx->SetVarsDataType<>() and ctx->GetVars<>() it is possible to store custom data on the stack.
 struct ImGuiTestGenericVars
 {
     // Generic storage with a bit of semantic to make user/test code look neater
@@ -120,28 +120,20 @@ struct ImGuiTestGenericVars
     ImVec2                  Pos;
     ImVec2                  Size;
     ImVec2                  Pivot;
+    ImVec4                  Color1, Color2;
 
     // Generic storage
-    int                     Int1;
-    int                     Int2;
+    int                     Int1, Int2;
     int                     IntArray[10];
-    float                   Float1;
-    float                   Float2;
+    float                   Float1, Float2;
     float                   FloatArray[10];
-    bool                    Bool1;
-    bool                    Bool2;
+    bool                    Bool1, Bool2;
     bool                    BoolArray[10];
-    ImVec2                  Vec2;
-    ImVec4                  Vec4;
-    ImVec4                  Vec4Array[10];
     ImGuiID                 Id;
     ImGuiID                 IdArray[10];
     char                    Str1[256];
     char                    Str2[256];
     ImVector<char>          StrLarge;
-    void*                   Ptr1;
-    void*                   Ptr2;
-    void*                   PtrArray[10];
 
     ImGuiTestGenericVars()  { Clear(); }
     void Clear()            { StrLarge.clear(); memset(this, 0, sizeof(*this)); }
@@ -196,7 +188,7 @@ struct ImGuiTestContext
     bool        IsFirstTestFrame() const    { return FrameCount == FirstTestFrameCount; }   // First frame where TestFunc is running (after warm-up frame).
     void        SetGuiFuncEnabled(bool v)   { if (v) RunFlags &= ~ImGuiTestRunFlags_GuiFuncDisable; else RunFlags |= ImGuiTestRunFlags_GuiFuncDisable; }
     void        RecoverFromUiContextErrors();
-    template <typename T> T& GetUserData()  { IM_ASSERT(UserData != NULL); return *(T*)(UserData); } // FIXME: Assert to compare sizes
+    template <typename T> T& GetVars()      { IM_ASSERT(UserData != NULL); return *(T*)(UserData); } // Campanion to using t->SetVarsDataType<>(). FIXME: Assert to compare sizes
 
     // Debug Control Flow
     bool        DebugHaltTestFunc(const char* file, int line);

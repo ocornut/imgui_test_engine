@@ -43,17 +43,17 @@ void RegisterAppMinimalTests(ImGuiTestEngine* e)
 
     t = IM_REGISTER_TEST(e, "demo_tests", "test2");
     struct TestVars2 { int MyInt = 42; };
-    t->SetUserDataType<TestVars2>();
+    t->SetVarsDataType<TestVars2>();
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
-        TestVars2& vars = ctx->GetUserData<TestVars2>();
+        TestVars2& vars = ctx->GetVars<TestVars2>();
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
         ImGui::SliderInt("Slider", &vars.MyInt, 0, 1000);
         ImGui::End();
     };
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
-        TestVars2& vars = ctx->GetUserData<TestVars2>();
+        TestVars2& vars = ctx->GetVars<TestVars2>();
         ctx->SetRef("Test Window");
 
         IM_CHECK_EQ(vars.MyInt, 42);

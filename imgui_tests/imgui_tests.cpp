@@ -423,27 +423,29 @@ void RegisterTests_Window(ImGuiTestEngine* e)
     t = IM_REGISTER_TEST(e, "window", "window_popup_on_void");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
-        ctx->GenericVars.Bool1 = false;
-        if (ImGui::BeginPopupContextVoid("testpopup", ctx->GenericVars.Int1))
+        ImGuiTestGenericVars& vars = ctx->GenericVars;
+        vars.Bool1 = false;
+        if (ImGui::BeginPopupContextVoid("testpopup", vars.Int1))
         {
-            ctx->GenericVars.Bool1 = true;
+            vars.Bool1 = true;
             ImGui::Selectable("Close");
             ImGui::EndPopup();
         }
     };
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
-        ctx->GenericVars.Int1 = 1;
+        ImGuiTestGenericVars& vars = ctx->GenericVars;
+        vars.Int1 = 1;
         ctx->MouseClickOnVoid(1);
-        IM_CHECK(ctx->GenericVars.Bool1 == true);
+        IM_CHECK(vars.Bool1 == true);
         ctx->MouseClickOnVoid(0);
-        IM_CHECK(ctx->GenericVars.Bool1 == false);
+        IM_CHECK(vars.Bool1 == false);
 
-        ctx->GenericVars.Int1 = 0;
+        vars.Int1 = 0;
         ctx->MouseClickOnVoid(0);
-        IM_CHECK(ctx->GenericVars.Bool1 == true);
+        IM_CHECK(vars.Bool1 == true);
         ctx->MouseClickOnVoid(1);
-        IM_CHECK(ctx->GenericVars.Bool1 == false);
+        IM_CHECK(vars.Bool1 == false);
     };
 
     // ## Test opening a popup after BeginPopup(), while window is out of focus. (#4308)
@@ -475,10 +477,10 @@ void RegisterTests_Window(ImGuiTestEngine* e)
 #if IMGUI_BROKEN_TESTS
     t = IM_REGISTER_TEST(e, "window", "window_popup_menu");
     struct WindowPopupMenuTestVars { bool FirstOpen = false; bool SecondOpen = false; };
-    t->SetUserDataType<WindowPopupMenuTestVars>();
+    t->SetVarsDataType<WindowPopupMenuTestVars>();
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
-        auto& vars = ctx->GetUserData<WindowPopupMenuTestVars>();
+        auto& vars = ctx->GetVars<WindowPopupMenuTestVars>();
         vars.FirstOpen = vars.SecondOpen = false;
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
         if (ctx->IsFirstGuiFrame())
@@ -510,7 +512,7 @@ void RegisterTests_Window(ImGuiTestEngine* e)
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         ImGuiWindow* window = ctx->GetWindowByRef("Menu Popup");
-        auto& vars = ctx->GetUserData<WindowPopupMenuTestVars>();
+        auto& vars = ctx->GetVars<WindowPopupMenuTestVars>();
         ctx->SetRef(window->Name);
         IM_CHECK_EQ(vars.FirstOpen, false);                                     // Nothing is open.
         IM_CHECK_EQ(vars.SecondOpen, false);
@@ -709,10 +711,10 @@ void RegisterTests_Window(ImGuiTestEngine* e)
 #if IMGUI_VERSION_NUM >= 18202
     t = IM_REGISTER_TEST(e, "window", "window_scroll_tracking");
     struct ScrollTestVars { int Variant = 0; bool FullyVisible[30][30] = {}; int TrackX = 0; int TrackY = 0; };
-    t->SetUserDataType<ScrollTestVars>();
+    t->SetVarsDataType<ScrollTestVars>();
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
-        auto& vars = ctx->GetUserData<ScrollTestVars>();
+        auto& vars = ctx->GetVars<ScrollTestVars>();
 
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
         if (ImGui::Button("Track 0,0")) { vars.TrackX = 0; vars.TrackY = 0; }
@@ -755,7 +757,7 @@ void RegisterTests_Window(ImGuiTestEngine* e)
     };
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
-        auto& vars = ctx->GetUserData<ScrollTestVars>();
+        auto& vars = ctx->GetVars<ScrollTestVars>();
         ctx->SetRef("Test Window");
         ImGuiWindow* window = ctx->GetWindowByRef("");
 
@@ -1011,7 +1013,7 @@ void RegisterTests_Window(ImGuiTestEngine* e)
     t = IM_REGISTER_TEST(e, "window", "window_pos_pivot");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
-        auto& vars = ctx->GenericVars;
+        ImGuiTestGenericVars& vars = ctx->GenericVars;
         ImGui::SetNextWindowSize(ImVec2(0, 0));
         ImGui::SetNextWindowPos(vars.Pos, ImGuiCond_Always, vars.Pivot);
         ImGui::Begin("Movable Window", NULL, ImGuiWindowFlags_NoSavedSettings);
@@ -1020,7 +1022,7 @@ void RegisterTests_Window(ImGuiTestEngine* e)
     };
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
-        auto& vars = ctx->GenericVars;
+        ImGuiTestGenericVars& vars = ctx->GenericVars;
         ImGuiWindow* window = ctx->GetWindowByRef("Movable Window");
         for (int n = 0; n < 4; n++)     // Test all pivot combinations.
             for (int c = 0; c < 2; c++) // Test collapsed and uncollapsed windows.
@@ -1106,10 +1108,10 @@ void RegisterTests_Window(ImGuiTestEngine* e)
     // ## Test window appearing state.
     t = IM_REGISTER_TEST(e, "window", "window_appearing");
     struct WindowAppearingVars { enum TestState { Hidden, ShowWindow, ShowWindowSetSize, ShowWindowAutoSize, ShowTooltip, ShowPopup, ShowMax_ } State = Hidden; int ShowFrame = -1, AppearingFrame = -1, AppearingCount = 0; };
-    t->SetUserDataType<WindowAppearingVars>();
+    t->SetVarsDataType<WindowAppearingVars>();
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
-        WindowAppearingVars& vars = ctx->GetUserData<WindowAppearingVars>();
+        WindowAppearingVars& vars = ctx->GetVars<WindowAppearingVars>();
         if (vars.State == WindowAppearingVars::Hidden)
             return;
 
@@ -1167,7 +1169,7 @@ void RegisterTests_Window(ImGuiTestEngine* e)
     };
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
-        WindowAppearingVars& vars = ctx->GetUserData<WindowAppearingVars>();
+        WindowAppearingVars& vars = ctx->GetVars<WindowAppearingVars>();
 
         // FIXME-TESTS: Test using a viewport window.
         const char* variant_names[] = { NULL, "Window", "WindowSetSize", "WindowAutoSize", "Tooltip", "Popup" };
@@ -1194,7 +1196,7 @@ void RegisterTests_Window(ImGuiTestEngine* e)
     t = IM_REGISTER_TEST(e, "window", "window_title_ctx_menu");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
-        auto& vars = ctx->GenericVars;
+        ImGuiTestGenericVars& vars = ctx->GenericVars;
         ImGui::SetNextWindowSize(ImVec2(300, 200), ImGuiCond_Appearing);
         ImGui::Begin("Window A", &vars.BoolArray[0], ImGuiWindowFlags_NoSavedSettings);
         if (ImGui::BeginPopupContextItem("Popup A"))
@@ -2059,10 +2061,10 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
     // ## Test ImGuiListClipper with table frozen rows
     t = IM_REGISTER_TEST(e, "misc", "misc_clipper");
     struct ClipperTestVars { ImGuiWindow* WindowOut = NULL; float WindowHeightInItems = 10.0f; int ItemsIn = 100; int ItemsOut = 0; int ForceDisplayStart = 0, ForceDisplayEnd = 0; float OffsetY = 0.0f; ImBitVector ItemsOutMask; bool ClipperManualItemHeight = true; bool TableEnable = false; int TableFreezeRows = 0; };
-    t->SetUserDataType<ClipperTestVars>();
+    t->SetVarsDataType<ClipperTestVars>();
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
-        auto& vars = ctx->GetUserData<ClipperTestVars>();
+        auto& vars = ctx->GetVars<ClipperTestVars>();
 
         if (ctx->RunFlags & ImGuiTestRunFlags_GuiFuncOnly)
         {
@@ -2127,7 +2129,7 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
     };
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
-        auto& vars = ctx->GetUserData<ClipperTestVars>();
+        auto& vars = ctx->GetVars<ClipperTestVars>();
         float item_height = ImGui::GetTextLineHeightWithSpacing(); // EXPECTED item height
 
         int step_count = 5;
@@ -2279,10 +2281,10 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
 
     // Test edge cases with single item or zero items clipper
     t = IM_REGISTER_TEST(e, "misc", "misc_clipper_single");
-    t->SetUserDataType<ClipperTestVars>();
+    t->SetVarsDataType<ClipperTestVars>();
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
-        auto& vars = ctx->GetUserData<ClipperTestVars>();
+        auto& vars = ctx->GetVars<ClipperTestVars>();
 
         vars.WindowOut = ImGui::GetCurrentWindow();
         vars.ItemsOut = 0;
@@ -3061,11 +3063,11 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
         ImU16 MouseClickedCount[IM_ARRAYSIZE(ImGuiIO::MouseClickedCount)];
         float MouseDownDuration[IM_ARRAYSIZE(ImGuiIO::MouseDownDuration)];
     };
-    t->SetUserDataType<MouseClicksVars>();
+    t->SetVarsDataType<MouseClicksVars>();
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         ImGuiContext& g = *ctx->UiContext;
-        MouseClicksVars& vars = ctx->GetUserData<MouseClicksVars>();
+        MouseClicksVars& vars = ctx->GetVars<MouseClicksVars>();
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
         ImGui::Button("Button");
         for (int btn = 0; btn < ImGuiMouseButton_COUNT; btn++)
@@ -3085,7 +3087,7 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         ImGuiContext& g = *ctx->UiContext;
-        MouseClicksVars& vars = ctx->GetUserData<MouseClicksVars>();
+        MouseClicksVars& vars = ctx->GetVars<MouseClicksVars>();
         ctx->SetRef("Test Window");
 
         // MouseDownOwned, MouseDownOwnedUnlessPopupClose

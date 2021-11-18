@@ -183,7 +183,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
     t = IM_REGISTER_TEST(e, "table", "table_draw_calls");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
-        auto& vars = ctx->GenericVars;
+        ImGuiTestGenericVars& vars = ctx->GenericVars;
 
         ImGui::PushStyleVar(ImGuiStyleVar_WindowMinSize, ImVec2(8, 8));
         ImGui::Begin("Test window 1", NULL, ImGuiWindowFlags_NoSavedSettings);
@@ -280,7 +280,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         // Test with/without clipping
-        auto& vars = ctx->GenericVars;
+        ImGuiTestGenericVars& vars = ctx->GenericVars;
         vars.Bool1 = false;
         ctx->WindowResize("Test window 1", ImVec2(500, 800));
         vars.Bool1 = true;
@@ -294,10 +294,10 @@ void RegisterTests_Table(ImGuiTestEngine* e)
 
     // ## Table: test effect of specifying or not a width in TableSetupColumn(), the effect of toggling _Resizable or setting _Fixed/_Auto widths.
     t = IM_REGISTER_TEST(e, "table", "table_width_explicit");
-    t->SetUserDataType<TableTestingVars>();
+    t->SetVarsDataType<TableTestingVars>();
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
-        auto& vars = ctx->GetUserData<TableTestingVars>();
+        auto& vars = ctx->GetVars<TableTestingVars>();
         ImGui::SetNextWindowSize(ImVec2(600.0f, 0.0f), ImGuiCond_Appearing);
         ImGui::Begin("Test window 1", NULL, ImGuiWindowFlags_NoSavedSettings);
         ImGui::CheckboxFlags("ImGuiTableFlags_Resizable", &vars.TableFlags, ImGuiTableFlags_Resizable);
@@ -332,7 +332,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
     };
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
-        auto& vars = ctx->GetUserData<TableTestingVars>();
+        auto& vars = ctx->GetVars<TableTestingVars>();
         ctx->SetRef("Test window 1");
         ImGuiTable* table = ImGui::TableFindByID(ctx->GetID("table1"));
 
@@ -407,10 +407,10 @@ void RegisterTests_Table(ImGuiTestEngine* e)
 
     // ## Table: test effect of specifying a weight in TableSetupColumn()
     t = IM_REGISTER_TEST(e, "table", "table_width_explicit_weight");
-    t->SetUserDataType<TableTestingVars>();
+    t->SetVarsDataType<TableTestingVars>();
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
-        auto& vars = ctx->GetUserData<TableTestingVars>();
+        auto& vars = ctx->GetVars<TableTestingVars>();
         ImGui::SetNextWindowSize(ImVec2(600.0f, 0.0f), ImGuiCond_Appearing);
         ImGui::Begin("Test window 1", NULL, ImGuiWindowFlags_NoSavedSettings);
         ImGui::CheckboxFlags("ImGuiTableFlags_Resizable", &vars.TableFlags, ImGuiTableFlags_Resizable);
@@ -433,7 +433,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
     };
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
-        auto& vars = ctx->GetUserData<TableTestingVars>();
+        auto& vars = ctx->GetVars<TableTestingVars>();
         ctx->SetRef("Test window 1");
         ImGuiTable* table = ImGui::TableFindByID(ctx->GetID("table1"));
 
@@ -484,7 +484,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
             { 9, ImGuiTableFlags_Borders },
         };
 
-        auto& vars = ctx->GenericVars;
+        ImGuiTestGenericVars& vars = ctx->GenericVars;
         ImGui::Checkbox("ImGuiTableFlags_PreciseStretchWidths", &vars.Bool1);
 
         const float max_variance = vars.Bool1 ? 0.0f : 1.0f;
@@ -548,7 +548,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
     t = IM_REGISTER_TEST(e, "table", "table_width_keep_visible");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
-        auto& vars = ctx->GenericVars;
+        ImGuiTestGenericVars& vars = ctx->GenericVars;
         if (vars.Width == 0.0f)
             vars.Width = 150.0f;
 
@@ -793,7 +793,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         ImGuiContext& g = *ctx->UiContext;
-        auto& vars = ctx->GenericVars;
+        ImGuiTestGenericVars& vars = ctx->GenericVars;
 
         const float cell_padding = g.Style.CellPadding.x;
         const float border_size = 1.0f;
@@ -845,7 +845,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
     };
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
-        auto& vars = ctx->GenericVars;
+        ImGuiTestGenericVars& vars = ctx->GenericVars;
         ctx->SetRef("Test window 1");
         ImGuiWindow* window = ctx->GetWindowByRef("");
         ImGuiTable* table = ImGui::TableFindByID(ctx->GetID("table1"));
@@ -878,10 +878,10 @@ void RegisterTests_Table(ImGuiTestEngine* e)
     };
 
     t = IM_REGISTER_TEST(e, "table", "table_sizing_policies");
-    t->SetUserDataType<TableTestingVars>();
+    t->SetVarsDataType<TableTestingVars>();
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
-        auto& vars = ctx->GetUserData<TableTestingVars>();
+        auto& vars = ctx->GetVars<TableTestingVars>();
         ImGui::SetNextWindowSize(ImVec2(500.0f, 500.0f), ImGuiCond_Appearing);
         ImGui::Begin("Test window 1", NULL, ImGuiWindowFlags_NoSavedSettings);
 
@@ -940,7 +940,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
     };
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
-        auto& vars = ctx->GetUserData<TableTestingVars>();
+        auto& vars = ctx->GetVars<TableTestingVars>();
         const ImGuiTableFlags sizing_policy_flags[4] = { ImGuiTableFlags_SizingFixedFit, ImGuiTableFlags_SizingFixedSame, ImGuiTableFlags_SizingStretchProp, ImGuiTableFlags_SizingStretchSame };
         ctx->SetRef("Test window 1");
         for (int step_n = 0; step_n < 4 * 2 && !ctx->IsError(); step_n++)
@@ -1386,10 +1386,10 @@ void RegisterTests_Table(ImGuiTestEngine* e)
     // ## Test saving and loading table settings.
     t = IM_REGISTER_TEST(e, "table", "table_settings_1");
     struct TableSettingsVars { ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoSavedSettings; bool call_get_sort_specs = false; };
-    t->SetUserDataType<TableSettingsVars>();
+    t->SetVarsDataType<TableSettingsVars>();
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
-        TableSettingsVars& vars = ctx->GetUserData<TableSettingsVars>();
+        TableSettingsVars& vars = ctx->GetVars<TableSettingsVars>();
 
         ImGui::SetNextWindowSize(ImVec2(300, 200), ImGuiCond_Appearing);
         ImGui::Begin("Table Settings", NULL, vars.window_flags);
@@ -1409,7 +1409,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
     };
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
-        TableSettingsVars& vars = ctx->GetUserData<TableSettingsVars>();
+        TableSettingsVars& vars = ctx->GetVars<TableSettingsVars>();
 
         ImGui::TableGcCompactSettings();
 
@@ -1624,6 +1624,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         ImGuiContext& g = *ctx->UiContext;
+        ImGuiTestGenericVars& vars = ctx->GenericVars;
 
         ImGui::SetNextWindowSize(ImVec2(300, 200));
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
@@ -1635,15 +1636,15 @@ void RegisterTests_Table(ImGuiTestEngine* e)
             ImGui::TableNextRow();
             ImGui::TableSetColumnIndex(0);
             float column_width = ImGui::GetContentRegionAvail().x;
-            ImGui::DragInt("row 1 item 1", &ctx->GenericVars.Int1);
+            ImGui::DragInt("row 1 item 1", &vars.Int1);
             ImGui::PushItemWidth(-FLT_MIN);
             IM_CHECK_EQ(ImGui::CalcItemWidth(), column_width);
-            ImGui::DragInt("##row 1 item 2", &ctx->GenericVars.Int1);
+            ImGui::DragInt("##row 1 item 2", &vars.Int1);
             IM_CHECK_EQ(g.LastItemData.Rect.GetWidth(), column_width);
 
             ImGui::TableNextRow();
             ImGui::TableSetColumnIndex(0);
-            ImGui::DragInt("##row 1 item 1", &ctx->GenericVars.Int1);
+            ImGui::DragInt("##row 1 item 1", &vars.Int1);
             IM_CHECK_EQ(ImGui::CalcItemWidth(), column_width);
             IM_CHECK_EQ(g.LastItemData.Rect.GetWidth(), column_width);
             //ImGui::PopItemWidth(); // Intentionally left out as we currently allow this to be ignored
@@ -1664,7 +1665,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
 
             ImGui::PushItemWidth(60.0f);
             IM_CHECK_EQ(ImGui::CalcItemWidth(), 60.0f);
-            ImGui::DragInt2("##row 1 item 1", &ctx->GenericVars.IntArray[0]);
+            ImGui::DragInt2("##row 1 item 1", &vars.IntArray[0]);
             IM_CHECK_EQ(g.LastItemData.Rect.GetWidth(), 60.0f);
             IM_CHECK_EQ(window->DC.ItemWidth, 60.0f);
 
@@ -1681,10 +1682,10 @@ void RegisterTests_Table(ImGuiTestEngine* e)
 
     // ## Test table sorting behaviors.
     t = IM_REGISTER_TEST(e, "table", "table_sorting");
-    t->SetUserDataType<TableTestingVars>();
+    t->SetVarsDataType<TableTestingVars>();
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
-        TableTestingVars& vars = ctx->GetUserData<TableTestingVars>();
+        TableTestingVars& vars = ctx->GetVars<TableTestingVars>();
 
         ImGui::SetNextWindowSize(ImVec2(600, 80), ImGuiCond_Appearing); // FIXME-TESTS: Why?
         ImGui::Begin("Test window", NULL, ImGuiWindowFlags_NoSavedSettings);
@@ -1714,7 +1715,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
 
         ImGuiTestRef table_ref("table1");
         ImGuiTable* table = ImGui::TableFindByID(ctx->GetID(table_ref));
-        TableTestingVars& vars = ctx->GetUserData<TableTestingVars>();
+        TableTestingVars& vars = ctx->GetVars<TableTestingVars>();
         vars.TableFlags = ImGuiTableFlags_Sortable | ImGuiTableFlags_SortMulti;
         ctx->Yield();
 
@@ -2061,7 +2062,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         ImGuiContext& g = *ctx->UiContext;
-        auto& vars = ctx->GenericVars;
+        ImGuiTestGenericVars& vars = ctx->GenericVars;
         if (ctx->IsFirstGuiFrame())
             vars.Count = 5;
 
@@ -2116,7 +2117,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         ImGuiContext& g = *ctx->UiContext;
-        auto& vars = ctx->GenericVars;
+        ImGuiTestGenericVars& vars = ctx->GenericVars;
 
         ctx->SetRef("Test Window");
         ImGuiWindow* window = ctx->GetWindowByRef(ctx->RefID);
@@ -2209,10 +2210,10 @@ void RegisterTests_Table(ImGuiTestEngine* e)
     // ## Test reported size
  #if IMGUI_VERSION_NUM >= 17913
     t = IM_REGISTER_TEST(e, "table", "table_reported_size_outer");
-    t->SetUserDataType<TableTestingVars>();
+    t->SetVarsDataType<TableTestingVars>();
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
-        auto& vars = ctx->GetUserData<TableTestingVars>();
+        auto& vars = ctx->GetVars<TableTestingVars>();
         ImGuiStyle& style = ImGui::GetStyle();
         ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0.0f, 0.0f));
         ImGui::PushStyleVar(ImGuiStyleVar_CellPadding, ImVec2(0.0f, 0.0f));
@@ -2294,7 +2295,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
     };
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
-        auto& vars = ctx->GetUserData<TableTestingVars>();
+        auto& vars = ctx->GetVars<TableTestingVars>();
 
         ctx->SetRef("Test Window");
         ImGuiTable* table = ImGui::TableFindByID(ctx->GetID("table1"));
@@ -2597,10 +2598,10 @@ void RegisterTests_Table(ImGuiTestEngine* e)
 
     // ## Test changing column count of existing table.
     t = IM_REGISTER_TEST(e, "table", "table_varying_columns_count");
-    t->SetUserDataType<TableTestingVars>();
+    t->SetVarsDataType<TableTestingVars>();
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
-        auto& vars = ctx->GetUserData<TableTestingVars>();
+        auto& vars = ctx->GetVars<TableTestingVars>();
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | vars.WindowFlags);
         vars.ColumnsCount = ImMax(vars.ColumnsCount, 1);
         ImGui::SliderInt("Count", &vars.ColumnsCount, 1, 30);
@@ -2615,7 +2616,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
     };
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
-        auto& vars = ctx->GetUserData<TableTestingVars>();
+        auto& vars = ctx->GetVars<TableTestingVars>();
         vars.WindowFlags = ImGuiWindowFlags_AlwaysAutoResize;
         ctx->Yield();
         ctx->SetRef("Test Window");
@@ -2649,10 +2650,10 @@ void RegisterTests_Table(ImGuiTestEngine* e)
 
     // ## Miscellaneous
     t = IM_REGISTER_TEST(e, "table", "table_cov_misc");
-    t->SetUserDataType<TableTestingVars>();
+    t->SetVarsDataType<TableTestingVars>();
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
-        TableTestingVars& vars = ctx->GetUserData<TableTestingVars>();
+        TableTestingVars& vars = ctx->GetVars<TableTestingVars>();
 
         ImGui::SetNextWindowSize(ImVec2(250.0f, 100.0f), ImGuiCond_Appearing);
         ImGui::Begin("Test window 1", NULL, ImGuiWindowFlags_NoSavedSettings);
@@ -2677,7 +2678,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
     };
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
-        TableTestingVars& vars = ctx->GetUserData<TableTestingVars>();
+        TableTestingVars& vars = ctx->GetVars<TableTestingVars>();
 
         ctx->SetRef("Test window 1");
         ImGuiTable* table = ImGui::TableFindByID(ctx->GetID("table1"));
@@ -2714,7 +2715,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
     // ## Test column reordering and resetting to default order.
     // ## Test ImGuiTableFlags_ContextMenuInBody
     t = IM_REGISTER_TEST(e, "table", "table_reorder");
-    t->SetUserDataType<TableTestingVars>();
+    t->SetVarsDataType<TableTestingVars>();
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         ImGui::SetNextWindowSize(ImVec2(250.0f, 100.0f), ImGuiCond_Appearing);
@@ -2770,9 +2771,10 @@ void RegisterTests_Table(ImGuiTestEngine* e)
 
     // ## Test whether widgets in a custom table header can be clicked.
     t = IM_REGISTER_TEST(e, "table", "table_custom_header");
-    t->SetUserDataType<TableTestingVars>();
+    t->SetVarsDataType<TableTestingVars>();
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
+        ImGuiTestGenericVars& vars = ctx->GenericVars;
         ImGui::SetNextWindowSize(ImVec2(250.0f, 100.0f), ImGuiCond_Appearing);
         ImGui::Begin("Test window 1", NULL, ImGuiWindowFlags_NoSavedSettings);
 
@@ -2786,8 +2788,8 @@ void RegisterTests_Table(ImGuiTestEngine* e)
             ImGui::TableNextRow(ImGuiTableRowFlags_Headers);
             ImGui::TableSetColumnIndex(0);
             ImGui::TableHeader(ImGui::TableGetColumnName(0));
-            bool ret = ImGui::Checkbox("##checkall", &ctx->GenericVars.Bool1);
-            ctx->GenericVars.Status.QueryInc(ret);
+            bool ret = ImGui::Checkbox("##checkall", &vars.Bool1);
+            vars.Status.QueryInc(ret);
             ImGui::TableNextRow();
             HelperTableSubmitCellsButtonFix(columns_count, 1);
             ImGui::EndTable();
@@ -2796,19 +2798,20 @@ void RegisterTests_Table(ImGuiTestEngine* e)
     };
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
+        ImGuiTestGenericVars& vars = ctx->GenericVars;
         ctx->SetRef("Test window 1");
-        IM_CHECK(ctx->GenericVars.Status.Ret == 0);
-        IM_CHECK(ctx->GenericVars.Status.Hovered == 0);
-        IM_CHECK(ctx->GenericVars.Status.Clicked == 0);
+        IM_CHECK(vars.Status.Ret == 0);
+        IM_CHECK(vars.Status.Hovered == 0);
+        IM_CHECK(vars.Status.Clicked == 0);
         ctx->ItemClick(ctx->GetID("##checkall", ctx->GetID("table1")));
-        IM_CHECK(ctx->GenericVars.Status.Ret > 0);
-        IM_CHECK(ctx->GenericVars.Status.Hovered > 0);
-        IM_CHECK(ctx->GenericVars.Status.Clicked > 0);
+        IM_CHECK(vars.Status.Ret > 0);
+        IM_CHECK(vars.Status.Hovered > 0);
+        IM_CHECK(vars.Status.Clicked > 0);
     };
 
     // ## Test keeping columns visible after column resize.
     t = IM_REGISTER_TEST(e, "table", "table_scroll_on_resize");
-    t->SetUserDataType<TableTestingVars>();
+    t->SetVarsDataType<TableTestingVars>();
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         ImGui::SetNextWindowSize(ImVec2(250.0f, 100.0f), ImGuiCond_Appearing);
@@ -2858,7 +2861,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
-        auto& vars = ctx->GenericVars;
+        ImGuiTestGenericVars& vars = ctx->GenericVars;
         if (vars.Int1 == 0)
             vars.Int1 = 16;
         ImGui::SliderInt("Levels", &vars.Int1, 1, 30);
@@ -3035,7 +3038,7 @@ void RegisterTests_Columns(ImGuiTestEngine* e)
     t = IM_REGISTER_TEST(e, "columns", "columns_cov_legacy_columns");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
-        auto& vars = ctx->GenericVars;
+        ImGuiTestGenericVars& vars = ctx->GenericVars;
 
         ImGui::SetNextWindowSize(ImVec2(300.0f, 60.0f), ImGuiCond_Appearing);
         ImGui::Begin("Test window", NULL, ImGuiWindowFlags_NoSavedSettings);
@@ -3065,7 +3068,7 @@ void RegisterTests_Columns(ImGuiTestEngine* e)
     };
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
-        auto& vars = ctx->GenericVars;
+        ImGuiTestGenericVars& vars = ctx->GenericVars;
 
         ctx->SetRef("Test window");
         ImGuiWindow* window = ctx->GetWindowByRef(ctx->RefID);
