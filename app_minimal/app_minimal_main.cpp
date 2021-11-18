@@ -10,10 +10,9 @@
 #endif
 #include "shared/imgui_app.h"
 
+// Test Engine
 #include "imgui_test_engine/imgui_te_engine.h"
-#include "imgui_test_engine/imgui_te_context.h"
 #include "imgui_test_engine/imgui_te_ui.h"
-#include "imgui_test_engine/imgui_capture_tool.h"
 #include "imgui_test_engine/thirdparty/implot/implot.h"     // FIXME: Remove or make optional -> need to remove implot from imgui_test_engine_imconfig
 
 static bool AppScreenCaptureFunc(ImGuiID viewport_id, int x, int y, int w, int h, unsigned int* pixels, void* user_data)
@@ -23,7 +22,7 @@ static bool AppScreenCaptureFunc(ImGuiID viewport_id, int x, int y, int w, int h
     return app->CaptureFramebuffer(app, x, y, w, h, pixels, NULL);
 };
 
-static void RegisterTests(ImGuiTestEngine* engine);
+extern void RegisterAppMinimalTests(ImGuiTestEngine* engine);
 
 int main(int argc, char** argv)
 {
@@ -65,7 +64,7 @@ int main(int argc, char** argv)
     test_io.ScreenCaptureUserData = (void*)app;
 
     // Register tests
-    RegisterTests(engine);
+    RegisterAppMinimalTests(engine);
 
     // Start test engine
     ImGuiTestEngine_Start(engine);
@@ -107,25 +106,4 @@ int main(int argc, char** argv)
     app->Destroy(app);
 
     return 0;
-}
-
-static void RegisterTests(ImGuiTestEngine* e)
-{
-    ImGuiTest* t = NULL;
-
-    t = IM_REGISTER_TEST(e, "test", "open_metrics");
-    t->TestFunc = [](ImGuiTestContext* ctx)
-    {
-        ctx->SetRef("Dear ImGui Demo");
-        ctx->MenuCheck("Tools/Metrics\\/Debugger");
-    };
-
-    // ## Capture entire Dear ImGui Demo window.
-    t = IM_REGISTER_TEST(e, "test", "capture_imgui_demo");
-    t->TestFunc = [](ImGuiTestContext* ctx)
-    {
-        ctx->SetRef("Dear ImGui Demo");
-        ctx->ItemOpenAll("");
-        ctx->CaptureScreenshotWindow("Dear ImGui Demo", ImGuiCaptureFlags_StitchFullContents | ImGuiCaptureFlags_HideMouseCursor);
-    };
 }

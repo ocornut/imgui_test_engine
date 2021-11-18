@@ -184,6 +184,7 @@
     <ClCompile Include="..\imgui_test_engine\thirdparty\implot\implot_items.cpp" />
     <ClCompile Include="..\shared\imgui_app.cpp" />
     <ClCompile Include="app_minimal_main.cpp" />
+    <ClCompile Include="app_minimal_tests.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\imgui_test_engine\imgui_test_engine.vcxproj">

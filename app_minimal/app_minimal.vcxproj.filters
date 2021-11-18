@@ -81,6 +81,9 @@
     <ClCompile Include="..\imgui_test_engine\thirdparty\implot\implot_demo.cpp">
       <Filter>thirdparty\implot</Filter>
     </ClCompile>
+    <ClCompile Include="app_minimal_tests.cpp">
+      <Filter>sources</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Natvis Include="..\..\imgui\misc\debuggers\imgui.natvis">
