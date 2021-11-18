@@ -81,13 +81,6 @@ static void LoadFonts(ImGuiApp* app)
     //io.Fonts->AddFontFromFileTTF("../data/fonts/fa5-solid-900.otf", 14.0f * app->DpiScale, &font_cfg_icons);
 }
 
-static bool AppScreenCaptureFunc(ImGuiID viewport_id, int x, int y, int w, int h, unsigned int* pixels, void* user_data)
-{
-    IM_UNUSED(viewport_id); // FIXME: Unsupported
-    ImGuiApp* app = (ImGuiApp*)user_data;
-    return app->CaptureFramebuffer(app, x, y, w, h, pixels, NULL);
-};
-
 int main(int argc, char** argv)
 {
     IM_UNUSED(argc);
@@ -123,7 +116,7 @@ int main(int argc, char** argv)
     ImGuiTestEngineIO& test_io = ImGuiTestEngine_GetIO(engine);
     test_io.ConfigVerboseLevel = ImGuiTestVerboseLevel_Info;
     test_io.ConfigVerboseLevelOnError = ImGuiTestVerboseLevel_Debug;
-    test_io.ScreenCaptureFunc = AppScreenCaptureFunc;
+    test_io.ScreenCaptureFunc = ImGuiApp_ScreenCaptureFunc;
     test_io.ScreenCaptureUserData = (void*)app;
 
     // Register tests
@@ -164,7 +157,7 @@ int main(int argc, char** argv)
     // Spawn a capture tool independent of ImGuiTestEngine's own instance (as you may use capture tool without the test engine)
     bool show_capture_tool = false;
     ImGuiCaptureTool capture_tool;
-    capture_tool.Context.ScreenCaptureFunc = AppScreenCaptureFunc;
+    capture_tool.Context.ScreenCaptureFunc = ImGuiApp_ScreenCaptureFunc;
     capture_tool.Context.ScreenCaptureUserData = app;
 
     // Main loop

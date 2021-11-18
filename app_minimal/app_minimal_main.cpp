@@ -1,4 +1,5 @@
-// dear imgui - Minimal application demonstrating integration the Test Engine
+// dear imgui
+// Minimal Application demonstrating integrating the Dear ImGui Test Engine
 
 #include "imgui.h"
 #define IMGUI_DEFINE_MATH_OPERATORS
@@ -14,13 +15,6 @@
 #include "imgui_test_engine/imgui_te_engine.h"
 #include "imgui_test_engine/imgui_te_ui.h"
 #include "imgui_test_engine/thirdparty/implot/implot.h"     // FIXME: Remove or make optional -> need to remove implot from imgui_test_engine_imconfig
-
-static bool AppScreenCaptureFunc(ImGuiID viewport_id, int x, int y, int w, int h, unsigned int* pixels, void* user_data)
-{
-    IM_UNUSED(viewport_id); // FIXME: Unsupported
-    ImGuiApp* app = (ImGuiApp*)user_data;
-    return app->CaptureFramebuffer(app, x, y, w, h, pixels, NULL);
-};
 
 extern void RegisterAppMinimalTests(ImGuiTestEngine* engine);
 
@@ -60,7 +54,7 @@ int main(int argc, char** argv)
     test_io.ConfigVerboseLevel = ImGuiTestVerboseLevel_Info;
     test_io.ConfigVerboseLevelOnError = ImGuiTestVerboseLevel_Debug;
     test_io.ConfigRunFast = false; // Default to slow mode in this demo
-    test_io.ScreenCaptureFunc = AppScreenCaptureFunc;
+    test_io.ScreenCaptureFunc = ImGuiApp_ScreenCaptureFunc;
     test_io.ScreenCaptureUserData = (void*)app;
 
     // Register tests

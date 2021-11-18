@@ -38,6 +38,9 @@ struct ImGuiApp
     bool    (*CaptureFramebuffer)(ImGuiApp* app, int x, int y, int w, int h, unsigned int* pixels_rgba, void* user_data) = nullptr;
 };
 
+// Helper stub to store directly in ImGuiTestEngineIO::ScreenCaptureFunc when using test engine (prototype is same as ImGuiTestEngineScreenCaptureFunc)
+bool ImGuiApp_ScreenCaptureFunc(ImGuiID viewport_id, int x, int y, int w, int h, unsigned int* pixels, void* user_data);
+
 //-----------------------------------------------------------------------------
 // Create function for each Backends
 // - In most case you can use the shortcut ImGuiApp_ImplCreate() which will be defined to the first available backend.

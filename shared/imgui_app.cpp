@@ -84,6 +84,19 @@ static bool ImGuiApp_ImplGL_CaptureFramebuffer(ImGuiApp* app, int x, int y, int 
 #endif
 
 //-----------------------------------------------------------------------------
+// [SECTION] Helper stub to store directly in ImGuiTestEngineIO::ScreenCaptureFunc when using test engine (prototype is same as ImGuiTestEngineScreenCaptureFunc)
+//-----------------------------------------------------------------------------
+
+bool ImGuiApp_ScreenCaptureFunc(ImGuiID viewport_id, int x, int y, int w, int h, unsigned int* pixels, void* user_data)
+{
+    ImGuiApp* app = (ImGuiApp*)user_data;
+    IM_UNUSED(viewport_id); // FIXME: Unsupported
+    if (app->CaptureFramebuffer == NULL)
+        return false;
+    return app->CaptureFramebuffer(app, x, y, w, h, pixels, NULL);
+}
+
+//-----------------------------------------------------------------------------
 // [SECTION] ImGuiApp Implementation: NULL
 //-----------------------------------------------------------------------------
 

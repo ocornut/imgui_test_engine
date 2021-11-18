@@ -1,4 +1,5 @@
-// dear imgui - Minimal application demonstrating integration the Test Engine
+// dear imgui
+// Demo Tests demonstrating the Dear ImGui Test Engine
 
 #include "imgui.h"
 #define IMGUI_DEFINE_MATH_OPERATORS

@@ -28,6 +28,8 @@ struct ImGuiTestCoroutineInterface
 
 //------------------------------------------------------------------------
 // Coroutine implementation using std::thread
+// The "coroutine" thread and user's main thread will always block on each other (both threads will NEVER run in parallel)
+// It is just an implementation convenience that we provide an implementation using std::thread as it is widely available/standard.
 //------------------------------------------------------------------------
 
 #ifdef IMGUI_TEST_ENGINE_ENABLE_COROUTINE_STDTHREAD_IMPL
