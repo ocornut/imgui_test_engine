@@ -48,7 +48,7 @@ Index of this file:
 #ifdef IMGUI_STB_IMAGE_WRITE_FILENAME
 #include IMGUI_STB_IMAGE_WRITE_FILENAME
 #else
-#include "../libs/stb/stb_image_write.h"
+#include "thirdparty/stb/stb_image_write.h"
 #endif  // #ifdef IMGUI_STB_IMAGE_WRITE_FILENAME
 #endif  // #ifndef STB_IMAGE_WRITE_IMPLEMENTATION
 
@@ -56,7 +56,7 @@ Index of this file:
 #define GIF_TEMP_FREE IM_FREE
 #define GIF_MALLOC IM_ALLOC
 #define GIF_FREE IM_FREE
-#include "../libs/gif-h/gif.h"
+#include "thirdparty/gif-h/gif.h"
 #ifdef _MSC_VER
 #pragma warning (pop)
 #else

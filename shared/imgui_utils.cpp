@@ -5,7 +5,7 @@
 #include "imgui_utils.h"
 #include "imgui.h"
 #include "imgui_internal.h"
-#include "../libs/Str/Str.h"
+#include "../imgui_test_engine/thirdparty/Str/Str.h"
 
 #if defined(_WIN32)
 #if !defined(_WINDOWS_)

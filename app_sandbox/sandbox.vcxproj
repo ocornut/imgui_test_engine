@@ -168,8 +168,8 @@
     <ClInclude Include="..\..\imgui\imstb_rectpack.h" />
     <ClInclude Include="..\..\imgui\imstb_textedit.h" />
     <ClInclude Include="..\..\imgui\imstb_truetype.h" />
-    <ClInclude Include="..\libs\implot\implot.h" />
-    <ClInclude Include="..\libs\implot\implot_internal.h" />
+    <ClInclude Include="..\imgui_test_engine\thirdparty\implot\implot.h" />
+    <ClInclude Include="..\imgui_test_engine\thirdparty\implot\implot_internal.h" />
     <ClInclude Include="..\shared\imgui_app.h" />
     <ClInclude Include="editor_assets_browser.h" />
     <ClInclude Include="editor_widgets.h" />
@@ -189,9 +189,9 @@
     <ClCompile Include="..\..\imgui\imgui_draw.cpp" />
     <ClCompile Include="..\..\imgui\imgui_tables.cpp" />
     <ClCompile Include="..\..\imgui\imgui_widgets.cpp" />
-    <ClCompile Include="..\libs\implot\implot.cpp" />
-    <ClCompile Include="..\libs\implot\implot_demo.cpp" />
-    <ClCompile Include="..\libs\implot\implot_items.cpp" />
+    <ClCompile Include="..\imgui_test_engine\thirdparty\implot\implot.cpp" />
+    <ClCompile Include="..\imgui_test_engine\thirdparty\implot\implot_demo.cpp" />
+    <ClCompile Include="..\imgui_test_engine\thirdparty\implot\implot_items.cpp" />
     <ClCompile Include="..\shared\imgui_app.cpp" />
     <ClCompile Include="editor_assets_browser.cpp" />
     <ClCompile Include="editor_scene.cpp" />

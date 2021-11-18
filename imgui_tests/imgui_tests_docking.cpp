@@ -17,7 +17,7 @@
 #include "shared/imgui_utils.h"
 #include "imgui_test_engine/imgui_te_engine.h"      // IM_REGISTER_TEST()
 #include "imgui_test_engine/imgui_te_context.h"
-#include "libs/Str/Str.h"
+#include "imgui_test_engine/thirdparty/Str/Str.h"
 
 // Warnings
 #ifdef _MSC_VER

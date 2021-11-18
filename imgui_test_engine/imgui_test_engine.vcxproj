@@ -153,9 +153,6 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="..\libs\gif-h\gif.h" />
-    <ClInclude Include="..\libs\stb\stb_image_write.h" />
-    <ClInclude Include="..\libs\Str\Str.h" />
     <ClInclude Include="..\shared\imgui_utils.h" />
     <ClInclude Include="imgui_capture_tool.h" />
     <ClInclude Include="imgui_te_context.h" />
@@ -165,6 +162,9 @@
     <ClInclude Include="imgui_te_perftool.h" />
     <ClInclude Include="imgui_te_ui.h" />
     <ClInclude Include="imgui_te_util.h" />
+    <ClInclude Include="thirdparty\gif-h\gif.h" />
+    <ClInclude Include="thirdparty\stb\stb_image_write.h" />
+    <ClInclude Include="thirdparty\Str\Str.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\shared\imgui_utils.cpp" />
@@ -177,7 +177,7 @@
     <ClCompile Include="imgui_te_perftool.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <Natvis Include="..\libs\Str\Str.natvis" />
+    <Natvis Include="thirdparty\Str\Str.natvis" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -4,8 +4,8 @@
 #include "imgui_internal.h"
 #include "shared/imgui_utils.h"
 #include "shared/IconsFontAwesome5.h"
-#include "libs/Str/Str.h"
 #include "thirdparty/imgui_markdown/imgui_markdown.h"
+#include "imgui_test_engine/thirdparty/Str/Str.h"
 
 static void LinkCallback(ImGui::MarkdownLinkCallbackData data)
 {

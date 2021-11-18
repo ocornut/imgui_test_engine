@@ -11,7 +11,7 @@ SOURCES += ../imgui_tests.cpp ../imgui_tests_docking.cpp ../imgui_tests_nav.cpp 
 SOURCES += ../imgui_te_context.cpp ../imgui_te_coroutine.cpp ../imgui_te_engine.cpp ../imgui_te_perftool.cpp ../imgui_te_ui.cpp ../imgui_te_util.cpp ../imgui_capture_tool.cpp
 SOURCES += $(IMGUI_DIR)/imgui.cpp $(IMGUI_DIR)/imgui_demo.cpp $(IMGUI_DIR)/imgui_draw.cpp $(IMGUI_DIR)/imgui_tables.cpp $(IMGUI_DIR)/imgui_widgets.cpp
 SOURCES += ../shared/imgui_app.cpp ../shared/imgui_utils.cpp
-SOURCES += ../libs/implot/implot.cpp ../libs/implot/implot_items.cpp ../libs/implot/implot_demo.cpp
+SOURCES += ../thirdparty/implot/implot.cpp ../thirdparty/implot/implot_items.cpp ../thirdparty/implot/implot_demo.cpp
 OBJS = $(addsuffix .o, $(basename $(notdir $(SOURCES))))
 UNAME_S := $(shell uname -s)
 
@@ -99,10 +99,10 @@ endif
 %.o:../shared/%.cpp
 	$(CXX) $(CFLAGS) $(CXXFLAGS) -c -o $@ $<
 
-%.o:../libs/Str/%.cpp
+%.o:../thirdparty/Str/%.cpp
 	$(CXX) $(CFLAGS) $(CXXFLAGS) -c -o $@ $<
 
-%.o:../libs/implot/%.cpp
+%.o:../thirdparty/implot/%.cpp
 	$(CXX) $(CFLAGS) $(CXXFLAGS) -c -o $@ $<
 
 %.o:$(IMGUI_DIR)/%.cpp

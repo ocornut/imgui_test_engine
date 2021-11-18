@@ -7,9 +7,9 @@
 #include "imgui.h"
 #include "imgui_internal.h"
 #include "imgui_te_util.h"
-#include "libs/Str/Str.h"
-#include "libs/implot/implot.h"
-#include "libs/implot/implot_internal.h"
+#include "thirdparty/Str/Str.h"
+#include "thirdparty/implot/implot.h"
+#include "thirdparty/implot/implot_internal.h"
 #include "shared/imgui_utils.h"
 
 // For tests

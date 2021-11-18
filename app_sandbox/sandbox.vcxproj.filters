@@ -64,12 +64,6 @@
     <ClInclude Include="editor_assets_browser.h">
       <Filter>sources</Filter>
     </ClInclude>
-    <ClInclude Include="..\libs\implot\implot.h">
-      <Filter>thirdparty\implot</Filter>
-    </ClInclude>
-    <ClInclude Include="..\libs\implot\implot_internal.h">
-      <Filter>thirdparty\implot</Filter>
-    </ClInclude>
     <ClInclude Include="sandbox_tests.h">
       <Filter>sources</Filter>
     </ClInclude>
@@ -93,6 +87,12 @@
     </ClInclude>
     <ClInclude Include="thirdparty\imgui_markdown\imgui_markdown.h">
       <Filter>thirdparty\imgui_markdown</Filter>
+    </ClInclude>
+    <ClInclude Include="..\imgui_test_engine\thirdparty\implot\implot_internal.h">
+      <Filter>thirdparty\implot</Filter>
+    </ClInclude>
+    <ClInclude Include="..\imgui_test_engine\thirdparty\implot\implot.h">
+      <Filter>thirdparty\implot</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -123,15 +123,6 @@
     <ClCompile Include="editor_scene.cpp">
       <Filter>sources</Filter>
     </ClCompile>
-    <ClCompile Include="..\libs\implot\implot.cpp">
-      <Filter>thirdparty\implot</Filter>
-    </ClCompile>
-    <ClCompile Include="..\libs\implot\implot_demo.cpp">
-      <Filter>thirdparty\implot</Filter>
-    </ClCompile>
-    <ClCompile Include="..\libs\implot\implot_items.cpp">
-      <Filter>thirdparty\implot</Filter>
-    </ClCompile>
     <ClCompile Include="sandbox_tests.cpp">
       <Filter>sources</Filter>
     </ClCompile>
@@ -149,6 +140,15 @@
     </ClCompile>
     <ClCompile Include="thirdparty\ImGuizmo\ImGuizmo.cpp">
       <Filter>thirdparty\imguizmo</Filter>
+    </ClCompile>
+    <ClCompile Include="..\imgui_test_engine\thirdparty\implot\implot_items.cpp">
+      <Filter>thirdparty\implot</Filter>
+    </ClCompile>
+    <ClCompile Include="..\imgui_test_engine\thirdparty\implot\implot.cpp">
+      <Filter>thirdparty\implot</Filter>
+    </ClCompile>
+    <ClCompile Include="..\imgui_test_engine\thirdparty\implot\implot_demo.cpp">
+      <Filter>thirdparty\implot</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

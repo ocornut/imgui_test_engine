@@ -7,9 +7,8 @@
 #include "editor_widgets.h"
 #include "sandbox_styles.h"
 #include "sandbox_tests.h"
-#include "libs/Str/Str.h"
+#include "imgui_test_engine/thirdparty/Str/Str.h"
 #include "thirdparty/imgui_memory_editor/imgui_memory_editor.h"
-#include "libs/implot/implot.h"
 #include "shared/IconsFontAwesome5.h"
 
 // imgui_app is a helper to wrap multiple Dear ImGui platform/renderer backends
@@ -27,6 +26,7 @@
 #include "imgui_test_engine/imgui_te_coroutine.h"
 #include "imgui_test_engine/imgui_te_ui.h"
 #include "imgui_test_engine/imgui_capture_tool.h"
+#include "imgui_test_engine/thirdparty/implot/implot.h"
 #endif
 
 void EditorRenderScene();

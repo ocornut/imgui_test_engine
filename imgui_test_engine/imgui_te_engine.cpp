@@ -14,7 +14,7 @@
 #include "imgui_te_internal.h"
 #include "imgui_te_perftool.h"
 #include "shared/imgui_utils.h"
-#include "libs/Str/Str.h"
+#include "thirdparty/Str/Str.h"
 
 /*
 

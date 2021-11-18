@@ -43,10 +43,10 @@
     <ClInclude Include="app_minimal_imconfig.h">
       <Filter>sources</Filter>
     </ClInclude>
-    <ClInclude Include="..\libs\implot\implot.h">
+    <ClInclude Include="..\imgui_test_engine\thirdparty\implot\implot.h">
       <Filter>thirdparty\implot</Filter>
     </ClInclude>
-    <ClInclude Include="..\libs\implot\implot_internal.h">
+    <ClInclude Include="..\imgui_test_engine\thirdparty\implot\implot_internal.h">
       <Filter>thirdparty\implot</Filter>
     </ClInclude>
   </ItemGroup>
@@ -72,13 +72,13 @@
     <ClCompile Include="..\..\imgui\imgui_tables.cpp">
       <Filter>imgui</Filter>
     </ClCompile>
-    <ClCompile Include="..\libs\implot\implot.cpp">
+    <ClCompile Include="..\imgui_test_engine\thirdparty\implot\implot_items.cpp">
       <Filter>thirdparty\implot</Filter>
     </ClCompile>
-    <ClCompile Include="..\libs\implot\implot_demo.cpp">
+    <ClCompile Include="..\imgui_test_engine\thirdparty\implot\implot.cpp">
       <Filter>thirdparty\implot</Filter>
     </ClCompile>
-    <ClCompile Include="..\libs\implot\implot_items.cpp">
+    <ClCompile Include="..\imgui_test_engine\thirdparty\implot\implot_demo.cpp">
       <Filter>thirdparty\implot</Filter>
     </ClCompile>
   </ItemGroup>

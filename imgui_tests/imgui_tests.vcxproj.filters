@@ -10,11 +10,8 @@
     <Filter Include="imgui_tests">
       <UniqueIdentifier>{08e36723-ce4f-4cff-9662-c40801cf1acf}</UniqueIdentifier>
     </Filter>
-    <Filter Include="libs">
-      <UniqueIdentifier>{eee3ce6a-c593-41b7-92b8-531d5d956f3c}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="libs\implot">
-      <UniqueIdentifier>{a4ab2be6-f030-4e79-acdf-49a4a8a9884c}</UniqueIdentifier>
+    <Filter Include="thirdparty">
+      <UniqueIdentifier>{0a7c9c80-f5b1-4b5a-b3e0-f72da0f35e36}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -45,11 +42,11 @@
     <ClInclude Include="imgui_tests_imconfig.h">
       <Filter>imgui_tests</Filter>
     </ClInclude>
-    <ClInclude Include="..\libs\implot\implot_internal.h">
-      <Filter>libs\implot</Filter>
+    <ClInclude Include="..\imgui_test_engine\thirdparty\implot\implot.h">
+      <Filter>thirdparty</Filter>
     </ClInclude>
-    <ClInclude Include="..\libs\implot\implot.h">
-      <Filter>libs\implot</Filter>
+    <ClInclude Include="..\imgui_test_engine\thirdparty\implot\implot_internal.h">
+      <Filter>thirdparty</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -92,17 +89,17 @@
     <ClCompile Include="imgui_tests_nav.cpp">
       <Filter>imgui_tests</Filter>
     </ClCompile>
-    <ClCompile Include="..\libs\implot\implot_demo.cpp">
-      <Filter>libs\implot</Filter>
-    </ClCompile>
-    <ClCompile Include="..\libs\implot\implot_items.cpp">
-      <Filter>libs\implot</Filter>
-    </ClCompile>
-    <ClCompile Include="..\libs\implot\implot.cpp">
-      <Filter>libs\implot</Filter>
-    </ClCompile>
     <ClCompile Include="imgui_tests_viewports.cpp">
       <Filter>imgui_tests</Filter>
+    </ClCompile>
+    <ClCompile Include="..\imgui_test_engine\thirdparty\implot\implot.cpp">
+      <Filter>thirdparty</Filter>
+    </ClCompile>
+    <ClCompile Include="..\imgui_test_engine\thirdparty\implot\implot_demo.cpp">
+      <Filter>thirdparty</Filter>
+    </ClCompile>
+    <ClCompile Include="..\imgui_test_engine\thirdparty\implot\implot_items.cpp">
+      <Filter>thirdparty</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

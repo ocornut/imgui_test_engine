@@ -13,7 +13,7 @@
 #include "imgui_te_perftool.h"
 #include "imgui_te_util.h"
 #include "shared/imgui_utils.h"
-#include "libs/Str/Str.h"
+#include "thirdparty/Str/Str.h"
 
 #ifndef _WIN32
 #include <unistd.h>     // usleep

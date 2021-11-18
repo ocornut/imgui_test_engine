@@ -6,7 +6,7 @@
 #include "imgui.h"
 #include "imgui_internal.h"
 #define STR_IMPLEMENTATION
-#include "libs/Str/Str.h"
+#include "thirdparty/Str/Str.h"
 
 // Hash "hello/world" as if it was "helloworld"
 // To hash a forward slash we need to use "hello\\/world"

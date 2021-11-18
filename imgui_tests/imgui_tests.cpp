@@ -11,9 +11,9 @@
 #include "imgui_test_engine/imgui_te_engine.h"      // IM_REGISTER_TEST()
 #include "imgui_test_engine/imgui_te_context.h"
 #include "imgui_test_engine/imgui_capture_tool.h"
-#include "libs/Str/Str.h"
+#include "imgui_test_engine/thirdparty/Str/Str.h"
 #ifdef IMGUI_TEST_ENGINE_ENABLE_IMPLOT
-#include "libs/implot/implot.h"
+#include "imgui_test_engine/thirdparty/implot/implot.h"
 #endif
 
 // Warnings
