@@ -1779,7 +1779,7 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
 #if IMGUI_VERSION_NUM >= 18420
     // ## Test SetKeyboardFocusHere() on clipped items (#343, #4079, #2352)
     t = IM_REGISTER_TEST(e, "nav", "nav_focus_api_clipped");
-    struct SetFocusVars { char Str1[256] = ""; int Step = 0; ImGuiTestGenericStatus Status[3]; };
+    struct SetFocusVars { char Str1[256] = ""; int Step = 0; ImGuiTestGenericItemStatus Status[3]; };
     t->SetUserDataType<SetFocusVars>();
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {

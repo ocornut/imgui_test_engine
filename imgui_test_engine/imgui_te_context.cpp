@@ -32,6 +32,64 @@ ImGuiTestRefDesc::ImGuiTestRefDesc(const ImGuiTestRef& ref, const ImGuiTestItemI
 }
 
 //-------------------------------------------------------------------------
+// [SECTION] ImGuiTestContextDepthScope
+//-------------------------------------------------------------------------
+
+// Helper to increment/decrement the function depth (so our log entry can be padded accordingly)
+#define IM_TOKENCONCAT_INTERNAL(x, y)                   x ## y
+#define IM_TOKENCONCAT(x, y)                            IM_TOKENCONCAT_INTERNAL(x, y)
+#define IMGUI_TEST_CONTEXT_REGISTER_DEPTH(_THIS)        ImGuiTestContextDepthScope IM_TOKENCONCAT(depth_register, __LINE__)(_THIS)
+
+struct ImGuiTestContextDepthScope
+{
+    ImGuiTestContext* TestContext;
+    ImGuiTestContextDepthScope(ImGuiTestContext* ctx) { TestContext = ctx; TestContext->ActionDepth++; }
+    ~ImGuiTestContextDepthScope() { TestContext->ActionDepth--; }
+};
+
+//-------------------------------------------------------------------------
+// [SECTION] Enum names helpers
+//-------------------------------------------------------------------------
+
+inline const char* GetActionName(ImGuiTestAction action)
+{
+    switch (action)
+    {
+    case ImGuiTestAction_Unknown:       return "Unknown";
+    case ImGuiTestAction_Hover:         return "Hover";
+    case ImGuiTestAction_Click:         return "Click";
+    case ImGuiTestAction_DoubleClick:   return "DoubleClick";
+    case ImGuiTestAction_Check:         return "Check";
+    case ImGuiTestAction_Uncheck:       return "Uncheck";
+    case ImGuiTestAction_Open:          return "Open";
+    case ImGuiTestAction_Close:         return "Close";
+    case ImGuiTestAction_Input:         return "Input";
+    case ImGuiTestAction_NavActivate:   return "NavActivate";
+    case ImGuiTestAction_COUNT:
+    default:                            return "N/A";
+    }
+}
+
+inline const char* GetActionVerb(ImGuiTestAction action)
+{
+    switch (action)
+    {
+    case ImGuiTestAction_Unknown:       return "Unknown";
+    case ImGuiTestAction_Hover:         return "Hovered";
+    case ImGuiTestAction_Click:         return "Clicked";
+    case ImGuiTestAction_DoubleClick:   return "DoubleClicked";
+    case ImGuiTestAction_Check:         return "Checked";
+    case ImGuiTestAction_Uncheck:       return "Unchecked";
+    case ImGuiTestAction_Open:          return "Opened";
+    case ImGuiTestAction_Close:         return "Closed";
+    case ImGuiTestAction_Input:         return "Input";
+    case ImGuiTestAction_NavActivate:   return "NavActivated";
+    case ImGuiTestAction_COUNT:
+    default:                            return "N/A";
+    }
+}
+
+//-------------------------------------------------------------------------
 // [SECTION] ImGuiTestContext
 // This is the interface that most tests will interact with.
 //-------------------------------------------------------------------------

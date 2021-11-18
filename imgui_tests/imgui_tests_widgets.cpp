@@ -236,14 +236,14 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
     struct ButtonStateTestVars
     {
         ButtonStateMachineTestStep NextStep;
-        ImGuiTestGenericStatus Status;
+        ImGuiTestGenericItemStatus Status;
         ButtonStateTestVars() { NextStep = ButtonStateMachineTestStep_None; }
     };
     t->SetUserDataType<ButtonStateTestVars>();
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         ButtonStateTestVars& vars = ctx->GetUserData<ButtonStateTestVars>();
-        ImGuiTestGenericStatus& status = vars.Status;
+        ImGuiTestGenericItemStatus& status = vars.Status;
 
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
 
@@ -1595,7 +1595,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
     {
         // Accumulate return values over several frames/action into each bool
         ImGuiTestGenericVars& vars = ctx->GenericVars;
-        ImGuiTestGenericStatus& status = vars.Status;
+        ImGuiTestGenericItemStatus& status = vars.Status;
 
         // Testing activation flag being set
         ctx->SetRef("Test Window");
@@ -1623,7 +1623,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
     {
         // Accumulate return values over several frames/action into each bool
         ImGuiTestGenericVars& vars = ctx->GenericVars;
-        ImGuiTestGenericStatus& status = vars.Status;
+        ImGuiTestGenericItemStatus& status = vars.Status;
 
         // Testing activation flag being set
         ctx->SetRef("Test Window");
@@ -1671,7 +1671,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
     {
         // Accumulate return values over several frames/action into each bool
         ImGuiTestGenericVars& vars = ctx->GenericVars;
-        ImGuiTestGenericStatus& status = vars.Status;
+        ImGuiTestGenericItemStatus& status = vars.Status;
 
         // FIXME-TESTS: Better helper to build ids out of various type of data
         ctx->SetRef("Test Window");
@@ -1733,7 +1733,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         ImGuiTestGenericVars& vars = ctx->GenericVars;
-        ImGuiTestGenericStatus& status = vars.Status;
+        ImGuiTestGenericItemStatus& status = vars.Status;
 
         // Input "1" which will be formatted as "1.000", make sure we don't report IsItemEdited() multiple times!
         ctx->SetRef("Test Window");
@@ -4348,7 +4348,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         struct BeginDisabledItemInfo
         {
             const char* Name = NULL;
-            ImGuiTestGenericStatus Status = {};
+            ImGuiTestGenericItemStatus Status = {};
             ImGuiItemFlags FlagsBegin = 0;
             ImGuiItemFlags FlagsEnd = 0;
             float AlphaBegin = 0;

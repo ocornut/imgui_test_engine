@@ -4,35 +4,31 @@
 #pragma once
 
 #include "imgui.h"
-#include "imgui_internal.h"
-#include "imgui_te_engine.h"            // IM_CHECK*, various flags, enums
-#include <stdint.h>                     // intptr_t
+#include "imgui_te_engine.h"    // IM_CHECK*, various flags, enums
+#include <stdint.h>             // intptr_t
 
 // Undo some of the damage done by <windows.h>
 #ifdef Yield
 #undef Yield
 #endif
 
-#define IM_TOKENCONCAT_INTERNAL(x, y)   x ## y
-#define IM_TOKENCONCAT(x, y)            IM_TOKENCONCAT_INTERNAL(x, y)
-
 //-------------------------------------------------------------------------
 // External forward declaration
 //-------------------------------------------------------------------------
 
-struct ImGuiCaptureArgs;
-struct ImGuiTest;
-struct ImGuiTestEngine;
-struct ImGuiTestEngineIO;
-struct ImGuiTestItemInfo;
-struct ImGuiTestInputs;
-struct ImGuiTestGatherTask;
+struct ImGuiCaptureArgs;        // Parameters for ctx->CaptureXXX functions
+struct ImGuiTest;               // A test registered with IM_REGISTER_TEST()
+struct ImGuiTestEngine;         // Test Engine Instance (opaque)
+struct ImGuiTestEngineIO;       // Test Engine IO structure (configuration flags, state)
+struct ImGuiTestItemInfo;       // Information gathered about an item: label, status, position etc.
+struct ImGuiTestInputs;         // Test Engine Simulated Inputs structure (opaque)
+struct ImGuiTestGatherTask;     // Test Engine task for scanning/finding items
 
 //-------------------------------------------------------------------------
 // ImGuiTestRef
 //-------------------------------------------------------------------------
 
-// Weak reference to an Item/Window given an ID or ID path.
+// Weak reference to an Item/Window given an hashed ID or a string path ID.
 struct ImGuiTestRef
 {
     ImGuiID         ID;
@@ -58,59 +54,20 @@ struct ImGuiTestRefDesc
 // This is the interface that most tests will interact with.
 //-------------------------------------------------------------------------
 
-// Note: keep in sync with GetActionName()
 enum ImGuiTestAction
 {
     ImGuiTestAction_Unknown = 0,
-    ImGuiTestAction_Hover,
-    ImGuiTestAction_Click,
-    ImGuiTestAction_DoubleClick,
-    ImGuiTestAction_Check,
-    ImGuiTestAction_Uncheck,
-    ImGuiTestAction_Open,
-    ImGuiTestAction_Close,
-    ImGuiTestAction_Input,
-    ImGuiTestAction_NavActivate,
+    ImGuiTestAction_Hover,          // Move mouse
+    ImGuiTestAction_Click,          // Move mouse and click
+    ImGuiTestAction_DoubleClick,    // Move mouse and double-click
+    ImGuiTestAction_Check,          // Check item if unchecked (Checkbox, MenuItem or any widget reporting ImGuiItemStatusFlags_Checkable)
+    ImGuiTestAction_Uncheck,        // Uncheck item if checked
+    ImGuiTestAction_Open,           // Open item if closed (TreeNode, BeginMenu or any widget reporting ImGuiItemStatusFlags_Openable)
+    ImGuiTestAction_Close,          // Close item if opened
+    ImGuiTestAction_Input,          // Start text inputing into a field (e.g. CTRL+Click on Drags/Slider, click on InputText etc.)
+    ImGuiTestAction_NavActivate,    // Activate item with navigation
     ImGuiTestAction_COUNT
 };
-
-inline const char* GetActionName(ImGuiTestAction action)
-{
-    switch (action)
-    {
-    case ImGuiTestAction_Unknown:       return "Unknown";
-    case ImGuiTestAction_Hover:         return "Hover";
-    case ImGuiTestAction_Click:         return "Click";
-    case ImGuiTestAction_DoubleClick:   return "DoubleClick";
-    case ImGuiTestAction_Check:         return "Check";
-    case ImGuiTestAction_Uncheck:       return "Uncheck";
-    case ImGuiTestAction_Open:          return "Open";
-    case ImGuiTestAction_Close:         return "Close";
-    case ImGuiTestAction_Input:         return "Input";
-    case ImGuiTestAction_NavActivate:   return "NavActivate";
-    case ImGuiTestAction_COUNT:
-    default:                            return "N/A";
-    }
-}
-
-inline const char*  GetActionVerb(ImGuiTestAction action)
-{
-    switch (action)
-    {
-    case ImGuiTestAction_Unknown:       return "Unknown";
-    case ImGuiTestAction_Hover:         return "Hovered";
-    case ImGuiTestAction_Click:         return "Clicked";
-    case ImGuiTestAction_DoubleClick:   return "DoubleClicked";
-    case ImGuiTestAction_Check:         return "Checked";
-    case ImGuiTestAction_Uncheck:       return "Unchecked";
-    case ImGuiTestAction_Open:          return "Opened";
-    case ImGuiTestAction_Close:         return "Closed";
-    case ImGuiTestAction_Input:         return "Input";
-    case ImGuiTestAction_NavActivate:   return "NavActivated";
-    case ImGuiTestAction_COUNT:
-    default:                            return "N/A";
-    }
-}
 
 struct ImGuiTestActionFilter
 {
@@ -124,57 +81,39 @@ struct ImGuiTestActionFilter
 };
 
 // Helper struct to store various query-able state of an item.
-// This facilitate interactions between GuiFunc <> TestFunc, since those state are frequently used.
-struct ImGuiTestGenericStatus
+// This facilitate interactions between GuiFunc and TestFunc, since those state are frequently used.
+struct ImGuiTestGenericItemStatus
 {
-    int     Ret;
-    int     Hovered;
-    int     Active;
-    int     Focused;
-    int     Clicked;
-    int     Visible;
-    int     Edited;
-    int     Activated;
-    int     Deactivated;
-    int     DeactivatedAfterEdit;
+    int     Ret;            // return value
+    int     Hovered;        // result of IsItemHovered()
+    int     Active;         // result of IsItemActive()
+    int     Focused;        // result of IsItemFocused()
+    int     Clicked;        // result of IsItemClicked()
+    int     Visible;        // result of IsItemVisible()
+    int     Edited;         // result of IsItemEdited()
+    int     Activated;      // result of IsItemActivated()
+    int     Deactivated;    // result of IsItemDeactivated()
+    int     DeactivatedAfterEdit;//.. of IsItemDeactivatedAfterEdit()
 
-    ImGuiTestGenericStatus()    { Clear(); }
-    void Clear()                { memset(this, 0, sizeof(*this)); }
+    ImGuiTestGenericItemStatus()        { Clear(); }
+    void Clear()                        { memset(this, 0, sizeof(*this)); }
     void QuerySet(bool ret_val = false) { Clear(); QueryInc(ret_val); }
-    void QueryInc(bool ret_val = false)
-    {
-        Ret += ret_val;
-        Hovered += ImGui::IsItemHovered();
-        Active += ImGui::IsItemActive();;
-        Focused += ImGui::IsItemFocused();
-        Clicked += ImGui::IsItemClicked();
-        Visible += ImGui::IsItemVisible();
-        Edited += ImGui::IsItemEdited();
-        Activated += ImGui::IsItemActivated();
-        Deactivated += ImGui::IsItemDeactivated();
-        DeactivatedAfterEdit += ImGui::IsItemDeactivatedAfterEdit();
-    }
+    void QueryInc(bool ret_val = false) { Ret += ret_val; Hovered += ImGui::IsItemHovered(); Active += ImGui::IsItemActive(); Focused += ImGui::IsItemFocused(); Clicked += ImGui::IsItemClicked(); Visible += ImGui::IsItemVisible(); Edited += ImGui::IsItemEdited(); Activated += ImGui::IsItemActivated(); Deactivated += ImGui::IsItemDeactivated(); DeactivatedAfterEdit += ImGui::IsItemDeactivatedAfterEdit(); }
 };
 
-enum ImGuiTestActiveFunc
-{
-    ImGuiTestActiveFunc_None,
-    ImGuiTestActiveFunc_GuiFunc,
-    ImGuiTestActiveFunc_TestFunc
-};
-
-// Generic structure with varied data. This is useful for tests to quickly share data between the GUI functions and the Test function.
-// This is however totally optional. Using SetUserDataType() it is possible to store custom data on the stack and read from it as UserData.
+// Generic structure with various storage fields.
+// This is useful for tests to quickly share data between GuiFunc and TestFunc.
+// If those fields are not enough: using ctx->SetUserDataType<>() and ctx->GetUserData<>() it is possible to store custom data on the stack.
 struct ImGuiTestGenericVars
 {
-    // Generic storage with a bit of semantic to make code look neater
+    // Generic storage with a bit of semantic to make user/test code look neater
     int                     Step;
     int                     Count;
     ImGuiID                 DockId;
     ImGuiWindowFlags        WindowFlags;
     ImGuiTableFlags         TableFlags;
     ImGuiOldColumnFlags     ColumnsFlags;
-    ImGuiTestGenericStatus  Status;
+    ImGuiTestGenericItemStatus  Status;
     bool                    ShowWindows;
     bool                    UseClipper;
     float                   Width;
@@ -208,8 +147,17 @@ struct ImGuiTestGenericVars
     void Clear()            { StrLarge.clear(); memset(this, 0, sizeof(*this)); }
 };
 
+enum ImGuiTestActiveFunc
+{
+    ImGuiTestActiveFunc_None,
+    ImGuiTestActiveFunc_GuiFunc,
+    ImGuiTestActiveFunc_TestFunc
+};
+
+// Context for a running ImGuiTest
 struct ImGuiTestContext
 {
+    // [Internal Fields]
     ImGuiTestEngine*        Engine = NULL;
     ImGuiTest*              Test = NULL;
     ImGuiTestEngineIO*      EngineIO = NULL;
@@ -228,7 +176,9 @@ struct ImGuiTestContext
     int                     ErrorCounter = 0;
     bool                    FirstGuiFrame = false;
     bool                    Abort = false;
-    bool                    HasDock = false;                        // #ifdef IMGUI_HAS_DOCK
+    bool                    HasDock = false;                        // #ifdef IMGUI_HAS_DOCK expressed in an easier to test value
+    double                  PerfRefDt = -1.0;
+    int                     PerfStressAmount = 0;                   // Convenience copy of engine->IO.PerfStressAmount
 
     // Commonly user exposed state for the ctx-> functions
     ImGuiTestGenericVars    GenericVars;
@@ -238,10 +188,6 @@ struct ImGuiTestContext
     ImGuiTestOpFlags        OpFlags = ImGuiTestOpFlags_None;
     ImVector<char>          Clipboard;
     ImVector<ImGuiWindow*>  ForeignWindowsToHide;
-
-    // Performance
-    double                  PerfRefDt = -1.0;
-    int                     PerfStressAmount = 0;                   // Convenience copy of engine->IO.PerfStressAmount
 
     // Main control
     void        Finish();
@@ -435,14 +381,4 @@ struct ImGuiTestContext
     // Performances
     void        PerfCalcRef();
     void        PerfCapture(const char* category = NULL, const char* test_name = NULL, const char* csv_file = NULL);
-};
-
-// Helper to increment/decrement the function depth (so our log entry can be padded accordingly)
-#define IMGUI_TEST_CONTEXT_REGISTER_DEPTH(_THIS)        ImGuiTestContextDepthScope IM_TOKENCONCAT(depth_register, __LINE__)(_THIS)
-
-struct ImGuiTestContextDepthScope
-{
-    ImGuiTestContext*       TestContext;
-    ImGuiTestContextDepthScope(ImGuiTestContext* ctx)   { TestContext = ctx; TestContext->ActionDepth++; }
-    ~ImGuiTestContextDepthScope()                       { TestContext->ActionDepth--; }
 };
