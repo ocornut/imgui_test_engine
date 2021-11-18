@@ -3325,10 +3325,8 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
         ctx->ItemOpen("Configuration");
         ctx->ItemOpen("Style");
         ctx->ItemClick("**/Rendering");
-        ctx->ItemDoubleClick("**/Circle Tessellation Max Error");
-        ctx->KeyCharsReplaceEnter("1.5");
-        ctx->ItemDoubleClick("**/Circle Tessellation Max Error");
-        ctx->KeyCharsReplaceEnter("1.25");
+        ctx->ItemInputValue("**/Circle Tessellation Max Error", 1.5f);
+        ctx->ItemInputValue("**/Circle Tessellation Max Error", 1.25f);
     };
 
     t = IM_REGISTER_TEST(e, "demo", "demo_cov_apps");
@@ -3753,8 +3751,7 @@ void RegisterTests_Capture(ImGuiTestEngine* e)
         ctx->ItemInput("string");
         ctx->KeyCharsReplace("Dear ImGui: Now with gif animations \\o/");
         ctx->SleepShort();
-        ctx->ItemInput("float");
-        ctx->KeyCharsReplaceEnter("3.14");
+        ctx->ItemInputValue("float", 3.14f);
         ctx->SleepShort();
         ctx->ItemClick("Save");
         ctx->SleepShort();
@@ -3828,8 +3825,7 @@ void RegisterTests_Capture(ImGuiTestEngine* e)
         ctx->MouseMove("Color##Z");
         ctx->Sleep(0.5f);
         ctx->MouseMove("Color##Y");
-        ctx->ItemInput("Color##Y");
-        ctx->KeyCharsReplaceEnter("200");
+        ctx->ItemInputValue("Color##Y", 200);
 
         ctx->Sleep(1.0f);
         ctx->ItemClick("Color##ColorButton");
@@ -3850,9 +3846,7 @@ void RegisterTests_Capture(ImGuiTestEngine* e)
         ctx->ItemOpen("Tables/Advanced/Options");
         ctx->ItemOpenAll("Tables/Advanced/Options", 1);
         ctx->ItemOpen("Tables/Tree view/**/Root");
-        ctx->ItemInput("Tables/Advanced/Options/Other:/items_count");
-
-        ctx->KeyCharsReplaceEnter("50000"); // Fancy
+        ctx->ItemInputValue("Tables/Advanced/Options/Other:/items_count", 50000); // Fancy
         //ctx->TableOpenContextMenu("Tables/Reorderable, hideable, with headers/##table1", 1);
 
         ctx->CaptureScreenshotWindow("", ImGuiCaptureFlags_StitchFullContents | ImGuiCaptureFlags_HideMouseCursor);

@@ -2279,6 +2279,27 @@ void    ImGuiTestContext::ItemCloseAll(ImGuiTestRef ref_parent, int max_depth, i
     ItemActionAll(ImGuiTestAction_Close, ref_parent, &filter);
 }
 
+void    ImGuiTestContext::ItemInputValue(ImGuiTestRef ref, int value)
+{
+    char buf[32];
+    ImFormatString(buf, IM_ARRAYSIZE(buf), "%d", value);
+    ItemInput(ref);
+    KeyCharsReplaceEnter(buf);
+}
+void    ImGuiTestContext::ItemInputValue(ImGuiTestRef ref, float value)
+{
+    char buf[32];
+    ImFormatString(buf, IM_ARRAYSIZE(buf), "%f", value);
+    ItemInput(ref);
+    KeyCharsReplaceEnter(buf);
+}
+
+void    ImGuiTestContext::ItemInputValue(ImGuiTestRef ref, const char* value)
+{
+    ItemInput(ref);
+    KeyCharsReplaceEnter(value);
+}
+
 void    ImGuiTestContext::ItemHold(ImGuiTestRef ref, float time)
 {
     if (IsError())
@@ -2398,6 +2419,7 @@ void    ImGuiTestContext::ItemVerifyCheckedIfAlive(ImGuiTestRef ref, bool checke
     }
 }
 
+// FIXME-TESTS: Could this be handled by ItemClose()?
 void    ImGuiTestContext::TabClose(ImGuiTestRef ref)
 {
     if (IsError())

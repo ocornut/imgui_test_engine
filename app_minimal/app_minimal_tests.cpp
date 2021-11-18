@@ -58,10 +58,7 @@ void RegisterAppMinimalTests(ImGuiTestEngine* e)
         ctx->SetRef("Test Window");
 
         IM_CHECK_EQ(vars.MyInt, 42);
-
-        ctx->ItemInput("Slider");
-        ctx->KeyCharsReplaceEnter("123");
-
+        ctx->ItemInputValue("Slider", 123);
         IM_CHECK_EQ(vars.MyInt, 123);
     };
 

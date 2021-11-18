@@ -498,8 +498,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
                 vars.SliderMin = slider_min_max[j][0];
                 vars.SliderMax = slider_min_max[j][1];
 
-                ctx->ItemInput("Slider");
-                ctx->KeyCharsReplaceEnter("2");
+                ctx->ItemInputValue("Slider", 2);
                 IM_CHECK_EQ(vars.SliderValue, clamp_on_input ? vars.SliderMax : 2.0f);
 
                 // Check higher bound
@@ -510,8 +509,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
                 ctx->MouseUp();
                 IM_CHECK_EQ(vars.SliderValue, vars.SliderMax);
 
-                ctx->ItemInput("Slider");
-                ctx->KeyCharsReplaceEnter("-2");
+                ctx->ItemInputValue("Slider", -2);
                 IM_CHECK_EQ(vars.SliderValue, clamp_on_input ? vars.SliderMin : -2.0f);
 
                 // Check lower bound
@@ -536,12 +534,10 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
                 bool unbound = (vars.DragMin == 0.0f && vars.DragMax == 0.0f) || (vars.DragMin == -FLT_MAX && vars.DragMax == FLT_MAX);
                 float value_before_click = 0.0f;
 
-                ctx->ItemInput("Drag");
-                ctx->KeyCharsReplaceEnter("-3");
+                ctx->ItemInputValue("Drag", -3);
                 IM_CHECK_EQ(vars.DragValue, clamp_on_input && !unbound ? vars.DragMin : -3.0f);
 
-                ctx->ItemInput("Drag");
-                ctx->KeyCharsReplaceEnter("2");
+                ctx->ItemInputValue("Drag", 2);
                 IM_CHECK_EQ(vars.DragValue, clamp_on_input && !unbound ? vars.DragMax : 2.0f);
 
                 // Check higher bound
@@ -590,12 +586,10 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
                 bool unbound_max = vars.ScalarMaxP == NULL;
                 float value_before_click = 0.0f;
 
-                ctx->ItemInput("Scalar");
-                ctx->KeyCharsReplaceEnter("-3");
+                ctx->ItemInputValue("Scalar", -3);
                 IM_CHECK_EQ(vars.ScalarValue, clamp_on_input && !unbound_min ? vars.DragMin : -3.0f);
 
-                ctx->ItemInput("Scalar");
-                ctx->KeyCharsReplaceEnter("2");
+                ctx->ItemInputValue("Scalar", 2);
                 IM_CHECK_EQ(vars.ScalarValue, clamp_on_input && !unbound_max ? vars.DragMax : 2.0f);
 
                 // Check higher bound
@@ -2617,17 +2611,13 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         // Test hex inputs.
         ctx->ItemClick("ColorEdit1/##ColorButton");
         ctx->SetRef(g.NavWindow);
-        ctx->ItemClick("##picker/##hex/##Text");
-        ctx->KeyCharsReplaceEnter("112233");
+        ctx->ItemInputValue("##picker/##hex/##Text", "112233");
         IM_CHECK(equal(vars.Color1, ImVec4(ImColor(0x11, 0x22, 0x33, 0xFF))));
-        ctx->ItemClick("##picker/##hex/##Text");
-        ctx->KeyCharsReplaceEnter("11223344");
+        ctx->ItemInputValue("##picker/##hex/##Text", "11223344");
         IM_CHECK(equal(vars.Color1, ImVec4(ImColor(0x11, 0x22, 0x33, 0x44))));
-        ctx->ItemClick("##picker/##hex/##Text");
-        ctx->KeyCharsReplaceEnter("#112233");
+        ctx->ItemInputValue("##picker/##hex/##Text", "#112233");
         IM_CHECK(equal(vars.Color1, ImVec4(ImColor(0x11, 0x22, 0x33, 0xFF))));
-        ctx->ItemClick("##picker/##hex/##Text");
-        ctx->KeyCharsReplaceEnter("#11223344");
+        ctx->ItemInputValue("##picker/##hex/##Text", "#11223344");
         IM_CHECK(equal(vars.Color1, ImVec4(ImColor(0x11, 0x22, 0x33, 0x44))));
     };
 

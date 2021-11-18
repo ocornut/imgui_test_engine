@@ -323,10 +323,17 @@ struct ImGuiTestContext
     void        ItemInput(ImGuiTestRef ref, ImGuiTestOpFlags flags = 0)                 { ItemAction(ImGuiTestAction_Input, ref, NULL, flags); }
     void        ItemNavActivate(ImGuiTestRef ref, ImGuiTestOpFlags flags = 0)           { ItemAction(ImGuiTestAction_NavActivate, ref, NULL, flags); }
 
+    // Item/Widgets: Batch actions over an entire scope
     void        ItemActionAll(ImGuiTestAction action, ImGuiTestRef ref_parent, const ImGuiTestActionFilter* filter = NULL);
     void        ItemOpenAll(ImGuiTestRef ref_parent, int depth = -1, int passes = -1);
     void        ItemCloseAll(ImGuiTestRef ref_parent, int depth = -1, int passes = -1);
 
+    // Item/Widgets: Helpers to easily set a value
+    void        ItemInputValue(ImGuiTestRef ref, int v);
+    void        ItemInputValue(ImGuiTestRef ref, float f);
+    void        ItemInputValue(ImGuiTestRef ref, const char* str);
+
+    // Item/Widgets: Drag and Mouse operations
     void        ItemHold(ImGuiTestRef ref, float time);
     void        ItemHoldForFrames(ImGuiTestRef ref, int frames);
     void        ItemDragOverAndHold(ImGuiTestRef ref_src, ImGuiTestRef ref_dst);
@@ -334,11 +341,11 @@ struct ImGuiTestContext
     void        ItemDragWithDelta(ImGuiTestRef ref_src, ImVec2 pos_delta);
     void        ItemVerifyCheckedIfAlive(ImGuiTestRef ref, bool checked);
 
-    // Tab Bars
+    // Helpers for Tab Bars widgets
     void        TabClose(ImGuiTestRef ref);
     bool        TabBarCompareOrder(ImGuiTabBar* tab_bar, const char** tab_order);
 
-    // Menus
+    // Helpers for Menus widgets
     void        MenuAction(ImGuiTestAction action, ImGuiTestRef ref);
     void        MenuActionAll(ImGuiTestAction action, ImGuiTestRef ref_parent);
     void        MenuClick(ImGuiTestRef ref)                 { MenuAction(ImGuiTestAction_Click, ref); }
@@ -347,11 +354,11 @@ struct ImGuiTestContext
     void        MenuCheckAll(ImGuiTestRef ref_parent)       { MenuActionAll(ImGuiTestAction_Check, ref_parent); }
     void        MenuUncheckAll(ImGuiTestRef ref_parent)     { MenuActionAll(ImGuiTestAction_Uncheck, ref_parent); }
 
-    // Combo
+    // Helpers for Combo Boxes
     void        ComboClick(ImGuiTestRef ref);
     void        ComboClickAll(ImGuiTestRef ref);
 
-    // Tables
+    // Helpers for Tables
     void                        TableOpenContextMenu(ImGuiTestRef ref, int column_n = -1);
     ImGuiSortDirection          TableClickHeader(ImGuiTestRef ref, const char* label, ImGuiKeyModFlags keys_mod = ImGuiKeyModFlags_None);
     void                        TableSetColumnEnabled(ImGuiTestRef ref, const char* label, bool enabled);
