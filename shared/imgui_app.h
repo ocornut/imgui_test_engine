@@ -47,34 +47,38 @@ bool ImGuiApp_ScreenCaptureFunc(ImGuiID viewport_id, int x, int y, int w, int h,
 // - It is technically possible to compile with multiple backends simultaneously (very few users will care/need this).
 //-----------------------------------------------------------------------------
 
-ImGuiApp*     ImGuiApp_ImplNull_Create();
-
 #ifdef IMGUI_APP_WIN32_DX11
-ImGuiApp*                   ImGuiApp_ImplWin32DX11_Create();
-#ifndef ImGuiApp_ImplCreate
+ImGuiApp* ImGuiApp_ImplWin32DX11_Create();
+#ifndef ImGuiApp_ImplDefault_Create
 #define ImGuiApp_ImplDefault_Create ImGuiApp_ImplWin32DX11_Create
 #endif
 #endif
 
 #ifdef IMGUI_APP_SDL_GL2
-ImGuiApp*                   ImGuiApp_ImplSdlGL2_Create();
-#ifndef ImGuiApp_ImplCreate
+ImGuiApp* ImGuiApp_ImplSdlGL2_Create();
+#ifndef ImGuiApp_ImplDefault_Create
 #define ImGuiApp_ImplDefault_Create ImGuiApp_ImplSdlGL2_Create
 #endif
 #endif
 
 #ifdef IMGUI_APP_SDL_GL3
-ImGuiApp*                   ImGuiApp_ImplSdlGL3_Create();
-#ifndef ImGuiApp_ImplCreate
+ImGuiApp* ImGuiApp_ImplSdlGL3_Create();
+#ifndef ImGuiApp_ImplDefault_Create
 #define ImGuiApp_ImplDefault_Create ImGuiApp_ImplSdlGL3_Create
 #endif
 #endif
 
 #ifdef IMGUI_APP_GLFW_GL3
-ImGuiApp*                   ImGuiApp_ImplGlfwGL3_Create();
-#ifndef ImGuiApp_ImplCreate
+ImGuiApp* ImGuiApp_ImplGlfwGL3_Create();
+#ifndef ImGuiApp_ImplDefault_Create
 #define ImGuiApp_ImplDefault_Create ImGuiApp_ImplGlfwGL3_Create
 #endif
+#endif
+
+// Dummy/Null Backend (last one in list so its only the default when there are no other backends compiled in)
+ImGuiApp* ImGuiApp_ImplNull_Create();
+#ifndef ImGuiApp_ImplDefault_Create
+#define ImGuiApp_ImplDefault_Create ImGuiApp_ImplNull_Create
 #endif
 
 //-----------------------------------------------------------------------------
@@ -104,7 +108,6 @@ ImGuiApp*                   ImGuiApp_ImplGlfwGL3_Create();
 #if defined(IMGUI_APP_GLFW_GL3)
 #include "imgui_impl_glfw.cpp"
 #endif
-
 
 #endif
 
