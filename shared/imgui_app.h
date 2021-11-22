@@ -88,6 +88,15 @@ ImGuiApp*                   ImGuiApp_ImplGlfwGL3_Create();
 #include "imgui_impl_dx11.cpp"
 #endif
 
+// Renderer before Platform backends because SDL/GLFW tend to have their own GL stuff which can conflict.
+#if defined(IMGUI_APP_SDL_GL2) || defined(IMGUI_APP_GLFW_GL3)
+#include "imgui_impl_opengl2.cpp"
+#endif
+
+#if defined(IMGUI_APP_SDL_GL3) || defined(IMGUI_APP_GLFW_GL3)
+#include "imgui_impl_opengl3.cpp"
+#endif
+
 #if defined(IMGUI_APP_SDL_GL2) || defined(IMGUI_APP_SDL_GL3)
 #include "imgui_impl_sdl.cpp"
 #endif
@@ -96,13 +105,6 @@ ImGuiApp*                   ImGuiApp_ImplGlfwGL3_Create();
 #include "imgui_impl_glfw.cpp"
 #endif
 
-#if defined(IMGUI_APP_SDL_GL2) || defined(IMGUI_APP_GLFW_GL3)
-#include "imgui_impl_opengl2.cpp"
-#endif
-
-#if defined(IMGUI_APP_SDL_GL3) || defined(IMGUI_APP_GLFW_GL3)
-#include "imgui_impl_opengl3.cpp"
-#endif
 
 #endif
 
