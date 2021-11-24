@@ -711,6 +711,8 @@ bool ImGuiTestContext::EndCaptureGif(ImGuiCaptureArgs* args)
     return ret;
 }
 
+// Supported values for ImGuiTestOpFlags:
+// - ImGuiTestOpFlags_NoError
 ImGuiTestItemInfo* ImGuiTestContext::ItemInfo(ImGuiTestRef ref, ImGuiTestOpFlags flags)
 {
     if (IsError())
@@ -1215,6 +1217,11 @@ void    ImGuiTestContext::NavEnableForWindow()
     KeyPressMap(ImGuiKey_COUNT, ImGuiKeyModFlags_Alt);
 }
 
+// Supported values for ImGuiTestOpFlags:
+// - ImGuiTestOpFlags_MoveToEdgeL
+// - ImGuiTestOpFlags_MoveToEdgeR
+// - ImGuiTestOpFlags_MoveToEdgeU
+// - ImGuiTestOpFlags_MoveToEdgeD
 static ImVec2 GetMouseAimingPos(ImGuiTestItemInfo* item, ImGuiTestOpFlags flags)
 {
     ImRect r = item->RectClipped;
@@ -1235,6 +1242,10 @@ static ImVec2 GetMouseAimingPos(ImGuiTestItemInfo* item, ImGuiTestOpFlags flags)
     return pos;
 }
 
+// Supported values for ImGuiTestOpFlags:
+// - ImGuiTestOpFlags_NoFocusWindow
+// - ImGuiTestOpFlags_NoCheckHoveredId
+// - ImGuiTestOpFlags_IsSecondAttempt [used when recursively calling ourself)
 // FIXME-TESTS: This is too eagerly trying to scroll everything even if already visible.
 // FIXME: Maybe ImGuiTestOpFlags_NoCheckHoveredId could be automatic if we detect that another item is active as intended?
 void    ImGuiTestContext::MouseMove(ImGuiTestRef ref, ImGuiTestOpFlags flags)
@@ -1912,6 +1923,8 @@ void    ImGuiTestContext::KeyCharsReplaceEnter(const char* chars)
     KeyPressMap(ImGuiKey_Enter);
 }
 
+// Supported values for ImGuiTestOpFlags:
+// - ImGuiTestOpFlags_NoError
 bool    ImGuiTestContext::WindowBringToFront(ImGuiWindow* window, ImGuiTestOpFlags flags)
 {
     ImGuiContext& g = *UiContext;

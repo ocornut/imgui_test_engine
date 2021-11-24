@@ -177,7 +177,7 @@ struct ImGuiTestContext
     char                    RefStr[256] = { 0 };                    // Reference window/path for ID construction
     ImGuiID                 RefID = 0;
     ImGuiInputSource        InputMode = ImGuiInputSource_Mouse;
-    ImGuiTestOpFlags        OpFlags = ImGuiTestOpFlags_None;
+    ImGuiTestOpFlags        OpFlags = ImGuiTestOpFlags_None;        // Supported: ImGuiTestOpFlags_NoAutoUncollapse
     ImVector<char>          Clipboard;
     ImVector<ImGuiWindow*>  ForeignWindowsToHide;
 
