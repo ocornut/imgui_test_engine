@@ -1,3 +1,25 @@
+#
+# This file describes building and testing of Dear ImGui along with variety of examples and backends.
+# Tested platforms:
+# * Windows
+# * Linux
+# * MacOS
+#
+# Tested branches:
+# * master
+# * docking
+# * features/range_select
+#
+# To save time and resources only linux builds/tests run on push. MacOS and Windows builds and tests
+# are triggered daily (see scheduled.yml).
+#
+# Builds of platforms not tested by default may be requested by adding a hint to commit message.
+# String may appear anywhere in commit message, caps are important.
+# Supported build hints:
+# * Build all
+# * Build Windows
+# * Build MacOS
+#
 name: tests
 
 on:
@@ -53,6 +75,14 @@ jobs:
         run: |
           make -C imgui_tests/ clean
           make -C imgui_tests/ BACKEND_LIB=glfw3
+
+      - name: Build (without IMGUI_TEST_ENGINE_ENABLE_IMPLOT)
+        if: github.event_name == 'workflow_run'
+        run: |
+          echo '#include "imgui_tests_imconfig.h"'      >  imgui_tests/imgui_tests_imconfig_no_implot.h
+          echo '#undef IMGUI_TEST_ENGINE_ENABLE_IMPLOT' >> imgui_tests/imgui_tests_imconfig_no_implot.h
+          make -C imgui_tests/ clean
+          make -C imgui_tests/ IMGUI_USER_CONFIG=imgui_tests/imgui_tests_imconfig_no_implot.h
 
       - name: Build imgui_tests
         run: |
@@ -162,34 +192,3 @@ jobs:
       - name: Run Tests
         run: |
           imgui_tests/Release/imgui_tests.exe -nogui -nopause -v2 -ve4 tests
-
-  Discord-CI:
-    runs-on: ubuntu-latest
-    if: always()
-    needs: [Windows, Linux, MacOS]
-    steps:
-    - uses: dearimgui/github_discord_notifier@latest
-      with:
-        discord-webhook: ${{ secrets.DISCORD_CI_WEBHOOK }}
-        github-token: ${{ github.token }}
-        action-task: discord-jobs
-        discord-filter: "'{{ github.branch }}' == 'master' && '{{ run.conclusion }}' != '{{ last_run.conclusion }}'"
-        discord-username: GitHub Actions
-        discord-job-new-failure-message: ''
-        discord-job-fixed-failure-message: ''
-        discord-job-new-failure-embed: |
-          {
-            "title": "`{{ job.name }}` job is failing on `{{ github.branch }}`!",
-            "description": "Commit [{{ github.context.payload.head_commit.title }}]({{ github.context.payload.head_commit.url }}) pushed to [{{ github.branch }}]({{ github.branch_url }}) broke [{{ job.name }}]({{ job.url }}) CI job.\nFailing steps: {{ failing_steps }}",
-            "url": "{{ job.url }}",
-            "color": "0xFF0000",
-            "timestamp": "{{ run.updated_at }}"
-          }
-        discord-job-fixed-failure-embed: |
-          {
-            "title": "`{{ github.branch }}` branch is no longer failing!",
-            "description": "Build failures were fixed on [{{ github.branch }}]({{ github.branch_url }}) branch.",
-            "color": "0x00FF00",
-            "url": "{{ github.context.payload.head_commit.url }}",
-            "timestamp": "{{ run.completed_at }}"
-          }
