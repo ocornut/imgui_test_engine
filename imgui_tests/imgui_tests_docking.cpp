@@ -909,19 +909,24 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
     };
 
     // ## Test _KeepAlive dockspace flag.
-    //  "Step 1: Window A has dockspace A2. Dock window B into A2.
-    //  "Step 2: Window A code call DockSpace with _KeepAlive only when collapsed. Verify that window B is still docked into A2 (and verify that both are HIDDEN at this point).
-    //  "Step 3: window A stop submitting the DockSpace() A2. verify that window B is now undocked."
     t = IM_REGISTER_TEST(e, "docking", "docking_dockspace_keep_alive");
+    struct DockspaceKeepAliveVars { ImGuiDockNodeFlags Flags = 0; bool ShowDockspace = true; bool ShowMainMenuBar = true; };
+    t->SetVarsDataType<DockspaceKeepAliveVars>();
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
-        ImGuiTestGenericVars& vars = ctx->GenericVars;
+        DockspaceKeepAliveVars& vars = ctx->GetVars<DockspaceKeepAliveVars>();
         ImGui::SetNextWindowSize(ImVec2(300, 200), ImGuiCond_Always);
+
+        if (vars.ShowMainMenuBar)
+        {
+            ImGui::BeginMainMenuBar();
+            ImGui::EndMainMenuBar();
+        }
+
+        ImGui::SetNextWindowSize(ImVec2(200, 100), ImGuiCond_Appearing);
         ImGui::Begin("Window A", NULL, ImGuiWindowFlags_NoSavedSettings);
-        if (vars.Step == 0)
-            ImGui::DockSpace(ImGui::GetID("A2"), ImVec2(0, 0), 0);
-        else if (vars.Step == 1)
-            ImGui::DockSpace(ImGui::GetID("A2"), ImVec2(0, 0), ImGuiDockNodeFlags_KeepAliveOnly);
+        if (vars.ShowDockspace)
+            ImGui::DockSpace(ImGui::GetID("A2"), ImVec2(0, 0), vars.Flags);
         ImGui::End();
 
         ImGui::SetNextWindowSize(ImVec2(150, 100), ImGuiCond_Always);
@@ -930,6 +935,7 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
     };
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
+        DockspaceKeepAliveVars& vars = ctx->GetVars<DockspaceKeepAliveVars>();
         ImGuiWindow* window1 = ctx->GetWindowByRef("Window A");
         ImGuiWindow* window2 = ctx->GetWindowByRef("Window B");
         ImGuiID dock_id = ctx->GetID("Window A/A2");
@@ -940,36 +946,58 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
             return;
         }
 
+        // "Window A" has dockspace "A2". Dock "window B" into "A2".
         ctx->OpFlags |= ImGuiTestOpFlags_NoAutoUncollapse;
         ctx->WindowCollapse(window1, false);
         ctx->WindowCollapse(window2, false);
         ctx->DockClear("Window B", "Window A", NULL);
         ctx->DockInto("Window B", dock_id);
-        IM_CHECK(ctx->WindowIsUndockedOrStandalone(window1));           // Window A is not docked
-        IM_CHECK_EQ(window2->DockId, dock_id);                          // Window B was docked into a dockspace
+        IM_CHECK(ctx->WindowIsUndockedOrStandalone(window1));           // "Window A" is not docked
+        IM_CHECK_EQ(window2->DockId, dock_id);                          // "Window B" was docked into a dockspace
 
-        // Start collapse window and start submitting  _KeepAliveOnly flag
-        ctx->WindowCollapse(window1, true);
-        ctx->GenericVars.Step = 1;
+        // "Window A" code calls DockSpace with _KeepAlive. Verify that "Window B" is still docked into "A2" (and verify that both are HIDDEN at this point).
+        vars.Flags = ImGuiDockNodeFlags_KeepAliveOnly;
         ctx->Yield();
-        IM_CHECK_EQ(window1->Collapsed, true);                          // Window A got collapsed
-        IM_CHECK_EQ(window1->DockIsActive, false);                      // and remains undocked
+        IM_CHECK_EQ(window1->DockIsActive, false);                      // "Window A" remains undocked
         IM_CHECK(ctx->WindowIsUndockedOrStandalone(window1));           //
-        IM_CHECK_EQ(window2->Collapsed, false);                         // Window B was not collapsed
+        IM_CHECK_EQ(window2->Collapsed, false);                         // "Window B" was not collapsed
         IM_CHECK_EQ(window2->DockIsActive, true);                       // Dockspace is being kept alive
         IM_CHECK_EQ(window2->DockId, dock_id);                          // window remains docked
         IM_CHECK_NE(window2->DockNode, (ImGuiDockNode*)NULL);
         IM_CHECK_EQ(window2->Hidden, true);                             // but invisible
-                                                                        // Stop submitting dockspace
-        ctx->GenericVars.Step = 2;
+
+        // "Window A" is collapsed, and regular call to DockSpace() without KeepAlive (KeepAlive becomes automatic).
+        vars.Flags = 0;
+        ctx->WindowCollapse(window1, true);
+        IM_CHECK_EQ(window1->Collapsed, true);                          // "Window A" got collapsed
+        IM_CHECK_EQ(window1->DockIsActive, false);                      // and remains undocked
+        IM_CHECK_EQ(window2->Collapsed, false);                         // "Window B" was not collapsed
+        IM_CHECK_EQ(window2->DockIsActive, true);                       // Dockspace is being kept alive
+        IM_CHECK_EQ(window2->DockId, dock_id);                          // window remains docked
+        IM_CHECK_NE(window2->DockNode, (ImGuiDockNode*)NULL);
+        IM_CHECK_EQ(window2->Hidden, true);                             // but invisible
+
+        // A window submitted before "Window A" is hidden (#4757).
+        vars.ShowMainMenuBar = false;
         ctx->Yield();
-        IM_CHECK_EQ(window1->Collapsed, true);                          // Window A got collapsed
+        IM_CHECK_EQ(window1->Collapsed, true);                          // "Window A" is still collapsed
+        IM_CHECK_EQ(window1->DockIsActive, false);                      // and remains undocked
+        IM_CHECK_EQ(window2->Collapsed, false);                         // "Window B" was not collapsed
+        IM_CHECK_EQ(window2->DockIsActive, true);                       // Dockspace is being kept alive
+        IM_CHECK_EQ(window2->DockId, dock_id);                          // window remains docked
+        IM_CHECK_NE(window2->DockNode, (ImGuiDockNode*)NULL);
+        IM_CHECK_EQ(window2->Hidden, true);                             // but invisible
+
+        // "Window A" stops submitting the DockSpace() "A2". verify that "window B" is now undocked.
+        vars.ShowDockspace = false;
+        ctx->Yield();
+        IM_CHECK_EQ(window1->Collapsed, true);                          // "Window A" got collapsed
         IM_CHECK_EQ(window1->DockIsActive, false);                      // and remains undocked
         IM_CHECK(ctx->WindowIsUndockedOrStandalone(window1));           //
-        IM_CHECK_EQ(window2->Collapsed, false);                         // Window B was not collapsed
+        IM_CHECK_EQ(window2->Collapsed, false);                         // "Window B" was not collapsed
         IM_CHECK_EQ(window2->DockIsActive, false);                      // Dockspace is no longer kept alive
         IM_CHECK(ctx->WindowIsUndockedOrStandalone(window2));           // and window gets undocked
-        IM_CHECK_EQ(window2->Hidden, false);                            // Window B shows up
+        IM_CHECK_EQ(window2->Hidden, false);                            // "Window B" shows up
     };
 
     // ## Test passthrough docking node.
