@@ -6,8 +6,14 @@
 
 struct ImGuiPerfToolColumnInfo;
 struct ImGuiTestEngine;
+struct ImGuiCSVParser;
 
 // [Internal] Perf log entry. Changes to this struct should be reflected in ImGuiTestContext::PerfCapture() and ImGuiTestEngine_Start().
+// This struct assumes strings stored here will be available until next ImGuiPerfTool::Clear() call. Fortunately we do not have to actively
+// manage lifetime of these strings. New entries are created only in two cases:
+// 1. ImGuiTestEngine_PerfToolAppendToCSV() call after perf test has run. This call receives ImGuiPerfToolEntry with const strings stored indefinitely by application.
+// 2. As a consequence of ImGuiPerfTool::LoadCSV() call, we persist the ImGuiCSVParser instance, which keeps parsed CSV text, from which strings are referenced.
+// As a result our solution also doesn't make many allocations.
 struct ImGuiPerfToolEntry
 {
     ImU64                       Timestamp = 0;                  // Title of a particular batch of perftool entries.
@@ -26,15 +32,12 @@ struct ImGuiPerfToolEntry
     const char*                 Date = NULL;                    // Date of this entry or min date of combined entries.
     //const char*               DateMax = NULL;                 // Max date of combined entries, or NULL.
     double                      VsBaseline = 0.0;               // Percent difference vs baseline.
-    bool                        DataOwner = false;              // Owns lifetime of pointers when set to true.
     int                         LabelIndex = 0;                 // Index of TestName in ImGuiPerfTool::_LabelsVisible.
 
     ImGuiPerfToolEntry()        { }
 	ImGuiPerfToolEntry(const ImGuiPerfToolEntry& rhs)           { Set(rhs); }
     ImGuiPerfToolEntry& operator=(const ImGuiPerfToolEntry& rhs){ Set(rhs); return *this; }
-    ~ImGuiPerfToolEntry();
     void Set(const ImGuiPerfToolEntry& rhs);
-    void TakeDataOwnership();
 };
 
 // [Internal] Perf log batch.
@@ -91,6 +94,7 @@ struct ImGuiPerfTool
     bool                        _PlotHoverTestLabel = false;
     bool                        _ReportGenerating = false;
     ImGuiStorage                _Visibility;
+    ImGuiCSVParser*             _CSVParser = NULL;
 
     ImGuiPerfTool();
     ~ImGuiPerfTool();

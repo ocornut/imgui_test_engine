@@ -28,21 +28,6 @@
 // ImGuiPerflogEntry
 //-------------------------------------------------------------------------
 
-void ImGuiPerfToolEntry::TakeDataOwnership()
-{
-    if (DataOwner)
-        return;
-    DataOwner = true;
-    Category = ImStrdup(Category);
-    TestName = ImStrdup(TestName);
-    GitBranchName = ImStrdup(GitBranchName);
-    BuildType = ImStrdup(BuildType);
-    Cpu = ImStrdup(Cpu);
-    OS = ImStrdup(OS);
-    Compiler = ImStrdup(Compiler);
-    Date = ImStrdup(Date);
-}
-
 void ImGuiPerfToolEntry::Set(const ImGuiPerfToolEntry& other)
 {
     Timestamp = other.Timestamp;
@@ -61,24 +46,7 @@ void ImGuiPerfToolEntry::Set(const ImGuiPerfToolEntry& other)
     Date = other.Date;
     //DateMax = ...
     VsBaseline = other.VsBaseline;
-    DataOwner = other.DataOwner;
     LabelIndex = other.LabelIndex;
-    if (other.DataOwner)
-        TakeDataOwnership();
-}
-
-ImGuiPerfToolEntry::~ImGuiPerfToolEntry()
-{
-    if (!DataOwner)
-        return;
-    IM_FREE((void*)Category);
-    IM_FREE((void*)TestName);
-    IM_FREE((void*)GitBranchName);
-    IM_FREE((void*)BuildType);
-    IM_FREE((void*)Cpu);
-    IM_FREE((void*)OS);
-    IM_FREE((void*)Compiler);
-    IM_FREE((void*)Date);
 }
 
 //-------------------------------------------------------------------------
@@ -535,6 +503,8 @@ ImGuiPerfTool::ImGuiPerfTool()
 {
     ImGuiContext& g = *GImGui;
 
+    _CSVParser = IM_NEW(ImGuiCSVParser)();
+
     ImGuiSettingsHandler ini_handler;
     ini_handler.TypeName = "Perflog";
     ini_handler.TypeHash = ImHashStr("Perflog");
@@ -553,6 +523,7 @@ ImGuiPerfTool::~ImGuiPerfTool()
 {
     _SrcData.clear_destruct();
     _Batches.clear_destruct();
+    IM_DELETE(_CSVParser);
 }
 
 void ImGuiPerfTool::AddEntry(ImGuiPerfToolEntry* entry)
@@ -563,7 +534,6 @@ void ImGuiPerfTool::AddEntry(ImGuiPerfToolEntry* entry)
         ImStrncpy(_FilterDateTo, entry->Date, IM_ARRAYSIZE(_FilterDateTo));
 
     _SrcData.push_back(*entry);
-    _SrcData.back().TakeDataOwnership();
     _Batches.clear_destruct();
 }
 
@@ -642,7 +612,6 @@ void ImGuiPerfTool::_Rebuild()
             *e = *entry;
             e->DtDeltaMs = 0;
             e->NumSamples = 0;
-            e->DataOwner = false;
             e->LabelIndex = i;
             e->TestName = _LabelsVisible.Data[i];
         }
@@ -820,7 +789,7 @@ void ImGuiPerfTool::Clear()
     _Batches.clear_destruct();
     _Visibility.Clear();
     _SrcData.clear_destruct();
-    _SrcData.clear();
+    _CSVParser->Clear();
 
     ImStrncpy(_FilterDateFrom, "9999-99-99", IM_ARRAYSIZE(_FilterDateFrom));
     ImStrncpy(_FilterDateTo, "0000-00-00", IM_ARRAYSIZE(_FilterDateFrom));
@@ -831,27 +800,28 @@ bool ImGuiPerfTool::LoadCSV(const char* filename)
     if (filename == NULL)
         filename = IMGUI_PERFLOG_FILENAME;
 
-    ImGuiCSVParser csv(11);
-    if (!csv.Load(filename))
+    Clear();
+
+    _CSVParser->Columns = 11;
+    if (!_CSVParser->Load(filename))
         return false;
 
     // Read perf test entries from CSV
-    Clear();
-    for (int row = 0; row < csv.Rows; row++)
+    for (int row = 0; row < _CSVParser->Rows; row++)
     {
         ImGuiPerfToolEntry entry;
         int col = 0;
-        sscanf(csv.GetCell(row, col++), "%llu", &entry.Timestamp);
-        entry.Category = csv.GetCell(row, col++);
-        entry.TestName = csv.GetCell(row, col++);
-        sscanf(csv.GetCell(row, col++), "%lf", &entry.DtDeltaMs);
-        sscanf(csv.GetCell(row, col++), "x%d", &entry.PerfStressAmount);
-        entry.GitBranchName = csv.GetCell(row, col++);
-        entry.BuildType = csv.GetCell(row, col++);
-        entry.Cpu = csv.GetCell(row, col++);
-        entry.OS = csv.GetCell(row, col++);
-        entry.Compiler = csv.GetCell(row, col++);
-        entry.Date = csv.GetCell(row, col++);
+        sscanf(_CSVParser->GetCell(row, col++), "%llu", &entry.Timestamp);
+        entry.Category = _CSVParser->GetCell(row, col++);
+        entry.TestName = _CSVParser->GetCell(row, col++);
+        sscanf(_CSVParser->GetCell(row, col++), "%lf", &entry.DtDeltaMs);
+        sscanf(_CSVParser->GetCell(row, col++), "x%d", &entry.PerfStressAmount);
+        entry.GitBranchName = _CSVParser->GetCell(row, col++);
+        entry.BuildType = _CSVParser->GetCell(row, col++);
+        entry.Cpu = _CSVParser->GetCell(row, col++);
+        entry.OS = _CSVParser->GetCell(row, col++);
+        entry.Compiler = _CSVParser->GetCell(row, col++);
+        entry.Date = _CSVParser->GetCell(row, col++);
         AddEntry(&entry);
     }
 
