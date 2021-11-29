@@ -471,14 +471,14 @@ ImGuiID ImGuiTestContext::GetID(ImGuiTestRef ref)
 {
     if (ref.ID)
         return ref.ID;
-    return ImHashDecoratedPath(ref.Path, NULL, RefID);
+    return ImHashDecoratedPath(ref.Path ? ref.Path : "", NULL, RefID);
 }
 
 ImGuiID ImGuiTestContext::GetID(ImGuiTestRef ref, ImGuiTestRef seed_ref)
 {
     if (ref.ID)
         return ref.ID; // FIXME: What if seed_ref != 0
-    return ImHashDecoratedPath(ref.Path, NULL, GetID(seed_ref));
+    return ImHashDecoratedPath(ref.Path ? ref.Path : "", NULL, GetID(seed_ref));
 }
 
 ImGuiID ImGuiTestContext::GetIDByInt(int n)
