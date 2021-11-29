@@ -92,6 +92,60 @@ void RegisterTests_Viewports(ImGuiTestEngine* e)
         IM_CHECK_NE(window->Pos, main_viewport->WorkPos + ImVec2(100.0f, 100.0f));
     };
 
+    // ## Test value of ParentViewportID (include bug #4756)
+    t = IM_REGISTER_TEST(e, "viewport", "viewport_parent_id");
+    struct DefaultParentIdVars { ImGuiWindowClass WindowClass; bool SetWindowClass = false; };
+    t->SetVarsDataType<DefaultParentIdVars>();
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        DefaultParentIdVars& vars = ctx->GetVars<DefaultParentIdVars>();
+        if (vars.SetWindowClass)
+            ImGui::SetNextWindowClass(&vars.WindowClass);
+        ImGui::SetNextWindowSize(ImVec2(50, 50));
+        ImGui::Begin("Test Window with Class", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiContext& g = *ctx->UiContext;
+        DefaultParentIdVars& vars = ctx->GetVars<DefaultParentIdVars>();
+        ctx->SetRef("Test Window with Class");
+        ImGuiWindow* window = ctx->GetWindowByRef("");
+
+        // Reset class at it currently persist if not set
+        vars.WindowClass = ImGuiWindowClass();
+        vars.SetWindowClass = true;
+        ctx->Yield();
+
+        // Default value.
+        ctx->WindowMove("", ctx->GetMainViewportPos() + ImVec2(100, 100));
+        IM_CHECK_EQ(window->ViewportOwned, false);
+        IM_CHECK_EQ(window->WindowClass.ParentViewportId, (ImGuiID)-1);  // Default value
+
+        // Unset. Result depends on ConfigViewportsNoDefaultParent value.
+        vars.WindowClass.ViewportFlagsOverrideSet = ImGuiViewportFlags_NoAutoMerge;
+        vars.SetWindowClass = true;
+
+        g.IO.ConfigViewportsNoDefaultParent = true;
+        ctx->Yield();
+        IM_CHECK_EQ(window->Viewport->ParentViewportId, (ImGuiID)0);
+
+        g.IO.ConfigViewportsNoDefaultParent = false;
+        ctx->Yield();
+        const ImGuiID IMGUI_VIEWPORT_DEFAULT_ID = ImGui::GetMainViewport()->ID;
+        IM_CHECK_EQ(window->Viewport->ParentViewportId, IMGUI_VIEWPORT_DEFAULT_ID);
+
+        // Explicitly set parent viewport id. 0 may or may not be a special value. Currently it isn't.
+        vars.WindowClass.ParentViewportId = 0;
+        ctx->Yield();
+        IM_CHECK_EQ(window->Viewport->ParentViewportId, (ImGuiID)0);
+
+        // This is definitely a non-special value.
+        vars.WindowClass.ParentViewportId = 0x12345678;
+        ctx->Yield();
+        IM_CHECK_EQ(window->Viewport->ParentViewportId, (ImGuiID)0x12345678);
+    };
+
 #else
     IM_UNUSED(e);
 #endif
