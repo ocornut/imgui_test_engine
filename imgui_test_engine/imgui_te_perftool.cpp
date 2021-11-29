@@ -620,11 +620,14 @@ void ImGuiPerfTool::_Rebuild()
     // timestamp or build info)).
     for (ImGuiPerfToolEntry* entry = _SrcData.begin(); entry < _SrcData.end();)
     {
-        // Filtered out entries can be safely ignored.
-        if (_FilterDateFrom[0] && strcmp(entry->Date, _FilterDateFrom) < 0)
+        // Filtered out entries can be safely ignored. Note that entry++ does not follow logic of fast-forwarding to the
+        // next batch, as found at the end of this loop. This is OK, because all entries belonging to a same batch will
+        // also have same date.
+        if ((_FilterDateFrom[0] && strcmp(entry->Date, _FilterDateFrom) < 0) || (_FilterDateTo[0] && strcmp(entry->Date, _FilterDateTo) > 0))
+        {
+            entry++;
             continue;
-        if (_FilterDateTo[0] && strcmp(entry->Date, _FilterDateTo) > 0)
-            continue;
+        }
 
         _Batches.push_back(ImGuiPerfToolBatch());
         ImGuiPerfToolBatch& batch = _Batches.back();
