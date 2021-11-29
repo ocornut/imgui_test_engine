@@ -220,7 +220,7 @@ struct ImGuiTestContext
     void        WindowClose(ImGuiTestRef ref);
     void        WindowCollapse(ImGuiWindow* window, bool collapsed);
     void        WindowFocus(ImGuiTestRef ref);
-    void        WindowMove(ImGuiTestRef ref, ImVec2 pos, ImVec2 pivot = ImVec2(0.0f, 0.0f));
+    void        WindowMove(ImGuiTestRef ref, ImVec2 pos, ImVec2 pivot = ImVec2(0.0f, 0.0f), ImGuiTestOpFlags flags = ImGuiTestOpFlags_None);
     void        WindowResize(ImGuiTestRef ref, ImVec2 sz);
     bool        WindowTeleportToMakePosVisibleInViewport(ImGuiWindow* window, ImVec2 pos_in_window);
     bool        WindowBringToFront(ImGuiWindow* window, ImGuiTestOpFlags flags = ImGuiTestOpFlags_None);

@@ -2756,7 +2756,9 @@ void    ImGuiTestContext::WindowFocus(ImGuiTestRef ref)
     }
 }
 
-void    ImGuiTestContext::WindowMove(ImGuiTestRef ref, ImVec2 input_pos, ImVec2 pivot)
+// Supported values for ImGuiTestOpFlags:
+// - ImGuiTestOpFlags_NoFocusWindow
+void    ImGuiTestContext::WindowMove(ImGuiTestRef ref, ImVec2 input_pos, ImVec2 pivot, ImGuiTestOpFlags flags)
 {
     if (IsError())
         return;
@@ -2773,7 +2775,8 @@ void    ImGuiTestContext::WindowMove(ImGuiTestRef ref, ImVec2 input_pos, ImVec2 
         return;
     }
 
-    WindowBringToFront(window);
+    if ((flags & ImGuiTestOpFlags_NoFocusWindow) == 0)
+        WindowBringToFront(window);
     WindowCollapse(window, false);
 
     MouseMoveToPos(GetWindowTitlebarPoint(ref));
