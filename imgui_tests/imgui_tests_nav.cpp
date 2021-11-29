@@ -1675,15 +1675,32 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
             ImGui::Button("Button1");
             vars.Status.QuerySet();
         }
+        else if (vars.Step == 9) // #4761
+        {
+            if (ImGui::Button("Focus"))
+            //if (!ImGui::IsAnyItemActive())
+                ImGui::SetKeyboardFocusHere();
+            ImGui::InputTextMultiline("TextMultiline1", vars.Str1, IM_ARRAYSIZE(vars.Str1));
+            vars.Status.QuerySet();
+        }
+        else if (vars.Step == 10) // #4761
+        {
+            bool focus = ImGui::Button("Focus");
+            ImGui::InputTextMultiline("TextMultiline2", vars.Str1, IM_ARRAYSIZE(vars.Str1));
+            vars.Status.QuerySet();
+            if (focus)
+                //if (!ImGui::IsAnyItemActive())
+                ImGui::SetKeyboardFocusHere(-1);
+        }
         ImGui::End();
     };
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         ImGuiContext& g = *ctx->UiContext;
+        ImGuiTestGenericVars& vars = ctx->GenericVars;
         ctx->SetRef("Test Window");
 
         // Test focusing next item with SetKeyboardFocusHere(0)
-        ImGuiTestGenericVars& vars = ctx->GenericVars;
         vars.Step = 1;
         ctx->Yield();
         IM_CHECK(g.ActiveId == 0);
@@ -1705,6 +1722,37 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
         ctx->Yield();
         IM_CHECK_EQ(g.ActiveId, ctx->GetID("Text2"));
         IM_CHECK_EQ(vars.Status.Activated, 1);
+
+#if IMGUI_VERSION_NUM >= 18512
+        vars.Step = 0;
+        ctx->Yield(2);
+
+        // Test focusing next item with SetKeyboardFocusHere(0)
+        vars.Step = 9;
+        ctx->Yield();
+        IM_CHECK(g.ActiveId == 0);
+        IM_CHECK(vars.Status.Active == 0);
+        ctx->ItemClick("Focus");
+        ctx->Yield(2);
+        IM_CHECK_EQ(g.ActiveId, ctx->GetID("TextMultiline1"));
+        IM_CHECK(vars.Status.Active == 1);
+
+        // Test that ActiveID gets cleared when not alive
+        vars.Step = 0;
+        ctx->Yield(2);
+        IM_CHECK(g.ActiveId == 0);
+
+        // Test focusing previous item with SetKeyboardFocusHere(-1)
+        vars.Step = 10;
+        //IM_DEBUG_HALT_TESTFUNC();
+        ctx->Yield();
+        IM_CHECK(g.ActiveId == 0);
+        IM_CHECK(vars.Status.Active == 0);
+        ctx->ItemClick("Focus");
+        ctx->Yield(2);
+        IM_CHECK_EQ(g.ActiveId, ctx->GetID("TextMultiline2"));
+        IM_CHECK_EQ(vars.Status.Active, 1);
+#endif
 
         // Test multiple overriding calls to SetKeyboardFocusHere() in same frame (last gets it)
         vars.Step = 0;

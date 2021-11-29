@@ -1526,6 +1526,9 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ImGuiTestGenericVars& vars = ctx->GenericVars;
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
         ImGui::InputTextMultiline("Field", vars.Str1, IM_ARRAYSIZE(vars.Str1));
+#if IMGUI_VERSION_NUM >= 18511
+        IM_CHECK_EQ(ImGui::GetItemID(), ImGui::GetID("Field"));
+#endif
         vars.Bool1 = ImGui::IsItemHovered();
         ImGui::Text("hovered: %d", vars.Bool1);
         ImGui::End();
@@ -1537,6 +1540,43 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ctx->MouseMove("Field");
         IM_CHECK(vars.Bool1 == true);
     };
+
+    // ## Test for IsItemXXX() calls on InputTextMultiline()
+#if IMGUI_VERSION_NUM >= 18512
+    t = IM_REGISTER_TEST(e, "widgets", "widgets_inputtext_multiline_status");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiTestGenericVars& vars = ctx->GenericVars;
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImGui::InputTextMultiline("Field", vars.Str1, IM_ARRAYSIZE(vars.Str1));
+        //IM_CHECK_EQ(ImGui::GetItemID(), ImGui::GetID("Field"));
+        vars.Status.QuerySet();
+        ImGui::Text("IsItemActive: %d", vars.Status.Active);
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiContext& g = *ctx->UiContext;
+        ImGuiTestGenericVars& vars = ctx->GenericVars;
+        ctx->SetRef("Test Window");
+        IM_CHECK(vars.Bool1 == false);
+        ctx->ItemClick("Field");
+        ImGuiID input_id = ctx->GetID("Field");
+        IM_CHECK_EQ(g.ActiveId, input_id);
+        IM_CHECK(vars.Status.Active == 1);
+        ctx->KeyCharsReplace("1\n2\n3\n4\n5\n6\n\7\n8\n9\n10\n11\n12\n13\n14\n15\n");
+        ImGuiWindow* window = ImGui::FindWindowByID(ctx->GetChildWindowID("Field"));
+        IM_CHECK(window != NULL);
+        ImGuiID scrollbar_id = ImGui::GetWindowScrollbarID(window, ImGuiAxis_Y);
+        ctx->MouseMove(scrollbar_id);
+        ctx->MouseDown(ImGuiMouseButton_Left);
+        IM_CHECK_EQ(g.ActiveId, scrollbar_id);
+        IM_CHECK(vars.Status.Active == 1);
+        ctx->MouseUp(ImGuiMouseButton_Left);
+        IM_CHECK_EQ(g.ActiveId, input_id);
+        IM_CHECK(vars.Status.Active == 1);
+    };
+#endif
 
     // ## Test inheritance of ItemFlags
     t = IM_REGISTER_TEST(e, "widgets", "widgets_item_flags_stack");
