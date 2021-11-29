@@ -25,9 +25,9 @@ struct ImGuiApp
     bool    SrgbFramebuffer = false;                    // [In]  InitCreateWindow() FIXME-WIP
     bool    Quit = false;                               // [In]  NewFrame()
     ImVec4  ClearColor = { 0.f, 0.f, 0.f, 1.f };        // [In]  Render()
+    bool    MockViewports = false;                      // [In]  InitBackends()
     float   DpiScale = 1.0f;                            // [Out] InitCreateWindow() / NewFrame()
     bool    Vsync = true;                               // [Out] Render()
-    int     Viewport = 0;                               // [In]  InitBackends()
 
     bool    (*InitCreateWindow)(ImGuiApp* app, const char* window_title, ImVec2 window_size) = nullptr;
     void    (*InitBackends)(ImGuiApp* app) = nullptr;

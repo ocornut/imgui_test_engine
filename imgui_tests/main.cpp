@@ -10,6 +10,7 @@
 //   main.exe -nogui -nopause perf_
 
 #define CMDLINE_ARGS  "-fileopener tools/win32_open_with_sublime.cmd"
+//#define CMDLINE_ARGS  "-viewport-mock -nogui viewport_"               // Test mock viewports on TTY mode
 //#define CMDLINE_ARGS  "-gui -nothrottle"
 //#define CMDLINE_ARGS    "-slow widgets_inputtext_5_deactivate_flags"
 //#define CMDLINE_ARGS  "-gui perf_stress_text_unformatted_2"
@@ -104,7 +105,8 @@ struct TestApp
     ImGuiTestVerboseLevel   OptVerboseLevelError = ImGuiTestVerboseLevel_COUNT; // "
     bool                    OptNoThrottle = false;
     bool                    OptPauseOnExit = true;
-    int                     OptViewport = 0;                                    // 0 - disabled, 1 - enabled, 2 - force mocked viewports
+    bool                    OptViewports = false;
+    bool                    OptMockViewports = false;
     int                     OptStressAmount = 5;
     char*                   OptFileOpener = NULL;
     ImVector<char*>         TestsToRun;
@@ -211,11 +213,11 @@ static bool ParseCommandLineOptions(int argc, char** argv)
             }
             else if (strcmp(argv[n], "-viewport") == 0)
             {
-                g_App.OptViewport = 1;
+                g_App.OptViewports = true;
             }
             else if (strcmp(argv[n], "-viewport-mock") == 0)
             {
-                g_App.OptViewport = 2;
+                g_App.OptViewports = g_App.OptMockViewports = true;
             }
             else if (strcmp(argv[n], "-stressamount") == 0 && n+1 < argc)
             {
@@ -412,7 +414,7 @@ int main(int argc, char** argv)
     //style.FrameBorderSize = 1.0f;
     //style.FrameRounding = 5.0f;
 #ifdef IMGUI_HAS_VIEWPORT
-    if (g_App.OptViewport)
+    if (g_App.OptViewports)
         io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
 #endif
 #ifdef IMGUI_HAS_DOCK
@@ -426,7 +428,7 @@ int main(int argc, char** argv)
     if (g_App.AppWindow == NULL)
         g_App.AppWindow = ImGuiApp_ImplNull_Create();
     g_App.AppWindow->DpiAware = false;
-    g_App.AppWindow->Viewport = g_App.OptViewport;
+    g_App.AppWindow->MockViewports = g_App.OptViewports && g_App.OptMockViewports;
 
     // Create TestEngine context
     IM_ASSERT(g_App.TestEngine == NULL);
@@ -455,6 +457,11 @@ int main(int argc, char** argv)
     test_io.ScreenCaptureFunc = ImGuiApp_ScreenCaptureFunc;
     test_io.ScreenCaptureUserData = (void*)g_App.AppWindow;
 
+    // Create window
+    ImGuiApp* app_window = g_App.AppWindow;
+    app_window->InitCreateWindow(app_window, "Dear ImGui: Test Engine", ImVec2(1440, 900));
+    app_window->InitBackends(app_window);
+
     // Register and queue our tests
     RegisterTests(engine);
     QueueTests(engine);
@@ -475,11 +482,6 @@ int main(int argc, char** argv)
 
     // Start engine
     ImGuiTestEngine_Start(engine);
-
-    // Create window
-    ImGuiApp* app_window = g_App.AppWindow;
-    app_window->InitCreateWindow(app_window, "Dear ImGui: Test Engine", ImVec2(1440, 900));
-    app_window->InitBackends(app_window);
 
     // Load fonts, Set DPI scale
     LoadFonts(app_window->DpiScale);
