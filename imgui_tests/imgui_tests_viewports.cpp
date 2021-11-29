@@ -35,6 +35,10 @@ void RegisterTests_Viewports(ImGuiTestEngine* e)
     // Require -viewport to register those tests
     if ((ImGui::GetIO().ConfigFlags & ImGuiConfigFlags_ViewportsEnable) == 0)
         return;
+    if ((ImGui::GetIO().BackendFlags & ImGuiBackendFlags_PlatformHasViewports) == 0)
+        return;
+    if ((ImGui::GetIO().BackendFlags & ImGuiBackendFlags_RendererHasViewports) == 0)
+        return;
 
     // ## Basic viewport test
     t = IM_REGISTER_TEST(e, "viewport", "viewport_basic_1");
