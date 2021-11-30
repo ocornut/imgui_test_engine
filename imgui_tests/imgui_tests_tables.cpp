@@ -2226,7 +2226,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
         }
 
         if (vars.WindowSize.x != 0.0f && vars.WindowSize.y != 0.0f)
-            ImGui::SetNextWindowSize(vars.WindowSize, (ctx->RunFlags & ImGuiTestRunFlags_GuiFuncOnly) ? ImGuiCond_Appearing : ImGuiCond_Always);
+            ImGui::SetNextWindowSize(vars.WindowSize, ctx->IsGuiFuncOnly() ? ImGuiCond_Appearing : ImGuiCond_Always);
 
         const ImU32 COL_CURSOR_MAX_POS = IM_COL32(255, 0, 255, 200);
         const ImU32 COL_IDEAL_MAX_POS = IM_COL32(0, 255, 0, 200);

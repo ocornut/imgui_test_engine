@@ -1222,7 +1222,7 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
     {
         ImGuiTestGenericVars& vars = ctx->GenericVars;
 
-        if (ctx->RunFlags & ImGuiTestRunFlags_GuiFuncOnly)
+        if (ctx->IsGuiFuncOnly())
         {
             ImGui::Begin("Config", NULL, ImGuiWindowFlags_NoSavedSettings);
             ImGui::Checkbox("UseClipper", &vars.UseClipper);
@@ -1330,7 +1330,7 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
     {
         ImGuiTestGenericVars& vars = ctx->GenericVars;
 
-        if (ctx->RunFlags & ImGuiTestRunFlags_GuiFuncOnly)
+        if (ctx->IsGuiFuncOnly())
         {
             ImGui::Begin("Config", NULL, ImGuiWindowFlags_NoSavedSettings);
             ImGui::Checkbox("UseClipper", &vars.UseClipper);

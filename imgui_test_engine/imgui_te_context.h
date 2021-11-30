@@ -187,6 +187,7 @@ struct ImGuiTestContext
     bool        IsError() const             { return Test->Status == ImGuiTestStatus_Error || Abort; }
     bool        IsFirstGuiFrame() const     { return FirstGuiFrame; }
     bool        IsFirstTestFrame() const    { return FrameCount == FirstTestFrameCount; }   // First frame where TestFunc is running (after warm-up frame).
+    bool        IsGuiFuncOnly() const       { return (RunFlags & ImGuiTestRunFlags_GuiFuncOnly) != 0; }
     void        SetGuiFuncEnabled(bool v)   { if (v) RunFlags &= ~ImGuiTestRunFlags_GuiFuncDisable; else RunFlags |= ImGuiTestRunFlags_GuiFuncDisable; }
     void        RecoverFromUiContextErrors();
     template <typename T> T& GetVars()      { IM_ASSERT(UserData != NULL); return *(T*)(UserData); } // Campanion to using t->SetVarsDataType<>(). FIXME: Assert to compare sizes

@@ -4084,7 +4084,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
 
         auto popup_debug_controls = [&]()
         {
-            if (ctx->RunFlags & ImGuiTestRunFlags_GuiFuncOnly)
+            if (ctx->IsGuiFuncOnly())
             {
                 float step = ctx->UiContext->IO.DeltaTime * 500.0f;
                 if (ImGui::IsKeyDown(ImGui::GetKeyIndex(ImGuiKey_UpArrow))) vars.Size.y -= step;
@@ -4095,7 +4095,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         };
 
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoNav);
-        if (ctx->RunFlags & ImGuiTestRunFlags_GuiFuncOnly)
+        if (ctx->IsGuiFuncOnly())
             ImGui::DragFloat2("Tooltip Size", &vars.Size.x);
         ImGui::Button("Tooltip", ImVec2(100, 0));
         if (ImGui::IsItemHovered())

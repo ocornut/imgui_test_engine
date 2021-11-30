@@ -2110,7 +2110,7 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
     {
         auto& vars = ctx->GetVars<ClipperTestVars>();
 
-        if (ctx->RunFlags & ImGuiTestRunFlags_GuiFuncOnly)
+        if (ctx->IsGuiFuncOnly())
         {
             ImGui::Begin("Config", NULL, ImGuiWindowFlags_NoSavedSettings);
             ImGui::Checkbox("TableEnable", &vars.TableEnable);

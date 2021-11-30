@@ -80,7 +80,7 @@ static void DockingTestsGenericGuiFunc(ImGuiTestContext* ctx)
         ctx->DockClear("AAA", "BBB", "CCC", NULL);  // Fix SetNextWindowSize() on next test run. // FIXME-TESTS
     }
 
-    if (ctx->RunFlags & ImGuiTestRunFlags_GuiFuncOnly)
+    if (ctx->IsGuiFuncOnly())
     {
         ImGui::Begin("Test Config");
         ImGui::Checkbox("Show Dockspace", &vars.ShowDockspace);
