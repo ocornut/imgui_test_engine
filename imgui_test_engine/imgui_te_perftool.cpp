@@ -834,6 +834,12 @@ void ImGuiTestEngine_PerfToolAppendToCSV(ImGuiPerfTool* perf_log, ImGuiPerfToolE
     if (filename == NULL)
         filename = IMGUI_PERFLOG_FILENAME;
 
+    if (!ImFileCreateDirectoryChain(filename, ImPathFindFilename(filename)))
+    {
+        fprintf(stderr, "Unable to create missing directory '%*s', perftool entry was not saved.\n", (int)(ImPathFindFilename(filename) - filename), filename);
+        return;
+    }
+
     // Appends to .csv
     FILE* f = fopen(filename, "a+b");
     if (f == NULL)
