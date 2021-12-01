@@ -59,6 +59,51 @@ struct ImGuiTestRunTask
     ImGuiTestRunFlags       RunFlags = ImGuiTestRunFlags_None;
 };
 
+enum ImGuiTestInputType
+{
+    ImGuiTestInputType_None,
+    ImGuiTestInputType_Key,
+    ImGuiTestInputType_Nav,
+    ImGuiTestInputType_Char
+};
+
+struct ImGuiTestInput
+{
+    ImGuiTestInputType      Type = ImGuiTestInputType_None;
+    ImGuiKey                Key = ImGuiKey_COUNT;
+    ImGuiKeyModFlags        KeyMods = ImGuiKeyModFlags_None;
+    ImGuiNavInput           NavInput = ImGuiNavInput_COUNT;
+    ImWchar                 Char = 0;
+    ImGuiKeyState           State = ImGuiKeyState_Unknown;
+
+    static ImGuiTestInput   FromKey(ImGuiKey v, ImGuiKeyState state, ImGuiKeyModFlags mods = ImGuiKeyModFlags_None)
+    {
+        ImGuiTestInput inp;
+        inp.Type = ImGuiTestInputType_Key;
+        inp.Key = v;
+        inp.KeyMods = mods;
+        inp.State = state;
+        return inp;
+    }
+
+    static ImGuiTestInput   FromNav(ImGuiNavInput v, ImGuiKeyState state)
+    {
+        ImGuiTestInput inp;
+        inp.Type = ImGuiTestInputType_Nav;
+        inp.NavInput = v;
+        inp.State = state;
+        return inp;
+    }
+
+    static ImGuiTestInput   FromChar(ImWchar v)
+    {
+        ImGuiTestInput inp;
+        inp.Type = ImGuiTestInputType_Char;
+        inp.Char = v;
+        return inp;
+    }
+};
+
 struct ImGuiTestInputs
 {
     ImGuiIO                     SimulatedIO;

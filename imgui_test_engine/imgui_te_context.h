@@ -47,7 +47,7 @@ struct ImGuiTestRefDesc
     char            Buf[80];
 
     const char* c_str()             { return Buf; }
-    ImGuiTestRefDesc(const ImGuiTestRef& ref, const ImGuiTestItemInfo* item = NULL);
+    ImGuiTestRefDesc(const ImGuiTestRef& ref, const ImGuiTestItemInfo* item);
 };
 
 //-------------------------------------------------------------------------
