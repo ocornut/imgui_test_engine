@@ -1,32 +1,29 @@
 // dear imgui
 // (test engine, core)
+// This is the interface that your initial setup (app init, main loop) will mostly be using.
+// Actual tests will mostly use the interface of imgui_te_context.h
 
 #pragma once
 
 #include "imgui.h"
-#include "imgui_internal.h"         // ImPool<>, ImGuiItemStatusFlags, ImFormatString
+#include "imgui_internal.h"         // ImPool<>, ImRect, ImGuiItemStatusFlags, ImFormatString
 #include "imgui_te_util.h"
 
 //-------------------------------------------------------------------------
 // Forward Declarations
 //-------------------------------------------------------------------------
 
-struct ImGuiTest;
-struct ImGuiTestContext;
-struct ImGuiTestCoroutineInterface;
-struct ImGuiTestEngine;
-struct ImGuiTestEngineIO;
-struct ImGuiTestItemInfo;
-struct ImGuiTestItemList;
-struct ImGuiTestInputs;
-struct ImGuiTestGatherTask;
-struct ImGuiTestFindByLabelTask;
-struct ImGuiTestInfoTask;
-struct ImGuiTestRunTask;
+struct ImGuiTest;                   // Data for a test registered with IM_REGISTER_TEST()
+struct ImGuiTestContext;            // Context while a test is running
+struct ImGuiTestCoroutineInterface; // Interface to expose coroutine functions (imgui_te_coroutine provides a default implementation for C++11 using std::thread, but you may use your own)
+struct ImGuiTestEngine;             // Test engine instance
+struct ImGuiTestEngineIO;           // Test engine public I/O
+struct ImGuiTestItemInfo;           // Info queried from item (id, geometry, status flags, debug label)
+struct ImGuiTestItemList;           // A list of items
+struct ImGuiTestInputs;             // Simulated user inputs (will be fed into ImGuiIO by the test engine)
 
-struct ImGuiCaptureArgs;
-struct ImGuiPerfTool;
-struct ImRect;
+struct ImGuiCaptureArgs;            // Parameters for ImGuiTestContext::CaptureXXX functions.
+struct ImGuiPerfTool;               // Perf tool instance
 
 typedef int ImGuiTestFlags;         // Flags: See ImGuiTestFlags_
 typedef int ImGuiTestCheckFlags;    // Flags: See ImGuiTestCheckFlags_
@@ -59,6 +56,7 @@ enum ImGuiTestStatus
     ImGuiTestStatus_Suspended   = 4,
 };
 
+// Test group (this is mostly used to categorize tests in our testing UI)
 enum ImGuiTestGroup
 {
     ImGuiTestGroup_Unknown      = -1,
@@ -72,7 +70,7 @@ enum ImGuiTestFlags_
     ImGuiTestFlags_None                 = 0,
     ImGuiTestFlags_NoWarmUp             = 1 << 0,   // By default, we run the GUI func twice before starting the test code
     ImGuiTestFlags_NoAutoFinish         = 1 << 1,   // By default, tests with no test func end on Frame 0 (after the warm up). Setting this require test to call ctx->Finish().
-    ImGuiTestFlags_NoRecoverWarnings    = 1 << 2
+    ImGuiTestFlags_NoRecoverWarnings    = 1 << 2    // Disable state recovery warnings (missing End/Pop calls etc.) for tests which may rely on those.
     //ImGuiTestFlags_RequireViewports   = 1 << 10
 };
 
@@ -88,22 +86,6 @@ enum ImGuiTestLogFlags_
 {
     ImGuiTestLogFlags_None              = 0,
     ImGuiTestLogFlags_NoHeader          = 1 << 0    // Do not display frame count and depth padding
-};
-
-// Generic flags for various ImGuiTestContext functions
-enum ImGuiTestOpFlags_
-{
-    ImGuiTestOpFlags_None               = 0,
-    ImGuiTestOpFlags_Verbose            = 1 << 0,
-    ImGuiTestOpFlags_NoCheckHoveredId   = 1 << 1,
-    ImGuiTestOpFlags_NoError            = 1 << 2,   // Don't abort/error e.g. if the item cannot be found
-    ImGuiTestOpFlags_NoFocusWindow      = 1 << 3,
-    ImGuiTestOpFlags_NoAutoUncollapse   = 1 << 4,   // Disable automatically uncollapsing windows (useful when specifically testing Collapsing behaviors)
-    ImGuiTestOpFlags_IsSecondAttempt    = 1 << 5,
-    ImGuiTestOpFlags_MoveToEdgeL        = 1 << 6,   // Dumb aiming helpers to test widget that care about clicking position. May need to replace will better functionalities.
-    ImGuiTestOpFlags_MoveToEdgeR        = 1 << 7,
-    ImGuiTestOpFlags_MoveToEdgeU        = 1 << 8,
-    ImGuiTestOpFlags_MoveToEdgeD        = 1 << 9
 };
 
 enum ImGuiTestRunFlags_
@@ -164,12 +146,10 @@ struct ImGuiTestInput
 };
 
 //-------------------------------------------------------------------------
-// Hooks for Core Library
+// Functions
 //-------------------------------------------------------------------------
 
-extern void     ImGuiTestEngineHook_Shutdown(ImGuiContext* ctx);
-extern void     ImGuiTestEngineHook_PreNewFrame(ImGuiContext* ui_ctx);
-extern void     ImGuiTestEngineHook_PostNewFrame(ImGuiContext* ui_ctx);
+// Hooks for core imgui/ library
 extern void     ImGuiTestEngineHook_ItemAdd(ImGuiContext* ui_ctx, const ImRect& bb, ImGuiID id);
 #ifdef IMGUI_HAS_IMSTR
 extern void     ImGuiTestEngineHook_ItemInfo(ImGuiContext* ui_ctx, ImGuiID id, ImStrv label, ImGuiItemStatusFlags flags);
@@ -178,7 +158,11 @@ extern void     ImGuiTestEngineHook_ItemInfo(ImGuiContext* ui_ctx, ImGuiID id, c
 static inline int ImStrcmp(const char* str1, const char* str2) { return strcmp(str1, str2); } // FIXME: to remove once this gets added in core library
 #endif
 extern void     ImGuiTestEngineHook_Log(ImGuiContext* ui_ctx, const char* fmt, ...);
-extern void     ImGuiTestEngineHook_AssertFunc(const char* expr, const char* file, const char* function, int line);
+
+// Functions
+extern bool     ImGuiTestEngine_Check(const char* file, const char* func, int line, ImGuiTestCheckFlags flags, bool result, const char* expr);
+extern bool     ImGuiTestEngine_Error(const char* file, const char* func, int line, ImGuiTestCheckFlags flags, const char* fmt, ...);
+extern void     ImGuiTestEngine_Assert(const char* expr, const char* file, const char* function, int line);
 const char*     ImGuiTestEngine_FindItemDebugLabel(ImGuiContext* ui_ctx, ImGuiID id);
 
 //-------------------------------------------------------------------------
@@ -186,17 +170,17 @@ const char*     ImGuiTestEngine_FindItemDebugLabel(ImGuiContext* ui_ctx, ImGuiID
 //-------------------------------------------------------------------------
 
 // Register a new test
-#define IM_REGISTER_TEST(_ENGINE, _CAT, _NAME)    ImGuiTestEngine_RegisterTest(_ENGINE, _CAT, _NAME, __FILE__, __LINE__)
+#define IM_REGISTER_TEST(_ENGINE, _CAT, _NAME)  ImGuiTestEngine_RegisterTest(_ENGINE, _CAT, _NAME, __FILE__, __LINE__)
 
 // We embed every macro in a do {} while(0) statement as a trick to allow using them as regular single statement, e.g. if (XXX) IM_CHECK(A); else IM_CHECK(B)
 // We leave the assert call (which will trigger a debugger break) outside of the check function to step out faster.
-#define IM_CHECK_NO_RET(_EXPR)              do { if (ImGuiTestEngineHook_Check(__FILE__, __func__, __LINE__, ImGuiTestCheckFlags_None, (bool)(_EXPR), #_EXPR))          { IM_ASSERT(_EXPR); } } while (0)
-#define IM_CHECK(_EXPR)                     do { if (ImGuiTestEngineHook_Check(__FILE__, __func__, __LINE__, ImGuiTestCheckFlags_None, (bool)(_EXPR), #_EXPR))          { IM_ASSERT(_EXPR); } if (!(bool)(_EXPR)) return; } while (0)
-#define IM_CHECK_SILENT(_EXPR)              do { if (ImGuiTestEngineHook_Check(__FILE__, __func__, __LINE__, ImGuiTestCheckFlags_SilentSuccess, (bool)(_EXPR), #_EXPR)) { IM_ASSERT(0); } if (!(bool)(_EXPR)) return; } while (0)
-#define IM_CHECK_RETV(_EXPR,_RETV)          do { if (ImGuiTestEngineHook_Check(__FILE__, __func__, __LINE__, ImGuiTestCheckFlags_None, (bool)(_EXPR), #_EXPR))          { IM_ASSERT(_EXPR); } if (!(bool)(_EXPR)) return _RETV; } while (0)
-#define IM_CHECK_SILENT_RETV(_EXPR,_RETV)   do { if (ImGuiTestEngineHook_Check(__FILE__, __func__, __LINE__, ImGuiTestCheckFlags_SilentSuccess, (bool)(_EXPR), #_EXPR)) { IM_ASSERT(_EXPR); } if (!(bool)(_EXPR)) return _RETV; } while (0)
-#define IM_ERRORF(_FMT,...)                 do { if (ImGuiTestEngineHook_Error(__FILE__, __func__, __LINE__, ImGuiTestCheckFlags_None, _FMT, __VA_ARGS__))              { IM_ASSERT(0); } } while (0)
-#define IM_ERRORF_NOHDR(_FMT,...)           do { if (ImGuiTestEngineHook_Error(NULL, NULL, 0, ImGuiTestCheckFlags_None, _FMT, __VA_ARGS__))                             { IM_ASSERT(0); } } while (0)
+#define IM_CHECK_NO_RET(_EXPR)                  do { if (ImGuiTestEngine_Check(__FILE__, __func__, __LINE__, ImGuiTestCheckFlags_None, (bool)(_EXPR), #_EXPR))          { IM_ASSERT(_EXPR); } } while (0)
+#define IM_CHECK(_EXPR)                         do { if (ImGuiTestEngine_Check(__FILE__, __func__, __LINE__, ImGuiTestCheckFlags_None, (bool)(_EXPR), #_EXPR))          { IM_ASSERT(_EXPR); } if (!(bool)(_EXPR)) return; } while (0)
+#define IM_CHECK_SILENT(_EXPR)                  do { if (ImGuiTestEngine_Check(__FILE__, __func__, __LINE__, ImGuiTestCheckFlags_SilentSuccess, (bool)(_EXPR), #_EXPR)) { IM_ASSERT(0); } if (!(bool)(_EXPR)) return; } while (0)
+#define IM_CHECK_RETV(_EXPR,_RETV)              do { if (ImGuiTestEngine_Check(__FILE__, __func__, __LINE__, ImGuiTestCheckFlags_None, (bool)(_EXPR), #_EXPR))          { IM_ASSERT(_EXPR); } if (!(bool)(_EXPR)) return _RETV; } while (0)
+#define IM_CHECK_SILENT_RETV(_EXPR,_RETV)       do { if (ImGuiTestEngine_Check(__FILE__, __func__, __LINE__, ImGuiTestCheckFlags_SilentSuccess, (bool)(_EXPR), #_EXPR)) { IM_ASSERT(_EXPR); } if (!(bool)(_EXPR)) return _RETV; } while (0)
+#define IM_ERRORF(_FMT,...)                     do { if (ImGuiTestEngine_Error(__FILE__, __func__, __LINE__, ImGuiTestCheckFlags_None, _FMT, __VA_ARGS__))              { IM_ASSERT(0); } } while (0)
+#define IM_ERRORF_NOHDR(_FMT,...)               do { if (ImGuiTestEngine_Error(NULL, NULL, 0, ImGuiTestCheckFlags_None, _FMT, __VA_ARGS__))                             { IM_ASSERT(0); } } while (0)
 
 template<typename T> void ImGuiTestEngineUtil_AppendStrValue(ImGuiTextBuffer& buf, T value)         { buf.appendf("???"); IM_UNUSED(value); } // FIXME-TESTS: Could improve with some template magic
 template<> inline void ImGuiTestEngineUtil_AppendStrValue(ImGuiTextBuffer& buf, const char* value)  { buf.appendf("\"%s\"", value); }
@@ -264,7 +248,7 @@ static inline void ImGuiTestEngineUtil_AppendStrCompareOp(ImGuiTextBuffer& buf, 
         expr_buf.appendf("] " #_OP " %s [", #_RHS);                 \
         ImGuiTestEngineUtil_AppendStrValue(expr_buf, __rhs);        \
         expr_buf.append("]");                                       \
-        if (ImGuiTestEngineHook_Check(__FILE__, __func__, __LINE__, ImGuiTestCheckFlags_None, __res, expr_buf.c_str())) \
+        if (ImGuiTestEngine_Check(__FILE__, __func__, __LINE__, ImGuiTestCheckFlags_None, __res, expr_buf.c_str())) \
             IM_ASSERT(__res);                                       \
         if (_RETURN && !__res)                                      \
             return;                                                 \
@@ -278,7 +262,7 @@ static inline void ImGuiTestEngineUtil_AppendStrCompareOp(ImGuiTextBuffer& buf, 
         bool __res = strcmp(__lhs.c_str(), __rhs.c_str()) _OP 0;    \
         ImGuiTextBuffer expr_buf;                                   \
         ImGuiTestEngineUtil_AppendStrCompareOp(expr_buf, #_LHS, __lhs.c_str(), #_OP, #_RHS, __rhs.c_str()); \
-        if (ImGuiTestEngineHook_Check(__FILE__, __func__, __LINE__, _FLAGS, __res, expr_buf.c_str())) \
+        if (ImGuiTestEngine_Check(__FILE__, __func__, __LINE__, _FLAGS, __res, expr_buf.c_str())) \
             IM_ASSERT(__res);                                               \
         if (_RETURN && !__res)                                              \
             return;                                                         \
@@ -307,9 +291,6 @@ static inline void ImGuiTestEngineUtil_AppendStrCompareOp(ImGuiTextBuffer& buf, 
 #define IM_CHECK_FLOAT_EQ_EPS(_LHS, _RHS)               IM_CHECK_LE(ImFabs(_LHS - (_RHS)), FLT_EPSILON)   // Float Equal
 #define IM_CHECK_FLOAT_NEAR(_LHS, _RHS, _EPS)           IM_CHECK_LE(ImFabs(_LHS - (_RHS)), _EPS)
 #define IM_CHECK_FLOAT_NEAR_NO_RET(_LHS, _RHS, _EPS)    IM_CHECK_LE_NO_RET(ImFabs(_LHS - (_RHS)), _EPS)
-
-bool        ImGuiTestEngineHook_Check(const char* file, const char* func, int line, ImGuiTestCheckFlags flags, bool result, const char* expr);
-bool        ImGuiTestEngineHook_Error(const char* file, const char* func, int line, ImGuiTestCheckFlags flags, const char* fmt, ...);
 
 //-------------------------------------------------------------------------
 // Macros for Debug / Control Flow
@@ -352,19 +333,19 @@ typedef bool        (*ImGuiTestEngineScreenCaptureFunc)(ImGuiID viewport_id, int
 struct ImGuiTestEngineIO
 {
     // Inputs: Functions
-    ImGuiTestEngineSrcFileOpenFunc      SrcFileOpenFunc = NULL;         // (Optional) To open source files
-    void*                               SrcFileOpenUserData = NULL;     // (Optional) User data for SrcFileOpenFunc
-    ImGuiTestEngineScreenCaptureFunc    ScreenCaptureFunc = NULL;       // (Optional) To capture graphics output
-    void*                               ScreenCaptureUserData = NULL;   // (Optional) User data for ScreenCaptureFunc
-    ImGuiTestCoroutineInterface*        CoroutineFuncs = NULL;          // (Required) Coroutine functions (see imgui_te_coroutines.h)
+    ImGuiTestCoroutineInterface*    CoroutineFuncs = NULL;          // (Required) Coroutine functions (see imgui_te_coroutines.h)
+    ImGuiTestEngineSrcFileOpenFunc  SrcFileOpenFunc = NULL;         // (Optional) To open source files
+    ImGuiTestEngineScreenCaptureFunc ScreenCaptureFunc = NULL;      // (Optional) To capture graphics output
+    void*                           SrcFileOpenUserData = NULL;     // (Optional) User data for SrcFileOpenFunc
+    void*                           ScreenCaptureUserData = NULL;   // (Optional) User data for ScreenCaptureFunc
 
     // Inputs: Options
-    bool                        ConfigRunWithGui = false;       // Run without graphics output (e.g. command-line)
-    bool                        ConfigRunFast = true;           // Run tests as fast as possible (teleport mouse, skip delays, etc.)
-    bool                        ConfigRunBlind = false;         // Run tests in a blind ImGuiContext separated from the visible context
-    bool                        ConfigStopOnError = false;      // Stop queued tests on test error
-    bool                        ConfigBreakOnError = false;     // Break debugger on test error
-    bool                        ConfigKeepGuiFunc = false;      // Keep test GUI running at the end of the test
+    bool                        ConfigRunWithGui = false;           // Run without graphics output (e.g. command-line)
+    bool                        ConfigRunFast = true;               // Run tests as fast as possible (teleport mouse, skip delays, etc.)
+    bool                        ConfigRunBlind = false;             // Run tests in a blind ImGuiContext separated from the visible context
+    bool                        ConfigStopOnError = false;          // Stop queued tests on test error
+    bool                        ConfigBreakOnError = false;         // Break debugger on test error
+    bool                        ConfigKeepGuiFunc = false;          // Keep test GUI running at the end of the test
     ImGuiTestVerboseLevel       ConfigVerboseLevel = ImGuiTestVerboseLevel_Warning;
     ImGuiTestVerboseLevel       ConfigVerboseLevelOnError = ImGuiTestVerboseLevel_Info;
     bool                        ConfigLogToTTY = false;
@@ -372,15 +353,15 @@ struct ImGuiTestEngineIO
     bool                        ConfigTakeFocusBackAfterTests = true;
     bool                        ConfigCaptureEnabled = true;
     bool                        ConfigCaptureOnError = false;
-    bool                        ConfigNoThrottle = false;       // Disable vsync for performance measurement or fast test running
-    float                       ConfigFixedDeltaTime = 0.0f;    // Use fixed delta time instead of calculating it from wall clock
+    bool                        ConfigNoThrottle = false;           // Disable vsync for performance measurement or fast test running
+    float                       ConfigFixedDeltaTime = 0.0f;        // Use fixed delta time instead of calculating it from wall clock
     float                       DpiScale = 1.0f;
-    float                       MouseSpeed = 1000.0f;           // Mouse speed (pixel/second) when not running in fast mode
-    float                       MouseWobble = 0.25f;            // How much wobble to apply to the mouse (pixels per pixel of move distance) when not running in fast mode
-    float                       ScrollSpeed = 1600.0f;          // Scroll speed (pixel/second) when not running in fast mode
-    float                       TypingSpeed = 30.0f;            // Char input speed (characters/second) when not running in fast mode
-    int                         PerfStressAmount = 1;           // Integer to scale the amount of items submitted in test
-    char                        GitBranchName[64] = "";         // e.g. fill in branch name
+    float                       MouseSpeed = 1000.0f;               // Mouse speed (pixel/second) when not running in fast mode
+    float                       MouseWobble = 0.25f;                // How much wobble to apply to the mouse (pixels per pixel of move distance) when not running in fast mode
+    float                       ScrollSpeed = 1600.0f;              // Scroll speed (pixel/second) when not running in fast mode
+    float                       TypingSpeed = 30.0f;                // Char input speed (characters/second) when not running in fast mode
+    int                         PerfStressAmount = 1;               // Integer to scale the amount of items submitted in test
+    char                        GitBranchName[64] = "";             // e.g. fill in branch name
 
     // Outputs: State
     bool                        RunningTests = false;
@@ -435,21 +416,18 @@ struct ImGuiTestItemList
 
 struct ImGuiTestLogLineInfo
 {
-    ImGuiTestVerboseLevel Level;
-    int                   LineOffset;
+    ImGuiTestVerboseLevel           Level;
+    int                             LineOffset;
 };
 
 struct ImGuiTestLog
 {
-    ImGuiTextBuffer                Buffer;
-    ImVector<ImGuiTestLogLineInfo> LineInfo;
-    ImVector<ImGuiTestLogLineInfo> LineInfoError;
-    bool                           CachedLinesPrintedToTTY;
+    ImGuiTextBuffer                 Buffer;
+    ImVector<ImGuiTestLogLineInfo>  LineInfo;
+    ImVector<ImGuiTestLogLineInfo>  LineInfoError;
+    bool                            CachedLinesPrintedToTTY = false;
 
-    ImGuiTestLog()
-    {
-        CachedLinesPrintedToTTY = false;
-    }
+    ImGuiTestLog() {}
 
     void Clear()
     {
@@ -501,47 +479,28 @@ typedef void    (*ImGuiTestUserDataDestructor)(void* ptr);
 // Storage for one test
 struct ImGuiTest
 {
-    ImGuiTestGroup                  Group;              // Coarse groups: 'Tests' or 'Perf'
-    bool                            NameOwned;          //
-    const char*                     Category;           // Literal, not owned
-    const char*                     Name;               // Literal, generally not owned unless NameOwned=true
-    const char*                     SourceFile;         // __FILE__
-    const char*                     SourceFileShort;    // Pointer within SourceFile, skips filename.
-    int                             SourceLine;         // __LINE__
-    int                             SourceLineEnd;      //
-    int                             ArgVariant;         // User parameter, for use by GuiFunc/TestFunc. Generally we use it to run variations of a same test.
-    size_t                          UserDataSize;       // When SetVarsDataType() is used, we create an instance of user structure so we can be used by GuiFunc/TestFunc.
-    ImGuiTestUserDataConstructor    UserDataConstructor;
-    ImGuiTestUserDataPostConstructor UserDataPostConstructor;
-    void*                           UserDataPostConstructorFn;
-    ImGuiTestUserDataDestructor     UserDataDestructor;
-    ImGuiTestStatus                 Status;
-    ImGuiTestFlags                  Flags;              // See ImGuiTestFlags_
-    ImGuiTestGuiFunc                GuiFunc;            // GUI functions can be reused
-    ImGuiTestTestFunc               TestFunc;           // Test function
-    int                             GuiFuncLastFrame;
+    ImGuiTestGroup                  Group = ImGuiTestGroup_Unknown; // Coarse groups: 'Tests' or 'Perf'
+    bool                            NameOwned = false;              //
+    const char*                     Category = NULL;                // Literal, not owned
+    const char*                     Name = NULL;                    // Literal, generally not owned unless NameOwned=true
+    const char*                     SourceFile = NULL;              // __FILE__
+    const char*                     SourceFileShort = NULL;         // Pointer within SourceFile, skips filename.
+    int                             SourceLine = 0;                 // __LINE__
+    int                             SourceLineEnd = 0;              //
+    int                             ArgVariant = 0;                 // User parameter. Generally we use it to run variations of a same test by sharing GuiFunc/TestFunc
+    size_t                          UserDataSize = 0;               // When SetVarsDataType() is used, we create an instance of user structure so we can be used by GuiFunc/TestFunc.
+    ImGuiTestUserDataConstructor    UserDataConstructor = NULL;
+    ImGuiTestUserDataPostConstructor UserDataPostConstructor = NULL;
+    void*                           UserDataPostConstructorFn = NULL;
+    ImGuiTestUserDataDestructor     UserDataDestructor = NULL;
+    ImGuiTestStatus                 Status = ImGuiTestStatus_Unknown;
+    ImGuiTestFlags                  Flags = ImGuiTestFlags_None;    // See ImGuiTestFlags_
+    ImGuiTestGuiFunc                GuiFunc = NULL;                 // GUI functions (optional if your test are running over an existing GUI application)
+    ImGuiTestTestFunc               TestFunc = NULL;                // Test function
+    int                             GuiFuncLastFrame = -1;
     ImGuiTestLog                    TestLog;
 
-    ImGuiTest()
-    {
-        Group = ImGuiTestGroup_Unknown;
-        NameOwned = false;
-        Category = NULL;
-        Name = NULL;
-        SourceFile = SourceFileShort = NULL;
-        SourceLine = SourceLineEnd = 0;
-        ArgVariant = 0;
-        UserDataSize = 0;
-        UserDataConstructor = NULL;
-        UserDataPostConstructor = NULL;
-        UserDataPostConstructorFn = NULL;
-        UserDataDestructor = NULL;
-        Status = ImGuiTestStatus_Unknown;
-        Flags = ImGuiTestFlags_None;
-        GuiFunc = NULL;
-        TestFunc = NULL;
-        GuiFuncLastFrame = -1;
-    }
+    ImGuiTest() {}
     ~ImGuiTest();
 
     void SetOwnedName(const char* name);

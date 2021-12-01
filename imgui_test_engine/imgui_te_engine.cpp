@@ -1497,7 +1497,7 @@ void ImGuiTestEngineHook_Log(ImGuiContext* ui_ctx, const char* fmt, ...)
     va_end(args);
 }
 
-void ImGuiTestEngineHook_AssertFunc(const char* expr, const char* file, const char* function, int line)
+void ImGuiTestEngine_Assert(const char* expr, const char* file, const char* function, int line)
 {
     ImGuiTestEngine* engine = GImGuiTestEngine;
     if (ImGuiTestContext* ctx = engine->TestContext)
@@ -1532,12 +1532,12 @@ const char* ImGuiTestEngine_FindItemDebugLabel(ImGuiContext* ui_ctx, ImGuiID id)
 //-------------------------------------------------------------------------
 // [SECTION] HOOKS FOR TESTS
 //-------------------------------------------------------------------------
-// - ImGuiTestEngineHook_Check()
-// - ImGuiTestEngineHook_Error()
+// - ImGuiTestEngine_Check()
+// - ImGuiTestEngine_Error()
 //-------------------------------------------------------------------------
 
 // Return true to request a debugger break
-bool ImGuiTestEngineHook_Check(const char* file, const char* func, int line, ImGuiTestCheckFlags flags, bool result, const char* expr)
+bool ImGuiTestEngine_Check(const char* file, const char* func, int line, ImGuiTestCheckFlags flags, bool result, const char* expr)
 {
     ImGuiTestEngine* engine = GImGuiTestEngine;
     (void)func;
@@ -1596,13 +1596,13 @@ bool ImGuiTestEngineHook_Check(const char* file, const char* func, int line, ImG
     return false;
 }
 
-bool ImGuiTestEngineHook_Error(const char* file, const char* func, int line, ImGuiTestCheckFlags flags, const char* fmt, ...)
+bool ImGuiTestEngine_Error(const char* file, const char* func, int line, ImGuiTestCheckFlags flags, const char* fmt, ...)
 {
     va_list args;
     va_start(args, fmt);
     Str256 buf;
     buf.setfv(fmt, args);
-    bool ret = ImGuiTestEngineHook_Check(file, func, line, flags, false, buf.c_str());
+    bool ret = ImGuiTestEngine_Check(file, func, line, flags, false, buf.c_str());
     va_end(args);
 
     ImGuiTestEngine* engine = GImGuiTestEngine;

@@ -1,5 +1,5 @@
 // dear imgui
-// (test engine, test context = end user automation API)
+// (test engine, context for a running test + end user automation API)
 
 #if defined(_MSC_VER) && !defined(_CRT_SECURE_NO_WARNINGS)
 #define _CRT_SECURE_NO_WARNINGS

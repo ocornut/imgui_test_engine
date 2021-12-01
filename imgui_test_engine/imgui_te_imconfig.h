@@ -12,8 +12,8 @@
 //#define IMGUI_TEST_ENGINE_DISABLE_CAPTURE
 
 // Test Engine Assert
-extern void ImGuiTestEngineHook_AssertFunc(const char* expr, const char* file, const char* func, int line);
-#define IMGUI_TEST_ENGINE_ASSERT(_EXPR)     ImGuiTestEngineHook_AssertFunc(#_EXPR, __FILE__, __func__, __LINE__)
+extern void ImGuiTestEngine_Assert(const char* expr, const char* file, const char* func, int line);
+#define IMGUI_TEST_ENGINE_ASSERT(_EXPR)     ImGuiTestEngine_Assert(#_EXPR, __FILE__, __func__, __LINE__)
 
 // Bind main assert macro
 // FIXME: Make it possible to combine a user-defined IM_ASSERT() macros with what we need for test engine.

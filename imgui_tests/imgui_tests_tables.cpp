@@ -3052,13 +3052,15 @@ void RegisterTests_Columns(ImGuiTestEngine* e)
 
     // ## Test column reordering and resetting to default order.
     t = IM_REGISTER_TEST(e, "columns", "columns_cov_legacy_columns");
+    struct ColumnsTestingVars { ImGuiOldColumnFlags Flags = 0; int Count = 0; };
+    t->SetVarsDataType<ColumnsTestingVars>();
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
-        ImGuiTestGenericVars& vars = ctx->GenericVars;
+        auto& vars = ctx->GetVars<ColumnsTestingVars>();
 
         ImGui::SetNextWindowSize(ImVec2(300.0f, 60.0f), ImGuiCond_Appearing);
         ImGui::Begin("Test window", NULL, ImGuiWindowFlags_NoSavedSettings);
-        ImGui::BeginColumns("Legacy Columns", 5, vars.ColumnsFlags);
+        ImGui::BeginColumns("Legacy Columns", 5, vars.Flags);
 
         // Flex column offset/width functions.
         vars.Count++;
@@ -3084,13 +3086,13 @@ void RegisterTests_Columns(ImGuiTestEngine* e)
     };
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
-        ImGuiTestGenericVars& vars = ctx->GenericVars;
+        auto& vars = ctx->GetVars<ColumnsTestingVars>();
 
         ctx->SetRef("Test window");
         ImGuiWindow* window = ctx->GetWindowByRef(ctx->RefID);
         ImGuiOldColumns* columns = ImGui::FindOrCreateColumns(window, ctx->GetID("Legacy Columns", ctx->GetIDByInt(0x11223347)));
 
-        vars.ColumnsFlags = ImGuiOldColumnFlags_None;
+        vars.Flags = ImGuiOldColumnFlags_None;
         vars.Count = -1;
         ctx->Yield(5);        // Run tests in GuiFunc.
         float w0 = columns->Columns[0].ClipRect.GetWidth();
@@ -3099,7 +3101,7 @@ void RegisterTests_Columns(ImGuiTestEngine* e)
         IM_CHECK_EQ(columns->Columns[0].ClipRect.GetWidth(), w0 + 10.0f);
         IM_CHECK_EQ(columns->Columns[1].ClipRect.GetWidth(), w1);
 
-        vars.ColumnsFlags = ImGuiOldColumnFlags_NoPreserveWidths;
+        vars.Flags = ImGuiOldColumnFlags_NoPreserveWidths;
         vars.Count = -1;
         ctx->Yield(5);        // Run tests in GuiFunc.
         w0 = columns->Columns[0].ClipRect.GetWidth();

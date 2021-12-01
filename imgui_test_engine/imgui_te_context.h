@@ -1,11 +1,11 @@
 // dear imgui
-// (test engine, test context = end user automation API)
+// (test engine, context for a running test + end user automation API)
+// This is the main or only interface that your Tests should be using.
 
 #pragma once
 
 #include "imgui.h"
 #include "imgui_te_engine.h"    // IM_CHECK*, various flags, enums
-#include <stdint.h>             // intptr_t
 
 // Undo some of the damage done by <windows.h>
 #ifdef Yield
@@ -41,6 +41,7 @@ struct ImGuiTestRef
 };
 
 // Helper to output a string showing the Path, ID or Debug Label based on what is available (some items only have ID as we couldn't find/store a Path)
+// (The size is arbitrary, this is only used for logging info the user/debugger)
 struct ImGuiTestRefDesc
 {
     char            Buf[80];
@@ -54,6 +55,7 @@ struct ImGuiTestRefDesc
 // This is the interface that most tests will interact with.
 //-------------------------------------------------------------------------
 
+// Named actions. Generally you will call the named helpers e.g. ItemClick(), this is used by shared/low-level functions.
 enum ImGuiTestAction
 {
     ImGuiTestAction_Unknown = 0,
@@ -69,6 +71,23 @@ enum ImGuiTestAction
     ImGuiTestAction_COUNT
 };
 
+// Generic flags for many ImGuiTestContext functions
+enum ImGuiTestOpFlags_
+{
+    ImGuiTestOpFlags_None               = 0,
+    ImGuiTestOpFlags_Verbose            = 1 << 0,
+    ImGuiTestOpFlags_NoCheckHoveredId   = 1 << 1,
+    ImGuiTestOpFlags_NoError            = 1 << 2,   // Don't abort/error e.g. if the item cannot be found
+    ImGuiTestOpFlags_NoFocusWindow      = 1 << 3,
+    ImGuiTestOpFlags_NoAutoUncollapse   = 1 << 4,   // Disable automatically uncollapsing windows (useful when specifically testing Collapsing behaviors)
+    ImGuiTestOpFlags_IsSecondAttempt    = 1 << 5,
+    ImGuiTestOpFlags_MoveToEdgeL        = 1 << 6,   // Dumb aiming helpers to test widget that care about clicking position. May need to replace will better functionalities.
+    ImGuiTestOpFlags_MoveToEdgeR        = 1 << 7,
+    ImGuiTestOpFlags_MoveToEdgeU        = 1 << 8,
+    ImGuiTestOpFlags_MoveToEdgeD        = 1 << 9
+};
+
+// Advanced filtering for ItemActionAll()
 struct ImGuiTestActionFilter
 {
     int                     MaxDepth;
@@ -112,7 +131,6 @@ struct ImGuiTestGenericVars
     ImGuiID                 DockId;
     ImGuiWindowFlags        WindowFlags;
     ImGuiTableFlags         TableFlags;
-    ImGuiOldColumnFlags     ColumnsFlags;
     ImGuiTestGenericItemStatus  Status;
     bool                    ShowWindows;
     bool                    UseClipper;
@@ -124,16 +142,11 @@ struct ImGuiTestGenericVars
     ImVec4                  Color1, Color2;
 
     // Generic storage
-    int                     Int1, Int2;
-    int                     IntArray[10];
-    float                   Float1, Float2;
-    float                   FloatArray[10];
-    bool                    Bool1, Bool2;
-    bool                    BoolArray[10];
-    ImGuiID                 Id;
-    ImGuiID                 IdArray[10];
-    char                    Str1[256];
-    char                    Str2[256];
+    int                     Int1, Int2, IntArray[10];
+    float                   Float1, Float2, FloatArray[10];
+    bool                    Bool1, Bool2, BoolArray[10];
+    ImGuiID                 Id, IdArray[10];
+    char                    Str1[256], Str2[256];
     ImVector<char>          StrLarge;
 
     ImGuiTestGenericVars()  { Clear(); }
@@ -317,7 +330,7 @@ struct ImGuiTestContext
 
     // Item/Widgets manipulation
     void        ItemAction(ImGuiTestAction action, ImGuiTestRef ref, void* action_arg = NULL, ImGuiTestOpFlags flags = 0);
-    void        ItemClick(ImGuiTestRef ref, ImGuiMouseButton button = 0, ImGuiTestOpFlags flags = 0) { ItemAction(ImGuiTestAction_Click, ref, (void*)(intptr_t)button, flags); }
+    void        ItemClick(ImGuiTestRef ref, ImGuiMouseButton button = 0, ImGuiTestOpFlags flags = 0) { ItemAction(ImGuiTestAction_Click, ref, (void*)(size_t)button, flags); }
     void        ItemDoubleClick(ImGuiTestRef ref, ImGuiTestOpFlags flags = 0)           { ItemAction(ImGuiTestAction_DoubleClick, ref, NULL, flags); }
     void        ItemCheck(ImGuiTestRef ref, ImGuiTestOpFlags flags = 0)                 { ItemAction(ImGuiTestAction_Check, ref, NULL, flags); }
     void        ItemUncheck(ImGuiTestRef ref, ImGuiTestOpFlags flags = 0)               { ItemAction(ImGuiTestAction_Uncheck, ref, NULL, flags); }
