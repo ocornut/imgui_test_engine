@@ -22,6 +22,22 @@
 #endif
 
 //-------------------------------------------------------------------------
+// Ideas/Specs for future tests
+// It is important we take the habit to write those down.
+// - Even if we don't implement the test right away: they allow us to remember edge cases and interesting things to test.
+// - Even if they will be hard to actually implement/automate, they still allow us to manually check things.
+//-------------------------------------------------------------------------
+// TODO: Tests: Nav: keep calling SetKeyboardFocusHere() see how MouseDisabledHover is not affected.
+// TODO: Tests: Nav: nav to button, verify that io.WantSetMousePos is set and MousePos changed
+// TODO: Tests: Nav: use Alt to toggle layer back and forth, verify that io.WantSetMousePos is set and MousePos changed
+// TODO: Tests: Nav: PageUp/PageDown/Home/End through flattened child (currently failing)
+// TODO: Tests: Nav: Ctrl+tab on window with only Menu layer should switch to menu layer when focusing new window.
+// TODO: Tests: Nav: focus on window with only Menu layer should switch layer (not currently the case)
+// TODO: Tests: Nav, Cov: Gamepad version of Ctrl+Tab (hold triangle + L/R) is never exercised.
+// TODO: Tests: Nav: add "widgets_drag_nav" (much simpler than "widgets_slider_nav"), just exercicing Left<>Right key, shift to make faster, alt to make slower
+//-------------------------------------------------------------------------
+
+//-------------------------------------------------------------------------
 // Tests: Navigation
 //-------------------------------------------------------------------------
 
@@ -1325,7 +1341,7 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
     };
 
     // ## Test PageUp/PageDown/Home/End/arrow keys
-    t = IM_REGISTER_TEST(e, "nav", "nav_page_home_end_arrows_scroll_only");
+    t = IM_REGISTER_TEST(e, "nav", "nav_scroll_when_no_items");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         ImGuiTestGenericVars& vars = ctx->GenericVars;

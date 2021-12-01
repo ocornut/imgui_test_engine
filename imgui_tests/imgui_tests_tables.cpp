@@ -26,6 +26,22 @@
 #endif
 
 //-------------------------------------------------------------------------
+// Ideas/Specs for future tests
+// It is important we take the habit to write those down.
+// - Even if we don't implement the test right away: they allow us to remember edge cases and interesting things to test.
+// - Even if they will be hard to actually implement/automate, they still allow us to manually check things.
+//-------------------------------------------------------------------------
+// TODO: Tests: Tables: shouldn't be able to hover resize line under frozen section (#3678)
+// TODO: Tests: Tables: Test that stuck resize is non-destructive
+// TODO: Tests: Tables: test the RefScale change path (change font, verify that fixed columns are scaled accordingly)
+// TODO: Tests: Tables: Test late 'table->ColumnsAutoFitWidth' update.
+// TODO: Tests: Tables: explicit outer-size + non-scrolling + double tables with SameLine()
+// TODO: Tests: Tables: outer_size.x == 0.0f (~NoHostExtendX) + sameline, NoHostExtendX tests auto-fit
+// TODO: Tests: Tables: test that clipped table doesn't emit any vertices/draw calls (amend "table_draw_calls")
+// TODO: Tests: Tables: test that clicking on a column and dragging up (to remove drag threshold) doesn't change its width, with all 4 borders combination
+//-------------------------------------------------------------------------
+
+//-------------------------------------------------------------------------
 // Tests: Tables
 //-------------------------------------------------------------------------
 

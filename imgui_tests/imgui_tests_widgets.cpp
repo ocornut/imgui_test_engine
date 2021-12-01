@@ -21,6 +21,19 @@
 #pragma GCC diagnostic ignored "-Wunused-parameter"
 #endif
 
+//-------------------------------------------------------------------------
+// Ideas/Specs for future tests
+// It is important we take the habit to write those down.
+// - Even if we don't implement the test right away: they allow us to remember edge cases and interesting things to test.
+// - Even if they will be hard to actually implement/automate, they still allow us to manually check things.
+//-------------------------------------------------------------------------
+// TODO: Tests: InputText: read-only + callback (#4762)
+// TODO: Tests: MenuItemEx() with icon (what to test?)
+// TODO: Tests: TabBar: test shrinking large number of tabs, that right-most tab edge touches exactly the edge of the tab bar.
+// TODO: Tests: test SetColorEditOptions(0) then restore value
+//-------------------------------------------------------------------------
+
+
 // Helpers
 static inline bool operator==(const ImVec2& lhs, const ImVec2& rhs)     { return lhs.x == rhs.x && lhs.y == rhs.y; }    // for IM_CHECK_EQ()
 static inline bool operator==(const ImVec4& lhs, const ImVec4& rhs)     { return lhs.x == rhs.x && lhs.y == rhs.y && lhs.z == rhs.z && lhs.w == rhs.w; }

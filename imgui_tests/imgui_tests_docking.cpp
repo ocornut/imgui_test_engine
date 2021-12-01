@@ -28,6 +28,18 @@
 #pragma GCC diagnostic ignored "-Wunused-parameter"
 #endif
 
+//-------------------------------------------------------------------------
+// Ideas/Specs for future tests
+// It is important we take the habit to write those down.
+// - Even if we don't implement the test right away: they allow us to remember edge cases and interesting things to test.
+// - Even if they will be hard to actually implement/automate, they still allow us to manually check things.
+//-------------------------------------------------------------------------
+// TODO: Tests: Docking: clicking on a tab sets NavWindow to the tab window
+// TODO: Tests: Docking: clicking on a node title bar (outside of tab) sets NavWindow to the selected tab window
+// TODO: Tests: Docking: test IsItemHovered() calls after Begin() of a docked window.
+// TODO: Tests: Docking: dragging collapse menu sets NavWindow to selected tab window + allow to move
+//-------------------------------------------------------------------------
+
 // Helpers
 #ifdef IMGUI_HAS_DOCK
 

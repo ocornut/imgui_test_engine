@@ -33,6 +33,18 @@
 static inline bool operator==(const ImVec2& lhs, const ImVec2& rhs)     { return lhs.x == rhs.x && lhs.y == rhs.y; }    // for IM_CHECK_EQ()
 
 //-------------------------------------------------------------------------
+// Ideas/Specs for future tests
+// It is important we take the habit to write those down.
+// - Even if we don't implement the test right away: they allow us to remember edge cases and interesting things to test.
+// - Even if they will be hard to actually implement/automate, they still allow us to manually check things.
+//-------------------------------------------------------------------------
+// TODO: Tests: Drag and drop: source and target from a window with SkipItems
+// TODO: Tests: How to verify allocation count and no alloc on a typical yield frame.
+// TODO: Tests: Test constraint on one axis while allowing resize on the other axis (maybe amend "window_size_constraints")
+// TODO: Tests: Add a test for ImGuiPopupFlags_NoOpenOverExistingPopup (there's not even a Demo yet)
+//-------------------------------------------------------------------------
+
+//-------------------------------------------------------------------------
 // Tests: Window
 //-------------------------------------------------------------------------
 
