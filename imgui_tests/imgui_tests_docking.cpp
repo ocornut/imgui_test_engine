@@ -1772,6 +1772,103 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
             IM_CHECK_EQ(vars.AppearingAAA, 2);
         }
     };
+
+    // ## Test reappearing windows and how they affect layout of the other windows across frames
+    // Among other things, this test how DockContextBindNodeToWindow() calls DockNodeTreeUpdatePosSize() to evaluate upcoming node pos/size mid-frame (improved 2021-12-02)
+    t = IM_REGISTER_TEST(e, "docking", "docking_window_appearing_layout");
+    struct DockingWindowAppearingVars2 { bool ShowAAA = false; bool ShowBBB = false; bool Log = false; bool SwapShowOrder = false; ImVec2 PosA, PosB, SizeA, SizeB; };
+    t->SetVarsDataType<DockingWindowAppearingVars2>();
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        DockingWindowAppearingVars2& vars = ctx->GetVars<DockingWindowAppearingVars2>();
+
+        for (int n = 0; n < 2; n++)
+        {
+            if (vars.ShowAAA && ((vars.SwapShowOrder == false && n == 0) || (vars.SwapShowOrder == true && n == 1)))
+            {
+                ImGui::Begin("AAA");
+                ImGui::TextUnformatted("AAA");
+                vars.PosA = ImGui::GetWindowPos();
+                vars.SizeA = ImGui::GetWindowSize();
+                ImGui::Text("Pos (%.1f,%.1f) Size (%.1f,%.1f)", vars.PosA.x, vars.PosA.y, vars.SizeA.x, vars.SizeA.y);
+                if (vars.Log)
+                    ctx->LogInfo("AAA Size (%.1f,%.1f)", vars.SizeA.x, vars.SizeA.y);
+                ImGui::End();
+            }
+            if (vars.ShowBBB && ((vars.SwapShowOrder == true && n == 0) || (vars.SwapShowOrder == false && n == 1)))
+            {
+                ImGui::Begin("BBB");
+                ImGui::TextUnformatted("BBB");
+                vars.PosB = ImGui::GetWindowPos();
+                vars.SizeB = ImGui::GetWindowSize();
+                ImGui::Text("Pos (%.1f,%.1f) Size (%.1f,%.1f)", vars.PosB.x, vars.PosB.y, vars.SizeB.x, vars.SizeB.y);
+                if (vars.Log)
+                    ctx->LogInfo("BBB Size (%.1f,%.1f)", vars.SizeB.x, vars.SizeB.y);
+                ImGui::End();
+            }
+        }
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        DockingWindowAppearingVars2& vars = ctx->GetVars<DockingWindowAppearingVars2>();
+        vars.ShowAAA = vars.ShowBBB = true;
+        ctx->DockClear("AAA", "BBB", NULL);
+        ctx->WindowResize("AAA", ImVec2(400, 800));
+        ctx->WindowResize("BBB", ImVec2(400, 800));
+        ctx->DockInto("BBB", "AAA", ImGuiDir_Down);
+
+        ImGuiWindow* window_AAA = ctx->GetWindowByRef("AAA");
+        ImGuiWindow* window_BBB = ctx->GetWindowByRef("BBB");
+
+        vars.Log = true;
+
+        for (int variant = 0; variant < 2; variant++) // Test both submission orders
+        {
+            vars.SwapShowOrder = (variant == 1);
+            ctx->LogDebug("Variant %d", variant);
+            IM_CHECK(vars.SizeA.x == 400 && vars.SizeA.y <= 400);
+            IM_CHECK(vars.SizeB.x == 400 && vars.SizeB.y <= 400);
+
+            // Hiding AAA (top)
+            ctx->LogDebug("Hide AAA");
+            vars.ShowAAA = false;
+            ctx->Yield();
+            IM_CHECK_NO_RET(vars.SizeB.y <= 400);
+            ctx->Yield();
+            IM_CHECK_NO_RET(vars.SizeB.y == 800);
+
+            // Showing AAA (top)
+            ctx->LogDebug("Show AAA");
+            vars.ShowAAA = true;
+            window_AAA->Size = window_AAA->SizeFull = vars.SizeA = ImGui::DockBuilderGetNode(window_AAA->DockId)->Size = ImVec2(666.0f, 666.0f); // Zealously clear trace of old size to further test that it will be recalculated
+            ctx->Yield();
+            IM_CHECK_NO_RET(vars.SizeA.y <= 400);
+            IM_CHECK_NO_RET(vars.SizeB.y == 800); // Behavior changed/fixed on 2021/12/02
+            ctx->Yield();
+            IM_CHECK_NO_RET(vars.SizeA.y <= 400);
+            IM_CHECK_NO_RET(vars.SizeB.y <= 400);
+
+            // Hiding BBB (bottom)
+            ctx->LogDebug("Hide BBB");
+            vars.ShowBBB = false;
+            ctx->Yield();
+            IM_CHECK_NO_RET(vars.SizeA.y <= 400);
+            ctx->Yield();
+            IM_CHECK_NO_RET(vars.SizeA.y == 800);
+
+            // Showing BBB (bottom)
+            ctx->LogDebug("Show BBB");
+            vars.ShowBBB = true;
+            window_BBB->Size = window_BBB->SizeFull = vars.SizeB = ImGui::DockBuilderGetNode(window_BBB->DockId)->Size = ImVec2(666.0f, 666.0f); // Zealously clear trace of old size to further test that it will be recalculated
+            ctx->Yield();
+            IM_CHECK_NO_RET(vars.SizeA.y == 800); // Behavior changed/fixed on 2021/12/02
+            IM_CHECK_NO_RET(vars.SizeB.y <= 400);
+            ctx->Yield();
+            IM_CHECK_NO_RET(vars.SizeA.y <= 400);
+            IM_CHECK_NO_RET(vars.SizeB.y <= 400);
+        }
+    };
+
 #else
     IM_UNUSED(e);
 #endif
