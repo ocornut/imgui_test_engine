@@ -108,7 +108,7 @@ struct TestApp
     bool                    OptViewports = false;
     bool                    OptMockViewports = false;
     int                     OptStressAmount = 5;
-    char*                   OptFileOpener = NULL;
+    Str128                  OptFileOpener;
     ImVector<char*>         TestsToRun;
 };
 
@@ -226,8 +226,8 @@ static bool ParseCommandLineOptions(int argc, char** argv)
             }
             else if (strcmp(argv[n], "-fileopener") == 0 && n + 1 < argc)
             {
-                g_App.OptFileOpener = strdup(argv[n + 1]);
-                ImPathFixSeparatorsForCurrentOS(g_App.OptFileOpener);
+                g_App.OptFileOpener = argv[n + 1];
+                ImPathFixSeparatorsForCurrentOS(g_App.OptFileOpener.c_str());
                 n++;
             }
             else
@@ -263,14 +263,13 @@ static bool ParseCommandLineOptions(int argc, char** argv)
 // Source file opener
 static void SrcFileOpenerFunc(const char* filename, int line, void*)
 {
-    if (!g_App.OptFileOpener)
+    if (g_App.OptFileOpener.empty())
     {
         fprintf(stderr, "Executable needs to be called with a -fileopener argument!\n");
         return;
     }
 
-    ImGuiTextBuffer cmd_line;
-    cmd_line.appendf("%s %s %d", g_App.OptFileOpener, filename, line);
+    Str256f cmd_line("%s %s %d", g_App.OptFileOpener.c_str(), filename, line);
     printf("Calling: '%s'\n", cmd_line.c_str());
     bool ret = ImOsCreateProcess(cmd_line.c_str());
     if (!ret)
@@ -544,9 +543,6 @@ int main(int argc, char** argv)
     ImGui::DestroyContext();
     ImGuiTestEngine_ShutdownContext(g_App.TestEngine);
     app_window->Destroy(app_window);
-
-    if (g_App.OptFileOpener)
-        free(g_App.OptFileOpener);
 
     if (g_App.OptPauseOnExit && !g_App.OptGui)
     {

@@ -669,11 +669,11 @@ static bool ImGuiApp_ImplSdlGL2_CreateWindow(ImGuiApp* app_opaque, const char* w
 
 static void ImGuiApp_ImplSdlGL2_InitBackends(ImGuiApp* app_opaque)
 {
-    ImGuiIO& io = ImGui::GetIO();
     ImGuiApp_ImplSdlGLX* app = (ImGuiApp_ImplSdlGLX*)app_opaque;
     ImGui_ImplSDL2_InitForOpenGL(app->window, app->gl_context);
     ImGui_ImplOpenGL2_Init();
 #ifdef IMGUI_HAS_VIEWPORT
+    ImGuiIO& io = ImGui::GetIO();
     if (app->MockViewports && (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable))
         ImGuiApp_InstalMockViewportsBackend(app);
 #endif
@@ -805,11 +805,11 @@ static bool ImGuiApp_ImplSdlGL3_CreateWindow(ImGuiApp* app_opaque, const char* w
 
 static void ImGuiApp_ImplSdlGL3_InitBackends(ImGuiApp* app_opaque)
 {
-    ImGuiIO& io = ImGui::GetIO();
     ImGuiApp_ImplSdlGLX* app = (ImGuiApp_ImplSdlGLX*)app_opaque;
     ImGui_ImplSDL2_InitForOpenGL(app->window, app->gl_context);
     ImGui_ImplOpenGL3_Init(app->glsl_version);
 #ifdef IMGUI_HAS_VIEWPORT
+    ImGuiIO& io = ImGui::GetIO();
     if (app->MockViewports && (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable))
         ImGuiApp_InstalMockViewportsBackend(app);
 #endif
@@ -1012,11 +1012,11 @@ static bool ImGuiApp_ImplGlfw_CreateWindow(ImGuiApp* app_opaque, const char* win
 
 static void ImGuiApp_ImplGlfw_InitBackends(ImGuiApp* app_opaque)
 {
-    ImGuiIO& io = ImGui::GetIO();
     ImGuiApp_ImplGlfwGL3* app = (ImGuiApp_ImplGlfwGL3*)app_opaque;
     ImGui_ImplGlfw_InitForOpenGL(app->window, true);
     ImGui_ImplOpenGL3_Init(app->glsl_version);
 #ifdef IMGUI_HAS_VIEWPORT
+    ImGuiIO& io = ImGui::GetIO();
     if (app->MockViewports && (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable))
         ImGuiApp_InstalMockViewportsBackend(app);
 #endif
