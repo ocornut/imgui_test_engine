@@ -806,10 +806,7 @@ ImGuiTestItemInfo* ImGuiTestContext::ItemInfo(ImGuiTestRef ref, ImGuiTestOpFlags
     else
     {
         // Normal matching
-        if (ref.ID)
-            full_id = ref.ID;
-        else
-            full_id = ImHashDecoratedPath(ref.Path, NULL, RefID);
+        full_id = GetID(ref);
     }
 
     // If ui_ctx->TestEngineHooksEnabled is not already on (first ItemItem task in a while) we'll probably need an extra frame to warmup

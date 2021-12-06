@@ -2125,7 +2125,9 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
         if (ctx->IsGuiFuncOnly())
         {
             ImGui::Begin("Config", NULL, ImGuiWindowFlags_NoSavedSettings);
+            ImGui::SliderInt("ItemsIn", &vars.ItemsIn, 0, 200);
             ImGui::Checkbox("TableEnable", &vars.TableEnable);
+            ImGui::SliderInt("TableFreezeRows", &vars.TableFreezeRows, 0, 3);
             ImGui::Checkbox("ClipperManualItemHeight", &vars.ClipperManualItemHeight);
             ImGui::End();
         }
