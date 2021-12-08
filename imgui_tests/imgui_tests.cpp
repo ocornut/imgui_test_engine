@@ -607,14 +607,17 @@ void RegisterTests_Window(ImGuiTestEngine* e)
 #if IMGUI_VERSION_NUM >= 18517
     // ## Test popups not being interrupted by various appearing elements. (#4317)
     t = IM_REGISTER_TEST(e, "window", "window_popup_interruptions");
-    struct WindowPopupWithWindowsVars { bool IsModalPopup[2] = { 0, 0 }; bool OpenPopup[2] = { 0, 0 }; int Variant = 0; };
+    struct WindowPopupWithWindowsVars { bool IsModalPopup[2] = { 0, 0 }; bool OpenPopup[2] = { 0, 0 }; int Variant = 0; bool ShowInterrupts = false; };
     t->SetVarsDataType<WindowPopupWithWindowsVars>();
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         ImGuiContext& g = *ctx->UiContext;
         WindowPopupWithWindowsVars& vars = ctx->GetVars<WindowPopupWithWindowsVars>();
 
-        if (g.IO.KeyShift)
+        if (ctx->IsGuiFuncOnly())
+            vars.ShowInterrupts = g.IO.KeyCtrl;
+
+        if (vars.ShowInterrupts)
             switch (vars.Variant)
             {
             case 1:
@@ -656,7 +659,7 @@ void RegisterTests_Window(ImGuiTestEngine* e)
             ImGui::Checkbox("Popup1 is modal", &vars.IsModalPopup[0]);
             ImGui::Checkbox("Popup2 is modal", &vars.IsModalPopup[1]);
             ImGui::Combo("Interrupt Kind", &vars.Variant, interrupt_kind, IM_ARRAYSIZE(interrupt_kind));
-            ImGui::Text("(Hold SHIFT to display interrupting window)");
+            ImGui::Text("(Hold CTRL to display interrupting window)");
         }
 
         float spacing = ImFloor(ImGui::GetFontSize() * 2.0f);
@@ -692,7 +695,7 @@ void RegisterTests_Window(ImGuiTestEngine* e)
                 ImGui::End();
 
                 // Remain open when one or more windows are created from within a popup. Windows also are movable.
-                if (g.IO.KeyShift)
+                if (vars.ShowInterrupts)
                 {
                     pos += ImVec2(spacing, spacing);
                     ImGui::SetNextWindowPos(pos, ImGuiCond_Appearing);
@@ -718,11 +721,20 @@ void RegisterTests_Window(ImGuiTestEngine* e)
             ImGui::SetNextWindowPos(pos, ImGuiCond_Appearing);
 
             if (vars.IsModalPopup[1])
-                is_open = ImGui::BeginPopupModal("Popup2", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
+                is_open = ImGui::BeginPopupModal("Popup2", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_MenuBar);
             else
-                is_open = ImGui::BeginPopup("Popup2", ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
+                is_open = ImGui::BeginPopup("Popup2", ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_MenuBar);
             if (is_open)
             {
+                if (ImGui::BeginMenuBar())
+                {
+                    if (ImGui::BeginMenu("File"))
+                    {
+                        ImGui::MenuItem("...");
+                        ImGui::EndMenu();
+                    }
+                    ImGui::EndMenuBar();
+                }
                 ImGui::Text("This is Popup2%s", vars.IsModalPopup[1] ? " (modal)" : "");
                 if (ImGui::Button("Close Popup2") || ImGui::IsKeyPressedMap(ImGuiKey_Escape))
                     ImGui::CloseCurrentPopup();
@@ -755,6 +767,7 @@ void RegisterTests_Window(ImGuiTestEngine* e)
         };
 
         auto OpenPopup = [ctx, &vars](int n) { IM_ASSERT(n < IM_ARRAYSIZE(vars.OpenPopup)); vars.OpenPopup[n] = true; ctx->Yield(2); };
+        auto SetShowInterrupts = [ctx, &vars](bool visible) { vars.ShowInterrupts = visible; ctx->Yield(2); };
 
         for (int popup_kind = 0; popup_kind < 4; popup_kind++)
         {
@@ -773,7 +786,7 @@ void RegisterTests_Window(ImGuiTestEngine* e)
             ImGuiWindow* window0 = ctx->GetWindowByRef("Window0");
             IM_CHECK_EQ(g.NavWindow, window0);
             IM_CHECK_EQ(popup1->Active, true);
-            ctx->KeyDownMap(ImGuiKey_COUNT, ImGuiKeyModFlags_Shift);            // "Window1" and "Window2" appear
+            SetShowInterrupts(true);                                            // "Window1" and "Window2" appear
             IM_CHECK_LT(FindWindowDisplayIndex(popup1->Name), FindWindowDisplayIndex("Window0"));
             IM_CHECK_LT(FindWindowDisplayIndex("Window0"), FindWindowDisplayIndex("Window1"));
             IM_CHECK_LT(FindWindowDisplayIndex("Window1"), FindWindowDisplayIndex("Window2"));
@@ -784,7 +797,7 @@ void RegisterTests_Window(ImGuiTestEngine* e)
             IM_CHECK_EQ(ctx->GetWindowByRef("Window1")->Pos, window_move_dest); // Window can move
             IM_CHECK_EQ(ctx->GetWindowByRef("Window2")->Pos, window_move_dest); // Window can move
             IM_CHECK_EQ(popup1->Active, true);                                  // Popup/modal remains active
-            ctx->KeyUpMap(ImGuiKey_COUNT, ImGuiKeyModFlags_Shift);
+            SetShowInterrupts(false);
             ctx->PopupCloseAll();
 
             // .
@@ -801,7 +814,8 @@ void RegisterTests_Window(ImGuiTestEngine* e)
             ImGuiWindow* popup2 = g.NavWindow;
             IM_CHECK_EQ(g.NavWindow, popup2);
             IM_CHECK_EQ(popup2->Active, true);
-            ctx->KeyDownMap(ImGuiKey_COUNT, ImGuiKeyModFlags_Shift);        // "Window1" and "Window2" appear
+            ctx->ItemClick(Str30f("/%s/##menubar/File", popup2->Name).c_str());// FIXME: MenuClick() does not work well with menus inside of a popup.
+            SetShowInterrupts(true);                                        // "Window1" and "Window2" appear
             IM_CHECK_LT(FindWindowDisplayIndex(popup1->Name), FindWindowDisplayIndex("Window0"));
             IM_CHECK_LT(FindWindowDisplayIndex("Window0"), FindWindowDisplayIndex("Window1"));
             IM_CHECK_LT(FindWindowDisplayIndex("Window1"), FindWindowDisplayIndex("Window2"));
@@ -824,7 +838,7 @@ void RegisterTests_Window(ImGuiTestEngine* e)
                 IM_CHECK_EQ(popup2->Active, false);                         // Popup is closed
             }
             IM_CHECK_EQ(popup1->Active, true);                              // Popup/modal remains active
-            ctx->KeyUpMap(ImGuiKey_COUNT, ImGuiKeyModFlags_Shift);
+            SetShowInterrupts(false);
             ctx->PopupCloseAll();
 
             // .
@@ -838,7 +852,7 @@ void RegisterTests_Window(ImGuiTestEngine* e)
                 OpenPopup(0);
                 IM_CHECK_EQ(g.NavWindow, popup1);
                 IM_CHECK_EQ(popup1->Active, true);
-                ctx->KeyDownMap(ImGuiKey_COUNT, ImGuiKeyModFlags_Shift);    // Window appears
+                SetShowInterrupts(true);                                    // Window appears
                 if (vars.IsModalPopup[0])
                 {
                     IM_CHECK_EQ(g.NavWindow, popup1);                       // Modal state remains unchanged
@@ -852,7 +866,7 @@ void RegisterTests_Window(ImGuiTestEngine* e)
                         IM_CHECK_STR_EQ(g.NavWindow->Name, "FocusOnAppearing");
                     IM_CHECK_EQ(popup1->Active, false);
                 }
-                ctx->KeyUpMap(ImGuiKey_COUNT, ImGuiKeyModFlags_Shift);
+                SetShowInterrupts(false);
                 ctx->PopupCloseAll();
             }
 
@@ -867,10 +881,10 @@ void RegisterTests_Window(ImGuiTestEngine* e)
                 OpenPopup(0);
                 IM_CHECK_EQ(g.NavWindow, popup1);
                 IM_CHECK_EQ(popup1->Active, true);
-                ctx->KeyDownMap(ImGuiKey_COUNT, ImGuiKeyModFlags_Shift);    // _NoFocusOnAppearing window appears
+                SetShowInterrupts(true);                                    // _NoFocusOnAppearing window appears
                 IM_CHECK_EQ(g.NavWindow, popup1);                           // Popup/modal state remains unchanged
                 IM_CHECK_EQ(popup1->Active, true);
-                ctx->KeyUpMap(ImGuiKey_COUNT, ImGuiKeyModFlags_Shift);
+                SetShowInterrupts(false);
                 ctx->PopupCloseAll();
             }
         }
