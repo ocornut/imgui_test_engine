@@ -689,7 +689,7 @@ void RegisterTests_Window(ImGuiTestEngine* e)
                 // Newly appearing windows should appear above this window.
                 pos += ImVec2(spacing, spacing);
                 ImGui::SetNextWindowPos(pos, ImGuiCond_Appearing);
-
+                ImGui::SetNextWindowSize(ImVec2(100, 200), ImGuiCond_Appearing);
                 ImGui::Begin("Window0");
                 ImGui::TextUnformatted("Another window.");
                 ImGui::End();
@@ -699,16 +699,15 @@ void RegisterTests_Window(ImGuiTestEngine* e)
                 {
                     pos += ImVec2(spacing, spacing);
                     ImGui::SetNextWindowPos(pos, ImGuiCond_Appearing);
-                    //ImGui::SetNextWindowPos(ImGui::GetMainViewport()->Pos + ImVec2(100, 100), ImGuiCond_Appearing);
-                    ImGui::Begin("Window1", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
+                    ImGui::SetNextWindowSize(ImVec2(100, 200), ImGuiCond_Appearing);
+                    ImGui::Begin("Window1", NULL, ImGuiWindowFlags_NoSavedSettings);
                     ImGui::BeginChild("C", ImVec2(100, 10));
 
                     // A window nested inside of a child window.
                     pos += ImVec2(spacing, spacing);
                     ImGui::SetNextWindowPos(pos, ImGuiCond_Appearing);
-                    //ImGui::SetNextWindowPos(ImGui::GetMainViewport()->Pos + ImVec2(200, 200), ImGuiCond_Appearing);
-                    ImGui::Begin("Window2", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
-                    ImGui::SetCursorPosX(100);  // Make full title visible.
+                    ImGui::SetNextWindowSize(ImVec2(100, 200), ImGuiCond_Appearing);
+                    ImGui::Begin("Window2", NULL, ImGuiWindowFlags_NoSavedSettings);
                     ImGui::End();
 
                     ImGui::EndChild();
@@ -738,6 +737,13 @@ void RegisterTests_Window(ImGuiTestEngine* e)
                 ImGui::Text("This is Popup2%s", vars.IsModalPopup[1] ? " (modal)" : "");
                 if (ImGui::Button("Close Popup2") || ImGui::IsKeyPressedMap(ImGuiKey_Escape))
                     ImGui::CloseCurrentPopup();
+
+                pos += ImVec2(spacing, spacing);
+                ImGui::SetNextWindowPos(pos, ImGuiCond_Appearing);
+                ImGui::SetNextWindowSize(ImVec2(100, 200), ImGuiCond_Appearing);
+                ImGui::Begin("Window3", NULL, ImGuiWindowFlags_NoSavedSettings);
+                ImGui::End();
+
                 ImGui::EndPopup();
             }
 
@@ -797,6 +803,20 @@ void RegisterTests_Window(ImGuiTestEngine* e)
             IM_CHECK_EQ(ctx->GetWindowByRef("Window1")->Pos, window_move_dest); // Window can move
             IM_CHECK_EQ(ctx->GetWindowByRef("Window2")->Pos, window_move_dest); // Window can move
             IM_CHECK_EQ(popup1->Active, true);                                  // Popup/modal remains active
+#ifdef IMGUI_HAS_DOCK
+            ImGuiWindow* window1 = ctx->GetWindowByRef("Window1");
+            ImGuiWindow* window2 = ctx->GetWindowByRef("Window2");
+            ctx->DockInto("Window0", "Interrupts", -1, false, ImGuiTestOpFlags_NoFocusWindow);
+            IM_CHECK_EQ(window0->DockId, (ImGuiID)0);                           // Failure to dock into window that does not belong to begin stack of current popup
+            ctx->DockInto("Window0", "Hello, world!", -1, false, ImGuiTestOpFlags_NoFocusWindow);
+            IM_CHECK_EQ(window0->DockId, (ImGuiID)0);
+            ctx->DockInto("Window0", "Window2", -1, false, ImGuiTestOpFlags_NoFocusWindow);
+            IM_CHECK_NE(window0->DockId, (ImGuiID)0);                           // Can dock into windows that belong to begin stack of current popup
+            IM_CHECK_NE(window2->DockId, (ImGuiID)0);
+            ctx->DockInto("Window1", "Window2", -1, false, ImGuiTestOpFlags_NoFocusWindow);
+            IM_CHECK_NE(window1->DockId, (ImGuiID)0);                           // Can dock into dock node, because all windows in that node belong to begin stack of payload window
+            ctx->DockClear("Interrupts", "Window0", "Window1", "Window2", NULL);
+#endif
             SetShowInterrupts(false);
             ctx->PopupCloseAll();
 
@@ -807,22 +827,40 @@ void RegisterTests_Window(ImGuiTestEngine* e)
             //     │   └── C                                                // Child window
             //     │       └── Window2                                      // Appears
             //     └── Popup2                                               // Blocks interactions with appearing windows when its a modal, or closes when its a popup
+            //         └── Window3                                          // Can not dock into any other window
             OpenPopup(0);
             IM_CHECK_EQ(g.NavWindow, window0);
             IM_CHECK_EQ(popup1->Active, true);
             OpenPopup(1);
-            ImGuiWindow* popup2 = g.NavWindow;
-            IM_CHECK_EQ(g.NavWindow, popup2);
+            ImGuiWindow* window3 = ctx->GetWindowByRef("Window3");
+            ImGuiWindow* popup2 = ctx->GetWindowByRef(vars.IsModalPopup[1] ? "Popup2" : Str30f("##Popup_%08x", ctx->GetID("Popup2", popup1->ID)).c_str());
+            IM_CHECK_EQ(g.NavWindow, window3);
             IM_CHECK_EQ(popup2->Active, true);
             ctx->ItemClick(Str30f("/%s/##menubar/File", popup2->Name).c_str());// FIXME: MenuClick() does not work well with menus inside of a popup.
+#ifdef IMGUI_HAS_DOCK
+            ctx->DockInto("Window3", "Interrupts", -1, false, ImGuiTestOpFlags_NoFocusWindow);
+            IM_CHECK_EQ(window3->DockId, (ImGuiID)0);                       // Can not dock into windows that belong to same begin stack, but are below parent popup
+            ctx->DockInto("Window3", "Hello, world!", -1, false, ImGuiTestOpFlags_NoFocusWindow);
+            IM_CHECK_EQ(window3->DockId, (ImGuiID)0);                       // Can not dock into windows whose begin stack does not intersect with begin stack of payload window
+            window0->Pos = popup2->Rect().GetTR() + ImVec2(20, 0);          // Ensure DockInto() does not try to hide (and kill) a popup
+            ctx->DockInto("Window3", "Window0", -1, false, ImGuiTestOpFlags_NoFocusWindow);
+            IM_CHECK_EQ(window3->DockId, (ImGuiID)0);                       // Can not dock into windows that belong to same begin stack, but are below parent popup
+            ctx->DockClear("Interrupts", "Window0", "Window3", NULL);
+#endif
             SetShowInterrupts(true);                                        // "Window1" and "Window2" appear
             IM_CHECK_LT(FindWindowDisplayIndex(popup1->Name), FindWindowDisplayIndex("Window0"));
             IM_CHECK_LT(FindWindowDisplayIndex("Window0"), FindWindowDisplayIndex("Window1"));
             IM_CHECK_LT(FindWindowDisplayIndex("Window1"), FindWindowDisplayIndex("Window2"));
             if (vars.IsModalPopup[1])
+            {
                 IM_CHECK_LT(FindWindowDisplayIndex("Window2"), FindWindowDisplayIndex(popup2->Name)); // Appearing windows go below a modal
+                IM_CHECK_EQ(window3->Active, true);                                                   // Popup's window remains active as long as popup is active
+            }
             else
+            {
                 IM_CHECK_GT(FindWindowDisplayIndex("Window2"), FindWindowDisplayIndex(popup2->Name)); // but above a popup (which gets deactivated)
+                IM_CHECK_EQ(window3->Active, false);                                                  // Popup's window gets deactivated together with a popup
+            }
             ctx->WindowMove("Window1", window_move_dest, ImVec2(0.0f, 0.0f), ImGuiTestOpFlags_NoFocusWindow);
             ctx->WindowMove("Window2", window_move_dest, ImVec2(0.0f, 0.0f), ImGuiTestOpFlags_NoFocusWindow);
             if (vars.IsModalPopup[1])                                       // Window interactions blocked by modal
@@ -838,6 +876,13 @@ void RegisterTests_Window(ImGuiTestEngine* e)
                 IM_CHECK_EQ(popup2->Active, false);                         // Popup is closed
             }
             IM_CHECK_EQ(popup1->Active, true);                              // Popup/modal remains active
+#ifdef IMGUI_HAS_DOCK
+            OpenPopup(1);
+            window1->Pos = popup2->Rect().GetTR() + ImVec2(20, 0);          // Ensure DockInto() does not try to hide (and kill) a popup
+            ctx->DockInto("Window3", "Window1", -1, false, ImGuiTestOpFlags_NoFocusWindow);
+            IM_CHECK_EQ(window3->DockId, (ImGuiID)0);                       // Window1 is blocked by Popup2
+            ctx->DockClear("Window1", "Window3", NULL);
+#endif
             SetShowInterrupts(false);
             ctx->PopupCloseAll();
 
