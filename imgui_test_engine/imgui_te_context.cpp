@@ -2856,7 +2856,9 @@ void    ImGuiTestContext::PopupCloseAll()
 
 #ifdef IMGUI_HAS_DOCK
 // Note: unlike DockBuilder functions, for _nodes_ this require the node to be visible.
-void    ImGuiTestContext::DockInto(ImGuiTestRef src_id, ImGuiTestRef dst_id, ImGuiDir split_dir, bool split_outer)
+// Supported values for ImGuiTestOpFlags:
+// - ImGuiTestOpFlags_NoFocusWindow
+void    ImGuiTestContext::DockInto(ImGuiTestRef src_id, ImGuiTestRef dst_id, ImGuiDir split_dir, bool split_outer, ImGuiTestOpFlags flags)
 {
     ImGuiContext& g = *UiContext;
     if (IsError())
@@ -2887,10 +2889,13 @@ void    ImGuiTestContext::DockInto(ImGuiTestRef src_id, ImGuiTestRef dst_id, ImG
     IM_CHECK_SILENT(window_dst->WasActive);
 
     // Avoid focusing if we don't need it (this facilitate avoiding focus flashing when recording animated gifs)
-    if (g.Windows[g.Windows.Size - 2] != window_dst)
-        WindowFocus(window_dst->ID);
-    if (g.Windows[g.Windows.Size - 1] != window_src)
-        WindowFocus(window_src->ID);
+    if (!(flags & ImGuiTestOpFlags_NoFocusWindow))
+    {
+        if (g.Windows[g.Windows.Size - 2] != window_dst)
+            WindowFocus(window_dst->ID);
+        if (g.Windows[g.Windows.Size - 1] != window_src)
+            WindowFocus(window_src->ID);
+    }
 
     // Aim at title bar or tab or node grab
     ImGuiTestRef ref_src;

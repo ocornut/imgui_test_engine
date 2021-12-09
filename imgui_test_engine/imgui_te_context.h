@@ -384,7 +384,7 @@ struct ImGuiTestContext
     // Docking
 #ifdef IMGUI_HAS_DOCK
     void        DockClear(const char* window_name, ...);
-    void        DockInto(ImGuiTestRef src_id, ImGuiTestRef dst_id, ImGuiDir split_dir = ImGuiDir_None, bool is_outer_docking = false);
+    void        DockInto(ImGuiTestRef src_id, ImGuiTestRef dst_id, ImGuiDir split_dir = ImGuiDir_None, bool is_outer_docking = false, ImGuiTestOpFlags flags = 0);
     void        UndockNode(ImGuiID dock_id);
     void        UndockWindow(const char* window_name);
 
