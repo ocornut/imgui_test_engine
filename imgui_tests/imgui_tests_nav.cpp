@@ -289,7 +289,15 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
         {
             if (ImGui::BeginMenu("Menu"))
             {
-                if (ImGui::BeginMenu("Submenu"))
+                if (ImGui::BeginMenu("Submenu1"))
+                {
+                    ImGui::MenuItem("A");
+                    ImGui::MenuItem("B");
+                    ImGui::MenuItem("C");
+                    ImGui::MenuItem("D");
+                    ImGui::EndMenu();
+                }
+                if (ImGui::BeginMenu("Submenu2"))
                 {
                     bool use_child = ctx->Test->ArgVariant == 1;
                     if (!use_child || ImGui::BeginChild("Child", ImVec2(100.f, 30.f), true))
@@ -323,7 +331,14 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
             ctx->Test->ArgVariant = variant;
             ctx->LogDebug("Variant: %d", variant);
             ctx->SetRef("Test Window");
-            ctx->MenuClick("Menu/Submenu");
+            ctx->MenuClick("Menu/Submenu1");
+            ctx->NavKeyPress(ImGuiNavInput_KeyRight_);
+            ctx->NavKeyPress(ImGuiNavInput_KeyDown_);
+            IM_CHECK(g.NavId == ctx->GetID("/##Menu_01/B"));
+            ctx->NavKeyPress(ImGuiNavInput_KeyLeft_);
+            IM_CHECK(g.NavId == ctx->GetID("/##Menu_00/Submenu1")); // Ensure navigation doesn't get us to Submenu2 which is at same Y position as B
+
+            ctx->MenuClick("Menu/Submenu2");
             if (variant == 0)
                 ctx->SetRef("##Menu_01");
             else

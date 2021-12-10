@@ -28,6 +28,7 @@
 // - Even if they will be hard to actually implement/automate, they still allow us to manually check things.
 //-------------------------------------------------------------------------
 // TODO: Tests: InputText: read-only + callback (#4762)
+// TODO: Tests: InputTextMultiline(): (ImDrawList) position of text (#4794)
 // TODO: Tests: MenuItemEx() with icon (what to test?)
 // TODO: Tests: TabBar: test shrinking large number of tabs, that right-most tab edge touches exactly the edge of the tab bar.
 // TODO: Tests: test SetColorEditOptions(0) then restore value

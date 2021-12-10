@@ -487,6 +487,8 @@ void RegisterTests_Window(ImGuiTestEngine* e)
     };
 
     // ## Test menus in a popup window (PR #3496).
+    // FIXME: Test with/without modal
+    // FIXME: Test closing menu by clicking on it
 #if IMGUI_BROKEN_TESTS
     t = IM_REGISTER_TEST(e, "window", "window_popup_menu");
     struct WindowPopupMenuTestVars { bool FirstOpen = false; bool SecondOpen = false; };
@@ -520,6 +522,8 @@ void RegisterTests_Window(ImGuiTestEngine* e)
                 ImGui::CloseCurrentPopup();
             ImGui::EndPopup();
         }
+
+        ImGui::Text("%d %d", vars.FirstOpen, vars.SecondOpen);
         ImGui::End();
     };
     t->TestFunc = [](ImGuiTestContext* ctx)
