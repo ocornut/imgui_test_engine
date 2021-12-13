@@ -534,8 +534,9 @@ void RegisterTests_Window(ImGuiTestEngine* e)
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         auto& vars = ctx->GetVars<WindowPopupMenuTestVars>();
-        ImGuiWindow* popup;
+        ImGuiWindow* popup = NULL;
         ImGuiWindow* window = ctx->GetWindowByRef("Test Window");
+        ImGuiContext& g = *ctx->UiContext;
         for (int variant = 0; variant < 2; variant++)
         {
             vars.UseModal = variant == 1;
@@ -573,6 +574,7 @@ void RegisterTests_Window(ImGuiTestEngine* e)
 #if IMGUI_BROKEN_TESTS
             IM_CHECK_EQ(vars.FirstOpen, false);                                     // FIXME: Closing menu by clicking on popup window.
 #else
+            IM_CHECK(g.OpenPopupStack.Size == 2);
             ctx->PopupCloseOne();
 #endif
             IM_CHECK_EQ(vars.SecondOpen, false);
@@ -586,7 +588,10 @@ void RegisterTests_Window(ImGuiTestEngine* e)
             IM_CHECK_EQ(vars.FirstOpen, false);                                     // FIXME: Closing menu by clicking on popup's parent window.
 #else
             if (vars.UseModal)
+            {
+                IM_CHECK(g.OpenPopupStack.Size == 2);
                 ctx->PopupCloseOne();
+            }
             else
                 IM_CHECK_EQ(vars.FirstOpen, false);
 #endif

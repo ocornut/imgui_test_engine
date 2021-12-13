@@ -1258,11 +1258,25 @@ void    ImGuiTestContext::MouseMove(ImGuiTestRef ref, ImGuiTestOpFlags flags)
 
     if (item == NULL)
         return;
+
+    if (!item->Window->WasActive)
+    {
+        LogError("Window '%s' is not active!", item->Window->Name);
+        return;
+    }
+
     item->RefCount++;
 
     // Focus window before scrolling/moving so things are nicely visible
     if (!(flags & ImGuiTestOpFlags_NoFocusWindow))
         WindowBringToFront(item->Window);
+
+    // Another active test (in the case focus change has a side effect BUT also implicitly we have yield an extra frame)
+    if (!item->Window->WasActive)
+    {
+        LogError("Window '%s' is not active (after focusing)", item->Window->Name);
+        return;
+    }
 
     ImGuiWindow* window = item->Window;
     ImRect window_inner_r_padded = window->InnerClipRect;
@@ -2840,6 +2854,7 @@ void    ImGuiTestContext::PopupCloseOne()
     ImGuiContext& g = *UiContext;
     if (g.OpenPopupStack.Size > 0)
         ImGui::ClosePopupToLevel(g.OpenPopupStack.Size - 1, true);    // FIXME
+    Yield();
 }
 
 void    ImGuiTestContext::PopupCloseAll()
@@ -2852,6 +2867,7 @@ void    ImGuiTestContext::PopupCloseAll()
     ImGuiContext& g = *UiContext;
     if (g.OpenPopupStack.Size > 0)
         ImGui::ClosePopupToLevel(0, true);    // FIXME
+    Yield();
 }
 
 #ifdef IMGUI_HAS_DOCK
