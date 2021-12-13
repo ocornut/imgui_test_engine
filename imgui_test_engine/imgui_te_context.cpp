@@ -1304,6 +1304,8 @@ void    ImGuiTestContext::MouseMove(ImGuiTestRef ref, ImGuiTestOpFlags flags)
         //LogDebug("Window '%s' not focused anymore, focusing again", window->Name);
         WindowBringToFront(window);// , ImGuiTestOpFlags_Verbose);
 
+        // 2021-12-13: straying away from that kind of stuff. We'd better error or handle hover without requiring focus.
+#if 0
         // Some windows are refusing to get focused.... e.g. MainMenuBar will relinguish focus... need to hide other windows.
 #ifdef IMGUI_HAS_DOCK
         if (window->RootWindowDockTree != g.Windows.back()->RootWindowDockTree)
@@ -1315,6 +1317,7 @@ void    ImGuiTestContext::MouseMove(ImGuiTestRef ref, ImGuiTestOpFlags flags)
             ImGuiWindow* ignore_list[] = { window, NULL };
             ForeignWindowsHideOverPos(pos, ignore_list);
         }
+#endif
     }
 
     if (!Abort && !(flags & ImGuiTestOpFlags_NoCheckHoveredId))
