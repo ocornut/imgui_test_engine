@@ -2988,7 +2988,7 @@ void    ImGuiTestContext::DockNodeHideTabBar(ImGuiDockNode* node, bool hidden)
     {
         SetRef(node->HostWindow);
         ItemClick(ImGui::DockNodeGetWindowMenuButtonId(node));
-        ItemClick(Str16f("/##Popup_%08x/Hide tab bar", GetID("#WindowMenu", node->ID)).c_str());
+        ItemClick(Str64f("/##Popup_%08x/Hide tab bar", GetID("#WindowMenu", node->ID)).c_str());
         IM_CHECK_SILENT(node->IsHiddenTabBar());
 
     }

@@ -924,12 +924,12 @@ void ImGuiPerfTool::ShowUI(ImGuiTestEngine* engine)
         }
     }
 
-    if (ImGui::Button(Str16f("Filter builds (%d/%d)###Filter builds", _NumVisibleBuilds, _NumUniqueBuilds).c_str()))
+    if (ImGui::Button(Str64f("Filter builds (%d/%d)###Filter builds", _NumVisibleBuilds, _NumUniqueBuilds).c_str()))
         ImGui::OpenPopup("Filter builds");
     if (ImGui::IsItemHovered())
         ImGui::SetTooltip("Hide or show individual builds.");
     ImGui::SameLine();
-    if (ImGui::Button(Str16f("Filter tests (%d/%d)###Filter tests", _LabelsVisible.Size - 1, _Labels.Size).c_str()))
+    if (ImGui::Button(Str64f("Filter tests (%d/%d)###Filter tests", _LabelsVisible.Size - 1, _Labels.Size).c_str()))
         ImGui::OpenPopup("Filter perfs");
     if (ImGui::IsItemHovered())
         ImGui::SetTooltip("Hide or show individual tests.");
