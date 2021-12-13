@@ -615,7 +615,7 @@ ImGuiTestRef ImGuiTestContext::GetFocusWindowRef()
 static bool ImGuiTestContext_CanCapture(ImGuiTestContext* ctx)
 {
     ImGuiTestEngineIO* io = ctx->EngineIO;
-    return io->ConfigCaptureEnabled && io->ConfigRunWithGui;
+    return io->ConfigCaptureEnabled && io->ConfigRunWithGui; // FIXME-TESTS: Should be able to capture in TTY mode provided user provides a capture functio
 }
 
 void ImGuiTestContext::CaptureInitArgs(ImGuiCaptureArgs* args, int flags)
@@ -748,7 +748,6 @@ ImGuiTestItemInfo* ImGuiTestContext::ItemInfo(ImGuiTestRef ref, ImGuiTestOpFlags
                 task->InSuffixDepth++;
 
         LogDebug("Wildcard matching..");
-
         int retries = 0;
         while (retries < 2 && task->OutItemId == 0)
         {
@@ -756,7 +755,7 @@ ImGuiTestItemInfo* ImGuiTestContext::ItemInfo(ImGuiTestRef ref, ImGuiTestOpFlags
             retries++;
         }
 
-        // FIXME-TESTS: Wildcard matching requires item to be visible, because clipped items are unaware of their labels. Try panning through entire window, searching for target item.
+        // Wildcard matching requires item to be visible, because clipped items are unaware of their labels. Try panning through entire window, searching for target item.
         // FIXME-TESTS: Scrollbar position restoration may be desirable, however it interferes with using found item.
         if (task->OutItemId == 0)
         {
@@ -1034,43 +1033,7 @@ void   ImGuiTestContext::ScrollToItemX(ImGuiTestRef ref)
     // FIXME-TESTS: Consider moving to its own function.
     if (ImGuiTabBar* tab_bar = g.TabBars.GetByKey(item->ParentID))
     {
-        // Cancel if "##v", because it's outside the tab_bar rect, and will be considered as "not visible" even if it is!
-        //if (GetID("##v") == item->ID)
-        //    return;
-
-        const ImGuiTabItem* selected_tab_item = ImGui::TabBarFindTabByID(tab_bar, tab_bar->SelectedTabId);
-        const ImGuiTabItem* target_tab_item = ImGui::TabBarFindTabByID(tab_bar, item->ID);
-        if (target_tab_item == NULL)
-            return;
-
-        int selected_tab_index = tab_bar->Tabs.index_from_ptr(selected_tab_item);
-        int target_tab_index = tab_bar->Tabs.index_from_ptr(target_tab_item);
-
-        ImGuiTestRef backup_ref = GetRef();
-        //SetRef(tab_bar->ID);
-        SetRef(item->ParentID);
-
-        if (selected_tab_index > target_tab_index)
-        {
-            MouseMove("##<");
-            for (int i = 0; i < selected_tab_index - target_tab_index; ++i)
-                MouseClick(0);
-        }
-        else
-        {
-            MouseMove("##>");
-            for (int i = 0; i < target_tab_index - selected_tab_index; ++i)
-                MouseClick(0);
-        }
-
-        // Skip the scroll animation
-        if (EngineIO->ConfigRunFast)
-        {
-            tab_bar->ScrollingAnim = tab_bar->ScrollingTarget;
-            Yield();
-        }
-
-        SetRef(backup_ref);
+        ScrollToTabItem(tab_bar, item->ID);
     }
     else
     {
@@ -1082,6 +1045,50 @@ void   ImGuiTestContext::ScrollToItemX(ImGuiTestRef ref)
 
         ScrollTo(window, ImGuiAxis_X, scroll_target_x);
     }
+}
+
+void    ImGuiTestContext::ScrollToTabItem(ImGuiTabBar* tab_bar, ImGuiID tab_id)
+{
+    if (IsError())
+        return;
+
+    // Cancel if "##v", because it's outside the tab_bar rect, and will be considered as "not visible" even if it is!
+    //if (GetID("##v") == item->ID)
+    //    return;
+
+    IM_CHECK_SILENT(tab_bar != NULL);
+    const ImGuiTabItem* selected_tab_item = ImGui::TabBarFindTabByID(tab_bar, tab_bar->SelectedTabId);
+    const ImGuiTabItem* target_tab_item = ImGui::TabBarFindTabByID(tab_bar, tab_id);
+    if (target_tab_item == NULL)
+        return;
+
+    int selected_tab_index = tab_bar->Tabs.index_from_ptr(selected_tab_item);
+    int target_tab_index = tab_bar->Tabs.index_from_ptr(target_tab_item);
+
+    ImGuiTestRef backup_ref = GetRef();
+    SetRef(tab_bar->ID);
+
+    if (selected_tab_index > target_tab_index)
+    {
+        MouseMove("##<");
+        for (int i = 0; i < selected_tab_index - target_tab_index; ++i)
+            MouseClick(0);
+    }
+    else
+    {
+        MouseMove("##>");
+        for (int i = 0; i < target_tab_index - selected_tab_index; ++i)
+            MouseClick(0);
+    }
+
+    // Skip the scroll animation
+    if (EngineIO->ConfigRunFast)
+    {
+        tab_bar->ScrollingAnim = tab_bar->ScrollingTarget;
+        Yield();
+    }
+
+    SetRef(backup_ref);
 }
 
 // Verify that ScrollMax is stable regardless of scrolling position
