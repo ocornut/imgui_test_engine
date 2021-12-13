@@ -260,7 +260,7 @@ struct ImGuiTestContext
     ImGuiID     GetChildWindowID(ImGuiTestRef parent_ref, ImGuiID child_id);        // Name created by BeginChild(id, ...), using specified parent.
 
     // Misc
-    ImVec2      GetPosOverVoid();                                                   // Find a point that has no windows
+    ImVec2      GetPosOnVoid();                                                   // Find a point that has no windows
     ImVec2      GetWindowTitlebarPoint(ImGuiTestRef window_ref);                    // Return a clickable point on window titlebar (window tab for docked windows).
 
     // Screen captures

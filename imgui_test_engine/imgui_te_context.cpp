@@ -1130,6 +1130,7 @@ void    ImGuiTestContext::NavMoveTo(ImGuiTestRef ref)
     // Teleport
     // FIXME-NAV: We should have a nav request feature that does this,
     // except it'll have to queue the request to find rect, then set scrolling, which would incur a 2 frame delay :/
+    // FIXME-TESTS-NOT_SAME_AS_END_USER
     IM_ASSERT(g.NavMoveSubmitted == false);
     ImRect rect_rel = item->RectFull;
     rect_rel.Translate(ImVec2(-item->Window->Pos.x, -item->Window->Pos.y));
@@ -1207,7 +1208,7 @@ void    ImGuiTestContext::NavInput()
 
 void    ImGuiTestContext::NavEnableForWindow()
 {
-    // FIXME-TESTS: this shouldn't be required, currently used as a kludge
+    // FIXME-TESTS: this shouldn't be required, currently used as a kludge (see e.g #2048)
     KeyModPress(ImGuiKeyModFlags_Alt);
     KeyModPress(ImGuiKeyModFlags_Alt);
 }
@@ -1221,7 +1222,6 @@ static ImVec2 GetMouseAimingPos(ImGuiTestItemInfo* item, ImGuiTestOpFlags flags)
 {
     ImRect r = item->RectClipped;
     ImVec2 pos;
-    //pos = r.GetCenter();
     if (flags & ImGuiTestOpFlags_MoveToEdgeL)
         pos.x = (r.Min.x + 1.0f);
     else if (flags & ImGuiTestOpFlags_MoveToEdgeR)
@@ -1266,6 +1266,7 @@ void    ImGuiTestContext::MouseMove(ImGuiTestRef ref, ImGuiTestOpFlags flags)
     item->RefCount++;
 
     // Focus window before scrolling/moving so things are nicely visible
+    // FIXME-TESTS-NOT_SAME_AS_END_USER: This has too many side effect, could we do without?
     if (!(flags & ImGuiTestOpFlags_NoFocusWindow))
         WindowBringToFront(item->Window);
 
@@ -1276,6 +1277,7 @@ void    ImGuiTestContext::MouseMove(ImGuiTestRef ref, ImGuiTestOpFlags flags)
         return;
     }
 
+    // Scroll to make item visible
     ImGuiWindow* window = item->Window;
     ImRect window_inner_r_padded = window->InnerClipRect;
     window_inner_r_padded.Expand(ImVec2(-g.WindowsHoverPadding.x, -g.WindowsHoverPadding.y));
@@ -1289,6 +1291,7 @@ void    ImGuiTestContext::MouseMove(ImGuiTestRef ref, ImGuiTestOpFlags flags)
             ScrollToItemX(ref);
     }
 
+    // FIXME-TESTS-NOT_SAME_AS_END_USER
     ImVec2 pos = item->RectFull.GetCenter();
     WindowTeleportToMakePosVisibleInViewport(window, pos);
 
@@ -1300,7 +1303,7 @@ void    ImGuiTestContext::MouseMove(ImGuiTestRef ref, ImGuiTestOpFlags flags)
     if (!(flags & ImGuiTestOpFlags_NoFocusWindow))
     {
         //LogDebug("Window '%s' not focused anymore, focusing again", window->Name);
-        WindowBringToFront(window);// , ImGuiTestOpFlags_Verbose);
+        WindowBringToFront(window);
 
         // 2021-12-13: straying away from that kind of stuff. We'd better error or handle hover without requiring focus.
 #if 0
@@ -1318,6 +1321,7 @@ void    ImGuiTestContext::MouseMove(ImGuiTestRef ref, ImGuiTestOpFlags flags)
 #endif
     }
 
+    // Check hovering target
     if (!Abort && !(flags & ImGuiTestOpFlags_NoCheckHoveredId))
     {
         const ImGuiID hovered_id = g.HoveredIdPreviousFrame;
@@ -1377,6 +1381,7 @@ bool    ImGuiTestContext::WindowTeleportToMakePosVisibleInViewport(ImGuiWindow* 
     if (!visible_r.Contains(pos))
     {
         // Fallback move window directly to make our item reachable with the mouse.
+        // FIXME-TESTS-NOT_SAME_AS_END_USER
         float pad = g.FontSize;
         ImVec2 delta;
         delta.x = (pos.x < visible_r.Min.x) ? (visible_r.Min.x - pos.x + pad) : (pos.x > visible_r.Max.x) ? (visible_r.Max.x - pos.x - pad) : 0.0f;
@@ -1390,6 +1395,7 @@ bool    ImGuiTestContext::WindowTeleportToMakePosVisibleInViewport(ImGuiWindow* 
 }
 
 // ignore_list is a NULL-terminated list of pointers
+// FIXME-TESTS-NOT_SAME_AS_END_USER: Aim to get rid of this.
 void ImGuiTestContext::ForeignWindowsHideOverPos(ImVec2 pos, ImGuiWindow** ignore_list)
 {
     ImGuiContext& g = *UiContext;
@@ -1592,11 +1598,12 @@ void    ImGuiTestContext::MouseClickMulti(ImGuiMouseButton button, int count)
         Inputs->MouseButtonsValue = (1 << button);
         Yield();
         Inputs->MouseButtonsValue = 0;
-        Yield(); // Let the imgui frame finish, start a new frame.
+        Yield();
     }
+
     // Now NewFrame() has seen the mouse release.
-    Yield(); // Let the imgui frame finish, now e.g. Button() function will return true. Start a new frame.
-    // At this point, we are in a new frame but our windows haven't been Begin()-ed into, so anything processed by Begin() is not valid yet.
+    // Let the imgui frame finish, now e.g. Button() function will return true. Start a new frame.
+    Yield();
 }
 
 // TODO: click time argument (seconds and/or frames)
@@ -1656,7 +1663,7 @@ bool    ImGuiTestContext::FindExistingVoidPosOnViewport(ImGuiViewport* viewport,
     return false;
 }
 
-ImVec2   ImGuiTestContext::GetPosOverVoid()
+ImVec2   ImGuiTestContext::GetPosOnVoid()
 {
     ImGuiContext& g = *UiContext;
     if (IsError())
@@ -1665,21 +1672,20 @@ ImVec2   ImGuiTestContext::GetPosOverVoid()
     ImVec2 void_pos;
     ImGuiViewport* viewport = ImGui::GetMainViewport();
     bool found_existing_void_pos = FindExistingVoidPosOnViewport(viewport, &void_pos);
+    if (found_existing_void_pos)
+        return void_pos;
 
     // Move windows away
-    if (!found_existing_void_pos)
-    {
-        void_pos = viewport->Pos + ImVec2(1, 1);
-        ImVec2 window_min_pos = void_pos + g.WindowsHoverPadding + ImVec2(1.0f, 1.0f);
-        for (ImGuiWindow* window : g.Windows)
+    void_pos = viewport->Pos + ImVec2(1, 1);
+    ImVec2 window_min_pos = void_pos + g.WindowsHoverPadding + ImVec2(1.0f, 1.0f);
+    for (ImGuiWindow* window : g.Windows)
 #ifdef IMGUI_HAS_DOCK
-            if (window->RootWindowDockTree == window && window->WasActive)
+        if (window->RootWindowDockTree == window && window->WasActive)
 #else
-            if (window->RootWindow == window && window->WasActive)
+        if (window->RootWindow == window && window->WasActive)
 #endif
-                if (window->Rect().Contains(window_min_pos))
-                    WindowMove(window->Name, window_min_pos);
-    }
+            if (window->Rect().Contains(window_min_pos))
+                WindowMove(window->Name, window_min_pos);
 
     return void_pos;
 }
@@ -1687,7 +1693,6 @@ ImVec2   ImGuiTestContext::GetPosOverVoid()
 ImVec2  ImGuiTestContext::GetWindowTitlebarPoint(ImGuiTestRef window_ref)
 {
     // FIXME-TESTS: Need to find a -visible- click point. drag_pos may end up being outside of main viewport.
-
     if (IsError())
         return ImVec2();
 
@@ -1733,7 +1738,7 @@ void    ImGuiTestContext::MouseClickOnVoid(int mouse_button)
     LogDebug("MouseClickOnVoid %d", mouse_button);
 
     // Click position which should now be empty space.
-    MouseMoveToPos(GetPosOverVoid());
+    MouseMoveToPos(GetPosOnVoid());
     IM_CHECK(g.HoveredWindow == NULL);
     MouseClick(mouse_button);
 }
@@ -1954,7 +1959,7 @@ bool    ImGuiTestContext::WindowBringToFront(ImGuiWindow* window, ImGuiTestOpFla
     {
         IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
         LogDebug("BringWindowToFront->FocusWindow('%s')", window->Name);
-        ImGui::FocusWindow(window);
+        ImGui::FocusWindow(window); // FIXME-TESTS-NOT_SAME_AS_END_USER
         Yield();
         Yield();
         //IM_CHECK(g.NavWindow == window);
@@ -1963,7 +1968,7 @@ bool    ImGuiTestContext::WindowBringToFront(ImGuiWindow* window, ImGuiTestOpFla
     {
         IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
         LogDebug("BringWindowToDisplayFront('%s') (window.back=%s)", window->Name, g.Windows.back()->Name);
-        ImGui::BringWindowToDisplayFront(window);
+        ImGui::BringWindowToDisplayFront(window); // FIXME-TESTS-NOT_SAME_AS_END_USER
         Yield();
         Yield();
     }
@@ -2152,7 +2157,6 @@ void    ImGuiTestContext::ItemAction(ImGuiTestAction action, ImGuiTestRef ref, v
         if ((item->StatusFlags & ImGuiItemStatusFlags_Checkable) && !(item->StatusFlags & ImGuiItemStatusFlags_Checked))
         {
             ItemClick(ref, 0, flags);
-            //Yield();
         }
         ItemVerifyCheckedIfAlive(ref, true); // We can't just IM_ASSERT(ItemIsChecked()) because the item may disappear and never update its StatusFlags any more!
     }
@@ -2763,7 +2767,7 @@ void    ImGuiTestContext::WindowFocus(ImGuiTestRef ref)
     IM_CHECK_SILENT(window != NULL);
     if (window)
     {
-        ImGui::FocusWindow(window);
+        ImGui::FocusWindow(window); // FIXME-TESTS-NOT_SAME_AS_END_USER: Click or tab?
         Yield();
     }
 }
@@ -2854,7 +2858,7 @@ void    ImGuiTestContext::PopupCloseOne()
     LogDebug("PopupCloseOne");
     ImGuiContext& g = *UiContext;
     if (g.OpenPopupStack.Size > 0)
-        ImGui::ClosePopupToLevel(g.OpenPopupStack.Size - 1, true);    // FIXME
+        ImGui::ClosePopupToLevel(g.OpenPopupStack.Size - 1, true);    // FIXME-TESTS-NOT_SAME_AS_END_USER
     Yield();
 }
 
@@ -2867,7 +2871,7 @@ void    ImGuiTestContext::PopupCloseAll()
     LogDebug("PopupCloseAll");
     ImGuiContext& g = *UiContext;
     if (g.OpenPopupStack.Size > 0)
-        ImGui::ClosePopupToLevel(0, true);    // FIXME
+        ImGui::ClosePopupToLevel(0, true);    // FIXME-TESTS-NOT_SAME_AS_END_USER
     Yield();
 }
 
