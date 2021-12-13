@@ -1178,9 +1178,9 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ctx->ItemInput("Field");
         for (int n = 0; n < 10; n++)
             ctx->KeyCharsAppendEnter(Str16f("Line %d", n).c_str());
-        ctx->KeyDownMap(ImGuiKey_COUNT, ImGuiKeyModFlags_Shift);
+        ctx->KeyModDown(ImGuiKeyModFlags_Shift);
         ctx->KeyPressMap(ImGuiKey_UpArrow);
-        ctx->KeyUpMap(ImGuiKey_COUNT, ImGuiKeyModFlags_Shift);
+        ctx->KeyModUp(ImGuiKeyModFlags_Shift);
 
         ImGuiID child_id = ctx->GetChildWindowID("/Test Window", "Field");
         ImGuiWindow* child_window = ctx->GetWindowByRef(child_id);
@@ -3639,19 +3639,19 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
 
         // Test SHIFT+Click
         ctx->ItemClick("Object 0001");
-        ctx->KeyDownMap(ImGuiKey_COUNT, ImGuiKeyModFlags_Shift);
+        ctx->KeyModDown(ImGuiKeyModFlags_Shift);
         ctx->MouseMove("Object 0006");
         ctx->MouseDown(0);
         IM_CHECK_EQ(selection.SelectionSize, 6);
         ctx->MouseUp(0);
-        ctx->KeyUpMap(ImGuiKey_COUNT, ImGuiKeyModFlags_Shift);
+        ctx->KeyModUp(ImGuiKeyModFlags_Shift);
 
         // Test that CTRL+A preserve RangeSrc (which was 0001)
         ctx->KeyPressMap(ImGuiKey_A, ImGuiKeyModFlags_Ctrl);
         IM_CHECK_EQ(selection.SelectionSize, 100);
-        ctx->KeyDownMap(ImGuiKey_COUNT, ImGuiKeyModFlags_Shift);
+        ctx->KeyModDown(ImGuiKeyModFlags_Shift);
         ctx->ItemClick("Object 0008");
-        ctx->KeyUpMap(ImGuiKey_COUNT, ImGuiKeyModFlags_Shift);
+        ctx->KeyModUp(ImGuiKeyModFlags_Shift);
         IM_CHECK_EQ(selection.SelectionSize, 8);
 
         // Test reverse clipped SHIFT+Click
@@ -3660,9 +3660,9 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         //ctx->ScrollToBottom();
         ctx->ItemClick("Object 0030");
         ctx->ScrollToTop();
-        ctx->KeyDownMap(ImGuiKey_COUNT, ImGuiKeyModFlags_Shift);
+        ctx->KeyModDown(ImGuiKeyModFlags_Shift);
         ctx->ItemClick("Object 0002");
-        ctx->KeyUpMap(ImGuiKey_COUNT, ImGuiKeyModFlags_Shift);
+        ctx->KeyModUp(ImGuiKeyModFlags_Shift);
         IM_CHECK_EQ(selection.SelectionSize, 29);
 
         // Test ESC to clear selection

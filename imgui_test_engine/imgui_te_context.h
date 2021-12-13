@@ -297,6 +297,9 @@ struct ImGuiTestContext
     void        KeyUpMap(ImGuiKey key, int mod_flags = 0);
     void        KeyPressMap(ImGuiKey key, int mod_flags = 0, int count = 1);
     void        KeyHoldMap(ImGuiKey key, int mod_flags, float time);
+    void        KeyModDown(int mod_flags)   { KeyDownMap(ImGuiKey_COUNT, mod_flags); }
+    void        KeyModUp(int mod_flags)     { KeyUpMap(ImGuiKey_COUNT, mod_flags); }
+    void        KeyModPress(int mod_flags)  { KeyPressMap(ImGuiKey_COUNT, mod_flags); }
     void        KeyChars(const char* chars);
     void        KeyCharsAppend(const char* chars);
     void        KeyCharsAppendEnter(const char* chars);

@@ -1210,8 +1210,8 @@ void    ImGuiTestContext::NavInput()
 void    ImGuiTestContext::NavEnableForWindow()
 {
     // FIXME-TESTS: this shouldn't be required, currently used as a kludge
-    KeyPressMap(ImGuiKey_COUNT, ImGuiKeyModFlags_Alt);
-    KeyPressMap(ImGuiKey_COUNT, ImGuiKeyModFlags_Alt);
+    KeyModPress(ImGuiKeyModFlags_Alt);
+    KeyModPress(ImGuiKeyModFlags_Alt);
 }
 
 // Supported values for ImGuiTestOpFlags:
@@ -2080,9 +2080,9 @@ void    ImGuiTestContext::ItemAction(ImGuiTestAction action, ImGuiTestRef ref, v
         if (InputMode == ImGuiInputSource_Mouse)
         {
             MouseMove(ref, flags);
-            KeyDownMap(ImGuiKey_COUNT, ImGuiKeyModFlags_Ctrl);
+            KeyModDown(ImGuiKeyModFlags_Ctrl);
             MouseClick(0);
-            KeyUpMap(ImGuiKey_COUNT, ImGuiKeyModFlags_Ctrl);
+            KeyModUp(ImGuiKeyModFlags_Ctrl);
         }
         else
         {
@@ -2647,12 +2647,12 @@ ImGuiSortDirection ImGuiTestContext::TableClickHeader(ImGuiTestRef ref, const ch
     IM_CHECK_SILENT_RETV(column != NULL, ImGuiSortDirection_None);
 
     if (keys_mod != ImGuiKeyModFlags_None)
-        KeyDownMap(ImGuiKey_COUNT, keys_mod);
+        KeyModDown(keys_mod);
 
     ItemClick(TableGetHeaderID(table, label), ImGuiMouseButton_Left);
 
     if (keys_mod != ImGuiKeyModFlags_None)
-        KeyUpMap(ImGuiKey_COUNT, keys_mod);
+        KeyModUp(keys_mod);
     return (ImGuiSortDirection_)column->SortDirection;
 }
 
@@ -2783,9 +2783,9 @@ void    ImGuiTestContext::WindowMove(ImGuiTestRef ref, ImVec2 input_pos, ImVec2 
     // Disable docking
 #ifdef IMGUI_HAS_DOCK
     if (UiContext->IO.ConfigDockingWithShift)
-        KeyUpMap(ImGuiKey_COUNT, ImGuiKeyModFlags_Shift);
+        KeyModUp(ImGuiKeyModFlags_Shift);
     else
-        KeyDownMap(ImGuiKey_COUNT, ImGuiKeyModFlags_Shift);
+        KeyModDown(ImGuiKeyModFlags_Shift);
 #endif
 
     ImVec2 delta = target_pos - window->Pos;
@@ -2794,7 +2794,7 @@ void    ImGuiTestContext::WindowMove(ImGuiTestRef ref, ImVec2 input_pos, ImVec2 
 
     MouseUp();
 #ifdef IMGUI_HAS_DOCK
-    KeyUpMap(ImGuiKey_COUNT, ImGuiKeyModFlags_Shift);
+    KeyModUp(ImGuiKeyModFlags_Shift);
 #endif
 }
 
@@ -2923,7 +2923,7 @@ void    ImGuiTestContext::DockInto(ImGuiTestRef src_id, ImGuiTestRef dst_id, ImG
     IM_CHECK_SILENT(drop_is_valid);
     MouseDown(0);
     if (g.IO.ConfigDockingWithShift)
-        KeyDownMap(ImGuiKey_COUNT, ImGuiKeyModFlags_Shift);
+        KeyModDown(ImGuiKeyModFlags_Shift);
     MouseLiftDragThreshold();
     MouseMoveToPos(drop_pos);
     IM_CHECK_SILENT(g.MovingWindow == window_src);
@@ -2936,7 +2936,7 @@ void    ImGuiTestContext::DockInto(ImGuiTestRef src_id, ImGuiTestRef dst_id, ImG
 
     MouseUp(0);
     if (g.IO.ConfigDockingWithShift)
-        KeyUpMap(ImGuiKey_COUNT, ImGuiKeyModFlags_Shift);
+        KeyModUp(ImGuiKeyModFlags_Shift);
     ForeignWindowsUnhideAll();
     Yield();
     Yield();
@@ -3014,10 +3014,10 @@ void    ImGuiTestContext::UndockNode(ImGuiID dock_id)
 
     const float h = node->Windows[0]->TitleBarHeight();
     if (!UiContext->IO.ConfigDockingWithShift)
-        KeyDownMap(ImGuiKey_COUNT, ImGuiKeyModFlags_Shift); // Disable docking
+        KeyModDown(ImGuiKeyModFlags_Shift); // Disable docking
     ItemDragWithDelta(ImGui::DockNodeGetWindowMenuButtonId(node), ImVec2(h, h) * -2);
     if (!UiContext->IO.ConfigDockingWithShift)
-        KeyUpMap(ImGuiKey_COUNT, ImGuiKeyModFlags_Shift);
+        KeyModUp(ImGuiKeyModFlags_Shift);
     MouseUp();
 }
 
@@ -3031,10 +3031,10 @@ void    ImGuiTestContext::UndockWindow(const char* window_name)
 
     const float h = window->TitleBarHeight();
     if (!UiContext->IO.ConfigDockingWithShift)
-        KeyDownMap(ImGuiKey_COUNT, ImGuiKeyModFlags_Shift);
+        KeyModDown(ImGuiKeyModFlags_Shift);
     ItemDragWithDelta(window_name, ImVec2(h, h) * -2);
     if (!UiContext->IO.ConfigDockingWithShift)
-        KeyUpMap(ImGuiKey_COUNT, ImGuiKeyModFlags_Shift);
+        KeyModUp(ImGuiKeyModFlags_Shift);
     Yield();
 }
 
