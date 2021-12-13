@@ -487,20 +487,23 @@ void RegisterTests_Window(ImGuiTestEngine* e)
     };
 
     // ## Test menus in a popup window (PR #3496).
-    // FIXME: Test with/without modal
-    // FIXME: Test closing menu by clicking on it
-#if IMGUI_BROKEN_TESTS
     t = IM_REGISTER_TEST(e, "window", "window_popup_menu");
-    struct WindowPopupMenuTestVars { bool FirstOpen = false; bool SecondOpen = false; };
+    struct WindowPopupMenuTestVars { bool UseModal = false; bool FirstOpen = false; bool SecondOpen = false; };
     t->SetVarsDataType<WindowPopupMenuTestVars>();
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         auto& vars = ctx->GetVars<WindowPopupMenuTestVars>();
         vars.FirstOpen = vars.SecondOpen = false;
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
-        if (ctx->IsFirstGuiFrame())
+        if (ImGui::Button("Open Menu Popup"))
             ImGui::OpenPopup("Menu Popup");
-        if (ImGui::BeginPopupModal("Menu Popup", NULL, ImGuiWindowFlags_MenuBar))
+
+        bool popup_open;
+        if (vars.UseModal)
+            popup_open = ImGui::BeginPopupModal("Menu Popup", NULL, ImGuiWindowFlags_MenuBar);
+        else
+            popup_open = ImGui::BeginPopup("Menu Popup", ImGuiWindowFlags_MenuBar);
+        if (popup_open)
         {
             if (ImGui::BeginMenuBar())
             {
@@ -520,36 +523,94 @@ void RegisterTests_Window(ImGuiTestEngine* e)
             }
             if (ImGui::IsKeyPressedMap(ImGuiKey_Escape))
                 ImGui::CloseCurrentPopup();
+            ImGui::SetCursorPos(ImGui::GetCursorPos() + ImVec2(100, 50));           // Make popup bigger so menus do not cover bottom-right corner
             ImGui::EndPopup();
         }
 
+        ImGui::Checkbox("Is Modal", &vars.UseModal);
         ImGui::Text("%d %d", vars.FirstOpen, vars.SecondOpen);
         ImGui::End();
     };
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
-        ImGuiWindow* window = ctx->GetWindowByRef("Menu Popup");
         auto& vars = ctx->GetVars<WindowPopupMenuTestVars>();
-        ctx->SetRef(window->Name);
-        IM_CHECK_EQ(vars.FirstOpen, false);                                     // Nothing is open.
-        IM_CHECK_EQ(vars.SecondOpen, false);
-        ctx->ItemClick("##menubar/First");                                      // Click and open first menu.
-        IM_CHECK_EQ(vars.FirstOpen, true);
-        IM_CHECK_EQ(vars.SecondOpen, false);
-        ctx->MouseMove("##menubar/Second", ImGuiTestOpFlags_NoFocusWindow);     // Hover and open second menu.
-        IM_CHECK_EQ(vars.FirstOpen, false);
-        IM_CHECK_EQ(vars.SecondOpen, true);
-        ctx->MouseMove("##menubar/First", ImGuiTestOpFlags_NoFocusWindow);      // Hover and open first menu again.
-        IM_CHECK_EQ(vars.FirstOpen, true);
-        IM_CHECK_EQ(vars.SecondOpen, false);
-        ctx->MouseMoveToPos(window->Pos + ImVec2(10.0f, 10.0f));                // Clicking window outside of menu closes it.
-        ctx->MouseClick();
-        ctx->ItemClick("##menubar/First");                                      // Click and reopen first menu.
-        ctx->MouseClickOnVoid();                                                // Clicking outside of menu closes it.
-        IM_CHECK_EQ(vars.FirstOpen, false);
-        IM_CHECK_EQ(vars.SecondOpen, false);
-    };
+        ImGuiWindow* popup;
+        ImGuiWindow* window = ctx->GetWindowByRef("Test Window");
+        for (int variant = 0; variant < 2; variant++)
+        {
+            vars.UseModal = variant == 1;
+            ctx->LogDebug("Testing with %s", vars.UseModal ? "modal" : "popup");
+            ctx->ItemClick("/Test Window/Open Menu Popup");
+            if (vars.UseModal)
+                popup = ctx->GetWindowByRef("Menu Popup");
+            else
+                popup = ctx->GetWindowByRef(Str16f("##Popup_%08x", ctx->GetID("/Test Window/Menu Popup")).c_str());
+            IM_CHECK(popup != NULL);
+            ctx->SetRef(popup->Name);
+            IM_CHECK_EQ(vars.FirstOpen, false);                                     // Nothing is open.
+            IM_CHECK_EQ(vars.SecondOpen, false);
+
+            // Test menu opening by hovering a menu item while a menu is already open.
+            ctx->ItemClick("##menubar/First");                                      // Click and open first menu.
+            IM_CHECK_EQ(vars.FirstOpen, true);
+            IM_CHECK_EQ(vars.SecondOpen, false);
+            ctx->MouseMove("##menubar/Second", ImGuiTestOpFlags_NoFocusWindow);     // Hover and open second menu.
+            IM_CHECK_EQ(vars.FirstOpen, false);
+            IM_CHECK_EQ(vars.SecondOpen, true);
+            ctx->MouseMove("##menubar/First", ImGuiTestOpFlags_NoFocusWindow);      // Hover and open first menu again.
+            IM_CHECK_EQ(vars.FirstOpen, true);
+            IM_CHECK_EQ(vars.SecondOpen, false);
+
+            // Test closing a menu by clicking menu item that opens this menu (#3496).
+            ctx->ItemClick("##menubar/First");                                      // Click it again to close.
+            IM_CHECK_EQ(vars.FirstOpen, false);
+            IM_CHECK_EQ(vars.SecondOpen, false);
+
+            // Test closing open menu by clicking popup window body.
+            ctx->ItemClick("##menubar/First");                                      // Click and open first menu.
+            ctx->MouseMoveToPos(popup->Rect().GetBR() - ImVec2(20.0f, 20.0f));      // Clicking window outside of menu closes it.
+            ctx->MouseClick();
+#if IMGUI_BROKEN_TESTS
+            IM_CHECK_EQ(vars.FirstOpen, false);                                     // FIXME: Closing menu by clicking on popup window.
+#else
+            ctx->PopupCloseOne();
 #endif
+            IM_CHECK_EQ(vars.SecondOpen, false);
+            IM_CHECK_EQ(popup->Active, true);
+
+            // Test closing a menu by clicking popup's parent window body.
+            ctx->ItemClick("##menubar/First");                                      // Click and open first menu.
+            ctx->MouseMoveToPos(window->Rect().GetBL() + ImVec2(20.0f, -20.0f));    // Clicking parent window of menu popup closes it.
+            ctx->MouseClick();
+#if IMGUI_BROKEN_TESTS
+            IM_CHECK_EQ(vars.FirstOpen, false);                                     // FIXME: Closing menu by clicking on popup's parent window.
+#else
+            if (vars.UseModal)
+                ctx->PopupCloseOne();
+            else
+                IM_CHECK_EQ(vars.FirstOpen, false);
+#endif
+            IM_CHECK_EQ(vars.SecondOpen, false);
+            IM_CHECK_EQ(popup->Active, vars.UseModal);
+            if (!popup->Active)
+                ctx->ItemClick("/Test Window/Open Menu Popup");                     // Reopen popup if it was closed.
+
+            // Test closing a menu by clicking on empty space.
+            ctx->ItemClick("##menubar/First");                                      // Click and reopen first menu.
+            ctx->MouseClickOnVoid();                                                // Clicking outside of menu closes it.
+#if IMGUI_BROKEN_TESTS
+            IM_CHECK_EQ(vars.FirstOpen, false);
+            IM_CHECK_EQ(vars.SecondOpen, false);
+#else
+            if (!vars.UseModal)                                                     // FIXME: Currently does not work with modals.
+            {
+                IM_CHECK_EQ(vars.FirstOpen, false);
+                IM_CHECK_EQ(vars.SecondOpen, false);
+            }
+#endif
+            IM_CHECK_EQ(popup->Active, vars.UseModal);
+        }
+    };
 
     // ## Test behavior of io.WantCaptureMouse and io.WantCaptureMouseUnlessPopupClose with popups. (#4480)
 #if IMGUI_VERSION_NUM >= 18410
