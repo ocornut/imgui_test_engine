@@ -617,6 +617,49 @@ void RegisterTests_Window(ImGuiTestEngine* e)
         }
     };
 
+    // ## Test hovering across levels of menu
+    t = IM_REGISTER_TEST(e, "window", "window_popup_menu_hover");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+        if (ImGui::Button("open"))
+            ImGui::OpenPopup("Popup");
+        if (ImGui::BeginPopup("Popup"))
+        {
+            ImGui::MenuItem("AAA");
+            ImGui::MenuItem("BBB");
+            if (ImGui::BeginMenu("CCC"))
+            {
+                ImGui::MenuItem("CCC.2");
+                ImGui::EndMenu();
+            }
+            if (ImGui::BeginMenu("DDD"))
+            {
+                ImGui::MenuItem("DDD.2");
+                ImGui::EndMenu();
+            }
+            ImGui::MenuItem("EEE");
+            ImGui::EndPopup();
+        }
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ctx->SetRef("Test Window");
+        ctx->ItemClick("open");
+        ctx->SetRef(ctx->GetFocusWindowRef());
+        ctx->MouseMove("BBB", ImGuiTestOpFlags_NoFocusWindow);
+        ctx->MouseMove("CCC", ImGuiTestOpFlags_NoFocusWindow);
+        IM_CHECK((ctx->UiContext->NavWindow->Flags & ImGuiWindowFlags_ChildMenu) != 0);
+        ctx->MouseMove("DDD", ImGuiTestOpFlags_NoFocusWindow);
+        IM_CHECK_EQ(ctx->UiContext->HoveredIdPreviousFrame, ctx->GetID("DDD"));
+        IM_CHECK((ctx->UiContext->NavWindow->Flags & ImGuiWindowFlags_ChildMenu) != 0);
+        ctx->MouseMove("EEE", ImGuiTestOpFlags_NoFocusWindow);
+        IM_CHECK_EQ(ctx->UiContext->HoveredIdPreviousFrame, ctx->GetID("EEE"));
+        ctx->Yield();
+        IM_CHECK((ctx->UiContext->NavWindow->Flags & ImGuiWindowFlags_ChildMenu) == 0);
+    };
+
     // ## Test behavior of io.WantCaptureMouse and io.WantCaptureMouseUnlessPopupClose with popups. (#4480)
 #if IMGUI_VERSION_NUM >= 18410
     t = IM_REGISTER_TEST(e, "window", "window_popup_want_capture");
