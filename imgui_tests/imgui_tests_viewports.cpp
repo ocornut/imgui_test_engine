@@ -135,7 +135,7 @@ void RegisterTests_Viewports(ImGuiTestEngine* e)
         ctx->Yield();
 
         // Default value.
-        ctx->WindowMove("", ctx->GetMainViewportPos() + ImVec2(100, 100));
+        ctx->WindowMove("", ImGui::GetMainViewport()->Pos + ImVec2(100, 100));
         IM_CHECK_EQ(window->ViewportOwned, false);
         IM_CHECK_EQ(window->WindowClass.ParentViewportId, (ImGuiID)-1);  // Default value
 

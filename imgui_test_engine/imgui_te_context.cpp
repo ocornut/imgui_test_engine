@@ -515,7 +515,8 @@ ImGuiID ImGuiTestContext::GetChildWindowID(ImGuiID child_id)
     return GetChildWindowID(RefID, child_id);
 }
 
-// Helper function for GetChildWindowID().
+// Helper function for GetChildWindowID()
+// FIXME-TESTS: Badly named.
 static bool GetWindowInformation(ImGuiTestContext* ctx, ImGuiTestRef window_ref, Str* out_name, ImGuiID* out_id)
 {
     IM_ASSERT(out_name != NULL || out_id != NULL);
@@ -609,16 +610,6 @@ ImGuiTestRef ImGuiTestContext::GetFocusWindowRef()
 {
     ImGuiContext& g = *UiContext;
     return g.NavWindow ? g.NavWindow->ID : 0;
-}
-
-ImVec2 ImGuiTestContext::GetMainViewportPos()
-{
-    return ImGui::GetMainViewport()->Pos;
-}
-
-ImVec2 ImGuiTestContext::GetMainViewportSize()
-{
-    return ImGui::GetMainViewport()->Size;
 }
 
 static bool ImGuiTestContext_CanCapture(ImGuiTestContext* ctx)
@@ -1658,7 +1649,7 @@ bool    ImGuiTestContext::FindExistingVoidPosOnViewport(ImGuiViewport* viewport,
     return false;
 }
 
-ImVec2   ImGuiTestContext::GetVoidPos()
+ImVec2   ImGuiTestContext::GetPosOverVoid()
 {
     ImGuiContext& g = *UiContext;
     if (IsError())
@@ -1735,7 +1726,7 @@ void    ImGuiTestContext::MouseClickOnVoid(int mouse_button)
     LogDebug("MouseClickOnVoid %d", mouse_button);
 
     // Click position which should now be empty space.
-    MouseMoveToPos(GetVoidPos());
+    MouseMoveToPos(GetPosOverVoid());
     IM_CHECK(g.HoveredWindow == NULL);
     MouseClick(mouse_button);
 }

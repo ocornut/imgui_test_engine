@@ -55,7 +55,7 @@ void RegisterTests_Perf(ImGuiTestEngine* e)
         IM_CHECK_SILENT(ctx->UiContext->IO.DisplaySize.y > 820);
 
         // FIXME-TESTS: Backup full layout
-        ImVec2 pos = ctx->GetMainViewportPos() + ImVec2(20, 20);
+        ImVec2 pos = ImGui::GetMainViewport()->Pos + ImVec2(20, 20);
         for (ImGuiWindow* window : ctx->UiContext->Windows)
         {
             window->Pos = pos;
@@ -757,7 +757,7 @@ void RegisterTests_Perf(ImGuiTestEngine* e)
     t = IM_REGISTER_TEST(e, "perf", "perf_stress_window");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
-        ImVec2 pos = ctx->GetMainViewportPos() + ImVec2(20, 20);
+        ImVec2 pos = ImGui::GetMainViewport()->Pos + ImVec2(20, 20);
         int loop_count = 200 * ctx->PerfStressAmount;
         for (int n = 0; n < loop_count; n++)
         {

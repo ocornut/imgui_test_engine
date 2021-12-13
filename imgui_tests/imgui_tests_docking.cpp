@@ -168,7 +168,7 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
 
             ImGuiWindow* window_aaa = ctx->GetWindowByRef("AAA");
             ImGuiWindow* window_bbb = ctx->GetWindowByRef("BBB");
-            ImVec2 viewport_pos = ctx->GetMainViewportPos();
+            ImVec2 viewport_pos = ImGui::GetMainViewport()->Pos;
 
             // Init state
             ctx->DockClear("AAA", "BBB", NULL);
@@ -476,8 +476,8 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
     };
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
-        ImVec2 viewport_pos = ctx->GetMainViewportPos();
-        ImVec2 viewport_size = ctx->GetMainViewportSize();
+        ImVec2 viewport_pos = ImGui::GetMainViewport()->Pos;
+        ImVec2 viewport_size = ImGui::GetMainViewport()->Size;
         ImGuiWindow* window1 = ctx->GetWindowByRef("Window 1");
         ImGuiWindow* window2 = ctx->GetWindowByRef("Window 2");
         ImGuiWindow* window3 = ctx->GetWindowByRef("Window 3");
@@ -642,8 +642,7 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
         ImGui::End();
         ImGui::PopStyleVar();
 
-        ImVec2 viewport_pos = ctx->GetMainViewportPos();
-        ImGui::SetNextWindowPos(viewport_pos + ImVec2(100, 100), ImGuiCond_Appearing);
+        ImGui::SetNextWindowPos(ImGui::GetMainViewport()->Pos + ImVec2(100, 100), ImGuiCond_Appearing);
         ImGui::SetNextWindowSize(ImVec2(300, 200), ImGuiCond_Appearing);
         ImGui::Begin("Dock Window", NULL, ImGuiWindowFlags_NoSavedSettings);
         ImGui::End();

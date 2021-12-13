@@ -146,7 +146,7 @@ void RegisterTests_Window(ImGuiTestEngine* e)
     t->Flags |= ImGuiTestFlags_NoAutoFinish;
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
-        ImVec2 viewport_pos = ctx->GetMainViewportPos();
+        ImVec2 viewport_pos = ImGui::GetMainViewport()->Pos;
         // #2067
         {
             ImGui::SetNextWindowPos(viewport_pos + ImVec2(401.0f, 103.0f), ImGuiCond_Once);
@@ -649,7 +649,7 @@ void RegisterTests_Window(ImGuiTestEngine* e)
         ctx->MouseMoveToPos(g.NavWindow->Pos + ImVec2(10, 10));
         IM_CHECK(io.WantCaptureMouse == true);
         IM_CHECK(io.WantCaptureMouseUnlessPopupClose == true);
-        ctx->MouseMoveToPos(ctx->GetVoidPos());
+        ctx->MouseMoveToPos(ctx->GetPosOverVoid());
         IM_CHECK(io.WantCaptureMouse == true);
         IM_CHECK(io.WantCaptureMouseUnlessPopupClose == false);
         ctx->PopupCloseAll();
@@ -659,7 +659,7 @@ void RegisterTests_Window(ImGuiTestEngine* e)
         ctx->MouseMoveToPos(g.NavWindow->Pos + ImVec2(10, 10));
         IM_CHECK(io.WantCaptureMouse == true);
         IM_CHECK(io.WantCaptureMouseUnlessPopupClose == true);
-        ctx->MouseMoveToPos(ctx->GetVoidPos());
+        ctx->MouseMoveToPos(ctx->GetPosOverVoid());
         IM_CHECK(g.HoveredWindow == NULL);
         IM_CHECK(io.WantCaptureMouse == true);
         IM_CHECK(io.WantCaptureMouseUnlessPopupClose == true);
@@ -832,7 +832,7 @@ void RegisterTests_Window(ImGuiTestEngine* e)
     {
         ImGuiContext& g = *ctx->UiContext;
         WindowPopupWithWindowsVars& vars = ctx->GetVars<WindowPopupWithWindowsVars>();
-        ImVec2 window_move_dest = ctx->GetMainViewportPos() + ImVec2(300.0f, 300.0f);
+        ImVec2 window_move_dest = ImGui::GetMainViewport()->Pos + ImVec2(300.0f, 300.0f);
         ctx->SetRef("Interrupts");
 
         auto FindWindowDisplayIndex = [ctx](ImGuiTestRef window_ref)
@@ -1400,7 +1400,7 @@ void RegisterTests_Window(ImGuiTestEngine* e)
     };
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
-        ImVec2 viewport_pos = ctx->GetMainViewportPos();
+        ImVec2 viewport_pos = ImGui::GetMainViewport()->Pos;
         ImGuiWindow* window = ctx->GetWindowByRef("Movable Window");
         ctx->WindowMove("Movable Window", viewport_pos + ImVec2(0, 0));
 #ifdef IMGUI_HAS_VIEWPORT
@@ -1443,7 +1443,7 @@ void RegisterTests_Window(ImGuiTestEngine* e)
             for (int c = 0; c < 2; c++) // Test collapsed and uncollapsed windows.
             {
                 ctx->WindowCollapse(window, c != 0);
-                vars.Pos = ctx->GetMainViewportPos() + window->Size; // Ensure window is tested within a visible viewport.
+                vars.Pos = ImGui::GetMainViewport()->Pos + window->Size; // Ensure window is tested within a visible viewport.
                 vars.Pivot = ImVec2(1.0f * ((n & 1) != 0 ? 1 : 0), 1.0f * ((n & 2) != 0 ? 1 : 0));
                 ctx->Yield();
                 IM_CHECK_EQ(window->Pos, vars.Pos - (window->Size * vars.Pivot));
@@ -1687,7 +1687,7 @@ void RegisterTests_Window(ImGuiTestEngine* e)
         auto& vars = ctx->GenericVars;
         if (vars.Step != 2)
         {
-            ImVec2 window_pos = ctx->GetMainViewportPos();
+            ImVec2 window_pos = ImGui::GetMainViewport()->Pos;
             if (vars.UseViewports == 0)
                 window_pos += ImVec2(10, 10); // Inside main viewport
             else
@@ -4055,8 +4055,8 @@ void RegisterTests_Capture(ImGuiTestEngine* e)
 
         // FIXME-TESTS: Find last newly opened window? -> cannot rely on NavWindow as menu item maybe was already checked..
 
-        ImVec2 viewport_pos = ctx->GetMainViewportPos();
-        ImVec2 viewport_size = ctx->GetMainViewportSize();
+        ImVec2 viewport_pos = ImGui::GetMainViewport()->Pos;
+        ImVec2 viewport_size = ImGui::GetMainViewport()->Size;
         float fh = ImGui::GetFontSize();
         float pad = fh;
 
