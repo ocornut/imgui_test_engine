@@ -758,6 +758,10 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
             ctx->NavActivate();                                         // Open menu, focus first item in the menu.
             ctx->NavActivate();                                         // Activate first item in the menu.
             IM_CHECK_EQ(g.NavId, ctx->GetID("1", ctx->GetIDByInt(1)));  // Verify NavId was restored to initial value.
+
+            ctx->SetRef("Dear ImGui Demo");
+            ctx->ItemClose("Scrolling");
+            ctx->ItemClose("Layout & Scrolling");
         }
     };
 

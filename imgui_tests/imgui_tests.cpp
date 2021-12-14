@@ -660,6 +660,69 @@ void RegisterTests_Window(ImGuiTestEngine* e)
         IM_CHECK((ctx->UiContext->NavWindow->Flags & ImGuiWindowFlags_ChildMenu) == 0);
     };
 
+    // ## Test clicking on already opened menu doesn't make it flicker
+    t = IM_REGISTER_TEST(e, "window", "window_popup_menu_reopen");
+    struct WindowMenuReopenVars { bool MenuIsVisible = false, MenuWasOnceNotVisible = false, SubmenuIsVisible = false, SubmenuWasOnceNotVisible = false; };
+    t->SetVarsDataType<WindowMenuReopenVars>();
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        auto& vars = ctx->GetVars<WindowMenuReopenVars>();
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_MenuBar);
+        if (ImGui::BeginMenuBar())
+        {
+            vars.MenuIsVisible = vars.SubmenuIsVisible = false;
+            if (ImGui::BeginMenu("Menu"))
+            {
+                vars.MenuIsVisible = true;
+                ImGui::MenuItem("Menu.item");
+                if (ImGui::BeginMenu("Submenu"))
+                {
+                    vars.SubmenuIsVisible = true;
+                    ImGui::MenuItem("Submenu.item");
+                    ImGui::EndMenu();
+                }
+                else
+                {
+                    vars.SubmenuWasOnceNotVisible = true;
+                }
+                ImGui::EndMenu();
+            }
+            else
+            {
+                vars.MenuWasOnceNotVisible = vars.SubmenuWasOnceNotVisible = true;
+            }
+            ImGui::EndMenuBar();
+        }
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        auto& vars = ctx->GetVars<WindowMenuReopenVars>();
+        ctx->SetRef("Test Window");
+        ctx->ItemClick("##menubar/Menu", 0, ImGuiTestOpFlags_NoFocusWindow);
+        IM_CHECK(vars.MenuIsVisible);
+        vars.MenuWasOnceNotVisible = false;
+        ctx->ItemClick("##menubar/Menu", 0, ImGuiTestOpFlags_NoFocusWindow);
+        IM_CHECK(vars.MenuIsVisible == false);
+        IM_CHECK(vars.MenuWasOnceNotVisible);
+        ctx->ItemClick("##menubar/Menu", 0, ImGuiTestOpFlags_NoFocusWindow);
+        IM_CHECK(vars.MenuIsVisible);
+
+        ctx->SetRef(ctx->GetFocusWindowRef());
+        vars.MenuWasOnceNotVisible = false;
+        ctx->ItemClick("Submenu", 0, ImGuiTestOpFlags_NoFocusWindow);
+        IM_CHECK(vars.MenuIsVisible);
+        IM_CHECK(vars.SubmenuIsVisible);
+        IM_CHECK(vars.MenuWasOnceNotVisible == false);
+        vars.SubmenuWasOnceNotVisible = false;
+
+        ctx->ItemClick("Submenu", 0, ImGuiTestOpFlags_NoFocusWindow);
+        IM_CHECK(vars.MenuIsVisible);
+        IM_CHECK(vars.SubmenuIsVisible);
+        IM_CHECK(vars.MenuWasOnceNotVisible == false);
+        IM_CHECK(vars.SubmenuWasOnceNotVisible == false);
+    };
+
     // ## Test behavior of io.WantCaptureMouse and io.WantCaptureMouseUnlessPopupClose with popups. (#4480)
 #if IMGUI_VERSION_NUM >= 18410
     t = IM_REGISTER_TEST(e, "window", "window_popup_want_capture");
