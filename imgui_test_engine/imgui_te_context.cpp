@@ -2522,11 +2522,13 @@ void    ImGuiTestContext::MenuAction(ImGuiTestAction action, ImGuiTestRef ref)
         if (depth == 0)
         {
             // Click menu in menu bar
-            IM_ASSERT(RefStr[0] != 0); // Unsupported: window needs to be in Ref
+            //IM_ASSERT(RefStr[0] != 0); // Unsupported: window needs to be in Ref
             if (g.NavWindow != NULL && strncmp(g.NavWindow->Name, "##Popup_", 8) == 0)
             {
                 buf.setf("/%s/%.*s", g.NavWindow->Name, (int)(p - path), path);
+#if IMGUI_VERSION_NUM < 18520
                 depth++;
+#endif
             }
             else
             {
