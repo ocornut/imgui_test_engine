@@ -1006,15 +1006,19 @@ void RegisterTests_Window(ImGuiTestEngine* e)
 #ifdef IMGUI_HAS_DOCK
             ImGuiWindow* window1 = ctx->GetWindowByRef("Window1");
             ImGuiWindow* window2 = ctx->GetWindowByRef("Window2");
-            ctx->DockInto("Window0", "Interrupts", -1, false, ImGuiTestOpFlags_NoFocusWindow);
-            IM_CHECK_EQ(window0->DockId, (ImGuiID)0);                           // Failure to dock into window that does not belong to begin stack of current popup
-            ctx->DockInto("Window0", "Hello, world!", -1, false, ImGuiTestOpFlags_NoFocusWindow);
-            IM_CHECK_EQ(window0->DockId, (ImGuiID)0);
-            ctx->DockInto("Window0", "Window2", -1, false, ImGuiTestOpFlags_NoFocusWindow);
-            IM_CHECK_NE(window0->DockId, (ImGuiID)0);                           // Can dock into windows that belong to begin stack of current popup
-            IM_CHECK_NE(window2->DockId, (ImGuiID)0);
-            ctx->DockInto("Window1", "Window2", -1, false, ImGuiTestOpFlags_NoFocusWindow);
-            IM_CHECK_NE(window1->DockId, (ImGuiID)0);                           // Can dock into dock node, because all windows in that node belong to begin stack of payload window
+            ctx->DockInto("Window0", "Interrupts", ImGuiDir_None, false, ImGuiTestOpFlags_NoFocusWindow);
+            IM_CHECK(ctx->WindowIsUndockedOrStandalone(window0));           // Failure to dock into window that does not belong to begin stack of current popup
+            ctx->DockInto("Window0", "Hello, world!", ImGuiDir_None, false, ImGuiTestOpFlags_NoFocusWindow);
+            IM_CHECK(ctx->WindowIsUndockedOrStandalone(window0));
+            IM_UNUSED(window2);
+#if IMGUI_BROKEN_TESTS
+            ctx->DockInto("Window0", "Window2", ImGuiDir_None, false, ImGuiTestOpFlags_NoFocusWindow);
+            IM_CHECK(!ctx->WindowIsUndockedOrStandalone(window0));          // Can dock into windows that belong to begin stack of current popup
+            IM_CHECK(!ctx->WindowIsUndockedOrStandalone(window2));
+            ctx->DockInto("Window1", "Window2", ImGuiDir_None, false, ImGuiTestOpFlags_NoFocusWindow);
+            IM_CHECK(!ctx->WindowIsUndockedOrStandalone(window1));          // Can dock into dock node, because all windows in that node belong to begin stack of payload window
+#endif
+
             ctx->DockClear("Interrupts", "Window0", "Window1", "Window2", NULL);
 #endif
             SetShowInterrupts(false);
@@ -1038,13 +1042,13 @@ void RegisterTests_Window(ImGuiTestEngine* e)
             IM_CHECK_EQ(popup2->Active, true);
             ctx->ItemClick(Str30f("/%s/##menubar/File", popup2->Name).c_str());// FIXME: MenuClick() does not work well with menus inside of a popup.
 #ifdef IMGUI_HAS_DOCK
-            ctx->DockInto("Window3", "Interrupts", -1, false, ImGuiTestOpFlags_NoFocusWindow);
-            IM_CHECK_EQ(window3->DockId, (ImGuiID)0);                       // Can not dock into windows that belong to same begin stack, but are below parent popup
-            ctx->DockInto("Window3", "Hello, world!", -1, false, ImGuiTestOpFlags_NoFocusWindow);
-            IM_CHECK_EQ(window3->DockId, (ImGuiID)0);                       // Can not dock into windows whose begin stack does not intersect with begin stack of payload window
-            window0->Pos = popup2->Rect().GetTR() + ImVec2(20, 0);          // Ensure DockInto() does not try to hide (and kill) a popup
-            ctx->DockInto("Window3", "Window0", -1, false, ImGuiTestOpFlags_NoFocusWindow);
-            IM_CHECK_EQ(window3->DockId, (ImGuiID)0);                       // Can not dock into windows that belong to same begin stack, but are below parent popup
+            ctx->DockInto("Window3", "Interrupts", ImGuiDir_None, false, ImGuiTestOpFlags_NoFocusWindow);
+            IM_CHECK(ctx->WindowIsUndockedOrStandalone(window3));                                   // Can not dock into windows that belong to same begin stack, but are below parent popup
+            ctx->DockInto("Window3", "Hello, world!", ImGuiDir_None, false, ImGuiTestOpFlags_NoFocusWindow);
+            IM_CHECK(ctx->WindowIsUndockedOrStandalone(window3));                                   // Can not dock into windows whose begin stack does not intersect with begin stack of payload window
+            window0->Pos = popup2->Rect().GetTR() + ImVec2(20, 0);                                  // Ensure DockInto() does not try to hide (and kill) a popup
+            ctx->DockInto("Window3", "Window0", ImGuiDir_None, false, ImGuiTestOpFlags_NoFocusWindow);
+            IM_CHECK(ctx->WindowIsUndockedOrStandalone(window3));                                   // Can not dock into windows that belong to same begin stack, but are below parent popup
             ctx->DockClear("Interrupts", "Window0", "Window3", NULL);
 #endif
             SetShowInterrupts(true);                                        // "Window1" and "Window2" appear
@@ -1079,8 +1083,8 @@ void RegisterTests_Window(ImGuiTestEngine* e)
 #ifdef IMGUI_HAS_DOCK
             OpenPopup(1);
             window1->Pos = popup2->Rect().GetTR() + ImVec2(20, 0);          // Ensure DockInto() does not try to hide (and kill) a popup
-            ctx->DockInto("Window3", "Window1", -1, false, ImGuiTestOpFlags_NoFocusWindow);
-            IM_CHECK_EQ(window3->DockId, (ImGuiID)0);                       // Window1 is blocked by Popup2
+            ctx->DockInto("Window3", "Window1", ImGuiDir_None, false, ImGuiTestOpFlags_NoFocusWindow);
+            IM_CHECK(ctx->WindowIsUndockedOrStandalone(window3));           // Window1 is blocked by Popup2
             ctx->DockClear("Window1", "Window3", NULL);
 #endif
             SetShowInterrupts(false);

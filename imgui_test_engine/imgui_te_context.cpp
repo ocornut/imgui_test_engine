@@ -1406,6 +1406,7 @@ void ImGuiTestContext::ForeignWindowsHideOverPos(ImVec2 pos, ImGuiWindow** ignor
     LogDebug("ForeignWindowsHideOverPos (%.0f,%.0f)", pos.x, pos.y);
     IM_CHECK_SILENT(ignore_list != NULL); // It makes little sense to call this function with an empty list.
     IM_CHECK_SILENT(ignore_list[0] != NULL);
+    //auto& ctx = this;  IM_DEBUG_HALT_TESTFUNC();
 
     bool hidden_windows = false;
     for (int i = 0; i < g.Windows.Size; i++)
@@ -2881,6 +2882,7 @@ void    ImGuiTestContext::PopupCloseAll()
 // Note: unlike DockBuilder functions, for _nodes_ this require the node to be visible.
 // Supported values for ImGuiTestOpFlags:
 // - ImGuiTestOpFlags_NoFocusWindow
+// FIXME-TESTS: USING ImGuiTestOpFlags_NoFocusWindow leads to increase of ForeignWindowsHideOverPos(), best to avoid
 void    ImGuiTestContext::DockInto(ImGuiTestRef src_id, ImGuiTestRef dst_id, ImGuiDir split_dir, bool split_outer, ImGuiTestOpFlags flags)
 {
     ImGuiContext& g = *UiContext;
