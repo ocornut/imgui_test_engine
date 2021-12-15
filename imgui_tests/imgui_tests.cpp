@@ -747,6 +747,118 @@ void RegisterTests_Window(ImGuiTestEngine* e)
         IM_CHECK(vars.SubmenuWasOnceNotVisible == false);
     };
 
+    // ## Test navigating menus with mouse button is held down.
+    t = IM_REGISTER_TEST(e, "window", "window_popup_menu_hold");
+    struct PopupMenuHoldVars { ImGuiID QueryVarsBaseId = 0; ImGuiTestGenericItemStatus Status; };
+    t->SetVarsDataType<PopupMenuHoldVars>();
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        PopupMenuHoldVars& vars = ctx->GetVars<PopupMenuHoldVars>();
+        auto CreateMenu = [ctx, &vars]()
+        {
+            ImGuiID base_id = ImGui::GetID("");
+            if (vars.QueryVarsBaseId == base_id)
+                vars.Status.Clear();
+
+            if (ImGui::BeginMenu("AAA"))
+            {
+                if (ImGui::BeginMenu("BBB"))
+                {
+                    bool clicked = ImGui::MenuItem("CCC");
+                    if (vars.QueryVarsBaseId == base_id)
+                    {
+                        vars.Status.QuerySet();
+                        if (!ImGui::IsItemClicked())    // IsItemClicked() fails when mouse is dragged while pressed down
+                            vars.Status.Clicked += (int)clicked;
+                    }
+                    ImGui::EndMenu();
+                }
+                ImGui::EndMenu();
+            }
+        };
+        auto CreateMenuBar = [CreateMenu]()
+        {
+            ImGui::BeginMenuBar();
+            CreateMenu();
+            ImGui::EndMenuBar();
+        };
+
+        // Window with menu bar
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_MenuBar);
+        CreateMenuBar();
+
+        // Popup with menu bar
+        if (ImGui::Button("Open Popup"))
+            ImGui::OpenPopup("Popup");
+        if (ImGui::BeginPopup("Popup", ImGuiWindowFlags_MenuBar))
+        {
+            CreateMenuBar();
+            ImGui::EndPopup();
+        }
+
+        // Modal with menu bar
+        if (ImGui::Button("Open Modal"))
+            ImGui::OpenPopup("Modal");
+        if (ImGui::BeginPopupModal("Modal", NULL, ImGuiWindowFlags_MenuBar))
+        {
+            CreateMenuBar();
+            if (ImGui::IsKeyPressedMap(ImGuiKey_Escape))
+                ImGui::CloseCurrentPopup();
+            ImGui::EndPopup();
+        }
+
+        // Popup with menu
+        if (ImGui::Button("Open Menu"))
+            ImGui::OpenPopup("Menu");
+        if (ImGui::BeginPopup("Menu"))
+        {
+            CreateMenu();
+            ImGui::EndPopup();
+        }
+
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiContext& g = *ctx->UiContext;
+        PopupMenuHoldVars& vars = ctx->GetVars<PopupMenuHoldVars>();
+        ctx->SetRef("Test Window");
+
+        struct { const char* OpenButton; const char* MenuBase; } test_data[] = {
+            { NULL,         "##menubar" }, // Test from a window menu bar.
+            { "Open Popup", "##menubar" }, // Test from popup menu bar.
+            { "Open Modal", "##menubar" }, // Test from modal menu bar.
+            { "Open Menu" , ""          }, // Test from popup menu.
+        };
+
+        for (int variant = 0; variant < IM_ARRAYSIZE(test_data); variant++)
+        {
+            ctx->LogDebug("Variant: %d", variant);
+            auto& td = test_data[variant];
+            if (td.OpenButton)
+                ctx->ItemClick(Str64f("/Test Window/%s", td.OpenButton).c_str());
+            else
+                ctx->WindowFocus("/Test Window");
+            ctx->SetRef(g.NavWindow);
+            vars.QueryVarsBaseId = ctx->GetID(td.MenuBase);
+            if (*td.MenuBase)
+                ctx->MouseMove(Str16f("%s/AAA", td.MenuBase).c_str());
+            else
+                ctx->MouseMove("AAA", ImGuiTestOpFlags_NoFocusWindow);
+            ctx->MouseDown();
+#if !IMGUI_BROKEN_TESTS
+            // FIXME-TESTS: Pressing menu item whose menu is already open, causes open menu to flicker.
+            // This is a regression since 48f263336bc7651e0b648d9aaacd7828e31b23f8. Yield one frame to
+            // give flickering window time to reappear so MenuAction() does not fail.
+            ctx->Yield();
+#endif
+            ctx->MenuAction(ImGuiTestAction_Hover, "AAA/BBB/CCC");
+            IM_CHECK_EQ(vars.Status.Hovered, 1);
+            ctx->MouseUp();
+            IM_CHECK_EQ(vars.Status.Clicked, 1);
+        }
+    };
+
     // ## Test behavior of io.WantCaptureMouse and io.WantCaptureMouseUnlessPopupClose with popups. (#4480)
 #if IMGUI_VERSION_NUM >= 18410
     t = IM_REGISTER_TEST(e, "window", "window_popup_want_capture");
