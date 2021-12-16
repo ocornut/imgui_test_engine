@@ -2513,59 +2513,67 @@ void    ImGuiTestContext::MenuAction(ImGuiTestAction action, ImGuiTestRef ref)
     int depth = 0;
     const char* path = ref.Path;
     const char* path_end = path + strlen(path);
+    ImGuiWindow* current_window = NULL;
+
+    // FIXME: A special case for context menus. This is needed to facilitate interaction with context menus
+    // without having to set a ref window as it would be quite cumbersome from point of view of the user.
+    if (g.NavWindow != NULL && strncmp(g.NavWindow->Name, "##Popup_", 8) == 0)
+        current_window = g.NavWindow;
+    else if (RefID)
+        current_window = GetWindowByRef(RefID);
+
+    IM_ASSERT(current_window != NULL);  // A ref window must always be set
+    IM_ASSERT(*path != '/');            // FIXME: We could support /Window/Menu convention that allows to not set RefID.
+
     Str128 buf;
-    while (path < path_end)
+    while (path < path_end && !IsError())
     {
         const char* p = ImStrchrRangeWithEscaping(path, path_end, '/');
         if (p == NULL)
             p = path_end;
+
         const bool is_target_item = (p == path_end);
-        if (depth == 0)
-        {
-            // Click menu in menu bar
-            //IM_ASSERT(RefStr[0] != 0); // Unsupported: window needs to be in Ref
-            if (g.NavWindow != NULL && strncmp(g.NavWindow->Name, "##Popup_", 8) == 0)
-            {
-                buf.setf("/%s/%.*s", g.NavWindow->Name, (int)(p - path), path);
+        if (current_window->Flags & ImGuiWindowFlags_MenuBar)
+            buf.setf("/%s/##menubar/%.*s", current_window->Name, (int)(p - path), path);    // Click menu in menu bar
+        else
+            buf.setf("/%s/%.*s", current_window->Name, (int)(p - path), path);              // Click sub menu in its own window
+
 #if IMGUI_VERSION_NUM < 18520
-                depth++;
+        if (depth == 0 && (current_window->Flags & ImGuiWindowFlags_Popup))
+            depth++;
 #endif
+
+        ImGuiTestItemInfo* item = ItemInfo(buf.c_str());
+        IM_CHECK_SILENT(item != NULL);
+        if (!(item->StatusFlags & ImGuiItemStatusFlags_Opened)) // Open menus can be ignored completely.
+        {
+            // We cannot move diagonally to a menu item because depending on the angle and other items we cross on our path we could close our target menu.
+            // First move horizontally into the menu, then vertically!
+            if (depth > 0)
+            {
+                IM_CHECK_SILENT(item != NULL);
+                item->RefCount++;
+                if (depth > 1 && (Inputs->MousePosValue.x <= item->RectFull.Min.x || Inputs->MousePosValue.x >= item->RectFull.Max.x))
+                    MouseMoveToPos(ImVec2(item->RectFull.GetCenter().x, Inputs->MousePosValue.y));
+                if (depth > 0 && (Inputs->MousePosValue.y <= item->RectFull.Min.y || Inputs->MousePosValue.y >= item->RectFull.Max.y))
+                    MouseMoveToPos(ImVec2(Inputs->MousePosValue.x, item->RectFull.GetCenter().y));
+                item->RefCount--;
+            }
+
+            if (is_target_item)
+            {
+                // Final item
+                ItemAction(action, buf.c_str());
+                break;
             }
             else
             {
-                buf.setf("##menubar/%.*s", (int)(p - path), path);
+                // Then aim at the menu item. Menus may be navigated by holding mouse button down by hovering a menu.
+                ItemAction(Inputs->MouseButtonsValue ? ImGuiTestAction_Hover : ImGuiTestAction_Click, buf.c_str());
             }
         }
-        else
-        {
-            // Click sub menu in its own window
-            buf.setf("/##Menu_%02d/%.*s", depth - 1, (int)(p - path), path);
-        }
-
-        // We cannot move diagonally to a menu item because depending on the angle and other items we cross on our path we could close our target menu.
-        // First move horizontally into the menu, then vertically!
-        if (depth > 0)
-        {
-            ImGuiTestItemInfo* item = ItemInfo(buf.c_str());
-            IM_CHECK_SILENT(item != NULL);
-            item->RefCount++;
-            if (depth > 1 && (Inputs->MousePosValue.x <= item->RectFull.Min.x || Inputs->MousePosValue.x >= item->RectFull.Max.x))
-                MouseMoveToPos(ImVec2(item->RectFull.GetCenter().x, Inputs->MousePosValue.y));
-            if (depth > 0 && (Inputs->MousePosValue.y <= item->RectFull.Min.y || Inputs->MousePosValue.y >= item->RectFull.Max.y))
-                MouseMoveToPos(ImVec2(Inputs->MousePosValue.x, item->RectFull.GetCenter().y));
-            item->RefCount--;
-        }
-
-        if (is_target_item)
-        {
-            // Final item
-            ItemAction(action, buf.c_str());
-        }
-        else
-        {
-            // Then aim at the menu item
-            ItemAction(ImGuiTestAction_Click, buf.c_str());
-        }
+        current_window = GetWindowByRef(Str16f("##Menu_%02d", depth).c_str());
+        IM_CHECK_SILENT(current_window != NULL);
 
         path = p + 1;
         depth++;
