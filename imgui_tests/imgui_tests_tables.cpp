@@ -3052,7 +3052,7 @@ void RegisterTests_Columns(ImGuiTestEngine* e)
 
     // ## Test column reordering and resetting to default order.
     t = IM_REGISTER_TEST(e, "columns", "columns_cov_legacy_columns");
-    struct ColumnsTestingVars { ImGuiOldColumnFlags Flags = 0; int Count = 0; };
+    struct ColumnsTestingVars { ImGuiOldColumnFlags Flags = 0; int Count = 0; ImGuiID ColumnsID; };
     t->SetVarsDataType<ColumnsTestingVars>();
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
@@ -3060,6 +3060,7 @@ void RegisterTests_Columns(ImGuiTestEngine* e)
 
         ImGui::SetNextWindowSize(ImVec2(300.0f, 60.0f), ImGuiCond_Appearing);
         ImGui::Begin("Test window", NULL, ImGuiWindowFlags_NoSavedSettings);
+        vars.ColumnsID = ImGui::GetColumnsID("Legacy Columns", 5);
         ImGui::BeginColumns("Legacy Columns", 5, vars.Flags);
 
         // Flex column offset/width functions.
@@ -3090,7 +3091,7 @@ void RegisterTests_Columns(ImGuiTestEngine* e)
 
         ctx->SetRef("Test window");
         ImGuiWindow* window = ctx->GetWindowByRef(ctx->RefID);
-        ImGuiOldColumns* columns = ImGui::FindOrCreateColumns(window, ctx->GetID("Legacy Columns", ctx->GetIDByInt(0x11223347)));
+        ImGuiOldColumns* columns = ImGui::FindOrCreateColumns(window, vars.ColumnsID);
 
         vars.Flags = ImGuiOldColumnFlags_None;
         vars.Count = -1;
