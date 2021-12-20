@@ -1736,7 +1736,7 @@ void RegisterTests_PerfTool(ImGuiTestEngine* e)
         ctx->MouseMoveToPos(plot_child->Rect().GetCenter());
         ctx->MouseDoubleClick(ImGuiMouseButton_Left);               // Auto-size plots while at it
         ctx->MouseClick(ImGuiMouseButton_Right);
-        ctx->MenuClick("Legend/NE");
+        ctx->MenuClick("/$FOCUSED/Legend/NE");
 
         // Click some stuff for more coverage.
         ctx->MouseMoveToPos(plot_child->Rect().GetCenter());
@@ -1799,7 +1799,7 @@ void RegisterTests_PerfTool(ImGuiTestEngine* e)
         ctx->MouseMoveToPos(plot_child->Rect().GetCenter());
         ctx->MouseDoubleClick(ImGuiMouseButton_Left);               // Auto-size plots while at it
         ctx->MouseClick(ImGuiMouseButton_Right);
-        ctx->MenuClick("Legend/NE");
+        ctx->MenuClick("/$FOCUSED/Legend/NE");
 #endif
         // Click some stuff for more coverage.
         ctx->ItemClick("##date-from", ImGuiMouseButton_Right);

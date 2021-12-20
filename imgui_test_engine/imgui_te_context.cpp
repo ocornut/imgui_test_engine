@@ -471,14 +471,34 @@ ImGuiID ImGuiTestContext::GetID(ImGuiTestRef ref)
 {
     if (ref.ID)
         return ref.ID;
-    return ImHashDecoratedPath(ref.Path ? ref.Path : "", NULL, RefID);
+
+    return GetID(ref, RefID);
 }
 
 ImGuiID ImGuiTestContext::GetID(ImGuiTestRef ref, ImGuiTestRef seed_ref)
 {
+    ImGuiContext& g = *UiContext;
+
     if (ref.ID)
         return ref.ID; // FIXME: What if seed_ref != 0
-    return ImHashDecoratedPath(ref.Path ? ref.Path : "", NULL, GetID(seed_ref));
+
+    const char* FOCUSED_PREFIX = "/$FOCUSED";
+    const size_t FOCUSED_PREFIX_LEN = 9;
+
+    const char* path = ref.Path ? ref.Path : "";
+    if (strncmp(path, FOCUSED_PREFIX, FOCUSED_PREFIX_LEN) == 0)
+        if (path[FOCUSED_PREFIX_LEN] == '/' || path[FOCUSED_PREFIX_LEN] == 0)
+        {
+            path += FOCUSED_PREFIX_LEN;
+            if (path[0] == '/')
+                path++;
+            if (g.NavWindow)
+                seed_ref = g.NavWindow->ID;
+            else
+                LogError("\"/$FOCUSED\" was used with no focused window!");
+        }
+
+    return ImHashDecoratedPath(path, NULL, seed_ref.Path ? GetID(seed_ref) : seed_ref.ID);
 }
 
 ImGuiID ImGuiTestContext::GetIDByInt(int n)
@@ -2509,21 +2529,25 @@ void    ImGuiTestContext::MenuAction(ImGuiTestAction action, ImGuiTestRef ref)
 
     IM_ASSERT(ref.Path != NULL);
 
-    ImGuiContext& g = *UiContext;
     int depth = 0;
     const char* path = ref.Path;
     const char* path_end = path + strlen(path);
     ImGuiWindow* current_window = NULL;
 
-    // FIXME: A special case for context menus. This is needed to facilitate interaction with context menus
-    // without having to set a ref window as it would be quite cumbersome from point of view of the user.
-    if (g.NavWindow != NULL && strncmp(g.NavWindow->Name, "##Popup_", 8) == 0)
-        current_window = g.NavWindow;
+    if (*path == '/')
+    {
+        const char* end = strstr(path + 1, "/");
+        IM_CHECK_SILENT(end != NULL); // Menu interaction without any menus specified in ref.
+        Str30 window_name;
+        window_name.append(path, end);
+        current_window = GetWindowByRef(GetID(window_name.c_str()));
+        path = end + 1;
+    }
     else if (RefID)
+    {
         current_window = GetWindowByRef(RefID);
-
-    IM_ASSERT(current_window != NULL);  // A ref window must always be set
-    IM_ASSERT(*path != '/');            // FIXME: We could support /Window/Menu convention that allows to not set RefID.
+    }
+    IM_CHECK_SILENT(current_window != NULL);  // A ref window must always be set
 
     Str128 buf;
     while (path < path_end && !IsError())
