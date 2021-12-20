@@ -1670,15 +1670,13 @@ void ImGuiPerfTool::_SetBaseline(int batch_index)
 
 static bool SetPerfToolWindowOpen(ImGuiTestContext* ctx, bool is_open)
 {
-    ImGuiContext& g = *ImGui::GetCurrentContext();
     ctx->WindowFocus("/Dear ImGui Test Engine");
     ctx->ItemClick("/Dear ImGui Test Engine/ TOOLS ");
-    Str30f perf_tool_checkbox("/%s/Perf Tool", g.NavWindow->Name);
-    if (ImGuiTestItemInfo* checkbox_info = ctx->ItemInfo(perf_tool_checkbox.c_str()))
+    if (ImGuiTestItemInfo* checkbox_info = ctx->ItemInfo("/$FOCUSED/Perf Tool"))
     {
         bool is_checked = (checkbox_info->StatusFlags & ImGuiItemStatusFlags_Checked) != 0;
         if (is_checked != is_open)
-            ctx->ItemClick(perf_tool_checkbox.c_str());
+            ctx->ItemClick("/$FOCUSED/Perf Tool");
         return is_checked;
     }
     return false;
@@ -1707,7 +1705,6 @@ void RegisterTests_PerfTool(ImGuiTestEngine* e)
     };
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
-        ImGuiContext& g = *ctx->UiContext;
         ImGuiPerfTool* perftool = ImGuiTestEngine_GetPerfTool(ctx->Engine);
         const char* temp_perf_csv = "output/misc_cov_perf_tool.csv";
 
@@ -1743,9 +1740,9 @@ void RegisterTests_PerfTool(ImGuiTestEngine* e)
         ctx->KeyModPress(ImGuiKeyModFlags_Shift);
 #endif
         ctx->ItemClick("##date-from", ImGuiMouseButton_Right);
-        ctx->ItemClick(ctx->GetID("Set Min", g.NavWindow->ID));
+        ctx->ItemClick(ctx->GetID("/$FOCUSED/Set Min"));
         ctx->ItemClick("##date-to", ImGuiMouseButton_Right);
-        ctx->ItemClick(ctx->GetID("Set Max", g.NavWindow->ID));
+        ctx->ItemClick(ctx->GetID("/$FOCUSED/Set Max"));
         ctx->ItemClick("###Filter builds");
         ctx->ItemClick("###Filter tests");
         ctx->ItemClick("Combine", 0, ImGuiTestOpFlags_MoveToEdgeL); // Toggle thrice to leave state unchanged
@@ -1770,7 +1767,6 @@ void RegisterTests_PerfTool(ImGuiTestEngine* e)
     t = IM_REGISTER_TEST(e, "capture", "capture_perf_report");
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
-        ImGuiContext& g = *ctx->UiContext;
         ImGuiPerfTool* perftool = ImGuiTestEngine_GetPerfTool(ctx->Engine);
         const char* perf_report_image = NULL;
         if (!ImFileExist(IMGUI_PERFLOG_FILENAME))
@@ -1803,9 +1799,9 @@ void RegisterTests_PerfTool(ImGuiTestEngine* e)
 #endif
         // Click some stuff for more coverage.
         ctx->ItemClick("##date-from", ImGuiMouseButton_Right);
-        ctx->ItemClick(ctx->GetID("Set Min", g.NavWindow->ID));
+        ctx->ItemClick(ctx->GetID("/$FOCUSED/Set Min"));
         ctx->ItemClick("##date-to", ImGuiMouseButton_Right);
-        ctx->ItemClick(ctx->GetID("Set Max", g.NavWindow->ID));
+        ctx->ItemClick(ctx->GetID("/$FOCUSED/Set Max"));
 #ifdef IMGUI_TEST_ENGINE_ENABLE_IMPLOT
         // Take a screenshot.
         perf_report_image = "captures/capture_perf_report_0000.png";

@@ -241,7 +241,6 @@ struct ImGuiTestContext
     void        PopupCloseOne();
     void        PopupCloseAll();
     ImGuiWindow* GetWindowByRef(ImGuiTestRef ref);
-    ImGuiTestRef GetFocusWindowRef();
 
     void        ForeignWindowsHideOverPos(ImVec2 pos, ImGuiWindow** ignore_list);
     void        ForeignWindowsUnhideAll();

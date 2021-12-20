@@ -440,7 +440,7 @@ void ImGuiTestContext::SetRef(ImGuiTestRef ref)
         IM_ASSERT(len < IM_ARRAYSIZE(RefStr) - 1);
 
         strcpy(RefStr, ref.Path);
-        RefID = ImHashDecoratedPath(ref.Path, NULL, 0);
+        RefID = GetID(ref.Path, ImGuiTestRef());
     }
     else
     {
@@ -624,12 +624,6 @@ ImGuiID ImGuiTestContext::GetChildWindowID(ImGuiTestRef parent_ref, ImGuiID chil
 
     ImStrReplace(&parent_name, "/", "\\/");
     return GetID(Str128f("/%s\\/%08X", parent_name.c_str(), child_id).c_str());
-}
-
-ImGuiTestRef ImGuiTestContext::GetFocusWindowRef()
-{
-    ImGuiContext& g = *UiContext;
-    return g.NavWindow ? g.NavWindow->ID : 0;
 }
 
 static bool ImGuiTestContext_CanCapture(ImGuiTestContext* ctx)
@@ -2608,7 +2602,7 @@ void    ImGuiTestContext::MenuActionAll(ImGuiTestAction action, ImGuiTestRef ref
 {
     ImGuiTestItemList items;
     MenuAction(ImGuiTestAction_Open, ref_parent);
-    GatherItems(&items, GetFocusWindowRef(), 1);
+    GatherItems(&items, "/$FOCUSED", 1);
     for (auto item : items)
     {
         MenuAction(ImGuiTestAction_Open, ref_parent); // We assume that every interaction will close the menu again
@@ -2642,8 +2636,7 @@ void    ImGuiTestContext::ComboClick(ImGuiTestRef ref)
     Str128f combo_popup_buf = Str128f("%.*s", (int)(p-path), path);
     ItemClick(combo_popup_buf.c_str());
 
-    ImGuiTestRef popup_ref = GetFocusWindowRef();
-    ImGuiWindow* popup = GetWindowByRef(popup_ref);
+    ImGuiWindow* popup = GetWindowByRef("/$FOCUSED");
     IM_CHECK_SILENT(popup && IsWindowACombo(popup));
 
     Str128f combo_item_buf = Str128f("/%s/**/%s", popup->Name, p + 1);
@@ -2654,12 +2647,11 @@ void    ImGuiTestContext::ComboClickAll(ImGuiTestRef ref_parent)
 {
     ItemClick(ref_parent);
 
-    ImGuiTestRef popup_ref = GetFocusWindowRef();
-    ImGuiWindow* popup = GetWindowByRef(popup_ref);
+    ImGuiWindow* popup = GetWindowByRef("/$FOCUSED");
     IM_CHECK_SILENT(popup && IsWindowACombo(popup));
 
     ImGuiTestItemList items;
-    GatherItems(&items, popup_ref);
+    GatherItems(&items, "/$FOCUSED");
     for (auto item : items)
     {
         ItemClick(ref_parent); // We assume that every interaction will close the combo again
@@ -2721,7 +2713,7 @@ void ImGuiTestContext::TableSetColumnEnabled(ImGuiTestRef ref, const char* label
     TableOpenContextMenu(ref);
 
     ImGuiTestRef backup_ref = GetRef();
-    SetRef(GetFocusWindowRef());
+    SetRef("/$FOCUSED");
     if (enabled)
         ItemCheck(label);
     else

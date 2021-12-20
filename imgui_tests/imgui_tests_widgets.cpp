@@ -2651,7 +2651,6 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
     };
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
-        ImGuiContext& g = *ctx->UiContext;
         ImGuiTestGenericVars& vars = ctx->GenericVars;
         vars.Color1 = ImVec4(1, 0, 0, 1);
 
@@ -2664,7 +2663,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
 
         // Test hex inputs.
         ctx->ItemClick("ColorEdit1/##ColorButton");
-        ctx->SetRef(g.NavWindow);
+        ctx->SetRef("/$FOCUSED");
         ctx->ItemInputValue("##picker/##hex/##Text", "112233");
         IM_CHECK(equal(vars.Color1, ImVec4(ImColor(0x11, 0x22, 0x33, 0xFF))));
         ctx->ItemInputValue("##picker/##hex/##Text", "11223344");
@@ -2724,7 +2723,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
 
         ImGuiContext& g = *ctx->UiContext;
         ctx->ItemClick("Window/Color/##ColorButton");
-        ctx->SetRef(ctx->GetFocusWindowRef());
+        ctx->SetRef("/$FOCUSED");
         ImGuiWindow* popup = g.NavWindow;
 
         // Variant 0: use float RGB.
@@ -3150,15 +3149,12 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ctx->MouseMove("Combo");
         ctx->MouseClick(ImGuiMouseButton_Right);
         IM_CHECK(vars.Bool1 == false && vars.Bool2 == true);
-        ctx->SetRef(ctx->GetFocusWindowRef());
-        ctx->ItemClick("Close");
+        ctx->ItemClick("/$FOCUSED/Close");
         vars.Bool1 = vars.Bool2 = false;
 
-        ctx->SetRef("Test Window");
         ctx->ItemClick("Combo");
         IM_CHECK(vars.Bool1 == true && vars.Bool2 == false);
-        ctx->SetRef(ctx->GetFocusWindowRef());
-        ctx->ItemClick("Close");
+        ctx->ItemClick("/$FOCUSED/Close");
         vars.Bool1 = vars.Bool2 = false;
     };
 #endif

@@ -446,14 +446,11 @@ void RegisterTests_Window(ImGuiTestEngine* e)
 
         ctx->ItemClick("Open Popup");
         IM_CHECK(g.OpenPopupStack.Size == 1);
-        ctx->SetRef(ctx->GetFocusWindowRef());
-        ctx->ItemClick("Close2");
+        ctx->ItemClick("/$FOCUSED/Close2");
         IM_CHECK(g.OpenPopupStack.Size == 0);
 
-        ctx->SetRef("Popups");
-        ctx->ItemClick("Open Popup");
-        ctx->SetRef(ctx->GetFocusWindowRef());
-        ctx->MenuClick("Submenu2/Close3");
+        ctx->ItemClick("/Popups/Open Popup");
+        ctx->MenuClick("/$FOCUSED/Submenu2/Close3");
         IM_CHECK(g.OpenPopupStack.Size == 0);
     };
 
@@ -671,7 +668,7 @@ void RegisterTests_Window(ImGuiTestEngine* e)
     {
         ctx->SetRef("Test Window");
         ctx->ItemClick("open");
-        ctx->SetRef(ctx->GetFocusWindowRef());
+        ctx->SetRef("/$FOCUSED");
         ctx->MouseMove("BBB", ImGuiTestOpFlags_NoFocusWindow);
         ctx->MouseMove("CCC", ImGuiTestOpFlags_NoFocusWindow);
         IM_CHECK((ctx->UiContext->NavWindow->Flags & ImGuiWindowFlags_ChildMenu) != 0);
@@ -732,7 +729,7 @@ void RegisterTests_Window(ImGuiTestEngine* e)
         ctx->ItemClick("##menubar/Menu", 0, ImGuiTestOpFlags_NoFocusWindow);
         IM_CHECK(vars.MenuIsVisible);
 
-        ctx->SetRef(ctx->GetFocusWindowRef());
+        ctx->SetRef("/$FOCUSED");
         vars.MenuWasOnceNotVisible = false;
         ctx->ItemClick("Submenu", 0, ImGuiTestOpFlags_NoFocusWindow);
         IM_CHECK(vars.MenuIsVisible);
@@ -820,7 +817,6 @@ void RegisterTests_Window(ImGuiTestEngine* e)
     };
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
-        ImGuiContext& g = *ctx->UiContext;
         PopupMenuHoldVars& vars = ctx->GetVars<PopupMenuHoldVars>();
         ctx->SetRef("Test Window");
 
@@ -839,7 +835,7 @@ void RegisterTests_Window(ImGuiTestEngine* e)
                 ctx->ItemClick(Str64f("/Test Window/%s", td.OpenButton).c_str());
             else
                 ctx->WindowFocus("/Test Window");
-            ctx->SetRef(g.NavWindow);
+            ctx->SetRef("/$FOCUSED");
             vars.QueryVarsBaseId = ctx->GetID(td.MenuBase);
             if (*td.MenuBase)
                 ctx->MouseMove(Str16f("%s/AAA", td.MenuBase).c_str());
@@ -4102,7 +4098,7 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
         ctx->MouseClick(1); // Open picker settings popup
         ctx->Yield();
 
-        ctx->SetRef(ctx->GetFocusWindowRef());
+        ctx->SetRef("/$FOCUSED");
         ctx->ItemClick("RGB");
         ctx->ItemClick("HSV");
         ctx->ItemClick("Hex");
@@ -4122,18 +4118,18 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
             ctx->Yield();
 
             // Open color picker style chooser
-            ctx->SetRef(ctx->GetFocusWindowRef());
+            ctx->SetRef("/$FOCUSED");
             ctx->MouseMoveToPos(ctx->GetWindowByRef("")->Rect().GetCenter());
             ctx->MouseClick(1);
             ctx->Yield();
 
             // Select picker type
-            ctx->SetRef(ctx->GetFocusWindowRef());
+            ctx->SetRef("/$FOCUSED");
             ctx->MouseMove(ctx->GetID("##selectable", ctx->GetIDByInt(picker_type)));
             ctx->MouseClick(0);
 
             // Interact with picker
-            ctx->SetRef(ctx->GetFocusWindowRef());
+            ctx->SetRef("/$FOCUSED");
             if (picker_type == 0)
             {
                 ctx->MouseMove("##picker/sv", ImGuiTestOpFlags_MoveToEdgeU | ImGuiTestOpFlags_MoveToEdgeL);
@@ -4541,7 +4537,7 @@ void RegisterTests_Capture(ImGuiTestEngine* e)
         ctx->Sleep(1.0f);
         ctx->ItemClick("Color##ColorButton");
 
-        ctx->SetRef(ctx->GetFocusWindowRef());
+        ctx->SetRef("/$FOCUSED");
         ctx->Sleep(2.0f);
         ctx->PopupCloseAll();
     };

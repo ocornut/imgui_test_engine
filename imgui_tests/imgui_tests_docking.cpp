@@ -1128,7 +1128,7 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
         for (int i = 0; i < IM_ARRAYSIZE(windows); i++)
         {
             ctx->ItemClick(ImGui::DockNodeGetWindowMenuButtonId(windows[i]->RootWindowDockTree->DockNodeAsHost));
-            ctx->SetRef(g.NavWindow);
+            ctx->SetRef("/$FOCUSED");
             ctx->ItemClick(windows[i]->Name);
             IM_CHECK(g.NavWindow == windows[i]);
         }

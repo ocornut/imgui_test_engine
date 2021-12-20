@@ -183,7 +183,7 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
 
             const ImGuiID input_id = ctx->GenericVars.Id; // "Input"
             ctx->NavMoveTo(input_id);
-            ctx->SetRef(g.NavWindow->ID);
+            ctx->SetRef("/$FOCUSED");
 
             IM_CHECK(g.OpenPopupStack.Size == (step == 2));
             IM_CHECK(g.NavLayer == ImGuiNavLayer_Main);
@@ -709,7 +709,7 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
         IM_CHECK((g.NavWindow->Flags & ImGuiWindowFlags_ChildWindow) != 0);
         ctx->NavKeyPress(ImGuiNavInput_KeyDown_);               // Manipulate something
         //IM_CHECK(g.NavId == ctx->ItemInfo("/**/Button 4")->ID); // Can't easily include child window name in ID because the / gets inhibited...
-        IM_CHECK(g.NavId == ctx->GetID("Button 4", g.NavWindow->ID));
+        IM_CHECK(g.NavId == ctx->GetID("/$FOCUSED/Button 4"));
         ctx->NavActivate();
         ctx->NavKeyPress(ImGuiNavInput_Cancel);                 // Leave child window
         IM_CHECK(g.NavId == ctx->GetID("Window 1/Child"));      // Focus resumes last location before entering child window
@@ -1004,9 +1004,9 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
         ctx->KeyPressMap(ImGuiKey_RightArrow);
 
         // Parent -> Child
-        IM_CHECK_EQ(g.NavId, ctx->GetID("Child 1 Button 2", g.NavWindow->ID));
+        IM_CHECK_EQ(g.NavId, ctx->GetID("/$FOCUSED/Child 1 Button 2"));
         ctx->KeyPressMap(ImGuiKey_UpArrow);
-        IM_CHECK_EQ(g.NavId, ctx->GetID("Child 1 Button 1", g.NavWindow->ID));
+        IM_CHECK_EQ(g.NavId, ctx->GetID("/$FOCUSED/Child 1 Button 1"));
 
         // Child -> Parent
         ctx->KeyPressMap(ImGuiKey_LeftArrow);
@@ -1016,11 +1016,11 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
         // Parent -> Child -> Child
         ctx->KeyPressMap(ImGuiKey_RightArrow);
         ctx->KeyPressMap(ImGuiKey_RightArrow);
-        IM_CHECK_EQ(g.NavId, ctx->GetID("Child 2 Button 2", g.NavWindow->ID));
+        IM_CHECK_EQ(g.NavId, ctx->GetID("/$FOCUSED/Child 2 Button 2"));
 
         // Child -> nested Child
         ctx->KeyPressMap(ImGuiKey_RightArrow);
-        IM_CHECK_EQ(g.NavId, ctx->GetID("Child 3B Button 2", g.NavWindow->ID));
+        IM_CHECK_EQ(g.NavId, ctx->GetID("/$FOCUSED/Child 3B Button 2"));
 
         // FIXME: test PageUp/PageDown on child
     };

@@ -749,7 +749,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
             ctx->ItemDragWithDelta(ImGui::TableGetColumnResizeID(table, 1), ImVec2(-20.0f, 0));
             ctx->ItemDragWithDelta(ImGui::TableGetColumnResizeID(table, 2), ImVec2(+20.0f, 0));
             ctx->TableOpenContextMenu("table0");
-            ctx->SetRef(ctx->GetFocusWindowRef());
+            ctx->SetRef("/$FOCUSED");
             ctx->ItemClick("###SizeAll");
             IM_CHECK_EQ(table->Columns[0].WidthGiven, ImGui::CalcTextSize("AA").x);
             IM_CHECK_EQ(table->Columns[1].WidthGiven, ImGui::CalcTextSize("AAAA").x);
@@ -774,27 +774,27 @@ void RegisterTests_Table(ImGuiTestEngine* e)
 
             ctx->SetRef("Test window 1");
             ctx->TableOpenContextMenu("table1", 0);
-            ctx->SetRef(ctx->GetFocusWindowRef());
+            ctx->SetRef("/$FOCUSED");
             ctx->ItemClick("###SizeOne");
             IM_CHECK_EQ(table->Columns[0].WidthGiven, ImGui::CalcTextSize("AA").x);
             IM_CHECK_EQ(table->Columns[3].WidthGiven, 99.0f);
 
             ctx->SetRef("Test window 1");
             ctx->TableOpenContextMenu("table1", 1);
-            ctx->SetRef(ctx->GetFocusWindowRef());
+            ctx->SetRef("/$FOCUSED");
             ctx->ItemClick("###SizeOne");
             IM_CHECK_EQ(table->Columns[1].WidthGiven, ImGui::CalcTextSize("AAAA").x);
             IM_CHECK_EQ(table->Columns[3].WidthGiven, 99.0f);
 
             ctx->SetRef("Test window 1");
             ctx->TableOpenContextMenu("table1", 2);
-            ctx->SetRef(ctx->GetFocusWindowRef());
+            ctx->SetRef("/$FOCUSED");
             ctx->ItemClick("###SizeOne");
             IM_CHECK_EQ(table->Columns[2].WidthGiven, ImGui::CalcTextSize("AAAAAA").x);
 
             ctx->SetRef("Test window 1");
             ctx->TableOpenContextMenu("table1", 0);
-            ctx->SetRef(ctx->GetFocusWindowRef());
+            ctx->SetRef("/$FOCUSED");
             ctx->ItemClick("###SizeAll");
             IM_CHECK_EQ(table->Columns[0].StretchWeight, 1.0f);
             IM_CHECK_EQ(table->Columns[1].StretchWeight, 1.0f);
@@ -1105,7 +1105,6 @@ void RegisterTests_Table(ImGuiTestEngine* e)
     };
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
-        ImGuiContext& g = *ctx->UiContext;
         ImGuiTable* table = NULL;
         ImVector<float> initial_column_width;
 
@@ -1150,7 +1149,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
             // Fit column.
             ctx->SetRef("Test window 1");
             ctx->ItemClick(TableGetHeaderID(table, "F3"), ImGuiMouseButton_Right);
-            ctx->SetRef(g.NavWindow);
+            ctx->SetRef("/$FOCUSED");
             ctx->ItemClick("###SizeOne");
             IM_CHECK(col_curr->WidthGiven == initial_column_width[column_n]);  // Column restored original size
 
@@ -1161,7 +1160,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
             // Test fitting rest of the columns
             ctx->SetRef("Test window 1");
             ctx->ItemClick(TableGetHeaderID(table, "F3"), ImGuiMouseButton_Right);
-            ctx->SetRef(g.NavWindow);
+            ctx->SetRef("/$FOCUSED");
             ctx->ItemClick("###SizeAll");
 
             // Ensure all columns fit to contents
@@ -2720,7 +2719,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
         // Test column hiding.
         ctx->TableSetColumnEnabled("table1", "One", false);
         //ctx->ItemClick(TableGetHeaderID(table, "One"), ImGuiMouseButton_Right);
-        //ctx->SetRef(g.NavWindow);
+        //ctx->SetRef("/$FOCUSED");
         //ctx->ItemUncheck("One");
         IM_CHECK(col0->IsEnabled == false);
         ctx->TableSetColumnEnabled("table1", "One", true);
@@ -2754,7 +2753,6 @@ void RegisterTests_Table(ImGuiTestEngine* e)
     };
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
-        ImGuiContext& g = *ctx->UiContext;
         ctx->SetRef("Test window 1");
         ImGuiTable* table = ImGui::TableFindByID(ctx->GetID("table1"));
 
@@ -2776,7 +2774,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
         // Reset order using the ImGuiTableFlags_ContextMenuInBody location
         ctx->MouseMoveToPos(table->InnerClipRect.GetCenter());
         ctx->MouseClick(ImGuiMouseButton_Right);
-        ctx->SetRef(g.NavWindow);
+        ctx->SetRef("/$FOCUSED");
         ctx->ItemClick("Reset order");
 
         // Verify default order.
