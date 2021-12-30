@@ -1726,7 +1726,7 @@ void RegisterTests_PerfTool(ImGuiTestEngine* e)
         ctx->WindowResize("", ImVec2(1400, 900));
         ctx->WindowBringToFront(ctx->GetWindowByRef(""));
 #ifdef IMGUI_TEST_ENGINE_ENABLE_IMPLOT
-        ImGuiID plot_window_id = ctx->GetChildWindowID("plot");
+        ImGuiID plot_window_id = ctx->GetChildWindowID("", "plot");
         IM_CHECK(plot_window_id != 0);
         ImGuiWindow* plot_child = ctx->GetWindowByRef(ctx->GetChildWindowID(plot_window_id, "PerfTool"));
         IM_CHECK_NO_RET(plot_child != NULL);
@@ -1790,7 +1790,7 @@ void RegisterTests_PerfTool(ImGuiTestEngine* e)
 #ifdef IMGUI_TEST_ENGINE_ENABLE_IMPLOT
         ctx->ItemDoubleClick("splitter");   // Hide info table
 
-        ImGuiWindow* plot_child = ctx->GetWindowByRef(ctx->GetChildWindowID(ctx->GetChildWindowID(ctx->GetID("plot")), "PerfTool"));
+        ImGuiWindow* plot_child = ctx->GetWindowByRef(ctx->GetChildWindowID(ctx->GetChildWindowID("", ctx->GetID("plot")), "PerfTool"));
         IM_CHECK_NO_RET(plot_child != NULL);
 
         // Move legend to right side.

@@ -526,26 +526,12 @@ ImGuiID ImGuiTestContext::GetIDByPtr(void* p, ImGuiTestRef seed_ref)
     return ImHashData(&p, sizeof(p), GetID(seed_ref));
 }
 
-ImGuiID ImGuiTestContext::GetChildWindowID(const char* child_name)
-{
-    // Use SetRef() before calling a function that depends on current ref.
-    IM_ASSERT(RefID != 0);
-    return GetChildWindowID(RefID, child_name);
-}
-
-ImGuiID ImGuiTestContext::GetChildWindowID(ImGuiID child_id)
-{
-    // Use SetRef() before calling a function that depends on current ref.
-    IM_ASSERT(RefID != 0);
-    return GetChildWindowID(RefID, child_id);
-}
-
 // Helper function for GetChildWindowID()
 // FIXME-TESTS: Badly named.
 static bool GetWindowInformation(ImGuiTestContext* ctx, ImGuiTestRef window_ref, Str* out_name, ImGuiID* out_id)
 {
     IM_ASSERT(out_name != NULL || out_id != NULL);
-    if (window_ref.Path)
+    if (window_ref.Path && window_ref.Path[0])
     {
         Str256 tmp;
         if (out_name == NULL)
@@ -594,7 +580,6 @@ static bool GetWindowInformation(ImGuiTestContext* ctx, ImGuiTestRef window_ref,
 // Mimic logic of BeginChildEx(), ASSUMING child is output in root of parent
 ImGuiID ImGuiTestContext::GetChildWindowID(ImGuiTestRef parent_ref, const char* child_name)
 {
-    IM_ASSERT(!parent_ref.IsEmpty());
     IM_ASSERT(child_name != NULL);
 
     ImGuiID parent_id = 0;
@@ -617,7 +602,6 @@ ImGuiID ImGuiTestContext::GetChildWindowID(ImGuiTestRef parent_ref, const char* 
 
 ImGuiID ImGuiTestContext::GetChildWindowID(ImGuiTestRef parent_ref, ImGuiID child_id)
 {
-    IM_ASSERT(!parent_ref.IsEmpty());
     IM_ASSERT(child_id != 0);
 
     Str256 parent_name;

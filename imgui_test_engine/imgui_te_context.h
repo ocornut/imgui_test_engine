@@ -267,9 +267,6 @@ struct ImGuiTestContext
     ImGuiID     GetIDByInt(int n, ImGuiTestRef seed_ref);
     ImGuiID     GetIDByPtr(void* p);
     ImGuiID     GetIDByPtr(void* p, ImGuiTestRef seed_ref);
-    // FIXME: too many overload confusing, remove the two first one, let user pass ""
-    ImGuiID     GetChildWindowID(const char* child_name);                           // Name created by BeginChild("name", ...), using current Ref as parent.
-    ImGuiID     GetChildWindowID(ImGuiID child_id);                                 // Name created by BeginChild(id, ...), using current Ref as parent.
     ImGuiID     GetChildWindowID(ImGuiTestRef parent_ref, const char* child_name);  // Name created by BeginChild("name", ...), using specified parent.
     ImGuiID     GetChildWindowID(ImGuiTestRef parent_ref, ImGuiID child_id);        // Name created by BeginChild(id, ...), using specified parent.
 

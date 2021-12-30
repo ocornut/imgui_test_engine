@@ -1579,7 +1579,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         IM_CHECK_EQ(g.ActiveId, input_id);
         IM_CHECK(vars.Status.Active == 1);
         ctx->KeyCharsReplace("1\n2\n3\n4\n5\n6\n\7\n8\n9\n10\n11\n12\n13\n14\n15\n");
-        ImGuiWindow* window = ImGui::FindWindowByID(ctx->GetChildWindowID("Field"));
+        ImGuiWindow* window = ImGui::FindWindowByID(ctx->GetChildWindowID("", "Field"));
         IM_CHECK(window != NULL);
         ImGuiID scrollbar_id = ImGui::GetWindowScrollbarID(window, ImGuiAxis_Y);
         ctx->MouseMove(scrollbar_id);

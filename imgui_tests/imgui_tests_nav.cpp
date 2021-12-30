@@ -750,7 +750,7 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
             ctx->NavActivate();
             ctx->NavMoveTo("Scrolling");
             ctx->NavActivate(); // FIXME-TESTS: Could query current g.NavWindow instead of making names?
-            ImGuiWindow* child_window = ctx->GetWindowByRef(ctx->GetChildWindowID("Scrolling/scrolling"));
+            ImGuiWindow* child_window = ctx->GetWindowByRef(ctx->GetChildWindowID("", "Scrolling/scrolling"));
             ctx->SetRef(child_window->ID);
             ctx->ScrollTo(demo_window, ImGuiAxis_Y, (child_window->Pos - demo_window->Pos).y);  // Required because buttons do not register their IDs when out of view (SkipItems == true).
             ctx->NavMoveTo(ctx->GetID("1", ctx->GetIDByInt(1)));        // Focus item within a child window.
