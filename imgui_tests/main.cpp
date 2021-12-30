@@ -8,13 +8,14 @@
 // Command-line mode, e.g.
 //   main.exe -nogui -v -nopause
 //   main.exe -nogui -nopause perf_
+//   main.exe -nogui -viewport-mock
 
 #define CMDLINE_ARGS  "-fileopener tools/win32_open_with_sublime.cmd"
 //#define CMDLINE_ARGS  "-viewport-mock -nogui viewport_"               // Test mock viewports on TTY mode
 //#define CMDLINE_ARGS  "-gui -nothrottle"
-//#define CMDLINE_ARGS    "-slow widgets_inputtext_5_deactivate_flags"
+//#define CMDLINE_ARGS  "-slow widgets_inputtext_5_deactivate_flags"
 //#define CMDLINE_ARGS  "-gui perf_stress_text_unformatted_2"
-//#define CMDLINE_ARGS    "-slow widgets_inputtext_5_deactivate_flags"
+//#define CMDLINE_ARGS  "-slow widgets_inputtext_5_deactivate_flags"
 //#define CMDLINE_ARGS  "-nogui -v3 nav"
 //#define CMDLINE_ARGS  "-slow"
 //#define CMDLINE_ARGS  "-gui docking_focus -slow"

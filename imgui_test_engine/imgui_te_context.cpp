@@ -423,6 +423,8 @@ void ImGuiTestContext::SetRef(ImGuiWindow* window)
     strcpy(RefStr, window->Name);
     RefID = window->ID;
 
+    MouseSetViewport(window);
+
     // Automatically uncollapse by default
     if (!(OpFlags & ImGuiTestOpFlags_NoAutoUncollapse))
         WindowCollapse(window, false);
@@ -448,10 +450,13 @@ void ImGuiTestContext::SetRef(ImGuiTestRef ref)
         RefID = ref.ID;
     }
 
+    ImGuiWindow* window = GetWindowByRef("");
+    if (window)
+        MouseSetViewport(window);
+
     // Automatically uncollapse by default
-    if (!(OpFlags & ImGuiTestOpFlags_NoAutoUncollapse))
-        if (ImGuiWindow* window = GetWindowByRef(""))
-            WindowCollapse(window, false);
+    if (window && !(OpFlags & ImGuiTestOpFlags_NoAutoUncollapse))
+        WindowCollapse(window, false);
 }
 
 ImGuiTestRef ImGuiTestContext::GetRef()
@@ -976,6 +981,8 @@ void    ImGuiTestContext::ScrollTo(ImGuiWindow* window, ImGuiAxis axis, float sc
         // FIXME-TESTS: GetWindowScrollbarMousePositionForScroll doesn't return the exact value when scrollbar grip is too small
         if (scrollbar_size_v >= window_resize_grip_size)
         {
+            MouseSetViewport(window);
+
             const float scroll_src = window->Scroll[axis];
             ImVec2 scrollbar_src_pos = GetWindowScrollbarMousePositionForScroll(window, axis, scroll_src);
             scrollbar_src_pos[axis] = ImMin(scrollbar_src_pos[axis], scrollbar_rect.Min[axis] + scrollbar_size_v - window_resize_grip_size);
@@ -1338,6 +1345,7 @@ void    ImGuiTestContext::MouseMove(ImGuiTestRef ref, ImGuiTestOpFlags flags)
     // Move toward an actually visible point
     pos = GetMouseAimingPos(item, flags);
     MouseMoveToPos(pos);
+    MouseSetViewport(item->Window);
 
     // Focus again in case something made us lost focus (which could happen on a simple hover)
     if (!(flags & ImGuiTestOpFlags_NoFocusWindow))
@@ -1399,6 +1407,55 @@ void    ImGuiTestContext::MouseMove(ImGuiTestRef ref, ImGuiTestOpFlags flags)
     }
 
     item->RefCount--;
+}
+
+void    ImGuiTestContext::MouseSetViewport(ImGuiWindow* window)
+{
+    IM_CHECK_SILENT(window != NULL);
+#ifdef IMGUI_HAS_VIEWPORT
+    ImGuiViewportP* viewport = window ? window->Viewport : NULL;
+    IM_CHECK_SILENT(viewport != NULL);
+
+    if (Inputs->MouseHoveredViewport != viewport->ID)
+    {
+        IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
+        LogDebug("MouseSetViewport changing to 0x%08X (window '%s')", viewport->ID, viewport->Window ? viewport->Window->Name : "N/A");
+        Inputs->MouseHoveredViewport = viewport->ID;
+        Yield(2);
+    }
+#else
+    IM_UNUSED(window);
+#endif
+}
+
+void    ImGuiTestContext::MouseSetViewport(ImGuiTestRef window_or_item_ref)
+{
+    if (IsError())
+        return;
+
+    ImGuiWindow* window = GetWindowByRef(window_or_item_ref);
+    if (!window)
+    {
+        ImGuiTestItemInfo* info = ItemInfo(window_or_item_ref);
+        if (info && info->Window)
+            window = info->Window;
+    }
+    return MouseSetViewport(window);
+}
+
+// May be 0 to specify "automatic" (based on platform stack, rarely used)
+void    ImGuiTestContext::MouseSetViewportID(ImGuiID viewport_id)
+{
+    if (IsError())
+        return;
+
+    if (Inputs->MouseHoveredViewport != viewport_id)
+    {
+        IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
+        LogDebug("MouseSetViewport changing to 0x%08X", viewport_id);
+        Inputs->MouseHoveredViewport = viewport_id;
+        ImGuiTestEngine_Yield(Engine);
+    }
 }
 
 // Make the point at 'pos' (generally expected to be within window's boundaries) visible in the viewport,
@@ -1779,6 +1836,9 @@ void    ImGuiTestContext::MouseMoveToVoid()
     LogDebug("MouseMoveToVoid");
 
     // Click position which should now be empty space.
+#ifdef IMGUI_HAS_VIEWPORT
+    MouseSetViewportID(ImGui::GetMainViewport()->ID);
+#endif
     MouseMoveToPos(GetPosOnVoid());
     IM_CHECK(g.HoveredWindow == NULL);
 }
@@ -2607,6 +2667,7 @@ void    ImGuiTestContext::MenuAction(ImGuiTestAction action, ImGuiTestRef ref)
             {
                 IM_CHECK_SILENT(item != NULL);
                 item->RefCount++;
+                MouseSetViewport(item->Window);
                 if (depth > 1 && (Inputs->MousePosValue.x <= item->RectFull.Min.x || Inputs->MousePosValue.x >= item->RectFull.Max.x))
                     MouseMoveToPos(ImVec2(item->RectFull.GetCenter().x, Inputs->MousePosValue.y));
                 if (depth > 0 && (Inputs->MousePosValue.y <= item->RectFull.Min.y || Inputs->MousePosValue.y >= item->RectFull.Max.y))
@@ -2858,6 +2919,7 @@ void    ImGuiTestContext::WindowMove(ImGuiTestRef ref, ImVec2 input_pos, ImVec2 
         WindowBringToFront(window);
     WindowCollapse(window, false);
 
+    MouseSetViewport(window);
     MouseMoveToPos(GetWindowTitlebarPoint(ref));
     //IM_CHECK_SILENT(UiContext->HoveredWindow == window);
     MouseDown(0);
@@ -2878,6 +2940,7 @@ void    ImGuiTestContext::WindowMove(ImGuiTestRef ref, ImVec2 input_pos, ImVec2 
 #ifdef IMGUI_HAS_DOCK
     KeyModUp(ImGuiKeyModFlags_Shift);
 #endif
+    MouseSetViewport(window); // Update in case window has changed viewport
 }
 
 void    ImGuiTestContext::WindowResize(ImGuiTestRef ref, ImVec2 size)
@@ -2910,6 +2973,7 @@ void    ImGuiTestContext::WindowResize(ImGuiTestRef ref, ImVec2 size)
     Yield(); // At this point we don't guarantee the final size!
 
     MouseUp();
+    MouseSetViewport(window); // Update in case window has changed viewport
 }
 
 void    ImGuiTestContext::PopupCloseOne()
@@ -3010,6 +3074,7 @@ void    ImGuiTestContext::DockInto(ImGuiTestRef src_id, ImGuiTestRef dst_id, ImG
     if (g.IO.ConfigDockingWithShift)
         KeyModDown(ImGuiKeyModFlags_Shift);
     MouseLiftDragThreshold();
+    MouseSetViewport(window_dst);
     MouseMoveToPos(drop_pos);
     IM_CHECK_SILENT(g.MovingWindow == window_src);
 #ifdef IMGUI_HAS_DOCK

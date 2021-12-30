@@ -1033,6 +1033,7 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
         ImGuiContext& g = *ctx->UiContext;
         ImGuiWindow* window1 = ctx->GetWindowByRef("Window 1");
         ImGuiWindow* window2 = ctx->GetWindowByRef("Window 2");
+        ctx->MouseSetViewportID(0); // Auto
         ctx->WindowFocus("Window 1");
         ctx->MouseMoveToPos(window1->Rect().GetCenter());
         IM_CHECK_EQ(g.NavWindow, window1);

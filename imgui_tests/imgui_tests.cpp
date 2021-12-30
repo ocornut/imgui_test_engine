@@ -1490,6 +1490,7 @@ void RegisterTests_Window(ImGuiTestEngine* e)
         ImGui::SetScrollY(window, 0);
         ctx->Yield();
 
+        ctx->MouseSetViewport(window);
         ctx->MouseMoveToPos(window->Rect().GetCenter());
         IM_CHECK_EQ(window->Scroll.x, 0.0f);
         IM_CHECK_EQ(window->Scroll.y, 0.0f);
@@ -1684,9 +1685,10 @@ void RegisterTests_Window(ImGuiTestEngine* e)
         for (int n = 0; n < 4; n++)     // Test all pivot combinations.
             for (int c = 0; c < 2; c++) // Test collapsed and uncollapsed windows.
             {
-                ctx->WindowCollapse(window, c != 0);
-                vars.Pos = ImGui::GetMainViewport()->Pos + window->Size; // Ensure window is tested within a visible viewport.
+                vars.Pos = ImGui::GetMainViewport()->Pos + window->Size + ImVec2(1, 1); // Ensure window is tested within a visible viewport.
                 vars.Pivot = ImVec2(1.0f * ((n & 1) != 0 ? 1 : 0), 1.0f * ((n & 2) != 0 ? 1 : 0));
+                ctx->Yield(2); // Because initial vars.Pos is unset, during warm up frames viewport will create its own viewport hence fast switches... we could avoid it by initializing vars.Pos
+                ctx->WindowCollapse(window, c != 0);
                 ctx->Yield();
                 IM_CHECK_EQ(window->Pos, vars.Pos - (window->Size * vars.Pivot));
             }
@@ -1728,6 +1730,7 @@ void RegisterTests_Window(ImGuiTestEngine* e)
             ImGui::SetWindowPos(window, ImVec2(100, 100));
             ImGui::SetWindowSize(window, ImVec2(200, 50));
             ctx->Yield();
+            ctx->MouseSetViewport(window);
             ctx->MouseMoveToPos(window->Pos + ((window->Size - ImVec2(1.0f, 1.0f)) * test_data.grab_pos));
             ctx->MouseDragWithDelta(test_data.drag_dir);
             IM_CHECK_EQ(window->Size, test_data.expect_size);

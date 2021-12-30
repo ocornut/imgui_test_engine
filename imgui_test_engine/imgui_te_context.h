@@ -307,6 +307,12 @@ struct ImGuiTestContext
     void        MouseClickOnVoid(ImGuiMouseButton button = 0);
     bool        FindExistingVoidPosOnViewport(ImGuiViewport* viewport, ImVec2* out);
 
+    // Mouse inputs: Viewports
+    // When using MouseMoveToPos() / MouseTeleportToPos() without referring to an item may need to set that up.
+    void        MouseSetViewport(ImGuiWindow* window);
+    void        MouseSetViewport(ImGuiTestRef window_or_item_ref);
+    void        MouseSetViewportID(ImGuiID viewport_id);
+
     // Keyboard inputs
     void        KeyDownMap(ImGuiKey key, int mod_flags = 0);
     void        KeyUpMap(ImGuiKey key, int mod_flags = 0);

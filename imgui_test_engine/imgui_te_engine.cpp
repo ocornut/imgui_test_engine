@@ -455,6 +455,9 @@ void ImGuiTestEngine_ClearInput(ImGuiTestEngine* engine)
     memset(simulated_io.MouseDown, 0, sizeof(simulated_io.MouseDown));
     memset(simulated_io.KeysDown, 0, sizeof(simulated_io.KeysDown));
     memset(simulated_io.NavInputs, 0, sizeof(simulated_io.NavInputs));
+#ifdef IMGUI_HAS_VIEWPORT
+    simulated_io.MouseHoveredViewport = 0;
+#endif
     simulated_io.ClearInputCharacters();
     ImGuiTestEngine_ApplyInputToImGuiContext(engine);
 }
@@ -468,6 +471,7 @@ static bool ImGuiTestEngine_UseSimulatedInputs(ImGuiTestEngine* engine)
     return false;
 }
 
+// Setup inputs in the tested Dear ImGui context. Essentially we override the work of the backend here.
 void ImGuiTestEngine_ApplyInputToImGuiContext(ImGuiTestEngine* engine)
 {
     IM_ASSERT(engine->UiContextTarget != NULL);
@@ -538,6 +542,18 @@ void ImGuiTestEngine_ApplyInputToImGuiContext(ImGuiTestEngine* engine)
         //main_io.WantSetMousePos = true;
         for (int n = 0; n < IM_ARRAYSIZE(simulated_io.MouseDown); n++)
             simulated_io.MouseDown[n] = (engine->Inputs.MouseButtonsValue & (1 << n)) != 0;
+
+        // Apply mouse viewport
+#ifdef IMGUI_HAS_VIEWPORT
+        ImGuiViewport* mouse_hovered_viewport;
+        if (engine->Inputs.MouseHoveredViewport != 0)
+            mouse_hovered_viewport = ImGui::FindViewportByID(engine->Inputs.MouseHoveredViewport); // Common case
+        else
+            mouse_hovered_viewport = ImGui::FindHoveredViewportFromPlatformWindowStack(engine->Inputs.MousePosValue); // Rarely used, some tests rely on this (e.g. "docking_dockspace_passthru_hover") may make it a opt-in feature instead?
+        if (mouse_hovered_viewport && (mouse_hovered_viewport->Flags & ImGuiViewportFlags_NoInputs))
+            mouse_hovered_viewport = NULL;
+        simulated_io.MouseHoveredViewport = mouse_hovered_viewport ? mouse_hovered_viewport->ID : 0;
+#endif
 
         // Apply keyboard mods
         simulated_io.KeyCtrl  = (engine->Inputs.KeyMods & ImGuiKeyModFlags_Ctrl) != 0;
@@ -1188,13 +1204,9 @@ static void ImGuiTestEngine_RunTest(ImGuiTestEngine* engine, ImGuiTestContext* c
     memset(backup_io.KeysDown, 0, sizeof(backup_io.KeysDown));
 
 #ifdef IMGUI_HAS_VIEWPORT
-    // Backends that support _HasMouseHoveredViewport are unable to satisfy it's requirements when tests run,
-    // because io.MousePos does not match position of real mouse cursor and hovered viewport is not necessarily one
-    // that simulated mouse cursor hovers. In order to satisfy this condition we have to do a window search much
-    // like FindHoveredWindow() (imgui.cpp) does. However given purpose of this flag, it is not important for test
-    // suite, therefore it must be disabled when tests run. Flag is restored in ImGuiTestEngine_ProcessTestQueue()
-    // when test queue finishes.
-    ctx->UiContext->IO.BackendFlags &= ~ImGuiBackendFlags_HasMouseHoveredViewport;
+    // We always fill io.MouseHoveredViewport manually (maintained in ImGuiTestInputs::SimulatedIO)
+    // so ensure we don't leave a chance to Dear ImGui to interpret things differently.
+    ctx->UiContext->IO.BackendFlags |= ImGuiBackendFlags_HasMouseHoveredViewport;
 #endif
 
     // Setup buffered clipboard
