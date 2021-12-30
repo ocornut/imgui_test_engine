@@ -241,7 +241,7 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
         ImGuiContext& g = *ctx->UiContext;
         IM_CHECK(g.IO.ConfigFlags & ImGuiConfigFlags_NavEnableKeyboard);
         ImGuiWindow* window = ImGui::FindWindowByName("Test Window");
-        ctx->SetRef("Test window");
+        ctx->SetRef("Test Window");
         ctx->SetInputMode(ImGuiInputSource_Nav);
 
         // FIXME-TESTS: This should not be required but nav init request is not applied until we start navigating, this is a workaround

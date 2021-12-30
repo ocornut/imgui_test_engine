@@ -1234,8 +1234,8 @@ static void ImGuiApp_InstalMockViewportsBackend(ImGuiApp*)
     platform_io.Platform_SetWindowPos = [](ImGuiViewport* viewport, ImVec2 pos)
     {
         ImGui_ImplMockViewport_Data* bd = ImGui_ImplNullViewport_GetBackendData();
-        ImGui_ImplMockViewport_ViewportData* vd = ImGui_ImplNullViewport_FindViewportData(bd, viewport);
-        vd->Pos = pos;
+        if (ImGui_ImplMockViewport_ViewportData* vd = ImGui_ImplNullViewport_FindViewportData(bd, viewport))
+            vd->Pos = pos;
     };
     platform_io.Platform_GetWindowPos = [](ImGuiViewport* viewport)
     {
@@ -1251,8 +1251,8 @@ static void ImGuiApp_InstalMockViewportsBackend(ImGuiApp*)
     platform_io.Platform_SetWindowSize = [](ImGuiViewport* viewport, ImVec2 size)
     {
         ImGui_ImplMockViewport_Data* bd = ImGui_ImplNullViewport_GetBackendData();
-        ImGui_ImplMockViewport_ViewportData* vd = ImGui_ImplNullViewport_FindViewportData(bd, viewport);
-        vd->Size = size;
+        if (ImGui_ImplMockViewport_ViewportData* vd = ImGui_ImplNullViewport_FindViewportData(bd, viewport))
+            vd->Size = size;
     };
     platform_io.Platform_GetWindowSize = [](ImGuiViewport* viewport)
     {

@@ -587,7 +587,7 @@ ImGuiID ImGuiTestContext::GetChildWindowID(ImGuiTestRef parent_ref, const char* 
     if (!GetWindowInformation(this, parent_ref, &parent_name, &parent_id))
     {
         LogError("GetChildWindowID: parent window should exist, when specifying by ID(0x%08X).", parent_ref.ID);
-        return 0;
+        IM_CHECK_RETV(false, 0);
     }
 
     ImGuiID child_item_id = GetID(child_name, parent_id);
@@ -595,7 +595,7 @@ ImGuiID ImGuiTestContext::GetChildWindowID(ImGuiTestRef parent_ref, const char* 
     if (const char* last_slash = strrchr(child_name, '/'))
     {
         child_name = last_slash + 1;
-        IM_ASSERT(*child_name != 0);    // child_name should not end with a slash.
+        IM_ASSERT(child_name[0] != 0);    // child_name should not end with a slash.
     }
     return GetID(Str128f("/%s\\/%s_%08X", parent_name.c_str(), child_name, child_item_id).c_str());
 }
@@ -608,7 +608,7 @@ ImGuiID ImGuiTestContext::GetChildWindowID(ImGuiTestRef parent_ref, ImGuiID chil
     if (!GetWindowInformation(this, parent_ref, &parent_name, NULL))
     {
         LogError("GetChildWindowID: parent window should exist, when specifying by ID(0x%08X).", parent_ref.ID);
-        return 0;
+        IM_CHECK_RETV(false, 0);
     }
 
     ImStrReplace(&parent_name, "/", "\\/");

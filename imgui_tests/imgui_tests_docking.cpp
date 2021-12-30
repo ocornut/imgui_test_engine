@@ -1152,6 +1152,7 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
         // Test focusing window by clicking on it.
         for (int i = 0; i < IM_ARRAYSIZE(windows); i++)
         {
+            ctx->MouseSetViewport(windows[i]);
             ctx->MouseMoveToPos(windows[i]->Rect().GetCenter());
             ctx->MouseClick();
             IM_CHECK(g.NavWindow == windows[i]);
@@ -1168,6 +1169,7 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
         for (int i = 0; i < IM_ARRAYSIZE(windows); i++)
         {
             ImRect bar_rect = windows[i]->DockNode->TabBar->BarRect;
+            ctx->MouseSetViewport(windows[i]);
             ctx->MouseMoveToPos(bar_rect.GetCenter() + ImVec2(bar_rect.GetWidth() * 0.4f, 0.0f));
             ctx->MouseClick();
             //ctx->MouseDragWithDelta(ImVec2(3.0f * (i % 2 == 0 ? -1.0f : +1.0f), 0.0f));

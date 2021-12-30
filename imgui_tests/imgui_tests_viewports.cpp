@@ -76,7 +76,7 @@ void RegisterTests_Viewports(ImGuiTestEngine* e)
                 return;
         }
 
-        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoBringToFrontOnFocus); // _NoBringToFrontOnFocus to avoid stray in-between viewport preventing merge. FIXME-TESTS: should test both
         ImGui::Text("hello!");
         ImGui::End();
     };

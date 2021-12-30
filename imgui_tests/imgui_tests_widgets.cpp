@@ -2835,8 +2835,10 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
     t = IM_REGISTER_TEST(e, "widgets", "widgets_drag_source_null_id");
     struct WidgetDragSourceNullIDData
     {
-        ImVec2 Source;
-        ImVec2 Destination;
+        ImGuiID SrcViewport = 0;
+        ImGuiID DstViewport = 0;
+        ImVec2 SrcPos;
+        ImVec2 DstPos;
         bool Dropped = false;
     };
     t->SetVarsDataType<WidgetDragSourceNullIDData>();
@@ -2846,7 +2848,11 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
 
         ImGui::Begin("Null ID Test", NULL, ImGuiWindowFlags_NoSavedSettings);
         ImGui::TextUnformatted("Null ID");
-        vars.Source = ImRect(ImGui::GetItemRectMin(), ImGui::GetItemRectMax()).GetCenter();
+
+#ifdef IMGUI_HAS_DOCK
+        vars.SrcViewport = ImGui::GetWindowViewport()->ID;
+#endif
+        vars.SrcPos = ImRect(ImGui::GetItemRectMin(), ImGui::GetItemRectMax()).GetCenter();
 
         if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_SourceAllowNullID))
         {
@@ -2855,7 +2861,10 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
             ImGui::EndDragDropSource();
         }
         ImGui::TextUnformatted("Drop Here");
-        vars.Destination = ImRect(ImGui::GetItemRectMin(), ImGui::GetItemRectMax()).GetCenter();
+#ifdef IMGUI_HAS_DOCK
+        vars.DstViewport = ImGui::GetWindowViewport()->ID;
+#endif
+        vars.DstPos = ImRect(ImGui::GetItemRectMin(), ImGui::GetItemRectMax()).GetCenter();
 
         if (ImGui::BeginDragDropTarget())
         {
@@ -2875,11 +2884,13 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
 
         // ImGui::TextUnformatted() does not have an ID therefore we can not use ctx->ItemDragAndDrop() as that refers
         // to items by their ID.
-        ctx->MouseMoveToPos(vars.Source);
+        ctx->MouseSetViewport(vars.SrcViewport);
+        ctx->MouseMoveToPos(vars.SrcPos);
         ctx->SleepShort();
         ctx->MouseDown(0);
 
-        ctx->MouseMoveToPos(vars.Destination);
+        ctx->MouseSetViewport(vars.DstViewport);
+        ctx->MouseMoveToPos(vars.DstPos);
         ctx->SleepShort();
         ctx->MouseUp(0);
 
