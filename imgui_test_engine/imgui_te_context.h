@@ -251,7 +251,7 @@ struct ImGuiTestContext
     void        WindowFocus(ImGuiTestRef ref);
     void        WindowMove(ImGuiTestRef ref, ImVec2 pos, ImVec2 pivot = ImVec2(0.0f, 0.0f), ImGuiTestOpFlags flags = ImGuiTestOpFlags_None);
     void        WindowResize(ImGuiTestRef ref, ImVec2 sz);
-    bool        WindowTeleportToMakePosVisibleInViewport(ImGuiWindow* window, ImVec2 pos_in_window);
+    bool        WindowTeleportToMakePosVisible(ImGuiWindow* window, ImVec2 pos_in_window);
     bool        WindowBringToFront(ImGuiWindow* window, ImGuiTestOpFlags flags = ImGuiTestOpFlags_None);
     void        PopupCloseOne();
     void        PopupCloseAll();

@@ -582,7 +582,7 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
                 IM_CHECK(window3->DockNode->HostWindow == window4->DockNode->HostWindow);
                 IM_CHECK(window1->DockNode->HostWindow == window3->DockNode->HostWindow);
                 pos = window4->DockNode->TabBar->BarRect.Max - ImVec2(1, h * 0.5f);
-                ctx->WindowTeleportToMakePosVisibleInViewport(window4->DockNode->HostWindow, pos + ImVec2(10, 10));     // Make space for next drag operation
+                ctx->WindowTeleportToMakePosVisible(window4->DockNode->HostWindow, pos + ImVec2(10, 10));     // Make space for next drag operation
                 pos = window4->DockNode->HostWindow->Pos;
                 ctx->MouseMoveToPos(window4->DockNode->TabBar->BarRect.Max - ImVec2(1, h * 0.5f));
                 ctx->MouseDragWithDelta(ImVec2(10, 10));

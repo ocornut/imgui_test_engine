@@ -1333,7 +1333,7 @@ void    ImGuiTestContext::MouseMove(ImGuiTestRef ref, ImGuiTestOpFlags flags)
 
     // FIXME-TESTS-NOT_SAME_AS_END_USER
     ImVec2 pos = item->RectFull.GetCenter();
-    WindowTeleportToMakePosVisibleInViewport(window, pos);
+    WindowTeleportToMakePosVisible(window, pos);
 
     // Move toward an actually visible point
     pos = GetMouseAimingPos(item, flags);
@@ -1403,7 +1403,7 @@ void    ImGuiTestContext::MouseMove(ImGuiTestRef ref, ImGuiTestOpFlags flags)
 
 // Make the point at 'pos' (generally expected to be within window's boundaries) visible in the viewport,
 // so it can be later focused then clicked.
-bool    ImGuiTestContext::WindowTeleportToMakePosVisibleInViewport(ImGuiWindow* window, ImVec2 pos)
+bool    ImGuiTestContext::WindowTeleportToMakePosVisible(ImGuiWindow* window, ImVec2 pos)
 {
     ImGuiContext& g = *UiContext;
     if (IsError())
@@ -1416,8 +1416,8 @@ bool    ImGuiTestContext::WindowTeleportToMakePosVisibleInViewport(ImGuiWindow* 
 #endif
 
     ImRect visible_r;
-    visible_r.Min = ImGui::GetMainViewport()->Pos;
-    visible_r.Max = visible_r.Min + ImGui::GetMainViewport()->Size;
+    visible_r.Min = GetMainMonitorWorkPos();
+    visible_r.Max = visible_r.Min + GetMainMonitorWorkSize();
     if (!visible_r.Contains(pos))
     {
         // Fallback move window directly to make our item reachable with the mouse.
@@ -1427,7 +1427,7 @@ bool    ImGuiTestContext::WindowTeleportToMakePosVisibleInViewport(ImGuiWindow* 
         delta.x = (pos.x < visible_r.Min.x) ? (visible_r.Min.x - pos.x + pad) : (pos.x > visible_r.Max.x) ? (visible_r.Max.x - pos.x - pad) : 0.0f;
         delta.y = (pos.y < visible_r.Min.y) ? (visible_r.Min.y - pos.y + pad) : (pos.y > visible_r.Max.y) ? (visible_r.Max.y - pos.y - pad) : 0.0f;
         ImGui::SetWindowPos(window, window->Pos + delta, ImGuiCond_Always);
-        LogDebug("WindowMoveBypass %s delta (%.1f,%.1f)", window->Name, delta.x, delta.y);
+        LogDebug("WindowTeleportToMakePosVisible %s delta (%.1f,%.1f)", window->Name, delta.x, delta.y);
         Yield();
         return true;
     }
@@ -1763,7 +1763,7 @@ ImVec2  ImGuiTestContext::GetWindowTitlebarPoint(ImGuiTestRef window_ref)
         }
 
         // If we didn't have to teleport it means we can reach the position already
-        if (!WindowTeleportToMakePosVisibleInViewport(window, drag_pos))
+        if (!WindowTeleportToMakePosVisible(window, drag_pos))
             break;
     }
     return drag_pos;
@@ -2989,7 +2989,7 @@ void    ImGuiTestContext::DockInto(ImGuiTestRef src_id, ImGuiTestRef dst_id, ImG
         return;
 
     // Ensure we can reach target
-    WindowTeleportToMakePosVisibleInViewport(window_dst, drop_pos);
+    WindowTeleportToMakePosVisible(window_dst, drop_pos);
     ImGuiWindow* friend_windows[] = { window_src, window_dst, NULL };
     ForeignWindowsHideOverPos(drop_pos, friend_windows);
 
