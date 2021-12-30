@@ -12,6 +12,12 @@
 #undef Yield
 #endif
 
+#if defined(__GNUC__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpragmas"          // warning: unknown option after '#pragma GCC diagnostic' kind
+#pragma GCC diagnostic ignored "-Wclass-memaccess"  // [__GNUC__ >= 8] warning: 'memset/memcpy' clearing/writing an object of type 'xxxx' with no trivial copy-assignment; use assignment or value-initialization instead
+#endif
+
 //-------------------------------------------------------------------------
 // External forward declaration
 //-------------------------------------------------------------------------
@@ -398,3 +404,7 @@ struct ImGuiTestContext
     void        PerfCalcRef();
     void        PerfCapture(const char* category = NULL, const char* test_name = NULL, const char* csv_file = NULL);
 };
+
+#if defined(__GNUC__)
+#pragma GCC diagnostic pop
+#endif

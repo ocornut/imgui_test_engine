@@ -94,7 +94,7 @@ ImGuiApp* ImGuiApp_ImplNull_Create();
 #endif
 
 // Renderer before Platform backends because SDL/GLFW tend to have their own GL stuff which can conflict.
-#if defined(IMGUI_APP_SDL_GL2) || defined(IMGUI_APP_GLFW_GL3)
+#if defined(IMGUI_APP_SDL_GL2) || defined(IMGUI_APP_GLFW_GL2)
 #include "imgui_impl_opengl2.cpp"
 #endif
 

@@ -63,7 +63,7 @@ ifeq ($(UNAME_S), Linux) #LINUX
 		LIBS += -lGL
 	endif
 	CFLAGS += -Wextra -Wpedantic
-	CXXFLAGS += -Wno-class-memaccess
+	#CXXFLAGS += -Wno-class-memaccess
 	ifeq ($(shell $(CXX) -v 2>&1 | grep -c "clang version"), 1)
 		CFLAGS += -Wshadow
 		LIBS += -lstdc++ -lm
