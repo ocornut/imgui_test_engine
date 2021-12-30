@@ -674,16 +674,6 @@ static void ImGuiTestEngine_PreNewFrame(ImGuiTestEngine* engine, ImGuiContext* u
                 engine->TestContext->LogWarning("KO: User aborted (pressed ESC)");
             ImGuiTestEngine_AbortTest(engine);
         }
-
-#ifdef IMGUI_HAS_VIEWPORT
-        // Backends that support _HasMouseHoveredViewport are unable to satisfy it's requirements when tests run,
-        // because io.MousePos does not match position of real mouse cursor and hovered viewport is not necessarily one
-        // that simulated mouse cursor hovers. In order to satisfy this condition we have to do a window search much
-        // like FindHoveredWindow() (imgui.cpp) does. However given purpose of this flag, it is not important for test
-        // suite, therefore it must be disabled when tests run. Flag is restored in ImGuiTestEngine_ProcessTestQueue()
-        // when test queue finishes.
-        main_io.BackendFlags &= ~ImGuiBackendFlags_HasMouseHoveredViewport;
-#endif
     }
 
     ImGuiTestEngine_ApplyInputToImGuiContext(engine);
@@ -922,8 +912,6 @@ static void ImGuiTestEngine_ProcessTestQueue(ImGuiTestEngine* engine)
     const char* settings_ini_backup = io.IniFilename;
     io.IniFilename = NULL;
 
-    const ImGuiBackendFlags backup_backend_flags = io.BackendFlags; // FIXME: Already done in ImGuiTestEngine_RunTest?
-
     ImU64 batch_start_time = ImTimeGetInMicroseconds();
     int ran_tests = 0;
     engine->IO.RunningTests = true;
@@ -1007,7 +995,6 @@ static void ImGuiTestEngine_ProcessTestQueue(ImGuiTestEngine* engine)
         //    if (engine->UiSelectedTest == NULL || engine->UiSelectedTest->Status != ImGuiTestStatus_Error)
         //        engine->UiSelectedTest = test;
     }
-    io.BackendFlags = backup_backend_flags;
     engine->IO.RunningTests = false;
 
     engine->Abort = false;
@@ -1199,6 +1186,16 @@ static void ImGuiTestEngine_RunTest(ImGuiTestEngine* engine, ImGuiTestContext* c
     ImGuiStyle backup_style = ctx->UiContext->Style;
     memset(backup_io.MouseDown, 0, sizeof(backup_io.MouseDown));
     memset(backup_io.KeysDown, 0, sizeof(backup_io.KeysDown));
+
+#ifdef IMGUI_HAS_VIEWPORT
+    // Backends that support _HasMouseHoveredViewport are unable to satisfy it's requirements when tests run,
+    // because io.MousePos does not match position of real mouse cursor and hovered viewport is not necessarily one
+    // that simulated mouse cursor hovers. In order to satisfy this condition we have to do a window search much
+    // like FindHoveredWindow() (imgui.cpp) does. However given purpose of this flag, it is not important for test
+    // suite, therefore it must be disabled when tests run. Flag is restored in ImGuiTestEngine_ProcessTestQueue()
+    // when test queue finishes.
+    ctx->UiContext->IO.BackendFlags &= ~ImGuiBackendFlags_HasMouseHoveredViewport;
+#endif
 
     // Setup buffered clipboard
     ctx->UiContext->IO.GetClipboardTextFn = [](void* user_data) -> const char*
