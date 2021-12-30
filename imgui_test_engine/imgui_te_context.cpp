@@ -629,7 +629,7 @@ ImGuiID ImGuiTestContext::GetChildWindowID(ImGuiTestRef parent_ref, ImGuiID chil
 static bool ImGuiTestContext_CanCapture(ImGuiTestContext* ctx)
 {
     ImGuiTestEngineIO* io = ctx->EngineIO;
-    return io->ConfigCaptureEnabled && io->ConfigRunWithGui; // FIXME-TESTS: Should be able to capture in TTY mode provided user provides a capture functio
+    return io->ConfigCaptureEnabled;
 }
 
 void ImGuiTestContext::CaptureInitArgs(ImGuiCaptureArgs* args, int flags)
@@ -679,17 +679,18 @@ void ImGuiTestContext::CaptureScreenshotWindow(ImGuiTestRef ref, int capture_fla
     CaptureScreenshotEx(&args);
 }
 
-bool ImGuiTestContext::BeginCaptureGif(ImGuiCaptureArgs* args)
+bool ImGuiTestContext::CaptureBeginGif(ImGuiCaptureArgs* args)
 {
     if (IsError())
         return false;
 
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
-    LogInfo("BeginCaptureGif()");
+    LogInfo("CaptureBeginGif()");
+    IM_CHECK_RETV(args != NULL, false);
 #ifndef IMGUI_TEST_ENGINE_DISABLE_CAPTURE
     if (!ImGuiTestContext_CanCapture(this))
         args->InFlags |= ImGuiCaptureFlags_NoSave;
-    return ImGuiTestEngine_BeginCaptureAnimation(Engine, args);
+    return ImGuiTestEngine_CaptureBeginGif(Engine, args);
 #else
     IM_UNUSED(args);
     LogWarning("Skipped recording GIF: capture disabled by IMGUI_TEST_ENGINE_DISABLE_CAPTURE.");
@@ -697,9 +698,10 @@ bool ImGuiTestContext::BeginCaptureGif(ImGuiCaptureArgs* args)
 #endif
 }
 
-bool ImGuiTestContext::EndCaptureGif(ImGuiCaptureArgs* args)
+bool ImGuiTestContext::CaptureEndGif(ImGuiCaptureArgs* args)
 {
-    bool ret = Engine->CaptureContext.IsCapturingGif() && ImGuiTestEngine_EndCaptureAnimation(Engine, args);
+    IM_CHECK_RETV(args != NULL, false);
+    bool ret = Engine->CaptureContext.IsCapturingGif() && ImGuiTestEngine_CaptureEndGif(Engine, args);
     if (ret)
     {
         // In-progress capture was canceled by user. Delete incomplete file.
@@ -1180,7 +1182,7 @@ void    ImGuiTestContext::NavKeyDown(ImGuiNavInput input)
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
     LogDebug("NavKeyDown %d", (int)input);
 
-    ImGuiTestEngine_PushInput(Engine, ImGuiTestInput::FromNav(input, ImGuiKeyState_Down));
+    Engine->Inputs.Queue.push_back(ImGuiTestInput::FromNav(input, ImGuiKeyState_Down));
     Yield();
 }
 
@@ -1193,7 +1195,7 @@ void    ImGuiTestContext::NavKeyUp(ImGuiNavInput input)
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
     LogDebug("NavKeyUp %d", (int)input);
 
-    ImGuiTestEngine_PushInput(Engine, ImGuiTestInput::FromNav(input, ImGuiKeyState_Up));
+    Engine->Inputs.Queue.push_back(ImGuiTestInput::FromNav(input, ImGuiKeyState_Up));
     Yield();
     Yield(); // For nav code to react e.g. run a query
 }

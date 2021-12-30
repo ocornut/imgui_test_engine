@@ -47,7 +47,7 @@ struct ImGuiCaptureImageBuf
 enum ImGuiCaptureFlags_ : unsigned int
 {
     ImGuiCaptureFlags_None                      = 0,
-    ImGuiCaptureFlags_StitchFullContents        = 1 << 0,   // Expand window to it's content size and capture its full height.
+    ImGuiCaptureFlags_StitchAll                 = 1 << 0,   // Expand window to it's content size and capture its full height.
     ImGuiCaptureFlags_ExpandToIncludePopups     = 1 << 1,   // Expand capture area to automatically include visible popups and tooltips.
     ImGuiCaptureFlags_HideMouseCursor           = 1 << 2,   // Do not render software mouse cursor during capture.
     ImGuiCaptureFlags_Instant                   = 1 << 3,   // Perform capture on very same frame. Only works when capturing a rectangular region. Unsupported features: content stitching, window hiding, window relocation.

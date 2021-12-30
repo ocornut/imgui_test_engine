@@ -777,7 +777,7 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
             ctx->ItemOpen("Help");
             ctx->ItemClose("Help");
             IM_CHECK_EQ(g.NavId, ctx->GetID("Help"));
-            IM_CHECK_EQ(g.NavWindow, ctx->GetWindowByRef(ctx->RefID));
+            IM_CHECK_EQ(g.NavWindow, ctx->GetWindowByRef(""));
             IM_CHECK(g.IO.ConfigFlags & ImGuiConfigFlags_NavEnableKeyboard); // FIXME-TESTS: Should test for both cases.
             IM_CHECK(g.IO.WantCaptureMouse == true);
             // FIXME-TESTS: This depends on ImGuiConfigFlags_NavNoCaptureKeyboard being cleared. Should test for both cases.

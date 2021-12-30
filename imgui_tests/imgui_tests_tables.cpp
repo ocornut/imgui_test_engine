@@ -2135,7 +2135,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
         ImGuiTestGenericVars& vars = ctx->GenericVars;
 
         ctx->SetRef("Test Window");
-        ImGuiWindow* window = ctx->GetWindowByRef(ctx->RefID);
+        ImGuiWindow* window = ctx->GetWindowByRef("");
         ImGuiTable* table = ImGui::TableFindByID(ctx->GetID("table1"));
 
         for (int step = 0; step < 4; step++)
@@ -2853,7 +2853,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         ctx->SetRef("Test window 1");
-        ImGuiWindow* window = ctx->GetWindowByRef(ctx->RefID);
+        ImGuiWindow* window = ctx->GetWindowByRef("");
         ImGuiTable* table = ImGui::TableFindByID(ctx->GetID("table1"));
         ImGuiID resize_id = ImGui::TableGetColumnResizeID(table, 0);
 
@@ -3088,7 +3088,7 @@ void RegisterTests_Columns(ImGuiTestEngine* e)
         auto& vars = ctx->GetVars<ColumnsTestingVars>();
 
         ctx->SetRef("Test window");
-        ImGuiWindow* window = ctx->GetWindowByRef(ctx->RefID);
+        ImGuiWindow* window = ctx->GetWindowByRef("");
         ImGuiOldColumns* columns = ImGui::FindOrCreateColumns(window, vars.ColumnsID);
 
         vars.Flags = ImGuiOldColumnFlags_None;

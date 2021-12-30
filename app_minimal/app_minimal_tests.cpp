@@ -82,6 +82,6 @@ void RegisterAppMinimalTests(ImGuiTestEngine* e)
     {
         ctx->SetRef("Dear ImGui Demo");
         ctx->ItemOpenAll("");
-        ctx->CaptureScreenshotWindow("Dear ImGui Demo", ImGuiCaptureFlags_StitchFullContents | ImGuiCaptureFlags_HideMouseCursor);
+        ctx->CaptureScreenshotWindow("Dear ImGui Demo", ImGuiCaptureFlags_StitchAll | ImGuiCaptureFlags_HideMouseCursor);
     };
 }

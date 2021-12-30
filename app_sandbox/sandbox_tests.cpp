@@ -25,7 +25,7 @@ void RegisterSandboxTests(ImGuiTestEngine* e)
         ctx->MenuCheck("View/Demo: Dear ImGui Demo");
         ctx->SetRef("Dear ImGui Demo");
         ctx->ItemOpenAll("");
-        ctx->CaptureScreenshotWindow("Dear ImGui Demo", ImGuiCaptureFlags_StitchFullContents | ImGuiCaptureFlags_HideMouseCursor);
+        ctx->CaptureScreenshotWindow("Dear ImGui Demo", ImGuiCaptureFlags_StitchAll | ImGuiCaptureFlags_HideMouseCursor);
     };
 
     // ## Capture entire ImPlot Demo window.
@@ -37,6 +37,6 @@ void RegisterSandboxTests(ImGuiTestEngine* e)
         ctx->SetRef("ImPlot Demo");
         ctx->ItemOpenAll("");
 
-        ctx->CaptureScreenshotWindow("ImPlot Demo", ImGuiCaptureFlags_StitchFullContents | ImGuiCaptureFlags_HideMouseCursor);
+        ctx->CaptureScreenshotWindow("ImPlot Demo", ImGuiCaptureFlags_StitchAll | ImGuiCaptureFlags_HideMouseCursor);
     };
 }

@@ -204,7 +204,7 @@ void ImGuiCaptureContext::PostNewFrame()
 
     // Force mouse position. Hovered window is reset in ImGui::NewFrame() based on mouse real mouse position.
     // FIXME: Would be saner to override io.MousePos in Pre NewFrame() hook.
-    if (_FrameNo > 2 && (args->InFlags & ImGuiCaptureFlags_StitchFullContents) != 0)
+    if (_FrameNo > 2 && (args->InFlags & ImGuiCaptureFlags_StitchAll) != 0)
     {
         IM_ASSERT(args->InCaptureWindows.Size == 1);
         g.IO.MousePos = args->InCaptureWindows[0]->Pos + _MouseRelativeToWindowPos;
@@ -227,7 +227,7 @@ ImGuiCaptureStatus ImGuiCaptureContext::CaptureUpdate(ImGuiCaptureArgs* args)
     {
         IM_ASSERT(args->InOutputFileTemplate[0] && "Output filename must be specified when recording gifs.");
         IM_ASSERT(args->InOutputImageBuf == NULL && "Output buffer cannot be specified when recording gifs.");
-        IM_ASSERT(!(args->InFlags & ImGuiCaptureFlags_StitchFullContents) && "Image stitching is not supported when recording gifs.");
+        IM_ASSERT(!(args->InFlags & ImGuiCaptureFlags_StitchAll) && "Image stitching is not supported when recording gifs.");
     }
 
     ImGuiCaptureImageBuf* output = args->InOutputImageBuf ? args->InOutputImageBuf : &_CaptureBuf;
@@ -255,7 +255,7 @@ ImGuiCaptureStatus ImGuiCaptureContext::CaptureUpdate(ImGuiCaptureArgs* args)
         IM_ASSERT(args->InCaptureWindows.empty());
         IM_ASSERT(is_capturing_rect);
         IM_ASSERT(!is_recording_gif);
-        IM_ASSERT((args->InFlags & ImGuiCaptureFlags_StitchFullContents) == 0);
+        IM_ASSERT((args->InFlags & ImGuiCaptureFlags_StitchAll) == 0);
     }
 
     //-----------------------------------------------------------------
@@ -322,7 +322,7 @@ ImGuiCaptureStatus ImGuiCaptureContext::CaptureUpdate(ImGuiCaptureArgs* args)
             _WindowBackupRectsWindows.push_back(window);
         }
 
-        if (args->InFlags & ImGuiCaptureFlags_StitchFullContents)
+        if (args->InFlags & ImGuiCaptureFlags_StitchAll)
         {
             IM_ASSERT(is_capturing_rect == false && "ImGuiCaptureContext: capture of full window contents is not possible when capturing specified rect.");
             IM_ASSERT(args->InCaptureWindows.Size == 1 && "ImGuiCaptureContext: capture of full window contents is not possible when capturing more than one window.");
@@ -368,7 +368,7 @@ ImGuiCaptureStatus ImGuiCaptureContext::CaptureUpdate(ImGuiCaptureArgs* args)
         for (ImGuiWindow* window : args->InCaptureWindows)
         {
             // Repositioning of a window may take multiple frames, depending on whether window was already rendered or not.
-            if (args->InFlags & ImGuiCaptureFlags_StitchFullContents)
+            if (args->InFlags & ImGuiCaptureFlags_StitchAll)
                 ImGui::SetWindowPos(window, window->Pos + move_offset);
             if (!is_capturing_rect)
                 _CaptureRect.Add(window->Rect());
@@ -379,7 +379,7 @@ ImGuiCaptureStatus ImGuiCaptureContext::CaptureUpdate(ImGuiCaptureArgs* args)
             _CaptureRect.Expand(args->InPadding);
 
         const ImRect clip_rect = viewport_rect;
-        if (args->InFlags & ImGuiCaptureFlags_StitchFullContents)
+        if (args->InFlags & ImGuiCaptureFlags_StitchAll)
             IM_ASSERT(_CaptureRect.Min.x >= clip_rect.Min.x && _CaptureRect.Max.x <= clip_rect.Max.x);  // Horizontal stitching is not implemented. Do not allow capture that does not fit into viewport horizontally.
         else
             _CaptureRect.ClipWith(clip_rect);   // Can not capture area outside of screen. Clip capture rect, since we capturing only visible rect anyway.
@@ -407,7 +407,7 @@ ImGuiCaptureStatus ImGuiCaptureContext::CaptureUpdate(ImGuiCaptureArgs* args)
         if (h > 0)
         {
             IM_ASSERT(w == output->Width);
-            if (args->InFlags & ImGuiCaptureFlags_StitchFullContents)
+            if (args->InFlags & ImGuiCaptureFlags_StitchAll)
                 IM_ASSERT(h <= output->Height);     // When stitching, image can be taller than captured viewport.
             else
                 IM_ASSERT(h == output->Height);
@@ -419,7 +419,7 @@ ImGuiCaptureStatus ImGuiCaptureContext::CaptureUpdate(ImGuiCaptureArgs* args)
                 return ImGuiCaptureStatus_Error;
             }
 
-            if (args->InFlags & ImGuiCaptureFlags_StitchFullContents)
+            if (args->InFlags & ImGuiCaptureFlags_StitchAll)
             {
                 // Window moves up in order to expose it's lower part.
                 for (ImGuiWindow* window : args->InCaptureWindows)
@@ -452,7 +452,7 @@ ImGuiCaptureStatus ImGuiCaptureContext::CaptureUpdate(ImGuiCaptureArgs* args)
         }
 
         // Image is finalized immediately when we are not stitching. Otherwise image is finalized when we have captured and stitched all frames.
-        if (!_GifRecording && (!(args->InFlags & ImGuiCaptureFlags_StitchFullContents) || h <= 0))
+        if (!_GifRecording && (!(args->InFlags & ImGuiCaptureFlags_StitchAll) || h <= 0))
         {
             output->RemoveAlpha();
 
@@ -758,7 +758,7 @@ void ImGuiCaptureTool::ShowCaptureToolWindow(bool* p_open)
     {
         ImGuiCaptureArgs* args = &_CaptureArgs;
         if (Context.IsCapturingGif() || args->InCaptureWindows.Size > 1)
-            args->InFlags &= ~ImGuiCaptureFlags_StitchFullContents;
+            args->InFlags &= ~ImGuiCaptureFlags_StitchAll;
 
         if (Context._GifRecording && ImGui::IsKeyPressedMap(ImGuiKey_Escape))
             Context.EndGifCapture();
@@ -840,7 +840,7 @@ void ImGuiCaptureTool::ShowCaptureToolWindow(bool* p_open)
 #endif
         if (!content_stitching_available)
             ImGui::BeginDisabled();
-        ImGui::CheckboxFlags("Stitch full contents height", &_CaptureArgs.InFlags, ImGuiCaptureFlags_StitchFullContents);
+        ImGui::CheckboxFlags("Stitch full contents height", &_CaptureArgs.InFlags, ImGuiCaptureFlags_StitchAll);
         if (!content_stitching_available)
         {
             ImGui::EndDisabled();

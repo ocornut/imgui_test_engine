@@ -4273,7 +4273,7 @@ void RegisterTests_Capture(ImGuiTestEngine* e)
         ctx->MenuCheck("Examples/Documents");
 
         ctx->SetRef("Example: Documents");
-        ctx->WindowResize(ctx->RefID, ImVec2(600, 300));    // Ensure no items are clipped, because then they cant be found by item search
+        ctx->WindowResize("", ImVec2(600, 300));    // Ensure no items are clipped, because then they cant be found by item search
         ctx->ItemCheck("**/Tomato");
         ctx->ItemCheck("**/Eggplant");
         ctx->ItemCheck("**/A Rather Long Title");
@@ -4454,7 +4454,7 @@ void RegisterTests_Capture(ImGuiTestEngine* e)
         ImGuiCaptureArgs args;
         ctx->CaptureInitArgs(&args);
         ctx->CaptureAddWindow(&args, "CaptureGif");
-        ctx->BeginCaptureGif(&args);
+        ctx->CaptureBeginGif(&args);
         ctx->ItemInput("string");
         ctx->KeyCharsReplace("Dear ImGui: Now with gif animations \\o/");
         ctx->SleepShort();
@@ -4462,7 +4462,7 @@ void RegisterTests_Capture(ImGuiTestEngine* e)
         ctx->SleepShort();
         ctx->ItemClick("Save");
         ctx->SleepShort();
-        ctx->EndCaptureGif(&args);
+        ctx->CaptureEndGif(&args);
     };
 
     // ## Capture
@@ -4556,7 +4556,7 @@ void RegisterTests_Capture(ImGuiTestEngine* e)
         ctx->ItemInputValue("Tables/Advanced/Options/Other:/items_count", 50000); // Fancy
         //ctx->TableOpenContextMenu("Tables/Reorderable, hideable, with headers/##table1", 1);
 
-        ctx->CaptureScreenshotWindow("", ImGuiCaptureFlags_StitchFullContents | ImGuiCaptureFlags_HideMouseCursor);
+        ctx->CaptureScreenshotWindow("", ImGuiCaptureFlags_StitchAll | ImGuiCaptureFlags_HideMouseCursor);
 
         ctx->ItemClick("Tables/Close all");
     };
@@ -4572,7 +4572,7 @@ void RegisterTests_Capture(ImGuiTestEngine* e)
     {
         ctx->SetRef("ImPlot Demo");
         ctx->ItemOpenAll("");
-        ctx->CaptureScreenshotWindow("ImPlot Demo", ImGuiCaptureFlags_StitchFullContents | ImGuiCaptureFlags_HideMouseCursor);
+        ctx->CaptureScreenshotWindow("ImPlot Demo", ImGuiCaptureFlags_StitchAll | ImGuiCaptureFlags_HideMouseCursor);
     };
 #endif
 }

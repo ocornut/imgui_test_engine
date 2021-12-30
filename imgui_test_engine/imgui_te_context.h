@@ -169,37 +169,46 @@ enum ImGuiTestActiveFunc
 // Context for a running ImGuiTest
 struct ImGuiTestContext
 {
-    // [Internal Fields]
-    ImGuiTestEngine*        Engine = NULL;
-    ImGuiTest*              Test = NULL;
+    // User variables
+    ImGuiTestGenericVars    GenericVars;
+    void*                   UserVars = NULL;
+
+    // Public fields
+    ImGuiContext*           UiContext = NULL;                       // UI context
     ImGuiTestEngineIO*      EngineIO = NULL;
-    ImGuiContext*           UiContext = NULL;
+    ImGuiTest*              Test = NULL;                            // Test being run
+    ImGuiTestOpFlags        OpFlags = ImGuiTestOpFlags_None;        // Supported: ImGuiTestOpFlags_NoAutoUncollapse
+    int                     PerfStressAmount = 0;                   // Convenience copy of engine->IO.PerfStressAmount
+    int                     FrameCount = 0;                         // Test frame count (restarts from zero every time)
+    int                     FirstTestFrameCount = 0;                // First frame where TestFunc is running (after warm-up frame). This is generally -1 or 0 depending on whether we have warm up enabled
+    bool                    FirstGuiFrame = false;
+    bool                    HasDock = false;                        // #ifdef IMGUI_HAS_DOCK expressed in an easier to test value
+
+    //-------------------------------------------------------------------------
+    // [Internal Fields]
+    //-------------------------------------------------------------------------
+
+    ImGuiTestEngine*        Engine = NULL;
     ImGuiTestInputs*        Inputs = NULL;
     ImGuiTestGatherTask*    GatherTask = NULL;
     ImGuiTestRunFlags       RunFlags = ImGuiTestRunFlags_None;
     ImGuiTestActiveFunc     ActiveFunc = ImGuiTestActiveFunc_None;  // None/GuiFunc/TestFunc
-    void*                   UserData = NULL;
-    int                     FrameCount = 0;                         // Test frame count (restarts from zero every time)
-    int                     FirstTestFrameCount = 0;                // First frame where TestFunc is running (after warm-up frame). This is generally -1 or 0 depending on whether we have warm up enabled
     double                  RunningTime = 0.0f;                     // Amount of wall clock time the Test has been running. Used by safety watchdog.
     ImU64                   BatchStartTime = 0;
-    int                     ActionDepth = 0;
-    int                     CaptureCounter = 0;
-    int                     ErrorCounter = 0;
-    bool                    FirstGuiFrame = false;
+    int                     ActionDepth = 0;                        // Nested depth of ctx-> function calls (used to decorate log)
+    int                     CaptureCounter = 0;                     // Number of captures
+    int                     ErrorCounter = 0;                       // Number of errors (generally this maxxes at 1 as most functions will early out)
     bool                    Abort = false;
-    bool                    HasDock = false;                        // #ifdef IMGUI_HAS_DOCK expressed in an easier to test value
     double                  PerfRefDt = -1.0;
-    int                     PerfStressAmount = 0;                   // Convenience copy of engine->IO.PerfStressAmount
-
-    // Commonly user exposed state for the ctx-> functions
-    ImGuiTestGenericVars    GenericVars;
     char                    RefStr[256] = { 0 };                    // Reference window/path for ID construction
     ImGuiID                 RefID = 0;
     ImGuiInputSource        InputMode = ImGuiInputSource_Mouse;
-    ImGuiTestOpFlags        OpFlags = ImGuiTestOpFlags_None;        // Supported: ImGuiTestOpFlags_NoAutoUncollapse
     ImVector<char>          Clipboard;
     ImVector<ImGuiWindow*>  ForeignWindowsToHide;
+
+    //-------------------------------------------------------------------------
+    // Public API
+    //-------------------------------------------------------------------------
 
     // Main control
     void        Finish();
@@ -209,7 +218,7 @@ struct ImGuiTestContext
     bool        IsGuiFuncOnly() const       { return (RunFlags & ImGuiTestRunFlags_GuiFuncOnly) != 0; }
     void        SetGuiFuncEnabled(bool v)   { if (v) RunFlags &= ~ImGuiTestRunFlags_GuiFuncDisable; else RunFlags |= ImGuiTestRunFlags_GuiFuncDisable; }
     void        RecoverFromUiContextErrors();
-    template <typename T> T& GetVars()      { IM_ASSERT(UserData != NULL); return *(T*)(UserData); } // Campanion to using t->SetVarsDataType<>(). FIXME: Assert to compare sizes
+    template <typename T> T& GetVars()      { IM_ASSERT(UserVars != NULL); return *(T*)(UserVars); } // Campanion to using t->SetVarsDataType<>(). FIXME: Assert to compare sizes
 
     // Debug Control Flow
     bool        DebugHaltTestFunc(const char* file, int line);
@@ -265,10 +274,10 @@ struct ImGuiTestContext
     ImGuiID     GetChildWindowID(ImGuiTestRef parent_ref, ImGuiID child_id);        // Name created by BeginChild(id, ...), using specified parent.
 
     // Misc
-    ImVec2      GetPosOnVoid();                                                   // Find a point that has no windows
-    ImVec2      GetWindowTitlebarPoint(ImGuiTestRef window_ref);                    // Return a clickable point on window titlebar (window tab for docked windows).
+    ImVec2      GetPosOnVoid();                                                     // Find a point that has no windows
+    ImVec2      GetWindowTitlebarPoint(ImGuiTestRef window_ref);                    // Return a clickable point on window title-bar (window tab for docked windows).
 
-    // Screen captures
+    // Screen/GIF capture
     // - Simple API
     void        CaptureScreenshotWindow(ImGuiTestRef ref, int capture_flags = 0);
     // - Advanced API
@@ -276,8 +285,8 @@ struct ImGuiTestContext
     bool        CaptureAddWindow(ImGuiCaptureArgs* args, ImGuiTestRef ref);
     bool        CaptureScreenshotEx(ImGuiCaptureArgs* args);
     // - Animation capturing API
-    bool        BeginCaptureGif(ImGuiCaptureArgs* args);
-    bool        EndCaptureGif(ImGuiCaptureArgs* args);
+    bool        CaptureBeginGif(ImGuiCaptureArgs* args);
+    bool        CaptureEndGif(ImGuiCaptureArgs* args);
 
     // Mouse inputs
     void        MouseMove(ImGuiTestRef ref, ImGuiTestOpFlags flags = ImGuiTestOpFlags_None);

@@ -295,7 +295,7 @@ struct ImGuiTestEngineIO
     void*                           ScreenCaptureUserData = NULL;   // (Optional) User data for ScreenCaptureFunc
 
     // Inputs: Options
-    bool                        ConfigRunWithGui = false;           // Run without graphics output (e.g. command-line)
+    bool                        ConfigRunWithGui = false;           // Run without graphics output (e.g. command-line). This is mostly a hint to adjust some features.
     bool                        ConfigRunFast = true;               // Run tests as fast as possible (teleport mouse, skip delays, etc.)
     bool                        ConfigRunBlind = false;             // Run tests in a blind ImGuiContext separated from the visible context
     bool                        ConfigStopOnError = false;          // Stop queued tests on test error

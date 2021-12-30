@@ -36,24 +36,22 @@ Index of this file:
 // [SECTION] TODO
 //-------------------------------------------------------------------------
 
-// GOAL: Code coverage.
 // GOAL: Custom testing.
-// GOAL: Take screenshots for web/docs.
+// GOAL: Take screenshots and video for web/docs or testing purpose.
+// GOAL: Improve code coverage.
 // GOAL: Reliable performance measurement (w/ deterministic setup)
-// GOAL: Full blind version with no graphical context.
+// GOAL: Run blind/tty with no graphical context.
 
-// Note: Tests can't reliably use ImGuiCond_Once or ImGuiCond_FirstUseEver
 // Note: GuiFunc can't run code that yields. There is an assert for that.
+// Note: GuiFunc in tests generally can't use ImGuiCond_Once or ImGuiCond_FirstUseEver reliably.
 
-// FIXME-TESTS: Make it possible to run adhoc tests without registering/adding to a global list.
+// FIXME-TESTS: Make it possible to run ad hoc tests without registering/adding to a global list.
 // FIXME-TESTS: UI to setup breakpoint (e.g. GUI func on frame X, beginning of Test func or at certain Yield/Sleep spot)
-// FIXME-TESTS: Be able to run blind within GUI
+// FIXME-TESTS: Be able to run blind within GUI application (second second)
 // FIXME-TESTS: Be able to run in own contexts to avoid side-effects
-// FIXME-TESTS: Randomize test order in shared context ~ kind of fuzzing (need to be able to repro order!)
-// FIXME-TESTS: Automate clicking/opening stuff based on gathering id?
+// FIXME-TESTS: Randomize test order in shared context ~ kind of fuzzing (need to be able to repro order)
 // FIXME-TESTS: Mouse actions on ImGuiNavLayer_Menu layer
-// FIXME-TESTS: Fail to open a double-click tree node
-// FIXME-TESTS: Possible ID resolving variables e.g. "$REF/Main menu bar" / "$NAV/Main menu bar" / "$TOP/Main menu bar"
+// FIXME-TESTS: Failing to open a double-click tree node
 
 
 //-------------------------------------------------------------------------
@@ -459,11 +457,6 @@ void ImGuiTestEngine_ClearInput(ImGuiTestEngine* engine)
     memset(simulated_io.NavInputs, 0, sizeof(simulated_io.NavInputs));
     simulated_io.ClearInputCharacters();
     ImGuiTestEngine_ApplyInputToImGuiContext(engine);
-}
-
-void ImGuiTestEngine_PushInput(ImGuiTestEngine* engine, const ImGuiTestInput& input)
-{
-    engine->Inputs.Queue.push_back(input);
 }
 
 static bool ImGuiTestEngine_UseSimulatedInputs(ImGuiTestEngine* engine)
@@ -882,7 +875,7 @@ bool ImGuiTestEngine_CaptureScreenshot(ImGuiTestEngine* engine, ImGuiCaptureArgs
     return true;
 }
 
-bool ImGuiTestEngine_BeginCaptureAnimation(ImGuiTestEngine* engine, ImGuiCaptureArgs* args)
+bool ImGuiTestEngine_CaptureBeginGif(ImGuiTestEngine* engine, ImGuiCaptureArgs* args)
 {
     if (engine->IO.ScreenCaptureFunc == NULL)
     {
@@ -905,7 +898,7 @@ bool ImGuiTestEngine_BeginCaptureAnimation(ImGuiTestEngine* engine, ImGuiCapture
     return true;
 }
 
-bool ImGuiTestEngine_EndCaptureAnimation(ImGuiTestEngine* engine, ImGuiCaptureArgs* args)
+bool ImGuiTestEngine_CaptureEndGif(ImGuiTestEngine* engine, ImGuiCaptureArgs* args)
 {
     IM_UNUSED(args);
     IM_ASSERT(engine->CurrentCaptureArgs != NULL && "No capture is in progress.");
@@ -959,7 +952,7 @@ static void ImGuiTestEngine_ProcessTestQueue(ImGuiTestEngine* engine)
         ctx.EngineIO = &engine->IO;
         ctx.Inputs = &engine->Inputs;
         ctx.GatherTask = &engine->GatherTask;
-        ctx.UserData = NULL;
+        ctx.UserVars = NULL;
         ctx.UiContext = engine->UiContextActive;
         ctx.PerfStressAmount = engine->IO.PerfStressAmount;
         ctx.RunFlags = run_task->RunFlags;
@@ -989,7 +982,7 @@ static void ImGuiTestEngine_ProcessTestQueue(ImGuiTestEngine* engine)
             }
 
             // Run test with a custom data type in the stack
-            ctx.UserData = engine->UserDataBuffer;
+            ctx.UserVars = engine->UserDataBuffer;
             test->UserDataConstructor(engine->UserDataBuffer);
             if (test->UserDataPostConstructor != NULL && test->UserDataPostConstructorFn != NULL)
                 test->UserDataPostConstructor(engine->UserDataBuffer, test->UserDataPostConstructorFn);
@@ -1568,7 +1561,7 @@ bool ImGuiTestEngine_Check(const char* file, const char* func, int line, ImGuiTe
             if (engine->CaptureContext.IsCapturingGif())
             {
                 ImGuiCaptureArgs* args = engine->CurrentCaptureArgs;
-                ImGuiTestEngine_EndCaptureAnimation(engine, args);
+                ImGuiTestEngine_CaptureEndGif(engine, args);
                 //ImFileDelete(args->OutSavedFileName);
             }
             ctx->ErrorCounter++;

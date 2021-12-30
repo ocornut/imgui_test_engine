@@ -2842,11 +2842,11 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
     t->SetVarsDataType<WidgetDragSourceNullIDData>();
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
-        WidgetDragSourceNullIDData& user_data = *(WidgetDragSourceNullIDData*)ctx->UserData;
+        WidgetDragSourceNullIDData& vars = ctx->GetVars<WidgetDragSourceNullIDData>();
 
         ImGui::Begin("Null ID Test", NULL, ImGuiWindowFlags_NoSavedSettings);
         ImGui::TextUnformatted("Null ID");
-        user_data.Source = ImRect(ImGui::GetItemRectMin(), ImGui::GetItemRectMax()).GetCenter();
+        vars.Source = ImRect(ImGui::GetItemRectMin(), ImGui::GetItemRectMax()).GetCenter();
 
         if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_SourceAllowNullID))
         {
@@ -2855,13 +2855,13 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
             ImGui::EndDragDropSource();
         }
         ImGui::TextUnformatted("Drop Here");
-        user_data.Destination = ImRect(ImGui::GetItemRectMin(), ImGui::GetItemRectMax()).GetCenter();
+        vars.Destination = ImRect(ImGui::GetItemRectMin(), ImGui::GetItemRectMax()).GetCenter();
 
         if (ImGui::BeginDragDropTarget())
         {
             if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("MAGIC"))
             {
-                user_data.Dropped = true;
+                vars.Dropped = true;
                 IM_CHECK_EQ(payload->DataSize, (int)sizeof(int));
                 IM_CHECK_EQ(*(int*)payload->Data, 0xF00);
             }
@@ -2871,19 +2871,19 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
     };
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
-        WidgetDragSourceNullIDData& user_data = *(WidgetDragSourceNullIDData*)ctx->UserData;
+        WidgetDragSourceNullIDData& vars = ctx->GetVars<WidgetDragSourceNullIDData>();
 
         // ImGui::TextUnformatted() does not have an ID therefore we can not use ctx->ItemDragAndDrop() as that refers
         // to items by their ID.
-        ctx->MouseMoveToPos(user_data.Source);
+        ctx->MouseMoveToPos(vars.Source);
         ctx->SleepShort();
         ctx->MouseDown(0);
 
-        ctx->MouseMoveToPos(user_data.Destination);
+        ctx->MouseMoveToPos(vars.Destination);
         ctx->SleepShort();
         ctx->MouseUp(0);
 
-        IM_CHECK(user_data.Dropped);
+        IM_CHECK(vars.Dropped);
     };
 
     // ## Test preserving g.ActiveId during drag operation opening tree items.
@@ -4223,7 +4223,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
             {
                 ctx->LogInfo("## Test case %d", (int)(&test_case - test_cases));
                 vars.Size = ImVec2(50, 50);
-                ctx->WindowMove(ctx->RefID, test_case.Pos, test_case.Pivot);
+                ctx->WindowMove("", test_case.Pos, test_case.Pivot);
                 ctx->ItemClick(button_name);
 
                 // Check default tooltip location
