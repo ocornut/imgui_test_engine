@@ -1769,18 +1769,28 @@ ImVec2  ImGuiTestContext::GetWindowTitlebarPoint(ImGuiTestRef window_ref)
     return drag_pos;
 }
 
-void    ImGuiTestContext::MouseClickOnVoid(int mouse_button)
+void    ImGuiTestContext::MouseMoveToVoid()
 {
     ImGuiContext& g = *UiContext;
     if (IsError())
         return;
 
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
-    LogDebug("MouseClickOnVoid %d", mouse_button);
+    LogDebug("MouseMoveToVoid");
 
     // Click position which should now be empty space.
     MouseMoveToPos(GetPosOnVoid());
     IM_CHECK(g.HoveredWindow == NULL);
+}
+
+void    ImGuiTestContext::MouseClickOnVoid(int mouse_button)
+{
+    if (IsError())
+        return;
+
+    IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
+    LogDebug("MouseClickOnVoid %d", mouse_button);
+    MouseMoveToVoid();
     MouseClick(mouse_button);
 }
 

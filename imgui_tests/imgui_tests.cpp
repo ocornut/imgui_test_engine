@@ -887,7 +887,7 @@ void RegisterTests_Window(ImGuiTestEngine* e)
         ctx->MouseMoveToPos(g.NavWindow->Pos + ImVec2(10, 10));
         IM_CHECK(io.WantCaptureMouse == true);
         IM_CHECK(io.WantCaptureMouseUnlessPopupClose == true);
-        ctx->MouseMoveToPos(ctx->GetPosOnVoid());
+        ctx->MouseMoveToVoid();
         IM_CHECK(io.WantCaptureMouse == true);
         IM_CHECK(io.WantCaptureMouseUnlessPopupClose == false);
         ctx->PopupCloseAll();
@@ -897,7 +897,7 @@ void RegisterTests_Window(ImGuiTestEngine* e)
         ctx->MouseMoveToPos(g.NavWindow->Pos + ImVec2(10, 10));
         IM_CHECK(io.WantCaptureMouse == true);
         IM_CHECK(io.WantCaptureMouseUnlessPopupClose == true);
-        ctx->MouseMoveToPos(ctx->GetPosOnVoid());
+        ctx->MouseMoveToVoid();
         IM_CHECK(g.HoveredWindow == NULL);
         IM_CHECK(io.WantCaptureMouse == true);
         IM_CHECK(io.WantCaptureMouseUnlessPopupClose == true);

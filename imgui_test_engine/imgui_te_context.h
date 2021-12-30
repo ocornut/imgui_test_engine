@@ -274,7 +274,7 @@ struct ImGuiTestContext
     ImGuiID     GetChildWindowID(ImGuiTestRef parent_ref, ImGuiID child_id);        // Name created by BeginChild(id, ...), using specified parent.
 
     // Misc
-    ImVec2      GetPosOnVoid();                                                     // Find a point that has no windows
+    ImVec2      GetPosOnVoid();                                                     // Find a point that has no windows // FIXME-VIEWPORT: This needs a viewport
     ImVec2      GetWindowTitlebarPoint(ImGuiTestRef window_ref);                    // Return a clickable point on window title-bar (window tab for docked windows).
     ImVec2      GetMainMonitorWorkPos();                                            // Work pos and size of main viewport when viewports are disabled, or work pos and size of monitor containing main viewport when viewports are enabled.
     ImVec2      GetMainMonitorWorkSize();
@@ -300,10 +300,11 @@ struct ImGuiTestContext
     void        MouseDown(ImGuiMouseButton button = 0);
     void        MouseUp(ImGuiMouseButton button = 0);
     void        MouseLiftDragThreshold(ImGuiMouseButton button = 0);
-    void        MouseClickOnVoid(ImGuiMouseButton button = 0);
     void        MouseDragWithDelta(ImVec2 delta, ImGuiMouseButton button = 0);
     void        MouseWheel(float vertical, float horizontal=0.0f);
     void        MouseWheel(ImVec2 delta);
+    void        MouseMoveToVoid();
+    void        MouseClickOnVoid(ImGuiMouseButton button = 0);
     bool        FindExistingVoidPosOnViewport(ImGuiViewport* viewport, ImVec2* out);
 
     // Keyboard inputs
