@@ -173,6 +173,23 @@ static bool ImGuiApp_ImplNull_CaptureFramebuffer(ImGuiApp* app, int x, int y, in
     return true;
 }
 
+static void ImGuiApp_ImplNull_RenderDrawData(ImDrawData* draw_data)
+{
+    for (int n = 0; n < draw_data->CmdListsCount; n++)
+    {
+        const ImDrawList* cmd_list = draw_data->CmdLists[n];
+        for (int cmd_i = 0; cmd_i < cmd_list->CmdBuffer.Size; cmd_i++)
+        {
+            const ImDrawCmd* pcmd = &cmd_list->CmdBuffer[cmd_i];
+            if (pcmd->UserCallback != NULL)
+            {
+                if (pcmd->UserCallback != ImDrawCallback_ResetRenderState)
+                    pcmd->UserCallback(cmd_list, pcmd);
+            }
+        }
+    }
+}
+
 static void ImGuiApp_ImplNull_Render(ImGuiApp* app_opaque)
 {
     IM_UNUSED(app_opaque);
@@ -187,19 +204,7 @@ static void ImGuiApp_ImplNull_Render(ImGuiApp* app_opaque)
     }
 #endif
 
-    for (int n = 0; n < draw_data->CmdListsCount; n++)
-    {
-        const ImDrawList* cmd_list = draw_data->CmdLists[n];
-        for (int cmd_i = 0; cmd_i < cmd_list->CmdBuffer.Size; cmd_i++)
-        {
-            const ImDrawCmd* pcmd = &cmd_list->CmdBuffer[cmd_i];
-            if (pcmd->UserCallback != NULL)
-            {
-                if (pcmd->UserCallback != ImDrawCallback_ResetRenderState)
-                    pcmd->UserCallback(cmd_list, pcmd);
-            }
-        }
-    }
+    ImGuiApp_ImplNull_RenderDrawData(draw_data);
 }
 
 ImGuiApp* ImGuiApp_ImplNull_Create()
@@ -1280,7 +1285,8 @@ static void ImGuiApp_InstalMockViewportsBackend(ImGuiApp*)
     {
         ImGui_ImplMockViewport_Data* bd = ImGui_ImplNullViewport_GetBackendData();
         ImGui_ImplMockViewport_ViewportData* vd = ImGui_ImplNullViewport_FindViewportData(bd, viewport);
-        ImFormatString(vd->Title, IM_ARRAYSIZE(vd->Title), "%s", title);
+        if (vd != NULL)
+            ImFormatString(vd->Title, IM_ARRAYSIZE(vd->Title), "%s", title);
     };
     platform_io.Platform_OnChangedViewport = [](ImGuiViewport* viewport)
     {
@@ -1293,7 +1299,7 @@ static void ImGuiApp_InstalMockViewportsBackend(ImGuiApp*)
             ImGui::GetForegroundDrawList(main_viewport)->AddRect(r.Min, r.Max, IM_COL32(255, 0, 0, 255), 0.0f, ImDrawFlags_None, 3.0f);
         }
     };
-    platform_io.Platform_RenderWindow = [](ImGuiViewport*, void*) {};
+    platform_io.Platform_RenderWindow = NULL;
     platform_io.Platform_SwapBuffers = [](ImGuiViewport*, void*) {};
     platform_io.Platform_SetWindowAlpha = [](ImGuiViewport*, float) {};
 
@@ -1301,7 +1307,7 @@ static void ImGuiApp_InstalMockViewportsBackend(ImGuiApp*)
     platform_io.Renderer_CreateWindow = NULL;
     platform_io.Renderer_DestroyWindow = NULL;
     platform_io.Renderer_SetWindowSize = NULL;
-    platform_io.Renderer_RenderWindow = NULL;
+    platform_io.Renderer_RenderWindow = [](ImGuiViewport* viewport, void*) { ImGuiApp_ImplNull_RenderDrawData(viewport->DrawData); };
     platform_io.Renderer_SwapBuffers = NULL;
 }
 
