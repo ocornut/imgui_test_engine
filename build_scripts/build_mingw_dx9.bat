@@ -13,7 +13,7 @@ set PATH=%PATH%;%MINGW_PATH%
 set LOCAL_DIR=%~dp0
 pushd %LOCAL_DIR%..\..\imgui\examples\example_win32_directx9\
 
-set CFLAGS=-Wall -pedantic -std=c++03 -Wno-variadic-macros -Wextra
+set CFLAGS=-Wall -pedantic -std=c++11 -Wextra
 set LIBS=-ld3d9 -lgdi32 -ldwmapi
 
 @echo on
