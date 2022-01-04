@@ -3822,7 +3822,6 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
             ctx->MouseDown(btn);
             ctx->MouseMoveToPos(g.IO.MousePos + ImVec2(10.0f, 10.0f));
             ctx->MouseUp(btn);
-            IM_CHECK_EQ(g.IO.MouseDragMaxDistanceAbs[btn], ImVec2(10.0f, 10.0f));
             IM_CHECK_EQ(g.IO.MouseDragMaxDistanceSqr[btn], 10.0f*10.0f + 10.0f*10.0f);
         }
 

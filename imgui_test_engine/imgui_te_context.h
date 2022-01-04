@@ -18,6 +18,14 @@
 #pragma GCC diagnostic ignored "-Wclass-memaccess"  // [__GNUC__ >= 8] warning: 'memset/memcpy' clearing/writing an object of type 'xxxx' with no trivial copy-assignment; use assignment or value-initialization instead
 #endif
 
+// Legacy
+#if IMGUI_VERSION_NUM >= 18604
+#define IMGUI_HAS_KEYEVENTS
+#endif
+#if defined(IMGUI_HAS_KEYEVENTS) && defined(IMGUI_DISABLE_OBSOLETE_KEYIO)
+namespace ImGui { static inline bool IsKeyPressedMap(ImGuiKey key) { return IsKeyPressed(key); } }
+#endif
+
 //-------------------------------------------------------------------------
 // External forward declaration
 //-------------------------------------------------------------------------

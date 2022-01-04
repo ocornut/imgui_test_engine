@@ -86,6 +86,9 @@ void GetImGuiKeyModsPrefixStr(ImGuiKeyModFlags mod_flags, char* out_buf, size_t 
 
 const char* GetImGuiKeyName(ImGuiKey key)
 {
+#ifdef IMGUI_HAS_KEYEVENTS
+    return ImGui::GetKeyName(key);
+#else
     // Create switch-case from enum with regexp: ImGuiKey_{.*}, --> case ImGuiKey_\1: return "\1";
     switch (key)
     {
@@ -113,6 +116,7 @@ const char* GetImGuiKeyName(ImGuiKey key)
     }
     IM_ASSERT(0);
     return "Unknown";
+#endif
 }
 
 // FIXME-TESTS: Should eventually remove.

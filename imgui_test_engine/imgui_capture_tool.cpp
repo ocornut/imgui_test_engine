@@ -31,6 +31,14 @@ Index of this file:
 #include "imgui_capture_tool.h"
 #include "../shared/imgui_utils.h"    // ImPathFindFilename, ImPathFindExtension, ImPathFixSeparatorsForCurrentOS, ImFileCreateDirectoryChain, ImOsOpenInShell
 
+// Legacy
+#if IMGUI_VERSION_NUM >= 18603
+#define IMGUI_HAS_KEYEVENTS
+#endif
+#if defined(IMGUI_HAS_KEYEVENTS) && defined(IMGUI_DISABLE_OBSOLETE_KEYIO)
+namespace ImGui { static inline bool IsKeyPressedMap(ImGuiKey key) { return IsKeyPressed(key); } }
+#endif
+
 //-----------------------------------------------------------------------------
 // [SECTION] Link stb_image_write.h + gif.h
 //-----------------------------------------------------------------------------

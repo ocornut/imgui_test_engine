@@ -12,6 +12,7 @@
 #define IMGUI_BROKEN_TESTS 0
 
 //#define IMGUI_DISABLE_OBSOLETE_FUNCTIONS
+#define IMGUI_DISABLE_OBSOLETE_KEYIO
 
 // Enable coroutine implementation using std::thread
 // In your own application you may want to implement them using your own facilities (own thread or coroutine)

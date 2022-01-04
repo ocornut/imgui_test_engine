@@ -129,8 +129,10 @@ static bool ImGuiApp_ImplNull_CreateWindow(ImGuiApp* app, const char*, ImVec2 si
     io.DisplaySize = size;
     io.BackendFlags |= ImGuiBackendFlags_RendererHasVtxOffset | ImGuiBackendFlags_HasMouseCursors;
     //io.Fonts->Build();
+#if IMGUI_VERSION_NUM < 18603
     for (int n = 0; n < ImGuiKey_COUNT; n++)
         io.KeyMap[n] = n;
+#endif
 
     return true;
 }

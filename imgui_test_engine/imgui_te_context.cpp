@@ -1700,7 +1700,6 @@ void    ImGuiTestContext::MouseLiftDragThreshold(ImGuiMouseButton button)
         return;
 
     ImGuiContext& g = *UiContext;
-    g.IO.MouseDragMaxDistanceAbs[button] = ImVec2(g.IO.MouseDragThreshold, g.IO.MouseDragThreshold);
     g.IO.MouseDragMaxDistanceSqr[button] = (g.IO.MouseDragThreshold * g.IO.MouseDragThreshold) + (g.IO.MouseDragThreshold * g.IO.MouseDragThreshold);
 }
 
