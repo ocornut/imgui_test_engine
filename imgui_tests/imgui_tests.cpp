@@ -1754,7 +1754,7 @@ void RegisterTests_Window(ImGuiTestEngine* e)
 
         // Open window switcher (CTRL+TAB).
         ctx->KeyModDown(ImGuiKeyModFlags_Ctrl); // Hold CTRL down
-        ctx->KeyPressMap(ImGuiKey_Tab, 0);
+        ctx->KeyPress(ImGuiKey_Tab, 0);
         ctx->SleepNoSkip(0.3f, 1.0f / 60.0f);
         for (int i = 0; i < 2; i++)
         {
@@ -2894,7 +2894,7 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
                 vars.WindowHeightInItems = 10.0f;
                 vars.ItemsIn = 100;
                 ctx->Yield();
-                ctx->KeyPressMap(ImGuiKey_PageDown);
+                ctx->KeyPress(ImGuiKey_PageDown);
                 ctx->Yield();
                 IM_CHECK_EQ(vars.OffsetY, vars.ItemsIn * item_height);
                 if (vars.ClipperManualItemHeight)
@@ -3976,13 +3976,13 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
         ctx->SetRef("Example: Console");
         ctx->ItemClick("Input");
         ctx->KeyCharsAppend("h");
-        ctx->KeyPressMap(ImGuiKey_Tab);
+        ctx->KeyPress(ImGuiKey_Tab);
         ctx->KeyCharsReplace("cl");
-        ctx->KeyPressMap(ImGuiKey_Tab);
+        ctx->KeyPress(ImGuiKey_Tab);
         ctx->KeyCharsReplace("cla");
-        ctx->KeyPressMap(ImGuiKey_Tab);
+        ctx->KeyPress(ImGuiKey_Tab);
         ctx->KeyCharsReplace("zzZZzz");
-        ctx->KeyPressMap(ImGuiKey_Tab);
+        ctx->KeyPress(ImGuiKey_Tab);
         ctx->KeyCharsReplaceEnter("HELP");
         ctx->KeyCharsReplaceEnter("HISTORY");
         ctx->KeyCharsReplaceEnter("CLEAR");
@@ -4111,7 +4111,7 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
         ctx->ItemClick("0..255");
 
         ctx->ItemClick("Copy as..");
-        ctx->KeyPressMap(ImGuiKey_Escape); // Close popup
+        ctx->KeyPress(ImGuiKey_Escape); // Close popup
 
         for (int picker_type = 0; picker_type < 2; picker_type++)
         {
@@ -4340,7 +4340,7 @@ void RegisterTests_Capture(ImGuiTestEngine* e)
         ctx->ItemClick("Add Debug Error");
         ctx->ItemClick("Input");
         ctx->KeyChars("H");
-        ctx->KeyPressMap(ImGuiKey_Tab);
+        ctx->KeyPress(ImGuiKey_Tab);
         ctx->KeyCharsAppendEnter("ELP");
         ctx->KeyCharsAppendEnter("hello, imgui world!");
 
@@ -4428,7 +4428,7 @@ void RegisterTests_Capture(ImGuiTestEngine* e)
             ctx->SetRef(window);
             ctx->ItemClick("string");
             ctx->KeyCharsReplace("quick brown fox");
-            //ctx->KeyPressMap(ImGuiKey_End);
+            //ctx->KeyPress(ImGuiKey_End);
             ctx->MouseMove("float");
             ctx->MouseMoveToPos(g.IO.MousePos + ImVec2(30, -10));
 

@@ -311,13 +311,13 @@ struct ImGuiTestContext
     void        MouseSetViewportID(ImGuiID viewport_id);
 
     // Keyboard inputs
-    void        KeyDownMap(ImGuiKey key, int mod_flags = 0);
-    void        KeyUpMap(ImGuiKey key, int mod_flags = 0);
-    void        KeyPressMap(ImGuiKey key, int mod_flags = 0, int count = 1);
-    void        KeyHoldMap(ImGuiKey key, int mod_flags, float time);
-    void        KeyModDown(int mod_flags)   { KeyDownMap(ImGuiKey_COUNT, mod_flags); }
-    void        KeyModUp(int mod_flags)     { KeyUpMap(ImGuiKey_COUNT, mod_flags); }
-    void        KeyModPress(int mod_flags)  { KeyPressMap(ImGuiKey_COUNT, mod_flags); }
+    void        KeyDown(ImGuiKey key, int mod_flags = 0);
+    void        KeyUp(ImGuiKey key, int mod_flags = 0);
+    void        KeyPress(ImGuiKey key, int mod_flags = 0, int count = 1);
+    void        KeyHold(ImGuiKey key, int mod_flags, float time);
+    void        KeyModDown(int mod_flags)   { KeyDown(ImGuiKey_COUNT, mod_flags); }
+    void        KeyModUp(int mod_flags)     { KeyUp(ImGuiKey_COUNT, mod_flags); }
+    void        KeyModPress(int mod_flags)  { KeyPress(ImGuiKey_COUNT, mod_flags); }
     void        KeyChars(const char* chars);
     void        KeyCharsAppend(const char* chars);
     void        KeyCharsAppendEnter(const char* chars);

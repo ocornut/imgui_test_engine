@@ -1896,7 +1896,7 @@ void    ImGuiTestContext::MouseWheel(ImVec2 delta)
     }
 }
 
-void    ImGuiTestContext::KeyDownMap(ImGuiKey key, int mod_flags)
+void    ImGuiTestContext::KeyDown(ImGuiKey key, int mod_flags)
 {
     if (IsError())
         return;
@@ -1904,13 +1904,13 @@ void    ImGuiTestContext::KeyDownMap(ImGuiKey key, int mod_flags)
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
     char mod_flags_str[32];
     GetImGuiKeyModsPrefixStr(mod_flags, mod_flags_str, IM_ARRAYSIZE(mod_flags_str));
-    LogDebug("KeyDownMap(%s%s)", mod_flags_str, (key != ImGuiKey_COUNT) ? GetImGuiKeyName(key) : "");
+    LogDebug("KeyDown(%s%s)", mod_flags_str, (key != ImGuiKey_COUNT) ? GetImGuiKeyName(key) : "");
     Inputs->Queue.push_back(ImGuiTestInput::FromKey(key, ImGuiKeyState_Down, mod_flags));
     Yield();
     Yield();
 }
 
-void    ImGuiTestContext::KeyUpMap(ImGuiKey key, int mod_flags)
+void    ImGuiTestContext::KeyUp(ImGuiKey key, int mod_flags)
 {
     if (IsError())
         return;
@@ -1918,13 +1918,13 @@ void    ImGuiTestContext::KeyUpMap(ImGuiKey key, int mod_flags)
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
     char mod_flags_str[32];
     GetImGuiKeyModsPrefixStr(mod_flags, mod_flags_str, IM_ARRAYSIZE(mod_flags_str));
-    LogDebug("KeyUpMap(%s%s)", mod_flags_str, (key != ImGuiKey_COUNT) ? GetImGuiKeyName(key) : "");
+    LogDebug("KeyUp(%s%s)", mod_flags_str, (key != ImGuiKey_COUNT) ? GetImGuiKeyName(key) : "");
     Inputs->Queue.push_back(ImGuiTestInput::FromKey(key, ImGuiKeyState_Up, mod_flags));
     Yield();
     Yield();
 }
 
-void    ImGuiTestContext::KeyPressMap(ImGuiKey key, int mod_flags, int count)
+void    ImGuiTestContext::KeyPress(ImGuiKey key, int mod_flags, int count)
 {
     if (IsError())
         return;
@@ -1932,7 +1932,7 @@ void    ImGuiTestContext::KeyPressMap(ImGuiKey key, int mod_flags, int count)
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
     char mod_flags_str[32];
     GetImGuiKeyModsPrefixStr(mod_flags, mod_flags_str, IM_ARRAYSIZE(mod_flags_str));
-    LogDebug("KeyPressMap(%s%s, %d)", mod_flags_str, (key != ImGuiKey_COUNT) ? GetImGuiKeyName(key) : "", count);
+    LogDebug("KeyPress(%s%s, %d)", mod_flags_str, (key != ImGuiKey_COUNT) ? GetImGuiKeyName(key) : "", count);
     while (count > 0)
     {
         count--;
@@ -1946,7 +1946,7 @@ void    ImGuiTestContext::KeyPressMap(ImGuiKey key, int mod_flags, int count)
     }
 }
 
-void    ImGuiTestContext::KeyHoldMap(ImGuiKey key, int mod_flags, float time)
+void    ImGuiTestContext::KeyHold(ImGuiKey key, int mod_flags, float time)
 {
     if (IsError())
         return;
@@ -1954,7 +1954,7 @@ void    ImGuiTestContext::KeyHoldMap(ImGuiKey key, int mod_flags, float time)
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
     char mod_flags_str[32];
     GetImGuiKeyModsPrefixStr(mod_flags, mod_flags_str, IM_ARRAYSIZE(mod_flags_str));
-    LogDebug("KeyHoldMap(%s%s, %.2f sec)", mod_flags_str, (key != ImGuiKey_COUNT) ? GetImGuiKeyName(key) : "", time);
+    LogDebug("KeyHold(%s%s, %.2f sec)", mod_flags_str, (key != ImGuiKey_COUNT) ? GetImGuiKeyName(key) : "", time);
 
     Inputs->Queue.push_back(ImGuiTestInput::FromKey(key, ImGuiKeyState_Down, mod_flags));
     SleepNoSkip(time, 1 / 100.0f);
@@ -1990,7 +1990,7 @@ void    ImGuiTestContext::KeyCharsAppend(const char* chars)
 
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
     LogDebug("KeyCharsAppend('%s')", chars);
-    KeyPressMap(ImGuiKey_End);
+    KeyPress(ImGuiKey_End);
     KeyChars(chars);
 }
 
@@ -2001,9 +2001,9 @@ void    ImGuiTestContext::KeyCharsAppendEnter(const char* chars)
 
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
     LogDebug("KeyCharsAppendEnter('%s')", chars);
-    KeyPressMap(ImGuiKey_End);
+    KeyPress(ImGuiKey_End);
     KeyChars(chars);
-    KeyPressMap(ImGuiKey_Enter);
+    KeyPress(ImGuiKey_Enter);
 }
 
 void    ImGuiTestContext::KeyCharsReplace(const char* chars)
@@ -2013,11 +2013,11 @@ void    ImGuiTestContext::KeyCharsReplace(const char* chars)
 
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
     LogDebug("KeyCharsReplace('%s')", chars);
-    KeyPressMap(ImGuiKey_A, ImGuiKeyModFlags_Shortcut);
+    KeyPress(ImGuiKey_A, ImGuiKeyModFlags_Shortcut);
     if (chars[0])
         KeyChars(chars);
     else
-        KeyPressMap(ImGuiKey_Delete);
+        KeyPress(ImGuiKey_Delete);
 }
 
 void    ImGuiTestContext::KeyCharsReplaceEnter(const char* chars)
@@ -2027,12 +2027,12 @@ void    ImGuiTestContext::KeyCharsReplaceEnter(const char* chars)
 
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
     LogDebug("KeyCharsReplaceEnter('%s')", chars);
-    KeyPressMap(ImGuiKey_A, ImGuiKeyModFlags_Shortcut);
+    KeyPress(ImGuiKey_A, ImGuiKeyModFlags_Shortcut);
     if (chars[0])
         KeyChars(chars);
     else
-        KeyPressMap(ImGuiKey_Delete);
-    KeyPressMap(ImGuiKey_Enter);
+        KeyPress(ImGuiKey_Delete);
+    KeyPress(ImGuiKey_Enter);
 }
 
 // Supported values for ImGuiTestOpFlags:

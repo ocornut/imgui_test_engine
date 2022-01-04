@@ -1181,7 +1181,7 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
         {
             // FIXME-TESTS: Standardize access to window/collapse menu ID (there are 6 instances in tests)
             ctx->ItemClick(ImGui::DockNodeGetWindowMenuButtonId(windows[i]->DockNode));
-            ctx->KeyPressMap(ImGuiKey_Escape);
+            ctx->KeyPress(ImGuiKey_Escape);
             IM_CHECK(g.NavWindow == windows[i]);
         }
 
