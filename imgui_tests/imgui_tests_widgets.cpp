@@ -2884,12 +2884,16 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
 
         // ImGui::TextUnformatted() does not have an ID therefore we can not use ctx->ItemDragAndDrop() as that refers
         // to items by their ID.
+#ifdef IMGUI_HAS_DOCK
         ctx->MouseSetViewport(vars.SrcViewport);
+#endif
         ctx->MouseMoveToPos(vars.SrcPos);
         ctx->SleepShort();
         ctx->MouseDown(0);
 
+#ifdef IMGUI_HAS_DOCK
         ctx->MouseSetViewport(vars.DstViewport);
+#endif
         ctx->MouseMoveToPos(vars.DstPos);
         ctx->SleepShort();
         ctx->MouseUp(0);
