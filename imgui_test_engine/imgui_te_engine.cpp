@@ -438,6 +438,7 @@ static void ImGuiTestEngine_ClearTests(ImGuiTestEngine* engine)
     engine->TestsQueue.clear();
 }
 
+// Called at the beginning of a test to ensure no previous inputs leak into the new test
 void ImGuiTestEngine_ClearInput(ImGuiTestEngine* engine)
 {
     IM_ASSERT(engine->UiContextTarget != NULL);

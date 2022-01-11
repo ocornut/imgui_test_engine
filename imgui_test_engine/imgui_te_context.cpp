@@ -1195,7 +1195,11 @@ void    ImGuiTestContext::NavKeyDown(ImGuiNavInput input)
         return;
 
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
+#if IMGUI_VERSION_NUM >= 18605
+    LogDebug("NavKeyDown %s", ImGui::GetNavInputName(input));
+#else
     LogDebug("NavKeyDown %d", (int)input);
+#endif
 
     Engine->Inputs.Queue.push_back(ImGuiTestInput::FromNav(input, ImGuiKeyState_Down));
     Yield();
@@ -1208,7 +1212,11 @@ void    ImGuiTestContext::NavKeyUp(ImGuiNavInput input)
         return;
 
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
+#if IMGUI_VERSION_NUM >= 18605
+    LogDebug("NavKeyUp %s", ImGui::GetNavInputName(input));
+#else
     LogDebug("NavKeyUp %d", (int)input);
+#endif
 
     Engine->Inputs.Queue.push_back(ImGuiTestInput::FromNav(input, ImGuiKeyState_Up));
     Yield();
