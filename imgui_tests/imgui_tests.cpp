@@ -543,7 +543,7 @@ void RegisterTests_Window(ImGuiTestEngine* e)
                 }
                 ImGui::EndMenuBar();
             }
-            if (ImGui::IsKeyPressedMap(ImGuiKey_Escape))
+            if (ImGui::IsKeyPressed(ImGuiKey_Escape))
                 ImGui::CloseCurrentPopup();
             ImGui::SetCursorPos(ImGui::GetCursorPos() + ImVec2(100, 50));           // Make popup bigger so menus do not cover bottom-right corner
             ImGui::EndPopup();
@@ -799,7 +799,7 @@ void RegisterTests_Window(ImGuiTestEngine* e)
         if (ImGui::BeginPopupModal("Modal", NULL, ImGuiWindowFlags_MenuBar))
         {
             CreateMenuBar();
-            if (ImGui::IsKeyPressedMap(ImGuiKey_Escape))
+            if (ImGui::IsKeyPressed(ImGuiKey_Escape))
                 ImGui::CloseCurrentPopup();
             ImGui::EndPopup();
         }
@@ -983,7 +983,7 @@ void RegisterTests_Window(ImGuiTestEngine* e)
         {
             ImGui::Text("This is Popup1%s", vars.IsModalPopup[0] ? " (modal)" : "");
 
-            if (ImGui::Button("Close") || ImGui::IsKeyPressedMap(ImGuiKey_Escape))
+            if (ImGui::Button("Close") || ImGui::IsKeyPressed(ImGuiKey_Escape))
                 ImGui::CloseCurrentPopup();
 
             if (ImGui::Button("Open Popup2") || vars.OpenPopup[1])
@@ -1043,7 +1043,7 @@ void RegisterTests_Window(ImGuiTestEngine* e)
                     ImGui::EndMenuBar();
                 }
                 ImGui::Text("This is Popup2%s", vars.IsModalPopup[1] ? " (modal)" : "");
-                if (ImGui::Button("Close Popup2") || ImGui::IsKeyPressedMap(ImGuiKey_Escape))
+                if (ImGui::Button("Close Popup2") || ImGui::IsKeyPressed(ImGuiKey_Escape))
                     ImGui::CloseCurrentPopup();
 
                 pos += ImVec2(spacing, spacing);

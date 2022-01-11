@@ -454,12 +454,8 @@ void ImGuiTestEngine_ClearInput(ImGuiTestEngine* engine)
     simulated_io.KeyModsPrev = ImGuiKeyModFlags_None;
 #endif
     memset(simulated_io.MouseDown, 0, sizeof(simulated_io.MouseDown));
-#ifdef IMGUI_HAS_KEYEVENTS
     for (int n = 0; n < IM_ARRAYSIZE(simulated_io.KeysData); n++)
         simulated_io.KeysData[n].Down = false;
-#else
-    memset(simulated_io.KeysDown, 0, sizeof(simulated_io.KeysDown));
-#endif
     memset(simulated_io.NavInputs, 0, sizeof(simulated_io.NavInputs));
 #ifdef IMGUI_HAS_VIEWPORT
     simulated_io.MouseHoveredViewport = 0;
@@ -516,15 +512,7 @@ void ImGuiTestEngine_ApplyInputToImGuiContext(ImGuiTestEngine* engine)
                         engine->Inputs.KeyMods &= ~input.KeyMods;
 
                     if (input.Key != ImGuiKey_COUNT)
-                    {
-#ifdef IMGUI_HAS_KEYEVENTS
                         simulated_io.AddKeyEvent(input.Key, (input.State == ImGuiKeyState_Down));
-#else
-                        int idx = main_io.KeyMap[input.Key];
-                        if (idx >= 0 && idx < IM_ARRAYSIZE(simulated_io.KeysDown))
-                            simulated_io.KeysDown[idx] = (input.State == ImGuiKeyState_Down);
-#endif
-                    }
                     break;
                 }
                 case ImGuiTestInputType_Nav:
@@ -592,12 +580,8 @@ void ImGuiTestEngine_ApplyInputToImGuiContext(ImGuiTestEngine* engine)
         COPY_FIELD(KeyAlt);
         COPY_FIELD(KeySuper);
         //COPY_FIELD(KeyMods);
-#ifdef IMGUI_HAS_KEYEVENTS
         for (int n = 0; n < IM_ARRAYSIZE(main_io.KeysData); n++)
             main_io.KeysData[n].Down = simulated_io.KeysData[n].Down;
-#else
-        COPY_FIELD(KeysDown);
-#endif
         COPY_FIELD(NavInputs);
 #ifdef IMGUI_HAS_VIEWPORT
         COPY_FIELD(MouseHoveredViewport);
@@ -693,19 +677,11 @@ static void ImGuiTestEngine_PreNewFrame(ImGuiTestEngine* engine, ImGuiContext* u
         ImGuiIO& simulated_io = engine->Inputs.SimulatedIO;
         const bool use_simulated_inputs = ImGuiTestEngine_UseSimulatedInputs(engine);
         bool abort = false;
-#ifdef IMGUI_HAS_KEYEVENTS
         const int key_data_idx = ImGuiKey_Escape - ImGuiKey_KeysData_OFFSET;
         if (use_simulated_inputs)
             abort = main_io.KeysData[key_data_idx].Down && !simulated_io.KeysData[key_data_idx].Down;
         else
             abort = main_io.KeysData[key_data_idx].DownDuration > 0.30f;
-#else
-        const int key_idx_escape = g.IO.KeyMap[ImGuiKey_Escape];
-        if (use_simulated_inputs)
-            abort = (key_idx_escape != -1 && main_io.KeysDown[key_idx_escape] && !simulated_io.KeysDown[key_idx_escape]);
-        else
-            abort = (key_idx_escape != -1 && main_io.KeysDownDuration[key_idx_escape] > 0.30f);
-#endif
         if (abort)
         {
             if (engine->TestContext)
@@ -1223,12 +1199,8 @@ static void ImGuiTestEngine_RunTest(ImGuiTestEngine* engine, ImGuiTestContext* c
     ImGuiIO backup_io = ctx->UiContext->IO;
     ImGuiStyle backup_style = ctx->UiContext->Style;
     memset(backup_io.MouseDown, 0, sizeof(backup_io.MouseDown));
-#ifdef IMGUI_HAS_KEYEVENTS
     for (int n = 0; n < IM_ARRAYSIZE(backup_io.KeysData); n++)
         backup_io.KeysData[n].Down = false;
-#else
-    memset(backup_io.KeysDown, 0, sizeof(backup_io.KeysDown));
-#endif
 
 #ifdef IMGUI_HAS_VIEWPORT
     // We always fill io.MouseHoveredViewport manually (maintained in ImGuiTestInputs::SimulatedIO)

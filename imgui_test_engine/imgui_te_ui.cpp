@@ -289,7 +289,7 @@ static void ShowTestGroup(ImGuiTestEngine* e, ImGuiTestGroup group, ImGuiTextFil
                     test->Status = ImGuiTestStatus_Running;
                 if (ImGui::IsItemHovered())
                     ImGui::SetTooltip("CTRL+Space to continue.");
-                if (ImGui::IsKeyPressedMap(ImGuiKey_Space) && io.KeyCtrl)
+                if (ImGui::IsKeyPressed(ImGuiKey_Space) && io.KeyCtrl)
                     test->Status = ImGuiTestStatus_Running;
             }
             else

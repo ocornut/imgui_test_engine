@@ -31,14 +31,6 @@ Index of this file:
 #include "imgui_capture_tool.h"
 #include "../shared/imgui_utils.h"    // ImPathFindFilename, ImPathFindExtension, ImPathFixSeparatorsForCurrentOS, ImFileCreateDirectoryChain, ImOsOpenInShell
 
-// Legacy
-#if IMGUI_VERSION_NUM >= 18603
-#define IMGUI_HAS_KEYEVENTS
-#endif
-#if defined(IMGUI_HAS_KEYEVENTS) && defined(IMGUI_DISABLE_OBSOLETE_KEYIO)
-namespace ImGui { static inline bool IsKeyPressedMap(ImGuiKey key) { return IsKeyPressed(key); } }
-#endif
-
 //-----------------------------------------------------------------------------
 // [SECTION] Link stb_image_write.h + gif.h
 //-----------------------------------------------------------------------------
@@ -606,7 +598,7 @@ void ImGuiCaptureTool::CaptureWindowPicker(ImGuiCaptureArgs* args)
             args->InCaptureWindows.clear();
             args->InCaptureWindows.push_back(capture_window);
         }
-        if (ImGui::IsKeyPressedMap(ImGuiKey_Escape))
+        if (ImGui::IsKeyPressed(ImGuiKey_Escape))
             _CaptureState = ImGuiCaptureToolState_None;
     }
     else
@@ -768,7 +760,7 @@ void ImGuiCaptureTool::ShowCaptureToolWindow(bool* p_open)
         if (Context.IsCapturingGif() || args->InCaptureWindows.Size > 1)
             args->InFlags &= ~ImGuiCaptureFlags_StitchAll;
 
-        if (Context._GifRecording && ImGui::IsKeyPressedMap(ImGuiKey_Escape))
+        if (Context._GifRecording && ImGui::IsKeyPressed(ImGuiKey_Escape))
             Context.EndGifCapture();
 
         ImGuiCaptureStatus status = Context.CaptureUpdate(args);

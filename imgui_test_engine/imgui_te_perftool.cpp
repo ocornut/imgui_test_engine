@@ -1055,7 +1055,7 @@ void ImGuiPerfTool::ShowUI(ImGuiTestEngine* engine)
     if (ImGui::BeginPopup("Filter perfs"))
     {
         dirty |= RenderMultiSelectFilter(this, "Filter by perf test", &_Labels);
-        if (ImGui::IsKeyPressedMap(ImGuiKey_Escape))
+        if (ImGui::IsKeyPressed(ImGuiKey_Escape))
             ImGui::CloseCurrentPopup();
         ImGui::EndPopup();
     }

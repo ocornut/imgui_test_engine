@@ -1911,7 +1911,7 @@ void    ImGuiTestContext::KeyDown(ImGuiKey key, int mod_flags)
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
     char mod_flags_str[32];
     GetImGuiKeyModsPrefixStr(mod_flags, mod_flags_str, IM_ARRAYSIZE(mod_flags_str));
-    LogDebug("KeyDown(%s%s)", mod_flags_str, (key != ImGuiKey_COUNT) ? GetImGuiKeyName(key) : "");
+    LogDebug("KeyDown(%s%s)", mod_flags_str, (key != ImGuiKey_COUNT) ? ImGui::GetKeyName(key) : "");
     Inputs->Queue.push_back(ImGuiTestInput::FromKey(key, ImGuiKeyState_Down, mod_flags));
     Yield();
     Yield();
@@ -1925,7 +1925,7 @@ void    ImGuiTestContext::KeyUp(ImGuiKey key, int mod_flags)
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
     char mod_flags_str[32];
     GetImGuiKeyModsPrefixStr(mod_flags, mod_flags_str, IM_ARRAYSIZE(mod_flags_str));
-    LogDebug("KeyUp(%s%s)", mod_flags_str, (key != ImGuiKey_COUNT) ? GetImGuiKeyName(key) : "");
+    LogDebug("KeyUp(%s%s)", mod_flags_str, (key != ImGuiKey_COUNT) ? ImGui::GetKeyName(key) : "");
     Inputs->Queue.push_back(ImGuiTestInput::FromKey(key, ImGuiKeyState_Up, mod_flags));
     Yield();
     Yield();
@@ -1939,7 +1939,7 @@ void    ImGuiTestContext::KeyPress(ImGuiKey key, int mod_flags, int count)
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
     char mod_flags_str[32];
     GetImGuiKeyModsPrefixStr(mod_flags, mod_flags_str, IM_ARRAYSIZE(mod_flags_str));
-    LogDebug("KeyPress(%s%s, %d)", mod_flags_str, (key != ImGuiKey_COUNT) ? GetImGuiKeyName(key) : "", count);
+    LogDebug("KeyPress(%s%s, %d)", mod_flags_str, (key != ImGuiKey_COUNT) ? ImGui::GetKeyName(key) : "", count);
     while (count > 0)
     {
         count--;
@@ -1961,7 +1961,7 @@ void    ImGuiTestContext::KeyHold(ImGuiKey key, int mod_flags, float time)
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
     char mod_flags_str[32];
     GetImGuiKeyModsPrefixStr(mod_flags, mod_flags_str, IM_ARRAYSIZE(mod_flags_str));
-    LogDebug("KeyHold(%s%s, %.2f sec)", mod_flags_str, (key != ImGuiKey_COUNT) ? GetImGuiKeyName(key) : "", time);
+    LogDebug("KeyHold(%s%s, %.2f sec)", mod_flags_str, (key != ImGuiKey_COUNT) ? ImGui::GetKeyName(key) : "", time);
 
     Inputs->Queue.push_back(ImGuiTestInput::FromKey(key, ImGuiKeyState_Down, mod_flags));
     SleepNoSkip(time, 1 / 100.0f);
