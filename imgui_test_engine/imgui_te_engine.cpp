@@ -442,25 +442,19 @@ static void ImGuiTestEngine_ClearTests(ImGuiTestEngine* engine)
 void ImGuiTestEngine_ClearInput(ImGuiTestEngine* engine)
 {
     IM_ASSERT(engine->UiContextTarget != NULL);
+    ImGuiContext& g = *engine->UiContextTarget;
+
     engine->Inputs.MouseButtonsValue = 0;
     engine->Inputs.KeyMods = ImGuiKeyModFlags_None;
     engine->Inputs.Queue.clear();
     engine->Inputs.MouseWheel = ImVec2(0, 0);
+    memset(&engine->Inputs.NavInputs, 0, sizeof(engine->Inputs.NavInputs));
 
-    ImGuiIO& simulated_io = engine->Inputs.SimulatedIO;
-    simulated_io.KeyCtrl = simulated_io.KeyShift = simulated_io.KeyAlt = simulated_io.KeySuper = false;
-    simulated_io.KeyMods = ImGuiKeyModFlags_None;
-#if IMGUI_VERSION_NUM >= 18314
-    simulated_io.KeyModsPrev = ImGuiKeyModFlags_None;
-#endif
-    memset(simulated_io.MouseDown, 0, sizeof(simulated_io.MouseDown));
-    for (int n = 0; n < IM_ARRAYSIZE(simulated_io.KeysData); n++)
-        simulated_io.KeysData[n].Down = false;
-    memset(simulated_io.NavInputs, 0, sizeof(simulated_io.NavInputs));
-#ifdef IMGUI_HAS_VIEWPORT
-    simulated_io.MouseHoveredViewport = 0;
-#endif
-    simulated_io.ClearInputCharacters();
+    // FIXME: Necessary?
+    g.InputEventsQueue.resize(0);
+    g.IO.ClearInputCharacters();
+    g.IO.ClearInputKeys();
+
     ImGuiTestEngine_ApplyInputToImGuiContext(engine);
 }
 
@@ -478,23 +472,44 @@ void ImGuiTestEngine_ApplyInputToImGuiContext(ImGuiTestEngine* engine)
 {
     IM_ASSERT(engine->UiContextTarget != NULL);
     ImGuiContext& g = *engine->UiContextTarget;
-
     ImGuiIO& main_io = g.IO;
-    ImGuiIO& simulated_io = engine->Inputs.SimulatedIO;
-
     main_io.MouseDrawCursor = true;
 
     const bool use_simulated_inputs = ImGuiTestEngine_UseSimulatedInputs(engine);
     if (use_simulated_inputs)
     {
-        IM_ASSERT(engine->TestContext != NULL);
+        // Erase events submitted by backend
+        for (int n = 0; n < g.InputEventsQueue.Size; n++)
+            if (g.InputEventsQueue[n].SubmittedByTestEngine == false)
+                g.InputEventsQueue.erase(&g.InputEventsQueue[n--]);
 
-        // Clear host IO queues (because we can't easily just memcpy the vectors)
-        if (engine->Inputs.ApplyingSimulatedIO == 0)
-            simulated_io.MousePos = main_io.MousePos;
+        const int input_event_count_prev = g.InputEventsQueue.Size;
 
-        engine->Inputs.ApplyingSimulatedIO = 2;
-        main_io.ClearInputCharacters();
+        // Apply mouse
+        main_io.AddMousePosEvent(engine->Inputs.MousePosValue.x, engine->Inputs.MousePosValue.y);
+        for (int n = 0; n < ImGuiMouseButton_COUNT; n++)
+            main_io.AddMouseButtonEvent(n, (engine->Inputs.MouseButtonsValue & (1 << n)) != 0);
+
+        // Apply mouse viewport
+#ifdef IMGUI_HAS_VIEWPORT
+        ImGuiViewport* mouse_hovered_viewport;
+        if (engine->Inputs.MouseHoveredViewport != 0)
+            mouse_hovered_viewport = ImGui::FindViewportByID(engine->Inputs.MouseHoveredViewport); // Common case
+        else
+            mouse_hovered_viewport = ImGui::FindHoveredViewportFromPlatformWindowStack(engine->Inputs.MousePosValue); // Rarely used, some tests rely on this (e.g. "docking_dockspace_passthru_hover") may make it a opt-in feature instead?
+        if (mouse_hovered_viewport && (mouse_hovered_viewport->Flags & ImGuiViewportFlags_NoInputs))
+            mouse_hovered_viewport = NULL;
+        main_io.MouseHoveredViewport = mouse_hovered_viewport ? mouse_hovered_viewport->ID : 0;
+#endif
+        // Apply mouse wheel
+        // [OSX] Simulate OSX behavior of automatically swapping mouse wheel axis when SHIFT is held.
+        // This is working in conjonction with the fact that ImGuiTestContext::MouseWheel() assume Windows-style behavior.
+        ImVec2 wheel = engine->Inputs.MouseWheel;
+        if (main_io.ConfigMacOSXBehaviors && (engine->Inputs.KeyMods & ImGuiKeyModFlags_Shift)) // FIXME!!
+            ImSwap(wheel.x, wheel.y);
+        if (wheel.x != 0.0f || wheel.y != 0.0f)
+            main_io.AddMouseWheelEvent(wheel.x, wheel.y);
+        engine->Inputs.MouseWheel = ImVec2(0, 0);
 
         // Process input requests/queues
         if (engine->Inputs.Queue.Size > 0)
@@ -506,19 +521,24 @@ void ImGuiTestEngine_ApplyInputToImGuiContext(ImGuiTestEngine* engine)
                 {
                 case ImGuiTestInputType_Key:
                 {
-                    if (input.State == ImGuiKeyState_Down)
-                        engine->Inputs.KeyMods |= input.KeyMods;
-                    else
-                        engine->Inputs.KeyMods &= ~input.KeyMods;
+                    if (input.KeyMods != 0x00)
+                    {
+                        if (input.State == ImGuiKeyState_Down)
+                            engine->Inputs.KeyMods |= input.KeyMods;
+                        else
+                            engine->Inputs.KeyMods &= ~input.KeyMods;
+                        main_io.AddKeyModsEvent(engine->Inputs.KeyMods);
+                    }
 
                     if (input.Key != ImGuiKey_COUNT)
-                        simulated_io.AddKeyEvent(input.Key, (input.State == ImGuiKeyState_Down));
+                        main_io.AddKeyEvent(input.Key, (input.State == ImGuiKeyState_Down));
                     break;
                 }
                 case ImGuiTestInputType_Nav:
                 {
+                    // FIXME-NEWINPUTS: Use stored array as ImGui clears its own
                     IM_ASSERT(input.NavInput >= 0 && input.NavInput < ImGuiNavInput_COUNT);
-                    simulated_io.NavInputs[input.NavInput] = (input.State == ImGuiKeyState_Down) ? 1.0f : 0.0f;
+                    engine->Inputs.NavInputs[input.NavInput] = (input.State == ImGuiKeyState_Down) ? 1.0f : 0.0f;
                     break;
                 }
                 case ImGuiTestInputType_Char:
@@ -532,68 +552,15 @@ void ImGuiTestEngine_ApplyInputToImGuiContext(ImGuiTestEngine* engine)
                     break;
                 }
             }
+
             engine->Inputs.Queue.resize(0);
         }
 
-        // Apply mouse position
-        simulated_io.MousePos = engine->Inputs.MousePosValue;
-        //main_io.WantSetMousePos = true;
-        for (int n = 0; n < IM_ARRAYSIZE(simulated_io.MouseDown); n++)
-            simulated_io.MouseDown[n] = (engine->Inputs.MouseButtonsValue & (1 << n)) != 0;
-
-        // Apply mouse viewport
-#ifdef IMGUI_HAS_VIEWPORT
-        ImGuiViewport* mouse_hovered_viewport;
-        if (engine->Inputs.MouseHoveredViewport != 0)
-            mouse_hovered_viewport = ImGui::FindViewportByID(engine->Inputs.MouseHoveredViewport); // Common case
-        else
-            mouse_hovered_viewport = ImGui::FindHoveredViewportFromPlatformWindowStack(engine->Inputs.MousePosValue); // Rarely used, some tests rely on this (e.g. "docking_dockspace_passthru_hover") may make it a opt-in feature instead?
-        if (mouse_hovered_viewport && (mouse_hovered_viewport->Flags & ImGuiViewportFlags_NoInputs))
-            mouse_hovered_viewport = NULL;
-        simulated_io.MouseHoveredViewport = mouse_hovered_viewport ? mouse_hovered_viewport->ID : 0;
-#endif
-
-        // Apply keyboard mods
-        simulated_io.KeyCtrl  = (engine->Inputs.KeyMods & ImGuiKeyModFlags_Ctrl) != 0;
-        simulated_io.KeyAlt   = (engine->Inputs.KeyMods & ImGuiKeyModFlags_Alt) != 0;
-        simulated_io.KeyShift = (engine->Inputs.KeyMods & ImGuiKeyModFlags_Shift) != 0;
-        simulated_io.KeySuper = (engine->Inputs.KeyMods & ImGuiKeyModFlags_Super) != 0;
-        //simulated_io.KeyMods  = (engine->Inputs.KeyMods);
-
-        // Mouse wheel
-        // [OSX] Simulate OSX behavior of automatically swapping mouse wheel axis when SHIFT is held.
-        // This is working in conjonction with the fact that ImGuiTestContext::MouseWheel() assume Windows-style behavior.
-        simulated_io.MouseWheelH = engine->Inputs.MouseWheel.x;
-        simulated_io.MouseWheel = engine->Inputs.MouseWheel.y;
-        if (simulated_io.ConfigMacOSXBehaviors && simulated_io.KeyShift)
-            ImSwap(simulated_io.MouseWheelH, simulated_io.MouseWheel);
-        engine->Inputs.MouseWheel = ImVec2(0, 0);
-
-        // Apply to real IO
-        #define COPY_FIELD(_FIELD)  { memcpy(&main_io._FIELD, &simulated_io._FIELD, sizeof(simulated_io._FIELD)); }
-        COPY_FIELD(MousePos);
-        COPY_FIELD(MouseDown);
-        COPY_FIELD(MouseWheel);
-        COPY_FIELD(MouseWheelH);
-        COPY_FIELD(KeyCtrl);
-        COPY_FIELD(KeyShift);
-        COPY_FIELD(KeyAlt);
-        COPY_FIELD(KeySuper);
-        //COPY_FIELD(KeyMods);
-        for (int n = 0; n < IM_ARRAYSIZE(main_io.KeysData); n++)
-            main_io.KeysData[n].Down = simulated_io.KeysData[n].Down;
-        COPY_FIELD(NavInputs);
-#ifdef IMGUI_HAS_VIEWPORT
-        COPY_FIELD(MouseHoveredViewport);
-#endif
-        #undef COPY_FIELD
-
-        simulated_io.ClearInputCharacters();
+        const int input_event_count_curr = g.InputEventsQueue.Size;
+        for (int n = input_event_count_prev; n < input_event_count_curr; n++)
+            g.InputEventsQueue[n].SubmittedByTestEngine = true;
     }
-    else
-    {
-        engine->Inputs.Queue.resize(0);
-    }
+    memcpy(&main_io.NavInputs, &engine->Inputs.NavInputs, sizeof(engine->Inputs.NavInputs)); // FIXME-NEWINPUTS: Use stored array as ImGui clears its own
 }
 
 // FIXME: Trying to abort a running GUI test won't kill the app immediately.
@@ -674,20 +641,22 @@ static void ImGuiTestEngine_PreNewFrame(ImGuiTestEngine* engine, ImGuiContext* u
         // Abort testing by holding ESC
         // When running GuiFunc only main_io == simulated_io we test for a long hold.
         ImGuiIO& main_io = g.IO;
-        ImGuiIO& simulated_io = engine->Inputs.SimulatedIO;
-        const bool use_simulated_inputs = ImGuiTestEngine_UseSimulatedInputs(engine);
-        bool abort = false;
-        const int key_data_idx = ImGuiKey_Escape - ImGuiKey_KeysData_OFFSET;
-        if (use_simulated_inputs)
-            abort = main_io.KeysData[key_data_idx].Down && !simulated_io.KeysData[key_data_idx].Down;
-        else
-            abort = main_io.KeysData[key_data_idx].DownDuration > 0.30f;
+        for (auto& e : g.InputEventsQueue)
+            if (e.Type == ImGuiInputEventType_Key && e.Key.Key == ImGuiKey_Escape)
+                engine->Inputs.HostEscDown = e.Key.Down;
+        engine->Inputs.HostEscDownDuration = engine->Inputs.HostEscDown ? (ImMax(engine->Inputs.HostEscDownDuration, 0.0f) + main_io.DeltaTime) : -1.0f;
+        const bool abort = engine->Inputs.HostEscDownDuration > 0.30f;
         if (abort)
         {
             if (engine->TestContext)
                 engine->TestContext->LogWarning("KO: User aborted (pressed ESC)");
             ImGuiTestEngine_AbortTest(engine);
         }
+    }
+    else
+    {
+        engine->Inputs.HostEscDown = false;
+        engine->Inputs.HostEscDownDuration = -1.0f;
     }
 
     ImGuiTestEngine_ApplyInputToImGuiContext(engine);
@@ -702,27 +671,6 @@ static void ImGuiTestEngine_PostNewFrame(ImGuiTestEngine* engine, ImGuiContext* 
 
     engine->CaptureContext.PostNewFrame();
     engine->CaptureTool.Context.PostNewFrame();
-
-    // Restore host inputs
-    const bool want_simulated_inputs = engine->UiContextActive != NULL && ImGuiTestEngine_IsRunningTests(engine) && !(engine->TestContext->RunFlags & ImGuiTestRunFlags_GuiFuncOnly);
-    if (!want_simulated_inputs)
-    {
-        ImGuiIO& main_io = ui_ctx->IO;
-        //IM_ASSERT(engine->UiContextActive == NULL);
-        if (engine->Inputs.ApplyingSimulatedIO > 0)
-        {
-            // Restore
-            engine->Inputs.ApplyingSimulatedIO--;
-            main_io.MousePos = engine->Inputs.HostLastMousePos;
-            //main_io.WantSetMousePos = true;
-        }
-        else
-        {
-            // Backup
-            if (ImGui::IsMousePosValid(&main_io.MousePos))
-                engine->Inputs.MousePosValue = engine->Inputs.HostLastMousePos = main_io.MousePos;
-        }
-    }
 
     // Garbage collect unused tasks
     const int LOCATION_TASK_ELAPSE_FRAMES = 20;

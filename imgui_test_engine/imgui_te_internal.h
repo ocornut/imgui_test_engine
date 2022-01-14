@@ -106,15 +106,15 @@ struct ImGuiTestInput
 
 struct ImGuiTestInputs
 {
-    ImGuiIO                     SimulatedIO;
-    int                         ApplyingSimulatedIO = 0;
     ImVec2                      MousePosValue;                  // Own non-rounded copy of MousePos in order facilitate simulating mouse movement very slow speed and high-framerate
     ImVec2                      MouseWheel;
     ImGuiID                     MouseHoveredViewport = 0;
-    ImVec2                      HostLastMousePos;
     int                         MouseButtonsValue = 0x00;       // FIXME-TESTS: Use simulated_io.MouseDown[] ?
     ImGuiKeyModFlags            KeyMods = 0x00;                 // FIXME-TESTS: Use simulated_io.KeyXXX ?
     ImVector<ImGuiTestInput>    Queue;
+    float                       NavInputs[ImGuiNavInput_COUNT];
+    bool                        HostEscDown = false;
+    float                       HostEscDownDuration = -1.0f;    // Maintain our own DownDuration for host/backend ESC key so we can abort.
 };
 
 // [Internal] Test Engine Context
