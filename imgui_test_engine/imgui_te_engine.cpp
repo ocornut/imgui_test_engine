@@ -462,8 +462,12 @@ static bool ImGuiTestEngine_UseSimulatedInputs(ImGuiTestEngine* engine)
 {
     if (engine->UiContextActive)
         if (ImGuiTestEngine_IsRunningTests(engine))
+        {
+            if (engine->TestContext->RunFlags & ImGuiTestRunFlags_EnableRawInputs)
+                return false;
             if (!(engine->TestContext->RunFlags & ImGuiTestRunFlags_GuiFuncOnly))
                 return true;
+        }
     return false;
 }
 

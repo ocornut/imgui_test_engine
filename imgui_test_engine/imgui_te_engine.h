@@ -96,8 +96,9 @@ enum ImGuiTestRunFlags_
     ImGuiTestRunFlags_NoSuccessMsg      = 1 << 2,
     ImGuiTestRunFlags_NoStopOnError     = 1 << 3,
     ImGuiTestRunFlags_NoBreakOnError    = 1 << 4,
-    ImGuiTestRunFlags_ManualRun         = 1 << 5,
-    ImGuiTestRunFlags_CommandLine       = 1 << 6
+    ImGuiTestRunFlags_EnableRawInputs   = 1 << 5,   // Disable input submission to let test submission raw input event (in order to test e.g. IO queue)
+    ImGuiTestRunFlags_ManualRun         = 1 << 6,
+    ImGuiTestRunFlags_CommandLine       = 1 << 7
 };
 
 //-------------------------------------------------------------------------

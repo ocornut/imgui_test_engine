@@ -2610,6 +2610,320 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
         ctx->Yield();
     };
 
+    // ## Test input queue trickling
+    t = IM_REGISTER_TEST(e, "misc", "misc_io_input_queue");
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiContext& g = *ctx->UiContext;
+        ImGuiIO& io = g.IO;
+
+        ctx->RunFlags |= ImGuiTestRunFlags_EnableRawInputs; // Disable TestEngine submitting inputs events
+        ctx->Yield();
+
+        // MousePos -> 1 frame
+        io.AddMousePosEvent(100.0f, 100.0f);
+        ctx->Yield();
+        IM_CHECK_EQ(io.MousePos, ImVec2(100.0f, 100.0f));
+
+        // MousePos x3 -> 1 frame
+        io.AddMousePosEvent(110.0f, 110.0f);
+        io.AddMousePosEvent(120.0f, 120.0f);
+        io.AddMousePosEvent(130.0f, 130.0f);
+        ctx->Yield();
+        IM_CHECK_EQ(io.MousePos, ImVec2(130.0f, 130.0f));
+
+        // MousePos, MouseButton -> 1 frame
+        io.AddMousePosEvent(140.0f, 140.0f);
+        io.AddMouseButtonEvent(0, true);
+        ctx->Yield();
+        IM_CHECK_EQ(io.MousePos, ImVec2(140.0f, 140.0f));
+        IM_CHECK_EQ(io.MouseDown[0], true);
+        io.AddMouseButtonEvent(0, false);
+        ctx->Yield();
+
+        // MouseButton | MousePos -> 2 frames
+        io.AddMouseButtonEvent(0, true);
+        io.AddMousePosEvent(150.0f, 150.0f);
+        ctx->Yield();
+        IM_CHECK_EQ(io.MousePos, ImVec2(140.0f, 140.0f));
+        IM_CHECK_EQ(io.MouseDown[0], true);
+        ctx->Yield();
+        IM_CHECK_EQ(io.MousePos, ImVec2(150.0f, 150.0f));
+        IM_CHECK_EQ(io.MouseDown[0], true);
+        io.AddMouseButtonEvent(0, false);
+        ctx->Yield();
+
+        // MousePos, MouseButton | MousePos -> 2 frames
+        io.AddMousePosEvent(100.0f, 100.0f);
+        io.AddMouseButtonEvent(0, true);
+        io.AddMousePosEvent(110.0f, 110.0f);
+        ctx->Yield();
+        IM_CHECK_EQ(io.MousePos, ImVec2(100.0f, 100.0f));
+        IM_CHECK_EQ(io.MouseDown[0], true);
+        ctx->Yield();
+        IM_CHECK_EQ(io.MousePos, ImVec2(110.0f, 110.0f));
+        IM_CHECK_EQ(io.MouseDown[0], true);
+        io.AddMouseButtonEvent(0, false);
+        ctx->Yield();
+
+        // MouseButton down 0 | up 0 -> 2 frames
+        io.AddMouseButtonEvent(0, true);
+        io.AddMouseButtonEvent(0, false);
+        ctx->Yield();
+        IM_CHECK_EQ(io.MouseDown[0], true);
+        ctx->Yield();
+        IM_CHECK_EQ(io.MouseDown[0], false);
+        ctx->Yield();
+
+        // MouseButton down 0, down 1, up 0, up 1 -> 2 frames
+        io.AddMouseButtonEvent(0, true);
+        io.AddMouseButtonEvent(1, true);
+        io.AddMouseButtonEvent(0, false);
+        io.AddMouseButtonEvent(1, false);
+        ctx->Yield();
+        IM_CHECK_EQ(io.MouseDown[0], true);
+        IM_CHECK_EQ(io.MouseDown[1], true);
+        ctx->Yield();
+        IM_CHECK_EQ(io.MouseDown[0], false);
+        IM_CHECK_EQ(io.MouseDown[1], false);
+        ctx->Yield();
+
+        // MouseButton down 0 | up 0 | down 0 -> 3 frames
+        io.AddMouseButtonEvent(0, true);
+        io.AddMouseButtonEvent(0, false);
+        io.AddMouseButtonEvent(0, true);
+        ctx->Yield();
+        IM_CHECK_EQ(io.MouseDown[0], true);
+        ctx->Yield();
+        IM_CHECK_EQ(io.MouseDown[0], false);
+        ctx->Yield();
+        IM_CHECK_EQ(io.MouseDown[0], true);
+        io.AddMouseButtonEvent(0, false);
+        ctx->Yield();
+
+        // MouseButton double-click -> 4 frames
+        ctx->SleepNoSkip(1.0f, 1.0f); // Ensure previous clicks are not counted
+        io.AddMouseButtonEvent(0, true);
+        io.AddMouseButtonEvent(0, false);
+        io.AddMouseButtonEvent(0, true);
+        io.AddMouseButtonEvent(0, false);
+        ctx->Yield();
+        IM_CHECK_EQ(io.MouseDown[0], true);
+        ctx->Yield();
+        IM_CHECK_EQ(io.MouseDown[0], false);
+        ctx->Yield();
+        IM_CHECK_EQ(io.MouseDown[0], true);
+        IM_CHECK(ImGui::IsMouseDoubleClicked(0));
+        ctx->Yield();
+        IM_CHECK_EQ(io.MouseDown[0], false);
+
+        // MousePos, MouseWheel -> 1 frame
+        io.AddMousePosEvent(100.0f, 100.0f);
+        io.AddMouseWheelEvent(0.0f, +1.0f);
+        ctx->Yield();
+        IM_CHECK_EQ(io.MousePos, ImVec2(100.0f, 100.0f));
+        IM_CHECK_EQ(io.MouseWheel, 1.0f);
+        ctx->Yield();
+        IM_CHECK_EQ(io.MouseWheel, 0.0f);
+
+        // MouseWheel | MousePos -> 2 frames
+        io.AddMouseWheelEvent(0.0f, +2.0f);
+        io.AddMousePosEvent(110.0f, 110.0f);
+        ctx->Yield();
+        IM_CHECK_EQ(io.MousePos, ImVec2(100.0f, 100.0f));
+        IM_CHECK_EQ(io.MouseWheel, 2.0f);
+        ctx->Yield();
+        IM_CHECK_EQ(io.MousePos, ImVec2(110.0f, 110.0f));
+        IM_CHECK_EQ(io.MouseWheel, 0.0f);
+        ctx->Yield();
+
+        // MouseWheel | MouseButton -> 2 frames
+        io.AddMouseWheelEvent(0.0f, +2.0f);
+        io.AddMouseButtonEvent(1, true);
+        ctx->Yield();
+        IM_CHECK_EQ(io.MouseWheel, 2.0f);
+        IM_CHECK_EQ(io.MouseDown[1], false);
+        ctx->Yield();
+        IM_CHECK_EQ(io.MouseWheel, 0.0f);
+        IM_CHECK_EQ(io.MouseDown[1], true);
+        io.AddMouseButtonEvent(1, false);
+        ctx->Yield();
+        IM_CHECK_EQ(io.MouseDown[1], false);
+
+        // MouseButton | MouseWheel -> 2 frames
+        io.AddMouseButtonEvent(1, true);
+        io.AddMouseWheelEvent(0.0f, +3.0f);
+        ctx->Yield();
+        IM_CHECK_EQ(io.MouseDown[1], true);
+        IM_CHECK_EQ(io.MouseWheel, 0.0f);
+        ctx->Yield();
+        IM_CHECK_EQ(io.MouseWheel, 3.0f);
+        IM_CHECK_EQ(io.MouseDown[1], true);
+        ctx->Yield();
+        io.AddMouseButtonEvent(1, false);
+        ctx->Yield();
+        IM_CHECK_EQ(io.MouseDown[1], false);
+
+        // MousePos, Key -> 1 frame
+        io.AddMousePosEvent(120.0f, 120.0f);
+        io.AddKeyEvent(ImGuiKey_F, true);
+        ctx->Yield();
+        IM_CHECK_EQ(io.MousePos, ImVec2(120.0f, 120.0f));
+        IM_CHECK_EQ(ImGui::IsKeyPressed(ImGuiKey_F), true);
+        ctx->Yield();
+        IM_CHECK_EQ(ImGui::IsKeyPressed(ImGuiKey_F), false);
+        IM_CHECK_EQ(ImGui::IsKeyDown(ImGuiKey_F), true);
+        io.AddKeyEvent(ImGuiKey_F, false);
+        ctx->Yield();
+        IM_CHECK_EQ(ImGui::IsKeyDown(ImGuiKey_F), false);
+
+        // Key | MousePos -> 2 frames
+        io.AddKeyEvent(ImGuiKey_G, true);
+        io.AddMousePosEvent(130.0f, 130.0f);
+        ctx->Yield();
+        IM_CHECK_EQ(ImGui::IsKeyPressed(ImGuiKey_G), true);
+        IM_CHECK_NE(io.MousePos, ImVec2(130.0f, 130.0f));
+        ctx->Yield();
+        IM_CHECK_EQ(ImGui::IsKeyPressed(ImGuiKey_G), false);
+        IM_CHECK_EQ(ImGui::IsKeyDown(ImGuiKey_G), true);
+        IM_CHECK_EQ(io.MousePos, ImVec2(130.0f, 130.0f));
+        io.AddKeyEvent(ImGuiKey_G, false);
+        ctx->Yield();
+        IM_CHECK_EQ(ImGui::IsKeyDown(ImGuiKey_G), false);
+
+        // Key Down | Key Up | Key Down -> 3 frames
+        io.AddKeyEvent(ImGuiKey_H, true);
+        io.AddKeyEvent(ImGuiKey_H, false);
+        io.AddKeyEvent(ImGuiKey_H, true);
+        ctx->Yield();
+        IM_CHECK_EQ(ImGui::IsKeyDown(ImGuiKey_H), true);
+        ctx->Yield();
+        IM_CHECK_EQ(ImGui::IsKeyDown(ImGuiKey_H), false);
+        ctx->Yield();
+        IM_CHECK_EQ(ImGui::IsKeyDown(ImGuiKey_H), true);
+        io.AddKeyEvent(ImGuiKey_H, false);
+        ctx->Yield();
+        IM_CHECK_EQ(ImGui::IsKeyDown(ImGuiKey_H), false);
+
+        // Key down | Key down (other) -> 2 frames
+        io.AddKeyEvent(ImGuiKey_I, true);
+        io.AddKeyEvent(ImGuiKey_J, true);
+        ctx->Yield();
+        IM_CHECK_EQ(ImGui::IsKeyDown(ImGuiKey_I), true);
+        IM_CHECK_EQ(ImGui::IsKeyDown(ImGuiKey_J), true);
+        io.AddKeyEvent(ImGuiKey_I, false);
+        io.AddKeyEvent(ImGuiKey_J, false);
+        ctx->Yield();
+        IM_CHECK_EQ(ImGui::IsKeyDown(ImGuiKey_I), false);
+        IM_CHECK_EQ(ImGui::IsKeyDown(ImGuiKey_J), false);
+
+        // Char -> 1 frame
+        io.AddInputCharacter('L');
+        ctx->Yield();
+        IM_CHECK(io.InputQueueCharacters.Size == 1 && io.InputQueueCharacters[0] == 'L');
+        ctx->Yield();
+        IM_CHECK(io.InputQueueCharacters.Size == 0);
+
+        // Key down | Char -> 2 frames
+        io.AddKeyEvent(ImGuiKey_K, true);
+        io.AddInputCharacter('L');
+        ctx->Yield();
+        IM_CHECK_EQ(ImGui::IsKeyDown(ImGuiKey_K), true);
+        IM_CHECK(io.InputQueueCharacters.Size == 0);
+        ctx->Yield();
+        IM_CHECK(io.InputQueueCharacters.Size == 1 && io.InputQueueCharacters[0] == 'L');
+        io.AddKeyEvent(ImGuiKey_K, false);
+        ctx->Yield();
+        IM_CHECK(io.InputQueueCharacters.Size == 0);
+
+        // Char | Key -> 2 frames
+        io.AddInputCharacter('L');
+        io.AddKeyEvent(ImGuiKey_K, true);
+        ctx->Yield();
+        IM_CHECK(io.InputQueueCharacters.Size == 1 && io.InputQueueCharacters[0] == 'L');
+        IM_CHECK_EQ(ImGui::IsKeyDown(ImGuiKey_K), false);
+        ctx->Yield();
+        IM_CHECK(io.InputQueueCharacters.Size == 0);
+        IM_CHECK_EQ(ImGui::IsKeyDown(ImGuiKey_K), true);
+        ctx->Yield();
+        io.AddKeyEvent(ImGuiKey_K, false);
+        ctx->Yield();
+
+        // Key, KeyMods -> 1 frame
+        IM_CHECK(io.KeyMods == ImGuiKeyModFlags_None);
+        io.AddKeyEvent(ImGuiKey_K, true);
+        io.AddKeyModsEvent(ImGuiKeyModFlags_Ctrl | ImGuiKeyModFlags_Shift);
+        ctx->Yield();
+        IM_CHECK_EQ(ImGui::IsKeyDown(ImGuiKey_K), true);
+        IM_CHECK(io.KeyMods == (ImGuiKeyModFlags_Ctrl | ImGuiKeyModFlags_Shift));
+        io.AddKeyEvent(ImGuiKey_K, false);
+        io.AddKeyModsEvent(ImGuiKeyModFlags_None);
+        ctx->Yield();
+
+        // KeyMods, Key -> 1 frame
+        IM_CHECK(io.KeyMods == ImGuiKeyModFlags_None);
+        io.AddKeyModsEvent(ImGuiKeyModFlags_Ctrl | ImGuiKeyModFlags_Shift);
+        io.AddKeyEvent(ImGuiKey_K, true);
+        ctx->Yield();
+        IM_CHECK_EQ(ImGui::IsKeyDown(ImGuiKey_K), true);
+        IM_CHECK(io.KeyMods == (ImGuiKeyModFlags_Ctrl | ImGuiKeyModFlags_Shift));
+        io.AddKeyEvent(ImGuiKey_K, false);
+        io.AddKeyModsEvent(ImGuiKeyModFlags_None);
+        ctx->Yield();
+
+        // KeyMods | KeyMods (same) -> 2 frames
+        IM_CHECK(io.KeyMods == ImGuiKeyModFlags_None);
+        io.AddKeyModsEvent(ImGuiKeyModFlags_Ctrl);
+        io.AddKeyModsEvent(ImGuiKeyModFlags_None);
+        ctx->Yield();
+        IM_CHECK(io.KeyMods == ImGuiKeyModFlags_Ctrl);
+        ctx->Yield();
+        IM_CHECK(io.KeyMods == ImGuiKeyModFlags_None);
+
+        // KeyMods, KeyMods (different) -> 1 frame
+        IM_CHECK(io.KeyMods == ImGuiKeyModFlags_None);
+        io.AddKeyModsEvent(ImGuiKeyModFlags_Ctrl);
+        io.AddKeyModsEvent(ImGuiKeyModFlags_Ctrl | ImGuiKeyModFlags_Shift);
+        io.AddKeyModsEvent(ImGuiKeyModFlags_None);
+        ctx->Yield();
+        IM_CHECK(io.KeyMods == (ImGuiKeyModFlags_Ctrl | ImGuiKeyModFlags_Shift));
+        ctx->Yield();
+        IM_CHECK(io.KeyMods == ImGuiKeyModFlags_None);
+
+        // MousePos, KeyMods -> 1 frame
+        io.AddMousePosEvent(200.0f, 200.0f);
+        io.AddKeyModsEvent(ImGuiKeyModFlags_Ctrl);
+        ctx->Yield();
+        IM_CHECK_EQ(io.MousePos, ImVec2(200.0f, 200.0f));
+        IM_CHECK(io.KeyMods == ImGuiKeyModFlags_Ctrl);
+        io.AddKeyModsEvent(ImGuiKeyModFlags_None);
+        ctx->Yield();
+        IM_CHECK(io.InputQueueCharacters.Size == 0);
+        IM_CHECK(io.KeyMods == ImGuiKeyModFlags_None);
+
+        // KeyMods | MousePos -> 2 frames
+        io.AddKeyModsEvent(ImGuiKeyModFlags_Ctrl);
+        io.AddMousePosEvent(210.0f, 210.0f);
+        io.AddKeyModsEvent(ImGuiKeyModFlags_None);
+        ctx->Yield();
+        IM_CHECK_EQ(io.MousePos, ImVec2(200.0f, 200.0f));
+        IM_CHECK(io.KeyMods == ImGuiKeyModFlags_Ctrl);
+        ctx->Yield();
+        IM_CHECK_EQ(io.MousePos, ImVec2(210.0f, 210.0f));
+        IM_CHECK(io.KeyMods == ImGuiKeyModFlags_None);
+
+        // MousePos | Char -> 2 frames
+        io.AddMousePosEvent(220.0f, 220.0f);
+        io.AddInputCharacter('B');
+        ctx->Yield();
+        IM_CHECK_EQ(io.MousePos, ImVec2(220.0f, 220.0f));
+        IM_CHECK(io.InputQueueCharacters.Size == 0);
+        ctx->Yield();
+        IM_CHECK(io.InputQueueCharacters.Size == 1 && io.InputQueueCharacters[0] == 'B');
+        ctx->Yield();
+        IM_CHECK(io.InputQueueCharacters.Size == 0);
+    };
+
     // ## Test hash functions and ##/### operators
     t = IM_REGISTER_TEST(e, "misc", "misc_hash_001");
     t->TestFunc = [](ImGuiTestContext* ctx)
