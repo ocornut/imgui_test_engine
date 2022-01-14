@@ -159,6 +159,7 @@
     <ClInclude Include="imgui_te_coroutine.h" />
     <ClInclude Include="imgui_te_engine.h" />
     <ClInclude Include="imgui_te_imconfig.h" />
+    <ClInclude Include="imgui_te_internal.h" />
     <ClInclude Include="imgui_te_perftool.h" />
     <ClInclude Include="imgui_te_ui.h" />
     <ClInclude Include="imgui_te_util.h" />

@@ -57,6 +57,9 @@
     <ClInclude Include="thirdparty\Str\Str.h">
       <Filter>thirdparty\Str</Filter>
     </ClInclude>
+    <ClInclude Include="imgui_te_internal.h">
+      <Filter>imgui_test_engine</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="imgui_te_context.cpp">
