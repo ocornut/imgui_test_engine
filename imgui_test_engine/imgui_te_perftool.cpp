@@ -1721,12 +1721,15 @@ void RegisterTests_PerfTool(ImGuiTestEngine* e)
         bool perf_was_open = SetPerfToolWindowOpen(ctx, true);
         ctx->Yield();
 
-        ctx->SetRef("Dear ImGui Perf Tool");
+        ImGuiWindow* window = ctx->GetWindowByRef("Dear ImGui Perf Tool");
+        ImVec2 pos_bkp = window->Pos;
+        ImVec2 size_bkp = window->Size;
+        ctx->SetRef(window);
         ctx->WindowMove("", ImVec2(50, 50));
         ctx->WindowResize("", ImVec2(1400, 900));
-        ctx->WindowBringToFront(ctx->GetWindowByRef(""));
+        ctx->WindowBringToFront(window);
 #ifdef IMGUI_TEST_ENGINE_ENABLE_IMPLOT
-        ImGuiID plot_window_id = ctx->GetChildWindowID("", "plot");
+        ImGuiID plot_window_id = ctx->GetChildWindowID("", ctx->GetID("plot"));
         IM_CHECK(plot_window_id != 0);
         ImGuiWindow* plot_child = ctx->GetWindowByRef(ctx->GetChildWindowID(plot_window_id, "PerfTool"));
         IM_CHECK_NO_RET(plot_child != NULL);
@@ -1762,6 +1765,8 @@ void RegisterTests_PerfTool(ImGuiTestEngine* e)
 #endif
         ImStrncpy(perftool->_FilterDateFrom, min_date_bkp.c_str(), IM_ARRAYSIZE(perftool->_FilterDateFrom));
         ImStrncpy(perftool->_FilterDateTo, max_date_bkp.c_str(), IM_ARRAYSIZE(perftool->_FilterDateTo));
+        ImGui::SetWindowPos(window, pos_bkp);
+        ImGui::SetWindowSize(window, size_bkp);
         SetPerfToolWindowOpen(ctx, perf_was_open);                   // Restore window visibility
     };
 
@@ -1783,7 +1788,10 @@ void RegisterTests_PerfTool(ImGuiTestEngine* e)
         bool perf_was_open = SetPerfToolWindowOpen(ctx, true);
         ctx->Yield();
 
-        ctx->SetRef("Dear ImGui Perf Tool");
+        ImGuiWindow* window = ctx->GetWindowByRef("Dear ImGui Perf Tool");
+        ImVec2 pos_bkp = window->Pos;
+        ImVec2 size_bkp = window->Size;
+        ctx->SetRef(window);
         ctx->WindowMove("", ImVec2(50, 50));
         ctx->WindowResize("", ImVec2(1400, 900));
         ctx->WindowBringToFront(ctx->GetWindowByRef(""));
@@ -1811,12 +1819,14 @@ void RegisterTests_PerfTool(ImGuiTestEngine* e)
         ctx->CaptureInitArgs(&args);
         args.InCaptureRect = plot_child->Rect();
         args.InFlags |= ImGuiCaptureFlags_HideMouseCursor;
-        ctx->CaptureAddWindow(&args, "Dear ImGui Perf Tool");
+        ctx->CaptureAddWindow(&args, window->Name);
         ctx->CaptureScreenshotEx(&args);
         ctx->ItemDragWithDelta("splitter", ImVec2(0, -180));        // Show info table
 #endif
         ImStrncpy(perftool->_FilterDateFrom, min_date_bkp, IM_ARRAYSIZE(min_date_bkp));
         ImStrncpy(perftool->_FilterDateTo, max_date_bkp, IM_ARRAYSIZE(max_date_bkp));
+        ImGui::SetWindowPos(window, pos_bkp);
+        ImGui::SetWindowSize(window, size_bkp);
         SetPerfToolWindowOpen(ctx, perf_was_open);                   // Restore window visibility
 
         const char* perf_report_output = getenv("CAPTURE_PERF_REPORT_OUTPUT");
