@@ -1406,13 +1406,14 @@ void    ImGuiTestContext::MouseSetViewport(ImGuiWindow* window)
     IM_CHECK_SILENT(window != NULL);
 #ifdef IMGUI_HAS_VIEWPORT
     ImGuiViewportP* viewport = window ? window->Viewport : NULL;
-    IM_CHECK_SILENT(viewport != NULL);
-
-    if (Inputs->MouseHoveredViewport != viewport->ID)
+    ImGuiID viewport_id = viewport ? viewport->ID : 0;
+    if (window->Viewport == NULL)
+        IM_CHECK(window->WasActive == false); // only time this is allowed is an inactive window (where the viewport was destroyed)
+    if (Inputs->MouseHoveredViewport != viewport_id)
     {
         IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
-        LogDebug("MouseSetViewport changing to 0x%08X (window '%s')", viewport->ID, viewport->Window ? viewport->Window->Name : "N/A");
-        Inputs->MouseHoveredViewport = viewport->ID;
+        LogDebug("MouseSetViewport changing to 0x%08X (window '%s')", viewport_id, window->Name);
+        Inputs->MouseHoveredViewport = viewport_id;
         Yield(2);
     }
 #else
