@@ -1507,30 +1507,57 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         const char* clipboard_text = ImGui::GetClipboardText();
         IM_CHECK_STR_EQ(clipboard_text, "");
         ctx->SetRef("Test Window");
-        strcpy(text, "Hello, world!");
 
-        // Copying without selection.
-        ctx->ItemClick("Field");
-        ctx->KeyPress(ImGuiKey_C, ImGuiKeyModFlags_Shortcut);
-        clipboard_text = ImGui::GetClipboardText();
-        IM_CHECK_STR_EQ(clipboard_text, "Hello, world!");
+        for (int variant = 0; variant < 2; variant++)
+        {
+            // State reset.
+            ImGui::ClearActiveID();
+            strcpy(text, "Hello, world!");
 
-        // Cut a selection.
-        ctx->ItemClick("Field");
-        ctx->KeyPress(ImGuiKey_Home);
-        for (int i = 0; i < 5; i++) // Seek to and select first word
-            ctx->KeyPress(ImGuiKey_RightArrow, ImGuiKeyModFlags_Shift);
-        ctx->KeyPress(ImGuiKey_X, ImGuiKeyModFlags_Shortcut);
-        clipboard_text = ImGui::GetClipboardText();
-        IM_CHECK_STR_EQ(clipboard_text, "Hello");
-        IM_CHECK_STR_EQ(text, ", world!");
+            // Copying without selection.
+            ctx->ItemClick("Field");
+            if (variant == 0)
+                ctx->KeyPress(ImGuiKey_C, ImGuiKeyModFlags_Shortcut);
+            else
+                ctx->KeyPress(ImGuiKey_Insert, ImGuiKeyModFlags_Shortcut);
+            clipboard_text = ImGui::GetClipboardText();
+            IM_CHECK_STR_EQ(clipboard_text, "Hello, world!");
 
-        // Paste over selection.
-        ctx->ItemClick("Field");
-        ImGui::SetClipboardText("h\xc9\x99\xcb\x88l\xc5\x8d");  // həˈlō
-        ctx->KeyPress(ImGuiKey_Home);
-        ctx->KeyPress(ImGuiKey_V, ImGuiKeyModFlags_Shortcut);
-        IM_CHECK_STR_EQ(text, "h\xc9\x99\xcb\x88l\xc5\x8d, world!");
+            // Copying with selection.
+            ctx->ItemClick("Field");
+            ctx->KeyPress(ImGuiKey_Home);
+            for (int i = 0; i < 5; i++) // Seek to and select first word
+                ctx->KeyPress(ImGuiKey_RightArrow, ImGuiKeyModFlags_Shift);
+            if (variant == 0)
+                ctx->KeyPress(ImGuiKey_C, ImGuiKeyModFlags_Shortcut);
+            else
+                ctx->KeyPress(ImGuiKey_Insert, ImGuiKeyModFlags_Shortcut);
+            clipboard_text = ImGui::GetClipboardText();
+            IM_CHECK_STR_EQ(clipboard_text, "Hello");
+
+            // Cut a selection.
+            ctx->ItemClick("Field");
+            ctx->KeyPress(ImGuiKey_Home);
+            for (int i = 0; i < 5; i++) // Seek to and select first word
+                ctx->KeyPress(ImGuiKey_RightArrow, ImGuiKeyModFlags_Shift);
+            if (variant == 0)
+                ctx->KeyPress(ImGuiKey_X, ImGuiKeyModFlags_Shortcut);
+            else
+                ctx->KeyPress(ImGuiKey_Delete, ImGuiKeyModFlags_Shift);
+            clipboard_text = ImGui::GetClipboardText();
+            IM_CHECK_STR_EQ(clipboard_text, "Hello");
+            IM_CHECK_STR_EQ(text, ", world!");
+
+            // Paste over selection.
+            ctx->ItemClick("Field");
+            ImGui::SetClipboardText("h\xc9\x99\xcb\x88l\xc5\x8d");  // həˈlō
+            ctx->KeyPress(ImGuiKey_Home);
+            if (variant == 0)
+                ctx->KeyPress(ImGuiKey_V, ImGuiKeyModFlags_Shortcut);
+            else
+                ctx->KeyPress(ImGuiKey_Insert, ImGuiKeyModFlags_Shift);
+            IM_CHECK_STR_EQ(text, "h\xc9\x99\xcb\x88l\xc5\x8d, world!");
+        }
     };
 
     // ## Test for IsItemHovered() on InputTextMultiline() (#1370, #3851)
