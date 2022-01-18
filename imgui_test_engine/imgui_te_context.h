@@ -307,7 +307,6 @@ struct ImGuiTestContext
     // Mouse inputs: Viewports
     // When using MouseMoveToPos() / MouseTeleportToPos() without referring to an item may need to set that up.
     void        MouseSetViewport(ImGuiWindow* window);
-    void        MouseSetViewport(ImGuiTestRef window_or_item_ref);
     void        MouseSetViewportID(ImGuiID viewport_id);
 
     // Keyboard inputs

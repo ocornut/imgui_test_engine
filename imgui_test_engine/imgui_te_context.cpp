@@ -1420,21 +1420,6 @@ void    ImGuiTestContext::MouseSetViewport(ImGuiWindow* window)
 #endif
 }
 
-void    ImGuiTestContext::MouseSetViewport(ImGuiTestRef window_or_item_ref)
-{
-    if (IsError())
-        return;
-
-    ImGuiWindow* window = GetWindowByRef(window_or_item_ref);
-    if (!window)
-    {
-        ImGuiTestItemInfo* info = ItemInfo(window_or_item_ref);
-        if (info && info->Window)
-            window = info->Window;
-    }
-    return MouseSetViewport(window);
-}
-
 // May be 0 to specify "automatic" (based on platform stack, rarely used)
 void    ImGuiTestContext::MouseSetViewportID(ImGuiID viewport_id)
 {
@@ -1444,7 +1429,7 @@ void    ImGuiTestContext::MouseSetViewportID(ImGuiID viewport_id)
     if (Inputs->MouseHoveredViewport != viewport_id)
     {
         IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
-        LogDebug("MouseSetViewport changing to 0x%08X", viewport_id);
+        LogDebug("MouseSetViewportID changing to 0x%08X", viewport_id);
         Inputs->MouseHoveredViewport = viewport_id;
         ImGuiTestEngine_Yield(Engine);
     }
