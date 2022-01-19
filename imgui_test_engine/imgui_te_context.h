@@ -61,6 +61,21 @@ struct ImGuiTestRefDesc
 // This is the interface that most tests will interact with.
 //-------------------------------------------------------------------------
 
+// FIXME_WIP: GamepadXXX inputs will be ignored if ConfigFlags it not enabled,
+// but e.g.ImGuiKey_NavActivate = ImGuiKey_Space would be ambiguous/not workable (e.g. while a InputText is active)
+enum
+{
+    ImGuiKey_NavUp          = ImGuiKey_GamepadDpadUp,
+    ImGuiKey_NavDown        = ImGuiKey_GamepadDpadDown,
+    ImGuiKey_NavLeft        = ImGuiKey_GamepadDpadLeft,
+    ImGuiKey_NavRight       = ImGuiKey_GamepadDpadRight,
+    ImGuiKey_NavActivate    = ImGuiKey_GamepadFaceDown,
+    ImGuiKey_NavCancel      = ImGuiKey_GamepadFaceRight,
+    ImGuiKey_NavInput       = ImGuiKey_GamepadFaceUp,
+    ImGuiKey_NavMenu        = ImGuiKey_GamepadFaceLeft,
+    //ImGuiKey_NavTweakSlow   = ImGuiKey_LeftCtrl, //GamepadL1
+};
+
 // Named actions. Generally you will call the named helpers e.g. ItemClick(), this is used by shared/low-level functions.
 enum ImGuiTestAction
 {
@@ -325,9 +340,6 @@ struct ImGuiTestContext
 
     // Navigation inputs
     void        SetInputMode(ImGuiInputSource input_mode);
-    void        NavKeyPress(ImGuiNavInput input);
-    void        NavKeyDown(ImGuiNavInput input);
-    void        NavKeyUp(ImGuiNavInput input);
     void        NavMoveTo(ImGuiTestRef ref);
     void        NavActivate();  // Activate current selected item. Same as pressing [space].
     void        NavInput();     // Press ImGuiNavInput_Input (e.g. Triangle) to turn a widget into a text input

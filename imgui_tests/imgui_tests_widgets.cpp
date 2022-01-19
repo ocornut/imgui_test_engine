@@ -161,14 +161,14 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ctx->NavEnableForWindow();
         ctx->NavMoveTo("Button4");
         vars.ButtonPressCount[4] = 0;
-        ctx->NavKeyDown(ImGuiNavInput_Activate);
+        ctx->KeyDown(ImGuiKey_NavActivate);
         IM_CHECK_EQ(vars.ButtonPressCount[4], 1);
         ctx->SleepNoSkip(ctx->UiContext->IO.KeyRepeatDelay, step);
         ctx->SleepNoSkip(ctx->UiContext->IO.KeyRepeatRate, step);
         ctx->SleepNoSkip(ctx->UiContext->IO.KeyRepeatRate, step);
         ctx->SleepNoSkip(ctx->UiContext->IO.KeyRepeatRate, step);
         IM_CHECK_EQ(vars.ButtonPressCount[4], 1 + 3 * 2); // FIXME: MouseRepeatRate is double KeyRepeatRate, that's not documented / or that's a bug
-        ctx->NavKeyUp(ImGuiNavInput_Activate);
+        ctx->KeyUp(ImGuiKey_NavActivate);
     };
 
     // ## Test basic button presses
@@ -3540,13 +3540,13 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         // Click doesn't affect g.NavId which is null at this point
 
         // Test basic key Navigation
-        ctx->NavKeyPress(ImGuiNavInput_KeyDown_);
+        ctx->KeyPress(ImGuiKey_NavDown);
         IM_CHECK_EQ(g.NavId, ctx->GetID("##Menu_00/Sub Menu 1"));
-        ctx->NavKeyPress(ImGuiNavInput_KeyRight_);
+        ctx->KeyPress(ImGuiKey_NavRight);
         IM_CHECK_EQ(g.NavId, ctx->GetID("##Menu_01/Item 1"));
-        ctx->NavKeyPress(ImGuiNavInput_KeyLeft_);
+        ctx->KeyPress(ImGuiKey_NavLeft);
         IM_CHECK_EQ(g.NavId, ctx->GetID("##Menu_00/Sub Menu 1"));
-        ctx->NavKeyPress(ImGuiNavInput_KeyLeft_);
+        ctx->KeyPress(ImGuiKey_NavLeft);
         IM_CHECK_EQ(g.NavId, ctx->GetID("##MainMenuBar##menubar/Menu 1"));
 
         ctx->MouseMove("##MainMenuBar##menubar/Menu 2"); // FIXME-TESTS: Workaround so TestEngine can find again Menu 1
@@ -3554,21 +3554,21 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         // Test forwarding of nav event to parent when there's no match in the current menu
         // Going from "Menu 1/Sub Menu 1/Item 1" to "Menu 2"
         ctx->ItemClick("##MainMenuBar##menubar/Menu 1");
-        ctx->NavKeyPress(ImGuiNavInput_KeyDown_);
-        ctx->NavKeyPress(ImGuiNavInput_KeyRight_);
+        ctx->KeyPress(ImGuiKey_NavDown);
+        ctx->KeyPress(ImGuiKey_NavRight);
         IM_CHECK_EQ(g.NavId, ctx->GetID("##Menu_01/Item 1"));
-        ctx->NavKeyPress(ImGuiNavInput_KeyRight_);
+        ctx->KeyPress(ImGuiKey_NavRight);
         IM_CHECK_EQ(g.NavId, ctx->GetID("##MainMenuBar##menubar/Menu 2"));
 
-        ctx->NavKeyPress(ImGuiNavInput_KeyDown_);
+        ctx->KeyPress(ImGuiKey_NavDown);
         IM_CHECK_EQ(g.NavId, ctx->GetID("##Menu_00/Sub Menu 2-1"));
-        ctx->NavKeyPress(ImGuiNavInput_KeyRight_);
+        ctx->KeyPress(ImGuiKey_NavRight);
         IM_CHECK_EQ(g.NavId, ctx->GetID("##Menu_01/Item 2"));
 
-        ctx->NavKeyPress(ImGuiNavInput_KeyLeft_);
-        ctx->NavKeyPress(ImGuiNavInput_KeyDown_);
+        ctx->KeyPress(ImGuiKey_NavLeft);
+        ctx->KeyPress(ImGuiKey_NavDown);
         IM_CHECK_EQ(g.NavId, ctx->GetID("##Menu_00/Sub Menu 2-2"));
-        ctx->NavKeyPress(ImGuiNavInput_KeyRight_);
+        ctx->KeyPress(ImGuiKey_NavRight);
         IM_CHECK_EQ(g.NavId, ctx->GetID("##Menu_01/Item 3"));
     };
 
@@ -4113,28 +4113,28 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         const float slider_float_step = 2.0f;
         const float slider_float_step_slow = 0.2f;
         float slider_float_value = vars.Float1;
-        ctx->NavKeyPress(ImGuiNavInput_DpadLeft);
+        ctx->KeyPress(ImGuiKey_NavLeft);
         IM_CHECK_EQ(vars.Float1, slider_float_value - slider_float_step);
-        ctx->NavKeyDown(ImGuiNavInput_TweakSlow);
-        ctx->NavKeyPress(ImGuiNavInput_DpadRight);
-        ctx->NavKeyUp(ImGuiNavInput_TweakSlow);
+        ctx->KeyDown(ImGuiKey_None, ImGuiKeyModFlags_Ctrl);
+        ctx->KeyPress(ImGuiKey_NavRight);
+        ctx->KeyUp(ImGuiKey_None, ImGuiKeyModFlags_Ctrl);
         IM_CHECK_EQ(vars.Float1, slider_float_value - slider_float_step + slider_float_step_slow);
 
-        ctx->NavKeyPress(ImGuiNavInput_DpadDown);
-        ctx->NavKeyPress(ImGuiNavInput_Activate);
+        ctx->KeyPress(ImGuiKey_NavDown);
+        ctx->KeyPress(ImGuiKey_NavActivate);
         IM_CHECK_EQ(g.NavId, ctx->GetID("Slider 2"));;
 
         const int slider_int_step = 1;
         const int slider_int_step_slow = 1;
         int slider_int_value = vars.Int1;
-        ctx->NavKeyPress(ImGuiNavInput_DpadRight);
+        ctx->KeyPress(ImGuiKey_NavRight);
         IM_CHECK_EQ(vars.Int1, slider_float_value + slider_int_step);
-        ctx->NavKeyDown(ImGuiNavInput_TweakSlow);
-        ctx->NavKeyPress(ImGuiNavInput_DpadLeft);
-        ctx->NavKeyUp(ImGuiNavInput_TweakSlow);
+        ctx->KeyDown(ImGuiKey_None, ImGuiKeyModFlags_Ctrl);
+        ctx->KeyPress(ImGuiKey_NavLeft);
+        ctx->KeyUp(ImGuiKey_None, ImGuiKeyModFlags_Ctrl);
         IM_CHECK_EQ(vars.Int1, slider_int_value + slider_int_step - slider_int_step_slow);
 
-        ctx->NavKeyPress(ImGuiNavInput_DpadUp);
+        ctx->KeyPress(ImGuiKey_NavUp);
         IM_CHECK_EQ(g.NavId, ctx->GetID("Slider 1"));
     };
 

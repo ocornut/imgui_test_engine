@@ -63,7 +63,6 @@ enum ImGuiTestInputType
 {
     ImGuiTestInputType_None,
     ImGuiTestInputType_Key,
-    ImGuiTestInputType_Nav,
     ImGuiTestInputType_Char
 };
 
@@ -86,15 +85,6 @@ struct ImGuiTestInput
         return inp;
     }
 
-    static ImGuiTestInput   FromNav(ImGuiNavInput v, ImGuiKeyState state)
-    {
-        ImGuiTestInput inp;
-        inp.Type = ImGuiTestInputType_Nav;
-        inp.NavInput = v;
-        inp.State = state;
-        return inp;
-    }
-
     static ImGuiTestInput   FromChar(ImWchar v)
     {
         ImGuiTestInput inp;
@@ -112,7 +102,6 @@ struct ImGuiTestInputs
     int                         MouseButtonsValue = 0x00;       // FIXME-TESTS: Use simulated_io.MouseDown[] ?
     ImGuiKeyModFlags            KeyMods = 0x00;                 // FIXME-TESTS: Use simulated_io.KeyXXX ?
     ImVector<ImGuiTestInput>    Queue;
-    float                       NavInputs[ImGuiNavInput_COUNT];
     bool                        HostEscDown = false;
     float                       HostEscDownDuration = -1.0f;    // Maintain our own DownDuration for host/backend ESC key so we can abort.
 };

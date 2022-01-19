@@ -1182,47 +1182,6 @@ void    ImGuiTestContext::NavMoveTo(ImGuiTestRef ref)
     item->RefCount--;
 }
 
-void    ImGuiTestContext::NavKeyPress(ImGuiNavInput input)
-{
-    NavKeyDown(input);
-    NavKeyUp(input);
-}
-
-void    ImGuiTestContext::NavKeyDown(ImGuiNavInput input)
-{
-    IM_ASSERT(input >= 0 && input < ImGuiNavInput_COUNT);
-    if (IsError())
-        return;
-
-    IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
-#if IMGUI_VERSION_NUM >= 18605
-    LogDebug("NavKeyDown %s", ImGui::GetNavInputName(input));
-#else
-    LogDebug("NavKeyDown %d", (int)input);
-#endif
-
-    Engine->Inputs.Queue.push_back(ImGuiTestInput::FromNav(input, ImGuiKeyState_Down));
-    Yield();
-}
-
-void    ImGuiTestContext::NavKeyUp(ImGuiNavInput input)
-{
-    IM_ASSERT(input >= 0 && input < ImGuiNavInput_COUNT);
-    if (IsError())
-        return;
-
-    IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
-#if IMGUI_VERSION_NUM >= 18605
-    LogDebug("NavKeyUp %s", ImGui::GetNavInputName(input));
-#else
-    LogDebug("NavKeyUp %d", (int)input);
-#endif
-
-    Engine->Inputs.Queue.push_back(ImGuiTestInput::FromNav(input, ImGuiKeyState_Up));
-    Yield();
-    Yield(); // For nav code to react e.g. run a query
-}
-
 void    ImGuiTestContext::NavActivate()
 {
     if (IsError())
@@ -1232,7 +1191,7 @@ void    ImGuiTestContext::NavActivate()
     LogDebug("NavActivate");
 
     Yield(); // ?
-    NavKeyPress(ImGuiNavInput_Activate);
+    KeyPress(ImGuiKey_NavActivate);
 }
 
 void    ImGuiTestContext::NavInput()
@@ -1242,7 +1201,7 @@ void    ImGuiTestContext::NavInput()
 
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
     LogDebug("NavInput");
-    NavKeyPress(ImGuiNavInput_Input);
+    KeyPress(ImGuiKey_NavInput);
 }
 
 void    ImGuiTestContext::NavEnableForWindow()
