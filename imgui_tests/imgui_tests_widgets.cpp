@@ -1436,6 +1436,41 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ctx->KeyCharsAppendEnter("hello");
     };
 
+    // ## Test resize callback being triggered from within callback (#4784)
+    t = IM_REGISTER_TEST(e, "widgets", "widgets_inputtext_callback_resize2");
+    t->SetVarsDataType<StrVars>();
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        auto callback = [](ImGuiInputTextCallbackData* data)
+        {
+            Str* str = (Str*)data->UserData;
+            if (data->EventFlag == ImGuiInputTextFlags_CallbackHistory)
+            {
+                data->InsertChars(0, "foo");
+            }
+            else if (data->EventFlag == ImGuiInputTextFlags_CallbackResize)
+            {
+                IM_ASSERT(data->Buf == str->c_str());
+                str->reserve(data->BufTextLen + 1);
+                data->Buf = (char*)str->c_str();
+            }
+            return 0;
+        };
+
+        StrVars& vars = ctx->GetVars<StrVars>();
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImGui::InputText("Field1", vars.str.c_str(), vars.str.capacity(), ImGuiInputTextFlags_CallbackHistory | ImGuiInputTextFlags_CallbackResize, callback, (void*)&vars.str);
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        StrVars& vars = ctx->GetVars<StrVars>();
+        ctx->SetRef("Test Window");
+        ctx->ItemClick("Field1");
+        ctx->KeyPress(ImGuiKey_DownArrow);
+        IM_CHECK_STR_EQ(vars.str.c_str(), "foo");
+    };
+
     // ## Test for Nav interference
     t = IM_REGISTER_TEST(e, "widgets", "widgets_inputtext_nav");
     t->GuiFunc = [](ImGuiTestContext* ctx)
