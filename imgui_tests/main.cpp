@@ -110,6 +110,7 @@ struct TestApp
     bool                    OptMockViewports = false;
     int                     OptStressAmount = 5;
     Str128                  OptFileOpener;
+    Str128                  OptJUnitXml;
     ImVector<char*>         TestsToRun;
 };
 
@@ -231,6 +232,10 @@ static bool ParseCommandLineOptions(int argc, char** argv)
                 ImPathFixSeparatorsForCurrentOS(g_App.OptFileOpener.c_str());
                 n++;
             }
+            else if (strcmp(argv[n], "-junit-xml") == 0 && n + 1 < argc)
+            {
+                g_App.OptJUnitXml = argv[n + 1];
+            }
             else
             {
                 printf("Syntax: %s <options> [tests]\n", argv[0]);
@@ -246,6 +251,7 @@ static bool ParseCommandLineOptions(int argc, char** argv)
                 printf("  -nopause                 : don't pause application on exit.\n");
                 printf("  -stressamount <int>      : set performance test duration multiplier (default: 5)\n");
                 printf("  -fileopener <file>       : provide a bat/cmd/shell script to open source file.\n");
+                printf("  -junit-xml <file>        : save test run result in junit format.\n");
                 printf("Tests:\n");
                 printf("   all/tests/perf          : queue by groups: all, only tests, only performance benchmarks.\n");
                 printf("   [pattern]               : queue all tests containing the word [pattern].\n");
@@ -530,6 +536,9 @@ int main(int argc, char** argv)
         ImGuiTestEngine_PrintResultSummary(engine);
         if (count_tested != count_success)
             error_code = ImGuiTestAppErrorCode_TestFailed;
+
+        if (!g_App.OptJUnitXml.empty())
+            ImGuiTestEngine_SaveJUnitXML(engine, g_App.OptJUnitXml.c_str());
     }
 
     // Shutdown window

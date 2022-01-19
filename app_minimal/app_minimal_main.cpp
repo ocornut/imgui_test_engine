@@ -91,6 +91,10 @@ int main(int argc, char** argv)
         ImGuiTestEngine_PostSwap(engine);
     }
 
+    // Optional: save test output in junit-compatible XML format.
+    if (!aborted)
+        ImGuiTestEngine_SaveJUnitXML(engine, "./results.xml");
+
     // Shutdown
     ImGuiTestEngine_Stop(engine);
     app->ShutdownBackends(app);

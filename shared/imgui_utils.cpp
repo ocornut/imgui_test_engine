@@ -368,6 +368,7 @@ void ImPathFixSeparatorsForCurrentOS(char* buf)
 // Time helpers
 //-----------------------------------------------------------------------------
 // - ImTimeGetInMicroseconds()
+// - ImTimestampToISO8601()
 //-----------------------------------------------------------------------------
 
 uint64_t ImTimeGetInMicroseconds()
@@ -376,6 +377,19 @@ uint64_t ImTimeGetInMicroseconds()
     using namespace std;
     chrono::microseconds ms = chrono::duration_cast<chrono::microseconds>(chrono::high_resolution_clock::now().time_since_epoch());
     return (uint64_t)ms.count();
+}
+
+void ImTimestampToISO8601(uint64_t timestamp, Str* out_date)
+{
+    time_t unix_time = (time_t)(timestamp / 1000000); // Convert to seconds.
+    tm* time = gmtime(&unix_time);
+    const char* time_format = "%Y-%m-%dT%H:%M:%S";
+    size_t size_req = strftime(out_date->c_str(), out_date->capacity(), time_format, time);
+    if (size_req >= (size_t)out_date->capacity())
+    {
+        out_date->reserve(size_req);
+        strftime(out_date->c_str(), out_date->capacity(), time_format, time);
+    }
 }
 
 //-----------------------------------------------------------------------------

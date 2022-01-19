@@ -67,6 +67,7 @@ void                ImPathFixSeparatorsForCurrentOS(char* buf);
 
 // Time helpers
 uint64_t            ImTimeGetInMicroseconds();
+void                ImTimestampToISO8601(uint64_t timestamp, Str* out_date);
 
 // Threading helpers
 void                ImThreadSleepInMilliseconds(int ms);

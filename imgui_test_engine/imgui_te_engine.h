@@ -279,6 +279,7 @@ void                ImGuiTestEngine_UpdateHooks(ImGuiTestEngine* engine);
 void                ImGuiTestEngine_GetResult(ImGuiTestEngine* engine, int& count_tested, int& success_count);
 void                ImGuiTestEngine_PrintResultSummary(ImGuiTestEngine* engine);
 ImGuiPerfTool*      ImGuiTestEngine_GetPerfTool(ImGuiTestEngine* engine);
+void                ImGuiTestEngine_SaveJUnitXML(ImGuiTestEngine* engine, const char* output);
 
 // Function pointers for IO structure
 // (also see imgui_te_coroutine.h for coroutine functions)
@@ -443,6 +444,8 @@ struct ImGuiTest
     const char*                     SourceFileShort = NULL;         // Pointer within SourceFile, skips filename.
     int                             SourceLine = 0;                 // __LINE__
     int                             SourceLineEnd = 0;              //
+    ImU64                           StartTime = 0;                  //
+    ImU64                           EndTime = 0;                    //
     int                             ArgVariant = 0;                 // User parameter. Generally we use it to run variations of a same test by sharing GuiFunc/TestFunc
     size_t                          UserDataSize = 0;               // When SetVarsDataType() is used, we create an instance of user structure so we can be used by GuiFunc/TestFunc.
     ImGuiTestUserDataConstructor    UserDataConstructor = NULL;

@@ -29,6 +29,7 @@ ImGuiID             ImHashDecoratedPath(const char* str, const char* str_end = N
 void                GetImGuiKeyModsPrefixStr(ImGuiKeyModFlags mod_flags, char* out_buf, size_t out_buf_size);
 ImFont*             FindFontByName(const char* name);
 void                ImStrReplace(Str* s, const char* find, const char* repl);
+void                ImStrXmlEscape(Str* s);
 int                 ImBase64Encode(const unsigned char* src, char* dst, int length);
 
 ImGuiID             TableGetHeaderID(ImGuiTable* table, const char* column, int instance_no = 0);

@@ -159,6 +159,13 @@ void ImStrReplace(Str* s, const char* find, const char* repl)
     }
 }
 
+void ImStrXmlEscape(Str* s)
+{
+    ImStrReplace(s, "<", "&lt;");
+    ImStrReplace(s, ">", "&gt;");
+    ImStrReplace(s, "\"", "&quot;");
+}
+
 // Based on code from https://github.com/EddieBreeg/C_b64 by @EddieBreeg.
 int ImBase64Encode(const unsigned char* src, char* dst, int length)
 {
