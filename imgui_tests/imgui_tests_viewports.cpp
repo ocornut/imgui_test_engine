@@ -83,6 +83,8 @@ void RegisterTests_Viewports(ImGuiTestEngine* e)
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         ctx->SetRef("Test Window");
+
+        // Inside main viewport
         ImGuiWindow* window = ctx->GetWindowByRef("");
         ImGuiViewport* main_viewport = ImGui::GetMainViewport();
         ImGuiTestGenericVars& vars = ctx->GenericVars;
@@ -90,12 +92,14 @@ void RegisterTests_Viewports(ImGuiTestEngine* e)
         ctx->Yield();
         IM_CHECK(window->Viewport == main_viewport);
 
+        // Outside, create its own viewport
         vars.Step = 1;
         ctx->WindowMove("", main_viewport->Pos - ImVec2(20.0f, 20.0f));
         IM_CHECK(window->Viewport != main_viewport);
         IM_CHECK(window->ViewportOwned);
         IM_CHECK(window->Viewport->Window == window);
 
+        // Back inside
         ctx->WindowMove("", main_viewport->WorkPos + ImVec2(20.0f, 20.0f));
         IM_CHECK(window->Viewport == main_viewport);
         IM_CHECK(window->Viewport->Window == NULL);

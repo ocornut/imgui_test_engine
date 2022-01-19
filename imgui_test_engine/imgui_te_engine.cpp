@@ -484,7 +484,7 @@ void ImGuiTestEngine_ApplyInputToImGuiContext(ImGuiTestEngine* engine)
     {
         // Erase events submitted by backend
         for (int n = 0; n < g.InputEventsQueue.Size; n++)
-            if (g.InputEventsQueue[n].SubmittedByTestEngine == false)
+            if (g.InputEventsQueue[n].AddedByTestEngine == false)
                 g.InputEventsQueue.erase(&g.InputEventsQueue[n--]);
 
         const int input_event_count_prev = g.InputEventsQueue.Size;
@@ -562,7 +562,7 @@ void ImGuiTestEngine_ApplyInputToImGuiContext(ImGuiTestEngine* engine)
 
         const int input_event_count_curr = g.InputEventsQueue.Size;
         for (int n = input_event_count_prev; n < input_event_count_curr; n++)
-            g.InputEventsQueue[n].SubmittedByTestEngine = true;
+            g.InputEventsQueue[n].AddedByTestEngine = true;
     }
     memcpy(&main_io.NavInputs, &engine->Inputs.NavInputs, sizeof(engine->Inputs.NavInputs)); // FIXME-NEWINPUTS: Use stored array as ImGui clears its own
 }
