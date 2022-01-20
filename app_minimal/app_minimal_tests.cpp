@@ -18,6 +18,7 @@ void RegisterAppMinimalTests(ImGuiTestEngine* e)
     t = IM_REGISTER_TEST(e, "demo_tests", "test1");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
+        IM_UNUSED(ctx);
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
         ImGui::Text("Hello, automation world");
         ImGui::Button("Click Me");

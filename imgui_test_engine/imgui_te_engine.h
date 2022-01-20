@@ -7,6 +7,7 @@
 
 #include "imgui.h"
 #include "imgui_internal.h"         // ImPool<>, ImRect, ImGuiItemStatusFlags, ImFormatString
+#include "imgui_te_exporters.h"
 #include "imgui_te_util.h"
 
 //-------------------------------------------------------------------------
@@ -279,7 +280,6 @@ void                ImGuiTestEngine_UpdateHooks(ImGuiTestEngine* engine);
 void                ImGuiTestEngine_GetResult(ImGuiTestEngine* engine, int& count_tested, int& success_count);
 void                ImGuiTestEngine_PrintResultSummary(ImGuiTestEngine* engine);
 ImGuiPerfTool*      ImGuiTestEngine_GetPerfTool(ImGuiTestEngine* engine);
-void                ImGuiTestEngine_SaveJUnitXML(ImGuiTestEngine* engine, const char* output);
 
 // Function pointers for IO structure
 // (also see imgui_te_coroutine.h for coroutine functions)
@@ -319,6 +319,8 @@ struct ImGuiTestEngineIO
     float                       TypingSpeed = 30.0f;                // Char input speed (characters/second) when not running in fast mode
     int                         PerfStressAmount = 1;               // Integer to scale the amount of items submitted in test
     char                        GitBranchName[64] = "";             // e.g. fill in branch name
+    const char*                 ExportResultsFile = NULL;
+    ImGuiTestEngineExportFormat ExportResultsFormat = 0;
 
     // Outputs: State
     bool                        RunningTests = false;

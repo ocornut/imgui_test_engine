@@ -158,6 +158,7 @@
     <ClInclude Include="imgui_te_context.h" />
     <ClInclude Include="imgui_te_coroutine.h" />
     <ClInclude Include="imgui_te_engine.h" />
+    <ClInclude Include="imgui_te_exporters.h" />
     <ClInclude Include="imgui_te_imconfig.h" />
     <ClInclude Include="imgui_te_internal.h" />
     <ClInclude Include="imgui_te_perftool.h" />
@@ -173,6 +174,7 @@
     <ClCompile Include="imgui_te_context.cpp" />
     <ClCompile Include="imgui_te_coroutine.cpp" />
     <ClCompile Include="imgui_te_engine.cpp" />
+    <ClCompile Include="imgui_te_exporters.cpp" />
     <ClCompile Include="imgui_te_ui.cpp" />
     <ClCompile Include="imgui_te_util.cpp" />
     <ClCompile Include="imgui_te_perftool.cpp" />

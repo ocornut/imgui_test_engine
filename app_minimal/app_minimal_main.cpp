@@ -58,6 +58,10 @@ int main(int argc, char** argv)
     test_io.ScreenCaptureFunc = ImGuiApp_ScreenCaptureFunc;
     test_io.ScreenCaptureUserData = (void*)app;
 
+    // Optional: save test output in junit-compatible XML format.
+    //test_io.ExportResultsFile = "./results.xml";
+    //test_io.ExportResultsFormat = ImGuiTestEngineExportFormat_JUnitXml;
+
     // Register tests
     RegisterAppMinimalTests(engine);
 
@@ -90,10 +94,6 @@ int main(int argc, char** argv)
 
         ImGuiTestEngine_PostSwap(engine);
     }
-
-    // Optional: save test output in junit-compatible XML format.
-    if (!aborted)
-        ImGuiTestEngine_SaveJUnitXML(engine, "./results.xml");
 
     // Shutdown
     ImGuiTestEngine_Stop(engine);

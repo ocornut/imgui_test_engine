@@ -59,6 +59,7 @@ static inline void DebugCrtDumpLeaks()
 #define IMGUI_DEFINE_MATH_OPERATORS
 #include "imgui_tests.h"
 #include "imgui_test_engine/imgui_te_engine.h"
+#include "imgui_test_engine/imgui_te_exporters.h"
 #include "imgui_test_engine/imgui_te_coroutine.h"
 #include "imgui_test_engine/imgui_te_util.h"
 #include "imgui_test_engine/imgui_te_ui.h"
@@ -463,6 +464,20 @@ int main(int argc, char** argv)
     test_io.ScreenCaptureFunc = ImGuiApp_ScreenCaptureFunc;
     test_io.ScreenCaptureUserData = (void*)g_App.AppWindow;
 
+    // Enable test result export
+    if (!g_App.OptJUnitXml.empty())
+    {
+        if (!g_App.TestsToRun.empty())
+        {
+            test_io.ExportResultsFile = g_App.OptJUnitXml.c_str();
+            test_io.ExportResultsFormat = ImGuiTestEngineExportFormat_JUnitXml;
+        }
+        else
+        {
+            fprintf(stderr, "-junit-xml parameter is ignored in interactive runs.");
+        }
+    }
+
     // Create window
     ImGuiApp* app_window = g_App.AppWindow;
     app_window->InitCreateWindow(app_window, "Dear ImGui: Test Engine", ImVec2(1440, 900));
@@ -536,9 +551,6 @@ int main(int argc, char** argv)
         ImGuiTestEngine_PrintResultSummary(engine);
         if (count_tested != count_success)
             error_code = ImGuiTestAppErrorCode_TestFailed;
-
-        if (!g_App.OptJUnitXml.empty())
-            ImGuiTestEngine_SaveJUnitXML(engine, g_App.OptJUnitXml.c_str());
     }
 
     // Shutdown window

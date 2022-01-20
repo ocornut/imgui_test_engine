@@ -13,8 +13,19 @@
 #include "imgui_te_context.h"
 #include "imgui_te_internal.h"
 #include "imgui_te_perftool.h"
+#include "imgui_te_exporters.h"
 #include "shared/imgui_utils.h"
 #include "thirdparty/Str/Str.h"
+#if _WIN32
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
+#include <windows.h>    // SetUnhandledExceptionFilter()
+#undef Yield            // /facepalm, Microsoft...
+#else
+#include <signal.h>     // signal()
+#include <unistd.h>     // sleep()
+#endif
 
 /*
 
@@ -76,6 +87,7 @@ static void ImGuiTestEngine_PostNewFrame(ImGuiTestEngine* engine, ImGuiContext* 
 static void ImGuiTestEngine_RunGuiFunc(ImGuiTestEngine* engine);
 static void ImGuiTestEngine_RunTest(ImGuiTestEngine* engine, ImGuiTestContext* ctx);
 static void ImGuiTestEngine_TestQueueCoroutineMain(void* engine_opaque);
+static void ImGuiTestEngine_InstallCrashHandler();
 
 // Settings
 static void* ImGuiTestEngine_SettingsReadOpen(ImGuiContext*, ImGuiSettingsHandler*, const char* name);
@@ -93,7 +105,6 @@ static void  ImGuiTestEngine_SettingsWriteAll(ImGuiContext* imgui_ctx, ImGuiSett
 // - ImGuiTestEngine_GetIO()
 // - ImGuiTestEngine_Abort()
 // - ImGuiTestEngine_QueueAllTests()
-// - ImGuiTestEngine_SaveJUnitXML()
 //-------------------------------------------------------------------------
 // - ImGuiTestEngine_FindItemInfo()
 // - ImGuiTestEngine_ClearTests()
@@ -104,6 +115,10 @@ static void  ImGuiTestEngine_SettingsWriteAll(ImGuiContext* imgui_ctx, ImGuiSett
 // - ImGuiTestEngine_ProcessTestQueue()
 // - ImGuiTestEngine_QueueTest()
 // - ImGuiTestEngine_RunTest()
+// - ImGuiTestEngine_InstallCrashHandler()
+// - ImGuiTestEngine_CrashHandler()
+// - ImGuiTestEngine_CrashHandlerWin32()
+// - ImGuiTestEngine_CrashHandlerUnix()
 //-------------------------------------------------------------------------
 
 ImGuiTestEngine::ImGuiTestEngine()
@@ -260,6 +275,7 @@ void    ImGuiTestEngine_Start(ImGuiTestEngine* engine)
     IM_ASSERT(!engine->Started);
 
     ImGuiTestEngine_StartCalcSourceLineEnds(engine);
+    ImGuiTestEngine_InstallCrashHandler();
 
     // Create our coroutine
     // (we include the word "Main" in the name to facilitate filtering for both this thread and the "Main Thread" in debuggers)
@@ -273,6 +289,7 @@ void    ImGuiTestEngine_Stop(ImGuiTestEngine* engine)
     IM_ASSERT(engine->Started);
 
     ImGuiTestEngine_CoroutineStopAndJoin(engine);
+    ImGuiTestEngine_Export(engine);
     engine->Started = false;
 }
 
@@ -1298,131 +1315,65 @@ static void ImGuiTestEngine_RunTest(ImGuiTestEngine* engine, ImGuiTestContext* c
     ctx->UiContext->Style = backup_style;
 }
 
-// XML format is documented at https://llg.cubic.org/docs/junit/.
-void ImGuiTestEngine_SaveJUnitXML(ImGuiTestEngine* engine, const char* output)
+static void ImGuiTestEngine_CrashHandler()
 {
-    IM_ASSERT(engine != NULL);
-    IM_ASSERT(output != NULL);
-
-    FILE* fp = fopen(output, "w+b");
-    if (fp == NULL)
-    {
-        fprintf(stderr, "Writing '%s' failed.\n", output);
+    static bool handled = false;
+    if (handled)
         return;
-    }
+    handled = true;
 
-    // Per-testsuite test statistics.
-    struct
+    ImGuiContext& g = *GImGui;
+    ImGuiTestEngine* engine = (ImGuiTestEngine*)g.TestEngine;
+
+    // FIXME: This will not be required when we handle asserts with some grace (possibly via C++ exceptions).
+    // Write stop times, because thread executing tests will no longer run.
+    engine->EndTime = ImTimeGetInMicroseconds();
+    for (int i = 0; i < engine->TestsAll.Size; i++)
     {
-        const char* Name     = NULL;
-        int         Tests    = 0;
-        int         Failures = 0;
-        int         Disabled = 0;
-    } testsuites[ImGuiTestGroup_COUNT];
-    testsuites[ImGuiTestGroup_Tests].Name = "tests";
-    testsuites[ImGuiTestGroup_Perfs].Name = "perfs";
-
-    for (int n = 0; n < engine->TestsAll.Size; n++)
-    {
-        ImGuiTest* test = engine->TestsAll[n];
-        auto* stats = &testsuites[test->Group];
-        stats->Tests += 1;
-        if (test->Status == ImGuiTestStatus_Error)
-            stats->Failures += 1;
-        else if (test->Status == ImGuiTestStatus_Unknown)
-            stats->Disabled += 1;
-    }
-
-    // Attributes for <testsuites> tag.
-    const char* testsuites_name = "Dear ImGui";
-    int testsuites_failures = 0;
-    int testsuites_tests = 0;
-    int testsuites_disabled = 0;
-    float testsuites_time = (float)((double)(engine->EndTime - engine->StartTime) / 1000000.0);
-    for (int testsuite_id = ImGuiTestGroup_Tests; testsuite_id < ImGuiTestGroup_COUNT; testsuite_id++)
-    {
-        testsuites_tests += testsuites[testsuite_id].Tests;
-        testsuites_failures += testsuites[testsuite_id].Failures;
-        testsuites_disabled += testsuites[testsuite_id].Disabled;
-    }
-
-    // FIXME: "errors" attribute and <error> tag in <testcase> may be supported if we have means to catch unexpected errors like assertions.
-    fprintf(fp, "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
-        "<testsuites disabled=\"%d\" errors=\"0\" failures=\"%d\" name=\"%s\" tests=\"%d\" time=\"%.3f\">\n",
-        testsuites_disabled, testsuites_failures, testsuites_name, testsuites_tests, testsuites_time);
-
-    const char* teststatus_names[] = { "skipped", "success", "queued", "running", "error", "suspended" };
-    for (int testsuite_id = ImGuiTestGroup_Tests; testsuite_id < ImGuiTestGroup_COUNT; testsuite_id++)
-    {
-        // Attributes for <testsuite> tag.
-        auto* testsuite = &testsuites[testsuite_id];
-        float testsuite_time = testsuites_time;         // FIXME: We do not differentiate between tests and perfs, they are executed in one big batch.
-        Str30 testsuite_timestamp = "";
-        ImTimestampToISO8601(engine->StartTime, &testsuite_timestamp);
-        fprintf(fp, "  <testsuite name=\"%s\" tests=\"%d\" disabled=\"%d\" errors=\"0\" failures=\"%d\" hostname=\"\" id=\"%d\" package=\"\" skipped=\"0\" time=\"%.3f\" timestamp=\"%s\">\n",
-            testsuite->Name, testsuite->Tests, testsuite->Disabled, testsuite->Failures, testsuite_id, testsuite_time, testsuite_timestamp.c_str());
-
-        for (int n = 0; n < engine->TestsAll.Size; n++)
+        ImGuiTest* test = engine->TestsAll[i];
+        if (test->Status == ImGuiTestStatus_Running)
         {
-            ImGuiTest* test = engine->TestsAll[n];
-            if (test->Group != testsuite_id)
-                continue;
-
-            // Attributes for <testcase> tag.
-            const char* testcase_name = test->Name;
-            const char* testcase_classname = test->Category;
-            const char* testcase_status = teststatus_names[test->Status + 1];   // +1 because _Unknown status is -1.
-            float testcase_time = (float)((double)(test->EndTime - test->StartTime) / 1000000.0);
-
-            fprintf(fp, "    <testcase name=\"%s\" assertions=\"0\" classname=\"%s\" status=\"%s\" time=\"%.3f\"",
-                testcase_name, testcase_classname, testcase_status, testcase_time);
-
-            if (test->Status == ImGuiTestStatus_Error)
-            {
-                // Skip last error message because it is generic information that test failed.
-                Str128 log_line;
-                for (int i = test->TestLog.LineInfoError.Size - 2; i >= 0; i--)
-                {
-                    ImGuiTestLogLineInfo* line_info = &test->TestLog.LineInfoError[i];
-                    if (line_info->Level == ImGuiTestVerboseLevel_Error)
-                    {
-                        const char* line_start = test->TestLog.Buffer.c_str() + line_info->LineOffset;
-                        const char* line_end = strstr(line_start, "\n");
-                        log_line.set(line_start, line_end);
-                        ImStrXmlEscape(&log_line);
-                        break;
-                    }
-                }
-
-                fprintf(fp, ">\n"); // End of <testcase> tag
-                fprintf(fp, "      <failure message=\"%s\" type=\"error\">\n", log_line.c_str());
-
-                // Save full log in text element of <failure> tag.
-                for (auto& line_info : test->TestLog.LineInfoError)
-                {
-                    const char* line_start = test->TestLog.Buffer.c_str() + line_info.LineOffset;
-                    const char* line_end = strstr(line_start, "\n");
-                    log_line.set(line_start, line_end);
-                    ImStrXmlEscape(&log_line);
-                    fprintf(fp, "        %s\n", log_line.c_str());
-                }
-
-                fprintf(fp, "      </failure>\n");
-                fprintf(fp, "    </testcase>\n");
-            }
-            else
-            {
-                fprintf(fp, "/>\n");    // Terminate <testcase>
-            }
+            test->Status = ImGuiTestStatus_Error;
+            test->EndTime = engine->EndTime;
+            break;
         }
-
-        // FIXME: These could be supported by capturing stdout/stderr, or printing all log messages.
-        fprintf(fp, "    <system-out></system-out>\n");
-        fprintf(fp, "    <system-err></system-err>\n");
-        fprintf(fp, "  </testsuite>\n");
     }
-    fprintf(fp, "</testsuites>\n");
-    fclose(fp);
+
+    // Export test run results.
+    ImGuiTestEngine_Export(engine);
+}
+
+#ifdef _WIN32
+static LONG WINAPI ImGuiTestEngine_CrashHandlerWin32(LPEXCEPTION_POINTERS)
+{
+    ImGuiTestEngine_CrashHandler();
+    return EXCEPTION_EXECUTE_HANDLER;
+}
+#else
+static void ImGuiTestEngine_CrashHandlerUnix(int signal)
+{
+    IM_UNUSED(signal);
+    ImGuiTestEngine_CrashHandler();
+    abort();
+}
+#endif
+
+static void ImGuiTestEngine_InstallCrashHandler()
+{
+#ifdef _WIN32
+    SetUnhandledExceptionFilter(&ImGuiTestEngine_CrashHandlerWin32);
+#else
+    // Install a crash handler to relevant signals.
+    struct sigaction action = {};
+    action.sa_handler = ImGuiTestEngine_CrashHandlerUnix;
+    action.sa_flags = SA_SIGINFO;
+    sigaction(SIGILL, &action, NULL);
+    sigaction(SIGABRT, &action, NULL);
+    sigaction(SIGFPE, &action, NULL);
+    sigaction(SIGSEGV, &action, NULL);
+    sigaction(SIGPIPE, &action, NULL);
+    sigaction(SIGBUS, &action, NULL);
+#endif
 }
 
 //-------------------------------------------------------------------------

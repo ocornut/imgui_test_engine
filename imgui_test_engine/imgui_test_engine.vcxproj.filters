@@ -60,6 +60,9 @@
     <ClInclude Include="imgui_te_internal.h">
       <Filter>imgui_test_engine</Filter>
     </ClInclude>
+    <ClInclude Include="imgui_te_exporters.h">
+      <Filter>imgui_test_engine</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="imgui_te_context.cpp">
@@ -84,6 +87,9 @@
       <Filter>imgui_test_engine</Filter>
     </ClCompile>
     <ClCompile Include="imgui_capture_tool.cpp">
+      <Filter>imgui_test_engine</Filter>
+    </ClCompile>
+    <ClCompile Include="imgui_te_exporters.cpp">
       <Filter>imgui_test_engine</Filter>
     </ClCompile>
   </ItemGroup>
