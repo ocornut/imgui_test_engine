@@ -1248,6 +1248,21 @@ void RegisterTests_Window(ImGuiTestEngine* e)
     };
 #endif
 
+ #if IMGUI_VERSION_NUM >= 18611
+    // ## Test immediate window creation after modal opens. (#4920)
+    t = IM_REGISTER_TEST(e, "window", "window_after_modal");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::Begin("Test Window 1", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImGui::OpenPopup("Popup");
+        if (ImGui::BeginPopupModal("Popup"))
+            ImGui::EndPopup();
+        ImGui::Begin("Test Window 2", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImGui::End();
+        ImGui::End();
+    };
+ #endif
+
     // ## Test that child window correctly affect contents size based on how their size was specified.
     t = IM_REGISTER_TEST(e, "window", "window_child_layout_size");
     t->Flags |= ImGuiTestFlags_NoAutoFinish;
