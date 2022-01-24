@@ -282,6 +282,7 @@ struct ImGuiTestLog
     ImGuiTextBuffer                 Buffer;
     ImVector<ImGuiTestLogLineInfo>  LineInfo;
     ImVector<ImGuiTestLogLineInfo>  LineInfoError;
+    ImVector<ImGuiTestLogLineInfo>  LineInfoAll;
     bool                            CachedLinesPrintedToTTY = false;
 
     ImGuiTestLog() {}
@@ -291,6 +292,7 @@ struct ImGuiTestLog
         Buffer.clear();
         LineInfo.clear();
         LineInfoError.clear();
+        LineInfoAll.clear();
         CachedLinesPrintedToTTY = false;
     }
 
@@ -314,6 +316,7 @@ struct ImGuiTestLog
                     LineInfo.push_back({level, offset});
                 if (engine_io->ConfigVerboseLevelOnError >= level)
                     LineInfoError.push_back({level, offset});
+                LineInfoAll.push_back({level, offset});
             }
             p = p_eol ? p_eol + 1 : NULL;
         }
