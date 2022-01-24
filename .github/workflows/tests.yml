@@ -111,6 +111,11 @@ jobs:
         run: |
           timeout 300 imgui_tests/imgui_tests -nogui -nopause -v2 -ve4 tests
 
+      - name: Run Viewport Tests
+        if: matrix.branch == 'docking'
+        run: |
+          timeout 300 imgui_tests/imgui_tests -nogui -nopause -v2 -ve4 -viewport-mock viewport
+
   MacOS:
     runs-on: macos-latest
     if: |
@@ -143,6 +148,11 @@ jobs:
       - name: Run Tests
         run: |
           imgui_tests/imgui_tests -nogui -nopause -v2 -ve4 tests
+
+      - name: Run Viewport Tests
+        if: matrix.branch == 'docking'
+        run: |
+          imgui_tests/imgui_tests -nogui -nopause -v2 -ve4 -viewport-mock viewport
 
   Windows:
     if: |
@@ -192,3 +202,8 @@ jobs:
       - name: Run Tests
         run: |
           imgui_tests/Release/imgui_tests.exe -nogui -nopause -v2 -ve4 tests
+
+      - name: Run Viewport Tests
+        if: matrix.branch == 'docking'
+        run: |
+          imgui_tests/Release/imgui_tests.exe -nogui -nopause -v2 -ve4 -viewport-mock viewport
