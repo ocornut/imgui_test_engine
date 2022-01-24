@@ -1970,49 +1970,57 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
         auto& vars = ctx->GetVars<NavWrappingWars>();
         ctx->SetRef("Test Window");
 
-        vars.WrapFlags = ImGuiNavMoveFlags_None;
-        ctx->ItemClick("0,0");
-        ctx->KeyPress(ImGuiKey_RightArrow);
-        IM_CHECK(g.NavId == ctx->GetID("0,1"));
-        ctx->KeyPress(ImGuiKey_RightArrow);
-        ctx->KeyPress(ImGuiKey_RightArrow);
-        IM_CHECK(g.NavId == ctx->GetID("0,3"));
-        ctx->KeyPress(ImGuiKey_RightArrow);
-        IM_CHECK(g.NavId == ctx->GetID("0,3"));
+        for (int input_source = 0; input_source < 2; input_source++)
+        {
+            //ImGuiKey key_up = (input_source == 0) ? ImGuiKey_UpArrow : ImGuiKey_GamepadDpadUp;
+            ImGuiKey key_down = (input_source == 0) ? ImGuiKey_DownArrow : ImGuiKey_GamepadDpadDown;
+            //ImGuiKey key_left = (input_source == 0) ? ImGuiKey_LeftArrow : ImGuiKey_GamepadDpadLeft;
+            ImGuiKey key_right = (input_source == 0) ? ImGuiKey_RightArrow : ImGuiKey_GamepadDpadRight;
 
-        vars.WrapFlags = ImGuiNavMoveFlags_WrapX;
-        ctx->ItemClick("0,0");
-        ctx->KeyPress(ImGuiKey_RightArrow);
-        IM_CHECK(g.NavId == ctx->GetID("0,1"));
-        ctx->KeyPress(ImGuiKey_RightArrow);
-        ctx->KeyPress(ImGuiKey_RightArrow);
-        IM_CHECK(g.NavId == ctx->GetID("0,3"));
-        ctx->KeyPress(ImGuiKey_RightArrow);
-        IM_CHECK(g.NavId == ctx->GetID("1,0"));
-        for (int n = 0; n < 50; n++) // Mash to get to the end of list
-            ctx->KeyPress(ImGuiKey_RightArrow);
-        IM_CHECK(g.NavId == ctx->GetID("3,1"));
+            vars.WrapFlags = ImGuiNavMoveFlags_None;
+            ctx->ItemClick("0,0");
+            ctx->KeyPress(key_right);
+            IM_CHECK(g.NavId == ctx->GetID("0,1"));
+            ctx->KeyPress(key_right);
+            ctx->KeyPress(key_right);
+            IM_CHECK(g.NavId == ctx->GetID("0,3"));
+            ctx->KeyPress(key_right);
+            IM_CHECK(g.NavId == ctx->GetID("0,3"));
 
-        vars.WrapFlags = ImGuiNavMoveFlags_LoopX;
-        ctx->ItemClick("0,0");
-        ctx->KeyPress(ImGuiKey_RightArrow);
-        IM_CHECK(g.NavId == ctx->GetID("0,1"));
-        ctx->KeyPress(ImGuiKey_RightArrow);
-        ctx->KeyPress(ImGuiKey_RightArrow);
-        IM_CHECK(g.NavId == ctx->GetID("0,3"));
-        ctx->KeyPress(ImGuiKey_RightArrow);
-        IM_CHECK(g.NavId == ctx->GetID("0,0"));
+            vars.WrapFlags = ImGuiNavMoveFlags_WrapX;
+            ctx->ItemClick("0,0");
+            ctx->KeyPress(key_right);
+            IM_CHECK(g.NavId == ctx->GetID("0,1"));
+            ctx->KeyPress(key_right);
+            ctx->KeyPress(key_right);
+            IM_CHECK(g.NavId == ctx->GetID("0,3"));
+            ctx->KeyPress(key_right);
+            IM_CHECK(g.NavId == ctx->GetID("1,0"));
+            for (int n = 0; n < 50; n++) // Mash to get to the end of list
+                ctx->KeyPress(key_right);
+            IM_CHECK(g.NavId == ctx->GetID("3,1"));
 
-        vars.WrapFlags = ImGuiNavMoveFlags_LoopY;
-        ctx->ItemClick("0,0");
-        ctx->KeyPress(ImGuiKey_RightArrow);
-        IM_CHECK(g.NavId == ctx->GetID("0,1"));
-        ctx->KeyPress(ImGuiKey_DownArrow);
-        ctx->KeyPress(ImGuiKey_DownArrow);
-        ctx->KeyPress(ImGuiKey_DownArrow);
-        IM_CHECK(g.NavId == ctx->GetID("3,1"));
-        ctx->KeyPress(ImGuiKey_DownArrow);
-        IM_CHECK(g.NavId == ctx->GetID("0,1"));
+            vars.WrapFlags = ImGuiNavMoveFlags_LoopX;
+            ctx->ItemClick("0,0");
+            ctx->KeyPress(key_right);
+            IM_CHECK(g.NavId == ctx->GetID("0,1"));
+            ctx->KeyPress(key_right);
+            ctx->KeyPress(key_right);
+            IM_CHECK(g.NavId == ctx->GetID("0,3"));
+            ctx->KeyPress(key_right);
+            IM_CHECK(g.NavId == ctx->GetID("0,0"));
+
+            vars.WrapFlags = ImGuiNavMoveFlags_LoopY;
+            ctx->ItemClick("0,0");
+            ctx->KeyPress(key_right);
+            IM_CHECK(g.NavId == ctx->GetID("0,1"));
+            ctx->KeyPress(key_down);
+            ctx->KeyPress(key_down);
+            ctx->KeyPress(key_down);
+            IM_CHECK(g.NavId == ctx->GetID("3,1"));
+            ctx->KeyPress(key_down);
+            IM_CHECK(g.NavId == ctx->GetID("0,1"));
+        }
 
 #if IMGUI_BROKEN_TESTS
         // FIXME: LoopY up from 0,2 to 2,2 fails, goes to 3.1 -> maybe looping/wrapping should apply a bias (scoring weight) on the other axis?
@@ -2042,18 +2050,31 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
     {
         ImGuiContext& g = *ctx->UiContext;
         ctx->SetRef("Test Window");
-        for (int n = 0; n < 52; n++)
+
+        for (int input_source = 0; input_source < 2; input_source++)
         {
-            IM_CHECK_EQ(g.NavId, ctx->GetID(Str30f("Input%d", (n) % 50).c_str()));
-            ctx->KeyPress(ImGuiKey_DownArrow);
-            IM_CHECK_EQ(g.NavId, ctx->GetID(Str30f("Input%d", (n + 1) % 50).c_str()));
-        }
-        // Should be on 51
-        for (int n = 0; n < 4; n++)
-        {
-            IM_CHECK_EQ(g.NavId, ctx->GetID(Str30f("Input%d", (52 - n) % 50).c_str()));
-            ctx->KeyPress(ImGuiKey_UpArrow);
-            IM_CHECK_EQ(g.NavId, ctx->GetID(Str30f("Input%d", (51 - n) % 50).c_str()));
+#if IMGUI_VERSION_NUM < 18613
+            if (input_source == 1)
+                continue;
+#endif
+            ImGuiKey key_up = (input_source == 0) ? ImGuiKey_UpArrow : ImGuiKey_GamepadDpadUp;
+            ImGuiKey key_down = (input_source == 0) ? ImGuiKey_DownArrow : ImGuiKey_GamepadDpadDown;
+
+            for (int n = 0; n < 52; n++)
+            {
+                IM_CHECK_EQ(g.NavId, ctx->GetID(Str30f("Input%d", (n) % 50).c_str()));
+                ctx->KeyPress(key_down);
+                IM_CHECK_EQ(g.NavId, ctx->GetID(Str30f("Input%d", (n + 1) % 50).c_str()));
+            }
+            // Should be on 51
+            for (int n = 0; n < 4; n++)
+            {
+                IM_CHECK_EQ(g.NavId, ctx->GetID(Str30f("Input%d", (52 - n) % 50).c_str()));
+                ctx->KeyPress(key_up);
+                IM_CHECK_EQ(g.NavId, ctx->GetID(Str30f("Input%d", (51 - n) % 50).c_str()));
+            }
+
+            ctx->NavMoveTo("Input0");
         }
     };
 }
