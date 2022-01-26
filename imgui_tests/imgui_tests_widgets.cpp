@@ -1898,6 +1898,108 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         IM_CHECK(vars.Double == -1.5);
     };
 
+    // ## Test ImGui::InputScalar() handling overflow for different data types
+    t = IM_REGISTER_TEST(e, "misc", "widgets_inputscalar_overflow");
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        {
+            ImS8 one = 1;
+            ImS8 value = 2;
+            ImGui::DataTypeApplyOp(ImGuiDataType_S8, '+', &value, &value, &one);
+            IM_CHECK(value == 3);
+            value = SCHAR_MAX;
+            ImGui::DataTypeApplyOp(ImGuiDataType_S8, '+', &value, &value, &one);
+            IM_CHECK(value == SCHAR_MAX);
+            value = SCHAR_MIN;
+            ImGui::DataTypeApplyOp(ImGuiDataType_S8, '-', &value, &value, &one);
+            IM_CHECK(value == SCHAR_MIN);
+        }
+        {
+            ImU8 one = 1;
+            ImU8 value = 2;
+            ImGui::DataTypeApplyOp(ImGuiDataType_U8, '+', &value, &value, &one);
+            IM_CHECK(value == 3);
+            value = UCHAR_MAX;
+            ImGui::DataTypeApplyOp(ImGuiDataType_U8, '+', &value, &value, &one);
+            IM_CHECK(value == UCHAR_MAX);
+            value = 0;
+            ImGui::DataTypeApplyOp(ImGuiDataType_U8, '-', &value, &value, &one);
+            IM_CHECK(value == 0);
+        }
+        {
+            ImS16 one = 1;
+            ImS16 value = 2;
+            ImGui::DataTypeApplyOp(ImGuiDataType_S16, '+', &value, &value, &one);
+            IM_CHECK(value == 3);
+            value = SHRT_MAX;
+            ImGui::DataTypeApplyOp(ImGuiDataType_S16, '+', &value, &value, &one);
+            IM_CHECK(value == SHRT_MAX);
+            value = SHRT_MIN;
+            ImGui::DataTypeApplyOp(ImGuiDataType_S16, '-', &value, &value, &one);
+            IM_CHECK(value == SHRT_MIN);
+        }
+        {
+            ImU16 one = 1;
+            ImU16 value = 2;
+            ImGui::DataTypeApplyOp(ImGuiDataType_U16, '+', &value, &value, &one);
+            IM_CHECK(value == 3);
+            value = USHRT_MAX;
+            ImGui::DataTypeApplyOp(ImGuiDataType_U16, '+', &value, &value, &one);
+            IM_CHECK(value == USHRT_MAX);
+            value = 0;
+            ImGui::DataTypeApplyOp(ImGuiDataType_U16, '-', &value, &value, &one);
+            IM_CHECK(value == 0);
+        }
+        {
+            ImS32 one = 1;
+            ImS32 value = 2;
+            ImGui::DataTypeApplyOp(ImGuiDataType_S32, '+', &value, &value, &one);
+            IM_CHECK(value == 3);
+            value = INT_MAX;
+            ImGui::DataTypeApplyOp(ImGuiDataType_S32, '+', &value, &value, &one);
+            IM_CHECK(value == INT_MAX);
+            value = INT_MIN;
+            ImGui::DataTypeApplyOp(ImGuiDataType_S32, '-', &value, &value, &one);
+            IM_CHECK(value == INT_MIN);
+        }
+        {
+            ImU32 one = 1;
+            ImU32 value = 2;
+            ImGui::DataTypeApplyOp(ImGuiDataType_U32, '+', &value, &value, &one);
+            IM_CHECK(value == 3);
+            value = UINT_MAX;
+            ImGui::DataTypeApplyOp(ImGuiDataType_U32, '+', &value, &value, &one);
+            IM_CHECK(value == UINT_MAX);
+            value = 0;
+            ImGui::DataTypeApplyOp(ImGuiDataType_U32, '-', &value, &value, &one);
+            IM_CHECK(value == 0);
+        }
+        {
+            ImS64 one = 1;
+            ImS64 value = 2;
+            ImGui::DataTypeApplyOp(ImGuiDataType_S64, '+', &value, &value, &one);
+            IM_CHECK(value == 3);
+            value = LLONG_MAX;
+            ImGui::DataTypeApplyOp(ImGuiDataType_S64, '+', &value, &value, &one);
+            IM_CHECK(value == LLONG_MAX);
+            value = LLONG_MIN;
+            ImGui::DataTypeApplyOp(ImGuiDataType_S64, '-', &value, &value, &one);
+            IM_CHECK(value == LLONG_MIN);
+        }
+        {
+            ImU64 one = 1;
+            ImU64 value = 2;
+            ImGui::DataTypeApplyOp(ImGuiDataType_U64, '+', &value, &value, &one);
+            IM_CHECK(value == 3);
+            value = ULLONG_MAX;
+            ImGui::DataTypeApplyOp(ImGuiDataType_U64, '+', &value, &value, &one);
+            IM_CHECK(value == ULLONG_MAX);
+            value = 0;
+            ImGui::DataTypeApplyOp(ImGuiDataType_U64, '-', &value, &value, &one);
+            IM_CHECK(value == 0);
+        }
+    };
+
     // ## Test that tight tab bar does not create extra drawcalls
     t = IM_REGISTER_TEST(e, "widgets", "widgets_tabbar_drawcalls");
     t->GuiFunc = [](ImGuiTestContext* ctx)

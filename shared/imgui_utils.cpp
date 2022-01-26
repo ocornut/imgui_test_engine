@@ -387,7 +387,7 @@ void ImTimestampToISO8601(uint64_t timestamp, Str* out_date)
     size_t size_req = strftime(out_date->c_str(), out_date->capacity(), time_format, time);
     if (size_req >= (size_t)out_date->capacity())
     {
-        out_date->reserve(size_req);
+        out_date->reserve((int)size_req);
         strftime(out_date->c_str(), out_date->capacity(), time_format, time);
     }
 }

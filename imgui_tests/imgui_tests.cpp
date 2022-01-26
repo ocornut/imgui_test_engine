@@ -2540,93 +2540,15 @@ void RegisterTests_DrawList(ImGuiTestEngine* e)
 }
 
 //-------------------------------------------------------------------------
-// Tests: Misc
+// Tests: Inputs
 //-------------------------------------------------------------------------
 
-void RegisterTests_Misc(ImGuiTestEngine* e)
+void RegisterTests_Inputs(ImGuiTestEngine* e)
 {
     ImGuiTest* t = NULL;
 
-    // ## Test watchdog
-#if 0
-    t = IM_REGISTER_TEST(e, "misc", "misc_watchdog");
-    t->TestFunc = [](ImGuiTestContext* ctx)
-    {
-        while (true)
-            ctx->Yield();
-    };
-#endif
-
-    // ## Test DebugRecoverFromErrors() FIXME-TESTS
-    t = IM_REGISTER_TEST(e, "misc", "misc_recover");
-    t->Flags |= ImGuiTestFlags_NoRecoverWarnings;
-    t->GuiFunc = [](ImGuiTestContext* ctx)
-    {
-#if IMGUI_VERSION_NUM >= 18415
-        ImGui::BeginDisabled();
-#endif
-        ImGui::Begin("Test window", NULL, ImGuiWindowFlags_NoSavedSettings);
-        ImGui::BeginChild("Child");
-        ImGui::PushFocusScope(ImGui::GetID("focusscope1"));
-        ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2());
-        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4());
-        ImGui::PushID("hello");
-#if IMGUI_VERSION_NUM >= 18415
-        ImGui::PushItemFlag(ImGuiItemFlags_ButtonRepeat, true);
-#endif
-        ImGui::BeginGroup();
-        ImGui::SetNextItemOpen(true);
-        ImGui::TreeNode("node");
-        ImGui::BeginTabBar("tabbar");
-        ImGui::BeginTable("table", 4);
-        ctx->Finish();
-    };
-
-    // ## Test window data garbage collection
-    t = IM_REGISTER_TEST(e, "misc", "misc_gc");
-    t->GuiFunc = [](ImGuiTestContext* ctx)
-    {
-        // Pretend window is no longer active once we start testing.
-        if (ctx->FrameCount < 2)
-        {
-            for (int i = 0; i < 5; i++)
-            {
-                Str16f name("GC Test %d", i);
-                ImGui::Begin(name.c_str(), NULL, ImGuiWindowFlags_NoSavedSettings);
-                ImGui::TextUnformatted(name.c_str());
-                ImGui::End();
-            }
-        }
-    };
-    t->TestFunc = [](ImGuiTestContext* ctx)
-    {
-        ctx->LogDebug("Check normal state");
-        for (int i = 0; i < 3; i++)
-        {
-            ImGuiWindow* window = ctx->GetWindowByRef(Str16f("GC Test %d", i).c_str());
-            IM_CHECK(!window->MemoryCompacted);
-            IM_CHECK(!window->DrawList->CmdBuffer.empty());
-        }
-
-        ctx->UiContext->IO.ConfigMemoryCompactTimer = 0.0f;
-        ctx->Yield(3); // Give time to perform GC
-        ctx->LogDebug("Check GC-ed state");
-        for (int i = 0; i < 3; i++)
-        {
-            ImGuiWindow* window = ctx->GetWindowByRef(Str16f("GC Test %d", i).c_str());
-            IM_CHECK(window->MemoryCompacted);
-            IM_CHECK(window->IDStack.empty());
-            IM_CHECK(window->DrawList->CmdBuffer.empty());
-        }
-
-        // Perform an additional fuller GC
-        ImGuiContext& g = *ctx->UiContext;
-        g.GcCompactAll = true;
-        ctx->Yield();
-    };
-
     // ## Test input queue trickling
-    t = IM_REGISTER_TEST(e, "misc", "misc_io_input_queue");
+    t = IM_REGISTER_TEST(e, "misc", "inputs_io_inputqueue");
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         ImGuiContext& g = *ctx->UiContext;
@@ -2937,6 +2859,93 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
         IM_CHECK(io.InputQueueCharacters.Size == 1 && io.InputQueueCharacters[0] == 'B');
         ctx->Yield();
         IM_CHECK(io.InputQueueCharacters.Size == 0);
+    };
+}
+
+//-------------------------------------------------------------------------
+// Tests: Misc
+//-------------------------------------------------------------------------
+
+void RegisterTests_Misc(ImGuiTestEngine* e)
+{
+    ImGuiTest* t = NULL;
+
+    // ## Test watchdog
+#if 0
+    t = IM_REGISTER_TEST(e, "misc", "misc_watchdog");
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        while (true)
+            ctx->Yield();
+    };
+#endif
+
+    // ## Test DebugRecoverFromErrors() FIXME-TESTS
+    t = IM_REGISTER_TEST(e, "misc", "misc_recover");
+    t->Flags |= ImGuiTestFlags_NoRecoverWarnings;
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+#if IMGUI_VERSION_NUM >= 18415
+        ImGui::BeginDisabled();
+#endif
+        ImGui::Begin("Test window", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImGui::BeginChild("Child");
+        ImGui::PushFocusScope(ImGui::GetID("focusscope1"));
+        ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2());
+        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4());
+        ImGui::PushID("hello");
+#if IMGUI_VERSION_NUM >= 18415
+        ImGui::PushItemFlag(ImGuiItemFlags_ButtonRepeat, true);
+#endif
+        ImGui::BeginGroup();
+        ImGui::SetNextItemOpen(true);
+        ImGui::TreeNode("node");
+        ImGui::BeginTabBar("tabbar");
+        ImGui::BeginTable("table", 4);
+        ctx->Finish();
+    };
+
+    // ## Test window data garbage collection
+    t = IM_REGISTER_TEST(e, "misc", "misc_gc");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        // Pretend window is no longer active once we start testing.
+        if (ctx->FrameCount < 2)
+        {
+            for (int i = 0; i < 5; i++)
+            {
+                Str16f name("GC Test %d", i);
+                ImGui::Begin(name.c_str(), NULL, ImGuiWindowFlags_NoSavedSettings);
+                ImGui::TextUnformatted(name.c_str());
+                ImGui::End();
+            }
+        }
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ctx->LogDebug("Check normal state");
+        for (int i = 0; i < 3; i++)
+        {
+            ImGuiWindow* window = ctx->GetWindowByRef(Str16f("GC Test %d", i).c_str());
+            IM_CHECK(!window->MemoryCompacted);
+            IM_CHECK(!window->DrawList->CmdBuffer.empty());
+        }
+
+        ctx->UiContext->IO.ConfigMemoryCompactTimer = 0.0f;
+        ctx->Yield(3); // Give time to perform GC
+        ctx->LogDebug("Check GC-ed state");
+        for (int i = 0; i < 3; i++)
+        {
+            ImGuiWindow* window = ctx->GetWindowByRef(Str16f("GC Test %d", i).c_str());
+            IM_CHECK(window->MemoryCompacted);
+            IM_CHECK(window->IDStack.empty());
+            IM_CHECK(window->DrawList->CmdBuffer.empty());
+        }
+
+        // Perform an additional fuller GC
+        ImGuiContext& g = *ctx->UiContext;
+        g.GcCompactAll = true;
+        ctx->Yield();
     };
 
     // ## Test hash functions and ##/### operators
@@ -3464,108 +3473,6 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
         ctx->LogDebug("No repeat delay/rate");
         IM_CHECK_EQ_NO_RET(ImGui::CalcTypematicRepeatAmount(0.00f, 0.00f, 0.0f, 0.0f), 1); // Trigger @ 0.0f
         IM_CHECK_EQ_NO_RET(ImGui::CalcTypematicRepeatAmount(0.01f, 1.01f, 0.0f, 0.0f), 0); // "
-    };
-
-    // ## Test ImGui::InputScalar() handling overflow for different data types
-    t = IM_REGISTER_TEST(e, "misc", "misc_input_scalar_overflow");
-    t->TestFunc = [](ImGuiTestContext* ctx)
-    {
-        {
-            ImS8 one = 1;
-            ImS8 value = 2;
-            ImGui::DataTypeApplyOp(ImGuiDataType_S8, '+', &value, &value, &one);
-            IM_CHECK(value == 3);
-            value = SCHAR_MAX;
-            ImGui::DataTypeApplyOp(ImGuiDataType_S8, '+', &value, &value, &one);
-            IM_CHECK(value == SCHAR_MAX);
-            value = SCHAR_MIN;
-            ImGui::DataTypeApplyOp(ImGuiDataType_S8, '-', &value, &value, &one);
-            IM_CHECK(value == SCHAR_MIN);
-        }
-        {
-            ImU8 one = 1;
-            ImU8 value = 2;
-            ImGui::DataTypeApplyOp(ImGuiDataType_U8, '+', &value, &value, &one);
-            IM_CHECK(value == 3);
-            value = UCHAR_MAX;
-            ImGui::DataTypeApplyOp(ImGuiDataType_U8, '+', &value, &value, &one);
-            IM_CHECK(value == UCHAR_MAX);
-            value = 0;
-            ImGui::DataTypeApplyOp(ImGuiDataType_U8, '-', &value, &value, &one);
-            IM_CHECK(value == 0);
-        }
-        {
-            ImS16 one = 1;
-            ImS16 value = 2;
-            ImGui::DataTypeApplyOp(ImGuiDataType_S16, '+', &value, &value, &one);
-            IM_CHECK(value == 3);
-            value = SHRT_MAX;
-            ImGui::DataTypeApplyOp(ImGuiDataType_S16, '+', &value, &value, &one);
-            IM_CHECK(value == SHRT_MAX);
-            value = SHRT_MIN;
-            ImGui::DataTypeApplyOp(ImGuiDataType_S16, '-', &value, &value, &one);
-            IM_CHECK(value == SHRT_MIN);
-        }
-        {
-            ImU16 one = 1;
-            ImU16 value = 2;
-            ImGui::DataTypeApplyOp(ImGuiDataType_U16, '+', &value, &value, &one);
-            IM_CHECK(value == 3);
-            value = USHRT_MAX;
-            ImGui::DataTypeApplyOp(ImGuiDataType_U16, '+', &value, &value, &one);
-            IM_CHECK(value == USHRT_MAX);
-            value = 0;
-            ImGui::DataTypeApplyOp(ImGuiDataType_U16, '-', &value, &value, &one);
-            IM_CHECK(value == 0);
-        }
-        {
-            ImS32 one = 1;
-            ImS32 value = 2;
-            ImGui::DataTypeApplyOp(ImGuiDataType_S32, '+', &value, &value, &one);
-            IM_CHECK(value == 3);
-            value = INT_MAX;
-            ImGui::DataTypeApplyOp(ImGuiDataType_S32, '+', &value, &value, &one);
-            IM_CHECK(value == INT_MAX);
-            value = INT_MIN;
-            ImGui::DataTypeApplyOp(ImGuiDataType_S32, '-', &value, &value, &one);
-            IM_CHECK(value == INT_MIN);
-        }
-        {
-            ImU32 one = 1;
-            ImU32 value = 2;
-            ImGui::DataTypeApplyOp(ImGuiDataType_U32, '+', &value, &value, &one);
-            IM_CHECK(value == 3);
-            value = UINT_MAX;
-            ImGui::DataTypeApplyOp(ImGuiDataType_U32, '+', &value, &value, &one);
-            IM_CHECK(value == UINT_MAX);
-            value = 0;
-            ImGui::DataTypeApplyOp(ImGuiDataType_U32, '-', &value, &value, &one);
-            IM_CHECK(value == 0);
-        }
-        {
-            ImS64 one = 1;
-            ImS64 value = 2;
-            ImGui::DataTypeApplyOp(ImGuiDataType_S64, '+', &value, &value, &one);
-            IM_CHECK(value == 3);
-            value = LLONG_MAX;
-            ImGui::DataTypeApplyOp(ImGuiDataType_S64, '+', &value, &value, &one);
-            IM_CHECK(value == LLONG_MAX);
-            value = LLONG_MIN;
-            ImGui::DataTypeApplyOp(ImGuiDataType_S64, '-', &value, &value, &one);
-            IM_CHECK(value == LLONG_MIN);
-        }
-        {
-            ImU64 one = 1;
-            ImU64 value = 2;
-            ImGui::DataTypeApplyOp(ImGuiDataType_U64, '+', &value, &value, &one);
-            IM_CHECK(value == 3);
-            value = ULLONG_MAX;
-            ImGui::DataTypeApplyOp(ImGuiDataType_U64, '+', &value, &value, &one);
-            IM_CHECK(value == ULLONG_MAX);
-            value = 0;
-            ImGui::DataTypeApplyOp(ImGuiDataType_U64, '-', &value, &value, &one);
-            IM_CHECK(value == 0);
-        }
     };
 
     // ## Test basic clipboard, test that clipboard is empty on start
@@ -4923,6 +4830,7 @@ void RegisterTests(ImGuiTestEngine* e)
     RegisterTests_Window(e);
     RegisterTests_Layout(e);
     RegisterTests_Widgets(e);
+    RegisterTests_Inputs(e);
     RegisterTests_Nav(e);
     RegisterTests_Columns(e);
     RegisterTests_Table(e);
