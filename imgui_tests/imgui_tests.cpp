@@ -1247,7 +1247,60 @@ void RegisterTests_Window(ImGuiTestEngine* e)
     };
 #endif
 
- #if IMGUI_VERSION_NUM >= 18611
+    // ## Test popups reopening at same position. (#4936)
+    t = IM_REGISTER_TEST(e, "window", "window_popup_mouse_reopen");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_MenuBar);
+        ImGui::BeginMenuBar();
+        if (ImGui::BeginMenu("File"))
+        {
+            ImGui::MenuItem("Exit");
+            ImGui::EndMenu();
+        }
+        ImGui::EndMenuBar();
+        ImGui::Button("Open Popup");
+        ImGui::OpenPopupOnItemClick("Popup", ImGuiPopupFlags_MouseButtonRight);
+        if (ImGui::BeginPopup("Popup"))
+            ImGui::EndPopup();
+
+        ImGui::Button("Open Modal");
+        ImGui::OpenPopupOnItemClick("Modal", ImGuiPopupFlags_MouseButtonRight);
+        if (ImGui::BeginPopupModal("Modal"))
+        {
+            if (ImGui::IsKeyPressed(ImGuiKey_Escape))
+                ImGui::CloseCurrentPopup();
+            ImGui::EndPopup();
+        }
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiContext& g = *ctx->UiContext;
+        ctx->SetRef("Test Window");
+        for (int variant = 0; variant < 3; variant++)
+        {
+            // 1. Open via a popup via button.
+            // 2. Open via a modal via button.
+            ctx->Yield();
+            ctx->LogDebug("Variant %d", variant);
+            ctx->ItemClick(variant == 0 ? "Open Popup" : "Open Modal", ImGuiMouseButton_Right);
+            ImVec2 mouse_pos = g.IO.MousePos;
+            ImGuiWindow* popup = g.NavWindow;
+            IM_CHECK(popup != NULL);
+            IM_CHECK((popup->Flags & (variant == 0 ? ImGuiWindowFlags_Popup : ImGuiWindowFlags_Modal)) != 0);
+            ImVec2 pos = popup->Pos;
+            ctx->MenuClick("File/Exit");    // Try mess with popup state by opening unrelated popup at different position
+            ctx->MouseMoveToPos(mouse_pos);
+            ctx->MouseClick(ImGuiMouseButton_Right);
+            IM_CHECK_EQ(popup->Active, true);
+            IM_CHECK((popup->Flags & (variant == 0 ? ImGuiWindowFlags_Popup : ImGuiWindowFlags_Modal)) != 0);
+            IM_CHECK_EQ(popup->Pos, pos);
+            ctx->PopupCloseOne();
+        }
+    };
+
+#if IMGUI_VERSION_NUM >= 18611
     // ## Test immediate window creation after modal opens. (#4920)
     t = IM_REGISTER_TEST(e, "window", "window_after_modal");
     t->GuiFunc = [](ImGuiTestContext* ctx)
@@ -1260,7 +1313,7 @@ void RegisterTests_Window(ImGuiTestEngine* e)
         ImGui::End();
         ImGui::End();
     };
- #endif
+#endif
 
     // ## Test that child window correctly affect contents size based on how their size was specified.
     t = IM_REGISTER_TEST(e, "window", "window_child_layout_size");
