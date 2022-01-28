@@ -153,7 +153,6 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="..\shared\imgui_utils.h" />
     <ClInclude Include="imgui_capture_tool.h" />
     <ClInclude Include="imgui_te_context.h" />
     <ClInclude Include="imgui_te_coroutine.h" />
@@ -169,7 +168,6 @@
     <ClInclude Include="thirdparty\Str\Str.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\shared\imgui_utils.cpp" />
     <ClCompile Include="imgui_capture_tool.cpp" />
     <ClCompile Include="imgui_te_context.cpp" />
     <ClCompile Include="imgui_te_coroutine.cpp" />

@@ -2,8 +2,7 @@
 // This is usable as a standalone applet or controlled by the test engine.
 // (code)
 
-// FIXME: This desperately needs rewrite.
-// FIXME: This currently depends on imgui_dev/shared/imgui_utils.cpp
+// FIXME: This probably needs a rewrite, it's a bit too complicated.
 // FIXME: GIF compression are substandard with current gif.h. May be simpler to pipe to ffmpeg?
 
 /*
@@ -30,7 +29,6 @@ Index of this file:
 #include "imgui_internal.h"
 #include "imgui_capture_tool.h"
 #include "imgui_te_utils.h"         // ImPathFindFilename, ImPathFindExtension, ImPathFixSeparatorsForCurrentOS, ImFileCreateDirectoryChain, ImOsOpenInShell
-#include "../shared/imgui_utils.h"  // ImPathFindFilename, ImPathFindExtension, ImPathFixSeparatorsForCurrentOS, ImFileCreateDirectoryChain, ImOsOpenInShell
 
 //-----------------------------------------------------------------------------
 // [SECTION] Link stb_image_write.h + gif.h

@@ -2,7 +2,6 @@
 #include "imgui.h"
 #define IMGUI_DEFINE_MATH_OPERATORS
 #include "imgui_internal.h"
-#include "shared/imgui_utils.h"
 #include "shared/IconsFontAwesome5.h"
 #include "thirdparty/imgui_markdown/imgui_markdown.h"
 #include "imgui_test_engine/imgui_te_utils.h"

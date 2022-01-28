@@ -14,7 +14,6 @@
 #define IMGUI_DEFINE_MATH_OPERATORS
 #include "imgui_internal.h"
 #include "imgui_tests.h"
-#include "shared/imgui_utils.h"
 #include "imgui_test_engine/imgui_te_engine.h"      // IM_REGISTER_TEST()
 #include "imgui_test_engine/imgui_te_context.h"
 #include "imgui_test_engine/thirdparty/Str/Str.h"

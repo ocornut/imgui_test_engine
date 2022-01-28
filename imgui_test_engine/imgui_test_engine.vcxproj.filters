@@ -4,9 +4,6 @@
     <Filter Include="imgui_test_engine">
       <UniqueIdentifier>{ea1f9e76-839d-4813-b11f-d4b3b610727a}</UniqueIdentifier>
     </Filter>
-    <Filter Include="shared">
-      <UniqueIdentifier>{3b2b4040-3edb-4cdf-b1d4-ba9f0398d799}</UniqueIdentifier>
-    </Filter>
     <Filter Include="thirdparty">
       <UniqueIdentifier>{0161f28d-4d72-482e-a06e-96bf3647391e}</UniqueIdentifier>
     </Filter>
@@ -21,9 +18,6 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\shared\imgui_utils.h">
-      <Filter>shared</Filter>
-    </ClInclude>
     <ClInclude Include="imgui_te_ui.h">
       <Filter>imgui_test_engine</Filter>
     </ClInclude>
@@ -76,9 +70,6 @@
     </ClCompile>
     <ClCompile Include="imgui_te_coroutine.cpp">
       <Filter>imgui_test_engine</Filter>
-    </ClCompile>
-    <ClCompile Include="..\shared\imgui_utils.cpp">
-      <Filter>shared</Filter>
     </ClCompile>
     <ClCompile Include="imgui_te_engine.cpp">
       <Filter>imgui_test_engine</Filter>

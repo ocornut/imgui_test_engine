@@ -65,7 +65,6 @@ static inline void DebugCrtDumpLeaks()
 #include "imgui_test_engine/imgui_te_ui.h"
 #include "imgui_test_engine/imgui_capture_tool.h"
 #include "imgui_test_engine/thirdparty/Str/Str.h"
-#include "shared/imgui_utils.h"
 
 // imgui_app
 #ifndef IMGUI_APP_IMPLEMENTATION

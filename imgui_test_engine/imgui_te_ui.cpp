@@ -10,7 +10,6 @@
 #include "imgui_te_context.h"
 #include "imgui_te_internal.h"
 #include "imgui_te_perftool.h"
-#include "shared/imgui_utils.h"
 #include "thirdparty/Str/Str.h"
 
 //-------------------------------------------------------------------------

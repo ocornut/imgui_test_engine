@@ -14,7 +14,6 @@
 #include "imgui_te_internal.h"
 #include "imgui_te_perftool.h"
 #include "imgui_te_exporters.h"
-#include "shared/imgui_utils.h"
 #include "thirdparty/Str/Str.h"
 #if _WIN32
 #ifndef WIN32_LEAN_AND_MEAN

@@ -7,7 +7,6 @@
 #include "imgui_te_exporters.h"
 #include "imgui_te_engine.h"
 #include "imgui_te_internal.h"
-#include "shared/imgui_utils.h"
 #include "thirdparty/Str/Str.h"
 
 //-------------------------------------------------------------------------

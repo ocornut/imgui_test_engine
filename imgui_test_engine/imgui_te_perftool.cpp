@@ -10,7 +10,6 @@
 #include "thirdparty/Str/Str.h"
 #include "thirdparty/implot/implot.h"
 #include "thirdparty/implot/implot_internal.h"
-#include "shared/imgui_utils.h"
 
 // For tests
 #include "imgui_te_engine.h"
