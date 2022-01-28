@@ -125,7 +125,7 @@ bool ImFileDelete(const char* filename)
     ImVector<wchar_t> buf;
     buf.resize(filename_wsize);
     ::MultiByteToWideChar(CP_UTF8, 0, filename, -1, (wchar_t*)&buf[0], filename_wsize);
-    return DeleteFileW(&buf[0]) == TRUE;
+    return ::DeleteFileW(&buf[0]) == TRUE;
 #else
     unlink(filename);
 #endif
@@ -422,10 +422,10 @@ int ImStrBase64Encode(const unsigned char* src, char* dst, int length)
 // Parsing Helpers
 //-----------------------------------------------------------------------------
 // - ImParseSplitCommandLine()
-// - ImFindIniSection()
+// - ImParseFindIniSection()
 //-----------------------------------------------------------------------------
 
-void    ImParseSplitCommandLine(int* out_argc, char const*** out_argv, const char* cmd_line)
+void    ImParseExtractArgcArgvFromCommandLine(int* out_argc, char const*** out_argv, const char* cmd_line)
 {
     size_t cmd_line_len = strlen(cmd_line);
 
@@ -862,16 +862,6 @@ void GetImGuiKeyModsPrefixStr(ImGuiKeyModFlags mod_flags, char* out_buf, size_t 
         (mod_flags & ImGuiKeyModFlags_Super) ? "Super+" : "");
 }
 
-// FIXME-TESTS: Should eventually remove.
-ImFont* FindFontByName(const char* name)
-{
-    ImGuiContext& g = *GImGui;
-    for (ImFont* font : g.IO.Fonts->Fonts)
-        if (strcmp(font->ConfigData->Name, name) == 0)
-            return font;
-    return NULL;
-}
-
 //-----------------------------------------------------------------------------
 // Str.h + InputText bindings
 //-----------------------------------------------------------------------------
@@ -988,6 +978,16 @@ bool ImGui::Splitter(const char* id, float* value_1, float* value_2, int axis, i
         splitter_bb = ImRect(window->WorkRect.Min.x, y - 1, window->WorkRect.Max.x, y + 1);
     }
     return ImGui::SplitterBehavior(splitter_bb, ImGui::GetID(id), (ImGuiAxis)axis, &v_1, &v_2, min_size_0, min_size_1, 3.0f);
+}
+
+// FIXME-TESTS: Should eventually remove.
+ImFont* ImGui::FindFontByName(const char* name)
+{
+    ImGuiContext& g = *GImGui;
+    for (ImFont* font : g.IO.Fonts->Fonts)
+        if (strcmp(font->ConfigData->Name, name) == 0)
+            return font;
+    return NULL;
 }
 
 ImGuiID TableGetHeaderID(ImGuiTable* table, const char* column, int instance_no)

@@ -100,10 +100,8 @@ jobs:
           echo '#include "../imgui/imgui_tables.cpp"'                         >> capture_tool_single_file.cpp
           echo '#include "../imgui/imgui_widgets.cpp"'                        >> capture_tool_single_file.cpp
           echo '#include "../imgui/examples/example_null/main.cpp"'           >> capture_tool_single_file.cpp
-          echo '#include "shared/imgui_utils.cpp"'                            >> capture_tool_single_file.cpp
           echo '#include "imgui_test_engine/imgui_capture_tool.cpp"'          >> capture_tool_single_file.cpp
-          echo '#define STR_IMPLEMENTATION'                                   >> capture_tool_single_file.cpp
-          echo '#include "imgui_test_engine/thirdparty/Str/Str.h"'            >> capture_tool_single_file.cpp
+          echo '#include "imgui_test_engine/imgui_te_utils.cpp"'              >> capture_tool_single_file.cpp
           g++ -o capture_tool_single_file -I. -I../imgui capture_tool_single_file.cpp -lm -lstdc++ -lpthread
           rm -f capture_tool_single_file capture_tool_single_file.*
 

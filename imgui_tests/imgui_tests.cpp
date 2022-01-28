@@ -4623,7 +4623,7 @@ void RegisterTests_Capture(ImGuiTestEngine* e)
 
         // Setup style
         // FIXME-TESTS: Ideally we'd want to be able to manipulate fonts
-        ImFont* font = FindFontByName("Roboto-Medium.ttf, 16px");
+        ImFont* font = ImGui::FindFontByName(TEST_APP_ALT_FONT_NAME);
         IM_CHECK_SILENT(font != NULL);
         ImGui::PushFont(font);
         style.FrameRounding = style.ChildRounding = 0;
@@ -4712,7 +4712,7 @@ void RegisterTests_Capture(ImGuiTestEngine* e)
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         ImGui::SetNextWindowSize(ImVec2(440, 330));
-        ImFont* font = FindFontByName("Roboto-Medium.ttf, 16px"); // FIXME-TESTS
+        ImFont* font = ImGui::FindFontByName(TEST_APP_ALT_FONT_NAME);
         IM_CHECK_SILENT(font != NULL);
         ImGui::PushFont(font);
 

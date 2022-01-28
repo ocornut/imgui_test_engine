@@ -9,14 +9,8 @@
 
 #include <math.h>   // fabsf
 #include <stdint.h> // uint64_t
-#include "imgui.h"  // ImGuiID, ImGuiKey, ImFont
-
-//-----------------------------------------------------------------------------
-// Forward Declarations
-//-----------------------------------------------------------------------------
-
-struct ImGuiTable;
-class Str;
+#include "imgui.h"  // ImGuiID, ImGuiKey
+class Str;          // Str<> from thirdparty/Str/Str.h
 
 //-----------------------------------------------------------------------------
 // Hashing Helpers
@@ -56,7 +50,7 @@ int         ImStrBase64Encode(const unsigned char* src, char* dst, int length);
 // Parsing Helpers
 //-----------------------------------------------------------------------------
 
-void        ImParseSplitCommandLine(int* out_argc, char const*** out_argv, const char* cmd_line);
+void        ImParseExtractArgcArgvFromCommandLine(int* out_argc, char const*** out_argv, const char* cmd_line);
 bool        ImParseFindIniSection(const char* ini_config, const char* header, ImVector<char>* result);
 
 //-----------------------------------------------------------------------------
@@ -122,22 +116,24 @@ void        ImOsOutputDebugString(const char* message);
 // Miscellaneous functions
 //-----------------------------------------------------------------------------
 
-ImFont*     FindFontByName(const char* name);
-
 // Inputs functions
 #if defined(__APPLE__) // FIXME: Setting IO.ConfigMacOSXBehaviors to non-default value breaks this assumption.
 #define ImGuiKeyModFlags_Shortcut   ImGuiKeyModFlags_Super
 #else
 #define ImGuiKeyModFlags_Shortcut   ImGuiKeyModFlags_Ctrl
 #endif
-void                GetImGuiKeyModsPrefixStr(ImGuiKeyModFlags mod_flags, char* out_buf, size_t out_buf_size);
+void        GetImGuiKeyModsPrefixStr(ImGuiKeyModFlags mod_flags, char* out_buf, size_t out_buf_size);
 
 // Tables functions
-ImGuiID             TableGetHeaderID(ImGuiTable* table, const char* column, int instance_no = 0);
-ImGuiID             TableGetHeaderID(ImGuiTable* table, int column_n, int instance_no = 0);
-void                TableDiscardInstanceAndSettings(ImGuiID table_id);
+struct ImGuiTable;
+ImGuiID     TableGetHeaderID(ImGuiTable* table, const char* column, int instance_no = 0);
+ImGuiID     TableGetHeaderID(ImGuiTable* table, int column_n, int instance_no = 0);
+void        TableDiscardInstanceAndSettings(ImGuiID table_id);
 
+//-----------------------------------------------------------------------------
 // Helper: maintain/calculate moving average
+//-----------------------------------------------------------------------------
+
 template<typename TYPE>
 struct ImMovingAverage
 {
@@ -155,7 +151,7 @@ struct ImMovingAverage
 };
 
 //-----------------------------------------------------------------------------
-// Simple CSV parser
+// Helper: Simple/dumb CSV parser
 //-----------------------------------------------------------------------------
 
 struct ImGuiCSVParser
@@ -181,11 +177,15 @@ struct ImGuiCSVParser
 namespace ImGui
 {
 
-// STR + InputText bindings
+// Str support for InputText()
 bool    InputText(const char* label, Str* str, ImGuiInputTextFlags flags = 0, ImGuiInputTextCallback callback = NULL, void* user_data = NULL);
 bool    InputTextWithHint(const char* label, const char* hint, Str* str, ImGuiInputTextFlags flags = 0, ImGuiInputTextCallback callback = NULL, void* user_data = NULL);
 bool    InputTextMultiline(const char* label, Str* str, const ImVec2& size = ImVec2(0, 0), ImGuiInputTextFlags flags = 0, ImGuiInputTextCallback callback = NULL, void* user_data = NULL);
+
+// Splitter
 bool    Splitter(const char* id, float* value_1, float* value_2, int axis, int anchor = 0, float min_size_0 = -1.0f, float min_size_1 = -1.0f);
 
-}
+// Misc
+ImFont* FindFontByName(const char* name);
 
+}

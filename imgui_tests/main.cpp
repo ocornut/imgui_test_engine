@@ -364,7 +364,7 @@ int main(int argc, char** argv)
     if (argc == 1)
     {
         printf("# [exe] %s\n", CMDLINE_ARGS);
-        ImParseSplitCommandLine(&argc, (const char***)&argv, CMDLINE_ARGS);
+        ImParseExtractArgcArgvFromCommandLine(&argc, (const char***)&argv, CMDLINE_ARGS);
         if (!ParseCommandLineOptions(argc, argv))
             return ImGuiTestAppErrorCode_CommandLineError;
         free(argv);
