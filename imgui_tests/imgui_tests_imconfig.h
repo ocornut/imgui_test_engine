@@ -4,14 +4,15 @@
 #ifdef _WIN32
 #define IMGUI_APP_WIN32_DX11
 #endif
-
-#define IMGUI_TEST_ENGINE_DEBUG
+//#define IMGUI_APP_SDL_GL3
+//#define IMGUI_APP_GLFW_GL3
 
 // Disable tests that are known to be broken. This mainly exist as a way to grep them.
 // We use this with #if instead of #ifdef to facilitate temporarily enabling a single broken test in the corresponding code.
 #define IMGUI_BROKEN_TESTS 0
 
-//#define IMGUI_DISABLE_OBSOLETE_FUNCTIONS
+// Disable legacy features / enforce using latest
+#define IMGUI_DISABLE_OBSOLETE_FUNCTIONS
 #define IMGUI_DISABLE_OBSOLETE_KEYIO
 
 // Enable coroutine implementation using std::thread
