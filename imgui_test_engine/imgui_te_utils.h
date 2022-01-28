@@ -8,6 +8,7 @@
 //-----------------------------------------------------------------------------
 
 #include <math.h>   // fabsf
+#include <stdint.h> // uint64_t
 #include "imgui.h"  // ImGuiID, ImGuiKey, ImFont
 
 //-----------------------------------------------------------------------------
@@ -51,6 +52,20 @@ int         ImStrBase64Encode(const unsigned char* src, char* dst, int length);
 
 void        ImParseSplitCommandLine(int* out_argc, char const*** out_argv, const char* cmd_line);
 bool        ImParseFindIniSection(const char* ini_config, const char* header, ImVector<char>* result);
+
+//-----------------------------------------------------------------------------
+// Time Helpers
+//-----------------------------------------------------------------------------
+
+uint64_t    ImTimeGetInMicroseconds();
+void        ImTimestampToISO8601(uint64_t timestamp, Str* out_date);
+
+//-----------------------------------------------------------------------------
+// Threading Helpers
+//-----------------------------------------------------------------------------
+
+void        ImThreadSleepInMilliseconds(int ms);
+void        ImThreadSetCurrentThreadDescription(const char* description);
 
 //-----------------------------------------------------------------------------
 // Operating System Helpers

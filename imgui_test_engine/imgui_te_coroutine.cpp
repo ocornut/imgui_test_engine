@@ -12,7 +12,7 @@
 
 #ifdef IMGUI_TEST_ENGINE_ENABLE_COROUTINE_STDTHREAD_IMPL
 
-#include "shared/imgui_utils.h"
+#include "imgui_te_utils.h"
 #include "thirdparty/Str/Str.h"
 #include <thread>
 #include <mutex>

@@ -1,7 +1,6 @@
 #pragma once
 
 #include <stdlib.h>
-#include <stdint.h> // uint64_t
 
 class Str;
 struct ImVec2;
@@ -26,19 +25,9 @@ struct ImBuildInfo
 // Functions
 //-----------------------------------------------------------------------------
 
-// Time helpers
-uint64_t            ImTimeGetInMicroseconds();
-void                ImTimestampToISO8601(uint64_t timestamp, Str* out_date);
-
-// Threading helpers
-void                ImThreadSleepInMilliseconds(int ms);
-void                ImThreadSetCurrentThreadDescription(const char* description);
-
 // Build Info helpers
 const ImBuildInfo&  ImBuildGetCompilationInfo();
 bool                ImBuildGetGitBranchName(const char* git_repo_path, Str* branch_name);
 
-// Maths/Geometry helpers
-void                ImGeomGenerateRandomConvexShape(ImVec2* points, int points_count, ImVec2 shape_center, float shape_size, unsigned int poly_seed);
 
 //-----------------------------------------------------------------------------
