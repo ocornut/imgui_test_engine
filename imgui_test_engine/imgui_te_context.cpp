@@ -3159,12 +3159,12 @@ void    ImGuiTestContext::PerfCapture(const char* category, const char* test_nam
     double dt_ref_ms = PerfRefDt * 1000;
     double dt_delta_ms = (dt_curr - PerfRefDt) * 1000;
 
-    const ImBuildInfo& build_info = ImBuildGetCompilationInfo();
+    const ImBuildInfo* build_info = ImBuildGetCompilationInfo();
 
     // Display results
     // FIXME-TESTS: Would be nice if we could submit a custom marker (e.g. branch/feature name)
     LogInfo("[PERF] Conditions: Stress x%d, %s, %s, %s, %s, %s",
-        PerfStressAmount, build_info.Type, build_info.Cpu, build_info.OS, build_info.Compiler, build_info.Date);
+        PerfStressAmount, build_info->Type, build_info->Cpu, build_info->OS, build_info->Compiler, build_info->Date);
     LogInfo("[PERF] Result: %+6.3f ms (from ref %+6.3f)", dt_delta_ms, dt_ref_ms);
 
     ImGuiPerfToolEntry entry;
@@ -3174,11 +3174,11 @@ void    ImGuiTestContext::PerfCapture(const char* category, const char* test_nam
     entry.DtDeltaMs = dt_delta_ms;
     entry.PerfStressAmount = PerfStressAmount;
     entry.GitBranchName = EngineIO->GitBranchName;
-    entry.BuildType = build_info.Type;
-    entry.Cpu = build_info.Cpu;
-    entry.OS = build_info.OS;
-    entry.Compiler = build_info.Compiler;
-    entry.Date = build_info.Date;
+    entry.BuildType = build_info->Type;
+    entry.Cpu = build_info->Cpu;
+    entry.OS = build_info->OS;
+    entry.Compiler = build_info->Compiler;
+    entry.Date = build_info->Date;
     ImGuiTestEngine_PerfToolAppendToCSV(Engine->PerfTool, &entry, csv_file);
 
     // Disable the "Success" message

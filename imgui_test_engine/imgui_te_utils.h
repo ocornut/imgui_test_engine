@@ -19,6 +19,12 @@ struct ImGuiTable;
 class Str;
 
 //-----------------------------------------------------------------------------
+// Hashing Helpers
+//-----------------------------------------------------------------------------
+
+ImGuiID     ImHashDecoratedPath(const char* str, const char* str_end = NULL, ImGuiID seed = 0);
+
+//-----------------------------------------------------------------------------
 // File/Directory Helpers
 //-----------------------------------------------------------------------------
 
@@ -68,6 +74,24 @@ void        ImThreadSleepInMilliseconds(int ms);
 void        ImThreadSetCurrentThreadDescription(const char* description);
 
 //-----------------------------------------------------------------------------
+// Build Info helpers
+//-----------------------------------------------------------------------------
+
+// All the pointers are to persistent literals
+struct ImBuildInfo
+{
+    const char*     Type = "";
+    const char*     Cpu = "";
+    const char*     OS = "";
+    const char*     Compiler = "";
+    char            Date[32];       // "YYYY-MM-DD"
+    const char*     Time = "";
+};
+
+const ImBuildInfo*  ImBuildGetCompilationInfo();
+bool                ImBuildGetGitBranchName(const char* git_repo_path, Str* branch_name);
+
+//-----------------------------------------------------------------------------
 // Operating System Helpers
 //-----------------------------------------------------------------------------
 
@@ -88,17 +112,17 @@ enum ImOsConsoleTextColor
     ImOsConsoleTextColor_BrightYellow
 };
 
-bool                ImOsCreateProcess(const char* cmd_line);
-void                ImOsOpenInShell(const char* path);
-void                ImOsConsoleSetTextColor(ImOsConsoleStream stream, ImOsConsoleTextColor color);
-bool                ImOsIsDebuggerPresent();
-void                ImOsOutputDebugString(const char* message);
+bool        ImOsCreateProcess(const char* cmd_line);
+void        ImOsOpenInShell(const char* path);
+void        ImOsConsoleSetTextColor(ImOsConsoleStream stream, ImOsConsoleTextColor color);
+bool        ImOsIsDebuggerPresent();
+void        ImOsOutputDebugString(const char* message);
 
 //-----------------------------------------------------------------------------
-
 // Miscellaneous functions
-ImGuiID             ImHashDecoratedPath(const char* str, const char* str_end = NULL, ImGuiID seed = 0);
-ImFont*             FindFontByName(const char* name);
+//-----------------------------------------------------------------------------
+
+ImFont*     FindFontByName(const char* name);
 
 // Inputs functions
 #if defined(__APPLE__) // FIXME: Setting IO.ConfigMacOSXBehaviors to non-default value breaks this assumption.
