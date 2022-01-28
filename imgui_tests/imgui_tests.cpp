@@ -1330,10 +1330,10 @@ void RegisterTests_Window(ImGuiTestEngine* e)
         IM_CHECK_NO_RET(scroll_y == scroll_max_y);
 
         float expected_size_contents_y = 100 * ImGui::GetTextLineHeightWithSpacing() - style.ItemSpacing.y; // Newer definition of SizeContents as per 1.71
-        IM_CHECK(ImFloatEq(window->ContentSize.y, expected_size_contents_y));
+        IM_CHECK_FLOAT_EQ_EPS(window->ContentSize.y, expected_size_contents_y);
 
         float expected_scroll_max_y = expected_size_contents_y + window->WindowPadding.y * 2.0f - window->InnerRect.GetHeight();
-        IM_CHECK(ImFloatEq(scroll_max_y, expected_scroll_max_y));
+        IM_CHECK_FLOAT_EQ_EPS(scroll_max_y, expected_scroll_max_y);
     };
 
     // ## Test that ScrollMax values are correctly zero (we had/have bugs where they are seldomly == BorderSize)

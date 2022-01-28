@@ -1,36 +1,39 @@
 #pragma once
 
+//-----------------------------------------------------------------------------
+// Includes
+//-----------------------------------------------------------------------------
+
 #include <math.h>           // fabsf
 #include "imgui.h"          // ImGuiID, ImGuiKey, ImFont
 
-// FIXME: Setting IO.ConfigMacOSXBehaviors to non-default value breaks this assumption.
-#if defined(__APPLE__)
-#define ImGuiKeyModFlags_Shortcut   ImGuiKeyModFlags_Super
-#else
-#define ImGuiKeyModFlags_Shortcut   ImGuiKeyModFlags_Ctrl
-#endif
-
-enum ImGuiKeyState
-{
-    ImGuiKeyState_Unknown,
-    ImGuiKeyState_Up,       // Released
-    ImGuiKeyState_Down      // Pressed/held
-};
+//-----------------------------------------------------------------------------
+// Forward Declarations
+//-----------------------------------------------------------------------------
 
 struct ImGuiTable;
 class Str;
 
-// Maths helpers
-static inline bool  ImFloatEq(float f1, float f2) { float d = f2 - f1; return fabsf(d) <= 1.192092896e-07F; }
+//-----------------------------------------------------------------------------
+// Helpers
+//-----------------------------------------------------------------------------
 
 // Miscellaneous functions
 ImGuiID             ImHashDecoratedPath(const char* str, const char* str_end = NULL, ImGuiID seed = 0);
-void                GetImGuiKeyModsPrefixStr(ImGuiKeyModFlags mod_flags, char* out_buf, size_t out_buf_size);
 ImFont*             FindFontByName(const char* name);
 void                ImStrReplace(Str* s, const char* find, const char* repl);
 void                ImStrXmlEscape(Str* s);
 int                 ImBase64Encode(const unsigned char* src, char* dst, int length);
 
+// Inputs functions
+#if defined(__APPLE__) // FIXME: Setting IO.ConfigMacOSXBehaviors to non-default value breaks this assumption.
+#define ImGuiKeyModFlags_Shortcut   ImGuiKeyModFlags_Super
+#else
+#define ImGuiKeyModFlags_Shortcut   ImGuiKeyModFlags_Ctrl
+#endif
+void                GetImGuiKeyModsPrefixStr(ImGuiKeyModFlags mod_flags, char* out_buf, size_t out_buf_size);
+
+// Tables functions
 ImGuiID             TableGetHeaderID(ImGuiTable* table, const char* column, int instance_no = 0);
 ImGuiID             TableGetHeaderID(ImGuiTable* table, int column_n, int instance_no = 0);
 void                TableDiscardInstanceAndSettings(ImGuiID table_id);
@@ -73,7 +76,7 @@ struct ImGuiCSVParser
 };
 
 //-----------------------------------------------------------------------------
-// Misc ImGui extensions
+// Misc Dear ImGui extensions
 //-----------------------------------------------------------------------------
 
 namespace ImGui

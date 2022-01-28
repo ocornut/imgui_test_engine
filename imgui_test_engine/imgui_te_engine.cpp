@@ -550,15 +550,15 @@ void ImGuiTestEngine_ApplyInputToImGuiContext(ImGuiTestEngine* engine)
                     {
 #if IMGUI_VERSION_NUM >= 18614
                         if (input.KeyMods & ImGuiKeyModFlags_Ctrl)
-                            io.AddKeyEvent(ImGuiKey_ModCtrl, input.State == ImGuiKeyState_Down);
+                            io.AddKeyEvent(ImGuiKey_ModCtrl, input.Down);
                         if (input.KeyMods & ImGuiKeyModFlags_Shift)
-                            io.AddKeyEvent(ImGuiKey_ModShift, input.State == ImGuiKeyState_Down);
+                            io.AddKeyEvent(ImGuiKey_ModShift, input.Down);
                         if (input.KeyMods & ImGuiKeyModFlags_Alt)
-                            io.AddKeyEvent(ImGuiKey_ModAlt, input.State == ImGuiKeyState_Down);
+                            io.AddKeyEvent(ImGuiKey_ModAlt, input.Down);
                         if (input.KeyMods & ImGuiKeyModFlags_Super)
-                            io.AddKeyEvent(ImGuiKey_ModSuper, input.State == ImGuiKeyState_Down);
+                            io.AddKeyEvent(ImGuiKey_ModSuper, input.Down);
 #else
-                        if (input.State == ImGuiKeyState_Down)
+                        if (input.Down)
                             engine->Inputs.KeyMods |= input.KeyMods;
                         else
                             engine->Inputs.KeyMods &= ~input.KeyMods;
@@ -567,7 +567,7 @@ void ImGuiTestEngine_ApplyInputToImGuiContext(ImGuiTestEngine* engine)
                     }
 
                     if (input.Key != ImGuiKey_COUNT)
-                        io.AddKeyEvent(input.Key, (input.State == ImGuiKeyState_Down));
+                        io.AddKeyEvent(input.Key, input.Down);
                     break;
                 }
                 case ImGuiTestInputType_Char:

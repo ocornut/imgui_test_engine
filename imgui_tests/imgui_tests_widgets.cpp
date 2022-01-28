@@ -470,12 +470,12 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ctx->ItemInput("Color##Y");
         IM_CHECK_EQ(ctx->UiContext->ActiveId, ctx->GetID("Color##Y"));
         ctx->KeyCharsAppend("123");
-        IM_CHECK(ImFloatEq(vars.Color1.y, 123.0f / 255.0f));
+        IM_CHECK_FLOAT_EQ_EPS(vars.Color1.y, 123.0f / 255.0f);
         ctx->KeyPress(ImGuiKey_Tab);
         ctx->KeyCharsAppendEnter("200");
-        IM_CHECK(ImFloatEq(vars.Color1.x,   0.0f / 255.0f));
-        IM_CHECK(ImFloatEq(vars.Color1.y, 123.0f / 255.0f));
-        IM_CHECK(ImFloatEq(vars.Color1.z, 200.0f / 255.0f));
+        IM_CHECK_FLOAT_EQ_EPS(vars.Color1.x,   0.0f / 255.0f);
+        IM_CHECK_FLOAT_EQ_EPS(vars.Color1.y, 123.0f / 255.0f);
+        IM_CHECK_FLOAT_EQ_EPS(vars.Color1.z, 200.0f / 255.0f);
     };
 
     // ## Test Sliders and Drags clamping values

@@ -66,6 +66,7 @@ enum ImGuiTestInputType
     ImGuiTestInputType_Char
 };
 
+// FIXME: May want to refactor/simplify now that core imgui is using its own input queue
 struct ImGuiTestInput
 {
     ImGuiTestInputType      Type = ImGuiTestInputType_None;
@@ -73,15 +74,15 @@ struct ImGuiTestInput
     ImGuiKeyModFlags        KeyMods = ImGuiKeyModFlags_None;
     ImGuiNavInput           NavInput = ImGuiNavInput_COUNT;
     ImWchar                 Char = 0;
-    ImGuiKeyState           State = ImGuiKeyState_Unknown;
+    bool                    Down = false;
 
-    static ImGuiTestInput   FromKey(ImGuiKey v, ImGuiKeyState state, ImGuiKeyModFlags mods = ImGuiKeyModFlags_None)
+    static ImGuiTestInput   FromKey(ImGuiKey v, bool down, ImGuiKeyModFlags mods = ImGuiKeyModFlags_None)
     {
         ImGuiTestInput inp;
         inp.Type = ImGuiTestInputType_Key;
         inp.Key = v;
         inp.KeyMods = mods;
-        inp.State = state;
+        inp.Down = down;
         return inp;
     }
 
