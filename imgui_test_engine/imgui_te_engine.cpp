@@ -548,11 +548,22 @@ void ImGuiTestEngine_ApplyInputToImGuiContext(ImGuiTestEngine* engine)
                 {
                     if (input.KeyMods != 0x00)
                     {
+#if IMGUI_VERSION_NUM >= 18614
+                        if (input.KeyMods & ImGuiKeyModFlags_Ctrl)
+                            io.AddKeyEvent(ImGuiKey_ModCtrl, input.State == ImGuiKeyState_Down);
+                        if (input.KeyMods & ImGuiKeyModFlags_Shift)
+                            io.AddKeyEvent(ImGuiKey_ModShift, input.State == ImGuiKeyState_Down);
+                        if (input.KeyMods & ImGuiKeyModFlags_Alt)
+                            io.AddKeyEvent(ImGuiKey_ModAlt, input.State == ImGuiKeyState_Down);
+                        if (input.KeyMods & ImGuiKeyModFlags_Super)
+                            io.AddKeyEvent(ImGuiKey_ModSuper, input.State == ImGuiKeyState_Down);
+#else
                         if (input.State == ImGuiKeyState_Down)
                             engine->Inputs.KeyMods |= input.KeyMods;
                         else
                             engine->Inputs.KeyMods &= ~input.KeyMods;
                         io.AddKeyModsEvent(engine->Inputs.KeyMods);
+#endif
                     }
 
                     if (input.Key != ImGuiKey_COUNT)
