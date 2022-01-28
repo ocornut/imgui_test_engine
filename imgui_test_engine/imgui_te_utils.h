@@ -15,8 +15,41 @@ struct ImGuiTable;
 class Str;
 
 //-----------------------------------------------------------------------------
-// Helpers
+// File/Directory Helpers
 //-----------------------------------------------------------------------------
+
+bool    ImFileExist(const char* filename);
+bool    ImFileDelete(const char* filename);
+bool    ImFileCreateDirectoryChain(const char* path, const char* path_end = NULL);
+bool    ImFileFindInParents(const char* sub_path, int max_parent_count, Str* output);
+bool    ImFileLoadSourceBlurb(const char* filename, int line_no_start, int line_no_end, ImGuiTextBuffer* out_buf);
+
+//-----------------------------------------------------------------------------
+// Operating System Helpers
+//-----------------------------------------------------------------------------
+
+enum ImOsConsoleStream
+{
+    ImOsConsoleStream_StandardOutput,
+    ImOsConsoleStream_StandardError
+};
+
+enum ImOsConsoleTextColor
+{
+    ImOsConsoleTextColor_Black,
+    ImOsConsoleTextColor_White,
+    ImOsConsoleTextColor_BrightWhite,
+    ImOsConsoleTextColor_BrightRed,
+    ImOsConsoleTextColor_BrightGreen,
+    ImOsConsoleTextColor_BrightBlue,
+    ImOsConsoleTextColor_BrightYellow
+};
+
+bool                ImOsCreateProcess(const char* cmd_line);
+void                ImOsOpenInShell(const char* path);
+void                ImOsConsoleSetTextColor(ImOsConsoleStream stream, ImOsConsoleTextColor color);
+bool                ImOsIsDebuggerPresent();
+void                ImOsOutputDebugString(const char* message);
 
 // Miscellaneous functions
 ImGuiID             ImHashDecoratedPath(const char* str, const char* str_end = NULL, ImGuiID seed = 0);

@@ -12,23 +12,6 @@ template<typename T> struct ImVector;
 // Data types
 //-----------------------------------------------------------------------------
 
-enum ImOsConsoleStream
-{
-    ImOsConsoleStream_StandardOutput,
-    ImOsConsoleStream_StandardError
-};
-
-enum ImOsConsoleTextColor
-{
-    ImOsConsoleTextColor_Black,
-    ImOsConsoleTextColor_White,
-    ImOsConsoleTextColor_BrightWhite,
-    ImOsConsoleTextColor_BrightRed,
-    ImOsConsoleTextColor_BrightGreen,
-    ImOsConsoleTextColor_BrightBlue,
-    ImOsConsoleTextColor_BrightYellow
-};
-
 struct ImBuildInfo
 {
     const char*     Type = "";
@@ -42,20 +25,6 @@ struct ImBuildInfo
 //-----------------------------------------------------------------------------
 // Functions
 //-----------------------------------------------------------------------------
-
-// OS helpers
-bool                ImOsCreateProcess(const char* cmd_line);
-void                ImOsOpenInShell(const char* path);
-void                ImOsConsoleSetTextColor(ImOsConsoleStream stream, ImOsConsoleTextColor color);
-bool                ImOsIsDebuggerPresent();
-void                ImOsOutputDebugString(const char* message);
-
-// File/Directory helpers
-bool                ImFileExist(const char* filename);
-bool                ImFileDelete(const char* filename);
-bool                ImFileCreateDirectoryChain(const char* path, const char* path_end = NULL);
-bool                ImFileFindInParents(const char* sub_path, int max_parent_count, Str* output);
-bool                ImFileLoadSourceBlurb(const char* filename, int line_no_start, int line_no_end, ImGuiTextBuffer* out_buf);
 
 // String helpers
 const char*         ImStrchrRangeWithEscaping(const char* str, const char* str_end, char find_c);
