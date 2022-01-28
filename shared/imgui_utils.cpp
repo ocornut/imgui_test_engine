@@ -25,82 +25,10 @@
 #include <chrono>
 #include <thread>
 
-
-//---------------------------
-
-//-----------------------------------------------------------------------------
-// String handling helpers (strictly string manipulation!)
-//-----------------------------------------------------------------------------
-
-const char* ImStrchrRangeWithEscaping(const char* str, const char* str_end, char find_c)
-{
-    while (str < str_end)
-    {
-        const char c = *str;
-        if (c == '\\')
-        {
-            str += 2;
-            continue;
-        }
-        if (c == find_c)
-            return str;
-        str++;
-    }
-    return NULL;
-}
-
 //-----------------------------------------------------------------------------
 // Path handling helpers (strictly string manipulation!)
 //-----------------------------------------------------------------------------
-// - ImPathFindFilename()
-// - ImPathFindFileExt()
-// - ImPathFixSeparatorsForCurrentOS()
-//-----------------------------------------------------------------------------
 
-const char* ImPathFindFilename(const char* path, const char* path_end)
-{
-    if (!path_end)
-        path_end = path + strlen(path);
-    const char* p = path_end;
-    while (p > path)
-    {
-        if (p[-1] == '/' || p[-1] == '\\')
-            break;
-        p--;
-    }
-    return p;
-}
-
-// "folder/filename" -> return pointer to "" (end of string)
-// "folder/filename.png" -> return pointer to ".png"
-// "folder/filename.png.bak" -> return pointer to ".png.bak"
-const char* ImPathFindExtension(const char* path, const char* path_end)
-{
-    if (!path_end)
-        path_end = path + strlen(path);
-    const char* filename = ImPathFindFilename(path, path_end);
-    const char* p = filename;
-    while (p < path_end)
-    {
-        if (p[0] == '.')
-            break;
-        p++;
-    }
-    return p;
-}
-
-void ImPathFixSeparatorsForCurrentOS(char* buf)
-{
-#ifdef _WIN32
-    for (char* p = buf; *p != 0; p++)
-        if (*p == '/')
-            *p = '\\';
-#else
-    for (char* p = buf; *p != 0; p++)
-        if (*p == '\\')
-            *p = '/';
-#endif
-}
 
 //-----------------------------------------------------------------------------
 // Time helpers
@@ -213,91 +141,6 @@ void ImThreadSetCurrentThreadDescription(const char* description)
 //-----------------------------------------------------------------------------
 // Parsing helpers
 //-----------------------------------------------------------------------------
-// - ImParseSplitCommandLine()
-// - ImFindIniSection()
-//-----------------------------------------------------------------------------
-
-void    ImParseSplitCommandLine(int* out_argc, char const*** out_argv, const char* cmd_line)
-{
-    size_t cmd_line_len = strlen(cmd_line);
-
-    int n = 1;
-    {
-        const char* p = cmd_line;
-        while (*p != 0)
-        {
-            const char* arg = p;
-            while (*arg == ' ')
-                arg++;
-            const char* arg_end = strchr(arg, ' ');
-            if (arg_end == NULL)
-                p = arg_end = cmd_line + cmd_line_len;
-            else
-                p = arg_end + 1;
-            n++;
-        }
-    }
-
-    int argc = n;
-    char const** argv = (char const**)malloc(sizeof(char*) * ((size_t)argc + 1) + (cmd_line_len + 1));
-    IM_ASSERT(argv != NULL);
-    char* cmd_line_dup = (char*)argv + sizeof(char*) * ((size_t)argc + 1);
-    strcpy(cmd_line_dup, cmd_line);
-
-    {
-        argv[0] = "main.exe";
-        argv[argc] = NULL;
-
-        char* p = cmd_line_dup;
-        for (n = 1; n < argc; n++)
-        {
-            char* arg = p;
-            char* arg_end = strchr(arg, ' ');
-            if (arg_end == NULL)
-                p = arg_end = cmd_line_dup + cmd_line_len;
-            else
-                p = arg_end + 1;
-            argv[n] = arg;
-            arg_end[0] = 0;
-        }
-    }
-
-    *out_argc = argc;
-    *out_argv = argv;
-}
-
-bool ImParseFindIniSection(const char* ini_config, const char* header, ImVector<char>* result)
-{
-    IM_ASSERT(ini_config != NULL);
-    IM_ASSERT(header != NULL);
-    IM_ASSERT(result != NULL);
-
-    size_t ini_len = strlen(ini_config);
-    size_t header_len = strlen(header);
-
-    IM_ASSERT(header_len > 0);
-
-    if (ini_len == 0)
-        return false;
-
-    const char* section_start = strstr(ini_config, header);
-    if (section_start == NULL)
-        return false;
-
-    const char* section_end = strstr(section_start + header_len, "\n[");
-    if (section_end == NULL)
-        section_end = section_start + ini_len;
-
-    // "\n[" matches next header start on all platforms, but it cuts new line marker in half on windows.
-    if (*(section_end - 1) == '\r')
-        --section_end;
-
-    size_t section_len = (size_t)(section_end - section_start);
-    result->resize((int)section_len + 1);
-    ImStrncpy(result->Data, section_start, section_len);
-
-    return true;
-}
 
 //-----------------------------------------------------------------------------
 // Build info helpers

@@ -1,11 +1,14 @@
+// dear imgui
+// (test engine: helpers/utilities. don't use this as a general purpose library)
+
 #pragma once
 
 //-----------------------------------------------------------------------------
 // Includes
 //-----------------------------------------------------------------------------
 
-#include <math.h>           // fabsf
-#include "imgui.h"          // ImGuiID, ImGuiKey, ImFont
+#include <math.h>   // fabsf
+#include "imgui.h"  // ImGuiID, ImGuiKey, ImFont
 
 //-----------------------------------------------------------------------------
 // Forward Declarations
@@ -18,11 +21,36 @@ class Str;
 // File/Directory Helpers
 //-----------------------------------------------------------------------------
 
-bool    ImFileExist(const char* filename);
-bool    ImFileDelete(const char* filename);
-bool    ImFileCreateDirectoryChain(const char* path, const char* path_end = NULL);
-bool    ImFileFindInParents(const char* sub_path, int max_parent_count, Str* output);
-bool    ImFileLoadSourceBlurb(const char* filename, int line_no_start, int line_no_end, ImGuiTextBuffer* out_buf);
+bool        ImFileExist(const char* filename);
+bool        ImFileDelete(const char* filename);
+bool        ImFileCreateDirectoryChain(const char* path, const char* path_end = NULL);
+bool        ImFileFindInParents(const char* sub_path, int max_parent_count, Str* output);
+bool        ImFileLoadSourceBlurb(const char* filename, int line_no_start, int line_no_end, ImGuiTextBuffer* out_buf);
+
+//-----------------------------------------------------------------------------
+// Path Helpers
+//-----------------------------------------------------------------------------
+
+// Those are strictly string manipulation functions
+const char* ImPathFindFilename(const char* path, const char* path_end = NULL);      // Return value always between path and path_end
+const char* ImPathFindExtension(const char* path, const char* path_end = NULL);     // Return value always between path and path_end
+void        ImPathFixSeparatorsForCurrentOS(char* buf);
+
+//-----------------------------------------------------------------------------
+// String Helpers
+//-----------------------------------------------------------------------------
+
+void        ImStrReplace(Str* s, const char* find, const char* repl);
+const char* ImStrchrRangeWithEscaping(const char* str, const char* str_end, char find_c);
+void        ImStrXmlEscape(Str* s);
+int         ImStrBase64Encode(const unsigned char* src, char* dst, int length);
+
+//-----------------------------------------------------------------------------
+// Parsing Helpers
+//-----------------------------------------------------------------------------
+
+void        ImParseSplitCommandLine(int* out_argc, char const*** out_argv, const char* cmd_line);
+bool        ImParseFindIniSection(const char* ini_config, const char* header, ImVector<char>* result);
 
 //-----------------------------------------------------------------------------
 // Operating System Helpers
@@ -51,12 +79,11 @@ void                ImOsConsoleSetTextColor(ImOsConsoleStream stream, ImOsConsol
 bool                ImOsIsDebuggerPresent();
 void                ImOsOutputDebugString(const char* message);
 
+//-----------------------------------------------------------------------------
+
 // Miscellaneous functions
 ImGuiID             ImHashDecoratedPath(const char* str, const char* str_end = NULL, ImGuiID seed = 0);
 ImFont*             FindFontByName(const char* name);
-void                ImStrReplace(Str* s, const char* find, const char* repl);
-void                ImStrXmlEscape(Str* s);
-int                 ImBase64Encode(const unsigned char* src, char* dst, int length);
 
 // Inputs functions
 #if defined(__APPLE__) // FIXME: Setting IO.ConfigMacOSXBehaviors to non-default value breaks this assumption.

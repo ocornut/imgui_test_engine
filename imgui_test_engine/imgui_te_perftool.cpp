@@ -1589,7 +1589,7 @@ bool ImGuiPerfTool::SaveReport(const char* file_name, const char* image_file)
             rewind(fp_img);
             fread(image_buffer.Data, 1, image_buffer.Size, fp_img);
             fclose(fp_img);
-            int len = ImBase64Encode((unsigned char*)image_buffer.Data, base64_buffer.Data, image_buffer.Size);
+            int len = ImStrBase64Encode((unsigned char*)image_buffer.Data, base64_buffer.Data, image_buffer.Size);
             base64_buffer.Data[len] = 0;
             fprintf(fp, "![](data:image/png;base64,%s)\n\n", base64_buffer.Data);
         }

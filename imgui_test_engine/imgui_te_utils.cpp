@@ -1,3 +1,6 @@
+// dear imgui
+// (test engine: helpers/utilities. don't use this as a general purpose library)
+
 #if defined(_MSC_VER) && !defined(_CRT_SECURE_NO_WARNINGS)
 #define _CRT_SECURE_NO_WARNINGS
 #endif
@@ -158,6 +161,282 @@ bool ImFileLoadSourceBlurb(const char* file_name, int line_no_start, int line_no
         out_buf->clear();
 
     ImGui::MemFree(file_begin);
+    return true;
+}
+
+//-----------------------------------------------------------------------------
+// Path Helpers
+//-----------------------------------------------------------------------------
+// - ImPathFindFilename()
+// - ImPathFindFileExt()
+// - ImPathFixSeparatorsForCurrentOS()
+//-----------------------------------------------------------------------------
+
+const char* ImPathFindFilename(const char* path, const char* path_end)
+{
+    if (!path_end)
+        path_end = path + strlen(path);
+    const char* p = path_end;
+    while (p > path)
+    {
+        if (p[-1] == '/' || p[-1] == '\\')
+            break;
+        p--;
+    }
+    return p;
+}
+
+// "folder/filename" -> return pointer to "" (end of string)
+// "folder/filename.png" -> return pointer to ".png"
+// "folder/filename.png.bak" -> return pointer to ".png.bak"
+const char* ImPathFindExtension(const char* path, const char* path_end)
+{
+    if (!path_end)
+        path_end = path + strlen(path);
+    const char* filename = ImPathFindFilename(path, path_end);
+    const char* p = filename;
+    while (p < path_end)
+    {
+        if (p[0] == '.')
+            break;
+        p++;
+    }
+    return p;
+}
+
+void ImPathFixSeparatorsForCurrentOS(char* buf)
+{
+#ifdef _WIN32
+    for (char* p = buf; *p != 0; p++)
+        if (*p == '/')
+            *p = '\\';
+#else
+    for (char* p = buf; *p != 0; p++)
+        if (*p == '\\')
+            *p = '/';
+#endif
+}
+
+//-----------------------------------------------------------------------------
+// String Helpers
+//-----------------------------------------------------------------------------
+
+static const char* ImStrStr(const char* haystack, size_t hlen, const char* needle, int nlen)
+{
+    const char* end = haystack + hlen;
+    const char* p = haystack;
+    while ((p = (const char*)memchr(p, *needle, end - p)) != NULL)
+    {
+        if (end - p < nlen)
+            return NULL;
+        if (memcmp(p, needle, nlen) == 0)
+            return p;
+        p++;
+    }
+    return NULL;
+}
+
+void ImStrReplace(Str* s, const char* find, const char* repl)
+{
+    IM_ASSERT(find != NULL && *find);
+    IM_ASSERT(repl != NULL);
+    int find_len = (int)strlen(find);
+    int repl_len = (int)strlen(repl);
+    int repl_diff = repl_len - find_len;
+
+    // Estimate required length of new buffer if string size increases.
+    int need_capacity = s->capacity();
+    int num_matches = INT_MAX;
+    if (repl_diff > 0)
+    {
+        num_matches = 0;
+        need_capacity = s->length() + 1;
+        for (char* p = s->c_str(), *end = s->c_str() + s->length(); p != NULL && p < end;)
+        {
+            p = (char*)ImStrStr(p, end - p, find, find_len);
+            if (p)
+            {
+                need_capacity += repl_diff;
+                p += find_len;
+                num_matches++;
+            }
+        }
+    }
+
+    if (num_matches == 0)
+        return;
+
+    const char* not_owned_data = s->owned() ? NULL : s->c_str();
+    if (!s->owned() || need_capacity > s->capacity())
+        s->reserve(need_capacity);
+    if (not_owned_data != NULL)
+        s->set(not_owned_data);
+
+    // Replace data.
+    for (char* p = s->c_str(), *end = s->c_str() + s->length(); p != NULL && p < end && num_matches--;)
+    {
+        p = (char*)ImStrStr(p, end - p, find, find_len);
+        if (p)
+        {
+            memmove(p + repl_len, p + find_len, end - p - find_len + 1);
+            memcpy(p, repl, repl_len);
+            p += repl_len;
+            end += repl_diff;
+        }
+    }
+}
+
+const char* ImStrchrRangeWithEscaping(const char* str, const char* str_end, char find_c)
+{
+    while (str < str_end)
+    {
+        const char c = *str;
+        if (c == '\\')
+        {
+            str += 2;
+            continue;
+        }
+        if (c == find_c)
+            return str;
+        str++;
+    }
+    return NULL;
+}
+
+void ImStrXmlEscape(Str* s)
+{
+    ImStrReplace(s, "<", "&lt;");
+    ImStrReplace(s, ">", "&gt;");
+    ImStrReplace(s, "\"", "&quot;");
+}
+
+// Based on code from https://github.com/EddieBreeg/C_b64 by @EddieBreeg.
+int ImStrBase64Encode(const unsigned char* src, char* dst, int length)
+{
+    static const char* b64Table = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
+    int i, j, k, l, encoded_len = 0;
+
+    while (length > 0)
+    {
+        switch (length)
+        {
+        case 1:
+            i = src[0] >> 2;
+            j = (src[0] & 3) << 4;
+            k = 64;
+            l = 64;
+            break;
+        case 2:
+            i = src[0] >> 2;
+            j = ((src[0] & 3) << 4) | (src[1] >> 4);
+            k = (src[1] & 15) << 2;
+            l = 64;
+            break;
+        default:
+            i = src[0] >> 2;
+            j = ((src[0] & 3) << 4) | (src[1] >> 4);
+            k = ((src[1] & 0xf) << 2) | (src[2] >> 6 & 3);
+            l = src[2] & 0x3f;
+            break;
+        }
+        dst[0] = b64Table[i];
+        dst[1] = b64Table[j];
+        dst[2] = b64Table[k];
+        dst[3] = b64Table[l];
+        src += 3;
+        dst += 4;
+        length -= 3;
+        encoded_len += 4;
+    }
+    return encoded_len;
+}
+
+//-----------------------------------------------------------------------------
+// Parsing Helpers
+//-----------------------------------------------------------------------------
+// - ImParseSplitCommandLine()
+// - ImFindIniSection()
+//-----------------------------------------------------------------------------
+
+void    ImParseSplitCommandLine(int* out_argc, char const*** out_argv, const char* cmd_line)
+{
+    size_t cmd_line_len = strlen(cmd_line);
+
+    int n = 1;
+    {
+        const char* p = cmd_line;
+        while (*p != 0)
+        {
+            const char* arg = p;
+            while (*arg == ' ')
+                arg++;
+            const char* arg_end = strchr(arg, ' ');
+            if (arg_end == NULL)
+                p = arg_end = cmd_line + cmd_line_len;
+            else
+                p = arg_end + 1;
+            n++;
+        }
+    }
+
+    int argc = n;
+    char const** argv = (char const**)malloc(sizeof(char*) * ((size_t)argc + 1) + (cmd_line_len + 1));
+    IM_ASSERT(argv != NULL);
+    char* cmd_line_dup = (char*)argv + sizeof(char*) * ((size_t)argc + 1);
+    strcpy(cmd_line_dup, cmd_line);
+
+    {
+        argv[0] = "main.exe";
+        argv[argc] = NULL;
+
+        char* p = cmd_line_dup;
+        for (n = 1; n < argc; n++)
+        {
+            char* arg = p;
+            char* arg_end = strchr(arg, ' ');
+            if (arg_end == NULL)
+                p = arg_end = cmd_line_dup + cmd_line_len;
+            else
+                p = arg_end + 1;
+            argv[n] = arg;
+            arg_end[0] = 0;
+        }
+    }
+
+    *out_argc = argc;
+    *out_argv = argv;
+}
+
+bool    ImParseFindIniSection(const char* ini_config, const char* header, ImVector<char>* result)
+{
+    IM_ASSERT(ini_config != NULL);
+    IM_ASSERT(header != NULL);
+    IM_ASSERT(result != NULL);
+
+    size_t ini_len = strlen(ini_config);
+    size_t header_len = strlen(header);
+
+    IM_ASSERT(header_len > 0);
+
+    if (ini_len == 0)
+        return false;
+
+    const char* section_start = strstr(ini_config, header);
+    if (section_start == NULL)
+        return false;
+
+    const char* section_end = strstr(section_start + header_len, "\n[");
+    if (section_end == NULL)
+        section_end = section_start + ini_len;
+
+    // "\n[" matches next header start on all platforms, but it cuts new line marker in half on windows.
+    if (*(section_end - 1) == '\r')
+        --section_end;
+
+    size_t section_len = (size_t)(section_end - section_start);
+    result->resize((int)section_len + 1);
+    ImStrncpy(result->Data, section_start, section_len);
+
     return true;
 }
 
@@ -381,121 +660,8 @@ ImFont* FindFontByName(const char* name)
     return NULL;
 }
 
-static const char* ImStrStr(const char* haystack, size_t hlen, const char* needle, int nlen)
-{
-    const char* end = haystack + hlen;
-    const char* p = haystack;
-    while ((p = (const char*)memchr(p, *needle, end - p)) != NULL)
-    {
-        if (end - p < nlen)
-            return NULL;
-        if (memcmp(p, needle, nlen) == 0)
-            return p;
-        p++;
-    }
-    return NULL;
-}
-
-void ImStrReplace(Str* s, const char* find, const char* repl)
-{
-    IM_ASSERT(find != NULL && *find);
-    IM_ASSERT(repl != NULL);
-    int find_len = (int)strlen(find);
-    int repl_len = (int)strlen(repl);
-    int repl_diff = repl_len - find_len;
-
-    // Estimate required length of new buffer if string size increases.
-    int need_capacity = s->capacity();
-    int num_matches = INT_MAX;
-    if (repl_diff > 0)
-    {
-        num_matches = 0;
-        need_capacity = s->length() + 1;
-        for (char* p = s->c_str(), *end = s->c_str() + s->length(); p != NULL && p < end;)
-        {
-            p = (char*)ImStrStr(p, end - p, find, find_len);
-            if (p)
-            {
-                need_capacity += repl_diff;
-                p += find_len;
-                num_matches++;
-            }
-        }
-    }
-
-    if (num_matches == 0)
-        return;
-
-    const char* not_owned_data = s->owned() ? NULL : s->c_str();
-    if (!s->owned() || need_capacity > s->capacity())
-        s->reserve(need_capacity);
-    if (not_owned_data != NULL)
-        s->set(not_owned_data);
-
-    // Replace data.
-    for (char* p = s->c_str(), *end = s->c_str() + s->length(); p != NULL && p < end && num_matches--;)
-    {
-        p = (char*)ImStrStr(p, end - p, find, find_len);
-        if (p)
-        {
-            memmove(p + repl_len, p + find_len, end - p - find_len + 1);
-            memcpy(p, repl, repl_len);
-            p += repl_len;
-            end += repl_diff;
-        }
-    }
-}
-
-void ImStrXmlEscape(Str* s)
-{
-    ImStrReplace(s, "<", "&lt;");
-    ImStrReplace(s, ">", "&gt;");
-    ImStrReplace(s, "\"", "&quot;");
-}
-
-// Based on code from https://github.com/EddieBreeg/C_b64 by @EddieBreeg.
-int ImBase64Encode(const unsigned char* src, char* dst, int length)
-{
-    static const char* b64Table = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
-    int i, j, k, l, encoded_len = 0;
-
-    while (length > 0)
-    {
-        switch (length)
-        {
-        case 1:
-            i = src[0] >> 2;
-            j = (src[0] & 3) << 4;
-            k = 64;
-            l = 64;
-            break;
-        case 2:
-            i = src[0] >> 2;
-            j = ((src[0] & 3) << 4) | (src[1] >> 4);
-            k = (src[1] & 15) << 2;
-            l = 64;
-            break;
-        default:
-            i = src[0] >> 2;
-            j = ((src[0] & 3) << 4) | (src[1] >> 4);
-            k = ((src[1] & 0xf) << 2) | (src[2] >> 6 & 3);
-            l = src[2] & 0x3f;
-            break;
-        }
-        dst[0] = b64Table[i];
-        dst[1] = b64Table[j];
-        dst[2] = b64Table[k];
-        dst[3] = b64Table[l];
-        src += 3;
-        dst += 4;
-        length -= 3;
-        encoded_len += 4;
-    }
-    return encoded_len;
-}
-
 //-----------------------------------------------------------------------------
-// STR + InputText bindings
+// Str.h + InputText bindings
 //-----------------------------------------------------------------------------
 
 struct InputTextCallbackStr_UserData

@@ -26,14 +26,6 @@ struct ImBuildInfo
 // Functions
 //-----------------------------------------------------------------------------
 
-// String helpers
-const char*         ImStrchrRangeWithEscaping(const char* str, const char* str_end, char find_c);
-
-// Path helpers (strictly string manipulation!)
-const char*         ImPathFindFilename(const char* path, const char* path_end = NULL);      // Return value always between path and path_end
-const char*         ImPathFindExtension(const char* path, const char* path_end = NULL);     // Return value always between path and path_end
-void                ImPathFixSeparatorsForCurrentOS(char* buf);
-
 // Time helpers
 uint64_t            ImTimeGetInMicroseconds();
 void                ImTimestampToISO8601(uint64_t timestamp, Str* out_date);
@@ -41,10 +33,6 @@ void                ImTimestampToISO8601(uint64_t timestamp, Str* out_date);
 // Threading helpers
 void                ImThreadSleepInMilliseconds(int ms);
 void                ImThreadSetCurrentThreadDescription(const char* description);
-
-// Parsing helpers
-void                ImParseSplitCommandLine(int* out_argc, char const*** out_argv, const char* cmd_line);
-bool                ImParseFindIniSection(const char* ini_config, const char* header, ImVector<char>* result);
 
 // Build Info helpers
 const ImBuildInfo&  ImBuildGetCompilationInfo();
