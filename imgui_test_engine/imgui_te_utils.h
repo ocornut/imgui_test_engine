@@ -2,7 +2,6 @@
 
 #include <math.h>           // fabsf
 #include "imgui.h"          // ImGuiID, ImGuiKey, ImFont
-//#include "imgui_internal.h" // ImGuiAxis
 
 // FIXME: Setting IO.ConfigMacOSXBehaviors to non-default value breaks this assumption.
 #if defined(__APPLE__)

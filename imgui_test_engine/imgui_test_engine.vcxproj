@@ -163,7 +163,7 @@
     <ClInclude Include="imgui_te_internal.h" />
     <ClInclude Include="imgui_te_perftool.h" />
     <ClInclude Include="imgui_te_ui.h" />
-    <ClInclude Include="imgui_te_util.h" />
+    <ClInclude Include="imgui_te_utils.h" />
     <ClInclude Include="thirdparty\gif-h\gif.h" />
     <ClInclude Include="thirdparty\stb\stb_image_write.h" />
     <ClInclude Include="thirdparty\Str\Str.h" />
@@ -176,7 +176,7 @@
     <ClCompile Include="imgui_te_engine.cpp" />
     <ClCompile Include="imgui_te_exporters.cpp" />
     <ClCompile Include="imgui_te_ui.cpp" />
-    <ClCompile Include="imgui_te_util.cpp" />
+    <ClCompile Include="imgui_te_utils.cpp" />
     <ClCompile Include="imgui_te_perftool.cpp" />
   </ItemGroup>
   <ItemGroup>

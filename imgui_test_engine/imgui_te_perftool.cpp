@@ -6,7 +6,7 @@
 #include "imgui_te_perftool.h"
 #include "imgui.h"
 #include "imgui_internal.h"
-#include "imgui_te_util.h"
+#include "imgui_te_utils.h"
 #include "thirdparty/Str/Str.h"
 #include "thirdparty/implot/implot.h"
 #include "thirdparty/implot/implot_internal.h"

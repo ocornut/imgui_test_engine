@@ -8,7 +8,7 @@
 #include "imgui.h"
 #include "imgui_internal.h"         // ImPool<>, ImRect, ImGuiItemStatusFlags, ImFormatString
 #include "imgui_te_exporters.h"
-#include "imgui_te_util.h"
+#include "imgui_te_utils.h"
 
 //-------------------------------------------------------------------------
 // Forward Declarations
