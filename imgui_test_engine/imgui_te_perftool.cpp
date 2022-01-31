@@ -8,8 +8,11 @@
 #include "imgui_internal.h"
 #include "imgui_te_utils.h"
 #include "thirdparty/Str/Str.h"
+#include <time.h> // time(), localtime()
+#ifdef IMGUI_TEST_ENGINE_ENABLE_IMPLOT
 #include "thirdparty/implot/implot.h"
 #include "thirdparty/implot/implot_internal.h"
+#endif
 
 // For tests
 #include "imgui_te_engine.h"
