@@ -11,7 +11,9 @@ SOURCES += ../imgui_tests.cpp ../imgui_tests_docking.cpp ../imgui_tests_nav.cpp 
 SOURCES += ../imgui_te_context.cpp ../imgui_te_coroutine.cpp ../imgui_te_engine.cpp ../imgui_te_perftool.cpp ../imgui_te_ui.cpp ../imgui_te_utils.cpp ../imgui_capture_tool.cpp ../imgui_te_exporters.cpp
 SOURCES += $(IMGUI_DIR)/imgui.cpp $(IMGUI_DIR)/imgui_demo.cpp $(IMGUI_DIR)/imgui_draw.cpp $(IMGUI_DIR)/imgui_tables.cpp $(IMGUI_DIR)/imgui_widgets.cpp
 SOURCES += ../shared/imgui_app.cpp
-SOURCES += ../thirdparty/implot/implot.cpp ../thirdparty/implot/implot_items.cpp ../thirdparty/implot/implot_demo.cpp
+ifneq ($(IMGUI_TEST_ENGINE_ENABLE_IMPLOT),0)
+	SOURCES += ../thirdparty/implot/implot.cpp ../thirdparty/implot/implot_items.cpp ../thirdparty/implot/implot_demo.cpp
+endif
 OBJS = $(addsuffix .o, $(basename $(notdir $(SOURCES))))
 UNAME_S := $(shell uname -s)
 

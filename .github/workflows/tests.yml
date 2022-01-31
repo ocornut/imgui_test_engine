@@ -79,10 +79,12 @@ jobs:
       - name: Build (without IMGUI_TEST_ENGINE_ENABLE_IMPLOT)
         if: github.event_name == 'workflow_run'
         run: |
+          mv imgui_test_engine/thirdparty/implot ./implot-hidden
           echo '#include "imgui_tests_imconfig.h"'      >  imgui_tests/imgui_tests_imconfig_no_implot.h
           echo '#undef IMGUI_TEST_ENGINE_ENABLE_IMPLOT' >> imgui_tests/imgui_tests_imconfig_no_implot.h
           make -C imgui_tests/ clean
-          make -C imgui_tests/ IMGUI_USER_CONFIG=imgui_tests/imgui_tests_imconfig_no_implot.h
+          make -C imgui_tests/ IMGUI_USER_CONFIG=imgui_tests/imgui_tests_imconfig_no_implot.h IMGUI_TEST_ENGINE_ENABLE_IMPLOT=0
+          mv ./implot-hidden imgui_test_engine/thirdparty/implot
 
       - name: Build imgui_tests
         run: |
