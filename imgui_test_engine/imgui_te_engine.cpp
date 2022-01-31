@@ -1456,6 +1456,47 @@ void ImGuiTestEngineHook_ItemAdd(ImGuiContext* ui_ctx, const ImRect& bb, ImGuiID
     }
 }
 
+static void ImGuiTestEngineHook_ItemInfo_ResolveFindByLabel(ImGuiContext* ui_ctx, ImGuiID id, const char* label, ImGuiItemStatusFlags flags)
+{
+    // At this point "label" is a match for the last-most item name in user wildcard.
+    ImGuiContext& g = *ui_ctx;
+    ImGuiTestEngine* engine = (ImGuiTestEngine*)ui_ctx->TestEngine;
+    IM_UNUSED(label); // Match ABI of caller function
+
+    ImGuiTestFindByLabelTask* label_task = &engine->FindByLabelTask;
+    if (ImGuiItemStatusFlags filter_flags = label_task->InFilterItemStatusFlags)
+        if (!(filter_flags & flags))
+            return;
+
+    ImGuiWindow* window = g.CurrentWindow;
+    const int id_stack_size = window->IDStack.Size;
+
+    // FIXME-TESTS: Depth limit?
+    bool match = false;
+    for (ImGuiID* p_id_stack = window->IDStack.Data + id_stack_size - 1; p_id_stack >= window->IDStack.Data; p_id_stack--)
+        if (*p_id_stack == label_task->InPrefixId || label_task->InPrefixId == 0)
+        {
+            match = true;
+            break;
+        }
+    if (!match)
+        return;
+
+    // We matched the "bar" of "**/foo/bar"
+    if (label_task->InSuffixDepth >= id_stack_size)
+        return;
+
+    // FIXME-TESTS: The entire suffix must be inside the same window.
+    // In theory, someone could craft a suffix that contains sub-window, e.g. "SomeWindow/**/SomeChild_XXXX/SomeItem" and this will currently fail.
+    ImGuiID base_id = window->IDStack.Data[id_stack_size - label_task->InSuffixDepth - 1];  // base_id correspond to the "**"
+    ImGuiID find_id = ImHashDecoratedPath(label_task->InSuffix, NULL, base_id);             // essentially compare the whole "foo/bar" suffix.
+    if (id == find_id)
+    {
+        label_task->OutItemId = id;
+        return;
+    }
+}
+
 // label is optional
 #ifdef IMGUI_HAS_IMSTR
 void ImGuiTestEngineHook_ItemInfo(ImGuiContext* ui_ctx, ImGuiID id, ImStrv label, ImGuiItemStatusFlags flags)
@@ -1493,36 +1534,7 @@ void ImGuiTestEngineHook_ItemInfo(ImGuiContext* ui_ctx, ImGuiID id, const char* 
     // Update Find by Label Task
     ImGuiTestFindByLabelTask* label_task = &engine->FindByLabelTask;
     if (label && label_task->InSuffixLastItem && label_task->OutItemId == 0 && ImStrcmp(label_task->InSuffixLastItem, label) == 0)
-    {
-        bool match = false; //(label_task->InBaseId == 0);
-        ImGuiWindow* window = g.CurrentWindow;
-        if (!match)
-        {
-            // FIXME-TESTS: Depth limit?
-            for (ImGuiID* p_id_stack = window->IDStack.end() - 1; p_id_stack >= window->IDStack.begin(); p_id_stack--)
-                if (*p_id_stack == label_task->InPrefixId || label_task->InPrefixId == 0)
-                {
-                    if (ImGuiItemStatusFlags filter_flags = label_task->InFilterItemStatusFlags)
-                        if (!(filter_flags & flags))
-                            continue;
-                    match = true;
-                    break;
-                }
-        }
-
-        // We matched the "bar" of "**/foo/bar"
-        if (match)
-        {
-            int id_stack_size = window->IDStack.Size;
-            if (label_task->InSuffixDepth < id_stack_size)
-            {
-                ImGuiID base_id = window->IDStack.Data[id_stack_size - label_task->InSuffixDepth - 1]; // base_id correspond to the "**"
-                ImGuiID find_id = ImHashDecoratedPath(label_task->InSuffix, NULL, base_id);            // essentially compare the whole "foo/bar" thing.
-                if (id == find_id)
-                    label_task->OutItemId = id;
-            }
-        }
-    }
+        ImGuiTestEngineHook_ItemInfo_ResolveFindByLabel(ui_ctx, id, label, flags);
 }
 
 // Forward core/user-land text to test log
