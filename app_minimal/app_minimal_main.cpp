@@ -83,7 +83,7 @@ int main(int argc, char** argv)
 
         ImGui::ShowDemoWindow();
 
-        ImGuiTestEngine_ShowTestWindows(engine, NULL);
+        ImGuiTestEngine_ShowTestEngineWindows(engine, NULL);
 
         app->Vsync = test_io.RenderWantMaxSpeed ? false : true;
 

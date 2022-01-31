@@ -4,4 +4,4 @@
 struct ImGuiTestEngine;
 
 // Functions
-void    ImGuiTestEngine_ShowTestWindows(ImGuiTestEngine* engine, bool* p_open);
+void    ImGuiTestEngine_ShowTestEngineWindows(ImGuiTestEngine* engine, bool* p_open);

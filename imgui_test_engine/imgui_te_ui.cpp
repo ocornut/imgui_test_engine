@@ -614,7 +614,7 @@ static void ImGuiTestEngine_ShowTestTool(ImGuiTestEngine* engine, bool* p_open)
     ImGui::End();
 }
 
-void    ImGuiTestEngine_ShowTestWindows(ImGuiTestEngine* e, bool* p_open)
+void    ImGuiTestEngine_ShowTestEngineWindows(ImGuiTestEngine* e, bool* p_open)
 {
     // Test Tool
     ImGuiTestEngine_ShowTestTool(e, p_open);

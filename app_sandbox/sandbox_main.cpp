@@ -308,7 +308,7 @@ int main(int argc, char** argv)
 
 #ifdef IMGUI_ENABLE_TEST_ENGINE
         if (show_test_engine)
-            ImGuiTestEngine_ShowTestWindows(engine, &show_test_engine);
+            ImGuiTestEngine_ShowTestEngineWindows(engine, &show_test_engine);
         app->Vsync = test_io.RenderWantMaxSpeed ? false : true;
 #endif
 
