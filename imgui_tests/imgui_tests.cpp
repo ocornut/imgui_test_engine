@@ -2952,6 +2952,31 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
         ctx->Yield();
     };
 
+    t = IM_REGISTER_TEST(e, "misc", "misc_wildcard");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        auto& vars = ctx->GenericVars;
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImGui::Checkbox("Test1", &vars.Bool1);
+
+        ImGui::BeginChild("Child");
+        ImGui::Checkbox("Test2", &vars.Bool2);
+        ImGui::EndChild();
+
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ctx->SetRef("Test Window");
+        ctx->ItemClick("**/Test1");
+
+        ctx->SetRef("");
+        ctx->ItemClick("**/Test1");
+
+        ctx->SetRef("");
+        ctx->ItemClick("**/Test2");
+    };
+
     // ## Test hash functions and ##/### operators
     t = IM_REGISTER_TEST(e, "misc", "misc_hash_001");
     t->TestFunc = [](ImGuiTestContext* ctx)

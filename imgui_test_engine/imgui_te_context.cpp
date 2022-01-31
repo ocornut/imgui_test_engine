@@ -756,6 +756,7 @@ ImGuiTestItemInfo* ImGuiTestContext::ItemInfo(ImGuiTestRef ref, ImGuiTestOpFlags
     if (wildcard_prefix_start)
     {
         // Wildcard matching
+        // Note that task->InPrefixId may be 0 as well (= we don't know the window)
         ImGuiTestFindByLabelTask* task = &Engine->FindByLabelTask;
         if (wildcard_prefix_start < wildcard_prefix_end)
             task->InPrefixId = ImHashDecoratedPath(wildcard_prefix_start, wildcard_prefix_end, RefID);

@@ -1500,7 +1500,7 @@ void ImGuiTestEngineHook_ItemInfo(ImGuiContext* ui_ctx, ImGuiID id, const char* 
         {
             // FIXME-TESTS: Depth limit?
             for (ImGuiID* p_id_stack = window->IDStack.end() - 1; p_id_stack >= window->IDStack.begin(); p_id_stack--)
-                if (*p_id_stack == label_task->InPrefixId)
+                if (*p_id_stack == label_task->InPrefixId || label_task->InPrefixId == 0)
                 {
                     if (ImGuiItemStatusFlags filter_flags = label_task->InFilterItemStatusFlags)
                         if (!(filter_flags & flags))
