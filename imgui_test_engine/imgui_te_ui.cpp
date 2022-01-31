@@ -479,6 +479,7 @@ static void ImGuiTestEngine_ShowLogAndTools(ImGuiTestEngine* engine)
         ImGui::DragFloat("DpiScale", &engine->IO.DpiScale, 0.005f, 0.0f, 0.0f, "%.2f");
         const ImGuiInputTextCallback filter_callback = [](ImGuiInputTextCallbackData* data) { return (data->EventChar == ',' || data->EventChar == ';') ? 1 : 0; };
         ImGui::InputText("Branch/Annotation", engine->IO.GitBranchName, IM_ARRAYSIZE(engine->IO.GitBranchName), ImGuiInputTextFlags_CallbackCharFilter, filter_callback, NULL);
+        HelpTooltip("This will be stored in the CSV file for performance tools.");
 
         // Perfs
         // FIXME-TESTS: Need to be visualizing the samples/spikes.
@@ -486,7 +487,6 @@ static void ImGuiTestEngine_ShowLogAndTools(ImGuiTestEngine* engine)
         double fps_now = 1.0 / dt_1;
         double dt_100 = engine->PerfDeltaTime100.GetAverage();
         double dt_1000 = engine->PerfDeltaTime1000.GetAverage();
-        double dt_2000 = engine->PerfDeltaTime2000.GetAverage();
 
         //if (engine->PerfRefDeltaTime <= 0.0 && engine->PerfRefDeltaTime.IsFull())
         //    engine->PerfRefDeltaTime = dt_2000;
@@ -494,14 +494,13 @@ static void ImGuiTestEngine_ShowLogAndTools(ImGuiTestEngine* engine)
         ImGui::Checkbox("Unthrolled", &engine->IO.ConfigNoThrottle);
         ImGui::SameLine();
         if (ImGui::Button("Pick ref dt"))
-            engine->PerfRefDeltaTime = dt_2000;
+            engine->PerfRefDeltaTime = dt_1000;
 
         double dt_ref = engine->PerfRefDeltaTime;
         ImGui::Text("[ref dt]    %6.3f ms", engine->PerfRefDeltaTime * 1000);
         ImGui::Text("[last 0001] %6.3f ms (%.1f FPS) ++ %6.3f ms", dt_1 * 1000.0, 1.0 / dt_1, (dt_1 - dt_ref) * 1000);
         ImGui::Text("[last 0100] %6.3f ms (%.1f FPS) ++ %6.3f ms ~ converging in %.1f secs", dt_100 * 1000.0, 1.0 / dt_100, (dt_1 - dt_ref) * 1000, 100.0 / fps_now);
         ImGui::Text("[last 1000] %6.3f ms (%.1f FPS) ++ %6.3f ms ~ converging in %.1f secs", dt_1000 * 1000.0, 1.0 / dt_1000, (dt_1 - dt_ref) * 1000, 1000.0 / fps_now);
-        ImGui::Text("[last 2000] %6.3f ms (%.1f FPS) ++ %6.3f ms ~ converging in %.1f secs", dt_2000 * 1000.0, 1.0 / dt_2000, (dt_1 - dt_ref) * 1000, 2000.0 / fps_now);
 
         //ImGui::PlotLines("Last 100", &engine->PerfDeltaTime100.Samples.Data, engine->PerfDeltaTime100.Samples.Size, engine->PerfDeltaTime100.Idx, NULL, 0.0f, dt_1000 * 1.10f, ImVec2(0.0f, ImGui::GetFontSize()));
         ImVec2 plot_size(0.0f, ImGui::GetFrameHeight() * 3);
@@ -559,16 +558,16 @@ static void ImGuiTestEngine_ShowTestTool(ImGuiTestEngine* engine, bool* p_open)
 
     ImGui::Checkbox("Fast", &engine->IO.ConfigRunFast); HelpTooltip("Run tests as fast as possible (no vsync, no delay, teleport mouse, etc.).");
     ImGui::SameLine();
-    ImGui::BeginDisabled(); bool dummy = false;
-    ImGui::Checkbox("Blind", &dummy);// engine->IO.ConfigRunBlind);
-    ImGui::EndDisabled();
+    //ImGui::BeginDisabled();
+    //ImGui::Checkbox("Blind", &engine->IO.ConfigRunBlind);
+    //ImGui::EndDisabled();
     HelpTooltip("<UNSUPPORTED>\nRun tests in a blind ui context.");
     ImGui::SameLine();
     ImGui::Checkbox("Stop", &engine->IO.ConfigStopOnError); HelpTooltip("Stop running tests when hitting an error.");
     ImGui::SameLine();
     ImGui::Checkbox("DbgBrk", &engine->IO.ConfigBreakOnError); HelpTooltip("Break in debugger when hitting an error.");
     ImGui::SameLine();
-    ImGui::Checkbox("KeepGUI", &engine->IO.ConfigKeepGuiFunc); HelpTooltip("Keep GUI function running after test function is finished.");
+    ImGui::Checkbox("KeepGUI", &engine->IO.ConfigKeepGuiFunc); HelpTooltip("Keep GUI function running after test function is finished. Hold ESC to abort a running GUI function.");
     ImGui::SameLine();
     ImGui::Checkbox("Refocus", &engine->IO.ConfigTakeFocusBackAfterTests); HelpTooltip("Set focus back to Test window after running tests.");
     ImGui::SameLine();

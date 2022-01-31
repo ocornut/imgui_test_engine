@@ -252,8 +252,8 @@ struct ImGuiTestContext
     // Yield, Timing
     void        Yield(int count = 1);
     void        YieldUntil(int frame_count);
-    void        Sleep(float time);
-    void        SleepNoSkip(float time, float frame_time_step);
+    void        Sleep(float time_in_second);
+    void        SleepNoSkip(float time_in_second, float frame_time_step);
     void        SleepShort();
 
     // Windows

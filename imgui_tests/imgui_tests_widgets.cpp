@@ -3735,7 +3735,8 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         if (ctx->Test->ArgVariant == 1)
             ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(ImGui::GetStyle().ItemSpacing.x, 0.0f));
 
-        ImGuiListClipper clipper(ITEMS_COUNT);
+        ImGuiListClipper clipper;
+        clipper.Begin(ITEMS_COUNT);
         while (clipper.Step())
         {
             if (clipper.DisplayStart > selection.RangeRef)

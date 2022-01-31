@@ -154,7 +154,6 @@ struct ImGuiTestEngine
     ImMovingAverage<double>     PerfDeltaTime100;
     ImMovingAverage<double>     PerfDeltaTime500;
     ImMovingAverage<double>     PerfDeltaTime1000;
-    ImMovingAverage<double>     PerfDeltaTime2000;
     ImGuiPerfTool*              PerfTool = NULL;
 
     // Tools
