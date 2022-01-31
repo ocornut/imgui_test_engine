@@ -2973,7 +2973,11 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
         ctx->SetRef("");
         ctx->ItemClick("**/Test1");
 
+        // Test Window/Child_XXXXX/Test2
         ctx->SetRef("");
+        ctx->ItemClick("**/Test2");
+
+        ctx->SetRef("Test Window");
         ctx->ItemClick("**/Test2");
     };
 

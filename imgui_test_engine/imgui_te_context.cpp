@@ -771,7 +771,7 @@ ImGuiTestItemInfo* ImGuiTestContext::ItemInfo(ImGuiTestRef ref, ImGuiTestOpFlags
                 task->InSuffixLastItem = c + 1;
 
         // Count number of labels
-        task->InSuffixDepth = 0;
+        task->InSuffixDepth = 1;
         for (const char* c = wildcard_suffix_start; *c; c++)
             if (*c == '/')
                 task->InSuffixDepth++;
@@ -816,7 +816,7 @@ ImGuiTestItemInfo* ImGuiTestContext::ItemInfo(ImGuiTestRef ref, ImGuiTestOpFlags
         }
         full_id = task->OutItemId;
 
-        // FIXME: InFilterItemStatusFlags is not clear here intentionally, because it is set in ItemAction() and reused in later calls to ItemInfo() to resolve ambiguities.
+        // FIXME: InFilterItemStatusFlags is intentionally not cleared here, because it is set in ItemAction() and reused in later calls to ItemInfo() to resolve ambiguities.
         task->InPrefixId = 0;
         task->InSuffix = task->InSuffixLastItem = NULL;
         task->InSuffixDepth = 0;
