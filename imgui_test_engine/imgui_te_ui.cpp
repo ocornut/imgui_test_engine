@@ -559,8 +559,8 @@ static void ImGuiTestEngine_ShowTestTool(ImGuiTestEngine* engine, bool* p_open)
 
     ImGui::Checkbox("Fast", &engine->IO.ConfigRunFast); HelpTooltip("Run tests as fast as possible (no vsync, no delay, teleport mouse, etc.).");
     ImGui::SameLine();
-    ImGui::BeginDisabled();
-    ImGui::Checkbox("Blind", &engine->IO.ConfigRunBlind);
+    ImGui::BeginDisabled(); bool dummy = false;
+    ImGui::Checkbox("Blind", &dummy);// engine->IO.ConfigRunBlind);
     ImGui::EndDisabled();
     HelpTooltip("<UNSUPPORTED>\nRun tests in a blind ui context.");
     ImGui::SameLine();

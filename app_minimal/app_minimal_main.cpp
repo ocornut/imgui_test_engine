@@ -53,7 +53,6 @@ int main(int argc, char** argv)
     ImGuiTestEngineIO& test_io = ImGuiTestEngine_GetIO(engine);
     test_io.ConfigVerboseLevel = ImGuiTestVerboseLevel_Info;
     test_io.ConfigVerboseLevelOnError = ImGuiTestVerboseLevel_Debug;
-    test_io.ConfigRunWithGui = true;
     test_io.ConfigRunFast = false; // Default to slow mode in this demo
     test_io.ScreenCaptureFunc = ImGuiApp_ScreenCaptureFunc;
     test_io.ScreenCaptureUserData = (void*)app;

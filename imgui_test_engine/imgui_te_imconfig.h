@@ -11,6 +11,9 @@
 // There's not much point to disable this but we provide it to reassure user that the dependencies on stb_image_write.h and gif.h are technically optional.
 //#define IMGUI_TEST_ENGINE_DISABLE_CAPTURE
 
+// Automatically fill ImGuiTestEngineIO::CoroutineFuncs with a default implementation using std::thread
+// #define IMGUI_TEST_ENGINE_ENABLE_COROUTINE_STDTHREAD_IMPL
+
 // Test Engine Assert
 extern void ImGuiTestEngine_Assert(const char* expr, const char* file, const char* func, int line);
 #define IMGUI_TEST_ENGINE_ASSERT(_EXPR)     ImGuiTestEngine_Assert(#_EXPR, __FILE__, __func__, __LINE__)

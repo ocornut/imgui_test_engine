@@ -279,7 +279,10 @@ void    ImGuiTestEngine_Start(ImGuiTestEngine* engine)
     // Create our coroutine
     // (we include the word "Main" in the name to facilitate filtering for both this thread and the "Main Thread" in debuggers)
     if (!engine->TestQueueCoroutine)
+    {
+        IM_ASSERT(engine->IO.CoroutineFuncs && "Missing CoroutineFuncs! Use IMGUI_TEST_ENGINE_ENABLE_COROUTINE_STDTHREAD_IMPL or define your own implementation!");
         engine->TestQueueCoroutine = engine->IO.CoroutineFuncs->CreateFunc(ImGuiTestEngine_TestQueueCoroutineMain, "Main Dear ImGui Test Thread", engine);
+    }
     engine->Started = true;
 }
 
@@ -598,9 +601,9 @@ static void ImGuiTestEngine_UpdateWatchdog(ImGuiTestEngine* engine, ImGuiContext
     if (test_ctx->RunFlags & ImGuiTestRunFlags_ManualRun)
         return;
 
-    const float timer_warn      = engine->IO.ConfigRunWithGui ? 30.0f : 15.0f;
-    const float timer_kill_test = engine->IO.ConfigRunWithGui ? 60.0f : 30.0f;
-    const float timer_kill_app  = engine->IO.ConfigRunWithGui ? FLT_MAX : 35.0f;
+    const float timer_warn = engine->IO.ConfigWatchdogWarning;
+    const float timer_kill_test = engine->IO.ConfigWatchdogKillTest;
+    const float timer_kill_app = engine->IO.ConfigWatchdogKillApp;
 
     // Emit a warning and then fail the test after a given time.
     if (t0 < timer_warn && t1 >= timer_warn)

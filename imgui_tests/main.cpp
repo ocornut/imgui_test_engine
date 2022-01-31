@@ -443,18 +443,29 @@ int main(int argc, char** argv)
 
     // Apply options
     ImGuiTestEngineIO& test_io = ImGuiTestEngine_GetIO(engine);
-    test_io.ConfigRunWithGui = g_App.OptGui;
     test_io.ConfigRunFast = g_App.OptFast;
     test_io.ConfigVerboseLevel = g_App.OptVerboseLevelBasic;
     test_io.ConfigVerboseLevelOnError = g_App.OptVerboseLevelError;
     test_io.ConfigNoThrottle = g_App.OptNoThrottle;
     test_io.PerfStressAmount = g_App.OptStressAmount;
-    if (!g_App.OptGui)
-        test_io.ConfigLogToTTY = true;
-    if (!g_App.OptGui && ImOsIsDebuggerPresent())
+
+    if (g_App.OptGui)
     {
-        test_io.ConfigLogToDebugger = true;
-        test_io.ConfigBreakOnError = true;
+        test_io.ConfigWatchdogWarning = 30.0f;
+        test_io.ConfigWatchdogKillTest = 60.0f;
+        test_io.ConfigWatchdogKillApp = FLT_MAX;
+    }
+    else
+    {
+        test_io.ConfigWatchdogWarning = 15.0f;
+        test_io.ConfigWatchdogKillTest = 30.0f;
+        test_io.ConfigWatchdogKillApp = 35.0f;
+        test_io.ConfigLogToTTY = true;
+        if (ImOsIsDebuggerPresent())
+        {
+            test_io.ConfigLogToDebugger = true;
+            test_io.ConfigBreakOnError = true;
+        }
     }
 
     // Set up functions

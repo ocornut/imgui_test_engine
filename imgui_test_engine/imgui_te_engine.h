@@ -286,20 +286,26 @@ ImGuiPerfTool*      ImGuiTestEngine_GetPerfTool(ImGuiTestEngine* engine);
 typedef void        (*ImGuiTestEngineSrcFileOpenFunc)(const char* filename, int line, void* user_data);
 typedef bool        (*ImGuiTestEngineScreenCaptureFunc)(ImGuiID viewport_id, int x, int y, int w, int h, unsigned int* pixels, void* user_data);
 
-// IO structure
+//-----------------------------------------------------------------------------
+// IO structure to configure the test engine
+//-----------------------------------------------------------------------------
+
 struct ImGuiTestEngineIO
 {
+    //-------------------------------------------------------------------------
+    // Functions
+    //-------------------------------------------------------------------------
+
     // Inputs: Functions
     ImGuiTestCoroutineInterface*    CoroutineFuncs = NULL;          // (Required) Coroutine functions (see imgui_te_coroutines.h)
-    ImGuiTestEngineSrcFileOpenFunc  SrcFileOpenFunc = NULL;         // (Optional) To open source files
+    ImGuiTestEngineSrcFileOpenFunc  SrcFileOpenFunc = NULL;         // (Optional) To open source files from test engine UI
     ImGuiTestEngineScreenCaptureFunc ScreenCaptureFunc = NULL;      // (Optional) To capture graphics output
     void*                           SrcFileOpenUserData = NULL;     // (Optional) User data for SrcFileOpenFunc
     void*                           ScreenCaptureUserData = NULL;   // (Optional) User data for ScreenCaptureFunc
 
     // Inputs: Options
-    bool                        ConfigRunWithGui = false;           // Run without graphics output (e.g. command-line). This is mostly a hint to adjust some features.
     bool                        ConfigRunFast = true;               // Run tests as fast as possible (teleport mouse, skip delays, etc.)
-    bool                        ConfigRunBlind = false;             // Run tests in a blind ImGuiContext separated from the visible context
+    //bool                      ConfigRunBlind = false;             // Run tests in a blind ImGuiContext separated from the visible context
     bool                        ConfigStopOnError = false;          // Stop queued tests on test error
     bool                        ConfigBreakOnError = false;         // Break debugger on test error
     bool                        ConfigKeepGuiFunc = false;          // Keep test GUI running at the end of the test
@@ -313,18 +319,32 @@ struct ImGuiTestEngineIO
     bool                        ConfigNoThrottle = false;           // Disable vsync for performance measurement or fast test running
     float                       ConfigFixedDeltaTime = 0.0f;        // Use fixed delta time instead of calculating it from wall clock
     float                       DpiScale = 1.0f;
+    int                         PerfStressAmount = 1;               // Integer to scale the amount of items submitted in test
+    char                        GitBranchName[64] = "";             // e.g. fill in branch name
+
+    // Options: Speed of user simulation
     float                       MouseSpeed = 1000.0f;               // Mouse speed (pixel/second) when not running in fast mode
     float                       MouseWobble = 0.25f;                // How much wobble to apply to the mouse (pixels per pixel of move distance) when not running in fast mode
     float                       ScrollSpeed = 1600.0f;              // Scroll speed (pixel/second) when not running in fast mode
     float                       TypingSpeed = 30.0f;                // Char input speed (characters/second) when not running in fast mode
-    int                         PerfStressAmount = 1;               // Integer to scale the amount of items submitted in test
-    char                        GitBranchName[64] = "";             // e.g. fill in branch name
+
+    // Options: Watchdog. Set values to FLT_MAX to disable.
+    // Interactive GUI applications that may be slower tend to use higher values.
+    float                       ConfigWatchdogWarning = 30.0f;      // Warn when a test exceed this time (in second)
+    float                       ConfigWatchdogKillTest = 60.0f;     // Attempt to stop running a test when exceeding this time (in second)
+    float                       ConfigWatchdogKillApp = FLT_MAX;    // Stop application when exceeding this time (in second)
+
+    // Options: Export
     const char*                 ExportResultsFile = NULL;
     ImGuiTestEngineExportFormat ExportResultsFormat = 0;
 
-    // Outputs: State
+    //-------------------------------------------------------------------------
+    // Outputs
+    //-------------------------------------------------------------------------
+
+    // State of test engine
     bool                        RunningTests = false;
-    bool                        RenderWantMaxSpeed = false;
+    bool                        RenderWantMaxSpeed = false;         // When running in fast mode: request app to skip vsync or even skip rendering if it wants
 };
 
 // Result of an ItemInfo query
