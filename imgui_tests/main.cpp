@@ -469,7 +469,7 @@ int main(int argc, char** argv)
     }
 
     // Set up functions
-    test_io.SrcFileOpenFunc = SrcFileOpenerFunc;
+    test_io.SrcFileOpenFunc = g_App.OptFileOpener.empty() ? NULL : SrcFileOpenerFunc;
     test_io.SrcFileOpenUserData = NULL;
     test_io.ScreenCaptureFunc = ImGuiApp_ScreenCaptureFunc;
     test_io.ScreenCaptureUserData = (void*)g_App.AppWindow;

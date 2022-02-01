@@ -335,19 +335,11 @@ static void ShowTestGroup(ImGuiTestEngine* e, ImGuiTestGroup group, ImGuiTextFil
                 ImGui::Separator();
 
                 const bool open_source_available = (test->SourceFile != NULL) && (e->IO.SrcFileOpenFunc != NULL);
-                if (open_source_available)
-                {
-                    Str128f buf("Open source (%s:%d)", test->SourceFileShort, test->SourceLine);
-                    if (ImGui::MenuItem(buf.c_str()))
-                        e->IO.SrcFileOpenFunc(test->SourceFile, test->SourceLine, e->IO.SrcFileOpenUserData);
-                    if (ImGui::MenuItem("View source..."))
-                        view_source = true;
-                }
-                else
-                {
-                    ImGui::MenuItem("Open source", NULL, false, false);
-                    ImGui::MenuItem("View source", NULL, false, false);
-                }
+                Str128f buf("Open source (%s:%d)", test->SourceFileShort, test->SourceLine);
+                if (ImGui::MenuItem(buf.c_str(), NULL, false, open_source_available))
+                    e->IO.SrcFileOpenFunc(test->SourceFile, test->SourceLine, e->IO.SrcFileOpenUserData);
+                if (ImGui::MenuItem("View source...", NULL, false, test->SourceFile != NULL))
+                    view_source = true;
 
                 if (group == ImGuiTestGroup_Perfs && ImGui::MenuItem("View perflog"))
                 {
