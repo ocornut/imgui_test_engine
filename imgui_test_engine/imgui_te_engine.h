@@ -123,137 +123,14 @@ extern void     ImGuiTestEngine_Assert(const char* expr, const char* file, const
 const char*     ImGuiTestEngine_FindItemDebugLabel(ImGuiContext* ui_ctx, ImGuiID id);
 
 //-------------------------------------------------------------------------
-// Macros for Tests
+// Macros (the IM_CHECK_xxx macros are at the bottom of this file)
 //-------------------------------------------------------------------------
 
 // Register a new test
 #define IM_REGISTER_TEST(_ENGINE, _CAT, _NAME)  ImGuiTestEngine_RegisterTest(_ENGINE, _CAT, _NAME, __FILE__, __LINE__)
 
-// We embed every macro in a do {} while(0) statement as a trick to allow using them as regular single statement, e.g. if (XXX) IM_CHECK(A); else IM_CHECK(B)
-// We leave the assert call (which will trigger a debugger break) outside of the check function to step out faster.
-#define IM_CHECK_NO_RET(_EXPR)                  do { if (ImGuiTestEngine_Check(__FILE__, __func__, __LINE__, ImGuiTestCheckFlags_None, (bool)(_EXPR), #_EXPR))          { IM_ASSERT(_EXPR); } } while (0)
-#define IM_CHECK(_EXPR)                         do { if (ImGuiTestEngine_Check(__FILE__, __func__, __LINE__, ImGuiTestCheckFlags_None, (bool)(_EXPR), #_EXPR))          { IM_ASSERT(_EXPR); } if (!(bool)(_EXPR)) return; } while (0)
-#define IM_CHECK_SILENT(_EXPR)                  do { if (ImGuiTestEngine_Check(__FILE__, __func__, __LINE__, ImGuiTestCheckFlags_SilentSuccess, (bool)(_EXPR), #_EXPR)) { IM_ASSERT(0); } if (!(bool)(_EXPR)) return; } while (0)
-#define IM_CHECK_RETV(_EXPR,_RETV)              do { if (ImGuiTestEngine_Check(__FILE__, __func__, __LINE__, ImGuiTestCheckFlags_None, (bool)(_EXPR), #_EXPR))          { IM_ASSERT(_EXPR); } if (!(bool)(_EXPR)) return _RETV; } while (0)
-#define IM_CHECK_SILENT_RETV(_EXPR,_RETV)       do { if (ImGuiTestEngine_Check(__FILE__, __func__, __LINE__, ImGuiTestCheckFlags_SilentSuccess, (bool)(_EXPR), #_EXPR)) { IM_ASSERT(_EXPR); } if (!(bool)(_EXPR)) return _RETV; } while (0)
-#define IM_ERRORF(_FMT,...)                     do { if (ImGuiTestEngine_Error(__FILE__, __func__, __LINE__, ImGuiTestCheckFlags_None, _FMT, __VA_ARGS__))              { IM_ASSERT(0); } } while (0)
-#define IM_ERRORF_NOHDR(_FMT,...)               do { if (ImGuiTestEngine_Error(NULL, NULL, 0, ImGuiTestCheckFlags_None, _FMT, __VA_ARGS__))                             { IM_ASSERT(0); } } while (0)
-
-template<typename T> void ImGuiTestEngineUtil_AppendStrValue(ImGuiTextBuffer& buf, T value)         { buf.appendf("???"); IM_UNUSED(value); } // FIXME-TESTS: Could improve with some template magic
-template<> inline void ImGuiTestEngineUtil_AppendStrValue(ImGuiTextBuffer& buf, const char* value)  { buf.appendf("\"%s\"", value); }
-template<> inline void ImGuiTestEngineUtil_AppendStrValue(ImGuiTextBuffer& buf, bool value)         { buf.append(value ? "true" : "false"); }
-template<> inline void ImGuiTestEngineUtil_AppendStrValue(ImGuiTextBuffer& buf, ImS8 value)         { buf.appendf("%d", value); }
-template<> inline void ImGuiTestEngineUtil_AppendStrValue(ImGuiTextBuffer& buf, ImU8 value)         { buf.appendf("%u", value); }
-template<> inline void ImGuiTestEngineUtil_AppendStrValue(ImGuiTextBuffer& buf, ImS16 value)        { buf.appendf("%hd", value); }
-template<> inline void ImGuiTestEngineUtil_AppendStrValue(ImGuiTextBuffer& buf, ImU16 value)        { buf.appendf("%hu", value); }
-template<> inline void ImGuiTestEngineUtil_AppendStrValue(ImGuiTextBuffer& buf, ImS32 value)        { buf.appendf("%d", value); }
-template<> inline void ImGuiTestEngineUtil_AppendStrValue(ImGuiTextBuffer& buf, ImU32 value)        { buf.appendf("0x%08X", value); } // Assuming ImGuiID
-template<> inline void ImGuiTestEngineUtil_AppendStrValue(ImGuiTextBuffer& buf, ImS64 value)        { buf.appendf("%lld", value); }
-template<> inline void ImGuiTestEngineUtil_AppendStrValue(ImGuiTextBuffer& buf, ImU64 value)        { buf.appendf("%llu", value); }
-template<> inline void ImGuiTestEngineUtil_AppendStrValue(ImGuiTextBuffer& buf, float value)        { buf.appendf("%.3f", value); }
-template<> inline void ImGuiTestEngineUtil_AppendStrValue(ImGuiTextBuffer& buf, double value)       { buf.appendf("%f", value); }
-template<> inline void ImGuiTestEngineUtil_AppendStrValue(ImGuiTextBuffer& buf, ImVec2 value)       { buf.appendf("(%.3f, %.3f)", value.x, value.y); }
-template<> inline void ImGuiTestEngineUtil_AppendStrValue(ImGuiTextBuffer& buf, const void* value)  { buf.appendf("%p", value); }
-
-static inline void ImGuiTestEngineUtil_AppendStrCompareOp(ImGuiTextBuffer& buf, const char* lhs_var, const char* lhs_val, const char* op, const char* rhs_var, const char* rhs_val)
-{
-    bool lhs_is_literal = lhs_var[0] == '\"';
-    bool rhs_is_literal = rhs_var[0] == '\"';
-    if (strchr(lhs_val, '\n') != NULL || strchr(rhs_var, '\n') != NULL)
-    {
-        // Multi line strings
-        size_t lhs_val_len = strlen(lhs_val);
-        size_t rhs_val_len = strlen(rhs_val);
-        if (lhs_val_len > 0 && lhs_val[lhs_val_len - 1] == '\n') // Strip trailing carriage return as we are adding one ourselves
-            lhs_val_len--;
-        if (rhs_val_len > 0 && rhs_val[rhs_val_len - 1] == '\n')
-            rhs_val_len--;
-        buf.appendf(
-            "\n"
-            "---------------------------------------- // lhs: %s\n"
-            "%.*s\n"
-            "---------------------------------------- // rhs: %s, compare op: %s\n"
-            "%.*s\n"
-            "----------------------------------------\n",
-            lhs_is_literal ? "literal" : lhs_var,
-            (int)lhs_val_len, lhs_val,
-            rhs_is_literal ? "literal" : rhs_var,
-            op,
-            (int)rhs_val_len, rhs_val);
-    }
-    else
-    {
-        // Single line strings
-        buf.appendf(
-            "%s [\"%s\"] %s %s [\"%s\"]",
-            lhs_is_literal ? "" : lhs_var, lhs_val,
-            op,
-            rhs_is_literal ? "" : rhs_var, rhs_val);
-    }
-}
-
-// Those macros allow us to print out the values of both lhs and rhs expressions involved in a check.
-#define IM_CHECK_OP(_LHS, _RHS, _OP, _RETURN)                       \
-    do                                                              \
-    {                                                               \
-        auto __lhs = _LHS;  /* Cache to avoid side effects */       \
-        auto __rhs = _RHS;                                          \
-        bool __res = __lhs _OP __rhs;                               \
-        ImGuiTextBuffer expr_buf;                                   \
-        expr_buf.appendf("%s [", #_LHS);                            \
-        ImGuiTestEngineUtil_AppendStrValue(expr_buf, __lhs);        \
-        expr_buf.appendf("] " #_OP " %s [", #_RHS);                 \
-        ImGuiTestEngineUtil_AppendStrValue(expr_buf, __rhs);        \
-        expr_buf.append("]");                                       \
-        if (ImGuiTestEngine_Check(__FILE__, __func__, __LINE__, ImGuiTestCheckFlags_None, __res, expr_buf.c_str())) \
-            IM_ASSERT(__res);                                       \
-        if (_RETURN && !__res)                                      \
-            return;                                                 \
-    } while (0)
-
-#define IM_CHECK_STR_OP(_LHS, _RHS, _OP, _RETURN, _FLAGS)           \
-    do                                                              \
-    {                                                               \
-        Str256 __lhs(_LHS);  /* Cache to avoid side effects */      \
-        Str256 __rhs(_RHS);                                         \
-        bool __res = strcmp(__lhs.c_str(), __rhs.c_str()) _OP 0;    \
-        ImGuiTextBuffer expr_buf;                                   \
-        ImGuiTestEngineUtil_AppendStrCompareOp(expr_buf, #_LHS, __lhs.c_str(), #_OP, #_RHS, __rhs.c_str()); \
-        if (ImGuiTestEngine_Check(__FILE__, __func__, __LINE__, _FLAGS, __res, expr_buf.c_str())) \
-            IM_ASSERT(__res);                                               \
-        if (_RETURN && !__res)                                              \
-            return;                                                         \
-    } while (0)
-
-#define IM_CHECK_STR_EQ(_LHS, _RHS)         IM_CHECK_STR_OP(_LHS, _RHS, ==, true, ImGuiTestCheckFlags_None)
-#define IM_CHECK_STR_NE(_LHS, _RHS)         IM_CHECK_STR_OP(_LHS, _RHS, !=, true, ImGuiTestCheckFlags_None)
-#define IM_CHECK_STR_EQ_NO_RET(_LHS, _RHS)  IM_CHECK_STR_OP(_LHS, _RHS, ==, false, ImGuiTestCheckFlags_None)
-#define IM_CHECK_STR_NE_NO_RET(_LHS, _RHS)  IM_CHECK_STR_OP(_LHS, _RHS, !=, false, ImGuiTestCheckFlags_None)
-#define IM_CHECK_STR_EQ_SILENT(_LHS, _RHS)  IM_CHECK_STR_OP(_LHS, _RHS, ==, true, ImGuiTestCheckFlags_SilentSuccess)
-
-#define IM_CHECK_EQ(_LHS, _RHS)             IM_CHECK_OP(_LHS, _RHS, ==, true)   // Equal
-#define IM_CHECK_NE(_LHS, _RHS)             IM_CHECK_OP(_LHS, _RHS, !=, true)   // Not Equal
-#define IM_CHECK_LT(_LHS, _RHS)             IM_CHECK_OP(_LHS, _RHS, < , true)   // Less Than
-#define IM_CHECK_LE(_LHS, _RHS)             IM_CHECK_OP(_LHS, _RHS, <=, true)   // Less or Equal
-#define IM_CHECK_GT(_LHS, _RHS)             IM_CHECK_OP(_LHS, _RHS, > , true)   // Greater Than
-#define IM_CHECK_GE(_LHS, _RHS)             IM_CHECK_OP(_LHS, _RHS, >=, true)   // Greater or Equal
-
-#define IM_CHECK_EQ_NO_RET(_LHS, _RHS)      IM_CHECK_OP(_LHS, _RHS, ==, false)  // Equal
-#define IM_CHECK_NE_NO_RET(_LHS, _RHS)      IM_CHECK_OP(_LHS, _RHS, !=, false)  // Not Equal
-#define IM_CHECK_LT_NO_RET(_LHS, _RHS)      IM_CHECK_OP(_LHS, _RHS, < , false)  // Less Than
-#define IM_CHECK_LE_NO_RET(_LHS, _RHS)      IM_CHECK_OP(_LHS, _RHS, <=, false)  // Less or Equal
-#define IM_CHECK_GT_NO_RET(_LHS, _RHS)      IM_CHECK_OP(_LHS, _RHS, > , false)  // Greater Than
-#define IM_CHECK_GE_NO_RET(_LHS, _RHS)      IM_CHECK_OP(_LHS, _RHS, >=, false)  // Greater or Equal
-
-#define IM_CHECK_FLOAT_EQ_EPS(_LHS, _RHS)               IM_CHECK_LE(ImFabs(_LHS - (_RHS)), FLT_EPSILON)   // Float Equal
-#define IM_CHECK_FLOAT_NEAR(_LHS, _RHS, _EPS)           IM_CHECK_LE(ImFabs(_LHS - (_RHS)), _EPS)
-#define IM_CHECK_FLOAT_NEAR_NO_RET(_LHS, _RHS, _EPS)    IM_CHECK_LE_NO_RET(ImFabs(_LHS - (_RHS)), _EPS)
-
-//-------------------------------------------------------------------------
-// Macros for Debug / Control Flow
-//-------------------------------------------------------------------------
-
-#define IM_DEBUG_HALT_TESTFUNC()            do { if (ctx->DebugHaltTestFunc(__FILE__, __LINE__)) return; } while (0)
+// Pause TestFunc to let user inspect the GUI state (user will need to press the "Continue" button to resume TestFunc execution)
+#define IM_DEBUG_HALT_TESTFUNC()                do { if (ctx->DebugHaltTestFunc(__FILE__, __LINE__)) return; } while (0)
 
 //-------------------------------------------------------------------------
 // ImGuiTestEngine API
@@ -347,7 +224,7 @@ struct ImGuiTestEngineIO
     bool                        RenderWantMaxSpeed = false;         // When running in fast mode: request app to skip vsync or even skip rendering if it wants
 };
 
-// Result of an ItemInfo query
+// Information about a given item, result of an ItemInfo() query
 struct ImGuiTestItemInfo
 {
     int                         RefCount : 8;               // User can increment this if they want to hold on the result pointer across frames, otherwise the task will be GC-ed.
@@ -499,3 +376,127 @@ struct ImGuiTest
         }
     }
 };
+
+//-------------------------------------------------------------------------
+// IM_CHECK macros
+//-------------------------------------------------------------------------
+
+// We embed every macro in a do {} while(0) statement as a trick to allow using them as regular single statement, e.g. if (XXX) IM_CHECK(A); else IM_CHECK(B)
+// We leave the assert call (which will trigger a debugger break) outside of the check function to step out faster.
+#define IM_CHECK_NO_RET(_EXPR)                  do { if (ImGuiTestEngine_Check(__FILE__, __func__, __LINE__, ImGuiTestCheckFlags_None, (bool)(_EXPR), #_EXPR))          { IM_ASSERT(_EXPR); } } while (0)
+#define IM_CHECK(_EXPR)                         do { if (ImGuiTestEngine_Check(__FILE__, __func__, __LINE__, ImGuiTestCheckFlags_None, (bool)(_EXPR), #_EXPR))          { IM_ASSERT(_EXPR); } if (!(bool)(_EXPR)) return; } while (0)
+#define IM_CHECK_SILENT(_EXPR)                  do { if (ImGuiTestEngine_Check(__FILE__, __func__, __LINE__, ImGuiTestCheckFlags_SilentSuccess, (bool)(_EXPR), #_EXPR)) { IM_ASSERT(0); } if (!(bool)(_EXPR)) return; } while (0)
+#define IM_CHECK_RETV(_EXPR,_RETV)              do { if (ImGuiTestEngine_Check(__FILE__, __func__, __LINE__, ImGuiTestCheckFlags_None, (bool)(_EXPR), #_EXPR))          { IM_ASSERT(_EXPR); } if (!(bool)(_EXPR)) return _RETV; } while (0)
+#define IM_CHECK_SILENT_RETV(_EXPR,_RETV)       do { if (ImGuiTestEngine_Check(__FILE__, __func__, __LINE__, ImGuiTestCheckFlags_SilentSuccess, (bool)(_EXPR), #_EXPR)) { IM_ASSERT(_EXPR); } if (!(bool)(_EXPR)) return _RETV; } while (0)
+#define IM_ERRORF(_FMT,...)                     do { if (ImGuiTestEngine_Error(__FILE__, __func__, __LINE__, ImGuiTestCheckFlags_None, _FMT, __VA_ARGS__))              { IM_ASSERT(0); } } while (0)
+#define IM_ERRORF_NOHDR(_FMT,...)               do { if (ImGuiTestEngine_Error(NULL, NULL, 0, ImGuiTestCheckFlags_None, _FMT, __VA_ARGS__))                             { IM_ASSERT(0); } } while (0)
+
+template<typename T> void ImGuiTestEngineUtil_AppendStrValue(ImGuiTextBuffer& buf, T value)         { buf.appendf("???"); IM_UNUSED(value); } // FIXME-TESTS: Could improve with some template magic
+template<> inline void ImGuiTestEngineUtil_AppendStrValue(ImGuiTextBuffer& buf, const char* value)  { buf.appendf("\"%s\"", value); }
+template<> inline void ImGuiTestEngineUtil_AppendStrValue(ImGuiTextBuffer& buf, bool value)         { buf.append(value ? "true" : "false"); }
+template<> inline void ImGuiTestEngineUtil_AppendStrValue(ImGuiTextBuffer& buf, ImS8 value)         { buf.appendf("%d", value); }
+template<> inline void ImGuiTestEngineUtil_AppendStrValue(ImGuiTextBuffer& buf, ImU8 value)         { buf.appendf("%u", value); }
+template<> inline void ImGuiTestEngineUtil_AppendStrValue(ImGuiTextBuffer& buf, ImS16 value)        { buf.appendf("%hd", value); }
+template<> inline void ImGuiTestEngineUtil_AppendStrValue(ImGuiTextBuffer& buf, ImU16 value)        { buf.appendf("%hu", value); }
+template<> inline void ImGuiTestEngineUtil_AppendStrValue(ImGuiTextBuffer& buf, ImS32 value)        { buf.appendf("%d", value); }
+template<> inline void ImGuiTestEngineUtil_AppendStrValue(ImGuiTextBuffer& buf, ImU32 value)        { buf.appendf("0x%08X", value); } // Assuming ImGuiID
+template<> inline void ImGuiTestEngineUtil_AppendStrValue(ImGuiTextBuffer& buf, ImS64 value)        { buf.appendf("%lld", value); }
+template<> inline void ImGuiTestEngineUtil_AppendStrValue(ImGuiTextBuffer& buf, ImU64 value)        { buf.appendf("%llu", value); }
+template<> inline void ImGuiTestEngineUtil_AppendStrValue(ImGuiTextBuffer& buf, float value)        { buf.appendf("%.3f", value); }
+template<> inline void ImGuiTestEngineUtil_AppendStrValue(ImGuiTextBuffer& buf, double value)       { buf.appendf("%f", value); }
+template<> inline void ImGuiTestEngineUtil_AppendStrValue(ImGuiTextBuffer& buf, ImVec2 value)       { buf.appendf("(%.3f, %.3f)", value.x, value.y); }
+template<> inline void ImGuiTestEngineUtil_AppendStrValue(ImGuiTextBuffer& buf, const void* value)  { buf.appendf("%p", value); }
+
+static inline void ImGuiTestEngineUtil_AppendStrCompareOp(ImGuiTextBuffer& buf, const char* lhs_var, const char* lhs_val, const char* op, const char* rhs_var, const char* rhs_val)
+{
+    bool lhs_is_literal = lhs_var[0] == '\"';
+    bool rhs_is_literal = rhs_var[0] == '\"';
+    if (strchr(lhs_val, '\n') != NULL || strchr(rhs_var, '\n') != NULL)
+    {
+        // Multi line strings
+        size_t lhs_val_len = strlen(lhs_val);
+        size_t rhs_val_len = strlen(rhs_val);
+        if (lhs_val_len > 0 && lhs_val[lhs_val_len - 1] == '\n') // Strip trailing carriage return as we are adding one ourselves
+            lhs_val_len--;
+        if (rhs_val_len > 0 && rhs_val[rhs_val_len - 1] == '\n')
+            rhs_val_len--;
+        buf.appendf(
+            "\n"
+            "---------------------------------------- // lhs: %s\n"
+            "%.*s\n"
+            "---------------------------------------- // rhs: %s, compare op: %s\n"
+            "%.*s\n"
+            "----------------------------------------\n",
+            lhs_is_literal ? "literal" : lhs_var,
+            (int)lhs_val_len, lhs_val,
+            rhs_is_literal ? "literal" : rhs_var,
+            op,
+            (int)rhs_val_len, rhs_val);
+    }
+    else
+    {
+        // Single line strings
+        buf.appendf(
+            "%s [\"%s\"] %s %s [\"%s\"]",
+            lhs_is_literal ? "" : lhs_var, lhs_val,
+            op,
+            rhs_is_literal ? "" : rhs_var, rhs_val);
+    }
+}
+
+// Those macros allow us to print out the values of both lhs and rhs expressions involved in a check.
+#define IM_CHECK_OP(_LHS, _RHS, _OP, _RETURN)                       \
+    do                                                              \
+    {                                                               \
+        auto __lhs = _LHS;  /* Cache to avoid side effects */       \
+        auto __rhs = _RHS;                                          \
+        bool __res = __lhs _OP __rhs;                               \
+        ImGuiTextBuffer expr_buf;                                   \
+        expr_buf.appendf("%s [", #_LHS);                            \
+        ImGuiTestEngineUtil_AppendStrValue(expr_buf, __lhs);        \
+        expr_buf.appendf("] " #_OP " %s [", #_RHS);                 \
+        ImGuiTestEngineUtil_AppendStrValue(expr_buf, __rhs);        \
+        expr_buf.append("]");                                       \
+        if (ImGuiTestEngine_Check(__FILE__, __func__, __LINE__, ImGuiTestCheckFlags_None, __res, expr_buf.c_str())) \
+            IM_ASSERT(__res);                                       \
+        if (_RETURN && !__res)                                      \
+            return;                                                 \
+    } while (0)
+
+#define IM_CHECK_STR_OP(_LHS, _RHS, _OP, _RETURN, _FLAGS)           \
+    do                                                              \
+    {                                                               \
+        Str256 __lhs(_LHS);  /* Cache to avoid side effects */      \
+        Str256 __rhs(_RHS);                                         \
+        bool __res = strcmp(__lhs.c_str(), __rhs.c_str()) _OP 0;    \
+        ImGuiTextBuffer expr_buf;                                   \
+        ImGuiTestEngineUtil_AppendStrCompareOp(expr_buf, #_LHS, __lhs.c_str(), #_OP, #_RHS, __rhs.c_str()); \
+        if (ImGuiTestEngine_Check(__FILE__, __func__, __LINE__, _FLAGS, __res, expr_buf.c_str())) \
+            IM_ASSERT(__res);                                               \
+        if (_RETURN && !__res)                                              \
+            return;                                                         \
+    } while (0)
+
+#define IM_CHECK_STR_EQ(_LHS, _RHS)         IM_CHECK_STR_OP(_LHS, _RHS, ==, true, ImGuiTestCheckFlags_None)
+#define IM_CHECK_STR_NE(_LHS, _RHS)         IM_CHECK_STR_OP(_LHS, _RHS, !=, true, ImGuiTestCheckFlags_None)
+#define IM_CHECK_STR_EQ_NO_RET(_LHS, _RHS)  IM_CHECK_STR_OP(_LHS, _RHS, ==, false, ImGuiTestCheckFlags_None)
+#define IM_CHECK_STR_NE_NO_RET(_LHS, _RHS)  IM_CHECK_STR_OP(_LHS, _RHS, !=, false, ImGuiTestCheckFlags_None)
+#define IM_CHECK_STR_EQ_SILENT(_LHS, _RHS)  IM_CHECK_STR_OP(_LHS, _RHS, ==, true, ImGuiTestCheckFlags_SilentSuccess)
+
+#define IM_CHECK_EQ(_LHS, _RHS)             IM_CHECK_OP(_LHS, _RHS, ==, true)   // Equal
+#define IM_CHECK_NE(_LHS, _RHS)             IM_CHECK_OP(_LHS, _RHS, !=, true)   // Not Equal
+#define IM_CHECK_LT(_LHS, _RHS)             IM_CHECK_OP(_LHS, _RHS, < , true)   // Less Than
+#define IM_CHECK_LE(_LHS, _RHS)             IM_CHECK_OP(_LHS, _RHS, <=, true)   // Less or Equal
+#define IM_CHECK_GT(_LHS, _RHS)             IM_CHECK_OP(_LHS, _RHS, > , true)   // Greater Than
+#define IM_CHECK_GE(_LHS, _RHS)             IM_CHECK_OP(_LHS, _RHS, >=, true)   // Greater or Equal
+
+#define IM_CHECK_EQ_NO_RET(_LHS, _RHS)      IM_CHECK_OP(_LHS, _RHS, ==, false)  // Equal
+#define IM_CHECK_NE_NO_RET(_LHS, _RHS)      IM_CHECK_OP(_LHS, _RHS, !=, false)  // Not Equal
+#define IM_CHECK_LT_NO_RET(_LHS, _RHS)      IM_CHECK_OP(_LHS, _RHS, < , false)  // Less Than
+#define IM_CHECK_LE_NO_RET(_LHS, _RHS)      IM_CHECK_OP(_LHS, _RHS, <=, false)  // Less or Equal
+#define IM_CHECK_GT_NO_RET(_LHS, _RHS)      IM_CHECK_OP(_LHS, _RHS, > , false)  // Greater Than
+#define IM_CHECK_GE_NO_RET(_LHS, _RHS)      IM_CHECK_OP(_LHS, _RHS, >=, false)  // Greater or Equal
+
+#define IM_CHECK_FLOAT_EQ_EPS(_LHS, _RHS)               IM_CHECK_LE(ImFabs(_LHS - (_RHS)), FLT_EPSILON)   // Float Equal
+#define IM_CHECK_FLOAT_NEAR(_LHS, _RHS, _EPS)           IM_CHECK_LE(ImFabs(_LHS - (_RHS)), _EPS)
+#define IM_CHECK_FLOAT_NEAR_NO_RET(_LHS, _RHS, _EPS)    IM_CHECK_LE_NO_RET(ImFabs(_LHS - (_RHS)), _EPS)

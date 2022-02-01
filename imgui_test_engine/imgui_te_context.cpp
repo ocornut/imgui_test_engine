@@ -1843,7 +1843,7 @@ void    ImGuiTestContext::MouseWheel(ImVec2 delta)
     }
 }
 
-void    ImGuiTestContext::KeyDown(ImGuiKey key, int mod_flags)
+void    ImGuiTestContext::KeyDown(ImGuiKey key, ImGuiKeyModFlags mod_flags)
 {
     if (IsError())
         return;
@@ -1857,7 +1857,7 @@ void    ImGuiTestContext::KeyDown(ImGuiKey key, int mod_flags)
     Yield();
 }
 
-void    ImGuiTestContext::KeyUp(ImGuiKey key, int mod_flags)
+void    ImGuiTestContext::KeyUp(ImGuiKey key, ImGuiKeyModFlags mod_flags)
 {
     if (IsError())
         return;
@@ -1871,7 +1871,7 @@ void    ImGuiTestContext::KeyUp(ImGuiKey key, int mod_flags)
     Yield();
 }
 
-void    ImGuiTestContext::KeyPress(ImGuiKey key, int mod_flags, int count)
+void    ImGuiTestContext::KeyPress(ImGuiKey key, ImGuiKeyModFlags mod_flags, int count)
 {
     if (IsError())
         return;
@@ -1893,7 +1893,7 @@ void    ImGuiTestContext::KeyPress(ImGuiKey key, int mod_flags, int count)
     }
 }
 
-void    ImGuiTestContext::KeyHold(ImGuiKey key, int mod_flags, float time)
+void    ImGuiTestContext::KeyHold(ImGuiKey key, ImGuiKeyModFlags mod_flags, float time)
 {
     if (IsError())
         return;
