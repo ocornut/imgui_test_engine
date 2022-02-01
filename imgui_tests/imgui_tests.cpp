@@ -2987,6 +2987,8 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
         ImGui::Checkbox("Test2", &vars.Bool2);
         ImGui::EndChild();
 
+        ImGui::Checkbox("Dear###Test3", &vars.Bool1);
+
         ImGui::End();
     };
     t->TestFunc = [](ImGuiTestContext* ctx)
@@ -3004,6 +3006,9 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
 
         ctx->SetRef("Test Window");
         ctx->ItemClick("**/Test2");
+
+        // ### operator
+        ctx->ItemClick("**/Hello###Test3");
     };
 
     // ## Test hash functions and ##/### operators

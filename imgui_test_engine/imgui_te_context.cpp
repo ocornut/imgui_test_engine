@@ -769,6 +769,7 @@ ImGuiTestItemInfo* ImGuiTestContext::ItemInfo(ImGuiTestRef ref, ImGuiTestOpFlags
         for (const char* c = task->InSuffix; *c; c++)
             if (*c == '/')
                 task->InSuffixLastItem = c + 1;
+        task->InSuffixLastItemHash = ImHashStr(task->InSuffixLastItem, 0, 0);
 
         // Count number of labels
         task->InSuffixDepth = 1;
@@ -819,6 +820,7 @@ ImGuiTestItemInfo* ImGuiTestContext::ItemInfo(ImGuiTestRef ref, ImGuiTestOpFlags
         // FIXME: InFilterItemStatusFlags is intentionally not cleared here, because it is set in ItemAction() and reused in later calls to ItemInfo() to resolve ambiguities.
         task->InPrefixId = 0;
         task->InSuffix = task->InSuffixLastItem = NULL;
+        task->InSuffixLastItemHash = 0;
         task->InSuffixDepth = 0;
         task->OutItemId = 0;    // -V1048   // Variable 'OutItemId' was assigned the same value. False-positive, because value of OutItemId could be modified from other thread during ImGuiTestEngine_Yield() call.
     }
@@ -2984,7 +2986,7 @@ void    ImGuiTestContext::DockInto(ImGuiTestRef src_id, ImGuiTestRef dst_id, ImG
     if (node_src)
         ref_src = ImGui::DockNodeGetWindowMenuButtonId(node_src); // Whole node grab
     else
-        ref_src = (window_src->DockIsActive ? window_src->ID : window_src->MoveId); // FIXME-TESTS FIXME-DOCKING: Identify tab
+        ref_src = ref_src = (window_src->DockIsActive ? window_src->ID : window_src->MoveId); // FIXME-TESTS FIXME-DOCKING: Identify tab
     MouseMove(ref_src, ImGuiTestOpFlags_NoCheckHoveredId);
     SleepShort();
 

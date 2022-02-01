@@ -46,6 +46,7 @@ struct ImGuiTestFindByLabelTask
     int                     InSuffixDepth = 0;              // Number of labels in a path, after unknown base ID (for "hello/**/foo/bar" it would be 2)
     const char*             InSuffix = NULL;                // A label string which appears on ID stack after unknown base ID (for "hello/**/foo/bar" it would be "foo/bar")
     const char*             InSuffixLastItem = NULL;        // A last label string (for "hello/**/foo/bar" it would be "bar")
+    ImGuiID                 InSuffixLastItemHash = 0;
     ImGuiItemStatusFlags    InFilterItemStatusFlags = 0;    // Flags required for item to be returned
 
     // Output

@@ -1552,9 +1552,13 @@ void ImGuiTestEngineHook_ItemInfo(ImGuiContext* ui_ctx, ImGuiID id, const char* 
     }
 
     // Update Find by Label Task
+    // FIXME-TESTS FIXME-OPT: Compare by hashes instead of strcmp to support "###" operator.
+    // Perhaps we could use strcmp() if we detect that ### is not used, that would be faster.
     ImGuiTestFindByLabelTask* label_task = &engine->FindByLabelTask;
-    if (label && label_task->InSuffixLastItem && label_task->OutItemId == 0 && ImStrcmp(label_task->InSuffixLastItem, label) == 0)
-        ImGuiTestEngineHook_ItemInfo_ResolveFindByLabel(ui_ctx, id, label, flags);
+    if (label && label_task->InSuffixLastItem && label_task->OutItemId == 0)
+        //if (ImStrcmp(label_task->InSuffixLastItem, label) == 0)
+        if (label_task->InSuffixLastItemHash == ImHashStr(label, 0, 0))
+            ImGuiTestEngineHook_ItemInfo_ResolveFindByLabel(ui_ctx, id, label, flags);
 }
 
 // Forward core/user-land text to test log
