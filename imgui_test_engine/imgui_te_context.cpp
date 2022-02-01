@@ -1804,11 +1804,6 @@ void    ImGuiTestContext::MouseDragWithDelta(ImVec2 delta, ImGuiMouseButton butt
     MouseUp(button);
 }
 
-void    ImGuiTestContext::MouseWheel(float vertical, float horizontal)
-{
-    MouseWheel(ImVec2(horizontal, vertical));
-}
-
 // Important: always call MouseWheel() with an understand that holding Shift will swap axises.
 // - On Windows/Linux, this swap is done in ImGui::NewFrame()
 // - On OSX, this swap is generally done by the backends

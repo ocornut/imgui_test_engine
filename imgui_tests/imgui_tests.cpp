@@ -1508,10 +1508,10 @@ void RegisterTests_Window(ImGuiTestEngine* e)
         ctx->MouseMoveToPos(window->Rect().GetCenter());
         IM_CHECK_EQ(window->Scroll.x, 0.0f);
         IM_CHECK_EQ(window->Scroll.y, 0.0f);
-        ctx->MouseWheel(-5.0f);                                     // Scroll down
+        ctx->MouseWheel(ImVec2(0.0f,-5.0f));                        // Scroll down
         IM_CHECK_EQ(window->Scroll.x, 0.0f);
         IM_CHECK_GT(window->Scroll.y, 0.0f);
-        ctx->MouseWheel(5.0f);                                      // Scroll up
+        ctx->MouseWheel(ImVec2(0.0f, 5.0f));                        // Scroll up
         IM_CHECK_EQ(window->Scroll.x, 0.0f);
         IM_CHECK_EQ(window->Scroll.y, 0.0f);
 
@@ -1519,24 +1519,24 @@ void RegisterTests_Window(ImGuiTestEngine* e)
         {
             if (n == 0)
             {
-                ctx->MouseWheel(0.0f, -5.0f);                       // Scroll right (horizontal scroll)
+                ctx->MouseWheel(ImVec2(-5.0f, 0.0f));               // Scroll right (horizontal scroll)
             }
             else
             {
                 ctx->KeyModDown(ImGuiKeyModFlags_Shift);
-                ctx->MouseWheel(-5.0f);                             // Scroll right (shift + vertical scroll)
+                ctx->MouseWheel(ImVec2(0.0f, -5.0f));               // Scroll right (shift + vertical scroll)
                 ctx->KeyModUp(ImGuiKeyModFlags_Shift);
             }
             IM_CHECK_GT(window->Scroll.x, 0.0f);
             IM_CHECK_EQ(window->Scroll.y, 0.0f);
             if (n == 0)
             {
-                ctx->MouseWheel(0.0f, 5.0f);                        // Scroll left (horizontal scroll)
+                ctx->MouseWheel(ImVec2(5.0f, 0.0f));                // Scroll left (horizontal scroll)
             }
             else
             {
                 ctx->KeyModDown(ImGuiKeyModFlags_Shift);
-                ctx->MouseWheel(5.0f);                              // Scroll left (shift + vertical scroll)
+                ctx->MouseWheel(ImVec2(0.0f, 5.0f));                // Scroll left (shift + vertical scroll)
                 ctx->KeyModUp(ImGuiKeyModFlags_Shift);
             }
             IM_CHECK_EQ(window->Scroll.x, 0.0f);
@@ -1579,7 +1579,7 @@ void RegisterTests_Window(ImGuiTestEngine* e)
         // Test vertical scrolling. Scroll operation goes over child window but does not scroll it.
         ctx->MouseMove("Top");
         IM_CHECK_EQ(g.HoveredWindow, window);                   // Not hovering child initially
-        ctx->MouseWheel(-3.0f);
+        ctx->MouseWheel(ImVec2(0.0f, -3.0f));
         ctx->Yield();                                           // FIXME-TESTS: g.HoveredWindow needs extra frame to update.
         IM_CHECK_GT(window->Scroll.y, 0.0f);                    // Main window was scrolled
         IM_CHECK_EQ(child->Scroll.y, 0.0f);                     // Child window was not scrolled
@@ -1588,7 +1588,7 @@ void RegisterTests_Window(ImGuiTestEngine* e)
         // Pause for a while and perform scroll operation when cursor is hovering child. Now child is scrolled.
         float prev_scroll_y = window->Scroll.y;
         ctx->SleepNoSkip(2.0f, 1.0f / 2.0f);
-        ctx->MouseWheel(-3.0f);
+        ctx->MouseWheel(ImVec2(0.0f, -3.0f));
         IM_CHECK_EQ(window->Scroll.y, prev_scroll_y);
         IM_CHECK_GT(child->Scroll.y, 0.0f);
         IM_CHECK_EQ(g.HoveredWindow, child);                    // Still hovering child
@@ -1612,14 +1612,14 @@ void RegisterTests_Window(ImGuiTestEngine* e)
             if (n == 0)
             {
                 // Wheel (horizontal)
-                ctx->MouseWheel(0, -3.0f);
+                ctx->MouseWheel(ImVec2(-3.0f, 0.0f));
                 ctx->Yield();                                   // FIXME-TESTS: g.HoveredWindow needs extra frame to update.
             }
             else
             {
                 // Wheel (vertical) + shift
                 ctx->KeyModDown(ImGuiKeyModFlags_Shift);
-                ctx->MouseWheel(-3.0f);
+                ctx->MouseWheel(ImVec2(0.0f, -3.0f));
                 ctx->KeyModUp(ImGuiKeyModFlags_Shift);
             }
             float prev_scroll_x = window->Scroll.x;
@@ -1631,12 +1631,12 @@ void RegisterTests_Window(ImGuiTestEngine* e)
             ctx->SleepNoSkip(2.0f, 1.0f / 2.0f);
             if (n == 0)
             {
-                ctx->MouseWheel(0, -3.0f);
+                ctx->MouseWheel(ImVec2(-3.0f, 0.0f));
             }
             else
             {
                 ctx->KeyModDown(ImGuiKeyModFlags_Shift);
-                ctx->MouseWheel(-3.0f);
+                ctx->MouseWheel(ImVec2(0.0f, -3.0f));
                 ctx->KeyModUp(ImGuiKeyModFlags_Shift);
                 ctx->Yield();
             }

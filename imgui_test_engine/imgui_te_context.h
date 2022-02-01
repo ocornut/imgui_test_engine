@@ -313,7 +313,6 @@ struct ImGuiTestContext
     void        MouseUp(ImGuiMouseButton button = 0);
     void        MouseLiftDragThreshold(ImGuiMouseButton button = 0);
     void        MouseDragWithDelta(ImVec2 delta, ImGuiMouseButton button = 0);
-    void        MouseWheel(float vertical, float horizontal=0.0f);
     void        MouseWheel(ImVec2 delta);
     void        MouseMoveToVoid();
     void        MouseClickOnVoid(ImGuiMouseButton button = 0);

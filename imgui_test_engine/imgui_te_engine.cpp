@@ -454,6 +454,7 @@ static void ImGuiTestEngine_ClearTests(ImGuiTestEngine* engine)
 }
 
 // Called at the beginning of a test to ensure no previous inputs leak into the new test
+// FIXME-TESTS: Would make sense to reset mouse position as well?
 void ImGuiTestEngine_ClearInput(ImGuiTestEngine* engine)
 {
     IM_ASSERT(engine->UiContextTarget != NULL);
@@ -491,11 +492,13 @@ void ImGuiTestEngine_ApplyInputToImGuiContext(ImGuiTestEngine* engine)
     IM_ASSERT(engine->UiContextTarget != NULL);
     ImGuiContext& g = *engine->UiContextTarget;
     ImGuiIO& io = g.IO;
-    io.MouseDrawCursor = true;
 
     const bool use_simulated_inputs = ImGuiTestEngine_UseSimulatedInputs(engine);
     if (!use_simulated_inputs)
         return;
+
+    // Always draw mouse cursor
+    io.MouseDrawCursor = true;
 
     // To support using ImGuiKey_NavXXXX shortcuts pointing to gamepad actions
     // FIXME-TEST-ENGINE: Should restore
@@ -639,7 +642,7 @@ static void ImGuiTestEngine_PreNewFrame(ImGuiTestEngine* engine, ImGuiContext* u
         engine->ToolDebugRebootUiContext = false;
     }
 
-    // Inject extra time into the imgui context
+    // Inject extra time into the Dear ImGui context
     if (engine->OverrideDeltaTime >= 0.0f)
     {
         ui_ctx->IO.DeltaTime = engine->OverrideDeltaTime;
@@ -693,6 +696,10 @@ static void ImGuiTestEngine_PostNewFrame(ImGuiTestEngine* engine, ImGuiContext* 
     if (engine->UiContextTarget != ui_ctx)
         return;
     IM_ASSERT(ui_ctx == GImGui);
+
+    // Set initial mouse position to a decent value on startup
+    if (engine->FrameCount == 1)
+        engine->Inputs.MousePosValue = ImGui::GetMainViewport()->Pos;
 
     engine->CaptureContext.PostNewFrame();
     engine->CaptureTool.Context.PostNewFrame();
