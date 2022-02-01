@@ -2952,7 +2952,31 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
         ctx->Yield();
     };
 
-    t = IM_REGISTER_TEST(e, "misc", "misc_wildcard");
+    // ## Test using Item functions on windows
+#if IMGUI_VERSION_NUM >= 18616
+    t = IM_REGISTER_TEST(e, "misc", "misc_ref_window");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::SetNextWindowSize(ImVec2(100, 100));
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiContext& g = *GImGui;
+        ctx->MouseMove("Test Window");
+        IM_CHECK(g.HoveredWindow != NULL);
+        IM_CHECK_STR_EQ(g.HoveredWindow->Name, "Test Window");
+        ctx->MouseMoveToVoid();
+
+        ctx->MouseMove("**/Test Window");
+        IM_CHECK(g.HoveredWindow != NULL);
+        IM_CHECK_STR_EQ(g.HoveredWindow->Name, "Test Window");
+    };
+#endif
+
+    // ## Test **/ handling
+    t = IM_REGISTER_TEST(e, "misc", "misc_ref_wildcard");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         auto& vars = ctx->GenericVars;
@@ -2967,6 +2991,7 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
     };
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
+        // Test Window/Test1
         ctx->SetRef("Test Window");
         ctx->ItemClick("**/Test1");
 

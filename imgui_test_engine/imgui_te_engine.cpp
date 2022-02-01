@@ -1407,6 +1407,7 @@ void ImGuiTestEngineHook_ItemAdd(ImGuiContext* ui_ctx, const ImRect& bb, ImGuiID
     IM_ASSERT(id != 0);
     ImGuiContext& g = *ui_ctx;
     ImGuiWindow* window = g.CurrentWindow;
+    const ImGuiID parent_id = window->IDStack.Size ? window->IDStack.back() : 0;
 
     // FIXME-OPT: Early out if there are no active Info/Gather tasks.
 
@@ -1416,7 +1417,7 @@ void ImGuiTestEngineHook_ItemAdd(ImGuiContext* ui_ctx, const ImRect& bb, ImGuiID
         ImGuiTestItemInfo* item = &task->Result;
         item->TimestampMain = g.FrameCount;
         item->ID = id;
-        item->ParentID = window->IDStack.back();
+        item->ParentID = parent_id;
         item->Window = window;
         item->RectFull = item->RectClipped = bb;
         item->RectClipped.ClipWithFull(window->ClipRect);      // This two step clipping is important, we want RectClipped to stays within RectFull
@@ -1430,15 +1431,14 @@ void ImGuiTestEngineHook_ItemAdd(ImGuiContext* ui_ctx, const ImRect& bb, ImGuiID
     if (engine->GatherTask.InParentID != 0 && window->DC.NavLayerCurrent == ImGuiNavLayer_Main) // FIXME: Layer filter?
     {
         const ImGuiID gather_parent_id = engine->GatherTask.InParentID;
-        const ImGuiID stack_top_id = window->IDStack.back();
         int depth = -1;
-        if (gather_parent_id == stack_top_id)
+        if (gather_parent_id == parent_id)
         {
             depth = 0;
         }
         else
         {
-            int max_depth = ImMin(window->IDStack.Size, engine->GatherTask.InDepth + ((id == stack_top_id) ? 1 : 0));
+            int max_depth = ImMin(window->IDStack.Size, engine->GatherTask.InDepth + ((id == parent_id) ? 1 : 0));
             for (int n_depth = 1; n_depth < max_depth; n_depth++)
                 if (window->IDStack[window->IDStack.Size - 1 - n_depth] == gather_parent_id)
                 {
@@ -1480,17 +1480,22 @@ static void ImGuiTestEngineHook_ItemInfo_ResolveFindByLabel(ImGuiContext* ui_ctx
     // FIXME-TESTS: Stack depth limit?
     // FIXME-TESTS: Recurse back into parent window limit?
     bool match_prefix = false;
-    for (ImGuiWindow* window = g.CurrentWindow; window != NULL; window = window->ParentWindow)
+    if (label_task->InPrefixId == 0)
     {
-        const int id_stack_size = window->IDStack.Size;
-        for (ImGuiID* p_id_stack = window->IDStack.Data + id_stack_size - 1; p_id_stack >= window->IDStack.Data; p_id_stack--)
-            if (*p_id_stack == label_task->InPrefixId || label_task->InPrefixId == 0)
-            {
-                match_prefix = true;
-                break;
-            }
-        if (match_prefix)
-            break;
+        match_prefix = true;
+    }
+    else
+    {
+        for (ImGuiWindow* window = g.CurrentWindow; window != NULL && !match_prefix; window = window->ParentWindow)
+        {
+            const int id_stack_size = window->IDStack.Size;
+            for (ImGuiID* p_id_stack = window->IDStack.Data + id_stack_size - 1; p_id_stack >= window->IDStack.Data; p_id_stack--)
+                if (*p_id_stack == label_task->InPrefixId)
+                {
+                    match_prefix = true;
+                    break;
+                }
+        }
     }
     if (!match_prefix)
         return;
@@ -1502,11 +1507,9 @@ static void ImGuiTestEngineHook_ItemInfo_ResolveFindByLabel(ImGuiContext* ui_ctx
     {
         ImGuiWindow* window = g.CurrentWindow;
         const int id_stack_size = window->IDStack.Size;
-        if (label_task->InSuffixDepth >= id_stack_size + 1)
-            return;
-
-        ImGuiID base_id = window->IDStack.Data[id_stack_size - label_task->InSuffixDepth];  // base_id correspond to the "**"
-        ImGuiID find_id = ImHashDecoratedPath(label_task->InSuffix, NULL, base_id);         // essentially compare the whole "foo/bar" suffix.
+        const int id_stack_pos = id_stack_size - label_task->InSuffixDepth;
+        ImGuiID base_id = id_stack_pos >= 0 ? window->IDStack.Data[id_stack_pos] : 0;   // base_id correspond to the "**"
+        ImGuiID find_id = ImHashDecoratedPath(label_task->InSuffix, NULL, base_id);     // essentially compare the whole "foo/bar" suffix.
         if (id != find_id)
             return;
 

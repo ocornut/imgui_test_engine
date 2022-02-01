@@ -1724,6 +1724,7 @@ void RegisterTests_PerfTool(ImGuiTestEngine* e)
         ctx->Yield();
 
         ImGuiWindow* window = ctx->GetWindowByRef("Dear ImGui Perf Tool");
+        IM_CHECK(window != NULL);
         ImVec2 pos_bkp = window->Pos;
         ImVec2 size_bkp = window->Size;
         ctx->SetRef(window);
