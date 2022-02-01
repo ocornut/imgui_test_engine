@@ -956,22 +956,22 @@ static void ImGuiTestEngine_ProcessTestQueue(ImGuiTestEngine* engine)
         // Test name is not displayed in UI due to a happy accident - logged test name is cleared in
         // ImGuiTestEngine_RunTest(). This is a behavior we want.
         ctx.LogWarning("Test: '%s' '%s'..", test->Category, test->Name);
-        if (test->UserDataConstructor != NULL)
+        if (test->VarsConstructor != NULL)
         {
-            if ((engine->UserDataBuffer == NULL) || (engine->UserDataBufferSize < test->UserDataSize))
+            if ((engine->UserDataBuffer == NULL) || (engine->UserDataBufferSize < test->VarsSize))
             {
                 IM_FREE(engine->UserDataBuffer);
-                engine->UserDataBufferSize = test->UserDataSize;
+                engine->UserDataBufferSize = test->VarsSize;
                 engine->UserDataBuffer = IM_ALLOC(engine->UserDataBufferSize);
             }
 
             // Run test with a custom data type in the stack
             ctx.UserVars = engine->UserDataBuffer;
-            test->UserDataConstructor(engine->UserDataBuffer);
-            if (test->UserDataPostConstructor != NULL && test->UserDataPostConstructorFn != NULL)
-                test->UserDataPostConstructor(engine->UserDataBuffer, test->UserDataPostConstructorFn);
+            test->VarsConstructor(engine->UserDataBuffer);
+            if (test->VarsPostConstructor != NULL && test->VarsPostConstructorUserFn != NULL)
+                test->VarsPostConstructor(engine->UserDataBuffer, test->VarsPostConstructorUserFn);
             ImGuiTestEngine_RunTest(engine, &ctx);
-            test->UserDataDestructor(engine->UserDataBuffer);
+            test->VarsDestructor(engine->UserDataBuffer);
         }
         else
         {

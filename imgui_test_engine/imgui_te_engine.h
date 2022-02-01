@@ -451,9 +451,9 @@ typedef void    (*ImGuiTestGuiFunc)(ImGuiTestContext* ctx);
 typedef void    (*ImGuiTestTestFunc)(ImGuiTestContext* ctx);
 
 // Wraps a placement new of a given type (where 'buffer' is the allocated memory)
-typedef void    (*ImGuiTestUserDataConstructor)(void* buffer);
-typedef void    (*ImGuiTestUserDataPostConstructor)(void* ptr, void* fn);
-typedef void    (*ImGuiTestUserDataDestructor)(void* ptr);
+typedef void    (*ImGuiTestVarsConstructor)(void* buffer);
+typedef void    (*ImGuiTestVarsPostConstructor)(void* ptr, void* fn);
+typedef void    (*ImGuiTestVarsDestructor)(void* ptr);
 
 // Storage for one test
 struct ImGuiTest
@@ -469,11 +469,11 @@ struct ImGuiTest
     ImU64                           StartTime = 0;                  //
     ImU64                           EndTime = 0;                    //
     int                             ArgVariant = 0;                 // User parameter. Generally we use it to run variations of a same test by sharing GuiFunc/TestFunc
-    size_t                          UserDataSize = 0;               // When SetVarsDataType() is used, we create an instance of user structure so we can be used by GuiFunc/TestFunc.
-    ImGuiTestUserDataConstructor    UserDataConstructor = NULL;
-    ImGuiTestUserDataPostConstructor UserDataPostConstructor = NULL;
-    void*                           UserDataPostConstructorFn = NULL;
-    ImGuiTestUserDataDestructor     UserDataDestructor = NULL;
+    size_t                          VarsSize = 0;                   // When SetVarsDataType() is used, we create an instance of user structure so we can be used by GuiFunc/TestFunc.
+    ImGuiTestVarsConstructor        VarsConstructor = NULL;
+    ImGuiTestVarsPostConstructor    VarsPostConstructor = NULL;     // To share a type/constructor while initializing different default (in case the default are problematic on the first frame)
+    void*                           VarsPostConstructorUserFn = NULL;
+    ImGuiTestVarsDestructor         VarsDestructor = NULL;
     ImGuiTestStatus                 Status = ImGuiTestStatus_Unknown;
     ImGuiTestFlags                  Flags = ImGuiTestFlags_None;    // See ImGuiTestFlags_
     ImGuiTestGuiFunc                GuiFunc = NULL;                 // GUI functions (optional if your test are running over an existing GUI application)
@@ -489,13 +489,13 @@ struct ImGuiTest
     template <typename T>
     void SetVarsDataType(void(*post_initialize)(T& vars) = NULL)
     {
-        UserDataSize = sizeof(T);
-        UserDataConstructor = [](void* ptr) { IM_PLACEMENT_NEW(ptr) T; };
-        UserDataDestructor = [](void* ptr) { IM_UNUSED(ptr); reinterpret_cast<T*>(ptr)->~T(); };
+        VarsSize = sizeof(T);
+        VarsConstructor = [](void* ptr) { IM_PLACEMENT_NEW(ptr) T; };
+        VarsDestructor = [](void* ptr) { IM_UNUSED(ptr); reinterpret_cast<T*>(ptr)->~T(); };
         if (post_initialize != NULL)
         {
-            UserDataPostConstructorFn = (void*)post_initialize;
-            UserDataPostConstructor = [](void* ptr, void* fn) { ((void (*)(T&))(fn))(*(T*)ptr); };
+            VarsPostConstructorUserFn = (void*)post_initialize;
+            VarsPostConstructor = [](void* ptr, void* fn) { ((void (*)(T&))(fn))(*(T*)ptr); };
         }
     }
 };
