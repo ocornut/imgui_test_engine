@@ -1671,6 +1671,57 @@ bool ImGuiTestEngine_Check(const char* file, const char* func, int line, ImGuiTe
     return false;
 }
 
+bool ImGuiTestEngine_CheckStrOp(const char* file, const char* func, int line, ImGuiTestCheckFlags flags, const char* op, const char* lhs_var, const char* lhs_value, const char* rhs_var, const char* rhs_value)
+{
+    int res_strcmp = strcmp(lhs_value, rhs_value);
+    bool res = 0;
+    if (strcmp(op, "==") == 0)
+        res = (res_strcmp == 0);
+    else if (strcmp(op, "!=") == 0)
+        res = (res_strcmp != 0);
+    else
+        IM_ASSERT(0);
+
+    ImGuiTextBuffer buf; // FIXME-OPT: Now we can probably remove that allocation
+
+    bool lhs_is_literal = lhs_var[0] == '\"';
+    bool rhs_is_literal = rhs_var[0] == '\"';
+    if (strchr(lhs_value, '\n') != NULL || strchr(rhs_value, '\n') != NULL)
+    {
+        // Multi line strings
+        size_t lhs_value_len = strlen(lhs_value);
+        size_t rhs_value_len = strlen(rhs_value);
+        if (lhs_value_len > 0 && lhs_value[lhs_value_len - 1] == '\n') // Strip trailing carriage return as we are adding one ourselves
+            lhs_value_len--;
+        if (rhs_value_len > 0 && rhs_value[rhs_value_len - 1] == '\n')
+            rhs_value_len--;
+        buf.appendf(
+            "\n"
+            "---------------------------------------- // lhs: %s\n"
+            "%.*s\n"
+            "---------------------------------------- // rhs: %s, compare op: %s\n"
+            "%.*s\n"
+            "----------------------------------------\n",
+            lhs_is_literal ? "literal" : lhs_var,
+            (int)lhs_value_len, lhs_value,
+            rhs_is_literal ? "literal" : rhs_var,
+            op,
+            (int)rhs_value_len, rhs_value);
+    }
+    else
+    {
+        // Single line strings
+        buf.appendf(
+            "%s [\"%s\"] %s %s [\"%s\"]",
+            lhs_is_literal ? "" : lhs_var, lhs_value,
+            op,
+            rhs_is_literal ? "" : rhs_var, rhs_value);
+    }
+
+
+    return ImGuiTestEngine_Check(file, func, line, flags, res, buf.c_str());
+}
+
 bool ImGuiTestEngine_Error(const char* file, const char* func, int line, ImGuiTestCheckFlags flags, const char* fmt, ...)
 {
     va_list args;
