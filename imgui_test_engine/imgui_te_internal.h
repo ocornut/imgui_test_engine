@@ -102,7 +102,6 @@ struct ImGuiTestInputs
     ImVec2                      MouseWheel;
     ImGuiID                     MouseHoveredViewport = 0;
     int                         MouseButtonsValue = 0x00;       // FIXME-TESTS: Use simulated_io.MouseDown[] ?
-    ImGuiKeyModFlags            KeyMods = 0x00;                 // FIXME-TESTS: Use simulated_io.KeyXXX ?
     ImVector<ImGuiTestInput>    Queue;
     bool                        HostEscDown = false;
     float                       HostEscDownDuration = -1.0f;    // Maintain our own DownDuration for host/backend ESC key so we can abort.
