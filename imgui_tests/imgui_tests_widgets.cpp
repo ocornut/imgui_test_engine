@@ -1553,7 +1553,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
             if (variant == 0)
                 ctx->KeyPress(ImGuiKey_C, ImGuiKeyModFlags_Shortcut);
             else
-                ctx->KeyPress(ImGuiKey_Insert, ImGuiKeyModFlags_Shortcut);
+                ctx->KeyPress(ImGuiKey_Insert, ImGuiKeyModFlags_Ctrl);
             clipboard_text = ImGui::GetClipboardText();
             IM_CHECK_STR_EQ(clipboard_text, "Hello, world!");
 
@@ -1565,7 +1565,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
             if (variant == 0)
                 ctx->KeyPress(ImGuiKey_C, ImGuiKeyModFlags_Shortcut);
             else
-                ctx->KeyPress(ImGuiKey_Insert, ImGuiKeyModFlags_Shortcut);
+                ctx->KeyPress(ImGuiKey_Insert, ImGuiKeyModFlags_Ctrl);
             clipboard_text = ImGui::GetClipboardText();
             IM_CHECK_STR_EQ(clipboard_text, "Hello");
 
