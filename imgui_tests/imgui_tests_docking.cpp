@@ -731,17 +731,17 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
             IM_CHECK(ctx->TabBarCompareOrder(tab_bar, tab_order_initial));
 
             // Verify that drag operation past edge of the tab, but not entering other tab does not trigger reorder.
-            ctx->ItemDragWithDelta("AAA", ImVec2((tab_bar->Tabs[0].Width + g.Style.ItemInnerSpacing.x) * +0.5f, 0.0f));
+            ctx->ItemDragWithDelta("AAA/#TAB", ImVec2((tab_bar->Tabs[0].Width + g.Style.ItemInnerSpacing.x) * +0.5f, 0.0f));
             tab_bar = window_aaa->DockNode->TabBar;
             IM_CHECK(ctx->TabBarCompareOrder(tab_bar, tab_order_initial));
-            ctx->ItemDragWithDelta("BBB", ImVec2((tab_bar->Tabs[0].Width + g.Style.ItemInnerSpacing.x) * -0.5f, 0.0f));
+            ctx->ItemDragWithDelta("BBB/#TAB", ImVec2((tab_bar->Tabs[0].Width + g.Style.ItemInnerSpacing.x) * -0.5f, 0.0f));
             tab_bar = window_aaa->DockNode->TabBar;
             IM_CHECK(ctx->TabBarCompareOrder(tab_bar, tab_order_initial));
-            IM_CHECK(tab_bar->Tabs[2].ID == window_ccc->ID);
+            IM_CHECK(tab_bar->Tabs[2].ID == window_ccc->TabId);
 
             // Mix tabs, expected order becomes CCC, BBB, AAA. This also verifies drag operations way beyond tab bar rect.
-            ctx->ItemDragWithDelta("AAA", ImVec2(+tab_bar->Tabs[2].Offset + tab_bar->Tabs[2].Width, 0.0f));
-            ctx->ItemDragWithDelta("CCC", ImVec2(-tab_bar->Tabs[1].Offset - tab_bar->Tabs[1].Width, 0.0f));
+            ctx->ItemDragWithDelta("AAA/#TAB", ImVec2(+tab_bar->Tabs[2].Offset + tab_bar->Tabs[2].Width, 0.0f));
+            ctx->ItemDragWithDelta("CCC/#TAB", ImVec2(-tab_bar->Tabs[1].Offset - tab_bar->Tabs[1].Width, 0.0f));
             IM_CHECK(window_aaa->DockNode != NULL);     // Avoid crashes if tab gets undocked.
             tab_bar = window_aaa->DockNode->TabBar;
             const char* tab_order_rearranged[] = { "CCC", "BBB", "AAA", NULL };
@@ -834,8 +834,8 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
 
             ctx->ItemClick("BBB");
             ImGuiTabBar* tab_bar = window_aaa->DockNode->TabBar;
-            IM_CHECK_EQ(node->SelectedTabId, window_bbb->ID);
-            IM_CHECK_EQ(tab_bar->SelectedTabId, window_bbb->ID);
+            IM_CHECK_EQ(node->SelectedTabId, window_bbb->TabId);
+            IM_CHECK_EQ(tab_bar->SelectedTabId, window_bbb->TabId);
             IM_CHECK(g.NavWindow == window_bbb);
 
             IM_CHECK(window_aaa->Hidden == true);
@@ -1239,10 +1239,10 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
             ImGuiTabBar* tab_bar_ddd = window_ddd->DockNode->TabBar;
 
             // Rearrange tabs and set active tab.
-            ctx->ItemDragAndDrop("CCC", "AAA");
-            ctx->ItemDragAndDrop("DDD", "FFF");
-            ctx->ItemClick("AAA");
-            ctx->ItemClick("FFF");
+            ctx->ItemDragAndDrop("CCC/#TAB", "AAA/#TAB");
+            ctx->ItemDragAndDrop("DDD/#TAB", "FFF/#TAB");
+            ctx->ItemClick("AAA/#TAB");
+            ctx->ItemClick("FFF/#TAB");
 
             // Verify initial order.
             const char* tab_order_1[] = { "CCC", "AAA", "BBB", NULL };
@@ -1316,7 +1316,7 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
         IM_CHECK(window->Size.x == initial_size.x);
         IM_CHECK(window->Size.y == initial_size.y);
 
-        ctx->ItemDragWithDelta("Window 1", ImVec2(50.0f, 50.0f));
+        ctx->ItemDragWithDelta("Window 1/#TAB", ImVec2(50.0f, 50.0f));
         IM_CHECK(ctx->WindowIsUndockedOrStandalone(window));
 
         ImVec2 expect_size;
@@ -1414,7 +1414,7 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
         {
             if (!g.IO.ConfigDockingWithShift)
                 ctx->KeyModDown(ImGuiKeyModFlags_Shift); // Disable docking
-            ctx->MouseMove(windowB->Name, ImGuiTestOpFlags_NoCheckHoveredId);
+            ctx->MouseMove(windowB->TabId, ImGuiTestOpFlags_NoCheckHoveredId);
             ctx->MouseDown(0);
 
             const float h = windowB->TitleBarHeight();

@@ -1748,7 +1748,11 @@ ImVec2  ImGuiTestContext::GetWindowTitlebarPoint(ImGuiTestRef window_ref)
         if (window->DockNode != NULL && window->DockNode->TabBar != NULL)
         {
             ImGuiTabBar* tab_bar = window->DockNode->TabBar;
+#if IMGUI_VERSION_NUM >= 18616
+            ImGuiTabItem* tab = ImGui::TabBarFindTabByID(tab_bar, window->TabId);
+#else
             ImGuiTabItem* tab = ImGui::TabBarFindTabByID(tab_bar, window->ID);
+#endif
             IM_ASSERT(tab != NULL);
             drag_pos = tab_bar->BarRect.Min + ImVec2(tab->Offset + tab->Width * 0.5f, tab_bar->BarRect.GetHeight() * 0.5f);
         }
@@ -2986,7 +2990,7 @@ void    ImGuiTestContext::DockInto(ImGuiTestRef src_id, ImGuiTestRef dst_id, ImG
     if (node_src)
         ref_src = ImGui::DockNodeGetWindowMenuButtonId(node_src); // Whole node grab
     else
-        ref_src = ref_src = (window_src->DockIsActive ? window_src->ID : window_src->MoveId); // FIXME-TESTS FIXME-DOCKING: Identify tab
+        ref_src = ref_src = (window_src->DockIsActive ? window_src->TabId : window_src->MoveId); // FIXME-TESTS FIXME-DOCKING: Identify tab
     MouseMove(ref_src, ImGuiTestOpFlags_NoCheckHoveredId);
     SleepShort();
 
@@ -3122,7 +3126,7 @@ void    ImGuiTestContext::UndockWindow(const char* window_name)
     const float h = window->TitleBarHeight();
     if (!UiContext->IO.ConfigDockingWithShift)
         KeyModDown(ImGuiKeyModFlags_Shift);
-    ItemDragWithDelta(window_name, ImVec2(h, h) * -2);
+    ItemDragWithDelta(window->TabId, ImVec2(h, h) * -2);
     if (!UiContext->IO.ConfigDockingWithShift)
         KeyModUp(ImGuiKeyModFlags_Shift);
     Yield();
