@@ -189,8 +189,7 @@ void RegisterTests_Window(ImGuiTestEngine* e)
                 IM_CHECK_EQ(data->Pos, window->Pos);
                 IM_CHECK_EQ(data->CurrentSize, window->SizeFull);
             }
-            data->DesiredSize.x = ImMax(data->DesiredSize.x, data->DesiredSize.y);
-            data->DesiredSize.y = ImMax(data->DesiredSize.x, data->DesiredSize.y);
+            data->DesiredSize.x = data->DesiredSize.y = ImMax(data->DesiredSize.x, data->DesiredSize.y);
         };
         ImGui::SetNextWindowSizeConstraints(ImVec2(0, 0), ImVec2(500, 500), constraints, ctx);
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);

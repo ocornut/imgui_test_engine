@@ -35,7 +35,6 @@
 //-------------------------------------------------------------------------
 // TODO: Tests: Docking: clicking on a tab sets NavWindow to the tab window
 // TODO: Tests: Docking: clicking on a node title bar (outside of tab) sets NavWindow to the selected tab window
-// TODO: Tests: Docking: test IsItemHovered() calls after Begin() of a docked window.
 // TODO: Tests: Docking: dragging collapse menu sets NavWindow to selected tab window + allow to move
 //-------------------------------------------------------------------------
 
@@ -916,6 +915,56 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
         IM_CHECK(window->DockId != 0);
         ctx->ItemClick(ctx->GetID("+", window->DockId));
         IM_CHECK_EQ(button_clicks, 1);
+    };
+
+    // ## Test IsItemHovered() on tabs and clipped contents
+    t = IM_REGISTER_TEST(e, "docking", "docking_tab_clipped_is_hovered");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        auto& vars = ctx->GenericVars;
+
+        ImGui::Begin("AAA", NULL, ImGuiWindowFlags_NoSavedSettings);
+        vars.BoolArray[0] = ImGui::IsItemHovered();
+        ImGui::Text("IsItemHovered: %d", vars.BoolArray[0]);
+        ImGui::Button("Button");
+        vars.BoolArray[1] = ImGui::IsItemHovered();
+        ImGui::Text("IsItemHovered: %d", vars.BoolArray[1]);
+        ImGui::End();
+
+        ImGui::Begin("BBB", NULL, ImGuiWindowFlags_NoSavedSettings);
+        vars.BoolArray[2] = ImGui::IsItemHovered();
+        ImGui::Text("IsItemHovered: %d", vars.BoolArray[2]);
+        ImGui::Button("Button");
+        vars.BoolArray[3] = ImGui::IsItemHovered();
+        ImGui::Text("IsItemHovered: %d", vars.BoolArray[3]);
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        auto& vars = ctx->GenericVars;
+
+        ctx->DockClear("AAA", "BBB", NULL);
+        ctx->DockInto("BBB", "AAA");
+
+        ctx->ItemClick("AAA/#TAB");
+        IM_CHECK(vars.BoolArray[0] == true);
+        IM_CHECK(vars.BoolArray[1] == false); // Button not reporting as hovered
+        IM_CHECK(vars.BoolArray[2] == false);
+        IM_CHECK(vars.BoolArray[3] == false); // Button not reporting as hovered
+        ctx->MouseDown(0);
+        ctx->Yield();
+        ctx->Yield();
+        IM_CHECK(vars.BoolArray[0] == true);
+        IM_CHECK(vars.BoolArray[1] == false); // Button not reporting as hovered
+        IM_CHECK(vars.BoolArray[2] == false);
+        IM_CHECK(vars.BoolArray[3] == false); // Button not reporting as hovered
+        ctx->MouseUp(0);
+
+        ctx->ItemClick("BBB/#TAB");
+        IM_CHECK(vars.BoolArray[0] == false);
+        IM_CHECK(vars.BoolArray[1] == false); // Button not reporting as hovered
+        IM_CHECK(vars.BoolArray[2] == true);
+        IM_CHECK(vars.BoolArray[3] == false); // Button not reporting as hovered
     };
 
     // ## Test _KeepAlive dockspace flag.
