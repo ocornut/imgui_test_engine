@@ -2962,7 +2962,7 @@ void    ImGuiTestContext::DockInto(ImGuiTestRef src_id, ImGuiTestRef dst_id, ImG
     if (node_dst)
         window_dst = node_dst->HostWindow;
 
-    Str128f log("DockWindowInto() Src: %s '%s' (0x%08X), Dst: %s '%s' (0x%08X)",
+    Str128f log("DockInto() Src: %s '%s' (0x%08X), Dst: %s '%s' (0x%08X)",
         node_src ? "node" : "window", node_src ? "" : window_src->Name, node_src ? node_src->ID : window_src->ID,
         node_dst ? "node" : "window", node_dst ? "" : window_dst->Name, node_dst ? node_dst->ID : window_dst->ID);
     LogDebug("%s", log.c_str());
@@ -3089,6 +3089,9 @@ void    ImGuiTestContext::DockNodeHideTabBar(ImGuiDockNode* node, bool hidden)
 
 void    ImGuiTestContext::UndockNode(ImGuiID dock_id)
 {
+    IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
+    LogDebug("UndockNode 0x%08X", dock_id);
+
     ImGuiDockNode* node = ImGui::DockBuilderGetNode(dock_id);
     if (node == NULL)
         return;
@@ -3109,6 +3112,8 @@ void    ImGuiTestContext::UndockNode(ImGuiID dock_id)
 void    ImGuiTestContext::UndockWindow(const char* window_name)
 {
     IM_ASSERT(window_name != NULL);
+    IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
+    LogDebug("UndockWindow \"%s\"", window_name);
 
     ImGuiWindow* window = GetWindowByRef(window_name);
     if (!window->DockIsActive)

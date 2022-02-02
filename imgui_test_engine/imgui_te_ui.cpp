@@ -548,18 +548,18 @@ static void ImGuiTestEngine_ShowTestTool(ImGuiTestEngine* engine, bool* p_open)
         ImGui::EndPopup();
     }
 
-    ImGui::Checkbox("Fast", &engine->IO.ConfigRunFast); HelpTooltip("Run tests as fast as possible (no vsync, no delay, teleport mouse, etc.).");
+    ImGui::Checkbox("Fast", &engine->IO.ConfigRunFast); HelpTooltip("Run tests as fast as possible (no delay/vsync, teleport mouse, etc.).");
     ImGui::SameLine();
     //ImGui::BeginDisabled();
     //ImGui::Checkbox("Blind", &engine->IO.ConfigRunBlind);
     //ImGui::EndDisabled();
-    HelpTooltip("<UNSUPPORTED>\nRun tests in a blind ui context.");
-    ImGui::SameLine();
+    //HelpTooltip("<UNSUPPORTED>\nRun tests in a blind ui context.");
+    //ImGui::SameLine();
     ImGui::Checkbox("Stop", &engine->IO.ConfigStopOnError); HelpTooltip("Stop running tests when hitting an error.");
     ImGui::SameLine();
     ImGui::Checkbox("DbgBrk", &engine->IO.ConfigBreakOnError); HelpTooltip("Break in debugger when hitting an error.");
     ImGui::SameLine();
-    ImGui::Checkbox("KeepGUI", &engine->IO.ConfigKeepGuiFunc); HelpTooltip("Keep GUI function running after test function is finished. Hold ESC to abort a running GUI function.");
+    ImGui::Checkbox("KeepGUI", &engine->IO.ConfigKeepGuiFunc); HelpTooltip("Keep GUI function running after test function is finished.\nHold ESC to abort a running GUI function.");
     ImGui::SameLine();
     ImGui::Checkbox("Refocus", &engine->IO.ConfigTakeFocusBackAfterTests); HelpTooltip("Set focus back to Test window after running tests.");
     ImGui::SameLine();

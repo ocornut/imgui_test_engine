@@ -34,7 +34,7 @@ struct ImGuiTestGatherTask;     // Test Engine task for scanning/finding items
 // ImGuiTestRef
 //-------------------------------------------------------------------------
 
-// Weak reference to an Item/Window given an hashed ID or a string path ID.
+// Weak reference to an Item/Window given an hashed ID _or_ a string path ID.
 struct ImGuiTestRef
 {
     ImGuiID         ID;
@@ -76,7 +76,7 @@ enum
     //ImGuiKey_NavTweakSlow   = ImGuiKey_LeftCtrl, //GamepadL1
 };
 
-// Named actions. Generally you will call the named helpers e.g. ItemClick(), this is used by shared/low-level functions.
+// Named actions. Generally you will call the named helpers e.g. ItemClick(). This is used by shared/low-level functions such as ItemAction().
 enum ImGuiTestAction
 {
     ImGuiTestAction_Unknown = 0,
@@ -96,13 +96,12 @@ enum ImGuiTestAction
 enum ImGuiTestOpFlags_
 {
     ImGuiTestOpFlags_None               = 0,
-    ImGuiTestOpFlags_Verbose            = 1 << 0,
-    ImGuiTestOpFlags_NoCheckHoveredId   = 1 << 1,
+    ImGuiTestOpFlags_NoCheckHoveredId   = 1 << 1,   // Don't check for HoveredId after aiming for a widget. A few situations may want this: while e.g. dragging or another items prevents hovering, or for items that don't use ItemHoverable()
     ImGuiTestOpFlags_NoError            = 1 << 2,   // Don't abort/error e.g. if the item cannot be found
-    ImGuiTestOpFlags_NoFocusWindow      = 1 << 3,
+    ImGuiTestOpFlags_NoFocusWindow      = 1 << 3,   // Don't focus window when aiming at an item
     ImGuiTestOpFlags_NoAutoUncollapse   = 1 << 4,   // Disable automatically uncollapsing windows (useful when specifically testing Collapsing behaviors)
-    ImGuiTestOpFlags_IsSecondAttempt    = 1 << 5,
-    ImGuiTestOpFlags_MoveToEdgeL        = 1 << 6,   // Dumb aiming helpers to test widget that care about clicking position. May need to replace will better functionalities.
+    ImGuiTestOpFlags_IsSecondAttempt    = 1 << 5,   // Used by recursing functions to indicate a second attempt
+    ImGuiTestOpFlags_MoveToEdgeL        = 1 << 6,   // Simple Dumb aiming helpers to test widget that care about clicking position. May need to replace will better functionalities.
     ImGuiTestOpFlags_MoveToEdgeR        = 1 << 7,
     ImGuiTestOpFlags_MoveToEdgeU        = 1 << 8,
     ImGuiTestOpFlags_MoveToEdgeD        = 1 << 9
@@ -124,16 +123,16 @@ struct ImGuiTestActionFilter
 // This facilitate interactions between GuiFunc and TestFunc, since those state are frequently used.
 struct ImGuiTestGenericItemStatus
 {
-    int     Ret;            // return value
-    int     Hovered;        // result of IsItemHovered()
-    int     Active;         // result of IsItemActive()
-    int     Focused;        // result of IsItemFocused()
-    int     Clicked;        // result of IsItemClicked()
-    int     Visible;        // result of IsItemVisible()
-    int     Edited;         // result of IsItemEdited()
-    int     Activated;      // result of IsItemActivated()
-    int     Deactivated;    // result of IsItemDeactivated()
-    int     DeactivatedAfterEdit;//.. of IsItemDeactivatedAfterEdit()
+    int     Ret;                    // return value
+    int     Hovered;                // result of IsItemHovered()
+    int     Active;                 // result of IsItemActive()
+    int     Focused;                // result of IsItemFocused()
+    int     Clicked;                // result of IsItemClicked()
+    int     Visible;                // result of IsItemVisible()
+    int     Edited;                 // result of IsItemEdited()
+    int     Activated;              // result of IsItemActivated()
+    int     Deactivated;            // result of IsItemDeactivated()
+    int     DeactivatedAfterEdit;   // .. of IsItemDeactivatedAfterEdit()
 
     ImGuiTestGenericItemStatus()        { Clear(); }
     void Clear()                        { memset(this, 0, sizeof(*this)); }
@@ -142,7 +141,7 @@ struct ImGuiTestGenericItemStatus
 };
 
 // Generic structure with various storage fields.
-// This is useful for tests to quickly share data between GuiFunc and TestFunc.
+// This is useful for tests to quickly share data between GuiFunc and TestFunc without creating custom data structure.
 // If those fields are not enough: using ctx->SetVarsDataType<>() and ctx->GetVars<>() it is possible to store custom data on the stack.
 struct ImGuiTestGenericVars
 {
@@ -162,7 +161,7 @@ struct ImGuiTestGenericVars
     ImVec2                  Pivot;
     ImVec4                  Color1, Color2;
 
-    // Generic storage
+    // Generic unnamed storage
     int                     Int1, Int2, IntArray[10];
     float                   Float1, Float2, FloatArray[10];
     bool                    Bool1, Bool2, BoolArray[10];
@@ -186,7 +185,7 @@ struct ImGuiTestContext
 {
     // User variables
     ImGuiTestGenericVars    GenericVars;
-    void*                   UserVars = NULL;
+    void*                   UserVars = NULL;                        // Access using ->GetVars<Type>()
 
     // Public fields
     ImGuiContext*           UiContext = NULL;                       // UI context
@@ -208,7 +207,7 @@ struct ImGuiTestContext
     ImGuiTestGatherTask*    GatherTask = NULL;
     ImGuiTestRunFlags       RunFlags = ImGuiTestRunFlags_None;
     ImGuiTestActiveFunc     ActiveFunc = ImGuiTestActiveFunc_None;  // None/GuiFunc/TestFunc
-    double                  RunningTime = 0.0f;                     // Amount of wall clock time the Test has been running. Used by safety watchdog.
+    double                  RunningTime = 0.0;                      // Amount of wall clock time the Test has been running. Used by safety watchdog.
     ImU64                   BatchStartTime = 0;
     int                     ActionDepth = 0;                        // Nested depth of ctx-> function calls (used to decorate log)
     int                     CaptureCounter = 0;                     // Number of captures
@@ -217,8 +216,8 @@ struct ImGuiTestContext
     double                  PerfRefDt = -1.0;
     char                    RefStr[256] = { 0 };                    // Reference window/path for ID construction
     ImGuiID                 RefID = 0;
-    ImGuiInputSource        InputMode = ImGuiInputSource_Mouse;
-    ImVector<char>          Clipboard;
+    ImGuiInputSource        InputMode = ImGuiInputSource_Mouse;     // Prefer interacting with mouse/keyboard/gamepad
+    ImVector<char>          Clipboard;                              // Private clipboard for the test instance
     ImVector<ImGuiWindow*>  ForeignWindowsToHide;
 
     //-------------------------------------------------------------------------
@@ -357,7 +356,7 @@ struct ImGuiTestContext
     void        ScrollVerifyScrollMax(ImGuiWindow* window);
 
     // Low-level queries
-    ImGuiTestItemInfo*  ItemInfo(ImGuiTestRef ref, ImGuiTestOpFlags flags = ImGuiTestOpFlags_None);
+    ImGuiTestItemInfo*  ItemInfo(ImGuiTestRef ref, ImGuiTestOpFlags flags = ImGuiTestOpFlags_None);     // Important: always test for NULL!
     void                GatherItems(ImGuiTestItemList* out_list, ImGuiTestRef parent, int depth = -1);
 
     // Item/Widgets manipulation
@@ -419,7 +418,6 @@ struct ImGuiTestContext
     void        DockInto(ImGuiTestRef src_id, ImGuiTestRef dst_id, ImGuiDir split_dir = ImGuiDir_None, bool is_outer_docking = false, ImGuiTestOpFlags flags = 0);
     void        UndockNode(ImGuiID dock_id);
     void        UndockWindow(const char* window_name);
-
     bool        WindowIsUndockedOrStandalone(ImGuiWindow* window);
     bool        DockIdIsUndockedOrStandalone(ImGuiID dock_id);
     void        DockNodeHideTabBar(ImGuiDockNode* node, bool hidden);

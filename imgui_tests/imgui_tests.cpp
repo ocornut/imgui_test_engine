@@ -1920,14 +1920,17 @@ void RegisterTests_Window(ImGuiTestEngine* e)
     };
 
     // ## Test context menus on window titlebar/docked window tab.
-    t = IM_REGISTER_TEST(e, "window", "window_title_ctx_menu");
+    t = IM_REGISTER_TEST(e, "window", "window_title_context_menu");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         ImGuiTestGenericVars& vars = ctx->GenericVars;
         ImGui::SetNextWindowSize(ImVec2(300, 200), ImGuiCond_Appearing);
         ImGui::Begin("Window A", &vars.BoolArray[0], ImGuiWindowFlags_NoSavedSettings);
         if (ImGui::BeginPopupContextItem("Popup A"))
+        {
+            ImGui::Text("Context menu");
             ImGui::EndPopup();
+        }
         ImGui::TextUnformatted("Window A");
         ImGui::End();
 #ifdef IMGUI_HAS_DOCK

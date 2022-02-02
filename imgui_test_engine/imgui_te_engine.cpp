@@ -137,8 +137,6 @@ ImGuiTestEngine::ImGuiTestEngine()
 ImGuiTestEngine::~ImGuiTestEngine()
 {
     IM_ASSERT(TestQueueCoroutine == NULL);
-    if (UiContextBlind != NULL)
-        ImGui::DestroyContext(UiContextBlind);
     IM_DELETE(PerfTool);
 }
 
@@ -149,7 +147,6 @@ static void ImGuiTestEngine_BindImGuiContext(ImGuiTestEngine* engine, ImGuiConte
     IM_ASSERT(engine->UiContextTarget == NULL);
 
     engine->UiContextVisible = ui_ctx;
-    engine->UiContextBlind = NULL;
     engine->UiContextTarget = engine->UiContextVisible;
     engine->UiContextActive = NULL;
 
@@ -210,7 +207,7 @@ static void    ImGuiTestEngine_UnbindImGuiContext(ImGuiTestEngine* engine, ImGui
     // Remove hook
     if (GImGuiTestEngine == engine)
         GImGuiTestEngine = NULL;
-    engine->UiContextVisible = engine->UiContextBlind = engine->UiContextTarget = engine->UiContextActive = NULL;
+    engine->UiContextVisible = engine->UiContextTarget = engine->UiContextActive = NULL;
 }
 
 // Create test context and attach to imgui context

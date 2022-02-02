@@ -112,7 +112,6 @@ struct ImGuiTestEngine
 {
     ImGuiTestEngineIO           IO;
     ImGuiContext*               UiContextVisible = NULL;        // imgui context for visible/interactive needs
-    ImGuiContext*               UiContextBlind = NULL;          // FIXME: Unsupported
     ImGuiContext*               UiContextTarget = NULL;         // imgui context for testing == io.ConfigRunBlind ? UiBlindContext : UiVisibleContext when running tests, otherwise NULL.
     ImGuiContext*               UiContextActive = NULL;         // imgui context for testing == UiContextTarget or NULL
 
