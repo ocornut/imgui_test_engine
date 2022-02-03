@@ -52,5 +52,7 @@ enum ImGuiTestEngineExportFormat : int
 // Functions
 //-------------------------------------------------------------------------
 
+void ImGuiTestEngine_PrintResultSummary(ImGuiTestEngine* engine);
+
 void ImGuiTestEngine_Export(ImGuiTestEngine* engine);
 void ImGuiTestEngine_ExportEx(ImGuiTestEngine* engine, ImGuiTestEngineExportFormat format, const char* filename);

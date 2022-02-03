@@ -156,7 +156,6 @@ bool                ImGuiTestEngine_IsTestQueueEmpty(ImGuiTestEngine* engine);  
 void                ImGuiTestEngine_CoroutineStopRequest(ImGuiTestEngine* engine);
 void                ImGuiTestEngine_UpdateHooks(ImGuiTestEngine* engine);
 void                ImGuiTestEngine_GetResult(ImGuiTestEngine* engine, int& count_tested, int& success_count);
-void                ImGuiTestEngine_PrintResultSummary(ImGuiTestEngine* engine);
 ImGuiPerfTool*      ImGuiTestEngine_GetPerfTool(ImGuiTestEngine* engine);
 
 // Function pointers for IO structure
