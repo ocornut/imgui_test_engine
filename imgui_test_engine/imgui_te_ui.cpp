@@ -513,6 +513,7 @@ static void ImGuiTestEngine_ShowTestTool(ImGuiTestEngine* engine, bool* p_open)
         ImGui::SetNextWindowFocus();
         engine->UiFocus = false;
     }
+    ImGui::SetNextWindowSize(ImVec2(ImGui::GetFontSize() * 50, ImGui::GetFontSize() * 40), ImGuiCond_FirstUseEver);
     if (!ImGui::Begin("Dear ImGui Test Engine", p_open))// , ImGuiWindowFlags_MenuBar);
     {
         ImGui::End();

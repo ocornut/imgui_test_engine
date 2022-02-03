@@ -1195,7 +1195,10 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
             IM_CHECK(ImAbs(state->Stb.select_end - state->Stb.select_start) == selection_len);
             IM_CHECK(state->Stb.select_end == state->Stb.cursor);
             IM_CHECK(state->Stb.cursor == state->CurLenW - selection_len);
-            ctx->ScrollTo(child_window, ImGuiAxis_Y, n == 1 ? child_window->ScrollMax.y : 0.0f);
+            if (n == 1)
+                ctx->ScrollToBottom(child_id);
+            else
+                ctx->ScrollToTop(child_id);
         }
 
         ImGuiInputTextState* state = ImGui::GetInputTextState(ctx->GetID("Field"));
@@ -4695,8 +4698,8 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         ctx->SetRef("Test Window");
+        ctx->ScrollToTop("");
         ImGuiWindow* window = ctx->GetWindowByRef("");
-        ctx->ScrollToTop();
         IM_CHECK(window->Scroll.y == 0.0f);
         ctx->MouseMove("You! Shall! Not! Scroll!");
         ctx->MouseWheelY(-10.0f);

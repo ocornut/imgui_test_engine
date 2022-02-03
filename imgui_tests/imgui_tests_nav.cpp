@@ -751,7 +751,7 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
             ctx->NavActivate(); // FIXME-TESTS: Could query current g.NavWindow instead of making names?
             ImGuiWindow* child_window = ctx->GetWindowByRef(ctx->GetChildWindowID("", "Scrolling/scrolling"));
             ctx->SetRef(child_window->ID);
-            ctx->ScrollTo(demo_window, ImGuiAxis_Y, (child_window->Pos - demo_window->Pos).y);  // Required because buttons do not register their IDs when out of view (SkipItems == true).
+            ctx->ScrollTo(demo_window->ID, ImGuiAxis_Y, (child_window->Pos - demo_window->Pos).y);  // Required because buttons do not register their IDs when out of view (SkipItems == true).
             ctx->NavMoveTo(ctx->GetID("1", ctx->GetIDByInt(1)));        // Focus item within a child window.
             ctx->KeyModPress(ImGuiKeyModFlags_Alt);                     // Focus menu
             ctx->NavActivate();                                         // Open menu, focus first item in the menu.
@@ -1198,8 +1198,8 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
 
             // Down
             ctx->NavMoveTo("Button 0,0");
-            ctx->ScrollToX(0);
-            ctx->ScrollToBottom();
+            ctx->ScrollToX("", 0.0f);
+            ctx->ScrollToBottom("");
             ctx->KeyPress((input_source == ImGuiInputSource_Keyboard) ? ImGuiKey_DownArrow : ImGuiKey_GamepadDpadDown);
             if (input_source == ImGuiInputSource_Keyboard)
                 IM_CHECK_EQ(ImGui::GetFocusID(), ctx->GetID("Button 0,1"));     // Started Nav from Button 0,0 (Previous NavID)
@@ -1211,8 +1211,8 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
 
             // Up
             ctx->NavMoveTo("Button 0,4");
-            ctx->ScrollToX(0);
-            ctx->ScrollToTop();
+            ctx->ScrollToX("", 0);
+            ctx->ScrollToTop("");
             ctx->KeyPress((input_source == ImGuiInputSource_Keyboard) ? ImGuiKey_UpArrow : ImGuiKey_GamepadDpadUp);
             if (input_source == ImGuiInputSource_Keyboard)
                 IM_CHECK_EQ(ImGui::GetFocusID(), ctx->GetID("Button 0,3"));
@@ -1224,8 +1224,8 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
 
             // Right
             ctx->NavMoveTo("Button 0,0");
-            ctx->ScrollToX(window->ScrollMax.x);
-            ctx->ScrollToTop();
+            ctx->ScrollToX("", window->ScrollMax.x);
+            ctx->ScrollToTop("");
             ctx->KeyPress((input_source == ImGuiInputSource_Keyboard) ? ImGuiKey_RightArrow : ImGuiKey_GamepadDpadRight);
             if (input_source == ImGuiInputSource_Keyboard)
                 IM_CHECK_EQ(ImGui::GetFocusID(), ctx->GetID("Button 1,0"));
@@ -1237,8 +1237,8 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
 
             // Left
             ctx->NavMoveTo("Button 4,0");
-            ctx->ScrollToX(0);
-            ctx->ScrollToTop();
+            ctx->ScrollToX("", 0);
+            ctx->ScrollToTop("");
             ctx->KeyPress((input_source == ImGuiInputSource_Keyboard) ? ImGuiKey_LeftArrow : ImGuiKey_GamepadDpadLeft);
             if (input_source == ImGuiInputSource_Keyboard)
                 IM_CHECK_EQ(ImGui::GetFocusID(), ctx->GetID("Button 3,0"));
@@ -1310,7 +1310,7 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
             ctx->Yield(2);
             g.NavId = 0;
             //memset(window->NavRectRel, 0, sizeof(window->NavRectRel));
-            ctx->ScrollToTop();
+            ctx->ScrollToTop("");
 
 #if IMGUI_VERSION_NUM < 18503
             ctx->KeyPress(ImGuiKey_PageDown);

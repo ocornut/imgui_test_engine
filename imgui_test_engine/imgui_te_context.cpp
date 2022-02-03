@@ -857,29 +857,29 @@ ImGuiTestItemInfo* ImGuiTestContext::ItemInfo(ImGuiTestRef ref, ImGuiTestOpFlags
     return NULL;
 }
 
-void    ImGuiTestContext::ScrollToTop()
+void    ImGuiTestContext::ScrollToTop(ImGuiTestRef ref)
 {
     if (IsError())
         return;
 
-    ImGuiWindow* window = GetWindowByRef("");
+    ImGuiWindow* window = GetWindowByRef(ref);
     IM_CHECK_SILENT(window != NULL);
     if (window->Scroll.y == 0.0f)
         return;
-    ScrollToY(0.0f);
+    ScrollToY(ref, 0.0f);
     Yield();
 }
 
-void    ImGuiTestContext::ScrollToBottom()
+void    ImGuiTestContext::ScrollToBottom(ImGuiTestRef ref)
 {
     if (IsError())
         return;
 
-    ImGuiWindow* window = GetWindowByRef("");
+    ImGuiWindow* window = GetWindowByRef(ref);
     IM_CHECK_SILENT(window != NULL);
     if (window->Scroll.y == window->ScrollMax.y)
         return;
-    ScrollToY(window->ScrollMax.y);
+    ScrollToY(ref, window->ScrollMax.y);
     Yield();
 }
 
@@ -937,11 +937,14 @@ static ImVec2 GetWindowScrollbarMousePositionForScroll(ImGuiWindow* window, ImGu
     return position;
 }
 
-void    ImGuiTestContext::ScrollTo(ImGuiWindow* window, ImGuiAxis axis, float scroll_target)
+void    ImGuiTestContext::ScrollTo(ImGuiTestRef ref, ImGuiAxis axis, float scroll_target)
 {
     ImGuiContext& g = *UiContext;
     if (IsError())
         return;
+
+    ImGuiWindow* window = GetWindowByRef(ref);
+    IM_CHECK(window != NULL);
 
     // Early out
     const float scroll_target_clamp = ImClamp(scroll_target, 0.0f, window->ScrollMax[axis]);
@@ -1042,7 +1045,7 @@ void    ImGuiTestContext::ScrollToItemY(ImGuiTestRef ref, float scroll_ratio_y)
     float scroll_delta_y = item_target_y - item_curr_y;
     float scroll_target_y = ImClamp(window->Scroll.y - scroll_delta_y, 0.0f, window->ScrollMax.y);
 
-    ScrollTo(window, ImGuiAxis_Y, scroll_target_y);
+    ScrollTo(window->ID, ImGuiAxis_Y, scroll_target_y);
 }
 
 void   ImGuiTestContext::ScrollToItemX(ImGuiTestRef ref)
@@ -1076,7 +1079,7 @@ void   ImGuiTestContext::ScrollToItemX(ImGuiTestRef ref)
         float scroll_delta_x = item_target_x - item_curr_x;
         float scroll_target_x = ImClamp(window->Scroll.x - scroll_delta_x, 0.0f, window->ScrollMax.x);
 
-        ScrollTo(window, ImGuiAxis_X, scroll_target_x);
+        ScrollTo(window->ID, ImGuiAxis_X, scroll_target_x);
     }
 }
 
@@ -1131,8 +1134,9 @@ void    ImGuiTestContext::ScrollToTabItem(ImGuiTabBar* tab_bar, ImGuiID tab_id)
 // - One of the net visible effect of an unstable ScrollMax is that the End key would put you at a spot that's not exactly the lowest spot,
 //   and so a second press to End would you move again by a few pixels.
 // FIXME-TESTS: Make this an iterative, smooth scroll.
-void    ImGuiTestContext::ScrollVerifyScrollMax(ImGuiWindow* window)
+void    ImGuiTestContext::ScrollVerifyScrollMax(ImGuiTestRef ref)
 {
+    ImGuiWindow* window = GetWindowByRef(ref);
     ImGui::SetScrollY(window, 0.0f);
     Yield();
     float scroll_max_0 = window->ScrollMax.y;

@@ -1985,6 +1985,7 @@ void RegisterTests_Window(ImGuiTestEngine* e)
         ctx->PopupCloseAll();
 
         // Close button of dock node
+        IM_CHECK(window->DockNode != NULL);
         ctx->ItemClick(ctx->GetID("#CLOSE", window->DockNode->ID), ImGuiMouseButton_Right);
         IM_CHECK_EQ(g.NavWindow, window->RootWindowDockTree);
         ctx->PopupCloseAll();
@@ -3032,7 +3033,10 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
         IM_CHECK(g.HoveredWindow != NULL);
         IM_CHECK_STR_EQ(g.HoveredWindow->RootWindow->Name, "Test Window");
 
-        ctx->MouseMove("**/Child1");
+        //ctx->MouseMove("**/Child1");
+        //IM_CHECK(g.HoveredWindow != NULL);
+        //IM_CHECK((g.HoveredWindow->Flags & ImGuiWindowFlags_ChildWindow) != 0);
+        //IM_CHECK_STR_EQ(g.HoveredWindow->Name, "Child1");
     };
 #endif
 
@@ -3332,7 +3336,7 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
                 // Test only rendering items 0->9
                 vars.WindowHeightInItems = 10.0f;
                 vars.ItemsIn = 100;
-                ctx->ScrollToTop();
+                ctx->ScrollToTop("");
                 ctx->Yield();
                 IM_CHECK_EQ(vars.OffsetY, vars.ItemsIn * item_height);
                 IM_CHECK_EQ(vars.ItemsOut, 10 + extra_forced_items);
@@ -3369,7 +3373,7 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
                     IM_CHECK(vars.ItemsOutMask.TestBit(0) == true);
 
                 // Scroll to bottom
-                ctx->ScrollToBottom();
+                ctx->ScrollToBottom("");
                 IM_CHECK_EQ(vars.OffsetY, vars.ItemsIn * item_height);
 #if IMGUI_VERSION_NUM >= 18505
                 const int extra_at_top_of_visibility_line = vars.TableEnable ? 0 : 1; // Slight artifact of our size/alignment, item 89 is flagged as visible
@@ -4253,8 +4257,7 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
         ctx->ItemOpenAll("");
 
         // Additional tests we bundled here because we are benefiting from the "opened all" state
-        ImGuiWindow* window = ctx->GetWindowByRef("");
-        ctx->ScrollVerifyScrollMax(window);
+        ctx->ScrollVerifyScrollMax("");
 
         // Test the Log/Capture api
         const char* clipboard = ImGui::GetClipboardText();

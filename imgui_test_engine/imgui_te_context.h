@@ -274,12 +274,11 @@ struct ImGuiTestContext
     void        WindowResize(ImGuiTestRef ref, ImVec2 sz);
     bool        WindowTeleportToMakePosVisible(ImGuiTestRef ref, ImVec2 pos_in_window);
     bool        WindowBringToFront(ImGuiTestRef ref, ImGuiTestOpFlags flags = ImGuiTestOpFlags_None);
-    void        PopupCloseOne();
-    void        PopupCloseAll();
     ImGuiWindow* GetWindowByRef(ImGuiTestRef ref);
 
-    void        ForeignWindowsHideOverPos(ImVec2 pos, ImGuiWindow** ignore_list);
-    void        ForeignWindowsUnhideAll();
+    // Popups
+    void        PopupCloseOne();
+    void        PopupCloseAll();
 
     // ID
     ImGuiID     GetID(ImGuiTestRef ref);
@@ -336,33 +335,33 @@ struct ImGuiTestContext
     void        KeyUp(ImGuiKey key, ImGuiKeyModFlags mod_flags = 0);
     void        KeyPress(ImGuiKey key, ImGuiKeyModFlags mod_flags = 0, int count = 1);
     void        KeyHold(ImGuiKey key, ImGuiKeyModFlags mod_flags, float time);
-    void        KeyModDown(ImGuiKeyModFlags mod_flags)   { KeyDown(ImGuiKey_COUNT, mod_flags); }
-    void        KeyModUp(ImGuiKeyModFlags mod_flags)     { KeyUp(ImGuiKey_COUNT, mod_flags); }
-    void        KeyModPress(ImGuiKeyModFlags mod_flags)  { KeyPress(ImGuiKey_COUNT, mod_flags); }
-    void        KeyChars(const char* chars);
-    void        KeyCharsAppend(const char* chars);
-    void        KeyCharsAppendEnter(const char* chars);
-    void        KeyCharsReplace(const char* chars);
-    void        KeyCharsReplaceEnter(const char* chars);
+    void        KeyModDown(ImGuiKeyModFlags mod_flags)      { KeyDown(ImGuiKey_COUNT, mod_flags); }
+    void        KeyModUp(ImGuiKeyModFlags mod_flags)        { KeyUp(ImGuiKey_COUNT, mod_flags); }
+    void        KeyModPress(ImGuiKeyModFlags mod_flags)     { KeyPress(ImGuiKey_COUNT, mod_flags); }
+    void        KeyChars(const char* chars);                // Input characters
+    void        KeyCharsAppend(const char* chars);          // Input characters at end of field
+    void        KeyCharsAppendEnter(const char* chars);     // Input characters at end of field, press Enter
+    void        KeyCharsReplace(const char* chars);         // Delete existing field then input characters
+    void        KeyCharsReplaceEnter(const char* chars);    // Delete existing field then input characters, press Enter
 
     // Navigation inputs
     void        SetInputMode(ImGuiInputSource input_mode);
     void        NavMoveTo(ImGuiTestRef ref);
-    void        NavActivate();  // Activate current selected item. Same as pressing [space].
-    void        NavInput();     // Press ImGuiNavInput_Input (e.g. Triangle) to turn a widget into a text input
+    void        NavActivate();                              // Activate current selected item. Same as pressing [space].
+    void        NavInput();                                 // Press ImGuiNavInput_Input (e.g. Triangle) to turn a widget into a text input
     void        NavEnableForWindow();
 
     // Scrolling
-    void        ScrollTo(ImGuiWindow* window, ImGuiAxis axis, float scroll_v);
-    void        ScrollToX(float scroll_x) { ScrollTo(GetWindowByRef(""), ImGuiAxis_X, scroll_x); }
-    void        ScrollToY(float scroll_y) { ScrollTo(GetWindowByRef(""), ImGuiAxis_Y, scroll_y); }
-    void        ScrollToTop();
-    void        ScrollToBottom();
+    void        ScrollTo(ImGuiTestRef ref, ImGuiAxis axis, float scroll_v);
+    void        ScrollToX(ImGuiTestRef ref, float scroll_x) { ScrollTo(ref, ImGuiAxis_X, scroll_x); }
+    void        ScrollToY(ImGuiTestRef ref, float scroll_y) { ScrollTo(ref, ImGuiAxis_Y, scroll_y); }
+    void        ScrollToTop(ImGuiTestRef ref);
+    void        ScrollToBottom(ImGuiTestRef ref);
     void        ScrollToItemY(ImGuiTestRef ref, float scroll_ratio_y = 0.5f);
     void        ScrollToItemX(ImGuiTestRef ref);
     void        ScrollToTabItem(ImGuiTabBar* tab_bar, ImGuiID tab_id);
     bool        ScrollErrorCheck(ImGuiAxis axis, float expected, float actual, int* remaining_attempts);
-    void        ScrollVerifyScrollMax(ImGuiWindow* window);
+    void        ScrollVerifyScrollMax(ImGuiTestRef ref);
 
     // Low-level queries
     ImGuiTestItemInfo*  ItemInfo(ImGuiTestRef ref, ImGuiTestOpFlags flags = ImGuiTestOpFlags_None);     // Important: always test for NULL!
@@ -435,6 +434,11 @@ struct ImGuiTestContext
     // Performances
     void        PerfCalcRef();
     void        PerfCapture(const char* category = NULL, const char* test_name = NULL, const char* csv_file = NULL);
+
+    // [Internal]
+    // FIXME: Aim to remove this system...
+    void        ForeignWindowsHideOverPos(ImVec2 pos, ImGuiWindow** ignore_list);
+    void        ForeignWindowsUnhideAll();
 };
 
 #if defined(__GNUC__)

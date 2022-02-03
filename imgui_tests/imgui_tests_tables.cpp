@@ -1914,11 +1914,11 @@ void RegisterTests_Table(ImGuiTestEngine* e)
         // Reset scroll, if any.
         // FIXME-TESTS: 2020/09/28 running nav_from_clipped_item followed by this breaks if we don't reset scroll of outer window
         ctx->SetRef(table->OuterWindow);
-        ctx->ScrollToX(0.0f);
-        ctx->ScrollToY(0.0f);
+        ctx->ScrollToX("", 0.0f);
+        ctx->ScrollToY("", 0.0f);
         ctx->SetRef(table->InnerWindow);
-        ctx->ScrollToX(0.0f);
-        ctx->ScrollToY(0.0f);
+        ctx->ScrollToX("", 0.0f);
+        ctx->ScrollToY("", 0.0f);
         ctx->Yield();
 
         // No initial freezing.
@@ -1936,8 +1936,8 @@ void RegisterTests_Table(ImGuiTestEngine* e)
         }
 
         // Scroll to the bottom-right of the table.
-        ctx->ScrollToX(table->InnerWindow->ScrollMax.x);
-        ctx->ScrollToY(table->InnerWindow->ScrollMax.y);
+        ctx->ScrollToX("", table->InnerWindow->ScrollMax.x);
+        ctx->ScrollToY("", table->InnerWindow->ScrollMax.y);
         ctx->Yield();
 
         // First five columns and rows are no longer visible
@@ -2560,11 +2560,11 @@ void RegisterTests_Table(ImGuiTestEngine* e)
         ImGuiTable* table = ImGui::TableFindByID(ctx->GetID("table1"));
 
         ctx->SetRef(table->InnerWindow);
-        ctx->ScrollToX(0.0f);
-        ctx->ScrollToY(0.0f);
+        ctx->ScrollToX("", 0.0f);
+        ctx->ScrollToY("", 0.0f);
         ctx->Yield(2);
-        ctx->ScrollToX(table->InnerWindow->ScrollMax.x);
-        ctx->ScrollToY(table->InnerWindow->ScrollMax.y);
+        ctx->ScrollToX("", table->InnerWindow->ScrollMax.x);
+        ctx->ScrollToY("", table->InnerWindow->ScrollMax.y);
         ctx->Yield(2);
     };
 
