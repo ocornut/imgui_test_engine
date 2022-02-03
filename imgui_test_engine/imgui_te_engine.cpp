@@ -291,6 +291,7 @@ void    ImGuiTestEngine_Stop(ImGuiTestEngine* engine)
 {
     IM_ASSERT(engine->Started);
 
+    engine->Abort = true;
     ImGuiTestEngine_CoroutineStopAndJoin(engine);
     ImGuiTestEngine_Export(engine);
     engine->Started = false;

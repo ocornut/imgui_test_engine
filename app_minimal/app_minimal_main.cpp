@@ -81,16 +81,16 @@ int main(int argc, char** argv)
 
         ImGui::NewFrame();
 
+        // Show windows
         ImGui::ShowDemoWindow();
-
         ImGuiTestEngine_ShowTestEngineWindows(engine, NULL);
 
+        // Render and swap
         app->Vsync = test_io.RenderWantMaxSpeed ? false : true;
-
         ImGui::Render();
-
         app->Render(app);
 
+        // Post-swap handler is required to support screen capture
         ImGuiTestEngine_PostSwap(engine);
     }
 
@@ -100,7 +100,10 @@ int main(int argc, char** argv)
     app->ShutdownCloseWindow(app);
     ImPlot::DestroyContext();
     ImGui::DestroyContext();
+
+    // IMPORTANT: we need to shutdown the Dear ImGui context BEFORE the test engine context, so .ini data may be saved.
     ImGuiTestEngine_ShutdownContext(engine);
+
     app->Destroy(app);
 
     return 0;

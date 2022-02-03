@@ -584,7 +584,7 @@ int main(int argc, char** argv)
     app_window->ShutdownCloseWindow(app_window);
 
     // Shutdown
-    // We shutdown the Dear ImGui context _before_ the test engine context, so .ini data may be saved.
+    // IMPORTANT: we need to shutdown the Dear ImGui context BEFORE the test engine context, so .ini data may be saved.
 #ifdef IMGUI_TEST_ENGINE_ENABLE_IMPLOT
     ImPlot::DestroyContext();
 #endif
