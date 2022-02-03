@@ -4699,7 +4699,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ctx->ScrollToTop();
         IM_CHECK(window->Scroll.y == 0.0f);
         ctx->MouseMove("You! Shall! Not! Scroll!");
-        ctx->MouseWheel(ImVec2(0.0f, -10.0f));
+        ctx->MouseWheelY(-10.0f);
         IM_CHECK(window->Scroll.y == 0.0f);
     };
 

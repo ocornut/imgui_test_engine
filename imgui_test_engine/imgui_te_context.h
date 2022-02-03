@@ -320,6 +320,8 @@ struct ImGuiTestContext
     void        MouseLiftDragThreshold(ImGuiMouseButton button = 0);
     void        MouseDragWithDelta(ImVec2 delta, ImGuiMouseButton button = 0);
     void        MouseWheel(ImVec2 delta);
+    void        MouseWheelX(float dx) { MouseWheel(ImVec2(dx, 0.0f)); }
+    void        MouseWheelY(float dy) { MouseWheel(ImVec2(0.0f, dy)); }
     void        MouseMoveToVoid();
     void        MouseClickOnVoid(ImGuiMouseButton button = 0);
     bool        FindExistingVoidPosOnViewport(ImGuiViewport* viewport, ImVec2* out);

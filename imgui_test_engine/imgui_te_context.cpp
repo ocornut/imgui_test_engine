@@ -1820,7 +1820,7 @@ void    ImGuiTestContext::MouseDragWithDelta(ImVec2 delta, ImGuiMouseButton butt
     MouseUp(button);
 }
 
-// Important: always call MouseWheel() with an understand that holding Shift will swap axises.
+// Important: always call MouseWheelX()/MouseWheelY() with an understand that holding Shift will swap axises.
 // - On Windows/Linux, this swap is done in ImGui::NewFrame()
 // - On OSX, this swap is generally done by the backends
 // - In simulated test engine, always assume Windows/Linux behavior as we will swap in ImGuiTestEngine_ApplyInputToImGuiContext()
