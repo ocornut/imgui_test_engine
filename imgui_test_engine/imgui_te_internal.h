@@ -1,7 +1,8 @@
 #pragma once
 
 #include "imgui_te_coroutine.h"
-#include "imgui_capture_tool.h"  // ImGuiCaptureTool  // FIXME
+#include "imgui_te_utils.h"         // ImMovingAverage
+#include "imgui_capture_tool.h"     // ImGuiCaptureTool  // FIXME
 
 //-------------------------------------------------------------------------
 // FORWARD DECLARATIONS

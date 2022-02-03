@@ -9,6 +9,7 @@
 #include "imgui_tests.h"
 #include "imgui_test_engine/imgui_te_engine.h"      // IM_REGISTER_TEST()
 #include "imgui_test_engine/imgui_te_context.h"
+#include "imgui_test_engine/imgui_te_utils.h"       // TableXXX hepers, FindFontByName(), etc.
 #include "imgui_test_engine/thirdparty/Str/Str.h"
 
 // Warnings

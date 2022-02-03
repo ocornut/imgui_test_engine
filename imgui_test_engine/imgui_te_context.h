@@ -61,6 +61,13 @@ struct ImGuiTestRefDesc
 // This is the interface that most tests will interact with.
 //-------------------------------------------------------------------------
 
+// Helpers (may move to core)
+#if defined(__APPLE__) // FIXME: Setting IO.ConfigMacOSXBehaviors to non-default value breaks this assumption.
+#define ImGuiKeyModFlags_Shortcut   ImGuiKeyModFlags_Super
+#else
+#define ImGuiKeyModFlags_Shortcut   ImGuiKeyModFlags_Ctrl
+#endif
+
 // FIXME_WIP: GamepadXXX inputs will be ignored if ConfigFlags it not enabled,
 // but e.g.ImGuiKey_NavActivate = ImGuiKey_Space would be ambiguous/not workable (e.g. while a InputText is active)
 enum

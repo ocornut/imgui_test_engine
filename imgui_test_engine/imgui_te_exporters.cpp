@@ -1,5 +1,5 @@
 // dear imgui
-// (test engine, core)
+// (test engine, exporters)
 
 #if defined(_MSC_VER) && !defined(_CRT_SECURE_NO_WARNINGS)
 #define _CRT_SECURE_NO_WARNINGS
@@ -10,24 +10,24 @@
 #include "thirdparty/Str/Str.h"
 
 //-------------------------------------------------------------------------
-// [SECTION] FORWARD DECLARATION
+// [SECTION] FORWARD DECLARATIONS
 //-------------------------------------------------------------------------
 
-void ImGuiTestEngine_ExportJUnitXml(ImGuiTestEngine* engine, const char* output_file);
+static void ImGuiTestEngine_ExportJUnitXml(ImGuiTestEngine* engine, const char* output_file);
 
 //-------------------------------------------------------------------------
 // [SECTION] TEST ENGINE EXPORTER FUNCTIONS
 //-------------------------------------------------------------------------
 // - ImGuiTestEngine_Export()
+// - ImGuiTestEngine_ExportEx()
 // - ImGuiTestEngine_ExportJUnitXml()
 //-------------------------------------------------------------------------
 
 // This is mostly a copy of ImGuiTestEngine_PrintResultSummary with few additions.
-static void ImGuiTestEngine_ExportResultSummary(ImGuiTestEngine* engine, FILE* fp, int indent, ImGuiTestGroup group)
+static void ImGuiTestEngine_ExportResultSummary(ImGuiTestEngine* engine, FILE* fp, int indent_count, ImGuiTestGroup group)
 {
     int count_tested = 0;
     int count_success = 0;
-    Str16 indent_str;
 
     for (ImGuiTest* test : engine->TestsAll)
     {
@@ -39,26 +39,27 @@ static void ImGuiTestEngine_ExportResultSummary(ImGuiTestEngine* engine, FILE* f
             count_success++;
     }
 
-    indent_str.reserve(indent + 1);
-    memset(indent_str.c_str(), ' ', indent);
-    *(indent_str.c_str() + indent) = 0;
-    const char* ind = indent_str.c_str();
+    Str64 indent_str;
+    indent_str.reserve(indent_count + 1);
+    memset(indent_str.c_str(), ' ', indent_count);
+    indent_str[indent_count] = 0;
+    const char* indent = indent_str.c_str();
 
     if (count_success < count_tested)
     {
-        fprintf(fp, "\n%sFailing tests:\n", ind);
+        fprintf(fp, "\n%sFailing tests:\n", indent);
         for (ImGuiTest* test : engine->TestsAll)
         {
             if (test->Group != group)
                 continue;
             if (test->Status == ImGuiTestStatus_Error)
-                fprintf(fp, "%s- %s\n", ind, test->Name);
+                fprintf(fp, "%s- %s\n", indent, test->Name);
         }
         fprintf(fp, "\n");
     }
 
-    fprintf(fp, "%sTests Result: %s\n", ind, (count_success == count_tested) ? "OK" : "KO");
-    fprintf(fp, "%s(%d/%d tests passed)\n", ind, count_success, count_tested);
+    fprintf(fp, "%sTests Result: %s\n", indent, (count_success == count_tested) ? "OK" : "KO");
+    fprintf(fp, "%s(%d/%d tests passed)\n", indent, count_success, count_tested);
 }
 
 static bool ImGuiTestEngine_HasAnyLogLines(ImGuiTestLog* test_log, ImGuiTestVerboseLevel level)
@@ -89,12 +90,17 @@ static void ImGuiTestEngine_PrintLogLines(FILE* fp, ImGuiTestLog* test_log, int 
 void ImGuiTestEngine_Export(ImGuiTestEngine* engine)
 {
     ImGuiTestEngineIO& io = engine->IO;
-    if (io.ExportResultsFormat == ImGuiTestEngineExportFormat_None)
-        return;
-    IM_ASSERT(io.ExportResultsFile != NULL);
+    ImGuiTestEngine_ExportEx(engine, io.ExportResultsFormat, io.ExportResultsFilename);
+}
 
-    if (io.ExportResultsFormat == ImGuiTestEngineExportFormat_JUnitXml)
-        ImGuiTestEngine_ExportJUnitXml(engine, io.ExportResultsFile);
+void ImGuiTestEngine_ExportEx(ImGuiTestEngine* engine, ImGuiTestEngineExportFormat format, const char* filename)
+{
+    if (format == ImGuiTestEngineExportFormat_None)
+        return;
+    IM_ASSERT(filename != NULL);
+
+    if (format == ImGuiTestEngineExportFormat_JUnitXml)
+        ImGuiTestEngine_ExportJUnitXml(engine, filename);
     else
         IM_ASSERT(0);
 }

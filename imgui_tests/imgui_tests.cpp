@@ -9,6 +9,7 @@
 #include "imgui_tests.h"
 #include "imgui_test_engine/imgui_te_engine.h"      // IM_REGISTER_TEST()
 #include "imgui_test_engine/imgui_te_context.h"
+#include "imgui_test_engine/imgui_te_utils.h"       // ImHashDecoratedPath()
 #include "imgui_test_engine/imgui_capture_tool.h"
 #include "imgui_test_engine/thirdparty/Str/Str.h"
 #ifdef IMGUI_TEST_ENGINE_ENABLE_IMPLOT

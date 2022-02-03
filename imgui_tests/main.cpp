@@ -11,6 +11,7 @@
 //   main.exe -nogui -viewport-mock
 
 #define CMDLINE_ARGS  "-fileopener tools/win32_open_with_sublime.cmd"
+//#define CMDLINE_ARGS  "-nogui -export-format junit -export-file output/tests.junit.xml widgets_input"
 //#define CMDLINE_ARGS  "-viewport-mock -nogui viewport_"               // Test mock viewports on TTY mode
 //#define CMDLINE_ARGS  "-gui -nothrottle"
 //#define CMDLINE_ARGS  "-slow widgets_inputtext_5_deactivate_flags"
@@ -109,8 +110,8 @@ struct TestApp
     bool                    OptViewports = false;
     bool                    OptMockViewports = false;
     int                     OptStressAmount = 5;
-    Str128                  OptFileOpener;
-    Str128                  OptExportFile;
+    Str128                  OptSourceFileOpener;
+    Str128                  OptExportFilename;
     ImGuiTestEngineExportFormat OptExportFormat = ImGuiTestEngineExportFormat_JUnitXml;
     ImVector<char*>         TestsToRun;
 };
@@ -229,25 +230,26 @@ static bool ParseCommandLineOptions(int argc, char** argv)
             }
             else if (strcmp(argv[n], "-fileopener") == 0 && n + 1 < argc)
             {
-                g_App.OptFileOpener = argv[n + 1];
-                ImPathFixSeparatorsForCurrentOS(g_App.OptFileOpener.c_str());
+                g_App.OptSourceFileOpener = argv[n + 1];
+                ImPathFixSeparatorsForCurrentOS(g_App.OptSourceFileOpener.c_str());
                 n++;
             }
-            //else if (strcmp(argv[n], "-export-format") == 0 && n + 1 < argc)
-            //{
-            //    if (strcmp(argv[n + 1], "junit"))
-            //    {
-            //        g_App.OptExportFormat = ImGuiTestEngineExportFormat_JUnitXml;
-            //    }
-            //    else
-            //    {
-            //        fprintf(stderr, "Unknown value '%s' passed to '-export-format'.", argv[n + 1]);
-            //        fprintf(stderr, "Possible values: junit|...");
-            //    }
-            //}
+            else if (strcmp(argv[n], "-export-format") == 0 && n + 1 < argc)
+            {
+                if (strcmp(argv[n + 1], "junit") == 0)
+                {
+                    g_App.OptExportFormat = ImGuiTestEngineExportFormat_JUnitXml;
+                }
+                else
+                {
+                    fprintf(stderr, "Unknown value '%s' passed to '-export-format'.", argv[n + 1]);
+                    fprintf(stderr, "Possible values:\n");
+                    fprintf(stderr, "- junit\n");
+                }
+            }
             else if (strcmp(argv[n], "-export-file") == 0 && n + 1 < argc)
             {
-                g_App.OptExportFile = argv[n + 1];
+                g_App.OptExportFilename = argv[n + 1];
             }
             else
             {
@@ -265,7 +267,7 @@ static bool ParseCommandLineOptions(int argc, char** argv)
                 printf("  -stressamount <int>      : set performance test duration multiplier (default: 5)\n");
                 printf("  -fileopener <file>       : provide a bat/cmd/shell script to open source file.\n");
                 printf("  -export-file <file>      : save test run results in specified file.\n");
-                //printf("  -export-format junit|... : save test run results in specified format. (default: junit)\n");
+                printf("  -export-format <format>   : save test run results in specified format. (default: junit)\n");
                 printf("Tests:\n");
                 printf("   all/tests/perf          : queue by groups: all, only tests, only performance benchmarks.\n");
                 printf("   [pattern]               : queue all tests containing the word [pattern].\n");
@@ -284,13 +286,13 @@ static bool ParseCommandLineOptions(int argc, char** argv)
 // Source file opener
 static void SrcFileOpenerFunc(const char* filename, int line, void*)
 {
-    if (g_App.OptFileOpener.empty())
+    if (g_App.OptSourceFileOpener.empty())
     {
         fprintf(stderr, "Executable needs to be called with a -fileopener argument!\n");
         return;
     }
 
-    Str256f cmd_line("%s %s %d", g_App.OptFileOpener.c_str(), filename, line);
+    Str256f cmd_line("%s %s %d", g_App.OptSourceFileOpener.c_str(), filename, line);
     printf("Calling: '%s'\n", cmd_line.c_str());
     bool ret = ImOsCreateProcess(cmd_line.c_str());
     if (!ret)
@@ -483,18 +485,18 @@ int main(int argc, char** argv)
     }
 
     // Set up functions
-    test_io.SrcFileOpenFunc = g_App.OptFileOpener.empty() ? NULL : SrcFileOpenerFunc;
+    test_io.SrcFileOpenFunc = g_App.OptSourceFileOpener.empty() ? NULL : SrcFileOpenerFunc;
     test_io.SrcFileOpenUserData = NULL;
     test_io.ScreenCaptureFunc = ImGuiApp_ScreenCaptureFunc;
     test_io.ScreenCaptureUserData = (void*)g_App.AppWindow;
 
     // Enable test result export
-    if (!g_App.OptExportFile.empty())
+    if (!g_App.OptExportFilename.empty())
     {
         if (!g_App.TestsToRun.empty())
         {
-            test_io.ExportResultsFile = g_App.OptExportFile.c_str();
-            test_io.ExportResultsFormat = !g_App.OptExportFile.empty() ? g_App.OptExportFormat : 0;
+            test_io.ExportResultsFilename = g_App.OptExportFilename.c_str();
+            test_io.ExportResultsFormat = !g_App.OptExportFilename.empty() ? g_App.OptExportFormat : ImGuiTestEngineExportFormat_None;
         }
         else
         {

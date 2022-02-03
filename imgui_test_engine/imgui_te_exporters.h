@@ -1,5 +1,5 @@
 // dear imgui
-// (test engine, core)
+// (test engine, exporters)
 
 #pragma once
 
@@ -15,7 +15,7 @@
 //     test_io.ExportResultsFormat = ImGuiTestEngineExportFormat_<...>;
 //
 // JUnit XML format
-//
+//------------------
 // JUnit XML format described at https://llg.cubic.org/docs/junit/. Many
 // third party applications support consumption of this format. Some of
 // of them are listed here:
@@ -42,15 +42,15 @@ struct ImGuiTestEngine;
 // Types
 //-------------------------------------------------------------------------
 
-enum ImGuiTestEngineExportFormat_
+enum ImGuiTestEngineExportFormat : int
 {
     ImGuiTestEngineExportFormat_None = 0,
     ImGuiTestEngineExportFormat_JUnitXml,
 };
-typedef int ImGuiTestEngineExportFormat;
 
 //-------------------------------------------------------------------------
 // Functions
 //-------------------------------------------------------------------------
 
 void ImGuiTestEngine_Export(ImGuiTestEngine* engine);
+void ImGuiTestEngine_ExportEx(ImGuiTestEngine* engine, ImGuiTestEngineExportFormat format, const char* filename);

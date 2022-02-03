@@ -117,11 +117,6 @@ void        ImOsOutputDebugString(const char* message);
 //-----------------------------------------------------------------------------
 
 // Inputs functions
-#if defined(__APPLE__) // FIXME: Setting IO.ConfigMacOSXBehaviors to non-default value breaks this assumption.
-#define ImGuiKeyModFlags_Shortcut   ImGuiKeyModFlags_Super
-#else
-#define ImGuiKeyModFlags_Shortcut   ImGuiKeyModFlags_Ctrl
-#endif
 void        GetImGuiKeyModsPrefixStr(ImGuiKeyModFlags mod_flags, char* out_buf, size_t out_buf_size);
 
 // Tables functions

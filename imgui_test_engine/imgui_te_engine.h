@@ -7,8 +7,6 @@
 
 #include "imgui.h"
 #include "imgui_internal.h"         // ImPool<>, ImRect, ImGuiItemStatusFlags, ImFormatString
-#include "imgui_te_exporters.h"
-#include "imgui_te_utils.h"
 
 //-------------------------------------------------------------------------
 // Forward Declarations
@@ -24,13 +22,15 @@ struct ImGuiTestItemList;           // A list of items
 struct ImGuiTestInputs;             // Simulated user inputs (will be fed into ImGuiIO by the test engine)
 
 struct ImGuiCaptureArgs;            // Parameters for ImGuiTestContext::CaptureXXX functions.
-struct ImGuiPerfTool;               // Perf tool instance
+struct ImGuiPerfTool;               // Performance tool instance
 
 typedef int ImGuiTestFlags;         // Flags: See ImGuiTestFlags_
 typedef int ImGuiTestCheckFlags;    // Flags: See ImGuiTestCheckFlags_
 typedef int ImGuiTestLogFlags;      // Flags: See ImGuiTestLogFlags_
 typedef int ImGuiTestOpFlags;       // Flags: See ImGuiTestOpFlags_
 typedef int ImGuiTestRunFlags;      // Flags: See ImGuiTestRunFlags_
+
+enum ImGuiTestEngineExportFormat : int;
 
 //-------------------------------------------------------------------------
 // Types
@@ -213,8 +213,8 @@ struct ImGuiTestEngineIO
     float                       ConfigWatchdogKillApp = FLT_MAX;    // Stop application when exceeding this time (in second)
 
     // Options: Export
-    const char*                 ExportResultsFile = NULL;
-    ImGuiTestEngineExportFormat ExportResultsFormat = 0;
+    const char*                 ExportResultsFilename = NULL;
+    ImGuiTestEngineExportFormat ExportResultsFormat = (ImGuiTestEngineExportFormat)0;
 
     //-------------------------------------------------------------------------
     // Outputs
@@ -464,3 +464,5 @@ template<> inline void ImGuiTestEngineUtil_AppendStrValue(ImGuiTextBuffer& buf, 
 #define IM_CHECK_FLOAT_EQ_EPS(_LHS, _RHS)               IM_CHECK_LE(ImFabs(_LHS - (_RHS)), FLT_EPSILON)   // Float Equal
 #define IM_CHECK_FLOAT_NEAR(_LHS, _RHS, _EPS)           IM_CHECK_LE(ImFabs(_LHS - (_RHS)), _EPS)
 #define IM_CHECK_FLOAT_NEAR_NO_RET(_LHS, _RHS, _EPS)    IM_CHECK_LE_NO_RET(ImFabs(_LHS - (_RHS)), _EPS)
+
+//-------------------------------------------------------------------------
