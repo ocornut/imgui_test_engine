@@ -31,10 +31,15 @@
 #define IM_DEBUG_BREAK()    IM_ASSERT(0)    // It is expected that you define IM_DEBUG_BREAK() into something that will break nicely in a debugger!
 #endif
 
+// Test Engine Assert Macro
+// - Macro is calling IM_DEBUG_BREAK() inline to get a callstack in the caller function.
+// - Macro is using comma operator instead of an if() to avoid "conditional expression is constant" warnings.
 extern void ImGuiTestEngine_Assert(const char* expr, const char* file, const char* func, int line);
+#define IM_TEST_ENGINE_ASSERT(_EXPR)    do { !!(_EXPR) || (ImGuiTestEngine_Assert(#_EXPR, __FILE__, __func__, __LINE__), IM_DEBUG_BREAK(), true); } while (0)
+// V_ASSERT_CONTRACT, assertMacro:IM_TEST_ENGINE_ASSERT
 
-// Bind our main assert macro
-// FIXME: Make it possible to combine a user-defined IM_ASSERT() macros with what we need for test engine.
-// Maybe we don't redefine this if IM_ASSERT() is already defined, and require user to call IMGUI_TEST_ENGINE_ASSERT() ?
-#define IM_ASSERT(_EXPR)    do { if (!(_EXPR)) { ImGuiTestEngine_Assert(#_EXPR, __FILE__, __func__, __LINE__); IM_DEBUG_BREAK(); } } while (0)
+// Bind Main Assert macro
+#ifndef IM_ASSERT
+#define IM_ASSERT(_EXPR)                IM_TEST_ENGINE_ASSERT(_EXPR)
 // V_ASSERT_CONTRACT, assertMacro:IM_ASSERT
+#endif

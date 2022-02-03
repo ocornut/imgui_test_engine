@@ -243,7 +243,7 @@ ImGuiApp* ImGuiApp_ImplNull_Create()
 struct ImGuiApp_ImplWin32DX11 : public ImGuiApp
 {
     HWND                    Hwnd = NULL;
-    WNDCLASSEX              WC;
+    WNDCLASSEX              WC = {};
     ID3D11Device*           pd3dDevice = NULL;
     ID3D11DeviceContext*    pd3dDeviceContext = NULL;
     IDXGISwapChain*         pSwapChain = NULL;
@@ -1148,7 +1148,7 @@ static bool ImGuiApp_ImplGL_CaptureFramebuffer(ImGuiApp* app, int x, int y, int 
 // A virtual window
 struct ImGui_ImplMockViewport_ViewportData
 {
-    ImGuiID     ID;
+    ImGuiID     ID = 0;
     ImVec2      Pos;
     ImVec2      Size;
     char        Title[256] = ""; // There's no getter so we don't mind if the title is truncated
