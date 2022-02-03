@@ -35,7 +35,7 @@
 // - Macro is calling IM_DEBUG_BREAK() inline to get a callstack in the caller function.
 // - Macro is using comma operator instead of an if() to avoid "conditional expression is constant" warnings.
 extern void ImGuiTestEngine_Assert(const char* expr, const char* file, const char* func, int line);
-#define IM_TEST_ENGINE_ASSERT(_EXPR)    do { !!(_EXPR) || (ImGuiTestEngine_Assert(#_EXPR, __FILE__, __func__, __LINE__), IM_DEBUG_BREAK(), true); } while (0)
+#define IM_TEST_ENGINE_ASSERT(_EXPR)    do { if ((void)0, !(_EXPR)) { ImGuiTestEngine_Assert(#_EXPR, __FILE__, __func__, __LINE__); IM_DEBUG_BREAK(); } } while (0)
 // V_ASSERT_CONTRACT, assertMacro:IM_TEST_ENGINE_ASSERT
 
 // Bind Main Assert macro

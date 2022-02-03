@@ -3838,7 +3838,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         // FIXME-TESTS: We would need to disable clipper because it conveniently rely on cliprect which is affected by actual viewport, so ScrollToBottom() is not enough...
         //ctx->ScrollToBottom();
         ctx->ItemClick("Object 0030");
-        ctx->ScrollToTop();
+        ctx->ScrollToTop("");
         ctx->KeyModDown(ImGuiKeyModFlags_Shift);
         ctx->ItemClick("Object 0002");
         ctx->KeyModUp(ImGuiKeyModFlags_Shift);
