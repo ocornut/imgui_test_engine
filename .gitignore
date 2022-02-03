@@ -52,6 +52,9 @@ imgui_tests/imgui_tests
 project.xcworkspace
 xcuserdata
 
+## PVS-Studio artifacts
+*.PVS-Studio.*
+
 ## JetBrains artifacts
 .idea
 cmake-build-*
