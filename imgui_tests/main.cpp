@@ -584,12 +584,12 @@ int main(int argc, char** argv)
     app_window->ShutdownCloseWindow(app_window);
 
     // Shutdown
-    // IMPORTANT: we need to shutdown the Dear ImGui context BEFORE the test engine context, so .ini data may be saved.
+    // IMPORTANT: we need to destroy the Dear ImGui context BEFORE the test engine context, so .ini data may be saved.
 #ifdef IMGUI_TEST_ENGINE_ENABLE_IMPLOT
     ImPlot::DestroyContext();
 #endif
     ImGui::DestroyContext();
-    ImGuiTestEngine_ShutdownContext(g_App.TestEngine);
+    ImGuiTestEngine_DestroyContext(g_App.TestEngine);
     app_window->Destroy(app_window);
 
     if (g_App.OptPauseOnExit && !g_App.OptGui)

@@ -103,7 +103,7 @@ static void  ImGuiTestEngine_SettingsWriteAll(ImGuiContext* imgui_ctx, ImGuiSett
 //-------------------------------------------------------------------------
 // Public
 // - ImGuiTestEngine_CreateContext()
-// - ImGuiTestEngine_ShutdownContext()
+// - ImGuiTestEngine_DestroyContext()
 // - ImGuiTestEngine_BindImGuiContext()
 // - ImGuiTestEngine_UnbindImGuiContext()
 // - ImGuiTestEngine_GetIO()
@@ -207,6 +207,8 @@ static void    ImGuiTestEngine_UnbindImGuiContext(ImGuiTestEngine* engine, ImGui
     IM_ASSERT(GImGui == ui_ctx);
     if (ImGuiSettingsHandler* ini_handler = ImGui::FindSettingsHandler("TestEngine"))
         ui_ctx->SettingsHandlers.erase(ui_ctx->SettingsHandlers.Data + ui_ctx->SettingsHandlers.index_from_ptr(ini_handler));
+    if (ImGuiSettingsHandler* ini_handler = ImGui::FindSettingsHandler("TestEnginePerfTool"))
+        ui_ctx->SettingsHandlers.erase(ui_ctx->SettingsHandlers.Data + ui_ctx->SettingsHandlers.index_from_ptr(ini_handler));
 #endif
 
     // Remove hook
@@ -246,8 +248,11 @@ static void    ImGuiTestEngine_CoroutineStopAndJoin(ImGuiTestEngine* engine)
     }
 }
 
-void    ImGuiTestEngine_ShutdownContext(ImGuiTestEngine* engine)
+void    ImGuiTestEngine_DestroyContext(ImGuiTestEngine* engine)
 {
+    // We require user to call DestroyContext() before ImGuiTestEngine_DestroyContext() in order to preserve ini data...
+    IM_ASSERT(engine->UiContextTarget == NULL && "You need to call ImGui::DestroyContext() BEFORE ImGuiTestEngine_DestroyContext()");
+
     // Shutdown coroutine
     ImGuiTestEngine_CoroutineStopAndJoin(engine);
     if (engine->UiContextTarget != NULL)

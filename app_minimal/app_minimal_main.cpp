@@ -101,8 +101,8 @@ int main(int argc, char** argv)
     ImPlot::DestroyContext();
     ImGui::DestroyContext();
 
-    // IMPORTANT: we need to shutdown the Dear ImGui context BEFORE the test engine context, so .ini data may be saved.
-    ImGuiTestEngine_ShutdownContext(engine);
+    // IMPORTANT: we need to destroy the Dear ImGui context BEFORE the test engine context, so .ini data may be saved.
+    ImGuiTestEngine_DestroyContext(engine);
 
     app->Destroy(app);
 

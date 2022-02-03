@@ -1945,6 +1945,7 @@ void RegisterTests_Window(ImGuiTestEngine* e)
         ImGuiContext& g = *ctx->UiContext;
         Str30f popup_name("##Popup_%08x", ctx->GetID("Window A/Popup A"));
         ImGuiWindow* window = ctx->GetWindowByRef("Window A");
+        IM_UNUSED(window);
         ctx->SetRef("Window A");
 #ifdef IMGUI_HAS_DOCK
         ctx->DockClear("Window A", "Window B", NULL);

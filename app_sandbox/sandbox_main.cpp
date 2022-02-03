@@ -332,8 +332,10 @@ int main(int argc, char** argv)
     app->ShutdownCloseWindow(app);
     ImPlot::DestroyContext();
     ImGui::DestroyContext();
+
+    // IMPORTANT: we need to destroy the Dear ImGui context BEFORE the test engine context, so .ini data may be saved.
 #ifdef IMGUI_ENABLE_TEST_ENGINE
-    ImGuiTestEngine_ShutdownContext(engine);
+    ImGuiTestEngine_DestroyContext(engine);
 #endif
     app->Destroy(app);
 

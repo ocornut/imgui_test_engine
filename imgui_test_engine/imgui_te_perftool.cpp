@@ -508,8 +508,8 @@ ImGuiPerfTool::ImGuiPerfTool()
     _CSVParser = IM_NEW(ImGuiCSVParser)();
 
     ImGuiSettingsHandler ini_handler;
-    ini_handler.TypeName = "Perflog";
-    ini_handler.TypeHash = ImHashStr("Perflog");
+    ini_handler.TypeName = "TestEnginePerfTool";
+    ini_handler.TypeHash = ImHashStr("TestEnginePerfTool");
     ini_handler.ClearAllFn = PerflogSettingsHandler_ClearAll;
     ini_handler.ReadOpenFn = PerflogSettingsHandler_ReadOpen;
     ini_handler.ReadLineFn = PerflogSettingsHandler_ReadLine;
