@@ -580,7 +580,7 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
                 IM_CHECK(window3->DockNode->HostWindow == window4->DockNode->HostWindow);
                 IM_CHECK(window1->DockNode->HostWindow == window3->DockNode->HostWindow);
                 pos = window4->DockNode->TabBar->BarRect.Max - ImVec2(1, h * 0.5f);
-                ctx->WindowTeleportToMakePosVisible(window4->DockNode->HostWindow, pos + ImVec2(10, 10));     // Make space for next drag operation
+                ctx->WindowTeleportToMakePosVisible(window4->DockNode->HostWindow->ID, pos + ImVec2(10, 10));     // Make space for next drag operation
                 pos = window4->DockNode->HostWindow->Pos;
                 ctx->MouseMoveToPos(window4->DockNode->TabBar->BarRect.Max - ImVec2(1, h * 0.5f));
                 ctx->MouseDragWithDelta(ImVec2(10, 10));
@@ -1007,9 +1007,9 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
 
         // "Window A" has dockspace "A2". Dock "window B" into "A2".
         ctx->OpFlags |= ImGuiTestOpFlags_NoAutoUncollapse;
-        ctx->WindowCollapse(window1, false);
-        ctx->WindowCollapse(window2, false);
         ctx->DockClear("Window B", "Window A", NULL);
+        ctx->WindowCollapse("Window A", false);
+        ctx->WindowCollapse("Window B", false);
         ctx->DockInto("Window B", dock_id);
         IM_CHECK(ctx->WindowIsUndockedOrStandalone(window1));           // "Window A" is not docked
         IM_CHECK_EQ(window2->DockId, dock_id);                          // "Window B" was docked into a dockspace
@@ -1027,7 +1027,7 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
 
         // "Window A" is collapsed, and regular call to DockSpace() without KeepAlive (KeepAlive becomes automatic).
         vars.Flags = 0;
-        ctx->WindowCollapse(window1, true);
+        ctx->WindowCollapse("Window A", true);
         IM_CHECK_EQ(window1->Collapsed, true);                          // "Window A" got collapsed
         IM_CHECK_EQ(window1->DockIsActive, false);                      // and remains undocked
         IM_CHECK_EQ(window2->Collapsed, false);                         // "Window B" was not collapsed
@@ -1444,7 +1444,7 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         ImGuiContext& g = *ctx->UiContext;
-        ctx->WindowCollapse(ctx->GetWindowByRef("Window A"), false);
+        ctx->WindowCollapse("Window A", false);
         ctx->DockClear("Window A", "Window B", NULL);
         ImGuiWindow* windowB = ctx->GetWindowByRef("Window B");
         ImGuiWindow* windowA2 = ctx->GetWindowByRef("Window A2");

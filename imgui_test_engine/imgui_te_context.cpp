@@ -426,7 +426,7 @@ void ImGuiTestContext::SetRef(ImGuiWindow* window)
 
     // Automatically uncollapse by default
     if (!(OpFlags & ImGuiTestOpFlags_NoAutoUncollapse))
-        WindowCollapse(window, false);
+        WindowCollapse(window->ID, false);
 }
 
 // FIXME-TESTS: May be to focus window when docked? Otherwise locate request won't even see an item?
@@ -455,7 +455,7 @@ void ImGuiTestContext::SetRef(ImGuiTestRef ref)
 
     // Automatically uncollapse by default
     if (window && !(OpFlags & ImGuiTestOpFlags_NoAutoUncollapse))
-        WindowCollapse(window, false);
+        WindowCollapse(window->ID, false);
 }
 
 ImGuiTestRef ImGuiTestContext::GetRef()
@@ -952,7 +952,7 @@ void    ImGuiTestContext::ScrollTo(ImGuiWindow* window, ImGuiAxis axis, float sc
     const char axis_c = (char)('X' + axis);
     LogDebug("ScrollTo %c %.1f/%.1f", axis_c, scroll_target, window->ScrollMax[axis]);
 
-    WindowBringToFront(window);
+    WindowBringToFront(window->ID);
     //Yield();
 
     // Try to use Scrollbar if available
@@ -1158,7 +1158,7 @@ void    ImGuiTestContext::NavMoveTo(ImGuiTestRef ref)
     item->RefCount++;
 
     // Focus window before scrolling/moving so things are nicely visible
-    WindowBringToFront(item->Window);
+    WindowBringToFront(item->Window->ID);
 
     // Teleport
     // FIXME-NAV: We should have a nav request feature that does this,
@@ -1268,7 +1268,7 @@ void    ImGuiTestContext::MouseMove(ImGuiTestRef ref, ImGuiTestOpFlags flags)
     // Focus window before scrolling/moving so things are nicely visible
     // FIXME-TESTS-NOT_SAME_AS_END_USER: This has too many side effect, could we do without?
     if (!(flags & ImGuiTestOpFlags_NoFocusWindow))
-        WindowBringToFront(item->Window);
+        WindowBringToFront(item->Window->ID);
 
     // Another active test (in the case focus change has a side effect BUT also implicitly we have yield an extra frame)
     if (!item->Window->WasActive)
@@ -1293,7 +1293,7 @@ void    ImGuiTestContext::MouseMove(ImGuiTestRef ref, ImGuiTestOpFlags flags)
 
     // FIXME-TESTS-NOT_SAME_AS_END_USER
     ImVec2 pos = item->RectFull.GetCenter();
-    WindowTeleportToMakePosVisible(window, pos);
+    WindowTeleportToMakePosVisible(window->ID, pos);
 
     // Move toward an actually visible point
     pos = GetMouseAimingPos(item, flags);
@@ -1304,7 +1304,7 @@ void    ImGuiTestContext::MouseMove(ImGuiTestRef ref, ImGuiTestOpFlags flags)
     if (!(flags & ImGuiTestOpFlags_NoFocusWindow))
     {
         //LogDebug("Window '%s' not focused anymore, focusing again", window->Name);
-        WindowBringToFront(window);
+        WindowBringToFront(window->ID);
 
         // 2021-12-13: straying away from that kind of stuff. We'd better error or handle hover without requiring focus.
 #if 0
@@ -1407,11 +1407,13 @@ void    ImGuiTestContext::MouseSetViewportID(ImGuiID viewport_id)
 
 // Make the point at 'pos' (generally expected to be within window's boundaries) visible in the viewport,
 // so it can be later focused then clicked.
-bool    ImGuiTestContext::WindowTeleportToMakePosVisible(ImGuiWindow* window, ImVec2 pos)
+bool    ImGuiTestContext::WindowTeleportToMakePosVisible(ImGuiTestRef ref, ImVec2 pos)
 {
     ImGuiContext& g = *UiContext;
     if (IsError())
         return false;
+    ImGuiWindow* window = GetWindowByRef(ref);
+    IM_CHECK_RETV(window != NULL, false);
 
 #ifdef IMGUI_HAS_DOCK
     // This is particularly useful for docked windows, as we have to move root dockspace window instead of docket window
@@ -1770,12 +1772,13 @@ ImVec2  ImGuiTestContext::GetWindowTitlebarPoint(ImGuiTestRef window_ref)
         }
 
         // If we didn't have to teleport it means we can reach the position already
-        if (!WindowTeleportToMakePosVisible(window, drag_pos))
+        if (!WindowTeleportToMakePosVisible(window->ID, drag_pos))
             break;
     }
     return drag_pos;
 }
 
+// Click position which should have no windows..
 void    ImGuiTestContext::MouseMoveToVoid()
 {
     ImGuiContext& g = *UiContext;
@@ -1785,7 +1788,6 @@ void    ImGuiTestContext::MouseMoveToVoid()
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
     LogDebug("MouseMoveToVoid");
 
-    // Click position which should now be empty space.
 #ifdef IMGUI_HAS_VIEWPORT
     MouseSetViewportID(ImGui::GetMainViewport()->ID);
 #endif
@@ -1998,12 +2000,13 @@ void    ImGuiTestContext::KeyCharsReplaceEnter(const char* chars)
 
 // Supported values for ImGuiTestOpFlags:
 // - ImGuiTestOpFlags_NoError
-bool    ImGuiTestContext::WindowBringToFront(ImGuiWindow* window, ImGuiTestOpFlags flags)
+bool    ImGuiTestContext::WindowBringToFront(ImGuiTestRef ref, ImGuiTestOpFlags flags)
 {
     ImGuiContext& g = *UiContext;
     if (IsError())
         return false;
 
+    ImGuiWindow* window = GetWindowByRef(ref);
     if (window == NULL)
     {
         ImGuiID window_id = GetID("");
@@ -2116,7 +2119,7 @@ void    ImGuiTestContext::ItemAction(ImGuiTestAction action, ImGuiTestRef ref, v
 
     // Automatically uncollapse by default
     if (item->Window && !(OpFlags & ImGuiTestOpFlags_NoAutoUncollapse))
-        WindowCollapse(item->Window, false);
+        WindowCollapse(item->Window->ID, false);
 
     if (action == ImGuiTestAction_Hover)
     {
@@ -2458,7 +2461,7 @@ void    ImGuiTestContext::ItemDragAndDrop(ImGuiTestRef ref_src, ImGuiTestRef ref
     // Try to keep destination window above other windows. MouseMove() operation will avoid focusing destination window
     // as that may steal ActiveID and break operation.
     // FIXME-TESTS: This does not handle a case where source and destination windows overlap.
-    WindowBringToFront(item_dst->Window);
+    WindowBringToFront(item_dst->Window->ID);
 
     MouseMove(ref_src, ImGuiTestOpFlags_NoCheckHoveredId);
     SleepShort();
@@ -2804,10 +2807,11 @@ void    ImGuiTestContext::WindowClose(ImGuiTestRef ref)
     ItemClick(GetID("#CLOSE", ref));
 }
 
-void    ImGuiTestContext::WindowCollapse(ImGuiWindow* window, bool collapsed)
+void    ImGuiTestContext::WindowCollapse(ImGuiTestRef window_ref, bool collapsed)
 {
     if (IsError())
         return;
+    ImGuiWindow* window = GetWindowByRef(window_ref);
     if (window == NULL)
         return;
 
@@ -2861,8 +2865,8 @@ void    ImGuiTestContext::WindowMove(ImGuiTestRef ref, ImVec2 input_pos, ImVec2 
     }
 
     if ((flags & ImGuiTestOpFlags_NoFocusWindow) == 0)
-        WindowBringToFront(window);
-    WindowCollapse(window, false);
+        WindowBringToFront(window->ID);
+    WindowCollapse(window->ID, false);
 
     MouseSetViewport(window);
     MouseMoveToPos(GetWindowTitlebarPoint(ref));
@@ -2902,8 +2906,8 @@ void    ImGuiTestContext::WindowResize(ImGuiTestRef ref, ImVec2 size)
     if (ImLengthSqr(size - window->Size) < 0.001f)
         return;
 
-    WindowBringToFront(window);
-    WindowCollapse(window, false);
+    WindowBringToFront(window->ID);
+    WindowCollapse(window->ID, false);
 
 #if IMGUI_VERSION_NUM < 18203
     ImGuiID id = ImGui::GetWindowResizeID(window, 0);
@@ -3008,7 +3012,7 @@ void    ImGuiTestContext::DockInto(ImGuiTestRef src_id, ImGuiTestRef dst_id, ImG
         return;
 
     // Ensure we can reach target
-    WindowTeleportToMakePosVisible(window_dst, drop_pos);
+    WindowTeleportToMakePosVisible(window_dst->ID, drop_pos);
     ImGuiWindow* friend_windows[] = { window_src, window_dst, NULL };
     ForeignWindowsHideOverPos(drop_pos, friend_windows);
 

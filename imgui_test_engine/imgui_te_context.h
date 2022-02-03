@@ -268,12 +268,12 @@ struct ImGuiTestContext
     void        SetRef(ImGuiWindow* window); // Shortcut to SetRef(window->Name) which works for ChildWindow (see code)
     ImGuiTestRef GetRef();
     void        WindowClose(ImGuiTestRef ref);
-    void        WindowCollapse(ImGuiWindow* window, bool collapsed);
+    void        WindowCollapse(ImGuiTestRef ref, bool collapsed);
     void        WindowFocus(ImGuiTestRef ref);
     void        WindowMove(ImGuiTestRef ref, ImVec2 pos, ImVec2 pivot = ImVec2(0.0f, 0.0f), ImGuiTestOpFlags flags = ImGuiTestOpFlags_None);
     void        WindowResize(ImGuiTestRef ref, ImVec2 sz);
-    bool        WindowTeleportToMakePosVisible(ImGuiWindow* window, ImVec2 pos_in_window);
-    bool        WindowBringToFront(ImGuiWindow* window, ImGuiTestOpFlags flags = ImGuiTestOpFlags_None);
+    bool        WindowTeleportToMakePosVisible(ImGuiTestRef ref, ImVec2 pos_in_window);
+    bool        WindowBringToFront(ImGuiTestRef ref, ImGuiTestOpFlags flags = ImGuiTestOpFlags_None);
     void        PopupCloseOne();
     void        PopupCloseAll();
     ImGuiWindow* GetWindowByRef(ImGuiTestRef ref);

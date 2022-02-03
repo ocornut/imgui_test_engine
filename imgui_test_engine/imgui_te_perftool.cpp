@@ -1730,7 +1730,7 @@ void RegisterTests_PerfTool(ImGuiTestEngine* e)
         ctx->SetRef(window);
         ctx->WindowMove("", ImVec2(50, 50));
         ctx->WindowResize("", ImVec2(1400, 900));
-        ctx->WindowBringToFront(window);
+        ctx->WindowBringToFront("");
 #ifdef IMGUI_TEST_ENGINE_ENABLE_IMPLOT
         ImGuiID plot_window_id = ctx->GetChildWindowID("", ctx->GetID("plot"));
         IM_CHECK(plot_window_id != 0);
@@ -1797,7 +1797,7 @@ void RegisterTests_PerfTool(ImGuiTestEngine* e)
         ctx->SetRef(window);
         ctx->WindowMove("", ImVec2(50, 50));
         ctx->WindowResize("", ImVec2(1400, 900));
-        ctx->WindowBringToFront(ctx->GetWindowByRef(""));
+        ctx->WindowBringToFront("");
 #ifdef IMGUI_TEST_ENGINE_ENABLE_IMPLOT
         ctx->ItemDoubleClick("splitter");   // Hide info table
 

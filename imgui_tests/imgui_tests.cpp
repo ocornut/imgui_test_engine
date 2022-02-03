@@ -245,16 +245,16 @@ void RegisterTests_Window(ImGuiTestEngine* e)
         ImGuiWindow* window = ImGui::FindWindowByName("Test Window");
         ctx->OpFlags |= ImGuiTestOpFlags_NoAutoUncollapse;
         ctx->SetRef("Test Window");
-        ctx->WindowCollapse(window, false);
+        ctx->WindowCollapse("", false);
         ctx->LogDebug("Size %f %f, SizeFull %f %f", window->Size.x, window->Size.y, window->SizeFull.x, window->SizeFull.y);
         IM_CHECK_EQ(window->Size, window->SizeFull);
         ImVec2 size_full_when_uncollapsed = window->SizeFull;
-        ctx->WindowCollapse(window, true);
+        ctx->WindowCollapse("", true);
         ctx->LogDebug("Size %f %f, SizeFull %f %f", window->Size.x, window->Size.y, window->SizeFull.x, window->SizeFull.y);
         ImVec2 size_collapsed = window->Size;
         IM_CHECK_GT(size_full_when_uncollapsed.y, size_collapsed.y);
         IM_CHECK_EQ(size_full_when_uncollapsed, window->SizeFull);
-        ctx->WindowCollapse(window, false);
+        ctx->WindowCollapse("", false);
         ctx->LogDebug("Size %f %f, SizeFull %f %f", window->Size.x, window->Size.y, window->SizeFull.x, window->SizeFull.y);
         IM_CHECK(window->Size.y == size_full_when_uncollapsed.y && "Window should have restored to full size.");
         ctx->Yield();
@@ -1755,7 +1755,7 @@ void RegisterTests_Window(ImGuiTestEngine* e)
                 vars.Pos = ImGui::GetMainViewport()->Pos + window->Size + ImVec2(1, 1); // Ensure window is tested within a visible viewport.
                 vars.Pivot = ImVec2(1.0f * ((n & 1) != 0 ? 1 : 0), 1.0f * ((n & 2) != 0 ? 1 : 0));
                 ctx->Yield(2); // Because initial vars.Pos is unset, during warm up frames viewport will create its own viewport hence fast switches... we could avoid it by initializing vars.Pos
-                ctx->WindowCollapse(window, c != 0);
+                ctx->WindowCollapse("", c != 0);
                 ctx->Yield();
                 IM_CHECK_EQ(window->Pos, vars.Pos - (window->Size * vars.Pivot));
             }
@@ -1949,7 +1949,7 @@ void RegisterTests_Window(ImGuiTestEngine* e)
 #ifdef IMGUI_HAS_DOCK
         ctx->DockClear("Window A", "Window B", NULL);
 #endif
-        ctx->WindowBringToFront(window);
+        ctx->WindowBringToFront("Window A");
 
         // Titlebar of undocked window
         ctx->MouseMoveToPos(ctx->GetWindowTitlebarPoint("/Window A"));
