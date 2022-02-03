@@ -1322,12 +1322,18 @@ void    ImGuiTestContext::MouseMove(ImGuiTestRef ref, ImGuiTestOpFlags flags)
 #endif
     }
 
-    // Check hovering target: may be a window (rare) or an item (common)
+    // Check hovering target: may be an item (common) or a window (rare)
     if (!Abort && !(flags & ImGuiTestOpFlags_NoCheckHoveredId))
     {
         const ImGuiID hovered_id = g.HoveredIdPreviousFrame;
         const bool is_hovered_item = (hovered_id == item->ID);
-        const bool is_hovered_window = g.HoveredWindow && g.HoveredWindow->ID == item->ID && g.HoveredWindow == item->Window;
+
+        bool is_hovered_window = false;
+        if (!is_hovered_item)
+            for (ImGuiWindow* hovered_window = g.HoveredWindow; hovered_window != NULL && !is_hovered_window; hovered_window = hovered_window->ParentWindow)
+                if (hovered_window->ID == item->ID && hovered_window == item->Window)
+                    is_hovered_window = true;
+
         if (!is_hovered_item && !is_hovered_window)
         {
             if (!(window->Flags & ImGuiWindowFlags_NoResize) && !(flags & ImGuiTestOpFlags_IsSecondAttempt))

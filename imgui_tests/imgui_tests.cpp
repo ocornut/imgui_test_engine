@@ -3013,8 +3013,11 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
     t = IM_REGISTER_TEST(e, "misc", "misc_ref_window");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
-        ImGui::SetNextWindowSize(ImVec2(100, 100));
+        ImGui::SetNextWindowSize(ImVec2(300, 300));
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImGui::BeginChild("Child1", ImVec2(200,200), true);
+        ImGui::Button("Button in child");
+        ImGui::EndChild();
         ImGui::End();
     };
     t->TestFunc = [](ImGuiTestContext* ctx)
@@ -3022,12 +3025,14 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
         ImGuiContext& g = *GImGui;
         ctx->MouseMove("Test Window");
         IM_CHECK(g.HoveredWindow != NULL);
-        IM_CHECK_STR_EQ(g.HoveredWindow->Name, "Test Window");
+        IM_CHECK_STR_EQ(g.HoveredWindow->RootWindow->Name, "Test Window");
         ctx->MouseMoveToVoid();
 
         ctx->MouseMove("**/Test Window");
         IM_CHECK(g.HoveredWindow != NULL);
-        IM_CHECK_STR_EQ(g.HoveredWindow->Name, "Test Window");
+        IM_CHECK_STR_EQ(g.HoveredWindow->RootWindow->Name, "Test Window");
+
+        ctx->MouseMove("**/Child1");
     };
 #endif
 
