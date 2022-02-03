@@ -213,11 +213,18 @@ static void ShowTestGroup(ImGuiTestEngine* e, ImGuiTestGroup group, ImGuiTextFil
     ImGui::SameLine();
     const char* perflog_label = "Perf Tool";
     float filter_width = ImGui::GetWindowContentRegionMax().x - ImGui::GetCursorPos().x;
+    float perf_stress_factor_width = (30 * e->IO.DpiScale);
     if (group == ImGuiTestGroup_Perfs)
+    {
+        filter_width -= style.ItemSpacing.x + perf_stress_factor_width;
         filter_width -= style.ItemSpacing.x + style.FramePadding.x * 2 + ImGui::CalcTextSize(perflog_label).x;
+    }
     filter->Draw("##filter", ImMax(20.0f, filter_width));
     if (group == ImGuiTestGroup_Perfs)
     {
+        ImGui::SameLine();
+        ImGui::SetNextItemWidth(perf_stress_factor_width);
+        ImGui::DragInt("##PerfStress", &e->IO.PerfStressAmount, 0.1f, 1, 20, "x%d"); HelpTooltip("Increase workload of performance tests (higher means longer run)."); // FIXME: Move?
         ImGui::SameLine();
         if (ImGui::Button(perflog_label))
         {
@@ -536,17 +543,21 @@ static void ImGuiTestEngine_ShowTestTool(ImGuiTestEngine* engine, bool* p_open)
 #endif
 
     // Options
-    ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0, 0));
-    if (ImGui::SmallButton(" TOOLS "))
+    //ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0, 0));
+    if (ImGui::Button(" TOOLS "))
         ImGui::OpenPopup("Tools");
     ImGui::SameLine();
     if (ImGui::BeginPopup("Tools"))
     {
-        if (ImGui::Checkbox("Metrics", &engine->UiMetricsOpen)) ImGui::CloseCurrentPopup(); // FIXME: duplicate with Demo one... use macros to activate in demo?
-        if (ImGui::Checkbox("Stack Tool", &engine->UiStackToolOpen)) ImGui::CloseCurrentPopup();
-        if (ImGui::Checkbox("Capture Tool", &engine->UiCaptureToolOpen)) ImGui::CloseCurrentPopup();
-        if (ImGui::Checkbox("Perf Tool", &engine->UiPerfToolOpen)) ImGui::CloseCurrentPopup();
+        //ImGui::PopStyleVar();
+        if (ImGui::Checkbox("Metrics", &engine->UiMetricsOpen)) { ImGui::CloseCurrentPopup(); }
+        if (ImGui::Checkbox("Stack Tool", &engine->UiStackToolOpen)) { ImGui::CloseCurrentPopup(); }
+        if (ImGui::Checkbox("Capture Tool", &engine->UiCaptureToolOpen)) { ImGui::CloseCurrentPopup(); }
+        if (ImGui::Checkbox("Perf Tool", &engine->UiPerfToolOpen)) { ImGui::CloseCurrentPopup(); }
+        ImGuiContext& g = *GImGui;
+        if (ImGui::Checkbox("Item Picker", &g.DebugItemPickerActive)) { ImGui::DebugStartItemPicker(); ImGui::CloseCurrentPopup(); }
         ImGui::EndPopup();
+        //ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0, 0));
     }
 
     ImGui::Checkbox("Fast", &engine->IO.ConfigRunFast); HelpTooltip("Run tests as fast as possible (no delay/vsync, teleport mouse, etc.).");
@@ -564,13 +575,17 @@ static void ImGuiTestEngine_ShowTestTool(ImGuiTestEngine* engine, bool* p_open)
     ImGui::SameLine();
     ImGui::Checkbox("Refocus", &engine->IO.ConfigTakeFocusBackAfterTests); HelpTooltip("Set focus back to Test window after running tests.");
     ImGui::SameLine();
-    ImGui::SetNextItemWidth(60 * engine->IO.DpiScale);
-    if (ImGui::DragInt("Verbose", (int*)&engine->IO.ConfigVerboseLevel, 0.1f, 0, ImGuiTestVerboseLevel_COUNT - 1, ImGuiTestEngine_GetVerboseLevelName(engine->IO.ConfigVerboseLevel)))
-        engine->IO.ConfigVerboseLevelOnError = engine->IO.ConfigVerboseLevel;
+    ImGui::SeparatorEx(ImGuiSeparatorFlags_Vertical);
     ImGui::SameLine();
-    ImGui::SetNextItemWidth(30 * engine->IO.DpiScale);
-    ImGui::DragInt("PerfStress", &engine->IO.PerfStressAmount, 0.1f, 1, 20); HelpTooltip("Increase workload of performance tests (higher means longer run)."); // FIXME: Move?
-    ImGui::PopStyleVar();
+    ImGui::SetNextItemWidth(70 * engine->IO.DpiScale);
+    if (ImGui::BeginCombo("Verbose", ImGuiTestEngine_GetVerboseLevelName(engine->IO.ConfigVerboseLevel), ImGuiComboFlags_None))
+    {
+        for (ImGuiTestVerboseLevel level = (ImGuiTestVerboseLevel)0; level < ImGuiTestVerboseLevel_COUNT; level = (ImGuiTestVerboseLevel)(level + 1))
+            if (ImGui::Selectable(ImGuiTestEngine_GetVerboseLevelName(level), engine->IO.ConfigVerboseLevel == level))
+                engine->IO.ConfigVerboseLevel = engine->IO.ConfigVerboseLevelOnError = level;
+        ImGui::EndCombo();
+    }
+    //ImGui::PopStyleVar();
     ImGui::Separator();
 
     // SPLITTER
