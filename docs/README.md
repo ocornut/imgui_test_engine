@@ -1,12 +1,15 @@
 ## Contents
 
-- `app_mimimal` minimal demo app showcasing how to integrate the test engine (app)
+- `app_mimimal/` minimal demo app showcasing how to integrate the test engine (app)
 - `app_sandbox/` experiments, showcase of third party extensions (app)
 - `build_scripts/` helpers scripts to build with various compilers and create packages.
 - `shared/` shared C++ helpers for apps
 - `imgui_tests/` test suite (app)
 - `imgui_test_engine/` test engine (library)
 
+## Docs / Wiki
+
+See [imgui_test_engine Wiki](https://github.com/ocornut/imgui_dev/wiki/imgui_test_engine).
 
 ## build_scripts/
 
