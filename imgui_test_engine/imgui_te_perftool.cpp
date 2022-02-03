@@ -948,7 +948,7 @@ void ImGuiPerfTool::ShowUI(ImGuiTestEngine* engine)
     }
 
     ImGui::SameLine();
-    if (_ReportGenerating && !ImGuiTestEngine_IsRunningTests(engine))
+    if (_ReportGenerating && ImGuiTestEngine_IsTestQueueEmpty(engine))
     {
         _ReportGenerating = false;
         ImOsOpenInShell(PerfToolReportDefaultOutputPath);

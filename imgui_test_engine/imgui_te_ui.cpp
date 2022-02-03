@@ -400,7 +400,7 @@ static void ShowTestGroup(ImGuiTestEngine* e, ImGuiTestGroup group, ImGuiTextFil
 
             // Process queuing
             if (queue_gui_func_toggle && is_running_gui_func)
-                ImGuiTestEngine_AbortTest(e);
+                ImGuiTestEngine_AbortCurrentTest(e);
             else if (queue_gui_func_toggle && !e->IO.RunningTests)
                 ImGuiTestEngine_QueueTest(e, test, ImGuiTestRunFlags_ManualRun | ImGuiTestRunFlags_GuiFuncOnly);
             if (queue_test && !e->IO.RunningTests)
@@ -525,7 +525,7 @@ static void ImGuiTestEngine_ShowTestTool(ImGuiTestEngine* engine, bool* p_open)
     {
         if (ImGui::BeginMenu("Options"))
         {
-            const bool busy = ImGuiTestEngine_IsRunningTests(engine);
+            const bool busy = !ImGuiTestEngine_IsTestQueueEmpty(engine);
             ImGui::MenuItem("Run fast", NULL, &engine->IO.ConfigRunFast, !busy);
             ImGui::MenuItem("Run in blind context", NULL, &engine->IO.ConfigRunBlind);
             ImGui::MenuItem("Debug break on error", NULL, &engine->IO.ConfigBreakOnError);

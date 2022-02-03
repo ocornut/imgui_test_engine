@@ -512,7 +512,7 @@ int main(int argc, char** argv)
     // Register and queue our tests
     RegisterTests(engine);
     QueueTests(engine);
-    bool exit_after_tests = ImGuiTestEngine_IsRunningTests(engine) && !g_App.OptPauseOnExit;
+    bool exit_after_tests = !ImGuiTestEngine_IsTestQueueEmpty(engine) && !g_App.OptPauseOnExit;
 
     // Retrieve Git branch name, store in annotation field by default
     Str64 git_repo_path;
@@ -548,7 +548,7 @@ int main(int argc, char** argv)
         if (aborted && ImGuiTestEngine_TryAbortEngine(engine))
             break;
 
-        if (exit_after_tests && !ImGuiTestEngine_IsRunningTests(engine))
+        if (exit_after_tests && ImGuiTestEngine_IsTestQueueEmpty(engine))
             break;
 
         ImGui::NewFrame();

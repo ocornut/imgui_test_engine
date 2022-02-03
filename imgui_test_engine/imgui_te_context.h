@@ -262,11 +262,15 @@ struct ImGuiTestContext
     void        SleepNoSkip(float time_in_second, float frame_time_step);
     void        SleepShort();
 
-    // Windows
-    // FIXME-TESTS: Refactor this horrible mess... perhaps all functions should have a ImGuiTestRef defaulting to empty?
+    // Base Reference
+    // - ItemClick("Window/Button")               --> click "Window/Button"
+    // - SetRef("Window"), ItemClick("Button")    --> click "Window/Button"
+    // - SetRef("Window"), ItemClick("/Button")   --> click "/Button"
     void        SetRef(ImGuiTestRef ref);
     void        SetRef(ImGuiWindow* window); // Shortcut to SetRef(window->Name) which works for ChildWindow (see code)
     ImGuiTestRef GetRef();
+
+    // Windows
     void        WindowClose(ImGuiTestRef ref);
     void        WindowCollapse(ImGuiTestRef ref, bool collapsed);
     void        WindowFocus(ImGuiTestRef ref);
