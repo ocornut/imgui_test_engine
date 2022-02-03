@@ -14,12 +14,27 @@
 // Automatically fill ImGuiTestEngineIO::CoroutineFuncs with a default implementation using std::thread
 // #define IMGUI_TEST_ENGINE_ENABLE_COROUTINE_STDTHREAD_IMPL
 
-// Test Engine Assert
-extern void ImGuiTestEngine_Assert(const char* expr, const char* file, const char* func, int line);
-#define IMGUI_TEST_ENGINE_ASSERT(_EXPR)     ImGuiTestEngine_Assert(#_EXPR, __FILE__, __func__, __LINE__)
+// Define our own IM_DEBUG_BREAK
+// This allows us to define a macro below that will let us break directly in the right call-stack (instead of a function)
+// (ignore the similar one in imgui_internal.h. if the one in imgui_internal.h were to be defined at the top of imgui.h we would use it)
+#if defined (_MSC_VER)
+#define IM_DEBUG_BREAK()    __debugbreak()
+#elif defined(__clang__)
+#define IM_DEBUG_BREAK()    __builtin_debugtrap()
+#elif defined(__GNUC__) && (defined(__i386__) || defined(__x86_64__))
+#define IM_DEBUG_BREAK()    __asm__ volatile("int $0x03")
+#elif defined(__GNUC__) && defined(__thumb__)
+#define IM_DEBUG_BREAK()    __asm__ volatile(".inst 0xde01")
+#elif defined(__GNUC__) && defined(__arm__) && !defined(__thumb__)
+#define IM_DEBUG_BREAK()    __asm__ volatile(".inst 0xe7f001f0");
+#else
+#define IM_DEBUG_BREAK()    IM_ASSERT(0)    // It is expected that you define IM_DEBUG_BREAK() into something that will break nicely in a debugger!
+#endif
 
-// Bind main assert macro
+extern void ImGuiTestEngine_Assert(const char* expr, const char* file, const char* func, int line);
+
+// Bind our main assert macro
 // FIXME: Make it possible to combine a user-defined IM_ASSERT() macros with what we need for test engine.
 // Maybe we don't redefine this if IM_ASSERT() is already defined, and require user to call IMGUI_TEST_ENGINE_ASSERT() ?
-#define IM_ASSERT(_EXPR)    do { !!(_EXPR) || (IMGUI_TEST_ENGINE_ASSERT(_EXPR), true); } while (0)
+#define IM_ASSERT(_EXPR)    do { if (!(_EXPR)) { ImGuiTestEngine_Assert(#_EXPR, __FILE__, __func__, __LINE__); IM_DEBUG_BREAK(); } } while (0)
 // V_ASSERT_CONTRACT, assertMacro:IM_ASSERT

@@ -26,6 +26,11 @@
 #include <unistd.h>     // sleep()
 #endif
 
+// Warnings
+#ifdef _MSC_VER
+#pragma warning (disable: 4127) // conditional expression is constant
+#endif
+
 /*
 
 Index of this file:
@@ -1578,16 +1583,6 @@ void ImGuiTestEngine_Assert(const char* expr, const char* file, const char* func
         if (ImGuiTest* test = ctx->Test)
             ctx->LogWarning("While running test: %s %s", test->Category, test->Name);
     }
-
-    // Consider using github.com/scottt/debugbreak
-    // FIXME: This should probably not happen in a user app?
-    // FIXME: In our test app ideally we should break without an extra layer in call-stack.
-#if __GNUC__
-    // __builtin_trap() is not part of IM_DEBUG_BREAK() because GCC optimizes away everything that comes after.
-    __builtin_trap();
-#else
-    IM_DEBUG_BREAK();
-#endif
 }
 
 const char* ImGuiTestEngine_FindItemDebugLabel(ImGuiContext* ui_ctx, ImGuiID id)
