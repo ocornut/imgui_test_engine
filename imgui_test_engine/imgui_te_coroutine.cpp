@@ -62,7 +62,8 @@ static void CoroutineThreadMain(Coroutine_ImplStdThreadData* data, ImGuiTestCoro
     }
 }
 
-static ImGuiTestCoroutineHandle Coroutine_ImplStdThread_Create(ImGuiTestCoroutineMainFunc func, const char* name, void* ctx)
+
+static ImGuiTestCoroutineHandle Coroutine_ImplStdThread_Create(ImGuiTestCoroutineMainFunc* func, const char* name, void* ctx)
 {
     Coroutine_ImplStdThreadData* data = new Coroutine_ImplStdThreadData();
 

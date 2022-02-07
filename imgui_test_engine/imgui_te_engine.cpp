@@ -1057,13 +1057,9 @@ ImGuiTest* ImGuiTestEngine_RegisterTest(ImGuiTestEngine* engine, const char* cat
     t->Group = group;
     t->Category = category;
     t->Name = name;
-    t->SourceFile = t->SourceFileShort = src_file;
+    t->SourceFile = src_file;
     t->SourceLine = t->SourceLineEnd = src_line;
     engine->TestsAll.push_back(t);
-
-    // Find filename only out of the fully qualified source path
-    if (src_file)
-        t->SourceFileShort = ImPathFindFilename(t->SourceFileShort);
 
     return t;
 }

@@ -342,7 +342,10 @@ static void ShowTestGroup(ImGuiTestEngine* e, ImGuiTestGroup group, ImGuiTextFil
                 ImGui::Separator();
 
                 const bool open_source_available = (test->SourceFile != NULL) && (e->IO.SrcFileOpenFunc != NULL);
-                Str128f buf("Open source (%s:%d)", test->SourceFileShort, test->SourceLine);
+
+                const char* source_file_rightmost = ImPathFindFilename(test->SourceFile);
+
+                Str128f buf("Open source (%s:%d)", source_file_rightmost, test->SourceLine);
                 if (ImGui::MenuItem(buf.c_str(), NULL, false, open_source_available))
                     e->IO.SrcFileOpenFunc(test->SourceFile, test->SourceLine, e->IO.SrcFileOpenUserData);
                 if (ImGui::MenuItem("View source...", NULL, false, test->SourceFile != NULL))
@@ -534,7 +537,6 @@ static void ImGuiTestEngine_ShowTestTool(ImGuiTestEngine* engine, bool* p_open)
         {
             const bool busy = !ImGuiTestEngine_IsTestQueueEmpty(engine);
             ImGui::MenuItem("Run fast", NULL, &engine->IO.ConfigRunFast, !busy);
-            ImGui::MenuItem("Run in blind context", NULL, &engine->IO.ConfigRunBlind);
             ImGui::MenuItem("Debug break on error", NULL, &engine->IO.ConfigBreakOnError);
             ImGui::EndMenu();
         }
@@ -562,11 +564,6 @@ static void ImGuiTestEngine_ShowTestTool(ImGuiTestEngine* engine, bool* p_open)
 
     ImGui::Checkbox("Fast", &engine->IO.ConfigRunFast); HelpTooltip("Run tests as fast as possible (no delay/vsync, teleport mouse, etc.).");
     ImGui::SameLine();
-    //ImGui::BeginDisabled();
-    //ImGui::Checkbox("Blind", &engine->IO.ConfigRunBlind);
-    //ImGui::EndDisabled();
-    //HelpTooltip("<UNSUPPORTED>\nRun tests in a blind ui context.");
-    //ImGui::SameLine();
     ImGui::Checkbox("Stop", &engine->IO.ConfigStopOnError); HelpTooltip("Stop running tests when hitting an error.");
     ImGui::SameLine();
     ImGui::Checkbox("DbgBrk", &engine->IO.ConfigBreakOnError); HelpTooltip("Break in debugger when hitting an error.");

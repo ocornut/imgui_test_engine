@@ -10,9 +10,9 @@
 
 // Our types
 struct ImGuiCaptureArgs;                // Parameters for Capture
-struct ImGuiCaptureContext;
-struct ImGuiCaptureImageBuf;
-struct ImGuiCaptureTool;                // Capture tool UI window
+struct ImGuiCaptureContext;             // State of an active capture tool
+struct ImGuiCaptureImageBuf;            // Simple helper to store an RGBA image in memory
+struct ImGuiCaptureTool;                // Capture tool instance + UI window
 
 typedef unsigned int ImGuiCaptureFlags; // See enum: ImGuiCaptureFlags_
 

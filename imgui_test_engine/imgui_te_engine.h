@@ -182,7 +182,6 @@ struct ImGuiTestEngineIO
 
     // Inputs: Options
     bool                        ConfigRunFast = true;               // Run tests as fast as possible (teleport mouse, skip delays, etc.)
-    //bool                      ConfigRunBlind = false;             // Run tests in a blind ImGuiContext separated from the visible context
     bool                        ConfigStopOnError = false;          // Stop queued tests on test error
     bool                        ConfigBreakOnError = false;         // Break debugger on test error
     bool                        ConfigKeepGuiFunc = false;          // Keep test GUI running at the end of the test
@@ -338,29 +337,36 @@ typedef void    (*ImGuiTestVarsDestructor)(void* ptr);
 // Storage for one test
 struct ImGuiTest
 {
-    ImGuiTestGroup                  Group = ImGuiTestGroup_Unknown; // Coarse groups: 'Tests' or 'Perf'
-    bool                            NameOwned = false;              //
+    // Test Definition
     const char*                     Category = NULL;                // Literal, not owned
     const char*                     Name = NULL;                    // Literal, generally not owned unless NameOwned=true
+    ImGuiTestGroup                  Group = ImGuiTestGroup_Unknown; // Coarse groups: 'Tests' or 'Perf'
+    bool                            NameOwned = false;              //
     const char*                     SourceFile = NULL;              // __FILE__
-    const char*                     SourceFileShort = NULL;         // Pointer within SourceFile, skips filename.
     int                             SourceLine = 0;                 // __LINE__
-    int                             SourceLineEnd = 0;              //
-    ImU64                           StartTime = 0;                  //
-    ImU64                           EndTime = 0;                    //
+    int                             SourceLineEnd = 0;              // Calculated by ImGuiTestEngine_StartCalcSourceLineEnds()
     int                             ArgVariant = 0;                 // User parameter. Generally we use it to run variations of a same test by sharing GuiFunc/TestFunc
-    size_t                          VarsSize = 0;                   // When SetVarsDataType() is used, we create an instance of user structure so we can be used by GuiFunc/TestFunc.
+    ImGuiTestFlags                  Flags = ImGuiTestFlags_None;    // See ImGuiTestFlags_
+    ImGuiTestGuiFunc                GuiFunc = NULL;                 // GUI functions (rarely used if your test are running over an existing GUI application)
+    ImGuiTestTestFunc               TestFunc = NULL;                // Test function
+
+    // Test Status
+    ImGuiTestStatus                 Status = ImGuiTestStatus_Unknown;
+    ImGuiTestLog                    TestLog;
+    ImU64                           StartTime = 0;
+    ImU64                           EndTime = 0;
+    int                             GuiFuncLastFrame = -1;
+
+    // User variables (which are instantiated when running the test)
+    // Setup after test registration with SetVarsDataType<>(), access instance during test with GetVars<>().
+    // This is mostly useful to communicate between GuiFunc and TestFunc. If you don't use both you may not want to use it!
+    size_t                          VarsSize = 0;
     ImGuiTestVarsConstructor        VarsConstructor = NULL;
-    ImGuiTestVarsPostConstructor    VarsPostConstructor = NULL;     // To share a type/constructor while initializing different default (in case the default are problematic on the first frame)
+    ImGuiTestVarsPostConstructor    VarsPostConstructor = NULL;     // To override constructor default (in case the default are problematic on the first GuiFunc frame)
     void*                           VarsPostConstructorUserFn = NULL;
     ImGuiTestVarsDestructor         VarsDestructor = NULL;
-    ImGuiTestStatus                 Status = ImGuiTestStatus_Unknown;
-    ImGuiTestFlags                  Flags = ImGuiTestFlags_None;    // See ImGuiTestFlags_
-    ImGuiTestGuiFunc                GuiFunc = NULL;                 // GUI functions (optional if your test are running over an existing GUI application)
-    ImGuiTestTestFunc               TestFunc = NULL;                // Test function
-    int                             GuiFuncLastFrame = -1;
-    ImGuiTestLog                    TestLog;
 
+    // Functions
     ImGuiTest() {}
     ~ImGuiTest();
 
