@@ -16,7 +16,7 @@ class Str;          // Str<> from thirdparty/Str/Str.h
 // Function Pointers
 //-----------------------------------------------------------------------------
 
-#ifndef IMGUI_TEST_ENGINE_DISABLE_STD_FUNCTION
+#if IMGUI_TEST_ENGINE_ENABLE_STD_FUNCTION
 #include <functional>
 #define ImFuncPtr(FUNC_TYPE)        std::function<FUNC_TYPE>
 #else

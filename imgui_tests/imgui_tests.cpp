@@ -12,7 +12,7 @@
 #include "imgui_test_engine/imgui_te_utils.h"       // ImHashDecoratedPath()
 #include "imgui_test_engine/imgui_capture_tool.h"
 #include "imgui_test_engine/thirdparty/Str/Str.h"
-#ifdef IMGUI_TEST_ENGINE_ENABLE_IMPLOT
+#if IMGUI_TEST_ENGINE_ENABLE_IMPLOT
 #include "imgui_test_engine/thirdparty/implot/implot.h"
 #endif
 
@@ -4927,7 +4927,7 @@ void RegisterTests_Capture(ImGuiTestEngine* e)
         ctx->ItemClick("Tables/Close all");
     };
 
-#ifdef IMGUI_TEST_ENGINE_ENABLE_IMPLOT
+#if IMGUI_TEST_ENGINE_ENABLE_IMPLOT
     // ## Capture all tables demo
     t = IM_REGISTER_TEST(e, "capture", "capture_implot_demo");
     t->GuiFunc = [](ImGuiTestContext* ctx)

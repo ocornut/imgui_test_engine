@@ -134,7 +134,8 @@ ImGuiTestEngine::ImGuiTestEngine()
     PerfTool = IM_NEW(ImGuiPerfTool);
 
     // Initialize std::thread based coroutine implementation if requested
-#ifdef IMGUI_TEST_ENGINE_ENABLE_COROUTINE_STDTHREAD_IMPL
+#if IMGUI_TEST_ENGINE_ENABLE_COROUTINE_STDTHREAD_IMPL
+    IM_ASSERT(IO.CoroutineFuncs == NULL && "IO.CoroutineFuncs already setup elsewhere!");
     IO.CoroutineFuncs = Coroutine_ImplStdThread_GetInterface();
 #endif
 }
@@ -286,7 +287,7 @@ void    ImGuiTestEngine_Start(ImGuiTestEngine* engine)
     // (we include the word "Main" in the name to facilitate filtering for both this thread and the "Main Thread" in debuggers)
     if (!engine->TestQueueCoroutine)
     {
-        IM_ASSERT(engine->IO.CoroutineFuncs && "Missing CoroutineFuncs! Use IMGUI_TEST_ENGINE_ENABLE_COROUTINE_STDTHREAD_IMPL or define your own implementation!");
+        IM_ASSERT(engine->IO.CoroutineFuncs && "Missing CoroutineFuncs! Use '#define IMGUI_TEST_ENGINE_ENABLE_COROUTINE_STDTHREAD_IMPL 1' or define your own implementation!");
         engine->TestQueueCoroutine = engine->IO.CoroutineFuncs->CreateFunc(ImGuiTestEngine_TestQueueCoroutineMain, "Main Dear ImGui Test Thread", engine);
     }
     engine->Started = true;

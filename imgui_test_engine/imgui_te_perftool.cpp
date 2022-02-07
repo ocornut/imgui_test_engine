@@ -9,7 +9,7 @@
 #include "imgui_te_utils.h"
 #include "thirdparty/Str/Str.h"
 #include <time.h> // time(), localtime()
-#ifdef IMGUI_TEST_ENGINE_ENABLE_IMPLOT
+#if IMGUI_TEST_ENGINE_ENABLE_IMPLOT
 #include "thirdparty/implot/implot.h"
 #include "thirdparty/implot/implot_internal.h"
 #endif
@@ -276,7 +276,7 @@ static float FormatVsBaseline(ImGuiPerfToolEntry* entry, ImGuiPerfToolEntry* bas
     return (float)dt_change;
 }
 
-#ifdef IMGUI_TEST_ENGINE_ENABLE_IMPLOT
+#if IMGUI_TEST_ENGINE_ENABLE_IMPLOT
 static void PerfToolFormatBuildInfo(ImGuiPerfTool* perftool, Str* result, ImGuiPerfToolBatch* batch)
 {
     IM_ASSERT(perftool != NULL);
@@ -477,7 +477,7 @@ static void PerflogSettingsHandler_WriteAll(ImGuiContext*, ImGuiSettingsHandler*
 }
 
 // Copied from ImPlot::SetupFinish().
-#ifdef IMGUI_TEST_ENGINE_ENABLE_IMPLOT
+#if IMGUI_TEST_ENGINE_ENABLE_IMPLOT
 static ImRect ImPlotGetYTickRect(int t, int y = 0)
 {
     ImPlotContext& gp = *GImPlot;
@@ -1072,7 +1072,7 @@ void ImGuiPerfTool::ShowUI(ImGuiTestEngine* engine)
         return;
     }
 
-#ifdef IMGUI_TEST_ENGINE_ENABLE_IMPLOT
+#if IMGUI_TEST_ENGINE_ENABLE_IMPLOT
     // Splitter between two following child windows is rendered first.
     float plot_height = 0.0f;
     float& table_height = _InfoTableHeight;
@@ -1103,7 +1103,7 @@ void ImGuiPerfTool::ShowUI(ImGuiTestEngine* engine)
 #endif
 }
 
-#ifdef IMGUI_TEST_ENGINE_ENABLE_IMPLOT
+#if IMGUI_TEST_ENGINE_ENABLE_IMPLOT
 static double GetLabelVerticalOffset(double occupy_h, int max_visible_builds, int now_visible_builds)
 {
     const double h = occupy_h / (float)max_visible_builds;
@@ -1114,7 +1114,7 @@ static double GetLabelVerticalOffset(double occupy_h, int max_visible_builds, in
 
 void ImGuiPerfTool::_ShowEntriesPlot()
 {
-#ifdef IMGUI_TEST_ENGINE_ENABLE_IMPLOT
+#if IMGUI_TEST_ENGINE_ENABLE_IMPLOT
     ImGuiIO& io = ImGui::GetIO();
     ImGuiStyle& style = ImGui::GetStyle();
     Str256 label;
@@ -1300,7 +1300,7 @@ void ImGuiPerfTool::_ShowEntriesPlot()
     ImPlot::EndPlot();
     ImPlot::PopStyleColor(2);
 #else
-    ImGui::TextUnformatted("Not enabled because ImPlot is not available (IMGUI_TEST_ENGINE_ENABLE_IMPLOT is not defined).");
+    ImGui::TextUnformatted("Not enabled because ImPlot is not available (IMGUI_TEST_ENGINE_ENABLE_IMPLOT=0).");
 #endif
 }
 
@@ -1731,7 +1731,7 @@ void RegisterTests_PerfTool(ImGuiTestEngine* e)
         ctx->WindowMove("", ImVec2(50, 50));
         ctx->WindowResize("", ImVec2(1400, 900));
         ctx->WindowBringToFront("");
-#ifdef IMGUI_TEST_ENGINE_ENABLE_IMPLOT
+#if IMGUI_TEST_ENGINE_ENABLE_IMPLOT
         ImGuiID plot_window_id = ctx->GetChildWindowID("", ctx->GetID("plot"));
         IM_CHECK(plot_window_id != 0);
         ImGuiWindow* plot_child = ctx->GetWindowByRef(ctx->GetChildWindowID(plot_window_id, "PerfTool"));
@@ -1762,7 +1762,7 @@ void RegisterTests_PerfTool(ImGuiTestEngine* e)
         ImFileDelete(temp_perf_csv);
         perftool->LoadCSV();
         ctx->Yield();
-#ifdef IMGUI_TEST_ENGINE_ENABLE_IMPLOT
+#if IMGUI_TEST_ENGINE_ENABLE_IMPLOT
         ctx->MouseMoveToPos(plot_child->Rect().GetCenter());
         ctx->MouseDoubleClick(ImGuiMouseButton_Left);               // Fit plot to original data
 #endif
@@ -1798,7 +1798,7 @@ void RegisterTests_PerfTool(ImGuiTestEngine* e)
         ctx->WindowMove("", ImVec2(50, 50));
         ctx->WindowResize("", ImVec2(1400, 900));
         ctx->WindowBringToFront("");
-#ifdef IMGUI_TEST_ENGINE_ENABLE_IMPLOT
+#if IMGUI_TEST_ENGINE_ENABLE_IMPLOT
         ctx->ItemDoubleClick("splitter");   // Hide info table
 
         ImGuiWindow* plot_child = ctx->GetWindowByRef(ctx->GetChildWindowID(ctx->GetChildWindowID("", ctx->GetID("plot")), "PerfTool"));
@@ -1815,7 +1815,7 @@ void RegisterTests_PerfTool(ImGuiTestEngine* e)
         ctx->ItemClick(ctx->GetID("/$FOCUSED/Set Min"));
         ctx->ItemClick("##date-to", ImGuiMouseButton_Right);
         ctx->ItemClick(ctx->GetID("/$FOCUSED/Set Max"));
-#ifdef IMGUI_TEST_ENGINE_ENABLE_IMPLOT
+#if IMGUI_TEST_ENGINE_ENABLE_IMPLOT
         // Take a screenshot.
         perf_report_image = "captures/capture_perf_report_0000.png";
         ImGuiCaptureArgs args;

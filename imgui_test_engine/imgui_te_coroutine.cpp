@@ -10,7 +10,7 @@
 // This implements a coroutine using std::thread, with a helper thread for each coroutine (with serialised execution, so threads never actually run concurrently)
 //------------------------------------------------------------------------
 
-#ifdef IMGUI_TEST_ENGINE_ENABLE_COROUTINE_STDTHREAD_IMPL
+#if IMGUI_TEST_ENGINE_ENABLE_COROUTINE_STDTHREAD_IMPL
 
 #include "imgui_te_utils.h"
 #include "thirdparty/Str/Str.h"
@@ -160,4 +160,4 @@ ImGuiTestCoroutineInterface* Coroutine_ImplStdThread_GetInterface()
     return &intf;
 }
 
-#endif // #ifdef IMGUI_TEST_ENGINE_ENABLE_COROUTINE_STDTHREAD_IMPL
+#endif // #if IMGUI_TEST_ENGINE_ENABLE_COROUTINE_STDTHREAD_IMPL

@@ -34,7 +34,7 @@ Index of this file:
 // [SECTION] Link stb_image_write.h + gif.h
 //-----------------------------------------------------------------------------
 
-#ifndef IMGUI_TEST_ENGINE_DISABLE_CAPTURE
+#if IMGUI_TEST_ENGINE_ENABLE_CAPTURE
 
 // stb_image_write
 #ifdef _MSC_VER
@@ -68,7 +68,7 @@ Index of this file:
 #pragma GCC diagnostic pop
 #endif
 
-#endif // #ifndef IMGUI_TEST_ENGINE_DISABLE_CAPTURE
+#endif // #if IMGUI_TEST_ENGINE_ENABLE_CAPTURE
 
 //-----------------------------------------------------------------------------
 // [SECTION] ImGuiCaptureImageBuf
@@ -98,7 +98,7 @@ void ImGuiCaptureImageBuf::CreateEmptyNoMemClear(int w, int h)
 
 bool ImGuiCaptureImageBuf::SaveFile(const char* filename)
 {
-#ifndef IMGUI_TEST_ENGINE_DISABLE_CAPTURE
+#if IMGUI_TEST_ENGINE_ENABLE_CAPTURE
     IM_ASSERT(Data != NULL);
     int ret = stbi_write_png(filename, Width, Height, 4, Data, Width * 4);
     return ret != 0;
@@ -135,7 +135,7 @@ void ImGuiCaptureImageBuf::BlitSubImage(int dst_x, int dst_y, int src_x, int src
 // [SECTION] ImGuiCaptureContext
 //-----------------------------------------------------------------------------
 
-#ifndef IMGUI_TEST_ENGINE_DISABLE_CAPTURE
+#if IMGUI_TEST_ENGINE_ENABLE_CAPTURE
 static void HideOtherWindows(const ImGuiCaptureArgs* args)
 {
     ImGuiContext& g = *GImGui;
@@ -214,7 +214,7 @@ void ImGuiCaptureContext::PostNewFrame()
 // Returns true when capture is in progress.
 ImGuiCaptureStatus ImGuiCaptureContext::CaptureUpdate(ImGuiCaptureArgs* args)
 {
-#ifndef IMGUI_TEST_ENGINE_DISABLE_CAPTURE
+#if IMGUI_TEST_ENGINE_ENABLE_CAPTURE
     ImGuiContext& g = *GImGui;
     ImGuiIO& io = g.IO;
     IM_ASSERT(args != NULL);

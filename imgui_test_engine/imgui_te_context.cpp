@@ -666,7 +666,7 @@ bool ImGuiTestContext::CaptureScreenshotEx(ImGuiCaptureArgs* args)
 
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
     LogDebug("CaptureScreenshot()");
-#ifndef IMGUI_TEST_ENGINE_DISABLE_CAPTURE
+#if IMGUI_TEST_ENGINE_ENABLE_CAPTURE
     if (!ImGuiTestContext_CanCapture(this))
         args->InFlags |= ImGuiCaptureFlags_NoSave;
     bool ret = ImGuiTestEngine_CaptureScreenshot(Engine, args);
@@ -677,7 +677,7 @@ bool ImGuiTestContext::CaptureScreenshotEx(ImGuiCaptureArgs* args)
     return ret;
 #else
     IM_UNUSED(args);
-    LogWarning("Skipped capturing screenshot: capture disabled by IMGUI_TEST_ENGINE_DISABLE_CAPTURE.");
+    LogWarning("Skipped capturing screenshot: capture disabled by IMGUI_TEST_ENGINE_ENABLE_CAPTURE=0.");
     return false;
 #endif
 }
@@ -699,13 +699,13 @@ bool ImGuiTestContext::CaptureBeginGif(ImGuiCaptureArgs* args)
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
     LogInfo("CaptureBeginGif()");
     IM_CHECK_RETV(args != NULL, false);
-#ifndef IMGUI_TEST_ENGINE_DISABLE_CAPTURE
+#if IMGUI_TEST_ENGINE_ENABLE_CAPTURE
     if (!ImGuiTestContext_CanCapture(this))
         args->InFlags |= ImGuiCaptureFlags_NoSave;
     return ImGuiTestEngine_CaptureBeginGif(Engine, args);
 #else
     IM_UNUSED(args);
-    LogWarning("Skipped recording GIF: capture disabled by IMGUI_TEST_ENGINE_DISABLE_CAPTURE.");
+    LogWarning("Skipped recording GIF: capture disabled by IMGUI_TEST_ENGINE_ENABLE_CAPTURE.");
     return false;
 #endif
 }

@@ -1,25 +1,34 @@
 // #include this file in your imconfig.h to enable test engine.
 
 // Compile Dear ImGui with test engine hooks
+// (Important: This is a value-less define, to be consistent with other defines used in core dear imgui.)
 #define IMGUI_ENABLE_TEST_ENGINE
 
-// [Optional] Enable plotting of perflog data for comparing performance of different runs.
+// [Optional, default 0] Enable plotting of perflog data for comparing performance of different runs.
 // This feature requires ImPlot to be linked in the application.
-//#define IMGUI_TEST_ENGINE_ENABLE_IMPLOT
+#ifndef IMGUI_TEST_ENGINE_ENABLE_IMPLOT
+#define IMGUI_TEST_ENGINE_ENABLE_IMPLOT 0
+#endif
 
-// [Optional] Disable screen capture and PNG/GIF saving functionalities
+// [Optional, default 1] Enable screen capture and PNG/GIF saving functionalities
 // There's not much point to disable this but we provide it to reassure user that the dependencies on stb_image_write.h and gif.h are technically optional.
-//#define IMGUI_TEST_ENGINE_DISABLE_CAPTURE
+#ifndef IMGUI_TEST_ENGINE_ENABLE_CAPTURE
+#define IMGUI_TEST_ENGINE_ENABLE_CAPTURE 1
+#endif
 
-// Disable using std::function and <functional> for function pointers such as ImGuiTest::TestFunc and ImGuiTest::GuiFunc
-//#define IMGUI_TEST_ENGINE_DISABLE_STD_FUNCTION
+// [Optional, default 0] Using std::function and <functional> for function pointers such as ImGuiTest::TestFunc and ImGuiTest::GuiFunc
+#ifndef IMGUI_TEST_ENGINE_ENABLE_STD_FUNCTION
+#define IMGUI_TEST_ENGINE_ENABLE_STD_FUNCTION 0
+#endif
 
-// Automatically fill ImGuiTestEngineIO::CoroutineFuncs with a default implementation using std::thread
-// #define IMGUI_TEST_ENGINE_ENABLE_COROUTINE_STDTHREAD_IMPL
+// [Optional, default 0] Automatically fill ImGuiTestEngineIO::CoroutineFuncs with a default implementation using std::thread
+#ifndef IMGUI_TEST_ENGINE_ENABLE_COROUTINE_STDTHREAD_IMPL
+#define IMGUI_TEST_ENGINE_ENABLE_COROUTINE_STDTHREAD_IMPL 0
+#endif
 
-// Define our own IM_DEBUG_BREAK
+// Define our own IM_DEBUG_BREAK macros.
 // This allows us to define a macro below that will let us break directly in the right call-stack (instead of a function)
-// (ignore the similar one in imgui_internal.h. if the one in imgui_internal.h were to be defined at the top of imgui.h we would use it)
+// (this is a copy of the one in imgui_internal.h. if the one in imgui_internal.h were to be defined at the top of imgui.h we could use that one)
 #if defined (_MSC_VER)
 #define IM_DEBUG_BREAK()    __debugbreak()
 #elif defined(__clang__)
