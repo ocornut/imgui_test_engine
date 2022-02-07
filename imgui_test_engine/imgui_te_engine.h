@@ -7,6 +7,7 @@
 
 #include "imgui.h"
 #include "imgui_internal.h"         // ImPool<>, ImRect, ImGuiItemStatusFlags, ImFormatString
+#include "imgui_te_utils.h"         // ImFuncPtr
 
 //-------------------------------------------------------------------------
 // Forward Declarations
@@ -160,8 +161,8 @@ ImGuiPerfTool*      ImGuiTestEngine_GetPerfTool(ImGuiTestEngine* engine);
 
 // Function pointers for IO structure
 // (also see imgui_te_coroutine.h for coroutine functions)
-typedef void        (*ImGuiTestEngineSrcFileOpenFunc)(const char* filename, int line, void* user_data);
-typedef bool        (*ImGuiTestEngineScreenCaptureFunc)(ImGuiID viewport_id, int x, int y, int w, int h, unsigned int* pixels, void* user_data);
+typedef void        (ImGuiTestEngineSrcFileOpenFunc)(const char* filename, int line, void* user_data);
+typedef bool        (ImGuiTestEngineScreenCaptureFunc)(ImGuiID viewport_id, int x, int y, int w, int h, unsigned int* pixels, void* user_data);
 
 //-----------------------------------------------------------------------------
 // IO structure to configure the test engine
@@ -174,11 +175,11 @@ struct ImGuiTestEngineIO
     //-------------------------------------------------------------------------
 
     // Inputs: Functions
-    ImGuiTestCoroutineInterface*    CoroutineFuncs = NULL;          // (Required) Coroutine functions (see imgui_te_coroutines.h)
-    ImGuiTestEngineSrcFileOpenFunc  SrcFileOpenFunc = NULL;         // (Optional) To open source files from test engine UI
-    ImGuiTestEngineScreenCaptureFunc ScreenCaptureFunc = NULL;      // (Optional) To capture graphics output
-    void*                           SrcFileOpenUserData = NULL;     // (Optional) User data for SrcFileOpenFunc
-    void*                           ScreenCaptureUserData = NULL;   // (Optional) User data for ScreenCaptureFunc
+    ImGuiTestCoroutineInterface*                CoroutineFuncs = NULL;          // (Required) Coroutine functions (see imgui_te_coroutines.h)
+    ImFuncPtr(ImGuiTestEngineSrcFileOpenFunc)   SrcFileOpenFunc = NULL;         // (Optional) To open source files from test engine UI
+    ImFuncPtr(ImGuiTestEngineScreenCaptureFunc) ScreenCaptureFunc = NULL;       // (Optional) To capture graphics output
+    void*                                       SrcFileOpenUserData = NULL;     // (Optional) User data for SrcFileOpenFunc
+    void*                                       ScreenCaptureUserData = NULL;   // (Optional) User data for ScreenCaptureFunc
 
     // Inputs: Options
     bool                        ConfigRunFast = true;               // Run tests as fast as possible (teleport mouse, skip delays, etc.)
@@ -325,14 +326,13 @@ struct ImGuiTestLog
 // ImGuiTest
 //-------------------------------------------------------------------------
 
-typedef void    (*ImGuiTestRunFunc)(ImGuiTestContext* ctx);
-typedef void    (*ImGuiTestGuiFunc)(ImGuiTestContext* ctx);
-typedef void    (*ImGuiTestTestFunc)(ImGuiTestContext* ctx);
+typedef void    (ImGuiTestGuiFunc)(ImGuiTestContext* ctx);
+typedef void    (ImGuiTestTestFunc)(ImGuiTestContext* ctx);
 
 // Wraps a placement new of a given type (where 'buffer' is the allocated memory)
-typedef void    (*ImGuiTestVarsConstructor)(void* buffer);
-typedef void    (*ImGuiTestVarsPostConstructor)(void* ptr, void* fn);
-typedef void    (*ImGuiTestVarsDestructor)(void* ptr);
+typedef void    (ImGuiTestVarsConstructor)(void* buffer);
+typedef void    (ImGuiTestVarsPostConstructor)(void* ptr, void* fn);
+typedef void    (ImGuiTestVarsDestructor)(void* ptr);
 
 // Storage for one test
 struct ImGuiTest
@@ -347,8 +347,9 @@ struct ImGuiTest
     int                             SourceLineEnd = 0;              // Calculated by ImGuiTestEngine_StartCalcSourceLineEnds()
     int                             ArgVariant = 0;                 // User parameter. Generally we use it to run variations of a same test by sharing GuiFunc/TestFunc
     ImGuiTestFlags                  Flags = ImGuiTestFlags_None;    // See ImGuiTestFlags_
-    ImGuiTestGuiFunc                GuiFunc = NULL;                 // GUI functions (rarely used if your test are running over an existing GUI application)
-    ImGuiTestTestFunc               TestFunc = NULL;                // Test function
+    ImFuncPtr(ImGuiTestGuiFunc)     GuiFunc = NULL;                 // GUI function (optional if your test are running over an existing GUI application)
+    ImFuncPtr(ImGuiTestTestFunc)    TestFunc = NULL;                // Test function
+    void*                           UserData = NULL;                // General purpose user data (if assigning capturing lambdas on GuiFunc/TestFunc you may not need to se this)
 
     // Test Status
     ImGuiTestStatus                 Status = ImGuiTestStatus_Unknown;
@@ -361,10 +362,10 @@ struct ImGuiTest
     // Setup after test registration with SetVarsDataType<>(), access instance during test with GetVars<>().
     // This is mostly useful to communicate between GuiFunc and TestFunc. If you don't use both you may not want to use it!
     size_t                          VarsSize = 0;
-    ImGuiTestVarsConstructor        VarsConstructor = NULL;
-    ImGuiTestVarsPostConstructor    VarsPostConstructor = NULL;     // To override constructor default (in case the default are problematic on the first GuiFunc frame)
+    ImGuiTestVarsConstructor*       VarsConstructor = NULL;
+    ImGuiTestVarsPostConstructor*   VarsPostConstructor = NULL;     // To override constructor default (in case the default are problematic on the first GuiFunc frame)
     void*                           VarsPostConstructorUserFn = NULL;
-    ImGuiTestVarsDestructor         VarsDestructor = NULL;
+    ImGuiTestVarsDestructor*        VarsDestructor = NULL;
 
     // Functions
     ImGuiTest() {}

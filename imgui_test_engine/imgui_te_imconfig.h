@@ -11,6 +11,9 @@
 // There's not much point to disable this but we provide it to reassure user that the dependencies on stb_image_write.h and gif.h are technically optional.
 //#define IMGUI_TEST_ENGINE_DISABLE_CAPTURE
 
+// Disable using std::function and <functional> for function pointers such as ImGuiTest::TestFunc and ImGuiTest::GuiFunc
+//#define IMGUI_TEST_ENGINE_DISABLE_STD_FUNCTION
+
 // Automatically fill ImGuiTestEngineIO::CoroutineFuncs with a default implementation using std::thread
 // #define IMGUI_TEST_ENGINE_ENABLE_COROUTINE_STDTHREAD_IMPL
 

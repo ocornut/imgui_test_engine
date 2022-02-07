@@ -4,6 +4,8 @@
 
 #pragma once
 
+#include "imgui_te_utils.h"             // ImFuncPtr
+
 //-----------------------------------------------------------------------------
 // Forward declarations
 //-----------------------------------------------------------------------------
@@ -17,7 +19,7 @@ struct ImGuiCaptureTool;                // Capture tool instance + UI window
 typedef unsigned int ImGuiCaptureFlags; // See enum: ImGuiCaptureFlags_
 
 // Capture function which needs to be provided by user application
-typedef bool (*ImGuiScreenCaptureFunc)(ImGuiID viewport_id, int x, int y, int w, int h, unsigned int* pixels, void* user_data);
+typedef bool (ImGuiScreenCaptureFunc)(ImGuiID viewport_id, int x, int y, int w, int h, unsigned int* pixels, void* user_data);
 
 // External types
 struct ImGuiWindow; // imgui.h
@@ -90,8 +92,8 @@ enum ImGuiCaptureStatus
 struct ImGuiCaptureContext
 {
     // IO
-    ImGuiScreenCaptureFunc  ScreenCaptureFunc = NULL;       // Graphics backend specific function that captures specified portion of framebuffer and writes RGBA data to `pixels` buffer.
-    void*                   ScreenCaptureUserData = NULL;   // Custom user pointer which is passed to ScreenCaptureFunc. (Optional)
+    ImFuncPtr(ImGuiScreenCaptureFunc) ScreenCaptureFunc = NULL; // Graphics backend specific function that captures specified portion of framebuffer and writes RGBA data to `pixels` buffer.
+    void*                   ScreenCaptureUserData = NULL;       // Custom user pointer which is passed to ScreenCaptureFunc. (Optional)
 
     // [Internal]
     ImRect                  _CaptureRect;                   // Viewport rect that is being captured.
