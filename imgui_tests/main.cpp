@@ -75,7 +75,7 @@ static inline void DebugCrtDumpLeaks()
 
 // implot
 #if IMGUI_TEST_ENGINE_ENABLE_IMPLOT
-#include "imgui_test_engine/thirdparty/implot/implot.h"
+#include "thirdparty/implot/implot.h"
 #endif
 
 //-------------------------------------------------------------------------

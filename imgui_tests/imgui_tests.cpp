@@ -13,7 +13,7 @@
 #include "imgui_test_engine/imgui_capture_tool.h"
 #include "imgui_test_engine/thirdparty/Str/Str.h"
 #if IMGUI_TEST_ENGINE_ENABLE_IMPLOT
-#include "imgui_test_engine/thirdparty/implot/implot.h"
+#include "thirdparty/implot/implot.h"
 #endif
 
 // Warnings

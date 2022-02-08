@@ -88,10 +88,10 @@
     <ClInclude Include="thirdparty\imgui_markdown\imgui_markdown.h">
       <Filter>thirdparty\imgui_markdown</Filter>
     </ClInclude>
-    <ClInclude Include="..\imgui_test_engine\thirdparty\implot\implot_internal.h">
+    <ClInclude Include="..\imgui_tests\thirdparty\implot\implot_internal.h">
       <Filter>thirdparty\implot</Filter>
     </ClInclude>
-    <ClInclude Include="..\imgui_test_engine\thirdparty\implot\implot.h">
+    <ClInclude Include="..\imgui_tests\thirdparty\implot\implot.h">
       <Filter>thirdparty\implot</Filter>
     </ClInclude>
   </ItemGroup>
@@ -141,13 +141,13 @@
     <ClCompile Include="thirdparty\ImGuizmo\ImGuizmo.cpp">
       <Filter>thirdparty\imguizmo</Filter>
     </ClCompile>
-    <ClCompile Include="..\imgui_test_engine\thirdparty\implot\implot_items.cpp">
+    <ClCompile Include="..\imgui_tests\thirdparty\implot\implot_items.cpp">
       <Filter>thirdparty\implot</Filter>
     </ClCompile>
-    <ClCompile Include="..\imgui_test_engine\thirdparty\implot\implot.cpp">
+    <ClCompile Include="..\imgui_tests\thirdparty\implot\implot.cpp">
       <Filter>thirdparty\implot</Filter>
     </ClCompile>
-    <ClCompile Include="..\imgui_test_engine\thirdparty\implot\implot_demo.cpp">
+    <ClCompile Include="..\imgui_tests\thirdparty\implot\implot_demo.cpp">
       <Filter>thirdparty\implot</Filter>
     </ClCompile>
   </ItemGroup>

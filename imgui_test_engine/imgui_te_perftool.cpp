@@ -10,8 +10,8 @@
 #include "thirdparty/Str/Str.h"
 #include <time.h> // time(), localtime()
 #if IMGUI_TEST_ENGINE_ENABLE_IMPLOT
-#include "thirdparty/implot/implot.h"
-#include "thirdparty/implot/implot_internal.h"
+#include "implot.h"
+#include "implot_internal.h"
 #endif
 
 // For tests

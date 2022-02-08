@@ -14,7 +14,9 @@
 // Test Engine
 #include "imgui_test_engine/imgui_te_engine.h"
 #include "imgui_test_engine/imgui_te_ui.h"
-#include "imgui_test_engine/thirdparty/implot/implot.h"     // FIXME: Remove or make optional -> need to remove implot from imgui_test_engine_imconfig
+
+// Optional dependencies
+#include "implot.h"
 
 extern void RegisterAppMinimalTests(ImGuiTestEngine* engine);
 
