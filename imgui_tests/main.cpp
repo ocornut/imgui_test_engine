@@ -428,6 +428,7 @@ int main(int argc, char** argv)
     ImPlot::CreateContext();
 #endif
     ImGui::StyleColorsDark();
+
     ImGuiIO& io = ImGui::GetIO();
     io.IniFilename = "imgui.ini";
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;  // Enable Keyboard Controls
@@ -470,6 +471,7 @@ int main(int argc, char** argv)
         test_io.ConfigWatchdogWarning = 30.0f;
         test_io.ConfigWatchdogKillTest = 60.0f;
         test_io.ConfigWatchdogKillApp = FLT_MAX;
+        test_io.ConfigMouseDrawCursor = false;
     }
     else
     {
@@ -553,6 +555,12 @@ int main(int argc, char** argv)
 
         ImGui::NewFrame();
         ShowUI();
+
+#if IMGUI_VERSION_NUM >= 18701
+        if (test_io.RunningTests && !test_io.ConfigMouseDrawCursor)
+            ImGui::RenderMouseCursor(io.MousePos, 1.2f, ImGui::GetMouseCursor(), IM_COL32(255, 255, 120, 255), IM_COL32(0, 0, 0, 255), IM_COL32(0, 0, 0, 60));
+#endif
+
         ImGui::Render();
 
         if (!g_App.OptGui && !test_io.RunningTests)

@@ -194,6 +194,7 @@ struct ImGuiTestEngineIO
     bool                        ConfigCaptureEnabled = true;
     bool                        ConfigCaptureOnError = false;
     bool                        ConfigNoThrottle = false;           // Disable vsync for performance measurement or fast test running
+    bool                        ConfigMouseDrawCursor = true;       // Enable drawing of Dear ImGui software mouse cursor when running tests
     float                       ConfigFixedDeltaTime = 0.0f;        // Use fixed delta time instead of calculating it from wall clock
     float                       DpiScale = 1.0f;
     int                         PerfStressAmount = 1;               // Integer to scale the amount of items submitted in test

@@ -88,6 +88,7 @@ static void ImGuiTestEngine_ProcessTestQueue(ImGuiTestEngine* engine);
 static void ImGuiTestEngine_ClearTests(ImGuiTestEngine* engine);
 static void ImGuiTestEngine_PreNewFrame(ImGuiTestEngine* engine, ImGuiContext* ui_ctx);
 static void ImGuiTestEngine_PostNewFrame(ImGuiTestEngine* engine, ImGuiContext* ui_ctx);
+static void ImGuiTestEngine_PostRender(ImGuiTestEngine* engine, ImGuiContext* ui_ctx);
 static void ImGuiTestEngine_RunGuiFunc(ImGuiTestEngine* engine);
 static void ImGuiTestEngine_RunTest(ImGuiTestEngine* engine, ImGuiTestContext* ctx);
 static void ImGuiTestEngine_TestQueueCoroutineMain(void* engine_opaque);
@@ -179,6 +180,11 @@ static void ImGuiTestEngine_BindImGuiContext(ImGuiTestEngine* engine, ImGuiConte
 
     hook.Type = ImGuiContextHookType_NewFramePost;
     hook.Callback = [](ImGuiContext* ui_ctx, ImGuiContextHook* hook) { ImGuiTestEngine_PostNewFrame((ImGuiTestEngine*)hook->UserData, ui_ctx); };
+    hook.UserData = (void*)engine;
+    ImGui::AddContextHook(ui_ctx, &hook);
+
+    hook.Type = ImGuiContextHookType_RenderPost;
+    hook.Callback = [](ImGuiContext* ui_ctx, ImGuiContextHook* hook) { ImGuiTestEngine_PostRender((ImGuiTestEngine*)hook->UserData, ui_ctx); };
     hook.UserData = (void*)engine;
     ImGui::AddContextHook(ui_ctx, &hook);
 
@@ -505,9 +511,6 @@ void ImGuiTestEngine_ApplyInputToImGuiContext(ImGuiTestEngine* engine)
     if (!use_simulated_inputs)
         return;
 
-    // Always draw mouse cursor
-    io.MouseDrawCursor = true;
-
     // To support using ImGuiKey_NavXXXX shortcuts pointing to gamepad actions
     // FIXME-TEST-ENGINE: Should restore
     g.IO.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;
@@ -745,6 +748,20 @@ static void ImGuiTestEngine_PostNewFrame(ImGuiTestEngine* engine, ImGuiContext* 
     engine->IO.RenderWantMaxSpeed = engine->IO.ConfigNoThrottle;
     if (engine->IO.ConfigRunFast && engine->IO.RunningTests && engine->TestContext && (engine->TestContext->RunFlags & ImGuiTestRunFlags_GuiFuncOnly) == 0)
         engine->IO.RenderWantMaxSpeed = true;
+}
+
+static void ImGuiTestEngine_PostRender(ImGuiTestEngine* engine, ImGuiContext* ui_ctx)
+{
+    if (engine->UiContextTarget != ui_ctx)
+        return;
+    IM_ASSERT(ui_ctx == GImGui);
+
+    // When test are running make sure real backend doesn't pick mouse cursor shape from tests.
+    // (If were to instead set io.ConfigFlags |= ImGuiConfigFlags_NoMouseCursorChange in ImGuiTestEngine_RunTest() that would get us 99% of the way,
+    // but unfortunately backend wouldn't restore normal shape after modified by OS decoration such as resize, so not enough..)
+    ImGuiContext& g = *ui_ctx;
+    if (engine->IO.RunningTests && !engine->IO.ConfigMouseDrawCursor && !g.IO.MouseDrawCursor)
+        g.MouseCursor = ImGuiMouseCursor_Arrow;
 }
 
 static void ImGuiTestEngine_RunGuiFunc(ImGuiTestEngine* engine)
@@ -1170,25 +1187,29 @@ static void ImGuiTestEngine_RunTest(ImGuiTestEngine* engine, ImGuiTestContext* c
     for (int n = 0; n < IM_ARRAYSIZE(backup_io.KeysData); n++)
         backup_io.KeysData[n].Down = false;
 
+    // Setup IO: software mouse cursor, viewport support
+    ImGuiIO& io = ctx->UiContext->IO;
+    if (engine->IO.ConfigMouseDrawCursor)
+        io.MouseDrawCursor = true;
 #ifdef IMGUI_HAS_VIEWPORT
     // We always fill io.MouseHoveredViewport manually (maintained in ImGuiTestInputs::SimulatedIO)
     // so ensure we don't leave a chance to Dear ImGui to interpret things differently.
-    ctx->UiContext->IO.BackendFlags |= ImGuiBackendFlags_HasMouseHoveredViewport;
+    io.BackendFlags |= ImGuiBackendFlags_HasMouseHoveredViewport;
 #endif
 
-    // Setup buffered clipboard
-    ctx->UiContext->IO.GetClipboardTextFn = [](void* user_data) -> const char*
+    // Setup IO: override clipboard
+    io.GetClipboardTextFn = [](void* user_data) -> const char*
     {
         ImGuiTestContext* ctx = (ImGuiTestContext*)user_data;
         return ctx->Clipboard.empty() ? "" : ctx->Clipboard.Data;
     };
-    ctx->UiContext->IO.SetClipboardTextFn = [](void* user_data, const char* text)
+    io.SetClipboardTextFn = [](void* user_data, const char* text)
     {
         ImGuiTestContext* ctx = (ImGuiTestContext*)user_data;
         ctx->Clipboard.resize((int)strlen(text) + 1);
         strcpy(ctx->Clipboard.Data, text);
     };
-    ctx->UiContext->IO.ClipboardUserData = ctx;
+    io.ClipboardUserData = ctx;
 
     // Mark as currently running the TestFunc (this is the only time when we are allowed to yield)
     IM_ASSERT(ctx->ActiveFunc == ImGuiTestActiveFunc_None);
