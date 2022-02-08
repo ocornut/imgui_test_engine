@@ -45,7 +45,7 @@
     <ClInclude Include="thirdparty\gif-h\gif.h">
       <Filter>thirdparty\gif-h</Filter>
     </ClInclude>
-    <ClInclude Include="thirdparty\stb\stb_image_write.h">
+    <ClInclude Include="thirdparty\stb\imstb_image_write.h">
       <Filter>thirdparty\stb</Filter>
     </ClInclude>
     <ClInclude Include="thirdparty\Str\Str.h">

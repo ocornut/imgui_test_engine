@@ -164,7 +164,7 @@
     <ClInclude Include="imgui_te_ui.h" />
     <ClInclude Include="imgui_te_utils.h" />
     <ClInclude Include="thirdparty\gif-h\gif.h" />
-    <ClInclude Include="thirdparty\stb\stb_image_write.h" />
+    <ClInclude Include="thirdparty\stb\imstb_image_write.h" />
     <ClInclude Include="thirdparty\Str\Str.h" />
   </ItemGroup>
   <ItemGroup>

@@ -11,7 +11,7 @@
 #endif
 
 // [Optional, default 1] Enable screen capture and PNG/GIF saving functionalities
-// There's not much point to disable this but we provide it to reassure user that the dependencies on stb_image_write.h and gif.h are technically optional.
+// There's not much point to disable this but we provide it to reassure user that the dependencies on imstb_image_write.h and gif.h are technically optional.
 #ifndef IMGUI_TEST_ENGINE_ENABLE_CAPTURE
 #define IMGUI_TEST_ENGINE_ENABLE_CAPTURE 1
 #endif

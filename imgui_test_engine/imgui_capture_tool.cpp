@@ -36,6 +36,11 @@ Index of this file:
 
 #if IMGUI_TEST_ENGINE_ENABLE_CAPTURE
 
+// Compile time options:
+//#define IMGUI_STB_NAMESPACE            ImStb
+//#define IMGUI_STB_IMAGE_WRITE_FILENAME "my_folder/stb_image_write.h"
+//#define IMGUI_DISABLE_STB_IMAGE_WRITE_IMPLEMENTATION
+
 // stb_image_write
 #ifdef _MSC_VER
 #pragma warning (push)
@@ -46,6 +51,10 @@ Index of this file:
 #pragma GCC diagnostic ignored "-Wsign-conversion"
 #endif
 
+#ifdef IMGUI_STB_NAMESPACE
+namespace IMGUI_STB_NAMESPACE
+{
+#endif
 #ifndef STB_IMAGE_WRITE_IMPLEMENTATION                       // in case the user already have an implementation in the _same_ compilation unit (e.g. unity builds)
 #ifndef IMGUI_DISABLE_STB_IMAGE_WRITE_IMPLEMENTATION         // in case the user already have an implementation in another compilation unit
 #define STB_IMAGE_WRITE_IMPLEMENTATION
@@ -53,9 +62,13 @@ Index of this file:
 #ifdef IMGUI_STB_IMAGE_WRITE_FILENAME
 #include IMGUI_STB_IMAGE_WRITE_FILENAME
 #else
-#include "thirdparty/stb/stb_image_write.h"
+#include "thirdparty/stb/imstb_image_write.h"
 #endif  // #ifdef IMGUI_STB_IMAGE_WRITE_FILENAME
 #endif  // #ifndef STB_IMAGE_WRITE_IMPLEMENTATION
+#ifdef IMGUI_STB_NAMESPACE
+} // namespace ImStb
+using namespace IMGUI_STB_NAMESPACE;
+#endif
 
 #define GIF_TEMP_MALLOC IM_ALLOC
 #define GIF_TEMP_FREE IM_FREE
