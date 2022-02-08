@@ -142,7 +142,7 @@ struct ImGuiTestEngine
     ImGuiTest*                  UiSelectedTest = NULL;
     ImGuiTextFilter             UiFilterTests;
     ImGuiTextFilter             UiFilterPerfs;
-    bool                        UiFilterFailingOnly = false;
+    ImU32                       UiFilterByStatusMask = ~0u;
     bool                        UiMetricsOpen = false; // FIXME
     bool                        UiCaptureToolOpen = false;
     bool                        UiStackToolOpen = false;

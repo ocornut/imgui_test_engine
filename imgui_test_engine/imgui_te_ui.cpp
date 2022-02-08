@@ -176,7 +176,7 @@ static bool ShowTestGroupFilterTest(ImGuiTestEngine* e, ImGuiTestGroup group, Im
     // FIXME: We cannot combine filters when used with "-remove" need to rework filtering system
     if (!filter->PassFilter(test->Name))// && !filter->PassFilter(test->Category))
         return false;
-    if (e->UiFilterFailingOnly && test->Status == ImGuiTestStatus_Success)
+    if ((e->UiFilterByStatusMask & (1 << test->Status)) == 0)
         return false;
     return true;
 }
@@ -200,14 +200,25 @@ static void ShowTestGroup(ImGuiTestEngine* e, ImGuiTestGroup group, ImGuiTextFil
     }
     ImGui::SameLine();
 
-    ImGui::SetNextItemWidth(ImGui::GetFontSize() * 6.0f);
-    if (ImGui::BeginCombo("##filterbystatus", e->UiFilterFailingOnly ? "Not OK" : "All"))
     {
-        if (ImGui::Selectable("All", e->UiFilterFailingOnly == false))
-            e->UiFilterFailingOnly = false;
-        if (ImGui::Selectable("Not OK", e->UiFilterFailingOnly == true))
-            e->UiFilterFailingOnly = true;
-        ImGui::EndCombo();
+        ImGui::SetNextItemWidth(ImGui::GetFontSize() * 6.0f);
+        const char* filter_by_status_desc = "";
+        if (e->UiFilterByStatusMask == ~0u)
+            filter_by_status_desc = "All";
+        else if (e->UiFilterByStatusMask == ~(1u << ImGuiTestStatus_Success))
+            filter_by_status_desc = "Not OK";
+        else if (e->UiFilterByStatusMask == (1u << ImGuiTestStatus_Error))
+            filter_by_status_desc = "Failed";
+        if (ImGui::BeginCombo("##filterbystatus", filter_by_status_desc))
+        {
+            if (ImGui::Selectable("All", e->UiFilterByStatusMask == ~0u))
+                e->UiFilterByStatusMask = (ImU32)~0u;
+            if (ImGui::Selectable("Not OK", e->UiFilterByStatusMask == ~(1u << ImGuiTestStatus_Success)))
+                e->UiFilterByStatusMask = (ImU32)~(1u << ImGuiTestStatus_Success);
+            if (ImGui::Selectable("Failed", e->UiFilterByStatusMask == (1u << ImGuiTestStatus_Error)))
+                e->UiFilterByStatusMask = (ImU32)(1u << ImGuiTestStatus_Error);
+            ImGui::EndCombo();
+        }
     }
 
     ImGui::SameLine();
