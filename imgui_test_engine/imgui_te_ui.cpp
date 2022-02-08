@@ -181,6 +181,23 @@ static bool ShowTestGroupFilterTest(ImGuiTestEngine* e, ImGuiTestGroup group, Im
     return true;
 }
 
+static void GetFailingTestsAsString(ImGuiTestEngine* e, ImGuiTestGroup group, char separator, Str* out_string)
+{
+    IM_ASSERT(out_string != NULL);
+    bool first = true;
+    for (int i = 0; i < e->TestsAll.Size; i++)
+    {
+        ImGuiTest* failing_test = e->TestsAll[i];
+        if (failing_test->Group == group && failing_test->Status == ImGuiTestStatus_Error)
+        {
+            if (!first)
+                out_string->append(separator);
+            out_string->append(failing_test->Name);
+            first = false;
+        }
+    }
+}
+
 static void ShowTestGroup(ImGuiTestEngine* e, ImGuiTestGroup group, ImGuiTextFilter* filter)
 {
     ImGuiStyle& style = ImGui::GetStyle();
@@ -371,6 +388,14 @@ static void ShowTestGroup(ImGuiTestEngine* e, ImGuiTestGroup group, ImGuiTextFil
                 ImGui::Separator();
                 if (ImGui::MenuItem("Copy name", NULL, false))
                     ImGui::SetClipboardText(test->Name);
+
+                if (test->Status == ImGuiTestStatus_Error)
+                    if (ImGui::MenuItem("Copy names of all failing tests"))
+                    {
+                        Str256 failing_tests;
+                        GetFailingTestsAsString(e, group, ',', &failing_tests);
+                        ImGui::SetClipboardText(failing_tests.c_str());
+                    }
 
                 if (ImGui::MenuItem("Copy log", NULL, false, !test->TestLog.Buffer.empty()))
                     ImGui::SetClipboardText(test->TestLog.Buffer.c_str());
