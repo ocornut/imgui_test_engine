@@ -1496,7 +1496,7 @@ void ImGuiTestContext::ForeignWindowsUnhideAll()
     Yield();
 }
 
-void	ImGuiTestContext::MouseMoveToPos(ImVec2 target)
+void    ImGuiTestContext::MouseMoveToPos(ImVec2 target)
 {
     ImGuiContext& g = *UiContext;
     if (IsError())
@@ -1600,7 +1600,7 @@ void    ImGuiTestContext::MouseDown(ImGuiMouseButton button)
     LogDebug("MouseDown %d", button);
 
     UiContext->IO.MouseClickedTime[button] = -FLT_MAX; // Prevent accidental double-click from happening ever
-    Inputs->MouseButtonsValue = (1 << button);
+    Inputs->MouseButtonsValue |= (1 << button);
     Yield();
 }
 

@@ -684,7 +684,7 @@ static void ImGuiTestEngine_PreNewFrame(ImGuiTestEngine* engine, ImGuiContext* u
             if (e.Type == ImGuiInputEventType_Key && e.Key.Key == ImGuiKey_Escape)
                 engine->Inputs.HostEscDown = e.Key.Down;
         engine->Inputs.HostEscDownDuration = engine->Inputs.HostEscDown ? (ImMax(engine->Inputs.HostEscDownDuration, 0.0f) + main_io.DeltaTime) : -1.0f;
-        const bool abort = engine->Inputs.HostEscDownDuration > 0.30f;
+        const bool abort = engine->Inputs.HostEscDownDuration > 0.20f;
         if (abort)
         {
             if (engine->TestContext)
