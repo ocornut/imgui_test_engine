@@ -365,6 +365,26 @@ static void QueueTests(ImGuiTestEngine* engine)
     g_App.TestsToRun.clear();
 }
 
+static void FindFFMPEG(char* out, int out_len)
+{
+    IM_ASSERT(out != NULL);
+    IM_ASSERT(out_len > 0);
+    Str64 ffmpeg_path("imgui_tests/tools/");                // Assume execution from root repository folder by default (linux/macos)
+    if (!ImFileExist(ffmpeg_path.c_str()))
+        ImFileFindInParents("tools/", 3, &ffmpeg_path);     // Assume execution from imgui_tests/$(Configuration) (visual studio)
+    ffmpeg_path.append("ffmpeg");                           // Look for ffmpeg executable in tools folder (windows/macos)
+#if _WIN32
+    ffmpeg_path.append(".exe");
+#else
+    if (!ImFileExist(ffmpeg_path.c_str()))
+        ffmpeg_path.set("/usr/bin/ffmpeg");                 // Use system version path (linux)
+#endif
+    if (ImFileExist(ffmpeg_path.c_str()))
+        ImStrncpy(out, ffmpeg_path.c_str(), out_len);
+    else
+        *out = 0;
+}
+
 int main(int argc, char** argv)
 {
 #ifdef DEBUG_CRT
@@ -465,6 +485,7 @@ int main(int argc, char** argv)
     test_io.ConfigVerboseLevelOnError = g_App.OptVerboseLevelError;
     test_io.ConfigNoThrottle = g_App.OptNoThrottle;
     test_io.PerfStressAmount = g_App.OptStressAmount;
+    FindFFMPEG(test_io.PathToFFMPEG, IM_ARRAYSIZE(test_io.PathToFFMPEG));
 
     if (g_App.OptGui)
     {

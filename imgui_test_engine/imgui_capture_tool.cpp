@@ -3,7 +3,6 @@
 // (code)
 
 // FIXME: This probably needs a rewrite, it's a bit too complicated.
-// FIXME: GIF compression are substandard with current gif.h. May be simpler to pipe to ffmpeg?
 
 /*
 
@@ -29,9 +28,10 @@ Index of this file:
 #include "imgui_internal.h"
 #include "imgui_capture_tool.h"
 #include "imgui_te_utils.h"         // ImPathFindFilename, ImPathFindExtension, ImPathFixSeparatorsForCurrentOS, ImFileCreateDirectoryChain, ImOsOpenInShell
+#include "thirdparty/Str/Str.h"
 
 //-----------------------------------------------------------------------------
-// [SECTION] Link stb_image_write.h + gif.h
+// [SECTION] Link stb_image_write.h
 //-----------------------------------------------------------------------------
 
 #if IMGUI_TEST_ENGINE_ENABLE_CAPTURE
@@ -70,11 +70,6 @@ namespace IMGUI_STB_NAMESPACE
 using namespace IMGUI_STB_NAMESPACE;
 #endif
 
-#define GIF_TEMP_MALLOC IM_ALLOC
-#define GIF_TEMP_FREE IM_FREE
-#define GIF_MALLOC IM_ALLOC
-#define GIF_FREE IM_FREE
-#include "thirdparty/gif-h/gif.h"
 #ifdef _MSC_VER
 #pragma warning (pop)
 #else
@@ -232,14 +227,15 @@ ImGuiCaptureStatus ImGuiCaptureContext::CaptureUpdate(ImGuiCaptureArgs* args)
     ImGuiIO& io = g.IO;
     IM_ASSERT(args != NULL);
     IM_ASSERT(ScreenCaptureFunc != NULL);
+    IM_ASSERT(VideoCaptureExt != NULL);
     IM_ASSERT(args->InOutputImageBuf != NULL || args->InOutputFileTemplate[0]);
     IM_ASSERT(args->InRecordFPSTarget != 0);
 
-    if (_GifRecording)
+    if (_VideoRecording)
     {
-        IM_ASSERT(args->InOutputFileTemplate[0] && "Output filename must be specified when recording gifs.");
-        IM_ASSERT(args->InOutputImageBuf == NULL && "Output buffer cannot be specified when recording gifs.");
-        IM_ASSERT(!(args->InFlags & ImGuiCaptureFlags_StitchAll) && "Image stitching is not supported when recording gifs.");
+        IM_ASSERT(args->InOutputFileTemplate[0] && "Output filename must be specified when recording videos.");
+        IM_ASSERT(args->InOutputImageBuf == NULL && "Output buffer cannot be specified when recording videos.");
+        IM_ASSERT(!(args->InFlags & ImGuiCaptureFlags_StitchAll) && "Image stitching is not supported when recording videos.");
     }
 
     ImGuiCaptureImageBuf* output = args->InOutputImageBuf ? args->InOutputImageBuf : &_CaptureBuf;
@@ -249,12 +245,12 @@ ImGuiCaptureStatus ImGuiCaptureContext::CaptureUpdate(ImGuiCaptureArgs* args)
     if (!args->InCaptureWindows.empty())
         HideOtherWindows(args);
 
-    // Recording will be set to false when we are stopping GIF capture.
-    const bool is_recording_gif = IsCapturingGif();
+    // Recording will be set to false when we are stopping video capture.
+    const bool is_recording_video = IsCapturingVideo();
     const double current_time_sec = ImGui::GetTime();
-    if (is_recording_gif && _GifLastFrameTime > 0)
+    if (is_recording_video && _VideoLastFrameTime > 0)
     {
-        double delta_sec = current_time_sec - _GifLastFrameTime;
+        double delta_sec = current_time_sec - _VideoLastFrameTime;
         if (delta_sec < 1.0 / args->InRecordFPSTarget)
             return ImGuiCaptureStatus_InProgress;
     }
@@ -266,7 +262,7 @@ ImGuiCaptureStatus ImGuiCaptureContext::CaptureUpdate(ImGuiCaptureArgs* args)
     {
         IM_ASSERT(args->InCaptureWindows.empty());
         IM_ASSERT(is_capturing_rect);
-        IM_ASSERT(!is_recording_gif);
+        IM_ASSERT(!is_recording_video);
         IM_ASSERT((args->InFlags & ImGuiCaptureFlags_StitchAll) == 0);
     }
 
@@ -287,14 +283,14 @@ ImGuiCaptureStatus ImGuiCaptureContext::CaptureUpdate(ImGuiCaptureArgs* args)
                 return ImGuiCaptureStatus_Error;
             }
 
-            // File template will most likely end with .png, but we need .gif for animated images.
-            if (is_recording_gif)
+            // File template will most likely end with .png, but we need a different extension for videos.
+            if (is_recording_video)
                 if (char* ext = (char*)ImPathFindExtension(args->OutSavedFileName))
-                    ImStrncpy(ext, ".gif", (size_t)(ext - args->OutSavedFileName));
+                    ImStrncpy(ext, VideoCaptureExt, (size_t)(ext - args->OutSavedFileName));
         }
 
-        // When recording, same args should have been passed to BeginGifCapture().
-        IM_ASSERT(!_GifRecording || _CaptureArgs == args);
+        // When recording, same args should have been passed to BeginVideoCapture().
+        IM_ASSERT(!_VideoRecording || _CaptureArgs == args);
 
         _CaptureArgs = args;
         _ChunkNo = 0;
@@ -404,7 +400,7 @@ ImGuiCaptureStatus ImGuiCaptureContext::CaptureUpdate(ImGuiCaptureArgs* args)
     //-----------------------------------------------------------------
     // Frame 4+N*4: Capture a frame
     //-----------------------------------------------------------------
-    if (((_FrameNo > 2) && (_FrameNo % 4) == 0) || (is_recording_gif && _FrameNo > 2) || instant_capture)
+    if (((_FrameNo > 2) && (_FrameNo % 4) == 0) || (is_recording_video && _FrameNo > 2) || instant_capture)
     {
         // FIXME: Implement capture of regions wider than viewport.
         // Capture a portion of image. Capturing of windows wider than viewport is not implemented yet.
@@ -440,41 +436,38 @@ ImGuiCaptureStatus ImGuiCaptureContext::CaptureUpdate(ImGuiCaptureArgs* args)
                 _ChunkNo++;
             }
 
-            if (is_recording_gif)
+            if (is_recording_video && (args->InFlags & ImGuiCaptureFlags_NoSave) == 0)
             {
-                // _GifWriter is NULL when recording just started. Initialize recording state.
-                const int gif_frame_interval = 100 / args->InRecordFPSTarget;
-                if (_GifWriter == NULL)
+                // _FFMPEGStdIn is NULL when recording just started. Initialize recording state.
+                if (_FFMPEGStdIn == NULL)
                 {
-                    // First GIF frame, initialize now that dimensions are known.
+                    // First video frame, initialize now that dimensions are known.
                     const unsigned int width = (unsigned int)capture_rect.GetWidth();
                     const unsigned int height = (unsigned int)capture_rect.GetHeight();
-                    IM_ASSERT(_GifWriter == NULL);
-                    _GifWriter = IM_NEW(GifWriter)();
-                    if ((args->InFlags & ImGuiCaptureFlags_NoSave) == 0)
-                        GifBegin(_GifWriter, args->OutSavedFileName, width, height, (uint32_t)gif_frame_interval);
+                    Str256f cmd("");
+                    cmd.setf("\"%s\" -r %d -f rawvideo -pix_fmt rgba -s %dx%d -i - -threads 0 -vsync 0 -preset ultrafast -y -pix_fmt yuv420p -crf %d -vf select=concatdec_select -af aselect=concatdec_select,aresample=async=1 %s",
+                             PathToFFMPEG, args->InRecordFPSTarget, width, height, args->InRecordQuality, args->OutSavedFileName);
+                    _FFMPEGStdIn = ImOsPOpen(cmd.c_str(), "w");
+                    IM_ASSERT(_FFMPEGStdIn != NULL);
                 }
 
-                // Save new GIF frame
-                // FIXME: Not optimal at all (e.g. compare to gifsicle -O3 output)
-                if ((args->InFlags & ImGuiCaptureFlags_NoSave) == 0)
-                    GifWriteFrame(_GifWriter, (const uint8_t*)output->Data, (uint32_t)output->Width, (uint32_t)output->Height, (uint32_t)gif_frame_interval, 8, false);
-                _GifLastFrameTime = current_time_sec;
+                // Save new video frame
+                fwrite(output->Data, 1, output->Width * output->Height * 4, _FFMPEGStdIn);
             }
+            if (is_recording_video)
+                _VideoLastFrameTime = current_time_sec;
         }
 
         // Image is finalized immediately when we are not stitching. Otherwise image is finalized when we have captured and stitched all frames.
-        if (!_GifRecording && (!(args->InFlags & ImGuiCaptureFlags_StitchAll) || h <= 0))
+        if (!_VideoRecording && (!(args->InFlags & ImGuiCaptureFlags_StitchAll) || h <= 0))
         {
             output->RemoveAlpha();
 
-            if (_GifWriter != NULL)
+            if (_FFMPEGStdIn != NULL)
             {
-                // At this point _Recording is false, but we know we were recording because _GifWriter is not NULL. Finalize gif animation here.
-                if ((args->InFlags & ImGuiCaptureFlags_NoSave) == 0)
-                    GifEnd(_GifWriter);
-                IM_DELETE(_GifWriter);
-                _GifWriter = NULL;
+                // At this point _Recording is false, but we know we were recording because _FFMPEGStdIn is not NULL. Finalize video here.
+                ImOsPClose(_FFMPEGStdIn);
+                _FFMPEGStdIn = NULL;
             }
             else if (args->InOutputImageBuf == NULL)
             {
@@ -502,7 +495,7 @@ ImGuiCaptureStatus ImGuiCaptureContext::CaptureUpdate(ImGuiCaptureArgs* args)
             g.Style.DisplaySafeAreaPadding = _DisplaySafeAreaPaddingBackup;
 
             _FrameNo = _ChunkNo = 0;
-            _GifLastFrameTime = 0;
+            _VideoLastFrameTime = 0;
             _MouseRelativeToWindowPos = ImVec2(-FLT_MAX, -FLT_MAX);
             _HoveredWindow = NULL;
             _CaptureArgs = NULL;
@@ -520,28 +513,27 @@ ImGuiCaptureStatus ImGuiCaptureContext::CaptureUpdate(ImGuiCaptureArgs* args)
 #endif
 }
 
-void ImGuiCaptureContext::BeginGifCapture(ImGuiCaptureArgs* args)
+void ImGuiCaptureContext::BeginVideoCapture(ImGuiCaptureArgs* args)
 {
     IM_ASSERT(args != NULL);
-    IM_ASSERT(_GifRecording == false);
-    IM_ASSERT(_GifWriter == NULL);
-    _GifRecording = true;
+    IM_ASSERT(_VideoRecording == false);
+    IM_ASSERT(_FFMPEGStdIn == NULL);
+    _VideoRecording = true;
     _CaptureArgs = args;
     IM_ASSERT(args->InRecordFPSTarget >= 1);
     IM_ASSERT(args->InRecordFPSTarget <= 100);
 }
 
-void ImGuiCaptureContext::EndGifCapture()
+void ImGuiCaptureContext::EndVideoCapture()
 {
     IM_ASSERT(_CaptureArgs != NULL);
-    IM_ASSERT(_GifRecording == true);
-    IM_ASSERT(_GifWriter != NULL);
-    _GifRecording = false;
+    IM_ASSERT(_VideoRecording == true);
+    _VideoRecording = false;
 }
 
-bool ImGuiCaptureContext::IsCapturingGif()
+bool ImGuiCaptureContext::IsCapturingVideo()
 {
-    return _GifRecording || _GifWriter;
+    return _VideoRecording;
 }
 
 //-----------------------------------------------------------------------------
@@ -670,25 +662,25 @@ void ImGuiCaptureTool::CaptureWindowsSelector(ImGuiCaptureArgs* args)
             _CaptureState = ImGuiCaptureToolState_Capturing;
     }
 
-    // Record GIF button
+    // Record video button
     // (Prefer 100/FPS to be an integer)
     {
-        const bool is_capturing_gif = Context.IsCapturingGif();
-        if (is_capturing_gif)
+        const bool is_capturing_video = Context.IsCapturingVideo();
+        if (is_capturing_video)
         {
-            if (ImGui::Button("Stop capturing gif###CaptureGif", button_sz))
-                Context.EndGifCapture();
+            if (ImGui::Button("Stop capturing video###CaptureVideo", button_sz))
+                Context.EndVideoCapture();
         }
         else
         {
             char label[64];
-            ImFormatString(label, 64, "Capture Gif (%d)###CaptureGif", args->InCaptureWindows.Size);
+            ImFormatString(label, 64, "Capture video (%d)###CaptureVideo", args->InCaptureWindows.Size);
             if (!allow_capture)
                 ImGui::BeginDisabled();
             if (ImGui::Button(label, button_sz))
             {
                 _CaptureState = ImGuiCaptureToolState_Capturing;
-                Context.BeginGifCapture(args);
+                Context.BeginVideoCapture(args);
             }
             if (!allow_capture)
                 ImGui::EndDisabled();
@@ -769,11 +761,11 @@ void ImGuiCaptureTool::ShowCaptureToolWindow(bool* p_open)
     if (_CaptureState == ImGuiCaptureToolState_Capturing)
     {
         ImGuiCaptureArgs* args = &_CaptureArgs;
-        if (Context.IsCapturingGif() || args->InCaptureWindows.Size > 1)
+        if (Context.IsCapturingVideo() || args->InCaptureWindows.Size > 1)
             args->InFlags &= ~ImGuiCaptureFlags_StitchAll;
 
-        if (Context._GifRecording && ImGui::IsKeyPressed(ImGuiKey_Escape))
-            Context.EndGifCapture();
+        if (Context._VideoRecording && ImGui::IsKeyPressed(ImGuiKey_Escape))
+            Context.EndVideoCapture();
 
         ImGuiCaptureStatus status = Context.CaptureUpdate(args);
         if (status != ImGuiCaptureStatus_InProgress)
@@ -836,7 +828,7 @@ void ImGuiCaptureTool::ShowCaptureToolWindow(bool* p_open)
         ImGui::PushItemWidth(-200.0f);
         ImGui::InputText("Output template", _CaptureArgs.InOutputFileTemplate, IM_ARRAYSIZE(_CaptureArgs.InOutputFileTemplate));
         ImGui::DragFloat("Padding", &_CaptureArgs.InPadding, 0.1f, 0, 32, "%.0f");
-        ImGui::DragInt("Gif FPS", &_CaptureArgs.InRecordFPSTarget, 0.1f, 10, 100, "%d fps");
+        ImGui::DragInt("Video FPS", &_CaptureArgs.InRecordFPSTarget, 0.1f, 10, 100, "%d fps");
 
         if (ImGui::Button("Snap Windows To Grid", ImVec2(-200, 0)))
             SnapWindowsToGrid(SnapGridSize, _CaptureArgs.InPadding);

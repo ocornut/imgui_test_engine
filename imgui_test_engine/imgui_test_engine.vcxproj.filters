@@ -45,9 +45,6 @@
     <ClInclude Include="imgui_capture_tool.h">
       <Filter>imgui_test_engine</Filter>
     </ClInclude>
-    <ClInclude Include="thirdparty\gif-h\gif.h">
-      <Filter>thirdparty\gif-h</Filter>
-    </ClInclude>
     <ClInclude Include="thirdparty\stb\imstb_image_write.h">
       <Filter>thirdparty\stb</Filter>
     </ClInclude>

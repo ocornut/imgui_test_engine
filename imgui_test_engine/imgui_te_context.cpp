@@ -650,7 +650,7 @@ ImVec2 ImGuiTestContext::GetMainMonitorWorkSize()
 static bool ImGuiTestContext_CanCapture(ImGuiTestContext* ctx)
 {
     ImGuiTestEngineIO* io = ctx->EngineIO;
-    return io->ConfigCaptureEnabled;
+    return io->ConfigCaptureEnabled && ImFileExist(io->PathToFFMPEG);
 }
 
 void ImGuiTestContext::CaptureInitArgs(ImGuiCaptureArgs* args, int flags)
@@ -722,7 +722,7 @@ bool ImGuiTestContext::CaptureBeginGif(ImGuiCaptureArgs* args)
 bool ImGuiTestContext::CaptureEndGif(ImGuiCaptureArgs* args)
 {
     IM_CHECK_RETV(args != NULL, false);
-    bool ret = Engine->CaptureContext.IsCapturingGif() && ImGuiTestEngine_CaptureEndGif(Engine, args);
+    bool ret = Engine->CaptureContext.IsCapturingVideo() && ImGuiTestEngine_CaptureEndGif(Engine, args);
     if (ret)
     {
         // In-progress capture was canceled by user. Delete incomplete file.

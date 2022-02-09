@@ -98,6 +98,7 @@ static void ImGuiTestEngine_InstallCrashHandler();
 // Settings
 static void* ImGuiTestEngine_SettingsReadOpen(ImGuiContext*, ImGuiSettingsHandler*, const char* name);
 static void  ImGuiTestEngine_SettingsReadLine(ImGuiContext*, ImGuiSettingsHandler*, void* entry, const char* line);
+static void  ImGuiTestEngine_SettingsApplyAll(ImGuiContext* ui_ctx, ImGuiSettingsHandler* handler);
 static void  ImGuiTestEngine_SettingsWriteAll(ImGuiContext* imgui_ctx, ImGuiSettingsHandler* handler, ImGuiTextBuffer* buf);
 
 //-------------------------------------------------------------------------
@@ -164,6 +165,7 @@ static void ImGuiTestEngine_BindImGuiContext(ImGuiTestEngine* engine, ImGuiConte
     ini_handler.TypeHash = ImHashStr("TestEngine");
     ini_handler.ReadOpenFn = ImGuiTestEngine_SettingsReadOpen;
     ini_handler.ReadLineFn = ImGuiTestEngine_SettingsReadLine;
+    ini_handler.ApplyAllFn = ImGuiTestEngine_SettingsApplyAll;
     ini_handler.WriteAllFn = ImGuiTestEngine_SettingsWriteAll;
     ui_ctx->SettingsHandlers.push_back(ini_handler);
 
@@ -377,6 +379,8 @@ void    ImGuiTestEngine_PostSwap(ImGuiTestEngine* engine)
     {
         engine->CaptureContext.ScreenCaptureFunc = engine->IO.ScreenCaptureFunc;
         engine->CaptureContext.ScreenCaptureUserData = engine->IO.ScreenCaptureUserData;
+        engine->CaptureContext.PathToFFMPEG = engine->IO.PathToFFMPEG;
+        engine->CaptureContext.VideoCaptureExt = engine->IO.VideoCaptureExt;
         ImGuiCaptureStatus status = engine->CaptureContext.CaptureUpdate(engine->CurrentCaptureArgs);
         if (status != ImGuiCaptureStatus_InProgress)
         {
@@ -904,7 +908,7 @@ bool ImGuiTestEngine_CaptureBeginGif(ImGuiTestEngine* engine, ImGuiCaptureArgs* 
         engine->IO.ConfigFixedDeltaTime = 1.0f / 60.0f;
     }
     engine->CurrentCaptureArgs = args;
-    engine->CaptureContext.BeginGifCapture(args);
+    engine->CaptureContext.BeginVideoCapture(args);
     return true;
 }
 
@@ -912,10 +916,10 @@ bool ImGuiTestEngine_CaptureEndGif(ImGuiTestEngine* engine, ImGuiCaptureArgs* ar
 {
     IM_UNUSED(args);
     IM_ASSERT(engine->CurrentCaptureArgs != NULL && "No capture is in progress.");
-    IM_ASSERT(engine->CaptureContext.IsCapturingGif() && "No gif capture is in progress.");
+    IM_ASSERT(engine->CaptureContext.IsCapturingVideo() && "No gif capture is in progress.");
 
-    engine->CaptureContext.EndGifCapture();
-    while (engine->CaptureContext._GifWriter != NULL)   // Wait until last frame is captured and gif is saved.
+    engine->CaptureContext.EndVideoCapture();
+    while (engine->CurrentCaptureArgs != NULL)   // Wait until last frame is captured and gif is saved.
         ImGuiTestEngine_Yield(engine);
     engine->IO.ConfigRunFast = engine->BackupConfigRunFast;
     engine->IO.ConfigNoThrottle = engine->BackupConfigNoThrottle;
@@ -1636,7 +1640,7 @@ bool ImGuiTestEngine_Check(const char* file, const char* func, int line, ImGuiTe
 
             // In case test failed without finishing gif capture - finish it here. It has to happen here because capture
             // args struct is on test function stack and would be lost when test function returns.
-            if (engine->CaptureContext.IsCapturingGif())
+            if (engine->CaptureContext.IsCapturingVideo())
             {
                 ImGuiCaptureArgs* args = engine->CurrentCaptureArgs;
                 ImGuiTestEngine_CaptureEndGif(engine, args);
@@ -1763,6 +1767,19 @@ static void     ImGuiTestEngine_SettingsReadLine(ImGuiContext* ui_ctx, ImGuiSett
     else if (sscanf(line, "StackTool=%d", &n) == 1)                                 { engine->UiStackToolOpen = (n != 0); }
     else if (sscanf(line, "CaptureEnabled=%d", &n) == 1)                            { engine->IO.ConfigCaptureEnabled = (n != 0); }
     else if (sscanf(line, "CaptureOnError=%d", &n) == 1)                            { engine->IO.ConfigCaptureOnError = (n != 0); }
+    else if (sscanf(line, "FFMPEG=%s", engine->IO.PathToFFMPEG) == 1)               { }
+    else if (sscanf(line, "VideoExt=%s", engine->IO.VideoCaptureExt) == 1)          { }
+}
+
+static void     ImGuiTestEngine_SettingsApplyAll(ImGuiContext* ui_ctx, ImGuiSettingsHandler* handler)
+{
+    IM_UNUSED(handler);
+    ImGuiTestEngine* engine = (ImGuiTestEngine*)ui_ctx->TestEngine;
+    IM_ASSERT(engine != NULL);
+    IM_ASSERT(engine->UiContextTarget == ui_ctx);
+
+    if (!ImFileExist(engine->IO.PathToFFMPEG))
+        fprintf(stderr, "ffmpeg.exe not found, screen capturing functions are disabled.\n");
 }
 
 static void     ImGuiTestEngine_SettingsWriteAll(ImGuiContext* ui_ctx, ImGuiSettingsHandler* handler, ImGuiTextBuffer* buf)
@@ -1780,6 +1797,8 @@ static void     ImGuiTestEngine_SettingsWriteAll(ImGuiContext* ui_ctx, ImGuiSett
     buf->appendf("StackTool=%d\n", engine->UiStackToolOpen);
     buf->appendf("CaptureEnabled=%d\n", engine->IO.ConfigCaptureEnabled);
     buf->appendf("CaptureOnError=%d\n", engine->IO.ConfigCaptureOnError);
+    buf->appendf("FFMPEG=%s\n", engine->IO.PathToFFMPEG);
+    buf->appendf("VideoExt=%s\n", engine->IO.VideoCaptureExt);
     buf->appendf("\n");
 }
 

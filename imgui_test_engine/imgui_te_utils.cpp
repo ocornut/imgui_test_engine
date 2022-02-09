@@ -14,9 +14,10 @@
 #if defined(_WIN32)
 #if !defined(_WINDOWS_)
 #define WIN32_LEAN_AND_MEAN
-#include <Windows.h>
+#include <windows.h>
 #endif
 #include <shellapi.h>
+#include <stdio.h>
 #else
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -107,6 +108,13 @@ ImGuiID ImHashDecoratedPath(const char* str, const char* str_end, ImGuiID seed)
 
 #if _WIN32
 static const char IM_DIR_SEPARATOR = '\\';
+
+static void ImUtf8ToWideChar(const char* multi_byte, ImVector<wchar_t>* buf)
+{
+    const int wsize = ::MultiByteToWideChar(CP_UTF8, 0, multi_byte, -1, NULL, 0);
+    buf->resize(wsize);
+    ::MultiByteToWideChar(CP_UTF8, 0, multi_byte, -1, (wchar_t*)buf->Data, wsize);
+}
 #else
 static const char IM_DIR_SEPARATOR = '/';
 #endif
@@ -121,10 +129,8 @@ bool ImFileExist(const char* filename)
 bool ImFileDelete(const char* filename)
 {
 #if _WIN32
-    const int filename_wsize = ::MultiByteToWideChar(CP_UTF8, 0, filename, -1, NULL, 0);
     ImVector<wchar_t> buf;
-    buf.resize(filename_wsize);
-    ::MultiByteToWideChar(CP_UTF8, 0, filename, -1, (wchar_t*)&buf[0], filename_wsize);
+    ImUtf8ToWideChar(filename, &buf);
     return ::DeleteFileW(&buf[0]) == TRUE;
 #else
     unlink(filename);
@@ -718,6 +724,8 @@ bool ImBuildGetGitBranchName(const char* git_repo_path, Str* branch_name)
 // Operating System Helpers
 //-----------------------------------------------------------------------------
 // - ImOsCreateProcess()
+// - ImOsPOpen()
+// - ImOsPClose()
 // - ImOsOpenInShell()
 // - ImOsConsoleSetTextColor()
 // - ImOsIsDebuggerPresent()
@@ -741,6 +749,41 @@ bool    ImOsCreateProcess(const char* cmd_line)
 #else
     IM_UNUSED(cmd_line);
     return false;
+#endif
+}
+
+FILE*       ImOsPOpen(const char* cmd_line, const char* mode)
+{
+    IM_ASSERT(cmd_line != NULL && *cmd_line);
+    IM_ASSERT(mode != NULL && *mode);
+#if _WIN32
+    ImVector<wchar_t> w_cmd_line;
+    ImVector<wchar_t> w_mode;
+    ImUtf8ToWideChar(cmd_line, &w_cmd_line);
+    ImUtf8ToWideChar(mode, &w_mode);
+    bool is_quoted = *cmd_line == '"';
+    for (wchar_t& c : w_cmd_line)   // Replace / with \ in application path of cmd_line.
+    {
+        if ((is_quoted && c == '"') || (!is_quoted && c == ' '))
+            break;
+        if (c == L'/')
+            c = L'\\';
+    }
+    w_mode.resize(w_mode.Size + 1);
+    wcscat(w_mode.Data, L"b");   // Windows requires 'b' mode while unixes do not support it and default to binary.
+    return _wpopen(w_cmd_line.Data, w_mode.Data);
+#else
+    return popen(cmd_line, mode);
+#endif
+}
+
+void        ImOsPClose(FILE* fp)
+{
+    IM_ASSERT(fp != NULL);
+#if _WIN32
+    _pclose(fp);
+#else
+    pclose(fp);
 #endif
 }
 
@@ -1022,6 +1065,17 @@ void TableDiscardInstanceAndSettings(ImGuiID table_id)
         ImGui::TableRemove(table);
     // FIXME-TABLE: We should be able to use TableResetSettings() instead of TableRemove()! Maybe less of a clean slate but would be good to check that it does the job
     //ImGui::TableResetSettings(table);
+}
+
+int         FindStringIndex(const char** array, int array_size, const char* str)
+{
+    IM_ASSERT(array != NULL);
+    IM_ASSERT(array_size > 0);
+    IM_ASSERT(str != NULL);
+    for (int i = 0; i < array_size; i++)
+        if (strcmp(array[i], str) == 0)
+            return i;
+    return -1;
 }
 
 //-----------------------------------------------------------------------------

@@ -9,6 +9,7 @@
 
 #include <math.h>   // fabsf
 #include <stdint.h> // uint64_t
+#include <stdio.h>  // FILE*
 #include "imgui.h"  // ImGuiID, ImGuiKey
 class Str;          // Str<> from thirdparty/Str/Str.h
 
@@ -118,6 +119,8 @@ enum ImOsConsoleTextColor
 };
 
 bool        ImOsCreateProcess(const char* cmd_line);
+FILE*       ImOsPOpen(const char* cmd_line, const char* mode);
+void        ImOsPClose(FILE* fp);
 void        ImOsOpenInShell(const char* path);
 void        ImOsConsoleSetTextColor(ImOsConsoleStream stream, ImOsConsoleTextColor color);
 bool        ImOsIsDebuggerPresent();
@@ -135,6 +138,9 @@ struct ImGuiTable;
 ImGuiID     TableGetHeaderID(ImGuiTable* table, const char* column, int instance_no = 0);
 ImGuiID     TableGetHeaderID(ImGuiTable* table, int column_n, int instance_no = 0);
 void        TableDiscardInstanceAndSettings(ImGuiID table_id);
+
+// Other functions
+int         FindStringIndex(const char** array, int array_size, const char* str);
 
 //-----------------------------------------------------------------------------
 // Helper: maintain/calculate moving average

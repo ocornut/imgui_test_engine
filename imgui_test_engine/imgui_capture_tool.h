@@ -23,7 +23,6 @@ typedef bool (ImGuiScreenCaptureFunc)(ImGuiID viewport_id, int x, int y, int w, 
 
 // External types
 struct ImGuiWindow; // imgui.h
-struct GifWriter;   // gif.h
 
 //-----------------------------------------------------------------------------
 
@@ -74,7 +73,8 @@ struct ImGuiCaptureArgs
     int                     InFileCounter = 0;              // Counter which may be appended to file name when saving. By default counting starts from 1. When done this field holds number of saved files.
     ImGuiCaptureImageBuf*   InOutputImageBuf = NULL;        // Output will be saved to image buffer if specified.
     char                    InOutputFileTemplate[256] = ""; // Output will be saved to a file if InOutputImageBuf is NULL.
-    int                     InRecordFPSTarget = 25;         // FPS target for recording gifs.
+    int                     InRecordFPSTarget = 25;         // FPS target for recording videos.
+    int                     InRecordQuality = 23;           // 0 = lossless, 18 = visually lossless, 23 = default, 51 = worst
 
     // [Output]
     ImVec2                  OutImageSize;                   // Produced image size.
@@ -94,6 +94,8 @@ struct ImGuiCaptureContext
     // IO
     ImFuncPtr(ImGuiScreenCaptureFunc) ScreenCaptureFunc = NULL; // Graphics backend specific function that captures specified portion of framebuffer and writes RGBA data to `pixels` buffer.
     void*                   ScreenCaptureUserData = NULL;       // Custom user pointer which is passed to ScreenCaptureFunc. (Optional)
+    char*                   PathToFFMPEG = NULL;                // Path to ffmpeg executable.
+    char*                   VideoCaptureExt = NULL;             // Video file extension.
 
     // [Internal]
     ImRect                  _CaptureRect;                   // Viewport rect that is being captured.
@@ -110,10 +112,10 @@ struct ImGuiCaptureContext
     const ImGuiCaptureArgs* _CaptureArgs = NULL;            // Current capture args. Set only if capture is in progress.
     bool                    _MouseDrawCursorBackup = false; // Initial value of g.IO.MouseDrawCursor.
 
-    // [Internal] Gif recording
-    bool                    _GifRecording = false;          // Flag indicating that GIF recording is in progress.
-    double                  _GifLastFrameTime = 0;          // Time when last GIF frame was recorded.
-    GifWriter*              _GifWriter = NULL;              // GIF image writer state.
+    // [Internal] Video recording
+    bool                    _VideoRecording = false;        // Flag indicating that video recording is in progress.
+    double                  _VideoLastFrameTime = 0;        // Time when last video frame was recorded.
+    FILE*                   _FFMPEGStdIn = NULL;            // File writing to stdin of ffmpeg process.
 
     ImGuiCaptureContext(ImGuiScreenCaptureFunc capture_func = NULL) { ScreenCaptureFunc = capture_func; _MouseRelativeToWindowPos = ImVec2(-FLT_MAX, -FLT_MAX); }
 
@@ -124,10 +126,10 @@ struct ImGuiCaptureContext
     // Capture a screenshot. If this function returns true then it should be called again with same arguments on the next frame.
     ImGuiCaptureStatus      CaptureUpdate(ImGuiCaptureArgs* args);
 
-    // Begin gif capture. Call CaptureUpdate() every frame afterwards until it returns false.
-    void    BeginGifCapture(ImGuiCaptureArgs* args);
-    void    EndGifCapture();
-    bool    IsCapturingGif();
+    // Begin video capture. Call CaptureUpdate() every frame afterwards until it returns false.
+    void    BeginVideoCapture(ImGuiCaptureArgs* args);
+    void    EndVideoCapture();
+    bool    IsCapturingVideo();
 };
 
 // Implements UI for capturing images
