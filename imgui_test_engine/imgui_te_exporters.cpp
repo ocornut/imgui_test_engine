@@ -99,9 +99,9 @@ static void ImGuiTestEngine_PrintLogLines(FILE* fp, ImGuiTestLog* test_log, int 
         if (line_info.Level > level)
             continue;
         const char* line_start = test_log->Buffer.c_str() + line_info.LineOffset;
-        const char* line_end = strstr(line_start, "\n");
+        const char* line_end = strstr(line_start, "\n"); // FIXME: Incorrect.
         log_line.set(line_start, line_end);
-        ImStrXmlEscape(&log_line);
+        ImStrXmlEscape(&log_line); // FIXME: Should not be here considering the function name.
         for (int i = 0; i < indent; i++)
             fprintf(fp, " ");
         fprintf(fp, "%s\n", log_line.c_str());

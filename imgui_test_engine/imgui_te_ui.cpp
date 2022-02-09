@@ -118,7 +118,7 @@ static void DrawTestLog(ImGuiTestEngine* e, ImGuiTest* test)
     const char* text = test->TestLog.Buffer.begin();
     const char* text_end = test->TestLog.Buffer.end();
     ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(6.0f, 2.0f) * e_io.DpiScale);
-    ImVector<ImGuiTestLogLineInfo>& line_info_vector = test->Status == ImGuiTestStatus_Error ? log->LineInfoError : log->LineInfo;
+    ImVector<ImGuiTestLogLineInfo>& line_info_vector = test->Status == ImGuiTestStatus_Error ? log->LineInfoOnError : log->LineInfo;
     ImGuiListClipper clipper;
     clipper.Begin(line_info_vector.Size);
     while (clipper.Step())
@@ -272,16 +272,16 @@ static void ShowTestGroup(ImGuiTestEngine* e, ImGuiTestGroup group, ImGuiTextFil
         ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(6, 4) * e_io.DpiScale);
         ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(4, 0) * e_io.DpiScale);
         //ImGui::PushStyleVar(ImGuiStyleVar_CellPadding, ImVec2(100, 10) * e_io.DpiScale);
-        for (int n = 0; n < e->TestsAll.Size; n++)
+        for (int test_n = 0; test_n < e->TestsAll.Size; test_n++)
         {
-            ImGuiTest* test = e->TestsAll[n];
+            ImGuiTest* test = e->TestsAll[test_n];
             if (!ShowTestGroupFilterTest(e, group, filter, test))
                 continue;
 
             ImGuiTestContext* test_context = (e->TestContext && e->TestContext->Test == test) ? e->TestContext : NULL;
 
             ImGui::TableNextRow();
-            ImGui::PushID(n);
+            ImGui::PushID(test_n);
 
             ImVec4 status_color;
             switch (test->Status)
@@ -397,11 +397,25 @@ static void ShowTestGroup(ImGuiTestEngine* e, ImGuiTestGroup group, ImGuiTextFil
                         ImGui::SetClipboardText(failing_tests.c_str());
                     }
 
-                if (ImGui::MenuItem("Copy log", NULL, false, !test->TestLog.Buffer.empty()))
-                    ImGui::SetClipboardText(test->TestLog.Buffer.c_str());
+                ImGuiTestLog* test_log = &test->TestLog;
+                if (ImGui::BeginMenu("Copy log", !test_log->IsEmpty()))
+                {
+                    for (int level_n = ImGuiTestVerboseLevel_Error; level_n < ImGuiTestVerboseLevel_COUNT; level_n++)
+                    {
+                        ImGuiTestVerboseLevel level = (ImGuiTestVerboseLevel)level_n;
+                        int count = test_log->ExtractLinesForVerboseLevels((ImGuiTestVerboseLevel)0, level, NULL);
+                        if (ImGui::MenuItem(Str64f("%s (%d lines)", ImGuiTestEngine_GetVerboseLevelName(level), count).c_str(), NULL, false, count > 0))
+                        {
+                            ImGuiTextBuffer buffer;
+                            test_log->ExtractLinesForVerboseLevels((ImGuiTestVerboseLevel)0, level, &buffer);
+                            ImGui::SetClipboardText(buffer.c_str());
+                        }
+                    }
+                    ImGui::EndMenu();
+                }
 
-                if (ImGui::MenuItem("Clear log", NULL, false, !test->TestLog.Buffer.empty()))
-                    test->TestLog.Clear();
+                if (ImGui::MenuItem("Clear log", NULL, false, !test_log->IsEmpty()))
+                    test_log->Clear();
 
                 ImGui::EndPopup();
             }

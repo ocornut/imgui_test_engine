@@ -279,47 +279,22 @@ struct ImGuiTestLogLineInfo
 struct ImGuiTestLog
 {
     ImGuiTextBuffer                 Buffer;
-    ImVector<ImGuiTestLogLineInfo>  LineInfo;
-    ImVector<ImGuiTestLogLineInfo>  LineInfoError;
     ImVector<ImGuiTestLogLineInfo>  LineInfoAll;
-    bool                            CachedLinesPrintedToTTY = false;
+    int                             CountPerLevel[ImGuiTestVerboseLevel_COUNT] = {};
 
+    // FIXME: To remove
+    ImVector<ImGuiTestLogLineInfo>  LineInfo;                           // FIXME: Remove (store/cache in UI if needed for clipper)
+    ImVector<ImGuiTestLogLineInfo>  LineInfoOnError;                    // FIXME: Remove (")
+    bool                            CachedLinesPrintedToTTY = false;    // FIXME: Remove as this is a view things
+
+    // Functions
     ImGuiTestLog() {}
+    bool    IsEmpty() const         { return Buffer.empty(); }
+    void    Clear();
+    int     ExtractLinesForVerboseLevels(ImGuiTestVerboseLevel level_min, ImGuiTestVerboseLevel level_max, ImGuiTextBuffer* buffer);
 
-    void Clear()
-    {
-        Buffer.clear();
-        LineInfo.clear();
-        LineInfoError.clear();
-        LineInfoAll.clear();
-        CachedLinesPrintedToTTY = false;
-    }
-
-    void UpdateLineOffsets(ImGuiTestEngineIO* engine_io, ImGuiTestVerboseLevel level, const char* start)
-    {
-        IM_ASSERT(Buffer.begin() <= start && start < Buffer.end());
-        const char* p_begin = start;
-        const char* p_end = Buffer.end();
-        const char* p = p_begin;
-        while (p < p_end)
-        {
-            const char* p_bol = p;
-            const char* p_eol = strchr(p, '\n');
-
-            bool last_empty_line = (p_bol + 1 == p_end);
-
-            if (!last_empty_line)
-            {
-                int offset = (int)(p_bol - Buffer.c_str());
-                if (engine_io->ConfigVerboseLevel >= level)
-                    LineInfo.push_back({level, offset});
-                if (engine_io->ConfigVerboseLevelOnError >= level)
-                    LineInfoError.push_back({level, offset});
-                LineInfoAll.push_back({level, offset});
-            }
-            p = p_eol ? p_eol + 1 : NULL;
-        }
-    }
+    // [Internal]
+    void    UpdateLineOffsets(ImGuiTestEngineIO* engine_io, ImGuiTestVerboseLevel level, const char* start);
 };
 
 //-------------------------------------------------------------------------

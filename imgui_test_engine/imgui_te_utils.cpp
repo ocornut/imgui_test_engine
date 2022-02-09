@@ -370,6 +370,7 @@ const char* ImStrchrRangeWithEscaping(const char* str, const char* str_end, char
     return NULL;
 }
 
+// Suboptimal but ok for the data size we are dealing with.
 void ImStrXmlEscape(Str* s)
 {
     ImStrReplace(s, "<", "&lt;");

@@ -43,6 +43,7 @@ Index of this file:
 // [SECTION] HOOKS FOR TESTS
 // [SECTION] USER INTERFACE
 // [SECTION] SETTINGS
+// [SECTION] ImGuiTestLog
 // [SECTION] ImGuiTest
 
 */
@@ -1780,6 +1781,75 @@ static void     ImGuiTestEngine_SettingsWriteAll(ImGuiContext* ui_ctx, ImGuiSett
     buf->appendf("CaptureEnabled=%d\n", engine->IO.ConfigCaptureEnabled);
     buf->appendf("CaptureOnError=%d\n", engine->IO.ConfigCaptureOnError);
     buf->appendf("\n");
+}
+
+//-------------------------------------------------------------------------
+// [SECTION] ImGuiTestLog
+//-------------------------------------------------------------------------
+
+void ImGuiTestLog::Clear()
+{
+    Buffer.clear();
+    LineInfo.clear();
+    LineInfoOnError.clear();
+    LineInfoAll.clear();
+    memset(&CountPerLevel, 0, sizeof(CountPerLevel));
+    CachedLinesPrintedToTTY = false;
+}
+
+// Level are inclusive.
+// - To get ONLY Error:                 Use level_min == ImGuiTestVerboseLevel_Error, level_max = ImGuiTestVerboseLevel_Error
+// - To get ONLY Error and Warnings:    Use level_min == ImGuiTestVerboseLevel_Error, level_max = ImGuiTestVerboseLevel_Warning
+// - To get Errors, Warnings, Debug...  Use level_min == ImGuiTestVerboseLevel_Error, level_max = ImGuiTestVerboseLevel_Trace
+int ImGuiTestLog::ExtractLinesForVerboseLevels(ImGuiTestVerboseLevel level_min, ImGuiTestVerboseLevel level_max, ImGuiTextBuffer* buffer)
+{
+    IM_ASSERT(level_min <= level_max);
+
+    // Return count
+    int count = 0;
+    if (buffer == NULL)
+    {
+        for (int n = level_min; n <= level_max; n++)
+            count += CountPerLevel[n];
+        return count;
+    }
+
+    // Extract lines and return count
+    for (auto& line_info : LineInfoAll)
+        if (line_info.Level >= level_min && line_info.Level <= level_max)
+        {
+            const char* line_begin = Buffer.c_str() + line_info.LineOffset;
+            const char* line_end = strchr(line_begin, '\n');
+            buffer->append(line_begin, line_end[0] == '\n' ? line_end + 1 : line_end);
+            count++;
+        }
+    return count;
+}
+
+void ImGuiTestLog::UpdateLineOffsets(ImGuiTestEngineIO* engine_io, ImGuiTestVerboseLevel level, const char* start)
+{
+    IM_ASSERT(Buffer.begin() <= start && start < Buffer.end());
+    const char* p_begin = start;
+    const char* p_end = Buffer.end();
+    const char* p = p_begin;
+    while (p < p_end)
+    {
+        const char* p_bol = p;
+        const char* p_eol = strchr(p, '\n');
+
+        bool last_empty_line = (p_bol + 1 == p_end);
+        if (!last_empty_line)
+        {
+            int offset = (int)(p_bol - Buffer.c_str());
+            if (engine_io->ConfigVerboseLevel >= level)
+                LineInfo.push_back({ level, offset });
+            if (engine_io->ConfigVerboseLevelOnError >= level)
+                LineInfoOnError.push_back({ level, offset });
+            LineInfoAll.push_back({ level, offset });
+            CountPerLevel[level] += 1;
+        }
+        p = p_eol ? p_eol + 1 : NULL;
+    }
 }
 
 //-------------------------------------------------------------------------

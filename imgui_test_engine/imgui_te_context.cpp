@@ -168,7 +168,7 @@ void ImGuiTestContext::LogError(const char* fmt, ...)
     va_end(args);
 }
 
-void    ImGuiTestContext::LogToTTY(ImGuiTestVerboseLevel level, const char* message)
+void    ImGuiTestContext::LogToTTY(ImGuiTestVerboseLevel level, const char* message, const char* message_end)
 {
     IM_ASSERT(level > ImGuiTestVerboseLevel_Silent && level < ImGuiTestVerboseLevel_COUNT);
 
@@ -185,18 +185,17 @@ void    ImGuiTestContext::LogToTTY(ImGuiTestVerboseLevel level, const char* mess
         if (!log->CachedLinesPrintedToTTY)
         {
             // Print current message and all previous logged messages.
+            // FIXME: Can't use ExtractLinesAboveVerboseLevel() before we want to keep error level...
             log->CachedLinesPrintedToTTY = true;
-            for (int i = 0; i < log->LineInfoError.Size; i++)
+            for (int i = 0; i < log->LineInfoOnError.Size; i++)
             {
-                ImGuiTestLogLineInfo& line_info = log->LineInfoError[i];
-                char* line_beg = log->Buffer.Buf.Data + line_info.LineOffset;
-                char* line_end = strchr(line_beg, '\n');
-                char line_end_bkp = *(line_end + 1);
-                *(line_end + 1) = 0;                            // Terminate line temporarily to avoid extra copying.
-                LogToTTY(line_info.Level, line_beg);
-                *(line_end + 1) = line_end_bkp;                 // Restore new line after printing.
+                ImGuiTestLogLineInfo& line_info = log->LineInfoOnError[i];
+                char* line_begin = log->Buffer.Buf.Data + line_info.LineOffset;
+                char* line_end = strchr(line_begin, '\n');
+                LogToTTY(line_info.Level, line_begin, line_end);
             }
-            return;                                             // This process included current line as well.
+            // We already printed current line as well, so return now.
+            return;
         }
         // Otherwise print only current message. If we are executing here log level already is within range of
         // ConfigVerboseLevelOnError setting.
@@ -219,7 +218,10 @@ void    ImGuiTestContext::LogToTTY(ImGuiTestVerboseLevel level, const char* mess
         ImOsConsoleSetTextColor(ImOsConsoleStream_StandardOutput, ImOsConsoleTextColor_White);
         break;
     }
-    fprintf(stdout, "%s", message);
+    if (message_end)
+        fprintf(stdout, "%.*s", (int)(message_end - message), message);
+    else
+        fprintf(stdout, "%s", message);
     ImOsConsoleSetTextColor(ImOsConsoleStream_StandardOutput, ImOsConsoleTextColor_White);
     fflush(stdout);
 }

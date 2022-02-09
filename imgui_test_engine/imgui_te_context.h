@@ -273,7 +273,7 @@ struct ImGuiTestContext
     // Logging
     void        LogEx(ImGuiTestVerboseLevel level, ImGuiTestLogFlags flags, const char* fmt, ...) IM_FMTARGS(4);
     void        LogExV(ImGuiTestVerboseLevel level, ImGuiTestLogFlags flags, const char* fmt, va_list args) IM_FMTLIST(4);
-    void        LogToTTY(ImGuiTestVerboseLevel level, const char* message);
+    void        LogToTTY(ImGuiTestVerboseLevel level, const char* message, const char* message_end = NULL);
     void        LogToDebugger(ImGuiTestVerboseLevel level, const char* message);
     void        LogDebug(const char* fmt, ...)      IM_FMTARGS(2);  // ImGuiTestVerboseLevel_Debug or ImGuiTestVerboseLevel_Trace depending on context depth
     void        LogInfo(const char* fmt, ...)       IM_FMTARGS(2);  // ImGuiTestVerboseLevel_Info
