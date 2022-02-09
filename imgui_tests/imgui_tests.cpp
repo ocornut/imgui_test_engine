@@ -4238,14 +4238,14 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
         ctx->ItemClick("Basic/combo");
         ctx->ItemClick("Basic/color 2/##ColorButton");
         //ctx->ItemClick("##Combo/BBBB");     // id chain
-        ctx->SleepShort();
+        ctx->SleepStandard();
         ctx->PopupCloseAll();
 
         //ctx->ItemClick("Layout & Scrolling");  // FIXME: close popup
         ctx->ItemOpen("Layout & Scrolling");
         ctx->ItemOpen("Scrolling");
         ctx->ItemHold("Scrolling/>>", 1.0f);
-        ctx->SleepShort();
+        ctx->SleepStandard();
     };
 
     // ## Coverage: open everything in demo window
@@ -4823,11 +4823,11 @@ void RegisterTests_Capture(ImGuiTestEngine* e)
         ctx->CaptureBeginGif(&args);
         ctx->ItemInput("string");
         ctx->KeyCharsReplace("Dear ImGui: Now with gif animations \\o/");
-        ctx->SleepShort();
+        ctx->SleepStandard();
         ctx->ItemInputValue("float", 3.14f);
-        ctx->SleepShort();
+        ctx->SleepStandard();
         ctx->ItemClick("Save");
-        ctx->SleepShort();
+        ctx->SleepStandard();
         ctx->CaptureEndGif(&args);
     };
 

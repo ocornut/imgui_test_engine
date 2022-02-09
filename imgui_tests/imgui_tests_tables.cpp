@@ -1392,7 +1392,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
     {
         ctx->SetRef("Bug Report");
         ctx->MouseMove("Test Tooltip");
-        ctx->SleepShort();
+        ctx->SleepStandard();
         const float tooltip_width = ctx->GenericVars.Float1;
         for (int n = 0; n < 3; n++)
             IM_CHECK_EQ(ctx->GenericVars.Float1, tooltip_width);

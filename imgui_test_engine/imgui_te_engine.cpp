@@ -1273,7 +1273,7 @@ static void ImGuiTestEngine_RunTest(ImGuiTestEngine* engine, ImGuiTestContext* c
         ctx->RecoverFromUiContextErrors();
 
         if (!engine->IO.ConfigRunFast)
-            ctx->SleepShort();
+            ctx->SleepStandard();
 
         // Stop in GuiFunc mode
         if (engine->IO.ConfigKeepGuiFunc && ctx->IsError())

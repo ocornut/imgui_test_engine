@@ -198,10 +198,12 @@ struct ImGuiTestEngineIO
     char                        GitBranchName[64] = "";             // e.g. fill in branch name
 
     // Options: Speed of user simulation
-    float                       MouseSpeed = 1000.0f;               // Mouse speed (pixel/second) when not running in fast mode
-    float                       MouseWobble = 0.25f;                // How much wobble to apply to the mouse (pixels per pixel of move distance) when not running in fast mode
-    float                       ScrollSpeed = 1600.0f;              // Scroll speed (pixel/second) when not running in fast mode
-    float                       TypingSpeed = 30.0f;                // Char input speed (characters/second) when not running in fast mode
+    float                       MouseSpeed = 600.0f;                // Mouse speed (pixel/second) when not running in fast mode
+    float                       MouseWobble = 0.25f;                // (0.0f..1.0f) How much wobble to apply to the mouse (pixels per pixel of move distance) when not running in fast mode
+    float                       ScrollSpeed = 1400.0f;              // Scroll speed (pixel/second) when not running in fast mode
+    float                       TypingSpeed = 20.0f;                // Char input speed (characters/second) when not running in fast mode
+    float                       ActionDelayShort = 0.15f;           // Time between short actions
+    float                       ActionDelayStandard = 0.40f;        // Time between most actions
 
     // Options: Watchdog. Set values to FLT_MAX to disable.
     // Interactive GUI applications that may be slower tend to use higher values.

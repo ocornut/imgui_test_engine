@@ -388,7 +388,14 @@ void    ImGuiTestContext::SleepNoSkip(float time, float frame_time_step)
 
 void    ImGuiTestContext::SleepShort()
 {
-    Sleep(0.3f);
+    if (!EngineIO->ConfigRunFast)
+        Sleep(EngineIO->ActionDelayShort);
+}
+
+void    ImGuiTestContext::SleepStandard()
+{
+    if (!EngineIO->ConfigRunFast)
+        Sleep(EngineIO->ActionDelayStandard);
 }
 
 void ImGuiTestContext::SetInputMode(ImGuiInputSource input_mode)
@@ -957,6 +964,7 @@ void    ImGuiTestContext::ScrollTo(ImGuiTestRef ref, ImGuiAxis axis, float scrol
 
     WindowBringToFront(window->ID);
     //Yield();
+    SleepStandard();
 
     // Try to use Scrollbar if available
     const ImGuiTestItemInfo* scrollbar_item = ItemInfo(ImGui::GetWindowScrollbarID(window, axis), ImGuiTestOpFlags_NoError);
@@ -977,12 +985,12 @@ void    ImGuiTestContext::ScrollTo(ImGuiTestRef ref, ImGuiAxis axis, float scrol
             scrollbar_src_pos[axis] = ImMin(scrollbar_src_pos[axis], scrollbar_rect.Min[axis] + scrollbar_size_v - window_resize_grip_size);
             MouseMoveToPos(scrollbar_src_pos);
             MouseDown(0);
-            SleepShort();
+            SleepStandard();
 
             ImVec2 scrollbar_dst_pos = GetWindowScrollbarMousePositionForScroll(window, axis, scroll_target_clamp);
             MouseMoveToPos(scrollbar_dst_pos);
             MouseUp(0);
-            SleepShort();
+            SleepStandard();
 
             // Verify that things worked
             const float scroll_result = window->Scroll[axis];
@@ -1160,6 +1168,8 @@ void    ImGuiTestContext::NavMoveTo(ImGuiTestRef ref)
     if (item == NULL)
         return;
     item->RefCount++;
+
+    SleepStandard();
 
     // Focus window before scrolling/moving so things are nicely visible
     WindowBringToFront(item->Window->ID);
@@ -1490,7 +1500,7 @@ void ImGuiTestContext::ForeignWindowsHideOverPos(ImVec2 pos, ImGuiWindow** ignor
         Yield();
 }
 
-void ImGuiTestContext::ForeignWindowsUnhideAll()
+void    ImGuiTestContext::ForeignWindowsUnhideAll()
 {
     ForeignWindowsToHide.clear();
     Yield();
@@ -1504,6 +1514,8 @@ void    ImGuiTestContext::MouseMoveToPos(ImVec2 target)
 
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
     LogDebug("MouseMoveToPos from (%.0f,%.0f) to (%.0f,%.0f)", Inputs->MousePosValue.x, Inputs->MousePosValue.y, target.x, target.y);
+
+    SleepStandard();
 
     // Enforce a mouse move if we are already at destination, to enforce g.NavDisableMouseHover gets cleared.
     if (g.NavDisableMouseHover && ImLengthSqr(Inputs->MousePosValue - target) < 1.0f)
@@ -1529,11 +1541,25 @@ void    ImGuiTestContext::MouseMoveToPos(ImVec2 target)
     const float length = (length2 > 0.0001f) ? ImSqrt(length2) : 1.0f;
     const float inv_length = 1.0f / length;
 
+    // Short distance alter speed and wobble
+    float base_speed = EngineIO->MouseSpeed;
+    float base_wobble = EngineIO->MouseWobble;
+    if (length < base_speed * 1.0f)
+    {
+        // Time = 1.0f -> wobble max, Time = 0.0f -> no wobble
+        base_wobble *= length / base_speed;
+
+        // Slow down for short movements(all movement in the 0.0f..1.0f range are remapped to a 0.5f..1.0f seconds)
+        float approx_time = length / base_speed;
+        approx_time = 0.5f + ImSaturate(approx_time * 0.5f);
+        base_speed = length / approx_time;
+    }
+
     // Calculate a vector perpendicular to the motion delta
     const ImVec2 perp = ImVec2(delta.y, -delta.x) * inv_length;
 
     // Calculate how much wobble we want, clamped to max out when the delta is 100 pixels (shorter movements get less wobble)
-    const float position_offset_magnitude = ImClamp(length, 1.0f, 100.0f) * EngineIO->MouseWobble;
+    const float position_offset_magnitude = ImClamp(length, 1.0f, 100.0f) * base_wobble;
 
     // Wobble positions, using a sine wave based on position as a cheap way to get a deterministic offset
     ImVec2 intermediate_pos_a = start_pos + (delta * 0.3f);
@@ -1546,7 +1572,7 @@ void    ImGuiTestContext::MouseMoveToPos(ImVec2 target)
     float current_dist = 0.0f; // Our current distance along the line (in pixels)
     while (true)
     {
-        float move_speed = EngineIO->MouseSpeed * g.IO.DeltaTime;
+        float move_speed = base_speed * g.IO.DeltaTime;
 
         //if (g.IO.KeyShift)
         //    move_speed *= 0.1f;
@@ -1598,6 +1624,7 @@ void    ImGuiTestContext::MouseDown(ImGuiMouseButton button)
 
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
     LogDebug("MouseDown %d", button);
+    SleepStandard();
 
     UiContext->IO.MouseClickedTime[button] = -FLT_MAX; // Prevent accidental double-click from happening ever
     Inputs->MouseButtonsValue |= (1 << button);
@@ -1611,6 +1638,7 @@ void    ImGuiTestContext::MouseUp(ImGuiMouseButton button)
 
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
     LogDebug("MouseUp %d", button);
+    SleepShort();
 
     Inputs->MouseButtonsValue &= ~(1 << button);
     Yield();
@@ -1647,7 +1675,10 @@ void    ImGuiTestContext::MouseClickMulti(ImGuiMouseButton button, int count)
     for (int n = 0; n < count; n++)
     {
         Inputs->MouseButtonsValue = (1 << button);
-        Yield();
+        if (EngineIO->ConfigRunFast)
+            Yield();
+        else
+            SleepShort();
         Inputs->MouseButtonsValue = 0;
         Yield();
     }
@@ -1836,6 +1867,7 @@ void    ImGuiTestContext::MouseWheel(ImVec2 delta)
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
 
     LogDebug("MouseWheel(%d, %d)", (int)delta.x, (int)delta.y);
+    SleepStandard();
 
     float td = 0.0f;
     const float scroll_speed = 15.0f; // Units per second.
@@ -1872,6 +1904,7 @@ void    ImGuiTestContext::KeyDown(ImGuiKey key, ImGuiKeyModFlags mod_flags)
     char mod_flags_str[32];
     GetImGuiKeyModsPrefixStr(mod_flags, mod_flags_str, IM_ARRAYSIZE(mod_flags_str));
     LogDebug("KeyDown(%s%s)", mod_flags_str, (key != ImGuiKey_COUNT) ? ImGui::GetKeyName(key) : "");
+    SleepShort();
     Inputs->Queue.push_back(ImGuiTestInput::FromKey(key, true, mod_flags));
     Yield();
     Yield();
@@ -1886,6 +1919,7 @@ void    ImGuiTestContext::KeyUp(ImGuiKey key, ImGuiKeyModFlags mod_flags)
     char mod_flags_str[32];
     GetImGuiKeyModsPrefixStr(mod_flags, mod_flags_str, IM_ARRAYSIZE(mod_flags_str));
     LogDebug("KeyUp(%s%s)", mod_flags_str, (key != ImGuiKey_COUNT) ? ImGui::GetKeyName(key) : "");
+    SleepShort();
     Inputs->Queue.push_back(ImGuiTestInput::FromKey(key, false, mod_flags));
     Yield();
     Yield();
@@ -1900,11 +1934,16 @@ void    ImGuiTestContext::KeyPress(ImGuiKey key, ImGuiKeyModFlags mod_flags, int
     char mod_flags_str[32];
     GetImGuiKeyModsPrefixStr(mod_flags, mod_flags_str, IM_ARRAYSIZE(mod_flags_str));
     LogDebug("KeyPress(%s%s, %d)", mod_flags_str, (key != ImGuiKey_COUNT) ? ImGui::GetKeyName(key) : "", count);
+    SleepShort();
+
     while (count > 0)
     {
         count--;
         Inputs->Queue.push_back(ImGuiTestInput::FromKey(key, true, mod_flags));
-        Yield();
+        if (EngineIO->ConfigRunFast)
+            Yield();
+        else
+            SleepShort();
         Inputs->Queue.push_back(ImGuiTestInput::FromKey(key, false, mod_flags));
         Yield();
 
@@ -1922,6 +1961,7 @@ void    ImGuiTestContext::KeyHold(ImGuiKey key, ImGuiKeyModFlags mod_flags, floa
     char mod_flags_str[32];
     GetImGuiKeyModsPrefixStr(mod_flags, mod_flags_str, IM_ARRAYSIZE(mod_flags_str));
     LogDebug("KeyHold(%s%s, %.2f sec)", mod_flags_str, (key != ImGuiKey_COUNT) ? ImGui::GetKeyName(key) : "", time);
+    SleepStandard();
 
     Inputs->Queue.push_back(ImGuiTestInput::FromKey(key, true, mod_flags));
     SleepNoSkip(time, 1 / 100.0f);
@@ -1936,6 +1976,8 @@ void    ImGuiTestContext::KeyChars(const char* chars)
 
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
     LogDebug("KeyChars('%s')", chars);
+    SleepStandard();
+
     while (*chars)
     {
         unsigned int c = 0;
@@ -2136,8 +2178,6 @@ void    ImGuiTestContext::ItemAction(ImGuiTestAction action, ImGuiTestRef ref, v
             const int mouse_button = (int)(intptr_t)action_arg;
             IM_ASSERT(mouse_button >= 0 && mouse_button < ImGuiMouseButton_COUNT);
             MouseMove(ref, flags);
-            if (!EngineIO->ConfigRunFast)
-                Sleep(0.05f);
             if (action == ImGuiTestAction_DoubleClick)
                 MouseDoubleClick(mouse_button);
             else
@@ -2439,7 +2479,7 @@ void    ImGuiTestContext::ItemDragOverAndHold(ImGuiTestRef ref_src, ImGuiTestRef
     LogDebug("ItemDragOverAndHold %s to %s", desc_src.c_str(), desc_dst.c_str());
 
     MouseMove(ref_src, ImGuiTestOpFlags_NoCheckHoveredId);
-    SleepShort();
+    SleepStandard();
     MouseDown(0);
 
     // Enforce lifting drag threshold even if both item are exactly at the same location.
@@ -2468,14 +2508,14 @@ void    ImGuiTestContext::ItemDragAndDrop(ImGuiTestRef ref_src, ImGuiTestRef ref
     WindowBringToFront(item_dst->Window->ID);
 
     MouseMove(ref_src, ImGuiTestOpFlags_NoCheckHoveredId);
-    SleepShort();
+    SleepStandard();
     MouseDown(button);
 
     // Enforce lifting drag threshold even if both item are exactly at the same location.
     MouseLiftDragThreshold();
 
     MouseMove(ref_dst, ImGuiTestOpFlags_NoCheckHoveredId | ImGuiTestOpFlags_NoFocusWindow);
-    SleepShort();
+    SleepStandard();
     MouseUp(button);
 }
 
@@ -2490,11 +2530,11 @@ void    ImGuiTestContext::ItemDragWithDelta(ImGuiTestRef ref_src, ImVec2 pos_del
     LogDebug("ItemDragWithDelta %s to (%f, %f)", desc_src.c_str(), pos_delta.x, pos_delta.y);
 
     MouseMove(ref_src, ImGuiTestOpFlags_NoCheckHoveredId);
-    SleepShort();
+    SleepStandard();
     MouseDown(0);
 
     MouseMoveToPos(UiContext->IO.MousePos + pos_delta);
-    SleepShort();
+    SleepStandard();
     MouseUp(0);
 }
 
@@ -3006,7 +3046,7 @@ void    ImGuiTestContext::DockInto(ImGuiTestRef src_id, ImGuiTestRef dst_id, ImG
     else
         ref_src = ref_src = (window_src->DockIsActive ? window_src->TabId : window_src->MoveId); // FIXME-TESTS FIXME-DOCKING: Identify tab
     MouseMove(ref_src, ImGuiTestOpFlags_NoCheckHoveredId);
-    SleepShort();
+    SleepStandard();
 
     // Locate target
     ImVec2 drop_pos;

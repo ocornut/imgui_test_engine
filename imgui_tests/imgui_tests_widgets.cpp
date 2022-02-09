@@ -828,11 +828,11 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ctx->KeyPress(ImGuiKey_A, ImGuiKeyModFlags_Shortcut);    // Select all
         ctx->KeyPress(ImGuiKey_C, ImGuiKeyModFlags_Shortcut);    // Copy
         ctx->KeyPress(ImGuiKey_End, ImGuiKeyModFlags_Shortcut);  // Go to end, clear selection
-        ctx->SleepShort();
+        ctx->SleepStandard();
         for (int n = 0; n < 3; n++)
         {
             ctx->KeyPress(ImGuiKey_V, ImGuiKeyModFlags_Shortcut);// Paste append three times
-            ctx->SleepShort();
+            ctx->SleepStandard();
         }
         int len = (int)strlen(vars.StrLarge.Data);
         IM_CHECK_EQ(len, 350 * 4);
@@ -3055,14 +3055,14 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ctx->MouseSetViewportID(vars.SrcViewport);
 #endif
         ctx->MouseMoveToPos(vars.SrcPos);
-        ctx->SleepShort();
+        ctx->SleepStandard();
         ctx->MouseDown(0);
 
 #ifdef IMGUI_HAS_DOCK
         ctx->MouseSetViewportID(vars.DstViewport);
 #endif
         ctx->MouseMoveToPos(vars.DstPos);
-        ctx->SleepShort();
+        ctx->SleepStandard();
         ctx->MouseUp(0);
 
         IM_CHECK(vars.Dropped);
@@ -3096,7 +3096,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ctx->SetRef("Test Window");
         ImGuiID active_id = ctx->GetID("Drag");
         ctx->MouseMove("Drag");
-        ctx->SleepShort();
+        ctx->SleepStandard();
         ctx->MouseDown();
         ctx->MouseLiftDragThreshold();
         IM_CHECK_EQ(g.ActiveId, active_id);
@@ -3443,12 +3443,12 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ctx->MenuCheck("Examples/Long text display");
         ctx->SetRef("Example: Long text display");
         ctx->ItemClick("Add 1000 lines");
-        ctx->SleepShort();
+        ctx->SleepStandard();
 
         ImGuiWindow* log_panel = ctx->GetWindowByRef(ctx->GetChildWindowID("Example: Long text display", "Log"));
         IM_CHECK(log_panel != NULL);
         ImGui::SetScrollY(log_panel, log_panel->ScrollMax.y);
-        ctx->SleepShort();
+        ctx->SleepStandard();
         ctx->ItemClick("Clear");
         // FIXME-TESTS: A bit of extra testing that will be possible once tomato problem is solved.
         // ctx->ComboClick("Test type/Single call to TextUnformatted()");

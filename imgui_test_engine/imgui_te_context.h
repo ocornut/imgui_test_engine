@@ -287,6 +287,7 @@ struct ImGuiTestContext
     void        Sleep(float time_in_second);
     void        SleepNoSkip(float time_in_second, float frame_time_step);
     void        SleepShort();
+    void        SleepStandard();
 
     // Base Reference
     // - ItemClick("Window/Button")               --> click "Window/Button"
