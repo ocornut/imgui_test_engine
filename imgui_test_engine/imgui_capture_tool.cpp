@@ -444,9 +444,15 @@ ImGuiCaptureStatus ImGuiCaptureContext::CaptureUpdate(ImGuiCaptureArgs* args)
                     // First video frame, initialize now that dimensions are known.
                     const unsigned int width = (unsigned int)capture_rect.GetWidth();
                     const unsigned int height = (unsigned int)capture_rect.GetHeight();
+                    Str64f ffmpeg_exe(VideoCapturePathToFFMPEG);
+                    ImPathFixSeparatorsForCurrentOS(ffmpeg_exe.c_str());
                     Str256f cmd("");
-                    cmd.setf("\"%s\" -r %d -f rawvideo -pix_fmt rgba -s %dx%d -i - -threads 0 -vsync 0 -preset ultrafast -y -pix_fmt yuv420p -crf %d -vf select=concatdec_select -af aselect=concatdec_select,aresample=async=1 %s",
-                             PathToFFMPEG, args->InRecordFPSTarget, width, height, args->InRecordQuality, args->OutSavedFileName);
+                    cmd.setf(
+                        "\"%s\" -r %d -f rawvideo -pix_fmt rgba -s %dx%d -i - -threads 0 -vsync 0 "
+                        "-preset ultrafast -y -pix_fmt yuv420p -crf %d -hide_banner -loglevel error "
+                        "%s",
+                        ffmpeg_exe.c_str(), args->InRecordFPSTarget, width, height, args->InRecordQuality, args->OutSavedFileName);
+                    fprintf(stdout, "# %s\n", cmd.c_str());
                     _FFMPEGStdIn = ImOsPOpen(cmd.c_str(), "w");
                     IM_ASSERT(_FFMPEGStdIn != NULL);
                 }

@@ -761,14 +761,6 @@ FILE*       ImOsPOpen(const char* cmd_line, const char* mode)
     ImVector<wchar_t> w_mode;
     ImUtf8ToWideChar(cmd_line, &w_cmd_line);
     ImUtf8ToWideChar(mode, &w_mode);
-    bool is_quoted = *cmd_line == '"';
-    for (wchar_t& c : w_cmd_line)   // Replace / with \ in application path of cmd_line.
-    {
-        if ((is_quoted && c == '"') || (!is_quoted && c == ' '))
-            break;
-        if (c == L'/')
-            c = L'\\';
-    }
     w_mode.resize(w_mode.Size + 1);
     wcscat(w_mode.Data, L"b");   // Windows requires 'b' mode while unixes do not support it and default to binary.
     return _wpopen(w_cmd_line.Data, w_mode.Data);
@@ -1065,17 +1057,6 @@ void TableDiscardInstanceAndSettings(ImGuiID table_id)
         ImGui::TableRemove(table);
     // FIXME-TABLE: We should be able to use TableResetSettings() instead of TableRemove()! Maybe less of a clean slate but would be good to check that it does the job
     //ImGui::TableResetSettings(table);
-}
-
-int         FindStringIndex(const char** array, int array_size, const char* str)
-{
-    IM_ASSERT(array != NULL);
-    IM_ASSERT(array_size > 0);
-    IM_ASSERT(str != NULL);
-    for (int i = 0; i < array_size; i++)
-        if (strcmp(array[i], str) == 0)
-            return i;
-    return -1;
 }
 
 //-----------------------------------------------------------------------------

@@ -4820,7 +4820,7 @@ void RegisterTests_Capture(ImGuiTestEngine* e)
         ImGuiCaptureArgs args;
         ctx->CaptureInitArgs(&args);
         ctx->CaptureAddWindow(&args, "CaptureGif");
-        ctx->CaptureBeginGif(&args);
+        ctx->CaptureBeginVideo(&args);
         ctx->ItemInput("string");
         ctx->KeyCharsReplace("Dear ImGui: Now with gif animations \\o/");
         ctx->SleepStandard();
@@ -4828,7 +4828,7 @@ void RegisterTests_Capture(ImGuiTestEngine* e)
         ctx->SleepStandard();
         ctx->ItemClick("Save");
         ctx->SleepStandard();
-        ctx->CaptureEndGif(&args);
+        ctx->CaptureEndVideo(&args);
     };
 
     // ## Capture

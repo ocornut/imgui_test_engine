@@ -94,8 +94,8 @@ struct ImGuiCaptureContext
     // IO
     ImFuncPtr(ImGuiScreenCaptureFunc) ScreenCaptureFunc = NULL; // Graphics backend specific function that captures specified portion of framebuffer and writes RGBA data to `pixels` buffer.
     void*                   ScreenCaptureUserData = NULL;       // Custom user pointer which is passed to ScreenCaptureFunc. (Optional)
-    char*                   PathToFFMPEG = NULL;                // Path to ffmpeg executable.
-    char*                   VideoCaptureExt = NULL;             // Video file extension.
+    const char*             VideoCaptureExt = NULL;             // Video file extension (e.g. ".gif" or ".mp4")
+    const char*             VideoCapturePathToFFMPEG = NULL;    // Path to ffmpeg executable.
 
     // [Internal]
     ImRect                  _CaptureRect;                   // Viewport rect that is being captured.

@@ -139,9 +139,6 @@ ImGuiID     TableGetHeaderID(ImGuiTable* table, const char* column, int instance
 ImGuiID     TableGetHeaderID(ImGuiTable* table, int column_n, int instance_no = 0);
 void        TableDiscardInstanceAndSettings(ImGuiID table_id);
 
-// Other functions
-int         FindStringIndex(const char** array, int array_size, const char* str);
-
 //-----------------------------------------------------------------------------
 // Helper: maintain/calculate moving average
 //-----------------------------------------------------------------------------

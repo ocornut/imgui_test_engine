@@ -334,9 +334,9 @@ struct ImGuiTestContext
     void        CaptureInitArgs(ImGuiCaptureArgs* args, int capture_flags = 0);
     bool        CaptureAddWindow(ImGuiCaptureArgs* args, ImGuiTestRef ref);
     bool        CaptureScreenshotEx(ImGuiCaptureArgs* args);
-    // - Animation capturing API
-    bool        CaptureBeginGif(ImGuiCaptureArgs* args);
-    bool        CaptureEndGif(ImGuiCaptureArgs* args);
+    // - Video/GIF capturing API
+    bool        CaptureBeginVideo(ImGuiCaptureArgs* args);
+    bool        CaptureEndVideo(ImGuiCaptureArgs* args);
 
     // Mouse inputs
     void        MouseMove(ImGuiTestRef ref, ImGuiTestOpFlags flags = ImGuiTestOpFlags_None);

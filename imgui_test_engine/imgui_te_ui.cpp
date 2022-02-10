@@ -103,6 +103,8 @@ static bool ParseLineAndDrawFileOpenItem(ImGuiTestEngine* e, ImGuiTest* test, co
         return true;
     if (ParseLineAndDrawFileOpenItemForImageFile(e, test, line_start, line_end, ".gif"))
         return true;
+    if (ParseLineAndDrawFileOpenItemForImageFile(e, test, line_start, line_end, ".mp4"))
+        return true;
     return false;
 }
 
@@ -522,17 +524,21 @@ static void ImGuiTestEngine_ShowLogAndTools(ImGuiTestEngine* engine)
         ImGui::SameLine(); ImGui::SetNextItemWidth(70 * engine->IO.DpiScale);
         ImGui::SliderInt("##ms", &engine->ToolSlowDownMs, 0, 400, "%d ms");
 
-        if (ImGui::InputText("Path to ffmpeg.exe", engine->IO.PathToFFMPEG, IM_ARRAYSIZE(engine->IO.PathToFFMPEG)))
+        if (ImGui::InputText("Path to ffmpeg", engine->IO.PathToFFMPEG, IM_ARRAYSIZE(engine->IO.PathToFFMPEG)))
             engine->UiFFMPEGPathValid = ImFileExist(engine->IO.PathToFFMPEG);
         ImGui::BeginDisabled(!engine->UiFFMPEGPathValid);
-        const char* supported_ext[] = { ".gif", ".mp4" };
-        int captured_ext_index = ImMax(FindStringIndex(supported_ext, IM_ARRAYSIZE(supported_ext), engine->IO.VideoCaptureExt), 0);
-        if (ImGui::Combo("Video file extension", &captured_ext_index, supported_ext, IM_ARRAYSIZE(supported_ext)))
-            ImStrncpy(engine->IO.VideoCaptureExt, supported_ext[captured_ext_index], IM_ARRAYSIZE(engine->IO.VideoCaptureExt));
+        if (ImGui::BeginCombo("Video file extension", engine->IO.VideoCaptureExt))
+        {
+            const char* supported_exts[] = { ".gif", ".mp4" };
+            for (auto& ext : supported_exts)
+                if (ImGui::Selectable(ext, strcmp(engine->IO.VideoCaptureExt, ext) == 0))
+                    ImStrncpy(engine->IO.VideoCaptureExt, ext, IM_ARRAYSIZE(engine->IO.VideoCaptureExt));
+            ImGui::EndCombo();
+        }
         HelpTooltip("File extension for captured video file.");
+        ImGui::EndDisabled();
         ImGui::Checkbox("Capture when requested by API", &engine->IO.ConfigCaptureEnabled); HelpTooltip("Enable or disable screen capture.");
         ImGui::Checkbox("Capture screen on error", &engine->IO.ConfigCaptureOnError); HelpTooltip("Capture a screenshot on test failure.");
-        ImGui::EndDisabled();
 
         ImGui::CheckboxFlags("io.ConfigFlags: NavEnableKeyboard", &io.ConfigFlags, ImGuiConfigFlags_NavEnableKeyboard);
         ImGui::CheckboxFlags("io.ConfigFlags: NavEnableGamepad", &io.ConfigFlags, ImGuiConfigFlags_NavEnableGamepad);
@@ -695,7 +701,7 @@ void    ImGuiTestEngine_ShowTestEngineWindows(ImGuiTestEngine* e, bool* p_open)
     ImGuiCaptureTool& capture_tool = e->CaptureTool;
     capture_tool.Context.ScreenCaptureFunc = e->IO.ScreenCaptureFunc;
     capture_tool.Context.ScreenCaptureUserData = e->IO.ScreenCaptureUserData;
-    e->CaptureContext.PathToFFMPEG = e->IO.PathToFFMPEG;
+    e->CaptureContext.VideoCapturePathToFFMPEG = e->IO.PathToFFMPEG;
     e->CaptureContext.VideoCaptureExt = e->IO.VideoCaptureExt;
     if (e->UiCaptureToolOpen)
         capture_tool.ShowCaptureToolWindow(&e->UiCaptureToolOpen);

@@ -700,7 +700,7 @@ void ImGuiTestContext::CaptureScreenshotWindow(ImGuiTestRef ref, int capture_fla
     CaptureScreenshotEx(&args);
 }
 
-bool ImGuiTestContext::CaptureBeginGif(ImGuiCaptureArgs* args)
+bool ImGuiTestContext::CaptureBeginVideo(ImGuiCaptureArgs* args)
 {
     if (IsError())
         return false;
@@ -719,7 +719,7 @@ bool ImGuiTestContext::CaptureBeginGif(ImGuiCaptureArgs* args)
 #endif
 }
 
-bool ImGuiTestContext::CaptureEndGif(ImGuiCaptureArgs* args)
+bool ImGuiTestContext::CaptureEndVideo(ImGuiCaptureArgs* args)
 {
     IM_CHECK_RETV(args != NULL, false);
     bool ret = Engine->CaptureContext.IsCapturingVideo() && ImGuiTestEngine_CaptureEndGif(Engine, args);
