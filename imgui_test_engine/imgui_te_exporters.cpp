@@ -85,7 +85,7 @@ static void ImGuiTestEngine_ExportResultSummary(ImGuiTestEngine* engine, FILE* f
 
 static bool ImGuiTestEngine_HasAnyLogLines(ImGuiTestLog* test_log, ImGuiTestVerboseLevel level)
 {
-    for (auto& line_info : test_log->LineInfoAll)
+    for (auto& line_info : test_log->LineInfo)
         if (line_info.Level <= level)
             return true;
     return false;
@@ -94,7 +94,7 @@ static bool ImGuiTestEngine_HasAnyLogLines(ImGuiTestLog* test_log, ImGuiTestVerb
 static void ImGuiTestEngine_PrintLogLines(FILE* fp, ImGuiTestLog* test_log, int indent, ImGuiTestVerboseLevel level)
 {
     Str128 log_line;
-    for (auto& line_info : test_log->LineInfoAll)
+    for (auto& line_info : test_log->LineInfo)
     {
         if (line_info.Level > level)
             continue;

@@ -187,9 +187,11 @@ void    ImGuiTestContext::LogToTTY(ImGuiTestVerboseLevel level, const char* mess
             // Print current message and all previous logged messages.
             // FIXME: Can't use ExtractLinesAboveVerboseLevel() before we want to keep error level...
             log->CachedLinesPrintedToTTY = true;
-            for (int i = 0; i < log->LineInfoOnError.Size; i++)
+            for (int i = 0; i < log->LineInfo.Size; i++)
             {
-                ImGuiTestLogLineInfo& line_info = log->LineInfoOnError[i];
+                ImGuiTestLogLineInfo& line_info = log->LineInfo[i];
+                if (line_info.Level > EngineIO->ConfigVerboseLevelOnError)
+                    continue;
                 char* line_begin = log->Buffer.Buf.Data + line_info.LineOffset;
                 char* line_end = strchr(line_begin, '\n');
                 LogToTTY(line_info.Level, line_begin, line_end);

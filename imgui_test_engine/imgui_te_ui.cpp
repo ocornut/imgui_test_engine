@@ -120,20 +120,32 @@ static void DrawTestLog(ImGuiTestEngine* e, ImGuiTest* test)
     const char* text = test->TestLog.Buffer.begin();
     const char* text_end = test->TestLog.Buffer.end();
     ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(6.0f, 2.0f) * e_io.DpiScale);
-    ImVector<ImGuiTestLogLineInfo>& line_info_vector = test->Status == ImGuiTestStatus_Error ? log->LineInfoOnError : log->LineInfo;
     ImGuiListClipper clipper;
-    clipper.Begin(line_info_vector.Size);
+    ImGuiTestVerboseLevel max_log_level = test->Status == ImGuiTestStatus_Error ? e->IO.ConfigVerboseLevelOnError : e->IO.ConfigVerboseLevel;
+    int line_count = log->ExtractLinesForVerboseLevels(ImGuiTestVerboseLevel_Silent, max_log_level, NULL);
+    clipper.Begin(line_count);
     while (clipper.Step())
     {
+        int current_index_clipped = -1;
+        int current_index_abs = 0;
         for (int line_no = clipper.DisplayStart; line_no < clipper.DisplayEnd; line_no++)
         {
-            ImGuiTestLogLineInfo& line_info = line_info_vector[line_no];
-            const char* line_start = text + line_info.LineOffset;
+            // Advance index_by_log_level to find log entry indicated by line_no.
+            ImGuiTestLogLineInfo* line_info = NULL;
+            while (current_index_clipped < line_no)
+            {
+                line_info = &log->LineInfo[current_index_abs];
+                if (line_info->Level <= max_log_level)
+                    current_index_clipped++;
+                current_index_abs++;
+            }
+
+            const char* line_start = text + line_info->LineOffset;
             const char* line_end = strchr(line_start, '\n');
             if (line_end == NULL)
                 line_end = text_end;
 
-            switch (line_info.Level)
+            switch (line_info->Level)
             {
             case ImGuiTestVerboseLevel_Error:
                 ImGui::PushStyleColor(ImGuiCol_Text, error_col);

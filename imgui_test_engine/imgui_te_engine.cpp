@@ -1820,8 +1820,6 @@ void ImGuiTestLog::Clear()
 {
     Buffer.clear();
     LineInfo.clear();
-    LineInfoOnError.clear();
-    LineInfoAll.clear();
     memset(&CountPerLevel, 0, sizeof(CountPerLevel));
     CachedLinesPrintedToTTY = false;
 }
@@ -1844,7 +1842,7 @@ int ImGuiTestLog::ExtractLinesForVerboseLevels(ImGuiTestVerboseLevel level_min, 
     }
 
     // Extract lines and return count
-    for (auto& line_info : LineInfoAll)
+    for (auto& line_info : LineInfo)
         if (line_info.Level >= level_min && line_info.Level <= level_max)
         {
             const char* line_begin = Buffer.c_str() + line_info.LineOffset;
@@ -1857,6 +1855,7 @@ int ImGuiTestLog::ExtractLinesForVerboseLevels(ImGuiTestVerboseLevel level_min, 
 
 void ImGuiTestLog::UpdateLineOffsets(ImGuiTestEngineIO* engine_io, ImGuiTestVerboseLevel level, const char* start)
 {
+    IM_UNUSED(engine_io);
     IM_ASSERT(Buffer.begin() <= start && start < Buffer.end());
     const char* p_begin = start;
     const char* p_end = Buffer.end();
@@ -1870,11 +1869,7 @@ void ImGuiTestLog::UpdateLineOffsets(ImGuiTestEngineIO* engine_io, ImGuiTestVerb
         if (!last_empty_line)
         {
             int offset = (int)(p_bol - Buffer.c_str());
-            if (engine_io->ConfigVerboseLevel >= level)
-                LineInfo.push_back({ level, offset });
-            if (engine_io->ConfigVerboseLevelOnError >= level)
-                LineInfoOnError.push_back({ level, offset });
-            LineInfoAll.push_back({ level, offset });
+            LineInfo.push_back({level, offset});
             CountPerLevel[level] += 1;
         }
         p = p_eol ? p_eol + 1 : NULL;

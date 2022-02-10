@@ -289,12 +289,10 @@ struct ImGuiTestLogLineInfo
 struct ImGuiTestLog
 {
     ImGuiTextBuffer                 Buffer;
-    ImVector<ImGuiTestLogLineInfo>  LineInfoAll;
+    ImVector<ImGuiTestLogLineInfo>  LineInfo;
     int                             CountPerLevel[ImGuiTestVerboseLevel_COUNT] = {};
 
     // FIXME: To remove
-    ImVector<ImGuiTestLogLineInfo>  LineInfo;                           // FIXME: Remove (store/cache in UI if needed for clipper)
-    ImVector<ImGuiTestLogLineInfo>  LineInfoOnError;                    // FIXME: Remove (")
     bool                            CachedLinesPrintedToTTY = false;    // FIXME: Remove as this is a view things
 
     // Functions
