@@ -2175,6 +2175,21 @@ void    ImGuiTestContext::ItemAction(ImGuiTestAction action, ImGuiTestRef ref, v
             Engine->FindByLabelTask.InFilterItemStatusFlags = ImGuiItemStatusFlags_Openable;
     }
 
+    if ((flags & ImGuiTestOpFlags_NoAutoOpenFullPath) == 0 && ref.Path != NULL)
+    {
+        const char* end = strstr(ref.Path, "**/");
+        end = strstr(end != NULL ? end + 3 : ref.Path, "/");
+        while (end != NULL)
+        {
+            Str128 partial_id;
+            partial_id.set(ref.Path, end);
+            ImGuiTestItemInfo* item = ItemInfo(partial_id.c_str(), ImGuiTestOpFlags_NoError);
+            if (item != NULL && (item->StatusFlags & ImGuiItemStatusFlags_Openable) != 0 && (item->StatusFlags & ImGuiItemStatusFlags_Opened) == 0)
+                ItemAction(ImGuiTestAction_Open, item->ID, NULL, ImGuiTestOpFlags_NoAutoOpenFullPath);
+            end = strstr(end + 1, "/");
+        }
+    }
+
     ImGuiTestItemInfo* item = ItemInfo(ref);
     ImGuiTestRefDesc desc(ref, item);
     if (item == NULL)

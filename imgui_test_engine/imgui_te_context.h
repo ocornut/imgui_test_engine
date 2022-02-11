@@ -124,11 +124,12 @@ enum ImGuiTestOpFlags_
     ImGuiTestOpFlags_NoError            = 1 << 2,   // Don't abort/error e.g. if the item cannot be found
     ImGuiTestOpFlags_NoFocusWindow      = 1 << 3,   // Don't focus window when aiming at an item
     ImGuiTestOpFlags_NoAutoUncollapse   = 1 << 4,   // Disable automatically uncollapsing windows (useful when specifically testing Collapsing behaviors)
-    ImGuiTestOpFlags_IsSecondAttempt    = 1 << 5,   // Used by recursing functions to indicate a second attempt
-    ImGuiTestOpFlags_MoveToEdgeL        = 1 << 6,   // Simple Dumb aiming helpers to test widget that care about clicking position. May need to replace will better functionalities.
-    ImGuiTestOpFlags_MoveToEdgeR        = 1 << 7,
-    ImGuiTestOpFlags_MoveToEdgeU        = 1 << 8,
-    ImGuiTestOpFlags_MoveToEdgeD        = 1 << 9
+    ImGuiTestOpFlags_NoAutoOpenFullPath = 1 << 5,   // Disable automatically opening intermediaries (e.g. ItemClick("Hello/OK") will automatically first open "Hello" if "OK" isn't found. Only works if ref is a string path.
+    ImGuiTestOpFlags_IsSecondAttempt    = 1 << 6,   // Used by recursing functions to indicate a second attempt
+    ImGuiTestOpFlags_MoveToEdgeL        = 1 << 7,   // Simple Dumb aiming helpers to test widget that care about clicking position. May need to replace will better functionalities.
+    ImGuiTestOpFlags_MoveToEdgeR        = 1 << 8,
+    ImGuiTestOpFlags_MoveToEdgeU        = 1 << 9,
+    ImGuiTestOpFlags_MoveToEdgeD        = 1 << 10,
 };
 
 // Advanced filtering for ItemActionAll()

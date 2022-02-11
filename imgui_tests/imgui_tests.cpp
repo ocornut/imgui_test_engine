@@ -4622,6 +4622,44 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
         ctx->ItemClose("Tables/Advanced");
         ctx->ItemClose("Tables & Columns");
     };
+
+    // ## Test auto-opening intermediary openable items automatically.
+    t = IM_REGISTER_TEST(e, "misc", "misc_ref_auto_open");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::SetNextWindowSize(ImVec2(300, 150), ImGuiCond_Appearing);
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImGui::PushID("Lv0");
+        ImGui::PushID("Lv1");
+        if (ImGui::TreeNode("Lv2"))
+        {
+            if (ImGui::TreeNode("Lv3"))
+            {
+                ImGui::Button("Button");
+                ctx->GenericVars.Status.QueryInc();
+                ImGui::TreePop();
+            }
+            ImGui::TreePop();
+        }
+        ImGui::PopID(); // Lv1
+        ImGui::PopID(); // Lv0
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ctx->SetRef("Test Window");
+        ctx->ItemCloseAll("");
+        ctx->ItemClick("Lv0/Lv1/Lv2/Lv3/Button");
+        IM_CHECK_EQ(ctx->GenericVars.Status.Clicked, 1);
+
+        ctx->ItemCloseAll("");
+        ctx->ItemClick("**/Lv1/Lv2/Lv3/Button");
+        IM_CHECK_EQ(ctx->GenericVars.Status.Clicked, 2);
+
+        ctx->ItemCloseAll("");
+        ctx->ItemClick("Lv0/**/Lv2/Lv3/Button");
+        IM_CHECK_EQ(ctx->GenericVars.Status.Clicked, 3);
+    };
 }
 
 //-------------------------------------------------------------------------
