@@ -34,7 +34,7 @@ void RegisterAppMinimalTests(ImGuiTestEngine* e)
     {
         ctx->SetRef("Test Window");
         ctx->ItemClick("Click Me");
-        ctx->ItemOpen("Node");
+        ctx->ItemOpen("Node"); // Optional as ItemCheck("Node/Checkbox") can do it automatically
         ctx->ItemCheck("Node/Checkbox");
         ctx->ItemUncheck("Node/Checkbox");
     };

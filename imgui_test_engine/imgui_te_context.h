@@ -397,7 +397,8 @@ struct ImGuiTestContext
     void        ScrollVerifyScrollMax(ImGuiTestRef ref);
 
     // Low-level queries
-    ImGuiTestItemInfo*  ItemInfo(ImGuiTestRef ref, ImGuiTestOpFlags flags = ImGuiTestOpFlags_None);     // Important: always test for NULL!
+    ImGuiTestItemInfo*  ItemInfo(ImGuiTestRef ref, ImGuiTestOpFlags flags = ImGuiTestOpFlags_None);             // Important: always test for NULL!
+    ImGuiTestItemInfo*  ItemInfoOpenFullPath(ImGuiTestRef ref);
     void                GatherItems(ImGuiTestItemList* out_list, ImGuiTestRef parent, int depth = -1);
 
     // Item/Widgets manipulation
@@ -410,6 +411,7 @@ struct ImGuiTestContext
     void        ItemClose(ImGuiTestRef ref, ImGuiTestOpFlags flags = 0)                 { ItemAction(ImGuiTestAction_Close, ref, NULL, flags); }
     void        ItemInput(ImGuiTestRef ref, ImGuiTestOpFlags flags = 0)                 { ItemAction(ImGuiTestAction_Input, ref, NULL, flags); }
     void        ItemNavActivate(ImGuiTestRef ref, ImGuiTestOpFlags flags = 0)           { ItemAction(ImGuiTestAction_NavActivate, ref, NULL, flags); }
+    bool        ItemOpenFullPath(ImGuiTestRef);
 
     // Item/Widgets: Batch actions over an entire scope
     void        ItemActionAll(ImGuiTestAction action, ImGuiTestRef ref_parent, const ImGuiTestActionFilter* filter = NULL);

@@ -868,6 +868,43 @@ ImGuiTestItemInfo* ImGuiTestContext::ItemInfo(ImGuiTestRef ref, ImGuiTestOpFlags
     return NULL;
 }
 
+ImGuiTestItemInfo* ImGuiTestContext::ItemInfoOpenFullPath(ImGuiTestRef ref)
+{
+    // First query
+    bool can_open_full_path = (ref.Path != NULL);
+    ImGuiTestItemInfo* item = ItemInfo(ref, can_open_full_path ? ImGuiTestOpFlags_NoError : ImGuiTestOpFlags_None);
+    if (item != NULL)
+        return item;
+    if (!can_open_full_path)
+        return NULL;
+
+    // Tries to auto open intermediaries leading to final path.
+    // FIXME: Should this simply be baked in ItemInfo() ??
+    // Note that openables cannot be part of the **/ (else it means we would have to open everything).
+    // - Openables can be before the wildcard    "Node2/Node3/**/Button"
+    // - Openables can be after the wildcard     "**/Node2/Node3/Lv4/Button"
+    int opened_parents = 0;
+    for (const char* parent_end = strstr(ref.Path, "/"); parent_end != NULL; parent_end = strstr(parent_end + 1, "/"))
+    {
+        // Skip "**/* sections
+        if (strncmp(ref.Path, "**/", parent_end - ref.Path) == 0)
+            continue;
+
+        Str128 parent_id;
+        parent_id.set(ref.Path, parent_end);
+        ImGuiTestItemInfo* parent_item = ItemInfo(parent_id.c_str(), ImGuiTestOpFlags_NoError);
+        if (parent_item != NULL && (parent_item->StatusFlags & ImGuiItemStatusFlags_Openable) != 0 && (parent_item->StatusFlags & ImGuiItemStatusFlags_Opened) == 0)
+        {
+            ItemAction(ImGuiTestAction_Open, parent_item->ID, NULL, ImGuiTestOpFlags_NoAutoOpenFullPath);
+            opened_parents++;
+        }
+    }
+    if (opened_parents > 0)
+        item = ItemInfo(ref);
+
+    return item;
+}
+
 void    ImGuiTestContext::ScrollToTop(ImGuiTestRef ref)
 {
     if (IsError())
@@ -1256,6 +1293,7 @@ static ImVec2 GetMouseAimingPos(ImGuiTestItemInfo* item, ImGuiTestOpFlags flags)
     return pos;
 }
 
+// Conceptucally this could be called ItemHover()
 // Supported values for ImGuiTestOpFlags:
 // - ImGuiTestOpFlags_NoFocusWindow
 // - ImGuiTestOpFlags_NoCheckHoveredId
@@ -1269,10 +1307,15 @@ void    ImGuiTestContext::MouseMove(ImGuiTestRef ref, ImGuiTestOpFlags flags)
 
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
     ImGuiContext& g = *UiContext;
-    ImGuiTestItemInfo* item = ItemInfo(ref);
+
+    ImGuiTestItemInfo* item;
+    if (flags & ImGuiTestOpFlags_NoAutoOpenFullPath)
+        item = ItemInfo(ref);
+    else
+        item = ItemInfoOpenFullPath(ref);
+
     ImGuiTestRefDesc desc(ref, item);
     LogDebug("MouseMove to %s", desc.c_str());
-
     if (item == NULL)
         return;
 
@@ -2175,22 +2218,11 @@ void    ImGuiTestContext::ItemAction(ImGuiTestAction action, ImGuiTestRef ref, v
             Engine->FindByLabelTask.InFilterItemStatusFlags = ImGuiItemStatusFlags_Openable;
     }
 
-    if ((flags & ImGuiTestOpFlags_NoAutoOpenFullPath) == 0 && ref.Path != NULL)
-    {
-        const char* end = strstr(ref.Path, "**/");
-        end = strstr(end != NULL ? end + 3 : ref.Path, "/");
-        while (end != NULL)
-        {
-            Str128 partial_id;
-            partial_id.set(ref.Path, end);
-            ImGuiTestItemInfo* item = ItemInfo(partial_id.c_str(), ImGuiTestOpFlags_NoError);
-            if (item != NULL && (item->StatusFlags & ImGuiItemStatusFlags_Openable) != 0 && (item->StatusFlags & ImGuiItemStatusFlags_Opened) == 0)
-                ItemAction(ImGuiTestAction_Open, item->ID, NULL, ImGuiTestOpFlags_NoAutoOpenFullPath);
-            end = strstr(end + 1, "/");
-        }
-    }
-
-    ImGuiTestItemInfo* item = ItemInfo(ref);
+    ImGuiTestItemInfo* item;
+    if (flags & ImGuiTestOpFlags_NoAutoOpenFullPath)
+        item = ItemInfo(ref);
+    else
+        item = ItemInfoOpenFullPath(ref);
     ImGuiTestRefDesc desc(ref, item);
     if (item == NULL)
         return;

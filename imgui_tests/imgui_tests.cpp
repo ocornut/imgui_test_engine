@@ -339,7 +339,6 @@ void RegisterTests_Window(ImGuiTestEngine* e)
         ImGuiContext& g = *ctx->UiContext;
         ctx->SetRef("Dear ImGui Demo");
         ctx->ItemOpen("Popups & Modal windows");
-        ctx->ItemOpen("Popups");
         ctx->ItemClick("Popups/Toggle..");
 
         ImGuiWindow* popup_1 = g.NavWindow;
@@ -4243,7 +4242,7 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
 
         //ctx->ItemClick("Layout & Scrolling");  // FIXME: close popup
         ctx->ItemOpen("Layout & Scrolling");
-        ctx->ItemOpen("Scrolling");
+        //ctx->ItemOpen("Scrolling");
         ctx->ItemHold("Scrolling/>>", 1.0f);
         ctx->SleepStandard();
     };
@@ -4302,7 +4301,6 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
     {
         ctx->SetRef("Dear ImGui Demo");
         ctx->ItemOpen("Layout & Scrolling");
-        ctx->ItemOpen("Scrolling");
         ctx->ItemCheck("Scrolling/Show Horizontal contents size demo window");   // FIXME-TESTS: maybe ItemXXX functions could do the recursion (e.g. Open all parents first)
         ImGuiTestActionFilter filter;
         filter.MaxPasses = filter.MaxDepth = 1;
@@ -4372,7 +4370,6 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
 
         // TODO: We could add more in-depth tests instead of just click-coverage
         ctx->ItemOpen("Widgets");
-        ctx->ItemOpen("Text Input");
         ctx->ItemOpen("Text Input/Completion, History, Edit Callbacks");
         ctx->SetRef("Dear ImGui Demo/Text Input/Completion, History, Edit Callbacks");
         ctx->ItemClick("Completion");
@@ -4390,7 +4387,6 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
         ctx->SetRef("Dear ImGui Demo");
         ctx->WindowResize("Dear ImGui Demo", ImVec2(100, backup_size.y));
         ctx->ItemOpen("Widgets");
-        ctx->ItemOpen("Basic");
         ctx->ItemClick("Basic/radio c");
         ctx->WindowResize("Dear ImGui Demo", backup_size);
 
@@ -4631,12 +4627,14 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
         ImGui::PushID("Lv0");
         ImGui::PushID("Lv1");
-        if (ImGui::TreeNode("Lv2"))
+        if (ImGui::TreeNode("Node2"))
         {
-            if (ImGui::TreeNode("Lv3"))
+            if (ImGui::TreeNode("Node3"))
             {
+                ImGui::PushID("Lv4");
                 ImGui::Button("Button");
                 ctx->GenericVars.Status.QueryInc();
+                ImGui::PopID();
                 ImGui::TreePop();
             }
             ImGui::TreePop();
@@ -4649,16 +4647,29 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
     {
         ctx->SetRef("Test Window");
         ctx->ItemCloseAll("");
-        ctx->ItemClick("Lv0/Lv1/Lv2/Lv3/Button");
+        ctx->ItemClick("Lv0/Lv1/Node2/Node3/Lv4/Button");
         IM_CHECK_EQ(ctx->GenericVars.Status.Clicked, 1);
 
         ctx->ItemCloseAll("");
-        ctx->ItemClick("**/Lv1/Lv2/Lv3/Button");
+        ctx->ItemClick("**/Lv1/Node2/Node3/Lv4/Button");
         IM_CHECK_EQ(ctx->GenericVars.Status.Clicked, 2);
 
         ctx->ItemCloseAll("");
-        ctx->ItemClick("Lv0/**/Lv2/Lv3/Button");
+        ctx->ItemClick("Lv0/**/Node2/Node3/Lv4/Button");
         IM_CHECK_EQ(ctx->GenericVars.Status.Clicked, 3);
+
+        ctx->ItemCloseAll("");
+        ctx->ItemClick("**/Node2/Node3/Lv4/Button");
+        IM_CHECK_EQ(ctx->GenericVars.Status.Clicked, 4);
+
+        ctx->ItemCloseAll("");
+        ctx->ItemClick("Lv0/Lv1/Node2/Node3/**/Button");
+        IM_CHECK_EQ(ctx->GenericVars.Status.Clicked, 5);
+
+        // Can't work (would need to brute-force open everything?)
+        //ctx->ItemCloseAll("");
+        //ctx->ItemClick("Lv0/Lv1/**/Button");
+        //IM_CHECK_EQ(ctx->GenericVars.Status.Clicked, 5);
     };
 }
 
