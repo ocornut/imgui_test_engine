@@ -252,6 +252,7 @@ struct ImGuiTestContext
     ImGuiInputSource        InputMode = ImGuiInputSource_Mouse;     // Prefer interacting with mouse/keyboard/gamepad
     ImVector<char>          Clipboard;                              // Private clipboard for the test instance
     ImVector<ImGuiWindow*>  ForeignWindowsToHide;
+    bool                    CachedLinesPrintedToTTY = false;
 
     //-------------------------------------------------------------------------
     // Public API

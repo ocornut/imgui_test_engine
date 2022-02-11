@@ -292,9 +292,6 @@ struct ImGuiTestLog
     ImVector<ImGuiTestLogLineInfo>  LineInfo;
     int                             CountPerLevel[ImGuiTestVerboseLevel_COUNT] = {};
 
-    // FIXME: To remove
-    bool                            CachedLinesPrintedToTTY = false;    // FIXME: Remove as this is a view things
-
     // Functions
     ImGuiTestLog() {}
     bool    IsEmpty() const         { return Buffer.empty(); }

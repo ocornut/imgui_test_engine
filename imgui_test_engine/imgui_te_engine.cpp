@@ -1821,7 +1821,6 @@ void ImGuiTestLog::Clear()
     Buffer.clear();
     LineInfo.clear();
     memset(&CountPerLevel, 0, sizeof(CountPerLevel));
-    CachedLinesPrintedToTTY = false;
 }
 
 // Level are inclusive.
