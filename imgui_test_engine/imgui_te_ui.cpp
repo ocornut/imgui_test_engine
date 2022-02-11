@@ -632,8 +632,23 @@ static void ImGuiTestEngine_ShowTestTool(ImGuiTestEngine* engine, bool* p_open)
         //ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0, 0));
     }
 
-    ImGui::Checkbox("Fast", &engine->IO.ConfigRunFast); HelpTooltip("Run tests as fast as possible (no delay/vsync, teleport mouse, etc.).");
+    ImGui::SetNextItemWidth(70 * engine->IO.DpiScale);
+    if (ImGui::BeginCombo("##RunSpeed", ImGuiTestEngine_GetRunSpeedName(engine->IO.ConfigRunSpeed), ImGuiComboFlags_None))
+    {
+        for (ImGuiTestRunSpeed level = (ImGuiTestRunSpeed)0; level < ImGuiTestRunSpeed_COUNT; level = (ImGuiTestRunSpeed)(level + 1))
+            if (ImGui::Selectable(ImGuiTestEngine_GetRunSpeedName(level), engine->IO.ConfigRunSpeed == level))
+                engine->IO.ConfigRunSpeed = level;
+        ImGui::EndCombo();
+    }
+    HelpTooltip(
+        "Running speed\n"
+        "- Fast: Run tests as fast as possible (no delay/vsync, teleport mouse, etc.).\n"
+        "- Normal: Run tests at human watchable speed (for debugging).\n"
+        "- Cinematic: Run tests with pauses between actions (for e.g. tutorials)."
+    );
     ImGui::SameLine();
+    //ImGui::Checkbox("Fast", &engine->IO.ConfigRunFast);
+    //ImGui::SameLine();
     ImGui::Checkbox("Stop", &engine->IO.ConfigStopOnError); HelpTooltip("Stop running tests when hitting an error.");
     ImGui::SameLine();
     ImGui::Checkbox("DbgBrk", &engine->IO.ConfigBreakOnError); HelpTooltip("Break in debugger when hitting an error.");
@@ -645,13 +660,14 @@ static void ImGuiTestEngine_ShowTestTool(ImGuiTestEngine* engine, bool* p_open)
     ImGui::SeparatorEx(ImGuiSeparatorFlags_Vertical);
     ImGui::SameLine();
     ImGui::SetNextItemWidth(70 * engine->IO.DpiScale);
-    if (ImGui::BeginCombo("Verbose", ImGuiTestEngine_GetVerboseLevelName(engine->IO.ConfigVerboseLevel), ImGuiComboFlags_None))
+    if (ImGui::BeginCombo("##Verbose", ImGuiTestEngine_GetVerboseLevelName(engine->IO.ConfigVerboseLevel), ImGuiComboFlags_None))
     {
         for (ImGuiTestVerboseLevel level = (ImGuiTestVerboseLevel)0; level < ImGuiTestVerboseLevel_COUNT; level = (ImGuiTestVerboseLevel)(level + 1))
             if (ImGui::Selectable(ImGuiTestEngine_GetVerboseLevelName(level), engine->IO.ConfigVerboseLevel == level))
                 engine->IO.ConfigVerboseLevel = engine->IO.ConfigVerboseLevelOnError = level;
         ImGui::EndCombo();
     }
+    HelpTooltip("Verbose level.");
     //ImGui::PopStyleVar();
     ImGui::Separator();
 

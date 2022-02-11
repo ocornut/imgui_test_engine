@@ -101,8 +101,8 @@ struct TestApp
 
     // Command-line options
     bool                    OptGui = false;
-    bool                    OptFast = true;
     bool                    OptGuiFunc = false;
+    ImGuiTestRunSpeed       OptRunSpeed = ImGuiTestRunSpeed_Fast;
     ImGuiTestVerboseLevel   OptVerboseLevelBasic = ImGuiTestVerboseLevel_COUNT; // Default is set in main.cpp depending on -gui/-nogui
     ImGuiTestVerboseLevel   OptVerboseLevelError = ImGuiTestVerboseLevel_COUNT; // "
     bool                    OptNoThrottle = false;
@@ -199,12 +199,12 @@ static bool ParseCommandLineOptions(int argc, char** argv)
             }
             else if (strcmp(argv[n], "-fast") == 0)
             {
-                g_App.OptFast = true;
+                g_App.OptRunSpeed = ImGuiTestRunSpeed_Fast;
                 g_App.OptNoThrottle = true;
             }
             else if (strcmp(argv[n], "-slow") == 0)
             {
-                g_App.OptFast = false;
+                g_App.OptRunSpeed = ImGuiTestRunSpeed_Normal;
                 g_App.OptNoThrottle = false;
             }
             else if (strcmp(argv[n], "-nothrottle") == 0)
@@ -480,7 +480,7 @@ int main(int argc, char** argv)
 
     // Apply options
     ImGuiTestEngineIO& test_io = ImGuiTestEngine_GetIO(engine);
-    test_io.ConfigRunFast = g_App.OptFast;
+    test_io.ConfigRunSpeed = g_App.OptRunSpeed;
     test_io.ConfigVerboseLevel = g_App.OptVerboseLevelBasic;
     test_io.ConfigVerboseLevelOnError = g_App.OptVerboseLevelError;
     test_io.ConfigNoThrottle = g_App.OptNoThrottle;

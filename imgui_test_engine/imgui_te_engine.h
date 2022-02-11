@@ -37,13 +37,21 @@ enum ImGuiTestEngineExportFormat : int;
 // Types
 //-------------------------------------------------------------------------
 
+enum ImGuiTestRunSpeed
+{
+    ImGuiTestRunSpeed_Fast          = 0,    // Run tests as fast as possible (teleport mouse, skip delays, etc.)
+    ImGuiTestRunSpeed_Normal        = 1,    // Run tests at human watchable speed (for debugging)
+    ImGuiTestRunSpeed_Cinematic     = 2,    // Run tests with pauses between actions (for e.g. tutorials)
+    ImGuiTestRunSpeed_COUNT
+};
+
 enum ImGuiTestVerboseLevel
 {
-    ImGuiTestVerboseLevel_Silent    = 0, // -v0
-    ImGuiTestVerboseLevel_Error     = 1, // -v1
-    ImGuiTestVerboseLevel_Warning   = 2, // -v2
-    ImGuiTestVerboseLevel_Info      = 3, // -v3
-    ImGuiTestVerboseLevel_Debug     = 4, // -v4
+    ImGuiTestVerboseLevel_Silent    = 0,    // -v0
+    ImGuiTestVerboseLevel_Error     = 1,    // -v1
+    ImGuiTestVerboseLevel_Warning   = 2,    // -v2
+    ImGuiTestVerboseLevel_Info      = 3,    // -v3
+    ImGuiTestVerboseLevel_Debug     = 4,    // -v4
     ImGuiTestVerboseLevel_Trace     = 5,
     ImGuiTestVerboseLevel_COUNT     = 6
 };
@@ -179,10 +187,10 @@ struct ImGuiTestEngineIO
     void*                                       ScreenCaptureUserData = NULL;   // (Optional) User data for ScreenCaptureFunc
 
     // Inputs: Options
-    bool                        ConfigRunFast = true;               // Run tests as fast as possible (teleport mouse, skip delays, etc.)
-    bool                        ConfigStopOnError = false;          // Stop queued tests on test error
-    bool                        ConfigBreakOnError = false;         // Break debugger on test error
-    bool                        ConfigKeepGuiFunc = false;          // Keep test GUI running at the end of the test
+    ImGuiTestRunSpeed           ConfigRunSpeed = ImGuiTestRunSpeed_Fast;        // Run tests in fast/normal/cinematic mode
+    bool                        ConfigStopOnError = false;                      // Stop queued tests on test error
+    bool                        ConfigBreakOnError = false;                     // Break debugger on test error
+    bool                        ConfigKeepGuiFunc = false;                      // Keep test GUI running at the end of the test
     ImGuiTestVerboseLevel       ConfigVerboseLevel = ImGuiTestVerboseLevel_Warning;
     ImGuiTestVerboseLevel       ConfigVerboseLevelOnError = ImGuiTestVerboseLevel_Info;
     bool                        ConfigLogToTTY = false;

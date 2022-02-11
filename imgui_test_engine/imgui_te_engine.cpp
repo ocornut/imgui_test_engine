@@ -614,7 +614,7 @@ static void ImGuiTestEngine_UpdateWatchdog(ImGuiTestEngine* engine, ImGuiContext
     IM_UNUSED(ui_ctx);
     ImGuiTestContext* test_ctx = engine->TestContext;
 
-    if (!engine->IO.ConfigRunFast || ImOsIsDebuggerPresent())
+    if (engine->IO.ConfigRunSpeed != ImGuiTestRunSpeed_Fast || ImOsIsDebuggerPresent())
         return;
 
     if (test_ctx->RunFlags & ImGuiTestRunFlags_ManualRun)
@@ -751,8 +751,9 @@ static void ImGuiTestEngine_PostNewFrame(ImGuiTestEngine* engine, ImGuiContext* 
 
     // Disable vsync
     engine->IO.RenderWantMaxSpeed = engine->IO.ConfigNoThrottle;
-    if (engine->IO.ConfigRunFast && engine->IO.RunningTests && engine->TestContext && (engine->TestContext->RunFlags & ImGuiTestRunFlags_GuiFuncOnly) == 0)
-        engine->IO.RenderWantMaxSpeed = true;
+    if (engine->IO.ConfigRunSpeed == ImGuiTestRunSpeed_Fast && engine->IO.RunningTests)
+        if (engine->TestContext && (engine->TestContext->RunFlags & ImGuiTestRunFlags_GuiFuncOnly) == 0)
+            engine->IO.RenderWantMaxSpeed = true;
 }
 
 static void ImGuiTestEngine_PostRender(ImGuiTestEngine* engine, ImGuiContext* ui_ctx)
@@ -844,6 +845,15 @@ double ImGuiTestEngine_GetPerfDeltaTime500Average(ImGuiTestEngine* engine)
     return engine->PerfDeltaTime500.GetAverage();
 }
 
+const char* ImGuiTestEngine_GetRunSpeedName(ImGuiTestRunSpeed v)
+{
+    static const char* names[ImGuiTestRunSpeed_COUNT] = { "Fast", "Normal", "Cinematic" };
+    IM_STATIC_ASSERT(IM_ARRAYSIZE(names) == ImGuiTestRunSpeed_COUNT);
+    if (v >= 0 && v < IM_ARRAYSIZE(names))
+        return names[v];
+    return "N/A";
+}
+
 const char* ImGuiTestEngine_GetVerboseLevelName(ImGuiTestVerboseLevel v)
 {
     static const char* names[ImGuiTestVerboseLevel_COUNT] = { "Silent", "Error", "Warning", "Info", "Debug", "Trace" };
@@ -865,8 +875,8 @@ bool ImGuiTestEngine_CaptureScreenshot(ImGuiTestEngine* engine, ImGuiCaptureArgs
 
     // Graphics API must render a window so it can be captured
     // FIXME: This should work without this, as long as Present vs Vsync are separated (we need a Present, we don't need Vsync)
-    const bool backup_fast = engine->IO.ConfigRunFast;
-    engine->IO.ConfigRunFast = false;
+    const ImGuiTestRunSpeed backup_run_speed = engine->IO.ConfigRunSpeed;
+    engine->IO.ConfigRunSpeed = ImGuiTestRunSpeed_Fast;
 
     const int frame_count = engine->FrameCount;
 
@@ -885,7 +895,7 @@ bool ImGuiTestEngine_CaptureScreenshot(ImGuiTestEngine* engine, ImGuiCaptureArgs
     if (args->InFlags & ImGuiCaptureFlags_Instant)
         IM_ASSERT(frame_count + 1== engine->FrameCount);
 
-    engine->IO.ConfigRunFast = backup_fast;
+    engine->IO.ConfigRunSpeed = backup_run_speed;
     return true;
 }
 
@@ -899,11 +909,11 @@ bool ImGuiTestEngine_CaptureBeginGif(ImGuiTestEngine* engine, ImGuiCaptureArgs* 
 
     IM_ASSERT(engine->CurrentCaptureArgs == NULL && "Nested captures are not supported.");
 
-    engine->BackupConfigRunFast = engine->IO.ConfigRunFast;
+    engine->BackupConfigRunSpeed = engine->IO.ConfigRunSpeed;
     engine->BackupConfigNoThrottle = engine->IO.ConfigNoThrottle;
-    if (engine->IO.ConfigRunFast)
+    if (engine->IO.ConfigRunSpeed != ImGuiTestRunSpeed_Cinematic)
     {
-        engine->IO.ConfigRunFast = false;
+        engine->IO.ConfigRunSpeed = ImGuiTestRunSpeed_Cinematic;
         engine->IO.ConfigNoThrottle = true;
         engine->IO.ConfigFixedDeltaTime = 1.0f / 60.0f;
     }
@@ -921,7 +931,7 @@ bool ImGuiTestEngine_CaptureEndGif(ImGuiTestEngine* engine, ImGuiCaptureArgs* ar
     engine->CaptureContext.EndVideoCapture();
     while (engine->CurrentCaptureArgs != NULL)   // Wait until last frame is captured and gif is saved.
         ImGuiTestEngine_Yield(engine);
-    engine->IO.ConfigRunFast = engine->BackupConfigRunFast;
+    engine->IO.ConfigRunSpeed = engine->BackupConfigRunSpeed;
     engine->IO.ConfigNoThrottle = engine->BackupConfigNoThrottle;
     engine->IO.ConfigFixedDeltaTime = 0;
     engine->CurrentCaptureArgs = NULL;
@@ -1277,7 +1287,7 @@ static void ImGuiTestEngine_RunTest(ImGuiTestEngine* engine, ImGuiTestContext* c
         // Recover missing End*/Pop* calls.
         ctx->RecoverFromUiContextErrors();
 
-        if (!engine->IO.ConfigRunFast)
+        if (engine->IO.ConfigRunSpeed != ImGuiTestRunSpeed_Fast)
             ctx->SleepStandard();
 
         // Stop in GuiFunc mode

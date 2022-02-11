@@ -1360,7 +1360,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         IM_CHECK_EQ(vars.EditCount, 2);
         ctx->KeyCharsAppend("llo");
         IM_CHECK_STR_EQ(vars.EditBuffer.c_str(), "Hello");
-        IM_CHECK_LE(vars.EditCount, ctx->EngineIO->ConfigRunFast ? 3 : 5); // If running fast, "llo" will be considered as one edit only
+        IM_CHECK_LE(vars.EditCount, (ctx->EngineIO->ConfigRunSpeed == ImGuiTestRunSpeed_Fast) ? 3 : 5); // If running fast, "llo" will be considered as one edit only
     };
 
     // ## Test character replacement in callback (inspired by https://github.com/ocornut/imgui/pull/3587)
