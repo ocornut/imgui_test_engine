@@ -1778,7 +1778,7 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
 
         // Test focusing previous item with SetKeyboardFocusHere(-1)
         vars.Step = 10;
-        //IM_DEBUG_HALT_TESTFUNC();
+        //IM_SUSPEND_TESTFUNC();
         ctx->Yield();
         IM_CHECK(g.ActiveId == 0);
         IM_CHECK(vars.Status.Active == 0);

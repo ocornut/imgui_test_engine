@@ -349,7 +349,7 @@ void    ImGuiTestContext::Sleep(float time)
 }
 
 // Return true to request aborting TestFunc
-bool    ImGuiTestContext::DebugHaltTestFunc(const char* file, int line)
+bool    ImGuiTestContext::SuspendTestFunc(const char* file, int line)
 {
     if (IsError())
         return false;
@@ -1471,7 +1471,7 @@ void ImGuiTestContext::ForeignWindowsHideOverPos(ImVec2 pos, ImGuiWindow** ignor
     LogDebug("ForeignWindowsHideOverPos (%.0f,%.0f)", pos.x, pos.y);
     IM_CHECK_SILENT(ignore_list != NULL); // It makes little sense to call this function with an empty list.
     IM_CHECK_SILENT(ignore_list[0] != NULL);
-    //auto& ctx = this;  IM_DEBUG_HALT_TESTFUNC();
+    //auto& ctx = this;  IM_SUSPEND_TESTFUNC();
 
     bool hidden_windows = false;
     for (int i = 0; i < g.Windows.Size; i++)

@@ -584,7 +584,7 @@ void RegisterTests_Window(ImGuiTestEngine* e)
             IM_CHECK_EQ(vars.SecondOpen, false);
 
             // Test closing a menu by clicking menu item that opens this menu (#3496).
-            //IM_DEBUG_HALT_TESTFUNC();
+            //IM_SUSPEND_TESTFUNC();
             ctx->ItemClick("##menubar/First", 0, ImGuiTestOpFlags_NoFocusWindow);      // Click it again to close.
             IM_CHECK_EQ(vars.FirstOpen, false);
             IM_CHECK_EQ(vars.SecondOpen, false);
@@ -4607,7 +4607,7 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
                 filter.MaxDepth = 2;
                 filter.MaxItemCountPerDepth = max_count_per_depth;
                 ctx->ItemActionAll(ImGuiTestAction_Open, item.ID, &filter);
-                //IM_DEBUG_HALT_TESTFUNC();
+                //IM_SUSPEND_TESTFUNC();
                 ctx->ItemActionAll(ImGuiTestAction_Hover, item.ID, &filter);
             }
 

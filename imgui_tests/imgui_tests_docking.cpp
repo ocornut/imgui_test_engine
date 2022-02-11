@@ -486,7 +486,7 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
         ctx->WindowMove("Dear ImGui Demo", viewport_pos + viewport_size * 0.5f, ImVec2(0.5f, 0.5f));
         ctx->WindowMove("Window 1", viewport_pos + viewport_size * 0.5f, ImVec2(0.5f, 0.5f));
         ctx->WindowMove("Window 2", viewport_pos + viewport_size * 0.5f, ImVec2(0.5f, 0.5f));
-        //IM_DEBUG_HALT_TESTFUNC();
+        //IM_SUSPEND_TESTFUNC();
 
         // Test undocking from tab.
         ctx->DockInto("Window 1", "Window 2");
@@ -1807,7 +1807,7 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
             ctx->DockClear("AAA", "BBB", NULL);
             IM_CHECK_EQ(vars.AppearingAAA, 1);
             IM_CHECK_EQ(vars.AppearingBBB, 2);
-            //IM_DEBUG_HALT_TESTFUNC();
+            //IM_SUSPEND_TESTFUNC();
             ctx->DockInto("BBB", "AAA", ImGuiDir_Right);
             IM_CHECK_EQ(vars.AppearingAAA, 1);
             IM_CHECK_EQ(vars.AppearingBBB, 2);

@@ -332,7 +332,7 @@ static void ShowTestGroup(ImGuiTestEngine* e, ImGuiTestGroup group, ImGuiTextFil
 
             if (test->Status == ImGuiTestStatus_Suspended)
             {
-                // Resume IM_DEBUG_HALT_TESTFUNC
+                // Resume IM_SUSPEND_TESTFUNC
                 if (ImGui::Button("Con###Run"))
                     test->Status = ImGuiTestStatus_Running;
                 if (ImGui::IsItemHovered())

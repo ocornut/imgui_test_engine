@@ -269,7 +269,7 @@ struct ImGuiTestContext
     template <typename T> T& GetVars()      { IM_ASSERT(UserVars != NULL); return *(T*)(UserVars); } // Campanion to using t->SetVarsDataType<>(). FIXME: Assert to compare sizes
 
     // Debug Control Flow
-    bool        DebugHaltTestFunc(const char* file, int line);
+    bool        SuspendTestFunc(const char* file, int line);
 
     // Logging
     void        LogEx(ImGuiTestVerboseLevel level, ImGuiTestLogFlags flags, const char* fmt, ...) IM_FMTARGS(4);
@@ -477,8 +477,8 @@ struct ImGuiTestContext
 // [SECTION] Debugging macros
 //-------------------------------------------------------------------------
 
-// Pause TestFunc to let user inspect the GUI state (user will need to press the "Continue" button to resume TestFunc execution)
-#define IM_DEBUG_HALT_TESTFUNC()            do { if (ctx->DebugHaltTestFunc(__FILE__, __LINE__)) return; } while (0)
+// Debug: Temporarily suspend TestFunc to let user interactively inspect the GUI state (user will need to press the "Continue" button to resume TestFunc execution)
+#define IM_SUSPEND_TESTFUNC()               do { if (ctx->SuspendTestFunc(__FILE__, __LINE__)) return; } while (0)
 
 //-------------------------------------------------------------------------
 // [SECTION] IM_CHECK macros

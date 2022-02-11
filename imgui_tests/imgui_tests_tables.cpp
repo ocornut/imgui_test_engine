@@ -2390,7 +2390,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
             ctx->Yield(2);
             IM_CHECK_EQ(vars.OutTableLayoutSize.y, 300.0f);
             IM_CHECK_EQ(table->OuterWindow->ContentSize.y, 200.0f);
-            //IM_DEBUG_HALT_TESTFUNC();
+            //IM_SUSPEND_TESTFUNC();
 
             // outer_size -FLT_MIN, button 200, window 100 -> layout 200, ideal 200
             vars.TableFlags &= ~ImGuiTableFlags_NoHostExtendY;
@@ -2481,7 +2481,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
             IM_CHECK_EQ(table->OuterWindow->ContentSize[axis], 100.0f);
             IM_CHECK_EQ(axis == ImGuiAxis_X ? table->OuterWindow->ScrollbarX : table->OuterWindow->ScrollbarY, false);
             IM_CHECK_EQ(table->OuterWindow->ContentSizeIdeal[axis], 200.0f);
-            //IM_DEBUG_HALT_TESTFUNC();
+            //IM_SUSPEND_TESTFUNC();
 
             vars.TableFlags = ImGuiTableFlags_NoSavedSettings | ImGuiTableFlags_ScrollX;
             vars.WindowSize = ImVec2(300.0f, 300.0f);
@@ -2499,7 +2499,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
             IM_CHECK_EQ(table->OuterWindow->ContentSize[axis], 100.0f);
             IM_CHECK_EQ(axis == ImGuiAxis_X ? table->OuterWindow->ScrollbarX : table->OuterWindow->ScrollbarY, false);
             IM_CHECK_EQ(table->OuterWindow->ContentSizeIdeal[axis], 200.0f);
-            //IM_DEBUG_HALT_TESTFUNC();
+            //IM_SUSPEND_TESTFUNC();
 
             vars.TableFlags = ImGuiTableFlags_NoSavedSettings | ImGuiTableFlags_ScrollX;
             vars.WindowSize = ImVec2(300.0f, 300.0f);
@@ -2512,7 +2512,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
             IM_CHECK_EQ(table->InnerWindow->ContentSizeIdeal[axis], 200.0f);
             IM_CHECK_EQ(table->OuterWindow->ContentSize[axis], 100.0f);
             IM_CHECK_EQ(table->OuterWindow->ContentSizeIdeal[axis], 100.0f);
-            //IM_DEBUG_HALT_TESTFUNC();
+            //IM_SUSPEND_TESTFUNC();
 
             vars.TableFlags = ImGuiTableFlags_NoSavedSettings | ImGuiTableFlags_ScrollX;
             vars.WindowSize = ImVec2(300.0f, 300.0f);
