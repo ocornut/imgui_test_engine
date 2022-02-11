@@ -123,11 +123,11 @@ static void DrawTestLog(ImGuiTestEngine* e, ImGuiTest* test)
     ImGuiListClipper clipper;
     ImGuiTestVerboseLevel max_log_level = test->Status == ImGuiTestStatus_Error ? e->IO.ConfigVerboseLevelOnError : e->IO.ConfigVerboseLevel;
     int line_count = log->ExtractLinesForVerboseLevels(ImGuiTestVerboseLevel_Silent, max_log_level, NULL);
+    int current_index_clipped = -1;
+    int current_index_abs = 0;
     clipper.Begin(line_count);
     while (clipper.Step())
     {
-        int current_index_clipped = -1;
-        int current_index_abs = 0;
         for (int line_no = clipper.DisplayStart; line_no < clipper.DisplayEnd; line_no++)
         {
             // Advance index_by_log_level to find log entry indicated by line_no.
