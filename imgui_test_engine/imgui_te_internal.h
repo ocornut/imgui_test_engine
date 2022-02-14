@@ -158,7 +158,7 @@ struct ImGuiTestEngine
     ImGuiPerfTool*              PerfTool = NULL;
 
     // Screen/Video Capturing
-    ImGuiCaptureTool            CaptureTool;
+    ImGuiCaptureToolUI            CaptureTool;
     ImGuiCaptureContext         CaptureContext;
     ImGuiCaptureArgs*           CaptureCurrentArgs = NULL;
 

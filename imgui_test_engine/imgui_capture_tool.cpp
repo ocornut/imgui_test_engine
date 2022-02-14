@@ -11,7 +11,7 @@ Index of this file:
 // [SECTION] Includes
 // [SECTION] ImGuiCaptureImageBuf
 // [SECTION] ImGuiCaptureContext
-// [SECTION] ImGuiCaptureTool
+// [SECTION] ImGuiCaptureToolUI
 
 */
 
@@ -229,11 +229,11 @@ ImGuiCaptureStatus ImGuiCaptureContext::CaptureUpdate(ImGuiCaptureArgs* args)
     // Sanity checks
     IM_ASSERT(args != NULL);
     IM_ASSERT(ScreenCaptureFunc != NULL);
-    IM_ASSERT(VideoCaptureExt != NULL);
     IM_ASSERT(args->InOutputImageBuf != NULL || args->InOutputFileTemplate[0]);
     IM_ASSERT(args->InRecordFPSTarget != 0);
     if (_VideoRecording)
     {
+        IM_ASSERT(VideoCaptureExt != NULL);
         IM_ASSERT(args->InOutputFileTemplate[0] && "Output filename must be specified when recording videos.");
         IM_ASSERT(args->InOutputImageBuf == NULL && "Output buffer cannot be specified when recording videos.");
         IM_ASSERT((args->InFlags & ImGuiCaptureFlags_StitchAll) == 0 && "Image stitching is not supported when recording videos.");
@@ -307,10 +307,10 @@ ImGuiCaptureStatus ImGuiCaptureContext::CaptureUpdate(ImGuiCaptureArgs* args)
         _CaptureArgs = args;
         _ChunkNo = 0;
         _CaptureRect = _CapturedWindowRect = ImRect(FLT_MAX, FLT_MAX, -FLT_MAX, -FLT_MAX);
-        _WindowBackupRects.clear();
-        _WindowBackupRectsWindows.clear();
-        _DisplayWindowPaddingBackup = g.Style.DisplayWindowPadding;
-        _DisplaySafeAreaPaddingBackup = g.Style.DisplaySafeAreaPadding;
+        _BackupWindowsRect.clear();
+        _BackupWindows.clear();
+        _BackupDisplayWindowPadding = g.Style.DisplayWindowPadding;
+        _BackupDisplaySafeAreaPadding = g.Style.DisplaySafeAreaPadding;
         g.Style.DisplayWindowPadding = ImVec2(0, 0);    // Allow windows to be positioned fully outside of visible viewport.
         g.Style.DisplaySafeAreaPadding = ImVec2(0, 0);
 
@@ -338,8 +338,8 @@ ImGuiCaptureStatus ImGuiCaptureContext::CaptureUpdate(ImGuiCaptureArgs* args)
         for (ImGuiWindow* window : args->InCaptureWindows)
         {
             _CapturedWindowRect.Add(window->Rect());
-            _WindowBackupRects.push_back(window->Rect());
-            _WindowBackupRectsWindows.push_back(window);
+            _BackupWindowsRect.push_back(window->Rect());
+            _BackupWindows.push_back(window);
         }
 
         if (args->InFlags & ImGuiCaptureFlags_StitchAll)
@@ -476,7 +476,7 @@ ImGuiCaptureStatus ImGuiCaptureContext::CaptureUpdate(ImGuiCaptureArgs* args)
             if (is_recording_video && (args->InFlags & ImGuiCaptureFlags_NoSave) == 0)
             {
                 // _FFMPEGStdIn is NULL when recording just started. Initialize recording state.
-                if (_FFMPEGStdIn == NULL)
+                if (_VideoFFMPEGPipe == NULL)
                 {
                     // First video frame, initialize now that dimensions are known.
                     const unsigned int width = (unsigned int)capture_rect.GetWidth();
@@ -490,12 +490,12 @@ ImGuiCaptureStatus ImGuiCaptureContext::CaptureUpdate(ImGuiCaptureArgs* args)
                         "%s",
                         ffmpeg_exe.c_str(), args->InRecordFPSTarget, width, height, args->InRecordQuality, args->OutSavedFileName);
                     fprintf(stdout, "# %s\n", cmd.c_str());
-                    _FFMPEGStdIn = ImOsPOpen(cmd.c_str(), "w");
-                    IM_ASSERT(_FFMPEGStdIn != NULL);
+                    _VideoFFMPEGPipe = ImOsPOpen(cmd.c_str(), "w");
+                    IM_ASSERT(_VideoFFMPEGPipe != NULL);
                 }
 
                 // Save new video frame
-                fwrite(output->Data, 1, output->Width * output->Height * 4, _FFMPEGStdIn);
+                fwrite(output->Data, 1, output->Width * output->Height * 4, _VideoFFMPEGPipe);
             }
             if (is_recording_video)
                 _VideoLastFrameTime = current_time_sec;
@@ -506,11 +506,11 @@ ImGuiCaptureStatus ImGuiCaptureContext::CaptureUpdate(ImGuiCaptureArgs* args)
         {
             output->RemoveAlpha();
 
-            if (_FFMPEGStdIn != NULL)
+            if (_VideoFFMPEGPipe != NULL)
             {
                 // At this point _Recording is false, but we know we were recording because _FFMPEGStdIn is not NULL. Finalize video here.
-                ImOsPClose(_FFMPEGStdIn);
-                _FFMPEGStdIn = NULL;
+                ImOsPClose(_VideoFFMPEGPipe);
+                _VideoFFMPEGPipe = NULL;
             }
             else if (args->InOutputImageBuf == NULL)
             {
@@ -524,18 +524,18 @@ ImGuiCaptureStatus ImGuiCaptureContext::CaptureUpdate(ImGuiCaptureArgs* args)
             }
 
             // Restore window positions unconditionally. We may have moved them ourselves during capture.
-            for (int i = 0; i < _WindowBackupRects.Size; i++)
+            for (int i = 0; i < _BackupWindowsRect.Size; i++)
             {
-                ImGuiWindow* window = _WindowBackupRectsWindows[i];
+                ImGuiWindow* window = _BackupWindows[i];
                 if (window->Hidden)
                     continue;
-                ImGui::SetWindowPos(window, _WindowBackupRects[i].Min, ImGuiCond_Always);
-                ImGui::SetWindowSize(window, _WindowBackupRects[i].GetSize(), ImGuiCond_Always);
+                ImGui::SetWindowPos(window, _BackupWindowsRect[i].Min, ImGuiCond_Always);
+                ImGui::SetWindowSize(window, _BackupWindowsRect[i].GetSize(), ImGuiCond_Always);
             }
             if (args->InFlags & ImGuiCaptureFlags_HideMouseCursor)
                 g.IO.MouseDrawCursor = _MouseDrawCursorBackup;
-            g.Style.DisplayWindowPadding = _DisplayWindowPaddingBackup;
-            g.Style.DisplaySafeAreaPadding = _DisplaySafeAreaPaddingBackup;
+            g.Style.DisplayWindowPadding = _BackupDisplayWindowPadding;
+            g.Style.DisplaySafeAreaPadding = _BackupDisplaySafeAreaPadding;
 
             _FrameNo = _ChunkNo = 0;
             _VideoLastFrameTime = 0;
@@ -560,7 +560,7 @@ void ImGuiCaptureContext::BeginVideoCapture(ImGuiCaptureArgs* args)
 {
     IM_ASSERT(args != NULL);
     IM_ASSERT(_VideoRecording == false);
-    IM_ASSERT(_FFMPEGStdIn == NULL);
+    IM_ASSERT(_VideoFFMPEGPipe == NULL);
     _VideoRecording = true;
     _CaptureArgs = args;
     IM_ASSERT(args->InRecordFPSTarget >= 1);
@@ -580,22 +580,22 @@ bool ImGuiCaptureContext::IsCapturingVideo()
 }
 
 //-----------------------------------------------------------------------------
-// ImGuiCaptureTool
+// ImGuiCaptureToolUI
 //-----------------------------------------------------------------------------
 
-ImGuiCaptureTool::ImGuiCaptureTool()
+ImGuiCaptureToolUI::ImGuiCaptureToolUI()
 {
     // Filename template for where screenshots will be saved. May contain directories or variation of %d format.
     strcpy(_CaptureArgs.InOutputFileTemplate, "captures/imgui_capture_%04d.png");
 }
 
-void ImGuiCaptureTool::SetCaptureFunc(ImGuiScreenCaptureFunc capture_func)
+void ImGuiCaptureToolUI::SetCaptureFunc(ImGuiScreenCaptureFunc capture_func)
 {
     Context.ScreenCaptureFunc = capture_func;
 }
 
 // Interactively pick a single window
-void ImGuiCaptureTool::CaptureWindowPicker(ImGuiCaptureArgs* args)
+void ImGuiCaptureToolUI::CaptureWindowPicker(ImGuiCaptureArgs* args)
 {
     ImGuiContext& g = *GImGui;
     ImGuiIO& io = g.IO;
@@ -655,7 +655,7 @@ void ImGuiCaptureTool::CaptureWindowPicker(ImGuiCaptureArgs* args)
     }
 }
 
-void ImGuiCaptureTool::CaptureWindowsSelector(ImGuiCaptureArgs* args)
+void ImGuiCaptureToolUI::CaptureWindowsSelector(ImGuiCaptureArgs* args)
 {
     ImGuiContext& g = *GImGui;
     ImGuiIO& io = g.IO;
@@ -798,7 +798,7 @@ void ImGuiCaptureTool::CaptureWindowsSelector(ImGuiCaptureArgs* args)
     }
 }
 
-void ImGuiCaptureTool::ShowCaptureToolWindow(bool* p_open)
+void ImGuiCaptureToolUI::ShowCaptureToolWindow(bool* p_open)
 {
     // Update capturing
     if (_CaptureState == ImGuiCaptureToolState_Capturing)
@@ -916,7 +916,7 @@ void ImGuiCaptureTool::ShowCaptureToolWindow(bool* p_open)
 
 // Move/resize all windows so they are neatly aligned on a grid
 // This is an easy way of ensuring some form of alignment without specifying detailed constraints.
-void ImGuiCaptureTool::SnapWindowsToGrid(float cell_size, float padding)
+void ImGuiCaptureToolUI::SnapWindowsToGrid(float cell_size, float padding)
 {
     ImGuiContext& g = *GImGui;
     for (ImGuiWindow* window : g.Windows)

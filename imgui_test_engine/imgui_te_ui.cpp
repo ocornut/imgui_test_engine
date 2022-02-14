@@ -726,7 +726,7 @@ void    ImGuiTestEngine_ShowTestEngineWindows(ImGuiTestEngine* e, bool* p_open)
         ImGui::ShowStackToolWindow(&e->UiStackToolOpen);
 
     // Capture Tool
-    ImGuiCaptureTool& capture_tool = e->CaptureTool;
+    ImGuiCaptureToolUI& capture_tool = e->CaptureTool;
     capture_tool.Context.ScreenCaptureFunc = e->IO.ScreenCaptureFunc;
     capture_tool.Context.ScreenCaptureUserData = e->IO.ScreenCaptureUserData;
     e->CaptureContext.VideoCapturePathToFFMPEG = e->IO.PathToFFMPEG;

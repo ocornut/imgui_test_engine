@@ -156,7 +156,7 @@ int main(int argc, char** argv)
 
     // Spawn a capture tool independent of ImGuiTestEngine's own instance (as you may use capture tool without the test engine)
     bool show_capture_tool = false;
-    ImGuiCaptureTool capture_tool;
+    ImGuiCaptureToolUI capture_tool;
     capture_tool.Context.ScreenCaptureFunc = ImGuiApp_ScreenCaptureFunc;
     capture_tool.Context.ScreenCaptureUserData = app;
 

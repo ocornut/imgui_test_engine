@@ -14,7 +14,7 @@
 struct ImGuiCaptureArgs;                // Parameters for Capture
 struct ImGuiCaptureContext;             // State of an active capture tool
 struct ImGuiCaptureImageBuf;            // Simple helper to store an RGBA image in memory
-struct ImGuiCaptureTool;                // Capture tool instance + UI window
+struct ImGuiCaptureToolUI;                // Capture tool instance + UI window
 
 typedef unsigned int ImGuiCaptureFlags; // See enum: ImGuiCaptureFlags_
 
@@ -103,11 +103,7 @@ struct ImGuiCaptureContext
     ImRect                  _CapturedWindowRect;            // Top-left corner of region that covers all windows included in capture. This is not same as _CaptureRect.Min when capturing explicitly specified rect.
     int                     _ChunkNo = 0;                   // Number of chunk that is being captured when capture spans multiple frames.
     int                     _FrameNo = 0;                   // Frame number during capture process that spans multiple frames.
-    ImVector<ImRect>        _WindowBackupRects;             // Backup window state that will be restored when screen capturing is done. Size and order matches windows of ImGuiCaptureArgs::InCaptureWindows.
-    ImVector<ImGuiWindow*>  _WindowBackupRectsWindows;      // Backup windows that will have their state restored. args->InCaptureWindows can not be used because popups may get closed during capture and no longer appear in that list.
-    ImVec2                  _DisplayWindowPaddingBackup;    // Backup padding. We set it to {0, 0} during capture.
-    ImVec2                  _DisplaySafeAreaPaddingBackup;  // Backup padding. We set it to {0, 0} during capture.
-    ImVec2                  _MouseRelativeToWindowPos;      // Mouse cursor position relative to captured window (when _StitchFullContents is in use).
+    ImVec2                  _MouseRelativeToWindowPos;      // Mouse cursor position relative to captured window (when _StitchAll is in use).
     ImGuiWindow*            _HoveredWindow = NULL;          // Window which was hovered at capture start.
     ImGuiCaptureImageBuf    _CaptureBuf;                    // Output image buffer.
     const ImGuiCaptureArgs* _CaptureArgs = NULL;            // Current capture args. Set only if capture is in progress.
@@ -116,26 +112,36 @@ struct ImGuiCaptureContext
     // [Internal] Video recording
     bool                    _VideoRecording = false;        // Flag indicating that video recording is in progress.
     double                  _VideoLastFrameTime = 0;        // Time when last video frame was recorded.
-    FILE*                   _FFMPEGStdIn = NULL;            // File writing to stdin of ffmpeg process.
+    FILE*                   _VideoFFMPEGPipe = NULL;        // File writing to stdin of ffmpeg process.
+
+    // [Internal] Backups
+    ImVector<ImGuiWindow*>  _BackupWindows;                 // Backup windows that will have their rect modified and restored. args->InCaptureWindows can not be used because popups may get closed during capture and no longer appear in that list.
+    ImVector<ImRect>        _BackupWindowsRect;             // Backup window state that will be restored when screen capturing is done. Size and order matches windows of ImGuiCaptureArgs::InCaptureWindows.
+    ImVec2                  _BackupDisplayWindowPadding;    // Backup padding. We set it to {0, 0} during capture.
+    ImVec2                  _BackupDisplaySafeAreaPadding;  // Backup padding. We set it to {0, 0} during capture.
+
+    //-------------------------------------------------------------------------
+    // Functions
+    //-------------------------------------------------------------------------
 
     ImGuiCaptureContext(ImGuiScreenCaptureFunc capture_func = NULL) { ScreenCaptureFunc = capture_func; _MouseRelativeToWindowPos = ImVec2(-FLT_MAX, -FLT_MAX); }
 
     // Should be called after ImGui::NewFrame() and before submitting any UI.
     // (ImGuiTestEngine automatically calls that for you, so this only apply to independently created instance)
-    void    PostNewFrame();
+    void                    PostNewFrame();
 
-    // Capture a screenshot. If this function returns true then it should be called again with same arguments on the next frame.
+    // Update capturing. If this function returns true then it should be called again with same arguments on the next frame.
     ImGuiCaptureStatus      CaptureUpdate(ImGuiCaptureArgs* args);
 
     // Begin video capture. Call CaptureUpdate() every frame afterwards until it returns false.
-    void    BeginVideoCapture(ImGuiCaptureArgs* args);
-    void    EndVideoCapture();
-    bool    IsCapturingVideo();
+    void                    BeginVideoCapture(ImGuiCaptureArgs* args);
+    void                    EndVideoCapture();
+    bool                    IsCapturingVideo();
 };
 
 // Implements UI for capturing images
 // (when using ImGuiTestEngine scripting API you may not need to use this at all)
-struct ImGuiCaptureTool
+struct ImGuiCaptureToolUI
 {
     ImGuiCaptureContext     Context;                                // Screenshot capture context.
     float                   SnapGridSize = 32.0f;                   // Size of the grid cell for "snap to grid" functionality.
@@ -146,7 +152,7 @@ struct ImGuiCaptureTool
     ImVector<ImGuiID>       _SelectedWindows;
 
     // Public
-    ImGuiCaptureTool();
+    ImGuiCaptureToolUI();
     void    ShowCaptureToolWindow(bool* p_open = NULL);             // Render a capture tool window with various options and utilities.
     void    SetCaptureFunc(ImGuiScreenCaptureFunc capture_func);
 
