@@ -83,7 +83,7 @@ void RegisterAppMinimalTests(ImGuiTestEngine* e)
     {
         ctx->SetRef("Dear ImGui Demo");
         ctx->ItemOpen("Widgets");       // Open collapsing header
-        ctx->ItemOpenAll("Basic");      // Open tree node and all its descendent
+        ctx->ItemOpenAll("Basic");      // Open tree node and all its descendant
         ctx->CaptureScreenshotWindow("Dear ImGui Demo", ImGuiCaptureFlags_StitchAll | ImGuiCaptureFlags_HideMouseCursor);
     };
 
@@ -97,8 +97,7 @@ void RegisterAppMinimalTests(ImGuiTestEngine* e)
         ImGuiCaptureArgs args;
         ctx->CaptureInitArgs(&args, ImGuiCaptureFlags_None);
 
-        // FIXME
-        //ctx->CaptureAddWindow(&args, "Dear ImGui Demo"); // Capture single window
+        ctx->CaptureAddWindow(&args, "Dear ImGui Demo"); // Optional: Capture single window
 
         ctx->CaptureBeginVideo(&args);
         ctx->ItemOpen("Widgets");

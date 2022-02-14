@@ -285,8 +285,20 @@ ImGuiCaptureStatus ImGuiCaptureContext::CaptureUpdate(ImGuiCaptureArgs* args)
 
             // File template will most likely end with .png, but we need a different extension for videos.
             if (is_recording_video)
+            {
                 if (char* ext = (char*)ImPathFindExtension(args->OutSavedFileName))
                     ImStrncpy(ext, VideoCaptureExt, (size_t)(ext - args->OutSavedFileName));
+
+                // Determinate size alignment
+                if (args->InSizeAlign == 0)
+                {
+                    if (strcmp(VideoCaptureExt, ".gif") == 0)
+                        args->InSizeAlign = 1;
+                    else
+                        args->InSizeAlign = 2; // mp4 wants >= 2
+                }
+                IM_ASSERT(args->InSizeAlign > 0);
+            }
         }
 
         // When recording, same args should have been passed to BeginVideoCapture().
@@ -395,10 +407,26 @@ ImGuiCaptureStatus ImGuiCaptureContext::CaptureUpdate(ImGuiCaptureArgs* args)
             }
         }
 
-        if (args->InFlags & ImGuiCaptureFlags_StitchAll)
-            IM_ASSERT(_CaptureRect.Min.x >= viewport_rect.Min.x && _CaptureRect.Max.x <= viewport_rect.Max.x);  // Horizontal stitching is not implemented. Do not allow capture that does not fit into viewport horizontally.
-        else
-            _CaptureRect.ClipWith(viewport_rect); // Can not capture area outside of screen. Clip capture rect, since we capturing only visible rect anyway.
+        ImVec2 capture_size_aligned = _CaptureRect.GetSize();
+        if (args->InSizeAlign > 1)
+        {
+            // Round up
+            IM_ASSERT(ImIsPowerOfTwo(args->InSizeAlign));
+            capture_size_aligned.x = (float)IM_MEMALIGN((int)capture_size_aligned.x, args->InSizeAlign);
+            capture_size_aligned.y = (float)IM_MEMALIGN((int)capture_size_aligned.y, args->InSizeAlign);
+
+            // Unless will stray off viewport, then round down
+            if (_CaptureRect.Min.x + capture_size_aligned.x >= viewport_rect.Max.x)
+                capture_size_aligned.x -= args->InSizeAlign;
+            if (_CaptureRect.Min.y + capture_size_aligned.y >= viewport_rect.Max.y)
+                capture_size_aligned.y -= args->InSizeAlign;
+
+            IM_ASSERT(capture_size_aligned.x > 0);
+            IM_ASSERT(capture_size_aligned.y > 0);
+            _CaptureRect.Max = _CaptureRect.Min + capture_size_aligned;
+        }
+
+        _CaptureRect.ClipWith(viewport_rect); // Can not capture area outside of screen. Clip capture rect, since we capturing only visible rect anyway.
 
         // Initialize capture buffer.
         IM_ASSERT(!_CaptureRect.IsInverted());

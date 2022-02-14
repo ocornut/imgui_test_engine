@@ -75,6 +75,7 @@ struct ImGuiCaptureArgs
     char                    InOutputFileTemplate[256] = ""; // Output will be saved to a file if InOutputImageBuf is NULL.
     int                     InRecordFPSTarget = 25;         // FPS target for recording videos.
     int                     InRecordQuality = 23;           // 0 = lossless, 18 = visually lossless, 23 = default, 51 = worst
+    int                     InSizeAlign = 0;                // Resolution alignment (0 = auto, 1 = no alignment, >= 2 = align width/height to be multiple of given value)
 
     // [Output]
     ImVec2                  OutImageSize;                   // Produced image size.
