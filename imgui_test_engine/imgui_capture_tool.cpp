@@ -225,17 +225,18 @@ ImGuiCaptureStatus ImGuiCaptureContext::CaptureUpdate(ImGuiCaptureArgs* args)
 #if IMGUI_TEST_ENGINE_ENABLE_CAPTURE
     ImGuiContext& g = *GImGui;
     ImGuiIO& io = g.IO;
+
+    // Sanity checks
     IM_ASSERT(args != NULL);
     IM_ASSERT(ScreenCaptureFunc != NULL);
     IM_ASSERT(VideoCaptureExt != NULL);
     IM_ASSERT(args->InOutputImageBuf != NULL || args->InOutputFileTemplate[0]);
     IM_ASSERT(args->InRecordFPSTarget != 0);
-
     if (_VideoRecording)
     {
         IM_ASSERT(args->InOutputFileTemplate[0] && "Output filename must be specified when recording videos.");
         IM_ASSERT(args->InOutputImageBuf == NULL && "Output buffer cannot be specified when recording videos.");
-        IM_ASSERT(!(args->InFlags & ImGuiCaptureFlags_StitchAll) && "Image stitching is not supported when recording videos.");
+        IM_ASSERT((args->InFlags & ImGuiCaptureFlags_StitchAll) == 0 && "Image stitching is not supported when recording videos.");
     }
 
     ImGuiCaptureImageBuf* output = args->InOutputImageBuf ? args->InOutputImageBuf : &_CaptureBuf;
@@ -262,7 +263,7 @@ ImGuiCaptureStatus ImGuiCaptureContext::CaptureUpdate(ImGuiCaptureArgs* args)
     {
         IM_ASSERT(args->InCaptureWindows.empty());
         IM_ASSERT(is_capturing_rect);
-        IM_ASSERT(!is_recording_video);
+        IM_ASSERT(is_recording_video == false);
         IM_ASSERT((args->InFlags & ImGuiCaptureFlags_StitchAll) == 0);
     }
 
@@ -279,7 +280,7 @@ ImGuiCaptureStatus ImGuiCaptureContext::CaptureUpdate(ImGuiCaptureArgs* args)
             ImPathFixSeparatorsForCurrentOS(args->OutSavedFileName);
             if (!ImFileCreateDirectoryChain(args->OutSavedFileName, ImPathFindFilename(args->OutSavedFileName)))
             {
-                printf("ImGuiCaptureContext: unable to create directory for file '%s'.\n", args->OutSavedFileName);
+                fprintf(stderr, "ImGuiCaptureContext: unable to create directory for file '%s'.\n", args->OutSavedFileName);
                 return ImGuiCaptureStatus_Error;
             }
 

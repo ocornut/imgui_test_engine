@@ -644,7 +644,7 @@ static void ImGuiTestEngine_ShowTestTool(ImGuiTestEngine* engine, bool* p_open)
         //ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0, 0));
     }
 
-    ImGui::SetNextItemWidth(70 * engine->IO.DpiScale);
+    ImGui::SetNextItemWidth(90 * engine->IO.DpiScale);
     if (ImGui::BeginCombo("##RunSpeed", ImGuiTestEngine_GetRunSpeedName(engine->IO.ConfigRunSpeed), ImGuiComboFlags_None))
     {
         for (ImGuiTestRunSpeed level = (ImGuiTestRunSpeed)0; level < ImGuiTestRunSpeed_COUNT; level = (ImGuiTestRunSpeed)(level + 1))

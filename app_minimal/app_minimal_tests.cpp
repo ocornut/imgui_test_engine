@@ -78,11 +78,12 @@ void RegisterAppMinimalTests(ImGuiTestEngine* e)
     // ## Capture entire Dear ImGui Demo window.
     //-----------------------------------------------------------------
 
-    t = IM_REGISTER_TEST(e, "demo_tests", "capture_imgui_demo");
+    t = IM_REGISTER_TEST(e, "demo_tests", "capture_screenshot");
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         ctx->SetRef("Dear ImGui Demo");
-        ctx->ItemOpenAll("");
+        ctx->ItemOpen("Widgets");       // Open collapsing header
+        ctx->ItemOpenAll("Basic");      // Open tree node and all its descendent
         ctx->CaptureScreenshotWindow("Dear ImGui Demo", ImGuiCaptureFlags_StitchAll | ImGuiCaptureFlags_HideMouseCursor);
     };
 }

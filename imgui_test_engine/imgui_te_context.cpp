@@ -682,7 +682,7 @@ bool ImGuiTestContext::CaptureScreenshotEx(ImGuiCaptureArgs* args)
         return false;
 
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
-    LogDebug("CaptureScreenshot()");
+    LogInfo("CaptureScreenshot()");
 #if IMGUI_TEST_ENGINE_ENABLE_CAPTURE
     bool can_capture = ImGuiTestContext_CanCaptureScreenshot(this);
     if (!can_capture)
@@ -715,8 +715,9 @@ bool ImGuiTestContext::CaptureBeginVideo(ImGuiCaptureArgs* args)
         return false;
 
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
-    LogInfo("CaptureBeginGif()");
-    IM_CHECK_RETV(args != NULL, false);
+    LogInfo("CaptureBeginVideo()");
+    IM_CHECK_SILENT_RETV(args != NULL, false);
+
 #if IMGUI_TEST_ENGINE_ENABLE_CAPTURE
     bool can_capture = ImGuiTestContext_CanCaptureVideo(this);
     if (!can_capture)
@@ -731,7 +732,10 @@ bool ImGuiTestContext::CaptureBeginVideo(ImGuiCaptureArgs* args)
 
 bool ImGuiTestContext::CaptureEndVideo(ImGuiCaptureArgs* args)
 {
-    IM_CHECK_RETV(args != NULL, false);
+    IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
+    LogInfo("CaptureEndVideo()");
+    IM_CHECK_SILENT_RETV(args != NULL, false);
+
     bool ret = Engine->CaptureContext.IsCapturingVideo() && ImGuiTestEngine_CaptureEndVideo(Engine, args);
     if (ret)
     {
@@ -1001,7 +1005,7 @@ void    ImGuiTestContext::ScrollTo(ImGuiTestRef ref, ImGuiAxis axis, float scrol
         return;
 
     ImGuiWindow* window = GetWindowByRef(ref);
-    IM_CHECK(window != NULL);
+    IM_CHECK_SILENT(window != NULL);
 
     // Early out
     const float scroll_target_clamp = ImClamp(scroll_target, 0.0f, window->ScrollMax[axis]);
@@ -1484,7 +1488,7 @@ bool    ImGuiTestContext::WindowTeleportToMakePosVisible(ImGuiTestRef ref, ImVec
     if (IsError())
         return false;
     ImGuiWindow* window = GetWindowByRef(ref);
-    IM_CHECK_RETV(window != NULL, false);
+    IM_CHECK_SILENT_RETV(window != NULL, false);
 
 #ifdef IMGUI_HAS_DOCK
     // This is particularly useful for docked windows, as we have to move root dockspace window instead of docket window
@@ -2362,6 +2366,21 @@ void    ImGuiTestContext::ItemActionAll(ImGuiTestAction action, ImGuiTestRef ref
         max_passes = 99;
     IM_ASSERT(max_depth > 0 && max_passes > 0);
 
+    IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
+    LogDebug("ItemActionAll() %s", GetActionName(action));
+
+    if (!ref_parent.IsEmpty())
+    {
+        // Open parent's parents
+        if (ImGuiTestItemInfo* parent_info = ItemInfoOpenFullPath(ref_parent))
+        {
+            // Open parent
+            if (action == ImGuiTestAction_Open && (parent_info->StatusFlags & ImGuiItemStatusFlags_Openable))
+                ItemOpen(ref_parent, ImGuiTestOpFlags_NoError);
+        }
+    }
+
+    // Find child items
     int actioned_total = 0;
     for (int pass = 0; pass < max_passes; pass++)
     {
