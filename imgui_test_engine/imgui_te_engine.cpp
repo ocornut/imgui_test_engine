@@ -1290,9 +1290,9 @@ static void ImGuiTestEngine_RunTest(ImGuiTestEngine* engine, ImGuiTestContext* c
         {
             // FIXME-VIEWPORT: Tested windows may be in their own viewport. This only captures everything in main viewport. Capture tool may be extended to capture viewport windows as well. This would leave out OS windows which may be a cause of failure.
             ImGuiCaptureArgs args;
+            args.InFlags = ImGuiCaptureFlags_Instant;
             args.InCaptureRect.Min = ImGui::GetMainViewport()->Pos;
             args.InCaptureRect.Max = args.InCaptureRect.Min + ImGui::GetMainViewport()->Size;
-            ctx->CaptureInitArgs(&args, ImGuiCaptureFlags_Instant);
             ImFormatString(args.InOutputFileTemplate, IM_ARRAYSIZE(args.InOutputFileTemplate), "output/failures/%s_%04d.png", ctx->Test->Name, ctx->ErrorCounter);
             if (ImGuiTestEngine_CaptureScreenshot(engine, &args))
                 ctx->LogDebug("Saved '%s' (%d*%d pixels)", args.OutSavedFileName, (int)args.OutImageSize.x, (int)args.OutImageSize.y);

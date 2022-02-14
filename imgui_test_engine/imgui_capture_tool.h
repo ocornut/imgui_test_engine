@@ -73,8 +73,8 @@ struct ImGuiCaptureArgs
     int                     InFileCounter = 0;              // Counter which may be appended to file name when saving. By default counting starts from 1. When done this field holds number of saved files.
     ImGuiCaptureImageBuf*   InOutputImageBuf = NULL;        // Output will be saved to image buffer if specified.
     char                    InOutputFileTemplate[256] = ""; // Output will be saved to a file if InOutputImageBuf is NULL.
-    int                     InRecordFPSTarget = 25;         // FPS target for recording videos.
-    int                     InRecordQuality = 23;           // 0 = lossless, 18 = visually lossless, 23 = default, 51 = worst
+    int                     InRecordFPSTarget = 30;         // FPS target for recording videos.
+    int                     InRecordQuality = 20;           // 0 = lossless, 18 = visually lossless, 23 = default, 51 = worst
     int                     InSizeAlign = 0;                // Resolution alignment (0 = auto, 1 = no alignment, >= 2 = align width/height to be multiple of given value)
 
     // [Output]

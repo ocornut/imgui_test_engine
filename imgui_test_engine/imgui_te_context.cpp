@@ -661,13 +661,6 @@ static bool ImGuiTestContext_CanCaptureVideo(ImGuiTestContext* ctx)
     return io->ConfigCaptureEnabled && ImFileExist(io->PathToFFMPEG);
 }
 
-void ImGuiTestContext::CaptureInitArgs(ImGuiCaptureArgs* args, int flags)
-{
-    args->InFlags = (ImGuiCaptureFlags)flags;
-    ImFormatString(args->InOutputFileTemplate, IM_ARRAYSIZE(args->InOutputFileTemplate), "output/captures/%s_%04d.png", Test->Name, CaptureCounter);
-    CaptureCounter++;
-}
-
 bool ImGuiTestContext::CaptureAddWindow(ImGuiCaptureArgs* args, ImGuiTestRef ref)
 {
     ImGuiWindow* window = GetWindowByRef(ref);
@@ -683,6 +676,14 @@ bool ImGuiTestContext::CaptureScreenshotEx(ImGuiCaptureArgs* args)
 
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
     LogInfo("CaptureScreenshot()");
+
+    // Auto filename
+    if (args->InOutputFileTemplate[0] == 0)
+    {
+        ImFormatString(args->InOutputFileTemplate, IM_ARRAYSIZE(args->InOutputFileTemplate), "output/captures/%s_%04d.png", Test->Name, CaptureCounter);
+        CaptureCounter++;
+    }
+
 #if IMGUI_TEST_ENGINE_ENABLE_CAPTURE
     bool can_capture = ImGuiTestContext_CanCaptureScreenshot(this);
     if (!can_capture)
@@ -704,7 +705,7 @@ bool ImGuiTestContext::CaptureScreenshotEx(ImGuiCaptureArgs* args)
 void ImGuiTestContext::CaptureScreenshotWindow(ImGuiTestRef ref, int capture_flags)
 {
     ImGuiCaptureArgs args;
-    CaptureInitArgs(&args, capture_flags);
+    args.InFlags = capture_flags;
     CaptureAddWindow(&args, ref);
     CaptureScreenshotEx(&args);
 }
@@ -717,6 +718,13 @@ bool ImGuiTestContext::CaptureBeginVideo(ImGuiCaptureArgs* args)
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
     LogInfo("CaptureBeginVideo()");
     IM_CHECK_SILENT_RETV(args != NULL, false);
+
+    // Auto filename
+    if (args->InOutputFileTemplate[0] == 0)
+    {
+        ImFormatString(args->InOutputFileTemplate, IM_ARRAYSIZE(args->InOutputFileTemplate), "output/captures/%s_%04d.mp4", Test->Name, CaptureCounter);
+        CaptureCounter++;
+    }
 
 #if IMGUI_TEST_ENGINE_ENABLE_CAPTURE
     bool can_capture = ImGuiTestContext_CanCaptureVideo(this);

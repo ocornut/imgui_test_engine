@@ -333,7 +333,6 @@ struct ImGuiTestContext
     // - Simple API
     void        CaptureScreenshotWindow(ImGuiTestRef ref, int capture_flags = 0);
     // - Advanced API
-    void        CaptureInitArgs(ImGuiCaptureArgs* args, int capture_flags = 0);     // Clear/initialize 'args' and set default filename
     bool        CaptureAddWindow(ImGuiCaptureArgs* args, ImGuiTestRef ref);
     bool        CaptureScreenshotEx(ImGuiCaptureArgs* args);
     // - Video/GIF capturing API

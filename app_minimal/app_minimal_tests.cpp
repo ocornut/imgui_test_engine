@@ -95,10 +95,7 @@ void RegisterAppMinimalTests(ImGuiTestEngine* e)
         ctx->MouseTeleportToPos(ctx->GetWindowByRef("")->Pos);
 
         ImGuiCaptureArgs args;
-        ctx->CaptureInitArgs(&args, ImGuiCaptureFlags_None);
-
         ctx->CaptureAddWindow(&args, "Dear ImGui Demo"); // Optional: Capture single window
-
         ctx->CaptureBeginVideo(&args);
         ctx->ItemOpen("Widgets");
         ctx->ItemInputValue("Basic/input text", "My first video!");

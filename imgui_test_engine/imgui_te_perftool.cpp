@@ -1819,9 +1819,8 @@ void RegisterTests_PerfTool(ImGuiTestEngine* e)
         // Take a screenshot.
         perf_report_image = "captures/capture_perf_report_0000.png";
         ImGuiCaptureArgs args;
-        ctx->CaptureInitArgs(&args);
+        args.InFlags = ImGuiCaptureFlags_HideMouseCursor;
         args.InCaptureRect = plot_child->Rect();
-        args.InFlags |= ImGuiCaptureFlags_HideMouseCursor;
         ctx->CaptureAddWindow(&args, window->Name);
         ctx->CaptureScreenshotEx(&args);
         ctx->ItemDragWithDelta("splitter", ImVec2(0, -180));        // Show info table

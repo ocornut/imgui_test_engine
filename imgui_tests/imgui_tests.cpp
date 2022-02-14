@@ -4770,7 +4770,6 @@ void RegisterTests_Capture(ImGuiTestEngine* e)
         ctx->SetRef("");
 
         ImGuiCaptureArgs args;
-        ctx->CaptureInitArgs(&args);
         ctx->CaptureAddWindow(&args, "Dear ImGui Demo");
         ctx->CaptureAddWindow(&args, "Example: Simple overlay");
         ctx->CaptureAddWindow(&args, "Example: Custom rendering");
@@ -4867,7 +4866,6 @@ void RegisterTests_Capture(ImGuiTestEngine* e)
     {
         ctx->SetRef("CaptureGif");
         ImGuiCaptureArgs args;
-        ctx->CaptureInitArgs(&args);
         ctx->CaptureAddWindow(&args, "CaptureGif");
         ctx->CaptureBeginVideo(&args);
         ctx->ItemInput("string");
