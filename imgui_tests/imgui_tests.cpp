@@ -4965,7 +4965,7 @@ void RegisterTests_Capture(ImGuiTestEngine* e)
         ctx->ItemOpen("Tables & Columns");
         ctx->ItemClick("Tables/Open all");
         ctx->ItemOpen("Tables/Synced instances", 1);
-        ctx->ItemOpen("Tables/Advanced/Options");
+        //ctx->ItemOpen("Tables/Advanced/Options");
         ctx->ItemOpenAll("Tables/Advanced/Options", 1);
         ctx->ItemOpen("Tables/Tree view/**/Root");
         ctx->ItemInputValue("Tables/Advanced/Options/Other:/items_count", 50000); // Fancy

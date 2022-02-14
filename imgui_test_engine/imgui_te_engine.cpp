@@ -920,9 +920,12 @@ bool ImGuiTestEngine_CaptureBeginVideo(ImGuiTestEngine* engine, ImGuiCaptureArgs
 
     IM_ASSERT(engine->CaptureCurrentArgs == NULL && "Nested captures are not supported.");
 
+    // RunSpeed set to Fast      -> Switch to Cinematic, no throttle
+    // RunSpeed set to Normal    -> No change
+    // RunSpeed set to Cinematic -> No change
     engine->BackupConfigRunSpeed = engine->IO.ConfigRunSpeed;
     engine->BackupConfigNoThrottle = engine->IO.ConfigNoThrottle;
-    if (engine->IO.ConfigRunSpeed != ImGuiTestRunSpeed_Cinematic)
+    if (engine->IO.ConfigRunSpeed == ImGuiTestRunSpeed_Fast)
     {
         engine->IO.ConfigRunSpeed = ImGuiTestRunSpeed_Cinematic;
         engine->IO.ConfigNoThrottle = true;

@@ -258,11 +258,11 @@ ImGuiCaptureStatus ImGuiCaptureContext::CaptureUpdate(ImGuiCaptureArgs* args)
 
     // Capture can be performed in single frame if we are capturing a rect.
     const bool instant_capture = (args->InFlags & ImGuiCaptureFlags_Instant) != 0;
-    const bool is_capturing_rect = args->InCaptureRect.GetWidth() > 0 && args->InCaptureRect.GetHeight() > 0;
+    const bool is_capturing_explicit_rect = args->InCaptureRect.GetWidth() > 0 && args->InCaptureRect.GetHeight() > 0;
     if (instant_capture)
     {
         IM_ASSERT(args->InCaptureWindows.empty());
-        IM_ASSERT(is_capturing_rect);
+        IM_ASSERT(is_capturing_explicit_rect);
         IM_ASSERT(is_recording_video == false);
         IM_ASSERT((args->InFlags & ImGuiCaptureFlags_StitchAll) == 0);
     }
@@ -275,8 +275,7 @@ ImGuiCaptureStatus ImGuiCaptureContext::CaptureUpdate(ImGuiCaptureArgs* args)
         // Create output folder and decide of output filename
         if (args->InOutputFileTemplate[0])
         {
-            size_t file_name_size = IM_ARRAYSIZE(args->OutSavedFileName);
-            ImFormatString(args->OutSavedFileName, file_name_size, args->InOutputFileTemplate, args->InFileCounter + 1);
+            ImFormatString(args->OutSavedFileName, IM_ARRAYSIZE(args->OutSavedFileName), args->InOutputFileTemplate, args->InFileCounter + 1);
             ImPathFixSeparatorsForCurrentOS(args->OutSavedFileName);
             if (!ImFileCreateDirectoryChain(args->OutSavedFileName, ImPathFindFilename(args->OutSavedFileName)))
             {
@@ -303,7 +302,7 @@ ImGuiCaptureStatus ImGuiCaptureContext::CaptureUpdate(ImGuiCaptureArgs* args)
         g.Style.DisplayWindowPadding = ImVec2(0, 0);    // Allow windows to be positioned fully outside of visible viewport.
         g.Style.DisplaySafeAreaPadding = ImVec2(0, 0);
 
-        if (is_capturing_rect)
+        if (is_capturing_explicit_rect)
         {
             // Capture arbitrary rectangle. If any windows are specified in this mode only they will appear in captured region.
             _CaptureRect = args->InCaptureRect;
@@ -333,7 +332,7 @@ ImGuiCaptureStatus ImGuiCaptureContext::CaptureUpdate(ImGuiCaptureArgs* args)
 
         if (args->InFlags & ImGuiCaptureFlags_StitchAll)
         {
-            IM_ASSERT(is_capturing_rect == false && "ImGuiCaptureContext: capture of full window contents is not possible when capturing specified rect.");
+            IM_ASSERT(is_capturing_explicit_rect == false && "ImGuiCaptureContext: capture of full window contents is not possible when capturing specified rect.");
             IM_ASSERT(args->InCaptureWindows.Size == 1 && "ImGuiCaptureContext: capture of full window contents is not possible when capturing more than one window.");
 
             // Resize window to it's contents and capture it's entire width/height. However if window is bigger than it's contents - keep original size.
@@ -372,28 +371,37 @@ ImGuiCaptureStatus ImGuiCaptureContext::CaptureUpdate(ImGuiCaptureArgs* args)
     {
         // Move group of windows so combined rectangle position is at the top-left corner + padding and create combined
         // capture rect of entire area that will be saved to screenshot. Doing this on the second frame because when
-        // ImGuiCaptureToolFlags_StitchFullContents flag is used we need to allow window to reposition.
-        ImVec2 move_offset = ImVec2(args->InPadding, args->InPadding) - _CapturedWindowRect.Min + viewport_rect.Min;
-        for (ImGuiWindow* window : args->InCaptureWindows)
+        // ImGuiCaptureFlags_StitchAll flag is used we need to allow window to reposition.
+        // Repositioning of a window may take multiple frames, depending on whether window was already rendered or not.
+        if (args->InFlags & ImGuiCaptureFlags_StitchAll)
         {
-            // Repositioning of a window may take multiple frames, depending on whether window was already rendered or not.
-            if (args->InFlags & ImGuiCaptureFlags_StitchAll)
+            ImVec2 move_offset = ImVec2(args->InPadding, args->InPadding) - _CapturedWindowRect.Min + viewport_rect.Min;
+            for (ImGuiWindow* window : args->InCaptureWindows) // FIXME: Technically with ImGuiCaptureFlags_StitchAll we are dealing with a single window, so loop is misleading
                 ImGui::SetWindowPos(window, window->Pos + move_offset);
-            if (!is_capturing_rect)
-                _CaptureRect.Add(window->Rect());
         }
 
-        // Include padding in capture.
-        if (!is_capturing_rect)
-            _CaptureRect.Expand(args->InPadding);
+        // Determine capture rectangle if not provided by user
+        if (!is_capturing_explicit_rect)
+        {
+            if (args->InCaptureWindows.Size > 0)
+            {
+                for (ImGuiWindow* window : args->InCaptureWindows)
+                    _CaptureRect.Add(window->Rect());
+                _CaptureRect.Expand(args->InPadding);
+            }
+            else
+            {
+                _CaptureRect = viewport_rect;
+            }
+        }
 
-        const ImRect clip_rect = viewport_rect;
         if (args->InFlags & ImGuiCaptureFlags_StitchAll)
-            IM_ASSERT(_CaptureRect.Min.x >= clip_rect.Min.x && _CaptureRect.Max.x <= clip_rect.Max.x);  // Horizontal stitching is not implemented. Do not allow capture that does not fit into viewport horizontally.
+            IM_ASSERT(_CaptureRect.Min.x >= viewport_rect.Min.x && _CaptureRect.Max.x <= viewport_rect.Max.x);  // Horizontal stitching is not implemented. Do not allow capture that does not fit into viewport horizontally.
         else
-            _CaptureRect.ClipWith(clip_rect);   // Can not capture area outside of screen. Clip capture rect, since we capturing only visible rect anyway.
+            _CaptureRect.ClipWith(viewport_rect); // Can not capture area outside of screen. Clip capture rect, since we capturing only visible rect anyway.
 
         // Initialize capture buffer.
+        IM_ASSERT(!_CaptureRect.IsInverted());
         args->OutImageSize = _CaptureRect.GetSize();
         output->CreateEmpty((int)_CaptureRect.GetWidth(), (int)_CaptureRect.GetHeight());
     }
@@ -424,7 +432,7 @@ ImGuiCaptureStatus ImGuiCaptureContext::CaptureUpdate(ImGuiCaptureArgs* args)
             const ImGuiID viewport_id = 0;
             if (!ScreenCaptureFunc(viewport_id, x1, y1, w, h, &output->Data[_ChunkNo * w * capture_height], ScreenCaptureUserData))
             {
-                printf("Screen capture function failed.\n");
+                fprintf(stderr, "Screen capture function failed.\n");
                 return ImGuiCaptureStatus_Error;
             }
 

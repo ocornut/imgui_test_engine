@@ -86,4 +86,25 @@ void RegisterAppMinimalTests(ImGuiTestEngine* e)
         ctx->ItemOpenAll("Basic");      // Open tree node and all its descendent
         ctx->CaptureScreenshotWindow("Dear ImGui Demo", ImGuiCaptureFlags_StitchAll | ImGuiCaptureFlags_HideMouseCursor);
     };
+
+    t = IM_REGISTER_TEST(e, "demo_tests", "capture_video");
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ctx->SetRef("Dear ImGui Demo");
+        ctx->ItemCloseAll("");
+        ctx->MouseTeleportToPos(ctx->GetWindowByRef("")->Pos);
+
+        ImGuiCaptureArgs args;
+        ctx->CaptureInitArgs(&args, ImGuiCaptureFlags_None);
+
+        // FIXME
+        //ctx->CaptureAddWindow(&args, "Dear ImGui Demo"); // Capture single window
+
+        ctx->CaptureBeginVideo(&args);
+        ctx->ItemOpen("Widgets");
+        ctx->ItemInputValue("Basic/input text", "My first video!");
+        ctx->CaptureEndVideo(&args);
+    };
+
+
 }

@@ -737,20 +737,28 @@ bool ImGuiTestContext::CaptureEndVideo(ImGuiCaptureArgs* args)
     IM_CHECK_SILENT_RETV(args != NULL, false);
 
     bool ret = Engine->CaptureContext.IsCapturingVideo() && ImGuiTestEngine_CaptureEndVideo(Engine, args);
-    if (ret)
+    if (!ret)
+        return false;
+
+    // In-progress capture was canceled by user. Delete incomplete file.
+    if (IsError())
     {
-        // In-progress capture was canceled by user. Delete incomplete file.
-        if (IsError())
-        {
-            //ImFileDelete(args->OutSavedFileName);
-            return false;
-        }
-        bool can_capture = ImGuiTestContext_CanCaptureVideo(this);
-        if (can_capture)
-            LogDebug("Saved '%s' (%d*%d pixels)", args->OutSavedFileName, (int)args->OutImageSize.x, (int)args->OutImageSize.y);
-        else
-            LogWarning("Skipped saving '%s' (%d*%d pixels) (enable in 'Misc->Options')", args->OutSavedFileName, (int)args->OutImageSize.x, (int)args->OutImageSize.y);
+        //ImFileDelete(args->OutSavedFileName);
+        return false;
     }
+    bool can_capture = ImGuiTestContext_CanCaptureVideo(this);
+    if (can_capture)
+    {
+        LogInfo("Saved '%s' (%d*%d pixels)", args->OutSavedFileName, (int)args->OutImageSize.x, (int)args->OutImageSize.y);
+    }
+    else
+    {
+        if (!EngineIO->ConfigCaptureEnabled)
+            LogWarning("Skipped saving '%s' video because: io.ConfigCaptureEnabled == false (enable in Misc->Options)", args->OutSavedFileName);
+        else
+            LogWarning("Skipped saving '%s' video because: FFMPEG not found.", args->OutSavedFileName);
+    }
+
     return ret;
 }
 
