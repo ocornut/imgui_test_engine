@@ -1772,24 +1772,36 @@ static void*    ImGuiTestEngine_SettingsReadOpen(ImGuiContext*, ImGuiSettingsHan
     return (void*)1;
 }
 
+static bool     SettingsTryReadString(const char* line, const char* prefix, char* out_buf, size_t out_buf_size)
+{
+    // Could also use scanf() with "%[^\n]" but it won't bound check.
+    size_t prefix_len = strlen(prefix);
+    if (strncmp(line, prefix, prefix_len) != 0)
+        return false;
+    line += prefix_len;
+    IM_ASSERT(out_buf_size >= strlen(line) + 1);
+    ImFormatString(out_buf, out_buf_size, "%s", line);
+    return true;
+}
+
 static void     ImGuiTestEngine_SettingsReadLine(ImGuiContext* ui_ctx, ImGuiSettingsHandler*, void* entry, const char* line)
 {
-    ImGuiTestEngine* engine = (ImGuiTestEngine*)ui_ctx->TestEngine;
-    IM_ASSERT(engine != NULL);
-    IM_ASSERT(engine->UiContextTarget == ui_ctx);
+    ImGuiTestEngine* e = (ImGuiTestEngine*)ui_ctx->TestEngine;
+    IM_ASSERT(e != NULL);
+    IM_ASSERT(e->UiContextTarget == ui_ctx);
     IM_UNUSED(entry);
 
     int n = 0;
-    /**/ if (sscanf(line, "FilterTests=%s", engine->UiFilterTests.InputBuf) == 1)   { engine->UiFilterTests.Build(); }
-    else if (sscanf(line, "FilterPerfs=%s", engine->UiFilterPerfs.InputBuf) == 1)   { engine->UiFilterPerfs.Build(); }
-    else if (sscanf(line, "LogHeight=%f", &engine->UiLogHeight) == 1)               { }
-    else if (sscanf(line, "CaptureTool=%d", &n) == 1)                               { engine->UiCaptureToolOpen = (n != 0); }
-    else if (sscanf(line, "PerfTool=%d", &n) == 1)                                  { engine->UiPerfToolOpen = (n != 0); }
-    else if (sscanf(line, "StackTool=%d", &n) == 1)                                 { engine->UiStackToolOpen = (n != 0); }
-    else if (sscanf(line, "CaptureEnabled=%d", &n) == 1)                            { engine->IO.ConfigCaptureEnabled = (n != 0); }
-    else if (sscanf(line, "CaptureOnError=%d", &n) == 1)                            { engine->IO.ConfigCaptureOnError = (n != 0); }
-    else if (sscanf(line, "VideoCapturePathToFFMPEG=%s", engine->IO.PathToFFMPEG) == 1) { }
-    else if (sscanf(line, "VideoCaptureExt=%s", engine->IO.VideoCaptureExt) == 1)   { }
+    /**/ if (SettingsTryReadString(line, "FilterTests=", e->UiFilterTests.InputBuf, IM_ARRAYSIZE(e->UiFilterTests.InputBuf)))       { e->UiFilterTests.Build(); }
+    else if (SettingsTryReadString(line, "FilterPerfs=", e->UiFilterPerfs.InputBuf, IM_ARRAYSIZE(e->UiFilterPerfs.InputBuf)))       { e->UiFilterPerfs.Build(); }
+    else if (sscanf(line, "LogHeight=%f", &e->UiLogHeight) == 1)                                                                    { }
+    else if (sscanf(line, "CaptureTool=%d", &n) == 1)                                                                               { e->UiCaptureToolOpen = (n != 0); }
+    else if (sscanf(line, "PerfTool=%d", &n) == 1)                                                                                  { e->UiPerfToolOpen = (n != 0); }
+    else if (sscanf(line, "StackTool=%d", &n) == 1)                                                                                 { e->UiStackToolOpen = (n != 0); }
+    else if (sscanf(line, "CaptureEnabled=%d", &n) == 1)                                                                            { e->IO.ConfigCaptureEnabled = (n != 0); }
+    else if (sscanf(line, "CaptureOnError=%d", &n) == 1)                                                                            { e->IO.ConfigCaptureOnError = (n != 0); }
+    else if (SettingsTryReadString(line, "VideoCapturePathToFFMPEG=",e->IO.PathToFFMPEG,    IM_ARRAYSIZE(e->IO.PathToFFMPEG)))      { }
+    else if (SettingsTryReadString(line, "VideoCaptureExt=",         e->IO.VideoCaptureExt, IM_ARRAYSIZE(e->IO.VideoCaptureExt)))   { }
 }
 
 static void     ImGuiTestEngine_SettingsApplyAll(ImGuiContext* ui_ctx, ImGuiSettingsHandler* handler)
