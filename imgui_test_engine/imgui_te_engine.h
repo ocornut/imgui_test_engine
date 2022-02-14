@@ -148,7 +148,7 @@ ImGuiTestEngine*    ImGuiTestEngine_CreateContext(ImGuiContext* ui_ctx);        
 void                ImGuiTestEngine_DestroyContext(ImGuiTestEngine* engine);        // Destroy test engine. Call after ImGui::DestroyContext() so test engine specific ini data gets saved.
 void                ImGuiTestEngine_Start(ImGuiTestEngine* engine);
 void                ImGuiTestEngine_Stop(ImGuiTestEngine* engine);
-void                ImGuiTestEngine_PostSwap(ImGuiTestEngine* engine);              // Call every frame after framebuffer swap, will process screen capture.
+void                ImGuiTestEngine_PostSwap(ImGuiTestEngine* engine);              // Call every frame after framebuffer swap, will process screen capture and call test_io.ScreenCaptureFunc()
 ImGuiTestEngineIO&  ImGuiTestEngine_GetIO(ImGuiTestEngine* engine);
 void                ImGuiTestEngine_RebootUiContext(ImGuiTestEngine* engine);
 
@@ -182,7 +182,7 @@ struct ImGuiTestEngineIO
     // Inputs: Functions
     ImGuiTestCoroutineInterface*                CoroutineFuncs = NULL;          // (Required) Coroutine functions (see imgui_te_coroutines.h)
     ImFuncPtr(ImGuiTestEngineSrcFileOpenFunc)   SrcFileOpenFunc = NULL;         // (Optional) To open source files from test engine UI
-    ImFuncPtr(ImGuiTestEngineScreenCaptureFunc) ScreenCaptureFunc = NULL;       // (Optional) To capture graphics output
+    ImFuncPtr(ImGuiTestEngineScreenCaptureFunc) ScreenCaptureFunc = NULL;       // (Optional) To capture graphics output (application _MUST_ call ImGuiTestEngine_PostSwap() function after swapping is framebuffer)
     void*                                       SrcFileOpenUserData = NULL;     // (Optional) User data for SrcFileOpenFunc
     void*                                       ScreenCaptureUserData = NULL;   // (Optional) User data for ScreenCaptureFunc
 
@@ -296,7 +296,17 @@ struct ImGuiTestLog
     ImGuiTestLog() {}
     bool    IsEmpty() const         { return Buffer.empty(); }
     void    Clear();
-    int     ExtractLinesForVerboseLevels(ImGuiTestVerboseLevel level_min, ImGuiTestVerboseLevel level_max, ImGuiTextBuffer* buffer);
+
+    // Extract log contents filtered per log-level.
+    // Output:
+    // - If 'buffer != NULL': all extracted lines are appended to 'buffer'. Use 'buffer->c_str()' on your side to obtain the text.
+    // - Return value: number of lines extracted (should be equivalent to number of '\n' inside buffer->c_str()).
+    // - You may call the function with buffer == NULL to only obtain a count without getting the data.
+    // Verbose levels are inclusive:
+    // - To get ONLY Error:                     Use level_min == ImGuiTestVerboseLevel_Error, level_max = ImGuiTestVerboseLevel_Error
+    // - To get ONLY Error and Warnings:        Use level_min == ImGuiTestVerboseLevel_Error, level_max = ImGuiTestVerboseLevel_Warning
+    // - To get All Errors, Warnings, Debug...  Use level_min == ImGuiTestVerboseLevel_Error, level_max = ImGuiTestVerboseLevel_Trace
+    int     ExtractLinesForVerboseLevels(ImGuiTestVerboseLevel level_min, ImGuiTestVerboseLevel level_max, ImGuiTextBuffer* out_buffer);
 
     // [Internal]
     void    UpdateLineOffsets(ImGuiTestEngineIO* engine_io, ImGuiTestVerboseLevel level, const char* start);

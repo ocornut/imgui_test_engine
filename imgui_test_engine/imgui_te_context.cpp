@@ -649,7 +649,13 @@ ImVec2 ImGuiTestContext::GetMainMonitorWorkSize()
     return ImGui::GetMainViewport()->WorkSize;
 }
 
-static bool ImGuiTestContext_CanCapture(ImGuiTestContext* ctx)
+static bool ImGuiTestContext_CanCaptureScreenshot(ImGuiTestContext* ctx)
+{
+    ImGuiTestEngineIO* io = ctx->EngineIO;
+    return io->ConfigCaptureEnabled;
+}
+
+static bool ImGuiTestContext_CanCaptureVideo(ImGuiTestContext* ctx)
 {
     ImGuiTestEngineIO* io = ctx->EngineIO;
     return io->ConfigCaptureEnabled && ImFileExist(io->PathToFFMPEG);
@@ -678,10 +684,11 @@ bool ImGuiTestContext::CaptureScreenshotEx(ImGuiCaptureArgs* args)
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
     LogDebug("CaptureScreenshot()");
 #if IMGUI_TEST_ENGINE_ENABLE_CAPTURE
-    if (!ImGuiTestContext_CanCapture(this))
+    bool can_capture = ImGuiTestContext_CanCaptureScreenshot(this);
+    if (!can_capture)
         args->InFlags |= ImGuiCaptureFlags_NoSave;
     bool ret = ImGuiTestEngine_CaptureScreenshot(Engine, args);
-    if (ImGuiTestContext_CanCapture(this))
+    if (can_capture)
         LogInfo("Saved '%s' (%d*%d pixels)", args->OutSavedFileName, (int)args->OutImageSize.x, (int)args->OutImageSize.y);
     else
         LogWarning("Skipped saving '%s' (%d*%d pixels) (enable in 'Misc->Options')", args->OutSavedFileName, (int)args->OutImageSize.x, (int)args->OutImageSize.y);
@@ -711,9 +718,10 @@ bool ImGuiTestContext::CaptureBeginVideo(ImGuiCaptureArgs* args)
     LogInfo("CaptureBeginGif()");
     IM_CHECK_RETV(args != NULL, false);
 #if IMGUI_TEST_ENGINE_ENABLE_CAPTURE
-    if (!ImGuiTestContext_CanCapture(this))
+    bool can_capture = ImGuiTestContext_CanCaptureVideo(this);
+    if (!can_capture)
         args->InFlags |= ImGuiCaptureFlags_NoSave;
-    return ImGuiTestEngine_CaptureBeginGif(Engine, args);
+    return ImGuiTestEngine_CaptureBeginVideo(Engine, args);
 #else
     IM_UNUSED(args);
     LogWarning("Skipped recording GIF: capture disabled by IMGUI_TEST_ENGINE_ENABLE_CAPTURE.");
@@ -724,7 +732,7 @@ bool ImGuiTestContext::CaptureBeginVideo(ImGuiCaptureArgs* args)
 bool ImGuiTestContext::CaptureEndVideo(ImGuiCaptureArgs* args)
 {
     IM_CHECK_RETV(args != NULL, false);
-    bool ret = Engine->CaptureContext.IsCapturingVideo() && ImGuiTestEngine_CaptureEndGif(Engine, args);
+    bool ret = Engine->CaptureContext.IsCapturingVideo() && ImGuiTestEngine_CaptureEndVideo(Engine, args);
     if (ret)
     {
         // In-progress capture was canceled by user. Delete incomplete file.
@@ -733,7 +741,8 @@ bool ImGuiTestContext::CaptureEndVideo(ImGuiCaptureArgs* args)
             //ImFileDelete(args->OutSavedFileName);
             return false;
         }
-        if (ImGuiTestContext_CanCapture(this))
+        bool can_capture = ImGuiTestContext_CanCaptureVideo(this);
+        if (can_capture)
             LogDebug("Saved '%s' (%d*%d pixels)", args->OutSavedFileName, (int)args->OutImageSize.x, (int)args->OutImageSize.y);
         else
             LogWarning("Skipped saving '%s' (%d*%d pixels) (enable in 'Misc->Options')", args->OutSavedFileName, (int)args->OutImageSize.x, (int)args->OutImageSize.y);

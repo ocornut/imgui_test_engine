@@ -92,7 +92,7 @@ int main(int argc, char** argv)
         ImGui::Render();
         app->Render(app);
 
-        // Post-swap handler is required to support screen capture
+        // Post-swap handler is REQUIRED in order to support screen capture
         ImGuiTestEngine_PostSwap(engine);
     }
 

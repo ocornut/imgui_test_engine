@@ -319,6 +319,7 @@ int main(int argc, char** argv)
 
         app->Render(app);
 
+        // Post-swap handler is REQUIRED in order to support screen capture
 #ifdef IMGUI_ENABLE_TEST_ENGINE
         ImGuiTestEngine_PostSwap(engine);
 #endif

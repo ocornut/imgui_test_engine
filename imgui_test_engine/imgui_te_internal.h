@@ -157,13 +157,16 @@ struct ImGuiTestEngine
     ImMovingAverage<double>     PerfDeltaTime1000;
     ImGuiPerfTool*              PerfTool = NULL;
 
+    // Screen/Video Capturing
+    ImGuiCaptureTool            CaptureTool;
+    ImGuiCaptureContext         CaptureContext;
+    ImGuiCaptureArgs*           CaptureCurrentArgs = NULL;
+
     // Tools
+    bool                        PostSwapCalled = false;
     bool                        ToolDebugRebootUiContext = false;   // Completely shutdown and recreate the dear imgui context in place
     bool                        ToolSlowDown = false;
     int                         ToolSlowDownMs = 100;
-    ImGuiCaptureTool            CaptureTool;
-    ImGuiCaptureContext         CaptureContext;
-    ImGuiCaptureArgs*           CurrentCaptureArgs = NULL;
     ImGuiTestRunSpeed           BackupConfigRunSpeed = ImGuiTestRunSpeed_Fast;
     bool                        BackupConfigNoThrottle = false;
 
@@ -173,7 +176,7 @@ struct ImGuiTestEngine
 };
 
 //-------------------------------------------------------------------------
-// FUNCTIONS
+// INTERNAL FUNCTIONS
 //-------------------------------------------------------------------------
 
 ImGuiTestItemInfo*  ImGuiTestEngine_FindItemInfo(ImGuiTestEngine* engine, ImGuiID id, const char* debug_id);
@@ -181,10 +184,13 @@ void                ImGuiTestEngine_Yield(ImGuiTestEngine* engine);
 void                ImGuiTestEngine_SetDeltaTime(ImGuiTestEngine* engine, float delta_time);
 int                 ImGuiTestEngine_GetFrameCount(ImGuiTestEngine* engine);
 double              ImGuiTestEngine_GetPerfDeltaTime500Average(ImGuiTestEngine* engine);
-bool                ImGuiTestEngine_CaptureScreenshot(ImGuiTestEngine* engine, ImGuiCaptureArgs* args);
-bool                ImGuiTestEngine_CaptureBeginGif(ImGuiTestEngine* engine, ImGuiCaptureArgs* args);
-bool                ImGuiTestEngine_CaptureEndGif(ImGuiTestEngine* engine, ImGuiCaptureArgs* args);
 
+// Screen/Video Capturing
+bool                ImGuiTestEngine_CaptureScreenshot(ImGuiTestEngine* engine, ImGuiCaptureArgs* args);
+bool                ImGuiTestEngine_CaptureBeginVideo(ImGuiTestEngine* engine, ImGuiCaptureArgs* args);
+bool                ImGuiTestEngine_CaptureEndVideo(ImGuiTestEngine* engine, ImGuiCaptureArgs* args);
+
+// Helper functions
 const char*         ImGuiTestEngine_GetRunSpeedName(ImGuiTestRunSpeed v);
 const char*         ImGuiTestEngine_GetVerboseLevelName(ImGuiTestVerboseLevel v);
 

@@ -592,6 +592,7 @@ int main(int argc, char** argv)
         app_window->ClearColor = g_App.ClearColor;
         app_window->Render(app_window);
 
+        // Post-swap handler is REQUIRED in order to support screen capture
         ImGuiTestEngine_PostSwap(engine);
     }
 

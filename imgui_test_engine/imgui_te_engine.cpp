@@ -371,22 +371,24 @@ void    ImGuiTestEngine_RebootUiContext(ImGuiTestEngine* engine)
 
 void    ImGuiTestEngine_PostSwap(ImGuiTestEngine* engine)
 {
+    engine->PostSwapCalled = true;
+
     if (engine->IO.ConfigFixedDeltaTime != 0.0f)
         ImGuiTestEngine_SetDeltaTime(engine, engine->IO.ConfigFixedDeltaTime);
 
     // Capture a screenshot from main thread while coroutine waits
-    if (engine->CurrentCaptureArgs != NULL)
+    if (engine->CaptureCurrentArgs != NULL)
     {
         engine->CaptureContext.ScreenCaptureFunc = engine->IO.ScreenCaptureFunc;
         engine->CaptureContext.ScreenCaptureUserData = engine->IO.ScreenCaptureUserData;
         engine->CaptureContext.VideoCapturePathToFFMPEG = engine->IO.PathToFFMPEG;
         engine->CaptureContext.VideoCaptureExt = engine->IO.VideoCaptureExt;
-        ImGuiCaptureStatus status = engine->CaptureContext.CaptureUpdate(engine->CurrentCaptureArgs);
+        ImGuiCaptureStatus status = engine->CaptureContext.CaptureUpdate(engine->CaptureCurrentArgs);
         if (status != ImGuiCaptureStatus_InProgress)
         {
             if (status == ImGuiCaptureStatus_Done)
-                ImStrncpy(engine->CaptureTool.LastOutputFileName, engine->CurrentCaptureArgs->OutSavedFileName, IM_ARRAYSIZE(engine->CaptureTool.LastOutputFileName));
-            engine->CurrentCaptureArgs = NULL;
+                ImStrncpy(engine->CaptureTool.LastOutputFileName, engine->CaptureCurrentArgs->OutSavedFileName, IM_ARRAYSIZE(engine->CaptureTool.LastOutputFileName));
+            engine->CaptureCurrentArgs = NULL;
         }
     }
 }
@@ -871,7 +873,7 @@ bool ImGuiTestEngine_CaptureScreenshot(ImGuiTestEngine* engine, ImGuiCaptureArgs
         return false;
     }
 
-    IM_ASSERT(engine->CurrentCaptureArgs == NULL && "Nested captures are not supported.");
+    IM_ASSERT(engine->CaptureCurrentArgs == NULL && "Nested captures are not supported.");
 
     // Graphics API must render a window so it can be captured
     // FIXME: This should work without this, as long as Present vs Vsync are separated (we need a Present, we don't need Vsync)
@@ -886,10 +888,19 @@ bool ImGuiTestEngine_CaptureScreenshot(ImGuiTestEngine* engine, ImGuiCaptureArgs
     if ((args->InFlags & ImGuiCaptureFlags_Instant) == 0)
         ImGuiTestEngine_Yield(engine);
 
-    // This will yield until ImGui::Render() -> ImGuiTestEngine_PostSwap() -> ImGuiCaptureContext::CaptureUpdate() return false.
-    engine->CurrentCaptureArgs = args;
-    while (engine->CurrentCaptureArgs != NULL)
+    // This will yield until ImGuiTestEngine_PostSwap() -> ImGuiCaptureContext::CaptureUpdate() return false.
+    // - CaptureUpdate() will call user provided test_io.ScreenCaptureFunc() function
+    // - Capturing is likely to take multiple frames depending on settings.
+    int frames_yielded = 0;
+    engine->CaptureCurrentArgs = args;
+    engine->PostSwapCalled = false;
+    while (engine->CaptureCurrentArgs != NULL)
+    {
         ImGuiTestEngine_Yield(engine);
+        frames_yielded++;
+        if (frames_yielded > 4)
+            IM_ASSERT(engine->PostSwapCalled && "ImGuiTestEngine_PostSwap() is not being called by application! Must be called in order.");
+    }
 
     // Verify that the ImGuiCaptureFlags_Instant flag got honored
     if (args->InFlags & ImGuiCaptureFlags_Instant)
@@ -899,7 +910,7 @@ bool ImGuiTestEngine_CaptureScreenshot(ImGuiTestEngine* engine, ImGuiCaptureArgs
     return true;
 }
 
-bool ImGuiTestEngine_CaptureBeginGif(ImGuiTestEngine* engine, ImGuiCaptureArgs* args)
+bool ImGuiTestEngine_CaptureBeginVideo(ImGuiTestEngine* engine, ImGuiCaptureArgs* args)
 {
     if (engine->IO.ScreenCaptureFunc == NULL)
     {
@@ -907,7 +918,7 @@ bool ImGuiTestEngine_CaptureBeginGif(ImGuiTestEngine* engine, ImGuiCaptureArgs* 
         return false;
     }
 
-    IM_ASSERT(engine->CurrentCaptureArgs == NULL && "Nested captures are not supported.");
+    IM_ASSERT(engine->CaptureCurrentArgs == NULL && "Nested captures are not supported.");
 
     engine->BackupConfigRunSpeed = engine->IO.ConfigRunSpeed;
     engine->BackupConfigNoThrottle = engine->IO.ConfigNoThrottle;
@@ -917,24 +928,24 @@ bool ImGuiTestEngine_CaptureBeginGif(ImGuiTestEngine* engine, ImGuiCaptureArgs* 
         engine->IO.ConfigNoThrottle = true;
         engine->IO.ConfigFixedDeltaTime = 1.0f / 60.0f;
     }
-    engine->CurrentCaptureArgs = args;
+    engine->CaptureCurrentArgs = args;
     engine->CaptureContext.BeginVideoCapture(args);
     return true;
 }
 
-bool ImGuiTestEngine_CaptureEndGif(ImGuiTestEngine* engine, ImGuiCaptureArgs* args)
+bool ImGuiTestEngine_CaptureEndVideo(ImGuiTestEngine* engine, ImGuiCaptureArgs* args)
 {
     IM_UNUSED(args);
-    IM_ASSERT(engine->CurrentCaptureArgs != NULL && "No capture is in progress.");
+    IM_ASSERT(engine->CaptureCurrentArgs != NULL && "No capture is in progress.");
     IM_ASSERT(engine->CaptureContext.IsCapturingVideo() && "No gif capture is in progress.");
 
     engine->CaptureContext.EndVideoCapture();
-    while (engine->CurrentCaptureArgs != NULL)   // Wait until last frame is captured and gif is saved.
+    while (engine->CaptureCurrentArgs != NULL)   // Wait until last frame is captured and gif is saved.
         ImGuiTestEngine_Yield(engine);
     engine->IO.ConfigRunSpeed = engine->BackupConfigRunSpeed;
     engine->IO.ConfigNoThrottle = engine->BackupConfigNoThrottle;
     engine->IO.ConfigFixedDeltaTime = 0;
-    engine->CurrentCaptureArgs = NULL;
+    engine->CaptureCurrentArgs = NULL;
     return true;
 }
 
@@ -1315,7 +1326,7 @@ static void ImGuiTestEngine_RunTest(ImGuiTestEngine* engine, ImGuiTestContext* c
         }
     }
 
-    IM_ASSERT(engine->CurrentCaptureArgs == NULL && "Active capture was not terminated in the test code.");
+    IM_ASSERT(engine->CaptureCurrentArgs == NULL && "Active capture was not terminated in the test code.");
 
     // Process and display result/status
     if (test->Status == ImGuiTestStatus_Running)
@@ -1652,8 +1663,8 @@ bool ImGuiTestEngine_Check(const char* file, const char* func, int line, ImGuiTe
             // args struct is on test function stack and would be lost when test function returns.
             if (engine->CaptureContext.IsCapturingVideo())
             {
-                ImGuiCaptureArgs* args = engine->CurrentCaptureArgs;
-                ImGuiTestEngine_CaptureEndGif(engine, args);
+                ImGuiCaptureArgs* args = engine->CaptureCurrentArgs;
+                ImGuiTestEngine_CaptureEndVideo(engine, args);
                 //ImFileDelete(args->OutSavedFileName);
             }
             ctx->ErrorCounter++;
@@ -1823,17 +1834,21 @@ void ImGuiTestLog::Clear()
     memset(&CountPerLevel, 0, sizeof(CountPerLevel));
 }
 
-// Level are inclusive.
-// - To get ONLY Error:                 Use level_min == ImGuiTestVerboseLevel_Error, level_max = ImGuiTestVerboseLevel_Error
-// - To get ONLY Error and Warnings:    Use level_min == ImGuiTestVerboseLevel_Error, level_max = ImGuiTestVerboseLevel_Warning
-// - To get Errors, Warnings, Debug...  Use level_min == ImGuiTestVerboseLevel_Error, level_max = ImGuiTestVerboseLevel_Trace
-int ImGuiTestLog::ExtractLinesForVerboseLevels(ImGuiTestVerboseLevel level_min, ImGuiTestVerboseLevel level_max, ImGuiTextBuffer* buffer)
+// Output:
+// - If 'buffer != NULL': all extracted lines are appended to 'buffer'. Use 'buffer->c_str()' on your side to obtain the text.
+// - Return value: number of lines extracted (should be equivalent to number of '\n' inside buffer->c_str()).
+// - You may call the function with buffer == NULL to only obtain a count without getting the data.
+// Verbose levels are inclusive:
+// - To get ONLY Error:                     Use level_min == ImGuiTestVerboseLevel_Error, level_max = ImGuiTestVerboseLevel_Error
+// - To get ONLY Error and Warnings:        Use level_min == ImGuiTestVerboseLevel_Error, level_max = ImGuiTestVerboseLevel_Warning
+// - To get All Errors, Warnings, Debug...  Use level_min == ImGuiTestVerboseLevel_Error, level_max = ImGuiTestVerboseLevel_Trace
+int ImGuiTestLog::ExtractLinesForVerboseLevels(ImGuiTestVerboseLevel level_min, ImGuiTestVerboseLevel level_max, ImGuiTextBuffer* out_buffer)
 {
     IM_ASSERT(level_min <= level_max);
 
     // Return count
     int count = 0;
-    if (buffer == NULL)
+    if (out_buffer == NULL)
     {
         for (int n = level_min; n <= level_max; n++)
             count += CountPerLevel[n];
@@ -1846,7 +1861,7 @@ int ImGuiTestLog::ExtractLinesForVerboseLevels(ImGuiTestVerboseLevel level_min, 
         {
             const char* line_begin = Buffer.c_str() + line_info.LineOffset;
             const char* line_end = strchr(line_begin, '\n');
-            buffer->append(line_begin, line_end[0] == '\n' ? line_end + 1 : line_end);
+            out_buffer->append(line_begin, line_end[0] == '\n' ? line_end + 1 : line_end);
             count++;
         }
     return count;
