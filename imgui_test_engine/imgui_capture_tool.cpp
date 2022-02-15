@@ -407,6 +407,11 @@ ImGuiCaptureStatus ImGuiCaptureContext::CaptureUpdate(ImGuiCaptureArgs* args)
             }
         }
 
+        // Can not capture area outside of screen. Clip capture rect, since we capturing only visible rect anyway.
+        _CaptureRect.ClipWith(viewport_rect);
+
+        // Align size
+        // FIXME: ffmpeg + codec can possibly handle that better on their side.
         ImVec2 capture_size_aligned = _CaptureRect.GetSize();
         if (args->InSizeAlign > 1)
         {
@@ -425,8 +430,6 @@ ImGuiCaptureStatus ImGuiCaptureContext::CaptureUpdate(ImGuiCaptureArgs* args)
             IM_ASSERT(capture_size_aligned.y > 0);
             _CaptureRect.Max = _CaptureRect.Min + capture_size_aligned;
         }
-
-        _CaptureRect.ClipWith(viewport_rect); // Can not capture area outside of screen. Clip capture rect, since we capturing only visible rect anyway.
 
         // Initialize capture buffer.
         IM_ASSERT(!_CaptureRect.IsInverted());
