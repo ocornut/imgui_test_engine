@@ -90,22 +90,17 @@ using namespace IMGUI_STB_NAMESPACE;
 void ImGuiCaptureImageBuf::Clear()
 {
     if (Data)
-        free(Data);
+        IM_FREE(Data);
     Data = NULL;
 }
 
 void ImGuiCaptureImageBuf::CreateEmpty(int w, int h)
 {
-    CreateEmptyNoMemClear(w, h);
-    memset(Data, 0, (size_t)(Width * Height * 4));
-}
-
-void ImGuiCaptureImageBuf::CreateEmptyNoMemClear(int w, int h)
-{
     Clear();
     Width = w;
     Height = h;
-    Data = (unsigned int*)malloc((size_t)(Width * Height * 4));
+    Data = (unsigned int*)IM_ALLOC((size_t)(Width * Height * 4));
+    memset(Data, 0, (size_t)(Width * Height * 4));
 }
 
 bool ImGuiCaptureImageBuf::SaveFile(const char* filename)
@@ -131,18 +126,6 @@ void ImGuiCaptureImageBuf::RemoveAlpha()
     }
 }
 
-void ImGuiCaptureImageBuf::BlitSubImage(int dst_x, int dst_y, int src_x, int src_y, int w, int h, const ImGuiCaptureImageBuf* source)
-{
-    IM_ASSERT(source && "Source image is null.");
-    IM_ASSERT(dst_x >= 0 && dst_y >= 0 && "Destination coordinates can not be negative.");
-    IM_ASSERT(src_x >= 0 && src_y >= 0 && "Source coordinates can not be negative.");
-    IM_ASSERT(dst_x + w <= Width && dst_y + h <= Height && "Destination image is too small.");
-    IM_ASSERT(src_x + w <= source->Width && src_y + h <= source->Height && "Source image is too small.");
-
-    for (int y = 0; y < h; y++)
-        memcpy(&Data[(dst_y + y) * Width + dst_x], &source->Data[(src_y + y) * source->Width + src_x], (size_t)source->Width * 4);
-}
-
 //-----------------------------------------------------------------------------
 // [SECTION] ImGuiCaptureContext
 //-----------------------------------------------------------------------------
@@ -151,21 +134,13 @@ void ImGuiCaptureImageBuf::BlitSubImage(int dst_x, int dst_y, int src_x, int src
 static void HideOtherWindows(const ImGuiCaptureArgs* args)
 {
     ImGuiContext& g = *GImGui;
-    ImGuiIO& io = g.IO;
-    IM_UNUSED(io);
-
     for (ImGuiWindow* window : g.Windows)
     {
-#ifdef IMGUI_HAS_VIEWPORT
-        // FIXME-VIEWPORTS: Content stitching is not possible because window would get moved out of main viewport and detach from it. We need a way to force captured windows to remain in main viewport here.
-        //if ((io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable) && (args->InFlags & ImGuiCaptureFlags_StitchFullContents))
-        //    IM_ASSERT(false);
-#endif
-        if (args->InCaptureWindows.contains(window))
-            continue;
         if (window->Flags & ImGuiWindowFlags_ChildWindow)
             continue;
         if ((window->Flags & ImGuiWindowFlags_Popup) != 0 && (args->InFlags & ImGuiCaptureFlags_IncludeTooltipsAndPopups) != 0)
+            continue;
+        if (args->InCaptureWindows.contains(window))
             continue;
 
 #ifdef IMGUI_HAS_DOCK
@@ -243,7 +218,7 @@ ImGuiCaptureStatus ImGuiCaptureContext::CaptureUpdate(ImGuiCaptureArgs* args)
     }
 
     ImGuiCaptureImageBuf* output = args->InOutputImageBuf ? args->InOutputImageBuf : &_CaptureBuf;
-    ImRect viewport_rect = GetMainViewportRect();
+    const ImRect viewport_rect = GetMainViewportRect();
 
     // Hide other windows so they can't be seen visible behind captured window
     if ((args->InFlags & ImGuiCaptureflags_HideOtherWindows) && !args->InCaptureWindows.empty())
@@ -307,8 +282,8 @@ ImGuiCaptureStatus ImGuiCaptureContext::CaptureUpdate(ImGuiCaptureArgs* args)
         _CaptureArgs = args;
         _ChunkNo = 0;
         _CaptureRect = _CapturedWindowRect = ImRect(FLT_MAX, FLT_MAX, -FLT_MAX, -FLT_MAX);
-        _BackupWindowsRect.clear();
         _BackupWindows.clear();
+        _BackupWindowsRect.clear();
         _BackupDisplayWindowPadding = g.Style.DisplayWindowPadding;
         _BackupDisplaySafeAreaPadding = g.Style.DisplaySafeAreaPadding;
         g.Style.DisplayWindowPadding = ImVec2(0, 0);    // Allow windows to be positioned fully outside of visible viewport.
@@ -338,8 +313,8 @@ ImGuiCaptureStatus ImGuiCaptureContext::CaptureUpdate(ImGuiCaptureArgs* args)
         for (ImGuiWindow* window : args->InCaptureWindows)
         {
             _CapturedWindowRect.Add(window->Rect());
-            _BackupWindowsRect.push_back(window->Rect());
             _BackupWindows.push_back(window);
+            _BackupWindowsRect.push_back(window->Rect());
         }
 
         if (args->InFlags & ImGuiCaptureFlags_StitchAll)
@@ -528,7 +503,7 @@ ImGuiCaptureStatus ImGuiCaptureContext::CaptureUpdate(ImGuiCaptureArgs* args)
             }
 
             // Restore window positions unconditionally. We may have moved them ourselves during capture.
-            for (int i = 0; i < _BackupWindowsRect.Size; i++)
+            for (int i = 0; i < _BackupWindows.Size; i++)
             {
                 ImGuiWindow* window = _BackupWindows[i];
                 if (window->Hidden)
@@ -565,16 +540,17 @@ void ImGuiCaptureContext::BeginVideoCapture(ImGuiCaptureArgs* args)
     IM_ASSERT(args != NULL);
     IM_ASSERT(_VideoRecording == false);
     IM_ASSERT(_VideoFFMPEGPipe == NULL);
+    IM_ASSERT(args->InRecordFPSTarget >= 1 && args->InRecordFPSTarget <= 100);
+
     _VideoRecording = true;
     _CaptureArgs = args;
-    IM_ASSERT(args->InRecordFPSTarget >= 1);
-    IM_ASSERT(args->InRecordFPSTarget <= 100);
 }
 
 void ImGuiCaptureContext::EndVideoCapture()
 {
     IM_ASSERT(_CaptureArgs != NULL);
     IM_ASSERT(_VideoRecording == true);
+
     _VideoRecording = false;
 }
 
@@ -870,17 +846,18 @@ void ImGuiCaptureToolUI::ShowCaptureToolWindow(bool* p_open)
                 ImGui::SetTooltip("Open %s/", save_file_dir);
         }
 
-        float button_width = (float)(int)-(font_size * 16);
+        const float TEXT_BASE_WIDTH = ImGui::CalcTextSize("A").x;
+        const float BUTTON_WIDTH = (float)(int)-(TEXT_BASE_WIDTH * 26);
 
-        ImGui::PushItemWidth(button_width);
+        ImGui::PushItemWidth(BUTTON_WIDTH);
         ImGui::InputText("Output template", _CaptureArgs.InOutputFileTemplate, IM_ARRAYSIZE(_CaptureArgs.InOutputFileTemplate));
         ImGui::DragFloat("Padding", &_CaptureArgs.InPadding, 0.1f, 0, 32, "%.0f");
         ImGui::DragInt("Video FPS", &_CaptureArgs.InRecordFPSTarget, 0.1f, 10, 100, "%d fps");
 
-        if (ImGui::Button("Snap Windows To Grid", ImVec2(button_width, 0)))
+        if (ImGui::Button("Snap Windows To Grid", ImVec2(BUTTON_WIDTH, 0)))
             SnapWindowsToGrid(SnapGridSize);
         ImGui::SameLine(0.0f, style.ItemInnerSpacing.x);
-        ImGui::SetNextItemWidth((float)(int)-(font_size * 5));
+        ImGui::SetNextItemWidth((float)(int)-(TEXT_BASE_WIDTH * 5));
         ImGui::DragFloat("##SnapGridSize", &SnapGridSize, 1.0f, 1.0f, 128.0f, "%.0f");
 
         ImGui::Checkbox("Software Mouse Cursor", &io.MouseDrawCursor);  // FIXME-TESTS: Test engine always resets this value.
@@ -889,15 +866,11 @@ void ImGuiCaptureToolUI::ShowCaptureToolWindow(bool* p_open)
 #ifdef IMGUI_HAS_VIEWPORT
         content_stitching_available &= !(io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable);
 #endif
-        if (!content_stitching_available)
-            ImGui::BeginDisabled();
+        ImGui::BeginDisabled(!content_stitching_available);
         ImGui::CheckboxFlags("Stitch full contents height", &_CaptureArgs.InFlags, ImGuiCaptureFlags_StitchAll);
-        if (!content_stitching_available)
-        {
-            ImGui::EndDisabled();
-            if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
-                ImGui::SetTooltip("Content stitching is not possible when using viewports.");
-        }
+        ImGui::EndDisabled();
+        if (!content_stitching_available && ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
+            ImGui::SetTooltip("Content stitching is not possible when using viewports.");
 
         ImGui::CheckboxFlags("Hide other windows", &_CaptureArgs.InFlags, ImGuiCaptureflags_HideOtherWindows);
         ImGui::CheckboxFlags("Include tooltips & popups", &_CaptureArgs.InFlags, ImGuiCaptureFlags_IncludeTooltipsAndPopups);

@@ -38,11 +38,9 @@ struct ImGuiCaptureImageBuf
     ~ImGuiCaptureImageBuf()     { Clear(); }
 
     void Clear();                                           // Free allocated memory buffer if such exists.
-    void CreateEmpty(int w, int h);                         // Reallocate buffer for pixel data, and zero it.
-    void CreateEmptyNoMemClear(int w, int h);               // Reallocate buffer for pixel data, but do not zero memory buffer.
+    void CreateEmpty(int w, int h);                         // Reallocate buffer for pixel data and zero it.
     bool SaveFile(const char* filename);                    // Save pixel data to specified image file.
     void RemoveAlpha();                                     // Clear alpha channel from all pixels.
-    void BlitSubImage(int dst_x, int dst_y, int src_x, int src_y, int w, int h, const ImGuiCaptureImageBuf* source);
 };
 
 enum ImGuiCaptureFlags_ : unsigned int
