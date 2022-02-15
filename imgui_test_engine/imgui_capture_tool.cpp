@@ -2,6 +2,10 @@
 // This is usable as a standalone applet or controlled by the test engine.
 // (code)
 
+// Two mode of operation:
+// - Interactive: call ImGuiCaptureToolUI::ShowCaptureToolWindow()
+// - Programmatic: generally via ImGuiTestContext::CaptureXXX functions
+
 // FIXME: This probably needs a rewrite, it's a bit too complicated.
 
 /*
@@ -16,7 +20,7 @@ Index of this file:
 */
 
 //-----------------------------------------------------------------------------
-// [SECTIONS Includes
+// [SECTION] Includes
 //-----------------------------------------------------------------------------
 
 #if defined(_MSC_VER) && !defined(_CRT_SECURE_NO_WARNINGS)
@@ -480,6 +484,7 @@ ImGuiCaptureStatus ImGuiCaptureContext::CaptureUpdate(ImGuiCaptureArgs* args)
                     // First video frame, initialize now that dimensions are known.
                     const unsigned int width = (unsigned int)capture_rect.GetWidth();
                     const unsigned int height = (unsigned int)capture_rect.GetHeight();
+                    IM_ASSERT(VideoCapturePathToFFMPEG != NULL && VideoCapturePathToFFMPEG[0]);
                     Str64f ffmpeg_exe(VideoCapturePathToFFMPEG);
                     ImPathFixSeparatorsForCurrentOS(ffmpeg_exe.c_str());
                     Str256f cmd("");
@@ -585,12 +590,7 @@ bool ImGuiCaptureContext::IsCapturingVideo()
 ImGuiCaptureToolUI::ImGuiCaptureToolUI()
 {
     // Filename template for where screenshots will be saved. May contain directories or variation of %d format.
-    strcpy(_CaptureArgs.InOutputFileTemplate, "captures/imgui_capture_%04d.png");
-}
-
-void ImGuiCaptureToolUI::SetCaptureFunc(ImGuiScreenCaptureFunc capture_func)
-{
-    Context.ScreenCaptureFunc = capture_func;
+    strcpy(_CaptureArgs.InOutputFileTemplate, "output/captures/imgui_capture_%04d.png");
 }
 
 // Interactively pick a single window
@@ -604,9 +604,9 @@ void ImGuiCaptureToolUI::CaptureWindowPicker(ImGuiCaptureArgs* args)
     const ImGuiID picking_id = ImGui::GetID("##picking");
 
     if (ImGui::Button("Capture Single Window..", button_sz))
-        _CaptureState = ImGuiCaptureToolState_PickingSingleWindow;
+        _StateIsPickingWindow = true;
 
-    if (_CaptureState == ImGuiCaptureToolState_PickingSingleWindow)
+    if (_StateIsPickingWindow)
     {
         // Picking a window
         ImGuiWindow* capture_window = g.HoveredWindow ? g.HoveredWindow->RootWindow : NULL;
@@ -640,12 +640,13 @@ void ImGuiCaptureToolUI::CaptureWindowPicker(ImGuiCaptureArgs* args)
         {
             ImGui::FocusWindow(capture_window);
             _SelectedWindows.resize(0);
-            _CaptureState = ImGuiCaptureToolState_Capturing;
+            _StateIsPickingWindow = false;
+            _StateIsCapturing = true;
             args->InCaptureWindows.clear();
             args->InCaptureWindows.push_back(capture_window);
         }
         if (ImGui::IsKeyPressed(ImGuiKey_Escape))
-            _CaptureState = ImGuiCaptureToolState_None;
+            _StateIsPickingWindow = _StateIsCapturing = false;
     }
     else
     {
@@ -701,7 +702,7 @@ void ImGuiCaptureToolUI::CaptureWindowsSelector(ImGuiCaptureArgs* args)
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Alternatively press Alt+C to capture selection.");
         if (do_capture)
-            _CaptureState = ImGuiCaptureToolState_Capturing;
+            _StateIsCapturing = true;
     }
 
     // Record video button
@@ -721,7 +722,7 @@ void ImGuiCaptureToolUI::CaptureWindowsSelector(ImGuiCaptureArgs* args)
                 ImGui::BeginDisabled();
             if (ImGui::Button(label, button_sz))
             {
-                _CaptureState = ImGuiCaptureToolState_Capturing;
+                _StateIsCapturing = true;
                 Context.BeginVideoCapture(args);
             }
             if (!allow_capture)
@@ -731,7 +732,7 @@ void ImGuiCaptureToolUI::CaptureWindowsSelector(ImGuiCaptureArgs* args)
 
     // Draw capture rectangle
     ImDrawList* draw_list = ImGui::GetForegroundDrawList();
-    if (allow_capture && _CaptureState == ImGuiCaptureToolState_None)
+    if (allow_capture && !_StateIsPickingWindow && !_StateIsCapturing)
     {
         IM_ASSERT(capture_rect.GetWidth() > 0);
         IM_ASSERT(capture_rect.GetHeight() > 0);
@@ -800,7 +801,7 @@ void ImGuiCaptureToolUI::CaptureWindowsSelector(ImGuiCaptureArgs* args)
 void ImGuiCaptureToolUI::ShowCaptureToolWindow(bool* p_open)
 {
     // Update capturing
-    if (_CaptureState == ImGuiCaptureToolState_Capturing)
+    if (_StateIsCapturing)
     {
         ImGuiCaptureArgs* args = &_CaptureArgs;
         if (Context.IsCapturingVideo() || args->InCaptureWindows.Size > 1)
@@ -814,7 +815,7 @@ void ImGuiCaptureToolUI::ShowCaptureToolWindow(bool* p_open)
         {
             if (status == ImGuiCaptureStatus_Done)
                 ImFormatString(LastOutputFileName, IM_ARRAYSIZE(LastOutputFileName), "%s", args->OutSavedFileName);
-            _CaptureState = ImGuiCaptureToolState_None;
+            _StateIsCapturing = false;
         }
     }
 
@@ -873,7 +874,7 @@ void ImGuiCaptureToolUI::ShowCaptureToolWindow(bool* p_open)
         ImGui::DragInt("Video FPS", &_CaptureArgs.InRecordFPSTarget, 0.1f, 10, 100, "%d fps");
 
         if (ImGui::Button("Snap Windows To Grid", ImVec2(-200, 0)))
-            SnapWindowsToGrid(SnapGridSize, _CaptureArgs.InPadding);
+            SnapWindowsToGrid(SnapGridSize);
         ImGui::SameLine(0.0f, style.ItemInnerSpacing.x);
         ImGui::SetNextItemWidth(50.0f);
         ImGui::DragFloat("##SnapGridSize", &SnapGridSize, 1.0f, 1.0f, 128.0f, "%.0f");
@@ -904,7 +905,7 @@ void ImGuiCaptureToolUI::ShowCaptureToolWindow(bool* p_open)
 
     ImGui::Separator();
 
-    if (_CaptureState != ImGuiCaptureToolState_Capturing)
+    if (_StateIsCapturing == false)
         _CaptureArgs.InCaptureWindows.clear();
     CaptureWindowPicker(&_CaptureArgs);
     CaptureWindowsSelector(&_CaptureArgs);
@@ -915,7 +916,7 @@ void ImGuiCaptureToolUI::ShowCaptureToolWindow(bool* p_open)
 
 // Move/resize all windows so they are neatly aligned on a grid
 // This is an easy way of ensuring some form of alignment without specifying detailed constraints.
-void ImGuiCaptureToolUI::SnapWindowsToGrid(float cell_size, float padding)
+void ImGuiCaptureToolUI::SnapWindowsToGrid(float cell_size)
 {
     ImGuiContext& g = *GImGui;
     for (ImGuiWindow* window : g.Windows)
@@ -934,7 +935,7 @@ void ImGuiCaptureToolUI::SnapWindowsToGrid(float cell_size, float padding)
         rect.Min.y = ImFloor(rect.Min.y / cell_size) * cell_size;
         rect.Max.x = ImFloor(rect.Max.x / cell_size) * cell_size;
         rect.Max.y = ImFloor(rect.Max.y / cell_size) * cell_size;
-        ImGui::SetWindowPos(window, rect.Min + ImVec2(padding, padding));
+        ImGui::SetWindowPos(window, rect.Min);
         ImGui::SetWindowSize(window, rect.GetSize());
     }
 }

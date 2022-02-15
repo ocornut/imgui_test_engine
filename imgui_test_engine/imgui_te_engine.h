@@ -8,6 +8,7 @@
 #include "imgui.h"
 #include "imgui_internal.h"         // ImPool<>, ImRect, ImGuiItemStatusFlags, ImFormatString
 #include "imgui_te_utils.h"         // ImFuncPtr
+#include "imgui_capture_tool.h"     // ImGuiScreenCaptureFunc
 
 //-------------------------------------------------------------------------
 // Forward Declarations
@@ -167,7 +168,6 @@ ImGuiPerfTool*      ImGuiTestEngine_GetPerfTool(ImGuiTestEngine* engine);
 // Function pointers for IO structure
 // (also see imgui_te_coroutine.h for coroutine functions)
 typedef void        (ImGuiTestEngineSrcFileOpenFunc)(const char* filename, int line, void* user_data);
-typedef bool        (ImGuiTestEngineScreenCaptureFunc)(ImGuiID viewport_id, int x, int y, int w, int h, unsigned int* pixels, void* user_data);
 
 //-----------------------------------------------------------------------------
 // IO structure to configure the test engine
@@ -182,7 +182,7 @@ struct ImGuiTestEngineIO
     // Inputs: Functions
     ImGuiTestCoroutineInterface*                CoroutineFuncs = NULL;          // (Required) Coroutine functions (see imgui_te_coroutines.h)
     ImFuncPtr(ImGuiTestEngineSrcFileOpenFunc)   SrcFileOpenFunc = NULL;         // (Optional) To open source files from test engine UI
-    ImFuncPtr(ImGuiTestEngineScreenCaptureFunc) ScreenCaptureFunc = NULL;       // (Optional) To capture graphics output (application _MUST_ call ImGuiTestEngine_PostSwap() function after swapping is framebuffer)
+    ImFuncPtr(ImGuiScreenCaptureFunc)           ScreenCaptureFunc = NULL;       // (Optional) To capture graphics output (application _MUST_ call ImGuiTestEngine_PostSwap() function after swapping is framebuffer)
     void*                                       SrcFileOpenUserData = NULL;     // (Optional) User data for SrcFileOpenFunc
     void*                                       ScreenCaptureUserData = NULL;   // (Optional) User data for ScreenCaptureFunc
 

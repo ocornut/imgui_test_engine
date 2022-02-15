@@ -84,7 +84,7 @@ static bool ImGuiApp_ImplGL_CaptureFramebuffer(ImGuiApp* app, int x, int y, int 
 #endif
 
 //-----------------------------------------------------------------------------
-// [SECTION] Helper stub to store directly in ImGuiTestEngineIO::ScreenCaptureFunc when using test engine (prototype is same as ImGuiTestEngineScreenCaptureFunc)
+// [SECTION] Helper stub to store directly in ImGuiTestEngineIO::ScreenCaptureFunc when using test engine (prototype is same as ImGuiScreenCaptureFunc)
 //-----------------------------------------------------------------------------
 
 bool ImGuiApp_ScreenCaptureFunc(ImGuiID viewport_id, int x, int y, int w, int h, unsigned int* pixels, void* user_data)

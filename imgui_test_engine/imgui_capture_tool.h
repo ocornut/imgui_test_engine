@@ -14,7 +14,7 @@
 struct ImGuiCaptureArgs;                // Parameters for Capture
 struct ImGuiCaptureContext;             // State of an active capture tool
 struct ImGuiCaptureImageBuf;            // Simple helper to store an RGBA image in memory
-struct ImGuiCaptureToolUI;                // Capture tool instance + UI window
+struct ImGuiCaptureToolUI;              // Capture tool instance + UI window
 
 typedef unsigned int ImGuiCaptureFlags; // See enum: ImGuiCaptureFlags_
 
@@ -53,13 +53,6 @@ enum ImGuiCaptureFlags_ : unsigned int
     ImGuiCaptureFlags_HideMouseCursor           = 1 << 2,   // Do not render software mouse cursor during capture.
     ImGuiCaptureFlags_Instant                   = 1 << 3,   // Perform capture on very same frame. Only works when capturing a rectangular region. Unsupported features: content stitching, window hiding, window relocation.
     ImGuiCaptureFlags_NoSave                    = 1 << 4    // Do not save output image.
-};
-
-enum ImGuiCaptureToolState : unsigned int
-{
-    ImGuiCaptureToolState_None,
-    ImGuiCaptureToolState_PickingSingleWindow,
-    ImGuiCaptureToolState_Capturing
 };
 
 // Defines input and output arguments for capture process.
@@ -138,6 +131,10 @@ struct ImGuiCaptureContext
     bool                    IsCapturingVideo();
 };
 
+//-----------------------------------------------------------------------------
+// ImGuiCaptureToolUI
+//-----------------------------------------------------------------------------
+
 // Implements UI for capturing images
 // (when using ImGuiTestEngine scripting API you may not need to use this at all)
 struct ImGuiCaptureToolUI
@@ -147,16 +144,16 @@ struct ImGuiCaptureToolUI
     char                    LastOutputFileName[256] = "";           // File name of last captured file.
 
     ImGuiCaptureArgs        _CaptureArgs;                           // Capture args
-    ImGuiCaptureToolState   _CaptureState = ImGuiCaptureToolState_None; // Which capture function is in progress.
+    bool                    _StateIsPickingWindow = false;
+    bool                    _StateIsCapturing = false;
     ImVector<ImGuiID>       _SelectedWindows;
 
     // Public
     ImGuiCaptureToolUI();
     void    ShowCaptureToolWindow(bool* p_open = NULL);             // Render a capture tool window with various options and utilities.
-    void    SetCaptureFunc(ImGuiScreenCaptureFunc capture_func);
 
     // [Internal]
     void    CaptureWindowPicker(ImGuiCaptureArgs* args);            // Render a window picker that captures picked window to file specified in file_name.
     void    CaptureWindowsSelector(ImGuiCaptureArgs* args);         // Render a selector for selecting multiple windows for capture.
-    void    SnapWindowsToGrid(float cell_size, float padding);      // Snaps edges of all visible windows to a virtual grid.
+    void    SnapWindowsToGrid(float cell_size);                 // Snaps edges of all visible windows to a virtual grid.
 };
