@@ -165,7 +165,7 @@ static void HideOtherWindows(const ImGuiCaptureArgs* args)
             continue;
         if (window->Flags & ImGuiWindowFlags_ChildWindow)
             continue;
-        if ((window->Flags & ImGuiWindowFlags_Popup) != 0 && (args->InFlags & ImGuiCaptureFlags_ExpandToIncludePopups) != 0)
+        if ((window->Flags & ImGuiWindowFlags_Popup) != 0 && (args->InFlags & ImGuiCaptureFlags_IncludeTooltipsAndPopups) != 0)
             continue;
 
 #ifdef IMGUI_HAS_DOCK
@@ -209,7 +209,7 @@ void ImGuiCaptureContext::PostNewFrame()
     if (args->InFlags & ImGuiCaptureFlags_HideMouseCursor)
     {
         if (_FrameNo == 0)
-            _MouseDrawCursorBackup = g.IO.MouseDrawCursor;
+            _BackupMouseDrawCursor = g.IO.MouseDrawCursor;
         g.IO.MouseDrawCursor = false;
     }
 
@@ -246,7 +246,7 @@ ImGuiCaptureStatus ImGuiCaptureContext::CaptureUpdate(ImGuiCaptureArgs* args)
     ImRect viewport_rect = GetMainViewportRect();
 
     // Hide other windows so they can't be seen visible behind captured window
-    if (!args->InCaptureWindows.empty())
+    if ((args->InFlags & ImGuiCaptureflags_HideOtherWindows) && !args->InCaptureWindows.empty())
         HideOtherWindows(args);
 
     // Recording will be set to false when we are stopping video capture.
@@ -326,7 +326,7 @@ ImGuiCaptureStatus ImGuiCaptureContext::CaptureUpdate(ImGuiCaptureArgs* args)
                     // Child windows will be included by their parents.
                     if (window->ParentWindow != NULL)
                         continue;
-                    if ((window->Flags & ImGuiWindowFlags_Popup || window->Flags & ImGuiWindowFlags_Tooltip) && !(args->InFlags & ImGuiCaptureFlags_ExpandToIncludePopups))
+                    if ((window->Flags & ImGuiWindowFlags_Popup || window->Flags & ImGuiWindowFlags_Tooltip) && !(args->InFlags & ImGuiCaptureFlags_IncludeTooltipsAndPopups))
                         continue;
                     args->InCaptureWindows.push_back(window);
                 }
@@ -537,7 +537,7 @@ ImGuiCaptureStatus ImGuiCaptureContext::CaptureUpdate(ImGuiCaptureArgs* args)
                 ImGui::SetWindowSize(window, _BackupWindowsRect[i].GetSize(), ImGuiCond_Always);
             }
             if (args->InFlags & ImGuiCaptureFlags_HideMouseCursor)
-                g.IO.MouseDrawCursor = _MouseDrawCursorBackup;
+                g.IO.MouseDrawCursor = _BackupMouseDrawCursor;
             g.Style.DisplayWindowPadding = _BackupDisplayWindowPadding;
             g.Style.DisplaySafeAreaPadding = _BackupDisplaySafeAreaPadding;
 
@@ -669,7 +669,7 @@ void ImGuiCaptureToolUI::CaptureWindowsSelector(ImGuiCaptureArgs* args)
         if (window->Flags & ImGuiWindowFlags_ChildWindow)
             continue;
         const bool is_popup = (window->Flags & ImGuiWindowFlags_Popup) || (window->Flags & ImGuiWindowFlags_Tooltip);
-        if ((args->InFlags & ImGuiCaptureFlags_ExpandToIncludePopups) && is_popup)
+        if ((args->InFlags & ImGuiCaptureFlags_IncludeTooltipsAndPopups) && is_popup)
         {
             capture_rect.Add(window->Rect());
             args->InCaptureWindows.push_back(window);
@@ -814,7 +814,7 @@ void ImGuiCaptureToolUI::ShowCaptureToolWindow(bool* p_open)
         if (status != ImGuiCaptureStatus_InProgress)
         {
             if (status == ImGuiCaptureStatus_Done)
-                ImFormatString(LastOutputFileName, IM_ARRAYSIZE(LastOutputFileName), "%s", args->OutSavedFileName);
+                ImFormatString(OutputLastFilename, IM_ARRAYSIZE(OutputLastFilename), "%s", args->OutSavedFileName);
             _StateIsCapturing = false;
         }
     }
@@ -835,21 +835,23 @@ void ImGuiCaptureToolUI::ShowCaptureToolWindow(bool* p_open)
     ImGuiIO& io = ImGui::GetIO();
     ImGuiStyle& style = ImGui::GetStyle();
 
+    float font_size = ImGui::GetFontSize();
+
     // Options
     ImGui::SetNextItemOpen(true, ImGuiCond_Once);
     if (ImGui::TreeNode("Options"))
     {
         // Open Last
         {
-            const bool has_last_file_name = (LastOutputFileName[0] != 0);
+            const bool has_last_file_name = (OutputLastFilename[0] != 0);
             if (!has_last_file_name)
                 ImGui::BeginDisabled();
             if (ImGui::Button("Open Last"))
-                ImOsOpenInShell(LastOutputFileName);
+                ImOsOpenInShell(OutputLastFilename);
             if (!has_last_file_name)
                 ImGui::EndDisabled();
             if (has_last_file_name && ImGui::IsItemHovered())
-                ImGui::SetTooltip("Open %s", LastOutputFileName);
+                ImGui::SetTooltip("Open %s", OutputLastFilename);
             ImGui::SameLine(0.0f, style.ItemInnerSpacing.x);
         }
 
@@ -868,15 +870,17 @@ void ImGuiCaptureToolUI::ShowCaptureToolWindow(bool* p_open)
                 ImGui::SetTooltip("Open %s/", save_file_dir);
         }
 
-        ImGui::PushItemWidth(-200.0f);
+        float button_width = (float)(int)-(font_size * 16);
+
+        ImGui::PushItemWidth(button_width);
         ImGui::InputText("Output template", _CaptureArgs.InOutputFileTemplate, IM_ARRAYSIZE(_CaptureArgs.InOutputFileTemplate));
         ImGui::DragFloat("Padding", &_CaptureArgs.InPadding, 0.1f, 0, 32, "%.0f");
         ImGui::DragInt("Video FPS", &_CaptureArgs.InRecordFPSTarget, 0.1f, 10, 100, "%d fps");
 
-        if (ImGui::Button("Snap Windows To Grid", ImVec2(-200, 0)))
+        if (ImGui::Button("Snap Windows To Grid", ImVec2(button_width, 0)))
             SnapWindowsToGrid(SnapGridSize);
         ImGui::SameLine(0.0f, style.ItemInnerSpacing.x);
-        ImGui::SetNextItemWidth(50.0f);
+        ImGui::SetNextItemWidth((float)(int)-(font_size * 5));
         ImGui::DragFloat("##SnapGridSize", &SnapGridSize, 1.0f, 1.0f, 128.0f, "%.0f");
 
         ImGui::Checkbox("Software Mouse Cursor", &io.MouseDrawCursor);  // FIXME-TESTS: Test engine always resets this value.
@@ -895,7 +899,8 @@ void ImGuiCaptureToolUI::ShowCaptureToolWindow(bool* p_open)
                 ImGui::SetTooltip("Content stitching is not possible when using viewports.");
         }
 
-        ImGui::CheckboxFlags("Include tooltips", &_CaptureArgs.InFlags, ImGuiCaptureFlags_ExpandToIncludePopups);
+        ImGui::CheckboxFlags("Hide other windows", &_CaptureArgs.InFlags, ImGuiCaptureflags_HideOtherWindows);
+        ImGui::CheckboxFlags("Include tooltips & popups", &_CaptureArgs.InFlags, ImGuiCaptureFlags_IncludeTooltipsAndPopups);
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Capture area will be expanded to include visible tooltips.");
 

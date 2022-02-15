@@ -386,7 +386,7 @@ void    ImGuiTestEngine_PostSwap(ImGuiTestEngine* engine)
         if (status != ImGuiCaptureStatus_InProgress)
         {
             if (status == ImGuiCaptureStatus_Done)
-                ImStrncpy(engine->CaptureTool.LastOutputFileName, engine->CaptureCurrentArgs->OutSavedFileName, IM_ARRAYSIZE(engine->CaptureTool.LastOutputFileName));
+                ImStrncpy(engine->CaptureTool.OutputLastFilename, engine->CaptureCurrentArgs->OutSavedFileName, IM_ARRAYSIZE(engine->CaptureTool.OutputLastFilename));
             engine->CaptureCurrentArgs = NULL;
         }
     }

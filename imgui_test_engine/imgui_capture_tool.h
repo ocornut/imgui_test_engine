@@ -49,10 +49,11 @@ enum ImGuiCaptureFlags_ : unsigned int
 {
     ImGuiCaptureFlags_None                      = 0,
     ImGuiCaptureFlags_StitchAll                 = 1 << 0,   // Capture entire window scroll area (by scrolling and taking multiple screenshot). Only works for a single window.
-    ImGuiCaptureFlags_ExpandToIncludePopups     = 1 << 1,   // Expand capture area to automatically include visible popups and tooltips.
-    ImGuiCaptureFlags_HideMouseCursor           = 1 << 2,   // Do not render software mouse cursor during capture.
-    ImGuiCaptureFlags_Instant                   = 1 << 3,   // Perform capture on very same frame. Only works when capturing a rectangular region. Unsupported features: content stitching, window hiding, window relocation.
-    ImGuiCaptureFlags_NoSave                    = 1 << 4    // Do not save output image.
+    ImGuiCaptureflags_HideOtherWindows          = 1 << 1,   // Disable hiding other windows
+    ImGuiCaptureFlags_IncludeTooltipsAndPopups  = 1 << 2,   // Expand capture area to automatically include visible popups and tooltips (use with ImGuiCaptureflags_HideOtherWindows)
+    ImGuiCaptureFlags_HideMouseCursor           = 1 << 3,   // Hide render software mouse cursor during capture.
+    ImGuiCaptureFlags_Instant                   = 1 << 4,   // Perform capture on very same frame. Only works when capturing a rectangular region. Unsupported features: content stitching, window hiding, window relocation.
+    ImGuiCaptureFlags_NoSave                    = 1 << 5    // Do not save output image.
 };
 
 // Defines input and output arguments for capture process.
@@ -64,10 +65,10 @@ struct ImGuiCaptureArgs
     ImRect                  InCaptureRect;                  // Screen rect to capture. Does not include padding.
     float                   InPadding = 16.0f;              // Extra padding at the edges of the screenshot. Ensure that there is available space around capture rect horizontally, also vertically if ImGuiCaptureFlags_StitchFullContents is not used.
     int                     InFileCounter = 0;              // Counter which may be appended to file name when saving. By default counting starts from 1. When done this field holds number of saved files.
-    ImGuiCaptureImageBuf*   InOutputImageBuf = NULL;        // Output will be saved to image buffer if specified.
     char                    InOutputFileTemplate[256] = ""; // Output will be saved to a file if InOutputImageBuf is NULL.
+    ImGuiCaptureImageBuf*   InOutputImageBuf = NULL;        // _OR_ Output will be saved to image buffer if specified.
     int                     InRecordFPSTarget = 30;         // FPS target for recording videos.
-    int                     InRecordQuality = 20;           // 0 = lossless, 18 = visually lossless, 23 = default, 51 = worst
+    int                     InRecordQuality = 20;           // 0 = lossless, 18 = visually lossless, 23 = default, 51 = worst // FIXME: Move to command-line
     int                     InSizeAlign = 0;                // Resolution alignment (0 = auto, 1 = no alignment, >= 2 = align width/height to be multiple of given value)
 
     // [Output]
@@ -99,7 +100,6 @@ struct ImGuiCaptureContext
     ImGuiWindow*            _HoveredWindow = NULL;          // Window which was hovered at capture start.
     ImGuiCaptureImageBuf    _CaptureBuf;                    // Output image buffer.
     const ImGuiCaptureArgs* _CaptureArgs = NULL;            // Current capture args. Set only if capture is in progress.
-    bool                    _MouseDrawCursorBackup = false; // Initial value of g.IO.MouseDrawCursor.
 
     // [Internal] Video recording
     bool                    _VideoRecording = false;        // Flag indicating that video recording is in progress.
@@ -107,6 +107,7 @@ struct ImGuiCaptureContext
     FILE*                   _VideoFFMPEGPipe = NULL;        // File writing to stdin of ffmpeg process.
 
     // [Internal] Backups
+    bool                    _BackupMouseDrawCursor = false; // Initial value of g.IO.MouseDrawCursor
     ImVector<ImGuiWindow*>  _BackupWindows;                 // Backup windows that will have their rect modified and restored. args->InCaptureWindows can not be used because popups may get closed during capture and no longer appear in that list.
     ImVector<ImRect>        _BackupWindowsRect;             // Backup window state that will be restored when screen capturing is done. Size and order matches windows of ImGuiCaptureArgs::InCaptureWindows.
     ImVec2                  _BackupDisplayWindowPadding;    // Backup padding. We set it to {0, 0} during capture.
@@ -139,21 +140,21 @@ struct ImGuiCaptureContext
 // (when using ImGuiTestEngine scripting API you may not need to use this at all)
 struct ImGuiCaptureToolUI
 {
-    ImGuiCaptureContext     Context;                                // Screenshot capture context.
-    float                   SnapGridSize = 32.0f;                   // Size of the grid cell for "snap to grid" functionality.
-    char                    LastOutputFileName[256] = "";           // File name of last captured file.
+    ImGuiCaptureContext     Context;                            // Screenshot capture context.
+    float                   SnapGridSize = 32.0f;               // Size of the grid cell for "snap to grid" functionality.
+    char                    OutputLastFilename[256] = "";       // File name of last captured file.
 
-    ImGuiCaptureArgs        _CaptureArgs;                           // Capture args
+    ImGuiCaptureArgs        _CaptureArgs;                       // Capture args
     bool                    _StateIsPickingWindow = false;
     bool                    _StateIsCapturing = false;
     ImVector<ImGuiID>       _SelectedWindows;
 
     // Public
     ImGuiCaptureToolUI();
-    void    ShowCaptureToolWindow(bool* p_open = NULL);             // Render a capture tool window with various options and utilities.
+    void    ShowCaptureToolWindow(bool* p_open = NULL);         // Render a capture tool window with various options and utilities.
 
     // [Internal]
-    void    CaptureWindowPicker(ImGuiCaptureArgs* args);            // Render a window picker that captures picked window to file specified in file_name.
-    void    CaptureWindowsSelector(ImGuiCaptureArgs* args);         // Render a selector for selecting multiple windows for capture.
+    void    CaptureWindowPicker(ImGuiCaptureArgs* args);        // Render a window picker that captures picked window to file specified in file_name.
+    void    CaptureWindowsSelector(ImGuiCaptureArgs* args);     // Render a selector for selecting multiple windows for capture.
     void    SnapWindowsToGrid(float cell_size);                 // Snaps edges of all visible windows to a virtual grid.
 };
