@@ -37,7 +37,7 @@ on:
 
 jobs:
   Linux:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
 
     strategy:
       fail-fast: false
@@ -79,7 +79,7 @@ jobs:
       - name: Build (IMGUI_TEST_ENGINE_ENABLE_IMPLOT=0 + IMGUI_TEST_ENGINE_ENABLE_STD_FUNCTION=0)
         if: github.event_name == 'workflow_run'
         run: |
-          mv imgui_test_engine/thirdparty/implot ./implot-hidden
+          mv imgui_tests/thirdparty/implot ./implot-hidden
           echo '#include "imgui_tests_imconfig.h"'                >  imgui_tests/imgui_tests_imconfig_temp.h
           echo '#undef  IMGUI_TEST_ENGINE_ENABLE_IMPLOT'          >> imgui_tests/imgui_tests_imconfig_temp.h
           echo '#define IMGUI_TEST_ENGINE_ENABLE_IMPLOT 0'        >> imgui_tests/imgui_tests_imconfig_temp.h
@@ -87,7 +87,7 @@ jobs:
           echo '#define IMGUI_TEST_ENGINE_DISABLE_STD_FUNCTION 0' >> imgui_tests/imgui_tests_imconfig_temp.h
           make -C imgui_tests/ clean
           make -C imgui_tests/ IMGUI_USER_CONFIG=imgui_tests/imgui_tests_imconfig_temp.h IMGUI_TEST_ENGINE_ENABLE_IMPLOT=0
-          mv ./implot-hidden imgui_test_engine/thirdparty/implot
+          mv ./implot-hidden imgui_tests/thirdparty/implot
 
       - name: Build imgui_tests
         run: |
@@ -120,7 +120,7 @@ jobs:
           timeout 300 imgui_tests/imgui_tests -nogui -nopause -v2 -ve4 -viewport-mock viewport
 
   MacOS:
-    runs-on: macos-latest
+    runs-on: macos-11
     if: |
       contains(github.event.head_commit.message, 'Build all') ||
       contains(github.event.head_commit.message, 'Build MacOS') ||
@@ -162,10 +162,10 @@ jobs:
       contains(github.event.head_commit.message, 'Build all') ||
       contains(github.event.head_commit.message, 'Build Windows') ||
       github.event_name == 'workflow_run'
-    runs-on: windows-latest
+    runs-on: windows-2022
     env:
-      VS_PATH: C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\
-      MSBUILD_PATH: C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\MSBuild\Current\Bin\
+      VS_PATH: C:\Program Files\Microsoft Visual Studio\2022\Enterprise\
+      MSBUILD_PATH: C:\Program Files\Microsoft Visual Studio\2022\Enterprise\MSBuild\Current\Bin\
 
     strategy:
       fail-fast: false
@@ -192,10 +192,10 @@ jobs:
           gci -recurse -filter "*.vcxproj" | ForEach-Object {
             # Fix SDK and toolset for most samples.
             (Get-Content $_.FullName) -Replace "<PlatformToolset>v110</PlatformToolset>","<PlatformToolset>v142</PlatformToolset>" | Set-Content -Path $_.FullName
-            (Get-Content $_.FullName) -Replace "<WindowsTargetPlatformVersion>8.1</WindowsTargetPlatformVersion>","<WindowsTargetPlatformVersion>10.0.18362.0</WindowsTargetPlatformVersion>" | Set-Content -Path $_.FullName
+            (Get-Content $_.FullName) -Replace "<WindowsTargetPlatformVersion>8.1</WindowsTargetPlatformVersion>","<WindowsTargetPlatformVersion>10.0.20348.0</WindowsTargetPlatformVersion>" | Set-Content -Path $_.FullName
             # Fix SDK and toolset for samples that require newer SDK/toolset. At the moment it is only dx12.
             (Get-Content $_.FullName) -Replace "<PlatformToolset>v140</PlatformToolset>","<PlatformToolset>v142</PlatformToolset>" | Set-Content -Path $_.FullName
-            (Get-Content $_.FullName) -Replace "<WindowsTargetPlatformVersion>10.0.14393.0</WindowsTargetPlatformVersion>","<WindowsTargetPlatformVersion>10.0.18362.0</WindowsTargetPlatformVersion>" | Set-Content -Path $_.FullName
+            (Get-Content $_.FullName) -Replace "<WindowsTargetPlatformVersion>10.0.14393.0</WindowsTargetPlatformVersion>","<WindowsTargetPlatformVersion>10.0.20348.0</WindowsTargetPlatformVersion>" | Set-Content -Path $_.FullName
           }
 
       - name: Build ${{ matrix.arch }} imgui_tests
