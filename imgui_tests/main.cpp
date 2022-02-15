@@ -556,7 +556,7 @@ int main(int argc, char** argv)
     // Load fonts, Set DPI scale
     LoadFonts(app_window->DpiScale);
     ImGui::GetStyle().ScaleAllSizes(app_window->DpiScale);
-    test_io.DpiScale = app_window->DpiScale;
+    //test_io.DpiScale = app_window->DpiScale;
 
     // Main loop
     bool aborted = false;

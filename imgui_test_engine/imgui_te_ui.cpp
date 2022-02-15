@@ -108,18 +108,26 @@ static bool ParseLineAndDrawFileOpenItem(ImGuiTestEngine* e, ImGuiTest* test, co
     return false;
 }
 
+static float GetDpiScale()
+{
+#ifdef IMGUI_HAS_VIEWPORT
+    return ImGui::GetWindowViewport()->DpiScale;
+#else
+    return 1.0f;
+#endif
+}
+
 static void DrawTestLog(ImGuiTestEngine* e, ImGuiTest* test)
 {
-    ImU32 error_col = IM_COL32(255, 150, 150, 255);
-    ImU32 warning_col = IM_COL32(240, 240, 150, 255);
-    ImU32 unimportant_col = IM_COL32(190, 190, 190, 255);
+    const ImU32 error_col = IM_COL32(255, 150, 150, 255);
+    const ImU32 warning_col = IM_COL32(240, 240, 150, 255);
+    const ImU32 unimportant_col = IM_COL32(190, 190, 190, 255);
+    const float dpi_scale = GetDpiScale();
 
     ImGuiTestLog* log = &test->TestLog;
-    ImGuiTestEngineIO& e_io = ImGuiTestEngine_GetIO(e);
-
     const char* text = test->TestLog.Buffer.begin();
     const char* text_end = test->TestLog.Buffer.end();
-    ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(6.0f, 2.0f) * e_io.DpiScale);
+    ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(6.0f, 2.0f) * dpi_scale);
     ImGuiListClipper clipper;
     ImGuiTestVerboseLevel max_log_level = test->Status == ImGuiTestStatus_Error ? e->IO.ConfigVerboseLevelOnError : e->IO.ConfigVerboseLevel;
     int line_count = log->ExtractLinesForVerboseLevels(ImGuiTestVerboseLevel_Silent, max_log_level, NULL);
@@ -216,7 +224,7 @@ static void ShowTestGroup(ImGuiTestEngine* e, ImGuiTestGroup group, ImGuiTextFil
 {
     ImGuiStyle& style = ImGui::GetStyle();
     ImGuiIO& io = ImGui::GetIO();
-    ImGuiTestEngineIO& e_io = ImGuiTestEngine_GetIO(e);
+    const float dpi_scale = GetDpiScale();
 
     //ImGui::Text("TESTS (%d)", engine->TestsAll.Size);
     if (ImGui::Button("Run"))
@@ -255,7 +263,7 @@ static void ShowTestGroup(ImGuiTestEngine* e, ImGuiTestGroup group, ImGuiTextFil
     ImGui::SameLine();
     const char* perflog_label = "Perf Tool";
     float filter_width = ImGui::GetWindowContentRegionMax().x - ImGui::GetCursorPos().x;
-    float perf_stress_factor_width = (30 * e->IO.DpiScale);
+    float perf_stress_factor_width = (30 * dpi_scale);
     if (group == ImGuiTestGroup_Perfs)
     {
         filter_width -= style.ItemSpacing.x + perf_stress_factor_width;
@@ -283,9 +291,9 @@ static void ShowTestGroup(ImGuiTestEngine* e, ImGuiTestGroup group, ImGuiTextFil
         ImGui::TableSetupColumn("Test", ImGuiTableColumnFlags_WidthStretch);
         ImGui::TableHeadersRow();
 
-        ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(6, 4) * e_io.DpiScale);
-        ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(4, 0) * e_io.DpiScale);
-        //ImGui::PushStyleVar(ImGuiStyleVar_CellPadding, ImVec2(100, 10) * e_io.DpiScale);
+        ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(6, 4) * dpi_scale);
+        ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(4, 0) * dpi_scale);
+        //ImGui::PushStyleVar(ImGuiStyleVar_CellPadding, ImVec2(100, 10) * dpi_scale);
         for (int test_n = 0; test_n < e->TestsAll.Size; test_n++)
         {
             ImGuiTest* test = e->TestsAll[test_n];
@@ -491,6 +499,7 @@ static void ShowTestGroup(ImGuiTestEngine* e, ImGuiTestGroup group, ImGuiTextFil
 static void ImGuiTestEngine_ShowLogAndTools(ImGuiTestEngine* engine)
 {
     ImGuiContext& g = *GImGui;
+    const float dpi_scale = GetDpiScale();
 
     if (ImGui::IsWindowAppearing())
         engine->UiFFMPEGPathValid = ImFileExist(engine->IO.PathToFFMPEG);
@@ -524,74 +533,90 @@ static void ImGuiTestEngine_ShowLogAndTools(ImGuiTestEngine* engine)
         ImGui::EndTabItem();
     }
 
-    // Misc
-    if (ImGui::BeginTabItem("MISC"))
+    // Options
+    if (ImGui::BeginTabItem("OPTIONS"))
     {
         ImGuiIO& io = ImGui::GetIO();
         ImGui::Text("%.3f ms/frame (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
         ImGui::Text("TestEngine: HookItems: %d, HookPushId: %d, InfoTasks: %d", g.TestEngineHookItems, g.DebugHookIdInfo != 0, engine->InfoTasks.Size);
         ImGui::Separator();
 
-        ImGui::Checkbox("Slow down whole app", &engine->ToolSlowDown);
-        ImGui::SameLine(); ImGui::SetNextItemWidth(70 * engine->IO.DpiScale);
-        ImGui::SliderInt("##ms", &engine->ToolSlowDownMs, 0, 400, "%d ms");
-
-        if (ImGui::InputText("Path to ffmpeg", engine->IO.PathToFFMPEG, IM_ARRAYSIZE(engine->IO.PathToFFMPEG)))
-            engine->UiFFMPEGPathValid = ImFileExist(engine->IO.PathToFFMPEG);
-        ImGui::BeginDisabled(!engine->UiFFMPEGPathValid);
-        if (ImGui::BeginCombo("Video file extension", engine->IO.VideoCaptureExtension))
-        {
-            const char* supported_exts[] = { ".gif", ".mp4" };
-            for (auto& ext : supported_exts)
-                if (ImGui::Selectable(ext, strcmp(engine->IO.VideoCaptureExtension, ext) == 0))
-                    ImStrncpy(engine->IO.VideoCaptureExtension, ext, IM_ARRAYSIZE(engine->IO.VideoCaptureExtension));
-            ImGui::EndCombo();
-        }
-        HelpTooltip("File extension for captured video file.");
-        ImGui::EndDisabled();
-        ImGui::Checkbox("Capture when requested by API", &engine->IO.ConfigCaptureEnabled); HelpTooltip("Enable or disable screen capture.");
-        ImGui::Checkbox("Capture screen on error", &engine->IO.ConfigCaptureOnError); HelpTooltip("Capture a screenshot on test failure.");
-
-        ImGui::CheckboxFlags("io.ConfigFlags: NavEnableKeyboard", &io.ConfigFlags, ImGuiConfigFlags_NavEnableKeyboard);
-        ImGui::CheckboxFlags("io.ConfigFlags: NavEnableGamepad", &io.ConfigFlags, ImGuiConfigFlags_NavEnableGamepad);
-#ifdef IMGUI_HAS_DOCK
-        ImGui::Checkbox("io.ConfigDockingAlwaysTabBar", &io.ConfigDockingAlwaysTabBar);
-#endif
         if (ImGui::Button("Reboot UI context"))
             engine->ToolDebugRebootUiContext = true;
 
-        ImGui::DragFloat("DpiScale", &engine->IO.DpiScale, 0.005f, 0.0f, 0.0f, "%.2f");
         const ImGuiInputTextCallback filter_callback = [](ImGuiInputTextCallbackData* data) { return (data->EventChar == ',' || data->EventChar == ';') ? 1 : 0; };
         ImGui::InputText("Branch/Annotation", engine->IO.GitBranchName, IM_ARRAYSIZE(engine->IO.GitBranchName), ImGuiInputTextFlags_CallbackCharFilter, filter_callback, NULL);
         HelpTooltip("This will be stored in the CSV file for performance tools.");
 
-        // Perfs
-        // FIXME-TESTS: Need to be visualizing the samples/spikes.
-        double dt_1 = 1.0 / ImGui::GetIO().Framerate;
-        double fps_now = 1.0 / dt_1;
-        double dt_100 = engine->PerfDeltaTime100.GetAverage();
-        double dt_1000 = engine->PerfDeltaTime1000.GetAverage();
+        ImGui::Separator();
 
-        //if (engine->PerfRefDeltaTime <= 0.0 && engine->PerfRefDeltaTime.IsFull())
-        //    engine->PerfRefDeltaTime = dt_2000;
+        if (ImGui::TreeNode("Screen/video capture"))
+        {
+            ImGui::Checkbox("Capture when requested by API", &engine->IO.ConfigCaptureEnabled); HelpTooltip("Enable or disable screen capture API completely.");
+            ImGui::Checkbox("Capture screen on error", &engine->IO.ConfigCaptureOnError); HelpTooltip("Capture a screenshot on test failure.");
 
-        ImGui::Checkbox("Unthrolled", &engine->IO.ConfigNoThrottle);
-        ImGui::SameLine();
-        if (ImGui::Button("Pick ref dt"))
-            engine->PerfRefDeltaTime = dt_1000;
+            if (ImGui::InputText("Path to ffmpeg", engine->IO.PathToFFMPEG, IM_ARRAYSIZE(engine->IO.PathToFFMPEG)))
+                engine->UiFFMPEGPathValid = ImFileExist(engine->IO.PathToFFMPEG);
+            ImGui::BeginDisabled(!engine->UiFFMPEGPathValid);
+            if (ImGui::BeginCombo("Video file extension", engine->IO.VideoCaptureExtension))
+            {
+                const char* supported_exts[] = { ".gif", ".mp4" };
+                for (auto& ext : supported_exts)
+                    if (ImGui::Selectable(ext, strcmp(engine->IO.VideoCaptureExtension, ext) == 0))
+                        ImStrncpy(engine->IO.VideoCaptureExtension, ext, IM_ARRAYSIZE(engine->IO.VideoCaptureExtension));
+                ImGui::EndCombo();
+            }
+            HelpTooltip("File extension for captured video file.");
+            ImGui::EndDisabled();
 
-        double dt_ref = engine->PerfRefDeltaTime;
-        ImGui::Text("[ref dt]    %6.3f ms", engine->PerfRefDeltaTime * 1000);
-        ImGui::Text("[last 0001] %6.3f ms (%.1f FPS) ++ %6.3f ms", dt_1 * 1000.0, 1.0 / dt_1, (dt_1 - dt_ref) * 1000);
-        ImGui::Text("[last 0100] %6.3f ms (%.1f FPS) ++ %6.3f ms ~ converging in %.1f secs", dt_100 * 1000.0, 1.0 / dt_100, (dt_1 - dt_ref) * 1000, 100.0 / fps_now);
-        ImGui::Text("[last 1000] %6.3f ms (%.1f FPS) ++ %6.3f ms ~ converging in %.1f secs", dt_1000 * 1000.0, 1.0 / dt_1000, (dt_1 - dt_ref) * 1000, 1000.0 / fps_now);
+            ImGui::TreePop();
+        }
 
-        //ImGui::PlotLines("Last 100", &engine->PerfDeltaTime100.Samples.Data, engine->PerfDeltaTime100.Samples.Size, engine->PerfDeltaTime100.Idx, NULL, 0.0f, dt_1000 * 1.10f, ImVec2(0.0f, ImGui::GetFontSize()));
-        ImVec2 plot_size(0.0f, ImGui::GetFrameHeight() * 3);
-        ImMovingAverage<double>* ma = &engine->PerfDeltaTime500;
-        ImGui::PlotLines("Last 500",
-            [](void* data, int n) { ImMovingAverage<double>* ma = (ImMovingAverage<double>*)data; return (float)(ma->Samples[n] * 1000); },
-            ma, ma->Samples.Size, 0 * ma->Idx, NULL, 0.0f, (float)(ImMax(dt_100, dt_1000) * 1000.0 * 1.2f), plot_size);
+        if (ImGui::TreeNode("Performances"))
+        {
+            ImGui::Checkbox("Slow down whole app", &engine->ToolSlowDown);
+            ImGui::SameLine(); ImGui::SetNextItemWidth(70 * dpi_scale);
+            ImGui::SliderInt("##ms", &engine->ToolSlowDownMs, 0, 400, "%d ms");
+
+            // FIXME-TESTS: Need to be visualizing the samples/spikes.
+            double dt_1 = 1.0 / ImGui::GetIO().Framerate;
+            double fps_now = 1.0 / dt_1;
+            double dt_100 = engine->PerfDeltaTime100.GetAverage();
+            double dt_1000 = engine->PerfDeltaTime1000.GetAverage();
+
+            //if (engine->PerfRefDeltaTime <= 0.0 && engine->PerfRefDeltaTime.IsFull())
+            //    engine->PerfRefDeltaTime = dt_2000;
+
+            ImGui::Checkbox("Unthrolled", &engine->IO.ConfigNoThrottle);
+            ImGui::SameLine();
+            if (ImGui::Button("Pick ref dt"))
+                engine->PerfRefDeltaTime = dt_1000;
+
+            double dt_ref = engine->PerfRefDeltaTime;
+            ImGui::Text("[ref dt]    %6.3f ms", engine->PerfRefDeltaTime * 1000);
+            ImGui::Text("[last 0001] %6.3f ms (%.1f FPS) ++ %6.3f ms", dt_1 * 1000.0, 1.0 / dt_1, (dt_1 - dt_ref) * 1000);
+            ImGui::Text("[last 0100] %6.3f ms (%.1f FPS) ++ %6.3f ms ~ converging in %.1f secs", dt_100 * 1000.0, 1.0 / dt_100, (dt_1 - dt_ref) * 1000, 100.0 / fps_now);
+            ImGui::Text("[last 1000] %6.3f ms (%.1f FPS) ++ %6.3f ms ~ converging in %.1f secs", dt_1000 * 1000.0, 1.0 / dt_1000, (dt_1 - dt_ref) * 1000, 1000.0 / fps_now);
+
+            //ImGui::PlotLines("Last 100", &engine->PerfDeltaTime100.Samples.Data, engine->PerfDeltaTime100.Samples.Size, engine->PerfDeltaTime100.Idx, NULL, 0.0f, dt_1000 * 1.10f, ImVec2(0.0f, ImGui::GetFontSize()));
+            ImVec2 plot_size(0.0f, ImGui::GetFrameHeight() * 3);
+            ImMovingAverage<double>* ma = &engine->PerfDeltaTime500;
+            ImGui::PlotLines("Last 500",
+                [](void* data, int n) { ImMovingAverage<double>* ma = (ImMovingAverage<double>*)data; return (float)(ma->Samples[n] * 1000); },
+                ma, ma->Samples.Size, 0 * ma->Idx, NULL, 0.0f, (float)(ImMax(dt_100, dt_1000) * 1000.0 * 1.2f), plot_size);
+
+            ImGui::TreePop();
+        }
+
+        if (ImGui::TreeNode("Dear ImGui Configuration Flags"))
+        {
+            ImGui::CheckboxFlags("io.ConfigFlags: NavEnableKeyboard", &io.ConfigFlags, ImGuiConfigFlags_NavEnableKeyboard);
+            ImGui::CheckboxFlags("io.ConfigFlags: NavEnableGamepad", &io.ConfigFlags, ImGuiConfigFlags_NavEnableGamepad);
+#ifdef IMGUI_HAS_DOCK
+            ImGui::Checkbox("io.ConfigDockingAlwaysTabBar", &io.ConfigDockingAlwaysTabBar);
+#endif
+            ImGui::TreePop();
+        }
 
         ImGui::EndTabItem();
     }
@@ -600,6 +625,8 @@ static void ImGuiTestEngine_ShowLogAndTools(ImGuiTestEngine* engine)
 
 static void ImGuiTestEngine_ShowTestTool(ImGuiTestEngine* engine, bool* p_open)
 {
+    const float dpi_scale = GetDpiScale();
+
     if (engine->UiFocus)
     {
         ImGui::SetNextWindowFocus();
@@ -644,7 +671,7 @@ static void ImGuiTestEngine_ShowTestTool(ImGuiTestEngine* engine, bool* p_open)
         //ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0, 0));
     }
 
-    ImGui::SetNextItemWidth(90 * engine->IO.DpiScale);
+    ImGui::SetNextItemWidth(90 * dpi_scale);
     if (ImGui::BeginCombo("##RunSpeed", ImGuiTestEngine_GetRunSpeedName(engine->IO.ConfigRunSpeed), ImGuiComboFlags_None))
     {
         for (ImGuiTestRunSpeed level = (ImGuiTestRunSpeed)0; level < ImGuiTestRunSpeed_COUNT; level = (ImGuiTestRunSpeed)(level + 1))
@@ -671,7 +698,7 @@ static void ImGuiTestEngine_ShowTestTool(ImGuiTestEngine* engine, bool* p_open)
     ImGui::SameLine();
     ImGui::SeparatorEx(ImGuiSeparatorFlags_Vertical);
     ImGui::SameLine();
-    ImGui::SetNextItemWidth(70 * engine->IO.DpiScale);
+    ImGui::SetNextItemWidth(70 * dpi_scale);
     if (ImGui::BeginCombo("##Verbose", ImGuiTestEngine_GetVerboseLevelName(engine->IO.ConfigVerboseLevel), ImGuiComboFlags_None))
     {
         for (ImGuiTestVerboseLevel level = (ImGuiTestVerboseLevel)0; level < ImGuiTestVerboseLevel_COUNT; level = (ImGuiTestVerboseLevel)(level + 1))
