@@ -4765,6 +4765,7 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
 
 void RegisterTests_Capture(ImGuiTestEngine* e)
 {
+#if IMGUI_TEST_ENGINE_ENABLE_CAPTURE
     ImGuiTest* t = NULL;
 
     t = IM_REGISTER_TEST(e, "capture", "capture_demo_documents");
@@ -5074,6 +5075,9 @@ void RegisterTests_Capture(ImGuiTestEngine* e)
         ctx->CaptureScreenshotWindow("ImPlot Demo", ImGuiCaptureFlags_StitchAll | ImGuiCaptureFlags_HideMouseCursor);
     };
 #endif // IMGUI_TEST_ENGINE_ENABLE_IMPLOT
+#else
+    IM_UNUSED(e);
+#endif // IMGUI_TEST_ENGINE_ENABLE_CAPTURE
 }
 
 void RegisterTests(ImGuiTestEngine* e)
