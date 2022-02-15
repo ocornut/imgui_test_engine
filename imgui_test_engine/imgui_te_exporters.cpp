@@ -39,7 +39,7 @@ void ImGuiTestEngine_PrintResultSummary(ImGuiTestEngine* engine)
     }
 
     ImOsConsoleSetTextColor(ImOsConsoleStream_StandardOutput, (count_success == count_tested) ? ImOsConsoleTextColor_BrightGreen : ImOsConsoleTextColor_BrightRed);
-    printf("\nTests Result: %s\n", (count_success == count_tested) ? "OK" : "KO");
+    printf("\nTests Result: %s\n", (count_success == count_tested) ? "OK" : "Errors");
     printf("(%d/%d tests passed)\n", count_success, count_tested);
     ImOsConsoleSetTextColor(ImOsConsoleStream_StandardOutput, ImOsConsoleTextColor_White);
 }
@@ -79,7 +79,7 @@ static void ImGuiTestEngine_ExportResultSummary(ImGuiTestEngine* engine, FILE* f
         fprintf(fp, "\n");
     }
 
-    fprintf(fp, "%sTests Result: %s\n", indent, (count_success == count_tested) ? "OK" : "KO");
+    fprintf(fp, "%sTests Result: %s\n", indent, (count_success == count_tested) ? "OK" : "Errors");
     fprintf(fp, "%s(%d/%d tests passed)\n", indent, count_success, count_tested);
 }
 

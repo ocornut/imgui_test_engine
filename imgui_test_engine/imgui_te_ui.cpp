@@ -239,14 +239,14 @@ static void ShowTestGroup(ImGuiTestEngine* e, ImGuiTestGroup group, ImGuiTextFil
         else if (e->UiFilterByStatusMask == ~(1u << ImGuiTestStatus_Success))
             filter_by_status_desc = "Not OK";
         else if (e->UiFilterByStatusMask == (1u << ImGuiTestStatus_Error))
-            filter_by_status_desc = "Failed";
+            filter_by_status_desc = "Errors";
         if (ImGui::BeginCombo("##filterbystatus", filter_by_status_desc))
         {
             if (ImGui::Selectable("All", e->UiFilterByStatusMask == ~0u))
                 e->UiFilterByStatusMask = (ImU32)~0u;
             if (ImGui::Selectable("Not OK", e->UiFilterByStatusMask == ~(1u << ImGuiTestStatus_Success)))
                 e->UiFilterByStatusMask = (ImU32)~(1u << ImGuiTestStatus_Success);
-            if (ImGui::Selectable("Failed", e->UiFilterByStatusMask == (1u << ImGuiTestStatus_Error)))
+            if (ImGui::Selectable("Errors", e->UiFilterByStatusMask == (1u << ImGuiTestStatus_Error)))
                 e->UiFilterByStatusMask = (ImU32)(1u << ImGuiTestStatus_Error);
             ImGui::EndCombo();
         }

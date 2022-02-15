@@ -691,11 +691,11 @@ static void ImGuiTestEngine_PreNewFrame(ImGuiTestEngine* engine, ImGuiContext* u
             if (e.Type == ImGuiInputEventType_Key && e.Key.Key == ImGuiKey_Escape)
                 engine->Inputs.HostEscDown = e.Key.Down;
         engine->Inputs.HostEscDownDuration = engine->Inputs.HostEscDown ? (ImMax(engine->Inputs.HostEscDownDuration, 0.0f) + main_io.DeltaTime) : -1.0f;
-        const bool abort = engine->Inputs.HostEscDownDuration > 0.20f;
+        const bool abort = engine->Inputs.HostEscDownDuration >= 0.20f;
         if (abort)
         {
             if (engine->TestContext)
-                engine->TestContext->LogWarning("KO: User aborted (pressed ESC)");
+                engine->TestContext->LogWarning("User aborted (pressed ESC)");
             ImGuiTestEngine_AbortCurrentTest(engine);
         }
     }
@@ -1655,11 +1655,11 @@ bool ImGuiTestEngine_Check(const char* file, const char* func, int line, ImGuiTe
 
             if (file)
             {
-                ctx->LogError("KO %s:%d '%s'", file_without_path, line, expr);
+                ctx->LogError("Error %s:%d '%s'", file_without_path, line, expr);
             }
             else
             {
-                ctx->LogError("KO '%s'", expr);
+                ctx->LogError("Error '%s'", expr);
             }
 
             // In case test failed without finishing gif capture - finish it here. It has to happen here because capture

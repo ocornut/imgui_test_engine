@@ -3126,6 +3126,13 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
         IM_CHECK(v.Data == NULL && v.Capacity == 0);
         int max_size = v.max_size();
         IM_CHECK(max_size == INT_MAX / sizeof(int));
+
+        // erase() empty range
+#if IMGUI_VERSION_NUM >= 18704
+        v.push_back(10);
+        v.erase(v.begin(), v.begin());
+        IM_CHECK(v.size() == 1);
+#endif
     };
 
     // ## Test ImVector functions
