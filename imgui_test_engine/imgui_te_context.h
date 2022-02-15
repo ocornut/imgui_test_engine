@@ -335,6 +335,7 @@ struct ImGuiTestContext
     // - Advanced API
     bool        CaptureAddWindow(ImGuiCaptureArgs* args, ImGuiTestRef ref);
     bool        CaptureScreenshotEx(ImGuiCaptureArgs* args);
+    void        CaptureInitAutoFilename(ImGuiCaptureArgs* args, const char* ext);
     // - Video/GIF capturing API
     bool        CaptureBeginVideo(ImGuiCaptureArgs* args);
     bool        CaptureEndVideo(ImGuiCaptureArgs* args);

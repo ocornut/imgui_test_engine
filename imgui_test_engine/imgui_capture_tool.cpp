@@ -233,7 +233,6 @@ ImGuiCaptureStatus ImGuiCaptureContext::CaptureUpdate(ImGuiCaptureArgs* args)
     IM_ASSERT(args->InRecordFPSTarget != 0);
     if (_VideoRecording)
     {
-        IM_ASSERT(VideoCaptureExt != NULL);
         IM_ASSERT(args->InOutputFileTemplate[0] && "Output filename must be specified when recording videos.");
         IM_ASSERT(args->InOutputImageBuf == NULL && "Output buffer cannot be specified when recording videos.");
         IM_ASSERT((args->InFlags & ImGuiCaptureFlags_StitchAll) == 0 && "Image stitching is not supported when recording videos.");
@@ -283,16 +282,13 @@ ImGuiCaptureStatus ImGuiCaptureContext::CaptureUpdate(ImGuiCaptureArgs* args)
                 return ImGuiCaptureStatus_Error;
             }
 
-            // File template will most likely end with .png, but we need a different extension for videos.
             if (is_recording_video)
             {
-                if (char* ext = (char*)ImPathFindExtension(args->OutSavedFileName))
-                    ImStrncpy(ext, VideoCaptureExt, (size_t)(ext - args->OutSavedFileName));
-
                 // Determinate size alignment
+                const char* extension = (char*)ImPathFindExtension(args->OutSavedFileName);
                 if (args->InSizeAlign == 0)
                 {
-                    if (strcmp(VideoCaptureExt, ".gif") == 0)
+                    if (strcmp(extension, ".gif") == 0)
                         args->InSizeAlign = 1;
                     else
                         args->InSizeAlign = 2; // mp4 wants >= 2

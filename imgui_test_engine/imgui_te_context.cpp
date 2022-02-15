@@ -678,11 +678,7 @@ bool ImGuiTestContext::CaptureScreenshotEx(ImGuiCaptureArgs* args)
     LogInfo("CaptureScreenshot()");
 
     // Auto filename
-    if (args->InOutputFileTemplate[0] == 0)
-    {
-        ImFormatString(args->InOutputFileTemplate, IM_ARRAYSIZE(args->InOutputFileTemplate), "output/captures/%s_%04d.png", Test->Name, CaptureCounter);
-        CaptureCounter++;
-    }
+    CaptureInitAutoFilename(args, ".png");
 
 #if IMGUI_TEST_ENGINE_ENABLE_CAPTURE
     bool can_capture = ImGuiTestContext_CanCaptureScreenshot(this);
@@ -710,6 +706,16 @@ void ImGuiTestContext::CaptureScreenshotWindow(ImGuiTestRef ref, int capture_fla
     CaptureScreenshotEx(&args);
 }
 
+void ImGuiTestContext::CaptureInitAutoFilename(ImGuiCaptureArgs* args, const char* ext)
+{
+    IM_ASSERT(ext && ext[0] == '.');
+    if (args->InOutputFileTemplate[0] == 0)
+    {
+        ImFormatString(args->InOutputFileTemplate, IM_ARRAYSIZE(args->InOutputFileTemplate), "output/captures/%s_%04d%s", Test->Name, CaptureCounter, ext);
+        CaptureCounter++;
+    }
+}
+
 bool ImGuiTestContext::CaptureBeginVideo(ImGuiCaptureArgs* args)
 {
     if (IsError())
@@ -720,11 +726,7 @@ bool ImGuiTestContext::CaptureBeginVideo(ImGuiCaptureArgs* args)
     IM_CHECK_SILENT_RETV(args != NULL, false);
 
     // Auto filename
-    if (args->InOutputFileTemplate[0] == 0)
-    {
-        ImFormatString(args->InOutputFileTemplate, IM_ARRAYSIZE(args->InOutputFileTemplate), "output/captures/%s_%04d.mp4", Test->Name, CaptureCounter);
-        CaptureCounter++;
-    }
+    CaptureInitAutoFilename(args, EngineIO->VideoCaptureExtension);
 
 #if IMGUI_TEST_ENGINE_ENABLE_CAPTURE
     bool can_capture = ImGuiTestContext_CanCaptureVideo(this);

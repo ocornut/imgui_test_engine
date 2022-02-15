@@ -539,12 +539,12 @@ static void ImGuiTestEngine_ShowLogAndTools(ImGuiTestEngine* engine)
         if (ImGui::InputText("Path to ffmpeg", engine->IO.PathToFFMPEG, IM_ARRAYSIZE(engine->IO.PathToFFMPEG)))
             engine->UiFFMPEGPathValid = ImFileExist(engine->IO.PathToFFMPEG);
         ImGui::BeginDisabled(!engine->UiFFMPEGPathValid);
-        if (ImGui::BeginCombo("Video file extension", engine->IO.VideoCaptureExt))
+        if (ImGui::BeginCombo("Video file extension", engine->IO.VideoCaptureExtension))
         {
             const char* supported_exts[] = { ".gif", ".mp4" };
             for (auto& ext : supported_exts)
-                if (ImGui::Selectable(ext, strcmp(engine->IO.VideoCaptureExt, ext) == 0))
-                    ImStrncpy(engine->IO.VideoCaptureExt, ext, IM_ARRAYSIZE(engine->IO.VideoCaptureExt));
+                if (ImGui::Selectable(ext, strcmp(engine->IO.VideoCaptureExtension, ext) == 0))
+                    ImStrncpy(engine->IO.VideoCaptureExtension, ext, IM_ARRAYSIZE(engine->IO.VideoCaptureExtension));
             ImGui::EndCombo();
         }
         HelpTooltip("File extension for captured video file.");
@@ -730,11 +730,10 @@ void    ImGuiTestEngine_ShowTestEngineWindows(ImGuiTestEngine* e, bool* p_open)
     capture_tool.Context.ScreenCaptureFunc = e->IO.ScreenCaptureFunc;
     capture_tool.Context.ScreenCaptureUserData = e->IO.ScreenCaptureUserData;
     e->CaptureContext.VideoCapturePathToFFMPEG = e->IO.PathToFFMPEG;
-    e->CaptureContext.VideoCaptureExt = e->IO.VideoCaptureExt;
     if (e->UiCaptureToolOpen)
         capture_tool.ShowCaptureToolWindow(&e->UiCaptureToolOpen);
 
-    // Perf tool
+    // Performanc tool
     if (e->UiPerfToolOpen)
     {
         if (ImGui::Begin("Dear ImGui Perf Tool", &e->UiPerfToolOpen))

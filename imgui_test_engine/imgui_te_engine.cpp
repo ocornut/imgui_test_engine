@@ -382,7 +382,6 @@ void    ImGuiTestEngine_PostSwap(ImGuiTestEngine* engine)
         engine->CaptureContext.ScreenCaptureFunc = engine->IO.ScreenCaptureFunc;
         engine->CaptureContext.ScreenCaptureUserData = engine->IO.ScreenCaptureUserData;
         engine->CaptureContext.VideoCapturePathToFFMPEG = engine->IO.PathToFFMPEG;
-        engine->CaptureContext.VideoCaptureExt = engine->IO.VideoCaptureExt;
         ImGuiCaptureStatus status = engine->CaptureContext.CaptureUpdate(engine->CaptureCurrentArgs);
         if (status != ImGuiCaptureStatus_InProgress)
         {
@@ -1803,8 +1802,8 @@ static void     ImGuiTestEngine_SettingsReadLine(ImGuiContext* ui_ctx, ImGuiSett
     else if (sscanf(line, "StackTool=%d", &n) == 1)                                                                                 { e->UiStackToolOpen = (n != 0); }
     else if (sscanf(line, "CaptureEnabled=%d", &n) == 1)                                                                            { e->IO.ConfigCaptureEnabled = (n != 0); }
     else if (sscanf(line, "CaptureOnError=%d", &n) == 1)                                                                            { e->IO.ConfigCaptureOnError = (n != 0); }
-    else if (SettingsTryReadString(line, "VideoCapturePathToFFMPEG=",e->IO.PathToFFMPEG,    IM_ARRAYSIZE(e->IO.PathToFFMPEG)))      { }
-    else if (SettingsTryReadString(line, "VideoCaptureExt=",         e->IO.VideoCaptureExt, IM_ARRAYSIZE(e->IO.VideoCaptureExt)))   { }
+    else if (SettingsTryReadString(line, "VideoCapturePathToFFMPEG=", e->IO.PathToFFMPEG, IM_ARRAYSIZE(e->IO.PathToFFMPEG)))        { }
+    else if (SettingsTryReadString(line, "VideoCaptureExtension=", e->IO.VideoCaptureExtension, IM_ARRAYSIZE(e->IO.VideoCaptureExtension)))   { }
 }
 
 static void     ImGuiTestEngine_SettingsApplyAll(ImGuiContext* ui_ctx, ImGuiSettingsHandler* handler)
@@ -1834,7 +1833,7 @@ static void     ImGuiTestEngine_SettingsWriteAll(ImGuiContext* ui_ctx, ImGuiSett
     buf->appendf("CaptureEnabled=%d\n", engine->IO.ConfigCaptureEnabled);
     buf->appendf("CaptureOnError=%d\n", engine->IO.ConfigCaptureOnError);
     buf->appendf("VideoCapturePathToFFMPEG=%s\n", engine->IO.PathToFFMPEG);
-    buf->appendf("VideoCaptureExt=%s\n", engine->IO.VideoCaptureExt);
+    buf->appendf("VideoCaptureExtension=%s\n", engine->IO.VideoCaptureExtension);
     buf->appendf("\n");
 }
 

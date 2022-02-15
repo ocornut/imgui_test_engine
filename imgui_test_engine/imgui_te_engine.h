@@ -205,7 +205,7 @@ struct ImGuiTestEngineIO
     int                         PerfStressAmount = 1;               // Integer to scale the amount of items submitted in test
     char                        GitBranchName[64] = "";             // e.g. fill in branch name
     char                        PathToFFMPEG[256] = "";             //
-    char                        VideoCaptureExt[8] = ".mp4";        // File extension (ffmpeg-compatible)
+    char                        VideoCaptureExtension[8] = ".mp4";  // Default file extension when using auto-filenames (ffmpeg-compatible)
 
     // Options: Speed of user simulation
     float                       MouseSpeed = 600.0f;                // Mouse speed (pixel/second) when not running in fast mode
