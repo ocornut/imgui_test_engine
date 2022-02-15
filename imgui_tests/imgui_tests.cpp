@@ -5073,7 +5073,7 @@ void RegisterTests_Capture(ImGuiTestEngine* e)
         ctx->ItemOpenAll("");
         ctx->CaptureScreenshotWindow("ImPlot Demo", ImGuiCaptureFlags_StitchAll | ImGuiCaptureFlags_HideMouseCursor);
     };
-#endif
+#endif // IMGUI_TEST_ENGINE_ENABLE_IMPLOT
 }
 
 void RegisterTests(ImGuiTestEngine* e)

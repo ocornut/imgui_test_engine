@@ -208,11 +208,11 @@ ImGuiCaptureStatus ImGuiCaptureContext::CaptureUpdate(ImGuiCaptureArgs* args)
     // Sanity checks
     IM_ASSERT(args != NULL);
     IM_ASSERT(ScreenCaptureFunc != NULL);
-    IM_ASSERT(args->InOutputImageBuf != NULL || args->InOutputFileTemplate[0]);
+    IM_ASSERT(args->InOutputImageBuf != NULL || args->InOutputFile[0]);
     IM_ASSERT(args->InRecordFPSTarget != 0);
     if (_VideoRecording)
     {
-        IM_ASSERT(args->InOutputFileTemplate[0] && "Output filename must be specified when recording videos.");
+        IM_ASSERT(args->InOutputFile[0] && "Output filename must be specified when recording videos.");
         IM_ASSERT(args->InOutputImageBuf == NULL && "Output buffer cannot be specified when recording videos.");
         IM_ASSERT((args->InFlags & ImGuiCaptureFlags_StitchAll) == 0 && "Image stitching is not supported when recording videos.");
     }
@@ -250,30 +250,18 @@ ImGuiCaptureStatus ImGuiCaptureContext::CaptureUpdate(ImGuiCaptureArgs* args)
     //-----------------------------------------------------------------
     if (_FrameNo == 0)
     {
-        // Create output folder and decide of output filename
-        if (args->InOutputFileTemplate[0])
+        if (is_recording_video)
         {
-            ImFormatString(args->OutSavedFileName, IM_ARRAYSIZE(args->OutSavedFileName), args->InOutputFileTemplate, args->InFileCounter + 1);
-            ImPathFixSeparatorsForCurrentOS(args->OutSavedFileName);
-            if (!ImFileCreateDirectoryChain(args->OutSavedFileName, ImPathFindFilename(args->OutSavedFileName)))
+            // Determinate size alignment
+            const char* extension = (char*)ImPathFindExtension(args->InOutputFile);
+            if (args->InSizeAlign == 0)
             {
-                fprintf(stderr, "ImGuiCaptureContext: unable to create directory for file '%s'.\n", args->OutSavedFileName);
-                return ImGuiCaptureStatus_Error;
+                if (strcmp(extension, ".gif") == 0)
+                    args->InSizeAlign = 1;
+                else
+                    args->InSizeAlign = 2; // mp4 wants >= 2
             }
-
-            if (is_recording_video)
-            {
-                // Determinate size alignment
-                const char* extension = (char*)ImPathFindExtension(args->OutSavedFileName);
-                if (args->InSizeAlign == 0)
-                {
-                    if (strcmp(extension, ".gif") == 0)
-                        args->InSizeAlign = 1;
-                    else
-                        args->InSizeAlign = 2; // mp4 wants >= 2
-                }
-                IM_ASSERT(args->InSizeAlign > 0);
-            }
+            IM_ASSERT(args->InSizeAlign > 0);
         }
 
         // When recording, same args should have been passed to BeginVideoCapture().
@@ -469,7 +457,7 @@ ImGuiCaptureStatus ImGuiCaptureContext::CaptureUpdate(ImGuiCaptureArgs* args)
                         "\"%s\" -r %d -f rawvideo -pix_fmt rgba -s %dx%d -i - -threads 0 -vsync 0 "
                         "-preset ultrafast -y -pix_fmt yuv420p -crf %d -hide_banner -loglevel error "
                         "%s",
-                        ffmpeg_exe.c_str(), args->InRecordFPSTarget, width, height, args->InRecordQuality, args->OutSavedFileName);
+                        ffmpeg_exe.c_str(), args->InRecordFPSTarget, width, height, args->InRecordQuality, args->InOutputFile);
                     fprintf(stdout, "# %s\n", cmd.c_str());
                     _VideoFFMPEGPipe = ImOsPOpen(cmd.c_str(), "w");
                     IM_ASSERT(_VideoFFMPEGPipe != NULL);
@@ -497,10 +485,7 @@ ImGuiCaptureStatus ImGuiCaptureContext::CaptureUpdate(ImGuiCaptureArgs* args)
             {
                 // Save single frame.
                 if ((args->InFlags & ImGuiCaptureFlags_NoSave) == 0)
-                {
-                    args->InFileCounter++;
-                    output->SaveFile(args->OutSavedFileName);
-                }
+                    output->SaveFile(args->InOutputFile);
                 output->Clear();
             }
 
@@ -568,7 +553,7 @@ bool ImGuiCaptureContext::IsCapturingVideo()
 ImGuiCaptureToolUI::ImGuiCaptureToolUI()
 {
     // Filename template for where screenshots will be saved. May contain directories or variation of %d format.
-    strcpy(_CaptureArgs.InOutputFileTemplate, "output/captures/imgui_capture_%04d.png");
+    strcpy(_OutputFileTemplate, "output/captures/imgui_capture_%04d.png");
 }
 
 // Interactively pick a single window
@@ -661,7 +646,7 @@ void ImGuiCaptureToolUI::CaptureWindowsSelector(ImGuiCaptureArgs* args)
             args->InCaptureWindows.push_back(window);
         }
     }
-    const bool allow_capture = !capture_rect.IsInverted() && args->InCaptureWindows.Size > 0;
+    const bool allow_capture = !capture_rect.IsInverted() && args->InCaptureWindows.Size > 0 && _OutputFileTemplate[0];
 
     const float TEXT_BASE_WIDTH = ImGui::CalcTextSize("A").x;
     const ImVec2 button_sz = ImVec2(TEXT_BASE_WIDTH * 30, 0.0f);
@@ -792,8 +777,9 @@ void ImGuiCaptureToolUI::ShowCaptureToolWindow(bool* p_open)
         if (status != ImGuiCaptureStatus_InProgress)
         {
             if (status == ImGuiCaptureStatus_Done)
-                ImFormatString(OutputLastFilename, IM_ARRAYSIZE(OutputLastFilename), "%s", args->OutSavedFileName);
+                ImStrncpy(OutputLastFilename, args->InOutputFile, IM_ARRAYSIZE(OutputLastFilename));
             _StateIsCapturing = false;
+            _FileCounter++;
         }
     }
 
@@ -834,7 +820,7 @@ void ImGuiCaptureToolUI::ShowCaptureToolWindow(bool* p_open)
         // Open Directory
         {
             char save_file_dir[256];
-            strcpy(save_file_dir, _CaptureArgs.InOutputFileTemplate);
+            strcpy(save_file_dir, _OutputFileTemplate);
             char* save_file_name = (char*)ImPathFindFilename(save_file_dir);
             if (save_file_name > save_file_dir)
                 save_file_name[-1] = 0;
@@ -850,7 +836,7 @@ void ImGuiCaptureToolUI::ShowCaptureToolWindow(bool* p_open)
         const float BUTTON_WIDTH = (float)(int)-(TEXT_BASE_WIDTH * 26);
 
         ImGui::PushItemWidth(BUTTON_WIDTH);
-        ImGui::InputText("Output template", _CaptureArgs.InOutputFileTemplate, IM_ARRAYSIZE(_CaptureArgs.InOutputFileTemplate));
+        ImGui::InputText("Output template", _OutputFileTemplate, IM_ARRAYSIZE(_OutputFileTemplate));
         ImGui::DragFloat("Padding", &_CaptureArgs.InPadding, 0.1f, 0, 32, "%.0f");
         ImGui::DragInt("Video FPS", &_CaptureArgs.InRecordFPSTarget, 0.1f, 10, 100, "%d fps");
 
@@ -883,10 +869,33 @@ void ImGuiCaptureToolUI::ShowCaptureToolWindow(bool* p_open)
 
     ImGui::Separator();
 
-    if (_StateIsCapturing == false)
+    bool was_capturing = _StateIsCapturing;
+    if (!_StateIsCapturing)
         _CaptureArgs.InCaptureWindows.clear();
     CaptureWindowPicker(&_CaptureArgs);
     CaptureWindowsSelector(&_CaptureArgs);
+
+    if (!was_capturing && _StateIsCapturing)
+    {
+        // Create output folder and decide of output filename
+        ImFormatString(_CaptureArgs.InOutputFile, IM_ARRAYSIZE(_CaptureArgs.InOutputFile), _OutputFileTemplate,
+                       _FileCounter + 1);
+        ImPathFixSeparatorsForCurrentOS(_CaptureArgs.InOutputFile);
+        if (!ImFileCreateDirectoryChain(_CaptureArgs.InOutputFile, ImPathFindFilename(_CaptureArgs.InOutputFile)))
+        {
+            fprintf(stderr, "ImGuiCaptureContext: unable to create directory for file '%s'.\n",
+                    _CaptureArgs.InOutputFile);
+            _StateIsCapturing = false;
+            if (Context.IsCapturingVideo())
+                Context.EndVideoCapture();
+        }
+
+        // File template will most likely end with .png, but we need a different extension for videos.
+        if (Context.IsCapturingVideo())
+            if (char* ext = (char*)ImPathFindExtension(_CaptureArgs.InOutputFile))
+                ImStrncpy(ext, VideoCaptureExt, (size_t)(ext - _CaptureArgs.InOutputFile));
+    }
+
     ImGui::Separator();
 
     ImGui::End();

@@ -62,8 +62,7 @@ struct ImGuiCaptureArgs
     ImVector<ImGuiWindow*>  InCaptureWindows;               // Windows to capture. All other windows will be hidden. May be used with InCaptureRect to capture only some windows in specified rect.
     ImRect                  InCaptureRect;                  // Screen rect to capture. Does not include padding.
     float                   InPadding = 16.0f;              // Extra padding at the edges of the screenshot. Ensure that there is available space around capture rect horizontally, also vertically if ImGuiCaptureFlags_StitchFullContents is not used.
-    int                     InFileCounter = 0;              // Counter which may be appended to file name when saving. By default counting starts from 1. When done this field holds number of saved files.
-    char                    InOutputFileTemplate[256] = ""; // Output will be saved to a file if InOutputImageBuf is NULL.
+    char                    InOutputFile[256] = "";         // Output will be saved to a file if InOutputImageBuf is NULL.
     ImGuiCaptureImageBuf*   InOutputImageBuf = NULL;        // _OR_ Output will be saved to image buffer if specified.
     int                     InRecordFPSTarget = 30;         // FPS target for recording videos.
     int                     InRecordQuality = 20;           // 0 = lossless, 18 = visually lossless, 23 = default, 51 = worst // FIXME: Move to command-line
@@ -71,7 +70,6 @@ struct ImGuiCaptureArgs
 
     // [Output]
     ImVec2                  OutImageSize;                   // Produced image size.
-    char                    OutSavedFileName[256] = "";     // Saved file name, if any.
 };
 
 enum ImGuiCaptureStatus
@@ -141,11 +139,14 @@ struct ImGuiCaptureToolUI
     ImGuiCaptureContext     Context;                            // Screenshot capture context.
     float                   SnapGridSize = 32.0f;               // Size of the grid cell for "snap to grid" functionality.
     char                    OutputLastFilename[256] = "";       // File name of last captured file.
+    const char*             VideoCaptureExt = NULL;             // Video file extension (e.g. ".gif" or ".mp4")
 
     ImGuiCaptureArgs        _CaptureArgs;                       // Capture args
     bool                    _StateIsPickingWindow = false;
     bool                    _StateIsCapturing = false;
     ImVector<ImGuiID>       _SelectedWindows;
+    char                    _OutputFileTemplate[256] = "";      //
+    int                     _FileCounter = 0;                   // Counter which may be appended to file name when saving. By default, counting starts from 1. When done this field holds number of saved files.
 
     // Public
     ImGuiCaptureToolUI();

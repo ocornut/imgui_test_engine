@@ -386,7 +386,7 @@ void    ImGuiTestEngine_PostSwap(ImGuiTestEngine* engine)
         if (status != ImGuiCaptureStatus_InProgress)
         {
             if (status == ImGuiCaptureStatus_Done)
-                ImStrncpy(engine->CaptureTool.OutputLastFilename, engine->CaptureCurrentArgs->OutSavedFileName, IM_ARRAYSIZE(engine->CaptureTool.OutputLastFilename));
+                ImStrncpy(engine->CaptureTool.OutputLastFilename, engine->CaptureCurrentArgs->InOutputFile, IM_ARRAYSIZE(engine->CaptureTool.OutputLastFilename));
             engine->CaptureCurrentArgs = NULL;
         }
     }
@@ -1298,9 +1298,9 @@ static void ImGuiTestEngine_RunTest(ImGuiTestEngine* engine, ImGuiTestContext* c
             args.InFlags = ImGuiCaptureFlags_Instant;
             args.InCaptureRect.Min = ImGui::GetMainViewport()->Pos;
             args.InCaptureRect.Max = args.InCaptureRect.Min + ImGui::GetMainViewport()->Size;
-            ImFormatString(args.InOutputFileTemplate, IM_ARRAYSIZE(args.InOutputFileTemplate), "output/failures/%s_%04d.png", ctx->Test->Name, ctx->ErrorCounter);
+            ImFormatString(args.InOutputFile, IM_ARRAYSIZE(args.InOutputFile), "output/failures/%s_%04d.png", ctx->Test->Name, ctx->ErrorCounter);
             if (ImGuiTestEngine_CaptureScreenshot(engine, &args))
-                ctx->LogDebug("Saved '%s' (%d*%d pixels)", args.OutSavedFileName, (int)args.OutImageSize.x, (int)args.OutImageSize.y);
+                ctx->LogDebug("Saved '%s' (%d*%d pixels)", args.InOutputFile, (int)args.OutImageSize.x, (int)args.OutImageSize.y);
         }
 
         // Recover missing End*/Pop* calls.

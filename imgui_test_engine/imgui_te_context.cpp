@@ -686,9 +686,9 @@ bool ImGuiTestContext::CaptureScreenshotEx(ImGuiCaptureArgs* args)
         args->InFlags |= ImGuiCaptureFlags_NoSave;
     bool ret = ImGuiTestEngine_CaptureScreenshot(Engine, args);
     if (can_capture)
-        LogInfo("Saved '%s' (%d*%d pixels)", args->OutSavedFileName, (int)args->OutImageSize.x, (int)args->OutImageSize.y);
+        LogInfo("Saved '%s' (%d*%d pixels)", args->InOutputFile, (int)args->OutImageSize.x, (int)args->OutImageSize.y);
     else
-        LogWarning("Skipped saving '%s' (%d*%d pixels) (enable in 'Misc->Options')", args->OutSavedFileName, (int)args->OutImageSize.x, (int)args->OutImageSize.y);
+        LogWarning("Skipped saving '%s' (%d*%d pixels) (enable in 'Misc->Options')", args->InOutputFile, (int)args->OutImageSize.x, (int)args->OutImageSize.y);
     return ret;
 #else
     IM_UNUSED(args);
@@ -709,9 +709,9 @@ void ImGuiTestContext::CaptureScreenshotWindow(ImGuiTestRef ref, int capture_fla
 void ImGuiTestContext::CaptureInitAutoFilename(ImGuiCaptureArgs* args, const char* ext)
 {
     IM_ASSERT(ext && ext[0] == '.');
-    if (args->InOutputFileTemplate[0] == 0)
+    if (args->InOutputFile[0] == 0)
     {
-        ImFormatString(args->InOutputFileTemplate, IM_ARRAYSIZE(args->InOutputFileTemplate), "output/captures/%s_%04d%s", Test->Name, CaptureCounter, ext);
+        ImFormatString(args->InOutputFile, IM_ARRAYSIZE(args->InOutputFile), "output/captures/%s_%04d%s", Test->Name, CaptureCounter, ext);
         CaptureCounter++;
     }
 }
@@ -759,14 +759,14 @@ bool ImGuiTestContext::CaptureEndVideo(ImGuiCaptureArgs* args)
     bool can_capture = ImGuiTestContext_CanCaptureVideo(this);
     if (can_capture)
     {
-        LogInfo("Saved '%s' (%d*%d pixels)", args->OutSavedFileName, (int)args->OutImageSize.x, (int)args->OutImageSize.y);
+        LogInfo("Saved '%s' (%d*%d pixels)", args->InOutputFile, (int)args->OutImageSize.x, (int)args->OutImageSize.y);
     }
     else
     {
         if (!EngineIO->ConfigCaptureEnabled)
-            LogWarning("Skipped saving '%s' video because: io.ConfigCaptureEnabled == false (enable in Misc->Options)", args->OutSavedFileName);
+            LogWarning("Skipped saving '%s' video because: io.ConfigCaptureEnabled == false (enable in Misc->Options)", args->InOutputFile);
         else
-            LogWarning("Skipped saving '%s' video because: FFMPEG not found.", args->OutSavedFileName);
+            LogWarning("Skipped saving '%s' video because: FFMPEG not found.", args->InOutputFile);
     }
 
     return ret;

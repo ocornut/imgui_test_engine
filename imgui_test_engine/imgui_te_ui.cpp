@@ -79,6 +79,7 @@ static bool ParseLineAndDrawFileOpenItemForImageFile(ImGuiTestEngine* e, ImGuiTe
     if (ImGui::MenuItem(buf.c_str()))
     {
         buf.setf("%.*s", (int)(path_end - path_begin), path_begin);
+        ImPathFixSeparatorsForCurrentOS(buf.c_str());
         ImOsOpenInShell(buf.c_str());
     }
 
@@ -89,6 +90,7 @@ static bool ParseLineAndDrawFileOpenItemForImageFile(ImGuiTestEngine* e, ImGuiTe
     if (ImGui::MenuItem(buf.c_str()))
     {
         buf.setf("%.*s", (int)(folder_end - folder_begin), folder_begin);
+        ImPathFixSeparatorsForCurrentOS(buf.c_str());
         ImOsOpenInShell(buf.c_str());
     }
 
@@ -801,11 +803,12 @@ void    ImGuiTestEngine_ShowTestEngineWindows(ImGuiTestEngine* e, bool* p_open)
     ImGuiCaptureToolUI& capture_tool = e->CaptureTool;
     capture_tool.Context.ScreenCaptureFunc = e->IO.ScreenCaptureFunc;
     capture_tool.Context.ScreenCaptureUserData = e->IO.ScreenCaptureUserData;
-    e->CaptureContext.VideoCapturePathToFFMPEG = e->IO.PathToFFMPEG;
+    capture_tool.Context.VideoCapturePathToFFMPEG = e->IO.PathToFFMPEG;
+    capture_tool.VideoCaptureExt = e->IO.VideoCaptureExtension;
     if (e->UiCaptureToolOpen)
         capture_tool.ShowCaptureToolWindow(&e->UiCaptureToolOpen);
 
-    // Performanc tool
+    // Performance tool
     if (e->UiPerfToolOpen)
     {
         if (ImGui::Begin("Dear ImGui Perf Tool", &e->UiPerfToolOpen))
