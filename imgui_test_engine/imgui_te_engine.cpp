@@ -100,7 +100,6 @@ static void ImGuiTestEngine_InstallCrashHandler();
 // Settings
 static void* ImGuiTestEngine_SettingsReadOpen(ImGuiContext*, ImGuiSettingsHandler*, const char* name);
 static void  ImGuiTestEngine_SettingsReadLine(ImGuiContext*, ImGuiSettingsHandler*, void* entry, const char* line);
-static void  ImGuiTestEngine_SettingsApplyAll(ImGuiContext* ui_ctx, ImGuiSettingsHandler* handler);
 static void  ImGuiTestEngine_SettingsWriteAll(ImGuiContext* imgui_ctx, ImGuiSettingsHandler* handler, ImGuiTextBuffer* buf);
 
 //-------------------------------------------------------------------------
@@ -163,7 +162,6 @@ static void ImGuiTestEngine_BindImGuiContext(ImGuiTestEngine* engine, ImGuiConte
         ini_handler.TypeHash = ImHashStr("TestEngine");
         ini_handler.ReadOpenFn = ImGuiTestEngine_SettingsReadOpen;
         ini_handler.ReadLineFn = ImGuiTestEngine_SettingsReadLine;
-        ini_handler.ApplyAllFn = ImGuiTestEngine_SettingsApplyAll;
         ini_handler.WriteAllFn = ImGuiTestEngine_SettingsWriteAll;
         ui_ctx->SettingsHandlers.push_back(ini_handler);
         engine->PerfTool->_AddSettingsHandler();
@@ -389,12 +387,19 @@ void    ImGuiTestEngine_PostSwap(ImGuiTestEngine* engine)
     if (engine->IO.ConfigFixedDeltaTime != 0.0f)
         ImGuiTestEngine_SetDeltaTime(engine, engine->IO.ConfigFixedDeltaTime);
 
+    // Sync capture tool configurations from engine IO.
+    engine->CaptureContext.ScreenCaptureFunc = engine->IO.ScreenCaptureFunc;
+    engine->CaptureContext.ScreenCaptureUserData = engine->IO.ScreenCaptureUserData;
+    engine->CaptureContext.VideoCaptureFFMPEGPath = engine->IO.VideoCaptureFFMPEGPath;
+    engine->CaptureContext.VideoCaptureFFMPEGPathSize = IM_ARRAYSIZE(engine->IO.VideoCaptureFFMPEGPath);
+    engine->CaptureContext.VideoCaptureFFMPEGParams = engine->IO.VideoCaptureFFMPEGParams;
+    engine->CaptureContext.VideoCaptureFFMPEGParamsSize = IM_ARRAYSIZE(engine->IO.VideoCaptureFFMPEGParams);
+    engine->CaptureContext.VideoCaptureExt = engine->IO.VideoCaptureExtension;
+    engine->CaptureContext.VideoCaptureExtSize = IM_ARRAYSIZE(engine->IO.VideoCaptureExtension);
+
     // Capture a screenshot from main thread while coroutine waits
     if (engine->CaptureCurrentArgs != NULL)
     {
-        engine->CaptureContext.ScreenCaptureFunc = engine->IO.ScreenCaptureFunc;
-        engine->CaptureContext.ScreenCaptureUserData = engine->IO.ScreenCaptureUserData;
-        engine->CaptureContext.VideoCapturePathToFFMPEG = engine->IO.PathToFFMPEG;
         ImGuiCaptureStatus status = engine->CaptureContext.CaptureUpdate(engine->CaptureCurrentArgs);
         if (status != ImGuiCaptureStatus_InProgress)
         {
@@ -922,7 +927,7 @@ bool ImGuiTestEngine_CaptureScreenshot(ImGuiTestEngine* engine, ImGuiCaptureArgs
 
     // Verify that the ImGuiCaptureFlags_Instant flag got honored
     if (args->InFlags & ImGuiCaptureFlags_Instant)
-        IM_ASSERT(frame_count + 1== engine->FrameCount);
+        IM_ASSERT(frame_count + 1 == engine->FrameCount);
 
     engine->IO.ConfigRunSpeed = backup_run_speed;
     return true;
@@ -1828,19 +1833,9 @@ static void     ImGuiTestEngine_SettingsReadLine(ImGuiContext* ui_ctx, ImGuiSett
     else if (sscanf(line, "StackTool=%d", &n) == 1)                                                                                 { e->UiStackToolOpen = (n != 0); }
     else if (sscanf(line, "CaptureEnabled=%d", &n) == 1)                                                                            { e->IO.ConfigCaptureEnabled = (n != 0); }
     else if (sscanf(line, "CaptureOnError=%d", &n) == 1)                                                                            { e->IO.ConfigCaptureOnError = (n != 0); }
-    else if (SettingsTryReadString(line, "VideoCapturePathToFFMPEG=", e->IO.PathToFFMPEG, IM_ARRAYSIZE(e->IO.PathToFFMPEG)))        { }
-    else if (SettingsTryReadString(line, "VideoCaptureExtension=", e->IO.VideoCaptureExtension, IM_ARRAYSIZE(e->IO.VideoCaptureExtension)))   { }
-}
-
-static void     ImGuiTestEngine_SettingsApplyAll(ImGuiContext* ui_ctx, ImGuiSettingsHandler* handler)
-{
-    IM_UNUSED(handler);
-    ImGuiTestEngine* engine = (ImGuiTestEngine*)ui_ctx->TestEngine;
-    IM_ASSERT(engine != NULL);
-    IM_ASSERT(engine->UiContextTarget == ui_ctx);
-
-    if (!ImFileExist(engine->IO.PathToFFMPEG))
-        fprintf(stderr, "ffmpeg.exe not found, screen capturing functions are disabled.\n");
+    else if (SettingsTryReadString(line, "VideoCapturePathToFFMPEG=", e->IO.VideoCaptureFFMPEGPath, IM_ARRAYSIZE(e->IO.VideoCaptureFFMPEGPath))) { }
+    else if (SettingsTryReadString(line, "VideoCaptureParamsToFFMPEG=", e->IO.VideoCaptureFFMPEGParams, IM_ARRAYSIZE(e->IO.VideoCaptureFFMPEGParams))) { }
+    else if (SettingsTryReadString(line, "VideoCaptureExtension=", e->IO.VideoCaptureExtension, IM_ARRAYSIZE(e->IO.VideoCaptureExtension))) { }
 }
 
 static void     ImGuiTestEngine_SettingsWriteAll(ImGuiContext* ui_ctx, ImGuiSettingsHandler* handler, ImGuiTextBuffer* buf)
@@ -1858,7 +1853,8 @@ static void     ImGuiTestEngine_SettingsWriteAll(ImGuiContext* ui_ctx, ImGuiSett
     buf->appendf("StackTool=%d\n", engine->UiStackToolOpen);
     buf->appendf("CaptureEnabled=%d\n", engine->IO.ConfigCaptureEnabled);
     buf->appendf("CaptureOnError=%d\n", engine->IO.ConfigCaptureOnError);
-    buf->appendf("VideoCapturePathToFFMPEG=%s\n", engine->IO.PathToFFMPEG);
+    buf->appendf("VideoCapturePathToFFMPEG=%s\n", engine->IO.VideoCaptureFFMPEGPath);
+    buf->appendf("VideoCaptureParamsToFFMPEG=%s\n", engine->IO.VideoCaptureFFMPEGParams);
     buf->appendf("VideoCaptureExtension=%s\n", engine->IO.VideoCaptureExtension);
     buf->appendf("\n");
 }

@@ -548,9 +548,6 @@ static void ImGuiTestEngine_ShowLogAndTools(ImGuiTestEngine* engine)
     ImGuiContext& g = *GImGui;
     const float dpi_scale = GetDpiScale();
 
-    if (ImGui::IsWindowAppearing())
-        engine->UiFFMPEGPathValid = ImFileExist(engine->IO.PathToFFMPEG);
-
     if (!ImGui::BeginTabBar("##tools"))
         return;
 
@@ -602,19 +599,8 @@ static void ImGuiTestEngine_ShowLogAndTools(ImGuiTestEngine* engine)
             ImGui::Checkbox("Capture when requested by API", &engine->IO.ConfigCaptureEnabled); HelpTooltip("Enable or disable screen capture API completely.");
             ImGui::Checkbox("Capture screen on error", &engine->IO.ConfigCaptureOnError); HelpTooltip("Capture a screenshot on test failure.");
 
-            if (ImGui::InputText("Path to ffmpeg", engine->IO.PathToFFMPEG, IM_ARRAYSIZE(engine->IO.PathToFFMPEG)))
-                engine->UiFFMPEGPathValid = ImFileExist(engine->IO.PathToFFMPEG);
-            ImGui::BeginDisabled(!engine->UiFFMPEGPathValid);
-            if (ImGui::BeginCombo("Video file extension", engine->IO.VideoCaptureExtension))
-            {
-                const char* supported_exts[] = { ".gif", ".mp4" };
-                for (auto& ext : supported_exts)
-                    if (ImGui::Selectable(ext, strcmp(engine->IO.VideoCaptureExtension, ext) == 0))
-                        ImStrncpy(engine->IO.VideoCaptureExtension, ext, IM_ARRAYSIZE(engine->IO.VideoCaptureExtension));
-                ImGui::EndCombo();
-            }
-            HelpTooltip("File extension for captured video file.");
-            ImGui::EndDisabled();
+            // Fields modified by in this call will be synced to engine->CaptureContext.
+            engine->CaptureTool._ShowFFMPEGConfigFields(&engine->CaptureContext);
 
             ImGui::TreePop();
         }
@@ -800,10 +786,8 @@ void    ImGuiTestEngine_ShowTestEngineWindows(ImGuiTestEngine* e, bool* p_open)
         ImGui::ShowStackToolWindow(&e->UiStackToolOpen);
 
     // Capture Tool
-    ImGuiCaptureToolUI& capture_tool = e->CaptureTool;
-    capture_tool.VideoCaptureExt = e->IO.VideoCaptureExtension;
     if (e->UiCaptureToolOpen)
-        capture_tool.ShowCaptureToolWindow(&e->CaptureContext, &e->UiCaptureToolOpen);
+        e->CaptureTool.ShowCaptureToolWindow(&e->CaptureContext, &e->UiCaptureToolOpen);
 
     // Performance tool
     if (e->UiPerfToolOpen)

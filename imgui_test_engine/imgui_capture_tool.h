@@ -65,7 +65,6 @@ struct ImGuiCaptureArgs
     char                    InOutputFile[256] = "";         // Output will be saved to a file if InOutputImageBuf is NULL.
     ImGuiCaptureImageBuf*   InOutputImageBuf = NULL;        // _OR_ Output will be saved to image buffer if specified.
     int                     InRecordFPSTarget = 30;         // FPS target for recording videos.
-    int                     InRecordQuality = 20;           // 0 = lossless, 18 = visually lossless, 23 = default, 51 = worst // FIXME: Move to command-line
     int                     InSizeAlign = 0;                // Resolution alignment (0 = auto, 1 = no alignment, >= 2 = align width/height to be multiple of given value)
 
     // [Output]
@@ -85,7 +84,12 @@ struct IMGUI_API ImGuiCaptureContext
     // IO
     ImFuncPtr(ImGuiScreenCaptureFunc) ScreenCaptureFunc = NULL; // Graphics backend specific function that captures specified portion of framebuffer and writes RGBA data to `pixels` buffer.
     void*                   ScreenCaptureUserData = NULL;       // Custom user pointer which is passed to ScreenCaptureFunc. (Optional)
-    const char*             VideoCapturePathToFFMPEG = NULL;    // Path to ffmpeg executable.
+    char*                   VideoCaptureFFMPEGPath = NULL;      // Path to ffmpeg executable.
+    int                     VideoCaptureFFMPEGPathSize = 0;     // Optional. Set in order to edit this parameter from UI.
+    char*                   VideoCaptureFFMPEGParams = NULL;    // Params to ffmpeg executable.
+    int                     VideoCaptureFFMPEGParamsSize = 0;   // Optional. Set in order to edit this parameter from UI.
+    char*                   VideoCaptureExt = NULL;             // Video file extension (e.g. ".gif" or ".mp4")
+    int                     VideoCaptureExtSize = 0;            // Optional. Set in order to edit this parameter from UI.
 
     // [Internal]
     ImRect                  _CaptureRect;                   // Viewport rect that is being captured.
@@ -139,7 +143,6 @@ struct IMGUI_API ImGuiCaptureToolUI
 {
     float                   SnapGridSize = 32.0f;               // Size of the grid cell for "snap to grid" functionality.
     char                    OutputLastFilename[256] = "";       // File name of last captured file.
-    const char*             VideoCaptureExt = NULL;             // Video file extension (e.g. ".gif" or ".mp4")
 
     ImGuiCaptureArgs        _CaptureArgs;                       // Capture args
     bool                    _StateIsPickingWindow = false;
@@ -153,7 +156,9 @@ struct IMGUI_API ImGuiCaptureToolUI
     void    ShowCaptureToolWindow(ImGuiCaptureContext* context, bool* p_open = NULL);   // Render a capture tool window with various options and utilities.
 
     // [Internal]
-    void    CaptureWindowPicker(ImGuiCaptureArgs* args);        // Render a window picker that captures picked window to file specified in file_name.
-    void    CaptureWindowsSelector(ImGuiCaptureContext* context, ImGuiCaptureArgs* args);   // Render a selector for selecting multiple windows for capture.
-    void    SnapWindowsToGrid(float cell_size);                 // Snaps edges of all visible windows to a virtual grid.
+    void    _CaptureWindowPicker(ImGuiCaptureArgs* args);       // Render a window picker that captures picked window to file specified in file_name.
+    void    _CaptureWindowsSelector(ImGuiCaptureContext* context, ImGuiCaptureArgs* args);    // Render a selector for selecting multiple windows for capture.
+    void    _SnapWindowsToGrid(float cell_size);                // Snap edges of all visible windows to a virtual grid.
+    bool    _InitializeOutputFile();                            // Format output file template into capture args struct and ensure target directory exists.
+    bool    _ShowFFMPEGConfigFields(ImGuiCaptureContext* context);
 };

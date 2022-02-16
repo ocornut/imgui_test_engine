@@ -215,6 +215,11 @@ ImGuiCaptureStatus ImGuiCaptureContext::CaptureUpdate(ImGuiCaptureArgs* args)
         IM_ASSERT(args->InOutputFile[0] && "Output filename must be specified when recording videos.");
         IM_ASSERT(args->InOutputImageBuf == NULL && "Output buffer cannot be specified when recording videos.");
         IM_ASSERT((args->InFlags & ImGuiCaptureFlags_StitchAll) == 0 && "Image stitching is not supported when recording videos.");
+        if (!ImFileExist(VideoCaptureFFMPEGPath))
+        {
+            fprintf(stderr, "ffmpeg.exe not found, video capturing failed.\n");
+            return ImGuiCaptureStatus_Error;
+        }
     }
 
     ImGuiCaptureImageBuf* output = args->InOutputImageBuf ? args->InOutputImageBuf : &_CaptureBuf;
@@ -449,15 +454,15 @@ ImGuiCaptureStatus ImGuiCaptureContext::CaptureUpdate(ImGuiCaptureArgs* args)
                     // First video frame, initialize now that dimensions are known.
                     const unsigned int width = (unsigned int)capture_rect.GetWidth();
                     const unsigned int height = (unsigned int)capture_rect.GetHeight();
-                    IM_ASSERT(VideoCapturePathToFFMPEG != NULL && VideoCapturePathToFFMPEG[0]);
-                    Str64f ffmpeg_exe(VideoCapturePathToFFMPEG);
+                    IM_ASSERT(VideoCaptureFFMPEGPath != NULL && VideoCaptureFFMPEGPath[0]);
+                    IM_ASSERT(VideoCaptureFFMPEGParams != NULL && VideoCaptureFFMPEGParams[0]);
+                    Str256f ffmpeg_exe(VideoCaptureFFMPEGPath), cmd("");
                     ImPathFixSeparatorsForCurrentOS(ffmpeg_exe.c_str());
-                    Str256f cmd("");
-                    cmd.setf(
-                        "\"%s\" -r %d -f rawvideo -pix_fmt rgba -s %dx%d -i - -threads 0 -vsync 0 "
-                        "-preset ultrafast -y -pix_fmt yuv420p -crf %d -hide_banner -loglevel error "
-                        "%s",
-                        ffmpeg_exe.c_str(), args->InRecordFPSTarget, width, height, args->InRecordQuality, args->InOutputFile);
+                    cmd.appendf("\"%s\" %s", ffmpeg_exe.c_str(), VideoCaptureFFMPEGParams);
+                    ImStrReplace(&cmd, "$FPS", Str16f("%d", args->InRecordFPSTarget).c_str());
+                    ImStrReplace(&cmd, "$WIDTH", Str16f("%d", width).c_str());
+                    ImStrReplace(&cmd, "$HEIGHT", Str16f("%d", height).c_str());
+                    ImStrReplace(&cmd, "$OUTPUT", args->InOutputFile);
                     fprintf(stdout, "# %s\n", cmd.c_str());
                     _VideoFFMPEGPipe = ImOsPOpen(cmd.c_str(), "w");
                     IM_ASSERT(_VideoFFMPEGPipe != NULL);
@@ -470,7 +475,7 @@ ImGuiCaptureStatus ImGuiCaptureContext::CaptureUpdate(ImGuiCaptureArgs* args)
                 _VideoLastFrameTime = current_time_sec;
         }
 
-        // Image is finalized immediately when we are not stitching. Otherwise image is finalized when we have captured and stitched all frames.
+        // Image is finalized immediately when we are not stitching. Otherwise, image is finalized when we have captured and stitched all frames.
         if (!_VideoRecording && (!(args->InFlags & ImGuiCaptureFlags_StitchAll) || h <= 0))
         {
             output->RemoveAlpha();
@@ -531,6 +536,10 @@ void ImGuiCaptureContext::BeginVideoCapture(ImGuiCaptureArgs* args)
 
     _VideoRecording = true;
     _CaptureArgs = args;
+
+    // File template will most likely end with .png, but we need a different extension for videos.
+    if (char* ext = (char*)ImPathFindExtension(args->InOutputFile))
+        ImStrncpy(ext, VideoCaptureExt, (size_t)(ext - args->InOutputFile));
 }
 
 void ImGuiCaptureContext::EndVideoCapture()
@@ -558,11 +567,11 @@ bool ImGuiCaptureContext::IsCapturing()
 ImGuiCaptureToolUI::ImGuiCaptureToolUI()
 {
     // Filename template for where screenshots will be saved. May contain directories or variation of %d format.
-    strcpy(_OutputFileTemplate, "output/captures/imgui_capture_%04d.png");
+    ImStrncpy(_OutputFileTemplate, "output/captures/imgui_capture_%04d.png", IM_ARRAYSIZE(_OutputFileTemplate));
 }
 
 // Interactively pick a single window
-void ImGuiCaptureToolUI::CaptureWindowPicker(ImGuiCaptureArgs* args)
+void ImGuiCaptureToolUI::_CaptureWindowPicker(ImGuiCaptureArgs* args)
 {
     ImGuiContext& g = *GImGui;
     ImGuiIO& io = g.IO;
@@ -604,7 +613,7 @@ void ImGuiCaptureToolUI::CaptureWindowPicker(ImGuiCaptureArgs* args)
             fg_draw_list->AddRectFilled(viewport_rect.Min, viewport_rect.Max, col_dim_overlay);
         }
 
-        if (ImGui::IsMouseClicked(0) && capture_window)
+        if (ImGui::IsMouseClicked(0) && capture_window && _InitializeOutputFile())
         {
             ImGui::FocusWindow(capture_window);
             _SelectedWindows.resize(0);
@@ -623,7 +632,7 @@ void ImGuiCaptureToolUI::CaptureWindowPicker(ImGuiCaptureArgs* args)
     }
 }
 
-void ImGuiCaptureToolUI::CaptureWindowsSelector(ImGuiCaptureContext* context, ImGuiCaptureArgs* args)
+void ImGuiCaptureToolUI::_CaptureWindowsSelector(ImGuiCaptureContext* context, ImGuiCaptureArgs* args)
 {
     ImGuiContext& g = *GImGui;
     ImGuiIO& io = g.IO;
@@ -669,7 +678,7 @@ void ImGuiCaptureToolUI::CaptureWindowsSelector(ImGuiCaptureContext* context, Im
             ImGui::EndDisabled();
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Alternatively press Alt+C to capture selection.");
-        if (do_capture)
+        if (do_capture && _InitializeOutputFile())
             _StateIsCapturing = true;
     }
 
@@ -688,7 +697,7 @@ void ImGuiCaptureToolUI::CaptureWindowsSelector(ImGuiCaptureContext* context, Im
             ImFormatString(label, 64, "Capture video (%d)###CaptureVideo", args->InCaptureWindows.Size);
             if (!allow_capture)
                 ImGui::BeginDisabled();
-            if (ImGui::Button(label, button_sz))
+            if (ImGui::Button(label, button_sz) && _InitializeOutputFile())
             {
                 _StateIsCapturing = true;
                 context->BeginVideoCapture(args);
@@ -845,11 +854,21 @@ void ImGuiCaptureToolUI::ShowCaptureToolWindow(ImGuiCaptureContext* context, boo
 
         ImGui::PushItemWidth(BUTTON_WIDTH);
         ImGui::InputText("Output template", _OutputFileTemplate, IM_ARRAYSIZE(_OutputFileTemplate));
+        if (ImGui::IsItemHovered())
+            ImGui::SetTooltip("Output template should contain one %%d (or variation of it) format variable. "
+                              "Multiple captures will be saved with an increasing number to avoid overwriting same file.");
+
+        _ShowFFMPEGConfigFields(context);
+
         ImGui::DragFloat("Padding", &_CaptureArgs.InPadding, 0.1f, 0, 32, "%.0f");
+        if (ImGui::IsItemHovered())
+            ImGui::SetTooltip("Extra padding around captured area.");
         ImGui::DragInt("Video FPS", &_CaptureArgs.InRecordFPSTarget, 0.1f, 10, 100, "%d fps");
+        if (ImGui::IsItemHovered())
+            ImGui::SetTooltip("Target FPS for video captures.");
 
         if (ImGui::Button("Snap Windows To Grid", ImVec2(BUTTON_WIDTH, 0)))
-            SnapWindowsToGrid(SnapGridSize);
+            _SnapWindowsToGrid(SnapGridSize);
         ImGui::SameLine(0.0f, style.ItemInnerSpacing.x);
         ImGui::SetNextItemWidth((float)(int)-(TEXT_BASE_WIDTH * 5));
         ImGui::DragFloat("##SnapGridSize", &SnapGridSize, 1.0f, 1.0f, 128.0f, "%.0f");
@@ -877,32 +896,10 @@ void ImGuiCaptureToolUI::ShowCaptureToolWindow(ImGuiCaptureContext* context, boo
 
     ImGui::Separator();
 
-    bool was_capturing = _StateIsCapturing;
     if (!_StateIsCapturing)
         _CaptureArgs.InCaptureWindows.clear();
-    CaptureWindowPicker(&_CaptureArgs);
-    CaptureWindowsSelector(context, &_CaptureArgs);
-
-    if (!was_capturing && _StateIsCapturing)
-    {
-        // Create output folder and decide of output filename
-        ImFormatString(_CaptureArgs.InOutputFile, IM_ARRAYSIZE(_CaptureArgs.InOutputFile), _OutputFileTemplate,
-                       _FileCounter + 1);
-        ImPathFixSeparatorsForCurrentOS(_CaptureArgs.InOutputFile);
-        if (!ImFileCreateDirectoryChain(_CaptureArgs.InOutputFile, ImPathFindFilename(_CaptureArgs.InOutputFile)))
-        {
-            fprintf(stderr, "ImGuiCaptureContext: unable to create directory for file '%s'.\n",
-                    _CaptureArgs.InOutputFile);
-            _StateIsCapturing = false;
-            if (context->IsCapturingVideo())
-                context->EndVideoCapture();
-        }
-
-        // File template will most likely end with .png, but we need a different extension for videos.
-        if (context->IsCapturingVideo())
-            if (char* ext = (char*)ImPathFindExtension(_CaptureArgs.InOutputFile))
-                ImStrncpy(ext, VideoCaptureExt, (size_t)(ext - _CaptureArgs.InOutputFile));
-    }
+    _CaptureWindowPicker(&_CaptureArgs);
+    _CaptureWindowsSelector(context, &_CaptureArgs);
 
     ImGui::Separator();
 
@@ -911,7 +908,7 @@ void ImGuiCaptureToolUI::ShowCaptureToolWindow(ImGuiCaptureContext* context, boo
 
 // Move/resize all windows so they are neatly aligned on a grid
 // This is an easy way of ensuring some form of alignment without specifying detailed constraints.
-void ImGuiCaptureToolUI::SnapWindowsToGrid(float cell_size)
+void ImGuiCaptureToolUI::_SnapWindowsToGrid(float cell_size)
 {
     ImGuiContext& g = *GImGui;
     for (ImGuiWindow* window : g.Windows)
@@ -933,6 +930,90 @@ void ImGuiCaptureToolUI::SnapWindowsToGrid(float cell_size)
         ImGui::SetWindowPos(window, rect.Min);
         ImGui::SetWindowSize(window, rect.GetSize());
     }
+}
+
+bool ImGuiCaptureToolUI::_InitializeOutputFile()
+{
+    // Create output folder and decide of output filename
+    ImFormatString(_CaptureArgs.InOutputFile, IM_ARRAYSIZE(_CaptureArgs.InOutputFile), _OutputFileTemplate,
+                   _FileCounter + 1);
+    ImPathFixSeparatorsForCurrentOS(_CaptureArgs.InOutputFile);
+    if (!ImFileCreateDirectoryChain(_CaptureArgs.InOutputFile, ImPathFindFilename(_CaptureArgs.InOutputFile)))
+    {
+        fprintf(stderr, "ImGuiCaptureContext: unable to create directory for file '%s'.\n",
+                _CaptureArgs.InOutputFile);
+        return false;
+    }
+    return true;
+}
+
+bool ImGuiCaptureToolUI::_ShowFFMPEGConfigFields(ImGuiCaptureContext* context)
+{
+    const float TEXT_BASE_WIDTH = ImGui::CalcTextSize("A").x;
+    const float BUTTON_WIDTH = (float)(int)-(TEXT_BASE_WIDTH * 26);
+
+    bool modified = false;
+    if (context->VideoCaptureFFMPEGPathSize)
+    {
+        bool ffmpeg_exe_missing = !ImFileExist(context->VideoCaptureFFMPEGPath);
+        if (ffmpeg_exe_missing)
+        {
+            ImGui::PushStyleColor(ImGuiCol_Border, IM_COL32(255, 0, 0, 255));
+            ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 1);
+        }
+        ImGui::PushItemWidth(BUTTON_WIDTH);
+        modified |= ImGui::InputText("Path to ffmpeg", context->VideoCaptureFFMPEGPath, context->VideoCaptureFFMPEGPathSize);
+        if (ImGui::IsItemHovered())
+            ImGui::SetTooltip("Absolute or relative path to ffmpeg executable. Required for video recording.%s", ffmpeg_exe_missing ? "\nFile does not exist!" : "");
+        if (ffmpeg_exe_missing)
+        {
+            ImGui::PopStyleColor();
+            ImGui::PopStyleVar();
+        }
+    }
+
+    if (context->VideoCaptureFFMPEGParamsSize)
+    {
+        ImGui::PushItemWidth(BUTTON_WIDTH);
+        bool ffmpeg_cmd_empty = !context->VideoCaptureFFMPEGParams[0];
+        if (ffmpeg_cmd_empty)
+        {
+            ImGui::PushStyleColor(ImGuiCol_Border, IM_COL32(255, 0, 0, 255));
+            ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 1);
+        }
+        modified |= ImGui::InputText("Params to ffmpeg", context->VideoCaptureFFMPEGParams, context->VideoCaptureFFMPEGParamsSize);
+        if (ImGui::IsItemHovered())
+            ImGui::SetTooltip("Command line parameters passed to ffmpeg executable, when recording a video.\n"
+                              "Following variables may be used:\n"
+                              "$FPS     - target FPS\n"
+                              "$WIDTH   - width of captured frame\n"
+                              "$HEIGHT  - height of captured frame\n"
+                              "$OUTPUT  - video output file");
+        if (ffmpeg_cmd_empty)
+        {
+            ImGui::PopStyleColor();
+            ImGui::PopStyleVar();
+        }
+    }
+
+    if (context->VideoCaptureExtSize)
+    {
+        ImGui::PushItemWidth(BUTTON_WIDTH);
+        if (ImGui::BeginCombo("Video file extension", context->VideoCaptureExt))
+        {
+            const char* supported_exts[] = {".gif", ".mp4"};
+            for (auto& ext: supported_exts)
+                if (ImGui::Selectable(ext, strcmp(context->VideoCaptureExt, ext) == 0))
+                {
+                    ImStrncpy(context->VideoCaptureExt, ext, context->VideoCaptureExtSize);
+                    modified = true;
+                }
+            ImGui::EndCombo();
+        }
+        if (ImGui::IsItemHovered())
+            ImGui::SetTooltip("File extension for captured video file.");
+    }
+    return modified;
 }
 
 //-----------------------------------------------------------------------------

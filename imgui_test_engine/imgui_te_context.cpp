@@ -658,7 +658,7 @@ static bool ImGuiTestContext_CanCaptureScreenshot(ImGuiTestContext* ctx)
 static bool ImGuiTestContext_CanCaptureVideo(ImGuiTestContext* ctx)
 {
     ImGuiTestEngineIO* io = ctx->EngineIO;
-    return io->ConfigCaptureEnabled && ImFileExist(io->PathToFFMPEG);
+    return io->ConfigCaptureEnabled && ImFileExist(io->VideoCaptureFFMPEGPath);
 }
 
 bool ImGuiTestContext::CaptureAddWindow(ImGuiCaptureArgs* args, ImGuiTestRef ref)

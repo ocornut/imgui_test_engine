@@ -147,7 +147,6 @@ struct ImGuiTestEngine
     bool                        UiStackToolOpen = false;
     bool                        UiPerfToolOpen = false;
     float                       UiLogHeight = 150.0f;
-    bool                        UiFFMPEGPathValid = false;
 
     // Performance Monitor
     double                      PerfRefDeltaTime;

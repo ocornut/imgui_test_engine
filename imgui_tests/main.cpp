@@ -485,7 +485,10 @@ int main(int argc, char** argv)
     test_io.ConfigVerboseLevelOnError = g_App.OptVerboseLevelError;
     test_io.ConfigNoThrottle = g_App.OptNoThrottle;
     test_io.PerfStressAmount = g_App.OptStressAmount;
-    FindFFMPEG(test_io.PathToFFMPEG, IM_ARRAYSIZE(test_io.PathToFFMPEG));
+    FindFFMPEG(test_io.VideoCaptureFFMPEGPath, IM_ARRAYSIZE(test_io.VideoCaptureFFMPEGPath));
+    ImStrncpy(test_io.VideoCaptureFFMPEGParams, "-r $FPS -f rawvideo -pix_fmt rgba -s $WIDTHx$HEIGHT -i - "
+        "-threads 0 -vsync 0 -preset ultrafast -y -pix_fmt yuv420p -crf 20 -hide_banner -loglevel error $OUTPUT",
+        IM_ARRAYSIZE(test_io.VideoCaptureFFMPEGParams));
 
     if (g_App.OptGui)
     {

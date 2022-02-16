@@ -214,8 +214,9 @@ struct IMGUI_API ImGuiTestEngineIO
     float                       ActionDelayStandard = 0.40f;        // Time between most actions
 
     // Options: Screen/video capture
-    char                        PathToFFMPEG[256] = "";             //
-    char                        VideoCaptureExtension[8] = ".mp4";  // Default file extension when using auto-filenames (ffmpeg-compatible)
+    char                        VideoCaptureFFMPEGPath[256] = "";   // User-provided ffmpeg executable path (read-only).
+    char                        VideoCaptureFFMPEGParams[256] = ""; // User-provided ffmpeg executable path (read-only).
+    char                        VideoCaptureExtension[8] = ".mp4";  // User-provided ffmpeg-compatible video file extension (read-only).
 
     // Options: Watchdog. Set values to FLT_MAX to disable.
     // Interactive GUI applications that may be slower tend to use higher values.
