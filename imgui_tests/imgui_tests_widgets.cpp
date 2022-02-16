@@ -154,7 +154,11 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ctx->SleepNoSkip(ctx->UiContext->IO.KeyRepeatRate, step);
         ctx->SleepNoSkip(ctx->UiContext->IO.KeyRepeatRate, step);
         ctx->SleepNoSkip(ctx->UiContext->IO.KeyRepeatRate, step);
+#if IMGUI_VERSION_NUM >= 18705
+        IM_CHECK_EQ(vars.ButtonPressCount[4], 1 + 1 + 3);
+#else
         IM_CHECK_EQ(vars.ButtonPressCount[4], 1 + 1 + 3 * 2); // FIXME: MouseRepeatRate is double KeyRepeatRate, that's not documented / or that's a bug
+#endif
         ctx->MouseUp(0);
 
         // Test ImGuiButtonFlags_Repeat with Nav
@@ -167,7 +171,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ctx->SleepNoSkip(ctx->UiContext->IO.KeyRepeatRate, step);
         ctx->SleepNoSkip(ctx->UiContext->IO.KeyRepeatRate, step);
         ctx->SleepNoSkip(ctx->UiContext->IO.KeyRepeatRate, step);
-        IM_CHECK_EQ(vars.ButtonPressCount[4], 1 + 3 * 2); // FIXME: MouseRepeatRate is double KeyRepeatRate, that's not documented / or that's a bug
+        IM_CHECK_EQ(vars.ButtonPressCount[4], 1 + 3 * 2);
         ctx->KeyUp(ImGuiKey_NavActivate);
     };
 
