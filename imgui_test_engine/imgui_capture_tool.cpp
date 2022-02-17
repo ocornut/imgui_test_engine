@@ -138,7 +138,7 @@ static void HideOtherWindows(const ImGuiCaptureArgs* args)
     {
         if (window->Flags & ImGuiWindowFlags_ChildWindow)
             continue;
-        if ((window->Flags & ImGuiWindowFlags_Popup) != 0 && (args->InFlags & ImGuiCaptureFlags_IncludeTooltipsAndPopups) != 0)
+        if ((window->Flags & (ImGuiWindowFlags_Popup | ImGuiWindowFlags_Tooltip)) != 0 && (args->InFlags & ImGuiCaptureFlags_IncludeTooltipsAndPopups) != 0)
             continue;
         if (args->InCaptureWindows.contains(window))
             continue;
@@ -156,14 +156,14 @@ static void HideOtherWindows(const ImGuiCaptureArgs* args)
             }
         if (!should_hide_window)
             continue;
-#endif
+#endif  // IMGUI_HAS_DOCK
 
         // Not overwriting HiddenFramesCanSkipItems or HiddenFramesCannotSkipItems since they have side-effects (e.g. preserving ContentsSize)
         if (window->WasActive || window->Active)
             window->HiddenFramesForRenderOnly = 2;
     }
 }
-#endif
+#endif  // IMGUI_TEST_ENGINE_ENABLE_CAPTURE
 
 static ImRect GetMainViewportRect()
 {
