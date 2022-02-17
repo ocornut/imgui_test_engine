@@ -126,6 +126,7 @@ struct IMGUI_API ImGuiCaptureContext
     void                    BeginVideoCapture(ImGuiCaptureArgs* args);
     void                    EndVideoCapture();
     bool                    IsCapturingVideo();
+    bool                    IsCapturing();
 };
 
 //-----------------------------------------------------------------------------

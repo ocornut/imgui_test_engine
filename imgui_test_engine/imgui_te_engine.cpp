@@ -732,6 +732,7 @@ static void ImGuiTestEngine_PostNewFrame(ImGuiTestEngine* engine, ImGuiContext* 
         engine->Inputs.MousePosValue = ImGui::GetMainViewport()->Pos;
 
     engine->CaptureContext.PostNewFrame();
+    engine->IO.IsCapturing = engine->CaptureContext.IsCapturing();
 
     // Garbage collect unused tasks
     const int LOCATION_TASK_ELAPSE_FRAMES = 20;
@@ -769,10 +770,10 @@ static void ImGuiTestEngine_PostNewFrame(ImGuiTestEngine* engine, ImGuiContext* 
     ImGuiTestEngine_UpdateHooks(engine);
 
     // Disable vsync
-    engine->IO.RenderWantMaxSpeed = engine->IO.ConfigNoThrottle;
-    if (engine->IO.ConfigRunSpeed == ImGuiTestRunSpeed_Fast && engine->IO.RunningTests)
+    engine->IO.IsRequestingMaxAppSpeed = engine->IO.ConfigNoThrottle;
+    if (engine->IO.ConfigRunSpeed == ImGuiTestRunSpeed_Fast && engine->IO.IsRunningTests)
         if (engine->TestContext && (engine->TestContext->RunFlags & ImGuiTestRunFlags_GuiFuncOnly) == 0)
-            engine->IO.RenderWantMaxSpeed = true;
+            engine->IO.IsRequestingMaxAppSpeed = true;
 }
 
 static void ImGuiTestEngine_PostRender(ImGuiTestEngine* engine, ImGuiContext* ui_ctx)
@@ -785,7 +786,7 @@ static void ImGuiTestEngine_PostRender(ImGuiTestEngine* engine, ImGuiContext* ui
     // (If were to instead set io.ConfigFlags |= ImGuiConfigFlags_NoMouseCursorChange in ImGuiTestEngine_RunTest() that would get us 99% of the way,
     // but unfortunately backend wouldn't restore normal shape after modified by OS decoration such as resize, so not enough..)
     ImGuiContext& g = *ui_ctx;
-    if (engine->IO.RunningTests && !engine->IO.ConfigMouseDrawCursor && !g.IO.MouseDrawCursor)
+    if (engine->IO.IsRunningTests && !engine->IO.ConfigMouseDrawCursor && !g.IO.MouseDrawCursor)
         g.MouseCursor = ImGuiMouseCursor_Arrow;
 }
 
@@ -979,7 +980,7 @@ static void ImGuiTestEngine_ProcessTestQueue(ImGuiTestEngine* engine)
 
     engine->StartTime = ImTimeGetInMicroseconds();
     int ran_tests = 0;
-    engine->IO.RunningTests = true;
+    engine->IO.IsRunningTests = true;
     for (int n = 0; n < engine->TestsQueue.Size; n++)
     {
         ImGuiTestRunTask* run_task = &engine->TestsQueue[n];
@@ -1063,7 +1064,7 @@ static void ImGuiTestEngine_ProcessTestQueue(ImGuiTestEngine* engine)
         //    if (engine->UiSelectedTest == NULL || engine->UiSelectedTest->Status != ImGuiTestStatus_Error)
         //        engine->UiSelectedTest = test;
     }
-    engine->IO.RunningTests = false;
+    engine->IO.IsRunningTests = false;
     engine->EndTime = ImTimeGetInMicroseconds();
 
     engine->Abort = false;

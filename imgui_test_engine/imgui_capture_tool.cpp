@@ -546,6 +546,11 @@ bool ImGuiCaptureContext::IsCapturingVideo()
     return _VideoRecording;
 }
 
+bool ImGuiCaptureContext::IsCapturing()
+{
+    return _CaptureArgs != NULL;
+}
+
 //-----------------------------------------------------------------------------
 // ImGuiCaptureToolUI
 //-----------------------------------------------------------------------------

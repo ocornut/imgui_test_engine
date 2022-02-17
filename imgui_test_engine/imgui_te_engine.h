@@ -232,8 +232,9 @@ struct IMGUI_API ImGuiTestEngineIO
     //-------------------------------------------------------------------------
 
     // State of test engine
-    bool                        RunningTests = false;
-    bool                        RenderWantMaxSpeed = false;         // When running in fast mode: request app to skip vsync or even skip rendering if it wants
+    bool                        IsRunningTests = false;
+    bool                        IsRequestingMaxAppSpeed = false;    // When running in fast mode: request app to skip vsync or even skip rendering if it wants
+    bool                        IsCapturing = false;                // Capture is in progress
 };
 
 // Information about a given item, result of an ItemInfo() query

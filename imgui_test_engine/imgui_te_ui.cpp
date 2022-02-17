@@ -511,9 +511,9 @@ static void ShowTestGroup(ImGuiTestEngine* e, ImGuiTestGroup group, ImGuiTextFil
             // Process queuing
             if (queue_gui_func_toggle && is_running_gui_func)
                 ImGuiTestEngine_AbortCurrentTest(e);
-            else if (queue_gui_func_toggle && !e->IO.RunningTests)
+            else if (queue_gui_func_toggle && !e->IO.IsRunningTests)
                 ImGuiTestEngine_QueueTest(e, test, ImGuiTestRunFlags_ManualRun | ImGuiTestRunFlags_GuiFuncOnly);
-            if (queue_test && !e->IO.RunningTests)
+            if (queue_test && !e->IO.IsRunningTests)
                 ImGuiTestEngine_QueueTest(e, test, ImGuiTestRunFlags_ManualRun);
 
             ImGui::PopID();
@@ -528,7 +528,7 @@ static void ShowTestGroup(ImGuiTestEngine* e, ImGuiTestGroup group, ImGuiTextFil
         ImVec4 status_color;
         if (tests_failed > 0)
             status_color = ImVec4(0.9f, 0.1f, 0.1f, 1.0f);
-        else if (e->IO.RunningTests)
+        else if (e->IO.IsRunningTests)
             status_color = ImVec4(0.8f, 0.4f, 0.1f, 1.0f);
         else if (tests_succeeded > 0 && tests_completed == tests_succeeded)
             status_color = ImVec4(0.1f, 0.9f, 0.1f, 1.0f);

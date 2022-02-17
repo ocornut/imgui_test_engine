@@ -4,6 +4,10 @@ CHANGELOG
 ** For a while this is going to include only breaking changes.
 ** As we slowly transition toward releasing the test engine, this will become a more full fledged changelog.
 
+2022/03/15
+- TestEngine: Renamed bool ImGuiTestEngineIO::RunningTest to bool ::IsRunningTests.
+- TestEngine: Renamed bool ImGuiTestEngineIO::RenderWantMaxSpeed to ::IsRequestingMaxAppSpeed.
+
 2022/02/15
-- Test Engine: Capture: rename ImGuiCaptureArgs::InOutputFileTemplate to InOutputFile (it was only
+- TestEngine: Capture: rename ImGuiCaptureArgs::InOutputFileTemplate to InOutputFile (it was only
   used as template by the capture tool UI, which now manages its own data correctly).

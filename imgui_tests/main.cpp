@@ -578,17 +578,18 @@ int main(int argc, char** argv)
         ShowUI();
 
 #if IMGUI_VERSION_NUM >= 18701
-        if (test_io.RunningTests && !test_io.ConfigMouseDrawCursor)
-            ImGui::RenderMouseCursor(io.MousePos, 1.0f, ImGui::GetMouseCursor(), IM_COL32_WHITE, IM_COL32_BLACK, IM_COL32(0, 0, 0, 48));
-            //ImGui::RenderMouseCursor(io.MousePos, 1.2f, ImGui::GetMouseCursor(), IM_COL32(255, 255, 120, 255), IM_COL32(0, 0, 0, 255), IM_COL32(0, 0, 0, 60)); // Custom yellow cursor
+        if (test_io.IsRunningTests && !test_io.ConfigMouseDrawCursor)
+            if (!test_io.IsCapturing)
+                ImGui::RenderMouseCursor(io.MousePos, 1.0f, ImGui::GetMouseCursor(), IM_COL32_WHITE, IM_COL32_BLACK, IM_COL32(0, 0, 0, 48));
+                //ImGui::RenderMouseCursor(io.MousePos, 1.2f, ImGui::GetMouseCursor(), IM_COL32(255, 255, 120, 255), IM_COL32(0, 0, 0, 255), IM_COL32(0, 0, 0, 60)); // Custom yellow cursor
 #endif
 
         ImGui::Render();
 
-        if (!g_App.OptGui && !test_io.RunningTests)
+        if (!g_App.OptGui && !test_io.IsRunningTests)
             break;
 
-        app_window->Vsync = test_io.RenderWantMaxSpeed ? false : true;
+        app_window->Vsync = test_io.IsRequestingMaxAppSpeed ? false : true;
         app_window->ClearColor = g_App.ClearColor;
         app_window->Render(app_window);
 
