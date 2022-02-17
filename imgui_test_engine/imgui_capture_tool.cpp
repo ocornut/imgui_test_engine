@@ -183,7 +183,7 @@ void ImGuiCaptureContext::PostNewFrame()
     // FIXME: Could override in Pre+Post Render() hooks to avoid doing a backup.
     if (args->InFlags & ImGuiCaptureFlags_HideMouseCursor)
     {
-        if (_FrameNo == 0)
+        if (_FrameNo == 1)
             _BackupMouseDrawCursor = g.IO.MouseDrawCursor;
         g.IO.MouseDrawCursor = false;
     }
