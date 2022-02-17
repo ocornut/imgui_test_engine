@@ -381,29 +381,31 @@ ImGuiCaptureStatus ImGuiCaptureContext::CaptureUpdate(ImGuiCaptureArgs* args)
                 _CaptureRect = viewport_rect;
             }
         }
-
-        // Can not capture area outside of screen. Clip capture rect, since we capturing only visible rect anyway.
-        _CaptureRect.ClipWith(viewport_rect);
-
-        // Align size
-        // FIXME: ffmpeg + codec can possibly handle that better on their side.
-        ImVec2 capture_size_aligned = _CaptureRect.GetSize();
-        if (args->InSizeAlign > 1)
+        if ((args->InFlags & ImGuiCaptureFlags_StitchAll) == 0)
         {
-            // Round up
-            IM_ASSERT(ImIsPowerOfTwo(args->InSizeAlign));
-            capture_size_aligned.x = (float)IM_MEMALIGN((int)capture_size_aligned.x, args->InSizeAlign);
-            capture_size_aligned.y = (float)IM_MEMALIGN((int)capture_size_aligned.y, args->InSizeAlign);
+            // Can not capture area outside of screen. Clip capture rect, since we are capturing only visible rect anyway.
+            _CaptureRect.ClipWith(viewport_rect);
 
-            // Unless will stray off viewport, then round down
-            if (_CaptureRect.Min.x + capture_size_aligned.x >= viewport_rect.Max.x)
-                capture_size_aligned.x -= args->InSizeAlign;
-            if (_CaptureRect.Min.y + capture_size_aligned.y >= viewport_rect.Max.y)
-                capture_size_aligned.y -= args->InSizeAlign;
+            // Align size
+            // FIXME: ffmpeg + codec can possibly handle that better on their side.
+            ImVec2 capture_size_aligned = _CaptureRect.GetSize();
+            if (args->InSizeAlign > 1)
+            {
+                // Round up
+                IM_ASSERT(ImIsPowerOfTwo(args->InSizeAlign));
+                capture_size_aligned.x = (float)IM_MEMALIGN((int)capture_size_aligned.x, args->InSizeAlign);
+                capture_size_aligned.y = (float)IM_MEMALIGN((int)capture_size_aligned.y, args->InSizeAlign);
 
-            IM_ASSERT(capture_size_aligned.x > 0);
-            IM_ASSERT(capture_size_aligned.y > 0);
-            _CaptureRect.Max = _CaptureRect.Min + capture_size_aligned;
+                // Unless will stray off viewport, then round down
+                if (_CaptureRect.Min.x + capture_size_aligned.x >= viewport_rect.Max.x)
+                    capture_size_aligned.x -= args->InSizeAlign;
+                if (_CaptureRect.Min.y + capture_size_aligned.y >= viewport_rect.Max.y)
+                    capture_size_aligned.y -= args->InSizeAlign;
+
+                IM_ASSERT(capture_size_aligned.x > 0);
+                IM_ASSERT(capture_size_aligned.y > 0);
+                _CaptureRect.Max = _CaptureRect.Min + capture_size_aligned;
+            }
         }
 
         // Initialize capture buffer.
