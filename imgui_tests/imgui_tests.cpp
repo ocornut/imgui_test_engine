@@ -2605,8 +2605,21 @@ void RegisterTests_Inputs(ImGuiTestEngine* e)
 
     // ## Test input queue trickling
     t = IM_REGISTER_TEST(e, "misc", "inputs_io_inputqueue");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        auto& vars = ctx->GenericVars;
+        ImGui::SetNextWindowPos(ImVec2(80, 80));
+        ImGui::SetNextWindowSize(ImVec2(500, 500));
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoResize);
+        ctx->UiContext->WantTextInputNextFrame = vars.Bool1; // Simulate InputText() without eating inputs
+        //ImGui::InputText("InputText", vars.Str1, IM_ARRAYSIZE(vars.Str1));
+        //if (vars.Bool1)
+        //    ImGui::SetKeyboardFocusHere(-1);
+        ImGui::End();
+    };
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
+        auto& vars = ctx->GenericVars;
         ImGuiContext& g = *ctx->UiContext;
         ImGuiIO& io = g.IO;
 
@@ -2798,7 +2811,7 @@ void RegisterTests_Inputs(ImGuiTestEngine* e)
         ctx->Yield();
         IM_CHECK_EQ(ImGui::IsKeyDown(ImGuiKey_H), false);
 
-        // Key down | Key down (other) -> 2 frames
+        // Key down, Key down (other) -> 1 frame
         io.AddKeyEvent(ImGuiKey_I, true);
         io.AddKeyEvent(ImGuiKey_J, true);
         ctx->Yield();
@@ -2811,36 +2824,56 @@ void RegisterTests_Inputs(ImGuiTestEngine* e)
         IM_CHECK_EQ(ImGui::IsKeyDown(ImGuiKey_J), false);
 
         // Char -> 1 frame
+        ImGui::ClearActiveID();
         io.AddInputCharacter('L');
         ctx->Yield();
         IM_CHECK(io.InputQueueCharacters.Size == 1 && io.InputQueueCharacters[0] == 'L');
         ctx->Yield();
         IM_CHECK(io.InputQueueCharacters.Size == 0);
 
-        // Key down | Char -> 2 frames
-        io.AddKeyEvent(ImGuiKey_K, true);
-        io.AddInputCharacter('L');
-        ctx->Yield();
-        IM_CHECK_EQ(ImGui::IsKeyDown(ImGuiKey_K), true);
-        IM_CHECK(io.InputQueueCharacters.Size == 0);
-        ctx->Yield();
-        IM_CHECK(io.InputQueueCharacters.Size == 1 && io.InputQueueCharacters[0] == 'L');
-        io.AddKeyEvent(ImGuiKey_K, false);
-        ctx->Yield();
-        IM_CHECK(io.InputQueueCharacters.Size == 0);
+#if IMGUI_VERSION_NUM >= 18709
+        const int INPUT_TEXT_STEPS = 2;
+#else
+        const int INPUT_TEXT_STEPS = 1;
+#endif
+        for (int step = 0; step < INPUT_TEXT_STEPS; step++)
+        {
+            vars.Bool1 = (step == 0); // Simulate activated InputText()
+            ctx->Yield();
 
-        // Char | Key -> 2 frames
-        io.AddInputCharacter('L');
-        io.AddKeyEvent(ImGuiKey_K, true);
-        ctx->Yield();
-        IM_CHECK(io.InputQueueCharacters.Size == 1 && io.InputQueueCharacters[0] == 'L');
-        IM_CHECK_EQ(ImGui::IsKeyDown(ImGuiKey_K), false);
-        ctx->Yield();
-        IM_CHECK(io.InputQueueCharacters.Size == 0);
-        IM_CHECK_EQ(ImGui::IsKeyDown(ImGuiKey_K), true);
-        ctx->Yield();
-        io.AddKeyEvent(ImGuiKey_K, false);
-        ctx->Yield();
+            // Key down | Char -> 2 frames when InputText() is active
+            // Key down, Char -> 1 frames otherwise
+            io.AddKeyEvent(ImGuiKey_K, true);
+            io.AddInputCharacter('L');
+            ctx->Yield();
+            IM_CHECK_EQ(ImGui::IsKeyDown(ImGuiKey_K), true);
+            if (step == 0)
+            {
+                IM_CHECK(io.InputQueueCharacters.Size == 0);
+                ctx->Yield();
+            }
+            IM_CHECK(io.InputQueueCharacters.Size == 1 && io.InputQueueCharacters[0] == 'L');
+            io.AddKeyEvent(ImGuiKey_K, false);
+            ctx->Yield();
+            IM_CHECK(io.InputQueueCharacters.Size == 0);
+
+            // Char | Key -> 2 frames when InputText() is active
+            // Char, Key -> 1 frame otherwise
+            io.AddInputCharacter('L');
+            io.AddKeyEvent(ImGuiKey_K, true);
+            ctx->Yield();
+            IM_CHECK(io.InputQueueCharacters.Size == 1 && io.InputQueueCharacters[0] == 'L');
+            if (step == 0)
+            {
+                IM_CHECK_EQ(ImGui::IsKeyDown(ImGuiKey_K), false);
+                ctx->Yield();
+                IM_CHECK(io.InputQueueCharacters.Size == 0);
+            }
+            IM_CHECK_EQ(ImGui::IsKeyDown(ImGuiKey_K), true);
+            ctx->Yield();
+            io.AddKeyEvent(ImGuiKey_K, false);
+            ctx->Yield();
+        }
 
         // Key, KeyMods -> 1 frame
         IM_CHECK(io.KeyMods == ImGuiKeyModFlags_None);

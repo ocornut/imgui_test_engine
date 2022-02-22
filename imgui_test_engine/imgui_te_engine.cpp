@@ -497,12 +497,8 @@ static bool ImGuiTestEngine_UseSimulatedInputs(ImGuiTestEngine* engine)
 {
     if (engine->UiContextActive)
         if (!ImGuiTestEngine_IsTestQueueEmpty(engine))
-        {
-            if (engine->TestContext->RunFlags & ImGuiTestRunFlags_EnableRawInputs)
-                return false;
             if (!(engine->TestContext->RunFlags & ImGuiTestRunFlags_GuiFuncOnly))
                 return true;
-        }
     return false;
 }
 
@@ -517,15 +513,19 @@ void ImGuiTestEngine_ApplyInputToImGuiContext(ImGuiTestEngine* engine)
     if (!use_simulated_inputs)
         return;
 
-    // To support using ImGuiKey_NavXXXX shortcuts pointing to gamepad actions
-    // FIXME-TEST-ENGINE: Should restore
-    g.IO.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;
-    g.IO.BackendFlags |= ImGuiBackendFlags_HasGamepad;
-
     // Erase events submitted by backend
     for (int n = 0; n < g.InputEventsQueue.Size; n++)
         if (g.InputEventsQueue[n].AddedByTestEngine == false)
             g.InputEventsQueue.erase(&g.InputEventsQueue[n--]);
+
+    // Special flags to stop submitting events
+    if (engine->TestContext->RunFlags & ImGuiTestRunFlags_EnableRawInputs)
+        return;
+
+    // To support using ImGuiKey_NavXXXX shortcuts pointing to gamepad actions
+    // FIXME-TEST-ENGINE: Should restore
+    g.IO.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;
+    g.IO.BackendFlags |= ImGuiBackendFlags_HasGamepad;
 
     const int input_event_count_prev = g.InputEventsQueue.Size;
 
@@ -745,7 +745,13 @@ static void ImGuiTestEngine_PostNewFrame(ImGuiTestEngine* engine, ImGuiContext* 
     // Run the test coroutine. This will resume the test queue from either the last point the test called YieldFromCoroutine(),
     // or the loop in ImGuiTestEngine_TestQueueCoroutineMain that does so if no test is running.
     // If you want to breakpoint the point execution continues in the test code, breakpoint the exit condition in YieldFromCoroutine()
+    const int input_queue_size_before = ui_ctx->InputEventsQueue.Size;
     engine->IO.CoroutineFuncs->RunFunc(engine->TestQueueCoroutine);
+
+    // Events added by TestFunc() marked automaticaly to not be deleted
+    if (engine->TestContext && (engine->TestContext->RunFlags & ImGuiTestRunFlags_EnableRawInputs))
+        for (int n = input_queue_size_before; n < ui_ctx->InputEventsQueue.Size; n++)
+            ui_ctx->InputEventsQueue[n].AddedByTestEngine = true;
 
     // Update hooks and output flags
     ImGuiTestEngine_UpdateHooks(engine);
