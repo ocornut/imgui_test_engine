@@ -362,6 +362,43 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
             ctx->KeyPress(ImGuiKey_NavLeft);            // Close 1st level menu
             IM_CHECK_STR_EQ(g.NavWindow->Name, "Test Window");
         }
+
+        // Test current menu behaviors. They are inconsistent, further discussion at https://github.com/ocornut/imgui_private/issues/19.
+        ctx->SetRef("Test Window");
+        ctx->MenuClick("Menu/Submenu1");
+        IM_CHECK_EQ(g.OpenPopupStack.Size, 2);
+        ctx->KeyPress(ImGuiKey_NavLeft);            // Left key closes a menu if menu item was clicked.
+        IM_CHECK_EQ(g.OpenPopupStack.Size, 0);
+
+        ctx->MenuClick("Menu");
+        ctx->ItemAction(ImGuiTestAction_Hover, "/$FOCUSED/Submenu1", NULL, ImGuiTestOpFlags_NoFocusWindow);
+        IM_CHECK_EQ(g.OpenPopupStack.Size, 2);
+        ctx->KeyPress(ImGuiKey_NavRight);           // Right key closes a menu if item was hovered.
+        IM_CHECK_EQ(g.OpenPopupStack.Size, 0);
+
+        ctx->MenuClick("Menu/Submenu1");
+        IM_CHECK_EQ(g.OpenPopupStack.Size, 2);
+        ctx->KeyPress(ImGuiKey_NavRight);           // Right key maintains submenu open if menu item was clicked.
+        IM_CHECK_EQ(g.OpenPopupStack.Size, 2);
+#if IMGUI_BROKEN_TESTS
+        // FIXME: Not working currently, but seems like it should be a correct behavior.
+        IM_CHECK(g.NavId == ctx->GetID("/$FOCUSED/A"));
+#endif
+        ctx->KeyPress(ImGuiKey_NavDown);            // Down key correctly moves to a second item in submenu.
+        IM_CHECK(g.NavId == ctx->GetID("/$FOCUSED/B"));
+
+        ctx->PopupCloseAll();
+        ctx->MenuClick("Menu");
+        ctx->ItemAction(ImGuiTestAction_Hover, "/$FOCUSED/Submenu1", NULL, ImGuiTestOpFlags_NoFocusWindow);
+        IM_CHECK_EQ(g.OpenPopupStack.Size, 2);
+        ctx->KeyPress(ImGuiKey_NavLeft);           // Right key maintains submenu open if menu item was hovered.
+        IM_CHECK_EQ(g.OpenPopupStack.Size, 2);
+#if IMGUI_BROKEN_TESTS
+        // FIXME: Not working currently, but seems like it should be a correct behavior.
+        IM_CHECK(g.NavId == ctx->GetID("/$FOCUSED/A"));
+#endif
+        ctx->KeyPress(ImGuiKey_NavDown);            // Down key correctly moves to a second item in submenu.
+        IM_CHECK(g.NavId == ctx->GetID("/$FOCUSED/B"));
     };
 
     // ## Test CTRL+TAB window focusing
