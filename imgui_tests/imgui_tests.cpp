@@ -452,6 +452,52 @@ void RegisterTests_Window(ImGuiTestEngine* e)
         IM_CHECK(g.OpenPopupStack.Size == 0);
     };
 
+    // ## Test closing of popups above a window that was clicked with a right mouse button.
+    t = IM_REGISTER_TEST(e, "window", "window_popup_close_above");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+        if (ImGui::Button("Open modal"))
+            ImGui::OpenPopup("Modal");
+        if (ImGui::BeginPopupModal("Modal"))
+        {
+            if (ImGui::Button("Open popup1"))
+                ImGui::OpenPopup("Popup1");
+            if (ImGui::BeginPopup("Popup1"))
+            {
+                if (ImGui::Button("Open popup2"))
+                    ImGui::OpenPopup("Popup2");
+                if (ImGui::BeginPopup("Popup2"))
+                {
+                    if (ImGui::Button("Close"))
+                        ImGui::CloseCurrentPopup();
+                    ImGui::EndPopup();
+                }
+                if (ImGui::Button("Close"))
+                    ImGui::CloseCurrentPopup();
+                ImGui::EndPopup();
+            }
+            if (ImGui::Button("Close"))
+                ImGui::CloseCurrentPopup();
+            ImGui::EndPopup();
+        }
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiContext& g = *ctx->UiContext;
+        ctx->ItemClick("/Test Window/Open modal");
+        ctx->ItemClick("/$FOCUSED/Open popup1");
+        ImGuiWindow* popup1 = g.NavWindow;
+        ctx->ItemClick("/$FOCUSED/Open popup2");
+        IM_CHECK_NE(g.NavWindow, popup1);
+        IM_CHECK_EQ(g.OpenPopupStack.Size, 3);
+        ctx->MouseMoveToPos(popup1->Pos + ImVec2(5, 5));
+        ctx->MouseClick(ImGuiMouseButton_Right);
+        IM_CHECK_EQ(g.NavWindow, popup1);
+        IM_CHECK_EQ(g.OpenPopupStack.Size, 2);
+    };
+
     // ## Test BeginPopupContextVoid()
     t = IM_REGISTER_TEST(e, "window", "window_popup_on_void");
     t->GuiFunc = [](ImGuiTestContext* ctx)
