@@ -819,17 +819,20 @@ void ImGuiCaptureToolUI::ShowCaptureToolWindow(bool* p_open)
 
         // Open Directory
         {
-            char save_file_dir[256];
-            strcpy(save_file_dir, _OutputFileTemplate);
-            char* save_file_name = (char*)ImPathFindFilename(save_file_dir);
-            if (save_file_name > save_file_dir)
-                save_file_name[-1] = 0;
+            char output_dir[256];
+            strcpy(output_dir, _OutputFileTemplate);
+            char* output_filename = (char*)ImPathFindFilename(output_dir);
+            if (output_filename > output_dir)
+                output_filename[-1] = 0;
             else
-                strcpy(save_file_dir, ".");
+                strcpy(output_dir, ".");
             if (ImGui::Button("Open Directory"))
-                ImOsOpenInShell(save_file_dir);
+            {
+                ImPathFixSeparatorsForCurrentOS(output_dir);
+                ImOsOpenInShell(output_dir);
+            }
             if (ImGui::IsItemHovered())
-                ImGui::SetTooltip("Open %s/", save_file_dir);
+                ImGui::SetTooltip("Open %s/", output_dir);
         }
 
         const float TEXT_BASE_WIDTH = ImGui::CalcTextSize("A").x;
