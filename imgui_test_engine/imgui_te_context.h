@@ -49,7 +49,7 @@ struct ImGuiTestGatherTask;     // Test Engine task for scanning/finding items
 //-------------------------------------------------------------------------
 
 // Weak reference to an Item/Window given an hashed ID _or_ a string path ID.
-struct ImGuiTestRef
+struct IMGUI_API ImGuiTestRef
 {
     ImGuiID         ID;
     const char*     Path;
@@ -62,7 +62,7 @@ struct ImGuiTestRef
 
 // Helper to output a string showing the Path, ID or Debug Label based on what is available (some items only have ID as we couldn't find/store a Path)
 // (The size is arbitrary, this is only used for logging info the user/debugger)
-struct ImGuiTestRefDesc
+struct IMGUI_API ImGuiTestRefDesc
 {
     char            Buf[80];
 
@@ -133,7 +133,7 @@ enum ImGuiTestOpFlags_
 };
 
 // Advanced filtering for ItemActionAll()
-struct ImGuiTestActionFilter
+struct IMGUI_API ImGuiTestActionFilter
 {
     int                     MaxDepth;
     int                     MaxPasses;
@@ -157,7 +157,7 @@ enum ImGuiTestActiveFunc
 
 // Helper struct to store various query-able state of an item.
 // This facilitate interactions between GuiFunc and TestFunc, since those state are frequently used.
-struct ImGuiTestGenericItemStatus
+struct IMGUI_API ImGuiTestGenericItemStatus
 {
     int     Ret;                    // return value
     int     Hovered;                // result of IsItemHovered()
@@ -179,7 +179,7 @@ struct ImGuiTestGenericItemStatus
 // Generic structure with various storage fields.
 // This is useful for tests to quickly share data between GuiFunc and TestFunc without creating custom data structure.
 // If those fields are not enough: using ctx->SetVarsDataType<>() and ctx->GetVars<>() it is possible to store custom data on the stack.
-struct ImGuiTestGenericVars
+struct IMGUI_API ImGuiTestGenericVars
 {
     // Generic storage with a bit of semantic to make user/test code look neater
     int                     Step;
@@ -215,7 +215,7 @@ struct ImGuiTestGenericVars
 // This is the interface that most tests will interact with.
 //-------------------------------------------------------------------------
 
-struct ImGuiTestContext
+struct IMGUI_API ImGuiTestContext
 {
     // User variables
     ImGuiTestGenericVars    GenericVars;

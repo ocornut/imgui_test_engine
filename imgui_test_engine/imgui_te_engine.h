@@ -117,21 +117,21 @@ enum ImGuiTestRunFlags_
 //-------------------------------------------------------------------------
 
 // Hooks for core imgui/ library
-extern void     ImGuiTestEngineHook_ItemAdd(ImGuiContext* ui_ctx, const ImRect& bb, ImGuiID id);
+extern void         ImGuiTestEngineHook_ItemAdd(ImGuiContext* ui_ctx, const ImRect& bb, ImGuiID id);
 #ifdef IMGUI_HAS_IMSTR
-extern void     ImGuiTestEngineHook_ItemInfo(ImGuiContext* ui_ctx, ImGuiID id, ImStrv label, ImGuiItemStatusFlags flags);
+extern void         ImGuiTestEngineHook_ItemInfo(ImGuiContext* ui_ctx, ImGuiID id, ImStrv label, ImGuiItemStatusFlags flags);
 #else
-extern void     ImGuiTestEngineHook_ItemInfo(ImGuiContext* ui_ctx, ImGuiID id, const char* label, ImGuiItemStatusFlags flags);
-static inline int ImStrcmp(const char* str1, const char* str2) { return strcmp(str1, str2); } // FIXME: to remove once this gets added in core library
+extern void         ImGuiTestEngineHook_ItemInfo(ImGuiContext* ui_ctx, ImGuiID id, const char* label, ImGuiItemStatusFlags flags);
+static inline int   ImStrcmp(const char* str1, const char* str2) { return strcmp(str1, str2); } // FIXME: to remove once this gets added in core library
 #endif
-extern void     ImGuiTestEngineHook_Log(ImGuiContext* ui_ctx, const char* fmt, ...);
+extern void         ImGuiTestEngineHook_Log(ImGuiContext* ui_ctx, const char* fmt, ...);
+extern const char*  ImGuiTestEngine_FindItemDebugLabel(ImGuiContext* ui_ctx, ImGuiID id);
 
 // Functions
-extern bool     ImGuiTestEngine_Check(const char* file, const char* func, int line, ImGuiTestCheckFlags flags, bool result, const char* expr);
-extern bool     ImGuiTestEngine_CheckStrOp(const char* file, const char* func, int line, ImGuiTestCheckFlags flags, const char* op, const char* lhs_var, const char* lhs_value, const char* rhs_var, const char* rhs_value);
-extern bool     ImGuiTestEngine_Error(const char* file, const char* func, int line, ImGuiTestCheckFlags flags, const char* fmt, ...);
-extern void     ImGuiTestEngine_Assert(const char* expr, const char* file, const char* function, int line);
-const char*     ImGuiTestEngine_FindItemDebugLabel(ImGuiContext* ui_ctx, ImGuiID id);
+IMGUI_API bool      ImGuiTestEngine_Check(const char* file, const char* func, int line, ImGuiTestCheckFlags flags, bool result, const char* expr);
+IMGUI_API bool      ImGuiTestEngine_CheckStrOp(const char* file, const char* func, int line, ImGuiTestCheckFlags flags, const char* op, const char* lhs_var, const char* lhs_value, const char* rhs_var, const char* rhs_value);
+IMGUI_API bool      ImGuiTestEngine_Error(const char* file, const char* func, int line, ImGuiTestCheckFlags flags, const char* fmt, ...);
+IMGUI_API void      ImGuiTestEngine_Assert(const char* expr, const char* file, const char* function, int line);
 
 //-------------------------------------------------------------------------
 // Macros (the IM_CHECK_xxx macros are at the bottom of this file)
@@ -145,25 +145,25 @@ const char*     ImGuiTestEngine_FindItemDebugLabel(ImGuiContext* ui_ctx, ImGuiID
 //-------------------------------------------------------------------------
 
 // Functions: Initialization
-ImGuiTestEngine*    ImGuiTestEngine_CreateContext(ImGuiContext* ui_ctx);            // Create test engine
-void                ImGuiTestEngine_DestroyContext(ImGuiTestEngine* engine);        // Destroy test engine. Call after ImGui::DestroyContext() so test engine specific ini data gets saved.
-void                ImGuiTestEngine_Start(ImGuiTestEngine* engine);
-void                ImGuiTestEngine_Stop(ImGuiTestEngine* engine);
-void                ImGuiTestEngine_PostSwap(ImGuiTestEngine* engine);              // Call every frame after framebuffer swap, will process screen capture and call test_io.ScreenCaptureFunc()
-ImGuiTestEngineIO&  ImGuiTestEngine_GetIO(ImGuiTestEngine* engine);
-void                ImGuiTestEngine_RebootUiContext(ImGuiTestEngine* engine);
+IMGUI_API ImGuiTestEngine*    ImGuiTestEngine_CreateContext(ImGuiContext* ui_ctx);            // Create test engine
+IMGUI_API void                ImGuiTestEngine_DestroyContext(ImGuiTestEngine* engine);        // Destroy test engine. Call after ImGui::DestroyContext() so test engine specific ini data gets saved.
+IMGUI_API void                ImGuiTestEngine_Start(ImGuiTestEngine* engine);
+IMGUI_API void                ImGuiTestEngine_Stop(ImGuiTestEngine* engine);
+IMGUI_API void                ImGuiTestEngine_PostSwap(ImGuiTestEngine* engine);              // Call every frame after framebuffer swap, will process screen capture and call test_io.ScreenCaptureFunc()
+IMGUI_API ImGuiTestEngineIO&  ImGuiTestEngine_GetIO(ImGuiTestEngine* engine);
+IMGUI_API void                ImGuiTestEngine_RebootUiContext(ImGuiTestEngine* engine);
 
 // Functions: Main
-ImGuiTest*          ImGuiTestEngine_RegisterTest(ImGuiTestEngine* engine, const char* category, const char* name, const char* src_file = NULL, int src_line = 0);
-void                ImGuiTestEngine_QueueTests(ImGuiTestEngine* engine, ImGuiTestGroup group, const char* filter = NULL, ImGuiTestRunFlags run_flags = 0);
-void                ImGuiTestEngine_QueueTest(ImGuiTestEngine* engine, ImGuiTest* test, ImGuiTestRunFlags run_flags = 0);
-void                ImGuiTestEngine_AbortCurrentTest(ImGuiTestEngine* engine);
-bool                ImGuiTestEngine_TryAbortEngine(ImGuiTestEngine* engine);
-bool                ImGuiTestEngine_IsTestQueueEmpty(ImGuiTestEngine* engine);      // FIXME: Clarify difference between this and io.RunningTests
-void                ImGuiTestEngine_CoroutineStopRequest(ImGuiTestEngine* engine);
-void                ImGuiTestEngine_UpdateHooks(ImGuiTestEngine* engine);
-void                ImGuiTestEngine_GetResult(ImGuiTestEngine* engine, int& count_tested, int& success_count);
-ImGuiPerfTool*      ImGuiTestEngine_GetPerfTool(ImGuiTestEngine* engine);
+IMGUI_API ImGuiTest*          ImGuiTestEngine_RegisterTest(ImGuiTestEngine* engine, const char* category, const char* name, const char* src_file = NULL, int src_line = 0);
+IMGUI_API void                ImGuiTestEngine_QueueTests(ImGuiTestEngine* engine, ImGuiTestGroup group, const char* filter = NULL, ImGuiTestRunFlags run_flags = 0);
+IMGUI_API void                ImGuiTestEngine_QueueTest(ImGuiTestEngine* engine, ImGuiTest* test, ImGuiTestRunFlags run_flags = 0);
+IMGUI_API void                ImGuiTestEngine_AbortCurrentTest(ImGuiTestEngine* engine);
+IMGUI_API bool                ImGuiTestEngine_TryAbortEngine(ImGuiTestEngine* engine);
+IMGUI_API bool                ImGuiTestEngine_IsTestQueueEmpty(ImGuiTestEngine* engine);      // FIXME: Clarify difference between this and io.RunningTests
+IMGUI_API void                ImGuiTestEngine_CoroutineStopRequest(ImGuiTestEngine* engine);
+IMGUI_API void                ImGuiTestEngine_UpdateHooks(ImGuiTestEngine* engine);
+IMGUI_API void                ImGuiTestEngine_GetResult(ImGuiTestEngine* engine, int& count_tested, int& success_count);
+IMGUI_API ImGuiPerfTool*      ImGuiTestEngine_GetPerfTool(ImGuiTestEngine* engine);
 
 // Function pointers for IO structure
 // (also see imgui_te_coroutine.h for coroutine functions)
@@ -173,7 +173,7 @@ typedef void        (ImGuiTestEngineSrcFileOpenFunc)(const char* filename, int l
 // IO structure to configure the test engine
 //-----------------------------------------------------------------------------
 
-struct ImGuiTestEngineIO
+struct IMGUI_API ImGuiTestEngineIO
 {
     //-------------------------------------------------------------------------
     // Functions
@@ -258,7 +258,7 @@ struct ImGuiTestItemInfo
 };
 
 // Result of an ItemGather query
-struct ImGuiTestItemList
+struct IMGUI_API ImGuiTestItemList
 {
     ImPool<ImGuiTestItemInfo>   Pool;
 
@@ -279,13 +279,13 @@ struct ImGuiTestItemList
 // ImGuiTestLog
 //-------------------------------------------------------------------------
 
-struct ImGuiTestLogLineInfo
+struct IMGUI_API ImGuiTestLogLineInfo
 {
     ImGuiTestVerboseLevel           Level;
     int                             LineOffset;
 };
 
-struct ImGuiTestLog
+struct IMGUI_API ImGuiTestLog
 {
     ImGuiTextBuffer                 Buffer;
     ImVector<ImGuiTestLogLineInfo>  LineInfo;
@@ -324,7 +324,7 @@ typedef void    (ImGuiTestVarsPostConstructor)(void* ptr, void* fn);
 typedef void    (ImGuiTestVarsDestructor)(void* ptr);
 
 // Storage for one test
-struct ImGuiTest
+struct IMGUI_API ImGuiTest
 {
     // Test Definition
     const char*                     Category = NULL;                // Literal, not owned

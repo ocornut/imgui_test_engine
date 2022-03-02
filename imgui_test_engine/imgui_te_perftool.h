@@ -14,7 +14,7 @@ struct ImGuiCSVParser;
 // 1. ImGuiTestEngine_PerfToolAppendToCSV() call after perf test has run. This call receives ImGuiPerfToolEntry with const strings stored indefinitely by application.
 // 2. As a consequence of ImGuiPerfTool::LoadCSV() call, we persist the ImGuiCSVParser instance, which keeps parsed CSV text, from which strings are referenced.
 // As a result our solution also doesn't make many allocations.
-struct ImGuiPerfToolEntry
+struct IMGUI_API ImGuiPerfToolEntry
 {
     ImU64                       Timestamp = 0;                  // Title of a particular batch of perftool entries.
     const char*                 Category = NULL;                // Name of category perf test is in.
@@ -35,7 +35,7 @@ struct ImGuiPerfToolEntry
     int                         LabelIndex = 0;                 // Index of TestName in ImGuiPerfTool::_LabelsVisible.
 
     ImGuiPerfToolEntry()        { }
-	ImGuiPerfToolEntry(const ImGuiPerfToolEntry& rhs)           { Set(rhs); }
+    ImGuiPerfToolEntry(const ImGuiPerfToolEntry& rhs)           { Set(rhs); }
     ImGuiPerfToolEntry& operator=(const ImGuiPerfToolEntry& rhs){ Set(rhs); return *this; }
     void Set(const ImGuiPerfToolEntry& rhs);
 };
@@ -58,7 +58,7 @@ enum ImGuiPerfToolDisplayType_
 };
 typedef int ImGuiPerfToolDisplayType;
 
-struct ImGuiPerfTool
+struct IMGUI_API ImGuiPerfTool
 {
     ImVector<ImGuiPerfToolEntry> _SrcData;                       // Raw entries from CSV file (with string pointer into CSV data).
     ImVector<const char*>       _Labels;
@@ -120,4 +120,4 @@ struct ImGuiPerfTool
     void        _SetBaseline(int batch_index);
 };
 
-void    ImGuiTestEngine_PerfToolAppendToCSV(ImGuiPerfTool* perf_log, ImGuiPerfToolEntry* entry, const char* filename = NULL);
+IMGUI_API void    ImGuiTestEngine_PerfToolAppendToCSV(ImGuiPerfTool* perf_log, ImGuiPerfToolEntry* entry, const char* filename = NULL);

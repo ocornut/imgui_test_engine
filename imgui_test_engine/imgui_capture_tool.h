@@ -28,7 +28,7 @@ struct ImGuiWindow; // imgui.h
 
 // [Internal]
 // Helper class for simple bitmap manipulation (not particularly efficient!)
-struct ImGuiCaptureImageBuf
+struct IMGUI_API ImGuiCaptureImageBuf
 {
     int             Width;
     int             Height;
@@ -80,7 +80,7 @@ enum ImGuiCaptureStatus
 };
 
 // Implements functionality for capturing images
-struct ImGuiCaptureContext
+struct IMGUI_API ImGuiCaptureContext
 {
     // IO
     ImFuncPtr(ImGuiScreenCaptureFunc) ScreenCaptureFunc = NULL; // Graphics backend specific function that captures specified portion of framebuffer and writes RGBA data to `pixels` buffer.
@@ -134,7 +134,7 @@ struct ImGuiCaptureContext
 
 // Implements UI for capturing images
 // (when using ImGuiTestEngine scripting API you may not need to use this at all)
-struct ImGuiCaptureToolUI
+struct IMGUI_API ImGuiCaptureToolUI
 {
     ImGuiCaptureContext     Context;                            // Screenshot capture context.
     float                   SnapGridSize = 32.0f;               // Size of the grid cell for "snap to grid" functionality.

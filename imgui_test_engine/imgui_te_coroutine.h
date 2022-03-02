@@ -1,5 +1,9 @@
 #pragma once
 
+#ifndef IMGUI_VERSION
+#include "imgui.h"
+#endif
+
 //------------------------------------------------------------------------
 // Coroutine abstraction
 //------------------------------------------------------------------------
@@ -19,7 +23,7 @@ typedef void (ImGuiTestCoroutineMainFunc)(void* data);
 // Coroutine support interface
 // Your app needs to return and implement this.
 // You can '#define IMGUI_TEST_ENGINE_ENABLE_COROUTINE_STDTHREAD_IMPL 1' in your imconfig file to use a default implementation using std::thread
-struct ImGuiTestCoroutineInterface
+struct IMGUI_API ImGuiTestCoroutineInterface
 {
     ImGuiTestCoroutineHandle (*CreateFunc)(ImGuiTestCoroutineMainFunc* func, const char* name, void* data); // Create a new coroutine
     void                     (*DestroyFunc)(ImGuiTestCoroutineHandle handle);                               // Destroy a coroutine (which must have completed first)
@@ -34,5 +38,5 @@ struct ImGuiTestCoroutineInterface
 //------------------------------------------------------------------------
 
 #if IMGUI_TEST_ENGINE_ENABLE_COROUTINE_STDTHREAD_IMPL
-ImGuiTestCoroutineInterface*    Coroutine_ImplStdThread_GetInterface();
+IMGUI_API ImGuiTestCoroutineInterface*    Coroutine_ImplStdThread_GetInterface();
 #endif // #if IMGUI_TEST_ENGINE_ENABLE_COROUTINE_STDTHREAD_IMPL
