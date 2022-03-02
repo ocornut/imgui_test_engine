@@ -1502,7 +1502,11 @@ void ImGuiTestEngineHook_ItemAdd(ImGuiContext* ui_ctx, const ImRect& bb, ImGuiID
     }
 }
 
+#ifdef IMGUI_HAS_IMSTR
+static void ImGuiTestEngineHook_ItemInfo_ResolveFindByLabel(ImGuiContext* ui_ctx, ImGuiID id, const ImStrv label, ImGuiItemStatusFlags flags)
+#else
 static void ImGuiTestEngineHook_ItemInfo_ResolveFindByLabel(ImGuiContext* ui_ctx, ImGuiID id, const char* label, ImGuiItemStatusFlags flags)
+#endif
 {
     // At this point "label" is a match for the right-most name in user wildcard (e.g. the "bar" of "**/foo/bar"
     ImGuiContext& g = *ui_ctx;
@@ -1595,8 +1599,11 @@ void ImGuiTestEngineHook_ItemInfo(ImGuiContext* ui_ctx, ImGuiID id, const char* 
     // Perhaps we could use strcmp() if we detect that ### is not used, that would be faster.
     ImGuiTestFindByLabelTask* label_task = &engine->FindByLabelTask;
     if (label && label_task->InSuffixLastItem && label_task->OutItemId == 0)
-        //if (ImStrcmp(label_task->InSuffixLastItem, label) == 0)
-        if (label_task->InSuffixLastItemHash == ImHashStr(label, 0, 0))
+#ifdef IMGUI_HAS_IMSTR
+        if (label_task->InSuffixLastItemHash == ImHashStr(label))
+#else
+        if (label_task->InSuffixLastItemHash == ImHashStr(label, 0))
+#endif
             ImGuiTestEngineHook_ItemInfo_ResolveFindByLabel(ui_ctx, id, label, flags);
 }
 
