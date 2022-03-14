@@ -26,8 +26,21 @@
 // * Build: A group of batches that have matching BuildType, OS, Cpu, Compiler, GitBranchName.
 // * Baseline: A batch that we are comparing against. Baselines are identified by batch timestamp and build id.
 
+/*
+
+Index of this file:
+
+// [SECTION] ImGuiPerflogEntry
+// [SECTION] Types & everything else
+// [SECTION] UI
+// [SECTION] Settings
+// [SECTION] Tests
+
+*/
+
+
 //-------------------------------------------------------------------------
-// ImGuiPerflogEntry
+// [SECTION] ImGuiPerflogEntry
 //-------------------------------------------------------------------------
 
 void ImGuiPerfToolEntry::Set(const ImGuiPerfToolEntry& other)
@@ -52,7 +65,7 @@ void ImGuiPerfToolEntry::Set(const ImGuiPerfToolEntry& other)
 }
 
 //-------------------------------------------------------------------------
-// Types
+// [SECTION] Types & everything else
 //-------------------------------------------------------------------------
 
 typedef ImGuiID(*HashEntryFn)(ImGuiPerfToolEntry* entry);
@@ -411,71 +424,6 @@ static bool RenderMultiSelectFilter(ImGuiPerfTool* perf, const char* filter_hint
     return modified;
 }
 
-static void PerflogSettingsHandler_ClearAll(ImGuiContext*, ImGuiSettingsHandler* ini_handler)
-{
-    ImGuiPerfTool* perftool = (ImGuiPerfTool*)ini_handler->UserData;
-    perftool->_Visibility.Clear();
-}
-
-static void* PerflogSettingsHandler_ReadOpen(ImGuiContext*, ImGuiSettingsHandler*, const char*)
-{
-    return (void*)1;
-}
-
-static void PerflogSettingsHandler_ReadLine(ImGuiContext*, ImGuiSettingsHandler* ini_handler, void*, const char* line)
-{
-    ImGuiPerfTool* perftool = (ImGuiPerfTool*)ini_handler->UserData;
-    char buf[128];
-    int visible, display_type;
-    /**/ if (sscanf(line, "DateFrom=%10s", perftool->_FilterDateFrom))               { }
-    else if (sscanf(line, "DateTo=%10s", perftool->_FilterDateTo))                   { }
-    else if (sscanf(line, "DisplayType=%d", &display_type))                         { perftool->_DisplayType = display_type; }
-    else if (sscanf(line, "BaselineBuildId=%llu", &perftool->_BaselineBuildId))      { }
-    else if (sscanf(line, "BaselineTimestamp=%llu", &perftool->_BaselineTimestamp))  { }
-    else if (sscanf(line, "TestVisibility=%[^,]=%d", buf, &visible))                { perftool->_Visibility.SetBool(ImHashStr(buf), !!visible); }
-    else if (sscanf(line, "BuildVisibility=%[^,]=%d", buf, &visible))               { perftool->_Visibility.SetBool(ImHashStr(buf), !!visible); }
-}
-
-static void PerflogSettingsHandler_ApplyAll(ImGuiContext*, ImGuiSettingsHandler* ini_handler)
-{
-    ImGuiPerfTool* perftool = (ImGuiPerfTool*)ini_handler->UserData;
-    perftool->_Batches.clear_destruct();
-    perftool->_SetBaseline(-1);
-}
-
-static void PerflogSettingsHandler_WriteAll(ImGuiContext*, ImGuiSettingsHandler* ini_handler, ImGuiTextBuffer* buf)
-{
-    ImGuiPerfTool* perftool = (ImGuiPerfTool*)ini_handler->UserData;
-    if (perftool->_Batches.empty())
-        return;
-    buf->appendf("[%s][Data]\n", ini_handler->TypeName);
-    buf->appendf("DateFrom=%s\n", perftool->_FilterDateFrom);
-    buf->appendf("DateTo=%s\n", perftool->_FilterDateTo);
-    buf->appendf("DisplayType=%d\n", perftool->_DisplayType);
-    buf->appendf("BaselineBuildId=%llu\n", perftool->_BaselineBuildId);
-    buf->appendf("BaselineTimestamp=%llu\n", perftool->_BaselineTimestamp);
-    for (const char* label : perftool->_Labels)
-        buf->appendf("TestVisibility=%s,%d\n", label, perftool->_Visibility.GetBool(ImHashStr(label), true));
-
-    ImGuiStorage& temp_set = perftool->_TempSet;
-    temp_set.Data.clear();
-    for (ImGuiPerfToolBatch& batch : perftool->_Batches)
-    {
-        ImGuiPerfToolEntry* entry = &batch.Entries.Data[0];
-        const char* properties[] = { entry->GitBranchName, entry->BuildType, entry->Cpu, entry->OS, entry->Compiler };
-        for (int i = 0; i < IM_ARRAYSIZE(properties); i++)
-        {
-            ImGuiID hash = ImHashStr(properties[i]);
-            if (!temp_set.GetBool(hash))
-            {
-                temp_set.SetBool(hash, true);
-                buf->appendf("BuildVisibility=%s,%d\n", properties[i], perftool->_Visibility.GetBool(hash, true));
-            }
-        }
-    }
-    buf->append("\n");
-}
-
 // Copied from ImPlot::SetupFinish().
 #if IMGUI_TEST_ENGINE_ENABLE_IMPLOT
 static ImRect ImPlotGetYTickRect(int t, int y = 0)
@@ -503,20 +451,9 @@ static ImRect ImPlotGetYTickRect(int t, int y = 0)
 
 ImGuiPerfTool::ImGuiPerfTool()
 {
-    ImGuiContext& g = *GImGui;
-
     _CSVParser = IM_NEW(ImGuiCSVParser)();
 
-    ImGuiSettingsHandler ini_handler;
-    ini_handler.TypeName = "TestEnginePerfTool";
-    ini_handler.TypeHash = ImHashStr("TestEnginePerfTool");
-    ini_handler.ClearAllFn = PerflogSettingsHandler_ClearAll;
-    ini_handler.ReadOpenFn = PerflogSettingsHandler_ReadOpen;
-    ini_handler.ReadLineFn = PerflogSettingsHandler_ReadLine;
-    ini_handler.ApplyAllFn = PerflogSettingsHandler_ApplyAll;
-    ini_handler.WriteAllFn = PerflogSettingsHandler_WriteAll;
-    ini_handler.UserData = this;
-    g.SettingsHandlers.push_back(ini_handler);
+    _RegisterSettingsHandler();
 
     Clear();
 }
@@ -1670,6 +1607,100 @@ void ImGuiPerfTool::_SetBaseline(int batch_index)
     }
 }
 
+//-------------------------------------------------------------------------
+// [SECTION] UI
+//-------------------------------------------------------------------------
+
+// <move stuff here>
+
+//-------------------------------------------------------------------------
+// [SECTION] Settings
+//-------------------------------------------------------------------------
+
+static void PerflogSettingsHandler_ClearAll(ImGuiContext*, ImGuiSettingsHandler* ini_handler)
+{
+    ImGuiPerfTool* perftool = (ImGuiPerfTool*)ini_handler->UserData;
+    perftool->_Visibility.Clear();
+}
+
+static void* PerflogSettingsHandler_ReadOpen(ImGuiContext*, ImGuiSettingsHandler*, const char*)
+{
+    return (void*)1;
+}
+
+static void PerflogSettingsHandler_ReadLine(ImGuiContext*, ImGuiSettingsHandler* ini_handler, void*, const char* line)
+{
+    ImGuiPerfTool* perftool = (ImGuiPerfTool*)ini_handler->UserData;
+    char buf[128];
+    int visible, display_type;
+    /**/ if (sscanf(line, "DateFrom=%10s", perftool->_FilterDateFrom)) {}
+    else if (sscanf(line, "DateTo=%10s", perftool->_FilterDateTo)) {}
+    else if (sscanf(line, "DisplayType=%d", &display_type)) { perftool->_DisplayType = display_type; }
+    else if (sscanf(line, "BaselineBuildId=%llu", &perftool->_BaselineBuildId)) {}
+    else if (sscanf(line, "BaselineTimestamp=%llu", &perftool->_BaselineTimestamp)) {}
+    else if (sscanf(line, "TestVisibility=%[^,]=%d", buf, &visible)) { perftool->_Visibility.SetBool(ImHashStr(buf), !!visible); }
+    else if (sscanf(line, "BuildVisibility=%[^,]=%d", buf, &visible)) { perftool->_Visibility.SetBool(ImHashStr(buf), !!visible); }
+}
+
+static void PerflogSettingsHandler_ApplyAll(ImGuiContext*, ImGuiSettingsHandler* ini_handler)
+{
+    ImGuiPerfTool* perftool = (ImGuiPerfTool*)ini_handler->UserData;
+    perftool->_Batches.clear_destruct();
+    perftool->_SetBaseline(-1);
+}
+
+static void PerflogSettingsHandler_WriteAll(ImGuiContext*, ImGuiSettingsHandler* ini_handler, ImGuiTextBuffer* buf)
+{
+    ImGuiPerfTool* perftool = (ImGuiPerfTool*)ini_handler->UserData;
+    if (perftool->_Batches.empty())
+        return;
+    buf->appendf("[%s][Data]\n", ini_handler->TypeName);
+    buf->appendf("DateFrom=%s\n", perftool->_FilterDateFrom);
+    buf->appendf("DateTo=%s\n", perftool->_FilterDateTo);
+    buf->appendf("DisplayType=%d\n", perftool->_DisplayType);
+    buf->appendf("BaselineBuildId=%llu\n", perftool->_BaselineBuildId);
+    buf->appendf("BaselineTimestamp=%llu\n", perftool->_BaselineTimestamp);
+    for (const char* label : perftool->_Labels)
+        buf->appendf("TestVisibility=%s,%d\n", label, perftool->_Visibility.GetBool(ImHashStr(label), true));
+
+    ImGuiStorage& temp_set = perftool->_TempSet;
+    temp_set.Data.clear();
+    for (ImGuiPerfToolBatch& batch : perftool->_Batches)
+    {
+        ImGuiPerfToolEntry* entry = &batch.Entries.Data[0];
+        const char* properties[] = { entry->GitBranchName, entry->BuildType, entry->Cpu, entry->OS, entry->Compiler };
+        for (int i = 0; i < IM_ARRAYSIZE(properties); i++)
+        {
+            ImGuiID hash = ImHashStr(properties[i]);
+            if (!temp_set.GetBool(hash))
+            {
+                temp_set.SetBool(hash, true);
+                buf->appendf("BuildVisibility=%s,%d\n", properties[i], perftool->_Visibility.GetBool(hash, true));
+            }
+        }
+    }
+    buf->append("\n");
+}
+
+void ImGuiPerfTool::_RegisterSettingsHandler()
+{
+    ImGuiContext& g = *GImGui;
+    ImGuiSettingsHandler ini_handler;
+    ini_handler.TypeName = "TestEnginePerfTool";
+    ini_handler.TypeHash = ImHashStr("TestEnginePerfTool");
+    ini_handler.ClearAllFn = PerflogSettingsHandler_ClearAll;
+    ini_handler.ReadOpenFn = PerflogSettingsHandler_ReadOpen;
+    ini_handler.ReadLineFn = PerflogSettingsHandler_ReadLine;
+    ini_handler.ApplyAllFn = PerflogSettingsHandler_ApplyAll;
+    ini_handler.WriteAllFn = PerflogSettingsHandler_WriteAll;
+    ini_handler.UserData = this;
+    g.SettingsHandlers.push_back(ini_handler);
+}
+
+//-------------------------------------------------------------------------
+// [SECTION] Tests
+//-------------------------------------------------------------------------
+
 static bool SetPerfToolWindowOpen(ImGuiTestContext* ctx, bool is_open)
 {
     ctx->WindowFocus("/Dear ImGui Test Engine");
@@ -1837,3 +1868,5 @@ void RegisterTests_PerfTool(ImGuiTestEngine* e)
         perftool->SaveReport(perf_report_output, perf_report_image);
     };
 }
+
+//-------------------------------------------------------------------------

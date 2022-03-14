@@ -118,6 +118,7 @@ struct IMGUI_API ImGuiPerfTool
     void        _ShowEntriesPlot();
     void        _ShowEntriesTable();
     void        _SetBaseline(int batch_index);
+    void        _RegisterSettingsHandler();
 };
 
 IMGUI_API void    ImGuiTestEngine_PerfToolAppendToCSV(ImGuiPerfTool* perf_log, ImGuiPerfToolEntry* entry, const char* filename = NULL);
