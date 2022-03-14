@@ -318,7 +318,7 @@ static void LoadFonts(float dpi_scale)
     //cfg.RasterizerMultiply = 1.1f;
 
     Str64 base_font_dir;
-    if (ImFileFindInParents("assets/fonts/", 3, &base_font_dir))
+    if (ImFileFindInParents("imgui_tests/assets/fonts/", 3, &base_font_dir))
     {
         io.Fonts->AddFontFromFileTTF(Str64f("%s/%s", base_font_dir.c_str(), "NotoSans-Regular.ttf").c_str(), 16.0f * dpi_scale);
         io.Fonts->AddFontFromFileTTF(Str64f("%s/%s", base_font_dir.c_str(), "Roboto-Medium.ttf").c_str(), 16.0f * dpi_scale);
