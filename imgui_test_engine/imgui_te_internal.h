@@ -112,8 +112,7 @@ struct ImGuiTestInputs
 struct ImGuiTestEngine
 {
     ImGuiTestEngineIO           IO;
-    ImGuiContext*               UiContextVisible = NULL;        // imgui context for visible/interactive needs
-    ImGuiContext*               UiContextTarget = NULL;         // imgui context for testing == io.ConfigRunBlind ? UiBlindContext : UiVisibleContext when running tests, otherwise NULL.
+    ImGuiContext*               UiContextTarget = NULL;         // imgui context for testing
     ImGuiContext*               UiContextActive = NULL;         // imgui context for testing == UiContextTarget or NULL
 
     bool                        Started = false;

@@ -186,7 +186,8 @@ struct IMGUI_API ImGuiTestEngineIO
     void*                                       SrcFileOpenUserData = NULL;     // (Optional) User data for SrcFileOpenFunc
     void*                                       ScreenCaptureUserData = NULL;   // (Optional) User data for ScreenCaptureFunc
 
-    // Inputs: Options
+    // Options: Main
+    bool                        ConfigSavedSettings = true;                     // Load/Save settings in main context .ini file.
     ImGuiTestRunSpeed           ConfigRunSpeed = ImGuiTestRunSpeed_Fast;        // Run tests in fast/normal/cinematic mode
     bool                        ConfigStopOnError = false;                      // Stop queued tests on test error
     bool                        ConfigBreakOnError = false;                     // Break debugger on test error
@@ -196,15 +197,13 @@ struct IMGUI_API ImGuiTestEngineIO
     bool                        ConfigLogToTTY = false;
     bool                        ConfigLogToDebugger = false;
     bool                        ConfigTakeFocusBackAfterTests = true;
-    bool                        ConfigCaptureEnabled = true;
+    bool                        ConfigCaptureEnabled = true;        // Master enable flags for capturing and saving captures. Disable to avoid e.g. lengthy saving of large PNG files.
     bool                        ConfigCaptureOnError = false;
     bool                        ConfigNoThrottle = false;           // Disable vsync for performance measurement or fast test running
     bool                        ConfigMouseDrawCursor = true;       // Enable drawing of Dear ImGui software mouse cursor when running tests
     float                       ConfigFixedDeltaTime = 0.0f;        // Use fixed delta time instead of calculating it from wall clock
     int                         PerfStressAmount = 1;               // Integer to scale the amount of items submitted in test
     char                        GitBranchName[64] = "";             // e.g. fill in branch name
-    char                        PathToFFMPEG[256] = "";             //
-    char                        VideoCaptureExtension[8] = ".mp4";  // Default file extension when using auto-filenames (ffmpeg-compatible)
 
     // Options: Speed of user simulation
     float                       MouseSpeed = 600.0f;                // Mouse speed (pixel/second) when not running in fast mode
@@ -213,6 +212,10 @@ struct IMGUI_API ImGuiTestEngineIO
     float                       TypingSpeed = 20.0f;                // Char input speed (characters/second) when not running in fast mode
     float                       ActionDelayShort = 0.15f;           // Time between short actions
     float                       ActionDelayStandard = 0.40f;        // Time between most actions
+
+    // Options: Screen/video capture
+    char                        PathToFFMPEG[256] = "";             //
+    char                        VideoCaptureExtension[8] = ".mp4";  // Default file extension when using auto-filenames (ffmpeg-compatible)
 
     // Options: Watchdog. Set values to FLT_MAX to disable.
     // Interactive GUI applications that may be slower tend to use higher values.

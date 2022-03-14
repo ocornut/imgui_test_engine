@@ -452,9 +452,6 @@ static ImRect ImPlotGetYTickRect(int t, int y = 0)
 ImGuiPerfTool::ImGuiPerfTool()
 {
     _CSVParser = IM_NEW(ImGuiCSVParser)();
-
-    _RegisterSettingsHandler();
-
     Clear();
 }
 
@@ -1682,9 +1679,8 @@ static void PerflogSettingsHandler_WriteAll(ImGuiContext*, ImGuiSettingsHandler*
     buf->append("\n");
 }
 
-void ImGuiPerfTool::_RegisterSettingsHandler()
+void ImGuiPerfTool::_AddSettingsHandler()
 {
-    ImGuiContext& g = *GImGui;
     ImGuiSettingsHandler ini_handler;
     ini_handler.TypeName = "TestEnginePerfTool";
     ini_handler.TypeHash = ImHashStr("TestEnginePerfTool");
@@ -1694,7 +1690,12 @@ void ImGuiPerfTool::_RegisterSettingsHandler()
     ini_handler.ApplyAllFn = PerflogSettingsHandler_ApplyAll;
     ini_handler.WriteAllFn = PerflogSettingsHandler_WriteAll;
     ini_handler.UserData = this;
+#if IMGUI_VERSION_NUM >= 18710
+    ImGui::AddSettingsHandler(&ini_handler);
+#else
+    ImGuiContext& g = *GImGui;
     g.SettingsHandlers.push_back(ini_handler);
+#endif
 }
 
 //-------------------------------------------------------------------------

@@ -81,6 +81,8 @@ static ImGuiTestEngine* GImGuiTestEngine = NULL;
 //-------------------------------------------------------------------------
 
 // Private functions
+static void ImGuiTestEngine_BindImGuiContext(ImGuiTestEngine* engine, ImGuiContext* ui_ctx);
+static void ImGuiTestEngine_UnbindImGuiContext(ImGuiTestEngine* engine, ImGuiContext* ui_ctx);
 static void ImGuiTestEngine_CoroutineStopAndJoin(ImGuiTestEngine* engine);
 static void ImGuiTestEngine_StartCalcSourceLineEnds(ImGuiTestEngine* engine);
 static void ImGuiTestEngine_ClearInput(ImGuiTestEngine* engine);
@@ -149,25 +151,23 @@ ImGuiTestEngine::~ImGuiTestEngine()
     IM_DELETE(PerfTool);
 }
 
-static void ImGuiTestEngine_UnbindImGuiContext(ImGuiTestEngine* engine, ImGuiContext* imgui_context);
-
 static void ImGuiTestEngine_BindImGuiContext(ImGuiTestEngine* engine, ImGuiContext* ui_ctx)
 {
-    IM_ASSERT(engine->UiContextTarget == NULL);
-
-    engine->UiContextVisible = ui_ctx;
-    engine->UiContextTarget = engine->UiContextVisible;
-    engine->UiContextActive = NULL;
+    IM_ASSERT(engine->UiContextTarget == ui_ctx);
 
     // Add .ini handle for ImGuiWindow type
-    ImGuiSettingsHandler ini_handler;
-    ini_handler.TypeName = "TestEngine";
-    ini_handler.TypeHash = ImHashStr("TestEngine");
-    ini_handler.ReadOpenFn = ImGuiTestEngine_SettingsReadOpen;
-    ini_handler.ReadLineFn = ImGuiTestEngine_SettingsReadLine;
-    ini_handler.ApplyAllFn = ImGuiTestEngine_SettingsApplyAll;
-    ini_handler.WriteAllFn = ImGuiTestEngine_SettingsWriteAll;
-    ui_ctx->SettingsHandlers.push_back(ini_handler);
+    if (engine->IO.ConfigSavedSettings)
+    {
+        ImGuiSettingsHandler ini_handler;
+        ini_handler.TypeName = "TestEngine";
+        ini_handler.TypeHash = ImHashStr("TestEngine");
+        ini_handler.ReadOpenFn = ImGuiTestEngine_SettingsReadOpen;
+        ini_handler.ReadLineFn = ImGuiTestEngine_SettingsReadLine;
+        ini_handler.ApplyAllFn = ImGuiTestEngine_SettingsApplyAll;
+        ini_handler.WriteAllFn = ImGuiTestEngine_SettingsWriteAll;
+        ui_ctx->SettingsHandlers.push_back(ini_handler);
+        engine->PerfTool->_AddSettingsHandler();
+    }
 
     // Install generic context hooks facility
     ImGuiContextHook hook;
@@ -215,16 +215,24 @@ static void    ImGuiTestEngine_UnbindImGuiContext(ImGuiTestEngine* engine, ImGui
 
     // Remove .ini handler
     IM_ASSERT(GImGui == ui_ctx);
-    if (ImGuiSettingsHandler* ini_handler = ImGui::FindSettingsHandler("TestEngine"))
-        ui_ctx->SettingsHandlers.erase(ui_ctx->SettingsHandlers.Data + ui_ctx->SettingsHandlers.index_from_ptr(ini_handler));
-    if (ImGuiSettingsHandler* ini_handler = ImGui::FindSettingsHandler("TestEnginePerfTool"))
-        ui_ctx->SettingsHandlers.erase(ui_ctx->SettingsHandlers.Data + ui_ctx->SettingsHandlers.index_from_ptr(ini_handler));
+    if (engine->IO.ConfigSavedSettings)
+    {
+#if IMGUI_VERSION_NUM >= 18710
+        ImGui::RemoveSettingsHandler("TestEngine");
+        ImGui::RemoveSettingsHandler("TestEnginePerfTool");
+#else
+        if (ImGuiSettingsHandler* ini_handler = ImGui::FindSettingsHandler("TestEngine"))
+            ui_ctx->SettingsHandlers.erase(ui_ctx->SettingsHandlers.Data + ui_ctx->SettingsHandlers.index_from_ptr(ini_handler));
+        if (ImGuiSettingsHandler* ini_handler = ImGui::FindSettingsHandler("TestEnginePerfTool"))
+            ui_ctx->SettingsHandlers.erase(ui_ctx->SettingsHandlers.Data + ui_ctx->SettingsHandlers.index_from_ptr(ini_handler));
+#endif
+    }
 #endif
 
     // Remove hook
     if (GImGuiTestEngine == engine)
         GImGuiTestEngine = NULL;
-    engine->UiContextVisible = engine->UiContextTarget = engine->UiContextActive = NULL;
+    engine->UiContextTarget = engine->UiContextActive = NULL;
 }
 
 // Create test context and attach to imgui context
@@ -232,7 +240,7 @@ ImGuiTestEngine*    ImGuiTestEngine_CreateContext(ImGuiContext* ui_ctx)
 {
     IM_ASSERT(ui_ctx != NULL);
     ImGuiTestEngine* engine = IM_NEW(ImGuiTestEngine)();
-    ImGuiTestEngine_BindImGuiContext(engine, ui_ctx);
+    engine->UiContextTarget = ui_ctx;
     return engine;
 }
 
@@ -261,7 +269,10 @@ static void    ImGuiTestEngine_CoroutineStopAndJoin(ImGuiTestEngine* engine)
 void    ImGuiTestEngine_DestroyContext(ImGuiTestEngine* engine)
 {
     // We require user to call DestroyContext() before ImGuiTestEngine_DestroyContext() in order to preserve ini data...
-    IM_ASSERT(engine->UiContextTarget == NULL && "You need to call ImGui::DestroyContext() BEFORE ImGuiTestEngine_DestroyContext()");
+    // In case of e.g. dynamically creating a TestEngine as runtime and not caring about its settings, you may set io.ConfigSavedSettings to false
+    // in order to allow earlier destruction of the context.
+    if (engine->IO.ConfigSavedSettings)
+        IM_ASSERT(engine->UiContextTarget == NULL && "You need to call ImGui::DestroyContext() BEFORE ImGuiTestEngine_DestroyContext()");
 
     // Shutdown coroutine
     ImGuiTestEngine_CoroutineStopAndJoin(engine);
@@ -287,8 +298,10 @@ void    ImGuiTestEngine_DestroyContext(ImGuiTestEngine* engine)
 
 void    ImGuiTestEngine_Start(ImGuiTestEngine* engine)
 {
-    IM_ASSERT(!engine->Started);
+    IM_ASSERT(engine->Started == false);
+    IM_ASSERT(engine->UiContextTarget != NULL);
 
+    ImGuiTestEngine_BindImGuiContext(engine, engine->UiContextTarget);
     ImGuiTestEngine_StartCalcSourceLineEnds(engine);
     ImGuiTestEngine_InstallCrashHandler();
 
