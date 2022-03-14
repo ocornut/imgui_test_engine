@@ -1,11 +1,10 @@
 ## Contents
 
 - `app_mimimal/` minimal demo app showcasing how to integrate the test engine (app)
-- `app_sandbox/` experiments, showcase of third party extensions (app)
-- `build_scripts/` helpers scripts to build with various compilers and create packages.
-- `shared/` shared C++ helpers for apps
+- `build_scripts/` helpers build scripts.
 - `imgui_tests/` test suite (app)
 - `imgui_test_engine/` test engine (library)
+- `shared/` shared C++ helpers for apps
 
 ## Docs / Wiki
 

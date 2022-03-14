@@ -8,7 +8,6 @@ build_scripts/config/build_config.bat
 
 ## Application artifacts
 output/
-app_sandbox/output/
 imgui_tests/output/
 imgui.ini
 
@@ -20,10 +19,6 @@ app_minimal/build/*
 app_minimal/Debug/*
 app_minimal/Release/*
 app_minimal/x64/*
-app_sandbox/build/*
-app_sandbox/Debug/*
-app_sandbox/Release/*
-app_sandbox/x64/*
 imgui_test_engine/build/*
 imgui_test_engine/Debug/*
 imgui_test_engine/Release/*

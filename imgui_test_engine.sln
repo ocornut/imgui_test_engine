@@ -3,11 +3,6 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.29806.167
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "sandbox", "app_sandbox\sandbox.vcxproj", "{C007452B-1817-4854-9F0C-5900527099D8}"
-	ProjectSection(ProjectDependencies) = postProject
-		{E6FAC6EF-4B54-45C4-9E76-3B063B51D4B9} = {E6FAC6EF-4B54-45C4-9E76-3B063B51D4B9}
-	EndProjectSection
-EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "imgui_tests", "imgui_tests\imgui_tests.vcxproj", "{9F316E83-5AE5-4939-A723-305A94F48005}"
 	ProjectSection(ProjectDependencies) = postProject
 		{E6FAC6EF-4B54-45C4-9E76-3B063B51D4B9} = {E6FAC6EF-4B54-45C4-9E76-3B063B51D4B9}
@@ -25,14 +20,6 @@ Global
 		Release|x64 = Release|x64
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{C007452B-1817-4854-9F0C-5900527099D8}.Debug|Win32.ActiveCfg = Debug|Win32
-		{C007452B-1817-4854-9F0C-5900527099D8}.Debug|Win32.Build.0 = Debug|Win32
-		{C007452B-1817-4854-9F0C-5900527099D8}.Debug|x64.ActiveCfg = Debug|x64
-		{C007452B-1817-4854-9F0C-5900527099D8}.Debug|x64.Build.0 = Debug|x64
-		{C007452B-1817-4854-9F0C-5900527099D8}.Release|Win32.ActiveCfg = Release|Win32
-		{C007452B-1817-4854-9F0C-5900527099D8}.Release|Win32.Build.0 = Release|Win32
-		{C007452B-1817-4854-9F0C-5900527099D8}.Release|x64.ActiveCfg = Release|x64
-		{C007452B-1817-4854-9F0C-5900527099D8}.Release|x64.Build.0 = Release|x64
 		{9F316E83-5AE5-4939-A723-305A94F48005}.Debug|Win32.ActiveCfg = Debug|Win32
 		{9F316E83-5AE5-4939-A723-305A94F48005}.Debug|Win32.Build.0 = Debug|Win32
 		{9F316E83-5AE5-4939-A723-305A94F48005}.Debug|x64.ActiveCfg = Debug|x64
