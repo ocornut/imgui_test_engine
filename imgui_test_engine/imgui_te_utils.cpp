@@ -659,6 +659,8 @@ const ImBuildInfo* ImBuildGetCompilationInfo()
         // CPU
 #if defined(_M_X86) || defined(_M_IX86) || defined(__i386) || defined(__i386__) || defined(_X86_) || defined(_M_AMD64) || defined(_AMD64_) || defined(__x86_64__)
         build_info.Cpu = (sizeof(size_t) == 4) ? "X86" : "X64";
+#elif defined(__aarch64__)
+        build_info.Cpu = "ARM64";
 #else
 #error
         build_info.Cpu = (sizeof(size_t) == 4) ? "Unknown32" : "Unknown64";
