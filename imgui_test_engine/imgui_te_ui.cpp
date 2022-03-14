@@ -801,12 +801,9 @@ void    ImGuiTestEngine_ShowTestEngineWindows(ImGuiTestEngine* e, bool* p_open)
 
     // Capture Tool
     ImGuiCaptureToolUI& capture_tool = e->CaptureTool;
-    capture_tool.Context.ScreenCaptureFunc = e->IO.ScreenCaptureFunc;
-    capture_tool.Context.ScreenCaptureUserData = e->IO.ScreenCaptureUserData;
-    capture_tool.Context.VideoCapturePathToFFMPEG = e->IO.PathToFFMPEG;
     capture_tool.VideoCaptureExt = e->IO.VideoCaptureExtension;
     if (e->UiCaptureToolOpen)
-        capture_tool.ShowCaptureToolWindow(&e->UiCaptureToolOpen);
+        capture_tool.ShowCaptureToolWindow(&e->CaptureContext, &e->UiCaptureToolOpen);
 
     // Performance tool
     if (e->UiPerfToolOpen)

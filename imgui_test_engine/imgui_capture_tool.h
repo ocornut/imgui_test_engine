@@ -136,7 +136,6 @@ struct IMGUI_API ImGuiCaptureContext
 // (when using ImGuiTestEngine scripting API you may not need to use this at all)
 struct IMGUI_API ImGuiCaptureToolUI
 {
-    ImGuiCaptureContext     Context;                            // Screenshot capture context.
     float                   SnapGridSize = 32.0f;               // Size of the grid cell for "snap to grid" functionality.
     char                    OutputLastFilename[256] = "";       // File name of last captured file.
     const char*             VideoCaptureExt = NULL;             // Video file extension (e.g. ".gif" or ".mp4")
@@ -150,10 +149,10 @@ struct IMGUI_API ImGuiCaptureToolUI
 
     // Public
     ImGuiCaptureToolUI();
-    void    ShowCaptureToolWindow(bool* p_open = NULL);         // Render a capture tool window with various options and utilities.
+    void    ShowCaptureToolWindow(ImGuiCaptureContext* context, bool* p_open = NULL);   // Render a capture tool window with various options and utilities.
 
     // [Internal]
     void    CaptureWindowPicker(ImGuiCaptureArgs* args);        // Render a window picker that captures picked window to file specified in file_name.
-    void    CaptureWindowsSelector(ImGuiCaptureArgs* args);     // Render a selector for selecting multiple windows for capture.
+    void    CaptureWindowsSelector(ImGuiCaptureContext* context, ImGuiCaptureArgs* args);   // Render a selector for selecting multiple windows for capture.
     void    SnapWindowsToGrid(float cell_size);                 // Snaps edges of all visible windows to a virtual grid.
 };

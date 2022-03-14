@@ -732,7 +732,6 @@ static void ImGuiTestEngine_PostNewFrame(ImGuiTestEngine* engine, ImGuiContext* 
         engine->Inputs.MousePosValue = ImGui::GetMainViewport()->Pos;
 
     engine->CaptureContext.PostNewFrame();
-    engine->CaptureTool.Context.PostNewFrame();
 
     // Garbage collect unused tasks
     const int LOCATION_TASK_ELAPSE_FRAMES = 20;

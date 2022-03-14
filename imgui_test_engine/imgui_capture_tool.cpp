@@ -618,7 +618,7 @@ void ImGuiCaptureToolUI::CaptureWindowPicker(ImGuiCaptureArgs* args)
     }
 }
 
-void ImGuiCaptureToolUI::CaptureWindowsSelector(ImGuiCaptureArgs* args)
+void ImGuiCaptureToolUI::CaptureWindowsSelector(ImGuiCaptureContext* context, ImGuiCaptureArgs* args)
 {
     ImGuiContext& g = *GImGui;
     ImGuiIO& io = g.IO;
@@ -671,11 +671,11 @@ void ImGuiCaptureToolUI::CaptureWindowsSelector(ImGuiCaptureArgs* args)
     // Record video button
     // (Prefer 100/FPS to be an integer)
     {
-        const bool is_capturing_video = Context.IsCapturingVideo();
+        const bool is_capturing_video = context->IsCapturingVideo();
         if (is_capturing_video)
         {
             if (ImGui::Button("Stop capturing video###CaptureVideo", button_sz))
-                Context.EndVideoCapture();
+                context->EndVideoCapture();
         }
         else
         {
@@ -686,7 +686,7 @@ void ImGuiCaptureToolUI::CaptureWindowsSelector(ImGuiCaptureArgs* args)
             if (ImGui::Button(label, button_sz))
             {
                 _StateIsCapturing = true;
-                Context.BeginVideoCapture(args);
+                context->BeginVideoCapture(args);
             }
             if (!allow_capture)
                 ImGui::EndDisabled();
@@ -761,19 +761,19 @@ void ImGuiCaptureToolUI::CaptureWindowsSelector(ImGuiCaptureArgs* args)
     }
 }
 
-void ImGuiCaptureToolUI::ShowCaptureToolWindow(bool* p_open)
+void ImGuiCaptureToolUI::ShowCaptureToolWindow(ImGuiCaptureContext* context, bool* p_open)
 {
     // Update capturing
     if (_StateIsCapturing)
     {
         ImGuiCaptureArgs* args = &_CaptureArgs;
-        if (Context.IsCapturingVideo() || args->InCaptureWindows.Size > 1)
+        if (context->IsCapturingVideo() || args->InCaptureWindows.Size > 1)
             args->InFlags &= ~ImGuiCaptureFlags_StitchAll;
 
-        if (Context._VideoRecording && ImGui::IsKeyPressed(ImGuiKey_Escape))
-            Context.EndVideoCapture();
+        if (context->_VideoRecording && ImGui::IsKeyPressed(ImGuiKey_Escape))
+            context->EndVideoCapture();
 
-        ImGuiCaptureStatus status = Context.CaptureUpdate(args);
+        ImGuiCaptureStatus status = context->CaptureUpdate(args);
         if (status != ImGuiCaptureStatus_InProgress)
         {
             if (status == ImGuiCaptureStatus_Done)
@@ -789,7 +789,7 @@ void ImGuiCaptureToolUI::ShowCaptureToolWindow(bool* p_open)
         ImGui::End();
         return;
     }
-    if (Context.ScreenCaptureFunc == NULL)
+    if (context->ScreenCaptureFunc == NULL)
     {
         ImGui::TextColored(ImVec4(1, 0, 0, 1), "Backend is missing ScreenCaptureFunc!");
         ImGui::End();
@@ -876,7 +876,7 @@ void ImGuiCaptureToolUI::ShowCaptureToolWindow(bool* p_open)
     if (!_StateIsCapturing)
         _CaptureArgs.InCaptureWindows.clear();
     CaptureWindowPicker(&_CaptureArgs);
-    CaptureWindowsSelector(&_CaptureArgs);
+    CaptureWindowsSelector(context, &_CaptureArgs);
 
     if (!was_capturing && _StateIsCapturing)
     {
@@ -889,12 +889,12 @@ void ImGuiCaptureToolUI::ShowCaptureToolWindow(bool* p_open)
             fprintf(stderr, "ImGuiCaptureContext: unable to create directory for file '%s'.\n",
                     _CaptureArgs.InOutputFile);
             _StateIsCapturing = false;
-            if (Context.IsCapturingVideo())
-                Context.EndVideoCapture();
+            if (context->IsCapturingVideo())
+                context->EndVideoCapture();
         }
 
         // File template will most likely end with .png, but we need a different extension for videos.
-        if (Context.IsCapturingVideo())
+        if (context->IsCapturingVideo())
             if (char* ext = (char*)ImPathFindExtension(_CaptureArgs.InOutputFile))
                 ImStrncpy(ext, VideoCaptureExt, (size_t)(ext - _CaptureArgs.InOutputFile));
     }
