@@ -5,6 +5,7 @@ CHANGELOG
 ** As we slowly transition toward releasing the test engine, this will become a more full fledged changelog.
 
 2022/03/15
+- TestEngine: Moved the ImGuiContext* parameter from ImGuiTestEngine_CreateContext() to ImGuiTestEngine_Start().
 - TestEngine: Renamed bool ImGuiTestEngineIO::RunningTest to bool ::IsRunningTests.
 - TestEngine: Renamed bool ImGuiTestEngineIO::RenderWantMaxSpeed to ::IsRequestingMaxAppSpeed.
 

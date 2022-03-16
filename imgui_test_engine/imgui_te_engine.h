@@ -145,13 +145,12 @@ IMGUI_API void      ImGuiTestEngine_Assert(const char* expr, const char* file, c
 //-------------------------------------------------------------------------
 
 // Functions: Initialization
-IMGUI_API ImGuiTestEngine*    ImGuiTestEngine_CreateContext(ImGuiContext* ui_ctx);            // Create test engine
-IMGUI_API void                ImGuiTestEngine_DestroyContext(ImGuiTestEngine* engine);        // Destroy test engine. Call after ImGui::DestroyContext() so test engine specific ini data gets saved.
-IMGUI_API void                ImGuiTestEngine_Start(ImGuiTestEngine* engine);
-IMGUI_API void                ImGuiTestEngine_Stop(ImGuiTestEngine* engine);
-IMGUI_API void                ImGuiTestEngine_PostSwap(ImGuiTestEngine* engine);              // Call every frame after framebuffer swap, will process screen capture and call test_io.ScreenCaptureFunc()
+IMGUI_API ImGuiTestEngine*    ImGuiTestEngine_CreateContext();                                      // Create test engine
+IMGUI_API void                ImGuiTestEngine_DestroyContext(ImGuiTestEngine* engine);              // Destroy test engine. Call after ImGui::DestroyContext() so test engine specific ini data gets saved.
+IMGUI_API void                ImGuiTestEngine_Start(ImGuiTestEngine* engine, ImGuiContext* ui_ctx); // Bind to a dear imgui context. Start coroutine.
+IMGUI_API void                ImGuiTestEngine_Stop(ImGuiTestEngine* engine);                        // Stop coroutine and export if any. (Unbind will lazily happen on context shutdown)
+IMGUI_API void                ImGuiTestEngine_PostSwap(ImGuiTestEngine* engine);                    // Call every frame after framebuffer swap, will process screen capture and call test_io.ScreenCaptureFunc()
 IMGUI_API ImGuiTestEngineIO&  ImGuiTestEngine_GetIO(ImGuiTestEngine* engine);
-IMGUI_API void                ImGuiTestEngine_RebootUiContext(ImGuiTestEngine* engine);
 
 // Functions: Main
 IMGUI_API ImGuiTest*          ImGuiTestEngine_RegisterTest(ImGuiTestEngine* engine, const char* category, const char* name, const char* src_file = NULL, int src_line = 0);
@@ -159,11 +158,13 @@ IMGUI_API void                ImGuiTestEngine_QueueTests(ImGuiTestEngine* engine
 IMGUI_API void                ImGuiTestEngine_QueueTest(ImGuiTestEngine* engine, ImGuiTest* test, ImGuiTestRunFlags run_flags = 0);
 IMGUI_API void                ImGuiTestEngine_AbortCurrentTest(ImGuiTestEngine* engine);
 IMGUI_API bool                ImGuiTestEngine_TryAbortEngine(ImGuiTestEngine* engine);
-IMGUI_API bool                ImGuiTestEngine_IsTestQueueEmpty(ImGuiTestEngine* engine);      // FIXME: Clarify difference between this and io.RunningTests
+IMGUI_API bool                ImGuiTestEngine_IsTestQueueEmpty(ImGuiTestEngine* engine);      // FIXME: Clarify difference between this and io.iSRunningTests
 IMGUI_API void                ImGuiTestEngine_CoroutineStopRequest(ImGuiTestEngine* engine);
-IMGUI_API void                ImGuiTestEngine_UpdateHooks(ImGuiTestEngine* engine);
 IMGUI_API void                ImGuiTestEngine_GetResult(ImGuiTestEngine* engine, int& count_tested, int& success_count);
 IMGUI_API ImGuiPerfTool*      ImGuiTestEngine_GetPerfTool(ImGuiTestEngine* engine);
+
+// Functions: Internal/Experimental
+IMGUI_API void                ImGuiTestEngine_RebootUiContext(ImGuiTestEngine* engine);
 
 // Function pointers for IO structure
 // (also see imgui_te_coroutine.h for coroutine functions)

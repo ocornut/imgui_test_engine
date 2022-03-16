@@ -51,7 +51,7 @@ int main(int argc, char** argv)
     app->InitBackends(app);
 
     // Setup test engine
-    ImGuiTestEngine* engine = ImGuiTestEngine_CreateContext(ImGui::GetCurrentContext());
+    ImGuiTestEngine* engine = ImGuiTestEngine_CreateContext();
     ImGuiTestEngineIO& test_io = ImGuiTestEngine_GetIO(engine);
     test_io.ConfigVerboseLevel = ImGuiTestVerboseLevel_Info;
     test_io.ConfigVerboseLevelOnError = ImGuiTestVerboseLevel_Debug;
@@ -63,11 +63,11 @@ int main(int argc, char** argv)
     //test_io.ExportResultsFile = "./results.xml";
     //test_io.ExportResultsFormat = ImGuiTestEngineExportFormat_JUnitXml;
 
+    // Start test engine
+    ImGuiTestEngine_Start(engine, ImGui::GetCurrentContext());
+
     // Register tests
     RegisterAppMinimalTests(engine);
-
-    // Start test engine
-    ImGuiTestEngine_Start(engine);
 
     // Main loop
     bool aborted = false;

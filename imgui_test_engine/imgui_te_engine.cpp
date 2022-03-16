@@ -92,6 +92,7 @@ static void ImGuiTestEngine_ClearTests(ImGuiTestEngine* engine);
 static void ImGuiTestEngine_PreNewFrame(ImGuiTestEngine* engine, ImGuiContext* ui_ctx);
 static void ImGuiTestEngine_PostNewFrame(ImGuiTestEngine* engine, ImGuiContext* ui_ctx);
 static void ImGuiTestEngine_PostRender(ImGuiTestEngine* engine, ImGuiContext* ui_ctx);
+static void ImGuiTestEngine_UpdateHooks(ImGuiTestEngine* engine);
 static void ImGuiTestEngine_RunGuiFunc(ImGuiTestEngine* engine);
 static void ImGuiTestEngine_RunTest(ImGuiTestEngine* engine, ImGuiTestContext* ctx);
 static void ImGuiTestEngine_TestQueueCoroutineMain(void* engine_opaque);
@@ -233,35 +234,11 @@ static void    ImGuiTestEngine_UnbindImGuiContext(ImGuiTestEngine* engine, ImGui
     engine->UiContextTarget = engine->UiContextActive = NULL;
 }
 
-// Create test context and attach to imgui context
-ImGuiTestEngine*    ImGuiTestEngine_CreateContext(ImGuiContext* ui_ctx)
+// Create test context (not bound to any dear imgui context yet)
+ImGuiTestEngine*    ImGuiTestEngine_CreateContext()
 {
-    IM_ASSERT(ui_ctx != NULL);
     ImGuiTestEngine* engine = IM_NEW(ImGuiTestEngine)();
-    engine->UiContextTarget = ui_ctx;
     return engine;
-}
-
-void    ImGuiTestEngine_CoroutineStopRequest(ImGuiTestEngine* engine)
-{
-    if (engine->TestQueueCoroutine != NULL)
-        engine->TestQueueCoroutineShouldExit = true;
-}
-
-static void    ImGuiTestEngine_CoroutineStopAndJoin(ImGuiTestEngine* engine)
-{
-    if (engine->TestQueueCoroutine != NULL)
-    {
-        // Run until the coroutine exits
-        engine->TestQueueCoroutineShouldExit = true;
-        while (true)
-        {
-            if (!engine->IO.CoroutineFuncs->RunFunc(engine->TestQueueCoroutine))
-                break;
-        }
-        engine->IO.CoroutineFuncs->DestroyFunc(engine->TestQueueCoroutine);
-        engine->TestQueueCoroutine = NULL;
-    }
 }
 
 void    ImGuiTestEngine_DestroyContext(ImGuiTestEngine* engine)
@@ -294,11 +271,12 @@ void    ImGuiTestEngine_DestroyContext(ImGuiTestEngine* engine)
         GImGuiTestEngine = NULL;
 }
 
-void    ImGuiTestEngine_Start(ImGuiTestEngine* engine)
+void    ImGuiTestEngine_Start(ImGuiTestEngine* engine, ImGuiContext* ui_ctx)
 {
     IM_ASSERT(engine->Started == false);
-    IM_ASSERT(engine->UiContextTarget != NULL);
+    IM_ASSERT(engine->UiContextTarget == NULL);
 
+    engine->UiContextTarget = ui_ctx;
     ImGuiTestEngine_BindImGuiContext(engine, engine->UiContextTarget);
     ImGuiTestEngine_StartCalcSourceLineEnds(engine);
     ImGuiTestEngine_InstallCrashHandler();
@@ -321,6 +299,28 @@ void    ImGuiTestEngine_Stop(ImGuiTestEngine* engine)
     ImGuiTestEngine_CoroutineStopAndJoin(engine);
     ImGuiTestEngine_Export(engine);
     engine->Started = false;
+}
+
+void    ImGuiTestEngine_CoroutineStopRequest(ImGuiTestEngine* engine)
+{
+    if (engine->TestQueueCoroutine != NULL)
+        engine->TestQueueCoroutineShouldExit = true;
+}
+
+static void    ImGuiTestEngine_CoroutineStopAndJoin(ImGuiTestEngine* engine)
+{
+    if (engine->TestQueueCoroutine != NULL)
+    {
+        // Run until the coroutine exits
+        engine->TestQueueCoroutineShouldExit = true;
+        while (true)
+        {
+            if (!engine->IO.CoroutineFuncs->RunFunc(engine->TestQueueCoroutine))
+                break;
+        }
+        engine->IO.CoroutineFuncs->DestroyFunc(engine->TestQueueCoroutine);
+        engine->TestQueueCoroutine = NULL;
+    }
 }
 
 // [EXPERIMENTAL] Destroy and recreate ImGui context
@@ -376,8 +376,7 @@ void    ImGuiTestEngine_RebootUiContext(ImGuiTestEngine* engine)
     //memset(&backup_viewport0, 0, sizeof(backup_viewport0));
 #endif
 
-    ImGuiTestEngine_BindImGuiContext(engine, ctx);
-    ImGuiTestEngine_Start(engine);
+    ImGuiTestEngine_Start(engine, ctx);
 }
 
 void    ImGuiTestEngine_PostSwap(ImGuiTestEngine* engine)
@@ -1197,7 +1196,7 @@ void ImGuiTestEngine_GetResult(ImGuiTestEngine* engine, int& count_tested, int& 
     }
 }
 
-void ImGuiTestEngine_UpdateHooks(ImGuiTestEngine* engine)
+static void ImGuiTestEngine_UpdateHooks(ImGuiTestEngine* engine)
 {
     ImGuiContext* ui_ctx = engine->UiContextTarget;
     IM_ASSERT(ui_ctx->TestEngine == engine);

@@ -475,7 +475,7 @@ int main(int argc, char** argv)
 
     // Create TestEngine context
     IM_ASSERT(g_App.TestEngine == NULL);
-    ImGuiTestEngine* engine = ImGuiTestEngine_CreateContext(ImGui::GetCurrentContext());
+    ImGuiTestEngine* engine = ImGuiTestEngine_CreateContext();
     g_App.TestEngine = engine;
 
     // Apply options
@@ -554,7 +554,7 @@ int main(int argc, char** argv)
     printf("Git branch: \"%s\"\n", test_io.GitBranchName);
 
     // Start engine
-    ImGuiTestEngine_Start(engine);
+    ImGuiTestEngine_Start(engine, ImGui::GetCurrentContext());
 
     // Load fonts, Set DPI scale
     LoadFonts(app_window->DpiScale);

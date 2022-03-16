@@ -536,7 +536,7 @@ static void ShowTestGroup(ImGuiTestEngine* e, ImGuiTestGroup group, ImGuiTextFil
             status_color = ImVec4(0.4f, 0.4f, 0.4f, 1.0f);
         //ImVec2 cursor_pos_bkp = ImGui::GetCursorPos();
         ImGui::SetCursorPos(status_button_pos);
-        TestStatusButton("status", status_color, false);// e->IO.RunningTests);
+        TestStatusButton("status", status_color, false);// e->IO.IsRunningTests);
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Filtered: %d\n- OK: %d\n- Errors: %d", tests_completed, tests_succeeded, tests_failed);
         //ImGui::SetCursorPos(cursor_pos_bkp);  // Restore cursor position for rendering further widgets
