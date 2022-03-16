@@ -658,7 +658,7 @@ static bool ImGuiTestContext_CanCaptureScreenshot(ImGuiTestContext* ctx)
 static bool ImGuiTestContext_CanCaptureVideo(ImGuiTestContext* ctx)
 {
     ImGuiTestEngineIO* io = ctx->EngineIO;
-    return io->ConfigCaptureEnabled && ImFileExist(io->VideoCaptureFFMPEGPath);
+    return io->ConfigCaptureEnabled && ImFileExist(io->VideoCaptureEncoderPath);
 }
 
 bool ImGuiTestContext::CaptureAddWindow(ImGuiCaptureArgs* args, ImGuiTestRef ref)
@@ -766,7 +766,7 @@ bool ImGuiTestContext::CaptureEndVideo(ImGuiCaptureArgs* args)
         if (!EngineIO->ConfigCaptureEnabled)
             LogWarning("Skipped saving '%s' video because: io.ConfigCaptureEnabled == false (enable in Misc->Options)", args->InOutputFile);
         else
-            LogWarning("Skipped saving '%s' video because: FFMPEG not found.", args->InOutputFile);
+            LogWarning("Skipped saving '%s' video because: Video Encoder not found.", args->InOutputFile);
     }
 
     return ret;

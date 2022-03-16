@@ -600,7 +600,7 @@ static void ImGuiTestEngine_ShowLogAndTools(ImGuiTestEngine* engine)
             ImGui::Checkbox("Capture screen on error", &engine->IO.ConfigCaptureOnError); HelpTooltip("Capture a screenshot on test failure.");
 
             // Fields modified by in this call will be synced to engine->CaptureContext.
-            engine->CaptureTool._ShowFFMPEGConfigFields(&engine->CaptureContext);
+            engine->CaptureTool._ShowEncoderConfigFields(&engine->CaptureContext);
 
             ImGui::TreePop();
         }

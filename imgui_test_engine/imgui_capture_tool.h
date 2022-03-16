@@ -84,10 +84,10 @@ struct IMGUI_API ImGuiCaptureContext
     // IO
     ImFuncPtr(ImGuiScreenCaptureFunc) ScreenCaptureFunc = NULL; // Graphics backend specific function that captures specified portion of framebuffer and writes RGBA data to `pixels` buffer.
     void*                   ScreenCaptureUserData = NULL;       // Custom user pointer which is passed to ScreenCaptureFunc. (Optional)
-    char*                   VideoCaptureFFMPEGPath = NULL;      // Path to ffmpeg executable.
-    int                     VideoCaptureFFMPEGPathSize = 0;     // Optional. Set in order to edit this parameter from UI.
-    char*                   VideoCaptureFFMPEGParams = NULL;    // Params to ffmpeg executable.
-    int                     VideoCaptureFFMPEGParamsSize = 0;   // Optional. Set in order to edit this parameter from UI.
+    char*                   VideoCaptureEncoderPath = NULL;     // Video encoder path (not owned, stored externally).
+    int                     VideoCaptureEncoderPathSize = 0;    // Optional. Set in order to edit this parameter from UI.
+    char*                   VideoCaptureEncoderParams = NULL;   // Video encoder params (not owned, stored externally).
+    int                     VideoCaptureEncoderParamsSize = 0;  // Optional. Set in order to edit this parameter from UI.
     char*                   VideoCaptureExt = NULL;             // Video file extension (e.g. ".gif" or ".mp4")
     int                     VideoCaptureExtSize = 0;            // Optional. Set in order to edit this parameter from UI.
 
@@ -104,7 +104,7 @@ struct IMGUI_API ImGuiCaptureContext
     // [Internal] Video recording
     bool                    _VideoRecording = false;        // Flag indicating that video recording is in progress.
     double                  _VideoLastFrameTime = 0;        // Time when last video frame was recorded.
-    FILE*                   _VideoFFMPEGPipe = NULL;        // File writing to stdin of ffmpeg process.
+    FILE*                   _VideoEncoderPipe = NULL;        // File writing to stdin of video encoder process.
 
     // [Internal] Backups
     bool                    _BackupMouseDrawCursor = false; // Initial value of g.IO.MouseDrawCursor
@@ -160,5 +160,5 @@ struct IMGUI_API ImGuiCaptureToolUI
     void    _CaptureWindowsSelector(ImGuiCaptureContext* context, ImGuiCaptureArgs* args);    // Render a selector for selecting multiple windows for capture.
     void    _SnapWindowsToGrid(float cell_size);                // Snap edges of all visible windows to a virtual grid.
     bool    _InitializeOutputFile();                            // Format output file template into capture args struct and ensure target directory exists.
-    bool    _ShowFFMPEGConfigFields(ImGuiCaptureContext* context);
+    bool    _ShowEncoderConfigFields(ImGuiCaptureContext* context);
 };

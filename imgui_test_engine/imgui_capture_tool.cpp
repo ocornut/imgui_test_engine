@@ -215,9 +215,9 @@ ImGuiCaptureStatus ImGuiCaptureContext::CaptureUpdate(ImGuiCaptureArgs* args)
         IM_ASSERT(args->InOutputFile[0] && "Output filename must be specified when recording videos.");
         IM_ASSERT(args->InOutputImageBuf == NULL && "Output buffer cannot be specified when recording videos.");
         IM_ASSERT((args->InFlags & ImGuiCaptureFlags_StitchAll) == 0 && "Image stitching is not supported when recording videos.");
-        if (!ImFileExist(VideoCaptureFFMPEGPath))
+        if (!ImFileExist(VideoCaptureEncoderPath))
         {
-            fprintf(stderr, "ffmpeg.exe not found, video capturing failed.\n");
+            fprintf(stderr, "Video encoder not found at \"%s\", video capturing failed.\n", VideoCaptureEncoderPath);
             return ImGuiCaptureStatus_Error;
         }
     }
@@ -448,29 +448,29 @@ ImGuiCaptureStatus ImGuiCaptureContext::CaptureUpdate(ImGuiCaptureArgs* args)
 
             if (is_recording_video && (args->InFlags & ImGuiCaptureFlags_NoSave) == 0)
             {
-                // _FFMPEGStdIn is NULL when recording just started. Initialize recording state.
-                if (_VideoFFMPEGPipe == NULL)
+                // _VideoEncoderPipe is NULL when recording just started. Initialize recording state.
+                if (_VideoEncoderPipe == NULL)
                 {
                     // First video frame, initialize now that dimensions are known.
                     const unsigned int width = (unsigned int)capture_rect.GetWidth();
                     const unsigned int height = (unsigned int)capture_rect.GetHeight();
-                    IM_ASSERT(VideoCaptureFFMPEGPath != NULL && VideoCaptureFFMPEGPath[0]);
-                    IM_ASSERT(VideoCaptureFFMPEGParams != NULL && VideoCaptureFFMPEGParams[0]);
-                    Str256f ffmpeg_exe(VideoCaptureFFMPEGPath), cmd("");
-                    ImPathFixSeparatorsForCurrentOS(ffmpeg_exe.c_str());
+                    IM_ASSERT(VideoCaptureEncoderPath != NULL && VideoCaptureEncoderPath[0]);
+                    IM_ASSERT(VideoCaptureEncoderParams != NULL && VideoCaptureEncoderParams[0]);
+                    Str256f encoder_exe(VideoCaptureEncoderPath), cmd("");
+                    ImPathFixSeparatorsForCurrentOS(encoder_exe.c_str());
                     ImFileCreateDirectoryChain(args->InOutputFile, ImPathFindFilename(args->InOutputFile));
-                    cmd.appendf("\"%s\" %s", ffmpeg_exe.c_str(), VideoCaptureFFMPEGParams);
+                    cmd.appendf("\"%s\" %s", encoder_exe.c_str(), VideoCaptureEncoderParams);
                     ImStrReplace(&cmd, "$FPS", Str16f("%d", args->InRecordFPSTarget).c_str());
                     ImStrReplace(&cmd, "$WIDTH", Str16f("%d", width).c_str());
                     ImStrReplace(&cmd, "$HEIGHT", Str16f("%d", height).c_str());
                     ImStrReplace(&cmd, "$OUTPUT", args->InOutputFile);
                     fprintf(stdout, "# %s\n", cmd.c_str());
-                    _VideoFFMPEGPipe = ImOsPOpen(cmd.c_str(), "w");
-                    IM_ASSERT(_VideoFFMPEGPipe != NULL);
+                    _VideoEncoderPipe = ImOsPOpen(cmd.c_str(), "w");
+                    IM_ASSERT(_VideoEncoderPipe != NULL);
                 }
 
                 // Save new video frame
-                fwrite(output->Data, 1, output->Width * output->Height * 4, _VideoFFMPEGPipe);
+                fwrite(output->Data, 1, output->Width * output->Height * 4, _VideoEncoderPipe);
             }
             if (is_recording_video)
                 _VideoLastFrameTime = current_time_sec;
@@ -481,11 +481,11 @@ ImGuiCaptureStatus ImGuiCaptureContext::CaptureUpdate(ImGuiCaptureArgs* args)
         {
             output->RemoveAlpha();
 
-            if (_VideoFFMPEGPipe != NULL)
+            if (_VideoEncoderPipe != NULL)
             {
-                // At this point _Recording is false, but we know we were recording because _FFMPEGStdIn is not NULL. Finalize video here.
-                ImOsPClose(_VideoFFMPEGPipe);
-                _VideoFFMPEGPipe = NULL;
+                // At this point _Recording is false, but we know we were recording because _VideoEncoderPipe is not NULL. Finalize video here.
+                ImOsPClose(_VideoEncoderPipe);
+                _VideoEncoderPipe = NULL;
             }
             else if (args->InOutputImageBuf == NULL)
             {
@@ -532,7 +532,7 @@ void ImGuiCaptureContext::BeginVideoCapture(ImGuiCaptureArgs* args)
 {
     IM_ASSERT(args != NULL);
     IM_ASSERT(_VideoRecording == false);
-    IM_ASSERT(_VideoFFMPEGPipe == NULL);
+    IM_ASSERT(_VideoEncoderPipe == NULL);
     IM_ASSERT(args->InRecordFPSTarget >= 1 && args->InRecordFPSTarget <= 100);
 
     _VideoRecording = true;
@@ -859,7 +859,7 @@ void ImGuiCaptureToolUI::ShowCaptureToolWindow(ImGuiCaptureContext* context, boo
             ImGui::SetTooltip("Output template should contain one %%d (or variation of it) format variable. "
                               "Multiple captures will be saved with an increasing number to avoid overwriting same file.");
 
-        _ShowFFMPEGConfigFields(context);
+        _ShowEncoderConfigFields(context);
 
         ImGui::DragFloat("Padding", &_CaptureArgs.InPadding, 0.1f, 0, 32, "%.0f");
         if (ImGui::IsItemHovered())
@@ -948,41 +948,41 @@ bool ImGuiCaptureToolUI::_InitializeOutputFile()
     return true;
 }
 
-bool ImGuiCaptureToolUI::_ShowFFMPEGConfigFields(ImGuiCaptureContext* context)
+bool ImGuiCaptureToolUI::_ShowEncoderConfigFields(ImGuiCaptureContext* context)
 {
     const float TEXT_BASE_WIDTH = ImGui::CalcTextSize("A").x;
     const float BUTTON_WIDTH = (float)(int)-(TEXT_BASE_WIDTH * 26);
 
     bool modified = false;
-    if (context->VideoCaptureFFMPEGPathSize)
+    if (context->VideoCaptureEncoderPathSize)
     {
         ImGui::PushItemWidth(BUTTON_WIDTH);
-        modified |= ImGui::InputText("Path to ffmpeg", context->VideoCaptureFFMPEGPath, context->VideoCaptureFFMPEGPathSize);
-        const bool ffmpeg_exe_missing = !ImFileExist(context->VideoCaptureFFMPEGPath);
-        if (ffmpeg_exe_missing)
+        modified |= ImGui::InputText("Video Encoder Path", context->VideoCaptureEncoderPath, context->VideoCaptureEncoderPathSize);
+        const bool encoder_exe_missing = !ImFileExist(context->VideoCaptureEncoderPath);
+        if (encoder_exe_missing)
             ImGui::ItemErrorFrame(IM_COL32(255, 0, 0, 255));
         if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("Absolute or relative path to ffmpeg executable. Required for video recording.%s", ffmpeg_exe_missing ? "\nFile does not exist!" : "");
+            ImGui::SetTooltip("Absolute or relative path to video encoder executable (e.g. \"path/to/ffmpeg.exe\"). Required for video recording.%s", encoder_exe_missing ? "\nFile does not exist!" : "");
     }
 
-    if (context->VideoCaptureFFMPEGParamsSize)
+    if (context->VideoCaptureEncoderParamsSize)
     {
         ImGui::PushItemWidth(BUTTON_WIDTH);
-        bool ffmpeg_cmd_empty = !context->VideoCaptureFFMPEGParams[0];
-        if (ffmpeg_cmd_empty)
+        bool encoder_cmd_empty = !context->VideoCaptureEncoderParams[0];
+        if (encoder_cmd_empty)
         {
             ImGui::PushStyleColor(ImGuiCol_Border, IM_COL32(255, 0, 0, 255));
             ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 1);
         }
-        modified |= ImGui::InputText("Params to ffmpeg", context->VideoCaptureFFMPEGParams, context->VideoCaptureFFMPEGParamsSize);
+        modified |= ImGui::InputText("Video Encoder Params", context->VideoCaptureEncoderParams, context->VideoCaptureEncoderParamsSize);
         if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("Command line parameters passed to ffmpeg executable, when recording a video.\n"
+            ImGui::SetTooltip("Command line parameters passed to video encoder executable, when recording a video.\n"
                               "Following variables may be used:\n"
                               "$FPS     - target FPS\n"
                               "$WIDTH   - width of captured frame\n"
                               "$HEIGHT  - height of captured frame\n"
                               "$OUTPUT  - video output file");
-        if (ffmpeg_cmd_empty)
+        if (encoder_cmd_empty)
         {
             ImGui::PopStyleColor();
             ImGui::PopStyleVar();

@@ -389,10 +389,10 @@ void    ImGuiTestEngine_PostSwap(ImGuiTestEngine* engine)
     // Sync capture tool configurations from engine IO.
     engine->CaptureContext.ScreenCaptureFunc = engine->IO.ScreenCaptureFunc;
     engine->CaptureContext.ScreenCaptureUserData = engine->IO.ScreenCaptureUserData;
-    engine->CaptureContext.VideoCaptureFFMPEGPath = engine->IO.VideoCaptureFFMPEGPath;
-    engine->CaptureContext.VideoCaptureFFMPEGPathSize = IM_ARRAYSIZE(engine->IO.VideoCaptureFFMPEGPath);
-    engine->CaptureContext.VideoCaptureFFMPEGParams = engine->IO.VideoCaptureFFMPEGParams;
-    engine->CaptureContext.VideoCaptureFFMPEGParamsSize = IM_ARRAYSIZE(engine->IO.VideoCaptureFFMPEGParams);
+    engine->CaptureContext.VideoCaptureEncoderPath = engine->IO.VideoCaptureEncoderPath;
+    engine->CaptureContext.VideoCaptureEncoderPathSize = IM_ARRAYSIZE(engine->IO.VideoCaptureEncoderPath);
+    engine->CaptureContext.VideoCaptureEncoderParams = engine->IO.VideoCaptureEncoderParams;
+    engine->CaptureContext.VideoCaptureEncoderParamsSize = IM_ARRAYSIZE(engine->IO.VideoCaptureEncoderParams);
     engine->CaptureContext.VideoCaptureExt = engine->IO.VideoCaptureExtension;
     engine->CaptureContext.VideoCaptureExtSize = IM_ARRAYSIZE(engine->IO.VideoCaptureExtension);
 
@@ -1832,8 +1832,8 @@ static void     ImGuiTestEngine_SettingsReadLine(ImGuiContext* ui_ctx, ImGuiSett
     else if (sscanf(line, "StackTool=%d", &n) == 1)                                                                                 { e->UiStackToolOpen = (n != 0); }
     else if (sscanf(line, "CaptureEnabled=%d", &n) == 1)                                                                            { e->IO.ConfigCaptureEnabled = (n != 0); }
     else if (sscanf(line, "CaptureOnError=%d", &n) == 1)                                                                            { e->IO.ConfigCaptureOnError = (n != 0); }
-    else if (SettingsTryReadString(line, "VideoCapturePathToFFMPEG=", e->IO.VideoCaptureFFMPEGPath, IM_ARRAYSIZE(e->IO.VideoCaptureFFMPEGPath))) { }
-    else if (SettingsTryReadString(line, "VideoCaptureParamsToFFMPEG=", e->IO.VideoCaptureFFMPEGParams, IM_ARRAYSIZE(e->IO.VideoCaptureFFMPEGParams))) { }
+    else if (SettingsTryReadString(line, "VideoCapturePathToEncoder=", e->IO.VideoCaptureEncoderPath, IM_ARRAYSIZE(e->IO.VideoCaptureEncoderPath))) { }
+    else if (SettingsTryReadString(line, "VideoCaptureParamsToEncoder=", e->IO.VideoCaptureEncoderParams, IM_ARRAYSIZE(e->IO.VideoCaptureEncoderParams))) { }
     else if (SettingsTryReadString(line, "VideoCaptureExtension=", e->IO.VideoCaptureExtension, IM_ARRAYSIZE(e->IO.VideoCaptureExtension))) { }
 }
 
@@ -1852,8 +1852,8 @@ static void     ImGuiTestEngine_SettingsWriteAll(ImGuiContext* ui_ctx, ImGuiSett
     buf->appendf("StackTool=%d\n", engine->UiStackToolOpen);
     buf->appendf("CaptureEnabled=%d\n", engine->IO.ConfigCaptureEnabled);
     buf->appendf("CaptureOnError=%d\n", engine->IO.ConfigCaptureOnError);
-    buf->appendf("VideoCapturePathToFFMPEG=%s\n", engine->IO.VideoCaptureFFMPEGPath);
-    buf->appendf("VideoCaptureParamsToFFMPEG=%s\n", engine->IO.VideoCaptureFFMPEGParams);
+    buf->appendf("VideoCapturePathToEncoder=%s\n", engine->IO.VideoCaptureEncoderPath);
+    buf->appendf("VideoCaptureParamsToEncoder=%s\n", engine->IO.VideoCaptureEncoderParams);
     buf->appendf("VideoCaptureExtension=%s\n", engine->IO.VideoCaptureExtension);
     buf->appendf("\n");
 }

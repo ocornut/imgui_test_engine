@@ -4,6 +4,9 @@ CHANGELOG
 ** For a while this is going to include only breaking changes.
 ** As we slowly transition toward releasing the test engine, this will become a more full fledged changelog.
 
+2022/03/23
+- TestEngine: Renamed ImGuiTestEngineIO::VideoCaptureFFMPEGPath to ::VideoCaptureEncoderPath.
+
 2022/03/15
 - TestEngine: Moved the ImGuiContext* parameter from ImGuiTestEngine_CreateContext() to ImGuiTestEngine_Start().
 - TestEngine: Renamed bool ImGuiTestEngineIO::RunningTest to bool ::IsRunningTests.
