@@ -458,6 +458,7 @@ ImGuiCaptureStatus ImGuiCaptureContext::CaptureUpdate(ImGuiCaptureArgs* args)
                     IM_ASSERT(VideoCaptureFFMPEGParams != NULL && VideoCaptureFFMPEGParams[0]);
                     Str256f ffmpeg_exe(VideoCaptureFFMPEGPath), cmd("");
                     ImPathFixSeparatorsForCurrentOS(ffmpeg_exe.c_str());
+                    ImFileCreateDirectoryChain(args->InOutputFile, ImPathFindFilename(args->InOutputFile));
                     cmd.appendf("\"%s\" %s", ffmpeg_exe.c_str(), VideoCaptureFFMPEGParams);
                     ImStrReplace(&cmd, "$FPS", Str16f("%d", args->InRecordFPSTarget).c_str());
                     ImStrReplace(&cmd, "$WIDTH", Str16f("%d", width).c_str());
@@ -955,21 +956,13 @@ bool ImGuiCaptureToolUI::_ShowFFMPEGConfigFields(ImGuiCaptureContext* context)
     bool modified = false;
     if (context->VideoCaptureFFMPEGPathSize)
     {
-        bool ffmpeg_exe_missing = !ImFileExist(context->VideoCaptureFFMPEGPath);
-        if (ffmpeg_exe_missing)
-        {
-            ImGui::PushStyleColor(ImGuiCol_Border, IM_COL32(255, 0, 0, 255));
-            ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 1);
-        }
         ImGui::PushItemWidth(BUTTON_WIDTH);
         modified |= ImGui::InputText("Path to ffmpeg", context->VideoCaptureFFMPEGPath, context->VideoCaptureFFMPEGPathSize);
+        const bool ffmpeg_exe_missing = !ImFileExist(context->VideoCaptureFFMPEGPath);
+        if (ffmpeg_exe_missing)
+            ImGui::ItemErrorFrame(IM_COL32(255, 0, 0, 255));
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Absolute or relative path to ffmpeg executable. Required for video recording.%s", ffmpeg_exe_missing ? "\nFile does not exist!" : "");
-        if (ffmpeg_exe_missing)
-        {
-            ImGui::PopStyleColor();
-            ImGui::PopStyleVar();
-        }
     }
 
     if (context->VideoCaptureFFMPEGParamsSize)

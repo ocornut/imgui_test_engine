@@ -29,6 +29,7 @@
 // Define our own IM_DEBUG_BREAK macros.
 // This allows us to define a macro below that will let us break directly in the right call-stack (instead of a function)
 // (this is a copy of the one in imgui_internal.h. if the one in imgui_internal.h were to be defined at the top of imgui.h we could use that one)
+#ifndef IM_DEBUG_BREAK
 #if defined (_MSC_VER)
 #define IM_DEBUG_BREAK()    __debugbreak()
 #elif defined(__clang__)
@@ -42,6 +43,7 @@
 #else
 #define IM_DEBUG_BREAK()    IM_ASSERT(0)    // It is expected that you define IM_DEBUG_BREAK() into something that will break nicely in a debugger!
 #endif
+#endif // #ifndef IMGUI_DEBUG_BREAK
 
 // Test Engine Assert Macro
 // - Macro is calling IM_DEBUG_BREAK() inline to get a callstack in the caller function.

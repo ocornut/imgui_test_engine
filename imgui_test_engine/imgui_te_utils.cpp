@@ -932,6 +932,16 @@ static int InputTextCallbackStr(ImGuiInputTextCallbackData* data)
     return 0;
 }
 
+// Draw an extra colored frame over the previous item
+void ImGui::ItemErrorFrame(ImU32 col)
+{
+    ImGuiContext& g = *GetCurrentContext();
+    ImDrawList* drawlist = GetWindowDrawList();
+    ImGuiStyle& style = GetStyle();
+    // FIXME: GetItemRectMin() / GetItemRectMax() will include label. NavRect is not probably defined :(
+    drawlist->AddRect(g.LastItemData.NavRect.Min, g.LastItemData.NavRect.Max, GetColorU32(col), style.FrameRounding, ImDrawFlags_None, ImMax(1.0f, style.FrameBorderSize));
+}
+
 bool ImGui::InputText(const char* label, Str* str, ImGuiInputTextFlags flags, ImGuiInputTextCallback callback, void* user_data)
 {
     IM_ASSERT((flags & ImGuiInputTextFlags_CallbackResize) == 0);
