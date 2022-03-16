@@ -1119,7 +1119,8 @@ static bool ImGuiApp_ImplGL_CaptureFramebuffer(ImGuiApp* app, int x, int y, int 
 
 #ifdef __linux__
     // FIXME: Odd timing issue is observed on linux (Plasma/X11 specifically), which causes outdated frames to be captured, unless we give compositor some time to update screen.
-    usleep(300);   // 0.3ms
+    // glFlush() didn't seem enough. Will probably need to revisit that.
+    usleep(1000);   // 1ms
 #endif
 
     int y2 = (int)ImGui::GetIO().DisplaySize.y - (y + h);
