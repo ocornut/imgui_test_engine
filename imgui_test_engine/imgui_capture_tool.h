@@ -121,9 +121,11 @@ struct IMGUI_API ImGuiCaptureContext
 
     ImGuiCaptureContext(ImGuiScreenCaptureFunc capture_func = NULL) { ScreenCaptureFunc = capture_func; _MouseRelativeToWindowPos = ImVec2(-FLT_MAX, -FLT_MAX); }
 
-    // Should be called after ImGui::NewFrame() and before submitting any UI.
+    // These functions should be called from appropriate context hooks. See ImGui::AddContextHook() for more info.
     // (ImGuiTestEngine automatically calls that for you, so this only apply to independently created instance)
-    void                    PostNewFrame();
+    void                    PreNewFrame();
+    void                    PreRender();
+    void                    PostRender();
 
     // Update capturing. If this function returns true then it should be called again with same arguments on the next frame.
     ImGuiCaptureStatus      CaptureUpdate(ImGuiCaptureArgs* args);

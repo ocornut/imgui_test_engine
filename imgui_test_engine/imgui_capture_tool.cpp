@@ -171,7 +171,7 @@ static ImRect GetMainViewportRect()
     return ImRect(viewport->Pos, viewport->Pos + viewport->Size);
 }
 
-void ImGuiCaptureContext::PostNewFrame()
+void ImGuiCaptureContext::PreNewFrame()
 {
     const ImGuiCaptureArgs* args = _CaptureArgs;
     if (args == NULL)
@@ -179,23 +179,30 @@ void ImGuiCaptureContext::PostNewFrame()
 
     ImGuiContext& g = *GImGui;
 
-    // Override mouse cursor
-    // FIXME: Could override in Pre+Post Render() hooks to avoid doing a backup.
-    if (args->InFlags & ImGuiCaptureFlags_HideMouseCursor)
-    {
-        if (_FrameNo == 1)
-            _BackupMouseDrawCursor = g.IO.MouseDrawCursor;
-        g.IO.MouseDrawCursor = false;
-    }
-
     // Force mouse position. Hovered window is reset in ImGui::NewFrame() based on mouse real mouse position.
-    // FIXME: Would be saner to override io.MousePos in Pre NewFrame() hook.
     if (_FrameNo > 2 && (args->InFlags & ImGuiCaptureFlags_StitchAll) != 0)
     {
         IM_ASSERT(args->InCaptureWindows.Size == 1);
         g.IO.MousePos = args->InCaptureWindows[0]->Pos + _MouseRelativeToWindowPos;
         g.HoveredWindow = _HoveredWindow;
     }
+}
+
+void ImGuiCaptureContext::PreRender()
+{
+    ImGuiContext& g = *GImGui;
+    _BackupMouseDrawCursor = g.IO.MouseDrawCursor;
+    if (IsCapturing())
+    {
+        const ImGuiCaptureArgs* args = _CaptureArgs;
+        g.IO.MouseDrawCursor = !(args->InFlags & ImGuiCaptureFlags_HideMouseCursor);
+    }
+}
+
+void ImGuiCaptureContext::PostRender()
+{
+    ImGuiContext& g = *GImGui;
+    g.IO.MouseDrawCursor = _BackupMouseDrawCursor;
 }
 
 // Returns true when capture is in progress.
@@ -519,8 +526,6 @@ ImGuiCaptureStatus ImGuiCaptureContext::CaptureUpdate(ImGuiCaptureArgs* args)
                 ImGui::SetWindowPos(window, _BackupWindowsRect[i].Min, ImGuiCond_Always);
                 ImGui::SetWindowSize(window, _BackupWindowsRect[i].GetSize(), ImGuiCond_Always);
             }
-            if (args->InFlags & ImGuiCaptureFlags_HideMouseCursor)
-                g.IO.MouseDrawCursor = _BackupMouseDrawCursor;
             g.Style.DisplayWindowPadding = _BackupDisplayWindowPadding;
             g.Style.DisplaySafeAreaPadding = _BackupDisplaySafeAreaPadding;
 

@@ -91,6 +91,7 @@ static void ImGuiTestEngine_ProcessTestQueue(ImGuiTestEngine* engine);
 static void ImGuiTestEngine_ClearTests(ImGuiTestEngine* engine);
 static void ImGuiTestEngine_PreNewFrame(ImGuiTestEngine* engine, ImGuiContext* ui_ctx);
 static void ImGuiTestEngine_PostNewFrame(ImGuiTestEngine* engine, ImGuiContext* ui_ctx);
+static void ImGuiTestEngine_PreRender(ImGuiTestEngine* engine, ImGuiContext* ui_ctx);
 static void ImGuiTestEngine_PostRender(ImGuiTestEngine* engine, ImGuiContext* ui_ctx);
 static void ImGuiTestEngine_UpdateHooks(ImGuiTestEngine* engine);
 static void ImGuiTestEngine_RunGuiFunc(ImGuiTestEngine* engine);
@@ -182,6 +183,11 @@ static void ImGuiTestEngine_BindImGuiContext(ImGuiTestEngine* engine, ImGuiConte
 
     hook.Type = ImGuiContextHookType_NewFramePost;
     hook.Callback = [](ImGuiContext* ui_ctx, ImGuiContextHook* hook) { ImGuiTestEngine_PostNewFrame((ImGuiTestEngine*)hook->UserData, ui_ctx); };
+    hook.UserData = (void*)engine;
+    ImGui::AddContextHook(ui_ctx, &hook);
+
+    hook.Type = ImGuiContextHookType_RenderPre;
+    hook.Callback = [](ImGuiContext* ui_ctx, ImGuiContextHook* hook) { ImGuiTestEngine_PreRender((ImGuiTestEngine*)hook->UserData, ui_ctx); };
     hook.UserData = (void*)engine;
     ImGui::AddContextHook(ui_ctx, &hook);
 
@@ -671,6 +677,8 @@ static void ImGuiTestEngine_PreNewFrame(ImGuiTestEngine* engine, ImGuiContext* u
     IM_ASSERT(ui_ctx == GImGui);
     ImGuiContext& g = *ui_ctx;
 
+    engine->CaptureContext.PreNewFrame();
+
     if (engine->ToolDebugRebootUiContext)
     {
         ImGuiTestEngine_RebootUiContext(engine);
@@ -737,7 +745,6 @@ static void ImGuiTestEngine_PostNewFrame(ImGuiTestEngine* engine, ImGuiContext* 
     if (engine->FrameCount == 1)
         engine->Inputs.MousePosValue = ImGui::GetMainViewport()->Pos;
 
-    engine->CaptureContext.PostNewFrame();
     engine->IO.IsCapturing = engine->CaptureContext.IsCapturing();
 
     // Garbage collect unused tasks
@@ -782,6 +789,15 @@ static void ImGuiTestEngine_PostNewFrame(ImGuiTestEngine* engine, ImGuiContext* 
             engine->IO.IsRequestingMaxAppSpeed = true;
 }
 
+static void ImGuiTestEngine_PreRender(ImGuiTestEngine* engine, ImGuiContext* ui_ctx)
+{
+    if (engine->UiContextTarget != ui_ctx)
+        return;
+    IM_ASSERT(ui_ctx == GImGui);
+
+    engine->CaptureContext.PreRender();
+}
+
 static void ImGuiTestEngine_PostRender(ImGuiTestEngine* engine, ImGuiContext* ui_ctx)
 {
     if (engine->UiContextTarget != ui_ctx)
@@ -794,6 +810,8 @@ static void ImGuiTestEngine_PostRender(ImGuiTestEngine* engine, ImGuiContext* ui
     ImGuiContext& g = *ui_ctx;
     if (engine->IO.IsRunningTests && !engine->IO.ConfigMouseDrawCursor && !g.IO.MouseDrawCursor)
         g.MouseCursor = ImGuiMouseCursor_Arrow;
+
+    engine->CaptureContext.PostRender();
 }
 
 static void ImGuiTestEngine_RunGuiFunc(ImGuiTestEngine* engine)
