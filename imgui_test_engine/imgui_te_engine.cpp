@@ -393,6 +393,8 @@ void    ImGuiTestEngine_PostSwap(ImGuiTestEngine* engine)
     engine->CaptureContext.VideoCaptureEncoderPathSize = IM_ARRAYSIZE(engine->IO.VideoCaptureEncoderPath);
     engine->CaptureContext.VideoCaptureEncoderParams = engine->IO.VideoCaptureEncoderParams;
     engine->CaptureContext.VideoCaptureEncoderParamsSize = IM_ARRAYSIZE(engine->IO.VideoCaptureEncoderParams);
+    engine->CaptureContext.GifCaptureEncoderParams = engine->IO.GifCaptureEncoderParams;
+    engine->CaptureContext.GifCaptureEncoderParamsSize = IM_ARRAYSIZE(engine->IO.GifCaptureEncoderParams);
     engine->CaptureContext.VideoCaptureExt = engine->IO.VideoCaptureExtension;
     engine->CaptureContext.VideoCaptureExtSize = IM_ARRAYSIZE(engine->IO.VideoCaptureExtension);
 
@@ -1834,6 +1836,7 @@ static void     ImGuiTestEngine_SettingsReadLine(ImGuiContext* ui_ctx, ImGuiSett
     else if (sscanf(line, "CaptureOnError=%d", &n) == 1)                                                                            { e->IO.ConfigCaptureOnError = (n != 0); }
     else if (SettingsTryReadString(line, "VideoCapturePathToEncoder=", e->IO.VideoCaptureEncoderPath, IM_ARRAYSIZE(e->IO.VideoCaptureEncoderPath))) { }
     else if (SettingsTryReadString(line, "VideoCaptureParamsToEncoder=", e->IO.VideoCaptureEncoderParams, IM_ARRAYSIZE(e->IO.VideoCaptureEncoderParams))) { }
+    else if (SettingsTryReadString(line, "GifCaptureParamsToEncoder=", e->IO.GifCaptureEncoderParams, IM_ARRAYSIZE(e->IO.GifCaptureEncoderParams))) { }
     else if (SettingsTryReadString(line, "VideoCaptureExtension=", e->IO.VideoCaptureExtension, IM_ARRAYSIZE(e->IO.VideoCaptureExtension))) { }
 }
 
@@ -1854,6 +1857,7 @@ static void     ImGuiTestEngine_SettingsWriteAll(ImGuiContext* ui_ctx, ImGuiSett
     buf->appendf("CaptureOnError=%d\n", engine->IO.ConfigCaptureOnError);
     buf->appendf("VideoCapturePathToEncoder=%s\n", engine->IO.VideoCaptureEncoderPath);
     buf->appendf("VideoCaptureParamsToEncoder=%s\n", engine->IO.VideoCaptureEncoderParams);
+    buf->appendf("GifCaptureParamsToEncoder=%s\n", engine->IO.GifCaptureEncoderParams);
     buf->appendf("VideoCaptureExtension=%s\n", engine->IO.VideoCaptureExtension);
     buf->appendf("\n");
 }

@@ -88,6 +88,8 @@ struct IMGUI_API ImGuiCaptureContext
     int                     VideoCaptureEncoderPathSize = 0;    // Optional. Set in order to edit this parameter from UI.
     char*                   VideoCaptureEncoderParams = NULL;   // Video encoder params (not owned, stored externally).
     int                     VideoCaptureEncoderParamsSize = 0;  // Optional. Set in order to edit this parameter from UI.
+    char*                   GifCaptureEncoderParams = NULL;     // Video encoder params for GIF output (not owned, stored externally).
+    int                     GifCaptureEncoderParamsSize = 0;    // Optional. Set in order to edit this parameter from UI.
     char*                   VideoCaptureExt = NULL;             // Video file extension (e.g. ".gif" or ".mp4")
     int                     VideoCaptureExtSize = 0;            // Optional. Set in order to edit this parameter from UI.
 
@@ -162,3 +164,6 @@ struct IMGUI_API ImGuiCaptureToolUI
     bool    _InitializeOutputFile();                            // Format output file template into capture args struct and ensure target directory exists.
     bool    _ShowEncoderConfigFields(ImGuiCaptureContext* context);
 };
+
+#define IMGUI_CAPTURE_DEFAULT_VIDEO_PARAMS_FOR_FFMPEG   "-hide_banner -loglevel error -r $FPS -f rawvideo -pix_fmt rgba -s $WIDTHx$HEIGHT -i - -threads 0 -y -preset ultrafast -pix_fmt yuv420p -crf 20 $OUTPUT"
+#define IMGUI_CAPTURE_DEFAULT_GIF_PARAMS_FOR_FFMPEG     "-hide_banner -loglevel error -r $FPS -f rawvideo -pix_fmt rgba -s $WIDTHx$HEIGHT -i - -threads 0 -y -filter_complex \"split=2 [a] [b]; [a] palettegen [pal]; [b] [pal] paletteuse\" $OUTPUT"

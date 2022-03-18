@@ -455,11 +455,26 @@ ImGuiCaptureStatus ImGuiCaptureContext::CaptureUpdate(ImGuiCaptureArgs* args)
                     const unsigned int width = (unsigned int)capture_rect.GetWidth();
                     const unsigned int height = (unsigned int)capture_rect.GetHeight();
                     IM_ASSERT(VideoCaptureEncoderPath != NULL && VideoCaptureEncoderPath[0]);
-                    IM_ASSERT(VideoCaptureEncoderParams != NULL && VideoCaptureEncoderParams[0]);
+                    IM_ASSERT(VideoCaptureExt != NULL && VideoCaptureExt[0]);
                     Str256f encoder_exe(VideoCaptureEncoderPath), cmd("");
                     ImPathFixSeparatorsForCurrentOS(encoder_exe.c_str());
                     ImFileCreateDirectoryChain(args->InOutputFile, ImPathFindFilename(args->InOutputFile));
-                    cmd.appendf("\"%s\" %s", encoder_exe.c_str(), VideoCaptureEncoderParams);
+#if _WIN32
+                    cmd.append("\"");   // On windows, entire command wrapped in quotes allows use of quotes for parameters.
+#endif
+                    if (strcmp(VideoCaptureExt, ".mp4") == 0)
+                    {
+                        IM_ASSERT(VideoCaptureEncoderParams != NULL && VideoCaptureEncoderParams[0]);
+                        cmd.appendf("\"%s\" %s", encoder_exe.c_str(), VideoCaptureEncoderParams);
+                    }
+                    else
+                    {
+                        IM_ASSERT(GifCaptureEncoderParams != NULL && GifCaptureEncoderParams[0]);
+                        cmd.appendf("\"%s\" %s", encoder_exe.c_str(), GifCaptureEncoderParams);
+                    }
+#if _WIN32
+                    cmd.append("\"");
+#endif
                     ImStrReplace(&cmd, "$FPS", Str16f("%d", args->InRecordFPSTarget).c_str());
                     ImStrReplace(&cmd, "$WIDTH", Str16f("%d", width).c_str());
                     ImStrReplace(&cmd, "$HEIGHT", Str16f("%d", height).c_str());
@@ -534,6 +549,7 @@ void ImGuiCaptureContext::BeginVideoCapture(ImGuiCaptureArgs* args)
     IM_ASSERT(_VideoRecording == false);
     IM_ASSERT(_VideoEncoderPipe == NULL);
     IM_ASSERT(args->InRecordFPSTarget >= 1 && args->InRecordFPSTarget <= 100);
+    IM_ASSERT(VideoCaptureExt != NULL && VideoCaptureExt[0]);
 
     _VideoRecording = true;
     _CaptureArgs = args;
@@ -950,6 +966,7 @@ bool ImGuiCaptureToolUI::_InitializeOutputFile()
 
 bool ImGuiCaptureToolUI::_ShowEncoderConfigFields(ImGuiCaptureContext* context)
 {
+    ImGuiContext& g = *GImGui;
     const float TEXT_BASE_WIDTH = ImGui::CalcTextSize("A").x;
     const float BUTTON_WIDTH = (float)(int)-(TEXT_BASE_WIDTH * 26);
 
@@ -965,36 +982,54 @@ bool ImGuiCaptureToolUI::_ShowEncoderConfigFields(ImGuiCaptureContext* context)
             ImGui::SetTooltip("Absolute or relative path to video encoder executable (e.g. \"path/to/ffmpeg.exe\"). Required for video recording.%s", encoder_exe_missing ? "\nFile does not exist!" : "");
     }
 
-    if (context->VideoCaptureEncoderParamsSize)
+    struct CmdLineParamsInfo
     {
-        ImGui::PushItemWidth(BUTTON_WIDTH);
-        bool encoder_cmd_empty = !context->VideoCaptureEncoderParams[0];
-        if (encoder_cmd_empty)
-        {
-            ImGui::PushStyleColor(ImGuiCol_Border, IM_COL32(255, 0, 0, 255));
-            ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 1);
-        }
-        modified |= ImGui::InputText("Video Encoder Params", context->VideoCaptureEncoderParams, context->VideoCaptureEncoderParamsSize);
+        const char* Title = NULL;
+        char*       Params = NULL;
+        int         ParamsSize = 0;
+        const char* DefaultCmdLineParams = NULL;
+        CmdLineParamsInfo(const char* title, char* params, int params_size, const char* default_cmd) { Title = title; Params = params; ParamsSize = params_size; DefaultCmdLineParams = default_cmd; }
+    };
+    CmdLineParamsInfo params_info[] =
+    {
+        { "Video Encoder params", context->VideoCaptureEncoderParams, context->VideoCaptureEncoderParamsSize, IMGUI_CAPTURE_DEFAULT_VIDEO_PARAMS_FOR_FFMPEG },
+        { "Gif Encoder params", context->GifCaptureEncoderParams, context->GifCaptureEncoderParamsSize, IMGUI_CAPTURE_DEFAULT_GIF_PARAMS_FOR_FFMPEG },
+    };
+    for (CmdLineParamsInfo& info : params_info)
+    {
+        if (info.ParamsSize == 0)
+            continue;   // Can not be edited.
+        IM_ASSERT(info.Params != NULL);
+        ImGui::PushID(&info);
+        float btn_size = ImGui::GetFrameHeight();
+        ImGui::PushItemWidth(BUTTON_WIDTH - btn_size);
+        modified |= ImGui::InputText("###Params", info.Params, info.ParamsSize);
         if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("Command line parameters passed to video encoder executable, when recording a video.\n"
+            ImGui::SetTooltip("Command line parameters passed to video encoder executable.\n"
                               "Following variables may be used:\n"
                               "$FPS     - target FPS\n"
                               "$WIDTH   - width of captured frame\n"
                               "$HEIGHT  - height of captured frame\n"
                               "$OUTPUT  - video output file");
-        if (encoder_cmd_empty)
-        {
-            ImGui::PopStyleColor();
-            ImGui::PopStyleVar();
-        }
+        ImGui::SameLine(0, 0);
+        if (ImGui::Button("X", ImVec2(btn_size, btn_size)))
+            ImStrncpy(info.Params, info.DefaultCmdLineParams, info.ParamsSize);
+        if (ImGui::IsItemHovered())
+            ImGui::SetTooltip("Reset to default value.");
+        ImGui::SameLine(0, g.Style.ItemInnerSpacing.x);
+        ImGui::TextUnformatted(info.Title);
+        if (!info.Params[0])
+            ImGui::ItemErrorFrame(IM_COL32(255, 0, 0, 255));
+        ImGui::PopID();
     }
 
     if (context->VideoCaptureExtSize)
     {
+        IM_ASSERT(context->VideoCaptureExt != NULL);
         ImGui::PushItemWidth(BUTTON_WIDTH);
         if (ImGui::BeginCombo("Video file extension", context->VideoCaptureExt))
         {
-            const char* supported_exts[] = {".gif", ".mp4"};
+            const char* supported_exts[] = { ".gif", ".mp4" };
             for (auto& ext: supported_exts)
                 if (ImGui::Selectable(ext, strcmp(context->VideoCaptureExt, ext) == 0))
                 {

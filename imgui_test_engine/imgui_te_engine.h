@@ -215,8 +215,9 @@ struct IMGUI_API ImGuiTestEngineIO
     float                       ActionDelayStandard = 0.40f;        // Time between most actions
 
     // Options: Screen/video capture
-    char                        VideoCaptureEncoderPath[256] = "";  // User-provided video encoder executable path, e.g. "path/to/ffmpeg.exe" (read-only).
-    char                        VideoCaptureEncoderParams[256] = "";// User-provided video encoder parameters (read-only).
+    char                        VideoCaptureEncoderPath[256] = "";  // User-provided video encoder executable path, e.g. "path/to/ffmpeg.exe".
+    char                        VideoCaptureEncoderParams[256] = "";// User-provided video encoder parameters for .MP4 captures, e.g. see IMGUI_CAPTURE_DEFAULT_VIDEO_PARAMS_FOR_FFMPEG
+    char                        GifCaptureEncoderParams[512] = "";  // User-provided video encoder parameters for .GIF captures, e.g. see IMGUI_CAPTURE_DEFAULT_GIF_PARAMS_FOR_FFMPEG
     char                        VideoCaptureExtension[8] = ".mp4";  // User-provided video file extension (read-only).
 
     // Options: Watchdog. Set values to FLT_MAX to disable.

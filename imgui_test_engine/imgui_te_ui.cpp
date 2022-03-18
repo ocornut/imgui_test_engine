@@ -228,7 +228,7 @@ static void TestStatusButton(const char* id, const ImVec4& color, bool running)
     ImGui::ColorButton(id, color, ImGuiColorEditFlags_NoTooltip);
     if (running)
     {
-        ImRect r = g.LastItemData.Rect;
+        //ImRect r = g.LastItemData.Rect;
         ImVec2 center = g.LastItemData.Rect.GetCenter();
         float radius = ImFloor(ImMin(g.LastItemData.Rect.GetWidth(), g.LastItemData.Rect.GetHeight()) * 0.40f);
         float t = (float)(ImGui::GetTime() * 20.0f);
@@ -358,7 +358,6 @@ static void ShowTestGroup(ImGuiTestEngine* e, ImGuiTestGroup group, ImGuiTextFil
             }
 
             ImGui::TableNextColumn();
-            ImVec2 p = ImGui::GetCursorScreenPos();
             TestStatusButton("status", status_color, test->Status == ImGuiTestStatus_Running || test->Status == ImGuiTestStatus_Suspended);
             ImGui::SameLine();
 

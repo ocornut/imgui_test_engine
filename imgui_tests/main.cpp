@@ -486,9 +486,8 @@ int main(int argc, char** argv)
     test_io.ConfigNoThrottle = g_App.OptNoThrottle;
     test_io.PerfStressAmount = g_App.OptStressAmount;
     FindVideoEncoder(test_io.VideoCaptureEncoderPath, IM_ARRAYSIZE(test_io.VideoCaptureEncoderPath));
-    ImStrncpy(test_io.VideoCaptureEncoderParams, "-r $FPS -f rawvideo -pix_fmt rgba -s $WIDTHx$HEIGHT -i - "
-        "-threads 0 -vsync 0 -preset ultrafast -y -pix_fmt yuv420p -crf 20 -hide_banner -loglevel error $OUTPUT",
-        IM_ARRAYSIZE(test_io.VideoCaptureEncoderParams));
+    ImStrncpy(test_io.VideoCaptureEncoderParams, IMGUI_CAPTURE_DEFAULT_VIDEO_PARAMS_FOR_FFMPEG, IM_ARRAYSIZE(test_io.VideoCaptureEncoderParams));
+    ImStrncpy(test_io.GifCaptureEncoderParams, IMGUI_CAPTURE_DEFAULT_GIF_PARAMS_FOR_FFMPEG, IM_ARRAYSIZE(test_io.GifCaptureEncoderParams));
 
     if (g_App.OptGui)
     {
