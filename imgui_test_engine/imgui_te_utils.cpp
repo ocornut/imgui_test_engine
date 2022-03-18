@@ -783,17 +783,19 @@ void        ImOsPClose(FILE* fp)
 
 void    ImOsOpenInShell(const char* path)
 {
+    Str256 command(path);
 #ifdef _WIN32
-    ::ShellExecuteA(NULL, "open", path, NULL, NULL, SW_SHOWDEFAULT);
+    ImPathFixSeparatorsForCurrentOS(command.c_str());
+    ::ShellExecuteA(NULL, "open", command.c_str(), NULL, NULL, SW_SHOWDEFAULT);
 #else
-    char command[1024];
 #if __APPLE__
     const char* open_executable = "open";
 #else
     const char* open_executable = "xdg-open";
 #endif
-    if (ImFormatString(command, IM_ARRAYSIZE(command), "%s \"%s\"", open_executable, path) < IM_ARRAYSIZE(command))
-        system(command);
+    command.setf("%s \"%s\"", open_executable, path);
+    ImPathFixSeparatorsForCurrentOS(command.c_str());
+    system(command.c_str());
 #endif
 }
 
