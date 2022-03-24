@@ -1120,7 +1120,8 @@ void ImGuiTestEngine_QueueTest(ImGuiTestEngine* engine, ImGuiTest* test, ImGuiTe
         return;
 
     // Detect lack of signal from imgui context, most likely not compiled with IMGUI_ENABLE_TEST_ENGINE=1
-    if (engine->FrameCount < engine->UiContextTarget->FrameCount - 2)
+    // FIXME: Why is in this function?
+    if (engine->UiContextTarget && engine->FrameCount < engine->UiContextTarget->FrameCount - 2)
     {
         ImGuiTestEngine_AbortCurrentTest(engine);
         IM_ASSERT(0 && "Not receiving signal from core library. Did you call ImGuiTestEngine_CreateContext() with the correct context? Did you compile imgui/ with IMGUI_ENABLE_TEST_ENGINE=1?");
