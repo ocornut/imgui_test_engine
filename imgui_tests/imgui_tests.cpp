@@ -3020,6 +3020,24 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
     };
 #endif
 
+    // ## Test creating multiple-context (#5135)
+#if IMGUI_VERSION_NUM >= 18711
+    t = IM_REGISTER_TEST(e, "misc", "misc_multi_context");
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiContext* c1 = ImGui::GetCurrentContext();
+        IM_CHECK(c1 != NULL);
+        ImGuiContext* c2 = ImGui::CreateContext();
+        ImGui::SetCurrentContext(NULL);
+        ImGuiContext* c3 = ImGui::CreateContext();
+        IM_CHECK(ImGui::GetCurrentContext() == c3);
+        ImGui::DestroyContext(c3);
+        IM_CHECK(ImGui::GetCurrentContext() == NULL);
+        ImGui::DestroyContext(c2);
+        ImGui::SetCurrentContext(c1);
+    };
+#endif
+
     // ## Test DebugRecoverFromErrors() FIXME-TESTS
     t = IM_REGISTER_TEST(e, "misc", "misc_recover");
     t->Flags |= ImGuiTestFlags_NoRecoverWarnings;
