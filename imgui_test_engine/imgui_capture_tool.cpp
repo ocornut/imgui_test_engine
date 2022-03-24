@@ -225,6 +225,8 @@ ImGuiCaptureStatus ImGuiCaptureContext::CaptureUpdate(ImGuiCaptureArgs* args)
         if (!ImFileExist(VideoCaptureEncoderPath))
         {
             fprintf(stderr, "Video encoder not found at \"%s\", video capturing failed.\n", VideoCaptureEncoderPath);
+            _VideoRecording = false;
+            _CaptureArgs = NULL;
             return ImGuiCaptureStatus_Error;
         }
     }
