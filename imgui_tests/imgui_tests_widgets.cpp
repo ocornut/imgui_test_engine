@@ -1661,6 +1661,57 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
     };
 #endif
 
+    // ## Test handling of Tab/Enter/Space keys events also emitting text events. (#2467, #1336)
+    // Backends are inconsistent in behavior: some don't send a text event for Tab and Enter (but still send it for Space)
+#if IMGUI_VERSION_NUM >= 18711
+    t = IM_REGISTER_TEST(e, "widgets", "widgets_inputtext_special_key_chars");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImGui::InputTextMultiline("Field", ctx->GenericVars.Str1, IM_ARRAYSIZE(ctx->GenericVars.Str1), ImVec2(), ImGuiInputTextFlags_AllowTabInput);
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiContext& g = *ctx->UiContext;
+
+        char* field_text = ctx->GenericVars.Str1;
+        ctx->SetRef("Test Window");
+        ctx->ItemClick("Field");
+        ctx->RunFlags |= ImGuiTestRunFlags_EnableRawInputs; // Disable TestEngine submitting inputs events
+        ctx->Yield();
+
+        g.IO.AddKeyEvent(ImGuiKey_Tab, true);
+        g.IO.AddInputCharacter('\t');
+        ctx->Yield();
+        g.IO.AddKeyEvent(ImGuiKey_Tab, false);
+        ctx->Yield();
+        IM_CHECK_STR_EQ(field_text, "\t");
+        g.IO.AddKeyEvent(ImGuiKey_Backspace, true);
+        ctx->Yield();
+        g.IO.AddKeyEvent(ImGuiKey_Backspace, false);
+        ctx->Yield();
+
+        g.IO.AddKeyEvent(ImGuiKey_Enter, true);
+        g.IO.AddInputCharacter('\r');
+        ctx->Yield();
+        g.IO.AddKeyEvent(ImGuiKey_Enter, false);
+        ctx->Yield();
+        IM_CHECK_STR_EQ(field_text, "\n");
+        g.IO.AddKeyEvent(ImGuiKey_Backspace, true);
+        ctx->Yield();
+        g.IO.AddKeyEvent(ImGuiKey_Backspace, false);
+        ctx->Yield();
+
+        g.IO.AddKeyEvent(ImGuiKey_Space, true);
+        g.IO.AddInputCharacter(' ');
+        ctx->Yield();
+        g.IO.AddKeyEvent(ImGuiKey_Space, false);
+        ctx->Yield();
+        IM_CHECK_STR_EQ(field_text, " ");
+    };
+#endif
+
     // ## Test inheritance of ItemFlags
     t = IM_REGISTER_TEST(e, "widgets", "widgets_item_flags_stack");
     t->GuiFunc = [](ImGuiTestContext* ctx)
