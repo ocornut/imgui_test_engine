@@ -1000,12 +1000,13 @@ bool ImGuiCaptureToolUI::_ShowEncoderConfigFields(ImGuiCaptureContext* context)
         char*       Params = NULL;
         int         ParamsSize = 0;
         const char* DefaultCmdLineParams = NULL;
-        CmdLineParamsInfo(const char* title, char* params, int params_size, const char* default_cmd) { Title = title; Params = params; ParamsSize = params_size; DefaultCmdLineParams = default_cmd; }
+        const char* VideoFileExt = NULL;
+        CmdLineParamsInfo(const char* title, char* params, int params_size, const char* default_cmd, const char* ext) { Title = title; Params = params; ParamsSize = params_size; DefaultCmdLineParams = default_cmd; VideoFileExt = ext; }
     };
     CmdLineParamsInfo params_info[] =
     {
-        { "Video Encoder params", context->VideoCaptureEncoderParams, context->VideoCaptureEncoderParamsSize, IMGUI_CAPTURE_DEFAULT_VIDEO_PARAMS_FOR_FFMPEG },
-        { "Gif Encoder params", context->GifCaptureEncoderParams, context->GifCaptureEncoderParamsSize, IMGUI_CAPTURE_DEFAULT_GIF_PARAMS_FOR_FFMPEG },
+        { "Video Encoder params", context->VideoCaptureEncoderParams, context->VideoCaptureEncoderParamsSize, IMGUI_CAPTURE_DEFAULT_VIDEO_PARAMS_FOR_FFMPEG, ".mp4" },
+        { "Gif Encoder params", context->GifCaptureEncoderParams, context->GifCaptureEncoderParamsSize, IMGUI_CAPTURE_DEFAULT_GIF_PARAMS_FOR_FFMPEG, ".gif" },
     };
     for (CmdLineParamsInfo& info : params_info)
     {
@@ -1013,21 +1014,41 @@ bool ImGuiCaptureToolUI::_ShowEncoderConfigFields(ImGuiCaptureContext* context)
             continue;   // Can not be edited.
         IM_ASSERT(info.Params != NULL);
         ImGui::PushID(&info);
-        float btn_size = ImGui::GetFrameHeight();
-        ImGui::PushItemWidth(BUTTON_WIDTH - btn_size);
+        float small_button_width = ImGui::CalcTextSize("..").x + ImGui::GetStyle().FramePadding.x * 2.0f;
+        ImGui::PushItemWidth(BUTTON_WIDTH - small_button_width);
         modified |= ImGui::InputText("###Params", info.Params, info.ParamsSize);
-        if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("Command line parameters passed to video encoder executable.\n"
-                              "Following variables may be used:\n"
-                              "$FPS     - target FPS\n"
-                              "$WIDTH   - width of captured frame\n"
-                              "$HEIGHT  - height of captured frame\n"
-                              "$OUTPUT  - video output file");
-        ImGui::SameLine(0, 0);
-        if (ImGui::Button("X", ImVec2(btn_size, btn_size)))
-            ImStrncpy(info.Params, info.DefaultCmdLineParams, info.ParamsSize);
-        if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("Reset to default value.");
+        ImGui::SameLine(0.0f, 0.0f);
+        ImRect input_rect = g.LastItemData.Rect;
+        if (ImGui::Button(".."))
+            ImGui::OpenPopup("CmdParamsPopup");
+        input_rect.Add(g.LastItemData.Rect);
+        ImGui::SetNextWindowSize(ImVec2(input_rect.GetWidth(), 0.0f));
+        ImGui::SetNextWindowPos(input_rect.GetBL());
+        if (ImGui::BeginPopup("CmdParamsPopup"))
+        {
+            ImGui::Text("Reset to default params for FFMPEG and %s file format:", info.VideoFileExt);
+            ImGui::Indent();
+            float wrap_width = ImGui::GetContentRegionAvail().x - g.Style.FramePadding.x * 2;
+            ImVec2 text_size = ImGui::CalcTextSize(info.DefaultCmdLineParams, NULL, false, wrap_width);
+            if (ImGui::Selectable("###Reset", false, 0, text_size + g.Style.FramePadding * 2))
+            {
+                ImStrncpy(info.Params, info.DefaultCmdLineParams, info.ParamsSize);
+                ImGui::CloseCurrentPopup();
+            }
+            ImDrawList* draw_list = ImGui::GetWindowDrawList();
+            draw_list->AddText(NULL, 0, g.LastItemData.Rect.GetTL() + g.Style.FramePadding, ImGui::GetColorU32(ImGuiCol_Text), info.DefaultCmdLineParams, NULL, wrap_width);
+            ImGui::Unindent();
+
+            ImGui::Separator();
+            ImGui::TextUnformatted(
+                "Command line parameters passed to video encoder executable.\n"
+                "Following variables may be used:\n"
+                "$FPS     - target FPS\n"
+                "$WIDTH   - width of captured frame\n"
+                "$HEIGHT  - height of captured frame\n"
+                "$OUTPUT  - video output file");
+            ImGui::EndPopup();
+        }
         ImGui::SameLine(0, g.Style.ItemInnerSpacing.x);
         ImGui::TextUnformatted(info.Title);
         if (!info.Params[0])
