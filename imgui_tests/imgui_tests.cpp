@@ -4978,6 +4978,7 @@ void RegisterTests_Capture(ImGuiTestEngine* e)
     {
         ctx->SetRef("CaptureGif");
         ImGuiCaptureArgs args;
+        ctx->CaptureSetExtension(&args, ".gif");
         ctx->CaptureAddWindow(&args, "CaptureGif");
         ctx->CaptureBeginVideo(&args);
         ctx->ItemInput("string");

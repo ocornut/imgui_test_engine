@@ -335,7 +335,7 @@ struct IMGUI_API ImGuiTestContext
     // - Advanced API
     bool        CaptureAddWindow(ImGuiCaptureArgs* args, ImGuiTestRef ref);
     bool        CaptureScreenshotEx(ImGuiCaptureArgs* args);
-    void        CaptureInitAutoFilename(ImGuiCaptureArgs* args, const char* ext);
+    void        CaptureSetExtension(ImGuiCaptureArgs* args, const char* ext);       // Set extension to filename in args struct or generate a new one if filename is empty.
     // - Video/GIF capturing API
     bool        CaptureBeginVideo(ImGuiCaptureArgs* args);
     bool        CaptureEndVideo(ImGuiCaptureArgs* args);

@@ -469,22 +469,26 @@ ImGuiCaptureStatus ImGuiCaptureContext::CaptureUpdate(ImGuiCaptureArgs* args)
                     const unsigned int width = (unsigned int)capture_rect.GetWidth();
                     const unsigned int height = (unsigned int)capture_rect.GetHeight();
                     IM_ASSERT(VideoCaptureEncoderPath != NULL && VideoCaptureEncoderPath[0]);
-                    IM_ASSERT(VideoCaptureExt != NULL && VideoCaptureExt[0]);
                     Str256f encoder_exe(VideoCaptureEncoderPath), cmd("");
                     ImPathFixSeparatorsForCurrentOS(encoder_exe.c_str());
                     ImFileCreateDirectoryChain(args->InOutputFile, ImPathFindFilename(args->InOutputFile));
 #if _WIN32
                     cmd.append("\"");   // On windows, entire command wrapped in quotes allows use of quotes for parameters.
 #endif
-                    if (strcmp(VideoCaptureExt, ".mp4") == 0)
+                    const char* extension = (char*)ImPathFindExtension(args->InOutputFile);
+                    if (strcmp(extension, ".mp4") == 0)
                     {
                         IM_ASSERT(VideoCaptureEncoderParams != NULL && VideoCaptureEncoderParams[0]);
                         cmd.appendf("\"%s\" %s", encoder_exe.c_str(), VideoCaptureEncoderParams);
                     }
-                    else
+                    else if (strcmp(extension, ".gif") == 0)
                     {
                         IM_ASSERT(GifCaptureEncoderParams != NULL && GifCaptureEncoderParams[0]);
                         cmd.appendf("\"%s\" %s", encoder_exe.c_str(), GifCaptureEncoderParams);
+                    }
+                    else
+                    {
+                        IM_ASSERT(0);   // Unknown video capture output format.
                     }
 #if _WIN32
                     cmd.append("\"");
@@ -561,14 +565,9 @@ void ImGuiCaptureContext::BeginVideoCapture(ImGuiCaptureArgs* args)
     IM_ASSERT(_VideoRecording == false);
     IM_ASSERT(_VideoEncoderPipe == NULL);
     IM_ASSERT(args->InRecordFPSTarget >= 1 && args->InRecordFPSTarget <= 100);
-    IM_ASSERT(VideoCaptureExt != NULL && VideoCaptureExt[0]);
 
     _VideoRecording = true;
     _CaptureArgs = args;
-
-    // File template will most likely end with .png, but we need a different extension for videos.
-    if (char* ext = (char*)ImPathFindExtension(args->InOutputFile))
-        ImStrncpy(ext, VideoCaptureExt, (size_t)(ext - args->InOutputFile));
 }
 
 void ImGuiCaptureContext::EndVideoCapture()
@@ -728,6 +727,10 @@ void ImGuiCaptureToolUI::_CaptureWindowsSelector(ImGuiCaptureContext* context, I
                 ImGui::BeginDisabled();
             if (ImGui::Button(label, button_sz) && _InitializeOutputFile())
             {
+                // File template will most likely end with .png, but we need a different extension for videos.
+                IM_ASSERT(VideoCaptureExt != NULL && VideoCaptureExt[0]);
+                char* ext = (char*)ImPathFindExtension(args->InOutputFile);
+                ImStrncpy(ext, VideoCaptureExt, (size_t)(ext - args->InOutputFile));
                 _StateIsCapturing = true;
                 context->BeginVideoCapture(args);
             }
@@ -1056,17 +1059,17 @@ bool ImGuiCaptureToolUI::_ShowEncoderConfigFields(ImGuiCaptureContext* context)
         ImGui::PopID();
     }
 
-    if (context->VideoCaptureExtSize)
+    if (VideoCaptureExtSize)
     {
-        IM_ASSERT(context->VideoCaptureExt != NULL);
+        IM_ASSERT(VideoCaptureExt != NULL);
         ImGui::PushItemWidth(BUTTON_WIDTH);
-        if (ImGui::BeginCombo("Video file extension", context->VideoCaptureExt))
+        if (ImGui::BeginCombo("Video file extension", VideoCaptureExt))
         {
             const char* supported_exts[] = { ".gif", ".mp4" };
             for (auto& ext: supported_exts)
-                if (ImGui::Selectable(ext, strcmp(context->VideoCaptureExt, ext) == 0))
+                if (ImGui::Selectable(ext, strcmp(VideoCaptureExt, ext) == 0))
                 {
-                    ImStrncpy(context->VideoCaptureExt, ext, context->VideoCaptureExtSize);
+                    ImStrncpy(VideoCaptureExt, ext, VideoCaptureExtSize);
                     modified = true;
                 }
             ImGui::EndCombo();

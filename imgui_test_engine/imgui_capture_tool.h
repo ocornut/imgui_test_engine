@@ -55,6 +55,7 @@ enum ImGuiCaptureFlags_ : unsigned int
 };
 
 // Defines input and output arguments for capture process.
+// When capturing from tests you can usually use the ImGuiTestContext::CaptureXXX() helpers functions.
 struct ImGuiCaptureArgs
 {
     // [Input]
@@ -90,8 +91,6 @@ struct IMGUI_API ImGuiCaptureContext
     int                     VideoCaptureEncoderParamsSize = 0;  // Optional. Set in order to edit this parameter from UI.
     char*                   GifCaptureEncoderParams = NULL;     // Video encoder params for GIF output (not owned, stored externally).
     int                     GifCaptureEncoderParamsSize = 0;    // Optional. Set in order to edit this parameter from UI.
-    char*                   VideoCaptureExt = NULL;             // Video file extension (e.g. ".gif" or ".mp4")
-    int                     VideoCaptureExtSize = 0;            // Optional. Set in order to edit this parameter from UI.
 
     // [Internal]
     ImRect                  _CaptureRect;                   // Viewport rect that is being captured.
@@ -147,6 +146,8 @@ struct IMGUI_API ImGuiCaptureToolUI
 {
     float                   SnapGridSize = 32.0f;               // Size of the grid cell for "snap to grid" functionality.
     char                    OutputLastFilename[256] = "";       // File name of last captured file.
+    char*                   VideoCaptureExt = NULL;             // Video file extension (e.g. ".gif" or ".mp4")
+    int                     VideoCaptureExtSize = 0;            // Optional. Set in order to edit this parameter from UI.
 
     ImGuiCaptureArgs        _CaptureArgs;                       // Capture args
     bool                    _StateIsPickingWindow = false;

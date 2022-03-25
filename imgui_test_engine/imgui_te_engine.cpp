@@ -401,8 +401,8 @@ void    ImGuiTestEngine_PostSwap(ImGuiTestEngine* engine)
     engine->CaptureContext.VideoCaptureEncoderParamsSize = IM_ARRAYSIZE(engine->IO.VideoCaptureEncoderParams);
     engine->CaptureContext.GifCaptureEncoderParams = engine->IO.GifCaptureEncoderParams;
     engine->CaptureContext.GifCaptureEncoderParamsSize = IM_ARRAYSIZE(engine->IO.GifCaptureEncoderParams);
-    engine->CaptureContext.VideoCaptureExt = engine->IO.VideoCaptureExtension;
-    engine->CaptureContext.VideoCaptureExtSize = IM_ARRAYSIZE(engine->IO.VideoCaptureExtension);
+    engine->CaptureTool.VideoCaptureExt = engine->IO.VideoCaptureExtension;
+    engine->CaptureTool.VideoCaptureExtSize = IM_ARRAYSIZE(engine->IO.VideoCaptureExtension);
 
     // Capture a screenshot from main thread while coroutine waits
     if (engine->CaptureCurrentArgs != NULL)
