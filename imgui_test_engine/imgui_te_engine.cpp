@@ -1026,6 +1026,7 @@ static void ImGuiTestEngine_ProcessTestQueue(ImGuiTestEngine* engine)
         engine->UiSelectedTest = test;
         test->Status = ImGuiTestStatus_Running;
 
+        ImGuiCaptureArgs capture_args;
         ImGuiTestContext ctx;
         ctx.Test = test;
         ctx.Engine = engine;
@@ -1042,6 +1043,7 @@ static void ImGuiTestEngine_ProcessTestQueue(ImGuiTestEngine* engine)
 #else
         ctx.HasDock = false;
 #endif
+        ctx.CaptureArgs = &capture_args;
         engine->TestContext = &ctx;
         ImGuiTestEngine_UpdateHooks(engine);
         if (track_scrolling)

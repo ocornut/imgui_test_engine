@@ -4881,14 +4881,13 @@ void RegisterTests_Capture(ImGuiTestEngine* e)
         ctx->LogDebug("Capture screenshot...");
         ctx->SetRef("");
 
-        ImGuiCaptureArgs args;
-        ctx->CaptureAddWindow(&args, "Dear ImGui Demo");
-        ctx->CaptureAddWindow(&args, "Example: Simple overlay");
-        ctx->CaptureAddWindow(&args, "Example: Custom rendering");
-        ctx->CaptureAddWindow(&args, "Example: Simple layout");
-        ctx->CaptureAddWindow(&args, "Example: Documents");
-        ctx->CaptureAddWindow(&args, "Example: Console");
-        ctx->CaptureScreenshotEx(&args);
+        ctx->CaptureAddWindow("Dear ImGui Demo");
+        ctx->CaptureAddWindow("Example: Simple overlay");
+        ctx->CaptureAddWindow("Example: Custom rendering");
+        ctx->CaptureAddWindow("Example: Simple layout");
+        ctx->CaptureAddWindow("Example: Documents");
+        ctx->CaptureAddWindow("Example: Console");
+        ctx->CaptureScreenshotEx();
 
         // Close everything
         ctx->SetRef("Dear ImGui Demo");
@@ -4977,10 +4976,9 @@ void RegisterTests_Capture(ImGuiTestEngine* e)
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         ctx->SetRef("CaptureGif");
-        ImGuiCaptureArgs args;
-        ctx->CaptureSetExtension(&args, ".gif");
-        ctx->CaptureAddWindow(&args, "CaptureGif");
-        ctx->CaptureBeginVideo(&args);
+        ctx->CaptureSetExtension(".gif");
+        ctx->CaptureAddWindow("CaptureGif");
+        ctx->CaptureBeginVideo();
         ctx->ItemInput("string");
         ctx->KeyCharsReplace("Dear ImGui: Now with gif animations \\o/");
         ctx->SleepStandard();
@@ -4988,7 +4986,7 @@ void RegisterTests_Capture(ImGuiTestEngine* e)
         ctx->SleepStandard();
         ctx->ItemClick("Save");
         ctx->SleepStandard();
-        ctx->CaptureEndVideo(&args);
+        ctx->CaptureEndVideo();
     };
 
     // ## Capture

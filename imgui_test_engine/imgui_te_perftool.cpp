@@ -1850,11 +1850,11 @@ void RegisterTests_PerfTool(ImGuiTestEngine* e)
 #if IMGUI_TEST_ENGINE_ENABLE_IMPLOT
         // Take a screenshot.
         perf_report_image = "captures/capture_perf_report_0000.png";
-        ImGuiCaptureArgs args;
-        args.InFlags = ImGuiCaptureFlags_HideMouseCursor;
-        args.InCaptureRect = plot_child->Rect();
-        ctx->CaptureAddWindow(&args, window->Name);
-        ctx->CaptureScreenshotEx(&args);
+        ImGuiCaptureArgs* args = ctx->CaptureArgs;
+        args->InFlags = ImGuiCaptureFlags_HideMouseCursor;
+        args->InCaptureRect = plot_child->Rect();
+        ctx->CaptureAddWindow(window->Name);
+        ctx->CaptureScreenshotEx();
         ctx->ItemDragWithDelta("splitter", ImVec2(0, -180));        // Show info table
 #endif
         ImStrncpy(perftool->_FilterDateFrom, min_date_bkp, IM_ARRAYSIZE(min_date_bkp));

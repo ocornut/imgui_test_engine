@@ -231,6 +231,7 @@ struct IMGUI_API ImGuiTestContext
     int                     FirstTestFrameCount = 0;                // First frame where TestFunc is running (after warm-up frame). This is generally -1 or 0 depending on whether we have warm up enabled
     bool                    FirstGuiFrame = false;
     bool                    HasDock = false;                        // #ifdef IMGUI_HAS_DOCK expressed in an easier to test value
+    ImGuiCaptureArgs*       CaptureArgs = NULL;                     // Capture settings used by ctx->Capture*() functions
 
     //-------------------------------------------------------------------------
     // [Internal Fields]
@@ -331,14 +332,15 @@ struct IMGUI_API ImGuiTestContext
 
     // Screen/GIF capture
     // - Simple API
+    void        CaptureReset();
     void        CaptureScreenshotWindow(ImGuiTestRef ref, int capture_flags = 0);
     // - Advanced API
-    bool        CaptureAddWindow(ImGuiCaptureArgs* args, ImGuiTestRef ref);
-    bool        CaptureScreenshotEx(ImGuiCaptureArgs* args);
-    void        CaptureSetExtension(ImGuiCaptureArgs* args, const char* ext);       // Set extension to filename in args struct or generate a new one if filename is empty.
+    bool        CaptureAddWindow(ImGuiTestRef ref);
+    bool        CaptureScreenshotEx();
+    void        CaptureSetExtension(const char* ext);                               // Set extension to filename in args struct or generate a new one if filename is empty.
     // - Video/GIF capturing API
-    bool        CaptureBeginVideo(ImGuiCaptureArgs* args);
-    bool        CaptureEndVideo(ImGuiCaptureArgs* args);
+    bool        CaptureBeginVideo();
+    bool        CaptureEndVideo();
 
     // Mouse inputs
     void        MouseMove(ImGuiTestRef ref, ImGuiTestOpFlags flags = ImGuiTestOpFlags_None);

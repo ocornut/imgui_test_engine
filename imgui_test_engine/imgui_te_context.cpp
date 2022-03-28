@@ -92,7 +92,7 @@ inline const char* GetActionVerb(ImGuiTestAction action)
 // [SECTION] Forward Declarations
 //-------------------------------------------------------------------------
 
-static void CaptureValidateOrInitFilename(ImGuiTestContext* ctx, ImGuiCaptureArgs* args, const char* ext, const char* allowed_extensions[]);
+static void CaptureValidateOrInitFilename(ImGuiTestContext* ctx, const char* ext, const char* allowed_extensions[]);
 
 //-------------------------------------------------------------------------
 // [SECTION] ImGuiTestContext
@@ -667,24 +667,25 @@ static bool ImGuiTestContext_CanCaptureVideo(ImGuiTestContext* ctx)
     return io->ConfigCaptureEnabled && ImFileExist(io->VideoCaptureEncoderPath);
 }
 
-bool ImGuiTestContext::CaptureAddWindow(ImGuiCaptureArgs* args, ImGuiTestRef ref)
+bool ImGuiTestContext::CaptureAddWindow(ImGuiTestRef ref)
 {
     ImGuiWindow* window = GetWindowByRef(ref);
     IM_CHECK_SILENT_RETV(window != NULL, false);
-    args->InCaptureWindows.push_back(window);
+    CaptureArgs->InCaptureWindows.push_back(window);
     return true;
 }
 
-bool ImGuiTestContext::CaptureScreenshotEx(ImGuiCaptureArgs* args)
+bool ImGuiTestContext::CaptureScreenshotEx()
 {
     if (IsError())
         return false;
 
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
     LogInfo("CaptureScreenshot()");
+    ImGuiCaptureArgs* args = CaptureArgs;
 
     // Auto filename
-    CaptureValidateOrInitFilename(this, args, ".png", NULL);
+    CaptureValidateOrInitFilename(this, ".png", NULL);
 
 #if IMGUI_TEST_ENGINE_ENABLE_CAPTURE
     bool can_capture = ImGuiTestContext_CanCaptureScreenshot(this);
@@ -703,19 +704,24 @@ bool ImGuiTestContext::CaptureScreenshotEx(ImGuiCaptureArgs* args)
 #endif
 }
 
+void ImGuiTestContext::CaptureReset()
+{
+    *CaptureArgs = ImGuiCaptureArgs();
+}
+
 // FIXME-TESTS: Add ImGuiCaptureFlags_NoHideOtherWindows
 void ImGuiTestContext::CaptureScreenshotWindow(ImGuiTestRef ref, int capture_flags)
 {
-    ImGuiCaptureArgs args;
-    args.InFlags = capture_flags;
-    CaptureAddWindow(&args, ref);
-    CaptureScreenshotEx(&args);
+    CaptureReset();
+    CaptureArgs->InFlags = capture_flags;
+    CaptureAddWindow(ref);
+    CaptureScreenshotEx();
 }
 
-static void CaptureValidateOrInitFilename(ImGuiTestContext* ctx, ImGuiCaptureArgs* args, const char* ext, const char* allowed_extensions[])
+static void CaptureValidateOrInitFilename(ImGuiTestContext* ctx, const char* ext, const char* allowed_extensions[])
 {
-    IM_ASSERT(args != NULL);
     IM_ASSERT(ext != NULL && ext[0] == '.');
+    ImGuiCaptureArgs* args = ctx->CaptureArgs;
 
     // Verify file extension and reset if necessary
     char* specified_ext = (char*)ImPathFindExtension(args->InOutputFile);
@@ -727,13 +733,14 @@ static void CaptureValidateOrInitFilename(ImGuiTestContext* ctx, ImGuiCaptureArg
     {
         if (args->InOutputFile[0])
             ctx->LogWarning("Unsupported output file '%s' format, file extension will be reset to '%s'.", args->InOutputFile, ext);
-        ctx->CaptureSetExtension(args, ext); // Reset extension of specified filename or auto-generate a new filename.
+        ctx->CaptureSetExtension(ext); // Reset extension of specified filename or auto-generate a new filename.
     }
 }
 
-void ImGuiTestContext::CaptureSetExtension(ImGuiCaptureArgs* args, const char* ext)
+void ImGuiTestContext::CaptureSetExtension(const char* ext)
 {
     IM_ASSERT(ext && ext[0] == '.');
+    ImGuiCaptureArgs* args = CaptureArgs;
     if (args->InOutputFile[0] == 0)
     {
         ImFormatString(args->InOutputFile, IM_ARRAYSIZE(args->InOutputFile), "output/captures/%s_%04d%s", Test->Name, CaptureCounter, ext);
@@ -746,18 +753,18 @@ void ImGuiTestContext::CaptureSetExtension(ImGuiCaptureArgs* args, const char* e
     }
 }
 
-bool ImGuiTestContext::CaptureBeginVideo(ImGuiCaptureArgs* args)
+bool ImGuiTestContext::CaptureBeginVideo()
 {
     if (IsError())
         return false;
 
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
     LogInfo("CaptureBeginVideo()");
-    IM_CHECK_SILENT_RETV(args != NULL, false);
+    ImGuiCaptureArgs* args = CaptureArgs;
 
     // Auto filename
     const char* allowed_extensions[] = {".gif", ".mp4", NULL };
-    CaptureValidateOrInitFilename(this, args, EngineIO->VideoCaptureExtension, allowed_extensions);
+    CaptureValidateOrInitFilename(this, EngineIO->VideoCaptureExtension, allowed_extensions);
 
 #if IMGUI_TEST_ENGINE_ENABLE_CAPTURE
     bool can_capture = ImGuiTestContext_CanCaptureVideo(this);
@@ -771,11 +778,11 @@ bool ImGuiTestContext::CaptureBeginVideo(ImGuiCaptureArgs* args)
 #endif
 }
 
-bool ImGuiTestContext::CaptureEndVideo(ImGuiCaptureArgs* args)
+bool ImGuiTestContext::CaptureEndVideo()
 {
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
     LogInfo("CaptureEndVideo()");
-    IM_CHECK_SILENT_RETV(args != NULL, false);
+    ImGuiCaptureArgs* args = CaptureArgs;
 
     bool ret = Engine->CaptureContext.IsCapturingVideo() && ImGuiTestEngine_CaptureEndVideo(Engine, args);
     if (!ret)
