@@ -703,7 +703,10 @@ void RegisterTests_Window(ImGuiTestEngine* e)
                 ImGui::MenuItem("DDD.2");
                 ImGui::EndMenu();
             }
-            ImGui::MenuItem("EEE");
+#if IMGUI_VERSION_NUM >= 18713
+            ImGui::Button("EEE"); // Test non-MenuItem() because they have a custom behavior.
+#endif
+            ImGui::MenuItem("FFF");
             ImGui::EndPopup();
         }
         ImGui::End();
@@ -719,8 +722,12 @@ void RegisterTests_Window(ImGuiTestEngine* e)
         ctx->MouseMove("DDD", ImGuiTestOpFlags_NoFocusWindow);
         IM_CHECK_EQ(ctx->UiContext->HoveredIdPreviousFrame, ctx->GetID("DDD"));
         IM_CHECK((ctx->UiContext->NavWindow->Flags & ImGuiWindowFlags_ChildMenu) != 0);
+#if IMGUI_VERSION_NUM >= 18713
         ctx->MouseMove("EEE", ImGuiTestOpFlags_NoFocusWindow);
         IM_CHECK_EQ(ctx->UiContext->HoveredIdPreviousFrame, ctx->GetID("EEE"));
+#endif
+        ctx->MouseMove("FFF", ImGuiTestOpFlags_NoFocusWindow);
+        IM_CHECK_EQ(ctx->UiContext->HoveredIdPreviousFrame, ctx->GetID("FFF"));
         ctx->Yield();
         IM_CHECK((ctx->UiContext->NavWindow->Flags & ImGuiWindowFlags_ChildMenu) == 0);
     };
