@@ -4,6 +4,10 @@ CHANGELOG
 ** For a while this is going to include only breaking changes.
 ** As we slowly transition toward releasing the test engine, this will become a more full fledged changelog.
 
+2022/03/28
+- TestEngine: Capture: Removed requirement to store/pass a ImGuiCaptureArgs in ctx->CaptureXXX functions.
+  General tidying up of the capture API.
+
 2022/03/23
 - TestEngine: Renamed ImGuiTestEngineIO::VideoCaptureFFMPEGPath to ::VideoCaptureEncoderPath.
 

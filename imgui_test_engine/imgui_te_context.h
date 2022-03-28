@@ -330,16 +330,13 @@ struct IMGUI_API ImGuiTestContext
     ImVec2      GetMainMonitorWorkPos();                                            // Work pos and size of main viewport when viewports are disabled, or work pos and size of monitor containing main viewport when viewports are enabled.
     ImVec2      GetMainMonitorWorkSize();
 
-    // Screen/GIF capture
-    // - Simple API
-    void        CaptureReset();
-    void        CaptureScreenshotWindow(ImGuiTestRef ref, int capture_flags = 0);
-    // - Advanced API
-    bool        CaptureAddWindow(ImGuiTestRef ref);
-    bool        CaptureScreenshotEx();
-    void        CaptureSetExtension(const char* ext);                               // Set extension to filename in args struct or generate a new one if filename is empty.
-    // - Video/GIF capturing API
-    bool        CaptureBeginVideo();
+    // Screenshot/Video Captures
+    void        CaptureReset();                                                     // Reset state (use when doing multiple captures)
+    void        CaptureSetExtension(const char* ext);                               // Set capture file format (otherwise for video this default to EngineIO->VideoCaptureExtension)
+    bool        CaptureAddWindow(ImGuiTestRef ref);                                 // Add window to be captured (default to capture everything)
+    void        CaptureScreenshotWindow(ImGuiTestRef ref, int capture_flags = 0);   // Trigger a screen capture of a single window (== CaptureAddWindow() + CaptureScreenshot())
+    bool        CaptureScreenshot(int capture_flags = 0);                           // Trigger a screen capture
+    bool        CaptureBeginVideo();                                                // Start a video capture
     bool        CaptureEndVideo();
 
     // Mouse inputs

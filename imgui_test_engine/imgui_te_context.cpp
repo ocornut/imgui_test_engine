@@ -88,11 +88,6 @@ inline const char* GetActionVerb(ImGuiTestAction action)
     }
 }
 
-//-------------------------------------------------------------------------
-// [SECTION] Forward Declarations
-//-------------------------------------------------------------------------
-
-static void CaptureValidateOrInitFilename(ImGuiTestContext* ctx, const char* ext, const char* allowed_extensions[]);
 
 //-------------------------------------------------------------------------
 // [SECTION] ImGuiTestContext
@@ -675,7 +670,15 @@ bool ImGuiTestContext::CaptureAddWindow(ImGuiTestRef ref)
     return true;
 }
 
-bool ImGuiTestContext::CaptureScreenshotEx()
+static void CaptureInitAutoFilename(ImGuiTestContext* ctx, const char* ext)
+{
+    IM_ASSERT(ext != NULL && ext[0] == '.');
+
+    if (ctx->CaptureArgs->InOutputFile[0] == 0)
+        ctx->CaptureSetExtension(ext); // Reset extension of specified filename or auto-generate a new filename.
+}
+
+bool ImGuiTestContext::CaptureScreenshot(int capture_flags)
 {
     if (IsError())
         return false;
@@ -683,9 +686,10 @@ bool ImGuiTestContext::CaptureScreenshotEx()
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
     LogInfo("CaptureScreenshot()");
     ImGuiCaptureArgs* args = CaptureArgs;
+    args->InFlags = capture_flags;
 
     // Auto filename
-    CaptureValidateOrInitFilename(this, ".png", NULL);
+    CaptureInitAutoFilename(this, ".png");
 
 #if IMGUI_TEST_ENGINE_ENABLE_CAPTURE
     bool can_capture = ImGuiTestContext_CanCaptureScreenshot(this);
@@ -713,28 +717,8 @@ void ImGuiTestContext::CaptureReset()
 void ImGuiTestContext::CaptureScreenshotWindow(ImGuiTestRef ref, int capture_flags)
 {
     CaptureReset();
-    CaptureArgs->InFlags = capture_flags;
     CaptureAddWindow(ref);
-    CaptureScreenshotEx();
-}
-
-static void CaptureValidateOrInitFilename(ImGuiTestContext* ctx, const char* ext, const char* allowed_extensions[])
-{
-    IM_ASSERT(ext != NULL && ext[0] == '.');
-    ImGuiCaptureArgs* args = ctx->CaptureArgs;
-
-    // Verify file extension and reset if necessary
-    char* specified_ext = (char*)ImPathFindExtension(args->InOutputFile);
-    bool is_ext_allowed = strcmp(specified_ext, ext) == 0;
-    if (allowed_extensions)
-        while (*allowed_extensions && !is_ext_allowed)
-            is_ext_allowed = strcmp(*allowed_extensions++, specified_ext) == 0;
-    if (!is_ext_allowed)
-    {
-        if (args->InOutputFile[0])
-            ctx->LogWarning("Unsupported output file '%s' format, file extension will be reset to '%s'.", args->InOutputFile, ext);
-        ctx->CaptureSetExtension(ext); // Reset extension of specified filename or auto-generate a new filename.
-    }
+    CaptureScreenshot(capture_flags);
 }
 
 void ImGuiTestContext::CaptureSetExtension(const char* ext)
@@ -763,8 +747,7 @@ bool ImGuiTestContext::CaptureBeginVideo()
     ImGuiCaptureArgs* args = CaptureArgs;
 
     // Auto filename
-    const char* allowed_extensions[] = {".gif", ".mp4", NULL };
-    CaptureValidateOrInitFilename(this, EngineIO->VideoCaptureExtension, allowed_extensions);
+    CaptureInitAutoFilename(this, EngineIO->VideoCaptureExtension);
 
 #if IMGUI_TEST_ENGINE_ENABLE_CAPTURE
     bool can_capture = ImGuiTestContext_CanCaptureVideo(this);

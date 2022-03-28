@@ -146,8 +146,8 @@ struct IMGUI_API ImGuiCaptureToolUI
 {
     float                   SnapGridSize = 32.0f;               // Size of the grid cell for "snap to grid" functionality.
     char                    OutputLastFilename[256] = "";       // File name of last captured file.
-    char*                   VideoCaptureExt = NULL;             // Video file extension (e.g. ".gif" or ".mp4")
-    int                     VideoCaptureExtSize = 0;            // Optional. Set in order to edit this parameter from UI.
+    char*                   VideoCaptureExtension = NULL;       // Video file extension (e.g. ".gif" or ".mp4")
+    int                     VideoCaptureExtensionSize = 0;      // Optional. Set in order to edit this parameter from UI.
 
     ImGuiCaptureArgs        _CaptureArgs;                       // Capture args
     bool                    _StateIsPickingWindow = false;

@@ -4887,7 +4887,7 @@ void RegisterTests_Capture(ImGuiTestEngine* e)
         ctx->CaptureAddWindow("Example: Simple layout");
         ctx->CaptureAddWindow("Example: Documents");
         ctx->CaptureAddWindow("Example: Console");
-        ctx->CaptureScreenshotEx();
+        ctx->CaptureScreenshot();
 
         // Close everything
         ctx->SetRef("Dear ImGui Demo");
