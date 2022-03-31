@@ -18,6 +18,9 @@ CXXFLAGS = -std=c++14
 CFLAGS = -I../ -I$(IMGUI_DIR) -I$(IMGUI_DIR)/backends -I../libs
 CFLAGS += -g -Wall -Wformat
 
+ifeq ($(IMGUI_OPTIMIZE),1)
+	IMGUI_CFLAGS = -O1
+endif
 ifneq ($(IMGUI_TEST_ENGINE_ENABLE_IMPLOT),0)
 	SOURCES += thirdparty/implot/implot.cpp thirdparty/implot/implot_items.cpp thirdparty/implot/implot_demo.cpp
 	CFLAGS += -Ithirdparty/implot
@@ -106,17 +109,14 @@ endif
 %.o:../imgui_test_engine/%.cpp
 	$(CXX) $(CFLAGS) $(CXXFLAGS) -c -o $@ $<
 
-%.o:../imgui_test_engine/thirdparty/implot/%.cpp
-	$(CXX) $(CFLAGS) $(CXXFLAGS) -c -o $@ $<
-
 %.o:../shared/%.cpp
 	$(CXX) $(CFLAGS) $(CXXFLAGS) -c -o $@ $<
 
 %.o:$(IMGUI_DIR)/%.cpp
-	$(CXX) $(CFLAGS) $(CXXFLAGS) -c -o $@ $<
+	$(CXX) $(CFLAGS) $(CXXFLAGS) $(IMGUI_CFLAGS) -c -o $@ $<
 
 %.o:$(IMGUI_DIR)/backends/%.cpp
-	$(CXX) $(CFLAGS) $(CXXFLAGS) -c -o $@ $<
+	$(CXX) $(CFLAGS) $(CXXFLAGS) $(IMGUI_CFLAGS) -c -o $@ $<
 
 all: $(EXE)
 	@echo Build complete for $(ECHO_MESSAGE)

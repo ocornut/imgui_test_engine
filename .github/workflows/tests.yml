@@ -97,11 +97,6 @@ jobs:
           make -C imgui_tests/ IMGUI_USER_CONFIG=imgui_tests/imgui_tests_imconfig_temp.h IMGUI_TEST_ENGINE_ENABLE_IMPLOT=0
           mv ./implot-hidden imgui_tests/thirdparty/implot
 
-      - name: Build imgui_tests
-        run: |
-          make -C imgui_tests/ clean
-          make -C imgui_tests/ ASAN=1
-
       - name: Build imgui_capture_tool
         if: matrix.branch == 'master'
         shell: bash
@@ -118,9 +113,15 @@ jobs:
           g++ -o capture_tool_single_file -I. -I../imgui capture_tool_single_file.cpp -lm -lstdc++ -lpthread
           rm -f capture_tool_single_file capture_tool_single_file.*
 
-      - name: Run Tests
+      - name: Build imgui_tests
         run: |
-          timeout 300 imgui_tests/imgui_tests -nogui -nopause -v2 -ve4 tests
+            make -C imgui_tests/ clean
+            make -C imgui_tests/ ASAN=1 IMGUI_OPTIMIZE=1
+
+      - name: Run Tests
+        # capture_implot_demo alone takes about 60s to run on CI worker therefore it is disabled to save time.
+        run: |
+          timeout 300 imgui_tests/imgui_tests -nogui -nopause -v2 -ve4 tests,-capture_implot_demo
 
       - name: Run Viewport Tests
         if: matrix.branch == 'docking'
