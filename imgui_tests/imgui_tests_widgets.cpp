@@ -2058,6 +2058,105 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         }
     };
 
+    // ## Test ImGui::InputScalar() formatting edgecases.
+    t = IM_REGISTER_TEST(e, "widgets", "widgets_inputscalar_formats");
+    struct InputScalarFormatsVars { Str30 Format; int Int = 0; Str30 Text; int CaptureWidget = -1; };
+    t->SetVarsDataType<InputScalarFormatsVars>();
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiContext& g = *ctx->UiContext;
+        InputScalarFormatsVars& vars = ctx->GetVars<InputScalarFormatsVars>();
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
+        if (ctx->IsGuiFuncOnly())
+            ImGui::InputText("Format", &vars.Format);
+
+        for (int i = 0; i < 3; i++)
+        {
+            ImGui::LogToBuffer();
+            if (i == 0)
+                ImGui::DragInt("Drag", &vars.Int, 1.0f, 0, 0, vars.Format.c_str());
+            else if (i == 1)
+                ImGui::InputScalar("Input", ImGuiDataType_S32, &vars.Int, NULL, NULL, vars.Format.c_str());
+            else if (i == 2)
+                ImGui::SliderInt("Slider", &vars.Int, -10000, +10000, vars.Format.c_str());
+            if (vars.CaptureWidget == i)
+            {
+                vars.Text = g.LogBuffer.c_str();
+                vars.CaptureWidget = -1;
+            }
+            ImGui::LogFinish();
+        }
+
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        InputScalarFormatsVars& vars = ctx->GetVars<InputScalarFormatsVars>();
+        ctx->SetRef("Test Window");
+        auto capture_widget_value = [ctx, &vars](int i)
+        {
+            vars.Text.clear();
+            vars.CaptureWidget = i;
+            ctx->Yield();
+            if (char* curly = strstr(vars.Text.c_str(), "}"))
+                curly[1] = 0;   // Strip widget name
+            return vars.Text.c_str();
+        };
+
+        const char* widget_names[] = { "Drag", "Input", "Slider" };
+        for (int i = 0; i < 3; i++)
+        {
+            const char* widget_name = widget_names[i];
+            ctx->LogDebug("Widget: %s", widget_name);
+
+#if IMGUI_VERSION_NUM >= 18714
+            vars.Int = 0;
+            vars.Format = "%03X";
+            ctx->ItemInput(widget_name);
+            ctx->KeyCharsReplaceEnter("7b");
+            IM_CHECK_STR_EQ(capture_widget_value(i), "{ 07B }");
+            IM_CHECK_EQ(vars.Int, 0x7B);
+#endif
+
+#if IMGUI_VERSION_NUM >= 18715
+            vars.Int = 0;
+            ctx->ItemInput(widget_name);
+            ctx->KeyCharsReplaceEnter("FF");
+            IM_CHECK_STR_EQ(capture_widget_value(i), "{ 0FF }");
+            IM_CHECK_EQ(vars.Int, 0xFF);
+
+            vars.Int = 0;
+            ctx->ItemInput(widget_name);
+            ctx->KeyCharsReplaceEnter("1FF");
+            IM_CHECK_STR_EQ(capture_widget_value(i), "{ 1FF }");
+            IM_CHECK_EQ(vars.Int, 0x1FF);
+#endif
+
+            vars.Int = 0;
+            vars.Format = "%03d";
+            ctx->ItemInput(widget_name);
+            ctx->KeyCharsReplaceEnter("1234");
+            IM_CHECK_STR_EQ(capture_widget_value(i), "{ 1234 }");
+            IM_CHECK_EQ(vars.Int, 1234);
+
+#if IMGUI_VERSION_NUM >= 18715
+            vars.Int = 0;
+            vars.Format = "%03d";
+            ctx->ItemInput(widget_name);
+            ctx->KeyCharsReplaceEnter("1235");
+            IM_CHECK_STR_EQ(capture_widget_value(i), "{ 1235 }");
+            IM_CHECK_EQ(vars.Int, 1235);
+
+            vars.Int = 0;
+            vars.Format = "%.03d";
+            ctx->ItemInput(widget_name);
+            ctx->KeyCharsReplaceEnter("1236");
+            IM_CHECK_STR_EQ(capture_widget_value(i), "{ 1236 }");
+            IM_CHECK_EQ(vars.Int, 1236);
+#endif
+        }
+    };
+
     // ## Test that tight tab bar does not create extra drawcalls
     t = IM_REGISTER_TEST(e, "widgets", "widgets_tabbar_drawcalls");
     t->GuiFunc = [](ImGuiTestContext* ctx)
