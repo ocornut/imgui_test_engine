@@ -4,6 +4,15 @@ CHANGELOG
 ** For a while this is going to include only breaking changes.
 ** As we slowly transition toward releasing the test engine, this will become a more full fledged changelog.
 
+2022/04/07
+- TestEngine: added more filtering options to ImGuiTestEngine_QueueTests() and command-line suppot.
+    - "all"   : all tests, no matter what group they are in.
+    - "tests" : all tests in the ImGuiTestGroup_Tests group.
+    - "perfs" : all tests in the ImGuiTestGroup_Perfs group.
+    - "^nav_" : all tests with name starting with "nav_".
+    - "-xxxx" : no tests will be matched because query does not include any.
+    - "tests,-scroll,-^nav_" : all tests that do not contain "scroll" in their name and does not start with "nav_".
+
 2022/03/28
 - TestEngine: Capture: Removed requirement to store/pass a ImGuiCaptureArgs in ctx->CaptureXXX functions.
   General tidying up of the capture API.

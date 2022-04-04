@@ -1142,7 +1142,7 @@ void ImGuiTestEngine_QueueTest(ImGuiTestEngine* engine, ImGuiTest* test, ImGuiTe
 ImGuiTest* ImGuiTestEngine_RegisterTest(ImGuiTestEngine* engine, const char* category, const char* name, const char* src_file, int src_line)
 {
     ImGuiTestGroup group = ImGuiTestGroup_Tests;
-    if (strcmp(category, "perf") == 0)
+    if (strcmp(category, "perfs") == 0)
         group = ImGuiTestGroup_Perfs;
 
     ImGuiTest* t = IM_NEW(ImGuiTest)();
@@ -1161,23 +1161,76 @@ ImGuiPerfTool* ImGuiTestEngine_GetPerfTool(ImGuiTestEngine* engine)
     return engine->PerfTool;
 }
 
+// Filter tests by a specified query. Query is composed of one or more comma-separated filter terms optionally prefixed with modifiers.
+// Available modifiers:
+// - '-' excludes tests matched by the term.
+// - '^' anchors term matching to the start of the string.
+// Example queries:
+// - "all"   : all tests, no matter what group they are in.
+// - "tests" : tests in ImGuiTestGroup_Tests group.
+// - "perfs" : tests in ImGuiTestGroup_Perfs group.
+// - "^nav_" : all tests with name starting with "nav_".
+// - "-xxx"  : no tests will be matched because query does not include any.
+// - "tests,-scroll,-^nav_" : all tests that do not contain "scroll" in their name and does not start with "nav_".
+static bool ImGuiTestEngine_PassFilter(ImGuiTest* test, const char* filter)
+{
+    bool include = false;
+    for (const char* filter_start = filter; filter_start[0];)
+    {
+        // Filter modifiers
+        bool is_exclude = false;
+        bool is_anchor_to_start = false;
+        for (;;)
+        {
+            if (filter_start[0] == '-')
+            {
+                is_exclude = true;
+                filter_start++;
+            }
+            else if (filter_start[0] == '^')
+            {
+                is_anchor_to_start = true;
+                filter_start++;
+            }
+            else
+            {
+                break;
+            }
+        }
+
+        const char* filter_end = strstr(filter_start, ",");
+        filter_end = filter_end ? filter_end : filter_start + strlen(filter_start);
+
+        if (strncmp(filter_start, "all", filter_end - filter_start) == 0)
+        {
+            include = !is_exclude;
+        }
+        else if (strncmp(filter_start, "tests", filter_end - filter_start) == 0)
+            include = (test->Group == ImGuiTestGroup_Tests) ? !is_exclude : include;
+        else if (strncmp(filter_start, "perfs", filter_end - filter_start) == 0)
+            include = (test->Group == ImGuiTestGroup_Perfs) ? !is_exclude : include;
+        if (is_anchor_to_start && strncmp(test->Name, filter_start, filter_end - filter_start) == 0)
+            include = !is_exclude;
+        else if (!is_anchor_to_start && ImStristr(test->Name, NULL, filter_start, filter_end) != NULL)
+            include = !is_exclude;
+
+        filter_start = filter_end + (filter_end[0] == ',' ? 1 : 0);
+    }
+    return include;
+}
+
 void ImGuiTestEngine_QueueTests(ImGuiTestEngine* engine, ImGuiTestGroup group, const char* filter_str, ImGuiTestRunFlags run_flags)
 {
-    IM_ASSERT(group >= 0 && group < ImGuiTestGroup_COUNT);
-    ImGuiTextFilter filter;
-    if (filter_str != NULL)
-    {
-        IM_ASSERT(strlen(filter_str) + 1 < IM_ARRAYSIZE(filter.InputBuf));
-        ImFormatString(filter.InputBuf, IM_ARRAYSIZE(filter.InputBuf), "%s", filter_str);
-        filter.Build();
-    }
+    IM_ASSERT(group >= ImGuiTestGroup_Unknown && group < ImGuiTestGroup_COUNT);
     for (int n = 0; n < engine->TestsAll.Size; n++)
     {
         ImGuiTest* test = engine->TestsAll[n];
-        if (test->Group != group)
+        if (group != ImGuiTestGroup_Unknown && test->Group != group)
             continue;
-        if (!filter.PassFilter(test->Name))
+
+        if (!ImGuiTestEngine_PassFilter(test, filter_str))
             continue;
+
         ImGuiTestEngine_QueueTest(engine, test, run_flags);
     }
 }

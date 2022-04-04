@@ -165,9 +165,10 @@ static void ShowUI()
 
 static bool ParseCommandLineOptions(int argc, char** argv)
 {
+    bool end_of_options = false;
     for (int n = 1; n < argc; n++)
     {
-        if (argv[n][0] == '-')
+        if (!end_of_options && argv[n][0] == '-')
         {
             // Command-line option
             if (strcmp(argv[n], "-v") == 0)
@@ -251,9 +252,13 @@ static bool ParseCommandLineOptions(int argc, char** argv)
             {
                 g_App.OptExportFilename = argv[n + 1];
             }
+            else if (strcmp(argv[n], "--") == 0)
+            {
+                end_of_options = true;
+            }
             else
             {
-                printf("Syntax: %s <options> [tests]\n", argv[0]);
+                printf("Syntax: %s <options> [tests...]\n", argv[0]);
                 printf("Options:\n");
                 printf("  -h                       : show command-line help.\n");
                 printf("  -v                       : verbose mode (same as -v3 -ve4)\n");
@@ -271,6 +276,8 @@ static bool ParseCommandLineOptions(int argc, char** argv)
                 printf("Tests:\n");
                 printf("   all/tests/perf          : queue by groups: all, only tests, only performance benchmarks.\n");
                 printf("   [pattern]               : queue all tests containing the word [pattern].\n");
+                printf("   [-pattern]              : queue all tests not containing the word [pattern].\n");
+                printf("   [^pattern]              : queue all tests starting with the word [pattern].\n");
                 return false;
             }
         }
@@ -342,26 +349,25 @@ static void QueueTests(ImGuiTestEngine* engine)
         g_App.TestsToRun.push_back(strdup("tests"));
 
     // Queue requested tests
-    // FIXME: Maybe need some cleanup to not hard-coded groups.
     ImGuiTestRunFlags run_flags = ImGuiTestRunFlags_CommandLine;
     if (g_App.OptGuiFunc)
         run_flags |= ImGuiTestRunFlags_GuiFuncOnly;
+
+    // Special groups are supported by ImGuiTestEngine_QueueTests(): "all", "tests", "perfs"
+    // Following command line examples are functionally identical:
+    //  ./imgui_tests tests,-window
+    //  ./imgui_tests -- tests -window
+    // See comments above ImGuiTestEngine_QueueTests() for more details.
+    Str256 filter;
     for (int n = 0; n < g_App.TestsToRun.Size; n++)
     {
         char* test_spec = g_App.TestsToRun[n];
-        if (strcmp(test_spec, "tests") == 0)
-            ImGuiTestEngine_QueueTests(engine, ImGuiTestGroup_Tests, NULL, run_flags);
-        else if (strcmp(test_spec, "perf") == 0)
-            ImGuiTestEngine_QueueTests(engine, ImGuiTestGroup_Perfs, NULL, run_flags);
-        else
-        {
-            if (strcmp(test_spec, "all") == 0)
-                test_spec = NULL;
-            for (int group = 0; group < ImGuiTestGroup_COUNT; group++)
-                ImGuiTestEngine_QueueTests(engine, (ImGuiTestGroup)group, test_spec, run_flags);
-        }
+        if (!filter.empty())
+            filter.append(",");
+        filter.append(test_spec);
         IM_FREE(test_spec);
     }
+    ImGuiTestEngine_QueueTests(engine, ImGuiTestGroup_Unknown, filter.c_str(), run_flags);
     g_App.TestsToRun.clear();
 }
 
