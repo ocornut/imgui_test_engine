@@ -3340,6 +3340,33 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
         out = ImParseFormatTrimDecorations(fmt, buf, buf_size);
         IM_CHECK(out == buf);
         IM_CHECK(strcmp(out, "%f") == 0);
+
+#if IMGUI_VERSION_NUM >= 18715
+        // Test ImParseFormatSanitizeForScanning()
+        fmt = "%d";
+        ImParseFormatSanitizeForScanning(fmt, buf, buf_size);
+        IM_CHECK_STR_EQ(buf, fmt);
+
+        fmt = "";
+        ImParseFormatSanitizeForScanning(fmt, buf, buf_size);
+        IM_CHECK_STR_EQ(buf, fmt);
+
+        fmt = "%03d";
+        ImParseFormatSanitizeForScanning(fmt, buf, buf_size);
+        IM_CHECK_STR_EQ(buf, "%d");
+
+        fmt = "%03.7f";
+        ImParseFormatSanitizeForScanning(fmt, buf, buf_size);
+        IM_CHECK_STR_EQ(buf, "%f");
+
+        fmt = "%I64d"; // Check we don't accidentally strip those
+        ImParseFormatSanitizeForScanning(fmt, buf, buf_size);
+        IM_CHECK_STR_EQ(buf, fmt);
+
+        fmt = "%07I64d";
+        ImParseFormatSanitizeForScanning(fmt, buf, buf_size);
+        IM_CHECK_STR_EQ(buf, "%I64d");
+#endif
     };
 
     // ## Test ImGuiListClipper basic behavior

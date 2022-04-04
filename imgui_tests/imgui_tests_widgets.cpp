@@ -4218,6 +4218,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
         ImGui::SetNextItemWidth(400);
         ImGui::SliderFloat("slider", &vars.Float1, -10.0f, 10.0f, "%.2f", ImGuiSliderFlags_Logarithmic);
+        ImGui::Text("%.4f", vars.Float1);
         ImGui::End();
     };
     t->TestFunc = [](ImGuiTestContext* ctx)
