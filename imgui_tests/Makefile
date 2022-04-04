@@ -21,10 +21,15 @@ CFLAGS += -g -Wall -Wformat
 ifeq ($(IMGUI_OPTIMIZE),1)
 	IMGUI_CFLAGS = -O1
 endif
-ifneq ($(IMGUI_TEST_ENGINE_ENABLE_IMPLOT),0)
+
+# Building of ImPlot takes a while and is disabled on CI to save build time.
+ifeq ($(IMGUI_TEST_ENGINE_ENABLE_IMPLOT),1)
 	SOURCES += thirdparty/implot/implot.cpp thirdparty/implot/implot_items.cpp thirdparty/implot/implot_demo.cpp
-	CFLAGS += -Ithirdparty/implot
+	CFLAGS += -Ithirdparty/implot -DIMGUI_TEST_ENGINE_ENABLE_IMPLOT=1
+else
+	CFLAGS += -DIMGUI_TEST_ENGINE_ENABLE_IMPLOT=0
 endif
+
 ifeq ($(IMGUI_USER_CONFIG),)
 	IMGUI_USER_CONFIG = imgui_tests/imgui_tests_imconfig.h
 endif

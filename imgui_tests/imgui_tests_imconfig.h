@@ -24,7 +24,9 @@
 #define IMGUI_TEST_ENGINE_ENABLE_COROUTINE_STDTHREAD_IMPL 1
 
 // Enable plotting of perflog data for comparing performance of different runs. This feature requires ImPlot.
+#ifndef IMGUI_TEST_ENGINE_ENABLE_IMPLOT
 #define IMGUI_TEST_ENGINE_ENABLE_IMPLOT 1
+#endif
 
 // Use relative path as this file may be compiled with different settings
 #include "../imgui_test_engine/imgui_te_imconfig.h"

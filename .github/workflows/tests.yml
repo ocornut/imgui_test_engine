@@ -68,21 +68,13 @@ jobs:
         if: github.event_name == 'workflow_run'
         run: |
           make -C imgui_tests/ clean
-          echo '#include "imgui_tests_imconfig.h"'                >  imgui_tests/imgui_tests_imconfig_temp.h
-          echo '#undef  IMGUI_TEST_ENGINE_ENABLE_IMPLOT'          >> imgui_tests/imgui_tests_imconfig_temp.h
-          echo '#define IMGUI_TEST_ENGINE_ENABLE_IMPLOT 0'        >> imgui_tests/imgui_tests_imconfig_temp.h
-          make -C imgui_tests/ clean
-          make -C imgui_tests/ BACKEND_LIB=sdl2 IMGUI_USER_CONFIG=imgui_tests/imgui_tests_imconfig_tests.h IMGUI_TEST_ENGINE_ENABLE_IMPLOT=0
+          make -C imgui_tests/ BACKEND_LIB=sdl2 IMGUI_TEST_ENGINE_ENABLE_IMPLOT=0
 
       - name: Build (with GLFW3)
         if: github.event_name == 'workflow_run'
         run: |
           make -C imgui_tests/ clean
-          echo '#include "imgui_tests_imconfig.h"'                >  imgui_tests/imgui_tests_imconfig_temp.h
-          echo '#undef  IMGUI_TEST_ENGINE_ENABLE_IMPLOT'          >> imgui_tests/imgui_tests_imconfig_temp.h
-          echo '#define IMGUI_TEST_ENGINE_ENABLE_IMPLOT 0'        >> imgui_tests/imgui_tests_imconfig_temp.h
-          make -C imgui_tests/ clean
-          make -C imgui_tests/ BACKEND_LIB=glfw3 IMGUI_USER_CONFIG=imgui_tests/imgui_tests_imconfig_tests.h IMGUI_TEST_ENGINE_ENABLE_IMPLOT=0
+          make -C imgui_tests/ BACKEND_LIB=glfw3 IMGUI_TEST_ENGINE_ENABLE_IMPLOT=0
 
       - name: Build (IMGUI_TEST_ENGINE_ENABLE_IMPLOT=0 + IMGUI_TEST_ENGINE_ENABLE_STD_FUNCTION=0)
         if: github.event_name == 'workflow_run'
