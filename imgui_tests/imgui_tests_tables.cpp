@@ -1755,20 +1755,20 @@ void RegisterTests_Table(ImGuiTestEngine* e)
         IM_CHECK_EQ(sort_specs->SpecsCount, 1);
 
         // Holding shift includes all sortable columns in multi-sort.
-        IM_CHECK_EQ(ctx->TableClickHeader(table_ref, "PreferSortDescending", ImGuiKeyModFlags_Shift), ImGuiSortDirection_Descending);
-        IM_CHECK_EQ(ctx->TableClickHeader(table_ref, "PreferSortDescending", ImGuiKeyModFlags_Shift), ImGuiSortDirection_Ascending);
+        IM_CHECK_EQ(ctx->TableClickHeader(table_ref, "PreferSortDescending", ImGuiModFlags_Shift), ImGuiSortDirection_Descending);
+        IM_CHECK_EQ(ctx->TableClickHeader(table_ref, "PreferSortDescending", ImGuiModFlags_Shift), ImGuiSortDirection_Ascending);
         sort_specs = ctx->TableGetSortSpecs(table_ref);
         IM_CHECK(sort_specs && sort_specs->SpecsCount == 2);
 
-        IM_CHECK_EQ(ctx->TableClickHeader(table_ref, "NoSort", ImGuiKeyModFlags_Shift), ImGuiSortDirection_None);
-        IM_CHECK_EQ(ctx->TableClickHeader(table_ref, "NoSort", ImGuiKeyModFlags_Shift), ImGuiSortDirection_None);
+        IM_CHECK_EQ(ctx->TableClickHeader(table_ref, "NoSort", ImGuiModFlags_Shift), ImGuiSortDirection_None);
+        IM_CHECK_EQ(ctx->TableClickHeader(table_ref, "NoSort", ImGuiModFlags_Shift), ImGuiSortDirection_None);
         sort_specs = ctx->TableGetSortSpecs(table_ref);
         IM_CHECK(sort_specs && sort_specs->SpecsCount == 2);
 
-        IM_CHECK_EQ(ctx->TableClickHeader(table_ref, "NoSortAscending", ImGuiKeyModFlags_Shift), ImGuiSortDirection_Descending);
-        IM_CHECK_EQ(ctx->TableClickHeader(table_ref, "NoSortAscending", ImGuiKeyModFlags_Shift), ImGuiSortDirection_Descending);
-        IM_CHECK_EQ(ctx->TableClickHeader(table_ref, "NoSortDescending", ImGuiKeyModFlags_Shift), ImGuiSortDirection_Ascending);
-        IM_CHECK_EQ(ctx->TableClickHeader(table_ref, "NoSortDescending", ImGuiKeyModFlags_Shift), ImGuiSortDirection_Ascending);
+        IM_CHECK_EQ(ctx->TableClickHeader(table_ref, "NoSortAscending", ImGuiModFlags_Shift), ImGuiSortDirection_Descending);
+        IM_CHECK_EQ(ctx->TableClickHeader(table_ref, "NoSortAscending", ImGuiModFlags_Shift), ImGuiSortDirection_Descending);
+        IM_CHECK_EQ(ctx->TableClickHeader(table_ref, "NoSortDescending", ImGuiModFlags_Shift), ImGuiSortDirection_Ascending);
+        IM_CHECK_EQ(ctx->TableClickHeader(table_ref, "NoSortDescending", ImGuiModFlags_Shift), ImGuiSortDirection_Ascending);
         sort_specs = ctx->TableGetSortSpecs(table_ref);
         IM_CHECK(sort_specs && sort_specs->SpecsCount == 4);
 
@@ -1802,25 +1802,25 @@ void RegisterTests_Table(ImGuiTestEngine* e)
         IM_CHECK(sort_specs && sort_specs->SpecsCount == 1);
 
         // Shift + triple-click to turn a second column back into non-sorting
-        IM_CHECK_EQ(ctx->TableClickHeader(table_ref, "Default", ImGuiKeyModFlags_Shift), ImGuiSortDirection_Ascending);
-        IM_CHECK_EQ(ctx->TableClickHeader(table_ref, "Default", ImGuiKeyModFlags_Shift), ImGuiSortDirection_Descending);
+        IM_CHECK_EQ(ctx->TableClickHeader(table_ref, "Default", ImGuiModFlags_Shift), ImGuiSortDirection_Ascending);
+        IM_CHECK_EQ(ctx->TableClickHeader(table_ref, "Default", ImGuiModFlags_Shift), ImGuiSortDirection_Descending);
         sort_specs = ctx->TableGetSortSpecs(table_ref);
         IM_CHECK(sort_specs && sort_specs->SpecsCount == 2);
         IM_CHECK(sort_specs->Specs[0].ColumnIndex == 1);
         IM_CHECK(sort_specs->Specs[1].ColumnIndex == 0);
-        IM_CHECK_EQ(ctx->TableClickHeader(table_ref, "Default", ImGuiKeyModFlags_Shift), ImGuiSortDirection_None);
+        IM_CHECK_EQ(ctx->TableClickHeader(table_ref, "Default", ImGuiModFlags_Shift), ImGuiSortDirection_None);
         sort_specs = ctx->TableGetSortSpecs(table_ref);
         IM_CHECK(sort_specs && sort_specs->SpecsCount == 1);
         IM_CHECK(sort_specs->Specs[0].ColumnIndex == 1);
 
         // Shift + triple-click to turn a first column back into non-sorting, while preserving second (making it first)
-        IM_CHECK_EQ(ctx->TableClickHeader(table_ref, "Default", ImGuiKeyModFlags_Shift), ImGuiSortDirection_Ascending);
-        IM_CHECK_EQ(ctx->TableClickHeader(table_ref, "PreferSortAscending", ImGuiKeyModFlags_Shift), ImGuiSortDirection_Descending);
+        IM_CHECK_EQ(ctx->TableClickHeader(table_ref, "Default", ImGuiModFlags_Shift), ImGuiSortDirection_Ascending);
+        IM_CHECK_EQ(ctx->TableClickHeader(table_ref, "PreferSortAscending", ImGuiModFlags_Shift), ImGuiSortDirection_Descending);
         sort_specs = ctx->TableGetSortSpecs(table_ref);
         IM_CHECK_EQ(sort_specs->SpecsCount, 2);
         IM_CHECK_EQ(sort_specs->Specs[0].ColumnIndex, 1);
         IM_CHECK_EQ(sort_specs->Specs[1].ColumnIndex, 0);
-        IM_CHECK_EQ(ctx->TableClickHeader(table_ref, "PreferSortAscending", ImGuiKeyModFlags_Shift), ImGuiSortDirection_None);
+        IM_CHECK_EQ(ctx->TableClickHeader(table_ref, "PreferSortAscending", ImGuiModFlags_Shift), ImGuiSortDirection_None);
         sort_specs = ctx->TableGetSortSpecs(table_ref);
         IM_CHECK_EQ(sort_specs->SpecsCount, 1);
         IM_CHECK_EQ(sort_specs->Specs[0].ColumnIndex, 0);

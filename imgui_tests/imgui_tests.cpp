@@ -1628,9 +1628,9 @@ void RegisterTests_Window(ImGuiTestEngine* e)
             }
             else
             {
-                ctx->KeyModDown(ImGuiKeyModFlags_Shift);
+                ctx->KeyModDown(ImGuiModFlags_Shift);
                 ctx->MouseWheelY(-5.0f);                // Scroll right (shift + vertical scroll)
-                ctx->KeyModUp(ImGuiKeyModFlags_Shift);
+                ctx->KeyModUp(ImGuiModFlags_Shift);
             }
             IM_CHECK_GT(window->Scroll.x, 0.0f);
             IM_CHECK_EQ(window->Scroll.y, 0.0f);
@@ -1640,9 +1640,9 @@ void RegisterTests_Window(ImGuiTestEngine* e)
             }
             else
             {
-                ctx->KeyModDown(ImGuiKeyModFlags_Shift);
+                ctx->KeyModDown(ImGuiModFlags_Shift);
                 ctx->MouseWheelY(5.0f);                 // Scroll left (shift + vertical scroll)
-                ctx->KeyModUp(ImGuiKeyModFlags_Shift);
+                ctx->KeyModUp(ImGuiModFlags_Shift);
             }
             IM_CHECK_EQ(window->Scroll.x, 0.0f);
             IM_CHECK_EQ(window->Scroll.y, 0.0f);
@@ -1723,9 +1723,9 @@ void RegisterTests_Window(ImGuiTestEngine* e)
             else
             {
                 // Wheel (vertical) + shift
-                ctx->KeyModDown(ImGuiKeyModFlags_Shift);
+                ctx->KeyModDown(ImGuiModFlags_Shift);
                 ctx->MouseWheelY(-3.0f);
-                ctx->KeyModUp(ImGuiKeyModFlags_Shift);
+                ctx->KeyModUp(ImGuiModFlags_Shift);
             }
             float prev_scroll_x = window->Scroll.x;
             IM_CHECK_GT(window->Scroll.x, 0.0f);                // Main window was scrolled
@@ -1740,9 +1740,9 @@ void RegisterTests_Window(ImGuiTestEngine* e)
             }
             else
             {
-                ctx->KeyModDown(ImGuiKeyModFlags_Shift);
+                ctx->KeyModDown(ImGuiModFlags_Shift);
                 ctx->MouseWheelY(-3.0f);
-                ctx->KeyModUp(ImGuiKeyModFlags_Shift);
+                ctx->KeyModUp(ImGuiModFlags_Shift);
                 ctx->Yield();
             }
             IM_CHECK_EQ(window->Scroll.x, prev_scroll_x);
@@ -1872,7 +1872,7 @@ void RegisterTests_Window(ImGuiTestEngine* e)
         ImGuiWindow* window = ctx->GetWindowByRef("###Test Window");
 
         // Open window switcher (CTRL+TAB).
-        ctx->KeyModDown(ImGuiKeyModFlags_Ctrl); // Hold CTRL down
+        ctx->KeyModDown(ImGuiModFlags_Ctrl); // Hold CTRL down
         ctx->KeyPress(ImGuiKey_Tab, 0);
         ctx->SleepNoSkip(0.3f, 1.0f / 60.0f);
         for (int i = 0; i < 2; i++)
@@ -1881,7 +1881,7 @@ void RegisterTests_Window(ImGuiTestEngine* e)
             IM_CHECK_STR_EQ_NO_RET(window->Name, window_name.c_str());    // Verify window->Name gets updated.
             ctx->Yield();
         }
-        ctx->KeyModUp(ImGuiKeyModFlags_Ctrl);
+        ctx->KeyModUp(ImGuiModFlags_Ctrl);
     };
 
     // ## Test window appearing state.
@@ -2929,61 +2929,61 @@ void RegisterTests_Inputs(ImGuiTestEngine* e)
         }
 
         // Key, KeyMods -> 1 frame
-        IM_CHECK(io.KeyMods == ImGuiKeyModFlags_None);
+        IM_CHECK(io.KeyMods == ImGuiModFlags_None);
         io.AddKeyEvent(ImGuiKey_K, true);
         io.AddKeyEvent(ImGuiKey_ModCtrl, true);
         io.AddKeyEvent(ImGuiKey_ModShift, true);
         ctx->Yield();
         IM_CHECK_EQ(ImGui::IsKeyDown(ImGuiKey_K), true);
-        IM_CHECK(io.KeyMods == (ImGuiKeyModFlags_Ctrl | ImGuiKeyModFlags_Shift));
+        IM_CHECK(io.KeyMods == (ImGuiModFlags_Ctrl | ImGuiModFlags_Shift));
         io.AddKeyEvent(ImGuiKey_K, false);
         io.AddKeyEvent(ImGuiKey_ModCtrl, false);
         io.AddKeyEvent(ImGuiKey_ModShift, false);
         ctx->Yield();
 
         // KeyMods, Key -> 1 frame
-        IM_CHECK(io.KeyMods == ImGuiKeyModFlags_None);
+        IM_CHECK(io.KeyMods == ImGuiModFlags_None);
         io.AddKeyEvent(ImGuiKey_ModCtrl, true);
         io.AddKeyEvent(ImGuiKey_ModShift, true);
         io.AddKeyEvent(ImGuiKey_K, true);
         ctx->Yield();
         IM_CHECK_EQ(ImGui::IsKeyDown(ImGuiKey_K), true);
-        IM_CHECK(io.KeyMods == (ImGuiKeyModFlags_Ctrl | ImGuiKeyModFlags_Shift));
+        IM_CHECK(io.KeyMods == (ImGuiModFlags_Ctrl | ImGuiModFlags_Shift));
         io.AddKeyEvent(ImGuiKey_K, false);
         io.AddKeyEvent(ImGuiKey_ModCtrl, false);
         io.AddKeyEvent(ImGuiKey_ModShift, false);
         ctx->Yield();
 
         // KeyMods | KeyMods (same) -> 2 frames
-        IM_CHECK(io.KeyMods == ImGuiKeyModFlags_None);
+        IM_CHECK(io.KeyMods == ImGuiModFlags_None);
         io.AddKeyEvent(ImGuiKey_ModCtrl, true);
         io.AddKeyEvent(ImGuiKey_ModCtrl, false);
         ctx->Yield();
-        IM_CHECK(io.KeyMods == ImGuiKeyModFlags_Ctrl);
+        IM_CHECK(io.KeyMods == ImGuiModFlags_Ctrl);
         ctx->Yield();
-        IM_CHECK(io.KeyMods == ImGuiKeyModFlags_None);
+        IM_CHECK(io.KeyMods == ImGuiModFlags_None);
 
         // KeyMods, KeyMods (different) -> 1 frame
-        IM_CHECK(io.KeyMods == ImGuiKeyModFlags_None);
+        IM_CHECK(io.KeyMods == ImGuiModFlags_None);
         io.AddKeyEvent(ImGuiKey_ModCtrl, true);
         io.AddKeyEvent(ImGuiKey_ModShift, true);
         io.AddKeyEvent(ImGuiKey_ModCtrl, false);
         io.AddKeyEvent(ImGuiKey_ModShift, false);
         ctx->Yield();
-        IM_CHECK(io.KeyMods == (ImGuiKeyModFlags_Ctrl | ImGuiKeyModFlags_Shift));
+        IM_CHECK(io.KeyMods == (ImGuiModFlags_Ctrl | ImGuiModFlags_Shift));
         ctx->Yield();
-        IM_CHECK(io.KeyMods == ImGuiKeyModFlags_None);
+        IM_CHECK(io.KeyMods == ImGuiModFlags_None);
 
         // MousePos, KeyMods -> 1 frame
         io.AddMousePosEvent(200.0f, 200.0f);
         io.AddKeyEvent(ImGuiKey_ModCtrl, true);
         ctx->Yield();
         IM_CHECK_EQ(io.MousePos, ImVec2(200.0f, 200.0f));
-        IM_CHECK(io.KeyMods == ImGuiKeyModFlags_Ctrl);
+        IM_CHECK(io.KeyMods == ImGuiModFlags_Ctrl);
         io.AddKeyEvent(ImGuiKey_ModCtrl, false);
         ctx->Yield();
         IM_CHECK(io.InputQueueCharacters.Size == 0);
-        IM_CHECK(io.KeyMods == ImGuiKeyModFlags_None);
+        IM_CHECK(io.KeyMods == ImGuiModFlags_None);
 
         // KeyMods | MousePos -> 2 frames
         io.AddKeyEvent(ImGuiKey_ModCtrl, true);
@@ -2991,10 +2991,10 @@ void RegisterTests_Inputs(ImGuiTestEngine* e)
         io.AddKeyEvent(ImGuiKey_ModCtrl, false);
         ctx->Yield();
         IM_CHECK_EQ(io.MousePos, ImVec2(200.0f, 200.0f));
-        IM_CHECK(io.KeyMods == ImGuiKeyModFlags_Ctrl);
+        IM_CHECK(io.KeyMods == ImGuiModFlags_Ctrl);
         ctx->Yield();
         IM_CHECK_EQ(io.MousePos, ImVec2(210.0f, 210.0f));
-        IM_CHECK(io.KeyMods == ImGuiKeyModFlags_None);
+        IM_CHECK(io.KeyMods == ImGuiModFlags_None);
 
         // MousePos | Char -> 2 frames
         io.AddMousePosEvent(220.0f, 220.0f);

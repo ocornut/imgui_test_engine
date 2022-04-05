@@ -1462,7 +1462,7 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
         // we cannot use UndockWindow() only because we perform our checks in the middle of the operation.
         {
             if (!g.IO.ConfigDockingWithShift)
-                ctx->KeyModDown(ImGuiKeyModFlags_Shift); // Disable docking
+                ctx->KeyModDown(ImGuiModFlags_Shift); // Disable docking
             ctx->MouseMove(windowB->TabId, ImGuiTestOpFlags_NoCheckHoveredId);
             ctx->MouseDown(0);
 
@@ -1477,7 +1477,7 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
 
             ctx->MouseUp(0);
             if (!g.IO.ConfigDockingWithShift)
-                ctx->KeyModUp(ImGuiKeyModFlags_Shift);
+                ctx->KeyModUp(ImGuiModFlags_Shift);
         }
     };
 

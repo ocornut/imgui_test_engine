@@ -888,7 +888,7 @@ void    ImOsOutputDebugString(const char* message)
 //-----------------------------------------------------------------------------
 
 // FIXME: Think they are 16 combinations we may as well store them in literals?
-void GetImGuiKeyModsPrefixStr(ImGuiKeyModFlags mod_flags, char* out_buf, size_t out_buf_size)
+void GetImGuiKeyModsPrefixStr(ImGuiModFlags mod_flags, char* out_buf, size_t out_buf_size)
 {
     if (mod_flags == 0)
     {
@@ -896,10 +896,10 @@ void GetImGuiKeyModsPrefixStr(ImGuiKeyModFlags mod_flags, char* out_buf, size_t 
         return;
     }
     ImFormatString(out_buf, out_buf_size, "%s%s%s%s",
-        (mod_flags & ImGuiKeyModFlags_Ctrl) ? "Ctrl+" : "",
-        (mod_flags & ImGuiKeyModFlags_Alt) ? "Alt+" : "",
-        (mod_flags & ImGuiKeyModFlags_Shift) ? "Shift+" : "",
-        (mod_flags & ImGuiKeyModFlags_Super) ? "Super+" : "");
+        (mod_flags & ImGuiModFlags_Ctrl) ? "Ctrl+" : "",
+        (mod_flags & ImGuiModFlags_Alt) ? "Alt+" : "",
+        (mod_flags & ImGuiModFlags_Shift) ? "Shift+" : "",
+        (mod_flags & ImGuiModFlags_Super) ? "Super+" : "");
 }
 
 //-----------------------------------------------------------------------------

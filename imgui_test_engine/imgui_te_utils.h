@@ -131,7 +131,7 @@ void        ImOsOutputDebugString(const char* message);
 //-----------------------------------------------------------------------------
 
 // Inputs functions
-void        GetImGuiKeyModsPrefixStr(ImGuiKeyModFlags mod_flags, char* out_buf, size_t out_buf_size);
+void        GetImGuiKeyModsPrefixStr(ImGuiModFlags mod_flags, char* out_buf, size_t out_buf_size);
 
 // Tables functions
 struct ImGuiTable;

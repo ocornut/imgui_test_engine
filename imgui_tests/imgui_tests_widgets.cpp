@@ -734,8 +734,8 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         // Delete
         ctx->ItemClick("InputText");
         ctx->KeyPress(ImGuiKey_End);
-        ctx->KeyPress(ImGuiKey_LeftArrow, ImGuiKeyModFlags_Shift, 2);    // Select last two characters
-        ctx->KeyPress(ImGuiKey_Backspace, ImGuiKeyModFlags_None, 3);     // Delete selection and two more characters
+        ctx->KeyPress(ImGuiKey_LeftArrow, ImGuiModFlags_Shift, 2);    // Select last two characters
+        ctx->KeyPress(ImGuiKey_Backspace, ImGuiModFlags_None, 3);     // Delete selection and two more characters
         ctx->KeyPress(ImGuiKey_Enter);
         IM_CHECK_STR_EQ(buf, "HelloWorld");
         IM_CHECK_EQ(state.CurLenA, 10);
@@ -753,7 +753,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         // Delete, Cancel
         ctx->ItemClick("InputText");
         ctx->KeyPress(ImGuiKey_End);
-        ctx->KeyPress(ImGuiKey_Backspace, ImGuiKeyModFlags_None, 5);
+        ctx->KeyPress(ImGuiKey_Backspace, ImGuiModFlags_None, 5);
         ctx->KeyPress(ImGuiKey_Escape);
         IM_CHECK_STR_EQ(buf, "HelloWorld");
         IM_CHECK_EQ(state.CurLenA, 10);
@@ -826,16 +826,16 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         //const char line_buf[26+8+1+1] = "xxxxxxx abcdefghijklmnopqrstuvwxyz\n"; // 8+26+1 = 35
         //ImGui::SetClipboardText(line_buf);
         //IM_CHECK(strlen(line_buf) == 35);
-        //ctx->KeyPress(ImGuiKey_V, ImGuiKeyModFlags_Shortcut, 10);
+        //ctx->KeyPress(ImGuiKey_V, ImGuiModFlags_Shortcut, 10);
 
         // Select all, copy, paste 3 times
-        ctx->KeyPress(ImGuiKey_A, ImGuiKeyModFlags_Shortcut);    // Select all
-        ctx->KeyPress(ImGuiKey_C, ImGuiKeyModFlags_Shortcut);    // Copy
-        ctx->KeyPress(ImGuiKey_End, ImGuiKeyModFlags_Shortcut);  // Go to end, clear selection
+        ctx->KeyPress(ImGuiKey_A, ImGuiModFlags_Shortcut);    // Select all
+        ctx->KeyPress(ImGuiKey_C, ImGuiModFlags_Shortcut);    // Copy
+        ctx->KeyPress(ImGuiKey_End, ImGuiModFlags_Shortcut);  // Go to end, clear selection
         ctx->SleepStandard();
         for (int n = 0; n < 3; n++)
         {
-            ctx->KeyPress(ImGuiKey_V, ImGuiKeyModFlags_Shortcut);// Paste append three times
+            ctx->KeyPress(ImGuiKey_V, ImGuiModFlags_Shortcut);// Paste append three times
             ctx->SleepStandard();
         }
         int len = (int)strlen(vars.StrLarge.Data);
@@ -845,8 +845,8 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
 
         // Undo x2
         IM_CHECK(undo_state.redo_point == STB_TEXTEDIT_UNDOSTATECOUNT);
-        ctx->KeyPress(ImGuiKey_Z, ImGuiKeyModFlags_Shortcut);
-        ctx->KeyPress(ImGuiKey_Z, ImGuiKeyModFlags_Shortcut);
+        ctx->KeyPress(ImGuiKey_Z, ImGuiModFlags_Shortcut);
+        ctx->KeyPress(ImGuiKey_Z, ImGuiModFlags_Shortcut);
         len = (int)strlen(vars.StrLarge.Data);
         IM_CHECK_EQ(len, 350 * 2);
         IM_CHECK_EQ(undo_state.undo_point, 1);
@@ -854,7 +854,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         IM_CHECK_EQ(undo_state.redo_char_point, STB_TEXTEDIT_UNDOCHARCOUNT - 350 * 2);
 
         // Undo x1 should call stb_textedit_discard_redo()
-        ctx->KeyPress(ImGuiKey_Z, ImGuiKeyModFlags_Shortcut);
+        ctx->KeyPress(ImGuiKey_Z, ImGuiModFlags_Shortcut);
         len = (int)strlen(vars.StrLarge.Data);
         IM_CHECK_EQ(len, 350 * 1);
     };
@@ -991,7 +991,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
             ctx->KeyPress(ImGuiKey_Escape);                      // Reset input to initial value.
             IM_CHECK_STR_EQ(vars.Str1, initial_value);
             ctx->ItemInput("Field");
-            ctx->KeyPress(ImGuiKey_Z, ImGuiKeyModFlags_Shortcut);    // Undo
+            ctx->KeyPress(ImGuiKey_Z, ImGuiModFlags_Shortcut);    // Undo
             IM_CHECK_STR_EQ(vars.Str1, "text");
             ctx->KeyPress(ImGuiKey_Enter);                       // Unfocus otherwise test_n==1 strcpy will fail
         }
@@ -1118,9 +1118,9 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
             IM_CHECK_EQ(stb.cursor, (vars.LineCount / 2) * char_count_per_line - 1);
 
             // Ctrl+Home/End to go to beginning/end of the text
-            SetCursorPosition(cursor_pos_middle); ctx->KeyPress(ImGuiKey_Home, ImGuiKeyModFlags_Ctrl);
+            SetCursorPosition(cursor_pos_middle); ctx->KeyPress(ImGuiKey_Home, ImGuiModFlags_Ctrl);
             IM_CHECK_EQ(stb.cursor, 0);
-            SetCursorPosition(cursor_pos_middle); ctx->KeyPress(ImGuiKey_End, ImGuiKeyModFlags_Ctrl);
+            SetCursorPosition(cursor_pos_middle); ctx->KeyPress(ImGuiKey_End, ImGuiModFlags_Ctrl);
             IM_CHECK_EQ(stb.cursor, cursor_pos_end_of_last_line + (has_trailing_line_feed ? 1 : 0));
 
             // PageUp/PageDown
@@ -1156,9 +1156,9 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         IM_CHECK_EQ(stb.select_start, 0);
         IM_CHECK_EQ(stb.select_end, 23);
         IM_CHECK_EQ(stb.cursor, 23);
-        ctx->KeyPress(ImGuiKey_LeftArrow, ImGuiKeyModFlags_Shortcut);
+        ctx->KeyPress(ImGuiKey_LeftArrow, ImGuiModFlags_Shortcut);
         IM_CHECK_EQ(stb.cursor, 0);
-        ctx->KeyPress(ImGuiKey_RightArrow, ImGuiKeyModFlags_Shortcut);
+        ctx->KeyPress(ImGuiKey_RightArrow, ImGuiModFlags_Shortcut);
         IM_CHECK_EQ(stb.cursor, 23);
     };
 
@@ -1182,9 +1182,9 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ctx->ItemInput("Field");
         for (int n = 0; n < 10; n++)
             ctx->KeyCharsAppendEnter(Str16f("Line %d", n).c_str());
-        ctx->KeyModDown(ImGuiKeyModFlags_Shift);
+        ctx->KeyModDown(ImGuiModFlags_Shift);
         ctx->KeyPress(ImGuiKey_UpArrow);
-        ctx->KeyModUp(ImGuiKeyModFlags_Shift);
+        ctx->KeyModUp(ImGuiModFlags_Shift);
 
         ImGuiID child_id = ctx->GetChildWindowID("/Test Window", "Field");
         ImGuiWindow* child_window = ctx->GetWindowByRef(child_id);
@@ -1341,12 +1341,12 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         // FIXME: Not testing History callback :)
         ctx->ItemClick("History");
         ctx->KeyCharsAppend("ABCDEF");
-        ctx->KeyPress(ImGuiKey_Z, ImGuiKeyModFlags_Shortcut);
+        ctx->KeyPress(ImGuiKey_Z, ImGuiModFlags_Shortcut);
         IM_CHECK_STR_EQ(vars.HistoryBuffer.c_str(), "ABCDE");
-        ctx->KeyPress(ImGuiKey_Z, ImGuiKeyModFlags_Shortcut);
-        ctx->KeyPress(ImGuiKey_Z, ImGuiKeyModFlags_Shortcut);
+        ctx->KeyPress(ImGuiKey_Z, ImGuiModFlags_Shortcut);
+        ctx->KeyPress(ImGuiKey_Z, ImGuiModFlags_Shortcut);
         IM_CHECK_STR_EQ(vars.HistoryBuffer.c_str(), "ABC");
-        ctx->KeyPress(ImGuiKey_Y, ImGuiKeyModFlags_Shortcut);
+        ctx->KeyPress(ImGuiKey_Y, ImGuiModFlags_Shortcut);
         IM_CHECK_STR_EQ(vars.HistoryBuffer.c_str(), "ABCD");
         ctx->KeyPress(ImGuiKey_UpArrow);
         IM_CHECK_STR_EQ(vars.HistoryBuffer.c_str(), "Pressed Up!");
@@ -1559,9 +1559,9 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
             // Copying without selection.
             ctx->ItemClick("Field");
             if (variant == 0)
-                ctx->KeyPress(ImGuiKey_C, ImGuiKeyModFlags_Shortcut);
+                ctx->KeyPress(ImGuiKey_C, ImGuiModFlags_Shortcut);
             else
-                ctx->KeyPress(ImGuiKey_Insert, ImGuiKeyModFlags_Ctrl);
+                ctx->KeyPress(ImGuiKey_Insert, ImGuiModFlags_Ctrl);
             clipboard_text = ImGui::GetClipboardText();
             IM_CHECK_STR_EQ(clipboard_text, "Hello, world!");
 
@@ -1569,11 +1569,11 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
             ctx->ItemClick("Field");
             ctx->KeyPress(ImGuiKey_Home);
             for (int i = 0; i < 5; i++) // Seek to and select first word
-                ctx->KeyPress(ImGuiKey_RightArrow, ImGuiKeyModFlags_Shift);
+                ctx->KeyPress(ImGuiKey_RightArrow, ImGuiModFlags_Shift);
             if (variant == 0)
-                ctx->KeyPress(ImGuiKey_C, ImGuiKeyModFlags_Shortcut);
+                ctx->KeyPress(ImGuiKey_C, ImGuiModFlags_Shortcut);
             else
-                ctx->KeyPress(ImGuiKey_Insert, ImGuiKeyModFlags_Ctrl);
+                ctx->KeyPress(ImGuiKey_Insert, ImGuiModFlags_Ctrl);
             clipboard_text = ImGui::GetClipboardText();
             IM_CHECK_STR_EQ(clipboard_text, "Hello");
 
@@ -1581,11 +1581,11 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
             ctx->ItemClick("Field");
             ctx->KeyPress(ImGuiKey_Home);
             for (int i = 0; i < 5; i++) // Seek to and select first word
-                ctx->KeyPress(ImGuiKey_RightArrow, ImGuiKeyModFlags_Shift);
+                ctx->KeyPress(ImGuiKey_RightArrow, ImGuiModFlags_Shift);
             if (variant == 0)
-                ctx->KeyPress(ImGuiKey_X, ImGuiKeyModFlags_Shortcut);
+                ctx->KeyPress(ImGuiKey_X, ImGuiModFlags_Shortcut);
             else
-                ctx->KeyPress(ImGuiKey_Delete, ImGuiKeyModFlags_Shift);
+                ctx->KeyPress(ImGuiKey_Delete, ImGuiModFlags_Shift);
             clipboard_text = ImGui::GetClipboardText();
             IM_CHECK_STR_EQ(clipboard_text, "Hello");
             IM_CHECK_STR_EQ(text, ", world!");
@@ -1595,9 +1595,9 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
             ImGui::SetClipboardText("h\xc9\x99\xcb\x88l\xc5\x8d");  // həˈlō
             ctx->KeyPress(ImGuiKey_Home);
             if (variant == 0)
-                ctx->KeyPress(ImGuiKey_V, ImGuiKeyModFlags_Shortcut);
+                ctx->KeyPress(ImGuiKey_V, ImGuiModFlags_Shortcut);
             else
-                ctx->KeyPress(ImGuiKey_Insert, ImGuiKeyModFlags_Shift);
+                ctx->KeyPress(ImGuiKey_Insert, ImGuiModFlags_Shift);
             IM_CHECK_STR_EQ(text, "h\xc9\x99\xcb\x88l\xc5\x8d, world!");
         }
     };
@@ -3860,7 +3860,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ctx->MouseUp(0);
 
         // CTRL-A
-        ctx->KeyPress(ImGuiKey_A, ImGuiKeyModFlags_Ctrl);
+        ctx->KeyPress(ImGuiKey_A, ImGuiModFlags_Ctrl);
         IM_CHECK_EQ(selection.SelectionSize, 100);
 
         // Verify that click on selected item clear other items from selection on MouseUp
@@ -3873,19 +3873,19 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
 
         // Test SHIFT+Click
         ctx->ItemClick("Object 0001");
-        ctx->KeyModDown(ImGuiKeyModFlags_Shift);
+        ctx->KeyModDown(ImGuiModFlags_Shift);
         ctx->MouseMove("Object 0006");
         ctx->MouseDown(0);
         IM_CHECK_EQ(selection.SelectionSize, 6);
         ctx->MouseUp(0);
-        ctx->KeyModUp(ImGuiKeyModFlags_Shift);
+        ctx->KeyModUp(ImGuiModFlags_Shift);
 
         // Test that CTRL+A preserve RangeSrc (which was 0001)
-        ctx->KeyPress(ImGuiKey_A, ImGuiKeyModFlags_Ctrl);
+        ctx->KeyPress(ImGuiKey_A, ImGuiModFlags_Ctrl);
         IM_CHECK_EQ(selection.SelectionSize, 100);
-        ctx->KeyModDown(ImGuiKeyModFlags_Shift);
+        ctx->KeyModDown(ImGuiModFlags_Shift);
         ctx->ItemClick("Object 0008");
-        ctx->KeyModUp(ImGuiKeyModFlags_Shift);
+        ctx->KeyModUp(ImGuiModFlags_Shift);
         IM_CHECK_EQ(selection.SelectionSize, 8);
 
         // Test reverse clipped SHIFT+Click
@@ -3894,9 +3894,9 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         //ctx->ScrollToBottom();
         ctx->ItemClick("Object 0030");
         ctx->ScrollToTop("");
-        ctx->KeyModDown(ImGuiKeyModFlags_Shift);
+        ctx->KeyModDown(ImGuiModFlags_Shift);
         ctx->ItemClick("Object 0002");
-        ctx->KeyModUp(ImGuiKeyModFlags_Shift);
+        ctx->KeyModUp(ImGuiModFlags_Shift);
         IM_CHECK_EQ(selection.SelectionSize, 29);
 
         // Test ESC to clear selection
@@ -3911,34 +3911,34 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ctx->ItemClick("Object 0002");
         IM_CHECK_EQ(g.NavId, ctx->GetID("Object 0002"));
         IM_CHECK_EQ(selection.SelectionSize, 1);
-        ctx->KeyPress(ImGuiKey_DownArrow, ImGuiKeyModFlags_Shift);
-        ctx->KeyPress(ImGuiKey_DownArrow, ImGuiKeyModFlags_Shift);
+        ctx->KeyPress(ImGuiKey_DownArrow, ImGuiModFlags_Shift);
+        ctx->KeyPress(ImGuiKey_DownArrow, ImGuiModFlags_Shift);
         IM_CHECK_EQ(g.NavId, ctx->GetID("Object 0004"));
         IM_CHECK_EQ(selection.SelectionSize, 3);
 
         // Test CTRL+Arrow
-        ctx->KeyPress(ImGuiKey_DownArrow, ImGuiKeyModFlags_Ctrl);
-        ctx->KeyPress(ImGuiKey_DownArrow, ImGuiKeyModFlags_Ctrl);
+        ctx->KeyPress(ImGuiKey_DownArrow, ImGuiModFlags_Ctrl);
+        ctx->KeyPress(ImGuiKey_DownArrow, ImGuiModFlags_Ctrl);
         IM_CHECK_EQ(g.NavId, ctx->GetID("Object 0006"));
         IM_CHECK_EQ(selection.SelectionSize, 3);
 
         // Test SHIFT+Arrow after a gap
-        ctx->KeyPress(ImGuiKey_DownArrow, ImGuiKeyModFlags_Shift);
+        ctx->KeyPress(ImGuiKey_DownArrow, ImGuiModFlags_Shift);
         IM_CHECK_EQ(g.NavId, ctx->GetID("Object 0007"));
         IM_CHECK_EQ(selection.SelectionSize, 6);
 
         // Test SHIFT+Arrow reducing selection
-        ctx->KeyPress(ImGuiKey_UpArrow, ImGuiKeyModFlags_Shift);
+        ctx->KeyPress(ImGuiKey_UpArrow, ImGuiModFlags_Shift);
         IM_CHECK_EQ(g.NavId, ctx->GetID("Object 0006"));
         IM_CHECK_EQ(selection.SelectionSize, 5);
 
         // Test CTRL+Shift+Arrow moving or appending without reducing selection
-        ctx->KeyPress(ImGuiKey_UpArrow, ImGuiKeyModFlags_Ctrl | ImGuiKeyModFlags_Shift, 4);
+        ctx->KeyPress(ImGuiKey_UpArrow, ImGuiModFlags_Ctrl | ImGuiModFlags_Shift, 4);
         IM_CHECK_EQ(g.NavId, ctx->GetID("Object 0002"));
         IM_CHECK_EQ(selection.SelectionSize, 5);
 
         // Test SHIFT+Arrow replacing selection
-        ctx->KeyPress(ImGuiKey_UpArrow, ImGuiKeyModFlags_Shift);
+        ctx->KeyPress(ImGuiKey_UpArrow, ImGuiModFlags_Shift);
         IM_CHECK_EQ(g.NavId, ctx->GetID("Object 0001"));
         IM_CHECK_EQ(selection.SelectionSize, 2);
 
@@ -3957,7 +3957,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         IM_CHECK_EQ(g.NavId, ctx->GetID("Object 0099"));
         IM_CHECK_EQ(selection.SelectionSize, 1);
         IM_CHECK_EQ(selection.GetSelected(99), true); // Would break if clipped by viewport
-        ctx->KeyPress(ImGuiKey_Home, ImGuiKeyModFlags_Ctrl);
+        ctx->KeyPress(ImGuiKey_Home, ImGuiModFlags_Ctrl);
         IM_CHECK_EQ(g.NavId, ctx->GetID("Object 0000"));
         IM_CHECK_EQ(selection.SelectionSize, 1);
         IM_CHECK_EQ(selection.GetSelected(99), true);
@@ -3967,7 +3967,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ctx->KeyPress(ImGuiKey_Space);
         IM_CHECK_EQ(selection.SelectionSize, 1);
         IM_CHECK_EQ(selection.GetSelected(0), true);
-        ctx->KeyPress(ImGuiKey_End, ImGuiKeyModFlags_Shift);
+        ctx->KeyPress(ImGuiKey_End, ImGuiModFlags_Shift);
         IM_CHECK_EQ(g.NavId, ctx->GetID("Object 0099"));
         IM_CHECK_EQ(selection.SelectionSize, 100);
     };
@@ -4029,7 +4029,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         IM_CHECK_EQ(selection0.SelectionSize, 1);
         IM_CHECK_EQ(selection1.SelectionSize, 1);
 
-        ctx->KeyPress(ImGuiKey_A, ImGuiKeyModFlags_Ctrl);
+        ctx->KeyPress(ImGuiKey_A, ImGuiModFlags_Ctrl);
         IM_CHECK_EQ(selection0.SelectionSize, 1);
         IM_CHECK_EQ(selection1.SelectionSize, 10);
     };
@@ -4277,9 +4277,9 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         float slider_float_value = vars.Float1;
         ctx->KeyPress(ImGuiKey_NavLeft);
         IM_CHECK_EQ(vars.Float1, slider_float_value - slider_float_step);
-        ctx->KeyDown(ImGuiKey_None, ImGuiKeyModFlags_Ctrl);
+        ctx->KeyDown(ImGuiKey_None, ImGuiModFlags_Ctrl);
         ctx->KeyPress(ImGuiKey_NavRight);
-        ctx->KeyUp(ImGuiKey_None, ImGuiKeyModFlags_Ctrl);
+        ctx->KeyUp(ImGuiKey_None, ImGuiModFlags_Ctrl);
         IM_CHECK_EQ(vars.Float1, slider_float_value - slider_float_step + slider_float_step_slow);
 
         ctx->KeyPress(ImGuiKey_NavDown);
@@ -4291,9 +4291,9 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         int slider_int_value = vars.Int1;
         ctx->KeyPress(ImGuiKey_NavRight);
         IM_CHECK_EQ(vars.Int1, slider_float_value + slider_int_step);
-        ctx->KeyDown(ImGuiKey_None, ImGuiKeyModFlags_Ctrl);
+        ctx->KeyDown(ImGuiKey_None, ImGuiModFlags_Ctrl);
         ctx->KeyPress(ImGuiKey_NavLeft);
-        ctx->KeyUp(ImGuiKey_None, ImGuiKeyModFlags_Ctrl);
+        ctx->KeyUp(ImGuiKey_None, ImGuiModFlags_Ctrl);
         IM_CHECK_EQ(vars.Int1, slider_int_value + slider_int_step - slider_int_step_slow);
 
         ctx->KeyPress(ImGuiKey_NavUp);

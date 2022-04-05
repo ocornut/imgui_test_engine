@@ -76,9 +76,9 @@ struct IMGUI_API ImGuiTestRefDesc
 
 // Helpers (may move to core)
 #if defined(__APPLE__) // FIXME: Setting IO.ConfigMacOSXBehaviors to non-default value breaks this assumption.
-#define ImGuiKeyModFlags_Shortcut   ImGuiKeyModFlags_Super
+#define ImGuiModFlags_Shortcut   ImGuiModFlags_Super
 #else
-#define ImGuiKeyModFlags_Shortcut   ImGuiKeyModFlags_Ctrl
+#define ImGuiModFlags_Shortcut   ImGuiModFlags_Ctrl
 #endif
 
 // FIXME_WIP: GamepadXXX inputs will be ignored if ConfigFlags it not enabled,
@@ -363,13 +363,13 @@ struct IMGUI_API ImGuiTestContext
     void        MouseSetViewportID(ImGuiID viewport_id);
 
     // Keyboard inputs
-    void        KeyDown(ImGuiKey key, ImGuiKeyModFlags mod_flags = 0);
-    void        KeyUp(ImGuiKey key, ImGuiKeyModFlags mod_flags = 0);
-    void        KeyPress(ImGuiKey key, ImGuiKeyModFlags mod_flags = 0, int count = 1);
-    void        KeyHold(ImGuiKey key, ImGuiKeyModFlags mod_flags, float time);
-    void        KeyModDown(ImGuiKeyModFlags mod_flags)      { KeyDown(ImGuiKey_COUNT, mod_flags); }
-    void        KeyModUp(ImGuiKeyModFlags mod_flags)        { KeyUp(ImGuiKey_COUNT, mod_flags); }
-    void        KeyModPress(ImGuiKeyModFlags mod_flags)     { KeyPress(ImGuiKey_COUNT, mod_flags); }
+    void        KeyDown(ImGuiKey key, ImGuiModFlags mod_flags = 0);
+    void        KeyUp(ImGuiKey key, ImGuiModFlags mod_flags = 0);
+    void        KeyPress(ImGuiKey key, ImGuiModFlags mod_flags = 0, int count = 1);
+    void        KeyHold(ImGuiKey key, ImGuiModFlags mod_flags, float time);
+    void        KeyModDown(ImGuiModFlags mod_flags)      { KeyDown(ImGuiKey_COUNT, mod_flags); }
+    void        KeyModUp(ImGuiModFlags mod_flags)        { KeyUp(ImGuiKey_COUNT, mod_flags); }
+    void        KeyModPress(ImGuiModFlags mod_flags)     { KeyPress(ImGuiKey_COUNT, mod_flags); }
     void        KeyChars(const char* chars);                // Input characters
     void        KeyCharsAppend(const char* chars);          // Input characters at end of field
     void        KeyCharsAppendEnter(const char* chars);     // Input characters at end of field, press Enter
@@ -449,7 +449,7 @@ struct IMGUI_API ImGuiTestContext
 
     // Helpers for Tables
     void                        TableOpenContextMenu(ImGuiTestRef ref, int column_n = -1);
-    ImGuiSortDirection          TableClickHeader(ImGuiTestRef ref, const char* label, ImGuiKeyModFlags keys_mod = ImGuiKeyModFlags_None);
+    ImGuiSortDirection          TableClickHeader(ImGuiTestRef ref, const char* label, ImGuiModFlags keys_mod = ImGuiModFlags_None);
     void                        TableSetColumnEnabled(ImGuiTestRef ref, const char* label, bool enabled);
     void                        TableResizeColumn(ImGuiTestRef ref, int column_n, float width);
     const ImGuiTableSortSpecs*  TableGetSortSpecs(ImGuiTestRef ref);
