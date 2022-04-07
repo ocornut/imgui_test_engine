@@ -1142,7 +1142,7 @@ void ImGuiTestEngine_QueueTest(ImGuiTestEngine* engine, ImGuiTest* test, ImGuiTe
 ImGuiTest* ImGuiTestEngine_RegisterTest(ImGuiTestEngine* engine, const char* category, const char* name, const char* src_file, int src_line)
 {
     ImGuiTestGroup group = ImGuiTestGroup_Tests;
-    if (strcmp(category, "perfs") == 0)
+    if (strcmp(category, "perf") == 0)
         group = ImGuiTestGroup_Perfs;
 
     ImGuiTest* t = IM_NEW(ImGuiTest)();
