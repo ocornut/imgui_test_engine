@@ -4,6 +4,9 @@ CHANGELOG
 ** For a while this is going to include only breaking changes.
 ** As we slowly transition toward releasing the test engine, this will become a more full fledged changelog.
 
+2022/04/08
+- TestEngine: fix ItemAction() or ItemInfo() with leading **/ wildcard from not reporting any error on failure.
+
 2022/04/07
 - TestEngine: added more filtering options to ImGuiTestEngine_QueueTests() and command-line suppot.
     - "all"   : all tests, no matter what group they are in.

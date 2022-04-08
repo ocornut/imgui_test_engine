@@ -954,6 +954,17 @@ ImGuiTestItemInfo* ImGuiTestContext::ItemInfoOpenFullPath(ImGuiTestRef ref)
     if (opened_parents > 0)
         item = ItemInfo(ref);
 
+    if (item == NULL)
+    {
+        // Prefixing the string with / ignore the reference/current ID
+        if (ref.Path && ref.Path[0] == '/' && RefStr[0] != 0)
+            IM_ERRORF_NOHDR("Unable to locate item: '%s'", ref.Path);
+        else if (ref.Path)
+            IM_ERRORF_NOHDR("Unable to locate item: '%s/%s'", RefStr, ref.Path);
+        else
+            IM_ERRORF_NOHDR("Unable to locate item: 0x%08X", ref.ID);
+    }
+
     return item;
 }
 
