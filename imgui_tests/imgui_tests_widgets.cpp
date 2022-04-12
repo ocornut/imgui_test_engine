@@ -1919,9 +1919,38 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         IM_CHECK(status.Edited == 1);
     };
 
+    // ## Check input of InputScalar().
+    t = IM_REGISTER_TEST(e, "widgets", "widgets_inputscalar_input");
+    struct InputScalarStepVars { int Int = 0; float Float = 0.0f; double Double = 0.0; };
+    t->SetVarsDataType<InputScalarStepVars>();
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        InputScalarStepVars& vars = ctx->GetVars<InputScalarStepVars>();
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
+#if IMGUI_VERSION_NUM >= 18717 // GetID() used to cause interferences by setting g.ActiveIdIsAlive (#5181)
+        ImGui::GetID("Int");
+        ImGui::GetID("Float");
+        ImGui::GetID("Double");
+#endif
+        ImGui::InputInt("Int", &vars.Int, 2);
+        ImGui::InputFloat("Float", &vars.Float, 1.5f);
+        ImGui::InputDouble("Double", &vars.Double, 1.5);
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        InputScalarStepVars& vars = ctx->GetVars<InputScalarStepVars>();
+        ctx->SetRef("Test Window");
+        ctx->ItemInputValue("Int", 42);
+        IM_CHECK(vars.Int == 42);
+        ctx->ItemInputValue("Float", 42.1f);
+        IM_CHECK(vars.Float == 42.1f);
+        ctx->ItemInputValue("Double", "123.456789");
+        IM_CHECK(vars.Double == 123.456789);
+    };
+
     // ## Check step buttons of InputScalar().
     t = IM_REGISTER_TEST(e, "widgets", "widgets_inputscalar_step");
-    struct InputScalarStepVars { int Int = 0; float Float = 0.0f; double Double = 0.0; };
     t->SetVarsDataType<InputScalarStepVars>();
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
@@ -1957,7 +1986,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
     };
 
     // ## Test ImGui::InputScalar() handling overflow for different data types
-    t = IM_REGISTER_TEST(e, "misc", "widgets_inputscalar_overflow");
+    t = IM_REGISTER_TEST(e, "widgets", "widgets_inputscalar_overflow");
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         {
