@@ -808,7 +808,7 @@ static void ImGuiTestEngine_PostRender(ImGuiTestEngine* engine, ImGuiContext* ui
     // (If were to instead set io.ConfigFlags |= ImGuiConfigFlags_NoMouseCursorChange in ImGuiTestEngine_RunTest() that would get us 99% of the way,
     // but unfortunately backend wouldn't restore normal shape after modified by OS decoration such as resize, so not enough..)
     ImGuiContext& g = *ui_ctx;
-    if (engine->IO.IsRunningTests && !engine->IO.ConfigMouseDrawCursor && !g.IO.MouseDrawCursor)
+    if (engine->IO.IsRunningTests && !engine->IO.IsRunningGuiFunc && !engine->IO.ConfigMouseDrawCursor && !g.IO.MouseDrawCursor)
         g.MouseCursor = ImGuiMouseCursor_Arrow;
 
     engine->CaptureContext.PostRender();
@@ -1011,6 +1011,7 @@ static void ImGuiTestEngine_ProcessTestQueue(ImGuiTestEngine* engine)
         ImGuiTest* test = run_task->Test;
         IM_ASSERT(test->Status == ImGuiTestStatus_Queued);
         test->StartTime = ImTimeGetInMicroseconds();
+        engine->IO.IsRunningGuiFunc = (run_task->RunFlags & ImGuiTestRunFlags_GuiFuncOnly) != 0;
 
         if (engine->Abort)
         {
@@ -1090,7 +1091,7 @@ static void ImGuiTestEngine_ProcessTestQueue(ImGuiTestEngine* engine)
         //    if (engine->UiSelectedTest == NULL || engine->UiSelectedTest->Status != ImGuiTestStatus_Error)
         //        engine->UiSelectedTest = test;
     }
-    engine->IO.IsRunningTests = false;
+    engine->IO.IsRunningTests = engine->IO.IsRunningGuiFunc = false;
     engine->EndTime = ImTimeGetInMicroseconds();
 
     engine->Abort = false;
