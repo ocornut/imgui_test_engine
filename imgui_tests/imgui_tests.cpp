@@ -916,11 +916,15 @@ void RegisterTests_Window(ImGuiTestEngine* e)
             ImGui::OpenPopup("Popup");
         if (ImGui::Button("Open Modal"))
             ImGui::OpenPopup("Modal");
+
+        ImGui::SetNextWindowPos(ImGui::GetWindowPos() + ImVec2(ImGui::GetWindowWidth(), 0.0f));
         if (ImGui::BeginPopup("Popup"))
         {
             ImGui::TextUnformatted("...");
             ImGui::EndPopup();
         }
+
+        ImGui::SetNextWindowPos(ImGui::GetWindowPos() + ImVec2(ImGui::GetWindowWidth(), 0.0f));
         if (ImGui::BeginPopupModal("Modal"))
         {
             ImGui::TextUnformatted("...");
@@ -2272,6 +2276,39 @@ void RegisterTests_Layout(ImGuiTestEngine* e)
         ImGui::NewLine();
         IM_CHECK_EQ(window->DC.CursorMaxPos.x, window->Pos.x + 200.0f);
         IM_CHECK_EQ(window->DC.CursorMaxPos.y, window->Pos.y + 100.0f + ImGui::GetTextLineHeight());
+
+        ImGui::End();
+    };
+
+    // ## Test NewLine() function
+    t = IM_REGISTER_TEST(e, "layout", "layout_newline");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImGuiWindow* window = ImGui::GetCurrentWindow();
+        float y1, y2;
+
+        ImGui::Text("1");
+        y1 = window->DC.CursorPos.y;
+        ImGui::NewLine(); // New line on empty line = use font size
+        y2 = window->DC.CursorPos.y;
+        IM_CHECK_EQ(y2 - y1, ImGui::GetTextLineHeightWithSpacing());
+
+        y1 = window->DC.CursorPos.y;
+        ImGui::ColorButton("blah", ImVec4(1, 0, 0, 1), 0, ImVec2(100, 100));
+        ImGui::SameLine();
+        ImGui::NewLine();
+        y2 = window->DC.CursorPos.y;
+        IM_CHECK_EQ(y2 - y1, 100.0f + ImGui::GetStyle().ItemSpacing.y);
+        ImGui::Text("3");
+
+        y1 = window->DC.CursorPos.y;
+        ImGui::ColorButton("blah", ImVec4(0, 1, 0, 1), 0, ImVec2(5, 5));
+        ImGui::SameLine();
+        ImGui::NewLine();
+        y2 = window->DC.CursorPos.y;
+        IM_CHECK_EQ(y2 - y1, 5.0f + ImGui::GetStyle().ItemSpacing.y);
+        ImGui::Text("4");
 
         ImGui::End();
     };
@@ -3630,6 +3667,7 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
         ImGui::End();
     };
 
+    // ## Test Log function bypassing clipper
     t = IM_REGISTER_TEST(e, "misc", "misc_clipper_log");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
@@ -3648,6 +3686,41 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
                 count_lines++;
         IM_CHECK_EQ(count_lines, 100);
         ImGui::End();
+    };
+
+    // ## Test clipper with high number of entries (we have mitigation code to reduce floating point issues) (#3609, #3962)
+    // Note that some other features will likely fail to work nicely with those ranges.
+    t = IM_REGISTER_TEST(e, "misc", "misc_clipper_floating_point_precision");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        auto& vars = ctx->GenericVars;
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoSavedSettings);
+        {
+            const int count = (vars.Step == 0) ? 100000 : (vars.Step == 1) ? 10000000 : 100000000;
+
+            float y1 = ImGui::GetCursorScreenPos().y;
+            ImGuiListClipper clipper;
+            clipper.Begin(count);
+            while (clipper.Step())
+                for (int n = clipper.DisplayStart; n < clipper.DisplayEnd; n++)
+                    ImGui::Text("%d", n);
+            float y2 = ImGui::GetCursorScreenPos().y;
+            IM_CHECK_EQ(y2 - y1, count * ImGui::GetTextLineHeightWithSpacing());
+        }
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        auto& vars = ctx->GenericVars;
+        ctx->SetRef("Test Window");
+        for (int step = 0; step < 3; step++)
+        {
+            vars.Step = step;
+            ctx->ScrollToTop("");
+            ctx->Yield(2);
+            ctx->ScrollToBottom("");
+            ctx->Yield(2);
+        }
     };
 
     // ## Test ImFontAtlas clearing of input data (#4455, #3487)

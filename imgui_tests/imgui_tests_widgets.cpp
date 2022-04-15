@@ -2510,6 +2510,11 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
                 ImGui::EndTabItem();
                 vars.CursorAfterActiveTab = g.CurrentWindow->DC.CursorPos;
             }
+            if (ImGui::BeginTabItem("Tab 2"))
+            {
+                ImGui::EndTabItem();
+                vars.CursorAfterActiveTab = g.CurrentWindow->DC.CursorPos;
+            }
             ImGui::EndTabBar();
         }
         ImGui::Text("After first TabBar submission");
@@ -3540,8 +3545,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
             ImGui::SetNextItemWidth(ImGui::GetFrameHeight() * 2.0f);
 
         const ImVec2 color_square_size = ImVec2(ImGui::GetFontSize(), ImGui::GetFontSize());
-        bool open = ImGui::BeginCombo("combo custom", "", ImGuiComboFlags_CustomPreview);
-        ImRect combo_r = g.LastItemData.Rect;
+        bool open = ImGui::BeginCombo("custom", "", ImGuiComboFlags_CustomPreview);
         if (open)
         {
             for (int n = 0; n < 5; n++)
@@ -3554,6 +3558,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
             }
             ImGui::EndCombo();
         }
+        ImRect combo_r = g.LastItemData.Rect;
         ImGuiWindow* window = ImGui::GetCurrentWindow();
         int old_cmd_buffer_size = window->DrawList->CmdBuffer.Size;
 
@@ -3566,7 +3571,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
 
         // Test sameline restore behavior
         ImGui::SameLine();
-        IM_CHECK_EQ(combo_r.Min.y, window->DC.CursorPos.y);
+        IM_CHECK_EQ_NO_RET(combo_r.Min.y, window->DC.CursorPos.y);
         IM_CHECK_EQ(ImGui::GetStyle().FramePadding.y, window->DC.CurrLineTextBaseOffset);
         ImGui::Text("HELLO");
 
@@ -3739,6 +3744,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
             if (ImGui::BeginMenu("File"))
                 ImGui::EndMenu();
             ImGui::Separator();
+            IM_CHECK_EQ(ImGui::GetItemRectMax().y - ImGui::GetItemRectMin().y, ImGui::GetFrameHeight());
             if (ImGui::BeginMenu("Edit"))
                 ImGui::EndMenu();
             ImGui::EndMenuBar();
