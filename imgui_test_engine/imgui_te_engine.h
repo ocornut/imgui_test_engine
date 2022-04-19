@@ -162,6 +162,7 @@ IMGUI_API bool                ImGuiTestEngine_IsTestQueueEmpty(ImGuiTestEngine* 
 IMGUI_API void                ImGuiTestEngine_CoroutineStopRequest(ImGuiTestEngine* engine);
 IMGUI_API void                ImGuiTestEngine_GetResult(ImGuiTestEngine* engine, int& count_tested, int& success_count);
 IMGUI_API ImGuiPerfTool*      ImGuiTestEngine_GetPerfTool(ImGuiTestEngine* engine);
+IMGUI_API bool                ImGuiTestEngine_UseSimulatedInputs(ImGuiTestEngine* engine);
 
 // Functions: Internal/Experimental
 IMGUI_API void                ImGuiTestEngine_RebootUiContext(ImGuiTestEngine* engine);
