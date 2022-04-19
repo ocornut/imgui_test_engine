@@ -1161,60 +1161,94 @@ ImGuiPerfTool* ImGuiTestEngine_GetPerfTool(ImGuiTestEngine* engine)
     return engine->PerfTool;
 }
 
-// Filter tests by a specified query. Query is composed of one or more comma-separated filter terms optionally prefixed with modifiers.
+// Filter tests by a specified query. Query is composed of one or more comma-separated filter terms optionally prefixed/suffixed with modifiers.
 // Available modifiers:
-// - '-' excludes tests matched by the term.
-// - '^' anchors term matching to the start of the string.
+// - '-' prefix excludes tests matched by the term.
+// - '^' prefix anchors term matching to the start of the string.
+// - '$' suffix anchors term matching to the end of the string.
 // Example queries:
 // - "all"   : all tests, no matter what group they are in.
 // - "tests" : tests in ImGuiTestGroup_Tests group.
 // - "perfs" : tests in ImGuiTestGroup_Perfs group.
 // - "^nav_" : all tests with name starting with "nav_".
-// - "-xxx"  : no tests will be matched because query does not include any.
-// - "tests,-scroll,-^nav_" : all tests that do not contain "scroll" in their name and does not start with "nav_".
-static bool ImGuiTestEngine_PassFilter(ImGuiTest* test, const char* filter)
+// - "_nav$" : all tests with name ending with "_nav".
+// - "-xxx"  : all tests and perfs that do not contain "xxx".
+// - "tests,-scroll,-^nav_" : all tests (but no perfs) that do not contain "scroll" in their name and does not start with "nav_".
+// Note: while we borrowed ^ and $ from regex conventions, we do not support actual regex syntax except for behavior of these two modifiers.
+bool ImGuiTestEngine_PassFilter(ImGuiTest* test, const char* filter)
 {
+    auto str_iequal = [](const char* s1, const char* s2, const char* s2_end)
+    {
+        size_t s2_len = (size_t)(s2_end - s2);
+        if (strlen(s1) != s2_len) return false;
+        return ImStrnicmp(s1, s2, s2_len) == 0;
+    };
+
+    auto str_iendswith = [&str_iequal](const char* s1, const char* s2, const char* s2_end)
+    {
+        size_t s1_len = strlen(s1);
+        size_t s2_len = (size_t)(s2_end - s2);
+        if (s1_len < s2_len) return false;
+        s1 = s1 + s1_len - s2_len;
+        return str_iequal(s1, s2, s2_end);
+    };
+
     bool include = false;
+    const char* prefixes = "^-";
+
+    // When filter starts with exclude condition, we assume we have included all tests from the start. This enables
+    // writing "-window" instead of "all,-window".
+    for (int i = 0; filter[i]; i++)
+        if (filter[i] == '-')
+            include = true; // First filter is exclusion
+        else if (strchr(prefixes, filter[i]) == NULL)
+            break;          // End of prefixes
+
     for (const char* filter_start = filter; filter_start[0];)
     {
         // Filter modifiers
         bool is_exclude = false;
         bool is_anchor_to_start = false;
+        bool is_anchor_to_end = false;
         for (;;)
         {
             if (filter_start[0] == '-')
-            {
                 is_exclude = true;
-                filter_start++;
-            }
             else if (filter_start[0] == '^')
-            {
                 is_anchor_to_start = true;
-                filter_start++;
-            }
             else
-            {
                 break;
-            }
+            filter_start++;
         }
 
         const char* filter_end = strstr(filter_start, ",");
         filter_end = filter_end ? filter_end : filter_start + strlen(filter_start);
+        is_anchor_to_end = filter_end[-1] == '$';
+        if (is_anchor_to_end)
+            filter_end--;
 
-        if (strncmp(filter_start, "all", filter_end - filter_start) == 0)
-        {
+        if (str_iequal("all", filter_start, filter_end))
             include = !is_exclude;
-        }
-        else if (strncmp(filter_start, "tests", filter_end - filter_start) == 0)
+        else if (str_iequal("tests", filter_start, filter_end))
             include = (test->Group == ImGuiTestGroup_Tests) ? !is_exclude : include;
-        else if (strncmp(filter_start, "perfs", filter_end - filter_start) == 0)
+        else if (str_iequal("perfs", filter_start, filter_end))
             include = (test->Group == ImGuiTestGroup_Perfs) ? !is_exclude : include;
-        if (is_anchor_to_start && strncmp(test->Name, filter_start, filter_end - filter_start) == 0)
-            include = !is_exclude;
-        else if (!is_anchor_to_start && ImStristr(test->Name, NULL, filter_start, filter_end) != NULL)
-            include = !is_exclude;
+        else if (!is_anchor_to_start && !is_anchor_to_end)
+            include = ImStristr(test->Name, NULL, filter_start, filter_end) != NULL ? !is_exclude : include;    // "foo" - match a substring.
+        else
+        {
+            bool match = true;
+            if (is_anchor_to_start)
+                match &= ImStrnicmp(test->Name, filter_start, filter_end - filter_start) == 0;                  // "^foo" - match start of the string.
+            if (is_anchor_to_end)
+                match &= str_iendswith(test->Name, filter_start, filter_end);                                   // "foo$" - match end of the string.
+            if (match)
+                include = !is_exclude;
+        }
 
-        filter_start = filter_end + (filter_end[0] == ',' ? 1 : 0);
+        while (filter_end[0] == ',' || filter_end[0] == '$')
+            filter_end++;
+        filter_start = filter_end;
     }
     return include;
 }
@@ -1900,8 +1934,8 @@ static void     ImGuiTestEngine_SettingsReadLine(ImGuiContext* ui_ctx, ImGuiSett
     IM_UNUSED(entry);
 
     int n = 0;
-    /**/ if (SettingsTryReadString(line, "FilterTests=", e->UiFilterTests.InputBuf, IM_ARRAYSIZE(e->UiFilterTests.InputBuf)))       { e->UiFilterTests.Build(); }
-    else if (SettingsTryReadString(line, "FilterPerfs=", e->UiFilterPerfs.InputBuf, IM_ARRAYSIZE(e->UiFilterPerfs.InputBuf)))       { e->UiFilterPerfs.Build(); }
+    /**/ if (SettingsTryReadString(line, "FilterTests=", e->UiFilterTests, IM_ARRAYSIZE(e->UiFilterTests)))                         { }
+    else if (SettingsTryReadString(line, "FilterPerfs=", e->UiFilterPerfs, IM_ARRAYSIZE(e->UiFilterPerfs)))                         { }
     else if (sscanf(line, "LogHeight=%f", &e->UiLogHeight) == 1)                                                                    { }
     else if (sscanf(line, "CaptureTool=%d", &n) == 1)                                                                               { e->UiCaptureToolOpen = (n != 0); }
     else if (sscanf(line, "PerfTool=%d", &n) == 1)                                                                                  { e->UiPerfToolOpen = (n != 0); }
@@ -1921,8 +1955,8 @@ static void     ImGuiTestEngine_SettingsWriteAll(ImGuiContext* ui_ctx, ImGuiSett
     IM_ASSERT(engine->UiContextTarget == ui_ctx);
 
     buf->appendf("[%s][Data]\n", handler->TypeName);
-    buf->appendf("FilterTests=%s\n", engine->UiFilterTests.InputBuf);
-    buf->appendf("FilterPerfs=%s\n", engine->UiFilterPerfs.InputBuf);
+    buf->appendf("FilterTests=%s\n", engine->UiFilterTests);
+    buf->appendf("FilterPerfs=%s\n", engine->UiFilterPerfs);
     buf->appendf("LogHeight=%.0f\n", engine->UiLogHeight);
     buf->appendf("CaptureTool=%d\n", engine->UiCaptureToolOpen);
     buf->appendf("PerfTool=%d\n", engine->UiPerfToolOpen);

@@ -73,7 +73,7 @@ struct ImGuiTestInput
 {
     ImGuiTestInputType      Type = ImGuiTestInputType_None;
     ImGuiKey                Key = ImGuiKey_COUNT;
-    ImGuiModFlags        KeyMods = ImGuiModFlags_None;
+    ImGuiModFlags           KeyMods = ImGuiModFlags_None;
     ImGuiNavInput           NavInput = ImGuiNavInput_COUNT;
     ImWchar                 Char = 0;
     bool                    Down = false;
@@ -139,8 +139,8 @@ struct ImGuiTestEngine
     bool                        UiFocus = false;
     ImGuiTest*                  UiSelectAndScrollToTest = NULL;
     ImGuiTest*                  UiSelectedTest = NULL;
-    ImGuiTextFilter             UiFilterTests;
-    ImGuiTextFilter             UiFilterPerfs;
+    char                        UiFilterTests[256] = "";        // FIXME: Use a resizing Str128?
+    char                        UiFilterPerfs[256] = "";
     ImU32                       UiFilterByStatusMask = ~0u;
     bool                        UiMetricsOpen = false; // FIXME
     bool                        UiCaptureToolOpen = false;
@@ -182,6 +182,7 @@ void                ImGuiTestEngine_Yield(ImGuiTestEngine* engine);
 void                ImGuiTestEngine_SetDeltaTime(ImGuiTestEngine* engine, float delta_time);
 int                 ImGuiTestEngine_GetFrameCount(ImGuiTestEngine* engine);
 double              ImGuiTestEngine_GetPerfDeltaTime500Average(ImGuiTestEngine* engine);
+bool                ImGuiTestEngine_PassFilter(ImGuiTest* test, const char* filter);
 
 // Screen/Video Capturing
 bool                ImGuiTestEngine_CaptureScreenshot(ImGuiTestEngine* engine, ImGuiCaptureArgs* args);

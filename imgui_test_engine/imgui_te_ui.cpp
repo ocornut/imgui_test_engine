@@ -193,12 +193,11 @@ static void HelpTooltip(const char* desc)
         ImGui::SetTooltip("%s", desc);
 }
 
-static bool ShowTestGroupFilterTest(ImGuiTestEngine* e, ImGuiTestGroup group, ImGuiTextFilter* filter, ImGuiTest* test)
+static bool ShowTestGroupFilterTest(ImGuiTestEngine* e, ImGuiTestGroup group, const char* filter, ImGuiTest* test)
 {
     if (test->Group != group)
         return false;
-    // FIXME: We cannot combine filters when used with "-remove" need to rework filtering system
-    if (!filter->PassFilter(test->Name))// && !filter->PassFilter(test->Category))
+    if (*filter && !ImGuiTestEngine_PassFilter(test, filter))
         return false;
     if ((e->UiFilterByStatusMask & (1 << test->Status)) == 0)
         return false;
@@ -212,7 +211,8 @@ static void GetFailingTestsAsString(ImGuiTestEngine* e, ImGuiTestGroup group, ch
     for (int i = 0; i < e->TestsAll.Size; i++)
     {
         ImGuiTest* failing_test = e->TestsAll[i];
-        if (failing_test->Group == group && failing_test->Status == ImGuiTestStatus_Error)
+        const char* filter = group == ImGuiTestGroup_Tests ? e->UiFilterTests : e->UiFilterPerfs;
+        if (failing_test->Group == group && failing_test->Status == ImGuiTestStatus_Error && ImGuiTestEngine_PassFilter(failing_test, filter))
         {
             if (!first)
                 out_string->append(separator);
@@ -238,7 +238,7 @@ static void TestStatusButton(const char* id, const ImVec4& color, bool running)
     }
 }
 
-static void ShowTestGroup(ImGuiTestEngine* e, ImGuiTestGroup group, ImGuiTextFilter* filter)
+static void ShowTestGroup(ImGuiTestEngine* e, ImGuiTestGroup group, char* filter, int filter_size)
 {
     ImGuiStyle& style = ImGui::GetStyle();
     ImGuiIO& io = ImGui::GetIO();
@@ -291,7 +291,16 @@ static void ShowTestGroup(ImGuiTestEngine* e, ImGuiTestGroup group, ImGuiTextFil
         filter_width -= style.ItemSpacing.x + perf_stress_factor_width;
         filter_width -= style.ItemSpacing.x + style.FramePadding.x * 2 + ImGui::CalcTextSize(perflog_label).x;
     }
-    filter->Draw("##filter", ImMax(20.0f, filter_width));
+    filter_width -= ImGui::CalcTextSize("?").x + style.ItemSpacing.x;
+    ImGui::SetNextItemWidth(ImMax(20.0f, filter_width));
+    ImGui::InputText("##filter", filter, filter_size);
+    ImGui::SameLine();
+    ImGui::TextDisabled("?");
+    HelpTooltip("Query is composed of one or more comma-separated filter terms with optional modifiers.\n"
+        "Available modifiers:\n"
+        "- '-' prefix excludes tests matched by the term.\n"
+        "- '^' prefix anchors term matching to the start of the string.\n"
+        "- '$' suffix anchors term matching to the end of the string.");
     if (group == ImGuiTestGroup_Perfs)
     {
         ImGui::SameLine();
@@ -754,12 +763,12 @@ static void ImGuiTestEngine_ShowTestTool(ImGuiTestEngine* engine, bool* p_open)
     {
         if (ImGui::BeginTabItem("TESTS", NULL, ImGuiTabItemFlags_NoPushId))
         {
-            ShowTestGroup(engine, ImGuiTestGroup_Tests, &engine->UiFilterTests);
+            ShowTestGroup(engine, ImGuiTestGroup_Tests, engine->UiFilterTests, IM_ARRAYSIZE(engine->UiFilterTests));
             ImGui::EndTabItem();
         }
         if (ImGui::BeginTabItem("PERFS", NULL, ImGuiTabItemFlags_NoPushId))
         {
-            ShowTestGroup(engine, ImGuiTestGroup_Perfs, &engine->UiFilterPerfs);
+            ShowTestGroup(engine, ImGuiTestGroup_Perfs, engine->UiFilterPerfs, IM_ARRAYSIZE(engine->UiFilterPerfs));
             ImGui::EndTabItem();
         }
         ImGui::EndTabBar();
