@@ -2280,6 +2280,37 @@ void RegisterTests_Layout(ImGuiTestEngine* e)
         ImGui::End();
     };
 
+    // ## Test AlignTextToFramePadding() function
+    t = IM_REGISTER_TEST(e, "layout", "layout_align_to_frame_padding");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImGuiWindow* window = ImGui::GetCurrentWindow();
+        float y1, y2;
+
+        y1 = window->DC.CursorPos.y;
+        ImGui::Text("Hello 1");
+        y2 = window->DC.CursorPos.y;
+        IM_CHECK_EQ_NO_RET(y2 - y1, ImGui::GetTextLineHeightWithSpacing());
+
+        y1 = window->DC.CursorPos.y;
+        ImGui::AlignTextToFramePadding();
+        ImGui::Text("Hello 2");
+        y2 = window->DC.CursorPos.y;
+        IM_CHECK_EQ_NO_RET(y2 - y1, ImGui::GetFrameHeightWithSpacing());
+
+        y1 = window->DC.CursorPos.y;
+        ImGui::AlignTextToFramePadding();
+        ImGui::AlignTextToFramePadding();
+        ImGui::AlignTextToFramePadding();
+        ImGui::Text("Hello 3");
+        y2 = window->DC.CursorPos.y;
+        IM_CHECK_EQ_NO_RET(y2 - y1, ImGui::GetFrameHeightWithSpacing());
+
+        ImGui::Text("Hello 4");
+        ImGui::End();
+    };
+
     // ## Test NewLine() function
     t = IM_REGISTER_TEST(e, "layout", "layout_newline");
     t->GuiFunc = [](ImGuiTestContext* ctx)
