@@ -236,7 +236,6 @@ struct IMGUI_API ImGuiTestEngineIO
 
     // State of test engine
     bool                        IsRunningTests = false;
-    bool                        IsRunningGuiFunc = false;
     bool                        IsRequestingMaxAppSpeed = false;    // When running in fast mode: request app to skip vsync or even skip rendering if it wants
     bool                        IsCapturing = false;                // Capture is in progress
 };
