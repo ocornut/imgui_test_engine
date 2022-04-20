@@ -3727,7 +3727,7 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
         auto& vars = ctx->GenericVars;
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoSavedSettings);
         {
-            const int count = (vars.Step == 0) ? 100000 : (vars.Step == 1) ? 10000000 : 100000000;
+            const int count = (vars.Step == 0) ? 100000 : (vars.Step == 1) ? 10000000 : (vars.Step == 2) ? 100000000 : 0;
 
             float y1 = ImGui::GetCursorScreenPos().y;
             ImGuiListClipper clipper;
@@ -3744,7 +3744,7 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
     {
         auto& vars = ctx->GenericVars;
         ctx->SetRef("Test Window");
-        for (int step = 0; step < 3; step++)
+        for (int step = 0; step < 4; step++)
         {
             vars.Step = step;
             ctx->ScrollToTop("");
