@@ -3097,6 +3097,9 @@ void    ImGuiTestContext::WindowResize(ImGuiTestRef ref, ImVec2 size)
     WindowBringToFront(window->ID);
     WindowCollapse(window->ID, false);
 
+    // Extra yield as newly created window that have AutoFitFramesX/AutoFitFramesY set are temporarily not submitting their resize widgets. Give them a bit of slack.
+    Yield();
+
 #if IMGUI_VERSION_NUM < 18203
     ImGuiID id = ImGui::GetWindowResizeID(window, 0);
 #else
