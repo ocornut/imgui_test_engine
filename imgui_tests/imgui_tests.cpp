@@ -2280,6 +2280,125 @@ void RegisterTests_Layout(ImGuiTestEngine* e)
         ImGui::End();
     };
 
+    // ## Test SameLine() + SetCursorPos() mixup
+#if IMGUI_VERSION_NUM >= 18718
+    t = IM_REGISTER_TEST(e, "layout", "layout_sameline_cursorpos");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        {
+            ImGui::Begin("Test Window 0", NULL, ImGuiWindowFlags_NoSavedSettings);
+            ImGuiWindow* window = ImGui::GetCurrentWindow();
+            float y1, y2;
+
+            ImGui::Text("First line");
+            y1 = window->DC.CursorPos.y;
+            ImGui::ColorButton("blah", ImVec4(1, 0, 0, 1), 0, ImVec2(100, 100));
+            ImGui::SameLine();
+            ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 40.0f);
+            ImGui::Text("Hello");
+            y2 = window->DC.CursorPos.y;
+            IM_CHECK_EQ_NO_RET(y2 - y1, 100.0f + ImGui::GetStyle().ItemSpacing.y);
+            ImGui::Text("Again");
+
+            ImGui::Separator();
+
+            ImGui::Text("First line");
+            y1 = window->DC.CursorPos.y;
+            ImGui::ColorButton("blah2", ImVec4(1, 0, 0, 1), 0, ImVec2(20, 20));
+            ImGui::SameLine();
+            ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 10.0f);
+            ImGui::ColorButton("blah2", ImVec4(1, 0, 0, 1), 0, ImVec2(100, 100));
+            y2 = window->DC.CursorPos.y;
+            IM_CHECK_EQ_NO_RET(y2 - y1, 110.0f + ImGui::GetStyle().ItemSpacing.y);
+            ImGui::Text("Again");
+            ImGui::End();
+        }
+
+        {
+            ImGui::Begin("Test Window 1", NULL, ImGuiWindowFlags_NoSavedSettings);
+            ImGuiWindow* window = ImGui::GetCurrentWindow();
+
+            ImGui::Text("First line 1");
+            float y1 = window->DC.CursorPos.y;
+            ImGui::ColorButton("blah", ImVec4(1, 0, 0, 1), 0, ImVec2(100, 100));
+            ImGui::SameLine();
+            ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 20.0f);
+            ImGui::ColorButton("blah2", ImVec4(1, 0.5f, 0, 1), 0, ImVec2(36, 16));
+            IM_CHECK_EQ(ImGui::GetItemRectMin().y, y1 + 20.0f);
+            ImGui::SameLine();
+            ImGui::ColorButton("blah3", ImVec4(1, 1, 0, 1), 0, ImVec2(16, 16));
+            IM_CHECK_EQ(ImGui::GetItemRectMin().y, y1);
+            //ImGui::Text("Hello");
+            //Test::s_Model.ShowPreviousLine();
+            ImGui::Separator();
+            IM_CHECK_EQ(ImGui::GetItemRectMin().y, y1 + 100.0f + ImGui::GetStyle().ItemSpacing.y);
+            ImGui::Text("Another line 1");
+            ImGui::End();
+        }
+        {
+            ImGui::Begin("Test Window 2", NULL, ImGuiWindowFlags_NoSavedSettings);
+            ImGuiWindow* window = ImGui::GetCurrentWindow();
+
+            ImGui::Text("First line 2");
+            float y1 = window->DC.CursorPos.y;
+            ImGui::ColorButton("blah", ImVec4(1, 0, 0, 1), 0, ImVec2(100, 100));
+            ImGui::SameLine();
+            ImGui::SetCursorPosY(ImGui::GetCursorPosY() - 20.0f);
+            ImGui::ColorButton("blah2", ImVec4(1, 0.5f, 0, 1), 0, ImVec2(36, 16));
+            IM_CHECK_EQ(ImGui::GetItemRectMin().y, y1 - 20.0f);
+            ImGui::SameLine();
+            ImGui::ColorButton("blah3", ImVec4(1, 1, 0, 1), 0, ImVec2(16, 16));
+            IM_CHECK_EQ(ImGui::GetItemRectMin().y, y1);
+            //ImGui::Text("Hello");
+            //ImGui::s_Model.ShowPreviousLine();
+            ImGui::Separator();
+            IM_CHECK_EQ(ImGui::GetItemRectMin().y, y1 + 100.0f + ImGui::GetStyle().ItemSpacing.y);
+            ImGui::Text("Another line 2");
+            ImGui::End();
+        }
+        {
+            ImGui::Begin("Test Window 3", NULL, ImGuiWindowFlags_NoSavedSettings);
+            ImGuiWindow* window = ImGui::GetCurrentWindow();
+
+            ImGui::Text("First line 3");
+            float y1 = window->DC.CursorPos.y;
+            ImGui::ColorButton("blah", ImVec4(1, 0, 0, 1), 0, ImVec2(100, 100));
+            ImGui::SetCursorScreenPos(ImVec2(ImGui::GetItemRectMax().x + ImGui::GetStyle().ItemSpacing.x, ImGui::GetItemRectMin().y + 20.0f));
+            ImGui::ColorButton("blah2", ImVec4(1, 0.5f, 0, 1), 0, ImVec2(36, 16));
+            IM_CHECK_EQ(ImGui::GetItemRectMin().y, y1 + 20.0f);
+            ImGui::SameLine();
+            ImGui::ColorButton("blah3", ImVec4(1, 1, 0, 1), 0, ImVec2(16, 16));
+            IM_CHECK_EQ(ImGui::GetItemRectMin().y, y1 + 20.0f);
+            //ImGui::Text("Hello");
+            //ImGui::s_Model.ShowPreviousLine();
+            ImGui::Separator();
+            IM_CHECK_EQ(ImGui::GetItemRectMin().y, y1 + 20.0f + 16.0f + ImGui::GetStyle().ItemSpacing.y);
+            ImGui::Text("Another line 3");
+            ImGui::End();
+        }
+        {
+            ImGui::Begin("Test Window 4", NULL, ImGuiWindowFlags_NoSavedSettings);
+            ImGuiWindow* window = ImGui::GetCurrentWindow();
+
+            ImGui::Text("First line 4");
+            float y1 = window->DC.CursorPos.y;
+            ImGui::ColorButton("blah", ImVec4(1, 0, 0, 1), 0, ImVec2(100, 100));
+            ImGui::SetCursorScreenPos(ImVec2(ImGui::GetItemRectMax().x + ImGui::GetStyle().ItemSpacing.x, ImGui::GetItemRectMin().y - 20.0f));
+            ImGui::ColorButton("blah2", ImVec4(1, 0.5f, 0, 1), 0, ImVec2(36, 16));
+            IM_CHECK_EQ(ImGui::GetItemRectMin().y, y1 - 20.0f);
+            ImGui::SameLine();
+            ImGui::ColorButton("blah3", ImVec4(1, 1, 0, 1), 0, ImVec2(16, 16));
+            IM_CHECK_EQ(ImGui::GetItemRectMin().y, y1 - 20.0f);
+            //ImGui::Text("Hello");
+            //ImGui::s_Model.ShowPreviousLine();
+            ImGui::Separator();
+            IM_CHECK_EQ(ImGui::GetItemRectMin().y, y1 - 20.0f + 16.0f + ImGui::GetStyle().ItemSpacing.y);
+            ImGui::Text("Another line 4");
+            ImGui::End();
+        }
+    };
+#endif
+
     // ## Test AlignTextToFramePadding() function
     t = IM_REGISTER_TEST(e, "layout", "layout_align_to_frame_padding");
     t->GuiFunc = [](ImGuiTestContext* ctx)
@@ -3657,7 +3776,8 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
         IM_CHECK_EQ(w0a, w1a);
         IM_CHECK_EQ(w0b.y, w1b.y);
 #if IMGUI_VERSION_NUM >= 18505
-        IM_CHECK_EQ(w0c.y, w1c.y);
+        if (!ctx->IsFirstGuiFrame())
+            IM_CHECK_EQ(w0c.y, w1c.y);
 #endif
     };
 
@@ -4463,6 +4583,59 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
     };
 #endif
 
+    // ## Test auto-opening intermediary openable items automatically.
+    t = IM_REGISTER_TEST(e, "misc", "misc_ref_auto_open");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::SetNextWindowSize(ImVec2(300, 150), ImGuiCond_Appearing);
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImGui::PushID("Lv0");
+        ImGui::PushID("Lv1");
+        if (ImGui::TreeNode("Node2"))
+        {
+            if (ImGui::TreeNode("Node3"))
+            {
+                ImGui::PushID("Lv4");
+                ImGui::Button("Button");
+                ctx->GenericVars.Status.QueryInc();
+                ImGui::PopID();
+                ImGui::TreePop();
+            }
+            ImGui::TreePop();
+        }
+        ImGui::PopID(); // Lv1
+        ImGui::PopID(); // Lv0
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ctx->SetRef("Test Window");
+        ctx->ItemCloseAll("");
+        ctx->ItemClick("Lv0/Lv1/Node2/Node3/Lv4/Button");
+        IM_CHECK_EQ(ctx->GenericVars.Status.Clicked, 1);
+
+        ctx->ItemCloseAll("");
+        ctx->ItemClick("**/Lv1/Node2/Node3/Lv4/Button");
+        IM_CHECK_EQ(ctx->GenericVars.Status.Clicked, 2);
+
+        ctx->ItemCloseAll("");
+        ctx->ItemClick("Lv0/**/Node2/Node3/Lv4/Button");
+        IM_CHECK_EQ(ctx->GenericVars.Status.Clicked, 3);
+
+        ctx->ItemCloseAll("");
+        ctx->ItemClick("**/Node2/Node3/Lv4/Button");
+        IM_CHECK_EQ(ctx->GenericVars.Status.Clicked, 4);
+
+        ctx->ItemCloseAll("");
+        ctx->ItemClick("Lv0/Lv1/Node2/Node3/**/Button");
+        IM_CHECK_EQ(ctx->GenericVars.Status.Clicked, 5);
+
+        // Can't work (would need to brute-force open everything?)
+        //ctx->ItemCloseAll("");
+        //ctx->ItemClick("Lv0/Lv1/**/Button");
+        //IM_CHECK_EQ(ctx->GenericVars.Status.Clicked, 5);
+    };
+
     // FIXME-TESTS
     t = IM_REGISTER_TEST(e, "demo", "demo_misc_001");
     t->GuiFunc = NULL;
@@ -4859,59 +5032,6 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
         ctx->SetRef("/Dear ImGui Demo");
         ctx->ItemClose("Tables/Advanced");
         ctx->ItemClose("Tables & Columns");
-    };
-
-    // ## Test auto-opening intermediary openable items automatically.
-    t = IM_REGISTER_TEST(e, "misc", "misc_ref_auto_open");
-    t->GuiFunc = [](ImGuiTestContext* ctx)
-    {
-        ImGui::SetNextWindowSize(ImVec2(300, 150), ImGuiCond_Appearing);
-        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
-        ImGui::PushID("Lv0");
-        ImGui::PushID("Lv1");
-        if (ImGui::TreeNode("Node2"))
-        {
-            if (ImGui::TreeNode("Node3"))
-            {
-                ImGui::PushID("Lv4");
-                ImGui::Button("Button");
-                ctx->GenericVars.Status.QueryInc();
-                ImGui::PopID();
-                ImGui::TreePop();
-            }
-            ImGui::TreePop();
-        }
-        ImGui::PopID(); // Lv1
-        ImGui::PopID(); // Lv0
-        ImGui::End();
-    };
-    t->TestFunc = [](ImGuiTestContext* ctx)
-    {
-        ctx->SetRef("Test Window");
-        ctx->ItemCloseAll("");
-        ctx->ItemClick("Lv0/Lv1/Node2/Node3/Lv4/Button");
-        IM_CHECK_EQ(ctx->GenericVars.Status.Clicked, 1);
-
-        ctx->ItemCloseAll("");
-        ctx->ItemClick("**/Lv1/Node2/Node3/Lv4/Button");
-        IM_CHECK_EQ(ctx->GenericVars.Status.Clicked, 2);
-
-        ctx->ItemCloseAll("");
-        ctx->ItemClick("Lv0/**/Node2/Node3/Lv4/Button");
-        IM_CHECK_EQ(ctx->GenericVars.Status.Clicked, 3);
-
-        ctx->ItemCloseAll("");
-        ctx->ItemClick("**/Node2/Node3/Lv4/Button");
-        IM_CHECK_EQ(ctx->GenericVars.Status.Clicked, 4);
-
-        ctx->ItemCloseAll("");
-        ctx->ItemClick("Lv0/Lv1/Node2/Node3/**/Button");
-        IM_CHECK_EQ(ctx->GenericVars.Status.Clicked, 5);
-
-        // Can't work (would need to brute-force open everything?)
-        //ctx->ItemCloseAll("");
-        //ctx->ItemClick("Lv0/Lv1/**/Button");
-        //IM_CHECK_EQ(ctx->GenericVars.Status.Clicked, 5);
     };
 }
 
