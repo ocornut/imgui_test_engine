@@ -185,8 +185,8 @@ void    ImGuiTestContext::LogToTTY(ImGuiTestVerboseLevel level, const char* mess
         // Current test failed.
         if (!CachedLinesPrintedToTTY)
         {
-            // Print current message and all previous logged messages.
-            // FIXME: Can't use ExtractLinesAboveVerboseLevel() before we want to keep error level...
+            // Print all previous logged messages first
+            // FIXME: Can't use ExtractLinesAboveVerboseLevel() because we want to keep error level...
             CachedLinesPrintedToTTY = true;
             for (int i = 0; i < log->LineInfo.Size; i++)
             {
@@ -195,7 +195,7 @@ void    ImGuiTestContext::LogToTTY(ImGuiTestVerboseLevel level, const char* mess
                     continue;
                 char* line_begin = log->Buffer.Buf.Data + line_info.LineOffset;
                 char* line_end = strchr(line_begin, '\n');
-                LogToTTY(line_info.Level, line_begin, line_end);
+                LogToTTY(line_info.Level, line_begin, line_end + 1);
             }
             // We already printed current line as well, so return now.
             return;
