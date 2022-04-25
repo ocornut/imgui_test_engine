@@ -981,8 +981,7 @@ bool ImGuiTestEngine_CaptureBeginVideo(ImGuiTestEngine* engine, ImGuiCaptureArgs
 bool ImGuiTestEngine_CaptureEndVideo(ImGuiTestEngine* engine, ImGuiCaptureArgs* args)
 {
     IM_UNUSED(args);
-    IM_ASSERT(engine->CaptureCurrentArgs != NULL && "No capture is in progress.");
-    IM_ASSERT(engine->CaptureContext.IsCapturingVideo() && "No gif capture is in progress.");
+    IM_ASSERT(engine->CaptureContext.IsCapturingVideo() && "No video capture is in progress.");
 
     engine->CaptureContext.EndVideoCapture();
     while (engine->CaptureCurrentArgs != NULL)   // Wait until last frame is captured and gif is saved.

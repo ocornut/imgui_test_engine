@@ -175,7 +175,7 @@ static bool ImGuiApp_ImplNull_CaptureFramebuffer(ImGuiApp* app, int x, int y, in
     IM_UNUSED(x);
     IM_UNUSED(y);
     memset(pixels, 0, (size_t)(w * h) * sizeof(unsigned int));
-    return true;
+    return false;
 }
 
 static void ImGuiApp_ImplNull_RenderDrawData(ImDrawData* draw_data)

@@ -107,6 +107,7 @@ bool ImGuiCaptureImageBuf::SaveFile(const char* filename)
 {
 #if IMGUI_TEST_ENGINE_ENABLE_CAPTURE
     IM_ASSERT(Data != NULL);
+    ImFileCreateDirectoryChain(filename, ImPathFindFilename(filename));
     int ret = stbi_write_png(filename, Width, Height, 4, Data, Width * 4);
     return ret != 0;
 #else
@@ -225,8 +226,6 @@ ImGuiCaptureStatus ImGuiCaptureContext::CaptureUpdate(ImGuiCaptureArgs* args)
         if (!ImFileExist(VideoCaptureEncoderPath))
         {
             fprintf(stderr, "Video encoder not found at \"%s\", video capturing failed.\n", VideoCaptureEncoderPath);
-            _VideoRecording = false;
-            _CaptureArgs = NULL;
             return ImGuiCaptureStatus_Error;
         }
     }
@@ -562,6 +561,7 @@ void ImGuiCaptureContext::BeginVideoCapture(ImGuiCaptureArgs* args)
     IM_ASSERT(_VideoEncoderPipe == NULL);
     IM_ASSERT(args->InRecordFPSTarget >= 1 && args->InRecordFPSTarget <= 100);
 
+    ImFileCreateDirectoryChain(args->InOutputFile, ImPathFindFilename(args->InOutputFile));
     _VideoRecording = true;
     _CaptureArgs = args;
 }
