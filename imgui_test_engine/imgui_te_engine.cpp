@@ -1408,6 +1408,16 @@ static void ImGuiTestEngine_RunTest(ImGuiTestEngine* engine, ImGuiTestContext* c
         {
             // Test function
             test->TestFunc(ctx);
+
+            // In case test failed without finishing gif capture - finish it here. This may trigger due to user error or
+            // due to IM_SUSPEND_TESTFUNC() terminating TestFunc() early.
+            if (engine->CaptureContext.IsCapturingVideo())
+            {
+                ImGuiCaptureArgs* args = engine->CaptureCurrentArgs;
+                ImGuiTestEngine_CaptureEndVideo(engine, args);
+                //ImFileDelete(args->OutSavedFileName);
+                ctx->LogWarning("Recovered from missing CaptureEndVideo()");
+            }
         }
         else
         {
@@ -1793,22 +1803,9 @@ bool ImGuiTestEngine_Check(const char* file, const char* func, int line, ImGuiTe
                 test->Status = ImGuiTestStatus_Error;
 
             if (file)
-            {
                 ctx->LogError("Error %s:%d '%s'", file_without_path, line, expr);
-            }
             else
-            {
                 ctx->LogError("Error '%s'", expr);
-            }
-
-            // In case test failed without finishing gif capture - finish it here. It has to happen here because capture
-            // args struct is on test function stack and would be lost when test function returns.
-            if (engine->CaptureContext.IsCapturingVideo())
-            {
-                ImGuiCaptureArgs* args = engine->CaptureCurrentArgs;
-                ImGuiTestEngine_CaptureEndVideo(engine, args);
-                //ImFileDelete(args->OutSavedFileName);
-            }
             ctx->ErrorCounter++;
         }
         else if (!(flags & ImGuiTestCheckFlags_SilentSuccess))
