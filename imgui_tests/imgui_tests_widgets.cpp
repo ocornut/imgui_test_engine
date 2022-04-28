@@ -3276,6 +3276,11 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
     {
         ImGuiContext& g = *ctx->UiContext;
 
+        ImVec2 main_viewport_pos = ImGui::GetMainViewport()->Pos;
+        ctx->WindowMove("Dear ImGui Demo", main_viewport_pos + ImVec2(16, 16));
+        ctx->WindowResize("Dear ImGui Demo", ImVec2(400, 800));
+        ctx->WindowMove("Test Window", main_viewport_pos = ImVec2(416, 16));
+
         ctx->SetRef("Dear ImGui Demo");
         ctx->ItemCloseAll("");
         ctx->WindowFocus(""); // So it's under TestWindow
