@@ -687,8 +687,11 @@ void RegisterTests_Table(ImGuiTestEngine* e)
 
     // ## Table: test auto-fit functions
     t = IM_REGISTER_TEST(e, "table", "table_width_autofit");
+    struct TableWidthAutofitVars { ImGuiTableFlags Table2Flags = 0; };
+    t->SetVarsDataType<TableWidthAutofitVars>();
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
+        TableWidthAutofitVars& vars = ctx->GetVars<TableWidthAutofitVars>();
         ImGui::SetNextWindowSize(ImVec2(500, 300), ImGuiCond_Once);
         ImGui::Begin("Test window 1", NULL, ImGuiWindowFlags_NoSavedSettings);
         if (ctx->IsFirstGuiFrame())
@@ -733,12 +736,26 @@ void RegisterTests_Table(ImGuiTestEngine* e)
             ImGui::EndTable();
         }
 
+#if IMGUI_VERSION_NUM >= 18719
+        if (ImGui::BeginTable("table2", 3, vars.Table2Flags))
+        {
+            ImGui::TableSetupColumn("A");
+            ImGui::TableSetupColumn("B");
+            ImGui::TableSetupColumn("C");
+            ImGui::TableHeadersRow();
+            ImGui::TableNextColumn(); ImGui::TextUnformatted("Short text.");
+            ImGui::TableNextColumn(); ImGui::TextUnformatted("A very long text that may not fit.");
+            ImGui::TableNextColumn(); ImGui::TextUnformatted("Short text.");
+            ImGui::EndTable();
+        }
+#endif
         ImGui::End();
 
     };
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         // FIXME-TESTS: fix inconsistent references/pointers all over the place
+        TableWidthAutofitVars& vars = ctx->GetVars<TableWidthAutofitVars>();
 
         // Test "Size All" on fixed columns
         {
@@ -802,6 +819,29 @@ void RegisterTests_Table(ImGuiTestEngine* e)
             //IM_CHECK_EQ(table->Columns[3].WidthGiven, 99.0f); // FIXME: SizeAll mixed is a best-fit size, not a revert to default
             IM_CHECK_EQ(table->Columns[3].WidthGiven, ImGui::CalcTextSize("AAAAAAAA").x);
         }
+
+#if IMGUI_VERSION_NUM >= 18719
+        // Test auto-sizing a window containing a table with stretch columns with equal weights (#5276)
+        for (int i = 0; i < 2; i++)
+        {
+            if (i == 0)
+                vars.Table2Flags = ImGuiTableFlags_Borders;
+            else if (i == 1)
+#if IMGUI_BROKEN_TESTS
+                vars.Table2Flags = ImGuiTableFlags_Borders | ImGuiTableFlags_Resizable;
+#else
+                break;
+#endif
+            ctx->Yield();
+            const char* very_long_text = "A very long text that may not fit.";
+            ctx->SetRef("Test window 1");
+            ImGuiTable* table = ImGui::TableFindByID(ctx->GetID("table2"));
+            ctx->WindowResize("", ImVec2(800, 200));
+            IM_CHECK_GT(table->Columns[1].WidthGiven, ImGui::CalcTextSize(very_long_text).x);
+            ctx->ItemDoubleClick(ImGui::GetWindowResizeCornerID(ctx->GetWindowByRef(""), 0));
+            IM_CHECK_GE(table->Columns[1].WidthGiven, ImGui::CalcTextSize(very_long_text).x);
+        }
+#endif
     };
 
     // ## Test Padding
