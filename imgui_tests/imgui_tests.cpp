@@ -5001,7 +5001,24 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
 
 #if IMGUI_VERSION_NUM >= 18720
                 ctx->ItemClick("Tools/UTF-8 Encoding viewer/##Text");
-                ctx->KeyCharsReplace("\u3053\u3093\u306B\u3061\u306F\u4E16\u754C\uFF01");
+                ctx->KeyCharsReplace("The quick ");
+                ctx->KeyCharsAppend("\xe8\x8c\xb6\xe8\x89\xb2\xe3\x81\xae\xe3\x82\xad\xe3\x83\x84\xe3\x83\x8d");   // "brown fox" in japanese, encoded to utf-8.
+
+                // From https://www.php.net/manual/en/reference.pcre.pattern.modifiers.php#54805
+                ctx->KeyCharsAppend(
+                    "\xc3\xb1 "                     // Valid 2 octet sequence
+                    "\xc3\x28 "                     // Invalid 2 octet sequence
+                    "\xa0\xa1 "                     // Invalid sequence identifier
+                    "\xe2\x82\xa1 "                 // Valid 3 octet sequence
+                    "\xe2\x28\xa1 "                 // Invalid 3 octet sequence (in 2nd octet)
+                    "\xe2\x82\x28 "                 // Invalid 3 octet sequence (in 3rd octet)
+                    "\xf0\x90\x8c\xbc "             // Valid 4 octet sequence
+                    "\xf0\x28\x8c\xbc "             // Invalid 4 octet sequence (in 2nd octet)
+                    "\xf0\x90\x28\xbc "             // Invalid 4 octet sequence (in 3rd octet)
+                    "\xf0\x28\x8c\x28 "             // Invalid 4 octet sequence (in 4th octet)
+                    "\xf8\xa1\xa1\xa1\xa1 "         // Valid 5 octet sequence (but not unicode!)
+                    "\xfc\xa1\xa1\xa1\xa1\xa1");    // Valid 6 octet sequence (but not unicode!)
+
                 ctx->KeyCharsReplace("");
 #endif
             }
