@@ -4998,6 +4998,12 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
                 ctx->ItemActionAll(ImGuiTestAction_Click, "Tools", &filter);
                 ctx->WindowFocus("/Dear ImGui Demo"); // To exercible "Show Tables Rects"
                 ctx->ItemActionAll(ImGuiTestAction_Click, "Tools", &filter);
+
+#if IMGUI_VERSION_NUM >= 18720
+                ctx->ItemClick("Tools/UTF-8 Encoding viewer/##Text");
+                ctx->KeyCharsReplace("\u3053\u3093\u306B\u3061\u306F\u4E16\u754C\uFF01");
+                ctx->KeyCharsReplace("");
+#endif
             }
 
             // Open fonts/glyphs
