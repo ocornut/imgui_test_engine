@@ -560,6 +560,7 @@ int main(int argc, char** argv)
 
     // Start engine
     ImGuiTestEngine_Start(engine, ImGui::GetCurrentContext());
+    ImGuiTestEngine_InstallCrashHandler();
 
     // Load fonts, Set DPI scale
     LoadFonts(app_window->DpiScale);

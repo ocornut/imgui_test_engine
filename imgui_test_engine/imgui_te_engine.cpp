@@ -97,7 +97,6 @@ static void ImGuiTestEngine_UpdateHooks(ImGuiTestEngine* engine);
 static void ImGuiTestEngine_RunGuiFunc(ImGuiTestEngine* engine);
 static void ImGuiTestEngine_RunTest(ImGuiTestEngine* engine, ImGuiTestContext* ctx);
 static void ImGuiTestEngine_TestQueueCoroutineMain(void* engine_opaque);
-static void ImGuiTestEngine_InstallCrashHandler();
 
 // Settings
 static void* ImGuiTestEngine_SettingsReadOpen(ImGuiContext*, ImGuiSettingsHandler*, const char* name);
@@ -285,7 +284,6 @@ void    ImGuiTestEngine_Start(ImGuiTestEngine* engine, ImGuiContext* ui_ctx)
     engine->UiContextTarget = ui_ctx;
     ImGuiTestEngine_BindImGuiContext(engine, engine->UiContextTarget);
     ImGuiTestEngine_StartCalcSourceLineEnds(engine);
-    ImGuiTestEngine_InstallCrashHandler();
 
     // Create our coroutine
     // (we include the word "Main" in the name to facilitate filtering for both this thread and the "Main Thread" in debuggers)
@@ -1505,7 +1503,7 @@ static void ImGuiTestEngine_RunTest(ImGuiTestEngine* engine, ImGuiTestContext* c
     ctx->UiContext->Style = backup_style;
 }
 
-static void ImGuiTestEngine_CrashHandler()
+void ImGuiTestEngine_CrashHandler()
 {
     static bool handled = false;
     if (handled)
@@ -1548,7 +1546,7 @@ static void ImGuiTestEngine_CrashHandlerUnix(int signal)
 }
 #endif
 
-static void ImGuiTestEngine_InstallCrashHandler()
+void ImGuiTestEngine_InstallCrashHandler()
 {
 #ifdef _WIN32
     SetUnhandledExceptionFilter(&ImGuiTestEngine_CrashHandlerWin32);

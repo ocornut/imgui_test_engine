@@ -65,6 +65,7 @@ int main(int argc, char** argv)
 
     // Start test engine
     ImGuiTestEngine_Start(engine, ImGui::GetCurrentContext());
+    ImGuiTestEngine_InstallCrashHandler();
 
     // Register tests
     RegisterAppMinimalTests(engine);
