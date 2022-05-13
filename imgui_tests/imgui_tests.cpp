@@ -2538,6 +2538,23 @@ void RegisterTests_DrawList(ImGuiTestEngine* e)
         IM_CHECK_EQ(ctx->GenericVars.Int1, 2);
     };
 
+#if IMGUI_VERSION_NUM >= 18721
+    // ## Test small rounding values (#5249, #5293)
+    t = IM_REGISTER_TEST(e, "drawlist", "drawlist_small_rounding");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImDrawList* draw_list = ImGui::GetForegroundDrawList();
+
+        int vtx_count_0 = draw_list->VtxBuffer.Size;
+        draw_list->AddRectFilled(ImVec2(20, 20), ImVec2(100, 100), IM_COL32(255, 0, 0, 100), 0.1f);
+        int vtx_count_1 = draw_list->VtxBuffer.Size;
+        IM_CHECK_EQ(vtx_count_1 - vtx_count_0, 4);
+        draw_list->AddRect(ImVec2(20, 20), ImVec2(100, 100), IM_COL32(255, 0, 0, 100), 0.000001f);
+        int vtx_count_2 = draw_list->VtxBuffer.Size;
+        IM_CHECK_EQ(vtx_count_2 - vtx_count_1, 8);
+    };
+#endif
+
     // ## Test whether splitting/merging draw lists properly retains a texture id.
     t = IM_REGISTER_TEST(e, "drawlist", "drawlist_splitter_texture_id");
     t->GuiFunc = [](ImGuiTestContext* ctx)
