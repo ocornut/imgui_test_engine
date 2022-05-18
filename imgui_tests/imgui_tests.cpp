@@ -2980,6 +2980,26 @@ void RegisterTests_Inputs(ImGuiTestEngine* e)
         ctx->Yield();
         IM_CHECK_EQ(io.MouseDown[0], false);
 
+#if IMGUI_VERSION_NUM >= 18722
+        // MousePos | MouseWheel -> 2 frame
+        io.AddMousePosEvent(100.0f, 100.0f);
+        io.AddMouseWheelEvent(0.0f, +1.0f);
+        ctx->Yield();
+        IM_CHECK_EQ(io.MousePos, ImVec2(100.0f, 100.0f));
+        IM_CHECK_EQ(io.MouseWheel, 0.0f);
+        ctx->Yield();
+        IM_CHECK_EQ(io.MouseWheel, 1.0f);
+        ctx->Yield();
+        IM_CHECK_EQ(io.MouseWheel, 0.0f);
+
+        // MouseWheel, MouseWheel -> 1 frame
+        io.AddMouseWheelEvent(0.0f, +1.0f);
+        io.AddMouseWheelEvent(0.0f, +1.0f);
+        ctx->Yield();
+        IM_CHECK_EQ(io.MouseWheel, 2.0f);
+        ctx->Yield();
+        IM_CHECK_EQ(io.MouseWheel, 0.0f);
+#else
         // MousePos, MouseWheel -> 1 frame
         io.AddMousePosEvent(100.0f, 100.0f);
         io.AddMouseWheelEvent(0.0f, +1.0f);
@@ -2988,6 +3008,7 @@ void RegisterTests_Inputs(ImGuiTestEngine* e)
         IM_CHECK_EQ(io.MouseWheel, 1.0f);
         ctx->Yield();
         IM_CHECK_EQ(io.MouseWheel, 0.0f);
+#endif
 
         // MouseWheel | MousePos -> 2 frames
         io.AddMouseWheelEvent(0.0f, +2.0f);
