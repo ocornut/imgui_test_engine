@@ -197,7 +197,7 @@ static bool ShowTestGroupFilterTest(ImGuiTestEngine* e, ImGuiTestGroup group, co
 {
     if (test->Group != group)
         return false;
-    if (*filter && !ImGuiTestEngine_PassFilter(test, filter))
+    if (!ImGuiTestEngine_PassFilter(test, *filter ? filter : "all"))
         return false;
     if ((e->UiFilterByStatusMask & (1 << test->Status)) == 0)
         return false;
@@ -212,13 +212,16 @@ static void GetFailingTestsAsString(ImGuiTestEngine* e, ImGuiTestGroup group, ch
     {
         ImGuiTest* failing_test = e->TestsAll[i];
         const char* filter = group == ImGuiTestGroup_Tests ? e->UiFilterTests : e->UiFilterPerfs;
-        if (failing_test->Group == group && failing_test->Status == ImGuiTestStatus_Error && ImGuiTestEngine_PassFilter(failing_test, filter))
-        {
-            if (!first)
-                out_string->append(separator);
-            out_string->append(failing_test->Name);
-            first = false;
-        }
+        if (failing_test->Group != group)
+            continue;
+        if (failing_test->Status != ImGuiTestStatus_Error)
+            continue;
+        if (!ImGuiTestEngine_PassFilter(failing_test, *filter ? filter : "all"))
+            continue;
+        if (!first)
+            out_string->append(separator);
+        out_string->append(failing_test->Name);
+        first = false;
     }
 }
 

@@ -117,6 +117,7 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
     {
         auto menu_content = [ctx]()
         {
+            IM_UNUSED(ctx);
             if (ImGui::BeginMenuBar())
             {
                 if (ImGui::BeginMenu("File"))

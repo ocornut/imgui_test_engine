@@ -804,6 +804,7 @@ void RegisterTests_Window(ImGuiTestEngine* e)
         PopupMenuHoldVars& vars = ctx->GetVars<PopupMenuHoldVars>();
         auto CreateMenu = [ctx, &vars]()
         {
+            IM_UNUSED(ctx);
             ImGuiID base_id = ImGui::GetID("");
             if (vars.QueryVarsBaseId == base_id)
                 vars.Status.Clear();

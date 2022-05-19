@@ -1164,6 +1164,7 @@ ImGuiPerfTool* ImGuiTestEngine_GetPerfTool(ImGuiTestEngine* engine)
 // - '^' prefix anchors term matching to the start of the string.
 // - '$' suffix anchors term matching to the end of the string.
 // Example queries:
+// - ""      : empty query matches no tests.
 // - "all"   : all tests, no matter what group they are in.
 // - "tests" : tests in ImGuiTestGroup_Tests group.
 // - "perfs" : tests in ImGuiTestGroup_Perfs group.
@@ -1174,6 +1175,7 @@ ImGuiPerfTool* ImGuiTestEngine_GetPerfTool(ImGuiTestEngine* engine)
 // Note: while we borrowed ^ and $ from regex conventions, we do not support actual regex syntax except for behavior of these two modifiers.
 bool ImGuiTestEngine_PassFilter(ImGuiTest* test, const char* filter)
 {
+    IM_ASSERT(filter != NULL);
     auto str_iequal = [](const char* s1, const char* s2, const char* s2_end)
     {
         size_t s2_len = (size_t)(s2_end - s2);
