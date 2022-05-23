@@ -259,9 +259,11 @@ ImGuiCaptureStatus ImGuiCaptureContext::CaptureUpdate(ImGuiCaptureArgs* args)
     }
 
     // Do not start a capture process while mouse button is pressed. In case mouse cursor is hovering a captured window,
-    // pressed button may cause window to be repositioned unexpectedly.
-    if (g.IO.MouseDown[0] && _FrameNo == 0)
-        return ImGuiCaptureStatus_InProgress;
+    // pressed button may cause window to be repositioned unexpectedly. This is only important in stitched mode, because
+    // this is the only time we move mouse cursor.
+    if ((args->InFlags & ImGuiCaptureFlags_StitchAll) != 0)
+        if (g.IO.MouseDown[0] && _FrameNo == 0)
+            return ImGuiCaptureStatus_InProgress;
 
     //-----------------------------------------------------------------
     // Frame 0: Initialize capture state
