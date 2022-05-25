@@ -101,6 +101,36 @@ static const ImGuiPerfToolColumnInfo PerfToolColumnInfo[] =
 
 static const char* PerfToolReportDefaultOutputPath = "./output/capture_perf_report.html";
 
+// This is declared as a standalone function in order to run without a PerfTool instance
+void ImGuiTestEngine_PerfToolAppendToCSV(ImGuiPerfTool* perf_log, ImGuiPerfToolEntry* entry, const char* filename)
+{
+    if (filename == NULL)
+        filename = IMGUI_PERFLOG_FILENAME;
+
+    if (!ImFileCreateDirectoryChain(filename, ImPathFindFilename(filename)))
+    {
+        fprintf(stderr, "Unable to create missing directory '%*s', perftool entry was not saved.\n", (int)(ImPathFindFilename(filename) - filename), filename);
+        return;
+    }
+
+    // Appends to .csv
+    FILE* f = fopen(filename, "a+b");
+    if (f == NULL)
+    {
+        fprintf(stderr, "Unable to open '%s', perftool entry was not saved.\n", filename);
+        return;
+    }
+    fprintf(f, "%llu,%s,%s,%.3f,x%d,%s,%s,%s,%s,%s,%s\n", entry->Timestamp, entry->Category, entry->TestName,
+            entry->DtDeltaMs, entry->PerfStressAmount, entry->GitBranchName, entry->BuildType, entry->Cpu, entry->OS,
+            entry->Compiler, entry->Date);
+    fflush(f);
+    fclose(f);
+
+    // Register to runtime perf tool if any
+    if (perf_log != NULL)
+        perf_log->AddEntry(entry);
+}
+
 // Tri-state button. Copied and modified ButtonEx().
 static bool Button3(const char* label, int* value)
 {
@@ -331,7 +361,7 @@ static int PerfToolCountBuilds(ImGuiPerfTool* perftool, bool only_visible)
     return num_builds;
 }
 
-static bool Date(const char* label, char* date, int date_len, bool valid)
+static bool InputDate(const char* label, char* date, int date_len, bool valid)
 {
     ImGui::SetNextItemWidth(ImGui::CalcTextSize("YYYY-MM-DD").x + ImGui::GetStyle().FramePadding.x * 2.0f);
     bool date_valid = *date == 0 || (IsDateValid(date) && valid/*strcmp(_FilterDateFrom, _FilterDateTo) <= 0*/);
@@ -764,35 +794,198 @@ bool ImGuiPerfTool::LoadCSV(const char* filename)
     return true;
 }
 
-// This is declared as a standalone function in order to run without a PerfTool instance
-void ImGuiTestEngine_PerfToolAppendToCSV(ImGuiPerfTool* perf_log, ImGuiPerfToolEntry* entry, const char* filename)
+void ImGuiPerfTool::ViewOnly(const char** perf_names)
 {
-    if (filename == NULL)
-        filename = IMGUI_PERFLOG_FILENAME;
+    // Data would not be built if we tried to view perftool of a particular test without first opening perftool via button. We need data to be built to hide perf tests.
+    if (_Batches.empty())
+        _Rebuild();
 
-    if (!ImFileCreateDirectoryChain(filename, ImPathFindFilename(filename)))
+    // Hide other perf tests.
+    for (const char* label : _Labels)
     {
-        fprintf(stderr, "Unable to create missing directory '%*s', perftool entry was not saved.\n", (int)(ImPathFindFilename(filename) - filename), filename);
-        return;
+        bool visible = false;
+        for (const char** p_name = perf_names; !visible && *p_name; p_name++)
+            visible |= strcmp(label, *p_name) == 0;
+        _Visibility.SetBool(ImHashStr(label), visible);
     }
-
-    // Appends to .csv
-    FILE* f = fopen(filename, "a+b");
-    if (f == NULL)
-    {
-        fprintf(stderr, "Unable to open '%s', perftool entry was not saved.\n", filename);
-        return;
-    }
-    fprintf(f, "%llu,%s,%s,%.3f,x%d,%s,%s,%s,%s,%s,%s\n", entry->Timestamp, entry->Category, entry->TestName,
-        entry->DtDeltaMs, entry->PerfStressAmount, entry->GitBranchName, entry->BuildType, entry->Cpu, entry->OS,
-        entry->Compiler, entry->Date);
-    fflush(f);
-    fclose(f);
-
-    // Register to runtime perf tool if any
-    if (perf_log != NULL)
-        perf_log->AddEntry(entry);
 }
+
+void ImGuiPerfTool::ViewOnly(const char* perf_name)
+{
+    const char* names[] = { perf_name, NULL };
+    ViewOnly(names);
+}
+
+ImGuiPerfToolEntry* ImGuiPerfTool::GetEntryByBatchIdx(int idx, const char* perf_name)
+{
+    if (idx < 0)
+        return NULL;
+    IM_ASSERT(idx < _Batches.Size);
+    ImGuiPerfToolBatch& batch = _Batches.Data[idx];
+    for (int i = 0; i < batch.Entries.Size; i++)
+        if (ImGuiPerfToolEntry* entry = &batch.Entries.Data[i])
+            if (strcmp(entry->TestName, perf_name) == 0)
+                return entry;
+    return NULL;
+}
+
+bool ImGuiPerfTool::_IsVisibleBuild(ImGuiPerfToolBatch* batch)
+{
+    IM_ASSERT(batch != NULL);
+    IM_ASSERT(!batch->Entries.empty());
+    return _IsVisibleBuild(&batch->Entries.Data[0]);
+}
+
+bool ImGuiPerfTool::_IsVisibleBuild(ImGuiPerfToolEntry* entry)
+{
+    return _Visibility.GetBool(ImHashStr(entry->GitBranchName), true) &&
+        _Visibility.GetBool(ImHashStr(entry->Compiler), true) &&
+        _Visibility.GetBool(ImHashStr(entry->Cpu), true) &&
+        _Visibility.GetBool(ImHashStr(entry->OS), true) &&
+        _Visibility.GetBool(ImHashStr(entry->BuildType), true);
+}
+
+bool ImGuiPerfTool::_IsVisibleTest(const char* test_name)
+{
+    return _Visibility.GetBool(ImHashStr(test_name), true);
+}
+
+void ImGuiPerfTool::_CalculateLegendAlignment()
+{
+    // Estimate paddings for legend format so it looks nice and aligned
+    // FIXME: Rely on font being monospace. May need to recalculate every frame on a per-need basis based on font?
+    _AlignStress = _AlignType = _AlignCpu = _AlignOs = _AlignCompiler = _AlignBranch = _AlignSamples = 0;
+    for (ImGuiPerfToolBatch& batch : _Batches)
+    {
+        ImGuiPerfToolEntry* entry = &batch.Entries.Data[0];
+        if (!_IsVisibleBuild(entry))
+            continue;
+        _AlignStress = ImMax(_AlignStress, (int)ceil(log10(entry->PerfStressAmount)));
+        _AlignType = ImMax(_AlignType, (int)strlen(entry->BuildType));
+        _AlignCpu = ImMax(_AlignCpu, (int)strlen(entry->Cpu));
+        _AlignOs = ImMax(_AlignOs, (int)strlen(entry->OS));
+        _AlignCompiler = ImMax(_AlignCompiler, (int)strlen(entry->Compiler));
+        _AlignBranch = ImMax(_AlignBranch, (int)strlen(entry->GitBranchName));
+        _AlignSamples = ImMax(_AlignSamples, (int)Str16f("%d", entry->NumSamples).length());
+    }
+}
+
+bool ImGuiPerfTool::SaveHtmlReport(const char* file_name, const char* image_file)
+{
+    if (!ImFileCreateDirectoryChain(file_name, ImPathFindFilename(file_name)))
+        return false;
+
+    FILE* fp = fopen(file_name, "w+");
+    if (fp == NULL)
+        return false;
+
+    fprintf(fp, "<!doctype html>\n"
+                "<html>\n"
+                "<head>\n"
+                "  <meta charset=\"utf-8\"/>\n"
+                "  <title>Dear ImGui perf report</title>\n"
+                "</head>\n"
+                "<body>\n"
+                "  <pre id=\"content\">\n");
+
+    // Embed performance chart.
+    fprintf(fp, "## Dear ImGui perf report\n\n");
+
+    if (image_file != NULL)
+    {
+        FILE* fp_img = fopen(image_file, "rb");
+        if (fp_img != NULL)
+        {
+            ImVector<char> image_buffer;
+            ImVector<char> base64_buffer;
+            fseek(fp_img, 0, SEEK_END);
+            image_buffer.resize((int)ftell(fp_img));
+            base64_buffer.resize(((image_buffer.Size / 3) + 1) * 4 + 1);
+            rewind(fp_img);
+            fread(image_buffer.Data, 1, image_buffer.Size, fp_img);
+            fclose(fp_img);
+            int len = ImStrBase64Encode((unsigned char*)image_buffer.Data, base64_buffer.Data, image_buffer.Size);
+            base64_buffer.Data[len] = 0;
+            fprintf(fp, "![](data:image/png;base64,%s)\n\n", base64_buffer.Data);
+        }
+    }
+
+    // Print info table.
+    const bool combine_by_build_info = _DisplayType == ImGuiPerfToolDisplayType_CombineByBuildInfo;
+    for (const auto& column_info : PerfToolColumnInfo)
+        if (column_info.ShowAlways || combine_by_build_info)
+            fprintf(fp, "| %s ", column_info.Title);
+    fprintf(fp, "|\n");
+    for (const auto& column_info : PerfToolColumnInfo)
+        if (column_info.ShowAlways || combine_by_build_info)
+            fprintf(fp, "| -- ");
+    fprintf(fp, "|\n");
+
+    for (int label_index = 0; label_index < _LabelsVisible.Size - 1; label_index++)
+    {
+        const char* test_name = _LabelsVisible.Data[label_index];
+        for (int batch_index = 0; batch_index < _Batches.Size; batch_index++)
+        {
+            ImGuiPerfToolEntry* entry = GetEntryByBatchIdx(_InfoTableSort[label_index * _Batches.Size + batch_index], test_name);
+            if (entry == NULL || !_IsVisibleBuild(entry) || entry->NumSamples == 0)
+                continue;
+
+            ImGuiPerfToolEntry* baseline_entry = GetEntryByBatchIdx(_BaselineBatchIndex, test_name);
+            for (int i = 0; i < IM_ARRAYSIZE(PerfToolColumnInfo); i++)
+            {
+                Str30f label("");
+                const ImGuiPerfToolColumnInfo& column_info = PerfToolColumnInfo[i];
+                if (column_info.ShowAlways || combine_by_build_info)
+                {
+                    switch (i)
+                    {
+                    case 0:  fprintf(fp, "| %s ", entry->TestName);             break;
+                    case 1:  fprintf(fp, "| %s ", entry->GitBranchName);        break;
+                    case 2:  fprintf(fp, "| %s ", entry->Compiler);             break;
+                    case 3:  fprintf(fp, "| %s ", entry->OS);                   break;
+                    case 4:  fprintf(fp, "| %s ", entry->Cpu);                  break;
+                    case 5:  fprintf(fp, "| %s ", entry->BuildType);            break;
+                    case 6:  fprintf(fp, "| x%d ", entry->PerfStressAmount);    break;
+                    case 7:  fprintf(fp, "| %.2f ", entry->DtDeltaMs);          break;
+                    case 8:  fprintf(fp, "| %.2f ", entry->DtDeltaMsMin);       break;
+                    case 9:  fprintf(fp, "| %.2f ", entry->DtDeltaMsMax);       break;
+                    case 10: fprintf(fp, "| %d ", entry->NumSamples);           break;
+                    case 11: FormatVsBaseline(entry, baseline_entry, label); fprintf(fp, "| %s ", label.c_str()); break;
+                    default: IM_ASSERT(0); break;
+                    }
+                }
+            }
+            fprintf(fp, "|\n");
+        }
+    }
+
+    fprintf(fp, "</pre>\n"
+                "  <script src=\"https://cdn.jsdelivr.net/npm/marked@4.0.0/marked.min.js\"></script>\n"
+                "  <script>\n"
+                "    var content = document.getElementById('content');\n"
+                "    content.innerHTML = marked.parse(content.innerText);\n"
+                "  </script>\n"
+                "</body>\n"
+                "</html>\n");
+
+    fclose(fp);
+    return true;
+}
+
+void ImGuiPerfTool::_SetBaseline(int batch_index)
+{
+    IM_ASSERT(batch_index < _Batches.Size);
+    _BaselineBatchIndex = batch_index;
+    if (batch_index >= 0)
+    {
+        _BaselineTimestamp = _Batches.Data[batch_index].Entries.Data[0].Timestamp;
+        _BaselineBuildId = GetBuildID(&_Batches.Data[batch_index]);
+    }
+}
+
+//-------------------------------------------------------------------------
+// [SECTION] USER INTERFACE
+//-------------------------------------------------------------------------
 
 void ImGuiPerfTool::ShowUI(ImGuiTestEngine* engine)
 {
@@ -804,17 +997,19 @@ void ImGuiPerfTool::ShowUI(ImGuiTestEngine* engine)
 
     // Date filter
     ImGui::AlignTextToFramePadding();
-    ImGui::TextUnformatted("Date:");
+    ImGui::TextUnformatted("InputDate:");
     ImGui::SameLine();
 
     bool dirty = _Batches.empty();
-    bool date_changed = Date("##date-from", _FilterDateFrom, IM_ARRAYSIZE(_FilterDateFrom), (strcmp(_FilterDateFrom, _FilterDateTo) <= 0 || !*_FilterDateTo));
+    bool date_changed = InputDate("##date-from", _FilterDateFrom, IM_ARRAYSIZE(_FilterDateFrom),
+                                  (strcmp(_FilterDateFrom, _FilterDateTo) <= 0 || !*_FilterDateTo));
     if (ImGui::IsItemHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Right))
-        ImGui::OpenPopup("Date From Menu");
+        ImGui::OpenPopup("InputDate From Menu");
     ImGui::SameLine(0, 0.0f);
     ImGui::TextUnformatted("..");
     ImGui::SameLine(0, 0.0f);
-    date_changed |= Date("##date-to", _FilterDateTo, IM_ARRAYSIZE(_FilterDateTo), (strcmp(_FilterDateFrom, _FilterDateTo) <= 0 || !*_FilterDateFrom));
+    date_changed |= InputDate("##date-to", _FilterDateTo, IM_ARRAYSIZE(_FilterDateTo),
+                              (strcmp(_FilterDateFrom, _FilterDateTo) <= 0 || !*_FilterDateFrom));
     if (date_changed)
     {
         dirty = (!_FilterDateFrom[0] || IsDateValid(_FilterDateFrom)) && (!_FilterDateTo[0] || IsDateValid(_FilterDateTo));
@@ -822,12 +1017,12 @@ void ImGuiPerfTool::ShowUI(ImGuiTestEngine* engine)
             dirty &= strcmp(_FilterDateFrom, _FilterDateTo) <= 0;
     }
     if (ImGui::IsItemHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Right))
-        ImGui::OpenPopup("Date To Menu");
+        ImGui::OpenPopup("InputDate To Menu");
     ImGui::SameLine();
 
     for (int i = 0; i < 2; i++)
     {
-        if (ImGui::BeginPopup(i == 0 ? "Date From Menu" : "Date To Menu"))
+        if (ImGui::BeginPopup(i == 0 ? "InputDate From Menu" : "InputDate To Menu"))
         {
             char* date = i == 0 ? _FilterDateFrom : _FilterDateTo;
             int date_size = i == 0 ? IM_ARRAYSIZE(_FilterDateFrom) : IM_ARRAYSIZE(_FilterDateTo);
@@ -889,8 +1084,9 @@ void ImGuiPerfTool::ShowUI(ImGuiTestEngine* engine)
     }
     if (_Batches.empty())
         ImGui::BeginDisabled();
-    if (ImGui::Button("Report"))
+    if (ImGui::Button("Html Export"))
     {
+        // In order to capture a screenshot Report is saved by executing a "capture_perf_report" test.
         _ReportGenerating = true;
         ImGuiTestEngine_QueueTests(engine, ImGuiTestGroup_Tests, "capture_perf_report");
     }
@@ -1414,201 +1610,6 @@ void ImGuiPerfTool::_ShowEntriesTable()
 
     ImGui::EndTable();
 }
-
-void ImGuiPerfTool::ViewOnly(const char** perf_names)
-{
-    // Data would not be built if we tried to view perftool of a particular test without first opening perftool via button. We need data to be built to hide perf tests.
-    if (_Batches.empty())
-        _Rebuild();
-
-    // Hide other perf tests.
-    for (const char* label : _Labels)
-    {
-        bool visible = false;
-        for (const char** p_name = perf_names; !visible && *p_name; p_name++)
-            visible |= strcmp(label, *p_name) == 0;
-        _Visibility.SetBool(ImHashStr(label), visible);
-    }
-}
-
-void ImGuiPerfTool::ViewOnly(const char* perf_name)
-{
-    const char* names[] = { perf_name, NULL };
-    ViewOnly(names);
-}
-
-ImGuiPerfToolEntry* ImGuiPerfTool::GetEntryByBatchIdx(int idx, const char* perf_name)
-{
-    if (idx < 0)
-        return NULL;
-    IM_ASSERT(idx < _Batches.Size);
-    ImGuiPerfToolBatch& batch = _Batches.Data[idx];
-    for (int i = 0; i < batch.Entries.Size; i++)
-        if (ImGuiPerfToolEntry* entry = &batch.Entries.Data[i])
-            if (strcmp(entry->TestName, perf_name) == 0)
-                return entry;
-    return NULL;
-}
-
-bool ImGuiPerfTool::_IsVisibleBuild(ImGuiPerfToolBatch* batch)
-{
-    IM_ASSERT(batch != NULL);
-    IM_ASSERT(!batch->Entries.empty());
-    return _IsVisibleBuild(&batch->Entries.Data[0]);
-}
-
-bool ImGuiPerfTool::_IsVisibleBuild(ImGuiPerfToolEntry* entry)
-{
-    return _Visibility.GetBool(ImHashStr(entry->GitBranchName), true) &&
-        _Visibility.GetBool(ImHashStr(entry->Compiler), true) &&
-        _Visibility.GetBool(ImHashStr(entry->Cpu), true) &&
-        _Visibility.GetBool(ImHashStr(entry->OS), true) &&
-        _Visibility.GetBool(ImHashStr(entry->BuildType), true);
-}
-
-bool ImGuiPerfTool::_IsVisibleTest(const char* test_name)
-{
-    return _Visibility.GetBool(ImHashStr(test_name), true);
-}
-
-void ImGuiPerfTool::_CalculateLegendAlignment()
-{
-    // Estimate paddings for legend format so it looks nice and aligned
-    // FIXME: Rely on font being monospace. May need to recalculate every frame on a per-need basis based on font?
-    _AlignStress = _AlignType = _AlignCpu = _AlignOs = _AlignCompiler = _AlignBranch = _AlignSamples = 0;
-    for (ImGuiPerfToolBatch& batch : _Batches)
-    {
-        ImGuiPerfToolEntry* entry = &batch.Entries.Data[0];
-        if (!_IsVisibleBuild(entry))
-            continue;
-        _AlignStress = ImMax(_AlignStress, (int)ceil(log10(entry->PerfStressAmount)));
-        _AlignType = ImMax(_AlignType, (int)strlen(entry->BuildType));
-        _AlignCpu = ImMax(_AlignCpu, (int)strlen(entry->Cpu));
-        _AlignOs = ImMax(_AlignOs, (int)strlen(entry->OS));
-        _AlignCompiler = ImMax(_AlignCompiler, (int)strlen(entry->Compiler));
-        _AlignBranch = ImMax(_AlignBranch, (int)strlen(entry->GitBranchName));
-        _AlignSamples = ImMax(_AlignSamples, (int)Str16f("%d", entry->NumSamples).length());
-    }
-}
-
-bool ImGuiPerfTool::SaveHtmlReport(const char* file_name, const char* image_file)
-{
-    if (!ImFileCreateDirectoryChain(file_name, ImPathFindFilename(file_name)))
-        return false;
-
-    FILE* fp = fopen(file_name, "w+");
-    if (fp == NULL)
-        return false;
-
-    fprintf(fp, "<!doctype html>\n"
-                "<html>\n"
-                "<head>\n"
-                "  <meta charset=\"utf-8\"/>\n"
-                "  <title>Dear ImGui perf report</title>\n"
-                "</head>\n"
-                "<body>\n"
-                "  <pre id=\"content\">\n");
-
-    // Embed performance chart.
-    fprintf(fp, "## Dear ImGui perf report\n\n");
-
-    if (image_file != NULL)
-    {
-        FILE* fp_img = fopen(image_file, "rb");
-        if (fp_img != NULL)
-        {
-            ImVector<char> image_buffer;
-            ImVector<char> base64_buffer;
-            fseek(fp_img, 0, SEEK_END);
-            image_buffer.resize((int)ftell(fp_img));
-            base64_buffer.resize(((image_buffer.Size / 3) + 1) * 4 + 1);
-            rewind(fp_img);
-            fread(image_buffer.Data, 1, image_buffer.Size, fp_img);
-            fclose(fp_img);
-            int len = ImStrBase64Encode((unsigned char*)image_buffer.Data, base64_buffer.Data, image_buffer.Size);
-            base64_buffer.Data[len] = 0;
-            fprintf(fp, "![](data:image/png;base64,%s)\n\n", base64_buffer.Data);
-        }
-    }
-
-    // Print info table.
-    const bool combine_by_build_info = _DisplayType == ImGuiPerfToolDisplayType_CombineByBuildInfo;
-    for (const auto& column_info : PerfToolColumnInfo)
-        if (column_info.ShowAlways || combine_by_build_info)
-            fprintf(fp, "| %s ", column_info.Title);
-    fprintf(fp, "|\n");
-    for (const auto& column_info : PerfToolColumnInfo)
-        if (column_info.ShowAlways || combine_by_build_info)
-            fprintf(fp, "| -- ");
-    fprintf(fp, "|\n");
-
-    for (int label_index = 0; label_index < _LabelsVisible.Size - 1; label_index++)
-    {
-        const char* test_name = _LabelsVisible.Data[label_index];
-        for (int batch_index = 0; batch_index < _Batches.Size; batch_index++)
-        {
-            ImGuiPerfToolEntry* entry = GetEntryByBatchIdx(_InfoTableSort[label_index * _Batches.Size + batch_index], test_name);
-            if (entry == NULL || !_IsVisibleBuild(entry) || entry->NumSamples == 0)
-                continue;
-
-            ImGuiPerfToolEntry* baseline_entry = GetEntryByBatchIdx(_BaselineBatchIndex, test_name);
-            for (int i = 0; i < IM_ARRAYSIZE(PerfToolColumnInfo); i++)
-            {
-                Str30f label("");
-                const ImGuiPerfToolColumnInfo& column_info = PerfToolColumnInfo[i];
-                if (column_info.ShowAlways || combine_by_build_info)
-                {
-                    switch (i)
-                    {
-                    case 0:  fprintf(fp, "| %s ", entry->TestName);             break;
-                    case 1:  fprintf(fp, "| %s ", entry->GitBranchName);        break;
-                    case 2:  fprintf(fp, "| %s ", entry->Compiler);             break;
-                    case 3:  fprintf(fp, "| %s ", entry->OS);                   break;
-                    case 4:  fprintf(fp, "| %s ", entry->Cpu);                  break;
-                    case 5:  fprintf(fp, "| %s ", entry->BuildType);            break;
-                    case 6:  fprintf(fp, "| x%d ", entry->PerfStressAmount);    break;
-                    case 7:  fprintf(fp, "| %.2f ", entry->DtDeltaMs);          break;
-                    case 8:  fprintf(fp, "| %.2f ", entry->DtDeltaMsMin);       break;
-                    case 9:  fprintf(fp, "| %.2f ", entry->DtDeltaMsMax);       break;
-                    case 10: fprintf(fp, "| %d ", entry->NumSamples);           break;
-                    case 11: FormatVsBaseline(entry, baseline_entry, label); fprintf(fp, "| %s ", label.c_str()); break;
-                    default: IM_ASSERT(0); break;
-                    }
-                }
-            }
-            fprintf(fp, "|\n");
-        }
-    }
-
-    fprintf(fp, "</pre>\n"
-                "  <script src=\"https://cdn.jsdelivr.net/npm/marked@4.0.0/marked.min.js\"></script>\n"
-                "  <script>\n"
-                "    var content = document.getElementById('content');\n"
-                "    content.innerHTML = marked.parse(content.innerText);\n"
-                "  </script>\n"
-                "</body>\n"
-                "</html>\n");
-
-    fclose(fp);
-    return true;
-}
-
-void ImGuiPerfTool::_SetBaseline(int batch_index)
-{
-    IM_ASSERT(batch_index < _Batches.Size);
-    _BaselineBatchIndex = batch_index;
-    if (batch_index >= 0)
-    {
-        _BaselineTimestamp = _Batches.Data[batch_index].Entries.Data[0].Timestamp;
-        _BaselineBuildId = GetBuildID(&_Batches.Data[batch_index]);
-    }
-}
-
-//-------------------------------------------------------------------------
-// [SECTION] USER INTERFACE
-//-------------------------------------------------------------------------
-
-// <move stuff here>
 
 //-------------------------------------------------------------------------
 // [SECTION] SETTINGS
