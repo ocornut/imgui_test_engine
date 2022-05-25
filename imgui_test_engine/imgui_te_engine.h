@@ -163,7 +163,9 @@ IMGUI_API void                ImGuiTestEngine_CoroutineStopRequest(ImGuiTestEngi
 IMGUI_API void                ImGuiTestEngine_GetResult(ImGuiTestEngine* engine, int& count_tested, int& success_count);
 IMGUI_API ImGuiPerfTool*      ImGuiTestEngine_GetPerfTool(ImGuiTestEngine* engine);
 IMGUI_API bool                ImGuiTestEngine_UseSimulatedInputs(ImGuiTestEngine* engine);
-IMGUI_API void                ImGuiTestEngine_InstallCrashHandler();                                // Install default crash handler
+
+// Functions: Crash Handling
+IMGUI_API void                ImGuiTestEngine_InstallDefaultCrashHandler();                         // Install default crash handler
 IMGUI_API void                ImGuiTestEngine_CrashHandler();                                       // Default crash handler, should be called from a custom crash handler if such exists
 
 // Functions: Internal/Experimental

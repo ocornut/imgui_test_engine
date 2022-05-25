@@ -14,10 +14,6 @@
 #include "imgui_te_utils.h"
 #include "thirdparty/Str/Str.h"
 
-#ifndef _WIN32
-#include <unistd.h>     // usleep
-#endif
-
 //-------------------------------------------------------------------------
 // [SECTION] ImGuiTestRefDesc
 //-------------------------------------------------------------------------

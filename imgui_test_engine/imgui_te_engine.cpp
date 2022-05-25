@@ -20,7 +20,7 @@
 #define WIN32_LEAN_AND_MEAN
 #endif
 #include <windows.h>    // SetUnhandledExceptionFilter()
-#undef Yield            // /facepalm, Microsoft...
+#undef Yield            // Undo some of the damage done by <windows.h>
 #else
 #include <signal.h>     // signal()
 #include <unistd.h>     // sleep()
@@ -39,9 +39,9 @@ Index of this file:
 // [SECTION] FORWARD DECLARATIONS
 // [SECTION] DATA STRUCTURES
 // [SECTION] TEST ENGINE FUNCTIONS
+// [SECTION] CRASH HANDLING
 // [SECTION] HOOKS FOR CORE LIBRARY
-// [SECTION] HOOKS FOR TESTS
-// [SECTION] USER INTERFACE
+// [SECTION] CHECK/ERROR FUNCTIONS FOR TESTS
 // [SECTION] SETTINGS
 // [SECTION] ImGuiTestLog
 // [SECTION] ImGuiTest
@@ -63,7 +63,7 @@ Index of this file:
 
 // FIXME-TESTS: Make it possible to run ad hoc tests without registering/adding to a global list.
 // FIXME-TESTS: UI to setup breakpoint (e.g. GUI func on frame X, beginning of Test func or at certain Yield/Sleep spot)
-// FIXME-TESTS: Be able to run blind within GUI application (second second)
+// FIXME-TESTS: Be able to run blind within GUI application (second context)
 // FIXME-TESTS: Be able to run in own contexts to avoid side-effects
 // FIXME-TESTS: Randomize test order in shared context ~ kind of fuzzing (need to be able to repro order)
 // FIXME-TESTS: Mouse actions on ImGuiNavLayer_Menu layer
@@ -124,10 +124,6 @@ static void  ImGuiTestEngine_SettingsWriteAll(ImGuiContext* imgui_ctx, ImGuiSett
 // - ImGuiTestEngine_ProcessTestQueue()
 // - ImGuiTestEngine_QueueTest()
 // - ImGuiTestEngine_RunTest()
-// - ImGuiTestEngine_InstallCrashHandler()
-// - ImGuiTestEngine_CrashHandler()
-// - ImGuiTestEngine_CrashHandlerWin32()
-// - ImGuiTestEngine_CrashHandlerUnix()
 //-------------------------------------------------------------------------
 
 ImGuiTestEngine::ImGuiTestEngine()
@@ -1505,6 +1501,13 @@ static void ImGuiTestEngine_RunTest(ImGuiTestEngine* engine, ImGuiTestContext* c
     ctx->UiContext->Style = backup_style;
 }
 
+//-------------------------------------------------------------------------
+// [SECTION] CRASH HANDLING
+//-------------------------------------------------------------------------
+// - ImGuiTestEngine_CrashHandler()
+// - ImGuiTestEngine_InstallDefaultCrashHandler()
+//-------------------------------------------------------------------------
+
 void ImGuiTestEngine_CrashHandler()
 {
     static bool handled = false;
@@ -1548,7 +1551,7 @@ static void ImGuiTestEngine_CrashHandlerUnix(int signal)
 }
 #endif
 
-void ImGuiTestEngine_InstallCrashHandler()
+void ImGuiTestEngine_InstallDefaultCrashHandler()
 {
 #ifdef _WIN32
     SetUnhandledExceptionFilter(&ImGuiTestEngine_CrashHandlerWin32);
@@ -1565,6 +1568,7 @@ void ImGuiTestEngine_InstallCrashHandler()
     sigaction(SIGBUS, &action, NULL);
 #endif
 }
+
 
 //-------------------------------------------------------------------------
 // [SECTION] HOOKS FOR CORE LIBRARY
@@ -1777,7 +1781,7 @@ const char* ImGuiTestEngine_FindItemDebugLabel(ImGuiContext* ui_ctx, ImGuiID id)
 }
 
 //-------------------------------------------------------------------------
-// [SECTION] HOOKS FOR TESTS
+// [SECTION] CHECK/ERROR FUNCTIONS FOR TESTS
 //-------------------------------------------------------------------------
 // - ImGuiTestEngine_Check()
 // - ImGuiTestEngine_Error()

@@ -6,7 +6,7 @@ CHANGELOG
 
 2022/05/10
 - TestEngine: Installation of a crash handler is now explicit and optional. Do one of the following:
-    - Call ImGuiTestEngine_InstallCrashHandler() to install default crash handler.
+    - Call ImGuiTestEngine_InstallDefaultCrashHandler() to install default crash handler.
     - Call ImGuiTestEngine_CrashHandler() from your own custom crash handler if such exists.
 
 2022/04/08

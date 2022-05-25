@@ -32,9 +32,9 @@ Index of this file:
 
 // [SECTION] ImGuiPerflogEntry
 // [SECTION] Types & everything else
-// [SECTION] UI
-// [SECTION] Settings
-// [SECTION] Tests
+// [SECTION] USER INTERFACE
+// [SECTION] SETTINGS
+// [SECTION] TESTS
 
 */
 
@@ -82,7 +82,7 @@ struct ImGuiPerfToolColumnInfo
     T GetValue(const ImGuiPerfToolEntry* entry) const { return *(T*)((const char*)entry + Offset); }
 };
 
-// Update _ShowEntriesTable() and SaveReport() when adding new entries.
+// Update _ShowEntriesTable() and SaveHtmlReport() when adding new entries.
 static const ImGuiPerfToolColumnInfo PerfToolColumnInfo[] =
 {
     { /* 00 */ "Test Name",   IM_OFFSETOF(ImGuiPerfToolEntry, TestName),         ImGuiDataType_COUNT,  true  },
@@ -1491,7 +1491,7 @@ void ImGuiPerfTool::_CalculateLegendAlignment()
     }
 }
 
-bool ImGuiPerfTool::SaveReport(const char* file_name, const char* image_file)
+bool ImGuiPerfTool::SaveHtmlReport(const char* file_name, const char* image_file)
 {
     if (!ImFileCreateDirectoryChain(file_name, ImPathFindFilename(file_name)))
         return false;
@@ -1605,13 +1605,13 @@ void ImGuiPerfTool::_SetBaseline(int batch_index)
 }
 
 //-------------------------------------------------------------------------
-// [SECTION] UI
+// [SECTION] USER INTERFACE
 //-------------------------------------------------------------------------
 
 // <move stuff here>
 
 //-------------------------------------------------------------------------
-// [SECTION] Settings
+// [SECTION] SETTINGS
 //-------------------------------------------------------------------------
 
 static void PerflogSettingsHandler_ClearAll(ImGuiContext*, ImGuiSettingsHandler* ini_handler)
@@ -1699,7 +1699,7 @@ void ImGuiPerfTool::_AddSettingsHandler()
 }
 
 //-------------------------------------------------------------------------
-// [SECTION] Tests
+// [SECTION] TESTS
 //-------------------------------------------------------------------------
 
 static bool SetPerfToolWindowOpen(ImGuiTestContext* ctx, bool is_open)
@@ -1865,7 +1865,7 @@ void RegisterTests_PerfTool(ImGuiTestEngine* e)
         const char* perf_report_output = getenv("CAPTURE_PERF_REPORT_OUTPUT");
         if (perf_report_output == NULL)
             perf_report_output = PerfToolReportDefaultOutputPath;
-        perftool->SaveReport(perf_report_output, perf_report_image);
+        perftool->SaveHtmlReport(perf_report_output, perf_report_image);
     };
 }
 

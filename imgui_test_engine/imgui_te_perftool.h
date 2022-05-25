@@ -107,7 +107,7 @@ struct IMGUI_API ImGuiPerfTool
     void        ViewOnly(const char* perf_name);
     void        ViewOnly(const char** perf_names);
     ImGuiPerfToolEntry* GetEntryByBatchIdx(int idx, const char* perf_name = NULL);
-    bool        SaveReport(const char* file_name, const char* image_file = NULL);
+    bool        SaveHtmlReport(const char* file_name, const char* image_file = NULL);
     bool        Empty()         { return _SrcData.empty(); }
 
     void        _Rebuild();
