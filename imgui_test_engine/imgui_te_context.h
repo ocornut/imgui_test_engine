@@ -299,6 +299,7 @@ struct IMGUI_API ImGuiTestContext
     // - ItemClick("Window/Button")               --> click "Window/Button"
     // - SetRef("Window"), ItemClick("Button")    --> click "Window/Button"
     // - SetRef("Window"), ItemClick("/Button")   --> click "/Button"
+    // - SetRef("/$FOCUSED"), ItemClick("Button") --> click "Button" in focused window.
     void        SetRef(ImGuiTestRef ref);
     void        SetRef(ImGuiWindow* window); // Shortcut to SetRef(window->Name) which works for ChildWindow (see code)
     ImGuiTestRef GetRef();

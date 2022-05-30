@@ -494,6 +494,16 @@ ImGuiID ImGuiTestContext::GetID(ImGuiTestRef ref, ImGuiTestRef seed_ref)
     if (ref.ID)
         return ref.ID; // FIXME: What if seed_ref != 0
 
+    // Handle special $FOCUSED variable.
+    // (Note that we don't and can't really support a "$HOVERED" equivalent for the hovered window.
+    //  Why? Because it is extremely fragile to use: with late translation of variable held in string,
+    //  it is extremely common that the "expected" hovered window at the time of passing the string has
+    //  changed in later use of the same reference.)
+    // (However we can imagine way to use that:
+    //    SetRef("$HOVERED");           // Not good. VERY prone to bug as further calls are likely to change the hovered window.
+    //    SetRef(GetID("$HOVERED"));    // Better: locking in the window (getting rid of the dynamic reference).
+    //  If we can find a way to enforce this better we can consider exposing a $HOVERED, but for now the equivalent is possible:
+    //    SetRef(g.HoveredWindow->ID);  // Same as the "Better" above except missing error checking.
     const char* FOCUSED_PREFIX = "/$FOCUSED";
     const size_t FOCUSED_PREFIX_LEN = 9;
 
@@ -1790,10 +1800,16 @@ void    ImGuiTestContext::MouseClickMulti(ImGuiMouseButton button, int count)
         Inputs->MouseButtonsValue = (1 << button);
         if (EngineIO->ConfigRunSpeed == ImGuiTestRunSpeed_Cinematic)
             SleepShort();
+        else if (EngineIO->ConfigRunSpeed != ImGuiTestRunSpeed_Fast)
+            Yield(2); // Leave enough time for non-alive IDs to expire. (#5325)
         else
             Yield();
         Inputs->MouseButtonsValue = 0;
-        Yield();
+
+        if (EngineIO->ConfigRunSpeed != ImGuiTestRunSpeed_Fast)
+            Yield(2); // Not strictly necessary but covers more variant.
+        else
+            Yield();
     }
 
     // Now NewFrame() has seen the mouse release.
