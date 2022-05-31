@@ -206,10 +206,12 @@ void RegisterTests_Table(ImGuiTestEngine* e)
         ImGui::Checkbox("Enable checks", &vars.Bool1);
         ImDrawList* draw_list = ImGui::GetWindowDrawList();
 
+        const ImGuiTableFlags border_flags = (vars.Bool2 ? ImGuiTableFlags_Borders : 0); // #4843, #4844 horizontal border had accidental effect on stripping draw commands.
+
         ImGui::Text("Text before");
         {
             int cmd_size_before = draw_list->CmdBuffer.Size;
-            if (ImGui::BeginTable("table1", 4, ImGuiTableFlags_NoClip | ImGuiTableFlags_Borders, ImVec2(400, 0)))
+            if (ImGui::BeginTable("table1", 4, ImGuiTableFlags_NoClip | border_flags, ImVec2(400, 0)))
             {
                 HelperTableSubmitCellsButtonFill(4, 5);
                 ImGui::EndTable();
@@ -222,7 +224,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
         }
         {
             int cmd_size_before = draw_list->CmdBuffer.Size;
-            if (ImGui::BeginTable("table2", 4, ImGuiTableFlags_Borders, ImVec2(400, 0)))
+            if (ImGui::BeginTable("table2", 4, border_flags, ImVec2(400, 0)))
             {
                 HelperTableSubmitCellsButtonFill(4, 4);
                 ImGui::EndTable();
@@ -234,7 +236,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
         }
         {
             int cmd_size_before = draw_list->CmdBuffer.Size;
-            if (ImGui::BeginTable("table3", 4, ImGuiTableFlags_Borders, ImVec2(400, 0)))
+            if (ImGui::BeginTable("table3", 4, border_flags, ImVec2(400, 0)))
             {
                 ImGui::TableSetupColumn("One");
                 ImGui::TableSetupColumn("TwoTwo");
@@ -251,7 +253,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
         }
         {
             int cmd_size_before = draw_list->CmdBuffer.Size;
-            if (ImGui::BeginTable("table4", 3, ImGuiTableFlags_Borders))
+            if (ImGui::BeginTable("table4", 3, border_flags))
             {
                 ImGui::TableSetupColumn("One");
                 ImGui::TableSetupColumn("TwoTwo");
@@ -267,7 +269,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
         }
         {
             int cmd_size_before = draw_list->CmdBuffer.Size;
-            if (ImGui::BeginTable("table5", 3, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg))
+            if (ImGui::BeginTable("table5", 3, border_flags | ImGuiTableFlags_RowBg))
             {
                 ImGui::TableSetupColumn("One");
                 ImGui::TableSetupColumn("TwoTwo");
@@ -297,15 +299,29 @@ void RegisterTests_Table(ImGuiTestEngine* e)
     {
         // Test with/without clipping
         ImGuiTestGenericVars& vars = ctx->GenericVars;
+        vars.Bool2 = true; // With border
         vars.Bool1 = false;
         ctx->WindowResize("Test window 1", ImVec2(500, 800));
         vars.Bool1 = true;
         ctx->Yield();
         ctx->Yield();
+#if IMGUI_VERSION_NUM >= 18725
+        vars.Bool2 = false; // Without border
+        ctx->Yield();
+        ctx->Yield();
+#endif
+
+        vars.Bool2 = true; // With border
         vars.Bool1 = false;
         ctx->WindowResize("Test window 1", ImVec2(10, 800));
         vars.Bool1 = true;
         ctx->Yield();
+        ctx->Yield();
+#if IMGUI_VERSION_NUM >= 18725
+        vars.Bool2 = false; // Without border
+        ctx->Yield();
+        ctx->Yield();
+#endif
     };
 
     // ## Table: test effect of specifying or not a width in TableSetupColumn(), the effect of toggling _Resizable or setting _Fixed/_Auto widths.
