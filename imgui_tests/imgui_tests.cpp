@@ -907,6 +907,45 @@ void RegisterTests_Window(ImGuiTestEngine* e)
         }
     };
 
+#if IMGUI_VERSION_NUM >= 18727
+    // ## Test menuset separation.
+    t = IM_REGISTER_TEST(e, "window", "window_popup_menusets");
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiContext& g = *ctx->UiContext;
+        ctx->SetRef("Dear ImGui Demo");
+        ctx->WindowResize("", ImVec2(350, 600));
+        ctx->ItemOpen("Popups & Modal windows");
+        ctx->ItemOpen("Menus inside a regular window");
+        ImGuiWindow* demo_window = ctx->GetWindowByRef("");
+        ctx->MouseMoveToPos(demo_window->Pos);   // Do not hover any menus.
+
+        // 1. Open a menu and hover a menu that does not belong to open menuset.
+        ctx->MenuClick("Examples");
+        IM_CHECK(g.OpenPopupStack.Size == 1);
+        ImGuiID popup_parent_id = g.OpenPopupStack.back().OpenParentId;
+        ctx->MouseMove("Menus inside a regular window/Menu inside a regular window", ImGuiTestOpFlags_NoFocusWindow | ImGuiTestOpFlags_NoCheckHoveredId);
+        IM_CHECK(g.OpenPopupStack.Size == 1);
+        IM_CHECK(g.OpenPopupStack.back().OpenParentId == popup_parent_id);
+
+        // 2. Hover a menu without another opened menuset.
+        ctx->MouseMoveToPos(demo_window->Pos);   // Do not hover any menus.
+        ctx->PopupCloseAll();
+        ctx->MouseMove("Menus inside a regular window/Menu inside a regular window");
+        IM_CHECK(g.OpenPopupStack.Size == 1);
+        IM_CHECK(g.OpenPopupStack.back().OpenParentId != popup_parent_id);
+
+        // 3. Now do same as 1. except in reverse order.
+        ctx->MouseMove("##menubar/Examples", ImGuiTestOpFlags_NoFocusWindow | ImGuiTestOpFlags_NoCheckHoveredId);
+        IM_CHECK(g.OpenPopupStack.Size == 0);
+
+        // 4. Clicking another menuset should finally open it.
+        ctx->MenuClick("Examples");
+        IM_CHECK(g.OpenPopupStack.Size == 1);
+        IM_CHECK(g.OpenPopupStack.back().OpenParentId == popup_parent_id);
+    };
+#endif
+
     // ## Test behavior of io.WantCaptureMouse and io.WantCaptureMouseUnlessPopupClose with popups. (#4480)
 #if IMGUI_VERSION_NUM >= 18410
     t = IM_REGISTER_TEST(e, "window", "window_popup_want_capture");
