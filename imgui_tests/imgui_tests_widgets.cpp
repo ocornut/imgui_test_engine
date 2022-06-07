@@ -94,6 +94,8 @@ void GetSliderTestRanges(ImGuiDataType data_type, ImGuiDataTypeStorage* min_p, I
 // Tests: Widgets
 //-------------------------------------------------------------------------
 
+struct StrVars { Str str; };
+
 void RegisterTests_Widgets(ImGuiTestEngine* e)
 {
     ImGuiTest* t = NULL;
@@ -859,6 +861,65 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         IM_CHECK_EQ(len, 350 * 1);
     };
 
+#if IMGUI_VERSION_NUM >= 18727
+    // ## Test undo stack reset when contents change while widget is inactive. (#4947's second bug, #2890)
+    t = IM_REGISTER_TEST(e, "widgets", "widgets_inputtext_undo_reset");
+    t->SetVarsDataType<StrVars>();
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        StrVars& vars = ctx->GetVars<StrVars>();
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImGui::InputText("Field1", &vars.str, ImGuiInputTextFlags_CallbackHistory);
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiContext& g = *ctx->UiContext;
+        StrVars& vars = ctx->GetVars<StrVars>();
+        ctx->SetRef("Test Window");
+        ctx->ItemClick("Field1");
+        ctx->KeyCharsAppend("Hello, world!");
+        IM_CHECK_GT(g.InputTextState.Stb.undostate.undo_point, 0);
+        ctx->KeyPress(ImGuiKey_Escape);
+        vars.str = "Foobar";
+        ctx->ItemClick("Field1");
+        IM_CHECK_EQ(g.InputTextState.Stb.undostate.undo_point, 0);
+    };
+#endif
+
+#if IMGUI_VERSION_NUM >= 18727
+    // ## Test undo/redo operations with modifications from callback. (#4947, #4949)
+    t = IM_REGISTER_TEST(e, "widgets", "widgets_inputtext_undo_callback");
+    t->SetVarsDataType<StrVars>();
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        auto callback = [](ImGuiInputTextCallbackData* data)
+        {
+            if (data->EventFlag == ImGuiInputTextFlags_CallbackHistory)
+                data->InsertChars(data->CursorPos, ", world!");
+            return 0;
+        };
+
+        StrVars& vars = ctx->GetVars<StrVars>();
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImGui::InputText("Field1", &vars.str, ImGuiInputTextFlags_CallbackHistory, callback);
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        StrVars& vars = ctx->GetVars<StrVars>();
+        ctx->SetRef("Test Window");
+        ctx->ItemClick("Field1");
+        ctx->KeyCharsAppend("Hello");
+        ctx->KeyPress(ImGuiKey_DownArrow);                      // Trigger modification from callback.
+        IM_CHECK_STR_EQ(vars.str.c_str(), "Hello, world!");
+        ctx->KeyPress(ImGuiKey_Z, ImGuiModFlags_Shortcut);
+        IM_CHECK_STR_EQ(vars.str.c_str(), "Hello");
+        ctx->KeyPress(ImGuiKey_Y, ImGuiModFlags_Shortcut);
+        IM_CHECK_STR_EQ(vars.str.c_str(), "Hello, world!");
+    };
+#endif
+
     // ## Test InputText vs user ownership of data
     t = IM_REGISTER_TEST(e, "widgets", "widgets_inputtext_text_ownership");
     t->GuiFunc = [](ImGuiTestContext* ctx)
@@ -1411,7 +1472,6 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
 
     // ## Test resize callback (#3009, #2006, #1443, #1008)
     t = IM_REGISTER_TEST(e, "widgets", "widgets_inputtext_callback_resize");
-    struct StrVars { Str str; };
     t->SetVarsDataType<StrVars>();
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
