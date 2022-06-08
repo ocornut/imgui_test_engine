@@ -3660,7 +3660,11 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ImGui::TextColored(ImColor(IM_COL32_WHITE), "%s", "...");
         ImGui::TextWrapped("%s", "...");
         ImGuiContext& g = *ImGui::GetCurrentContext();
+#if IMGUI_VERSION_NUM >= 18727
+        IM_CHECK_STR_EQ(g.TempBuffer.Data, "HELLO");
+#else
         IM_CHECK_STR_EQ(g.TempBuffer, "HELLO");
+#endif
         ImGui::End();
     };
 
