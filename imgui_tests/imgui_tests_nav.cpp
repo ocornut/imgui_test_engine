@@ -1764,6 +1764,24 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
                 //if (!ImGui::IsAnyItemActive())
                 ImGui::SetKeyboardFocusHere(-1);
         }
+        else if (vars.Step == 11) // Test non-wrapping of SetKeyboardFocusHere(0)
+        {
+            ImGui::InputText("Text1", vars.Str1, IM_ARRAYSIZE(vars.Str1));
+            ImGui::InputText("Text2", vars.Str1, IM_ARRAYSIZE(vars.Str1));
+            ImGui::SetKeyboardFocusHere(0);
+            ImGui::Begin("Test Window 2", NULL, ImGuiWindowFlags_NoSavedSettings);
+            ImGui::InputText("Text3", vars.Str1, IM_ARRAYSIZE(vars.Str1));
+            ImGui::End();
+        }
+        else if (vars.Step == 12) // Test non-wrapping of SetKeyboardFocusHere(-1)
+        {
+            ImGui::SetKeyboardFocusHere(-1);
+            ImGui::InputText("Text1", vars.Str1, IM_ARRAYSIZE(vars.Str1));
+            ImGui::InputText("Text2", vars.Str1, IM_ARRAYSIZE(vars.Str1));
+            ImGui::Begin("Test Window 2", NULL, ImGuiWindowFlags_NoSavedSettings);
+            ImGui::InputText("Text3", vars.Str1, IM_ARRAYSIZE(vars.Str1));
+            ImGui::End();
+        }
         ImGui::End();
     };
     t->TestFunc = [](ImGuiTestContext* ctx)
@@ -1824,6 +1842,18 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
         ctx->Yield(2);
         IM_CHECK_EQ(g.ActiveId, ctx->GetID("TextMultiline2"));
         IM_CHECK_EQ(vars.Status.Active, 1);
+#endif
+
+#if IMGUI_VERSION_NUM >= 18728
+        // Test non-wrapping of SetKeyboardFocusHere(0)
+        vars.Step = 11;
+        ctx->Yield(3);
+        IM_CHECK(g.ActiveId == 0);
+
+        // Test non-wrapping of SetKeyboardFocusHere(-1)
+        vars.Step = 12;
+        ctx->Yield(3);
+        IM_CHECK(g.ActiveId == 0);
 #endif
 
         // Test multiple overriding calls to SetKeyboardFocusHere() in same frame (last gets it)
