@@ -5068,14 +5068,20 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
             // Toggle all tools (to enable/disable them, then restore their initial state)
             if (item.ID == ctx->GetID("Tools"))
             {
-                ImGuiTestActionFilter filter;
-                filter.RequireAllStatusFlags = ImGuiItemStatusFlags_Checkable;
-                filter.MaxDepth = filter.MaxPasses = 1;
-
-                ctx->WindowFocus("/Dear ImGui Demo"); // To exercible "Show Tables Rects"
-                ctx->ItemActionAll(ImGuiTestAction_Click, "Tools", &filter);
-                ctx->WindowFocus("/Dear ImGui Demo"); // To exercible "Show Tables Rects"
-                ctx->ItemActionAll(ImGuiTestAction_Click, "Tools", &filter);
+#if IMGUI_VERSION_NUM >= 18729
+                for (int n = 0; n < 2; n++)
+                {
+                    ctx->WindowFocus("/Dear ImGui Demo"); // To exercise "Show Tables Rects" among others
+                    ctx->ItemClick("Tools/Show Item Picker");
+                    if (ctx->ItemInfo("Tools/Show Item Picker")->StatusFlags & ImGuiItemStatusFlags_Checked)
+                        ctx->KeyPress(ImGuiKey_Escape);
+                    ctx->ItemClick("Tools/Show Debug Log");
+                    ctx->ItemClick("Tools/Show Stack Tool");
+                    ctx->ItemClick("Tools/Show windows begin order");
+                    ctx->ItemClick("Tools/Show windows rectangles");
+                    ctx->ItemClick("Tools/Show tables rectangles");
+                }
+#endif
 
 #if IMGUI_VERSION_NUM >= 18720
                 ctx->ItemClick("Tools/UTF-8 Encoding viewer/##Text");
