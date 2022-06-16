@@ -1339,6 +1339,7 @@ static void ImGuiTestEngine_RunTest(ImGuiTestEngine* engine, ImGuiTestContext* c
     // Back entire IO and style. Allows tests modifying them and not caring about restoring state.
     ImGuiIO backup_io = ctx->UiContext->IO;
     ImGuiStyle backup_style = ctx->UiContext->Style;
+    ImGuiDebugLogFlags backup_debug_log_flags = ctx->UiContext->DebugLogFlags;
     memset(backup_io.MouseDown, 0, sizeof(backup_io.MouseDown));
     for (int n = 0; n < IM_ARRAYSIZE(backup_io.KeysData); n++)
         backup_io.KeysData[n].Down = false;
@@ -1499,6 +1500,7 @@ static void ImGuiTestEngine_RunTest(ImGuiTestEngine* engine, ImGuiTestContext* c
     backup_io.MetricsActiveAllocations = ctx->UiContext->IO.MetricsActiveAllocations;
     ctx->UiContext->IO = backup_io;
     ctx->UiContext->Style = backup_style;
+    ctx->UiContext->DebugLogFlags = backup_debug_log_flags;
 }
 
 //-------------------------------------------------------------------------

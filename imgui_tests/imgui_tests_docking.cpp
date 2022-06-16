@@ -1144,10 +1144,6 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
 
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
         vars.DockId = ImGui::GetID("Dockspace");
-        ImGuiViewport* viewport = ImGui::GetMainViewport();
-        //ImGui::SetNextWindowPos(viewport->WorkPos);
-        //ImGui::SetNextWindowSize(viewport->WorkSize);
-        //ImGui::SetNextWindowViewport(viewport->ID);
         ImGui::DockSpace(vars.DockId, ImVec2(0.0f, 0.0f), ImGuiDockNodeFlags_PassthruCentralNode);
         ImGui::SetNextWindowSize(ImVec2(300, 200), ImGuiCond_Appearing);
         ImGui::Begin("A", NULL, ImGuiWindowFlags_NoSavedSettings); ImGui::End();

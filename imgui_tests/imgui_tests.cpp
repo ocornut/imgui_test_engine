@@ -4747,6 +4747,12 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         ctx->SetRef("Dear ImGui Demo");
+        ctx->UiContext->DebugLogFlags &= ~ImGuiDebugLogFlags_OutputToTTY;
+
+        ctx->MenuCheck("Tools/Debug Log");
+        ctx->ItemCheck("/Dear ImGui Debug Log/All");
+        ctx->ItemClick("/Dear ImGui Debug Log/Clear");
+
         ctx->ItemOpenAll("");
 
         // Additional tests we bundled here because we are benefiting from the "opened all" state
@@ -4757,9 +4763,18 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
         IM_CHECK(strlen(clipboard) == 0);
         ctx->ItemClick("Capture\\/Logging/LogButtons/Log To Clipboard");
         clipboard = ImGui::GetClipboardText();
-        const int clipboard_len = (int)strlen(clipboard);
+        int clipboard_len = (int)strlen(clipboard);
         IM_CHECK_GT(clipboard_len, 15000); // This is going to vary (as of 2019-11-18 on Master this 22766)
 
+        ctx->SetRef("Dear ImGui Debug Log");
+        ImGui::SetClipboardText("");
+        ctx->ItemClick("Copy");
+        clipboard = ImGui::GetClipboardText();
+        clipboard_len = (int)strlen(clipboard);
+        IM_CHECK_GT(clipboard_len, 1500);
+        ctx->ItemClick("Clear");
+        ctx->ItemUncheck("All");
+        ctx->WindowClose("");
 #if 0
         ctx->CaptureScreenshotWindow("Dear ImGui Demo", ImGuiCaptureFlags_StitchFullContents);
 #endif
