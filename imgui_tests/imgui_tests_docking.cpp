@@ -2018,6 +2018,44 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
         }
     };
 
+    // ## Test an edge case with FindBlockingModal() requiring ParentWindowInBeginStack to be set (#5401)
+#if IMGUI_VERSION_NUM >= 18729
+    t = IM_REGISTER_TEST(e, "docking", "docking_popup_parent");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+
+        ImGuiID dockspace_id = ImGui::GetID("RootDockspace");
+        if (ctx->IsFirstGuiFrame())
+        {
+            ImGui::DockBuilderRemoveNode(dockspace_id);
+            ImGui::DockSpace(dockspace_id);
+            ImGuiID node_1 = 0;
+            ImGuiID node_2 = ImGui::DockBuilderSplitNode(dockspace_id, ImGuiDir_Right, 0.42f, NULL, &node_1);
+            ImGui::DockBuilderDockWindow("WindowWithPopup", node_1);
+            ImGui::DockBuilderDockWindow("WindowAfterPopup", node_2);
+            ImGui::DockBuilderFinish(dockspace_id);
+        }
+        else
+        {
+            ImGui::DockSpace(dockspace_id);
+        }
+        ImGui::End(); // Root Window
+
+        ImGui::Begin("WindowWithPopup");
+        if (!ImGui::IsPopupOpen("popup"))
+            ImGui::OpenPopup("popup");
+        if (ImGui::BeginPopupModal("popup"))
+            ImGui::EndPopup();
+
+        ImGui::End();
+
+        // Crash occurred here (see #5401)
+        ImGui::Begin("WindowAfterPopup");
+        ImGui::End();
+    };
+#endif
+
 #else
     IM_UNUSED(e);
 #endif
