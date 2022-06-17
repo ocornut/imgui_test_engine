@@ -4013,6 +4013,8 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
                 {
                     ImGui::Selectable(label.c_str(), item_is_selected);
                     bool toggled = ImGui::IsItemToggledSelection();
+                    //if (toggled)
+                    //    ImGui::DebugLog("Item %d toggled selection %d->%d\n", item_n, item_is_selected, !item_is_selected);
                     if (toggled)
                         selection.SetSelected(item_n, !item_is_selected);
                 }
@@ -4024,6 +4026,9 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
                         flags |= ImGuiTreeNodeFlags_Selected;
                     if (ImGui::TreeNodeEx(label.c_str(), flags))
                         ImGui::TreePop();
+                    //if (ImGui::IsItemToggledSelection())
+                    //    ImGui::DebugLog("Item %d toggled selection %d->%d\n", item_n, item_is_selected, !item_is_selected);
+
                     if (ImGui::IsItemToggledSelection())
                         selection.SetSelected(item_n, !item_is_selected);
                 }
@@ -4108,6 +4113,19 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ctx->KeyPress(ImGuiKey_Escape);
         ctx->Yield();
         IM_CHECK_EQ(selection.SelectionSize, 0);
+#endif
+
+        // Test CTRL+Click
+#if IMGUI_VERSION_NUM >= 18730
+        ctx->ItemClick("Object 0001");
+        IM_CHECK_EQ(selection.SelectionSize, 1);
+        ctx->KeyModDown(ImGuiModFlags_Ctrl);
+        ctx->ItemClick("Object 0006");
+        ctx->ItemClick("Object 0007");
+        ctx->KeyModUp(ImGuiModFlags_Ctrl);
+        IM_CHECK_EQ(selection.SelectionSize, 3);
+        ctx->ItemClick("Object 0008");
+        IM_CHECK_EQ(selection.SelectionSize, 1);
 #endif
 
         // Test SHIFT+Arrow
