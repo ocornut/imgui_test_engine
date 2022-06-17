@@ -58,53 +58,68 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
         IM_CHECK(g.NavWindow && g.NavWindow->ID == ctx->GetID("/Dear ImGui Demo"));
     };
 
-    // ## Test that ESC deactivate InputText without closing current Popup (#2321, #787)
+    // ## Test that ESC deactivate InputText without closing current Popup (#2321, #787, #5400)
     t = IM_REGISTER_TEST(e, "nav", "nav_esc_popup");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
+        ImGuiContext& g = *ctx->UiContext;
         ImGuiTestGenericVars& vars = ctx->GenericVars;
-        bool& b_popup_open = vars.Bool1;
-        bool& b_field_active = vars.Bool2;
-        ImGuiID& popup_id = vars.Id;
 
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
         if (ImGui::Button("Open Popup"))
             ImGui::OpenPopup("Popup");
+        if (ImGui::Button("Open Modal"))
+            ImGui::OpenPopup("Modal");
 
-        b_popup_open = ImGui::BeginPopup("Popup", ImGuiWindowFlags_NoSavedSettings);
-        if (b_popup_open)
+        if (ImGui::BeginPopup("Popup", ImGuiWindowFlags_NoSavedSettings) || ImGui::BeginPopupModal("Modal", NULL, ImGuiWindowFlags_NoSavedSettings))
         {
-            popup_id = ImGui::GetCurrentWindow()->ID;
             ImGui::InputText("Field", vars.Str1, IM_ARRAYSIZE(vars.Str1));
-            b_field_active = ImGui::IsItemActive();
+            if (ctx->IsGuiFuncOnly() && ImGui::IsKeyPressed(ImGuiKey_Escape) && !g.IO.NavVisible)
+                ImGui::CloseCurrentPopup();
             ImGui::EndPopup();
         }
         ImGui::End();
     };
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
-        ImGuiTestGenericVars& vars = ctx->GenericVars;
-        bool& b_popup_open = vars.Bool1;
-        bool& b_field_active = vars.Bool2;
+        ImGuiContext& g = *ctx->UiContext;
+        for (int variant = 0; variant < 2; variant++)
+        {
+            ctx->LogDebug("Variant: %s", variant == 0 ? "popup" : "modal");
+            ctx->SetRef("Test Window");
 
-        // FIXME-TESTS: Come up with a better mechanism to get popup ID
-        ImGuiID& popup_id = vars.Id;
-        popup_id = 0;
+            ctx->NavMoveTo(variant == 0 ? "Open Popup" : "Open Modal");
+            ctx->NavActivate();
+            ImGuiWindow* popup = g.NavWindow;
+            if (variant == 0)
+                IM_CHECK((popup->Flags & ImGuiWindowFlags_Popup) != 0);
+            else
+                IM_CHECK((popup->Flags & ImGuiWindowFlags_Modal) != 0);
 
-        ctx->SetRef("Test Window");
-        ctx->ItemClick("Open Popup");
+            ctx->NavInput();    // Activate "Field"
+            IM_CHECK(popup->Active);
+            IM_CHECK(g.ActiveId == ctx->GetID("Field", popup->ID));
 
-        while (popup_id == 0 && !ctx->IsError())
-            ctx->Yield();
+            ctx->KeyPress(ImGuiKey_Escape);
+            IM_CHECK(popup->Active);
+            IM_CHECK(g.ActiveId == 0);
+            IM_CHECK(g.IO.NavVisible);
 
-        ctx->SetRef(popup_id);
-        ctx->ItemClick("Field");
-        IM_CHECK(b_popup_open);
-        IM_CHECK(b_field_active);
-
-        ctx->KeyPress(ImGuiKey_Escape);
-        IM_CHECK(b_popup_open);
-        IM_CHECK(!b_field_active);
+            ctx->KeyPress(ImGuiKey_Escape);
+            if (variant == 0)
+            {
+                // Ordinary popups are closed immediately.
+                IM_CHECK(!popup->Active);
+            }
+            else
+            {
+                // Modals do not auto-close, instead they deactivate navigation.
+                IM_CHECK(popup->Active);
+#if IMGUI_VERSION_NUM >= 18731
+                IM_CHECK(!g.IO.NavVisible);
+#endif
+            }
+        }
     };
 
     // ## Test that Alt toggle layer, test that AltGr doesn't.
