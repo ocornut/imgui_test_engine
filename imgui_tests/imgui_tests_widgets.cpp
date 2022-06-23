@@ -2684,6 +2684,43 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
     };
     t->TestFunc = [](ImGuiTestContext* ctx) { ctx->Yield(); };
 
+    // ## Test SetNextItemWidth() with TabItem(). (#5262)
+#if IMGUI_VERSION_NUM >= 18732
+    t = IM_REGISTER_TEST(e, "widgets", "widgets_tabbar_tabitem_setwidth");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        auto& vars = ctx->GenericVars;
+        const ImGuiTabItemFlags test_flags[] = { ImGuiTabItemFlags_None, ImGuiTabItemFlags_Trailing, ImGuiTabItemFlags_Leading, ImGuiTabItemFlags_None };
+        vars.Count = IM_ARRAYSIZE(test_flags);
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
+        if (ImGui::BeginTabBar("TabBar"))
+        {
+            for (int i = 0; i < IM_ARRAYSIZE(test_flags); i++)
+            {
+                ImGui::SetNextItemWidth(30.0f + i * 10.0f);
+                if (ImGui::BeginTabItem(Str16f("Tab %d", i).c_str(), NULL, test_flags[i]))
+                {
+                    ImGui::TextUnformatted(Str16f("Content %d", i).c_str());
+                    ImGui::EndTabItem();
+                }
+            }
+            ImGui::EndTabBar();
+        }
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        auto& vars = ctx->GenericVars;
+        ctx->SetRef("Test Window");
+        for (int i = 0; i < vars.Count; i++)
+        {
+            ImGuiTestItemInfo* item_info = ctx->ItemInfo(Str30f("TabBar/Tab %d", i).c_str());
+            IM_CHECK(item_info != NULL);
+            IM_CHECK_EQ(item_info->RectFull.GetWidth(), 30.0f + i * 10.0f);
+        }
+    };
+#endif
+
     // ## Tests: Coverage: TabBar: TabBarTabListPopupButton() and TabBarScrollingButtons()
     t = IM_REGISTER_TEST(e, "widgets", "widgets_tabbar_popup_scrolling_button");
     struct TabBarCoveragePopupScrolling { int TabCount = 9; int Selected = -1; };
