@@ -83,9 +83,8 @@ struct IMGUI_API ImGuiPerfTool
     int                         _AlignBranch = 0;
     int                         _AlignSamples = 0;
     bool                        _InfoTableSortDirty = false;
-    ImVector<int>               _InfoTableSort;                 // _InfoTableSort[_LabelsVisible.Size * _Batches.Size]. Contains sorted batch indices for each label.
+    ImVector<ImU64>             _InfoTableSort;                 // _InfoTableSort[_LabelsVisible.Size * _Batches.Size]. Contains sorted batch indices for each label.
     const ImGuiTableSortSpecs*  _InfoTableSortSpecs = NULL;     // Current table sort specs.
-    int                         _InfoTableNowSortingLabelIdx = 0;// Label index that is being sorted now.
     ImGuiStorage                _TempSet;                       // Used as a set
     int                         _TableHoveredTest = -1;         // Index within _VisibleLabelPointers array.
     int                         _TableHoveredBatch = -1;
@@ -108,7 +107,7 @@ struct IMGUI_API ImGuiPerfTool
     void        ViewOnly(const char** perf_names);
     ImGuiPerfToolEntry* GetEntryByBatchIdx(int idx, const char* perf_name = NULL);
     bool        SaveHtmlReport(const char* file_name, const char* image_file = NULL);
-    bool        Empty()         { return _SrcData.empty(); }
+    inline bool Empty()         { return _SrcData.empty(); }
 
     void        _Rebuild();
     bool        _IsVisibleBuild(ImGuiPerfToolBatch* batch);
@@ -119,6 +118,8 @@ struct IMGUI_API ImGuiPerfTool
     void        _ShowEntriesTable();
     void        _SetBaseline(int batch_index);
     void        _AddSettingsHandler();
+    inline int  _GetNumVisibleLabels()  { return _LabelsVisible.Size - 1; }
+    void        _UnpackSortedKey(ImU64 key, int* batch_index, int* entry_index, int* monotonic_index = NULL);
 };
 
 IMGUI_API void    ImGuiTestEngine_PerfToolAppendToCSV(ImGuiPerfTool* perf_log, ImGuiPerfToolEntry* entry, const char* filename = NULL);

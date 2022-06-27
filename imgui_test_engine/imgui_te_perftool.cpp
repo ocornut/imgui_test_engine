@@ -242,16 +242,19 @@ static ImGuiPerfTool* PerfToolInstance = NULL;
 static int IMGUI_CDECL CompareWithSortSpecs(const void* lhs, const void* rhs)
 {
     IM_ASSERT(PerfToolInstance != NULL);
+    ImGuiPerfTool* tool = PerfToolInstance;
     const ImGuiTableSortSpecs* sort_specs = PerfToolInstance->_InfoTableSortSpecs;
-
+    int batch_index_a, entry_index_a, mono_index_a, batch_index_b, entry_index_b, mono_index_b;
+    tool->_UnpackSortedKey(*(ImU64*)lhs, &batch_index_a, &entry_index_a, &mono_index_a);
+    tool->_UnpackSortedKey(*(ImU64*)rhs, &batch_index_b, &entry_index_b, &mono_index_b);
     for (int i = 0; i < sort_specs->SpecsCount; i++)
     {
         const ImGuiTableColumnSortSpecs* specs = &sort_specs->Specs[i];
         const ImGuiPerfToolColumnInfo& col_info = PerfToolColumnInfo[specs->ColumnIndex];
-        const ImGuiPerfToolBatch* batch_a = &PerfToolInstance->_Batches[*(int*)lhs];
-        const ImGuiPerfToolBatch* batch_b = &PerfToolInstance->_Batches[*(int*)rhs];
-        ImGuiPerfToolEntry* a = &batch_a->Entries.Data[PerfToolInstance->_InfoTableNowSortingLabelIdx];
-        ImGuiPerfToolEntry* b = &batch_b->Entries.Data[PerfToolInstance->_InfoTableNowSortingLabelIdx];
+        const ImGuiPerfToolBatch* batch_a = &tool->_Batches[batch_index_a];
+        const ImGuiPerfToolBatch* batch_b = &tool->_Batches[batch_index_b];
+        ImGuiPerfToolEntry* a = &batch_a->Entries.Data[entry_index_a];
+        ImGuiPerfToolEntry* b = &batch_b->Entries.Data[entry_index_b];
         if (specs->SortDirection == ImGuiSortDirection_Ascending)
             ImSwap(a, b);
 
@@ -259,13 +262,13 @@ static int IMGUI_CDECL CompareWithSortSpecs(const void* lhs, const void* rhs)
         switch (col_info.Type)
         {
         case ImGuiDataType_S32:
-            result = col_info.GetValue<int>(a) < col_info.GetValue<int>(b) ? -1 : +1;
+            result = col_info.GetValue<int>(a) - col_info.GetValue<int>(b);
             break;
         case ImGuiDataType_Float:
-            result = col_info.GetValue<float>(a) < col_info.GetValue<float>(b) ? -1 : +1;
+            result = (int)((col_info.GetValue<float>(a) - col_info.GetValue<float>(b)) * 1000.0f);
             break;
         case ImGuiDataType_Double:
-            result = col_info.GetValue<double>(a) < col_info.GetValue<double>(b) ? -1 : +1;
+            result = (int)((col_info.GetValue<double>(a) - col_info.GetValue<double>(b)) * 1000.0);
             break;
         case ImGuiDataType_COUNT:
             result = strcmp(col_info.GetValue<const char*>(a), col_info.GetValue<const char*>(b));
@@ -276,7 +279,7 @@ static int IMGUI_CDECL CompareWithSortSpecs(const void* lhs, const void* rhs)
         if (result != 0)
             return result;
     }
-    return 0;
+    return mono_index_a - mono_index_b;
 }
 
 // Dates are in format "YYYY-MM-DD"
@@ -921,42 +924,42 @@ bool ImGuiPerfTool::SaveHtmlReport(const char* file_name, const char* image_file
             fprintf(fp, "| -- ");
     fprintf(fp, "|\n");
 
-    for (int label_index = 0; label_index < _LabelsVisible.Size - 1; label_index++)
+    for (int row_index = _InfoTableSort.Size - 1; row_index >= 0; row_index--)
     {
-        const char* test_name = _LabelsVisible.Data[label_index];
-        for (int batch_index = 0; batch_index < _Batches.Size; batch_index++)
-        {
-            ImGuiPerfToolEntry* entry = GetEntryByBatchIdx(_InfoTableSort[label_index * _Batches.Size + batch_index], test_name);
-            if (entry == NULL || !_IsVisibleBuild(entry) || entry->NumSamples == 0)
-                continue;
+        int batch_index_sorted, entry_index_sorted;
+        _UnpackSortedKey(_InfoTableSort[row_index], &batch_index_sorted, &entry_index_sorted);
+        ImGuiPerfToolBatch* batch = &_Batches[batch_index_sorted];
+        ImGuiPerfToolEntry* entry = &batch->Entries[entry_index_sorted];
+        const char* test_name = entry->TestName;
+        if (!_IsVisibleBuild(entry) || entry->NumSamples == 0)
+            continue;
 
-            ImGuiPerfToolEntry* baseline_entry = GetEntryByBatchIdx(_BaselineBatchIndex, test_name);
-            for (int i = 0; i < IM_ARRAYSIZE(PerfToolColumnInfo); i++)
+        ImGuiPerfToolEntry* baseline_entry = GetEntryByBatchIdx(_BaselineBatchIndex, test_name);
+        for (int i = 0; i < IM_ARRAYSIZE(PerfToolColumnInfo); i++)
+        {
+            Str30f label("");
+            const ImGuiPerfToolColumnInfo& column_info = PerfToolColumnInfo[i];
+            if (column_info.ShowAlways || combine_by_build_info)
             {
-                Str30f label("");
-                const ImGuiPerfToolColumnInfo& column_info = PerfToolColumnInfo[i];
-                if (column_info.ShowAlways || combine_by_build_info)
+                switch (i)
                 {
-                    switch (i)
-                    {
-                    case 0:  fprintf(fp, "| %s ", entry->TestName);             break;
-                    case 1:  fprintf(fp, "| %s ", entry->GitBranchName);        break;
-                    case 2:  fprintf(fp, "| %s ", entry->Compiler);             break;
-                    case 3:  fprintf(fp, "| %s ", entry->OS);                   break;
-                    case 4:  fprintf(fp, "| %s ", entry->Cpu);                  break;
-                    case 5:  fprintf(fp, "| %s ", entry->BuildType);            break;
-                    case 6:  fprintf(fp, "| x%d ", entry->PerfStressAmount);    break;
-                    case 7:  fprintf(fp, "| %.2f ", entry->DtDeltaMs);          break;
-                    case 8:  fprintf(fp, "| %.2f ", entry->DtDeltaMsMin);       break;
-                    case 9:  fprintf(fp, "| %.2f ", entry->DtDeltaMsMax);       break;
-                    case 10: fprintf(fp, "| %d ", entry->NumSamples);           break;
-                    case 11: FormatVsBaseline(entry, baseline_entry, label); fprintf(fp, "| %s ", label.c_str()); break;
-                    default: IM_ASSERT(0); break;
-                    }
+                case 0:  fprintf(fp, "| %s ", entry->TestName);             break;
+                case 1:  fprintf(fp, "| %s ", entry->GitBranchName);        break;
+                case 2:  fprintf(fp, "| %s ", entry->Compiler);             break;
+                case 3:  fprintf(fp, "| %s ", entry->OS);                   break;
+                case 4:  fprintf(fp, "| %s ", entry->Cpu);                  break;
+                case 5:  fprintf(fp, "| %s ", entry->BuildType);            break;
+                case 6:  fprintf(fp, "| x%d ", entry->PerfStressAmount);    break;
+                case 7:  fprintf(fp, "| %.2f ", entry->DtDeltaMs);          break;
+                case 8:  fprintf(fp, "| %.2f ", entry->DtDeltaMsMin);       break;
+                case 9:  fprintf(fp, "| %.2f ", entry->DtDeltaMsMax);       break;
+                case 10: fprintf(fp, "| %d ", entry->NumSamples);           break;
+                case 11: FormatVsBaseline(entry, baseline_entry, label); fprintf(fp, "| %s ", label.c_str()); break;
+                default: IM_ASSERT(0); break;
                 }
             }
-            fprintf(fp, "|\n");
         }
+        fprintf(fp, "|\n");
     }
 
     fprintf(fp, "</pre>\n"
@@ -1060,7 +1063,7 @@ void ImGuiPerfTool::ShowUI(ImGuiTestEngine* engine)
     if (ImGui::IsItemHovered())
         ImGui::SetTooltip("Hide or show individual builds.");
     ImGui::SameLine();
-    if (ImGui::Button(Str64f("Filter tests (%d/%d)###Filter tests", _LabelsVisible.Size - 1, _Labels.Size).c_str()))
+    if (ImGui::Button(Str64f("Filter tests (%d/%d)###Filter tests", _GetNumVisibleLabels(), _Labels.Size).c_str()))
         ImGui::OpenPopup("Filter perfs");
     if (ImGui::IsItemHovered())
         ImGui::SetTooltip("Hide or show individual tests.");
@@ -1256,7 +1259,7 @@ void ImGuiPerfTool::_ShowEntriesPlot()
         return;
 
     ImPlot::SetupAxis(ImAxis_X1, NULL, ImPlotAxisFlags_NoTickLabels);
-    ImPlot::SetupAxisTicks(ImAxis_Y1, 0, _LabelsVisible.Size - 1, _LabelsVisible.Size, _LabelsVisible.Data);
+    ImPlot::SetupAxisTicks(ImAxis_Y1, 0, _GetNumVisibleLabels(), _LabelsVisible.Size, _LabelsVisible.Data);
     ImPlot::SetupLegend(ImPlotLocation_NorthEast);
 
     // Amount of vertical space bars of one label will occupy. 1.0 would leave no space between bars of adjacent labels.
@@ -1326,7 +1329,7 @@ void ImGuiPerfTool::_ShowEntriesPlot()
 
     // Highlight bars when hovering a label.
     int hovered_label_index = -1;
-    for (int i = 0; i < _LabelsVisible.Size - 1 && can_highlight; i++)
+    for (int i = 0; i < _GetNumVisibleLabels() && can_highlight; i++)
     {
         ImRect label_rect_loose = ImPlotGetYTickRect(i);                // Rect around test label
         ImRect label_rect_tight;                                        // Rect around test label, covering bar height and label area width
@@ -1436,19 +1439,20 @@ void ImGuiPerfTool::_ShowEntriesPlot()
 
 void ImGuiPerfTool::_ShowEntriesTable()
 {
-    if (!ImGui::BeginTable("PerfInfo", IM_ARRAYSIZE(PerfToolColumnInfo), ImGuiTableFlags_Hideable | ImGuiTableFlags_Borders | ImGuiTableFlags_Sortable | ImGuiTableFlags_SortMulti | ImGuiTableFlags_SortTristate | ImGuiTableFlags_Resizable | ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_ScrollY))
+    ImGuiTableFlags table_flags = ImGuiTableFlags_Hideable | ImGuiTableFlags_Borders | ImGuiTableFlags_Sortable |
+        ImGuiTableFlags_SortMulti | ImGuiTableFlags_SortTristate | ImGuiTableFlags_Resizable |
+        ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_ScrollY;
+    if (!ImGui::BeginTable("PerfInfo", IM_ARRAYSIZE(PerfToolColumnInfo), table_flags))
         return;
 
     ImGuiStyle& style = ImGui::GetStyle();
-    int num_visible_labels = _LabelsVisible.Size - 1;
+    int num_visible_labels = _GetNumVisibleLabels();
 
     // Test name column is not sorted because we do sorting only within perf runs of a particular tests,
     // so as far as sorting function is concerned all items in first column are identical.
     for (int i = 0; i < IM_ARRAYSIZE(PerfToolColumnInfo); i++)
     {
         ImGuiTableColumnFlags column_flags = ImGuiTableColumnFlags_None;
-        if (i == 0)
-            column_flags |= ImGuiTableColumnFlags_NoSort;
         if (!PerfToolColumnInfo[i].ShowAlways && _DisplayType != ImGuiPerfToolDisplayType_CombineByBuildInfo)
             column_flags |= ImGuiTableColumnFlags_Disabled;
         ImGui::TableSetupColumn(PerfToolColumnInfo[i].Title, column_flags);
@@ -1463,22 +1467,19 @@ void ImGuiPerfTool::_ShowEntriesTable()
 
             // Reinitialize sorting table to unsorted state.
             _InfoTableSort.resize(num_visible_labels * _Batches.Size);
-            for (int i = 0; i < num_visible_labels; i++)
-                for (int j = 0; j < _Batches.Size; j++)
-                    _InfoTableSort.Data[i * _Batches.Size + j] = j;
+            for (int entry_index = 0, i = 0; entry_index < num_visible_labels; entry_index++)
+                for (int batch_index = 0; batch_index < _Batches.Size; batch_index++, i++)
+                    _InfoTableSort.Data[i] = (((ImU64)batch_index * num_visible_labels + entry_index) << 24) | i;
 
             // Sort batches of each label.
             if (sorts_specs->SpecsCount > 0)
-                for (int i = 0; i < num_visible_labels; i++)
-                {
-                    int* label_batch_indices = &_InfoTableSort.Data[i * _Batches.Size];
-                    _InfoTableSortSpecs = sorts_specs;
-                    _InfoTableNowSortingLabelIdx = i;
-                    PerfToolInstance = this;
-                    ImQsort(label_batch_indices, (size_t)_Batches.Size, sizeof(label_batch_indices[0]), CompareWithSortSpecs);
-                    _InfoTableSortSpecs = NULL;
-                    PerfToolInstance = NULL;
-                }
+            {
+                _InfoTableSortSpecs = sorts_specs;
+                PerfToolInstance = this;
+                ImQsort(_InfoTableSort.Data, (size_t)_InfoTableSort.Size, sizeof(_InfoTableSort.Data[0]), CompareWithSortSpecs);
+                _InfoTableSortSpecs = NULL;
+                PerfToolInstance = NULL;
+            }
         }
 
     ImGui::TableHeadersRow();
@@ -1490,116 +1491,117 @@ void ImGuiPerfTool::_ShowEntriesTable()
     const bool scroll_into_view = _PlotHoverTestLabel && ImGui::IsMouseClicked(ImGuiMouseButton_Left);
     const float header_row_height = ImGui::TableGetCellBgRect(ImGui::GetCurrentTable(), 0).GetHeight();
     ImRect scroll_into_view_rect(FLT_MAX, FLT_MAX, -FLT_MAX, -FLT_MAX);
-    for (int label_index = num_visible_labels - 1; label_index >= 0; label_index--)
+
+    for (int row_index = _InfoTableSort.Size - 1; row_index >= 0; row_index--)
     {
-        const char* test_name = _LabelsVisible.Data[label_index];
-        for (int batch_index = _Batches.Size - 1; batch_index >= 0; batch_index--)
+        int batch_index_sorted, entry_index_sorted;
+        _UnpackSortedKey(_InfoTableSort[row_index], &batch_index_sorted, &entry_index_sorted);
+        ImGuiPerfToolBatch* batch = &_Batches[batch_index_sorted];
+        ImGuiPerfToolEntry* entry = &batch->Entries[entry_index_sorted];
+        const char* test_name = entry->TestName;
+
+        if (!_IsVisibleBuild(entry) || !_IsVisibleTest(entry->TestName) || entry->NumSamples == 0)
+            continue;
+
+        ImGui::PushID(entry);
+        ImGui::TableNextRow();
+        if (row_index & 1)
+            ImGui::TableSetBgColor(ImGuiTableBgTarget_RowBg0, ImGui::GetColorU32(ImGuiCol_TableRowBgAlt, 0.5f));
+        else
+            ImGui::TableSetBgColor(ImGuiTableBgTarget_RowBg0, ImGui::GetColorU32(ImGuiCol_TableRowBg, 0.5f));
+
+        if (_PlotHoverTest == entry_index_sorted)
         {
-            int batch_index_sorted = _InfoTableSort[label_index * _Batches.Size + batch_index];
-            ImGuiPerfToolEntry* entry = GetEntryByBatchIdx(batch_index_sorted, test_name);
-            if (entry == NULL || !_IsVisibleBuild(entry) || !_IsVisibleTest(entry->TestName) || entry->NumSamples == 0)
-                continue;
-
-            ImGui::PushID(entry);
-            ImGui::TableNextRow();
-            if (label_index & 1)
-                ImGui::TableSetBgColor(ImGuiTableBgTarget_RowBg0, ImGui::GetColorU32(ImGuiCol_TableRowBgAlt, 0.5f));
-            else
-                ImGui::TableSetBgColor(ImGuiTableBgTarget_RowBg0, ImGui::GetColorU32(ImGuiCol_TableRowBg, 0.5f));
-
-            if (_PlotHoverTest == label_index)
-            {
-                // Highlight a row that corresponds to hovered bar, or all rows that correspond to hovered perf test label.
-                if (_PlotHoverBatch == batch_index_sorted || _PlotHoverTestLabel)
-                    ImGui::TableSetBgColor(ImGuiTableBgTarget_RowBg0, ImColor(style.Colors[ImGuiCol_TextSelectedBg]));
-            }
-
-            ImGuiPerfToolEntry* baseline_entry = GetEntryByBatchIdx(_BaselineBatchIndex, test_name);
-
-            // Build info
-            if (ImGui::TableNextColumn())
-            {
-                // ImGuiSelectableFlags_Disabled + changing ImGuiCol_TextDisabled color prevents selectable from overriding table highlight behavior.
-                ImGui::PushStyleColor(ImGuiCol_Header, style.Colors[ImGuiCol_Text]);
-                ImGui::PushStyleColor(ImGuiCol_HeaderHovered, style.Colors[ImGuiCol_TextSelectedBg]);
-                ImGui::PushStyleColor(ImGuiCol_HeaderActive, style.Colors[ImGuiCol_TextSelectedBg]);
-                ImGui::Selectable(entry->TestName, false, ImGuiSelectableFlags_SpanAllColumns);
-                ImGui::PopStyleColor(3);
-                if (ImGui::IsItemHovered())
-                {
-                    _TableHoveredTest = label_index;
-                    _TableHoveredBatch = batch_index_sorted;
-                }
-
-                if (ImGui::BeginPopupContextItem())
-                {
-                    if (entry == baseline_entry)
-                        ImGui::BeginDisabled();
-                    if (ImGui::MenuItem("Set as baseline"))
-                        _SetBaseline(batch_index_sorted);
-                    if (entry == baseline_entry)
-                        ImGui::EndDisabled();
-                    ImGui::EndPopup();
-                }
-            }
-            if (ImGui::TableNextColumn())
-                ImGui::TextUnformatted(entry->GitBranchName);
-            if (ImGui::TableNextColumn())
-                ImGui::TextUnformatted(entry->Compiler);
-            if (ImGui::TableNextColumn())
-                ImGui::TextUnformatted(entry->OS);
-            if (ImGui::TableNextColumn())
-                ImGui::TextUnformatted(entry->Cpu);
-            if (ImGui::TableNextColumn())
-                ImGui::TextUnformatted(entry->BuildType);
-            if (ImGui::TableNextColumn())
-                ImGui::Text("x%d", entry->PerfStressAmount);
-
-            // Avg ms
-            if (ImGui::TableNextColumn())
-                ImGui::Text("%.3lf", entry->DtDeltaMs);
-
-            // Min ms
-            if (ImGui::TableNextColumn())
-                ImGui::Text("%.3lf", entry->DtDeltaMsMin);
-
-            // Max ms
-            if (ImGui::TableNextColumn())
-                ImGui::Text("%.3lf", entry->DtDeltaMsMax);
-
-            // Num samples
-            if (ImGui::TableNextColumn())
-                ImGui::Text("%d", entry->NumSamples);
-
-            // VS Baseline
-            if (ImGui::TableNextColumn())
-            {
-                float dt_change = (float)entry->VsBaseline;
-                if (_DisplayType == ImGuiPerfToolDisplayType_PerBranchColors)
-                {
-                    ImGui::TextUnformatted("--");
-                }
-                else
-                {
-                    Str30 label;
-                    dt_change = FormatVsBaseline(entry, baseline_entry, label);
-                    ImGui::TextUnformatted(label.c_str());
-                    if (dt_change != entry->VsBaseline)
-                    {
-                        entry->VsBaseline = dt_change;
-                        _InfoTableSortDirty = true;             // Force re-sorting.
-                    }
-                }
-            }
-
-            if (_PlotHoverTest == label_index && scroll_into_view)
-            {
-                ImGuiTable* table = ImGui::GetCurrentTable();
-                scroll_into_view_rect.Add(ImGui::TableGetCellBgRect(table, 0));
-            }
-
-            ImGui::PopID();
+            // Highlight a row that corresponds to hovered bar, or all rows that correspond to hovered perf test label.
+            if (_PlotHoverBatch == batch_index_sorted || _PlotHoverTestLabel)
+                ImGui::TableSetBgColor(ImGuiTableBgTarget_RowBg0, ImColor(style.Colors[ImGuiCol_TextSelectedBg]));
         }
+
+        ImGuiPerfToolEntry* baseline_entry = GetEntryByBatchIdx(_BaselineBatchIndex, test_name);
+
+        // Build info
+        if (ImGui::TableNextColumn())
+        {
+            // ImGuiSelectableFlags_Disabled + changing ImGuiCol_TextDisabled color prevents selectable from overriding table highlight behavior.
+            ImGui::PushStyleColor(ImGuiCol_Header, style.Colors[ImGuiCol_Text]);
+            ImGui::PushStyleColor(ImGuiCol_HeaderHovered, style.Colors[ImGuiCol_TextSelectedBg]);
+            ImGui::PushStyleColor(ImGuiCol_HeaderActive, style.Colors[ImGuiCol_TextSelectedBg]);
+            ImGui::Selectable(entry->TestName, false, ImGuiSelectableFlags_SpanAllColumns);
+            ImGui::PopStyleColor(3);
+            if (ImGui::IsItemHovered())
+            {
+                _TableHoveredTest = entry_index_sorted;
+                _TableHoveredBatch = batch_index_sorted;
+            }
+
+            if (ImGui::BeginPopupContextItem())
+            {
+                if (entry == baseline_entry)
+                    ImGui::BeginDisabled();
+                if (ImGui::MenuItem("Set as baseline"))
+                    _SetBaseline(batch_index_sorted);
+                if (entry == baseline_entry)
+                    ImGui::EndDisabled();
+                ImGui::EndPopup();
+            }
+        }
+        if (ImGui::TableNextColumn())
+            ImGui::TextUnformatted(entry->GitBranchName);
+        if (ImGui::TableNextColumn())
+            ImGui::TextUnformatted(entry->Compiler);
+        if (ImGui::TableNextColumn())
+            ImGui::TextUnformatted(entry->OS);
+        if (ImGui::TableNextColumn())
+            ImGui::TextUnformatted(entry->Cpu);
+        if (ImGui::TableNextColumn())
+            ImGui::TextUnformatted(entry->BuildType);
+        if (ImGui::TableNextColumn())
+            ImGui::Text("x%d", entry->PerfStressAmount);
+
+        // Avg ms
+        if (ImGui::TableNextColumn())
+            ImGui::Text("%.3lf", entry->DtDeltaMs);
+
+        // Min ms
+        if (ImGui::TableNextColumn())
+            ImGui::Text("%.3lf", entry->DtDeltaMsMin);
+
+        // Max ms
+        if (ImGui::TableNextColumn())
+            ImGui::Text("%.3lf", entry->DtDeltaMsMax);
+
+        // Num samples
+        if (ImGui::TableNextColumn())
+            ImGui::Text("%d", entry->NumSamples);
+
+        // VS Baseline
+        if (ImGui::TableNextColumn())
+        {
+            float dt_change = (float)entry->VsBaseline;
+            if (_DisplayType == ImGuiPerfToolDisplayType_PerBranchColors)
+            {
+                ImGui::TextUnformatted("--");
+            }
+            else
+            {
+                Str30 label;
+                dt_change = FormatVsBaseline(entry, baseline_entry, label);
+                ImGui::TextUnformatted(label.c_str());
+                if (dt_change != entry->VsBaseline)
+                {
+                    entry->VsBaseline = dt_change;
+                    _InfoTableSortDirty = true;             // Force re-sorting.
+                }
+            }
+        }
+
+        if (_PlotHoverTest == entry_index_sorted && scroll_into_view)
+        {
+            ImGuiTable* table = ImGui::GetCurrentTable();
+            scroll_into_view_rect.Add(ImGui::TableGetCellBgRect(table, 0));
+        }
+
+        ImGui::PopID();
     }
 
     if (scroll_into_view)
@@ -1697,6 +1699,17 @@ void ImGuiPerfTool::_AddSettingsHandler()
     ImGuiContext& g = *GImGui;
     g.SettingsHandlers.push_back(ini_handler);
 #endif
+}
+
+void ImGuiPerfTool::_UnpackSortedKey(ImU64 key, int* batch_index, int* entry_index, int* monotonic_index)
+{
+    IM_ASSERT(batch_index != NULL);
+    IM_ASSERT(entry_index != NULL);
+    const int num_visible_labels = _GetNumVisibleLabels();
+    *batch_index = (int)((key >> 24) / num_visible_labels);
+    *entry_index = (int)((key >> 24) % num_visible_labels);
+    if (monotonic_index)
+        *monotonic_index = (int)(key & 0xFFFFFF);
 }
 
 //-------------------------------------------------------------------------
@@ -1850,12 +1863,12 @@ void RegisterTests_PerfTool(ImGuiTestEngine* e)
         ctx->ItemClick(ctx->GetID("/$FOCUSED/Set Max"));
 #if IMGUI_TEST_ENGINE_ENABLE_IMPLOT
         // Take a screenshot.
-        perf_report_image = "captures/capture_perf_report_0000.png";
         ImGuiCaptureArgs* args = ctx->CaptureArgs;
         args->InCaptureRect = plot_child->Rect();
         ctx->CaptureAddWindow(window->Name);
         ctx->CaptureScreenshot(ImGuiCaptureFlags_HideMouseCursor);
         ctx->ItemDragWithDelta("splitter", ImVec2(0, -180));        // Show info table
+        perf_report_image = args->InOutputFile;
 #endif
         ImStrncpy(perftool->_FilterDateFrom, min_date_bkp, IM_ARRAYSIZE(min_date_bkp));
         ImStrncpy(perftool->_FilterDateTo, max_date_bkp, IM_ARRAYSIZE(max_date_bkp));
