@@ -3203,7 +3203,7 @@ void    ImGuiTestContext::DockInto(ImGuiTestRef src_id, ImGuiTestRef dst_id, ImG
     if (node_src)
         ref_src = ImGui::DockNodeGetWindowMenuButtonId(node_src); // Whole node grab
     else
-        ref_src = ref_src = (window_src->DockIsActive ? window_src->TabId : window_src->MoveId); // FIXME-TESTS FIXME-DOCKING: Identify tab
+        ref_src = (window_src->DockIsActive ? window_src->TabId : window_src->MoveId); // FIXME-TESTS FIXME-DOCKING: Identify tab
     MouseMove(ref_src, ImGuiTestOpFlags_NoCheckHoveredId);
     SleepStandard();
 

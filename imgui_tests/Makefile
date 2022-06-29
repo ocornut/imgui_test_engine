@@ -14,8 +14,8 @@ SOURCES += ../shared/imgui_app.cpp
 OBJS = $(addsuffix .o, $(basename $(notdir $(SOURCES))))
 UNAME_S := $(shell uname -s)
 
-CXXFLAGS = -std=c++14
-CFLAGS = -I../ -I$(IMGUI_DIR) -I$(IMGUI_DIR)/backends -I../libs
+CXXFLAGS += -std=c++14
+CFLAGS += -I../ -I$(IMGUI_DIR) -I$(IMGUI_DIR)/backends -I../libs
 CFLAGS += -g -Wall -Wformat
 
 ifeq ($(IMGUI_OPTIMIZE),1)

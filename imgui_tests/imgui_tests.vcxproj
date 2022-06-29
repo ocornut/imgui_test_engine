@@ -87,6 +87,7 @@
       <Optimization>Disabled</Optimization>
       <AdditionalIncludeDirectories>..;..\..\imgui;..\..\imgui\backends;%(AdditionalIncludeDirectories);</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>_UNICODE;UNICODE;IMGUI_USER_CONFIG="imgui_tests/imgui_tests_imconfig.h";%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalOptions>%(AdditionalOptions) $(ClFlags)</AdditionalOptions>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -101,6 +102,7 @@
       <Optimization>Disabled</Optimization>
       <AdditionalIncludeDirectories>..;..\..\imgui;..\..\imgui\backends;%(AdditionalIncludeDirectories);</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>_UNICODE;UNICODE;IMGUI_USER_CONFIG="imgui_tests/imgui_tests_imconfig.h";%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalOptions>%(AdditionalOptions) $(ClFlags)</AdditionalOptions>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -118,6 +120,7 @@
       <AdditionalIncludeDirectories>..;..\..\imgui;..\..\imgui\backends;%(AdditionalIncludeDirectories);</AdditionalIncludeDirectories>
       <BufferSecurityCheck>false</BufferSecurityCheck>
       <PreprocessorDefinitions>_UNICODE;UNICODE;IMGUI_USER_CONFIG="imgui_tests/imgui_tests_imconfig.h";%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalOptions>%(AdditionalOptions) $(ClFlags)</AdditionalOptions>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -137,6 +140,7 @@
       <AdditionalIncludeDirectories>..;..\..\imgui;..\..\imgui\backends;%(AdditionalIncludeDirectories);</AdditionalIncludeDirectories>
       <BufferSecurityCheck>false</BufferSecurityCheck>
       <PreprocessorDefinitions>_UNICODE;UNICODE;IMGUI_USER_CONFIG="imgui_tests/imgui_tests_imconfig.h";%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalOptions>%(AdditionalOptions) $(ClFlags)</AdditionalOptions>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
