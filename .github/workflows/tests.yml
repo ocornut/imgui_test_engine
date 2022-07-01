@@ -16,9 +16,12 @@
 # Builds of platforms not tested by default may be requested by adding a hint to commit message.
 # String may appear anywhere in commit message, caps are important.
 # Supported build hints:
-# * Build all
-# * Build Windows
-# * Build MacOS
+# * Build Win32: include x86 windows builds.
+# * Test MacOS: run MacOS tests.
+# * Full CI: perform full CI builds/tests.
+#
+# Forks may create a GitHub Actions secret named 'RUN_TESTS_ALWAYS' with value '1' to allow MacOS tests be executed on
+# every push to repository.
 #
 name: tests
 
@@ -38,6 +41,8 @@ on:
 jobs:
   Linux:
     runs-on: ubuntu-20.04
+    env:
+      SHOULD_BUILD_EXTENDED: ${{ github.event_name == 'workflow_run' || contains(github.event.head_commit.message, 'Full CI') }}
 
     strategy:
       fail-fast: false
@@ -65,19 +70,19 @@ jobs:
           sudo apt-get install -y libglfw3-dev libsdl2-dev
 
       - name: Build (with SDL2)
-        if: github.event_name == 'workflow_run'
+        if: env.SHOULD_BUILD_EXTENDED == 'true'
         run: |
           make -C imgui_tests/ clean
           CFLAGS=-Werror make -C imgui_tests/ BACKEND_LIB=sdl2 IMGUI_TEST_ENGINE_ENABLE_IMPLOT=0
 
       - name: Build (with GLFW3)
-        if: github.event_name == 'workflow_run'
+        if: env.SHOULD_BUILD_EXTENDED == 'true'
         run: |
           make -C imgui_tests/ clean
           CFLAGS=-Werror make -C imgui_tests/ BACKEND_LIB=glfw3 IMGUI_TEST_ENGINE_ENABLE_IMPLOT=0
 
       - name: Build (IMGUI_TEST_ENGINE_ENABLE_IMPLOT=0 + IMGUI_TEST_ENGINE_ENABLE_STD_FUNCTION=0)
-        if: github.event_name == 'workflow_run'
+        if: env.SHOULD_BUILD_EXTENDED == 'true'
         run: |
           mv imgui_tests/thirdparty/implot ./implot-hidden
           echo '#include "imgui_tests_imconfig.h"'                >  imgui_tests/imgui_tests_imconfig_temp.h
@@ -90,7 +95,7 @@ jobs:
           mv ./implot-hidden imgui_tests/thirdparty/implot
 
       - name: Build imgui_capture_tool
-        if: matrix.branch == 'master'
+        if: env.SHOULD_BUILD_EXTENDED == 'true' || matrix.branch == 'master'
         shell: bash
         run: |
           echo '#define IMGUI_TEST_ENGINE_ENABLE_COROUTINE_STDTHREAD_IMPL 1'  >  capture_tool_single_file.cpp
@@ -120,17 +125,16 @@ jobs:
         run: |
           timeout 300 imgui_tests/imgui_tests -nogui -nopause -v2 -ve4 -viewport-mock viewport
 
+  # MacOS minutes are expensive (x10) for private repo so reduce the amount of tests running there for now.
+  # Builds are performed only for docking branch and tests are only performed daily or on request.
   MacOS:
     runs-on: macos-11
-    if: |
-      contains(github.event.head_commit.message, 'Build all') ||
-      contains(github.event.head_commit.message, 'Build MacOS') ||
-      github.event_name == 'workflow_run'
+    env:
+      SHOULD_TEST: ${{ contains(github.event.head_commit.message, 'Test MacOS') || contains(github.event.head_commit.message, 'Full CI') || secrets.RUN_TESTS_ALWAYS == '1' || github.event_name == 'workflow_run' }}
 
     strategy:
       fail-fast: false
       matrix:
-        # MacOS minutes are expensive (x10) for private repo so reduce the amount of tests running there for now.
         branch: [docking]
 
     steps:
@@ -150,19 +154,18 @@ jobs:
           CFLAGS=-Werror make -C imgui_tests/ ASAN=1
 
       - name: Run Tests
+        if: env.SHOULD_TEST == 'true'
         run: |
           imgui_tests/imgui_tests -nogui -nopause -v2 -ve4 tests
 
       - name: Run Viewport Tests
-        if: matrix.branch == 'docking'
+        if: env.SHOULD_TEST == 'true' && matrix.branch == 'docking'
         run: |
           imgui_tests/imgui_tests -nogui -nopause -v2 -ve4 -viewport-mock viewport
 
+  # Windows minutes are a little expensive (x2) for private repo so reduce the amount of tests running there for now.
+  # Builds and tests are performed only for docking branch and x64 arch. Daily builds also include x86.
   Windows:
-    if: |
-      contains(github.event.head_commit.message, 'Build all') ||
-      contains(github.event.head_commit.message, 'Build Windows') ||
-      github.event_name == 'workflow_run'
     runs-on: windows-2022
     env:
       VS_PATH: C:\Program Files\Microsoft Visual Studio\2022\Enterprise\
@@ -175,18 +178,30 @@ jobs:
         arch: [Win32, x64]
 
     steps:
+       # FIXME: This is an ugly workaround for github actions being unable to terminate jobs from a step early without
+       # failing entire job and us having no access to matrix.branch one level above to avoid running job entirely.
+       # https://github.com/actions/runner/issues/662
+      - name: Environment
+        shell: bash
+        run: |
+          # Do only x64 builds by default, win32 builds daily. Done in a step because only here we have access to build matrix.
+          echo 'SHOULD_BUILD=${{ matrix.arch == 'x64' || github.event_name == 'workflow_run' || contains(github.event.head_commit.message, 'Build Win32') || contains(github.event.head_commit.message, 'Full CI') }}' >> $GITHUB_ENV
+
       - uses: actions/checkout@v1
+        if: env.SHOULD_BUILD == 'true'
         with:
           fetch-depth: 1
           submodules: recursive
 
       - uses: actions/checkout@v1
+        if: env.SHOULD_BUILD == 'true'
         with:
           fetch-depth: 1
           repository: ocornut/imgui
           ref: ${{ matrix.branch }}
 
       - name: Fix Projects
+        if: env.SHOULD_BUILD == 'true'
         shell: powershell
         run: |
           # WARNING: This will need updating if toolset/sdk change in project files!
@@ -200,14 +215,16 @@ jobs:
           }
 
       - name: Build ${{ matrix.arch }} imgui_tests
+        if: env.SHOULD_BUILD == 'true'
         shell: cmd
         run: '"%MSBUILD_PATH%\MSBuild.exe" imgui_tests/imgui_tests.vcxproj /p:Platform=${{ matrix.arch }} /p:Configuration=Release /p:ClFlags=/WX'
 
       - name: Run Tests
+        if: env.SHOULD_BUILD == 'true'
         run: |
           imgui_tests/Release/imgui_tests.exe -nogui -nopause -v2 -ve4 tests
 
       - name: Run Viewport Tests
-        if: matrix.branch == 'docking'
+        if: env.SHOULD_BUILD == 'true' && matrix.branch == 'docking'
         run: |
           imgui_tests/Release/imgui_tests.exe -nogui -nopause -v2 -ve4 -viewport-mock viewport
