@@ -73,13 +73,13 @@ jobs:
         if: env.SHOULD_BUILD_EXTENDED == 'true'
         run: |
           make -C imgui_tests/ clean
-          CFLAGS=-Werror make -C imgui_tests/ BACKEND_LIB=sdl2 IMGUI_TEST_ENGINE_ENABLE_IMPLOT=0
+          CFLAGS=-Werror make -C imgui_tests/ -j$(nproc) BACKEND_LIB=sdl2 IMGUI_TEST_ENGINE_ENABLE_IMPLOT=0
 
       - name: Build (with GLFW3)
         if: env.SHOULD_BUILD_EXTENDED == 'true'
         run: |
           make -C imgui_tests/ clean
-          CFLAGS=-Werror make -C imgui_tests/ BACKEND_LIB=glfw3 IMGUI_TEST_ENGINE_ENABLE_IMPLOT=0
+          CFLAGS=-Werror make -C imgui_tests/ -j$(nproc) BACKEND_LIB=glfw3 IMGUI_TEST_ENGINE_ENABLE_IMPLOT=0
 
       - name: Build (IMGUI_TEST_ENGINE_ENABLE_IMPLOT=0 + IMGUI_TEST_ENGINE_ENABLE_STD_FUNCTION=0)
         if: env.SHOULD_BUILD_EXTENDED == 'true'
@@ -91,7 +91,7 @@ jobs:
           echo '#undef  IMGUI_TEST_ENGINE_DISABLE_STD_FUNCTION'   >> imgui_tests/imgui_tests_imconfig_temp.h
           echo '#define IMGUI_TEST_ENGINE_DISABLE_STD_FUNCTION 0' >> imgui_tests/imgui_tests_imconfig_temp.h
           make -C imgui_tests/ clean
-          CFLAGS=-Werror make -C imgui_tests/ IMGUI_USER_CONFIG=imgui_tests/imgui_tests_imconfig_temp.h IMGUI_TEST_ENGINE_ENABLE_IMPLOT=0
+          CFLAGS=-Werror make -C imgui_tests/ -j$(nproc) IMGUI_USER_CONFIG=imgui_tests/imgui_tests_imconfig_temp.h IMGUI_TEST_ENGINE_ENABLE_IMPLOT=0
           mv ./implot-hidden imgui_tests/thirdparty/implot
 
       - name: Build imgui_capture_tool
@@ -113,7 +113,7 @@ jobs:
       - name: Build imgui_tests
         run: |
             make -C imgui_tests/ clean
-            CFLAGS=-Werror make -C imgui_tests/ ASAN=1 IMGUI_OPTIMIZE=1
+            CFLAGS=-Werror make -C imgui_tests/ -j$(nproc) ASAN=1 IMGUI_OPTIMIZE=1
 
       - name: Run Tests
         # capture_implot_demo alone takes about 60s to run on CI worker therefore it is disabled to save time.
@@ -151,7 +151,7 @@ jobs:
 
       - name: Build
         run: |
-          CFLAGS=-Werror make -C imgui_tests/ ASAN=1
+          CFLAGS=-Werror make -C imgui_tests/ -j$(sysctl -n hw.ncpu) ASAN=1
 
       - name: Run Tests
         if: env.SHOULD_TEST == 'true'
@@ -217,7 +217,7 @@ jobs:
       - name: Build ${{ matrix.arch }} imgui_tests
         if: env.SHOULD_BUILD == 'true'
         shell: cmd
-        run: '"%MSBUILD_PATH%\MSBuild.exe" imgui_tests/imgui_tests.vcxproj /p:Platform=${{ matrix.arch }} /p:Configuration=Release /p:ClFlags=/WX'
+        run: '"%MSBUILD_PATH%\MSBuild.exe" imgui_tests/imgui_tests.vcxproj /p:Platform=${{ matrix.arch }} /p:Configuration=Release /p:ClFlags=/WX -maxcpucount:%NUMBER_OF_PROCESSORS%'
 
       - name: Run Tests
         if: env.SHOULD_BUILD == 'true'
