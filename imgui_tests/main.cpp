@@ -109,6 +109,7 @@ struct TestApp
     bool                    OptPauseOnExit = true;
     bool                    OptViewports = false;
     bool                    OptMockViewports = false;
+    bool                    OptCaptureEnabled = true;
     int                     OptStressAmount = 5;
     Str128                  OptSourceFileOpener;
     Str128                  OptExportFilename;
@@ -216,6 +217,10 @@ static bool ParseCommandLineOptions(int argc, char** argv)
             {
                 g_App.OptPauseOnExit = false;
             }
+            else if (strcmp(argv[n], "-nocapture") == 0)
+            {
+                g_App.OptCaptureEnabled = false;
+            }
             else if (strcmp(argv[n], "-viewport") == 0)
             {
                 g_App.OptViewports = true;
@@ -269,6 +274,7 @@ static bool ParseCommandLineOptions(int argc, char** argv)
                 printf("  -slow                    : run automation at feeble human speed.\n");
                 printf("  -nothrottle              : run GUI app without throttling/vsync by default.\n");
                 printf("  -nopause                 : don't pause application on exit.\n");
+                printf("  -nocapture               : don't capture any images or video.\n");
                 printf("  -stressamount <int>      : set performance test duration multiplier (default: 5)\n");
                 printf("  -fileopener <file>       : provide a bat/cmd/shell script to open source file.\n");
                 printf("  -export-file <file>      : save test run results in specified file.\n");
@@ -491,6 +497,7 @@ int main(int argc, char** argv)
     test_io.ConfigVerboseLevelOnError = g_App.OptVerboseLevelError;
     test_io.ConfigNoThrottle = g_App.OptNoThrottle;
     test_io.PerfStressAmount = g_App.OptStressAmount;
+    test_io.ConfigCaptureEnabled = g_App.OptCaptureEnabled;
     FindVideoEncoder(test_io.VideoCaptureEncoderPath, IM_ARRAYSIZE(test_io.VideoCaptureEncoderPath));
     ImStrncpy(test_io.VideoCaptureEncoderParams, IMGUI_CAPTURE_DEFAULT_VIDEO_PARAMS_FOR_FFMPEG, IM_ARRAYSIZE(test_io.VideoCaptureEncoderParams));
     ImStrncpy(test_io.GifCaptureEncoderParams, IMGUI_CAPTURE_DEFAULT_GIF_PARAMS_FOR_FFMPEG, IM_ARRAYSIZE(test_io.GifCaptureEncoderParams));
