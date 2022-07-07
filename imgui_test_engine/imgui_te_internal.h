@@ -74,7 +74,6 @@ struct ImGuiTestInput
     ImGuiTestInputType      Type = ImGuiTestInputType_None;
     ImGuiKey                Key = ImGuiKey_COUNT;
     ImGuiModFlags           KeyMods = ImGuiModFlags_None;
-    ImGuiNavInput           NavInput = ImGuiNavInput_COUNT;
     ImWchar                 Char = 0;
     bool                    Down = false;
 

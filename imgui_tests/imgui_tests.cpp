@@ -713,23 +713,25 @@ void RegisterTests_Window(ImGuiTestEngine* e)
     };
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
+        ImGuiContext& g = *ctx->UiContext;
         ctx->SetRef("Test Window");
         ctx->ItemClick("open");
         ctx->SetRef("/$FOCUSED");
         ctx->MouseMove("BBB", ImGuiTestOpFlags_NoFocusWindow);
         ctx->MouseMove("CCC", ImGuiTestOpFlags_NoFocusWindow);
-        IM_CHECK((ctx->UiContext->NavWindow->Flags & ImGuiWindowFlags_ChildMenu) != 0);
+        IM_CHECK(g.NavWindow != NULL);
+        IM_CHECK((g.NavWindow->Flags & ImGuiWindowFlags_ChildMenu) != 0);
         ctx->MouseMove("DDD", ImGuiTestOpFlags_NoFocusWindow);
-        IM_CHECK_EQ(ctx->UiContext->HoveredIdPreviousFrame, ctx->GetID("DDD"));
-        IM_CHECK((ctx->UiContext->NavWindow->Flags & ImGuiWindowFlags_ChildMenu) != 0);
+        IM_CHECK_EQ(g.HoveredIdPreviousFrame, ctx->GetID("DDD"));
+        IM_CHECK((g.NavWindow->Flags & ImGuiWindowFlags_ChildMenu) != 0);
 #if IMGUI_VERSION_NUM >= 18713
         ctx->MouseMove("EEE", ImGuiTestOpFlags_NoFocusWindow);
-        IM_CHECK_EQ(ctx->UiContext->HoveredIdPreviousFrame, ctx->GetID("EEE"));
+        IM_CHECK_EQ(g.HoveredIdPreviousFrame, ctx->GetID("EEE"));
 #endif
         ctx->MouseMove("FFF", ImGuiTestOpFlags_NoFocusWindow);
-        IM_CHECK_EQ(ctx->UiContext->HoveredIdPreviousFrame, ctx->GetID("FFF"));
+        IM_CHECK_EQ(g.HoveredIdPreviousFrame, ctx->GetID("FFF"));
         ctx->Yield();
-        IM_CHECK((ctx->UiContext->NavWindow->Flags & ImGuiWindowFlags_ChildMenu) == 0);
+        IM_CHECK((g.NavWindow->Flags & ImGuiWindowFlags_ChildMenu) == 0);
     };
 
     // ## Test clicking on already opened menu doesn't make it flicker

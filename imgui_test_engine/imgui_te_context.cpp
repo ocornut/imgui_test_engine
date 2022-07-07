@@ -1316,9 +1316,8 @@ void    ImGuiTestContext::NavActivate()
 
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
     LogDebug("NavActivate");
-
     Yield(); // ?
-    KeyPress(ImGuiKey_NavActivate);
+    KeyPress(ImGuiKey_Space);
 }
 
 void    ImGuiTestContext::NavInput()
@@ -1328,7 +1327,17 @@ void    ImGuiTestContext::NavInput()
 
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
     LogDebug("NavInput");
-    KeyPress(ImGuiKey_NavInput);
+    KeyPress(ImGuiKey_Enter);
+}
+
+void    ImGuiTestContext::NavCancel()
+{
+    if (IsError())
+        return;
+
+    IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
+    LogDebug("NavCancel");
+    KeyPress(ImGuiKey_Escape);
 }
 
 void    ImGuiTestContext::NavEnableForWindow()

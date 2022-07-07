@@ -288,9 +288,9 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
         ctx->MenuClick("Menu");
         ctx->NavEnableForWindow();
         IM_CHECK(g.NavId == ctx->GetID("/##Menu_00/New"));
-        ctx->KeyPress(ImGuiKey_NavUp);
+        ctx->KeyPress(ImGuiKey_UpArrow);
         IM_CHECK(g.NavId == ctx->GetID("/##Menu_00/Quit"));
-        ctx->KeyPress(ImGuiKey_NavDown);
+        ctx->KeyPress(ImGuiKey_DownArrow);
         IM_CHECK(g.NavId == ctx->GetID("/##Menu_00/New"));
     };
 
@@ -347,10 +347,10 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
             ctx->LogDebug("Variant: %d", variant);
             ctx->SetRef("Test Window");
             ctx->MenuClick("Menu/Submenu1");
-            ctx->KeyPress(ImGuiKey_NavRight);
-            ctx->KeyPress(ImGuiKey_NavDown);
+            ctx->KeyPress(ImGuiKey_RightArrow);
+            ctx->KeyPress(ImGuiKey_DownArrow);
             IM_CHECK(g.NavId == ctx->GetID("/##Menu_01/B"));
-            ctx->KeyPress(ImGuiKey_NavLeft);
+            ctx->KeyPress(ImGuiKey_LeftArrow);
             IM_CHECK(g.NavId == ctx->GetID("/##Menu_00/Submenu1")); // Ensure navigation doesn't get us to Submenu2 which is at same Y position as B
 
             ctx->MenuClick("Menu/Submenu2");
@@ -359,23 +359,23 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
             else
                 ctx->SetRef(child_id);
             ctx->ItemClick("Tabs/Tab 1");
-            ctx->KeyPress(ImGuiKey_NavRight);           // Activate nav, navigate to next tab
+            ctx->KeyPress(ImGuiKey_RightArrow);         // Activate nav, navigate to next tab
 #if IMGUI_VERSION_NUM < 18414
             if (g.NavId == ctx->GetID("Tabs/Tab 1"))
-                ctx->KeyPress(ImGuiKey_NavRight);       // FIXME-NAV: NavInit() prevents navigation to Tab 2 on the very first try.
+                ctx->KeyPress(ImGuiKey_RightArrow);     // FIXME-NAV: NavInit() prevents navigation to Tab 2 on the very first try.
 #endif
             IM_CHECK(g.NavId == ctx->GetID("Tabs/Tab 2"));
-            ctx->KeyPress(ImGuiKey_NavLeft);            // Navigate to first tab, not closing menu
+            ctx->KeyPress(ImGuiKey_LeftArrow);          // Navigate to first tab, not closing menu
             IM_CHECK(g.NavId == ctx->GetID("Tabs/Tab 1"));
             if (variant == 1)
             {
-                ctx->KeyPress(ImGuiKey_NavLeft);        // Navigation fails, not closing menu
+                ctx->KeyPress(ImGuiKey_LeftArrow);      // Navigation fails, not closing menu
                 IM_CHECK(g.NavId == ctx->GetID("Tabs/Tab 1"));
                 ctx->KeyPress(ImGuiKey_Escape);         // Exit child window nav
             }
-            ctx->KeyPress(ImGuiKey_NavLeft);            // Close 2nd level menu
+            ctx->KeyPress(ImGuiKey_LeftArrow);          // Close 2nd level menu
             IM_CHECK_STR_EQ(g.NavWindow->Name, "##Menu_00");
-            ctx->KeyPress(ImGuiKey_NavLeft);            // Close 1st level menu
+            ctx->KeyPress(ImGuiKey_LeftArrow);          // Close 1st level menu
             IM_CHECK_STR_EQ(g.NavWindow->Name, "Test Window");
         }
 
@@ -383,37 +383,37 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
         ctx->SetRef("Test Window");
         ctx->MenuClick("Menu/Submenu1");
         IM_CHECK_EQ(g.OpenPopupStack.Size, 2);
-        ctx->KeyPress(ImGuiKey_NavLeft);            // Left key closes a menu if menu item was clicked.
+        ctx->KeyPress(ImGuiKey_LeftArrow);          // Left key closes a menu if menu item was clicked.
         IM_CHECK_EQ(g.OpenPopupStack.Size, 0);
 
         ctx->MenuClick("Menu");
         ctx->ItemAction(ImGuiTestAction_Hover, "/$FOCUSED/Submenu1", NULL, ImGuiTestOpFlags_NoFocusWindow);
         IM_CHECK_EQ(g.OpenPopupStack.Size, 2);
-        ctx->KeyPress(ImGuiKey_NavRight);           // Right key closes a menu if item was hovered.
+        ctx->KeyPress(ImGuiKey_RightArrow);         // Right key closes a menu if item was hovered.
         IM_CHECK_EQ(g.OpenPopupStack.Size, 0);
 
         ctx->MenuClick("Menu/Submenu1");
         IM_CHECK_EQ(g.OpenPopupStack.Size, 2);
-        ctx->KeyPress(ImGuiKey_NavRight);           // Right key maintains submenu open if menu item was clicked.
+        ctx->KeyPress(ImGuiKey_RightArrow);         // Right key maintains submenu open if menu item was clicked.
         IM_CHECK_EQ(g.OpenPopupStack.Size, 2);
 #if IMGUI_BROKEN_TESTS
         // FIXME: Not working currently, but seems like it should be a correct behavior.
         IM_CHECK(g.NavId == ctx->GetID("/$FOCUSED/A"));
 #endif
-        ctx->KeyPress(ImGuiKey_NavDown);            // Down key correctly moves to a second item in submenu.
+        ctx->KeyPress(ImGuiKey_DownArrow);          // Down key correctly moves to a second item in submenu.
         IM_CHECK(g.NavId == ctx->GetID("/$FOCUSED/B"));
 
         ctx->PopupCloseAll();
         ctx->MenuClick("Menu");
         ctx->ItemAction(ImGuiTestAction_Hover, "/$FOCUSED/Submenu1", NULL, ImGuiTestOpFlags_NoFocusWindow);
         IM_CHECK_EQ(g.OpenPopupStack.Size, 2);
-        ctx->KeyPress(ImGuiKey_NavLeft);           // Right key maintains submenu open if menu item was hovered.
+        ctx->KeyPress(ImGuiKey_LeftArrow);          // Right key maintains submenu open if menu item was hovered.
         IM_CHECK_EQ(g.OpenPopupStack.Size, 2);
 #if IMGUI_BROKEN_TESTS
         // FIXME: Not working currently, but seems like it should be a correct behavior.
         IM_CHECK(g.NavId == ctx->GetID("/$FOCUSED/A"));
 #endif
-        ctx->KeyPress(ImGuiKey_NavDown);            // Down key correctly moves to a second item in submenu.
+        ctx->KeyPress(ImGuiKey_DownArrow);          // Down key correctly moves to a second item in submenu.
         IM_CHECK(g.NavId == ctx->GetID("/$FOCUSED/B"));
     };
 
@@ -666,7 +666,7 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
         ctx->NavInput();
         ctx->KeyCharsReplace("123");
         IM_CHECK_STR_EQ(vars.Str1, "123");
-        ctx->KeyPress(ImGuiKey_NavActivate);
+        ctx->KeyPress(ImGuiKey_Enter);
         IM_CHECK(g.ActiveId == 0);
         IM_CHECK_STR_EQ(vars.Str1, "123");
 
@@ -676,7 +676,7 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
         IM_CHECK_STR_EQ(vars.Str1, "0");
         ctx->NavInput();
         ctx->KeyCharsReplace("123");
-        ctx->KeyPress(ImGuiKey_NavCancel);
+        ctx->NavCancel();
         IM_CHECK(g.ActiveId == 0);
         IM_CHECK_STR_EQ(vars.Str1, "0");
 
@@ -759,11 +759,11 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
 
         ctx->NavActivate();                                     // Enter child window
         IM_CHECK((g.NavWindow->Flags & ImGuiWindowFlags_ChildWindow) != 0);
-        ctx->KeyPress(ImGuiKey_NavDown);               // Manipulate something
+        ctx->KeyPress(ImGuiKey_DownArrow);                          // Manipulate something
         //IM_CHECK(g.NavId == ctx->ItemInfo("/**/Button 4")->ID); // Can't easily include child window name in ID because the / gets inhibited...
         IM_CHECK(g.NavId == ctx->GetID("/$FOCUSED/Button 4"));
         ctx->NavActivate();
-        ctx->KeyPress(ImGuiKey_NavCancel);                 // Leave child window
+        ctx->NavCancel();                                       // Leave child window
         IM_CHECK(g.NavId == ctx->GetID("Window 1/Child"));      // Focus resumes last location before entering child window
     };
 
@@ -1147,7 +1147,7 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
         ctx->NavMoveTo("Configuration");
         IM_CHECK(g.NavDisableHighlight == false);
         IM_CHECK(g.NavDisableMouseHover == true);
-        ctx->KeyPress(ImGuiKey_NavUp);
+        ctx->KeyPress(ImGuiKey_UpArrow);
         IM_CHECK(g.NavId == ctx->GetID("Help"));
         IM_CHECK(g.NavDisableHighlight == false);
         IM_CHECK(g.NavDisableMouseHover == true);
@@ -1196,11 +1196,11 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
 
         // Navigate to "c" item.
         IM_CHECK_EQ(ImGui::GetFocusID(), ctx->GetID("a"));
-        ctx->KeyPress(ImGuiKey_NavDown);
-        ctx->KeyPress(ImGuiKey_NavDown);
+        ctx->KeyPress(ImGuiKey_DownArrow);
+        ctx->KeyPress(ImGuiKey_DownArrow);
         IM_CHECK_EQ(ImGui::GetFocusID(), ctx->GetID("c"));
-        ctx->KeyPress(ImGuiKey_NavDown);
-        ctx->KeyPress(ImGuiKey_NavDown);
+        ctx->KeyPress(ImGuiKey_DownArrow);
+        ctx->KeyPress(ImGuiKey_DownArrow);
         IM_CHECK_EQ(ImGui::GetFocusID(), ctx->GetID("a"));
     };
 
@@ -1259,7 +1259,7 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
             else
                 IM_CHECK_EQ(ImGui::GetFocusID(), ctx->GetID("Button 0,3"));     // Started Nav from Button 0,2 (Visible)
 
-            ctx->KeyPress(ImGuiKey_NavUp);                             // Move to opposite direction than previous operation in order to trigger scrolling focused item into view
+            ctx->KeyPress(ImGuiKey_UpArrow);                                    // Move to opposite direction than previous operation in order to trigger scrolling focused item into view
             IM_CHECK(window->InnerRect.Contains(get_focus_item_rect(window)));  // Ensure item scrolled into view is fully visible
 
             // Up
@@ -1272,7 +1272,7 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
             else
                 IM_CHECK_EQ(ImGui::GetFocusID(), ctx->GetID("Button 0,2"));
 
-            ctx->KeyPress(ImGuiKey_NavDown);
+            ctx->KeyPress(ImGuiKey_DownArrow);
             IM_CHECK(window->InnerRect.Contains(get_focus_item_rect(window)));
 
             // Right
@@ -1285,7 +1285,7 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
             else
                 IM_CHECK_EQ(ImGui::GetFocusID(), ctx->GetID("Button 3,0"));
 
-            ctx->KeyPress(ImGuiKey_NavLeft);
+            ctx->KeyPress(ImGuiKey_LeftArrow);
             IM_CHECK(window->InnerRect.Contains(get_focus_item_rect(window)));
 
             // Left
