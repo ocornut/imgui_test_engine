@@ -354,13 +354,15 @@ static int PerfToolCountBuilds(ImGuiPerfTool* perftool, bool only_visible)
 {
     int num_builds = 0;
     ImU64 build_id = 0;
-    for (ImGuiPerfToolBatch& batch : perftool->_Batches)
-        if (build_id != GetBuildID(&batch))
+    for (ImGuiPerfToolEntry& entry : perftool->_SrcData)
+    {
+        if (build_id != GetBuildID(&entry))
         {
-            if (!only_visible || perftool->_IsVisibleBuild(&batch))
+            if (!only_visible || perftool->_IsVisibleBuild(&entry))
                 num_builds++;
-            build_id = GetBuildID(&batch);
+            build_id = GetBuildID(&entry);
         }
+    }
     return num_builds;
 }
 
@@ -409,14 +411,20 @@ static bool RenderMultiSelectFilter(ImGuiPerfTool* perf, const char* filter_hint
         ImGui::PushItemFlag(ImGuiItemFlags_SelectableDontClosePopup, true);
 
     if (ImGui::MenuItem("Show All"))
+    {
         for (const char* label : *labels)
             if (strstr(label, perf->_Filter) != NULL)
                 visibility.SetBool(ImHashStr(label), true);
+        modified = true;
+    }
 
     if (ImGui::MenuItem("Hide All"))
+    {
         for (const char* label : *labels)
             if (strstr(label, perf->_Filter) != NULL)
                 visibility.SetBool(ImHashStr(label), false);
+        modified = true;
+    }
 
     // Render perf labels in reversed order. Labels are sorted, but stored in reversed order to render them on the plot
     // from top down (implot renders stuff from bottom up).
@@ -672,6 +680,12 @@ void ImGuiPerfTool::_Rebuild()
             *mean_entry = batch.Entries.Data[0];
             mean_entry->LabelIndex = _LabelsVisible.Size - num_visible_mean_labels + visible_label_i;
             mean_entry->TestName = _LabelsVisible.Data[mean_entry->LabelIndex];
+            mean_entry->GitBranchName = "";
+            mean_entry->BuildType = "";
+            mean_entry->Compiler = "";
+            mean_entry->OS = "";
+            mean_entry->Cpu = "";
+            mean_entry->Date = "";
             visible_label_i++;
             if (i == 0)
                 mean_entry->DtDeltaMs = num_visible_labels / delta_rec;
@@ -705,6 +719,8 @@ void ImGuiPerfTool::_Rebuild()
     _BaselineBatchIndex = -1;
     for (ImGuiPerfToolBatch& batch : _Batches)
     {
+        if (batch.Entries.empty())
+            continue;
         ImGuiPerfToolEntry* entry = &batch.Entries.Data[0];
         ImGuiID branch_hash = ImHashStr(entry->GitBranchName);
         batch.BranchIndex = temp_set.GetInt(branch_hash, -1);
@@ -743,12 +759,6 @@ void ImGuiPerfTool::_Rebuild()
 
     _CalculateLegendAlignment();
     temp_set.Data.resize(0);
-
-    // ImPlot will assert if there is just one visible label, so keep a dummy one in _LabelsVisible for clarity all the time.
-    // Whenever _LabelsVisible is looped we always skip last item.
-    // FIXME: In theory this is not needed any more, because of added synthetic mean entries. Removing this hack would touch
-    // more places therefore it is left for a later time.
-    _LabelsVisible.push_back("");
 }
 
 void ImGuiPerfTool::Clear()
@@ -835,7 +845,8 @@ ImGuiPerfToolEntry* ImGuiPerfTool::GetEntryByBatchIdx(int idx, const char* perf_
 bool ImGuiPerfTool::_IsVisibleBuild(ImGuiPerfToolBatch* batch)
 {
     IM_ASSERT(batch != NULL);
-    IM_ASSERT(!batch->Entries.empty());
+    if (batch->Entries.empty())
+        return false;   // All entries are hidden.
     return _IsVisibleBuild(&batch->Entries.Data[0]);
 }
 
@@ -860,6 +871,8 @@ void ImGuiPerfTool::_CalculateLegendAlignment()
     _AlignStress = _AlignType = _AlignCpu = _AlignOs = _AlignCompiler = _AlignBranch = _AlignSamples = 0;
     for (ImGuiPerfToolBatch& batch : _Batches)
     {
+        if (batch.Entries.empty())
+            continue;
         ImGuiPerfToolEntry* entry = &batch.Entries.Data[0];
         if (!_IsVisibleBuild(entry))
             continue;
@@ -1063,7 +1076,7 @@ void ImGuiPerfTool::ShowUI(ImGuiTestEngine* engine)
     if (ImGui::IsItemHovered())
         ImGui::SetTooltip("Hide or show individual builds.");
     ImGui::SameLine();
-    if (ImGui::Button(Str64f("Filter tests (%d/%d)###Filter tests", _GetNumVisibleLabels(), _Labels.Size).c_str()))
+    if (ImGui::Button(Str64f("Filter tests (%d/%d)###Filter tests", _LabelsVisible.Size, _Labels.Size).c_str()))
         ImGui::OpenPopup("Filter perfs");
     if (ImGui::IsItemHovered())
         ImGui::SetTooltip("Hide or show individual tests.");
@@ -1131,11 +1144,9 @@ void ImGuiPerfTool::ShowUI(ImGuiTestEngine* engine)
 
             // Find columns with nothing checked.
             bool checked_any[] = { false, false, false, false, false };
-            for (ImGuiPerfToolBatch& batch : _Batches)
+            for (ImGuiPerfToolEntry& entry : _SrcData)
             {
-                IM_ASSERT(!batch.Entries.empty());
-                ImGuiPerfToolEntry* entry = &batch.Entries.Data[0];
-                const char* properties[] = { entry->GitBranchName, entry->BuildType, entry->Cpu, entry->OS, entry->Compiler };
+                const char* properties[] = { entry.GitBranchName, entry.BuildType, entry.Cpu, entry.OS, entry.Compiler };
                 for (int i = 0; i < IM_ARRAYSIZE(properties); i++)
                 {
                     ImGuiID hash = ImHashStr(properties[i]);
@@ -1144,13 +1155,11 @@ void ImGuiPerfTool::ShowUI(ImGuiTestEngine* engine)
             }
 
             bool visible = true;
-            for (ImGuiPerfToolBatch& batch : _Batches)
+            for (ImGuiPerfToolEntry& entry : _SrcData)
             {
-                IM_ASSERT(!batch.Entries.empty());
-                ImGuiPerfToolEntry* entry = &batch.Entries.Data[0];
                 bool new_row = true;
                 ImGuiID hash;
-                const char* properties[] = { entry->GitBranchName, entry->BuildType, entry->Cpu, entry->OS, entry->Compiler };
+                const char* properties[] = { entry.GitBranchName, entry.BuildType, entry.Cpu, entry.OS, entry.Compiler };
                 for (int i = 0; i < IM_ARRAYSIZE(properties); i++)
                 {
                     hash = ImHashStr(properties[i]);
@@ -1199,7 +1208,7 @@ void ImGuiPerfTool::ShowUI(ImGuiTestEngine* engine)
         _Rebuild();
 
     // Rendering a plot of empty dataset is not possible.
-    if (_Batches.empty() || _LabelsVisible.empty() || _NumVisibleBuilds == 0)
+    if (_Batches.empty() || _LabelsVisible.Size == 0 || _NumVisibleBuilds == 0)
     {
         ImGui::TextUnformatted("No data is available. Run some perf tests or adjust filter settings.");
         return;
@@ -1259,7 +1268,7 @@ void ImGuiPerfTool::_ShowEntriesPlot()
         return;
 
     ImPlot::SetupAxis(ImAxis_X1, NULL, ImPlotAxisFlags_NoTickLabels);
-    ImPlot::SetupAxisTicks(ImAxis_Y1, 0, _GetNumVisibleLabels(), _LabelsVisible.Size, _LabelsVisible.Data);
+    ImPlot::SetupAxisTicks(ImAxis_Y1, 0, _LabelsVisible.Size, _LabelsVisible.Size, _LabelsVisible.Data);
     ImPlot::SetupLegend(ImPlotLocation_NorthEast);
 
     // Amount of vertical space bars of one label will occupy. 1.0 would leave no space between bars of adjacent labels.
@@ -1329,7 +1338,7 @@ void ImGuiPerfTool::_ShowEntriesPlot()
 
     // Highlight bars when hovering a label.
     int hovered_label_index = -1;
-    for (int i = 0; i < _GetNumVisibleLabels() && can_highlight; i++)
+    for (int i = 0; i < _LabelsVisible.Size && can_highlight; i++)
     {
         ImRect label_rect_loose = ImPlotGetYTickRect(i);                // Rect around test label
         ImRect label_rect_tight;                                        // Rect around test label, covering bar height and label area width
@@ -1446,7 +1455,7 @@ void ImGuiPerfTool::_ShowEntriesTable()
         return;
 
     ImGuiStyle& style = ImGui::GetStyle();
-    int num_visible_labels = _GetNumVisibleLabels();
+    int num_visible_labels = _LabelsVisible.Size;
 
     // Test name column is not sorted because we do sorting only within perf runs of a particular tests,
     // so as far as sorting function is concerned all items in first column are identical.
@@ -1665,10 +1674,9 @@ static void PerflogSettingsHandler_WriteAll(ImGuiContext*, ImGuiSettingsHandler*
 
     ImGuiStorage& temp_set = perftool->_TempSet;
     temp_set.Data.clear();
-    for (ImGuiPerfToolBatch& batch : perftool->_Batches)
+    for (ImGuiPerfToolEntry& entry : perftool->_SrcData)
     {
-        ImGuiPerfToolEntry* entry = &batch.Entries.Data[0];
-        const char* properties[] = { entry->GitBranchName, entry->BuildType, entry->Cpu, entry->OS, entry->Compiler };
+        const char* properties[] = { entry.GitBranchName, entry.BuildType, entry.Cpu, entry.OS, entry.Compiler };
         for (int i = 0; i < IM_ARRAYSIZE(properties); i++)
         {
             ImGuiID hash = ImHashStr(properties[i]);
@@ -1705,7 +1713,7 @@ void ImGuiPerfTool::_UnpackSortedKey(ImU64 key, int* batch_index, int* entry_ind
 {
     IM_ASSERT(batch_index != NULL);
     IM_ASSERT(entry_index != NULL);
-    const int num_visible_labels = _GetNumVisibleLabels();
+    const int num_visible_labels = _LabelsVisible.Size;
     *batch_index = (int)((key >> 24) / num_visible_labels);
     *entry_index = (int)((key >> 24) % num_visible_labels);
     if (monotonic_index)

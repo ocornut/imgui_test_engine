@@ -118,7 +118,6 @@ struct IMGUI_API ImGuiPerfTool
     void        _ShowEntriesTable();
     void        _SetBaseline(int batch_index);
     void        _AddSettingsHandler();
-    inline int  _GetNumVisibleLabels()  { return _LabelsVisible.Size - 1; }
     void        _UnpackSortedKey(ImU64 key, int* batch_index, int* entry_index, int* monotonic_index = NULL);
 };
 
