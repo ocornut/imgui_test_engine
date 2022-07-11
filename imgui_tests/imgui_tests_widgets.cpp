@@ -174,8 +174,12 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ctx->SleepNoSkip(g.IO.KeyRepeatRate, step);
         ctx->SleepNoSkip(g.IO.KeyRepeatRate, step);
         ctx->SleepNoSkip(g.IO.KeyRepeatRate, step);
-        IM_CHECK_EQ(vars.ButtonPressCount[4], 1 + 3 * 2);
         ctx->KeyUp(ImGuiKey_Space);
+#if IMGUI_VERSION_NUM >= 18804
+        IM_CHECK_EQ(vars.ButtonPressCount[4], 1 + 1 + 3);
+#else
+        IM_CHECK_EQ(vars.ButtonPressCount[4], 1 + 3 * 2);
+#endif
     };
 
     // ## Test basic button presses
