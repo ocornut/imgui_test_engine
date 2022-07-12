@@ -180,6 +180,12 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
                 ImGui::EndPopup();
             }
             break;
+        case 3:
+            // Test toggling between nav layers when menu layer only has generic buttons. (#5463, #4792)
+            ImGui::Begin("Test window", &ctx->GenericVars.Bool1, ImGuiWindowFlags_NoSavedSettings);
+            window_content();
+            ImGui::End();
+            break;
         }
     };
     t->TestFunc = [](ImGuiTestContext* ctx)
@@ -190,10 +196,11 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
         //ctx->SetInputMode(ImGuiInputSource_Nav);
         //ctx->SetRef("Test window");
 
-        for (int step = 0; step < 3; step++)
+        for (int step = 0; step < 4; step++)
         {
             ctx->LogDebug("Step %d", step);
             ctx->GenericVars.Step = step; // Enable modal popup?
+            ctx->PopupCloseAll();
             ctx->Yield();
 
             const ImGuiID input_id = ctx->GenericVars.Id; // "Input"
@@ -204,16 +211,18 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
             IM_CHECK(g.NavLayer == ImGuiNavLayer_Main);
             ctx->KeyModPress(ImGuiModFlags_Alt);
             IM_CHECK(g.NavLayer == ImGuiNavLayer_Menu);
-            IM_CHECK(g.NavId == ctx->GetID("##menubar/File"));
+            const char* menu_item_1 = step == 3 ? "#COLLAPSE" : "##menubar/File";
+            const char* menu_item_2 = step == 3 ? "#CLOSE" : "##menubar/Edit";
+            IM_CHECK_EQ(g.NavId, ctx->GetID(menu_item_1));
             ctx->KeyPress(ImGuiKey_RightArrow);
-            IM_CHECK(g.NavId == ctx->GetID("##menubar/Edit"));
+            IM_CHECK_EQ(g.NavId, ctx->GetID(menu_item_2));
 
             ctx->KeyModPress(ImGuiModFlags_Alt);
             IM_CHECK(g.NavLayer == ImGuiNavLayer_Main);
             ctx->KeyModPress(ImGuiModFlags_Alt | ImGuiModFlags_Ctrl);
             IM_CHECK(g.NavLayer == ImGuiNavLayer_Main);
             ctx->KeyModPress(ImGuiModFlags_Alt); // Verify nav id is reset for menu layer
-            IM_CHECK(g.NavId == ctx->GetID("##menubar/File"));
+            IM_CHECK_EQ(g.NavId, ctx->GetID(menu_item_1));
             ctx->KeyModPress(ImGuiModFlags_Alt);
 
             // Test that toggling layer steals active id.
