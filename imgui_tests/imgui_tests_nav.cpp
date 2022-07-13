@@ -459,6 +459,8 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
             ctx->KeyModDown(ImGuiModFlags_Ctrl);
             ctx->KeyPress(ImGuiKey_Tab);
             ctx->SleepNoSkip(0.5f, 0.1f);
+            IM_CHECK(g.NavWindowingTarget == ctx->GetWindowByRef("Window 2"));
+            IM_CHECK(g.NavWindowingTarget->SkipItems == false);
             ctx->KeyModUp(ImGuiModFlags_Ctrl);
             IM_CHECK(g.NavWindow == ctx->GetWindowByRef("Window 2"));
 
