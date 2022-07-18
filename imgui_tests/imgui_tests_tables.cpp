@@ -3016,6 +3016,64 @@ void RegisterTests_Table(ImGuiTestEngine* e)
         ctx->MouseMove("table1/0");     // Ensure LastItemStatusFlags has _HoveredRect flag.
         ctx->Yield(2);                  // Do one more frame so tests in GuiFunc can run.
     };
+
+
+#if IMGUI_VERSION_NUM >= 18805
+    // ## Test SameLine() before a row change
+    t = IM_REGISTER_TEST(e, "table", "table_sameline_before_nextrow");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0, 0));
+        ImGui::Begin("Test window 1", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImGui::Text("Hello");
+
+        if (ImGui::BeginTable("columns1", 3))
+        {
+            {
+                ImGui::TableNextColumn();
+                ImGui::CollapsingHeader("AAAA");
+                ImGui::SameLine();
+                ImGui::Text("*1");
+                ImGui::TableNextColumn();
+                ImGui::Text("BBBB");
+                ImGui::TableNextColumn();
+                ImGui::Text("CCCC\nTwoLines\nThreeLines");
+            }
+
+            {
+                ImGui::TableNextColumn();
+                ImGui::CollapsingHeader("AAAA2");
+                ImVec2 p1 = ImGui::GetItemRectMin();
+                ImGui::SameLine();
+                ImGui::Text("*2");
+                ImVec2 p2 = ImGui::GetItemRectMin();
+                IM_CHECK_EQ(p1.y, p2.y);
+                ImGui::TableNextColumn();
+                ImGui::Text("BBBB2");
+                ImGui::TableNextColumn();
+                ImGui::Text("CCCC2\nTwoLines\nThreeLines");
+                ImGui::SameLine(); // <---- Note the extraneous SameLine here
+            }
+
+            {
+                ImGui::TableNextColumn();
+                ImGui::CollapsingHeader("AAAA3");
+                ImVec2 p1 = ImGui::GetItemRectMin();
+                ImGui::SameLine();
+                ImGui::Text("*3");
+                ImVec2 p2 = ImGui::GetItemRectMin();
+                IM_CHECK_EQ(p1.y, p2.y); // On 2022/07/18 we fixed previous row SameLine() leaking into this
+                ImGui::TableNextColumn();
+                ImGui::Text("BBBB3");
+                ImGui::TableNextColumn();
+                ImGui::Text("CCCC3\nTwoLines\nThreeLines");
+            }
+            ImGui::EndTable();
+        }
+        ImGui::End();
+        ImGui::PopStyleVar();
+    };
+#endif
 }
 
 //-------------------------------------------------------------------------
@@ -3165,5 +3223,62 @@ void RegisterTests_Columns(ImGuiTestEngine* e)
         IM_CHECK_EQ(columns->Columns[0].ClipRect.GetWidth(), w0 + 10.0f);
         IM_CHECK_EQ(columns->Columns[1].ClipRect.GetWidth(), w1 - 10.0f);
     };
+
+#if IMGUI_VERSION_NUM >= 18805
+    // ## Test SameLine() before a row change
+    t = IM_REGISTER_TEST(e, "columns", "columns_sameline_before_nextrow");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0, 0));
+        ImGui::Begin("Test window 1", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImGui::Text("Hello");
+
+        ImGui::BeginColumns("columns1", 3);
+
+        {
+            ImGui::CollapsingHeader("AAAA");
+            ImGui::SameLine();
+            ImGui::Text("*1");
+            ImGui::NextColumn();
+            ImGui::Text("BBBB"); ImGui::NextColumn();
+            ImGui::Text("CCCC\nTwoLines\nThreeLines");
+        }
+        ImGui::NextColumn();
+
+        {
+            ImGui::CollapsingHeader("AAAA2");
+            ImVec2 p1 = ImGui::GetItemRectMin();
+            ImGui::SameLine();
+            ImGui::Text("*2");
+            ImVec2 p2 = ImGui::GetItemRectMin();
+            IM_CHECK_EQ(p1.y, p2.y);
+            ImGui::NextColumn();
+            ImGui::Text("BBBB2"); ImGui::NextColumn();
+            ImGui::Text("CCCC2\nTwoLines\nThreeLines");
+            ImGui::SameLine(); // <---- Note the extraneous SameLine here
+        }
+        ImGui::NextColumn();
+
+        // Note: Y Position will look wrong here: this was always the case with Columns:
+        // - they never used CursorMaxPos.y, only the current CursorPos.y value during cell change, so this is not a new bug.
+
+        {
+            ImGui::CollapsingHeader("AAAA3");
+            ImVec2 p1 = ImGui::GetItemRectMin();
+            ImGui::SameLine();
+            ImGui::Text("*3");
+            ImVec2 p2 = ImGui::GetItemRectMin();
+            IM_CHECK_EQ(p1.y, p2.y); // On 2022/07/18 we fixed previous row SameLine() leaking into this
+            ImGui::NextColumn();
+            ImGui::Text("BBBB3"); ImGui::NextColumn();
+            ImGui::Text("CCCC3\nTwoLines\nThreeLines");
+        }
+        ImGui::NextColumn();
+
+        ImGui::EndColumns();
+        ImGui::End();
+        ImGui::PopStyleVar();
+    };
+#endif
 }
 
