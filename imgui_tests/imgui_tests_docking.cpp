@@ -174,10 +174,10 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
                 IM_CHECK(window_aaa->DockId != 0 && window_bbb->DockId != 0 && window_aaa->DockId != window_bbb->DockId);
             else
                 IM_CHECK(window_aaa->DockId == 0 && window_bbb->DockId == 0);
-            ctx->WindowResize("/AAA", ImVec2(200, 200));
-            ctx->WindowMove("/AAA", viewport_pos + ImVec2(100, 100));
-            ctx->WindowResize("/BBB", ImVec2(200, 200));
-            ctx->WindowMove("/BBB", viewport_pos + ImVec2(200, 200));
+            ctx->WindowResize("//AAA", ImVec2(200, 200));
+            ctx->WindowMove("//AAA", viewport_pos + ImVec2(100, 100));
+            ctx->WindowResize("//BBB", ImVec2(200, 200));
+            ctx->WindowMove("//BBB", viewport_pos + ImVec2(200, 200));
 
             // Dock Once
             ctx->DockInto("AAA", "BBB");
@@ -196,13 +196,13 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
                 IM_CHECK(window_bbb->DockId == dock_id);
 
                 // Intentionally move both floating windows away
-                ctx->WindowMove("/AAA", viewport_pos + ImVec2(100, 100));
-                ctx->WindowResize("/AAA", ImVec2(100, 100));
-                ctx->WindowMove("/BBB", viewport_pos + ImVec2(300, 300));
-                ctx->WindowResize("/BBB", ImVec2(200, 200)); // Should already the case
+                ctx->WindowMove("//AAA", viewport_pos + ImVec2(100, 100));
+                ctx->WindowResize("//AAA", ImVec2(100, 100));
+                ctx->WindowMove("//BBB", viewport_pos + ImVec2(300, 300));
+                ctx->WindowResize("//BBB", ImVec2(200, 200)); // Should already the case
 
                 // Dock again (BBB still refers to dock id, making this different from the first docking)
-                ctx->DockInto("/AAA", "/BBB", ImGuiDir_None);
+                ctx->DockInto("//AAA", "//BBB", ImGuiDir_None);
                 IM_CHECK_EQ(window_aaa->DockId, dock_id);
                 IM_CHECK_EQ(window_bbb->DockId, dock_id);
                 IM_CHECK_EQ(window_aaa->Pos, viewport_pos + ImVec2(300, 300));
@@ -220,11 +220,11 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
                 IM_CHECK_EQ(window_bbb->DockId, dock_id);
 
                 // Intentionally move both floating windows away
-                ctx->WindowMove("/AAA", viewport_pos + ImVec2(100, 100));
-                ctx->WindowMove("/BBB", viewport_pos + ImVec2(200, 200));
+                ctx->WindowMove("//AAA", viewport_pos + ImVec2(100, 100));
+                ctx->WindowMove("//BBB", viewport_pos + ImVec2(200, 200));
 
                 // Dock on the side (BBBB still refers to dock id, making this different from the first docking)
-                ctx->DockInto("/AAA", "/BBB", ImGuiDir_Left);
+                ctx->DockInto("//AAA", "//BBB", ImGuiDir_Left);
                 IM_CHECK(window_aaa->DockNode != NULL);
                 IM_CHECK_EQ(window_aaa->DockNode->ParentNode->ID, dock_id);
                 IM_CHECK_EQ(window_bbb->DockNode->ParentNode->ID, dock_id);
@@ -1264,7 +1264,7 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
         for (int i = 0; i < IM_ARRAYSIZE(windows); i++)
         {
             ctx->ItemClick(ImGui::DockNodeGetWindowMenuButtonId(windows[i]->RootWindowDockTree->DockNodeAsHost));
-            ctx->SetRef("/$FOCUSED");
+            ctx->SetRef("//$FOCUSED");
             ctx->ItemClick(windows[i]->Name);
             IM_CHECK(g.NavWindow == windows[i]);
         }
@@ -1475,7 +1475,7 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
     {
         if (ctx->IsFirstTestFrame())
         {
-            ImGuiID dockspace_id = ctx->GetID("/Test Window/dockspace");
+            ImGuiID dockspace_id = ctx->GetID("//Test Window/dockspace");
             ImGui::DockBuilderRemoveNode(dockspace_id);
             ImGui::DockBuilderAddNode(dockspace_id, ImGuiDockNodeFlags_DockSpace);
             ImGui::DockBuilderDockWindow("AAA", dockspace_id);
@@ -1485,7 +1485,7 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
     };
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
-        ImGuiID dockspace_id = ctx->GetID("/Test Window/dockspace");
+        ImGuiID dockspace_id = ctx->GetID("//Test Window/dockspace");
 
         ImGuiWindow* window_a = ImGui::FindWindowByName("AAA");
         ImGuiWindow* window_b = ImGui::FindWindowByName("BBB");

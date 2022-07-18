@@ -1726,13 +1726,13 @@ void ImGuiPerfTool::_UnpackSortedKey(ImU64 key, int* batch_index, int* entry_ind
 
 static bool SetPerfToolWindowOpen(ImGuiTestContext* ctx, bool is_open)
 {
-    ctx->WindowFocus("/Dear ImGui Test Engine");
-    ctx->ItemClick("/Dear ImGui Test Engine/ TOOLS ");
-    if (ImGuiTestItemInfo* checkbox_info = ctx->ItemInfo("/$FOCUSED/Perf Tool"))
+    ctx->WindowFocus("//Dear ImGui Test Engine");
+    ctx->ItemClick("//Dear ImGui Test Engine/ TOOLS ");
+    if (ImGuiTestItemInfo* checkbox_info = ctx->ItemInfo("//$FOCUSED/Perf Tool"))
     {
         bool is_checked = (checkbox_info->StatusFlags & ImGuiItemStatusFlags_Checked) != 0;
         if (is_checked != is_open)
-            ctx->ItemClick("/$FOCUSED/Perf Tool");
+            ctx->ItemClick("//$FOCUSED/Perf Tool");
         return is_checked;
     }
     return false;
@@ -1795,16 +1795,16 @@ void RegisterTests_PerfTool(ImGuiTestEngine* e)
         ctx->MouseMoveToPos(plot_child->Rect().GetCenter());
         ctx->MouseDoubleClick(ImGuiMouseButton_Left);               // Auto-size plots while at it
         ctx->MouseClick(ImGuiMouseButton_Right);
-        ctx->MenuClick("/$FOCUSED/Legend/NE");
+        ctx->MenuClick("//$FOCUSED/Legend/NE");
 
         // Click some stuff for more coverage.
         ctx->MouseMoveToPos(plot_child->Rect().GetCenter());
         ctx->KeyModPress(ImGuiModFlags_Shift);
 #endif
         ctx->ItemClick("##date-from", ImGuiMouseButton_Right);
-        ctx->ItemClick(ctx->GetID("/$FOCUSED/Set Min"));
+        ctx->ItemClick(ctx->GetID("//$FOCUSED/Set Min"));
         ctx->ItemClick("##date-to", ImGuiMouseButton_Right);
-        ctx->ItemClick(ctx->GetID("/$FOCUSED/Set Max"));
+        ctx->ItemClick(ctx->GetID("//$FOCUSED/Set Max"));
         ctx->ItemClick("###Filter builds");
         ctx->ItemClick("###Filter tests");
         ctx->ItemClick("Combine", 0, ImGuiTestOpFlags_MoveToEdgeL); // Toggle thrice to leave state unchanged
@@ -1862,13 +1862,13 @@ void RegisterTests_PerfTool(ImGuiTestEngine* e)
         ctx->MouseMoveToPos(plot_child->Rect().GetCenter());
         ctx->MouseDoubleClick(ImGuiMouseButton_Left);               // Auto-size plots while at it
         ctx->MouseClick(ImGuiMouseButton_Right);
-        ctx->MenuClick("/$FOCUSED/Legend/NE");
+        ctx->MenuClick("//$FOCUSED/Legend/NE");
 #endif
         // Click some stuff for more coverage.
         ctx->ItemClick("##date-from", ImGuiMouseButton_Right);
-        ctx->ItemClick(ctx->GetID("/$FOCUSED/Set Min"));
+        ctx->ItemClick(ctx->GetID("//$FOCUSED/Set Min"));
         ctx->ItemClick("##date-to", ImGuiMouseButton_Right);
-        ctx->ItemClick(ctx->GetID("/$FOCUSED/Set Max"));
+        ctx->ItemClick(ctx->GetID("//$FOCUSED/Set Max"));
 #if IMGUI_TEST_ENGINE_ENABLE_IMPLOT
         // Take a screenshot.
         ImGuiCaptureArgs* args = ctx->CaptureArgs;

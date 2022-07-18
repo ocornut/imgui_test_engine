@@ -281,10 +281,12 @@ struct IMGUI_API ImGuiTestContext
     void        SleepStandard();
 
     // Base Reference
-    // - ItemClick("Window/Button")               --> click "Window/Button"
-    // - SetRef("Window"), ItemClick("Button")    --> click "Window/Button"
-    // - SetRef("Window"), ItemClick("/Button")   --> click "/Button"
-    // - SetRef("/$FOCUSED"), ItemClick("Button") --> click "Button" in focused window.
+    // - ItemClick("Window/Button")                --> click "Window/Button"
+    // - SetRef("Window"), ItemClick("Button")     --> click "Window/Button"
+    // - SetRef("Window"), ItemClick("/Button")    --> click "Window/Button"
+    // - SetRef("Window"), ItemClick("//Button")   --> click "/Button"
+    // - SetRef("//$FOCUSED"), ItemClick("Button") --> click "Button" in focused window.
+    // Takes multiple frames to complete if specified ref is an item id.
     void        SetRef(ImGuiTestRef ref);
     void        SetRef(ImGuiWindow* window); // Shortcut to SetRef(window->Name) which works for ChildWindow (see code)
     ImGuiTestRef GetRef();

@@ -4,22 +4,32 @@ CHANGELOG
 ** For a while this is going to include only breaking changes.
 ** As we slowly transition toward releasing the test engine, this will become a more full fledged changelog.
 
+2022/07/19
+- TestEngine:
+  - The syntax "/someidentifier" to ignore the current SetRef() value has been changed to "//someidentifier" !!
+    - "//" ref prefix now resets ID seed to 0 (old behavior)
+    - "/" ref prefix now refers to "current window" id.s
+      - In GuiFunc, "/" refers to current window we are Begin()-ing into.
+      - In TestFunc, "/" refers to the window set by SetRef().
+    - This change is to be consistent with core Dear ImGui adding ways to compute ID given a path,
+      and both "/" and "//" are desirable features.
+
 2022/05/10
 - TestEngine: Installation of a crash handler is now explicit and optional. Do one of the following:
-    - Call ImGuiTestEngine_InstallDefaultCrashHandler() to install default crash handler.
-    - Call ImGuiTestEngine_CrashHandler() from your own custom crash handler if such exists.
+  - Call ImGuiTestEngine_InstallDefaultCrashHandler() to install default crash handler.
+  - Call ImGuiTestEngine_CrashHandler() from your own custom crash handler if such exists.
 
 2022/04/08
 - TestEngine: fix ItemAction() or ItemInfo() with leading **/ wildcard from not reporting any error on failure.
 
 2022/04/07
 - TestEngine: added more filtering options to ImGuiTestEngine_QueueTests() and command-line suppot.
-    - "all"   : all tests, no matter what group they are in.
-    - "tests" : all tests in the ImGuiTestGroup_Tests group.
-    - "perfs" : all tests in the ImGuiTestGroup_Perfs group.
-    - "^nav_" : all tests with name starting with "nav_".
-    - "-xxxx" : no tests will be matched because query does not include any.
-    - "tests,-scroll,-^nav_" : all tests that do not contain "scroll" in their name and does not start with "nav_".
+  - "all"   : all tests, no matter what group they are in.
+  - "tests" : all tests in the ImGuiTestGroup_Tests group.
+  - "perfs" : all tests in the ImGuiTestGroup_Perfs group.
+  - "^nav_" : all tests with name starting with "nav_".
+  - "-xxxx" : no tests will be matched because query does not include any.
+  - "tests,-scroll,-^nav_" : all tests that do not contain "scroll" in their name and does not start with "nav_".
 
 2022/03/28
 - TestEngine: Capture: Removed requirement to store/pass a ImGuiCaptureArgs in ctx->CaptureXXX functions.

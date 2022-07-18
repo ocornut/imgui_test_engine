@@ -310,26 +310,26 @@ void RegisterTests_Window(ImGuiTestEngine* e)
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         ImGuiContext& g = *ctx->UiContext;
-        IM_CHECK_EQ(g.NavWindow->ID, ctx->GetID("/BBBB"));
+        IM_CHECK_EQ(g.NavWindow->ID, ctx->GetID("//BBBB"));
         ctx->YieldUntil(19);
-        IM_CHECK_EQ(g.NavWindow->ID, ctx->GetID("/BBBB"));
+        IM_CHECK_EQ(g.NavWindow->ID, ctx->GetID("//BBBB"));
         ctx->YieldUntil(20);
-        IM_CHECK_EQ(g.NavWindow->ID, ctx->GetID("/DDDD"));
+        IM_CHECK_EQ(g.NavWindow->ID, ctx->GetID("//DDDD"));
         ctx->YieldUntil(30);
-        ctx->WindowFocus("/CCCC");
-        IM_CHECK_EQ(g.NavWindow->ID, ctx->GetID("/CCCC"));
+        ctx->WindowFocus("//CCCC");
+        IM_CHECK_EQ(g.NavWindow->ID, ctx->GetID("//CCCC"));
         ctx->YieldUntil(39);
         ctx->YieldUntil(40);
-        IM_CHECK_EQ(g.NavWindow->ID, ctx->GetID("/CCCC"));
+        IM_CHECK_EQ(g.NavWindow->ID, ctx->GetID("//CCCC"));
 
         // When docked, it should NOT takes 1 extra frame to lose focus (fixed 2019/03/28)
         ctx->YieldUntil(41);
-        IM_CHECK_EQ(g.NavWindow->ID, ctx->GetID("/BBBB"));
+        IM_CHECK_EQ(g.NavWindow->ID, ctx->GetID("//BBBB"));
 
         ctx->YieldUntil(49);
-        IM_CHECK_EQ(g.NavWindow->ID, ctx->GetID("/BBBB"));
+        IM_CHECK_EQ(g.NavWindow->ID, ctx->GetID("//BBBB"));
         ctx->YieldUntil(50);
-        IM_CHECK_EQ(g.NavWindow->ID, ctx->GetID("/DDDD"));
+        IM_CHECK_EQ(g.NavWindow->ID, ctx->GetID("//DDDD"));
     };
 
     // ## Test popup focus and right-click to close popups up to a given level
@@ -383,16 +383,16 @@ void RegisterTests_Window(ImGuiTestEngine* e)
         ImGuiContext& g = *ctx->UiContext;
         ctx->SetRef("Stacked Modal Popups");
         ctx->ItemClick("Open Modal Popup 1");
-        IM_CHECK_EQ(g.NavWindow->ID, ctx->GetID("/Popup1"));
+        IM_CHECK_EQ(g.NavWindow->ID, ctx->GetID("//Popup1"));
         IM_CHECK_EQ(g.OpenPopupStack.Size, 1);
         ctx->SetRef("Popup1");
         ctx->ItemClick("Open Modal Popup 2");
-        IM_CHECK_EQ(g.NavWindow->ID, ctx->GetID("/Popup2"));
+        IM_CHECK_EQ(g.NavWindow->ID, ctx->GetID("//Popup2"));
         IM_CHECK_EQ(g.OpenPopupStack.Size, 2);
         ctx->MouseMoveToPos(g.NavWindow->Rect().GetCenter());
         ctx->MouseClick(0);
         IM_CHECK_EQ(g.OpenPopupStack.Size, 1);
-        IM_CHECK_EQ(g.NavWindow->ID, ctx->GetID("/Popup1"));
+        IM_CHECK_EQ(g.NavWindow->ID, ctx->GetID("//Popup1"));
     };
 
     // ## Test closing current popup
@@ -444,11 +444,11 @@ void RegisterTests_Window(ImGuiTestEngine* e)
 
         ctx->ItemClick("Open Popup");
         IM_CHECK(g.OpenPopupStack.Size == 1);
-        ctx->ItemClick("/$FOCUSED/Close2");
+        ctx->ItemClick("//$FOCUSED/Close2");
         IM_CHECK(g.OpenPopupStack.Size == 0);
 
-        ctx->ItemClick("/Popups/Open Popup");
-        ctx->MenuClick("/$FOCUSED/Submenu2/Close3");
+        ctx->ItemClick("//Popups/Open Popup");
+        ctx->MenuClick("//$FOCUSED/Submenu2/Close3");
         IM_CHECK(g.OpenPopupStack.Size == 0);
     };
 
@@ -486,10 +486,10 @@ void RegisterTests_Window(ImGuiTestEngine* e)
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         ImGuiContext& g = *ctx->UiContext;
-        ctx->ItemClick("/Test Window/Open modal");
-        ctx->ItemClick("/$FOCUSED/Open popup1");
+        ctx->ItemClick("//Test Window/Open modal");
+        ctx->ItemClick("//$FOCUSED/Open popup1");
         ImGuiWindow* popup1 = g.NavWindow;
-        ctx->ItemClick("/$FOCUSED/Open popup2");
+        ctx->ItemClick("//$FOCUSED/Open popup2");
         IM_CHECK_NE(g.NavWindow, popup1);
         IM_CHECK_EQ(g.OpenPopupStack.Size, 3);
         ctx->MouseMoveToPos(popup1->Pos + ImVec2(5, 5));
@@ -607,11 +607,11 @@ void RegisterTests_Window(ImGuiTestEngine* e)
         {
             vars.UseModal = variant == 1;
             ctx->LogDebug("Testing with %s", vars.UseModal ? "modal" : "popup");
-            ctx->ItemClick("/Test Window/Open Menu Popup");
+            ctx->ItemClick("//Test Window/Open Menu Popup");
             if (vars.UseModal)
                 popup = ctx->GetWindowByRef("Menu Popup");
             else
-                popup = ctx->GetWindowByRef(Str16f("##Popup_%08x", ctx->GetID("/Test Window/Menu Popup")).c_str());
+                popup = ctx->GetWindowByRef(Str16f("##Popup_%08x", ctx->GetID("//Test Window/Menu Popup")).c_str());
             IM_CHECK(popup != NULL);
             ctx->SetRef(popup->Name);
             IM_CHECK_EQ(vars.FirstOpen, false);                                     // Nothing is open.
@@ -663,7 +663,7 @@ void RegisterTests_Window(ImGuiTestEngine* e)
             IM_CHECK_EQ(vars.SecondOpen, false);
             IM_CHECK_EQ(popup->Active, vars.UseModal);
             if (!popup->Active)
-                ctx->ItemClick("/Test Window/Open Menu Popup");                     // Reopen popup if it was closed.
+                ctx->ItemClick("//Test Window/Open Menu Popup");                     // Reopen popup if it was closed.
 
             // Test closing a menu by clicking on empty space.
             ctx->ItemClick("##menubar/First");                                      // Click and reopen first menu.
@@ -716,7 +716,7 @@ void RegisterTests_Window(ImGuiTestEngine* e)
         ImGuiContext& g = *ctx->UiContext;
         ctx->SetRef("Test Window");
         ctx->ItemClick("open");
-        ctx->SetRef("/$FOCUSED");
+        ctx->SetRef("//$FOCUSED");
         ctx->MouseMove("BBB", ImGuiTestOpFlags_NoFocusWindow);
         ctx->MouseMove("CCC", ImGuiTestOpFlags_NoFocusWindow);
         IM_CHECK(g.NavWindow != NULL);
@@ -782,7 +782,7 @@ void RegisterTests_Window(ImGuiTestEngine* e)
         ctx->ItemClick("##menubar/Menu", 0, ImGuiTestOpFlags_NoFocusWindow);
         IM_CHECK(vars.MenuIsVisible);
 
-        ctx->SetRef("/$FOCUSED");
+        ctx->SetRef("//$FOCUSED");
         vars.MenuWasOnceNotVisible = false;
         ctx->ItemClick("Submenu", 0, ImGuiTestOpFlags_NoFocusWindow);
         IM_CHECK(vars.MenuIsVisible);
@@ -886,10 +886,10 @@ void RegisterTests_Window(ImGuiTestEngine* e)
             ctx->LogDebug("Variant: %d", variant);
             auto& td = test_data[variant];
             if (td.OpenButton)
-                ctx->ItemClick(Str64f("/Test Window/%s", td.OpenButton).c_str());
+                ctx->ItemClick(Str64f("//Test Window/%s", td.OpenButton).c_str());
             else
-                ctx->WindowFocus("/Test Window");
-            ctx->SetRef("/$FOCUSED");
+                ctx->WindowFocus("//Test Window");
+            ctx->SetRef("//$FOCUSED");
             vars.QueryVarsBaseId = ctx->GetID(td.MenuBase);
             if (*td.MenuBase)
                 ctx->MouseMove(Str16f("%s/AAA", td.MenuBase).c_str());
@@ -1000,7 +1000,7 @@ void RegisterTests_Window(ImGuiTestEngine* e)
         IM_CHECK(io.WantCaptureMouseUnlessPopupClose == true);
 
         // Move to button behind, verify it is inhibited
-        ctx->MouseMove("/Test Window/Open Modal", ImGuiTestOpFlags_NoFocusWindow | ImGuiTestOpFlags_NoCheckHoveredId);
+        ctx->MouseMove("//Test Window/Open Modal", ImGuiTestOpFlags_NoFocusWindow | ImGuiTestOpFlags_NoCheckHoveredId);
         IM_CHECK(g.HoveredWindow == NULL);
         IM_CHECK(io.WantCaptureMouse == true);
         IM_CHECK(io.WantCaptureMouseUnlessPopupClose == true);
@@ -1245,7 +1245,7 @@ void RegisterTests_Window(ImGuiTestEngine* e)
             ImGuiWindow* popup2 = ctx->GetWindowByRef(vars.IsModalPopup[1] ? "Popup2" : Str30f("##Popup_%08x", ctx->GetID("Popup2", popup1->ID)).c_str());
             IM_CHECK_EQ(g.NavWindow, window3);
             IM_CHECK_EQ(popup2->Active, true);
-            ctx->ItemClick(Str30f("/%s/##menubar/File", popup2->Name).c_str());// FIXME: MenuClick() does not work well with menus inside of a popup.
+            ctx->ItemClick(Str30f("//%s/##menubar/File", popup2->Name).c_str());// FIXME: MenuClick() does not work well with menus inside of a popup.
 #ifdef IMGUI_HAS_DOCK
             ctx->DockInto("Window3", "Interrupts", ImGuiDir_None, false, ImGuiTestOpFlags_NoFocusWindow);
             IM_CHECK(ctx->WindowIsUndockedOrStandalone(window3));                                   // Can not dock into windows that belong to same begin stack, but are below parent popup
@@ -2051,7 +2051,7 @@ void RegisterTests_Window(ImGuiTestEngine* e)
         ctx->WindowBringToFront("Window A");
 
         // Titlebar of undocked window
-        ctx->MouseMoveToPos(ctx->GetWindowTitlebarPoint("/Window A"));
+        ctx->MouseMoveToPos(ctx->GetWindowTitlebarPoint("//Window A"));
         ctx->MouseClick(ImGuiMouseButton_Right);
         IM_CHECK_NE(g.NavWindow, (ImGuiWindow*)NULL);
         IM_CHECK_STR_EQ(g.NavWindow->Name, popup_name.c_str());
@@ -2071,7 +2071,7 @@ void RegisterTests_Window(ImGuiTestEngine* e)
         ctx->DockInto("Window B", "Window A");
 
         // Tab of docked window
-        ctx->MouseMoveToPos(ctx->GetWindowTitlebarPoint("/Window A"));
+        ctx->MouseMoveToPos(ctx->GetWindowTitlebarPoint("//Window A"));
         ctx->MouseClick(ImGuiMouseButton_Right);
         IM_CHECK_NE(g.NavWindow, (ImGuiWindow*)NULL);
         IM_CHECK_STR_EQ(g.NavWindow->Name, popup_name.c_str());
@@ -3467,11 +3467,11 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
         // Verify that Test Engine high-level hash wrapper works
         IM_CHECK_EQ(ImHashDecoratedPath("Hello/world"), ImHashStr("Helloworld"));            // Slashes are ignored
         IM_CHECK_EQ(ImHashDecoratedPath("Hello\\/world"), ImHashStr("Hello/world"));         // Slashes can be inhibited
-        IM_CHECK_EQ(ImHashDecoratedPath("/Hello", NULL, 42), ImHashDecoratedPath("Hello"));        // Leading / clears seed
+        IM_CHECK_EQ(ImHashDecoratedPath("//Hello", NULL, 42), ImHashDecoratedPath("Hello"));        // Leading / clears seed
 
         ctx->WindowFocus("Hello, world!");
-        IM_CHECK_EQ(ctx->GetID("/$FOCUSED"), ImHashDecoratedPath("Hello, world!"));
-        IM_CHECK_EQ(ctx->GetID("/$FOCUSED/Foo"), ImHashDecoratedPath("Hello, world!/Foo"));
+        IM_CHECK_EQ(ctx->GetID("//$FOCUSED"), ImHashDecoratedPath("Hello, world!"));
+        IM_CHECK_EQ(ctx->GetID("//$FOCUSED/Foo"), ImHashDecoratedPath("Hello, world!/Foo"));
     };
 
     // ## Test ImVector functions
@@ -4752,8 +4752,8 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
         ctx->UiContext->DebugLogFlags &= ~ImGuiDebugLogFlags_OutputToTTY;
 
         ctx->MenuCheck("Tools/Debug Log");
-        ctx->ItemCheck("/Dear ImGui Debug Log/All");
-        ctx->ItemClick("/Dear ImGui Debug Log/Clear");
+        ctx->ItemCheck("//Dear ImGui Debug Log/All");
+        ctx->ItemClick("//Dear ImGui Debug Log/Clear");
 
         ctx->ItemOpenAll("");
 
@@ -4815,8 +4815,8 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
         ImGuiTestActionFilter filter;
         filter.MaxPasses = filter.MaxDepth = 1;
         filter.RequireAllStatusFlags = ImGuiItemStatusFlags_Checkable;
-        ctx->ItemActionAll(ImGuiTestAction_Click, "/Horizontal contents size demo window", &filter);    // Toggle
-        ctx->ItemActionAll(ImGuiTestAction_Click, "/Horizontal contents size demo window", &filter);    // Toggle
+        ctx->ItemActionAll(ImGuiTestAction_Click, "//Horizontal contents size demo window", &filter);    // Toggle
+        ctx->ItemActionAll(ImGuiTestAction_Click, "//Horizontal contents size demo window", &filter);    // Toggle
         ctx->ItemUncheck("Scrolling/Show Horizontal contents size demo window");
 
         ctx->SetRef("Dear ImGui Demo");
@@ -4970,7 +4970,7 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
         ctx->MouseClick(1); // Open picker settings popup
         ctx->Yield();
 
-        ctx->SetRef("/$FOCUSED");
+        ctx->SetRef("//$FOCUSED");
         ctx->ItemClick("RGB");
         ctx->ItemClick("HSV");
         ctx->ItemClick("Hex");
@@ -4990,18 +4990,18 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
             ctx->Yield();
 
             // Open color picker style chooser
-            ctx->SetRef("/$FOCUSED");
+            ctx->SetRef("//$FOCUSED");
             ctx->MouseMoveToPos(ctx->GetWindowByRef("")->Rect().GetCenter());
             ctx->MouseClick(1);
             ctx->Yield();
 
             // Select picker type
-            ctx->SetRef("/$FOCUSED");
+            ctx->SetRef("//$FOCUSED");
             ctx->MouseMove(ctx->GetID("##selectable", ctx->GetIDByInt(picker_type)));
             ctx->MouseClick(0);
 
             // Interact with picker
-            ctx->SetRef("/$FOCUSED");
+            ctx->SetRef("//$FOCUSED");
             if (picker_type == 0)
             {
                 ctx->MouseMove("##picker/sv", ImGuiTestOpFlags_MoveToEdgeU | ImGuiTestOpFlags_MoveToEdgeL);
@@ -5031,14 +5031,14 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         // Ensure Metrics windows is closed when beginning the test
-        ctx->SetRef("/Dear ImGui Demo");
+        ctx->SetRef("//Dear ImGui Demo");
         ctx->MenuCheck("Tools/Metrics\\/Debugger");
 
         // Make tables visible to exercice more of metrics paths
         ctx->ItemOpen("Tables & Columns");
         ctx->ItemOpen("Tables/Advanced");
 
-        ctx->SetRef("/Dear ImGui Metrics\\/Debugger");
+        ctx->SetRef("//Dear ImGui Metrics\\/Debugger");
         ctx->ItemCloseAll("");
 
         // FIXME-TESTS: Maybe add status flags filter to GatherItems() ?
@@ -5088,7 +5088,7 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
 #if IMGUI_VERSION_NUM >= 18729
                 for (int n = 0; n < 2; n++)
                 {
-                    ctx->WindowFocus("/Dear ImGui Demo"); // To exercise "Show Tables Rects" among others
+                    ctx->WindowFocus("//Dear ImGui Demo"); // To exercise "Show Tables Rects" among others
                     ctx->ItemClick("Tools/Show Item Picker");
                     if (ctx->ItemInfo("Tools/Show Item Picker")->StatusFlags & ImGuiItemStatusFlags_Checked)
                         ctx->KeyPress(ImGuiKey_Escape);
@@ -5153,7 +5153,7 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
 
         ctx->WindowClose("");
 
-        ctx->SetRef("/Dear ImGui Demo");
+        ctx->SetRef("//Dear ImGui Demo");
         ctx->ItemClose("Tables/Advanced");
         ctx->ItemClose("Tables & Columns");
     };
@@ -5321,7 +5321,7 @@ void RegisterTests_Capture(ImGuiTestEngine* e)
         ImGuiContext& g = *ctx->UiContext;
         for (int n = 0; n < 2; n++)
         {
-            ImGuiWindow* window = (n == 0) ? ctx->GetWindowByRef("/Debug##Dark") : ctx->GetWindowByRef("/Debug##Light");
+            ImGuiWindow* window = (n == 0) ? ctx->GetWindowByRef("//Debug##Dark") : ctx->GetWindowByRef("//Debug##Light");
             ctx->SetRef(window);
             ctx->ItemClick("string");
             ctx->KeyCharsReplace("quick brown fox");

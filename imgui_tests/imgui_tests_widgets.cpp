@@ -1079,7 +1079,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
         ImGui::InputTextMultiline("Field", &vars.str, ImVec2(300, height), ImGuiInputTextFlags_EnterReturnsTrue);
         ImGui::InputText("Password", &vars.Password, ImGuiInputTextFlags_Password);
-        if (ImGuiInputTextState* state = ImGui::GetInputTextState(ctx->GetID("/Test Window/Field")))
+        if (ImGuiInputTextState* state = ImGui::GetInputTextState(ctx->GetID("//Test Window/Field")))
             ImGui::Text("Stb Cursor: %d", state->Stb.cursor);
         ImGui::End();
     };
@@ -1238,7 +1238,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         float height = 5 * ImGui::GetFontSize();
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
         ImGui::InputTextMultiline("Field", &vars.str, ImVec2(300, height), ImGuiInputTextFlags_EnterReturnsTrue);
-        if (ImGuiInputTextState* state = ImGui::GetInputTextState(ctx->GetID("/Test Window/Field")))
+        if (ImGuiInputTextState* state = ImGui::GetInputTextState(ctx->GetID("//Test Window/Field")))
             ImGui::Text("Stb Cursor: %d", state->Stb.cursor);
         ImGui::End();
     };
@@ -1252,7 +1252,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ctx->KeyPress(ImGuiKey_UpArrow);
         ctx->KeyModUp(ImGuiModFlags_Shift);
 
-        ImGuiID child_id = ctx->GetChildWindowID("/Test Window", "Field");
+        ImGuiID child_id = ctx->GetChildWindowID("//Test Window", "Field");
         ImGuiWindow* child_window = ctx->GetWindowByRef(child_id);
         IM_CHECK(child_window != NULL);
         const int selection_len = (int)strlen("Line 9\n");
@@ -2462,7 +2462,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
 
         // Resize down
         vars.WindowAutoResize = false;
-        ImGuiWindow* window = ctx->GetWindowByRef("/Test Window");
+        ImGuiWindow* window = ctx->GetWindowByRef("//Test Window");
         ctx->WindowResize("Test Window", ImVec2(window->Size.x * 0.3f, window->Size.y));
         for (int i = 0; i < 2; ++i)
         {
@@ -2756,7 +2756,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
             IM_CHECK_EQ(vars.Selected, i == 0 ? 0 : i - 1);
 
             ctx->ItemClick("TabBar/##v");
-            ctx->ItemClick(Str64f("/##Combo_00/Tab %d", i).c_str());
+            ctx->ItemClick(Str64f("//##Combo_00/Tab %d", i).c_str());
             ctx->Yield();
             IM_CHECK_EQ(vars.Selected, i);
 
@@ -3120,7 +3120,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
 
         // Test hex inputs.
         ctx->ItemClick("ColorEdit1/##ColorButton");
-        ctx->SetRef("/$FOCUSED");
+        ctx->SetRef("//$FOCUSED");
         ctx->ItemInputValue("##picker/##hex/##Text", "112233");
         IM_CHECK(equal(vars.Color1, ImVec4(ImColor(0x11, 0x22, 0x33, 0xFF))));
         ctx->ItemInputValue("##picker/##hex/##Text", "11223344");
@@ -3180,7 +3180,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
 
         ImGuiContext& g = *ctx->UiContext;
         ctx->ItemClick("Window/Color/##ColorButton");
-        ctx->SetRef("/$FOCUSED");
+        ctx->SetRef("//$FOCUSED");
         ImGuiWindow* popup = g.NavWindow;
 
         // Variant 0: use float RGB.
@@ -3626,12 +3626,12 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ctx->MouseMove("Combo");
         ctx->MouseClick(ImGuiMouseButton_Right);
         IM_CHECK(vars.Bool1 == false && vars.Bool2 == true);
-        ctx->ItemClick("/$FOCUSED/Close");
+        ctx->ItemClick("//$FOCUSED/Close");
         vars.Bool1 = vars.Bool2 = false;
 
         ctx->ItemClick("Combo");
         IM_CHECK(vars.Bool1 == true && vars.Bool2 == false);
-        ctx->ItemClick("/$FOCUSED/Close");
+        ctx->ItemClick("//$FOCUSED/Close");
         vars.Bool1 = vars.Bool2 = false;
     };
 #endif

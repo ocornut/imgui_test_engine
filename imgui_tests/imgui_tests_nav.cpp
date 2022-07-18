@@ -55,7 +55,7 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
         ctx->ItemCheck("Demo Window");
 
         ImGuiContext& g = *ctx->UiContext;
-        IM_CHECK(g.NavWindow && g.NavWindow->ID == ctx->GetID("/Dear ImGui Demo"));
+        IM_CHECK(g.NavWindow && g.NavWindow->ID == ctx->GetID("//Dear ImGui Demo"));
     };
 
     // ## Test that ESC deactivate InputText without closing current Popup (#2321, #787, #5400)
@@ -198,7 +198,7 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
 
             const ImGuiID input_id = ctx->GenericVars.Id; // "Input"
             ctx->NavMoveTo(input_id);
-            ctx->SetRef("/$FOCUSED");
+            ctx->SetRef("//$FOCUSED");
 
             IM_CHECK(g.OpenPopupStack.Size == (step == 2));
             IM_CHECK(g.NavLayer == ImGuiNavLayer_Main);
@@ -287,11 +287,11 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
         ctx->SetRef("Dear ImGui Demo");
         ctx->MenuClick("Menu");
         ctx->NavEnableForWindow();
-        IM_CHECK(g.NavId == ctx->GetID("/##Menu_00/New"));
+        IM_CHECK(g.NavId == ctx->GetID("//##Menu_00/New"));
         ctx->KeyPress(ImGuiKey_UpArrow);
-        IM_CHECK(g.NavId == ctx->GetID("/##Menu_00/Quit"));
+        IM_CHECK(g.NavId == ctx->GetID("//##Menu_00/Quit"));
         ctx->KeyPress(ImGuiKey_DownArrow);
-        IM_CHECK(g.NavId == ctx->GetID("/##Menu_00/New"));
+        IM_CHECK(g.NavId == ctx->GetID("//##Menu_00/New"));
     };
 
     // ## Test menu closing with left arrow key. (#4510)
@@ -349,9 +349,9 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
             ctx->MenuClick("Menu/Submenu1");
             ctx->KeyPress(ImGuiKey_RightArrow);
             ctx->KeyPress(ImGuiKey_DownArrow);
-            IM_CHECK(g.NavId == ctx->GetID("/##Menu_01/B"));
+            IM_CHECK(g.NavId == ctx->GetID("//##Menu_01/B"));
             ctx->KeyPress(ImGuiKey_LeftArrow);
-            IM_CHECK(g.NavId == ctx->GetID("/##Menu_00/Submenu1")); // Ensure navigation doesn't get us to Submenu2 which is at same Y position as B
+            IM_CHECK(g.NavId == ctx->GetID("//##Menu_00/Submenu1")); // Ensure navigation doesn't get us to Submenu2 which is at same Y position as B
 
             ctx->MenuClick("Menu/Submenu2");
             if (variant == 0)
@@ -387,7 +387,7 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
         IM_CHECK_EQ(g.OpenPopupStack.Size, 0);
 
         ctx->MenuClick("Menu");
-        ctx->ItemAction(ImGuiTestAction_Hover, "/$FOCUSED/Submenu1", NULL, ImGuiTestOpFlags_NoFocusWindow);
+        ctx->ItemAction(ImGuiTestAction_Hover, "//$FOCUSED/Submenu1", NULL, ImGuiTestOpFlags_NoFocusWindow);
         IM_CHECK_EQ(g.OpenPopupStack.Size, 2);
         ctx->KeyPress(ImGuiKey_RightArrow);         // Right key closes a menu if item was hovered.
         IM_CHECK_EQ(g.OpenPopupStack.Size, 0);
@@ -398,23 +398,23 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
         IM_CHECK_EQ(g.OpenPopupStack.Size, 2);
 #if IMGUI_BROKEN_TESTS
         // FIXME: Not working currently, but seems like it should be a correct behavior.
-        IM_CHECK(g.NavId == ctx->GetID("/$FOCUSED/A"));
+        IM_CHECK(g.NavId == ctx->GetID("//$FOCUSED/A"));
 #endif
         ctx->KeyPress(ImGuiKey_DownArrow);          // Down key correctly moves to a second item in submenu.
-        IM_CHECK(g.NavId == ctx->GetID("/$FOCUSED/B"));
+        IM_CHECK(g.NavId == ctx->GetID("//$FOCUSED/B"));
 
         ctx->PopupCloseAll();
         ctx->MenuClick("Menu");
-        ctx->ItemAction(ImGuiTestAction_Hover, "/$FOCUSED/Submenu1", NULL, ImGuiTestOpFlags_NoFocusWindow);
+        ctx->ItemAction(ImGuiTestAction_Hover, "//$FOCUSED/Submenu1", NULL, ImGuiTestOpFlags_NoFocusWindow);
         IM_CHECK_EQ(g.OpenPopupStack.Size, 2);
         ctx->KeyPress(ImGuiKey_LeftArrow);          // Right key maintains submenu open if menu item was hovered.
         IM_CHECK_EQ(g.OpenPopupStack.Size, 2);
 #if IMGUI_BROKEN_TESTS
         // FIXME: Not working currently, but seems like it should be a correct behavior.
-        IM_CHECK(g.NavId == ctx->GetID("/$FOCUSED/A"));
+        IM_CHECK(g.NavId == ctx->GetID("//$FOCUSED/A"));
 #endif
         ctx->KeyPress(ImGuiKey_DownArrow);          // Down key correctly moves to a second item in submenu.
-        IM_CHECK(g.NavId == ctx->GetID("/$FOCUSED/B"));
+        IM_CHECK(g.NavId == ctx->GetID("//$FOCUSED/B"));
     };
 
     // ## Test CTRL+TAB window focusing
@@ -592,7 +592,7 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
 
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
 
-        ImGuiID activate_target = ctx->GetID((vars.Step == 0) ? "/Test Window/Button" : "/Test Window/InputText");
+        ImGuiID activate_target = ctx->GetID((vars.Step == 0) ? "//Test Window/Button" : "//Test Window/InputText");
 
         if (ImGui::Button("Activate Src 0"))
             ImGui::ActivateItem(activate_target);
@@ -623,19 +623,19 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
         IM_CHECK(vars.Int1 == 1);
         ctx->ItemClick("Activate Src 1");
         IM_CHECK(vars.Int1 == 2);
-        ctx->ItemClick("/Window 2/Activate Src 2");
+        ctx->ItemClick("//Window 2/Activate Src 2");
         IM_CHECK(vars.Int1 == 3);
 
         vars.Step = 1;
         ctx->Yield();
         ctx->ItemClick("Activate Src 0");
-        IM_CHECK(g.NavId == ctx->GetID("/Test Window/InputText"));
-        IM_CHECK(g.ActiveId == ctx->GetID("/Test Window/InputText"));
+        IM_CHECK(g.NavId == ctx->GetID("//Test Window/InputText"));
+        IM_CHECK(g.ActiveId == ctx->GetID("//Test Window/InputText"));
         ctx->KeyPress(ImGuiKey_Escape);
         IM_CHECK(g.ActiveId == 0);
-        ctx->ItemClick("/Window 2/Activate Src 2");
-        IM_CHECK(g.NavId == ctx->GetID("/Test Window/InputText"));
-        IM_CHECK(g.ActiveId == ctx->GetID("/Test Window/InputText"));
+        ctx->ItemClick("//Window 2/Activate Src 2");
+        IM_CHECK(g.NavId == ctx->GetID("//Test Window/InputText"));
+        IM_CHECK(g.ActiveId == ctx->GetID("//Test Window/InputText"));
     };
 
 #if IMGUI_VERSION_NUM >= 18412
@@ -660,7 +660,7 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
 
         // Cross/Activate to apply + release ActiveId
         ctx->NavInput();
-        IM_CHECK(g.ActiveId == ctx->GetID("/Test Window/InputText"));
+        IM_CHECK(g.ActiveId == ctx->GetID("//Test Window/InputText"));
         ctx->KeyCharsReplaceEnter("0");
         IM_CHECK_STR_EQ(vars.Str1, "0");
         ctx->NavInput();
@@ -760,8 +760,8 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
         ctx->NavActivate();                                     // Enter child window
         IM_CHECK((g.NavWindow->Flags & ImGuiWindowFlags_ChildWindow) != 0);
         ctx->KeyPress(ImGuiKey_DownArrow);                          // Manipulate something
-        //IM_CHECK(g.NavId == ctx->ItemInfo("/**/Button 4")->ID); // Can't easily include child window name in ID because the / gets inhibited...
-        IM_CHECK(g.NavId == ctx->GetID("/$FOCUSED/Button 4"));
+        //IM_CHECK(g.NavId == ctx->ItemInfo("//**/Button 4")->ID); // Can't easily include child window name in ID because the / gets inhibited...
+        IM_CHECK(g.NavId == ctx->GetID("//$FOCUSED/Button 4"));
         ctx->NavActivate();
         ctx->NavCancel();                                       // Leave child window
         IM_CHECK(g.NavId == ctx->GetID("Window 1/Child"));      // Focus resumes last location before entering child window
@@ -1056,9 +1056,9 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
         ctx->KeyPress(ImGuiKey_RightArrow);
 
         // Parent -> Child
-        IM_CHECK_EQ(g.NavId, ctx->GetID("/$FOCUSED/Child 1 Button 2"));
+        IM_CHECK_EQ(g.NavId, ctx->GetID("//$FOCUSED/Child 1 Button 2"));
         ctx->KeyPress(ImGuiKey_UpArrow);
-        IM_CHECK_EQ(g.NavId, ctx->GetID("/$FOCUSED/Child 1 Button 1"));
+        IM_CHECK_EQ(g.NavId, ctx->GetID("//$FOCUSED/Child 1 Button 1"));
 
         // Child -> Parent
         ctx->KeyPress(ImGuiKey_LeftArrow);
@@ -1068,11 +1068,11 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
         // Parent -> Child -> Child
         ctx->KeyPress(ImGuiKey_RightArrow);
         ctx->KeyPress(ImGuiKey_RightArrow);
-        IM_CHECK_EQ(g.NavId, ctx->GetID("/$FOCUSED/Child 2 Button 2"));
+        IM_CHECK_EQ(g.NavId, ctx->GetID("//$FOCUSED/Child 2 Button 2"));
 
         // Child -> nested Child
         ctx->KeyPress(ImGuiKey_RightArrow);
-        IM_CHECK_EQ(g.NavId, ctx->GetID("/$FOCUSED/Child 3B Button 2"));
+        IM_CHECK_EQ(g.NavId, ctx->GetID("//$FOCUSED/Child 3B Button 2"));
 
         // FIXME: test PageUp/PageDown on child
     };

@@ -474,7 +474,7 @@ ImGuiTestRef ImGuiTestContext::GetRef()
 // Turn ref into a root ref unless ref is empty
 ImGuiWindow* ImGuiTestContext::GetWindowByRef(ImGuiTestRef ref)
 {
-    ImGuiID window_id = ref.IsEmpty() ? GetID(ref) : GetID(ref, "/");
+    ImGuiID window_id = ref.IsEmpty() ? GetID(ref) : GetID(ref, "//");
     ImGuiWindow* window = ImGui::FindWindowByID(window_id);
     return window;
 }
@@ -504,8 +504,8 @@ ImGuiID ImGuiTestContext::GetID(ImGuiTestRef ref, ImGuiTestRef seed_ref)
     //    SetRef(GetID("$HOVERED"));    // Better: locking in the window (getting rid of the dynamic reference).
     //  If we can find a way to enforce this better we can consider exposing a $HOVERED, but for now the equivalent is possible:
     //    SetRef(g.HoveredWindow->ID);  // Same as the "Better" above except missing error checking.
-    const char* FOCUSED_PREFIX = "/$FOCUSED";
-    const size_t FOCUSED_PREFIX_LEN = 9;
+    const char* FOCUSED_PREFIX = "//$FOCUSED";
+    const size_t FOCUSED_PREFIX_LEN = 10;
 
     const char* path = ref.Path ? ref.Path : "";
     if (strncmp(path, FOCUSED_PREFIX, FOCUSED_PREFIX_LEN) == 0)
@@ -517,8 +517,30 @@ ImGuiID ImGuiTestContext::GetID(ImGuiTestRef ref, ImGuiTestRef seed_ref)
             if (g.NavWindow)
                 seed_ref = g.NavWindow->ID;
             else
-                LogError("\"/$FOCUSED\" was used with no focused window!");
+                LogError("\"//$FOCUSED\" was used with no focused window!");
         }
+
+    if (path[0] == '/')
+    {
+        path++;
+        if (path[0] == '/')
+        {
+            // "//" : Double-slash prefix resets ID seed to 0.
+            seed_ref = ImGuiTestRef();
+        }
+        else
+        {
+            // "/" : Single-slash prefix sets seed to the "current window", which a parent window containing an item with RefID id.
+            if (ActiveFunc == ImGuiTestActiveFunc_GuiFunc)
+                seed_ref = ImGuiTestRef(g.CurrentWindow->ID);
+            else if (ImGuiWindow* window = GetWindowByRef(RefID))
+                seed_ref = ImGuiTestRef(window->ID);
+            //else if (ImGuiTestItemInfo* item_info = ItemInfo(RefID))    // FIXME: This does mess with TestFunc timing (skips frames).
+            //    seed_ref = ImGuiTestRef(item_info->Window->ID);
+            else
+                seed_ref = ImGuiTestRef();
+        }
+    }
 
     return ImHashDecoratedPath(path, NULL, seed_ref.Path ? GetID(seed_ref) : seed_ref.ID);
 }
@@ -556,11 +578,18 @@ static bool GetWindowInformation(ImGuiTestContext* ctx, ImGuiTestRef window_ref,
 
         // Assume window_ref follows ImGuiTestRef conventions (unescaped slash resets ID counter).
         const char* name = window_ref.Path;
-        if (*name == '/')   // Skip initial /, indicating we arent using RefID as ID base.
-            name++;
+        if (name[0] == '/')   // Skip initial //, indicating we arent using RefID as ID base.
+        {
+            if (name[1] != '/')
+            {
+                IM_ASSERT(0);
+                return false;
+            }
+            name += 2;
+        }
 
         // Ensure there are no unescaped slashes remaining, since this is just a window name, not a hashable path.
-        // Valid: "Window", "/Window", "/Window\\/Foo".
+        // Valid: "Window", "//Window", "//Window\\/Foo".
         // Invalid: "/Window/Foo", "Window/Foo".
         for (int i = 1; i < name[i]; i++)
             if (name[i] == '/' && name[i - 1] != '\\')
@@ -614,7 +643,7 @@ ImGuiID ImGuiTestContext::GetChildWindowID(ImGuiTestRef parent_ref, const char* 
         child_name = last_slash + 1;
         IM_ASSERT(child_name[0] != 0);    // child_name should not end with a slash.
     }
-    return GetID(Str128f("/%s\\/%s_%08X", parent_name.c_str(), child_name, child_item_id).c_str());
+    return GetID(Str128f("//%s\\/%s_%08X", parent_name.c_str(), child_name, child_item_id).c_str());
 }
 
 ImGuiID ImGuiTestContext::GetChildWindowID(ImGuiTestRef parent_ref, ImGuiID child_id)
@@ -629,7 +658,7 @@ ImGuiID ImGuiTestContext::GetChildWindowID(ImGuiTestRef parent_ref, ImGuiID chil
     }
 
     ImStrReplace(&parent_name, "/", "\\/");
-    return GetID(Str128f("/%s\\/%08X", parent_name.c_str(), child_id).c_str());
+    return GetID(Str128f("//%s\\/%08X", parent_name.c_str(), child_id).c_str());
 }
 
 ImVec2 ImGuiTestContext::GetMainMonitorWorkPos()
@@ -2781,9 +2810,9 @@ void    ImGuiTestContext::MenuAction(ImGuiTestAction action, ImGuiTestRef ref)
     const char* path_end = path + strlen(path);
     ImGuiWindow* current_window = NULL;
 
-    if (*path == '/')
+    if (path[0] == '/' && path[1] == '/')
     {
-        const char* end = strstr(path + 1, "/");
+        const char* end = strstr(path + 2, "/");
         IM_CHECK_SILENT(end != NULL); // Menu interaction without any menus specified in ref.
         Str30 window_name;
         window_name.append(path, end);
@@ -2805,9 +2834,9 @@ void    ImGuiTestContext::MenuAction(ImGuiTestAction action, ImGuiTestRef ref)
 
         const bool is_target_item = (p == path_end);
         if (current_window->Flags & ImGuiWindowFlags_MenuBar)
-            buf.setf("/%s/##menubar/%.*s", current_window->Name, (int)(p - path), path);    // Click menu in menu bar
+            buf.setf("//%s/##menubar/%.*s", current_window->Name, (int)(p - path), path);    // Click menu in menu bar
         else
-            buf.setf("/%s/%.*s", current_window->Name, (int)(p - path), path);              // Click sub menu in its own window
+            buf.setf("//%s/%.*s", current_window->Name, (int)(p - path), path);              // Click sub menu in its own window
 
 #if IMGUI_VERSION_NUM < 18520
         if (depth == 0 && (current_window->Flags & ImGuiWindowFlags_Popup))
@@ -2856,7 +2885,7 @@ void    ImGuiTestContext::MenuActionAll(ImGuiTestAction action, ImGuiTestRef ref
 {
     ImGuiTestItemList items;
     MenuAction(ImGuiTestAction_Open, ref_parent);
-    GatherItems(&items, "/$FOCUSED", 1);
+    GatherItems(&items, "//$FOCUSED", 1);
     for (auto item : items)
     {
         MenuAction(ImGuiTestAction_Open, ref_parent); // We assume that every interaction will close the menu again
@@ -2890,10 +2919,10 @@ void    ImGuiTestContext::ComboClick(ImGuiTestRef ref)
     Str128f combo_popup_buf = Str128f("%.*s", (int)(p-path), path);
     ItemClick(combo_popup_buf.c_str());
 
-    ImGuiWindow* popup = GetWindowByRef("/$FOCUSED");
+    ImGuiWindow* popup = GetWindowByRef("//$FOCUSED");
     IM_CHECK_SILENT(popup && IsWindowACombo(popup));
 
-    Str128f combo_item_buf = Str128f("/%s/**/%s", popup->Name, p + 1);
+    Str128f combo_item_buf = Str128f("//%s/**/%s", popup->Name, p + 1);
     ItemClick(combo_item_buf.c_str());
 }
 
@@ -2901,11 +2930,11 @@ void    ImGuiTestContext::ComboClickAll(ImGuiTestRef ref_parent)
 {
     ItemClick(ref_parent);
 
-    ImGuiWindow* popup = GetWindowByRef("/$FOCUSED");
+    ImGuiWindow* popup = GetWindowByRef("//$FOCUSED");
     IM_CHECK_SILENT(popup && IsWindowACombo(popup));
 
     ImGuiTestItemList items;
-    GatherItems(&items, "/$FOCUSED");
+    GatherItems(&items, "//$FOCUSED");
     for (auto item : items)
     {
         ItemClick(ref_parent); // We assume that every interaction will close the combo again
@@ -2967,7 +2996,7 @@ void ImGuiTestContext::TableSetColumnEnabled(ImGuiTestRef ref, const char* label
     TableOpenContextMenu(ref);
 
     ImGuiTestRef backup_ref = GetRef();
-    SetRef("/$FOCUSED");
+    SetRef("//$FOCUSED");
     if (enabled)
         ItemCheck(label);
     else
@@ -3299,7 +3328,7 @@ void    ImGuiTestContext::DockNodeHideTabBar(ImGuiDockNode* node, bool hidden)
     {
         SetRef(node->HostWindow);
         ItemClick(ImGui::DockNodeGetWindowMenuButtonId(node));
-        ItemClick(Str64f("/##Popup_%08x/Hide tab bar", GetID("#WindowMenu", node->ID)).c_str());
+        ItemClick(Str64f("//##Popup_%08x/Hide tab bar", GetID("#WindowMenu", node->ID)).c_str());
         IM_CHECK_SILENT(node->IsHiddenTabBar());
 
     }
