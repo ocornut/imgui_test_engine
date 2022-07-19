@@ -3468,10 +3468,83 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
         IM_CHECK_EQ(ImHashDecoratedPath("Hello/world"), ImHashStr("Helloworld"));            // Slashes are ignored
         IM_CHECK_EQ(ImHashDecoratedPath("Hello\\/world"), ImHashStr("Hello/world"));         // Slashes can be inhibited
         IM_CHECK_EQ(ImHashDecoratedPath("//Hello", NULL, 42), ImHashDecoratedPath("Hello"));        // Leading / clears seed
+    };
 
+    // ## Test GetID() + SetRef() behaviors.
+    t = IM_REGISTER_TEST(e, "misc", "misc_hash_002");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImGui::BeginChild("Child");
+        ImGui::EndChild();
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiContext& g = *ctx->UiContext;
+
+        // Avoid possible frame skips.
+        ctx->WindowCollapse("Hello, world!", false);
+        ctx->MouseSetViewport(ctx->GetWindowByRef("Hello, world!"));
+
+        // $FOCUSED meta-variable refers to current focused window.
         ctx->WindowFocus("Hello, world!");
         IM_CHECK_EQ(ctx->GetID("//$FOCUSED"), ImHashDecoratedPath("Hello, world!"));
         IM_CHECK_EQ(ctx->GetID("//$FOCUSED/Foo"), ImHashDecoratedPath("Hello, world!/Foo"));
+
+        // Test tracking of current ref id window.
+        int frame_number = g.FrameCount;
+        ctx->SetRef("//Hello, world!");
+        IM_CHECK_EQ(ctx->RefID, ImHashDecoratedPath("Hello, world!"));
+        IM_CHECK_EQ(ctx->RefWindowID, ImHashDecoratedPath("Hello, world!"));
+        IM_CHECK_EQ(frame_number, g.FrameCount);
+
+        // Existing item. Window is inferred from ref string.
+        frame_number = g.FrameCount;
+        ctx->SetRef("//Hello, world!/float");
+        IM_CHECK_EQ(ctx->RefID, ImHashDecoratedPath("Hello, world!/float"));
+        IM_CHECK_EQ(ctx->RefWindowID, ImHashDecoratedPath("Hello, world!"));
+        IM_CHECK_EQ(frame_number, g.FrameCount);
+
+        // Missing item. Window is inferred from ref string as well.
+        frame_number = g.FrameCount;
+        ctx->SetRef("//Hello, world!/not-float");
+        IM_CHECK_EQ(ctx->RefID, ImHashDecoratedPath("Hello, world!/not-float"));
+        IM_CHECK_EQ(ctx->RefWindowID, ImHashDecoratedPath("Hello, world!"));
+        IM_CHECK_EQ(frame_number, g.FrameCount);
+
+        // Existing item, set by ID. Item lookup is performed.
+        frame_number = g.FrameCount;
+        ctx->SetRef(ImHashDecoratedPath("Hello, world!/float"));
+        IM_CHECK_EQ(ctx->RefID, ImHashDecoratedPath("Hello, world!/float"));
+        IM_CHECK_EQ(ctx->RefWindowID, ImHashDecoratedPath("Hello, world!"));
+        IM_CHECK_LT(frame_number, g.FrameCount);
+
+        // Missing item, set by ID. Window can not be found.
+        frame_number = g.FrameCount;
+        ctx->SetRef(ImHashDecoratedPath("Hello, world!/not-float"));
+        IM_CHECK_EQ(ctx->RefID, ImHashDecoratedPath("Hello, world!/not-float"));
+        IM_CHECK_EQ(ctx->RefWindowID, (ImGuiID)0);
+        IM_CHECK_LT(frame_number, g.FrameCount);
+
+        // "//" and "/" prefixes.
+        ctx->SetRef("//Hello, world!/float");
+        IM_CHECK_EQ(ctx->GetID("//Foo"), ImHashDecoratedPath("Foo"));               // "//" resets seed id.
+        IM_CHECK_EQ(ctx->GetID("/Foo"), ImHashDecoratedPath("Hello, world!/Foo"));  // "/" uses current window as a seed.
+
+        // SetRef() with child windows.
+        ImGuiID child_id = ctx->GetChildWindowID("Test Window", "Child");
+        ImGuiWindow* child_window = ctx->GetWindowByRef(child_id);
+        Str64 ref(child_window->Name);
+        ImStrReplace(&ref, "/", "\\/");
+        ref.append("/float");
+        ctx->MouseSetViewport(child_window);
+        frame_number = g.FrameCount;
+        ctx->SetRef(ImGuiTestRef());    // Easier to reset RefID than to prepend child window with "//".
+        ctx->SetRef(ref.c_str());
+        IM_CHECK_EQ(ctx->RefID, ImHashDecoratedPath("float", NULL, child_id));
+        IM_CHECK_EQ(ctx->RefWindowID, child_id);
+        IM_CHECK_EQ(frame_number, g.FrameCount);
     };
 
     // ## Test ImVector functions
