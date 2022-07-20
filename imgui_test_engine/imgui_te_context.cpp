@@ -428,7 +428,7 @@ void ImGuiTestContext::SetRef(ImGuiWindow* window)
     size_t len = strlen(window->Name);
     IM_ASSERT(len < IM_ARRAYSIZE(RefStr) - 1);
     strcpy(RefStr, window->Name);
-    RefID = window->ID;
+    RefID = RefWindowID = window->ID;
 
     MouseSetViewport(window);
 
@@ -456,10 +456,34 @@ void ImGuiTestContext::SetRef(ImGuiTestRef ref)
         RefStr[0] = 0;
         RefID = ref.ID;
     }
+    RefWindowID = 0;
 
+    // Try to infer window
+    // (1) Try first element of ref path, it is most likely a window name and item lookup won't be necessary.
     ImGuiWindow* window = GetWindowByRef("");
+    if (window == NULL && ref.Path != NULL)
+    {
+        const char* name_begin = ref.Path;
+        while (*name_begin == '/') name_begin++;
+        const char* name_end = name_begin - 1;
+        do
+        {
+            name_end = strchr(name_end + 1, '/');
+        } while (name_end != NULL && name_end > name_begin && name_end[-1] == '\\');
+        window = GetWindowByRef(ImHashDecoratedPath(name_begin, name_end));
+    }
+
+    // (2) Ref was specified as an ID and points to an item therefore item lookup is unavoidable.
+    // FIXME: Maybe display something in log when that happens?
+    if (window == NULL)
+        if (ImGuiTestItemInfo* item_info = ItemInfo(RefID, ImGuiTestOpFlags_NoError))
+            window = item_info->Window;
+
     if (window)
+    {
+        RefWindowID = window->ID;
         MouseSetViewport(window);
+    }
 
     // Automatically uncollapse by default
     if (window && !(OpFlags & ImGuiTestOpFlags_NoAutoUncollapse))
@@ -533,12 +557,8 @@ ImGuiID ImGuiTestContext::GetID(ImGuiTestRef ref, ImGuiTestRef seed_ref)
             // "/" : Single-slash prefix sets seed to the "current window", which a parent window containing an item with RefID id.
             if (ActiveFunc == ImGuiTestActiveFunc_GuiFunc)
                 seed_ref = ImGuiTestRef(g.CurrentWindow->ID);
-            else if (ImGuiWindow* window = GetWindowByRef(RefID))
-                seed_ref = ImGuiTestRef(window->ID);
-            //else if (ImGuiTestItemInfo* item_info = ItemInfo(RefID))    // FIXME: This does mess with TestFunc timing (skips frames).
-            //    seed_ref = ImGuiTestRef(item_info->Window->ID);
             else
-                seed_ref = ImGuiTestRef();
+                seed_ref = RefWindowID;
         }
     }
 

@@ -239,6 +239,7 @@ struct IMGUI_API ImGuiTestContext
     double                  PerfRefDt = -1.0;
     char                    RefStr[256] = { 0 };                    // Reference window/path for ID construction
     ImGuiID                 RefID = 0;
+    ImGuiID                 RefWindowID = 0;                        // ID of a window that contains RefID item
     ImGuiInputSource        InputMode = ImGuiInputSource_Mouse;     // Prefer interacting with mouse/keyboard/gamepad
     ImVector<char>          Clipboard;                              // Private clipboard for the test instance
     ImVector<ImGuiWindow*>  ForeignWindowsToHide;
