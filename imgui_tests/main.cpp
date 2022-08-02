@@ -570,9 +570,10 @@ int main(int argc, char** argv)
     ImGuiTestEngine_InstallDefaultCrashHandler();
 
     // Load fonts, Set DPI scale
-    LoadFonts(app_window->DpiScale);
-    ImGui::GetStyle().ScaleAllSizes(app_window->DpiScale);
-    //test_io.DpiScale = app_window->DpiScale;
+    //const float dpi_scale = app_window->DpiScale;
+    const float dpi_scale = 1.0f;
+    LoadFonts(dpi_scale);
+    ImGui::GetStyle().ScaleAllSizes(dpi_scale);
 
     // Main loop
     bool aborted = false;
