@@ -2241,7 +2241,11 @@ void RegisterTests_Layout(ImGuiTestEngine* e)
                     break;
                 case ItemType_ImageButton:
                     expected_padding = style.FramePadding.y * 2.0f;
+#if IMGUI_VERSION_NUM >= 18807
+                    ImGui::ImageButton("tex", ImGui::GetIO().Fonts->TexID, ImVec2(100, ImGui::GetTextLineHeight() * label_line_count), ImVec2(0, 0), ImVec2(1, 1), ImVec4(1.0f, 0.6f, 0.0f, 1.0f));
+#else
                     ImGui::ImageButton(ImGui::GetIO().Fonts->TexID, ImVec2(100, ImGui::GetTextLineHeight() * label_line_count), ImVec2(0, 0), ImVec2(1, 1), -1, ImVec4(1.0f, 0.6f, 0.0f, 1.0f));
+#endif
                     break;
                 }
 
