@@ -3537,6 +3537,41 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ctx->MouseUp();
     };
 
+#if IMGUI_VERSION_NUM >= 18808
+    // ## Test using mouse wheel while using drag and drop, or dragging from active item..
+    t = IM_REGISTER_TEST(e, "widgets", "widgets_drag_scroll");
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiWindow* window_demo = ctx->GetWindowByRef("Dear ImGui Demo");
+        ImGuiWindow* window_hello = ctx->GetWindowByRef("Hello, world!");
+        ctx->WindowMove("Hello, world!", ImGui::GetMainViewport()->Pos + ImVec2(50.0f, 50.0f));
+        ctx->WindowMove("Dear ImGui Demo", window_hello->Rect().GetTR());
+        ctx->WindowResize("Hello, world!", ImVec2(400.0f, 200.0f));
+        ctx->WindowResize("Dear ImGui Demo", ImVec2(400.0f, 600.0f));
+        ctx->ItemOpen("Dear ImGui Demo/Help");
+
+        const char* items[] =
+        {
+            "clear color/##ColorButton",    // Drag & drop system
+            "float"                         // Active item (FIXME: Unspecified if we want that behavior of allowing drag while another is active)
+        };
+        for (int n = 0; n < IM_ARRAYSIZE(items); n++)
+        {
+            ctx->ScrollToTop("Dear ImGui Demo");
+            IM_CHECK_EQ(window_demo->Scroll.y, 0.0f);
+            ctx->MouseMove(Str64f("Hello, world!/%s", items[n]).c_str());
+            IM_CHECK(ImGui::IsDragDropActive() == false);
+            ctx->MouseDown();
+            ctx->MouseMoveToPos(window_demo->Rect().GetCenter());
+            if (n == 0)
+                IM_CHECK(ImGui::IsDragDropActive() == true);
+            ctx->MouseWheelY(-10);
+            ctx->MouseUp();
+            IM_CHECK_GT(window_demo->Scroll.y, 0.0f);
+        }
+    };
+#endif
+
     // ## Test drag & drop using three main mouse buttons.
     t = IM_REGISTER_TEST(e, "widgets", "widgets_drag_mouse_buttons");
     struct DragMouseButtonsVars { bool Pressed = false; bool Dropped = false; };
