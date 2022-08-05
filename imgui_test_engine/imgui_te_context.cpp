@@ -2786,6 +2786,7 @@ bool    ImGuiTestContext::TabBarCompareOrder(ImGuiTabBar* tab_bar, const char** 
 
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
     LogDebug("TabBarCompareOrder");
+    IM_CHECK_SILENT_RETV(tab_bar != NULL, false);
 
     // Display
     char buf[256];

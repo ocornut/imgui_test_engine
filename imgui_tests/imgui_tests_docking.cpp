@@ -793,6 +793,32 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
         IM_CHECK(ctx->TabBarCompareOrder(tab_bar, expected_tab_order));
     };
 
+    // ## Test preserving of tab order when entire dock node is moved.
+    t = IM_REGISTER_TEST(e, "docking", "docking_tab_order_preserve");
+    t->SetVarsDataType<DockingTestsGenericVars>([](auto& vars)
+    {
+        vars.ShowDockspace = false;
+        vars.SetShowWindows(5, true);
+    });
+    t->GuiFunc = DockingTestsGenericGuiFunc;
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiWindow* window_bbb = ctx->GetWindowByRef("BBB");
+        ImGuiWindow* window_ccc = ctx->GetWindowByRef("CCC");
+        ctx->DockClear("AAA", "BBB", "CCC", "DDD", "EEE", NULL);
+        ctx->WindowMove("EEE", window_bbb->Rect().GetTR() + ImVec2(10.0f, 0.0f));
+        ctx->DockInto("AAA", "BBB");
+        ctx->DockInto("CCC", "EEE", ImGuiDir_Right);
+        ctx->DockInto("DDD", "CCC");
+
+        ImGuiTabBar* tab_bar = window_ccc->DockNode->TabBar;
+        ctx->ItemDragWithDelta("CCC/#TAB", ImVec2(tab_bar->Tabs[1].Offset + tab_bar->Tabs[1].Width, 0.0f));
+        IM_CHECK(window_ccc->DockNode != NULL);
+        ctx->DockInto(window_ccc->DockNode->ID, "AAA");
+        const char* expected_tab_order[] = { "BBB", "AAA", "DDD", "CCC", NULL };
+        IM_CHECK(ctx->TabBarCompareOrder(window_bbb->DockNode->TabBar, expected_tab_order));
+    };
+
     // Test focus order restore (#2304)
     t = IM_REGISTER_TEST(e, "docking", "docking_tab_focus_restore");
     t->SetVarsDataType<DockingTestsGenericVars>([](auto& vars) {
