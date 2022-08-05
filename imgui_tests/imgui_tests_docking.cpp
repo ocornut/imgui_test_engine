@@ -2078,6 +2078,61 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
     };
 #endif
 
+    // ## Test DockNodeBeginAmendTabBar() and TabItemButton() use with a dockspace. (#5515)
+    t = IM_REGISTER_TEST(e, "docking", "docking_dockspace_tab_amend");
+    struct DockspaceTabButtonVars { ImGuiID DockId; int ButtonClicks = 0; };
+    t->SetVarsDataType<DockspaceTabButtonVars>();
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        DockspaceTabButtonVars& vars = ctx->GetVars<DockspaceTabButtonVars>();
+        vars.DockId = ImGui::DockSpaceOverViewport();
+        ImGuiWindow* window_demo = ctx->GetWindowByRef("Dear ImGui Demo");
+
+        // FIXME: It can be confusing which dock node we are supposed to use. While under normal circumstances using
+        //  dockspace ID works, is simple and intuitive thing to do, it breaks when dockspace already has docked windows
+        //  that are hidden. For example if we run "docking_dockspace_passthru_padding,docking_dockspace_tab_button"
+        //  tests, first test inserts four window into dockspace over viewport and they disappear when test stops. This
+        //  test uses same dockspace and docking demo window into central node actually docks it way down the dock node
+        //  tree. Since other windows are invisible, this new dock node which is multiple levels deep into dock node
+        //  tree contains a tab bar instead of root dockspace node.
+        //ImGuiDockNode* node = ImGui::DockContextFindNodeByID(ctx->UiContext, vars.DockId);
+        ImGuiDockNode* node = window_demo->DockNode;
+        if (node && ImGui::DockNodeBeginAmendTabBar(node))
+        {
+            if (ImGui::TabItemButton("+", ImGuiTabItemFlags_Leading))
+                vars.ButtonClicks++;
+            ImGui::DockNodeEndAmendTabBar();
+        }
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiContext& g = *ctx->UiContext;
+        DockspaceTabButtonVars& vars = ctx->GetVars<DockspaceTabButtonVars>();
+        ImGuiWindow* window_demo = ctx->GetWindowByRef("Dear ImGui Demo");
+        ctx->DockInto("Dear ImGui Demo", vars.DockId);
+        IM_CHECK(g.WindowsFocusOrder.back() == window_demo);
+
+        // Appended button is functional.
+        ctx->ItemClick(ctx->GetID("+", window_demo->DockNode->ID /*vars.DockId*/)); // FIXME: See GuiFunc.
+        IM_CHECK(vars.ButtonClicks == 1);
+#if IMGUI_BROKEN_TESTS
+        IM_CHECK(g.WindowsFocusOrder.back() == window_demo);  // Dock host remains focused.
+#endif
+        // TabItemButton() does not trigger an assert (e926a6).
+        ctx->ItemClick(ctx->GetID("#CLOSE", window_demo->DockNode->ID));
+        ctx->ItemCheck("Hello, world!/Demo Window");
+
+        // TabItemButton() did cause a dockspace child window get inserted into g.WindowsFocusOrder which eventually
+        // caused a crash (#5515, 0e95cf)..
+        ctx->MenuClick("//Dear ImGui Demo/Tools/Metrics\\/Debugger");
+        ctx->WindowClose("Dear ImGui Metrics\\/Debugger");
+        for (ImGuiWindow* window : g.WindowsFocusOrder)
+            if (!window->DockNodeIsVisible) // Docked windows are converted to child windows and are valid in this list
+            { // VS2015 throws a "error C2059: syntax error: '}'" when using for-range/if/do-while, I don't understand it. VS2019 is ok.
+                IM_CHECK_SILENT((window->Flags& ImGuiWindowFlags_ChildWindow) == 0);
+            }
+    };
+
 #else
     IM_UNUSED(e);
 #endif
