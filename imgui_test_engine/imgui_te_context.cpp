@@ -3267,7 +3267,7 @@ void    ImGuiTestContext::DockInto(ImGuiTestRef src_id, ImGuiTestRef dst_id, ImG
 
     // Locate target
     ImVec2 drop_pos;
-    bool drop_is_valid = ImGui::DockContextCalcDropPosForDocking(window_dst, node_dst, window_src, split_dir, split_outer, &drop_pos);
+    bool drop_is_valid = ImGui::DockContextCalcDropPosForDocking(window_dst, node_dst, window_src, node_src, split_dir, split_outer, &drop_pos);
     IM_CHECK_SILENT(drop_is_valid);
     if (!drop_is_valid)
         return;
@@ -3278,7 +3278,7 @@ void    ImGuiTestContext::DockInto(ImGuiTestRef src_id, ImGuiTestRef dst_id, ImG
     ForeignWindowsHideOverPos(drop_pos, friend_windows);
 
     // Drag
-    drop_is_valid = ImGui::DockContextCalcDropPosForDocking(window_dst, node_dst, window_src, split_dir, split_outer, &drop_pos);
+    drop_is_valid = ImGui::DockContextCalcDropPosForDocking(window_dst, node_dst, window_src, node_src, split_dir, split_outer, &drop_pos);
     IM_CHECK_SILENT(drop_is_valid);
     MouseDown(0);
     if (g.IO.ConfigDockingWithShift)
@@ -3286,9 +3286,11 @@ void    ImGuiTestContext::DockInto(ImGuiTestRef src_id, ImGuiTestRef dst_id, ImG
     MouseLiftDragThreshold();
     MouseSetViewport(window_dst);
     MouseMoveToPos(drop_pos);
+    if (node_src)
+        window_src = node_src->HostWindow;  // Dragging a menu button may detach a node and create a new window.
     IM_CHECK_SILENT(g.MovingWindow == window_src);
 #ifdef IMGUI_HAS_DOCK
-    Yield();    // Docking to dockspace over viewport fails in fast mode without this.
+    Yield(2);    // Docking to dockspace over viewport (needs extra frame) or moving a dock node to another node (needs two extra frames) fails in fast mode without this.
     IM_CHECK_SILENT(g.HoveredWindowUnderMovingWindow && g.HoveredWindowUnderMovingWindow->RootWindowDockTree == window_dst->RootWindowDockTree);
 #else
     IM_CHECK_SILENT(g.HoveredWindowUnderMovingWindow && g.HoveredWindowUnderMovingWindow->RootWindow == window_dst);
