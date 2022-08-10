@@ -952,9 +952,20 @@ ImGuiTestItemInfo* ImGuiTestContext::ItemInfo(ImGuiTestRef ref, ImGuiTestOpFlags
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
     ImGuiTestItemInfo* item = NULL;
     int retries = 0;
-    while (full_id && retries < 2)
+    int max_retries = 2;
+    int extra_retries_for_appearing = 0;
+    while (full_id && retries < max_retries)
     {
         item = ImGuiTestEngine_FindItemInfo(Engine, full_id, ref.Path);
+
+        // While a window is appearing it is likely to be resizing and items moving. Wait an extra frame for things to settle. (FIXME: Could use another source e.g. Hidden? AutoFitFramesX?)
+        if (item && item->Window && item->Window->Appearing && extra_retries_for_appearing == 0)
+        {
+            item = NULL;
+            max_retries++;
+            extra_retries_for_appearing++;
+        }
+
         if (item)
             return item;
         ImGuiTestEngine_Yield(Engine);

@@ -824,6 +824,7 @@ void RegisterTests_Window(ImGuiTestEngine* e)
                     }
                     ImGui::EndMenu();
                 }
+                ImGui::MenuItem("Item"); // FIXME: Add some testing from holding this first
                 ImGui::EndMenu();
             }
         };
@@ -902,6 +903,7 @@ void RegisterTests_Window(ImGuiTestEngine* e)
             // give flickering window time to reappear so MenuAction() does not fail.
             ctx->Yield();
 #endif
+            IM_CHECK_EQ(ctx->UiContext->ActiveId, 0u);
             ctx->MenuAction(ImGuiTestAction_Hover, "AAA/BBB/CCC");
             IM_CHECK_EQ(vars.Status.Hovered, 1);
             ctx->MouseUp();
