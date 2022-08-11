@@ -1347,73 +1347,133 @@ void RegisterTests_Table(ImGuiTestEngine* e)
         ImGui::End();
     };
 
-    // ## Test rendering two tables with same ID.
+    // ## Test rendering two tables with same ID (#5557)
     t = IM_REGISTER_TEST(e, "table", "table_multi_instances");
+    struct MultiInstancesVars { bool MultiWindow = false, SideBySide = false, DifferSizes = false, Retest = false; };
+    t->SetVarsDataType<MultiInstancesVars>();
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
-        ImGui::SetNextWindowSize(ImVec2(300, 400), ImGuiCond_Appearing);
-        ImGui::Begin("Test window 1", NULL, ImGuiWindowFlags_NoSavedSettings);
-
+        MultiInstancesVars& vars = ctx->GetVars<MultiInstancesVars>();
         const int col_count = 3;
         float column_widths[col_count] = {};
-        for (int i = 0; i < 2; i++)
+        float first_instance_width = 0.0f;
+        ImGuiWindow* first_window = NULL;
+
+        for (int window_n = 0; window_n < 2; window_n++)
         {
-            ImGui::BeginTable("table1", col_count, ImGuiTableFlags_NoSavedSettings | ImGuiTableFlags_Resizable | ImGuiTableFlags_Borders);
+            float width = 300.0f + (vars.DifferSizes ? window_n : 0) * 50.0f;
+            ImGui::SetNextWindowSize(ImVec2(width, vars.MultiWindow ? 210.0f : 320.0f), ImGuiCond_Always);
+
+            if (vars.MultiWindow && window_n == 1)
+            {
+                if (vars.SideBySide)
+                    ImGui::SetNextWindowPos(first_window->Rect().GetTR() + ImVec2(10.0f, 0.0f), ImGuiCond_Always);
+                else
+                    ImGui::SetNextWindowPos(first_window->Rect().GetBL() + ImVec2(0.0f, 10.0f), ImGuiCond_Always);
+            }
+
+            if (vars.MultiWindow || window_n == 0)
+            {
+                ImGui::Begin(Str16f("Test window - %d", window_n).c_str(), NULL, ImGuiWindowFlags_NoSavedSettings);
+                ImGui::Checkbox("Multi-window table", &vars.MultiWindow);
+                ImGui::Checkbox("Windows side by side", &vars.SideBySide);
+                ImGui::Checkbox("Windows of different sizes", &vars.DifferSizes);
+            }
+
+            if (window_n == 0)
+                first_window = ImGui::GetCurrentWindow();
+
+            // Use a shared is
+            if (vars.MultiWindow)
+                ImGui::PushOverrideID(123);
+
+            ImGui::BeginTable("table1", col_count, ImGuiTableFlags_NoSavedSettings | ImGuiTableFlags_Resizable | ImGuiTableFlags_Borders | ImGuiTableFlags_Reorderable);
             for (int c = 0; c < col_count; c++)
                 ImGui::TableSetupColumn("Header", c ? ImGuiTableColumnFlags_WidthFixed : ImGuiTableColumnFlags_WidthStretch);
             ImGui::TableHeadersRow();
-            for (int r = 0; r < 10; r++)
+            for (int r = 0; r < 5; r++)
             {
                 ImGui::TableNextRow();
                 for (int c = 0; c < col_count; c++)
                 {
                     // Second table contains larger data, attempting to confuse column sync.
                     ImGui::TableNextColumn();
-                    ImGui::Text(i ? "Long Data" : "Data");
+                    ImGui::Text(window_n ? "Long Data" : "Data");
                 }
             }
 
-            if (ctx->IsFirstTestFrame() || ctx->GenericVars.Bool1)
+            if (ctx->IsFirstTestFrame() || vars.Retest)
             {
                 // Perform actual test.
                 ImGuiContext& g = *ctx->UiContext;
                 ImGuiTable* table = g.CurrentTable;
 
-                if (i == 0)
+                if (window_n == 0)
                 {
                     // Save column widths of table during first iteration.
                     for (int c = 0; c < col_count; c++)
                         column_widths[c] = table->Columns[c].WidthGiven;
+                    first_instance_width = table->WorkRect.GetWidth();
                 }
                 else
                 {
                     // Verify column widths match during second iteration.
+                    // Columns preserve proportions across instances.
+                    float table_width = table->WorkRect.GetWidth();
                     for (int c = 0; c < col_count; c++)
-                        IM_CHECK(column_widths[c] == table->Columns[c].WidthGiven);
+                        IM_CHECK(first_instance_width / column_widths[c] == table_width / table->Columns[c].WidthGiven);
                 }
             }
 
             ImGui::EndTable();
+
+            if (vars.MultiWindow)
+                ImGui::PopID();
+
+            if (vars.MultiWindow || window_n == 1)
+                ImGui::End();
         }
 
-        ctx->GenericVars.Bool1 = false;
-        ImGui::End();
+        vars.Retest = false;
     };
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
-        ctx->SetRef("Test window 1");
-        ImGuiTable* table = ImGui::TableFindByID(ctx->GetID("table1"));
-
-        for (int instance_no = 0; instance_no < 2; instance_no++)
+        MultiInstancesVars& vars = ctx->GetVars<MultiInstancesVars>();
+        for (int variant = 0; variant < 2 * 2 * 2; variant++)
         {
-            // Resize a column in the second table. It is not important whether we increase or reduce column size.
-            // Changing direction ensures resize happens around the first third of the table and does not stick to
-            // either side of the table across multiple test runs.
-            float direction = (table->ColumnsGivenWidth * 0.3f) < table->Columns[0].WidthGiven ? -1.0f : 1.0f;
-            float length = 30.0f + 10.0f * instance_no; // Different length for different table instances
-            ctx->ItemDragWithDelta(ImGui::TableGetColumnResizeID(table, 0, instance_no), ImVec2(length * direction, 0.0f));
-            ctx->GenericVars.Bool1 = true;      // Retest again
-            ctx->Yield();                       // Render one more frame to retest column widths
+            vars.MultiWindow = (variant & (1 << 0)) != 0;
+            vars.SideBySide = (variant & (1 << 1)) != 0;
+            vars.DifferSizes = (variant & (1 << 2)) != 0;
+
+            if (!vars.MultiWindow && (vars.SideBySide || vars.DifferSizes))
+                continue;   // Not applicable.
+
+#if !IMGUI_BROKEN_TESTS
+            // FIXME-TABLE: Column resize happens within first table instance, but depends on table->WorkRect of resized instance, which isn't available. See TableGetMaxColumnWidth().
+            if (vars.MultiWindow && vars.SideBySide)
+                continue;
+            if (vars.DifferSizes)
+                continue;
+#endif
+            ctx->LogDebug("Multi-window: %d", vars.MultiWindow);
+            ctx->LogDebug("Side by side: %d", vars.SideBySide);
+            ctx->LogDebug("Differ sizes: %d", vars.DifferSizes);
+            ctx->Yield(2);
+            ImGuiTable* table = ImGui::TableFindByID(ctx->GetID("table1", vars.MultiWindow ? 123 : ctx->GetID("//Test window - 0")));
+            IM_CHECK(table != NULL);
+            for (int instance_no = 0; instance_no < 2; instance_no++)
+            {
+                // Resize a column in the second table. It is not important whether we increase or reduce column size.
+                // Changing direction ensures resize happens around the first third of the table and does not stick to
+                // either side of the table across multiple test runs.
+                float direction = (table->ColumnsGivenWidth * 0.3f) < table->Columns[0].WidthGiven ? -1.0f : 1.0f;
+                float length = 30.0f + 10.0f * instance_no; // Different length for different table instances
+                float column_width = table->Columns[0].WidthGiven;
+                ctx->ItemDragWithDelta(ImGui::TableGetColumnResizeID(table, 0, instance_no), ImVec2(length * direction, 0.0f));
+                vars.Retest = true;                 // Retest again
+                ctx->Yield();                       // Render one more frame to retest column widths
+                IM_CHECK_EQ(table->Columns[0].WidthGiven, column_width + length * direction);
+            }
         }
     };
 
@@ -3281,4 +3341,3 @@ void RegisterTests_Columns(ImGuiTestEngine* e)
     };
 #endif
 }
-
