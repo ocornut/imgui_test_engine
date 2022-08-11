@@ -1653,6 +1653,7 @@ bool    ImGuiTestContext::WindowTeleportToMakePosVisible(ImGuiTestRef ref, ImVec
 }
 
 // ignore_list is a NULL-terminated list of pointers
+// Windows that are below all of ignore_list windows are not hidden.
 // FIXME-TESTS-NOT_SAME_AS_END_USER: Aim to get rid of this.
 void ImGuiTestContext::ForeignWindowsHideOverPos(ImVec2 pos, ImGuiWindow** ignore_list)
 {
@@ -1665,6 +1666,12 @@ void ImGuiTestContext::ForeignWindowsHideOverPos(ImVec2 pos, ImGuiWindow** ignor
     IM_CHECK_SILENT(ignore_list != NULL); // It makes little sense to call this function with an empty list.
     IM_CHECK_SILENT(ignore_list[0] != NULL);
     //auto& ctx = this;  IM_SUSPEND_TESTFUNC();
+
+    // Find lowest ignored window index. All windows rendering above this index will be hidden. All windows rendering
+    // below this index do not prevent interactions with these windows already, and they can be ignored.
+    int min_window_index = g.Windows.Size;
+    for (int i = 0; ignore_list[i]; i++)
+        min_window_index = ImMin(min_window_index, ImGui::FindWindowDisplayIndex(ignore_list[i]));
 
     bool hidden_windows = false;
     for (int i = 0; i < g.Windows.Size; i++)
@@ -1686,6 +1693,10 @@ void ImGuiTestContext::ForeignWindowsHideOverPos(ImVec2 pos, ImGuiWindow** ignor
                         other_window = NULL;
                         break;
                     }
+
+                if (other_window && ImGui::FindWindowDisplayIndex(other_window) < min_window_index)
+                    other_window = NULL;
+
                 if (other_window)
                 {
                     ForeignWindowsToHide.push_back(other_window);
