@@ -1577,6 +1577,7 @@ void ImGuiTestEngine_InstallDefaultCrashHandler()
 //-------------------------------------------------------------------------
 // - ImGuiTestEngineHook_ItemAdd()
 // - ImGuiTestEngineHook_ItemInfo()
+// - ImGuiTestEngineHook_ItemInfo_ResolveFindByLabel()
 // - ImGuiTestEngineHook_Log()
 // - ImGuiTestEngineHook_AssertFunc()
 //-------------------------------------------------------------------------
@@ -1653,7 +1654,7 @@ static void ImGuiTestEngineHook_ItemInfo_ResolveFindByLabel(ImGuiContext* ui_ctx
     // At this point "label" is a match for the right-most name in user wildcard (e.g. the "bar" of "**/foo/bar"
     ImGuiContext& g = *ui_ctx;
     ImGuiTestEngine* engine = (ImGuiTestEngine*)ui_ctx->TestEngine;
-    IM_UNUSED(label); // Match ABI of caller function
+    IM_UNUSED(label); // Match ABI of caller function (faster call)
 
     // Test for matching status flags
     ImGuiTestFindByLabelTask* label_task = &engine->FindByLabelTask;
@@ -1692,12 +1693,29 @@ static void ImGuiTestEngineHook_ItemInfo_ResolveFindByLabel(ImGuiContext* ui_ctx
     {
         ImGuiWindow* window = g.CurrentWindow;
         const int id_stack_size = window->IDStack.Size;
-        const int id_stack_pos = id_stack_size - label_task->InSuffixDepth;
-        ImGuiID base_id = id_stack_pos >= 0 ? window->IDStack.Data[id_stack_pos] : 0;   // base_id correspond to the "**"
-        ImGuiID find_id = ImHashDecoratedPath(label_task->InSuffix, NULL, base_id);     // essentially compare the whole "foo/bar" suffix.
-        if (id != find_id)
-            return;
+        int id_stack_pos = id_stack_size - label_task->InSuffixDepth;
 
+        // At this point, IN MOST CASES (BUT NOT ALL) this should be the case:
+        //    ImHashStr(label, 0, g.CurrentWindow->IDStack.back()) == id
+        // It's not always the case as we have situations where we call IMGUI_TEST_ENGINE_ITEM_INFO() outside of the right stack location:
+        //    e.g. Begin(), or items using the PushID(label); SubItem(""); PopID(); idiom.
+        // If you are curious or need to understand this more in depth, uncomment this assert to detect them:
+        //    ImGuiID tmp_id = ImHashStr(label, 0, g.CurrentWindow->IDStack.back());
+        //    IM_ASSERT(tmp_id == id);
+        // The "Try with parent" case is designed to handle that. May need further tuning.
+
+        ImGuiID base_id = id_stack_pos >= 0 ? window->IDStack.Data[id_stack_pos] : 0;   // base_id correspond to the "**"
+        ImGuiID find_id = ImHashDecoratedPath(label_task->InSuffix, NULL, base_id);     // hash the whole suffix e.g. "foo/bar" over our base
+        if (id != find_id)
+        {
+            // Try with parent
+            base_id = id_stack_pos > 0 ? window->IDStack.Data[id_stack_pos - 1] : 0;
+            find_id = ImHashDecoratedPath(label_task->InSuffix, NULL, base_id);
+            if (id != find_id)
+                return;
+        }
+
+        // Success
         label_task->OutItemId = id;
     }
 }

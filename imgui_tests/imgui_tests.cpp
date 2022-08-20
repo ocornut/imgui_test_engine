@@ -3425,16 +3425,27 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
         ImGui::Checkbox("Test1", &vars.Bool1);
 
-        ImGui::BeginChild("Child");
+        ImGui::BeginChild("Child", ImVec2(0, 200), true);
         ImGui::Checkbox("Test2", &vars.Bool2);
+        ImGui::InputInt("Int1", &vars.Int1, 1, 1);
+        ImGui::InputInt("AA###Int2", &vars.Int1, 0, 0);
         ImGui::EndChild();
 
         ImGui::Checkbox("Dear###Test3", &vars.Bool1);
+
+        if (ImGui::BeginMenu("TestMenu"))
+        {
+            ImGui::MenuItem("Nothing");
+            ImGui::EndMenu();
+        }
 
         ImGui::End();
     };
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
+        auto& vars = ctx->GenericVars;
+        IM_UNUSED(vars);
+
         // Test Window/Test1
         ctx->SetRef("Test Window");
         ctx->ItemClick("**/Test1");
@@ -3449,8 +3460,30 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
         ctx->SetRef("Test Window");
         ctx->ItemClick("**/Test2");
 
+#if IMGUI_VERSION_NUM >= 18809
+        // BeginMenu() - Items using PushID(id); SubItem(""); PopID() idioms
+        IM_CHECK(ctx->ItemInfo("**/TestMenu/") != NULL);
+        IM_CHECK(ctx->ItemInfo("**/TestMenu") != NULL);
+        ctx->ItemClick("**/TestMenu");
+
+        // InputScalar() - Items using PushID(id); SubItem(""); PopID() idioms
+        vars.Int1 = 0;
+        ctx->ItemInputValue("**/Int1", 10);     // Natural aiming at "parent" widget
+        IM_CHECK_EQ(vars.Int1, 10);
+#if IMGUI_BROKEN_TESTS
+        //ctx->ItemInputValue("**/Int1/", 11);    // "" label inside InputScalar() with step. This is normally simplier but currently subject to clipping in this example.
+        //IM_CHECK_EQ(vars.Int1, 11);
+#endif
+#endif
+
         // ### operator
         ctx->ItemClick("**/Hello###Test3");
+
+#if IMGUI_VERSION_NUM >= 18809
+        // ### operator inside a child
+        ctx->ItemInputValue("**/BB###Int2", 20);    // With ### in label, no steps
+        IM_CHECK_EQ(vars.Int1, 20);
+#endif
     };
 
     // ## Test hash functions and ##/### operators
