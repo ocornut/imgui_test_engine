@@ -102,9 +102,9 @@ static void ImGuiTestEngine_PrintLogLines(FILE* fp, ImGuiTestLog* test_log, int 
         const char* line_end = strstr(line_start, "\n"); // FIXME: Incorrect.
         log_line.set(line_start, line_end);
         ImStrXmlEscape(&log_line); // FIXME: Should not be here considering the function name.
-        for (int i = 0; i < indent; i++)
-            fprintf(fp, " ");
-        fprintf(fp, "%s\n", log_line.c_str());
+
+        // Some users may want to disable indenting?
+        fprintf(fp, "%*s%s\n", indent, "", log_line.c_str());
     }
 }
 
