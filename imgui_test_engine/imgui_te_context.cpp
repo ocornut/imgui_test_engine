@@ -1495,6 +1495,9 @@ void    ImGuiTestContext::MouseMove(ImGuiTestRef ref, ImGuiTestOpFlags flags)
     ImVec2 pos = item->RectFull.GetCenter();
     WindowTeleportToMakePosVisible(window->ID, pos);
 
+    // Keep a deep copy of item info since item-> will be kept updated as we set a RefCount on it.
+    ImGuiTestItemInfo item_initial_state = *item;
+
     // Move toward an actually visible point
     pos = GetMouseAimingPos(item, flags);
     MouseMoveToPos(pos);
@@ -1557,13 +1560,22 @@ void    ImGuiTestContext::MouseMove(ImGuiTestRef ref, ImGuiTestOpFlags flags)
                 }
             }
 
-            IM_ERRORF_NOHDR(
+            ImVec2 pos_old = item_initial_state.RectFull.Min;
+            ImVec2 pos_new = item->RectFull.Min;
+            ImVec2 size_old = item_initial_state.RectFull.GetSize();
+            ImVec2 size_new = item->RectFull.GetSize();
+            Str256f error_message(
                 "Unable to Hover %s:\n"
                 "- Expected item %08X in window '%s', targeted position: (%.1f,%.1f)'\n"
-                "- Hovered id was %08X in '%s'.",
+                "- Hovered id was %08X in '%s'.\n"
+                "- Item Pos:  Before mouse move (%.1f,%.1f) vs Now (%.1f,%.1f) (%s)\n"
+                "- Item Size: Before mouse move (%.1f,%.1f) vs Now (%.1f,%.1f) (%s)",
                 desc.c_str(),
                 item->ID, item->Window ? item->Window->Name : "<NULL>", pos.x, pos.y,
-                hovered_id, g.HoveredWindow ? g.HoveredWindow->Name : "");
+                hovered_id, g.HoveredWindow ? g.HoveredWindow->Name : "",
+                pos_old.x, pos_old.y, pos_new.x, pos_new.y, (pos_old.x == pos_new.x && pos_old.y == pos_new.y) ? "Same" : "Changed",
+                size_old.x, size_old.y, size_new.x, size_new.y, (size_old.x == size_new.x && size_old.y == size_new.y) ? "Same" : "Changed");
+            IM_ERRORF_NOHDR("%s", error_message.c_str());
         }
     }
 
