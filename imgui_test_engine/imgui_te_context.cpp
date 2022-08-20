@@ -848,6 +848,87 @@ bool ImGuiTestContext::CaptureEndVideo()
     return ret;
 }
 
+// Handle wildcard search on the TestFunc side.
+// Results will be resolved on the Gui side via the following call-chain:
+//   IMGUI_TEST_ENGINE_ITEM_INFO() -> ImGuiTestEngineHook_ItemInfo() -> ImGuiTestEngineHook_ItemInfo_ResolveFindByLabel()
+ImGuiID ImGuiTestContext::ItemInfoHandleWildcardSearch(const char* wildcard_prefix_start, const char* wildcard_prefix_end, const char* wildcard_suffix_start)
+{
+    LogDebug("Wildcard matching..");
+
+    // Wildcard matching
+    // Note that task->InPrefixId may be 0 as well (= we don't know the window)
+    ImGuiTestFindByLabelTask* task = &Engine->FindByLabelTask;
+    if (wildcard_prefix_start < wildcard_prefix_end)
+        task->InPrefixId = ImHashDecoratedPath(wildcard_prefix_start, wildcard_prefix_end, RefID);
+    else
+        task->InPrefixId = RefID;
+    task->OutItemId = 0;
+
+    // Advance pointer to point it to the last label
+    task->InSuffix = task->InSuffixLastItem = wildcard_suffix_start;
+    for (const char* c = task->InSuffix; *c; c++)
+        if (*c == '/')
+            task->InSuffixLastItem = c + 1;
+    task->InSuffixLastItemHash = ImHashStr(task->InSuffixLastItem, 0, 0);
+
+    // Count number of labels
+    task->InSuffixDepth = 1;
+    for (const char* c = wildcard_suffix_start; *c; c++)
+        if (*c == '/')
+            task->InSuffixDepth++;
+
+    int retries = 0;
+    while (retries < 2 && task->OutItemId == 0)
+    {
+        ImGuiTestEngine_Yield(Engine);
+        retries++;
+    }
+
+    // Wildcard matching requires item to be visible, because clipped items are unaware of their labels. Try panning through entire window, searching for target item.
+    // FIXME-TESTS: Scrollbar position restoration may be desirable, however it interferes with using found item.
+    // FIXME-TESTS: This doesn't recurse properly into each child..
+    // FIXME: Down the line if we refactor ItemAdd() return value to distinguish render-clipping vs logic-clipping etc, we should instead temporarily enable a "no clip"
+    // mode without the need for scrolling.
+    if (task->OutItemId == 0)
+    {
+        ImGuiTestItemInfo* base_item = ItemInfo(task->InPrefixId, ImGuiTestOpFlags_NoError);
+        ImGuiWindow* window = base_item ? base_item->Window : GetWindowByRef(task->InPrefixId);
+        if (window)
+        {
+            ImVec2 rect_size = window->InnerRect.GetSize();
+            for (float scroll_x = 0.0f; task->OutItemId == 0; scroll_x += rect_size.x)
+            {
+                for (float scroll_y = 0.0f; task->OutItemId == 0; scroll_y += rect_size.y)
+                {
+                    window->Scroll.x = scroll_x;
+                    window->Scroll.y = scroll_y;
+
+                    retries = 0;
+                    while (retries < 2 && task->OutItemId == 0)
+                    {
+                        ImGuiTestEngine_Yield(Engine);
+                        retries++;
+                    }
+                    if (window->Scroll.y >= window->ScrollMax.y)
+                        break;
+                }
+                if (window->Scroll.x >= window->ScrollMax.x)
+                    break;
+            }
+        }
+    }
+    ImGuiID full_id = task->OutItemId;
+
+    // FIXME: InFilterItemStatusFlags is intentionally not cleared here, because it is set in ItemAction() and reused in later calls to ItemInfo() to resolve ambiguities.
+    task->InPrefixId = 0;
+    task->InSuffix = task->InSuffixLastItem = NULL;
+    task->InSuffixLastItemHash = 0;
+    task->InSuffixDepth = 0;
+    task->OutItemId = 0;    // -V1048   // Variable 'OutItemId' was assigned the same value. False-positive, because value of OutItemId could be modified from other thread during ImGuiTestEngine_Yield() call.
+
+    return full_id;
+}
+
 // Supported values for ImGuiTestOpFlags:
 // - ImGuiTestOpFlags_NoError
 ImGuiTestItemInfo* ImGuiTestContext::ItemInfo(ImGuiTestRef ref, ImGuiTestOpFlags flags)
@@ -857,94 +938,19 @@ ImGuiTestItemInfo* ImGuiTestContext::ItemInfo(ImGuiTestRef ref, ImGuiTestOpFlags
 
     ImGuiID full_id = 0;
 
-    // Wildcard matching
-    // FIXME-TESTS: Need to verify that this is not inhibited by a \, so \**/ should not pass, but \\**/ should :)
-    // We could add a simple helpers that would iterate the strings, handling inhibitors, and let you check if a given characters is inhibited or not.
-    const char* wildcard_prefix_start = NULL;
-    const char* wildcard_prefix_end = NULL;
-    const char* wildcard_suffix_start = NULL;
-    if (ref.Path)
-        if (const char* p = strstr(ref.Path, "**/"))
-        {
-            wildcard_prefix_start = ref.Path;
-            wildcard_prefix_end = p;
-            wildcard_suffix_start = wildcard_prefix_end + 3;
-        }
-
-    if (wildcard_prefix_start)
+    if (const char* p = ref.Path ? strstr(ref.Path, "**/") : NULL)
     {
         // Wildcard matching
-        // Note that task->InPrefixId may be 0 as well (= we don't know the window)
-        ImGuiTestFindByLabelTask* task = &Engine->FindByLabelTask;
-        if (wildcard_prefix_start < wildcard_prefix_end)
-            task->InPrefixId = ImHashDecoratedPath(wildcard_prefix_start, wildcard_prefix_end, RefID);
-        else
-            task->InPrefixId = RefID;
-        task->OutItemId = 0;
-
-        // Advance pointer to point it to the last label
-        task->InSuffix = task->InSuffixLastItem = wildcard_suffix_start;
-        for (const char* c = task->InSuffix; *c; c++)
-            if (*c == '/')
-                task->InSuffixLastItem = c + 1;
-        task->InSuffixLastItemHash = ImHashStr(task->InSuffixLastItem, 0, 0);
-
-        // Count number of labels
-        task->InSuffixDepth = 1;
-        for (const char* c = wildcard_suffix_start; *c; c++)
-            if (*c == '/')
-                task->InSuffixDepth++;
-
-        LogDebug("Wildcard matching..");
-        int retries = 0;
-        while (retries < 2 && task->OutItemId == 0)
-        {
-            ImGuiTestEngine_Yield(Engine);
-            retries++;
-        }
-
-        // Wildcard matching requires item to be visible, because clipped items are unaware of their labels. Try panning through entire window, searching for target item.
-        // FIXME-TESTS: Scrollbar position restoration may be desirable, however it interferes with using found item.
-        if (task->OutItemId == 0)
-        {
-            ImGuiTestItemInfo* base_item = ItemInfo(task->InPrefixId, ImGuiTestOpFlags_NoError);
-            ImGuiWindow* window = base_item ? base_item->Window : GetWindowByRef(task->InPrefixId);
-            if (window)
-            {
-                ImVec2 rect_size = window->InnerRect.GetSize();
-                for (float scroll_x = 0.0f; task->OutItemId == 0; scroll_x += rect_size.x)
-                {
-                    for (float scroll_y = 0.0f; task->OutItemId == 0; scroll_y += rect_size.y)
-                    {
-                        window->Scroll.x = scroll_x;
-                        window->Scroll.y = scroll_y;
-
-                        retries = 0;
-                        while (retries < 2 && task->OutItemId == 0)
-                        {
-                            ImGuiTestEngine_Yield(Engine);
-                            retries++;
-                        }
-                        if (window->Scroll.y >= window->ScrollMax.y)
-                            break;
-                    }
-                    if (window->Scroll.x >= window->ScrollMax.x)
-                        break;
-                }
-            }
-        }
-        full_id = task->OutItemId;
-
-        // FIXME: InFilterItemStatusFlags is intentionally not cleared here, because it is set in ItemAction() and reused in later calls to ItemInfo() to resolve ambiguities.
-        task->InPrefixId = 0;
-        task->InSuffix = task->InSuffixLastItem = NULL;
-        task->InSuffixLastItemHash = 0;
-        task->InSuffixDepth = 0;
-        task->OutItemId = 0;    // -V1048   // Variable 'OutItemId' was assigned the same value. False-positive, because value of OutItemId could be modified from other thread during ImGuiTestEngine_Yield() call.
+        // FIXME-TESTS: Need to verify that this is not inhibited by a \, so \**/ should not pass, but \\**/ should :)
+        // We could add a simple helpers that would iterate the strings, handling inhibitors, and let you check if a given characters is inhibited or not.
+        const char* wildcard_prefix_start = ref.Path;
+        const char* wildcard_prefix_end = p;
+        const char* wildcard_suffix_start = wildcard_prefix_end + 3;
+        full_id = ItemInfoHandleWildcardSearch(wildcard_prefix_start, wildcard_prefix_end, wildcard_suffix_start);
     }
     else
     {
-        // Normal matching
+        // Regular matching
         full_id = GetID(ref);
     }
 
