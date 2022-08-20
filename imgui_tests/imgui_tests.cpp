@@ -3473,7 +3473,7 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
         // Verify that Test Engine high-level hash wrapper works
         IM_CHECK_EQ(ImHashDecoratedPath("Hello/world"), ImHashStr("Helloworld"));            // Slashes are ignored
         IM_CHECK_EQ(ImHashDecoratedPath("Hello\\/world"), ImHashStr("Hello/world"));         // Slashes can be inhibited
-        IM_CHECK_EQ(ImHashDecoratedPath("//Hello", NULL, 42), ImHashDecoratedPath("Hello"));        // Leading / clears seed
+        IM_CHECK_EQ(ImHashDecoratedPath("//Hello", NULL, 42), ImHashDecoratedPath("Hello")); // Leading / clears seed
     };
 
     // ## Test GetID() + SetRef() behaviors.

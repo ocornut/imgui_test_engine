@@ -1268,7 +1268,8 @@ void ImGuiPerfTool::_ShowEntriesPlot()
         return;
 
     ImPlot::SetupAxis(ImAxis_X1, NULL, ImPlotAxisFlags_NoTickLabels);
-    ImPlot::SetupAxisTicks(ImAxis_Y1, 0, _LabelsVisible.Size, _LabelsVisible.Size, _LabelsVisible.Data);
+    if (_LabelsVisible.Size > 1) // FIXME: is assert in implot correct?
+        ImPlot::SetupAxisTicks(ImAxis_Y1, 0, _LabelsVisible.Size, _LabelsVisible.Size, _LabelsVisible.Data);
     ImPlot::SetupLegend(ImPlotLocation_NorthEast);
 
     // Amount of vertical space bars of one label will occupy. 1.0 would leave no space between bars of adjacent labels.
@@ -1641,14 +1642,14 @@ static void PerflogSettingsHandler_ReadLine(ImGuiContext*, ImGuiSettingsHandler*
 {
     ImGuiPerfTool* perftool = (ImGuiPerfTool*)ini_handler->UserData;
     char buf[128];
-    int visible, display_type;
+    int visible = -1, display_type = -1;
     /**/ if (sscanf(line, "DateFrom=%10s", perftool->_FilterDateFrom)) {}
     else if (sscanf(line, "DateTo=%10s", perftool->_FilterDateTo)) {}
     else if (sscanf(line, "DisplayType=%d", &display_type)) { perftool->_DisplayType = display_type; }
     else if (sscanf(line, "BaselineBuildId=%llu", &perftool->_BaselineBuildId)) {}
     else if (sscanf(line, "BaselineTimestamp=%llu", &perftool->_BaselineTimestamp)) {}
-    else if (sscanf(line, "TestVisibility=%[^,]=%d", buf, &visible)) { perftool->_Visibility.SetBool(ImHashStr(buf), !!visible); }
-    else if (sscanf(line, "BuildVisibility=%[^,]=%d", buf, &visible)) { perftool->_Visibility.SetBool(ImHashStr(buf), !!visible); }
+    else if (sscanf(line, "TestVisibility=%[^,],%d", buf, &visible) == 2) { perftool->_Visibility.SetBool(ImHashStr(buf), !!visible); }
+    else if (sscanf(line, "BuildVisibility=%[^,],%d", buf, &visible) == 2) { perftool->_Visibility.SetBool(ImHashStr(buf), !!visible); }
 }
 
 static void PerflogSettingsHandler_ApplyAll(ImGuiContext*, ImGuiSettingsHandler* ini_handler)
