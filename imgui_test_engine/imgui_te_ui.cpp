@@ -432,9 +432,11 @@ static void ShowTestGroup(ImGuiTestEngine* e, ImGuiTestGroup group, char* filter
 
                 const bool open_source_available = (test->SourceFile != NULL) && (e->IO.SrcFileOpenFunc != NULL);
 
-                const char* source_file_rightmost = ImPathFindFilename(test->SourceFile);
-
-                Str128f buf("Open source (%s:%d)", source_file_rightmost, test->SourceLine);
+                Str128 buf;
+                if (test->SourceFile != NULL) // This is normally set by IM_REGISTER_TEST() but custom registration may omit it.
+                    buf.setf("Open source (%s:%d)", ImPathFindFilename(test->SourceFile), test->SourceLine);
+                else
+                    buf.set("Open source");
                 if (ImGui::MenuItem(buf.c_str(), NULL, false, open_source_available))
                     e->IO.SrcFileOpenFunc(test->SourceFile, test->SourceLine, e->IO.SrcFileOpenUserData);
                 if (ImGui::MenuItem("View source...", NULL, false, test->SourceFile != NULL))

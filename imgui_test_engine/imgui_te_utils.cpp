@@ -247,6 +247,7 @@ bool ImFileLoadSourceBlurb(const char* file_name, int line_no_start, int line_no
 
 const char* ImPathFindFilename(const char* path, const char* path_end)
 {
+    IM_ASSERT(path != NULL);
     if (!path_end)
         path_end = path + strlen(path);
     const char* p = path_end;

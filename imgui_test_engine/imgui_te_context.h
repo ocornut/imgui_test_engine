@@ -52,6 +52,7 @@ struct ImGuiTestGatherTask;     // Test Engine task for scanning/finding items
 //-------------------------------------------------------------------------
 
 // Weak reference to an Item/Window given an hashed ID _or_ a string path ID.
+// (SUGGESTION: add those functions to "VA Step Filter" (Visual Assist) or a .natstepfilter file (Visual Studio)
 struct IMGUI_API ImGuiTestRef
 {
     ImGuiID         ID;
