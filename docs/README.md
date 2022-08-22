@@ -23,6 +23,9 @@ https://user-images.githubusercontent.com/8225057/182409619-cd3bf990-b383-4a6c-a
 - You can use it to program high-level commands e.g. `MenuCheck("Edit/Options/Enable Grid")` or run more programmatic queries ("list openable items in that section, then open them all"). So from your POV it could be used for simple smoke testing ("open all our tools") or for more elaborate testing ("interact with xxx and xxx, check result").
 - It **can be used as a form of "live tutorial / demo"** where a script can run on an actual user application to showcase features.
 - It includes a performance tool and viewer which we used to record/compare performances between builds and branches (optional, requires ImPlot).
+
+## Status
+
 - It is currently a C++ API but down the line we can expect that the commands will be better standardized, stored in data files, called from other languages.
 - It has been in use and development since 2018. Library is provided as-is, and we'll provide best effort to make it suitable for user needs.
 
