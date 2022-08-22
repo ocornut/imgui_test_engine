@@ -2869,23 +2869,28 @@ void    ImGuiTestContext::MenuAction(ImGuiTestAction action, ImGuiTestRef ref)
     int depth = 0;
     const char* path = ref.Path;
     const char* path_end = path + strlen(path);
-    ImGuiWindow* current_window = NULL;
 
+    ImGuiWindow* ref_window = NULL;
     if (path[0] == '/' && path[1] == '/')
     {
         const char* end = strstr(path + 2, "/");
         IM_CHECK_SILENT(end != NULL); // Menu interaction without any menus specified in ref.
-        Str30 window_name;
+        Str64 window_name;
         window_name.append(path, end);
-        current_window = GetWindowByRef(GetID(window_name.c_str()));
+        ref_window = GetWindowByRef(GetID(window_name.c_str()));
         path = end + 1;
+        if (ref_window == NULL)
+            LogError("MenuAction: missing ref window (invalid name \"//%s\" ?", window_name.c_str());
     }
     else if (RefID)
     {
-        current_window = GetWindowByRef(RefID);
+        ref_window = GetWindowByRef(RefID);
+        if (ref_window == NULL)
+            LogError("MenuAction: missing ref window (invalid SetRef value?)");
     }
-    IM_CHECK_SILENT(current_window != NULL);  // A ref window must always be set
+    IM_CHECK_SILENT(ref_window != NULL);  // A ref window must always be set
 
+    ImGuiWindow* current_window = ref_window;
     Str128 buf;
     while (path < path_end && !IsError())
     {

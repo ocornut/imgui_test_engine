@@ -134,13 +134,6 @@ IMGUI_API bool      ImGuiTestEngine_Error(const char* file, const char* func, in
 IMGUI_API void      ImGuiTestEngine_Assert(const char* expr, const char* file, const char* function, int line);
 
 //-------------------------------------------------------------------------
-// Macros (the IM_CHECK_xxx macros are at the bottom of this file)
-//-------------------------------------------------------------------------
-
-// Register a new test
-#define IM_REGISTER_TEST(_ENGINE, _CAT, _NAME)  ImGuiTestEngine_RegisterTest(_ENGINE, _CAT, _NAME, __FILE__, __LINE__)
-
-//-------------------------------------------------------------------------
 // ImGuiTestEngine API
 //-------------------------------------------------------------------------
 
@@ -152,8 +145,11 @@ IMGUI_API void                ImGuiTestEngine_Stop(ImGuiTestEngine* engine);    
 IMGUI_API void                ImGuiTestEngine_PostSwap(ImGuiTestEngine* engine);                    // Call every frame after framebuffer swap, will process screen capture and call test_io.ScreenCaptureFunc()
 IMGUI_API ImGuiTestEngineIO&  ImGuiTestEngine_GetIO(ImGuiTestEngine* engine);
 
+// Macros: Register Test
+#define IM_REGISTER_TEST(_ENGINE, _CATEGORY, _NAME)  ImGuiTestEngine_RegisterTest(_ENGINE, _CATEGORY, _NAME, __FILE__, __LINE__)
+
 // Functions: Main
-IMGUI_API ImGuiTest*          ImGuiTestEngine_RegisterTest(ImGuiTestEngine* engine, const char* category, const char* name, const char* src_file = NULL, int src_line = 0);
+IMGUI_API ImGuiTest*          ImGuiTestEngine_RegisterTest(ImGuiTestEngine* engine, const char* category, const char* name, const char* src_file = NULL, int src_line = 0); // Prefer calling IM_REGISTER_TEST()
 IMGUI_API void                ImGuiTestEngine_QueueTests(ImGuiTestEngine* engine, ImGuiTestGroup group, const char* filter = NULL, ImGuiTestRunFlags run_flags = 0);
 IMGUI_API void                ImGuiTestEngine_QueueTest(ImGuiTestEngine* engine, ImGuiTest* test, ImGuiTestRunFlags run_flags = 0);
 IMGUI_API void                ImGuiTestEngine_AbortCurrentTest(ImGuiTestEngine* engine);

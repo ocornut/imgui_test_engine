@@ -1132,6 +1132,7 @@ void ImGuiTestEngine_QueueTest(ImGuiTestEngine* engine, ImGuiTest* test, ImGuiTe
     engine->TestsQueue.push_back(run_task);
 }
 
+// Called by IM_REGISTER_TEST(). Prefer calling IM_REGISTER_TEST() in your code so src_file/src_line are automatically passed.
 ImGuiTest* ImGuiTestEngine_RegisterTest(ImGuiTestEngine* engine, const char* category, const char* name, const char* src_file, int src_line)
 {
     ImGuiTestGroup group = ImGuiTestGroup_Tests;
