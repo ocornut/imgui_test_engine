@@ -3878,6 +3878,38 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ctx->MenuClick("First Menu/Second Menu/2 Second");
     };
 
+    // ## Test use of ### operator in menu path
+    t = IM_REGISTER_TEST(e, "widgets", "widgets_menu_path");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_MenuBar);
+        if (ImGui::BeginMenuBar())
+        {
+            if (ImGui::BeginMenu("First"))
+            {
+                if (ImGui::BeginMenu("Second"))
+                {
+                    ImGui::MenuItem("Item");
+                    ImGui::EndMenu();
+                }
+                if (ImGui::BeginMenu("Third###Hello"))
+                {
+                    ImGui::MenuItem("Item");
+                    ImGui::EndMenu();
+                }
+                ImGui::EndMenu();
+            }
+            ImGui::EndMenuBar();
+        }
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ctx->SetRef("Test Window");
+        ctx->MenuClick("First/Second/Item");
+        ctx->MenuClick("First/Third###Hello/Item");
+    };
+
     // ## Test text capture of separator in a menu.
     t = IM_REGISTER_TEST(e, "widgets", "widgets_menu_separator");
     t->GuiFunc = [](ImGuiTestContext* ctx)

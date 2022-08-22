@@ -84,6 +84,7 @@ ImGuiID ImHashDecoratedPath(const char* str, const char* str_end, ImGuiID seed)
         if (c == '/' && !inhibit_one)
         {
             inhibit_one = false;
+            seed = crc; // Set seed to the new path
             continue;
         }
 

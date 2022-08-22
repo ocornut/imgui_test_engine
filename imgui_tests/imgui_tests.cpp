@@ -3507,6 +3507,9 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
         IM_CHECK_EQ(ImHashDecoratedPath("Hello/world"), ImHashStr("Helloworld"));            // Slashes are ignored
         IM_CHECK_EQ(ImHashDecoratedPath("Hello\\/world"), ImHashStr("Hello/world"));         // Slashes can be inhibited
         IM_CHECK_EQ(ImHashDecoratedPath("//Hello", NULL, 42), ImHashDecoratedPath("Hello")); // Leading / clears seed
+
+        // Verify that ### reset to the last slash
+        IM_CHECK_EQ(ImHashDecoratedPath("Hello/world###Blah"), ImHashStr("###Blah", 0, ImHashStr("Hello")));
     };
 
     // ## Test GetID() + SetRef() behaviors.
@@ -3584,6 +3587,36 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
         IM_CHECK_EQ(ctx->RefID, ImHashDecoratedPath("float", NULL, child_id));
         IM_CHECK_EQ(ctx->RefWindowID, child_id);
         IM_CHECK_EQ(frame_number, g.FrameCount);
+    };
+
+    // ## Test ID/hash of window names
+    t = IM_REGISTER_TEST(e, "misc", "misc_hash_003");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiContext& g = *ctx->UiContext;
+
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+        IM_CHECK_EQ(g.CurrentWindow->ID, ImHashDecoratedPath("Test Window"));
+        ImGui::End();
+
+        ImGui::Begin("Test Window###WithHashes", NULL, ImGuiWindowFlags_NoSavedSettings);
+        IM_CHECK_EQ(g.CurrentWindow->ID, ImHashDecoratedPath("Test Window###WithHashes"));
+        IM_CHECK_EQ(g.CurrentWindow->ID, ImHashDecoratedPath("###WithHashes"));
+        //ImGuiID parent_id = g.CurrentWindow->ID;
+        //ImGui::BeginChild("Child1");
+        //IM_CHECK_EQ(ctx->GetChildWindowID(g.CurrentWindow->ID, "Child1"));
+        //ImGui::EndChild();
+        ImGui::End();
+
+        ImGui::Begin("Test Window/WithSlash", NULL, ImGuiWindowFlags_NoSavedSettings);
+        IM_CHECK_EQ(g.CurrentWindow->ID, ImHashDecoratedPath("Test Window\\/WithSlash"));
+        ImGui::End();
+
+        ImGui::Begin("Test Window/WithSlash###AndHashes", NULL, ImGuiWindowFlags_NoSavedSettings);
+        IM_CHECK_EQ(g.CurrentWindow->ID, ImHashDecoratedPath("Test Window\\/WithSlash###AndHashes"));
+        ImGui::End();
+
+        ctx->Finish(); // Finish on first frame
     };
 
     // ## Test ImVector functions
