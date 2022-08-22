@@ -472,7 +472,7 @@ static ImRect ImPlotGetYTickRect(int t, int y = 0)
     ImPlotContext& gp = *GImPlot;
     ImPlotPlot& plot = *gp.CurrentPlot;
     ImPlotAxis& ax = plot.YAxis(y);
-    const ImPlotTickCollection& tkc = ax.Ticks;
+    const ImPlotTicker& tkc = ax.Ticker;
     const bool opp = ax.IsOpposite();
     ImRect result(1.0f, 1.0f, -1.0f, -1.0f);
     if (ax.HasTickLabels())
@@ -1268,8 +1268,15 @@ void ImGuiPerfTool::_ShowEntriesPlot()
         return;
 
     ImPlot::SetupAxis(ImAxis_X1, NULL, ImPlotAxisFlags_NoTickLabels);
-    if (_LabelsVisible.Size > 1) // FIXME: is assert in implot correct?
+    if (_LabelsVisible.Size > 1)
+    {
         ImPlot::SetupAxisTicks(ImAxis_Y1, 0, _LabelsVisible.Size, _LabelsVisible.Size, _LabelsVisible.Data);
+    }
+    else if (_LabelsVisible.Size == 1)
+    {
+        const char* labels[] = { _LabelsVisible[0], "" };
+        ImPlot::SetupAxisTicks(ImAxis_Y1, 0, _LabelsVisible.Size, 2, labels);
+    }
     ImPlot::SetupLegend(ImPlotLocation_NorthEast);
 
     // Amount of vertical space bars of one label will occupy. 1.0 would leave no space between bars of adjacent labels.
@@ -1316,7 +1323,7 @@ void ImGuiPerfTool::_ShowEntriesPlot()
             temp_set.SetInt(label_id, now_visible_builds + 1);
             double y_pos = (double)entry.LabelIndex + GetLabelVerticalOffset(occupy_h, max_visible_builds, now_visible_builds);
             ImPlot::SetNextFillStyle(ImPlot::GetColormapColor(_DisplayType == ImGuiPerfToolDisplayType_PerBranchColors ? batch.BranchIndex : batch_index));
-            ImPlot::PlotBarsH<double>(display_label.c_str(), &entry.DtDeltaMs, &y_pos, 1, occupy_h / (double)max_visible_builds);
+            ImPlot::PlotBars<double>(display_label.c_str(), &entry.DtDeltaMs, &y_pos, 1, occupy_h / (double)max_visible_builds, ImPlotBarsFlags_Horizontal);
         }
         legend_hovered |= ImPlot::IsLegendEntryHovered(display_label.c_str());
 
