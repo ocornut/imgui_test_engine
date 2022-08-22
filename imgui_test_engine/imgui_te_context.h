@@ -167,7 +167,7 @@ struct IMGUI_API ImGuiTestGenericItemStatus
 
 // Generic structure with various storage fields.
 // This is useful for tests to quickly share data between GuiFunc and TestFunc without creating custom data structure.
-// If those fields are not enough: using ctx->SetVarsDataType<>() and ctx->GetVars<>() it is possible to store custom data on the stack.
+// If those fields are not enough: using test->SetVarsDataType<>() + ctx->GetVars<>() it is possible to store custom data on the stack.
 struct IMGUI_API ImGuiTestGenericVars
 {
     // Generic storage with a bit of semantic to make user/test code look neater
@@ -208,7 +208,7 @@ struct IMGUI_API ImGuiTestContext
 {
     // User variables
     ImGuiTestGenericVars    GenericVars;
-    void*                   UserVars = NULL;                        // Access using ->GetVars<Type>()
+    void*                   UserVars = NULL;                        // Access using ctx->GetVars<Type>(). Setup with test->SetVarsDataType<>().
 
     // Public fields
     ImGuiContext*           UiContext = NULL;                       // UI context

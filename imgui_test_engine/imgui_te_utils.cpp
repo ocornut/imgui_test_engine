@@ -377,61 +377,14 @@ const char* ImStrchrRangeWithEscaping(const char* str, const char* str_end, char
     return NULL;
 }
 
-// Since the escaped characters are fitting in a small ASCII range (34 to 62) we can probably use a LUT to avoid the search,
-// but to be honest for the amount of data we are dealing with this is likely more than good enough, and this is flexible.
-struct ImStrXmlEscapeCharData
-{
-    char    c;
-    ImU8    replacement_len;
-    char    replacement[7];
-};
-static const ImStrXmlEscapeCharData xml_escapes[] =
-{
-    { '&', 5, "&amp;" },
-    { '<', 4, "&lt;" },
-    { '>', 4, "&gt;" },
-    { '\"', 6, "&quot;" },
-    { '\'', 6, "&apos;" },
-};
-
+// Suboptimal but ok for the data size we are dealing with (see commit on 2022/08/22 for a faster and more complicated version)
 void ImStrXmlEscape(Str* s)
 {
-    // Count
-    size_t dst_len = 0;
-    const char* src_p = s->c_str();
-    while (const char c = *src_p++)
-    {
-        dst_len += 1;
-        for (auto& xml_escape : xml_escapes)
-            if (c == xml_escape.c)
-            {
-                dst_len += xml_escape.replacement_len - 1;
-                break;
-            }
-    }
-    size_t src_len = src_p - s->c_str();
-    if (src_len == dst_len)
-        return;
-
-    // Replace
-    Str original = *s;
-    s->reserve_discard((int)(dst_len + 1));
-    char* dst_p = s->c_str();
-    src_p = original.c_str();
-    while (const char c = *src_p++)
-    {
-        *dst_p = c;
-        dst_p++;
-        for (auto& xml_escape : xml_escapes)
-            if (c == xml_escape.c)
-            {
-                memcpy(dst_p - 1, xml_escape.replacement, xml_escape.replacement_len);
-                dst_p += xml_escape.replacement_len - 1;
-                break;
-            }
-    }
-    *dst_p = 0;
-    IM_ASSERT((size_t)(dst_p - s->c_str()) == dst_len);
+    ImStrReplace(s, "&", "&amp;");
+    ImStrReplace(s, "<", "&lt;");
+    ImStrReplace(s, ">", "&gt;");
+    ImStrReplace(s, "\"", "&quot;");
+    ImStrReplace(s, "\'", "&apos;");
 }
 
 // Based on code from https://github.com/EddieBreeg/C_b64 by @EddieBreeg.
