@@ -77,6 +77,7 @@ struct ImGuiPerfToolColumnInfo
     int             Offset;
     ImGuiDataType   Type;
     bool            ShowAlways;
+    ImGuiTableFlags Flags;
 
     template<typename T>
     T GetValue(const ImGuiPerfToolEntry* entry) const { return *(T*)((const char*)entry + Offset); }
@@ -85,18 +86,19 @@ struct ImGuiPerfToolColumnInfo
 // Update _ShowEntriesTable() and SaveHtmlReport() when adding new entries.
 static const ImGuiPerfToolColumnInfo PerfToolColumnInfo[] =
 {
-    { /* 00 */ "Test Name",   IM_OFFSETOF(ImGuiPerfToolEntry, TestName),         ImGuiDataType_COUNT,  true  },
-    { /* 01 */ "Branch",      IM_OFFSETOF(ImGuiPerfToolEntry, GitBranchName),    ImGuiDataType_COUNT,  true  },
-    { /* 02 */ "Compiler",    IM_OFFSETOF(ImGuiPerfToolEntry, Compiler),         ImGuiDataType_COUNT,  true  },
-    { /* 03 */ "OS",          IM_OFFSETOF(ImGuiPerfToolEntry, OS),               ImGuiDataType_COUNT,  true  },
-    { /* 04 */ "CPU",         IM_OFFSETOF(ImGuiPerfToolEntry, Cpu),              ImGuiDataType_COUNT,  true  },
-    { /* 05 */ "Build",       IM_OFFSETOF(ImGuiPerfToolEntry, BuildType),        ImGuiDataType_COUNT,  true  },
-    { /* 06 */ "Stress",      IM_OFFSETOF(ImGuiPerfToolEntry, PerfStressAmount), ImGuiDataType_S32,    true  },
-    { /* 07 */ "Avg ms",      IM_OFFSETOF(ImGuiPerfToolEntry, DtDeltaMs),        ImGuiDataType_Double, true  },
-    { /* 08 */ "Min ms",      IM_OFFSETOF(ImGuiPerfToolEntry, DtDeltaMsMin),     ImGuiDataType_Double, false },
-    { /* 09 */ "Max ms",      IM_OFFSETOF(ImGuiPerfToolEntry, DtDeltaMsMax),     ImGuiDataType_Double, false },
-    { /* 10 */ "Samples",     IM_OFFSETOF(ImGuiPerfToolEntry, NumSamples),       ImGuiDataType_S32,    false },
-    { /* 11 */ "VS Baseline", IM_OFFSETOF(ImGuiPerfToolEntry, VsBaseline),       ImGuiDataType_Float,  true  },
+    { /* 00 */ "Date",        IM_OFFSETOF(ImGuiPerfToolEntry, Timestamp),        ImGuiDataType_U64,    true,  ImGuiTableColumnFlags_DefaultHide },
+    { /* 01 */ "Test Name",   IM_OFFSETOF(ImGuiPerfToolEntry, TestName),         ImGuiDataType_COUNT,  true,  0 },
+    { /* 02 */ "Branch",      IM_OFFSETOF(ImGuiPerfToolEntry, GitBranchName),    ImGuiDataType_COUNT,  true,  0 },
+    { /* 03 */ "Compiler",    IM_OFFSETOF(ImGuiPerfToolEntry, Compiler),         ImGuiDataType_COUNT,  true,  0 },
+    { /* 04 */ "OS",          IM_OFFSETOF(ImGuiPerfToolEntry, OS),               ImGuiDataType_COUNT,  true,  0 },
+    { /* 05 */ "CPU",         IM_OFFSETOF(ImGuiPerfToolEntry, Cpu),              ImGuiDataType_COUNT,  true,  0 },
+    { /* 06 */ "Build",       IM_OFFSETOF(ImGuiPerfToolEntry, BuildType),        ImGuiDataType_COUNT,  true,  0 },
+    { /* 07 */ "Stress",      IM_OFFSETOF(ImGuiPerfToolEntry, PerfStressAmount), ImGuiDataType_S32,    true,  0 },
+    { /* 08 */ "Avg ms",      IM_OFFSETOF(ImGuiPerfToolEntry, DtDeltaMs),        ImGuiDataType_Double, true,  0 },
+    { /* 09 */ "Min ms",      IM_OFFSETOF(ImGuiPerfToolEntry, DtDeltaMsMin),     ImGuiDataType_Double, false, 0 },
+    { /* 00 */ "Max ms",      IM_OFFSETOF(ImGuiPerfToolEntry, DtDeltaMsMax),     ImGuiDataType_Double, false, 0 },
+    { /* 11 */ "Samples",     IM_OFFSETOF(ImGuiPerfToolEntry, NumSamples),       ImGuiDataType_S32,    false, 0 },
+    { /* 12 */ "VS Baseline", IM_OFFSETOF(ImGuiPerfToolEntry, VsBaseline),       ImGuiDataType_Float,  true,  0 },
 };
 
 static const char* PerfToolReportDefaultOutputPath = "./output/capture_perf_report.html";
@@ -264,6 +266,9 @@ static int IMGUI_CDECL CompareWithSortSpecs(const void* lhs, const void* rhs)
         case ImGuiDataType_S32:
             result = col_info.GetValue<int>(a) - col_info.GetValue<int>(b);
             break;
+        case ImGuiDataType_U64:
+            result = (int)(col_info.GetValue<ImU64>(a) - col_info.GetValue<ImU64>(b));
+            break;
         case ImGuiDataType_Float:
             result = (int)((col_info.GetValue<float>(a) - col_info.GetValue<float>(b)) * 1000.0f);
             break;
@@ -382,6 +387,13 @@ static bool InputDate(const char* label, char* date, int date_len, bool valid)
         ImGui::PopStyleColor();
     }
     return date_changed;
+}
+
+static void FormatDate(ImU64 microseconds, Str* out_date)
+{
+    time_t timestamp = (time_t)(microseconds / 1000000);
+    tm* time = localtime(&timestamp);
+    out_date->appendf("%04d-%02d-%02d %02d:%02d:%02d", time->tm_year + 1900, time->tm_mon + 1, time->tm_mday, time->tm_hour, time->tm_min, time->tm_sec);
 }
 
 static void RenderFilterInput(ImGuiPerfTool* perf, const char* hint, float width = -FLT_MIN)
@@ -956,18 +968,25 @@ bool ImGuiPerfTool::SaveHtmlReport(const char* file_name, const char* image_file
             {
                 switch (i)
                 {
-                case 0:  fprintf(fp, "| %s ", entry->TestName);             break;
-                case 1:  fprintf(fp, "| %s ", entry->GitBranchName);        break;
-                case 2:  fprintf(fp, "| %s ", entry->Compiler);             break;
-                case 3:  fprintf(fp, "| %s ", entry->OS);                   break;
-                case 4:  fprintf(fp, "| %s ", entry->Cpu);                  break;
-                case 5:  fprintf(fp, "| %s ", entry->BuildType);            break;
-                case 6:  fprintf(fp, "| x%d ", entry->PerfStressAmount);    break;
-                case 7:  fprintf(fp, "| %.2f ", entry->DtDeltaMs);          break;
-                case 8:  fprintf(fp, "| %.2f ", entry->DtDeltaMsMin);       break;
-                case 9:  fprintf(fp, "| %.2f ", entry->DtDeltaMsMax);       break;
-                case 10: fprintf(fp, "| %d ", entry->NumSamples);           break;
-                case 11: FormatVsBaseline(entry, baseline_entry, label); fprintf(fp, "| %s ", label.c_str()); break;
+                case 0:
+                {
+                    Str16 date;
+                    FormatDate(entry->Timestamp, &date);
+                    fprintf(fp, "| %s ", date.c_str());
+                    break;
+                }
+                case 1:  fprintf(fp, "| %s ", entry->TestName);             break;
+                case 2:  fprintf(fp, "| %s ", entry->GitBranchName);        break;
+                case 3:  fprintf(fp, "| %s ", entry->Compiler);             break;
+                case 4:  fprintf(fp, "| %s ", entry->OS);                   break;
+                case 5:  fprintf(fp, "| %s ", entry->Cpu);                  break;
+                case 6:  fprintf(fp, "| %s ", entry->BuildType);            break;
+                case 7:  fprintf(fp, "| x%d ", entry->PerfStressAmount);    break;
+                case 8:  fprintf(fp, "| %.2f ", entry->DtDeltaMs);          break;
+                case 9:  fprintf(fp, "| %.2f ", entry->DtDeltaMsMin);       break;
+                case 10: fprintf(fp, "| %.2f ", entry->DtDeltaMsMax);       break;
+                case 11: fprintf(fp, "| %d ", entry->NumSamples);           break;
+                case 12: FormatVsBaseline(entry, baseline_entry, label); fprintf(fp, "| %s ", label.c_str()); break;
                 default: IM_ASSERT(0); break;
                 }
             }
@@ -1469,10 +1488,13 @@ void ImGuiPerfTool::_ShowEntriesTable()
     // so as far as sorting function is concerned all items in first column are identical.
     for (int i = 0; i < IM_ARRAYSIZE(PerfToolColumnInfo); i++)
     {
-        ImGuiTableColumnFlags column_flags = ImGuiTableColumnFlags_None;
-        if (!PerfToolColumnInfo[i].ShowAlways && _DisplayType != ImGuiPerfToolDisplayType_CombineByBuildInfo)
+        const ImGuiPerfToolColumnInfo& info = PerfToolColumnInfo[i];
+        ImGuiTableColumnFlags column_flags = info.Flags;
+        if (i == 0 && _DisplayType != ImGuiPerfToolDisplayType_Simple)
+            column_flags |= ImGuiTableColumnFlags_Disabled; // Date only visible in non-combining mode.
+        if (!info.ShowAlways && _DisplayType != ImGuiPerfToolDisplayType_CombineByBuildInfo)
             column_flags |= ImGuiTableColumnFlags_Disabled;
-        ImGui::TableSetupColumn(PerfToolColumnInfo[i].Title, column_flags);
+        ImGui::TableSetupColumn(info.Title, column_flags);
     }
     ImGui::TableSetupScrollFreeze(0, 1);
 
@@ -1535,6 +1557,14 @@ void ImGuiPerfTool::_ShowEntriesTable()
         }
 
         ImGuiPerfToolEntry* baseline_entry = GetEntryByBatchIdx(_BaselineBatchIndex, test_name);
+
+        // Date
+        if (ImGui::TableNextColumn())
+        {
+            Str16 date;
+            FormatDate(entry->Timestamp, &date);
+            ImGui::TextUnformatted(date.c_str());
+        }
 
         // Build info
         if (ImGui::TableNextColumn())
