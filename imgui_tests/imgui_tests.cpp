@@ -589,7 +589,7 @@ void RegisterTests_Window(ImGuiTestEngine* e)
             }
             if (ImGui::IsKeyPressed(ImGuiKey_Escape))
                 ImGui::CloseCurrentPopup();
-            ImGui::SetCursorPos(ImGui::GetCursorPos() + ImVec2(100, 50));           // Make popup bigger so menus do not cover bottom-right corner
+            ImGui::Dummy(ImVec2(100, 50));
             ImGui::EndPopup();
         }
 
@@ -1647,7 +1647,7 @@ void RegisterTests_Window(ImGuiTestEngine* e)
     {
         ImGui::SetNextWindowSize(ImVec2(100, 100), ImGuiCond_Always);
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_HorizontalScrollbar);
-        ImGui::SetCursorPos(ImVec2(200, 200));
+        ImGui::Dummy(ImVec2(200, 200));
         ImGui::End();
     };
     t->TestFunc = [](ImGuiTestContext* ctx)
@@ -1708,10 +1708,10 @@ void RegisterTests_Window(ImGuiTestEngine* e)
         ImGui::Button("Left");
         ImGui::SameLine();
         ImGui::BeginChild("Child", ImVec2(100.0f, 100.0f), true, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_HorizontalScrollbar);
-        ImGui::SetCursorPos(ImVec2(120.0f, 120.0f));
+        ImGui::Dummy(ImVec2(80.0f, 120.0f + 80.0f));
         ImGui::EndChild();
         ImGui::SameLine();
-        ImGui::SetCursorPos(ImGui::GetCursorPos() + ImVec2(80.0f, 120.0f + 80.0f));
+        ImGui::Dummy(ImVec2(80.0f, 120.0f + 80.0f));
         ImGui::End();
     };
     t->TestFunc = [](ImGuiTestContext* ctx)
@@ -1890,6 +1890,10 @@ void RegisterTests_Window(ImGuiTestEngine* e)
             { ImVec2(  0, 0.5), ImVec2(-10,   0), ImVec2( 90, 100), ImVec2(210, 50) },    // From left edge go left
             { ImVec2(  0,   0), ImVec2(-10, -10), ImVec2( 90,  90), ImVec2(200, 50) },    // From left-top edge, no resize, window is moved
         };
+
+#ifdef IMGUI_HAS_DOCK
+        ctx->DockClear("Test Window", NULL);
+#endif
 
         ImGuiWindow* window = ctx->GetWindowByRef("Test Window");
         for (auto& test_data : test_datas)
@@ -2318,8 +2322,8 @@ void RegisterTests_Layout(ImGuiTestEngine* e)
         IM_CHECK_EQ(window->DC.CursorMaxPos.y, window->DC.CursorStartPos.y);
 
         ImGui::SetCursorPos(ImVec2(200.0f, 100.0f));
-        IM_CHECK_EQ(window->DC.CursorMaxPos.x, window->Pos.x + 200.0f);
-        IM_CHECK_EQ(window->DC.CursorMaxPos.y, window->Pos.y + 100.0f);
+        IM_CHECK_EQ(window->DC.CursorMaxPos.x, window->Pos.x + 200.0f); // FIXME: Won't be valid if we apply #5548
+        IM_CHECK_EQ(window->DC.CursorMaxPos.y, window->Pos.y + 100.0f); // ""
 
         ImGui::NewLine();
         IM_CHECK_EQ(window->DC.CursorMaxPos.x, window->Pos.x + 200.0f);
