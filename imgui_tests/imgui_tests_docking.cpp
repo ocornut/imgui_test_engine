@@ -1112,7 +1112,7 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
         ctx->MouseMoveToPos(window1->Rect().GetCenter());
         IM_CHECK_EQ(g.NavWindow, window1);
         IM_CHECK_EQ(g.HoveredWindow, window2);
-        IM_CHECK_EQ(g.HoveredDockNode, (ImGuiDockNode*)NULL);
+        IM_CHECK_EQ(g.DebugHoveredDockNode, (ImGuiDockNode*)NULL);
         ctx->MouseClick();
         IM_CHECK_EQ(g.NavWindow, window2);
     };
