@@ -4597,6 +4597,40 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
     };
 #endif
 
+    // ## Test ImStrReplace() and ImStrXmlEscape().
+    t = IM_REGISTER_TEST(e, "misc", "misc_str_replace");
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        Str30 text("&&<>\"\'");
+        ImStrXmlEscape(&text);
+        IM_CHECK_STR_EQ(text.c_str(), "&amp;&amp;&lt;&gt;&quot;&apos;");
+
+        // No recursive replacement.
+        text.set("rerepeapeating rerepeapeating");
+        ImStrReplace(&text, "repea", "");
+        IM_CHECK_STR_EQ(text.c_str(), "repeating repeating");
+
+        // Multiple partial replacements.
+        ImStrReplace(&text, "ing", "..");
+        IM_CHECK_STR_EQ(text.c_str(), "repeat.. repeat..");
+
+        // Missing searched substring.
+        ImStrReplace(&text, "Not here", "-");
+        IM_CHECK_STR_EQ(text.c_str(), "repeat.. repeat..");
+
+        // Replace entire string.
+        ImStrReplace(&text, "repeat.. repeat..", "Something else");
+        IM_CHECK_STR_EQ(text.c_str(), "Something else");
+
+        // Replace first characters.
+        ImStrReplace(&text, "Some", "A ");
+        IM_CHECK_STR_EQ(text.c_str(), "A thing else");
+
+        // Replace last characters.
+        ImStrReplace(&text, "else", "somewhere");
+        IM_CHECK_STR_EQ(text.c_str(), "A thing somewhere");
+    };
+
     // ## Test ImGuiTextFilter
     t = IM_REGISTER_TEST(e, "misc", "misc_text_filter");
     t->GuiFunc = [](ImGuiTestContext* ctx)
