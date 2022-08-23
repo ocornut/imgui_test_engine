@@ -1646,6 +1646,7 @@ void ImGuiTestEngineHook_ItemAdd(ImGuiContext* ui_ctx, const ImRect& bb, ImGuiID
     }
 }
 
+// Task is submitted in TestFunc by ItemInfo() -> ItemInfoHandleWildcardSearch()
 #ifdef IMGUI_HAS_IMSTR
 static void ImGuiTestEngineHook_ItemInfo_ResolveFindByLabel(ImGuiContext* ui_ctx, ImGuiID id, const ImStrv label, ImGuiItemStatusFlags flags)
 #else
@@ -1689,8 +1690,10 @@ static void ImGuiTestEngineHook_ItemInfo_ResolveFindByLabel(ImGuiContext* ui_ctx
 
     // Test for full matching SUFFIX (the "foo/bar" or "window/**/foo/bar")
     // Because at this point we have only compared the prefix and the right-most label (the "window" and "bar" or "window/**/foo/bar")
-    // FIXME-TESTS: The entire suffix must be inside the final window.
-    // In theory, someone could craft a suffix that contains sub-window, e.g. "SomeWindow/**/SomeChild_XXXX/SomeItem" and this will fail.
+    // FIXME-TESTS: The entire suffix must be inside the final window:
+    // - In theory, someone could craft a suffix that contains sub-window, e.g. "SomeWindow/**/SomeChild_XXXX/SomeItem" and this will fail.
+    // - Once we make child path easier to access we can fix that.
+    if (label_task->InSuffixDepth > 1) // This is merely an early out: for Depth==1 the compare has already been done in ImGuiTestEngineHook_ItemInfo()
     {
         ImGuiWindow* window = g.CurrentWindow;
         const int id_stack_size = window->IDStack.Size;
@@ -1715,10 +1718,10 @@ static void ImGuiTestEngineHook_ItemInfo_ResolveFindByLabel(ImGuiContext* ui_ctx
             if (id != find_id)
                 return;
         }
-
-        // Success
-        label_task->OutItemId = id;
     }
+
+    // Success
+    label_task->OutItemId = id;
 }
 
 // label is optional

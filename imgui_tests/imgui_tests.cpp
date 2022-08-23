@@ -3426,8 +3426,17 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         auto& vars = ctx->GenericVars;
-        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+
+#if IMGUI_BROKEN_TESTS
+        ImGui::SetNextWindowSize(ImVec2(20, 20));
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings); // FIXME: Should work with same size: ItemInfoHandleWildcardSearch() doesn't scroll in childs.
+#else
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
+#endif
         ImGui::Checkbox("Test1", &vars.Bool1);
+        ImGui::PushID("node");
+        ImGui::Checkbox("Test1b", &vars.Bool1);
+        ImGui::PopID();
 
         ImGui::BeginChild("Child", ImVec2(0, 200), true);
         ImGui::Checkbox("Test2", &vars.Bool2);
@@ -3453,9 +3462,11 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
         // Test Window/Test1
         ctx->SetRef("Test Window");
         ctx->ItemClick("**/Test1");
+        ctx->ItemClick("**/node/Test1b");
 
         ctx->SetRef("");
         ctx->ItemClick("**/Test1");
+        ctx->ItemClick("**/node/Test1b");
 
         // Test Window/Child_XXXXX/Test2
         ctx->SetRef("");
