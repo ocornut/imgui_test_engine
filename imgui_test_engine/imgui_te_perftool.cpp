@@ -1769,6 +1769,7 @@ void RegisterTests_PerfTool(ImGuiTestEngine* e)
         Str16f max_date_bkp = perftool->_FilterDateTo;
 
         // Execute few perf tests, serialize them to temporary csv file.
+        ctx->PerfIterations = 50; // Make faster
         ctx->PerfCapture("perf", "misc_cov_perf_tool_1", temp_perf_csv);
         ctx->PerfCapture("perf", "misc_cov_perf_tool_2", temp_perf_csv);
 

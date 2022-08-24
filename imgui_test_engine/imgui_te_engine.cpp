@@ -131,7 +131,6 @@ ImGuiTestEngine::ImGuiTestEngine()
     PerfRefDeltaTime = 0.0f;
     PerfDeltaTime100.Init(100);
     PerfDeltaTime500.Init(500);
-    PerfDeltaTime1000.Init(1000);
     PerfTool = IM_NEW(ImGuiPerfTool);
 
     // Initialize std::thread based coroutine implementation if requested
@@ -700,7 +699,6 @@ static void ImGuiTestEngine_PreNewFrame(ImGuiTestEngine* engine, ImGuiContext* u
 
     engine->PerfDeltaTime100.AddSample(g.IO.DeltaTime);
     engine->PerfDeltaTime500.AddSample(g.IO.DeltaTime);
-    engine->PerfDeltaTime1000.AddSample(g.IO.DeltaTime);
 
     if (!ImGuiTestEngine_IsTestQueueEmpty(engine) && !engine->Abort)
     {
@@ -876,11 +874,6 @@ void ImGuiTestEngine_SetDeltaTime(ImGuiTestEngine* engine, float delta_time)
 int ImGuiTestEngine_GetFrameCount(ImGuiTestEngine* engine)
 {
     return engine->FrameCount;
-}
-
-double ImGuiTestEngine_GetPerfDeltaTime500Average(ImGuiTestEngine* engine)
-{
-    return engine->PerfDeltaTime500.GetAverage();
 }
 
 const char* ImGuiTestEngine_GetRunSpeedName(ImGuiTestRunSpeed v)

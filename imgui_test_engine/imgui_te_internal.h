@@ -151,7 +151,6 @@ struct ImGuiTestEngine
     double                      PerfRefDeltaTime;
     ImMovingAverage<double>     PerfDeltaTime100;
     ImMovingAverage<double>     PerfDeltaTime500;
-    ImMovingAverage<double>     PerfDeltaTime1000;
     ImGuiPerfTool*              PerfTool = NULL;
 
     // Screen/Video Capturing
@@ -180,7 +179,6 @@ ImGuiTestItemInfo*  ImGuiTestEngine_FindItemInfo(ImGuiTestEngine* engine, ImGuiI
 void                ImGuiTestEngine_Yield(ImGuiTestEngine* engine);
 void                ImGuiTestEngine_SetDeltaTime(ImGuiTestEngine* engine, float delta_time);
 int                 ImGuiTestEngine_GetFrameCount(ImGuiTestEngine* engine);
-double              ImGuiTestEngine_GetPerfDeltaTime500Average(ImGuiTestEngine* engine);
 bool                ImGuiTestEngine_PassFilter(ImGuiTest* test, const char* filter);
 
 // Screen/Video Capturing

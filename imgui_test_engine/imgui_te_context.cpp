@@ -3477,14 +3477,21 @@ void    ImGuiTestContext::UndockWindow(const char* window_name)
 // ImGuiTestContext - Performance Tools
 //-------------------------------------------------------------------------
 
-// Calculate the reference DeltaTime, averaged over 500 frames, with GuiFunc disabled.
+// Calculate the reference DeltaTime, averaged over PerfIterations/500 frames, with GuiFunc disabled.
 void    ImGuiTestContext::PerfCalcRef()
 {
     LogDebug("Measuring ref dt...");
     SetGuiFuncEnabled(false);
-    for (int n = 0; n < 500 && !Abort; n++)
+
+    ImMovingAverage<double> delta_times;
+    delta_times.Init(PerfIterations);
+    for (int n = 0; n < PerfIterations && !Abort; n++)
+    {
         Yield();
-    PerfRefDt = ImGuiTestEngine_GetPerfDeltaTime500Average(Engine);
+        delta_times.AddSample(UiContext->IO.DeltaTime);
+    }
+
+    PerfRefDt = delta_times.GetAverage();
     SetGuiFuncEnabled(true);
 }
 
@@ -3496,13 +3503,18 @@ void    ImGuiTestContext::PerfCapture(const char* category, const char* test_nam
     IM_ASSERT(PerfRefDt >= 0.0);
 
     // Yield for the average to stabilize
-    LogDebug("Measuring gui dt...");
-    for (int n = 0; n < 500 && !Abort; n++)
+    LogDebug("Measuring GUI dt...");
+    ImMovingAverage<double> delta_times;
+    delta_times.Init(PerfIterations);
+    for (int n = 0; n < PerfIterations && !Abort; n++)
+    {
         Yield();
+        delta_times.AddSample(UiContext->IO.DeltaTime);
+    }
     if (Abort)
         return;
 
-    double dt_curr = ImGuiTestEngine_GetPerfDeltaTime500Average(Engine);
+    double dt_curr = delta_times.GetAverage();
     double dt_ref_ms = PerfRefDt * 1000;
     double dt_delta_ms = (dt_curr - PerfRefDt) * 1000;
 

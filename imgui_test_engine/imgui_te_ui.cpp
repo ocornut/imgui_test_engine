@@ -628,7 +628,7 @@ static void ImGuiTestEngine_ShowLogAndTools(ImGuiTestEngine* engine)
             double dt_1 = 1.0 / ImGui::GetIO().Framerate;
             double fps_now = 1.0 / dt_1;
             double dt_100 = engine->PerfDeltaTime100.GetAverage();
-            double dt_1000 = engine->PerfDeltaTime1000.GetAverage();
+            double dt_500 = engine->PerfDeltaTime500.GetAverage();
 
             //if (engine->PerfRefDeltaTime <= 0.0 && engine->PerfRefDeltaTime.IsFull())
             //    engine->PerfRefDeltaTime = dt_2000;
@@ -636,20 +636,20 @@ static void ImGuiTestEngine_ShowLogAndTools(ImGuiTestEngine* engine)
             ImGui::Checkbox("Unthrolled", &engine->IO.ConfigNoThrottle);
             ImGui::SameLine();
             if (ImGui::Button("Pick ref dt"))
-                engine->PerfRefDeltaTime = dt_1000;
+                engine->PerfRefDeltaTime = dt_500;
 
             double dt_ref = engine->PerfRefDeltaTime;
             ImGui::Text("[ref dt]    %6.3f ms", engine->PerfRefDeltaTime * 1000);
-            ImGui::Text("[last 0001] %6.3f ms (%.1f FPS) ++ %6.3f ms", dt_1 * 1000.0, 1.0 / dt_1, (dt_1 - dt_ref) * 1000);
-            ImGui::Text("[last 0100] %6.3f ms (%.1f FPS) ++ %6.3f ms ~ converging in %.1f secs", dt_100 * 1000.0, 1.0 / dt_100, (dt_1 - dt_ref) * 1000, 100.0 / fps_now);
-            ImGui::Text("[last 1000] %6.3f ms (%.1f FPS) ++ %6.3f ms ~ converging in %.1f secs", dt_1000 * 1000.0, 1.0 / dt_1000, (dt_1 - dt_ref) * 1000, 1000.0 / fps_now);
+            ImGui::Text("[last 001] %6.3f ms (%.1f FPS) ++ %6.3f ms", dt_1 * 1000.0, 1.0 / dt_1, (dt_1 - dt_ref) * 1000);
+            ImGui::Text("[last 100] %6.3f ms (%.1f FPS) ++ %6.3f ms ~ converging in %.1f secs", dt_100 * 1000.0, 1.0 / dt_100, (dt_1 - dt_ref) * 1000, 100.0 / fps_now);
+            ImGui::Text("[last 500] %6.3f ms (%.1f FPS) ++ %6.3f ms ~ converging in %.1f secs", dt_500 * 1000.0, 1.0 / dt_500, (dt_1 - dt_ref) * 1000, 500.0 / fps_now);
 
             //ImGui::PlotLines("Last 100", &engine->PerfDeltaTime100.Samples.Data, engine->PerfDeltaTime100.Samples.Size, engine->PerfDeltaTime100.Idx, NULL, 0.0f, dt_1000 * 1.10f, ImVec2(0.0f, ImGui::GetFontSize()));
             ImVec2 plot_size(0.0f, ImGui::GetFrameHeight() * 3);
             ImMovingAverage<double>* ma = &engine->PerfDeltaTime500;
             ImGui::PlotLines("Last 500",
                 [](void* data, int n) { ImMovingAverage<double>* ma = (ImMovingAverage<double>*)data; return (float)(ma->Samples[n] * 1000); },
-                ma, ma->Samples.Size, 0 * ma->Idx, NULL, 0.0f, (float)(ImMax(dt_100, dt_1000) * 1000.0 * 1.2f), plot_size);
+                ma, ma->Samples.Size, 0 * ma->Idx, NULL, 0.0f, (float)(ImMax(dt_100, dt_500) * 1000.0 * 1.2f), plot_size);
 
             ImGui::TreePop();
         }

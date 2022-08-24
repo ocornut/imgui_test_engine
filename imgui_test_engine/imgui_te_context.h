@@ -238,6 +238,7 @@ struct IMGUI_API ImGuiTestContext
     int                     ErrorCounter = 0;                       // Number of errors (generally this maxxes at 1 as most functions will early out)
     bool                    Abort = false;
     double                  PerfRefDt = -1.0;
+    int                     PerfIterations = 400;                   // Number of frames for PerfCapture() measurements
     char                    RefStr[256] = { 0 };                    // Reference window/path for ID construction
     ImGuiID                 RefID = 0;
     ImGuiID                 RefWindowID = 0;                        // ID of a window that contains RefID item
