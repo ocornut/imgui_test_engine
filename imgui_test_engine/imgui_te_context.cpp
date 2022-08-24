@@ -330,13 +330,16 @@ void    ImGuiTestContext::Sleep(float time)
     if (IsError())
         return;
 
+    IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
     if (EngineIO->ConfigRunSpeed == ImGuiTestRunSpeed_Fast)
     {
+        LogEx(ImGuiTestVerboseLevel_Trace, ImGuiTestLogFlags_None, "Sleep(%.2f) -> Yield() in fast mode", time);
         //ImGuiTestEngine_AddExtraTime(Engine, time); // We could add time, for now we have no use for it...
         ImGuiTestEngine_Yield(Engine);
     }
     else
     {
+        LogEx(ImGuiTestVerboseLevel_Trace, ImGuiTestLogFlags_None, "Sleep(%.2f)", time);
         while (time > 0.0f && !Abort)
         {
             ImGuiTestEngine_Yield(Engine);
@@ -422,6 +425,7 @@ void ImGuiTestContext::SetInputMode(ImGuiInputSource input_mode)
 void ImGuiTestContext::SetRef(ImGuiWindow* window)
 {
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
+    IM_CHECK_SILENT(window != NULL);
     LogDebug("WindowRef '%s' %08X", window->Name, window->ID);
 
     // We grab the ID directly and avoid ImHashDecoratedPath so "/" in window names are not ignored.
@@ -596,6 +600,7 @@ static bool GetWindowInformation(ImGuiTestContext* ctx, ImGuiTestRef window_ref,
         if (out_name == NULL)
             out_name = &tmp;
 
+        // Parent window specified by name: it may not exist yet
         // Assume window_ref follows ImGuiTestRef conventions (unescaped slash resets ID counter).
         const char* name = window_ref.Path;
         if (name[0] == '/')   // Skip initial //, indicating we arent using RefID as ID base.
@@ -1179,7 +1184,7 @@ void    ImGuiTestContext::ScrollTo(ImGuiTestRef ref, ImGuiAxis axis, float scrol
     }
 
     // Fallback: manual slow scroll
-    // FIXME-TESTS: Consider using mouse wheel
+    // FIXME-TESTS: Consider using mouse wheel, since it can work without taking focus
     int remaining_failures = 3;
     while (!Abort)
     {
@@ -1203,11 +1208,8 @@ void    ImGuiTestContext::ScrollTo(ImGuiTestRef ref, ImGuiAxis axis, float scrol
     Yield();
 }
 
-// FIXME-TESTS: scroll_ratio_y unsupported
-void    ImGuiTestContext::ScrollToItemY(ImGuiTestRef ref, float scroll_ratio_y)
+void    ImGuiTestContext::ScrollToItem(ImGuiTestRef ref, ImGuiAxis axis)
 {
-    IM_UNUSED(scroll_ratio_y);
-
     if (IsError())
         return;
 
@@ -1215,34 +1217,8 @@ void    ImGuiTestContext::ScrollToItemY(ImGuiTestRef ref, float scroll_ratio_y)
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
     ImGuiTestItemInfo* item = ItemInfo(ref);
     ImGuiTestRefDesc desc(ref, item);
-    LogDebug("ScrollToItemY %s", desc.c_str());
+    LogDebug("ScrollToItem%c %s", 'X' + axis, desc.c_str());
 
-    if (item == NULL)
-        return;
-
-    // Ensure window size and ScrollMax are up-to-date
-    Yield();
-
-    ImGuiWindow* window = item->Window;
-    float item_curr_y = ImFloor(item->RectFull.GetCenter().y);
-    float item_target_y = ImFloor(window->InnerClipRect.GetCenter().y);
-    float scroll_delta_y = item_target_y - item_curr_y;
-    float scroll_target_y = ImClamp(window->Scroll.y - scroll_delta_y, 0.0f, window->ScrollMax.y);
-
-    ScrollTo(window->ID, ImGuiAxis_Y, scroll_target_y);
-}
-
-void   ImGuiTestContext::ScrollToItemX(ImGuiTestRef ref)
-{
-    ImGuiContext& g = *UiContext;
-    if (IsError())
-        return;
-
-    // If the item is not currently visible, scroll to get it in the center of our window
-    IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
-    ImGuiTestItemInfo* item = ItemInfo(ref);
-    ImGuiTestRefDesc desc(ref, item);
-    LogDebug("ScrollToItemX %s", desc.c_str());
     if (item == NULL)
         return;
 
@@ -1251,20 +1227,31 @@ void   ImGuiTestContext::ScrollToItemX(ImGuiTestRef ref)
 
     // TabBar are a special case because they have no scrollbar and rely on ScrollButton "<" and ">"
     // FIXME-TESTS: Consider moving to its own function.
-    if (ImGuiTabBar* tab_bar = g.TabBars.GetByKey(item->ParentID))
-    {
-        ScrollToTabItem(tab_bar, item->ID);
-    }
-    else
-    {
-        ImGuiWindow* window = item->Window;
-        float item_curr_x = ImFloor(item->RectFull.GetCenter().x);
-        float item_target_x = ImFloor(window->InnerClipRect.GetCenter().x);
-        float scroll_delta_x = item_target_x - item_curr_x;
-        float scroll_target_x = ImClamp(window->Scroll.x - scroll_delta_x, 0.0f, window->ScrollMax.x);
+    ImGuiContext& g = *UiContext;
+    if (axis == ImGuiAxis_X)
+        if (ImGuiTabBar* tab_bar = g.TabBars.GetByKey(item->ParentID))
+        {
+            ScrollToTabItem(tab_bar, item->ID);
+            return;
+        }
 
-        ScrollTo(window->ID, ImGuiAxis_X, scroll_target_x);
-    }
+    ImGuiWindow* window = item->Window;
+    float item_curr = ImFloor(item->RectFull.GetCenter()[axis]);
+    float item_target = ImFloor(window->InnerClipRect.GetCenter()[axis]);
+    float scroll_delta = item_target - item_curr;
+    float scroll_target = ImClamp(window->Scroll[axis] - scroll_delta, 0.0f, window->ScrollMax[axis]);
+
+    ScrollTo(window->ID, axis, scroll_target);
+}
+
+void    ImGuiTestContext::ScrollToItemX(ImGuiTestRef ref)
+{
+    ScrollToItem(ref, ImGuiAxis_X);
+}
+
+void    ImGuiTestContext::ScrollToItemY(ImGuiTestRef ref)
+{
+    ScrollToItem(ref, ImGuiAxis_Y);
 }
 
 void    ImGuiTestContext::ScrollToTabItem(ImGuiTabBar* tab_bar, ImGuiID tab_id)
@@ -1484,6 +1471,7 @@ void    ImGuiTestContext::MouseMove(ImGuiTestRef ref, ImGuiTestOpFlags flags)
     }
 
     // Scroll to make item visible
+    // FIXME: This breaks support for ImGuiTestOpFlags_NoFocusWindow
     ImGuiWindow* window = item->Window;
     ImRect window_inner_r_padded = window->InnerClipRect;
     window_inner_r_padded.Expand(ImVec2(-g.WindowsHoverPadding.x, -g.WindowsHoverPadding.y));

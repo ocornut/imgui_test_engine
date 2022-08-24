@@ -384,8 +384,9 @@ struct IMGUI_API ImGuiTestContext
     void        ScrollToY(ImGuiTestRef ref, float scroll_y) { ScrollTo(ref, ImGuiAxis_Y, scroll_y); }
     void        ScrollToTop(ImGuiTestRef ref);
     void        ScrollToBottom(ImGuiTestRef ref);
-    void        ScrollToItemY(ImGuiTestRef ref, float scroll_ratio_y = 0.5f);
+    void        ScrollToItem(ImGuiTestRef ref, ImGuiAxis axis);
     void        ScrollToItemX(ImGuiTestRef ref);
+    void        ScrollToItemY(ImGuiTestRef ref);
     void        ScrollToTabItem(ImGuiTabBar* tab_bar, ImGuiID tab_id);
     bool        ScrollErrorCheck(ImGuiAxis axis, float expected, float actual, int* remaining_attempts);
     void        ScrollVerifyScrollMax(ImGuiTestRef ref);

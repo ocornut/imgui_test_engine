@@ -5414,7 +5414,7 @@ void RegisterTests_Capture(ImGuiTestEngine* e)
         ctx->ItemOpen("Color\\/Picker Widgets");
         ctx->ItemOpen("Layout & Scrolling");
         ctx->ItemOpen("Groups");
-        ctx->ScrollToItemY("Layout & Scrolling", 0.8f);
+        ctx->ScrollToItemY("Layout & Scrolling");
 
         ctx->LogDebug("Capture screenshot...");
         ctx->SetRef("");
