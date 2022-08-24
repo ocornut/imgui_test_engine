@@ -325,7 +325,7 @@ static void LoadFonts(float dpi_scale)
     ImGuiIO& io = ImGui::GetIO();
 
     ImFontConfig cfg;
-    cfg.SizePixels = 13.0f * dpi_scale;
+    cfg.SizePixels = IM_ROUND(13.0f * dpi_scale);
     io.Fonts->AddFontDefault(&cfg);
     //ImFontConfig cfg;
     //cfg.RasterizerMultiply = 1.1f;
@@ -333,8 +333,8 @@ static void LoadFonts(float dpi_scale)
     Str64 base_font_dir;
     if (ImFileFindInParents("imgui_tests/assets/fonts/", 3, &base_font_dir))
     {
-        io.Fonts->AddFontFromFileTTF(Str64f("%s/%s", base_font_dir.c_str(), "NotoSans-Regular.ttf").c_str(), 16.0f * dpi_scale);
-        io.Fonts->AddFontFromFileTTF(Str64f("%s/%s", base_font_dir.c_str(), "Roboto-Medium.ttf").c_str(), 16.0f * dpi_scale);
+        io.Fonts->AddFontFromFileTTF(Str64f("%s/%s", base_font_dir.c_str(), "NotoSans-Regular.ttf").c_str(), IM_ROUND(16.0f * dpi_scale));
+        io.Fonts->AddFontFromFileTTF(Str64f("%s/%s", base_font_dir.c_str(), "Roboto-Medium.ttf").c_str(), IM_ROUND(16.0f * dpi_scale));
         //io.Fonts->AddFontFromFileTTF(Str64f("%s/%s", base_font_dir.c_str(), "RobotoMono-Regular.ttf").c_str(), 16.0f * dpi_scale, &cfg);
         //io.Fonts->AddFontFromFileTTF(Str64f("%s/%s", base_font_dir.c_str(), "Cousine-Regular.ttf").c_str(), 15.0f * dpi_scale);
         //io.Fonts->AddFontFromFileTTF(Str64f("%s/%s", base_font_dir.c_str(), "DroidSans.ttf").c_str(), 16.0f * dpi_scale);
