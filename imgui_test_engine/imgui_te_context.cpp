@@ -954,7 +954,7 @@ ImGuiTestItemInfo* ImGuiTestContext::ItemInfo(ImGuiTestRef ref, ImGuiTestOpFlags
         full_id = GetID(ref);
     }
 
-    // If ui_ctx->TestEngineHooksEnabled is not already on (first ItemItem task in a while) we'll probably need an extra frame to warmup
+    // If ui_ctx->TestEngineHooksEnabled is not already on (first ItemInfo() task in a while) we'll probably need an extra frame to warmup
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
     ImGuiTestItemInfo* item = NULL;
     int retries = 0;
@@ -2865,6 +2865,26 @@ void    ImGuiTestContext::MenuAction(ImGuiTestAction action, ImGuiTestRef ref)
     LogDebug("MenuAction '%s' %08X", ref.Path ? ref.Path : "NULL", ref.ID);
 
     IM_ASSERT(ref.Path != NULL);
+
+    // MenuAction() doesn't support **/ in most case it would be equivalent to opening all menus to "search".
+    // [01] Works:
+    //   MenuClick("File/New"):
+    // [02] Works:
+    //   MenuClick("File");
+    //   MenuClick("File/New");
+    // [03] Works:
+    //   MenuClick("File");
+    //   ItemClick("**/New");
+    // [04] Doesn't work: (may work in the future)
+    //   MenuClick("File");
+    //   MenuClick("**/New");
+    // [05] Doesn't work: (unlikely to ever work)
+    //   MenuClick("**/New");
+    if (strncmp(ref.Path, "**/", 3) == 0)
+    {
+        LogError("\"**/\" is not yet supported by MenuAction().");
+        return;
+    }
 
     int depth = 0;
     const char* path = ref.Path;

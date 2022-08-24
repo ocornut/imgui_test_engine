@@ -3908,6 +3908,14 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ctx->SetRef("Test Window");
         ctx->MenuClick("First/Second/Item");
         ctx->MenuClick("First/Third###Hello/Item");
+
+        ctx->MenuClick("First/Second");
+        ctx->ItemClick("**/Item");
+
+#if IMGUI_BROKEN_TESTS
+        ctx->MenuClick("First/Second");
+        ctx->MenuClick("**/Item");
+#endif
     };
 
     // ## Test text capture of separator in a menu.

@@ -294,11 +294,11 @@ static void ShowTestGroup(ImGuiTestEngine* e, ImGuiTestGroup group, char* filter
         filter_width -= style.ItemSpacing.x + perf_stress_factor_width;
         filter_width -= style.ItemSpacing.x + style.FramePadding.x * 2 + ImGui::CalcTextSize(perflog_label).x;
     }
-    filter_width -= ImGui::CalcTextSize("?").x + style.ItemSpacing.x;
+    filter_width -= ImGui::CalcTextSize("(?)").x + style.ItemSpacing.x;
     ImGui::SetNextItemWidth(ImMax(20.0f, filter_width));
     ImGui::InputText("##filter", filter, filter_size);
     ImGui::SameLine();
-    ImGui::TextDisabled("?");
+    ImGui::TextDisabled("(?)");
     HelpTooltip("Query is composed of one or more comma-separated filter terms with optional modifiers.\n"
         "Available modifiers:\n"
         "- '-' prefix excludes tests matched by the term.\n"
