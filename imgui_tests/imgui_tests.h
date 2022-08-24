@@ -3,7 +3,7 @@
 
 #pragma once
 
-#define TEST_APP_ALT_FONT_NAME   "Roboto-Medium.ttf, 16px"
+#define TEST_APP_ALT_FONT_NAME   "Roboto-Medium.ttf" // Prefix
 
 // Forward declaration
 struct ImGuiTestEngine;

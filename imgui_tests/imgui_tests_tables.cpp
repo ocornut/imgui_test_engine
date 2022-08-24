@@ -141,7 +141,7 @@ static void HelperTableWithResizingPolicies(const char* table_id, ImGuiTableFlag
         else IM_ASSERT(0);
         ImGui::TableSetupColumn(Str16f("%c%d", policy, column + 1).c_str(), column_flags);
     }
-    ImFont* font = ImGui::FindFontByName(TEST_APP_ALT_FONT_NAME);
+    ImFont* font = ImGui::FindFontByPrefix(TEST_APP_ALT_FONT_NAME);
     if (!font)
         IM_CHECK_NO_RET(font != NULL);
     ImGui::PushFont(font);

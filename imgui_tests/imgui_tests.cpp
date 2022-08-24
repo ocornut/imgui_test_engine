@@ -1545,6 +1545,7 @@ void RegisterTests_Window(ImGuiTestEngine* e)
         if (ImGui::Button("Track 29,0")) { vars.TrackX = 29; vars.TrackY = 0; }
         if (ImGui::Button("Track 0,29")) { vars.TrackX = 0; vars.TrackY = 29; }
         if (ImGui::Button("Track 29,29")) { vars.TrackX = 29; vars.TrackY = 29; }
+        //if (ImGui::Button("Track 2,20")) { vars.TrackX = 2; vars.TrackY = 20; }
 
         if (vars.Variant & 1)
             ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(1, 1));
@@ -1558,11 +1559,12 @@ void RegisterTests_Window(ImGuiTestEngine* e)
             {
                 if (x > 0)
                     ImGui::SameLine();
-                ImGui::Button(Str30f("%d Item %d,%d###%d,%d", vars.FullyVisible[y][x], y, x, y, x).c_str());
-                if (vars.TrackX == x)
+                ImGui::Button(Str30f("%d Item x%d y%d###%d,%d", vars.FullyVisible[y][x], x, y, x, y).c_str());
+                if (vars.TrackX == x && vars.TrackY == y)
+                {
                     ImGui::SetScrollHereX(vars.TrackX / 29.0f);
-                if (vars.TrackY == y)
                     ImGui::SetScrollHereY(vars.TrackY / 29.0f);
+                }
 
                 ImRect clip_rect = ImGui::GetCurrentWindow()->ClipRect;
                 ImRect item_rect = ImGui::GetCurrentContext()->LastItemData.Rect;
@@ -1707,11 +1709,11 @@ void RegisterTests_Window(ImGuiTestEngine* e)
         ImGui::Button("Top");
         ImGui::Button("Left");
         ImGui::SameLine();
-        ImGui::BeginChild("Child", ImVec2(100.0f, 100.0f), true, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_HorizontalScrollbar);
-        ImGui::Dummy(ImVec2(80.0f, 120.0f + 80.0f));
+        ImGui::BeginChild("Child", ImVec2(100.0f, 1000.0f), true, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_HorizontalScrollbar);
+        ImGui::Dummy(ImVec2(80.0f, 1000.0f + 80.0f));
         ImGui::EndChild();
         ImGui::SameLine();
-        ImGui::Dummy(ImVec2(80.0f, 120.0f + 80.0f));
+        ImGui::Dummy(ImVec2(80.0f, 1000.0f + 80.0f));
         ImGui::End();
     };
     t->TestFunc = [](ImGuiTestContext* ctx)
@@ -1736,7 +1738,7 @@ void RegisterTests_Window(ImGuiTestEngine* e)
         ctx->Yield();                                           // FIXME-TESTS: g.HoveredWindow needs extra frame to update.
         IM_CHECK_GT(window->Scroll.y, 0.0f);                    // Main window was scrolled
         IM_CHECK_EQ(child->Scroll.y, 0.0f);                     // Child window was not scrolled
-        IM_CHECK_EQ(g.HoveredWindow, child);                    // Scroll operation happened over child
+        IM_CHECK_EQ(g.HoveredWindow, child);                    // Scroll operation left mouse over over child (assume child is big enough)
 
         // Pause for a while and perform scroll operation when cursor is hovering child. Now child is scrolled.
         float prev_scroll_y = window->Scroll.y;
@@ -1865,6 +1867,7 @@ void RegisterTests_Window(ImGuiTestEngine* e)
     t = IM_REGISTER_TEST(e, "window", "window_resizing");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
+        ctx->UiContext->Style.WindowMinSize = ImVec2(10, 10);
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoCollapse);
         ImGui::TextUnformatted("Lorem ipsum dolor sit amet");
         ImGui::End();
@@ -5441,7 +5444,7 @@ void RegisterTests_Capture(ImGuiTestEngine* e)
 
         // Setup style
         // FIXME-TESTS: Ideally we'd want to be able to manipulate fonts
-        ImFont* font = ImGui::FindFontByName(TEST_APP_ALT_FONT_NAME);
+        ImFont* font = ImGui::FindFontByPrefix(TEST_APP_ALT_FONT_NAME);
         IM_CHECK_SILENT(font != NULL);
         ImGui::PushFont(font);
         style.FrameRounding = style.ChildRounding = 0;
@@ -5477,12 +5480,17 @@ void RegisterTests_Capture(ImGuiTestEngine* e)
     };
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
+        if (ctx->Abort) // in caseof FindFontByPrefix() failure
+            return;
+
         // Capture both windows in separate captures
         ImGuiContext& g = *ctx->UiContext;
         for (int n = 0; n < 2; n++)
         {
             ImGuiWindow* window = (n == 0) ? ctx->GetWindowByRef("//Debug##Dark") : ctx->GetWindowByRef("//Debug##Light");
             ctx->SetRef(window);
+            IM_CHECK_SILENT(window != NULL);
+
             ctx->ItemClick("string");
             ctx->KeyCharsReplace("quick brown fox");
             //ctx->KeyPress(ImGuiKey_End);
@@ -5529,7 +5537,7 @@ void RegisterTests_Capture(ImGuiTestEngine* e)
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         ImGui::SetNextWindowSize(ImVec2(440, 330));
-        ImFont* font = ImGui::FindFontByName(TEST_APP_ALT_FONT_NAME);
+        ImFont* font = ImGui::FindFontByPrefix(TEST_APP_ALT_FONT_NAME);
         IM_CHECK_SILENT(font != NULL);
         ImGui::PushFont(font);
 
@@ -5576,6 +5584,8 @@ void RegisterTests_Capture(ImGuiTestEngine* e)
         // FIXME-TODO: try to match https://raw.githubusercontent.com/wiki/ocornut/imgui/web/v180/code_sample_04_color.gif
         // - maybe we could control timing scale when gif recording
         // - need scroll via scrollbar
+        if (ctx->Abort) // in caseof FindFontByPrefix() failure
+            return;
 
         ctx->SetRef("My First Tool");
         ImGuiWindow* window = ctx->GetWindowByRef("");

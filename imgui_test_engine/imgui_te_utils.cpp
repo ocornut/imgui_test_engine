@@ -1035,11 +1035,11 @@ bool ImGui::Splitter(const char* id, float* value_1, float* value_2, int axis, i
 }
 
 // FIXME-TESTS: Should eventually remove.
-ImFont* ImGui::FindFontByName(const char* name)
+ImFont* ImGui::FindFontByPrefix(const char* prefix)
 {
     ImGuiContext& g = *GImGui;
     for (ImFont* font : g.IO.Fonts->Fonts)
-        if (strcmp(font->ConfigData->Name, name) == 0)
+        if (strncmp(font->ConfigData->Name, prefix, strlen(prefix)) == 0)
             return font;
     return NULL;
 }

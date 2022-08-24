@@ -197,6 +197,6 @@ IMGUI_API bool      InputTextMultiline(const char* label, Str* str, const ImVec2
 IMGUI_API bool      Splitter(const char* id, float* value_1, float* value_2, int axis, int anchor = 0, float min_size_0 = -1.0f, float min_size_1 = -1.0f);
 
 // Misc
-IMGUI_API ImFont*   FindFontByName(const char* name);
+IMGUI_API ImFont*   FindFontByPrefix(const char* name);
 
 }

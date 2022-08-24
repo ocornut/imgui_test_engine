@@ -675,7 +675,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         ImGuiTestGenericVars& vars = ctx->GenericVars;
-        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
 
         ImGui::BeginChild("Child", ImVec2(100, 100), true);
         vars.Pos = ImGui::GetCursorScreenPos();
@@ -2271,7 +2271,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ctx->WindowResize("Test Window", ImVec2(300, 300));
         int draw_calls = window->DrawList->CmdBuffer.Size;
         ctx->WindowResize("Test Window", ImVec2(1, 1));
-        IM_CHECK(draw_calls == window->DrawList->CmdBuffer.Size);
+        IM_CHECK(draw_calls >= window->DrawList->CmdBuffer.Size); // May create less :)
     };
 
     // ## Test order of tabs in a tab bar
