@@ -379,12 +379,12 @@ struct IMGUI_API ImGuiTestContext
     void        NavEnableForWindow();
 
     // Scrolling
-    void        ScrollTo(ImGuiTestRef ref, ImGuiAxis axis, float scroll_v);
+    void        ScrollTo(ImGuiTestRef ref, ImGuiAxis axis, float scroll_v, ImGuiTestOpFlags flags = ImGuiTestOpFlags_None);
     void        ScrollToX(ImGuiTestRef ref, float scroll_x) { ScrollTo(ref, ImGuiAxis_X, scroll_x); }
     void        ScrollToY(ImGuiTestRef ref, float scroll_y) { ScrollTo(ref, ImGuiAxis_Y, scroll_y); }
     void        ScrollToTop(ImGuiTestRef ref);
     void        ScrollToBottom(ImGuiTestRef ref);
-    void        ScrollToItem(ImGuiTestRef ref, ImGuiAxis axis);
+    void        ScrollToItem(ImGuiTestRef ref, ImGuiAxis axis, ImGuiTestOpFlags flags = ImGuiTestOpFlags_None);
     void        ScrollToItemX(ImGuiTestRef ref);
     void        ScrollToItemY(ImGuiTestRef ref);
     void        ScrollToTabItem(ImGuiTabBar* tab_bar, ImGuiID tab_id);

@@ -930,14 +930,14 @@ void RegisterTests_Window(ImGuiTestEngine* e)
         ImGuiID popup_parent_id = g.OpenPopupStack.back().OpenParentId;
         ctx->MouseMove("Menus inside a regular window/Menu inside a regular window", ImGuiTestOpFlags_NoFocusWindow | ImGuiTestOpFlags_NoCheckHoveredId);
         IM_CHECK(g.OpenPopupStack.Size == 1);
-        IM_CHECK(g.OpenPopupStack.back().OpenParentId == popup_parent_id);
+        IM_CHECK_EQ(g.OpenPopupStack.back().OpenParentId, popup_parent_id);
 
         // 2. Hover a menu without another opened menuset.
         ctx->MouseMoveToPos(demo_window->Pos);   // Do not hover any menus.
         ctx->PopupCloseAll();
         ctx->MouseMove("Menus inside a regular window/Menu inside a regular window");
         IM_CHECK(g.OpenPopupStack.Size == 1);
-        IM_CHECK(g.OpenPopupStack.back().OpenParentId != popup_parent_id);
+        IM_CHECK_NE(g.OpenPopupStack.back().OpenParentId, popup_parent_id);
 
         // 3. Now do same as 1. except in reverse order.
         ctx->MouseMove("##menubar/Examples", ImGuiTestOpFlags_NoFocusWindow | ImGuiTestOpFlags_NoCheckHoveredId);
@@ -946,7 +946,7 @@ void RegisterTests_Window(ImGuiTestEngine* e)
         // 4. Clicking another menuset should finally open it.
         ctx->MenuClick("Examples");
         IM_CHECK(g.OpenPopupStack.Size == 1);
-        IM_CHECK(g.OpenPopupStack.back().OpenParentId == popup_parent_id);
+        IM_CHECK_EQ(g.OpenPopupStack.back().OpenParentId, popup_parent_id);
     };
 #endif
 
