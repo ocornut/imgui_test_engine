@@ -1074,10 +1074,13 @@ void    ImGuiTestContext::ScrollToBottom(ImGuiTestRef ref)
 bool    ImGuiTestContext::ScrollErrorCheck(ImGuiAxis axis, float expected, float actual, int* remaining_attempts)
 {
     if (IsError())
+    {
+        (*remaining_attempts)--;
         return false;
+    }
 
     float THRESHOLD = 1.0f;
-    if (ImFabs(actual - expected) <= THRESHOLD)
+    if (ImFabs(actual - expected) < THRESHOLD)
         return true;
 
     (*remaining_attempts)--;
