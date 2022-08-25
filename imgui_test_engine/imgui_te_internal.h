@@ -141,7 +141,8 @@ struct ImGuiTestEngine
     char                        UiFilterTests[256] = "";        // FIXME: Use a resizing Str128?
     char                        UiFilterPerfs[256] = "";
     ImU32                       UiFilterByStatusMask = ~0u;
-    bool                        UiMetricsOpen = false; // FIXME
+    bool                        UiMetricsOpen = false;
+    bool                        UiDebugLogOpen = false;
     bool                        UiCaptureToolOpen = false;
     bool                        UiStackToolOpen = false;
     bool                        UiPerfToolOpen = false;

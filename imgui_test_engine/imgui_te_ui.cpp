@@ -567,7 +567,7 @@ static void ImGuiTestEngine_ShowLogAndTools(ImGuiTestEngine* engine)
     if (ImGui::BeginTabItem("LOG"))
     {
         if (engine->UiSelectedTest)
-            ImGui::Text("Log for %s: %s", engine->UiSelectedTest->Category, engine->UiSelectedTest->Name);
+            ImGui::Text("Log for '%s' '%s'", engine->UiSelectedTest->Category, engine->UiSelectedTest->Name);
         else
             ImGui::Text("N/A");
         if (ImGui::SmallButton("Clear"))
@@ -679,42 +679,27 @@ static void ImGuiTestEngine_ShowTestTool(ImGuiTestEngine* engine, bool* p_open)
         engine->UiFocus = false;
     }
     ImGui::SetNextWindowSize(ImVec2(ImGui::GetFontSize() * 50, ImGui::GetFontSize() * 40), ImGuiCond_FirstUseEver);
-    if (!ImGui::Begin("Dear ImGui Test Engine", p_open))// , ImGuiWindowFlags_MenuBar);
+    if (!ImGui::Begin("Dear ImGui Test Engine", p_open, ImGuiWindowFlags_MenuBar))
     {
         ImGui::End();
         return;
     }
 
-#if 0
-    if (0 && ImGui::BeginMenuBar())
+    if (ImGui::BeginMenuBar())
     {
-        if (ImGui::BeginMenu("Options"))
+        if (ImGui::BeginMenu("Tools"))
         {
-            const bool busy = !ImGuiTestEngine_IsTestQueueEmpty(engine);
-            ImGui::MenuItem("Run fast", NULL, &engine->IO.ConfigRunFast, !busy);
-            ImGui::MenuItem("Debug break on error", NULL, &engine->IO.ConfigBreakOnError);
+            ImGuiContext& g = *GImGui;
+            ImGui::MenuItem("Metrics/Debugger", "", &engine->UiMetricsOpen);
+            ImGui::MenuItem("Debug Log", "", &engine->UiDebugLogOpen);
+            ImGui::MenuItem("Stack Tool", "", &engine->UiStackToolOpen);
+            ImGui::MenuItem("Item Picker", "", &g.DebugItemPickerActive);
+            ImGui::Separator();
+            ImGui::MenuItem("Capture Tool", "", &engine->UiCaptureToolOpen);
+            ImGui::MenuItem("Perf Tool", "", &engine->UiPerfToolOpen);
             ImGui::EndMenu();
         }
         ImGui::EndMenuBar();
-    }
-#endif
-
-    // Options
-    //ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0, 0));
-    if (ImGui::Button(" TOOLS "))
-        ImGui::OpenPopup("Tools");
-    ImGui::SameLine();
-    if (ImGui::BeginPopup("Tools"))
-    {
-        //ImGui::PopStyleVar();
-        if (ImGui::Checkbox("Metrics", &engine->UiMetricsOpen)) { ImGui::CloseCurrentPopup(); }
-        if (ImGui::Checkbox("Stack Tool", &engine->UiStackToolOpen)) { ImGui::CloseCurrentPopup(); }
-        if (ImGui::Checkbox("Capture Tool", &engine->UiCaptureToolOpen)) { ImGui::CloseCurrentPopup(); }
-        if (ImGui::Checkbox("Perf Tool", &engine->UiPerfToolOpen)) { ImGui::CloseCurrentPopup(); }
-        ImGuiContext& g = *GImGui;
-        if (ImGui::Checkbox("Item Picker", &g.DebugItemPickerActive)) { ImGui::DebugStartItemPicker(); ImGui::CloseCurrentPopup(); }
-        ImGui::EndPopup();
-        //ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0, 0));
     }
 
     ImGui::SetNextItemWidth(90 * dpi_scale);
@@ -814,8 +799,10 @@ void    ImGuiTestEngine_ShowTestEngineWindows(ImGuiTestEngine* e, bool* p_open)
         ImGui::End();
     }
 
-    // Metrics window
-    // FIXME
+    // Show Dear ImGui windows
+    // (we cannot show demo window here because it could lead to duplicate display, which demo windows isn't guarded for)
     if (e->UiMetricsOpen)
         ImGui::ShowMetricsWindow(&e->UiMetricsOpen);
+    if (e->UiDebugLogOpen)
+        ImGui::ShowDebugLogWindow(&e->UiDebugLogOpen);
 }

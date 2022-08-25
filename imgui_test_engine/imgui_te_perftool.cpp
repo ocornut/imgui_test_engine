@@ -1764,16 +1764,10 @@ void ImGuiPerfTool::_UnpackSortedKey(ImU64 key, int* batch_index, int* entry_ind
 
 static bool SetPerfToolWindowOpen(ImGuiTestContext* ctx, bool is_open)
 {
-    ctx->WindowFocus("//Dear ImGui Test Engine");
-    ctx->ItemClick("//Dear ImGui Test Engine/ TOOLS ");
-    ImGuiTestItemInfo* checkbox_info = ctx->ItemInfo("//$FOCUSED/Perf Tool");
-    if (checkbox_info->ID != 0)
-    {
-        bool is_checked = (checkbox_info->StatusFlags & ImGuiItemStatusFlags_Checked) != 0;
-        if (is_checked != is_open)
-            ctx->ItemClick("//$FOCUSED/Perf Tool");
-        return is_checked;
-    }
+    if (is_open)
+        ctx->MenuCheck("//Dear ImGui Test Engine/Tools/Perf Tool");
+    else
+        ctx->MenuUncheck("//Dear ImGui Test Engine/Tools/Perf Tool");
     return false;
 }
 
@@ -1886,6 +1880,7 @@ void RegisterTests_PerfTool(ImGuiTestEngine* e)
         ctx->Yield();
 
         ImGuiWindow* window = ctx->GetWindowByRef("Dear ImGui Perf Tool");
+        IM_CHECK_SILENT(window != NULL);
         ImVec2 pos_bkp = window->Pos;
         ImVec2 size_bkp = window->Size;
         ctx->SetRef(window);
