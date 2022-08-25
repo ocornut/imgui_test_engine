@@ -1729,7 +1729,8 @@ static bool SetPerfToolWindowOpen(ImGuiTestContext* ctx, bool is_open)
 {
     ctx->WindowFocus("//Dear ImGui Test Engine");
     ctx->ItemClick("//Dear ImGui Test Engine/ TOOLS ");
-    if (ImGuiTestItemInfo* checkbox_info = ctx->ItemInfo("//$FOCUSED/Perf Tool"))
+    ImGuiTestItemInfo* checkbox_info = ctx->ItemInfo("//$FOCUSED/Perf Tool");
+    if (checkbox_info->ID != 0)
     {
         bool is_checked = (checkbox_info->StatusFlags & ImGuiItemStatusFlags_Checked) != 0;
         if (is_checked != is_open)

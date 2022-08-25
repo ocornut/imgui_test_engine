@@ -4,6 +4,12 @@ CHANGELOG
 ** For a while this is going to include only breaking changes.
 ** As we slowly transition toward releasing the test engine, this will become a more full fledged changelog.
 
+2022/08/25:
+- TestEngine:
+  - Changed ItemInfo() functions to never return a NULL pointer anymore.
+    If you were testing for NULL pointer, the right test to do now is 'info->ID != 0'.
+    This change reduce the likehood of failing test code crashing the application.
+
 2022/07/19
 - TestEngine:
   - The syntax "/someidentifier" to ignore the current SetRef() value has been changed to "//someidentifier" !!

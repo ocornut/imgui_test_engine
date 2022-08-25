@@ -245,6 +245,7 @@ struct IMGUI_API ImGuiTestContext
     ImGuiInputSource        InputMode = ImGuiInputSource_Mouse;     // Prefer interacting with mouse/keyboard/gamepad
     ImVector<char>          Clipboard;                              // Private clipboard for the test instance
     ImVector<ImGuiWindow*>  ForeignWindowsToHide;
+    ImGuiTestItemInfo       DummyItemInfoNull;                      // Storage for ItemInfoNull()
     bool                    CachedLinesPrintedToTTY = false;
 
     //-------------------------------------------------------------------------
@@ -392,9 +393,11 @@ struct IMGUI_API ImGuiTestContext
     void        ScrollVerifyScrollMax(ImGuiTestRef ref);
 
     // Low-level queries
-    ImGuiTestItemInfo*  ItemInfo(ImGuiTestRef ref, ImGuiTestOpFlags flags = ImGuiTestOpFlags_None);             // Important: always test for NULL!
+    // Since 2022/06/25 to faciliate test code and reduce crashes: ItemInfo queries never return a NULL pointer, instead they return an empty instance (info->IsEmpty(), info->ID == 0).
+    ImGuiTestItemInfo*  ItemInfo(ImGuiTestRef ref, ImGuiTestOpFlags flags = ImGuiTestOpFlags_None);
     ImGuiTestItemInfo*  ItemInfoOpenFullPath(ImGuiTestRef ref);
     ImGuiID             ItemInfoHandleWildcardSearch(const char* wildcard_prefix_start, const char* wildcard_prefix_end, const char* wildcard_suffix_start);
+    ImGuiTestItemInfo*  ItemInfoNull();
     void                GatherItems(ImGuiTestItemList* out_list, ImGuiTestRef parent, int depth = -1);
 
     // Item/Widgets manipulation

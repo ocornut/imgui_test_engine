@@ -257,12 +257,8 @@ struct ImGuiTestItemInfo
     ImGuiItemStatusFlags        StatusFlags = 0;            // Item Status flags (fully updated for some items only, compare TimestampStatus to FrameCount)
     char                        DebugLabel[32] = {};        // Shortened label for debugging purpose
 
-    ImGuiTestItemInfo()
-    {
-        RefCount = 0;
-        NavLayer = 0;
-        Depth = 0;
-    }
+    ImGuiTestItemInfo()         { RefCount = 0; NavLayer = 0; Depth = 0; }
+    bool                        IsEmpty() const         { return ID == 0; }
 };
 
 // Result of an ItemGather query

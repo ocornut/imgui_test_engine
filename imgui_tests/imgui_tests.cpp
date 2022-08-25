@@ -3480,8 +3480,8 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
 
 #if IMGUI_VERSION_NUM >= 18809
         // BeginMenu() - Items using PushID(id); SubItem(""); PopID() idioms
-        IM_CHECK(ctx->ItemInfo("**/TestMenu/") != NULL);
-        IM_CHECK(ctx->ItemInfo("**/TestMenu") != NULL);
+        IM_CHECK(ctx->ItemInfo("**/TestMenu/")->ID != 0);
+        IM_CHECK(ctx->ItemInfo("**/TestMenu")->ID != 0);
         ctx->ItemClick("**/TestMenu");
 
         // InputScalar() - Items using PushID(id); SubItem(""); PopID() idioms

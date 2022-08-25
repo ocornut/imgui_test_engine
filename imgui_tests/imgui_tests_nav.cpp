@@ -1686,20 +1686,20 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
         {
             ctx->KeyPress(ImGuiKey_Tab);
             item_info = ctx->ItemInfo(g.ActiveId);
-            IM_CHECK(item_info != NULL);
+            IM_CHECK(item_info->ID != 0);
             IM_CHECK_STR_EQ(item_info->DebugLabel, Str30f("Input%d", n % 20).c_str());
         }
         // Should be on 21
         for (int n = 0; n < 4; n++)
         {
             item_info = ctx->ItemInfo(g.ActiveId);
-            IM_CHECK(item_info != NULL);
+            IM_CHECK(item_info->ID != 0);
             IM_CHECK_STR_EQ(item_info->DebugLabel, Str30f("Input%d", (21 - n) % 20).c_str());
 
             ctx->KeyPress(ImGuiKey_Tab, ImGuiModFlags_Shift);
 
             item_info = ctx->ItemInfo(g.ActiveId);
-            IM_CHECK(item_info != NULL);
+            IM_CHECK(item_info->ID != 0);
             IM_CHECK_STR_EQ(item_info->DebugLabel, Str30f("Input%d", (20 - n) % 20).c_str());
         }
     };

@@ -1233,9 +1233,9 @@ void RegisterTests_Table(ImGuiTestEngine* e)
         {
             ImGuiID handle_id = ImGui::TableGetColumnResizeID(table, column_n);
             if (column_n == table->RightMostEnabledColumn)
-                IM_CHECK(ctx->ItemInfo(handle_id, ImGuiTestOpFlags_NoError) == NULL); // W
+                IM_CHECK(ctx->ItemInfo(handle_id, ImGuiTestOpFlags_NoError)->ID == 0); // W
             else
-                IM_CHECK(ctx->ItemInfo(handle_id, ImGuiTestOpFlags_NoError) != NULL); // FF
+                IM_CHECK(ctx->ItemInfo(handle_id, ImGuiTestOpFlags_NoError)->ID != 0); // FF
         }
         IM_CHECK(table->ColumnsGivenWidth == table->InnerWindow->ContentRegionRect.GetWidth());
     };
@@ -2916,13 +2916,13 @@ void RegisterTests_Table(ImGuiTestEngine* e)
         // Left to right, verify that column is still fully visible at the end of resize
         ctx->ItemDragWithDelta(resize_id, ImVec2(window->InnerRect.GetWidth() * 2.0f, 0.0f));
         ImGuiTestItemInfo* item_info = ctx->ItemInfo("table1/0");
-        IM_CHECK(item_info != NULL);
+        IM_CHECK(item_info->ID != 0);
         IM_CHECK(window->ClipRect.Min.x <= table->Columns[0].ClipRect.Min.x && window->ClipRect.Max.x >= table->Columns[0].ClipRect.Max.x);
 
         // Right to left, verify that column is still fully visible at the end of resize
         ctx->ItemDragWithDelta(resize_id, ImVec2(-window->InnerRect.GetWidth() * 2.0f, 0.0f));
         item_info = ctx->ItemInfo("table1/0");
-        IM_CHECK(item_info != NULL);
+        IM_CHECK(item_info->ID != 0);
         IM_CHECK(window->ClipRect.Min.x <= table->Columns[0].ClipRect.Min.x && window->ClipRect.Max.x >= table->Columns[0].ClipRect.Max.x);
     };
 

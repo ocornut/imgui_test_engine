@@ -2720,7 +2720,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         for (int i = 0; i < vars.Count; i++)
         {
             ImGuiTestItemInfo* item_info = ctx->ItemInfo(Str30f("TabBar/Tab %d", i).c_str());
-            IM_CHECK(item_info != NULL);
+            IM_CHECK(item_info->ID != 0);
             IM_CHECK_EQ(item_info->RectFull.GetWidth(), 30.0f + i * 10.0f);
         }
     };
@@ -3400,7 +3400,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ctx->MouseMove("Widgets", ImGuiTestOpFlags_NoFocusWindow);
         ctx->SleepNoSkip(1.0f, 1.0f / 60.0f);
 
-        IM_CHECK(ctx->ItemInfo("Widgets") != NULL);
+        IM_CHECK(ctx->ItemInfo("Widgets")->ID != 0);
         IM_CHECK((ctx->ItemInfo("Widgets")->StatusFlags & ImGuiItemStatusFlags_Opened) != 0);
         IM_CHECK_EQ(g.ActiveId, active_id);
         ctx->MouseMove("Trees", ImGuiTestOpFlags_NoFocusWindow);

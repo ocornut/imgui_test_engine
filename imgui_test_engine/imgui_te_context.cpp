@@ -266,8 +266,8 @@ void    ImGuiTestContext::LogBasicUiState()
     ImGuiTestItemInfo* item_hovered_info = item_hovered_id ? ImGuiTestEngine_FindItemInfo(Engine, item_hovered_id, "") : NULL;
     ImGuiTestItemInfo* item_active_info = item_active_id ? ImGuiTestEngine_FindItemInfo(Engine, item_active_id, "") : NULL;
     LogDebug("Hovered: 0x%08X (\"%s\"), Active:  0x%08X(\"%s\")",
-        item_hovered_id, item_hovered_info ? item_hovered_info->DebugLabel : "",
-        item_active_id, item_active_info ? item_active_info->DebugLabel : "");
+        item_hovered_id, item_hovered_info->ID != 0 ? item_hovered_info->DebugLabel : "",
+        item_active_id, item_active_info->ID != 0 ? item_active_info->DebugLabel : "");
 }
 
 void    ImGuiTestContext::Finish()
@@ -481,7 +481,8 @@ void ImGuiTestContext::SetRef(ImGuiTestRef ref)
     // FIXME: Maybe display something in log when that happens?
     if (window == NULL)
         if (ImGuiTestItemInfo* item_info = ItemInfo(RefID, ImGuiTestOpFlags_NoError))
-            window = item_info->Window;
+            if (item_info->ID != 0)
+                window = item_info->Window;
 
     if (window)
     {
@@ -897,7 +898,7 @@ ImGuiID ImGuiTestContext::ItemInfoHandleWildcardSearch(const char* wildcard_pref
     if (task->OutItemId == 0)
     {
         ImGuiTestItemInfo* base_item = ItemInfo(task->InPrefixId, ImGuiTestOpFlags_NoError);
-        ImGuiWindow* window = base_item ? base_item->Window : GetWindowByRef(task->InPrefixId);
+        ImGuiWindow* window = (base_item->ID != 0) ? base_item->Window : GetWindowByRef(task->InPrefixId);
         if (window)
         {
             ImVec2 rect_size = window->InnerRect.GetSize();
@@ -934,12 +935,19 @@ ImGuiID ImGuiTestContext::ItemInfoHandleWildcardSearch(const char* wildcard_pref
     return full_id;
 }
 
+// Return an empty instance so ItemInfo() never returns a NULL pointer by default (unless requested)
+ImGuiTestItemInfo* ImGuiTestContext::ItemInfoNull()
+{
+    DummyItemInfoNull = ImGuiTestItemInfo();
+    return &DummyItemInfoNull;
+}
+
 // Supported values for ImGuiTestOpFlags:
 // - ImGuiTestOpFlags_NoError
 ImGuiTestItemInfo* ImGuiTestContext::ItemInfo(ImGuiTestRef ref, ImGuiTestOpFlags flags)
 {
     if (IsError())
-        return NULL;
+        return ItemInfoNull();
 
     ImGuiID full_id = 0;
 
@@ -994,7 +1002,7 @@ ImGuiTestItemInfo* ImGuiTestContext::ItemInfo(ImGuiTestRef ref, ImGuiTestOpFlags
             IM_ERRORF_NOHDR("Unable to locate item: 0x%08X", ref.ID);
     }
 
-    return NULL;
+    return ItemInfoNull();
 }
 
 ImGuiTestItemInfo* ImGuiTestContext::ItemInfoOpenFullPath(ImGuiTestRef ref)
@@ -1002,10 +1010,10 @@ ImGuiTestItemInfo* ImGuiTestContext::ItemInfoOpenFullPath(ImGuiTestRef ref)
     // First query
     bool can_open_full_path = (ref.Path != NULL);
     ImGuiTestItemInfo* item = ItemInfo(ref, can_open_full_path ? ImGuiTestOpFlags_NoError : ImGuiTestOpFlags_None);
-    if (item != NULL)
+    if (item->ID != 0)
         return item;
     if (!can_open_full_path)
-        return NULL;
+        return ItemInfoNull();
 
     // Tries to auto open intermediaries leading to final path.
     // FIXME: Should this simply be baked in ItemInfo() ??
@@ -1022,7 +1030,7 @@ ImGuiTestItemInfo* ImGuiTestContext::ItemInfoOpenFullPath(ImGuiTestRef ref)
         Str128 parent_id;
         parent_id.set(ref.Path, parent_end);
         ImGuiTestItemInfo* parent_item = ItemInfo(parent_id.c_str(), ImGuiTestOpFlags_NoError);
-        if (parent_item != NULL && (parent_item->StatusFlags & ImGuiItemStatusFlags_Openable) != 0 && (parent_item->StatusFlags & ImGuiItemStatusFlags_Opened) == 0)
+        if (parent_item->ID != 0 && (parent_item->StatusFlags & ImGuiItemStatusFlags_Openable) != 0 && (parent_item->StatusFlags & ImGuiItemStatusFlags_Opened) == 0)
         {
             ItemAction(ImGuiTestAction_Open, parent_item->ID, NULL, ImGuiTestOpFlags_NoAutoOpenFullPath);
             opened_parents++;
@@ -1031,7 +1039,7 @@ ImGuiTestItemInfo* ImGuiTestContext::ItemInfoOpenFullPath(ImGuiTestRef ref)
     if (opened_parents > 0)
         item = ItemInfo(ref);
 
-    if (item == NULL)
+    if (item->ID == 0)
     {
         // Prefixing the string with / ignore the reference/current ID
         if (ref.Path && ref.Path[0] == '/' && RefStr[0] != 0)
@@ -1153,7 +1161,7 @@ void    ImGuiTestContext::ScrollTo(ImGuiTestRef ref, ImGuiAxis axis, float scrol
 
     // Try to use Scrollbar if available
     const ImGuiTestItemInfo* scrollbar_item = ItemInfo(ImGui::GetWindowScrollbarID(window, axis), ImGuiTestOpFlags_NoError);
-    if (scrollbar_item != NULL && EngineIO->ConfigRunSpeed != ImGuiTestRunSpeed_Fast && !(flags & ImGuiTestOpFlags_NoFocusWindow))
+    if (scrollbar_item->ID != 0 && EngineIO->ConfigRunSpeed != ImGuiTestRunSpeed_Fast && !(flags & ImGuiTestOpFlags_NoFocusWindow))
     {
         WindowBringToFront(window->ID);
 
@@ -1227,7 +1235,7 @@ void    ImGuiTestContext::ScrollToItem(ImGuiTestRef ref, ImGuiAxis axis, ImGuiTe
     ImGuiTestRefDesc desc(ref, item);
     LogDebug("ScrollToItem%c %s", 'X' + axis, desc.c_str());
 
-    if (item == NULL)
+    if (item->ID == 0)
         return;
 
     // Ensure window size and ScrollMax are up-to-date
@@ -1336,7 +1344,7 @@ void    ImGuiTestContext::NavMoveTo(ImGuiTestRef ref)
     ImGuiTestRefDesc desc(ref, item);
     LogDebug("NavMove to %s", desc.c_str());
 
-    if (item == NULL)
+    if (item->ID == 0)
         return;
     item->RefCount++;
 
@@ -1455,7 +1463,7 @@ void    ImGuiTestContext::MouseMove(ImGuiTestRef ref, ImGuiTestOpFlags flags)
 
     ImGuiTestRefDesc desc(ref, item);
     LogDebug("MouseMove to %s", desc.c_str());
-    if (item == NULL)
+    if (item->ID == 0)
         return;
 
     if (!item->Window->WasActive)
@@ -2392,7 +2400,7 @@ void    ImGuiTestContext::ItemAction(ImGuiTestAction action, ImGuiTestRef ref, v
     else
         item = ItemInfoOpenFullPath(ref);
     ImGuiTestRefDesc desc(ref, item);
-    if (item == NULL)
+    if (item->ID == 0)
         return;
 
     LogDebug("Item%s %s%s", GetActionName(action), desc.c_str(), (InputMode == ImGuiInputSource_Mouse) ? "" : " (w/ Nav)");
@@ -2527,7 +2535,8 @@ void    ImGuiTestContext::ItemActionAll(ImGuiTestAction action, ImGuiTestRef ref
     if (!ref_parent.IsEmpty())
     {
         // Open parent's parents
-        if (ImGuiTestItemInfo* parent_info = ItemInfoOpenFullPath(ref_parent))
+        ImGuiTestItemInfo* parent_info = ItemInfoOpenFullPath(ref_parent);
+        if (parent_info->ID != 0)
         {
             // Open parent
             if (action == ImGuiTestAction_Open && (parent_info->StatusFlags & ImGuiItemStatusFlags_Openable))
@@ -2791,13 +2800,11 @@ void    ImGuiTestContext::ItemVerifyCheckedIfAlive(ImGuiTestRef ref, bool checke
 {
     Yield();
     ImGuiTestItemInfo* item = ItemInfo(ref, ImGuiTestOpFlags_NoError);
-    if (item
-     && (item->TimestampMain + 1 >= ImGuiTestEngine_GetFrameCount(Engine))
-     && (item->TimestampStatus == item->TimestampMain)
-     && (((item->StatusFlags & ImGuiItemStatusFlags_Checked) != 0) != checked))
-    {
-        IM_CHECK(((item->StatusFlags & ImGuiItemStatusFlags_Checked) != 0) == checked);
-    }
+    if (item->ID == 0)
+        return;
+    if (item->TimestampMain + 1 >= ImGuiTestEngine_GetFrameCount(Engine) && item->TimestampStatus == item->TimestampMain)
+        if (((item->StatusFlags & ImGuiItemStatusFlags_Checked) != 0) != checked)
+            IM_CHECK(((item->StatusFlags & ImGuiItemStatusFlags_Checked) != 0) == checked);
 }
 
 // FIXME-TESTS: Could this be handled by ItemClose()?
@@ -2925,7 +2932,7 @@ void    ImGuiTestContext::MenuAction(ImGuiTestAction action, ImGuiTestRef ref)
 #endif
 
         ImGuiTestItemInfo* item = ItemInfo(buf.c_str());
-        IM_CHECK_SILENT(item != NULL);
+        IM_CHECK_SILENT(item->ID != 0);
         if (!(item->StatusFlags & ImGuiItemStatusFlags_Opened)) // Open menus can be ignored completely.
         {
             // We cannot move diagonally to a menu item because depending on the angle and other items we cross on our path we could close our target menu.
