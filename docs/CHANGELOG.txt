@@ -5,14 +5,19 @@ CHANGELOG
 ** As we slowly transition toward releasing the test engine, this will become a more full fledged changelog.
 
 2022/08/25:
-- TestEngine:
-  - Changed ItemInfo() functions to never return a NULL pointer anymore.
-    If you were testing for NULL pointer, the right test to do now is 'info->ID != 0'.
-    This change reduce the likehood of failing test code crashing the application.
+- TestEngine: Changed ItemInfo() functions to never return a NULL pointer anymore.
+  If you were testing for NULL pointer, the right test to do now is 'info->ID != 0'.
+  This change reduce the likehood of failing test code crashing the application.
+- TestEngine: Changed signatured of ItemAction() from:
+    void ItemAction(ImGuiTestAction action, ImGuiTestRef ref, void* action_arg = NULL, ImGuiTestOpFlags flags = 0)
+  to
+    void ItemAction(ImGuiTestAction action, ImGuiTestRef ref, ImGuiTestOpFlags flags = 0, void* action_arg = NULL)
+  As action_arg is rarely used and may be removed.
+
 
 2022/07/19
-- TestEngine:
-  - The syntax "/someidentifier" to ignore the current SetRef() value has been changed to "//someidentifier" !!
+- TestEngine: The syntax "/someidentifier" to ignore the current SetRef() value has been changed
+  to "//someidentifier".
     - "//" ref prefix now resets ID seed to 0 (old behavior)
     - "/" ref prefix now refers to "current window" id.s
       - In GuiFunc, "/" refers to current window we are Begin()-ing into.

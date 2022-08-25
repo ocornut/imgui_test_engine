@@ -627,6 +627,7 @@ static bool GetWindowInformation(ImGuiTestContext* ctx, ImGuiTestRef window_ref,
         out_name->set(name);
         ImStrReplace(out_name, "\\/", "/"); // Unescape slashes.
 
+
         if (out_id)
             *out_id = ImHashStr(name);
     }
@@ -1032,7 +1033,7 @@ ImGuiTestItemInfo* ImGuiTestContext::ItemInfoOpenFullPath(ImGuiTestRef ref)
         ImGuiTestItemInfo* parent_item = ItemInfo(parent_id.c_str(), ImGuiTestOpFlags_NoError);
         if (parent_item->ID != 0 && (parent_item->StatusFlags & ImGuiItemStatusFlags_Openable) != 0 && (parent_item->StatusFlags & ImGuiItemStatusFlags_Opened) == 0)
         {
-            ItemAction(ImGuiTestAction_Open, parent_item->ID, NULL, ImGuiTestOpFlags_NoAutoOpenFullPath);
+            ItemAction(ImGuiTestAction_Open, parent_item->ID, ImGuiTestOpFlags_NoAutoOpenFullPath);
             opened_parents++;
         }
     }
@@ -2370,7 +2371,7 @@ void    ImGuiTestContext::GatherItems(ImGuiTestItemList* out_list, ImGuiTestRef 
     GatherTask->LastItemInfo = NULL;
 }
 
-void    ImGuiTestContext::ItemAction(ImGuiTestAction action, ImGuiTestRef ref, void* action_arg, ImGuiTestOpFlags flags)
+void    ImGuiTestContext::ItemAction(ImGuiTestAction action, ImGuiTestRef ref, ImGuiTestOpFlags flags, void* action_arg)
 {
     if (IsError())
         return;

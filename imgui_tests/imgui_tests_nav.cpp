@@ -396,7 +396,7 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
         IM_CHECK_EQ(g.OpenPopupStack.Size, 0);
 
         ctx->MenuClick("Menu");
-        ctx->ItemAction(ImGuiTestAction_Hover, "//$FOCUSED/Submenu1", NULL, ImGuiTestOpFlags_NoFocusWindow);
+        ctx->ItemAction(ImGuiTestAction_Hover, "//$FOCUSED/Submenu1", ImGuiTestOpFlags_NoFocusWindow);
         IM_CHECK_EQ(g.OpenPopupStack.Size, 2);
         ctx->KeyPress(ImGuiKey_RightArrow);         // Right key closes a menu if item was hovered.
         IM_CHECK_EQ(g.OpenPopupStack.Size, 0);
@@ -414,7 +414,7 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
 
         ctx->PopupCloseAll();
         ctx->MenuClick("Menu");
-        ctx->ItemAction(ImGuiTestAction_Hover, "//$FOCUSED/Submenu1", NULL, ImGuiTestOpFlags_NoFocusWindow);
+        ctx->ItemAction(ImGuiTestAction_Hover, "//$FOCUSED/Submenu1", ImGuiTestOpFlags_NoFocusWindow);
         IM_CHECK_EQ(g.OpenPopupStack.Size, 2);
         ctx->KeyPress(ImGuiKey_LeftArrow);          // Right key maintains submenu open if menu item was hovered.
         IM_CHECK_EQ(g.OpenPopupStack.Size, 2);
