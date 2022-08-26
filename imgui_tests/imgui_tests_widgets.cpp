@@ -1252,8 +1252,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ctx->KeyPress(ImGuiKey_UpArrow);
         ctx->KeyModUp(ImGuiModFlags_Shift);
 
-        ImGuiID child_id = ctx->GetChildWindowID("//Test Window", "Field");
-        ImGuiWindow* child_window = ctx->GetWindowByRef(child_id);
+        ImGuiWindow* child_window = ctx->WindowInfo("//Test Window/Field")->Window;
         IM_CHECK(child_window != NULL);
         const int selection_len = (int)strlen("Line 9\n");
 
@@ -1266,9 +1265,9 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
             IM_CHECK(state->Stb.select_end == state->Stb.cursor);
             IM_CHECK(state->Stb.cursor == state->CurLenW - selection_len);
             if (n == 1)
-                ctx->ScrollToBottom(child_id);
+                ctx->ScrollToBottom(child_window->ID);
             else
-                ctx->ScrollToTop(child_id);
+                ctx->ScrollToTop(child_window->ID);
         }
 
         ImGuiInputTextState* state = ImGui::GetInputTextState(ctx->GetID("Field"));
@@ -1713,7 +1712,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         IM_CHECK_EQ(g.ActiveId, input_id);
         IM_CHECK(vars.Status.Active == 1);
         ctx->KeyCharsReplace("1\n2\n3\n4\n5\n6\n\7\n8\n9\n10\n11\n12\n13\n14\n15\n");
-        ImGuiWindow* window = ImGui::FindWindowByID(ctx->GetChildWindowID("", "Field"));
+        ImGuiWindow* window = ctx->WindowInfo("Field")->Window;
         IM_CHECK(window != NULL);
         ImGuiID scrollbar_id = ImGui::GetWindowScrollbarID(window, ImGuiAxis_Y);
         ctx->MouseMove(scrollbar_id);
@@ -3775,7 +3774,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ctx->ItemClick("Add 1000 lines");
         ctx->SleepStandard();
 
-        ImGuiWindow* log_panel = ctx->GetWindowByRef(ctx->GetChildWindowID("Example: Long text display", "Log"));
+        ImGuiWindow* log_panel = ctx->WindowInfo("Log")->Window;
         IM_CHECK(log_panel != NULL);
         ImGui::SetScrollY(log_panel, log_panel->ScrollMax.y);
         ctx->SleepStandard();
@@ -5126,9 +5125,9 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         ImGuiTestGenericVars& vars = ctx->GenericVars;
-        ImGuiWindow* child1 = ctx->GetWindowByRef(ctx->GetChildWindowID("Test Window", "Child 1"));
-        ImGuiWindow* child2 = ctx->GetWindowByRef(ctx->GetChildWindowID("Test Window", "Child 2"));
         ctx->SetRef("Test Window");
+        ImGuiWindow* child1 = ctx->WindowInfo("Child 1")->Window;
+        ImGuiWindow* child2 = ctx->WindowInfo("Child 2")->Window;
         ImVec2& child_size = vars.Size;
         for (int axis = 0; axis < 2; axis++)
         {

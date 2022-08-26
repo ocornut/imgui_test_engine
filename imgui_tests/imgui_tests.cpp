@@ -1719,7 +1719,7 @@ void RegisterTests_Window(ImGuiTestEngine* e)
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         ImGuiWindow* window = ctx->GetWindowByRef("Test Window");
-        ImGuiWindow* child = ctx->GetWindowByRef(ctx->GetChildWindowID(window->Name, "Child"));
+        ImGuiWindow* child = ctx->WindowInfo("Test Window/Child")->Window;
         ImGuiContext& g = *ctx->UiContext;
         ImGui::SetScrollX(window, 0);
         ImGui::SetScrollY(window, 0);

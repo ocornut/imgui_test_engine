@@ -348,7 +348,6 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         ImGuiContext& g = *ctx->UiContext;
-        ImGuiID child_id = ctx->GetChildWindowID("##Menu_01", "Child");
 
         for (int variant = 0; variant < 2; variant++)
         {
@@ -364,9 +363,14 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
 
             ctx->MenuClick("Menu/Submenu2");
             if (variant == 0)
+            {
                 ctx->SetRef("##Menu_01");
+            }
             else
+            {
+                ImGuiID child_id = ctx->WindowInfo("##Menu_01/Child")->ID;
                 ctx->SetRef(child_id);
+            }
             ctx->ItemClick("Tabs/Tab 1");
             ctx->KeyPress(ImGuiKey_RightArrow);         // Activate nav, navigate to next tab
 #if IMGUI_VERSION_NUM < 18414
@@ -476,7 +480,7 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
             // Set up window focus order, focus child window.
             ctx->WindowFocus("Window 1");
             ctx->WindowFocus("Window 2"); // FIXME: Needed for case when docked
-            ctx->ItemClick(ctx->GetID("Button In", ctx->GetChildWindowID("Window 2", "Child")));
+            ctx->ItemClick(ctx->GetID("Button In", ctx->WindowInfo("Window 2/Child")->ID));
 
             ctx->KeyPress(ImGuiKey_Tab, ImGuiModFlags_Ctrl);
             IM_CHECK(g.NavWindow == ctx->GetWindowByRef("Window 1"));
@@ -513,7 +517,7 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
 #endif
 
             ImGuiTestRef win1_button_ref("Window 1/Button 1");
-            ImGuiTestRef win2_button_ref(ctx->GetID("Button 2", ctx->GetChildWindowID("Window 2", "Child")));
+            ImGuiTestRef win2_button_ref(ctx->GetID("Button 2", ctx->WindowInfo("Window 2/Child")->ID));
 
             // Focus Window 1, navigate to the button
             ctx->WindowFocus("Window 1");
@@ -814,6 +818,8 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
             ctx->NavMoveTo("Scrolling");
             ctx->NavActivate(); // FIXME-TESTS: Could query current g.NavWindow instead of making names?
             ImGuiWindow* child_window = ctx->GetWindowByRef(ctx->GetChildWindowID("", "Scrolling/scrolling"));
+            //ImGuiWindow* child_window = ctx->WindowInfo("Scrolling/scrolling")->Window;
+            IM_CHECK(child_window != NULL);
             ctx->SetRef(child_window->ID);
             ctx->ScrollTo(demo_window->ID, ImGuiAxis_Y, (child_window->Pos - demo_window->Pos).y);  // Required because buttons do not register their IDs when out of view (SkipItems == true).
             ctx->NavMoveTo(ctx->GetID("1", ctx->GetIDByInt(1)));        // Focus item within a child window.
@@ -1133,7 +1139,7 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
         vars.ShowWindows = true;
         vars.SetFocus = false;
         ctx->Yield(2);
-        IM_CHECK_EQ(g.NavId, ctx->GetID("Child 0 Button 1", ctx->GetChildWindowID("Window 1", "Child 0")));
+        IM_CHECK_EQ(g.NavId, ctx->GetID("Child 0 Button 1", ctx->WindowInfo("Window 1/Child 0")->ID));
         vars.ShowWindows = false;
         ctx->Yield(2);
 
@@ -1142,7 +1148,7 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
         vars.SetFocus = true;
         ctx->Yield(2);
 #if IMGUI_VERSION_NUM >= 18205
-        IM_CHECK_EQ(g.NavId, ctx->GetID("Child 1 Button 2", ctx->GetChildWindowID("Window 1", "Child 1")));
+        IM_CHECK_EQ(g.NavId, ctx->GetID("Child 1 Button 2", ctx->WindowInfo("Window 1/Child 1")->ID));
 #endif
     };
 
