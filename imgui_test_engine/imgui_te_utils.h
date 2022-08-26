@@ -29,6 +29,7 @@ class Str;          // Str<> from thirdparty/Str/Str.h
 //-----------------------------------------------------------------------------
 
 ImGuiID     ImHashDecoratedPath(const char* str, const char* str_end = NULL, ImGuiID seed = 0);
+const char* ImFindNextDecoratedPartInPath(const char* str, const char* str_end = NULL);
 
 //-----------------------------------------------------------------------------
 // File/Directory Helpers

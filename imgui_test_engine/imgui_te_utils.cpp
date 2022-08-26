@@ -34,6 +34,7 @@
 // Hashing Helpers
 //-----------------------------------------------------------------------------
 // - ImHashDecoratedPath
+// - ImFindNextDecoratedPartInPath
 //-----------------------------------------------------------------------------
 
 // Hash "hello/world" as if it was "helloworld"
@@ -96,6 +97,41 @@ ImGuiID ImHashDecoratedPath(const char* str, const char* str_end, ImGuiID seed)
         inhibit_one = false;
     }
     return ~crc;
+}
+
+// Returns a next element of decorated hash path.
+//    "//hello/world/child" --> "world/child"
+//    "world/child"         --> "child"
+// This is a helper for code needing to do some parsing of individual nodes in a path.
+// Note: we need the (unsigned char*) stuff in order to keep code similar to ImHashDecoratedPath(). They are not really necessary in this function tho.
+const char* ImFindNextDecoratedPartInPath(const char* str, const char* str_end)
+{
+    const unsigned char* current = (const unsigned char*)str;
+    while (*current == '/')
+        current++;
+
+    bool inhibit_one = false;
+    while (true)
+    {
+        if (str_end != NULL && current == (const unsigned char*)str_end)
+            break;
+
+        const unsigned char c = *current++;
+        if (c == 0)
+            break;
+        if (c == '\\' && !inhibit_one)
+        {
+            inhibit_one = true;
+            continue;
+        }
+
+        // Forward slashes are ignored unless prefixed with a backward slash
+        if (c == '/' && !inhibit_one)
+            return (const char*)current;
+
+        inhibit_one = false;
+    }
+    return NULL;
 }
 
 //-----------------------------------------------------------------------------

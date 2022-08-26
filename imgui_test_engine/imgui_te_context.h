@@ -296,6 +296,7 @@ struct IMGUI_API ImGuiTestContext
     ImGuiTestRef GetRef();
 
     // Windows
+    ImGuiTestItemInfo* WindowInfo(ImGuiTestRef ref, ImGuiTestOpFlags flags = ImGuiTestOpFlags_None);
     void        WindowClose(ImGuiTestRef ref);
     void        WindowCollapse(ImGuiTestRef ref, bool collapsed);
     void        WindowFocus(ImGuiTestRef ref);
@@ -303,13 +304,14 @@ struct IMGUI_API ImGuiTestContext
     void        WindowResize(ImGuiTestRef ref, ImVec2 sz);
     bool        WindowTeleportToMakePosVisible(ImGuiTestRef ref, ImVec2 pos_in_window);
     bool        WindowBringToFront(ImGuiTestRef ref, ImGuiTestOpFlags flags = ImGuiTestOpFlags_None);
-    ImGuiWindow* GetWindowByRef(ImGuiTestRef ref);
+    ImGuiWindow*GetWindowByRef(ImGuiTestRef ref);
 
     // Popups
     void        PopupCloseOne();
     void        PopupCloseAll();
 
     // ID
+    // Note: for windows you may use WindowInfo()
     ImGuiID     GetID(ImGuiTestRef ref);
     ImGuiID     GetID(ImGuiTestRef ref, ImGuiTestRef seed_ref);
     ImGuiID     GetIDByInt(int n);

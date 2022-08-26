@@ -426,7 +426,7 @@ void ImGuiTestContext::SetRef(ImGuiWindow* window)
 {
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
     IM_CHECK_SILENT(window != NULL);
-    LogDebug("WindowRef '%s' %08X", window->Name, window->ID);
+    LogDebug("SetRef '%s' %08X", window->Name, window->ID);
 
     // We grab the ID directly and avoid ImHashDecoratedPath so "/" in window names are not ignored.
     size_t len = strlen(window->Name);
@@ -445,7 +445,7 @@ void ImGuiTestContext::SetRef(ImGuiWindow* window)
 void ImGuiTestContext::SetRef(ImGuiTestRef ref)
 {
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
-    LogDebug("WindowRef '%s' %08X", ref.Path ? ref.Path : "NULL", ref.ID);
+    LogDebug("SetRef '%s' %08X", ref.Path ? ref.Path : "NULL", ref.ID);
 
     if (ref.Path)
     {
@@ -501,6 +501,7 @@ ImGuiTestRef ImGuiTestContext::GetRef()
 }
 
 // Turn ref into a root ref unless ref is empty
+// FIXME: This seems inconsistent? Clarify?
 ImGuiWindow* ImGuiTestContext::GetWindowByRef(ImGuiTestRef ref)
 {
     ImGuiID window_id = ref.IsEmpty() ? GetID(ref) : GetID(ref, "//");
@@ -591,8 +592,7 @@ ImGuiID ImGuiTestContext::GetIDByPtr(void* p, ImGuiTestRef seed_ref)
 }
 
 // Helper function for GetChildWindowID()
-// FIXME-TESTS: Badly named.
-static bool GetWindowInformation(ImGuiTestContext* ctx, ImGuiTestRef window_ref, Str* out_name, ImGuiID* out_id)
+static bool GetChildWindowID_ExtractWindowNameAndId(ImGuiTestContext* ctx, ImGuiTestRef window_ref, Str* out_name, ImGuiID* out_id)
 {
     IM_ASSERT(out_name != NULL || out_id != NULL);
     if (window_ref.Path && window_ref.Path[0])
@@ -627,7 +627,6 @@ static bool GetWindowInformation(ImGuiTestContext* ctx, ImGuiTestRef window_ref,
         out_name->set(name);
         ImStrReplace(out_name, "\\/", "/"); // Unescape slashes.
 
-
         if (out_id)
             *out_id = ImHashStr(name);
     }
@@ -657,7 +656,7 @@ ImGuiID ImGuiTestContext::GetChildWindowID(ImGuiTestRef parent_ref, const char* 
 
     ImGuiID parent_id = 0;
     Str256 parent_name;
-    if (!GetWindowInformation(this, parent_ref, &parent_name, &parent_id))
+    if (!GetChildWindowID_ExtractWindowNameAndId(this, parent_ref, &parent_name, &parent_id))
     {
         LogError("GetChildWindowID: parent window should exist, when specifying by ID(0x%08X).", parent_ref.ID);
         IM_CHECK_RETV(false, 0);
@@ -668,7 +667,7 @@ ImGuiID ImGuiTestContext::GetChildWindowID(ImGuiTestRef parent_ref, const char* 
     if (const char* last_slash = strrchr(child_name, '/'))
     {
         child_name = last_slash + 1;
-        IM_ASSERT(child_name[0] != 0);    // child_name should not end with a slash.
+        IM_ASSERT(child_name[0] != 0);    // child_name should not end with a slash. // FIXME: Don't assert
     }
     return GetID(Str128f("//%s\\/%s_%08X", parent_name.c_str(), child_name, child_item_id).c_str());
 }
@@ -678,7 +677,7 @@ ImGuiID ImGuiTestContext::GetChildWindowID(ImGuiTestRef parent_ref, ImGuiID chil
     IM_ASSERT(child_id != 0);
 
     Str256 parent_name;
-    if (!GetWindowInformation(this, parent_ref, &parent_name, NULL))
+    if (!GetChildWindowID_ExtractWindowNameAndId(this, parent_ref, &parent_name, NULL))
     {
         LogError("GetChildWindowID: parent window should exist, when specifying by ID(0x%08X).", parent_ref.ID);
         IM_CHECK_RETV(false, 0);
@@ -1052,6 +1051,117 @@ ImGuiTestItemInfo* ImGuiTestContext::ItemInfoOpenFullPath(ImGuiTestRef ref)
     }
 
     return item;
+}
+
+// Find a window given a path or an ID.
+// In the case of when a path is passed, this handle finding child windows as well.
+// This is designed to be a replacement for GetChildWindowID().
+// e.g.
+//   ctx->WindowInfo("//Test Window");                          // OK
+//   ctx->WindowInfo("//Test Window/Child/SubChild");           // OK
+//   ctx->WindowInfo("//$FOCUSED/Child");                       // OK
+//   ctx->SetRef("Test Window); ctx->WindowInfo("Child");       // OK
+//   ctx->WindowInfo(GetID("//Test Window"));                   // OK (find by raw ID without a path)
+//   ctx->WindowInfo(GetID("//Test Window/Child/SubChild));     // *INCORRECT* GetID() doesn't unmangle child names.
+//   ctx->WindowInfo("//Test Window/Button");                   // *INCORRECT* Only finds windows, not items.
+// Return:
+// - Return pointer is always valid.
+// - Valid fields are:
+//   - item->ID     : window ID      (may be == 0, if the window doesn't exist)
+//   - item->Window : window pointer (may be == NULL, if the window doesn't exist)
+//   - Other fields correspond to the title-bar/tab item of a window, so likely not what you want (same as using IsItemXXX after Begin)
+//   - If you want other fields simply get them via the window-> pointer.
+// - Likely you may want to feed the return value into SetRef(): e.g. 'ctx->SetRef(item->ID)' or 'ctx->SetRef(WindowInfo("//Window/Child")->ID);'
+// Todos:
+// - FIXME: Missing support for wildcards.
+// - FIXME: Missing support for windows that are not instantiated yet.
+ImGuiTestItemInfo* ImGuiTestContext::WindowInfo(ImGuiTestRef ref, ImGuiTestOpFlags flags)
+{
+    if (IsError())
+        return ItemInfoNull();
+
+    IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
+    ImGuiTestVerboseLevel log_level = (flags & ImGuiTestOpFlags_NoError) ? ImGuiTestVerboseLevel_Info : ImGuiTestVerboseLevel_Error;
+
+    // Query by ID (not very useful but supported)
+    if (ref.ID != 0)
+    {
+        LogDebug("WindowInfo: by id: %08X", ref.ID);
+        IM_ASSERT(ref.Path == NULL);
+        ImGuiWindow* window = GetWindowByRef(ref);
+        if (window == NULL)
+        {
+            LogEx(log_level, 0, "WindowInfo: error: cannot find window by ID!"); // FIXME: What if we want to query a not-yet-existing window by ID?
+            return ItemInfoNull();
+        }
+        return ItemInfo(window->ID);
+    }
+
+    // Query by path: this is where the meat of our work is.s
+    LogDebug("WindowInfo: by path: '%s'", ref.Path ? ref.Path : "NULL");
+    ImGuiWindow* window = NULL;
+    const char* current = ref.Path;
+    while (*current || window == NULL)
+    {
+        // Handle SetRef(), if any (this will also handle "//$FOCUSED" syntax)
+        Str128 part_name;
+        if (window == NULL && RefID != 0 && strncmp(ref.Path, "//", 2) != 0)
+        {
+            window = GetWindowByRef("");
+        }
+        else
+        {
+            // Find next part of the path + create a zero-terminated copy for convenience
+            const char* part_start = current;
+            const char* part_end = ImFindNextDecoratedPartInPath(current);
+            if (part_end == NULL)
+            {
+                current = part_end = part_start + strlen(part_start);
+            }
+            else if (part_end > part_start)
+            {
+                current = part_end;
+                part_end--;
+                IM_ASSERT(part_end[0] == '/');
+            }
+            part_name.setf("%.*s", (int)(part_end - part_start), part_start);
+
+            // Find root window or child window
+            if (window == NULL)
+            {
+                // Root: defer first element to GetID(), this will handle SetRef(), "//" and "//$FOCUSED" syntax.
+                ImGuiID window_id = GetID(part_name.c_str());
+                window = GetWindowByRef(window_id);
+            }
+            else
+            {
+                // Child: Try to BeginChild(const char*) variant.
+                // FIXME: Both cases technically don't support if PushID() was used prior to submitting the child.
+                // FIXME: Eventually should obsolete GetChildWindowID() we can embed the code in here.
+                ImGuiID window_id = GetChildWindowID(window->ID, part_name.c_str());
+                ImGuiWindow* child_window = GetWindowByRef(window_id);
+                if (child_window == NULL)
+                {
+                    // Try for BeginChild(ImGuiID id) variant.
+                    // FIXME: This only really works when ID is derived from a string.
+                    window_id = GetChildWindowID(window->ID, GetID(part_name.c_str(), window->ID));
+                    child_window = GetWindowByRef(window_id);
+                }
+                window = child_window;
+            }
+        }
+
+        // Process result
+        // FIXME: What if we want to query a not-yet-existing window by ID?
+        if (window == NULL)
+        {
+            LogEx(log_level, 0, "WindowInfo: error: element \"%s\" doesn't seem to exist.", part_name.c_str());
+            return ItemInfoNull();
+        }
+    }
+
+    IM_ASSERT(window != NULL);
+    return ItemInfo(window->ID);
 }
 
 void    ImGuiTestContext::ScrollToTop(ImGuiTestRef ref)
