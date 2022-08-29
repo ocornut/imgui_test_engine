@@ -368,7 +368,7 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
             }
             else
             {
-                ImGuiID child_id = ctx->WindowInfo("##Menu_01/Child")->ID;
+                ImGuiID child_id = ctx->WindowInfo("//##Menu_01/Child")->ID;
                 ctx->SetRef(child_id);
             }
             ctx->ItemClick("Tabs/Tab 1");
