@@ -8,6 +8,7 @@
 // FORWARD DECLARATIONS
 //-------------------------------------------------------------------------
 
+class Str;                          // Str<> from thirdparty/Str/Str.h
 struct ImGuiPerfTool;
 
 //-------------------------------------------------------------------------
@@ -138,8 +139,8 @@ struct ImGuiTestEngine
     bool                        UiFocus = false;
     ImGuiTest*                  UiSelectAndScrollToTest = NULL;
     ImGuiTest*                  UiSelectedTest = NULL;
-    char                        UiFilterTests[256] = "";        // FIXME: Use a resizing Str128?
-    char                        UiFilterPerfs[256] = "";
+    Str*                        UiFilterTests;
+    Str*                        UiFilterPerfs;
     ImU32                       UiFilterByStatusMask = ~0u;
     bool                        UiMetricsOpen = false;
     bool                        UiDebugLogOpen = false;

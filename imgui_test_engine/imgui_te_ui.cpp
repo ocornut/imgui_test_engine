@@ -211,12 +211,12 @@ static void GetFailingTestsAsString(ImGuiTestEngine* e, ImGuiTestGroup group, ch
     for (int i = 0; i < e->TestsAll.Size; i++)
     {
         ImGuiTest* failing_test = e->TestsAll[i];
-        const char* filter = group == ImGuiTestGroup_Tests ? e->UiFilterTests : e->UiFilterPerfs;
+        Str* filter = (group == ImGuiTestGroup_Tests) ? e->UiFilterTests : e->UiFilterPerfs;
         if (failing_test->Group != group)
             continue;
         if (failing_test->Status != ImGuiTestStatus_Error)
             continue;
-        if (!ImGuiTestEngine_PassFilter(failing_test, *filter ? filter : "all"))
+        if (!ImGuiTestEngine_PassFilter(failing_test, filter->empty() ? "all" : filter->c_str()))
             continue;
         if (!first)
             out_string->append(separator);
@@ -241,7 +241,7 @@ static void TestStatusButton(const char* id, const ImVec4& color, bool running)
     }
 }
 
-static void ShowTestGroup(ImGuiTestEngine* e, ImGuiTestGroup group, char* filter, int filter_size)
+static void ShowTestGroup(ImGuiTestEngine* e, ImGuiTestGroup group, Str* filter)
 {
     ImGuiStyle& style = ImGui::GetStyle();
     ImGuiIO& io = ImGui::GetIO();
@@ -257,7 +257,7 @@ static void ShowTestGroup(ImGuiTestEngine* e, ImGuiTestGroup group, char* filter
         for (int n = 0; n < e->TestsAll.Size; n++)
         {
             ImGuiTest* test = e->TestsAll[n];
-            if (!ShowTestGroupFilterTest(e, group, filter, test))
+            if (!ShowTestGroupFilterTest(e, group, filter->c_str(), test))
                 continue;
             ImGuiTestEngine_QueueTest(e, test, ImGuiTestRunFlags_None);
         }
@@ -296,7 +296,7 @@ static void ShowTestGroup(ImGuiTestEngine* e, ImGuiTestGroup group, char* filter
     }
     filter_width -= ImGui::CalcTextSize("(?)").x + style.ItemSpacing.x;
     ImGui::SetNextItemWidth(ImMax(20.0f, filter_width));
-    ImGui::InputText("##filter", filter, filter_size);
+    ImGui::InputText("##filter", filter);
     ImGui::SameLine();
     ImGui::TextDisabled("(?)");
     HelpTooltip("Query is composed of one or more comma-separated filter terms with optional modifiers.\n"
@@ -334,7 +334,7 @@ static void ShowTestGroup(ImGuiTestEngine* e, ImGuiTestGroup group, char* filter
         for (int test_n = 0; test_n < e->TestsAll.Size; test_n++)
         {
             ImGuiTest* test = e->TestsAll[test_n];
-            if (!ShowTestGroupFilterTest(e, group, filter, test))
+            if (!ShowTestGroupFilterTest(e, group, filter->c_str(), test))
                 continue;
 
             ImGuiTestContext* test_context = (e->TestContext && e->TestContext->Test == test) ? e->TestContext : NULL;
@@ -753,12 +753,12 @@ static void ImGuiTestEngine_ShowTestTool(ImGuiTestEngine* engine, bool* p_open)
     {
         if (ImGui::BeginTabItem("TESTS", NULL, ImGuiTabItemFlags_NoPushId))
         {
-            ShowTestGroup(engine, ImGuiTestGroup_Tests, engine->UiFilterTests, IM_ARRAYSIZE(engine->UiFilterTests));
+            ShowTestGroup(engine, ImGuiTestGroup_Tests, engine->UiFilterTests);
             ImGui::EndTabItem();
         }
         if (ImGui::BeginTabItem("PERFS", NULL, ImGuiTabItemFlags_NoPushId))
         {
-            ShowTestGroup(engine, ImGuiTestGroup_Perfs, engine->UiFilterPerfs, IM_ARRAYSIZE(engine->UiFilterPerfs));
+            ShowTestGroup(engine, ImGuiTestGroup_Perfs, engine->UiFilterPerfs);
             ImGui::EndTabItem();
         }
         ImGui::EndTabBar();

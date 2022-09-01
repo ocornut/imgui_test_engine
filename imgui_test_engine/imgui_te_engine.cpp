@@ -132,6 +132,8 @@ ImGuiTestEngine::ImGuiTestEngine()
     PerfDeltaTime100.Init(100);
     PerfDeltaTime500.Init(500);
     PerfTool = IM_NEW(ImGuiPerfTool);
+    UiFilterTests = IM_NEW(Str256); // We bite the bullet of adding an extra alloc/indirection in order to avoid including Str.h in our header
+    UiFilterPerfs = IM_NEW(Str256);
 
     // Initialize std::thread based coroutine implementation if requested
 #if IMGUI_TEST_ENGINE_ENABLE_COROUTINE_STDTHREAD_IMPL
@@ -144,6 +146,8 @@ ImGuiTestEngine::~ImGuiTestEngine()
 {
     IM_ASSERT(TestQueueCoroutine == NULL);
     IM_DELETE(PerfTool);
+    IM_DELETE(UiFilterTests);
+    IM_DELETE(UiFilterPerfs);
 }
 
 static void ImGuiTestEngine_BindImGuiContext(ImGuiTestEngine* engine, ImGuiContext* ui_ctx)
@@ -1943,6 +1947,17 @@ static bool     SettingsTryReadString(const char* line, const char* prefix, char
     return true;
 }
 
+static bool     SettingsTryReadString(const char* line, const char* prefix, Str* out_str)
+{
+    // Could also use scanf() with "%[^\n]" but it won't bound check.
+    size_t prefix_len = strlen(prefix);
+    if (strncmp(line, prefix, prefix_len) != 0)
+        return false;
+    line += prefix_len;
+    out_str->set(line);
+    return true;
+}
+
 static void     ImGuiTestEngine_SettingsReadLine(ImGuiContext* ui_ctx, ImGuiSettingsHandler*, void* entry, const char* line)
 {
     ImGuiTestEngine* e = (ImGuiTestEngine*)ui_ctx->TestEngine;
@@ -1951,8 +1966,8 @@ static void     ImGuiTestEngine_SettingsReadLine(ImGuiContext* ui_ctx, ImGuiSett
     IM_UNUSED(entry);
 
     int n = 0;
-    /**/ if (SettingsTryReadString(line, "FilterTests=", e->UiFilterTests, IM_ARRAYSIZE(e->UiFilterTests)))                         { }
-    else if (SettingsTryReadString(line, "FilterPerfs=", e->UiFilterPerfs, IM_ARRAYSIZE(e->UiFilterPerfs)))                         { }
+    /**/ if (SettingsTryReadString(line, "FilterTests=", e->UiFilterTests))                                                         { }
+    else if (SettingsTryReadString(line, "FilterPerfs=", e->UiFilterPerfs))                                                         { }
     else if (sscanf(line, "LogHeight=%f", &e->UiLogHeight) == 1)                                                                    { }
     else if (sscanf(line, "CaptureTool=%d", &n) == 1)                                                                               { e->UiCaptureToolOpen = (n != 0); }
     else if (sscanf(line, "PerfTool=%d", &n) == 1)                                                                                  { e->UiPerfToolOpen = (n != 0); }
@@ -1972,8 +1987,8 @@ static void     ImGuiTestEngine_SettingsWriteAll(ImGuiContext* ui_ctx, ImGuiSett
     IM_ASSERT(engine->UiContextTarget == ui_ctx);
 
     buf->appendf("[%s][Data]\n", handler->TypeName);
-    buf->appendf("FilterTests=%s\n", engine->UiFilterTests);
-    buf->appendf("FilterPerfs=%s\n", engine->UiFilterPerfs);
+    buf->appendf("FilterTests=%s\n", engine->UiFilterTests->c_str());
+    buf->appendf("FilterPerfs=%s\n", engine->UiFilterPerfs->c_str());
     buf->appendf("LogHeight=%.0f\n", engine->UiLogHeight);
     buf->appendf("CaptureTool=%d\n", engine->UiCaptureToolOpen);
     buf->appendf("PerfTool=%d\n", engine->UiPerfToolOpen);
