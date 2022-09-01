@@ -514,17 +514,32 @@ void RegisterTests_Window(ImGuiTestEngine* e)
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         ImGuiTestGenericVars& vars = ctx->GenericVars;
-        vars.Int1 = 1;
+
+        // Clear focus
+        vars.Int1 = ImGuiPopupFlags_MouseButtonRight;
+        ctx->MouseClickOnVoid(0);
+        IM_CHECK(ctx->UiContext->NavWindow == NULL);
+
+        // Open popup with right-click
         ctx->MouseClickOnVoid(1);
         IM_CHECK(vars.Bool1 == true);
+        IM_CHECK(ctx->UiContext->NavWindow != NULL);
+        ImGuiWindow* debug_window = ImGui::FindWindowByName("Debug##Default"); // Verify this doesn't make the Debug window appear
+        IM_CHECK(debug_window != NULL);
+        IM_CHECK(debug_window->WasActive == false);
+
+        // Close popup, verify NULL NavWindow was restored (#2517)
         ctx->MouseClickOnVoid(0);
         IM_CHECK(vars.Bool1 == false);
+        IM_CHECK(ctx->UiContext->NavWindow == NULL);
 
+        // Try with inverse buttons
         vars.Int1 = 0;
         ctx->MouseClickOnVoid(0);
         IM_CHECK(vars.Bool1 == true);
         ctx->MouseClickOnVoid(1);
         IM_CHECK(vars.Bool1 == false);
+        IM_CHECK(ctx->UiContext->NavWindow == NULL);
     };
 
     // ## Test opening a popup after BeginPopup(), while window is out of focus. (#4308)
