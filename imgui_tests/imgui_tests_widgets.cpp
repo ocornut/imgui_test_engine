@@ -165,7 +165,6 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ctx->MouseUp(0);
 
         // Test ImGuiButtonFlags_Repeat with Nav
-        ctx->NavEnableForWindow();
         ctx->NavMoveTo("Button4");
         vars.ButtonPressCount[4] = 0;
         ctx->KeyDown(ImGuiKey_Space);

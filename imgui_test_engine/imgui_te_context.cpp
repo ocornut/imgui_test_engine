@@ -1510,13 +1510,6 @@ void    ImGuiTestContext::NavInput()
     KeyPress(ImGuiKey_Enter);
 }
 
-void    ImGuiTestContext::NavEnableForWindow()
-{
-    // FIXME-TESTS: this shouldn't be required, currently used as a kludge (see e.g #2048)
-    KeyModPress(ImGuiModFlags_Alt);
-    KeyModPress(ImGuiModFlags_Alt);
-}
-
 // Supported values for ImGuiTestOpFlags:
 // - ImGuiTestOpFlags_MoveToEdgeL
 // - ImGuiTestOpFlags_MoveToEdgeR

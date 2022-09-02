@@ -8,6 +8,7 @@ CHANGELOG
 - TestEngine: removed ImGuiTestContext::NavCancel(): same as ->KeyPress(ImGuiKey_Escape);
   Follow on core lib which is moving away from the NavInput_ semantic, in favor of using ImGuiKey enum
   for both keys and gamepads actions.
+- TestEngine: removed ImGuiTestContext::NavEnableForWindow() which was a workaround/kludge.
 
 2022/08/25:
 - TestEngine: Changed ItemInfo() functions to never return a NULL pointer anymore.

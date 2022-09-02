@@ -268,9 +268,6 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
         ctx->SetRef("Test Window");
         ctx->SetInputMode(ImGuiInputSource_Nav);
 
-        // FIXME-TESTS: This should not be required but nav init request is not applied until we start navigating, this is a workaround
-        ctx->NavEnableForWindow();
-
         IM_CHECK(g.NavId == window->GetID("Button 0"));
         IM_CHECK(window->Scroll.y == 0);
         // Navigate to the middle of window
@@ -295,7 +292,6 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
         ImGuiContext& g = *ctx->UiContext;
         ctx->SetRef("Dear ImGui Demo");
         ctx->MenuClick("Menu");
-        ctx->NavEnableForWindow();
         IM_CHECK(g.NavId == ctx->GetID("//##Menu_00/New"));
         ctx->KeyPress(ImGuiKey_UpArrow);
         IM_CHECK(g.NavId == ctx->GetID("//##Menu_00/Quit"));
@@ -949,7 +945,6 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
             vars.SetFocus = (variant == 1);
             vars.ShowWindows = true;
             ctx->Yield(2);
-            ctx->NavEnableForWindow();
             IM_CHECK(g.NavLayer == ImGuiNavLayer_Main);
             if (!vars.SetFocus)
                 IM_CHECK_EQ(g.NavId, ctx->GetID("Window/##1"));
@@ -999,7 +994,6 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
     {
         DefaultFocusVars& vars = ctx->GetVars<DefaultFocusVars>();
 
-        ctx->NavEnableForWindow();
         vars.ShowWindows = true;
         ctx->Yield(2);
 #if IMGUI_BROKEN_TESTS
@@ -1064,7 +1058,6 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         ImGuiContext& g = *ctx->UiContext;
-        ctx->NavEnableForWindow();
 
         // Navigating in child
         IM_CHECK_EQ(g.NavId, ctx->GetID("Window 1/Button 1"));
@@ -1133,7 +1126,6 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
     {
         ImGuiContext& g = *ctx->UiContext;
         DefaultFocusVars& vars = ctx->GetVars<DefaultFocusVars>();
-        ctx->NavEnableForWindow();
 
         // Test implicit default init on flattened window
         vars.ShowWindows = true;
