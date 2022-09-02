@@ -1510,16 +1510,6 @@ void    ImGuiTestContext::NavInput()
     KeyPress(ImGuiKey_Enter);
 }
 
-void    ImGuiTestContext::NavCancel()
-{
-    if (IsError())
-        return;
-
-    IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
-    LogDebug("NavCancel");
-    KeyPress(ImGuiKey_Escape);
-}
-
 void    ImGuiTestContext::NavEnableForWindow()
 {
     // FIXME-TESTS: this shouldn't be required, currently used as a kludge (see e.g #2048)

@@ -374,11 +374,14 @@ struct IMGUI_API ImGuiTestContext
     void        KeyCharsReplaceEnter(const char* chars);    // Delete existing field then input characters, press Enter
 
     // Navigation inputs
-    void        SetInputMode(ImGuiInputSource input_mode);
+    // FIXME: Need some redesign/refactoring:
+    // - This was initially intended to: replace mouse action with keyboard/gamepad
+    // - Abstract keyboard vs gamepad actions
+    // However this is widely inconsistent and unfinished at this point.
+    void        SetInputMode(ImGuiInputSource input_mode);  // ImGuiInputSource_Mouse or ImGuiInputSource_Nav. In nav mode, actions such as ItemClick or ItemInput are using nav facilities instead of Mouse.
     void        NavMoveTo(ImGuiTestRef ref);
-    void        NavActivate();                              // Activate current selected item. Same as pressing [space].
-    void        NavInput();                                 // Press ImGuiNavInput_Input (e.g. Triangle) to turn a widget into a text input
-    void        NavCancel();
+    void        NavActivate();                              // Activate current selected item: activate button, tweak sliders/drags. Equivalent of pressing Space on keyboard, ImGuiKey_GamepadFaceUp on a gamepad.
+    void        NavInput();                                 // Input into select item: input sliders/drags. Equivalent of pressing Enter on keyboard, ImGuiKey_GamepadFaceDown on a gamepad.
     void        NavEnableForWindow();
 
     // Scrolling

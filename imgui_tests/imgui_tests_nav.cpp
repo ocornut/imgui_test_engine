@@ -691,7 +691,7 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
         IM_CHECK_STR_EQ(vars.Str1, "0");
         ctx->NavInput();
         ctx->KeyCharsReplace("123");
-        ctx->NavCancel();
+        ctx->KeyPress(ImGuiKey_Escape);
         IM_CHECK(g.ActiveId == 0);
         IM_CHECK_STR_EQ(vars.Str1, "0");
 
@@ -774,11 +774,11 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
 
         ctx->NavActivate();                                     // Enter child window
         IM_CHECK((g.NavWindow->Flags & ImGuiWindowFlags_ChildWindow) != 0);
-        ctx->KeyPress(ImGuiKey_DownArrow);                          // Manipulate something
+        ctx->KeyPress(ImGuiKey_DownArrow);                      // Manipulate something
         //IM_CHECK(g.NavId == ctx->ItemInfo("//**/Button 4")->ID); // Can't easily include child window name in ID because the / gets inhibited...
         IM_CHECK(g.NavId == ctx->GetID("//$FOCUSED/Button 4"));
         ctx->NavActivate();
-        ctx->NavCancel();                                       // Leave child window
+        ctx->KeyPress(ImGuiKey_Escape);                         // Leave child window
         IM_CHECK(g.NavId == ctx->GetID("Window 1/Child"));      // Focus resumes last location before entering child window
     };
 
