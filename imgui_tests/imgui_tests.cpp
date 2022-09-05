@@ -2340,8 +2340,13 @@ void RegisterTests_Layout(ImGuiTestEngine* e)
         IM_CHECK_EQ(window->DC.CursorMaxPos.y, window->DC.CursorStartPos.y);
 
         ImGui::SetCursorPos(ImVec2(200.0f, 100.0f));
+#if IMGUI_VERSION_NUM < 18814
         IM_CHECK_EQ(window->DC.CursorMaxPos.x, window->Pos.x + 200.0f); // FIXME: Won't be valid if we apply #5548
         IM_CHECK_EQ(window->DC.CursorMaxPos.y, window->Pos.y + 100.0f); // ""
+#else
+        IM_CHECK_EQ(window->DC.CursorMaxPos.x, window->DC.CursorStartPos.x);
+        IM_CHECK_EQ(window->DC.CursorMaxPos.y, window->DC.CursorStartPos.y);
+#endif
 
         ImGui::NewLine();
         IM_CHECK_EQ(window->DC.CursorMaxPos.x, window->Pos.x + 200.0f);
