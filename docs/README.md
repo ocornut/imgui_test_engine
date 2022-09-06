@@ -29,9 +29,13 @@ https://user-images.githubusercontent.com/8225057/182409619-cd3bf990-b383-4a6c-a
 - It is currently a C++ API but down the line we can expect that the commands will be better standardized, stored in data files, called from other languages.
 - It has been in use and development since 2018. Library is provided as-is, and we'll provide best effort to make it suitable for user needs.
 
-## Docs / Wiki
+## Documentation
 
-See [imgui_test_engine Wiki](https://github.com/ocornut/imgui_test_engine/wiki/imgui_test_engine).
+See [Wiki](https://github.com/ocornut/imgui_test_engine/wiki) sections: 
+- [Overview](https://github.com/ocornut/imgui_test_engine/wiki/Overview)
+- [Setting Up](https://github.com/ocornut/imgui_test_engine/wiki/SettingUp)
+- [Automation API](https://github.com/ocornut/imgui_test_engine/wiki/AutomationAPI)
+- [Exporting Results](https://github.com/ocornut/imgui_test_engine/wiki/ExportingResults)
 
 ## Licenses
 

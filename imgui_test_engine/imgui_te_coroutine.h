@@ -23,12 +23,20 @@ typedef void (ImGuiTestCoroutineMainFunc)(void* data);
 // Coroutine support interface
 // Your app needs to return and implement this.
 // You can '#define IMGUI_TEST_ENGINE_ENABLE_COROUTINE_STDTHREAD_IMPL 1' in your imconfig file to use a default implementation using std::thread
+// Documentation: https://github.com/ocornut/imgui_test_engine/wiki/SettingUp
 struct IMGUI_API ImGuiTestCoroutineInterface
 {
-    ImGuiTestCoroutineHandle (*CreateFunc)(ImGuiTestCoroutineMainFunc* func, const char* name, void* data); // Create a new coroutine
-    void                     (*DestroyFunc)(ImGuiTestCoroutineHandle handle);                               // Destroy a coroutine (which must have completed first)
-    bool                     (*RunFunc)(ImGuiTestCoroutineHandle handle);                                   // Run a coroutine until it yields or finishes, returning false if finished
-    void                     (*YieldFunc)();                                                                // Yield from a coroutine back to the caller, preserving coroutine state
+    // Create a new coroutine
+    ImGuiTestCoroutineHandle (*CreateFunc)(ImGuiTestCoroutineMainFunc* func, const char* name, void* data);
+
+    // Destroy a coroutine (which must have completed first)
+    void                     (*DestroyFunc)(ImGuiTestCoroutineHandle handle);
+
+    // Run a coroutine until it yields or finishes, returning false if finished
+    bool                     (*RunFunc)(ImGuiTestCoroutineHandle handle);
+
+    // Yield from a coroutine back to the caller, preserving coroutine state
+    void                     (*YieldFunc)();
 };
 
 //------------------------------------------------------------------------
