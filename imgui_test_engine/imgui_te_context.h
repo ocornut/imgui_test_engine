@@ -192,10 +192,9 @@ struct IMGUI_API ImGuiTestGenericVars
     bool                    Bool1, Bool2, BoolArray[10];
     ImGuiID                 Id, IdArray[10];
     char                    Str1[256], Str2[256];
-    ImVector<char>          StrLarge;
 
     ImGuiTestGenericVars()  { Clear(); }
-    void Clear()            { StrLarge.clear(); memset(this, 0, sizeof(*this)); }
+    void Clear()            { memset(this, 0, sizeof(*this)); }
 };
 
 //-------------------------------------------------------------------------

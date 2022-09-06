@@ -787,9 +787,15 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
 
     // ## Test InputText undo/redo ops, in particular related to issue we had with stb_textedit undo/redo buffers
     t = IM_REGISTER_TEST(e, "widgets", "widgets_inputtext_undo_redo");
+    struct InputTextUndoRedoVars
+    {
+        char Str1[256];
+        ImVector<char> StrLarge;
+    };
+    t->SetVarsDataType<InputTextUndoRedoVars>();
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
-        ImGuiTestGenericVars& vars = ctx->GenericVars;
+        auto& vars = ctx->GetVars<InputTextUndoRedoVars>();
         if (vars.StrLarge.empty())
             vars.StrLarge.resize(10000, 0);
         ImGui::SetNextWindowSize(ImVec2(ImGui::GetFontSize() * 50, 0.0f));
@@ -803,7 +809,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         // https://github.com/nothings/stb/issues/321
-        ImGuiTestGenericVars& vars = ctx->GenericVars;
+        auto& vars = ctx->GetVars<InputTextUndoRedoVars>();
         ImGuiContext& g = *ctx->UiContext;
 
         // Start with a 350 characters buffer.

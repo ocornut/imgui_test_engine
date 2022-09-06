@@ -1012,8 +1012,15 @@ void RegisterTests_Perf(ImGuiTestEngine* e)
 	};
 	t->TestFunc = PerfCaptureFunc;
 
-    // ## Measure performance of drawlist text rendering
+    // ## "perf_draw_text_XXXX" tests: measure performance of drawlist text rendering
     {
+        struct PerfDrawTextVars
+        {
+            ImVector<char>  str;
+            int             line_count;
+            int             line_length;
+            ImVec2          text_size;
+        };
         enum PerfTestTextFlags : int
         {
             PerfTestTextFlags_TextShort             = 1 << 0,
@@ -1024,20 +1031,22 @@ void RegisterTests_Perf(ImGuiTestEngine* e)
             PerfTestTextFlags_NoCpuFineClipRect     = 1 << 5,
             PerfTestTextFlags_WithCpuFineClipRect   = 1 << 6,
         };
-        auto measure_text_rendering_perf = [](ImGuiTestContext* ctx)
+        auto gui_func_measure_text_rendering_perf = [](ImGuiTestContext* ctx)
         {
+            auto& vars = ctx->GetVars<PerfDrawTextVars>();
             ImGui::SetNextWindowSize(ImVec2(300, 120), ImGuiCond_Always);
             ImGui::Begin("Test Func", NULL, ImGuiWindowFlags_NoSavedSettings);
 
             ImGuiWindow* window = ImGui::GetCurrentWindow();
             ImDrawList* draw_list = ImGui::GetWindowDrawList();
-            int test_variant = ctx->Test->ArgVariant;
-            ImVector<char>& str = ctx->GenericVars.StrLarge;
+            const int test_variant = ctx->Test->ArgVariant;
             float wrap_width = 0.0f;
-            int& line_count = ctx->GenericVars.Int1;
-            int& line_length = ctx->GenericVars.Int2;
+
+            auto& str = vars.str;
+            int& line_count = vars.line_count;
+            int& line_length = vars.line_length;
+            ImVec2& text_size = vars.text_size;
             ImVec4* cpu_fine_clip_rect = NULL;
-            ImVec2& text_size = ctx->GenericVars.Size;
             ImVec2 window_padding = ImGui::GetCursorScreenPos() - window->Pos;
 
             if (test_variant & PerfTestTextFlags_WithWrapWidth)
@@ -1047,7 +1056,7 @@ void RegisterTests_Perf(ImGuiTestEngine* e)
                 cpu_fine_clip_rect = &ctx->GenericVars.Color1; // :)
 
             // Set up test string.
-            if (ctx->GenericVars.StrLarge.empty())
+            if (str.empty())
             {
                 if (test_variant & PerfTestTextFlags_TextLong)
                 {
@@ -1113,7 +1122,7 @@ void RegisterTests_Perf(ImGuiTestEngine* e)
                     t = IM_REGISTER_TEST(e, "perf", "");
                     t->SetOwnedName(test_name.c_str());
                     t->ArgVariant = (PerfTestTextFlags_TextShort << i) | (PerfTestTextFlags_NoWrapWidth << j) | (PerfTestTextFlags_NoCpuFineClipRect << k);
-                    t->GuiFunc = measure_text_rendering_perf;
+                    t->GuiFunc = gui_func_measure_text_rendering_perf;
                     t->TestFunc = PerfCaptureFunc;
                 }
             }
