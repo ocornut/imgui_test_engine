@@ -8,7 +8,7 @@
 #include "imgui_internal.h"
 #include "imgui_te_utils.h"
 #include "thirdparty/Str/Str.h"
-#include <time.h> // time(), localtime()
+#include <time.h>               // time(), localtime()
 #if IMGUI_TEST_ENGINE_ENABLE_IMPLOT
 #include "implot.h"
 #include "implot_internal.h"
@@ -375,7 +375,7 @@ static int PerfToolCountBuilds(ImGuiPerfTool* perftool, bool only_visible)
 static bool InputDate(const char* label, char* date, int date_len, bool valid)
 {
     ImGui::SetNextItemWidth(ImGui::CalcTextSize("YYYY-MM-DD").x + ImGui::GetStyle().FramePadding.x * 2.0f);
-    bool date_valid = *date == 0 || (IsDateValid(date) && valid/*strcmp(_FilterDateFrom, _FilterDateTo) <= 0*/);
+    const bool date_valid = date[0] == 0 || (IsDateValid(date) && valid);
     if (!date_valid)
     {
         ImGui::PushStyleColor(ImGuiCol_Border, IM_COL32(255, 0, 0, 255));
@@ -390,11 +390,18 @@ static bool InputDate(const char* label, char* date, int date_len, bool valid)
     return date_changed;
 }
 
-static void FormatDate(ImU64 microseconds, Str* out_date)
+static void FormatDate(ImU64 microseconds, char* buf, size_t buf_size)
 {
     time_t timestamp = (time_t)(microseconds / 1000000);
     tm* time = localtime(&timestamp);
-    out_date->appendf("%04d-%02d-%02d %02d:%02d:%02d", time->tm_year + 1900, time->tm_mon + 1, time->tm_mday, time->tm_hour, time->tm_min, time->tm_sec);
+    ImFormatString(buf, buf_size, "%04d-%02d-%02d", time->tm_year + 1900, time->tm_mon + 1, time->tm_mday);
+}
+
+static void FormatDateAndTime(ImU64 microseconds, char* buf, size_t buf_size)
+{
+    time_t timestamp = (time_t)(microseconds / 1000000);
+    tm* time = localtime(&timestamp);
+    ImFormatString(buf, buf_size, "%04d-%02d-%02d %02d:%02d:%02d", time->tm_year + 1900, time->tm_mon + 1, time->tm_mday, time->tm_hour, time->tm_min, time->tm_sec);
 }
 
 static void RenderFilterInput(ImGuiPerfTool* perf, const char* hint, float width = -FLT_MIN)
@@ -413,9 +420,9 @@ static bool RenderMultiSelectFilter(ImGuiPerfTool* perf, const char* filter_hint
     ImGuiIO& io = ImGui::GetIO();
     ImGuiStorage& visibility = perf->_Visibility;
     bool modified = false;
-    RenderFilterInput(perf, filter_hint, -ImGui::CalcTextSize("?").x - g.Style.ItemSpacing.x);
+    RenderFilterInput(perf, filter_hint, -(ImGui::CalcTextSize("(?)").x + g.Style.ItemSpacing.x));
     ImGui::SameLine();
-    ImGui::TextDisabled("?");
+    ImGui::TextDisabled("(?)");
     if (ImGui::IsItemHovered())
         ImGui::SetTooltip("Hold CTRL to invert other items.\nHold SHIFT to close popup instantly.");
 
@@ -440,7 +447,7 @@ static bool RenderMultiSelectFilter(ImGuiPerfTool* perf, const char* filter_hint
     }
 
     // Render perf labels in reversed order. Labels are sorted, but stored in reversed order to render them on the plot
-    // from top down (implot renders stuff from bottom up).
+    // from top down (ImPlot renders stuff from bottom up).
     int filtered_entries = 0;
     for (int i = labels->Size - 1; i >= 0; i--)
     {
@@ -478,7 +485,7 @@ static bool RenderMultiSelectFilter(ImGuiPerfTool* perf, const char* filter_hint
     return modified;
 }
 
-// Copied from ImPlot::SetupFinish().
+// Based on ImPlot::SetupFinish().
 #if IMGUI_TEST_ENGINE_ENABLE_IMPLOT
 static ImRect ImPlotGetYTickRect(int t, int y = 0)
 {
@@ -501,7 +508,7 @@ static ImRect ImPlotGetYTickRect(int t, int y = 0)
     }
     return result;
 }
-#endif
+#endif // #if IMGUI_TEST_ENGINE_ENABLE_IMPLOT
 
 ImGuiPerfTool::ImGuiPerfTool()
 {
@@ -609,7 +616,7 @@ void ImGuiPerfTool::_Rebuild()
         // Find perf test runs for this particular batch and accumulate them.
         for (int i = 0; i < num_visible_labels; i++)
         {
-            // This inner loop walks all antries that belong to current batch. Due to sorting we are sure that batch
+            // This inner loop walks all entries that belong to current batch. Due to sorting we are sure that batch
             // always starts with `entry`, and all entries that belong to a batch (whether we combine by build info or not)
             // will be grouped in _SrcData.
             ImGuiPerfToolEntry* aggregate = &batch.Entries.Data[i];
@@ -971,9 +978,9 @@ bool ImGuiPerfTool::SaveHtmlReport(const char* file_name, const char* image_file
                 {
                 case 0:
                 {
-                    Str16 date;
-                    FormatDate(entry->Timestamp, &date);
-                    fprintf(fp, "| %s ", date.c_str());
+                    char date[64];
+                    FormatDateAndTime(entry->Timestamp, date, IM_ARRAYSIZE(date));
+                    fprintf(fp, "| %s ", date);
                     break;
                 }
                 case 1:  fprintf(fp, "| %s ", entry->TestName);             break;
@@ -1033,7 +1040,7 @@ void ImGuiPerfTool::ShowUI(ImGuiTestEngine* engine)
 
     // Date filter
     ImGui::AlignTextToFramePadding();
-    ImGui::TextUnformatted("InputDate:");
+    ImGui::TextUnformatted("Date Range:");
     ImGui::SameLine();
 
     bool dirty = _Batches.empty();
@@ -1083,8 +1090,7 @@ void ImGuiPerfTool::ShowUI(ImGuiTestEngine* engine)
             if (ImGui::MenuItem("Set Today"))
             {
                 time_t now = time(NULL);
-                struct tm* tm = localtime(&now);
-                ImFormatString(date, date_size, "%d-%02d-%02d", tm->tm_year + 1900, tm->tm_mon + 1, tm->tm_mday);
+                FormatDate((ImU64)now * 1000000, date, date_size);
                 dirty = true;
             }
             ImGui::EndPopup();
@@ -1133,11 +1139,11 @@ void ImGuiPerfTool::ShowUI(ImGuiTestEngine* engine)
         ImGui::SetTooltip("Generate a report and open it in the browser.");
 
     // Align help button to the right.
-    float help_pos = ImGui::GetWindowContentRegionMax().x - style.FramePadding.x * 2 - ImGui::CalcTextSize("?").x;
+    float help_pos = ImGui::GetWindowContentRegionMax().x - style.FramePadding.x * 2 - ImGui::CalcTextSize("(?)").x;
     if (help_pos > ImGui::GetCursorPosX())
         ImGui::SetCursorPosX(help_pos);
 
-    ImGui::TextDisabled("?");
+    ImGui::TextDisabled("(?)");
     if (ImGui::IsItemHovered())
     {
         ImGui::BeginTooltip();
@@ -1178,11 +1184,10 @@ void ImGuiPerfTool::ShowUI(ImGuiTestEngine* engine)
             for (ImGuiPerfToolEntry& entry : _SrcData)
             {
                 bool new_row = true;
-                ImGuiID hash;
                 const char* properties[] = { entry.GitBranchName, entry.BuildType, entry.Cpu, entry.OS, entry.Compiler };
                 for (int i = 0; i < IM_ARRAYSIZE(properties); i++)
                 {
-                    hash = ImHashStr(properties[i]);
+                    ImGuiID hash = ImHashStr(properties[i]);
                     if (temp_set.GetBool(hash))
                         continue;
                     temp_set.SetBool(hash, true);
@@ -1562,9 +1567,9 @@ void ImGuiPerfTool::_ShowEntriesTable()
         // Date
         if (ImGui::TableNextColumn())
         {
-            Str16 date;
-            FormatDate(entry->Timestamp, &date);
-            ImGui::TextUnformatted(date.c_str());
+            char date[64];
+            FormatDateAndTime(entry->Timestamp, date, IM_ARRAYSIZE(date));
+            ImGui::TextUnformatted(date);
         }
 
         // Build info
