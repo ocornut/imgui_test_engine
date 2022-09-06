@@ -595,7 +595,7 @@ int main(int argc, char** argv)
         ShowUI();
 
 #if IMGUI_VERSION_NUM >= 18701
-        if (!test_io.ConfigMouseDrawCursor && !test_io.IsCapturing && ImGuiTestEngine_UseSimulatedInputs(engine))
+        if (!test_io.ConfigMouseDrawCursor && !test_io.IsCapturing && ImGuiTestEngine_IsUsingSimulatedInputs(engine))
             ImGui::RenderMouseCursor(io.MousePos, 1.0f, ImGui::GetMouseCursor(), IM_COL32_WHITE, IM_COL32_BLACK, IM_COL32(0, 0, 0, 48));
             //ImGui::RenderMouseCursor(io.MousePos, 1.2f, ImGui::GetMouseCursor(), IM_COL32(255, 255, 120, 255), IM_COL32(0, 0, 0, 255), IM_COL32(0, 0, 0, 60)); // Custom yellow cursor
 #endif

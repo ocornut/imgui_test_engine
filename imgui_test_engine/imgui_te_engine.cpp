@@ -304,7 +304,7 @@ void    ImGuiTestEngine_Stop(ImGuiTestEngine* engine)
     engine->Started = false;
 }
 
-void    ImGuiTestEngine_CoroutineStopRequest(ImGuiTestEngine* engine)
+static void    ImGuiTestEngine_CoroutineStopRequest(ImGuiTestEngine* engine)
 {
     if (engine->TestQueueCoroutine != NULL)
         engine->TestQueueCoroutineShouldExit = true;
@@ -515,7 +515,7 @@ void ImGuiTestEngine_ClearInput(ImGuiTestEngine* engine)
     ImGuiTestEngine_ApplyInputToImGuiContext(engine);
 }
 
-bool ImGuiTestEngine_UseSimulatedInputs(ImGuiTestEngine* engine)
+bool ImGuiTestEngine_IsUsingSimulatedInputs(ImGuiTestEngine* engine)
 {
     if (engine->UiContextActive)
         if (!ImGuiTestEngine_IsTestQueueEmpty(engine))
@@ -531,7 +531,7 @@ void ImGuiTestEngine_ApplyInputToImGuiContext(ImGuiTestEngine* engine)
     ImGuiContext& g = *engine->UiContextTarget;
     ImGuiIO& io = g.IO;
 
-    const bool use_simulated_inputs = ImGuiTestEngine_UseSimulatedInputs(engine);
+    const bool use_simulated_inputs = ImGuiTestEngine_IsUsingSimulatedInputs(engine);
     if (!use_simulated_inputs)
         return;
 
@@ -804,7 +804,7 @@ static void ImGuiTestEngine_PostRender(ImGuiTestEngine* engine, ImGuiContext* ui
     // (If were to instead set io.ConfigFlags |= ImGuiConfigFlags_NoMouseCursorChange in ImGuiTestEngine_RunTest() that would get us 99% of the way,
     // but unfortunately backend wouldn't restore normal shape after modified by OS decoration such as resize, so not enough..)
     ImGuiContext& g = *ui_ctx;
-    if (!engine->IO.ConfigMouseDrawCursor && !g.IO.MouseDrawCursor && ImGuiTestEngine_UseSimulatedInputs(engine))
+    if (!engine->IO.ConfigMouseDrawCursor && !g.IO.MouseDrawCursor && ImGuiTestEngine_IsUsingSimulatedInputs(engine))
         g.MouseCursor = ImGuiMouseCursor_Arrow;
 
     engine->CaptureContext.PostRender();

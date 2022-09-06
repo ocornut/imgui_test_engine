@@ -150,15 +150,16 @@ IMGUI_API ImGuiTestEngineIO&  ImGuiTestEngine_GetIO(ImGuiTestEngine* engine);
 
 // Functions: Main
 IMGUI_API ImGuiTest*          ImGuiTestEngine_RegisterTest(ImGuiTestEngine* engine, const char* category, const char* name, const char* src_file = NULL, int src_line = 0); // Prefer calling IM_REGISTER_TEST()
-IMGUI_API void                ImGuiTestEngine_QueueTests(ImGuiTestEngine* engine, ImGuiTestGroup group, const char* filter = NULL, ImGuiTestRunFlags run_flags = 0);
 IMGUI_API void                ImGuiTestEngine_QueueTest(ImGuiTestEngine* engine, ImGuiTest* test, ImGuiTestRunFlags run_flags = 0);
-IMGUI_API void                ImGuiTestEngine_AbortCurrentTest(ImGuiTestEngine* engine);
+IMGUI_API void                ImGuiTestEngine_QueueTests(ImGuiTestEngine* engine, ImGuiTestGroup group, const char* filter = NULL, ImGuiTestRunFlags run_flags = 0);
 IMGUI_API bool                ImGuiTestEngine_TryAbortEngine(ImGuiTestEngine* engine);
-IMGUI_API bool                ImGuiTestEngine_IsTestQueueEmpty(ImGuiTestEngine* engine);      // FIXME: Clarify difference between this and io.iSRunningTests
-IMGUI_API void                ImGuiTestEngine_CoroutineStopRequest(ImGuiTestEngine* engine);
+IMGUI_API void                ImGuiTestEngine_AbortCurrentTest(ImGuiTestEngine* engine);
+
+// Functions: Status Queries
+// FIXME: Clarify API to avoid function calls vs raw bools in ImGuiTestEngineIO
+IMGUI_API bool                ImGuiTestEngine_IsTestQueueEmpty(ImGuiTestEngine* engine);
+IMGUI_API bool                ImGuiTestEngine_IsUsingSimulatedInputs(ImGuiTestEngine* engine);
 IMGUI_API void                ImGuiTestEngine_GetResult(ImGuiTestEngine* engine, int& count_tested, int& success_count);
-IMGUI_API ImGuiPerfTool*      ImGuiTestEngine_GetPerfTool(ImGuiTestEngine* engine);
-IMGUI_API bool                ImGuiTestEngine_UseSimulatedInputs(ImGuiTestEngine* engine);
 
 // Functions: Crash Handling
 IMGUI_API void                ImGuiTestEngine_InstallDefaultCrashHandler();                         // Install default crash handler
@@ -166,6 +167,7 @@ IMGUI_API void                ImGuiTestEngine_CrashHandler();                   
 
 // Functions: Internal/Experimental
 IMGUI_API void                ImGuiTestEngine_RebootUiContext(ImGuiTestEngine* engine);
+IMGUI_API ImGuiPerfTool*      ImGuiTestEngine_GetPerfTool(ImGuiTestEngine* engine);
 
 // Function pointers for IO structure
 // (also see imgui_te_coroutine.h for coroutine functions)

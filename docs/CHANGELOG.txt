@@ -4,6 +4,9 @@ CHANGELOG
 ** For a while this is going to include only breaking changes.
 ** As we slowly transition toward releasing the test engine, this will become a more full fledged changelog.
 
+2022/09/05
+- TestEngine: renamed ImGuiTestEngine_UseSimulatedInputs() to ImGuiTestEngine_IsUsingSimulatedInputs().
+
 2022/09/02
 - TestEngine: removed ImGuiTestContext::NavCancel(): same as ->KeyPress(ImGuiKey_Escape);
   Follow on core lib which is moving away from the NavInput_ semantic, in favor of using ImGuiKey enum
