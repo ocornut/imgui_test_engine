@@ -1,5 +1,8 @@
 //-----------------------------------------------------------------------------
-// Simple Dear ImGui App Framework (using standard bindings)
+// Simple Dear ImGui App Framework (using standard backends)
+//-----------------------------------------------------------------------------
+// THIS IS FOR OUR OWN USE AND IS NOT SUPPORTED.
+// IF YOU USE IT PLEASE DON'T ASK QUESTIONS. WE MAY CHANGE API AT ANY TIME.
 //-----------------------------------------------------------------------------
 // Example usage:
 /*

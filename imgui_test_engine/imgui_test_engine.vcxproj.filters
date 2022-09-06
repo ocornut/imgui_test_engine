@@ -7,9 +7,6 @@
     <Filter Include="thirdparty">
       <UniqueIdentifier>{0161f28d-4d72-482e-a06e-96bf3647391e}</UniqueIdentifier>
     </Filter>
-    <Filter Include="thirdparty\gif-h">
-      <UniqueIdentifier>{38a34ed0-2d17-4c66-890a-80c659074e83}</UniqueIdentifier>
-    </Filter>
     <Filter Include="thirdparty\stb">
       <UniqueIdentifier>{addc1c25-b52a-4de3-9460-3179a671ddfc}</UniqueIdentifier>
     </Filter>

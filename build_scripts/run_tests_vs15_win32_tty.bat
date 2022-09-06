@@ -5,4 +5,4 @@ set PLATFORM=Win32
 set CONFIGURATION=Release
 set TEST_RUN_OPTIONS=-nogui -nopause -v2
 
-call build_and_run_tests.bat
+call run_tests_vs.bat

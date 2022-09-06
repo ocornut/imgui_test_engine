@@ -1,8 +1,8 @@
 @set PVS_DIR=C:\Program Files (x86)\PVS-Studio
 @set WORK_DIR=%~dp0
-@set IMGUI_DIR=%WORK_DIR%..\..\..\imgui_test_engine
-@set PROJ_DIR=%IMGUI_DIR%\imgui_tests
-@set PROJ_NAME=imgui_tests
+@set IMGUI_DIR=%WORK_DIR%..\..\imgui
+@set PROJ_DIR=%IMGUI_DIR%\examples\example_win32_directx11
+@set PROJ_NAME=example_win32_directx11
 
 @REM // warning: V1071 Consider inspecting the 'TreeNodeEx' function. The return value is not always used. Total calls: 10, discarded results: 1.
 @set EXCLUDED_CODES=-d V1071
