@@ -39,8 +39,12 @@
     <ClInclude Include="imgui_tests_imconfig.h">
       <Filter>imgui_tests</Filter>
     </ClInclude>
-    <ClInclude Include="..\imgui_tests\thirdparty\implot\implot.h" />
-    <ClInclude Include="..\imgui_tests\thirdparty\implot\implot_internal.h" />
+    <ClInclude Include="thirdparty\implot\implot_internal.h">
+      <Filter>shared</Filter>
+    </ClInclude>
+    <ClInclude Include="thirdparty\implot\implot.h">
+      <Filter>shared</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\imgui\imgui.cpp">
@@ -84,6 +88,15 @@
     </ClCompile>
     <ClCompile Include="imgui_tests_viewports.cpp">
       <Filter>imgui_tests</Filter>
+    </ClCompile>
+    <ClCompile Include="thirdparty\implot\implot_items.cpp">
+      <Filter>shared</Filter>
+    </ClCompile>
+    <ClCompile Include="thirdparty\implot\implot.cpp">
+      <Filter>shared</Filter>
+    </ClCompile>
+    <ClCompile Include="thirdparty\implot\implot_demo.cpp">
+      <Filter>shared</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

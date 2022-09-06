@@ -171,9 +171,6 @@
     <ClInclude Include="thirdparty\Str\Str.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\imgui_tests\thirdparty\implot\implot.cpp" />
-    <ClCompile Include="..\imgui_tests\thirdparty\implot\implot_demo.cpp" />
-    <ClCompile Include="..\imgui_tests\thirdparty\implot\implot_items.cpp" />
     <ClCompile Include="imgui_capture_tool.cpp" />
     <ClCompile Include="imgui_te_context.cpp" />
     <ClCompile Include="imgui_te_coroutine.cpp" />
