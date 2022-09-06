@@ -33,9 +33,10 @@ https://user-images.githubusercontent.com/8225057/182409619-cd3bf990-b383-4a6c-a
 
 See [Wiki](https://github.com/ocornut/imgui_test_engine/wiki) sections: 
 - [Overview](https://github.com/ocornut/imgui_test_engine/wiki/Overview)
-- [Setting Up](https://github.com/ocornut/imgui_test_engine/wiki/SettingUp)
-- [Automation API](https://github.com/ocornut/imgui_test_engine/wiki/AutomationAPI)
-- [Exporting Results](https://github.com/ocornut/imgui_test_engine/wiki/ExportingResults)
+- [Setting Up](https://github.com/ocornut/imgui_test_engine/wiki/Setting-Up)
+- [Automation API](https://github.com/ocornut/imgui_test_engine/wiki/Automation-API)
+- [Exporting Results](https://github.com/ocornut/imgui_test_engine/wiki/Exporting-Results)
+- [Screen & Video Captures](https://github.com/ocornut/imgui_test_engine/wiki/Screen-and-Video-Captures)
 
 ## Licenses
 
