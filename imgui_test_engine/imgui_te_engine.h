@@ -24,7 +24,6 @@ struct ImGuiTestItemList;           // A list of items
 struct ImGuiTestInputs;             // Simulated user inputs (will be fed into ImGuiIO by the test engine)
 
 struct ImGuiCaptureArgs;            // Parameters for ImGuiTestContext::CaptureXXX functions.
-struct ImGuiPerfTool;               // Performance tool instance
 
 typedef int ImGuiTestFlags;         // Flags: See ImGuiTestFlags_
 typedef int ImGuiTestCheckFlags;    // Flags: See ImGuiTestCheckFlags_
@@ -116,18 +115,17 @@ enum ImGuiTestRunFlags_
 // Functions
 //-------------------------------------------------------------------------
 
-// Hooks for core imgui/ library
+// Hooks for core imgui/ library (don't call directly)
 extern void         ImGuiTestEngineHook_ItemAdd(ImGuiContext* ui_ctx, const ImRect& bb, ImGuiID id);
 #ifdef IMGUI_HAS_IMSTR
 extern void         ImGuiTestEngineHook_ItemInfo(ImGuiContext* ui_ctx, ImGuiID id, ImStrv label, ImGuiItemStatusFlags flags);
 #else
 extern void         ImGuiTestEngineHook_ItemInfo(ImGuiContext* ui_ctx, ImGuiID id, const char* label, ImGuiItemStatusFlags flags);
-static inline int   ImStrcmp(const char* str1, const char* str2) { return strcmp(str1, str2); } // FIXME: to remove once this gets added in core library
 #endif
 extern void         ImGuiTestEngineHook_Log(ImGuiContext* ui_ctx, const char* fmt, ...);
 extern const char*  ImGuiTestEngine_FindItemDebugLabel(ImGuiContext* ui_ctx, ImGuiID id);
 
-// Functions
+// Functions (generally called via IM_CHECK() macros)
 IMGUI_API bool      ImGuiTestEngine_Check(const char* file, const char* func, int line, ImGuiTestCheckFlags flags, bool result, const char* expr);
 IMGUI_API bool      ImGuiTestEngine_CheckStrOp(const char* file, const char* func, int line, ImGuiTestCheckFlags flags, const char* op, const char* lhs_var, const char* lhs_value, const char* rhs_var, const char* rhs_value);
 IMGUI_API bool      ImGuiTestEngine_Error(const char* file, const char* func, int line, ImGuiTestCheckFlags flags, const char* fmt, ...);
@@ -147,9 +145,9 @@ IMGUI_API ImGuiTestEngineIO&  ImGuiTestEngine_GetIO(ImGuiTestEngine* engine);
 
 // Macros: Register Test
 #define IM_REGISTER_TEST(_ENGINE, _CATEGORY, _NAME)  ImGuiTestEngine_RegisterTest(_ENGINE, _CATEGORY, _NAME, __FILE__, __LINE__)
+IMGUI_API ImGuiTest*          ImGuiTestEngine_RegisterTest(ImGuiTestEngine* engine, const char* category, const char* name, const char* src_file = NULL, int src_line = 0); // Prefer calling IM_REGISTER_TEST()
 
 // Functions: Main
-IMGUI_API ImGuiTest*          ImGuiTestEngine_RegisterTest(ImGuiTestEngine* engine, const char* category, const char* name, const char* src_file = NULL, int src_line = 0); // Prefer calling IM_REGISTER_TEST()
 IMGUI_API void                ImGuiTestEngine_QueueTest(ImGuiTestEngine* engine, ImGuiTest* test, ImGuiTestRunFlags run_flags = 0);
 IMGUI_API void                ImGuiTestEngine_QueueTests(ImGuiTestEngine* engine, ImGuiTestGroup group, const char* filter = NULL, ImGuiTestRunFlags run_flags = 0);
 IMGUI_API bool                ImGuiTestEngine_TryAbortEngine(ImGuiTestEngine* engine);
@@ -165,17 +163,11 @@ IMGUI_API void                ImGuiTestEngine_GetResult(ImGuiTestEngine* engine,
 IMGUI_API void                ImGuiTestEngine_InstallDefaultCrashHandler();                         // Install default crash handler
 IMGUI_API void                ImGuiTestEngine_CrashHandler();                                       // Default crash handler, should be called from a custom crash handler if such exists
 
-// Functions: Internal/Experimental
-IMGUI_API void                ImGuiTestEngine_RebootUiContext(ImGuiTestEngine* engine);
-IMGUI_API ImGuiPerfTool*      ImGuiTestEngine_GetPerfTool(ImGuiTestEngine* engine);
-
-// Function pointers for IO structure
-// (also see imgui_te_coroutine.h for coroutine functions)
-typedef void        (ImGuiTestEngineSrcFileOpenFunc)(const char* filename, int line, void* user_data);
-
 //-----------------------------------------------------------------------------
 // IO structure to configure the test engine
 //-----------------------------------------------------------------------------
+
+typedef void (ImGuiTestEngineSrcFileOpenFunc)(const char* filename, int line, void* user_data);
 
 struct IMGUI_API ImGuiTestEngineIO
 {
@@ -242,6 +234,10 @@ struct IMGUI_API ImGuiTestEngineIO
     bool                        IsRequestingMaxAppSpeed = false;    // When running in fast mode: request app to skip vsync or even skip rendering if it wants
     bool                        IsCapturing = false;                // Capture is in progress
 };
+
+//-------------------------------------------------------------------------
+// ImGuiTestItemInfo
+//-------------------------------------------------------------------------
 
 // Information about a given item, result of an ItemInfo() query
 struct ImGuiTestItemInfo

@@ -23,7 +23,7 @@ typedef void (ImGuiTestCoroutineMainFunc)(void* data);
 // Coroutine support interface
 // Your app needs to return and implement this.
 // You can '#define IMGUI_TEST_ENGINE_ENABLE_COROUTINE_STDTHREAD_IMPL 1' in your imconfig file to use a default implementation using std::thread
-// Documentation: https://github.com/ocornut/imgui_test_engine/wiki/SettingUp
+// Documentation: https://github.com/ocornut/imgui_test_engine/wiki/Setting-Up
 struct IMGUI_API ImGuiTestCoroutineInterface
 {
     // Create a new coroutine

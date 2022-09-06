@@ -17,6 +17,7 @@
 // For tests
 #include "imgui_te_engine.h"
 #include "imgui_te_context.h"
+#include "imgui_te_internal.h"  // ImGuiTestEngine_GetPerfTool()
 #include "imgui_capture_tool.h"
 
 // Terminology:

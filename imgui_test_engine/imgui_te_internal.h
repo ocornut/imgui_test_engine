@@ -183,6 +183,9 @@ void                ImGuiTestEngine_SetDeltaTime(ImGuiTestEngine* engine, float 
 int                 ImGuiTestEngine_GetFrameCount(ImGuiTestEngine* engine);
 bool                ImGuiTestEngine_PassFilter(ImGuiTest* test, const char* filter);
 
+void                ImGuiTestEngine_RebootUiContext(ImGuiTestEngine* engine);
+ImGuiPerfTool*      ImGuiTestEngine_GetPerfTool(ImGuiTestEngine* engine);
+
 // Screen/Video Capturing
 bool                ImGuiTestEngine_CaptureScreenshot(ImGuiTestEngine* engine, ImGuiCaptureArgs* args);
 bool                ImGuiTestEngine_CaptureBeginVideo(ImGuiTestEngine* engine, ImGuiCaptureArgs* args);
