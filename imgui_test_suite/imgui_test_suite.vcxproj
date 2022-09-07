@@ -171,7 +171,7 @@
     <ClCompile Include="..\..\imgui\imgui_tables.cpp" />
     <ClCompile Include="..\..\imgui\imgui_widgets.cpp" />
     <ClCompile Include="..\shared\imgui_app.cpp" />
-    <ClCompile Include="imgui_tests.cpp" />
+    <ClCompile Include="imgui_tests_core.cpp" />
     <ClCompile Include="imgui_tests_docking.cpp" />
     <ClCompile Include="imgui_tests_nav.cpp" />
     <ClCompile Include="imgui_tests_perf.cpp" />

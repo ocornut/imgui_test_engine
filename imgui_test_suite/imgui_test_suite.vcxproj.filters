@@ -59,7 +59,7 @@
     <ClCompile Include="..\..\imgui\imgui_widgets.cpp">
       <Filter>imgui</Filter>
     </ClCompile>
-    <ClCompile Include="imgui_tests.cpp">
+    <ClCompile Include="imgui_tests_core.cpp">
       <Filter>imgui_test_suite</Filter>
     </ClCompile>
     <ClCompile Include="imgui_test_suite_main.cpp">
