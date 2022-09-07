@@ -331,7 +331,7 @@ static void LoadFonts(float dpi_scale)
     //cfg.RasterizerMultiply = 1.1f;
 
     Str64 base_font_dir;
-    if (ImFileFindInParents("imgui_tests/assets/fonts/", 3, &base_font_dir))
+    if (ImFileFindInParents("imgui_test_suite/assets/fonts/", 3, &base_font_dir))
     {
         io.Fonts->AddFontFromFileTTF(Str64f("%s/%s", base_font_dir.c_str(), "NotoSans-Regular.ttf").c_str(), IM_ROUND(16.0f * dpi_scale));
         io.Fonts->AddFontFromFileTTF(Str64f("%s/%s", base_font_dir.c_str(), "Roboto-Medium.ttf").c_str(), IM_ROUND(16.0f * dpi_scale));
@@ -361,8 +361,8 @@ static void QueueTests(ImGuiTestEngine* engine)
 
     // Special groups are supported by ImGuiTestEngine_QueueTests(): "all", "tests", "perfs"
     // Following command line examples are functionally identical:
-    //  ./imgui_tests tests,-window
-    //  ./imgui_tests -- tests -window
+    //  ./imgui_test_suite tests,-window
+    //  ./imgui_test_suite -- tests -window
     // See comments above ImGuiTestEngine_QueueTests() for more details.
     Str256 filter;
     for (int n = 0; n < g_App.TestsToRun.Size; n++)
@@ -381,9 +381,9 @@ static void FindVideoEncoder(char* out, int out_len)
 {
     IM_ASSERT(out != NULL);
     IM_ASSERT(out_len > 0);
-    Str64 encoder_path("imgui_tests/tools/");                // Assume execution from root repository folder by default (linux/macos)
+    Str64 encoder_path("imgui_test_suite/tools/");           // Assume execution from root repository folder by default (linux/macos)
     if (!ImFileExist(encoder_path.c_str()))
-        ImFileFindInParents("tools/", 3, &encoder_path);     // Assume execution from imgui_tests/$(Configuration) (visual studio)
+        ImFileFindInParents("tools/", 3, &encoder_path);     // Assume execution from imgui_test_suite/$(Configuration) (visual studio)
     encoder_path.append("ffmpeg");                           // Look for ffmpeg executable in tools folder (windows/macos)
 #if _WIN32
     encoder_path.append(".exe");
@@ -544,7 +544,7 @@ int main(int argc, char** argv)
 
     // Create window
     ImGuiApp* app_window = g_App.AppWindow;
-    app_window->InitCreateWindow(app_window, "Dear ImGui: Test Engine", ImVec2(1440, 900));
+    app_window->InitCreateWindow(app_window, "Dear ImGui Test Suite", ImVec2(1440, 900));
     app_window->InitBackends(app_window);
 
     // Register and queue our tests

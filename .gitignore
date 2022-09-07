@@ -8,7 +8,7 @@ build_scripts/config/build_config.bat
 
 ## Application artifacts
 output/
-imgui_tests/output/
+imgui_test_suite/output/
 imgui.ini
 
 ## Build artifacts
@@ -23,11 +23,11 @@ imgui_test_engine/build/*
 imgui_test_engine/Debug/*
 imgui_test_engine/Release/*
 imgui_test_engine/x64/*
-imgui_tests/build/*
-imgui_tests/Debug/*
-imgui_tests/Release/*
-imgui_tests/x64/*
-imgui_tests/imgui_tests
+imgui_test_suite/build/*
+imgui_test_suite/Debug/*
+imgui_test_suite/Release/*
+imgui_test_suite/x64/*
+imgui_test_suite/imgui_test_suite
 
 ## Visual Studio artifacts
 .vs/*

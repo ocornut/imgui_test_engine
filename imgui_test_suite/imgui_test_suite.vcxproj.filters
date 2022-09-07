@@ -7,7 +7,7 @@
     <Filter Include="shared">
       <UniqueIdentifier>{67f74698-0094-4ad4-b787-ab144bdfd6a2}</UniqueIdentifier>
     </Filter>
-    <Filter Include="imgui_tests">
+    <Filter Include="imgui_test_suite">
       <UniqueIdentifier>{08e36723-ce4f-4cff-9662-c40801cf1acf}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
@@ -31,13 +31,13 @@
       <Filter>imgui</Filter>
     </ClInclude>
     <ClInclude Include="imgui_tests.h">
-      <Filter>imgui_tests</Filter>
+      <Filter>imgui_test_suite</Filter>
     </ClInclude>
     <ClInclude Include="..\shared\imgui_app.h">
       <Filter>shared</Filter>
     </ClInclude>
-    <ClInclude Include="imgui_tests_imconfig.h">
-      <Filter>imgui_tests</Filter>
+    <ClInclude Include="imgui_test_suite_imconfig.h">
+      <Filter>imgui_test_suite</Filter>
     </ClInclude>
     <ClInclude Include="thirdparty\implot\implot_internal.h">
       <Filter>shared</Filter>
@@ -60,34 +60,34 @@
       <Filter>imgui</Filter>
     </ClCompile>
     <ClCompile Include="imgui_tests.cpp">
-      <Filter>imgui_tests</Filter>
+      <Filter>imgui_test_suite</Filter>
     </ClCompile>
-    <ClCompile Include="main.cpp">
-      <Filter>imgui_tests</Filter>
+    <ClCompile Include="imgui_test_suite_main.cpp">
+      <Filter>imgui_test_suite</Filter>
     </ClCompile>
     <ClCompile Include="..\shared\imgui_app.cpp">
       <Filter>shared</Filter>
     </ClCompile>
     <ClCompile Include="imgui_tests_tables.cpp">
-      <Filter>imgui_tests</Filter>
+      <Filter>imgui_test_suite</Filter>
     </ClCompile>
     <ClCompile Include="imgui_tests_docking.cpp">
-      <Filter>imgui_tests</Filter>
+      <Filter>imgui_test_suite</Filter>
     </ClCompile>
     <ClCompile Include="imgui_tests_perf.cpp">
-      <Filter>imgui_tests</Filter>
+      <Filter>imgui_test_suite</Filter>
     </ClCompile>
     <ClCompile Include="imgui_tests_widgets.cpp">
-      <Filter>imgui_tests</Filter>
+      <Filter>imgui_test_suite</Filter>
     </ClCompile>
     <ClCompile Include="..\..\imgui\imgui_tables.cpp">
       <Filter>imgui</Filter>
     </ClCompile>
     <ClCompile Include="imgui_tests_nav.cpp">
-      <Filter>imgui_tests</Filter>
+      <Filter>imgui_test_suite</Filter>
     </ClCompile>
     <ClCompile Include="imgui_tests_viewports.cpp">
-      <Filter>imgui_tests</Filter>
+      <Filter>imgui_test_suite</Filter>
     </ClCompile>
     <ClCompile Include="thirdparty\implot\implot_items.cpp">
       <Filter>shared</Filter>

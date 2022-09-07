@@ -1,1 +1,1 @@
-#include "../imgui_tests/imgui_tests_imconfig.h"
+#include "../imgui_test_suite/imgui_test_suite_imconfig.h"

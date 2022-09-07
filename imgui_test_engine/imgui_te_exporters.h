@@ -27,7 +27,7 @@
 //    - Install npm: https://docs.npmjs.com/downloading-and-installing-node-js-and-npm
 //    - Install viewer and view test results:
 //          npm install xunit-viewer
-//          imgui_tests -nopause -v2 -ve4 -nogui -export-file junit.xml tests
+//          imgui_test_suite -nopause -v2 -ve4 -nogui -export-file junit.xml tests
 //          node_modules/xunit-viewer/bin/xunit-viewer -r junit.xml -o junit.html
 //    - Open junit.html
 //

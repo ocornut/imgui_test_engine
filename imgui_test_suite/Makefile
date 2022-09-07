@@ -3,9 +3,9 @@
 # Compatible with MSYS2/MINGW, Ubuntu 14.04.1 and Mac OS X
 #
 
-EXE = imgui_tests
+EXE = imgui_test_suite
 IMGUI_DIR = ../../imgui
-SOURCES = main.cpp
+SOURCES = imgui_test_suite_main.cpp
 # FIXME: The paths look wrong here??
 SOURCES += ../imgui_tests.cpp ../imgui_tests_docking.cpp ../imgui_tests_nav.cpp ../imgui_tests_perf.cpp ../imgui_tests_tables.cpp ../imgui_tests_viewports.cpp ../imgui_tests_widgets.cpp
 SOURCES += ../imgui_te_context.cpp ../imgui_te_coroutine.cpp ../imgui_te_engine.cpp ../imgui_te_perftool.cpp ../imgui_te_ui.cpp ../imgui_te_utils.cpp ../imgui_capture_tool.cpp ../imgui_te_exporters.cpp
@@ -31,7 +31,7 @@ else
 endif
 
 ifeq ($(IMGUI_USER_CONFIG),)
-	IMGUI_USER_CONFIG = imgui_tests/imgui_tests_imconfig.h
+	IMGUI_USER_CONFIG = imgui_test_suite/imgui_test_suite_imconfig.h
 endif
 CFLAGS += -DIMGUI_USER_CONFIG=\"$(IMGUI_USER_CONFIG)\"
 

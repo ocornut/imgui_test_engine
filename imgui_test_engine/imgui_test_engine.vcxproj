@@ -90,8 +90,8 @@
     <ClCompile>
       <WarningLevel>Level4</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>..;..\..\imgui;..\..\imgui\backends;..\imgui_tests\thirdparty\implot;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>_UNICODE;UNICODE;IMGUI_USER_CONFIG="imgui_tests/imgui_tests_imconfig.h";%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>..;..\..\imgui;..\..\imgui\backends;..\imgui_test_suite\thirdparty\implot;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>_UNICODE;UNICODE;IMGUI_USER_CONFIG="imgui_test_suite/imgui_test_suite_imconfig.h";%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalOptions>%(AdditionalOptions) $(ClFlags)</AdditionalOptions>
     </ClCompile>
     <Link>
@@ -105,8 +105,8 @@
     <ClCompile>
       <WarningLevel>Level4</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>..;..\..\imgui;..\..\imgui\backends;..\imgui_tests\thirdparty\implot;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>_UNICODE;UNICODE;IMGUI_USER_CONFIG="imgui_tests/imgui_tests_imconfig.h";%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>..;..\..\imgui;..\..\imgui\backends;..\imgui_test_suite\thirdparty\implot;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>_UNICODE;UNICODE;IMGUI_USER_CONFIG="imgui_test_suite/imgui_test_suite_imconfig.h";%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalOptions>%(AdditionalOptions) $(ClFlags)</AdditionalOptions>
     </ClCompile>
     <Link>
@@ -122,9 +122,9 @@
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <AdditionalIncludeDirectories>..;..\..\imgui;..\..\imgui\backends;..\imgui_tests\thirdparty\implot;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..;..\..\imgui;..\..\imgui\backends;..\imgui_test_suite\thirdparty\implot;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <BufferSecurityCheck>false</BufferSecurityCheck>
-      <PreprocessorDefinitions>_UNICODE;UNICODE;IMGUI_USER_CONFIG="imgui_tests/imgui_tests_imconfig.h";%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_UNICODE;UNICODE;IMGUI_USER_CONFIG="imgui_test_suite/imgui_test_suite_imconfig.h";%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalOptions>%(AdditionalOptions) $(ClFlags)</AdditionalOptions>
     </ClCompile>
     <Link>
@@ -142,9 +142,9 @@
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <AdditionalIncludeDirectories>..;..\..\imgui;..\..\imgui\backends;..\imgui_tests\thirdparty\implot;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..;..\..\imgui;..\..\imgui\backends;..\imgui_test_suite\thirdparty\implot;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <BufferSecurityCheck>false</BufferSecurityCheck>
-      <PreprocessorDefinitions>_UNICODE;UNICODE;IMGUI_USER_CONFIG="imgui_tests/imgui_tests_imconfig.h";%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_UNICODE;UNICODE;IMGUI_USER_CONFIG="imgui_test_suite/imgui_test_suite_imconfig.h";%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalOptions>%(AdditionalOptions) $(ClFlags)</AdditionalOptions>
     </ClCompile>
     <Link>

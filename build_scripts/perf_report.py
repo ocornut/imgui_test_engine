@@ -36,7 +36,7 @@ def main():
     parser.add_argument('-r', '--run', nargs='?', const='perf', required=False, metavar='MASK',
                         help='Run tests matching specified mask (eg. perf_draw,perf_misc). Not specifying a mask will '
                              'run all perf tests.')
-    parser.add_argument('-p', '--preview', action='store_true', help='Preview results in imgui_tests after executing '
+    parser.add_argument('-p', '--preview', action='store_true', help='Preview results in imgui_test_suite after executing '
                                                                      'tests of each branch.')
     parser.add_argument('-o', '--output', nargs='?', const='capture_perf_report.html',
                         help='Report file name. Default: capture_perf_report.html')
@@ -44,9 +44,9 @@ def main():
     args = parser.parse_args()
 
     if os.name == 'nt':
-        imgui_tests_exe = '../imgui_tests/Release/imgui_tests.exe'
+        imgui_test_suite_exe = '../imgui_test_suite/Release/imgui_test_suite.exe'
     else:
-        imgui_tests_exe = '../imgui_tests/imgui_tests'
+        imgui_test_suite_exe = '../imgui_test_suite/imgui_test_suite'
     initial_branch = get_git_branch()
 
     if args.clean:
@@ -70,31 +70,31 @@ def main():
             try:
                 if os.name == 'nt':
                     msbuild = os.environ['WINDIR'] + '/Microsoft.NET/Framework/v4.0.30319/MSBuild.exe'
-                    subprocess.call([msbuild, '../imgui_tests/imgui_tests.vcxproj', '/t:Clean',
+                    subprocess.call([msbuild, '../imgui_test_suite/imgui_test_suite.vcxproj', '/t:Clean',
                                      '/p:Configuration=Release'])
-                    subprocess.call([msbuild, '../imgui_tests/imgui_tests.vcxproj', '/p:Configuration=Release',
+                    subprocess.call([msbuild, '../imgui_test_suite/imgui_test_suite.vcxproj', '/p:Configuration=Release',
                                      '/m:'+str(multiprocessing.cpu_count())])
                 else:
-                    subprocess.call(['make', '-C', '../imgui_tests', 'clean'])
-                    subprocess.call(['make', '-C', '../imgui_tests', '-j'+str(multiprocessing.cpu_count())])
+                    subprocess.call(['make', '-C', '../imgui_test_suite', 'clean'])
+                    subprocess.call(['make', '-C', '../imgui_test_suite', '-j'+str(multiprocessing.cpu_count())])
             except subprocess.CalledProcessError:
-                logging.error('Building imgui_tests on branch {} failed'.format(branch))
+                logging.error('Building imgui_test_suite on branch {} failed'.format(branch))
                 return -1
 
             try:
-                subprocess.call([imgui_tests_exe, '-nogui', '-nopause', '-v2', '-ve4', '-stressamount', str(args.stress),
+                subprocess.call([imgui_test_suite_exe, '-nogui', '-nopause', '-v2', '-ve4', '-stressamount', str(args.stress),
                                  args.run])
             except subprocess.CalledProcessError:
-                logging.error('imgui_tests returned an error when executing tests.')
+                logging.error('imgui_test_suite returned an error when executing tests.')
                 return -1
 
             if args.preview:
-                logging.info('Opening imgui_tests for result preview. Close the window to continue.')
+                logging.info('Opening imgui_test_suite for result preview. Close the window to continue.')
                 try:
                     # FIXME: This could open perf tool from the start.
-                    subprocess.call([imgui_tests_exe, '-gui', '-v2', '-ve4', '-stressamount', str(args.stress)])
+                    subprocess.call([imgui_test_suite_exe, '-gui', '-v2', '-ve4', '-stressamount', str(args.stress)])
                 except subprocess.CalledProcessError:
-                    logging.error('imgui_tests returned an error when previewing results.')
+                    logging.error('imgui_test_suite returned an error when previewing results.')
                     return -1
 
     if args.output:
@@ -105,9 +105,9 @@ def main():
         try:
             env = dict(os.environ)
             env['CAPTURE_PERF_REPORT_OUTPUT'] = args.output
-            subprocess.call([imgui_tests_exe, '-gui', '-nopause', '-v2', '-ve4', 'capture_perf_report'], env=env)
+            subprocess.call([imgui_test_suite_exe, '-gui', '-nopause', '-v2', '-ve4', 'capture_perf_report'], env=env)
         except subprocess.CalledProcessError:
-            logging.error('imgui_tests returned an error when generating a performance report.')
+            logging.error('imgui_test_suite returned an error when generating a performance report.')
             return -1
         else:
             if args.show:
