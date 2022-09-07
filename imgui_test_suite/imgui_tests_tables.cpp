@@ -6,7 +6,7 @@
 #include "imgui.h"
 #define IMGUI_DEFINE_MATH_OPERATORS
 #include "imgui_internal.h"
-#include "imgui_tests.h"
+#include "imgui_test_suite.h"
 #include "imgui_test_engine/imgui_te_engine.h"      // IM_REGISTER_TEST()
 #include "imgui_test_engine/imgui_te_context.h"
 #include "imgui_test_engine/imgui_te_utils.h"       // TableXXX hepers, FindFontByName(), etc.
@@ -141,7 +141,7 @@ static void HelperTableWithResizingPolicies(const char* table_id, ImGuiTableFlag
         else IM_ASSERT(0);
         ImGui::TableSetupColumn(Str16f("%c%d", policy, column + 1).c_str(), column_flags);
     }
-    ImFont* font = ImGui::FindFontByPrefix(TEST_APP_ALT_FONT_NAME);
+    ImFont* font = ImGui::FindFontByPrefix(TEST_SUITE_ALT_FONT_NAME);
     if (!font)
         IM_CHECK_NO_RET(font != NULL);
     ImGui::PushFont(font);

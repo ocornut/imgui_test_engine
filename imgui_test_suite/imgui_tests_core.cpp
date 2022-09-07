@@ -1,12 +1,12 @@
 // dear imgui
-// (tests: main)
+// (test suite app)
 
 #define _CRT_SECURE_NO_WARNINGS
 #include <limits.h>
 #include "imgui.h"
 #define IMGUI_DEFINE_MATH_OPERATORS
 #include "imgui_internal.h"
-#include "imgui_tests.h"
+#include "imgui_test_suite.h"
 #include "imgui_test_engine/imgui_te_engine.h"      // IM_REGISTER_TEST()
 #include "imgui_test_engine/imgui_te_context.h"
 #include "imgui_test_engine/imgui_te_utils.h"       // ImHashDecoratedPath()
@@ -5639,7 +5639,7 @@ void RegisterTests_Capture(ImGuiTestEngine* e)
 
         // Setup style
         // FIXME-TESTS: Ideally we'd want to be able to manipulate fonts
-        ImFont* font = ImGui::FindFontByPrefix(TEST_APP_ALT_FONT_NAME);
+        ImFont* font = ImGui::FindFontByPrefix(TEST_SUITE_ALT_FONT_NAME);
         IM_CHECK_SILENT(font != NULL);
         ImGui::PushFont(font);
         style.FrameRounding = style.ChildRounding = 0;
@@ -5732,7 +5732,7 @@ void RegisterTests_Capture(ImGuiTestEngine* e)
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         ImGui::SetNextWindowSize(ImVec2(440, 330));
-        ImFont* font = ImGui::FindFontByPrefix(TEST_APP_ALT_FONT_NAME);
+        ImFont* font = ImGui::FindFontByPrefix(TEST_SUITE_ALT_FONT_NAME);
         IM_CHECK_SILENT(font != NULL);
         ImGui::PushFont(font);
 
@@ -5844,15 +5844,15 @@ void RegisterTests_Capture(ImGuiTestEngine* e)
 #endif // IMGUI_TEST_ENGINE_ENABLE_CAPTURE
 }
 
-void RegisterTests(ImGuiTestEngine* e)
+void RegisterTests_All(ImGuiTestEngine* e)
 {
-    extern void RegisterTests_Docking(ImGuiTestEngine * e);     // imgui_tests_docking.cpp
-    extern void RegisterTests_Nav(ImGuiTestEngine * e);         // imgui_tests_nav.cpp
-    extern void RegisterTests_Perf(ImGuiTestEngine * e);        // imgui_tests_perf.cpp
-    extern void RegisterTests_Columns(ImGuiTestEngine * e);     // imgui_tests_tables.cpp
-    extern void RegisterTests_Table(ImGuiTestEngine * e);       // imgui_tests_tables.cpp
-    extern void RegisterTests_Viewports(ImGuiTestEngine * e);   // imgui_tests_viewports.cpp
-    extern void RegisterTests_Widgets(ImGuiTestEngine * e);     // imgui_tests_widgets.cpp
+    extern void RegisterTests_Docking(ImGuiTestEngine* e);      // imgui_tests_docking.cpp
+    extern void RegisterTests_Nav(ImGuiTestEngine* e);          // imgui_tests_nav.cpp
+    extern void RegisterTests_Perf(ImGuiTestEngine* e);         // imgui_tests_perf.cpp
+    extern void RegisterTests_Columns(ImGuiTestEngine* e);      // imgui_tests_tables.cpp
+    extern void RegisterTests_Table(ImGuiTestEngine* e);        // imgui_tests_tables.cpp
+    extern void RegisterTests_Viewports(ImGuiTestEngine* e);    // imgui_tests_viewports.cpp
+    extern void RegisterTests_Widgets(ImGuiTestEngine* e);      // imgui_tests_widgets.cpp
     extern void RegisterTests_PerfTool(ImGuiTestEngine* e);     // imgui_te_perftool.cpp
 
     // Tests

@@ -5,7 +5,7 @@
 
 EXE = imgui_test_suite
 IMGUI_DIR = ../../imgui
-SOURCES = imgui_test_suite_main.cpp
+SOURCES = imgui_test_suite.cpp
 # FIXME: The paths look wrong here??
 SOURCES += ../imgui_tests_core.cpp ../imgui_tests_docking.cpp ../imgui_tests_nav.cpp ../imgui_tests_perf.cpp ../imgui_tests_tables.cpp ../imgui_tests_viewports.cpp ../imgui_tests_widgets.cpp
 SOURCES += ../imgui_te_context.cpp ../imgui_te_coroutine.cpp ../imgui_te_engine.cpp ../imgui_te_perftool.cpp ../imgui_te_ui.cpp ../imgui_te_utils.cpp ../imgui_capture_tool.cpp ../imgui_te_exporters.cpp

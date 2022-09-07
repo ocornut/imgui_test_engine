@@ -58,7 +58,7 @@ static inline void DebugCrtDumpLeaks()
 #include "imgui.h"
 #include <stdio.h>
 #define IMGUI_DEFINE_MATH_OPERATORS
-#include "imgui_tests.h"
+#include "imgui_test_suite.h"
 #include "imgui_test_engine/imgui_te_engine.h"
 #include "imgui_test_engine/imgui_te_exporters.h"
 #include "imgui_test_engine/imgui_te_coroutine.h"
@@ -548,7 +548,7 @@ int main(int argc, char** argv)
     app_window->InitBackends(app_window);
 
     // Register and queue our tests
-    RegisterTests(engine);
+    RegisterTests_All(engine);
     QueueTests(engine);
     bool exit_after_tests = !ImGuiTestEngine_IsTestQueueEmpty(engine) && !g_App.OptPauseOnExit;
 

@@ -30,9 +30,6 @@
     <ClInclude Include="..\..\imgui\imconfig.h">
       <Filter>imgui</Filter>
     </ClInclude>
-    <ClInclude Include="imgui_tests.h">
-      <Filter>imgui_test_suite</Filter>
-    </ClInclude>
     <ClInclude Include="..\shared\imgui_app.h">
       <Filter>shared</Filter>
     </ClInclude>
@@ -44,6 +41,9 @@
     </ClInclude>
     <ClInclude Include="thirdparty\implot\implot.h">
       <Filter>shared</Filter>
+    </ClInclude>
+    <ClInclude Include="imgui_test_suite.h">
+      <Filter>imgui_test_suite</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -60,9 +60,6 @@
       <Filter>imgui</Filter>
     </ClCompile>
     <ClCompile Include="imgui_tests_core.cpp">
-      <Filter>imgui_test_suite</Filter>
-    </ClCompile>
-    <ClCompile Include="imgui_test_suite_main.cpp">
       <Filter>imgui_test_suite</Filter>
     </ClCompile>
     <ClCompile Include="..\shared\imgui_app.cpp">
@@ -97,6 +94,9 @@
     </ClCompile>
     <ClCompile Include="thirdparty\implot\implot_demo.cpp">
       <Filter>shared</Filter>
+    </ClCompile>
+    <ClCompile Include="imgui_test_suite.cpp">
+      <Filter>imgui_test_suite</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

@@ -159,7 +159,7 @@
     <ClInclude Include="..\..\imgui\imstb_textedit.h" />
     <ClInclude Include="..\..\imgui\imstb_truetype.h" />
     <ClInclude Include="..\shared\imgui_app.h" />
-    <ClInclude Include="imgui_tests.h" />
+    <ClInclude Include="imgui_test_suite.h" />
     <ClInclude Include="imgui_test_suite_imconfig.h" />
     <ClInclude Include="thirdparty\implot\implot.h" />
     <ClInclude Include="thirdparty\implot\implot_internal.h" />
@@ -178,7 +178,7 @@
     <ClCompile Include="imgui_tests_tables.cpp" />
     <ClCompile Include="imgui_tests_viewports.cpp" />
     <ClCompile Include="imgui_tests_widgets.cpp" />
-    <ClCompile Include="imgui_test_suite_main.cpp" />
+    <ClCompile Include="imgui_test_suite.cpp" />
     <ClCompile Include="thirdparty\implot\implot.cpp" />
     <ClCompile Include="thirdparty\implot\implot_demo.cpp" />
     <ClCompile Include="thirdparty\implot\implot_items.cpp" />
