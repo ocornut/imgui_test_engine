@@ -1163,7 +1163,7 @@ void ImGuiPerfTool::ShowUI(ImGuiTestEngine* engine)
         bool show_all = ImGui::Button("Show All");
         ImGui::SameLine();
         bool hide_all = ImGui::Button("Hide All");
-        if (ImGui::BeginTable("PerfInfo", IM_ARRAYSIZE(columns), ImGuiTableFlags_Borders | ImGuiTableFlags_SizingFixedFit))
+        if (ImGui::BeginTable("Builds", IM_ARRAYSIZE(columns), ImGuiTableFlags_Borders | ImGuiTableFlags_SizingFixedFit))
         {
             for (int i = 0; i < IM_ARRAYSIZE(columns); i++)
                 ImGui::TableSetupColumn(columns[i]);
@@ -1181,27 +1181,30 @@ void ImGuiPerfTool::ShowUI(ImGuiTestEngine* engine)
                 }
             }
 
-            bool visible = true;
-            for (ImGuiPerfToolEntry& entry : _SrcData)
+            int property_offsets[] = {
+                IM_OFFSETOF(ImGuiPerfToolEntry, GitBranchName),
+                IM_OFFSETOF(ImGuiPerfToolEntry, BuildType),
+                IM_OFFSETOF(ImGuiPerfToolEntry, Cpu),
+                IM_OFFSETOF(ImGuiPerfToolEntry, OS),
+                IM_OFFSETOF(ImGuiPerfToolEntry, Compiler),
+            };
+
+            ImGui::TableNextRow();
+            for (int i = 0; i < IM_ARRAYSIZE(property_offsets); i++)
             {
-                bool new_row = true;
-                const char* properties[] = { entry.GitBranchName, entry.BuildType, entry.Cpu, entry.OS, entry.Compiler };
-                for (int i = 0; i < IM_ARRAYSIZE(properties); i++)
+                ImGui::TableSetColumnIndex(i);
+                for (ImGuiPerfToolEntry& entry : _SrcData)
                 {
-                    ImGuiID hash = ImHashStr(properties[i]);
+                    const char* property = *(const char**)((const char*)&entry + property_offsets[i]);
+                    ImGuiID hash = ImHashStr(property);
                     if (temp_set.GetBool(hash))
                         continue;
                     temp_set.SetBool(hash, true);
 
-                    if (new_row)
-                        ImGui::TableNextRow();
-                    new_row = false;
-
-                    ImGui::TableSetColumnIndex(i);
-                    visible = _Visibility.GetBool(hash, true) || show_all;
+                    bool visible = _Visibility.GetBool(hash, true) || show_all;
                     if (hide_all)
                         visible = false;
-                    bool modified = ImGui::Checkbox(properties[i], &visible) || show_all || hide_all;
+                    bool modified = ImGui::Checkbox(property, &visible) || show_all || hide_all;
                     _Visibility.SetBool(hash, visible);
                     if (modified)
                     {
