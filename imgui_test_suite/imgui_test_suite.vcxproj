@@ -178,6 +178,7 @@
     <ClCompile Include="imgui_tests_tables.cpp" />
     <ClCompile Include="imgui_tests_viewports.cpp" />
     <ClCompile Include="imgui_tests_widgets.cpp" />
+    <ClCompile Include="imgui_tests_widgets_inputtext.cpp" />
     <ClCompile Include="imgui_test_suite.cpp" />
     <ClCompile Include="thirdparty\implot\implot.cpp" />
     <ClCompile Include="thirdparty\implot\implot_demo.cpp" />

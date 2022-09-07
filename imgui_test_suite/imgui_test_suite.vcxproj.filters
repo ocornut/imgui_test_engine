@@ -98,6 +98,9 @@
     <ClCompile Include="imgui_test_suite.cpp">
       <Filter>imgui_test_suite</Filter>
     </ClCompile>
+    <ClCompile Include="imgui_tests_widgets_inputtext.cpp">
+      <Filter>imgui_test_suite</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Natvis Include="..\..\imgui\misc\debuggers\imgui.natvis">
