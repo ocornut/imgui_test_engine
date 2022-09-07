@@ -23,38 +23,22 @@
 //#define CMDLINE_ARGS  "-nogui -nothrottle perf_stress_hash"
 
 //-------------------------------------------------------------------------
+// Includes & Compiler Stuff
+//-------------------------------------------------------------------------
 
 #ifdef _WIN32
 #define DEBUG_CRT
-#endif
-
-#ifdef DEBUG_CRT
 #define _CRTDBG_MAP_ALLOC
 #include <stdlib.h>
 #include <crtdbg.h>
-static inline void DebugCrtInit(long break_alloc)
-{
-    _CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
-    _CrtSetReportMode(_CRT_ERROR, _CRTDBG_MODE_DEBUG);
-    if (break_alloc != 0)
-        _CrtSetBreakAlloc(break_alloc);
-}
-
-static inline void DebugCrtDumpLeaks()
-{
-    _CrtDumpMemoryLeaks();
-}
 #endif // #ifdef DEBUG_CRT
-
-//-------------------------------------------------------------------------
 
 // Visual Studio warnings
 #ifdef _MSC_VER
 #pragma warning (disable: 4996)     // 'This function or variable may be unsafe': strcpy, strdup, sprintf, vsnprintf, sscanf, fopen
 #endif
 
-//-------------------------------------------------------------------------
-
+// Includes
 #include "imgui.h"
 #include <stdio.h>
 #define IMGUI_DEFINE_MATH_OPERATORS
@@ -67,13 +51,13 @@ static inline void DebugCrtDumpLeaks()
 #include "imgui_test_engine/imgui_capture_tool.h"
 #include "imgui_test_engine/thirdparty/Str/Str.h"
 
-// imgui_app
+// imgui_app (this is a helper to wrap multiple backends)
 #ifndef IMGUI_APP_IMPLEMENTATION
 #define IMGUI_APP_IMPLEMENTATION 1
 #endif
 #include "shared/imgui_app.h"
 
-// implot
+// ImPlot (optional for users of test engine, but we use it in test suite)
 #if IMGUI_TEST_ENGINE_ENABLE_IMPLOT
 #include "thirdparty/implot/implot.h"
 #endif
@@ -86,42 +70,51 @@ static void*   MallocWrapper(size_t size, void* user_data)    { IM_UNUSED(user_d
 static void    FreeWrapper(void* ptr, void* user_data)        { IM_UNUSED(user_data); free(ptr); }
 
 //-------------------------------------------------------------------------
+// Forward Declarations
+//-------------------------------------------------------------------------
+
+struct TestSuiteApp;
+static void TestSuite_ShowUI(TestSuiteApp* app);
+static void TestSuite_PrintCommandLineHelp();
+static bool TestSuite_ParseCommandLineOptions(TestSuiteApp* app, int argc, char** argv);
+static void TestSuite_QueueTests(TestSuiteApp* app);
+static void TestSuite_LoadFonts(float dpi_scale);
+
+//-------------------------------------------------------------------------
 // Test Application
 //-------------------------------------------------------------------------
 
 struct ImGuiApp;
 
-struct TestApp
+struct TestSuiteApp
 {
-    bool                    Quit = false;
-    ImGuiApp*               AppWindow = NULL;
-    ImGuiTestEngine*        TestEngine = NULL;
-    ImU64                   LastTime = 0;
-    ImVec4                  ClearColor = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
+    // Main State
+    bool                        Quit = false;
+    ImGuiApp*                   AppWindow = NULL;
+    ImGuiTestEngine*            TestEngine = NULL;
+    ImVec4                      ClearColor = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
 
     // Command-line options
-    bool                    OptGui = false;
-    bool                    OptGuiFunc = false;
-    ImGuiTestRunSpeed       OptRunSpeed = ImGuiTestRunSpeed_Fast;
-    ImGuiTestVerboseLevel   OptVerboseLevelBasic = ImGuiTestVerboseLevel_COUNT; // Default is set in main.cpp depending on -gui/-nogui
-    ImGuiTestVerboseLevel   OptVerboseLevelError = ImGuiTestVerboseLevel_COUNT; // "
-    bool                    OptNoThrottle = false;
-    bool                    OptPauseOnExit = true;
-    bool                    OptViewports = false;
-    bool                    OptMockViewports = false;
-    bool                    OptCaptureEnabled = true;
-    int                     OptStressAmount = 5;
-    Str128                  OptSourceFileOpener;
-    Str128                  OptExportFilename;
+    bool                        OptGui = false;
+    bool                        OptGuiFunc = false;
+    ImGuiTestRunSpeed           OptRunSpeed = ImGuiTestRunSpeed_Fast;
+    ImGuiTestVerboseLevel       OptVerboseLevelBasic = ImGuiTestVerboseLevel_COUNT; // Default is set in main.cpp depending on -gui/-nogui
+    ImGuiTestVerboseLevel       OptVerboseLevelError = ImGuiTestVerboseLevel_COUNT; // "
+    bool                        OptNoThrottle = false;
+    bool                        OptPauseOnExit = true;
+    bool                        OptViewports = false;
+    bool                        OptMockViewports = false;
+    bool                        OptCaptureEnabled = true;
+    int                         OptStressAmount = 5;
+    Str128                      OptSourceFileOpener;
+    Str128                      OptExportFilename;
     ImGuiTestEngineExportFormat OptExportFormat = ImGuiTestEngineExportFormat_JUnitXml;
-    ImVector<char*>         TestsToRun;
+    ImVector<char*>             TestsToRun;
 };
 
-TestApp g_App;
-
-static void ShowUI()
+static void TestSuite_ShowUI(TestSuiteApp* app)
 {
-    ImGuiTestEngine_ShowTestEngineWindows(g_App.TestEngine, NULL);
+    ImGuiTestEngine_ShowTestEngineWindows(app->TestEngine, NULL);
 
     static bool show_demo_window = true;
     static bool show_another_window = false;
@@ -142,7 +135,7 @@ static void ShowUI()
         ImGui::Checkbox("Another Window", &show_another_window);
 
         ImGui::SliderFloat("float", &f, 0.0f, 1.0f);            // Edit 1 float using a slider from 0.0f to 1.0f
-        ImGui::ColorEdit3("clear color", (float*)&g_App.ClearColor); // Edit 3 floats representing a color
+        ImGui::ColorEdit3("clear color", (float*)&app->ClearColor); // Edit 3 floats representing a color
 
         if (ImGui::Button("Button"))                            // Buttons return true when clicked (most widgets return true when edited/activated)
             counter++;
@@ -164,148 +157,118 @@ static void ShowUI()
     }
 }
 
-static bool ParseCommandLineOptions(int argc, char** argv)
+static void TestSuite_PrintCommandLineHelp()
+{
+    printf("Options:\n");
+    printf("  -h                       : show command-line help.\n");
+    printf("  -v                       : verbose mode (same as -v3 -ve4)\n");
+    printf("  -v0/-v1/-v2/-v3/-v4      : verbose level [v0: silent, v1: errors, v2: headers & warnings, v3: info, v4: debug]\n");
+    printf("  -ve0/-ve1/-ve2/-ve3/-ve4 : verbose level for errored tests [same as above]\n");
+    printf("  -gui/-nogui              : enable gui/interactive mode.\n");
+    printf("  -guifunc                 : run test GuiFunc only (no TestFunc).\n");
+    printf("  -slow                    : run automation at feeble human speed.\n");
+    printf("  -nothrottle              : run GUI app without throttling/vsync by default.\n");
+    printf("  -nopause                 : don't pause application on exit.\n");
+    printf("  -nocapture               : don't capture any images or video.\n");
+    printf("  -stressamount <int>      : set performance test duration multiplier (default: 5)\n");
+    printf("  -fileopener <file>       : provide a bat/cmd/shell script to open source file.\n");
+    printf("  -export-file <file>      : save test run results in specified file.\n");
+    printf("  -export-format <format>   : save test run results in specified format. (default: junit)\n");
+    printf("Tests:\n");
+    printf("   all/tests/perf          : queue by groups: all, only tests, only performance benchmarks.\n");
+    printf("   [pattern]               : queue all tests containing the word [pattern].\n");
+    printf("   [-pattern]              : queue all tests not containing the word [pattern].\n");
+    printf("   [^pattern]              : queue all tests starting with the word [pattern].\n");
+}
+
+static bool TestSuite_ParseCommandLineOptions(TestSuiteApp* app, int argc, char** argv)
 {
     bool end_of_options = false;
     for (int n = 1; n < argc; n++)
     {
-        if (!end_of_options && argv[n][0] == '-')
+        if (end_of_options || argv[n][0] != '-')
         {
-            // Command-line option
-            if (strcmp(argv[n], "-v") == 0)
+            // Queue test name or test pattern
+            app->TestsToRun.push_back(ImStrdup(argv[n]));
+            continue;
+        }
+
+        // Parse Command-line option
+        if (strcmp(argv[n], "-v") == 0)
+        {
+            app->OptVerboseLevelBasic = ImGuiTestVerboseLevel_Info;
+            app->OptVerboseLevelError = ImGuiTestVerboseLevel_Debug;
+        }
+        else if (strcmp(argv[n], "--") == 0)            { end_of_options = true; }
+        else if (strcmp(argv[n], "-v0") == 0)           { app->OptVerboseLevelBasic = ImGuiTestVerboseLevel_Silent; }
+        else if (strcmp(argv[n], "-v1") == 0)           { app->OptVerboseLevelBasic = ImGuiTestVerboseLevel_Error; }
+        else if (strcmp(argv[n], "-v2") == 0)           { app->OptVerboseLevelBasic = ImGuiTestVerboseLevel_Warning; }
+        else if (strcmp(argv[n], "-v3") == 0)           { app->OptVerboseLevelBasic = ImGuiTestVerboseLevel_Info; }
+        else if (strcmp(argv[n], "-v4") == 0)           { app->OptVerboseLevelBasic = ImGuiTestVerboseLevel_Debug; }
+        else if (strcmp(argv[n], "-ve0") == 0)          { app->OptVerboseLevelError = ImGuiTestVerboseLevel_Silent; }
+        else if (strcmp(argv[n], "-ve1") == 0)          { app->OptVerboseLevelError = ImGuiTestVerboseLevel_Error; }
+        else if (strcmp(argv[n], "-ve2") == 0)          { app->OptVerboseLevelError = ImGuiTestVerboseLevel_Warning; }
+        else if (strcmp(argv[n], "-ve3") == 0)          { app->OptVerboseLevelError = ImGuiTestVerboseLevel_Info; }
+        else if (strcmp(argv[n], "-ve4") == 0)          { app->OptVerboseLevelError = ImGuiTestVerboseLevel_Debug; }
+        else if (strcmp(argv[n], "-gui") == 0)          { app->OptGui = true; }
+        else if (strcmp(argv[n], "-nogui") == 0)        { app->OptGui = false; }
+        else if (strcmp(argv[n], "-guifunc") == 0)      { app->OptGuiFunc = true; }
+        else if (strcmp(argv[n], "-fast") == 0)         { app->OptRunSpeed = ImGuiTestRunSpeed_Fast; app->OptNoThrottle = true; }
+        else if (strcmp(argv[n], "-slow") == 0)         { app->OptRunSpeed = ImGuiTestRunSpeed_Normal; app->OptNoThrottle = false; }
+        else if (strcmp(argv[n], "-nothrottle") == 0)   { app->OptNoThrottle = true; }
+        else if (strcmp(argv[n], "-nopause") == 0)      { app->OptPauseOnExit = false; }
+        else if (strcmp(argv[n], "-nocapture") == 0)    { app->OptCaptureEnabled = false; }
+        else if (strcmp(argv[n], "-viewport") == 0)     { app->OptViewports = true; }
+        else if (strcmp(argv[n], "-viewport-mock") == 0){ app->OptViewports = app->OptMockViewports = true; }
+        else if (strcmp(argv[n], "-stressamount") == 0 && n + 1 < argc)
+        {
+            app->OptStressAmount = atoi(argv[n + 1]);
+            n++;
+        }
+        else if (strcmp(argv[n], "-fileopener") == 0 && n + 1 < argc)
+        {
+            app->OptSourceFileOpener = argv[n + 1];
+            ImPathFixSeparatorsForCurrentOS(app->OptSourceFileOpener.c_str());
+            n++;
+        }
+        else if (strcmp(argv[n], "-export-format") == 0 && n + 1 < argc)
+        {
+            if (strcmp(argv[n + 1], "junit") == 0)
             {
-                g_App.OptVerboseLevelBasic = ImGuiTestVerboseLevel_Info;
-                g_App.OptVerboseLevelError = ImGuiTestVerboseLevel_Debug;
-            }
-            else if (strcmp(argv[n], "-v0") == 0)   { g_App.OptVerboseLevelBasic = ImGuiTestVerboseLevel_Silent; }
-            else if (strcmp(argv[n], "-v1") == 0)   { g_App.OptVerboseLevelBasic = ImGuiTestVerboseLevel_Error; }
-            else if (strcmp(argv[n], "-v2") == 0)   { g_App.OptVerboseLevelBasic = ImGuiTestVerboseLevel_Warning; }
-            else if (strcmp(argv[n], "-v3") == 0)   { g_App.OptVerboseLevelBasic = ImGuiTestVerboseLevel_Info; }
-            else if (strcmp(argv[n], "-v4") == 0)   { g_App.OptVerboseLevelBasic = ImGuiTestVerboseLevel_Debug; }
-            else if (strcmp(argv[n], "-ve0") == 0)  { g_App.OptVerboseLevelError = ImGuiTestVerboseLevel_Silent; }
-            else if (strcmp(argv[n], "-ve1") == 0)  { g_App.OptVerboseLevelError = ImGuiTestVerboseLevel_Error; }
-            else if (strcmp(argv[n], "-ve2") == 0)  { g_App.OptVerboseLevelError = ImGuiTestVerboseLevel_Warning; }
-            else if (strcmp(argv[n], "-ve3") == 0)  { g_App.OptVerboseLevelError = ImGuiTestVerboseLevel_Info; }
-            else if (strcmp(argv[n], "-ve4") == 0)  { g_App.OptVerboseLevelError = ImGuiTestVerboseLevel_Debug; }
-            else if (strcmp(argv[n], "-gui") == 0)
-            {
-                g_App.OptGui = true;
-            }
-            else if (strcmp(argv[n], "-nogui") == 0)
-            {
-                g_App.OptGui = false;
-            }
-            else if (strcmp(argv[n], "-guifunc") == 0)
-            {
-                g_App.OptGuiFunc = true;
-            }
-            else if (strcmp(argv[n], "-fast") == 0)
-            {
-                g_App.OptRunSpeed = ImGuiTestRunSpeed_Fast;
-                g_App.OptNoThrottle = true;
-            }
-            else if (strcmp(argv[n], "-slow") == 0)
-            {
-                g_App.OptRunSpeed = ImGuiTestRunSpeed_Normal;
-                g_App.OptNoThrottle = false;
-            }
-            else if (strcmp(argv[n], "-nothrottle") == 0)
-            {
-                g_App.OptNoThrottle = true;
-            }
-            else if (strcmp(argv[n], "-nopause") == 0)
-            {
-                g_App.OptPauseOnExit = false;
-            }
-            else if (strcmp(argv[n], "-nocapture") == 0)
-            {
-                g_App.OptCaptureEnabled = false;
-            }
-            else if (strcmp(argv[n], "-viewport") == 0)
-            {
-                g_App.OptViewports = true;
-            }
-            else if (strcmp(argv[n], "-viewport-mock") == 0)
-            {
-                g_App.OptViewports = g_App.OptMockViewports = true;
-            }
-            else if (strcmp(argv[n], "-stressamount") == 0 && n+1 < argc)
-            {
-                g_App.OptStressAmount = atoi(argv[n + 1]);
-                n++;
-            }
-            else if (strcmp(argv[n], "-fileopener") == 0 && n + 1 < argc)
-            {
-                g_App.OptSourceFileOpener = argv[n + 1];
-                ImPathFixSeparatorsForCurrentOS(g_App.OptSourceFileOpener.c_str());
-                n++;
-            }
-            else if (strcmp(argv[n], "-export-format") == 0 && n + 1 < argc)
-            {
-                if (strcmp(argv[n + 1], "junit") == 0)
-                {
-                    g_App.OptExportFormat = ImGuiTestEngineExportFormat_JUnitXml;
-                }
-                else
-                {
-                    fprintf(stderr, "Unknown value '%s' passed to '-export-format'.", argv[n + 1]);
-                    fprintf(stderr, "Possible values:\n");
-                    fprintf(stderr, "- junit\n");
-                }
-            }
-            else if (strcmp(argv[n], "-export-file") == 0 && n + 1 < argc)
-            {
-                g_App.OptExportFilename = argv[n + 1];
-            }
-            else if (strcmp(argv[n], "--") == 0)
-            {
-                end_of_options = true;
+                app->OptExportFormat = ImGuiTestEngineExportFormat_JUnitXml;
             }
             else
             {
-                printf("Syntax: %s <options> [tests...]\n", argv[0]);
-                printf("Options:\n");
-                printf("  -h                       : show command-line help.\n");
-                printf("  -v                       : verbose mode (same as -v3 -ve4)\n");
-                printf("  -v0/-v1/-v2/-v3/-v4      : verbose level [v0: silent, v1: errors, v2: headers & warnings, v3: info, v4: debug]\n");
-                printf("  -ve0/-ve1/-ve2/-ve3/-ve4 : verbose level for errored tests [same as above]\n");
-                printf("  -gui/-nogui              : enable gui/interactive mode.\n");
-                printf("  -guifunc                 : run test GuiFunc only (no TestFunc).\n");
-                printf("  -slow                    : run automation at feeble human speed.\n");
-                printf("  -nothrottle              : run GUI app without throttling/vsync by default.\n");
-                printf("  -nopause                 : don't pause application on exit.\n");
-                printf("  -nocapture               : don't capture any images or video.\n");
-                printf("  -stressamount <int>      : set performance test duration multiplier (default: 5)\n");
-                printf("  -fileopener <file>       : provide a bat/cmd/shell script to open source file.\n");
-                printf("  -export-file <file>      : save test run results in specified file.\n");
-                printf("  -export-format <format>   : save test run results in specified format. (default: junit)\n");
-                printf("Tests:\n");
-                printf("   all/tests/perf          : queue by groups: all, only tests, only performance benchmarks.\n");
-                printf("   [pattern]               : queue all tests containing the word [pattern].\n");
-                printf("   [-pattern]              : queue all tests not containing the word [pattern].\n");
-                printf("   [^pattern]              : queue all tests starting with the word [pattern].\n");
-                return false;
+                fprintf(stderr, "Unknown value '%s' passed to '-export-format'.", argv[n + 1]);
+                fprintf(stderr, "Possible values:\n");
+                fprintf(stderr, "- junit\n");
             }
+        }
+        else if (strcmp(argv[n], "-export-file") == 0 && n + 1 < argc)
+        {
+            app->OptExportFilename = argv[n + 1];
         }
         else
         {
-            // Add tests
-            g_App.TestsToRun.push_back(ImStrdup(argv[n]));
+            printf("Syntax: %s <options> [tests...]\n", argv[0]);
+            TestSuite_PrintCommandLineHelp();
+            return false;
         }
     }
     return true;
 }
 
 // Source file opener
-static void SrcFileOpenerFunc(const char* filename, int line, void*)
+static void SrcFileOpenerFunc(const char* filename, int line, void* user_data)
 {
-    if (g_App.OptSourceFileOpener.empty())
+    TestSuiteApp* app = (TestSuiteApp*)user_data;
+    if (app->OptSourceFileOpener.empty())
     {
         fprintf(stderr, "Executable needs to be called with a -fileopener argument!\n");
         return;
     }
 
-    Str256f cmd_line("%s %s %d", g_App.OptSourceFileOpener.c_str(), filename, line);
+    Str256f cmd_line("%s %s %d", app->OptSourceFileOpener.c_str(), filename, line);
     printf("Calling: '%s'\n", cmd_line.c_str());
     bool ret = ImOsCreateProcess(cmd_line.c_str());
     if (!ret)
@@ -320,7 +283,7 @@ enum ImGuiTestAppErrorCode
     ImGuiTestAppErrorCode_TestFailed = 2
 };
 
-static void LoadFonts(float dpi_scale)
+static void TestSuite_LoadFonts(float dpi_scale)
 {
     ImGuiIO& io = ImGui::GetIO();
 
@@ -348,15 +311,15 @@ static void LoadFonts(float dpi_scale)
     io.Fonts->Build();
 }
 
-static void QueueTests(ImGuiTestEngine* engine)
+static void TestSuite_QueueTests(TestSuiteApp* app)
 {
     // Non-interactive mode queue all tests by default
-    if (!g_App.OptGui && g_App.TestsToRun.empty())
-        g_App.TestsToRun.push_back(strdup("tests"));
+    if (!app->OptGui && app->TestsToRun.empty())
+        app->TestsToRun.push_back(strdup("tests"));
 
     // Queue requested tests
     ImGuiTestRunFlags run_flags = ImGuiTestRunFlags_CommandLine;
-    if (g_App.OptGuiFunc)
+    if (app->OptGuiFunc)
         run_flags |= ImGuiTestRunFlags_GuiFuncOnly;
 
     // Special groups are supported by ImGuiTestEngine_QueueTests(): "all", "tests", "perfs"
@@ -365,16 +328,16 @@ static void QueueTests(ImGuiTestEngine* engine)
     //  ./imgui_test_suite -- tests -window
     // See comments above ImGuiTestEngine_QueueTests() for more details.
     Str256 filter;
-    for (int n = 0; n < g_App.TestsToRun.Size; n++)
+    for (int n = 0; n < app->TestsToRun.Size; n++)
     {
-        char* test_spec = g_App.TestsToRun[n];
+        char* test_spec = app->TestsToRun[n];
         if (!filter.empty())
             filter.append(",");
         filter.append(test_spec);
         IM_FREE(test_spec);
     }
-    ImGuiTestEngine_QueueTests(engine, ImGuiTestGroup_Unknown, filter.c_str(), run_flags);
-    g_App.TestsToRun.clear();
+    ImGuiTestEngine_QueueTests(app->TestEngine, ImGuiTestGroup_Unknown, filter.c_str(), run_flags);
+    app->TestsToRun.clear();
 }
 
 static void FindVideoEncoder(char* out, int out_len)
@@ -397,112 +360,121 @@ static void FindVideoEncoder(char* out, int out_len)
         *out = 0;
 }
 
+// Win32 Debug CRT to help catch leaks. Replace parameter in main() to track a given allocation from the ID given in leak report.
+#ifdef DEBUG_CRT
+static inline void DebugCrtInit(long break_alloc)
+{
+    _CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
+    _CrtSetReportMode(_CRT_ERROR, _CRTDBG_MODE_DEBUG);
+    if (break_alloc != 0)
+        _CrtSetBreakAlloc(break_alloc);
+}
+
+static inline void DebugCrtDumpLeaks()
+{
+    _CrtDumpMemoryLeaks();
+}
+#endif // #ifdef DEBUG_CRT
+
+// Application entry point
 int main(int argc, char** argv)
 {
 #ifdef DEBUG_CRT
     DebugCrtInit(0);
 #endif
 
-    // Parse command-line arguments
+    TestSuiteApp GAppInstance;
+    TestSuiteApp* app = &GAppInstance;
+
+    // Default to GUI mode when a graphics backend is compiled
 #if defined(IMGUI_APP_WIN32_DX11) || defined(IMGUI_APP_SDL_GL2) || defined(IMGUI_APP_SDL_GL3) || defined(IMGUI_APP_GLFW_GL3)
-    g_App.OptGui = true;
+    app->OptGui = true;
 #endif
 
+    // Parse command-line arguments
 #ifdef CMDLINE_ARGS
     if (argc == 1)
     {
         printf("# [exe] %s\n", CMDLINE_ARGS);
         ImParseExtractArgcArgvFromCommandLine(&argc, (const char***)&argv, CMDLINE_ARGS);
-        if (!ParseCommandLineOptions(argc, argv))
+        if (!TestSuite_ParseCommandLineOptions(app, argc, argv))
             return ImGuiTestAppErrorCode_CommandLineError;
         free(argv);
     }
     else
 #endif
     {
-        if (!ParseCommandLineOptions(argc, argv))
+        if (!TestSuite_ParseCommandLineOptions(app, argc, argv))
             return ImGuiTestAppErrorCode_CommandLineError;
     }
     argv = NULL;
 
     // Default verbose levels differs whether we are in in GUI or Command-Line mode
-    if (g_App.OptGui)
+    if (app->OptGui)
     {
         // Default -v4 -ve4
-        if (g_App.OptVerboseLevelBasic == ImGuiTestVerboseLevel_COUNT)
-            g_App.OptVerboseLevelBasic = ImGuiTestVerboseLevel_Debug;
-        if (g_App.OptVerboseLevelError == ImGuiTestVerboseLevel_COUNT)
-            g_App.OptVerboseLevelError = ImGuiTestVerboseLevel_Debug;
+        if (app->OptVerboseLevelBasic == ImGuiTestVerboseLevel_COUNT)
+            app->OptVerboseLevelBasic = ImGuiTestVerboseLevel_Debug;
+        if (app->OptVerboseLevelError == ImGuiTestVerboseLevel_COUNT)
+            app->OptVerboseLevelError = ImGuiTestVerboseLevel_Debug;
     }
     else
     {
         // Default -v2 -ve4
-        if (g_App.OptVerboseLevelBasic == ImGuiTestVerboseLevel_COUNT)
-            g_App.OptVerboseLevelBasic = ImGuiTestVerboseLevel_Warning;
-        if (g_App.OptVerboseLevelError == ImGuiTestVerboseLevel_COUNT)
-            g_App.OptVerboseLevelError = ImGuiTestVerboseLevel_Debug;
+        if (app->OptVerboseLevelBasic == ImGuiTestVerboseLevel_COUNT)
+            app->OptVerboseLevelBasic = ImGuiTestVerboseLevel_Warning;
+        if (app->OptVerboseLevelError == ImGuiTestVerboseLevel_COUNT)
+            app->OptVerboseLevelError = ImGuiTestVerboseLevel_Debug;
     }
 
-    // Custom allocator functions, only to test overriding of allocators.
-    ImGui::SetAllocatorFunctions(&MallocWrapper, &FreeWrapper, &g_App);
-    ImGuiMemAllocFunc alloc_func;
-    ImGuiMemFreeFunc free_func;
-    void* alloc_user_data;
-    ImGui::GetAllocatorFunctions(&alloc_func, &free_func, &alloc_user_data);
-    IM_ASSERT(alloc_func == &MallocWrapper);
-    IM_ASSERT(free_func == &FreeWrapper);
-    IM_ASSERT(alloc_user_data == &g_App);
-
     // Setup Dear ImGui binding
+    // (We use a custom allocator but mostly to exercise that overriding)
     IMGUI_CHECKVERSION();
+    ImGui::SetAllocatorFunctions(&MallocWrapper, &FreeWrapper, app);
     ImGui::CreateContext();
 #if IMGUI_TEST_ENGINE_ENABLE_IMPLOT
     ImPlot::CreateContext();
 #endif
-    ImGui::StyleColorsDark();
 
+    // Setup Configuration & Style
     ImGuiIO& io = ImGui::GetIO();
     io.IniFilename = "imgui.ini";
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;  // Enable Keyboard Controls
-    //ImGuiStyle& style = ImGui::GetStyle();
-    //style.Colors[ImGuiCol_Border] = style.Colors[ImGuiCol_BorderShadow] = ImVec4(1.0f, 0, 0, 1.0f);
-    //style.FrameBorderSize = 1.0f;
-    //style.FrameRounding = 5.0f;
 #ifdef IMGUI_HAS_VIEWPORT
-    if (g_App.OptViewports)
+    if (app->OptViewports)
         io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
 #endif
 #ifdef IMGUI_HAS_DOCK
     io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
-    //io.ConfigDockingTabBarOnSingleWindows = true;
 #endif
+    ImGui::StyleColorsDark();
 
-    // Creates window
-    if (g_App.OptGui)
-        g_App.AppWindow = ImGuiApp_ImplDefault_Create();
-    if (g_App.AppWindow == NULL)
-        g_App.AppWindow = ImGuiApp_ImplNull_Create();
-    g_App.AppWindow->DpiAware = false;
-    g_App.AppWindow->MockViewports = g_App.OptViewports && g_App.OptMockViewports;
+    // Creates Application Wrapper
+    if (app->OptGui)
+        app->AppWindow = ImGuiApp_ImplDefault_Create();
+    if (app->AppWindow == NULL)
+        app->AppWindow = ImGuiApp_ImplNull_Create();
+    app->AppWindow->DpiAware = false;
+    app->AppWindow->MockViewports = app->OptViewports && app->OptMockViewports;
 
     // Create TestEngine context
-    IM_ASSERT(g_App.TestEngine == NULL);
+    IM_ASSERT(app->TestEngine == NULL);
     ImGuiTestEngine* engine = ImGuiTestEngine_CreateContext();
-    g_App.TestEngine = engine;
+    app->TestEngine = engine;
 
-    // Apply options
+    // Apply Options to TestEngine
     ImGuiTestEngineIO& test_io = ImGuiTestEngine_GetIO(engine);
-    test_io.ConfigRunSpeed = g_App.OptRunSpeed;
-    test_io.ConfigVerboseLevel = g_App.OptVerboseLevelBasic;
-    test_io.ConfigVerboseLevelOnError = g_App.OptVerboseLevelError;
-    test_io.ConfigNoThrottle = g_App.OptNoThrottle;
-    test_io.PerfStressAmount = g_App.OptStressAmount;
-    test_io.ConfigCaptureEnabled = g_App.OptCaptureEnabled;
+    test_io.ConfigRunSpeed = app->OptRunSpeed;
+    test_io.ConfigVerboseLevel = app->OptVerboseLevelBasic;
+    test_io.ConfigVerboseLevelOnError = app->OptVerboseLevelError;
+    test_io.ConfigNoThrottle = app->OptNoThrottle;
+    test_io.PerfStressAmount = app->OptStressAmount;
+    test_io.ConfigCaptureEnabled = app->OptCaptureEnabled;
     FindVideoEncoder(test_io.VideoCaptureEncoderPath, IM_ARRAYSIZE(test_io.VideoCaptureEncoderPath));
     ImStrncpy(test_io.VideoCaptureEncoderParams, IMGUI_CAPTURE_DEFAULT_VIDEO_PARAMS_FOR_FFMPEG, IM_ARRAYSIZE(test_io.VideoCaptureEncoderParams));
     ImStrncpy(test_io.GifCaptureEncoderParams, IMGUI_CAPTURE_DEFAULT_GIF_PARAMS_FOR_FFMPEG, IM_ARRAYSIZE(test_io.GifCaptureEncoderParams));
 
-    if (g_App.OptGui)
+    if (app->OptGui)
     {
         test_io.ConfigWatchdogWarning = 30.0f;
         test_io.ConfigWatchdogKillTest = 60.0f;
@@ -522,19 +494,19 @@ int main(int argc, char** argv)
         }
     }
 
-    // Set up functions
-    test_io.SrcFileOpenFunc = g_App.OptSourceFileOpener.empty() ? NULL : SrcFileOpenerFunc;
-    test_io.SrcFileOpenUserData = NULL;
+    // Set up source file opener and framebuffer capture functions
+    test_io.SrcFileOpenFunc = app->OptSourceFileOpener.empty() ? NULL : SrcFileOpenerFunc;
+    test_io.SrcFileOpenUserData = (void*)app;
     test_io.ScreenCaptureFunc = ImGuiApp_ScreenCaptureFunc;
-    test_io.ScreenCaptureUserData = (void*)g_App.AppWindow;
+    test_io.ScreenCaptureUserData = (void*)app->AppWindow;
 
     // Enable test result export
-    if (!g_App.OptExportFilename.empty())
+    if (!app->OptExportFilename.empty())
     {
-        if (!g_App.TestsToRun.empty())
+        if (!app->TestsToRun.empty())
         {
-            test_io.ExportResultsFilename = g_App.OptExportFilename.c_str();
-            test_io.ExportResultsFormat = !g_App.OptExportFilename.empty() ? g_App.OptExportFormat : ImGuiTestEngineExportFormat_None;
+            test_io.ExportResultsFilename = app->OptExportFilename.c_str();
+            test_io.ExportResultsFormat = !app->OptExportFilename.empty() ? app->OptExportFormat : ImGuiTestEngineExportFormat_None;
         }
         else
         {
@@ -542,15 +514,15 @@ int main(int argc, char** argv)
         }
     }
 
-    // Create window
-    ImGuiApp* app_window = g_App.AppWindow;
+    // Create Application Window, Initialize Backends
+    ImGuiApp* app_window = app->AppWindow;
     app_window->InitCreateWindow(app_window, "Dear ImGui Test Suite", ImVec2(1440, 900));
     app_window->InitBackends(app_window);
 
     // Register and queue our tests
     RegisterTests_All(engine);
-    QueueTests(engine);
-    bool exit_after_tests = !ImGuiTestEngine_IsTestQueueEmpty(engine) && !g_App.OptPauseOnExit;
+    TestSuite_QueueTests(app);
+    const bool exit_after_tests = !ImGuiTestEngine_IsTestQueueEmpty(engine) && !app->OptPauseOnExit;
 
     // Retrieve Git branch name, store in annotation field by default
     Str64 git_repo_path;
@@ -572,7 +544,7 @@ int main(int argc, char** argv)
     // Load fonts, Set DPI scale
     //const float dpi_scale = app_window->DpiScale;
     const float dpi_scale = 1.0f;
-    LoadFonts(dpi_scale);
+    TestSuite_LoadFonts(dpi_scale);
     ImGui::GetStyle().ScaleAllSizes(dpi_scale);
 
     // Main loop
@@ -592,8 +564,9 @@ int main(int argc, char** argv)
             break;
 
         ImGui::NewFrame();
-        ShowUI();
+        TestSuite_ShowUI(app);
 
+        // Optionally draw a non-ambiguous mouse cursor when simulated inputs are running
 #if IMGUI_VERSION_NUM >= 18701
         if (!test_io.ConfigMouseDrawCursor && !test_io.IsCapturing && ImGuiTestEngine_IsUsingSimulatedInputs(engine))
             ImGui::RenderMouseCursor(io.MousePos, 1.0f, ImGui::GetMouseCursor(), IM_COL32_WHITE, IM_COL32_BLACK, IM_COL32(0, 0, 0, 48));
@@ -602,11 +575,11 @@ int main(int argc, char** argv)
 
         ImGui::Render();
 
-        if (!g_App.OptGui && !test_io.IsRunningTests)
+        if (!app->OptGui && !test_io.IsRunningTests)
             break;
 
         app_window->Vsync = test_io.IsRequestingMaxAppSpeed ? false : true;
-        app_window->ClearColor = g_App.ClearColor;
+        app_window->ClearColor = app->ClearColor;
         app_window->Render(app_window);
 
         // Post-swap handler is REQUIRED in order to support screen capture
@@ -627,7 +600,7 @@ int main(int argc, char** argv)
             error_code = ImGuiTestAppErrorCode_TestFailed;
     }
 
-    // Shutdown window
+    // Shutdown Application Window
     app_window->ShutdownBackends(app_window);
     app_window->ShutdownCloseWindow(app_window);
 
@@ -637,10 +610,10 @@ int main(int argc, char** argv)
     ImPlot::DestroyContext();
 #endif
     ImGui::DestroyContext();
-    ImGuiTestEngine_DestroyContext(g_App.TestEngine);
+    ImGuiTestEngine_DestroyContext(app->TestEngine);
     app_window->Destroy(app_window);
 
-    if (g_App.OptPauseOnExit && !g_App.OptGui)
+    if (app->OptPauseOnExit && !app->OptGui)
     {
         printf("Press Enter to exit.\n");
         getc(stdin);
