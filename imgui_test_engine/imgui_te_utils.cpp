@@ -924,25 +924,6 @@ void    ImOsOutputDebugString(const char* message)
 }
 
 //-----------------------------------------------------------------------------
-// Miscellaneous functions
-//-----------------------------------------------------------------------------
-
-// FIXME: Think they are 16 combinations we may as well store them in literals?
-void GetImGuiKeyModsPrefixStr(ImGuiModFlags mod_flags, char* out_buf, size_t out_buf_size)
-{
-    if (mod_flags == 0)
-    {
-        out_buf[0] = 0;
-        return;
-    }
-    ImFormatString(out_buf, out_buf_size, "%s%s%s%s",
-        (mod_flags & ImGuiModFlags_Ctrl) ? "Ctrl+" : "",
-        (mod_flags & ImGuiModFlags_Alt) ? "Alt+" : "",
-        (mod_flags & ImGuiModFlags_Shift) ? "Shift+" : "",
-        (mod_flags & ImGuiModFlags_Super) ? "Super+" : "");
-}
-
-//-----------------------------------------------------------------------------
 // Str.h + InputText bindings
 //-----------------------------------------------------------------------------
 
@@ -1117,7 +1098,7 @@ void TableDiscardInstanceAndSettings(ImGuiID table_id)
 // Simple CSV parser
 //-----------------------------------------------------------------------------
 
-void ImGuiCSVParser::Clear()
+void ImGuiCsvParser::Clear()
 {
     Rows = Columns = 0;
     if (_Data != NULL)
@@ -1126,7 +1107,7 @@ void ImGuiCSVParser::Clear()
     _Index.clear();
 }
 
-bool ImGuiCSVParser::Load(const char* filename)
+bool ImGuiCsvParser::Load(const char* filename)
 {
     size_t len = 0;
     _Data = (char*)ImFileLoadToMemory(filename, "rb", &len, 1);

@@ -512,7 +512,7 @@ static ImRect ImPlotGetYTickRect(int t, int y = 0)
 
 ImGuiPerfTool::ImGuiPerfTool()
 {
-    _CSVParser = IM_NEW(ImGuiCSVParser)();
+    _CsvParser = IM_NEW(ImGuiCsvParser)();
     Clear();
 }
 
@@ -520,7 +520,7 @@ ImGuiPerfTool::~ImGuiPerfTool()
 {
     _SrcData.clear_destruct();
     _Batches.clear_destruct();
-    IM_DELETE(_CSVParser);
+    IM_DELETE(_CsvParser);
 }
 
 void ImGuiPerfTool::AddEntry(ImGuiPerfToolEntry* entry)
@@ -788,7 +788,7 @@ void ImGuiPerfTool::Clear()
     _Batches.clear_destruct();
     _Visibility.Clear();
     _SrcData.clear_destruct();
-    _CSVParser->Clear();
+    _CsvParser->Clear();
 
     ImStrncpy(_FilterDateFrom, "9999-99-99", IM_ARRAYSIZE(_FilterDateFrom));
     ImStrncpy(_FilterDateTo, "0000-00-00", IM_ARRAYSIZE(_FilterDateFrom));
@@ -801,26 +801,27 @@ bool ImGuiPerfTool::LoadCSV(const char* filename)
 
     Clear();
 
-    _CSVParser->Columns = 11;
-    if (!_CSVParser->Load(filename))
+    ImGuiCsvParser* parser = _CsvParser;
+    parser->Columns = 11;
+    if (!parser->Load(filename))
         return false;
 
     // Read perf test entries from CSV
-    for (int row = 0; row < _CSVParser->Rows; row++)
+    for (int row = 0; row < parser->Rows; row++)
     {
         ImGuiPerfToolEntry entry;
         int col = 0;
-        sscanf(_CSVParser->GetCell(row, col++), "%llu", &entry.Timestamp);
-        entry.Category = _CSVParser->GetCell(row, col++);
-        entry.TestName = _CSVParser->GetCell(row, col++);
-        sscanf(_CSVParser->GetCell(row, col++), "%lf", &entry.DtDeltaMs);
-        sscanf(_CSVParser->GetCell(row, col++), "x%d", &entry.PerfStressAmount);
-        entry.GitBranchName = _CSVParser->GetCell(row, col++);
-        entry.BuildType = _CSVParser->GetCell(row, col++);
-        entry.Cpu = _CSVParser->GetCell(row, col++);
-        entry.OS = _CSVParser->GetCell(row, col++);
-        entry.Compiler = _CSVParser->GetCell(row, col++);
-        entry.Date = _CSVParser->GetCell(row, col++);
+        sscanf(parser->GetCell(row, col++), "%llu", &entry.Timestamp);
+        entry.Category = parser->GetCell(row, col++);
+        entry.TestName = parser->GetCell(row, col++);
+        sscanf(parser->GetCell(row, col++), "%lf", &entry.DtDeltaMs);
+        sscanf(parser->GetCell(row, col++), "x%d", &entry.PerfStressAmount);
+        entry.GitBranchName = parser->GetCell(row, col++);
+        entry.BuildType = parser->GetCell(row, col++);
+        entry.Cpu = parser->GetCell(row, col++);
+        entry.OS = parser->GetCell(row, col++);
+        entry.Compiler = parser->GetCell(row, col++);
+        entry.Date = parser->GetCell(row, col++);
         AddEntry(&entry);
     }
 

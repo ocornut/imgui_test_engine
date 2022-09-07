@@ -131,9 +131,6 @@ void        ImOsOutputDebugString(const char* message);
 // Miscellaneous functions
 //-----------------------------------------------------------------------------
 
-// Inputs functions
-void        GetImGuiKeyModsPrefixStr(ImGuiModFlags mod_flags, char* out_buf, size_t out_buf_size);
-
 // Tables functions
 struct ImGuiTable;
 ImGuiID     TableGetHeaderID(ImGuiTable* table, const char* column, int instance_no = 0);
@@ -147,11 +144,13 @@ void        TableDiscardInstanceAndSettings(ImGuiID table_id);
 template<typename TYPE>
 struct ImMovingAverage
 {
+    // Internal Fields
     ImVector<TYPE>  Samples;
     TYPE            Accum;
     int             Idx;
     int             FillAmount;
 
+    // Functions
     ImMovingAverage()               { Accum = (TYPE)0; Idx = FillAmount = 0; }
     void    Init(int count)         { Samples.resize(count); memset(Samples.Data, 0, (size_t)Samples.Size * sizeof(TYPE)); Accum = (TYPE)0; Idx = FillAmount = 0; }
     void    AddSample(TYPE v)       { Accum += v - Samples[Idx]; Samples[Idx] = v; if (++Idx == Samples.Size) Idx = 0; if (FillAmount < Samples.Size) FillAmount++;  }
@@ -164,17 +163,19 @@ struct ImMovingAverage
 // Helper: Simple/dumb CSV parser
 //-----------------------------------------------------------------------------
 
-struct ImGuiCSVParser
+struct ImGuiCsvParser
 {
+    // Public fields
     int             Columns = 0;                    // Number of columns in CSV file.
     int             Rows = 0;                       // Number of rows in CSV file.
 
+    // Internal fields
     char*           _Data = NULL;                   // CSV file data.
     ImVector<char*> _Index;                         // CSV table: _Index[row * _Columns + col].
 
-    ImGuiCSVParser(int columns = -1)                { Columns = columns; }
-    ~ImGuiCSVParser()                               { Clear(); }
-
+    // Functions
+    ImGuiCsvParser(int columns = -1)                { Columns = columns; }
+    ~ImGuiCsvParser()                               { Clear(); }
     bool            Load(const char* file_name);    // Open and parse a CSV file.
     void            Clear();                        // Free allocated buffers.
     const char*     GetCell(int row, int col)       { IM_ASSERT(0 <= row && row < Rows && 0 <= col && col < Columns); return _Index[row * Columns + col]; }

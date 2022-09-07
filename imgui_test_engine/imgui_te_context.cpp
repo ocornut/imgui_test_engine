@@ -2220,61 +2220,61 @@ void    ImGuiTestContext::MouseWheel(ImVec2 delta)
     }
 }
 
-void    ImGuiTestContext::KeyDown(ImGuiKey key, ImGuiModFlags mod_flags)
+void    ImGuiTestContext::KeyDown(ImGuiKey key, ImGuiModFlags mods)
 {
     if (IsError())
         return;
 
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
-    char mod_flags_str[32];
-    GetImGuiKeyModsPrefixStr(mod_flags, mod_flags_str, IM_ARRAYSIZE(mod_flags_str));
-    LogDebug("KeyDown(%s%s)", mod_flags_str, (key != ImGuiKey_COUNT) ? ImGui::GetKeyName(key) : "");
+    char chord_desc[32];
+    ImGui::GetKeyChordName(mods, key, chord_desc, IM_ARRAYSIZE(chord_desc));
+    LogDebug("KeyDown(%s)", chord_desc);
     if (EngineIO->ConfigRunSpeed == ImGuiTestRunSpeed_Cinematic)
         SleepShort();
 
-    Inputs->Queue.push_back(ImGuiTestInput::FromKey(key, true, mod_flags));
+    Inputs->Queue.push_back(ImGuiTestInput::FromKeyChord(mods, key, true));
     Yield();
     Yield();
 }
 
-void    ImGuiTestContext::KeyUp(ImGuiKey key, ImGuiModFlags mod_flags)
+void    ImGuiTestContext::KeyUp(ImGuiKey key, ImGuiModFlags mods)
 {
     if (IsError())
         return;
 
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
-    char mod_flags_str[32];
-    GetImGuiKeyModsPrefixStr(mod_flags, mod_flags_str, IM_ARRAYSIZE(mod_flags_str));
-    LogDebug("KeyUp(%s%s)", mod_flags_str, (key != ImGuiKey_COUNT) ? ImGui::GetKeyName(key) : "");
+    char chord_desc[32];
+    ImGui::GetKeyChordName(mods, key, chord_desc, IM_ARRAYSIZE(chord_desc));
+    LogDebug("KeyUp(%s)", chord_desc);
     if (EngineIO->ConfigRunSpeed == ImGuiTestRunSpeed_Cinematic)
         SleepShort();
 
-    Inputs->Queue.push_back(ImGuiTestInput::FromKey(key, false, mod_flags));
+    Inputs->Queue.push_back(ImGuiTestInput::FromKeyChord(mods, key, false));
     Yield();
     Yield();
 }
 
-void    ImGuiTestContext::KeyPress(ImGuiKey key, ImGuiModFlags mod_flags, int count)
+void    ImGuiTestContext::KeyPress(ImGuiKey key, ImGuiModFlags mods, int count)
 {
     if (IsError())
         return;
 
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
-    char mod_flags_str[32];
-    GetImGuiKeyModsPrefixStr(mod_flags, mod_flags_str, IM_ARRAYSIZE(mod_flags_str));
-    LogDebug("KeyPress(%s%s, %d)", mod_flags_str, (key != ImGuiKey_COUNT) ? ImGui::GetKeyName(key) : "", count);
+    char chord_desc[32];
+    ImGui::GetKeyChordName(mods, key, chord_desc, IM_ARRAYSIZE(chord_desc));
+    LogDebug("KeyPress(%s, %d)", chord_desc, count);
     if (EngineIO->ConfigRunSpeed == ImGuiTestRunSpeed_Cinematic)
         SleepShort();
 
     while (count > 0)
     {
         count--;
-        Inputs->Queue.push_back(ImGuiTestInput::FromKey(key, true, mod_flags));
+        Inputs->Queue.push_back(ImGuiTestInput::FromKeyChord(mods, key, true));
         if (EngineIO->ConfigRunSpeed == ImGuiTestRunSpeed_Cinematic)
             SleepShort();
         else
             Yield();
-        Inputs->Queue.push_back(ImGuiTestInput::FromKey(key, false, mod_flags));
+        Inputs->Queue.push_back(ImGuiTestInput::FromKeyChord(mods, key, false));
         Yield();
 
         // Give a frame for items to react
@@ -2282,21 +2282,21 @@ void    ImGuiTestContext::KeyPress(ImGuiKey key, ImGuiModFlags mod_flags, int co
     }
 }
 
-void    ImGuiTestContext::KeyHold(ImGuiKey key, ImGuiModFlags mod_flags, float time)
+void    ImGuiTestContext::KeyHold(ImGuiKey key, ImGuiModFlags mods, float time)
 {
     if (IsError())
         return;
 
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
-    char mod_flags_str[32];
-    GetImGuiKeyModsPrefixStr(mod_flags, mod_flags_str, IM_ARRAYSIZE(mod_flags_str));
-    LogDebug("KeyHold(%s%s, %.2f sec)", mod_flags_str, (key != ImGuiKey_COUNT) ? ImGui::GetKeyName(key) : "", time);
+    char chord_desc[32];
+    ImGui::GetKeyChordName(mods, key, chord_desc, IM_ARRAYSIZE(chord_desc));
+    LogDebug("KeyHold(%s, %.2f sec)", chord_desc, time);
     if (EngineIO->ConfigRunSpeed == ImGuiTestRunSpeed_Cinematic)
         SleepStandard();
 
-    Inputs->Queue.push_back(ImGuiTestInput::FromKey(key, true, mod_flags));
+    Inputs->Queue.push_back(ImGuiTestInput::FromKeyChord(mods, key, true));
     SleepNoSkip(time, 1 / 100.0f);
-    Inputs->Queue.push_back(ImGuiTestInput::FromKey(key, false, mod_flags));
+    Inputs->Queue.push_back(ImGuiTestInput::FromKeyChord(mods, key, false));
     Yield(); // Give a frame for items to react
 }
 

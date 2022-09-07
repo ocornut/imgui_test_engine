@@ -607,7 +607,7 @@ void ImGuiTestEngine_ApplyInputToImGuiContext(ImGuiTestEngine* engine)
 #endif
                 }
 
-                if (input.Key != ImGuiKey_COUNT)
+                if (input.Key != ImGuiKey_None)
                     io.AddKeyEvent(input.Key, input.Down);
                 break;
             }

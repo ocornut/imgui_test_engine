@@ -359,13 +359,13 @@ struct IMGUI_API ImGuiTestContext
     void        MouseSetViewportID(ImGuiID viewport_id);
 
     // Keyboard inputs
-    void        KeyDown(ImGuiKey key, ImGuiModFlags mod_flags = 0);
-    void        KeyUp(ImGuiKey key, ImGuiModFlags mod_flags = 0);
-    void        KeyPress(ImGuiKey key, ImGuiModFlags mod_flags = 0, int count = 1);
-    void        KeyHold(ImGuiKey key, ImGuiModFlags mod_flags, float time);
-    void        KeyModDown(ImGuiModFlags mod_flags)      { KeyDown(ImGuiKey_COUNT, mod_flags); }
-    void        KeyModUp(ImGuiModFlags mod_flags)        { KeyUp(ImGuiKey_COUNT, mod_flags); }
-    void        KeyModPress(ImGuiModFlags mod_flags)     { KeyPress(ImGuiKey_COUNT, mod_flags); }
+    void        KeyDown(ImGuiKey key, ImGuiModFlags mods = 0);
+    void        KeyUp(ImGuiKey key, ImGuiModFlags mods = 0);
+    void        KeyPress(ImGuiKey key, ImGuiModFlags mods = 0, int count = 1);
+    void        KeyHold(ImGuiKey key, ImGuiModFlags mods, float time);
+    void        KeyModDown(ImGuiModFlags mods)              { KeyDown(ImGuiKey_None, mods); }
+    void        KeyModUp(ImGuiModFlags mods)                { KeyUp(ImGuiKey_None, mods); }
+    void        KeyModPress(ImGuiModFlags mods)             { KeyPress(ImGuiKey_None, mods); }
     void        KeyChars(const char* chars);                // Input characters
     void        KeyCharsAppend(const char* chars);          // Input characters at end of field
     void        KeyCharsAppendEnter(const char* chars);     // Input characters at end of field, press Enter

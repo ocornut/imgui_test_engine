@@ -6,7 +6,7 @@
 
 struct ImGuiPerfToolColumnInfo;
 struct ImGuiTestEngine;
-struct ImGuiCSVParser;
+struct ImGuiCsvParser;
 
 // [Internal] Perf log entry. Changes to this struct should be reflected in ImGuiTestContext::PerfCapture() and ImGuiTestEngine_Start().
 // This struct assumes strings stored here will be available until next ImGuiPerfTool::Clear() call. Fortunately we do not have to actively
@@ -93,7 +93,7 @@ struct IMGUI_API ImGuiPerfTool
     bool                        _PlotHoverTestLabel = false;
     bool                        _ReportGenerating = false;
     ImGuiStorage                _Visibility;
-    ImGuiCSVParser*             _CSVParser = NULL;
+    ImGuiCsvParser*             _CsvParser = NULL;              // We keep this around and point to its fields
 
     ImGuiPerfTool();
     ~ImGuiPerfTool();
