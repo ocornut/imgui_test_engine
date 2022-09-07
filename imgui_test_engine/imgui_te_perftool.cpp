@@ -1774,11 +1774,10 @@ void ImGuiPerfTool::_UnpackSortedKey(ImU64 key, int* batch_index, int* entry_ind
 
 static bool SetPerfToolWindowOpen(ImGuiTestContext* ctx, bool is_open)
 {
-    if (is_open)
-        ctx->MenuCheck("//Dear ImGui Test Engine/Tools/Perf Tool");
-    else
-        ctx->MenuUncheck("//Dear ImGui Test Engine/Tools/Perf Tool");
-    return false;
+    ctx->MenuClick("//Dear ImGui Test Engine/Tools");
+    bool was_open = (ctx->ItemInfo("//##Menu_00/Perf Tool")->StatusFlags & ImGuiItemStatusFlags_Checked) != 0;
+    ctx->MenuAction(is_open ? ImGuiTestAction_Check : ImGuiTestAction_Uncheck, "//Dear ImGui Test Engine/Tools/Perf Tool");
+    return was_open;
 }
 
 void RegisterTests_PerfTool(ImGuiTestEngine* e)
