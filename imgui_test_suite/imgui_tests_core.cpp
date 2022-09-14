@@ -5159,7 +5159,6 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
         ctx->ItemOpen("Layout & Scrolling");
         ctx->ItemOpen("Popups & Modal windows");
         ctx->ItemOpen("Tables & Columns");
-        ctx->ItemOpen("Filtering");
         ctx->ItemOpen("Inputs, Navigation & Focus");
     };
 
