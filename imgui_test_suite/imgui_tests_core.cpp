@@ -1164,6 +1164,7 @@ void RegisterTests_Window(ImGuiTestEngine* e)
                 ImGui::SetNextWindowPos(pos, ImGuiCond_Appearing);
                 ImGui::SetNextWindowSize(ImVec2(100, 200), ImGuiCond_Appearing);
                 ImGui::Begin("Window3", NULL, ImGuiWindowFlags_NoSavedSettings);
+                ImGui::Button("Button");
                 ImGui::End();
 
                 ImGui::EndPopup();
@@ -1362,6 +1363,42 @@ void RegisterTests_Window(ImGuiTestEngine* e)
     };
 #endif
 
+    // ## Test Begin() nested inside a popup, IsWindowContentHoverable() previously didn't handle that well.
+    t = IM_REGISTER_TEST(e, "window", "window_popup_nested_begin");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+
+        if (ImGui::Button("Open Popup"))
+            ImGui::OpenPopup("Popup");
+
+        if (ImGui::BeginPopupModal("Popup"))
+        {
+            ImGui::Text("Hello from popup");
+
+            ImGui::SetNextWindowPos(ImGui::GetCurrentWindow()->Rect().GetBL());
+            ImGui::Begin("Nested Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+            ImGui::Button("Button");
+            ImGui::End();
+
+            ImGui::EndPopup();
+        }
+
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ctx->ItemClick("//Test Window/Open Popup");
+
+        ctx->WindowFocus("//Nested Window");
+        ctx->MouseMove("//Nested Window/Button", ImGuiTestOpFlags_NoFocusWindow);
+
+        ctx->WindowFocus("//Popup");
+#if IMGUI_VERSION_NUM >= 18820
+        ctx->MouseMove("//Nested Window/Button", ImGuiTestOpFlags_NoFocusWindow);
+#endif
+    };
+
     // ## Test popups reopening at same position. (#4936)
     t = IM_REGISTER_TEST(e, "window", "window_popup_mouse_reopen");
     t->GuiFunc = [](ImGuiTestContext* ctx)
@@ -1417,7 +1454,7 @@ void RegisterTests_Window(ImGuiTestEngine* e)
 
 #if IMGUI_VERSION_NUM >= 18611
     // ## Test immediate window creation after modal opens. (#4920)
-    t = IM_REGISTER_TEST(e, "window", "window_after_modal");
+    t = IM_REGISTER_TEST(e, "window", "window_modal_begin_after");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         ImGui::Begin("Test Window 1", NULL, ImGuiWindowFlags_NoSavedSettings);
