@@ -1840,7 +1840,7 @@ void RegisterTests_PerfTool(ImGuiTestEngine* e)
 
         // Click some stuff for more coverage.
         ctx->MouseMoveToPos(plot_child->Rect().GetCenter());
-        ctx->KeyModPress(ImGuiModFlags_Shift);
+        ctx->KeyModPress(ImGuiMod_Shift);
 #endif
         ctx->ItemClick("##date-from", ImGuiMouseButton_Right);
         ctx->ItemClick(ctx->GetID("//$FOCUSED/Set Min"));

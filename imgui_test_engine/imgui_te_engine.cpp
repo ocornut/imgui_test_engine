@@ -571,7 +571,7 @@ void ImGuiTestEngine_ApplyInputToImGuiContext(ImGuiTestEngine* engine)
     // [OSX] Simulate OSX behavior of automatically swapping mouse wheel axis when SHIFT is held.
     // This is working in conjonction with the fact that ImGuiTestContext::MouseWheel() assume Windows-style behavior.
     ImVec2 wheel = engine->Inputs.MouseWheel;
-    if (io.ConfigMacOSXBehaviors && (io.KeyMods & ImGuiModFlags_Shift)) // FIXME!!
+    if (io.ConfigMacOSXBehaviors && (io.KeyMods & ImGuiMod_Shift)) // FIXME!!
         ImSwap(wheel.x, wheel.y);
     if (wheel.x != 0.0f || wheel.y != 0.0f)
         io.AddMouseWheelEvent(wheel.x, wheel.y);
@@ -590,14 +590,14 @@ void ImGuiTestEngine_ApplyInputToImGuiContext(ImGuiTestEngine* engine)
                 if (input.KeyMods != 0x00)
                 {
 #if IMGUI_VERSION_NUM >= 18614
-                    if (input.KeyMods & ImGuiModFlags_Ctrl)
-                        io.AddKeyEvent(ImGuiKey_ModCtrl, input.Down);
-                    if (input.KeyMods & ImGuiModFlags_Shift)
-                        io.AddKeyEvent(ImGuiKey_ModShift, input.Down);
-                    if (input.KeyMods & ImGuiModFlags_Alt)
-                        io.AddKeyEvent(ImGuiKey_ModAlt, input.Down);
-                    if (input.KeyMods & ImGuiModFlags_Super)
-                        io.AddKeyEvent(ImGuiKey_ModSuper, input.Down);
+                    if (input.KeyMods & ImGuiMod_Ctrl)
+                        io.AddKeyEvent(ImGuiMod_Ctrl, input.Down);
+                    if (input.KeyMods & ImGuiMod_Shift)
+                        io.AddKeyEvent(ImGuiMod_Shift, input.Down);
+                    if (input.KeyMods & ImGuiMod_Alt)
+                        io.AddKeyEvent(ImGuiMod_Alt, input.Down);
+                    if (input.KeyMods & ImGuiMod_Super)
+                        io.AddKeyEvent(ImGuiMod_Super, input.Down);
 #else
                     if (input.Down)
                         engine->Inputs.KeyMods |= input.KeyMods;

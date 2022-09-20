@@ -3114,7 +3114,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ctx->MouseUp(0);
 
         // CTRL-A
-        ctx->KeyPress(ImGuiKey_A, ImGuiModFlags_Ctrl);
+        ctx->KeyPress(ImGuiKey_A, ImGuiMod_Ctrl);
         IM_CHECK_EQ(selection.SelectionSize, 100);
 
         // Verify that click on selected item clear other items from selection on MouseUp
@@ -3127,19 +3127,19 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
 
         // Test SHIFT+Click
         ctx->ItemClick("Object 0001");
-        ctx->KeyModDown(ImGuiModFlags_Shift);
+        ctx->KeyModDown(ImGuiMod_Shift);
         ctx->MouseMove("Object 0006");
         ctx->MouseDown(0);
         IM_CHECK_EQ(selection.SelectionSize, 6);
         ctx->MouseUp(0);
-        ctx->KeyModUp(ImGuiModFlags_Shift);
+        ctx->KeyModUp(ImGuiMod_Shift);
 
         // Test that CTRL+A preserve RangeSrc (which was 0001)
-        ctx->KeyPress(ImGuiKey_A, ImGuiModFlags_Ctrl);
+        ctx->KeyPress(ImGuiKey_A, ImGuiMod_Ctrl);
         IM_CHECK_EQ(selection.SelectionSize, 100);
-        ctx->KeyModDown(ImGuiModFlags_Shift);
+        ctx->KeyModDown(ImGuiMod_Shift);
         ctx->ItemClick("Object 0008");
-        ctx->KeyModUp(ImGuiModFlags_Shift);
+        ctx->KeyModUp(ImGuiMod_Shift);
         IM_CHECK_EQ(selection.SelectionSize, 8);
 
         // Test reverse clipped SHIFT+Click
@@ -3148,9 +3148,9 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         //ctx->ScrollToBottom();
         ctx->ItemClick("Object 0030");
         ctx->ScrollToTop("");
-        ctx->KeyModDown(ImGuiModFlags_Shift);
+        ctx->KeyModDown(ImGuiMod_Shift);
         ctx->ItemClick("Object 0002");
-        ctx->KeyModUp(ImGuiModFlags_Shift);
+        ctx->KeyModUp(ImGuiMod_Shift);
         IM_CHECK_EQ(selection.SelectionSize, 29);
 
         // Test ESC to clear selection
@@ -3165,10 +3165,10 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
 #if IMGUI_VERSION_NUM >= 18730
         ctx->ItemClick("Object 0001");
         IM_CHECK_EQ(selection.SelectionSize, 1);
-        ctx->KeyModDown(ImGuiModFlags_Ctrl);
+        ctx->KeyModDown(ImGuiMod_Ctrl);
         ctx->ItemClick("Object 0006");
         ctx->ItemClick("Object 0007");
-        ctx->KeyModUp(ImGuiModFlags_Ctrl);
+        ctx->KeyModUp(ImGuiMod_Ctrl);
         IM_CHECK_EQ(selection.SelectionSize, 3);
         ctx->ItemClick("Object 0008");
         IM_CHECK_EQ(selection.SelectionSize, 1);
@@ -3178,34 +3178,34 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ctx->ItemClick("Object 0002");
         IM_CHECK_EQ(g.NavId, ctx->GetID("Object 0002"));
         IM_CHECK_EQ(selection.SelectionSize, 1);
-        ctx->KeyPress(ImGuiKey_DownArrow, ImGuiModFlags_Shift);
-        ctx->KeyPress(ImGuiKey_DownArrow, ImGuiModFlags_Shift);
+        ctx->KeyPress(ImGuiKey_DownArrow, ImGuiMod_Shift);
+        ctx->KeyPress(ImGuiKey_DownArrow, ImGuiMod_Shift);
         IM_CHECK_EQ(g.NavId, ctx->GetID("Object 0004"));
         IM_CHECK_EQ(selection.SelectionSize, 3);
 
         // Test CTRL+Arrow
-        ctx->KeyPress(ImGuiKey_DownArrow, ImGuiModFlags_Ctrl);
-        ctx->KeyPress(ImGuiKey_DownArrow, ImGuiModFlags_Ctrl);
+        ctx->KeyPress(ImGuiKey_DownArrow, ImGuiMod_Ctrl);
+        ctx->KeyPress(ImGuiKey_DownArrow, ImGuiMod_Ctrl);
         IM_CHECK_EQ(g.NavId, ctx->GetID("Object 0006"));
         IM_CHECK_EQ(selection.SelectionSize, 3);
 
         // Test SHIFT+Arrow after a gap
-        ctx->KeyPress(ImGuiKey_DownArrow, ImGuiModFlags_Shift);
+        ctx->KeyPress(ImGuiKey_DownArrow, ImGuiMod_Shift);
         IM_CHECK_EQ(g.NavId, ctx->GetID("Object 0007"));
         IM_CHECK_EQ(selection.SelectionSize, 6);
 
         // Test SHIFT+Arrow reducing selection
-        ctx->KeyPress(ImGuiKey_UpArrow, ImGuiModFlags_Shift);
+        ctx->KeyPress(ImGuiKey_UpArrow, ImGuiMod_Shift);
         IM_CHECK_EQ(g.NavId, ctx->GetID("Object 0006"));
         IM_CHECK_EQ(selection.SelectionSize, 5);
 
         // Test CTRL+Shift+Arrow moving or appending without reducing selection
-        ctx->KeyPress(ImGuiKey_UpArrow, ImGuiModFlags_Ctrl | ImGuiModFlags_Shift, 4);
+        ctx->KeyPress(ImGuiKey_UpArrow, ImGuiMod_Ctrl | ImGuiMod_Shift, 4);
         IM_CHECK_EQ(g.NavId, ctx->GetID("Object 0002"));
         IM_CHECK_EQ(selection.SelectionSize, 5);
 
         // Test SHIFT+Arrow replacing selection
-        ctx->KeyPress(ImGuiKey_UpArrow, ImGuiModFlags_Shift);
+        ctx->KeyPress(ImGuiKey_UpArrow, ImGuiMod_Shift);
         IM_CHECK_EQ(g.NavId, ctx->GetID("Object 0001"));
         IM_CHECK_EQ(selection.SelectionSize, 2);
 
@@ -3224,7 +3224,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         IM_CHECK_EQ(g.NavId, ctx->GetID("Object 0099"));
         IM_CHECK_EQ(selection.SelectionSize, 1);
         IM_CHECK_EQ(selection.GetSelected(99), true); // Would break if clipped by viewport
-        ctx->KeyPress(ImGuiKey_Home, ImGuiModFlags_Ctrl);
+        ctx->KeyPress(ImGuiKey_Home, ImGuiMod_Ctrl);
         IM_CHECK_EQ(g.NavId, ctx->GetID("Object 0000"));
         IM_CHECK_EQ(selection.SelectionSize, 1);
         IM_CHECK_EQ(selection.GetSelected(99), true);
@@ -3234,7 +3234,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ctx->KeyPress(ImGuiKey_Space);
         IM_CHECK_EQ(selection.SelectionSize, 1);
         IM_CHECK_EQ(selection.GetSelected(0), true);
-        ctx->KeyPress(ImGuiKey_End, ImGuiModFlags_Shift);
+        ctx->KeyPress(ImGuiKey_End, ImGuiMod_Shift);
         IM_CHECK_EQ(g.NavId, ctx->GetID("Object 0099"));
         IM_CHECK_EQ(selection.SelectionSize, 100);
     };
@@ -3296,7 +3296,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         IM_CHECK_EQ(selection0.SelectionSize, 1);
         IM_CHECK_EQ(selection1.SelectionSize, 1);
 
-        ctx->KeyPress(ImGuiKey_A, ImGuiModFlags_Ctrl);
+        ctx->KeyPress(ImGuiKey_A, ImGuiMod_Ctrl);
         IM_CHECK_EQ(selection0.SelectionSize, 1);
         IM_CHECK_EQ(selection1.SelectionSize, 10);
     };
@@ -3545,9 +3545,9 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         float slider_float_value = vars.Float1;
         ctx->KeyPress(ImGuiKey_LeftArrow);
         IM_CHECK_EQ(vars.Float1, slider_float_value - slider_float_step);
-        ctx->KeyDown(ImGuiKey_None, ImGuiModFlags_Ctrl);
+        ctx->KeyDown(ImGuiKey_None, ImGuiMod_Ctrl);
         ctx->KeyPress(ImGuiKey_RightArrow);
-        ctx->KeyUp(ImGuiKey_None, ImGuiModFlags_Ctrl);
+        ctx->KeyUp(ImGuiKey_None, ImGuiMod_Ctrl);
         IM_CHECK_EQ(vars.Float1, slider_float_value - slider_float_step + slider_float_step_slow);
 
         ctx->KeyPress(ImGuiKey_DownArrow);
@@ -3559,9 +3559,9 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         int slider_int_value = vars.Int1;
         ctx->KeyPress(ImGuiKey_RightArrow);
         IM_CHECK_EQ(vars.Int1, slider_float_value + slider_int_step);
-        ctx->KeyDown(ImGuiKey_None, ImGuiModFlags_Ctrl);
+        ctx->KeyDown(ImGuiKey_None, ImGuiMod_Ctrl);
         ctx->KeyPress(ImGuiKey_LeftArrow);
-        ctx->KeyUp(ImGuiKey_None, ImGuiModFlags_Ctrl);
+        ctx->KeyUp(ImGuiKey_None, ImGuiMod_Ctrl);
         IM_CHECK_EQ(vars.Int1, slider_int_value + slider_int_step - slider_int_step_slow);
 
         ctx->KeyPress(ImGuiKey_UpArrow);

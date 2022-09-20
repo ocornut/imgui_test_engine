@@ -74,11 +74,11 @@ struct ImGuiTestInput
 {
     ImGuiTestInputType      Type = ImGuiTestInputType_None;
     ImGuiKey                Key = ImGuiKey_None;
-    ImGuiModFlags           KeyMods = ImGuiModFlags_None;
+    ImGuiKeyChord           KeyMods = ImGuiMod_None;
     ImWchar                 Char = 0;
     bool                    Down = false;
 
-    static ImGuiTestInput   FromKeyChord(ImGuiModFlags mods, ImGuiKey key, bool down)
+    static ImGuiTestInput   FromKeyChord(ImGuiKeyChord mods, ImGuiKey key, bool down)
     {
         ImGuiTestInput inp;
         inp.Type = ImGuiTestInputType_Key;

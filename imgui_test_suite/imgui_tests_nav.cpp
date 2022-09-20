@@ -208,7 +208,7 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
 
             IM_CHECK(g.OpenPopupStack.Size == (step == 2));
             IM_CHECK(g.NavLayer == ImGuiNavLayer_Main);
-            ctx->KeyModPress(ImGuiModFlags_Alt);
+            ctx->KeyModPress(ImGuiMod_Alt);
             IM_CHECK(g.NavLayer == ImGuiNavLayer_Menu);
             const char* menu_item_1 = step == 3 ? "#COLLAPSE" : "##menubar/File";
             const char* menu_item_2 = step == 3 ? "#CLOSE" : "##menubar/Edit";
@@ -216,20 +216,20 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
             ctx->KeyPress(ImGuiKey_RightArrow);
             IM_CHECK_EQ(g.NavId, ctx->GetID(menu_item_2));
 
-            ctx->KeyModPress(ImGuiModFlags_Alt);
+            ctx->KeyModPress(ImGuiMod_Alt);
             IM_CHECK(g.NavLayer == ImGuiNavLayer_Main);
-            ctx->KeyModPress(ImGuiModFlags_Alt | ImGuiModFlags_Ctrl);
+            ctx->KeyModPress(ImGuiMod_Alt | ImGuiMod_Ctrl);
             IM_CHECK(g.NavLayer == ImGuiNavLayer_Main);
-            ctx->KeyModPress(ImGuiModFlags_Alt); // Verify nav id is reset for menu layer
+            ctx->KeyModPress(ImGuiMod_Alt); // Verify nav id is reset for menu layer
             IM_CHECK_EQ(g.NavId, ctx->GetID(menu_item_1));
-            ctx->KeyModPress(ImGuiModFlags_Alt);
+            ctx->KeyModPress(ImGuiMod_Alt);
 
             // Test that toggling layer steals active id.
 #if IMGUI_VERSION_NUM >= 18206
             ctx->NavMoveTo(input_id);
             ctx->NavInput();
             IM_CHECK_EQ(g.ActiveId, input_id);
-            ctx->KeyModPress(ImGuiModFlags_Alt);
+            ctx->KeyModPress(ImGuiMod_Alt);
             IM_CHECK_EQ(g.ActiveId, (ImGuiID)0);
             IM_CHECK(g.NavLayer == ImGuiNavLayer_Menu);
             ctx->KeyPress(ImGuiKey_Escape); // ESC to leave layer
@@ -239,9 +239,9 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
             // Test that toggling layer is canceled by character typing (#370)
             ctx->NavMoveTo(input_id);
             ctx->NavInput();
-            ctx->KeyModDown(ImGuiModFlags_Alt);
+            ctx->KeyModDown(ImGuiMod_Alt);
             ctx->KeyChars("ABC");
-            ctx->KeyModUp(ImGuiModFlags_Alt);
+            ctx->KeyModUp(ImGuiMod_Alt);
             IM_CHECK(g.NavLayer == ImGuiNavLayer_Main);
             IM_CHECK_EQ(g.ActiveId, input_id);
 #endif
@@ -459,17 +459,17 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
             ctx->WindowFocus("Window 1");
             ctx->WindowFocus("Window 2");
 
-            ctx->KeyPress(ImGuiKey_Tab, ImGuiModFlags_Ctrl);
+            ctx->KeyPress(ImGuiKey_Tab, ImGuiMod_Ctrl);
             IM_CHECK(g.NavWindow == ctx->GetWindowByRef("Window 1"));
 
             // Intentionally perform a "SLOW" ctrl-tab to make sure the UI appears!
-            //ctx->KeyPress(ImGuiKey_Tab, ImGuiModFlags_Ctrl);
-            ctx->KeyModDown(ImGuiModFlags_Ctrl);
+            //ctx->KeyPress(ImGuiKey_Tab, ImGuiMod_Ctrl);
+            ctx->KeyModDown(ImGuiMod_Ctrl);
             ctx->KeyPress(ImGuiKey_Tab);
             ctx->SleepNoSkip(0.5f, 0.1f);
             IM_CHECK(g.NavWindowingTarget == ctx->GetWindowByRef("Window 2"));
             IM_CHECK(g.NavWindowingTarget->SkipItems == false);
-            ctx->KeyModUp(ImGuiModFlags_Ctrl);
+            ctx->KeyModUp(ImGuiMod_Ctrl);
             IM_CHECK(g.NavWindow == ctx->GetWindowByRef("Window 2"));
 
             // Set up window focus order, focus child window.
@@ -477,7 +477,7 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
             ctx->WindowFocus("Window 2"); // FIXME: Needed for case when docked
             ctx->ItemClick(ctx->GetID("Button In", ctx->WindowInfo("Window 2/Child")->ID));
 
-            ctx->KeyPress(ImGuiKey_Tab, ImGuiModFlags_Ctrl);
+            ctx->KeyPress(ImGuiKey_Tab, ImGuiMod_Ctrl);
             IM_CHECK(g.NavWindow == ctx->GetWindowByRef("Window 1"));
         }
     };
@@ -524,11 +524,11 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
             ctx->NavMoveTo(win2_button_ref);
 
             // Ctrl+Tab back to previous window, check if nav id was restored
-            ctx->KeyPress(ImGuiKey_Tab, ImGuiModFlags_Ctrl);
+            ctx->KeyPress(ImGuiKey_Tab, ImGuiMod_Ctrl);
             IM_CHECK_EQ(ctx->GetID(win1_button_ref), g.NavId);
 
             // Ctrl+Tab back to previous window, check if nav id was restored
-            ctx->KeyPress(ImGuiKey_Tab, ImGuiModFlags_Ctrl);
+            ctx->KeyPress(ImGuiKey_Tab, ImGuiMod_Ctrl);
             IM_CHECK_EQ(ctx->GetID(win2_button_ref), g.NavId);
         }
     };
@@ -559,10 +559,10 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
         ImGuiContext& g = *ctx->UiContext;
         ctx->WindowFocus("Window 1");
         ctx->WindowFocus("Window 2");
-        ctx->KeyPress(ImGuiKey_Tab, ImGuiModFlags_Ctrl);
+        ctx->KeyPress(ImGuiKey_Tab, ImGuiMod_Ctrl);
         IM_CHECK_STR_EQ(g.NavWindow->Name, "Window 1");
         IM_CHECK_EQ(g.NavLayer, ImGuiNavLayer_Menu);
-        ctx->KeyPress(ImGuiKey_Tab, ImGuiModFlags_Ctrl);
+        ctx->KeyPress(ImGuiKey_Tab, ImGuiMod_Ctrl);
         IM_CHECK_STR_EQ(g.NavWindow->Name, "Window 2");
         IM_CHECK_EQ(g.NavLayer, ImGuiNavLayer_Main);
     };
@@ -589,7 +589,7 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
         ctx->ItemInput("InputText");
         ctx->KeyCharsAppend("123");
         IM_CHECK_EQ(ctx->UiContext->ActiveId, ctx->GetID("InputText"));
-        ctx->KeyPress(ImGuiKey_Tab, ImGuiModFlags_Ctrl);
+        ctx->KeyPress(ImGuiKey_Tab, ImGuiMod_Ctrl);
         IM_CHECK_EQ(ctx->UiContext->ActiveId, (ImGuiID)0);
         ctx->Sleep(1.0f);
     };
@@ -800,7 +800,7 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
 
             // Test simple focus restoration.
             ctx->NavMoveTo("Configuration");                            // Focus item.
-            ctx->KeyModPress(ImGuiModFlags_Alt);                     // Focus menu.
+            ctx->KeyModPress(ImGuiMod_Alt);                     // Focus menu.
             IM_CHECK_EQ(g.NavLayer, ImGuiNavLayer_Menu);
             ctx->NavActivate();                                         // Open menu, focus first item in the menu.
             ctx->NavActivate();                                         // Activate first item in the menu.
@@ -818,7 +818,7 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
             ctx->SetRef(child_window->ID);
             ctx->ScrollTo(demo_window->ID, ImGuiAxis_Y, (child_window->Pos - demo_window->Pos).y);  // Required because buttons do not register their IDs when out of view (SkipItems == true).
             ctx->NavMoveTo(ctx->GetID("1", ctx->GetIDByInt(1)));        // Focus item within a child window.
-            ctx->KeyModPress(ImGuiModFlags_Alt);                     // Focus menu
+            ctx->KeyModPress(ImGuiMod_Alt);                     // Focus menu
             ctx->NavActivate();                                         // Open menu, focus first item in the menu.
             ctx->NavActivate();                                         // Activate first item in the menu.
             IM_CHECK_EQ(g.NavId, ctx->GetID("1", ctx->GetIDByInt(1)));  // Verify NavId was restored to initial value.
@@ -1163,7 +1163,7 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
         IM_CHECK(g.NavDisableHighlight == false); // Moving mouse doesn't set this to true: rect will be visible but NavId not marked as "hovered"
         IM_CHECK(g.NavDisableMouseHover == false);
 
-        ctx->KeyModPress(ImGuiModFlags_Alt);
+        ctx->KeyModPress(ImGuiMod_Alt);
         IM_CHECK(g.NavDisableHighlight == false);
         IM_CHECK(g.NavDisableMouseHover == true);
     };
@@ -1199,7 +1199,7 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
 
         // Open menu, focus first "a" item.
         ctx->MenuClick("Menu");
-        ctx->KeyModPress(ImGuiModFlags_Alt); // FIXME
+        ctx->KeyModPress(ImGuiMod_Alt); // FIXME
         ctx->SetRef(ctx->UiContext->NavWindow);
 
         // Navigate to "c" item.
@@ -1582,13 +1582,13 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
                 IM_CHECK_EQ(g.ActiveId, ctx->GetID("Item0"));
 
                 // Test Shift+Tab
-                ctx->KeyPress(ImGuiKey_Tab, ImGuiModFlags_Shift);
+                ctx->KeyPress(ImGuiKey_Tab, ImGuiMod_Shift);
                 IM_CHECK_EQ(g.ActiveId, ctx->GetID("Item4"));
-                ctx->KeyPress(ImGuiKey_Tab, ImGuiModFlags_Shift);
+                ctx->KeyPress(ImGuiKey_Tab, ImGuiMod_Shift);
                 IM_CHECK_EQ(g.ActiveId, ctx->GetID("Item3"));
-                ctx->KeyPress(ImGuiKey_Tab, ImGuiModFlags_Shift);
+                ctx->KeyPress(ImGuiKey_Tab, ImGuiMod_Shift);
                 IM_CHECK_EQ(g.ActiveId, ctx->GetID("Item1"));
-                ctx->KeyPress(ImGuiKey_Tab, ImGuiModFlags_Shift);
+                ctx->KeyPress(ImGuiKey_Tab, ImGuiMod_Shift);
                 IM_CHECK_EQ(g.ActiveId, ctx->GetID("Item0"));
 
                 ctx->KeyPress(ImGuiKey_Escape);
@@ -1636,7 +1636,7 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
         for (int n = 0; n < 4; n++)
         {
             IM_CHECK_EQ(g.ActiveId, ctx->GetID(Str30f("Input%d", (51 - n) % 50).c_str()));
-            ctx->KeyPress(ImGuiKey_Tab, ImGuiModFlags_Shift);
+            ctx->KeyPress(ImGuiKey_Tab, ImGuiMod_Shift);
             IM_CHECK_EQ(g.ActiveId, ctx->GetID(Str30f("Input%d", (50 - n) % 50).c_str()));
         }
     };
@@ -1693,7 +1693,7 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
             IM_CHECK(item_info->ID != 0);
             IM_CHECK_STR_EQ(item_info->DebugLabel, Str30f("Input%d", (21 - n) % 20).c_str());
 
-            ctx->KeyPress(ImGuiKey_Tab, ImGuiModFlags_Shift);
+            ctx->KeyPress(ImGuiKey_Tab, ImGuiMod_Shift);
 
             item_info = ctx->ItemInfo(g.ActiveId);
             IM_CHECK(item_info->ID != 0);

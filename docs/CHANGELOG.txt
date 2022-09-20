@@ -4,6 +4,12 @@ CHANGELOG
 ** For a while this is going to include only breaking changes.
 ** As we slowly transition toward releasing the test engine, this will become a more full fledged changelog.
 
+2022/09/26
+- TestEngine: following on core lib, renamed/merged mod enums and flags into same value:
+     ImGuiKey_ModXXX   -> ImGuiMod_XXX
+     ImGuiModFlags_XXX -> ImGuiMod_XXX
+  See main library changelog for details.
+
 2022/09/05
 - TestEngine: renamed ImGuiTestEngine_UseSimulatedInputs() to ImGuiTestEngine_IsUsingSimulatedInputs().
 
