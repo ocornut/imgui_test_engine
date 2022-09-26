@@ -2220,48 +2220,48 @@ void    ImGuiTestContext::MouseWheel(ImVec2 delta)
     }
 }
 
-void    ImGuiTestContext::KeyDown(ImGuiKey key, ImGuiKeyChord mods)
+void    ImGuiTestContext::KeyDown(ImGuiKeyChord key_chord)
 {
     if (IsError())
         return;
 
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
     char chord_desc[32];
-    ImGui::GetKeyChordName(key | mods, chord_desc, IM_ARRAYSIZE(chord_desc));
+    ImGui::GetKeyChordName(key_chord, chord_desc, IM_ARRAYSIZE(chord_desc));
     LogDebug("KeyDown(%s)", chord_desc);
     if (EngineIO->ConfigRunSpeed == ImGuiTestRunSpeed_Cinematic)
         SleepShort();
 
-    Inputs->Queue.push_back(ImGuiTestInput::FromKeyChord(mods, key, true));
+    Inputs->Queue.push_back(ImGuiTestInput::FromKeyChord(key_chord, true));
     Yield();
     Yield();
 }
 
-void    ImGuiTestContext::KeyUp(ImGuiKey key, ImGuiKeyChord mods)
+void    ImGuiTestContext::KeyUp(ImGuiKeyChord key_chord)
 {
     if (IsError())
         return;
 
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
     char chord_desc[32];
-    ImGui::GetKeyChordName(key | mods, chord_desc, IM_ARRAYSIZE(chord_desc));
+    ImGui::GetKeyChordName(key_chord, chord_desc, IM_ARRAYSIZE(chord_desc));
     LogDebug("KeyUp(%s)", chord_desc);
     if (EngineIO->ConfigRunSpeed == ImGuiTestRunSpeed_Cinematic)
         SleepShort();
 
-    Inputs->Queue.push_back(ImGuiTestInput::FromKeyChord(mods, key, false));
+    Inputs->Queue.push_back(ImGuiTestInput::FromKeyChord(key_chord, false));
     Yield();
     Yield();
 }
 
-void    ImGuiTestContext::KeyPress(ImGuiKey key, ImGuiKeyChord mods, int count)
+void    ImGuiTestContext::KeyPress(ImGuiKeyChord key_chord, int count)
 {
     if (IsError())
         return;
 
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
     char chord_desc[32];
-    ImGui::GetKeyChordName(key | mods, chord_desc, IM_ARRAYSIZE(chord_desc));
+    ImGui::GetKeyChordName(key_chord, chord_desc, IM_ARRAYSIZE(chord_desc));
     LogDebug("KeyPress(%s, %d)", chord_desc, count);
     if (EngineIO->ConfigRunSpeed == ImGuiTestRunSpeed_Cinematic)
         SleepShort();
@@ -2269,12 +2269,12 @@ void    ImGuiTestContext::KeyPress(ImGuiKey key, ImGuiKeyChord mods, int count)
     while (count > 0)
     {
         count--;
-        Inputs->Queue.push_back(ImGuiTestInput::FromKeyChord(mods, key, true));
+        Inputs->Queue.push_back(ImGuiTestInput::FromKeyChord(key_chord, true));
         if (EngineIO->ConfigRunSpeed == ImGuiTestRunSpeed_Cinematic)
             SleepShort();
         else
             Yield();
-        Inputs->Queue.push_back(ImGuiTestInput::FromKeyChord(mods, key, false));
+        Inputs->Queue.push_back(ImGuiTestInput::FromKeyChord(key_chord, false));
         Yield();
 
         // Give a frame for items to react
@@ -2282,21 +2282,21 @@ void    ImGuiTestContext::KeyPress(ImGuiKey key, ImGuiKeyChord mods, int count)
     }
 }
 
-void    ImGuiTestContext::KeyHold(ImGuiKey key, ImGuiKeyChord mods, float time)
+void    ImGuiTestContext::KeyHold(ImGuiKeyChord key_chord, float time)
 {
     if (IsError())
         return;
 
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
     char chord_desc[32];
-    ImGui::GetKeyChordName(key | mods, chord_desc, IM_ARRAYSIZE(chord_desc));
+    ImGui::GetKeyChordName(key_chord, chord_desc, IM_ARRAYSIZE(chord_desc));
     LogDebug("KeyHold(%s, %.2f sec)", chord_desc, time);
     if (EngineIO->ConfigRunSpeed == ImGuiTestRunSpeed_Cinematic)
         SleepStandard();
 
-    Inputs->Queue.push_back(ImGuiTestInput::FromKeyChord(mods, key, true));
+    Inputs->Queue.push_back(ImGuiTestInput::FromKeyChord(key_chord, true));
     SleepNoSkip(time, 1 / 100.0f);
-    Inputs->Queue.push_back(ImGuiTestInput::FromKeyChord(mods, key, false));
+    Inputs->Queue.push_back(ImGuiTestInput::FromKeyChord(key_chord, false));
     Yield(); // Give a frame for items to react
 }
 
@@ -2354,7 +2354,7 @@ void    ImGuiTestContext::KeyCharsReplace(const char* chars)
 
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
     LogDebug("KeyCharsReplace('%s')", chars);
-    KeyPress(ImGuiKey_A, ImGuiMod_Shortcut);
+    KeyPress(ImGuiKey_A | ImGuiMod_Shortcut);
     if (chars[0])
         KeyChars(chars);
     else
@@ -2368,7 +2368,7 @@ void    ImGuiTestContext::KeyCharsReplaceEnter(const char* chars)
 
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
     LogDebug("KeyCharsReplaceEnter('%s')", chars);
-    KeyPress(ImGuiKey_A, ImGuiMod_Shortcut);
+    KeyPress(ImGuiKey_A | ImGuiMod_Shortcut);
     if (chars[0])
         KeyChars(chars);
     else
@@ -2539,9 +2539,9 @@ void    ImGuiTestContext::ItemAction(ImGuiTestAction action, ImGuiTestRef ref, I
         if (InputMode == ImGuiInputSource_Mouse)
         {
             MouseMove(ref, flags);
-            KeyModDown(ImGuiMod_Ctrl);
+            KeyDown(ImGuiMod_Ctrl);
             MouseClick(0);
-            KeyModUp(ImGuiMod_Ctrl);
+            KeyUp(ImGuiMod_Ctrl);
         }
         else
         {
@@ -3149,21 +3149,23 @@ void ImGuiTestContext::TableOpenContextMenu(ImGuiTestRef ref, int column_n)
     Yield();
 }
 
-ImGuiSortDirection ImGuiTestContext::TableClickHeader(ImGuiTestRef ref, const char* label, ImGuiKeyChord keys_mod)
+ImGuiSortDirection ImGuiTestContext::TableClickHeader(ImGuiTestRef ref, const char* label, ImGuiKeyChord key_mods)
 {
+    IM_ASSERT((key_mods & ~ImGuiMod_Mask_) == 0); // Cannot pass keys only mods
+
     ImGuiTable* table = ImGui::TableFindByID(GetID(ref));
     IM_CHECK_SILENT_RETV(table != NULL, ImGuiSortDirection_None);
 
     ImGuiTableColumn* column = HelperTableFindColumnByName(table, label);
     IM_CHECK_SILENT_RETV(column != NULL, ImGuiSortDirection_None);
 
-    if (keys_mod != ImGuiMod_None)
-        KeyModDown(keys_mod);
+    if (key_mods != ImGuiMod_None)
+        KeyDown(key_mods);
 
     ItemClick(TableGetHeaderID(table, label), ImGuiMouseButton_Left);
 
-    if (keys_mod != ImGuiMod_None)
-        KeyModUp(keys_mod);
+    if (key_mods != ImGuiMod_None)
+        KeyUp(key_mods);
     return (ImGuiSortDirection_)column->SortDirection;
 }
 
@@ -3296,9 +3298,9 @@ void    ImGuiTestContext::WindowMove(ImGuiTestRef ref, ImVec2 input_pos, ImVec2 
     // Disable docking
 #ifdef IMGUI_HAS_DOCK
     if (UiContext->IO.ConfigDockingWithShift)
-        KeyModUp(ImGuiMod_Shift);
+        KeyUp(ImGuiMod_Shift);
     else
-        KeyModDown(ImGuiMod_Shift);
+        KeyDown(ImGuiMod_Shift);
 #endif
 
     ImVec2 delta = target_pos - window->Pos;
@@ -3307,7 +3309,7 @@ void    ImGuiTestContext::WindowMove(ImGuiTestRef ref, ImVec2 input_pos, ImVec2 
 
     MouseUp();
 #ifdef IMGUI_HAS_DOCK
-    KeyModUp(ImGuiMod_Shift);
+    KeyUp(ImGuiMod_Shift);
 #endif
     MouseSetViewport(window); // Update in case window has changed viewport
 }
@@ -3444,7 +3446,7 @@ void    ImGuiTestContext::DockInto(ImGuiTestRef src_id, ImGuiTestRef dst_id, ImG
     IM_CHECK_SILENT(drop_is_valid);
     MouseDown(0);
     if (g.IO.ConfigDockingWithShift)
-        KeyModDown(ImGuiMod_Shift);
+        KeyDown(ImGuiMod_Shift);
     MouseLiftDragThreshold();
     MouseSetViewport(window_dst);
     MouseMoveToPos(drop_pos);
@@ -3460,7 +3462,7 @@ void    ImGuiTestContext::DockInto(ImGuiTestRef src_id, ImGuiTestRef dst_id, ImG
 
     MouseUp(0);
     if (g.IO.ConfigDockingWithShift)
-        KeyModUp(ImGuiMod_Shift);
+        KeyUp(ImGuiMod_Shift);
     ForeignWindowsUnhideAll();
     Yield();
     Yield();
@@ -3541,10 +3543,10 @@ void    ImGuiTestContext::UndockNode(ImGuiID dock_id)
 
     const float h = node->Windows[0]->TitleBarHeight();
     if (!UiContext->IO.ConfigDockingWithShift)
-        KeyModDown(ImGuiMod_Shift); // Disable docking
+        KeyDown(ImGuiMod_Shift); // Disable docking
     ItemDragWithDelta(ImGui::DockNodeGetWindowMenuButtonId(node), ImVec2(h, h) * -2);
     if (!UiContext->IO.ConfigDockingWithShift)
-        KeyModUp(ImGuiMod_Shift);
+        KeyUp(ImGuiMod_Shift);
     MouseUp();
 }
 
@@ -3560,10 +3562,10 @@ void    ImGuiTestContext::UndockWindow(const char* window_name)
 
     const float h = window->TitleBarHeight();
     if (!UiContext->IO.ConfigDockingWithShift)
-        KeyModDown(ImGuiMod_Shift);
+        KeyDown(ImGuiMod_Shift);
     ItemDragWithDelta(window->TabId, ImVec2(h, h) * -2);
     if (!UiContext->IO.ConfigDockingWithShift)
-        KeyModUp(ImGuiMod_Shift);
+        KeyUp(ImGuiMod_Shift);
     Yield();
 }
 

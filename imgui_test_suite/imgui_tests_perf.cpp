@@ -33,9 +33,9 @@ void RegisterTests_Perf(ImGuiTestEngine* e)
 
     auto PerfCaptureFunc = [](ImGuiTestContext* ctx)
     {
-        //ctx->KeyModDown(ImGuiMod_Shift);
+        //ctx->KeyDown(ImGuiMod_Shift);
         ctx->PerfCapture();
-        //ctx->KeyModUp(ImGuiMod_Shift);
+        //ctx->KeyUp(ImGuiMod_Shift);
     };
 
     // ## Measure the cost all demo contents

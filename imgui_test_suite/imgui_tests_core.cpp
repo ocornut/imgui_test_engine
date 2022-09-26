@@ -1730,9 +1730,9 @@ void RegisterTests_Window(ImGuiTestEngine* e)
             }
             else
             {
-                ctx->KeyModDown(ImGuiMod_Shift);
+                ctx->KeyDown(ImGuiMod_Shift);
                 ctx->MouseWheelY(-5.0f);                // Scroll right (shift + vertical scroll)
-                ctx->KeyModUp(ImGuiMod_Shift);
+                ctx->KeyUp(ImGuiMod_Shift);
             }
             IM_CHECK_GT(window->Scroll.x, 0.0f);
             IM_CHECK_EQ(window->Scroll.y, 0.0f);
@@ -1742,9 +1742,9 @@ void RegisterTests_Window(ImGuiTestEngine* e)
             }
             else
             {
-                ctx->KeyModDown(ImGuiMod_Shift);
+                ctx->KeyDown(ImGuiMod_Shift);
                 ctx->MouseWheelY(5.0f);                 // Scroll left (shift + vertical scroll)
-                ctx->KeyModUp(ImGuiMod_Shift);
+                ctx->KeyUp(ImGuiMod_Shift);
             }
             IM_CHECK_EQ(window->Scroll.x, 0.0f);
             IM_CHECK_EQ(window->Scroll.y, 0.0f);
@@ -1825,9 +1825,9 @@ void RegisterTests_Window(ImGuiTestEngine* e)
             else
             {
                 // Wheel (vertical) + shift
-                ctx->KeyModDown(ImGuiMod_Shift);
+                ctx->KeyDown(ImGuiMod_Shift);
                 ctx->MouseWheelY(-3.0f);
-                ctx->KeyModUp(ImGuiMod_Shift);
+                ctx->KeyUp(ImGuiMod_Shift);
             }
             float prev_scroll_x = window->Scroll.x;
             IM_CHECK_GT(window->Scroll.x, 0.0f);                // Main window was scrolled
@@ -1842,9 +1842,9 @@ void RegisterTests_Window(ImGuiTestEngine* e)
             }
             else
             {
-                ctx->KeyModDown(ImGuiMod_Shift);
+                ctx->KeyDown(ImGuiMod_Shift);
                 ctx->MouseWheelY(-3.0f);
-                ctx->KeyModUp(ImGuiMod_Shift);
+                ctx->KeyUp(ImGuiMod_Shift);
                 ctx->Yield();
             }
             IM_CHECK_EQ(window->Scroll.x, prev_scroll_x);
@@ -1979,8 +1979,8 @@ void RegisterTests_Window(ImGuiTestEngine* e)
         ImGuiWindow* window = ctx->GetWindowByRef("###Test Window");
 
         // Open window switcher (CTRL+TAB).
-        ctx->KeyModDown(ImGuiMod_Ctrl); // Hold CTRL down
-        ctx->KeyPress(ImGuiKey_Tab, 0);
+        ctx->KeyDown(ImGuiMod_Ctrl); // Hold CTRL down
+        ctx->KeyPress(ImGuiKey_Tab);
         ctx->SleepNoSkip(0.3f, 1.0f / 60.0f);
         for (int i = 0; i < 2; i++)
         {
@@ -1988,7 +1988,7 @@ void RegisterTests_Window(ImGuiTestEngine* e)
             IM_CHECK_STR_EQ_NO_RET(window->Name, window_name.c_str());    // Verify window->Name gets updated.
             ctx->Yield();
         }
-        ctx->KeyModUp(ImGuiMod_Ctrl);
+        ctx->KeyUp(ImGuiMod_Ctrl);
     };
 
     // ## Test window appearing state.

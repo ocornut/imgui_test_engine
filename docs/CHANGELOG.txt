@@ -5,6 +5,12 @@ CHANGELOG
 ** As we slowly transition toward releasing the test engine, this will become a more full fledged changelog.
 
 2022/09/26
+- TestEngine: simplified merged Key functions following simplification in core lib.
+     ctx->KeyDown(ImGuiKey key, ImGuiKeyChord mods = 0);                 -> KeyDown(ImGuiKeyChord key_chord);
+     ctx->KeyPress(ImGuiKey key, ImGuiKeyChord mods = 0, int count = 1); -> KeyPress(ImGuiKeyChord key_chord, int count = 1);
+     ctx->KeyModPress(ImGuiModFlags mods);                               -> KeyPress(ImGuiKeyChord key_chord, int count = 1);
+  ImGuiKeyChord = ImGuiKey_XXX or ImGuiMod_XXX or ImGuiKey_XXX | ImGuiMod_XXX.
+  Same for all ctx->KeyXXX functions.
 - TestEngine: following on core lib, renamed/merged mod enums and flags into same value:
      ImGuiKey_ModXXX   -> ImGuiMod_XXX
      ImGuiModFlags_XXX -> ImGuiMod_XXX

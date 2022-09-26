@@ -587,28 +587,30 @@ void ImGuiTestEngine_ApplyInputToImGuiContext(ImGuiTestEngine* engine)
             {
             case ImGuiTestInputType_Key:
             {
-                if (input.KeyMods != 0x00)
+                const ImGuiKey key = (ImGuiKey)(input.KeyChord & ~ImGuiMod_Mask_);
+                const ImGuiKeyChord mods = (input.KeyChord & ImGuiMod_Mask_);
+                if (mods != 0x00)
                 {
 #if IMGUI_VERSION_NUM >= 18614
-                    if (input.KeyMods & ImGuiMod_Ctrl)
+                    if (mods & ImGuiMod_Ctrl)
                         io.AddKeyEvent(ImGuiMod_Ctrl, input.Down);
-                    if (input.KeyMods & ImGuiMod_Shift)
+                    if (mods & ImGuiMod_Shift)
                         io.AddKeyEvent(ImGuiMod_Shift, input.Down);
-                    if (input.KeyMods & ImGuiMod_Alt)
+                    if (mods & ImGuiMod_Alt)
                         io.AddKeyEvent(ImGuiMod_Alt, input.Down);
-                    if (input.KeyMods & ImGuiMod_Super)
+                    if (mods & ImGuiMod_Super)
                         io.AddKeyEvent(ImGuiMod_Super, input.Down);
 #else
                     if (input.Down)
-                        engine->Inputs.KeyMods |= input.KeyMods;
+                        engine->Inputs.KeyMods |= mods;
                     else
-                        engine->Inputs.KeyMods &= ~input.KeyMods;
+                        engine->Inputs.KeyMods &= ~mods;
                     io.AddKeyModsEvent(engine->Inputs.KeyMods);
 #endif
                 }
 
-                if (input.Key != ImGuiKey_None)
-                    io.AddKeyEvent(input.Key, input.Down);
+                if (key != ImGuiKey_None)
+                    io.AddKeyEvent(key, input.Down);
                 break;
             }
             case ImGuiTestInputType_Char:

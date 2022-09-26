@@ -73,17 +73,15 @@ enum ImGuiTestInputType
 struct ImGuiTestInput
 {
     ImGuiTestInputType      Type = ImGuiTestInputType_None;
-    ImGuiKey                Key = ImGuiKey_None;
-    ImGuiKeyChord           KeyMods = ImGuiMod_None;
+    ImGuiKeyChord           KeyChord = ImGuiKey_None;
     ImWchar                 Char = 0;
     bool                    Down = false;
 
-    static ImGuiTestInput   FromKeyChord(ImGuiKeyChord mods, ImGuiKey key, bool down)
+    static ImGuiTestInput   FromKeyChord(ImGuiKeyChord key_chord, bool down)
     {
         ImGuiTestInput inp;
         inp.Type = ImGuiTestInputType_Key;
-        inp.Key = key;
-        inp.KeyMods = mods;
+        inp.KeyChord = key_chord;
         inp.Down = down;
         return inp;
     }
