@@ -1,4 +1,4 @@
-Dear ImGui Test Engine License (v1.00)
+Dear ImGui Test Engine License (v1.01)
 Copyright (c) 2022 Omar Cornut
 
 This document is a legal agreement ("License") between you ("Licensee") and
@@ -13,8 +13,8 @@ criterion:
 
 - You are a natural person (not a legal entity);
 - You are using this Software for educational purposes;
-- You are using this Software to create Derivative Software released under an Open Source
-  license, as defined by the Open Source Initiative;
+- You are using this Software to create Derivative Software released publicly and under
+  an Open Source license, as defined by the Open Source Initiative;
 - You are a legal entity with a turnover inferior to 2 million USD (or equivalent) during
   your last fiscal year.
 
