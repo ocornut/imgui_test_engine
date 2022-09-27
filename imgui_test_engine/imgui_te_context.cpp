@@ -325,30 +325,8 @@ void    ImGuiTestContext::YieldUntil(int frame_count)
         ImGuiTestEngine_Yield(Engine);
 }
 
-void    ImGuiTestContext::Sleep(float time)
-{
-    if (IsError())
-        return;
-
-    IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
-    if (EngineIO->ConfigRunSpeed == ImGuiTestRunSpeed_Fast)
-    {
-        LogEx(ImGuiTestVerboseLevel_Trace, ImGuiTestLogFlags_None, "Sleep(%.2f) -> Yield() in fast mode", time);
-        //ImGuiTestEngine_AddExtraTime(Engine, time); // We could add time, for now we have no use for it...
-        ImGuiTestEngine_Yield(Engine);
-    }
-    else
-    {
-        LogEx(ImGuiTestVerboseLevel_Trace, ImGuiTestLogFlags_None, "Sleep(%.2f)", time);
-        while (time > 0.0f && !Abort)
-        {
-            ImGuiTestEngine_Yield(Engine);
-            time -= UiContext->IO.DeltaTime;
-        }
-    }
-}
-
 // Return true to request aborting TestFunc
+// Called via IM_SUSPEND_TESTFUNC()
 bool    ImGuiTestContext::SuspendTestFunc(const char* file, int line)
 {
     if (IsError())
@@ -376,6 +354,31 @@ bool    ImGuiTestContext::SuspendTestFunc(const char* file, int line)
     return Abort;
 }
 
+// Sleep a given amount of time (unless running in Fast mode: there it will Yield once)
+void    ImGuiTestContext::Sleep(float time)
+{
+    if (IsError())
+        return;
+
+    IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
+    if (EngineIO->ConfigRunSpeed == ImGuiTestRunSpeed_Fast)
+    {
+        LogEx(ImGuiTestVerboseLevel_Trace, ImGuiTestLogFlags_None, "Sleep(%.2f) -> Yield() in fast mode", time);
+        //ImGuiTestEngine_AddExtraTime(Engine, time); // We could add time, for now we have no use for it...
+        ImGuiTestEngine_Yield(Engine);
+    }
+    else
+    {
+        LogEx(ImGuiTestVerboseLevel_Trace, ImGuiTestLogFlags_None, "Sleep(%.2f)", time);
+        while (time > 0.0f && !Abort)
+        {
+            ImGuiTestEngine_Yield(Engine);
+            time -= UiContext->IO.DeltaTime;
+        }
+    }
+}
+
+// This is useful when you need to wait a certain amount of time (even in Fast mode)
 // Sleep for a given clock time from the point of view of the imgui context, without affecting wall clock time of the running application.
 void    ImGuiTestContext::SleepNoSkip(float time, float frame_time_step)
 {

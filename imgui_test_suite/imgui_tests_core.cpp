@@ -1696,7 +1696,7 @@ void RegisterTests_Window(ImGuiTestEngine* e)
     };
 
     // ## Test window scrolling using mouse wheel.
-    t = IM_REGISTER_TEST(e, "window", "window_scroll_with_wheel");
+    t = IM_REGISTER_TEST(e, "window", "window_scroll_wheel");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         ImGui::SetNextWindowSize(ImVec2(100, 100), ImGuiCond_Always);
@@ -1751,8 +1751,9 @@ void RegisterTests_Window(ImGuiTestEngine* e)
         }
     };
 
-    // ## Test window scrolling using mouse wheel over a child window.
-    t = IM_REGISTER_TEST(e, "window", "window_scroll_over_child");
+    // ## Test window scrolling lock (g.WheelingWindow) using mouse wheel over a child window.
+    // TODO: test #3795, #4559
+    t = IM_REGISTER_TEST(e, "window", "window_scroll_wheel_lock");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         ImGui::SetNextWindowSize(ImVec2(200.0f, 200.0f), ImGuiCond_Always);
