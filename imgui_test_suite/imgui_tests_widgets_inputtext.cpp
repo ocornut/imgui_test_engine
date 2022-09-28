@@ -554,6 +554,11 @@ void RegisterTests_WidgetsInputText(ImGuiTestEngine* e)
         ctx->ItemClick("Password");
         ctx->KeyCharsAppendEnter("Totally not Password123");
         ctx->ItemDoubleClick("Password");
+        state = ImGui::GetInputTextState(ctx->GetID("Password"));
+        IM_CHECK(state != NULL);
+#if IMGUI_VERSION_NUM >= 18825
+        IM_CHECK((state->Flags & ImGuiInputTextFlags_Password) != 0); // Verify flags are persistent (#5724)
+#endif
         IM_CHECK_EQ(stb.select_start, 0);
         IM_CHECK_EQ(stb.select_end, 23);
         IM_CHECK_EQ(stb.cursor, 23);
