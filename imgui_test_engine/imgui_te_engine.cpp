@@ -1382,7 +1382,7 @@ static void ImGuiTestEngine_RunTest(ImGuiTestEngine* engine, ImGuiTestContext* c
     {
         ctx->FrameCount -= 2;
         ctx->Yield();
-        if (test->Status == ImGuiTestStatus_Running) // To allow GuIFunc calling Finish() in first frame
+        if (test->Status == ImGuiTestStatus_Running) // To allow GuiFunc calling Finish() in first frame
             ctx->Yield();
     }
     ctx->FirstTestFrameCount = ctx->FrameCount;

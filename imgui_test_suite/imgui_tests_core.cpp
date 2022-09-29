@@ -3345,6 +3345,43 @@ void RegisterTests_Inputs(ImGuiTestEngine* e)
         ctx->Yield();
         IM_CHECK(io.InputQueueCharacters.Size == 0);
     };
+
+    // ## Test input queue filtering of duplicates (#5599)
+#if IMGUI_VERSION_NUM >= 18828
+    t = IM_REGISTER_TEST(e, "misc", "inputs_io_inputqueue_filtering");
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiContext& g = *ctx->UiContext;
+        ImGuiIO& io = g.IO;
+
+        ctx->RunFlags |= ImGuiTestRunFlags_EnableRawInputs; // Disable TestEngine submitting inputs events
+        ctx->Yield();
+
+        io.AddMousePosEvent(-FLT_MAX, -FLT_MAX);
+        ctx->Yield();
+        IM_CHECK(g.InputEventsQueue.Size == 0);
+
+        io.AddKeyEvent(ImGuiKey_Space, true);
+        io.AddMousePosEvent(100.0f, 100.0f);
+        io.AddMouseButtonEvent(1, true);
+        io.AddMouseWheelEvent(0.0f, 1.0f);
+        IM_CHECK(g.InputEventsQueue.Size == 4);
+
+        io.AddMouseButtonEvent(1, true);
+        io.AddMousePosEvent(100.0f, 100.0f);
+        io.AddKeyEvent(ImGuiKey_Space, true);
+        io.AddMouseWheelEvent(0.0f, 0.0f);
+        IM_CHECK(g.InputEventsQueue.Size == 4);
+
+        ctx->Yield(4);
+        IM_CHECK(g.InputEventsQueue.Size == 0);
+        IM_CHECK(io.AppFocusLost == false);
+        io.AddFocusEvent(true);
+        io.AddFocusEvent(true);
+        IM_CHECK(g.InputEventsQueue.Size == 0);
+    };
+#endif
+
 }
 
 //-------------------------------------------------------------------------
