@@ -423,6 +423,62 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
         IM_CHECK(g.NavId == ctx->GetID("//$FOCUSED/B"));
     };
 
+    // ## Test navigation across menuset_is_open and ImGuiItemFlags_NoWindowHoverableCheck (#5730)
+    t = IM_REGISTER_TEST(e, "nav", "nav_menu_menuset");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        if (ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings))
+        {
+            if (ImGui::BeginMenu("Menu1"))
+            {
+                ImGui::MenuItem("MenuItem1");
+                ImGui::EndMenu();
+            }
+            if (ImGui::BeginMenu("Menu2"))
+            {
+                static float ff = 0.5;
+                ImGui::SliderFloat("float1", &ff, 0.f, 1.f);
+                ImGui::MenuItem("MenuItem2");
+                ImGui::MenuItem("MenuItem2b");
+                ImGui::MenuItem("MenuItem2c");
+                ImGui::EndMenu();
+            }
+            if (ImGui::BeginMenu("Menu3"))
+            {
+                ImGui::MenuItem("MenuItem3");
+                ImGui::EndMenu();
+            }
+            ImGui::MenuItem("MenuItemOutside");
+#if IMGUI_BROKEN_TESTS
+            // FIXME: IsItemHovered() is not supported yet by ImGuiItemFlags_NoWindowHoverableCheck
+            // - Because it already failed before on opened BeginMenu() -> need LastItemData backup/restore
+            // - Need add support in IsItemHovered() + fix BeginMenu() to backup/restore LastItemData around BeginPopup
+            //ImGui::Text("hovered: %d", ImGui::IsItemHovered());
+#endif
+        }
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiContext& g = *ctx->UiContext;
+        ctx->SetRef("//Test Window");
+        ctx->MouseMove("MenuItemOutside"); // Get out of the way
+        ctx->NavMoveTo("Menu1"); // FIXME: ItemClick() would open menu and take focus to sub-menu
+        //IM_SUSPEND_TESTFUNC();
+        ctx->KeyPress(ImGuiKey_DownArrow);
+        IM_CHECK_EQ(g.NavId, ctx->GetID("Menu2"));
+        ctx->KeyPress(ImGuiKey_RightArrow);
+        IM_CHECK_EQ(g.NavId, ctx->GetID("//$FOCUSED/float1"));
+        ctx->KeyPress(ImGuiKey_DownArrow);
+#if IMGUI_VERSION_NUM >= 18826
+        IM_CHECK_EQ(g.NavId, ctx->GetID("//$FOCUSED/MenuItem2"));
+#endif
+#if IMGUI_VERSION_NUM >= 18827
+        ctx->KeyPress(ImGuiKey_LeftArrow);
+        IM_CHECK_EQ(g.NavId, ctx->GetID("Menu2"));
+#endif
+    };
+
     // ## Test CTRL+TAB window focusing
     t = IM_REGISTER_TEST(e, "nav", "nav_ctrl_tab_focusing");
     t->GuiFunc = [](ImGuiTestContext* ctx)

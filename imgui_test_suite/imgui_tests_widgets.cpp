@@ -2758,7 +2758,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ImGui::End();
     };
 
-    // ## Test menu appending.
+    // ## Test menu appending (#1207)
     t = IM_REGISTER_TEST(e, "widgets", "widgets_menu_append");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
@@ -2786,6 +2786,12 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
             if (ImGui::BeginMenu("Second Menu"))
             {
                 ImGui::MenuItem("2 Second");
+
+                // To test left<>right movement within
+                ImGui::Button("AAA");
+                ImGui::SameLine();
+                ImGui::Button("BBB");
+
                 ImGui::EndMenu();
             }
             ImGui::EndMenu();
@@ -2805,6 +2811,19 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         IM_CHECK_EQ(vars.Bool1, true);
         ctx->MenuClick("First Menu/Second Menu/2 First");
         ctx->MenuClick("First Menu/Second Menu/2 Second");
+
+#if IMGUI_VERSION_NUM >= 18827
+        // Test that Left<>Right navigation work on appended menu
+        ImGuiContext& g = *ctx->UiContext;
+        ctx->MenuClick("First Menu/Second Menu/AAA");
+        //ctx->NavMoveTo("//$FOCUSED/AAA");
+        ctx->Yield(2);
+        IM_CHECK_EQ(g.NavId, ctx->GetID("//$FOCUSED/AAA"));
+        ctx->KeyPress(ImGuiKey_RightArrow);
+        IM_CHECK_EQ(g.NavId, ctx->GetID("//$FOCUSED/BBB"));
+        ctx->KeyPress(ImGuiKey_LeftArrow);
+        IM_CHECK_EQ(g.NavId, ctx->GetID("//$FOCUSED/AAA"));
+#endif
     };
 
     // ## Test use of ### operator in menu path
