@@ -1824,7 +1824,7 @@ void RegisterTests_Window(ImGuiTestEngine* e)
 
         // Pause for a while and perform scroll operation when cursor is hovering child. Now child is scrolled.
         float prev_scroll_y = window->Scroll.y;
-        ctx->SleepNoSkip(2.0f, 1.0f / 2.0f);
+        ctx->SleepNoSkip(2.0f, 0.5f);
         ctx->MouseWheelY(-3.0f);
         IM_CHECK_EQ(window->Scroll.y, prev_scroll_y);
         IM_CHECK_GT(child->Scroll.y, 0.0f);
@@ -1881,6 +1881,111 @@ void RegisterTests_Window(ImGuiTestEngine* e)
             IM_CHECK_GT(child->Scroll.x, 0.0f);
             IM_CHECK_EQ(g.HoveredWindow, child);                // Still hovering child
         }
+    };
+
+    // ## Test window scrolling lock (g.WheelingWindow) using mouse wheel over a child window (#3795, #4559)
+    t = IM_REGISTER_TEST(e, "window", "window_scroll_wheel_lock_2");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::SetNextWindowSize(ImVec2(200.0f, 200.0f), ImGuiCond_Always);
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_HorizontalScrollbar);// | ImGuiWindowFlags_AlwaysAutoResize);
+
+        ImGui::Button("Button 1");
+
+        ImGui::BeginChild("Child", ImVec2(0.0f, 200.0f), true);
+        ImGui::Button("Button 2");
+        ImGui::Text("this is a long line of text. this is a long line of text. this is a long line of text. this is a long line of text. ");
+        ImGui::EndChild();
+        for (int n = 0; n < 20; n++)
+            ImGui::Text("%*s some extra contents", n, "");
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiWindow* window = ctx->GetWindowByRef("Test Window");
+        ImGuiWindow* child = ctx->WindowInfo("Test Window/Child")->Window;
+        ImGuiContext& g = *ctx->UiContext;
+        ImGui::SetScrollX(window, 0);
+        ImGui::SetScrollY(window, 0);
+        ImGui::SetScrollX(child, 0);
+        ImGui::SetScrollY(child, 0);
+        ctx->Yield();
+
+        ctx->SetRef("Test Window");
+        IM_CHECK_EQ(window->Scroll, ImVec2(0.0f, 0.0f));
+        IM_CHECK_EQ(child->Scroll, ImVec2(0.0f, 0.0f));
+
+        // Test horizontal scroll
+        ctx->MouseMove("**/Button 2");
+        ctx->MouseWheelX(-10.0f); // FIXME
+        ctx->Yield();
+        IM_CHECK_EQ(window->Scroll.x, 0.0f);
+        IM_CHECK_GT(child->Scroll.x, 0.0f);
+        IM_CHECK(g.WheelingWindow == child);
+
+        // Verify we are locked
+        ctx->MouseWheelY(+1.0f);
+        IM_CHECK_EQ(window->Scroll.y, 0.0f);
+        IM_CHECK_EQ(child->Scroll.y, 0.0f);
+        IM_CHECK(g.WheelingWindow == child);
+        ctx->SleepNoSkip(2.0f, 0.5f);
+        IM_CHECK(g.WheelingWindow == NULL);
+        ImGui::SetScrollX(child, 0);
+        ImGui::SetScrollY(window, 0);
+        ctx->Yield();
+
+        // Test ambiguous scrolling (#3795, #4459)
+#if IMGUI_VERSION_NUM >= 18913
+        IM_CHECK_EQ(window->Scroll.y, 0.0f);
+        ctx->MouseWheel(ImVec2(1.0f, -10.0f));
+        IM_CHECK_EQ(window->Scroll.y, 0.0f); // This assume that MouseWheel() only did a single Yield() after injecting value, might change.
+        ctx->Yield();
+        IM_CHECK_GT(window->Scroll.y, 0.0f);
+
+        ImGui::SetScrollX(child, 0);
+        ImGui::SetScrollY(window, 0);
+        ctx->SleepNoSkip(2.0f, 0.5f);
+        IM_CHECK(g.WheelingWindow == NULL);
+        ctx->MouseMove("**/Button 2");
+        ctx->MouseWheel(ImVec2(-10.0f, 1.0f));
+        IM_CHECK_EQ(child->Scroll.x, 0.0f); // This assume that MouseWheel() only did a single Yield() after injecting value, might change.
+        ctx->Yield();
+        IM_CHECK_GT(child->Scroll.x, 0.0f);
+#endif
+
+        // Test for trashed inertia (#3795)
+        // "When you scroll quickly with the touchpad and "lift" your fingers, the "virtual" wheel still
+        // has inertial, which should probably NOT "reset" the timer to full 0.8s WHEN the "inertial" did
+        // NOT have any visible effect (scrolling past limit): because when an user did scroll, if the
+        // inertia "continues" to ... "non"-scrolling, then the user probably expects a quick "scrolling
+        // on another axe" to execute. which will not if the previous axis was still locked."
+        ImGui::SetScrollX(child, 0);
+        ImGui::SetScrollY(window, 0);
+        ctx->SleepNoSkip(2.0f, 0.5f);
+        ctx->MouseWheelY(-1.0f);
+        ctx->Yield();
+        ctx->MouseWheelY(-0.1f);
+        ctx->Yield();
+        float timer0 = g.WheelingWindowReleaseTimer;
+        ctx->SleepNoSkip(timer0 * 0.9f, timer0 * 0.9f);
+        for (int n = 0; n < 20; n++)
+        {
+            // Value tuned so we can watch the timer reducing down from WINDOWS_MOUSE_WHEEL_SCROLL_LOCK_TIMER
+            // - Each wheeling raise the timer by 0.05 * WINDOWS_MOUSE_WHEEL_SCROLL_LOCK_TIMER
+            // - Each yield() + sleep reduces it, normally with those values the decrease should be larger than the increase.
+            ctx->MouseWheelY(-0.05f);
+            ctx->LogDebug("WheelingWindowReleaseTimer = %.3f after wheeling", g.WheelingWindowReleaseTimer);
+            ctx->SleepNoSkip(0.05f, 0.05f);
+            ctx->Yield();
+        }
+        float timer1 = g.WheelingWindowReleaseTimer;
+        IM_CHECK(timer1 < timer0);
+        IM_CHECK(timer1 == 0.0f);
+        IM_CHECK(g.WheelingWindow == NULL);
+        IM_CHECK_GT(window->Scroll.y, 0.0f);
+        ctx->MouseWheelX(-10.0f); // FIXME
+        ctx->Yield();
+        IM_CHECK(g.WheelingWindow == child);
     };
 
     // ## Test window moving

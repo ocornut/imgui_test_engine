@@ -2138,7 +2138,7 @@ void    ImGuiTestContext::MouseWheel(ImVec2 delta)
 
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
 
-    LogDebug("MouseWheel(%d, %d)", (int)delta.x, (int)delta.y);
+    LogDebug("MouseWheel(%g, %g)", delta.x, delta.y);
     if (EngineIO->ConfigRunSpeed == ImGuiTestRunSpeed_Cinematic)
         SleepStandard();
 
