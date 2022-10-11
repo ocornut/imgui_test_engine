@@ -298,16 +298,18 @@ struct IMGUI_API ImGuiTestContext
     void        PopupCloseOne();
     void        PopupCloseAll();
 
-    // ID
+    // Get hash for a decorated ID Path.
     // Note: for windows you may use WindowInfo()
     ImGuiID     GetID(ImGuiTestRef ref);
     ImGuiID     GetID(ImGuiTestRef ref, ImGuiTestRef seed_ref);
-    ImGuiID     GetIDByInt(int n);
+    ImGuiID     GetChildWindowID(ImGuiTestRef parent_ref, const char* child_name);  // Name created by BeginChild("name", ...), using specified parent. // FIXME: Will obsolete. Prefer using WindowInfo()
+    ImGuiID     GetChildWindowID(ImGuiTestRef parent_ref, ImGuiID child_id);        // Name created by BeginChild(id, ...), using specified parent. // FIXME: Will obsolete. Prefer using WindowInfo()
+#ifndef IMGUI_DISABLE_OBSOLETE_FUNCTIONS
+    ImGuiID     GetIDByInt(int n);                                                  // Prefer using "$$123"
     ImGuiID     GetIDByInt(int n, ImGuiTestRef seed_ref);
-    ImGuiID     GetIDByPtr(void* p);
+    ImGuiID     GetIDByPtr(void* p);                                                // Prefer using "$$(ptr)0xFFFFFFFF"
     ImGuiID     GetIDByPtr(void* p, ImGuiTestRef seed_ref);
-    ImGuiID     GetChildWindowID(ImGuiTestRef parent_ref, const char* child_name);  // Name created by BeginChild("name", ...), using specified parent.
-    ImGuiID     GetChildWindowID(ImGuiTestRef parent_ref, ImGuiID child_id);        // Name created by BeginChild(id, ...), using specified parent.
+#endif
 
     // Misc
     ImVec2      GetPosOnVoid();                                                     // Find a point that has no windows // FIXME-VIEWPORT: This needs a viewport

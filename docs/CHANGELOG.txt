@@ -4,6 +4,13 @@ CHANGELOG
 ** For a while this is going to include only breaking changes.
 ** As we slowly transition toward releasing the test engine, this will become a more full fledged changelog.
 
+2022/10/11
+- TestEngine: literals can now easily be encoded in decorated path strings using "$$xxxx",
+  making it easier to access items for which the ID stack used PushID(int) or PushID(void*).
+     ItemClick("list/$$1/button") : match id for PushID("list"), PushID(1), Item("button");
+- TestEngine: removed 'ImGuiTestContext::GetIDByInt(int n)'' in favor of using "$$123" syntax.
+- TestEngine: removed 'ImGuiTestContext::GetIDByPtr(void* ptr)'' in favor of using "$$(ptr)0xFFFFFFFF" syntax.
+
 2022/09/26
 - TestEngine: simplified merged Key functions following simplification in core lib.
      ctx->KeyDown(ImGuiKey key, ImGuiKeyChord mods = 0);                 -> KeyDown(ImGuiKeyChord key_chord);

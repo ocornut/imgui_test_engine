@@ -520,6 +520,12 @@ ImGuiID ImGuiTestContext::GetID(ImGuiTestRef ref)
     return GetID(ref, RefID);
 }
 
+// Refer to Wiki to read about
+// - Meaning of trailing "//" ................ "//rootnode" : ignore SetRef
+// - Meaning of trailing "//$FOCUSED" ........ "//$FOCUSED/node" : "node" in currently focused window
+// - Meaning of trailing "/" ................. "/node" : move to root of window pointed by SetRef() when SetRef() uses a path
+// - Meaning of trailing "../" ............... "../node" : move back 1 level from SetRef path() when SetRef() uses a path
+// - Meaning of $$xxxx literal encoding ...... "list/$1" : hash of "list" + hash if (int)1, equivalent of PushID("hello"); PushID(1);
 ImGuiID ImGuiTestContext::GetID(ImGuiTestRef ref, ImGuiTestRef seed_ref)
 {
     ImGuiContext& g = *UiContext;
@@ -574,6 +580,7 @@ ImGuiID ImGuiTestContext::GetID(ImGuiTestRef ref, ImGuiTestRef seed_ref)
     return ImHashDecoratedPath(path, NULL, seed_ref.Path ? GetID(seed_ref) : seed_ref.ID);
 }
 
+#ifndef IMGUI_DISABLE_OBSOLETE_FUNCTIONS
 ImGuiID ImGuiTestContext::GetIDByInt(int n)
 {
     return ImHashData(&n, sizeof(n), GetID(RefID));
@@ -593,6 +600,7 @@ ImGuiID ImGuiTestContext::GetIDByPtr(void* p, ImGuiTestRef seed_ref)
 {
     return ImHashData(&p, sizeof(p), GetID(seed_ref));
 }
+#endif
 
 // Helper function for GetChildWindowID()
 static bool GetChildWindowID_ExtractWindowNameAndId(ImGuiTestContext* ctx, ImGuiTestRef window_ref, Str* out_name, ImGuiID* out_id)
@@ -653,6 +661,7 @@ static bool GetChildWindowID_ExtractWindowNameAndId(ImGuiTestContext* ctx, ImGui
 }
 
 // Mimic logic of BeginChildEx(), ASSUMING child is output in root of parent
+// FIXME: Will obsolete. Prefer using WindowInfo()!
 ImGuiID ImGuiTestContext::GetChildWindowID(ImGuiTestRef parent_ref, const char* child_name)
 {
     IM_ASSERT(child_name != NULL);
@@ -675,6 +684,7 @@ ImGuiID ImGuiTestContext::GetChildWindowID(ImGuiTestRef parent_ref, const char* 
     return GetID(Str128f("//%s\\/%s_%08X", parent_name.c_str(), child_name, child_item_id).c_str());
 }
 
+// FIXME: Will obsolete. Prefer using WindowInfo()!
 ImGuiID ImGuiTestContext::GetChildWindowID(ImGuiTestRef parent_ref, ImGuiID child_id)
 {
     IM_ASSERT(child_id != 0);
