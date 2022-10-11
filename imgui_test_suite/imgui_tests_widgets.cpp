@@ -843,10 +843,9 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
 
         // FIXME-TESTS: Better helper to build ids out of various type of data
         ctx->SetRef("Test Window");
-        int n;
-        n = 0; ImGuiID field_0 = ImHashData(&n, sizeof(n), ctx->GetID("Field"));
-        n = 1; ImGuiID field_1 = ImHashData(&n, sizeof(n), ctx->GetID("Field"));
-        //n = 2; ImGuiID field_2 = ImHashData(&n, sizeof(n), ctx->GetID("Field"));
+        ImGuiID field_0 = ctx->GetID("Field/$$0");
+        ImGuiID field_1 = ctx->GetID("Field/$$1");
+        //ImGuiID field_2 = ctx->GetID("Field/$$2"));
 
         // Testing activation/deactivation flags
         ctx->ItemClick(field_0);

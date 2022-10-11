@@ -3625,8 +3625,8 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
         IM_CHECK_EQ(ImHashDecoratedPath("Hello/world###Blah"), ImHashStr("###Blah", 0, ImHashStr("Hello")));
     };
 
-    // ## Test GetID() + SetRef() behaviors.
-    t = IM_REGISTER_TEST(e, "misc", "misc_hash_002");
+    // ## Test GetID() + SetRef() behaviors. Test "//$FOCUSED" function.
+    t = IM_REGISTER_TEST(e, "misc", "misc_hash_002_paths");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
@@ -3702,8 +3702,27 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
         IM_CHECK_EQ(frame_number, g.FrameCount);
     };
 
+    // ## Test "$$xxxx" literals encoders
+    t = IM_REGISTER_TEST(e, "misc", "misc_hash_003_scalar_literals");
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        int v_42 = 42;
+        int v_n1 = -1;
+        IM_CHECK_EQ(ImHashDecoratedPath("$$42"), ImHashData(&v_42, sizeof(int)));
+        IM_CHECK_EQ(ImHashDecoratedPath("$$-1"), ImHashData(&v_n1, sizeof(int)));
+
+        IM_CHECK_EQ(ImHashDecoratedPath("hello/$$42"), ImHashData(&v_42, sizeof(int), ImHashStr("hello")));
+        IM_CHECK_EQ(ImHashDecoratedPath("hello/$$-1"), ImHashData(&v_n1, sizeof(int), ImHashStr("hello")));
+
+        IM_CHECK_EQ(ImHashDecoratedPath("$$42/hello"), ImHashStr("hello", 0, ImHashData(&v_42, sizeof(int))));
+        IM_CHECK_EQ(ImHashDecoratedPath("$$-1/hello"), ImHashStr("hello", 0, ImHashData(&v_n1, sizeof(int))));
+
+        IM_CHECK_EQ(ImHashDecoratedPath("hello/$$42/world"), ImHashStr("world", 0, ImHashData(&v_42, sizeof(int), ImHashStr("hello"))));
+        IM_CHECK_EQ(ImHashDecoratedPath("hello/$$-1/world"), ImHashStr("world", 0, ImHashData(&v_n1, sizeof(int), ImHashStr("hello"))));
+    };
+
     // ## Test ID/hash of window names
-    t = IM_REGISTER_TEST(e, "misc", "misc_hash_003");
+    t = IM_REGISTER_TEST(e, "misc", "misc_hash_004_window_names");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         ImGuiContext& g = *ctx->UiContext;
@@ -5429,7 +5448,7 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
 
             // Select picker type
             ctx->SetRef("//$FOCUSED");
-            ctx->MouseMove(ctx->GetID("##selectable", ctx->GetIDByInt(picker_type)));
+            ctx->MouseMove(ctx->GetID(Str30f("$$%d/##selectable", picker_type).c_str()));
             ctx->MouseClick(0);
 
             // Interact with picker

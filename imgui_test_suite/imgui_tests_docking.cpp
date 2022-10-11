@@ -1349,7 +1349,7 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
         ImGuiWindow* last_focused_window = g.NavWindow;
 
         ImGuiWindow* root_dock = last_focused_window->RootWindowDockTree;
-        ImGuiID splitter_id = ctx->GetID("##Splitter", ctx->GetIDByInt(root_dock->DockNodeAsHost->ID, ctx->GetID(root_dock->Name)));
+        ImGuiID splitter_id = ctx->GetID(Str64f("%s/$$%d/##Splitter", root_dock->Name, root_dock->DockNodeAsHost->ID).c_str());
         ctx->MouseMove(splitter_id);
         ctx->MouseDragWithDelta(ImVec2(0.0f, 10.0f));
         // FIXME-TESTS: This would fail due to a bug (#3820)

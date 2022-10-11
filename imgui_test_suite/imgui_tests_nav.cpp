@@ -872,11 +872,11 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
             IM_CHECK(child_window != NULL);
             ctx->SetRef(child_window->ID);
             ctx->ScrollTo(demo_window->ID, ImGuiAxis_Y, (child_window->Pos - demo_window->Pos).y);  // Required because buttons do not register their IDs when out of view (SkipItems == true).
-            ctx->NavMoveTo(ctx->GetID("1", ctx->GetIDByInt(1)));        // Focus item within a child window.
-            ctx->KeyPress(ImGuiMod_Alt);                                // Focus menu
-            ctx->NavActivate();                                         // Open menu, focus first item in the menu.
-            ctx->NavActivate();                                         // Activate first item in the menu.
-            IM_CHECK_EQ(g.NavId, ctx->GetID("1", ctx->GetIDByInt(1)));  // Verify NavId was restored to initial value.
+            ctx->NavMoveTo("$$1/1");                    // Focus item within a child window.
+            ctx->KeyPress(ImGuiMod_Alt);                // Focus menu
+            ctx->NavActivate();                         // Open menu, focus first item in the menu.
+            ctx->NavActivate();                         // Activate first item in the menu.
+            IM_CHECK_EQ(g.NavId, ctx->GetID("$$1/1"));  // Verify NavId was restored to initial value.
 
             ctx->SetRef("Dear ImGui Demo");
             ctx->ItemClose("Scrolling");
@@ -1946,8 +1946,7 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
         ctx->Yield(2);
         vars.Step = 4;
         ctx->Yield(2);
-        int field_idx = 2;
-        IM_CHECK_EQ(g.ActiveId, ImHashData(&field_idx, sizeof(int), ctx->GetID("Float4")));
+        IM_CHECK_EQ(g.ActiveId, ctx->GetID("Float4/$$2"));
 
 #if IMGUI_VERSION_NUM >= 18420
         // Test focusing next item when it disappears (#432)

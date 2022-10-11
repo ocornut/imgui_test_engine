@@ -33,14 +33,41 @@
 //-----------------------------------------------------------------------------
 // Hashing Helpers
 //-----------------------------------------------------------------------------
-// - ImHashDecoratedPath
-// - ImFindNextDecoratedPartInPath
+// - ImHashDecoratedPathParseLiteral() [internal]
+// - ImHashDecoratedPath()
+// - ImFindNextDecoratedPartInPath()
 //-----------------------------------------------------------------------------
+
+// - Parse literals encoded as "$$xxxx/" and incorporate into our hash based on type.
+// - $$ not passed by caller.
+static ImGuiID ImHashDecoratedPathParseLiteral(ImGuiID crc, const unsigned char* str, const unsigned char* str_end, const unsigned char** out_str_remaining)
+{
+    // Default: $$???? where ???? is 'int'
+    // TODO: syntax for other types: e.g. "$$0x????" where ???? is 'void*' ? "$$(void*)????" explicit type names for non-int?
+    {
+        int negative = 0;
+        if (str < str_end && *str == '-') { negative = 1; str++; }
+        if (str < str_end && *str == '+') { str++; }
+        int v = 0;
+        while (str < str_end && *str >= '0' && *str <= '9')
+            v = (v * 10) + (*str++ - '0');
+        if (negative)
+            v = -v;
+        crc = ~ImHashData(&v, sizeof(int), ~crc);
+    }
+
+    // "$$xxxx" must always be either end of string, either leading to a next section e.g. "$$xxxx/"
+    IM_ASSERT(str == str_end || *str == '/');
+
+    *out_str_remaining = str;
+    return crc;
+}
 
 // Hash "hello/world" as if it was "helloworld"
 // To hash a forward slash we need to use "hello\\/world"
-//   IM_ASSERT(ImHashDecoratedPath("Hello/world")   == ImHash("Helloworld", 0));
-//   IM_ASSERT(ImHashDecoratedPath("Hello\\/world") == ImHash("Hello/world", 0));
+//   IM_ASSERT(ImHashDecoratedPath("Hello/world")   == ImHashStr("Helloworld", 0));
+//   IM_ASSERT(ImHashDecoratedPath("Hello\\/world") == ImHashStr("Hello/world", 0));
+//   IM_ASSERT(ImHashDecoratedPath("$$1")           == (n = 1, ImHashData(&n, sizeof(int))));
 // Adapted from ImHash(). Not particularly fast!
 ImGuiID ImHashDecoratedPath(const char* str, const char* str_end, ImGuiID seed)
 {
@@ -64,17 +91,18 @@ ImGuiID ImHashDecoratedPath(const char* str, const char* str_end, ImGuiID seed)
     seed = ~seed;
     ImU32 crc = seed;
 
-    // Zero-terminated string
-    bool inhibit_one = false;
-    const unsigned char* current = (const unsigned char*)str;
-    while (true)
-    {
-        if (str_end != NULL && current == (const unsigned char*)str_end)
-            break;
+    // Focus for non-zero terminated string for consistency
+    if (str_end == NULL)
+        str_end = str + strlen(str);
 
+    bool inhibit_one = false;
+    bool new_section = true;
+    const unsigned char* current = (const unsigned char*)str;
+    while (current < (const unsigned char*)str_end)
+    {
         const unsigned char c = *current++;
-        if (c == 0)
-            break;
+
+        // Backslash to inhibit special behavior of following character
         if (c == '\\' && !inhibit_one)
         {
             inhibit_one = true;
@@ -85,7 +113,17 @@ ImGuiID ImHashDecoratedPath(const char* str, const char* str_end, ImGuiID seed)
         if (c == '/' && !inhibit_one)
         {
             inhibit_one = false;
+            new_section = true;
             seed = crc; // Set seed to the new path
+            continue;
+        }
+
+        // $$ at the beginning of a section to encode literals.
+        // - Currently: "$$????" = hash of 1 as int
+        // - May add pointers and other types.
+        if (c == '$' && current[0] == '$' && !inhibit_one && new_section)
+        {
+            crc = ImHashDecoratedPathParseLiteral(crc, current + 1, (const unsigned char*)str_end, &current);
             continue;
         }
 
@@ -93,8 +131,10 @@ ImGuiID ImHashDecoratedPath(const char* str, const char* str_end, ImGuiID seed)
         if (c == '#' && current[0] == '#' && current[1] == '#')
             crc = seed;
 
+        // Hash byte
         crc = (crc >> 8) ^ crc32_lut[(crc & 0xFF) ^ c];
-        inhibit_one = false;
+
+        inhibit_one = new_section = false;
     }
     return ~crc;
 }
