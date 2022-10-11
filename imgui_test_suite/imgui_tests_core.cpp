@@ -3719,6 +3719,12 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
 
         IM_CHECK_EQ(ImHashDecoratedPath("hello/$$42/world"), ImHashStr("world", 0, ImHashData(&v_42, sizeof(int), ImHashStr("hello"))));
         IM_CHECK_EQ(ImHashDecoratedPath("hello/$$-1/world"), ImHashStr("world", 0, ImHashData(&v_n1, sizeof(int), ImHashStr("hello"))));
+
+        void* p_123FFF = (void*)(intptr_t)0x123FFF;
+        IM_CHECK_EQ(ImHashDecoratedPath("$$(ptr)0x123FFF"), ImHashData(&p_123FFF, sizeof(void*)));
+        IM_CHECK_EQ(ImHashDecoratedPath("hello/$$(ptr)0x123FFF"), ImHashData(&p_123FFF, sizeof(void*), ImHashStr("hello")));
+        IM_CHECK_EQ(ImHashDecoratedPath("$$(ptr)0x123FFF/hello"), ImHashStr("hello", 0, ImHashData(&p_123FFF, sizeof(void*))));
+        IM_CHECK_EQ(ImHashDecoratedPath("hello/$$(ptr)0x123FFF/world"), ImHashStr("world", 0, ImHashData(&p_123FFF, sizeof(void*), ImHashStr("hello"))));
     };
 
     // ## Test ID/hash of window names

@@ -42,18 +42,62 @@
 // - $$ not passed by caller.
 static ImGuiID ImHashDecoratedPathParseLiteral(ImGuiID crc, const unsigned char* str, const unsigned char* str_end, const unsigned char** out_str_remaining)
 {
-    // Default: $$???? where ???? is 'int'
-    // TODO: syntax for other types: e.g. "$$0x????" where ???? is 'void*' ? "$$(void*)????" explicit type names for non-int?
+    // Parse type (default to int)
+    ImGuiDataType type = ImGuiDataType_S32;
+    if (*str == '(')
     {
-        int negative = 0;
-        if (str < str_end && *str == '-') { negative = 1; str++; }
-        if (str < str_end && *str == '+') { str++; }
+        // "$$(int)????" where ???? is s32 or u32
+        if (str + 5 < str_end && memcmp(str, "(int)", 5) == 0)
+        {
+            type = ImGuiDataType_S32;
+            str += 5;
+        }
+        // "$$(ptr)0x????" where ???? is ptr size
+        else if (str + 7 < str_end && memcmp(str, "(ptr)0x", 7) == 0)
+        {
+            type = ImGuiDataType_Pointer;
+            str += 7;
+        }
+    }
+
+    // Parse value
+    switch (type)
+    {
+    case ImGuiDataType_S32:
+    {
+        // e.g. "$$(int)123" for s32/u32/ImGuiID, same as PushID(int)
         int v = 0;
-        while (str < str_end && *str >= '0' && *str <= '9')
-            v = (v * 10) + (*str++ - '0');
-        if (negative)
-            v = -v;
+        {
+            int negative = 0;
+            if (str < str_end && *str == '-') { negative = 1; str++; }
+            if (str < str_end && *str == '+') { str++; }
+            for (char c = *str; str < str_end; c = *(++str))
+            {
+                if (c >= '0' && c <= '9') { v = (v * 10) + (c - '0'); }
+                else break;
+            }
+            if (negative)
+                v = -v;
+        }
         crc = ~ImHashData(&v, sizeof(int), ~crc);
+        break;
+    }
+    case ImGuiDataType_Pointer:
+    {
+        // e.g. "$$(ptr)0x1234FFFF" for pointers, same as PushID(void*)
+        intptr_t v = 0;
+        {
+            for (char c = *str; str < str_end; c = *(++str))
+            {
+                if (c >= '0' && c <= '9')       { v = (v << 4) + (c - '0'); }
+                else if (c >= 'A' && c <= 'F')  { v = (v << 4) + 10 + (c - 'A'); }
+                else if (c >= 'a' && c <= 'f')  { v = (v << 4) + 10 + (c - 'a'); }
+                else break;
+            }
+        }
+        crc = ~ImHashData(&v, sizeof(void*), ~crc);
+        break;
+    }
     }
 
     // "$$xxxx" must always be either end of string, either leading to a next section e.g. "$$xxxx/"
