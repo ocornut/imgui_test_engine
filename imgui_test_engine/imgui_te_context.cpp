@@ -603,27 +603,6 @@ ImGuiID ImGuiTestContext::GetIDByPtr(void* p, ImGuiTestRef seed_ref)
 }
 #endif
 
-// Mimic logic of BeginChildEx().
-static ImGuiID GetChildWindowID(ImGuiWindow* parent_window, const char* child_name, ImGuiID parent_idstack_back)
-{
-    IM_ASSERT(child_name != NULL);
-
-    size_t child_name_len = strlen(child_name);
-    IM_ASSERT(child_name_len > 0);
-    IM_ASSERT(child_name[child_name_len - 1] != '/'); // child_name should not end with a slash. // FIXME: Don't assert
-
-    ImGuiID child_item_id = ImHashStr(child_name, child_name_len, parent_idstack_back ? parent_idstack_back : parent_window->ID);
-    Str128f full_child_name("%s/%s_%08X", parent_window->Name, child_name, child_item_id);
-    return ImHashStr(full_child_name.c_str());
-}
-
-static ImGuiID GetChildWindowID(ImGuiWindow* parent_window, ImGuiID child_id)
-{
-    IM_ASSERT(child_id != 0);
-    Str128f full_child_name("%s/%08X", parent_window->Name, child_id);
-    return ImHashStr(full_child_name.c_str());
-}
-
 ImVec2 ImGuiTestContext::GetMainMonitorWorkPos()
 {
 #ifdef IMGUI_HAS_VIEWPORT
@@ -1074,14 +1053,23 @@ ImGuiTestItemInfo* ImGuiTestContext::WindowInfo(ImGuiTestRef ref, ImGuiTestOpFla
             }
             else
             {
-                // Child: Try to BeginChild(const char*) variant.
-                ImGuiID child_window_id = GetChildWindowID(window, part_name.c_str(), window_idstack_back);
-                ImGuiWindow* child_window = GetWindowByRef(child_window_id);
+                ImGuiID child_window_id = 0;
+                ImGuiWindow* child_window = NULL;
+                {
+                    // Child: Attempt 1: Try to BeginChild(const char*) variant and mimic its logic.
+                    ImGuiID child_item_id = GetID(part_name.c_str(), window_idstack_back);
+                    Str128f child_window_full_name("%s/%s_%08X", window->Name, part_name.c_str(), child_item_id);
+                    child_window_id = ImHashStr(child_window_full_name.c_str());
+                    child_window = GetWindowByRef(child_window_id);
+                }
                 if (child_window == NULL)
                 {
-                    // Try for BeginChild(ImGuiID id) variant.
-                    // FIXME: This only really works when ID is derived from a string.
-                    child_window_id = GetChildWindowID(window, GetID(part_name.c_str(), window_idstack_back));
+                    // Child: Attempt 2: Try for BeginChild(ImGuiID id) variant and mimic its logic.
+                    // FIXME: This only really works when ID passed to BeginChild() was derived from a string.
+                    // We could support $$xxxx syntax to encode ID in parameter?
+                    ImGuiID child_item_id = GetID(part_name.c_str(), window_idstack_back);
+                    Str128f child_window_full_name("%s/%08X", window->Name, child_item_id);
+                    child_window_id = ImHashStr(child_window_full_name.c_str());
                     child_window = GetWindowByRef(child_window_id);
                 }
                 if (child_window == NULL)
