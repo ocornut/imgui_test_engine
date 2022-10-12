@@ -467,8 +467,8 @@ struct IMGUI_API ImGuiTestContext
     void        PerfCapture(const char* category = NULL, const char* test_name = NULL, const char* csv_file = NULL);
 
     // Obsolete functions
-    ImGuiID     GetChildWindowID(ImGuiTestRef parent_ref, const char* child_name);  // Name created by BeginChild("name", ...), using specified parent. // FIXME: Will obsolete. Prefer using WindowInfo()
-    ImGuiID     GetChildWindowID(ImGuiTestRef parent_ref, ImGuiID child_id);        // Name created by BeginChild(id, ...), using specified parent. // FIXME: Will obsolete. Prefer using WindowInfo()
+    ImGuiID     GetChildWindowID(ImGuiTestRef parent_ref, const char* child_name, ImGuiID parent_idstack_back = 0); // Name created by BeginChild("name", ...), using specified parent. // FIXME: Will obsolete. Prefer using WindowInfo()
+    ImGuiID     GetChildWindowID(ImGuiTestRef parent_ref, ImGuiID child_id);                                        // Name created by BeginChild(id, ...), using specified parent. // FIXME: Will obsolete. Prefer using WindowInfo()
 #ifndef IMGUI_DISABLE_OBSOLETE_FUNCTIONS
     // Obsoleted 2022/10/11
     ImGuiID     GetIDByInt(int n);                                      // Prefer using "$$123"

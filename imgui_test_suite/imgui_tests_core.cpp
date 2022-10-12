@@ -3583,8 +3583,8 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
         IM_CHECK_EQ(ctx->GetID("/Foo"), ImHashDecoratedPath("Hello, world!/Foo"));  // "/" uses current window as a seed.
 
         // SetRef() with child windows.
-        ImGuiID child_id = ctx->GetChildWindowID("Test Window", "Child");
-        ImGuiWindow* child_window = ctx->GetWindowByRef(child_id);
+        ImGuiWindow* child_window = ctx->WindowInfo("//Test Window/Child")->Window;
+        IM_CHECK(child_window != NULL);
         Str64 ref(child_window->Name);
         ImStrReplace(&ref, "/", "\\/");
         ref.append("/float");
@@ -3592,8 +3592,8 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
         frame_number = g.FrameCount;
         ctx->SetRef(ImGuiTestRef());    // Easier to reset RefID than to prepend child window with "//".
         ctx->SetRef(ref.c_str());
-        IM_CHECK_EQ(ctx->RefID, ImHashDecoratedPath("float", NULL, child_id));
-        IM_CHECK_EQ(ctx->RefWindowID, child_id);
+        IM_CHECK_EQ(ctx->RefID, ImHashDecoratedPath("float", NULL, child_window->ID));
+        IM_CHECK_EQ(ctx->RefWindowID, child_window->ID);
         IM_CHECK_EQ(frame_number, g.FrameCount);
     };
 
@@ -3635,10 +3635,6 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
         ImGui::Begin("Test Window###WithHashes", NULL, ImGuiWindowFlags_NoSavedSettings);
         IM_CHECK_EQ(g.CurrentWindow->ID, ImHashDecoratedPath("Test Window###WithHashes"));
         IM_CHECK_EQ(g.CurrentWindow->ID, ImHashDecoratedPath("###WithHashes"));
-        //ImGuiID parent_id = g.CurrentWindow->ID;
-        //ImGui::BeginChild("Child1");
-        //IM_CHECK_EQ(ctx->GetChildWindowID(g.CurrentWindow->ID, "Child1"));
-        //ImGui::EndChild();
         ImGui::End();
 
         ImGui::Begin("Test Window/WithSlash", NULL, ImGuiWindowFlags_NoSavedSettings);
@@ -3901,7 +3897,6 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
         // Test for missing/non-found window
         window_info = ctx->WindowInfo("//Test Window/Item", ImGuiTestOpFlags_NoError);
         IM_CHECK(window_info->ID == 0 && window_info->Window == NULL);
-
         window_info = ctx->WindowInfo("//Test Window/NotExisting", ImGuiTestOpFlags_NoError);
         IM_CHECK(window_info->ID == 0 && window_info->Window == NULL);
 
@@ -3913,13 +3908,13 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
         IM_CHECK(window_info->ID != 0 && window_info->Window != NULL);
 
         // Test when child is not in root of parent window (used ID stack)
-#if IMGUI_BROKEN_TEST
         ctx->SetRef("//Test Window");
         window_info = ctx->WindowInfo("Folder/Child3");
         IM_CHECK(window_info->ID != 0 && window_info->Window != NULL);
         window_info = ctx->WindowInfo("//Test Window/Folder/Child3");
         IM_CHECK(window_info->ID != 0 && window_info->Window != NULL);
-#endif
+        window_info = ctx->WindowInfo("//Test Window/Folder/NotExisting", ImGuiTestOpFlags_NoError);
+        IM_CHECK(window_info->ID == 0 && window_info->Window == NULL);
 
         // FIXME: Missing tests for wildcards.
     };

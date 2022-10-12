@@ -4,6 +4,9 @@ CHANGELOG
 ** For a while this is going to include only breaking changes.
 ** As we slowly transition toward releasing the test engine, this will become a more full fledged changelog.
 
+2022/10/12
+- TestEngine: WindowInfo() support when child is not in root of parent window.
+
 2022/10/11
 - TestEngine: literals can now easily be encoded in decorated path strings using "$$xxxx",
   making it easier to access items for which the ID stack used PushID(int) or PushID(void*).

@@ -603,7 +603,6 @@ ImGuiID ImGuiTestContext::GetIDByPtr(void* p, ImGuiTestRef seed_ref)
 }
 #endif
 
-// Helper function for GetChildWindowID()
 static bool GetChildWindowID_ExtractWindowNameAndId(ImGuiTestContext* ctx, ImGuiTestRef window_ref, Str* out_name, ImGuiID* out_id)
 {
     IM_ASSERT(out_name != NULL || out_id != NULL);
@@ -661,9 +660,9 @@ static bool GetChildWindowID_ExtractWindowNameAndId(ImGuiTestContext* ctx, ImGui
     return true;
 }
 
-// Mimic logic of BeginChildEx(), ASSUMING child is output in root of parent
+// Mimic logic of BeginChildEx().
 // FIXME: Will obsolete. Prefer using WindowInfo()!
-ImGuiID ImGuiTestContext::GetChildWindowID(ImGuiTestRef parent_ref, const char* child_name)
+ImGuiID ImGuiTestContext::GetChildWindowID(ImGuiTestRef parent_ref, const char* child_name, ImGuiID parent_idstack_back)
 {
     IM_ASSERT(child_name != NULL);
 
@@ -675,6 +674,8 @@ ImGuiID ImGuiTestContext::GetChildWindowID(ImGuiTestRef parent_ref, const char* 
         IM_CHECK_RETV(false, 0);
     }
 
+    if (parent_idstack_back != 0)
+        parent_id = parent_idstack_back;
     ImGuiID child_item_id = GetID(child_name, parent_id);
     ImStrReplace(&parent_name, "/", "\\/");
     if (const char* last_slash = strrchr(child_name, '/'))
@@ -1088,7 +1089,7 @@ ImGuiTestItemInfo* ImGuiTestContext::ItemInfoOpenFullPath(ImGuiTestRef ref)
 // - Likely you may want to feed the return value into SetRef(): e.g. 'ctx->SetRef(item->ID)' or 'ctx->SetRef(WindowInfo("//Window/Child")->ID);'
 // Todos:
 // - FIXME: Missing support for wildcards.
-// - FIXME: Missing support for windows that are not instantiated yet.
+// - FIXME: Missing support for windows that are not instantiated yet. May not need to support that?s
 ImGuiTestItemInfo* ImGuiTestContext::WindowInfo(ImGuiTestRef ref, ImGuiTestOpFlags flags)
 {
     if (IsError())
@@ -1114,6 +1115,7 @@ ImGuiTestItemInfo* ImGuiTestContext::WindowInfo(ImGuiTestRef ref, ImGuiTestOpFla
     // Query by Path: this is where the meat of our work is.
     LogDebug("WindowInfo: by path: '%s'", ref.Path ? ref.Path : "NULL");
     ImGuiWindow* window = NULL;
+    ImGuiID window_idstack_back = 0;
     const char* current = ref.Path;
     while (*current || window == NULL)
     {
@@ -1122,6 +1124,7 @@ ImGuiTestItemInfo* ImGuiTestContext::WindowInfo(ImGuiTestRef ref, ImGuiTestOpFla
         if (window == NULL && RefID != 0 && strncmp(ref.Path, "//", 2) != 0)
         {
             window = GetWindowByRef("");
+            window_idstack_back = window ? window->ID : 0;
         }
         else
         {
@@ -1146,22 +1149,31 @@ ImGuiTestItemInfo* ImGuiTestContext::WindowInfo(ImGuiTestRef ref, ImGuiTestOpFla
                 // Root: defer first element to GetID(), this will handle SetRef(), "//" and "//$FOCUSED" syntax.
                 ImGuiID window_id = GetID(part_name.c_str());
                 window = GetWindowByRef(window_id);
+                window_idstack_back = window ? window->ID : 0;
             }
             else
             {
                 // Child: Try to BeginChild(const char*) variant.
-                // FIXME: Both cases technically don't support if PushID() was used prior to submitting the child.
                 // FIXME: Eventually should obsolete GetChildWindowID() and we can embed the code in here.
-                ImGuiID child_window_id = GetChildWindowID(window->ID, part_name.c_str());
+                ImGuiID child_window_id = GetChildWindowID(window->ID, part_name.c_str(), window_idstack_back);
                 ImGuiWindow* child_window = GetWindowByRef(child_window_id);
                 if (child_window == NULL)
                 {
                     // Try for BeginChild(ImGuiID id) variant.
                     // FIXME: This only really works when ID is derived from a string.
-                    child_window_id = GetChildWindowID(window->ID, GetID(part_name.c_str(), window->ID));
+                    child_window_id = GetChildWindowID(window->ID, GetID(part_name.c_str(), window_idstack_back));
                     child_window = GetWindowByRef(child_window_id);
                 }
-                window = child_window;
+                if (child_window == NULL)
+                {
+                    // Assume that part is an arbitrary PushID(const char*)
+                    window_idstack_back = GetID(part_name.c_str(), window_idstack_back);
+                }
+                else
+                {
+                    window = child_window;
+                    window_idstack_back = window ? window->ID : 0;
+                }
             }
         }
 
@@ -1175,6 +1187,15 @@ ImGuiTestItemInfo* ImGuiTestContext::WindowInfo(ImGuiTestRef ref, ImGuiTestOpFla
     }
 
     IM_ASSERT(window != NULL);
+    IM_ASSERT(window_idstack_back != 0);
+
+    // Stopped on "window/node/"
+    if (window_idstack_back != 0 && window_idstack_back != window->ID)
+    {
+        LogEx(log_level, 0, "WindowInfo: error: element doesn't seem to exist or isn't a window.");
+        return ItemInfoNull();
+    }
+
     return ItemInfo(window->ID);
 }
 
