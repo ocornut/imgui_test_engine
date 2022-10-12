@@ -1,3 +1,31 @@
+// dear imgui test engine
+// (performance tool)
+// Browse and visualize samples recorded by ctx->PerfCapture() calls.
+// User access via 'Test Engine UI -> Tools -> Perf Tool'
+
+/*
+
+Index of this file:
+// [SECTION] Header mess
+// [SECTION] ImGuiPerflogEntry
+// [SECTION] Types & everything else
+// [SECTION] USER INTERFACE
+// [SECTION] SETTINGS
+// [SECTION] TESTS
+
+*/
+
+// Terminology:
+// * Entry: information about execution of a single perf test. This corresponds to one line in CSV file.
+// * Batch: a group of entries that were created together during a single execution. A new batch is created each time
+//   one or more perf tests are executed. All entries in a single batch will have a matching ImGuiPerflogEntry::Timestamp.
+// * Build: A group of batches that have matching BuildType, OS, Cpu, Compiler, GitBranchName.
+// * Baseline: A batch that we are comparing against. Baselines are identified by batch timestamp and build id.
+
+//-------------------------------------------------------------------------
+// [SECTION] Header mess
+//-------------------------------------------------------------------------
+
 #if defined(_MSC_VER) && !defined(_CRT_SECURE_NO_WARNINGS)
 #define _CRT_SECURE_NO_WARNINGS
 #endif
@@ -19,26 +47,6 @@
 #include "imgui_te_context.h"
 #include "imgui_te_internal.h"  // ImGuiTestEngine_GetPerfTool()
 #include "imgui_capture_tool.h"
-
-// Terminology:
-// * Entry: information about execution of a single perf test. This corresponds to one line in CSV file.
-// * Batch: a group of entries that were created together during a single execution. A new batch is created each time
-//   one or more perf tests are executed. All entries in a single batch will have a matching ImGuiPerflogEntry::Timestamp.
-// * Build: A group of batches that have matching BuildType, OS, Cpu, Compiler, GitBranchName.
-// * Baseline: A batch that we are comparing against. Baselines are identified by batch timestamp and build id.
-
-/*
-
-Index of this file:
-
-// [SECTION] ImGuiPerflogEntry
-// [SECTION] Types & everything else
-// [SECTION] USER INTERFACE
-// [SECTION] SETTINGS
-// [SECTION] TESTS
-
-*/
-
 
 //-------------------------------------------------------------------------
 // [SECTION] ImGuiPerflogEntry
@@ -108,7 +116,7 @@ static const char* PerfToolReportDefaultOutputPath = "./output/capture_perf_repo
 void ImGuiTestEngine_PerfToolAppendToCSV(ImGuiPerfTool* perf_log, ImGuiPerfToolEntry* entry, const char* filename)
 {
     if (filename == NULL)
-        filename = IMGUI_PERFLOG_FILENAME;
+        filename = IMGUI_PERFLOG_DEFAULT_FILENAME;
 
     if (!ImFileCreateDirectoryChain(filename, ImPathFindFilename(filename)))
     {
@@ -797,7 +805,7 @@ void ImGuiPerfTool::Clear()
 bool ImGuiPerfTool::LoadCSV(const char* filename)
 {
     if (filename == NULL)
-        filename = IMGUI_PERFLOG_FILENAME;
+        filename = IMGUI_PERFLOG_DEFAULT_FILENAME;
 
     Clear();
 
@@ -1109,7 +1117,7 @@ void ImGuiPerfTool::ShowUI(ImGuiTestEngine* engine)
         ImGui::SetTooltip("Hide or show individual tests.");
     ImGui::SameLine();
 
-    dirty |= Button3("Combine", &_DisplayType);
+    dirty |= Button3("Combine", (int*)&_DisplayType);
     if (ImGui::IsItemHovered())
     {
         ImGui::BeginTooltip();
@@ -1692,7 +1700,7 @@ static void PerflogSettingsHandler_ReadLine(ImGuiContext*, ImGuiSettingsHandler*
     int visible = -1, display_type = -1;
     /**/ if (sscanf(line, "DateFrom=%10s", perftool->_FilterDateFrom)) {}
     else if (sscanf(line, "DateTo=%10s", perftool->_FilterDateTo)) {}
-    else if (sscanf(line, "DisplayType=%d", &display_type)) { perftool->_DisplayType = display_type; }
+    else if (sscanf(line, "DisplayType=%d", &display_type)) { perftool->_DisplayType = (ImGuiPerfToolDisplayType)display_type; }
     else if (sscanf(line, "BaselineBuildId=%llu", &perftool->_BaselineBuildId)) {}
     else if (sscanf(line, "BaselineTimestamp=%llu", &perftool->_BaselineTimestamp)) {}
     else if (sscanf(line, "TestVisibility=%[^,],%d", buf, &visible) == 2) { perftool->_Visibility.SetBool(ImHashStr(buf), !!visible); }
@@ -1874,7 +1882,7 @@ void RegisterTests_PerfTool(ImGuiTestEngine* e)
     {
         ImGuiPerfTool* perftool = ImGuiTestEngine_GetPerfTool(ctx->Engine);
         const char* perf_report_image = NULL;
-        if (!ImFileExist(IMGUI_PERFLOG_FILENAME))
+        if (!ImFileExist(IMGUI_PERFLOG_DEFAULT_FILENAME))
         {
             ctx->LogWarning("Perf tool has no data. Perf report generation was aborted.");
             return;

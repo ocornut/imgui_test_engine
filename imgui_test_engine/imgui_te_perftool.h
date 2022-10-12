@@ -1,12 +1,19 @@
+// dear imgui test engine
+// (performance tool)
+// Browse and visualize samples recorded by ctx->PerfCapture() calls.
+// User access via 'Test Engine UI -> Tools -> Perf Tool'
+
 #pragma once
 
 #include "imgui.h"
 
-#define IMGUI_PERFLOG_FILENAME  "output/imgui_perflog.csv"
-
+// Forward Declaration
 struct ImGuiPerfToolColumnInfo;
 struct ImGuiTestEngine;
 struct ImGuiCsvParser;
+
+// Configuration
+#define IMGUI_PERFLOG_DEFAULT_FILENAME  "output/imgui_perflog.csv"
 
 // [Internal] Perf log entry. Changes to this struct should be reflected in ImGuiTestContext::PerfCapture() and ImGuiTestEngine_Start().
 // This struct assumes strings stored here will be available until next ImGuiPerfTool::Clear() call. Fortunately we do not have to actively
@@ -47,17 +54,17 @@ struct ImGuiPerfToolBatch
     int                         NumSamples = 0;                 // A number of unique batches aggregated.
     int                         BranchIndex = 0;                // For per-branch color mapping.
     ImVector<ImGuiPerfToolEntry> Entries;                       // Aggregated perf test entries. Order follows ImGuiPerfTool::_LabelsVisible order.
-    ~ImGuiPerfToolBatch()       { Entries.clear_destruct(); }
+    ~ImGuiPerfToolBatch()       { Entries.clear_destruct(); }   // FIXME: Misleading: nothing to destruct in that struct?
 };
 
-enum ImGuiPerfToolDisplayType_
+enum ImGuiPerfToolDisplayType : int
 {
     ImGuiPerfToolDisplayType_Simple,                            // Each run will be displayed individually.
     ImGuiPerfToolDisplayType_PerBranchColors,                   // Use one bar color per branch.
     ImGuiPerfToolDisplayType_CombineByBuildInfo,                // Entries with same build information will be averaged.
 };
-typedef int ImGuiPerfToolDisplayType;
 
+//
 struct IMGUI_API ImGuiPerfTool
 {
     ImVector<ImGuiPerfToolEntry> _SrcData;                       // Raw entries from CSV file (with string pointer into CSV data).

@@ -1,3 +1,7 @@
+// dear imgui test engine
+// (coroutine interface + optional implementation)
+// Read https://github.com/ocornut/imgui_test_engine/wiki/Setting-Up
+
 #pragma once
 
 #ifndef IMGUI_VERSION
@@ -46,5 +50,7 @@ struct IMGUI_API ImGuiTestCoroutineInterface
 //------------------------------------------------------------------------
 
 #if IMGUI_TEST_ENGINE_ENABLE_COROUTINE_STDTHREAD_IMPL
+
 IMGUI_API ImGuiTestCoroutineInterface*    Coroutine_ImplStdThread_GetInterface();
+
 #endif // #if IMGUI_TEST_ENGINE_ENABLE_COROUTINE_STDTHREAD_IMPL

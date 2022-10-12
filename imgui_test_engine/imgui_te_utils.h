@@ -1,5 +1,5 @@
-// dear imgui
-// (test engine: helpers/utilities. don't use this as a general purpose library)
+// dear imgui test engine
+// (helpers/utilities. do NOT use this as a general purpose library)
 
 #pragma once
 
@@ -84,7 +84,7 @@ void        ImThreadSetCurrentThreadDescription(const char* description);
 // Build Info helpers
 //-----------------------------------------------------------------------------
 
-// All the pointers are to persistent literals
+// All the pointers are expect to be literals/persistent
 struct ImBuildInfo
 {
     const char*     Type = "";
@@ -96,7 +96,7 @@ struct ImBuildInfo
 };
 
 const ImBuildInfo*  ImBuildGetCompilationInfo();
-bool                ImBuildGetGitBranchName(const char* git_repo_path, Str* branch_name);
+bool                ImBuildFindGitBranchName(const char* git_repo_path, Str* branch_name);
 
 //-----------------------------------------------------------------------------
 // Operating System Helpers
@@ -123,9 +123,9 @@ bool        ImOsCreateProcess(const char* cmd_line);
 FILE*       ImOsPOpen(const char* cmd_line, const char* mode);
 void        ImOsPClose(FILE* fp);
 void        ImOsOpenInShell(const char* path);
-void        ImOsConsoleSetTextColor(ImOsConsoleStream stream, ImOsConsoleTextColor color);
 bool        ImOsIsDebuggerPresent();
 void        ImOsOutputDebugString(const char* message);
+void        ImOsConsoleSetTextColor(ImOsConsoleStream stream, ImOsConsoleTextColor color);
 
 //-----------------------------------------------------------------------------
 // Miscellaneous functions

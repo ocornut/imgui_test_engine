@@ -1,11 +1,30 @@
-// dear imgui
-// (test engine, context for a running test + end user automation API)
-// This is the main or only interface that your Tests should be using.
+// dear imgui test engine
+// (context when a running test + end user automation API)
+// This is the main (if not only) interface that your Tests will be using.
 
 #pragma once
 
 #include "imgui.h"
 #include "imgui_te_engine.h"    // IM_CHECK*, various flags, enums
+
+/*
+
+Index of this file:
+// [SECTION] Header mess, warnings
+// [SECTION] External forward declaration
+// [SECTION] ImGuiTestRef
+// [SECTION] Helper keys
+// [SECTION] ImGuiTestContext related Flags/Enumerations
+// [SECTION] ImGuiTestGenericVars, ImGuiTestGenericItemStatus
+// [SECTION] ImGuiTestContext
+// [SECTION] Debugging macros
+// [SECTION] IM_CHECK macros
+
+*/
+
+//-------------------------------------------------------------------------
+// [SECTION] Header mess, warnings
+//-------------------------------------------------------------------------
 
 // Undo some of the damage done by <windows.h>
 #ifdef Yield
@@ -21,38 +40,29 @@
 #pragma GCC diagnostic ignored "-Wclass-memaccess"                  // [__GNUC__ >= 8] warning: 'memset/memcpy' clearing/writing an object of type 'xxxx' with no trivial copy-assignment; use assignment or value-initialization instead
 #endif
 
-/*
-
-Index of this file:
-// [SECTION] External forward declaration
-// [SECTION] ImGuiTestRef
-// [SECTION] Helper keys
-// [SECTION] ImGuiTestContext related Flags/Enumerations
-// [SECTION] ImGuiTestGenericVars, ImGuiTestGenericItemStatus
-// [SECTION] ImGuiTestContext
-// [SECTION] Debugging macros
-// [SECTION] IM_CHECK macros
-
-*/
-
 //-------------------------------------------------------------------------
-// [SECTION] External forward declaration
+// [SECTION] Forward declaration
 //-------------------------------------------------------------------------
 
-struct ImGuiCaptureArgs;        // Parameters for ctx->CaptureXXX functions
-struct ImGuiTest;               // A test registered with IM_REGISTER_TEST()
-struct ImGuiTestEngine;         // Test Engine Instance (opaque)
-struct ImGuiTestEngineIO;       // Test Engine IO structure (configuration flags, state)
-struct ImGuiTestItemInfo;       // Information gathered about an item: label, status, position etc.
-struct ImGuiTestInputs;         // Test Engine Simulated Inputs structure (opaque)
-struct ImGuiTestGatherTask;     // Test Engine task for scanning/finding items
+// This file
+typedef int ImGuiTestOpFlags;       // Flags: See ImGuiTestOpFlags_
+
+// External
+struct ImGuiTest;                   // A test registered with IM_REGISTER_TEST()
+struct ImGuiTestEngine;             // Test Engine Instance (opaque)
+struct ImGuiTestEngineIO;           // Test Engine IO structure (configuration flags, state)
+struct ImGuiTestItemInfo;           // Information gathered about an item: label, status, bounding box etc.
+struct ImGuiTestInputs;             // Test Engine Simulated Inputs structure (opaque)
+struct ImGuiTestGatherTask;         // Test Engine task for scanning/finding items
+struct ImGuiCaptureArgs;            // Parameters for ctx->CaptureXXX functions
+enum ImGuiTestVerboseLevel : int;
 
 //-------------------------------------------------------------------------
 // [SECTION] ImGuiTestRef
 //-------------------------------------------------------------------------
 
 // Weak reference to an Item/Window given an hashed ID _or_ a string path ID.
-// (SUGGESTION: add those functions to "VA Step Filter" (Visual Assist) or a .natstepfilter file (Visual Studio)
+// (SUGGESTION: add those constructors to "VA Step Filter" (Visual Assist) or a .natstepfilter file (Visual Studio) so they are skipped by F11 (StepInto)
 struct IMGUI_API ImGuiTestRef
 {
     ImGuiID         ID;
@@ -64,7 +74,7 @@ struct IMGUI_API ImGuiTestRef
     bool IsEmpty() const            { return ID == 0 && (Path == NULL || Path[0] == 0); }
 };
 
-// Helper to output a string showing the Path, ID or Debug Label based on what is available (some items only have ID as we couldn't find/store a Path)
+// Debug helper to output a string showing the Path, ID or Debug Label based on what is available (some items only have ID as we couldn't find/store a Path)
 // (The size is arbitrary, this is only used for logging info the user/debugger)
 struct IMGUI_API ImGuiTestRefDesc
 {
@@ -120,13 +130,6 @@ struct IMGUI_API ImGuiTestActionFilter
     ImGuiItemStatusFlags    RequireAnyStatusFlags;
 
     ImGuiTestActionFilter() { MaxDepth = -1; MaxPasses = -1; MaxItemCountPerDepth = NULL; RequireAllStatusFlags = RequireAnyStatusFlags = 0; }
-};
-
-enum ImGuiTestActiveFunc
-{
-    ImGuiTestActiveFunc_None,
-    ImGuiTestActiveFunc_GuiFunc,
-    ImGuiTestActiveFunc_TestFunc
 };
 
 //-------------------------------------------------------------------------
@@ -267,10 +270,10 @@ struct IMGUI_API ImGuiTestContext
     // Yield, Timing
     void        Yield(int count = 1);
     void        YieldUntil(int frame_count);
-    void        Sleep(float time_in_second);
-    void        SleepNoSkip(float time_in_second, float frame_time_step);
-    void        SleepShort();
-    void        SleepStandard();
+    void        Sleep(float time_in_second);            // Sleep for a given simulation time, unless in Fast mode
+    void        SleepShort();                           // Standard short delay of io.ActionDelayShort (~0.15f), unless in Fast mode.
+    void        SleepStandard();                        // Standard regular delay of io.ActionDelayStandard (~0.40f), unless in Fast mode.
+    void        SleepNoSkip(float time_in_second, float framestep_in_second);
 
     // Base Reference
     // - ItemClick("Window/Button")                --> click "Window/Button"
@@ -304,12 +307,6 @@ struct IMGUI_API ImGuiTestContext
     ImGuiID     GetID(ImGuiTestRef ref, ImGuiTestRef seed_ref);
     ImGuiID     GetChildWindowID(ImGuiTestRef parent_ref, const char* child_name);  // Name created by BeginChild("name", ...), using specified parent. // FIXME: Will obsolete. Prefer using WindowInfo()
     ImGuiID     GetChildWindowID(ImGuiTestRef parent_ref, ImGuiID child_id);        // Name created by BeginChild(id, ...), using specified parent. // FIXME: Will obsolete. Prefer using WindowInfo()
-#ifndef IMGUI_DISABLE_OBSOLETE_FUNCTIONS
-    ImGuiID     GetIDByInt(int n);                                                  // Prefer using "$$123"
-    ImGuiID     GetIDByInt(int n, ImGuiTestRef seed_ref);
-    ImGuiID     GetIDByPtr(void* p);                                                // Prefer using "$$(ptr)0xFFFFFFFF"
-    ImGuiID     GetIDByPtr(void* p, ImGuiTestRef seed_ref);
-#endif
 
     // Misc
     ImVec2      GetPosOnVoid();                                                     // Find a point that has no windows // FIXME-VIEWPORT: This needs a viewport
@@ -354,11 +351,6 @@ struct IMGUI_API ImGuiTestContext
     void        KeyUp(ImGuiKeyChord key_chord);
     void        KeyPress(ImGuiKeyChord key_chord, int count = 1);
     void        KeyHold(ImGuiKeyChord key_chord, float time);
-#ifndef IMGUI_DISABLE_OBSOLETE_FUNCTIONS
-    void        KeyModDown(ImGuiModFlags mods)              { KeyDown(mods); }
-    void        KeyModUp(ImGuiModFlags mods)                { KeyUp(mods); }
-    void        KeyModPress(ImGuiModFlags mods)             { KeyPress(mods); }
-#endif
     void        KeyChars(const char* chars);                // Input characters
     void        KeyCharsAppend(const char* chars);          // Input characters at end of field
     void        KeyCharsAppendEnter(const char* chars);     // Input characters at end of field, press Enter
@@ -424,6 +416,8 @@ struct IMGUI_API ImGuiTestContext
     void        ItemDragOverAndHold(ImGuiTestRef ref_src, ImGuiTestRef ref_dst);
     void        ItemDragAndDrop(ImGuiTestRef ref_src, ImGuiTestRef ref_dst, ImGuiMouseButton button = 0);
     void        ItemDragWithDelta(ImGuiTestRef ref_src, ImVec2 pos_delta);
+
+    // Helpers for Item/Widget state query
     void        ItemVerifyCheckedIfAlive(ImGuiTestRef ref, bool checked);
 
     // Helpers for Tab Bars widgets
@@ -464,6 +458,19 @@ struct IMGUI_API ImGuiTestContext
     // Performances
     void        PerfCalcRef();
     void        PerfCapture(const char* category = NULL, const char* test_name = NULL, const char* csv_file = NULL);
+
+    // Obsolete functions
+#ifndef IMGUI_DISABLE_OBSOLETE_FUNCTIONS
+    // Obsoleted 2022/10/11
+    ImGuiID     GetIDByInt(int n);                                      // Prefer using "$$123"
+    ImGuiID     GetIDByInt(int n, ImGuiTestRef seed_ref);
+    ImGuiID     GetIDByPtr(void* p);                                    // Prefer using "$$(ptr)0xFFFFFFFF"
+    ImGuiID     GetIDByPtr(void* p, ImGuiTestRef seed_ref);
+    // Obsoleted 2022/09/26
+    void        KeyModDown(ImGuiModFlags mods)  { KeyDown(mods); }
+    void        KeyModUp(ImGuiModFlags mods)    { KeyUp(mods); }
+    void        KeyModPress(ImGuiModFlags mods) { KeyPress(mods); }
+#endif
 
     // [Internal]
     // FIXME: Aim to remove this system...

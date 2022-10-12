@@ -1,6 +1,6 @@
-// Dear ImGui Screen/Video Capture Tool
+// dear imgui test engine
+// (screen/video capture tool)
 // This is usable as a standalone applet or controlled by the test engine.
-// (headers)
 
 #pragma once
 

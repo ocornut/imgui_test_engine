@@ -1,5 +1,5 @@
-// dear imgui
-// (test engine: helpers/utilities. don't use this as a general purpose library)
+// dear imgui test engine
+// (helpers/utilities. do NOT use this as a general purpose library)
 
 #if defined(_MSC_VER) && !defined(_CRT_SECURE_NO_WARNINGS)
 #define _CRT_SECURE_NO_WARNINGS
@@ -824,7 +824,7 @@ const ImBuildInfo* ImBuildGetCompilationInfo()
     return &build_info;
 }
 
-bool ImBuildGetGitBranchName(const char* git_repo_path, Str* branch_name)
+bool ImBuildFindGitBranchName(const char* git_repo_path, Str* branch_name)
 {
     IM_ASSERT(git_repo_path != NULL);
     IM_ASSERT(branch_name != NULL);
@@ -1040,6 +1040,7 @@ static int InputTextCallbackStr(ImGuiInputTextCallbackData* data)
 }
 
 // Draw an extra colored frame over the previous item
+// Similar to DebugDrawItemRect() but use Max(1.0f, FrameBorderSize)
 void ImGui::ItemErrorFrame(ImU32 col)
 {
     ImGuiContext& g = *GetCurrentContext();
@@ -1165,6 +1166,7 @@ ImGuiID TableGetHeaderID(ImGuiTable* table, int column_n, int instance_no)
     return ImHashData(column_name, strlen(column_name), ImHashData(&column_id, sizeof(column_id), table->ID + instance_no));
 }
 
+// FIXME: Could be moved to core as an internal function?
 void TableDiscardInstanceAndSettings(ImGuiID table_id)
 {
     ImGuiContext& g = *GImGui;

@@ -1,3 +1,7 @@
+// dear imgui test engine
+// (ui)
+// If you run tests in an interactive or visible application, you may want to call ImGuiTestEngine_ShowTestEngineWindows()
+
 #if defined(_MSC_VER) && !defined(_CRT_SECURE_NO_WARNINGS)
 #define _CRT_SECURE_NO_WARNINGS
 #endif
@@ -792,7 +796,7 @@ void    ImGuiTestEngine_ShowTestEngineWindows(ImGuiTestEngine* e, bool* p_open)
     {
         if (ImGui::Begin("Dear ImGui Perf Tool", &e->UiPerfToolOpen))
         {
-            if (ImGui::IsWindowAppearing() && e->PerfTool->Empty())
+            if (ImGui::IsWindowAppearing() && e->PerfTool->Empty()) // FIXME: Move internally??
                 e->PerfTool->LoadCSV();
             e->PerfTool->ShowUI(e);
         }

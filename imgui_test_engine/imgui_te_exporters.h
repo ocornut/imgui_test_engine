@@ -1,5 +1,6 @@
-// dear imgui
-// (test engine, exporters)
+// dear imgui test engine
+// (result exporters)
+// Read https://github.com/ocornut/imgui_test_engine/wiki/Exporting-Results
 
 #pragma once
 

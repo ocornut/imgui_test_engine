@@ -1,5 +1,6 @@
-// dear imgui
-// (test engine, exporters)
+// dear imgui test engine
+// (result exporters)
+// Read https://github.com/ocornut/imgui_test_engine/wiki/Exporting-Results
 
 #if defined(_MSC_VER) && !defined(_CRT_SECURE_NO_WARNINGS)
 #define _CRT_SECURE_NO_WARNINGS

@@ -1,5 +1,5 @@
-// dear imgui
-// (test engine, core)
+// dear imgui test engine
+// (core)
 // This is the interface that your initial setup (app init, main loop) will mostly be using.
 // Actual tests will mostly use the interface of imgui_te_context.h
 
@@ -23,21 +23,31 @@ struct ImGuiTestItemInfo;           // Info queried from item (id, geometry, sta
 struct ImGuiTestItemList;           // A list of items
 struct ImGuiTestInputs;             // Simulated user inputs (will be fed into ImGuiIO by the test engine)
 
-struct ImGuiCaptureArgs;            // Parameters for ImGuiTestContext::CaptureXXX functions.
-
 typedef int ImGuiTestFlags;         // Flags: See ImGuiTestFlags_
 typedef int ImGuiTestCheckFlags;    // Flags: See ImGuiTestCheckFlags_
 typedef int ImGuiTestLogFlags;      // Flags: See ImGuiTestLogFlags_
-typedef int ImGuiTestOpFlags;       // Flags: See ImGuiTestOpFlags_
 typedef int ImGuiTestRunFlags;      // Flags: See ImGuiTestRunFlags_
 
+enum ImGuiTestActiveFunc : int;
+enum ImGuiTestGroup : int;
+enum ImGuiTestRunSpeed : int;
+enum ImGuiTestStatus : int;
+enum ImGuiTestVerboseLevel : int;
 enum ImGuiTestEngineExportFormat : int;
 
 //-------------------------------------------------------------------------
 // Types
 //-------------------------------------------------------------------------
 
-enum ImGuiTestRunSpeed
+// Stored in ImGuiTestContext: where we are currently running GuiFunc or TestFunc
+enum ImGuiTestActiveFunc : int
+{
+    ImGuiTestActiveFunc_None,
+    ImGuiTestActiveFunc_GuiFunc,
+    ImGuiTestActiveFunc_TestFunc
+};
+
+enum ImGuiTestRunSpeed : int
 {
     ImGuiTestRunSpeed_Fast          = 0,    // Run tests as fast as possible (teleport mouse, skip delays, etc.)
     ImGuiTestRunSpeed_Normal        = 1,    // Run tests at human watchable speed (for debugging)
@@ -45,7 +55,7 @@ enum ImGuiTestRunSpeed
     ImGuiTestRunSpeed_COUNT
 };
 
-enum ImGuiTestVerboseLevel
+enum ImGuiTestVerboseLevel : int
 {
     ImGuiTestVerboseLevel_Silent    = 0,    // -v0
     ImGuiTestVerboseLevel_Error     = 1,    // -v1
@@ -56,7 +66,8 @@ enum ImGuiTestVerboseLevel
     ImGuiTestVerboseLevel_COUNT     = 6
 };
 
-enum ImGuiTestStatus
+// Test status (stored in ImGuiTest)
+enum ImGuiTestStatus : int
 {
     ImGuiTestStatus_Unknown     = -1,
     ImGuiTestStatus_Success     = 0,
@@ -66,8 +77,8 @@ enum ImGuiTestStatus
     ImGuiTestStatus_Suspended   = 4,
 };
 
-// Test group (this is mostly used to categorize tests in our testing UI)
-enum ImGuiTestGroup
+// Test group: this is mostly used to categorize tests in our testing UI. (Stored in ImGuiTest)
+enum ImGuiTestGroup : int
 {
     ImGuiTestGroup_Unknown      = -1,
     ImGuiTestGroup_Tests        = 0,
@@ -75,12 +86,13 @@ enum ImGuiTestGroup
     ImGuiTestGroup_COUNT
 };
 
+// Flags (stored in ImGuiTest)
 enum ImGuiTestFlags_
 {
     ImGuiTestFlags_None                 = 0,
-    ImGuiTestFlags_NoWarmUp             = 1 << 0,   // By default, we run the GUI func twice before starting the test code
-    ImGuiTestFlags_NoAutoFinish         = 1 << 1,   // By default, tests with no test func end on Frame 0 (after the warm up). Setting this require test to call ctx->Finish().
-    ImGuiTestFlags_NoRecoverWarnings    = 1 << 2    // Disable state recovery warnings (missing End/Pop calls etc.) for tests which may rely on those.
+    ImGuiTestFlags_NoWarmUp             = 1 << 0,   // Disable running the GUI func for 2 frames before starting test code. For tests which absolutely need to start before GuiFunc.
+    ImGuiTestFlags_NoAutoFinish         = 1 << 1,   // By default, tests with no TestFunc (only a GuiFunc) will end after warmup. Setting this require test to call ctx->Finish().
+    ImGuiTestFlags_NoRecoveryWarnings   = 1 << 2    // Disable state recovery warnings (missing End/Pop calls etc.) for tests which may rely on those.
     //ImGuiTestFlags_RequireViewports   = 1 << 10
 };
 
@@ -199,7 +211,7 @@ struct IMGUI_API ImGuiTestEngineIO
     bool                        ConfigMouseDrawCursor = true;       // Enable drawing of Dear ImGui software mouse cursor when running tests
     float                       ConfigFixedDeltaTime = 0.0f;        // Use fixed delta time instead of calculating it from wall clock
     int                         PerfStressAmount = 1;               // Integer to scale the amount of items submitted in test
-    char                        GitBranchName[64] = "";             // e.g. fill in branch name
+    char                        GitBranchName[64] = "";             // e.g. fill in branch name (e.g. recorded in perf samples .csv)
 
     // Options: Speed of user simulation
     float                       MouseSpeed = 600.0f;                // Mouse speed (pixel/second) when not running in fast mode
@@ -243,7 +255,7 @@ struct IMGUI_API ImGuiTestEngineIO
 struct ImGuiTestItemInfo
 {
     int                         RefCount : 8;               // User can increment this if they want to hold on the result pointer across frames, otherwise the task will be GC-ed.
-    unsigned int                NavLayer : 1;               // Nav layer of the item
+    unsigned int                NavLayer : 1;               // Nav layer of the item (ImGuiNavLayer)
     int                         Depth : 16;                 // Depth from requested parent id. 0 == ID is immediate child of requested parent id.
     int                         TimestampMain = -1;         // Timestamp of main result (all fields)
     int                         TimestampStatus = -1;       // Timestamp of StatusFlags
@@ -259,7 +271,7 @@ struct ImGuiTestItemInfo
     bool                        IsEmpty() const         { return ID == 0; }
 };
 
-// Result of an ItemGather query
+// Result of an GatherItems() query
 struct IMGUI_API ImGuiTestItemList
 {
     ImPool<ImGuiTestItemInfo>   Pool;

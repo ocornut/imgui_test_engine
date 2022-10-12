@@ -1,5 +1,6 @@
 // dear imgui
-// (test engine, context for a running test + end user automation API)
+// (context when a running test + end user automation API)
+// This is the main (if not only) interface that your Tests will be using.
 
 #if defined(_MSC_VER) && !defined(_CRT_SECURE_NO_WARNINGS)
 #define _CRT_SECURE_NO_WARNINGS
@@ -8,6 +9,7 @@
 #define IMGUI_DEFINE_MATH_OPERATORS
 #include "imgui_te_context.h"
 #include "imgui.h"
+#include "imgui_internal.h"
 #include "imgui_te_engine.h"
 #include "imgui_te_internal.h"
 #include "imgui_te_perftool.h"
@@ -303,7 +305,7 @@ void    ImGuiTestContext::RecoverFromUiContextErrors()
 
     // If we are _already_ in a test error state, recovering is normal so we'll hide the log.
     const bool verbose = (Test->Status != ImGuiTestStatus_Error) || (EngineIO->ConfigVerboseLevel >= ImGuiTestVerboseLevel_Debug);
-    if (verbose && (Test->Flags & ImGuiTestFlags_NoRecoverWarnings) == 0)
+    if (verbose && (Test->Flags & ImGuiTestFlags_NoRecoveryWarnings) == 0)
         ImGui::ErrorCheckEndFrameRecover(LogWarningFunc, this);
     else
         ImGui::ErrorCheckEndFrameRecover(LogNotAsWarningFunc, this);
@@ -379,15 +381,16 @@ void    ImGuiTestContext::Sleep(float time)
 }
 
 // This is useful when you need to wait a certain amount of time (even in Fast mode)
-// Sleep for a given clock time from the point of view of the imgui context, without affecting wall clock time of the running application.
-void    ImGuiTestContext::SleepNoSkip(float time, float frame_time_step)
+// Sleep for a given clock time from the point of view of the Dear ImGui context, without affecting wall clock time of the running application.
+// FIXME: This makes sense for apps only relying on io.DeltaTime.
+void    ImGuiTestContext::SleepNoSkip(float time, float framestep_in_second)
 {
     if (IsError())
         return;
 
     while (time > 0.0f && !Abort)
     {
-        ImGuiTestEngine_SetDeltaTime(Engine, frame_time_step);
+        ImGuiTestEngine_SetDeltaTime(Engine, framestep_in_second);
         ImGuiTestEngine_Yield(Engine);
         time -= UiContext->IO.DeltaTime;
     }

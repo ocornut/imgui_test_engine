@@ -1,3 +1,7 @@
+// dear imgui test engine
+// (coroutine interface + optional implementation)
+// Read https://github.com/ocornut/imgui_test_engine/wiki/Setting-Up
+
 #include "imgui_te_coroutine.h"
 #include "imgui.h"
 

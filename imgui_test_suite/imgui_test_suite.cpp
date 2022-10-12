@@ -528,7 +528,7 @@ int main(int argc, char** argv)
     Str64 git_repo_path;
     Str64 git_branch;
     if (ImFileFindInParents("imgui/", 4, &git_repo_path))
-        if (ImBuildGetGitBranchName(git_repo_path.c_str(), &git_branch))
+        if (ImBuildFindGitBranchName(git_repo_path.c_str(), &git_branch))
             strncpy(test_io.GitBranchName, git_branch.c_str(), IM_ARRAYSIZE(test_io.GitBranchName));
     if (!test_io.GitBranchName[0])
     {

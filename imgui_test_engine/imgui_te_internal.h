@@ -1,3 +1,6 @@
+// dear imgui test engine
+// (internal api)
+
 #pragma once
 
 #include "imgui_te_coroutine.h"

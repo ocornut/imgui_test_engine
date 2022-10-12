@@ -1,4 +1,6 @@
-// #include this file in your imconfig.h to enable test engine.
+// dear imgui test engine
+// (template for compile-time configuration)
+// Replicate or #include this file in your imconfig.h to enable test engine.
 
 // Compile Dear ImGui with test engine hooks
 // (Important: This is a value-less define, to be consistent with other defines used in core dear imgui.)

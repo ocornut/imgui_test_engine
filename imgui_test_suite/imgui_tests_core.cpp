@@ -3422,7 +3422,7 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
 
     // ## Test DebugRecoverFromErrors() FIXME-TESTS
     t = IM_REGISTER_TEST(e, "misc", "misc_recover");
-    t->Flags |= ImGuiTestFlags_NoRecoverWarnings;
+    t->Flags |= ImGuiTestFlags_NoRecoveryWarnings;
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
 #if IMGUI_VERSION_NUM >= 18415
