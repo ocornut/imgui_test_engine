@@ -5,7 +5,8 @@
 #pragma once
 
 #include "imgui.h"
-#include "imgui_te_engine.h"    // IM_CHECK*, various flags, enums
+#include "imgui_internal.h"     // ImGuiAxis, ImGuiItemStatusFlags, ImGuiInputSource, ImGuiWindow
+#include "imgui_te_engine.h"    // ImGuiTestStatus, ImGuiTestRunFlags, ImGuiTestActiveFunc, ImGuiTestItemInfo, ImGuiTestLogFlags
 
 /*
 
@@ -47,11 +48,17 @@ Index of this file:
 // This file
 typedef int ImGuiTestOpFlags;       // Flags: See ImGuiTestOpFlags_
 
-// External
+// External: imgui
+struct ImGuiDockNode;
+struct ImGuiTabBar;
+struct ImGuiWindow;
+
+// External: test engine
 struct ImGuiTest;                   // A test registered with IM_REGISTER_TEST()
 struct ImGuiTestEngine;             // Test Engine Instance (opaque)
 struct ImGuiTestEngineIO;           // Test Engine IO structure (configuration flags, state)
 struct ImGuiTestItemInfo;           // Information gathered about an item: label, status, bounding box etc.
+struct ImGuiTestItemList;           // Result of an GatherItems() query
 struct ImGuiTestInputs;             // Test Engine Simulated Inputs structure (opaque)
 struct ImGuiTestGatherTask;         // Test Engine task for scanning/finding items
 struct ImGuiCaptureArgs;            // Parameters for ctx->CaptureXXX functions
