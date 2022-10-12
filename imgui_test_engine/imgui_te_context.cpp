@@ -606,57 +606,20 @@ ImGuiID ImGuiTestContext::GetIDByPtr(void* p, ImGuiTestRef seed_ref)
 static bool GetChildWindowID_ExtractWindowNameAndId(ImGuiTestContext* ctx, ImGuiTestRef window_ref, Str* out_name, ImGuiID* out_id)
 {
     IM_ASSERT(out_name != NULL || out_id != NULL);
-    if (window_ref.Path && window_ref.Path[0])
+
+    // Parent window must exist.
+    ImGuiWindow* window = ctx->GetWindowByRef(window_ref);
+    for (int retries = 2; window == NULL && retries > 0; retries--)
     {
-        Str256 tmp;
-        if (out_name == NULL)
-            out_name = &tmp;
-
-        // Parent window specified by name: it may not exist yet
-        // Assume window_ref follows ImGuiTestRef conventions (unescaped slash resets ID counter).
-        const char* name = window_ref.Path;
-        if (name[0] == '/')   // Skip initial //, indicating we arent using RefID as ID base.
-        {
-            if (name[1] != '/')
-            {
-                IM_ASSERT(0);
-                return false;
-            }
-            name += 2;
-        }
-
-        // Ensure there are no unescaped slashes remaining, since this is just a window name, not a hashable path.
-        // Valid: "Window", "//Window", "//Window\\/Foo".
-        // Invalid: "/Window/Foo", "Window/Foo".
-        for (int i = 1; i < name[i]; i++)
-            if (name[i] == '/' && name[i - 1] != '\\')
-            {
-                IM_ASSERT(0);
-                return false;
-            }
-
-        out_name->set(name);
-        ImStrReplace(out_name, "\\/", "/"); // Unescape slashes.
-
-        if (out_id)
-            *out_id = ImHashStr(name);
+        ctx->Yield();
+        window = ctx->GetWindowByRef(window_ref);
     }
-    else
-    {
-        // Parent window specified by ID, it must exist.
-        ImGuiWindow* window = ctx->GetWindowByRef(window_ref);
-        for (int retries = 2; window == NULL && retries > 0; retries--)
-        {
-            ctx->Yield();
-            window = ctx->GetWindowByRef(window_ref);
-        }
-        if (window == NULL)
-            return false;
-        if (out_name)
-            out_name->set(window->Name);
-        if (out_id)
-            *out_id = window->ID;
-    }
+    if (window == NULL)
+        return false;
+    if (out_name)
+        out_name->set(window->Name);
+    if (out_id)
+        *out_id = window->ID;
     return true;
 }
 
