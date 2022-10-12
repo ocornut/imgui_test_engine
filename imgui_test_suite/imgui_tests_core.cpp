@@ -3488,117 +3488,6 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
         ctx->Yield();
     };
 
-    // ## Test using Item functions on windows
-#if IMGUI_VERSION_NUM >= 18616
-    t = IM_REGISTER_TEST(e, "misc", "misc_ref_window");
-    t->GuiFunc = [](ImGuiTestContext* ctx)
-    {
-        ImGui::SetNextWindowSize(ImVec2(300, 300));
-        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
-        ImGui::BeginChild("Child1", ImVec2(200,200), true);
-        ImGui::Button("Button in child");
-        ImGui::EndChild();
-        ImGui::End();
-    };
-    t->TestFunc = [](ImGuiTestContext* ctx)
-    {
-        ImGuiContext& g = *GImGui;
-        ctx->MouseMove("Test Window");
-        IM_CHECK(g.HoveredWindow != NULL);
-        IM_CHECK_STR_EQ(g.HoveredWindow->RootWindow->Name, "Test Window");
-        ctx->MouseMoveToVoid();
-
-        ctx->MouseMove("**/Test Window");
-        IM_CHECK(g.HoveredWindow != NULL);
-        IM_CHECK_STR_EQ(g.HoveredWindow->RootWindow->Name, "Test Window");
-
-        //ctx->MouseMove("**/Child1");
-        //IM_CHECK(g.HoveredWindow != NULL);
-        //IM_CHECK((g.HoveredWindow->Flags & ImGuiWindowFlags_ChildWindow) != 0);
-        //IM_CHECK_STR_EQ(g.HoveredWindow->Name, "Child1");
-    };
-#endif
-
-    // ## Test **/ handling
-    t = IM_REGISTER_TEST(e, "misc", "misc_ref_wildcard");
-    t->GuiFunc = [](ImGuiTestContext* ctx)
-    {
-        auto& vars = ctx->GenericVars;
-
-#if IMGUI_BROKEN_TESTS
-        ImGui::SetNextWindowSize(ImVec2(20, 20));
-        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings); // FIXME: Should work with same size: ItemInfoHandleWildcardSearch() doesn't scroll in childs.
-#else
-        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
-#endif
-        ImGui::Checkbox("Test1", &vars.Bool1);
-        ImGui::PushID("node");
-        ImGui::Checkbox("Test1b", &vars.Bool1);
-        ImGui::PopID();
-
-        ImGui::BeginChild("Child", ImVec2(0, 200), true);
-        ImGui::Checkbox("Test2", &vars.Bool2);
-        ImGui::InputInt("Int1", &vars.Int1, 1, 1);
-        ImGui::InputInt("AA###Int2", &vars.Int1, 0, 0);
-        ImGui::EndChild();
-
-        ImGui::Checkbox("Dear###Test3", &vars.Bool1);
-
-        if (ImGui::BeginMenu("TestMenu"))
-        {
-            ImGui::MenuItem("Nothing");
-            ImGui::EndMenu();
-        }
-
-        ImGui::End();
-    };
-    t->TestFunc = [](ImGuiTestContext* ctx)
-    {
-        auto& vars = ctx->GenericVars;
-        IM_UNUSED(vars);
-
-        // Test Window/Test1
-        ctx->SetRef("Test Window");
-        ctx->ItemClick("**/Test1");
-        ctx->ItemClick("**/node/Test1b");
-
-        ctx->SetRef("");
-        ctx->ItemClick("**/Test1");
-        ctx->ItemClick("**/node/Test1b");
-
-        // Test Window/Child_XXXXX/Test2
-        ctx->SetRef("");
-        ctx->ItemClick("**/Test2");
-
-        ctx->SetRef("Test Window");
-        ctx->ItemClick("**/Test2");
-
-#if IMGUI_VERSION_NUM >= 18809
-        // BeginMenu() - Items using PushID(id); SubItem(""); PopID() idioms
-        IM_CHECK(ctx->ItemInfo("**/TestMenu/")->ID != 0);
-        IM_CHECK(ctx->ItemInfo("**/TestMenu")->ID != 0);
-        ctx->ItemClick("**/TestMenu");
-
-        // InputScalar() - Items using PushID(id); SubItem(""); PopID() idioms
-        vars.Int1 = 0;
-        ctx->ItemInputValue("**/Int1", 10);     // Natural aiming at "parent" widget
-        IM_CHECK_EQ(vars.Int1, 10);
-#if IMGUI_BROKEN_TESTS
-        //ctx->ItemInputValue("**/Int1/", 11);    // "" label inside InputScalar() with step. This is normally simplier but currently subject to clipping in this example.
-        //IM_CHECK_EQ(vars.Int1, 11);
-#endif
-#endif
-
-        // ### operator
-        ctx->ItemClick("**/Hello###Test3");
-
-#if IMGUI_VERSION_NUM >= 18809
-        // ### operator inside a child
-        ctx->ItemInputValue("**/BB###Int2", 20);    // With ### in label, no steps
-        IM_CHECK_EQ(vars.Int1, 20);
-#endif
-    };
-
     // ## Test hash functions and ##/### operators
     t = IM_REGISTER_TEST(e, "misc", "misc_hash_001");
     t->TestFunc = [](ImGuiTestContext* ctx)
@@ -3646,6 +3535,12 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
         ctx->WindowFocus("Hello, world!");
         IM_CHECK_EQ(ctx->GetID("//$FOCUSED"), ImHashDecoratedPath("Hello, world!"));
         IM_CHECK_EQ(ctx->GetID("//$FOCUSED/Foo"), ImHashDecoratedPath("Hello, world!/Foo"));
+
+        // Test that SetRef() locks the window
+        ctx->SetRef("//$FOCUSED");
+        IM_CHECK_EQ(ctx->GetID(""), ImHashDecoratedPath("Hello, world!"));
+        ctx->WindowFocus("//Test Window");
+        IM_CHECK_EQ(ctx->GetID(""), ImHashDecoratedPath("Hello, world!"));
 
         // Test tracking of current ref id window.
         int frame_number = g.FrameCount;
@@ -3757,8 +3652,119 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
         ctx->Finish(); // Finish on first frame
     };
 
+    // ## Test using Item functions on windows
+#if IMGUI_VERSION_NUM >= 18616
+    t = IM_REGISTER_TEST(e, "misc", "misc_ref_window");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::SetNextWindowSize(ImVec2(300, 300));
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImGui::BeginChild("Child1", ImVec2(200, 200), true);
+        ImGui::Button("Button in child");
+        ImGui::EndChild();
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiContext& g = *GImGui;
+        ctx->MouseMove("Test Window");
+        IM_CHECK(g.HoveredWindow != NULL);
+        IM_CHECK_STR_EQ(g.HoveredWindow->RootWindow->Name, "Test Window");
+        ctx->MouseMoveToVoid();
+
+        ctx->MouseMove("**/Test Window");
+        IM_CHECK(g.HoveredWindow != NULL);
+        IM_CHECK_STR_EQ(g.HoveredWindow->RootWindow->Name, "Test Window");
+
+        //ctx->MouseMove("**/Child1");
+        //IM_CHECK(g.HoveredWindow != NULL);
+        //IM_CHECK((g.HoveredWindow->Flags & ImGuiWindowFlags_ChildWindow) != 0);
+        //IM_CHECK_STR_EQ(g.HoveredWindow->Name, "Child1");
+    };
+#endif
+
+    // ## Test **/ handling
+    t = IM_REGISTER_TEST(e, "misc", "misc_ref_wildcard");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        auto& vars = ctx->GenericVars;
+
+#if IMGUI_BROKEN_TESTS
+        ImGui::SetNextWindowSize(ImVec2(20, 20));
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings); // FIXME: Should work with same size: ItemInfoHandleWildcardSearch() doesn't scroll in childs.
+#else
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
+#endif
+        ImGui::Checkbox("Test1", &vars.Bool1);
+        ImGui::PushID("node");
+        ImGui::Checkbox("Test1b", &vars.Bool1);
+        ImGui::PopID();
+
+        ImGui::BeginChild("Child", ImVec2(0, 200), true);
+        ImGui::Checkbox("Test2", &vars.Bool2);
+        ImGui::InputInt("Int1", &vars.Int1, 1, 1);
+        ImGui::InputInt("AA###Int2", &vars.Int1, 0, 0);
+        ImGui::EndChild();
+
+        ImGui::Checkbox("Dear###Test3", &vars.Bool1);
+
+        if (ImGui::BeginMenu("TestMenu"))
+        {
+            ImGui::MenuItem("Nothing");
+            ImGui::EndMenu();
+        }
+
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        auto& vars = ctx->GenericVars;
+        IM_UNUSED(vars);
+
+        // Test Window/Test1
+        ctx->SetRef("Test Window");
+        ctx->ItemClick("**/Test1");
+        ctx->ItemClick("**/node/Test1b");
+
+        ctx->SetRef("");
+        ctx->ItemClick("**/Test1");
+        ctx->ItemClick("**/node/Test1b");
+
+        // Test Window/Child_XXXXX/Test2
+        ctx->SetRef("");
+        ctx->ItemClick("**/Test2");
+
+        ctx->SetRef("Test Window");
+        ctx->ItemClick("**/Test2");
+
+#if IMGUI_VERSION_NUM >= 18809
+        // BeginMenu() - Items using PushID(id); SubItem(""); PopID() idioms
+        IM_CHECK(ctx->ItemInfo("**/TestMenu/")->ID != 0);
+        IM_CHECK(ctx->ItemInfo("**/TestMenu")->ID != 0);
+        ctx->ItemClick("**/TestMenu");
+
+        // InputScalar() - Items using PushID(id); SubItem(""); PopID() idioms
+        vars.Int1 = 0;
+        ctx->ItemInputValue("**/Int1", 10);     // Natural aiming at "parent" widget
+        IM_CHECK_EQ(vars.Int1, 10);
+#if IMGUI_BROKEN_TESTS
+        //ctx->ItemInputValue("**/Int1/", 11);    // "" label inside InputScalar() with step. This is normally simplier but currently subject to clipping in this example.
+        //IM_CHECK_EQ(vars.Int1, 11);
+#endif
+#endif
+
+        // ### operator
+        ctx->ItemClick("**/Hello###Test3");
+
+#if IMGUI_VERSION_NUM >= 18809
+        // ### operator inside a child
+        ctx->ItemInputValue("**/BB###Int2", 20);    // With ### in label, no steps
+        IM_CHECK_EQ(vars.Int1, 20);
+#endif
+    };
+
     // ## Test ctx->WindowInfo().
-    t = IM_REGISTER_TEST(e, "misc", "misc_window_info");
+    t = IM_REGISTER_TEST(e, "misc", "misc_ref_window_info");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         auto& vars = ctx->GenericVars;
