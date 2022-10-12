@@ -523,12 +523,13 @@ ImGuiID ImGuiTestContext::GetID(ImGuiTestRef ref)
     return GetID(ref, RefID);
 }
 
-// Refer to Wiki to read about
-// - Meaning of trailing "//" ................ "//rootnode" : ignore SetRef
-// - Meaning of trailing "//$FOCUSED" ........ "//$FOCUSED/node" : "node" in currently focused window
-// - Meaning of trailing "/" ................. "/node" : move to root of window pointed by SetRef() when SetRef() uses a path
-// - Meaning of trailing "../" ............... "../node" : move back 1 level from SetRef path() when SetRef() uses a path
-// - Meaning of $$xxxx literal encoding ...... "list/$1" : hash of "list" + hash if (int)1, equivalent of PushID("hello"); PushID(1);
+// Refer to Wiki to read details
+// https://github.com/ocornut/imgui_test_engine/wiki/Named-References
+// - Meaning of leading "//" ................. "//rootnode" : ignore SetRef
+// - Meaning of leading "//$FOCUSED" ......... "//$FOCUSED/node" : "node" in currently focused window
+// - Meaning of leading "/" .................. "/node" : move to root of window pointed by SetRef() when SetRef() uses a path
+// - Meaning of $$xxxx literal encoding ...... "list/$$1" : hash of "list" + hash if (int)1, equivalent of PushID("hello"); PushID(1);
+//// - Meaning of leading "../" .............. "../node" : move back 1 level from SetRef path() when SetRef() uses a path // Unimplemented
 ImGuiID ImGuiTestContext::GetID(ImGuiTestRef ref, ImGuiTestRef seed_ref)
 {
     ImGuiContext& g = *UiContext;
@@ -540,12 +541,9 @@ ImGuiID ImGuiTestContext::GetID(ImGuiTestRef ref, ImGuiTestRef seed_ref)
     // (Note that we don't and can't really support a "$HOVERED" equivalent for the hovered window.
     //  Why? Because it is extremely fragile to use: with late translation of variable held in string,
     //  it is extremely common that the "expected" hovered window at the time of passing the string has
-    //  changed in later use of the same reference.)
-    // (However we can imagine way to use that:
-    //    SetRef("$HOVERED");           // Not good. VERY prone to bug as further calls are likely to change the hovered window.
-    //    SetRef(GetID("$HOVERED"));    // Better: locking in the window (getting rid of the dynamic reference).
-    //  If we can find a way to enforce this better we can consider exposing a $HOVERED, but for now the equivalent is possible:
-    //    SetRef(g.HoveredWindow->ID);  // Same as the "Better" above except missing error checking.
+    //  changed in later uses of the same reference.)
+    // You can however easily use:
+    //   SetRef(g.HoveredWindow->ID);
     const char* FOCUSED_PREFIX = "//$FOCUSED";
     const size_t FOCUSED_PREFIX_LEN = 10;
 
@@ -1113,7 +1111,7 @@ ImGuiTestItemInfo* ImGuiTestContext::WindowInfo(ImGuiTestRef ref, ImGuiTestOpFla
         return ItemInfo(window->ID);
     }
 
-    // Query by path: this is where the meat of our work is.s
+    // Query by Path: this is where the meat of our work is.
     LogDebug("WindowInfo: by path: '%s'", ref.Path ? ref.Path : "NULL");
     ImGuiWindow* window = NULL;
     const char* current = ref.Path;
@@ -1153,15 +1151,15 @@ ImGuiTestItemInfo* ImGuiTestContext::WindowInfo(ImGuiTestRef ref, ImGuiTestOpFla
             {
                 // Child: Try to BeginChild(const char*) variant.
                 // FIXME: Both cases technically don't support if PushID() was used prior to submitting the child.
-                // FIXME: Eventually should obsolete GetChildWindowID() we can embed the code in here.
-                ImGuiID window_id = GetChildWindowID(window->ID, part_name.c_str());
-                ImGuiWindow* child_window = GetWindowByRef(window_id);
+                // FIXME: Eventually should obsolete GetChildWindowID() and we can embed the code in here.
+                ImGuiID child_window_id = GetChildWindowID(window->ID, part_name.c_str());
+                ImGuiWindow* child_window = GetWindowByRef(child_window_id);
                 if (child_window == NULL)
                 {
                     // Try for BeginChild(ImGuiID id) variant.
                     // FIXME: This only really works when ID is derived from a string.
-                    window_id = GetChildWindowID(window->ID, GetID(part_name.c_str(), window->ID));
-                    child_window = GetWindowByRef(window_id);
+                    child_window_id = GetChildWindowID(window->ID, GetID(part_name.c_str(), window->ID));
+                    child_window = GetWindowByRef(child_window_id);
                 }
                 window = child_window;
             }

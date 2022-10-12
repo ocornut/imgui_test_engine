@@ -3676,10 +3676,13 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
         IM_CHECK(g.HoveredWindow != NULL);
         IM_CHECK_STR_EQ(g.HoveredWindow->RootWindow->Name, "Test Window");
 
-        //ctx->MouseMove("**/Child1");
-        //IM_CHECK(g.HoveredWindow != NULL);
-        //IM_CHECK((g.HoveredWindow->Flags & ImGuiWindowFlags_ChildWindow) != 0);
-        //IM_CHECK_STR_EQ(g.HoveredWindow->Name, "Child1");
+        // FIMXE: Would be good to support wildcard to grab child
+#if IMGUI_BROKEN_TESTS
+        ctx->MouseMove("**/Child1");
+        IM_CHECK(g.HoveredWindow != NULL);
+        IM_CHECK((g.HoveredWindow->Flags & ImGuiWindowFlags_ChildWindow) != 0);
+        IM_CHECK_STR_EQ(g.HoveredWindow->Name, "Child1");
+#endif
     };
 #endif
 
@@ -3798,6 +3801,13 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
             }
             ImGui::EndChild();
         }
+        {
+            // Inside a sub-id
+            ImGui::PushID("Folder");
+            ImGui::BeginChild("Child3");
+            ImGui::EndChild();
+            ImGui::PopID();
+        }
 
         ImGui::End();
     };
@@ -3888,6 +3898,7 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
         IM_CHECK_EQ(window_info->Window->ID, vars.IdArray[3]);
         IM_CHECK_EQ(window_info->Window->ID, ctx->GetChildWindowID(first_child->ID, ctx->GetID("SubChildUsingID", first_child->ID)));
 
+        // Test for missing/non-found window
         window_info = ctx->WindowInfo("//Test Window/Item", ImGuiTestOpFlags_NoError);
         IM_CHECK(window_info->ID == 0 && window_info->Window == NULL);
 
@@ -3900,6 +3911,15 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
         IM_CHECK(window_info->ID != 0 && window_info->Window != NULL);
         window_info = ctx->WindowInfo("###Child2Name/###Child3Name");
         IM_CHECK(window_info->ID != 0 && window_info->Window != NULL);
+
+        // Test when child is not in root of parent window (used ID stack)
+#if IMGUI_BROKEN_TEST
+        ctx->SetRef("//Test Window");
+        window_info = ctx->WindowInfo("Folder/Child3");
+        IM_CHECK(window_info->ID != 0 && window_info->Window != NULL);
+        window_info = ctx->WindowInfo("//Test Window/Folder/Child3");
+        IM_CHECK(window_info->ID != 0 && window_info->Window != NULL);
+#endif
 
         // FIXME: Missing tests for wildcards.
     };

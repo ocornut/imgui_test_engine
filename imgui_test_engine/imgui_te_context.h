@@ -69,15 +69,17 @@ enum ImGuiTestVerboseLevel : int;
 //-------------------------------------------------------------------------
 
 // Weak reference to an Item/Window given an hashed ID _or_ a string path ID.
+// This is most often passed as argument to function and generally has a very short lifetime.
+// Documentation: https://github.com/ocornut/imgui_test_engine/wiki/Named-References
 // (SUGGESTION: add those constructors to "VA Step Filter" (Visual Assist) or a .natstepfilter file (Visual Studio) so they are skipped by F11 (StepInto)
 struct IMGUI_API ImGuiTestRef
 {
-    ImGuiID         ID;
-    const char*     Path;
+    ImGuiID         ID;             // Pre-hashed ID
+    const char*     Path;           // Relative or absolute path (string pointed to, not owned, as our lifetime is very short)
 
     ImGuiTestRef()                  { ID = 0; Path = NULL; }
     ImGuiTestRef(ImGuiID id)        { ID = id; Path = NULL; }
-    ImGuiTestRef(const char* p)     { ID = 0; Path = p; }
+    ImGuiTestRef(const char* path)  { ID = 0; Path = path; }
     bool IsEmpty() const            { return ID == 0 && (Path == NULL || Path[0] == 0); }
 };
 
@@ -312,8 +314,6 @@ struct IMGUI_API ImGuiTestContext
     // Note: for windows you may use WindowInfo()
     ImGuiID     GetID(ImGuiTestRef ref);
     ImGuiID     GetID(ImGuiTestRef ref, ImGuiTestRef seed_ref);
-    ImGuiID     GetChildWindowID(ImGuiTestRef parent_ref, const char* child_name);  // Name created by BeginChild("name", ...), using specified parent. // FIXME: Will obsolete. Prefer using WindowInfo()
-    ImGuiID     GetChildWindowID(ImGuiTestRef parent_ref, ImGuiID child_id);        // Name created by BeginChild(id, ...), using specified parent. // FIXME: Will obsolete. Prefer using WindowInfo()
 
     // Misc
     ImVec2      GetPosOnVoid();                                                     // Find a point that has no windows // FIXME-VIEWPORT: This needs a viewport
@@ -467,6 +467,8 @@ struct IMGUI_API ImGuiTestContext
     void        PerfCapture(const char* category = NULL, const char* test_name = NULL, const char* csv_file = NULL);
 
     // Obsolete functions
+    ImGuiID     GetChildWindowID(ImGuiTestRef parent_ref, const char* child_name);  // Name created by BeginChild("name", ...), using specified parent. // FIXME: Will obsolete. Prefer using WindowInfo()
+    ImGuiID     GetChildWindowID(ImGuiTestRef parent_ref, ImGuiID child_id);        // Name created by BeginChild(id, ...), using specified parent. // FIXME: Will obsolete. Prefer using WindowInfo()
 #ifndef IMGUI_DISABLE_OBSOLETE_FUNCTIONS
     // Obsoleted 2022/10/11
     ImGuiID     GetIDByInt(int n);                                      // Prefer using "$$123"

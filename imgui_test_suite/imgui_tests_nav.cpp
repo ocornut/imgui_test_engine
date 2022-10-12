@@ -867,8 +867,11 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
             ctx->NavActivate();
             ctx->NavMoveTo("Scrolling");
             ctx->NavActivate(); // FIXME-TESTS: Could query current g.NavWindow instead of making names?
+#if IMGUI_BROKEN_TESTS
+            ImGuiWindow* child_window = ctx->WindowInfo("Scrolling/scrolling")->Window;
+#else
             ImGuiWindow* child_window = ctx->GetWindowByRef(ctx->GetChildWindowID("", "Scrolling/scrolling"));
-            //ImGuiWindow* child_window = ctx->WindowInfo("Scrolling/scrolling")->Window;
+#endif
             IM_CHECK(child_window != NULL);
             ctx->SetRef(child_window->ID);
             ctx->ScrollTo(demo_window->ID, ImGuiAxis_Y, (child_window->Pos - demo_window->Pos).y);  // Required because buttons do not register their IDs when out of view (SkipItems == true).
