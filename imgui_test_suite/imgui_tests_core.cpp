@@ -3848,8 +3848,6 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
         IM_CHECK(window_info->ID != 0 && window_info->Window != NULL);
         IM_CHECK_EQ(window_info->Window->ID, window_info->ID);
         IM_CHECK_EQ(window_info->Window->ID, vars.IdArray[1]);
-        IM_CHECK_EQ(window_info->Window->ID, ctx->GetChildWindowID("Test Window", "Child1"));
-        ImGuiWindow* first_child = window_info->Window;
 
         // Query by path with a ref
         ctx->SetRef("//Test Window");
@@ -3862,7 +3860,6 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
         IM_CHECK(window_info->ID != 0 && window_info->Window != NULL);
         IM_CHECK_EQ(window_info->Window->ID, window_info->ID);
         IM_CHECK_EQ(window_info->Window->ID, vars.IdArray[1]);
-        IM_CHECK_EQ(window_info->Window->ID, ctx->GetChildWindowID("Test Window", "Child1"));
 
         ctx->SetRef(window_info->ID);
         ctx->ItemClick("Child1_Item");
@@ -3885,14 +3882,12 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
         IM_CHECK(window_info->ID != 0 && window_info->Window != NULL);
         IM_CHECK_EQ(window_info->Window->ID, window_info->ID);
         IM_CHECK_EQ(window_info->Window->ID, vars.IdArray[2]);
-        IM_CHECK_EQ(window_info->Window->ID, ctx->GetChildWindowID(first_child->ID, "SubChild"));
 
         // Test sub-child which have been created with the ImGuiID version of BeginChild()
         window_info = ctx->WindowInfo("//Test Window/Child1/SubChildUsingID");
         IM_CHECK(window_info->ID != 0 && window_info->Window != NULL);
         IM_CHECK_EQ(window_info->Window->ID, window_info->ID);
         IM_CHECK_EQ(window_info->Window->ID, vars.IdArray[3]);
-        IM_CHECK_EQ(window_info->Window->ID, ctx->GetChildWindowID(first_child->ID, ctx->GetID("SubChildUsingID", first_child->ID)));
 
         // Test for missing/non-found window
         window_info = ctx->WindowInfo("//Test Window/Item", ImGuiTestOpFlags_NoError);

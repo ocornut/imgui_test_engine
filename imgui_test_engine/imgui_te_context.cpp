@@ -625,44 +625,44 @@ static bool GetChildWindowID_ExtractWindowNameAndId(ImGuiTestContext* ctx, ImGui
 
 // Mimic logic of BeginChildEx().
 // FIXME: Will obsolete. Prefer using WindowInfo()!
-ImGuiID ImGuiTestContext::GetChildWindowID(ImGuiTestRef parent_ref, const char* child_name, ImGuiID parent_idstack_back)
+static ImGuiID GetChildWindowID(ImGuiTestContext* ctx, ImGuiTestRef parent_ref, const char* child_name, ImGuiID parent_idstack_back)
 {
     IM_ASSERT(child_name != NULL);
 
     ImGuiID parent_id = 0;
     Str256 parent_name;
-    if (!GetChildWindowID_ExtractWindowNameAndId(this, parent_ref, &parent_name, &parent_id))
+    if (!GetChildWindowID_ExtractWindowNameAndId(ctx, parent_ref, &parent_name, &parent_id))
     {
-        LogError("GetChildWindowID: parent window should exist, when specifying by ID(0x%08X).", parent_ref.ID);
+        ctx->LogError("GetChildWindowID: parent window should exist, when specifying by ID(0x%08X).", parent_ref.ID);
         IM_CHECK_RETV(false, 0);
     }
 
     if (parent_idstack_back != 0)
         parent_id = parent_idstack_back;
-    ImGuiID child_item_id = GetID(child_name, parent_id);
+    ImGuiID child_item_id = ctx->GetID(child_name, parent_id);
     ImStrReplace(&parent_name, "/", "\\/");
     if (const char* last_slash = strrchr(child_name, '/'))
     {
         child_name = last_slash + 1;
         IM_ASSERT(child_name[0] != 0);    // child_name should not end with a slash. // FIXME: Don't assert
     }
-    return GetID(Str128f("//%s\\/%s_%08X", parent_name.c_str(), child_name, child_item_id).c_str());
+    return ctx->GetID(Str128f("//%s\\/%s_%08X", parent_name.c_str(), child_name, child_item_id).c_str());
 }
 
 // FIXME: Will obsolete. Prefer using WindowInfo()!
-ImGuiID ImGuiTestContext::GetChildWindowID(ImGuiTestRef parent_ref, ImGuiID child_id)
+static ImGuiID GetChildWindowID(ImGuiTestContext* ctx, ImGuiTestRef parent_ref, ImGuiID child_id)
 {
     IM_ASSERT(child_id != 0);
 
     Str256 parent_name;
-    if (!GetChildWindowID_ExtractWindowNameAndId(this, parent_ref, &parent_name, NULL))
+    if (!GetChildWindowID_ExtractWindowNameAndId(ctx, parent_ref, &parent_name, NULL))
     {
-        LogError("GetChildWindowID: parent window should exist, when specifying by ID(0x%08X).", parent_ref.ID);
+        ctx->LogError("GetChildWindowID: parent window should exist, when specifying by ID(0x%08X).", parent_ref.ID);
         IM_CHECK_RETV(false, 0);
     }
 
     ImStrReplace(&parent_name, "/", "\\/");
-    return GetID(Str128f("//%s\\/%08X", parent_name.c_str(), child_id).c_str());
+    return ctx->GetID(Str128f("//%s\\/%08X", parent_name.c_str(), child_id).c_str());
 }
 
 ImVec2 ImGuiTestContext::GetMainMonitorWorkPos()
@@ -1033,7 +1033,6 @@ ImGuiTestItemInfo* ImGuiTestContext::ItemInfoOpenFullPath(ImGuiTestRef ref)
 
 // Find a window given a path or an ID.
 // In the case of when a path is passed, this handle finding child windows as well.
-// This is designed to be a replacement for GetChildWindowID().
 // e.g.
 //   ctx->WindowInfo("//Test Window");                          // OK
 //   ctx->WindowInfo("//Test Window/Child/SubChild");           // OK
@@ -1117,14 +1116,13 @@ ImGuiTestItemInfo* ImGuiTestContext::WindowInfo(ImGuiTestRef ref, ImGuiTestOpFla
             else
             {
                 // Child: Try to BeginChild(const char*) variant.
-                // FIXME: Eventually should obsolete GetChildWindowID() and we can embed the code in here.
-                ImGuiID child_window_id = GetChildWindowID(window->ID, part_name.c_str(), window_idstack_back);
+                ImGuiID child_window_id = GetChildWindowID(this, window->ID, part_name.c_str(), window_idstack_back);
                 ImGuiWindow* child_window = GetWindowByRef(child_window_id);
                 if (child_window == NULL)
                 {
                     // Try for BeginChild(ImGuiID id) variant.
                     // FIXME: This only really works when ID is derived from a string.
-                    child_window_id = GetChildWindowID(window->ID, GetID(part_name.c_str(), window_idstack_back));
+                    child_window_id = GetChildWindowID(this, window->ID, GetID(part_name.c_str(), window_idstack_back));
                     child_window = GetWindowByRef(child_window_id);
                 }
                 if (child_window == NULL)
