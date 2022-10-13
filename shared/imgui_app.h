@@ -25,7 +25,7 @@
 struct ImGuiApp
 {
     bool    DpiAware = true;                            // [In]  InitCreateWindow()
-    bool    SrgbFramebuffer = false;                    // [In]  InitCreateWindow() FIXME-WIP
+    bool    SrgbFramebuffer = false;                    // [In]  InitCreateWindow()
     bool    Quit = false;                               // [In]  NewFrame()
     ImVec4  ClearColor = { 0.f, 0.f, 0.f, 1.f };        // [In]  Render()
     bool    MockViewports = false;                      // [In]  InitBackends()

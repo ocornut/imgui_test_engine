@@ -903,7 +903,7 @@ void ImGuiCaptureToolUI::ShowCaptureToolWindow(ImGuiCaptureContext* context, boo
         ImGui::SetNextItemWidth((float)(int)-(TEXT_BASE_WIDTH * 5));
         ImGui::DragFloat("##SnapGridSize", &SnapGridSize, 1.0f, 1.0f, 128.0f, "%.0f");
 
-        ImGui::Checkbox("Software Mouse Cursor", &io.MouseDrawCursor);  // FIXME-TESTS: Test engine always resets this value.
+        ImGui::Checkbox("Software Mouse Cursor", &io.MouseDrawCursor);
 
         bool content_stitching_available = _CaptureArgs.InCaptureWindows.Size <= 1;
 #ifdef IMGUI_HAS_VIEWPORT

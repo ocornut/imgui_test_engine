@@ -2379,8 +2379,8 @@ void RegisterTests_Layout(ImGuiTestEngine* e)
 
         ImGui::SetCursorPos(ImVec2(200.0f, 100.0f));
 #if IMGUI_VERSION_NUM < 18814
-        IM_CHECK_EQ(window->DC.CursorMaxPos.x, window->Pos.x + 200.0f); // FIXME: Won't be valid if we apply #5548
-        IM_CHECK_EQ(window->DC.CursorMaxPos.y, window->Pos.y + 100.0f); // ""
+        IM_CHECK_EQ(window->DC.CursorMaxPos.x, window->Pos.x + 200.0f); // See change #5548
+        IM_CHECK_EQ(window->DC.CursorMaxPos.y, window->Pos.y + 100.0f);
 #else
         IM_CHECK_EQ(window->DC.CursorMaxPos.x, window->DC.CursorStartPos.x);
         IM_CHECK_EQ(window->DC.CursorMaxPos.y, window->DC.CursorStartPos.y);
@@ -3420,7 +3420,7 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
     };
 #endif
 
-    // ## Test DebugRecoverFromErrors() FIXME-TESTS
+    // ## Test DebugRecoverFromErrors()
     t = IM_REGISTER_TEST(e, "misc", "misc_recover");
     t->Flags |= ImGuiTestFlags_NoRecoveryWarnings;
     t->GuiFunc = [](ImGuiTestContext* ctx)
@@ -3499,7 +3499,7 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
         IM_CHECK_EQ(ImHashStr("helloxxx", 5), ImHashStr("hello"));                           // String size is honored
         IM_CHECK_EQ(ImHashStr("", 0, 0), (ImU32)0);                                          // Empty string doesn't alter hash
         IM_CHECK_EQ(ImHashStr("", 0, 1234), (ImU32)1234);                                    // Empty string doesn't alter hash
-        IM_CHECK_EQ(ImHashStr("hello", 5), ImHashData("hello", 5));                          // FIXME: Do we need to guarantee this?
+        IM_CHECK_EQ(ImHashStr("hello", 5), ImHashData("hello", 5));                          // Do we need to guarantee this?
 
         const int data[2] = { 42, 50 };
         IM_CHECK_EQ(ImHashData(&data[0], sizeof(int) * 2), ImHashData(&data[1], sizeof(int), ImHashData(&data[0], sizeof(int))));
@@ -4178,7 +4178,7 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
 
                 ctx->Yield();
                 ctx->Yield();
-                ctx->SetRef(vars.WindowOut); // FIXME-TESTS: Can't use ->Name as the / would be ignored
+                ctx->SetRef(vars.WindowOut);
                 ctx->WindowFocus("");
 
                 // Test only rendering items 0->9
@@ -5193,7 +5193,6 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
         //IM_CHECK_EQ(ctx->GenericVars.Status.Clicked, 5);
     };
 
-    // FIXME-TESTS
     t = IM_REGISTER_TEST(e, "demo", "demo_misc_001");
     t->GuiFunc = NULL;
     t->TestFunc = [](ImGuiTestContext* ctx)
@@ -5287,7 +5286,7 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
     {
         ctx->SetRef("Dear ImGui Demo");
         ctx->ItemOpen("Layout & Scrolling");
-        ctx->ItemCheck("Scrolling/Show Horizontal contents size demo window");   // FIXME-TESTS: maybe ItemXXX functions could do the recursion (e.g. Open all parents first)
+        ctx->ItemCheck("Scrolling/Show Horizontal contents size demo window");
         ImGuiTestActionFilter filter;
         filter.MaxPasses = filter.MaxDepth = 1;
         filter.RequireAllStatusFlags = ImGuiItemStatusFlags_Checkable;

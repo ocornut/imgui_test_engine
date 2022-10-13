@@ -1180,7 +1180,6 @@ void RegisterTests_Table(ImGuiTestEngine* e)
             initial_column_width[column_n] = col_curr->WidthGiven;              // Save initial column size for next test
 
             // Resize a column
-            // FIXME-TESTS: higher level helpers.
             const float move_by = -30.0f;
             ImGuiID handle_id = ImGui::TableGetColumnResizeID(table, column_n);
             ctx->ItemDragWithDelta(handle_id, ImVec2(move_by, 0));

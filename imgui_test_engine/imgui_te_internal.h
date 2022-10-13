@@ -72,7 +72,7 @@ enum ImGuiTestInputType
     ImGuiTestInputType_Char
 };
 
-// FIXME: May want to refactor/simplify now that core imgui is using its own input queue
+// FIXME: May want to strip further now that core imgui is using its own input queue
 struct ImGuiTestInput
 {
     ImGuiTestInputType      Type = ImGuiTestInputType_None;

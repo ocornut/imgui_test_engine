@@ -51,28 +51,6 @@ Index of this file:
 */
 
 //-------------------------------------------------------------------------
-// [SECTION] TODO
-//-------------------------------------------------------------------------
-
-// GOAL: Custom testing.
-// GOAL: Take screenshots and video for web/docs or testing purpose.
-// GOAL: Improve code coverage.
-// GOAL: Reliable performance measurement (w/ deterministic setup)
-// GOAL: Run blind/tty with no graphical context.
-
-// Note: GuiFunc can't run code that yields. There is an assert for that.
-// Note: GuiFunc in tests generally can't use ImGuiCond_Once or ImGuiCond_FirstUseEver reliably.
-
-// FIXME-TESTS: Make it possible to run ad hoc tests without registering/adding to a global list.
-// FIXME-TESTS: UI to setup breakpoint (e.g. GUI func on frame X, beginning of Test func or at certain Yield/Sleep spot)
-// FIXME-TESTS: Be able to run blind within GUI application (second context)
-// FIXME-TESTS: Be able to run in own contexts to avoid side-effects
-// FIXME-TESTS: Randomize test order in shared context ~ kind of fuzzing (need to be able to repro order)
-// FIXME-TESTS: Mouse actions on ImGuiNavLayer_Menu layer
-// FIXME-TESTS: Failing to open a double-click tree node
-
-
-//-------------------------------------------------------------------------
 // [SECTION] DATA
 //-------------------------------------------------------------------------
 
@@ -1522,7 +1500,6 @@ void ImGuiTestEngine_CrashHandler()
     ImGuiContext& g = *GImGui;
     ImGuiTestEngine* engine = (ImGuiTestEngine*)g.TestEngine;
 
-    // FIXME: This will not be required when we handle asserts with some grace (possibly via C++ exceptions).
     // Write stop times, because thread executing tests will no longer run.
     engine->EndTime = ImTimeGetInMicroseconds();
     for (int i = 0; i < engine->TestsAll.Size; i++)

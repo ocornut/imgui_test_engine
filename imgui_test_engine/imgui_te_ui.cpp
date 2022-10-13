@@ -793,15 +793,7 @@ void    ImGuiTestEngine_ShowTestEngineWindows(ImGuiTestEngine* e, bool* p_open)
 
     // Performance tool
     if (e->UiPerfToolOpen)
-    {
-        if (ImGui::Begin("Dear ImGui Perf Tool", &e->UiPerfToolOpen))
-        {
-            if (ImGui::IsWindowAppearing() && e->PerfTool->Empty()) // FIXME: Move internally??
-                e->PerfTool->LoadCSV();
-            e->PerfTool->ShowUI(e);
-        }
-        ImGui::End();
-    }
+        e->PerfTool->ShowPerfToolWindow(e, &e->UiPerfToolOpen);;
 
     // Show Dear ImGui windows
     // (we cannot show demo window here because it could lead to duplicate display, which demo windows isn't guarded for)

@@ -155,7 +155,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
 #if IMGUI_VERSION_NUM >= 18705
         IM_CHECK_EQ(vars.ButtonPressCount[4], 1 + 1 + 3);
 #else
-        IM_CHECK_EQ(vars.ButtonPressCount[4], 1 + 1 + 3 * 2); // FIXME: MouseRepeatRate is double KeyRepeatRate, that's not documented / or that's a bug
+        IM_CHECK_EQ(vars.ButtonPressCount[4], 1 + 1 + 3 * 2); // MouseRepeatRate was double KeyRepeatRate, that's not documented / or that's a bug
 #endif
         ctx->MouseUp(0);
 
@@ -841,7 +841,6 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ImGuiTestGenericVars& vars = ctx->GenericVars;
         ImGuiTestGenericItemStatus& status = vars.Status;
 
-        // FIXME-TESTS: Better helper to build ids out of various type of data
         ctx->SetRef("Test Window");
         ImGuiID field_0 = ctx->GetID("Field/$$0");
         ImGuiID field_1 = ctx->GetID("Field/$$1");
@@ -2550,7 +2549,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         }
 
         // Drag & drop using all mouse buttons work.
-        // FIXME: At this time only left, right and middle mouse buttons are supported for this usecase.
+        // FIXME: At this time only left, right and middle mouse buttons are supported for this use-case.
         for (ImGuiMouseButton button = 0; button < 3; button++)
         {
             vars.Dropped = false;

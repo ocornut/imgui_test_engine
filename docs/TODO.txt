@@ -1,0 +1,20 @@
+dear imgui test engine
+ISSUES & TODO LIST
+
+Issue numbers (#) refer to GitHub issues listed at https://github.com/ocornut/imgui_test_engine/issues/XXXX
+
+Grep IMGUI_BROKEN_TESTS: they are tests we implemented to demonstrate an issue (which never worked).
+
+- TestEngine: IO: Clarify API to avoid function calls vs raw bools in ImGuiTestEngineIO.
+
+- TestEngine: **/ wildcard search doesn't scroll in sub-child to make item visible (also see "misc_ref_wildcard")
+- TestEngine: Add sleep variants for wallclock/app time when not based on io.DeltaTime.
+- TestEngine: ScrollTo() could try to inject mouse wheel events?
+- TestEngine: Tables: if item is clipped by columns boundaries, doesn't know how to manipulate table
+  (resize columns and/or host window) to make item visible.
+
+- TestEngine: dismantle the "ForeignWindowsHideOverPos" system: ideally never force hiding.
+
+- TestEngine: UI/Tooling: UI to setup breakpoint (e.g. GUI func on frame X, beginning of Test func or at certain Yield/Sleep spot)?
+- TestEngine: UI/Tooling: Randomize/fuzz order in a deterministic way.
+

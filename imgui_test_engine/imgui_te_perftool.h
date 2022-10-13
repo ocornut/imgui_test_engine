@@ -109,7 +109,7 @@ struct IMGUI_API ImGuiPerfTool
     bool        LoadCSV(const char* filename = NULL);
     void        AddEntry(ImGuiPerfToolEntry* entry);
 
-    void        ShowUI(ImGuiTestEngine* engine);
+    void        ShowPerfToolWindow(ImGuiTestEngine* engine, bool* p_open);
     void        ViewOnly(const char* perf_name);
     void        ViewOnly(const char** perf_names);
     ImGuiPerfToolEntry* GetEntryByBatchIdx(int idx, const char* perf_name = NULL);

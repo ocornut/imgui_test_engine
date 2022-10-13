@@ -1039,8 +1039,17 @@ void ImGuiPerfTool::_SetBaseline(int batch_index)
 // [SECTION] USER INTERFACE
 //-------------------------------------------------------------------------
 
-void ImGuiPerfTool::ShowUI(ImGuiTestEngine* engine)
+void ImGuiPerfTool::ShowPerfToolWindow(ImGuiTestEngine* engine, bool* p_open)
 {
+    if (!ImGui::Begin("Dear ImGui Perf Tool", p_open))
+    {
+        ImGui::End();
+        return;
+    }
+
+    if (ImGui::IsWindowAppearing() && Empty())
+        LoadCSV();
+
     ImGuiStyle& style = ImGui::GetStyle();
 
     // -----------------------------------------------------------------------------------------------------------------
@@ -1248,38 +1257,40 @@ void ImGuiPerfTool::ShowUI(ImGuiTestEngine* engine)
     if (_Batches.empty() || _LabelsVisible.Size == 0 || _NumVisibleBuilds == 0)
     {
         ImGui::TextUnformatted("No data is available. Run some perf tests or adjust filter settings.");
-        return;
     }
-
+    else
+    {
 #if IMGUI_TEST_ENGINE_ENABLE_IMPLOT
-    // Splitter between two following child windows is rendered first.
-    float plot_height = 0.0f;
-    float& table_height = _InfoTableHeight;
-    ImGui::Splitter("splitter", &plot_height, &table_height, ImGuiAxis_Y, +1);
+        // Splitter between two following child windows is rendered first.
+        float plot_height = 0.0f;
+        float& table_height = _InfoTableHeight;
+        ImGui::Splitter("splitter", &plot_height, &table_height, ImGuiAxis_Y, +1);
 
-    // Double-click to move splitter to bottom
-    if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
-    {
-        table_height = 0;
-        plot_height = ImGui::GetContentRegionAvail().y - style.ItemSpacing.y;
-        ImGui::ClearActiveID();
-    }
+        // Double-click to move splitter to bottom
+        if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
+        {
+            table_height = 0;
+            plot_height = ImGui::GetContentRegionAvail().y - style.ItemSpacing.y;
+            ImGui::ClearActiveID();
+        }
 
-    // Render entries plot
-    if (ImGui::BeginChild(ImGui::GetID("plot"), ImVec2(0, plot_height)))
-        _ShowEntriesPlot();
-    ImGui::EndChild();
-
-    // Render entries tables
-    if (table_height > 0.0f)
-    {
-        if (ImGui::BeginChild(ImGui::GetID("info-table"), ImVec2(0, table_height)))
-            _ShowEntriesTable();
+        // Render entries plot
+        if (ImGui::BeginChild(ImGui::GetID("plot"), ImVec2(0, plot_height)))
+            _ShowEntriesPlot();
         ImGui::EndChild();
-    }
+
+        // Render entries tables
+        if (table_height > 0.0f)
+        {
+            if (ImGui::BeginChild(ImGui::GetID("info-table"), ImVec2(0, table_height)))
+                _ShowEntriesTable();
+            ImGui::EndChild();
+        }
 #else
-    _ShowEntriesTable();
+        _ShowEntriesTable();
 #endif
+    }
+    ImGui::End();
 }
 
 #if IMGUI_TEST_ENGINE_ENABLE_IMPLOT

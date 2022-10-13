@@ -447,7 +447,7 @@ void ImGuiTestContext::SetRef(ImGuiWindow* window)
         WindowCollapse(window->ID, false);
 }
 
-// FIXME-TESTS: May be to focus window when docked? Otherwise locate request won't even see an item?
+// FIXME-TESTS: May be good to focus window when docked? Otherwise locate request won't even see an item?
 void ImGuiTestContext::SetRef(ImGuiTestRef ref)
 {
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
@@ -807,7 +807,7 @@ ImGuiID ImGuiTestContext::ItemInfoHandleWildcardSearch(const char* wildcard_pref
     }
 
     // Wildcard matching requires item to be visible, because clipped items are unaware of their labels. Try panning through entire window, searching for target item.
-    // FIXME-TESTS: Scrollbar position restoration may be desirable, however it interferes with using found item.
+    // (Scrollbar position restoration in theory may be desirable, however it interferes with typical use of found item)
     // FIXME-TESTS: This doesn't recurse properly into each child..
     // FIXME: Down the line if we refactor ItemAdd() return value to distinguish render-clipping vs logic-clipping etc, we should instead temporarily enable a "no clip"
     // mode without the need for scrolling.
@@ -932,7 +932,6 @@ ImGuiTestItemInfo* ImGuiTestContext::ItemInfoOpenFullPath(ImGuiTestRef ref)
         return ItemInfoNull();
 
     // Tries to auto open intermediaries leading to final path.
-    // FIXME: Should this simply be baked in ItemInfo() ??
     // Note that openables cannot be part of the **/ (else it means we would have to open everything).
     // - Openables can be before the wildcard    "Node2/Node3/**/Button"
     // - Openables can be after the wildcard     "**/Node2/Node3/Lv4/Button"
@@ -989,7 +988,6 @@ ImGuiTestItemInfo* ImGuiTestContext::ItemInfoOpenFullPath(ImGuiTestRef ref)
 // - Likely you may want to feed the return value into SetRef(): e.g. 'ctx->SetRef(item->ID)' or 'ctx->SetRef(WindowInfo("//Window/Child")->ID);'
 // Todos:
 // - FIXME: Missing support for wildcards.
-// - FIXME: Missing support for windows that are not instantiated yet. May not need to support that?s
 ImGuiTestItemInfo* ImGuiTestContext::WindowInfo(ImGuiTestRef ref, ImGuiTestOpFlags flags)
 {
     if (IsError())
@@ -3451,7 +3449,6 @@ void    ImGuiTestContext::DockNodeHideTabBar(ImGuiDockNode* node, bool hidden)
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
     LogDebug("DockNodeHideTabBar %d", hidden);
 
-    // FIXME-TEST: Alter WindowRef
     ImGuiTestRef backup_ref = GetRef();
     if (hidden)
     {
