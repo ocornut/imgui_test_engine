@@ -3134,6 +3134,85 @@ void RegisterTests_Table(ImGuiTestEngine* e)
         ImGui::PopStyleVar();
     };
 #endif
+
+#if IMGUI_VERSION_NUM >= 18831
+    // ## Test status of ImGuiTableColumnFlags_IsHovered
+    t = IM_REGISTER_TEST(e, "table", "table_hovered_column");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        auto& vars = ctx->GenericVars;
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImGui::Text("Hello");
+
+#if !IMGUI_BROKEN_TESTS
+        ImGui::Dummy(ImVec2(500, 0.0f)); // Enlarge window so all columns are visible: TestEngine doesn't know how to resize column yet
+#endif
+
+        if (ImGui::BeginTable("table", 3, ImGuiTableFlags_Borders | ImGuiTableFlags_NoSavedSettings | ImGuiTableFlags_SizingStretchSame))
+        {
+            for (int row = 0; row < 5; row++)
+            {
+                ImGui::TableNextRow();
+                ImGui::PushID(row);
+
+                ImGui::TableSetColumnIndex(0);
+                ImGui::Selectable("##selectable", false, ImGuiSelectableFlags_SpanAllColumns | ImGuiSelectableFlags_AllowItemOverlap);
+                ImGui::SameLine(0.0f, 0.0f);
+                ImGui::Button("Col0");
+                if (ImGui::TableGetColumnFlags() & ImGuiTableColumnFlags_IsHovered)
+                {
+                    ImGui::SameLine();
+                    ImGui::Text("Hovered");
+                }
+
+                ImGui::TableSetColumnIndex(1);
+                ImGui::Button("Col1");
+                ImGui::SameLine();
+                ImGui::Text("%d", vars.IntArray[row]);
+                if (ImGui::TableGetColumnFlags() & ImGuiTableColumnFlags_IsHovered)
+                {
+                    ImGui::SameLine();
+                    if (ImGui::ArrowButton("<", ImGuiDir_Left))
+                        vars.IntArray[row]--;
+                    ImGui::SameLine();
+                    if (ImGui::ArrowButton(">", ImGuiDir_Right))
+                        vars.IntArray[row]++;
+                }
+
+                ImGui::TableSetColumnIndex(2);
+                if (ImGui::TableGetColumnFlags() & ImGuiTableColumnFlags_IsHovered)
+                    ImGui::Text("Hovered");
+
+                ImGui::PopID();
+            }
+            ImGui::EndTable();
+        }
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        auto& vars = ctx->GenericVars;
+
+        ctx->SetRef("Test Window");
+        ImGuiTable* table = ImGui::TableFindByID(ctx->GetID("table"));
+
+        ctx->MouseMove("table/$$1/Col0");
+        IM_CHECK(table->HoveredColumnBody == 0);
+
+        ctx->MouseMove("table/$$1/Col1");
+        IM_CHECK(table->HoveredColumnBody == 1);
+        ctx->MouseMove("table/$$1/<");
+        IM_CHECK(table->HoveredColumnBody == 1);
+        IM_CHECK(vars.IntArray[1] == 0);
+        ctx->ItemClick("table/$$1/<");
+        IM_CHECK(table->HoveredColumnBody == 1);
+        IM_CHECK(vars.IntArray[1] == -1);
+        ctx->ItemClick("table/$$1/>");
+        ctx->ItemClick("table/$$1/>");
+        IM_CHECK(table->HoveredColumnBody == 1);
+        IM_CHECK(vars.IntArray[1] == 1);
+    };
+#endif
 }
 
 //-------------------------------------------------------------------------

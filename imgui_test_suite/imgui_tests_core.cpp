@@ -3606,6 +3606,9 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
         IM_CHECK_EQ(ImHashDecoratedPath("$$42"), ImHashData(&v_42, sizeof(int)));
         IM_CHECK_EQ(ImHashDecoratedPath("$$-1"), ImHashData(&v_n1, sizeof(int)));
 
+        IM_CHECK_EQ(ImHashDecoratedPath("\\$$42"), ImHashStr("$$42")); // Test escaping
+        IM_CHECK_EQ(ImHashDecoratedPath("$\\$42"), ImHashStr("$$42")); // Test escaping
+
         IM_CHECK_EQ(ImHashDecoratedPath("hello/$$42"), ImHashData(&v_42, sizeof(int), ImHashStr("hello")));
         IM_CHECK_EQ(ImHashDecoratedPath("hello/$$-1"), ImHashData(&v_n1, sizeof(int), ImHashStr("hello")));
 
