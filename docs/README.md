@@ -13,10 +13,11 @@ https://user-images.githubusercontent.com/8225057/182409619-cd3bf990-b383-4a6c-a
 
 ## Overview
 
-- Designed to **automate and test Dear ImGui applications**. 
+- Designed to **automate and test Dear ImGui applications**.
 - We also use it to **self-test Dear ImGui itself**, reduce regression and facilitate contributions.
 - **Test Engine interacts mostly from the point of view of an end-user, by injecting mouse/keyboard** inputs into Dear ImGui's IO. It means it tries to "find its way" toward accomplishing an action. Opening an item may mean CTRL+Tabbing into a given widow, moving things out of the way, scrolling to locate the item, querying its open status, etc.
 - It can be used for a variety of testing (smoke testing, integration/functional testing) or automation purposes (running tasks, capturing videos, etc.).
+- Your app can be controlled from Dear ImGui + You can now automate your app = **You can test anything exposed in your app/engine**! (not only UI).
 - It **can run in your windowed application**. **It can also run headless** (e.g. running GUI tests from a console or on a CI server without rendering).
 - It **can run at simulated human speed** (for watching or exporting videos) or **can run in fast mode** (e.g. teleporting mouse).
 - It **can export screenshots and videos/gifs**. They can be leveraged for some forms of testing, but also to generate assets for documentation, or notify teams of certain changes. Assets that often need to be updated are best generated from a script inside of manually recreated/cropped/exported.
@@ -34,7 +35,8 @@ https://user-images.githubusercontent.com/8225057/182409619-cd3bf990-b383-4a6c-a
 See [Wiki](https://github.com/ocornut/imgui_test_engine/wiki) sections: 
 - [Overview](https://github.com/ocornut/imgui_test_engine/wiki/Overview)
 - [Setting Up](https://github.com/ocornut/imgui_test_engine/wiki/Setting-Up)
-- [Automation API](https://github.com/ocornut/imgui_test_engine/wiki/Automation-API)
+- [Automation API](https://github.com/ocornut/imgui_test_engine/wiki/Automation-API) (ImGuiTestContext interface)
+- [Named References](https://github.com/ocornut/imgui_test_engine/wiki/Named-References) (all nice uses of ImGuiTestRef)
 - [Exporting Results](https://github.com/ocornut/imgui_test_engine/wiki/Exporting-Results)
 - [Screen & Video Captures](https://github.com/ocornut/imgui_test_engine/wiki/Screen-and-Video-Captures)
 
