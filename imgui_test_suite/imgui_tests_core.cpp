@@ -90,6 +90,35 @@ void RegisterTests_Window(ImGuiTestEngine* e)
         ImGui::End();
     };
 
+    // ## Test a collapsed window doesn't show a scrollbar on expand
+#if IMGUI_VERSION_NUM >= 18833
+    t = IM_REGISTER_TEST(e, "window", "window_size_collapsed_2");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::SetNextWindowSize(ImVec2(400, 200), ImGuiCond_Appearing);
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+        IM_CHECK_EQ_NO_RET(ImGui::GetCurrentWindow()->ScrollbarY, false);
+        ImGui::End();
+
+        ImGui::SetNextWindowSize(ImVec2(400, 200), ImGuiCond_Appearing);
+        ImGui::Begin("Test Window 2", NULL, ImGuiWindowFlags_NoSavedSettings);
+        IM_CHECK_EQ_NO_RET(ImGui::GetCurrentWindow()->ScrollbarY, false);
+        for (int n = 0; n < 3; n++)
+            ImGui::Text("Test %d", n);
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ctx->SetRef("Test Window");
+        ctx->WindowCollapse("", true);
+        ctx->WindowCollapse("", false);
+
+        ctx->SetRef("Test Window 2");
+        ctx->WindowCollapse("", true);
+        ctx->WindowCollapse("", false);
+    };
+#endif
+
     t = IM_REGISTER_TEST(e, "window", "window_size_contents");
     t->Flags |= ImGuiTestFlags_NoAutoFinish;
     t->GuiFunc = [](ImGuiTestContext* ctx)

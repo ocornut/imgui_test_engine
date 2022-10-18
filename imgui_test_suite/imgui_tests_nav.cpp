@@ -432,6 +432,7 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
             if (ImGui::BeginMenu("Menu1"))
             {
                 ImGui::MenuItem("MenuItem1");
+                ImGui::Text("hovered: %d", ImGui::IsItemHovered());
                 ImGui::EndMenu();
             }
             if (ImGui::BeginMenu("Menu2"))
@@ -439,21 +440,20 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
                 static float ff = 0.5;
                 ImGui::SliderFloat("float1", &ff, 0.f, 1.f);
                 ImGui::MenuItem("MenuItem2");
+                ImGui::Text("hovered: %d", ImGui::IsItemHovered());
                 ImGui::MenuItem("MenuItem2b");
                 ImGui::MenuItem("MenuItem2c");
                 ImGui::EndMenu();
             }
+            ImGui::Text("hovered: %d", ImGui::IsItemHovered());
             if (ImGui::BeginMenu("Menu3"))
             {
                 ImGui::MenuItem("MenuItem3");
                 ImGui::EndMenu();
             }
             ImGui::MenuItem("MenuItemOutside");
-#if IMGUI_BROKEN_TESTS
-            // FIXME: IsItemHovered() is not supported yet by ImGuiItemFlags_NoWindowHoverableCheck
-            // - Because it already failed before on opened BeginMenu() -> need LastItemData backup/restore
-            // - Need add support in IsItemHovered() + fix BeginMenu() to backup/restore LastItemData around BeginPopup
-            //ImGui::Text("hovered: %d", ImGui::IsItemHovered());
+#if IMGUI_VERSION_NUM >= 18832
+            ImGui::Text("hovered: %d", ImGui::IsItemHovered()); // FIXME-TESTS: Support fixed in 18832, need test.
 #endif
         }
         ImGui::End();
