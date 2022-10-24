@@ -4799,6 +4799,58 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
         IM_CHECK_STR_EQ(text.c_str(), "A thing somewhere");
     };
 
+
+    // ## Test ImGuiTextLineIndex
+#if IMGUI_VERSION_NUM >= 18833
+    t = IM_REGISTER_TEST(e, "misc", "misc_text_index");
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiTextBuffer buf;
+        ImGuiTextIndex index;
+        auto f_append = [&](const char* text)
+        {
+            int old_size = buf.size();
+            buf.append(text);
+            int new_size = buf.size();
+            index.append(buf.c_str(), old_size, new_size);
+        };
+        IM_CHECK(index.LineOffsets.Data == NULL); // Check no allocation
+        IM_CHECK_EQ(index.size(), 0);
+        f_append("");
+        IM_CHECK(index.LineOffsets.Data == NULL); // Check no allocation
+        IM_CHECK_EQ(index.size(), 0);
+
+        f_append("hel");
+        IM_CHECK_EQ(index.size(), 1);
+        IM_CHECK_EQ(index.get_line_begin(buf.c_str(), 0), buf.c_str());
+        IM_CHECK_EQ(index.get_line_end(buf.c_str(), 0), buf.c_str() + 3);
+        f_append("lo");
+        IM_CHECK_EQ(index.size(), 1);
+        IM_CHECK_EQ(index.get_line_begin(buf.c_str(), 0), buf.c_str());
+        IM_CHECK_EQ(index.get_line_end(buf.c_str(), 0), buf.c_str() + 5);
+        f_append("world\nhi");
+        IM_CHECK_EQ(index.size(), 2);
+
+        buf.clear();
+        index.clear();
+        f_append("hello\n");
+        IM_CHECK_EQ(index.size(), 1);
+        f_append("world");
+        IM_CHECK_EQ(index.size(), 2);
+        f_append("\n");
+        IM_CHECK_EQ(index.size(), 2);
+        f_append("\n\n");
+        IM_CHECK_EQ(index.size(), 4);
+        f_append("");
+        f_append("");
+        IM_CHECK_EQ(index.size(), 4);
+        f_append("\n\n");
+        IM_CHECK_EQ(index.size(), 6);
+        f_append("aaa");
+        IM_CHECK_EQ(index.size(), 7);
+    };
+#endif
+
     // ## Test ImGuiTextFilter
     t = IM_REGISTER_TEST(e, "misc", "misc_text_filter");
     t->GuiFunc = [](ImGuiTestContext* ctx)
