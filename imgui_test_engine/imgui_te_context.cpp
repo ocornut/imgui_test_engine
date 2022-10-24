@@ -3332,8 +3332,8 @@ void    ImGuiTestContext::DockInto(ImGuiTestRef src_id, ImGuiTestRef dst_id, ImG
 
     ImGuiWindow* window_src = GetWindowByRef(src_id);
     ImGuiWindow* window_dst = GetWindowByRef(dst_id);
-    ImGuiDockNode* node_src = ImGui::DockBuilderGetNode(src_id.ID);
-    ImGuiDockNode* node_dst = ImGui::DockBuilderGetNode(dst_id.ID);
+    ImGuiDockNode* node_src = ImGui::DockBuilderGetNode(GetID(src_id));
+    ImGuiDockNode* node_dst = ImGui::DockBuilderGetNode(GetID(dst_id));
     IM_CHECK_SILENT((window_src != NULL) != (node_src != NULL)); // Src must be either a window either a node
     IM_CHECK_SILENT((window_dst != NULL) != (node_dst != NULL)); // Dst must be either a window either a node
 
@@ -3394,19 +3394,32 @@ void    ImGuiTestContext::DockInto(ImGuiTestRef src_id, ImGuiTestRef dst_id, ImG
     if (node_src)
         window_src = node_src->HostWindow;  // Dragging a menu button may detach a node and create a new window.
     IM_CHECK_SILENT(g.MovingWindow == window_src);
-#ifdef IMGUI_HAS_DOCK
+
     Yield(2);    // Docking to dockspace over viewport (needs extra frame) or moving a dock node to another node (needs two extra frames) fails in fast mode without this.
     IM_CHECK_SILENT(g.HoveredWindowUnderMovingWindow && g.HoveredWindowUnderMovingWindow->RootWindowDockTree == window_dst->RootWindowDockTree);
-#else
-    IM_CHECK_SILENT(g.HoveredWindowUnderMovingWindow && g.HoveredWindowUnderMovingWindow->RootWindow == window_dst);
-#endif
+
+    // Docking will happen on the mouse-up
+    const ImGuiID prev_dock_id = window_src->DockId;
+    const ImGuiID prev_dock_parent_id = (window_src->DockNode && window_src->DockNode->ParentNode) ? window_src->DockNode->ParentNode->ID : 0;
+    const ImGuiID prev_dock_node_as_host_id = window_src->DockNodeAsHost ? window_src->DockNodeAsHost->ID : 0;
 
     MouseUp(0);
+
+    // Cool down
     if (g.IO.ConfigDockingWithShift)
         KeyUp(ImGuiMod_Shift);
     ForeignWindowsUnhideAll();
     Yield();
     Yield();
+
+    // Verify docking has succeeded! It's not easy to write a full fledged test, let's go for a simple one.
+    if (!(flags & ImGuiTestOpFlags_NoError))
+    {
+        const ImGuiID curr_dock_id = window_src->DockId;
+        const ImGuiID curr_dock_parent_id = (window_src->DockNode && window_src->DockNode->ParentNode) ? window_src->DockNode->ParentNode->ID : 0;
+        const ImGuiID curr_dock_node_as_host_id = window_src->DockNodeAsHost ? window_src->DockNodeAsHost->ID : 0;
+        IM_CHECK((prev_dock_id != curr_dock_id) || (prev_dock_parent_id != curr_dock_parent_id) || (prev_dock_node_as_host_id != curr_dock_node_as_host_id));
+    }
 }
 
 void    ImGuiTestContext::DockClear(const char* window_name, ...)
