@@ -1161,93 +1161,6 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
         IM_CHECK_LT(viewport->Pos.y + window->HitTestHoleOffset.y + window->HitTestHoleSize.y, down_window->Pos.y);
     };
 
-    // # Test dock node focus flag.
-    t = IM_REGISTER_TEST(e, "docking", "docking_node_focus");
-    t->GuiFunc = [](ImGuiTestContext* ctx)
-    {
-        ImGuiTestGenericVars& vars = ctx->GenericVars;
-
-        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
-        vars.DockId = ImGui::GetID("Dockspace");
-        ImGui::DockSpace(vars.DockId, ImVec2(0.0f, 0.0f), ImGuiDockNodeFlags_PassthruCentralNode);
-        ImGui::SetNextWindowSize(ImVec2(300, 200), ImGuiCond_Appearing);
-        ImGui::Begin("A", NULL, ImGuiWindowFlags_NoSavedSettings); ImGui::End();
-        ImGui::SetNextWindowSize(ImVec2(300, 200), ImGuiCond_Appearing);
-        ImGui::Begin("B", NULL, ImGuiWindowFlags_NoSavedSettings); ImGui::End();
-        ImGui::SetNextWindowSize(ImVec2(300, 200), ImGuiCond_Appearing);
-        ImGui::Begin("C", NULL, ImGuiWindowFlags_NoSavedSettings); ImGui::End();
-        if (ImGuiDockNode* node = ImGui::DockBuilderGetCentralNode(vars.DockId))
-        {
-            ImGui::SetCursorScreenPos(node->Pos + ImVec2(10, 10));
-            ImGui::BeginChild("InjectedChild", node->Size - ImVec2(200, 20), true);
-            ImGui::EndChild();
-        }
-        ImGui::End();
-    };
-    t->TestFunc = [](ImGuiTestContext* ctx)
-    {
-        ImGuiTestGenericVars& vars = ctx->GenericVars;
-        ctx->WindowResize("Test Window", ImVec2(600.0f, 600.0f));
-        ctx->DockInto("A", vars.DockId, ImGuiDir_Left, true);
-        ctx->DockInto("B", vars.DockId, ImGuiDir_Down, true);
-        ctx->DockInto("C", "B");
-        ImGuiWindow* window = ctx->GetWindowByRef("A");
-        ImGuiWindow* window_child = ctx->WindowInfo("Test Window/InjectedChild")->Window;
-        ImGuiDockNode* node_root = ImGui::DockNodeGetRootNode(window->DockNode);
-        ImGuiDockNode* node_split = node_root->ChildNodes[0];
-        ImGuiDockNode* node_a = node_split->ChildNodes[0];
-        ImGuiDockNode* node_central = node_split->ChildNodes[1];
-        ImGuiDockNode* node_bc = node_root->ChildNodes[1];
-
-        // Verify that only clicked node is focused.
-        ctx->MouseMoveToPos(ctx->GetWindowTitlebarPoint("A"));
-        ctx->MouseClick();
-        IM_CHECK_EQ(node_central->IsFocused, false);
-        IM_CHECK_EQ(node_root->IsFocused, false);
-        IM_CHECK_EQ(node_split->IsFocused, false);
-        IM_CHECK_EQ(node_a->IsFocused, true);
-        IM_CHECK_EQ(node_bc->IsFocused, false);
-
-        ctx->MouseMoveToPos(ctx->GetWindowTitlebarPoint("B"));
-        ctx->MouseClick();
-        IM_CHECK_EQ(node_central->IsFocused, false);
-        IM_CHECK_EQ(node_root->IsFocused, false);
-        IM_CHECK_EQ(node_split->IsFocused, false);
-        IM_CHECK_EQ(node_a->IsFocused, false);
-        IM_CHECK_EQ(node_bc->IsFocused, true);
-
-        ctx->MouseMoveToPos(ctx->GetWindowTitlebarPoint("C"));
-        ctx->MouseClick();
-        IM_CHECK_EQ(node_central->IsFocused, false);
-        IM_CHECK_EQ(node_root->IsFocused, false);
-        IM_CHECK_EQ(node_split->IsFocused, false);
-        IM_CHECK_EQ(node_a->IsFocused, false);
-        IM_CHECK_EQ(node_bc->IsFocused, true);
-
-        // Clicking another node and then central node does not focus any other nodes.
-        ctx->MouseMoveToPos(window_child->Rect().GetTR() + ImVec2(10.0f, 10.0f));
-        ctx->MouseClick();
-        IM_CHECK_EQ(node_root->IsFocused, false);
-        IM_CHECK_EQ(node_split->IsFocused, false);
-        IM_CHECK_EQ(node_a->IsFocused, false);
-        IM_CHECK_EQ(node_bc->IsFocused, false);
-#if IMGUI_BROKEN_TESTS
-        // Clicking central node focuses it even with _PassthruCentralNode flag.
-        IM_CHECK_EQ(node_central->IsFocused, true);
-#endif
-
-        // Clicking another node and then central node does not focus any other node flags.
-        ctx->MouseMoveToPos(ctx->GetWindowTitlebarPoint("C"));
-        ctx->MouseClick();
-        ctx->MouseMoveToPos(window_child->Rect().GetCenter());
-        ctx->MouseClick();
-        IM_CHECK_EQ(node_root->IsFocused, false);
-        IM_CHECK_EQ(node_split->IsFocused, false);
-        IM_CHECK_EQ(node_a->IsFocused, false);
-        IM_CHECK_EQ(node_bc->IsFocused, false);
-        IM_CHECK_EQ(node_central->IsFocused, false);
-    };
-
     // ## Test preserving docking information of closed windows. (#3716)
     t = IM_REGISTER_TEST(e, "docking", "docking_preserve_docking_info");
     t->SetVarsDataType<DockingTestsGenericVars>([](auto& vars) {
@@ -1357,6 +1270,177 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
         IM_CHECK(g.NavWindow == last_focused_window);
 #endif
         IM_UNUSED(last_focused_window);
+    };
+
+    // # Test dock node focused flag.
+    // # Test with child window injected into host window
+    t = IM_REGISTER_TEST(e, "docking", "docking_focus_nodes_1");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiTestGenericVars& vars = ctx->GenericVars;
+
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+        vars.DockId = ImGui::GetID("Dockspace");
+        ImGui::DockSpace(vars.DockId, ImVec2(0.0f, 0.0f), ImGuiDockNodeFlags_PassthruCentralNode);
+        ImGui::SetNextWindowSize(ImVec2(300, 200), ImGuiCond_Appearing);
+        ImGui::Begin("A", NULL, ImGuiWindowFlags_NoSavedSettings); ImGui::End();
+        ImGui::SetNextWindowSize(ImVec2(300, 200), ImGuiCond_Appearing);
+        ImGui::Begin("B", NULL, ImGuiWindowFlags_NoSavedSettings); ImGui::End();
+        ImGui::SetNextWindowSize(ImVec2(300, 200), ImGuiCond_Appearing);
+        ImGui::Begin("C", NULL, ImGuiWindowFlags_NoSavedSettings); ImGui::End();
+        if (ImGuiDockNode* node = ImGui::DockBuilderGetCentralNode(vars.DockId))
+        {
+            ImGui::SetCursorScreenPos(node->Pos + ImVec2(10, 10));
+            ImGui::BeginChild("InjectedChild", node->Size - ImVec2(200, 20), true);
+            ImGui::EndChild();
+        }
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiTestGenericVars& vars = ctx->GenericVars;
+        ctx->WindowResize("Test Window", ImVec2(600.0f, 600.0f));
+        ctx->DockClear("A", "B", "C", NULL);
+        ctx->DockInto("A", vars.DockId, ImGuiDir_Left, true);
+        ctx->DockInto("B", vars.DockId, ImGuiDir_Down, true);
+        ctx->DockInto("C", "B");
+        ImGuiWindow* window = ctx->GetWindowByRef("A");
+        ImGuiWindow* window_child = ctx->WindowInfo("Test Window/InjectedChild")->Window;
+        ImGuiDockNode* node_root = ImGui::DockNodeGetRootNode(window->DockNode);
+        ImGuiDockNode* node_split = node_root->ChildNodes[0];
+        ImGuiDockNode* node_a = node_split->ChildNodes[0];
+        ImGuiDockNode* node_central = node_split->ChildNodes[1];
+        ImGuiDockNode* node_bc = node_root->ChildNodes[1];
+
+        // Verify that only clicked node is focused.
+        ctx->MouseMoveToPos(ctx->GetWindowTitlebarPoint("A"));
+        ctx->MouseClick();
+        IM_CHECK_EQ(node_central->IsFocused, false);
+        IM_CHECK_EQ(node_root->IsFocused, false);
+        IM_CHECK_EQ(node_split->IsFocused, false);
+        IM_CHECK_EQ(node_a->IsFocused, true);
+        IM_CHECK_EQ(node_bc->IsFocused, false);
+
+        ctx->MouseMoveToPos(ctx->GetWindowTitlebarPoint("B"));
+        ctx->MouseClick();
+        IM_CHECK_EQ(node_central->IsFocused, false);
+        IM_CHECK_EQ(node_root->IsFocused, false);
+        IM_CHECK_EQ(node_split->IsFocused, false);
+        IM_CHECK_EQ(node_a->IsFocused, false);
+        IM_CHECK_EQ(node_bc->IsFocused, true);
+
+        ctx->MouseMoveToPos(ctx->GetWindowTitlebarPoint("C"));
+        ctx->MouseClick();
+        IM_CHECK_EQ(node_central->IsFocused, false);
+        IM_CHECK_EQ(node_root->IsFocused, false);
+        IM_CHECK_EQ(node_split->IsFocused, false);
+        IM_CHECK_EQ(node_a->IsFocused, false);
+        IM_CHECK_EQ(node_bc->IsFocused, true);
+
+        // Clicking another node and then central node does not focus any other nodes.
+        ctx->MouseMoveToPos(window_child->Rect().GetTR() + ImVec2(10.0f, 10.0f));
+        ctx->MouseClick();
+        IM_CHECK_EQ(node_root->IsFocused, false);
+        IM_CHECK_EQ(node_split->IsFocused, false);
+        IM_CHECK_EQ(node_a->IsFocused, false);
+        IM_CHECK_EQ(node_bc->IsFocused, false);
+#if IMGUI_BROKEN_TESTS
+        // Clicking central node focuses it even with _PassthruCentralNode flag.
+        IM_CHECK_EQ(node_central->IsFocused, true);
+#endif
+
+        // Clicking another node and then central node does not focus any other node flags.
+        ctx->MouseMoveToPos(ctx->GetWindowTitlebarPoint("C"));
+        ctx->MouseClick();
+        ctx->MouseMoveToPos(window_child->Rect().GetCenter());
+        ctx->MouseClick();
+        IM_CHECK_EQ(node_root->IsFocused, false);
+        IM_CHECK_EQ(node_split->IsFocused, false);
+        IM_CHECK_EQ(node_a->IsFocused, false);
+        IM_CHECK_EQ(node_bc->IsFocused, false);
+        IM_CHECK_EQ(node_central->IsFocused, false);
+    };
+
+    t = IM_REGISTER_TEST(e, "docking", "docking_focus_nodes_nested");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+
+        ImGui::DockSpace(ImGui::GetID("Dockspace1"));
+
+        ImGui::Begin("A1", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImGui::Text("SpacerSpacerSpacer-SpacerSpacerSpacer");
+        ImGui::Text("SpacerSpacerSpacer-SpacerSpacerSpacer");
+        ImGui::DockSpace(ImGui::GetID("Dockspace2"));
+        ImGui::End();
+        ImGui::Begin("A2", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImGui::Text("SpacerSpacerSpacer");
+        ImGui::Text("SpacerSpacerSpacer");
+        ImGui::End();
+
+        ImGui::Begin("B1", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImGui::Text("SpacerSpacerSpacer");
+        ImGui::Text("SpacerSpacerSpacer");
+        ImGui::DockSpace(ImGui::GetID("Dockspace3"));
+        ImGui::End();
+        ImGui::Begin("B2", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImGui::Text("SpacerSpacerSpacer");
+        ImGui::Text("SpacerSpacerSpacer");
+        ImGui::End();
+
+        ImGui::Begin("C1", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImGui::Text("SpacerSpacerSpacer");
+        ImGui::Text("SpacerSpacerSpacer");
+        ImGui::End();
+        ImGui::Begin("C2", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImGui::Text("SpacerSpacerSpacer");
+        ImGui::Text("SpacerSpacerSpacer");
+        ImGui::End();
+
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ctx->WindowResize("Test Window", ImVec2(600.0f, 600.0f));
+        ctx->DockClear("A1", "A2", "B1", "B2", "C1", "C2", NULL);
+        ctx->DockInto("A1", "//Test Window/Dockspace1", ImGuiDir_Left, true);
+        ctx->DockInto("A2", "//Test Window/Dockspace1", ImGuiDir_Down, true);
+        ctx->DockInto("B1", "//A1/Dockspace2", ImGuiDir_Left, true);
+        ctx->DockInto("B2", "//A1/Dockspace2", ImGuiDir_Down, true);
+        ctx->DockInto("C1", "//B1/Dockspace3", ImGuiDir_Left, true);
+        ctx->DockInto("C2", "//B1/Dockspace3", ImGuiDir_Down, true); // Very small node made us land over the splitter, which prior to 2022/10/24 was broken.
+
+        ctx->ItemClick("A1");
+        IM_CHECK(ctx->GetWindowByRef("A1")->DockNode->IsFocused == true);
+        IM_CHECK(ctx->GetWindowByRef("B1")->DockNode->IsFocused == false);
+        IM_CHECK(ctx->GetWindowByRef("C1")->DockNode->IsFocused == false);
+        IM_CHECK(ctx->GetWindowByRef("A2")->DockNode->IsFocused == false);
+        IM_CHECK(ctx->GetWindowByRef("B2")->DockNode->IsFocused == false);
+        IM_CHECK(ctx->GetWindowByRef("C2")->DockNode->IsFocused == false);
+
+        ctx->ItemClick("C1");
+        IM_CHECK(ctx->GetWindowByRef("A1")->DockNode->IsFocused == true);
+        IM_CHECK(ctx->GetWindowByRef("B1")->DockNode->IsFocused == true);
+        IM_CHECK(ctx->GetWindowByRef("C1")->DockNode->IsFocused == true);
+        IM_CHECK(ctx->GetWindowByRef("A2")->DockNode->IsFocused == false);
+        IM_CHECK(ctx->GetWindowByRef("B2")->DockNode->IsFocused == false);
+        IM_CHECK(ctx->GetWindowByRef("C2")->DockNode->IsFocused == false);
+
+        ctx->ItemClick("A2");
+        IM_CHECK(ctx->GetWindowByRef("A1")->DockNode->IsFocused == false);
+        IM_CHECK(ctx->GetWindowByRef("B1")->DockNode->IsFocused == false);
+        IM_CHECK(ctx->GetWindowByRef("C1")->DockNode->IsFocused == false);
+        IM_CHECK(ctx->GetWindowByRef("A2")->DockNode->IsFocused == true);
+        IM_CHECK(ctx->GetWindowByRef("B2")->DockNode->IsFocused == false);
+        IM_CHECK(ctx->GetWindowByRef("C2")->DockNode->IsFocused == false);
+
+        ctx->ItemClick("B2");
+        IM_CHECK(ctx->GetWindowByRef("A1")->DockNode->IsFocused == true);
+        IM_CHECK(ctx->GetWindowByRef("B1")->DockNode->IsFocused == false);
+        IM_CHECK(ctx->GetWindowByRef("C1")->DockNode->IsFocused == false);
+        IM_CHECK(ctx->GetWindowByRef("A2")->DockNode->IsFocused == false);
+        IM_CHECK(ctx->GetWindowByRef("B2")->DockNode->IsFocused == true);
+        IM_CHECK(ctx->GetWindowByRef("C2")->DockNode->IsFocused == false);
     };
 
     // ## Test restoring dock tab state in independent and split windows.
@@ -2123,7 +2207,7 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
 
         // TabItemButton() did cause a dockspace child window get inserted into g.WindowsFocusOrder which eventually
         // caused a crash (#5515, 0e95cf)..
-        ctx->MenuClick("//Dear ImGui Demo/Tools/Metrics\\/Debugger");
+        ctx->MenuCheck("//Dear ImGui Demo/Tools/Metrics\\/Debugger");
         ctx->WindowClose("Dear ImGui Metrics\\/Debugger");
         for (ImGuiWindow* window : g.WindowsFocusOrder)
             if (!window->DockNodeIsVisible) // Docked windows are converted to child windows and are valid in this list
