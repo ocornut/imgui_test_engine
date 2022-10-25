@@ -2192,7 +2192,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
     };
 
     // ## Test ColorEdit basic Drag and Drop
-    t = IM_REGISTER_TEST(e, "widgets", "widgets_drag_coloredit");
+    t = IM_REGISTER_TEST(e, "widgets", "widgets_dragdrop_coloredit");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         ImGuiTestGenericVars& vars = ctx->GenericVars;
@@ -2216,7 +2216,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
     };
 
     // ## Test BeginDragDropSource() with NULL id.
-    t = IM_REGISTER_TEST(e, "widgets", "widgets_drag_source_null_id");
+    t = IM_REGISTER_TEST(e, "widgets", "widgets_dragdrop_source_null_id");
     struct WidgetDragSourceNullIDData
     {
         ImGuiID SrcViewport = 0;
@@ -2286,7 +2286,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
     };
 
     // ## Test preserving g.ActiveId during drag operation opening tree items.
-    t = IM_REGISTER_TEST(e, "widgets", "widgets_drag_hold_to_open");
+    t = IM_REGISTER_TEST(e, "widgets", "widgets_dragdrop_hold_to_open");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         if (ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings))
@@ -2338,7 +2338,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
     };
 
     // ## Test overlapping drag and drop targets. The drag and drop system always prioritize the smaller target.
-    t = IM_REGISTER_TEST(e, "widgets", "widgets_drag_overlapping_targets");
+    t = IM_REGISTER_TEST(e, "widgets", "widgets_dragdrop_overlapping_targets");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
@@ -2394,7 +2394,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
 
     // ## Test drag sources with _SourceNoPreviewTooltip flag not producing a tooltip.
     // ## Test drag target/accept with ImGuiDragDropFlags_AcceptNoPreviewTooltip
-    t = IM_REGISTER_TEST(e, "widgets", "widgets_drag_no_preview_tooltip");
+    t = IM_REGISTER_TEST(e, "widgets", "widgets_dragdrop_no_preview_tooltip");
     struct DragNoPreviewTooltipVars { bool TooltipWasVisible = false; bool TooltipIsVisible = false; ImGuiDragDropFlags AcceptFlags = 0; };
     t->SetVarsDataType<DragNoPreviewTooltipVars>();
     t->GuiFunc = [](ImGuiTestContext* ctx)
@@ -2466,7 +2466,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
 
 #if IMGUI_VERSION_NUM >= 18808
     // ## Test using mouse wheel while using drag and drop, or dragging from active item..
-    t = IM_REGISTER_TEST(e, "widgets", "widgets_drag_scroll");
+    t = IM_REGISTER_TEST(e, "widgets", "widgets_dragdrop_scroll");
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         ImGuiWindow* window_demo = ctx->GetWindowByRef("Dear ImGui Demo");
@@ -2500,7 +2500,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
 #endif
 
     // ## Test drag & drop using three main mouse buttons.
-    t = IM_REGISTER_TEST(e, "widgets", "widgets_drag_mouse_buttons");
+    t = IM_REGISTER_TEST(e, "widgets", "widgets_dragdrop_mouse_buttons");
     struct DragMouseButtonsVars { bool Pressed = false; bool Dropped = false; };
     t->SetVarsDataType<DragMouseButtonsVars>();
     t->GuiFunc = [](ImGuiTestContext* ctx)
