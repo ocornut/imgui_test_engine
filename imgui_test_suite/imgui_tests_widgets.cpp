@@ -4089,7 +4089,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         }
     };
 
-#ifndef IMGUI_DISABLE_OBSOLETE_FUNCTIONS
+#if !defined(IMGUI_DISABLE_OBSOLETE_FUNCTIONS) && (IMGUI_VERSION_NUM < 18830)
     // ## Test legacy float format string patching in DragInt().
     t = IM_REGISTER_TEST(e, "widgets", "widgets_dragint_float_format");
     t->GuiFunc = [](ImGuiTestContext* ctx)
