@@ -858,6 +858,28 @@ ImGuiTestItemInfo* ImGuiTestContext::ItemInfoNull()
     return &DummyItemInfoNull;
 }
 
+static void ItemInfoErrorLog(ImGuiTestContext* ctx, ImGuiTestRef ref, ImGuiID full_id, ImGuiTestOpFlags flags)
+{
+    if (flags & ImGuiTestOpFlags_NoError)
+        return;
+
+    // Prefixing the string with / ignore the reference/current ID
+    Str256 msg;
+    if (ref.Path && ref.Path[0] == '/' && ctx->RefStr[0] != 0)
+        msg.setf("Unable to locate item: '%s'", ref.Path);
+    else if (ref.Path && full_id != 0)
+        msg.setf("Unable to locate item: '%s/%s' (0x%08X)", ctx->RefStr, ref.Path, full_id);
+    else if (ref.Path)
+        msg.setf("Unable to locate item: '%s/%s'", ctx->RefStr, ref.Path);
+    else
+        msg.setf("Unable to locate item: 0x%08X", ref.ID);
+
+    //if (flags & ImGuiTestOpFlags_NoError)
+    //    ctx->LogInfo("Ignored: %s", msg.c_str()); // FIXME
+    //else
+    IM_ERRORF_NOHDR("%s", msg.c_str());
+}
+
 // Supported values for ImGuiTestOpFlags:
 // - ImGuiTestOpFlags_NoError
 ImGuiTestItemInfo* ImGuiTestContext::ItemInfo(ImGuiTestRef ref, ImGuiTestOpFlags flags)
@@ -907,25 +929,18 @@ ImGuiTestItemInfo* ImGuiTestContext::ItemInfo(ImGuiTestRef ref, ImGuiTestOpFlags
         retries++;
     }
 
-    if (!(flags & ImGuiTestOpFlags_NoError))
-    {
-        // Prefixing the string with / ignore the reference/current ID
-        if (ref.Path && ref.Path[0] == '/' && RefStr[0] != 0)
-            IM_ERRORF_NOHDR("Unable to locate item: '%s'", ref.Path);
-        else if (ref.Path)
-            IM_ERRORF_NOHDR("Unable to locate item: '%s/%s' (0x%08X)", RefStr, ref.Path, full_id);
-        else
-            IM_ERRORF_NOHDR("Unable to locate item: 0x%08X", ref.ID);
-    }
+    ItemInfoErrorLog(this, ref, full_id, flags);
 
     return ItemInfoNull();
 }
 
-ImGuiTestItemInfo* ImGuiTestContext::ItemInfoOpenFullPath(ImGuiTestRef ref)
+// Supported values for ImGuiTestOpFlags:
+// - ImGuiTestOpFlags_NoError
+ImGuiTestItemInfo* ImGuiTestContext::ItemInfoOpenFullPath(ImGuiTestRef ref, ImGuiTestOpFlags flags)
 {
     // First query
     bool can_open_full_path = (ref.Path != NULL);
-    ImGuiTestItemInfo* item = ItemInfo(ref, can_open_full_path ? ImGuiTestOpFlags_NoError : ImGuiTestOpFlags_None);
+    ImGuiTestItemInfo* item = ItemInfo(ref, (can_open_full_path ? ImGuiTestOpFlags_NoError : ImGuiTestOpFlags_None) | (flags & ImGuiTestOpFlags_NoError));
     if (item->ID != 0)
         return item;
     if (!can_open_full_path)
@@ -952,18 +967,10 @@ ImGuiTestItemInfo* ImGuiTestContext::ItemInfoOpenFullPath(ImGuiTestRef ref)
         }
     }
     if (opened_parents > 0)
-        item = ItemInfo(ref);
+        item = ItemInfo(ref, (flags & ImGuiTestOpFlags_NoError));
 
     if (item->ID == 0)
-    {
-        // Prefixing the string with / ignore the reference/current ID
-        if (ref.Path && ref.Path[0] == '/' && RefStr[0] != 0)
-            IM_ERRORF_NOHDR("Unable to locate item: '%s'", ref.Path);
-        else if (ref.Path)
-            IM_ERRORF_NOHDR("Unable to locate item: '%s/%s'", RefStr, ref.Path);
-        else
-            IM_ERRORF_NOHDR("Unable to locate item: 0x%08X", ref.ID);
-    }
+        ItemInfoErrorLog(this, ref, 0, flags);
 
     return item;
 }
@@ -2405,6 +2412,9 @@ void    ImGuiTestContext::GatherItems(ImGuiTestItemList* out_list, ImGuiTestRef 
     GatherTask->LastItemInfo = NULL;
 }
 
+// Supported values for ImGuiTestOpFlags:
+// - ImGuiTestOpFlags_NoAutoOpenFullPath
+// - ImGuiTestOpFlags_NoError
 void    ImGuiTestContext::ItemAction(ImGuiTestAction action, ImGuiTestRef ref, ImGuiTestOpFlags flags, void* action_arg)
 {
     if (IsError())
@@ -2429,16 +2439,21 @@ void    ImGuiTestContext::ItemAction(ImGuiTestAction action, ImGuiTestRef ref, I
             Engine->FindByLabelTask.InFilterItemStatusFlags = ImGuiItemStatusFlags_Openable;
     }
 
+    // Find item
     ImGuiTestItemInfo* item;
     if (flags & ImGuiTestOpFlags_NoAutoOpenFullPath)
-        item = ItemInfo(ref);
+        item = ItemInfo(ref, (flags & ImGuiTestOpFlags_NoError));
     else
-        item = ItemInfoOpenFullPath(ref);
-    ImGuiTestRefDesc desc(ref, item);
-    if (item->ID == 0)
-        return;
+        item = ItemInfoOpenFullPath(ref, (flags & ImGuiTestOpFlags_NoError));
 
+    ImGuiTestRefDesc desc(ref, item);
     LogDebug("Item%s %s%s", GetActionName(action), desc.c_str(), (InputMode == ImGuiInputSource_Mouse) ? "" : " (w/ Nav)");
+    if (item->ID == 0)
+    {
+        if (flags & ImGuiTestOpFlags_NoError)
+            LogDebug("Action skipped: Item doesn't exist + used ImGuiTestOpFlags_NoError.");
+        return;
+    }
 
     // Automatically uncollapse by default
     if (item->Window && !(OpFlags & ImGuiTestOpFlags_NoAutoUncollapse))

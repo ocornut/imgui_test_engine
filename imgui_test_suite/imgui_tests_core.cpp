@@ -3474,6 +3474,26 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
         ctx->Finish();
     };
 
+    // ## Test ImGuiTestOpFlags_NoError
+    t = IM_REGISTER_TEST(e, "misc", "misc_no_error");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        auto& vars = ctx->GenericVars;
+        ImGui::Begin("Test window", NULL, ImGuiWindowFlags_NoSavedSettings);
+        if (ImGui::Button("Button1"))
+            vars.Int1++;
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ctx->SetRef("Test window");
+        auto& vars = ctx->GenericVars;
+        ctx->ItemClick("Button2", 0, ImGuiTestOpFlags_NoError);
+        IM_CHECK(vars.Int1 == 0);
+        ctx->ItemClick("Button1");
+        IM_CHECK(vars.Int1 == 1);
+    };
+
     // ## Test window data garbage collection
     t = IM_REGISTER_TEST(e, "misc", "misc_gc");
     t->GuiFunc = [](ImGuiTestContext* ctx)

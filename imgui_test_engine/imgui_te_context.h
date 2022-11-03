@@ -390,7 +390,7 @@ struct IMGUI_API ImGuiTestContext
     // Low-level queries
     // Since 2022/06/25 to faciliate test code and reduce crashes: ItemInfo queries never return a NULL pointer, instead they return an empty instance (info->IsEmpty(), info->ID == 0).
     ImGuiTestItemInfo*  ItemInfo(ImGuiTestRef ref, ImGuiTestOpFlags flags = ImGuiTestOpFlags_None);
-    ImGuiTestItemInfo*  ItemInfoOpenFullPath(ImGuiTestRef ref);
+    ImGuiTestItemInfo*  ItemInfoOpenFullPath(ImGuiTestRef ref, ImGuiTestOpFlags flags = ImGuiTestOpFlags_None);
     ImGuiID             ItemInfoHandleWildcardSearch(const char* wildcard_prefix_start, const char* wildcard_prefix_end, const char* wildcard_suffix_start);
     ImGuiTestItemInfo*  ItemInfoNull();
     void                GatherItems(ImGuiTestItemList* out_list, ImGuiTestRef parent, int depth = -1);
