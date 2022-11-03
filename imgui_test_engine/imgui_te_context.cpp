@@ -3027,6 +3027,11 @@ void    ImGuiTestContext::MenuActionAll(ImGuiTestAction action, ImGuiTestRef ref
     for (auto item : items)
     {
         MenuAction(ImGuiTestAction_Open, ref_parent); // We assume that every interaction will close the menu again
+
+        if (action == ImGuiTestAction_Check || action == ImGuiTestAction_Uncheck)
+            if ((ItemInfo(item.ID)->StatusFlags & ImGuiItemStatusFlags_Checkable) == 0)
+                continue;
+
         ItemAction(action, item.ID);
     }
 }

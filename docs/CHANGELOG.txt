@@ -7,10 +7,13 @@ CHANGELOG
 2022/10/03
 - TestEngine: Added missing ImGuiTestOpFlags_NoError support in ItemAction()/ItemClick() family of
   functions + in ItemInfoOpenFullPath() function.
+- TestEngine: Fixed MenuCheckAll()/MenuUncheckAll() from trying to access non-checkable items.
 
 2022/10/12
 - TestEngine: WindowInfo() support when child is not in root of parent window.
 - TestEngine: Removed legacy GetChildWindowID() in favor of easier to use and more featured WindowInfo().
+   e.g. ctx->GetChildWindowID(ImGuiTestRef("Parent"), "Child") --> ctx->WindowInfo("Parent/Child")->ID.
+   Note that 'WindowInfo("Parent/Child")->Window' is also frequently useful.
 
 2022/10/11
 - TestEngine: literals can now easily be encoded in decorated path strings using "$$xxxx",
