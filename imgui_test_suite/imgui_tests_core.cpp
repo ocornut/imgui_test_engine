@@ -3989,6 +3989,308 @@ void RegisterTests_Inputs(ImGuiTestEngine* e)
         vars.Clear();
     };
 #endif
+
+#if 0
+    t = IM_REGISTER_TEST(e, "misc", "inputs_routing_basic");
+    enum InputFunc { InputFunc_IsKeyPressed = 0, InputFunc_IsShortcutPressed, InputFunc_IsKeyDown, InputFunc_IsKeyReleased };
+    struct InputRoutingVars { int Pressed[4][5] = {}; bool EnableDynamicOwner = false; int Func = 2; ImGuiReadFlags InputFlags = 0; };
+    t->SetVarsDataType<InputRoutingVars>();
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        auto& vars = ctx->GetVars<InputRoutingVars>();
+        ImGui::Begin("Input Routing Basic");
+        ImGui::CheckboxFlags("ImGuiInputFlags_Repeat", &vars.InputFlags, ImGuiInputFlags_Repeat);
+        ImGui::Separator();
+
+        if (ctx->IsGuiFuncOnly())
+            memset(&vars.Pressed, 0, sizeof(vars.Pressed));
+
+        for (int window_n = 0; window_n < 3; window_n++)
+        {
+            ImGui::BeginChild(Str16f("Window%d", window_n).c_str(), ImVec2(200, 150), true);
+            ImGui::Text("Window %d 0x%08X\n", window_n, ImGui::IsWindowFocused(), ImGui::GetID(""));
+            for (int flag_n = 0; flag_n < 3; flag_n++)
+            {
+                ImGuiInputFlags flags = ((flag_n == 0) ? ImGuiInputFlags_ServeAll : (flag_n == 1) ? ImGuiInputFlags_ServeFirst : ImGuiInputFlags_ServeLast) | (vars.InputFlags & ImGuiInputFlags_Repeat);
+                bool ret = false;
+                switch (vars.Func)
+                {
+                case InputFunc_IsKeyPressed:
+                    ret = ImGui::IsKeyPressed(ImGuiKey_B, 0, flags);
+                    break;
+                case InputFunc_IsShortcutPressed:
+                    ret = ImGui::IsShortcutPressed(ImGuiMod_Ctrl | ImGuiKey_B, 0, flags);
+                    break;
+                case InputFunc_IsKeyDown:
+                    ret = ImGui::IsKeyDown(ImGuiKey_B, 0, flags);
+                    break;
+                case InputFunc_IsKeyReleased:
+                    ret = ImGui::IsKeyReleased(ImGuiKey_B, 0, flags);
+                    break;
+                }
+                vars.Pressed[window_n][flag_n] += ret ? 1 : 0;
+            }
+            ImGui::Text("B all %s", vars.Pressed[window_n][0] ? "Pressed" : "");
+            ImGui::Text("B first %s", vars.Pressed[window_n][1] ? "Pressed" : "");
+            ImGui::Text("B last %s", vars.Pressed[window_n][2] ? "Pressed" : "");
+            ImGui::EndChild();
+        }
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        auto& vars = ctx->GetVars<InputRoutingVars>();
+        for (int variant = 0; variant < 4; variant++)
+        {
+            ctx->LogInfo("## Step %d", variant);
+            memset(&vars.Pressed, 0, sizeof(vars.Pressed));
+
+            vars.Func = (InputFunc)variant;
+            vars.InputFlags = false;//(variant >= 4) ? ImGuiInputFlags_Repeat : 0;
+
+            memset(&vars.Pressed, 0, sizeof(vars.Pressed));
+            ctx->Yield();
+
+            /*
+            if (variant >= 2)
+            {
+                if (vars.UseShortcut)
+                    ctx->KeyHold(ImGuiKey_B | ImGuiMod_Ctrl, ctx->UiContext->IO.KeyRepeatDelay + 0.01f);
+                else
+                    ctx->KeyHold(ImGuiKey_B, ctx->UiContext->IO.KeyRepeatDelay + 0.01f);
+            }
+            else
+            */
+            {
+                if (vars.Func == InputFunc_IsShortcutPressed)
+                    ctx->KeyPress(ImGuiKey_B | ImGuiMod_Ctrl);
+                else
+                    ctx->KeyPress(ImGuiKey_B);
+            }
+
+            if (vars.InputFlags & ImGuiInputFlags_Repeat)
+            {
+                IM_CHECK_GT_NO_RET(vars.Pressed[0][0], 1); // All
+                IM_CHECK_GT_NO_RET(vars.Pressed[0][1], 1); // First
+                IM_CHECK_EQ_NO_RET(vars.Pressed[0][2], 0); // Last
+                IM_CHECK_GT_NO_RET(vars.Pressed[1][0], 1); // All
+                IM_CHECK_EQ_NO_RET(vars.Pressed[1][1], 0); // First
+                IM_CHECK_EQ_NO_RET(vars.Pressed[1][2], 0); // Last
+                IM_CHECK_GT_NO_RET(vars.Pressed[2][0], 1); // All
+                IM_CHECK_EQ_NO_RET(vars.Pressed[2][1], 0); // First
+                IM_CHECK_GT_NO_RET(vars.Pressed[2][2], 1); // Last
+            }
+            else
+            {
+                IM_CHECK_EQ_NO_RET(vars.Pressed[0][0], 1); // All
+                IM_CHECK_EQ_NO_RET(vars.Pressed[0][1], 1); // First
+                IM_CHECK_EQ_NO_RET(vars.Pressed[0][2], 0); // Last
+                IM_CHECK_EQ_NO_RET(vars.Pressed[1][0], 1); // All
+                IM_CHECK_EQ_NO_RET(vars.Pressed[1][1], 0); // First
+                IM_CHECK_EQ_NO_RET(vars.Pressed[1][2], 0); // Last
+                IM_CHECK_EQ_NO_RET(vars.Pressed[2][0], 1); // All
+                IM_CHECK_EQ_NO_RET(vars.Pressed[2][1], 0); // First
+                IM_CHECK_EQ_NO_RET(vars.Pressed[2][2], 1); // Last
+            }
+        }
+    };
+
+    t = IM_REGISTER_TEST(e, "misc", "inputs_routing_shortcuts");
+    t->SetVarsDataType<InputRoutingVars>();
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        auto& vars = ctx->GetVars<InputRoutingVars>();
+        ImGui::Begin("Input Routing", NULL, ImGuiWindowFlags_NoSavedSettings);
+        {
+            ImGui::Text("Window 1 (focused=%d)\n(want 1+2+4. catch input without focus)", ImGui::IsWindowFocused());
+            ImGui::Button("Button 1"); // Used to focus window
+            if (true) // ImGui::IsWindowFocused(ImGuiHoveredFlags_ChildWindows)
+            {
+                vars.Pressed[0][1] += ImGui::IsShortcutPressed(ImGuiMod_Ctrl | ImGuiKey_1, 0, vars.InputFlags);
+                vars.Pressed[0][2] += ImGui::IsShortcutPressed(ImGuiMod_Ctrl | ImGuiKey_2, 0, vars.InputFlags);
+                vars.Pressed[0][4] += ImGui::IsShortcutPressed(ImGuiMod_Ctrl | ImGuiKey_4, 0, vars.InputFlags);
+            }
+            ImGui::Text("[Ctrl+1] %d", vars.Pressed[0][1]); ImGui::SameLine();
+            ImGui::Text("[2] %d", vars.Pressed[0][2]); ImGui::SameLine();
+            ImGui::TextDisabled("[3] %d", vars.Pressed[0][3]); ImGui::SameLine();
+            ImGui::Text("[4] %d", vars.Pressed[0][4]);
+        }
+
+        ImGui::BeginChild("Window2", ImVec2(320, 330), true);
+        {
+            ImGui::Text("Window 2 (focused=%d)\n(want 1+3+4)", ImGui::IsWindowFocused());
+            ImGui::Button("Button 2"); // Used to focus window
+            if (ImGui::IsWindowFocused(ImGuiHoveredFlags_ChildWindows))
+            {
+                vars.Pressed[1][1] += ImGui::IsShortcutPressed(ImGuiMod_Ctrl | ImGuiKey_1, 0, vars.InputFlags);
+                vars.Pressed[1][3] += ImGui::IsShortcutPressed(ImGuiMod_Ctrl | ImGuiKey_3, 0, vars.InputFlags);
+                vars.Pressed[1][4] += ImGui::IsShortcutPressed(ImGuiMod_Ctrl | ImGuiKey_4, 0, vars.InputFlags);
+            }
+            ImGui::Text("[Ctrl+1] %d", vars.Pressed[1][1]); ImGui::SameLine();
+            ImGui::TextDisabled("[2] %d", vars.Pressed[1][2]); ImGui::SameLine();
+            ImGui::Text("[3] %d", vars.Pressed[1][3]); ImGui::SameLine();
+            ImGui::Text("[4] %d", vars.Pressed[1][4]);
+        }
+
+        ImGui::BeginChild("Window3", ImVec2(240, 200), true);
+        {
+            ImGui::Text("Window 3 (focused=%d)\n(want 2+3)", ImGui::IsWindowFocused());
+            ImGui::Button("Button 3"); // Used to focus window
+            if (ImGui::IsWindowFocused(ImGuiHoveredFlags_ChildWindows))
+            {
+                vars.Pressed[2][2] += ImGui::IsShortcutPressed(ImGuiMod_Ctrl | ImGuiKey_2, 0, vars.InputFlags);
+                vars.Pressed[2][3] += ImGui::IsShortcutPressed(ImGuiMod_Ctrl | ImGuiKey_3, 0, vars.InputFlags);
+                vars.Pressed[2][4] += ImGui::IsShortcutPressed(ImGuiMod_Ctrl | ImGuiKey_4, 0, vars.InputFlags);
+            }
+            ImGui::TextDisabled("[Ctrl+1] %d", vars.Pressed[2][1]); ImGui::SameLine();
+            ImGui::Text("[2] %d", vars.Pressed[2][2]); ImGui::SameLine();
+            ImGui::Text("[3] %d", vars.Pressed[2][3]); ImGui::SameLine();
+            ImGui::Text("[4] %d", vars.Pressed[2][4]);
+        }
+
+        ImGui::Checkbox("Dynamic Owner", &vars.EnableDynamicOwner);
+        if (vars.EnableDynamicOwner)
+        {
+            ImGui::BeginChild("Window4", ImVec2(220, 200), true);
+            {
+                ImGui::Text("Window 4 (focused=%d)\n(want 2+3)", ImGui::IsWindowFocused());
+                ImGui::Button("Button 4"); // Used to focus window
+                if (ImGui::IsWindowFocused(ImGuiHoveredFlags_ChildWindows))
+                {
+                    vars.Pressed[3][2] += ImGui::IsShortcutPressed(ImGuiMod_Ctrl | ImGuiKey_2, 0, vars.InputFlags);
+                    vars.Pressed[3][3] += ImGui::IsShortcutPressed(ImGuiMod_Ctrl | ImGuiKey_3, 0, vars.InputFlags);
+                    vars.Pressed[3][4] += ImGui::IsShortcutPressed(ImGuiMod_Ctrl | ImGuiKey_4, 0, vars.InputFlags);
+                }
+                ImGui::TextDisabled("[Ctrl+1] %d", vars.Pressed[2][1]); ImGui::SameLine();
+                ImGui::Text("[2] %d", vars.Pressed[3][2]); ImGui::SameLine();
+                ImGui::Text("[3] %d", vars.Pressed[3][3]); ImGui::SameLine();
+                ImGui::Text("[4] %d", vars.Pressed[3][4]);
+            }
+            ImGui::EndChild();
+        }
+
+        ImGui::EndChild();
+        ImGui::EndChild();
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        auto& vars = ctx->GetVars<InputRoutingVars>();
+
+        for (int variant = 0; variant < 3; variant++)
+        {
+            ctx->LogInfo("## Step %d", variant);
+            memset(&vars.Pressed, 0, sizeof(vars.Pressed));
+            vars.InputFlags = (variant == 0) ? ImGuiInputFlags_ServeAll : (variant == 1) ? ImGuiInputFlags_ServeFirst : ImGuiInputFlags_ServeLast;
+
+            ctx->ItemClick("**/Button 1");
+            ctx->KeyPress(ImGuiKey_1 | ImGuiMod_Ctrl, 2);
+            ctx->KeyPress(ImGuiKey_2 | ImGuiMod_Ctrl, 2);
+            ctx->KeyPress(ImGuiKey_3 | ImGuiMod_Ctrl, 2); // will be ignored
+            ctx->KeyPress(ImGuiKey_4 | ImGuiMod_Ctrl, 2);
+            for (int window_n = 0; window_n < 3; window_n++)
+                for (int key_n = 1; key_n <= 4; key_n++)
+                {
+                    const bool disabled = (window_n == 0 && key_n == 3) || (window_n == 1 && key_n == 2) || (window_n == 2 && key_n == 1) || (window_n == 3 && key_n == 1);
+                    const int count = vars.Pressed[window_n][key_n];
+                    {
+                        if (window_n == 0 && !disabled)
+                            IM_CHECK_EQ(count, 2);
+                        else
+                            IM_CHECK_EQ(count, 0);
+                    }
+                }
+            memset(&vars.Pressed, 0, sizeof(vars.Pressed));
+
+            ctx->ItemClick("**/Button 2");
+            ctx->Yield(2);
+            ctx->KeyPress(ImGuiKey_1 | ImGuiMod_Ctrl, 1);
+            ctx->KeyPress(ImGuiKey_2 | ImGuiMod_Ctrl, 1); // will be caught by Window 1
+            ctx->KeyPress(ImGuiKey_3 | ImGuiMod_Ctrl, 1);
+            ctx->KeyPress(ImGuiKey_4 | ImGuiMod_Ctrl, 1);
+            // Variant: hold CTRL before (verify it doesn't after ownership stealing)
+            ctx->KeyDown(ImGuiMod_Ctrl);
+            ctx->KeyPress(ImGuiKey_1, 1);
+            ctx->KeyPress(ImGuiKey_2, 1); // will be caught by Window 1
+            ctx->KeyPress(ImGuiKey_3, 1);
+            ctx->KeyPress(ImGuiKey_4, 1);
+            ctx->KeyUp(ImGuiMod_Ctrl);
+            for (int window_n = 0; window_n < 3; window_n++)
+                for (int key_n = 1; key_n <= 4; key_n++)
+                {
+                    const bool disabled = (window_n == 0 && key_n == 3) || (window_n == 1 && key_n == 2) || (window_n == 2 && key_n == 1) || (window_n == 3 && key_n == 1);
+                    const int count = vars.Pressed[window_n][key_n];
+                    if (vars.InputFlags & ImGuiInputFlags_ServeAll)
+                    {
+                        if (window_n <= 1 && !disabled)
+                            IM_CHECK_EQ(count, 2);
+                        else
+                            IM_CHECK_EQ(count, 0);
+                    }
+                    if (vars.InputFlags & ImGuiInputFlags_ServeFirst)
+                    {
+                        if (window_n == 0 && !disabled)
+                            IM_CHECK_EQ(count, 2);
+                        else if (window_n == 1 && key_n == 3)
+                            IM_CHECK_EQ(count, 2);
+                        else
+                            IM_CHECK_EQ(count, 0);
+                    }
+                    if (vars.InputFlags & ImGuiInputFlags_ServeLast)
+                    {
+                        if (window_n == 0 && key_n == 2)
+                            IM_CHECK_EQ(count, 2);
+                        else if (window_n == 1 && !disabled)
+                            IM_CHECK_EQ(count, 2);
+                        else
+                            IM_CHECK_EQ(count, 0);
+                    }
+                }
+            memset(&vars.Pressed, 0, sizeof(vars.Pressed));
+
+            ctx->ItemClick("**/Button 3");
+            ctx->Yield(2);
+            ctx->KeyPress(ImGuiKey_1 | ImGuiMod_Ctrl, 2);
+            ctx->KeyPress(ImGuiKey_2 | ImGuiMod_Ctrl, 2);
+            ctx->KeyPress(ImGuiKey_3 | ImGuiMod_Ctrl, 2);
+            ctx->KeyPress(ImGuiKey_4 | ImGuiMod_Ctrl, 2);
+            for (int window_n = 0; window_n < 3; window_n++)
+                for (int key_n = 1; key_n <= 4; key_n++)
+                {
+                    const bool disabled = (window_n == 0 && key_n == 3) || (window_n == 1 && key_n == 2) || (window_n == 2 && key_n == 1) || (window_n == 3 && key_n == 1);
+                    const int count = vars.Pressed[window_n][key_n];
+                    if (vars.InputFlags & ImGuiInputFlags_ServeAll)
+                    {
+                        if (window_n <= 2 && !disabled)
+                            IM_CHECK_EQ(count, 2);
+                        else
+                            IM_CHECK_EQ(count, 0);
+                    }
+                    if (vars.InputFlags & ImGuiInputFlags_ServeFirst)
+                    {
+                        if (window_n == 1 && key_n == 3)
+                            IM_CHECK_EQ(count, 2);
+                        else if (window_n == 0 && !disabled)
+                            IM_CHECK_EQ(count, 2);
+                        else
+                            IM_CHECK_EQ(count, 0);
+                    }
+                    if (vars.InputFlags & ImGuiInputFlags_ServeLast)
+                    {
+                        if (window_n == 2 && !disabled)
+                            IM_CHECK_EQ(count, 2);
+                        else if (window_n == 1 && key_n == 1)
+                            IM_CHECK_EQ(count, 2);
+                        else
+                            IM_CHECK_EQ(count, 0);
+                    }
+                }
+            memset(&vars.Pressed, 0, sizeof(vars.Pressed));
+
+            ctx->ItemClick("**/Button 3");
+        }
+    };
+#endif
 }
 
 //-------------------------------------------------------------------------
