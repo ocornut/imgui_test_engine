@@ -4031,7 +4031,11 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ImGui::SetNextWindowSize(ImVec2(0, 100), ImGuiCond_Always);
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysVerticalScrollbar);
         ImGui::Button("You! Shall! Not! Scroll!");
+#if IMGUI_VERSION_NUM >= 18837
+        ImGui::SetItemKeyOwner(ImGuiKey_MouseWheelY);
+#else
         ImGui::SetItemUsingMouseWheel();
+#endif
         for (int i = 0; i < 10; i++)
             ImGui::Text("Line %d", i + 1);
         ImGui::End();

@@ -3411,6 +3411,364 @@ void RegisterTests_Inputs(ImGuiTestEngine* e)
     };
 #endif
 
+#if IMGUI_VERSION_NUM >= 18837
+    // ## Test SetKeyOwner(), TestKeyOwner()
+    t = IM_REGISTER_TEST(e, "misc", "inputs_owner_basic_1");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        auto& vars = ctx->GenericVars;
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_MenuBar);
+        if (ImGui::BeginMenuBar())
+        {
+            ImGui::MenuItem("MenuItem");
+            ImGui::EndMenuBar();
+        }
+        ImGui::Button("Button Up");
+        ImGui::Checkbox("Steal ImGuiKey_Home", &vars.Bool1);
+        ImGui::ColorButton("hello1", ImVec4(0.4f, 0.4f, 0.8f, 1.0f), ImGuiColorEditFlags_NoTooltip | ImGuiColorEditFlags_NoDragDrop, ImVec2(128, 128));
+        if (vars.Bool1)
+            ImGui::SetKeyOwner(ImGuiKey_Home, ImGui::GetItemID());
+        ImGui::Button("Button Down");
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiContext& g = *ctx->UiContext;
+        ctx->SetRef("Test Window");
+        IM_CHECK_EQ(ImGui::TestKeyOwner(ImGuiKey_Home, ImGuiKeyOwner_None), true);
+        ctx->ItemCheck("Steal ImGuiKey_Home");
+
+        IM_CHECK_EQ(ImGui::TestKeyOwner(ImGuiKey_Home, ImGuiKeyOwner_None), false);
+        IM_CHECK_EQ(ImGui::TestKeyOwner(ImGuiKey_Home, ctx->GetID("hello1")), true);
+        IM_CHECK_EQ(ImGui::TestKeyOwner(ImGuiKey_End, ctx->GetID("hello1")), true);
+        IM_CHECK_EQ(ImGui::GetKeyOwnerData(ImGuiKey_End)->OwnerCurr, ImGuiKeyOwner_None);
+        ctx->KeyPress(ImGuiKey_End);
+        IM_CHECK_EQ(g.NavId, ctx->GetID("Button Down"));
+        ctx->KeyPress(ImGuiKey_Home);
+        IM_CHECK_EQ(g.NavId, ctx->GetID("Button Down"));
+
+        ctx->ItemUncheck("Steal ImGuiKey_Home");
+        ctx->KeyPress(ImGuiKey_Home);
+        IM_CHECK_EQ(g.NavId, ctx->GetID("Button Up"));
+    };
+
+    // ## Test SetKeyOwner(), TestKeyOwner() same frame behavior
+    t = IM_REGISTER_TEST(e, "misc", "inputs_owner_basic_2");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_MenuBar);
+        ImGui::Button("Button 1");
+        IM_CHECK_EQ_NO_RET(ImGui::TestKeyOwner(ImGuiKey_A, ImGuiKeyOwner_None), ctx->IsFirstGuiFrame() ? true : false);
+        IM_CHECK_EQ_NO_RET(ImGui::TestKeyOwner(ImGuiKey_A, ImGui::GetItemID()), true);
+        ImGui::SetKeyOwner(ImGuiKey_A, ImGui::GetItemID());
+
+        ImGui::Button("Button 2");
+        if (!ctx->IsFirstGuiFrame()) // Can't check this on first frame since TestKeyOwner() is not checking OwnerNext
+        {
+            IM_CHECK_EQ_NO_RET(ImGui::TestKeyOwner(ImGuiKey_A, ImGuiKeyOwner_None), false);
+            IM_CHECK_EQ_NO_RET(ImGui::TestKeyOwner(ImGuiKey_A, ImGui::GetItemID()), false);
+        }
+
+        ImGui::End();
+    };
+
+    // ## Test release event of a Selectable() in a popup from being caught by parent window
+    t = IM_REGISTER_TEST(e, "misc", "inputs_owner_popup_overlap");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        auto& vars = ctx->GenericVars;
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+        if (ImGui::Button("Open Popup"))
+            ImGui::OpenPopup("Popup");
+
+        ImGui::SetNextWindowPos(ImGui::GetCursorScreenPos());
+        if (ImGui::BeginPopup("Popup"))
+        {
+            // Will take ownership on mouse down aka frame of double-click
+            if (ImGui::Selectable("Front", false, ImGuiSelectableFlags_DontClosePopups | ImGuiSelectableFlags_AllowDoubleClick, ImVec2(200,200)))
+                if (ImGui::IsMouseDoubleClicked(0))
+                    ImGui::CloseCurrentPopup();
+            ImGui::EndPopup();
+        }
+
+        // NB: This does not rely on SetKeyOwner() applying in same frame (since using _SelectOnRelease)
+        // Same frame discard would happen because of ActiveId/HoveredId being set.
+        if (ImGui::Selectable("Back", false, ImGuiSelectableFlags_SelectOnRelease, ImVec2(200, 200)))
+            vars.Count++;
+        ImGui::Text("Counter %d", vars.Count);
+
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        auto& vars = ctx->GenericVars;
+        ctx->SetRef("Test Window");
+        ctx->ItemClick("Open Popup");
+        ctx->SetRef("//$FOCUSED");
+        ctx->ItemDoubleClick("Front");
+        IM_CHECK(vars.Count == 0);
+    };
+
+    // ## Test overriding and next frame behavior
+    t = IM_REGISTER_TEST(e, "misc", "inputs_owner_override");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        auto& vars = ctx->GenericVars;
+        ctx->SetRef("Test Window");
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_MenuBar);
+
+        ImGui::Button("Button 1");
+        if (vars.Step >= 1)
+            ImGui::SetKeyOwner(ImGuiKey_Space, ImGui::GetItemID());
+
+        const ImGuiKeyOwnerData* owner_data = ImGui::GetKeyOwnerData(ImGuiKey_Space);
+        if (vars.Bool1)
+        {
+            if (vars.Step == 0)
+                IM_CHECK_EQ(owner_data->OwnerCurr, ImGuiKeyOwner_None);
+            else if (vars.Step == 1 || vars.Step == 2)
+                IM_CHECK_EQ(owner_data->OwnerCurr, ctx->GetID("Button 1"));
+            // [2022-09-20]: changed SetKeyOwner() to alter OwnerCurr as well
+            //else if (vars.Step == 2)
+            //    IM_CHECK_EQ(owner_data->OwnerCurr, ctx->GetID("Button 2"));
+            if (vars.Step >= 1)
+                IM_CHECK_EQ(owner_data->OwnerNext, ctx->GetID("Button 1"));
+        }
+
+        ImGui::Button("Button 2");
+        if (vars.Step >= 2)
+            ImGui::SetKeyOwner(ImGuiKey_Space, ImGui::GetItemID());
+        if (vars.Bool1 && vars.Step >= 2)
+            IM_CHECK_EQ(owner_data->OwnerNext, ctx->GetID("Button 2"));
+
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        auto& vars = ctx->GenericVars;
+        for (int n = 0; n < 3; n++)
+        {
+            ctx->LogInfo("STEP %d", n);
+            vars.Step = n;
+            vars.Bool1 = false; // Let run without checking
+            ctx->Yield(2);
+            vars.Bool1 = true; // Start checking
+            ctx->Yield(2);
+        }
+    };
+
+    // ## Test ImGuiInputFlags_LockThisFrame for stealing inputs EVEN for calls that not requesting ownership test
+    t = IM_REGISTER_TEST(e, "misc", "inputs_owner_lock_this_frame");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        auto& vars = ctx->GenericVars;
+
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImGui::Button("Button 1");
+        ImGuiID owner_id = ImGui::GetItemID();
+
+        if (ImGui::IsKeyPressed(ImGuiKey_A))
+            vars.IntArray[0]++;
+        ImGui::SetKeyOwner(ImGuiKey_A, (vars.Step == 0) ? owner_id : ImGuiKeyOwner_Any, ImGuiInputFlags_LockThisFrame);
+        if (ImGui::IsKeyPressed(ImGuiKey_A))
+            vars.IntArray[1]++;
+        if (ImGui::IsKeyPressed(ImGuiKey_A, owner_id ^ 0x42424242))
+            vars.IntArray[2]++;
+        if (ImGui::IsKeyPressed(ImGuiKey_A, owner_id))
+            vars.IntArray[3]++;
+        ImGui::Text("%d %d %d", vars.IntArray[0], vars.IntArray[1], vars.IntArray[2]);
+
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        auto& vars = ctx->GenericVars;
+        ctx->SetRef("Test Window");
+        for (int step = 0; step < 2; step++)
+        {
+            vars.Clear();
+            vars.Step = step;
+            ctx->Yield();
+            ctx->KeyPress(ImGuiKey_A);
+            ctx->KeyPress(ImGuiKey_A);
+            IM_CHECK_EQ_NO_RET(vars.IntArray[0], 2);
+            IM_CHECK_EQ_NO_RET(vars.IntArray[1], 0);
+            IM_CHECK_EQ_NO_RET(vars.IntArray[2], 0);
+            IM_CHECK_EQ_NO_RET(vars.IntArray[3], (vars.Step == 0) ? 2 : 0);
+        }
+    };
+
+    // ## Test ImGuiInputFlags_LockUntilRelease
+    t = IM_REGISTER_TEST(e, "misc", "inputs_owner_lock_until_release");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        auto& vars = ctx->GenericVars;
+
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImGui::Button("Button 1");
+        ImGuiID owner_id = ImGui::GetItemID();
+
+        if (ImGui::IsKeyPressed(ImGuiKey_A))
+        {
+            vars.IntArray[0]++;
+            ImGui::SetKeyOwner(ImGuiKey_A, (vars.Step == 0) ? owner_id : ImGuiKeyOwner_Any, ImGuiInputFlags_LockUntilRelease);
+        }
+        if (ImGui::IsKeyDown(ImGuiKey_A))
+            vars.IntArray[1]++;
+        if (ImGui::IsKeyDown(ImGuiKey_A, owner_id ^ 0x42424242))
+            vars.IntArray[2]++;
+        if (ImGui::IsKeyDown(ImGuiKey_A, owner_id))
+            vars.IntArray[3]++;
+        ImGui::Text("%d %d %d", vars.IntArray[0], vars.IntArray[1], vars.IntArray[2]);
+
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        auto& vars = ctx->GenericVars;
+        ctx->SetRef("Test Window");
+        for (int step = 0; step < 2; step++)
+        {
+            vars.Clear();
+            vars.Step = step;
+            ctx->Yield();
+            ctx->KeyPress(ImGuiKey_A);
+            IM_CHECK_EQ_NO_RET(vars.IntArray[0], 1);
+            IM_CHECK_EQ_NO_RET(vars.IntArray[1], 0);
+            IM_CHECK_EQ_NO_RET(vars.IntArray[2], 0);
+            IM_CHECK_EQ_NO_RET(vars.IntArray[3], (vars.Step == 0) ? 1 : 0);
+            ctx->KeyHold(ImGuiKey_A, 1.0f);
+            IM_CHECK_EQ_NO_RET(vars.IntArray[0], 2);
+            IM_CHECK_EQ_NO_RET(vars.IntArray[1], 0);
+            IM_CHECK_EQ_NO_RET(vars.IntArray[2], 0);
+            if (vars.Step == 0)
+                IM_CHECK_GT_NO_RET(vars.IntArray[3], 2);
+            else
+                IM_CHECK_EQ_NO_RET(vars.IntArray[3], 0);
+        }
+    };
+
+    // ## General test claiming Alt to prevent menu opening
+    t = IM_REGISTER_TEST(e, "misc", "inputs_owner_mod_alt");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        //auto& vars = ctx->GenericVars;
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_MenuBar);
+        if (ImGui::BeginMenuBar())
+        {
+            ImGui::MenuItem("MenuItem");
+            ImGui::EndMenuBar();
+        }
+        ImGui::Button("Button1");
+        ImGui::Button("Button2");
+        ImGui::SetItemKeyOwner(ImGuiMod_Alt);
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiContext& g = *ctx->UiContext;
+        ctx->SetRef("Test Window");
+
+        // Test Alt mod being captured
+        ctx->MouseMove("Button1");
+        ctx->KeyPress(ImGuiMod_Alt);
+        IM_CHECK(g.NavLayer == ImGuiNavLayer_Menu);
+        ctx->KeyPress(ImGuiMod_Alt);
+        IM_CHECK(g.NavLayer == ImGuiNavLayer_Main);
+
+        ctx->MouseMove("Button2");
+        ctx->KeyPress(ImGuiMod_Alt);
+        IM_CHECK(g.NavLayer == ImGuiNavLayer_Main);
+
+        // Also test with ImGuiKey_ModAlt (does specs enable allows that?)
+        ctx->MouseMove("Button1");
+        ctx->KeyPress(ImGuiMod_Alt);
+        IM_CHECK(g.NavLayer == ImGuiNavLayer_Menu);
+        ctx->KeyPress(ImGuiMod_Alt);
+        IM_CHECK(g.NavLayer == ImGuiNavLayer_Main);
+
+        ctx->MouseMove("Button2");
+        ctx->KeyPress(ImGuiMod_Alt);
+        IM_CHECK(g.NavLayer == ImGuiNavLayer_Main);
+    };
+
+    // ## Test special ButtonBehavior() flags
+    t = IM_REGISTER_TEST(e, "misc", "inputs_owner_button_behavior");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        auto& vars = ctx->GenericVars;
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_MenuBar);
+
+        ImVec2 sz = ImVec2(400, 0);
+
+        vars.IntArray[0] += (int)ImGui::ButtonEx("Button _None##A1", sz);
+        ImGui::SameLine(); ImGui::Text("%d", vars.IntArray[0]);
+        vars.IntArray[1] += (int)ImGui::ButtonEx("Button _PressedOnRelease##A2", sz, ImGuiButtonFlags_PressedOnRelease);
+        ImGui::SameLine(); ImGui::Text("%d", vars.IntArray[1]);
+        vars.IntArray[2] += (int)ImGui::ButtonEx("Button _None##A3", sz); // testing order dependency
+        ImGui::SameLine(); ImGui::Text("%d", vars.IntArray[2]);
+        ImGui::Spacing();
+
+        vars.IntArray[3] += (int)ImGui::ButtonEx("Button _NoSetKeyOwner##B1", sz, ImGuiButtonFlags_NoSetKeyOwner);
+        ImGui::SameLine(); ImGui::Text("%d", vars.IntArray[3]);
+        vars.IntArray[4] += (int)ImGui::ButtonEx("Button _PressedOnRelease##B2", sz, ImGuiButtonFlags_PressedOnRelease);
+        ImGui::SameLine(); ImGui::Text("%d", vars.IntArray[4]);
+        vars.IntArray[5] += (int)ImGui::ButtonEx("Button _NoSetKeyOwner##B3", sz, ImGuiButtonFlags_NoSetKeyOwner);
+        ImGui::SameLine(); ImGui::Text("%d", vars.IntArray[5]);
+        ImGui::Spacing();
+
+        vars.IntArray[6] += (int)ImGui::ButtonEx("Button _None##C1", sz);
+        ImGui::SameLine(); ImGui::Text("%d", vars.IntArray[6]);
+        vars.IntArray[7] += (int)ImGui::ButtonEx("Button _PressedOnRelease | _NoTestKeyOwner##C2", sz, ImGuiButtonFlags_PressedOnRelease | ImGuiButtonFlags_NoTestKeyOwner);
+        ImGui::SameLine(); ImGui::Text("%d", vars.IntArray[7]);
+        vars.IntArray[8] += (int)ImGui::ButtonEx("Button _None##C3", sz);
+        ImGui::SameLine(); ImGui::Text("%d", vars.IntArray[8]);
+        ImGui::Spacing();
+
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        auto& vars = ctx->GenericVars;
+        ctx->SetRef("Test Window");
+        ctx->ItemClick("Button _None##A1");
+        IM_CHECK_EQ(vars.IntArray[0], 1);
+        vars.Clear();
+
+        ctx->ItemDragAndDrop("Button _None##A1", "Button _PressedOnRelease##A2");
+        IM_CHECK_EQ(vars.IntArray[0], 0);
+        IM_CHECK_EQ(vars.IntArray[1], 0);
+        IM_CHECK_EQ(vars.IntArray[2], 0);
+
+        ctx->ItemDragAndDrop("Button _None##A3", "Button _PressedOnRelease##A2");
+        IM_CHECK_EQ(vars.IntArray[0], 0);
+        IM_CHECK_EQ(vars.IntArray[1], 0);
+        IM_CHECK_EQ(vars.IntArray[2], 0);
+
+        ctx->ItemDragAndDrop("Button _NoSetKeyOwner##B1", "Button _PressedOnRelease##B2");
+        IM_CHECK_EQ(vars.IntArray[3], 0);
+        IM_CHECK_EQ(vars.IntArray[4], 1);
+        IM_CHECK_EQ(vars.IntArray[5], 0);
+        vars.Clear();
+
+        ctx->ItemDragAndDrop("Button _NoSetKeyOwner##B3", "Button _PressedOnRelease##B2");
+        IM_CHECK_EQ(vars.IntArray[3], 0);
+        IM_CHECK_EQ(vars.IntArray[4], IMGUI_BROKEN_TESTS ? 1 : 0); // FIXME: Order matters because ActiveId is taken (not because of Owner)
+        IM_CHECK_EQ(vars.IntArray[5], 0);
+
+        ctx->ItemDragAndDrop("Button _None##C1", "Button _PressedOnRelease | _NoTestKeyOwner##C2");
+        IM_CHECK_EQ(vars.IntArray[6], 0);
+        IM_CHECK_EQ(vars.IntArray[7], 1);
+        IM_CHECK_EQ(vars.IntArray[8], 0);
+        vars.Clear();
+
+        ctx->ItemDragAndDrop("Button _None##C3", "Button _PressedOnRelease | _NoTestKeyOwner##C2");
+        IM_CHECK_EQ(vars.IntArray[6], 0);
+        IM_CHECK_EQ(vars.IntArray[7], IMGUI_BROKEN_TESTS ? 1 : 0); // FIXME: Order matters because ActiveId is taken (not because of Owner)
+        IM_CHECK_EQ(vars.IntArray[8], 0);
+    };
+#endif
+#endif
 }
 
 //-------------------------------------------------------------------------
