@@ -3768,6 +3768,226 @@ void RegisterTests_Inputs(ImGuiTestEngine* e)
         IM_CHECK_EQ(vars.IntArray[8], 0);
     };
 #endif
+
+#if IMGUI_VERSION_NUM >= 18837
+    t = IM_REGISTER_TEST(e, "misc", "inputs_routing_1");
+    struct InputRoutingVars
+    {
+        bool            IsRouting[26] = {};
+        int             PressedCount[26] = {};
+        ImGuiKeyChord   KeyChord = ImGuiMod_Ctrl | ImGuiKey_A;
+        char            Str[64] = "Hello";
+
+        void            Clear()
+        {
+            memset(IsRouting, 0, sizeof(IsRouting));
+            memset(PressedCount, 0, sizeof(PressedCount));
+        }
+        void            TestIsRoutingOnly(char c)
+        {
+            int idx = c - 'A';
+            for (int n = 0; n < IM_ARRAYSIZE(IsRouting); n++)
+            {
+                if (c != 0 && n == idx)
+                    IM_CHECK_EQ(IsRouting[n], true);
+                else
+                    IM_CHECK_SILENT(IsRouting[n] == false);
+            }
+        }
+        void            TestIsPressedOnly(char c)
+        {
+            int idx = c - 'A';
+            for (int n = 0; n < IM_ARRAYSIZE(IsRouting); n++)
+            {
+                if (c != 0 && n == idx)
+                    IM_CHECK_GT(PressedCount[n], 0);
+                else
+                    IM_CHECK_SILENT(PressedCount[n] == 0);
+            }
+        }
+    };
+    t->SetVarsDataType<InputRoutingVars>();
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        auto& vars = ctx->GetVars<InputRoutingVars>();
+
+        auto DoRoute = [&vars](char scope_name_c)
+        {
+            IM_ASSERT(scope_name_c >= 'A' && scope_name_c <= 'Z');
+            const int idx = scope_name_c - 'A';
+            bool is_routing = ImGui::TestShortcutRouting(vars.KeyChord, 0);// , ImGuiInputFlags_RouteFocused);
+            bool shortcut_pressed = ImGui::Shortcut(vars.KeyChord);
+            vars.IsRouting[idx] = is_routing;
+            vars.PressedCount[idx] += shortcut_pressed ? 1 : 0;
+            ImGui::Text("Routing: %d %s", is_routing, shortcut_pressed? "PRESSED" : "...");
+        };
+        auto DoRouteForItem = [&vars](char scope_name_c, ImGuiID id)
+        {
+            IM_ASSERT(scope_name_c >= 'A' && scope_name_c <= 'Z');
+            const int idx = scope_name_c - 'A';
+            bool is_routing = ImGui::TestShortcutRouting(vars.KeyChord, id);
+            bool shortcut_pressed = ImGui::Shortcut(vars.KeyChord, id, ImGuiInputFlags_RouteAlways); // No side-effect
+            vars.IsRouting[idx] = is_routing;
+            vars.PressedCount[idx] += shortcut_pressed ? 1 : 0;
+            ImGui::Text("Routing: %d %s", is_routing, shortcut_pressed ? "PRESSED" : "...");
+        };
+
+        ImGui::Begin("WindowA");
+
+        char chord[32];
+        ImGui::GetKeyChordName(vars.KeyChord, chord, IM_ARRAYSIZE(chord));
+        ImGui::Text("Chord: %s", chord);
+
+        ImGui::Button("WindowA");
+        DoRoute('A');
+
+        //if (ImGui::Shortcut(ImGuiMod_Ctrl | ImGuiKey_A))
+        //    ImGui::Text("PRESSED 111");
+
+        // TODO: Write a test for that
+        //ImGui::Text("Down: %d", ImGui::InputRoutingSubmit2(ImGuiKey_DownArrow));
+
+        ImGui::InputText("InputTextB", vars.Str, IM_ARRAYSIZE(vars.Str));
+        DoRouteForItem('B', ImGui::GetItemID());
+
+        ImGui::Button("ButtonC");
+        ImGui::BeginChild("ChildD", ImVec2(-FLT_MIN, 100), true);
+        ImGui::Button("ChildD");
+        ImGui::EndChild();
+        ImGui::BeginChild("ChildE", ImVec2(-FLT_MIN, 100), true);
+        ImGui::Button("ChildE");
+        DoRoute('E');
+        ImGui::EndChild();
+        if (ImGui::Button("Open Popup"))
+            ImGui::OpenPopup("PopupF");
+
+        if (ImGui::BeginPopup("PopupF"))
+        {
+            ImGui::Button("PopupF");
+            DoRoute('F');
+            ImGui::InputText("InputTextG", vars.Str, IM_ARRAYSIZE(vars.Str));
+            DoRouteForItem('G', ImGui::GetItemID());
+            ImGui::EndPopup();
+        }
+
+        ImGui::End();
+
+        /*
+        ImGui::Begin("WindowH");
+        ImGui::Button("WindowH");
+        DoRoute('H');
+        ImGui::BeginChild("ChildI", ImVec2(-FLT_MIN, 100), true);
+        ImGui::Button("ChildI");
+        ImGui::EndChild();
+        ImGui::End();
+
+        // TODO: NodeTabBarL+DockedWindowM
+
+        ImGui::Begin("WindowN");
+        ImGui::Button("WindowM");
+        DoRoute('M');
+
+        ImGui::BeginChild("ChildN", ImVec2(-FLT_MIN, 300), true);
+        ImGui::Button("ChildN");
+        DoRoute('N');
+
+        ImGui::BeginChild("ChildO", ImVec2(-FLT_MIN, 150), true);
+        ImGui::Button("ChildO");
+        DoRoute('O');
+        ImGui::EndChild();
+
+        ImGui::EndChild();
+        ImGui::ColorButton("##Color", ImVec4(1, 0, 0, 1));
+        ImGui::End();
+        */
+
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        auto& vars = ctx->GetVars<InputRoutingVars>();
+        ImGuiInputTextState* input_state = NULL;
+
+        ctx->SetRef("WindowA");
+
+        // A
+        ctx->ItemClick("WindowA");
+        vars.TestIsRoutingOnly('A');
+        vars.TestIsPressedOnly(0);
+        ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_A);
+        vars.TestIsPressedOnly('A');
+        vars.Clear();
+
+        // B: verify catching CTRL+A
+        ctx->ItemClick("InputTextB");
+        vars.TestIsRoutingOnly('B');
+        vars.TestIsPressedOnly(0);
+        input_state = ImGui::GetInputTextState(ctx->GetID("InputTextB"));
+        IM_CHECK(input_state != NULL);
+        IM_CHECK(input_state->HasSelection() == false);
+        ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_A);
+        vars.TestIsPressedOnly('B');
+        input_state = ImGui::GetInputTextState(ctx->GetID("InputTextB"));
+        IM_CHECK(input_state != NULL);
+        IM_CHECK(input_state->HasSelection() == true);
+        vars.Clear();
+
+        // B: verify that CTRL+B is caught by A but not B
+        vars.KeyChord = ImGuiMod_Ctrl | ImGuiKey_B;
+        ctx->Yield(2);
+        vars.TestIsRoutingOnly('A');
+        ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_B);
+        vars.TestIsPressedOnly('A');
+        vars.KeyChord = ImGuiMod_Ctrl | ImGuiKey_A;
+        vars.Clear();
+
+        // D: Focus child which does no polling/routing: parent A gets it: results are same as A
+        ctx->ItemClick("**/ChildD");
+        vars.TestIsRoutingOnly('A');
+        vars.TestIsPressedOnly(0);
+        ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_A);
+        vars.TestIsPressedOnly('A');
+        vars.Clear();
+
+        // E: Focus child which does its polling/routing
+        ctx->ItemClick("**/ChildE");
+        vars.TestIsRoutingOnly('E');
+        vars.TestIsPressedOnly(0);
+        ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_A);
+        vars.TestIsPressedOnly('E');
+        vars.Clear();
+
+        // F: Open Popup
+        ctx->ItemClick("Open Popup");
+        ctx->Yield(); // Appearing route requires a frame to establish
+        vars.TestIsRoutingOnly('F');
+        vars.TestIsPressedOnly(0);
+        ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_A);
+        vars.TestIsPressedOnly('F');
+        vars.Clear();
+
+        // G: verify popup's input text catching CTRL+A
+        ctx->ItemClick("**/InputTextG");
+        vars.TestIsRoutingOnly('G');
+        vars.TestIsPressedOnly(0);
+        input_state = ImGui::GetInputTextState(ImGui::GetActiveID());
+        IM_CHECK(input_state != NULL);
+        IM_CHECK(input_state->HasSelection() == false);
+        ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_A);
+        vars.TestIsPressedOnly('G');
+        input_state = ImGui::GetInputTextState(ImGui::GetActiveID());
+        IM_CHECK(input_state != NULL);
+        IM_CHECK(input_state->HasSelection() == true);
+        vars.Clear();
+
+        // G: verify that CTRL+B is caught by F but not G
+        vars.KeyChord = ImGuiMod_Ctrl | ImGuiKey_B;
+        ctx->Yield(2);
+        vars.TestIsRoutingOnly('F');
+        ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_B);
+        vars.TestIsPressedOnly('F');
+        vars.KeyChord = ImGuiMod_Ctrl | ImGuiKey_A;
+        vars.Clear();
+    };
 #endif
 }
 
