@@ -256,7 +256,11 @@ static void ShowTestGroup(ImGuiTestEngine* e, ImGuiTestGroup group, Str* filter)
     ImGui::SetCursorPosX(ImGui::GetCursorPosX() + ImGui::GetFrameHeight() + style.ItemInnerSpacing.x);
 
     //ImGui::Text("TESTS (%d)", engine->TestsAll.Size);
+#if IMGUI_VERSION_NUM >= 18837
+    if (ImGui::Button("Run") || ImGui::Shortcut(ImGuiMod_Ctrl | ImGuiKey_R))
+#else
     if (ImGui::Button("Run"))
+#endif
     {
         for (int n = 0; n < e->TestsAll.Size; n++)
         {

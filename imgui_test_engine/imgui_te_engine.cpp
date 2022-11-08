@@ -1652,6 +1652,7 @@ static void ImGuiTestEngineHook_ItemInfo_ResolveFindByLabel(ImGuiContext* ui_ctx
     }
     else
     {
+        // Recurse back into parent, so from "WindowA" with SetRef("WindowA") it is possible to use "**/Button" to reach "WindowA/ChildXXXX/Button"
         for (ImGuiWindow* window = g.CurrentWindow; window != NULL && !match_prefix; window = window->ParentWindow)
         {
             const int id_stack_size = window->IDStack.Size;
