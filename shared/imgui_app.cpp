@@ -1048,9 +1048,12 @@ static bool ImGuiApp_ImplGlfwGL3_NewFrame(ImGuiApp* app_opaque)
     if (glfwWindowShouldClose(app->window))
         return false;
     app->DpiScale = ImGuiApp_ImplGlfw_GetDPI(app->window);
+#if !defined (IMGUI_IMPL_OPENGL_ES3) && !defined(IMGUI_IMPL_OPENGL_ES2)
     if (app->SrgbFramebuffer)
         glEnable(GL_FRAMEBUFFER_SRGB);
     else
+        glDisable(GL_FRAMEBUFFER_SRGB);
+#endif
         glDisable(GL_FRAMEBUFFER_SRGB);
     ImGui_ImplOpenGL3_NewFrame();
     ImGui_ImplGlfw_NewFrame();
