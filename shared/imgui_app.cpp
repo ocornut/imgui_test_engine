@@ -1054,7 +1054,6 @@ static bool ImGuiApp_ImplGlfwGL3_NewFrame(ImGuiApp* app_opaque)
     else
         glDisable(GL_FRAMEBUFFER_SRGB);
 #endif
-        glDisable(GL_FRAMEBUFFER_SRGB);
     ImGui_ImplOpenGL3_NewFrame();
     ImGui_ImplGlfw_NewFrame();
     return true;
