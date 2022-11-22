@@ -9,7 +9,21 @@
 
 ## Don't blink
 
+Running Dear ImGui Test Suite, in Fast Mode, in a visible window:
+
 https://user-images.githubusercontent.com/8225057/182409619-cd3bf990-b383-4a6c-a6ba-c5afe7557d6c.mp4
+
+Quick overview of what test code may look like like:
+```cpp
+ImGuiTest* test = IM_REGISTER_TEST(e, "demo_test", "test1");
+test->TestFunc = [](ImGuiTestContext* ctx)
+{
+    ctx->SetRef("My Window");           // Set a base path so we don't have to specify full path afterwards
+    ctx->ItemClick("My Button");        // Click "My Button" inside "My Window"
+    ctx->ItemCheck("Node/Checkbox");    // Open "Node", find "Checkbox", ensure it is checked if not checked already.
+    ctx->ItemInputValue("Slider", 123); // Find "Slider" and set the value to 123
+};
+```
 
 ## Overview
 
