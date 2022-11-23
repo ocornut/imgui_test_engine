@@ -2890,7 +2890,11 @@ void RegisterTests_Table(ImGuiTestEngine* e)
         ctx->MouseMoveToPos(table->InnerClipRect.GetCenter());
         ctx->MouseClick(ImGuiMouseButton_Right);
         ctx->SetRef("//$FOCUSED");
+#if IMGUI_VERSION_NUM >= 18903
+        ctx->ItemClick("###ResetOrder");
+#else
         ctx->ItemClick("Reset order");
+#endif
 
         // Verify default order.
         IM_CHECK(table->IsDefaultDisplayOrder);
