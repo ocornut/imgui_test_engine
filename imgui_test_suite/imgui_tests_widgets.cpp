@@ -2558,6 +2558,40 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         }
     };
 
+#if IMGUI_VERSION_NUM >= 18903
+    // ## Test drag & drop trigger on new payload, GetDragDropPayload() returning true. (#5910)
+    t = IM_REGISTER_TEST(e, "widgets", "widgets_dragdrop_new_payloads");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        auto& vars = ctx->GenericVars;
+        ImGui::SetNextWindowSize(ImVec2(0, 0), ImGuiCond_Appearing);
+        if (ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings))
+        {
+            ImGui::Button("DragSrc");
+            if (ImGui::BeginDragDropSource())
+            {
+                const ImGuiPayload* payload = ImGui::GetDragDropPayload();
+                if (vars.Count <= 1)
+                    IM_CHECK(payload == NULL);
+                else
+                    IM_CHECK(payload != NULL);
+                if (vars.Count >= 1)
+                    ImGui::SetDragDropPayload("Button", "Data", 5);
+                vars.Count++;
+                ImGui::EndDragDropSource();
+            }
+            ImGui::Button("DragDst");
+        }
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        auto& vars = ctx->GenericVars;
+        ctx->ItemDragOverAndHold("//Test Window/DragSrc", "//Test Window/DragDst");
+        IM_CHECK(vars.Count > 3); // Verify we tested enough (used ItemDragOverAndHold() instead of ItemDragAndDrop() to increase frame count in fast mode)
+    };
+#endif
+
     // ## Test using default context menu along with a combo (#4167)
 #if IMGUI_VERSION_NUM >= 18211
     t = IM_REGISTER_TEST(e, "widgets", "widgets_combo_context_menu");
