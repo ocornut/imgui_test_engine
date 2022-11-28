@@ -172,14 +172,18 @@ IMGUI_API bool                ImGuiTestEngine_IsUsingSimulatedInputs(ImGuiTestEn
 IMGUI_API void                ImGuiTestEngine_GetResult(ImGuiTestEngine* engine, int& count_tested, int& success_count);
 
 // Functions: Crash Handling
-IMGUI_API void                ImGuiTestEngine_InstallDefaultCrashHandler();                         // Install default crash handler
-IMGUI_API void                ImGuiTestEngine_CrashHandler();                                       // Default crash handler, should be called from a custom crash handler if such exists
+// Ensure past test results are properly exported even if application crash during a test.
+IMGUI_API void                ImGuiTestEngine_InstallDefaultCrashHandler();     // Install default crash handler (if you don't have one)
+IMGUI_API void                ImGuiTestEngine_CrashHandler();                   // Default crash handler, should be called from a custom crash handler if such exists
 
 //-----------------------------------------------------------------------------
 // IO structure to configure the test engine
 //-----------------------------------------------------------------------------
 
-typedef void (ImGuiTestEngineSrcFileOpenFunc)(const char* filename, int line, void* user_data);
+// Function bound to right-clicking on a test and selecting "Open source" in the UI
+// - Easy: you can make this function call OS shell to "open" the file (e.g. ImOsOpenInShell() helper).
+// - Better: bind this function to a custom setup which can pass line number to a text editor (e.g. see 'imgui_test_suite/tools/win32_open_with_sublime.cmd' example)
+typedef void (ImGuiTestEngineSrcFileOpenFunc)(const char* filename, int line_no, void* user_data);
 
 struct IMGUI_API ImGuiTestEngineIO
 {
@@ -187,7 +191,7 @@ struct IMGUI_API ImGuiTestEngineIO
     // Functions
     //-------------------------------------------------------------------------
 
-    // Inputs: Functions
+    // Options: Functions
     ImGuiTestCoroutineInterface*                CoroutineFuncs = NULL;          // (Required) Coroutine functions (see imgui_te_coroutines.h)
     ImFuncPtr(ImGuiTestEngineSrcFileOpenFunc)   SrcFileOpenFunc = NULL;         // (Optional) To open source files from test engine UI
     ImFuncPtr(ImGuiScreenCaptureFunc)           ScreenCaptureFunc = NULL;       // (Optional) To capture graphics output (application _MUST_ call ImGuiTestEngine_PostSwap() function after swapping is framebuffer)
@@ -225,7 +229,7 @@ struct IMGUI_API ImGuiTestEngineIO
     char                        VideoCaptureEncoderPath[256] = "";  // Video encoder executable path, e.g. "path/to/ffmpeg.exe".
     char                        VideoCaptureEncoderParams[256] = "";// Video encoder parameters for .MP4 captures, e.g. see IMGUI_CAPTURE_DEFAULT_VIDEO_PARAMS_FOR_FFMPEG
     char                        GifCaptureEncoderParams[512] = "";  // Video encoder parameters for .GIF captures, e.g. see IMGUI_CAPTURE_DEFAULT_GIF_PARAMS_FOR_FFMPEG
-    char                        VideoCaptureExtension[8] = ".mp4";  // Video file extension (default, may be overriden by test).
+    char                        VideoCaptureExtension[8] = ".mp4";  // Video file extension (default, may be overridden by test).
 
     // Options: Watchdog. Set values to FLT_MAX to disable.
     // Interactive GUI applications that may be slower tend to use higher values.
@@ -234,14 +238,15 @@ struct IMGUI_API ImGuiTestEngineIO
     float                       ConfigWatchdogKillApp = FLT_MAX;    // Stop application when exceeding this time (in second)
 
     // Options: Export
+    // While you can manually call ImGuiTestEngine_Export(), registering filename/format here ensure the crash handler will always export if application crash.
     const char*                 ExportResultsFilename = NULL;
     ImGuiTestEngineExportFormat ExportResultsFormat = (ImGuiTestEngineExportFormat)0;
 
     //-------------------------------------------------------------------------
-    // Outputs
+    // Output
     //-------------------------------------------------------------------------
 
-    // State of test engine
+    // Output: State of test engine
     bool                        IsRunningTests = false;
     bool                        IsRequestingMaxAppSpeed = false;    // When running in fast mode: request app to skip vsync or even skip rendering if it wants
     bool                        IsCapturing = false;                // Capture is in progress
@@ -251,7 +256,7 @@ struct IMGUI_API ImGuiTestEngineIO
 // ImGuiTestItemInfo
 //-------------------------------------------------------------------------
 
-// Information about a given item, result of an ItemInfo() query
+// Information about a given item or window, result of an ItemInfo() or WindowInfo() query
 struct ImGuiTestItemInfo
 {
     int                         RefCount : 8;               // User can increment this if they want to hold on the result pointer across frames, otherwise the task will be GC-ed.
@@ -290,7 +295,7 @@ struct IMGUI_API ImGuiTestItemList
 };
 
 //-------------------------------------------------------------------------
-// ImGuiTestLog
+// ImGuiTestLog: store textual output of one given Test.
 //-------------------------------------------------------------------------
 
 struct IMGUI_API ImGuiTestLogLineInfo

@@ -109,12 +109,15 @@ static void ImGuiTestEngine_PrintLogLines(FILE* fp, ImGuiTestLog* test_log, int 
     }
 }
 
+// Export using settings stored in ImGuiTestEngineIO
+// This is called by ImGuiTestEngine_CrashHandler().
 void ImGuiTestEngine_Export(ImGuiTestEngine* engine)
 {
     ImGuiTestEngineIO& io = engine->IO;
     ImGuiTestEngine_ExportEx(engine, io.ExportResultsFormat, io.ExportResultsFilename);
 }
 
+// Export using custom settings.
 void ImGuiTestEngine_ExportEx(ImGuiTestEngine* engine, ImGuiTestEngineExportFormat format, const char* filename)
 {
     if (format == ImGuiTestEngineExportFormat_None)
