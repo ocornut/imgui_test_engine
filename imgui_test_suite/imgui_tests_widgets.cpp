@@ -2766,6 +2766,40 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ImGui::End();
     };
 
+#if IMGUI_VERSION_NUM >= 18911
+    // ## Basic tests for wrapped text (probably more to add)
+    t = IM_REGISTER_TEST(e, "widgets", "widgets_text_wrapped");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiContext& g = *ImGui::GetCurrentContext();
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoTitleBar);
+        for (int n = 0; n < 6; n++)
+            ImGui::Text("Dummy %d", n);
+
+        // Verify that vertices fit in bounding-box when clipped (#5919)
+        // (FIXME: we can't use our WIP capture vtx api as it relies on items having an identifier)
+        ImDrawList* draw_list = ImGui::GetWindowDrawList();
+        unsigned int vtx_0 = draw_list->_VtxCurrentIdx;
+        ImGui::TextWrapped("This is a long wrapped text hello world hello world this is some long text");
+        ImRect rect = g.LastItemData.Rect;
+        rect.Expand(2.0f);
+        unsigned int vtx_1 = draw_list->_VtxCurrentIdx;
+        for (unsigned int n = vtx_0; n < vtx_1; n++)
+            IM_CHECK(rect.Contains(draw_list->VtxBuffer[n].pos));
+        for (int n = 0; n < 6; n++)
+            ImGui::Text("Dummy %d", n);
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiContext& g = *ImGui::GetCurrentContext();
+        ctx->SetRef("Test Window");
+        ctx->WindowResize("", ImVec2(g.FontSize * 15, ImGui::GetTextLineHeightWithSpacing() * 8));
+        ctx->ScrollToTop("");
+        ctx->ScrollToBottom("");
+    };
+#endif
+
     // ## Test LabelText() variants layout (#4004)
     t = IM_REGISTER_TEST(e, "widgets", "widgets_label_text");
     t->GuiFunc = [](ImGuiTestContext* ctx)

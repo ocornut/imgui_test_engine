@@ -296,15 +296,15 @@ struct IMGUI_API ImGuiTestContext
     ImGuiTestRef GetRef();
 
     // Windows
-    ImGuiTestItemInfo* WindowInfo(ImGuiTestRef ref, ImGuiTestOpFlags flags = ImGuiTestOpFlags_None);
-    void        WindowClose(ImGuiTestRef ref);
-    void        WindowCollapse(ImGuiTestRef ref, bool collapsed);
-    void        WindowFocus(ImGuiTestRef ref);
-    void        WindowMove(ImGuiTestRef ref, ImVec2 pos, ImVec2 pivot = ImVec2(0.0f, 0.0f), ImGuiTestOpFlags flags = ImGuiTestOpFlags_None);
-    void        WindowResize(ImGuiTestRef ref, ImVec2 sz);
-    bool        WindowTeleportToMakePosVisible(ImGuiTestRef ref, ImVec2 pos_in_window);
-    bool        WindowBringToFront(ImGuiTestRef ref, ImGuiTestOpFlags flags = ImGuiTestOpFlags_None);
-    ImGuiWindow*GetWindowByRef(ImGuiTestRef ref);
+    ImGuiTestItemInfo* WindowInfo(ImGuiTestRef window_ref, ImGuiTestOpFlags flags = ImGuiTestOpFlags_None);
+    void        WindowClose(ImGuiTestRef window_ref);
+    void        WindowCollapse(ImGuiTestRef window_ref, bool collapsed);
+    void        WindowFocus(ImGuiTestRef window_ref);
+    void        WindowMove(ImGuiTestRef window_ref, ImVec2 pos, ImVec2 pivot = ImVec2(0.0f, 0.0f), ImGuiTestOpFlags flags = ImGuiTestOpFlags_None);
+    void        WindowResize(ImGuiTestRef window_ref, ImVec2 sz);
+    bool        WindowTeleportToMakePosVisible(ImGuiTestRef window_ref, ImVec2 pos_in_window);
+    bool        WindowBringToFront(ImGuiTestRef window_ref, ImGuiTestOpFlags flags = ImGuiTestOpFlags_None);
+    ImGuiWindow*GetWindowByRef(ImGuiTestRef window_ref);
 
     // Popups
     void        PopupCloseOne();
