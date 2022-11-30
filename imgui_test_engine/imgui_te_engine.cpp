@@ -580,6 +580,10 @@ void ImGuiTestEngine_ApplyInputToImGuiContext(ImGuiTestEngine* engine)
                         io.AddKeyEvent(ImGuiMod_Alt, input.Down);
                     if (mods & ImGuiMod_Super)
                         io.AddKeyEvent(ImGuiMod_Super, input.Down);
+#if IMGUI_VERSION_NUM >= 18912
+                    if (mods & ImGuiMod_Shortcut)
+                        io.AddKeyEvent(io.ConfigMacOSXBehaviors ? ImGuiMod_Super : ImGuiMod_Ctrl, input.Down);
+#endif
 #else
                     if (input.Down)
                         engine->Inputs.KeyMods |= mods;

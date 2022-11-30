@@ -1,8 +1,8 @@
 Dear ImGui Test Engine
 CHANGELOG
 
-** For a while this is going to include only breaking changes.
-** As we slowly transition toward releasing the test engine, this will become a more full fledged changelog.
+** For a while this is going to ONLY INCLUDE BREAKING CHANGES.
+** As we transition toward expanding the test engine user-base, this will become a full fledged changelog.
 
 2022/10/03
 - TestEngine: Added missing ImGuiTestOpFlags_NoError support in ItemAction()/ItemClick() family of

@@ -3411,6 +3411,67 @@ void RegisterTests_Inputs(ImGuiTestEngine* e)
     };
 #endif
 
+    // ## Test ImGuiMod_Shortcut redirect (#5923)
+#if IMGUI_VERSION_NUM >= 18912
+    t = IM_REGISTER_TEST(e, "misc", "inputs_io_mod_shortcut");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiContext& g = *ctx->UiContext;
+        auto& vars = ctx->GenericVars;
+
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImGui::Text("Shortcut+L count: %d", vars.Count);
+        ImGui::Text("io.KeyMods = 0x%04X", g.IO.KeyMods);
+
+        if (ImGui::Shortcut(ImGuiMod_Shortcut | ImGuiKey_L))
+        {
+            // Verify whatever Shortcut does with routing
+            vars.Count++;
+            IM_CHECK(ImGui::IsKeyDown(ImGuiMod_Shortcut));
+            if (g.IO.ConfigMacOSXBehaviors)
+            {
+                // Verify IsKeyPressed() redirection + merged io.KeyMods
+                IM_CHECK(ImGui::IsKeyDown(ImGuiMod_Super) == true);
+                IM_CHECK(ImGui::IsKeyDown(ImGuiMod_Ctrl) == false);
+                IM_CHECK(g.IO.KeyMods == (ImGuiMod_Super));// | ImGuiMod_Shortcut));
+            }
+            else
+            {
+                IM_CHECK(ImGui::IsKeyDown(ImGuiMod_Ctrl) == true);
+                IM_CHECK(ImGui::IsKeyDown(ImGuiMod_Super) == false);
+                IM_CHECK(g.IO.KeyMods == (ImGuiMod_Ctrl));// | ImGuiMod_Shortcut));
+            }
+        }
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        auto& vars = ctx->GenericVars;
+
+        ctx->SetRef("Test Window");
+        ctx->WindowFocus("");
+
+        ctx->KeyPress(ImGuiMod_Shortcut | ImGuiKey_L);
+        IM_CHECK_EQ(vars.Count, 1);
+
+        vars.Count = 0;
+        if (ctx->UiContext->IO.ConfigMacOSXBehaviors)
+        {
+            ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_L);
+            IM_CHECK_EQ(vars.Count, 0);
+            ctx->KeyPress(ImGuiMod_Super | ImGuiKey_L);
+            IM_CHECK_EQ(vars.Count, 1);
+        }
+        else
+        {
+            ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_L);
+            IM_CHECK_EQ(vars.Count, 1);
+            ctx->KeyPress(ImGuiMod_Super | ImGuiKey_L);
+            IM_CHECK_EQ(vars.Count, 1);
+        }
+    };
+#endif
+
 #if IMGUI_VERSION_NUM >= 18837
     // ## Test SetKeyOwner(), TestKeyOwner()
     t = IM_REGISTER_TEST(e, "misc", "inputs_owner_basic_1");
