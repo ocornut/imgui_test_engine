@@ -6424,7 +6424,7 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
         ctx->ItemOpen("Layout & Scrolling");
         ctx->ItemOpen("Popups & Modal windows");
         ctx->ItemOpen("Tables & Columns");
-        ctx->ItemOpen("Inputs, Navigation & Focus");
+        ctx->ItemOpen("Inputs & Focus");
     };
 
     // ## Open misc elements which are beneficial to coverage and not covered with ItemOpenAll
