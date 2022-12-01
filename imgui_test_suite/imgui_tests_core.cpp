@@ -2869,7 +2869,12 @@ void RegisterTests_DrawList(ImGuiTestEngine* e)
         IM_CHECK_EQ(ImGui::IsItemVisible(), true);
 
         ImGui::Columns(1);
+
+#if IMGUI_VERSION_NUM >= 18914
+        IM_CHECK_EQ(draw_list->CmdBuffer.Size, start_cmdbuffer_size + 2); // Empty command removed! (See #4857, #5937) + Channel 1 and 2 each other one Cmd
+#else
         IM_CHECK_EQ(draw_list->CmdBuffer.Size, start_cmdbuffer_size + 1 + 2); // Channel 1 and 2 each other one Cmd
+#endif
 
         ImGui::End();
     };
