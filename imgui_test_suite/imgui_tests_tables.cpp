@@ -25,6 +25,9 @@
 #define IsUserEnabledNextFrame IsEnabledNextFrame
 #endif
 
+// Helpers
+static inline bool operator==(const ImVec2& lhs, const ImVec2& rhs) { return lhs.x == rhs.x && lhs.y == rhs.y; }    // for IM_CHECK_EQ()
+
 //-------------------------------------------------------------------------
 // Ideas/Specs for future tests
 // It is important we take the habit to write those down.
@@ -2100,6 +2103,119 @@ void RegisterTests_Table(ImGuiTestEngine* e)
             // Test whether frozen columns are visible.
             for (int column_n = 0; column_n < 4; column_n++)
                 IM_CHECK_EQ(table->Columns[column_n].IsVisibleX, (column_n < freeze_count));
+        }
+    };
+
+    // ## Test nav scrolling with frozen rows/columns (#5143, #4868, #3692)
+    t = IM_REGISTER_TEST(e, "table", "table_freezing_scroll");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::Begin("Test Window", nullptr, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
+        if (ImGui::BeginTable("table1", 2, ImGuiTableFlags_ScrollY | ImGuiTableFlags_Resizable, ImVec2(300, 300)))
+        {
+            ImGui::TableSetupScrollFreeze(0, 1);
+            ImGui::TableSetupColumn("AAA");
+            ImGui::TableSetupColumn("BBB");
+            ImGui::TableHeadersRow();
+            for (int row = 0; row < 30; ++row)
+            {
+                ImGui::TableNextRow();
+                ImGui::TableNextColumn();
+                ImGui::Selectable(Str30f("%d", row).c_str(), false, ImGuiSelectableFlags_SpanAllColumns);
+                ImGui::TableNextColumn();
+                ImGui::Text("Example text");
+            }
+            ImGui::EndTable();
+        }
+        if (ImGui::BeginTable("table2", 30, ImGuiTableFlags_ScrollX | ImGuiTableFlags_Resizable, ImVec2(300, 300)))
+        {
+            ImGui::TableSetupScrollFreeze(1, 0);
+            for (int row = 0; row < 30; ++row)
+            {
+                ImGui::TableNextRow();
+                for (int col = 0; col < 30; col++)
+                {
+                    ImGui::TableNextColumn();
+                    ImGui::Button(Str30f("%d,%d", row, col).c_str());
+                }
+            }
+            ImGui::EndTable();
+        }
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiContext& g = *ctx->UiContext;
+
+        auto check_is_fully_visible = [ctx](const ImGuiTestRef& ref)
+        {
+            ImGuiTestItemInfo* item_info = ctx->ItemInfo(ref);
+            IM_CHECK_EQ(item_info->RectClipped.Min, item_info->RectFull.Min);
+            IM_CHECK_EQ(item_info->RectClipped.Max, item_info->RectFull.Max);
+        };
+
+        {
+            ImGuiTable* table = ImGui::TableFindByID(ctx->GetID("//Test Window/table1"));
+            IM_CHECK(table != NULL);
+            ctx->SetRef(table->ID);
+
+            ImGuiTestRef header_a = TableGetHeaderID(table, "AAA");
+            ctx->ItemClick(header_a, ImGuiMouseButton_Left);
+            IM_CHECK_EQ(g.NavId, TableGetHeaderID(table, "AAA"));
+            ctx->KeyPress(ImGuiKey_DownArrow);
+            IM_CHECK_EQ(g.NavId, ctx->GetID("0"));
+            ctx->KeyPress(ImGuiKey_DownArrow);
+            IM_CHECK_EQ(g.NavId, ctx->GetID("1"));
+            ctx->KeyPress(ImGuiKey_DownArrow, 25);
+            IM_CHECK_EQ(g.NavId, ctx->GetID("26"));
+            check_is_fully_visible("26");
+            check_is_fully_visible(header_a);
+            ctx->KeyPress(ImGuiKey_UpArrow, 20);
+            IM_CHECK_EQ(g.NavId, ctx->GetID("6"));
+#if IMGUI_VERSION_NUM >= 18915
+            check_is_fully_visible("6");
+#endif
+            check_is_fully_visible(header_a);
+            ctx->KeyPress(ImGuiKey_UpArrow, 5);
+            IM_CHECK_EQ(g.NavId, ctx->GetID("1"));
+#if IMGUI_VERSION_NUM >= 18915
+            check_is_fully_visible("1");
+#endif
+            check_is_fully_visible(header_a);
+            ctx->KeyPress(ImGuiKey_UpArrow);
+            IM_CHECK_EQ(g.NavId, ctx->GetID("0"));
+#if IMGUI_VERSION_NUM >= 18915
+            check_is_fully_visible("0");
+#endif
+            check_is_fully_visible(header_a);
+        }
+        {
+            ImGuiTable* table = ImGui::TableFindByID(ctx->GetID("//Test Window/table2"));
+            IM_CHECK(table != NULL);
+            ctx->SetRef(table->ID);
+
+            ctx->ItemClick("0,0");
+            IM_CHECK_EQ(g.NavId, ctx->GetID("0,0"));
+            ctx->KeyPress(ImGuiKey_RightArrow);
+            IM_CHECK_EQ(g.NavId, ctx->GetID("0,1"));
+            ctx->KeyPress(ImGuiKey_RightArrow);
+            IM_CHECK_EQ(g.NavId, ctx->GetID("0,2"));
+            ctx->KeyPress(ImGuiKey_RightArrow, 25);
+            IM_CHECK_EQ(g.NavId, ctx->GetID("0,27"));
+            check_is_fully_visible("0,27");
+            check_is_fully_visible("0,0");
+            ctx->KeyPress(ImGuiKey_LeftArrow, 20);
+            IM_CHECK_EQ(g.NavId, ctx->GetID("0,7"));
+#if IMGUI_VERSION_NUM >= 18915
+            check_is_fully_visible("0,7");
+#endif
+            check_is_fully_visible("0,0");
+            ctx->KeyPress(ImGuiKey_LeftArrow, 5);
+            IM_CHECK_EQ(g.NavId, ctx->GetID("0,2"));
+#if IMGUI_VERSION_NUM >= 18915
+            check_is_fully_visible("0,2");
+#endif
+            check_is_fully_visible("0,0");
         }
     };
 

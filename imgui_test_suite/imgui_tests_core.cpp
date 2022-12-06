@@ -1577,16 +1577,17 @@ void RegisterTests_Window(ImGuiTestEngine* e)
         ImGui::Begin("Test Scrolling 1", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysHorizontalScrollbar | ImGuiWindowFlags_AlwaysAutoResize);
         ImGui::Dummy(ImVec2(200, 200));
         ImGuiWindow* window1 = ctx->UiContext->CurrentWindow;
-        IM_CHECK_NO_RET(window1->ScrollMax.x == 0.0f); // FIXME-TESTS: If another window in another test used same name, ScrollMax won't be zero on first frame
-        IM_CHECK_NO_RET(window1->ScrollMax.y == 0.0f);
+        IM_CHECK_EQ_NO_RET(window1->ScrollMax.x, 0.0f); // FIXME-TESTS: If another window in another test used same name, ScrollMax won't be zero on first frame
+        IM_CHECK_EQ_NO_RET(window1->ScrollMax.y, 0.0f);
         ImGui::End();
 
         ImGui::Begin("Test Scrolling 2", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysVerticalScrollbar | ImGuiWindowFlags_AlwaysAutoResize);
         ImGui::Dummy(ImVec2(200, 200));
         ImGuiWindow* window2 = ctx->UiContext->CurrentWindow;
-        IM_CHECK_NO_RET(window2->ScrollMax.x == 0.0f);
-        IM_CHECK_NO_RET(window2->ScrollMax.y == 0.0f);
+        IM_CHECK_EQ_NO_RET(window2->ScrollMax.x, 0.0f);
+        IM_CHECK_EQ_NO_RET(window2->ScrollMax.y, 0.0f);
         ImGui::End();
+
         if (ctx->FrameCount == 2)
             ctx->Finish();
     };

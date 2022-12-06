@@ -2471,6 +2471,8 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
     {
         ImGuiWindow* window_demo = ctx->GetWindowByRef("Dear ImGui Demo");
         ImGuiWindow* window_hello = ctx->GetWindowByRef("Hello, world!");
+        ctx->WindowFocus("Hello, world!");
+        ctx->WindowFocus("Dear ImGui Demo");
         ctx->WindowMove("Hello, world!", ImGui::GetMainViewport()->Pos + ImVec2(50.0f, 50.0f));
         ctx->WindowMove("Dear ImGui Demo", window_hello->Rect().GetTR());
         ctx->WindowResize("Hello, world!", ImVec2(400.0f, 200.0f));
