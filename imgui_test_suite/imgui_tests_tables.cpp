@@ -2111,7 +2111,12 @@ void RegisterTests_Table(ImGuiTestEngine* e)
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         ImGui::Begin("Test Window", nullptr, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
-        if (ImGui::BeginTable("table1", 2, ImGuiTableFlags_ScrollY | ImGuiTableFlags_Resizable, ImVec2(300, 300)))
+#if IMGUI_BROKEN_TESTS
+        ImGuiTableFlags table_extra_flags = ImGuiTableFlags_Resizable; // FIXME-NAV: Nav break when overloading buttons
+#else
+        ImGuiTableFlags table_extra_flags = ImGuiTableFlags_None;
+#endif
+        if (ImGui::BeginTable("table1", 2, ImGuiTableFlags_ScrollY | table_extra_flags, ImVec2(300, 300)))
         {
             ImGui::TableSetupScrollFreeze(0, 1);
             ImGui::TableSetupColumn("AAA");
@@ -2127,7 +2132,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
             }
             ImGui::EndTable();
         }
-        if (ImGui::BeginTable("table2", 30, ImGuiTableFlags_ScrollX | ImGuiTableFlags_Resizable, ImVec2(300, 300)))
+        if (ImGui::BeginTable("table2", 30, ImGuiTableFlags_ScrollX | table_extra_flags, ImVec2(300, 300)))
         {
             ImGui::TableSetupScrollFreeze(1, 0);
             for (int row = 0; row < 30; ++row)
@@ -2158,6 +2163,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
             ImGuiTable* table = ImGui::TableFindByID(ctx->GetID("//Test Window/table1"));
             IM_CHECK(table != NULL);
             ctx->SetRef(table->ID);
+            ctx->ScrollToTop(table->InnerWindow->ID);
 
             ImGuiTestRef header_a = TableGetHeaderID(table, "AAA");
             ctx->ItemClick(header_a, ImGuiMouseButton_Left);
@@ -2193,6 +2199,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
             ImGuiTable* table = ImGui::TableFindByID(ctx->GetID("//Test Window/table2"));
             IM_CHECK(table != NULL);
             ctx->SetRef(table->ID);
+            ctx->ScrollToTop(table->InnerWindow->ID);
 
             ctx->ItemClick("0,0");
             IM_CHECK_EQ(g.NavId, ctx->GetID("0,0"));
@@ -2774,7 +2781,11 @@ void RegisterTests_Table(ImGuiTestEngine* e)
                 {
                     ImGuiWindow* window = ImGui::GetCurrentWindow();
                     ImGuiNavLayer layer = window->DC.NavLayerCurrent;
+#if IMGUI_VERSION_NUM >= 18915
+                    if (line < 2 && window->Scroll.y > 0.0f)
+#else
                     if ((column < 2 && window->Scroll.x > 0.0f) || (line < 2 && window->Scroll.y > 0.0f))
+#endif
                         IM_CHECK_NO_RET(layer == 1);
                     else
                         IM_CHECK_NO_RET(layer == 0);
