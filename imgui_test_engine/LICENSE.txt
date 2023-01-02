@@ -1,4 +1,4 @@
-Dear ImGui Test Engine License (v1.01)
+Dear ImGui Test Engine License (v1.02)
 Copyright (c) 2022-2023 Omar Cornut
 
 This document is a legal agreement ("License") between you ("Licensee") and
@@ -11,7 +11,8 @@ LIZARDCUBE SAS ("Licensor") that governs your use of Dear ImGui Test Engine ("So
 The Licensor grants you a free license ("Free License") if you meet ANY of the following
 criterion:
 
-- You are a natural person (not a legal entity);
+- You are a natural person;
+- You are not a legal entity, or you are a not-for-profit legal entity;
 - You are using this Software for educational purposes;
 - You are using this Software to create Derivative Software released publicly and under
   an Open Source license, as defined by the Open Source Initiative;
