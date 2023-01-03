@@ -3947,7 +3947,7 @@ void RegisterTests_Inputs(ImGuiTestEngine* e)
     {
         bool            IsRouting[26] = {};
         int             PressedCount[26] = {};
-        ImGuiKeyChord   KeyChord = ImGuiMod_Ctrl | ImGuiKey_A;
+        ImGuiKeyChord   KeyChord = ImGuiMod_Shortcut | ImGuiKey_A;
         char            Str[64] = "Hello";
 
         void            Clear()
