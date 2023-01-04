@@ -492,7 +492,9 @@ void RegisterTests_WidgetsInputText(ImGuiTestEngine* e)
 
             // End of last line
             SetCursorPosition(cursor_pos_end_of_last_line); ctx->KeyPress(ImGuiKey_UpArrow);
-            //IM_CHECK_EQ(stb.cursor, cursor_pos_end_of_last_line - char_count_per_line); // FIXME: This one is broken even on master
+#if IMGUI_VERSION_NUM >= 18917
+            IM_CHECK_EQ(stb.cursor, cursor_pos_end_of_last_line - char_count_per_line); // Issue #6000
+#endif
             SetCursorPosition(cursor_pos_end_of_last_line); ctx->KeyPress(ImGuiKey_LeftArrow);
             IM_CHECK_EQ(stb.cursor, cursor_pos_end_of_last_line - 1);
             SetCursorPosition(cursor_pos_end_of_last_line); ctx->KeyPress(ImGuiKey_DownArrow);
@@ -547,6 +549,19 @@ void RegisterTests_WidgetsInputText(ImGuiTestEngine* e)
         // Cursor positioning after new line. Broken line indexing may produce incorrect results in such case.
         ctx->KeyCharsReplaceEnter("foo");
         IM_CHECK_EQ(stb.cursor, 4);
+
+        // Empty buffer
+        ctx->KeyCharsReplace("");
+        IM_CHECK_EQ(stb.cursor, 0);
+        IM_CHECK_EQ(state->CurLenA, 0);
+        ctx->KeyPress(ImGuiKey_UpArrow);
+        IM_CHECK_EQ(stb.cursor, 0);
+        ctx->KeyPress(ImGuiKey_DownArrow);
+        IM_CHECK_EQ(stb.cursor, 0);
+        ctx->KeyPress(ImGuiKey_LeftArrow);
+        IM_CHECK_EQ(stb.cursor, 0);
+        ctx->KeyPress(ImGuiKey_RightArrow);
+        IM_CHECK_EQ(stb.cursor, 0);
     };
 
     // ## Verify that text selection does not leak spaces in password fields. (#4155)
