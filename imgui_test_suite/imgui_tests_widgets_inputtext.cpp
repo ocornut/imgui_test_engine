@@ -399,7 +399,6 @@ void RegisterTests_WidgetsInputText(ImGuiTestEngine* e)
     };
 
     // ## Test input text multiline cursor movement: left, up, right, down, origin, end, ctrl+origin, ctrl+end, page up, page down
-    // ## Verify that text selection does not leak spaces in password fields. (#4155)
     // TODO ## Test input text multiline cursor with selection: left, up, right, down, origin, end, ctrl+origin, ctrl+end, page up, page down
     // TODO ## Test input text multiline scroll movement only: ctrl + (left, up, right, down)
     // TODO ## Test input text multiline page up/page down history ?
@@ -413,7 +412,6 @@ void RegisterTests_WidgetsInputText(ImGuiTestEngine* e)
         float height = vars.LineCount * 0.5f * ImGui::GetFontSize();
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
         ImGui::InputTextMultiline("Field", &vars.str, ImVec2(300, height), ImGuiInputTextFlags_EnterReturnsTrue);
-        ImGui::InputText("Password", &vars.Password, ImGuiInputTextFlags_Password);
         if (ImGuiInputTextState* state = ImGui::GetInputTextState(ctx->GetID("//Test Window/Field")))
             ImGui::Text("Stb Cursor: %d", state->Stb.cursor);
         ImGui::End();
@@ -549,16 +547,33 @@ void RegisterTests_WidgetsInputText(ImGuiTestEngine* e)
         // Cursor positioning after new line. Broken line indexing may produce incorrect results in such case.
         ctx->KeyCharsReplaceEnter("foo");
         IM_CHECK_EQ(stb.cursor, 4);
+    };
 
+    // ## Verify that text selection does not leak spaces in password fields. (#4155)
+    t = IM_REGISTER_TEST(e, "widgets", "widgets_inputtext_password");
+    t->SetVarsDataType<InputTextCursorVars>();
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        InputTextCursorVars& vars = ctx->GetVars<InputTextCursorVars>();
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
+        ImGui::InputText("Password", &vars.Password, ImGuiInputTextFlags_Password);
+        if (ImGuiInputTextState* state = ImGui::GetInputTextState(ctx->GetID("//Test Window/Field")))
+            ImGui::Text("Stb Cursor: %d", state->Stb.cursor);
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
         // Verify that cursor placement does not leak spaces in password field. (#4155)
+        ctx->SetRef("Test Window");
         ctx->ItemClick("Password");
         ctx->KeyCharsAppendEnter("Totally not Password123");
         ctx->ItemDoubleClick("Password");
-        state = ImGui::GetInputTextState(ctx->GetID("Password"));
+        ImGuiInputTextState* state = ImGui::GetInputTextState(ctx->GetID("Password"));
         IM_CHECK(state != NULL);
 #if IMGUI_VERSION_NUM >= 18825
-        IM_CHECK((state->Flags & ImGuiInputTextFlags_Password) != 0); // Verify flags are persistent (#5724)
+        IM_CHECK((state->Flags& ImGuiInputTextFlags_Password) != 0); // Verify flags are persistent (#5724)
 #endif
+        ImStb::STB_TexteditState& stb = state->Stb;
         IM_CHECK_EQ(stb.select_start, 0);
         IM_CHECK_EQ(stb.select_end, 23);
         IM_CHECK_EQ(stb.cursor, 23);
