@@ -4013,7 +4013,7 @@ void RegisterTests_Inputs(ImGuiTestEngine* e)
         ImGui::Button("WindowA");
         DoRoute('A');
 
-        //if (ImGui::Shortcut(ImGuiMod_Ctrl | ImGuiKey_A))
+        //if (ImGui::Shortcut(ImGuiMod_Shortcut | ImGuiKey_A))
         //    ImGui::Text("PRESSED 111");
 
         // TODO: Write a test for that
@@ -4085,7 +4085,7 @@ void RegisterTests_Inputs(ImGuiTestEngine* e)
         ctx->ItemClick("WindowA");
         vars.TestIsRoutingOnly('A');
         vars.TestIsPressedOnly(0);
-        ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_A);
+        ctx->KeyPress(ImGuiMod_Shortcut | ImGuiKey_A);
         vars.TestIsPressedOnly('A');
         vars.Clear();
 
@@ -4096,7 +4096,7 @@ void RegisterTests_Inputs(ImGuiTestEngine* e)
         input_state = ImGui::GetInputTextState(ctx->GetID("InputTextB"));
         IM_CHECK(input_state != NULL);
         IM_CHECK(input_state->HasSelection() == false);
-        ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_A);
+        ctx->KeyPress(ImGuiMod_Shortcut | ImGuiKey_A);
         vars.TestIsPressedOnly('B');
         input_state = ImGui::GetInputTextState(ctx->GetID("InputTextB"));
         IM_CHECK(input_state != NULL);
@@ -4104,19 +4104,19 @@ void RegisterTests_Inputs(ImGuiTestEngine* e)
         vars.Clear();
 
         // B: verify that CTRL+B is caught by A but not B
-        vars.KeyChord = ImGuiMod_Ctrl | ImGuiKey_B;
+        vars.KeyChord = ImGuiMod_Shortcut | ImGuiKey_B;
         ctx->Yield(2);
         vars.TestIsRoutingOnly('A');
-        ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_B);
+        ctx->KeyPress(ImGuiMod_Shortcut | ImGuiKey_B);
         vars.TestIsPressedOnly('A');
-        vars.KeyChord = ImGuiMod_Ctrl | ImGuiKey_A;
+        vars.KeyChord = ImGuiMod_Shortcut | ImGuiKey_A;
         vars.Clear();
 
         // D: Focus child which does no polling/routing: parent A gets it: results are same as A
         ctx->ItemClick("**/ChildD");
         vars.TestIsRoutingOnly('A');
         vars.TestIsPressedOnly(0);
-        ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_A);
+        ctx->KeyPress(ImGuiMod_Shortcut | ImGuiKey_A);
         vars.TestIsPressedOnly('A');
         vars.Clear();
 
@@ -4124,7 +4124,7 @@ void RegisterTests_Inputs(ImGuiTestEngine* e)
         ctx->ItemClick("**/ChildE");
         vars.TestIsRoutingOnly('E');
         vars.TestIsPressedOnly(0);
-        ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_A);
+        ctx->KeyPress(ImGuiMod_Shortcut | ImGuiKey_A);
         vars.TestIsPressedOnly('E');
         vars.Clear();
 
@@ -4133,7 +4133,7 @@ void RegisterTests_Inputs(ImGuiTestEngine* e)
         ctx->Yield(); // Appearing route requires a frame to establish
         vars.TestIsRoutingOnly('F');
         vars.TestIsPressedOnly(0);
-        ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_A);
+        ctx->KeyPress(ImGuiMod_Shortcut | ImGuiKey_A);
         vars.TestIsPressedOnly('F');
         vars.Clear();
 
@@ -4144,7 +4144,7 @@ void RegisterTests_Inputs(ImGuiTestEngine* e)
         input_state = ImGui::GetInputTextState(ImGui::GetActiveID());
         IM_CHECK(input_state != NULL);
         IM_CHECK(input_state->HasSelection() == false);
-        ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_A);
+        ctx->KeyPress(ImGuiMod_Shortcut | ImGuiKey_A);
         vars.TestIsPressedOnly('G');
         input_state = ImGui::GetInputTextState(ImGui::GetActiveID());
         IM_CHECK(input_state != NULL);
@@ -4152,12 +4152,12 @@ void RegisterTests_Inputs(ImGuiTestEngine* e)
         vars.Clear();
 
         // G: verify that CTRL+B is caught by F but not G
-        vars.KeyChord = ImGuiMod_Ctrl | ImGuiKey_B;
+        vars.KeyChord = ImGuiMod_Shortcut | ImGuiKey_B;
         ctx->Yield(2);
         vars.TestIsRoutingOnly('F');
-        ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_B);
+        ctx->KeyPress(ImGuiMod_Shortcut | ImGuiKey_B);
         vars.TestIsPressedOnly('F');
-        vars.KeyChord = ImGuiMod_Ctrl | ImGuiKey_A;
+        vars.KeyChord = ImGuiMod_Shortcut | ImGuiKey_A;
         vars.Clear();
     };
 #endif
