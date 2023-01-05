@@ -1,6 +1,7 @@
 #
 # This is a dummy workflow used to trigger scheduled builds. Forked repositories most likely should disable this
 # workflow to avoid daily builds of inactive repositories.
+# (test: amending this file as we are debugging a CI issue)
 #
 name: scheduled
 
