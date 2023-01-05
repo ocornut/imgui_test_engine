@@ -2507,16 +2507,11 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
     t->SetVarsDataType<DragMouseButtonsVars>();
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
-        ImGuiContext& g = *ImGui::GetCurrentContext();
         DragMouseButtonsVars& vars = ctx->GetVars<DragMouseButtonsVars>();
         ImGui::SetNextWindowSize(ImVec2(0, 0), ImGuiCond_Appearing);
         if (ImGui::Begin("Window", NULL, ImGuiWindowFlags_NoSavedSettings))
         {
-            vars.Pressed |= ImGui::Button("Button");
-
-            // This is a workaround for button widget not reacting to mouse clicks other than the left one.
-            // See https://github.com/ocornut/imgui/issues/3885 for more details.
-            ImGui::ButtonBehavior(g.LastItemData.Rect, g.LastItemData.ID, NULL, NULL, ImGuiButtonFlags_MouseButtonLeft | ImGuiButtonFlags_MouseButtonMiddle | ImGuiButtonFlags_MouseButtonRight);
+            vars.Pressed |= ImGui::ButtonEx("Button", ImVec2(), ImGuiButtonFlags_MouseButtonLeft | ImGuiButtonFlags_MouseButtonMiddle | ImGuiButtonFlags_MouseButtonRight);
 
             if (ImGui::BeginDragDropSource())
             {
