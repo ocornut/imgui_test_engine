@@ -6556,7 +6556,7 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
         ctx->SetRef("Example: Documents");
         ctx->ItemCheck("**/Lettuce");
         ctx->ItemClick("##tabs/Lettuce");
-        ctx->ItemClick("##tabs/Lettuce/**/Modify (Ctrl+M)");
+        ctx->ItemClick("##tabs/Lettuce/**/Modify");
         ctx->MenuClick("File");
         ctx->SetRef("");
         ctx->ItemClick("##Menu_00/Close All Documents");
@@ -6809,7 +6809,7 @@ void RegisterTests_Capture(ImGuiTestEngine* e)
         ctx->ItemCheck("**/A Rather Long Title");
         ctx->ItemClick("##tabs/Eggplant");
         ctx->SetRef(ctx->GetID("##tabs/Eggplant"));
-        ctx->MouseMove("**/Modify (Ctrl+M)");
+        ctx->MouseMove("**/Modify");
         ctx->Sleep(1.0f);
     };
 
