@@ -332,7 +332,7 @@ static void ShowTestGroup(ImGuiTestEngine* e, ImGuiTestGroup group, Str* filter)
     {
         ImGui::TableSetupScrollFreeze(0, 1);
         ImGui::TableSetupColumn("Status");
-        ImGui::TableSetupColumn("Group");
+        ImGui::TableSetupColumn("Category");
         ImGui::TableSetupColumn("Test", ImGuiTableColumnFlags_WidthStretch);
         ImGui::TableHeadersRow();
 

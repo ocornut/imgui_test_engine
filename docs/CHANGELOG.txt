@@ -1,8 +1,29 @@
 Dear ImGui Test Engine
 CHANGELOG
 
+** Test Engine is regularly updated to support recent Dear ImGui version, when a change is required.
+   Those changes are not all listed here.
 ** For a while this is going to ONLY INCLUDE BREAKING CHANGES.
-** As we transition toward expanding the test engine user-base, this will become a full fledged changelog.
+
+2023/01/10
+- TestEngine: Filtering can be done on Category string as well.
+
+2023/01/02:
+- TestEngine: Amend license to 1.02 (clarify/widen audience of free version).
+
+2022/11/30
+- TestEngine: Support ImGuiMod_Shortcut being an independent value.
+
+2022/11/24
+- TestEngine: Update/fixes for Docking node access.
+
+2022/11/04
+- TestEngine: UI: Added CTRL+R shortcut when focused.
+- TestEngine: Fixed MenuCheckAll()/MenuUncheckAll() from trying to access non-checkable items.
+- TestEngine: Added ImGuiTestOpFlags_NoError support in ItemAction() + ItemInfoOpenFullPath().
+
+2022/10/24:
+- TestEngine: DockInto() unmangle path references + verify result.
 
 2022/10/03
 - TestEngine: Added missing ImGuiTestOpFlags_NoError support in ItemAction()/ItemClick() family of

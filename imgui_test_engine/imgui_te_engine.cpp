@@ -1143,19 +1143,20 @@ ImGuiPerfTool* ImGuiTestEngine_GetPerfTool(ImGuiTestEngine* engine)
 // - '-' prefix excludes tests matched by the term.
 // - '^' prefix anchors term matching to the start of the string.
 // - '$' suffix anchors term matching to the end of the string.
-// Example queries:
-// - ""      : empty query matches no tests.
+// Special keywords:
 // - "all"   : all tests, no matter what group they are in.
 // - "tests" : tests in ImGuiTestGroup_Tests group.
 // - "perfs" : tests in ImGuiTestGroup_Perfs group.
+// Example queries:
+// - ""      : empty query matches no tests.
 // - "^nav_" : all tests with name starting with "nav_".
 // - "_nav$" : all tests with name ending with "_nav".
 // - "-xxx"  : all tests and perfs that do not contain "xxx".
 // - "tests,-scroll,-^nav_" : all tests (but no perfs) that do not contain "scroll" in their name and does not start with "nav_".
 // Note: while we borrowed ^ and $ from regex conventions, we do not support actual regex syntax except for behavior of these two modifiers.
-bool ImGuiTestEngine_PassFilter(ImGuiTest* test, const char* filter)
+bool ImGuiTestEngine_PassFilter(ImGuiTest* test, const char* filter_specs)
 {
-    IM_ASSERT(filter != NULL);
+    IM_ASSERT(filter_specs != NULL);
     auto str_iequal = [](const char* s1, const char* s2, const char* s2_end)
     {
         size_t s2_len = (size_t)(s2_end - s2);
@@ -1177,13 +1178,13 @@ bool ImGuiTestEngine_PassFilter(ImGuiTest* test, const char* filter)
 
     // When filter starts with exclude condition, we assume we have included all tests from the start. This enables
     // writing "-window" instead of "all,-window".
-    for (int i = 0; filter[i]; i++)
-        if (filter[i] == '-')
+    for (int i = 0; filter_specs[i]; i++)
+        if (filter_specs[i] == '-')
             include = true; // First filter is exclusion
-        else if (strchr(prefixes, filter[i]) == NULL)
+        else if (strchr(prefixes, filter_specs[i]) == NULL)
             break;          // End of prefixes
 
-    for (const char* filter_start = filter; filter_start[0];)
+    for (const char* filter_start = filter_specs; filter_start[0];)
     {
         // Filter modifiers
         bool is_exclude = false;
@@ -1212,17 +1213,33 @@ bool ImGuiTestEngine_PassFilter(ImGuiTest* test, const char* filter)
             include = (test->Group == ImGuiTestGroup_Tests) ? !is_exclude : include;
         else if (str_iequal("perfs", filter_start, filter_end))
             include = (test->Group == ImGuiTestGroup_Perfs) ? !is_exclude : include;
-        else if (!is_anchor_to_start && !is_anchor_to_end)
-            include = ImStristr(test->Name, NULL, filter_start, filter_end) != NULL ? !is_exclude : include;    // "foo" - match a substring.
         else
         {
-            bool match = true;
-            if (is_anchor_to_start)
-                match &= ImStrnicmp(test->Name, filter_start, filter_end - filter_start) == 0;                  // "^foo" - match start of the string.
-            if (is_anchor_to_end)
-                match &= str_iendswith(test->Name, filter_start, filter_end);                                   // "foo$" - match end of the string.
-            if (match)
-                include = !is_exclude;
+            // General filtering
+            for (int n = 0; n < 2; n++)
+            {
+                const char* name = (n == 0) ? test->Name : test->Category;
+
+                bool match = true;
+
+                // "foo" - match a substring.
+                if (!is_anchor_to_start && !is_anchor_to_end)
+                    match = ImStristr(name, NULL, filter_start, filter_end) != NULL;
+
+                // "^foo" - match start of the string.
+                // "foo$" - match end of the string.
+                // FIXME: (minor) '^aaa$' will incorrectly match 'aaabbbaaa'.
+                if (is_anchor_to_start)
+                    match &= ImStrnicmp(name, filter_start, filter_end - filter_start) == 0;
+                if (is_anchor_to_end)
+                    match &= str_iendswith(name, filter_start, filter_end);
+
+                if (match)
+                {
+                    include = is_exclude ? false : true;
+                    break;
+                }
+            }
         }
 
         while (filter_end[0] == ',' || filter_end[0] == '$')
