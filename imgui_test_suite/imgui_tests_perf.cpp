@@ -1120,6 +1120,7 @@ void RegisterTests_Perf(ImGuiTestEngine* e)
                     Str64f test_name("%s%s%s%s", base_name, text_suffixes[i], wrap_suffixes[j], clip_suffixes[k]);
                     t = IM_REGISTER_TEST(e, "perf", "");
                     t->SetOwnedName(test_name.c_str());
+                    t->SetVarsDataType<PerfDrawTextVars>();
                     t->ArgVariant = (PerfTestTextFlags_TextShort << i) | (PerfTestTextFlags_NoWrapWidth << j) | (PerfTestTextFlags_NoCpuFineClipRect << k);
                     t->GuiFunc = gui_func_measure_text_rendering_perf;
                     t->TestFunc = PerfCaptureFunc;
