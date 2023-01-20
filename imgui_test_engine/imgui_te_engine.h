@@ -339,7 +339,7 @@ typedef void    (ImGuiTestTestFunc)(ImGuiTestContext* ctx);
 
 // Wraps a placement new of a given type (where 'buffer' is the allocated memory)
 typedef void    (ImGuiTestVarsConstructor)(void* buffer);
-typedef void    (ImGuiTestVarsPostConstructor)(void* ptr, void* fn);
+typedef void    (ImGuiTestVarsPostConstructor)(ImGuiTestContext* ctx, void* ptr, void* fn);
 typedef void    (ImGuiTestVarsDestructor)(void* ptr);
 
 // Storage for one test
@@ -382,7 +382,7 @@ struct IMGUI_API ImGuiTest
     void SetOwnedName(const char* name);
 
     template <typename T>
-    void SetVarsDataType(void(*post_initialize)(T& vars) = NULL)
+    void SetVarsDataType(void(*post_initialize)(ImGuiTestContext* ctx, T& vars) = NULL)
     {
         VarsSize = sizeof(T);
         VarsConstructor = [](void* ptr) { IM_PLACEMENT_NEW(ptr) T; };
@@ -390,7 +390,7 @@ struct IMGUI_API ImGuiTest
         if (post_initialize != NULL)
         {
             VarsPostConstructorUserFn = (void*)post_initialize;
-            VarsPostConstructor = [](void* ptr, void* fn) { ((void (*)(T&))(fn))(*(T*)ptr); };
+            VarsPostConstructor = [](ImGuiTestContext* ctx, void* ptr, void* fn) { ((void (*)(ImGuiTestContext*, T&))(fn))(ctx, *(T*)ptr); };
         }
     }
 };

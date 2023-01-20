@@ -151,7 +151,7 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
 
     // ## Test merging windows by dragging them.
     t = IM_REGISTER_TEST(e, "docking", "docking_basic_1");
-    t->SetVarsDataType<DockingTestsGenericVars>([](auto& vars) { vars.SetShowWindows(2, true); });
+    t->SetVarsDataType<DockingTestsGenericVars>([](auto* ctx, auto& vars) { vars.SetShowWindows(2, true); });
     t->GuiFunc = DockingTestsGenericGuiFunc;
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
@@ -594,7 +594,7 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
     // ## Test hide/unhiding tab bar
     // "On a 2-way split, test using Hide Tab Bar on both node, then unhiding the tab bar."
     t = IM_REGISTER_TEST(e, "docking", "docking_hide_tabbar");
-    t->SetVarsDataType<DockingTestsGenericVars>([](auto& vars) { vars.SetShowWindows(2, true); });
+    t->SetVarsDataType<DockingTestsGenericVars>([](auto* ctx, auto& vars) { vars.SetShowWindows(2, true); });
     t->GuiFunc = DockingTestsGenericGuiFunc;
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
@@ -689,7 +689,7 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
 
     // ## Test whether docked window tabs are in right order.
     t = IM_REGISTER_TEST(e, "docking", "docking_tab_order");
-    t->SetVarsDataType<DockingTestsGenericVars>([](auto& vars) { vars.SetShowWindows(3, true); });
+    t->SetVarsDataType<DockingTestsGenericVars>([](auto* ctx, auto& vars) { vars.SetShowWindows(3, true); });
     t->GuiFunc = DockingTestsGenericGuiFunc;
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
@@ -762,7 +762,7 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
 
     // ## Test tab order related to edge case with 1 window node which don't have a tab bar
     t = IM_REGISTER_TEST(e, "docking", "docking_tab_order_hidden_tabbar");
-    t->SetVarsDataType<DockingTestsGenericVars>([](auto& vars)
+    t->SetVarsDataType<DockingTestsGenericVars>([](auto* ctx, auto& vars)
     {
         vars.ShowDockspace = false;
         vars.SetShowWindows(4, true);
@@ -794,7 +794,7 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
 
     // ## Test preserving of tab order when entire dock node is moved.
     t = IM_REGISTER_TEST(e, "docking", "docking_tab_order_preserve");
-    t->SetVarsDataType<DockingTestsGenericVars>([](auto& vars)
+    t->SetVarsDataType<DockingTestsGenericVars>([](auto* ctx, auto& vars)
     {
         vars.ShowDockspace = false;
         vars.SetShowWindows(5, true);
@@ -820,7 +820,7 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
 
     // Test focus order restore (#2304)
     t = IM_REGISTER_TEST(e, "docking", "docking_tab_focus_restore");
-    t->SetVarsDataType<DockingTestsGenericVars>([](auto& vars) {
+    t->SetVarsDataType<DockingTestsGenericVars>([](auto* ctx, auto& vars) {
         vars.SetShowWindows(4, true);
     });
     t->GuiFunc = DockingTestsGenericGuiFunc;
@@ -1163,7 +1163,7 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
 
     // ## Test preserving docking information of closed windows. (#3716)
     t = IM_REGISTER_TEST(e, "docking", "docking_preserve_docking_info");
-    t->SetVarsDataType<DockingTestsGenericVars>([](auto& vars) {
+    t->SetVarsDataType<DockingTestsGenericVars>([](auto* ctx, auto& vars) {
         vars.SetShowWindows(3, true);
     });
     t->GuiFunc = DockingTestsGenericGuiFunc;
@@ -1187,9 +1187,7 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
 
     // ## Test docked window focusing from the menu.
     t = IM_REGISTER_TEST(e, "docking", "docking_focus_from_menu");
-    t->SetVarsDataType<DockingTestsGenericVars>([](auto& vars) {
-        vars.SetShowWindows(3, true);
-    });
+    t->SetVarsDataType<DockingTestsGenericVars>([](auto* ctx, auto& vars) { vars.SetShowWindows(3, true); });
     t->GuiFunc = DockingTestsGenericGuiFunc;
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
@@ -1211,9 +1209,7 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
     // ## Test docked window focusing.
     t = IM_REGISTER_TEST(e, "docking", "docking_focus_from_host");
     t->SetVarsDataType<DockingTestsGenericVars>();
-    t->SetVarsDataType<DockingTestsGenericVars>([](auto& vars) {
-        vars.SetShowWindows(2, true);
-    });
+    t->SetVarsDataType<DockingTestsGenericVars>([](auto* ctx, auto& vars) { vars.SetShowWindows(2, true); });
     t->GuiFunc = DockingTestsGenericGuiFunc;
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
@@ -1445,9 +1441,7 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
 
     // ## Test restoring dock tab state in independent and split windows.
     t = IM_REGISTER_TEST(e, "docking", "docking_tab_state");
-    t->SetVarsDataType<DockingTestsGenericVars>([](auto& vars) {
-        vars.SetShowWindows(6, true);
-    });
+    t->SetVarsDataType<DockingTestsGenericVars>([](auto* ctx, auto& vars) { vars.SetShowWindows(6, true); });
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         // FIXME-DOCKING
@@ -1522,9 +1516,7 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
 
     // ## Test dock node retention when second window in two-way split is undocked.
     t = IM_REGISTER_TEST(e, "docking", "docking_undock_simple");
-    t->SetVarsDataType<DockingTestsGenericVars>([](auto& vars) {
-        vars.SetShowWindows(2, true);
-    });
+    t->SetVarsDataType<DockingTestsGenericVars>([](auto* ctx, auto& vars) { vars.SetShowWindows(2, true); });
     t->GuiFunc = DockingTestsGenericGuiFunc;
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
@@ -1577,9 +1569,7 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
 
     // ## Test that undocking a whole _node_ doesn't lose/reset size
     t = IM_REGISTER_TEST(e, "docking", "docking_undock_from_dockspace_size");
-    t->SetVarsDataType<DockingTestsGenericVars>([](auto& vars) {
-        vars.SetShowWindows(2, true);
-    });
+    t->SetVarsDataType<DockingTestsGenericVars>([](auto* ctx, auto& vars) { vars.SetShowWindows(2, true); });
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         if (ctx->IsFirstTestFrame())
@@ -1809,9 +1799,7 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
 
     // ## Test transferring full node payload, even with hidden windows.
     t = IM_REGISTER_TEST(e, "docking", "docking_split_payload");
-    t->SetVarsDataType<DockingTestsGenericVars>([](DockingTestsGenericVars& vars) {
-        vars.SetShowWindows(3, true);
-    });
+    t->SetVarsDataType<DockingTestsGenericVars>([](auto* ctx, DockingTestsGenericVars& vars) { vars.SetShowWindows(3, true); });
     t->GuiFunc = DockingTestsGenericGuiFunc;
     t->TestFunc = [](ImGuiTestContext* ctx)
     {

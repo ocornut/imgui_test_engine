@@ -5,6 +5,17 @@ CHANGELOG
    Those changes are not all listed here.
 ** For a while this is going to ONLY INCLUDE BREAKING CHANGES.
 
+2023/01/20:
+- TestEngine: Added a `ImGuiTestContext* ctx` parameter to the optional "pre-run" constructor
+  declared in ImGuiTest::SetVarsDataType<>:
+     before:   test->SetVarsDataType<MyVars>([](MyVars& vars) { ... })
+     after:    test->SetVarsDataType<MyVars>([](ImGuiTestContext* ctx, MyVars& vars) { ... })
+  This feature is useful to share GuiFunc/TestFunc accross multiple tests while needing
+  specific state initialized before the first run of GuiFunc. It is convenient because
+  the custom initialization code can be specified while registering the test.
+  (vs. t is also possible to set `test->ArgVariant` and run initialization code in the
+  first-frame of the GuiFunc, but this seems the init code is located in a same location).
+
 2023/01/10
 - TestEngine: Filtering can be done on Category string as well.
 

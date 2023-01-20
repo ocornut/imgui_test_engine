@@ -1043,7 +1043,7 @@ static void ImGuiTestEngine_ProcessTestQueue(ImGuiTestEngine* engine)
             ctx.UserVars = engine->UserDataBuffer;
             test->VarsConstructor(engine->UserDataBuffer);
             if (test->VarsPostConstructor != NULL && test->VarsPostConstructorUserFn != NULL)
-                test->VarsPostConstructor(engine->UserDataBuffer, test->VarsPostConstructorUserFn);
+                test->VarsPostConstructor(&ctx, engine->UserDataBuffer, test->VarsPostConstructorUserFn);
             ImGuiTestEngine_RunTest(engine, &ctx);
             test->VarsDestructor(engine->UserDataBuffer);
         }
