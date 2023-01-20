@@ -535,50 +535,37 @@ void RegisterTests_Perf(ImGuiTestEngine* e)
     };
     t->TestFunc = PerfCaptureFunc;
 
-    // ## Measure the cost of TableNextCell(), TableNextRow(): one table, many rows
-    t = IM_REGISTER_TEST(e, "perf", "perf_stress_table_1");
-    t->GuiFunc = [](ImGuiTestContext* ctx)
+    // Shared function to test basic table performances.
+    struct TablePerfFuncVars { int TablesCount = 1; int RowsCount = 50; int ColumnsCount = 3; };
+    auto TablePerfFunc = [](ImGuiTestContext* ctx)
     {
-        ImGui::SetNextWindowSize(ImVec2(400, 0));
+        auto& vars = ctx->GetVars<TablePerfFuncVars>();
+        ImGui::SetNextWindowSize(ImVec2(800, 800));
         ImGui::Begin("Test Func", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
-        int loop_count = 50 * 2 * ctx->PerfStressAmount;
-        if (ImGui::BeginTable("table1", 3, ImGuiTableFlags_BordersV))
-        {
-            for (int n = 0; n < loop_count; n++)
-            {
-                ImGui::TableNextColumn();
-                ImGui::Text("Cell 1,%d", n);
-                ImGui::TableNextColumn();
-                ImGui::TextUnformatted("Cell 2");
-                ImGui::TableNextColumn();
-                ImGui::TextUnformatted("Cell 3");
-            }
-            ImGui::EndTable();
-        }
-        ImGui::End();
-    };
-    t->TestFunc = PerfCaptureFunc;
 
-    // ## Measure the cost of BeginTable(): many tables with few rows
-    t = IM_REGISTER_TEST(e, "perf", "perf_stress_table_2");
-    t->GuiFunc = [](ImGuiTestContext* ctx)
-    {
-        ImGui::SetNextWindowSize(ImVec2(400, 0));
-        ImGui::Begin("Test Func", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
-        int loop_count = 50 * ctx->PerfStressAmount;
-        for (int n = 0; n < loop_count; n++)
+        const int tables_count = vars.TablesCount;
+        const int columns_count = vars.ColumnsCount;
+        const int rows_count = vars.RowsCount;
+        if (ctx->IsFirstGuiFrame())
+            ctx->LogDebug("%d tables x %d columns x %d rows", tables_count, columns_count, rows_count);
+        for (int n = 0; n < tables_count; n++)
         {
             ImGui::PushID(n);
-            if (ImGui::BeginTable("table1", 3, ImGuiTableFlags_BordersV))
+            if (ImGui::BeginTable("table1", columns_count, ImGuiTableFlags_BordersV))
             {
-                for (int row = 0; row < 2; row++)
+                for (int row = 0; row < rows_count; row++)
                 {
-                    ImGui::TableNextColumn();
-                    ImGui::Text("Cell 1,%d", n);
-                    ImGui::TableNextColumn();
-                    ImGui::TextUnformatted("Cell 2");
-                    ImGui::TableNextColumn();
-                    ImGui::TextUnformatted("Cell 3");
+                    for (int col = 0; col < columns_count; col++)
+                    {
+                        ImGui::TableNextColumn();
+                        if (col == 0)
+                            ImGui::Text("Cell 0,%d", n);
+                        else if (col == 1)
+                            ImGui::TextUnformatted("Cell 1");
+                        else if (col == 2)
+                            ImGui::TextUnformatted("Cell 2");
+                        // No output on further columns to not interfere with performances more than necessary
+                    }
                 }
                 ImGui::EndTable();
             }
@@ -587,6 +574,49 @@ void RegisterTests_Perf(ImGuiTestEngine* e)
         }
         ImGui::End();
     };
+
+    // ## Measure the cost of TableNextCell(), TableNextRow(): one table, few columns, many rows
+    t = IM_REGISTER_TEST(e, "perf", "perf_tables_basic_tables_lo_cols_lo_rows_hi");
+    t->SetVarsDataType<TablePerfFuncVars>([](ImGuiTestContext* ctx, auto& vars)
+        {
+            vars.TablesCount = 1;
+            vars.ColumnsCount = 3;
+            vars.RowsCount = 100 * ctx->PerfStressAmount;
+        });
+    t->GuiFunc = TablePerfFunc;
+    t->TestFunc = PerfCaptureFunc;
+
+    // ## Measure the cost of BeginTable(): many tables, few columns, few rows
+    t = IM_REGISTER_TEST(e, "perf", "perf_tables_basic_tables_hi_cols_lo_rows_lo");
+    t->SetVarsDataType<TablePerfFuncVars>([](ImGuiTestContext* ctx, auto& vars)
+        {
+            vars.TablesCount = 30 * ctx->PerfStressAmount;
+            vars.ColumnsCount = 3;
+            vars.RowsCount = 3;
+        });
+    t->GuiFunc = TablePerfFunc;
+    t->TestFunc = PerfCaptureFunc;
+
+    // ## Measure the cost of BeginTable(): many tables, many columns, few rows
+    t = IM_REGISTER_TEST(e, "perf", "perf_tables_basic_tables_hi_cols_hi_rows_lo");
+    t->SetVarsDataType<TablePerfFuncVars>([](ImGuiTestContext* ctx, auto& vars)
+        {
+            vars.TablesCount = 30 * ctx->PerfStressAmount;
+            vars.ColumnsCount = 32;
+            vars.RowsCount = 3;
+        });
+    t->GuiFunc = TablePerfFunc;
+    t->TestFunc = PerfCaptureFunc;
+
+    // ## Measure the cost of BeginTable(): one table, many columns, many rows
+    t = IM_REGISTER_TEST(e, "perf", "perf_tables_basic_tables_lo_cols_hi_rows_hi");
+    t->SetVarsDataType<TablePerfFuncVars>([](ImGuiTestContext* ctx, auto& vars)
+        {
+            vars.TablesCount = 1;
+            vars.ColumnsCount = 32;
+            vars.RowsCount = 30 * ctx->PerfStressAmount;
+        });
+    t->GuiFunc = TablePerfFunc;
     t->TestFunc = PerfCaptureFunc;
 
     // ## Measure the cost of simple ColorEdit4() calls (multi-component, group based widgets are quite heavy)

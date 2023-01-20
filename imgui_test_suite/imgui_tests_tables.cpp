@@ -1323,15 +1323,16 @@ void RegisterTests_Table(ImGuiTestEngine* e)
     {
         ImGui::SetNextWindowSize(ImVec2(300, 400));
         ImGui::Begin("Test window 1", NULL, ImGuiWindowFlags_NoSavedSettings);
-        ImGui::BeginTable("table1", IMGUI_TABLE_MAX_COLUMNS, ImGuiTableFlags_ScrollY);
+        const int columns_count = IMGUI_TABLE_MAX_COLUMNS - 1;
+        ImGui::BeginTable("table1", columns_count, ImGuiTableFlags_ScrollX | ImGuiTableFlags_ScrollY);
         ImGui::TableSetupScrollFreeze(0, 10);
-        for (int n = 0; n < IMGUI_TABLE_MAX_COLUMNS; n++)
-            ImGui::TableSetupColumn("Header");
+        for (int n = 0; n < columns_count; n++)
+            ImGui::TableSetupColumn(Str16f("C%03d", n).c_str());
         ImGui::TableHeadersRow();
-        for (int i = 0; i < 128; i++)
+        for (int i = 0; i < 20; i++)
         {
             ImGui::TableNextRow();
-            for (int n = 0; n < IMGUI_TABLE_MAX_COLUMNS; n++)
+            for (int n = 0; n < columns_count; n++)
             {
                 ImGui::TableNextColumn();
                 ImGui::Text("Data");
@@ -1342,6 +1343,9 @@ void RegisterTests_Table(ImGuiTestEngine* e)
             ImGui::SetScrollHereY(1.0f);
         if (ctx->FrameCount == 2)
         {
+#if IMGUI_VERSION_NUM >= 18923
+            const int IMGUI_TABLE_MAX_DRAW_CHANNELS = 4 + columns_count * 2;
+#endif
             IM_CHECK_EQ(ImGui::GetCurrentTable()->DrawSplitter->_Channels.Size, IMGUI_TABLE_MAX_DRAW_CHANNELS);
             ctx->Finish();
         }
