@@ -564,6 +564,188 @@ void RegisterTests_WidgetsInputText(ImGuiTestEngine* e)
         IM_CHECK_EQ(stb.cursor, 0);
     };
 
+    // ## Test CTRL+arrow and other word boundaries functions
+    t = IM_REGISTER_TEST(e, "widgets", "widgets_inputtext_cursor_prevnext_words");
+    t->SetVarsDataType<InputTextCursorVars>([](auto* ctx, auto& vars) { vars.str = "Hello world. Foo.bar!!!"; });
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        InputTextCursorVars& vars = ctx->GetVars<InputTextCursorVars>();
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
+        ImGui::InputTextMultiline("Field", &vars.str);
+        ImGuiInputTextState* state = ImGui::GetInputTextState(ctx->GetID("//Test Window/Field"));
+        ImGui::Text("CursorPos: %d", state ? state->GetCursorPos() : -1);
+        ImGui::Checkbox("ConfigMacOSXBehaviors", &ctx->UiContext->IO.ConfigMacOSXBehaviors);
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiContext& g = *ctx->UiContext;
+        InputTextCursorVars& vars = ctx->GetVars<InputTextCursorVars>();
+        ctx->SetRef("Test Window");
+        ctx->ItemClick("Field");
+        ImGuiInputTextState* state = ImGui::GetInputTextState(ctx->GetID("//Test Window/Field"));
+        IM_CHECK(state != NULL);
+        auto KeyPressAndDebugPrint = [&](ImGuiKeyChord key_chord)
+        {
+            ctx->KeyPress(key_chord);
+            int cursor = state->GetCursorPos();
+            ctx->LogDebug("\"%.*s|%s\"", cursor, vars.str.c_str(), vars.str.c_str() + cursor); // Only valid when using ASCII only.
+        };
+
+        /*
+        // Action   VS(Win)                     Firefox(Win)        XCode(OSX)                  Firefox(OSX)
+        //------------------------------------------------------------------------------------------------------
+        //         |Hello                      |Hello              |Hello                       ==
+        // Ctrl->   Hello |world                ==                  Hello|                      ==
+        // Ctrl->   Hello world|.               (skip)              Hello world|.               ==
+        // Ctrl->   Hello world. |Foo           ==                  (skip)                      (skip)
+        // Ctrl->   Hello world. Foo|.bar       (skip)              Hello world. Foo|.bar       (skip)
+        // Ctrl->   Hello world. Foo.|bar       ==                  (skip)                      (skip)
+        // Ctrl->   Hello world. Foo.bar|       (skip)              Hello world. Foo.bar|       ==
+        // Ctrl->   Hello world. Foo.bar!!!|    ==                  (next line word)            (eol)
+        //
+        //          Hello world. Foo.bar!!!|    ==                  Hello world. Foo.bar!!!|    ==
+        // Ctrl<-   Hello world. Foo.bar|!!!    (skip)              (skip)                      (skip)
+        // Ctrl<-   Hello world. Foo.|bar!!!    ==                  Hello world. Foo.|bar!!!    (skip)
+        // Ctrl<-   Hello world. Foo|.bar!!!    (skip)              (skip)                      (skip)
+        // Ctrl<-   Hello world. |Foo.bar!!!    ==                  Hello world. |Foo.bar!!!    ==
+        // Ctrl<-   Hello world|. Foo.bar!!!    (skip)              (skip)                      (skip)
+        // Ctrl<-   Hello |world. Foo.bar!!!    ==                  Hello |world. Foo.bar!!!    ==
+        // Ctrl<-   |Hello world. Foo.bar!!!    ==                  Hello world. Foo.bar!!!     ==
+        //
+        // (*) Firefox: tested GitHub, Google, WhatsApp text fields with same results.
+        */
+
+        //Hello world. Foo.bar!!!
+
+        for (int os_mode = 0; os_mode < 2; os_mode++)
+        {
+            g.IO.ConfigMacOSXBehaviors = (os_mode == 0) ? false : true;
+#if !IMGUI_BROKEN_TESTS
+            if (g.IO.ConfigMacOSXBehaviors) // Skip testing OSX behavior for now
+                continue;
+#endif
+            ctx->Yield(); // for behavior change to update
+            const bool is_osx = g.IO.ConfigMacOSXBehaviors;
+            const ImGuiKeyChord chord_word_prev = (is_osx ? ImGuiMod_Alt : ImGuiMod_Ctrl) | ImGuiKey_LeftArrow;
+            const ImGuiKeyChord chord_word_next = (is_osx ? ImGuiMod_Alt : ImGuiMod_Ctrl) | ImGuiKey_RightArrow;
+            ctx->LogDebug("## Testing with io.ConfigMacOSXBehaviors = %d", is_osx);
+
+            // [SET 1]
+            ctx->KeyCharsReplace("Hello world. Foo.bar!!!");
+            KeyPressAndDebugPrint(ImGuiKey_Home);
+            IM_CHECK_EQ(state->GetCursorPos(), 0); // "|Hello "
+            if (!is_osx)
+            {
+                // Windows
+                KeyPressAndDebugPrint(chord_word_next);
+                IM_CHECK_EQ(state->GetCursorPos(), 6); //  "Hello |"
+                KeyPressAndDebugPrint(chord_word_prev);
+                IM_CHECK_EQ(state->GetCursorPos(), 0); // "|Hello "
+                for (int n = 0; n < 5; n++)
+                    KeyPressAndDebugPrint(ImGuiKey_RightArrow);
+                IM_CHECK_EQ(state->GetCursorPos(), 5); // "Hello| "
+                KeyPressAndDebugPrint(chord_word_next);
+                IM_CHECK_EQ(state->GetCursorPos(), 6); //  "Hello |"
+
+                KeyPressAndDebugPrint(chord_word_next);
+#if IMGUI_BROKEN_TESTS // may be fixed by #6067
+                IM_CHECK_EQ(state->GetCursorPos(), 6 + 5);      //  "Hello world|." // VS(Win) does this, GitHub-Web(Win) doesn't.
+                KeyPressAndDebugPrint(chord_word_next);
+#endif
+                IM_CHECK_EQ(state->GetCursorPos(), 6 + 5 + 2);  //  "Hello world. |"
+
+                KeyPressAndDebugPrint(chord_word_next);
+#if IMGUI_BROKEN_TESTS // may be fixed by #6067
+                IM_CHECK_EQ(state->GetCursorPos(), 6 + 5 + 2 + 3);              //  "Hello world. Foo|."    // VS-Win: STOP, GitHubWeb-Win: SKIP
+                KeyPressAndDebugPrint(chord_word_next);
+                IM_CHECK_EQ(state->GetCursorPos(), 6 + 5 + 2 + 3 + 1);          //  "Hello world. Foo.|"
+
+                KeyPressAndDebugPrint(chord_word_next);
+                IM_CHECK_EQ(state->GetCursorPos(), 6 + 5 + 2 + 3 + 1 + 3);      //  "Hello world. Foo.bar|" // VS-Win: STOP, GitHubWeb-Win: SKIP
+
+                KeyPressAndDebugPrint(chord_word_next);
+#endif
+                IM_CHECK_EQ(state->GetCursorPos(), 6 + 5 + 2 + 3 + 1 + 3 + 3);  //  "Hello world. Foo.bar!!!|"
+
+                ctx->KeyPress(ImGuiKey_End);
+                KeyPressAndDebugPrint(chord_word_prev);
+#if IMGUI_BROKEN_TESTS // may be fixed by #6067
+                IM_CHECK_EQ(state->GetCursorPos(), 6 + 5 + 2 + 3 + 1 + 3);  //  "Hello world. Foo.bar|!!!" // VS-Win: STOP, GitHubWeb-Win: SKIP
+
+                KeyPressAndDebugPrint(chord_word_prev);
+                IM_CHECK_EQ(state->GetCursorPos(), 6 + 5 + 2 + 3 + 1);      //  "Hello world. Foo.|bar!!!"
+
+                KeyPressAndDebugPrint(chord_word_prev);
+                IM_CHECK_EQ(state->GetCursorPos(), 6 + 5 + 2 + 3);          //  "Hello world. Foo|.bar!!!" // VS-Win: STOP, GitHubWeb-Win: SKIP
+
+                KeyPressAndDebugPrint(chord_word_prev;
+#endif
+                IM_CHECK_EQ(state->GetCursorPos(), 6 + 5 + 2);              //  "Hello world. |Foo.bar!!!"
+
+                KeyPressAndDebugPrint(chord_word_prev);
+#if IMGUI_BROKEN_TESTS // may be fixed by #6067
+                IM_CHECK_EQ(state->GetCursorPos(), 6 + 5);                  //  "Hello world|. Foo.bar!!!" // VS-Win: STOP, GitHubWeb-Win: SKIP
+                KeyPressAndDebugPrint(chord_word_prev);
+#endif
+                IM_CHECK_EQ(state->GetCursorPos(), 6);                      //  "Hello |world. Foo.bar!!!"
+
+                KeyPressAndDebugPrint(chord_word_prev);
+                IM_CHECK_EQ(state->GetCursorPos(), 0);                      // "|Hello world. Foo.bar!!!"
+            }
+            else
+            {
+                // OSX
+                KeyPressAndDebugPrint(chord_word_next);
+                IM_CHECK_EQ(state->GetCursorPos(), 5); //  "Hello|"
+                KeyPressAndDebugPrint(chord_word_prev);
+                IM_CHECK_EQ(state->GetCursorPos(), 0); // "|Hello "
+                for (int n = 0; n < 5; n++)
+                    KeyPressAndDebugPrint(ImGuiKey_RightArrow);
+                IM_CHECK_EQ(state->GetCursorPos(), 5); // "Hello| "
+
+                KeyPressAndDebugPrint(chord_word_next);
+                IM_CHECK_EQ(state->GetCursorPos(), 5 + 1 + 5 + 1); // "Hello world.| " // FIXME: Not matching desirable OSX behavior.
+
+                // FIXME-TODO
+            }
+
+            // [SET 2]
+            // Delete all, Extra Test with Multiple Spaces
+            ctx->KeyCharsReplace("Hello     world.....HELLO");
+            KeyPressAndDebugPrint(ImGuiKey_Home);
+            IM_CHECK_EQ(state->GetCursorPos(), 0); // "|Hello     World"
+            if (!is_osx)
+            {
+                // Windows
+                KeyPressAndDebugPrint(chord_word_next);
+                IM_CHECK_EQ(state->GetCursorPos(), 10); // "Hello     |world"
+                KeyPressAndDebugPrint(chord_word_next);
+#if IMGUI_BROKEN_TESTS // may be fixed by #6067
+                IM_CHECK_EQ(state->GetCursorPos(), 15); // "Hello     world|"   // VS-Win: STOP, GitHubWeb-Win: SKIP
+                KeyPressAndDebugPrint(chord_word_next);
+                IM_CHECK_EQ(state->GetCursorPos(), 20); // "Hello     world.....|"
+                KeyPressAndDebugPrint(chord_word_next);
+#endif
+                IM_CHECK_EQ(state->GetCursorPos(), 25); // "Hello     world.....HELLO|"
+                KeyPressAndDebugPrint(chord_word_prev);
+#if IMGUI_BROKEN_TESTS // may be fixed by #6067
+                IM_CHECK_EQ(state->GetCursorPos(), 20); // "Hello     world.....|"
+                KeyPressAndDebugPrint(chord_word_prev);
+                IM_CHECK_EQ(state->GetCursorPos(), 15); // "Hello     world|"   // VS-Win: STOP, GitHubWeb-Win: SKIP
+                KeyPressAndDebugPrint(chord_word_prev);
+#endif
+                IM_CHECK_EQ(state->GetCursorPos(), 10); // "Hello     |world"
+                KeyPressAndDebugPrint(chord_word_prev);
+                IM_CHECK_EQ(state->GetCursorPos(), 0); // "|Hello     World"
+            }
+            else
+            {
+                // FIXME-TODO
+            }
+        }
+    };
+
     // ## Verify that text selection does not leak spaces in password fields. (#4155)
     t = IM_REGISTER_TEST(e, "widgets", "widgets_inputtext_password");
     t->SetVarsDataType<InputTextCursorVars>();
@@ -572,13 +754,12 @@ void RegisterTests_WidgetsInputText(ImGuiTestEngine* e)
         InputTextCursorVars& vars = ctx->GetVars<InputTextCursorVars>();
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
         ImGui::InputText("Password", &vars.Password, ImGuiInputTextFlags_Password);
-        if (ImGuiInputTextState* state = ImGui::GetInputTextState(ctx->GetID("//Test Window/Field")))
+        if (ImGuiInputTextState* state = ImGui::GetInputTextState(ctx->GetID("//Test Window/Password")))
             ImGui::Text("Stb Cursor: %d", state->Stb.cursor);
         ImGui::End();
     };
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
-        // Verify that cursor placement does not leak spaces in password field. (#4155)
         ctx->SetRef("Test Window");
         ctx->ItemClick("Password");
         ctx->KeyCharsAppendEnter("Totally not Password123");
@@ -609,7 +790,7 @@ void RegisterTests_WidgetsInputText(ImGuiTestEngine* e)
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
         ImGui::InputTextMultiline("Field", &vars.str, ImVec2(300, height), ImGuiInputTextFlags_EnterReturnsTrue);
         if (ImGuiInputTextState* state = ImGui::GetInputTextState(ctx->GetID("//Test Window/Field")))
-            ImGui::Text("Stb Cursor: %d", state->Stb.cursor);
+            ImGui::Text("CursorPos: %d", state->GetCursorPos());
         ImGui::End();
     };
     t->TestFunc = [](ImGuiTestContext* ctx)
