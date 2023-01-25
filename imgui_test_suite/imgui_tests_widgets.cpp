@@ -1231,24 +1231,24 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ctx->Yield();
         ctx->Yield(); // Important: so tab layout are correct for TabClose()
         IM_CHECK(tab_bar->Tabs.Size == 3);
-        IM_CHECK_STR_EQ(tab_bar->GetTabName(&tab_bar->Tabs[0]), "Tab 0");
-        IM_CHECK_STR_EQ(tab_bar->GetTabName(&tab_bar->Tabs[1]), "Tab 1");
-        IM_CHECK_STR_EQ(tab_bar->GetTabName(&tab_bar->Tabs[2]), "Tab 2");
+        IM_CHECK_STR_EQ(ImGui::TabBarGetTabName(tab_bar, &tab_bar->Tabs[0]), "Tab 0");
+        IM_CHECK_STR_EQ(ImGui::TabBarGetTabName(tab_bar, &tab_bar->Tabs[1]), "Tab 1");
+        IM_CHECK_STR_EQ(ImGui::TabBarGetTabName(tab_bar, &tab_bar->Tabs[2]), "Tab 2");
 
         ctx->TabClose("TabBar/Tab 1");
         ctx->Yield();
         ctx->Yield();
         IM_CHECK(vars.BoolArray[1] == false);
         IM_CHECK(tab_bar->Tabs.Size == 2);
-        IM_CHECK_STR_EQ(tab_bar->GetTabName(&tab_bar->Tabs[0]), "Tab 0");
-        IM_CHECK_STR_EQ(tab_bar->GetTabName(&tab_bar->Tabs[1]), "Tab 2");
+        IM_CHECK_STR_EQ(ImGui::TabBarGetTabName(tab_bar, &tab_bar->Tabs[0]), "Tab 0");
+        IM_CHECK_STR_EQ(ImGui::TabBarGetTabName(tab_bar, &tab_bar->Tabs[1]), "Tab 2");
 
         vars.BoolArray[1] = true;
         ctx->Yield();
         IM_CHECK(tab_bar->Tabs.Size == 3);
-        IM_CHECK_STR_EQ(tab_bar->GetTabName(&tab_bar->Tabs[0]), "Tab 0");
-        IM_CHECK_STR_EQ(tab_bar->GetTabName(&tab_bar->Tabs[1]), "Tab 2");
-        IM_CHECK_STR_EQ(tab_bar->GetTabName(&tab_bar->Tabs[2]), "Tab 1");
+        IM_CHECK_STR_EQ(ImGui::TabBarGetTabName(tab_bar, &tab_bar->Tabs[0]), "Tab 0");
+        IM_CHECK_STR_EQ(ImGui::TabBarGetTabName(tab_bar, &tab_bar->Tabs[1]), "Tab 2");
+        IM_CHECK_STR_EQ(ImGui::TabBarGetTabName(tab_bar, &tab_bar->Tabs[2]), "Tab 1");
     };
 
     // ## (Attempt to) Test that tab bar declares its unclipped size.

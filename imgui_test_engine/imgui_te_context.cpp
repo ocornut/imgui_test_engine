@@ -2886,7 +2886,7 @@ bool    ImGuiTestContext::TabBarCompareOrder(ImGuiTabBar* tab_bar, const char** 
 
     char* p = buf;
     for (int i = 0; i < tab_bar->Tabs.Size; i++)
-        p += ImFormatString(p, buf_end - p, "%s\"%s\"", i ? ", " : " ", tab_bar->GetTabName(&tab_bar->Tabs[i]));
+        p += ImFormatString(p, buf_end - p, "%s\"%s\"", i ? ", " : " ", ImGui::TabBarGetTabName(tab_bar, &tab_bar->Tabs[i]));
     LogDebug("  Current  {%s }", buf);
 
     p = buf;
@@ -2899,7 +2899,7 @@ bool    ImGuiTestContext::TabBarCompareOrder(ImGuiTabBar* tab_bar, const char** 
     {
         if (i >= tab_bar->Tabs.Size)
             return false;
-        const char* current = tab_bar->GetTabName(&tab_bar->Tabs[i]);
+        const char* current = ImGui::TabBarGetTabName(tab_bar, &tab_bar->Tabs[i]);
         const char* expected = tab_order[i];
         if (strcmp(current, expected) != 0)
             return false;
