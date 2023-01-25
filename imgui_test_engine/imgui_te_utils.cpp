@@ -1146,6 +1146,15 @@ ImFont* ImGui::FindFontByPrefix(const char* prefix)
     return NULL;
 }
 
+// Legacy version support
+#if IMGUI_VERSION_NUM < 18924
+const char* ImGui::TabBarGetTabName(ImGuiTabBar* tab_bar, ImGuiTabItem* tab)
+{
+    return tab_bar->GetTabName(tab);
+}
+#endif
+
+
 ImGuiID TableGetHeaderID(ImGuiTable* table, const char* column, int instance_no)
 {
     IM_ASSERT(table != NULL);

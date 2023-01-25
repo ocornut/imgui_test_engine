@@ -185,6 +185,11 @@ struct ImGuiCsvParser
 // Misc Dear ImGui extensions
 //-----------------------------------------------------------------------------
 
+#if IMGUI_VERSION_NUM < 18924
+struct ImGuiTabBar;
+struct ImGuiTabItem;
+#endif
+
 namespace ImGui
 {
 
@@ -200,5 +205,10 @@ IMGUI_API bool      Splitter(const char* id, float* value_1, float* value_2, int
 
 // Misc
 IMGUI_API ImFont*   FindFontByPrefix(const char* name);
+
+// Legacy version support
+#if IMGUI_VERSION_NUM < 18924
+IMGUI_API const char* TabBarGetTabName(ImGuiTabBar* tab_bar, ImGuiTabItem* tab);
+#endif
 
 }
