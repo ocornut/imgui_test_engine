@@ -2749,12 +2749,15 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
     t = IM_REGISTER_TEST(e, "widgets", "widgets_text_unformatted_shortcut");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
+        ImGuiContext& g = *ImGui::GetCurrentContext();
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
-        ImGui::Text("%s", "HELLO"); // FIXME: Maybe change this to add the shortcut?
+        ImGui::Text("%sLO", "HEL");
+#if IMGUI_VERSION_NUM >= 18924
+        ImGui::Text("%s", "...");
+#endif
         ImGui::TextDisabled("%s", "...");
         ImGui::TextColored(ImColor(IM_COL32_WHITE), "%s", "...");
         ImGui::TextWrapped("%s", "...");
-        ImGuiContext& g = *ImGui::GetCurrentContext();
 #if IMGUI_VERSION_NUM >= 18727
         IM_CHECK_STR_EQ(g.TempBuffer.Data, "HELLO");
 #else
