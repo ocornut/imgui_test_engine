@@ -621,8 +621,8 @@ void RegisterTests_WidgetsInputText(ImGuiTestEngine* e)
         for (int os_mode = 0; os_mode < 2; os_mode++)
         {
             g.IO.ConfigMacOSXBehaviors = (os_mode == 0) ? false : true;
-#if !IMGUI_BROKEN_TESTS
-            if (g.IO.ConfigMacOSXBehaviors) // Skip testing OSX behavior for now
+#if IMGUI_VERSION_NUM < 18930 // Fixed in 6067
+            if (g.IO.ConfigMacOSXBehaviors)
                 continue;
 #endif
             ctx->Yield(); // for behavior change to update
@@ -649,14 +649,14 @@ void RegisterTests_WidgetsInputText(ImGuiTestEngine* e)
                 IM_CHECK_EQ(state->GetCursorPos(), 6); //  "Hello |"
 
                 KeyPressAndDebugPrint(chord_word_next);
-#if IMGUI_BROKEN_TESTS // may be fixed by #6067
+#if IMGUI_VERSION_NUM >= 18930
                 IM_CHECK_EQ(state->GetCursorPos(), 6 + 5);      //  "Hello world|." // VS(Win) does this, GitHub-Web(Win) doesn't.
                 KeyPressAndDebugPrint(chord_word_next);
 #endif
                 IM_CHECK_EQ(state->GetCursorPos(), 6 + 5 + 2);  //  "Hello world. |"
 
                 KeyPressAndDebugPrint(chord_word_next);
-#if IMGUI_BROKEN_TESTS // may be fixed by #6067
+#if IMGUI_VERSION_NUM >= 18930
                 IM_CHECK_EQ(state->GetCursorPos(), 6 + 5 + 2 + 3);              //  "Hello world. Foo|."    // VS-Win: STOP, GitHubWeb-Win: SKIP
                 KeyPressAndDebugPrint(chord_word_next);
                 IM_CHECK_EQ(state->GetCursorPos(), 6 + 5 + 2 + 3 + 1);          //  "Hello world. Foo.|"
@@ -670,7 +670,7 @@ void RegisterTests_WidgetsInputText(ImGuiTestEngine* e)
 
                 ctx->KeyPress(ImGuiKey_End);
                 KeyPressAndDebugPrint(chord_word_prev);
-#if IMGUI_BROKEN_TESTS // may be fixed by #6067
+#if IMGUI_VERSION_NUM >= 18930
                 IM_CHECK_EQ(state->GetCursorPos(), 6 + 5 + 2 + 3 + 1 + 3);  //  "Hello world. Foo.bar|!!!" // VS-Win: STOP, GitHubWeb-Win: SKIP
 
                 KeyPressAndDebugPrint(chord_word_prev);
@@ -679,12 +679,12 @@ void RegisterTests_WidgetsInputText(ImGuiTestEngine* e)
                 KeyPressAndDebugPrint(chord_word_prev);
                 IM_CHECK_EQ(state->GetCursorPos(), 6 + 5 + 2 + 3);          //  "Hello world. Foo|.bar!!!" // VS-Win: STOP, GitHubWeb-Win: SKIP
 
-                KeyPressAndDebugPrint(chord_word_prev;
+                KeyPressAndDebugPrint(chord_word_prev);
 #endif
                 IM_CHECK_EQ(state->GetCursorPos(), 6 + 5 + 2);              //  "Hello world. |Foo.bar!!!"
 
                 KeyPressAndDebugPrint(chord_word_prev);
-#if IMGUI_BROKEN_TESTS // may be fixed by #6067
+#if IMGUI_VERSION_NUM >= 18930
                 IM_CHECK_EQ(state->GetCursorPos(), 6 + 5);                  //  "Hello world|. Foo.bar!!!" // VS-Win: STOP, GitHubWeb-Win: SKIP
                 KeyPressAndDebugPrint(chord_word_prev);
 #endif
@@ -692,20 +692,27 @@ void RegisterTests_WidgetsInputText(ImGuiTestEngine* e)
 
                 KeyPressAndDebugPrint(chord_word_prev);
                 IM_CHECK_EQ(state->GetCursorPos(), 0);                      // "|Hello world. Foo.bar!!!"
+
+                KeyPressAndDebugPrint(chord_word_prev);
+                IM_CHECK_EQ(state->GetCursorPos(), 0);                      // "|Hello world. Foo.bar!!!" // (no-op)
             }
             else
             {
                 // OSX
                 KeyPressAndDebugPrint(chord_word_next);
                 IM_CHECK_EQ(state->GetCursorPos(), 5); //  "Hello|"
+                ImGui::SetActiveID(state->ID, ImGui::GetCurrentWindow());
                 KeyPressAndDebugPrint(chord_word_prev);
                 IM_CHECK_EQ(state->GetCursorPos(), 0); // "|Hello "
+                ImGui::SetActiveID(state->ID, ImGui::GetCurrentWindow());
                 for (int n = 0; n < 5; n++)
                     KeyPressAndDebugPrint(ImGuiKey_RightArrow);
                 IM_CHECK_EQ(state->GetCursorPos(), 5); // "Hello| "
+                ImGui::SetActiveID(state->ID, ImGui::GetCurrentWindow());
 
                 KeyPressAndDebugPrint(chord_word_next);
                 IM_CHECK_EQ(state->GetCursorPos(), 5 + 1 + 5 + 1); // "Hello world.| " // FIXME: Not matching desirable OSX behavior.
+                ImGui::SetActiveID(state->ID, ImGui::GetCurrentWindow());
 
                 // FIXME-TODO
             }
@@ -721,7 +728,7 @@ void RegisterTests_WidgetsInputText(ImGuiTestEngine* e)
                 KeyPressAndDebugPrint(chord_word_next);
                 IM_CHECK_EQ(state->GetCursorPos(), 10); // "Hello     |world"
                 KeyPressAndDebugPrint(chord_word_next);
-#if IMGUI_BROKEN_TESTS // may be fixed by #6067
+#if IMGUI_VERSION_NUM >= 18930
                 IM_CHECK_EQ(state->GetCursorPos(), 15); // "Hello     world|"   // VS-Win: STOP, GitHubWeb-Win: SKIP
                 KeyPressAndDebugPrint(chord_word_next);
                 IM_CHECK_EQ(state->GetCursorPos(), 20); // "Hello     world.....|"
@@ -729,7 +736,7 @@ void RegisterTests_WidgetsInputText(ImGuiTestEngine* e)
 #endif
                 IM_CHECK_EQ(state->GetCursorPos(), 25); // "Hello     world.....HELLO|"
                 KeyPressAndDebugPrint(chord_word_prev);
-#if IMGUI_BROKEN_TESTS // may be fixed by #6067
+#if IMGUI_VERSION_NUM >= 18930
                 IM_CHECK_EQ(state->GetCursorPos(), 20); // "Hello     world.....|"
                 KeyPressAndDebugPrint(chord_word_prev);
                 IM_CHECK_EQ(state->GetCursorPos(), 15); // "Hello     world|"   // VS-Win: STOP, GitHubWeb-Win: SKIP
