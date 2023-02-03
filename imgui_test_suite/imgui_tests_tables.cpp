@@ -1501,7 +1501,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
                 vars.ClickCounters[0] = vars.ClickCounters[1] = 0;
                 ctx->ItemClick("//Test window - 0/table/Button");
                 IM_CHECK(vars.ClickCounters[0] == 1 && vars.ClickCounters[1] == 0);
-                ctx->ItemClick("//Test window - 0/table/##Instance1/Button");
+                ctx->ItemClick("//Test window - 0/table/##Instances/$$1/Button");
                 IM_CHECK(vars.ClickCounters[0] == 1 && vars.ClickCounters[1] == 1);
             }
 #endif
