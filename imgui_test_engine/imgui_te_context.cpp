@@ -2813,7 +2813,8 @@ void    ImGuiTestContext::ItemDragAndDrop(ImGuiTestRef ref_src, ImGuiTestRef ref
     // Try to keep destination window above other windows. MouseMove() operation will avoid focusing destination window
     // as that may steal ActiveID and break operation.
     // FIXME-TESTS: This does not handle a case where source and destination windows overlap.
-    WindowBringToFront(item_dst->Window->ID);
+    if (item_dst->Window != NULL)
+        WindowBringToFront(item_dst->Window->ID);
 
     MouseMove(ref_src, ImGuiTestOpFlags_NoCheckHoveredId);
     SleepStandard();

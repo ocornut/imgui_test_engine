@@ -5,6 +5,9 @@ CHANGELOG
    Those changes are not all listed here.
 ** For a while this is going to ONLY INCLUDE BREAKING CHANGES.
 
+2023/02/03
+- TestEngine: Update/fixes for Tables-related changes in main lib.
+
 2023/01/20:
 - TestEngine: Added a `ImGuiTestContext* ctx` parameter to the optional "pre-run" constructor
   declared in ImGuiTest::SetVarsDataType<>:

@@ -195,6 +195,10 @@ namespace ImGui
 
 IMGUI_API void      ItemErrorFrame(ImU32 col);
 
+#if IMGUI_VERSION_NUM < 18927
+ImGuiID             TableGetInstanceID(ImGuiTable* table, int instance_no = 0);
+#endif
+
 // Str support for InputText()
 IMGUI_API bool      InputText(const char* label, Str* str, ImGuiInputTextFlags flags = 0, ImGuiInputTextCallback callback = NULL, void* user_data = NULL);
 IMGUI_API bool      InputTextWithHint(const char* label, const char* hint, Str* str, ImGuiInputTextFlags flags = 0, ImGuiInputTextCallback callback = NULL, void* user_data = NULL);

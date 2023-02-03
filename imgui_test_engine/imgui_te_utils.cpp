@@ -1154,6 +1154,13 @@ const char* ImGui::TabBarGetTabName(ImGuiTabBar* tab_bar, ImGuiTabItem* tab)
 }
 #endif
 
+#if IMGUI_VERSION_NUM < 18927
+ImGuiID ImGui::TableGetInstanceID(ImGuiTable* table, int instance_no)
+{
+    // Changed in #6140
+    return table->ID + instance_no;
+}
+#endif
 
 ImGuiID TableGetHeaderID(ImGuiTable* table, const char* column, int instance_no)
 {
@@ -1163,16 +1170,21 @@ ImGuiID TableGetHeaderID(ImGuiTable* table, const char* column, int instance_no)
         if (strcmp(ImGui::TableGetColumnName(table, n), column) == 0)
             column_n = n;
     IM_ASSERT(column_n != -1);
-    int column_id = instance_no * table->ColumnsCount + column_n;
-    return ImHashData(column, strlen(column), ImHashData(&column_id, sizeof(column_id), table->ID + instance_no));
+    return TableGetHeaderID(table, column_n, instance_no);
 }
 
 ImGuiID TableGetHeaderID(ImGuiTable* table, int column_n, int instance_no)
 {
     IM_ASSERT(column_n >= 0 && column_n < table->ColumnsCount);
-    int column_id = instance_no * table->ColumnsCount + column_n;
+    const ImGuiID table_instance_id = ImGui::TableGetInstanceID(table, instance_no);
     const char* column_name = ImGui::TableGetColumnName(table, column_n);
-    return ImHashData(column_name, strlen(column_name), ImHashData(&column_id, sizeof(column_id), table->ID + instance_no));
+#if IMGUI_VERSION_NUM >= 18927
+    const int column_id_differencier = column_n;
+#else
+    const int column_id_differencier = instance_no * table->ColumnsCount + column_n;
+#endif
+    const int column_id = ImHashData(&column_id_differencier, sizeof(column_id_differencier), table_instance_id);
+    return ImHashData(column_name, strlen(column_name), column_id);
 }
 
 // FIXME: Could be moved to core as an internal function?

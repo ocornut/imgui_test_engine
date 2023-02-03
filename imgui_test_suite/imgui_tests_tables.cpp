@@ -1355,7 +1355,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
 
     // ## Test rendering two tables with same ID (#5557)
     t = IM_REGISTER_TEST(e, "table", "table_multi_instances");
-    struct MultiInstancesVars { bool MultiWindow = false, SideBySide = false, DifferSizes = false, Retest = false; };
+    struct MultiInstancesVars { bool MultiWindow = false, SideBySide = false, DifferSizes = false, Retest = false; int ClickCounters[3] = {}; };
     t->SetVarsDataType<MultiInstancesVars>();
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
@@ -1365,12 +1365,12 @@ void RegisterTests_Table(ImGuiTestEngine* e)
         float first_instance_width = 0.0f;
         ImGuiWindow* first_window = NULL;
 
-        for (int window_n = 0; window_n < 2; window_n++)
+        for (int instance_n = 0; instance_n < 2; instance_n++)
         {
-            float width = 300.0f + (vars.DifferSizes ? window_n : 0) * 50.0f;
+            float width = 300.0f + (vars.DifferSizes ? instance_n : 0) * 50.0f;
             ImGui::SetNextWindowSize(ImVec2(width, vars.MultiWindow ? 210.0f : 320.0f), ImGuiCond_Always);
 
-            if (vars.MultiWindow && window_n == 1)
+            if (vars.MultiWindow && instance_n == 1)
             {
                 if (vars.SideBySide)
                     ImGui::SetNextWindowPos(first_window->Rect().GetTR() + ImVec2(10.0f, 0.0f), ImGuiCond_Always);
@@ -1378,33 +1378,38 @@ void RegisterTests_Table(ImGuiTestEngine* e)
                     ImGui::SetNextWindowPos(first_window->Rect().GetBL() + ImVec2(0.0f, 10.0f), ImGuiCond_Always);
             }
 
-            if (vars.MultiWindow || window_n == 0)
+            if (vars.MultiWindow || instance_n == 0)
             {
-                ImGui::Begin(Str16f("Test window - %d", window_n).c_str(), NULL, ImGuiWindowFlags_NoSavedSettings);
+                ImGui::Begin(Str16f("Test window - %d", instance_n).c_str(), NULL, ImGuiWindowFlags_NoSavedSettings);
                 ImGui::Checkbox("Multi-window table", &vars.MultiWindow);
                 ImGui::Checkbox("Windows side by side", &vars.SideBySide);
                 ImGui::Checkbox("Windows of different sizes", &vars.DifferSizes);
             }
 
-            if (window_n == 0)
+            if (instance_n == 0)
                 first_window = ImGui::GetCurrentWindow();
 
             // Use a shared is
             if (vars.MultiWindow)
                 ImGui::PushOverrideID(123);
 
-            ImGui::BeginTable("table1", col_count, ImGuiTableFlags_NoSavedSettings | ImGuiTableFlags_Resizable | ImGuiTableFlags_Borders | ImGuiTableFlags_Reorderable);
+            ImGui::BeginTable("table", col_count, ImGuiTableFlags_NoSavedSettings | ImGuiTableFlags_Resizable | ImGuiTableFlags_Borders | ImGuiTableFlags_Reorderable);
             for (int c = 0; c < col_count; c++)
                 ImGui::TableSetupColumn("Header", c ? ImGuiTableColumnFlags_WidthFixed : ImGuiTableColumnFlags_WidthStretch);
             ImGui::TableHeadersRow();
             for (int r = 0; r < 5; r++)
             {
                 ImGui::TableNextRow();
+
                 for (int c = 0; c < col_count; c++)
                 {
                     // Second table contains larger data, attempting to confuse column sync.
                     ImGui::TableNextColumn();
-                    ImGui::Text(window_n ? "Long Data" : "Data");
+                    ImGui::Text(instance_n ? "Long Data" : "Data");
+
+                    if (r == 0 && c == 0)
+                        if (ImGui::Button("Button"))
+                            vars.ClickCounters[instance_n]++;
                 }
             }
 
@@ -1414,7 +1419,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
                 ImGuiContext& g = *ctx->UiContext;
                 ImGuiTable* table = g.CurrentTable;
 
-                if (window_n == 0)
+                if (instance_n == 0)
                 {
                     // Save column widths of table during first iteration.
                     for (int c = 0; c < col_count; c++)
@@ -1436,7 +1441,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
             if (vars.MultiWindow)
                 ImGui::PopID();
 
-            if (vars.MultiWindow || window_n == 1)
+            if (vars.MultiWindow || instance_n == 1)
                 ImGui::End();
         }
 
@@ -1465,10 +1470,13 @@ void RegisterTests_Table(ImGuiTestEngine* e)
             ctx->LogDebug("Side by side: %d", vars.SideBySide);
             ctx->LogDebug("Differ sizes: %d", vars.DifferSizes);
             ctx->Yield(2);
-            ImGuiTable* table = ImGui::TableFindByID(ctx->GetID("table1", vars.MultiWindow ? 123 : ctx->GetID("//Test window - 0")));
+            ImGuiTable* table = ImGui::TableFindByID(ctx->GetID("table", vars.MultiWindow ? 123 : ctx->GetID("//Test window - 0")));
             IM_CHECK(table != NULL);
             for (int instance_no = 0; instance_no < 2; instance_no++)
             {
+                // Click header
+                ctx->ItemClick(TableGetHeaderID(table, 2, instance_no));
+
                 // Resize a column in the second table. It is not important whether we increase or reduce column size.
                 // Changing direction ensures resize happens around the first third of the table and does not stick to
                 // either side of the table across multiple test runs.
@@ -1480,6 +1488,23 @@ void RegisterTests_Table(ImGuiTestEngine* e)
                 ctx->Yield();                       // Render one more frame to retest column widths
                 IM_CHECK_EQ(table->Columns[0].WidthGiven, column_width + length * direction);
             }
+
+            // Test references
+#if IMGUI_VERSION_NUM >= 18927
+            vars.ClickCounters[0] = vars.ClickCounters[1] = 0;
+            ctx->ItemClick(ctx->GetID("Button", ImGui::TableGetInstanceID(table, 0)));
+            IM_CHECK(vars.ClickCounters[0] == 1 && vars.ClickCounters[1] == 0);
+            ctx->ItemClick(ctx->GetID("Button", ImGui::TableGetInstanceID(table, 1)));
+            IM_CHECK(vars.ClickCounters[0] == 1 && vars.ClickCounters[1] == 1);
+            if (!vars.MultiWindow)
+            {
+                vars.ClickCounters[0] = vars.ClickCounters[1] = 0;
+                ctx->ItemClick("//Test window - 0/table/Button");
+                IM_CHECK(vars.ClickCounters[0] == 1 && vars.ClickCounters[1] == 0);
+                ctx->ItemClick("//Test window - 0/table/##Instance1/Button");
+                IM_CHECK(vars.ClickCounters[0] == 1 && vars.ClickCounters[1] == 1);
+            }
+#endif
         }
     };
 
