@@ -106,7 +106,7 @@ ImGuiApp* ImGuiApp_ImplNull_Create();
 #endif
 
 #if defined(IMGUI_APP_SDL_GL2) || defined(IMGUI_APP_SDL_GL3)
-#include "imgui_impl_sdl.cpp"
+#include "imgui_impl_sdl2.cpp"
 #endif
 
 #if defined(IMGUI_APP_GLFW_GL3)

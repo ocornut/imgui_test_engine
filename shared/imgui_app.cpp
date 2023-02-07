@@ -617,7 +617,7 @@ static LRESULT WINAPI ImGuiApp_ImplWin32_WndProc(HWND hWnd, UINT msg, WPARAM wPa
 #ifdef IMGUI_APP_SDL
 
 // Include
-#include "imgui_impl_sdl.h"
+#include "imgui_impl_sdl2.h"
 #include <SDL.h>
 
 #define SDL_HAS_PER_MONITOR_DPI             SDL_VERSION_ATLEAST(2,0,4)

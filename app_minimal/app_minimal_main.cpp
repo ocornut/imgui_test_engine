@@ -1,6 +1,11 @@
 // dear imgui
 // Minimal Application demonstrating integrating the Dear ImGui Test Engine
 
+// Visual Studio warnings
+#ifdef _MSC_VER
+#pragma warning (disable: 4996)     // 'This function or variable may be unsafe': strcpy, strdup, sprintf, vsnprintf, sscanf, fopen
+#endif
+
 #include "imgui.h"
 #define IMGUI_DEFINE_MATH_OPERATORS
 #include "imgui_internal.h"
