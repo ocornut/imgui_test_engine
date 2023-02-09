@@ -1292,7 +1292,7 @@ void    ImGuiTestContext::ScrollToItem(ImGuiTestRef ref, ImGuiAxis axis, ImGuiTe
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
     ImGuiTestItemInfo* item = ItemInfo(ref);
     ImGuiTestRefDesc desc(ref, item);
-    LogDebug("ScrollToItem%c %s", 'X' + axis, desc.c_str());
+    LogDebug("ScrollToItem %c %s", 'X' + axis, desc.c_str());
 
     if (item->ID == 0)
         return;
@@ -1528,18 +1528,27 @@ void    ImGuiTestContext::MouseMove(ImGuiTestRef ref, ImGuiTestOpFlags flags)
         return;
     }
 
-    // Scroll to make item visible
+    // Check visibility and scroll if necessary
     ImGuiWindow* window = item->Window;
-    ImRect window_inner_r_padded = window->InnerClipRect;
-    window_inner_r_padded.Expand(ImVec2(-g.WindowsHoverPadding.x, -g.WindowsHoverPadding.y));
     if (item->NavLayer == ImGuiNavLayer_Main)
     {
-        bool contains_y = (item->RectClipped.Min.y >= window_inner_r_padded.Min.y && item->RectClipped.Max.y <= window_inner_r_padded.Max.y);
-        bool contains_x = (item->RectClipped.Min.x >= window_inner_r_padded.Min.x && item->RectClipped.Max.x <= window_inner_r_padded.Max.x);
-        if (!contains_y)
-            ScrollToItem(ref, ImGuiAxis_Y, ImGuiTestOpFlags_NoFocusWindow);
-        if (!contains_x)
+        ImRect window_r = window->InnerClipRect;
+        window_r.Expand(ImVec2(-g.WindowsHoverPadding.x, -g.WindowsHoverPadding.y));
+
+        ImRect item_r_clipped;
+        item_r_clipped.Min.x = ImClamp(item->RectFull.Min.x, window_r.Min.x, window_r.Max.x);
+        item_r_clipped.Min.y = ImClamp(item->RectFull.Min.y, window_r.Min.y, window_r.Max.y);
+        item_r_clipped.Max.x = ImClamp(item->RectFull.Max.x, window_r.Min.x, window_r.Max.x);
+        item_r_clipped.Max.y = ImClamp(item->RectFull.Max.y, window_r.Min.y, window_r.Max.y);
+
+        // In theory all we need is one visible point, but it is generally nicer if we scroll toward visibility.
+        // Bias toward reducing amount of horizontal scroll.
+        float visibility_ratio_x = (item_r_clipped.GetWidth() + 1.0f) / (item->RectFull.GetWidth() + 1.0f);
+        float visibility_ratio_y = (item_r_clipped.GetHeight() + 1.0f) / (item->RectFull.GetHeight() + 1.0f);
+        if (visibility_ratio_x < 0.70f)
             ScrollToItem(ref, ImGuiAxis_X, ImGuiTestOpFlags_NoFocusWindow);
+        if (visibility_ratio_y < 0.90f)
+            ScrollToItem(ref, ImGuiAxis_Y, ImGuiTestOpFlags_NoFocusWindow);
     }
 
     // FIXME-TESTS-NOT_SAME_AS_END_USER

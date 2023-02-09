@@ -5,6 +5,10 @@ CHANGELOG
    Those changes are not all listed here.
 ** For a while this is going to ONLY INCLUDE BREAKING CHANGES.
 
+2023/02/09:
+- TestEngine: Alter visibility checks to reduce unnecessary scrolling when items are
+  mostly visible. Bias toward reducing amount of horizontal scroll.
+
 2023/02/03
 - TestEngine: Update/fixes for Tables-related changes in main lib.
 
