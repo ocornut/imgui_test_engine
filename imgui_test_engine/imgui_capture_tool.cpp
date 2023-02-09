@@ -234,7 +234,7 @@ ImGuiCaptureStatus ImGuiCaptureContext::CaptureUpdate(ImGuiCaptureArgs* args)
     const ImRect viewport_rect = GetMainViewportRect();
 
     // Hide other windows so they can't be seen visible behind captured window
-    if ((args->InFlags & ImGuiCaptureflags_IncludeOtherWindows) == 0 && !args->InCaptureWindows.empty())
+    if ((args->InFlags & ImGuiCaptureFlags_IncludeOtherWindows) == 0 && !args->InCaptureWindows.empty())
         HideOtherWindows(args);
 
     // Recording will be set to false when we are stopping video capture.
@@ -915,7 +915,7 @@ void ImGuiCaptureToolUI::ShowCaptureToolWindow(ImGuiCaptureContext* context, boo
         if (!content_stitching_available && ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
             ImGui::SetTooltip("Content stitching is not possible when using viewports.");
 
-        ImGui::CheckboxFlags("Include other windows", &_CaptureArgs.InFlags, ImGuiCaptureflags_IncludeOtherWindows);
+        ImGui::CheckboxFlags("Include other windows", &_CaptureArgs.InFlags, ImGuiCaptureFlags_IncludeOtherWindows);
         ImGui::CheckboxFlags("Include tooltips & popups", &_CaptureArgs.InFlags, ImGuiCaptureFlags_IncludeTooltipsAndPopups);
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Capture area will be expanded to include visible tooltips.");
