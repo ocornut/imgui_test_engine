@@ -1588,10 +1588,22 @@ void    ImGuiTestContext::MouseMove(ImGuiTestRef ref, ImGuiTestOpFlags flags)
     // Check hovering target: may be an item (common) or a window (rare)
     if (!Abort && !(flags & ImGuiTestOpFlags_NoCheckHoveredId))
     {
-        const ImGuiID hovered_id = g.HoveredIdPreviousFrame;
-        const bool is_hovered_item = (hovered_id == item->ID);
+        ImGuiID hovered_id;
+        bool is_hovered_item;
 
-        bool is_hovered_window = false;
+        // Give a few extra frames to validate hovering.
+        // In the vast majority of case this will be set on the first attempt,
+        // but e.g. blocking popups may need to close based on external logic.
+        for (int remaining_attempts = 3; remaining_attempts > 0; remaining_attempts--)
+        {
+            hovered_id = g.HoveredIdPreviousFrame;
+            is_hovered_item = (hovered_id == item->ID);
+            if (is_hovered_item)
+                break;
+            Yield();
+        }
+
+        bool is_hovered_window = is_hovered_item ? true : false;
         if (!is_hovered_item)
             for (ImGuiWindow* hovered_window = g.HoveredWindow; hovered_window != NULL && !is_hovered_window; hovered_window = hovered_window->ParentWindow)
                 if (hovered_window->ID == item->ID && hovered_window == item->Window)
@@ -1611,7 +1623,7 @@ void    ImGuiTestContext::MouseMove(ImGuiTestRef ref, ImGuiTestOpFlags flags)
 #endif
                 if (is_resize_corner)
                 {
-                    LogDebug("Obstructed by ResizeGrip, trying to resize window and trying again..");
+                    LogDebug("Child obstructed by parent's ResizeGrip, trying to resize window and trying again..");
                     float extra_size = window->CalcFontSize() * 3.0f;
                     WindowResize(window->ID, window->Size + ImVec2(extra_size, extra_size));
                     MouseMove(ref, flags | ImGuiTestOpFlags_IsSecondAttempt);
@@ -1628,8 +1640,8 @@ void    ImGuiTestContext::MouseMove(ImGuiTestRef ref, ImGuiTestOpFlags flags)
                 "Unable to Hover %s:\n"
                 "- Expected item %08X in window '%s', targeted position: (%.1f,%.1f)'\n"
                 "- Hovered id was %08X in '%s'.\n"
-                "- Item Pos:  Before mouse move (%.1f,%.1f) vs Now (%.1f,%.1f) (%s)\n"
-                "- Item Size: Before mouse move (%.1f,%.1f) vs Now (%.1f,%.1f) (%s)",
+                "- Item Pos:  Before mouse move (%6.1f,%6.1f) vs Now (%6.1f,%6.1f) (%s)\n"
+                "- Item Size: Before mouse move (%6.1f,%6.1f) vs Now (%6.1f,%6.1f) (%s)",
                 desc.c_str(),
                 item->ID, item->Window ? item->Window->Name : "<NULL>", pos.x, pos.y,
                 hovered_id, g.HoveredWindow ? g.HoveredWindow->Name : "",
@@ -3582,6 +3594,9 @@ void    ImGuiTestContext::PerfCalcRef()
 
 void    ImGuiTestContext::PerfCapture(const char* category, const char* test_name, const char* csv_file)
 {
+    if (IsError())
+        return;
+
     // Calculate reference average DeltaTime if it wasn't explicitly called by TestFunc
     if (PerfRefDt < 0.0)
         PerfCalcRef();

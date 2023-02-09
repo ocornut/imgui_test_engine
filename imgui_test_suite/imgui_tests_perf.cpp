@@ -51,6 +51,8 @@ void RegisterTests_Perf(ImGuiTestEngine* e)
 
         IM_CHECK_SILENT(ctx->UiContext->IO.DisplaySize.x > 820);
         IM_CHECK_SILENT(ctx->UiContext->IO.DisplaySize.y > 820);
+        if (ctx->IsError())
+            return;
 
         // FIXME-TESTS: Backup full layout
         ImVec2 pos = ImGui::GetMainViewport()->Pos + ImVec2(20, 20);

@@ -6,8 +6,10 @@ CHANGELOG
 ** For a while this is going to ONLY INCLUDE BREAKING CHANGES.
 
 2023/02/09:
-- TestEngine: Alter visibility checks to reduce unnecessary scrolling when items are
-  mostly visible. Bias toward reducing amount of horizontal scroll.
+- TestEngine: Alter visibility checks to reduce unnecessary scrolling when items
+  are mostly visible. Bias toward reducing amount of horizontal scroll.
+- TestEngine: Allow for extra frames when necessary to validates hovering.
+  e.g. blocking popups may be closed by external logic.
 
 2023/02/03
 - TestEngine: Update/fixes for Tables-related changes in main lib.
