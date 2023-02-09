@@ -3114,7 +3114,7 @@ void RegisterTests_Inputs(ImGuiTestEngine* e)
     ImGuiTest* t = NULL;
 
     // ## Test input queue trickling
-    t = IM_REGISTER_TEST(e, "misc", "inputs_io_inputqueue");
+    t = IM_REGISTER_TEST(e, "inputs", "inputs_io_inputqueue");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         auto& vars = ctx->GenericVars;
@@ -3488,7 +3488,7 @@ void RegisterTests_Inputs(ImGuiTestEngine* e)
 
     // ## Test input queue filtering of duplicates (#5599)
 #if IMGUI_VERSION_NUM >= 18828
-    t = IM_REGISTER_TEST(e, "misc", "inputs_io_inputqueue_filtering");
+    t = IM_REGISTER_TEST(e, "inputs", "inputs_io_inputqueue_filtering");
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         ImGuiContext& g = *ctx->UiContext;
@@ -3524,7 +3524,7 @@ void RegisterTests_Inputs(ImGuiTestEngine* e)
 
     // ## Test ImGuiMod_Shortcut redirect (#5923)
 #if IMGUI_VERSION_NUM >= 18912
-    t = IM_REGISTER_TEST(e, "misc", "inputs_io_mod_shortcut");
+    t = IM_REGISTER_TEST(e, "inputs", "inputs_io_mod_shortcut");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         ImGuiContext& g = *ctx->UiContext;
@@ -3585,7 +3585,7 @@ void RegisterTests_Inputs(ImGuiTestEngine* e)
 
 #if IMGUI_VERSION_NUM >= 18837
     // ## Test SetKeyOwner(), TestKeyOwner()
-    t = IM_REGISTER_TEST(e, "misc", "inputs_owner_basic_1");
+    t = IM_REGISTER_TEST(e, "inputs", "inputs_owner_basic_1");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         auto& vars = ctx->GenericVars;
@@ -3625,7 +3625,7 @@ void RegisterTests_Inputs(ImGuiTestEngine* e)
     };
 
     // ## Test SetKeyOwner(), TestKeyOwner() same frame behavior
-    t = IM_REGISTER_TEST(e, "misc", "inputs_owner_basic_2");
+    t = IM_REGISTER_TEST(e, "inputs", "inputs_owner_basic_2");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_MenuBar);
@@ -3645,7 +3645,7 @@ void RegisterTests_Inputs(ImGuiTestEngine* e)
     };
 
     // ## Test release event of a Selectable() in a popup from being caught by parent window
-    t = IM_REGISTER_TEST(e, "misc", "inputs_owner_popup_overlap");
+    t = IM_REGISTER_TEST(e, "inputs", "inputs_owner_popup_overlap");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         auto& vars = ctx->GenericVars;
@@ -3682,7 +3682,7 @@ void RegisterTests_Inputs(ImGuiTestEngine* e)
     };
 
     // ## Test overriding and next frame behavior
-    t = IM_REGISTER_TEST(e, "misc", "inputs_owner_override");
+    t = IM_REGISTER_TEST(e, "inputs", "inputs_owner_override");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         auto& vars = ctx->GenericVars;
@@ -3730,7 +3730,7 @@ void RegisterTests_Inputs(ImGuiTestEngine* e)
     };
 
     // ## Test ImGuiInputFlags_LockThisFrame for stealing inputs EVEN for calls that not requesting ownership test
-    t = IM_REGISTER_TEST(e, "misc", "inputs_owner_lock_this_frame");
+    t = IM_REGISTER_TEST(e, "inputs", "inputs_owner_lock_this_frame");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         auto& vars = ctx->GenericVars;
@@ -3771,7 +3771,7 @@ void RegisterTests_Inputs(ImGuiTestEngine* e)
     };
 
     // ## Test ImGuiInputFlags_LockUntilRelease
-    t = IM_REGISTER_TEST(e, "misc", "inputs_owner_lock_until_release");
+    t = IM_REGISTER_TEST(e, "inputs", "inputs_owner_lock_until_release");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         auto& vars = ctx->GenericVars;
@@ -3821,7 +3821,7 @@ void RegisterTests_Inputs(ImGuiTestEngine* e)
     };
 
     // ## General test claiming Alt to prevent menu opening
-    t = IM_REGISTER_TEST(e, "misc", "inputs_owner_mod_alt");
+    t = IM_REGISTER_TEST(e, "inputs", "inputs_owner_mod_alt");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         //auto& vars = ctx->GenericVars;
@@ -3865,7 +3865,7 @@ void RegisterTests_Inputs(ImGuiTestEngine* e)
     };
 
     // ## Test special ButtonBehavior() flags
-    t = IM_REGISTER_TEST(e, "misc", "inputs_owner_button_behavior");
+    t = IM_REGISTER_TEST(e, "inputs", "inputs_owner_button_behavior");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         auto& vars = ctx->GenericVars;
@@ -3942,7 +3942,7 @@ void RegisterTests_Inputs(ImGuiTestEngine* e)
 #endif
 
 #if IMGUI_VERSION_NUM >= 18837
-    t = IM_REGISTER_TEST(e, "misc", "inputs_routing_1");
+    t = IM_REGISTER_TEST(e, "inputs", "inputs_routing_1");
     struct InputRoutingVars
     {
         bool            IsRouting[26] = {};
@@ -4163,7 +4163,7 @@ void RegisterTests_Inputs(ImGuiTestEngine* e)
 #endif
 
 #if 0
-    t = IM_REGISTER_TEST(e, "misc", "inputs_routing_basic");
+    t = IM_REGISTER_TEST(e, "inputs", "inputs_routing_basic");
     enum InputFunc { InputFunc_IsKeyPressed = 0, InputFunc_IsShortcutPressed, InputFunc_IsKeyDown, InputFunc_IsKeyReleased };
     struct InputRoutingVars { int Pressed[4][5] = {}; bool EnableDynamicOwner = false; int Func = 2; ImGuiReadFlags InputFlags = 0; };
     t->SetVarsDataType<InputRoutingVars>();
@@ -4267,7 +4267,7 @@ void RegisterTests_Inputs(ImGuiTestEngine* e)
         }
     };
 
-    t = IM_REGISTER_TEST(e, "misc", "inputs_routing_shortcuts");
+    t = IM_REGISTER_TEST(e, "inputs", "inputs_routing_shortcuts");
     t->SetVarsDataType<InputRoutingVars>();
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
@@ -4473,16 +4473,6 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
 {
     ImGuiTest* t = NULL;
 
-    // ## Test watchdog
-#if 0
-    t = IM_REGISTER_TEST(e, "misc", "misc_watchdog");
-    t->TestFunc = [](ImGuiTestContext* ctx)
-    {
-        while (true)
-            ctx->Yield();
-    };
-#endif
-
     // ## Test creating multiple-context (#5135)
 #if IMGUI_VERSION_NUM >= 18711
     t = IM_REGISTER_TEST(e, "misc", "misc_multi_context");
@@ -4524,26 +4514,6 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
         ImGui::BeginTabBar("tabbar");
         ImGui::BeginTable("table", 4);
         ctx->Finish();
-    };
-
-    // ## Test ImGuiTestOpFlags_NoError
-    t = IM_REGISTER_TEST(e, "misc", "misc_no_error");
-    t->GuiFunc = [](ImGuiTestContext* ctx)
-    {
-        auto& vars = ctx->GenericVars;
-        ImGui::Begin("Test window", NULL, ImGuiWindowFlags_NoSavedSettings);
-        if (ImGui::Button("Button1"))
-            vars.Int1++;
-        ImGui::End();
-    };
-    t->TestFunc = [](ImGuiTestContext* ctx)
-    {
-        ctx->SetRef("Test window");
-        auto& vars = ctx->GenericVars;
-        ctx->ItemClick("Button2", 0, ImGuiTestOpFlags_NoError);
-        IM_CHECK(vars.Int1 == 0);
-        ctx->ItemClick("Button1");
-        IM_CHECK(vars.Int1 == 1);
     };
 
     // ## Test window data garbage collection
@@ -4750,272 +4720,6 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
         ImGui::End();
 
         ctx->Finish(); // Finish on first frame
-    };
-
-    // ## Test using Item functions on windows
-#if IMGUI_VERSION_NUM >= 18616
-    t = IM_REGISTER_TEST(e, "misc", "misc_ref_window");
-    t->GuiFunc = [](ImGuiTestContext* ctx)
-    {
-        ImGui::SetNextWindowSize(ImVec2(300, 300));
-        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
-        ImGui::BeginChild("Child1", ImVec2(200, 200), true);
-        ImGui::Button("Button in child");
-        ImGui::EndChild();
-        ImGui::End();
-    };
-    t->TestFunc = [](ImGuiTestContext* ctx)
-    {
-        ImGuiContext& g = *GImGui;
-        ctx->MouseMove("Test Window");
-        IM_CHECK(g.HoveredWindow != NULL);
-        IM_CHECK_STR_EQ(g.HoveredWindow->RootWindow->Name, "Test Window");
-        ctx->MouseMoveToVoid();
-
-        ctx->MouseMove("**/Test Window");
-        IM_CHECK(g.HoveredWindow != NULL);
-        IM_CHECK_STR_EQ(g.HoveredWindow->RootWindow->Name, "Test Window");
-
-        // FIMXE: Would be good to support wildcard to grab child
-#if IMGUI_BROKEN_TESTS
-        ctx->MouseMove("**/Child1");
-        IM_CHECK(g.HoveredWindow != NULL);
-        IM_CHECK((g.HoveredWindow->Flags & ImGuiWindowFlags_ChildWindow) != 0);
-        IM_CHECK_STR_EQ(g.HoveredWindow->Name, "Child1");
-#endif
-    };
-#endif
-
-    // ## Test **/ handling
-    t = IM_REGISTER_TEST(e, "misc", "misc_ref_wildcard");
-    t->GuiFunc = [](ImGuiTestContext* ctx)
-    {
-        auto& vars = ctx->GenericVars;
-
-#if IMGUI_BROKEN_TESTS
-        ImGui::SetNextWindowSize(ImVec2(20, 20));
-        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings); // FIXME: Should work with same size: ItemInfoHandleWildcardSearch() doesn't scroll in childs.
-#else
-        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
-#endif
-        ImGui::Checkbox("Test1", &vars.Bool1);
-        ImGui::PushID("node");
-        ImGui::Checkbox("Test1b", &vars.Bool1);
-        ImGui::PopID();
-
-        ImGui::BeginChild("Child", ImVec2(0, 200), true);
-        ImGui::Checkbox("Test2", &vars.Bool2);
-        ImGui::InputInt("Int1", &vars.Int1, 1, 1);
-        ImGui::InputInt("AA###Int2", &vars.Int1, 0, 0);
-        ImGui::EndChild();
-
-        ImGui::Checkbox("Dear###Test3", &vars.Bool1);
-
-        if (ImGui::BeginMenu("TestMenu"))
-        {
-            ImGui::MenuItem("Nothing");
-            ImGui::EndMenu();
-        }
-
-        ImGui::End();
-    };
-    t->TestFunc = [](ImGuiTestContext* ctx)
-    {
-        auto& vars = ctx->GenericVars;
-        IM_UNUSED(vars);
-
-        // Test Window/Test1
-        ctx->SetRef("Test Window");
-        ctx->ItemClick("**/Test1");
-        ctx->ItemClick("**/node/Test1b");
-
-        ctx->SetRef("");
-        ctx->ItemClick("**/Test1");
-        ctx->ItemClick("**/node/Test1b");
-
-        // Test Window/Child_XXXXX/Test2
-        ctx->SetRef("");
-        ctx->ItemClick("**/Test2");
-
-        ctx->SetRef("Test Window");
-        ctx->ItemClick("**/Test2");
-
-#if IMGUI_VERSION_NUM >= 18809
-        // BeginMenu() - Items using PushID(id); SubItem(""); PopID() idioms
-        IM_CHECK(ctx->ItemInfo("**/TestMenu/")->ID != 0);
-        IM_CHECK(ctx->ItemInfo("**/TestMenu")->ID != 0);
-        ctx->ItemClick("**/TestMenu");
-
-        // InputScalar() - Items using PushID(id); SubItem(""); PopID() idioms
-        vars.Int1 = 0;
-        ctx->ItemInputValue("**/Int1", 10);     // Natural aiming at "parent" widget
-        IM_CHECK_EQ(vars.Int1, 10);
-#if IMGUI_BROKEN_TESTS
-        //ctx->ItemInputValue("**/Int1/", 11);    // "" label inside InputScalar() with step. This is normally simplier but currently subject to clipping in this example.
-        //IM_CHECK_EQ(vars.Int1, 11);
-#endif
-#endif
-
-        // ### operator
-        ctx->ItemClick("**/Hello###Test3");
-
-#if IMGUI_VERSION_NUM >= 18809
-        // ### operator inside a child
-        ctx->ItemInputValue("**/BB###Int2", 20);    // With ### in label, no steps
-        IM_CHECK_EQ(vars.Int1, 20);
-#endif
-    };
-
-    // ## Test ctx->WindowInfo().
-    t = IM_REGISTER_TEST(e, "misc", "misc_ref_window_info");
-    t->GuiFunc = [](ImGuiTestContext* ctx)
-    {
-        auto& vars = ctx->GenericVars;
-
-        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
-        vars.IdArray[0] = ImGui::GetID(""); // Record window id for our test
-
-        ImGui::Button("Item");
-        {
-            ImGui::BeginChild("Child1");
-            vars.IdArray[1] = ImGui::GetID("");
-            ImGui::Button("Child1_Item");
-
-            {
-                ImGui::BeginChild("SubChild");
-                vars.IdArray[2] = ImGui::GetID("");
-                ImGui::EndChild();
-
-                ImGui::BeginChild(ImGui::GetID("SubChildUsingID"));
-                vars.IdArray[3] = ImGui::GetID("");
-                ImGui::EndChild();
-            }
-            ImGui::EndChild();
-        }
-        {
-            // Using ###
-            ImGui::BeginChild("Child2###Child2Name");
-            {
-                ImGui::BeginChild("Child3###Child3Name");
-                ImGui::EndChild();
-            }
-            ImGui::EndChild();
-        }
-        {
-            // Inside a sub-id
-            ImGui::PushID("Folder");
-            ImGui::BeginChild("Child3");
-            ImGui::EndChild();
-            ImGui::PopID();
-        }
-
-        ImGui::End();
-    };
-    t->TestFunc = [](ImGuiTestContext* ctx)
-    {
-        auto& vars = ctx->GenericVars;
-
-        ImGuiTestItemInfo* window_info = NULL;
-
-        // Query by ID (not very useful but supported)
-        ctx->LogInfo("## Test querying by ID");
-        window_info = ctx->WindowInfo(ctx->GetID("//Test Window/"));
-        IM_CHECK(window_info->ID != 0 && window_info->Window != NULL);
-        IM_CHECK_EQ(window_info->Window->ID, window_info->ID);
-        IM_CHECK_EQ(window_info->Window->ID, vars.IdArray[0]);
-
-        window_info = ctx->WindowInfo(vars.IdArray[1]);
-        IM_CHECK(window_info->ID != 0 && window_info->Window != NULL);
-        IM_CHECK_EQ(window_info->Window->ID, window_info->ID);
-        IM_CHECK_EQ(window_info->Window->ID, vars.IdArray[1]);
-
-        // Ensure that non-windows and non-existing windows are not found
-        window_info = ctx->WindowInfo(ctx->GetID("//Test Window/Item"), ImGuiTestOpFlags_NoError);
-        IM_CHECK(window_info->ID == 0 && window_info->Window == NULL);
-
-        window_info = ctx->WindowInfo(ctx->GetID("//Non Existing Window/"), ImGuiTestOpFlags_NoError);
-        IM_CHECK(window_info->ID == 0 && window_info->Window == NULL);
-
-        // Query by path
-        ctx->LogInfo("## Test querying by Path");
-        window_info = ctx->WindowInfo("//Test Window");
-        IM_CHECK(window_info->ID != 0 && window_info->Window != NULL);
-        IM_CHECK_EQ(window_info->Window->ID, window_info->ID);
-        IM_CHECK_EQ(window_info->Window->ID, vars.IdArray[0]);
-
-        window_info = ctx->WindowInfo("//Test Window/");
-        IM_CHECK(window_info->ID != 0 && window_info->Window != NULL);
-        IM_CHECK_EQ(window_info->Window->ID, window_info->ID);
-        IM_CHECK_EQ(window_info->Window->ID, vars.IdArray[0]);
-
-        window_info = ctx->WindowInfo("//Test Window/Child1");
-        IM_CHECK(window_info->ID != 0 && window_info->Window != NULL);
-        IM_CHECK_EQ(window_info->Window->ID, window_info->ID);
-        IM_CHECK_EQ(window_info->Window->ID, vars.IdArray[1]);
-
-        // Query by path with a ref
-        ctx->SetRef("//Test Window");
-        window_info = ctx->WindowInfo("");
-        IM_CHECK(window_info->ID != 0 && window_info->Window != NULL);
-        IM_CHECK_EQ(window_info->Window->ID, window_info->ID);
-        IM_CHECK_EQ(window_info->Window->ID, vars.IdArray[0]);
-
-        window_info = ctx->WindowInfo("Child1");
-        IM_CHECK(window_info->ID != 0 && window_info->Window != NULL);
-        IM_CHECK_EQ(window_info->Window->ID, window_info->ID);
-        IM_CHECK_EQ(window_info->Window->ID, vars.IdArray[1]);
-
-        ctx->SetRef(window_info->ID);
-        ctx->ItemClick("Child1_Item");
-
-        ctx->SetRef("//$FOCUSED");
-        window_info = ctx->WindowInfo("SubChild");
-        IM_CHECK(window_info->ID != 0 && window_info->Window != NULL);
-        IM_CHECK_EQ(window_info->Window->ID, window_info->ID);
-        IM_CHECK_EQ(window_info->Window->ID, vars.IdArray[2]);
-
-        ctx->SetRef("");
-        window_info = ctx->WindowInfo("//$FOCUSED/SubChild");
-        IM_CHECK(window_info->ID != 0 && window_info->Window != NULL);
-        IM_CHECK_EQ(window_info->Window->ID, window_info->ID);
-        IM_CHECK_EQ(window_info->Window->ID, vars.IdArray[2]);
-
-        // Test sub-child + verify that wrong seed doesn't matter if our ref uses "//"
-        ctx->SetRef("//DummyNonExistingSeed");
-        window_info = ctx->WindowInfo("//Test Window/Child1/SubChild");
-        IM_CHECK(window_info->ID != 0 && window_info->Window != NULL);
-        IM_CHECK_EQ(window_info->Window->ID, window_info->ID);
-        IM_CHECK_EQ(window_info->Window->ID, vars.IdArray[2]);
-
-        // Test sub-child which have been created with the ImGuiID version of BeginChild()
-        window_info = ctx->WindowInfo("//Test Window/Child1/SubChildUsingID");
-        IM_CHECK(window_info->ID != 0 && window_info->Window != NULL);
-        IM_CHECK_EQ(window_info->Window->ID, window_info->ID);
-        IM_CHECK_EQ(window_info->Window->ID, vars.IdArray[3]);
-
-        // Test for missing/non-found window
-        window_info = ctx->WindowInfo("//Test Window/Item", ImGuiTestOpFlags_NoError);
-        IM_CHECK(window_info->ID == 0 && window_info->Window == NULL);
-        window_info = ctx->WindowInfo("//Test Window/NotExisting", ImGuiTestOpFlags_NoError);
-        IM_CHECK(window_info->ID == 0 && window_info->Window == NULL);
-
-        // Test with ### in names
-        ctx->SetRef("//Test Window");
-        window_info = ctx->WindowInfo("Child2###Child2Name/Child3###Child3Name");
-        IM_CHECK(window_info->ID != 0 && window_info->Window != NULL);
-        window_info = ctx->WindowInfo("###Child2Name/###Child3Name");
-        IM_CHECK(window_info->ID != 0 && window_info->Window != NULL);
-
-        // Test when child is not in root of parent window (used ID stack)
-        ctx->SetRef("//Test Window");
-        window_info = ctx->WindowInfo("Folder/Child3");
-        IM_CHECK(window_info->ID != 0 && window_info->Window != NULL);
-        window_info = ctx->WindowInfo("//Test Window/Folder/Child3");
-        IM_CHECK(window_info->ID != 0 && window_info->Window != NULL);
-        window_info = ctx->WindowInfo("//Test Window/Folder/NotExisting", ImGuiTestOpFlags_NoError);
-        IM_CHECK(window_info->ID == 0 && window_info->Window == NULL);
-
-        // FIXME: Missing tests for wildcards.
     };
 
     // ## Test ImVector functions
@@ -6293,59 +5997,6 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
     };
 #endif
 
-    // ## Test auto-opening intermediary openable items automatically.
-    t = IM_REGISTER_TEST(e, "misc", "misc_ref_auto_open");
-    t->GuiFunc = [](ImGuiTestContext* ctx)
-    {
-        ImGui::SetNextWindowSize(ImVec2(300, 150), ImGuiCond_Appearing);
-        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
-        ImGui::PushID("Lv0");
-        ImGui::PushID("Lv1");
-        if (ImGui::TreeNode("Node2"))
-        {
-            if (ImGui::TreeNode("Node3"))
-            {
-                ImGui::PushID("Lv4");
-                ImGui::Button("Button");
-                ctx->GenericVars.Status.QueryInc();
-                ImGui::PopID();
-                ImGui::TreePop();
-            }
-            ImGui::TreePop();
-        }
-        ImGui::PopID(); // Lv1
-        ImGui::PopID(); // Lv0
-        ImGui::End();
-    };
-    t->TestFunc = [](ImGuiTestContext* ctx)
-    {
-        ctx->SetRef("Test Window");
-        ctx->ItemCloseAll("");
-        ctx->ItemClick("Lv0/Lv1/Node2/Node3/Lv4/Button");
-        IM_CHECK_EQ(ctx->GenericVars.Status.Clicked, 1);
-
-        ctx->ItemCloseAll("");
-        ctx->ItemClick("**/Lv1/Node2/Node3/Lv4/Button");
-        IM_CHECK_EQ(ctx->GenericVars.Status.Clicked, 2);
-
-        ctx->ItemCloseAll("");
-        ctx->ItemClick("Lv0/**/Node2/Node3/Lv4/Button");
-        IM_CHECK_EQ(ctx->GenericVars.Status.Clicked, 3);
-
-        ctx->ItemCloseAll("");
-        ctx->ItemClick("**/Node2/Node3/Lv4/Button");
-        IM_CHECK_EQ(ctx->GenericVars.Status.Clicked, 4);
-
-        ctx->ItemCloseAll("");
-        ctx->ItemClick("Lv0/Lv1/Node2/Node3/**/Button");
-        IM_CHECK_EQ(ctx->GenericVars.Status.Clicked, 5);
-
-        // Can't work (would need to brute-force open everything?)
-        //ctx->ItemCloseAll("");
-        //ctx->ItemClick("Lv0/Lv1/**/Button");
-        //IM_CHECK_EQ(ctx->GenericVars.Status.Clicked, 5);
-    };
-
     t = IM_REGISTER_TEST(e, "demo", "demo_misc_001");
     t->GuiFunc = NULL;
     t->TestFunc = [](ImGuiTestContext* ctx)
@@ -6788,6 +6439,364 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
 }
 
 //-------------------------------------------------------------------------
+// Tests: Test Engine
+//-------------------------------------------------------------------------
+
+void RegisterTests_TestEngine(ImGuiTestEngine* e)
+{
+    ImGuiTest* t = NULL;
+
+    // ## Test watchdog: this test works but currently takes too much time.
+#if 0
+    t = IM_REGISTER_TEST(e, "misc", "testengine_watchdog");
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        while (true)
+            ctx->Yield();
+    };
+#endif
+
+    // ## Test ImGuiTestOpFlags_NoError
+    t = IM_REGISTER_TEST(e, "testengine", "testengine_noerror");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        auto& vars = ctx->GenericVars;
+        ImGui::Begin("Test window", NULL, ImGuiWindowFlags_NoSavedSettings);
+        if (ImGui::Button("Button1"))
+            vars.Int1++;
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ctx->SetRef("Test window");
+        auto& vars = ctx->GenericVars;
+        ctx->ItemClick("Button2", 0, ImGuiTestOpFlags_NoError);
+        IM_CHECK(vars.Int1 == 0);
+        ctx->ItemClick("Button1");
+        IM_CHECK(vars.Int1 == 1);
+    };
+
+    // ## Test using Item functions on windows
+#if IMGUI_VERSION_NUM >= 18616
+    t = IM_REGISTER_TEST(e, "testengine", "testengine_ref_window");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::SetNextWindowSize(ImVec2(300, 300));
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImGui::BeginChild("Child1", ImVec2(200, 200), true);
+        ImGui::Button("Button in child");
+        ImGui::EndChild();
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiContext& g = *GImGui;
+        ctx->MouseMove("Test Window");
+        IM_CHECK(g.HoveredWindow != NULL);
+        IM_CHECK_STR_EQ(g.HoveredWindow->RootWindow->Name, "Test Window");
+        ctx->MouseMoveToVoid();
+
+        ctx->MouseMove("**/Test Window");
+        IM_CHECK(g.HoveredWindow != NULL);
+        IM_CHECK_STR_EQ(g.HoveredWindow->RootWindow->Name, "Test Window");
+
+        // FIMXE: Would be good to support wildcard to grab child
+#if IMGUI_BROKEN_TESTS
+        ctx->MouseMove("**/Child1");
+        IM_CHECK(g.HoveredWindow != NULL);
+        IM_CHECK((g.HoveredWindow->Flags & ImGuiWindowFlags_ChildWindow) != 0);
+        IM_CHECK_STR_EQ(g.HoveredWindow->Name, "Child1");
+#endif
+    };
+#endif
+
+    // ## Test **/ handling
+    t = IM_REGISTER_TEST(e, "testengine", "testengine_ref_wildcard");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        auto& vars = ctx->GenericVars;
+
+#if IMGUI_BROKEN_TESTS
+        ImGui::SetNextWindowSize(ImVec2(20, 20));
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings); // FIXME: Should work with same size: ItemInfoHandleWildcardSearch() doesn't scroll in childs.
+#else
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
+#endif
+        ImGui::Checkbox("Test1", &vars.Bool1);
+        ImGui::PushID("node");
+        ImGui::Checkbox("Test1b", &vars.Bool1);
+        ImGui::PopID();
+
+        ImGui::BeginChild("Child", ImVec2(0, 200), true);
+        ImGui::Checkbox("Test2", &vars.Bool2);
+        ImGui::InputInt("Int1", &vars.Int1, 1, 1);
+        ImGui::InputInt("AA###Int2", &vars.Int1, 0, 0);
+        ImGui::EndChild();
+
+        ImGui::Checkbox("Dear###Test3", &vars.Bool1);
+
+        if (ImGui::BeginMenu("TestMenu"))
+        {
+            ImGui::MenuItem("Nothing");
+            ImGui::EndMenu();
+        }
+
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        auto& vars = ctx->GenericVars;
+        IM_UNUSED(vars);
+
+        // Test Window/Test1
+        ctx->SetRef("Test Window");
+        ctx->ItemClick("**/Test1");
+        ctx->ItemClick("**/node/Test1b");
+
+        ctx->SetRef("");
+        ctx->ItemClick("**/Test1");
+        ctx->ItemClick("**/node/Test1b");
+
+        // Test Window/Child_XXXXX/Test2
+        ctx->SetRef("");
+        ctx->ItemClick("**/Test2");
+
+        ctx->SetRef("Test Window");
+        ctx->ItemClick("**/Test2");
+
+#if IMGUI_VERSION_NUM >= 18809
+        // BeginMenu() - Items using PushID(id); SubItem(""); PopID() idioms
+        IM_CHECK(ctx->ItemInfo("**/TestMenu/")->ID != 0);
+        IM_CHECK(ctx->ItemInfo("**/TestMenu")->ID != 0);
+        ctx->ItemClick("**/TestMenu");
+
+        // InputScalar() - Items using PushID(id); SubItem(""); PopID() idioms
+        vars.Int1 = 0;
+        ctx->ItemInputValue("**/Int1", 10);     // Natural aiming at "parent" widget
+        IM_CHECK_EQ(vars.Int1, 10);
+#if IMGUI_BROKEN_TESTS
+        //ctx->ItemInputValue("**/Int1/", 11);    // "" label inside InputScalar() with step. This is normally simplier but currently subject to clipping in this example.
+        //IM_CHECK_EQ(vars.Int1, 11);
+#endif
+#endif
+
+        // ### operator
+        ctx->ItemClick("**/Hello###Test3");
+
+#if IMGUI_VERSION_NUM >= 18809
+        // ### operator inside a child
+        ctx->ItemInputValue("**/BB###Int2", 20);    // With ### in label, no steps
+        IM_CHECK_EQ(vars.Int1, 20);
+#endif
+    };
+
+    // ## Test ctx->WindowInfo().
+    t = IM_REGISTER_TEST(e, "testengine", "testengine_ref_window_info");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        auto& vars = ctx->GenericVars;
+
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+        vars.IdArray[0] = ImGui::GetID(""); // Record window id for our test
+
+        ImGui::Button("Item");
+        {
+            ImGui::BeginChild("Child1");
+            vars.IdArray[1] = ImGui::GetID("");
+            ImGui::Button("Child1_Item");
+
+            {
+                ImGui::BeginChild("SubChild");
+                vars.IdArray[2] = ImGui::GetID("");
+                ImGui::EndChild();
+
+                ImGui::BeginChild(ImGui::GetID("SubChildUsingID"));
+                vars.IdArray[3] = ImGui::GetID("");
+                ImGui::EndChild();
+            }
+            ImGui::EndChild();
+        }
+        {
+            // Using ###
+            ImGui::BeginChild("Child2###Child2Name");
+            {
+                ImGui::BeginChild("Child3###Child3Name");
+                ImGui::EndChild();
+            }
+            ImGui::EndChild();
+        }
+        {
+            // Inside a sub-id
+            ImGui::PushID("Folder");
+            ImGui::BeginChild("Child3");
+            ImGui::EndChild();
+            ImGui::PopID();
+        }
+
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        auto& vars = ctx->GenericVars;
+
+        ImGuiTestItemInfo* window_info = NULL;
+
+        // Query by ID (not very useful but supported)
+        ctx->LogInfo("## Test querying by ID");
+        window_info = ctx->WindowInfo(ctx->GetID("//Test Window/"));
+        IM_CHECK(window_info->ID != 0 && window_info->Window != NULL);
+        IM_CHECK_EQ(window_info->Window->ID, window_info->ID);
+        IM_CHECK_EQ(window_info->Window->ID, vars.IdArray[0]);
+
+        window_info = ctx->WindowInfo(vars.IdArray[1]);
+        IM_CHECK(window_info->ID != 0 && window_info->Window != NULL);
+        IM_CHECK_EQ(window_info->Window->ID, window_info->ID);
+        IM_CHECK_EQ(window_info->Window->ID, vars.IdArray[1]);
+
+        // Ensure that non-windows and non-existing windows are not found
+        window_info = ctx->WindowInfo(ctx->GetID("//Test Window/Item"), ImGuiTestOpFlags_NoError);
+        IM_CHECK(window_info->ID == 0 && window_info->Window == NULL);
+
+        window_info = ctx->WindowInfo(ctx->GetID("//Non Existing Window/"), ImGuiTestOpFlags_NoError);
+        IM_CHECK(window_info->ID == 0 && window_info->Window == NULL);
+
+        // Query by path
+        ctx->LogInfo("## Test querying by Path");
+        window_info = ctx->WindowInfo("//Test Window");
+        IM_CHECK(window_info->ID != 0 && window_info->Window != NULL);
+        IM_CHECK_EQ(window_info->Window->ID, window_info->ID);
+        IM_CHECK_EQ(window_info->Window->ID, vars.IdArray[0]);
+
+        window_info = ctx->WindowInfo("//Test Window/");
+        IM_CHECK(window_info->ID != 0 && window_info->Window != NULL);
+        IM_CHECK_EQ(window_info->Window->ID, window_info->ID);
+        IM_CHECK_EQ(window_info->Window->ID, vars.IdArray[0]);
+
+        window_info = ctx->WindowInfo("//Test Window/Child1");
+        IM_CHECK(window_info->ID != 0 && window_info->Window != NULL);
+        IM_CHECK_EQ(window_info->Window->ID, window_info->ID);
+        IM_CHECK_EQ(window_info->Window->ID, vars.IdArray[1]);
+
+        // Query by path with a ref
+        ctx->SetRef("//Test Window");
+        window_info = ctx->WindowInfo("");
+        IM_CHECK(window_info->ID != 0 && window_info->Window != NULL);
+        IM_CHECK_EQ(window_info->Window->ID, window_info->ID);
+        IM_CHECK_EQ(window_info->Window->ID, vars.IdArray[0]);
+
+        window_info = ctx->WindowInfo("Child1");
+        IM_CHECK(window_info->ID != 0 && window_info->Window != NULL);
+        IM_CHECK_EQ(window_info->Window->ID, window_info->ID);
+        IM_CHECK_EQ(window_info->Window->ID, vars.IdArray[1]);
+
+        ctx->SetRef(window_info->ID);
+        ctx->ItemClick("Child1_Item");
+
+        ctx->SetRef("//$FOCUSED");
+        window_info = ctx->WindowInfo("SubChild");
+        IM_CHECK(window_info->ID != 0 && window_info->Window != NULL);
+        IM_CHECK_EQ(window_info->Window->ID, window_info->ID);
+        IM_CHECK_EQ(window_info->Window->ID, vars.IdArray[2]);
+
+        ctx->SetRef("");
+        window_info = ctx->WindowInfo("//$FOCUSED/SubChild");
+        IM_CHECK(window_info->ID != 0 && window_info->Window != NULL);
+        IM_CHECK_EQ(window_info->Window->ID, window_info->ID);
+        IM_CHECK_EQ(window_info->Window->ID, vars.IdArray[2]);
+
+        // Test sub-child + verify that wrong seed doesn't matter if our ref uses "//"
+        ctx->SetRef("//DummyNonExistingSeed");
+        window_info = ctx->WindowInfo("//Test Window/Child1/SubChild");
+        IM_CHECK(window_info->ID != 0 && window_info->Window != NULL);
+        IM_CHECK_EQ(window_info->Window->ID, window_info->ID);
+        IM_CHECK_EQ(window_info->Window->ID, vars.IdArray[2]);
+
+        // Test sub-child which have been created with the ImGuiID version of BeginChild()
+        window_info = ctx->WindowInfo("//Test Window/Child1/SubChildUsingID");
+        IM_CHECK(window_info->ID != 0 && window_info->Window != NULL);
+        IM_CHECK_EQ(window_info->Window->ID, window_info->ID);
+        IM_CHECK_EQ(window_info->Window->ID, vars.IdArray[3]);
+
+        // Test for missing/non-found window
+        window_info = ctx->WindowInfo("//Test Window/Item", ImGuiTestOpFlags_NoError);
+        IM_CHECK(window_info->ID == 0 && window_info->Window == NULL);
+        window_info = ctx->WindowInfo("//Test Window/NotExisting", ImGuiTestOpFlags_NoError);
+        IM_CHECK(window_info->ID == 0 && window_info->Window == NULL);
+
+        // Test with ### in names
+        ctx->SetRef("//Test Window");
+        window_info = ctx->WindowInfo("Child2###Child2Name/Child3###Child3Name");
+        IM_CHECK(window_info->ID != 0 && window_info->Window != NULL);
+        window_info = ctx->WindowInfo("###Child2Name/###Child3Name");
+        IM_CHECK(window_info->ID != 0 && window_info->Window != NULL);
+
+        // Test when child is not in root of parent window (used ID stack)
+        ctx->SetRef("//Test Window");
+        window_info = ctx->WindowInfo("Folder/Child3");
+        IM_CHECK(window_info->ID != 0 && window_info->Window != NULL);
+        window_info = ctx->WindowInfo("//Test Window/Folder/Child3");
+        IM_CHECK(window_info->ID != 0 && window_info->Window != NULL);
+        window_info = ctx->WindowInfo("//Test Window/Folder/NotExisting", ImGuiTestOpFlags_NoError);
+        IM_CHECK(window_info->ID == 0 && window_info->Window == NULL);
+
+        // FIXME: Missing tests for wildcards.
+    };
+
+    // ## Test auto-opening intermediary openable items automatically.
+    t = IM_REGISTER_TEST(e, "testengine", "testengine_ref_auto_open");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::SetNextWindowSize(ImVec2(300, 150), ImGuiCond_Appearing);
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImGui::PushID("Lv0");
+        ImGui::PushID("Lv1");
+        if (ImGui::TreeNode("Node2"))
+        {
+            if (ImGui::TreeNode("Node3"))
+            {
+                ImGui::PushID("Lv4");
+                ImGui::Button("Button");
+                ctx->GenericVars.Status.QueryInc();
+                ImGui::PopID();
+                ImGui::TreePop();
+            }
+            ImGui::TreePop();
+        }
+        ImGui::PopID(); // Lv1
+        ImGui::PopID(); // Lv0
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ctx->SetRef("Test Window");
+        ctx->ItemCloseAll("");
+        ctx->ItemClick("Lv0/Lv1/Node2/Node3/Lv4/Button");
+        IM_CHECK_EQ(ctx->GenericVars.Status.Clicked, 1);
+
+        ctx->ItemCloseAll("");
+        ctx->ItemClick("**/Lv1/Node2/Node3/Lv4/Button");
+        IM_CHECK_EQ(ctx->GenericVars.Status.Clicked, 2);
+
+        ctx->ItemCloseAll("");
+        ctx->ItemClick("Lv0/**/Node2/Node3/Lv4/Button");
+        IM_CHECK_EQ(ctx->GenericVars.Status.Clicked, 3);
+
+        ctx->ItemCloseAll("");
+        ctx->ItemClick("**/Node2/Node3/Lv4/Button");
+        IM_CHECK_EQ(ctx->GenericVars.Status.Clicked, 4);
+
+        ctx->ItemCloseAll("");
+        ctx->ItemClick("Lv0/Lv1/Node2/Node3/**/Button");
+        IM_CHECK_EQ(ctx->GenericVars.Status.Clicked, 5);
+
+        // Can't work (would need to brute-force open everything?)
+        //ctx->ItemCloseAll("");
+        //ctx->ItemClick("Lv0/Lv1/**/Button");
+        //IM_CHECK_EQ(ctx->GenericVars.Status.Clicked, 5);
+    };
+}
+
+//-------------------------------------------------------------------------
 // Tests: Capture
 //-------------------------------------------------------------------------
 
@@ -7116,36 +7125,46 @@ void RegisterTests_Capture(ImGuiTestEngine* e)
 
 void RegisterTests_All(ImGuiTestEngine* e)
 {
-    extern void RegisterTests_Docking(ImGuiTestEngine* e);          // imgui_tests_docking.cpp
-    extern void RegisterTests_Nav(ImGuiTestEngine* e);              // imgui_tests_nav.cpp
-    extern void RegisterTests_Perf(ImGuiTestEngine* e);             // imgui_tests_perf.cpp
-    extern void RegisterTests_Columns(ImGuiTestEngine* e);          // imgui_tests_tables.cpp
-    extern void RegisterTests_Table(ImGuiTestEngine* e);            // imgui_tests_tables.cpp
-    extern void RegisterTests_Viewports(ImGuiTestEngine* e);        // imgui_tests_viewports.cpp
-    extern void RegisterTests_Widgets(ImGuiTestEngine* e);          // imgui_tests_widgets.cpp
-    extern void RegisterTests_WidgetsInputText(ImGuiTestEngine* e); // imgui_tests_widgets_inputtext.cpp
-    extern void RegisterTests_PerfTool(ImGuiTestEngine* e);         // imgui_te_perftool.cpp
-
-    // Tests
+    // Here
     RegisterTests_Window(e);
     RegisterTests_Layout(e);
-    RegisterTests_Widgets(e);
-    RegisterTests_WidgetsInputText(e);
     RegisterTests_Inputs(e);
+
+    // imgui_tests_widgets.cpp
+    extern void RegisterTests_Widgets(ImGuiTestEngine * e);
+    RegisterTests_Widgets(e);
+
+    // imgui_tests_widgets_inputtext.cpp
+    extern void RegisterTests_WidgetsInputText(ImGuiTestEngine * e);
+    RegisterTests_WidgetsInputText(e);
+
+    // imgui_tests_nav.cpp
+    extern void RegisterTests_Nav(ImGuiTestEngine * e);
     RegisterTests_Nav(e);
+
+    // imgui_tests_tables.cpp
+    extern void RegisterTests_Columns(ImGuiTestEngine * e);
+    extern void RegisterTests_Table(ImGuiTestEngine * e);
     RegisterTests_Columns(e);
     RegisterTests_Table(e);
+
+    // imgui_tests_docking.cpp
+    extern void RegisterTests_Docking(ImGuiTestEngine * e);
     RegisterTests_Docking(e);
+
+    // imgui_tests_viewports.cpp
+    extern void RegisterTests_Viewports(ImGuiTestEngine * e);
     RegisterTests_Viewports(e);
+
+    // Here
+    extern void RegisterTests_TestEnginePerfTool(ImGuiTestEngine * e);// imgui_te_perftool.cpp
     RegisterTests_DrawList(e);
     RegisterTests_Misc(e);
-
-    // Captures
+    RegisterTests_TestEngine(e);
+    RegisterTests_TestEnginePerfTool(e);
     RegisterTests_Capture(e);
 
-    // Performance Benchmarks
+    // imgui_tests_perf.cpp (Performance Benchmarks0
+    extern void RegisterTests_Perf(ImGuiTestEngine * e);
     RegisterTests_Perf(e);
-
-    // Tools
-    RegisterTests_PerfTool(e);
 }

@@ -1799,12 +1799,12 @@ static bool SetPerfToolWindowOpen(ImGuiTestContext* ctx, bool is_open)
     return was_open;
 }
 
-void RegisterTests_PerfTool(ImGuiTestEngine* e)
+void RegisterTests_TestEnginePerfTool(ImGuiTestEngine* e)
 {
     ImGuiTest* t = NULL;
 
     // ## Flex perf tool code.
-    t = IM_REGISTER_TEST(e, "misc", "misc_cov_perf_tool");
+    t = IM_REGISTER_TEST(e, "testengine", "testengine_cov_perftool");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         IM_UNUSED(ctx);
