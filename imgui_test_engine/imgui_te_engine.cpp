@@ -1379,7 +1379,7 @@ static void ImGuiTestEngine_RunTest(ImGuiTestEngine* engine, ImGuiTestContext* c
     // - We need one mandatory frame running GuiFunc before running TestFunc
     // - We add a second frame, to avoid running tests while e.g. windows are typically appearing for the first time, hidden,
     // measuring their initial size. Most tests are going to be more meaningful with this stabilized base.
-    if (!(test->Flags & ImGuiTestFlags_NoWarmUp))
+    if (!(test->Flags & ImGuiTestFlags_NoGuiWarmUp))
     {
         ctx->FrameCount -= 2;
         ctx->Yield();
@@ -1398,7 +1398,7 @@ static void ImGuiTestEngine_RunTest(ImGuiTestEngine* engine, ImGuiTestContext* c
     else
     {
         // Sanity check
-        if (test->GuiFunc)
+        if (test->GuiFunc && !(test->Flags & ImGuiTestFlags_NoGuiWarmUp))
             IM_ASSERT(test->GuiFuncLastFrame == ctx->UiContext->FrameCount);
 
         if (test->TestFunc)

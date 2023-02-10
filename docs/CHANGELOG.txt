@@ -5,6 +5,9 @@ CHANGELOG
    Those changes are not all listed here.
 ** For a while this is going to ONLY INCLUDE BREAKING CHANGES.
 
+2023/02/10:
+- TestEngine: renamed 'ImGuiTestFlags_NoWarmUp' to 'ImGuiTestFlags_NoGuiWarmUp' (rarely used).
+
 2023/02/09:
 - TestEngine: Alter visibility checks to reduce unnecessary scrolling when items
   are mostly visible. Bias toward reducing amount of horizontal scroll.
