@@ -1461,11 +1461,15 @@ static void ImGuiTestEngine_RunTest(ImGuiTestEngine* engine, ImGuiTestContext* c
 
         // Keep GuiFunc spinning
         // FIXME-TESTS: after an error, this is not visible in the UI because status is not _Running anymore...
-        while (engine->IO.ConfigKeepGuiFunc && !engine->Abort)
-        {
-            ctx->RunFlags |= ImGuiTestRunFlags_GuiFuncOnly;
-            ctx->Yield();
-        }
+        if (engine->IO.ConfigKeepGuiFunc)
+            if (engine->TestsQueue.Size == 1 || test->Status == ImGuiTestStatus_Error)
+            {
+                while (engine->IO.ConfigKeepGuiFunc && !engine->Abort)
+                {
+                    ctx->RunFlags |= ImGuiTestRunFlags_GuiFuncOnly;
+                    ctx->Yield();
+                }
+            }
     }
 
     IM_ASSERT(engine->CaptureCurrentArgs == NULL && "Active capture was not terminated in the test code.");

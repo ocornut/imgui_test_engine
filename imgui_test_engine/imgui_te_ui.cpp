@@ -731,7 +731,7 @@ static void ImGuiTestEngine_ShowTestTool(ImGuiTestEngine* engine, bool* p_open)
     ImGui::SameLine();
     ImGui::Checkbox("DbgBrk", &engine->IO.ConfigBreakOnError); HelpTooltip("Break in debugger when hitting an error.");
     ImGui::SameLine();
-    ImGui::Checkbox("KeepGUI", &engine->IO.ConfigKeepGuiFunc); HelpTooltip("Keep GUI function running after test function is finished.\nHold ESC to abort a running GUI function.");
+    ImGui::Checkbox("KeepGUI", &engine->IO.ConfigKeepGuiFunc); HelpTooltip("Keep GUI function running after a test fails, or when a single queued test is finished.\nHold ESC to abort a running GUI function.");
     ImGui::SameLine();
     ImGui::Checkbox("Refocus", &engine->IO.ConfigTakeFocusBackAfterTests); HelpTooltip("Set focus back to Test window after running tests.");
     ImGui::SameLine();
