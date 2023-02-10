@@ -2335,6 +2335,45 @@ void RegisterTests_Window(ImGuiTestEngine* e)
             IM_CHECK(g.NavWindow == ctx->GetWindowByRef("Test Window"));
         }
     };
+
+#if IMGUI_VERSION_NUM >= 18928
+    // ## Test a few window settings functions
+    t = IM_REGISTER_TEST(e, "window", "window_settings");
+    t->Flags |= ImGuiTestFlags_NoGuiWarmUp;
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::SetNextWindowPos(ImGui::GetMainViewport()->Pos + ImVec2(101.0f, 101.0f), ImGuiCond_FirstUseEver);
+        ImGui::Begin("Test Window Settings", NULL, ImGuiWindowFlags_None);
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ctx->SetRef("//Test Window Settings");
+        ImGui::ClearWindowSettings("Test Window Settings");
+        ctx->Yield();
+        ImGuiWindow* window = ctx->GetWindowByRef("");
+        IM_CHECK(window != NULL);
+        IM_CHECK_EQ(window->Pos, ImGui::GetMainViewport()->Pos + ImVec2(101.0f, 101.0f));
+        ctx->Yield(2);
+
+        // Alter settings and verify saving state
+        ctx->WindowMove("", window->Pos + ImVec2(10, 10));
+        ImGui::SaveIniSettingsToMemory();
+        ImGuiWindowSettings* settings = ImGui::FindWindowSettingsByWindow(window);
+        IM_CHECK(settings != NULL);
+        IM_CHECK_EQ(ImVec2(settings->Pos.x, settings->Pos.y), ImVec2(101.0f, 101.0f) + ImVec2(10.0f, 10.0f)); // Viewport relative
+
+        // Test clearing settings
+        ImGui::ClearWindowSettings("Test Window Settings");
+        ctx->Yield();
+        IM_CHECK_EQ(window->Pos, ImGui::GetMainViewport()->Pos + ImVec2(101.0f, 101.0f));
+
+        // Verify we don't create additional garbage
+        ImGui::SaveIniSettingsToMemory();
+        ImGuiWindowSettings* settings2 = ImGui::FindWindowSettingsByWindow(window);
+        IM_CHECK(settings == settings2);
+    };
+#endif
 }
 
 

@@ -1403,7 +1403,7 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
 
         if (ctx->IsGuiFuncOnly())
         {
-            ImGui::Begin("Config", NULL, ImGuiWindowFlags_NoSavedSettings);
+            ImGui::Begin("Config", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoFocusOnAppearing);
             ImGui::Checkbox("UseClipper", &vars.UseClipper);
             ImGui::End();
         }
@@ -1455,7 +1455,8 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
             ctx->Yield(2);
             g.NavId = 0;
             //memset(window->NavRectRel, 0, sizeof(window->NavRectRel));
-            ctx->ScrollToTop("");
+            ctx->ScrollToX("", 0.0f);
+            ctx->ScrollToY("", 0.0f);
 
 #if IMGUI_VERSION_NUM < 18503
             ctx->KeyPress(ImGuiKey_PageDown);
