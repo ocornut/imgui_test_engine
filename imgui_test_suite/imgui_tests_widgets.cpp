@@ -2059,7 +2059,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
     };
 
     // ## Test preserving hue and saturation for certain colors having these components undefined.
-    t = IM_REGISTER_TEST(e, "widgets", "widgets_coloredit_hue_sat");
+    t = IM_REGISTER_TEST(e, "widgets", "widgets_coloredit_preserve_hs");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         ImGuiTestGenericVars& vars = ctx->GenericVars;
@@ -2131,7 +2131,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
             Color color = read_color();
             IM_CHECK_EQ(color.S, 0.0f);
             IM_CHECK_EQ(color.H, 0.0f);                     // Hue undefined
-            IM_CHECK_EQ(color_start.H, g.ColorEditLastHue); // Preserved hue matches original color
+            IM_CHECK_EQ(color_start.H, g.ColorEditSavedHue); // Preserved hue matches original color
 
             // Test saturation preservation during mouse input.
             ctx->ItemClick("##picker/sv");
@@ -2145,7 +2145,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
             ctx->MouseMoveToPos(g.IO.MousePos + ImVec2(0.0f, -popup->Size.y * 1.0f));  // Top
             ctx->MouseUp();
             IM_CHECK_EQ(read_color().S, color_start.S);
-            IM_CHECK_EQ(g.ColorEditLastSat, color_start.H);
+            IM_CHECK_EQ(g.ColorEditSavedSat, color_start.H);
 
             ctx->ItemClick("##picker/sv");                  // Reset color
             ctx->ItemClick("##picker/hue");
@@ -2156,7 +2156,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
             color = read_color();
             IM_CHECK_EQ(color.V, 0.0f);
             IM_CHECK_EQ(color.S, 0.0f);                     // Saturation undefined
-            IM_CHECK_EQ(color_start.S, g.ColorEditLastSat); // Preserved saturation matches original color
+            IM_CHECK_EQ(color_start.S, g.ColorEditSavedSat);// Preserved saturation matches original color
 
             // Set color to pure white and verify it can reach (1.0f, 1.0f, 1.0f).
             ctx->ItemDragWithDelta("##picker/sv", ImVec2(-popup->Size.x * 0.5f, -popup->Size.y * 0.5f));
@@ -2168,10 +2168,10 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
             // Move hue to extreme ends, see if it does not wrap around.
             ctx->ItemDragWithDelta("##picker/hue", ImVec2(0, +popup->Size.y * 0.5f));
             IM_CHECK_EQ(read_color().H, 0.0f);              // Hue undefined
-            IM_CHECK_EQ(g.ColorEditLastHue, 1.0f);          // Preserved hue matches just set value
+            IM_CHECK_EQ(g.ColorEditSavedHue, 1.0f);         // Preserved hue matches just set value
             ctx->ItemDragWithDelta("##picker/hue", ImVec2(0, -popup->Size.y * 0.5f));
             IM_CHECK_EQ(read_color().H, 0.0f);              // Hue undefined
-            IM_CHECK_EQ(g.ColorEditLastHue, 0.0f);          // Preserved hue matches just set value
+            IM_CHECK_EQ(g.ColorEditSavedHue, 0.0f);         // Preserved hue matches just set value
 
             // Test hue preservation during mouse input.
             ctx->ItemClick("##picker/hue");
@@ -2187,7 +2187,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
             ctx->MouseMoveToPos(g.IO.MousePos + ImVec2(-popup->Size.x * 1.0f, 0.0f));  // BL
             ctx->MouseMoveToPos(g.IO.MousePos + ImVec2(0.0f, -popup->Size.y * 1.0f));  // TL
             ctx->MouseUp();
-            IM_CHECK_EQ(color_start.H, g.ColorEditLastHue); // Hue remains unchanged during all operations
+            IM_CHECK_EQ(color_start.H, g.ColorEditSavedHue); // Hue remains unchanged during all operations
         }
     };
 
