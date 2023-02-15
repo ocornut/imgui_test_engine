@@ -1,8 +1,8 @@
 // dear imgui
 // Demo Tests demonstrating the Dear ImGui Test Engine
 
-#include "imgui.h"
 #define IMGUI_DEFINE_MATH_OPERATORS
+#include "imgui.h"
 #include "imgui_internal.h"
 #include "imgui_test_engine/imgui_te_context.h"
 #include "imgui_test_engine/imgui_capture_tool.h"

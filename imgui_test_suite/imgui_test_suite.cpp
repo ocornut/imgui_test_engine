@@ -39,9 +39,9 @@
 #endif
 
 // Includes
+#define IMGUI_DEFINE_MATH_OPERATORS
 #include "imgui.h"
 #include <stdio.h>
-#define IMGUI_DEFINE_MATH_OPERATORS
 #include "imgui_test_suite.h"
 #include "imgui_test_engine/imgui_te_engine.h"
 #include "imgui_test_engine/imgui_te_exporters.h"
