@@ -2338,6 +2338,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
     };
 
     // ## Test overlapping drag and drop targets. The drag and drop system always prioritize the smaller target.
+    // ## Test edge cases related to the overlapping targets submission order. (#6183)
     t = IM_REGISTER_TEST(e, "widgets", "widgets_dragdrop_overlapping_targets");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
@@ -2362,18 +2363,22 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
                 {
                     IM_UNUSED(payload);
                     vars.Id = ImGui::GetItemID();
+                    vars.Count++;
+                    ctx->LogDebug("Dropped on \"%s\"!", name);
                 }
                 ImGui::EndDragDropTarget();
             }
         };
 
-        // Render small button over big one
+        // Render small button after big one
+        // Position buttons so that our default "center" aiming behavior doesn't need to be tweaked,
+        // otherwise we could expose ImGuiTestOpFlags to ItemDragAndDrop().
         ImVec2 pos = ImGui::GetCursorScreenPos();
         render_button(ctx, "Big1", pos, ImVec2(100, 100));
-        render_button(ctx, "Small1", pos + ImVec2(25, 25), ImVec2(50, 50));
+        render_button(ctx, "Small1", pos + ImVec2(70, 70), ImVec2(20, 20));
 
-        // Render small button over small one
-        render_button(ctx, "Small2", pos + ImVec2(0, 110) + ImVec2(25, 25), ImVec2(50, 50));
+        // Render big button after small one
+        render_button(ctx, "Small2", pos + ImVec2(0, 110) + ImVec2(70, 70), ImVec2(20, 20));
         render_button(ctx, "Big2", pos + ImVec2(0, 110), ImVec2(100, 100));
 
         ImGui::End();
@@ -2383,14 +2388,64 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ImGuiTestGenericVars& vars = ctx->GenericVars;
         ctx->SetRef("Test Window");
 
-        vars.Id = 0;
-        ctx->ItemDragAndDrop("Drag", "Small1");
-        IM_CHECK(vars.Id == ctx->GetID("Small1"));
+        const char* drop_targets[] = { "Big1", "Small1", "Big2", "Small2" };
+        //const char* drop_targets[] = { "Small2" };
 
-        vars.Id = 0;
-        ctx->ItemDragAndDrop("Drag", "Small2");
-        IM_CHECK(vars.Id == ctx->GetID("Small2"));
+        for (auto drop_target : drop_targets)
+        {
+            vars.Id = 0;
+            vars.Count = 0;
+            ctx->ItemDragAndDrop("Drag", drop_target);
+            IM_CHECK(vars.Id == ctx->GetID(drop_target));
+#if IMGUI_VERSION_NUM >= 18933
+            IM_CHECK(vars.Count == 1);
+#endif
+            ctx->Yield(2); // Check again. As per #6183 we used to have a bug with overlapping targets.
+            IM_CHECK(vars.Id == ctx->GetID(drop_target));
+#if IMGUI_VERSION_NUM >= 18933
+            IM_CHECK(vars.Count == 1);
+#endif
+        }
     };
+
+
+    // ## Test timing of clearing payload right after delivery (#5817)
+#if IMGUI_VERSION_NUM >= 18933
+    t = IM_REGISTER_TEST(e, "widgets", "widgets_dragdrop_clear_payload");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
+
+        ImGui::Button("Drag Me");
+        if (ImGui::BeginDragDropSource())
+        {
+            ImGui::SetDragDropPayload("_TEST_VALUE", NULL, 0);
+            ImGui::EndDragDropSource();
+        }
+
+        ImGui::Button("Drop Here");
+        bool just_dropped = false;
+        if (ImGui::BeginDragDropTarget())
+        {
+            if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("_TEST_VALUE"))
+            {
+                IM_UNUSED(payload);
+                just_dropped = true;
+                IM_CHECK(ImGui::IsDragDropActive());
+            }
+            ImGui::EndDragDropTarget();
+            // This is basically the only meaningful test here. Merely testing our basic contract for #5817
+            if (just_dropped)
+                IM_CHECK(!ImGui::IsDragDropActive());
+        }
+
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ctx->ItemDragAndDrop("//Test Window/Drag Me", "//Test Window/Drop Here");
+    };
+#endif
 
     // ## Test drag sources with _SourceNoPreviewTooltip flag not producing a tooltip.
     // ## Test drag target/accept with ImGuiDragDropFlags_AcceptNoPreviewTooltip
