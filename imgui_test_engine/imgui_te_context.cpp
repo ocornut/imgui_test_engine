@@ -447,11 +447,13 @@ void ImGuiTestContext::SetRef(ImGuiWindow* window)
         WindowCollapse(window->ID, false);
 }
 
+// SetRef() ok in GUI Func ONLY if pointer to a pointer.
 // FIXME-TESTS: May be good to focus window when docked? Otherwise locate request won't even see an item?
 void ImGuiTestContext::SetRef(ImGuiTestRef ref)
 {
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
-    LogDebug("SetRef '%s' %08X", ref.Path ? ref.Path : "NULL", ref.ID);
+    if (ActiveFunc == ImGuiTestActiveFunc_TestFunc)
+        LogDebug("SetRef '%s' %08X", ref.Path ? ref.Path : "NULL", ref.ID);
 
     if (ref.Path)
     {
@@ -482,6 +484,9 @@ void ImGuiTestContext::SetRef(ImGuiTestRef ref)
         } while (name_end != NULL && name_end > name_begin && name_end[-1] == '\\');
         window = GetWindowByRef(ImHashDecoratedPath(name_begin, name_end));
     }
+
+    if (ActiveFunc == ImGuiTestActiveFunc_GuiFunc)
+        return;
 
     // (2) Ref was specified as an ID and points to an item therefore item lookup is unavoidable.
     // FIXME: Maybe display something in log when that happens?
