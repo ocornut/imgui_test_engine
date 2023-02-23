@@ -4598,169 +4598,6 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
         ctx->Yield();
     };
 
-    // ## Test hash functions and ##/### operators
-    t = IM_REGISTER_TEST(e, "misc", "misc_hash_001");
-    t->TestFunc = [](ImGuiTestContext* ctx)
-    {
-        // Test hash function for the property we need
-        IM_CHECK_EQ(ImHashStr("helloworld"), ImHashStr("world", 0, ImHashStr("hello", 0)));  // String concatenation
-        IM_CHECK_EQ(ImHashStr("hello###world"), ImHashStr("###world"));                      // ### operator reset back to the seed
-        IM_CHECK_EQ(ImHashStr("hello###world", 0, 1234), ImHashStr("###world", 0, 1234));    // ### operator reset back to the seed
-        IM_CHECK_EQ(ImHashStr("helloxxx", 5), ImHashStr("hello"));                           // String size is honored
-        IM_CHECK_EQ(ImHashStr("", 0, 0), (ImU32)0);                                          // Empty string doesn't alter hash
-        IM_CHECK_EQ(ImHashStr("", 0, 1234), (ImU32)1234);                                    // Empty string doesn't alter hash
-        IM_CHECK_EQ(ImHashStr("hello", 5), ImHashData("hello", 5));                          // Do we need to guarantee this?
-
-        const int data[2] = { 42, 50 };
-        IM_CHECK_EQ(ImHashData(&data[0], sizeof(int) * 2), ImHashData(&data[1], sizeof(int), ImHashData(&data[0], sizeof(int))));
-        IM_CHECK_EQ(ImHashData("", 0, 1234), (ImU32)1234);                                   // Empty data doesn't alter hash
-
-        // Verify that Test Engine high-level hash wrapper works
-        IM_CHECK_EQ(ImHashDecoratedPath("Hello/world"), ImHashStr("Helloworld"));            // Slashes are ignored
-        IM_CHECK_EQ(ImHashDecoratedPath("Hello\\/world"), ImHashStr("Hello/world"));         // Slashes can be inhibited
-        IM_CHECK_EQ(ImHashDecoratedPath("//Hello", NULL, 42), ImHashDecoratedPath("Hello")); // Leading / clears seed
-
-        // Verify that ### reset to the last slash
-        IM_CHECK_EQ(ImHashDecoratedPath("Hello/world###Blah"), ImHashStr("###Blah", 0, ImHashStr("Hello")));
-    };
-
-    // ## Test GetID() + SetRef() behaviors. Test "//$FOCUSED" function.
-    t = IM_REGISTER_TEST(e, "misc", "misc_hash_002_paths");
-    t->GuiFunc = [](ImGuiTestContext* ctx)
-    {
-        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
-        ImGui::BeginChild("Child");
-        ImGui::EndChild();
-        ImGui::End();
-    };
-    t->TestFunc = [](ImGuiTestContext* ctx)
-    {
-        ImGuiContext& g = *ctx->UiContext;
-
-        // Avoid possible frame skips.
-        ctx->WindowCollapse("Hello, world!", false);
-        ctx->MouseSetViewport(ctx->GetWindowByRef("Hello, world!"));
-
-        // $FOCUSED meta-variable refers to current focused window.
-        ctx->WindowFocus("Hello, world!");
-        IM_CHECK_EQ(ctx->GetID("//$FOCUSED"), ImHashDecoratedPath("Hello, world!"));
-        IM_CHECK_EQ(ctx->GetID("//$FOCUSED/Foo"), ImHashDecoratedPath("Hello, world!/Foo"));
-
-        // Test that SetRef() locks the window
-        ctx->SetRef("//$FOCUSED");
-        IM_CHECK_EQ(ctx->GetID(""), ImHashDecoratedPath("Hello, world!"));
-        ctx->WindowFocus("//Test Window");
-        IM_CHECK_EQ(ctx->GetID(""), ImHashDecoratedPath("Hello, world!"));
-
-        // Test tracking of current ref id window.
-        int frame_number = g.FrameCount;
-        ctx->SetRef("//Hello, world!");
-        IM_CHECK_EQ(ctx->RefID, ImHashDecoratedPath("Hello, world!"));
-        IM_CHECK_EQ(ctx->RefWindowID, ImHashDecoratedPath("Hello, world!"));
-        IM_CHECK_EQ(frame_number, g.FrameCount);
-
-        // Existing item. Window is inferred from ref string.
-        frame_number = g.FrameCount;
-        ctx->SetRef("//Hello, world!/float");
-        IM_CHECK_EQ(ctx->RefID, ImHashDecoratedPath("Hello, world!/float"));
-        IM_CHECK_EQ(ctx->RefWindowID, ImHashDecoratedPath("Hello, world!"));
-        IM_CHECK_EQ(frame_number, g.FrameCount);
-
-        // Missing item. Window is inferred from ref string as well.
-        frame_number = g.FrameCount;
-        ctx->SetRef("//Hello, world!/not-float");
-        IM_CHECK_EQ(ctx->RefID, ImHashDecoratedPath("Hello, world!/not-float"));
-        IM_CHECK_EQ(ctx->RefWindowID, ImHashDecoratedPath("Hello, world!"));
-        IM_CHECK_EQ(frame_number, g.FrameCount);
-
-        // Existing item, set by ID. Item lookup is performed.
-        frame_number = g.FrameCount;
-        ctx->SetRef(ImHashDecoratedPath("Hello, world!/float"));
-        IM_CHECK_EQ(ctx->RefID, ImHashDecoratedPath("Hello, world!/float"));
-        IM_CHECK_EQ(ctx->RefWindowID, ImHashDecoratedPath("Hello, world!"));
-        IM_CHECK_LT(frame_number, g.FrameCount);
-
-        // Missing item, set by ID. Window can not be found.
-        frame_number = g.FrameCount;
-        ctx->SetRef(ImHashDecoratedPath("Hello, world!/not-float"));
-        IM_CHECK_EQ(ctx->RefID, ImHashDecoratedPath("Hello, world!/not-float"));
-        IM_CHECK_EQ(ctx->RefWindowID, (ImGuiID)0);
-        IM_CHECK_LT(frame_number, g.FrameCount);
-
-        // "//" and "/" prefixes.
-        ctx->SetRef("//Hello, world!/float");
-        IM_CHECK_EQ(ctx->GetID("//Foo"), ImHashDecoratedPath("Foo"));               // "//" resets seed id.
-        IM_CHECK_EQ(ctx->GetID("/Foo"), ImHashDecoratedPath("Hello, world!/Foo"));  // "/" uses current window as a seed.
-
-        // SetRef() with child windows.
-        ImGuiWindow* child_window = ctx->WindowInfo("//Test Window/Child")->Window;
-        IM_CHECK(child_window != NULL);
-        Str64 ref(child_window->Name);
-        ImStrReplace(&ref, "/", "\\/");
-        ref.append("/float");
-        ctx->MouseSetViewport(child_window);
-        frame_number = g.FrameCount;
-        ctx->SetRef(ImGuiTestRef());    // Easier to reset RefID than to prepend child window with "//".
-        ctx->SetRef(ref.c_str());
-        IM_CHECK_EQ(ctx->RefID, ImHashDecoratedPath("float", NULL, child_window->ID));
-        IM_CHECK_EQ(ctx->RefWindowID, child_window->ID);
-        IM_CHECK_EQ(frame_number, g.FrameCount);
-    };
-
-    // ## Test "$$xxxx" literals encoders
-    t = IM_REGISTER_TEST(e, "misc", "misc_hash_003_scalar_literals");
-    t->TestFunc = [](ImGuiTestContext* ctx)
-    {
-        int v_42 = 42;
-        int v_n1 = -1;
-        IM_CHECK_EQ(ImHashDecoratedPath("$$42"), ImHashData(&v_42, sizeof(int)));
-        IM_CHECK_EQ(ImHashDecoratedPath("$$-1"), ImHashData(&v_n1, sizeof(int)));
-
-        IM_CHECK_EQ(ImHashDecoratedPath("\\$$42"), ImHashStr("$$42")); // Test escaping
-        IM_CHECK_EQ(ImHashDecoratedPath("$\\$42"), ImHashStr("$$42")); // Test escaping
-
-        IM_CHECK_EQ(ImHashDecoratedPath("hello/$$42"), ImHashData(&v_42, sizeof(int), ImHashStr("hello")));
-        IM_CHECK_EQ(ImHashDecoratedPath("hello/$$-1"), ImHashData(&v_n1, sizeof(int), ImHashStr("hello")));
-
-        IM_CHECK_EQ(ImHashDecoratedPath("$$42/hello"), ImHashStr("hello", 0, ImHashData(&v_42, sizeof(int))));
-        IM_CHECK_EQ(ImHashDecoratedPath("$$-1/hello"), ImHashStr("hello", 0, ImHashData(&v_n1, sizeof(int))));
-
-        IM_CHECK_EQ(ImHashDecoratedPath("hello/$$42/world"), ImHashStr("world", 0, ImHashData(&v_42, sizeof(int), ImHashStr("hello"))));
-        IM_CHECK_EQ(ImHashDecoratedPath("hello/$$-1/world"), ImHashStr("world", 0, ImHashData(&v_n1, sizeof(int), ImHashStr("hello"))));
-
-        void* p_123FFF = (void*)(intptr_t)0x123FFF;
-        IM_CHECK_EQ(ImHashDecoratedPath("$$(ptr)0x123FFF"), ImHashData(&p_123FFF, sizeof(void*)));
-        IM_CHECK_EQ(ImHashDecoratedPath("hello/$$(ptr)0x123FFF"), ImHashData(&p_123FFF, sizeof(void*), ImHashStr("hello")));
-        IM_CHECK_EQ(ImHashDecoratedPath("$$(ptr)0x123FFF/hello"), ImHashStr("hello", 0, ImHashData(&p_123FFF, sizeof(void*))));
-        IM_CHECK_EQ(ImHashDecoratedPath("hello/$$(ptr)0x123FFF/world"), ImHashStr("world", 0, ImHashData(&p_123FFF, sizeof(void*), ImHashStr("hello"))));
-    };
-
-    // ## Test ID/hash of window names
-    t = IM_REGISTER_TEST(e, "misc", "misc_hash_004_window_names");
-    t->GuiFunc = [](ImGuiTestContext* ctx)
-    {
-        ImGuiContext& g = *ctx->UiContext;
-
-        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
-        IM_CHECK_EQ(g.CurrentWindow->ID, ImHashDecoratedPath("Test Window"));
-        ImGui::End();
-
-        ImGui::Begin("Test Window###WithHashes", NULL, ImGuiWindowFlags_NoSavedSettings);
-        IM_CHECK_EQ(g.CurrentWindow->ID, ImHashDecoratedPath("Test Window###WithHashes"));
-        IM_CHECK_EQ(g.CurrentWindow->ID, ImHashDecoratedPath("###WithHashes"));
-        ImGui::End();
-
-        ImGui::Begin("Test Window/WithSlash", NULL, ImGuiWindowFlags_NoSavedSettings);
-        IM_CHECK_EQ(g.CurrentWindow->ID, ImHashDecoratedPath("Test Window\\/WithSlash"));
-        ImGui::End();
-
-        ImGui::Begin("Test Window/WithSlash###AndHashes", NULL, ImGuiWindowFlags_NoSavedSettings);
-        IM_CHECK_EQ(g.CurrentWindow->ID, ImHashDecoratedPath("Test Window\\/WithSlash###AndHashes"));
-        ImGui::End();
-
-        ctx->Finish(); // Finish on first frame
-    };
-
     // ## Test ImVector functions
     t = IM_REGISTER_TEST(e, "misc", "misc_vector_001");
     t->TestFunc = [](ImGuiTestContext* ctx)
@@ -6630,7 +6467,7 @@ void RegisterTests_TestEngine(ImGuiTestEngine* e)
     };
 
     // ## Test ctx->WindowInfo().
-    t = IM_REGISTER_TEST(e, "testengine", "testengine_ref_window_info");
+    t = IM_REGISTER_TEST(e, "testengine", "testengine_ref_windowinfo");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         auto& vars = ctx->GenericVars;
@@ -6850,6 +6687,169 @@ void RegisterTests_TestEngine(ImGuiTestEngine* e)
     {
         ctx->ItemClick("//Test Window A/A");
         ctx->ItemDragAndDrop("//$FOCUSED/A", "//Test Window B/B");
+    };
+
+    // ## Test hash functions and ##/### operators
+    t = IM_REGISTER_TEST(e, "testengine", "testengine_hash_001");
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        // Test hash function for the property we need
+        IM_CHECK_EQ(ImHashStr("helloworld"), ImHashStr("world", 0, ImHashStr("hello", 0)));  // String concatenation
+        IM_CHECK_EQ(ImHashStr("hello###world"), ImHashStr("###world"));                      // ### operator reset back to the seed
+        IM_CHECK_EQ(ImHashStr("hello###world", 0, 1234), ImHashStr("###world", 0, 1234));    // ### operator reset back to the seed
+        IM_CHECK_EQ(ImHashStr("helloxxx", 5), ImHashStr("hello"));                           // String size is honored
+        IM_CHECK_EQ(ImHashStr("", 0, 0), (ImU32)0);                                          // Empty string doesn't alter hash
+        IM_CHECK_EQ(ImHashStr("", 0, 1234), (ImU32)1234);                                    // Empty string doesn't alter hash
+        IM_CHECK_EQ(ImHashStr("hello", 5), ImHashData("hello", 5));                          // Do we need to guarantee this?
+
+        const int data[2] = { 42, 50 };
+        IM_CHECK_EQ(ImHashData(&data[0], sizeof(int) * 2), ImHashData(&data[1], sizeof(int), ImHashData(&data[0], sizeof(int))));
+        IM_CHECK_EQ(ImHashData("", 0, 1234), (ImU32)1234);                                   // Empty data doesn't alter hash
+
+        // Verify that Test Engine high-level hash wrapper works
+        IM_CHECK_EQ(ImHashDecoratedPath("Hello/world"), ImHashStr("Helloworld"));            // Slashes are ignored
+        IM_CHECK_EQ(ImHashDecoratedPath("Hello\\/world"), ImHashStr("Hello/world"));         // Slashes can be inhibited
+        IM_CHECK_EQ(ImHashDecoratedPath("//Hello", NULL, 42), ImHashDecoratedPath("Hello")); // Leading / clears seed
+
+        // Verify that ### reset to the last slash
+        IM_CHECK_EQ(ImHashDecoratedPath("Hello/world###Blah"), ImHashStr("###Blah", 0, ImHashStr("Hello")));
+    };
+
+    // ## Test GetID() + SetRef() behaviors. Test "//$FOCUSED" function.
+    t = IM_REGISTER_TEST(e, "testengine", "testengine_hash_001_paths");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImGui::BeginChild("Child");
+        ImGui::EndChild();
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiContext& g = *ctx->UiContext;
+
+        // Avoid possible frame skips.
+        ctx->WindowCollapse("Hello, world!", false);
+        ctx->MouseSetViewport(ctx->GetWindowByRef("Hello, world!"));
+
+        // $FOCUSED meta-variable refers to current focused window.
+        ctx->WindowFocus("Hello, world!");
+        IM_CHECK_EQ(ctx->GetID("//$FOCUSED"), ImHashDecoratedPath("Hello, world!"));
+        IM_CHECK_EQ(ctx->GetID("//$FOCUSED/Foo"), ImHashDecoratedPath("Hello, world!/Foo"));
+
+        // Test that SetRef() locks the window
+        ctx->SetRef("//$FOCUSED");
+        IM_CHECK_EQ(ctx->GetID(""), ImHashDecoratedPath("Hello, world!"));
+        ctx->WindowFocus("//Test Window");
+        IM_CHECK_EQ(ctx->GetID(""), ImHashDecoratedPath("Hello, world!"));
+
+        // Test tracking of current ref id window.
+        int frame_number = g.FrameCount;
+        ctx->SetRef("//Hello, world!");
+        IM_CHECK_EQ(ctx->RefID, ImHashDecoratedPath("Hello, world!"));
+        IM_CHECK_EQ(ctx->RefWindowID, ImHashDecoratedPath("Hello, world!"));
+        IM_CHECK_EQ(frame_number, g.FrameCount);
+
+        // Existing item. Window is inferred from ref string.
+        frame_number = g.FrameCount;
+        ctx->SetRef("//Hello, world!/float");
+        IM_CHECK_EQ(ctx->RefID, ImHashDecoratedPath("Hello, world!/float"));
+        IM_CHECK_EQ(ctx->RefWindowID, ImHashDecoratedPath("Hello, world!"));
+        IM_CHECK_EQ(frame_number, g.FrameCount);
+
+        // Missing item. Window is inferred from ref string as well.
+        frame_number = g.FrameCount;
+        ctx->SetRef("//Hello, world!/not-float");
+        IM_CHECK_EQ(ctx->RefID, ImHashDecoratedPath("Hello, world!/not-float"));
+        IM_CHECK_EQ(ctx->RefWindowID, ImHashDecoratedPath("Hello, world!"));
+        IM_CHECK_EQ(frame_number, g.FrameCount);
+
+        // Existing item, set by ID. Item lookup is performed.
+        frame_number = g.FrameCount;
+        ctx->SetRef(ImHashDecoratedPath("Hello, world!/float"));
+        IM_CHECK_EQ(ctx->RefID, ImHashDecoratedPath("Hello, world!/float"));
+        IM_CHECK_EQ(ctx->RefWindowID, ImHashDecoratedPath("Hello, world!"));
+        IM_CHECK_LT(frame_number, g.FrameCount);
+
+        // Missing item, set by ID. Window can not be found.
+        frame_number = g.FrameCount;
+        ctx->SetRef(ImHashDecoratedPath("Hello, world!/not-float"));
+        IM_CHECK_EQ(ctx->RefID, ImHashDecoratedPath("Hello, world!/not-float"));
+        IM_CHECK_EQ(ctx->RefWindowID, (ImGuiID)0);
+        IM_CHECK_LT(frame_number, g.FrameCount);
+
+        // "//" and "/" prefixes.
+        ctx->SetRef("//Hello, world!/float");
+        IM_CHECK_EQ(ctx->GetID("//Foo"), ImHashDecoratedPath("Foo"));               // "//" resets seed id.
+        IM_CHECK_EQ(ctx->GetID("/Foo"), ImHashDecoratedPath("Hello, world!/Foo"));  // "/" uses current window as a seed.
+
+        // SetRef() with child windows.
+        ImGuiWindow* child_window = ctx->WindowInfo("//Test Window/Child")->Window;
+        IM_CHECK(child_window != NULL);
+        Str64 ref(child_window->Name);
+        ImStrReplace(&ref, "/", "\\/");
+        ref.append("/float");
+        ctx->MouseSetViewport(child_window);
+        frame_number = g.FrameCount;
+        ctx->SetRef(ImGuiTestRef());    // Easier to reset RefID than to prepend child window with "//".
+        ctx->SetRef(ref.c_str());
+        IM_CHECK_EQ(ctx->RefID, ImHashDecoratedPath("float", NULL, child_window->ID));
+        IM_CHECK_EQ(ctx->RefWindowID, child_window->ID);
+        IM_CHECK_EQ(frame_number, g.FrameCount);
+    };
+
+    // ## Test "$$xxxx" literals encoders
+    t = IM_REGISTER_TEST(e, "testengine", "testengine_hash_003_scalar_literals");
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        int v_42 = 42;
+        int v_n1 = -1;
+        IM_CHECK_EQ(ImHashDecoratedPath("$$42"), ImHashData(&v_42, sizeof(int)));
+        IM_CHECK_EQ(ImHashDecoratedPath("$$-1"), ImHashData(&v_n1, sizeof(int)));
+
+        IM_CHECK_EQ(ImHashDecoratedPath("\\$$42"), ImHashStr("$$42")); // Test escaping
+        IM_CHECK_EQ(ImHashDecoratedPath("$\\$42"), ImHashStr("$$42")); // Test escaping
+
+        IM_CHECK_EQ(ImHashDecoratedPath("hello/$$42"), ImHashData(&v_42, sizeof(int), ImHashStr("hello")));
+        IM_CHECK_EQ(ImHashDecoratedPath("hello/$$-1"), ImHashData(&v_n1, sizeof(int), ImHashStr("hello")));
+
+        IM_CHECK_EQ(ImHashDecoratedPath("$$42/hello"), ImHashStr("hello", 0, ImHashData(&v_42, sizeof(int))));
+        IM_CHECK_EQ(ImHashDecoratedPath("$$-1/hello"), ImHashStr("hello", 0, ImHashData(&v_n1, sizeof(int))));
+
+        IM_CHECK_EQ(ImHashDecoratedPath("hello/$$42/world"), ImHashStr("world", 0, ImHashData(&v_42, sizeof(int), ImHashStr("hello"))));
+        IM_CHECK_EQ(ImHashDecoratedPath("hello/$$-1/world"), ImHashStr("world", 0, ImHashData(&v_n1, sizeof(int), ImHashStr("hello"))));
+
+        void* p_123FFF = (void*)(intptr_t)0x123FFF;
+        IM_CHECK_EQ(ImHashDecoratedPath("$$(ptr)0x123FFF"), ImHashData(&p_123FFF, sizeof(void*)));
+        IM_CHECK_EQ(ImHashDecoratedPath("hello/$$(ptr)0x123FFF"), ImHashData(&p_123FFF, sizeof(void*), ImHashStr("hello")));
+        IM_CHECK_EQ(ImHashDecoratedPath("$$(ptr)0x123FFF/hello"), ImHashStr("hello", 0, ImHashData(&p_123FFF, sizeof(void*))));
+        IM_CHECK_EQ(ImHashDecoratedPath("hello/$$(ptr)0x123FFF/world"), ImHashStr("world", 0, ImHashData(&p_123FFF, sizeof(void*), ImHashStr("hello"))));
+    };
+
+    // ## Test ID/hash of window names
+    t = IM_REGISTER_TEST(e, "testengine", "testengine_hash_004_window_names");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiContext& g = *ctx->UiContext;
+
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+        IM_CHECK_EQ(g.CurrentWindow->ID, ImHashDecoratedPath("Test Window"));
+        ImGui::End();
+
+        ImGui::Begin("Test Window###WithHashes", NULL, ImGuiWindowFlags_NoSavedSettings);
+        IM_CHECK_EQ(g.CurrentWindow->ID, ImHashDecoratedPath("Test Window###WithHashes"));
+        IM_CHECK_EQ(g.CurrentWindow->ID, ImHashDecoratedPath("###WithHashes"));
+        ImGui::End();
+
+        ImGui::Begin("Test Window/WithSlash", NULL, ImGuiWindowFlags_NoSavedSettings);
+        IM_CHECK_EQ(g.CurrentWindow->ID, ImHashDecoratedPath("Test Window\\/WithSlash"));
+        ImGui::End();
+
+        ImGui::Begin("Test Window/WithSlash###AndHashes", NULL, ImGuiWindowFlags_NoSavedSettings);
+        IM_CHECK_EQ(g.CurrentWindow->ID, ImHashDecoratedPath("Test Window\\/WithSlash###AndHashes"));
+        ImGui::End();
+
+        ctx->Finish(); // Finish on first frame
     };
 }
 
