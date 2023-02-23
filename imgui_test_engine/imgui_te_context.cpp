@@ -2411,10 +2411,12 @@ void    ImGuiTestContext::GatherItems(ImGuiTestItemList* out_list, ImGuiTestRef 
     if (parent.ID == 0)
         parent.ID = GetID(parent);
     GatherTask->InParentID = parent.ID;
-    GatherTask->InDepth = depth;
+    GatherTask->InMaxDepth = depth;
+    GatherTask->InLayerMask = (1 << ImGuiNavLayer_Main); // FIXME: Configurable filter
     GatherTask->OutList = out_list;
 
     // Keep running while gathering
+    // The corresponding hook is ItemAdd() -> ImGuiTestEngineHook_ItemAdd() -> ImGuiTestEngineHook_ItemAdd_GatherTask()
     const int begin_gather_size = out_list->GetSize();
     while (true)
     {
@@ -2432,10 +2434,7 @@ void    ImGuiTestContext::GatherItems(ImGuiTestItemList* out_list, ImGuiTestRef 
     ImGuiTestItemInfo* parent_item = ItemInfo(parent, ImGuiTestOpFlags_NoError);
     LogDebug("GatherItems from %s, %d deep: found %d items.", ImGuiTestRefDesc(parent, parent_item).c_str(), depth, end_gather_size - begin_gather_size);
 
-    GatherTask->InParentID = 0;
-    GatherTask->InDepth = 0;
-    GatherTask->OutList = NULL;
-    GatherTask->LastItemInfo = NULL;
+    GatherTask->Clear();
 }
 
 // Supported values for ImGuiTestOpFlags:

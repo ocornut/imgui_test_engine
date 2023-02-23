@@ -35,11 +35,14 @@ struct ImGuiTestGatherTask
 {
     // Input
     ImGuiID                 InParentID = 0;
-    int                     InDepth = 0;
+    int                     InMaxDepth = 0;
+    short                   InLayerMask = 0;
 
     // Output/Temp
     ImGuiTestItemList*      OutList = NULL;
     ImGuiTestItemInfo*      LastItemInfo = NULL;
+
+    void Clear() { memset(this, 0, sizeof(*this)); }
 };
 
 // Find item ID given a label and a parent id

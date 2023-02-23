@@ -1580,11 +1580,56 @@ void ImGuiTestEngine_InstallDefaultCrashHandler()
 // [SECTION] HOOKS FOR CORE LIBRARY
 //-------------------------------------------------------------------------
 // - ImGuiTestEngineHook_ItemAdd()
+// - ImGuiTestEngineHook_ItemAdd_GatherTask()
 // - ImGuiTestEngineHook_ItemInfo()
 // - ImGuiTestEngineHook_ItemInfo_ResolveFindByLabel()
 // - ImGuiTestEngineHook_Log()
 // - ImGuiTestEngineHook_AssertFunc()
 //-------------------------------------------------------------------------
+
+// This is rather slow at it runs on all items but only during a GatherItems() operations.
+static void ImGuiTestEngineHook_ItemAdd_GatherTask(ImGuiContext* ui_ctx, ImGuiTestEngine* engine, const ImRect& bb, ImGuiID id)
+{
+    ImGuiContext& g = *ui_ctx;
+    ImGuiWindow* window = g.CurrentWindow;
+    ImGuiTestGatherTask* task = &engine->GatherTask;
+
+    if ((task->InLayerMask & (1 << window->DC.NavLayerCurrent)) == 0)
+        return;
+
+    const ImGuiID parent_id = window->IDStack.Size ? window->IDStack.back() : 0;
+    const ImGuiID gather_parent_id = task->InParentID;
+    int result_depth = -1;
+    if (gather_parent_id == parent_id)
+    {
+        result_depth = 0;
+    }
+    else
+    {
+        int max_depth = ImMin(window->IDStack.Size, task->InMaxDepth + ((id == parent_id) ? 1 : 0));
+        for (int n_depth = 1; n_depth < max_depth; n_depth++)
+            if (window->IDStack[window->IDStack.Size - 1 - n_depth] == gather_parent_id)
+            {
+                result_depth = n_depth;
+                break;
+            }
+    }
+
+    if (result_depth != -1)
+    {
+        ImGuiTestItemInfo* item = task->OutList->Pool.GetOrAddByKey(id); // Add
+        item->TimestampMain = engine->FrameCount;
+        item->ID = id;
+        item->ParentID = parent_id;
+        item->Window = window;
+        item->RectFull = item->RectClipped = bb;
+        item->RectClipped.ClipWithFull(window->ClipRect);      // This two step clipping is important, we want RectClipped to stays within RectFull
+        item->RectClipped.ClipWithFull(item->RectFull);
+        item->NavLayer = window->DC.NavLayerCurrent;
+        item->Depth = result_depth;
+        task->LastItemInfo = item;
+    }
+}
 
 void ImGuiTestEngineHook_ItemAdd(ImGuiContext* ui_ctx, const ImRect& bb, ImGuiID id)
 {
@@ -1593,7 +1638,6 @@ void ImGuiTestEngineHook_ItemAdd(ImGuiContext* ui_ctx, const ImRect& bb, ImGuiID
     IM_ASSERT(id != 0);
     ImGuiContext& g = *ui_ctx;
     ImGuiWindow* window = g.CurrentWindow;
-    const ImGuiID parent_id = window->IDStack.Size ? window->IDStack.back() : 0;
 
     // FIXME-OPT: Early out if there are no active Info/Gather tasks.
 
@@ -1603,7 +1647,7 @@ void ImGuiTestEngineHook_ItemAdd(ImGuiContext* ui_ctx, const ImRect& bb, ImGuiID
         ImGuiTestItemInfo* item = &task->Result;
         item->TimestampMain = g.FrameCount;
         item->ID = id;
-        item->ParentID = parent_id;
+        item->ParentID = window->IDStack.Size ? window->IDStack.back() : 0;
         item->Window = window;
         item->RectFull = item->RectClipped = bb;
         item->RectClipped.ClipWithFull(window->ClipRect);      // This two step clipping is important, we want RectClipped to stays within RectFull
@@ -1614,39 +1658,8 @@ void ImGuiTestEngineHook_ItemAdd(ImGuiContext* ui_ctx, const ImRect& bb, ImGuiID
     }
 
     // Gather Task (only 1 can be active)
-    if (engine->GatherTask.InParentID != 0 && window->DC.NavLayerCurrent == ImGuiNavLayer_Main) // FIXME: Layer filter?
-    {
-        const ImGuiID gather_parent_id = engine->GatherTask.InParentID;
-        int depth = -1;
-        if (gather_parent_id == parent_id)
-        {
-            depth = 0;
-        }
-        else
-        {
-            int max_depth = ImMin(window->IDStack.Size, engine->GatherTask.InDepth + ((id == parent_id) ? 1 : 0));
-            for (int n_depth = 1; n_depth < max_depth; n_depth++)
-                if (window->IDStack[window->IDStack.Size - 1 - n_depth] == gather_parent_id)
-                {
-                    depth = n_depth;
-                    break;
-                }
-        }
-        if (depth != -1)
-        {
-            ImGuiTestItemInfo* item = engine->GatherTask.OutList->Pool.GetOrAddByKey(id);
-            item->TimestampMain = engine->FrameCount;
-            item->ID = id;
-            item->ParentID = window->IDStack.back();
-            item->Window = window;
-            item->RectFull = item->RectClipped = bb;
-            item->RectClipped.ClipWithFull(window->ClipRect);      // This two step clipping is important, we want RectClipped to stays within RectFull
-            item->RectClipped.ClipWithFull(item->RectFull);
-            item->NavLayer = window->DC.NavLayerCurrent;
-            item->Depth = depth;
-            engine->GatherTask.LastItemInfo = item;
-        }
-    }
+    if (engine->GatherTask.InParentID != 0)
+        ImGuiTestEngineHook_ItemAdd_GatherTask(ui_ctx, engine, bb, id);
 }
 
 // Task is submitted in TestFunc by ItemInfo() -> ItemInfoHandleWildcardSearch()
