@@ -6833,6 +6833,24 @@ void RegisterTests_TestEngine(ImGuiTestEngine* e)
         //ctx->ItemClick("Lv0/Lv1/**/Button");
         //IM_CHECK_EQ(ctx->GenericVars.Status.Clicked, 5);
     };
+
+    // ## Test some high-level functions latching the value for //$FOCUSED (imgui_test_engine issue #5)
+    t = IM_REGISTER_TEST(e, "testengine", "testengine_ref_focused_latch");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::SetNextWindowSize(ImVec2(300, 150), ImGuiCond_Appearing);
+        ImGui::Begin("Test Window A", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImGui::Button("A");
+        ImGui::End();
+        ImGui::Begin("Test Window B", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImGui::Button("B");
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ctx->ItemClick("//Test Window A/A");
+        ctx->ItemDragAndDrop("//$FOCUSED/A", "//Test Window B/B");
+    };
 }
 
 //-------------------------------------------------------------------------

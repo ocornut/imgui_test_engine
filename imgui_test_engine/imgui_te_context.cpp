@@ -2842,14 +2842,15 @@ void    ImGuiTestContext::ItemDragAndDrop(ImGuiTestRef ref_src, ImGuiTestRef ref
     if (item_dst->Window != NULL)
         WindowBringToFront(item_dst->Window->ID);
 
-    MouseMove(ref_src, ImGuiTestOpFlags_NoCheckHoveredId);
+    // Use item_src/item_dst instead of ref_src/ref_dst so references with e.g. //$FOCUSED are latched once in the ItemInfo() call.
+    MouseMove(item_src->ID, ImGuiTestOpFlags_NoCheckHoveredId);
     SleepStandard();
     MouseDown(button);
 
     // Enforce lifting drag threshold even if both item are exactly at the same location.
     MouseLiftDragThreshold();
 
-    MouseMove(ref_dst, ImGuiTestOpFlags_NoCheckHoveredId | ImGuiTestOpFlags_NoFocusWindow);
+    MouseMove(item_dst->ID, ImGuiTestOpFlags_NoCheckHoveredId | ImGuiTestOpFlags_NoFocusWindow);
     SleepStandard();
     MouseUp(button);
 }
