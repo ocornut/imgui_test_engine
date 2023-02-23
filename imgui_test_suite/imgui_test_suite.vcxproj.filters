@@ -80,6 +80,9 @@
     <ClCompile Include="..\..\imgui\imgui_tables.cpp">
       <Filter>imgui</Filter>
     </ClCompile>
+    <ClCompile Include="imgui_tests_inputs.cpp">
+      <Filter>imgui_test_suite</Filter>
+    </ClCompile>
     <ClCompile Include="imgui_tests_nav.cpp">
       <Filter>imgui_test_suite</Filter>
     </ClCompile>
