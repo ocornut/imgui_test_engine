@@ -127,8 +127,11 @@ enum ImGuiTestRunFlags_
 // Functions
 //-------------------------------------------------------------------------
 
-// Hooks for core imgui/ library (don't call directly)
+// Hooks for core imgui/ library (generally called via macros)
+extern void         ImGuiTestEngineHook_ItemAdd(ImGuiContext* ui_ctx, ImGuiID id, const ImRect& bb, const ImGuiLastItemData* item_data);
+#if IMGUI_VERSION_NUM < 18934
 extern void         ImGuiTestEngineHook_ItemAdd(ImGuiContext* ui_ctx, const ImRect& bb, ImGuiID id);
+#endif
 #ifdef IMGUI_HAS_IMSTR
 extern void         ImGuiTestEngineHook_ItemInfo(ImGuiContext* ui_ctx, ImGuiID id, ImStrv label, ImGuiItemStatusFlags flags);
 #else
@@ -269,6 +272,7 @@ struct ImGuiTestItemInfo
     ImGuiWindow*                Window = NULL;              // Item Window
     ImRect                      RectFull = ImRect();        // Item Rectangle
     ImRect                      RectClipped = ImRect();     // Item Rectangle (clipped with window->ClipRect at time of item submission)
+    ImGuiItemFlags              InFlags = 0;                // Item flags
     ImGuiItemStatusFlags        StatusFlags = 0;            // Item Status flags (fully updated for some items only, compare TimestampStatus to FrameCount)
     char                        DebugLabel[32] = {};        // Shortened label for debugging purpose
 

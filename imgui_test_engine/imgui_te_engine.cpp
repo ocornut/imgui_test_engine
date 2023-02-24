@@ -1588,7 +1588,7 @@ void ImGuiTestEngine_InstallDefaultCrashHandler()
 //-------------------------------------------------------------------------
 
 // This is rather slow at it runs on all items but only during a GatherItems() operations.
-static void ImGuiTestEngineHook_ItemAdd_GatherTask(ImGuiContext* ui_ctx, ImGuiTestEngine* engine, const ImRect& bb, ImGuiID id)
+static void ImGuiTestEngineHook_ItemAdd_GatherTask(ImGuiContext* ui_ctx, ImGuiTestEngine* engine, ImGuiID id, const ImRect& bb, const ImGuiLastItemData* item_data)
 {
     ImGuiContext& g = *ui_ctx;
     ImGuiWindow* window = g.CurrentWindow;
@@ -1627,11 +1627,13 @@ static void ImGuiTestEngineHook_ItemAdd_GatherTask(ImGuiContext* ui_ctx, ImGuiTe
         item->RectClipped.ClipWithFull(item->RectFull);
         item->NavLayer = window->DC.NavLayerCurrent;
         item->Depth = result_depth;
+        item->InFlags = item_data ? item_data->InFlags : ImGuiItemFlags_None;
+        item->StatusFlags = item_data ? item_data->StatusFlags : ImGuiItemStatusFlags_None;
         task->LastItemInfo = item;
     }
 }
 
-void ImGuiTestEngineHook_ItemAdd(ImGuiContext* ui_ctx, const ImRect& bb, ImGuiID id)
+void ImGuiTestEngineHook_ItemAdd(ImGuiContext* ui_ctx, ImGuiID id, const ImRect& bb, const ImGuiLastItemData* item_data)
 {
     ImGuiTestEngine* engine = (ImGuiTestEngine*)ui_ctx->TestEngine;
 
@@ -1654,13 +1656,21 @@ void ImGuiTestEngineHook_ItemAdd(ImGuiContext* ui_ctx, const ImRect& bb, ImGuiID
         item->RectClipped.ClipWithFull(item->RectFull);
         item->NavLayer = window->DC.NavLayerCurrent;
         item->Depth = 0;
-        item->StatusFlags = (g.LastItemData.ID == id) ? g.LastItemData.StatusFlags : ImGuiItemStatusFlags_None;
+        item->InFlags = item_data ? item_data->InFlags : ImGuiItemFlags_None;
+        item->StatusFlags = item_data ? item_data->StatusFlags : ImGuiItemStatusFlags_None;
     }
 
     // Gather Task (only 1 can be active)
     if (engine->GatherTask.InParentID != 0)
-        ImGuiTestEngineHook_ItemAdd_GatherTask(ui_ctx, engine, bb, id);
+        ImGuiTestEngineHook_ItemAdd_GatherTask(ui_ctx, engine, id, bb, item_data);
 }
+
+#if IMGUI_VERSION_NUM < 18934
+void    ImGuiTestEngineHook_ItemAdd(ImGuiContext* ui_ctx, const ImRect& bb, ImGuiID id)
+{
+    ImGuiTestEngineHook_ItemAdd(ui_ctx, id, bb, NULL);
+}
+#endif
 
 // Task is submitted in TestFunc by ItemInfo() -> ItemInfoHandleWildcardSearch()
 #ifdef IMGUI_HAS_IMSTR

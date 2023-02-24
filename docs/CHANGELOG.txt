@@ -5,6 +5,9 @@ CHANGELOG
    Those changes are not all listed here.
 ** For a while this is going to ONLY INCLUDE BREAKING CHANGES.
 
+2023/03/06:
+- TestEngine: Do not attempt Open/Close/Check/Uncheck actions on Disabled items.
+
 2023/02/23:
 - TestEngine: Fixed ItemDragAndDrop() to latch references in order to avoid breaking when
   using "//$FOCUSED" in references, because focus is changed during the call.
