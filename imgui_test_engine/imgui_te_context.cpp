@@ -965,11 +965,15 @@ ImGuiTestItemInfo* ImGuiTestContext::ItemInfoOpenFullPath(ImGuiTestRef ref, ImGu
         Str128 parent_id;
         parent_id.set(ref.Path, parent_end);
         ImGuiTestItemInfo* parent_item = ItemInfo(parent_id.c_str(), ImGuiTestOpFlags_NoError);
-        if (parent_item->ID != 0 && (parent_item->StatusFlags & ImGuiItemStatusFlags_Openable) != 0 && (parent_item->StatusFlags & ImGuiItemStatusFlags_Opened) == 0)
-        {
-            ItemAction(ImGuiTestAction_Open, parent_item->ID, ImGuiTestOpFlags_NoAutoOpenFullPath);
-            opened_parents++;
-        }
+        if (parent_item->ID != 0)
+            if ((parent_item->StatusFlags & ImGuiItemStatusFlags_Openable) != 0 && (parent_item->StatusFlags & ImGuiItemStatusFlags_Opened) == 0)
+            {
+                if ((parent_item->InFlags & ImGuiItemFlags_Disabled) == 0) // FIXME: Report disabled state in log?
+                {
+                    ItemAction(ImGuiTestAction_Open, parent_item->ID, ImGuiTestOpFlags_NoAutoOpenFullPath);
+                    opened_parents++;
+                }
+            }
     }
     if (opened_parents > 0)
         item = ItemInfo(ref, (flags & ImGuiTestOpFlags_NoError));
@@ -2546,7 +2550,7 @@ void    ImGuiTestContext::ItemAction(ImGuiTestAction action, ImGuiTestRef ref, I
                 {
                     MouseDoubleClick(0); // Attempt a double-click // FIXME-TESTS: let's not start doing those fuzzy things..
                     if ((item->StatusFlags & ImGuiItemStatusFlags_Opened) == 0)
-                        IM_ERRORF_NOHDR("Unable to Open item: %s", ImGuiTestRefDesc(ref, item).c_str());
+                        IM_ERRORF_NOHDR("Unable to Open item: '%s' in '%s'", desc.c_str(), item->Window ? item->Window->Name : "N/A");
                 }
             }
             item->RefCount--;
@@ -2614,8 +2618,9 @@ void    ImGuiTestContext::ItemActionAll(ImGuiTestAction action, ImGuiTestRef ref
         if (parent_info->ID != 0)
         {
             // Open parent
-            if (action == ImGuiTestAction_Open && (parent_info->StatusFlags & ImGuiItemStatusFlags_Openable))
-                ItemOpen(ref_parent, ImGuiTestOpFlags_NoError);
+            if (action == ImGuiTestAction_Open)
+                if ((parent_info->StatusFlags & ImGuiItemStatusFlags_Openable) && (parent_info->InFlags & ImGuiItemFlags_Disabled) == 0)
+                    ItemOpen(ref_parent, ImGuiTestOpFlags_NoError);
         }
     }
 
@@ -2630,7 +2635,7 @@ void    ImGuiTestContext::ItemActionAll(ImGuiTestAction action, ImGuiTestRef ref
         int highest_depth = -1;
         if (action == ImGuiTestAction_Close)
             for (auto& item : items)
-                if ((item.StatusFlags & ImGuiItemStatusFlags_Openable) && (item.StatusFlags & ImGuiItemStatusFlags_Opened))
+                if ((item.StatusFlags & ImGuiItemStatusFlags_Openable) && (item.StatusFlags & ImGuiItemStatusFlags_Opened)) // Not checking Disabled state here
                     highest_depth = ImMax(highest_depth, item.Depth);
 
         const int actioned_total_at_beginning_of_pass = actioned_total;
@@ -2686,31 +2691,35 @@ void    ImGuiTestContext::ItemActionAll(ImGuiTestAction action, ImGuiTestRef ref
                 break;
             case ImGuiTestAction_Check:
                 if ((item.StatusFlags & ImGuiItemStatusFlags_Checkable) && !(item.StatusFlags & ImGuiItemStatusFlags_Checked))
-                {
-                    ItemAction(action, item.ID);
-                    actioned_total++;
-                }
+                    if ((item.InFlags & ImGuiItemFlags_Disabled) == 0)
+                    {
+                        ItemAction(action, item.ID);
+                        actioned_total++;
+                    }
                 break;
             case ImGuiTestAction_Uncheck:
                 if ((item.StatusFlags & ImGuiItemStatusFlags_Checkable) && (item.StatusFlags & ImGuiItemStatusFlags_Checked))
-                {
-                    ItemAction(action, item.ID);
-                    actioned_total++;
-                }
+                    if ((item.InFlags & ImGuiItemFlags_Disabled) == 0)
+                    {
+                        ItemAction(action, item.ID);
+                        actioned_total++;
+                    }
                 break;
             case ImGuiTestAction_Open:
                 if ((item.StatusFlags & ImGuiItemStatusFlags_Openable) && !(item.StatusFlags & ImGuiItemStatusFlags_Opened))
-                {
-                    ItemAction(action, item.ID);
-                    actioned_total++;
-                }
+                    if ((item.InFlags & ImGuiItemFlags_Disabled) == 0)
+                    {
+                        ItemAction(action, item.ID);
+                        actioned_total++;
+                    }
                 break;
             case ImGuiTestAction_Close:
                 if (item.Depth == highest_depth && (item.StatusFlags & ImGuiItemStatusFlags_Openable) && (item.StatusFlags & ImGuiItemStatusFlags_Opened))
-                {
-                    ItemClose(item.ID);
-                    actioned_total++;
-                }
+                    if ((item.InFlags & ImGuiItemFlags_Disabled) == 0)
+                    {
+                        ItemClose(item.ID);
+                        actioned_total++;
+                    }
                 break;
             default:
                 IM_ASSERT(0);
