@@ -1803,6 +1803,7 @@ void RegisterTests_Window(ImGuiTestEngine* e)
     {
         ImGuiWindow* window = ctx->GetWindowByRef("Test Window");
         ImGuiWindow* child = ctx->WindowInfo("Test Window/Child")->Window;
+        IM_CHECK(window != NULL && child != NULL);
         ImGuiContext& g = *ctx->UiContext;
         ImGui::SetScrollX(window, 0);
         ImGui::SetScrollY(window, 0);
@@ -1905,6 +1906,7 @@ void RegisterTests_Window(ImGuiTestEngine* e)
     {
         ImGuiWindow* window = ctx->GetWindowByRef("Test Window");
         ImGuiWindow* child = ctx->WindowInfo("Test Window/Child")->Window;
+        IM_CHECK(window != NULL && child != NULL);
         ImGuiContext& g = *ctx->UiContext;
         ImGui::SetScrollX(window, 0);
         ImGui::SetScrollY(window, 0);
@@ -4550,6 +4552,7 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
         ctx->MenuCheck("Tools/Debug Log");
         ctx->ItemCheck("//Dear ImGui Debug Log/All");
         ctx->ItemClick("//Dear ImGui Debug Log/Clear");
+        ctx->ItemUncheck("//Dear ImGui Debug Log/Clipper");
 
         ctx->ItemOpenAll("");
 

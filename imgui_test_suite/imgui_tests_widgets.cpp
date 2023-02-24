@@ -4202,6 +4202,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ctx->SetRef("Test Window");
         ImGuiWindow* child1 = ctx->WindowInfo("Child 1")->Window;
         ImGuiWindow* child2 = ctx->WindowInfo("Child 2")->Window;
+        IM_CHECK(child1 && child2);
         ImVec2& child_size = vars.Size;
         for (int axis = 0; axis < 2; axis++)
         {
