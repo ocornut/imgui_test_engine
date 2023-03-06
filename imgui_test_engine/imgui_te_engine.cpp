@@ -1647,7 +1647,7 @@ void ImGuiTestEngineHook_ItemAdd(ImGuiContext* ui_ctx, ImGuiID id, const ImRect&
     if (ImGuiTestInfoTask* task = ImGuiTestEngine_FindInfoTask(engine, id))
     {
         ImGuiTestItemInfo* item = &task->Result;
-        item->TimestampMain = g.FrameCount;
+        item->TimestampMain = engine->FrameCount;
         item->ID = id;
         item->ParentID = window->IDStack.Size ? window->IDStack.back() : 0;
         item->Window = window;
