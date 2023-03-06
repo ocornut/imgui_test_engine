@@ -1606,13 +1606,29 @@ static void ImGuiTestEngineHook_ItemAdd_GatherTask(ImGuiContext* ui_ctx, ImGuiTe
     }
     else
     {
-        int max_depth = ImMin(window->IDStack.Size, task->InMaxDepth + ((id == parent_id) ? 1 : 0));
-        for (int n_depth = 1; n_depth < max_depth; n_depth++)
-            if (window->IDStack[window->IDStack.Size - 1 - n_depth] == gather_parent_id)
+        const int max_depth = task->InMaxDepth;
+        int curr_depth = 0;
+        ImGuiWindow* curr_window = window;
+        while (result_depth == -1 && curr_window != NULL)
+        {
+            const int id_stack_size = curr_window->IDStack.Size;
+            for (ImGuiID* p_id_stack = curr_window->IDStack.Data + id_stack_size - 1; p_id_stack >= curr_window->IDStack.Data; p_id_stack--, curr_depth++)
             {
-                result_depth = n_depth;
-                break;
+                if (curr_depth >= max_depth)
+                    break;
+                if (*p_id_stack == gather_parent_id)
+                {
+                    result_depth = curr_depth;
+                    break;
+                }
             }
+
+            // Recurse in child (could be policy/option in GatherTask)
+            if (curr_window->Flags & ImGuiWindowFlags_ChildWindow)
+                curr_window = curr_window->ParentWindow;
+            else
+                curr_window = NULL;
+        }
     }
 
     if (result_depth != -1)

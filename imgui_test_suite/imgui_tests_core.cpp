@@ -5494,6 +5494,46 @@ void RegisterTests_TestEngine(ImGuiTestEngine* e)
 
         ctx->Finish(); // Finish on first frame
     };
+
+    // ## Test that GatherItems() finds items in child windows
+    t = IM_REGISTER_TEST(e, "testengine", "testengine_gather_in_childs");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImGui::Button("Button1");
+        ImGui::BeginChild("Child", ImVec2(100, 100), true);
+        ImGui::Button("Button2");
+        ImGui::EndChild();
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        IM_CHECK_NE(ctx->ItemInfoOpenFullPath("//Test Window")->ID, 0u);             // Ok
+        IM_CHECK_NE(ctx->ItemInfoOpenFullPath("//Test Window/**/Button2")->ID, 0u);  // Ok
+
+        {
+            ImGuiTestItemList items;
+            ctx->GatherItems(&items, "//Test Window", 1);
+            bool has_button_2 = false;
+            for (const ImGuiTestItemInfo& info : items)
+                if (strcmp(info.DebugLabel, "Button2") == 0)
+                    has_button_2 = true;
+            IM_CHECK(has_button_2 == false);
+        }
+        {
+            ImGuiTestItemList items;
+            ctx->GatherItems(&items, "//Test Window", 2);
+            for (const ImGuiTestItemInfo& info : items)
+                ctx->LogDebug("- 0x%08x: '%s' in window '%s'\n", info.ID, info.DebugLabel, info.Window->Name);
+            bool has_button_2 = false;
+            for (const ImGuiTestItemInfo& info : items)
+                if (strcmp(info.DebugLabel, "Button2") == 0)
+                    has_button_2 = true;
+            IM_CHECK(has_button_2 == true);
+            IM_CHECK_GT(items.size(), 2u);
+        }
+    };
+
 }
 
 //-------------------------------------------------------------------------

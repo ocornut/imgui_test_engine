@@ -6,6 +6,7 @@ CHANGELOG
 ** For a while this is going to ONLY INCLUDE BREAKING CHANGES.
 
 2023/03/06:
+- TestEngine: Made GatherItems() calls find items in child windows.
 - TestEngine: Do not attempt Open/Close/Check/Uncheck actions on Disabled items.
 
 2023/02/23:
