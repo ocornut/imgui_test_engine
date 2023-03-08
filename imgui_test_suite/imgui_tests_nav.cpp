@@ -755,11 +755,15 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
         IM_CHECK(g.ActiveId == 0);
         IM_CHECK_STR_EQ(vars.Str1, "123");
 
-        // Verify that NavInput doesn't trigger other fields
+        // Verify that NavInput triggers buttons (#5606)
         vars.Int1 = 0;
         ctx->NavMoveTo("Button");
         ctx->NavInput();
+#if IMGUI_VERSION_NUM >= 18935
+        IM_CHECK(vars.Int1 > 0);
+#else
         IM_CHECK(vars.Int1 == 0);
+#endif
     };
 #endif
 
