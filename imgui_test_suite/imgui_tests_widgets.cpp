@@ -2451,6 +2451,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
     // ## Test drag target/accept with ImGuiDragDropFlags_AcceptNoPreviewTooltip
     t = IM_REGISTER_TEST(e, "widgets", "widgets_dragdrop_no_preview_tooltip");
     struct DragNoPreviewTooltipVars { bool TooltipWasVisible = false; bool TooltipIsVisible = false; ImGuiDragDropFlags AcceptFlags = 0; };
+    t->Flags |= ImGuiTestFlags_NoGuiWarmUp;
     t->SetVarsDataType<DragNoPreviewTooltipVars>();
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
@@ -2488,7 +2489,8 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ImGuiContext& g = *ctx->UiContext;
         ImGuiWindow* tooltip = ctx->GetWindowByRef(Str16f("##Tooltip_%02d", g.TooltipOverrideCount).c_str());
         vars.TooltipIsVisible = g.TooltipOverrideCount != 0 || (tooltip != NULL && (tooltip->Active || tooltip->WasActive));
-        vars.TooltipWasVisible |= vars.TooltipIsVisible;
+        if (vars.TooltipIsVisible)
+            vars.TooltipWasVisible |= vars.TooltipIsVisible;
 
         ImGui::End();
     };
@@ -2496,6 +2498,8 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
     {
         DragNoPreviewTooltipVars& vars = ctx->GetVars<DragNoPreviewTooltipVars>();
         ctx->SetRef("Test Window");
+        ctx->MouseMove("Drag");
+        vars.TooltipWasVisible = false;
         ctx->ItemDragAndDrop("Drag", "Drop");
         IM_CHECK(vars.TooltipWasVisible == false);
         vars.TooltipWasVisible = false;
