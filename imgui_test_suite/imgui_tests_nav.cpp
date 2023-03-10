@@ -1628,9 +1628,9 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
         out_widget("Item1", 1);
         if (vars.Step == 1)
             IM_CHECK(!ImGui::IsItemVisible());
-        ImGui::PushAllowKeyboardFocus(false);
+        ImGui::PushTabStop(false);
         out_widget("Item2", 2);
-        ImGui::PopAllowKeyboardFocus();
+        ImGui::PopTabStop();
         out_widget("Item3", 3);
         out_widget("Item4", 4);
 
@@ -1649,14 +1649,14 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
                 if (vars.Step == 1) // Tabbing through clipped items is yet unsupported
                     continue;
 #endif
-
                 // Step 0: Make sure tabbing works on unclipped widgets
                 // Step 1: Make sure tabbing works on clipped widgets
                 ctx->LogDebug("STEP %d WIDGET %d", vars.Step, vars.WidgetType);
 
                 IM_CHECK_EQ(g.ActiveId, (ImGuiID)0);
 #if IMGUI_VERSION_NUM >= 18208
-                ctx->KeyPress(ImGuiKey_Tab);
+                //if (vars.WidgetType == 0 && vars.Step == 0)
+                    ctx->KeyPress(ImGuiKey_Tab);
                 IM_CHECK_EQ(g.ActiveId, ctx->GetID("Item0"));
 #endif
                 ctx->KeyPress(ImGuiKey_Tab);
@@ -1679,8 +1679,22 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
                 IM_CHECK_EQ(g.ActiveId, ctx->GetID("Item1"));
                 ctx->KeyPress(ImGuiMod_Shift | ImGuiKey_Tab);
                 IM_CHECK_EQ(g.ActiveId, ctx->GetID("Item0"));
-
                 ctx->KeyPress(ImGuiKey_Escape);
+
+#if IMGUI_VERSION_NUM >= 18936
+                // Test departing from a TabStop=0 item
+                ctx->ItemInput("Item2");
+                IM_CHECK_EQ(g.ActiveId, ctx->GetID("Item2"));
+                ctx->KeyPress(ImGuiKey_Tab);
+                IM_CHECK_EQ(g.ActiveId, ctx->GetID("Item3"));
+                ctx->ItemInput("Item2");
+                IM_CHECK_EQ(g.ActiveId, ctx->GetID("Item2"));
+                ctx->KeyPress(ImGuiMod_Shift | ImGuiKey_Tab);
+                IM_CHECK_EQ(g.ActiveId, ctx->GetID("Item1"));
+
+                ctx->ItemInput("Item0");
+                ctx->KeyPress(ImGuiKey_Escape);
+#endif
             }
     };
 
@@ -1847,11 +1861,11 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
         }
         else if (vars.Step == 7)
         {
-            ImGui::PushAllowKeyboardFocus(false);
+            ImGui::PushTabStop(false);
             ImGui::SetKeyboardFocusHere();
             ImGui::InputText("Text1", vars.Str1, IM_ARRAYSIZE(vars.Str1));
             vars.Status.QuerySet();
-            ImGui::PopAllowKeyboardFocus();
+            ImGui::PopTabStop();
         }
         else if (vars.Step == 8)
         {
@@ -2010,7 +2024,7 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
         IM_CHECK_EQ(vars.Status.Activated, 0);
 #endif
 
-        // Test API focusing an item that has PushAllowKeyboardFocus(false)
+        // Test API focusing an item that has PushTabStop(false)
         vars.Step = 7;
         ctx->Yield(2);
         IM_CHECK_EQ(g.ActiveId, ctx->GetID("Text1"));
