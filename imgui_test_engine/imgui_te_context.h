@@ -309,6 +309,7 @@ struct IMGUI_API ImGuiTestContext
     // Popups
     void        PopupCloseOne();
     void        PopupCloseAll();
+    ImGuiID     PopupGetWindowID(ImGuiTestRef ref);
 
     // Get hash for a decorated ID Path.
     // Note: for windows you may use WindowInfo()

@@ -592,8 +592,7 @@ void RegisterTests_Window(ImGuiTestEngine* e)
         ctx->MouseClickOnVoid();                                                        // Ensure no window is focused.
         ctx->ItemClick("Open", ImGuiMouseButton_Right, ImGuiTestOpFlags_NoFocusWindow); // Open popup without focusing window.
         IM_CHECK(g.OpenPopupStack.Size == 1);
-        Str30f popup_name("##Popup_%08x", ctx->GetID("Popup"));
-        IM_CHECK_STR_EQ(g.OpenPopupStack[0].Window->Name, popup_name.c_str());
+        IM_CHECK_EQ(g.OpenPopupStack[0].Window->ID, ctx->PopupGetWindowID("Popup"));
     };
 
     // ## Test menus in a popup window (PR #3496).
@@ -655,7 +654,7 @@ void RegisterTests_Window(ImGuiTestEngine* e)
             if (vars.UseModal)
                 popup = ctx->GetWindowByRef("Menu Popup");
             else
-                popup = ctx->GetWindowByRef(Str16f("##Popup_%08x", ctx->GetID("//Test Window/Menu Popup")).c_str());
+                popup = ctx->GetWindowByRef(ctx->PopupGetWindowID("//Test Window/Menu Popup"));
             IM_CHECK(popup != NULL);
             ctx->SetRef(popup->Name);
             IM_CHECK_EQ(vars.FirstOpen, false);                                     // Nothing is open.
@@ -1240,8 +1239,9 @@ void RegisterTests_Window(ImGuiTestEngine* e)
             //         └── C                                                // Child window
             //             └── Window2                                      // Appears, is freely interactable with
             OpenPopup(0);
-            ImGuiWindow* popup1 = ctx->GetWindowByRef(vars.IsModalPopup[0] ? "Popup1" : Str30f("##Popup_%08x", ctx->GetID("Popup1")).c_str());
+            ImGuiWindow* popup1 = vars.IsModalPopup[0] ? ctx->GetWindowByRef("Popup1") : ctx->GetWindowByRef(ctx->PopupGetWindowID("Popup1"));
             ImGuiWindow* window0 = ctx->GetWindowByRef("Window0");
+            IM_CHECK(popup1 != NULL && window0 != NULL);
             IM_CHECK_EQ(g.NavWindow, window0);
             IM_CHECK_EQ(popup1->Active, true);
             SetShowInterrupts(true);                                            // "Window1" and "Window2" appear
@@ -1277,19 +1277,20 @@ void RegisterTests_Window(ImGuiTestEngine* e)
             ctx->PopupCloseAll();
 
             // .
-            // └── Popup1                                                   // Remains open on interaction with nested window
-            //     ├── Window0                                              // Newly appearing windows must appear above this window
-            //     ├── Window1                                              // Appears
-            //     │   └── C                                                // Child window
-            //     │       └── Window2                                      // Appears
-            //     └── Popup2                                               // Blocks interactions with appearing windows when its a modal, or closes when its a popup
-            //         └── Window3                                          // Can not dock into any other window
+            // └── Popup1                                 // Remains open on interaction with nested window
+            //     ├── Window0                            // Newly appearing windows must appear above this window
+            //     ├── Window1                            // Appears
+            //     │   └── C                              // Child window
+            //     │       └── Window2                    // Appears
+            //     └── Popup2                             // Blocks interactions with appearing windows when its a modal, or closes when its a popup
+            //         └── Window3                        // Can not dock into any other window
             OpenPopup(0);
             IM_CHECK_EQ(g.NavWindow, window0);
             IM_CHECK_EQ(popup1->Active, true);
             OpenPopup(1);
             ImGuiWindow* window3 = ctx->GetWindowByRef("Window3");
-            ImGuiWindow* popup2 = ctx->GetWindowByRef(vars.IsModalPopup[1] ? "Popup2" : Str30f("##Popup_%08x", ctx->GetID("Popup2", popup1->ID)).c_str());
+            ImGuiWindow* popup2 = vars.IsModalPopup[1] ? ctx->GetWindowByRef("Popup2") : ctx->GetWindowByRef(ctx->PopupGetWindowID(ctx->GetID("Popup2", popup1->ID)));
+            IM_CHECK(window3 != NULL && popup2 != NULL);
             IM_CHECK_EQ(g.NavWindow, window3);
             IM_CHECK_EQ(popup2->Active, true);
             ctx->ItemClick(Str30f("//%s/##menubar/File", popup2->Name).c_str());// FIXME: MenuClick() does not work well with menus inside of a popup.
@@ -2240,7 +2241,7 @@ void RegisterTests_Window(ImGuiTestEngine* e)
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         ImGuiContext& g = *ctx->UiContext;
-        Str30f popup_name("##Popup_%08x", ctx->GetID("Window A/Popup A"));
+        ImGuiID popup_window_id = ctx->PopupGetWindowID("//Window A/Popup A");
         ImGuiWindow* window = ctx->GetWindowByRef("Window A");
         IM_UNUSED(window);
         ctx->SetRef("Window A");
@@ -2253,18 +2254,18 @@ void RegisterTests_Window(ImGuiTestEngine* e)
         ctx->MouseMoveToPos(ctx->GetWindowTitlebarPoint("//Window A"));
         ctx->MouseClick(ImGuiMouseButton_Right);
         IM_CHECK_NE(g.NavWindow, (ImGuiWindow*)NULL);
-        IM_CHECK_STR_EQ(g.NavWindow->Name, popup_name.c_str());
+        IM_CHECK_EQ(g.NavWindow->ID, popup_window_id);
         ctx->PopupCloseAll();
 
         // Close button of undocked window
         ctx->ItemClick(ctx->GetID("#CLOSE"), ImGuiMouseButton_Right);
         IM_CHECK_NE(g.NavWindow, (ImGuiWindow*)NULL);
-        IM_CHECK_STR_EQ(g.NavWindow->Name, popup_name.c_str());
+        IM_CHECK_EQ(g.NavWindow->ID, popup_window_id);
 
         // Collapse button of undocked window
         ctx->ItemClick(ctx->GetID("#COLLAPSE"), ImGuiMouseButton_Right);
         IM_CHECK_NE(g.NavWindow, (ImGuiWindow*)NULL);
-        IM_CHECK_STR_EQ(g.NavWindow->Name, popup_name.c_str());
+        IM_CHECK_EQ(g.NavWindow->ID, popup_window_id);
 
 #ifdef IMGUI_HAS_DOCK
         ctx->DockInto("Window B", "Window A");
@@ -2273,13 +2274,13 @@ void RegisterTests_Window(ImGuiTestEngine* e)
         ctx->MouseMoveToPos(ctx->GetWindowTitlebarPoint("//Window A"));
         ctx->MouseClick(ImGuiMouseButton_Right);
         IM_CHECK_NE(g.NavWindow, (ImGuiWindow*)NULL);
-        IM_CHECK_STR_EQ(g.NavWindow->Name, popup_name.c_str());
+        IM_CHECK_EQ(g.NavWindow->ID, popup_window_id);
         ctx->PopupCloseAll();
 
         // Collapse button of docked window tab
         ctx->ItemClick(ctx->GetID("#CLOSE"), ImGuiMouseButton_Right);
         IM_CHECK_NE(g.NavWindow, (ImGuiWindow*)NULL);
-        IM_CHECK_STR_EQ(g.NavWindow->Name, popup_name.c_str());
+        IM_CHECK_EQ(g.NavWindow->ID, popup_window_id);
         ctx->PopupCloseAll();
 
         // Close button of dock node
