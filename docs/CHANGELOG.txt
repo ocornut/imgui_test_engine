@@ -5,6 +5,9 @@ CHANGELOG
    Those changes are not all listed here.
 ** For a while this is going to ONLY INCLUDE BREAKING CHANGES.
 
+2023/03/14:
+- TestEngine: Fixed GatherItems() max-depth test being off-by-1 (regression in 2023/03/06 update).
+
 2023/03/06:
 - TestEngine: Made GatherItems() calls find items in child windows.
 - TestEngine: Do not attempt Open/Close/Check/Uncheck actions on Disabled items.

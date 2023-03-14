@@ -275,6 +275,7 @@ struct IMGUI_API ImGuiTestContext
     void        LogWarning(const char* fmt, ...)    IM_FMTARGS(2);  // ImGuiTestVerboseLevel_Warning
     void        LogError(const char* fmt, ...)      IM_FMTARGS(2);  // ImGuiTestVerboseLevel_Error
     void        LogBasicUiState();
+    void        LogItemList(ImGuiTestItemList* list);
 
     // Yield, Timing
     void        Yield(int count = 1);

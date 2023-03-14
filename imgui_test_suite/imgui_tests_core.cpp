@@ -5514,6 +5514,7 @@ void RegisterTests_TestEngine(ImGuiTestEngine* e)
         {
             ImGuiTestItemList items;
             ctx->GatherItems(&items, "//Test Window", 1);
+            ctx->LogItemList(&items);
             bool has_button_2 = false;
             for (const ImGuiTestItemInfo& info : items)
                 if (strcmp(info.DebugLabel, "Button2") == 0)
@@ -5523,8 +5524,7 @@ void RegisterTests_TestEngine(ImGuiTestEngine* e)
         {
             ImGuiTestItemList items;
             ctx->GatherItems(&items, "//Test Window", 2);
-            for (const ImGuiTestItemInfo& info : items)
-                ctx->LogDebug("- 0x%08x: '%s' in window '%s'\n", info.ID, info.DebugLabel, info.Window->Name);
+            ctx->LogItemList(&items);
             bool has_button_2 = false;
             for (const ImGuiTestItemInfo& info : items)
                 if (strcmp(info.DebugLabel, "Button2") == 0)

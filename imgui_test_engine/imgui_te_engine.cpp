@@ -1607,7 +1607,11 @@ static void ImGuiTestEngineHook_ItemAdd_GatherTask(ImGuiContext* ui_ctx, ImGuiTe
     else
     {
         const int max_depth = task->InMaxDepth;
-        int curr_depth = 0;
+
+        // When using a 'PushID(label); Widget(""); PopID();` pattern flatten as 1 deep instead of 2 for simplicity.
+        // We do this by offsetting our depth level.
+        int curr_depth = (id == parent_id) ? -1 : 0;
+
         ImGuiWindow* curr_window = window;
         while (result_depth == -1 && curr_window != NULL)
         {

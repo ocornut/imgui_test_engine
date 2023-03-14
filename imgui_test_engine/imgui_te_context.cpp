@@ -272,6 +272,12 @@ void    ImGuiTestContext::LogBasicUiState()
         item_active_id, item_active_info->ID != 0 ? item_active_info->DebugLabel : "");
 }
 
+void    ImGuiTestContext::LogItemList(ImGuiTestItemList* items)
+{
+    for (const ImGuiTestItemInfo& info : *items)
+        LogDebug("- 0x%08X: depth %d: '%s' in window '%s'\n", info.ID, info.Depth, info.DebugLabel, info.Window->Name);
+}
+
 void    ImGuiTestContext::Finish()
 {
     if (RunFlags & ImGuiTestRunFlags_GuiFuncOnly)
@@ -2399,6 +2405,7 @@ bool    ImGuiTestContext::WindowBringToFront(ImGuiTestRef ref, ImGuiTestOpFlags 
     return ret;
 }
 
+// depth = 1 -> immediate child of 'parent' in ID Stack
 void    ImGuiTestContext::GatherItems(ImGuiTestItemList* out_list, ImGuiTestRef parent, int depth)
 {
     IM_ASSERT(out_list != NULL);
@@ -2630,6 +2637,7 @@ void    ImGuiTestContext::ItemActionAll(ImGuiTestAction action, ImGuiTestRef ref
     {
         ImGuiTestItemList items;
         GatherItems(&items, ref_parent, max_depth);
+        //LogItemList(&items);
 
         // Find deep most items
         int highest_depth = -1;
@@ -3060,6 +3068,8 @@ void    ImGuiTestContext::MenuActionAll(ImGuiTestAction action, ImGuiTestRef ref
     ImGuiTestItemList items;
     MenuAction(ImGuiTestAction_Open, ref_parent);
     GatherItems(&items, "//$FOCUSED", 1);
+    //LogItemList(&items);
+
     for (auto item : items)
     {
         MenuAction(ImGuiTestAction_Open, ref_parent); // We assume that every interaction will close the menu again
