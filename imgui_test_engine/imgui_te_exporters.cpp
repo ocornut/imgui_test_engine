@@ -169,7 +169,7 @@ void ImGuiTestEngine_ExportJUnitXml(ImGuiTestEngine* engine, const char* output_
     int testsuites_failures = 0;
     int testsuites_tests = 0;
     int testsuites_disabled = 0;
-    float testsuites_time = (float)((double)(engine->EndTime - engine->StartTime) / 1000000.0);
+    float testsuites_time = (float)((double)(engine->BatchEndTime - engine->BatchStartTime) / 1000000.0);
     for (int testsuite_id = ImGuiTestGroup_Tests; testsuite_id < ImGuiTestGroup_COUNT; testsuite_id++)
     {
         testsuites_tests += testsuites[testsuite_id].Tests;
@@ -189,7 +189,7 @@ void ImGuiTestEngine_ExportJUnitXml(ImGuiTestEngine* engine, const char* output_
         auto* testsuite = &testsuites[testsuite_id];
         float testsuite_time = testsuites_time;         // FIXME: We do not differentiate between tests and perfs, they are executed in one big batch.
         Str30 testsuite_timestamp = "";
-        ImTimestampToISO8601(engine->StartTime, &testsuite_timestamp);
+        ImTimestampToISO8601(engine->BatchStartTime, &testsuite_timestamp);
         fprintf(fp, "  <testsuite name=\"%s\" tests=\"%d\" disabled=\"%d\" errors=\"0\" failures=\"%d\" hostname=\"\" id=\"%d\" package=\"\" skipped=\"0\" time=\"%.3f\" timestamp=\"%s\">\n",
             testsuite->Name, testsuite->Tests, testsuite->Disabled, testsuite->Failures, testsuite_id, testsuite_time, testsuite_timestamp.c_str());
 

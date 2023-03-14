@@ -158,7 +158,7 @@ struct IMGUI_API ImGuiTestGenericItemStatus
     int     Edited;                 // result of IsItemEdited()
     int     Activated;              // result of IsItemActivated()
     int     Deactivated;            // result of IsItemDeactivated()
-    int     DeactivatedAfterEdit;   // .. of IsItemDeactivatedAfterEdit()
+    int     DeactivatedAfterEdit;   // result of IsItemDeactivatedAfterEdit()
 
     ImGuiTestGenericItemStatus()        { Clear(); }
     void Clear()                        { memset(this, 0, sizeof(*this)); }
@@ -232,7 +232,6 @@ struct IMGUI_API ImGuiTestContext
     ImGuiTestRunFlags       RunFlags = ImGuiTestRunFlags_None;
     ImGuiTestActiveFunc     ActiveFunc = ImGuiTestActiveFunc_None;  // None/GuiFunc/TestFunc
     double                  RunningTime = 0.0;                      // Amount of wall clock time the Test has been running. Used by safety watchdog.
-    ImU64                   BatchStartTime = 0;
     int                     ActionDepth = 0;                        // Nested depth of ctx-> function calls (used to decorate log)
     int                     CaptureCounter = 0;                     // Number of captures
     int                     ErrorCounter = 0;                       // Number of errors (generally this maxxes at 1 as most functions will early out)

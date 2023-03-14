@@ -105,7 +105,7 @@ bool                ImBuildFindGitBranchName(const char* git_repo_path, Str* bra
 enum ImOsConsoleStream
 {
     ImOsConsoleStream_StandardOutput,
-    ImOsConsoleStream_StandardError
+    ImOsConsoleStream_StandardError,
 };
 
 enum ImOsConsoleTextColor
@@ -116,7 +116,7 @@ enum ImOsConsoleTextColor
     ImOsConsoleTextColor_BrightRed,
     ImOsConsoleTextColor_BrightGreen,
     ImOsConsoleTextColor_BrightBlue,
-    ImOsConsoleTextColor_BrightYellow
+    ImOsConsoleTextColor_BrightYellow,
 };
 
 bool        ImOsCreateProcess(const char* cmd_line);

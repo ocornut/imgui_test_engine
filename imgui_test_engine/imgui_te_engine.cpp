@@ -978,7 +978,7 @@ static void ImGuiTestEngine_ProcessTestQueue(ImGuiTestEngine* engine)
     const char* settings_ini_backup = io.IniFilename;
     io.IniFilename = NULL;
 
-    engine->StartTime = ImTimeGetInMicroseconds();
+    engine->BatchStartTime = ImTimeGetInMicroseconds();
     int ran_tests = 0;
     engine->IO.IsRunningTests = true;
     for (int n = 0; n < engine->TestsQueue.Size; n++)
@@ -1013,7 +1013,6 @@ static void ImGuiTestEngine_ProcessTestQueue(ImGuiTestEngine* engine)
         ctx.UiContext = engine->UiContextActive;
         ctx.PerfStressAmount = engine->IO.PerfStressAmount;
         ctx.RunFlags = run_task->RunFlags;
-        ctx.BatchStartTime = engine->StartTime;
 #ifdef IMGUI_HAS_DOCK
         ctx.HasDock = true;
 #else
@@ -1067,7 +1066,7 @@ static void ImGuiTestEngine_ProcessTestQueue(ImGuiTestEngine* engine)
         //        engine->UiSelectedTest = test;
     }
     engine->IO.IsRunningTests = false;
-    engine->EndTime = ImTimeGetInMicroseconds();
+    engine->BatchEndTime = ImTimeGetInMicroseconds();
 
     engine->Abort = false;
     engine->TestsQueue.clear();
@@ -1526,14 +1525,14 @@ void ImGuiTestEngine_CrashHandler()
     ImGuiTestEngine* engine = (ImGuiTestEngine*)g.TestEngine;
 
     // Write stop times, because thread executing tests will no longer run.
-    engine->EndTime = ImTimeGetInMicroseconds();
+    engine->BatchEndTime = ImTimeGetInMicroseconds();
     for (int i = 0; i < engine->TestsAll.Size; i++)
     {
         ImGuiTest* test = engine->TestsAll[i];
         if (test->Status == ImGuiTestStatus_Running)
         {
             test->Status = ImGuiTestStatus_Error;
-            test->EndTime = engine->EndTime;
+            test->EndTime = engine->BatchEndTime;
             break;
         }
     }

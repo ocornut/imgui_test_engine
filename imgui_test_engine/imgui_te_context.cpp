@@ -3651,7 +3651,7 @@ void    ImGuiTestContext::PerfCapture(const char* category, const char* test_nam
     LogInfo("[PERF] Result: %+6.3f ms (from ref %+6.3f)", dt_delta_ms, dt_ref_ms);
 
     ImGuiPerfToolEntry entry;
-    entry.Timestamp = BatchStartTime;
+    entry.Timestamp = Engine->BatchStartTime;
     entry.Category = category ? category : Test->Category;
     entry.TestName = test_name ? test_name : Test->Name;
     entry.DtDeltaMs = dt_delta_ms;

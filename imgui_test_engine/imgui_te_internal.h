@@ -120,8 +120,8 @@ struct ImGuiTestEngine
     ImGuiContext*               UiContextActive = NULL;         // imgui context for testing == UiContextTarget or NULL
 
     bool                        Started = false;
-    ImU64                       StartTime = 0;
-    ImU64                       EndTime = 0;
+    ImU64                       BatchStartTime = 0;
+    ImU64                       BatchEndTime = 0;
     int                         FrameCount = 0;
     float                       OverrideDeltaTime = -1.0f;      // Inject custom delta time into imgui context to simulate clock passing faster than wall clock time.
     ImVector<ImGuiTest*>        TestsAll;
