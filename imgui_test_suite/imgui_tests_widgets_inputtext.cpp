@@ -1282,15 +1282,17 @@ void RegisterTests_WidgetsInputText(ImGuiTestEngine* e)
     t = IM_REGISTER_TEST(e, "widgets", "widgets_inputtext_special_key_chars");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
+        auto& vars = ctx->GenericVars;
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
-        ImGui::InputTextMultiline("Field", ctx->GenericVars.Str1, IM_ARRAYSIZE(ctx->GenericVars.Str1), ImVec2(), ImGuiInputTextFlags_AllowTabInput);
+        ImGui::InputTextMultiline("Field", vars.Str1, IM_ARRAYSIZE(vars.Str1), ImVec2(), ImGuiInputTextFlags_AllowTabInput);
         ImGui::End();
     };
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         ImGuiContext& g = *ctx->UiContext;
+        auto& vars = ctx->GenericVars;
 
-        char* field_text = ctx->GenericVars.Str1;
+        char* field_text = vars.Str1;
         ctx->SetRef("Test Window");
         ctx->ItemClick("Field");
         ctx->RunFlags |= ImGuiTestRunFlags_EnableRawInputs; // Disable TestEngine submitting inputs events
@@ -1326,4 +1328,122 @@ void RegisterTests_WidgetsInputText(ImGuiTestEngine* e)
         IM_CHECK_STR_EQ(field_text, " ");
     };
 #endif
+
+    // Test application of value on DeactivateAfterEdit frame (#4714)
+    t = IM_REGISTER_TEST(e, "widgets", "widgets_inputtext_deactivate_apply");
+    struct InputTextDeactivateVars
+    {
+        bool UseTempVar;
+        ImVec4 Value;
+        int ActivatedFrame = -1, ActivatedField = -1;
+        int EditedRetFrame = -1, EditedRetField = -1;
+        int EditedQueryFrame = -1, EditedQueryField = -1;
+        int DeactivatedFrame = -1, DeactivatedField = -1;
+    };
+    t->SetVarsDataType<InputTextDeactivateVars>();
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        auto& vars = ctx->GetVars<InputTextDeactivateVars>();
+
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImGui::Checkbox("Use Temp Var", &vars.UseTempVar);
+
+        ImVec4 temp_var = vars.Value;
+        ImVec4* p = vars.UseTempVar ? &temp_var : &vars.Value;
+
+        if (ImGui::InputFloat("x", &p->x, 0, 0, "%.3f", 0)) { vars.EditedRetFrame = ImGui::GetFrameCount(); vars.EditedRetField = 0; }
+        if (ImGui::IsItemEdited()) { vars.EditedQueryFrame = ImGui::GetFrameCount(); vars.EditedQueryField = 0; }
+        if (ImGui::IsItemActivated()) { vars.ActivatedFrame = ImGui::GetFrameCount(); vars.ActivatedField = 0; }
+        if (ImGui::IsItemDeactivatedAfterEdit()) { vars.DeactivatedFrame = ImGui::GetFrameCount(); vars.DeactivatedField = 0; }
+        if (ImGui::IsItemDeactivatedAfterEdit() && vars.UseTempVar)
+            vars.Value = temp_var;
+
+        if (ImGui::InputFloat("y", &p->y, 0, 0, "%.3f", 0)) { vars.EditedRetFrame = ImGui::GetFrameCount(); vars.EditedRetField = 1; }
+        if (ImGui::IsItemEdited()) { vars.EditedQueryFrame = ImGui::GetFrameCount(); vars.EditedQueryField = 1; }
+        if (ImGui::IsItemActivated()) { vars.ActivatedFrame = ImGui::GetFrameCount(); vars.ActivatedField = 1; }
+        if (ImGui::IsItemDeactivatedAfterEdit()) { vars.DeactivatedFrame = ImGui::GetFrameCount(); vars.DeactivatedField = 1; }
+        if (ImGui::IsItemDeactivatedAfterEdit() && vars.UseTempVar)
+            vars.Value = temp_var;
+
+        if (ImGui::InputFloat("z", &p->z, 0, 0, "%.3f", 0)) { vars.EditedRetFrame = ImGui::GetFrameCount(); vars.EditedRetField = 2; }
+        if (ImGui::IsItemEdited()) { vars.EditedQueryFrame = ImGui::GetFrameCount(); vars.EditedQueryField = 2; }
+        if (ImGui::IsItemActivated()) { vars.ActivatedFrame = ImGui::GetFrameCount(); vars.ActivatedField = 2; }
+        if (ImGui::IsItemDeactivatedAfterEdit()) { vars.DeactivatedFrame = ImGui::GetFrameCount(); vars.DeactivatedField = 2; }
+        if (ImGui::IsItemDeactivatedAfterEdit() && vars.UseTempVar)
+            vars.Value = temp_var;
+
+        ImGui::Text("Value %.3f %.3f %.3f %.3f", vars.Value.x, vars.Value.y, vars.Value.z, vars.Value.w);
+        ImGui::Text("temp_var %.3f %.3f %.3f %.3f", temp_var.x, temp_var.y, temp_var.z, temp_var.w);
+        ImGui::Text("Activated frame %d, field %d", vars.ActivatedFrame, vars.ActivatedField);
+        ImGui::Text("Edited (ret) frame %d, field %d", vars.EditedRetFrame, vars.EditedRetField);
+        ImGui::Text("Edited (query) frame %d, field %d", vars.EditedQueryFrame, vars.EditedQueryField);
+        ImGui::Text("DeactivatedAfterEdit frame %d, field %d", vars.DeactivatedFrame, vars.DeactivatedField);
+
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        //ImGuiContext& g = *ctx->UiContext;
+        auto& vars = ctx->GetVars<InputTextDeactivateVars>();
+
+        ctx->SetRef("Test Window");
+
+        for (int step = 0; step < 3; step++)
+        {
+            ctx->LogDebug("## Step %d", step);
+
+            vars.UseTempVar = (step > 0);
+            if (step == 0)
+                ctx->WindowResize("", ImVec2(300, ImGui::GetFrameHeight() * 20));
+
+            // For step 2 we test an edge case where deactivated InputText() is immediately clipped out.
+            // FIXME-TESTS: Since this is solved by ItemAdd() clipping rules, it's possible a similar issue can be recreated with clipper.
+            if (step == 2)
+                ctx->WindowResize("", ImVec2(300, ImGui::GetFrameHeight()));
+
+            vars.Value = ImVec4();
+            ctx->ItemClick("y");
+            ctx->KeyCharsReplace("123.0"); // Input value but don't press enter
+            if (vars.UseTempVar == false)
+                IM_CHECK_EQ(vars.Value.y, 123.0f);
+            ctx->ItemClick("z"); // Click Next item
+            IM_CHECK_EQ(vars.Value.y, 123.0f);
+            IM_CHECK(vars.DeactivatedField == 1);
+            ctx->KeyPress(ImGuiKey_Escape);
+
+            vars.Value = ImVec4();
+            ctx->ItemClick("y");
+            ctx->KeyCharsReplace("123.0"); // Input value but don't press enter
+            ctx->ItemClick("x"); // Click Previous item
+#if IMGUI_VERSION_NUM < 18942
+            if (step == 0)
+#endif
+            IM_CHECK_EQ(vars.Value.y, 123.0f);
+            IM_CHECK(vars.DeactivatedField == 1);
+            ctx->KeyPress(ImGuiKey_Escape);
+
+            vars.Value = ImVec4();
+            ctx->ItemClick("y");
+            ctx->KeyCharsReplace("123.0"); // Input value but don't press enter
+            ctx->KeyPress(ImGuiKey_Tab); // Tab to Next Item
+#if IMGUI_VERSION_NUM < 18942
+            if (step == 0)
+#endif
+            IM_CHECK_EQ(vars.Value.y, 123.0f);
+            IM_CHECK(vars.DeactivatedField == 1);
+            ctx->KeyPress(ImGuiKey_Escape);
+
+            vars.Value = ImVec4();
+            ctx->ItemClick("y");
+            ctx->KeyCharsReplace("123.0"); // Input value but don't press enter
+            ctx->KeyPress(ImGuiMod_Shift | ImGuiKey_Tab); // Tab to previous item
+#if IMGUI_VERSION_NUM < 18942
+            if (step == 0)
+#endif
+            IM_CHECK_EQ(vars.Value.y, 123.0f);
+            IM_CHECK(vars.DeactivatedField == 1);
+            ctx->KeyPress(ImGuiKey_Escape);
+        }
+    };
+
 }
