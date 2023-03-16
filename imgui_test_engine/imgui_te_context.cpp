@@ -419,10 +419,10 @@ void ImGuiTestContext::SetInputMode(ImGuiInputSource input_mode)
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
     LogDebug("SetInputMode %d", input_mode);
 
-    IM_ASSERT(input_mode == ImGuiInputSource_Mouse || input_mode == ImGuiInputSource_Nav);
+    IM_ASSERT(input_mode == ImGuiInputSource_Mouse || input_mode == ImGuiInputSource_Keyboard || input_mode == ImGuiInputSource_Gamepad);
     InputMode = input_mode;
 
-    if (InputMode == ImGuiInputSource_Nav)
+    if (InputMode == ImGuiInputSource_Keyboard || InputMode == ImGuiInputSource_Gamepad)
     {
         UiContext->NavDisableHighlight = false;
         UiContext->NavDisableMouseHover = true;

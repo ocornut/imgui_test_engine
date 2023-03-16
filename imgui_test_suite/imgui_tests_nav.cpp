@@ -48,7 +48,7 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
     t = IM_REGISTER_TEST(e, "nav", "nav_basic");
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
-        ctx->SetInputMode(ImGuiInputSource_Nav);
+        ctx->SetInputMode(ImGuiInputSource_Keyboard);
         ctx->SetRef("Hello, world!");
         ctx->ItemUncheck("Demo Window");
         ctx->ItemCheck("Demo Window");
@@ -192,7 +192,7 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
         // FIXME-TESTS: Fails if window is resized too small
         ImGuiContext& g = *ctx->UiContext;
         IM_CHECK(g.IO.ConfigFlags & ImGuiConfigFlags_NavEnableKeyboard);
-        //ctx->SetInputMode(ImGuiInputSource_Nav);
+        //ctx->SetInputMode(ImGuiInputSource_Keyboard);
         //ctx->SetRef("Test window");
 
         for (int step = 0; step < 4; step++)
@@ -265,7 +265,7 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
         IM_CHECK(g.IO.ConfigFlags & ImGuiConfigFlags_NavEnableKeyboard);
         ImGuiWindow* window = ImGui::FindWindowByName("Test Window");
         ctx->SetRef("Test Window");
-        ctx->SetInputMode(ImGuiInputSource_Nav);
+        ctx->SetInputMode(ImGuiInputSource_Keyboard);
 
         IM_CHECK(g.NavId == window->GetID("Button 0"));
         IM_CHECK(window->Scroll.y == 0);
@@ -638,7 +638,7 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         // FIXME-TESTS: Fails if window is resized too small
-        ctx->SetInputMode(ImGuiInputSource_Nav);
+        ctx->SetInputMode(ImGuiInputSource_Keyboard);
         ctx->SetRef("Test window 1");
         ctx->ItemInput("InputText");
         ctx->KeyCharsAppend("123");
@@ -1342,8 +1342,8 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
         for (int n = 0; n < 2; n++)
         {
             const ImGuiInputSource input_source = (n == 0) ? ImGuiInputSource_Keyboard : ImGuiInputSource_Gamepad;
-            ctx->SetInputMode(ImGuiInputSource_Nav);
-            ctx->UiContext->NavInputSource = input_source;  // FIXME-NAV: Should be set by above ctx->SetInputMode(ImGuiInputSource_Gamepad) call, but those states are a mess.
+            ctx->SetInputMode(input_source);
+            //ctx->UiContext->NavInputSource = input_source;  // FIXME-NAV: Should be set by above ctx->SetInputMode(ImGuiInputSource_Gamepad) call, but those states are a mess.
 
             // Down
             ctx->NavMoveTo("Button 0,0");

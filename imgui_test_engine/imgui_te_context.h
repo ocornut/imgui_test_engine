@@ -370,7 +370,7 @@ struct IMGUI_API ImGuiTestContext
     // - This was initially intended to: replace mouse action with keyboard/gamepad
     // - Abstract keyboard vs gamepad actions
     // However this is widely inconsistent and unfinished at this point.
-    void        SetInputMode(ImGuiInputSource input_mode);  // ImGuiInputSource_Mouse or ImGuiInputSource_Nav. In nav mode, actions such as ItemClick or ItemInput are using nav facilities instead of Mouse.
+    void        SetInputMode(ImGuiInputSource input_mode);  // Mouse or Keyboard or Gamepad. In Keyboard or Gamepad mode, actions such as ItemClick or ItemInput are using nav facilities instead of Mouse.
     void        NavMoveTo(ImGuiTestRef ref);
     void        NavActivate();                              // Activate current selected item: activate button, tweak sliders/drags. Equivalent of pressing Space on keyboard, ImGuiKey_GamepadFaceUp on a gamepad.
     void        NavInput();                                 // Input into select item: input sliders/drags. Equivalent of pressing Enter on keyboard, ImGuiKey_GamepadFaceDown on a gamepad.
