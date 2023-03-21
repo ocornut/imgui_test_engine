@@ -405,6 +405,29 @@ void RegisterTests_Inputs(ImGuiTestEngine* e)
         IM_CHECK(io.InputQueueCharacters.Size == 0);
     };
 
+    // ## Test IO with multiple-context (#6199, #6256)
+#if IMGUI_VERSION_NUM >= 18943
+    t = IM_REGISTER_TEST(e, "misc", "inputs_io_inputqueue_multi_context");
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiContext* c1 = ImGui::GetCurrentContext();
+        ImGuiContext* c2 = ImGui::CreateContext();
+        ImGuiContext* c3 = ImGui::CreateContext();
+
+        IM_CHECK(c1->InputEventsQueue.Size == 0 && c2->InputEventsQueue.Size == 0 && c3->InputEventsQueue.Size == 0);
+        ImGui::SetCurrentContext(NULL);
+        c1->IO.AddKeyEvent(ImGuiKey_1, true);
+        c2->IO.AddKeyEvent(ImGuiKey_2, true);
+        c2->IO.AddKeyEvent(ImGuiKey_2, false);
+        c3->IO.AddKeyEvent(ImGuiKey_3, true);
+
+        IM_CHECK(c1->InputEventsQueue.Size == 1 && c2->InputEventsQueue.Size == 2 && c3->InputEventsQueue.Size == 1);
+        ImGui::DestroyContext(c3);
+        ImGui::DestroyContext(c2);
+        ImGui::SetCurrentContext(c1);
+    };
+#endif
+
     // ## Test input queue filtering of duplicates (#5599)
 #if IMGUI_VERSION_NUM >= 18828
     t = IM_REGISTER_TEST(e, "inputs", "inputs_io_inputqueue_filtering");
@@ -532,7 +555,7 @@ void RegisterTests_Inputs(ImGuiTestEngine* e)
         IM_CHECK_EQ(ImGui::TestKeyOwner(ImGuiKey_Home, ImGuiKeyOwner_None), false);
         IM_CHECK_EQ(ImGui::TestKeyOwner(ImGuiKey_Home, ctx->GetID("hello1")), true);
         IM_CHECK_EQ(ImGui::TestKeyOwner(ImGuiKey_End, ctx->GetID("hello1")), true);
-        IM_CHECK_EQ(ImGui::GetKeyOwnerData(ImGuiKey_End)->OwnerCurr, ImGuiKeyOwner_None);
+        IM_CHECK_EQ(ImGui::GetKeyOwnerData(&g, ImGuiKey_End)->OwnerCurr, ImGuiKeyOwner_None);
         ctx->KeyPress(ImGuiKey_End);
         IM_CHECK_EQ(g.NavId, ctx->GetID("Button Down"));
         ctx->KeyPress(ImGuiKey_Home);
@@ -604,6 +627,7 @@ void RegisterTests_Inputs(ImGuiTestEngine* e)
     t = IM_REGISTER_TEST(e, "inputs", "inputs_owner_override");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
+        ImGuiContext& g = *ctx->UiContext;
         auto& vars = ctx->GenericVars;
         ctx->SetRef("Test Window");
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_MenuBar);
@@ -612,7 +636,7 @@ void RegisterTests_Inputs(ImGuiTestEngine* e)
         if (vars.Step >= 1)
             ImGui::SetKeyOwner(ImGuiKey_Space, ImGui::GetItemID());
 
-        const ImGuiKeyOwnerData* owner_data = ImGui::GetKeyOwnerData(ImGuiKey_Space);
+        const ImGuiKeyOwnerData* owner_data = ImGui::GetKeyOwnerData(&g, ImGuiKey_Space);
         if (vars.Bool1)
         {
             if (vars.Step == 0)
