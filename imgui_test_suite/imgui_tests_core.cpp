@@ -1497,6 +1497,48 @@ void RegisterTests_Window(ImGuiTestEngine* e)
     };
 #endif
 
+    // ## Test position of modal too tall for work area. (#5843)
+#if IMGUI_VERSION_NUM >= 18834
+    t = IM_REGISTER_TEST(e, "window", "window_modal_bounds_exceeding_work_area");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        if (ImGui::BeginMainMenuBar())
+            ImGui::EndMainMenuBar();
+
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+        if (ImGui::Button("Open Modal"))
+            ImGui::OpenPopup("Modal");
+
+        if (ImGui::BeginPopupModal("Modal", nullptr, ImGuiWindowFlags_NoSavedSettings))
+        {
+            ImGui::Dummy({ 1.f, ImGui::GetIO().DisplaySize.y * 1.5f });
+            ImGui::EndPopup();
+        }
+
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiIO& io = ImGui::GetIO();
+        io.ConfigWindowsMoveFromTitleBarOnly = true;
+
+        ctx->ItemClick("//Test Window/Open Modal");
+
+        ImGuiWindow* window = ctx->GetWindowByRef("Modal");
+        ImGuiViewport* viewport = ImGui::GetMainViewport();
+        ImRect work_rect(viewport->WorkPos, viewport->WorkPos + viewport->WorkSize);
+
+        // Ensure the modal is fully within the working area both while it is settling and once it's settled
+        for (int i = 0; i < 3; i++)
+        {
+            IM_CHECK(work_rect.Contains(window->Rect()));
+            ctx->Yield();
+        }
+
+        io.ConfigWindowsMoveFromTitleBarOnly = false;
+    };
+#endif
+
     // ## Test that child window correctly affect contents size based on how their size was specified.
     t = IM_REGISTER_TEST(e, "window", "window_child_layout_size");
     t->Flags |= ImGuiTestFlags_NoAutoFinish;
