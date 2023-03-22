@@ -992,6 +992,22 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
         IM_CHECK(vars.BoolArray[3] == false); // Button not reporting as hovered
     };
 
+    // ## Test basic Item function on DockSpace() which is based but not using BeginChild()/EndChild() (#6217)
+#if IMGUI_VERSION_NUM >= 18943
+    t = IM_REGISTER_TEST(e, "docking", "docking_dockspace_item_query");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImGuiID id = ImGui::GetID("foo");
+        ImGui::DockSpace(id, ImVec2(200, 300));
+        ImVec2 sz = ImGui::GetItemRectSize();
+        ImGuiID id2 = ImGui::GetItemID();
+        IM_CHECK(sz.x == 200.0f && sz.y == 300.0f);
+        IM_CHECK(id == id2);
+        ImGui::End();
+    };
+#endif
+
     // ## Test _KeepAlive dockspace flag.
     t = IM_REGISTER_TEST(e, "docking", "docking_dockspace_keep_alive");
     struct DockspaceKeepAliveVars { ImGuiDockNodeFlags Flags = 0; bool ShowDockspace = true; bool ShowMainMenuBar = true; };
