@@ -660,7 +660,7 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
         ctx->Sleep(1.0f);
     };
 
-#if IMGUI_VERSION_NUM >= 18837
+#if IMGUI_VERSION_NUM >= 18944
     // ## Test CTRL+TAB customization (#4828)
     t = IM_REGISTER_TEST(e, "nav", "nav_ctrl_tab_customization");
     t->GuiFunc = [](ImGuiTestContext* ctx)
@@ -681,65 +681,51 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
         g.ConfigNavWindowingKeyNext = ImGuiMod_Alt | ImGuiKey_N;
         g.ConfigNavWindowingKeyPrev = ImGuiMod_Alt | ImGuiKey_P;
 
+        // Dock windows together
+        // This tests edge case where the alt gets grabbed by the docking tab bar instead of windowing
+        // See https://github.com/ocornut/imgui_test_engine/pull/17#issuecomment-1478643518
+#ifdef IMGUI_HAS_DOCK
+        ctx->DockClear("Window 1", "Window 2", NULL);
+        ctx->DockInto("Window 1", "Window 2");
+#endif
+
         // Set up window focus order.
         ctx->WindowFocus("Window 1");
         ctx->WindowFocus("Window 2");
 
         // Press default windowing keys and ensure window focus is unchanged
         ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_Tab);
-        IM_CHECK(g.NavWindow == ctx->GetWindowByRef("Window 2"));
+        IM_CHECK_EQ(g.NavWindow, ctx->GetWindowByRef("Window 2"));
 
         ctx->KeyPress(ImGuiMod_Ctrl | ImGuiMod_Shift | ImGuiKey_Tab);
-        IM_CHECK(g.NavWindow == ctx->GetWindowByRef("Window 2"));
+        IM_CHECK_EQ(g.NavWindow, ctx->GetWindowByRef("Window 2"));
 
         // Press custom windowing key and ensure focus changed
         ctx->KeyPress(ImGuiMod_Alt | ImGuiKey_N);
-        IM_CHECK(g.NavWindow == ctx->GetWindowByRef("Window 1"));
+        IM_CHECK_EQ(g.NavWindow, ctx->GetWindowByRef("Window 1"));
 
         // Intentionally perform a "SLOW" windowing key combo to make sure the UI appears!
         ctx->KeyDown(ImGuiMod_Alt);
         ctx->KeyPress(ImGuiKey_N);
         ctx->SleepNoSkip(0.5f, 0.1f);
-        IM_CHECK(g.NavWindowingTarget == ctx->GetWindowByRef("Window 2"));
-        IM_CHECK(g.NavWindowingTarget->SkipItems == false);
+        IM_CHECK_EQ(g.NavWindowingTarget, ctx->GetWindowByRef("Window 2"));
+        IM_CHECK_EQ(g.NavWindowingTarget->SkipItems, false);
         ctx->KeyUp(ImGuiMod_Alt);
-        IM_CHECK(g.NavWindow == ctx->GetWindowByRef("Window 2"));
+        IM_CHECK_EQ(g.NavWindow, ctx->GetWindowByRef("Window 2"));
 
         // Test previous windowing key combo with UI
         ctx->KeyDown(ImGuiMod_Alt);
         ctx->KeyPress(ImGuiKey_N);
         ctx->SleepNoSkip(0.5f, 0.1f);
-        IM_CHECK(g.NavWindowingTarget == ctx->GetWindowByRef("Window 1"));
-        IM_CHECK(g.NavWindowingTarget->SkipItems == false);
+        IM_CHECK_EQ(g.NavWindowingTarget, ctx->GetWindowByRef("Window 1"));
+        IM_CHECK_EQ(g.NavWindowingTarget->SkipItems, false);
         ctx->KeyPress(ImGuiKey_P);
-        IM_CHECK(g.NavWindowingTarget == ctx->GetWindowByRef("Window 2"));
-        IM_CHECK(g.NavWindowingTarget->SkipItems == false);
+        IM_CHECK_EQ(g.NavWindowingTarget, ctx->GetWindowByRef("Window 2"));
+        IM_CHECK_EQ(g.NavWindowingTarget->SkipItems, false);
         ctx->KeyUp(ImGuiMod_Alt);
-        IM_CHECK(g.NavWindow == ctx->GetWindowByRef("Window 2"));
+        IM_CHECK_EQ(g.NavWindow, ctx->GetWindowByRef("Window 2"));
 
-        // Restore configuration
-        g.ConfigNavWindowingKeyNext = ImGuiMod_Ctrl | ImGuiKey_Tab;
-        g.ConfigNavWindowingKeyPrev = ImGuiMod_Ctrl | ImGuiMod_Shift | ImGuiKey_Tab;
-    };
-#endif
-
-#if IMGUI_VERSION_NUM >= 18837
-    // ## Test CTRL+TAB disabled (#4828)
-    t = IM_REGISTER_TEST(e, "nav", "nav_ctrl_tab_disabled");
-    t->GuiFunc = [](ImGuiTestContext* ctx)
-    {
-        ImGui::Begin("Window 1", NULL, ImGuiWindowFlags_NoSavedSettings);
-        ImGui::TextUnformatted("Oh dear");
-        ImGui::End();
-
-        ImGui::Begin("Window 2", NULL, ImGuiWindowFlags_NoSavedSettings);
-        ImGui::TextUnformatted("Oh dear");
-        ImGui::End();
-    };
-    t->TestFunc = [](ImGuiTestContext* ctx)
-    {
-        ImGuiContext& g = *ctx->UiContext;
-
+        //---------------------------------------------------------------------
         // Disable windowing key combinations
         g.ConfigNavWindowingKeyNext = 0;
         g.ConfigNavWindowingKeyPrev = 0;
@@ -750,14 +736,10 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
 
         // Press Ctrl+Tab and Ctrl+Shift+Tab and ensure window focus is unchanged
         ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_Tab);
-        IM_CHECK(g.NavWindow == ctx->GetWindowByRef("Window 2"));
+        IM_CHECK_EQ(g.NavWindow, ctx->GetWindowByRef("Window 2"));
 
         ctx->KeyPress(ImGuiMod_Ctrl | ImGuiMod_Shift | ImGuiKey_Tab);
-        IM_CHECK(g.NavWindow == ctx->GetWindowByRef("Window 2"));
-
-        // Restore configuration
-        g.ConfigNavWindowingKeyNext = ImGuiMod_Ctrl | ImGuiKey_Tab;
-        g.ConfigNavWindowingKeyPrev = ImGuiMod_Ctrl | ImGuiMod_Shift | ImGuiKey_Tab;
+        IM_CHECK_EQ(g.NavWindow, ctx->GetWindowByRef("Window 2"));
     };
 #endif
 
