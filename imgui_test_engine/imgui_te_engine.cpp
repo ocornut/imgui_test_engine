@@ -1340,6 +1340,9 @@ static void ImGuiTestEngine_RunTest(ImGuiTestEngine* engine, ImGuiTestContext* c
     ImGuiIO backup_io = ctx->UiContext->IO;
     ImGuiStyle backup_style = ctx->UiContext->Style;
     ImGuiDebugLogFlags backup_debug_log_flags = ctx->UiContext->DebugLogFlags;
+    ImGuiKeyChord backup_nav_windowing_key_next = ctx->UiContext->ConfigNavWindowingKeyNext;
+    ImGuiKeyChord backup_nav_windowing_key_prev = ctx->UiContext->ConfigNavWindowingKeyPrev;
+
     memset(backup_io.MouseDown, 0, sizeof(backup_io.MouseDown));
     for (int n = 0; n < IM_ARRAYSIZE(backup_io.KeysData); n++)
         backup_io.KeysData[n].Down = false;
@@ -1505,6 +1508,8 @@ static void ImGuiTestEngine_RunTest(ImGuiTestEngine* engine, ImGuiTestContext* c
     ctx->UiContext->IO = backup_io;
     ctx->UiContext->Style = backup_style;
     ctx->UiContext->DebugLogFlags = backup_debug_log_flags;
+    ctx->UiContext->ConfigNavWindowingKeyNext = backup_nav_windowing_key_next;
+    ctx->UiContext->ConfigNavWindowingKeyPrev = backup_nav_windowing_key_prev;
 }
 
 //-------------------------------------------------------------------------
