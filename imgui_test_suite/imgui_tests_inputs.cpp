@@ -884,6 +884,65 @@ void RegisterTests_Inputs(ImGuiTestEngine* e)
     };
 #endif
 
+#if IMGUI_VERSION_NUM > 18902
+    // ## Test SetActiveIdUsingAllKeyboardKeys (via window dragging) dropping modifiers and blocking input-owner-unaware code from accessing keys (#5888)
+    t = IM_REGISTER_TEST(e, "inputs", "inputs_owner_all_keys_w_owner_unaware");
+    struct InputsOwnerAllkeysTestVars { bool CtrlDown; bool ShiftDown; bool ADown; bool LeftMouseDown; };
+    t->SetVarsDataType<InputsOwnerAllkeysTestVars>();
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        auto& vars = ctx->GetVars<InputsOwnerAllkeysTestVars>();
+        ImGui::SetNextWindowSize({ 100.f, 200.f });
+        ImGui::Begin("Test", nullptr, ImGuiWindowFlags_NoSavedSettings);
+        vars.CtrlDown = ImGui::IsKeyDown(ImGuiMod_Ctrl);
+        vars.ShiftDown = ImGui::IsKeyDown(ImGuiMod_Shift);
+        vars.ADown = ImGui::IsKeyDown(ImGuiKey_A);
+        vars.LeftMouseDown = ImGui::IsMouseClicked(ImGuiMouseButton_Left) || ImGui::IsMouseDragging(ImGuiMouseButton_Left);
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        auto& vars = ctx->GetVars<InputsOwnerAllkeysTestVars>();
+        ImGuiIO& io = ImGui::GetIO();
+
+        // Start dragging the window
+        // This is a slightly minified version of ImGuiTestContext::WindowMove, we can't use it since we want the mouse to stay down
+        ImGuiWindow* window = ctx->GetWindowByRef("Test");
+        IM_CHECK_NE(window, nullptr);
+        ImGuiTestRef ref = window->ID;
+        ctx->WindowBringToFront(ref);
+        ctx->WindowCollapse(ref, false);
+        ctx->MouseSetViewport(window);
+        ctx->MouseMoveToPos(ctx->GetWindowTitlebarPoint(ref));
+
+        // Press shift before drag to disable docking (and test shift)
+#ifdef IMGUI_HAS_DOCK
+        IM_CHECK(!io.ConfigDockingWithShift);
+#endif
+        ctx->KeyDown(ImGuiMod_Shift);
+
+        ImVec2 old_pos = window->Pos;
+        ctx->MouseDown(ImGuiMouseButton_Left);
+        ctx->MouseMoveToPos(io.MousePos + ImVec2(10.f, 0.f));
+        IM_CHECK_NE(old_pos, window->Pos);
+
+        // Press keys and ensure they're detected along with shift and left mouse (both held earlier)
+        ctx->KeyDown(ImGuiMod_Ctrl);
+        ctx->KeyDown(ImGuiKey_A);
+        vars = { };
+        ctx->Yield();
+        IM_CHECK(vars.CtrlDown);
+        IM_CHECK(vars.ShiftDown);
+        IM_CHECK(vars.ADown);
+        IM_CHECK(vars.LeftMouseDown);
+
+        ctx->KeyUp(ImGuiKey_A);
+        ctx->KeyUp(ImGuiMod_Ctrl);
+        ctx->MouseUp(ImGuiMouseButton_Left);
+        ctx->KeyUp(ImGuiMod_Shift);
+    };
+#endif
+
 #if IMGUI_VERSION_NUM >= 18837
     t = IM_REGISTER_TEST(e, "inputs", "inputs_routing_1");
     struct InputRoutingVars
