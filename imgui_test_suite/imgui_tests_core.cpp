@@ -1655,6 +1655,88 @@ void RegisterTests_Window(ImGuiTestEngine* e)
         IM_CHECK_EQ(sy, 100.0f);
     };
 
+    // ## Test scroll functions are delayed to next frame except SetNextWindowScroll which applies immediately (#1526)
+#if IMGUI_VERSION_NUM >= 18838
+    t = IM_REGISTER_TEST(e, "window", "window_scroll_latency");
+    struct WindowScrollLatencyTestVars { int TestStep; ImVec2 ScrollTarget; ImVec2 GotScroll; };
+    t->SetVarsDataType<WindowScrollLatencyTestVars>();
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        auto& vars = ctx->GetVars<WindowScrollLatencyTestVars>();
+
+        ImGui::SetNextWindowSize({ 100.f, 100.f });
+        if (vars.TestStep == 1)
+            ImGui::SetNextWindowScroll(vars.ScrollTarget);
+        ImGui::Begin("Test", nullptr, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoResize);
+        ImGui::Dummy({ 500.f, 500.f });
+        switch (vars.TestStep)
+        {
+            case 2: ImGui::SetScrollX(vars.ScrollTarget.x); break;
+            case 3: ImGui::SetScrollY(vars.ScrollTarget.y); break;
+            case 4: ImGui::SetScrollHereX(); break;
+            case 5: ImGui::SetScrollHereY(); break;
+            case 6: ImGui::SetScrollFromPosX(vars.ScrollTarget.x); break;
+            case 7: ImGui::SetScrollFromPosY(vars.ScrollTarget.y); break;
+        }
+
+        if (vars.TestStep != 0)
+        {
+            vars.GotScroll = { ImGui::GetScrollX(), ImGui::GetScrollY() };
+            vars.TestStep = 0;
+        }
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        auto& vars = ctx->GetVars<WindowScrollLatencyTestVars>();
+
+        for (int test_step = 1; test_step <= 7; test_step++)
+        {
+            ctx->LogDebug("Sub test %d/7", test_step);
+
+            // Reset the window's scroll
+            vars.TestStep = 1;
+            vars.ScrollTarget = { 0.f, 0.f };
+            ctx->Yield();
+
+            ImGuiWindow* window = ctx->GetWindowByRef("Test");
+            IM_CHECK_NE(window, nullptr);
+            IM_CHECK_EQ(window->Scroll, ImVec2(0.f, 0.f));
+
+            // Perform the corresponding scroll action in the GUI function
+            vars.TestStep = test_step;
+            vars.ScrollTarget = { 100.f, 200.f };
+            vars.GotScroll = { };
+            ctx->Yield();
+
+            // Scroll from SetNextWindowScroll should apply immediately
+            if (test_step == 1)
+            {
+                IM_CHECK_EQ(vars.GotScroll, ImVec2(100.f, 200.f));
+                continue;
+            }
+
+            // For all other subtests, the scroll is not reflected in the API until the next frame
+            IM_CHECK_EQ(vars.GotScroll, ImVec2(0.f, 0.f));
+            vars.TestStep = -1; // Don't set scroll, just capture it
+            ctx->Yield();
+
+            // Ensure the appropriate axis moved
+            // (Exact scroll values don't matter for this test, just ensure far/near zero)
+            if (test_step % 2 == 0)
+            {
+                IM_CHECK_GT(vars.GotScroll.x, 1.f);
+                IM_CHECK_FLOAT_EQ_EPS(vars.GotScroll.y, 0.f);
+            }
+            else
+            {
+                IM_CHECK_FLOAT_EQ_EPS(vars.GotScroll.x, 0.f);
+                IM_CHECK_GT(vars.GotScroll.y, 1.f);
+            }
+        }
+    };
+#endif
+
     // ## Test that SetScrollHereXX functions make items fully visible
     // Regardless of WindowPadding and ItemSpacing values
 #if IMGUI_VERSION_NUM >= 18202
