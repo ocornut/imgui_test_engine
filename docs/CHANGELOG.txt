@@ -5,6 +5,9 @@ CHANGELOG
    Those changes are not all listed here.
 ** For a while this is going to ONLY INCLUDE BREAKING CHANGES.
 
+2023/03/28:
+- TestEngine: Added ItemExists() helper.
+
 2023/03/14:
 - TestEngine: Fixed GatherItems() max-depth test being off-by-1 (regression in 2023/03/06 update).
 

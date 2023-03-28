@@ -426,6 +426,7 @@ struct IMGUI_API ImGuiTestContext
     void        ItemDragWithDelta(ImGuiTestRef ref_src, ImVec2 pos_delta);
 
     // Helpers for Item/Widget state query
+    bool        ItemExists(ImGuiTestRef ref);
     void        ItemVerifyCheckedIfAlive(ImGuiTestRef ref, bool checked);
 
     // Helpers for Tab Bars widgets

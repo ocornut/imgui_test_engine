@@ -2890,15 +2890,23 @@ void    ImGuiTestContext::ItemDragWithDelta(ImGuiTestRef ref_src, ImVec2 pos_del
     MouseUp(0);
 }
 
+bool    ImGuiTestContext::ItemExists(ImGuiTestRef ref)
+{
+    ImGuiTestItemInfo* item = ItemInfo(ref, ImGuiTestOpFlags_NoError);
+    return item->ID != 0;
+}
+
 void    ImGuiTestContext::ItemVerifyCheckedIfAlive(ImGuiTestRef ref, bool checked)
 {
+    // This is designed to deal with disappearing items which will not update their state,
+    // e.g. a checkable menu item in a popup which closes when checked.
+    // Otherwise ItemInfo() data is preserved for an additional frame.
     Yield();
     ImGuiTestItemInfo* item = ItemInfo(ref, ImGuiTestOpFlags_NoError);
     if (item->ID == 0)
         return;
     if (item->TimestampMain + 1 >= ImGuiTestEngine_GetFrameCount(Engine) && item->TimestampStatus == item->TimestampMain)
-        if (((item->StatusFlags & ImGuiItemStatusFlags_Checked) != 0) != checked)
-            IM_CHECK(((item->StatusFlags & ImGuiItemStatusFlags_Checked) != 0) == checked);
+        IM_CHECK_SILENT(((item->StatusFlags & ImGuiItemStatusFlags_Checked) != 0) == checked);
 }
 
 // FIXME-TESTS: Could this be handled by ItemClose()?
