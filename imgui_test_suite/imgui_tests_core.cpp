@@ -3608,7 +3608,7 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
         for (int clipper_step = 0; clipper_step < 2; clipper_step++)
             for (int step = 0; step < step_count; step++)
             {
-                vars.ClipperManualItemHeight = (clipper_step == 2);
+                vars.ClipperManualItemHeight = (clipper_step == 1);
                 vars.TableEnable = (step > 1);
                 vars.TableFreezeRows = (step == 3) ? 1 : (step == 4) ? 2 : 0;
                 vars.ForceDisplayStart = vars.ForceDisplayEnd = 0;
