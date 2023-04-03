@@ -1,8 +1,8 @@
-Dear ImGui Test Engine License (v1.02)
+Dear ImGui Test Engine License (v1.03)
 Copyright (c) 2018-2023 Omar Cornut
 
 This document is a legal agreement ("License") between you ("Licensee") and
-LIZARDCUBE SAS ("Licensor") that governs your use of Dear ImGui Test Engine ("Software").
+DISCO HELLO ("Licensor") that governs your use of Dear ImGui Test Engine ("Software").
 
 1. LICENSE MODELS
 
@@ -24,7 +24,7 @@ criterion:
 If you do not meet any criterion of Article 1.1, Licensor grants you a trial period of a
 maximum of 45 days, at no charge. Following this trial period, you must subscribe to a paid
 license ("Paid License") with the Licensor to continue using the Software.
-Paid Licenses are exclusively sold by LIZARDCUBE SAS. Paid Licenses and the associated
+Paid Licenses are exclusively sold by DISCO HELLO. Paid Licenses and the associated
 information are available at the following URL: http://www.dearimgui.com/licenses
 
 2. GRANT OF LICENSE
