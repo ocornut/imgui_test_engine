@@ -320,7 +320,22 @@ void RegisterTests_WidgetsInputText(ImGuiTestEngine* e)
             else
                 ImGui::InputText("Hello", vars.Str1, IM_ARRAYSIZE(vars.Str1));
         }
-        else
+        if (vars.Step == 1)
+        {
+            if (vars.Int1 == 0)
+            {
+                if (ImGui::BeginCombo("Hello", "Previews"))
+                {
+                    ImGui::Selectable("Dummy");
+                    ImGui::EndCombo();
+                }
+            }
+            else
+            {
+                ImGui::InputInt("Hello", &vars.Int1, 0, 100, ImGuiInputTextFlags_CharsNoBlank);
+            }
+        }
+        if (vars.Step == 2)
         {
             ImGui::InputTextMultiline("Hello", vars.Str1, IM_ARRAYSIZE(vars.Str1));
         }
@@ -330,6 +345,7 @@ void RegisterTests_WidgetsInputText(ImGuiTestEngine* e)
     {
         ImGuiTestGenericVars& vars = ctx->GenericVars;
 
+        // Toggling from Button() to InputText()
         ctx->SetRef("Test Window");
         ctx->ItemHoldForFrames("Hello", 100);
         ctx->ItemClick("Hello");
@@ -337,8 +353,18 @@ void RegisterTests_WidgetsInputText(ImGuiTestEngine* e)
         IM_CHECK(state != NULL);
         IM_CHECK(state->Stb.single_line == 1);
 
-        // Toggling from single to multiline is a little bit ill-defined
+        // Toggling from InputInt() to BeginCombo() (#6304)
+#if IMGUI_VERSION_NUM >= 18949
         vars.Step = 1;
+        vars.Int1 = 1;
+        ctx->Yield();
+        ctx->ItemClick("Hello");
+        ctx->KeyCharsReplace("0");
+        ctx->Yield(2);
+#endif
+
+        // Toggling from single to multiline is a little bit ill-defined
+        vars.Step = 2;
         ctx->Yield();
         ctx->ItemClick("Hello");
         state = ImGui::GetInputTextState(ctx->GetID("Hello"));
