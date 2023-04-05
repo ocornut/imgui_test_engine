@@ -166,6 +166,74 @@ void RegisterTests_Viewports(ImGuiTestEngine* e)
         IM_CHECK_EQ(window->Viewport->ParentViewportId, (ImGuiID)0x12345678);
     };
 
+    // Test Platform Focus leading to Dear ImGui focus (#6299)
+    t = IM_REGISTER_TEST(e, "viewport", "viewport_platform_focus");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::SetNextWindowPos(ImGui::GetMainViewport()->Pos + ImVec2(10, 10));
+        ImGui::SetNextWindowSize(ImVec2(200, 200)); // Assume fitting in host viewport
+        ImGui::Begin("Window A", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImGui::Button("Button A");
+        ImGui::BeginChild("Child A", ImVec2(100, 100), true);
+        ImGui::Button("Button Child A");
+        ImGui::EndChild();
+        ImGui::End();
+
+        ImGui::SetNextWindowPos(ImGui::GetMainViewport()->Pos + ImVec2(ImGui::GetMainViewport()->Size.x, 10));
+        ImGui::Begin("Window B", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImGui::Button("Button B");
+        ImGui::BeginChild("Child B", ImVec2(100, 100), true);
+        ImGui::Button("Button Child B");
+        ImGui::EndChild();
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiContext& g = *ctx->UiContext;
+        ImGuiWindow* window_a = ctx->WindowInfo("//Window A")->Window;
+        ImGuiWindow* window_b = ctx->WindowInfo("//Window B")->Window;
+        ImGuiWindow* window_child_a = ctx->WindowInfo("//Window A/Child A")->Window;
+        ImGuiWindow* window_child_b = ctx->WindowInfo("//Window B/Child B")->Window;
+        IM_ASSERT(window_a && window_b && window_child_a && window_child_b);
+        ctx->Yield();
+
+        ImGuiViewport* viewport_a = window_a->Viewport;
+        ImGuiViewport* viewport_b = window_b->Viewport; IM_UNUSED(viewport_b);
+        IM_CHECK(window_a->Viewport != NULL);
+        IM_CHECK(window_a->ViewportId == ImGui::GetMainViewport()->ID);
+        IM_CHECK(window_b->Viewport != NULL);
+        IM_CHECK(window_b->ViewportId != ImGui::GetMainViewport()->ID);
+
+        ctx->ItemClick("//Window A/Button A");
+        IM_CHECK_EQ(g.NavWindow, window_a);
+        ctx->ViewportPlatform_SetWindowFocus(viewport_a);   // No-op
+        IM_CHECK_EQ(g.NavWindow, window_a);
+
+#if IMGUI_VERSION_NUM >= 18949
+        ctx->ViewportPlatform_SetWindowFocus(viewport_b);
+        IM_CHECK_EQ(g.NavWindow, window_b);
+
+        ctx->ViewportPlatform_SetWindowFocus(viewport_a);
+        IM_CHECK_EQ(g.NavWindow, window_a);
+        ctx->SetRef(window_child_a);
+        ctx->ItemClick("Button Child A");
+        IM_CHECK_EQ(g.NavWindow, window_child_a);
+        ctx->ViewportPlatform_SetWindowFocus(viewport_b);
+        IM_CHECK_EQ(g.NavWindow, window_b);
+        ctx->ViewportPlatform_SetWindowFocus(viewport_a);
+        IM_CHECK_EQ(g.NavWindow, window_child_a);
+
+        ctx->ViewportPlatform_SetWindowFocus(viewport_b);
+        ctx->SetRef(window_child_b);
+        ctx->ItemClick("Button Child B");
+        IM_CHECK_EQ(g.NavWindow, window_child_b);
+        ctx->ViewportPlatform_SetWindowFocus(viewport_a);
+        IM_CHECK_EQ(g.NavWindow, window_child_a);
+        ctx->ViewportPlatform_SetWindowFocus(viewport_b);
+        IM_CHECK_EQ(g.NavWindow, window_child_b);
+#endif
+    };
+
 #else
     IM_UNUSED(e);
 #endif

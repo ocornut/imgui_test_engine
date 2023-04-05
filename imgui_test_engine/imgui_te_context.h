@@ -453,6 +453,14 @@ struct IMGUI_API ImGuiTestContext
     void                        TableResizeColumn(ImGuiTestRef ref, int column_n, float width);
     const ImGuiTableSortSpecs*  TableGetSortSpecs(ImGuiTestRef ref);
 
+    // Viewports
+    // IMPORTANT: Those function will alter Platform state (unless using the "Mock Viewport" backend). Our carefully.
+#ifdef IMGUI_HAS_VIEWPORT
+    //void      ViewportPlatform_SetWindowPos(ImGuiViewport* viewport, const ImVec2& pos);
+    //void      ViewportPlatform_SetWindowSize(ImGuiViewport* viewport, const ImVec2& size);
+    void        ViewportPlatform_SetWindowFocus(ImGuiViewport* viewport);
+#endif
+
     // Docking
 #ifdef IMGUI_HAS_DOCK
     void        DockClear(const char* window_name, ...);

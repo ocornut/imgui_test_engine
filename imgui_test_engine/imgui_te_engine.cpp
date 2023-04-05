@@ -538,6 +538,7 @@ void ImGuiTestEngine_ApplyInputToImGuiContext(ImGuiTestEngine* engine)
 
     // Apply mouse viewport
 #ifdef IMGUI_HAS_VIEWPORT
+    ImGuiPlatformIO& platform_io = g.PlatformIO;
     ImGuiViewport* mouse_hovered_viewport;
     if (engine->Inputs.MouseHoveredViewport != 0)
         mouse_hovered_viewport = ImGui::FindViewportByID(engine->Inputs.MouseHoveredViewport); // Common case
@@ -601,6 +602,20 @@ void ImGuiTestEngine_ApplyInputToImGuiContext(ImGuiTestEngine* engine)
             {
                 IM_ASSERT(input.Char != 0);
                 io.AddInputCharacter(input.Char);
+                break;
+            }
+            case ImGuiTestInputType_ViewportFocus:
+            {
+#ifdef IMGUI_HAS_VIEWPORT
+                IM_ASSERT(engine->TestContext != NULL);
+                ImGuiViewport* viewport = ImGui::FindViewportByID(input.ViewportId);
+                if (viewport == NULL)
+                    engine->TestContext->LogError("ViewportPlatform_SetWindowFocus(%08X): cannot find viewport anymore!", input.ViewportId);
+                else if (platform_io.Platform_SetWindowSize == NULL)
+                    engine->TestContext->LogError("ViewportPlatform_SetWindowFocus(%08X): backend's Platform_SetWindowSize() is not set", input.ViewportId);
+                else
+                    platform_io.Platform_SetWindowFocus(viewport);
+#endif
                 break;
             }
             case ImGuiTestInputType_None:

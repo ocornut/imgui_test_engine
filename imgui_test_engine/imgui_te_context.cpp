@@ -2216,7 +2216,7 @@ void    ImGuiTestContext::KeyDown(ImGuiKeyChord key_chord)
     if (EngineIO->ConfigRunSpeed == ImGuiTestRunSpeed_Cinematic)
         SleepShort();
 
-    Inputs->Queue.push_back(ImGuiTestInput::FromKeyChord(key_chord, true));
+    Inputs->Queue.push_back(ImGuiTestInput::ForKeyChord(key_chord, true));
     Yield();
     Yield();
 }
@@ -2233,7 +2233,7 @@ void    ImGuiTestContext::KeyUp(ImGuiKeyChord key_chord)
     if (EngineIO->ConfigRunSpeed == ImGuiTestRunSpeed_Cinematic)
         SleepShort();
 
-    Inputs->Queue.push_back(ImGuiTestInput::FromKeyChord(key_chord, false));
+    Inputs->Queue.push_back(ImGuiTestInput::ForKeyChord(key_chord, false));
     Yield();
     Yield();
 }
@@ -2253,12 +2253,12 @@ void    ImGuiTestContext::KeyPress(ImGuiKeyChord key_chord, int count)
     while (count > 0)
     {
         count--;
-        Inputs->Queue.push_back(ImGuiTestInput::FromKeyChord(key_chord, true));
+        Inputs->Queue.push_back(ImGuiTestInput::ForKeyChord(key_chord, true));
         if (EngineIO->ConfigRunSpeed == ImGuiTestRunSpeed_Cinematic)
             SleepShort();
         else
             Yield();
-        Inputs->Queue.push_back(ImGuiTestInput::FromKeyChord(key_chord, false));
+        Inputs->Queue.push_back(ImGuiTestInput::ForKeyChord(key_chord, false));
         Yield();
 
         // Give a frame for items to react
@@ -2278,9 +2278,9 @@ void    ImGuiTestContext::KeyHold(ImGuiKeyChord key_chord, float time)
     if (EngineIO->ConfigRunSpeed == ImGuiTestRunSpeed_Cinematic)
         SleepStandard();
 
-    Inputs->Queue.push_back(ImGuiTestInput::FromKeyChord(key_chord, true));
+    Inputs->Queue.push_back(ImGuiTestInput::ForKeyChord(key_chord, true));
     SleepNoSkip(time, 1 / 100.0f);
-    Inputs->Queue.push_back(ImGuiTestInput::FromKeyChord(key_chord, false));
+    Inputs->Queue.push_back(ImGuiTestInput::ForKeyChord(key_chord, false));
     Yield(); // Give a frame for items to react
 }
 
@@ -2300,7 +2300,7 @@ void    ImGuiTestContext::KeyChars(const char* chars)
         int bytes_count = ImTextCharFromUtf8(&c, chars, NULL);
         chars += bytes_count;
         if (c > 0 && c <= 0xFFFF)
-            Inputs->Queue.push_back(ImGuiTestInput::FromChar((ImWchar)c));
+            Inputs->Queue.push_back(ImGuiTestInput::ForChar((ImWchar)c));
 
         if (EngineIO->ConfigRunSpeed != ImGuiTestRunSpeed_Fast)
             Sleep(1.0f / EngineIO->TypingSpeed);
@@ -3397,6 +3397,20 @@ ImGuiID ImGuiTestContext::PopupGetWindowID(ImGuiTestRef ref)
     Str30f popup_name("//##Popup_%08x", GetID(ref));
     return GetID(popup_name.c_str());
 }
+
+#ifdef IMGUI_HAS_VIEWPORT
+void    ImGuiTestContext::ViewportPlatform_SetWindowFocus(ImGuiViewport* viewport)
+{
+    if (IsError())
+        return;
+
+    IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
+    LogDebug("ViewportPlatform_SetWindowFocus(0x%08X)", viewport->ID);
+    Inputs->Queue.push_back(ImGuiTestInput::ForViewportFocus(viewport->ID)); // Queued since this will poke into backend, best to do in main thread.
+    Yield(); // Submit to Platform
+    Yield(); // Let Dear ImGui next frame see it
+}
+#endif
 
 #ifdef IMGUI_HAS_DOCK
 // Note: unlike DockBuilder functions, for _nodes_ this require the node to be visible.
