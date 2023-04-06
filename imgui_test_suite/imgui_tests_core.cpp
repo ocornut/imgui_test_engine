@@ -418,6 +418,7 @@ void RegisterTests_Window(ImGuiTestEngine* e)
         ctx->ItemClick("Open Modal Popup 2");
         IM_CHECK_EQ(g.NavWindow->ID, ctx->GetID("//Popup2"));
         IM_CHECK_EQ(g.OpenPopupStack.Size, 2);
+        ctx->MouseSetViewport(g.NavWindow);
         ctx->MouseMoveToPos(g.NavWindow->Rect().GetCenter());
         ctx->MouseClick(0);
         IM_CHECK_EQ(g.OpenPopupStack.Size, 1);
@@ -521,6 +522,7 @@ void RegisterTests_Window(ImGuiTestEngine* e)
         ctx->ItemClick("//$FOCUSED/Open popup2");
         IM_CHECK_NE(g.NavWindow, popup1);
         IM_CHECK_EQ(g.OpenPopupStack.Size, 3);
+        ctx->MouseSetViewport(popup1);
         ctx->MouseMoveToPos(popup1->Pos + ImVec2(5, 5));
         ctx->MouseClick(ImGuiMouseButton_Right);
         IM_CHECK_EQ(g.NavWindow, popup1);
@@ -679,6 +681,7 @@ void RegisterTests_Window(ImGuiTestEngine* e)
 
             // Test closing open menu by clicking popup window body.
             ctx->ItemClick("##menubar/First");                                      // Click and open first menu.
+            ctx->MouseSetViewport(popup);
             ctx->MouseMoveToPos(popup->Rect().GetBR() - ImVec2(20.0f, 20.0f));      // Clicking window outside of menu closes it.
             ctx->MouseClick();
 #if IMGUI_VERSION_NUM >= 18521
@@ -693,6 +696,7 @@ void RegisterTests_Window(ImGuiTestEngine* e)
 
             // Test closing a menu by clicking popup's parent window body.
             ctx->ItemClick("##menubar/First");                                      // Click and open first menu.
+            ctx->MouseSetViewport(window);
             ctx->MouseMoveToPos(window->Rect().GetBL() + ImVec2(20.0f, -20.0f));    // Clicking parent window of menu popup closes it.
             ctx->MouseClick();
 #if !IMGUI_BROKEN_TESTS
@@ -1026,6 +1030,7 @@ void RegisterTests_Window(ImGuiTestEngine* e)
         ctx->SetRef("Test Window");
         ctx->ItemClick("Open Popup");
         IM_CHECK(g.NavWindow != NULL);
+        ctx->MouseSetViewport(g.NavWindow);
         ctx->MouseMoveToPos(g.NavWindow->Pos + ImVec2(10, 10));
         IM_CHECK(io.WantCaptureMouse == true);
         IM_CHECK(io.WantCaptureMouseUnlessPopupClose == true);
@@ -1036,6 +1041,7 @@ void RegisterTests_Window(ImGuiTestEngine* e)
 
         ctx->ItemClick("Open Modal");
         IM_CHECK(g.NavWindow != NULL);
+        ctx->MouseSetViewport(g.NavWindow);
         ctx->MouseMoveToPos(g.NavWindow->Pos + ImVec2(10, 10));
         IM_CHECK(io.WantCaptureMouse == true);
         IM_CHECK(io.WantCaptureMouseUnlessPopupClose == true);
@@ -1460,19 +1466,24 @@ void RegisterTests_Window(ImGuiTestEngine* e)
     {
         ImGuiContext& g = *ctx->UiContext;
         ctx->SetRef("Test Window");
+
         for (int variant = 0; variant < 3; variant++)
         {
             // 1. Open via a popup via button.
             // 2. Open via a modal via button.
             ctx->Yield();
             ctx->LogDebug("Variant %d", variant);
-            ctx->ItemClick(variant == 0 ? "Open Popup" : "Open Modal", ImGuiMouseButton_Right);
+            ctx->MouseMove(variant == 0 ? "Open Popup" : "Open Modal");
+            ImGuiWindow* test_window = g.HoveredWindow;
+            IM_CHECK(test_window != NULL);
+            ctx->MouseClick(ImGuiMouseButton_Right);
             ImVec2 mouse_pos = g.IO.MousePos;
             ImGuiWindow* popup = g.NavWindow;
             IM_CHECK(popup != NULL);
             IM_CHECK((popup->Flags & (variant == 0 ? ImGuiWindowFlags_Popup : ImGuiWindowFlags_Modal)) != 0);
             ImVec2 pos = popup->Pos;
             ctx->MenuClick("File/Exit");    // Try mess with popup state by opening unrelated popup at different position
+            ctx->MouseSetViewport(test_window);
             ctx->MouseMoveToPos(mouse_pos);
             ctx->MouseClick(ImGuiMouseButton_Right);
             IM_CHECK_EQ(popup->Active, true);
@@ -1970,6 +1981,7 @@ void RegisterTests_Window(ImGuiTestEngine* e)
             IM_CHECK_EQ(child->Scroll.x, 0.0f);
 
             // Scroll operation goes over child window but does not scroll it.
+            ctx->MouseSetViewport(child);
             ctx->MouseMoveToPos(child->Pos);                    // FIXME-TESTS: Lack of mouse movement makes child window take scroll input as if mouse hovered it.
             ctx->MouseMove("Left");
             IM_CHECK_EQ(g.HoveredWindow, window);               // Not hovering child initially
@@ -2475,15 +2487,15 @@ void RegisterTests_Window(ImGuiTestEngine* e)
     };
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
-        ctx->SetRef("//Test Window Settings");
         ImGui::ClearWindowSettings("Test Window Settings");
-        ctx->Yield();
-        ImGuiWindow* window = ctx->GetWindowByRef("");
+        ctx->Yield(2);
+        ImGuiWindow* window = ctx->GetWindowByRef("//Test Window Settings");
         IM_CHECK(window != NULL);
         IM_CHECK_EQ(window->Pos, ImGui::GetMainViewport()->Pos + ImVec2(101.0f, 101.0f));
         ctx->Yield(2);
 
         // Alter settings and verify saving state
+        ctx->SetRef("//Test Window Settings"); // This may Yield() so do it after GuiFunc went through
         ctx->WindowMove("", window->Pos + ImVec2(10, 10));
         ImGui::SaveIniSettingsToMemory();
         ImGuiWindowSettings* settings = ImGui::FindWindowSettingsByWindow(window);

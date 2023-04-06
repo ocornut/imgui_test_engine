@@ -350,7 +350,8 @@ struct IMGUI_API ImGuiTestContext
     bool        FindExistingVoidPosOnViewport(ImGuiViewport* viewport, ImVec2* out);
 
     // Mouse inputs: Viewports
-    // When using MouseMoveToPos() / MouseTeleportToPos() without referring to an item may need to set that up.
+    // - This is automatically called by SetRef() and any mouse action taking an item reference (e.g. ItemClick("button"), MouseClick("button"))
+    // - But when using raw position directy e.g. MouseMoveToPos() / MouseTeleportToPos() without referring to the parent window before, this needs to be set.
     void        MouseSetViewport(ImGuiWindow* window);
     void        MouseSetViewportID(ImGuiID viewport_id);
 
