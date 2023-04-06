@@ -5,6 +5,10 @@ CHANGELOG
    Those changes are not all listed here.
 ** For a while this is going to ONLY INCLUDE BREAKING CHANGES.
 
+2023/04/06;
+- TestEngine: MouseMoveToVoid(), MouseClickOnVoid(), GetPosOnVoid() now take an optional
+  viewport, and default to mouse current viewport if not specified.
+
 2023/04/05:
 - TestEngine: Added ViewportPlatform_SetWindowXXX() function to inject Platform-altering actions,
   mostly for the purpose of testing viewport-specific features.

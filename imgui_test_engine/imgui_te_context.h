@@ -317,7 +317,7 @@ struct IMGUI_API ImGuiTestContext
     ImGuiID     GetID(ImGuiTestRef ref, ImGuiTestRef seed_ref);
 
     // Misc
-    ImVec2      GetPosOnVoid();                                                     // Find a point that has no windows // FIXME-VIEWPORT: This needs a viewport
+    ImVec2      GetPosOnVoid(ImGuiViewport* viewport);                              // Find a point that has no windows // FIXME: This needs error return and flag to enable/disable forcefully finding void.
     ImVec2      GetWindowTitlebarPoint(ImGuiTestRef window_ref);                    // Return a clickable point on window title-bar (window tab for docked windows).
     ImVec2      GetMainMonitorWorkPos();                                            // Work pos and size of main viewport when viewports are disabled, or work pos and size of monitor containing main viewport when viewports are enabled.
     ImVec2      GetMainMonitorWorkSize();
@@ -345,8 +345,8 @@ struct IMGUI_API ImGuiTestContext
     void        MouseWheel(ImVec2 delta);
     void        MouseWheelX(float dx) { MouseWheel(ImVec2(dx, 0.0f)); }
     void        MouseWheelY(float dy) { MouseWheel(ImVec2(0.0f, dy)); }
-    void        MouseMoveToVoid();
-    void        MouseClickOnVoid(ImGuiMouseButton button = 0);
+    void        MouseMoveToVoid(ImGuiViewport* viewport = NULL);
+    void        MouseClickOnVoid(ImGuiMouseButton button = 0, ImGuiViewport* viewport = NULL);
     bool        FindExistingVoidPosOnViewport(ImGuiViewport* viewport, ImVec2* out);
 
     // Mouse inputs: Viewports

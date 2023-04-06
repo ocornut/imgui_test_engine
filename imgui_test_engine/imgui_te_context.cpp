@@ -2030,10 +2030,10 @@ static bool IsPosOnVoid(ImGuiContext& g, const ImVec2& pos)
 
 // Sample viewport for an easy location with nothing on it.
 // FIXME-OPT: If ever any problematic:
-// - (1) could iterate g.WindowsFocusOrder[] once we make the switch of it only containing root windows
+// - (1) could iterate g.WindowsFocusOrder[] now that we made the switch of it only containing root windows
 // - (2) increase steps iteratively
 // - (3) remember last answer and tries it first.
-// - (4) shortcut negative if a window covers the whole viewport
+// - (4) shortpath to failure negative if a window covers the whole viewport?
 bool    ImGuiTestContext::FindExistingVoidPosOnViewport(ImGuiViewport* viewport, ImVec2* out)
 {
     ImGuiContext& g = *UiContext;
@@ -2052,29 +2052,33 @@ bool    ImGuiTestContext::FindExistingVoidPosOnViewport(ImGuiViewport* viewport,
     return false;
 }
 
-ImVec2   ImGuiTestContext::GetPosOnVoid()
+ImVec2   ImGuiTestContext::GetPosOnVoid(ImGuiViewport* viewport)
 {
     ImGuiContext& g = *UiContext;
     if (IsError())
         return ImVec2();
 
     ImVec2 void_pos;
-    ImGuiViewport* viewport = ImGui::GetMainViewport();
     bool found_existing_void_pos = FindExistingVoidPosOnViewport(viewport, &void_pos);
     if (found_existing_void_pos)
         return void_pos;
 
     // Move windows away
+    // FIXME: Should be optional and otherwise error.
     void_pos = viewport->Pos + ImVec2(1, 1);
     ImVec2 window_min_pos = void_pos + g.WindowsHoverPadding + ImVec2(1.0f, 1.0f);
     for (ImGuiWindow* window : g.Windows)
+    {
 #ifdef IMGUI_HAS_DOCK
+        if (window->Viewport != viewport)
+            continue;
         if (window->RootWindowDockTree == window && window->WasActive)
 #else
         if (window->RootWindow == window && window->WasActive)
 #endif
             if (window->Rect().Contains(window_min_pos))
                 WindowMove(window->Name, window_min_pos);
+    }
 
     return void_pos;
 }
@@ -2121,8 +2125,9 @@ ImVec2  ImGuiTestContext::GetWindowTitlebarPoint(ImGuiTestRef window_ref)
     return drag_pos;
 }
 
-// Click position which should have no windows..
-void    ImGuiTestContext::MouseMoveToVoid()
+// Click position which should have no windows.
+// Default to last mouse viewport if viewport not specified.
+void    ImGuiTestContext::MouseMoveToVoid(ImGuiViewport* viewport)
 {
     ImGuiContext& g = *UiContext;
     if (IsError())
@@ -2131,21 +2136,24 @@ void    ImGuiTestContext::MouseMoveToVoid()
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
     LogDebug("MouseMoveToVoid");
 
+    if (viewport == NULL)
+        viewport = g.MouseViewport;
+
 #ifdef IMGUI_HAS_VIEWPORT
-    MouseSetViewportID(ImGui::GetMainViewport()->ID);
+    MouseSetViewportID(viewport->ID);
 #endif
-    MouseMoveToPos(GetPosOnVoid());
+    MouseMoveToPos(GetPosOnVoid(viewport));
     IM_CHECK(g.HoveredWindow == NULL);
 }
 
-void    ImGuiTestContext::MouseClickOnVoid(int mouse_button)
+void    ImGuiTestContext::MouseClickOnVoid(int mouse_button, ImGuiViewport* viewport)
 {
     if (IsError())
         return;
 
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
     LogDebug("MouseClickOnVoid %d", mouse_button);
-    MouseMoveToVoid();
+    MouseMoveToVoid(viewport);
     MouseClick(mouse_button);
 }
 
