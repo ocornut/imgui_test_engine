@@ -541,11 +541,12 @@ void ImGuiTestEngine_ApplyInputToImGuiContext(ImGuiTestEngine* engine)
         mouse_hovered_viewport = ImGui::FindHoveredViewportFromPlatformWindowStack(engine->Inputs.MousePosValue); // Rarely used, some tests rely on this (e.g. "docking_dockspace_passthru_hover") may make it a opt-in feature instead?
     if (mouse_hovered_viewport && (mouse_hovered_viewport->Flags & ImGuiViewportFlags_NoInputs))
         mouse_hovered_viewport = NULL;
-    io.AddMouseViewportEvent(mouse_hovered_viewport ? mouse_hovered_viewport->ID : 0);
+    if (io.BackendFlags & ImGuiBackendFlags_HasMouseHoveredViewport)
+        io.AddMouseViewportEvent(mouse_hovered_viewport ? mouse_hovered_viewport->ID : 0);
+    bool mouse_hovered_viewport_focused = mouse_hovered_viewport && (mouse_hovered_viewport->Flags & ImGuiViewportFlags_IsFocused) != 0;
 #endif
 
     // Apply mouse
-    bool mouse_hovered_viewport_focused = mouse_hovered_viewport && (mouse_hovered_viewport->Flags & ImGuiViewportFlags_IsFocused) != 0;
     io.AddMousePosEvent(engine->Inputs.MousePosValue.x, engine->Inputs.MousePosValue.y);
     for (int n = 0; n < ImGuiMouseButton_COUNT; n++)
     {
@@ -553,11 +554,13 @@ void ImGuiTestEngine_ApplyInputToImGuiContext(ImGuiTestEngine* engine)
         io.AddMouseButtonEvent(n, down);
 
         // A click simulate platform focus on the viewport.
+#ifdef IMGUI_HAS_VIEWPORT
         if (down && mouse_hovered_viewport && !mouse_hovered_viewport_focused)
         {
             mouse_hovered_viewport_focused = true;
             engine->Inputs.Queue.push_back(ImGuiTestInput::ForViewportFocus(mouse_hovered_viewport->ID));
         }
+#endif
     }
 
     // Apply mouse wheel
@@ -619,14 +622,17 @@ void ImGuiTestEngine_ApplyInputToImGuiContext(ImGuiTestEngine* engine)
             case ImGuiTestInputType_ViewportFocus:
             {
 #ifdef IMGUI_HAS_VIEWPORT
-                IM_ASSERT(engine->TestContext != NULL);
-                ImGuiViewport* viewport = ImGui::FindViewportByID(input.ViewportId);
-                if (viewport == NULL)
-                    engine->TestContext->LogError("ViewportPlatform_SetWindowFocus(%08X): cannot find viewport anymore!", input.ViewportId);
-                else if (platform_io.Platform_SetWindowSize == NULL)
-                    engine->TestContext->LogError("ViewportPlatform_SetWindowFocus(%08X): backend's Platform_SetWindowSize() is not set", input.ViewportId);
-                else
-                    platform_io.Platform_SetWindowFocus(viewport);
+                if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
+                {
+                    IM_ASSERT(engine->TestContext != NULL);
+                    ImGuiViewport* viewport = ImGui::FindViewportByID(input.ViewportId);
+                    if (viewport == NULL)
+                        engine->TestContext->LogError("ViewportPlatform_SetWindowFocus(%08X): cannot find viewport anymore!", input.ViewportId);
+                    else if (platform_io.Platform_SetWindowSize == NULL)
+                        engine->TestContext->LogError("ViewportPlatform_SetWindowFocus(%08X): backend's Platform_SetWindowSize() is not set", input.ViewportId);
+                    else
+                        platform_io.Platform_SetWindowFocus(viewport);
+                }
 #endif
                 break;
             }
