@@ -6,6 +6,8 @@ CHANGELOG
 ** For a while this is going to ONLY INCLUDE BREAKING CHANGES.
 
 2023/04/06;
+- TestEngine: Made simulated mouse-clicks activate platform-level focus when changing viewports.
+  As platform-level focus signal leads to reactions at Dear ImGui this is desirable.
 - TestEngine: MouseMoveToVoid(), MouseClickOnVoid(), GetPosOnVoid() now take an optional
   viewport, and default to mouse current viewport if not specified.
 

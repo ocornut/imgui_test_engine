@@ -531,11 +531,6 @@ void ImGuiTestEngine_ApplyInputToImGuiContext(ImGuiTestEngine* engine)
 
     const int input_event_count_prev = g.InputEventsQueue.Size;
 
-    // Apply mouse
-    io.AddMousePosEvent(engine->Inputs.MousePosValue.x, engine->Inputs.MousePosValue.y);
-    for (int n = 0; n < ImGuiMouseButton_COUNT; n++)
-        io.AddMouseButtonEvent(n, (engine->Inputs.MouseButtonsValue & (1 << n)) != 0);
-
     // Apply mouse viewport
 #ifdef IMGUI_HAS_VIEWPORT
     ImGuiPlatformIO& platform_io = g.PlatformIO;
@@ -546,8 +541,25 @@ void ImGuiTestEngine_ApplyInputToImGuiContext(ImGuiTestEngine* engine)
         mouse_hovered_viewport = ImGui::FindHoveredViewportFromPlatformWindowStack(engine->Inputs.MousePosValue); // Rarely used, some tests rely on this (e.g. "docking_dockspace_passthru_hover") may make it a opt-in feature instead?
     if (mouse_hovered_viewport && (mouse_hovered_viewport->Flags & ImGuiViewportFlags_NoInputs))
         mouse_hovered_viewport = NULL;
-    io.MouseHoveredViewport = mouse_hovered_viewport ? mouse_hovered_viewport->ID : 0;
+    io.AddMouseViewportEvent(mouse_hovered_viewport ? mouse_hovered_viewport->ID : 0);
 #endif
+
+    // Apply mouse
+    bool mouse_hovered_viewport_focused = mouse_hovered_viewport && (mouse_hovered_viewport->Flags & ImGuiViewportFlags_IsFocused) != 0;
+    io.AddMousePosEvent(engine->Inputs.MousePosValue.x, engine->Inputs.MousePosValue.y);
+    for (int n = 0; n < ImGuiMouseButton_COUNT; n++)
+    {
+        bool down = (engine->Inputs.MouseButtonsValue & (1 << n)) != 0;
+        io.AddMouseButtonEvent(n, down);
+
+        // A click simulate platform focus on the viewport.
+        if (down && mouse_hovered_viewport && !mouse_hovered_viewport_focused)
+        {
+            mouse_hovered_viewport_focused = true;
+            engine->Inputs.Queue.push_back(ImGuiTestInput::ForViewportFocus(mouse_hovered_viewport->ID));
+        }
+    }
+
     // Apply mouse wheel
     // [OSX] Simulate OSX behavior of automatically swapping mouse wheel axis when SHIFT is held.
     // This is working in conjonction with the fact that ImGuiTestContext::MouseWheel() assume Windows-style behavior.

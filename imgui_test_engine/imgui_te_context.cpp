@@ -3407,6 +3407,7 @@ ImGuiID ImGuiTestContext::PopupGetWindowID(ImGuiTestRef ref)
 }
 
 #ifdef IMGUI_HAS_VIEWPORT
+// Simulate a platform focus WITHOUT a click perceived by dear imgui. Similare to clicking on Platform title bar.
 void    ImGuiTestContext::ViewportPlatform_SetWindowFocus(ImGuiViewport* viewport)
 {
     if (IsError())

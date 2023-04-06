@@ -197,8 +197,8 @@ void RegisterTests_Viewports(ImGuiTestEngine* e)
         IM_ASSERT(window_a && window_b && window_child_a && window_child_b);
         ctx->Yield();
 
-        ImGuiViewport* viewport_a = window_a->Viewport;
-        ImGuiViewport* viewport_b = window_b->Viewport; IM_UNUSED(viewport_b);
+        ImGuiViewportP* viewport_a = window_a->Viewport;
+        ImGuiViewportP* viewport_b = window_b->Viewport; IM_UNUSED(viewport_b);
         IM_CHECK(window_a->Viewport != NULL);
         IM_CHECK(window_a->ViewportId == ImGui::GetMainViewport()->ID);
         IM_CHECK(window_b->Viewport != NULL);
@@ -209,7 +209,7 @@ void RegisterTests_Viewports(ImGuiTestEngine* e)
         ctx->ViewportPlatform_SetWindowFocus(viewport_a);   // No-op
         IM_CHECK_EQ(g.NavWindow, window_a);
 
-#if IMGUI_VERSION_NUM >= 18949
+#if IMGUI_VERSION_NUM >= 18948
         ctx->ViewportPlatform_SetWindowFocus(viewport_b);
         IM_CHECK_EQ(g.NavWindow, window_b);
 
@@ -231,6 +231,22 @@ void RegisterTests_Viewports(ImGuiTestEngine* e)
         IM_CHECK_EQ(g.NavWindow, window_child_a);
         ctx->ViewportPlatform_SetWindowFocus(viewport_b);
         IM_CHECK_EQ(g.NavWindow, window_child_b);
+
+        ctx->MouseClickOnVoid(ImGuiMouseButton_Left, viewport_a);
+        IM_CHECK(g.NavWindow == NULL);
+
+        // Verify that TestEngine mouse actions are propagated to focus.
+        IM_CHECK((viewport_a->Flags & ImGuiViewportFlags_IsFocused) != 0);
+        IM_CHECK((viewport_b->Flags & ImGuiViewportFlags_IsFocused) == 0);
+        IM_CHECK_GT(viewport_a->LastFocusedStampCount, viewport_b->LastFocusedStampCount);
+
+        // Verify that NULL focus is preserved after refocusing Viewport A which didn't have focus.
+        ctx->SetRef("");
+        ctx->ItemClick("//Window B/Button B");
+        IM_CHECK((viewport_b->Flags & ImGuiViewportFlags_IsFocused) != 0);
+        IM_CHECK_EQ(g.NavWindow, window_b);
+        ctx->ViewportPlatform_SetWindowFocus(viewport_a);
+        IM_CHECK(g.NavWindow == NULL);
 #endif
     };
 
