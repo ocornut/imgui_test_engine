@@ -541,7 +541,7 @@ void ImGuiTestEngine_ApplyInputToImGuiContext(ImGuiTestEngine* engine)
         mouse_hovered_viewport = ImGui::FindHoveredViewportFromPlatformWindowStack(engine->Inputs.MousePosValue); // Rarely used, some tests rely on this (e.g. "docking_dockspace_passthru_hover") may make it a opt-in feature instead?
     if (mouse_hovered_viewport && (mouse_hovered_viewport->Flags & ImGuiViewportFlags_NoInputs))
         mouse_hovered_viewport = NULL;
-    if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
+    //if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
         if (io.BackendFlags & ImGuiBackendFlags_HasMouseHoveredViewport)
             io.AddMouseViewportEvent(mouse_hovered_viewport ? mouse_hovered_viewport->ID : 0);
     bool mouse_hovered_viewport_focused = mouse_hovered_viewport && (mouse_hovered_viewport->Flags & ImGuiViewportFlags_IsFocused) != 0;
@@ -1389,7 +1389,11 @@ static void ImGuiTestEngine_RunTest(ImGuiTestEngine* engine, ImGuiTestContext* c
 #ifdef IMGUI_HAS_VIEWPORT
     // We always fill io.MouseHoveredViewport manually (maintained in ImGuiTestInputs::SimulatedIO)
     // so ensure we don't leave a chance to Dear ImGui to interpret things differently.
-    io.BackendFlags |= ImGuiBackendFlags_HasMouseHoveredViewport;
+    // FIXME: As written, this would prevent tests from toggling ImGuiConfigFlags_ViewportsEnable and have correct value for ImGuiBackendFlags_HasMouseHoveredViewport
+    if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
+        io.BackendFlags |= ImGuiBackendFlags_HasMouseHoveredViewport;
+    else
+        io.BackendFlags &= ~ImGuiBackendFlags_HasMouseHoveredViewport;
 #endif
 
     // Setup IO: override clipboard

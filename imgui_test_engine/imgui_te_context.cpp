@@ -2137,14 +2137,17 @@ void    ImGuiTestContext::MouseMoveToVoid(ImGuiViewport* viewport)
     LogDebug("MouseMoveToVoid");
 
 #ifdef IMGUI_HAS_VIEWPORT
-    if (viewport == NULL)
+    if (viewport == NULL && g.MouseViewport && (g.MouseViewport->Flags & ImGuiViewportFlags_CanHostOtherWindows))
         viewport = g.MouseViewport;
-    MouseSetViewportID(viewport->ID);
-#else
+#endif
     if (viewport == NULL)
         viewport = ImGui::GetMainViewport();
+
+    ImVec2 pos = GetPosOnVoid(viewport); // This may call WindowMove and alter mouse viewport.
+#ifdef IMGUI_HAS_VIEWPORT
+    MouseSetViewportID(viewport->ID);
 #endif
-    MouseMoveToPos(GetPosOnVoid(viewport));
+    MouseMoveToPos(pos);
     IM_CHECK(g.HoveredWindow == NULL);
 }
 
