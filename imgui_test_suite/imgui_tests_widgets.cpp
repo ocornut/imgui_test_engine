@@ -2408,7 +2408,6 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         }
     };
 
-
     // ## Test timing of clearing payload right after delivery (#5817)
 #if IMGUI_VERSION_NUM >= 18933
     t = IM_REGISTER_TEST(e, "widgets", "widgets_dragdrop_clear_payload");
