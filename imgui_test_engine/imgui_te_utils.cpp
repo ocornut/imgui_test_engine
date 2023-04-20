@@ -16,14 +16,17 @@
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #endif
-#include <shellapi.h>
+#include <shellapi.h>   // ShellExecuteA()
 #include <stdio.h>
 #else
-#include <sys/types.h>
-#include <sys/stat.h>
 #include <errno.h>
 #include <unistd.h>
 #endif
+#ifndef _MSC_VER
+#include <sys/types.h>
+#include <sys/stat.h>   // stat()
+#endif
+
 #if defined(__linux) || defined(__linux__) || defined(__MACH__) || defined(__MSL__)
 #include <pthread.h>    // pthread_setname_np()
 #endif
