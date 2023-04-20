@@ -2228,14 +2228,26 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
 
     // ## Test wrapping behavior
     t = IM_REGISTER_TEST(e, "nav", "nav_wrapping");
-    struct NavWrappingWars { ImGuiNavMoveFlags WrapFlags = ImGuiNavMoveFlags_WrapY; };
+    struct NavWrappingWars { ImGuiNavMoveFlags WrapFlags = ImGuiNavMoveFlags_WrapY; bool UseButton = false; };
     t->SetVarsDataType<NavWrappingWars>();
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
-        ImGui::SetNextWindowSize(ImVec2(300, 300), ImGuiCond_Appearing);
-        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
-
         auto& vars = ctx->GetVars<NavWrappingWars>();
+
+        ImGui::SetNextWindowSize(ImVec2(300, 300), ImGuiCond_Appearing);
+
+        if (ctx->IsGuiFuncOnly())
+        {
+            ImGui::Begin("Test Options", NULL, ImGuiWindowFlags_NoSavedSettings);
+            ImGui::RadioButton("ImGuiNavMoveFlags_None", &vars.WrapFlags, ImGuiNavMoveFlags_None);
+            ImGui::RadioButton("ImGuiNavMoveFlags_WrapX", &vars.WrapFlags, ImGuiNavMoveFlags_WrapX);
+            ImGui::RadioButton("ImGuiNavMoveFlags_WrapY", &vars.WrapFlags, ImGuiNavMoveFlags_WrapY);
+            ImGui::RadioButton("ImGuiNavMoveFlags_LoopX", &vars.WrapFlags, ImGuiNavMoveFlags_LoopX);
+            ImGui::RadioButton("ImGuiNavMoveFlags_LoopY", &vars.WrapFlags, ImGuiNavMoveFlags_LoopY);
+            ImGui::End();
+        }
+
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
         for (int ny = 0; ny < 4; ny++)
         {
             for (int nx = 0; nx < 4; nx++)
@@ -2244,7 +2256,10 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
                     continue;
                 if (nx > 0)
                     ImGui::SameLine();
-                ImGui::Selectable(Str30f("%d,%d", ny, nx).c_str(), true, 0, ImVec2(40,40));
+                if (vars.UseButton)
+                    ImGui::Button(Str30f("%d,%d", ny, nx).c_str(), ImVec2(40, 40));
+                else
+                    ImGui::Selectable(Str30f("%d,%d", ny, nx).c_str(), true, 0, ImVec2(40,40));
             }
         }
         if (vars.WrapFlags != 0)
@@ -2255,6 +2270,7 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
     {
         ImGuiContext& g = *ctx->UiContext;
         auto& vars = ctx->GetVars<NavWrappingWars>();
+        vars.UseButton = false;
         ctx->SetRef("Test Window");
 
         for (int input_source = 0; input_source < 2; input_source++)
@@ -2364,6 +2380,73 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
             ctx->NavMoveTo("Input0");
         }
     };
+
+    // ## Test clipping behavior within columns which are not "push-scrollable" containers (#2221)
+#if IMGUI_VERSION_NUM >= 18952
+    t = IM_REGISTER_TEST(e, "nav", "nav_columns_clip");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImVec2 sz_large = ImVec2(400, 0.0f);
+        ImVec2 sz_small = ImVec2(0.0f, 0.0f); // Auto
+        ImGui::PushStyleVar(ImGuiStyleVar_ButtonTextAlign, ImVec2(0.0f, 0.0f));
+        ImGui::SetNextWindowSize({ 200, 500 });
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+
+        ImGui::Columns(2);
+        ImGui::Button("0-SMALL", sz_small);
+        ImGui::NextColumn();
+        ImGui::Button("0-LARGE", sz_large);
+        ImGui::NextColumn();
+        ImGui::Button("1-LARGE", sz_large);
+        ImGui::NextColumn();
+        ImGui::Button("1-SMALL", sz_small);
+        ImGui::Columns(1);
+
+        ImGui::Separator();
+        if (ImGui::BeginTable("table", 2))
+        {
+            ImGui::TableNextColumn();
+            ImGui::Button("2-SMALL", sz_small);
+            ImGui::TableNextColumn();
+            ImGui::Button("2-LARGE", sz_large);
+            ImGui::TableNextColumn();
+            ImGui::Button("3-LARGE", sz_large);
+            ImGui::TableNextColumn();
+            ImGui::Button("3-SMALL", sz_small);
+            ImGui::EndTable();
+        }
+        ImGui::End();
+        ImGui::PopStyleVar();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiContext& g = *ctx->UiContext;
+        ctx->SetRef("Test Window");
+
+        for (int set_n = 0; set_n < 4; set_n++)
+        {
+            const char* item_L = NULL;
+            const char* item_R = NULL;
+            switch (set_n)
+            {
+            case 0: item_L = "0-SMALL"; item_R = "0-LARGE"; break;
+            case 1: item_L = "1-LARGE"; item_R = "1-SMALL"; break;
+            case 2: item_L = "table/2-SMALL"; item_R = "table/2-LARGE"; break;
+            case 3: item_L = "table/3-LARGE"; item_R = "table/3-SMALL"; break;
+            }
+            ctx->ItemClick(item_L);
+            IM_CHECK_EQ(g.NavId, ctx->GetID(item_L));
+            ctx->KeyPress(ImGuiKey_RightArrow);
+            IM_CHECK_EQ(g.NavId, ctx->GetID(item_R));
+            ctx->KeyPress(ImGuiKey_RightArrow); // No-op
+            IM_CHECK_EQ(g.NavId, ctx->GetID(item_R));
+            ctx->KeyPress(ImGuiKey_LeftArrow);
+            IM_CHECK_EQ(g.NavId, ctx->GetID(item_L));
+            ctx->KeyPress(ImGuiKey_LeftArrow); // No-op
+            IM_CHECK_EQ(g.NavId, ctx->GetID(item_L));
+        }
+    };
+#endif
 }
 
 //-------------------------------------------------------------------------
