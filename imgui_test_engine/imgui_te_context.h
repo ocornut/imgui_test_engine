@@ -177,6 +177,7 @@ struct IMGUI_API ImGuiTestGenericVars
     ImGuiID                 DockId;
     ImGuiWindowFlags        WindowFlags;
     ImGuiTableFlags         TableFlags;
+    ImGuiPopupFlags         PopupFlags;
     ImGuiTestGenericItemStatus  Status;
     bool                    ShowWindows;
     bool                    UseClipper;

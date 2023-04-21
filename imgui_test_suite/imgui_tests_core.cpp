@@ -534,10 +534,22 @@ void RegisterTests_Window(ImGuiTestEngine* e)
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         ImGuiTestGenericVars& vars = ctx->GenericVars;
+
         vars.Bool1 = false;
-        if (ImGui::BeginPopupContextVoid("testpopup", vars.Int1))
+        if (ImGui::BeginPopupContextVoid("testpopup", vars.PopupFlags))
         {
             vars.Bool1 = true;
+            ImGui::Selectable("Close");
+            ImGui::EndPopup();
+        }
+
+        if (vars.Bool2)
+        {
+            ImGui::OpenPopup("Modal");
+            vars.Bool2 = false;
+        }
+        if (ImGui::BeginPopupModal("Modal"))
+        {
             ImGui::Selectable("Close");
             ImGui::EndPopup();
         }
@@ -545,16 +557,17 @@ void RegisterTests_Window(ImGuiTestEngine* e)
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         ImGuiTestGenericVars& vars = ctx->GenericVars;
+        ImGuiContext& g = *ctx->UiContext;
 
         // Clear focus
-        vars.Int1 = ImGuiPopupFlags_MouseButtonRight;
+        vars.PopupFlags = ImGuiPopupFlags_MouseButtonRight;
         ctx->MouseClickOnVoid(0);
-        IM_CHECK(ctx->UiContext->NavWindow == NULL);
+        IM_CHECK(g.NavWindow == NULL);
 
         // Open popup with right-click
         ctx->MouseClickOnVoid(1);
         IM_CHECK(vars.Bool1 == true);
-        IM_CHECK(ctx->UiContext->NavWindow != NULL);
+        IM_CHECK(g.NavWindow != NULL);
         ImGuiWindow* debug_window = ImGui::FindWindowByName("Debug##Default"); // Verify this doesn't make the Debug window appear
         IM_CHECK(debug_window != NULL);
         IM_CHECK(debug_window->WasActive == false);
@@ -562,15 +575,23 @@ void RegisterTests_Window(ImGuiTestEngine* e)
         // Close popup, verify NULL NavWindow was restored (#2517)
         ctx->MouseClickOnVoid(0);
         IM_CHECK(vars.Bool1 == false);
-        IM_CHECK(ctx->UiContext->NavWindow == NULL);
+        IM_CHECK(g.NavWindow == NULL);
 
         // Try with inverse buttons
-        vars.Int1 = 0;
+        vars.PopupFlags = 0;
         ctx->MouseClickOnVoid(0);
         IM_CHECK(vars.Bool1 == true);
         ctx->MouseClickOnVoid(1);
         IM_CHECK(vars.Bool1 == false);
-        IM_CHECK(ctx->UiContext->NavWindow == NULL);
+        IM_CHECK(g.NavWindow == NULL);
+
+        // Try with a blocking modal
+        vars.Bool2 = true; // Open modal
+        ctx->Yield(2);
+        IM_CHECK_EQ(g.NavWindow, ctx->GetWindowByRef("//Modal"));
+        ctx->MouseClickOnVoid(0);
+        IM_CHECK_EQ(g.NavWindow, ctx->GetWindowByRef("//Modal"));
+        ctx->ItemClick("//Modal/Close");
     };
 
     // ## Test opening a popup after BeginPopup(), while window is out of focus. (#4308)
@@ -702,7 +723,7 @@ void RegisterTests_Window(ImGuiTestEngine* e)
 #if !IMGUI_BROKEN_TESTS
             if (vars.UseModal)                                                      // FIXME: Closing menu by clicking on a window under the modal
             {
-                IM_CHECK(g.OpenPopupStack.Size == 2);
+                IM_CHECK_EQ(g.OpenPopupStack.Size, 2);
                 ctx->PopupCloseOne();
             }
 #endif

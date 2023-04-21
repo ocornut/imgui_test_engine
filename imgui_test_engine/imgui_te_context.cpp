@@ -1533,6 +1533,7 @@ void    ImGuiTestContext::MouseMove(ImGuiTestRef ref, ImGuiTestOpFlags flags)
 
     // Focus window before scrolling/moving so things are nicely visible
     // FIXME-TESTS-NOT_SAME_AS_END_USER: This has too many side effect, could we do without?
+    // In most cases it could be done via title bar click?
     if (!(flags & ImGuiTestOpFlags_NoFocusWindow))
         WindowBringToFront(item->Window->ID);
 
@@ -1542,6 +1543,10 @@ void    ImGuiTestContext::MouseMove(ImGuiTestRef ref, ImGuiTestOpFlags flags)
         LogError("Window '%s' is not active (after focusing)", item->Window->Name);
         return;
     }
+
+    // FIXME-TESTS: If window was not brought to front (because of either ImGuiWindowFlags_NoBringToFrontOnFocus or ImGuiTestOpFlags_NoFocusWindow)
+    // then we need to make space by moving other windows away.
+    // An easy to reproduce this bug is to run "docking_dockspace_tab_amend" with Test Engine UI over top-left corner, covering the Tools menu.
 
     // Check visibility and scroll if necessary
     ImGuiWindow* window = item->Window;
