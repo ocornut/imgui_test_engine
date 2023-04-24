@@ -58,6 +58,7 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
     };
 
     // ## Test basic scoring
+ #if IMGUI_VERSION_NUM >= 18953 // As simple at it is, before our 2023/04/24 the clamping would make this fail with very small windows.
     t = IM_REGISTER_TEST(e, "nav", "nav_scoring_1");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
@@ -103,6 +104,7 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
         ctx->KeyPress(ImGuiKey_UpArrow);
         IM_CHECK_EQ(g.NavId, ctx->GetID("table/CCCC"));
     };
+#endif
 
     // ## Test that ESC deactivate InputText without closing current Popup (#2321, #787, #5400)
     t = IM_REGISTER_TEST(e, "nav", "nav_esc_popup");

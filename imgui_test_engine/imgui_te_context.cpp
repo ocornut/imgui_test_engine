@@ -2378,52 +2378,6 @@ void    ImGuiTestContext::KeyCharsReplaceEnter(const char* chars)
     KeyPress(ImGuiKey_Enter);
 }
 
-// Supported values for ImGuiTestOpFlags:
-// - ImGuiTestOpFlags_NoError
-// - ImGuiTestOpFlags_NoFocusWindow
-bool    ImGuiTestContext::WindowBringToFront(ImGuiTestRef ref, ImGuiTestOpFlags flags)
-{
-    ImGuiContext& g = *UiContext;
-    if (IsError())
-        return false;
-
-    ImGuiWindow* window = GetWindowByRef(ref);
-    if (window == NULL)
-    {
-        ImGuiID window_id = GetID("");
-        window = ImGui::FindWindowByID(window_id);
-        IM_ASSERT(window != NULL);
-    }
-
-    if (window != g.NavWindow && !(flags & ImGuiTestOpFlags_NoFocusWindow))
-    {
-        IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
-        LogDebug("BringWindowToFront->FocusWindow('%s')", window->Name);
-        ImGui::FocusWindow(window); // FIXME-TESTS-NOT_SAME_AS_END_USER: In theory should be replaced by click on title-bar or tab?
-        Yield();
-        Yield();
-        //IM_CHECK(g.NavWindow == window);
-    }
-    else if (window->RootWindow != g.Windows.back()->RootWindow)
-    {
-        IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
-        LogDebug("BringWindowToDisplayFront('%s') (window.back=%s)", window->Name, g.Windows.back()->Name);
-        ImGui::BringWindowToDisplayFront(window); // FIXME-TESTS-NOT_SAME_AS_END_USER: This is not an actually possible action for end-user.
-        Yield();
-        Yield();
-    }
-
-    // We cannot guarantee this will work 100%
-    // Because merely hovering an item may e.g. open a window or change focus.
-    // In particular this can be the case with MenuItem. So trying to Open a MenuItem may lead to its child opening while hovering,
-    // causing this function to seemingly fail (even if the end goal was reached).
-    bool ret = (window == g.NavWindow);
-    if (!ret && !(flags & ImGuiTestOpFlags_NoError))
-        LogDebug("-- Expected focused window '%s', but '%s' got focus back.", window->Name, g.NavWindow ? g.NavWindow->Name : "<NULL>");
-
-    return ret;
-}
-
 // depth = 1 -> immediate child of 'parent' in ID Stack
 void    ImGuiTestContext::GatherItems(ImGuiTestItemList* out_list, ImGuiTestRef parent, int depth)
 {
@@ -3293,7 +3247,6 @@ void    ImGuiTestContext::WindowCollapse(ImGuiTestRef window_ref, bool collapsed
     }
 }
 
-// FIXME-TESTS: Ideally we would aim toward a clickable spot in the window.
 void    ImGuiTestContext::WindowFocus(ImGuiTestRef ref)
 {
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
@@ -3308,6 +3261,53 @@ void    ImGuiTestContext::WindowFocus(ImGuiTestRef ref)
         ImGui::FocusWindow(window); // FIXME-TESTS-NOT_SAME_AS_END_USER: In theory should be replaced by click on title-bar or tab?
         Yield();
     }
+}
+
+// Supported values for ImGuiTestOpFlags:
+// - ImGuiTestOpFlags_NoError
+// - ImGuiTestOpFlags_NoFocusWindow
+// FIXME: In principle most calls to this could be replaced by WindowFocus()?
+bool    ImGuiTestContext::WindowBringToFront(ImGuiTestRef ref, ImGuiTestOpFlags flags)
+{
+    ImGuiContext& g = *UiContext;
+    if (IsError())
+        return false;
+
+    ImGuiWindow* window = GetWindowByRef(ref);
+    if (window == NULL)
+    {
+        ImGuiID window_id = GetID("");
+        window = ImGui::FindWindowByID(window_id);
+        IM_ASSERT(window != NULL);
+    }
+
+    if (window != g.NavWindow && !(flags & ImGuiTestOpFlags_NoFocusWindow))
+    {
+        IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
+        LogDebug("WindowBringToFront()->FocusWindow('%s')", window->Name);
+        ImGui::FocusWindow(window); // FIXME-TESTS-NOT_SAME_AS_END_USER: In theory should be replaced by click on title-bar or tab?
+        Yield();
+        Yield();
+        //IM_CHECK(g.NavWindow == window);
+    }
+    else if (window->RootWindow != g.Windows.back()->RootWindow)
+    {
+        IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
+        LogDebug("BringWindowToDisplayFront('%s') (window.back=%s)", window->Name, g.Windows.back()->Name);
+        ImGui::BringWindowToDisplayFront(window); // FIXME-TESTS-NOT_SAME_AS_END_USER: This is not an actually possible action for end-user.
+        Yield();
+        Yield();
+    }
+
+    // We cannot guarantee this will work 100%
+    // Because merely hovering an item may e.g. open a window or change focus.
+    // In particular this can be the case with MenuItem. So trying to Open a MenuItem may lead to its child opening while hovering,
+    // causing this function to seemingly fail (even if the end goal was reached).
+    bool ret = (window == g.NavWindow);
+    if (!ret && !(flags & ImGuiTestOpFlags_NoError))
+        LogDebug("-- Expected focused window '%s', but '%s' got focus back.", window->Name, g.NavWindow ? g.NavWindow->Name : "<NULL>");
+
+    return ret;
 }
 
 // Supported values for ImGuiTestOpFlags:
