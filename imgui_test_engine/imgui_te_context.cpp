@@ -2938,7 +2938,10 @@ void    ImGuiTestContext::TabClose(ImGuiTestRef ref)
 
     // Move into first, then click close button as it appears
     MouseMove(ref);
-    ItemClick(GetID("#CLOSE", ref));
+    ImGuiTestRef backup_ref = GetRef();
+    SetRef(GetID(ref));
+    ItemClick("#CLOSE");
+    SetRef(backup_ref);
 }
 
 bool    ImGuiTestContext::TabBarCompareOrder(ImGuiTabBar* tab_bar, const char** tab_order)
@@ -3259,7 +3262,10 @@ void    ImGuiTestContext::WindowClose(ImGuiTestRef ref)
 
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
     LogDebug("WindowClose");
-    ItemClick(GetID("#CLOSE", ref));
+    ImGuiTestRef backup_ref = GetRef();
+    SetRef(GetID(ref));
+    ItemClick("#CLOSE");
+    SetRef(backup_ref);
 }
 
 void    ImGuiTestContext::WindowCollapse(ImGuiTestRef window_ref, bool collapsed)
@@ -3276,7 +3282,10 @@ void    ImGuiTestContext::WindowCollapse(ImGuiTestRef window_ref, bool collapsed
         LogDebug("WindowCollapse %d", collapsed);
         ImGuiTestOpFlags backup_op_flags = OpFlags;
         OpFlags |= ImGuiTestOpFlags_NoAutoUncollapse;
-        ItemClick(GetID("#COLLAPSE", window->ID));
+        ImGuiTestRef backup_ref = GetRef();
+        SetRef(window->ID);
+        ItemClick("#COLLAPSE");
+        SetRef(backup_ref);
         OpFlags = backup_op_flags;
         Yield();
         IM_CHECK(window->Collapsed == collapsed);
@@ -3582,13 +3591,13 @@ void    ImGuiTestContext::DockNodeHideTabBar(ImGuiDockNode* node, bool hidden)
         SetRef(node->HostWindow);
         ItemClick(ImGui::DockNodeGetWindowMenuButtonId(node));
         ImGuiID popup_id = PopupGetWindowID(GetID("#WindowMenu", node->ID));
+        SetRef(popup_id);
 #if IMGUI_VERSION_NUM >= 18910
-        ItemClick(GetID("###HideTabBar", popup_id));
+        ItemClick("###HideTabBar");
 #else
-        ItemClick(GetID("Hide tab bar", popup_id));
+        ItemClick("Hide tab bar");
 #endif
         IM_CHECK_SILENT(node->IsHiddenTabBar());
-
     }
     else
     {
