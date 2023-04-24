@@ -3251,10 +3251,9 @@ void    ImGuiTestContext::WindowFocus(ImGuiTestRef ref)
 {
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
     ImGuiTestRefDesc desc(ref, NULL);
-    LogDebug("FocusWindow('%s')", desc.c_str());
+    LogDebug("WindowFocus('%s')", desc.c_str());
 
-    ImGuiID window_id = GetID(ref);
-    ImGuiWindow* window = ImGui::FindWindowByID(window_id);
+    ImGuiWindow* window = GetWindowByRef(ref);
     IM_CHECK_SILENT(window != NULL);
     if (window)
     {
@@ -3274,20 +3273,14 @@ void    ImGuiTestContext::WindowBringToFront(ImGuiTestRef ref, ImGuiTestOpFlags 
         return;
 
     ImGuiWindow* window = GetWindowByRef(ref);
-    if (window == NULL)
-    {
-        ImGuiID window_id = GetID("");
-        window = ImGui::FindWindowByID(window_id);
-        IM_ASSERT(window != NULL);
-    }
+    IM_CHECK_SILENT(window != NULL);
 
     if (window != g.NavWindow && !(flags & ImGuiTestOpFlags_NoFocusWindow))
     {
         IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
         LogDebug("WindowBringToFront()->FocusWindow('%s')", window->Name);
         ImGui::FocusWindow(window); // FIXME-TESTS-NOT_SAME_AS_END_USER: In theory should be replaced by click on title-bar or tab?
-        Yield();
-        Yield();
+        Yield(2);
         //IM_CHECK(g.NavWindow == window);
     }
     else if (window->RootWindow != g.Windows.back()->RootWindow)
@@ -3295,8 +3288,7 @@ void    ImGuiTestContext::WindowBringToFront(ImGuiTestRef ref, ImGuiTestOpFlags 
         IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
         LogDebug("BringWindowToDisplayFront('%s') (window.back=%s)", window->Name, g.Windows.back()->Name);
         ImGui::BringWindowToDisplayFront(window); // FIXME-TESTS-NOT_SAME_AS_END_USER: This is not an actually possible action for end-user.
-        Yield();
-        Yield();
+        Yield(2);
     }
 
     // We cannot guarantee this will work 100%

@@ -2405,7 +2405,7 @@ void RegisterTests_Window(ImGuiTestEngine* e)
 #ifdef IMGUI_HAS_DOCK
         ctx->DockClear("Window A", "Window B", NULL);
 #endif
-        ctx->WindowBringToFront("Window A");
+        ctx->WindowFocus("Window A");
 
         // Titlebar of undocked window
         ctx->MouseMoveToPos(ctx->GetWindowTitlebarPoint("//Window A"));
