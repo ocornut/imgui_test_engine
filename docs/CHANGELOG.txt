@@ -6,6 +6,7 @@ CHANGELOG
 ** For a while this is going to ONLY INCLUDE BREAKING CHANGES.
 
 2023/04/24:
+- TestEngine: Removed unnecessary bool return value from WindowBringToFront().
 - TestEngine: Fixed IM_CHECK_STR_xxx() macros not honoring io.ConfigBreakOnError.
 - TestEngine: Added ImGuiTestOpFlags_NoFocusWindow support in WindowBringToFront(). (#24)
 

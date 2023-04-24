@@ -3267,11 +3267,11 @@ void    ImGuiTestContext::WindowFocus(ImGuiTestRef ref)
 // - ImGuiTestOpFlags_NoError
 // - ImGuiTestOpFlags_NoFocusWindow
 // FIXME: In principle most calls to this could be replaced by WindowFocus()?
-bool    ImGuiTestContext::WindowBringToFront(ImGuiTestRef ref, ImGuiTestOpFlags flags)
+void    ImGuiTestContext::WindowBringToFront(ImGuiTestRef ref, ImGuiTestOpFlags flags)
 {
     ImGuiContext& g = *UiContext;
     if (IsError())
-        return false;
+        return;
 
     ImGuiWindow* window = GetWindowByRef(ref);
     if (window == NULL)
@@ -3306,8 +3306,6 @@ bool    ImGuiTestContext::WindowBringToFront(ImGuiTestRef ref, ImGuiTestOpFlags 
     bool ret = (window == g.NavWindow);
     if (!ret && !(flags & ImGuiTestOpFlags_NoError))
         LogDebug("-- Expected focused window '%s', but '%s' got focus back.", window->Name, g.NavWindow ? g.NavWindow->Name : "<NULL>");
-
-    return ret;
 }
 
 // Supported values for ImGuiTestOpFlags:
