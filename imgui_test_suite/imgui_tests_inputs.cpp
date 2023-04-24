@@ -910,7 +910,7 @@ void RegisterTests_Inputs(ImGuiTestEngine* e)
         ImGuiWindow* window = ctx->GetWindowByRef("Test");
         IM_CHECK_NE(window, nullptr);
         ImGuiTestRef ref = window->ID;
-        ctx->WindowBringToFront(ref);
+        ctx->WindowFocus(ref);
         ctx->WindowCollapse(ref, false);
         ctx->MouseSetViewport(window);
         ctx->MouseMoveToPos(ctx->GetWindowTitlebarPoint(ref));

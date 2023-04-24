@@ -1846,7 +1846,6 @@ void RegisterTests_TestEnginePerfTool(ImGuiTestEngine* e)
         ctx->SetRef(window);
         ctx->WindowMove("", ImVec2(50, 50));
         ctx->WindowResize("", ImVec2(1400, 900));
-        ctx->WindowBringToFront("");
 #if IMGUI_TEST_ENGINE_ENABLE_IMPLOT
         ImGuiWindow* plot_child = ctx->WindowInfo("plot/PerfTool")->Window;
         IM_CHECK(plot_child != NULL);
@@ -1912,7 +1911,6 @@ void RegisterTests_TestEnginePerfTool(ImGuiTestEngine* e)
         ctx->SetRef(window);
         ctx->WindowMove("", ImVec2(50, 50));
         ctx->WindowResize("", ImVec2(1400, 900));
-        ctx->WindowBringToFront("");
 #if IMGUI_TEST_ENGINE_ENABLE_IMPLOT
         ctx->ItemDoubleClick("splitter");   // Hide info table
 

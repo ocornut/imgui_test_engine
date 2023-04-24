@@ -1237,7 +1237,7 @@ void    ImGuiTestContext::ScrollTo(ImGuiTestRef ref, ImGuiAxis axis, float scrol
     const ImGuiTestItemInfo* scrollbar_item = ItemInfo(ImGui::GetWindowScrollbarID(window, axis), ImGuiTestOpFlags_NoError);
     if (scrollbar_item->ID != 0 && EngineIO->ConfigRunSpeed != ImGuiTestRunSpeed_Fast && !(flags & ImGuiTestOpFlags_NoFocusWindow))
     {
-        WindowBringToFront(window->ID);
+        WindowFocus(window->ID);
 
         const ImRect scrollbar_rect = ImGui::GetWindowScrollbarRect(window, axis);
         const float scrollbar_size_v = scrollbar_rect.Max[axis] - scrollbar_rect.Min[axis];
@@ -1426,7 +1426,7 @@ void    ImGuiTestContext::NavMoveTo(ImGuiTestRef ref)
         SleepStandard();
 
     // Focus window before scrolling/moving so things are nicely visible
-    WindowBringToFront(item->Window->ID);
+    WindowFocus(item->Window->ID);
 
     // Teleport
     // FIXME-NAV: We should have a nav request feature that does this,
@@ -3320,7 +3320,7 @@ void    ImGuiTestContext::WindowMove(ImGuiTestRef ref, ImVec2 input_pos, ImVec2 
     }
 
     if ((flags & ImGuiTestOpFlags_NoFocusWindow) == 0)
-        WindowBringToFront(window->ID);
+        WindowFocus(window->ID);
     WindowCollapse(window->ID, false);
 
     MouseSetViewport(window);
@@ -3361,7 +3361,7 @@ void    ImGuiTestContext::WindowResize(ImGuiTestRef ref, ImVec2 size)
     if (ImLengthSqr(size - window->Size) < 0.001f)
         return;
 
-    WindowBringToFront(window->ID);
+    WindowFocus(window->ID);
     WindowCollapse(window->ID, false);
 
     // Extra yield as newly created window that have AutoFitFramesX/AutoFitFramesY set are temporarily not submitting their resize widgets. Give them a bit of slack.
