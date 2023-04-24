@@ -57,6 +57,53 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
         IM_CHECK(g.NavWindow && g.NavWindow->ID == ctx->GetID("//Dear ImGui Demo"));
     };
 
+    // ## Test basic scoring
+    t = IM_REGISTER_TEST(e, "nav", "nav_scoring_1");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+        if (ImGui::CollapsingHeader("Window options"))
+        {
+            // 3 way layout, encore we transition to AAAA and not to center most
+            if (ImGui::BeginTable("table", 3))
+            {
+                bool b = false;
+                ImGui::TableNextColumn(); ImGui::Checkbox("AAAA", &b);
+                ImGui::TableNextColumn(); ImGui::Checkbox("BBBB", &b);
+                ImGui::TableNextColumn(); ImGui::Checkbox("CCCC", &b);
+                ImGui::TableNextColumn(); ImGui::Checkbox("DDDD", &b);
+                ImGui::TableNextColumn(); ImGui::Checkbox("EEEE", &b);
+                ImGui::TableNextColumn(); ImGui::Checkbox("FFFF", &b);
+                ImGui::EndTable();
+            }
+        }
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiContext& g = *ctx->UiContext;
+        ctx->SetRef("Test Window");
+        ctx->ItemClick("Window options");
+        ctx->ItemOpen("Window options");
+        IM_CHECK_EQ(g.NavId, ctx->GetID("Window options"));
+        ctx->KeyPress(ImGuiKey_DownArrow);
+        IM_CHECK_EQ(g.NavId, ctx->GetID("table/AAAA"));
+        ctx->KeyPress(ImGuiKey_DownArrow);
+        IM_CHECK_EQ(g.NavId, ctx->GetID("table/DDDD"));
+        ctx->KeyPress(ImGuiKey_UpArrow);
+        IM_CHECK_EQ(g.NavId, ctx->GetID("table/AAAA"));
+        ctx->KeyPress(ImGuiKey_RightArrow);
+        IM_CHECK_EQ(g.NavId, ctx->GetID("table/BBBB"));
+        ctx->KeyPress(ImGuiKey_DownArrow);
+        IM_CHECK_EQ(g.NavId, ctx->GetID("table/EEEE"));
+        ctx->KeyPress(ImGuiKey_RightArrow);
+        IM_CHECK_EQ(g.NavId, ctx->GetID("table/FFFF"));
+        ctx->KeyPress(ImGuiKey_RightArrow);
+        IM_CHECK_EQ(g.NavId, ctx->GetID("table/FFFF"));
+        ctx->KeyPress(ImGuiKey_UpArrow);
+        IM_CHECK_EQ(g.NavId, ctx->GetID("table/CCCC"));
+    };
+
     // ## Test that ESC deactivate InputText without closing current Popup (#2321, #787, #5400)
     t = IM_REGISTER_TEST(e, "nav", "nav_esc_popup");
     t->GuiFunc = [](ImGuiTestContext* ctx)
