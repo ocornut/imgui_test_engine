@@ -5,6 +5,9 @@ CHANGELOG
    Those changes are not all listed here.
 ** For a while this is going to ONLY INCLUDE BREAKING CHANGES.
 
+2023/04/24:
+- TestEngine: Fixed IM_CHECK_STR_xxx() macros not honoring io.ConfigBreakOnError.
+
 2023/04/06;
 - TestEngine: Made simulated mouse-clicks activate platform-level focus when changing viewports.
   As platform-level focus signal leads to reactions at Dear ImGui this is desirable.

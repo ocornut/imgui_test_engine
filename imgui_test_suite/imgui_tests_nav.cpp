@@ -2236,17 +2236,6 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
 
         ImGui::SetNextWindowSize(ImVec2(300, 300), ImGuiCond_Appearing);
 
-        if (ctx->IsGuiFuncOnly())
-        {
-            ImGui::Begin("Test Options", NULL, ImGuiWindowFlags_NoSavedSettings);
-            ImGui::RadioButton("ImGuiNavMoveFlags_None", &vars.WrapFlags, ImGuiNavMoveFlags_None);
-            ImGui::RadioButton("ImGuiNavMoveFlags_WrapX", &vars.WrapFlags, ImGuiNavMoveFlags_WrapX);
-            ImGui::RadioButton("ImGuiNavMoveFlags_WrapY", &vars.WrapFlags, ImGuiNavMoveFlags_WrapY);
-            ImGui::RadioButton("ImGuiNavMoveFlags_LoopX", &vars.WrapFlags, ImGuiNavMoveFlags_LoopX);
-            ImGui::RadioButton("ImGuiNavMoveFlags_LoopY", &vars.WrapFlags, ImGuiNavMoveFlags_LoopY);
-            ImGui::End();
-        }
-
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
         for (int ny = 0; ny < 4; ny++)
         {
@@ -2264,7 +2253,20 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
         }
         if (vars.WrapFlags != 0)
             ImGui::NavMoveRequestTryWrapping(ImGui::GetCurrentWindow(), vars.WrapFlags);
+        ImVec2 options_pos = ImGui::GetCurrentWindow()->Rect().GetBL();
         ImGui::End();
+
+        if (ctx->IsGuiFuncOnly())
+        {
+            ImGui::SetNextWindowPos(options_pos);
+            ImGui::Begin("Test Options", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoFocusOnAppearing);
+            ImGui::RadioButton("ImGuiNavMoveFlags_None", &vars.WrapFlags, ImGuiNavMoveFlags_None);
+            ImGui::RadioButton("ImGuiNavMoveFlags_WrapX", &vars.WrapFlags, ImGuiNavMoveFlags_WrapX);
+            ImGui::RadioButton("ImGuiNavMoveFlags_WrapY", &vars.WrapFlags, ImGuiNavMoveFlags_WrapY);
+            ImGui::RadioButton("ImGuiNavMoveFlags_LoopX", &vars.WrapFlags, ImGuiNavMoveFlags_LoopX);
+            ImGui::RadioButton("ImGuiNavMoveFlags_LoopY", &vars.WrapFlags, ImGuiNavMoveFlags_LoopY);
+            ImGui::End();
+        }
     };
     t->TestFunc = [](ImGuiTestContext* ctx)
     {

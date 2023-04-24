@@ -558,11 +558,10 @@ template<> inline void ImGuiTestEngineUtil_AppendStrValue(ImGuiTextBuffer& buf, 
 #define IM_CHECK_STR_OP(_LHS, _RHS, _OP, _RETURN, _FLAGS)           \
     do                                                              \
     {                                                               \
-        bool __res = ImGuiTestEngine_CheckStrOp(__FILE__, __func__, __LINE__, _FLAGS, #_OP, #_LHS, _LHS, #_RHS, _RHS); \
-        if (!__res)                                                 \
-            break;                                                  \
-        IM_ASSERT(__res);                                           \
-        if (_RETURN)                                                \
+        bool __res;                                                 \
+        if (ImGuiTestEngine_CheckStrOp(__FILE__, __func__, __LINE__, _FLAGS, #_OP, #_LHS, _LHS, #_RHS, _RHS, &__res)) \
+            IM_ASSERT(__res);                                       \
+        if (_RETURN && !__res)                                      \
             return;                                                 \
     } while (0)
 

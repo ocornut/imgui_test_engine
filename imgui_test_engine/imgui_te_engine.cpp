@@ -1939,16 +1939,14 @@ bool ImGuiTestEngine_Check(const char* file, const char* func, int line, ImGuiTe
     }
 
     if (result == false && engine->IO.ConfigStopOnError && !engine->Abort)
-        engine->Abort = true;
-        //ImGuiTestEngine_Abort(engine);
-
+        engine->Abort = true; //ImGuiTestEngine_Abort(engine);
     if (result == false && engine->IO.ConfigBreakOnError && !engine->Abort)
         return true;
 
     return false;
 }
 
-bool ImGuiTestEngine_CheckStrOp(const char* file, const char* func, int line, ImGuiTestCheckFlags flags, const char* op, const char* lhs_var, const char* lhs_value, const char* rhs_var, const char* rhs_value)
+bool ImGuiTestEngine_CheckStrOp(const char* file, const char* func, int line, ImGuiTestCheckFlags flags, const char* op, const char* lhs_var, const char* lhs_value, const char* rhs_var, const char* rhs_value, bool* out_res)
 {
     int res_strcmp = strcmp(lhs_value, rhs_value);
     bool res = 0;
@@ -1958,6 +1956,7 @@ bool ImGuiTestEngine_CheckStrOp(const char* file, const char* func, int line, Im
         res = (res_strcmp != 0);
     else
         IM_ASSERT(0);
+    *out_res = res;
 
     ImGuiTextBuffer buf; // FIXME-OPT: Now we can probably remove that allocation
 

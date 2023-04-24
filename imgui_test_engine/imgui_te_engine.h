@@ -142,7 +142,7 @@ extern const char*  ImGuiTestEngine_FindItemDebugLabel(ImGuiContext* ui_ctx, ImG
 
 // Functions (generally called via IM_CHECK() macros)
 IMGUI_API bool      ImGuiTestEngine_Check(const char* file, const char* func, int line, ImGuiTestCheckFlags flags, bool result, const char* expr);
-IMGUI_API bool      ImGuiTestEngine_CheckStrOp(const char* file, const char* func, int line, ImGuiTestCheckFlags flags, const char* op, const char* lhs_var, const char* lhs_value, const char* rhs_var, const char* rhs_value);
+IMGUI_API bool      ImGuiTestEngine_CheckStrOp(const char* file, const char* func, int line, ImGuiTestCheckFlags flags, const char* op, const char* lhs_var, const char* lhs_value, const char* rhs_var, const char* rhs_value, bool* out_result);
 IMGUI_API bool      ImGuiTestEngine_Error(const char* file, const char* func, int line, ImGuiTestCheckFlags flags, const char* fmt, ...);
 IMGUI_API void      ImGuiTestEngine_Assert(const char* expr, const char* file, const char* function, int line);
 
