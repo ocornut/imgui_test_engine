@@ -2380,6 +2380,7 @@ void    ImGuiTestContext::KeyCharsReplaceEnter(const char* chars)
 
 // Supported values for ImGuiTestOpFlags:
 // - ImGuiTestOpFlags_NoError
+// - ImGuiTestOpFlags_NoFocusWindow
 bool    ImGuiTestContext::WindowBringToFront(ImGuiTestRef ref, ImGuiTestOpFlags flags)
 {
     ImGuiContext& g = *UiContext;
@@ -2394,11 +2395,11 @@ bool    ImGuiTestContext::WindowBringToFront(ImGuiTestRef ref, ImGuiTestOpFlags 
         IM_ASSERT(window != NULL);
     }
 
-    if (window != g.NavWindow)
+    if (window != g.NavWindow && !(flags & ImGuiTestOpFlags_NoFocusWindow))
     {
         IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
         LogDebug("BringWindowToFront->FocusWindow('%s')", window->Name);
-        ImGui::FocusWindow(window); // FIXME-TESTS-NOT_SAME_AS_END_USER
+        ImGui::FocusWindow(window); // FIXME-TESTS-NOT_SAME_AS_END_USER: In theory should be replaced by click on title-bar or tab?
         Yield();
         Yield();
         //IM_CHECK(g.NavWindow == window);
@@ -2407,7 +2408,7 @@ bool    ImGuiTestContext::WindowBringToFront(ImGuiTestRef ref, ImGuiTestOpFlags 
     {
         IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
         LogDebug("BringWindowToDisplayFront('%s') (window.back=%s)", window->Name, g.Windows.back()->Name);
-        ImGui::BringWindowToDisplayFront(window); // FIXME-TESTS-NOT_SAME_AS_END_USER
+        ImGui::BringWindowToDisplayFront(window); // FIXME-TESTS-NOT_SAME_AS_END_USER: This is not an actually possible action for end-user.
         Yield();
         Yield();
     }
@@ -3304,7 +3305,7 @@ void    ImGuiTestContext::WindowFocus(ImGuiTestRef ref)
     IM_CHECK_SILENT(window != NULL);
     if (window)
     {
-        ImGui::FocusWindow(window); // FIXME-TESTS-NOT_SAME_AS_END_USER: Click or tab?
+        ImGui::FocusWindow(window); // FIXME-TESTS-NOT_SAME_AS_END_USER: In theory should be replaced by click on title-bar or tab?
         Yield();
     }
 }
