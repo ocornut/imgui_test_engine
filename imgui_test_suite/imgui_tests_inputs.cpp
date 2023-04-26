@@ -882,7 +882,50 @@ void RegisterTests_Inputs(ImGuiTestEngine* e)
         IM_CHECK_EQ(vars.IntArray[7], IMGUI_BROKEN_TESTS ? 1 : 0); // FIXME: Order matters because ActiveId is taken (not because of Owner)
         IM_CHECK_EQ(vars.IntArray[8], 0);
     };
-#endif
+    #endif
+
+    t = IM_REGISTER_TEST(e, "issues", "issues_0024");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        // Drawing
+        static bool show_app_overlay = false;
+        static double end_overlay;
+
+        const ImGuiViewport* const viewport = ImGui::GetMainViewport();
+
+        // Drawing
+        if (show_app_overlay)
+        {
+            ImGui::SetNextWindowBgAlpha(0.35f);
+            ImGui::SetNextWindowPos({ viewport->WorkPos.x + viewport->WorkSize.x - 10.f, viewport->WorkPos.y + 30.f }, ImGuiCond_Always, { 1.f, 0.f });
+            if (ImGui::Begin("Overlay", &show_app_overlay, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNav))
+            {
+
+                const double current_time = ImGui::GetTime();
+                if (ImGui::IsWindowFocused() || end_overlay < current_time)
+                    show_app_overlay = false;
+                ImGui::TextColored(ImVec4{ 1.f, 0.f, 0.f, 1.f }, "%f", end_overlay - current_time);
+            } ImGui::End();
+        }
+
+        ImGui::SetNextWindowPos(viewport->Pos);
+        ImGui::SetNextWindowSize(viewport->Size);
+        if (ImGui::Begin("QAP", nullptr, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoBringToFrontOnFocus))
+        {
+            if (ImGui::Button("Launch"))
+            {
+                show_app_overlay = true;
+                end_overlay = ImGui::GetTime() + 5.;
+            }
+        }
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ctx->ItemClick("//QAP/Launch");
+        ctx->MouseMove("//Overlay");
+        ctx->MouseClick();
+    };
 
 #if IMGUI_VERSION_NUM > 18902
     // ## Test SetActiveIdUsingAllKeyboardKeys() (via window dragging) dropping modifiers and blocking input-owner-unaware code from accessing keys (#5888)

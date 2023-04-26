@@ -4008,7 +4008,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         // Navigating over disabled menu.
         ctx->MenuAction(ImGuiTestAction_Hover, "Menu 1/Menu Enabled/Item");
         IM_CHECK(g.NavWindow != NULL);
-        IM_CHECK_STR_EQ(g.NavWindow->Name, "##Menu_01");
+        //IM_CHECK_STR_EQ(g.NavWindow->Name, "##Menu_01");          // 2023/04/26 Incorrect since FindHoveredWindowAtPos() addition, since we don't necessarily focus sub-menu.
         ctx->MenuAction(ImGuiTestAction_Hover, "Menu 1/Menu Disabled");
         IM_CHECK(g.NavWindow != NULL);
         IM_CHECK_STR_EQ(g.NavWindow->Name, "##Menu_00");

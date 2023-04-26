@@ -1531,19 +1531,6 @@ void    ImGuiTestContext::MouseMove(ImGuiTestRef ref, ImGuiTestOpFlags flags)
 
     item->RefCount++;
 
-    // Focus window before scrolling/moving so things are nicely visible
-    // FIXME-TESTS-NOT_SAME_AS_END_USER: This has too many side effect, could we do without?
-    // In most cases it could be done via title bar click?
-    if (!(flags & ImGuiTestOpFlags_NoFocusWindow))
-        WindowBringToFront(item->Window->ID);
-
-    // Another active test (in the case focus change has a side effect BUT also implicitly we have yield an extra frame)
-    if (!item->Window->WasActive)
-    {
-        LogError("Window '%s' is not active (after focusing)", item->Window->Name);
-        return;
-    }
-
     // FIXME-TESTS: If window was not brought to front (because of either ImGuiWindowFlags_NoBringToFrontOnFocus or ImGuiTestOpFlags_NoFocusWindow)
     // then we need to make space by moving other windows away.
     // An easy to reproduce this bug is to run "docking_dockspace_tab_amend" with Test Engine UI over top-left corner, covering the Tools menu.
@@ -1578,31 +1565,44 @@ void    ImGuiTestContext::MouseMove(ImGuiTestRef ref, ImGuiTestOpFlags flags)
     // Keep a deep copy of item info since item-> will be kept updated as we set a RefCount on it.
     ImGuiTestItemInfo item_initial_state = *item;
 
-    // Move toward an actually visible point
+    // Target point
     pos = GetMouseAimingPos(item, flags);
-    MouseMoveToPos(pos);
+
+    // Focus window
+    if (!(flags & ImGuiTestOpFlags_NoFocusWindow))
+    {
+        // Avoid unnecessary focus
+        // While this is generally desirable and much more consistent with user behavior,
+        // it make test-engine behavior a little less deterministic.
+        // Incorrectly written tests could possibly succeed or fail based on position of other windows.
+        bool is_covered = FindHoveredWindowAtPos(pos) != item->Window;
+        bool is_inhibited = ImGui::IsWindowContentHoverable(item->Window) == false;
+
+        // FIXME-TESTS-NOT_SAME_AS_END_USER: This has too many side effect, could we do without?
+        // - e.g. This can close a modal.
+        if (is_covered || is_inhibited)
+            WindowBringToFront(item->Window->ID);
+    }
+
+    // Another is window active test (in the case focus change has a side effect but also as we have yield an extra frame)
+    if (!item->Window->WasActive)
+    {
+        LogError("Window '%s' is not active (after aiming)", item->Window->Name);
+        return;
+    }
+
     MouseSetViewport(item->Window);
+    MouseMoveToPos(pos);
 
     // Focus again in case something made us lost focus (which could happen on a simple hover)
     if (!(flags & ImGuiTestOpFlags_NoFocusWindow))
     {
-        //LogDebug("Window '%s' not focused anymore, focusing again", window->Name);
-        WindowBringToFront(window->ID);
+        // Avoid unnecessary focus
+        bool is_covered = FindHoveredWindowAtPos(pos) != item->Window;
+        bool is_inhibited = ImGui::IsWindowContentHoverable(item->Window) == false;
 
-        // 2021-12-13: straying away from that kind of stuff. We'd better error or handle hover without requiring focus.
-#if 0
-        // Some windows are refusing to get focused.... e.g. MainMenuBar will relinguish focus... need to hide other windows.
-#ifdef IMGUI_HAS_DOCK
-        if (window->RootWindowDockTree != g.Windows.back()->RootWindowDockTree)
-#else
-        if (window->RootWindow != g.Windows.back()->RootWindow)
-#endif
-        {
-            LogDebug("Window '%s' not focused anymore: hiding other windows", window->Name);
-            ImGuiWindow* ignore_list[] = { window, NULL };
-            ForeignWindowsHideOverPos(pos, ignore_list);
-        }
-#endif
+        if (is_covered || is_inhibited)
+            WindowBringToFront(window->ID);
     }
 
     // Check hovering target: may be an item (common) or a window (rare)
@@ -2014,6 +2014,48 @@ void    ImGuiTestContext::MouseLiftDragThreshold(ImGuiMouseButton button)
 
     ImGuiContext& g = *UiContext;
     g.IO.MouseDragMaxDistanceSqr[button] = (g.IO.MouseDragThreshold * g.IO.MouseDragThreshold) + (g.IO.MouseDragThreshold * g.IO.MouseDragThreshold);
+}
+
+// Modeled on FindHoveredWindow() in imgui.cpp.
+// Ideally that core function would be refactored to avoid this copy.
+// - Need to take account of MovingWindow specificities and early out.
+// - Need to be able to skip viewport compare.
+// So for now we use a custom function.
+ImGuiWindow* ImGuiTestContext::FindHoveredWindowAtPos(const ImVec2& pos)
+{
+    ImGuiContext& g = *UiContext;
+    const ImVec2 padding_regular = g.Style.TouchExtraPadding;
+    const ImVec2 padding_for_resize = g.IO.ConfigWindowsResizeFromEdges ? g.WindowsHoverPadding : padding_regular;
+    for (int i = g.Windows.Size - 1; i >= 0; i--)
+    {
+        ImGuiWindow* window = g.Windows[i];
+        if (!window->Active || window->Hidden)
+            continue;
+        if (window->Flags & ImGuiWindowFlags_NoMouseInputs)
+            continue;
+
+        // Using the clipped AABB, a child window will typically be clipped by its parent (not always)
+        ImRect bb(window->OuterRectClipped);
+        if (window->Flags & (ImGuiWindowFlags_ChildWindow | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_AlwaysAutoResize))
+            bb.Expand(padding_regular);
+        else
+            bb.Expand(padding_for_resize);
+        if (!bb.Contains(pos))
+            continue;
+
+        // Support for one rectangular hole in any given window
+        // FIXME: Consider generalizing hit-testing override (with more generic data, callback, etc.) (#1512)
+        if (window->HitTestHoleSize.x != 0)
+        {
+            ImVec2 hole_pos(window->Pos.x + (float)window->HitTestHoleOffset.x, window->Pos.y + (float)window->HitTestHoleOffset.y);
+            ImVec2 hole_size((float)window->HitTestHoleSize.x, (float)window->HitTestHoleSize.y);
+            if (ImRect(hole_pos, hole_pos + hole_size).Contains(pos))
+                continue;
+        }
+
+        return window;
+    }
+    return NULL;
 }
 
 static bool IsPosOnVoid(ImGuiContext& g, const ImVec2& pos)

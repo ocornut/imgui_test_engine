@@ -5,6 +5,12 @@ CHANGELOG
    Those changes are not all listed here.
 ** For a while this is going to ONLY INCLUDE BREAKING CHANGES.
 
+2023/04/26:
+- TestEngine: Reworked mouse actions to avoid unnecessarily focusing windows if not necessary.
+  If an item is visible and within a window not inhibited by a popup, we don't need to focus
+  the target window before clicking.
+  This reduces the amount of inconsistency between TestEngine and user actions.
+
 2023/04/24:
 - TestEngine: Fixed IM_CHECK_STR_xxx() macros not honoring io.ConfigBreakOnError.
 - TestEngine: Added result check in WindowFocus().

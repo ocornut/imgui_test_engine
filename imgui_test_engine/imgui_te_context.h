@@ -348,6 +348,7 @@ struct IMGUI_API ImGuiTestContext
     void        MouseWheelY(float dy) { MouseWheel(ImVec2(0.0f, dy)); }
     void        MouseMoveToVoid(ImGuiViewport* viewport = NULL);
     void        MouseClickOnVoid(ImGuiMouseButton button = 0, ImGuiViewport* viewport = NULL);
+    ImGuiWindow*FindHoveredWindowAtPos(const ImVec2& pos);
     bool        FindExistingVoidPosOnViewport(ImGuiViewport* viewport, ImVec2* out);
 
     // Mouse inputs: Viewports

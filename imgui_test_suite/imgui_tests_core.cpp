@@ -2443,12 +2443,12 @@ void RegisterTests_Window(ImGuiTestEngine* e)
         // Close button of dock node
         IM_CHECK(window->DockNode != NULL);
         ctx->ItemClick(ctx->GetID("#CLOSE", window->DockNode->ID), ImGuiMouseButton_Right);
-        IM_CHECK_EQ(g.NavWindow, window->RootWindowDockTree);
+        IM_CHECK_EQ(g.NavWindow, window);
         ctx->PopupCloseAll();
 
         // Collapse button of dock node
         ctx->ItemClick(ctx->GetID("#COLLAPSE", window->DockNode->ID), ImGuiMouseButton_Right);
-        IM_CHECK_EQ(g.NavWindow, window->RootWindowDockTree);
+        IM_CHECK_EQ(g.NavWindow, window);
 #endif
     };
 
@@ -4630,6 +4630,7 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
             IM_CHECK_EQ(g.IO.MouseDownOwned[btn], true);
             IM_CHECK_EQ(g.IO.MouseDownOwnedUnlessPopupClose[btn], false);
         }
+        ctx->MouseClickOnVoid(ImGuiMouseButton_Left); // Close popup
 
         // MouseDragMaxDistanceAbs, MouseDragMaxDistanceSqr
         for (int btn = 0; btn <= ImGuiMouseButton_Middle; btn++)
