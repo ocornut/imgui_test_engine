@@ -30,7 +30,7 @@ test->TestFunc = [](ImGuiTestContext* ctx)
 
 - Designed to **automate and test Dear ImGui applications**.
 - We also use it to **self-test Dear ImGui itself**, reduce regression and facilitate contributions.
-- **Test Engine interacts mostly from the point of view of an end-user, by injecting mouse/keyboard** inputs into Dear ImGui's IO. It means it tries to "find its way" toward accomplishing an action. Opening an item may mean CTRL+Tabbing into a given widow, moving things out of the way, scrolling to locate the item, querying its open status, etc.
+- **Test Engine interacts mostly from the point of view of an end-user, by injecting mouse/keyboard/gamepad** inputs into Dear ImGui's IO. It means it tries to "find its way" toward accomplishing an action. Opening an item may mean CTRL+Tabbing into a given widow, moving things out of the way, scrolling to locate the item, querying its open status, etc.
 - It can be used for a variety of testing (smoke testing, integration/functional testing) or automation purposes (running tasks, capturing videos, etc.).
 - Your app can be controlled from Dear ImGui + You can now automate your app = **You can test anything exposed in your app/engine**! (not only UI).
 - It **can run in your windowed application**. **It can also run headless** (e.g. running GUI tests from a console or on a CI server without rendering).
