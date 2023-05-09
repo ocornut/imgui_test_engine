@@ -3494,7 +3494,7 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
     t = IM_REGISTER_TEST(e, "misc", "misc_format_parse");
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
-        // fmt = "blah blah"  -> return fmt
+        // fmt = "blah blah"  -> return "" (previously was fmt)
         // fmt = "%.3f"       -> return fmt
         // fmt = "hello %.3f" -> return fmt + 6
         // fmt = "%.3f hello" -> return buf, "%.3f"
@@ -3506,7 +3506,11 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
 
         fmt = "blah blah";
         out = ImParseFormatTrimDecorations(fmt, buf, buf_size);
+#if IMGUI_VERSION_NUM >= 18955
+        IM_CHECK(strcmp(out, "") == 0);
+#else
         IM_CHECK(out == fmt);
+#endif
 
         fmt = "%.3f";
         out = ImParseFormatTrimDecorations(fmt, buf, buf_size);

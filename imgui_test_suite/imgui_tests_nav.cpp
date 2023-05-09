@@ -454,10 +454,10 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
         ctx->KeyPress(ImGuiKey_RightArrow);         // Right key maintains submenu open if menu item was clicked.
         IM_CHECK_EQ(g.OpenPopupStack.Size, 2);
 #if IMGUI_VERSION_NUM >= 18813
-        IM_CHECK(g.NavId == ctx->GetID("//$FOCUSED/A"));
+        IM_CHECK_EQ(g.NavId, ctx->GetID("//$FOCUSED/A"));
 #endif
         ctx->KeyPress(ImGuiKey_DownArrow);          // Down key correctly moves to a second item in submenu.
-        IM_CHECK(g.NavId == ctx->GetID("//$FOCUSED/B"));
+        IM_CHECK_EQ(g.NavId, ctx->GetID("//$FOCUSED/B"));
 
         ctx->PopupCloseAll();
         ctx->MenuClick("Menu");
@@ -466,10 +466,10 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
         ctx->KeyPress(ImGuiKey_LeftArrow);          // Right key maintains submenu open if menu item was hovered.
         IM_CHECK_EQ(g.OpenPopupStack.Size, 2);
 #if IMGUI_VERSION_NUM >= 18813
-        IM_CHECK(g.NavId == ctx->GetID("//$FOCUSED/A"));
+        IM_CHECK_EQ(g.NavId, ctx->GetID("//$FOCUSED/A"));
 #endif
         ctx->KeyPress(ImGuiKey_DownArrow);          // Down key correctly moves to a second item in submenu.
-        IM_CHECK(g.NavId == ctx->GetID("//$FOCUSED/B"));
+        IM_CHECK_EQ(g.NavId, ctx->GetID("//$FOCUSED/B"));
     };
 
     // ## Test navigation across menuset_is_open and ImGuiItemFlags_NoWindowHoverableCheck (#5730)
