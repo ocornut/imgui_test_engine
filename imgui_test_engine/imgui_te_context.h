@@ -254,13 +254,16 @@ struct IMGUI_API ImGuiTestContext
 
     // Main control
     void        Finish();
+    void        RecoverFromUiContextErrors();
+    template <typename T> T& GetVars()      { IM_ASSERT(UserVars != NULL); return *(T*)(UserVars); } // Campanion to using t->SetVarsDataType<>(). FIXME: Assert to compare sizes
+
+    // Main status queries
     bool        IsError() const             { return Test->Status == ImGuiTestStatus_Error || Abort; }
+    bool        IsWarmUpGuiFrame() const    { return FrameCount < FirstTestFrameCount; }    // Unless test->Flags has ImGuiTestFlags_NoGuiWarmUp, we run GuiFunc() twice before running TestFunc(). Those frames are called "WarmUp" frames.
     bool        IsFirstGuiFrame() const     { return FirstGuiFrame; }
     bool        IsFirstTestFrame() const    { return FrameCount == FirstTestFrameCount; }   // First frame where TestFunc is running (after warm-up frame).
     bool        IsGuiFuncOnly() const       { return (RunFlags & ImGuiTestRunFlags_GuiFuncOnly) != 0; }
-    void        SetGuiFuncEnabled(bool v)   { if (v) RunFlags &= ~ImGuiTestRunFlags_GuiFuncDisable; else RunFlags |= ImGuiTestRunFlags_GuiFuncDisable; }
-    void        RecoverFromUiContextErrors();
-    template <typename T> T& GetVars()      { IM_ASSERT(UserVars != NULL); return *(T*)(UserVars); } // Campanion to using t->SetVarsDataType<>(). FIXME: Assert to compare sizes
+    void        SetGuiFuncEnabled(bool v) { if (v) RunFlags &= ~ImGuiTestRunFlags_GuiFuncDisable; else RunFlags |= ImGuiTestRunFlags_GuiFuncDisable; }
 
     // Debug Control Flow
     bool        SuspendTestFunc(const char* file, int line);

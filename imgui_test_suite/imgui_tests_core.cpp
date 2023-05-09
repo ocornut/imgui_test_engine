@@ -97,12 +97,14 @@ void RegisterTests_Window(ImGuiTestEngine* e)
     {
         ImGui::SetNextWindowSize(ImVec2(400, 200), ImGuiCond_Appearing);
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
-        IM_CHECK_EQ_NO_RET(ImGui::GetCurrentWindow()->ScrollbarY, false);
+        if (!ctx->IsWarmUpGuiFrame())
+            IM_CHECK_EQ_NO_RET(ImGui::GetCurrentWindow()->ScrollbarY, false);
         ImGui::End();
 
         ImGui::SetNextWindowSize(ImVec2(400, 200), ImGuiCond_Appearing);
         ImGui::Begin("Test Window 2", NULL, ImGuiWindowFlags_NoSavedSettings);
-        IM_CHECK_EQ_NO_RET(ImGui::GetCurrentWindow()->ScrollbarY, false);
+        if (!ctx->IsWarmUpGuiFrame())
+            IM_CHECK_EQ_NO_RET(ImGui::GetCurrentWindow()->ScrollbarY, false);
         for (int n = 0; n < 3; n++)
             ImGui::Text("Test %d", n);
         ImGui::End();
@@ -1866,7 +1868,7 @@ void RegisterTests_Window(ImGuiTestEngine* e)
         ImGuiWindow* child_window = ctx->UiContext->CurrentWindow;
         ImGui::EndChild();
         IM_CHECK(child_window->ScrollbarY == false);
-        if (ctx->FrameCount >= ctx->FirstTestFrameCount)
+        if (!ctx->IsWarmUpGuiFrame())
         {
             ImGuiWindow* window = ctx->UiContext->CurrentWindow;
             IM_CHECK(window->ScrollbarY == false);
