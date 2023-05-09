@@ -103,6 +103,40 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
         IM_CHECK_EQ(g.NavId, ctx->GetID("table/FFFF"));
         ctx->KeyPress(ImGuiKey_UpArrow);
         IM_CHECK_EQ(g.NavId, ctx->GetID("table/CCCC"));
+
+        // Test recorded preferred scoring pos
+#if IMGUI_VERSION_NUM >= 18956
+        ctx->KeyPress(ImGuiKey_UpArrow);
+        IM_CHECK_EQ(g.NavId, ctx->GetID("Window options"));
+        ctx->KeyPress(ImGuiKey_DownArrow);
+        IM_CHECK_EQ(g.NavId, ctx->GetID("table/CCCC"));
+        ctx->KeyPress(ImGuiKey_LeftArrow);
+        IM_CHECK_EQ(g.NavId, ctx->GetID("table/BBBB"));
+        ctx->KeyPress(ImGuiKey_UpArrow);
+        IM_CHECK_EQ(g.NavId, ctx->GetID("Window options"));
+        ctx->KeyPress(ImGuiKey_DownArrow);
+        IM_CHECK_EQ(g.NavId, ctx->GetID("table/BBBB"));
+        ctx->KeyPress(ImGuiKey_UpArrow);
+        IM_CHECK_EQ(g.NavId, ctx->GetID("Window options"));
+
+        // Failing move resets preferred pos on this axis
+        ctx->KeyPress(ImGuiKey_RightArrow);
+        IM_CHECK_EQ(g.NavId, ctx->GetID("Window options"));
+        ctx->KeyPress(ImGuiKey_DownArrow);
+        IM_CHECK_EQ(g.NavId, ctx->GetID("table/AAAA"));
+
+        // Test that preferred pos is saved/restored on focus change
+        ctx->KeyPress(ImGuiKey_RightArrow);
+        ctx->KeyPress(ImGuiKey_UpArrow);
+        ctx->WindowFocus("Dear ImGui Demo"); // Focus other window
+        ctx->ItemOpen("//Dear ImGui Demo/Help");
+        ctx->KeyPress(ImGuiKey_DownArrow);
+        ctx->ItemClose("//Dear ImGui Demo/Help");
+        ctx->KeyPress(ImGuiKey_Tab | ImGuiMod_Ctrl);
+        IM_CHECK_EQ(g.NavId, ctx->GetID("Window options"));
+        ctx->KeyPress(ImGuiKey_DownArrow);
+        IM_CHECK_EQ(g.NavId, ctx->GetID("table/BBBB"));
+#endif
     };
 #endif
 
