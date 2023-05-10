@@ -23,6 +23,8 @@ test->TestFunc = [](ImGuiTestContext* ctx)
     ctx->ItemCheck("Node/Checkbox");    // Open "Node", find "Checkbox", ensure it is checked if not checked already.
     ctx->ItemInputValue("Slider", 123); // Find "Slider" and set the value to 123
     IM_CHECK_EQ(app->SliderValue, 123); // Check value on app side
+    
+    ctx->MenuCheck("//Dear ImGui Demo/Tools/About Dear ImGui"); // Show Dear ImGui About Window (assume Demo window is open)
 };
 ```
 
