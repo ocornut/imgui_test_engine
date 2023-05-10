@@ -2311,7 +2311,7 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
 
     // ## Test wrapping behavior
     t = IM_REGISTER_TEST(e, "nav", "nav_wrapping");
-    struct NavWrappingWars { ImGuiNavMoveFlags WrapFlags = ImGuiNavMoveFlags_WrapY; bool UseButton = false; };
+    struct NavWrappingWars { ImGuiNavMoveFlags WrapFlags = ImGuiNavMoveFlags_WrapY; bool UseButton = false; bool AltLayout = false; };
     t->SetVarsDataType<NavWrappingWars>();
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
@@ -2324,7 +2324,9 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
         {
             for (int nx = 0; nx < 4; nx++)
             {
-                if (ny == 3 && nx >= 2)
+                if (vars.AltLayout == false && ny == 3 && nx >= 2)
+                    continue;
+                if (vars.AltLayout == true && nx == 3 && ny >= 2)
                     continue;
                 if (nx > 0)
                     ImGui::SameLine();
@@ -2339,7 +2341,8 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
         ImVec2 options_pos = ImGui::GetCurrentWindow()->Rect().GetBL();
         ImGui::End();
 
-        if (ctx->IsGuiFuncOnly())
+        // Options
+        //if (ctx->IsGuiFuncOnly())
         {
             ImGui::SetNextWindowPos(options_pos);
             ImGui::Begin("Test Options", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoFocusOnAppearing);
@@ -2348,6 +2351,7 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
             ImGui::RadioButton("ImGuiNavMoveFlags_WrapY", &vars.WrapFlags, ImGuiNavMoveFlags_WrapY);
             ImGui::RadioButton("ImGuiNavMoveFlags_LoopX", &vars.WrapFlags, ImGuiNavMoveFlags_LoopX);
             ImGui::RadioButton("ImGuiNavMoveFlags_LoopY", &vars.WrapFlags, ImGuiNavMoveFlags_LoopY);
+            ImGui::Checkbox("AltLayout", &vars.AltLayout);
             ImGui::End();
         }
     };
@@ -2360,54 +2364,86 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
 
         for (int input_source = 0; input_source < 2; input_source++)
         {
-            //ImGuiKey key_up = (input_source == 0) ? ImGuiKey_UpArrow : ImGuiKey_GamepadDpadUp;
+            ImGuiKey key_up = (input_source == 0) ? ImGuiKey_UpArrow : ImGuiKey_GamepadDpadUp;
             ImGuiKey key_down = (input_source == 0) ? ImGuiKey_DownArrow : ImGuiKey_GamepadDpadDown;
-            //ImGuiKey key_left = (input_source == 0) ? ImGuiKey_LeftArrow : ImGuiKey_GamepadDpadLeft;
+            ImGuiKey key_left = (input_source == 0) ? ImGuiKey_LeftArrow : ImGuiKey_GamepadDpadLeft;
             ImGuiKey key_right = (input_source == 0) ? ImGuiKey_RightArrow : ImGuiKey_GamepadDpadRight;
 
             vars.WrapFlags = ImGuiNavMoveFlags_None;
             ctx->ItemClick("0,0");
             ctx->KeyPress(key_right);
-            IM_CHECK(g.NavId == ctx->GetID("0,1"));
+            IM_CHECK_EQ(g.NavId, ctx->GetID("0,1"));
             ctx->KeyPress(key_right);
             ctx->KeyPress(key_right);
             IM_CHECK(g.NavId == ctx->GetID("0,3"));
             ctx->KeyPress(key_right);
-            IM_CHECK(g.NavId == ctx->GetID("0,3"));
+            IM_CHECK_EQ(g.NavId, ctx->GetID("0,3"));
+#if IMGUI_VERSION_NUM >= 18956
+            ctx->ItemClick("3,1");
+            ctx->KeyPress(key_right);
+            IM_CHECK_EQ(g.NavId, ctx->GetID("3,1"));
+            ctx->ItemClick("2,2");
+            ctx->KeyPress(key_down);
+#if 1       // FIXME: 2023/05/15: It is debatable whether pressing down here should reach (3,1). The opposite (3,1) + Right currently doesn't reach (2.2)
+            IM_CHECK_EQ(g.NavId, ctx->GetID("3,1"));
+            ctx->KeyPress(key_up);
+#endif
+            IM_CHECK_EQ(g.NavId, ctx->GetID("2,2")); // Restore preferred pos
+#endif
 
             vars.WrapFlags = ImGuiNavMoveFlags_WrapX;
             ctx->ItemClick("0,0");
             ctx->KeyPress(key_right);
-            IM_CHECK(g.NavId == ctx->GetID("0,1"));
+            IM_CHECK_EQ(g.NavId, ctx->GetID("0,1"));
             ctx->KeyPress(key_right);
             ctx->KeyPress(key_right);
-            IM_CHECK(g.NavId == ctx->GetID("0,3"));
+            IM_CHECK_EQ(g.NavId, ctx->GetID("0,3"));
             ctx->KeyPress(key_right);
-            IM_CHECK(g.NavId == ctx->GetID("1,0"));
+            IM_CHECK_EQ(g.NavId, ctx->GetID("1,0"));
             for (int n = 0; n < 50; n++) // Mash to get to the end of list
                 ctx->KeyPress(key_right);
-            IM_CHECK(g.NavId == ctx->GetID("3,1"));
+            IM_CHECK_EQ(g.NavId, ctx->GetID("3,1"));
+#if IMGUI_VERSION_NUM >= 18957
+            ctx->KeyPress(key_left);
+            ctx->KeyPress(key_left);
+            IM_CHECK_EQ(g.NavId, ctx->GetID("2,3"));
+#endif
 
             vars.WrapFlags = ImGuiNavMoveFlags_LoopX;
             ctx->ItemClick("0,0");
             ctx->KeyPress(key_right);
-            IM_CHECK(g.NavId == ctx->GetID("0,1"));
+            IM_CHECK_EQ(g.NavId, ctx->GetID("0,1"));
             ctx->KeyPress(key_right);
             ctx->KeyPress(key_right);
-            IM_CHECK(g.NavId == ctx->GetID("0,3"));
+            IM_CHECK_EQ(g.NavId, ctx->GetID("0,3"));
             ctx->KeyPress(key_right);
-            IM_CHECK(g.NavId == ctx->GetID("0,0"));
+            IM_CHECK_EQ(g.NavId, ctx->GetID("0,0"));
+            ctx->KeyPress(key_left);
+            IM_CHECK_EQ(g.NavId, ctx->GetID("0,3"));
+            ctx->ItemClick("3,0");
+            ctx->KeyPress(key_right);
+            IM_CHECK_EQ(g.NavId, ctx->GetID("3,1"));
+            ctx->KeyPress(key_right);
+            IM_CHECK_EQ(g.NavId, ctx->GetID("3,0"));
+            ctx->KeyPress(key_left);
+            IM_CHECK_EQ(g.NavId, ctx->GetID("3,1"));
+            ctx->KeyPress(key_left);
+            IM_CHECK_EQ(g.NavId, ctx->GetID("3,0"));
 
+            // FIXME: LoopY/WrapY currently have some issues easy to see with AltLayout=false
+            // Presumably due to Y bias since the equivalent problem with AltLayout=true doesn't happen with LoopX/WrapX
             vars.WrapFlags = ImGuiNavMoveFlags_LoopY;
             ctx->ItemClick("0,0");
             ctx->KeyPress(key_right);
-            IM_CHECK(g.NavId == ctx->GetID("0,1"));
+            IM_CHECK_EQ(g.NavId, ctx->GetID("0,1"));
             ctx->KeyPress(key_down);
             ctx->KeyPress(key_down);
             ctx->KeyPress(key_down);
-            IM_CHECK(g.NavId == ctx->GetID("3,1"));
+            IM_CHECK_EQ(g.NavId, ctx->GetID("3,1"));
             ctx->KeyPress(key_down);
-            IM_CHECK(g.NavId == ctx->GetID("0,1"));
+            IM_CHECK_EQ(g.NavId, ctx->GetID("0,1"));
+            ctx->KeyPress(key_up);
+            IM_CHECK_EQ(g.NavId, ctx->GetID("3,1"));
         }
 
 #if IMGUI_BROKEN_TESTS

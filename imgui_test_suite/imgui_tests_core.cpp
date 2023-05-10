@@ -3349,6 +3349,9 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
 #if IMGUI_VERSION_NUM >= 18415
         ImGui::PushItemFlag(ImGuiItemFlags_ButtonRepeat, true);
 #endif
+#if IMGUI_VERSION_NUM >= 18957
+        ImGui::PushFont(ImGui::GetFont());
+#endif
         ImGui::BeginGroup();
         ImGui::SetNextItemOpen(true);
         ImGui::TreeNode("node");
