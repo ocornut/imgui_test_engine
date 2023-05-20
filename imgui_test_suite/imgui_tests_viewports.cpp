@@ -250,6 +250,44 @@ void RegisterTests_Viewports(ImGuiTestEngine* e)
 #endif
     };
 
+    // More tests Platform Focus leading to Dear ImGui focus (#6299)
+#if IMGUI_VERSION_NUM >= 18956
+    t = IM_REGISTER_TEST(e, "viewport", "viewport_platform_focus_2");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::Begin("Window A", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImGui::Button("Button A");
+        ImGui::End();
+
+        ImGui::Begin("Window B", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImGui::Button("Button B");
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiContext& g = *ctx->UiContext;
+        ImGuiViewport* main_viewport = ImGui::GetMainViewport();
+        ImGuiWindow* window_a = ctx->WindowInfo("//Window A")->Window;
+        ImGuiWindow* window_b = ctx->WindowInfo("//Window B")->Window;
+
+        ctx->WindowResize("//Window A", ImVec2(100, 100));
+        ctx->WindowMove("//Window A", main_viewport->Pos + ImVec2(10,10));
+        IM_CHECK(window_a->Viewport == main_viewport);
+
+        ctx->WindowResize("//Window B", ImVec2(100, 100));
+        ctx->WindowMove("//Window B", main_viewport->Pos + ImVec2(30, 30));
+        IM_CHECK(window_b->Viewport == main_viewport);
+
+        ctx->WindowMove("//Window B", main_viewport->Pos + ImVec2(main_viewport->Size.x, 0.0f));
+        IM_CHECK(window_b->Viewport != main_viewport);
+        IM_CHECK(g.NavWindow == window_b);
+
+        ctx->WindowMove("//Window B", main_viewport->Pos + ImVec2(30, 30));
+        IM_CHECK(window_b->Viewport == main_viewport);
+        IM_CHECK(g.NavWindow == window_b);
+    };
+#endif
+
 #else
     IM_UNUSED(e);
 #endif
