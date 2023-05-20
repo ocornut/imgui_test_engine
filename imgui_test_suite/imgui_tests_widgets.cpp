@@ -3443,6 +3443,100 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         IM_CHECK_EQ(selection0.SelectionSize, 1);
         IM_CHECK_EQ(selection1.SelectionSize, 10);
     };
+
+    // Test Enter key behaviors
+    t = IM_REGISTER_TEST(e, "widgets", "widgets_multiselect_enter");
+    t->SetVarsDataType<MultiSelectTestVars>();
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        MultiSelectTestVars& vars = ctx->GetVars<MultiSelectTestVars>();
+        ExampleSelection& selection = vars.Selection0;
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
+        selection.BeginMultiSelect(ImGuiMultiSelectFlags_ClearOnEscape, 50);
+        for (int n = 0; n < 50; n++)
+        {
+            bool item_is_selected = selection.GetSelected(n);
+            ImGui::SetNextItemSelectionData((void*)(intptr_t)n);
+            ImGui::Selectable(Str64f("Object %03d", n).c_str(), item_is_selected);
+            if (ImGui::IsItemToggledSelection())
+                selection.SetSelected(n, !item_is_selected);
+        }
+        selection.EndMultiSelect(50);
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        MultiSelectTestVars& vars = ctx->GetVars<MultiSelectTestVars>();
+        ExampleSelection& selection = vars.Selection0;
+        ctx->SetRef("Test Window");
+
+        // Enter alters selection because current item is not selected
+        ctx->ItemClick("Object 000");
+        ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_DownArrow);
+        IM_CHECK_EQ(selection.GetSelectionSize(), 1);
+        IM_CHECK(selection.GetSelected(0) == true);
+        IM_CHECK(selection.GetSelected(1) == false);
+        ctx->KeyPress(ImGuiKey_Enter);
+        IM_CHECK_EQ(selection.GetSelectionSize(), 1);
+        IM_CHECK(selection.GetSelected(0) == false);
+        IM_CHECK(selection.GetSelected(1) == true);
+
+        // Enter doesn't alter selection because current item is selected
+        ctx->KeyPress(ImGuiMod_Shift | ImGuiKey_DownArrow);
+        IM_CHECK_EQ(selection.GetSelectionSize(), 2);
+        IM_CHECK(selection.GetSelected(1) == true);
+        IM_CHECK(selection.GetSelected(2) == true);
+        ctx->KeyPress(ImGuiKey_Enter);
+        IM_CHECK_EQ(selection.GetSelectionSize(), 2);
+        IM_CHECK(selection.GetSelected(1) == true);
+        IM_CHECK(selection.GetSelected(2) == true);
+    };
+
+    // Test interleaving CollapsingHeader() between selection items
+    t = IM_REGISTER_TEST(e, "widgets", "widgets_multiselect_disjoint");
+    t->SetVarsDataType<MultiSelectTestVars>();
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        MultiSelectTestVars& vars = ctx->GetVars<MultiSelectTestVars>();
+        ExampleSelection& selection = vars.Selection0;
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
+        selection.BeginMultiSelect(ImGuiMultiSelectFlags_ClearOnEscape, 50);
+        for (int n = 0; n < 50; n++)
+        {
+            if ((n % 10) == 0 && ImGui::CollapsingHeader(Str64f("Section %02d-> %02d", n, n + 9).c_str()))
+            {
+                n += 9;
+                continue;
+            }
+            bool item_is_selected = selection.GetSelected(n);
+            ImGui::SetNextItemSelectionData((void*)(intptr_t)n);
+            ImGui::Selectable(Str64f("Object %03d", n).c_str(), item_is_selected);
+            if (ImGui::IsItemToggledSelection())
+                selection.SetSelected(n, !item_is_selected);
+        }
+        selection.EndMultiSelect(50);
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        MultiSelectTestVars& vars = ctx->GetVars<MultiSelectTestVars>();
+        ExampleSelection& selection = vars.Selection0;
+        ctx->SetRef("Test Window");
+        ctx->ItemClick("Object 000");
+        IM_CHECK_EQ(selection.GetSelectionSize(), 1);
+        IM_CHECK(selection.GetSelected(0) == true);
+        ctx->KeyPress(ImGuiMod_Shift | ImGuiKey_UpArrow);
+        IM_CHECK_EQ(selection.GetSelectionSize(), 1);
+        IM_CHECK(selection.GetSelected(0) == true);
+        ctx->KeyPress(ImGuiMod_Shift | ImGuiKey_DownArrow);
+        IM_CHECK_EQ(selection.GetSelectionSize(), 1);
+        IM_CHECK(selection.GetSelected(0) == true);
+        ctx->KeyPress(ImGuiMod_Shift | ImGuiKey_DownArrow, 10);
+        IM_CHECK_EQ(selection.GetSelectionSize(), 10);
+        ctx->KeyPress(ImGuiMod_Shift | ImGuiKey_DownArrow);
+        IM_CHECK_EQ(selection.GetSelectionSize(), 11);
+    };
+
 #endif
 
     // ## Test Selectable() with ImGuiSelectableFlags_SpanAllColumns inside Columns()
