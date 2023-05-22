@@ -3164,6 +3164,19 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
             if (data->RequestSelectAll) { SelectAll(items_count); }
             if (data->RequestSetRange)  { SetRange((int)(intptr_t)data->RangeSrc, (int)(intptr_t)data->RangeDst, data->RangeValue ? 1 : 0); }
         }
+        void EmitBasicLoop(ImGuiMultiSelectFlags flags, int items_count, const char* label_format)
+        {
+            BeginMultiSelect(flags, items_count);
+            for (int item_n = 0; item_n < items_count; item_n++)
+            {
+                bool item_is_selected = GetSelected(item_n);
+                ImGui::SetNextItemSelectionData((void*)(intptr_t)item_n);
+                ImGui::Selectable(Str16f(label_format, item_n).c_str(), item_is_selected);
+                if (ImGui::IsItemToggledSelection())
+                    SetSelected(item_n, !item_is_selected);
+            }
+            EndMultiSelect(items_count);
+        }
     };
     struct MultiSelectTestVars
     {
@@ -3190,7 +3203,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         clipper.Begin(ITEMS_COUNT);
         while (clipper.Step())
         {
-            if (clipper.DisplayStart > selection.RangeRef)
+            if (clipper.DisplayStart > (intptr_t)multi_select_data->RangeSrc)
                 multi_select_data->RangeSrcPassedBy = true;
             for (int item_n = clipper.DisplayStart; item_n < clipper.DisplayEnd; item_n++)
             {
@@ -3407,16 +3420,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
             ExampleSelection& selection = (scope_n == 1) ? vars.Selection1 : vars.Selection0;
             ImGui::Text("SCOPE %d\n", scope_n);
             ImGui::PushID(Str16f("Scope %d", scope_n).c_str());
-            selection.BeginMultiSelect(ImGuiMultiSelectFlags_None, ITEMS_COUNT);
-            for (int item_n = 0; item_n < ITEMS_COUNT; item_n++)
-            {
-                bool item_is_selected = selection.GetSelected(item_n);
-                ImGui::SetNextItemSelectionData((void*)(intptr_t)item_n);
-                ImGui::Selectable(Str16f("Object %04d", item_n).c_str(), item_is_selected);
-                if (ImGui::IsItemToggledSelection())
-                    selection.SetSelected(item_n, !item_is_selected);
-            }
-            selection.EndMultiSelect(ITEMS_COUNT);
+            selection.EmitBasicLoop(ImGuiMultiSelectFlags_None, ITEMS_COUNT, "Object %04d");
             ImGui::PopID();
         }
         ImGui::End();
@@ -3452,16 +3456,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         MultiSelectTestVars& vars = ctx->GetVars<MultiSelectTestVars>();
         ExampleSelection& selection = vars.Selection0;
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
-        selection.BeginMultiSelect(ImGuiMultiSelectFlags_ClearOnEscape, 50);
-        for (int n = 0; n < 50; n++)
-        {
-            bool item_is_selected = selection.GetSelected(n);
-            ImGui::SetNextItemSelectionData((void*)(intptr_t)n);
-            ImGui::Selectable(Str64f("Object %03d", n).c_str(), item_is_selected);
-            if (ImGui::IsItemToggledSelection())
-                selection.SetSelected(n, !item_is_selected);
-        }
-        selection.EndMultiSelect(50);
+        selection.EmitBasicLoop(ImGuiMultiSelectFlags_ClearOnEscape, 50, "Object %03d");
         ImGui::End();
     };
     t->TestFunc = [](ImGuiTestContext* ctx)
@@ -3536,6 +3531,56 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ctx->KeyPress(ImGuiMod_Shift | ImGuiKey_DownArrow);
         IM_CHECK_EQ(selection.GetSelectionSize(), 11);
     };
+
+    // Test range-select with no RangeSource
+    t = IM_REGISTER_TEST(e, "widgets", "widgets_multiselect_nosrc");
+    t->SetVarsDataType<MultiSelectTestVars>();
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        MultiSelectTestVars& vars = ctx->GetVars<MultiSelectTestVars>();
+        ExampleSelection& selection = vars.Selection0;
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
+        selection.EmitBasicLoop(ImGuiMultiSelectFlags_ClearOnEscape, 50, "Object %03d");
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        MultiSelectTestVars& vars = ctx->GetVars<MultiSelectTestVars>();
+        ExampleSelection& selection = vars.Selection0;
+        ctx->KeyDown(ImGuiMod_Shift);
+        ctx->ItemClick("//Test Window/Object 005");
+        IM_CHECK(selection.GetSelectionSize() == 6);
+        IM_CHECK(selection.GetSelected(0) == true);
+        IM_CHECK(selection.GetSelected(5) == true);
+    };
+
+    // Test default selection on NavInit
+#if IMGUI_BROKEN_TESTS // NavInit happens once
+#if IMGUI_VERSION_NUM >= 18958
+    t = IM_REGISTER_TEST(e, "widgets", "widgets_multiselect_init_child");
+    t->SetVarsDataType<MultiSelectTestVars>();
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        MultiSelectTestVars& vars = ctx->GetVars<MultiSelectTestVars>();
+        ExampleSelection& selection = vars.Selection0;
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImGui::Button("Dummy");
+        ImGui::BeginChild("Child", ImVec2(0, 300));
+        selection.EmitBasicLoop(ImGuiMultiSelectFlags_None, 50, "Object %03d");
+        ImGui::EndChild();
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        MultiSelectTestVars& vars = ctx->GetVars<MultiSelectTestVars>();
+        ExampleSelection& selection = vars.Selection0;
+        ctx->KeyPress(ImGuiKey_DownArrow);
+        ctx->KeyPress(ImGuiKey_Enter);
+        IM_CHECK(selection.GetSelectionSize() == 1);
+        IM_CHECK(selection.GetSelected(0) == true);
+    };
+#endif
+#endif
 
 #endif
 
