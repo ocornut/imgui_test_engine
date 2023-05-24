@@ -3149,20 +3149,20 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         void SelectAll(int count)               { Storage.Data.resize(count); for (int idx = 0; idx < count; idx++) Storage.Data[idx] = ImGuiStorage::ImGuiStoragePair((ImGuiID)idx, 1); SelectionSize = count; } // This could be using SetRange(), but it this way is faster.
 
         // FIXME-MULTISELECT: This itself is a good condition we could improve either our API or our demos
-        ImGuiMultiSelectData* BeginMultiSelect(ImGuiMultiSelectFlags flags, int items_count)
+        ImGuiMultiSelectIO* BeginMultiSelect(ImGuiMultiSelectFlags flags, int items_count)
         {
-            ImGuiMultiSelectData* data = ImGui::BeginMultiSelect(flags, (void*)(intptr_t)RangeRef, GetSelected(RangeRef));
-            if (data->RequestClear)     { Clear(); }
-            if (data->RequestSelectAll) { SelectAll(items_count); }
-            return data;
+            ImGuiMultiSelectIO* ms_io = ImGui::BeginMultiSelect(flags, (void*)(intptr_t)RangeRef, GetSelected(RangeRef));
+            if (ms_io->RequestClear)     { Clear(); }
+            if (ms_io->RequestSelectAll) { SelectAll(items_count); }
+            return ms_io;
         }
         void EndMultiSelect(int items_count)
         {
-            ImGuiMultiSelectData* data = ImGui::EndMultiSelect();
-            RangeRef = (int)(intptr_t)data->RangeSrc;
-            if (data->RequestClear)     { Clear(); }
-            if (data->RequestSelectAll) { SelectAll(items_count); }
-            if (data->RequestSetRange)  { SetRange((int)(intptr_t)data->RangeSrc, (int)(intptr_t)data->RangeDst, data->RangeValue ? 1 : 0); }
+            ImGuiMultiSelectIO* ms_io = ImGui::EndMultiSelect();
+            RangeRef = (int)(intptr_t)ms_io->RangeSrc;
+            if (ms_io->RequestClear)     { Clear(); }
+            if (ms_io->RequestSelectAll) { SelectAll(items_count); }
+            if (ms_io->RequestSetRange)  { SetRange((int)(intptr_t)ms_io->RangeSrc, (int)(intptr_t)ms_io->RangeDst, ms_io->RangeValue ? 1 : 0); }
         }
         void EmitBasicLoop(ImGuiMultiSelectFlags flags, int items_count, const char* label_format)
         {
@@ -3194,7 +3194,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ImGui::Text("(RangeRef = %04d)", selection.RangeRef);
         ImGui::Separator();
 
-        ImGuiMultiSelectData* multi_select_data = selection.BeginMultiSelect(ImGuiMultiSelectFlags_None, ITEMS_COUNT);
+        ImGuiMultiSelectIO* ms_io = selection.BeginMultiSelect(ImGuiMultiSelectFlags_None, ITEMS_COUNT);
 
         if (ctx->Test->ArgVariant == 1)
             ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(ImGui::GetStyle().ItemSpacing.x, 0.0f));
@@ -3203,8 +3203,8 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         clipper.Begin(ITEMS_COUNT);
         while (clipper.Step())
         {
-            if (clipper.DisplayStart > (intptr_t)multi_select_data->RangeSrc)
-                multi_select_data->RangeSrcPassedBy = true;
+            if (clipper.DisplayStart > (intptr_t)ms_io->RangeSrc)
+                ms_io->RangeSrcPassedBy = true;
             for (int item_n = clipper.DisplayStart; item_n < clipper.DisplayEnd; item_n++)
             {
                 Str64f label("Object %04d", item_n);
