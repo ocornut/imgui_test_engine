@@ -5526,6 +5526,36 @@ void RegisterTests_TestEngine(ImGuiTestEngine* e)
         IM_CHECK_EQ(ImHashDecoratedPath("Hello/world###Blah"), ImHashStr("###Blah", 0, ImHashStr("Hello")));
     };
 
+    // ## Test accessing items in non-scrolling menu layer when clipped
+    t = IM_REGISTER_TEST(e, "testengine", "testengine_hover_hidden_menu");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_MenuBar);
+        if (ImGui::BeginMenuBar())
+        {
+            if (ImGui::BeginMenu("FIRST_MENU_WITH_LONG_NAME"))
+            {
+                ImGui::EndMenu();
+            }
+            if (ImGui::BeginMenu("SECOND_MENU"))
+            {
+                ImGui::MenuItem("Item");
+                ImGui::EndMenu();
+            }
+            ImGui::Button("Button");
+            ImGui::EndMenuBar();
+        }
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ctx->SetRef("Test Window");
+        ctx->WindowResize("", ImVec2(50, 200));
+        ctx->ItemClick("##menubar/Button");
+        ctx->WindowResize("", ImVec2(50, 200));
+        ctx->MenuClick("SECOND_MENU/Item");
+    };
+
     // ## Test GetID() + SetRef() behaviors. Test "//$FOCUSED" function.
     t = IM_REGISTER_TEST(e, "testengine", "testengine_hash_001_paths");
     t->GuiFunc = [](ImGuiTestContext* ctx)

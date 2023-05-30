@@ -6,10 +6,11 @@
 //   main.exe -gui -fileopener ..\..\tools\win32_open_with_sublime.cmd -nothrottle
 
 // Command-line mode, e.g.
-//   main.exe -nogui -v -nopause
-//   main.exe -nogui -nopause perf_
-//   main.exe -nogui -viewport-mock
+//   main.exe -nogui -v -nopause            // <- run all tests
+//   main.exe -nogui -nopause testname      // <- run 'testname' or all matching tests
+//   main.exe -nogui -viewport-mock         // <- run with viewport emulation
 
+// Examples
 #define CMDLINE_ARGS  "-fileopener tools/win32_open_with_sublime.cmd"
 //#define CMDLINE_ARGS  "-nogui -export-format junit -export-file output/tests.junit.xml widgets_input"
 //#define CMDLINE_ARGS  "-viewport-mock -nogui viewport_"               // Test mock viewports on TTY mode

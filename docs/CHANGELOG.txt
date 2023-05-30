@@ -5,6 +5,10 @@ CHANGELOG
    Those changes are not all listed here.
 ** For a while this is going to ONLY INCLUDE BREAKING CHANGES.
 
+2023/05/30:
+- TestEngine: Attempt to resize host window when aiming at a clipped item within menu layer.
+  (which is non-scrolling).
+
 2023/05/09:
 - TestEngine: Added IsWarmUpGuiFrame() query to avoid polling frame-count.
 

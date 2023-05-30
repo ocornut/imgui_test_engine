@@ -1557,6 +1557,25 @@ void    ImGuiTestContext::MouseMove(ImGuiTestRef ref, ImGuiTestOpFlags flags)
         if (visibility_ratio_y < 0.90f)
             ScrollToItem(ref, ImGuiAxis_Y, ImGuiTestOpFlags_NoFocusWindow);
     }
+    else
+    {
+        // Menu layer is not scrollable: attempt to resize window.
+        // FIXME-TESTS: ImGuiItemStatusFlags_Visible is currently not usable for test engine as it relies on ITEM_INFO hook, need moving in ItemAdd().
+        //if ((item->StatusFlags & ImGuiItemStatusFlags_Visible) == 0)
+        {
+            // FIXME-TESTS: We designed RectClipped as being within RectFull which is not what we want here. Approximate using window's Max.x
+            ImRect window_r = window->Rect();
+            if (item->RectFull.Min.x > window_r.Max.x)
+            {
+                float extra_width_desired = item->RectFull.Max.x - window_r.Max.x; // item->RectClipped.Max.x;
+                if (extra_width_desired > 0.0f && (flags & ImGuiTestOpFlags_IsSecondAttempt) == 0)
+                {
+                    LogDebug("Will attempt to resize window to make item in menu layer visible.");
+                    WindowResize(window->ID, window->Size + ImVec2(extra_width_desired, 0.0f));
+                }
+            }
+        }
+    }
 
     // FIXME-TESTS-NOT_SAME_AS_END_USER
     ImVec2 pos = item->RectFull.GetCenter();
@@ -1631,17 +1650,18 @@ void    ImGuiTestContext::MouseMove(ImGuiTestRef ref, ImGuiTestOpFlags flags)
 
         if (!is_hovered_item && !is_hovered_window)
         {
+            // Check if we are accidentally hovering resize grip (which uses ImGuiButtonFlags_FlattenChildren)
             if (!(window->Flags & ImGuiWindowFlags_NoResize) && !(flags & ImGuiTestOpFlags_IsSecondAttempt))
             {
-                bool is_resize_corner = false;
+                bool is_hovering_resize_corner = false;
 #if IMGUI_VERSION_NUM < 18203
                 for (int n = 0; n < 2; n++)
                     is_resize_corner |= (hovered_id == ImGui::GetWindowResizeID(window, n));
 #else
                 for (int n = 0; n < 2; n++)
-                    is_resize_corner |= (hovered_id == ImGui::GetWindowResizeCornerID(window, n));
+                    is_hovering_resize_corner |= (hovered_id == ImGui::GetWindowResizeCornerID(window, n));
 #endif
-                if (is_resize_corner)
+                if (is_hovering_resize_corner)
                 {
                     LogDebug("Child obstructed by parent's ResizeGrip, trying to resize window and trying again..");
                     float extra_size = window->CalcFontSize() * 3.0f;
@@ -3053,7 +3073,7 @@ void    ImGuiTestContext::MenuAction(ImGuiTestAction action, ImGuiTestRef ref)
 
         ImGuiTestItemInfo* item = ItemInfo(buf.c_str());
         IM_CHECK_SILENT(item->ID != 0);
-        if (!(item->StatusFlags & ImGuiItemStatusFlags_Opened)) // Open menus can be ignored completely.
+        if ((item->StatusFlags & ImGuiItemStatusFlags_Opened) == 0) // Open menus can be ignored completely.
         {
             // We cannot move diagonally to a menu item because depending on the angle and other items we cross on our path we could close our target menu.
             // First move horizontally into the menu, then vertically!
@@ -3419,7 +3439,7 @@ void    ImGuiTestContext::WindowResize(ImGuiTestRef ref, ImVec2 size)
 #else
     ImGuiID id = ImGui::GetWindowResizeCornerID(window, 0);
 #endif
-    MouseMove(id);
+    MouseMove(id, ImGuiTestOpFlags_IsSecondAttempt);
     MouseDown(0);
 
     ImVec2 delta = size - window->Size;
