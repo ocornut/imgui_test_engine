@@ -1768,12 +1768,7 @@ void ImGuiPerfTool::_AddSettingsHandler()
     ini_handler.ApplyAllFn = PerflogSettingsHandler_ApplyAll;
     ini_handler.WriteAllFn = PerflogSettingsHandler_WriteAll;
     ini_handler.UserData = this;
-#if IMGUI_VERSION_NUM >= 18710
     ImGui::AddSettingsHandler(&ini_handler);
-#else
-    ImGuiContext& g = *GImGui;
-    g.SettingsHandlers.push_back(ini_handler);
-#endif
 }
 
 void ImGuiPerfTool::_UnpackSortedKey(ImU64 key, int* batch_index, int* entry_index, int* monotonic_index)

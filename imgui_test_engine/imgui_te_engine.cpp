@@ -192,7 +192,6 @@ static void    ImGuiTestEngine_UnbindImGuiContext(ImGuiTestEngine* engine, ImGui
 
     ImGuiTestEngine_CoroutineStopAndJoin(engine);
 
-#if IMGUI_VERSION_NUM >= 17701
     IM_ASSERT(ui_ctx->TestEngine == engine);
     ui_ctx->TestEngine = NULL;
 
@@ -200,17 +199,9 @@ static void    ImGuiTestEngine_UnbindImGuiContext(ImGuiTestEngine* engine, ImGui
     IM_ASSERT(GImGui == ui_ctx);
     if (engine->IO.ConfigSavedSettings)
     {
-#if IMGUI_VERSION_NUM >= 18710
         ImGui::RemoveSettingsHandler("TestEngine");
         ImGui::RemoveSettingsHandler("TestEnginePerfTool");
-#else
-        if (ImGuiSettingsHandler* ini_handler = ImGui::FindSettingsHandler("TestEngine"))
-            ui_ctx->SettingsHandlers.erase(ui_ctx->SettingsHandlers.Data + ui_ctx->SettingsHandlers.index_from_ptr(ini_handler));
-        if (ImGuiSettingsHandler* ini_handler = ImGui::FindSettingsHandler("TestEnginePerfTool"))
-            ui_ctx->SettingsHandlers.erase(ui_ctx->SettingsHandlers.Data + ui_ctx->SettingsHandlers.index_from_ptr(ini_handler));
-#endif
     }
-#endif
 
     // Remove hook
     if (GImGuiTestEngine == engine)
@@ -589,7 +580,6 @@ void ImGuiTestEngine_ApplyInputToImGuiContext(ImGuiTestEngine* engine)
                 const ImGuiKeyChord mods = (input.KeyChord & ImGuiMod_Mask_);
                 if (mods != 0x00)
                 {
-#if IMGUI_VERSION_NUM >= 18614
                     if (mods & ImGuiMod_Ctrl)
                         io.AddKeyEvent(ImGuiMod_Ctrl, input.Down);
                     if (mods & ImGuiMod_Shift)
@@ -601,13 +591,6 @@ void ImGuiTestEngine_ApplyInputToImGuiContext(ImGuiTestEngine* engine)
 #if IMGUI_VERSION_NUM >= 18912
                     if (mods & ImGuiMod_Shortcut)
                         io.AddKeyEvent(io.ConfigMacOSXBehaviors ? ImGuiMod_Super : ImGuiMod_Ctrl, input.Down);
-#endif
-#else
-                    if (input.Down)
-                        engine->Inputs.KeyMods |= mods;
-                    else
-                        engine->Inputs.KeyMods &= ~mods;
-                    io.AddKeyModsEvent(engine->Inputs.KeyMods);
 #endif
                 }
 

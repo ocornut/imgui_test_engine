@@ -1654,13 +1654,8 @@ void    ImGuiTestContext::MouseMove(ImGuiTestRef ref, ImGuiTestOpFlags flags)
             if (!(window->Flags & ImGuiWindowFlags_NoResize) && !(flags & ImGuiTestOpFlags_IsSecondAttempt))
             {
                 bool is_hovering_resize_corner = false;
-#if IMGUI_VERSION_NUM < 18203
-                for (int n = 0; n < 2; n++)
-                    is_resize_corner |= (hovered_id == ImGui::GetWindowResizeID(window, n));
-#else
                 for (int n = 0; n < 2; n++)
                     is_hovering_resize_corner |= (hovered_id == ImGui::GetWindowResizeCornerID(window, n));
-#endif
                 if (is_hovering_resize_corner)
                 {
                     LogDebug("Child obstructed by parent's ResizeGrip, trying to resize window and trying again..");
@@ -2170,11 +2165,7 @@ ImVec2  ImGuiTestContext::GetWindowTitlebarPoint(ImGuiTestRef window_ref)
         if (window->DockNode != NULL && window->DockNode->TabBar != NULL)
         {
             ImGuiTabBar* tab_bar = window->DockNode->TabBar;
-#if IMGUI_VERSION_NUM >= 18616
             ImGuiTabItem* tab = ImGui::TabBarFindTabByID(tab_bar, window->TabId);
-#else
-            ImGuiTabItem* tab = ImGui::TabBarFindTabByID(tab_bar, window->ID);
-#endif
             IM_ASSERT(tab != NULL);
             drag_pos = tab_bar->BarRect.Min + ImVec2(tab->Offset + tab->Width * 0.5f, tab_bar->BarRect.GetHeight() * 0.5f);
         }
@@ -3434,11 +3425,7 @@ void    ImGuiTestContext::WindowResize(ImGuiTestRef ref, ImVec2 size)
     // Extra yield as newly created window that have AutoFitFramesX/AutoFitFramesY set are temporarily not submitting their resize widgets. Give them a bit of slack.
     Yield();
 
-#if IMGUI_VERSION_NUM < 18203
-    ImGuiID id = ImGui::GetWindowResizeID(window, 0);
-#else
     ImGuiID id = ImGui::GetWindowResizeCornerID(window, 0);
-#endif
     MouseMove(id, ImGuiTestOpFlags_IsSecondAttempt);
     MouseDown(0);
 
