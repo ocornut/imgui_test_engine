@@ -270,6 +270,16 @@ void RegisterTests_Viewports(ImGuiTestEngine* e)
         ImGuiWindow* window_a = ctx->WindowInfo("//Window A")->Window;
         ImGuiWindow* window_b = ctx->WindowInfo("//Window B")->Window;
 
+        // Move all other windows which could be occluding to main viewport
+        // FIXME-TESTS: Could add dedicated/shared helpers?
+        for (ImGuiWindow* window : g.WindowsFocusOrder)
+            if (window != window_a && window != window_b && window->Viewport != main_viewport && window->WasActive)
+            {
+                ctx->WindowResize(window->ID, ImVec2(100, 100));
+                ctx->WindowMove(window->ID, main_viewport->Pos + ImVec2(10, 10));
+                IM_CHECK(window->Viewport == main_viewport);
+            }
+
         ctx->WindowResize("//Window A", ImVec2(100, 100));
         ctx->WindowMove("//Window A", main_viewport->Pos + ImVec2(10,10));
         IM_CHECK(window_a->Viewport == main_viewport);
@@ -285,6 +295,58 @@ void RegisterTests_Viewports(ImGuiTestEngine* e)
         ctx->WindowMove("//Window B", main_viewport->Pos + ImVec2(30, 30));
         IM_CHECK(window_b->Viewport == main_viewport);
         IM_CHECK(g.NavWindow == window_b);
+    };
+#endif
+
+    // More tests Platform Focus leading to Dear ImGui focus (#6462)
+    // Test closing a popup in viewport and opening another one also in viewport, temporary focus of parent viewport should not interfere.
+#if IMGUI_VERSION_NUM >= 18958
+    t = IM_REGISTER_TEST(e, "viewport", "viewport_platform_focus_3");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        if (ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize)) // will make small
+        {
+            if (ImGui::BeginPopup("second"))
+            {
+                ImGui::Text("success message!");
+                ImGui::EndPopup();
+            }
+
+            bool open_second_popup = false;
+            if (ImGui::BeginPopup("first"))
+            {
+                if (ImGui::Button("open second popup"))
+                    open_second_popup = true;
+                ImGui::EndPopup();
+            }
+            if (open_second_popup)
+                ImGui::OpenPopup("second");
+
+            if (ImGui::Button("open first popup"))
+                ImGui::OpenPopup("first");
+        }
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiViewport* main_viewport = ImGui::GetMainViewport();
+        ImGuiWindow* window = ctx->WindowInfo("//Test Window")->Window;
+        IM_CHECK(window != NULL);
+        ctx->WindowMove(window->ID, main_viewport->Pos + ImVec2(main_viewport->Size.x - window->Size.x - 2.0f, 10.0f));
+        IM_CHECK(window->Viewport == main_viewport);
+
+        ctx->ItemClick("//Test Window/open first popup");
+        ImGuiWindow* popup_1 = ctx->WindowInfo("//$FOCUSED")->Window;
+        IM_CHECK(popup_1 && (popup_1->Flags & ImGuiWindowFlags_Popup));
+        IM_CHECK(popup_1->Viewport != main_viewport);
+
+        // Important: as per https://github.com/ocornut/imgui/issues/6462, prior to our fix this depends on backend handling
+        // the ImGuiViewportFlags_NoFocusOnClick flag or not. Behavior may be different depending on backend (e.g. mock viewport support vs interactive win32/glfw backend).
+        ctx->ItemClick("//$FOCUSED/open second popup");
+        ImGuiWindow* popup_2 = ctx->WindowInfo("//$FOCUSED")->Window;
+        IM_CHECK(popup_2 && (popup_2->Flags & ImGuiWindowFlags_Popup));
+        IM_CHECK(popup_2 != popup_1);
+        IM_CHECK(popup_2->Viewport != main_viewport);
     };
 #endif
 

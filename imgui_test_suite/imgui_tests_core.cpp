@@ -1543,6 +1543,9 @@ void RegisterTests_Window(ImGuiTestEngine* e)
         if (ImGui::Button("Open Modal"))
             ImGui::OpenPopup("Modal");
 
+#ifdef IMGUI_HAS_VIEWPORT
+        ImGui::SetNextWindowViewport(ImGui::GetMainViewport()->ID);
+#endif
         if (ImGui::BeginPopupModal("Modal", nullptr, ImGuiWindowFlags_NoSavedSettings))
         {
             ImGui::Dummy({ 1.f, ImGui::GetIO().DisplaySize.y * 1.5f });

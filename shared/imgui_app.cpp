@@ -1172,7 +1172,7 @@ struct ImGui_ImplMockViewport_Data
 {
     ImVector<ImGui_ImplMockViewport_ViewportData>   MockViewports;  // We can't store in viewport->PlatformUserData to allow combining with real backends.
     ImGuiID                                         FocusedViewportId = 0;
-    ImGuiPlatformIO     OriginalPlatformIO;
+    ImGuiPlatformIO                                 OriginalPlatformIO;
 };
 
 static ImGui_ImplMockViewport_Data g_NullViewportBackendData;
@@ -1238,6 +1238,16 @@ static void ImGuiApp_InstalMockViewportsBackend(ImGuiApp*)
         ImGui_ImplMockViewport_Data* bd = ImGui_ImplNullViewport_GetBackendData();
         if (ImGui_ImplMockViewport_ViewportData* vd = ImGui_ImplNullViewport_FindViewportData(bd, viewport))
             bd->MockViewports.erase(vd);
+
+        // Transfer focus to previous viewport
+        if (bd->FocusedViewportId == viewport->ID)
+        {
+            ImGuiViewportP* top_most_viewport_under_this_one = NULL;
+            for (ImGuiViewportP* other_viewport : ImGui::GetCurrentContext()->Viewports)
+                if (other_viewport != viewport && (top_most_viewport_under_this_one == NULL || top_most_viewport_under_this_one->LastFocusedStampCount < other_viewport->LastFocusedStampCount))
+                    top_most_viewport_under_this_one = other_viewport;
+            bd->FocusedViewportId = top_most_viewport_under_this_one ? top_most_viewport_under_this_one->ID : 0;
+        }
 
         // Because default backends tend to create data for main viewport during init we give them a change of destroying it.
         // (otherwise we could null the PlatformUserData/RendererUserData fields would it would lead to a leak when using that strange mock-viewport + real backend debug feature)

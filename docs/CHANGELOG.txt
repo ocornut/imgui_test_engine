@@ -8,6 +8,7 @@ CHANGELOG
 2023/05/30:
 - TestEngine: Attempt to resize host window when aiming at a clipped item within menu layer.
   (which is non-scrolling).
+- TestEngine: Mock viewport emulation transfer platform focus when a viewport is destroyed.
 
 2023/05/09:
 - TestEngine: Added IsWarmUpGuiFrame() query to avoid polling frame-count.
