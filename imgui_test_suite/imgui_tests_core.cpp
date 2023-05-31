@@ -5059,7 +5059,7 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
                 {
                     ctx->WindowFocus("//Dear ImGui Demo"); // To exercise "Show Tables Rects" among others
                     ctx->ItemClick("Tools/Show Item Picker");
-                    if (ctx->ItemInfo("Tools/Show Item Picker")->StatusFlags & ImGuiItemStatusFlags_Checked)
+                    if (ctx->ItemIsChecked("Tools/Show Item Picker"))
                         ctx->KeyPress(ImGuiKey_Escape);
                     ctx->ItemClick("Tools/Show Debug Log");
                     ctx->ItemClick("Tools/Show Stack Tool");

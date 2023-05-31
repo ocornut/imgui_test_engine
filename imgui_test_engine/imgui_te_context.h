@@ -433,6 +433,8 @@ struct IMGUI_API ImGuiTestContext
 
     // Helpers for Item/Widget state query
     bool        ItemExists(ImGuiTestRef ref);
+    bool        ItemIsChecked(ImGuiTestRef ref);
+    bool        ItemIsOpened(ImGuiTestRef ref);
     void        ItemVerifyCheckedIfAlive(ImGuiTestRef ref, bool checked);
 
     // Helpers for Tab Bars widgets

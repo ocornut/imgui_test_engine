@@ -2922,6 +2922,20 @@ bool    ImGuiTestContext::ItemExists(ImGuiTestRef ref)
     return item->ID != 0;
 }
 
+// May want to add support for ImGuiTestOpFlags_NoError if item does not exist?
+bool    ImGuiTestContext::ItemIsChecked(ImGuiTestRef ref)
+{
+    ImGuiTestItemInfo* item = ItemInfo(ref);
+    return (item->StatusFlags & ImGuiItemStatusFlags_Checked) != 0;
+}
+
+// May want to add support for ImGuiTestOpFlags_NoError if item does not exist?
+bool    ImGuiTestContext::ItemIsOpened(ImGuiTestRef ref)
+{
+    ImGuiTestItemInfo* item = ItemInfo(ref);
+    return (item->StatusFlags & ImGuiItemStatusFlags_Opened) != 0;
+}
+
 void    ImGuiTestContext::ItemVerifyCheckedIfAlive(ImGuiTestRef ref, bool checked)
 {
     // This is designed to deal with disappearing items which will not update their state,
