@@ -45,7 +45,7 @@ test->TestFunc = [](ImGuiTestContext* ctx)
 ## Status
 
 - It is currently a C++ API but down the line we can expect that the commands will be better standardized, stored in data files, called from other languages.
-- It has been in use and development since 2018. Library is provided as-is, and we'll provide best effort to make it suitable for user needs.
+- It has been in use and development since 2018 and only made public at the end of 2022. We'll provide best effort to make it suitable for user needs.
 - You will run into problems and shortcomings. We are happy to hear about them and improve the software and documentation accordingly.
 
 ## Documentation
