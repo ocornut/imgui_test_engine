@@ -717,6 +717,9 @@ void RegisterTests_Window(ImGuiTestEngine* e)
             IM_CHECK_EQ(vars.SecondOpen, false);
             IM_CHECK_EQ(popup->Active, true);
 
+            if (vars.UseModal)
+                ctx->WindowMove(popup->ID, window->Rect().GetTR());
+
             // Test closing a menu by clicking popup's parent window body.
             ctx->ItemClick("##menubar/First");                                      // Click and open first menu.
             ctx->MouseSetViewport(window);

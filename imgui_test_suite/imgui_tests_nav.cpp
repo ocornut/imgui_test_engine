@@ -826,7 +826,7 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
     };
 #endif
 
-    // ## Test remote ActivateItem()
+    // ## Test remote ActivateItemByID()
     t = IM_REGISTER_TEST(e, "nav", "nav_activate");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
@@ -837,19 +837,31 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
         ImGuiID activate_target = ctx->GetID((vars.Step == 0) ? "//Test Window/Button" : "//Test Window/InputText");
 
         if (ImGui::Button("Activate Src 0"))
+#if IMGUI_VERSION_NUM >= 18961
+            ImGui::ActivateItemByID(activate_target);
+#else
             ImGui::ActivateItem(activate_target);
+#endif
         if (ImGui::Button("Button"))
             vars.Int1++;
         ImGui::SameLine();
         ImGui::Text("%d", vars.Int1);
         ImGui::InputText("InputText", vars.Str1, IM_ARRAYSIZE(vars.Str1));
         if (ImGui::Button("Activate Src 1"))
+#if IMGUI_VERSION_NUM >= 18961
+            ImGui::ActivateItemByID(activate_target);
+#else
             ImGui::ActivateItem(activate_target);
+#endif
         ImGui::End();
 
         ImGui::Begin("Window 2", NULL, ImGuiWindowFlags_NoSavedSettings);
         if (ImGui::Button("Activate Src 2"))
+#if IMGUI_VERSION_NUM >= 18961
+            ImGui::ActivateItemByID(activate_target);
+#else
             ImGui::ActivateItem(activate_target);
+#endif
         ImGui::End();
     };
     t->TestFunc = [](ImGuiTestContext* ctx)
@@ -2219,7 +2231,7 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
         IM_CHECK_STR_EQ(vars.Str1, "");
 #endif
 
-        // Test that SetKeyboardFocusHere() on a Button() does not triggers clear.
+        // Test that SetKeyboardFocusHere() on a Button() does not trigger it.
 #if IMGUI_VERSION_NUM >= 18508
         vars.Step = 8;
         vars.Bool1 = true;
