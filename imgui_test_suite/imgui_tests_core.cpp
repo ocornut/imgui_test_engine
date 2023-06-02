@@ -5506,32 +5506,6 @@ void RegisterTests_TestEngine(ImGuiTestEngine* e)
         ctx->ItemDragAndDrop("//$FOCUSED/A", "//Test Window B/B");
     };
 
-    // ## Test hash functions and ##/### operators
-    t = IM_REGISTER_TEST(e, "testengine", "testengine_hash_001");
-    t->TestFunc = [](ImGuiTestContext* ctx)
-    {
-        // Test hash function for the property we need
-        IM_CHECK_EQ(ImHashStr("helloworld"), ImHashStr("world", 0, ImHashStr("hello", 0)));  // String concatenation
-        IM_CHECK_EQ(ImHashStr("hello###world"), ImHashStr("###world"));                      // ### operator reset back to the seed
-        IM_CHECK_EQ(ImHashStr("hello###world", 0, 1234), ImHashStr("###world", 0, 1234));    // ### operator reset back to the seed
-        IM_CHECK_EQ(ImHashStr("helloxxx", 5), ImHashStr("hello"));                           // String size is honored
-        IM_CHECK_EQ(ImHashStr("", 0, 0), (ImU32)0);                                          // Empty string doesn't alter hash
-        IM_CHECK_EQ(ImHashStr("", 0, 1234), (ImU32)1234);                                    // Empty string doesn't alter hash
-        IM_CHECK_EQ(ImHashStr("hello", 5), ImHashData("hello", 5));                          // Do we need to guarantee this?
-
-        const int data[2] = { 42, 50 };
-        IM_CHECK_EQ(ImHashData(&data[0], sizeof(int) * 2), ImHashData(&data[1], sizeof(int), ImHashData(&data[0], sizeof(int))));
-        IM_CHECK_EQ(ImHashData("", 0, 1234), (ImU32)1234);                                   // Empty data doesn't alter hash
-
-        // Verify that Test Engine high-level hash wrapper works
-        IM_CHECK_EQ(ImHashDecoratedPath("Hello/world"), ImHashStr("Helloworld"));            // Slashes are ignored
-        IM_CHECK_EQ(ImHashDecoratedPath("Hello\\/world"), ImHashStr("Hello/world"));         // Slashes can be inhibited
-        IM_CHECK_EQ(ImHashDecoratedPath("//Hello", NULL, 42), ImHashDecoratedPath("Hello")); // Leading / clears seed
-
-        // Verify that ### reset to the last slash
-        IM_CHECK_EQ(ImHashDecoratedPath("Hello/world###Blah"), ImHashStr("###Blah", 0, ImHashStr("Hello")));
-    };
-
     // ## Test accessing items in non-scrolling menu layer when clipped
     t = IM_REGISTER_TEST(e, "testengine", "testengine_hover_hidden_menu");
     t->GuiFunc = [](ImGuiTestContext* ctx)
@@ -5562,8 +5536,34 @@ void RegisterTests_TestEngine(ImGuiTestEngine* e)
         ctx->MenuClick("SECOND_MENU/Item");
     };
 
+    // ## Test hash functions and ##/### operators
+    t = IM_REGISTER_TEST(e, "testengine", "testengine_hash_001");
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        // Test hash function for the property we need
+        IM_CHECK_EQ(ImHashStr("helloworld"), ImHashStr("world", 0, ImHashStr("hello", 0)));  // String concatenation
+        IM_CHECK_EQ(ImHashStr("hello###world"), ImHashStr("###world"));                      // ### operator reset back to the seed
+        IM_CHECK_EQ(ImHashStr("hello###world", 0, 1234), ImHashStr("###world", 0, 1234));    // ### operator reset back to the seed
+        IM_CHECK_EQ(ImHashStr("helloxxx", 5), ImHashStr("hello"));                           // String size is honored
+        IM_CHECK_EQ(ImHashStr("", 0, 0), (ImU32)0);                                          // Empty string doesn't alter hash
+        IM_CHECK_EQ(ImHashStr("", 0, 1234), (ImU32)1234);                                    // Empty string doesn't alter hash
+        IM_CHECK_EQ(ImHashStr("hello", 5), ImHashData("hello", 5));                          // Do we need to guarantee this?
+
+        const int data[2] = { 42, 50 };
+        IM_CHECK_EQ(ImHashData(&data[0], sizeof(int) * 2), ImHashData(&data[1], sizeof(int), ImHashData(&data[0], sizeof(int))));
+        IM_CHECK_EQ(ImHashData("", 0, 1234), (ImU32)1234);                                   // Empty data doesn't alter hash
+
+        // Verify that Test Engine high-level hash wrapper works
+        IM_CHECK_EQ(ImHashDecoratedPath("Hello/world"), ImHashStr("Helloworld"));            // Slashes are ignored
+        IM_CHECK_EQ(ImHashDecoratedPath("Hello\\/world"), ImHashStr("Hello/world"));         // Slashes can be inhibited
+        IM_CHECK_EQ(ImHashDecoratedPath("//Hello", NULL, 42), ImHashDecoratedPath("Hello")); // Leading / clears seed
+
+        // Verify that ### reset to the last slash
+        IM_CHECK_EQ(ImHashDecoratedPath("Hello/world###Blah"), ImHashStr("###Blah", 0, ImHashStr("Hello")));
+    };
+
     // ## Test GetID() + SetRef() behaviors. Test "//$FOCUSED" function.
-    t = IM_REGISTER_TEST(e, "testengine", "testengine_hash_001_paths");
+    t = IM_REGISTER_TEST(e, "testengine", "testengine_hash_002_paths");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
