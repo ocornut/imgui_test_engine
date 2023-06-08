@@ -3159,10 +3159,10 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         void EndMultiSelect(int items_count)
         {
             ImGuiMultiSelectIO* ms_io = ImGui::EndMultiSelect();
-            RangeRef = (int)(intptr_t)ms_io->RangeSrc;
+            RangeRef = (int)(intptr_t)ms_io->RangeSrcItem;
             if (ms_io->RequestClear)     { Clear(); }
             if (ms_io->RequestSelectAll) { SelectAll(items_count); }
-            if (ms_io->RequestSetRange)  { SetRange((int)(intptr_t)ms_io->RangeSrc, (int)(intptr_t)ms_io->RangeDst, ms_io->RangeValue ? 1 : 0); }
+            if (ms_io->RequestSetRange)  { SetRange((int)(intptr_t)ms_io->RangeSrcItem, (int)(intptr_t)ms_io->RangeDstItem, ms_io->RangeSelected ? 1 : 0); }
         }
         void EmitBasicLoop(ImGuiMultiSelectFlags flags, int items_count, const char* label_format)
         {
@@ -3203,7 +3203,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         clipper.Begin(ITEMS_COUNT);
         while (clipper.Step())
         {
-            if (clipper.DisplayStart > (intptr_t)ms_io->RangeSrc)
+            if (clipper.DisplayStart > (intptr_t)ms_io->RangeSrcItem)
                 ms_io->RangeSrcPassedBy = true;
             for (int item_n = clipper.DisplayStart; item_n < clipper.DisplayEnd; item_n++)
             {
