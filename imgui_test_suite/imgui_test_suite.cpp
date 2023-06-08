@@ -366,7 +366,8 @@ static void FindVideoEncoder(char* out, int out_len)
 static inline void DebugCrtInit(long break_alloc)
 {
     _CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
-    _CrtSetReportMode(_CRT_ERROR, _CRTDBG_MODE_DEBUG);
+    _CrtSetReportMode(_CRT_ERROR, _CRTDBG_MODE_DEBUG | _CRTDBG_MODE_WNDW);
+    _CrtSetReportMode(_CRT_ASSERT, _CRTDBG_MODE_DEBUG | _CRTDBG_MODE_WNDW);
     if (break_alloc != 0)
         _CrtSetBreakAlloc(break_alloc);
 }

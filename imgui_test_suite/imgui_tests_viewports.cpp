@@ -194,7 +194,7 @@ void RegisterTests_Viewports(ImGuiTestEngine* e)
         ImGuiWindow* window_b = ctx->WindowInfo("//Window B")->Window;
         ImGuiWindow* window_child_a = ctx->WindowInfo("//Window A/Child A")->Window;
         ImGuiWindow* window_child_b = ctx->WindowInfo("//Window B/Child B")->Window;
-        IM_ASSERT(window_a && window_b && window_child_a && window_child_b);
+        IM_CHECK_SILENT(window_a && window_b && window_child_a && window_child_b);
         ctx->Yield();
 
         ImGuiViewportP* viewport_a = window_a->Viewport;

@@ -213,7 +213,7 @@ void RegisterTests_Window(ImGuiTestEngine* e)
     {
         auto constraints = [](ImGuiSizeCallbackData* data)
         {
-            IM_ASSERT(data != NULL);
+            IM_CHECK_SILENT(data != NULL);
             ImGuiTestContext* ctx = (ImGuiTestContext*)data->UserData;
             if (ctx->IsFirstGuiFrame())
             {
@@ -3899,20 +3899,20 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
     {
         ImFontAtlas atlas;
         atlas.Build();
-        IM_ASSERT(atlas.IsBuilt());
+        IM_CHECK(atlas.IsBuilt());
 
         atlas.ClearTexData();
-        IM_ASSERT(atlas.IsBuilt());
+        IM_CHECK(atlas.IsBuilt());
 
         atlas.ClearInputData();
-        IM_ASSERT(atlas.Fonts.Size > 0);
+        IM_CHECK(atlas.Fonts.Size > 0);
 #if IMGUI_VERSION_NUM > 18407
-        IM_ASSERT(atlas.IsBuilt());
+        IM_CHECK(atlas.IsBuilt());
 #endif
 
         atlas.ClearFonts();
-        IM_ASSERT(atlas.Fonts.Size == 0);
-        IM_ASSERT(!atlas.IsBuilt());
+        IM_CHECK(atlas.Fonts.Size == 0);
+        IM_CHECK(!atlas.IsBuilt());
 
         atlas.Build();  // Build after clear
         atlas.Build();  // Build too many times
