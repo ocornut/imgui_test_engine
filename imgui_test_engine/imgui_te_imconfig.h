@@ -28,9 +28,9 @@
 #define IMGUI_TEST_ENGINE_ENABLE_COROUTINE_STDTHREAD_IMPL 0
 #endif
 
-// Define our own IM_DEBUG_BREAK macros.
-// This allows us to define a macro below that will let us break directly in the right call-stack (instead of a function)
-// (this is a copy of the one in imgui_internal.h. if the one in imgui_internal.h were to be defined at the top of imgui.h we could use that one)
+// Define IM_DEBUG_BREAK macros so it is accessible in imgui.h
+// (this is a conveniance for app using test engine may define an IM_ASSERT() that uses this instead of an actual assert)
+// (this is a copy of the block in imgui_internal.h. if the one in imgui_internal.h were to be defined at the top of imgui.h we wouldn't need this)
 #ifndef IM_DEBUG_BREAK
 #if defined (_MSC_VER)
 #define IM_DEBUG_BREAK()    __debugbreak()
@@ -47,15 +47,11 @@
 #endif
 #endif // #ifndef IMGUI_DEBUG_BREAK
 
-// Test Engine Assert Macro
-// - Macro is calling IM_DEBUG_BREAK() inline to get a callstack in the caller function.
+// [Options] We provide custom assert macro used by our our test suite, which you may use:
+// - Calling IM_DEBUG_BREAK() instead of an actual assert, so we can easily recover and step over (compared to many assert implementations).
+// - If a test is running, test name will be included in the log.
+// - Macro is calling IM_DEBUG_BREAK() inline to get debugger to break in the calling function (instead of a deeper callstack level).
 // - Macro is using comma operator instead of an if() to avoid "conditional expression is constant" warnings.
-extern void ImGuiTestEngine_Assert(const char* expr, const char* file, const char* func, int line);
-#define IM_TEST_ENGINE_ASSERT(_EXPR)    do { if ((void)0, !(_EXPR)) { ImGuiTestEngine_Assert(#_EXPR, __FILE__, __func__, __LINE__); IM_DEBUG_BREAK(); } } while (0)
-// V_ASSERT_CONTRACT, assertMacro:IM_TEST_ENGINE_ASSERT
-
-// Bind Main Assert macro
-#ifndef IM_ASSERT
-#define IM_ASSERT(_EXPR)                IM_TEST_ENGINE_ASSERT(_EXPR)
+extern void ImGuiTestEngine_AssertLog(const char* expr, const char* file, const char* func, int line);
+#define IM_TEST_ENGINE_ASSERT(_EXPR)    do { if ((void)0, !(_EXPR)) { ImGuiTestEngine_AssertLog(#_EXPR, __FILE__, __func__, __LINE__); IM_DEBUG_BREAK(); } } while (0)
 // V_ASSERT_CONTRACT, assertMacro:IM_ASSERT
-#endif

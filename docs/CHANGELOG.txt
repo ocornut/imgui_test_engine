@@ -8,6 +8,8 @@ CHANGELOG
 2023/06/08
 - TestEngine: Made failed IM_CHECK() with io.ConfigBreakOnError enabled call IM_DEBUG_BREAK()
   directly instead of calling IM_ASSERT(0).
+- TestEngine: Moved suggested IM_ASSERT() override out of test engine's imconfig.h and
+  into our TestSuite's imconfig.h.
 
 2023/05/31
 - TestEngine: Added ctx->ItemIsChecked() and ctx->ItemIsOpened() helpers.

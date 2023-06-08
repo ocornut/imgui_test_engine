@@ -1855,7 +1855,9 @@ void ImGuiTestEngineHook_Log(ImGuiContext* ui_ctx, const char* fmt, ...)
     va_end(args);
 }
 
-void ImGuiTestEngine_Assert(const char* expr, const char* file, const char* function, int line)
+// Helper to output extra information (e.g. current test) during an assert.
+// Your custom assert code may optionally want to call this.
+void ImGuiTestEngine_AssertLog(const char* expr, const char* file, const char* function, int line)
 {
     ImGuiTestEngine* engine = GImGuiTestEngine;
     if (ImGuiTestContext* ctx = engine->TestContext)
