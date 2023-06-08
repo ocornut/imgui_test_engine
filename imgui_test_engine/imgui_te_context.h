@@ -12,14 +12,14 @@
 
 Index of this file:
 // [SECTION] Header mess, warnings
-// [SECTION] External forward declaration
+// [SECTION] Forward declarations
 // [SECTION] ImGuiTestRef
 // [SECTION] Helper keys
 // [SECTION] ImGuiTestContext related Flags/Enumerations
 // [SECTION] ImGuiTestGenericVars, ImGuiTestGenericItemStatus
 // [SECTION] ImGuiTestContext
-// [SECTION] Debugging macros
-// [SECTION] IM_CHECK macros
+// [SECTION] Debugging macros: IM_SUSPEND_TESTFUNC()
+// [SECTION] Testing/Checking macros: IM_CHECK(), IM_ERRORF() etc.
 
 */
 
@@ -42,7 +42,7 @@ Index of this file:
 #endif
 
 //-------------------------------------------------------------------------
-// [SECTION] Forward declaration
+// [SECTION] Forward declarations
 //-------------------------------------------------------------------------
 
 // This file
@@ -168,7 +168,7 @@ struct IMGUI_API ImGuiTestGenericItemStatus
 
 // Generic structure with various storage fields.
 // This is useful for tests to quickly share data between GuiFunc and TestFunc without creating custom data structure.
-// If those fields are not enough: using test->SetVarsDataType<>() + ctx->GetVars<>() it is possible to store custom data on the stack.
+// If those fields are not enough: using test->SetVarsDataType<>() + ctx->GetVars<>() it is possible to store custom data.
 struct IMGUI_API ImGuiTestGenericVars
 {
     // Generic storage with a bit of semantic to make user/test code look neater
@@ -213,9 +213,9 @@ struct IMGUI_API ImGuiTestContext
 
     // Public fields
     ImGuiContext*           UiContext = NULL;                       // UI context
-    ImGuiTestEngineIO*      EngineIO = NULL;
-    ImGuiTest*              Test = NULL;                            // Test being run
-    ImGuiTestOpFlags        OpFlags = ImGuiTestOpFlags_None;        // Supported: ImGuiTestOpFlags_NoAutoUncollapse
+    ImGuiTestEngineIO*      EngineIO = NULL;                        // Test Engine IO/settings
+    ImGuiTest*              Test = NULL;                            // Test currently running
+    ImGuiTestOpFlags        OpFlags = ImGuiTestOpFlags_None;        // Flags affecting all operation (supported: ImGuiTestOpFlags_NoAutoUncollapse)
     int                     PerfStressAmount = 0;                   // Convenience copy of engine->IO.PerfStressAmount
     int                     FrameCount = 0;                         // Test frame count (restarts from zero every time)
     int                     FirstTestFrameCount = 0;                // First frame where TestFunc is running (after warm-up frame). This is generally -1 or 0 depending on whether we have warm up enabled
@@ -239,8 +239,8 @@ struct IMGUI_API ImGuiTestContext
     bool                    Abort = false;
     double                  PerfRefDt = -1.0;
     int                     PerfIterations = 400;                   // Number of frames for PerfCapture() measurements
-    char                    RefStr[256] = { 0 };                    // Reference window/path for ID construction
-    ImGuiID                 RefID = 0;
+    char                    RefStr[256] = { 0 };                    // Reference window/path over which all named references are based
+    ImGuiID                 RefID = 0;                              // Reference ID over which all named references are based
     ImGuiID                 RefWindowID = 0;                        // ID of a window that contains RefID item
     ImGuiInputSource        InputMode = ImGuiInputSource_Mouse;     // Prefer interacting with mouse/keyboard/gamepad
     ImVector<char>          Clipboard;                              // Private clipboard for the test instance
@@ -504,25 +504,25 @@ struct IMGUI_API ImGuiTestContext
 };
 
 //-------------------------------------------------------------------------
-// [SECTION] Debugging macros
+// [SECTION] Debugging macros (IM_SUSPEND_TESTFUNC)
 //-------------------------------------------------------------------------
 
 // Debug: Temporarily suspend TestFunc to let user interactively inspect the GUI state (user will need to press the "Continue" button to resume TestFunc execution)
 #define IM_SUSPEND_TESTFUNC()               do { if (ctx->SuspendTestFunc(__FILE__, __LINE__)) return; } while (0)
 
 //-------------------------------------------------------------------------
-// [SECTION] IM_CHECK macros
+// [SECTION] Testing/Checking macros: IM_CHECK(), IM_ERRORF() etc.
 //-------------------------------------------------------------------------
 
 // We embed every macro in a do {} while(0) statement as a trick to allow using them as regular single statement, e.g. if (XXX) IM_CHECK(A); else IM_CHECK(B)
-// We leave the assert call (which will trigger a debugger break) outside of the check function to step out faster.
-#define IM_CHECK_NO_RET(_EXPR)              do { if (ImGuiTestEngine_Check(__FILE__, __func__, __LINE__, ImGuiTestCheckFlags_None, (bool)(_EXPR), #_EXPR))          { IM_ASSERT(_EXPR); } } while (0)
-#define IM_CHECK(_EXPR)                     do { if (ImGuiTestEngine_Check(__FILE__, __func__, __LINE__, ImGuiTestCheckFlags_None, (bool)(_EXPR), #_EXPR))          { IM_ASSERT(_EXPR); } if (!(bool)(_EXPR)) return; } while (0)
-#define IM_CHECK_SILENT(_EXPR)              do { if (ImGuiTestEngine_Check(__FILE__, __func__, __LINE__, ImGuiTestCheckFlags_SilentSuccess, (bool)(_EXPR), #_EXPR)) { IM_ASSERT(0); } if (!(bool)(_EXPR)) return; } while (0)
-#define IM_CHECK_RETV(_EXPR,_RETV)          do { if (ImGuiTestEngine_Check(__FILE__, __func__, __LINE__, ImGuiTestCheckFlags_None, (bool)(_EXPR), #_EXPR))          { IM_ASSERT(_EXPR); } if (!(bool)(_EXPR)) return _RETV; } while (0)
-#define IM_CHECK_SILENT_RETV(_EXPR,_RETV)   do { if (ImGuiTestEngine_Check(__FILE__, __func__, __LINE__, ImGuiTestCheckFlags_SilentSuccess, (bool)(_EXPR), #_EXPR)) { IM_ASSERT(_EXPR); } if (!(bool)(_EXPR)) return _RETV; } while (0)
-#define IM_ERRORF(_FMT,...)                 do { if (ImGuiTestEngine_Error(__FILE__, __func__, __LINE__, ImGuiTestCheckFlags_None, _FMT, __VA_ARGS__))              { IM_ASSERT(0); } } while (0)
-#define IM_ERRORF_NOHDR(_FMT,...)           do { if (ImGuiTestEngine_Error(NULL, NULL, 0, ImGuiTestCheckFlags_None, _FMT, __VA_ARGS__))                             { IM_ASSERT(0); } } while (0)
+// We leave the IM_DEBUG_BREAK() outside of the check function to step out faster when using a debugger. It also has the benefit of being lighter than an IM_ASSERT().
+#define IM_CHECK_NO_RET(_EXPR)              do { bool res = (bool)(_EXPR); if (ImGuiTestEngine_Check(__FILE__, __func__, __LINE__, ImGuiTestCheckFlags_None, res, #_EXPR))          { IM_DEBUG_BREAK(); } } while (0)
+#define IM_CHECK(_EXPR)                     do { bool res = (bool)(_EXPR); if (ImGuiTestEngine_Check(__FILE__, __func__, __LINE__, ImGuiTestCheckFlags_None, res, #_EXPR))          { IM_DEBUG_BREAK(); } if (!res) return; } while (0)
+#define IM_CHECK_SILENT(_EXPR)              do { bool res = (bool)(_EXPR); if (ImGuiTestEngine_Check(__FILE__, __func__, __LINE__, ImGuiTestCheckFlags_SilentSuccess, res, #_EXPR)) { IM_DEBUG_BREAK(); } if (!res) return; } while (0)
+#define IM_CHECK_RETV(_EXPR,_RETV)          do { bool res = (bool)(_EXPR); if (ImGuiTestEngine_Check(__FILE__, __func__, __LINE__, ImGuiTestCheckFlags_None, res, #_EXPR))          { IM_DEBUG_BREAK(); } if (!res) return _RETV; } while (0)
+#define IM_CHECK_SILENT_RETV(_EXPR,_RETV)   do { bool res = (bool)(_EXPR); if (ImGuiTestEngine_Check(__FILE__, __func__, __LINE__, ImGuiTestCheckFlags_SilentSuccess, res, #_EXPR)) { IM_DEBUG_BREAK(); } if (!res) return _RETV; } while (0)
+#define IM_ERRORF(_FMT,...)                 do { if (ImGuiTestEngine_Error(__FILE__, __func__, __LINE__, ImGuiTestCheckFlags_None, _FMT, __VA_ARGS__))                              { IM_DEBUG_BREAK(); } } while (0)
+#define IM_ERRORF_NOHDR(_FMT,...)           do { if (ImGuiTestEngine_Error(NULL, NULL, 0, ImGuiTestCheckFlags_None, _FMT, __VA_ARGS__))                                             { IM_DEBUG_BREAK(); } } while (0)
 
 template<typename T> void ImGuiTestEngineUtil_AppendStrValue(ImGuiTextBuffer& buf, T value)         { buf.appendf("???"); IM_UNUSED(value); } // FIXME-TESTS: Could improve with some template magic
 template<> inline void ImGuiTestEngineUtil_AppendStrValue(ImGuiTextBuffer& buf, const char* value)  { buf.appendf("\"%s\"", value); }

@@ -205,7 +205,7 @@ struct IMGUI_API ImGuiTestEngineIO
     bool                        ConfigSavedSettings = true;                     // Load/Save settings in main context .ini file.
     ImGuiTestRunSpeed           ConfigRunSpeed = ImGuiTestRunSpeed_Fast;        // Run tests in fast/normal/cinematic mode
     bool                        ConfigStopOnError = false;                      // Stop queued tests on test error
-    bool                        ConfigBreakOnError = false;                     // Break debugger on test error
+    bool                        ConfigBreakOnError = false;                     // Break debugger on test error by calling IM_DEBUG_BREAK()
     bool                        ConfigKeepGuiFunc = false;                      // Keep test GUI running at the end of the test
     ImGuiTestVerboseLevel       ConfigVerboseLevel = ImGuiTestVerboseLevel_Warning;
     ImGuiTestVerboseLevel       ConfigVerboseLevelOnError = ImGuiTestVerboseLevel_Info;

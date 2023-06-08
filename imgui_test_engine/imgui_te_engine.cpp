@@ -1845,6 +1845,7 @@ void ImGuiTestEngineHook_ItemInfo(ImGuiContext* ui_ctx, ImGuiID id, const char* 
 }
 
 // Forward core/user-land text to test log
+// This is called via the user-land IMGUI_TEST_ENGINE_LOG() macro.
 void ImGuiTestEngineHook_Log(ImGuiContext* ui_ctx, const char* fmt, ...)
 {
     ImGuiTestEngine* engine = (ImGuiTestEngine*)ui_ctx->TestEngine;
