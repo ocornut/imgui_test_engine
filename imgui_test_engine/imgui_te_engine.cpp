@@ -1026,7 +1026,6 @@ static void ImGuiTestEngine_ProcessTestQueue(ImGuiTestEngine* engine)
         ctx.Engine = engine;
         ctx.EngineIO = &engine->IO;
         ctx.Inputs = &engine->Inputs;
-        ctx.GatherTask = &engine->GatherTask;
         ctx.UserVars = NULL;
         ctx.UiContext = engine->UiContextActive;
         ctx.PerfStressAmount = engine->IO.PerfStressAmount;

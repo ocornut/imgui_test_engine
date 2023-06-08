@@ -2436,21 +2436,23 @@ void    ImGuiTestContext::GatherItems(ImGuiTestItemList* out_list, ImGuiTestRef 
 {
     IM_ASSERT(out_list != NULL);
     IM_ASSERT(depth > 0 || depth == -1);
-    IM_ASSERT(GatherTask->InParentID == 0);
-    IM_ASSERT(GatherTask->LastItemInfo == NULL);
 
     if (IsError())
         return;
+
+    ImGuiTestGatherTask* task = &Engine->GatherTask;
+    IM_ASSERT(task->InParentID == 0);
+    IM_ASSERT(task->LastItemInfo == NULL);
 
     // Register gather tasks
     if (depth == -1)
         depth = 99;
     if (parent.ID == 0)
         parent.ID = GetID(parent);
-    GatherTask->InParentID = parent.ID;
-    GatherTask->InMaxDepth = depth;
-    GatherTask->InLayerMask = (1 << ImGuiNavLayer_Main); // FIXME: Configurable filter
-    GatherTask->OutList = out_list;
+    task->InParentID = parent.ID;
+    task->InMaxDepth = depth;
+    task->InLayerMask = (1 << ImGuiNavLayer_Main); // FIXME: Configurable filter
+    task->OutList = out_list;
 
     // Keep running while gathering
     // The corresponding hook is ItemAdd() -> ImGuiTestEngineHook_ItemAdd() -> ImGuiTestEngineHook_ItemAdd_GatherTask()
@@ -2471,7 +2473,7 @@ void    ImGuiTestContext::GatherItems(ImGuiTestItemList* out_list, ImGuiTestRef 
     ImGuiTestItemInfo* parent_item = ItemInfo(parent, ImGuiTestOpFlags_NoError);
     LogDebug("GatherItems from %s, %d deep: found %d items.", ImGuiTestRefDesc(parent, parent_item).c_str(), depth, end_gather_size - begin_gather_size);
 
-    GatherTask->Clear();
+    task->Clear();
 }
 
 // Supported values for ImGuiTestOpFlags:

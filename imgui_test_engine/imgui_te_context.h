@@ -229,7 +229,6 @@ struct IMGUI_API ImGuiTestContext
 
     ImGuiTestEngine*        Engine = NULL;
     ImGuiTestInputs*        Inputs = NULL;
-    ImGuiTestGatherTask*    GatherTask = NULL;
     ImGuiTestRunFlags       RunFlags = ImGuiTestRunFlags_None;
     ImGuiTestActiveFunc     ActiveFunc = ImGuiTestActiveFunc_None;  // None/GuiFunc/TestFunc
     double                  RunningTime = 0.0;                      // Amount of wall clock time the Test has been running. Used by safety watchdog.
