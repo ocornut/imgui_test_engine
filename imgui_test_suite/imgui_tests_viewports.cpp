@@ -350,6 +350,62 @@ void RegisterTests_Viewports(ImGuiTestEngine* e)
     };
 #endif
 
+    // More tests Platform Focus leading to Dear ImGui focus (#6462)
+    // Test a docking-related edge case that used to crash.
+    // - Dock node created by NewFrame are not in same hierarchy as implicit DebugWindow (no ParentInBeginStack link)
+    // - Made FindBlockingModal() crash it won't find any match exploring ParentInBeginStack chain.
+#if IMGUI_VERSION_NUM >= 18963
+    t = IM_REGISTER_TEST(e, "viewport", "viewport_platform_focus_4");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        if (ImGui::Begin("Test Window 1", NULL, ImGuiWindowFlags_NoSavedSettings))
+        {
+            if (ImGui::Button("Open modal"))
+                ImGui::OpenPopup("Modal");
+
+            if (ImGui::BeginPopupModal("Modal"))
+            {
+                if (ImGui::Button("Close"))
+                    ImGui::CloseCurrentPopup();
+                ImGui::EndPopup();
+            }
+        }
+        ImGui::End();
+        ImGui::Begin("Sibling", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImGui::End();
+
+        ImGui::Begin("Test Window 2", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiViewport* main_viewport = ImGui::GetMainViewport();
+
+        // Dock and move to ensure the dock node has its own viewport
+        ctx->DockClear("Test Window 1", "Sibling", "Test Window 2", NULL);
+        ImGuiWindow* window_1 = ctx->WindowInfo("//Test Window 1")->Window;
+        IM_CHECK(window_1 != NULL);
+        ctx->WindowMove(window_1->ID, main_viewport->Pos + ImVec2(main_viewport->Size.x, 0.0f));
+        IM_CHECK(window_1->Viewport != main_viewport);
+        ctx->DockInto("Sibling", "Test Window 1");
+
+        ImGuiWindow* window_2 = ctx->WindowInfo("//Test Window 2")->Window;
+        IM_CHECK(window_2 != NULL);
+        ctx->WindowMove(window_2->ID, window_1->Rect().GetBL() + ImVec2(0.0f, 10.0f));
+        IM_CHECK(window_2->Viewport != main_viewport);
+        IM_CHECK(window_2->Viewport != window_1->Viewport);
+
+        //ctx->WindowFocus("//Test Window 1");
+        ctx->ItemClick("//Test Window 1/Open modal");
+
+        ImGuiWindow* window_modal = ctx->WindowInfo("//$FOCUSED")->Window;
+        IM_CHECK(window_modal != NULL);
+        ctx->WindowMove(window_modal->ID, window_2->Rect().GetBL() + ImVec2(0.0f, 10.0f));
+
+        ctx->ViewportPlatform_SetWindowFocus(window_2->Viewport); // Used to crash in FindBlockingModal()
+    };
+#endif
+
 #else
     IM_UNUSED(e);
 #endif

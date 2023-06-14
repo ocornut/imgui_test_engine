@@ -1088,7 +1088,7 @@ void RegisterTests_Window(ImGuiTestEngine* e)
 
 #if IMGUI_VERSION_NUM >= 18517
     // ## Test popups not being interrupted by various appearing elements. (#4317)
-    t = IM_REGISTER_TEST(e, "window", "window_popup_interruptions");
+    t = IM_REGISTER_TEST(e, "window", "window_popup_nested_interruptions");
     struct WindowPopupWithWindowsVars { bool IsModalPopup[2] = { 0, 0 }; bool OpenPopup[2] = { 0, 0 }; int Variant = 0; bool ShowInterrupts = false; };
     t->SetVarsDataType<WindowPopupWithWindowsVars>();
     t->GuiFunc = [](ImGuiTestContext* ctx)
@@ -1422,6 +1422,49 @@ void RegisterTests_Window(ImGuiTestEngine* e)
                 ctx->PopupCloseAll();
             }
         }
+    };
+#endif
+
+#if IMGUI_VERSION_NUM >= 18963
+    // ## Simple version of window_popup_nested_interruptions_1 with nested modal to ensure that focused window appears behind LOWEST modal.
+    t = IM_REGISTER_TEST(e, "window", "window_popup_nested_interruptions_2");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        if (ImGui::GetIO().KeyShift)
+        {
+            ImGui::Begin("Test Window 1", NULL, ImGuiWindowFlags_NoSavedSettings);
+            ImGui::End();
+        }
+
+        ImGui::Begin("Test Window 2", NULL, ImGuiWindowFlags_NoSavedSettings);
+        if (ImGui::Button("Open Modal 1"))
+            ImGui::OpenPopup("Modal 1");
+        if (ImGui::BeginPopupModal("Modal 1"))
+        {
+            if (ImGui::Button("Open Modal 2"))
+                ImGui::OpenPopup("Modal 2");
+            if (ImGui::Button("Close"))
+                ImGui::CloseCurrentPopup();
+            if (ImGui::BeginPopupModal("Modal 2"))
+            {
+                if (ImGui::Button("Close"))
+                    ImGui::CloseCurrentPopup();
+                ImGui::EndPopup();
+            }
+            ImGui::EndPopup();
+        }
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ctx->ItemClick("//Test Window 2/Open Modal 1");
+        ImGuiWindow* modal_1 = ctx->GetWindowByRef("//$FOCUSED");
+        ctx->ItemClick("//$FOCUSED/Open Modal 2");
+        ImGuiWindow* modal_2 = ctx->GetWindowByRef("//$FOCUSED");
+        ctx->KeyDown(ImGuiMod_Shift);
+        ImGuiWindow* window_1 = ctx->GetWindowByRef("//Test Window 1");
+        IM_CHECK_LT(ImGui::FindWindowDisplayIndex(window_1), ImGui::FindWindowDisplayIndex(modal_2));
+        IM_CHECK_LT(ImGui::FindWindowDisplayIndex(window_1), ImGui::FindWindowDisplayIndex(modal_1));
     };
 #endif
 
