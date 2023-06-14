@@ -972,14 +972,28 @@ ImGuiTestItemInfo* ImGuiTestContext::ItemInfoOpenFullPath(ImGuiTestRef ref, ImGu
         parent_id.set(ref.Path, parent_end);
         ImGuiTestItemInfo* parent_item = ItemInfo(parent_id.c_str(), ImGuiTestOpFlags_NoError);
         if (parent_item->ID != 0)
+        {
+#ifdef IMGUI_HAS_DOCK
+            ImGuiWindow* parent_window = parent_item->Window;
+#endif
             if ((parent_item->StatusFlags & ImGuiItemStatusFlags_Openable) != 0 && (parent_item->StatusFlags & ImGuiItemStatusFlags_Opened) == 0)
             {
+                // Open intermediary item
                 if ((parent_item->InFlags & ImGuiItemFlags_Disabled) == 0) // FIXME: Report disabled state in log?
                 {
                     ItemAction(ImGuiTestAction_Open, parent_item->ID, ImGuiTestOpFlags_NoAutoOpenFullPath);
                     opened_parents++;
                 }
             }
+#ifdef IMGUI_HAS_DOCK
+            else if (parent_window->ID == parent_item->ID && parent_window->DockIsActive && parent_window->DockTabIsVisible == false)
+            {
+                // Make tab visible
+                ItemClick(parent_item->ID);
+                opened_parents++;
+            }
+#endif
+        }
     }
     if (opened_parents > 0)
         item = ItemInfo(ref, (flags & ImGuiTestOpFlags_NoError));

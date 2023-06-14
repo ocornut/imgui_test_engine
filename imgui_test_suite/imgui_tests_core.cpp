@@ -5488,6 +5488,34 @@ void RegisterTests_TestEngine(ImGuiTestEngine* e)
         //IM_CHECK_EQ(ctx->GenericVars.Status.Clicked, 5);
     };
 
+#ifdef IMGUI_HAS_DOCK
+    // ## Test auto-selection intermediary docked window.
+    t = IM_REGISTER_TEST(e, "testengine", "testengine_ref_auto_open_docked");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::Begin("Window 1", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImGui::Button("Button 1");
+        ImGui::End();
+        ImGui::Begin("Window 2", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImGui::Button("Button 2");
+        ImGui::End();
+        ImGui::Begin("Window 3", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImGui::Button("Button 3");
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ctx->DockClear("Window 1", "Window 2", "Window 3", NULL);
+        ctx->DockInto("Window 2", "Window 1");
+        ctx->DockInto("Window 3", "Window 1");
+
+        ctx->ItemClick("//Window 1/Button 1");
+        ctx->ItemClick("//Window 2/Button 2");
+        ctx->ItemClick("//Window 3/Button 3");
+        ctx->ItemClick("//Window 1/Button 1");
+    };
+#endif
+
     // ## Test some high-level functions latching the value for //$FOCUSED (imgui_test_engine issue #5)
     t = IM_REGISTER_TEST(e, "testengine", "testengine_ref_focused_latch");
     t->GuiFunc = [](ImGuiTestContext* ctx)

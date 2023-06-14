@@ -5,6 +5,10 @@ CHANGELOG
    Those changes are not all listed here.
 ** For a while this is going to ONLY INCLUDE BREAKING CHANGES.
 
+2023/06/14
+- TestEngine: ItemInfoOpenFullPath() can focus/select inactive docked windows.
+  (similar to e.g. opening an intermediary tree node).
+
 2023/06/08
 - TestEngine: Made failed IM_CHECK() with io.ConfigBreakOnError enabled call IM_DEBUG_BREAK()
   directly instead of calling IM_ASSERT(0).
