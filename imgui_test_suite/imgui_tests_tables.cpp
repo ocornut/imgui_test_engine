@@ -355,8 +355,8 @@ void RegisterTests_Table(ImGuiTestEngine* e)
                     ImGui::TableNextColumn();
                     if (row_n == 0)
                         ImGui::Text("%.1f", ImGui::GetContentRegionAvail().x);
-                    else if (column_n == 4)
-                        ImGui::Button(Str16f("Fill %d,%d", row_n, column_n).c_str(), ImVec2(-FLT_MIN, 0.0f));
+                    //else if (column_n == 4)
+                    //    ImGui::Button(Str16f("Fill %d,%d", row_n, column_n).c_str(), ImVec2(-FLT_MIN, 0.0f));
                     else
                         ImGui::Button(Str16f("Width %d", 50 + column_n * 10).c_str(), ImVec2(50.0f + column_n * 10.0f, 0.0f));
                 }
