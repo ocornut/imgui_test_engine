@@ -1029,7 +1029,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
             ImGuiTable* table1 = ImGui::TableFindByID(ctx->GetID("table1"));
             ImGuiTable* table2 = ImGui::TableFindByID(ctx->GetID("table2"));
 
-            for (int resize_n = 0; resize_n < 1 && !ctx->IsError(); resize_n++)
+            for (int resize_n = 0; resize_n < 2 && !ctx->IsError(); resize_n++)
             {
                 ctx->LogInfo("Step %d resize %d", step_n, resize_n);
 
