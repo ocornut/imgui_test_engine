@@ -191,11 +191,21 @@ static void DrawTestLog(ImGuiTestEngine* e, ImGuiTest* test)
     ImGui::PopStyleVar();
 }
 
-static void HelpTooltip(const char* desc)
+#if IMGUI_VERSION_NUM <= 18963
+namespace ImGui
 {
-    if (ImGui::IsItemHovered())
-        ImGui::SetTooltip("%s", desc);
-}
+    void SetItemTooltip(const char* fmt, ...)
+    {
+        if (ImGui::IsItemHovered())
+        {
+            va_list args;
+            va_start(args, fmt);
+            ImGui::SetTooltipV(fmt, args);
+            va_end(args);
+        }
+    }
+} // namespace ImGui
+#endif
 
 static bool ShowTestGroupFilterTest(ImGuiTestEngine* e, ImGuiTestGroup group, const char* filter, ImGuiTest* test)
 {
@@ -309,7 +319,7 @@ static void ShowTestGroup(ImGuiTestEngine* e, ImGuiTestGroup group, Str* filter)
     ImGui::InputText("##filter", filter);
     ImGui::SameLine();
     ImGui::TextDisabled("(?)");
-    HelpTooltip("Query is composed of one or more comma-separated filter terms with optional modifiers.\n"
+    ImGui::SetItemTooltip("Query is composed of one or more comma-separated filter terms with optional modifiers.\n"
         "Available modifiers:\n"
         "- '-' prefix excludes tests matched by the term.\n"
         "- '^' prefix anchors term matching to the start of the string.\n"
@@ -318,7 +328,8 @@ static void ShowTestGroup(ImGuiTestEngine* e, ImGuiTestGroup group, Str* filter)
     {
         ImGui::SameLine();
         ImGui::SetNextItemWidth(perf_stress_factor_width);
-        ImGui::DragInt("##PerfStress", &e->IO.PerfStressAmount, 0.1f, 1, 20, "x%d"); HelpTooltip("Increase workload of performance tests (higher means longer run)."); // FIXME: Move?
+        ImGui::DragInt("##PerfStress", &e->IO.PerfStressAmount, 0.1f, 1, 20, "x%d");
+        ImGui::SetItemTooltip("Increase workload of performance tests (higher means longer run)."); // FIXME: Move?
         ImGui::SameLine();
         if (ImGui::Button(perflog_label))
         {
@@ -390,10 +401,10 @@ static void ShowTestGroup(ImGuiTestEngine* e, ImGuiTestGroup group, Str* filter)
             if (test->Status == ImGuiTestStatus_Suspended)
             {
                 // Resume IM_SUSPEND_TESTFUNC
+                // FIXME: Terrible user experience to have this here.
                 if (ImGui::Button("Con###Run"))
                     test->Status = ImGuiTestStatus_Running;
-                if (ImGui::IsItemHovered())
-                    ImGui::SetTooltip("CTRL+Space to continue.");
+                ImGui::SetItemTooltip("CTRL+Space to continue.");
                 if (ImGui::IsKeyPressed(ImGuiKey_Space) && io.KeyCtrl)
                     test->Status = ImGuiTestStatus_Running;
             }
@@ -560,8 +571,7 @@ static void ShowTestGroup(ImGuiTestEngine* e, ImGuiTestGroup group, Str* filter)
         //ImVec2 cursor_pos_bkp = ImGui::GetCursorPos();
         ImGui::SetCursorPos(status_button_pos);
         TestStatusButton("status", status_color, false);// e->IO.IsRunningTests);
-        if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("Filtered: %d\n- OK: %d\n- Errors: %d", tests_completed, tests_succeeded, tests_failed);
+        ImGui::SetItemTooltip("Filtered: %d\n- OK: %d\n- Errors: %d", tests_completed, tests_succeeded, tests_failed);
         //ImGui::SetCursorPos(cursor_pos_bkp);  // Restore cursor position for rendering further widgets
     }
 }
@@ -613,14 +623,16 @@ static void ImGuiTestEngine_ShowLogAndTools(ImGuiTestEngine* engine)
 
         const ImGuiInputTextCallback filter_callback = [](ImGuiInputTextCallbackData* data) { return (data->EventChar == ',' || data->EventChar == ';') ? 1 : 0; };
         ImGui::InputText("Branch/Annotation", engine->IO.GitBranchName, IM_ARRAYSIZE(engine->IO.GitBranchName), ImGuiInputTextFlags_CallbackCharFilter, filter_callback, NULL);
-        HelpTooltip("This will be stored in the CSV file for performance tools.");
+        ImGui::SetItemTooltip("This will be stored in the CSV file for performance tools.");
 
         ImGui::Separator();
 
         if (ImGui::TreeNode("Screen/video capture"))
         {
-            ImGui::Checkbox("Capture when requested by API", &engine->IO.ConfigCaptureEnabled); HelpTooltip("Enable or disable screen capture API completely.");
-            ImGui::Checkbox("Capture screen on error", &engine->IO.ConfigCaptureOnError); HelpTooltip("Capture a screenshot on test failure.");
+            ImGui::Checkbox("Capture when requested by API", &engine->IO.ConfigCaptureEnabled);
+            ImGui::SetItemTooltip("Enable or disable screen capture API completely.");
+            ImGui::Checkbox("Capture screen on error", &engine->IO.ConfigCaptureOnError);
+            ImGui::SetItemTooltip("Capture a screenshot on test failure.");
 
             // Fields modified by in this call will be synced to engine->CaptureContext.
             engine->CaptureTool._ShowEncoderConfigFields(&engine->CaptureContext);
@@ -720,7 +732,7 @@ static void ImGuiTestEngine_ShowTestTool(ImGuiTestEngine* engine, bool* p_open)
                 engine->IO.ConfigRunSpeed = level;
         ImGui::EndCombo();
     }
-    HelpTooltip(
+    ImGui::SetItemTooltip(
         "Running speed\n"
         "- Fast: Run tests as fast as possible (no delay/vsync, teleport mouse, etc.).\n"
         "- Normal: Run tests at human watchable speed (for debugging).\n"
@@ -729,13 +741,17 @@ static void ImGuiTestEngine_ShowTestTool(ImGuiTestEngine* engine, bool* p_open)
     ImGui::SameLine();
     //ImGui::Checkbox("Fast", &engine->IO.ConfigRunFast);
     //ImGui::SameLine();
-    ImGui::Checkbox("Stop", &engine->IO.ConfigStopOnError); HelpTooltip("Stop running tests when hitting an error.");
+    ImGui::Checkbox("Stop", &engine->IO.ConfigStopOnError);
+    ImGui::SetItemTooltip("Stop running tests when hitting an error.");
     ImGui::SameLine();
-    ImGui::Checkbox("DbgBrk", &engine->IO.ConfigBreakOnError); HelpTooltip("Break in debugger when hitting an error.");
+    ImGui::Checkbox("DbgBrk", &engine->IO.ConfigBreakOnError);
+    ImGui::SetItemTooltip("Break in debugger when hitting an error.");
     ImGui::SameLine();
-    ImGui::Checkbox("KeepGUI", &engine->IO.ConfigKeepGuiFunc); HelpTooltip("Keep GUI function running after a test fails, or when a single queued test is finished.\nHold ESC to abort a running GUI function.");
+    ImGui::Checkbox("KeepGUI", &engine->IO.ConfigKeepGuiFunc);
+    ImGui::SetItemTooltip("Keep GUI function running after a test fails, or when a single queued test is finished.\nHold ESC to abort a running GUI function.");
     ImGui::SameLine();
-    ImGui::Checkbox("Refocus", &engine->IO.ConfigTakeFocusBackAfterTests); HelpTooltip("Set focus back to Test window after running tests.");
+    ImGui::Checkbox("Refocus", &engine->IO.ConfigTakeFocusBackAfterTests);
+    ImGui::SetItemTooltip("Set focus back to Test window after running tests.");
     ImGui::SameLine();
     ImGui::SeparatorEx(ImGuiSeparatorFlags_Vertical);
     ImGui::SameLine();
@@ -747,7 +763,7 @@ static void ImGuiTestEngine_ShowTestTool(ImGuiTestEngine* engine, bool* p_open)
                 engine->IO.ConfigVerboseLevel = engine->IO.ConfigVerboseLevelOnError = level;
         ImGui::EndCombo();
     }
-    HelpTooltip("Verbose level.");
+    ImGui::SetItemTooltip("Verbose level.");
     //ImGui::PopStyleVar();
     ImGui::Separator();
 
