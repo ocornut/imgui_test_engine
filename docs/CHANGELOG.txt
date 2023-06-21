@@ -8,6 +8,9 @@ CHANGELOG
 2023/06/21:
 - TestEngine: in helper ImGuiTestGenericItemStatus storage struct,
   renamed 'bool Ret' to 'bool RetValue' as it is less ambiguous.
+- TestEngine: Added ViewportPlatform_CloseWindow() function to simulate platform closure
+  (e.g. ALT+F4 on Windows with viewport enabled and OS decoration enabled) for the purpose
+  of testing viewport-specific features. Probably of little use to regular end-user.
 
 2023/06/14
 - TestEngine: ItemInfoOpenFullPath() can focus/select inactive docked windows.

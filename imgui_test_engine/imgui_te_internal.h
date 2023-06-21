@@ -73,7 +73,8 @@ enum ImGuiTestInputType
     ImGuiTestInputType_None,
     ImGuiTestInputType_Key,
     ImGuiTestInputType_Char,
-    ImGuiTestInputType_ViewportFocus
+    ImGuiTestInputType_ViewportFocus,
+    ImGuiTestInputType_ViewportClose
 };
 
 // FIXME: May want to strip further now that core imgui is using its own input queue
@@ -106,6 +107,14 @@ struct ImGuiTestInput
     {
         ImGuiTestInput inp;
         inp.Type = ImGuiTestInputType_ViewportFocus;
+        inp.ViewportId = viewport_id;
+        return inp;
+    }
+
+    static ImGuiTestInput   ForViewportClose(ImGuiID viewport_id)
+    {
+        ImGuiTestInput inp;
+        inp.Type = ImGuiTestInputType_ViewportClose;
         inp.ViewportId = viewport_id;
         return inp;
     }

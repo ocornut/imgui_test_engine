@@ -3513,6 +3513,20 @@ void    ImGuiTestContext::ViewportPlatform_SetWindowFocus(ImGuiViewport* viewpor
     Yield(); // Submit to Platform
     Yield(); // Let Dear ImGui next frame see it
 }
+
+// Simulate a platform window closure.
+void    ImGuiTestContext::ViewportPlatform_CloseWindow(ImGuiViewport* viewport)
+{
+    if (IsError())
+        return;
+
+    IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
+    LogDebug("ViewportPlatform_CloseWindow(0x%08X)", viewport->ID);
+    Inputs->Queue.push_back(ImGuiTestInput::ForViewportClose(viewport->ID)); // Queued since this will poke into backend, best to do in main thread.
+    Yield(); // Submit to Platform
+    Yield(3); // Let Dear ImGui next frame see it
+}
+
 #endif
 
 #ifdef IMGUI_HAS_DOCK

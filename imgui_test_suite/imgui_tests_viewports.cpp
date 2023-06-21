@@ -406,6 +406,54 @@ void RegisterTests_Viewports(ImGuiTestEngine* e)
     };
 #endif
 
+    // Test Platform Close behaviors
+    t = IM_REGISTER_TEST(e, "viewport", "viewport_platform_close");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        auto& vars = ctx->GenericVars;
+        if (ctx->IsFirstGuiFrame())
+            vars.Bool1 = vars.Bool2 = true;
+
+        if (vars.Bool1)
+        {
+            ImGui::SetNextWindowSize(ImVec2(300, 300));
+            ImGui::Begin("Window 1", &vars.Bool1, ImGuiWindowFlags_NoSavedSettings);
+            ImGui::End();
+        }
+        if (vars.Bool2)
+        {
+            ImGui::SetNextWindowSize(ImVec2(300, 300));
+            ImGui::Begin("Window 2", &vars.Bool2, ImGuiWindowFlags_NoSavedSettings);
+            ImGui::End();
+        }
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        //ImGuiContext& g = *ctx->UiContext;
+        //g.IO.ConfigViewportsNoDecoration = false; // Not even necessary since Closure can happens without decorations.
+        //ctx->Yield(3);
+
+        auto& vars = ctx->GenericVars;
+
+        ctx->DockClear("Window 1", "Window 2", NULL);
+        ctx->WindowMove("Window 1", ImGui::GetMainViewport()->Pos + ImVec2(ImGui::GetMainViewport()->Size.x, 0.0f));
+        ctx->DockInto("Window 2", "Window 1");
+        IM_CHECK_EQ(vars.Bool1, true);
+        IM_CHECK_EQ(vars.Bool2, true);
+
+        ImGuiWindow* window_1 = ctx->GetWindowByRef("Window 1");
+        ctx->WindowFocus("Window 1");
+        ctx->ViewportPlatform_CloseWindow(window_1->Viewport);
+        //ctx->Yield(2);
+
+        IM_CHECK_EQ(vars.Bool1, false);
+#if IMGUI_VERSION_NUM >= 18964
+        IM_CHECK_EQ(vars.Bool2, false);
+#else
+        IM_CHECK_EQ(vars.Bool2, true);  // Old behavior
+#endif
+    };
+
 #else
     IM_UNUSED(e);
 #endif

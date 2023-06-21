@@ -621,6 +621,22 @@ void ImGuiTestEngine_ApplyInputToImGuiContext(ImGuiTestEngine* engine)
 #endif
                 break;
             }
+            case ImGuiTestInputType_ViewportClose:
+            {
+#ifdef IMGUI_HAS_VIEWPORT
+                if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
+                {
+                    IM_ASSERT(engine->TestContext != NULL);
+                    ImGuiViewport* viewport = ImGui::FindViewportByID(input.ViewportId);
+                    if (viewport == NULL)
+                        engine->TestContext->LogError("ViewportPlatform_CloseWindow(%08X): cannot find viewport anymore!", input.ViewportId);
+                    else
+                        viewport->PlatformRequestClose = true;
+                    // FIXME: doesn't apply to actual backend
+                }
+#endif
+                break;
+            }
             case ImGuiTestInputType_None:
             default:
                 break;
