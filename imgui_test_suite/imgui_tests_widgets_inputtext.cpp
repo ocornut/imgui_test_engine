@@ -26,7 +26,6 @@
 // - Even if we don't implement the test right away: they allow us to remember edge cases and interesting things to test.
 // - Even if they will be hard to actually implement/automate, they still allow us to manually check things.
 //-------------------------------------------------------------------------
-// TODO: Tests: test ImGuiInputTextFlags_EscapeClearsAll (#5688)
 // TODO: Tests: InputText: read-only + callback (#4762)
 // TODO: Tests: InputTextMultiline(): (ImDrawList) position of text (#4794)
 //-------------------------------------------------------------------------
@@ -392,7 +391,7 @@ void RegisterTests_WidgetsInputText(ImGuiTestEngine* e)
     };
 
     // ## Test input clearing action (ESC key) being undoable (#3008).
-    t = IM_REGISTER_TEST(e, "widgets", "widgets_inputtext_esc_undo");
+    t = IM_REGISTER_TEST(e, "widgets", "widgets_inputtext_esc_revert");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         ImGuiTestGenericVars& vars = ctx->GenericVars;
@@ -423,6 +422,48 @@ void RegisterTests_WidgetsInputText(ImGuiTestEngine* e)
             ctx->KeyPress(ImGuiKey_Enter);                       // Unfocus otherwise test_n==1 strcpy will fail
         }
     };
+
+#if IMGUI_VERSION_NUM >= 18965
+    // ## Test ImGuiInputTextFlags_EscapeClearsAll (#5688)
+    // FIXME-TESTS: Possible edge cases when mismatch of internal vs user buffer.
+    t = IM_REGISTER_TEST(e, "widgets", "widgets_inputtext_esc_clear");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiTestGenericVars& vars = ctx->GenericVars;
+        ImGui::SetNextWindowSize(ImVec2(200, 200));
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+        bool ret_val = ImGui::InputText("InputText", vars.Str1, IM_ARRAYSIZE(vars.Str1), ImGuiInputTextFlags_EscapeClearsAll);
+        vars.Status.QueryInc(ret_val);
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiContext& g = *ctx->UiContext;
+        ImGuiTestGenericVars& vars = ctx->GenericVars;
+        ctx->SetRef("Test Window");
+        ctx->ItemClick("InputText");
+        ctx->KeyChars("H");
+        ctx->KeyChars("ello");
+        IM_CHECK_GE(vars.Status.Ret, 2);
+        IM_CHECK_STR_EQ(vars.Str1, "Hello");
+        vars.Status.Clear();
+
+        // First ESC press clears buffer, notify of change if any
+        ctx->KeyPress(ImGuiKey_Escape);
+        IM_CHECK_EQ(vars.Status.Ret, 1);
+        IM_CHECK_EQ(vars.Status.Deactivated, 0);
+        IM_CHECK_STR_EQ(vars.Str1, "");
+        IM_CHECK_EQ(g.ActiveId, ctx->GetID("InputText"));
+        vars.Status.Clear();
+
+        // Second ESC deactivate item
+        ctx->KeyPress(ImGuiKey_Escape);
+        IM_CHECK_EQ(vars.Status.Ret, 0);
+        IM_CHECK_EQ(vars.Status.Deactivated, 1);
+        IM_CHECK_STR_EQ(vars.Str1, "");
+        IM_CHECK_EQ(g.ActiveId, 0u);
+    };
+#endif
 
     // ## Test input text multiline cursor movement: left, up, right, down, origin, end, ctrl+origin, ctrl+end, page up, page down
     // TODO ## Test input text multiline cursor with selection: left, up, right, down, origin, end, ctrl+origin, ctrl+end, page up, page down
@@ -1358,7 +1399,7 @@ void RegisterTests_WidgetsInputText(ImGuiTestEngine* e)
     };
 #endif
 
-    // Test application of value on DeactivateAfterEdit frame (#4714)
+    // ## Test application of value on DeactivateAfterEdit frame (#4714)
     t = IM_REGISTER_TEST(e, "widgets", "widgets_inputtext_deactivate_apply");
     struct InputTextDeactivateVars
     {

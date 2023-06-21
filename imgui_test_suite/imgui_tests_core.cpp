@@ -5182,9 +5182,10 @@ void RegisterTests_TestEngine(ImGuiTestEngine* e)
 {
     ImGuiTest* t = NULL;
 
-    // ## Test watchdog: this test works but currently takes too much time.
+    // ## Test watchdog (configured in io.ConfigWatchXXXX). This test works but currently takes too much time.
+    // Also note the watchdog is not always enabled, e.g. debugger is attached. see ImGuiTestEngine_UpdateWatchdog().
 #if 0
-    t = IM_REGISTER_TEST(e, "misc", "testengine_watchdog");
+    t = IM_REGISTER_TEST(e, "testengine", "testengine_watchdog");
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         while (true)
@@ -5210,6 +5211,19 @@ void RegisterTests_TestEngine(ImGuiTestEngine* e)
         IM_CHECK(vars.Int1 == 0);
         ctx->ItemClick("Button1");
         IM_CHECK(vars.Int1 == 1);
+    };
+
+    // ## Test that our IM_CHECK_xxx macros don't expand parameters more than once, which would cause problem when parameters side-effects.
+    t = IM_REGISTER_TEST(e, "testengine", "testengine_checks");
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        int n = 0;
+        IM_CHECK(n++ == 0);
+        IM_CHECK(n == 1);
+        IM_CHECK_EQ(n, 1);
+        IM_CHECK_EQ(n++, 1);
+        IM_CHECK_EQ(n, 2);
+        IM_CHECK_LT(n++, 3);
     };
 
     // ## Test using Item functions on windows
