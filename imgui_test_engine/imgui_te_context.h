@@ -149,7 +149,7 @@ struct IMGUI_API ImGuiTestActionFilter
 // This facilitate interactions between GuiFunc and TestFunc, since those state are frequently used.
 struct IMGUI_API ImGuiTestGenericItemStatus
 {
-    int     Ret;                    // return value
+    int     RetValue;               // return value
     int     Hovered;                // result of IsItemHovered()
     int     Active;                 // result of IsItemActive()
     int     Focused;                // result of IsItemFocused()
@@ -163,7 +163,7 @@ struct IMGUI_API ImGuiTestGenericItemStatus
     ImGuiTestGenericItemStatus()        { Clear(); }
     void Clear()                        { memset(this, 0, sizeof(*this)); }
     void QuerySet(bool ret_val = false) { Clear(); QueryInc(ret_val); }
-    void QueryInc(bool ret_val = false) { Ret += ret_val; Hovered += ImGui::IsItemHovered(); Active += ImGui::IsItemActive(); Focused += ImGui::IsItemFocused(); Clicked += ImGui::IsItemClicked(); Visible += ImGui::IsItemVisible(); Edited += ImGui::IsItemEdited(); Activated += ImGui::IsItemActivated(); Deactivated += ImGui::IsItemDeactivated(); DeactivatedAfterEdit += ImGui::IsItemDeactivatedAfterEdit(); }
+    void QueryInc(bool ret_val = false) { RetValue += ret_val; Hovered += ImGui::IsItemHovered(); Active += ImGui::IsItemActive(); Focused += ImGui::IsItemFocused(); Clicked += ImGui::IsItemClicked(); Visible += ImGui::IsItemVisible(); Edited += ImGui::IsItemEdited(); Activated += ImGui::IsItemActivated(); Deactivated += ImGui::IsItemDeactivated(); DeactivatedAfterEdit += ImGui::IsItemDeactivatedAfterEdit(); }
 };
 
 // Generic structure with various storage fields.

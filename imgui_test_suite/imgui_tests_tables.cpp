@@ -3089,11 +3089,11 @@ void RegisterTests_Table(ImGuiTestEngine* e)
     {
         ImGuiTestGenericVars& vars = ctx->GenericVars;
         ctx->SetRef("Test window 1");
-        IM_CHECK(vars.Status.Ret == 0);
+        IM_CHECK(vars.Status.RetValue == 0);
         IM_CHECK(vars.Status.Hovered == 0);
         IM_CHECK(vars.Status.Clicked == 0);
         ctx->ItemClick(ctx->GetID("##checkall", ctx->GetID("table1")));
-        IM_CHECK(vars.Status.Ret > 0);
+        IM_CHECK(vars.Status.RetValue > 0);
         IM_CHECK(vars.Status.Hovered > 0);
         IM_CHECK(vars.Status.Clicked > 0);
     };

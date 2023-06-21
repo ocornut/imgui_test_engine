@@ -444,13 +444,13 @@ void RegisterTests_WidgetsInputText(ImGuiTestEngine* e)
         ctx->ItemClick("InputText");
         ctx->KeyChars("H");
         ctx->KeyChars("ello");
-        IM_CHECK_GE(vars.Status.Ret, 2);
+        IM_CHECK_GE(vars.Status.RetValue, 2);
         IM_CHECK_STR_EQ(vars.Str1, "Hello");
         vars.Status.Clear();
 
         // First ESC press clears buffer, notify of change if any
         ctx->KeyPress(ImGuiKey_Escape);
-        IM_CHECK_EQ(vars.Status.Ret, 1);
+        IM_CHECK_EQ(vars.Status.RetValue, 1);
         IM_CHECK_EQ(vars.Status.Deactivated, 0);
         IM_CHECK_STR_EQ(vars.Str1, "");
         IM_CHECK_EQ(g.ActiveId, ctx->GetID("InputText"));
@@ -458,7 +458,7 @@ void RegisterTests_WidgetsInputText(ImGuiTestEngine* e)
 
         // Second ESC deactivate item
         ctx->KeyPress(ImGuiKey_Escape);
-        IM_CHECK_EQ(vars.Status.Ret, 0);
+        IM_CHECK_EQ(vars.Status.RetValue, 0);
         IM_CHECK_EQ(vars.Status.Deactivated, 1);
         IM_CHECK_STR_EQ(vars.Str1, "");
         IM_CHECK_EQ(g.ActiveId, 0u);

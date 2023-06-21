@@ -435,11 +435,11 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
                 vars.Status.Clear();
                 ctx->ItemInput(widget_name);
                 ctx->KeyChars("123");                               // Case fixed by PR #3231
-                IM_CHECK_GE(vars.Status.Ret, 1);
+                IM_CHECK_GE(vars.Status.RetValue, 1);
                 IM_CHECK_GE(vars.Status.Edited, 1);
                 vars.Status.Clear();
                 ctx->Yield();
-                IM_CHECK_EQ(vars.Status.Ret, 0);        // Verify it doesn't keep returning as edited.
+                IM_CHECK_EQ(vars.Status.RetValue, 0);        // Verify it doesn't keep returning as edited.
                 IM_CHECK_EQ(vars.Status.Edited, 0);
 
                 vars.Status.Clear();
@@ -768,11 +768,11 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         // Testing activation flag being set
         ctx->SetRef("Test Window");
         ctx->ItemClick("Field/##ColorButton");
-        IM_CHECK(status.Ret == 0 && status.Activated == 1 && status.Deactivated == 1 && status.DeactivatedAfterEdit == 0 && status.Edited == 0);
+        IM_CHECK(status.RetValue == 0 && status.Activated == 1 && status.Deactivated == 1 && status.DeactivatedAfterEdit == 0 && status.Edited == 0);
         status.Clear();
 
         ctx->KeyPress(ImGuiKey_Escape);
-        IM_CHECK(status.Ret == 0 && status.Activated == 0 && status.Deactivated == 0 && status.DeactivatedAfterEdit == 0 && status.Edited == 0);
+        IM_CHECK(status.RetValue == 0 && status.Activated == 0 && status.Deactivated == 0 && status.DeactivatedAfterEdit == 0 && status.Edited == 0);
         status.Clear();
     };
 
@@ -796,32 +796,32 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         // Testing activation flag being set
         ctx->SetRef("Test Window");
         ctx->ItemClick("Field");
-        IM_CHECK(status.Ret == 0 && status.Activated == 1 && status.Deactivated == 0 && status.DeactivatedAfterEdit == 0 && status.Edited == 0);
+        IM_CHECK(status.RetValue == 0 && status.Activated == 1 && status.Deactivated == 0 && status.DeactivatedAfterEdit == 0 && status.Edited == 0);
         status.Clear();
 
         // Testing deactivated flag being set when canceling with Escape
         ctx->KeyPress(ImGuiKey_Escape);
-        IM_CHECK(status.Ret == 0 && status.Activated == 0 && status.Deactivated == 1 && status.DeactivatedAfterEdit == 0 && status.Edited == 0);
+        IM_CHECK(status.RetValue == 0 && status.Activated == 0 && status.Deactivated == 1 && status.DeactivatedAfterEdit == 0 && status.Edited == 0);
         status.Clear();
 
         // Testing validation with Return after editing
         ctx->ItemClick("Field");
-        IM_CHECK(!status.Ret && status.Activated && !status.Deactivated && !status.DeactivatedAfterEdit && status.Edited == 0);
+        IM_CHECK(status.RetValue == 0 && status.Activated && !status.Deactivated && !status.DeactivatedAfterEdit && status.Edited == 0);
         status.Clear();
         ctx->KeyCharsAppend("Hello");
-        IM_CHECK(status.Ret && !status.Activated && !status.Deactivated && !status.DeactivatedAfterEdit && status.Edited >= 1);
+        IM_CHECK(status.RetValue != 0 && !status.Activated && !status.Deactivated && !status.DeactivatedAfterEdit && status.Edited >= 1);
         status.Clear();
         ctx->KeyPress(ImGuiKey_Enter);
-        IM_CHECK(!status.Ret && !status.Activated && status.Deactivated && status.DeactivatedAfterEdit && status.Edited == 0);
+        IM_CHECK(status.RetValue == 0 && !status.Activated && status.Deactivated && status.DeactivatedAfterEdit && status.Edited == 0);
         status.Clear();
 
         // Testing validation with Tab after editing
         ctx->ItemClick("Field");
         ctx->KeyCharsAppend(" World");
-        IM_CHECK(status.Ret && status.Activated && !status.Deactivated && !status.DeactivatedAfterEdit && status.Edited >= 1);
+        IM_CHECK(status.RetValue != 0 && status.Activated && !status.Deactivated && !status.DeactivatedAfterEdit && status.Edited >= 1);
         status.Clear();
         ctx->KeyPress(ImGuiKey_Tab);
-        IM_CHECK(!status.Ret && !status.Activated && status.Deactivated && status.DeactivatedAfterEdit && status.Edited == 0);
+        IM_CHECK(status.RetValue == 0 && !status.Activated && status.Deactivated && status.DeactivatedAfterEdit && status.Edited == 0);
         status.Clear();
     };
 
@@ -848,20 +848,20 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
 
         // Testing activation/deactivation flags
         ctx->ItemClick(field_0);
-        IM_CHECK(status.Ret == 0 && status.Activated == 1 && status.Deactivated == 0 && status.DeactivatedAfterEdit == 0);
+        IM_CHECK(status.RetValue == 0 && status.Activated == 1 && status.Deactivated == 0 && status.DeactivatedAfterEdit == 0);
         status.Clear();
         ctx->KeyPress(ImGuiKey_Enter);
-        IM_CHECK(status.Ret == 0 && status.Activated == 0 && status.Deactivated == 1 && status.DeactivatedAfterEdit == 0);
+        IM_CHECK(status.RetValue == 0 && status.Activated == 0 && status.Deactivated == 1 && status.DeactivatedAfterEdit == 0);
         status.Clear();
 
         // Testing validation with Return after editing
         ctx->ItemClick(field_0);
         status.Clear();
         ctx->KeyCharsAppend("123");
-        IM_CHECK(status.Ret >= 1 && status.Activated == 0 && status.Deactivated == 0);
+        IM_CHECK(status.RetValue >= 1 && status.Activated == 0 && status.Deactivated == 0);
         status.Clear();
         ctx->KeyPress(ImGuiKey_Enter);
-        IM_CHECK(status.Ret == 0 && status.Activated == 0 && status.Deactivated == 1);
+        IM_CHECK(status.RetValue == 0 && status.Activated == 0 && status.Deactivated == 1);
         status.Clear();
 
         // Testing validation with Tab after editing
@@ -869,7 +869,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ctx->KeyCharsAppend("456");
         status.Clear();
         ctx->KeyPress(ImGuiKey_Tab);
-        IM_CHECK(status.Ret == 0 && status.Activated == 1 && status.Deactivated == 1 && status.DeactivatedAfterEdit == 1);
+        IM_CHECK(status.RetValue == 0 && status.Activated == 1 && status.Deactivated == 1 && status.DeactivatedAfterEdit == 1);
 
         // Testing Edited flag on all components
         ctx->ItemClick(field_1); // FIXME-TESTS: Should not be necessary!
@@ -905,7 +905,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ctx->SetRef("Test Window");
         ctx->ItemClick("Field");
         ctx->KeyCharsAppend("1");
-        IM_CHECK(status.Ret == 1 && status.Edited == 1 && status.Activated == 1 && status.Deactivated == 0 && status.DeactivatedAfterEdit == 0);
+        IM_CHECK(status.RetValue == 1 && status.Edited == 1 && status.Activated == 1 && status.Deactivated == 0 && status.DeactivatedAfterEdit == 0);
         ctx->Yield();
         ctx->Yield();
         IM_CHECK(status.Edited == 1);
@@ -4275,7 +4275,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
             auto& button_info = vars.ButtonInfo[i];
             ctx->LogDebug("Button %s", button_info.Name);
             ctx->ItemClick(button_info.Name);
-            IM_CHECK(button_info.Status.Ret == 0);                      // No clicks
+            IM_CHECK(button_info.Status.RetValue == 0);                 // No clicks
             IM_CHECK(button_info.Status.Clicked == 0);
             IM_CHECK(g.HoveredId == ctx->GetID(button_info.Name));      // HoveredId is set
             IM_CHECK(button_info.FlagsBegin == button_info.FlagsEnd);   // Flags and Alpha match between Begin/End calls
@@ -4284,7 +4284,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ctx->ItemClick("E");
         IM_CHECK(vars.ButtonInfo[4].Status.Hovered == 0);               // Ensure we rely on last item storage, not current state
         ctx->ItemClick("F");
-        IM_CHECK(vars.ButtonInfo[5].Status.Ret == 1);                   // BeginDisabled(false) does not prevent clicks
+        IM_CHECK(vars.ButtonInfo[5].Status.RetValue == 1);              // BeginDisabled(false) does not prevent clicks
         IM_CHECK(vars.ButtonInfo[5].Status.Clicked == 1);
     };
 #endif
