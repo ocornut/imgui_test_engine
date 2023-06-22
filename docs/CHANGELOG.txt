@@ -5,6 +5,9 @@ CHANGELOG
    Those changes are not all listed here.
 ** For a while this is going to ONLY INCLUDE BREAKING CHANGES.
 
+2023/06/22:
+- TestEngine: Fixed WindowClose() support when window Docked.
+
 2023/06/21:
 - TestEngine: in helper ImGuiTestGenericItemStatus storage struct,
   renamed 'bool Ret' to 'bool RetValue' as it is less ambiguous.

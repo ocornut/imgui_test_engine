@@ -3302,6 +3302,14 @@ void    ImGuiTestContext::WindowClose(ImGuiTestRef ref)
     LogDebug("WindowClose");
     ImGuiTestRef backup_ref = GetRef();
     SetRef(GetID(ref));
+
+#ifdef IMGUI_HAS_DOCK
+    // When docked: first move to Tab to make Close Button appear.
+    if (ImGuiWindow* window = GetWindowByRef(""))
+        if (window->DockIsActive)
+            MouseMove(window->TabId);
+#endif
+
     ItemClick("#CLOSE");
     SetRef(backup_ref);
 }
