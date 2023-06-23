@@ -6,7 +6,7 @@ CHANGELOG
 ** For a while this is going to ONLY INCLUDE BREAKING CHANGES.
 
 2023/06/23:
-- TestEngine: Fixed cases where DockInto() would fail if window is already docked.
+- TestEngine: Fixed two case where DockInto() would fail if one or both windows are already docked.
 
 2023/06/22:
 - TestEngine: Fixed WindowClose() support when window Docked.

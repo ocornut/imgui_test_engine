@@ -3590,12 +3590,26 @@ void    ImGuiTestContext::DockInto(ImGuiTestRef src_id, ImGuiTestRef dst_id, ImG
     MouseMove(ref_src, ImGuiTestOpFlags_NoCheckHoveredId);
     SleepStandard();
 
+    // Start dragging source, so it gets undocked already, because we calculate target position
+    // (Consider the possibility that dragging this out will move target position)
+    MouseDown(0);
+    if (g.IO.ConfigDockingWithShift)
+        KeyDown(ImGuiMod_Shift);
+    MouseLiftDragThreshold();
+    if (window_src->DockIsActive)
+        MouseMoveToPos(g.IO.MousePos + ImVec2(0, ImGui::GetFrameHeight() * 2.0f));
+    // (Button still held)
+
     // Locate target
     ImVec2 drop_pos;
     bool drop_is_valid = ImGui::DockContextCalcDropPosForDocking(window_dst, node_dst, window_src, node_src, split_dir, split_outer, &drop_pos);
     IM_CHECK_SILENT(drop_is_valid);
     if (!drop_is_valid)
+    {
+        if (g.IO.ConfigDockingWithShift)
+            KeyUp(ImGuiMod_Shift);
         return;
+    }
 
     // Ensure we can reach target
     WindowTeleportToMakePosVisible(window_dst->ID, drop_pos);
@@ -3605,12 +3619,6 @@ void    ImGuiTestContext::DockInto(ImGuiTestRef src_id, ImGuiTestRef dst_id, ImG
     // Drag
     drop_is_valid = ImGui::DockContextCalcDropPosForDocking(window_dst, node_dst, window_src, node_src, split_dir, split_outer, &drop_pos);
     IM_CHECK_SILENT(drop_is_valid);
-    MouseDown(0);
-    if (g.IO.ConfigDockingWithShift)
-        KeyDown(ImGuiMod_Shift);
-    MouseLiftDragThreshold();
-    if (window_src->DockIsActive)
-        MouseMoveToPos(g.IO.MousePos + ImVec2(0, ImGui::GetFrameHeight() * 2.0f));
     MouseSetViewport(window_dst);
     MouseMoveToPos(drop_pos);
     if (node_src)
