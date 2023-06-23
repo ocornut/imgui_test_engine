@@ -3562,9 +3562,9 @@ void    ImGuiTestContext::DockInto(ImGuiTestRef src_id, ImGuiTestRef dst_id, ImG
     if (node_dst)
         window_dst = node_dst->HostWindow;
 
-    Str128f log("DockInto() Src: %s '%s' (0x%08X), Dst: %s '%s' (0x%08X)",
+    Str128f log("DockInto() Src: %s '%s' (0x%08X), Dst: %s '%s' (0x%08X), SplitDir = %d",
         node_src ? "node" : "window", node_src ? "" : window_src->Name, node_src ? node_src->ID : window_src->ID,
-        node_dst ? "node" : "window", node_dst ? "" : window_dst->Name, node_dst ? node_dst->ID : window_dst->ID);
+        node_dst ? "node" : "window", node_dst ? "" : window_dst->Name, node_dst ? node_dst->ID : window_dst->ID, split_dir);
     LogDebug("%s", log.c_str());
 
     IM_CHECK_SILENT(window_src != NULL);
@@ -3609,6 +3609,8 @@ void    ImGuiTestContext::DockInto(ImGuiTestRef src_id, ImGuiTestRef dst_id, ImG
     if (g.IO.ConfigDockingWithShift)
         KeyDown(ImGuiMod_Shift);
     MouseLiftDragThreshold();
+    if (window_src->DockIsActive)
+        MouseMoveToPos(g.IO.MousePos + ImVec2(0, ImGui::GetFrameHeight() * 2.0f));
     MouseSetViewport(window_dst);
     MouseMoveToPos(drop_pos);
     if (node_src)
@@ -3638,7 +3640,7 @@ void    ImGuiTestContext::DockInto(ImGuiTestRef src_id, ImGuiTestRef dst_id, ImG
         const ImGuiID curr_dock_id = window_src->DockId;
         const ImGuiID curr_dock_parent_id = (window_src->DockNode && window_src->DockNode->ParentNode) ? window_src->DockNode->ParentNode->ID : 0;
         const ImGuiID curr_dock_node_as_host_id = window_src->DockNodeAsHost ? window_src->DockNodeAsHost->ID : 0;
-        IM_CHECK((prev_dock_id != curr_dock_id) || (prev_dock_parent_id != curr_dock_parent_id) || (prev_dock_node_as_host_id != curr_dock_node_as_host_id));
+        IM_CHECK_SILENT((prev_dock_id != curr_dock_id) || (prev_dock_parent_id != curr_dock_parent_id) || (prev_dock_node_as_host_id != curr_dock_node_as_host_id));
     }
 }
 
