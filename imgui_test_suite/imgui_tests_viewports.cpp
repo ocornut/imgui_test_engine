@@ -408,25 +408,33 @@ void RegisterTests_Viewports(ImGuiTestEngine* e)
 
     // Test Platform Close behaviors
     t = IM_REGISTER_TEST(e, "viewport", "viewport_platform_close");
-    t->GuiFunc = [](ImGuiTestContext* ctx)
+    auto GenericGuiFuncTwoWindows = [](ImGuiTestContext* ctx)
     {
         auto& vars = ctx->GenericVars;
         if (ctx->IsFirstGuiFrame())
-            vars.Bool1 = vars.Bool2 = true;
-
-        if (vars.Bool1)
+            vars.ShowWindow1 = vars.ShowWindow2 = true;
+        if (ctx->IsGuiFuncOnly())
         {
-            ImGui::SetNextWindowSize(ImVec2(300, 300));
-            ImGui::Begin("Window 1", &vars.Bool1, ImGuiWindowFlags_NoSavedSettings);
+            ImGui::Begin("Gui Func Configuration");
+            ImGui::Checkbox("ShowWindow1", &vars.ShowWindow1);
+            ImGui::Checkbox("ShowWindow2", &vars.ShowWindow2);
             ImGui::End();
         }
-        if (vars.Bool2)
+
+        if (vars.ShowWindow1)
         {
-            ImGui::SetNextWindowSize(ImVec2(300, 300));
-            ImGui::Begin("Window 2", &vars.Bool2, ImGuiWindowFlags_NoSavedSettings);
+            ImGui::Begin("Window 1", &vars.ShowWindow1, ImGuiWindowFlags_NoSavedSettings);
+            ImGui::ColorButton("dummy", ImVec4(1.0f, 0.5f, 0.5f, 1.0f), ImGuiColorEditFlags_NoTooltip, ImVec2(250, 250));
+            ImGui::End();
+        }
+        if (vars.ShowWindow2)
+        {
+            ImGui::Begin("Window 2", &vars.ShowWindow2, ImGuiWindowFlags_NoSavedSettings);
+            ImGui::ColorButton("dummy", ImVec4(1.0f, 0.5f, 0.5f, 1.0f), ImGuiColorEditFlags_NoTooltip, ImVec2(250, 250));
             ImGui::End();
         }
     };
+    t->GuiFunc = GenericGuiFuncTwoWindows;
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         //ImGuiContext& g = *ctx->UiContext;
@@ -438,21 +446,142 @@ void RegisterTests_Viewports(ImGuiTestEngine* e)
         ctx->DockClear("Window 1", "Window 2", NULL);
         ctx->WindowMove("Window 1", ImGui::GetMainViewport()->Pos + ImVec2(ImGui::GetMainViewport()->Size.x, 0.0f));
         ctx->DockInto("Window 2", "Window 1");
-        IM_CHECK_EQ(vars.Bool1, true);
-        IM_CHECK_EQ(vars.Bool2, true);
+        IM_CHECK_EQ(vars.ShowWindow1, true);
+        IM_CHECK_EQ(vars.ShowWindow2, true);
 
         ImGuiWindow* window_1 = ctx->GetWindowByRef("Window 1");
         ctx->WindowFocus("Window 1");
         ctx->ViewportPlatform_CloseWindow(window_1->Viewport);
         //ctx->Yield(2);
 
-        IM_CHECK_EQ(vars.Bool1, false);
+        IM_CHECK_EQ(vars.ShowWindow1, false);
 #if IMGUI_VERSION_NUM >= 18964
-        IM_CHECK_EQ(vars.Bool2, false);
+        IM_CHECK_EQ(vars.ShowWindow2, false);
 #else
-        IM_CHECK_EQ(vars.Bool2, true);  // Old behavior
+        IM_CHECK_EQ(vars.ShowWindow2, true);  // Old behavior
 #endif
     };
+
+#if IMGUI_VERSION_NUM >= 18965
+    // ## Test transfer/reuse of viewport when changing owner window, generally due to docking changes, e.g. "Window 1" add itself to a docking TabBar
+    // ## With some backends + without OS decoration, viewport destroy/recreate can be so seamless they are not always noticeable.
+    // ## Usually once OS decoration are visible it gets obvious when that happens.
+    // Case 1:
+    // - Config: [X] NoAutoMerge
+    // - Floating Window 1 in own viewport.
+    // - Toggle AlwaysTabBar -> ensure no viewport recreation or flickering.
+    t = IM_REGISTER_TEST(e, "viewport", "viewport_owner_change_1");
+    t->GuiFunc = GenericGuiFuncTwoWindows;
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiContext& g = *ctx->UiContext;
+        auto& vars = ctx->GenericVars;
+        vars.ShowWindow2 = false;
+        ctx->DockClear("Window 1", NULL);
+        g.IO.ConfigViewportsNoAutoMerge = false;
+        g.IO.ConfigDockingAlwaysTabBar = false;
+        ctx->Yield(2);
+
+        for (int variant = 0; variant < 2; variant++)
+        {
+            g.IO.ConfigViewportsNoAutoMerge = (variant == 1);
+            ctx->LogDebug("## Variant %d", variant);
+            ctx->LogDebug("- io.ConfigViewportsNoAutoMerge = %d", g.IO.ConfigViewportsNoAutoMerge);
+            ctx->LogDebug("- io.ConfigDockingAlwaysTabBar = %d", g.IO.ConfigDockingAlwaysTabBar);
+
+            ImGuiWindow* window_1 = ctx->GetWindowByRef("Window 1");
+            ctx->DockClear("Window 1", NULL);
+            ctx->WindowMove("Window 1", ImGui::GetMainViewport()->Pos + ImVec2(ImGui::GetMainViewport()->Size.x, 0.0f));
+            IM_CHECK(window_1->RootWindowDockTree->ViewportOwned);
+
+            {
+                const int prev_viewport_created_count = g.ViewportCreatedCount;
+                g.IO.ConfigDockingAlwaysTabBar = true;
+                ctx->Yield(3);
+                IM_CHECK_EQ(prev_viewport_created_count, g.ViewportCreatedCount);
+            }
+            {
+                const int prev_viewport_created_count = g.ViewportCreatedCount;
+                g.IO.ConfigDockingAlwaysTabBar = false;
+                ctx->Yield(3);
+                IM_CHECK_EQ(prev_viewport_created_count, g.ViewportCreatedCount);
+            }
+        }
+    };
+
+    // ## Test transfer/reuse of viewport when changing owner window, generally due to docking changes, e.g. "Window 1" add itself to a docking TabBar
+    // Case 2:
+    // - Window 1 and Window 2 docked together, floating in their own viewport.
+    // - Toggling visibility of Window 2.
+    t = IM_REGISTER_TEST(e, "viewport", "viewport_owner_change_2");
+    t->GuiFunc = GenericGuiFuncTwoWindows;
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiContext& g = *ctx->UiContext;
+        auto& vars = ctx->GenericVars;
+        g.IO.ConfigViewportsNoAutoMerge = false;
+        g.IO.ConfigDockingAlwaysTabBar = false;
+        ctx->Yield(2);
+        ctx->DockClear("Window 1", "Window 2", NULL);
+
+        for (int variant = 0; variant < 8; variant++)
+        {
+            g.IO.ConfigDockingAlwaysTabBar = (variant & 1) != 0;
+            g.IO.ConfigViewportsNoAutoMerge = (variant & 2) != 0;
+            ctx->LogDebug("## Variant %d", variant);
+            ctx->LogDebug("- io.ConfigDockingAlwaysTabBar = %d", g.IO.ConfigDockingAlwaysTabBar);
+            ctx->LogDebug("- io.ConfigViewportsNoAutoMerge = %d", g.IO.ConfigViewportsNoAutoMerge);
+
+            ImGuiWindow* window_1 = ctx->GetWindowByRef("Window 1");
+            //ImGuiWindow* window_2 = ctx->GetWindowByRef("Window 1");
+            ctx->WindowMove("Window 1", ImGui::GetMainViewport()->Pos + ImVec2(ImGui::GetMainViewport()->Size.x, 0.0f));
+
+            ctx->WindowResize("Window 1", ImVec2(255, 255));
+            ctx->WindowResize("Window 2", ImVec2(255, 255));
+
+            ctx->DockInto("Window 2", "Window 1");
+            IM_CHECK(window_1->RootWindowDockTree->ViewportOwned);
+
+            // Variant flag 4: try both order
+
+            // FIXME-TESTS: Ideally we'd compare g.ViewportsCreatedCount and not g.PlatformWindowsCreatedCount
+            // But we still have some spots where a viewports gets created then removed.
+
+            // Close window
+            {
+                const int prev_count = g.PlatformWindowsCreatedCount;
+                if ((variant & 4) == 0)
+                    ctx->WindowClose("Window 2");
+                else
+                    ctx->WindowClose("Window 1");
+                ctx->Yield(3);
+                IM_CHECK_EQ(prev_count, g.PlatformWindowsCreatedCount);
+            }
+
+            // Reappear
+            {
+                const int prev_count = g.PlatformWindowsCreatedCount;
+                if ((variant & 4) == 0)
+                    vars.ShowWindow2 = true;
+                else
+                    vars.ShowWindow1 = true;
+                ctx->Yield(3);
+                IM_CHECK_EQ(prev_count, g.PlatformWindowsCreatedCount);
+            }
+
+            // Dock
+            {
+                const int prev_count = g.PlatformWindowsCreatedCount;
+                if ((variant & 4) == 0)
+                    ctx->DockInto("Window 2", "Window 1", ImGuiDir_Down);
+                else
+                    ctx->DockInto("Window 1", "Window 2", ImGuiDir_Down);
+                ctx->Yield(3);
+                IM_CHECK_EQ(prev_count + 1, g.PlatformWindowsCreatedCount);
+            }
+        }
+    };
+#endif
 
 #else
     IM_UNUSED(e);
