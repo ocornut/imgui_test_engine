@@ -8,7 +8,7 @@
 //#define IMGUI_APP_GLFW_GL3
 
 // Disable legacy features / enforce using latest
-#ifdef IMGUI_HAS_IMSTR
+#ifndef IMGUI_HAS_IMSTR
 #define IMGUI_DISABLE_OBSOLETE_FUNCTIONS
 #endif
 #define IMGUI_DISABLE_OBSOLETE_KEYIO
