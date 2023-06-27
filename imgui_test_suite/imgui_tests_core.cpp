@@ -5823,6 +5823,49 @@ void RegisterTests_TestEngine(ImGuiTestEngine* e)
         }
     };
 
+
+    // ## Test not focusing window if unnecessary(issue #24)
+    t = IM_REGISTER_TEST(e, "testengine", "testengine_avoid_focus");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        auto& vars = ctx->GenericVars;
+        static float& time_to_end_overlay = vars.Float1;
+
+        ImGuiViewport* viewport = ImGui::GetMainViewport();
+
+        // Drawing
+        if (vars.ShowWindow1)
+        {
+            ImGui::SetNextWindowBgAlpha(0.35f);
+            ImGui::SetNextWindowPos({ viewport->WorkPos.x + viewport->WorkSize.x - 10.f, viewport->WorkPos.y + 30.f }, ImGuiCond_Always, { 1.f, 0.f });
+            if (ImGui::Begin("Overlay", &vars.ShowWindow1, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNav))
+            {
+                const float current_time = (float)ImGui::GetTime();
+                if (ImGui::IsWindowFocused() || time_to_end_overlay < current_time)
+                    vars.ShowWindow1 = false;
+                ImGui::TextColored(ImVec4{ 1.f, 0.f, 0.f, 1.f }, "%f", time_to_end_overlay - current_time);
+            } ImGui::End();
+        }
+
+        ImGui::SetNextWindowPos(viewport->Pos);
+        ImGui::SetNextWindowSize(viewport->Size);
+        if (ImGui::Begin("Test Window", nullptr, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoBringToFrontOnFocus))
+        {
+            if (ImGui::Button("Launch"))
+            {
+                vars.ShowWindow1 = true;
+                time_to_end_overlay = (float)ImGui::GetTime() + 5.0f;
+            }
+        }
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ctx->ItemClick("//Test Window/Launch");
+        ctx->MouseMove("//Overlay");
+        ctx->MouseClick();
+    };
+
 }
 
 //-------------------------------------------------------------------------

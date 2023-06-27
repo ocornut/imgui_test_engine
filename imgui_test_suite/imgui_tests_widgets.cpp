@@ -911,6 +911,56 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         IM_CHECK(status.Edited == 1);
     };
 
+    // ## Test overlap mode
+    t = IM_REGISTER_TEST(e, "widgets", "widgets_overlap_1");
+    struct OverlapTestVars { ImGuiTestGenericItemStatus Status[2]; };
+    t->SetVarsDataType<OverlapTestVars>();
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        OverlapTestVars& vars = ctx->GetVars<OverlapTestVars>();
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
+
+        ImVec2 p = ImGui::GetCursorScreenPos();
+        bool button_0_pressed = ImGui::ButtonEx("00000", ImVec2(50, 50), ImGuiButtonFlags_AllowItemOverlap);
+        vars.Status[0].QueryInc(button_0_pressed);
+        ImGui::SetItemAllowOverlap();
+
+        ImGui::SetCursorScreenPos(p + ImVec2(20, 25));
+        bool button_1_pressed = ImGui::Button("11111", ImVec2(50, 25));
+        vars.Status[1].QueryInc(button_1_pressed);
+
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        OverlapTestVars& vars = ctx->GetVars<OverlapTestVars>();
+        ctx->SetRef("Test Window");
+
+        ImVec2 p = ctx->ItemInfo("00000")->RectFull.Min;
+
+        ctx->MouseMoveToPos(p - ImVec2(10, 10));
+        vars.Status[0].Clear();
+        vars.Status[1].Clear();
+
+        // Mouse directly to overlap
+        ctx->MouseTeleportToPos(p + ImVec2(25, 30));
+        ctx->Yield(2);
+#if IMGUI_BROKEN_TESTS
+#if IMGUI_VERSION_NUM < 18966
+        IM_CHECK(vars.Status[0].Hovered == 1); // Can't be tested yet as IsItemHovered() ignore overlap.
+#else
+        IM_CHECK(vars.Status[0].Hovered == 0); // Can't be tested yet as IsItemHovered() ignore overlap.
+#endif
+#endif
+        IM_CHECK(vars.Status[1].Hovered > 0);
+
+        ctx->MouseClick();
+        IM_CHECK(vars.Status[0].RetValue == 0);
+        IM_CHECK(vars.Status[0].Active == 0);
+        IM_CHECK(vars.Status[1].RetValue == 1);
+        IM_CHECK(vars.Status[1].Active > 0);
+    };
+
     // ## Check input of InputScalar().
     t = IM_REGISTER_TEST(e, "widgets", "widgets_inputscalar_input");
     struct InputScalarStepVars { int Int = 0; float Float = 0.0f; double Double = 0.0; };
