@@ -1516,6 +1516,7 @@ static ImVec2 GetMouseAimingPos(ImGuiTestItemInfo* item, ImGuiTestOpFlags flags)
 // - ImGuiTestOpFlags_NoFocusWindow
 // - ImGuiTestOpFlags_NoCheckHoveredId
 // - ImGuiTestOpFlags_IsSecondAttempt [used when recursively calling ourself)
+// - ImGuiTestOpFlags_MoveToEdgeXXX flags
 // FIXME-TESTS: This is too eagerly trying to scroll everything even if already visible.
 // FIXME: Maybe ImGuiTestOpFlags_NoCheckHoveredId could be automatic if we detect that another item is active as intended?
 void    ImGuiTestContext::MouseMove(ImGuiTestRef ref, ImGuiTestOpFlags flags)

@@ -3315,7 +3315,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
                 ImGui::PushID(row);
 
                 ImGui::TableSetColumnIndex(0);
-                ImGui::Selectable("##selectable", false, ImGuiSelectableFlags_SpanAllColumns | ImGuiSelectableFlags_AllowItemOverlap);
+                ImGui::Selectable("##selectable", false, ImGuiSelectableFlags_SpanAllColumns | ImGuiSelectableFlags_AllowOverlap);
                 ImGui::SameLine(0.0f, 0.0f);
                 ImGui::Button("Col0");
                 if (ImGui::TableGetColumnFlags() & ImGuiTableColumnFlags_IsHovered)

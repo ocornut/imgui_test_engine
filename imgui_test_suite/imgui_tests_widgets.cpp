@@ -913,7 +913,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
 
     // ## Test overlap mode
     t = IM_REGISTER_TEST(e, "widgets", "widgets_overlap_1");
-    struct OverlapTestVars { ImGuiTestGenericItemStatus Status[2]; };
+    struct OverlapTestVars { ImGuiTestGenericItemStatus Status[2]; int Int1 = 0; };
     t->SetVarsDataType<OverlapTestVars>();
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
@@ -921,9 +921,14 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
 
         ImVec2 p = ImGui::GetCursorScreenPos();
-        bool button_0_pressed = ImGui::ButtonEx("00000", ImVec2(50, 50), ImGuiButtonFlags_AllowItemOverlap);
-        vars.Status[0].QueryInc(button_0_pressed);
+#if IMGUI_VERSION_NUM >= 18967
+        ImGui::SetNextItemAllowOverlap();
+#endif
+        bool button_0_pressed = ImGui::ButtonEx("00000", ImVec2(50, 50), ImGuiButtonFlags_AllowOverlap);
+#if IMGUI_VERSION_NUM < 18967
         ImGui::SetItemAllowOverlap();
+#endif
+        vars.Status[0].QueryInc(button_0_pressed);
 
         ImGui::SetCursorScreenPos(p + ImVec2(20, 25));
         bool button_1_pressed = ImGui::Button("11111", ImVec2(50, 25));
@@ -945,12 +950,10 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         // Mouse directly to overlap
         ctx->MouseTeleportToPos(p + ImVec2(25, 30));
         ctx->Yield(2);
-#if IMGUI_BROKEN_TESTS
-#if IMGUI_VERSION_NUM < 18966
+#if IMGUI_VERSION_NUM >= 18967
+        IM_CHECK(vars.Status[0].Hovered == 0);
+#elif (IMGUI_VERSION_NUM < 18966) && IMGUI_BROKEN_TESTS
         IM_CHECK(vars.Status[0].Hovered == 1); // Can't be tested yet as IsItemHovered() ignore overlap.
-#else
-        IM_CHECK(vars.Status[0].Hovered == 0); // Can't be tested yet as IsItemHovered() ignore overlap.
-#endif
 #endif
         IM_CHECK(vars.Status[1].Hovered > 0);
 
@@ -960,6 +963,53 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         IM_CHECK(vars.Status[1].RetValue == 1);
         IM_CHECK(vars.Status[1].Active > 0);
     };
+
+    // ## Test overlap mode on various widgets
+#if IMGUI_VERSION_NUM >= 18967
+    t = IM_REGISTER_TEST(e, "widgets", "widgets_overlap_2");
+    t->SetVarsDataType<OverlapTestVars>();
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        OverlapTestVars& vars = ctx->GetVars<OverlapTestVars>();
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
+
+        ImGui::SetNextItemWidth(200.0f);
+        ImGui::SetNextItemAllowOverlap();
+        bool ret = ImGui::SliderInt("##Slider", &vars.Int1, 0, 10);
+        vars.Status[0].QueryInc(ret);
+
+        ImRect r(ImGui::GetItemRectMin(), ImGui::GetItemRectMax());
+        ImGui::SetCursorScreenPos({ r.Max.x - 40, r.Min.y });
+        ret = ImGui::Button("Button");
+        vars.Status[1].QueryInc(ret);
+
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        OverlapTestVars& vars = ctx->GetVars<OverlapTestVars>();
+        ctx->SetRef("Test Window");
+
+        ctx->MouseMove("##Slider", ImGuiTestOpFlags_MoveToEdgeL);
+        vars.Status[0].Clear();
+        vars.Status[1].Clear();
+        ctx->MouseDown(0);
+        IM_CHECK(vars.Int1 == 0);
+        ctx->MouseMove("##Slider", ImGuiTestOpFlags_MoveToEdgeR);
+        IM_CHECK(vars.Int1 == 10);
+        IM_CHECK(vars.Status[0].Hovered > 0);
+        IM_CHECK(vars.Status[1].Hovered == 0);
+        ctx->MouseUp(0);
+        vars.Status[0].Clear();
+        vars.Status[1].Clear();
+        ctx->Yield();
+        IM_CHECK(vars.Status[0].Hovered == 0);
+        IM_CHECK(vars.Status[1].Hovered > 0);
+        ctx->MouseClick(0);
+        IM_CHECK(vars.Status[0].Activated == 0);
+        IM_CHECK(vars.Status[1].Activated > 0);
+    };
+#endif
 
     // ## Check input of InputScalar().
     t = IM_REGISTER_TEST(e, "widgets", "widgets_inputscalar_input");
