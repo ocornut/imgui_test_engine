@@ -3272,8 +3272,8 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
                 bool item_is_selected = GetSelected(item_n);
                 ImGui::SetNextItemSelectionData((void*)(intptr_t)item_n);
                 ImGui::Selectable(Str16f(label_format, item_n).c_str(), item_is_selected);
-                if (ImGui::IsItemToggledSelection())
-                    SetSelected(item_n, !item_is_selected);
+                //if (ImGui::IsItemToggledSelection())
+                //    SetSelected(item_n, !item_is_selected);
             }
             EndMultiSelect(items_count);
         }
@@ -3314,11 +3314,11 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
                 if (ctx->Test->ArgVariant == 0)
                 {
                     ImGui::Selectable(label.c_str(), item_is_selected);
-                    bool toggled = ImGui::IsItemToggledSelection();
-                    //if (toggled)
+                    //if (ImGui::IsItemToggledSelection())
+                    //{
                     //    ImGui::DebugLog("Item %d toggled selection %d->%d\n", item_n, item_is_selected, !item_is_selected);
-                    if (toggled)
-                        selection.SetSelected(item_n, !item_is_selected);
+                    //    selection.SetSelected(item_n, !item_is_selected);
+                    //}
                 }
                 else if (ctx->Test->ArgVariant == 1)
                 {
@@ -3329,10 +3329,10 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
                     if (ImGui::TreeNodeEx(label.c_str(), flags))
                         ImGui::TreePop();
                     //if (ImGui::IsItemToggledSelection())
+                    //{
                     //    ImGui::DebugLog("Item %d toggled selection %d->%d\n", item_n, item_is_selected, !item_is_selected);
-
-                    if (ImGui::IsItemToggledSelection())
-                        selection.SetSelected(item_n, !item_is_selected);
+                    //    selection.SetSelected(item_n, !item_is_selected);
+                    //}
                 }
             }
         }
@@ -3396,7 +3396,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ctx->KeyDown(ImGuiMod_Shift);
         ctx->ItemClick("Object 0008");
         ctx->KeyUp(ImGuiMod_Shift);
-        IM_CHECK_EQ(selection.SelectionSize, 8);
+        IM_CHECK_EQ(selection.SelectionSize, 8); // 0001->0008
 
         // Test reverse clipped SHIFT+Click
         // FIXME-TESTS: ItemInfo query could disable clipper?
@@ -3470,6 +3470,29 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         IM_CHECK_EQ(g.NavId, ctx->GetID("Object 0002"));
         IM_CHECK_EQ(selection.SelectionSize, 1);
         IM_CHECK_EQ(selection.GetSelected(2), true);
+
+        // Test keyboard activation (Space/Enter)
+        ctx->ItemClick("Object 0001");
+        ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_DownArrow);
+        ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_DownArrow);
+        IM_CHECK_EQ(selection.SelectionSize, 1);
+        IM_CHECK_EQ(selection.GetSelected(1), true);
+        ctx->KeyPress(ImGuiKey_Space); // Over 0003 while not selected
+        IM_CHECK_EQ(selection.SelectionSize, 1);
+        IM_CHECK_EQ(selection.GetSelected(3), true);
+        ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_DownArrow);
+        ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_Space); // Over 0004
+        IM_CHECK_EQ(selection.SelectionSize, 2);
+        IM_CHECK_EQ(selection.GetSelected(3), true);
+        IM_CHECK_EQ(selection.GetSelected(4), true);
+        ctx->KeyPress(ImGuiKey_Space); // Over 0004 while selected
+        IM_CHECK_EQ(selection.SelectionSize, 1);
+        IM_CHECK_EQ(selection.GetSelected(4), true);
+        ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_DownArrow, 4);
+        ctx->KeyPress(ImGuiMod_Shift | ImGuiKey_Space); // Over 0008 while not selected
+        IM_CHECK_EQ(selection.SelectionSize, 5);
+        IM_CHECK_EQ(selection.GetSelected(4), true);
+        IM_CHECK_EQ(selection.GetSelected(8), true);
 
         // Test Home/End
         ctx->KeyPress(ImGuiKey_Home);
@@ -3606,8 +3629,8 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
             bool item_is_selected = selection.GetSelected(n);
             ImGui::SetNextItemSelectionData((void*)(intptr_t)n);
             ImGui::Selectable(Str64f("Object %03d", n).c_str(), item_is_selected);
-            if (ImGui::IsItemToggledSelection())
-                selection.SetSelected(n, !item_is_selected);
+            //if (ImGui::IsItemToggledSelection())
+            //    selection.SetSelected(n, !item_is_selected);
         }
         selection.EndMultiSelect(50);
         ImGui::End();
