@@ -479,8 +479,12 @@ void ImGuiTestEngine_ClearInput(ImGuiTestEngine* engine)
     engine->Inputs.MouseWheel = ImVec2(0, 0);
 
     // FIXME: Necessary?
+#if IMGUI_VERSION_NUM >= 18972
+    g.IO.ClearEventsQueue();
+#else
     g.InputEventsQueue.resize(0);
     g.IO.ClearInputCharacters();
+#endif
     g.IO.ClearInputKeys();
 
     ImGuiTestEngine_ApplyInputToImGuiContext(engine);

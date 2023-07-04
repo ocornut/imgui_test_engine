@@ -525,6 +525,24 @@ void RegisterTests_Inputs(ImGuiTestEngine* e)
     };
 #endif
 
+#if IMGUI_VERSION_NUM >= 18968
+    t = IM_REGISTER_TEST(e, "inputs", "inputs_stationary_timer");
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiContext& g = *ctx->UiContext;
+        ImVec2 ref_pos = ImGui::GetMainViewport()->GetCenter();
+
+        ctx->LogDebug("MouseStationaryTimer = %f", g.MouseStationaryTimer);
+        ctx->MouseMoveToPos(ref_pos);
+        ctx->MouseMoveToPos(ref_pos + ImVec2(10, 10));
+        IM_CHECK_LE(g.MouseStationaryTimer, g.IO.DeltaTime * 3);
+        ctx->SleepNoSkip(5.0f, 1.0f);
+        IM_CHECK_GE(g.MouseStationaryTimer, 5.0f);
+
+        // FIXME-TESTS: As we rework stationary timer logic, will want to test for high-framerates
+    };
+#endif
+
 #if IMGUI_VERSION_NUM >= 18837
     // ## Test SetKeyOwner(), TestKeyOwner()
     t = IM_REGISTER_TEST(e, "inputs", "inputs_owner_basic_1");
