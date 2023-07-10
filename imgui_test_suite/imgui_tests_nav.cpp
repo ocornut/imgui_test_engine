@@ -826,6 +826,36 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
     };
 #endif
 
+    // ## Test Ctrl+Tab with callback at end of drawlist (crash fixed in 18973)
+#if IMGUI_VERSION_NUM >= 18972
+    t = IM_REGISTER_TEST(e, "nav", "nav_ctrl_tab_callback");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImDrawCallback dummy_callback = [](const ImDrawList* parent_list, const ImDrawCmd* cmd) {};
+        ImGui::Begin("Window 1", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
+        ImGui::Button("Button 1");
+        ImGui::GetWindowDrawList()->AddCallback(dummy_callback, NULL);
+        ImGui::End();
+
+        ImGui::Begin("Window 2", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
+        ImGui::Button("Button 2");
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ctx->WindowFocus("Window 1");
+        ctx->WindowFocus("Window 2");
+        ctx->KeyDown(ImGuiMod_Ctrl);
+        ctx->SleepNoSkip(1.0f, 0.50f);
+        ctx->KeyPress(ImGuiKey_Tab);
+        ctx->SleepNoSkip(1.0f, 0.50f);
+        ctx->KeyPress(ImGuiKey_Tab);
+        ctx->SleepNoSkip(1.0f, 0.50f);
+        ctx->KeyPress(ImGuiKey_Tab);
+        ctx->KeyUp(ImGuiMod_Ctrl);
+    };
+#endif
+
     // ## Test remote ActivateItemByID()
     t = IM_REGISTER_TEST(e, "nav", "nav_activate");
     t->GuiFunc = [](ImGuiTestContext* ctx)
