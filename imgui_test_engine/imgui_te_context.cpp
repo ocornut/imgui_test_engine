@@ -1334,10 +1334,11 @@ void    ImGuiTestContext::ScrollToItem(ImGuiTestRef ref, ImGuiAxis axis, ImGuiTe
     ImGuiContext& g = *UiContext;
     if (axis == ImGuiAxis_X)
         if (ImGuiTabBar* tab_bar = g.TabBars.GetByKey(item->ParentID))
-        {
-            ScrollToTabItem(tab_bar, item->ID);
-            return;
-        }
+            if (tab_bar->Flags & ImGuiTabBarFlags_FittingPolicyScroll)
+            {
+                ScrollToTabItem(tab_bar, item->ID);
+                return;
+            }
 
     ImGuiWindow* window = item->Window;
     float item_curr = ImFloor(item->RectFull.GetCenter()[axis]);

@@ -5,6 +5,9 @@ CHANGELOG
    Those changes are not all listed here.
 ** For a while this is going to ONLY INCLUDE BREAKING CHANGES.
 
+2023/07/11:
+- TestEngine: Fixed an issue accessing tabs in a TabBar without scrolling policy.
+
 2023/06/23:
 - TestEngine: Fixed two case where DockInto() would fail if one or both windows are already docked.
 
