@@ -3572,6 +3572,36 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         IM_CHECK_EQ(selection1.SelectionSize, 10);
     };
 
+    // Test mouse-right click on unfocused window
+    t = IM_REGISTER_TEST(e, "widgets", "widgets_multiselect_unfocused");
+    t->SetVarsDataType<MultiSelectTestVars>();
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        MultiSelectTestVars& vars = ctx->GetVars<MultiSelectTestVars>();
+        ExampleSelection& selection = vars.Selection0;
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
+        selection.EmitBasicLoop(ImGuiMultiSelectFlags_ClearOnEscape, 50, "Object %03d");
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiContext& g = *ctx->UiContext;
+        MultiSelectTestVars& vars = ctx->GetVars<MultiSelectTestVars>();
+        ExampleSelection& selection = vars.Selection0;
+        ctx->ItemClick("//Test Window/Object 001");
+        IM_CHECK(selection.GetSelectionSize() == 1 && selection.GetSelected(1));
+        ctx->WindowFocus("Dear ImGui Demo");
+        ctx->WindowMove("Dear ImGui Demo", ctx->GetWindowByRef("Test Window")->Rect().GetTR());
+        IM_CHECK(selection.GetSelectionSize() == 1 && selection.GetSelected(1));
+        ctx->MouseMove("//Test Window/Object 006", ImGuiTestOpFlags_NoFocusWindow);
+        IM_CHECK(g.NavWindow != NULL);
+        IM_CHECK_STR_EQ(g.NavWindow->Name, "Dear ImGui Demo");
+        ctx->MouseClick(ImGuiMouseButton_Right);
+        IM_CHECK(g.NavWindow != NULL);
+        IM_CHECK_STR_EQ(g.NavWindow->Name, "Test Window");
+        IM_CHECK(selection.GetSelectionSize() == 1);
+        IM_CHECK(selection.GetSelected(6) == true);
+    };
 
     // Test Enter key behaviors
     t = IM_REGISTER_TEST(e, "widgets", "widgets_multiselect_enter");
@@ -3680,6 +3710,36 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         IM_CHECK(selection.GetSelectionSize() == 6);
         IM_CHECK(selection.GetSelected(0) == true);
         IM_CHECK(selection.GetSelected(5) == true);
+    };
+
+    // Test validity of ImGuiMultiSelectIO data.
+    t = IM_REGISTER_TEST(e, "widgets", "widgets_multiselect_io_lifetime");
+    t->SetVarsDataType<MultiSelectTestVars>();
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        MultiSelectTestVars& vars = ctx->GetVars<MultiSelectTestVars>();
+        ExampleSelection& selection = vars.Selection0;
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
+
+        ImGuiMultiSelectIO* ms_io_1 = ImGui::BeginMultiSelect(ImGuiMultiSelectFlags_None);
+        if (vars.Test0)
+            IM_CHECK(ms_io_1->RangeSrcItem == selection.IndexToItemData(5));
+        selection.EmitBasicItems(ms_io_1, 50, "Object %03d");
+        selection.ApplyRequests(ms_io_1, 50);
+        ImGuiMultiSelectIO* ms_io_2 = ImGui::EndMultiSelect();
+        if (vars.Test0)
+            IM_CHECK(ms_io_2->RangeSrcItem == selection.IndexToItemData(5));
+        selection.ApplyRequests(ms_io_2, 50);
+        IM_CHECK(ms_io_1->RangeSrcItem == (void*)-1);
+
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        MultiSelectTestVars& vars = ctx->GetVars<MultiSelectTestVars>();
+        ctx->ItemClick("//Test Window/Object 005");
+        vars.Test0 = true;
+        ctx->Yield();
     };
 
     // Test default selection on NavInit
