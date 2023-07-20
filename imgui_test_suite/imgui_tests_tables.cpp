@@ -1353,8 +1353,8 @@ void RegisterTests_Table(ImGuiTestEngine* e)
         ImGui::End();
     };
 
-    // ## Test rendering two tables with same ID (#5557)
-    t = IM_REGISTER_TEST(e, "table", "table_multi_instances");
+    // ## Test rendering two tables with same ID (multi-instance, synced tables) (#5557)
+    t = IM_REGISTER_TEST(e, "table", "table_synced_1");
     struct MultiInstancesVars { bool MultiWindow = false, SideBySide = false, DifferSizes = false, Retest = false; int ClickCounters[3] = {}; };
     t->SetVarsDataType<MultiInstancesVars>();
     t->GuiFunc = [](ImGuiTestContext* ctx)
@@ -1507,6 +1507,42 @@ void RegisterTests_Table(ImGuiTestEngine* e)
 #endif
         }
     };
+
+#if IMGUI_VERSION_NUM >= 18974
+    // ## Test shared decoration width in synced instance (#5920)
+    // FIXME-TESTS: currently only testing a subset for a fix done for #6619. Should test more.
+    t = IM_REGISTER_TEST(e, "table", "table_synced_2");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        auto& vars = ctx->GenericVars;
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+        if (ImGui::BeginTable("tab", 2, ImGuiTableFlags_Resizable | ImGuiTableFlags_ScrollY, ImVec2(0.0f, 0.0f)))
+        {
+            ImGui::TableNextRow();
+            ImGui::TableNextColumn();
+            if (vars.Step == 1)
+                vars.Width = ImGui::GetContentRegionAvail().x;
+            if (vars.Step == 2)
+                IM_CHECK_EQ(vars.Width, ImGui::GetContentRegionAvail().x);
+            ImGui::BeginChild("foo", ImVec2(0, -2)); // in IMGUI_VERSION_NUM < 18974 this leads to parent column width flickering.
+            ImGui::EndChild();
+            ImGui::TableNextColumn();
+            ImGui::EndTable();
+        }
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        auto& vars = ctx->GenericVars;
+        ctx->SetRef("Test Window");
+        ctx->WindowResize("", ImVec2(300, 300));
+        vars.Step = 1; // write
+        ctx->Yield(2);
+        vars.Step = 2; // Check
+        ctx->WindowResize("", ImVec2(300, 200)); // Resize on Y axis only
+        ctx->WindowResize("", ImVec2(300, 100));
+    };
+#endif
 
     // ## Test two tables in a tooltip continuously expanding tooltip size (#3162)
     t = IM_REGISTER_TEST(e, "table", "table_two_tables_in_tooltip");
