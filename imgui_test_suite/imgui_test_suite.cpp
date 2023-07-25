@@ -50,6 +50,7 @@
 #include "imgui_test_engine/imgui_te_utils.h"
 #include "imgui_test_engine/imgui_te_ui.h"
 #include "imgui_test_engine/imgui_capture_tool.h"
+#include "imgui_test_engine/imgui_te_internal.h"
 #include "imgui_test_engine/thirdparty/Str/Str.h"
 
 // imgui_app (this is a helper to wrap multiple backends)
@@ -111,6 +112,7 @@ struct TestSuiteApp
     Str128                      OptExportFilename;
     ImGuiTestEngineExportFormat OptExportFormat = ImGuiTestEngineExportFormat_JUnitXml;
     ImVector<char*>             TestsToRun;
+    bool                        OptListTests = false;
 };
 
 static void TestSuite_ShowUI(TestSuiteApp* app)
@@ -180,6 +182,7 @@ static void TestSuite_PrintCommandLineHelp()
     printf("   [pattern]               : queue all tests containing the word [pattern].\n");
     printf("   [-pattern]              : queue all tests not containing the word [pattern].\n");
     printf("   [^pattern]              : queue all tests starting with the word [pattern].\n");
+    printf("   -list-tests             : list all tests, one per line\n");
 }
 
 static bool TestSuite_ParseCommandLineOptions(TestSuiteApp* app, int argc, char** argv)
@@ -248,6 +251,11 @@ static bool TestSuite_ParseCommandLineOptions(TestSuiteApp* app, int argc, char*
         else if (strcmp(argv[n], "-export-file") == 0 && n + 1 < argc)
         {
             app->OptExportFilename = argv[n + 1];
+        }
+        else if (strcmp(argv[n], "-list-tests") == 0)
+        {
+            app->OptListTests = true;
+            app->OptGui = false;
         }
         else
         {
@@ -538,6 +546,18 @@ int main(int argc, char** argv)
         fprintf(stderr, "Dear ImGui git repository was not found.\n");
     }
     printf("Git branch: \"%s\"\n", test_io.GitBranchName);
+
+    // List all tests and exit the program
+    if (app->OptListTests)
+    {
+        for (int n = 0; n < engine->TestsAll.Size; n++)
+        {
+            ImGuiTest* test = engine->TestsAll[n];
+            printf("Test: '%s' '%s'\n", test->Category, test->Name);
+        }
+
+        return 0;
+    }
 
     // Start engine
     ImGuiTestEngine_Start(engine, ImGui::GetCurrentContext());
