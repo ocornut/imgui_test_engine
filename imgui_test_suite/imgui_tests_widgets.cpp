@@ -3712,6 +3712,58 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         IM_CHECK(selection.GetSelected(5) == true);
     };
 
+    // Test range-select with ImGuiMultiSelectFlags_SingleSelect flag (previously ImGuiMultiSelectFlags_NoMultiSelect)
+    t = IM_REGISTER_TEST(e, "widgets", "widgets_multiselect_singleselect");
+    t->SetVarsDataType<MultiSelectTestVars>();
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        MultiSelectTestVars& vars = ctx->GetVars<MultiSelectTestVars>();
+        ExampleSelection& selection = vars.Selection0;
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
+#if IMGUI_VERSION_NUM < 18980
+        const ImGuiMultiSelectFlags ImGuiMultiSelectFlags_SingleSelect = ImGuiMultiSelectFlags_NoMultiSelect;
+#endif
+        selection.EmitBasicLoop(ImGuiMultiSelectFlags_SingleSelect, 50, "Object %03d");
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        MultiSelectTestVars& vars = ctx->GetVars<MultiSelectTestVars>();
+        ExampleSelection& selection = vars.Selection0;
+
+        // Shift+Arrow move
+        ctx->ItemClick("//Test Window/Object 000");
+        ctx->KeyPress(ImGuiMod_Shift | ImGuiKey_DownArrow);
+        IM_CHECK(selection.GetSelectionSize() == 1);
+        IM_CHECK(selection.GetSelected(0) == false);
+        IM_CHECK(selection.GetSelected(1) == true);
+
+        // Shift+Click
+        ctx->KeyDown(ImGuiMod_Shift);
+        ctx->ItemClick("//Test Window/Object 005");
+        ctx->KeyUp(ImGuiMod_Shift);
+        IM_CHECK(selection.GetSelectionSize() == 1);
+        IM_CHECK(selection.GetSelected(1) == false);
+        IM_CHECK(selection.GetSelected(5) == true);
+
+        // Ctrl+Click
+        ctx->KeyDown(ImGuiMod_Ctrl);
+        ctx->ItemClick("//Test Window/Object 006");
+        ctx->KeyUp(ImGuiMod_Ctrl);
+        IM_CHECK(selection.GetSelectionSize() == 1);
+        IM_CHECK(selection.GetSelected(5) == false);
+        IM_CHECK(selection.GetSelected(6) == true);
+
+        // Ctrl+Down, Ctrl+Space
+        ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_DownArrow);
+        IM_CHECK(selection.GetSelectionSize() == 1);
+        IM_CHECK(selection.GetSelected(6) == true);
+        ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_Space);
+        IM_CHECK(selection.GetSelectionSize() == 1);
+        IM_CHECK(selection.GetSelected(6) == false);
+        IM_CHECK(selection.GetSelected(7) == true);
+    };
+
     // Test validity of ImGuiMultiSelectIO data.
     t = IM_REGISTER_TEST(e, "widgets", "widgets_multiselect_io_lifetime");
     t->SetVarsDataType<MultiSelectTestVars>();
