@@ -3272,6 +3272,48 @@ void RegisterTests_Table(ImGuiTestEngine* e)
         ctx->Yield(2);                  // Do one more frame so tests in GuiFunc can run.
     };
 
+#if IMGUI_VERSION_NUM >= 18983
+    // ## Test SameLine() between columns
+    t = IM_REGISTER_TEST(e, "table", "table_sameline_between_columns");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::Begin("Test window 1", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImGui::Text("Hello");
+
+        if (ImGui::BeginTable("columns1", 3, ImGuiTableFlags_Borders))
+        {
+            ImGui::TableNextColumn();
+
+            // Test that SameLine(0, 0) doesn't alter position (even in first column)
+            ImVec2 p1 = ImGui::GetCursorScreenPos();
+            ImGui::SameLine(0.0f, 0.0f);
+            IM_CHECK_EQ(p1.x, ImGui::GetCursorScreenPos().x);
+            IM_CHECK_EQ(p1.y, ImGui::GetCursorScreenPos().y);
+            ImGui::Dummy({ 32, 32 });
+
+            ImGui::TableNextColumn();
+            IM_CHECK_EQ(ImGui::GetCursorScreenPos().y, p1.y); // Verify we start same height as before
+            ImGui::Text("Test");
+            IM_CHECK_EQ(ImGui::GetCursorScreenPos().y, p1.y + ImGui::GetTextLineHeightWithSpacing()); // Line height not automatically shared
+
+            // Test that SameLine() pulls line height from before.
+            ImGui::TableNextRow();
+            ImGui::TableNextColumn();
+            p1 = ImGui::GetCursorScreenPos();
+            ImGui::Dummy({ 32, 32 });
+
+            ImGui::TableNextColumn();
+            IM_CHECK_EQ(ImGui::GetCursorScreenPos().y, p1.y);
+            ImGui::SameLine(0.0f, 0.0f);
+            IM_CHECK_EQ(ImGui::GetCursorScreenPos().y, p1.y);
+            ImGui::Text("Test");
+            IM_CHECK_EQ(ImGui::GetCursorScreenPos().y, p1.y + 32 + ImGui::GetStyle().ItemSpacing.y); // Line height shared
+
+            ImGui::EndTable();
+        }
+        ImGui::End();
+    };
+#endif
 
 #if IMGUI_VERSION_NUM >= 18805
     // ## Test SameLine() before a row change
