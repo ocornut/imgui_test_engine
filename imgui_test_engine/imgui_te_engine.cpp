@@ -831,6 +831,18 @@ static void ImGuiTestEngine_PostRender(ImGuiTestEngine* engine, ImGuiContext* ui
     if (!engine->IO.ConfigMouseDrawCursor && !g.IO.MouseDrawCursor && ImGuiTestEngine_IsUsingSimulatedInputs(engine))
         g.MouseCursor = ImGuiMouseCursor_Arrow;
 
+
+    // Check ImDrawData integrity
+    // This is currently a very cheap operation but may later become slower we if e.g. check idx boundaries.
+#ifdef IMGUI_HAS_DOCK
+    if (engine->IO.CheckDrawDataIntegrity)
+        for (ImGuiViewport* viewport : ImGui::GetPlatformIO().Viewports)
+            DrawDataVerifyMatchingBufferCount(viewport->DrawData);
+#else
+    if (engine->IO.CheckDrawDataIntegrity)
+        DrawDataVerifyMatchingBufferCount(ImGui::GetDrawData());
+#endif
+
     engine->CaptureContext.PostRender();
 }
 

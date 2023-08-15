@@ -475,6 +475,7 @@ int main(int argc, char** argv)
     FindVideoEncoder(test_io.VideoCaptureEncoderPath, IM_ARRAYSIZE(test_io.VideoCaptureEncoderPath));
     ImStrncpy(test_io.VideoCaptureEncoderParams, IMGUI_CAPTURE_DEFAULT_VIDEO_PARAMS_FOR_FFMPEG, IM_ARRAYSIZE(test_io.VideoCaptureEncoderParams));
     ImStrncpy(test_io.GifCaptureEncoderParams, IMGUI_CAPTURE_DEFAULT_GIF_PARAMS_FOR_FFMPEG, IM_ARRAYSIZE(test_io.GifCaptureEncoderParams));
+    test_io.CheckDrawDataIntegrity = true;
 
     if (app->OptGui)
     {

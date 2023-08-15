@@ -245,6 +245,9 @@ struct IMGUI_API ImGuiTestEngineIO
     const char*                 ExportResultsFilename = NULL;
     ImGuiTestEngineExportFormat ExportResultsFormat = (ImGuiTestEngineExportFormat)0;
 
+    // Options: Sanity Checks
+    bool                        CheckDrawDataIntegrity = false;     // Check ImDrawData integrity (buffer count, etc.). Currently cheap but may become a slow operation.
+
     //-------------------------------------------------------------------------
     // Output
     //-------------------------------------------------------------------------

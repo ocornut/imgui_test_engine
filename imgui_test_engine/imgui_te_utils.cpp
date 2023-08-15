@@ -1203,6 +1203,22 @@ void TableDiscardInstanceAndSettings(ImGuiID table_id)
     //ImGui::TableResetSettings(table);
 }
 
+// Helper to verify ImDrawData integrity of buffer count (broke before e.g. #6716)
+void DrawDataVerifyMatchingBufferCount(ImDrawData* draw_data)
+{
+    int total_vtx_count = 0;
+    int total_idx_count = 0;
+    for (ImDrawList* draw_list : draw_data->CmdLists)
+    {
+        total_vtx_count += draw_list->VtxBuffer.Size;
+        total_idx_count += draw_list->IdxBuffer.Size;
+    }
+    IM_UNUSED(total_vtx_count);
+    IM_UNUSED(total_idx_count);
+    IM_ASSERT(total_vtx_count == draw_data->TotalVtxCount);
+    IM_ASSERT(total_idx_count == draw_data->TotalIdxCount);
+}
+
 //-----------------------------------------------------------------------------
 // Simple CSV parser
 //-----------------------------------------------------------------------------
