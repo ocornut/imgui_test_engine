@@ -1833,7 +1833,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         if (vars.IsMultiSelect)
         {
             ImGui::BeginMultiSelect(ImGuiMultiSelectFlags_None); // Placeholder, won't interact properly
-            ImGui::SetNextItemSelectionUserData(NULL);
+            ImGui::SetNextItemSelectionUserData(ImGuiSelectionUserData_Invalid);
         }
 #endif
 
