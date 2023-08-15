@@ -1350,6 +1350,18 @@ void ImGuiTestEngine_GetResult(ImGuiTestEngine* engine, int& count_tested, int& 
     }
 }
 
+// Get a copy of the test list
+void ImGuiTestEngine_GetTestList(ImGuiTestEngine* engine, ImVector<ImGuiTest*>* out_tests)
+{
+    *out_tests = engine->TestsAll;
+}
+
+// Get a copy of the test queue
+void ImGuiTestEngine_GetTestQueue(ImGuiTestEngine* engine, ImVector<ImGuiTestRunTask>* out_tests)
+{
+    *out_tests = engine->TestsQueue;
+}
+
 static void ImGuiTestEngine_UpdateHooks(ImGuiTestEngine* engine)
 {
     ImGuiContext* ui_ctx = engine->UiContextTarget;

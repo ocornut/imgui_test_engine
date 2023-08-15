@@ -22,6 +22,7 @@ struct ImGuiTestEngineIO;           // Test engine public I/O
 struct ImGuiTestItemInfo;           // Info queried from item (id, geometry, status flags, debug label)
 struct ImGuiTestItemList;           // A list of items
 struct ImGuiTestInputs;             // Simulated user inputs (will be fed into ImGuiIO by the test engine)
+struct ImGuiTestRunTask;            // A queued test (test + runflags)
 
 typedef int ImGuiTestFlags;         // Flags: See ImGuiTestFlags_
 typedef int ImGuiTestCheckFlags;    // Flags: See ImGuiTestCheckFlags_
@@ -173,6 +174,8 @@ IMGUI_API void                ImGuiTestEngine_AbortCurrentTest(ImGuiTestEngine* 
 IMGUI_API bool                ImGuiTestEngine_IsTestQueueEmpty(ImGuiTestEngine* engine);
 IMGUI_API bool                ImGuiTestEngine_IsUsingSimulatedInputs(ImGuiTestEngine* engine);
 IMGUI_API void                ImGuiTestEngine_GetResult(ImGuiTestEngine* engine, int& count_tested, int& success_count);
+IMGUI_API void                ImGuiTestEngine_GetTestList(ImGuiTestEngine* engine, ImVector<ImGuiTest*>* out_tests);
+IMGUI_API void                ImGuiTestEngine_GetTestQueue(ImGuiTestEngine* engine, ImVector<ImGuiTestRunTask>* out_tests);
 
 // Functions: Crash Handling
 // Ensure past test results are properly exported even if application crash during a test.
@@ -400,6 +403,13 @@ struct IMGUI_API ImGuiTest
             VarsPostConstructor = [](ImGuiTestContext* ctx, void* ptr, void* fn) { ((void (*)(ImGuiTestContext*, T&))(fn))(ctx, *(T*)ptr); };
         }
     }
+};
+
+// Stored in test queue
+struct IMGUI_API ImGuiTestRunTask
+{
+    ImGuiTest*          Test = NULL;
+    ImGuiTestRunFlags   RunFlags = ImGuiTestRunFlags_None;
 };
 
 //-------------------------------------------------------------------------

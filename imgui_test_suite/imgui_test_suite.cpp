@@ -6,9 +6,12 @@
 //   main.exe -gui -fileopener ..\..\tools\win32_open_with_sublime.cmd -nothrottle
 
 // Command-line mode, e.g.
-//   main.exe -nogui -v -nopause            // <- run all tests
-//   main.exe -nogui -nopause testname      // <- run 'testname' or all matching tests
-//   main.exe -nogui -viewport-mock         // <- run with viewport emulation
+//   main.exe -list                         // List available tests
+//   main.exe -list table_                  // List tests matching "table_"
+//   main.exe -list "^table_"               // List tests starting with "table_"
+//   main.exe -nogui -v -nopause            // Run all tests
+//   main.exe -nogui -nopause testname      // Run tests matching "testname"
+//   main.exe -nogui -viewport-mock         // Run with viewport emulation
 
 // Examples
 #define CMDLINE_ARGS  "-fileopener tools/win32_open_with_sublime.cmd"
@@ -50,7 +53,6 @@
 #include "imgui_test_engine/imgui_te_utils.h"
 #include "imgui_test_engine/imgui_te_ui.h"
 #include "imgui_test_engine/imgui_capture_tool.h"
-#include "imgui_test_engine/imgui_te_internal.h"
 #include "imgui_test_engine/thirdparty/Str/Str.h"
 
 // imgui_app (this is a helper to wrap multiple backends)
@@ -99,6 +101,7 @@ struct TestSuiteApp
     // Command-line options
     bool                        OptGui = false;
     bool                        OptGuiFunc = false;
+    bool                        OptListTests = false;
     ImGuiTestRunSpeed           OptRunSpeed = ImGuiTestRunSpeed_Fast;
     ImGuiTestVerboseLevel       OptVerboseLevelBasic = ImGuiTestVerboseLevel_COUNT; // Default is set in main.cpp depending on -gui/-nogui
     ImGuiTestVerboseLevel       OptVerboseLevelError = ImGuiTestVerboseLevel_COUNT; // "
@@ -112,7 +115,6 @@ struct TestSuiteApp
     Str128                      OptExportFilename;
     ImGuiTestEngineExportFormat OptExportFormat = ImGuiTestEngineExportFormat_JUnitXml;
     ImVector<char*>             TestsToRun;
-    bool                        OptListTests = false;
 };
 
 static void TestSuite_ShowUI(TestSuiteApp* app)
@@ -176,13 +178,13 @@ static void TestSuite_PrintCommandLineHelp()
     printf("  -stressamount <int>      : set performance test duration multiplier (default: 5)\n");
     printf("  -fileopener <file>       : provide a bat/cmd/shell script to open source file.\n");
     printf("  -export-file <file>      : save test run results in specified file.\n");
-    printf("  -export-format <format>   : save test run results in specified format. (default: junit)\n");
+    printf("  -export-format <format>  : save test run results in specified format. (default: junit)\n");
+    printf("  -list                    : list queued tests (one per line) and exit.\n");
     printf("Tests:\n");
     printf("   all/tests/perf          : queue by groups: all, only tests, only performance benchmarks.\n");
     printf("   [pattern]               : queue all tests containing the word [pattern].\n");
     printf("   [-pattern]              : queue all tests not containing the word [pattern].\n");
     printf("   [^pattern]              : queue all tests starting with the word [pattern].\n");
-    printf("   -list-tests             : list all tests, one per line\n");
 }
 
 static bool TestSuite_ParseCommandLineOptions(TestSuiteApp* app, int argc, char** argv)
@@ -252,7 +254,7 @@ static bool TestSuite_ParseCommandLineOptions(TestSuiteApp* app, int argc, char*
         {
             app->OptExportFilename = argv[n + 1];
         }
-        else if (strcmp(argv[n], "-list-tests") == 0)
+        else if (strcmp(argv[n], "-list") == 0)
         {
             app->OptListTests = true;
             app->OptGui = false;
@@ -548,15 +550,13 @@ int main(int argc, char** argv)
     }
     printf("Git branch: \"%s\"\n", test_io.GitBranchName);
 
-    // List all tests and exit the program
+    // List all queued tests and exit the program
     if (app->OptListTests)
     {
-        for (int n = 0; n < engine->TestsAll.Size; n++)
-        {
-            ImGuiTest* test = engine->TestsAll[n];
-            printf("Test: '%s' '%s'\n", test->Category, test->Name);
-        }
-
+        ImVector<ImGuiTestRunTask> tests;
+        ImGuiTestEngine_GetTestQueue(engine, &tests);
+        for (ImGuiTestRunTask& test_task : tests)
+            printf("Test: '%s' '%s'\n", test_task.Test->Category, test_task.Test->Name);
         return 0;
     }
 

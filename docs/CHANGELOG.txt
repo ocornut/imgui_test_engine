@@ -6,6 +6,8 @@ CHANGELOG
 ** For a while this is going to ONLY INCLUDE BREAKING CHANGES.
 
 2023/08/15:
+- TestSuite: Added -list option (e.g. 'test_suite.exe -list "^table"').
+- TestEngine: Added ImGuiTestEngine_GetTestList(), ImGuiTestEngine_GetTestQueue().
 - TestEngine: Added IO.CheckDrawDataIntegrity helper (mostly for use by test suite).
 
 2023/07/11:

@@ -61,13 +61,6 @@ struct ImGuiTestFindByLabelTask
     ImGuiID                 OutItemId = 0;                  // Result item ID
 };
 
-// Processed by test queue
-struct ImGuiTestRunTask
-{
-    ImGuiTest*              Test = NULL;
-    ImGuiTestRunFlags       RunFlags = ImGuiTestRunFlags_None;
-};
-
 enum ImGuiTestInputType
 {
     ImGuiTestInputType_None,
