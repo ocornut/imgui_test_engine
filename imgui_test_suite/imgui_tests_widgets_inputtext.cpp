@@ -930,7 +930,7 @@ void RegisterTests_WidgetsInputText(ImGuiTestEngine* e)
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         InputTextFilterVars& vars = ctx->GetVars<InputTextFilterVars>();
-        const char* input_text = "Some fancy Input Text in 0.., 1.., 2.., 3!";
+        const char* input_text = "Some fancy Input Text in 0.. 1.. 2.. 3!";
         ctx->SetRef("Test Window");
         ctx->ItemClick("default");
         ctx->KeyCharsAppendEnter(input_text);
@@ -939,6 +939,13 @@ void RegisterTests_WidgetsInputText(ImGuiTestEngine* e)
         ctx->ItemClick("decimal");
         ctx->KeyCharsAppendEnter(input_text);
         IM_CHECK_STR_EQ(vars.Decimal.c_str(), "0..1..2..3");
+
+        // , are replaced by . in decimal and scientific fields (#6719, #2278)
+#if IMGUI_VERSION_NUM >= 18983
+        ctx->ItemClick("decimal");
+        ctx->KeyCharsReplaceEnter(".,.,");
+        IM_CHECK_STR_EQ(vars.Decimal.c_str(), "....");
+#endif
 
         ctx->ItemClick("scientific");
         ctx->KeyCharsAppendEnter(input_text);
@@ -950,11 +957,11 @@ void RegisterTests_WidgetsInputText(ImGuiTestEngine* e)
 
         ctx->ItemClick("uppercase");
         ctx->KeyCharsAppendEnter(input_text);
-        IM_CHECK_STR_EQ(vars.Uppercase.c_str(), "SOME FANCY INPUT TEXT IN 0.., 1.., 2.., 3!");
+        IM_CHECK_STR_EQ(vars.Uppercase.c_str(), "SOME FANCY INPUT TEXT IN 0.. 1.. 2.. 3!");
 
         ctx->ItemClick("no blank");
         ctx->KeyCharsAppendEnter(input_text);
-        IM_CHECK_STR_EQ(vars.NoBlank.c_str(), "SomefancyInputTextin0..,1..,2..,3!");
+        IM_CHECK_STR_EQ(vars.NoBlank.c_str(), "SomefancyInputTextin0..1..2..3!");
 
         ctx->ItemClick("\"imgui\" letters");
         ctx->KeyCharsAppendEnter(input_text);
