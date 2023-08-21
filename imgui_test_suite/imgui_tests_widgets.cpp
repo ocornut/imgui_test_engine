@@ -3248,14 +3248,14 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         // You are likely to need some kind of data structure to convert 'view index' <> 'object ID'.
         // FIXME-MULTISELECT: Would be worth providing a demo of doing this.
         // FIXME-MULTISELECT: SetRange() is currently very inefficient since it doesn't take advantage of the fact that ImGuiStorage stores sorted key.
-        void SetRange(int n1, int n2, bool v)   { if (n2 < n1) { int tmp = n2; n2 = n1; n1 = tmp; } for (int n = n1; n <= n2; n++) SetSelected(n, v); }
+        void SetRange(int n1, int n2, bool v)   { for (int n = n1; n <= n2; n++) SetSelected(n, v); }
         void SelectAll(int count)               { Storage.Data.resize(count); for (int idx = 0; idx < count; idx++) Storage.Data[idx] = ImGuiStorage::ImGuiStoragePair((ImGuiID)idx, 1); SelectionSize = count; } // This could be using SetRange(), but it this way is faster.
 
         void ApplyRequests(ImGuiMultiSelectIO* ms_io, int items_count)
         {
             if (ms_io->RequestClear)     { Clear(); }
             if (ms_io->RequestSelectAll) { SelectAll(items_count); }
-            if (ms_io->RequestSetRange)  { SetRange(ItemDataToIndex(ms_io->RangeSrcItem), ItemDataToIndex(ms_io->RangeDstItem), ms_io->RangeSelected ? 1 : 0); }
+            if (ms_io->RequestSetRange)  { SetRange(ItemDataToIndex(ms_io->RangeFirstItem), ItemDataToIndex(ms_io->RangeLastItem), ms_io->RangeSelected ? 1 : 0); }
         }
         void EmitBasicItems(ImGuiMultiSelectIO* ms_io, int items_count, const char* label_format)
         {
