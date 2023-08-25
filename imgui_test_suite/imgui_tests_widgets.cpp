@@ -3253,9 +3253,9 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
 
         void ApplyRequests(ImGuiMultiSelectIO* ms_io, int items_count)
         {
-            if (ms_io->RequestClear)     { Clear(); }
-            if (ms_io->RequestSelectAll) { SelectAll(items_count); }
-            if (ms_io->RequestSetRange)  { SetRange(ItemDataToIndex(ms_io->RangeFirstItem), ItemDataToIndex(ms_io->RangeLastItem), ms_io->RangeSelected ? 1 : 0); }
+            if (ms_io->RequestClear)        { Clear(); }
+            if (ms_io->RequestSelectAll)    { SelectAll(items_count); }
+            if (ms_io->RequestSetRange)     { SetRange(ItemDataToIndex(ms_io->RangeFirstItem), ItemDataToIndex(ms_io->RangeLastItem), ms_io->RangeSelected ? 1 : 0); }
         }
         void EmitBasicItems(ImGuiMultiSelectIO* ms_io, int items_count, const char* label_format)
         {
@@ -3301,10 +3301,10 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
 
         ImGuiListClipper clipper;
         clipper.Begin(ITEMS_COUNT);
+        if (ms_io->RangeSrcItem > 0)
+            clipper.IncludeByIndex(selection.ItemDataToIndex(ms_io->RangeSrcItem));
         while (clipper.Step())
         {
-            if (ms_io->RangeSrcItem != ImGuiSelectionUserData_Invalid && clipper.DisplayStart > selection.ItemDataToIndex(ms_io->RangeSrcItem))
-                ms_io->RangeSrcPassedBy = true;
             for (int item_n = clipper.DisplayStart; item_n < clipper.DisplayEnd; item_n++)
             {
                 Str64f label("Object %04d", item_n);
