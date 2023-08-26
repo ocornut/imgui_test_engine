@@ -3302,7 +3302,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ImGuiListClipper clipper;
         clipper.Begin(ITEMS_COUNT);
         if (ms_io->RangeSrcItem > 0)
-            clipper.IncludeByIndex(selection.ItemDataToIndex(ms_io->RangeSrcItem));
+            clipper.IncludeItemByIndex(selection.ItemDataToIndex(ms_io->RangeSrcItem));
         while (clipper.Step())
         {
             for (int item_n = clipper.DisplayStart; item_n < clipper.DisplayEnd; item_n++)
@@ -3570,6 +3570,20 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_A);
         IM_CHECK_EQ(selection0.SelectionSize, 1);
         IM_CHECK_EQ(selection1.SelectionSize, 10);
+
+        // Check leaving a scope with keyboard directional move 
+        // May need to clarify how this behave depending on "leaving" source, as mouse clicks don't impact this.
+#if IMGUI_VERSION_NUM >= 18983
+        ctx->ItemClick("Scope 1/Object 0000");
+        IM_CHECK_EQ(selection0.SelectionSize, 1);
+        IM_CHECK_EQ(selection1.SelectionSize, 1);
+        ctx->KeyPress(ImGuiKey_UpArrow);
+        IM_CHECK_EQ(selection0.SelectionSize, 1);
+        IM_CHECK_EQ(selection1.SelectionSize, 0);
+        ctx->KeyPress(ImGuiKey_DownArrow);
+        IM_CHECK_EQ(selection0.SelectionSize, 0);
+        IM_CHECK_EQ(selection1.SelectionSize, 1);
+#endif
     };
 
     // Test mouse-right click on unfocused window

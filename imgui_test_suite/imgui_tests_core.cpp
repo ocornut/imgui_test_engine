@@ -3661,7 +3661,10 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
                 clipper.Begin(vars.ItemsIn, ImGui::GetTextLineHeightWithSpacing());
             else
                 clipper.Begin(vars.ItemsIn);
-#if IMGUI_VERSION_NUM >= 18509
+#if IMGUI_VERSION_NUM >= 18984
+            if (vars.ForceDisplayStart != vars.ForceDisplayEnd)
+                clipper.IncludeItemsByIndex(vars.ForceDisplayStart, vars.ForceDisplayEnd);
+#elif IMGUI_VERSION_NUM >= 18509
             if (vars.ForceDisplayStart != vars.ForceDisplayEnd)
                 clipper.IncludeRangeByIndices(vars.ForceDisplayStart, vars.ForceDisplayEnd);
 #endif
