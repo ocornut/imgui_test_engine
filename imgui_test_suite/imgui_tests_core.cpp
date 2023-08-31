@@ -3623,7 +3623,7 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
     t = IM_REGISTER_TEST(e, "misc", "misc_clipper");
     struct ClipperTestVars { ImGuiWindow* WindowOut = NULL; float WindowHeightInItems = 10.0f; int ItemsIn = 100; int ItemsOut = 0; int ForceDisplayStart = 0, ForceDisplayEnd = 0; float OffsetY = 0.0f; ImBitVector ItemsOutMask; bool ClipperManualItemHeight = true; bool TableEnable = false; int TableFreezeRows = 0; };
     t->SetVarsDataType<ClipperTestVars>();
-    t->GuiFunc = [](ImGuiTestContext* ctx)
+    auto ClipperGuiFunc = [](ImGuiTestContext* ctx)
     {
         auto& vars = ctx->GetVars<ClipperTestVars>();
 
@@ -3693,6 +3693,7 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
         ImGui::End();
         ImGui::PopStyleVar();
     };
+    t->GuiFunc = ClipperGuiFunc;
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         auto& vars = ctx->GetVars<ClipperTestVars>();
@@ -3808,6 +3809,38 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
                 IM_CHECK_EQ(vars.ItemsOut, 0);
             }
     };
+
+#if IMGUI_VERSION_NUM >= 18985
+    // ## Test user submitting duplicate ranges
+    t = IM_REGISTER_TEST(e, "misc", "misc_clipper_dupe_ranges");
+    t->SetVarsDataType<ClipperTestVars>();
+    t->GuiFunc = ClipperGuiFunc;
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        auto& vars = ctx->GetVars<ClipperTestVars>();
+
+        vars.ClipperManualItemHeight = false;
+        vars.ForceDisplayStart = 0;
+        vars.ForceDisplayEnd = 1;
+        ctx->SetRef(vars.WindowOut);
+        vars.WindowHeightInItems = 10.0f;
+        vars.ItemsIn = 100;
+        ctx->ScrollToTop("");
+        ctx->Yield(2);
+        IM_CHECK_EQ(vars.ItemsOut, 10);
+
+        vars.ForceDisplayStart = 0;
+        vars.ForceDisplayEnd = 0;
+        ctx->ScrollToBottom("");
+        ctx->Yield(2);
+        IM_CHECK_EQ(vars.ItemsOut, 1 + 11);
+
+        vars.ForceDisplayStart = 0;
+        vars.ForceDisplayEnd = 1;
+        ctx->Yield(2);
+        IM_CHECK_EQ(vars.ItemsOut, 1 + 11);
+    };
+#endif
 
     // ## Test that ImGuiListClippr effect on layout is correct
     t = IM_REGISTER_TEST(e, "misc", "misc_clipper_layout");
