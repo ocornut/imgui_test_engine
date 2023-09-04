@@ -3296,14 +3296,22 @@ void RegisterTests_Table(ImGuiTestEngine* e)
             ImGui::Text("Test");
             IM_CHECK_EQ(ImGui::GetCursorScreenPos().y, p1.y + ImGui::GetTextLineHeightWithSpacing()); // Line height not automatically shared
 
-            // Test that SameLine() pulls line height from before.
+            // Test that SameLine() pulls line pos and height from before.
             ImGui::TableNextRow();
             ImGui::TableNextColumn();
+#if IMGUI_VERSION_NUM >= 18985
+            ImVec2 p0 = ImGui::GetCursorScreenPos();
+            ImGui::Dummy({ 4.0f, 4.0f });
+#endif
             p1 = ImGui::GetCursorScreenPos();
             ImGui::Dummy({ 32, 32 });
 
             ImGui::TableNextColumn();
+#if IMGUI_VERSION_NUM >= 18985
+            IM_CHECK_EQ(ImGui::GetCursorScreenPos().y, p0.y);
+#else
             IM_CHECK_EQ(ImGui::GetCursorScreenPos().y, p1.y);
+#endif
             ImGui::SameLine(0.0f, 0.0f);
             IM_CHECK_EQ(ImGui::GetCursorScreenPos().y, p1.y);
             ImGui::Text("Test");
