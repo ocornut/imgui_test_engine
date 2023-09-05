@@ -5,6 +5,10 @@ CHANGELOG
    Those changes are not all listed here.
 ** For a while this is going to ONLY INCLUDE BREAKING CHANGES.
 
+2023/09/05:
+- TestEngine: Running a test in GuiFunc mode only provide access to backend clipboard
+  instead of redirecting it to a jailed clipboard.
+
 2023/08/15:
 - TestSuite: Added -list option (e.g. 'test_suite.exe -list "^table"').
 - TestEngine: Added ImGuiTestEngine_GetTestList(), ImGuiTestEngine_GetTestQueue().

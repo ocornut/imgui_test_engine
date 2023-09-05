@@ -1423,18 +1423,21 @@ static void ImGuiTestEngine_RunTest(ImGuiTestEngine* engine, ImGuiTestContext* c
 #endif
 
     // Setup IO: override clipboard
-    io.GetClipboardTextFn = [](void* user_data) -> const char*
+    if ((ctx->RunFlags & ImGuiTestRunFlags_GuiFuncOnly) == 0)
     {
-        ImGuiTestContext* ctx = (ImGuiTestContext*)user_data;
-        return ctx->Clipboard.empty() ? "" : ctx->Clipboard.Data;
-    };
-    io.SetClipboardTextFn = [](void* user_data, const char* text)
-    {
-        ImGuiTestContext* ctx = (ImGuiTestContext*)user_data;
-        ctx->Clipboard.resize((int)strlen(text) + 1);
-        strcpy(ctx->Clipboard.Data, text);
-    };
-    io.ClipboardUserData = ctx;
+        io.GetClipboardTextFn = [](void* user_data) -> const char*
+        {
+            ImGuiTestContext* ctx = (ImGuiTestContext*)user_data;
+            return ctx->Clipboard.empty() ? "" : ctx->Clipboard.Data;
+        };
+        io.SetClipboardTextFn = [](void* user_data, const char* text)
+        {
+            ImGuiTestContext* ctx = (ImGuiTestContext*)user_data;
+            ctx->Clipboard.resize((int)strlen(text) + 1);
+            strcpy(ctx->Clipboard.Data, text);
+        };
+        io.ClipboardUserData = ctx;
+    }
 
     // Mark as currently running the TestFunc (this is the only time when we are allowed to yield)
     IM_ASSERT(ctx->ActiveFunc == ImGuiTestActiveFunc_None);

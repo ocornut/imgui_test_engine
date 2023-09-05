@@ -3571,7 +3571,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         IM_CHECK_EQ(selection0.SelectionSize, 1);
         IM_CHECK_EQ(selection1.SelectionSize, 10);
 
-        // Check leaving a scope with keyboard directional move 
+        // Check leaving a scope with keyboard directional move
         // May need to clarify how this behave depending on "leaving" source, as mouse clicks don't impact this.
 #if IMGUI_VERSION_NUM >= 18983
         ctx->ItemClick("Scope 1/Object 0000");
