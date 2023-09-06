@@ -5,6 +5,9 @@ CHANGELOG
    Those changes are not all listed here.
 ** For a while this is going to ONLY INCLUDE BREAKING CHANGES.
 
+2023/09/06:
+- TestEngine: WindowResize() can be used to auto-resize a window.
+
 2023/09/05:
 - TestEngine: Running a test in GuiFunc mode only provide access to backend clipboard
   instead of redirecting it to a jailed clipboard.

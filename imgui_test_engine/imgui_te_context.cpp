@@ -3467,13 +3467,21 @@ void    ImGuiTestContext::WindowResize(ImGuiTestRef ref, ImVec2 size)
 
     ImGuiID id = ImGui::GetWindowResizeCornerID(window, 0);
     MouseMove(id, ImGuiTestOpFlags_IsSecondAttempt);
-    MouseDown(0);
 
-    ImVec2 delta = size - window->Size;
-    MouseMoveToPos(Inputs->MousePosValue + delta);
-    Yield(); // At this point we don't guarantee the final size!
-
-    MouseUp();
+    if (size.x <= 0.0f || size.y <= 0.0f)
+    {
+        IM_ASSERT(size.x <= 0.0f && size.y <= 0.0f);
+        MouseDoubleClick(0);
+        Yield();
+    }
+    else
+    {
+        MouseDown(0);
+        ImVec2 delta = size - window->Size;
+        MouseMoveToPos(Inputs->MousePosValue + delta);
+        Yield(); // At this point we don't guarantee the final size!
+        MouseUp();
+    }
     MouseSetViewport(window); // Update in case window has changed viewport
 }
 
