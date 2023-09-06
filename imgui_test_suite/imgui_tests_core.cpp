@@ -2778,6 +2778,69 @@ void RegisterTests_Layout(ImGuiTestEngine* e)
         ImGui::End();
     };
 
+    // ## Test how contents submitted in Menu Layer affect contents size.
+    t = IM_REGISTER_TEST(e, "layout", "layout_menu_extents");
+    struct LayoutMenuVars { bool MainOutButton = false; ImVec2 MenuAvailSize; };
+    t->SetVarsDataType<LayoutMenuVars>();
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        auto& vars = ctx->GetVars<LayoutMenuVars>();
+        ImGui::Begin("Test Window", nullptr, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_HorizontalScrollbar);
+
+        if (ImGui::BeginMenuBar())
+        {
+            vars.MenuAvailSize = ImGui::GetContentRegionAvail();
+            ImGui::Button("Menu Button", ImVec2(400.0f, 0.0f));
+            ImGui::EndMenuBar();
+        }
+        ImGui::Text("Hi");
+        if (vars.MainOutButton)
+            ImGui::Button("Main button", ImVec2(500.f, 500.f));
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        auto& vars = ctx->GetVars<LayoutMenuVars>();
+
+        ctx->SetRef("Test Window");
+        ImGuiWindow* window = ctx->GetWindowByRef("");
+        ctx->ScrollToX("", 0.0f);
+
+        // Auto-resize uses ContentSizeIdeal which is similar to ContentSize but doesn't affect scrolling range.
+        vars.MainOutButton = false;
+        ctx->WindowResize("", ImVec2(100.0f, 100.0f));
+        ctx->WindowResize("", ImVec2(-1.0f, -1.0f)); // Auto-resize up
+        IM_CHECK_EQ(window->Size.x, 400.0f + ImGui::GetStyle().WindowPadding.x * 2.0f);
+
+        ctx->WindowResize("", ImVec2(600.0f, 100.0f));
+        ctx->WindowResize("", ImVec2(-1.0f, -1.0f)); // Auto-resize down
+        IM_CHECK_EQ(window->Size.x, 400.0f + ImGui::GetStyle().WindowPadding.x * 2.0f);
+        IM_CHECK_EQ(vars.MenuAvailSize.x, 400.0f);
+
+        vars.MainOutButton = true;
+        ctx->Yield(2);
+        //ctx->WindowResize("", ImVec2(100.0f, 100.0f));
+        IM_CHECK_EQ(window->ContentSize.x, 500.0f);
+        IM_CHECK_GE(window->ContentSize.y, 500.0f);
+        IM_CHECK(window->ScrollbarX && window->ScrollbarY);
+
+        // Check that absolute position of menu contents doesn't interfere with main layer scrolling and contents size
+        float scroll_max_x = window->ScrollMax.x;
+        ctx->ScrollToX("", window->ScrollMax.x);
+        IM_UNUSED(scroll_max_x);
+#if IMGUI_VERSION_NUM >= 18991
+        IM_CHECK_EQ(window->ContentSize.x, 500.0f);
+        IM_CHECK_EQ(window->ScrollMax.x, scroll_max_x);
+#endif
+
+        ctx->WindowResize("", ImVec2(-1.0f, -1.0f)); // Auto-resize up
+#if IMGUI_VERSION_NUM >= 18991
+        IM_CHECK_EQ(window->Size.x, 500.0f + ImGui::GetStyle().WindowPadding.x * 2.0f);
+#endif
+
+        ctx->Yield(3);
+    };
+
     // ## Test SameLine() + SetCursorPos() mixup
 #if IMGUI_VERSION_NUM >= 18718
     t = IM_REGISTER_TEST(e, "layout", "layout_sameline_cursorpos");
