@@ -629,6 +629,14 @@ void RegisterTests_WidgetsInputText(ImGuiTestEngine* e)
         IM_CHECK_EQ(stb.cursor, 0);
         ctx->KeyPress(ImGuiKey_RightArrow);
         IM_CHECK_EQ(stb.cursor, 0);
+
+#if IMGUI_VERSION_NUM >= 18991
+        // Extra test for #6783, long line trailed with \n, pressing down.
+        // This is almost exercised elsewhere but didn't crash with small values until we added bound-check in STB_TEXTEDIT_GETCHAR() too.
+        ctx->KeyCharsReplace("Click this text then press down-arrow twice to cause an assert.\n");
+        IM_CHECK_EQ(stb.cursor, state->CurLenA);
+        ctx->KeyPress(ImGuiKey_DownArrow);
+#endif
     };
 
     // ## Test CTRL+arrow and other word boundaries functions
@@ -868,7 +876,10 @@ void RegisterTests_WidgetsInputText(ImGuiTestEngine* e)
         ctx->SetRef("Test Window");
         ctx->ItemInput("Field");
         for (int n = 0; n < 10; n++)
-            ctx->KeyCharsAppendEnter(Str16f("Line %d", n).c_str());
+            ctx->KeyCharsAppend(Str30f("Line %d\n", n).c_str());
+#if IMGUI_VERSION_NUM >= 18991
+        ctx->KeyPress(ImGuiKey_DownArrow); // Extra test for #6783
+#endif
         ctx->KeyDown(ImGuiMod_Shift);
         ctx->KeyPress(ImGuiKey_UpArrow);
         ctx->KeyUp(ImGuiMod_Shift);
