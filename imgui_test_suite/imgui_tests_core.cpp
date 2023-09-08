@@ -4356,6 +4356,27 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
 #undef IM_CHECK_UTF8
     };
 
+    // ## Test going backward in a UTF-8 stream
+    // FIXME-TESTS: Could probably more thoroughly validate cases of invalid UTF-8.
+#if IMGUI_VERSION_NUM >= 18991
+    t = IM_REGISTER_TEST(e, "misc", "misc_utf8_backward");
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        const char* str1 = "hello";
+        IM_CHECK(ImTextFindPreviousUtf8Codepoint(str1, str1) == str1);
+        IM_CHECK(ImTextFindPreviousUtf8Codepoint(str1, str1 + 1) == str1);
+        IM_CHECK(ImTextFindPreviousUtf8Codepoint(str1, str1 + 5) == str1 + 4);
+
+        const char* str2 = "\xe3\x81\x8b\xe3\x81\x8d\xe3\x81\x8f\xe3\x81\x91\xe3\x81\x93"; // KAKIKUKEKO (5 codepoints)
+        IM_CHECK(ImTextFindPreviousUtf8Codepoint(str2, str2) == str2);
+        IM_CHECK(ImTextFindPreviousUtf8Codepoint(str2, str2 + 1) == str2);
+        IM_CHECK(ImTextFindPreviousUtf8Codepoint(str2, str2 + 2) == str2);
+        IM_CHECK(ImTextFindPreviousUtf8Codepoint(str2, str2 + 3) == str2);
+        IM_CHECK(ImTextFindPreviousUtf8Codepoint(str2, str2 + 4) == str2 + 3);
+        IM_CHECK(ImTextFindPreviousUtf8Codepoint(str2, str2 + 5*3) == str2 + 4*3);
+    };
+#endif
+
 #ifdef IMGUI_USE_WCHAR32
     t = IM_REGISTER_TEST(e, "misc", "misc_utf16_surrogate");
     t->TestFunc = [](ImGuiTestContext* ctx)
