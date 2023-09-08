@@ -1364,6 +1364,51 @@ void RegisterTests_WidgetsInputText(ImGuiTestEngine* e)
     };
 #endif
 
+#if IMGUI_VERSION_NUM >= 18992
+    // ## Test for Enter key in InputTextMultiline() used for both entering child and input
+    t = IM_REGISTER_TEST(e, "widgets", "widgets_inputtext_multiline_enter");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiTestGenericVars& vars = ctx->GenericVars;
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImGui::Button("Above");
+        ImGui::InputTextMultiline("Field", vars.Str1, IM_ARRAYSIZE(vars.Str1));
+        ImGui::Button("Below");
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiContext& g = *ctx->UiContext;
+        ImGuiTestGenericVars& vars = ctx->GenericVars;
+        ctx->SetRef("Test Window");
+        ImGuiID input_id = ctx->GetID("Field");
+        ctx->ItemClick("Above");
+        ctx->KeyPress(ImGuiKey_DownArrow);
+        IM_CHECK_EQ(g.ActiveId, 0u);
+        ctx->KeyPress(ImGuiKey_Enter);
+        IM_CHECK_EQ(g.ActiveId, input_id);
+        ctx->KeyChars("Hello");
+        ctx->KeyPress(ImGuiKey_Enter);
+        ctx->KeyChars("World");
+        IM_CHECK_STR_EQ(vars.Str1, "Hello\nWorld");
+        ctx->KeyPress(ImGuiKey_Enter | ImGuiMod_Ctrl);
+        ctx->Yield(2);
+        IM_CHECK_EQ(g.ActiveId, 0u);
+        IM_CHECK_EQ(g.NavId, input_id);
+
+        ctx->KeyPress(ImGuiKey_Tab);
+        ctx->KeyPress(ImGuiKey_Tab | ImGuiMod_Shift);
+        IM_CHECK_EQ(g.ActiveId, input_id);
+        ctx->KeyPress(ImGuiMod_Shortcut | ImGuiKey_A);
+        ctx->KeyPress(ImGuiKey_Delete);
+        IM_CHECK_STR_EQ(vars.Str1, "");
+        ctx->KeyChars("Hello");
+        ctx->KeyPress(ImGuiKey_Enter);
+        ctx->KeyChars("World");
+        IM_CHECK_STR_EQ(vars.Str1, "Hello\nWorld");
+    };
+#endif
+
     // ## Test handling of Tab/Enter/Space keys events also emitting text events. (#2467, #1336)
     // Backends are inconsistent in behavior: some don't send a text event for Tab and Enter (but still send it for Space)
 #if IMGUI_VERSION_NUM >= 18711

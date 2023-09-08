@@ -3545,6 +3545,18 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
         v.erase(v.begin(), v.begin());
         IM_CHECK(v.size() == 1);
 #endif
+
+        // find_index()
+#if IMGUI_VERSION_NUM >= 18991
+        v.clear();
+        IM_CHECK(v.find_index(42) == -1);
+        v.push_back(3);
+        IM_CHECK(v.find_index(42) == -1);
+        IM_CHECK(v.find_index(3) == 0);
+        v.push_back(4);
+        IM_CHECK(v.find_index(3) == 0);
+        IM_CHECK(v.find_index(4) == 1);
+#endif
     };
 
     // ## Test ImVector functions
