@@ -1474,6 +1474,17 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
         ctx->KeyPress(ImGuiMod_Alt);
         IM_CHECK(g.NavDisableHighlight == false);
         IM_CHECK(g.NavDisableMouseHover == true);
+
+#if IMGUI_VERSION_NUM >= 18992
+        // Switching from Mouse to keyboard
+        ctx->ItemOpen("Inputs & Focus");
+        ctx->ItemOpen("Tabbing");
+        ctx->ItemClick("Tabbing/2");
+        IM_CHECK(g.NavDisableHighlight == true);
+        ctx->KeyPress(ImGuiKey_Tab);
+        IM_CHECK_EQ(g.NavId, ctx->GetID("Tabbing/3"));
+        IM_CHECK(g.NavDisableHighlight == false);
+#endif
     };
 
     // ## Test navigation in popups that are appended across multiple calls to BeginPopup()/EndPopup(). (#3223)
