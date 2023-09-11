@@ -1279,6 +1279,35 @@ void RegisterTests_Table(ImGuiTestEngine* e)
         ImGui::End();
     };
 
+    // ## Test that host AlwaysAutoResize doesn't prevent table coarse clipping
+#if IMGUI_VERSION_NUM >= 18992
+    t = IM_REGISTER_TEST(e, "table", "table_clip_auto_resize");
+    t->Flags |= ImGuiTestFlags_NoAutoFinish;
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        auto& vars = ctx->GenericVars;
+        ImGui::SetNextWindowPos(ImGui::GetMainViewport()->Pos + ImVec2(0.0f, ImGui::GetMainViewport()->Size.y - 80.0f));
+#ifdef IMGUI_HAS_DOCK
+        ImGui::SetNextWindowViewport(ImGui::GetMainViewport()->ID);
+#endif
+        ImGui::Begin("Test window 1", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
+        ImGui::Dummy(ImVec2(100, 100));
+        if (ImGui::BeginTable("table1", 4, ImGuiTableFlags_ScrollX | ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_Borders, ImVec2(200, 200)))
+        {
+            vars.Int1++;
+            ImGui::TableNextColumn();
+            ImGui::Text("Hello");
+            ImGui::EndTable();
+        }
+        ImGui::End();
+        if (ctx->FrameCount >= 10)
+        {
+            IM_CHECK_LE(vars.Int1, 1); // 0 or 1
+            ctx->Finish();
+        }
+    };
+#endif
+
     // ## Test that BeginTable/EndTable with no contents doesn't fail
     t = IM_REGISTER_TEST(e, "table", "table_empty");
     t->GuiFunc = [](ImGuiTestContext* ctx)
@@ -2830,6 +2859,62 @@ void RegisterTests_Table(ImGuiTestEngine* e)
             IM_CHECK_EQ(table->InnerWindow->ContentSize[axis], 200.0f);
             IM_CHECK_EQ(table->OuterWindow->ContentSize[axis], 300.0f);
         }
+    };
+#endif
+
+    // ## Test that scrolling table doesn't clip itself when outer window is trying measure size (#6510)
+    // Test success only fully valid on first run (would need to clear table + child data)
+#if IMGUI_VERSION_NUM >= 18992
+    t = IM_REGISTER_TEST(e, "table", "table_reported_size_outer_clipped");
+    t->Flags |= ImGuiTestFlags_NoGuiWarmUp;
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::SetNextWindowSize(ImVec2(-1.0f, -1.0f), ImGuiCond_Appearing);
+        if (ImGui::Begin("Test Window", nullptr, ImGuiWindowFlags_NoSavedSettings))
+        {
+            // Not strictly required but add a TabBar in the mix as it is typically a widget that might incur a delay.
+            if (ImGui::BeginTabBar("Tabs"))
+            {
+                if (ImGui::BeginTabItem("Tab1"))
+                {
+                    if (ImGui::BeginTable("Table1", 4, ImGuiTableFlags_ScrollY | ImGuiTableFlags_NoSavedSettings | ImGuiTableFlags_Resizable))
+                    {
+                        for (int n = 0; n < 4; n++)
+                            ImGui::TableSetupColumn(Str16f("Column%d", n).c_str());
+                        ImGui::TableHeadersRow();
+                        for (int n = 0; n < 4 * 5; n++)
+                            if (ImGui::TableNextColumn())
+                                ImGui::Text("Test Item %d", n);
+                        ImGui::EndTable();
+                    }
+                    ImGuiWindow* window = ImGui::GetCurrentWindow();
+                    ctx->LogDebug("ContentSize.x = %f", window->ContentSize.x);
+                    ctx->LogDebug("IdealMaxOff.x = %f", window->DC.IdealMaxPos.x - window->Pos.x);
+                    ImGui::EndTabItem();
+                }
+                ImGui::EndTabBar();
+            }
+        }
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        if (ctx->IsFirstGuiFrame())
+        {
+            TableDiscardInstanceAndSettings(ctx->GetID("//Test Window/Tabs/Tab1/Table1"));
+            ImGui::ClearWindowSettings("Test Window");
+        }
+
+        ctx->Yield(3);
+        ctx->SetRef("Test Window");
+
+        ImGuiWindow* window = ctx->GetWindowByRef("");
+        IM_CHECK(window != NULL);
+        ImVec2 size = window->Size;
+        IM_CHECK_GT(size.x, ImGui::CalcTextSize("Column0Column1Column2Column3").x);
+
+        ctx->WindowResize("", ImVec2(-1.0f, -1.0f)); // Auto-resize
+        IM_CHECK_EQ(size, window->Size);             // Check that size hasn't changed.
     };
 #endif
 

@@ -269,10 +269,14 @@ static void ShowTestGroup(ImGuiTestEngine* e, ImGuiTestGroup group, Str* filter)
 
     //ImGui::Text("TESTS (%d)", engine->TestsAll.Size);
 #if IMGUI_VERSION_NUM >= 18837
-    if (ImGui::Button("Run") || ImGui::Shortcut(ImGuiMod_Ctrl | ImGuiKey_R))
+    bool run = ImGui::Button("Run") || ImGui::Shortcut(ImGuiMod_Ctrl | ImGuiKey_R);
 #else
-    if (ImGui::Button("Run"))
+    bool = ImGui::Button("Run");
 #endif
+#if IMGUI_VERSION_NUM > 18963
+    ImGui::SetItemTooltip("Ctrl+R");
+#endif
+    if (run)
     {
         for (int n = 0; n < e->TestsAll.Size; n++)
         {
