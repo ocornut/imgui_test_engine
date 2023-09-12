@@ -1308,6 +1308,59 @@ void RegisterTests_Table(ImGuiTestEngine* e)
     };
 #endif
 
+    // ## Test using Clipper with a Table which is small enough to only have visible scrollbar. Fixed 2023/09/12.
+#if IMGUI_VERSION_NUM >= 18992
+    t = IM_REGISTER_TEST(e, "table", "table_clip_all_columns");
+    struct TableClipAllColumnsVars { bool TableIsVisible = false; int ColumnsVisibleMask = 0x00; };
+    t->SetVarsDataType<TableClipAllColumnsVars>();
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        auto& vars = ctx->GetVars<TableClipAllColumnsVars>();
+        vars.TableIsVisible = false;
+        vars.ColumnsVisibleMask = 0x00;
+
+        ImGui::SetNextWindowSize(ImVec2(500, 500), ImGuiCond_Appearing);
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImGui::PushStyleVar(ImGuiStyleVar_CellPadding, ImVec2(0, 0)); // Clipper Step() used to assert in this case because of zero Y advance.
+        ImGui::SetCursorScreenPos(ImGui::GetCursorScreenPos() + ImGui::GetStyle().WindowMinSize); // Offset all
+        if (ImGui::BeginTable("table_scrolly", 3, ImGuiTableFlags_ScrollY))
+        {
+            vars.TableIsVisible = true;
+            ImGuiListClipper clipper;
+            clipper.Begin(100);
+            while (clipper.Step())
+                for (int row = clipper.DisplayStart; row < clipper.DisplayEnd; row++)
+                    for (int column = 0; column < 3; column++)
+                    {
+                        if (!ImGui::TableNextColumn()) // User eagerly/correct always testing this.
+                            continue;
+                        vars.ColumnsVisibleMask |= (1 << ImGui::TableGetColumnIndex());
+                        ImGui::Text("Hello %d,%d", column, row);
+                    }
+            ImGui::EndTable();
+        }
+        ImGui::PopStyleVar();
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiStyle& style = ImGui::GetStyle();
+        auto& vars = ctx->GetVars<TableClipAllColumnsVars>();
+        ctx->SetRef("Test Window");
+        ctx->WindowResize("", ImVec2(500, 500)); // All visible
+        IM_CHECK_EQ(vars.TableIsVisible, true);
+        IM_CHECK_EQ(vars.ColumnsVisibleMask, 0x07);
+        ctx->WindowResize("", style.WindowMinSize); // Nothing visible
+        IM_CHECK_EQ(vars.TableIsVisible, false);
+        IM_CHECK_EQ(vars.ColumnsVisibleMask, 0x00);
+
+        // Only scrollbar visible: this crashed with clipper and zero CellPadding prior to 18992
+        ctx->WindowResize("", style.WindowMinSize + ImVec2(style.WindowPadding.x * 2 + style.ScrollbarSize, 500.0f));
+        IM_CHECK_EQ(vars.TableIsVisible, true);
+        IM_CHECK_EQ(vars.ColumnsVisibleMask, 0x01); // Per spec BeginTable() always makes column visible if none should be.
+    };
+#endif
+
     // ## Test that BeginTable/EndTable with no contents doesn't fail
     t = IM_REGISTER_TEST(e, "table", "table_empty");
     t->GuiFunc = [](ImGuiTestContext* ctx)

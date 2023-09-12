@@ -1831,10 +1831,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
 
 #ifdef IMGUI_HAS_MULTI_SELECT
         if (vars.IsMultiSelect)
-        {
             ImGui::BeginMultiSelect(ImGuiMultiSelectFlags_None); // Placeholder, won't interact properly
-            ImGui::SetNextItemSelectionUserData(ImGuiSelectionUserData_Invalid);
-        }
 #endif
 
         vars.IsOpen = ImGui::TreeNodeEx("AAA", vars.Flags);
