@@ -3222,6 +3222,14 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
     };
 
 #ifdef IMGUI_HAS_MULTI_SELECT
+
+    static const char* ExampleNames[] =
+    {
+        "Artichoke", "Arugula", "Asparagus", "Avocado", "Bamboo Shoots", "Bean Sprouts", "Beans", "Beet", "Belgian Endive", "Bell Pepper",
+        "Bitter Gourd", "Bok Choy", "Broccoli", "Brussels Sprouts", "Burdock Root", "Cabbage", "Calabash", "Capers", "Carrot", "Cassava",
+        "Cauliflower", "Celery", "Celery Root", "Celcuce", "Chayote", "Chinese Broccoli", "Corn", "Cucumber", "AAAB",
+    };
+
     // ## Test MultiSelect API
     struct ExampleSelection
     {
@@ -3833,7 +3841,108 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
 #endif
 #endif
 
-#endif
+    // ## Basic test for GetTypingSelectRequest()
+    // Technically this API doesn't require MultiSelect but it's easier for us to reuse that code.
+    t = IM_REGISTER_TEST(e, "widgets", "widgets_typingselect");
+    t->SetVarsDataType<MultiSelectTestVars>();
+    struct TypingSelectTestFuncs
+    {
+        static const char* GetItemName(int n)
+        {
+            return ExampleNames[n % IM_ARRAYSIZE(ExampleNames)];
+        }
+    };
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        MultiSelectTestVars& vars = ctx->GetVars<MultiSelectTestVars>();
+        ExampleSelection& selection = vars.Selection0;
+        selection.OptMangleItemData = false;
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
+        ImGuiMultiSelectIO* ms_io = ImGui::BeginMultiSelect(ImGuiMultiSelectFlags_None);
+        const int items_count = IM_ARRAYSIZE(ExampleNames);
+        selection.ApplyRequests(ms_io, items_count);
+
+        int request_focus_idx = -1;
+        if (ImGui::IsWindowFocused())
+            if (ImGuiTypingSelectRequest* req = ImGui::GetTypingSelectRequest(ImGuiTypingSelectFlags_AllowSingleCharMode))
+                request_focus_idx = ImGui::TypingSelectFindMatch(req, items_count, [](void*, int idx) { return TypingSelectTestFuncs::GetItemName(idx); }, NULL, (int)ms_io->NavIdItem);
+
+        for (int item_n = 0; item_n < items_count; item_n++)
+        {
+            bool item_is_selected = selection.GetSelected(item_n);
+            ImGui::SetNextItemSelectionUserData(selection.IndexToItemData(item_n));
+            ImGui::Selectable(TypingSelectTestFuncs::GetItemName(item_n), item_is_selected);
+            if (item_n == request_focus_idx)
+                ImGui::SetKeyboardFocusHere(-1);
+        }
+        ms_io = ImGui::EndMultiSelect();
+        selection.ApplyRequests(ms_io, items_count);
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiContext& g = *GImGui;
+        MultiSelectTestVars& vars = ctx->GetVars<MultiSelectTestVars>();
+        ctx->SetRef("Test Window");
+        ctx->ItemClick(TypingSelectTestFuncs::GetItemName(1)); // "Arugula"
+        IM_CHECK(vars.Selection0.SelectionSize == 1 && vars.Selection0.GetSelected(1));
+        ctx->KeyChars("b"); // Start
+        // At this point, TypingSelectFindResult() was called, SetKeyboardFocusHere() but we don't have our result yet.
+        ctx->Yield();
+        // At this point, the nav request succeeded and NavId == "Bamboo Shoots" (Item 4)
+        IM_CHECK_EQ(g.NavId, ctx->GetID(TypingSelectTestFuncs::GetItemName(4)));
+        IM_CHECK_EQ((int)g.NavLastValidSelectionUserData, 4);
+        IM_CHECK(vars.Selection0.SelectionSize == 1 && vars.Selection0.GetSelected(4)); // "Bamboo Shoots"
+
+        ctx->KeyChars("ean"); // Amend
+        ctx->Yield();
+        IM_CHECK(vars.Selection0.SelectionSize == 1 && vars.Selection0.GetSelected(5)); // "Bean Sprout"
+
+        ctx->KeyChars("s"); // Disambiguation
+        ctx->Yield();
+        IM_CHECK(vars.Selection0.SelectionSize == 1 && vars.Selection0.GetSelected(6)); // "Beans"
+
+        ctx->KeyChars("ccc"); // Extraneous
+        ctx->Yield();
+        IM_CHECK(vars.Selection0.SelectionSize == 1 && vars.Selection0.GetSelected(6)); // "Beans"
+        ctx->SleepNoSkip(2.0f, 0.5f);
+
+        ctx->KeyChars("c");   // New request
+        ctx->Yield();
+        IM_CHECK(vars.Selection0.SelectionSize == 1 && vars.Selection0.GetSelected(15)); // "Cabbage"
+
+        ctx->KeyChars("c");   // Single-char mode
+        ctx->Yield();
+        IM_CHECK(vars.Selection0.SelectionSize == 1 && vars.Selection0.GetSelected(16));
+        for (int sel = 17; sel < 28; sel++)
+        {
+            ctx->KeyChars("c");   // Single-char mode next
+            ctx->Yield();
+            IM_CHECK(vars.Selection0.SelectionSize == 1 && vars.Selection0.GetSelected(sel));
+        }
+
+        ctx->KeyChars("c");   // Single-char mode wrap
+        ctx->Yield();
+        IM_CHECK(vars.Selection0.SelectionSize == 1 && vars.Selection0.GetSelected(15));
+
+        ctx->KeyChars("a");   // Single-char mode quick exit
+        ctx->Yield();
+        IM_CHECK(vars.Selection0.SelectionSize == 1 && vars.Selection0.GetSelected(0));
+
+        ctx->KeyChars("a");   // Single-char to full match
+        ctx->KeyChars("a");
+        ctx->KeyChars("b");
+        ctx->Yield();
+        IM_CHECK(vars.Selection0.SelectionSize == 1 && vars.Selection0.GetSelected(28)); // "AAAB"
+
+        // Verify that first single-char skips current item
+        ctx->ItemClick(TypingSelectTestFuncs::GetItemName(1)); // "Arugula"
+        ctx->KeyChars("a");
+        ctx->Yield();
+        IM_CHECK(vars.Selection0.SelectionSize == 1 && vars.Selection0.GetSelected(2));
+    };
+
+#endif // #ifdef IMGUI_HAS_MULTI_SELECT
 
     // ## Test Selectable() with ImGuiSelectableFlags_SpanAllColumns inside Columns()
     t = IM_REGISTER_TEST(e, "widgets", "widgets_selectable_span_all_columns");
