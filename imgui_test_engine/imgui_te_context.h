@@ -265,7 +265,7 @@ struct IMGUI_API ImGuiTestContext
     void        SetGuiFuncEnabled(bool v) { if (v) RunFlags &= ~ImGuiTestRunFlags_GuiFuncDisable; else RunFlags |= ImGuiTestRunFlags_GuiFuncDisable; }
 
     // Debug Control Flow
-    bool        SuspendTestFunc(const char* file, int line);
+    bool        SuspendTestFunc(const char* file = NULL, int line = 0); // Generally called via IM_SUSPEND_TESTFUNC
 
     // Logging
     void        LogEx(ImGuiTestVerboseLevel level, ImGuiTestLogFlags flags, const char* fmt, ...) IM_FMTARGS(4);

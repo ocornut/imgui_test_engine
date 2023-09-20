@@ -341,12 +341,18 @@ bool    ImGuiTestContext::SuspendTestFunc(const char* file, int line)
         return false;
 
     file = ImPathFindFilename(file);
-    LogError("DebugHaltTestFunc at %s:%d", file, line);
+    if (file != NULL)
+        LogError("SuspendTestFunc() at %s:%d", file, line);
+    else
+        LogError("SuspendTestFunc()");
 
     // Save relevant state.
     // FIXME-TESTS: Saving/restoring window z-order could be desirable.
     ImVec2 mouse_pos = Inputs->MousePosValue;
     ImGuiTestRunFlags run_flags = RunFlags;
+#if IMGUI_VERSION_NUM >= 18992
+    ImGui::TeleportMousePos(mouse_pos);
+#endif
 
     RunFlags |= ImGuiTestRunFlags_GuiFuncOnly;
     Test->Status = ImGuiTestStatus_Suspended;
