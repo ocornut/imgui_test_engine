@@ -152,7 +152,6 @@ struct ImGuiTestEngine
 
     // UI support
     bool                        Abort = false;
-    bool                        UiFocus = false;
     ImGuiTest*                  UiSelectAndScrollToTest = NULL;
     ImGuiTest*                  UiSelectedTest = NULL;
     Str*                        UiFilterTests;

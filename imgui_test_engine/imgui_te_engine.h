@@ -214,7 +214,7 @@ struct IMGUI_API ImGuiTestEngineIO
     ImGuiTestVerboseLevel       ConfigVerboseLevelOnError = ImGuiTestVerboseLevel_Info;
     bool                        ConfigLogToTTY = false;
     bool                        ConfigLogToDebugger = false;
-    bool                        ConfigTakeFocusBackAfterTests = true;
+    bool                        ConfigRestoreFocusAfterTests = true;// Restore focus back after running tests
     bool                        ConfigCaptureEnabled = true;        // Master enable flags for capturing and saving captures. Disable to avoid e.g. lengthy saving of large PNG files.
     bool                        ConfigCaptureOnError = false;
     bool                        ConfigNoThrottle = false;           // Disable vsync for performance measurement or fast test running

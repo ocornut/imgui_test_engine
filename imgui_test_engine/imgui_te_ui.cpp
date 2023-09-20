@@ -699,11 +699,6 @@ static void ImGuiTestEngine_ShowTestTool(ImGuiTestEngine* engine, bool* p_open)
 {
     const float dpi_scale = GetDpiScale();
 
-    if (engine->UiFocus)
-    {
-        ImGui::SetNextWindowFocus();
-        engine->UiFocus = false;
-    }
     ImGui::SetNextWindowSize(ImVec2(ImGui::GetFontSize() * 50, ImGui::GetFontSize() * 40), ImGuiCond_FirstUseEver);
     if (!ImGui::Begin("Dear ImGui Test Engine", p_open, ImGuiWindowFlags_MenuBar))
     {
@@ -754,8 +749,8 @@ static void ImGuiTestEngine_ShowTestTool(ImGuiTestEngine* engine, bool* p_open)
     ImGui::Checkbox("KeepGUI", &engine->IO.ConfigKeepGuiFunc);
     ImGui::SetItemTooltip("Keep GUI function running after a test fails, or when a single queued test is finished.\nHold ESC to abort a running GUI function.");
     ImGui::SameLine();
-    ImGui::Checkbox("Refocus", &engine->IO.ConfigTakeFocusBackAfterTests);
-    ImGui::SetItemTooltip("Set focus back to Test window after running tests.");
+    ImGui::Checkbox("Refocus", &engine->IO.ConfigRestoreFocusAfterTests);
+    ImGui::SetItemTooltip("Restore focus back after running tests.");
     ImGui::SameLine();
     ImGui::SeparatorEx(ImGuiSeparatorFlags_Vertical);
     ImGui::SameLine();

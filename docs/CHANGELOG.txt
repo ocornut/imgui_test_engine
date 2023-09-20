@@ -5,6 +5,10 @@ CHANGELOG
    Those changes are not all listed here.
 ** For a while this is going to ONLY INCLUDE BREAKING CHANGES.
 
+2023/09/20:
+- TestEngine: Renamed io.ConfigTakeFocusBackAfterTests to io.ConfigRestoreFocusAfterTests
+  and fixed to restore previous focus instead of always focus Test Engine UI window.
+
 2023/09/06:
 - TestEngine: WindowResize() can be used to auto-resize a window.
 
