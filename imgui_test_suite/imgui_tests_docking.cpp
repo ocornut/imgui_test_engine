@@ -70,6 +70,7 @@ struct DockingTestsGenericVars
     }
 };
 
+// Return "AAA", "BBB", "CCC", ..., "ZZZ"
 static Str16 DockingTestsGetWindowName(int n)
 {
     IM_ASSERT(n <= 26);
@@ -821,20 +822,21 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
     // Test focus order restore (#2304)
     t = IM_REGISTER_TEST(e, "docking", "docking_tab_focus_restore");
     t->SetVarsDataType<DockingTestsGenericVars>([](auto* ctx, auto& vars) {
-        vars.SetShowWindows(4, true);
+        vars.SetShowWindows(5, true);
     });
     t->GuiFunc = DockingTestsGenericGuiFunc;
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         ImGuiContext& g = *ctx->UiContext;
         DockingTestsGenericVars& vars = ctx->GetVars<DockingTestsGenericVars>();
+        ctx->MenuUncheck("//Dear ImGui Demo/Examples/Dockspace"); // Conflict with ShowDockspace=true
 
         for (int step = 0; step < 3; step++)
         {
             vars.Step = step;
             vars.ShowDockspace = (vars.Step == 1);
 
-            ctx->DockClear("Test Window", "AAA", "BBB", "CCC", NULL);
+            ctx->DockClear("Test Window", "AAA", "BBB", "CCC", "DDD", "EEE", NULL);
             ctx->WindowResize("Test Window", ImVec2(300, 200));
             ctx->WindowResize("AAA", ImVec2(300, 200));
             ctx->LogInfo("STEP %d", step);
@@ -850,54 +852,94 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
             ctx->DockInto("BBB", "AAA");
             ctx->DockInto("CCC", "AAA");
 
+            // Dock DDD/EEE separately because Focus restore issues are different when node carry final focused node or not.
+            ctx->DockInto("DDD", "AAA", ImGuiDir_Down);
+            ctx->DockInto("EEE", "DDD");
+
             ImGuiWindow* window_aaa = ctx->GetWindowByRef("AAA");
-            ImGuiWindow* window_bbb = ctx->GetWindowByRef("BBB"); IM_UNUSED(window_bbb);
-            ImGuiWindow* window_ccc = ctx->GetWindowByRef("CCC"); IM_UNUSED(window_ccc);
-            ImGuiDockNode* node = window_aaa->DockNode; IM_UNUSED(node);
+            ImGuiWindow* window_bbb = ctx->GetWindowByRef("BBB");
+            ImGuiWindow* window_ccc = ctx->GetWindowByRef("CCC");
+            ImGuiWindow* window_ddd = ctx->GetWindowByRef("DDD");
+            ImGuiWindow* window_eee = ctx->GetWindowByRef("EEE");
+            ImGuiDockNode* node1 = window_aaa->DockNode; IM_UNUSED(node1);
+            ImGuiDockNode* node2 = window_ddd->DockNode; IM_UNUSED(node2);
             IM_CHECK(window_aaa->DockNode != NULL);
+            IM_CHECK(window_ddd->DockNode != NULL);
+            IM_CHECK(node1 != node2);
+
+            ctx->ItemClick("DDD");
+            IM_CHECK_EQ(node2->SelectedTabId, window_ddd->TabId);
 
             ctx->ItemClick("BBB");
-            ImGuiTabBar* tab_bar = window_aaa->DockNode->TabBar;
-            IM_CHECK_EQ(node->SelectedTabId, window_bbb->TabId);
-            IM_CHECK_EQ(tab_bar->SelectedTabId, window_bbb->TabId);
+            ImGuiTabBar* tabbar_1 = node1->TabBar;
+            IM_CHECK_EQ(node1->SelectedTabId, window_bbb->TabId);
+            IM_CHECK_EQ(tabbar_1->SelectedTabId, window_bbb->TabId);
             IM_CHECK(g.NavWindow == window_bbb);
 
-            IM_CHECK(window_aaa->Hidden == true);
+            IM_CHECK(window_aaa->Hidden == true);   // Node 1
             IM_CHECK(window_bbb->Hidden == false);
             IM_CHECK(window_ccc->Hidden == true);
-            const float w = tab_bar->WidthAllTabs;
+            IM_CHECK(window_ddd->Hidden == false);  // Node 2
+            IM_CHECK(window_eee->Hidden == true);
+            const float w = tabbar_1->WidthAllTabs;
 
             // Hide all tabs and show them together on the same frame.
-            vars.SetShowWindows(3, false);
+            vars.SetShowWindows(5, false);
             ctx->Yield();
             IM_CHECK(window_aaa->Active == false);
             IM_CHECK(window_bbb->Active == false);
             IM_CHECK(window_ccc->Active == false);
+            IM_CHECK(window_ddd->Active == false);
+            IM_CHECK(window_eee->Active == false);
             ctx->Yield();
 
-            vars.SetShowWindows(3, true);
+            vars.ShowWindow[3] = true; // Show "DDD" and "EEE" first
+            vars.ShowWindow[4] = true;
+            ctx->Yield();
+            IM_CHECK(window_ddd->Active == true);
+            IM_CHECK(window_eee->Active == true);
+            IM_CHECK(window_ddd->Hidden == true);
+            IM_CHECK(window_eee->Hidden == true);
+            vars.SetShowWindows(5, true);   // Then "AAA" "BBB" "CCC"
             ctx->Yield();
             IM_CHECK(window_aaa->Active == true);
             IM_CHECK(window_bbb->Active == true);
             IM_CHECK(window_ccc->Active == true);
+            IM_CHECK(window_ddd->Active == true);
+            IM_CHECK(window_eee->Active == true);
             IM_CHECK(window_aaa->Hidden == true);
             IM_CHECK(window_bbb->Hidden == true);
             IM_CHECK(window_ccc->Hidden == true);
-            ctx->Yield();
 
             // BBB should have focus.
-            // FIXME-TESTS: This check would fail due to a missing feature (#2304)
-            tab_bar = window_aaa->DockNode->TabBar;
-            IM_CHECK_EQ(tab_bar->WidthAllTabs, w);
+            ctx->Yield();
+            tabbar_1 = window_aaa->DockNode->TabBar;
+            IM_CHECK_EQ(tabbar_1->WidthAllTabs, w);
+            ImGuiTabBar* tabbar_2 = window_ddd->DockNode->TabBar;
 
-            // Test focus restore (#2304)
-#if IMGUI_BROKEN_TESTS
-            IM_CHECK_EQ(node->SelectedTabId, window_bbb->ID);
-            IM_CHECK_EQ(tab_bar->SelectedTabId, window_bbb->ID);
+#if IMGUI_VERSION_NUM >= 18992
+            // Test focus restore (#2304)... for node with no final focus
+            IM_CHECK(window_ddd->Hidden == false);
+            IM_CHECK(window_eee->Hidden == true);
+            IM_CHECK_EQ(node2->SelectedTabId, window_ddd->TabId);
+            IM_CHECK_EQ(tabbar_2->SelectedTabId, window_ddd->TabId);
+
+            // Test focus restore (#2304)... for node that has final focus
+            // FIXME-TESTS: This check would fail due to a missing feature (#2304)
+            IM_CHECK_EQ(node1->SelectedTabId, window_bbb->TabId);
+            IM_CHECK_EQ(tabbar_1->SelectedTabId, window_bbb->TabId);
             IM_CHECK(window_aaa->Hidden == true);
             IM_CHECK(window_bbb->Hidden == false);
             IM_CHECK(window_ccc->Hidden == true);
+#if IMGUI_BROKEN_TESTS
             IM_CHECK(g.NavWindow == window_bbb);
+            ctx->Yield();
+            IM_CHECK_EQ(node1->SelectedTabId, window_bbb->TabId);
+            IM_CHECK_EQ(tabbar_1->SelectedTabId, window_bbb->TabId);
+            IM_CHECK(window_aaa->Hidden == true);
+            IM_CHECK(window_bbb->Hidden == false);
+            IM_CHECK(window_ccc->Hidden == true);
+#endif
 #endif
 
             // FIXME-TESTS: Now close CCC and verify the focused windows (should be "AAA" or "BBB" depending on which we last focused before "CCC": should test both cases!)
