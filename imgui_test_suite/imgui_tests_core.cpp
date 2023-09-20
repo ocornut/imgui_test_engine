@@ -3067,8 +3067,10 @@ void RegisterTests_DrawList(ImGuiTestEngine* e)
     t = IM_REGISTER_TEST(e, "drawlist", "drawlist_callbacks");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
+#ifdef IMGUI_HAS_DOCK
         if (ctx->IsFirstGuiFrame())
             ctx->DockClear("Test Window", NULL);
+#endif
 
         ImGui::SetNextWindowScroll(ImVec2(0.0f, 0.0f));
         ImGui::SetNextWindowSize(ImVec2(100.0f, 100.0f));
