@@ -6,6 +6,7 @@ CHANGELOG
 ** For a while this is going to ONLY INCLUDE BREAKING CHANGES.
 
 2023/09/20:
+- TestEngine: Fixed an aiming issue with DockInto() when src/dst window is in a nested node.
 - TestEngine: "KeepGUI" option and IM_SUSPEND_TESTFUNC()/SuspendTestFunc() sets OS mouse
   cursor to TestEngine mouse cursor, allowing user to more easily understand the failing state.
   (require IMGUI_VERSION_NUM >= 18992).

@@ -3573,10 +3573,15 @@ void    ImGuiTestContext::DockInto(ImGuiTestRef src_id, ImGuiTestRef dst_id, ImG
     IM_CHECK_SILENT((window_src != NULL) != (node_src != NULL)); // Src must be either a window either a node
     IM_CHECK_SILENT((window_dst != NULL) != (node_dst != NULL)); // Dst must be either a window either a node
 
+    // Infer window from node and vice-versa
     if (node_src)
         window_src = node_src->HostWindow;
+    else if (window_src->DockNode && window_src->DockIsActive)
+        node_src = window_src->DockNode;
     if (node_dst)
         window_dst = node_dst->HostWindow;
+    else if (window_dst->DockNode && window_dst->DockIsActive)
+        node_dst = window_dst->DockNode;
 
     Str128f log("DockInto() Src: %s '%s' (0x%08X), Dst: %s '%s' (0x%08X), SplitDir = %d",
         node_src ? "node" : "window", node_src ? "" : window_src->Name, node_src ? node_src->ID : window_src->ID,
