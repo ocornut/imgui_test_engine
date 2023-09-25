@@ -3449,7 +3449,7 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
     };
 #endif
 
-    // ## Test DebugRecoverFromErrors()
+    // ## Test ErrorCheckEndFrameRecover()
     t = IM_REGISTER_TEST(e, "misc", "misc_recover");
     t->Flags |= ImGuiTestFlags_NoRecoveryWarnings;
     t->GuiFunc = [](ImGuiTestContext* ctx)
@@ -3470,11 +3470,14 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
         ImGui::PushFont(ImGui::GetFont());
 #endif
         ImGui::BeginGroup();
+#ifdef IMGUI_HAS_MULTI_SELECT
+        ImGui::BeginMultiSelect(ImGuiMultiSelectFlags_None);
+#endif
         ImGui::SetNextItemOpen(true);
         ImGui::TreeNode("node");
         ImGui::BeginTabBar("tabbar");
         ImGui::BeginTable("table", 4);
-        ctx->Finish();
+        // Ensure we run two frames.
     };
 
     // ## Test window data garbage collection
