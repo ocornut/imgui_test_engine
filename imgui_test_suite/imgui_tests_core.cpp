@@ -2957,6 +2957,24 @@ void RegisterTests_Layout(ImGuiTestEngine* e)
             ImGui::Text("Another line 4");
             ImGui::End();
         }
+#if IMGUI_VERSION_NUM >= 18993
+        {
+            ImGui::Begin("Test Window 5", NULL, ImGuiWindowFlags_NoSavedSettings);
+            ImGuiWindow* window = ImGui::GetCurrentWindow();
+
+            float y1 = window->DC.CursorPos.y;
+            ImGui::ColorButton("blah", ImVec4(1, 0, 0, 1), 0, ImVec2(100, 100));
+            ImGui::SameLine();
+            ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 50.0f);
+            ImGui::BeginGroup();
+            IM_CHECK_EQ(ImGui::GetCursorScreenPos().y, y1 + 50.0f);
+            ImGui::Text("Text in Group");
+            ImGui::EndGroup();
+            float y2 = window->DC.CursorPos.y;
+            ImGui::Text("Another line 5");
+            IM_CHECK_EQ(y2, y1 + 100.0f + ImGui::GetStyle().ItemSpacing.y);
+        }
+#endif
     };
 #endif
 
