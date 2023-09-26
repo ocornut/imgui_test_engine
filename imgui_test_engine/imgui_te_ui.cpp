@@ -805,8 +805,13 @@ void    ImGuiTestEngine_ShowTestEngineWindows(ImGuiTestEngine* e, bool* p_open)
     ImGuiTestEngine_ShowTestTool(e, p_open);
 
     // Stack Tool
+#if IMGUI_VERSION_NUM < 18993
     if (e->UiStackToolOpen)
         ImGui::ShowStackToolWindow(&e->UiStackToolOpen);
+#else
+    if (e->UiStackToolOpen)
+        ImGui::ShowIdStackToolWindow(&e->UiStackToolOpen);
+#endif
 
     // Capture Tool
     if (e->UiCaptureToolOpen)

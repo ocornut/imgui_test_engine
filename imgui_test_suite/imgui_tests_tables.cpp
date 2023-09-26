@@ -525,7 +525,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
         const float max_variance = vars.Bool1 ? 0.0f : 1.0f;
 
         ImGui::Text("(width variance should be <= %.2f)", max_variance);
-        ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(ImGui::GetStyle().ItemSpacing.x, IM_FLOOR(ImGui::GetStyle().ItemSpacing.y * 0.80f)));
+        ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(ImGui::GetStyle().ItemSpacing.x, ImTrunc(ImGui::GetStyle().ItemSpacing.y * 0.80f)));
         for (int test_case_n = 0; test_case_n < IM_ARRAYSIZE(test_cases); test_case_n++)
         {
             const TestCase& tc = test_cases[test_case_n];

@@ -5248,7 +5248,7 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
                     if (ctx->ItemIsChecked("Tools/Show Item Picker"))
                         ctx->KeyPress(ImGuiKey_Escape);
                     ctx->ItemClick("Tools/Show Debug Log");
-                    ctx->ItemClick("Tools/Show Stack Tool");
+                    ctx->ItemClick("Tools/Show ID Stack Tool");
                     ctx->ItemClick("Tools/Show windows begin order");
                     ctx->ItemClick("Tools/Show windows rectangles");
                     ctx->ItemClick("Tools/Show tables rectangles");

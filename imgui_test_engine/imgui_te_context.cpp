@@ -1230,6 +1230,10 @@ static ImVec2 GetWindowScrollbarMousePositionForScroll(ImGuiWindow* window, ImGu
     return position;
 }
 
+#if IMGUI_VERSION_NUM < 18993
+#define ImTrunc ImFloor
+#endif
+
 // Supported values for ImGuiTestOpFlags:
 // - ImGuiTestOpFlags_NoFocusWindow
 void    ImGuiTestContext::ScrollTo(ImGuiTestRef ref, ImGuiAxis axis, float scroll_target, ImGuiTestOpFlags flags)
@@ -1261,7 +1265,7 @@ void    ImGuiTestContext::ScrollTo(ImGuiTestRef ref, ImGuiAxis axis, float scrol
 
         const ImRect scrollbar_rect = ImGui::GetWindowScrollbarRect(window, axis);
         const float scrollbar_size_v = scrollbar_rect.Max[axis] - scrollbar_rect.Min[axis];
-        const float window_resize_grip_size = IM_FLOOR(ImMax(g.FontSize * 1.35f, window->WindowRounding + 1.0f + g.FontSize * 0.2f));
+        const float window_resize_grip_size = ImTrunc(ImMax(g.FontSize * 1.35f, window->WindowRounding + 1.0f + g.FontSize * 0.2f));
 
         // In case of a very small window, directly use SetScrollX/Y function to prevent resizing it
         // FIXME-TESTS: GetWindowScrollbarMousePositionForScroll doesn't return the exact value when scrollbar grip is too small
