@@ -1020,6 +1020,22 @@ void RegisterTests_Window(ImGuiTestEngine* e)
         ctx->MenuClick("Examples");
         IM_CHECK(g.OpenPopupStack.Size == 1);
         IM_CHECK_EQ(g.OpenPopupStack.back().OpenParentId, popup_parent_id);
+
+        // Verify that menu doesn't close while activating an item and dragging back over parent menu (#6869)
+        ctx->ItemClose("Popups & Modal windows");
+        ctx->MenuClick("Menu");
+        ctx->MouseMove("//$FOCUSED/New");
+        ImVec2 pos = ImGui::GetMousePos();
+        ctx->MenuClick("Menu/Options/Value"); // Click DragFloat()
+        ctx->MouseDown();
+        ctx->Yield();
+        IM_CHECK_EQ(g.OpenPopupStack.Size, 2);
+        IM_CHECK_EQ(g.ActiveId, ctx->GetID("//$FOCUSED/Value"));
+#if IMGUI_VERSION_NUM >= 18993
+        ctx->MouseMoveToPos(pos); // Move back to "New" item
+        IM_CHECK_EQ(g.OpenPopupStack.Size, 2);
+        IM_CHECK_EQ(g.ActiveId, ctx->GetID("//$FOCUSED/Value"));
+#endif
     };
 #endif
 
