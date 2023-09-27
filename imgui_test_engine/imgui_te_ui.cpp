@@ -810,7 +810,7 @@ void    ImGuiTestEngine_ShowTestEngineWindows(ImGuiTestEngine* e, bool* p_open)
         ImGui::ShowStackToolWindow(&e->UiStackToolOpen);
 #else
     if (e->UiStackToolOpen)
-        ImGui::ShowIdStackToolWindow(&e->UiStackToolOpen);
+        ImGui::ShowIDStackToolWindow(&e->UiStackToolOpen);
 #endif
 
     // Capture Tool

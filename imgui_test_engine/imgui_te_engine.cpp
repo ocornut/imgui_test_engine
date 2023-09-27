@@ -1582,7 +1582,9 @@ static void ImGuiTestEngine_RunTest(ImGuiTestEngine* engine, ImGuiTestContext* c
     ctx->ActiveFunc = backup_active_func;
 
     // Restore backed up IO and style
+#if IMGUI_VERSION_NUM < 18993
     backup_io.MetricsActiveAllocations = ctx->UiContext->IO.MetricsActiveAllocations;
+#endif
     ctx->UiContext->IO = backup_io;
     ctx->UiContext->Style = backup_style;
     ctx->UiContext->DebugLogFlags = backup_debug_log_flags;
