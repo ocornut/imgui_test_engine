@@ -5,6 +5,10 @@ CHANGELOG
    Those changes are not all listed here.
 ** For a while this is going to ONLY INCLUDE BREAKING CHANGES.
 
+2023/09/28:
+- TestEngine: Capture: Fixed use of ImGuiCaptureFlags_StitchAll when io.ConfigWindowsMoveFromTitleBarOnly
+  option is set. (#33)
+
 2023/09/20:
 - TestEngine: Fixed an aiming issue with DockInto() when src/dst window is in a nested node.
 - TestEngine: "KeepGUI" option and IM_SUSPEND_TESTFUNC()/SuspendTestFunc() sets OS mouse

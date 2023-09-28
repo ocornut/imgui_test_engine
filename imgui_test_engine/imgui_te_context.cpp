@@ -686,14 +686,26 @@ bool ImGuiTestContext::CaptureScreenshot(int capture_flags)
     CaptureInitAutoFilename(this, ".png");
 
 #if IMGUI_TEST_ENGINE_ENABLE_CAPTURE
+    // Way capture tool is implemented doesn't prevent ClampWindowPos() from running,
+    // so we disable that feature at the moment. (imgui_test_engine/#33)
+    ImGuiIO& io = ImGui::GetIO();
+    bool backup_io_config_move_window_from_title_bar_only = io.ConfigWindowsMoveFromTitleBarOnly;
+    if (capture_flags & ImGuiCaptureFlags_StitchAll)
+        io.ConfigWindowsMoveFromTitleBarOnly = false;
+
     bool can_capture = ImGuiTestContext_CanCaptureScreenshot(this);
     if (!can_capture)
         args->InFlags |= ImGuiCaptureFlags_NoSave;
+
     bool ret = ImGuiTestEngine_CaptureScreenshot(Engine, args);
     if (can_capture)
         LogInfo("Saved '%s' (%d*%d pixels)", args->InOutputFile, (int)args->OutImageSize.x, (int)args->OutImageSize.y);
     else
         LogWarning("Skipped saving '%s' (%d*%d pixels) (enable in 'Misc->Options')", args->InOutputFile, (int)args->OutImageSize.x, (int)args->OutImageSize.y);
+
+    if (capture_flags & ImGuiCaptureFlags_StitchAll)
+        io.ConfigWindowsMoveFromTitleBarOnly = backup_io_config_move_window_from_title_bar_only;
+
     return ret;
 #else
     IM_UNUSED(args);
