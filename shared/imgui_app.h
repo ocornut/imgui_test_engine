@@ -10,8 +10,7 @@
 //   #define IMGUI_APP_SDL_GL3
 //   #define IMGUI_APP_GLFW_GL3
 //-----------------------------------------------------------------------------
-// To automatically include the backends .cpp, define in exactly one of your source file:
-//   #define IMGUI_APP_IMPLEMENTATION 1
+// IMPORTANT: BACKENDS IMPLEMENTATIONS ARE AUTOMATICALLY LINKED IN imgui_app.cpp
 //-----------------------------------------------------------------------------
 
 #pragma once
@@ -39,7 +38,7 @@ struct ImGuiApp
     void    (*ShutdownCloseWindow)(ImGuiApp* app) = nullptr;
     void    (*ShutdownBackends)(ImGuiApp* app) = nullptr;
     void    (*Destroy)(ImGuiApp* app) = nullptr;
-    bool    (*CaptureFramebuffer)(ImGuiApp* app, int x, int y, int w, int h, unsigned int* pixels_rgba, void* user_data) = nullptr;
+    bool    (*CaptureFramebuffer)(ImGuiApp* app, ImGuiViewport* viewport, int x, int y, int w, int h, unsigned int* pixels_rgba, void* user_data) = nullptr;
 };
 
 // Helper stub to store directly in ImGuiTestEngineIO::ScreenCaptureFunc when using test engine (prototype is same as ImGuiScreenCaptureFunc)

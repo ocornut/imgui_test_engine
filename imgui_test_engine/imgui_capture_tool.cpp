@@ -462,7 +462,14 @@ ImGuiCaptureStatus ImGuiCaptureContext::CaptureUpdate(ImGuiCaptureArgs* args)
             else
                 IM_ASSERT(h == output->Height);
 
-            const ImGuiID viewport_id = 0;
+            ImGuiID viewport_id = 0;
+#ifdef IMGUI_HAS_VIEWPORT
+            if (args->InFlags & ImGuiCaptureFlags_StitchAll)
+                viewport_id = _WindowsData[0].Window->ViewportId;
+            else
+                viewport_id = ImGui::GetMainViewport()->ID;
+#endif
+
             //printf("ScreenCaptureFunc x1: %d, y1: %d, w: %d, h: %d\n", x1, y1, w, h);
             if (!ScreenCaptureFunc(viewport_id, x1, y1, w, h, &output->Data[_ChunkNo * w * capture_height], ScreenCaptureUserData))
             {

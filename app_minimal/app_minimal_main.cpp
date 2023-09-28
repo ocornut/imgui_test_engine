@@ -11,9 +11,6 @@
 #include "imgui_internal.h"
 
 // imgui_app is a helper to wrap multiple Dear ImGui platform/renderer backends
-#ifndef IMGUI_APP_IMPLEMENTATION
-#define IMGUI_APP_IMPLEMENTATION 1  // Include the backend .cpp files
-#endif
 #include "shared/imgui_app.h"
 
 // Test Engine

@@ -56,9 +56,6 @@
 #include "imgui_test_engine/thirdparty/Str/Str.h"
 
 // imgui_app (this is a helper to wrap multiple backends)
-#ifndef IMGUI_APP_IMPLEMENTATION
-#define IMGUI_APP_IMPLEMENTATION 1
-#endif
 #include "shared/imgui_app.h"
 
 // ImPlot (optional for users of test engine, but we use it in test suite)

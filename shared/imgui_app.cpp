@@ -28,6 +28,13 @@
 */
 //-----------------------------------------------------------------------------
 
+#if defined(_MSC_VER) && !defined(_CRT_SECURE_NO_WARNINGS)
+#define _CRT_SECURE_NO_WARNINGS
+#endif
+
+#ifndef IMGUI_APP_IMPLEMENTATION
+#define IMGUI_APP_IMPLEMENTATION 1
+#endif
 
 #include "imgui_app.h"
 #include "imgui.h"
@@ -77,7 +84,7 @@ Index of this file:
 
 // Forward declarations
 #if defined(IMGUI_APP_GL2) || defined(IMGUI_APP_GL3)
-static bool ImGuiApp_ImplGL_CaptureFramebuffer(ImGuiApp* app, int x, int y, int w, int h, unsigned int* pixels, void* user_data);
+static bool ImGuiApp_ImplGL_CaptureFramebuffer(ImGuiApp* app, ImGuiViewport* viewport, int x, int y, int w, int h, unsigned int* pixels, void* user_data);
 #endif
 
 // Linking
@@ -96,10 +103,16 @@ static bool ImGuiApp_ImplGL_CaptureFramebuffer(ImGuiApp* app, int x, int y, int 
 bool ImGuiApp_ScreenCaptureFunc(ImGuiID viewport_id, int x, int y, int w, int h, unsigned int* pixels, void* user_data)
 {
     ImGuiApp* app = (ImGuiApp*)user_data;
-    IM_UNUSED(viewport_id); // FIXME: Unsupported
     if (app->CaptureFramebuffer == NULL)
         return false;
-    return app->CaptureFramebuffer(app, x, y, w, h, pixels, NULL);
+#ifdef IMGUI_HAS_VIEWPORT
+    ImGuiViewport* viewport = ImGui::FindViewportByID(viewport_id);
+#else
+    ImGuiViewport* viewport = ImGui::GetMainViewport();
+    IM_UNUSED(viewport_id);
+#endif
+    IM_ASSERT(viewport != NULL);
+    return app->CaptureFramebuffer(app, viewport, x, y, w, h, pixels, NULL);
 }
 
 //-----------------------------------------------------------------------------
@@ -171,8 +184,9 @@ static bool ImGuiApp_ImplNull_NewFrame(ImGuiApp* app_opaque)
     return true;
 }
 
-static bool ImGuiApp_ImplNull_CaptureFramebuffer(ImGuiApp* app, int x, int y, int w, int h, unsigned int* pixels, void* user_data)
+static bool ImGuiApp_ImplNull_CaptureFramebuffer(ImGuiApp* app, ImGuiViewport* viewport, int x, int y, int w, int h, unsigned int* pixels, void* user_data)
 {
+    IM_UNUSED(viewport);
     IM_UNUSED(app);
     IM_UNUSED(user_data);
     IM_UNUSED(x);
@@ -404,17 +418,30 @@ static void ImGuiApp_ImplWin32DX11_Render(ImGuiApp* app_opaque)
         app->pSwapChain->Present(0, 0);
 }
 
-static bool ImGuiApp_ImplWin32DX11_CaptureFramebuffer(ImGuiApp* app_opaque, int x, int y, int w, int h, unsigned int* pixels_rgba, void* user_data)
+static bool ImGuiApp_ImplWin32DX11_CaptureFramebuffer(ImGuiApp* app_opaque, ImGuiViewport* viewport, int x, int y, int w, int h, unsigned int* pixels_rgba, void* user_data)
 {
     IM_UNUSED(user_data);
     ImGuiApp_ImplWin32DX11* app = (ImGuiApp_ImplWin32DX11*)app_opaque;
     ImGuiContext& g = *GImGui;
     ImGuiIO& io = g.IO;
 
+    ID3D11RenderTargetView* rtView = app->mainRenderTargetView;
+    UINT rtWidth = (UINT)io.DisplaySize.x;
+    UINT rtHeight = (UINT)io.DisplaySize.y;
+#ifdef IMGUI_HAS_VIEWPORT
+    if (viewport != NULL)
+        if (ImGui_ImplDX11_ViewportData* vd = (ImGui_ImplDX11_ViewportData*)viewport->RendererUserData)
+        {
+            rtView = vd->RTView;
+            rtWidth = (UINT)viewport->Size.x;
+            rtHeight = (UINT)viewport->Size.y;
+        }
+#endif
+
     D3D11_TEXTURE2D_DESC texture_desc;
     memset(&texture_desc, 0, sizeof(texture_desc));
-    texture_desc.Width = (UINT)io.DisplaySize.x;
-    texture_desc.Height = (UINT)io.DisplaySize.y;
+    texture_desc.Width = rtWidth;
+    texture_desc.Height = rtHeight;
     texture_desc.MipLevels = 1;
     texture_desc.ArraySize = 1;
     texture_desc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
@@ -436,7 +463,7 @@ static bool ImGuiApp_ImplWin32DX11_CaptureFramebuffer(ImGuiApp* app_opaque, int 
     }
 
     ID3D11Resource* source = NULL;
-    app->mainRenderTargetView->GetResource(&source);
+    rtView->GetResource(&source);
     app->pd3dDeviceContext->CopyResource(texture, source);
     source->Release();
 
@@ -593,6 +620,7 @@ static LRESULT WINAPI ImGuiApp_ImplWin32_WndProc(HWND hWnd, UINT msg, WPARAM wPa
 //-----------------------------------------------------------------------------
 
 #ifdef IMGUI_APP_GL3
+#ifndef IMGUI_APP_IMPLEMENTATION
 #include "imgui_impl_opengl3.h"
 
 // GL includes
@@ -606,6 +634,7 @@ static LRESULT WINAPI ImGuiApp_ImplWin32_WndProc(HWND hWnd, UINT msg, WPARAM wPa
 #endif
 #else
 #include "imgui_impl_opengl3_loader.h"
+#endif
 #endif
 
 #endif
@@ -754,6 +783,16 @@ static void ImGuiApp_ImplSdlGL2_ShutdownBackends(ImGuiApp* app_opaque)
     ImGui_ImplSDL2_Shutdown();
 }
 
+static bool ImGuiApp_ImplSdlGL2_CaptureFramebuffer(ImGuiApp* app, ImGuiViewport* viewport, int x, int y, int w, int h, unsigned int* pixels, void* user_data)
+{
+#ifdef IMGUI_HAS_VIEWPORT
+    if (ImGui_ImplSDL2_ViewportData* vd = (ImGui_ImplSDL2_ViewportData*)viewport->PlatformUserData)
+        if (vd->GLContext)
+            SDL_GL_MakeCurrent(vd->Window, vd->GLContext);
+#endif
+    return ImGuiApp_ImplGL_CaptureFramebuffer(app, viewport, x, y, w, h, pixels, user_data);
+}
+
 ImGuiApp* ImGuiApp_ImplSdlGL2_Create()
 {
     ImGuiApp_ImplSdlGLX* intf = new ImGuiApp_ImplSdlGLX();
@@ -763,7 +802,7 @@ ImGuiApp* ImGuiApp_ImplSdlGL2_Create()
     intf->Render                = ImGuiApp_ImplSdlGL2_Render;
     intf->ShutdownCloseWindow   = ImGuiApp_ImplSdlGLX_ShutdownCloseWindow;
     intf->ShutdownBackends      = ImGuiApp_ImplSdlGL2_ShutdownBackends;
-    intf->CaptureFramebuffer    = ImGuiApp_ImplGL_CaptureFramebuffer;
+    intf->CaptureFramebuffer    = ImGuiApp_ImplSdlGL2_CaptureFramebuffer;
     intf->Destroy               = [](ImGuiApp* app) { SDL_Quit(); delete (ImGuiApp_ImplSdlGLX*)app; };
     return intf;
 }
@@ -895,6 +934,16 @@ static void ImGuiApp_ImplSdlGL3_ShutdownBackends(ImGuiApp* app_opaque)
     ImGui_ImplSDL2_Shutdown();
 }
 
+static bool ImGuiApp_ImplSdlGL3_CaptureFramebuffer(ImGuiApp* app, ImGuiViewport* viewport, int x, int y, int w, int h, unsigned int* pixels, void* user_data)
+{
+#ifdef IMGUI_HAS_VIEWPORT
+    if (ImGui_ImplSDL2_ViewportData* vd = (ImGui_ImplSDL2_ViewportData*)viewport->PlatformUserData)
+        if (vd->GLContext)
+            SDL_GL_MakeCurrent(vd->Window, vd->GLContext);
+#endif
+    return ImGuiApp_ImplGL_CaptureFramebuffer(app, viewport, x, y, w, h, pixels, user_data);
+}
+
 ImGuiApp* ImGuiApp_ImplSdlGL3_Create()
 {
     ImGuiApp_ImplSdlGLX* intf = new ImGuiApp_ImplSdlGLX();
@@ -904,7 +953,7 @@ ImGuiApp* ImGuiApp_ImplSdlGL3_Create()
     intf->Render                = ImGuiApp_ImplSdlGL3_Render;
     intf->ShutdownCloseWindow   = ImGuiApp_ImplSdlGLX_ShutdownCloseWindow;
     intf->ShutdownBackends      = ImGuiApp_ImplSdlGL3_ShutdownBackends;
-    intf->CaptureFramebuffer    = ImGuiApp_ImplGL_CaptureFramebuffer;
+    intf->CaptureFramebuffer    = ImGuiApp_ImplSdlGL3_CaptureFramebuffer;
     intf->Destroy               = [](ImGuiApp* app) { SDL_Quit(); delete (ImGuiApp_ImplSdlGLX*)app; };
     return intf;
 }
@@ -1096,6 +1145,16 @@ static void ImGuiApp_ImplGlfwGL3_ShutdownBackends(ImGuiApp* app_opaque)
     ImGui_ImplGlfw_Shutdown();
 }
 
+static bool ImGuiApp_ImplGlfwGL3_CaptureFramebuffer(ImGuiApp* app, ImGuiViewport* viewport, int x, int y, int w, int h, unsigned int* pixels, void* user_data)
+{
+#ifdef IMGUI_HAS_VIEWPORT
+    if (ImGui_ImplGlfw_ViewportData* vd = (ImGui_ImplGlfw_ViewportData*)viewport->PlatformUserData)
+        if (vd->Window)
+            glfwMakeContextCurrent(vd->Window);
+#endif
+    return ImGuiApp_ImplGL_CaptureFramebuffer(app, viewport, x, y, w, h, pixels, user_data);
+}
+
 ImGuiApp* ImGuiApp_ImplGlfwGL3_Create()
 {
     ImGuiApp_ImplGlfwGL3* intf = new ImGuiApp_ImplGlfwGL3();
@@ -1117,7 +1176,7 @@ ImGuiApp* ImGuiApp_ImplGlfwGL3_Create()
 //-----------------------------------------------------------------------------
 
 #if defined(IMGUI_APP_GL2) || defined(IMGUI_APP_GL3)
-static bool ImGuiApp_ImplGL_CaptureFramebuffer(ImGuiApp* app, int x, int y, int w, int h, unsigned int* pixels, void* user_data)
+static bool ImGuiApp_ImplGL_CaptureFramebuffer(ImGuiApp* app, ImGuiViewport* viewport, int x, int y, int w, int h, unsigned int* pixels, void* user_data)
 {
     IM_UNUSED(app);
     IM_UNUSED(user_data);
