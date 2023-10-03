@@ -436,6 +436,8 @@ static bool ImGuiApp_ImplWin32DX11_CaptureFramebuffer(ImGuiApp* app_opaque, ImGu
             rtWidth = (UINT)viewport->Size.x;
             rtHeight = (UINT)viewport->Size.y;
         }
+#else
+    IM_UNUSED(viewport);
 #endif
 
     D3D11_TEXTURE2D_DESC texture_desc;
@@ -1180,6 +1182,7 @@ static bool ImGuiApp_ImplGL_CaptureFramebuffer(ImGuiApp* app, ImGuiViewport* vie
 {
     IM_UNUSED(app);
     IM_UNUSED(user_data);
+    IM_UNUSED(viewport); // Expecting calling code to have set the right GL context
 
 #ifdef __linux__
     // FIXME: Odd timing issue is observed on linux (Plasma/X11 specifically), which causes outdated frames to be captured, unless we give compositor some time to update screen.
