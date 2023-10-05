@@ -531,6 +531,66 @@ void RegisterTests_Window(ImGuiTestEngine* e)
         IM_CHECK_EQ(g.OpenPopupStack.Size, 2);
     };
 
+    // ## Test input and output value of *p_open (#6900)
+    t = IM_REGISTER_TEST(e, "window", "window_popup_close_signal");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        auto& vars = ctx->GenericVars;
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+        if (ImGui::Button("Open modal"))
+        {
+            ImGui::OpenPopup("Modal");
+            vars.Bool1 = true;
+        }
+        vars.Bool2 = false;
+        if (ImGui::BeginPopupModal("Modal", &vars.Bool1))
+        {
+            vars.Bool2 = true; // Visible
+            if (ImGui::Button("Close"))
+                ImGui::CloseCurrentPopup();
+            ImGui::EndPopup();
+        }
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiContext& g = *ctx->UiContext;
+        auto& vars = ctx->GenericVars;
+
+        // Test p_open as output signal when closing from Window Close button
+        ctx->ItemClick("//Test Window/Open modal");
+        IM_CHECK_EQ(vars.Bool1, true); // Open
+        IM_CHECK_EQ(vars.Bool2, true); // BeginPopupModal() returned true
+        ctx->WindowClose("//$FOCUSED");
+        ctx->Yield();
+        IM_CHECK_EQ(vars.Bool1, false); // Closed
+        IM_CHECK_EQ(vars.Bool2, false); // BeginPopupModal() returned false
+        IM_CHECK_EQ(g.OpenPopupStack.Size, 0);
+
+        // Test p_open as output signal when closing from API
+#if (!defined(IMGUI_HAS_DOCK) && IMGUI_VERSION_NUM >= 18994) || (IMGUI_VERSION_NUM >= 18995)
+        ctx->ItemClick("//Test Window/Open modal");
+        IM_CHECK_EQ(vars.Bool1, true); // Open
+        IM_CHECK_EQ(vars.Bool2, true); // BeginPopupModal() returned true
+        ctx->ItemClick("//$FOCUSED/Close");
+        ctx->Yield();
+        IM_CHECK_EQ(vars.Bool1, false); // Closed
+        IM_CHECK_EQ(vars.Bool2, false); // BeginPopupModal() returned false
+        IM_CHECK_EQ(g.OpenPopupStack.Size, 0);
+#endif
+
+        // Test p_open as input signal
+        ctx->ItemClick("//Test Window/Open modal");
+        IM_CHECK_EQ(vars.Bool1, true); // Open
+        IM_CHECK_EQ(vars.Bool2, true); // BeginPopupModal() returned true
+        ctx->Yield(2);
+        IM_CHECK_EQ(vars.Bool2, true); // BeginPopupModal() returned true
+        vars.Bool1 = false;
+        ctx->Yield();
+        IM_CHECK_EQ(vars.Bool1, false); // Closed
+        IM_CHECK_EQ(vars.Bool2, false); // BeginPopupModal() returned false
+    };
+
     // ## Test BeginPopupContextVoid()
     t = IM_REGISTER_TEST(e, "window", "window_popup_on_void");
     t->GuiFunc = [](ImGuiTestContext* ctx)
