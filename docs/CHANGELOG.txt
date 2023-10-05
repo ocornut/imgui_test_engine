@@ -5,6 +5,9 @@ CHANGELOG
    Those changes are not all listed here.
 ** For a while this is going to ONLY INCLUDE BREAKING CHANGES.
 
+2023/10/05:
+- TestEngine: Capture: Fixed an issue capturing docked windows. (#34)
+
 2023/09/28:
 - TestEngine: Capture: Fixed use of ImGuiCaptureFlags_StitchAll when io.ConfigWindowsMoveFromTitleBarOnly
   option is set. (#33)
