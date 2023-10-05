@@ -2427,9 +2427,9 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         IM_CHECK(ctx->ItemInfo("Widgets")->ID != 0);
         IM_CHECK((ctx->ItemInfo("Widgets")->StatusFlags & ImGuiItemStatusFlags_Opened) != 0);
         IM_CHECK_EQ(g.ActiveId, active_id);
-        ctx->MouseMove("Trees", ImGuiTestOpFlags_NoFocusWindow);
+        ctx->MouseMove("Tree Nodes", ImGuiTestOpFlags_NoFocusWindow);
         ctx->SleepNoSkip(1.0f, 1.0f / 60.0f);
-        IM_CHECK((ctx->ItemInfo("Trees")->StatusFlags & ImGuiItemStatusFlags_Opened) != 0);
+        IM_CHECK((ctx->ItemInfo("Tree Nodes")->StatusFlags & ImGuiItemStatusFlags_Opened) != 0);
         IM_CHECK_EQ(g.ActiveId, active_id);
         ctx->MouseUp(0);
     };
