@@ -206,6 +206,15 @@ void ImGuiCaptureContext::PostRender()
     g.IO.MouseDrawCursor = _BackupMouseDrawCursor;
 }
 
+void ImGuiCaptureContext::ClearState()
+{
+    _FrameNo = _ChunkNo = 0;
+    _VideoLastFrameTime = 0;
+    _MouseRelativeToWindowPos = ImVec2(-FLT_MAX, -FLT_MAX);
+    _HoveredWindow = NULL;
+    _CaptureArgs = NULL;
+}
+
 // Returns true when capture is in progress.
 ImGuiCaptureStatus ImGuiCaptureContext::CaptureUpdate(ImGuiCaptureArgs* args)
 {
@@ -474,6 +483,7 @@ ImGuiCaptureStatus ImGuiCaptureContext::CaptureUpdate(ImGuiCaptureArgs* args)
             if (!ScreenCaptureFunc(viewport_id, x1, y1, w, h, &output->Data[_ChunkNo * w * capture_height], ScreenCaptureUserData))
             {
                 fprintf(stderr, "Screen capture function failed.\n");
+                ClearState();
                 return ImGuiCaptureStatus_Error;
             }
 
@@ -560,12 +570,7 @@ ImGuiCaptureStatus ImGuiCaptureContext::CaptureUpdate(ImGuiCaptureArgs* args)
             g.Style.DisplayWindowPadding = _BackupDisplayWindowPadding;
             g.Style.DisplaySafeAreaPadding = _BackupDisplaySafeAreaPadding;
 
-            _FrameNo = _ChunkNo = 0;
-            _VideoLastFrameTime = 0;
-            _MouseRelativeToWindowPos = ImVec2(-FLT_MAX, -FLT_MAX);
-            _HoveredWindow = NULL;
-            _CaptureArgs = NULL;
-
+            ClearState();
             return ImGuiCaptureStatus_Done;
         }
     }
