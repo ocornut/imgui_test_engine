@@ -280,7 +280,7 @@ bool ImFileCreateDirectoryChain(const char* path, const char* path_end)
     path_local[path_len] = 0;
 
 #if defined(_WIN32)
-    ImVector<ImWchar> buf;
+    ImVector<wchar_t> buf;
 #endif
     // Modification of passed file_name allows us to avoid extra temporary memory allocation.
     // strtok() pokes \0 into places where slashes are, we create a directory using directory_name and restore slash.
@@ -291,10 +291,12 @@ bool ImFileCreateDirectoryChain(const char* path, const char* path_end)
             *(token - 1) = IM_DIR_SEPARATOR;
 
 #if defined(_WIN32)
-        // Use ::CreateDirectoryW() because ::CreateDirectoryA() treat filenames in the local code-page instead of UTF-8.
-        const int filename_wsize = ImTextCountCharsFromUtf8(path_local, NULL) + 1;
+        // Use ::CreateDirectoryW() because ::CreateDirectoryA() treat filenames in the local code-page instead of UTF-8
+        // We cannot use ImWchar, which can be 32bits if IMGUI_USE_WCHAR32 (and CreateDirectoryW require 16bits wchar)
+        int filename_wsize = MultiByteToWideChar(CP_UTF8, 0, path_local, -1, NULL, 0);
         buf.resize(filename_wsize);
-        ImTextStrFromUtf8(&buf[0], filename_wsize, path_local, NULL);
+        MultiByteToWideChar(CP_UTF8, 0, path_local, -1, &buf[0], filename_wsize);
+
         if (!::CreateDirectoryW((wchar_t*)&buf[0], NULL) && GetLastError() != ERROR_ALREADY_EXISTS)
 #else
         if (mkdir(path_local, S_IRWXU) != 0 && errno != EEXIST)
