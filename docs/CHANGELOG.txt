@@ -7,6 +7,7 @@ CHANGELOG
 
 2024/04/15:
 - TestEngine: Added ImGuiTestEngine_UnregisterTest().
+- TestEngine: Fixed directory creation for capture save when using IMGUI_USE_WCHAR32.
 
 2024/04/11:
 - TestEngine: Better assert on misusage of ComboClick().
