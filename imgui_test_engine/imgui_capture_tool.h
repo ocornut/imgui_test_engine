@@ -134,6 +134,7 @@ struct IMGUI_API ImGuiCaptureContext
 
     // Update capturing. If this function returns true then it should be called again with same arguments on the next frame.
     ImGuiCaptureStatus      CaptureUpdate(ImGuiCaptureArgs* args);
+    void                    RestoreBackedUpData();
     void                    ClearState();
 
     // Begin video capture. Call CaptureUpdate() every frame afterwards until it returns false.

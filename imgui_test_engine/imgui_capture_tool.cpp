@@ -205,6 +205,22 @@ void ImGuiCaptureContext::PostRender()
     g.IO.MouseDrawCursor = _BackupMouseDrawCursor;
 }
 
+void ImGuiCaptureContext::RestoreBackedUpData()
+{
+    // Restore window positions unconditionally. We may have moved them ourselves during capture.
+    ImGuiContext& g = *GImGui;
+    for (int n = 0; n < _WindowsData.Size; n++)
+    {
+        ImGuiWindow* window = _WindowsData[n].Window;
+        if (window->Hidden)
+            continue;
+        ImGui::SetWindowPos(window, _WindowsData[n].BackupRect.Min, ImGuiCond_Always);
+        ImGui::SetWindowSize(window, _WindowsData[n].BackupRect.GetSize(), ImGuiCond_Always);
+    }
+    g.Style.DisplayWindowPadding = _BackupDisplayWindowPadding;
+    g.Style.DisplaySafeAreaPadding = _BackupDisplaySafeAreaPadding;
+}
+
 void ImGuiCaptureContext::ClearState()
 {
     _FrameNo = _ChunkNo = 0;
@@ -482,6 +498,7 @@ ImGuiCaptureStatus ImGuiCaptureContext::CaptureUpdate(ImGuiCaptureArgs* args)
             if (!ScreenCaptureFunc(viewport_id, x1, y1, w, h, &output->Data[_ChunkNo * w * capture_height], ScreenCaptureUserData))
             {
                 fprintf(stderr, "Screen capture function failed.\n");
+                RestoreBackedUpData();
                 ClearState();
                 return ImGuiCaptureStatus_Error;
             }
@@ -557,18 +574,7 @@ ImGuiCaptureStatus ImGuiCaptureContext::CaptureUpdate(ImGuiCaptureArgs* args)
                 output->Clear();
             }
 
-            // Restore window positions unconditionally. We may have moved them ourselves during capture.
-            for (int n = 0; n < _WindowsData.Size; n++)
-            {
-                ImGuiWindow* window = _WindowsData[n].Window;
-                if (window->Hidden)
-                    continue;
-                ImGui::SetWindowPos(window, _WindowsData[n].BackupRect.Min, ImGuiCond_Always);
-                ImGui::SetWindowSize(window, _WindowsData[n].BackupRect.GetSize(), ImGuiCond_Always);
-            }
-            g.Style.DisplayWindowPadding = _BackupDisplayWindowPadding;
-            g.Style.DisplaySafeAreaPadding = _BackupDisplaySafeAreaPadding;
-
+            RestoreBackedUpData();
             ClearState();
             return ImGuiCaptureStatus_Done;
         }
