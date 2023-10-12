@@ -2258,7 +2258,8 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
         for (ImGuiWindow* window : g.WindowsFocusOrder)
             if (!window->DockNodeIsVisible) // Docked windows are converted to child windows and are valid in this list
             { // VS2015 throws a "error C2059: syntax error: '}'" when using for-range/if/do-while, I don't understand it. VS2019 is ok.
-                IM_CHECK_SILENT((window->Flags& ImGuiWindowFlags_ChildWindow) == 0);
+                // FIXME-TESTS: Test is not totally correct, see "window_popup_child_without_input_blocking"
+                IM_CHECK_SILENT((window->Flags & ImGuiWindowFlags_ChildWindow) == 0 || (window->Flags & ImGuiWindowFlags_Popup));
             }
     };
 

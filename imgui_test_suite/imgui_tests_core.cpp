@@ -568,7 +568,7 @@ void RegisterTests_Window(ImGuiTestEngine* e)
         IM_CHECK_EQ(g.OpenPopupStack.Size, 0);
 
         // Test p_open as output signal when closing from API
-#if (!defined(IMGUI_HAS_DOCK) && IMGUI_VERSION_NUM >= 18994) || (IMGUI_VERSION_NUM >= 18995)
+#if IMGUI_VERSION_NUM >= 18995
         ctx->ItemClick("//Test Window/Open modal");
         IM_CHECK_EQ(vars.Bool1, true); // Open
         IM_CHECK_EQ(vars.Bool2, true); // BeginPopupModal() returned true
@@ -1637,6 +1637,56 @@ void RegisterTests_Window(ImGuiTestEngine* e)
             ctx->PopupCloseOne();
         }
     };
+
+#if IMGUI_VERSION_NUM >= 18995
+    // ## Test popups + child flag (#6915, #718)
+    t = IM_REGISTER_TEST(e, "window", "window_popup_child_without_input_blocking");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        auto& vars = ctx->GenericVars;
+        if (ctx->IsFirstGuiFrame())
+            vars.Bool1 = true;
+        if (!vars.Bool1)
+            return;
+        ImGui::Begin("Test Window", &vars.Bool1, ImGuiWindowFlags_NoSavedSettings);
+        const bool is_input_text_enter_pressed = ImGui::InputText("Input", vars.Str1, sizeof(vars.Str1), ImGuiInputTextFlags_EnterReturnsTrue);
+        const bool is_input_text_active = ImGui::IsItemActive();
+        const bool is_input_text_activated = ImGui::IsItemActivated();
+        if (is_input_text_activated)
+            ImGui::OpenPopup("##popup");
+
+        ImGui::SetNextWindowPos(ImVec2(ImGui::GetItemRectMin().x, ImGui::GetItemRectMax().y));
+        //ImGui::SetNextWindowSize({ ImGui::GetItemRectSize().x, 0 });
+        if (ImGui::BeginPopup("##popup", ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_ChildWindow))
+        {
+            static const char* autocomplete[] = { "cats", "dogs", "rabbits", "turtles" };
+            for (int i = 0; i < IM_ARRAYSIZE(autocomplete); i++)
+                if (ImGui::Selectable(autocomplete[i]))
+                {
+                    ImGui::ClearActiveID();
+                    ImFormatString(vars.Str1, IM_ARRAYSIZE(vars.Str1), "%s", autocomplete[i]);
+                }
+            if (is_input_text_enter_pressed || (!is_input_text_active && !ImGui::IsWindowFocused()))
+                ImGui::CloseCurrentPopup();
+            ImGui::EndPopup();
+        }
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        auto& vars = ctx->GenericVars;
+        ctx->SetRef("Test Window");
+        ctx->ItemClick("Input");
+        ctx->KeyChars("aa");
+        IM_CHECK_STR_EQ(vars.Str1, "aa");
+        // FIXME-TESTS: cats should be highlighted and not skipped
+        ctx->KeyPress(ImGuiKey_DownArrow);
+        ctx->KeyPress(ImGuiKey_Enter);
+        IM_CHECK_STR_EQ(vars.Str1, "dogs");
+        ctx->WindowClose("");
+        ctx->Yield(2); // Asserted prior to 2023/10/12
+    };
+#endif
 
 #if IMGUI_VERSION_NUM >= 18611
     // ## Test immediate window creation after modal opens. (#4920)
@@ -6397,7 +6447,11 @@ void RegisterTests_Capture(ImGuiTestEngine* e)
     {
         ctx->SetRef("Dear ImGui Demo");
         ctx->ItemOpen("Tables & Columns");
+#if IMGUI_VERSION_NUM >= 18995
+        ctx->ItemClick("Tables/Expand all");
+#else
         ctx->ItemClick("Tables/Open all");
+#endif
         ctx->ItemOpen("Tables/Synced instances", 1);
         //ctx->ItemOpen("Tables/Advanced/Options");
         ctx->ItemOpenAll("Tables/Advanced/Options", 1);
@@ -6407,7 +6461,11 @@ void RegisterTests_Capture(ImGuiTestEngine* e)
 
         ctx->CaptureScreenshotWindow("", ImGuiCaptureFlags_StitchAll | ImGuiCaptureFlags_HideMouseCursor);
 
+#if IMGUI_VERSION_NUM >= 18995
+        ctx->ItemClick("Tables/Collapse all");
+#else
         ctx->ItemClick("Tables/Close all");
+#endif
     };
 
 #if IMGUI_TEST_ENGINE_ENABLE_IMPLOT
