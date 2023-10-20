@@ -1109,9 +1109,19 @@ ImGuiTestItemInfo* ImGuiTestContext::WindowInfo(ImGuiTestRef ref, ImGuiTestOpFla
                 ImGuiWindow* child_window = NULL;
                 {
                     // Child: Attempt 1: Try to BeginChild(const char*) variant and mimic its logic.
-                    ImGuiID child_item_id = GetID(part_name.c_str(), window_idstack_back);
-                    Str128f child_window_full_name("%s/%s_%08X", window->Name, part_name.c_str(), child_item_id);
-                    child_window_id = ImHashStr(child_window_full_name.c_str());
+                    Str128 child_window_full_name;
+#if IMGUI_VERSION_NUM >= 18996
+                    if (window_idstack_back == window->ID)
+                    {
+                        child_window_full_name.setf("%s/%s", window->Name, part_name.c_str());
+                    }
+                    else
+#endif
+                    {
+                        ImGuiID child_item_id = GetID(part_name.c_str(), window_idstack_back);
+                        child_window_full_name.setf("%s/%s_%08X", window->Name, part_name.c_str(), child_item_id);
+                    }
+                    child_window_id = ImHashStr(child_window_full_name.c_str()); // We do NOT use ImHashDecoratedPath()
                     child_window = GetWindowByRef(child_window_id);
                 }
                 if (child_window == NULL)
@@ -1121,7 +1131,7 @@ ImGuiTestItemInfo* ImGuiTestContext::WindowInfo(ImGuiTestRef ref, ImGuiTestOpFla
                     // We could support $$xxxx syntax to encode ID in parameter?
                     ImGuiID child_item_id = GetID(part_name.c_str(), window_idstack_back);
                     Str128f child_window_full_name("%s/%08X", window->Name, child_item_id);
-                    child_window_id = ImHashStr(child_window_full_name.c_str());
+                    child_window_id = ImHashStr(child_window_full_name.c_str()); // We do NOT use ImHashDecoratedPath()
                     child_window = GetWindowByRef(child_window_id);
                 }
                 if (child_window == NULL)
