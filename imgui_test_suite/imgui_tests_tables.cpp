@@ -207,6 +207,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
         ImGui::PushStyleVar(ImGuiStyleVar_WindowMinSize, ImVec2(8, 8));
         ImGui::Begin("Test window 1", NULL, ImGuiWindowFlags_NoSavedSettings);
         ImGui::Checkbox("Enable checks", &vars.Bool1);
+        ImGui::Checkbox("Enable borders", &vars.Bool2);
         ImDrawList* draw_list = ImGui::GetWindowDrawList();
 
         const ImGuiTableFlags border_flags = (vars.Bool2 ? ImGuiTableFlags_Borders : 0); // #4843, #4844 horizontal border had accidental effect on stripping draw commands.

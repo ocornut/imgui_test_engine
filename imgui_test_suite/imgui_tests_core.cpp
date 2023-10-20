@@ -121,6 +121,30 @@ void RegisterTests_Window(ImGuiTestEngine* e)
     };
 #endif
 
+    // ## Test that a collapsed window with AlwaysAutoResize still does set SkipItems
+    t = IM_REGISTER_TEST(e, "window", "window_size_collapsed_3");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        auto& vars = ctx->GenericVars;
+        vars.Bool1 = ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
+        //ctx->LogDebug("%f,%f", ImGui::GetContentRegionAvail().x, ImGui::GetContentRegionAvail().y);
+        if (vars.Bool1)
+            for (int n = 0; n < 10; n++)
+                ImGui::Text("Test line %d", n);
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        auto& vars = ctx->GenericVars;
+        ctx->SetRef("Test Window");
+        ctx->Yield(2);
+        IM_CHECK(vars.Bool1 == true);   // Begin() return true
+        ctx->WindowCollapse("", true);  // Collapse window
+        IM_CHECK(vars.Bool1 == false);  // Begin() return false
+        ctx->WindowCollapse("", false);
+        IM_CHECK(vars.Bool1 == true);   // Begin() return true
+    };
+
     t = IM_REGISTER_TEST(e, "window", "window_size_contents");
     t->Flags |= ImGuiTestFlags_NoAutoFinish;
     t->GuiFunc = [](ImGuiTestContext* ctx)
