@@ -3795,6 +3795,43 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         IM_CHECK(selection.GetSelected(7) == true);
     };
 
+#if IMGUI_VERSION_NUM >= 18996
+    // Test nested/recursive BeginMultiSelect()
+    // FIXME: This doesn't test any behavior merely that the thing doesn't assert/crash
+    t = IM_REGISTER_TEST(e, "widgets", "widgets_multiselect_nested");
+    t->SetVarsDataType<MultiSelectTestVars>();
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        MultiSelectTestVars& vars = ctx->GetVars<MultiSelectTestVars>();
+        ExampleSelection& selection = vars.Selection0;
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
+
+        ImGuiMultiSelectIO* ms_io = ImGui::BeginMultiSelect(ImGuiMultiSelectFlags_None);
+        selection.ApplyRequests(ms_io, 50);
+        selection.EmitBasicItems(ms_io, 50, "Object %03d");
+        if (ImGui::Button("Open Popup"))
+            ImGui::OpenPopup("Popup");
+        if (ImGui::BeginPopup("Popup"))
+        {
+            ImGuiMultiSelectIO* ms_io_2 = ImGui::BeginMultiSelect(ImGuiMultiSelectFlags_None);
+            selection.ApplyRequests(ms_io_2, 50);
+            selection.EmitBasicItems(ms_io_2, 50, "Object %03d");
+            ms_io_2 = ImGui::EndMultiSelect();
+            selection.ApplyRequests(ms_io_2, 50);
+            ImGui::EndPopup();
+        }
+        ms_io = ImGui::EndMultiSelect();
+        selection.ApplyRequests(ms_io, 50);
+        //IM_CHECK(ms_io_1->RangeSrcItem == ImGuiSelectionUserData_Invalid);
+
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ctx->ItemClick("//Test Window/Open Popup");
+    };
+#endif
+
     // Test validity of ImGuiMultiSelectIO data.
     t = IM_REGISTER_TEST(e, "widgets", "widgets_multiselect_io_lifetime");
     t->SetVarsDataType<MultiSelectTestVars>();
