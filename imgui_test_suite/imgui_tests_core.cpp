@@ -273,8 +273,8 @@ void RegisterTests_Window(ImGuiTestEngine* e)
         //  loop keeping new size.
         ImGui::SetNextWindowSize(ImVec2(1, 1), ImGuiCond_Appearing); // Fixes test failing due to side-effects caused by other tests using window with same name.
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
-        ImGui::Text("Hello World");
-        ImGui::BeginChild("Child", ImVec2(0, 200));
+        ImGui::Text(ImGui::GetIO().KeyShift ? "This is some longer text" : "Hello World");
+        ImGui::BeginChild("Child", ImVec2(0, 200), true);
         ImGui::EndChild();
         ImVec2 sz = ImGui::GetWindowSize();
         ImGui::End();
@@ -1826,6 +1826,50 @@ void RegisterTests_Window(ImGuiTestEngine* e)
         if (ctx->FrameCount == 2)
             ctx->Finish();
     };
+
+#if IMGUI_VERSION_NUM >= 18998
+    // ## Test ImGuiWindowFlags_AlwaysAutoResize with child windows.
+    t = IM_REGISTER_TEST(e, "window", "window_child_layout_autoresize");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        auto& vars = ctx->GenericVars;
+        ImGui::Begin("Test Debug");
+        ImGui::DragInt("Lines Count", &vars.Count, 0.2f, 0, 100);
+        ImGui::End();
+
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+
+        ImGui::SetNextWindowSizeConstraints(ImVec2(0.0f, 0.0f), ImVec2(FLT_MAX, ImGui::GetTextLineHeightWithSpacing() * 10));
+
+        ImGui::BeginChild("Child 1", ImVec2(-FLT_MIN, 0.0f), ImGuiChildFlags_Border | ImGuiChildFlags_AutoResizeY);// , ImGuiWindowFlags_AlwaysAutoResize);
+        for (int n = 0; n < vars.Count; n++)
+            ImGui::Text("Line %d", n);
+        ImGui::EndChild();
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        auto& vars = ctx->GenericVars;
+
+        vars.Count = 5;
+        ctx->Yield();
+        ctx->WindowResize("//Test Window", ImVec2(200.0f, 200.0f)); // Set width
+        ctx->WindowResize("//Test Window", ImVec2(-1.0f, -1.0f)); // Then auto-fit
+        ImGuiWindow* window = ctx->WindowInfo("//Test Window")->Window;
+        ImGuiWindow* child = ctx->WindowInfo("//Test Window/Child 1")->Window;
+        IM_CHECK(window && child);
+
+        ImGuiStyle& style = ImGui::GetStyle();
+        IM_CHECK_EQ(child->Size.x, window->Size.x - style.WindowPadding.y * 2.0f);
+        IM_CHECK_EQ(child->Size.y, ImGui::GetTextLineHeight() * 5 + style.ItemSpacing.y * 4 + style.WindowPadding.y * 2.0f);
+
+        vars.Count = 20;
+        ctx->Yield();
+        ctx->WindowResize("//Test Window", ImVec2(-1.0f, -1.0f)); // Auto-fit
+        IM_CHECK_EQ(child->Size.x, window->Size.x - style.WindowPadding.y * 2.0f);
+        IM_CHECK_EQ(child->Size.y, ImGui::GetTextLineHeightWithSpacing() * 10);
+    };
+#endif
 
     // ## Test that child window correctly affect contents size based on how their size was specified.
     t = IM_REGISTER_TEST(e, "window", "window_child_layout_size");
