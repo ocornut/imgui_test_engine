@@ -1772,25 +1772,41 @@ void RegisterTests_Window(ImGuiTestEngine* e)
     };
 #endif
 
-    // ## Test that child window correctly affect contents size based on how their size was specified.
-    t = IM_REGISTER_TEST(e, "window", "window_child_layout_size");
-    t->Flags |= ImGuiTestFlags_NoAutoFinish;
+    // ## Test basic SkipItems behavior on regular and ImGuiWindowFlags_AlwaysAutoResize windows
+    t = IM_REGISTER_TEST(e, "window", "window_skipitems_basic");
+    t->Flags |= ImGuiTestOpFlags_NoAutoUncollapse;
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
-        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
-        ImGui::Text("Hi");
-        ImGui::BeginChild("Child 1", ImVec2(100, 100), true);
-        ImGui::EndChild();
-        if (ctx->FrameCount == 2)
-        {
-            IM_CHECK_EQ(ctx->UiContext->CurrentWindow->ContentSize, ImVec2(100, 100 + ImGui::GetTextLineHeightWithSpacing()));
-            ctx->Finish();
-        }
+        ImGui::Begin("Test Window 1", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImGui::Text("Dummy text");
         ImGui::End();
+        ImGui::Begin("Test Window 2", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
+        ImGui::Text("Dummy text");
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ctx->SetRef("Test Window 1");
+        ImGuiWindow* window1 = ctx->GetWindowByRef("");
+        ctx->WindowCollapse("", false);
+        IM_CHECK(window1 != NULL);
+        IM_CHECK(window1->SkipItems == false);
+        ctx->WindowCollapse("", true);
+        IM_CHECK(window1->SkipItems == true);
+        ctx->WindowCollapse("", false);
+
+        ctx->SetRef("Test Window 2");
+        ImGuiWindow* window2 = ctx->GetWindowByRef("");
+        ctx->WindowCollapse("", false);
+        IM_CHECK(window2 != NULL);
+        IM_CHECK(window2->SkipItems == false);
+        ctx->WindowCollapse("", true);
+        IM_CHECK(window2->SkipItems == true);
+        ctx->WindowCollapse("", false);
     };
 
     // ## Test that child window outside the visible section of their parent are clipped
-    t = IM_REGISTER_TEST(e, "window", "window_child_clip");
+    t = IM_REGISTER_TEST(e, "window", "window_skipitems_child");
     t->Flags |= ImGuiTestFlags_NoAutoFinish;
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
@@ -1809,6 +1825,23 @@ void RegisterTests_Window(ImGuiTestEngine* e)
         ImGui::End();
         if (ctx->FrameCount == 2)
             ctx->Finish();
+    };
+
+    // ## Test that child window correctly affect contents size based on how their size was specified.
+    t = IM_REGISTER_TEST(e, "window", "window_child_layout_size");
+    t->Flags |= ImGuiTestFlags_NoAutoFinish;
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImGui::Text("Hi");
+        ImGui::BeginChild("Child 1", ImVec2(100, 100), true);
+        ImGui::EndChild();
+        if (ctx->FrameCount == 2)
+        {
+            IM_CHECK_EQ(ctx->UiContext->CurrentWindow->ContentSize, ImVec2(100, 100 + ImGui::GetTextLineHeightWithSpacing()));
+            ctx->Finish();
+        }
+        ImGui::End();
     };
 
     // ## Test that basic SetScrollHereY call scrolls all the way (#1804)
