@@ -402,7 +402,7 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
                 if (ImGui::BeginMenu("Submenu2"))
                 {
                     bool use_child = ctx->Test->ArgVariant == 1;
-                    if (!use_child || ImGui::BeginChild("Child", ImVec2(100.f, 30.f), true))
+                    if (!use_child || ImGui::BeginChild("Child", ImVec2(100.f, 30.f), ImGuiChildFlags_Border))
                     {
                         if (ImGui::BeginTabBar("Tabs"))
                         {
@@ -572,7 +572,7 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
 
         ImGui::Begin("Window 2", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
         ImGui::Button("Button Out");
-        ImGui::BeginChild("Child", ImVec2(50, 50), true);
+        ImGui::BeginChild("Child", ImVec2(50, 50), ImGuiChildFlags_Border);
         ImGui::Button("Button In");
         ImGui::EndChild();
         ImGui::End();
@@ -640,7 +640,7 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
         ImGui::End();
 
         ImGui::Begin("Window 2", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
-        ImGui::BeginChild("Child", ImVec2(50, 50), true);
+        ImGui::BeginChild("Child", ImVec2(50, 50), ImGuiChildFlags_Border);
         ImGui::Button("Button 2");
         ImGui::EndChild();
         ImGui::End();
@@ -994,7 +994,7 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
         ImGui::Begin("Window 1", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
         ImGui::Button("Button 1");
         ImGui::Button("Button 2");
-        ImGui::BeginChild("Child", ImVec2(100, 100), true);
+        ImGui::BeginChild("Child", ImVec2(100, 100), ImGuiChildFlags_Border);
         ImGui::Button("Button 3");
         ImGui::Button("Button 4");
         ImGui::EndChild();

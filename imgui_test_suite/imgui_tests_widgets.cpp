@@ -651,7 +651,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
     {
         ImGui::SetNextWindowSize(ImVec2(200, 200));
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysHorizontalScrollbar);
-        ImGui::BeginChild("##Child", ImVec2(800, 800), true);
+        ImGui::BeginChild("##Child", ImVec2(800, 800), ImGuiChildFlags_Border);
         ImGui::Text("This is some text");
         ImGui::EndChild();
         ImGui::End();
@@ -671,7 +671,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ImGuiTestGenericVars& vars = ctx->GenericVars;
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
 
-        ImGui::BeginChild("Child", ImVec2(100, 100), true);
+        ImGui::BeginChild("Child", ImVec2(100, 100), ImGuiChildFlags_Border);
         vars.Pos = ImGui::GetCursorScreenPos();
         ImGui::Dummy(ImVec2(10, 10));
         ImGui::Button("button");

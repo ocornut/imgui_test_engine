@@ -1043,10 +1043,10 @@ void RegisterTests_Inputs(ImGuiTestEngine* e)
         DoRouteForItem('B', ImGui::GetItemID());
 
         ImGui::Button("ButtonC");
-        ImGui::BeginChild("ChildD", ImVec2(-FLT_MIN, 100), true);
+        ImGui::BeginChild("ChildD", ImVec2(-FLT_MIN, 100), ImGuiChildFlags_Border);
         ImGui::Button("ChildD");
         ImGui::EndChild();
-        ImGui::BeginChild("ChildE", ImVec2(-FLT_MIN, 100), true);
+        ImGui::BeginChild("ChildE", ImVec2(-FLT_MIN, 100), ImGuiChildFlags_Border);
         ImGui::Button("ChildE");
         DoRoute('E');
         ImGui::EndChild();
@@ -1068,7 +1068,7 @@ void RegisterTests_Inputs(ImGuiTestEngine* e)
         ImGui::Begin("WindowH");
         ImGui::Button("WindowH");
         DoRoute('H');
-        ImGui::BeginChild("ChildI", ImVec2(-FLT_MIN, 100), true);
+        ImGui::BeginChild("ChildI", ImVec2(-FLT_MIN, 100), ImGuiChildFlags_Border);
         ImGui::Button("ChildI");
         ImGui::EndChild();
         ImGui::End();
@@ -1079,11 +1079,11 @@ void RegisterTests_Inputs(ImGuiTestEngine* e)
         ImGui::Button("WindowM");
         DoRoute('M');
 
-        ImGui::BeginChild("ChildN", ImVec2(-FLT_MIN, 300), true);
+        ImGui::BeginChild("ChildN", ImVec2(-FLT_MIN, 300), ImGuiChildFlags_Border);
         ImGui::Button("ChildN");
         DoRoute('N');
 
-        ImGui::BeginChild("ChildO", ImVec2(-FLT_MIN, 150), true);
+        ImGui::BeginChild("ChildO", ImVec2(-FLT_MIN, 150), ImGuiChildFlags_Border);
         ImGui::Button("ChildO");
         DoRoute('O');
         ImGui::EndChild();
@@ -1199,7 +1199,7 @@ void RegisterTests_Inputs(ImGuiTestEngine* e)
 
         for (int window_n = 0; window_n < 3; window_n++)
         {
-            ImGui::BeginChild(Str16f("Window%d", window_n).c_str(), ImVec2(200, 150), true);
+            ImGui::BeginChild(Str16f("Window%d", window_n).c_str(), ImVec2(200, 150), ImGuiChildFlags_Border);
             ImGui::Text("Window %d 0x%08X\n", window_n, ImGui::IsWindowFocused(), ImGui::GetID(""));
             for (int flag_n = 0; flag_n < 3; flag_n++)
             {
@@ -1308,7 +1308,7 @@ void RegisterTests_Inputs(ImGuiTestEngine* e)
             ImGui::Text("[4] %d", vars.Pressed[0][4]);
         }
 
-        ImGui::BeginChild("Window2", ImVec2(320, 330), true);
+        ImGui::BeginChild("Window2", ImVec2(320, 330), ImGuiChildFlags_Border);
         {
             ImGui::Text("Window 2 (focused=%d)\n(want 1+3+4)", ImGui::IsWindowFocused());
             ImGui::Button("Button 2"); // Used to focus window
@@ -1324,7 +1324,7 @@ void RegisterTests_Inputs(ImGuiTestEngine* e)
             ImGui::Text("[4] %d", vars.Pressed[1][4]);
         }
 
-        ImGui::BeginChild("Window3", ImVec2(240, 200), true);
+        ImGui::BeginChild("Window3", ImVec2(240, 200), ImGuiChildFlags_Border);
         {
             ImGui::Text("Window 3 (focused=%d)\n(want 2+3)", ImGui::IsWindowFocused());
             ImGui::Button("Button 3"); // Used to focus window
@@ -1343,7 +1343,7 @@ void RegisterTests_Inputs(ImGuiTestEngine* e)
         ImGui::Checkbox("Dynamic Owner", &vars.EnableDynamicOwner);
         if (vars.EnableDynamicOwner)
         {
-            ImGui::BeginChild("Window4", ImVec2(220, 200), true);
+            ImGui::BeginChild("Window4", ImVec2(220, 200), ImGuiChildFlags_Border);
             {
                 ImGui::Text("Window 4 (focused=%d)\n(want 2+3)", ImGui::IsWindowFocused());
                 ImGui::Button("Button 4"); // Used to focus window

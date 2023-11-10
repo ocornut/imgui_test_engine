@@ -174,7 +174,7 @@ void RegisterTests_Viewports(ImGuiTestEngine* e)
         ImGui::SetNextWindowSize(ImVec2(200, 200)); // Assume fitting in host viewport
         ImGui::Begin("Window A", NULL, ImGuiWindowFlags_NoSavedSettings);
         ImGui::Button("Button A");
-        ImGui::BeginChild("Child A", ImVec2(100, 100), true);
+        ImGui::BeginChild("Child A", ImVec2(100, 100), ImGuiChildFlags_Border);
         ImGui::Button("Button Child A");
         ImGui::EndChild();
         ImGui::End();
@@ -182,7 +182,7 @@ void RegisterTests_Viewports(ImGuiTestEngine* e)
         ImGui::SetNextWindowPos(ImGui::GetMainViewport()->Pos + ImVec2(ImGui::GetMainViewport()->Size.x, 10));
         ImGui::Begin("Window B", NULL, ImGuiWindowFlags_NoSavedSettings);
         ImGui::Button("Button B");
-        ImGui::BeginChild("Child B", ImVec2(100, 100), true);
+        ImGui::BeginChild("Child B", ImVec2(100, 100), ImGuiChildFlags_Border);
         ImGui::Button("Button Child B");
         ImGui::EndChild();
         ImGui::End();

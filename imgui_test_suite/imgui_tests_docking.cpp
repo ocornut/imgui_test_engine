@@ -1345,7 +1345,7 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
         if (ImGuiDockNode* node = ImGui::DockBuilderGetCentralNode(vars.DockId))
         {
             ImGui::SetCursorScreenPos(node->Pos + ImVec2(10, 10));
-            ImGui::BeginChild("InjectedChild", node->Size - ImVec2(200, 20), true);
+            ImGui::BeginChild("InjectedChild", node->Size - ImVec2(200, 20), ImGuiChildFlags_Border);
             ImGui::EndChild();
         }
         ImGui::End();
