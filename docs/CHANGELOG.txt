@@ -5,6 +5,9 @@ CHANGELOG
    Those changes are not all listed here.
 ** For a while this is going to ONLY INCLUDE BREAKING CHANGES.
 
+2023/11/14:
+- TestEngine: Update for BeginChild() internal naming changes in IMGUI_VERSION_NUM >= 18999.
+
 2023/10/20:
 - TestEngine: Support for BeginChild() internal naming changes in IMGUI_VERSION_NUM >= 18996.
 

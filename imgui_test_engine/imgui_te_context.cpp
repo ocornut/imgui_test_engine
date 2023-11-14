@@ -1110,7 +1110,7 @@ ImGuiTestItemInfo* ImGuiTestContext::WindowInfo(ImGuiTestRef ref, ImGuiTestOpFla
                 {
                     // Child: Attempt 1: Try to BeginChild(const char*) variant and mimic its logic.
                     Str128 child_window_full_name;
-#if IMGUI_VERSION_NUM >= 18996
+#if (IMGUI_VERSION_NUM >= 18996) && (IMGUI_VERSION_NUM < 18999)
                     if (window_idstack_back == window->ID)
                     {
                         child_window_full_name.setf("%s/%s", window->Name, part_name.c_str());
