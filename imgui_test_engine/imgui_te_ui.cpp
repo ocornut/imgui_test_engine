@@ -239,7 +239,7 @@ static void GetFailingTestsAsString(ImGuiTestEngine* e, ImGuiTestGroup group, ch
     }
 }
 
-static void TestStatusButton(const char* id, const ImVec4& color, bool running)
+static void TestStatusButton(const char* id, const ImVec4& color, bool running, int display_counter)
 {
     ImGuiContext& g = *GImGui;
     ImGui::PushItemFlag(ImGuiItemFlags_NoTabStop, true);
@@ -255,6 +255,12 @@ static void TestStatusButton(const char* id, const ImVec4& color, bool running)
         ImGui::GetWindowDrawList()->AddLine(center - off, center + off, ImGui::GetColorU32(ImGuiCol_Text), 1.5f);
         //ImGui::RenderText(r.Min + style.FramePadding + ImVec2(0, 0), &"|\0/\0-\0\\"[(((ImGui::GetFrameCount() / 5) & 3) << 1)], NULL);
     }
+    else if (display_counter >= 0)
+    {
+        ImVec2 center = g.LastItemData.Rect.GetCenter();
+        Str30f buf("%d", display_counter);
+        ImGui::GetWindowDrawList()->AddText(center - ImGui::CalcTextSize(buf.c_str()) * 0.5f, ImGui::GetColorU32(ImGuiCol_Text), buf.c_str());
+    }
 }
 
 static void ShowTestGroup(ImGuiTestEngine* e, ImGuiTestGroup group, Str* filter)
@@ -263,7 +269,8 @@ static void ShowTestGroup(ImGuiTestEngine* e, ImGuiTestGroup group, Str* filter)
     ImGuiIO& io = ImGui::GetIO();
     const float dpi_scale = GetDpiScale();
 
-    // Save position of test run status button and make space for it.
+    // Colored Status button: will be displayed later below
+    // - Save position of test run status button and make space for it.
     const ImVec2 status_button_pos = ImGui::GetCursorPos();
     ImGui::SetCursorPosX(ImGui::GetCursorPosX() + ImGui::GetFrameHeight() + style.ItemInnerSpacing.x);
 
@@ -395,7 +402,7 @@ static void ShowTestGroup(ImGuiTestEngine* e, ImGuiTestGroup group, Str* filter)
             }
 
             ImGui::TableNextColumn();
-            TestStatusButton("status", status_color, test->Status == ImGuiTestStatus_Running || test->Status == ImGuiTestStatus_Suspended);
+            TestStatusButton("status", status_color, test->Status == ImGuiTestStatus_Running || test->Status == ImGuiTestStatus_Suspended, -1);
             ImGui::SameLine();
 
             bool queue_test = false;
@@ -565,7 +572,7 @@ static void ShowTestGroup(ImGuiTestEngine* e, ImGuiTestGroup group, Str* filter)
     {
         ImVec4 status_color;
         if (tests_failed > 0)
-            status_color = ImVec4(0.9f, 0.1f, 0.1f, 1.0f);
+            status_color = ImVec4(0.9f, 0.1f, 0.1f, 1.0f); // Red
         else if (e->IO.IsRunningTests)
             status_color = ImVec4(0.8f, 0.4f, 0.1f, 1.0f);
         else if (tests_succeeded > 0 && tests_completed == tests_succeeded)
@@ -574,7 +581,7 @@ static void ShowTestGroup(ImGuiTestEngine* e, ImGuiTestGroup group, Str* filter)
             status_color = ImVec4(0.4f, 0.4f, 0.4f, 1.0f);
         //ImVec2 cursor_pos_bkp = ImGui::GetCursorPos();
         ImGui::SetCursorPos(status_button_pos);
-        TestStatusButton("status", status_color, false);// e->IO.IsRunningTests);
+        TestStatusButton("status", status_color, false, tests_failed > 0 ? tests_failed : -1);// e->IO.IsRunningTests);
         ImGui::SetItemTooltip("Filtered: %d\n- OK: %d\n- Errors: %d", tests_completed, tests_succeeded, tests_failed);
         //ImGui::SetCursorPos(cursor_pos_bkp);  // Restore cursor position for rendering further widgets
     }
