@@ -57,7 +57,6 @@ void RegisterTests_Window(ImGuiTestEngine* e)
     t = IM_REGISTER_TEST(e, "window", "window_empty");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
-        //ImGui::GetStyle().WindowMinSize = ImVec2(10, 10);
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
         ImGui::End();
     };
@@ -65,10 +64,62 @@ void RegisterTests_Window(ImGuiTestEngine* e)
     {
         ImGuiStyle& style = ImGui::GetStyle();
         ImGuiWindow* window = ImGui::FindWindowByName("Test Window");
+#if IMGUI_VERSION_NUM >= 18999
+        IM_CHECK_EQ(window->Size.x, style.WindowPadding.x * 2.0f);
+#else
         IM_CHECK_EQ(window->Size.x, ImMax(style.WindowMinSize.x, style.WindowPadding.x * 2.0f));
+#endif
         IM_CHECK_EQ(window->Size.y, ImGui::GetFontSize() + style.FramePadding.y * 2.0f + style.WindowPadding.y * 2.0f);
         IM_CHECK_EQ(window->ContentSize, ImVec2(0, 0));
         IM_CHECK_EQ(window->Scroll, ImVec2(0, 0));
+    };
+
+    // ## We currently apply style.WindowMinSize on SetNextWindowSize()
+    // ## But ImGuiWindowFlags_AlwaysAutoResize as a side-effect of not needing style.WindowMinSize, bypasses it for SetNextWindowSize()
+    // (that has been changed on 2023/10/19 with e2035a5, fixed on 2023/11/15)
+    t = IM_REGISTER_TEST(e, "window", "window_size_min");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowMinSize, ImVec2(40, 40));
+        {
+            ImGui::Begin("Test Window 1", NULL, ImGuiWindowFlags_NoTitleBar);
+            // Tested in TestFunc(), after auto-resize should be (40,40)
+            ImGui::End();
+        }
+        {
+            ImGui::Begin("Test Window 2", NULL, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_AlwaysAutoResize);
+            // Tested in TestFunc(), should be WindowPadding*2.0f
+            ImGui::End();
+        }
+        {
+            ImGui::SetNextWindowSize(ImVec2(400, 10));
+            ImGui::Begin("Test Window 3", NULL, ImGuiWindowFlags_NoTitleBar);
+            ImVec2 sz = ImGui::GetWindowSize();
+            ImGui::End();
+            IM_CHECK_EQ(sz, ImVec2(400, 40));
+        }
+        {
+            // Before 2023/10/19 the small height was accepted here.
+            ImGui::SetNextWindowSize(ImVec2(400, 10));
+            ImGui::Begin("Test Window 4", NULL, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_AlwaysAutoResize);
+            ImVec2 sz = ImGui::GetWindowSize();
+            ImGui::End();
+#if IMGUI_VERSION_NUM < 18995 || IMGUI_VERSION_NUM >= 18999
+            IM_CHECK_EQ(sz, ImVec2(400, 10));
+#endif
+        }
+        ImGui::PopStyleVar();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ctx->WindowResize("Test Window 1", ImVec2(-1.0f, -1.0f));
+        ImGuiWindow* window_1 = ctx->GetWindowByRef("Test Window 1");
+        ImGuiWindow* window_2 = ctx->GetWindowByRef("Test Window 2");
+        IM_CHECK(window_1 != NULL && window_2 != NULL);
+        IM_CHECK_EQ(window_1->Size, ImVec2(40, 40));
+#if IMGUI_VERSION_NUM < 18995 || IMGUI_VERSION_NUM >= 18999
+        IM_CHECK_EQ(window_2->Size, ImGui::GetStyle().WindowPadding * 2.0f);
+#endif
     };
 
     // ## Test that a window starting collapsed performs width/contents size measurement on its first few frames.
