@@ -1166,7 +1166,7 @@ ImGuiApp* ImGuiApp_ImplGlfwGL3_Create()
     intf->Render                = ImGuiApp_ImplGlfwGL3_Render;
     intf->ShutdownCloseWindow   = ImGuiApp_ImplGlfwGL3_ShutdownCloseWindow;
     intf->ShutdownBackends      = ImGuiApp_ImplGlfwGL3_ShutdownBackends;
-    intf->CaptureFramebuffer    = ImGuiApp_ImplGL_CaptureFramebuffer;
+    intf->CaptureFramebuffer    = ImGuiApp_ImplGlfwGL3_CaptureFramebuffer;
     intf->Destroy               = [](ImGuiApp* app) { delete (ImGuiApp_ImplGlfwGL3*)app; };
     return intf;
 }
