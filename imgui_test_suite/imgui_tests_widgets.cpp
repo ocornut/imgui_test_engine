@@ -2930,12 +2930,20 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
 
 #if IMGUI_VERSION_NUM >= 19001
         ImGui::LogToClipboard();
-        ImGui::Text("%s", NULL);
-        ImGui::Text("%.*s", 3, NULL);
-        ImGui::Text("%.*s", 9999, NULL);
+#ifdef __GNUC__
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wformat-overflow"  // warning: ‘%s’ directive argument is null
+#endif
+        ImGui::Text("%s", (const char*)NULL);
+        ImGui::Text("%.*s", 3, (const char*)NULL);
+        ImGui::Text("%.*s", 9999, (const char*)NULL);
         ImGui::LogFinish();
         IM_CHECK_STR_EQ(g.TempBuffer.Data, "STRINGVIEW!");
         IM_CHECK_STR_EQ(ImGui::GetClipboardText(), "(null)" IM_NEWLINE "(nu" IM_NEWLINE "(null)" IM_NEWLINE);
+
+#ifdef __GNUC__
+#pragma GCC diagnostic pop
+#endif
 #endif
 
         ImGui::End();
