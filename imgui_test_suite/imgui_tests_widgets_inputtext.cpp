@@ -153,14 +153,19 @@ void RegisterTests_WidgetsInputText(ImGuiTestEngine* e)
         ctx->ItemClick("Other"); // This is to ensure stb_textedit_clear_state() gets called (clear the undo buffer, etc.)
         ctx->ItemClick("InputText");
 
+#if IMGUI_VERSION_NUM < 19001
+        int IMSTB_TEXTEDIT_UNDOSTATECOUNT = STB_TEXTEDIT_UNDOSTATECOUNT;
+        int IMSTB_TEXTEDIT_UNDOCHARCOUNT = STB_TEXTEDIT_UNDOCHARCOUNT;
+#endif
+
         ImGuiInputTextState& input_text_state = g.InputTextState;
         ImStb::StbUndoState& undo_state = input_text_state.Stb.undostate;
         IM_CHECK_EQ(input_text_state.ID, g.ActiveId);
         IM_CHECK_EQ(undo_state.undo_point, 0);
         IM_CHECK_EQ(undo_state.undo_char_point, 0);
-        IM_CHECK_EQ(undo_state.redo_point, STB_TEXTEDIT_UNDOSTATECOUNT);
-        IM_CHECK_EQ(undo_state.redo_char_point, STB_TEXTEDIT_UNDOCHARCOUNT);
-        IM_CHECK_EQ(STB_TEXTEDIT_UNDOCHARCOUNT, 999); // Test designed for this value
+        IM_CHECK_EQ(undo_state.redo_point, IMSTB_TEXTEDIT_UNDOSTATECOUNT);
+        IM_CHECK_EQ(undo_state.redo_char_point, IMSTB_TEXTEDIT_UNDOCHARCOUNT);
+        IM_CHECK_EQ(IMSTB_TEXTEDIT_UNDOCHARCOUNT, 999); // Test designed for this value
 
         // Insert 350 characters via 10 paste operations
         // We use paste operations instead of key-by-key insertion so we know our undo buffer will contains 10 undo points.
@@ -185,14 +190,14 @@ void RegisterTests_WidgetsInputText(ImGuiTestEngine* e)
         IM_CHECK_EQ(undo_state.undo_char_point, 0);
 
         // Undo x2
-        IM_CHECK(undo_state.redo_point == STB_TEXTEDIT_UNDOSTATECOUNT);
+        IM_CHECK(undo_state.redo_point == IMSTB_TEXTEDIT_UNDOSTATECOUNT);
         ctx->KeyPress(ImGuiMod_Shortcut | ImGuiKey_Z);
         ctx->KeyPress(ImGuiMod_Shortcut | ImGuiKey_Z);
         len = (int)strlen(vars.StrLarge.Data);
         IM_CHECK_EQ(len, 350 * 2);
         IM_CHECK_EQ(undo_state.undo_point, 1);
-        IM_CHECK_EQ(undo_state.redo_point, STB_TEXTEDIT_UNDOSTATECOUNT - 2);
-        IM_CHECK_EQ(undo_state.redo_char_point, STB_TEXTEDIT_UNDOCHARCOUNT - 350 * 2);
+        IM_CHECK_EQ(undo_state.redo_point, IMSTB_TEXTEDIT_UNDOSTATECOUNT - 2);
+        IM_CHECK_EQ(undo_state.redo_char_point, IMSTB_TEXTEDIT_UNDOCHARCOUNT - 350 * 2);
 
         // Undo x1 should call stb_textedit_discard_redo()
         ctx->KeyPress(ImGuiMod_Shortcut | ImGuiKey_Z);

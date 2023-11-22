@@ -2902,6 +2902,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
 
     // ## Flex code paths that try to avoid formatting when "%s" is used as format.
     // ## Also flex "%.*s" variant (#6846)
+    // ## Verify case of passing NULL as string (#7016)
     t = IM_REGISTER_TEST(e, "widgets", "widgets_text_unformatted_fastpath");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
@@ -2925,6 +2926,16 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         IM_CHECK_STR_EQ(g.TempBuffer.Data, "STRINGVIEW!");
         ImGui::Text("%.*s", 5, "HELLO");
         IM_CHECK_STR_EQ(g.TempBuffer.Data, "STRINGVIEW!");
+#endif
+
+#if IMGUI_VERSION_NUM >= 19001
+        ImGui::LogToClipboard();
+        ImGui::Text("%s", NULL);
+        ImGui::Text("%.*s", 3, NULL);
+        ImGui::Text("%.*s", 9999, NULL);
+        ImGui::LogFinish();
+        IM_CHECK_STR_EQ(g.TempBuffer.Data, "STRINGVIEW!");
+        IM_CHECK_STR_EQ(ImGui::GetClipboardText(), "(null)" IM_NEWLINE "(nu" IM_NEWLINE "(null)" IM_NEWLINE);
 #endif
 
         ImGui::End();
