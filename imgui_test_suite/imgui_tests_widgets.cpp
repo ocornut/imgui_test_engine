@@ -2934,6 +2934,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ImGui::LogToClipboard();
 #ifdef __GNUC__
 #pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpragmas"          // warning: unknown option after '#pragma GCC diagnostic' kind
 #pragma GCC diagnostic ignored "-Wformat-overflow"  // warning: ‘%s’ directive argument is null
 #endif
         ImGui::Text("%s", (const char*)NULL);
