@@ -33,9 +33,11 @@
 
 
 // Helpers
+#if IMGUI_VERSION_NUM < 19002
 static inline bool operator==(const ImVec2& lhs, const ImVec2& rhs)     { return lhs.x == rhs.x && lhs.y == rhs.y; }    // for IM_CHECK_EQ()
 static inline bool operator==(const ImVec4& lhs, const ImVec4& rhs)     { return lhs.x == rhs.x && lhs.y == rhs.y && lhs.z == rhs.z && lhs.w == rhs.w; }
 static inline bool operator!=(const ImVec4& lhs, const ImVec4& rhs)     { return lhs.x != rhs.x || lhs.y != rhs.y || lhs.z != rhs.z || lhs.w != rhs.w; }
+#endif
 
 typedef ImGuiDataTypeTempStorage ImGuiDataTypeStorage; // Will rename in imgui/ later
 void GetSliderTestRanges(ImGuiDataType data_type, ImGuiDataTypeStorage* min_p, ImGuiDataTypeStorage* max_p)

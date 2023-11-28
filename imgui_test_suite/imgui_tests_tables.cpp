@@ -26,7 +26,9 @@
 #endif
 
 // Helpers
+#if IMGUI_VERSION_NUM < 19002
 static inline bool operator==(const ImVec2& lhs, const ImVec2& rhs) { return lhs.x == rhs.x && lhs.y == rhs.y; }    // for IM_CHECK_EQ()
+#endif
 
 //-------------------------------------------------------------------------
 // Ideas/Specs for future tests
