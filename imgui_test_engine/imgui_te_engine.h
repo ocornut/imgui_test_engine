@@ -168,6 +168,7 @@ IMGUI_API void                ImGuiTestEngine_QueueTest(ImGuiTestEngine* engine,
 IMGUI_API void                ImGuiTestEngine_QueueTests(ImGuiTestEngine* engine, ImGuiTestGroup group, const char* filter = NULL, ImGuiTestRunFlags run_flags = 0);
 IMGUI_API bool                ImGuiTestEngine_TryAbortEngine(ImGuiTestEngine* engine);
 IMGUI_API void                ImGuiTestEngine_AbortCurrentTest(ImGuiTestEngine* engine);
+IMGUI_API ImGuiTest*          ImGuiTestEngine_FindTestByName(ImGuiTestEngine* engine, const char* category, const char* name);
 
 // Functions: Status Queries
 // FIXME: Clarify API to avoid function calls vs raw bools in ImGuiTestEngineIO

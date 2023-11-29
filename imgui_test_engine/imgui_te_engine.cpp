@@ -229,10 +229,6 @@ void    ImGuiTestEngine_DestroyContext(ImGuiTestEngine* engine)
     if (engine->UiContextTarget != NULL)
         ImGuiTestEngine_UnbindImGuiContext(engine, engine->UiContextTarget);
 
-    IM_FREE(engine->UserDataBuffer);
-    engine->UserDataBuffer = NULL;
-    engine->UserDataBufferSize = 0;
-
     ImGuiTestEngine_ClearTests(engine);
 
     for (int n = 0; n < engine->InfoTasks.Size; n++)
@@ -404,6 +400,22 @@ bool    ImGuiTestEngine_TryAbortEngine(ImGuiTestEngine* engine)
     if (ImGuiTestEngine_IsTestQueueEmpty(engine))
         return true;
     return false; // Still running coroutine
+}
+
+// FIXME-OPT
+ImGuiTest* ImGuiTestEngine_FindTestByName(ImGuiTestEngine* engine, const char* category, const char* name)
+{
+    IM_ASSERT(category != NULL || name != NULL);
+    for (int n = 0; n < engine->TestsAll.Size; n++)
+    {
+        ImGuiTest* test = engine->TestsAll[n];
+        if (name != NULL && strcmp(test->Name, name) != 0)
+            continue;
+        if (category != NULL && strcmp(test->Category, category) != 0)
+            continue;
+        return test;
+    }
+    return NULL;
 }
 
 // FIXME-OPT
@@ -1079,33 +1091,34 @@ static void ImGuiTestEngine_ProcessTestQueue(ImGuiTestEngine* engine)
         ctx.LogEx(ImGuiTestVerboseLevel_Info, ImGuiTestLogFlags_NoHeader, "----------------------------------------------------------------------");
 
         // Test name is not displayed in UI due to a happy accident - logged test name is cleared in
-        // ImGuiTestEngine_RunTest(). This is a behavior we want.
+        // ImGuiTestEngine_RunTest(). This is a behavior we are currently happy with.
         ctx.LogWarning("Test: '%s' '%s'..", test->Category, test->Name);
+
+        // Create user vars
         if (test->VarsConstructor != NULL)
         {
-            if ((engine->UserDataBuffer == NULL) || (engine->UserDataBufferSize < test->VarsSize))
-            {
-                IM_FREE(engine->UserDataBuffer);
-                engine->UserDataBufferSize = test->VarsSize;
-                engine->UserDataBuffer = IM_ALLOC(engine->UserDataBufferSize);
-            }
-
-            // Run test with a custom data type in the stack
-            ctx.UserVars = engine->UserDataBuffer;
-            test->VarsConstructor(engine->UserDataBuffer);
+            ctx.UserVars = IM_ALLOC(test->VarsSize);
+            test->VarsConstructor(ctx.UserVars);
             if (test->VarsPostConstructor != NULL && test->VarsPostConstructorUserFn != NULL)
-                test->VarsPostConstructor(&ctx, engine->UserDataBuffer, test->VarsPostConstructorUserFn);
-            ImGuiTestEngine_RunTest(engine, &ctx);
-            test->VarsDestructor(engine->UserDataBuffer);
+                test->VarsPostConstructor(&ctx, ctx.UserVars, test->VarsPostConstructorUserFn);
         }
-        else
+
+        // Run test
+        ImGuiTestEngine_RunTest(engine, &ctx);
+
+        // Destruct user vars
+        if (test->VarsConstructor != NULL)
         {
-            // Run test
-            ImGuiTestEngine_RunTest(engine, &ctx);
+            test->VarsDestructor(ctx.UserVars);
+            if (ctx.UserVars)
+                IM_FREE(ctx.UserVars);
+            ctx.UserVars = NULL;
         }
+
         ran_tests++;
         test->EndTime = ImTimeGetInMicroseconds();
 
+        // Cleanup
         IM_ASSERT(engine->TestContext == &ctx);
         IM_ASSERT(engine->UiContextActive == engine->UiContextTarget);
         engine->TestContext = NULL;
@@ -1557,10 +1570,10 @@ static void ImGuiTestEngine_RunTest(ImGuiTestEngine* engine, ImGuiTestContext* c
     // Process and display result/status
     if (test->Status == ImGuiTestStatus_Running)
         test->Status = ImGuiTestStatus_Success;
-
     if (engine->Abort && test->Status != ImGuiTestStatus_Error)
         test->Status = ImGuiTestStatus_Unknown;
 
+    // Log result
     if (test->Status == ImGuiTestStatus_Success)
     {
         if ((ctx->RunFlags & ImGuiTestRunFlags_NoSuccessMsg) == 0)
@@ -1575,8 +1588,7 @@ static void ImGuiTestEngine_RunTest(ImGuiTestEngine* engine, ImGuiTestContext* c
 
     // Additional yields to avoid consecutive tests who may share identifiers from missing their window/item activation.
     ctx->SetGuiFuncEnabled(false);
-    ctx->Yield();
-    ctx->Yield();
+    ctx->Yield(2);
 
     // Restore active func
     ctx->ActiveFunc = backup_active_func;

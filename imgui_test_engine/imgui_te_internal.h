@@ -142,8 +142,6 @@ struct ImGuiTestEngine
     ImVector<ImGuiTestInfoTask*>InfoTasks;
     ImGuiTestGatherTask         GatherTask;
     ImGuiTestFindByLabelTask    FindByLabelTask;
-    void*                       UserDataBuffer = NULL;
-    size_t                      UserDataBufferSize = 0;
     ImGuiTestCoroutineHandle    TestQueueCoroutine = NULL;      // Coroutine to run the test queue
     bool                        TestQueueCoroutineShouldExit = false; // Flag to indicate that we are shutting down and the test queue coroutine should stop
 
