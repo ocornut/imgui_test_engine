@@ -75,7 +75,7 @@ static void ImGuiTestEngine_PreRender(ImGuiTestEngine* engine, ImGuiContext* ui_
 static void ImGuiTestEngine_PostRender(ImGuiTestEngine* engine, ImGuiContext* ui_ctx);
 static void ImGuiTestEngine_UpdateHooks(ImGuiTestEngine* engine);
 static void ImGuiTestEngine_RunGuiFunc(ImGuiTestEngine* engine);
-static void ImGuiTestEngine_RunTest(ImGuiTestEngine* engine, ImGuiTestContext* ctx);
+static void ImGuiTestEngine_RunTest(ImGuiTestEngine* engine, ImGuiTestContext* ctx, ImGuiTest* test, ImGuiTestRunFlags run_flags);
 static void ImGuiTestEngine_TestQueueCoroutineMain(void* engine_opaque);
 
 // Settings
@@ -1049,86 +1049,30 @@ static void ImGuiTestEngine_ProcessTestQueue(ImGuiTestEngine* engine)
     for (int n = 0; n < engine->TestsQueue.Size; n++)
     {
         ImGuiTestRunTask* run_task = &engine->TestsQueue[n];
-        ImGuiTest* test = run_task->Test;
-        IM_ASSERT(test->Status == ImGuiTestStatus_Queued);
-        test->StartTime = ImTimeGetInMicroseconds();
-
-        if (engine->Abort)
-        {
-            test->Status = ImGuiTestStatus_Unknown;
-            test->EndTime = test->StartTime;
-            continue;
-        }
+        IM_ASSERT(run_task->Test->Status == ImGuiTestStatus_Queued);
 
         // FIXME-TESTS: Blind mode not supported
         IM_ASSERT(engine->UiContextTarget != NULL);
         IM_ASSERT(engine->UiContextActive == NULL);
         engine->UiContextActive = engine->UiContextTarget;
-        engine->UiSelectedTest = test;
-        test->Status = ImGuiTestStatus_Running;
-
-        ImGuiCaptureArgs capture_args;
-        ImGuiTestContext ctx;
-        ctx.Test = test;
-        ctx.Engine = engine;
-        ctx.EngineIO = &engine->IO;
-        ctx.Inputs = &engine->Inputs;
-        ctx.UserVars = NULL;
-        ctx.UiContext = engine->UiContextActive;
-        ctx.PerfStressAmount = engine->IO.PerfStressAmount;
-        ctx.RunFlags = run_task->RunFlags;
-#ifdef IMGUI_HAS_DOCK
-        ctx.HasDock = true;
-#else
-        ctx.HasDock = false;
-#endif
-        ctx.CaptureArgs = &capture_args;
-        engine->TestContext = &ctx;
-        ImGuiTestEngine_UpdateHooks(engine);
+        engine->UiSelectedTest = run_task->Test;
         if (track_scrolling)
-            engine->UiSelectAndScrollToTest = test;
-
-        ctx.LogEx(ImGuiTestVerboseLevel_Info, ImGuiTestLogFlags_NoHeader, "----------------------------------------------------------------------");
-
-        // Test name is not displayed in UI due to a happy accident - logged test name is cleared in
-        // ImGuiTestEngine_RunTest(). This is a behavior we are currently happy with.
-        ctx.LogWarning("Test: '%s' '%s'..", test->Category, test->Name);
-
-        // Create user vars
-        if (test->VarsConstructor != NULL)
-        {
-            ctx.UserVars = IM_ALLOC(test->VarsSize);
-            test->VarsConstructor(ctx.UserVars);
-            if (test->VarsPostConstructor != NULL && test->VarsPostConstructorUserFn != NULL)
-                test->VarsPostConstructor(&ctx, ctx.UserVars, test->VarsPostConstructorUserFn);
-        }
+            engine->UiSelectAndScrollToTest = run_task->Test;
 
         // Run test
-        ImGuiTestEngine_RunTest(engine, &ctx);
-
-        // Destruct user vars
-        if (test->VarsConstructor != NULL)
-        {
-            test->VarsDestructor(ctx.UserVars);
-            if (ctx.UserVars)
-                IM_FREE(ctx.UserVars);
-            ctx.UserVars = NULL;
-        }
-
-        ran_tests++;
-        test->EndTime = ImTimeGetInMicroseconds();
+        ImGuiTestEngine_RunTest(engine, NULL, run_task->Test, run_task->RunFlags);
 
         // Cleanup
-        IM_ASSERT(engine->TestContext == &ctx);
+        IM_ASSERT(engine->TestContext == NULL);
         IM_ASSERT(engine->UiContextActive == engine->UiContextTarget);
-        engine->TestContext = NULL;
         engine->UiContextActive = NULL;
-        ImGuiTestEngine_UpdateHooks(engine);
 
         // Auto select the first error test
         //if (test->Status == ImGuiTestStatus_Error)
         //    if (engine->UiSelectedTest == NULL || engine->UiSelectedTest->Status != ImGuiTestStatus_Error)
         //        engine->UiSelectedTest = test;
+
+        ran_tests++;
     }
     engine->IO.IsRunningTests = false;
     engine->BatchEndTime = ImTimeGetInMicroseconds();
@@ -1400,12 +1344,71 @@ static void ImGuiTestEngine_UpdateHooks(ImGuiTestEngine* engine)
     ui_ctx->TestEngineHookItems = want_hooking;
 }
 
-static void ImGuiTestEngine_RunTest(ImGuiTestEngine* engine, ImGuiTestContext* ctx)
+static void ImGuiTestEngine_RunTest(ImGuiTestEngine* engine, ImGuiTestContext* shared_ctx, ImGuiTest* test, ImGuiTestRunFlags run_flags)
 {
+    ImGuiTestContext stack_ctx;
+    ImGuiCaptureArgs stack_capture_args;
+    ImGuiTestContext* ctx;
+
+    if (shared_ctx != NULL)
+    {
+        // Reuse existing test context
+        ctx = shared_ctx;
+    }
+    else
+    {
+        // Create a test context
+        ctx = &stack_ctx;
+        ctx->Engine = engine;
+        ctx->EngineIO = &engine->IO;
+        ctx->Inputs = &engine->Inputs;
+        ctx->CaptureArgs = &stack_capture_args;
+        ctx->UserVars = NULL;
+        ctx->PerfStressAmount = engine->IO.PerfStressAmount;
+#ifdef IMGUI_HAS_DOCK
+        ctx->HasDock = true;
+#else
+        ctx->HasDock = false;
+#endif
+    }
+
+    test->StartTime = ImTimeGetInMicroseconds();
+
+    if (engine->Abort)
+    {
+        test->Status = ImGuiTestStatus_Unknown;
+        test->EndTime = test->StartTime;
+        return;
+    }
+
+    test->Status = ImGuiTestStatus_Running;
+
+    ctx->Test = test;
+    ctx->RunFlags = run_flags;
+    ctx->UiContext = engine->UiContextActive;
+
+    ImGuiTestContext* parent_ctx = engine->TestContext;
+    engine->TestContext = ctx;
+    ImGuiTestEngine_UpdateHooks(engine);
+
+    // Test name is not displayed in UI due to a happy accident - logged test name is cleared in
+    // ImGuiTestEngine_RunTest(). This is a behavior we are currently happy with.
+    ctx->LogEx(ImGuiTestVerboseLevel_Info, ImGuiTestLogFlags_NoHeader, "----------------------------------------------------------------------");
+    ctx->LogWarning("Test: '%s' '%s'..", test->Category, test->Name);
+
+    // Create user vars
+    if (test->VarsConstructor != NULL)
+    {
+        ctx->UserVars = IM_ALLOC(test->VarsSize);
+        test->VarsConstructor(ctx->UserVars);
+        if (test->VarsPostConstructor != NULL && test->VarsPostConstructorUserFn != NULL)
+            test->VarsPostConstructor(ctx, ctx->UserVars, test->VarsPostConstructorUserFn);
+    }
+
     // Clear ImGui inputs to avoid key/mouse leaks from one test to another
     ImGuiTestEngine_ClearInput(engine);
 
-    ImGuiTest* test = ctx->Test;
+    //ImGuiTest* test = ctx->Test;
     ctx->FrameCount = 0;
     ctx->ErrorCounter = 0;
     ctx->SetRef("");
@@ -1568,6 +1571,7 @@ static void ImGuiTestEngine_RunTest(ImGuiTestEngine* engine, ImGuiTestContext* c
     IM_ASSERT(engine->CaptureCurrentArgs == NULL && "Active capture was not terminated in the test code.");
 
     // Process and display result/status
+    test->EndTime = ImTimeGetInMicroseconds();
     if (test->Status == ImGuiTestStatus_Running)
         test->Status = ImGuiTestStatus_Success;
     if (engine->Abort && test->Status != ImGuiTestStatus_Error)
@@ -1602,6 +1606,18 @@ static void ImGuiTestEngine_RunTest(ImGuiTestEngine* engine, ImGuiTestContext* c
     ctx->UiContext->DebugLogFlags = backup_debug_log_flags;
     ctx->UiContext->ConfigNavWindowingKeyNext = backup_nav_windowing_key_next;
     ctx->UiContext->ConfigNavWindowingKeyPrev = backup_nav_windowing_key_prev;
+
+    // Destruct user vars
+    if (test->VarsConstructor != NULL)
+    {
+        test->VarsDestructor(ctx->UserVars);
+        if (ctx->UserVars)
+            IM_FREE(ctx->UserVars);
+        ctx->UserVars = NULL;
+    }
+
+    IM_ASSERT(engine->TestContext == ctx);
+    engine->TestContext = parent_ctx;
 }
 
 //-------------------------------------------------------------------------
