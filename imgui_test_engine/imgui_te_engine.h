@@ -64,7 +64,7 @@ enum ImGuiTestVerboseLevel : int
     ImGuiTestVerboseLevel_Info      = 3,    // -v3
     ImGuiTestVerboseLevel_Debug     = 4,    // -v4
     ImGuiTestVerboseLevel_Trace     = 5,
-    ImGuiTestVerboseLevel_COUNT     = 6
+    ImGuiTestVerboseLevel_COUNT
 };
 
 // Test status (stored in ImGuiTest)
@@ -76,6 +76,7 @@ enum ImGuiTestStatus : int
     ImGuiTestStatus_Running     = 2,
     ImGuiTestStatus_Error       = 3,
     ImGuiTestStatus_Suspended   = 4,
+    ImGuiTestStatus_COUNT
 };
 
 // Test group: this is mostly used to categorize tests in our testing UI. (Stored in ImGuiTest)
@@ -121,7 +122,7 @@ enum ImGuiTestRunFlags_
     ImGuiTestRunFlags_NoBreakOnError    = 1 << 4,
     ImGuiTestRunFlags_EnableRawInputs   = 1 << 5,   // Disable input submission to let test submission raw input event (in order to test e.g. IO queue)
     ImGuiTestRunFlags_ManualRun         = 1 << 6,
-    ImGuiTestRunFlags_CommandLine       = 1 << 7
+    ImGuiTestRunFlags_CommandLine       = 1 << 7,
 };
 
 //-------------------------------------------------------------------------

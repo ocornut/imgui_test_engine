@@ -182,7 +182,6 @@ void ImGuiTestEngine_ExportJUnitXml(ImGuiTestEngine* engine, const char* output_
         "<testsuites disabled=\"%d\" errors=\"0\" failures=\"%d\" name=\"%s\" tests=\"%d\" time=\"%.3f\">\n",
         testsuites_disabled, testsuites_failures, testsuites_name, testsuites_tests, testsuites_time);
 
-    const char* teststatus_names[] = { "skipped", "success", "queued", "running", "error", "suspended" };
     for (int testsuite_id = ImGuiTestGroup_Tests; testsuite_id < ImGuiTestGroup_COUNT; testsuite_id++)
     {
         // Attributes for <testsuite> tag.
@@ -205,7 +204,7 @@ void ImGuiTestEngine_ExportJUnitXml(ImGuiTestEngine* engine, const char* output_
             // Attributes for <testcase> tag.
             const char* testcase_name = test->Name;
             const char* testcase_classname = test->Category;
-            const char* testcase_status = teststatus_names[test_output->Status + 1];   // +1 because _Unknown status is -1. // FIXME: Getter function please
+            const char* testcase_status = ImGuiTestEngine_GetStatusName(test_output->Status);
             const float testcase_time = (float)((double)(test_output->EndTime - test_output->StartTime) / 1000000.0);
 
             fprintf(fp, "    <testcase name=\"%s\" assertions=\"0\" classname=\"%s\" status=\"%s\" time=\"%.3f\">\n",

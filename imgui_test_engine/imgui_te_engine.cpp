@@ -927,6 +927,15 @@ int ImGuiTestEngine_GetFrameCount(ImGuiTestEngine* engine)
     return engine->FrameCount;
 }
 
+const char* ImGuiTestEngine_GetStatusName(ImGuiTestStatus v)
+{
+    static const char* names[ImGuiTestStatus_COUNT] = { "Success", "Queued", "Running", "Error", "Suspended" };
+    IM_STATIC_ASSERT(IM_ARRAYSIZE(names) == ImGuiTestStatus_COUNT);
+    if (v >= 0 && v < IM_ARRAYSIZE(names))
+        return names[v];
+    return "N/A";
+}
+
 const char* ImGuiTestEngine_GetRunSpeedName(ImGuiTestRunSpeed v)
 {
     static const char* names[ImGuiTestRunSpeed_COUNT] = { "Fast", "Normal", "Cinematic" };

@@ -205,6 +205,7 @@ bool                ImGuiTestEngine_CaptureBeginVideo(ImGuiTestEngine* engine, I
 bool                ImGuiTestEngine_CaptureEndVideo(ImGuiTestEngine* engine, ImGuiCaptureArgs* args);
 
 // Helper functions
+const char*         ImGuiTestEngine_GetStatusName(ImGuiTestStatus v);
 const char*         ImGuiTestEngine_GetRunSpeedName(ImGuiTestRunSpeed v);
 const char*         ImGuiTestEngine_GetVerboseLevelName(ImGuiTestVerboseLevel v);
 

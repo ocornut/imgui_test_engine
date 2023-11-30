@@ -354,10 +354,10 @@ bool    ImGuiTestContext::SuspendTestFunc(const char* file, int line)
 #endif
 
     RunFlags |= ImGuiTestRunFlags_GuiFuncOnly;
-    Test->Output.Status = ImGuiTestStatus_Suspended;
-    while (Test->Output.Status == ImGuiTestStatus_Suspended && !Abort)
+    TestOutput->Status = ImGuiTestStatus_Suspended;
+    while (TestOutput->Status == ImGuiTestStatus_Suspended && !Abort)
         Yield();
-    Test->Output.Status = ImGuiTestStatus_Running;
+    TestOutput->Status = ImGuiTestStatus_Running;
 
     // Restore relevant state.
     RunFlags = run_flags;
