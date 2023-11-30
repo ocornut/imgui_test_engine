@@ -5692,7 +5692,7 @@ void RegisterTests_TestEngine(ImGuiTestEngine* e)
         IM_CHECK_EQ(vars2.Count, 0); // Verify user vars not shared
 
         // Check that not sharing context means state is not modified in our current context
-        const int backup_frame_count = ctx->FrameCount;
+        //const int backup_frame_count = ctx->FrameCount;
         ctx->SetRef("Dummy");
         ctx->RunChildTest("testengine_childtests_1a");
         IM_CHECK_EQ(ctx->GetID(""), ctx->GetID("//Dummy"));
