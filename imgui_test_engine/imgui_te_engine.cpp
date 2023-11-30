@@ -1344,6 +1344,44 @@ static void ImGuiTestEngine_UpdateHooks(ImGuiTestEngine* engine)
     ui_ctx->TestEngineHookItems = want_hooking;
 }
 
+struct ImGuiTestContextUiContextBackup
+{
+    ImGuiIO             IO;
+    ImGuiStyle          Style;
+    ImGuiDebugLogFlags  DebugLogFlags;
+    ImGuiKeyChord       ConfigNavWindowingKeyNext;
+    ImGuiKeyChord       ConfigNavWindowingKeyPrev;
+
+    void Backup(ImGuiContext& g)
+    {
+        IO = g.IO;
+        Style = g.Style;
+        DebugLogFlags = g.DebugLogFlags;
+        ConfigNavWindowingKeyNext = g.ConfigNavWindowingKeyNext;
+        ConfigNavWindowingKeyPrev = g.ConfigNavWindowingKeyPrev;
+        memset(IO.MouseDown, 0, sizeof(IO.MouseDown));
+        for (int n = 0; n < IM_ARRAYSIZE(IO.KeysData); n++)
+            IO.KeysData[n].Down = false;
+    }
+    void Restore(ImGuiContext& g)
+    {
+#if IMGUI_VERSION_NUM < 18993
+        IO.MetricsActiveAllocations = g.IO.MetricsActiveAllocations;
+#endif
+        g.IO = IO;
+        g.Style = Style;
+        g.DebugLogFlags = DebugLogFlags;
+        g.ConfigNavWindowingKeyNext = ConfigNavWindowingKeyNext;
+        g.ConfigNavWindowingKeyPrev = ConfigNavWindowingKeyPrev;
+    }
+    void RestoreClipboardFuncs(ImGuiContext& g)
+    {
+        g.IO.GetClipboardTextFn = IO.GetClipboardTextFn;
+        g.IO.SetClipboardTextFn = IO.SetClipboardTextFn;
+        g.IO.ClipboardUserData = IO.ClipboardUserData;
+    }
+};
+
 static void ImGuiTestEngine_RunTest(ImGuiTestEngine* engine, ImGuiTestContext* shared_ctx, ImGuiTest* test, ImGuiTestRunFlags run_flags)
 {
     ImGuiTestContext stack_ctx;
@@ -1418,16 +1456,10 @@ static void ImGuiTestEngine_RunTest(ImGuiTestEngine* engine, ImGuiTestContext* s
     ctx->GenericVars.Clear();
     test->TestLog.Clear();
 
-    // Back entire IO and style. Allows tests modifying them and not caring about restoring state.
-    ImGuiIO backup_io = ctx->UiContext->IO;
-    ImGuiStyle backup_style = ctx->UiContext->Style;
-    ImGuiDebugLogFlags backup_debug_log_flags = ctx->UiContext->DebugLogFlags;
-    ImGuiKeyChord backup_nav_windowing_key_next = ctx->UiContext->ConfigNavWindowingKeyNext;
-    ImGuiKeyChord backup_nav_windowing_key_prev = ctx->UiContext->ConfigNavWindowingKeyPrev;
 
-    memset(backup_io.MouseDown, 0, sizeof(backup_io.MouseDown));
-    for (int n = 0; n < IM_ARRAYSIZE(backup_io.KeysData); n++)
-        backup_io.KeysData[n].Down = false;
+    // Backup entire IO and style. Allows tests modifying them and not caring about restoring state.
+    ImGuiTestContextUiContextBackup backup_ui_context;
+    backup_ui_context.Backup(*ctx->UiContext);
 
     // Setup IO: software mouse cursor, viewport support
     ImGuiIO& io = ctx->UiContext->IO;
@@ -1542,9 +1574,7 @@ static void ImGuiTestEngine_RunTest(ImGuiTestEngine* engine, ImGuiTestContext* s
             ctx->UiContext->IO.MousePos = engine->Inputs.MousePosValue;
 
             // Restore backend clipboard functions
-            ctx->UiContext->IO.GetClipboardTextFn = backup_io.GetClipboardTextFn;
-            ctx->UiContext->IO.SetClipboardTextFn = backup_io.SetClipboardTextFn;
-            ctx->UiContext->IO.ClipboardUserData = backup_io.ClipboardUserData;
+            backup_ui_context.RestoreClipboardFuncs(*ctx->UiContext);
 
             // Unhide foreign windows (may be useful sometimes to inspect GuiFunc state... sometimes not)
             //ctx->ForeignWindowsUnhideAll();
@@ -1598,14 +1628,7 @@ static void ImGuiTestEngine_RunTest(ImGuiTestEngine* engine, ImGuiTestContext* s
     ctx->ActiveFunc = backup_active_func;
 
     // Restore backed up IO and style
-#if IMGUI_VERSION_NUM < 18993
-    backup_io.MetricsActiveAllocations = ctx->UiContext->IO.MetricsActiveAllocations;
-#endif
-    ctx->UiContext->IO = backup_io;
-    ctx->UiContext->Style = backup_style;
-    ctx->UiContext->DebugLogFlags = backup_debug_log_flags;
-    ctx->UiContext->ConfigNavWindowingKeyNext = backup_nav_windowing_key_next;
-    ctx->UiContext->ConfigNavWindowingKeyPrev = backup_nav_windowing_key_prev;
+    backup_ui_context.Restore(*ctx->UiContext);
 
     // Destruct user vars
     if (test->VarsConstructor != NULL)
