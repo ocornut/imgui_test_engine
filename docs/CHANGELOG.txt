@@ -6,6 +6,8 @@ CHANGELOG
 ** For a while this is going to ONLY INCLUDE BREAKING CHANGES.
 
 2023/11/30:
+- TestEngine: Added ImGuiTestContext::RunChildTest() [Experimental].
+- TestEngine: Added ImGuiTestRunFlags_ShareVars and ImGuiTestRunFlags_ShareContext for RunChildTest().
 - TestEngine: Refactor ImGuiTest to isolate output (test status, log, start/end times) into
   a dedicated ImguiTestOutput structure. 'test->Status' and 'test->TestLog' respectively
   become 'test->Output.Status' and 'test->Output.Log'.

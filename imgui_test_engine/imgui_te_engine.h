@@ -123,6 +123,11 @@ enum ImGuiTestRunFlags_
     ImGuiTestRunFlags_EnableRawInputs   = 1 << 5,   // Disable input submission to let test submission raw input event (in order to test e.g. IO queue)
     ImGuiTestRunFlags_ManualRun         = 1 << 6,
     ImGuiTestRunFlags_CommandLine       = 1 << 7,
+
+    // Flags for ImGuiTestContext::RunChildTest()
+    ImGuiTestRunFlags_ShareVars         = 1 << 10,
+    ImGuiTestRunFlags_ShareContext      = 1 << 11,
+    // TODO: Add GuiFunc options
 };
 
 //-------------------------------------------------------------------------

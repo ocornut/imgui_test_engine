@@ -75,7 +75,6 @@ static void ImGuiTestEngine_PreRender(ImGuiTestEngine* engine, ImGuiContext* ui_
 static void ImGuiTestEngine_PostRender(ImGuiTestEngine* engine, ImGuiContext* ui_ctx);
 static void ImGuiTestEngine_UpdateHooks(ImGuiTestEngine* engine);
 static void ImGuiTestEngine_RunGuiFunc(ImGuiTestEngine* engine);
-static void ImGuiTestEngine_RunTest(ImGuiTestEngine* engine, ImGuiTestContext* ctx, ImGuiTest* test, ImGuiTestRunFlags run_flags);
 static void ImGuiTestEngine_TestQueueCoroutineMain(void* engine_opaque);
 
 // Settings
@@ -1390,16 +1389,18 @@ struct ImGuiTestContextUiContextBackup
     }
 };
 
-static void ImGuiTestEngine_RunTest(ImGuiTestEngine* engine, ImGuiTestContext* shared_ctx, ImGuiTest* test, ImGuiTestRunFlags run_flags)
+// FIXME: Work toward simplifying this function?
+void ImGuiTestEngine_RunTest(ImGuiTestEngine* engine, ImGuiTestContext* parent_ctx, ImGuiTest* test, ImGuiTestRunFlags run_flags)
 {
     ImGuiTestContext stack_ctx;
     ImGuiCaptureArgs stack_capture_args;
     ImGuiTestContext* ctx;
 
-    if (shared_ctx != NULL)
+    if (run_flags & ImGuiTestRunFlags_ShareContext)
     {
         // Reuse existing test context
-        ctx = shared_ctx;
+        IM_ASSERT(parent_ctx != NULL);
+        ctx = parent_ctx;
     }
     else
     {
@@ -1418,53 +1419,94 @@ static void ImGuiTestEngine_RunTest(ImGuiTestEngine* engine, ImGuiTestContext* s
 #endif
     }
 
-    ImGuiTestOutput* test_output = &test->Output;
-    test_output->StartTime = ImTimeGetInMicroseconds();
+    ImGuiTestOutput* test_output;
+    if (parent_ctx == NULL)
+    {
+        ctx->Test = test;
+        test_output = ctx->TestOutput = &test->Output;
+        test_output->StartTime = ImTimeGetInMicroseconds();
+    }
+    else
+    {
+        ctx->Test = parent_ctx->Test;
+        test_output = ctx->TestOutput = parent_ctx->TestOutput;
+    }
 
     if (engine->Abort)
     {
         test_output->Status = ImGuiTestStatus_Unknown;
-        test_output->EndTime = test_output->StartTime;
+        if (parent_ctx == NULL)
+            test_output->EndTime = test_output->StartTime;
+        ctx->Test = NULL;
+        ctx->TestOutput = NULL;
         return;
     }
 
-    ctx->Test = test;
-    ctx->TestOutput = test_output;
     test_output->Status = ImGuiTestStatus_Running;
 
     ctx->RunFlags = run_flags;
     ctx->UiContext = engine->UiContextActive;
 
-    ImGuiTestContext* parent_ctx = engine->TestContext;
     engine->TestContext = ctx;
     ImGuiTestEngine_UpdateHooks(engine);
 
-    // Test name is not displayed in UI due to a happy accident - logged test name is cleared in
-    // ImGuiTestEngine_RunTest(). This is a behavior we are currently happy with.
-    ctx->LogEx(ImGuiTestVerboseLevel_Info, ImGuiTestLogFlags_NoHeader, "----------------------------------------------------------------------");
-    ctx->LogWarning("Test: '%s' '%s'..", test->Category, test->Name);
-
-    // Create user vars
-    if (test->VarsConstructor != NULL)
+    void* backup_user_vars = NULL;
+    ImGuiTestGenericVars backup_generic_vars;
+    if (run_flags & ImGuiTestRunFlags_ShareVars)
     {
-        ctx->UserVars = IM_ALLOC(test->VarsSize);
-        test->VarsConstructor(ctx->UserVars);
-        if (test->VarsPostConstructor != NULL && test->VarsPostConstructorUserFn != NULL)
-            test->VarsPostConstructor(ctx, ctx->UserVars, test->VarsPostConstructorUserFn);
+        // Share user vars and generic vars
+        IM_CHECK_SILENT(parent_ctx != NULL);
+        IM_CHECK_SILENT(test->VarsSize == parent_ctx->Test->VarsSize);
+        IM_CHECK_SILENT(test->VarsConstructor == parent_ctx->Test->VarsConstructor);
+        IM_CHECK_SILENT(test->VarsPostConstructor == parent_ctx->Test->VarsPostConstructor);
+        IM_CHECK_SILENT(test->VarsPostConstructorUserFn == parent_ctx->Test->VarsPostConstructorUserFn);
+        IM_CHECK_SILENT(test->VarsDestructor == parent_ctx->Test->VarsDestructor);
+        if ((run_flags & ImGuiTestRunFlags_ShareContext) == 0)
+        {
+            ctx->GenericVars = parent_ctx->GenericVars;
+            ctx->UserVars = parent_ctx->UserVars;
+        }
+    }
+    else
+    {
+        // Create user vars
+        if (run_flags & ImGuiTestRunFlags_ShareContext)
+        {
+            backup_user_vars = parent_ctx->UserVars;
+            backup_generic_vars = parent_ctx->GenericVars;
+        }
+        ctx->GenericVars.Clear();
+        if (test->VarsConstructor != NULL)
+        {
+            ctx->UserVars = IM_ALLOC(test->VarsSize);
+            test->VarsConstructor(ctx->UserVars);
+            if (test->VarsPostConstructor != NULL && test->VarsPostConstructorUserFn != NULL)
+                test->VarsPostConstructor(ctx, ctx->UserVars, test->VarsPostConstructorUserFn);
+        }
+    }
+
+    // Log header
+    if (parent_ctx == NULL)
+    {
+        ctx->LogEx(ImGuiTestVerboseLevel_Info, ImGuiTestLogFlags_NoHeader, "----------------------------------------------------------------------"); // Intentionally TTY only (just before clear: make it a flag?)
+        test_output->Log.Clear();
+        ctx->LogWarning("Test: '%s' '%s'..", test->Category, test->Name);
+    }
+    else
+    {
+        ctx->LogWarning("Child Test: '%s' '%s'..", test->Category, test->Name);
+        ctx->LogWarning("(ShareVars=%d ShareContext=%d)", (run_flags & ImGuiTestRunFlags_ShareVars) ? 1 : 0, (run_flags & ImGuiTestRunFlags_ShareContext) ? 1 : 0);
     }
 
     // Clear ImGui inputs to avoid key/mouse leaks from one test to another
     ImGuiTestEngine_ClearInput(engine);
 
-    //ImGuiTest* test = ctx->Test;
-    ctx->FrameCount = 0;
+    ctx->FrameCount = parent_ctx ? parent_ctx->FrameCount : 0;
     ctx->ErrorCounter = 0;
     ctx->SetRef("");
     ctx->SetInputMode(ImGuiInputSource_Mouse);
     ctx->UiContext->NavInputSource = ImGuiInputSource_Keyboard;
     ctx->Clipboard.clear();
-    ctx->GenericVars.Clear();
-    test_output->Log.Clear();
 
     // Backup entire IO and style. Allows tests modifying them and not caring about restoring state.
     ImGuiTestContextUiContextBackup backup_ui_context;
@@ -1502,7 +1544,7 @@ static void ImGuiTestEngine_RunTest(ImGuiTestEngine* engine, ImGuiTestContext* s
     }
 
     // Mark as currently running the TestFunc (this is the only time when we are allowed to yield)
-    IM_ASSERT(ctx->ActiveFunc == ImGuiTestActiveFunc_None);
+    IM_ASSERT(ctx->ActiveFunc == ImGuiTestActiveFunc_None || ctx->ActiveFunc == ImGuiTestActiveFunc_TestFunc);
     ImGuiTestActiveFunc backup_active_func = ctx->ActiveFunc;
     ctx->ActiveFunc = ImGuiTestActiveFunc_TestFunc;
     ctx->FirstGuiFrame = (test->GuiFunc != NULL) ? true : false;
@@ -1631,17 +1673,33 @@ static void ImGuiTestEngine_RunTest(ImGuiTestEngine* engine, ImGuiTestContext* s
 
     // Restore active func
     ctx->ActiveFunc = backup_active_func;
+    if (parent_ctx)
+        parent_ctx->FrameCount = ctx->FrameCount;
 
     // Restore backed up IO and style
     backup_ui_context.Restore(*ctx->UiContext);
 
-    // Destruct user vars
-    if (test->VarsConstructor != NULL)
+    if (run_flags & ImGuiTestRunFlags_ShareVars)
     {
-        test->VarsDestructor(ctx->UserVars);
-        if (ctx->UserVars)
-            IM_FREE(ctx->UserVars);
-        ctx->UserVars = NULL;
+        // Share generic vars?
+        if ((run_flags & ImGuiTestRunFlags_ShareContext) == 0)
+            parent_ctx->GenericVars = ctx->GenericVars;
+    }
+    else
+    {
+        // Destruct user vars
+        if (test->VarsConstructor != NULL)
+        {
+            test->VarsDestructor(ctx->UserVars);
+            if (ctx->UserVars)
+                IM_FREE(ctx->UserVars);
+            ctx->UserVars = NULL;
+        }
+        if (run_flags & ImGuiTestRunFlags_ShareContext)
+        {
+            parent_ctx->UserVars = backup_user_vars;
+            parent_ctx->GenericVars = backup_generic_vars;
+        }
     }
 
     IM_ASSERT(engine->TestContext == ctx);

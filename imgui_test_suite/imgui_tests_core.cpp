@@ -5664,6 +5664,78 @@ void RegisterTests_TestEngine(ImGuiTestEngine* e)
         IM_CHECK_LT(n++, 3);
     };
 
+    // ## Test using RunChildTest()
+    struct TestEngineChildTestVars { int Count = 0; };
+    t = IM_REGISTER_TEST(e, "testengine", "testengine_childtests_1");
+    t->SetVarsDataType<TestEngineChildTestVars>();
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        //auto& vars1 = ctx->GenericVars;
+        //auto& vars2 = ctx->GetVars<TestEngineChildTestVars>();
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+        if (ImGui::Button("Button"))
+        {
+        }
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        auto& vars1 = ctx->GenericVars;
+        auto& vars2 = ctx->GetVars<TestEngineChildTestVars>();
+        ctx->RunChildTest("testengine_childtests_1a");
+        ImGuiWindow* window = ctx->GetWindowByRef("//About Dear ImGui");
+        IM_CHECK(window != NULL && window->WasActive);
+        ctx->RunChildTest("testengine_childtests_1b");
+        IM_CHECK(window != NULL && !window->WasActive);
+
+        IM_CHECK_EQ(vars1.Count, 0); // Verify generic vars not shared
+        IM_CHECK_EQ(vars2.Count, 0); // Verify user vars not shared
+
+        // Check that not sharing context means state is not modified in our current context
+        const int backup_frame_count = ctx->FrameCount;
+        ctx->SetRef("Dummy");
+        ctx->RunChildTest("testengine_childtests_1a");
+        IM_CHECK_EQ(ctx->GetID(""), ctx->GetID("//Dummy"));
+
+        // Check that sharing context means state is modified in our current context
+        ctx->SetRef("Dummy");
+        ctx->RunChildTest("testengine_childtests_1a", ImGuiTestRunFlags_ShareContext);
+        IM_CHECK_EQ(ctx->GetID(""), ctx->GetID("//Dear ImGui Demo"));
+
+        // Check that generic and users vars are shared when sharing context
+        ctx->RunChildTest("testengine_childtests_1a", ImGuiTestRunFlags_ShareVars | ImGuiTestRunFlags_ShareContext);
+        IM_CHECK_EQ(vars1.Count, 1);
+        IM_CHECK_EQ(vars2.Count, 1);
+
+        // Check that generic and users vars are shared when not sharing context
+        ctx->RunChildTest("testengine_childtests_1a", ImGuiTestRunFlags_ShareVars);
+        IM_CHECK_EQ(vars1.Count, 2);
+        IM_CHECK_EQ(vars2.Count, 2);
+    };
+    t = IM_REGISTER_TEST(e, "testengine", "testengine_childtests_1a");
+    t->SetVarsDataType<TestEngineChildTestVars>();
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        auto& vars1 = ctx->GenericVars;
+        auto& vars2 = ctx->GetVars<TestEngineChildTestVars>();
+        vars1.Count++;
+        vars2.Count++;
+        ctx->SetRef("Dear ImGui Demo");
+        ctx->MenuCheck("Tools/About Dear ImGui");
+    };
+    t = IM_REGISTER_TEST(e, "testengine", "testengine_childtests_1b");
+    t->SetVarsDataType<TestEngineChildTestVars>();
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        auto& vars1 = ctx->GenericVars;
+        auto& vars2 = ctx->GetVars<TestEngineChildTestVars>();
+        vars1.Count++;
+        vars2.Count++;
+        ctx->SetRef("Dear ImGui Demo");
+        ctx->MenuUncheck("Tools/About Dear ImGui");
+        //IM_CHECK(false);
+    };
+
     // ## Test using Item functions on windows
 #if IMGUI_VERSION_NUM >= 18616
     t = IM_REGISTER_TEST(e, "testengine", "testengine_ref_window");

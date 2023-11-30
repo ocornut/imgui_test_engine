@@ -332,6 +332,35 @@ void    ImGuiTestContext::YieldUntil(int frame_count)
         ImGuiTestEngine_Yield(Engine);
 }
 
+// Supported values for ImGuiTestRunFlags:
+// - ImGuiTestRunFlags_NoStopOnError: if child test fails, return false and do not mark parent test as failed.
+// - ImGuiTestRunFlags_ShareVars: share generic and custom vars between child and parent tests.
+// - ImGuiTestRunFlags_ShareContext
+bool ImGuiTestContext::RunChildTest(const char* child_test_name, ImGuiTestRunFlags run_flags)
+{
+    if (IsError())
+        return false;
+
+    IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
+    LogDebug("RunChildTest %s", child_test_name);
+
+    ImGuiTest* child_test = ImGuiTestEngine_FindTestByName(Engine, NULL, child_test_name);
+    IM_CHECK_SILENT_RETV(child_test != NULL, false);
+    IM_CHECK_SILENT_RETV(child_test != Test, false); // Can't recursively run same test.
+
+    ImGuiTestStatus parent_status = TestOutput->Status;
+    TestOutput->Status = ImGuiTestStatus_Running;
+    ImGuiTestEngine_RunTest(Engine, this, child_test, run_flags);
+    ImGuiTestStatus child_status = TestOutput->Status;
+
+    // Restore parent status, return child status
+    if (run_flags & ImGuiTestRunFlags_NoStopOnError)
+        TestOutput->Status = parent_status;
+
+    LogWarning("(returning to parent test)");
+    return child_status == ImGuiTestStatus_Success;
+}
+
 // Return true to request aborting TestFunc
 // Called via IM_SUSPEND_TESTFUNC()
 bool    ImGuiTestContext::SuspendTestFunc(const char* file, int line)

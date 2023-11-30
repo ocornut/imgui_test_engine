@@ -208,7 +208,7 @@ struct IMGUI_API ImGuiTestGenericVars
 struct IMGUI_API ImGuiTestContext
 {
     // User variables
-    ImGuiTestGenericVars    GenericVars;
+    ImGuiTestGenericVars    GenericVars;                            // Generic variables holder for convenience.
     void*                   UserVars = NULL;                        // Access using ctx->GetVars<Type>(). Setup with test->SetVarsDataType<>().
 
     // Public fields
@@ -266,7 +266,10 @@ struct IMGUI_API ImGuiTestContext
     void        SetGuiFuncEnabled(bool v) { if (v) RunFlags &= ~ImGuiTestRunFlags_GuiFuncDisable; else RunFlags |= ImGuiTestRunFlags_GuiFuncDisable; }
 
     // Control Flow
-    bool        SuspendTestFunc(const char* file = NULL, int line = 0); // [DEBUG] Generally called via IM_SUSPEND_TESTFUNC
+    bool        RunChildTest(const char* test_name, ImGuiTestRunFlags flags = 0);   // [Experimental] Run another test from the current test.
+
+    // Debugging
+    bool        SuspendTestFunc(const char* file = NULL, int line = 0);             // [DEBUG] Generally called via IM_SUSPEND_TESTFUNC
 
     // Logging
     void        LogEx(ImGuiTestVerboseLevel level, ImGuiTestLogFlags flags, const char* fmt, ...) IM_FMTARGS(4);
