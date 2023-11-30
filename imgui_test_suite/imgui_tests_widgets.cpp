@@ -15,8 +15,18 @@
 #ifdef _MSC_VER
 #pragma warning (disable: 4100) // unreferenced formal parameter
 #pragma warning (disable: 4127) // conditional expression is constant
-#else
+#endif
+
+#if __clang__
+#pragma clang diagnostic push
+#if __has_warning("-Wunknown-warning-option")
+#pragma clang diagnostic ignored "-Wunknown-warning-option"         // warning: unknown warning group 'xxx'                      // not all warnings are known by all Clang versions and they tend to be rename-happy.. so ignoring warnings triggers new warnings on some configuration. Great!
+#endif
+#pragma clang diagnostic ignored "-Wunknown-pragmas"                // warning: unknown warning group 'xxx'
+#endif
+#ifdef __GNUC__
 #pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpragmas"                          // warning: unknown option after '#pragma GCC diagnostic' kind
 #pragma GCC diagnostic ignored "-Wunused-parameter"
 #endif
 
@@ -2934,7 +2944,6 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ImGui::LogToClipboard();
 #ifdef __GNUC__
 #pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wpragmas"          // warning: unknown option after '#pragma GCC diagnostic' kind
 #pragma GCC diagnostic ignored "-Wformat-overflow"  // warning: ‘%s’ directive argument is null
 #endif
         ImGui::Text("%s", (const char*)NULL);
@@ -4814,3 +4823,10 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
     };
 #endif
 }
+
+#ifdef __GNUC__
+#pragma GCC diagnostic pop
+#endif
+#if __clang__
+#pragma clang diagnostic pop
+#endif
