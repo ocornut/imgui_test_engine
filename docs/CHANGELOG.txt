@@ -5,6 +5,11 @@ CHANGELOG
    Those changes are not all listed here.
 ** For a while this is going to ONLY INCLUDE BREAKING CHANGES.
 
+2023/11/30:
+- TestEngine: Refactor ImGuiTest to isolate output (test status, log, start/end times) into
+  a dedicated ImguiTestOutput structure. 'test->Status' and 'test->TestLog' respectively
+  become 'test->Output.Status' and 'test->Output.Log'.
+
 2023/11/15:
 - TestEngine: UI: display failed counter in colored button while running (since tooltip is
   likely not accessible while running tests).

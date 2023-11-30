@@ -863,7 +863,6 @@ static void ImGuiTestEngine_RunGuiFunc(ImGuiTestEngine* engine)
     ImGuiTestContext* ctx = engine->TestContext;
     if (ctx && ctx->Test->GuiFunc)
     {
-        ctx->Test->GuiFuncLastFrame = ctx->UiContext->FrameCount;
         if (!(ctx->RunFlags & ImGuiTestRunFlags_GuiFuncDisable))
         {
             ImGuiTestActiveFunc backup_active_func = ctx->ActiveFunc;
@@ -1049,7 +1048,7 @@ static void ImGuiTestEngine_ProcessTestQueue(ImGuiTestEngine* engine)
     for (int n = 0; n < engine->TestsQueue.Size; n++)
     {
         ImGuiTestRunTask* run_task = &engine->TestsQueue[n];
-        IM_ASSERT(run_task->Test->Status == ImGuiTestStatus_Queued);
+        IM_ASSERT(run_task->Test->Output.Status == ImGuiTestStatus_Queued);
 
         // FIXME-TESTS: Blind mode not supported
         IM_ASSERT(engine->UiContextTarget != NULL);
@@ -1113,11 +1112,11 @@ void ImGuiTestEngine_QueueTest(ImGuiTestEngine* engine, ImGuiTest* test, ImGuiTe
     {
         ImGuiTestEngine_AbortCurrentTest(engine);
         IM_ASSERT(0 && "Not receiving signal from core library. Did you call ImGuiTestEngine_CreateContext() with the correct context? Did you compile imgui/ with IMGUI_ENABLE_TEST_ENGINE=1?");
-        test->Status = ImGuiTestStatus_Error;
+        test->Output.Status = ImGuiTestStatus_Error;
         return;
     }
 
-    test->Status = ImGuiTestStatus_Queued;
+    test->Output.Status = ImGuiTestStatus_Queued;
 
     ImGuiTestRunTask run_task;
     run_task.Test = test;
@@ -1302,12 +1301,12 @@ void ImGuiTestEngine_GetResult(ImGuiTestEngine* engine, int& count_tested, int& 
     for (int n = 0; n < engine->TestsAll.Size; n++)
     {
         ImGuiTest* test = engine->TestsAll[n];
-        if (test->Status == ImGuiTestStatus_Unknown)
+        if (test->Output.Status == ImGuiTestStatus_Unknown)
             continue;
-        IM_ASSERT(test->Status != ImGuiTestStatus_Queued);
-        IM_ASSERT(test->Status != ImGuiTestStatus_Running);
+        IM_ASSERT(test->Output.Status != ImGuiTestStatus_Queued);
+        IM_ASSERT(test->Output.Status != ImGuiTestStatus_Running);
         count_tested++;
-        if (test->Status == ImGuiTestStatus_Success)
+        if (test->Output.Status == ImGuiTestStatus_Success)
             count_success++;
     }
 }
@@ -1410,18 +1409,20 @@ static void ImGuiTestEngine_RunTest(ImGuiTestEngine* engine, ImGuiTestContext* s
 #endif
     }
 
-    test->StartTime = ImTimeGetInMicroseconds();
+    ImGuiTestOutput* test_output = &test->Output;
+    test_output->StartTime = ImTimeGetInMicroseconds();
 
     if (engine->Abort)
     {
-        test->Status = ImGuiTestStatus_Unknown;
-        test->EndTime = test->StartTime;
+        test_output->Status = ImGuiTestStatus_Unknown;
+        test_output->EndTime = test_output->StartTime;
         return;
     }
 
-    test->Status = ImGuiTestStatus_Running;
-
     ctx->Test = test;
+    ctx->TestOutput = test_output;
+    test_output->Status = ImGuiTestStatus_Running;
+
     ctx->RunFlags = run_flags;
     ctx->UiContext = engine->UiContextActive;
 
@@ -1454,8 +1455,7 @@ static void ImGuiTestEngine_RunTest(ImGuiTestEngine* engine, ImGuiTestContext* s
     ctx->UiContext->NavInputSource = ImGuiInputSource_Keyboard;
     ctx->Clipboard.clear();
     ctx->GenericVars.Clear();
-    test->TestLog.Clear();
-
+    test_output->Log.Clear();
 
     // Backup entire IO and style. Allows tests modifying them and not caring about restoring state.
     ImGuiTestContextUiContextBackup backup_ui_context;
@@ -1506,7 +1506,7 @@ static void ImGuiTestEngine_RunTest(ImGuiTestEngine* engine, ImGuiTestContext* s
     {
         ctx->FrameCount -= 2;
         ctx->Yield();
-        if (test->Status == ImGuiTestStatus_Running) // To allow GuiFunc calling Finish() in first frame
+        if (test_output->Status == ImGuiTestStatus_Running) // To allow GuiFunc calling Finish() in first frame
             ctx->Yield();
     }
     ctx->FirstTestFrameCount = ctx->FrameCount;
@@ -1515,15 +1515,11 @@ static void ImGuiTestEngine_RunTest(ImGuiTestEngine* engine, ImGuiTestContext* s
     if (ctx->RunFlags & ImGuiTestRunFlags_GuiFuncOnly)
     {
         // No test function
-        while (!engine->Abort && test->Status == ImGuiTestStatus_Running)
+        while (!engine->Abort && test_output->Status == ImGuiTestStatus_Running)
             ctx->Yield();
     }
     else
     {
-        // Sanity check
-        if (test->GuiFunc && !(test->Flags & ImGuiTestFlags_NoGuiWarmUp))
-            IM_ASSERT(test->GuiFuncLastFrame == ctx->UiContext->FrameCount);
-
         if (test->TestFunc)
         {
             // Test function
@@ -1543,7 +1539,7 @@ static void ImGuiTestEngine_RunTest(ImGuiTestEngine* engine, ImGuiTestContext* s
         {
             // No test function
             if (test->Flags & ImGuiTestFlags_NoAutoFinish)
-                while (!engine->Abort && test->Status == ImGuiTestStatus_Running)
+                while (!engine->Abort && test_output->Status == ImGuiTestStatus_Running)
                     ctx->Yield();
         }
 
@@ -1584,7 +1580,7 @@ static void ImGuiTestEngine_RunTest(ImGuiTestEngine* engine, ImGuiTestContext* s
         // FIXME-TESTS: after an error, this is not visible in the UI because status is not _Running anymore...
         if (engine->IO.ConfigKeepGuiFunc)
         {
-            if (engine->TestsQueue.Size == 1 || test->Status == ImGuiTestStatus_Error)
+            if (engine->TestsQueue.Size == 1 || test_output->Status == ImGuiTestStatus_Error)
             {
 #if IMGUI_VERSION_NUM >= 18992
                 ImGui::TeleportMousePos(engine->Inputs.MousePosValue);
@@ -1601,21 +1597,21 @@ static void ImGuiTestEngine_RunTest(ImGuiTestEngine* engine, ImGuiTestContext* s
     IM_ASSERT(engine->CaptureCurrentArgs == NULL && "Active capture was not terminated in the test code.");
 
     // Process and display result/status
-    test->EndTime = ImTimeGetInMicroseconds();
-    if (test->Status == ImGuiTestStatus_Running)
-        test->Status = ImGuiTestStatus_Success;
-    if (engine->Abort && test->Status != ImGuiTestStatus_Error)
-        test->Status = ImGuiTestStatus_Unknown;
+    test_output->EndTime = ImTimeGetInMicroseconds();
+    if (test_output->Status == ImGuiTestStatus_Running)
+        test_output->Status = ImGuiTestStatus_Success;
+    if (engine->Abort && test_output->Status != ImGuiTestStatus_Error)
+        test_output->Status = ImGuiTestStatus_Unknown;
 
     // Log result
-    if (test->Status == ImGuiTestStatus_Success)
+    if (test_output->Status == ImGuiTestStatus_Success)
     {
         if ((ctx->RunFlags & ImGuiTestRunFlags_NoSuccessMsg) == 0)
             ctx->LogInfo("Success.");
     }
     else if (engine->Abort)
         ctx->LogWarning("Aborted.");
-    else if (test->Status == ImGuiTestStatus_Error)
+    else if (test_output->Status == ImGuiTestStatus_Error)
         ctx->LogError("%s test failed.", test->Name);
     else
         ctx->LogWarning("Unknown status.");
@@ -1664,13 +1660,14 @@ void ImGuiTestEngine_CrashHandler()
     engine->BatchEndTime = ImTimeGetInMicroseconds();
     for (int i = 0; i < engine->TestsAll.Size; i++)
     {
-        ImGuiTest* test = engine->TestsAll[i];
-        if (test->Status == ImGuiTestStatus_Running)
-        {
-            test->Status = ImGuiTestStatus_Error;
-            test->EndTime = engine->BatchEndTime;
-            break;
-        }
+        if (engine->TestContext)
+            if (ImGuiTest* test = engine->TestContext->Test)
+                if (test->Output.Status == ImGuiTestStatus_Running)
+                {
+                    test->Output.Status = ImGuiTestStatus_Error;
+                    test->Output.EndTime = engine->BatchEndTime;
+                    break;
+                }
     }
 
     // Export test run results.
@@ -2012,7 +2009,7 @@ bool ImGuiTestEngine_Check(const char* file, const char* func, int line, ImGuiTe
         if (!result)
         {
             if (!(ctx->RunFlags & ImGuiTestRunFlags_GuiFuncOnly))
-                test->Status = ImGuiTestStatus_Error;
+                test->Output.Status = ImGuiTestStatus_Error;
 
             if (file)
                 ctx->LogError("Error %s:%d '%s'", file_without_path, line, expr);

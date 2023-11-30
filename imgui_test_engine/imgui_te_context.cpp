@@ -103,7 +103,7 @@ void    ImGuiTestContext::LogEx(ImGuiTestVerboseLevel level, ImGuiTestLogFlags f
 void    ImGuiTestContext::LogExV(ImGuiTestVerboseLevel level, ImGuiTestLogFlags flags, const char* fmt, va_list args)
 {
     ImGuiTestContext* ctx = this;
-    ImGuiTest* test = ctx->Test;
+    //ImGuiTest* test = ctx->Test;
 
     IM_ASSERT(level > ImGuiTestVerboseLevel_Silent && level < ImGuiTestVerboseLevel_COUNT);
 
@@ -114,7 +114,7 @@ void    ImGuiTestContext::LogExV(ImGuiTestVerboseLevel level, ImGuiTestLogFlags 
     if (EngineIO->ConfigVerboseLevelOnError < level)
         return;
 
-    ImGuiTestLog* log = &test->TestLog;
+    ImGuiTestLog* log = &ctx->TestOutput->Log;
     const int prev_size = log->Buffer.size();
 
     //const char verbose_level_char = ImGuiTestEngine_GetVerboseLevelName(level)[0];
@@ -175,10 +175,10 @@ void    ImGuiTestContext::LogToTTY(ImGuiTestVerboseLevel level, const char* mess
         return;
 
     ImGuiTestContext* ctx = this;
-    ImGuiTest* test = ctx->Test;
-    ImGuiTestLog* log = &test->TestLog;
+    ImGuiTestOutput* test_output = ctx->TestOutput;
+    ImGuiTestLog* log = &test_output->Log;
 
-    if (test->Status == ImGuiTestStatus_Error)
+    if (test_output->Status == ImGuiTestStatus_Error)
     {
         // Current test failed.
         if (!CachedLinesPrintedToTTY)
@@ -282,9 +282,8 @@ void    ImGuiTestContext::Finish()
 {
     if (RunFlags & ImGuiTestRunFlags_GuiFuncOnly)
         return;
-    ImGuiTest* test = Test;
-    if (test->Status == ImGuiTestStatus_Running)
-        test->Status = ImGuiTestStatus_Success;
+    if (TestOutput->Status == ImGuiTestStatus_Running)
+        TestOutput->Status = ImGuiTestStatus_Success;
 }
 
 static void LogWarningFunc(void* user_data, const char* fmt, ...)
@@ -310,7 +309,7 @@ void    ImGuiTestContext::RecoverFromUiContextErrors()
     IM_ASSERT(Test != NULL);
 
     // If we are _already_ in a test error state, recovering is normal so we'll hide the log.
-    const bool verbose = (Test->Status != ImGuiTestStatus_Error) || (EngineIO->ConfigVerboseLevel >= ImGuiTestVerboseLevel_Debug);
+    const bool verbose = (TestOutput->Status != ImGuiTestStatus_Error) || (EngineIO->ConfigVerboseLevel >= ImGuiTestVerboseLevel_Debug);
     if (verbose && (Test->Flags & ImGuiTestFlags_NoRecoveryWarnings) == 0)
         ImGui::ErrorCheckEndFrameRecover(LogWarningFunc, this);
     else
@@ -355,10 +354,10 @@ bool    ImGuiTestContext::SuspendTestFunc(const char* file, int line)
 #endif
 
     RunFlags |= ImGuiTestRunFlags_GuiFuncOnly;
-    Test->Status = ImGuiTestStatus_Suspended;
-    while (Test->Status == ImGuiTestStatus_Suspended && !Abort)
+    Test->Output.Status = ImGuiTestStatus_Suspended;
+    while (Test->Output.Status == ImGuiTestStatus_Suspended && !Abort)
         Yield();
-    Test->Status = ImGuiTestStatus_Running;
+    Test->Output.Status = ImGuiTestStatus_Running;
 
     // Restore relevant state.
     RunFlags = run_flags;

@@ -353,6 +353,15 @@ typedef void    (ImGuiTestVarsConstructor)(void* buffer);
 typedef void    (ImGuiTestVarsPostConstructor)(ImGuiTestContext* ctx, void* ptr, void* fn);
 typedef void    (ImGuiTestVarsDestructor)(void* ptr);
 
+// Storage for the output of a test run
+struct IMGUI_API ImGuiTestOutput
+{
+    ImGuiTestStatus                 Status = ImGuiTestStatus_Unknown;
+    ImGuiTestLog                    Log;
+    ImU64                           StartTime = 0;
+    ImU64                           EndTime = 0;
+};
+
 // Storage for one test
 struct IMGUI_API ImGuiTest
 {
@@ -370,12 +379,9 @@ struct IMGUI_API ImGuiTest
     ImFuncPtr(ImGuiTestTestFunc)    TestFunc = NULL;                // Test function
     void*                           UserData = NULL;                // General purpose user data (if assigning capturing lambdas on GuiFunc/TestFunc you may not need to se this)
 
-    // Test Status
-    ImGuiTestStatus                 Status = ImGuiTestStatus_Unknown;
-    ImGuiTestLog                    TestLog;
-    ImU64                           StartTime = 0;
-    ImU64                           EndTime = 0;
-    int                             GuiFuncLastFrame = -1;
+    // Last Test Output/Status
+    // (this is the only part that may change after registration)
+    ImGuiTestOutput                 Output;
 
     // User variables (which are instantiated when running the test)
     // Setup after test registration with SetVarsDataType<>(), access instance during test with GetVars<>().

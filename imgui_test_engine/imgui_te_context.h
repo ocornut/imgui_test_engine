@@ -215,6 +215,7 @@ struct IMGUI_API ImGuiTestContext
     ImGuiContext*           UiContext = NULL;                       // UI context
     ImGuiTestEngineIO*      EngineIO = NULL;                        // Test Engine IO/settings
     ImGuiTest*              Test = NULL;                            // Test currently running
+    ImGuiTestOutput*        TestOutput = NULL;                      // Test output (generally == &Test->Output)
     ImGuiTestOpFlags        OpFlags = ImGuiTestOpFlags_None;        // Flags affecting all operation (supported: ImGuiTestOpFlags_NoAutoUncollapse)
     int                     PerfStressAmount = 0;                   // Convenience copy of engine->IO.PerfStressAmount
     int                     FrameCount = 0;                         // Test frame count (restarts from zero every time)
@@ -257,7 +258,7 @@ struct IMGUI_API ImGuiTestContext
     template <typename T> T& GetVars()      { IM_ASSERT(UserVars != NULL); return *(T*)(UserVars); } // Campanion to using t->SetVarsDataType<>(). FIXME: Assert to compare sizes
 
     // Main status queries
-    bool        IsError() const             { return Test->Status == ImGuiTestStatus_Error || Abort; }
+    bool        IsError() const             { return TestOutput->Status == ImGuiTestStatus_Error || Abort; }
     bool        IsWarmUpGuiFrame() const    { return FrameCount < FirstTestFrameCount; }    // Unless test->Flags has ImGuiTestFlags_NoGuiWarmUp, we run GuiFunc() twice before running TestFunc(). Those frames are called "WarmUp" frames.
     bool        IsFirstGuiFrame() const     { return FirstGuiFrame; }
     bool        IsFirstTestFrame() const    { return FrameCount == FirstTestFrameCount; }   // First frame where TestFunc is running (after warm-up frame).

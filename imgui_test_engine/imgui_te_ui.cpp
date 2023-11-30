@@ -130,12 +130,14 @@ static void DrawTestLog(ImGuiTestEngine* e, ImGuiTest* test)
     const ImU32 unimportant_col = IM_COL32(190, 190, 190, 255);
     const float dpi_scale = GetDpiScale();
 
-    ImGuiTestLog* log = &test->TestLog;
-    const char* text = test->TestLog.Buffer.begin();
-    const char* text_end = test->TestLog.Buffer.end();
+    ImGuiTestOutput* test_output = &test->Output;
+
+    ImGuiTestLog* log = &test_output->Log;
+    const char* text = log->Buffer.begin();
+    const char* text_end = log->Buffer.end();
     ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(6.0f, 2.0f) * dpi_scale);
     ImGuiListClipper clipper;
-    ImGuiTestVerboseLevel max_log_level = test->Status == ImGuiTestStatus_Error ? e->IO.ConfigVerboseLevelOnError : e->IO.ConfigVerboseLevel;
+    ImGuiTestVerboseLevel max_log_level = test_output->Status == ImGuiTestStatus_Error ? e->IO.ConfigVerboseLevelOnError : e->IO.ConfigVerboseLevel;
     int line_count = log->ExtractLinesForVerboseLevels(ImGuiTestVerboseLevel_Silent, max_log_level, NULL);
     int current_index_clipped = -1;
     int current_index_abs = 0;
@@ -213,7 +215,7 @@ static bool ShowTestGroupFilterTest(ImGuiTestEngine* e, ImGuiTestGroup group, co
         return false;
     if (!ImGuiTestEngine_PassFilter(test, *filter ? filter : "all"))
         return false;
-    if ((e->UiFilterByStatusMask & (1 << test->Status)) == 0)
+    if ((e->UiFilterByStatusMask & (1 << test->Output.Status)) == 0)
         return false;
     return true;
 }
@@ -228,7 +230,7 @@ static void GetFailingTestsAsString(ImGuiTestEngine* e, ImGuiTestGroup group, ch
         Str* filter = (group == ImGuiTestGroup_Tests) ? e->UiFilterTests : e->UiFilterPerfs;
         if (failing_test->Group != group)
             continue;
-        if (failing_test->Status != ImGuiTestStatus_Error)
+        if (failing_test->Output.Status != ImGuiTestStatus_Error)
             continue;
         if (!ImGuiTestEngine_PassFilter(failing_test, filter->empty() ? "all" : filter->c_str()))
             continue;
@@ -369,14 +371,15 @@ static void ShowTestGroup(ImGuiTestEngine* e, ImGuiTestGroup group, Str* filter)
             if (!ShowTestGroupFilterTest(e, group, filter->c_str(), test))
                 continue;
 
-            ImGuiTestContext* test_context = (e->TestContext && e->TestContext->Test == test) ? e->TestContext : NULL;
+            ImGuiTestOutput* test_output = &test->Output;
+            ImGuiTestContext* test_context = (e->TestContext && e->TestContext->Test == test) ? e->TestContext : NULL; // Running context, if any
 
             ImGui::TableNextRow();
             ImGui::PushID(test_n);
 
             // Colors match general test status colors defined below.
             ImVec4 status_color;
-            switch (test->Status)
+            switch (test_output->Status)
             {
             case ImGuiTestStatus_Error:
                 status_color = ImVec4(0.9f, 0.1f, 0.1f, 1.0f);
@@ -402,22 +405,22 @@ static void ShowTestGroup(ImGuiTestEngine* e, ImGuiTestGroup group, Str* filter)
             }
 
             ImGui::TableNextColumn();
-            TestStatusButton("status", status_color, test->Status == ImGuiTestStatus_Running || test->Status == ImGuiTestStatus_Suspended, -1);
+            TestStatusButton("status", status_color, test_output->Status == ImGuiTestStatus_Running || test_output->Status == ImGuiTestStatus_Suspended, -1);
             ImGui::SameLine();
 
             bool queue_test = false;
             bool queue_gui_func_toggle = false;
             bool select_test = false;
 
-            if (test->Status == ImGuiTestStatus_Suspended)
+            if (test_output->Status == ImGuiTestStatus_Suspended)
             {
                 // Resume IM_SUSPEND_TESTFUNC
                 // FIXME: Terrible user experience to have this here.
                 if (ImGui::Button("Con###Run"))
-                    test->Status = ImGuiTestStatus_Running;
+                    test_output->Status = ImGuiTestStatus_Running;
                 ImGui::SetItemTooltip("CTRL+Space to continue.");
                 if (ImGui::IsKeyPressed(ImGuiKey_Space) && io.KeyCtrl)
-                    test->Status = ImGuiTestStatus_Running;
+                    test_output->Status = ImGuiTestStatus_Running;
             }
             else
             {
@@ -484,7 +487,7 @@ static void ShowTestGroup(ImGuiTestEngine* e, ImGuiTestGroup group, Str* filter)
                 if (ImGui::MenuItem("Copy name", NULL, false))
                     ImGui::SetClipboardText(test->Name);
 
-                if (test->Status == ImGuiTestStatus_Error)
+                if (test_output->Status == ImGuiTestStatus_Error)
                     if (ImGui::MenuItem("Copy names of all failing tests"))
                     {
                         Str256 failing_tests;
@@ -492,7 +495,7 @@ static void ShowTestGroup(ImGuiTestEngine* e, ImGuiTestGroup group, Str* filter)
                         ImGui::SetClipboardText(failing_tests.c_str());
                     }
 
-                ImGuiTestLog* test_log = &test->TestLog;
+                ImGuiTestLog* test_log = &test_output->Log;
                 if (ImGui::BeginMenu("Copy log", !test_log->IsEmpty()))
                 {
                     for (int level_n = ImGuiTestVerboseLevel_Error; level_n < ImGuiTestVerboseLevel_COUNT; level_n++)
@@ -597,17 +600,19 @@ static void ImGuiTestEngine_ShowLogAndTools(ImGuiTestEngine* engine)
 
     if (ImGui::BeginTabItem("LOG"))
     {
-        if (engine->UiSelectedTest)
-            ImGui::Text("Log for '%s' '%s'", engine->UiSelectedTest->Category, engine->UiSelectedTest->Name);
+        ImGuiTest* selected_test = engine->UiSelectedTest;
+
+        if (selected_test != NULL)
+            ImGui::Text("Log for '%s' '%s'", selected_test->Category, selected_test->Name);
         else
             ImGui::Text("N/A");
         if (ImGui::SmallButton("Clear"))
-            if (engine->UiSelectedTest)
-                engine->UiSelectedTest->TestLog.Clear();
+            if (selected_test)
+                selected_test->Output.Log.Clear();
         ImGui::SameLine();
         if (ImGui::SmallButton("Copy to clipboard"))
             if (engine->UiSelectedTest)
-                ImGui::SetClipboardText(engine->UiSelectedTest->TestLog.Buffer.c_str());
+                ImGui::SetClipboardText(selected_test->Output.Log.Buffer.c_str());
         ImGui::Separator();
 
         ImGui::BeginChild("Log");
