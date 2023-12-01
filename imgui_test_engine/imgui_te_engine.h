@@ -125,8 +125,8 @@ enum ImGuiTestRunFlags_
     ImGuiTestRunFlags_CommandLine       = 1 << 7,
 
     // Flags for ImGuiTestContext::RunChildTest()
-    ImGuiTestRunFlags_ShareVars         = 1 << 10,
-    ImGuiTestRunFlags_ShareContext      = 1 << 11,
+    ImGuiTestRunFlags_ShareVars         = 1 << 10,  // Share generic vars and custom vars between child and parent tests (custom vars need to be same type)
+    ImGuiTestRunFlags_ShareTestContext  = 1 << 11,  // Share ImGuiTestContext instead of creating a new one (unsure what purpose this may be useful for yet)
     // TODO: Add GuiFunc options
 };
 

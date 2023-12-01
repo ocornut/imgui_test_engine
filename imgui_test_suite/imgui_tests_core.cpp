@@ -5699,11 +5699,11 @@ void RegisterTests_TestEngine(ImGuiTestEngine* e)
 
         // Check that sharing context means state is modified in our current context
         ctx->SetRef("Dummy");
-        ctx->RunChildTest("testengine_childtests_1a", ImGuiTestRunFlags_ShareContext);
+        ctx->RunChildTest("testengine_childtests_1a", ImGuiTestRunFlags_ShareTestContext);
         IM_CHECK_EQ(ctx->GetID(""), ctx->GetID("//Dear ImGui Demo"));
 
         // Check that generic and users vars are shared when sharing context
-        ctx->RunChildTest("testengine_childtests_1a", ImGuiTestRunFlags_ShareVars | ImGuiTestRunFlags_ShareContext);
+        ctx->RunChildTest("testengine_childtests_1a", ImGuiTestRunFlags_ShareVars | ImGuiTestRunFlags_ShareTestContext);
         IM_CHECK_EQ(vars1.Count, 1);
         IM_CHECK_EQ(vars2.Count, 1);
 

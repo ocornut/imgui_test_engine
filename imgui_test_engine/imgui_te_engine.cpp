@@ -1396,7 +1396,7 @@ void ImGuiTestEngine_RunTest(ImGuiTestEngine* engine, ImGuiTestContext* parent_c
     ImGuiCaptureArgs stack_capture_args;
     ImGuiTestContext* ctx;
 
-    if (run_flags & ImGuiTestRunFlags_ShareContext)
+    if (run_flags & ImGuiTestRunFlags_ShareTestContext)
     {
         // Reuse existing test context
         IM_ASSERT(parent_ctx != NULL);
@@ -1461,7 +1461,7 @@ void ImGuiTestEngine_RunTest(ImGuiTestEngine* engine, ImGuiTestContext* parent_c
         IM_CHECK_SILENT(test->VarsPostConstructor == parent_ctx->Test->VarsPostConstructor);
         IM_CHECK_SILENT(test->VarsPostConstructorUserFn == parent_ctx->Test->VarsPostConstructorUserFn);
         IM_CHECK_SILENT(test->VarsDestructor == parent_ctx->Test->VarsDestructor);
-        if ((run_flags & ImGuiTestRunFlags_ShareContext) == 0)
+        if ((run_flags & ImGuiTestRunFlags_ShareTestContext) == 0)
         {
             ctx->GenericVars = parent_ctx->GenericVars;
             ctx->UserVars = parent_ctx->UserVars;
@@ -1470,7 +1470,7 @@ void ImGuiTestEngine_RunTest(ImGuiTestEngine* engine, ImGuiTestContext* parent_c
     else
     {
         // Create user vars
-        if (run_flags & ImGuiTestRunFlags_ShareContext)
+        if (run_flags & ImGuiTestRunFlags_ShareTestContext)
         {
             backup_user_vars = parent_ctx->UserVars;
             backup_generic_vars = parent_ctx->GenericVars;
@@ -1495,7 +1495,7 @@ void ImGuiTestEngine_RunTest(ImGuiTestEngine* engine, ImGuiTestContext* parent_c
     else
     {
         ctx->LogWarning("Child Test: '%s' '%s'..", test->Category, test->Name);
-        ctx->LogWarning("(ShareVars=%d ShareContext=%d)", (run_flags & ImGuiTestRunFlags_ShareVars) ? 1 : 0, (run_flags & ImGuiTestRunFlags_ShareContext) ? 1 : 0);
+        ctx->LogWarning("(ShareVars=%d ShareTestContext=%d)", (run_flags & ImGuiTestRunFlags_ShareVars) ? 1 : 0, (run_flags & ImGuiTestRunFlags_ShareTestContext) ? 1 : 0);
     }
 
     // Clear ImGui inputs to avoid key/mouse leaks from one test to another
@@ -1682,7 +1682,7 @@ void ImGuiTestEngine_RunTest(ImGuiTestEngine* engine, ImGuiTestContext* parent_c
     if (run_flags & ImGuiTestRunFlags_ShareVars)
     {
         // Share generic vars?
-        if ((run_flags & ImGuiTestRunFlags_ShareContext) == 0)
+        if ((run_flags & ImGuiTestRunFlags_ShareTestContext) == 0)
             parent_ctx->GenericVars = ctx->GenericVars;
     }
     else
@@ -1695,7 +1695,7 @@ void ImGuiTestEngine_RunTest(ImGuiTestEngine* engine, ImGuiTestContext* parent_c
                 IM_FREE(ctx->UserVars);
             ctx->UserVars = NULL;
         }
-        if (run_flags & ImGuiTestRunFlags_ShareContext)
+        if (run_flags & ImGuiTestRunFlags_ShareTestContext)
         {
             parent_ctx->UserVars = backup_user_vars;
             parent_ctx->GenericVars = backup_generic_vars;
