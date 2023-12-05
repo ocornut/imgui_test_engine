@@ -5685,7 +5685,13 @@ void RegisterTests_TestEngine(ImGuiTestEngine* e)
         ctx->RunChildTest("testengine_childtests_1a");
         ImGuiWindow* window = ctx->GetWindowByRef("//About Dear ImGui");
         IM_CHECK(window != NULL && window->WasActive);
-        ctx->RunChildTest("testengine_childtests_1b");
+
+        // This idiom could be standardized as a ImGuiTest::AddDependency() feature?
+        if (ctx->RunChildTest("testengine_childtests_1b", ImGuiTestRunFlags_NoError) != ImGuiTestStatus_Success)
+        {
+            ctx->Finish(ImGuiTestStatus_Unknown);
+            return;
+        }
         IM_CHECK(window != NULL && !window->WasActive);
 
         IM_CHECK_EQ(vars1.Count, 0); // Verify generic vars not shared

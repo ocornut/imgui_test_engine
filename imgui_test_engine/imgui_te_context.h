@@ -253,8 +253,8 @@ struct IMGUI_API ImGuiTestContext
     //-------------------------------------------------------------------------
 
     // Main control
-    void        Finish();
     void        RecoverFromUiContextErrors();
+    void        Finish(ImGuiTestStatus status = ImGuiTestStatus_Success);                            // Set test status and stop running. Usually called when running test logic from GuiFunc() only.
     template <typename T> T& GetVars()      { IM_ASSERT(UserVars != NULL); return *(T*)(UserVars); } // Campanion to using t->SetVarsDataType<>(). FIXME: Assert to compare sizes
 
     // Main status queries
@@ -266,7 +266,7 @@ struct IMGUI_API ImGuiTestContext
     void        SetGuiFuncEnabled(bool v) { if (v) RunFlags &= ~ImGuiTestRunFlags_GuiFuncDisable; else RunFlags |= ImGuiTestRunFlags_GuiFuncDisable; }
 
     // Control Flow
-    bool        RunChildTest(const char* test_name, ImGuiTestRunFlags flags = 0);   // [Experimental] Run another test from the current test.
+    ImGuiTestStatus RunChildTest(const char* test_name, ImGuiTestRunFlags flags = 0);   // [Experimental] Run another test from the current test.
 
     // Debugging
     bool        SuspendTestFunc(const char* file = NULL, int line = 0);             // [DEBUG] Generally called via IM_SUSPEND_TESTFUNC

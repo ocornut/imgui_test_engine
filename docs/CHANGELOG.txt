@@ -5,6 +5,10 @@ CHANGELOG
    Those changes are not all listed here.
 ** For a while this is going to ONLY INCLUDE BREAKING CHANGES.
 
+2023/12/05:
+- TestEngine: Made it possible to use ctx->RunChildTest() along with ctx->Finish(ImGuiTestStatus_Unknown)
+  to setup test dependencies without marking dependent tests as errored when the dependance is errored.
+
 2023/11/30:
 - TestEngine: Added ImGuiTestContext::RunChildTest() [Experimental].
 - TestEngine: Added ImGuiTestRunFlags_ShareVars and ImGuiTestRunFlags_ShareTestContext for RunChildTest().

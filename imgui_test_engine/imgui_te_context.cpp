@@ -278,12 +278,22 @@ void    ImGuiTestContext::LogItemList(ImGuiTestItemList* items)
         LogDebug("- 0x%08X: depth %d: '%s' in window '%s'\n", info.ID, info.Depth, info.DebugLabel, info.Window->Name);
 }
 
-void    ImGuiTestContext::Finish()
+void    ImGuiTestContext::Finish(ImGuiTestStatus status)
 {
-    if (RunFlags & ImGuiTestRunFlags_GuiFuncOnly)
-        return;
-    if (TestOutput->Status == ImGuiTestStatus_Running)
-        TestOutput->Status = ImGuiTestStatus_Success;
+    if (ActiveFunc == ImGuiTestActiveFunc_GuiFunc)
+    {
+        IM_ASSERT(status == ImGuiTestStatus_Success || status == ImGuiTestStatus_Unknown);
+        if (RunFlags & ImGuiTestRunFlags_GuiFuncOnly)
+            return;
+        if (TestOutput->Status == ImGuiTestStatus_Running)
+            TestOutput->Status = status;
+    }
+    else if (ActiveFunc == ImGuiTestActiveFunc_TestFunc)
+    {
+        IM_ASSERT(status == ImGuiTestStatus_Unknown); // To set Success from a TestFunc() you can 'return' from it.
+        if (TestOutput->Status == ImGuiTestStatus_Running)
+            TestOutput->Status = status;
+    }
 }
 
 static void LogWarningFunc(void* user_data, const char* fmt, ...)
@@ -336,29 +346,31 @@ void    ImGuiTestContext::YieldUntil(int frame_count)
 // - ImGuiTestRunFlags_NoError: if child test fails, return false and do not mark parent test as failed.
 // - ImGuiTestRunFlags_ShareVars: share generic vars and custom vars between child and parent tests.
 // - ImGuiTestRunFlags_ShareTestContext
-bool ImGuiTestContext::RunChildTest(const char* child_test_name, ImGuiTestRunFlags run_flags)
+ImGuiTestStatus ImGuiTestContext::RunChildTest(const char* child_test_name, ImGuiTestRunFlags run_flags)
 {
     if (IsError())
-        return false;
+        return ImGuiTestStatus_Error;
 
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
     LogDebug("RunChildTest %s", child_test_name);
 
     ImGuiTest* child_test = ImGuiTestEngine_FindTestByName(Engine, NULL, child_test_name);
-    IM_CHECK_SILENT_RETV(child_test != NULL, false);
-    IM_CHECK_SILENT_RETV(child_test != Test, false); // Can't recursively run same test.
+    IM_CHECK_SILENT_RETV(child_test != NULL, ImGuiTestStatus_Error);
+    IM_CHECK_SILENT_RETV(child_test != Test, ImGuiTestStatus_Error); // Can't recursively run same test.
 
     ImGuiTestStatus parent_status = TestOutput->Status;
     TestOutput->Status = ImGuiTestStatus_Running;
     ImGuiTestEngine_RunTest(Engine, this, child_test, run_flags);
     ImGuiTestStatus child_status = TestOutput->Status;
 
-    // Restore parent status, return child status
-    if (run_flags & ImGuiTestRunFlags_NoError)
-        TestOutput->Status = parent_status;
+    // Restore parent status
+    TestOutput->Status = parent_status;
+    if (child_status == ImGuiTestStatus_Error && (run_flags & ImGuiTestRunFlags_NoError) == 0)
+        TestOutput->Status = ImGuiTestStatus_Error;
 
+    // Return child status
     LogWarning("(returning to parent test)");
-    return child_status == ImGuiTestStatus_Success;
+    return child_status;
 }
 
 // Return true to request aborting TestFunc
