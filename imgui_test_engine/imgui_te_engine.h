@@ -118,15 +118,14 @@ enum ImGuiTestRunFlags_
     ImGuiTestRunFlags_GuiFuncDisable    = 1 << 0,   // Used internally to temporarily disable the GUI func (at the end of a test, etc)
     ImGuiTestRunFlags_GuiFuncOnly       = 1 << 1,   // Set when user selects "Run GUI func"
     ImGuiTestRunFlags_NoSuccessMsg      = 1 << 2,
-    ImGuiTestRunFlags_NoStopOnError     = 1 << 3,
-    ImGuiTestRunFlags_NoBreakOnError    = 1 << 4,
-    ImGuiTestRunFlags_EnableRawInputs   = 1 << 5,   // Disable input submission to let test submission raw input event (in order to test e.g. IO queue)
-    ImGuiTestRunFlags_ManualRun         = 1 << 6,
-    ImGuiTestRunFlags_CommandLine       = 1 << 7,
+    ImGuiTestRunFlags_EnableRawInputs   = 1 << 3,   // Disable input submission to let test submission raw input event (in order to test e.g. IO queue)
+    ImGuiTestRunFlags_RunFromGui        = 1 << 4,   // Test ran manually from GUI, will disable watchdog.
+    ImGuiTestRunFlags_RunFromCommandLine= 1 << 5,   // Test queued from command-line.
 
     // Flags for ImGuiTestContext::RunChildTest()
-    ImGuiTestRunFlags_ShareVars         = 1 << 10,  // Share generic vars and custom vars between child and parent tests (custom vars need to be same type)
-    ImGuiTestRunFlags_ShareTestContext  = 1 << 11,  // Share ImGuiTestContext instead of creating a new one (unsure what purpose this may be useful for yet)
+    ImGuiTestRunFlags_NoError           = 1 << 10,
+    ImGuiTestRunFlags_ShareVars         = 1 << 11,  // Share generic vars and custom vars between child and parent tests (custom vars need to be same type)
+    ImGuiTestRunFlags_ShareTestContext  = 1 << 12,  // Share ImGuiTestContext instead of creating a new one (unsure what purpose this may be useful for yet)
     // TODO: Add GuiFunc options
 };
 

@@ -78,7 +78,7 @@ struct TestSuiteApp;
 static void TestSuite_ShowUI(TestSuiteApp* app);
 static void TestSuite_PrintCommandLineHelp();
 static bool TestSuite_ParseCommandLineOptions(TestSuiteApp* app, int argc, char** argv);
-static void TestSuite_QueueTests(TestSuiteApp* app);
+static void TestSuite_QueueTests(TestSuiteApp* app, ImGuiTestRunFlags run_flags);
 static void TestSuite_LoadFonts(float dpi_scale);
 
 //-------------------------------------------------------------------------
@@ -319,16 +319,11 @@ static void TestSuite_LoadFonts(float dpi_scale)
     io.Fonts->Build();
 }
 
-static void TestSuite_QueueTests(TestSuiteApp* app)
+static void TestSuite_QueueTests(TestSuiteApp* app, ImGuiTestRunFlags run_flags)
 {
     // Non-interactive mode queue all tests by default
     if (!app->OptGui && app->TestsToRun.empty())
         app->TestsToRun.push_back(strdup("tests"));
-
-    // Queue requested tests
-    ImGuiTestRunFlags run_flags = ImGuiTestRunFlags_CommandLine;
-    if (app->OptGuiFunc)
-        run_flags |= ImGuiTestRunFlags_GuiFuncOnly;
 
     // Special groups are supported by ImGuiTestEngine_QueueTests(): "all", "tests", "perfs"
     // Following command line examples are functionally identical:
@@ -531,7 +526,12 @@ int main(int argc, char** argv)
 
     // Register and queue our tests
     RegisterTests_All(engine);
-    TestSuite_QueueTests(app);
+
+    // Queue requested tests
+    ImGuiTestRunFlags test_run_flags = ImGuiTestRunFlags_RunFromCommandLine;
+    if (app->OptGuiFunc)
+        test_run_flags |= ImGuiTestRunFlags_GuiFuncOnly;
+    TestSuite_QueueTests(app, test_run_flags);
     const bool exit_after_tests = !ImGuiTestEngine_IsTestQueueEmpty(engine) && !app->OptPauseOnExit;
 
     // Retrieve Git branch name, store in annotation field by default

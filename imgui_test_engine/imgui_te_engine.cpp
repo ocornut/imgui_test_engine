@@ -675,7 +675,7 @@ static void ImGuiTestEngine_UpdateWatchdog(ImGuiTestEngine* engine, ImGuiContext
     if (engine->IO.ConfigRunSpeed != ImGuiTestRunSpeed_Fast || ImOsIsDebuggerPresent())
         return;
 
-    if (test_ctx->RunFlags & ImGuiTestRunFlags_ManualRun)
+    if (test_ctx->RunFlags & ImGuiTestRunFlags_RunFromGui)
         return;
 
     const float timer_warn = engine->IO.ConfigWatchdogWarning;
@@ -1042,7 +1042,7 @@ bool ImGuiTestEngine_CaptureEndVideo(ImGuiTestEngine* engine, ImGuiCaptureArgs* 
 static void ImGuiTestEngine_ProcessTestQueue(ImGuiTestEngine* engine)
 {
     // Avoid tracking scrolling in UI when running a single test
-    const bool track_scrolling = (engine->TestsQueue.Size > 1) || (engine->TestsQueue.Size == 1 && (engine->TestsQueue[0].RunFlags & ImGuiTestRunFlags_CommandLine));
+    const bool track_scrolling = (engine->TestsQueue.Size > 1) || (engine->TestsQueue.Size == 1 && (engine->TestsQueue[0].RunFlags & ImGuiTestRunFlags_RunFromCommandLine));
 
     // Backup some state
     ImGuiIO& io = ImGui::GetIO();

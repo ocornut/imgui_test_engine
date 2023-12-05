@@ -560,9 +560,9 @@ static void ShowTestGroup(ImGuiTestEngine* e, ImGuiTestGroup group, Str* filter)
             if (queue_gui_func_toggle && is_running_gui_func)
                 ImGuiTestEngine_AbortCurrentTest(e);
             else if (queue_gui_func_toggle && !e->IO.IsRunningTests)
-                ImGuiTestEngine_QueueTest(e, test, ImGuiTestRunFlags_ManualRun | ImGuiTestRunFlags_GuiFuncOnly);
+                ImGuiTestEngine_QueueTest(e, test, ImGuiTestRunFlags_RunFromGui | ImGuiTestRunFlags_GuiFuncOnly);
             if (queue_test && !e->IO.IsRunningTests)
-                ImGuiTestEngine_QueueTest(e, test, ImGuiTestRunFlags_ManualRun);
+                ImGuiTestEngine_QueueTest(e, test, ImGuiTestRunFlags_RunFromGui);
 
             ImGui::PopID();
         }

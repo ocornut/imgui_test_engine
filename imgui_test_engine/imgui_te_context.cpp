@@ -333,7 +333,7 @@ void    ImGuiTestContext::YieldUntil(int frame_count)
 }
 
 // Supported values for ImGuiTestRunFlags:
-// - ImGuiTestRunFlags_NoStopOnError: if child test fails, return false and do not mark parent test as failed.
+// - ImGuiTestRunFlags_NoError: if child test fails, return false and do not mark parent test as failed.
 // - ImGuiTestRunFlags_ShareVars: share generic vars and custom vars between child and parent tests.
 // - ImGuiTestRunFlags_ShareTestContext
 bool ImGuiTestContext::RunChildTest(const char* child_test_name, ImGuiTestRunFlags run_flags)
@@ -354,7 +354,7 @@ bool ImGuiTestContext::RunChildTest(const char* child_test_name, ImGuiTestRunFla
     ImGuiTestStatus child_status = TestOutput->Status;
 
     // Restore parent status, return child status
-    if (run_flags & ImGuiTestRunFlags_NoStopOnError)
+    if (run_flags & ImGuiTestRunFlags_NoError)
         TestOutput->Status = parent_status;
 
     LogWarning("(returning to parent test)");
