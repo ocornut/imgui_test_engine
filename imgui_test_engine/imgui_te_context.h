@@ -529,51 +529,52 @@ struct IMGUI_API ImGuiTestContext
 #define IM_ERRORF(_FMT,...)                 do { if (ImGuiTestEngine_Error(__FILE__, __func__, __LINE__, ImGuiTestCheckFlags_None, _FMT, __VA_ARGS__))                              { IM_DEBUG_BREAK(); } } while (0)
 #define IM_ERRORF_NOHDR(_FMT,...)           do { if (ImGuiTestEngine_Error(NULL, NULL, 0, ImGuiTestCheckFlags_None, _FMT, __VA_ARGS__))                                             { IM_DEBUG_BREAK(); } } while (0)
 
-template<typename T> void ImGuiTestEngineUtil_AppendStrValue(ImGuiTextBuffer& buf, T value)         { buf.appendf("???"); IM_UNUSED(value); } // FIXME-TESTS: Could improve with some template magic
-template<> inline void ImGuiTestEngineUtil_AppendStrValue(ImGuiTextBuffer& buf, const char* value)  { buf.appendf("\"%s\"", value); }
-template<> inline void ImGuiTestEngineUtil_AppendStrValue(ImGuiTextBuffer& buf, bool value)         { buf.append(value ? "true" : "false"); }
-template<> inline void ImGuiTestEngineUtil_AppendStrValue(ImGuiTextBuffer& buf, ImS8 value)         { buf.appendf("%d", value); }
-template<> inline void ImGuiTestEngineUtil_AppendStrValue(ImGuiTextBuffer& buf, ImU8 value)         { buf.appendf("%u", value); }
-template<> inline void ImGuiTestEngineUtil_AppendStrValue(ImGuiTextBuffer& buf, ImS16 value)        { buf.appendf("%hd", value); }
-template<> inline void ImGuiTestEngineUtil_AppendStrValue(ImGuiTextBuffer& buf, ImU16 value)        { buf.appendf("%hu", value); }
-template<> inline void ImGuiTestEngineUtil_AppendStrValue(ImGuiTextBuffer& buf, ImS32 value)        { buf.appendf("%d", value); }
-template<> inline void ImGuiTestEngineUtil_AppendStrValue(ImGuiTextBuffer& buf, ImU32 value)        { buf.appendf("0x%08X", value); } // Assuming ImGuiID
-template<> inline void ImGuiTestEngineUtil_AppendStrValue(ImGuiTextBuffer& buf, ImS64 value)        { buf.appendf("%lld", value); }
-template<> inline void ImGuiTestEngineUtil_AppendStrValue(ImGuiTextBuffer& buf, ImU64 value)        { buf.appendf("%llu", value); }
-template<> inline void ImGuiTestEngineUtil_AppendStrValue(ImGuiTextBuffer& buf, float value)        { buf.appendf("%.3f", value); }
-template<> inline void ImGuiTestEngineUtil_AppendStrValue(ImGuiTextBuffer& buf, double value)       { buf.appendf("%f", value); }
-template<> inline void ImGuiTestEngineUtil_AppendStrValue(ImGuiTextBuffer& buf, ImVec2 value)       { buf.appendf("(%.3f, %.3f)", value.x, value.y); }
-template<> inline void ImGuiTestEngineUtil_AppendStrValue(ImGuiTextBuffer& buf, const void* value)  { buf.appendf("%p", value); }
-template<> inline void ImGuiTestEngineUtil_AppendStrValue(ImGuiTextBuffer& buf, ImGuiWindow* w)     { if (w) buf.appendf("\"%s\"", w->Name); else buf.append("NULL"); }
+template<typename T> void ImGuiTestEngineUtil_AppendStrValue(ImGuiTextBuffer& buf, T v)         { buf.append("???"); IM_UNUSED(v); } // FIXME-TESTS: Could improve with some template magic
+template<> inline void ImGuiTestEngineUtil_AppendStrValue(ImGuiTextBuffer& buf, const char* v)  { buf.appendf("\"%s\"", v); }
+template<> inline void ImGuiTestEngineUtil_AppendStrValue(ImGuiTextBuffer& buf, bool v)         { buf.append(v ? "true" : "false"); }
+template<> inline void ImGuiTestEngineUtil_AppendStrValue(ImGuiTextBuffer& buf, ImS8 v)         { buf.appendf("%d", v); }
+template<> inline void ImGuiTestEngineUtil_AppendStrValue(ImGuiTextBuffer& buf, ImU8 v)         { buf.appendf("%u", v); }
+template<> inline void ImGuiTestEngineUtil_AppendStrValue(ImGuiTextBuffer& buf, ImS16 v)        { buf.appendf("%hd", v); }
+template<> inline void ImGuiTestEngineUtil_AppendStrValue(ImGuiTextBuffer& buf, ImU16 v)        { buf.appendf("%hu", v); }
+template<> inline void ImGuiTestEngineUtil_AppendStrValue(ImGuiTextBuffer& buf, ImS32 v)        { buf.appendf("%d", v); }
+template<> inline void ImGuiTestEngineUtil_AppendStrValue(ImGuiTextBuffer& buf, ImU32 v)        { buf.appendf("0x%08X", v); } // Assuming ImGuiID
+template<> inline void ImGuiTestEngineUtil_AppendStrValue(ImGuiTextBuffer& buf, ImS64 v)        { buf.appendf("%lld", v); }
+template<> inline void ImGuiTestEngineUtil_AppendStrValue(ImGuiTextBuffer& buf, ImU64 v)        { buf.appendf("%llu", v); }
+template<> inline void ImGuiTestEngineUtil_AppendStrValue(ImGuiTextBuffer& buf, float v)        { buf.appendf("%.3f", v); }
+template<> inline void ImGuiTestEngineUtil_AppendStrValue(ImGuiTextBuffer& buf, double v)       { buf.appendf("%f", v); }
+template<> inline void ImGuiTestEngineUtil_AppendStrValue(ImGuiTextBuffer& buf, ImVec2 v)       { buf.appendf("(%.3f, %.3f)", v.x, v.y); }
+template<> inline void ImGuiTestEngineUtil_AppendStrValue(ImGuiTextBuffer& buf, const void* v)  { buf.appendf("%p", v); }
+template<> inline void ImGuiTestEngineUtil_AppendStrValue(ImGuiTextBuffer& buf, ImGuiWindow* v) { if (v) buf.appendf("\"%s\"", v->Name); else buf.append("NULL"); }
 
 // Those macros allow us to print out the values of both lhs and rhs expressions involved in a check.
 // FIXME: Could we move some more of that into a function?
-#define IM_CHECK_OP(_LHS, _RHS, _OP, _RETURN)                       \
-    do                                                              \
-    {                                                               \
-        auto __lhs = _LHS;  /* Cache to avoid side effects */       \
-        auto __rhs = _RHS;                                          \
-        bool __res = __lhs _OP __rhs;                               \
-        ImGuiTextBuffer expr_buf;                                   \
-        expr_buf.appendf("%s [", #_LHS);                            \
-        ImGuiTestEngineUtil_AppendStrValue(expr_buf, __lhs);        \
-        expr_buf.appendf("] " #_OP " %s [", #_RHS);                 \
-        ImGuiTestEngineUtil_AppendStrValue(expr_buf, __rhs);        \
-        expr_buf.append("]");                                       \
+// FIXME: It is a bit wasteful to create a text buffer every time, but we don't have access to e.g. test context directly here.
+#define IM_CHECK_OP(_LHS, _RHS, _OP, _RETURN)                   \
+    do                                                          \
+    {                                                           \
+        auto __lhs = _LHS;  /* Cache to avoid side effects */   \
+        auto __rhs = _RHS;                                      \
+        bool __res = __lhs _OP __rhs;                           \
+        ImGuiTextBuffer expr_buf;                               \
+        expr_buf.append(#_LHS " [");                            \
+        ImGuiTestEngineUtil_AppendStrValue(expr_buf, __lhs);    \
+        expr_buf.append("] " #_OP " " #_RHS " [");              \
+        ImGuiTestEngineUtil_AppendStrValue(expr_buf, __rhs);    \
+        expr_buf.append("]");                                   \
         if (ImGuiTestEngine_Check(__FILE__, __func__, __LINE__, ImGuiTestCheckFlags_None, __res, expr_buf.c_str())) \
-            IM_ASSERT(__res);                                       \
-        if (_RETURN && !__res)                                      \
-            return;                                                 \
+            IM_ASSERT(__res);                                   \
+        if (_RETURN && !__res)                                  \
+            return;                                             \
     } while (0)
 
-#define IM_CHECK_STR_OP(_LHS, _RHS, _OP, _RETURN, _FLAGS)           \
-    do                                                              \
-    {                                                               \
-        bool __res;                                                 \
+#define IM_CHECK_STR_OP(_LHS, _RHS, _OP, _RETURN, _FLAGS)       \
+    do                                                          \
+    {                                                           \
+        bool __res;                                             \
         if (ImGuiTestEngine_CheckStrOp(__FILE__, __func__, __LINE__, _FLAGS, #_OP, #_LHS, _LHS, #_RHS, _RHS, &__res)) \
-            IM_ASSERT(__res);                                       \
-        if (_RETURN && !__res)                                      \
-            return;                                                 \
+            IM_ASSERT(__res);                                   \
+        if (_RETURN && !__res)                                  \
+            return;                                             \
     } while (0)
 
 // Scalar compares
