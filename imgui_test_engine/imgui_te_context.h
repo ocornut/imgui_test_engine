@@ -253,9 +253,10 @@ struct IMGUI_API ImGuiTestContext
     //-------------------------------------------------------------------------
 
     // Main control
-    void        RecoverFromUiContextErrors();
-    void        Finish(ImGuiTestStatus status = ImGuiTestStatus_Success);                            // Set test status and stop running. Usually called when running test logic from GuiFunc() only.
-    template <typename T> T& GetVars()      { IM_ASSERT(UserVars != NULL); return *(T*)(UserVars); } // Campanion to using t->SetVarsDataType<>(). FIXME: Assert to compare sizes
+    void            RecoverFromUiContextErrors();
+    void            Finish(ImGuiTestStatus status = ImGuiTestStatus_Success);                       // Set test status and stop running. Usually called when running test logic from GuiFunc() only.
+    ImGuiTestStatus RunChildTest(const char* test_name, ImGuiTestRunFlags flags = 0);               // [Experimental] Run another test from the current test.
+    template <typename T> T& GetVars()      { IM_ASSERT(UserVars != NULL); return *(T*)(UserVars); }// Campanion to using t->SetVarsDataType<>(). FIXME: Assert to compare sizes
 
     // Main status queries
     bool        IsError() const             { return TestOutput->Status == ImGuiTestStatus_Error || Abort; }
@@ -263,10 +264,6 @@ struct IMGUI_API ImGuiTestContext
     bool        IsFirstGuiFrame() const     { return FirstGuiFrame; }
     bool        IsFirstTestFrame() const    { return FrameCount == FirstTestFrameCount; }   // First frame where TestFunc is running (after warm-up frame).
     bool        IsGuiFuncOnly() const       { return (RunFlags & ImGuiTestRunFlags_GuiFuncOnly) != 0; }
-    void        SetGuiFuncEnabled(bool v) { if (v) RunFlags &= ~ImGuiTestRunFlags_GuiFuncDisable; else RunFlags |= ImGuiTestRunFlags_GuiFuncDisable; }
-
-    // Control Flow
-    ImGuiTestStatus RunChildTest(const char* test_name, ImGuiTestRunFlags flags = 0);   // [Experimental] Run another test from the current test.
 
     // Debugging
     bool        SuspendTestFunc(const char* file = NULL, int line = 0);             // [DEBUG] Generally called via IM_SUSPEND_TESTFUNC
@@ -297,7 +294,8 @@ struct IMGUI_API ImGuiTestContext
     // - SetRef("Window"), ItemClick("/Button")    --> click "Window/Button"
     // - SetRef("Window"), ItemClick("//Button")   --> click "/Button"
     // - SetRef("//$FOCUSED"), ItemClick("Button") --> click "Button" in focused window.
-    // Takes multiple frames to complete if specified ref is an item id.
+    // See https://github.com/ocornut/imgui_test_engine/wiki/Named-References about using ImGuiTestRef in all ImGuiTestContext functions.
+    // Note: SetRef() may take multiple frames to complete if specified ref is an item id.
     void        SetRef(ImGuiTestRef ref);
     void        SetRef(ImGuiWindow* window); // Shortcut to SetRef(window->Name) which works for ChildWindow (see code)
     ImGuiTestRef GetRef();
@@ -323,7 +321,7 @@ struct IMGUI_API ImGuiTestContext
     ImGuiID     GetID(ImGuiTestRef ref);
     ImGuiID     GetID(ImGuiTestRef ref, ImGuiTestRef seed_ref);
 
-    // Misc
+    // Miscellaneous helpers
     ImVec2      GetPosOnVoid(ImGuiViewport* viewport);                              // Find a point that has no windows // FIXME: This needs error return and flag to enable/disable forcefully finding void.
     ImVec2      GetWindowTitlebarPoint(ImGuiTestRef window_ref);                    // Return a clickable point on window title-bar (window tab for docked windows).
     ImVec2      GetMainMonitorWorkPos();                                            // Work pos and size of main viewport when viewports are disabled, or work pos and size of monitor containing main viewport when viewports are enabled.
@@ -398,7 +396,8 @@ struct IMGUI_API ImGuiTestContext
     void        ScrollVerifyScrollMax(ImGuiTestRef ref);
 
     // Low-level queries
-    // Since 2022/06/25 to faciliate test code and reduce crashes: ItemInfo queries never return a NULL pointer, instead they return an empty instance (info->IsEmpty(), info->ID == 0).
+    // - ItemInfo queries never returns a NULL pointer, instead they return an empty instance (info->IsEmpty(), info->ID == 0) and set contexted as errored.
+    // - You can use ImGuiTestOpFlags_NoError to do a query without marking context as errored. This is what ItemExists() does.
     ImGuiTestItemInfo*  ItemInfo(ImGuiTestRef ref, ImGuiTestOpFlags flags = ImGuiTestOpFlags_None);
     ImGuiTestItemInfo*  ItemInfoOpenFullPath(ImGuiTestRef ref, ImGuiTestOpFlags flags = ImGuiTestOpFlags_None);
     ImGuiID             ItemInfoHandleWildcardSearch(const char* wildcard_prefix_start, const char* wildcard_prefix_end, const char* wildcard_suffix_start);
@@ -434,7 +433,7 @@ struct IMGUI_API ImGuiTestContext
     void        ItemDragAndDrop(ImGuiTestRef ref_src, ImGuiTestRef ref_dst, ImGuiMouseButton button = 0);
     void        ItemDragWithDelta(ImGuiTestRef ref_src, ImVec2 pos_delta);
 
-    // Helpers for Item/Widget state query
+    // Item/Widgets: Status query
     bool        ItemExists(ImGuiTestRef ref);
     bool        ItemIsChecked(ImGuiTestRef ref);
     bool        ItemIsOpened(ImGuiTestRef ref);
@@ -444,7 +443,8 @@ struct IMGUI_API ImGuiTestContext
     void        TabClose(ImGuiTestRef ref);
     bool        TabBarCompareOrder(ImGuiTabBar* tab_bar, const char** tab_order);
 
-    // Helpers for Menus widgets
+    // Helpers for MenuBar and Menus widgets
+    // - e.g. MenuCheck("File/Options/Enable grid");
     void        MenuAction(ImGuiTestAction action, ImGuiTestRef ref);
     void        MenuActionAll(ImGuiTestAction action, ImGuiTestRef ref_parent);
     void        MenuClick(ImGuiTestRef ref)                 { MenuAction(ImGuiTestAction_Click, ref); }
@@ -485,7 +485,7 @@ struct IMGUI_API ImGuiTestContext
     void        DockNodeHideTabBar(ImGuiDockNode* node, bool hidden);
 #endif
 
-    // Performances
+    // Performances Measurement (use along with Dear ImGui Perf Tool)
     void        PerfCalcRef();
     void        PerfCapture(const char* category = NULL, const char* test_name = NULL, const char* csv_file = NULL);
 

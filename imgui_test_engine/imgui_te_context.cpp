@@ -3850,7 +3850,7 @@ void    ImGuiTestContext::UndockWindow(const char* window_name)
 void    ImGuiTestContext::PerfCalcRef()
 {
     LogDebug("Measuring ref dt...");
-    SetGuiFuncEnabled(false);
+    RunFlags |= ImGuiTestRunFlags_GuiFuncDisable;
 
     ImMovingAverage<double> delta_times;
     delta_times.Init(PerfIterations);
@@ -3861,7 +3861,7 @@ void    ImGuiTestContext::PerfCalcRef()
     }
 
     PerfRefDt = delta_times.GetAverage();
-    SetGuiFuncEnabled(true);
+    RunFlags &= ~ImGuiTestRunFlags_GuiFuncDisable;
 }
 
 void    ImGuiTestContext::PerfCapture(const char* category, const char* test_name, const char* csv_file)

@@ -1668,7 +1668,7 @@ void ImGuiTestEngine_RunTest(ImGuiTestEngine* engine, ImGuiTestContext* parent_c
         ctx->LogWarning("Unknown status.");
 
     // Additional yields to avoid consecutive tests who may share identifiers from missing their window/item activation.
-    ctx->SetGuiFuncEnabled(false);
+    ctx->RunFlags |= ImGuiTestRunFlags_GuiFuncDisable;
     ctx->Yield(2);
 
     // Restore active func
