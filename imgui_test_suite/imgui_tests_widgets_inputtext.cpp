@@ -1414,6 +1414,49 @@ void RegisterTests_WidgetsInputText(ImGuiTestEngine* e)
     };
 #endif
 
+#if IMGUI_VERSION_NUM >= 19002
+    // ## Test nav Tabbing and Tab character InputTextMultiline()
+    t = IM_REGISTER_TEST(e, "widgets", "widgets_inputtext_multiline_tab");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiTestGenericVars& vars = ctx->GenericVars;
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImGui::Button("Above");
+        ImGuiInputTextFlags input_text_flags = vars.Bool1 ? ImGuiInputTextFlags_AllowTabInput : ImGuiInputTextFlags_None;
+        ImGui::InputTextMultiline("Field", vars.Str1, IM_ARRAYSIZE(vars.Str1), ImVec2(0,0), input_text_flags);
+        ImGui::Button("Below");
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiContext& g = *ctx->UiContext;
+        ImGuiTestGenericVars& vars = ctx->GenericVars;
+        ctx->SetRef("Test Window");
+        ImGuiID input_id = ctx->GetID("Field");
+
+        vars.Bool1 = false; // ImGuiInputTextFlags_None
+        ctx->ItemClick("Above");
+        ctx->KeyPress(ImGuiKey_Tab); // Highlight Appears
+        ctx->KeyPress(ImGuiKey_Tab);
+        ctx->Yield();
+        IM_CHECK_EQ(g.ActiveId, input_id);
+        IM_CHECK_EQ(g.NavId, input_id);
+        ctx->KeyPress(ImGuiKey_Tab);
+        IM_CHECK_EQ(g.NavId, ctx->GetID("Below"));
+        IM_CHECK_EQ(g.ActiveId, 0u);
+
+        vars.Bool1 = true; // ImGuiInputTextFlags_None
+        ctx->ItemClick("Above");
+        ctx->KeyPress(ImGuiKey_Tab); // Highlight Appears
+        ctx->KeyPress(ImGuiKey_Tab);
+        IM_CHECK_EQ(g.NavId, input_id);
+        IM_CHECK_EQ(g.ActiveId, 0u); // NOT activated
+        ctx->KeyPress(ImGuiKey_Tab);
+        IM_CHECK_EQ(g.NavId, ctx->GetID("Below"));
+        IM_CHECK_EQ(g.ActiveId, 0u);
+    };
+#endif
+
     // ## Test handling of Tab/Enter/Space keys events also emitting text events. (#2467, #1336)
     // Backends are inconsistent in behavior: some don't send a text event for Tab and Enter (but still send it for Space)
 #if IMGUI_VERSION_NUM >= 18711

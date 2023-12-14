@@ -1138,12 +1138,11 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
 
     // ## Test inheritance (and lack of) of FocusScope
     // FIXME-TESTS: could test for actual propagation of focus scope from<>into nav data
-    t = IM_REGISTER_TEST(e, "nav", "nav_focus_scope");
+#if IMGUI_VERSION_NUM >= 18835
+    t = IM_REGISTER_TEST(e, "nav", "nav_focus_scope_1");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
-
-#if IMGUI_VERSION_NUM >= 18835
 
         ImGuiID focus_scope_id = ImGui::GetID("MyScope");
 
@@ -1167,48 +1166,76 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
         IM_CHECK_EQ(ImGui::GetCurrentFocusScope(), ImGui::GetID(""));
         ImGui::End();
 
+        // ...Unless flattened child
+#if IMGUI_VERSION_NUM >= 19002
+        ImGui::BeginChild("Child 3", ImVec2(100, 100), ImGuiChildFlags_Border, ImGuiWindowFlags_NavFlattened);
+        IM_CHECK_EQ(ImGui::GetCurrentFocusScope(), focus_scope_id); // New child
+        ImGui::EndChild();
+#endif
         ImGui::PopFocusScope();
 
         IM_CHECK_EQ(ImGui::GetCurrentFocusScope(), ImGui::GetID(""));
         ImGui::End();
-#else
-#if IMGUI_VERSION_NUM >= 18308
-        ImGuiID unset_scope_id = ImGui::GetID("#FOCUSSCOPE");
-#else
-        ImGuiID unset_scope_id = 0u;
+    };
 #endif
-        ImGuiID focus_scope_id = ImGui::GetID("MyScope");
 
-        IM_CHECK_EQ(ImGui::GetFocusScope(), unset_scope_id);
-        ImGui::BeginChild("Child 1", ImVec2(100, 100));
-        IM_CHECK_EQ(ImGui::GetFocusScope(), unset_scope_id);
-        ImGui::EndChild();
+    // Also see "nav_tabbing_flattened"
+#if IMGUI_VERSION_NUM >= 19002
+    t = IM_REGISTER_TEST(e, "nav", "nav_focus_scope_2");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
 
-        ImGui::PushFocusScope(focus_scope_id);
-        IM_CHECK_EQ(ImGui::GetFocusScope(), focus_scope_id);
-        ImGui::BeginChild("Child 1", ImVec2(100, 100));
-        IM_CHECK_EQ(ImGui::GetFocusScope(), focus_scope_id); // Append
-        ImGui::EndChild();
-        ImGui::BeginChild("Child 2", ImVec2(100, 100));
-        IM_CHECK_EQ(ImGui::GetFocusScope(), focus_scope_id); // New child
-        ImGui::EndChild();
-        IM_CHECK_EQ(ImGui::GetFocusScope(), focus_scope_id);
+        ImGui::Button("0");
 
-        // Should not inherit
-        ImGui::Begin("Test Window 2", NULL, ImGuiWindowFlags_NoSavedSettings);
-        IM_CHECK_EQ(ImGui::GetFocusScope(), ImGui::GetID("#FOCUSSCOPE"));
-        ImGui::End();
-
+        ImGui::Separator();
+        ImGui::PushFocusScope(ImGui::GetID("Scope 1"));
+        ImGui::Button("1A");
+        ImGui::Button("1B");
+        ImGui::Button("1C");
         ImGui::PopFocusScope();
 
-        IM_CHECK_EQ(ImGui::GetFocusScope(), unset_scope_id);
+        ImGui::Separator();
+        ImGui::PushFocusScope(ImGui::GetID("Scope 2"));
+        ImGui::Button("2A");
+        ImGui::Button("2B");
+        ImGui::Button("2C");
+        ImGui::PopFocusScope();
+
         ImGui::End();
-#endif
     };
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
+        ImGuiContext& g = *ctx->UiContext;
         ctx->SetRef("Test Window");
+        ctx->ItemClick("0");
+        IM_CHECK_EQ(g.NavId, ctx->GetID("0"));
+        ctx->KeyPress(ImGuiKey_Tab);
+        IM_CHECK_EQ(g.NavId, ctx->GetID("0"));
+
+        ctx->ItemClick("1A");
+#if 1
+        ctx->KeyPress(ImGuiKey_Tab);
+        IM_CHECK_EQ(g.NavId, ctx->GetID("1A")); // Highlight appears
+#endif
+        ctx->KeyPress(ImGuiKey_Tab);
+        IM_CHECK_EQ(g.NavId, ctx->GetID("1B"));
+        ctx->KeyPress(ImGuiKey_Tab);
+        IM_CHECK_EQ(g.NavId, ctx->GetID("1C"));
+        ctx->KeyPress(ImGuiKey_Tab);
+        IM_CHECK_EQ(g.NavId, ctx->GetID("1A"));
+        ctx->KeyPress(ImGuiKey_Tab | ImGuiMod_Shift);
+        IM_CHECK_EQ(g.NavId, ctx->GetID("1C"));
+
+        ctx->ItemClick("2C");
+#if 1
+        ctx->KeyPress(ImGuiKey_Tab);
+        IM_CHECK_EQ(g.NavId, ctx->GetID("2C")); // Highlight appears
+#endif
+        ctx->KeyPress(ImGuiKey_Tab);
+        IM_CHECK_EQ(g.NavId, ctx->GetID("2A"));
     };
+#endif
 
     // ## Check setting default focus.
     t = IM_REGISTER_TEST(e, "nav", "nav_focus_default");
