@@ -1,5 +1,7 @@
 # Dear ImGui Test Engine + Test Suite
 
+Automation and test suite for [Dear ImGui](https://github.com/ocornut/imgui) and applications/games/engines using Dear ImGui.
+
 ## Contents
 
 - [imgui_test_engine/](https://github.com/ocornut/imgui_test_engine/tree/main/imgui_test_engine): dear imgui test engine / automation system (library)
