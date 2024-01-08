@@ -2043,6 +2043,15 @@ void ImGuiTestEngine_AssertLog(const char* expr, const char* file, const char* f
     }
 }
 
+// Used by IM_CHECK_OP() macros
+ImGuiTestEngineStringBuilder* ImGuiTestEngine_GetTempStringBuilder()
+{
+    static ImGuiTestEngineStringBuilder builder;
+    builder.Buf.resize(1);
+    builder.Buf[0] = 0;
+    return &builder;
+}
+
 const char* ImGuiTestEngine_FindItemDebugLabel(ImGuiContext* ui_ctx, ImGuiID id)
 {
     IM_ASSERT(ui_ctx->TestEngine != NULL);

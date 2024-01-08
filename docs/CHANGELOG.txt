@@ -5,6 +5,9 @@ CHANGELOG
    Those changes are not all listed here.
 ** For a while this is going to ONLY INCLUDE BREAKING CHANGES.
 
+2024/01/08:
+- TestEngine: Avoid allocations in IM_CHECK_XX macros.
+
 2023/12/05:
 - TestEngine: Made it possible to use ctx->RunChildTest() along with ctx->Finish(ImGuiTestStatus_Unknown)
   to setup test dependencies without marking dependent tests as errored when the dependance is errored.
