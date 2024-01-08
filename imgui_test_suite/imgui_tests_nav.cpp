@@ -1216,7 +1216,7 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
         ctx->ItemClick("1A");
 #if 1
         ctx->KeyPress(ImGuiKey_Tab);
-        IM_CHECK_EQ(g.NavId, ctx->GetID("1A")); // Highlight appears
+        IM_CHECK_EQ(g.NavId, ctx->GetID("1A")); // Highlight reappears after we mouse-click
 #endif
         ctx->KeyPress(ImGuiKey_Tab);
         IM_CHECK_EQ(g.NavId, ctx->GetID("1B"));
@@ -1230,7 +1230,7 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
         ctx->ItemClick("2C");
 #if 1
         ctx->KeyPress(ImGuiKey_Tab);
-        IM_CHECK_EQ(g.NavId, ctx->GetID("2C")); // Highlight appears
+        IM_CHECK_EQ(g.NavId, ctx->GetID("2C")); // Highlight reappears after we mouse-click
 #endif
         ctx->KeyPress(ImGuiKey_Tab);
         IM_CHECK_EQ(g.NavId, ctx->GetID("2A"));
