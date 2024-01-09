@@ -10,6 +10,7 @@ CHANGELOG
   (most other functions add yields to accomodate for common use cases).
 - app_minimal: Added a building batch file to provide an alternative building reference.
 - app_minimal: Removed misleading optional dependency on implot.
+- app_minimal, imgui_app: Fixed building in MBCS (non-Unicode) mode.
 
 2024/01/08:
 - TestEngine: Avoid allocations in IM_CHECK_XX macros.

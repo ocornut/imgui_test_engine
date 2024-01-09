@@ -263,7 +263,7 @@ ImGuiApp* ImGuiApp_ImplNull_Create()
 struct ImGuiApp_ImplWin32DX11 : public ImGuiApp
 {
     HWND                    Hwnd = NULL;
-    WNDCLASSEX              WC = {};
+    WNDCLASSEXW             WC = {};
     ID3D11Device*           pd3dDevice = NULL;
     ID3D11DeviceContext*    pd3dDeviceContext = NULL;
     IDXGISwapChain*         pSwapChain = NULL;
@@ -285,8 +285,8 @@ static bool ImGuiApp_ImplWin32DX11_InitCreateWindow(ImGuiApp* app_opaque, const 
         ImGui_ImplWin32_EnableDpiAwareness();
 
     // Create application window
-    app->WC = { sizeof(WNDCLASSEXA), CS_CLASSDC, ImGuiApp_ImplWin32_WndProc, 0L, 0L, ::GetModuleHandle(NULL), NULL, NULL, NULL, NULL, L"ImGuiApp", NULL };
-    ::RegisterClassEx(&app->WC);
+    app->WC = { sizeof(app->WC), CS_CLASSDC, ImGuiApp_ImplWin32_WndProc, 0L, 0L, ::GetModuleHandle(NULL), NULL, NULL, NULL, NULL, L"ImGuiApp", NULL };
+    ::RegisterClassExW(&app->WC);
 
     POINT pos = { 1, 1 };
     HMONITOR monitor = ::MonitorFromPoint(pos, 0);
@@ -303,7 +303,6 @@ static bool ImGuiApp_ImplWin32DX11_InitCreateWindow(ImGuiApp* app_opaque, const 
         pos.y = monitor_info.rcWork.top + ImMax((LONG)0, ((monitor_info.rcWork.bottom - monitor_info.rcWork.top) - (LONG)window_size.y) / 2);
     }
 
-#ifdef UNICODE
     const int count = ::MultiByteToWideChar(CP_UTF8, 0, window_title_a, -1, NULL, 0);
     WCHAR* window_title_t = (WCHAR*)calloc(count, sizeof(WCHAR));
     if (!::MultiByteToWideChar(CP_UTF8, 0, window_title_a, -1, window_title_t, count))
@@ -311,18 +310,14 @@ static bool ImGuiApp_ImplWin32DX11_InitCreateWindow(ImGuiApp* app_opaque, const 
         free(window_title_t);
         return false;
     }
-    app->Hwnd = ::CreateWindowEx(0L, app->WC.lpszClassName, window_title_t, WS_OVERLAPPEDWINDOW, pos.x, pos.y, (int)window_size.x, (int)window_size.y, NULL, NULL, app->WC.hInstance, NULL);
+    app->Hwnd = ::CreateWindowExW(0L, app->WC.lpszClassName, window_title_t, WS_OVERLAPPEDWINDOW, pos.x, pos.y, (int)window_size.x, (int)window_size.y, NULL, NULL, app->WC.hInstance, NULL);
     free(window_title_t);
-#else
-    const char* window_title_t = window_titLe_a;
-    app->Hwnd = ::CreateWindowEx(0L, app->WC.lpszClassName, window_titLe_t, WS_OVERLAPPEDWINDOW, pos.x, pos.y, (int)window_size.x, (int)window_size.y, NULL, NULL, app->WC.hInstance, NULL);
-#endif
 
     // Initialize Direct3D
     if (!CreateDeviceD3D(app))
     {
         CleanupDeviceD3D(app);
-        ::UnregisterClass(app->WC.lpszClassName, app->WC.hInstance);
+        ::UnregisterClassW(app->WC.lpszClassName, app->WC.hInstance);
         return 1;
     }
 
@@ -342,7 +337,7 @@ static void ImGuiApp_ImplWin32DX11_ShutdownCloseWindow(ImGuiApp* app_opaque)
     ImGuiApp_ImplWin32DX11* app = (ImGuiApp_ImplWin32DX11*)app_opaque;
     CleanupDeviceD3D(app);
     ::DestroyWindow(app->Hwnd);
-    ::UnregisterClass(app->WC.lpszClassName, app->WC.hInstance);
+    ::UnregisterClassW(app->WC.lpszClassName, app->WC.hInstance);
 }
 
 static void ImGuiApp_ImplWin32DX11_InitBackends(ImGuiApp* app_opaque)
@@ -589,7 +584,7 @@ static LRESULT WINAPI ImGuiApp_ImplWin32_WndProc(HWND hWnd, UINT msg, WPARAM wPa
         ::PostQuitMessage(0);
         return 0;
     }
-    return ::DefWindowProc(hWnd, msg, wParam, lParam);
+    return ::DefWindowProcW(hWnd, msg, wParam, lParam);
 }
 
 #endif // #ifdef IMGUI_APP_WIN32_DX11
