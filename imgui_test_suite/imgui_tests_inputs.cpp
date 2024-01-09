@@ -527,6 +527,95 @@ void RegisterTests_Inputs(ImGuiTestEngine* e)
     };
 #endif
 
+#if IMGUI_VERSION_NUM >= 19003
+    // ## Test key and key chord repeat behaviors and ImGuiInputFlags_RepeatUntilXXX flags.
+    // This has some overlap with "inputs_routing_shortcut".
+    // Also see "inputs_repeat_typematic" for lower-level timing calculations.
+    t = IM_REGISTER_TEST(e, "inputs", "inputs_repeat_key");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        auto& vars = ctx->GenericVars;
+        auto& counters = vars.IntArray;
+        const ImGuiKey key = ImGuiKey_A;
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+        counters[0] += ImGui::IsKeyPressed(key, 0, ImGuiInputFlags_None);
+        counters[1] += ImGui::IsKeyPressed(key, 0, ImGuiInputFlags_Repeat);
+        counters[2] += ImGui::IsKeyPressed(key, 0, ImGuiInputFlags_RepeatUntilRelease);
+        counters[3] += ImGui::IsKeyPressed(key, 0, ImGuiInputFlags_RepeatUntilKeyModsChange);
+        counters[4] += ImGui::IsKeyPressed(key, 0, ImGuiInputFlags_RepeatUntilKeyModsChangeFromNone);
+        counters[5] += ImGui::IsKeyPressed(key, 0, ImGuiInputFlags_RepeatUntilOtherKeyPress);
+        ImGui::Text("%d (_None)", counters[0]);
+        ImGui::Text("%d (_Repeat)", counters[1]);
+        ImGui::Text("%d (_RepeatUntilRelease)", counters[2]);
+        ImGui::Text("%d (_RepeatUntilKeyModsChange)", counters[3]);
+        ImGui::Text("%d (_RepeatUntilKeyModsChangeFromNone)", counters[4]);
+        ImGui::Text("%d (_RepeatUntilOtherKeyPress)", counters[5]);
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiContext& g = *ctx->UiContext;
+        auto& vars = ctx->GenericVars;
+        auto& counters = vars.IntArray;
+        const ImGuiKey key = ImGuiKey_A;
+        const ImGuiKey key2 = ImGuiKey_UpArrow;
+
+        ctx->KeyPress(key);
+        for (int n = 0; n < 6; n++)
+            IM_CHECK_EQ(counters[n], 1);
+        memset(counters, 0, sizeof(int) * 6);
+
+        const float duration = 0.8f;
+        const int repeat_count_for_duration = 1 + ImGui::CalcTypematicRepeatAmount(0.0f, duration, g.IO.KeyRepeatDelay, g.IO.KeyRepeatRate);
+        const int repeat_count_for_duration_x2 = 1 + ImGui::CalcTypematicRepeatAmount(0.0f, duration * 2, g.IO.KeyRepeatDelay, g.IO.KeyRepeatRate);
+
+        ctx->KeyHold(key, duration);
+        IM_CHECK_EQ(counters[0], 1);
+        for (int n = 1; n < 6; n++)
+            IM_CHECK_EQ(counters[n], repeat_count_for_duration);
+        memset(counters, 0, sizeof(int) * 6);
+
+        // Use KeySetEx() as we deal with precise timing (other functions add extra yields)
+        // Hold Key and press Ctrl mid-way
+        ctx->KeySetEx(key, true, duration);
+        for (int n = 1; n < 6; n++)
+            IM_CHECK_EQ(counters[n], repeat_count_for_duration);
+        ctx->KeySetEx(ImGuiMod_Ctrl, true, duration);           // Press Ctrl
+        IM_CHECK_EQ(counters[2], repeat_count_for_duration_x2);
+        IM_CHECK_EQ(counters[3], repeat_count_for_duration);    // _RepeatUntilKeyModsChange
+        IM_CHECK_EQ(counters[4], repeat_count_for_duration);    // _RepeatUntilKeyModsChangeFromNone
+        IM_CHECK_EQ(counters[5], repeat_count_for_duration);    // _RepeatUntilOtherKeyPress
+        ctx->KeyUp(ImGuiMod_Ctrl | key);
+        memset(counters, 0, sizeof(int) * 6);
+
+        // Hold Ctrl+Key and release Ctrl mid-way
+        // _RepeatUntilKeyModsChangeFromNone behave differently in this direction, as the behavior is useful for certain shortcut handling.
+        ctx->KeySetEx(ImGuiMod_Ctrl | key, true, duration);
+        for (int n = 1; n < 6; n++)
+            IM_CHECK_EQ(counters[n], repeat_count_for_duration);
+        ctx->KeySetEx(ImGuiMod_Ctrl, false, duration);          // Release Ctrl
+        IM_CHECK_EQ(counters[2], repeat_count_for_duration_x2);
+        IM_CHECK_EQ(counters[3], repeat_count_for_duration);    // _RepeatUntilKeyModsChange
+        IM_CHECK_EQ(counters[4], repeat_count_for_duration_x2); // _RepeatUntilKeyModsChangeFromNone
+        IM_CHECK_EQ(counters[5], repeat_count_for_duration_x2); // _RepeatUntilOtherKeyPress
+        ctx->KeyUp(key);
+        memset(counters, 0, sizeof(int) * 6);
+
+        // Hold Key and press another key
+        ctx->KeySetEx(key, true, duration);
+        for (int n = 1; n < 6; n++)
+            IM_CHECK_EQ(counters[n], repeat_count_for_duration);
+        ctx->KeySetEx(ImGuiKey_UpArrow, true, duration);        // Press UpArrow
+        IM_CHECK_EQ(counters[2], repeat_count_for_duration_x2);
+        IM_CHECK_EQ(counters[3], repeat_count_for_duration_x2); // _RepeatUntilKeyModsChange
+        IM_CHECK_EQ(counters[4], repeat_count_for_duration_x2); // _RepeatUntilKeyModsChangeFromNone
+        IM_CHECK_EQ(counters[5], repeat_count_for_duration);    // _RepeatUntilOtherKeyPress
+        ctx->KeyUp(key);
+        ctx->KeyUp(ImGuiKey_UpArrow);
+        memset(counters, 0, sizeof(int) * 6);
+    };
+#endif
+
     t = IM_REGISTER_TEST(e, "inputs", "inputs_repeat_typematic");
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
@@ -1003,6 +1092,7 @@ void RegisterTests_Inputs(ImGuiTestEngine* e)
         int             PressedCount[26] = {};
         ImGuiKeyChord   KeyChord = ImGuiMod_Shortcut | ImGuiKey_A;
         char            Str[64] = "Hello";
+        ImGuiID         OwnerID = 0;
 
         void            Clear()
         {
@@ -1213,6 +1303,72 @@ void RegisterTests_Inputs(ImGuiTestEngine* e)
         vars.TestIsPressedOnly('F');
         vars.KeyChord = ImGuiMod_Shortcut | ImGuiKey_A;
         vars.Clear();
+    };
+#endif
+
+    // ## Additional tests for Shortcut(), notably of underlying ImGuiInputFlags_RepeatUntilKeyModsChange behavior.
+    // Notably, test cases of releasing a mod key not triggering the other shortcut when Repeat is on
+#if IMGUI_VERSION_NUM >= 19003
+    t = IM_REGISTER_TEST(e, "inputs", "inputs_routing_shortcut");
+    t->SetVarsDataType<InputRoutingVars>();
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        auto& vars = ctx->GetVars<InputRoutingVars>();
+
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
+
+        ImGui::Button("Button0");
+        if (ImGui::Shortcut(ImGuiKey_W, vars.OwnerID, ImGuiInputFlags_Repeat))
+            vars.PressedCount[0]++;
+
+        ImGui::BeginChild("Child1", ImVec2(100, 100), ImGuiChildFlags_Border);
+        ImGui::Button("Button1");
+        if (ImGui::Shortcut(ImGuiKey_W | ImGuiMod_Ctrl, vars.OwnerID, ImGuiInputFlags_Repeat))
+            vars.PressedCount[1]++;
+        ImGui::EndChild();
+
+        ImGui::Text("Count: %d (W)", vars.PressedCount[0]);
+        ImGui::Text("Count: %d (Ctrl+W)", vars.PressedCount[1]);
+
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        auto& vars = ctx->GetVars<InputRoutingVars>();
+
+        ctx->SetRef("Test Window");
+        for (int step_n = 0; step_n < 2; step_n++)
+        {
+            ctx->LogDebug("Step %d: %s", step_n, step_n ? "With owner_id" : "Without owner_id");
+            vars.PressedCount[0] = vars.PressedCount[1] = 0;
+
+            ctx->ItemClick("Button0");
+            ctx->KeyPress(ImGuiKey_W);
+            IM_CHECK_EQ(vars.PressedCount[0], 1);
+            IM_CHECK_EQ(vars.PressedCount[1], 0);
+            ctx->ItemClick("**/Button1");
+            ctx->KeyPress(ImGuiKey_W);
+            IM_CHECK_EQ(vars.PressedCount[0], 2);
+            IM_CHECK_EQ(vars.PressedCount[1], 0);
+            ctx->KeyPress(ImGuiKey_W | ImGuiMod_Ctrl);
+            IM_CHECK_EQ(vars.PressedCount[0], 2);
+            IM_CHECK_EQ(vars.PressedCount[1], 1);
+
+            // Test Ctrl down, W down, Ctrl up -> verify that W shortcut is not triggered.
+            ctx->KeyDown(ImGuiMod_Ctrl);
+            ctx->KeyDown(ImGuiKey_W);
+            IM_CHECK_EQ(vars.PressedCount[0], 2);
+            IM_CHECK_EQ(vars.PressedCount[1], 2);
+            ctx->KeyUp(ImGuiMod_Ctrl);
+            ctx->SleepNoSkip(0.5f, 0.1f);
+            IM_CHECK_EQ(vars.PressedCount[0], 2); // Verify that W shortcut didn't trigger.
+            IM_CHECK_EQ(vars.PressedCount[1], 2);
+            ctx->KeyDown(ImGuiMod_Ctrl);
+            ctx->KeyUp(ImGuiMod_Ctrl);
+            IM_CHECK_EQ(vars.PressedCount[0], 2);
+            IM_CHECK_EQ(vars.PressedCount[1], 2); // Verify that Ctrl+W shortcut didn't trigger
+            ctx->KeyUp(ImGuiKey_W);
+        }
     };
 #endif
 

@@ -2443,6 +2443,21 @@ void    ImGuiTestContext::KeyHold(ImGuiKeyChord key_chord, float time)
     Yield(); // Give a frame for items to react
 }
 
+// No extra yield
+void    ImGuiTestContext::KeySetEx(ImGuiKeyChord key_chord, bool is_down, float time)
+{
+    if (IsError())
+        return;
+
+    IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
+    char chord_desc[32];
+    ImGui::GetKeyChordName(key_chord, chord_desc, IM_ARRAYSIZE(chord_desc));
+    LogDebug("KeySetEx(%s, is_down=%d, time=%.f)", chord_desc, is_down, time);
+    Inputs->Queue.push_back(ImGuiTestInput::ForKeyChord(key_chord, is_down));
+    if (time > 0.0f)
+        SleepNoSkip(time, 1.0f / 100.0f);
+}
+
 void    ImGuiTestContext::KeyChars(const char* chars)
 {
     if (IsError())

@@ -366,6 +366,7 @@ struct IMGUI_API ImGuiTestContext
     void        KeyUp(ImGuiKeyChord key_chord);
     void        KeyPress(ImGuiKeyChord key_chord, int count = 1);
     void        KeyHold(ImGuiKeyChord key_chord, float time);
+    void        KeySetEx(ImGuiKeyChord key_chord, bool is_down, float time);
     void        KeyChars(const char* chars);                // Input characters
     void        KeyCharsAppend(const char* chars);          // Input characters at end of field
     void        KeyCharsAppendEnter(const char* chars);     // Input characters at end of field, press Enter
