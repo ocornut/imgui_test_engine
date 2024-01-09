@@ -286,7 +286,6 @@ static bool ImGuiApp_ImplWin32DX11_InitCreateWindow(ImGuiApp* app_opaque, const 
 
     // Create application window
     app->WC = { sizeof(WNDCLASSEX), CS_CLASSDC, ImGuiApp_ImplWin32_WndProc, 0L, 0L, ::GetModuleHandle(NULL), NULL, NULL, NULL, NULL, TEXT("ImGuiApp"), NULL };
-
     ::RegisterClassEx(&app->WC);
 
     POINT pos = { 1, 1 };
