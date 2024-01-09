@@ -151,9 +151,7 @@ IMGUI_API bool      ImGuiTestEngine_Check(const char* file, const char* func, in
 IMGUI_API bool      ImGuiTestEngine_CheckStrOp(const char* file, const char* func, int line, ImGuiTestCheckFlags flags, const char* op, const char* lhs_var, const char* lhs_value, const char* rhs_var, const char* rhs_value, bool* out_result);
 IMGUI_API bool      ImGuiTestEngine_Error(const char* file, const char* func, int line, ImGuiTestCheckFlags flags, const char* fmt, ...);
 IMGUI_API void      ImGuiTestEngine_AssertLog(const char* expr, const char* file, const char* function, int line);
-
-struct ImGuiTestEngineStringBuilder;
-IMGUI_API ImGuiTestEngineStringBuilder* ImGuiTestEngine_GetTempStringBuilder();
+IMGUI_API ImGuiTextBuffer* ImGuiTestEngine_GetTempStringBuilder();
 
 //-------------------------------------------------------------------------
 // ImGuiTestEngine API

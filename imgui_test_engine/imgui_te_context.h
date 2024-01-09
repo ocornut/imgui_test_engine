@@ -520,27 +520,24 @@ struct IMGUI_API ImGuiTestContext
 // [SECTION] Testing/Checking macros: IM_CHECK(), IM_ERRORF() etc.
 //-------------------------------------------------------------------------
 
-// Helper used by IM_CHECK_OP() macros.
-// ImGuiTestEngine_GetTempStringBuilder() returns a same instance of this to recycle memory allocations
-struct ImGuiTestEngineStringBuilder : public ImGuiTextBuffer
-{
-    template<typename T> void appendf_auto(T v)     { append("???"); IM_UNUSED(v); } // FIXME-TESTS: Could improve with some template magic
-    template<> void appendf_auto(const char* v)     { appendf("\"%s\"", v); }
-    template<> void appendf_auto(bool v)            { append(v ? "true" : "false"); }
-    template<> void appendf_auto(ImS8 v)            { appendf("%d", v); }
-    template<> void appendf_auto(ImU8 v)            { appendf("%u", v); }
-    template<> void appendf_auto(ImS16 v)           { appendf("%hd", v); }
-    template<> void appendf_auto(ImU16 v)           { appendf("%hu", v); }
-    template<> void appendf_auto(ImS32 v)           { appendf("%d", v); }
-    template<> void appendf_auto(ImU32 v)           { appendf("0x%08X", v); } // Assuming ImGuiID
-    template<> void appendf_auto(ImS64 v)           { appendf("%lld", v); }
-    template<> void appendf_auto(ImU64 v)           { appendf("%llu", v); }
-    template<> void appendf_auto(float v)           { appendf("%.3f", v); }
-    template<> void appendf_auto(double v)          { appendf("%f", v); }
-    template<> void appendf_auto(ImVec2 v)          { appendf("(%.3f, %.3f)", v.x, v.y); }
-    template<> void appendf_auto(const void* v)     { appendf("%p", v); }
-    template<> void appendf_auto(ImGuiWindow* v)    { if (v) appendf("\"%s\"", v->Name); else append("NULL"); }
-};
+// Helpers used by IM_CHECK_OP() macros.
+// ImGuiTestEngine_GetTempStringBuilder() returns a shared instance of ImGuiTextBuffer to recycle memory allocations
+template<typename T> void ImGuiTestEngineUtil_appendf_auto(ImGuiTextBuffer* buf, T v) { buf->append("???"); IM_UNUSED(v); } // FIXME-TESTS: Could improve with some template magic
+template<> inline void ImGuiTestEngineUtil_appendf_auto(ImGuiTextBuffer* buf, const char* v) { buf->appendf("\"%s\"", v); }
+template<> inline void ImGuiTestEngineUtil_appendf_auto(ImGuiTextBuffer* buf, bool v)        { buf->append(v ? "true" : "false"); }
+template<> inline void ImGuiTestEngineUtil_appendf_auto(ImGuiTextBuffer* buf, ImS8 v)        { buf->appendf("%d", v); }
+template<> inline void ImGuiTestEngineUtil_appendf_auto(ImGuiTextBuffer* buf, ImU8 v)        { buf->appendf("%u", v); }
+template<> inline void ImGuiTestEngineUtil_appendf_auto(ImGuiTextBuffer* buf, ImS16 v)       { buf->appendf("%hd", v); }
+template<> inline void ImGuiTestEngineUtil_appendf_auto(ImGuiTextBuffer* buf, ImU16 v)       { buf->appendf("%hu", v); }
+template<> inline void ImGuiTestEngineUtil_appendf_auto(ImGuiTextBuffer* buf, ImS32 v)       { buf->appendf("%d", v); }
+template<> inline void ImGuiTestEngineUtil_appendf_auto(ImGuiTextBuffer* buf, ImU32 v)       { buf->appendf("0x%08X", v); } // Assuming ImGuiID
+template<> inline void ImGuiTestEngineUtil_appendf_auto(ImGuiTextBuffer* buf, ImS64 v)       { buf->appendf("%lld", v); }
+template<> inline void ImGuiTestEngineUtil_appendf_auto(ImGuiTextBuffer* buf, ImU64 v)       { buf->appendf("%llu", v); }
+template<> inline void ImGuiTestEngineUtil_appendf_auto(ImGuiTextBuffer* buf, float v)       { buf->appendf("%.3f", v); }
+template<> inline void ImGuiTestEngineUtil_appendf_auto(ImGuiTextBuffer* buf, double v)      { buf->appendf("%f", v); }
+template<> inline void ImGuiTestEngineUtil_appendf_auto(ImGuiTextBuffer* buf, ImVec2 v)      { buf->appendf("(%.3f, %.3f)", v.x, v.y); }
+template<> inline void ImGuiTestEngineUtil_appendf_auto(ImGuiTextBuffer* buf, const void* v) { buf->appendf("%p", v); }
+template<> inline void ImGuiTestEngineUtil_appendf_auto(ImGuiTextBuffer* buf, ImGuiWindow* v){ if (v) buf->appendf("\"%s\"", v->Name); else buf->append("NULL"); }
 
 // We embed every macro in a do {} while(0) statement as a trick to allow using them as regular single statement, e.g. if (XXX) IM_CHECK(A); else IM_CHECK(B)
 // We leave the IM_DEBUG_BREAK() outside of the check function to step out faster when using a debugger. It also has the benefit of being lighter than an IM_ASSERT().
@@ -559,11 +556,11 @@ struct ImGuiTestEngineStringBuilder : public ImGuiTextBuffer
         auto __lhs = _LHS;  /* Cache to avoid side effects */   \
         auto __rhs = _RHS;                                      \
         bool __res = __lhs _OP __rhs;                           \
-        ImGuiTestEngineStringBuilder* expr_buf = ImGuiTestEngine_GetTempStringBuilder(); \
+        ImGuiTextBuffer* expr_buf = ImGuiTestEngine_GetTempStringBuilder(); \
         expr_buf->append(#_LHS " [");                           \
-        expr_buf->appendf_auto(__lhs);                          \
+        ImGuiTestEngineUtil_appendf_auto(expr_buf, __lhs);      \
         expr_buf->append("] " #_OP " " #_RHS " [");             \
-        expr_buf->appendf_auto(__rhs);                          \
+        ImGuiTestEngineUtil_appendf_auto(expr_buf, __rhs);      \
         expr_buf->append("]");                                  \
         if (ImGuiTestEngine_Check(__FILE__, __func__, __LINE__, ImGuiTestCheckFlags_None, __res, expr_buf->c_str())) \
             IM_ASSERT(__res);                                   \

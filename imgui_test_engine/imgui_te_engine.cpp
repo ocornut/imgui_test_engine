@@ -2044,9 +2044,9 @@ void ImGuiTestEngine_AssertLog(const char* expr, const char* file, const char* f
 }
 
 // Used by IM_CHECK_OP() macros
-ImGuiTestEngineStringBuilder* ImGuiTestEngine_GetTempStringBuilder()
+ImGuiTextBuffer* ImGuiTestEngine_GetTempStringBuilder()
 {
-    static ImGuiTestEngineStringBuilder builder;
+    static ImGuiTextBuffer builder;
     builder.Buf.resize(1);
     builder.Buf[0] = 0;
     return &builder;
