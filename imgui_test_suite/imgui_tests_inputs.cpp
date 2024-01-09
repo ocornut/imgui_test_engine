@@ -558,7 +558,6 @@ void RegisterTests_Inputs(ImGuiTestEngine* e)
         auto& vars = ctx->GenericVars;
         auto& counters = vars.IntArray;
         const ImGuiKey key = ImGuiKey_A;
-        const ImGuiKey key2 = ImGuiKey_UpArrow;
 
         ctx->KeyPress(key);
         for (int n = 0; n < 6; n++)
@@ -605,7 +604,7 @@ void RegisterTests_Inputs(ImGuiTestEngine* e)
         ctx->KeySetEx(key, true, duration);
         for (int n = 1; n < 6; n++)
             IM_CHECK_EQ(counters[n], repeat_count_for_duration);
-        ctx->KeySetEx(ImGuiKey_UpArrow, true, duration);        // Press UpArrow
+        ctx->KeySetEx(ImGuiKey_UpArrow, true, duration);        // Press any other key!
         IM_CHECK_EQ(counters[2], repeat_count_for_duration_x2);
         IM_CHECK_EQ(counters[3], repeat_count_for_duration_x2); // _RepeatUntilKeyModsChange
         IM_CHECK_EQ(counters[4], repeat_count_for_duration_x2); // _RepeatUntilKeyModsChangeFromNone
