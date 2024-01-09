@@ -11,7 +11,6 @@
 #ifndef IMGUI_HAS_IMSTR
 #define IMGUI_DISABLE_OBSOLETE_FUNCTIONS
 #endif
-#define IMGUI_DISABLE_OBSOLETE_KEYIO
 
 //------------------------------------------------------------------------
 // Test Engine

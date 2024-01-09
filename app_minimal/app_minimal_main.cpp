@@ -17,9 +17,6 @@
 #include "imgui_test_engine/imgui_te_engine.h"
 #include "imgui_test_engine/imgui_te_ui.h"
 
-// Optional dependencies
-#include "implot.h"
-
 extern void RegisterAppMinimalTests(ImGuiTestEngine* engine);
 
 int main(int argc, char** argv)
@@ -33,7 +30,6 @@ int main(int argc, char** argv)
     // Setup Dear ImGui context
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
-    ImPlot::CreateContext();
 
     ImGuiIO& io = ImGui::GetIO();
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
@@ -103,7 +99,6 @@ int main(int argc, char** argv)
     ImGuiTestEngine_Stop(engine);
     app->ShutdownBackends(app);
     app->ShutdownCloseWindow(app);
-    ImPlot::DestroyContext();
     ImGui::DestroyContext();
 
     // IMPORTANT: we need to destroy the Dear ImGui context BEFORE the test engine context, so .ini data may be saved.
