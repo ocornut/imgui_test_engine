@@ -576,6 +576,9 @@ void RegisterTests_Inputs(ImGuiTestEngine* e)
 
         // Use KeySetEx() as we deal with precise timing (other functions add extra yields)
         // Hold Key and press Ctrl mid-way
+        // IMPORTANT: we hold ImGuiMod_Ctrl down but test engine virtual backend doesn't emit a key for this.
+        // Exact ImGuiMod_Ctrl <> ImGuiKey_LeftCtrl / ImGuiKey_Right synchronization is technically backend dependent
+        // as we relay this ambiguity from OS layers themselves.
         ctx->KeySetEx(key, true, duration);
         for (int n = 1; n < 6; n++)
             IM_CHECK_EQ(counters[n], repeat_count_for_duration);
@@ -583,7 +586,7 @@ void RegisterTests_Inputs(ImGuiTestEngine* e)
         IM_CHECK_EQ(counters[2], repeat_count_for_duration_x2);
         IM_CHECK_EQ(counters[3], repeat_count_for_duration);    // _RepeatUntilKeyModsChange
         IM_CHECK_EQ(counters[4], repeat_count_for_duration);    // _RepeatUntilKeyModsChangeFromNone
-        IM_CHECK_EQ(counters[5], repeat_count_for_duration);    // _RepeatUntilOtherKeyPress
+        IM_CHECK_EQ(counters[5], repeat_count_for_duration);    // _RepeatUntilOtherKeyPress // <--- If this fails it can be because ImGuiMod_Ctrl isn't detected as a Key Press in LastKeyboardKeyPressTime handling logic.
         ctx->KeyUp(ImGuiMod_Ctrl | key);
         memset(counters, 0, sizeof(int) * 6);
 

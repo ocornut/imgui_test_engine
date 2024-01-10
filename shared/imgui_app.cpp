@@ -967,9 +967,6 @@ ImGuiApp* ImGuiApp_ImplSdlGL3_Create()
 // Include
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_opengl3.h"
-#if _WIN32
-//#include "imgui_impl_win32.cpp"
-#endif
 #define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
 
@@ -1031,10 +1028,7 @@ static void ImGuiApp_ImplGlfw_ErrorCallback(int error, const char* description)
 static bool ImGuiApp_ImplGlfw_CreateWindow(ImGuiApp* app_opaque, const char* window_title, ImVec2 window_size)
 {
     ImGuiApp_ImplGlfwGL3* app = (ImGuiApp_ImplGlfwGL3*)app_opaque;
-#if GLFW_HAS_PER_MONITOR_DPI && _WIN32
-    if (app->DpiAware)
-        ImGui_ImplWin32_EnableDpiAwareness();
-#endif
+
     // Setup window
     glfwSetErrorCallback(ImGuiApp_ImplGlfw_ErrorCallback);
     if (!glfwInit())
