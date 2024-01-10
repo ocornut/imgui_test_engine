@@ -40,6 +40,9 @@ int main(int argc, char** argv)
 #ifdef IMGUI_HAS_VIEWPORT
     io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
 #endif
+#if IMGUI_VERSION_NUM >= 19004
+    io.ConfigDebugIsDebuggerPresent = ImOsIsDebuggerPresent();
+#endif
 
     // Setup application
     app->DpiAware = false;

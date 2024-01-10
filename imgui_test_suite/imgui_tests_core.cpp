@@ -5521,7 +5521,12 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
 #endif
 
 #if IMGUI_VERSION_NUM >= 18720
+#if IMGUI_VERSION_NUM >= 19004
+                ctx->ItemCheck("Tools/UTF-8 Encoding viewer");
+                ctx->ItemClick("Tools/##DebugTextEncodingBuf");
+#else
                 ctx->ItemClick("Tools/UTF-8 Encoding viewer/##Text");
+#endif
                 ctx->KeyCharsReplace("The quick ");
                 ctx->KeyCharsAppend("\xe8\x8c\xb6\xe8\x89\xb2\xe3\x81\xae\xe3\x82\xad\xe3\x83\x84\xe3\x83\x8d");   // "brown fox" in japanese, encoded to utf-8.
 

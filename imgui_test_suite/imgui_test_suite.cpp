@@ -451,6 +451,9 @@ int main(int argc, char** argv)
 #ifdef IMGUI_HAS_DOCK
     io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
 #endif
+#if IMGUI_VERSION_NUM >= 19004
+    io.ConfigDebugIsDebuggerPresent = ImOsIsDebuggerPresent();
+#endif
     ImGui::StyleColorsDark();
 
     // Creates Application Wrapper
