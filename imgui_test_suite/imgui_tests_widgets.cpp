@@ -1823,11 +1823,20 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
 
     // ## Test various TreeNode flags
     t = IM_REGISTER_TEST(e, "widgets", "widgets_treenode_behaviors");
-    struct TreeNodeTestVars { bool Reset = true, IsOpen = false, IsMultiSelect = false; int ToggleCount = 0; int DragSourceCount = 0;  ImGuiTreeNodeFlags Flags = 0; };
+    struct TreeNodeTestVars
+    {
+        bool                    Reset = true, IsOpen = false, IsMultiSelect = false;
+        int                     ToggleCount = 0;
+        int                     DragSourceCount = 0;
+        ImGuiTreeNodeFlags      TreeNodeFlags = 0;
+#ifdef IMGUI_HAS_MULTI_SELECT
+        ImGuiMultiSelectFlags   MultiSelectFlags = 0;
+#endif
+    };
     t->SetVarsDataType<TreeNodeTestVars>();
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
-        ImGui::SetNextWindowSize(ImVec2(300, 100), ImGuiCond_Always);
+        ImGui::SetNextWindowSize(ImVec2(300, 100), ImGuiCond_Appearing);
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
 
         ImGui::ColorButton("Color", ImVec4(1.0f, 1.0f, 0.0f, 1.0f), ImGuiColorEditFlags_NoTooltip); // To test open-on-drag-hold
@@ -1839,14 +1848,24 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
             vars.ToggleCount = vars.DragSourceCount = 0;
         }
         vars.Reset = false;
-        ImGui::Text("Flags: 0x%08X, MultiSelect: %d", vars.Flags, vars.IsMultiSelect);
 
 #ifdef IMGUI_HAS_MULTI_SELECT
+        ImGui::Text("TreeNodeFlags: 0x%08X, MultiSelect: %d (flags=%08X)", vars.TreeNodeFlags, vars.IsMultiSelect, vars.MultiSelectFlags);
+        ImGui::CheckboxFlags("ImGuiTreeNodeFlags_OpenOnArrow", &vars.TreeNodeFlags, ImGuiTreeNodeFlags_OpenOnArrow);
+        ImGui::CheckboxFlags("ImGuiTreeNodeFlags_OpenOnDoubleClick", &vars.TreeNodeFlags, ImGuiTreeNodeFlags_OpenOnDoubleClick);
+        ImGui::Checkbox("IsMultiSelect", &vars.IsMultiSelect);
+        ImGui::CheckboxFlags("ImGuiMultiSelectFlags_SelectOnClick", &vars.MultiSelectFlags, ImGuiMultiSelectFlags_SelectOnClick);
+        ImGui::CheckboxFlags("ImGuiMultiSelectFlags_SelectOnClickRelease", &vars.MultiSelectFlags, ImGuiMultiSelectFlags_SelectOnClickRelease);
+
         if (vars.IsMultiSelect)
-            ImGui::BeginMultiSelect(ImGuiMultiSelectFlags_None); // Placeholder, won't interact properly
+            ImGui::BeginMultiSelect(vars.MultiSelectFlags); // Placeholder, won't interact properly
+#else
+        ImGui::Text("TreeNodeFlags: 0x%08X, MultiSelect: %d", vars.TreeNodeFlags, vars.IsMultiSelect);
 #endif
 
-        vars.IsOpen = ImGui::TreeNodeEx("AAA", vars.Flags);
+        if (vars.IsMultiSelect)
+            ImGui::SetNextItemSelectionUserData(0); // To enable MultiSelect logic
+        vars.IsOpen = ImGui::TreeNodeEx("AAA", vars.TreeNodeFlags);
         if (ImGui::IsItemToggledOpen())
             vars.ToggleCount++;
         if (ImGui::BeginDragDropSource())
@@ -1861,6 +1880,8 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
             ImGui::Text("Contents");
             ImGui::TreePop();
         }
+        if (ImGui::TreeNodeEx("BBB", vars.TreeNodeFlags))
+            ImGui::TreePop();
 
 #ifdef IMGUI_HAS_MULTI_SELECT
         if (vars.IsMultiSelect)
@@ -1875,19 +1896,22 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ctx->SetRef("Test Window");
 
 #ifdef IMGUI_HAS_MULTI_SELECT
-        int loop_count = 2;
+        int step_count = 3;
 #else
-        int loop_count = 1;
+        int step_count = 1;
 #endif
 
-        for (int loop_n = 0; loop_n < loop_count; loop_n++)
+        for (int step_n = 0; step_n < step_count; step_n++)
         {
-            vars.IsMultiSelect = (loop_n == 1);
+            vars.IsMultiSelect = (step_n == 1 || step_n == 2);
+#ifdef IMGUI_HAS_MULTI_SELECT
+            vars.MultiSelectFlags = (step_n == 1 ? ImGuiMultiSelectFlags_SelectOnClickRelease : ImGuiMultiSelectFlags_SelectOnClick);
+#endif
 
             {
                 ctx->LogInfo("## ImGuiTreeNodeFlags_None, IsMultiSelect=%d", vars.IsMultiSelect);
                 vars.Reset = true;
-                vars.Flags = ImGuiTreeNodeFlags_None;
+                vars.TreeNodeFlags = ImGuiTreeNodeFlags_None;
                 ctx->Yield();
                 IM_CHECK(vars.IsOpen == false && vars.ToggleCount == 0);
 
@@ -1931,7 +1955,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
             {
                 ctx->LogInfo("## ImGuiTreeNodeFlags_OpenOnDoubleClick, IsMultiSelect=%d", vars.IsMultiSelect);
                 vars.Reset = true;
-                vars.Flags = ImGuiTreeNodeFlags_OpenOnDoubleClick;
+                vars.TreeNodeFlags = ImGuiTreeNodeFlags_OpenOnDoubleClick;
                 ctx->Yield();
                 IM_CHECK(vars.IsOpen == false && vars.ToggleCount == 0);
 
@@ -1981,7 +2005,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
             {
                 ctx->LogInfo("## ImGuiTreeNodeFlags_OpenOnArrow, IsMultiSelect=%d", vars.IsMultiSelect);
                 vars.Reset = true;
-                vars.Flags = ImGuiTreeNodeFlags_OpenOnArrow;
+                vars.TreeNodeFlags = ImGuiTreeNodeFlags_OpenOnArrow;
                 ctx->Yield();
                 IM_CHECK(vars.IsOpen == false && vars.ToggleCount == 0);
 
@@ -2024,7 +2048,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
             {
                 ctx->LogInfo("## ImGuiTreeNodeFlags_OpenOnArrow|ImGuiTreeNodeFlags_OpenOnDoubleClick, IsMultiSelect=%d", vars.IsMultiSelect);
                 vars.Reset = true;
-                vars.Flags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_OpenOnDoubleClick;
+                vars.TreeNodeFlags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_OpenOnDoubleClick;
                 ctx->Yield();
                 IM_CHECK(vars.IsOpen == false && vars.ToggleCount == 0);
 
@@ -3327,9 +3351,10 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
     };
     struct MultiSelectTestVars
     {
-        ExampleSelection    Selection0;
-        ExampleSelection    Selection1;
-        bool                Test0 = false;
+        ExampleSelection        Selection0;
+        ExampleSelection        Selection1;
+        bool                    Test0 = false;
+        ImGuiMultiSelectFlags   MultiSelectFlags = ImGuiMultiSelectFlags_None;
     };
     auto multiselect_guifunc = [](ImGuiTestContext* ctx)
     {
@@ -3341,7 +3366,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ImGui::Text("(Size = %3d items)", selection.SelectionSize);
         ImGui::Separator();
 
-        ImGuiMultiSelectIO* ms_io = ImGui::BeginMultiSelect(ImGuiMultiSelectFlags_None);
+        ImGuiMultiSelectIO* ms_io = ImGui::BeginMultiSelect(vars.MultiSelectFlags);
         selection.ApplyRequests(ms_io, ITEMS_COUNT);
 
         if (ctx->Test->ArgVariant == 1)
@@ -3400,171 +3425,211 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         MultiSelectTestVars& vars = ctx->GetVars<MultiSelectTestVars>();
         ExampleSelection& selection = vars.Selection0;
 
+        const bool is_treenode_test = (ctx->Test->ArgVariant == 1);
+
         ctx->SetRef("Test Window");
+        for (int step = 0; step < 2; step++)
+        {
+            ctx->LogDebug("STEP %d", step);
+            vars.MultiSelectFlags = (step == 0) ? ImGuiMultiSelectFlags_SelectOnClick : ImGuiMultiSelectFlags_SelectOnClickRelease;
 
-        selection.Clear();
-        ctx->Yield();
-        IM_CHECK_EQ(selection.SelectionSize, 0);
+            selection.Clear();
+            ctx->Yield();
+            IM_CHECK_EQ(selection.SelectionSize, 0);
 
-        // Single click
-        ctx->ItemClick("Object 0000");
-        IM_CHECK_EQ(selection.SelectionSize, 1);
-        IM_CHECK_EQ(selection.GetSelected(0), true);
+            // Single click
+            ctx->ItemClick("Object 0000");
+            IM_CHECK_EQ(selection.SelectionSize, 1);
+            IM_CHECK_EQ(selection.GetSelected(0), true);
 
-        // Verify that click on another item alter selection on MouseDown
-        ctx->MouseMove("Object 0001");
-        ctx->MouseDown(0);
-        IM_CHECK_EQ(selection.SelectionSize, 1);
-        IM_CHECK_EQ(selection.GetSelected(1), true);
-        ctx->MouseUp(0);
+            // Verify that click on another item alter selection on MouseDown
+            ctx->MouseMove("Object 0001");
+            if (vars.MultiSelectFlags & ImGuiMultiSelectFlags_SelectOnClickRelease)
+            {
+                ctx->MouseDown(0);
+                IM_CHECK_EQ(selection.SelectionSize, 1);
+                IM_CHECK_EQ(selection.GetSelected(0), true);
+                ctx->MouseUp(0);
+                IM_CHECK_EQ(selection.SelectionSize, 1);
+                IM_CHECK_EQ(selection.GetSelected(1), true);
+            }
+            else
+            {
+                ctx->MouseDown(0);
+                IM_CHECK_EQ(selection.SelectionSize, 1);
+                IM_CHECK_EQ(selection.GetSelected(1), true);
+                ctx->MouseUp(0);
+            }
 
-        // CTRL-A
-        ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_A);
-        IM_CHECK_EQ(selection.SelectionSize, 100);
+            // CTRL-A
+            ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_A);
+            IM_CHECK_EQ(selection.SelectionSize, 100);
 
-        // Verify that click on selected item clear other items from selection on MouseUp
-        ctx->MouseMove("Object 0001");
-        ctx->MouseDown(0);
-        IM_CHECK_EQ(selection.SelectionSize, 100);
-        ctx->MouseUp(0);
-        IM_CHECK_EQ(selection.SelectionSize, 1);
-        IM_CHECK_EQ(selection.GetSelected(1), true);
+            // Verify that click on selected item clear other items from selection on MouseUp
+            ctx->MouseMove("Object 0001");
+            ctx->MouseDown(0);
+            IM_CHECK_EQ(selection.SelectionSize, 100);
+            ctx->MouseUp(0);
+            IM_CHECK_EQ(selection.SelectionSize, 1);
+            IM_CHECK_EQ(selection.GetSelected(1), true);
 
-        // Test SHIFT+Click
-        ctx->ItemClick("Object 0001");
-        ctx->KeyDown(ImGuiMod_Shift);
-        ctx->MouseMove("Object 0006");
-        ctx->MouseDown(0);
-        IM_CHECK_EQ(selection.SelectionSize, 6);
-        ctx->MouseUp(0);
-        ctx->KeyUp(ImGuiMod_Shift);
+            // Test SHIFT+Click
+            ctx->ItemClick("Object 0001");
+            ctx->KeyDown(ImGuiMod_Shift);
+            ctx->MouseMove("Object 0006");
+            if (vars.MultiSelectFlags & ImGuiMultiSelectFlags_SelectOnClickRelease)
+            {
+                ctx->MouseDown(0);
+                IM_CHECK_EQ(selection.SelectionSize, 1);
+                ctx->MouseUp(0);
+                IM_CHECK_EQ(selection.SelectionSize, 6);
+            }
+            else
+            {
+                ctx->MouseDown(0);
+                IM_CHECK_EQ(selection.SelectionSize, 6);
+                ctx->MouseUp(0);
+            }
+            ctx->KeyUp(ImGuiMod_Shift);
 
-        // Test that CTRL+A preserve RangeSrc (which was 0001)
-        ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_A);
-        IM_CHECK_EQ(selection.SelectionSize, 100);
-        ctx->KeyDown(ImGuiMod_Shift);
-        ctx->ItemClick("Object 0008");
-        ctx->KeyUp(ImGuiMod_Shift);
-        IM_CHECK_EQ(selection.SelectionSize, 8); // 0001->0008
+            // Test that CTRL+A preserve RangeSrc (which was 0001)
+            ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_A);
+            IM_CHECK_EQ(selection.SelectionSize, 100);
+            ctx->KeyDown(ImGuiMod_Shift);
+            ctx->ItemClick("Object 0008");
+            ctx->KeyUp(ImGuiMod_Shift);
+            IM_CHECK_EQ(selection.SelectionSize, 8); // 0001->0008
 
-        // Test reverse clipped SHIFT+Click
-        // FIXME-TESTS: ItemInfo query could disable clipper?
-        // FIXME-TESTS: We would need to disable clipper because it conveniently rely on cliprect which is affected by actual viewport, so ScrollToBottom() is not enough...
-        //ctx->ScrollToBottom();
-        ctx->ItemClick("Object 0030");
-        ctx->ScrollToTop("");
-        ctx->KeyDown(ImGuiMod_Shift);
-        ctx->ItemClick("Object 0002");
-        ctx->KeyUp(ImGuiMod_Shift);
-        IM_CHECK_EQ(selection.SelectionSize, 29);
+            // Test reverse clipped SHIFT+Click
+            // FIXME-TESTS: ItemInfo query could disable clipper?
+            // FIXME-TESTS: We would need to disable clipper because it conveniently rely on cliprect which is affected by actual viewport, so ScrollToBottom() is not enough...
+            //ctx->ScrollToBottom();
+            ctx->ItemClick("Object 0030");
+            ctx->ScrollToTop("");
+            ctx->KeyDown(ImGuiMod_Shift);
+            ctx->ItemClick("Object 0002");
+            ctx->KeyUp(ImGuiMod_Shift);
+            IM_CHECK_EQ(selection.SelectionSize, 29);
 
-        // Test ESC to clear selection
-        // FIXME-TESTS: Feature not implemented
+            // Test ESC to clear selection
+            // FIXME-TESTS: Feature not implemented
 #if IMGUI_BROKEN_TESTS
-        ctx->KeyPress(ImGuiKey_Escape);
-        ctx->Yield();
-        IM_CHECK_EQ(selection.SelectionSize, 0);
+            ctx->KeyPress(ImGuiKey_Escape);
+            ctx->Yield();
+            IM_CHECK_EQ(selection.SelectionSize, 0);
 #endif
 
-        // Test CTRL+Click
+            // Test CTRL+Click
 #if IMGUI_VERSION_NUM >= 18730
-        ctx->ItemClick("Object 0001");
-        IM_CHECK_EQ(selection.SelectionSize, 1);
-        ctx->KeyDown(ImGuiMod_Ctrl);
-        ctx->ItemClick("Object 0006");
-        ctx->ItemClick("Object 0007");
-        ctx->KeyUp(ImGuiMod_Ctrl);
-        IM_CHECK_EQ(selection.SelectionSize, 3);
-        ctx->ItemClick("Object 0008");
-        IM_CHECK_EQ(selection.SelectionSize, 1);
+            ctx->ItemClick("Object 0001");
+            IM_CHECK_EQ(selection.SelectionSize, 1);
+            ctx->KeyDown(ImGuiMod_Ctrl);
+            ctx->ItemClick("Object 0006");
+            ctx->ItemClick("Object 0007");
+            ctx->KeyUp(ImGuiMod_Ctrl);
+            IM_CHECK_EQ(selection.SelectionSize, 3);
+            ctx->ItemClick("Object 0008");
+            IM_CHECK_EQ(selection.SelectionSize, 1);
 #endif
 
-        // Test SHIFT+Arrow
-        ctx->ItemClick("Object 0002");
-        IM_CHECK_EQ(g.NavId, ctx->GetID("Object 0002"));
-        IM_CHECK_EQ(selection.SelectionSize, 1);
-        ctx->KeyPress(ImGuiMod_Shift | ImGuiKey_DownArrow);
-        ctx->KeyPress(ImGuiMod_Shift | ImGuiKey_DownArrow);
-        IM_CHECK_EQ(g.NavId, ctx->GetID("Object 0004"));
-        IM_CHECK_EQ(selection.SelectionSize, 3);
+            // Test SHIFT+Arrow
+            ctx->ItemClick("Object 0002");
+            IM_CHECK_EQ(g.NavId, ctx->GetID("Object 0002"));
+            IM_CHECK_EQ(selection.SelectionSize, 1);
+            ctx->KeyPress(ImGuiMod_Shift | ImGuiKey_DownArrow);
+            ctx->KeyPress(ImGuiMod_Shift | ImGuiKey_DownArrow);
+            IM_CHECK_EQ(g.NavId, ctx->GetID("Object 0004"));
+            IM_CHECK_EQ(selection.SelectionSize, 3);
 
-        // Test CTRL+Arrow
-        ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_DownArrow);
-        ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_DownArrow);
-        IM_CHECK_EQ(g.NavId, ctx->GetID("Object 0006"));
-        IM_CHECK_EQ(selection.SelectionSize, 3);
+            // Test CTRL+Arrow
+            ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_DownArrow);
+            ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_DownArrow);
+            IM_CHECK_EQ(g.NavId, ctx->GetID("Object 0006"));
+            IM_CHECK_EQ(selection.SelectionSize, 3);
 
-        // Test SHIFT+Arrow after a gap
-        ctx->KeyPress(ImGuiMod_Shift | ImGuiKey_DownArrow);
-        IM_CHECK_EQ(g.NavId, ctx->GetID("Object 0007"));
-        IM_CHECK_EQ(selection.SelectionSize, 6);
+            // Test SHIFT+Arrow after a gap
+            ctx->KeyPress(ImGuiMod_Shift | ImGuiKey_DownArrow);
+            IM_CHECK_EQ(g.NavId, ctx->GetID("Object 0007"));
+            IM_CHECK_EQ(selection.SelectionSize, 6);
 
-        // Test SHIFT+Arrow reducing selection
-        ctx->KeyPress(ImGuiMod_Shift | ImGuiKey_UpArrow);
-        IM_CHECK_EQ(g.NavId, ctx->GetID("Object 0006"));
-        IM_CHECK_EQ(selection.SelectionSize, 5);
+            // Test SHIFT+Arrow reducing selection
+            ctx->KeyPress(ImGuiMod_Shift | ImGuiKey_UpArrow);
+            IM_CHECK_EQ(g.NavId, ctx->GetID("Object 0006"));
+            IM_CHECK_EQ(selection.SelectionSize, 5);
 
-        // Test CTRL+Shift+Arrow moving or appending without reducing selection
-        ctx->KeyPress(ImGuiMod_Ctrl | ImGuiMod_Shift | ImGuiKey_UpArrow, 4);
-        IM_CHECK_EQ(g.NavId, ctx->GetID("Object 0002"));
-        IM_CHECK_EQ(selection.SelectionSize, 5);
+            // Test CTRL+Shift+Arrow moving or appending without reducing selection
+            ctx->KeyPress(ImGuiMod_Ctrl | ImGuiMod_Shift | ImGuiKey_UpArrow, 4);
+            IM_CHECK_EQ(g.NavId, ctx->GetID("Object 0002"));
+            IM_CHECK_EQ(selection.SelectionSize, 5);
 
-        // Test SHIFT+Arrow replacing selection
-        ctx->KeyPress(ImGuiMod_Shift | ImGuiKey_UpArrow);
-        IM_CHECK_EQ(g.NavId, ctx->GetID("Object 0001"));
-        IM_CHECK_EQ(selection.SelectionSize, 2);
+            // Test SHIFT+Arrow replacing selection
+            ctx->KeyPress(ImGuiMod_Shift | ImGuiKey_UpArrow);
+            IM_CHECK_EQ(g.NavId, ctx->GetID("Object 0001"));
+            IM_CHECK_EQ(selection.SelectionSize, 2);
 
-        // Test Arrow replacing selection
-        ctx->KeyPress(ImGuiKey_DownArrow);
-        IM_CHECK_EQ(g.NavId, ctx->GetID("Object 0002"));
-        IM_CHECK_EQ(selection.SelectionSize, 1);
-        IM_CHECK_EQ(selection.GetSelected(2), true);
+            // Test Arrow replacing selection
+            ctx->KeyPress(ImGuiKey_DownArrow);
+            IM_CHECK_EQ(g.NavId, ctx->GetID("Object 0002"));
+            IM_CHECK_EQ(selection.SelectionSize, 1);
+            IM_CHECK_EQ(selection.GetSelected(2), true);
 
-        // Test keyboard activation (Space/Enter)
-        ctx->ItemClick("Object 0001");
-        ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_DownArrow);
-        ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_DownArrow);
-        IM_CHECK_EQ(selection.SelectionSize, 1);
-        IM_CHECK_EQ(selection.GetSelected(1), true);
-        ctx->KeyPress(ImGuiKey_Space); // Over 0003 while not selected
-        IM_CHECK_EQ(selection.SelectionSize, 1);
-        IM_CHECK_EQ(selection.GetSelected(3), true);
-        ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_DownArrow);
-        ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_Space); // Over 0004
-        IM_CHECK_EQ(selection.SelectionSize, 2);
-        IM_CHECK_EQ(selection.GetSelected(3), true);
-        IM_CHECK_EQ(selection.GetSelected(4), true);
-        ctx->KeyPress(ImGuiKey_Space); // Over 0004 while selected
-        IM_CHECK_EQ(selection.SelectionSize, 1);
-        IM_CHECK_EQ(selection.GetSelected(4), true);
-        ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_DownArrow, 4);
-        ctx->KeyPress(ImGuiMod_Shift | ImGuiKey_Space); // Over 0008 while not selected
-        IM_CHECK_EQ(selection.SelectionSize, 5);
-        IM_CHECK_EQ(selection.GetSelected(4), true);
-        IM_CHECK_EQ(selection.GetSelected(8), true);
+            // Test keyboard activation (Space/Enter)
+            ctx->ItemClick("Object 0001");
+            ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_DownArrow);
+            ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_DownArrow);
+            IM_CHECK_EQ(selection.SelectionSize, 1);
+            IM_CHECK_EQ(selection.GetSelected(1), true);
+            ctx->KeyPress(ImGuiKey_Space); // Over 0003 while not selected
+            IM_CHECK_EQ(selection.SelectionSize, 1);
+            IM_CHECK_EQ(selection.GetSelected(3), true);
+            ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_DownArrow);
+            ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_Space); // Over 0004
+            IM_CHECK_EQ(selection.SelectionSize, 2);
+            IM_CHECK_EQ(selection.GetSelected(3), true);
+            IM_CHECK_EQ(selection.GetSelected(4), true);
+            ctx->KeyPress(ImGuiKey_Space); // Over 0004 while selected
+            IM_CHECK_EQ(selection.SelectionSize, 1);
+            IM_CHECK_EQ(selection.GetSelected(4), true);
+            ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_DownArrow, 4);
+            ctx->KeyPress(ImGuiMod_Shift | ImGuiKey_Space); // Over 0008 while not selected
+            IM_CHECK_EQ(selection.SelectionSize, 5);
+            IM_CHECK_EQ(selection.GetSelected(4), true);
+            IM_CHECK_EQ(selection.GetSelected(8), true);
 
-        // Test Home/End
-        ctx->KeyPress(ImGuiKey_Home);
-        IM_CHECK_EQ(g.NavId, ctx->GetID("Object 0000"));
-        IM_CHECK_EQ(selection.SelectionSize, 1);
-        IM_CHECK_EQ(selection.GetSelected(0), true);
-        ctx->KeyPress(ImGuiKey_End);
-        IM_CHECK_EQ(g.NavId, ctx->GetID("Object 0099"));
-        IM_CHECK_EQ(selection.SelectionSize, 1);
-        IM_CHECK_EQ(selection.GetSelected(99), true); // Would break if clipped by viewport
-        ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_Home);
-        IM_CHECK_EQ(g.NavId, ctx->GetID("Object 0000"));
-        IM_CHECK_EQ(selection.SelectionSize, 1);
-        IM_CHECK_EQ(selection.GetSelected(99), true);
-        ctx->KeyPress(ImGuiKey_Home);
-        IM_CHECK_EQ(selection.SelectionSize, 1);
-        IM_CHECK_EQ(selection.GetSelected(99), true); // FIXME: A Home/End/PageUp/PageDown leading to same target doesn't trigger JustMovedTo, may be reasonable.
-        ctx->KeyPress(ImGuiKey_Space);
-        IM_CHECK_EQ(selection.SelectionSize, 1);
-        IM_CHECK_EQ(selection.GetSelected(0), true);
-        ctx->KeyPress(ImGuiMod_Shift | ImGuiKey_End);
-        IM_CHECK_EQ(g.NavId, ctx->GetID("Object 0099"));
-        IM_CHECK_EQ(selection.SelectionSize, 100);
+            // Basic test for keyboard open/close
+            if (is_treenode_test)
+            {
+                ctx->ItemClick("Object 0001");
+                ctx->ItemClose("Object 0001");
+                ctx->KeyPress(ImGuiKey_RightArrow);
+                IM_CHECK(ctx->ItemIsOpened("Object 0001") == true);
+                ctx->KeyPress(ImGuiKey_LeftArrow);
+                IM_CHECK(ctx->ItemIsOpened("Object 0001") == false);
+            }
+
+            // Test Home/End
+            ctx->KeyPress(ImGuiKey_Home);
+            IM_CHECK_EQ(g.NavId, ctx->GetID("Object 0000"));
+            IM_CHECK_EQ(selection.SelectionSize, 1);
+            IM_CHECK_EQ(selection.GetSelected(0), true);
+            ctx->KeyPress(ImGuiKey_End);
+            IM_CHECK_EQ(g.NavId, ctx->GetID("Object 0099"));
+            IM_CHECK_EQ(selection.SelectionSize, 1);
+            IM_CHECK_EQ(selection.GetSelected(99), true); // Would break if clipped by viewport
+            ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_Home);
+            IM_CHECK_EQ(g.NavId, ctx->GetID("Object 0000"));
+            IM_CHECK_EQ(selection.SelectionSize, 1);
+            IM_CHECK_EQ(selection.GetSelected(99), true);
+            ctx->KeyPress(ImGuiKey_Home);
+            IM_CHECK_EQ(selection.SelectionSize, 1);
+            IM_CHECK_EQ(selection.GetSelected(99), true); // FIXME: A Home/End/PageUp/PageDown leading to same target doesn't trigger JustMovedTo, may be reasonable.
+            ctx->KeyPress(ImGuiKey_Space);
+            IM_CHECK_EQ(selection.SelectionSize, 1);
+            IM_CHECK_EQ(selection.GetSelected(0), true);
+            ctx->KeyPress(ImGuiMod_Shift | ImGuiKey_End);
+            IM_CHECK_EQ(g.NavId, ctx->GetID("Object 0099"));
+            IM_CHECK_EQ(selection.SelectionSize, 100);
+        }
     };
 
     t = IM_REGISTER_TEST(e, "widgets", "widgets_multiselect_1_selectables");
