@@ -1151,11 +1151,7 @@ void RegisterTests_Inputs(ImGuiTestEngine* e)
         };
 
         ImGui::Begin("WindowA");
-
-        char chord[32];
-        ImGui::GetKeyChordName(vars.KeyChord, chord, IM_ARRAYSIZE(chord));
-        ImGui::Text("Chord: %s", chord);
-
+        ImGui::Text("Chord: %s", ImGui::GetKeyChordName(vars.KeyChord));
         ImGui::Button("WindowA");
         DoRoute('A');
 

@@ -5,6 +5,9 @@ CHANGELOG
    Those changes are not all listed here.
 ** For a while this is going to ONLY INCLUDE BREAKING CHANGES.
 
+2024/01/15:
+- TestEngine: Fixes for GetKeyChordName() api changes.
+
 2024/01/09:
 - TestEngine: Added ImGuiTestContext::KeySetEx() to manipulate keys with precise timings.
   (most other functions add yields to accomodate for common use cases).

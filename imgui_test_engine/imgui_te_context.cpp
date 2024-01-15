@@ -2369,8 +2369,12 @@ void    ImGuiTestContext::KeyDown(ImGuiKeyChord key_chord)
         return;
 
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
+#if IMGUI_VERSION_NUM >= 19012
+    const char* chord_desc = ImGui::GetKeyChordName(key_chord);
+#else
     char chord_desc[32];
     ImGui::GetKeyChordName(key_chord, chord_desc, IM_ARRAYSIZE(chord_desc));
+#endif
     LogDebug("KeyDown(%s)", chord_desc);
     if (EngineIO->ConfigRunSpeed == ImGuiTestRunSpeed_Cinematic)
         SleepShort();
@@ -2386,8 +2390,12 @@ void    ImGuiTestContext::KeyUp(ImGuiKeyChord key_chord)
         return;
 
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
+#if IMGUI_VERSION_NUM >= 19012
+    const char* chord_desc = ImGui::GetKeyChordName(key_chord);
+#else
     char chord_desc[32];
     ImGui::GetKeyChordName(key_chord, chord_desc, IM_ARRAYSIZE(chord_desc));
+#endif
     LogDebug("KeyUp(%s)", chord_desc);
     if (EngineIO->ConfigRunSpeed == ImGuiTestRunSpeed_Cinematic)
         SleepShort();
@@ -2403,8 +2411,12 @@ void    ImGuiTestContext::KeyPress(ImGuiKeyChord key_chord, int count)
         return;
 
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
+#if IMGUI_VERSION_NUM >= 19012
+    const char* chord_desc = ImGui::GetKeyChordName(key_chord);
+#else
     char chord_desc[32];
     ImGui::GetKeyChordName(key_chord, chord_desc, IM_ARRAYSIZE(chord_desc));
+#endif
     LogDebug("KeyPress(%s, %d)", chord_desc, count);
     if (EngineIO->ConfigRunSpeed == ImGuiTestRunSpeed_Cinematic)
         SleepShort();
@@ -2431,8 +2443,12 @@ void    ImGuiTestContext::KeyHold(ImGuiKeyChord key_chord, float time)
         return;
 
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
+#if IMGUI_VERSION_NUM >= 19012
+    const char* chord_desc = ImGui::GetKeyChordName(key_chord);
+#else
     char chord_desc[32];
     ImGui::GetKeyChordName(key_chord, chord_desc, IM_ARRAYSIZE(chord_desc));
+#endif
     LogDebug("KeyHold(%s, %.2f sec)", chord_desc, time);
     if (EngineIO->ConfigRunSpeed == ImGuiTestRunSpeed_Cinematic)
         SleepStandard();
@@ -2450,8 +2466,12 @@ void    ImGuiTestContext::KeySetEx(ImGuiKeyChord key_chord, bool is_down, float 
         return;
 
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
+#if IMGUI_VERSION_NUM >= 19012
+    const char* chord_desc = ImGui::GetKeyChordName(key_chord);
+#else
     char chord_desc[32];
     ImGui::GetKeyChordName(key_chord, chord_desc, IM_ARRAYSIZE(chord_desc));
+#endif
     LogDebug("KeySetEx(%s, is_down=%d, time=%.f)", chord_desc, is_down, time);
     Inputs->Queue.push_back(ImGuiTestInput::ForKeyChord(key_chord, is_down));
     if (time > 0.0f)
