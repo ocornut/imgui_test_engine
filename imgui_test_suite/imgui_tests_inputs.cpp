@@ -1151,7 +1151,9 @@ void RegisterTests_Inputs(ImGuiTestEngine* e)
         };
 
         ImGui::Begin("WindowA");
+#if IMGUI_VERSION_NUM >= 19012
         ImGui::Text("Chord: %s", ImGui::GetKeyChordName(vars.KeyChord));
+#endif
         ImGui::Button("WindowA");
         DoRoute('A');
 

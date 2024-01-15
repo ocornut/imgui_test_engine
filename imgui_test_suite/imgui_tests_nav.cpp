@@ -2389,6 +2389,48 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
     };
 #endif
 
+#if IMGUI_VERSION_NUM < 19002 || IMGUI_VERSION_NUM >= 19012
+    // ## Test SetKeyboardFocusHere() accross windows (#7226)
+    t = IM_REGISTER_TEST(e, "nav", "nav_focus_api_remote");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        int set_focus = -1;
+        ImGui::Begin("Test Window 1", NULL, ImGuiWindowFlags_NoSavedSettings);
+        if (ImGui::Button("Focus A")) { set_focus = 0; }
+        if (ImGui::Button("Focus B")) { set_focus = 1; }
+        ImGui::End();
+
+        ImGui::Begin("Test Window 2", NULL, ImGuiWindowFlags_NoSavedSettings);
+        if (ImGui::Button("Focus A")) { set_focus = 0; }
+        if (ImGui::Button("Focus B")) { set_focus = 1; }
+        ImGui::End();
+
+        char dummy[16];
+        ImGui::Begin("Test Window 1", NULL, ImGuiWindowFlags_NoSavedSettings);
+        if (set_focus == 0)
+            ImGui::SetKeyboardFocusHere();
+        ImGui::InputText("Item A", dummy, IM_ARRAYSIZE(dummy));
+        ImGui::End();
+        ImGui::Begin("Test Window 2", NULL, ImGuiWindowFlags_NoSavedSettings);
+        if (set_focus == 1)
+            ImGui::SetKeyboardFocusHere();
+        ImGui::InputText("Item B", dummy, IM_ARRAYSIZE(dummy));
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiContext& g = *ctx->UiContext;
+        ctx->ItemClick("//Test Window 1/Focus A");
+        IM_CHECK_EQ(g.ActiveId, ctx->GetID("//Test Window 1/Item A"));
+        ctx->ItemClick("//Test Window 1/Focus B");
+        IM_CHECK_EQ(g.ActiveId, ctx->GetID("//Test Window 2/Item B"));
+        ctx->ItemClick("//Test Window 2/Focus A");
+        IM_CHECK_EQ(g.ActiveId, ctx->GetID("//Test Window 1/Item A"));
+        ctx->ItemClick("//Test Window 2/Focus B");
+        IM_CHECK_EQ(g.ActiveId, ctx->GetID("//Test Window 2/Item B"));
+    };
+#endif
+
     // ## Test wrapping behavior
     t = IM_REGISTER_TEST(e, "nav", "nav_wrapping");
     struct NavWrappingWars { ImGuiNavMoveFlags WrapFlags = ImGuiNavMoveFlags_WrapY; bool UseButton = false; bool AltLayout = false; };
