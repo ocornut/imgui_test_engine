@@ -1388,6 +1388,69 @@ void RegisterTests_Inputs(ImGuiTestEngine* e)
     };
 #endif
 
+    // ## Test how shortcut that could characters are filtered out when an item is active that reads characters e.g. InputText().
+#if IMGUI_VERSION_NUM >= 19013
+    t = IM_REGISTER_TEST(e, "inputs", "inputs_routing_char_filter");
+    t->SetVarsDataType<InputRoutingVars>();
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        auto& vars = ctx->GetVars<InputRoutingVars>();
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImGui::InputText("buf", vars.Str, IM_ARRAYSIZE(vars.Str));;
+        vars.PressedCount[0] += ImGui::Shortcut(ImGuiKey_G);                                 // Filtered
+        vars.PressedCount[1] += ImGui::Shortcut(ImGuiMod_Ctrl | ImGuiKey_G);                 // Pass
+        vars.PressedCount[2] += ImGui::Shortcut(ImGuiMod_Alt | ImGuiKey_G);                  // Filtered
+        vars.PressedCount[3] += ImGui::Shortcut(ImGuiMod_Ctrl | ImGuiMod_Alt | ImGuiKey_G);  // Currently pass / Should be filtered?
+        vars.PressedCount[4] += ImGui::Shortcut(ImGuiMod_Shift | ImGuiMod_Alt | ImGuiKey_G); // Currently pass / Should be filtered?
+        vars.PressedCount[5] += ImGui::Shortcut(ImGuiKey_F1);                                // Pass
+        for (int n = 0; n < 6; n++)
+            ImGui::Text("%d", vars.PressedCount[n]);
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        auto& vars = ctx->GetVars<InputRoutingVars>();
+        ctx->SetRef("Test Window");
+
+        for (int step = 0; step < 2; step++)
+        {
+            // Emit presses with no active id
+            bool is_active = (step == 1);
+            ctx->ItemClick("buf");
+            if (step == 0)
+                ctx->KeyPress(ImGuiKey_Escape);
+
+            ctx->KeyPress(ImGuiKey_G);
+            vars.TestIsPressedOnly(is_active ? -1 : 0);
+            vars.Clear();
+            ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_G);
+            vars.TestIsPressedOnly(1);
+            vars.Clear();
+            ctx->KeyPress(ImGuiMod_Alt | ImGuiKey_G);
+            vars.TestIsPressedOnly(is_active ? -1 : 2);
+            vars.Clear();
+
+            ctx->KeyPress(ImGuiMod_Ctrl | ImGuiMod_Alt | ImGuiKey_G);
+#if IMGUI_BROKEN_TESTS
+            vars.TestIsPressedOnly(is_active ? -1 : 3); // Technically more correct but too aggressive behavior for rare user-base?
+#else
+            vars.TestIsPressedOnly(3);
+#endif
+            vars.Clear();
+            ctx->KeyPress(ImGuiMod_Shift | ImGuiMod_Alt | ImGuiKey_G);
+#if IMGUI_BROKEN_TESTS
+            vars.TestIsPressedOnly(is_active ? -1 : 4); // Technically more correct but too aggressive behavior for rare user-base?
+#else
+            vars.TestIsPressedOnly(4);
+#endif
+            vars.Clear();
+            ctx->KeyPress(ImGuiKey_F1);
+            vars.TestIsPressedOnly(5);
+            vars.Clear();
+        }
+    };
+#endif
+
 #if 0
     t = IM_REGISTER_TEST(e, "inputs", "inputs_routing_basic");
     enum InputFunc { InputFunc_IsKeyPressed = 0, InputFunc_IsShortcutPressed, InputFunc_IsKeyDown, InputFunc_IsKeyReleased };
