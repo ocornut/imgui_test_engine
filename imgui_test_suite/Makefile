@@ -49,8 +49,8 @@ endif
 
 ifneq ($(BACKEND_LIB),)
 	ifeq ($(BACKEND_LIB), sdl2)
-		CFLAGS += -DIMGUI_APP_SDL_GL3
-		#SOURCES += $(IMGUI_DIR)/backends/imgui_impl_sdl.cpp
+		CFLAGS += -DIMGUI_APP_SDL2_GL3
+		#SOURCES += $(IMGUI_DIR)/backends/imgui_impl_sdl2.cpp
 	endif
 	ifeq ($(BACKEND_LIB), glfw3)
 		CFLAGS += -DIMGUI_APP_GLFW_GL3

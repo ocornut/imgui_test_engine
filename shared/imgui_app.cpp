@@ -67,13 +67,13 @@ Index of this file:
 #define IMGUI_APP_DX11
 #endif
 
-#ifdef IMGUI_APP_SDL_GL2
-#define IMGUI_APP_SDL
+#ifdef IMGUI_APP_SDL2_GL2
+#define IMGUI_APP_SDL2
 #define IMGUI_APP_GL2
 #endif
 
-#ifdef IMGUI_APP_SDL_GL3
-#define IMGUI_APP_SDL
+#ifdef IMGUI_APP_SDL2_GL3
+#define IMGUI_APP_SDL2
 #define IMGUI_APP_GL3
 #endif
 
@@ -88,7 +88,7 @@ static bool ImGuiApp_ImplGL_CaptureFramebuffer(ImGuiApp* app, ImGuiViewport* vie
 #endif
 
 // Linking
-#if defined(_MSC_VER) && defined(IMGUI_APP_SDL)
+#if defined(_MSC_VER) && defined(IMGUI_APP_SDL2)
 #pragma comment(lib, "sdl2")      // Link with sdl2.lib. MinGW will require linking with '-lsdl2'
 #pragma comment(lib, "sdl2main")  // Link with sdl2main.lib. MinGW will require linking with '-lsdl2main'
 #endif
@@ -640,7 +640,7 @@ static LRESULT WINAPI ImGuiApp_ImplWin32_WndProc(HWND hWnd, UINT msg, WPARAM wPa
 // [SECTION] ImGuiApp Implementation: SDL + OpenGL3
 //-----------------------------------------------------------------------------
 
-#ifdef IMGUI_APP_SDL
+#ifdef IMGUI_APP_SDL2
 
 // Include
 #include "imgui_impl_sdl2.h"
@@ -672,7 +672,7 @@ static float ImGuiApp_ImplSdl_GetDPI(int display_index)
 
 #endif
 
-#ifdef IMGUI_APP_SDL_GL2
+#ifdef IMGUI_APP_SDL2_GL2
 
 // Functions
 static bool ImGuiApp_ImplSdlGL2_CreateWindow(ImGuiApp* app_opaque, const char* window_title, ImVec2 window_size)
@@ -804,9 +804,9 @@ ImGuiApp* ImGuiApp_ImplSdlGL2_Create()
     return intf;
 }
 
-#endif // #ifdef IMGUI_APP_SDL_GL3
+#endif // #ifdef IMGUI_APP_SDL2_GL3
 
-#ifdef IMGUI_APP_SDL_GL3
+#ifdef IMGUI_APP_SDL2_GL3
 
 // Functions
 static bool ImGuiApp_ImplSdlGL3_CreateWindow(ImGuiApp* app_opaque, const char* window_title, ImVec2 window_size)
@@ -955,7 +955,7 @@ ImGuiApp* ImGuiApp_ImplSdlGL3_Create()
     return intf;
 }
 
-#endif // #ifdef IMGUI_APP_SDL_GL3
+#endif // #ifdef IMGUI_APP_SDL2_GL3
 
 
 //-----------------------------------------------------------------------------
