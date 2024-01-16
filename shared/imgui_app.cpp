@@ -970,9 +970,6 @@ ImGuiApp* ImGuiApp_ImplSdlGL3_Create()
 #define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
 
-#define GLFW_HAS_PER_MONITOR_DPI      (GLFW_VERSION_MAJOR * 1000 + GLFW_VERSION_MINOR * 100 >= 3300) // 3.3+ glfwGetMonitorContentScale
-#define GLFW_HAS_MONITOR_WORK_AREA    (GLFW_VERSION_MAJOR * 1000 + GLFW_VERSION_MINOR * 100 >= 3300) // 3.3+ glfwGetMonitorWorkarea
-
 // Data
 struct ImGuiApp_ImplGlfwGL3 : public ImGuiApp
 {
