@@ -1101,23 +1101,21 @@ void RegisterTests_Inputs(ImGuiTestEngine* e)
             memset(IsRouting, 0, sizeof(IsRouting));
             memset(PressedCount, 0, sizeof(PressedCount));
         }
-        void            TestIsRoutingOnly(char c)
+        void            TestIsRoutingOnly(int idx)
         {
-            int idx = c - 'A';
             for (int n = 0; n < IM_ARRAYSIZE(IsRouting); n++)
             {
-                if (c != 0 && n == idx)
+                if (n == idx)
                     IM_CHECK_EQ(IsRouting[n], true);
                 else
                     IM_CHECK_SILENT(IsRouting[n] == false);
             }
         }
-        void            TestIsPressedOnly(char c)
+        void            TestIsPressedOnly(int idx)
         {
-            int idx = c - 'A';
             for (int n = 0; n < IM_ARRAYSIZE(IsRouting); n++)
             {
-                if (c != 0 && n == idx)
+                if (n == idx)
                     IM_CHECK_GT(PressedCount[n], 0);
                 else
                     IM_CHECK_SILENT(PressedCount[n] == 0);
@@ -1225,23 +1223,25 @@ void RegisterTests_Inputs(ImGuiTestEngine* e)
 
         ctx->SetRef("WindowA");
 
+        auto alpha_to_idx = [](char c) { IM_ASSERT(c >= 'A' && c <= 'Z'); return c - 'A'; };
+
         // A
         ctx->ItemClick("WindowA");
-        vars.TestIsRoutingOnly('A');
-        vars.TestIsPressedOnly(0);
+        vars.TestIsRoutingOnly(alpha_to_idx('A'));
+        vars.TestIsPressedOnly(-1);
         ctx->KeyPress(ImGuiMod_Shortcut | ImGuiKey_A);
-        vars.TestIsPressedOnly('A');
+        vars.TestIsPressedOnly(alpha_to_idx('A'));
         vars.Clear();
 
         // B: verify catching CTRL+A
         ctx->ItemClick("InputTextB");
-        vars.TestIsRoutingOnly('B');
-        vars.TestIsPressedOnly(0);
+        vars.TestIsRoutingOnly(alpha_to_idx('B'));
+        vars.TestIsPressedOnly(-1);
         input_state = ImGui::GetInputTextState(ctx->GetID("InputTextB"));
         IM_CHECK(input_state != NULL);
         IM_CHECK(input_state->HasSelection() == false);
         ctx->KeyPress(ImGuiMod_Shortcut | ImGuiKey_A);
-        vars.TestIsPressedOnly('B');
+        vars.TestIsPressedOnly(alpha_to_idx('B'));
         input_state = ImGui::GetInputTextState(ctx->GetID("InputTextB"));
         IM_CHECK(input_state != NULL);
         IM_CHECK(input_state->HasSelection() == true);
@@ -1252,14 +1252,14 @@ void RegisterTests_Inputs(ImGuiTestEngine* e)
         ctx->Yield(2);
 #if IMGUI_VERSION_NUM >= 19012
         // Not caught by anyone
-        vars.TestIsRoutingOnly('B'); // Should be None but we call Shortcut() for item making it a side-effect
+        vars.TestIsRoutingOnly(alpha_to_idx('B')); // Should be None but we call Shortcut() for item making it a side-effect
         ctx->KeyPress(ImGuiMod_Shortcut | ImGuiKey_B);
-        vars.TestIsPressedOnly('B');
+        vars.TestIsPressedOnly(alpha_to_idx('B'));
 #else
         // Only caught by A
-        vars.TestIsRoutingOnly('A');
+        vars.TestIsRoutingOnly(alpha_to_idx('A'));
         ctx->KeyPress(ImGuiMod_Shortcut | ImGuiKey_B);
-        vars.TestIsPressedOnly('A');
+        vars.TestIsPressedOnly(alpha_to_idx('A'));
 #endif
         vars.KeyChord = ImGuiMod_Shortcut | ImGuiKey_A;
         vars.Clear();
@@ -1267,38 +1267,38 @@ void RegisterTests_Inputs(ImGuiTestEngine* e)
         // D: Focus child which does no polling/routing: parent A gets it: results are same as A
         ctx->ItemClick("**/ChildD");
         ctx->Yield();
-        vars.TestIsRoutingOnly('A');
-        vars.TestIsPressedOnly(0);
+        vars.TestIsRoutingOnly(alpha_to_idx('A'));
+        vars.TestIsPressedOnly(-1);
         ctx->KeyPress(ImGuiMod_Shortcut | ImGuiKey_A);
-        vars.TestIsPressedOnly('A');
+        vars.TestIsPressedOnly(alpha_to_idx('A'));
         vars.Clear();
 
         // E: Focus child which does its polling/routing
         ctx->ItemClick("**/ChildE");
-        vars.TestIsRoutingOnly('E');
-        vars.TestIsPressedOnly(0);
+        vars.TestIsRoutingOnly(alpha_to_idx('E'));
+        vars.TestIsPressedOnly(-1);
         ctx->KeyPress(ImGuiMod_Shortcut | ImGuiKey_A);
-        vars.TestIsPressedOnly('E');
+        vars.TestIsPressedOnly(alpha_to_idx('E'));
         vars.Clear();
 
         // F: Open Popup
         ctx->ItemClick("Open Popup");
         ctx->Yield(); // Appearing route requires a frame to establish
-        vars.TestIsRoutingOnly('F');
-        vars.TestIsPressedOnly(0);
+        vars.TestIsRoutingOnly(alpha_to_idx('F'));
+        vars.TestIsPressedOnly(-1);
         ctx->KeyPress(ImGuiMod_Shortcut | ImGuiKey_A);
-        vars.TestIsPressedOnly('F');
+        vars.TestIsPressedOnly(alpha_to_idx('F'));
         vars.Clear();
 
         // G: verify popup's input text catching CTRL+A
         ctx->ItemClick("**/InputTextG");
-        vars.TestIsRoutingOnly('G');
-        vars.TestIsPressedOnly(0);
+        vars.TestIsRoutingOnly(alpha_to_idx('G'));
+        vars.TestIsPressedOnly(-1);
         input_state = ImGui::GetInputTextState(ImGui::GetActiveID());
         IM_CHECK(input_state != NULL);
         IM_CHECK(input_state->HasSelection() == false);
         ctx->KeyPress(ImGuiMod_Shortcut | ImGuiKey_A);
-        vars.TestIsPressedOnly('G');
+        vars.TestIsPressedOnly(alpha_to_idx('G'));
         input_state = ImGui::GetInputTextState(ImGui::GetActiveID());
         IM_CHECK(input_state != NULL);
         IM_CHECK(input_state->HasSelection() == true);
@@ -1309,13 +1309,13 @@ void RegisterTests_Inputs(ImGuiTestEngine* e)
         ctx->Yield(2);
 #if IMGUI_VERSION_NUM >= 19012
         // Not caught by anyone
-        vars.TestIsRoutingOnly('G'); // Should be None but we call Shortcut() for item making it a side-effect
+        vars.TestIsRoutingOnly(alpha_to_idx('G')); // Should be None but we call Shortcut() for item making it a side-effect
         ctx->KeyPress(ImGuiMod_Shortcut | ImGuiKey_B);
-        vars.TestIsPressedOnly('G');
+        vars.TestIsPressedOnly(alpha_to_idx('G'));
 #else
-        vars.TestIsRoutingOnly('F');
+        vars.TestIsRoutingOnly(alpha_to_idx('F'));
         ctx->KeyPress(ImGuiMod_Shortcut | ImGuiKey_B);
-        vars.TestIsPressedOnly('F');
+        vars.TestIsPressedOnly(alpha_to_idx('F'));
 #endif
         vars.KeyChord = ImGuiMod_Shortcut | ImGuiKey_A;
         vars.Clear();
