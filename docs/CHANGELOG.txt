@@ -5,6 +5,10 @@ CHANGELOG
    Those changes are not all listed here.
 ** For a while this is going to ONLY INCLUDE BREAKING CHANGES.
 
+2024/01/16:
+- TestEngine: Fixes crash when running an ImGui instanced compiled with IMGUI_ENABLE_TEST_ENGINE
+  but before a test engine has been attached to the ImGuiContext.
+
 2024/01/15:
 - TestEngine: Fixes for GetKeyChordName() api changes.
 

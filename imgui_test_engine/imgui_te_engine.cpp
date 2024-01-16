@@ -2052,10 +2052,10 @@ ImGuiTextBuffer* ImGuiTestEngine_GetTempStringBuilder()
     return &builder;
 }
 
+// Out of convenience for main library we allow this to be called before TestEngine is initialized.
 const char* ImGuiTestEngine_FindItemDebugLabel(ImGuiContext* ui_ctx, ImGuiID id)
 {
-    IM_ASSERT(ui_ctx->TestEngine != NULL);
-    if (id == 0)
+    if (ui_ctx->TestEngine == NULL || id == 0)
         return NULL;
     if (ImGuiTestItemInfo* id_info = ImGuiTestEngine_FindItemInfo((ImGuiTestEngine*)ui_ctx->TestEngine, id, ""))
         return id_info->DebugLabel;
