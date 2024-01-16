@@ -1144,7 +1144,7 @@ void RegisterTests_Inputs(ImGuiTestEngine* e)
             IM_ASSERT(scope_name_c >= 'A' && scope_name_c <= 'Z');
             const int idx = scope_name_c - 'A';
             bool is_routing = ImGui::TestShortcutRouting(vars.KeyChord, id);
-            bool shortcut_pressed = ImGui::Shortcut(vars.KeyChord, id, ImGuiInputFlags_RouteAlways); // No side-effect
+            bool shortcut_pressed = ImGui::Shortcut(vars.KeyChord, id, 0);// ImGuiInputFlags_RouteAlways); // Use _RouteAlways to poll only, no side-effect
             vars.IsRouting[idx] = is_routing;
             vars.PressedCount[idx] += shortcut_pressed ? 1 : 0;
             ImGui::Text("Routing: %d %s", is_routing, shortcut_pressed ? "PRESSED" : "...");
@@ -1247,17 +1247,26 @@ void RegisterTests_Inputs(ImGuiTestEngine* e)
         IM_CHECK(input_state->HasSelection() == true);
         vars.Clear();
 
-        // B: verify that CTRL+B is caught by A but not B
+        // B: verify other shortcut CTRL+B when B is active but not using it.
         vars.KeyChord = ImGuiMod_Shortcut | ImGuiKey_B;
         ctx->Yield(2);
+#if IMGUI_VERSION_NUM >= 19012
+        // Not caught by anyone
+        vars.TestIsRoutingOnly('B'); // Should be None but we call Shortcut() for item making it a side-effect
+        ctx->KeyPress(ImGuiMod_Shortcut | ImGuiKey_B);
+        vars.TestIsPressedOnly('B');
+#else
+        // Only caught by A
         vars.TestIsRoutingOnly('A');
         ctx->KeyPress(ImGuiMod_Shortcut | ImGuiKey_B);
         vars.TestIsPressedOnly('A');
+#endif
         vars.KeyChord = ImGuiMod_Shortcut | ImGuiKey_A;
         vars.Clear();
 
         // D: Focus child which does no polling/routing: parent A gets it: results are same as A
         ctx->ItemClick("**/ChildD");
+        ctx->Yield();
         vars.TestIsRoutingOnly('A');
         vars.TestIsPressedOnly(0);
         ctx->KeyPress(ImGuiMod_Shortcut | ImGuiKey_A);
@@ -1295,12 +1304,19 @@ void RegisterTests_Inputs(ImGuiTestEngine* e)
         IM_CHECK(input_state->HasSelection() == true);
         vars.Clear();
 
-        // G: verify that CTRL+B is caught by F but not G
+        // G: verify other shortcut CTRL+B when G is active but not using it, and F is not using it either.
         vars.KeyChord = ImGuiMod_Shortcut | ImGuiKey_B;
         ctx->Yield(2);
+#if IMGUI_VERSION_NUM >= 19012
+        // Not caught by anyone
+        vars.TestIsRoutingOnly('G'); // Should be None but we call Shortcut() for item making it a side-effect
+        ctx->KeyPress(ImGuiMod_Shortcut | ImGuiKey_B);
+        vars.TestIsPressedOnly('G');
+#else
         vars.TestIsRoutingOnly('F');
         ctx->KeyPress(ImGuiMod_Shortcut | ImGuiKey_B);
         vars.TestIsPressedOnly('F');
+#endif
         vars.KeyChord = ImGuiMod_Shortcut | ImGuiKey_A;
         vars.Clear();
     };
