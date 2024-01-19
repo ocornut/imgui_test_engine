@@ -1091,6 +1091,7 @@ void RegisterTests_Inputs(ImGuiTestEngine* e)
     struct InputRoutingVars
     {
         bool            IsRouting[26] = {};
+        bool            StealOwner = false;
         int             PressedCount[26] = {};
         ImGuiKeyChord   KeyChord = ImGuiMod_Shortcut | ImGuiKey_A;
         char            Str[64] = "Hello";
@@ -1385,6 +1386,34 @@ void RegisterTests_Inputs(ImGuiTestEngine* e)
             IM_CHECK_EQ(vars.PressedCount[1], 2); // Verify that Ctrl+W shortcut didn't trigger
             ctx->KeyUp(ImGuiKey_W);
         }
+    };
+#endif
+
+    // ## Test that key ownership is verified along with routing.
+    // There's a possibility of a third-party setting key-owner without routing.
+#if IMGUI_VERSION_NUM >= 19014
+    t = IM_REGISTER_TEST(e, "inputs", "inputs_routing_shortcut_no_owners");
+    t->SetVarsDataType<InputRoutingVars>();
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        auto& vars = ctx->GetVars<InputRoutingVars>();
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
+        vars.PressedCount[0] += ImGui::Shortcut(ImGuiMod_Ctrl | ImGuiKey_W);
+        if (vars.StealOwner)
+            ImGui::SetKeyOwner(ImGuiKey_W, ImGui::GetID("SomeOwner"));
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        auto& vars = ctx->GetVars<InputRoutingVars>();
+        ctx->SetRef("Test Window");
+        ctx->ItemClick("");
+        ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_W);
+        IM_CHECK_EQ(vars.PressedCount[0], 1);
+        vars.StealOwner = true;
+        ctx->Yield();
+        ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_W);
+        IM_CHECK_EQ(vars.PressedCount[0], 1);
     };
 #endif
 
