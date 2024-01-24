@@ -906,6 +906,50 @@ void RegisterTests_Inputs(ImGuiTestEngine* e)
         }
     };
 
+    // ## Test SetActiveIdUsingAllKeyboardKeys()
+    t = IM_REGISTER_TEST(e, "inputs", "inputs_owner_activeid_using_all_keys");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        auto& vars = ctx->GenericVars;
+
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+        if (ImGui::Shortcut(ImGuiKey_W))
+            vars.IntArray[0]++;
+        ImGui::Button("behavior", ImVec2(100, 100));
+        if (ImGui::IsItemActive())
+        {
+            ImGuiID behaviorId = ImGui::GetItemID();
+            ImGui::SetActiveIdUsingAllKeyboardKeys();
+            if (ImGui::IsKeyDown(ImGuiKey_W, behaviorId))
+                vars.IntArray[1]++;
+            if (ImGui::IsKeyDown(ImGuiKey_S, behaviorId))
+                vars.IntArray[2]++;
+        }
+        for (int n = 0; n < 3; n++)
+            ImGui::Text("%d", vars.IntArray[n]);
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        auto& vars = ctx->GenericVars;
+        ctx->SetRef("Test Window");
+        ctx->ItemClick("behavior"); // Dummy click to get focus
+        ctx->KeyPress(ImGuiKey_W);
+        IM_CHECK_EQ(vars.IntArray[0], 1);
+        IM_CHECK_EQ(vars.IntArray[1], 0);
+        ctx->KeyPress(ImGuiKey_S);
+        IM_CHECK_EQ(vars.IntArray[2], 0); // No-op
+        vars.Clear();
+        ctx->MouseDown();
+        ctx->Yield();
+        IM_CHECK_EQ(ImGui::GetActiveID(), ctx->GetID("behavior"));
+        ctx->KeyPress(ImGuiKey_W);  // Caught by behavior
+#if IMGUI_VERSION_NUM >= 19016
+        IM_CHECK_EQ(vars.IntArray[0], 0);
+        IM_CHECK_GE(vars.IntArray[1], 1);
+#endif
+    };
+
     // ## General test claiming Alt to prevent menu opening
     t = IM_REGISTER_TEST(e, "inputs", "inputs_owner_mod_alt");
     t->GuiFunc = [](ImGuiTestContext* ctx)
