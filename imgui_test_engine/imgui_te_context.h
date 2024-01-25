@@ -175,6 +175,7 @@ struct IMGUI_API ImGuiTestGenericVars
     int                     Step;
     int                     Count;
     ImGuiID                 DockId;
+    ImGuiID                 OwnerId;
     ImGuiWindowFlags        WindowFlags;
     ImGuiTableFlags         TableFlags;
     ImGuiPopupFlags         PopupFlags;

@@ -948,6 +948,8 @@ void RegisterTests_Inputs(ImGuiTestEngine* e)
         IM_CHECK_EQ(vars.IntArray[0], 0);
         IM_CHECK_GE(vars.IntArray[1], 1);
 #endif
+        ctx->KeyPress(ImGuiKey_S);  // Caught by behavior
+        IM_CHECK_GE(vars.IntArray[2], 1);
     };
 
     // ## General test claiming Alt to prevent menu opening
@@ -993,6 +995,111 @@ void RegisterTests_Inputs(ImGuiTestEngine* e)
         ctx->KeyPress(ImGuiMod_Alt);
         IM_CHECK(g.NavLayer == ImGuiNavLayer_Main);
     };
+
+#if IMGUI_VERSION_NUM >= 19016
+    // ## General test with LeftXXX/RightXXX keys vs ModXXX
+    t = IM_REGISTER_TEST(e, "inputs", "inputs_owner_single_mod");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        auto& vars = ctx->GenericVars;
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_MenuBar);
+        vars.OwnerId = ImGui::GetID("OwnerID");
+        if (ImGui::BeginMenuBar())
+        {
+            ImGui::MenuItem("MenuItem");
+            ImGui::EndMenuBar();
+        }
+        ImGui::Button("Button1");
+
+        ImGui::RadioButton("SetKeyOwner(ModAlt)", &vars.Step, 1);
+        ImGui::RadioButton("SetKeyOwner(LeftAlt)", &vars.Step, 2);
+        ImGui::RadioButton("Shortcut(ModAlt)", &vars.Step, 3);
+        ImGui::RadioButton("Shortcut(LeftAlt)", &vars.Step, 4);
+
+        // Case 1: OK
+        if (vars.Step == 1)
+            ImGui::SetKeyOwner(ImGuiMod_Alt, vars.OwnerId);
+
+        // Case 2: KO: Doesn't inhibit Nav
+        if (vars.Step == 2)
+            ImGui::SetKeyOwner(ImGuiKey_LeftAlt, vars.OwnerId);
+
+        // Case 3: OK
+        if (vars.Step == 3 && ImGui::Shortcut(ImGuiMod_Alt, vars.OwnerId))
+        {
+            vars.IntArray[3]++;
+            ImGui::Text("PRESSED");
+        }
+
+        // Case 4: KO : Shortcut works but doesn't inhibit Nav
+        if (vars.Step == 4 && ImGui::Shortcut(ImGuiKey_LeftAlt, vars.OwnerId))
+        {
+            vars.IntArray[4]++;
+            ImGui::Text("PRESSED");
+        }
+
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiContext& g = *ctx->UiContext;
+        auto& vars = ctx->GenericVars;
+
+        ctx->SetRef("Test Window");
+
+        // SetKeyOwner(ModAlt)
+        vars.Step = 1;
+        ctx->Yield(2);
+        IM_CHECK_EQ(ImGui::GetKeyOwner(ImGuiMod_Alt), vars.OwnerId);
+        ctx->KeyPress(ImGuiMod_Alt);
+        IM_CHECK_EQ(g.NavLayer, ImGuiNavLayer_Main);
+        ctx->KeyPress(ImGuiKey_LeftAlt);
+        IM_CHECK_EQ(g.NavLayer, ImGuiNavLayer_Main);
+
+        // SetKeyOwner(LeftAlt)
+
+        // Shortcut(ModAlt)
+        vars.Clear();
+        vars.Step = 3;
+        ctx->Yield(2);
+        IM_CHECK_EQ(ImGui::GetKeyOwner(ImGuiMod_Alt), ImGuiKeyOwner_None);
+        ctx->KeyDown(ImGuiMod_Alt);
+        IM_CHECK_EQ(ImGui::GetKeyOwner(ImGuiMod_Alt), vars.OwnerId);
+        IM_CHECK_EQ(vars.IntArray[3], 1);
+        ctx->KeyUp(ImGuiMod_Alt);
+        IM_CHECK_EQ(g.NavLayer, ImGuiNavLayer_Main);
+        ctx->Yield(2);
+        ctx->KeyDown(ImGuiKey_LeftAlt);
+        IM_CHECK_EQ(ImGui::GetKeyOwner(ImGuiMod_Alt), vars.OwnerId);
+        IM_CHECK_EQ(vars.IntArray[3], 2);
+        ctx->KeyUp(ImGuiKey_LeftAlt);
+        IM_CHECK_EQ(g.NavLayer, ImGuiNavLayer_Main);
+
+        // Shortcut(LeftAlt)
+        vars.Clear();
+        vars.Step = 4;
+        ctx->Yield(2);
+        IM_CHECK_EQ(ImGui::GetKeyOwner(ImGuiKey_LeftAlt), ImGuiKeyOwner_None);
+        ctx->KeyDown(ImGuiMod_Alt);
+        IM_CHECK_EQ(ImGui::GetKeyOwner(ImGuiMod_Alt), ImGuiKeyOwner_None);
+        IM_CHECK_EQ(ImGui::GetKeyOwner(ImGuiKey_LeftAlt), vars.OwnerId);
+        IM_CHECK_EQ(vars.IntArray[4], 1);            // Shortcut passed: TestEngine arbitrarily needs to turn loose ImGuiMod_Alt into some Alt key
+        ctx->KeyUp(ImGuiMod_Alt);
+        IM_CHECK_EQ(g.NavLayer, ImGuiNavLayer_Main); // No effect
+        ctx->Yield(2);
+        ctx->KeyDown(ImGuiKey_LeftAlt);
+        IM_CHECK_EQ(ImGui::GetKeyOwner(ImGuiMod_Alt), ImGuiKeyOwner_None);
+        IM_CHECK_EQ(ImGui::GetKeyOwner(ImGuiKey_LeftAlt), vars.OwnerId);
+        IM_CHECK_EQ(vars.IntArray[4], 2);            // Shortcut passed
+        ctx->KeyUp(ImGuiKey_LeftAlt);
+        IM_CHECK_EQ(g.NavLayer, ImGuiNavLayer_Main); // No effect
+        ctx->Yield(2);
+        ctx->KeyDown(ImGuiKey_RightAlt);
+        IM_CHECK_EQ(vars.IntArray[4], 2);
+        ctx->KeyUp(ImGuiKey_RightAlt);
+        IM_CHECK_EQ(g.NavLayer, ImGuiNavLayer_Menu); // Toggle layer
+    };
+#endif
 
     // ## Test special ButtonBehavior() flags
     t = IM_REGISTER_TEST(e, "inputs", "inputs_owner_button_behavior");
@@ -1148,23 +1255,19 @@ void RegisterTests_Inputs(ImGuiTestEngine* e)
         }
         void            TestIsRoutingOnly(int idx)
         {
+            if (idx != -1)
+                IM_CHECK_EQ(IsRouting[idx], true);
             for (int n = 0; n < IM_ARRAYSIZE(IsRouting); n++)
-            {
-                if (n == idx)
-                    IM_CHECK_EQ(IsRouting[n], true);
-                else
+                if (n != idx)
                     IM_CHECK_SILENT(IsRouting[n] == false);
-            }
         }
         void            TestIsPressedOnly(int idx)
         {
+            if (idx != -1)
+                IM_CHECK_GT(PressedCount[idx], 0);
             for (int n = 0; n < IM_ARRAYSIZE(IsRouting); n++)
-            {
-                if (n == idx)
-                    IM_CHECK_GT(PressedCount[n], 0);
-                else
+                if (n != idx)
                     IM_CHECK_SILENT(PressedCount[n] == 0);
-            }
         }
     };
     t->SetVarsDataType<InputRoutingVars>();
