@@ -5,6 +5,13 @@ CHANGELOG
    Those changes are not all listed here.
 ** For a while this is going to ONLY INCLUDE BREAKING CHANGES.
 
+2024/01/25:
+- TestEngine: Submitting a ImGuiKey_LeftAlt/ImGuiKey_RightAlt, ImGuiKey_LeftShift/ImGuiKey_RightShift,
+  ImGuiKey_LeftCtrl/ImGuiKey_RightCtrl, ImGuiKey_LeftSuper/ImGuiKey_RightSuper key interaction
+  will submit the equivalent ImGuiMod_XXX mod, as what would happen in a real backend.
+- TestEngine: ...also done in the opposite direction: submitting e.g. ImGuiMod_XXX automatically
+  adds ImGuiKey_LeftXXX.
+
 2024/01/16:
 - TestEngine: Fixes crash when running an ImGui instanced compiled with IMGUI_ENABLE_TEST_ENGINE
   but before a test engine has been attached to the ImGuiContext.

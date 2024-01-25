@@ -591,22 +591,44 @@ void ImGuiTestEngine_ApplyInputToImGuiContext(ImGuiTestEngine* engine)
             {
             case ImGuiTestInputType_Key:
             {
-                const ImGuiKey key = (ImGuiKey)(input.KeyChord & ~ImGuiMod_Mask_);
-                const ImGuiKeyChord mods = (input.KeyChord & ImGuiMod_Mask_);
+                ImGuiKeyChord key_chord = input.KeyChord;
+#if IMGUI_VERSION_NUM >= 19016
+                key_chord = ImGui::FixupKeyChord(&g, key_chord); // This will add ImGuiMod_Alt when pressing ImGuiKey_LeftAlt or ImGuiKey_LeftRight
+#endif
+                ImGuiKey key = (ImGuiKey)(key_chord & ~ImGuiMod_Mask_);
+                ImGuiKeyChord mods = (key_chord & ImGuiMod_Mask_);
                 if (mods != 0x00)
                 {
-                    if (mods & ImGuiMod_Ctrl)
-                        io.AddKeyEvent(ImGuiMod_Ctrl, input.Down);
-                    if (mods & ImGuiMod_Shift)
-                        io.AddKeyEvent(ImGuiMod_Shift, input.Down);
-                    if (mods & ImGuiMod_Alt)
-                        io.AddKeyEvent(ImGuiMod_Alt, input.Down);
-                    if (mods & ImGuiMod_Super)
-                        io.AddKeyEvent(ImGuiMod_Super, input.Down);
+                    // OSX conversion
 #if IMGUI_VERSION_NUM >= 18912
                     if (mods & ImGuiMod_Shortcut)
-                        io.AddKeyEvent(io.ConfigMacOSXBehaviors ? ImGuiMod_Super : ImGuiMod_Ctrl, input.Down);
+                        mods = (mods & ~ImGuiMod_Shortcut) | (g.IO.ConfigMacOSXBehaviors ? ImGuiMod_Super : ImGuiMod_Ctrl);
 #endif
+                    // Submitting a ImGuiMod_XXX without associated key needs to add at least one of the key.
+                    if (mods & ImGuiMod_Ctrl)
+                    {
+                        io.AddKeyEvent(ImGuiMod_Ctrl, input.Down);
+                        if (key != ImGuiKey_LeftCtrl && key != ImGuiKey_RightCtrl)
+                            io.AddKeyEvent(ImGuiKey_LeftCtrl, input.Down);
+                    }
+                    if (mods & ImGuiMod_Shift)
+                    {
+                        io.AddKeyEvent(ImGuiMod_Shift, input.Down);
+                        if (key != ImGuiKey_LeftShift && key != ImGuiKey_RightShift)
+                            io.AddKeyEvent(ImGuiKey_LeftShift, input.Down);
+                    }
+                    if (mods & ImGuiMod_Alt)
+                    {
+                        io.AddKeyEvent(ImGuiMod_Alt, input.Down);
+                        if (key != ImGuiKey_LeftAlt && key != ImGuiKey_RightAlt)
+                            io.AddKeyEvent(ImGuiKey_LeftAlt, input.Down);
+                    }
+                    if (mods & ImGuiMod_Super)
+                    {
+                        io.AddKeyEvent(ImGuiMod_Super, input.Down);
+                        if (key != ImGuiKey_LeftSuper && key != ImGuiKey_RightSuper)
+                            io.AddKeyEvent(ImGuiKey_LeftSuper, input.Down);
+                    }
                 }
 
                 if (key != ImGuiKey_None)
