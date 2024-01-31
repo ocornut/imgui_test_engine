@@ -892,6 +892,59 @@ void RegisterTests_Window(ImGuiTestEngine* e)
         }
     };
 
+    // ## Test menus in a popup window that are very horizontal/diagonal
+    t = IM_REGISTER_TEST(e, "window", "window_popup_with_sub_menus");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+        if (ImGui::Button("Open Menu Popup"))
+            ImGui::OpenPopup("Menu Popup");
+
+        if (ImGui::BeginPopup("Menu Popup"))
+        {
+            if (ImGui::BeginMenu("Sub Menu"))
+            {
+                ImGui::MenuItem("Lorem");
+                ImGui::MenuItem("Ipsum");
+                if (ImGui::BeginMenu("Second Sub Menu 1"))
+                {
+                    ImGui::MenuItem("Sub Item 1");
+                    ImGui::EndMenu();
+                }
+                if (ImGui::BeginMenu("Second Sub Menu 2"))
+                {
+                    ImGui::MenuItem("Sub Item 2");
+                    if (ImGui::BeginMenu("Third Sub Menu 1"))
+                    {
+                        ImGui::MenuItem("Item 3");
+                        ImGui::EndMenu();
+                    }
+                    if (ImGui::BeginMenu("Third Sub Menu 2"))
+                    {
+                        ImGui::MenuItem("Sub Item 4");
+                        ImGui::MenuItem("Sub Item 5");
+                        ImGui::MenuItem("Sub Item 6");
+                        ImGui::EndMenu();
+                    }
+                    ImGui::EndMenu();
+                }
+                ImGui::EndMenu();
+            }
+            ImGui::MenuItem("consectetur adipiscing elit");
+            ImGui::MenuItem("sed do eiusmod tempor incididunt");
+            ImGui::EndPopup();
+        }
+
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ctx->SetRef("Test Window");
+        ctx->ItemClick("Open Menu Popup");
+        ctx->SetRef("//$FOCUSED");
+        ctx->MenuClick("Sub Menu/Second Sub Menu 2/Third Sub Menu 2/Sub Item 6");
+    };
+
     // ## Test hovering across levels of menu
     t = IM_REGISTER_TEST(e, "window", "window_popup_menu_hover");
     t->GuiFunc = [](ImGuiTestContext* ctx)
