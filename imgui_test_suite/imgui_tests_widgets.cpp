@@ -3433,6 +3433,28 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
     };
 #endif
 
+    // ## Test menus inside a popup (not a menubar), notably for #43
+    t = IM_REGISTER_TEST(e, "window", "widgets_menu_in_popup");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        if (ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings))
+        {
+            if (ImGui::BeginMenu("Menu1"))
+            {
+                ImGui::MenuItem("MenuItem1");
+                ImGui::MenuItem("MenuItem2");
+                ImGui::EndMenu();
+            }
+        }
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ctx->SetRef("//Test Window");
+        ctx->MenuClick("Menu1/MenuItem1");
+        ctx->MenuClick("Menu1/MenuItem2");
+    };
+
     // ## Test navigating menus with mouse button is held down.
     t = IM_REGISTER_TEST(e, "widgets", "widgets_menu_mouse_hold");
     struct PopupMenuHoldVars { ImGuiID QueryVarsBaseId = 0; ImGuiTestGenericItemStatus Status; };
