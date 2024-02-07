@@ -840,9 +840,15 @@ bool ImBuildFindGitBranchName(const char* git_repo_path, Str* branch_name)
         strtok(git_head, "\r\n");                       // Trim new line
         if (head_size > prefix_length && strncmp(git_head, prefix, prefix_length) == 0)
         {
-            strcpy(branch_name->c_str(), git_head + prefix_length);
-            result = true;
+            // "ref: refs/heads/master" -> "master"
+            branch_name->set(git_head + prefix_length);
         }
+        else
+        {
+            // Should be git hash, keep first 8 characters (see #42)
+            branch_name->setf("%.8s", git_head);
+        }
+        result = true;
         IM_FREE(git_head);
     }
     return result;

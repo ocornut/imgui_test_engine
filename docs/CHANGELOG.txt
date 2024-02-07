@@ -5,6 +5,10 @@ CHANGELOG
    Those changes are not all listed here.
 ** For a while this is going to ONLY INCLUDE BREAKING CHANGES.
 
+2024/02/07:
+- TestEngine: fixed ImBuildFindGitBranchName() helper and auto-filling of io.GitBranchName
+  when using a detached head. (#42)
+
 2024/01/25:
 - TestEngine: Submitting a ImGuiKey_LeftAlt/ImGuiKey_RightAlt, ImGuiKey_LeftShift/ImGuiKey_RightShift,
   ImGuiKey_LeftCtrl/ImGuiKey_RightCtrl, ImGuiKey_LeftSuper/ImGuiKey_RightSuper key interaction
