@@ -757,6 +757,46 @@ void RegisterTests_Window(ImGuiTestEngine* e)
         IM_CHECK_EQ(g.OpenPopupStack[0].Window->ID, ctx->PopupGetWindowID("Popup"));
     };
 
+    // ## Test reopening an open popup (#1497, #1533)
+    t = IM_REGISTER_TEST(e, "window", "window_popup_reopen");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        auto& vars = ctx->GenericVars;
+        if (vars.Bool1)
+            ImGui::OpenPopup("TestPopup");
+        if (ImGui::BeginPopup("TestPopup"))
+        {
+            vars.Pos = ImGui::GetWindowPos();
+            ImGui::Text("HELLO\nWORLD");
+            ImGui::EndPopup();
+        }
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        auto& vars = ctx->GenericVars;
+        ImGuiViewport* viewport = ImGui::GetMainViewport();
+
+        ImVec2 pos1 = viewport->WorkPos + ImVec2(40, 40);
+        ctx->MouseTeleportToPos(pos1);
+        IM_CHECK(ImGui::IsPopupOpen("TestPopup") == false);
+        vars.Bool1 = true; // Open
+        ctx->Yield();
+        vars.Bool1 = false;
+        IM_CHECK(ImGui::IsPopupOpen("TestPopup") == true);
+        IM_CHECK(ImRect(pos1, pos1 + ImVec2(30, 30)).Contains(vars.Pos));
+
+        ImVec2 pos2 = viewport->WorkPos + ImVec2(100, 100);
+        ctx->MouseTeleportToPos(pos2);
+        IM_CHECK(ImGui::IsPopupOpen("TestPopup") == true); // Still open
+        IM_CHECK(ImRect(pos1, pos1 + ImVec2(30, 30)).Contains(vars.Pos));
+        vars.Bool1 = true; // Reopen
+        ctx->Yield();
+        vars.Bool1 = false;
+        IM_CHECK(ImGui::IsPopupOpen("TestPopup") == true);
+        IM_CHECK(ImRect(pos2, pos2 + ImVec2(30, 30)).Contains(vars.Pos));
+
+    };
+
     // ## Test menus in a popup window (PR #3496).
     t = IM_REGISTER_TEST(e, "window", "window_popup_menu");
     struct WindowPopupMenuTestVars { bool UseModal = false; bool FirstOpen = false; bool SecondOpen = false; };
