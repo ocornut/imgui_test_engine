@@ -434,6 +434,10 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
             ctx->SetRef("Test Window");
             ctx->MenuClick("Menu/Submenu1");
             ctx->KeyPress(ImGuiKey_RightArrow);
+#if IMGUI_VERSION_NUM >= 19018
+            IM_CHECK(g.NavId == ctx->GetID("//##Menu_01/A"));
+            IM_CHECK(g.NavDisableHighlight == false);
+#endif
             ctx->KeyPress(ImGuiKey_DownArrow);
             IM_CHECK(g.NavId == ctx->GetID("//##Menu_01/B"));
             ctx->KeyPress(ImGuiKey_LeftArrow);
@@ -629,6 +633,56 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
             ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_Tab);
             IM_CHECK(g.NavWindow == ctx->GetWindowByRef("Window 1"));
         }
+    };
+
+    // ## Test CTRL+TAB window focusing with open popup
+    t = IM_REGISTER_TEST(e, "nav", "nav_ctrl_tab_popups");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
+        ImGui::TextUnformatted("Not empty space");
+        if (ImGui::Button("Popup 1"))
+            ImGui::OpenPopup("Popup 1");
+        if (ImGui::BeginPopup("Popup 1"))
+        {
+            ImGui::Text("This is Popup 1");
+            ImGui::EndPopup();
+        }
+        if (ImGui::Button("Popup 2"))
+            ImGui::OpenPopup("Popup 2");
+        if (ImGui::BeginPopup("Popup 2", ImGuiWindowFlags_ChildWindow))
+        {
+            ImGui::Text("This is Popup 2");
+            ImGui::EndPopup();
+        }
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiContext& g = *ctx->UiContext;
+#ifdef IMGUI_HAS_DOCK
+        ctx->DockClear("Dear ImGui Demo", "Test Window", NULL);
+#endif
+        ctx->WindowFocus("Dear ImGui Demo");
+        ctx->WindowFocus("Test Window");
+        ctx->ItemClick("Test Window/Popup 1");
+        ctx->KeyDown(ImGuiMod_Ctrl);
+        ctx->KeyPress(ImGuiKey_Tab); // to Test Window
+        ctx->KeyPress(ImGuiKey_Tab); // to Dear ImGui Demo
+        ctx->KeyUp(ImGuiMod_Ctrl);
+        ctx->Yield(2);
+        IM_CHECK(g.NavWindow == ctx->GetWindowByRef("Dear ImGui Demo"));
+        IM_CHECK(g.OpenPopupStack.Size == 0);
+
+        ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_Tab);
+        IM_CHECK(g.NavWindow == ctx->GetWindowByRef("Test Window"));
+        ctx->ItemClick("Test Window/Popup 2");
+        ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_Tab); // To Dear ImGui Demo
+        ctx->Yield(2);
+        IM_CHECK(g.NavWindow == ctx->GetWindowByRef("Dear ImGui Demo"));
+#if IMGUI_VERSION_NUM >= 19018
+        IM_CHECK(g.OpenPopupStack.Size == 0);
+#endif
     };
 
     // ## Test NavID restoration during CTRL+TAB focusing
