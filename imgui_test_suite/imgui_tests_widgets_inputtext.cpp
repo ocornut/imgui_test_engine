@@ -300,10 +300,26 @@ void RegisterTests_WidgetsInputText(ImGuiTestEngine* e)
         IM_CHECK_STR_EQ(buf_user, "Hello1");
         IM_CHECK_STR_EQ(buf_visible, "{ Hello1 }");
 
-        // Lose focus, at this point the InputTextState->ID should be holding on the last active state,
-        // so we verify that InputText() is picking up external changes.
+#if IMGUI_VERSION_NUM >= 19018
+        // ## Test ImGuiInputTextState::ReloadUserBufXXX functions (#2890)
+        strcpy(buf_user, "OverwrittenAgain");
+        ImGuiInputTextState* input_state = ImGui::GetInputTextState(ctx->GetID("##InputText"));
+        IM_CHECK(input_state != NULL);
+        input_state->ReloadUserBufAndSelectAll();
+        ctx->Yield();
+        IM_CHECK_STR_EQ(buf_user, "OverwrittenAgain");
+        IM_CHECK_STR_EQ(buf_visible, "{ OverwrittenAgain }");
+#endif
+
+        // Verify reverted value
         ctx->KeyPress(ImGuiKey_Escape);
         IM_CHECK_EQ(ctx->UiContext->ActiveId, (unsigned)0);
+#if IMGUI_VERSION_NUM >= 19018
+        IM_CHECK_STR_EQ(buf_user, "Hello"); // ReloadUserBufAndSelectAll() shouldn't have overrided revert
+#endif
+
+        // At his point the InputTextState->ID should be holding on the last active state,
+        // so we verify that InputText() is picking up external changes.
         strcpy(buf_user, "Hello2");
         ctx->Yield();
         IM_CHECK_STR_EQ(buf_user, "Hello2");
@@ -1626,5 +1642,4 @@ void RegisterTests_WidgetsInputText(ImGuiTestEngine* e)
             ctx->KeyPress(ImGuiKey_Escape);
         }
     };
-
 }
