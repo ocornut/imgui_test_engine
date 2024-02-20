@@ -587,6 +587,7 @@ ImGuiID ImGuiTestContext::GetID(ImGuiTestRef ref)
 // - Meaning of leading "/" .................. "/node" : move to root of window pointed by SetRef() when SetRef() uses a path
 // - Meaning of $$xxxx literal encoding ...... "list/$$1" : hash of "list" + hash if (int)1, equivalent of PushID("hello"); PushID(1);
 //// - Meaning of leading "../" .............. "../node" : move back 1 level from SetRef path() when SetRef() uses a path // Unimplemented
+// FIXME: "//$FOCUSED/.." is currently not usable.
 ImGuiID ImGuiTestContext::GetID(ImGuiTestRef ref, ImGuiTestRef seed_ref)
 {
     ImGuiContext& g = *UiContext;

@@ -3158,6 +3158,59 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         IM_CHECK(vars.SubmenuWasOnceNotVisible == false);
     };
 
+    // ## Test menu reopens while moving up or down (#7325 highlighted an order-dependent issue)
+#if IMGUI_VERSION_NUM >= 19032
+    t = IM_REGISTER_TEST(e, "widgets", "widgets_menu_reopen_2");
+    t->SetVarsDataType<WindowMenuReopenVars>();
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        if (ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings))
+        {
+            if (ImGui::BeginMenu("Nested1"))
+            {
+                if (ImGui::BeginMenu("Nested2"))
+                {
+                    for (int i = 0; i < 10; i++)
+                    {
+                        if (ImGui::BeginMenu(Str30f("%d", i).c_str()))
+                        {
+                            ImGui::Text("Nothing here");
+                            ImGui::EndMenu();
+                        }
+                    }
+                    ImGui::EndMenu();
+                }
+                ImGui::EndMenu();
+            }
+        }
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiContext& g = *ctx->UiContext;
+        ctx->SetRef("Test Window");
+        ctx->MouseMove("Nested1");
+        IM_CHECK_EQ(g.OpenPopupStack.Size, 1);
+        ctx->MouseMove("//$FOCUSED/Nested2");
+        IM_CHECK_EQ(g.OpenPopupStack.Size, 2);
+        ctx->MouseMove("//$FOCUSED/0");
+        ctx->MouseMove("//##Menu_01/0");    // Same
+        IM_CHECK_EQ(g.OpenPopupStack.Size, 3);
+
+        // Move down
+        ctx->MouseMove("//##Menu_01/1");
+        IM_CHECK_EQ(g.OpenPopupStack.Size, 3);
+        ctx->MouseMove("//##Menu_01/2");
+        IM_CHECK_EQ(g.OpenPopupStack.Size, 3);
+
+        // Move up: between 2024/02/08 and 2024/02/20 closure of /2 led to NewFrame() running
+        // "if (g.NavWindow && !g.NavWindow->WasActive) FocusTopMostWindowUnderOne(NULL, etc.)"
+        // and FocusTopMostWindowUnderOne() only look for top-level windows. (#7325)
+        ctx->MouseMove("//##Menu_01/1");
+        IM_CHECK_EQ(g.OpenPopupStack.Size, 3);
+    };
+#endif
+
     // ## Test navigating menus with mouse button is held down.
     t = IM_REGISTER_TEST(e, "widgets", "widgets_menu_mouse_hold");
     struct PopupMenuHoldVars { ImGuiID QueryVarsBaseId = 0; ImGuiTestGenericItemStatus Status; };
