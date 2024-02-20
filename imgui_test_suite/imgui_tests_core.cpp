@@ -110,6 +110,18 @@ void RegisterTests_Window(ImGuiTestEngine* e)
             IM_CHECK_EQ(sz, ImVec2(400, 10));
 #endif
         }
+        {
+            // BeginChild()
+            ImGui::SetNextWindowSize(ImVec2(400, 400));
+            ImGui::Begin("Test Window 5", NULL, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_AlwaysAutoResize);
+            ImGui::BeginChild("child", ImVec2(200, 5));
+            ImVec2 sz = ImGui::GetWindowSize();
+            ImGui::EndChild();
+            ImGui::End();
+#if IMGUI_VERSION_NUM >= 19032
+            IM_CHECK_EQ(sz, ImVec2(200, 5));
+#endif
+        }
         ImGui::PopStyleVar();
     };
     t->TestFunc = [](ImGuiTestContext* ctx)
