@@ -4997,6 +4997,8 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
     t = IM_REGISTER_TEST(e, "demo", "demo_cov_002");
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
+        ImGuiContext& g = *ctx->UiContext;
+
         ctx->SetRef("Dear ImGui Demo");
         ctx->ItemOpen("Layout & Scrolling");
         ctx->ItemCheck("Scrolling/Show Horizontal contents size demo window");
@@ -5029,6 +5031,36 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
         ctx->ItemClick("##TabBar/Primitives");
         ctx->ItemClick("##TabBar/Canvas");
         ctx->ItemClick("##TabBar/BG\\/FG draw lists");
+        ctx->ItemClick("##TabBar/Draw Channels");
+        ctx->ItemClick("##TabBar/Primitives");
+
+        // FIXME-TESTS: May be reworked into e.g. ItemReadValue() (need the right name for this)
+        {
+            ctx->ItemInput("##TabBar/Primitives/Size");
+            IM_CHECK_EQ(g.ActiveId, ctx->GetID("##TabBar/Primitives/Size"));
+            ctx->KeyPress(ImGuiMod_Shortcut | ImGuiKey_A);
+            ctx->KeyPress(ImGuiMod_Shortcut | ImGuiKey_C);
+            ctx->KeyPress(ImGuiKey_Enter);
+            float backup_size = (float)ImAtof(ImGui::GetClipboardText());
+
+            // Very basic flex of non-AA paths
+            for (int size_step = 0; size_step < 3; size_step++)
+            {
+                float size = (size_step == 0) ? 1.5f : (size_step == 1) ? 20.0f : 200.0f; // Basic flex of sizing paths
+                ctx->ItemInputValue("##TabBar/Primitives/Size", size);
+                for (int aa_step = 0; aa_step < 2; aa_step++)
+                {
+                    ctx->Yield(2);
+                    g.Style.AntiAliasedLinesUseTex ^= true;
+                    ctx->Yield(2);
+                    g.Style.AntiAliasedLines ^= true;
+                    ctx->Yield(2);
+                    g.Style.AntiAliasedFill ^= true;
+                    ctx->Yield(2);
+                }
+            }
+            ctx->ItemInputValue("##TabBar/Primitives/Size", backup_size);
+        }
 
         ctx->SetRef("Dear ImGui Demo");
         ctx->MenuCheck("Examples/Console");
