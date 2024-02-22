@@ -3252,8 +3252,13 @@ void    ImGuiTestContext::MenuActionAll(ImGuiTestAction action, ImGuiTestRef ref
         MenuAction(ImGuiTestAction_Open, ref_parent); // We assume that every interaction will close the menu again
 
         if (action == ImGuiTestAction_Check || action == ImGuiTestAction_Uncheck)
-            if ((ItemInfo(item.ID)->StatusFlags & ImGuiItemStatusFlags_Checkable) == 0)
+        {
+            ImGuiTestItemInfo* info2 = ItemInfo(item.ID); // refresh info
+            if ((info2->InFlags & ImGuiItemFlags_Disabled) != 0) // FIXME: Report disabled state in log? Make that optional?
                 continue;
+            if ((info2->StatusFlags & ImGuiItemStatusFlags_Checkable) == 0)
+                continue;
+        }
 
         ItemAction(action, item.ID);
     }
