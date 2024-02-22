@@ -5135,6 +5135,9 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
         ctx->MenuClick("Menu/Open Recent/More..");
         ctx->MenuCheckAll("Examples");
         ctx->MenuUncheckAll("Examples");
+
+        // Disable Item Picker menu entry otherwise we are toast
+        ImGui::GetIO().ConfigDebugIsDebuggerPresent = false;
         ctx->MenuCheckAll("Tools");
         ctx->MenuUncheckAll("Tools");
     };
