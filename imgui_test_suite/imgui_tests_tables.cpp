@@ -21,10 +21,6 @@
 #pragma GCC diagnostic ignored "-Wunused-parameter"
 #endif
 
-#if IMGUI_VERSION_NUM < 18305
-#define IsUserEnabledNextFrame IsEnabledNextFrame
-#endif
-
 // Helpers
 #if IMGUI_VERSION_NUM < 19002
 static inline bool operator==(const ImVec2& lhs, const ImVec2& rhs) { return lhs.x == rhs.x && lhs.y == rhs.y; }    // for IM_CHECK_EQ()
@@ -3582,6 +3578,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
         ctx->SetRef("Test Window");
         ImGuiTable* table = ImGui::TableFindByID(ctx->GetID("table"));
 
+        // FIXME-TESTS: tests could be on actual on public ImGui::TableGetHoveredColumn()
         ctx->MouseMove("table/$$1/Col0");
         IM_CHECK(table->HoveredColumnBody == 0);
 
@@ -3597,6 +3594,47 @@ void RegisterTests_Table(ImGuiTestEngine* e)
         ctx->ItemClick("table/$$1/>");
         IM_CHECK(table->HoveredColumnBody == 1);
         IM_CHECK(vars.IntArray[1] == 1);
+    };
+#endif
+
+#if IMGUI_VERSION_NUM >= 19041
+    // ## Basic test for TableGetHoveredRow() (#7350)
+    t = IM_REGISTER_TEST(e, "table", "table_hovered_row");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        auto& vars = ctx->GenericVars;
+        ImGui::SetNextWindowSize(ImVec2(0.0f, ImGui::GetFrameHeightWithSpacing() * 10)); // Make window smaller than line count to ensure scrolling
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+        if (ImGui::BeginTable("table1", 3, ImGuiTableFlags_ScrollY | ImGuiTableFlags_RowBg | ImGuiTableFlags_BordersV, ImVec2(0.0f, -ImGui::GetTextLineHeightWithSpacing())))
+        {
+            ImGui::TableSetupScrollFreeze(0, 1);
+            for (int n = 0; n < 3; n++)
+                ImGui::TableSetupColumn(Str30f("Column%d", n).c_str());
+            ImGui::TableHeadersRow();
+            HelperTableSubmitCellsButtonFix(3, 30);
+            vars.Int1 = ImGui::TableGetHoveredRow();
+            vars.Int2 = ImGui::TableGetHoveredColumn();
+            ImGui::EndTable();
+        }
+        ImGui::Text("Hovered row %d, column %d", vars.Int1, vars.Int2);
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        auto& vars = ctx->GenericVars;
+        ctx->SetRef("Test Window");
+        ImGuiTable* table = ImGui::TableFindByID(ctx->GetID("table1"));
+        ctx->MouseMove(TableGetHeaderID(table, "Column0")); // table1/$$0/Column0 as TableHeadersRow() does a PushID(int)
+        IM_CHECK_EQ(vars.Int1, 0);
+        ctx->MouseMove(TableGetHeaderID(table, "Column2")); // table1/$$1/Column2 as "
+        IM_CHECK_EQ(vars.Int1, 0);
+        ctx->MouseMove("table1/0,0");
+        IM_CHECK_EQ(vars.Int1, 1);
+        ctx->MouseMove("table1/1,0");
+        IM_CHECK_EQ(vars.Int1, 2);
+        ctx->ScrollToBottom(table->InnerWindow->ID);
+        ctx->MouseMove(TableGetHeaderID(table, "Column0"));
+        IM_CHECK_EQ(vars.Int1, 0); // At this point your frozen row is overlapping some other row
     };
 #endif
 }
