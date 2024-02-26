@@ -30,6 +30,7 @@ Index of this file:
 #define IMGUI_DEFINE_MATH_OPERATORS
 #include "imgui.h"
 #include "imgui_internal.h"
+#include "imgui_te_engine.h"
 #include "imgui_capture_tool.h"
 #include "imgui_te_utils.h"         // ImPathFindFilename, ImPathFindExtension, ImPathFixSeparatorsForCurrentOS, ImFileCreateDirectoryChain, ImOsOpenInShell
 #include "thirdparty/Str/Str.h"

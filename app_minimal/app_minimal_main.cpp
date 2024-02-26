@@ -16,6 +16,7 @@
 // Test Engine
 #include "imgui_test_engine/imgui_te_engine.h"
 #include "imgui_test_engine/imgui_te_ui.h"
+#include "imgui_test_engine/imgui_te_utils.h"   // ImOsIsDebuggerPresent()
 
 extern void RegisterAppMinimalTests(ImGuiTestEngine* engine);
 

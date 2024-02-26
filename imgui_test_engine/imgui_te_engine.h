@@ -7,7 +7,18 @@
 
 #include "imgui.h"
 #include "imgui_internal.h"         // ImPool<>, ImRect, ImGuiItemStatusFlags, ImFormatString
-#include "imgui_te_utils.h"         // ImFuncPtr
+
+//-----------------------------------------------------------------------------
+// Function Pointers
+//-----------------------------------------------------------------------------
+
+#if IMGUI_TEST_ENGINE_ENABLE_STD_FUNCTION
+#include <functional>
+#define ImFuncPtr(FUNC_TYPE)        std::function<FUNC_TYPE>
+#else
+#define ImFuncPtr(FUNC_TYPE)        FUNC_TYPE*
+#endif
+
 #include "imgui_capture_tool.h"     // ImGuiScreenCaptureFunc
 
 //-------------------------------------------------------------------------
