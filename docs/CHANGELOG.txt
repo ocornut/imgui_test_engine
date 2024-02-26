@@ -5,6 +5,15 @@ CHANGELOG
    Those changes are not all listed here.
 ** For a while this is going to ONLY INCLUDE BREAKING CHANGES.
 
+2024/02/26:
+- TestEngine: *BREAKING* fixed GetWindowByRef() behaving inconsistently by ignoring
+  current SetRef() base reference when non-empty. Most functions expected on windows
+  parts, such as WindowMove(), WindowResize(), WindowFocus(), WindowBringToFront(),
+  ScrollToXXX(), etc. were affected:
+     ctx->SetRef("Window 1"); + ctx->WindowFocus("");          // OK
+     ctx->SetRef("Window 1"); + ctx->WindowFocus("//Window1"); // OK
+     ctx->SetRef("window 1"); + ctx->WindowFocus("Window1");   // Not OK, previously worked.
+
 2024/02/22:
 - TestEngine: fixed MenuCheckAll(), MenuUncheckAll(), MenuActionAll() from trying to
   perform actions on disabled menu items.

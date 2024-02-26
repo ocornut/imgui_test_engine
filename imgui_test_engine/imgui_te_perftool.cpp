@@ -1928,7 +1928,7 @@ void RegisterTests_TestEnginePerfTool(ImGuiTestEngine* e)
         // Take a screenshot.
         ImGuiCaptureArgs* args = ctx->CaptureArgs;
         args->InCaptureRect = plot_child->Rect();
-        ctx->CaptureAddWindow(window->Name);
+        ctx->CaptureAddWindow(window->ID);
         ctx->CaptureScreenshot(ImGuiCaptureFlags_HideMouseCursor);
         ctx->ItemDragWithDelta("splitter", ImVec2(0, -180));        // Show info table
         perf_report_image = args->InOutputFile;

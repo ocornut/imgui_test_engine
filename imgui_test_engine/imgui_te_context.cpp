@@ -563,11 +563,9 @@ ImGuiTestRef ImGuiTestContext::GetRef()
     return RefID;
 }
 
-// Turn ref into a root ref unless ref is empty
-// FIXME: This seems inconsistent? Clarify?
 ImGuiWindow* ImGuiTestContext::GetWindowByRef(ImGuiTestRef ref)
 {
-    ImGuiID window_id = ref.IsEmpty() ? GetID(ref) : GetID(ref, "//");
+    ImGuiID window_id = GetID(ref);
     ImGuiWindow* window = ImGui::FindWindowByID(window_id);
     return window;
 }
@@ -3232,7 +3230,7 @@ void    ImGuiTestContext::MenuAction(ImGuiTestAction action, ImGuiTestRef ref)
                 ItemAction(Inputs->MouseButtonsValue ? ImGuiTestAction_Hover : ImGuiTestAction_Click, buf.c_str());
             }
         }
-        current_window = GetWindowByRef(Str16f("##Menu_%02d", depth).c_str());
+        current_window = GetWindowByRef(Str16f("//##Menu_%02d", depth).c_str());
         IM_CHECK_SILENT(current_window != NULL);
 
         path = p + 1;

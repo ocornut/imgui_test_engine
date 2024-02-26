@@ -128,7 +128,7 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
         // Test that preferred pos is saved/restored on focus change
         ctx->KeyPress(ImGuiKey_RightArrow);
         ctx->KeyPress(ImGuiKey_UpArrow);
-        ctx->WindowFocus("Dear ImGui Demo"); // Focus other window
+        ctx->WindowFocus("//Dear ImGui Demo"); // Focus other window
         ctx->ItemOpen("//Dear ImGui Demo/Help");
         ctx->KeyPress(ImGuiKey_DownArrow);
         ctx->ItemClose("//Dear ImGui Demo/Help");

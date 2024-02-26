@@ -2217,7 +2217,8 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
     {
         DockspaceTabButtonVars& vars = ctx->GetVars<DockspaceTabButtonVars>();
         vars.DockId = ImGui::DockSpaceOverViewport();
-        ImGuiWindow* window_demo = ctx->GetWindowByRef("Dear ImGui Demo");
+        ImGuiWindow* window_demo = ctx->GetWindowByRef("//Dear ImGui Demo");
+        IM_CHECK(window_demo != NULL);
 
         // FIXME: It can be confusing which dock node we are supposed to use. While under normal circumstances using
         //  dockspace ID works, is simple and intuitive thing to do, it breaks when dockspace already has docked windows

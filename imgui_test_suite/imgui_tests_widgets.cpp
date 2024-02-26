@@ -1502,7 +1502,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         // Resize down
         vars.WindowAutoResize = false;
         ImGuiWindow* window = ctx->GetWindowByRef("//Test Window");
-        ctx->WindowResize("Test Window", ImVec2(window->Size.x * 0.3f, window->Size.y));
+        ctx->WindowResize("//Test Window", ImVec2(window->Size.x * 0.3f, window->Size.y));
         for (int i = 0; i < 2; ++i)
         {
             vars.TabBarFlags = ImGuiTabBarFlags_Reorderable | (i == 0 ? ImGuiTabBarFlags_FittingPolicyResizeDown : ImGuiTabBarFlags_FittingPolicyScroll);
@@ -2619,7 +2619,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         }
 
         ImGuiContext& g = *ctx->UiContext;
-        ImGuiWindow* tooltip = ctx->GetWindowByRef(Str16f("##Tooltip_%02d", g.TooltipOverrideCount).c_str());
+        ImGuiWindow* tooltip = ctx->GetWindowByRef(Str16f("//##Tooltip_%02d", g.TooltipOverrideCount).c_str());
         vars.TooltipIsVisible = g.TooltipOverrideCount != 0 || (tooltip != NULL && (tooltip->Active || tooltip->WasActive));
         if (vars.TooltipIsVisible)
             vars.TooltipWasVisible |= vars.TooltipIsVisible;
@@ -4848,7 +4848,8 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
             const char* button_name = variant ? "Popup" : "Tooltip";
             ctx->LogInfo("## Test variant: %s", button_name);
             ctx->ItemClick(button_name);        // Force tooltip creation so we can grab the pointer
-            ImGuiWindow* tooltip = variant ? g.NavWindow : ctx->GetWindowByRef("##Tooltip_00");
+            ImGuiWindow* tooltip = variant ? g.NavWindow : ctx->GetWindowByRef("//##Tooltip_00");
+            IM_CHECK(tooltip != NULL);
 
             for (auto& test_case : test_cases)
             {

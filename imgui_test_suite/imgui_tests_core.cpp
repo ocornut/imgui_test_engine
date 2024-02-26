@@ -866,7 +866,7 @@ void RegisterTests_Window(ImGuiTestEngine* e)
             ctx->LogDebug("Testing with %s", vars.UseModal ? "modal" : "popup");
             ctx->ItemClick("//Test Window/Open Menu Popup");
             if (vars.UseModal)
-                popup = ctx->GetWindowByRef("Menu Popup");
+                popup = ctx->GetWindowByRef("//Menu Popup");
             else
                 popup = ctx->GetWindowByRef(ctx->PopupGetWindowID("//Test Window/Menu Popup"));
             IM_CHECK(popup != NULL);
@@ -1167,7 +1167,6 @@ void RegisterTests_Window(ImGuiTestEngine* e)
         ImGuiContext& g = *ctx->UiContext;
         WindowPopupWithWindowsVars& vars = ctx->GetVars<WindowPopupWithWindowsVars>();
         ImVec2 window_move_dest = ImGui::GetMainViewport()->Pos + ImVec2(300.0f, 300.0f);
-        ctx->SetRef("Interrupts");
 
         auto FindWindowDisplayIndex = [ctx](ImGuiTestRef window_ref)
         {
@@ -1192,7 +1191,7 @@ void RegisterTests_Window(ImGuiTestEngine* e)
             //         └── C                                                // Child window
             //             └── Window2                                      // Appears, is freely interactable with
             OpenPopup(0);
-            ImGuiWindow* popup1 = vars.IsModalPopup[0] ? ctx->GetWindowByRef("Popup1") : ctx->GetWindowByRef(ctx->PopupGetWindowID("Popup1"));
+            ImGuiWindow* popup1 = vars.IsModalPopup[0] ? ctx->GetWindowByRef("Popup1") : ctx->GetWindowByRef(ctx->PopupGetWindowID("Interrupts/Popup1"));
             ImGuiWindow* window0 = ctx->GetWindowByRef("Window0");
             IM_CHECK(popup1 != NULL && window0 != NULL);
             IM_CHECK_EQ(g.NavWindow, window0);
@@ -2504,7 +2503,7 @@ void RegisterTests_Window(ImGuiTestEngine* e)
 #ifdef IMGUI_HAS_DOCK
         ctx->DockClear("Window A", "Window B", NULL);
 #endif
-        ctx->WindowFocus("Window A");
+        ctx->WindowFocus("//Window A");
 
         // Titlebar of undocked window
         ctx->MouseMoveToPos(ctx->GetWindowTitlebarPoint("//Window A"));
@@ -2524,7 +2523,7 @@ void RegisterTests_Window(ImGuiTestEngine* e)
         IM_CHECK_EQ(g.NavWindow->ID, popup_window_id);
 
 #ifdef IMGUI_HAS_DOCK
-        ctx->DockInto("Window B", "Window A");
+        ctx->DockInto("//Window B", "//Window A");
 
         // Tab of docked window
         ctx->MouseMoveToPos(ctx->GetWindowTitlebarPoint("//Window A"));
@@ -5112,13 +5111,14 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
         ctx->ItemClick("##MyStr");
 
         // Ensure X scrolling is working in TestContext
-        ImGuiWindow* window = ctx->GetWindowByRef("Dear ImGui Demo");
+        ImGuiWindow* window = ctx->GetWindowByRef("//Dear ImGui Demo");
+        IM_CHECK(window != NULL);
         ImVec2 backup_size = window->Rect().GetSize();
         ctx->SetRef("Dear ImGui Demo");
-        ctx->WindowResize("Dear ImGui Demo", ImVec2(100, backup_size.y));
+        ctx->WindowResize("", ImVec2(100, backup_size.y));
         ctx->ItemOpen("Widgets");
         ctx->ItemClick("Basic/radio c");
-        ctx->WindowResize("Dear ImGui Demo", backup_size);
+        ctx->WindowResize("", backup_size);
 
         // Flex the popup showing in "Circle Tessellation Max Error" (note that style modifications are restored at end of test)
         ctx->ItemOpen("Configuration");
@@ -6333,8 +6333,7 @@ void RegisterTests_Capture(ImGuiTestEngine* e)
             //ctx->KeyPress(ImGuiKey_End);
             ctx->MouseMove("float");
             ctx->MouseMoveToPos(g.IO.MousePos + ImVec2(30, -10));
-
-            ctx->CaptureScreenshotWindow(window->Name);
+            ctx->CaptureScreenshotWindow("");
         }
     };
 
@@ -6357,7 +6356,7 @@ void RegisterTests_Capture(ImGuiTestEngine* e)
     {
         ctx->SetRef("CaptureGif");
         ctx->CaptureSetExtension(".gif");
-        ctx->CaptureAddWindow("CaptureGif");
+        ctx->CaptureAddWindow("");
         ctx->CaptureBeginVideo();
         ctx->ItemInput("string");
         ctx->KeyCharsReplace("Dear ImGui: Now with gif animations \\o/");
@@ -6486,7 +6485,7 @@ void RegisterTests_Capture(ImGuiTestEngine* e)
     {
         ctx->SetRef("ImPlot Demo");
         ctx->ItemOpenAll("");
-        ctx->CaptureScreenshotWindow("ImPlot Demo", ImGuiCaptureFlags_StitchAll | ImGuiCaptureFlags_HideMouseCursor);
+        ctx->CaptureScreenshotWindow("//ImPlot Demo", ImGuiCaptureFlags_StitchAll | ImGuiCaptureFlags_HideMouseCursor);
     };
 #endif // IMGUI_TEST_ENGINE_ENABLE_IMPLOT
 #else
