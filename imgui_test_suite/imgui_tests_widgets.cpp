@@ -3208,6 +3208,26 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         // and FocusTopMostWindowUnderOne() only look for top-level windows. (#7325)
         ctx->MouseMove("//##Menu_01/1");
         IM_CHECK_EQ(g.OpenPopupStack.Size, 3);
+
+        // Move down instantaneously to exercise successive frames opens (#7325)
+        ctx->MouseTeleportToPos(ctx->ItemInfo("//##Menu_01/3")->RectClipped.GetCenter(), ImGuiTestOpFlags_NoYield);
+        ctx->Yield();
+        IM_CHECK_EQ(g.OpenPopupStack.Size, 3);
+        ctx->MouseTeleportToPos(ctx->ItemInfo("//##Menu_01/5")->RectClipped.GetCenter(), ImGuiTestOpFlags_NoYield);
+        ctx->Yield();
+        IM_CHECK_EQ(g.OpenPopupStack.Size, 3);
+        ctx->Yield();
+        IM_CHECK_EQ(g.OpenPopupStack.Size, 3);
+        ctx->MouseTeleportToPos(ctx->ItemInfo("//##Menu_01/4")->RectClipped.GetCenter(), ImGuiTestOpFlags_NoYield);
+        ctx->Yield();
+        IM_CHECK_EQ(g.OpenPopupStack.Size, 3);
+        ctx->MouseTeleportToPos(ctx->ItemInfo("//##Menu_01/3")->RectClipped.GetCenter(), ImGuiTestOpFlags_NoYield);
+        ctx->Yield();
+        IM_CHECK_EQ(g.OpenPopupStack.Size, 3);
+        ctx->Yield();
+#if IMGUI_VERSION_NUM >= 19042
+        IM_CHECK_EQ(g.OpenPopupStack.Size, 3); // Broken before 2024/02/27
+#endif
     };
 #endif
 

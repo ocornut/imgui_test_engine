@@ -1425,7 +1425,7 @@ void RegisterTests_Window(ImGuiTestEngine* e)
     };
 
     // ## Test popups reopening at same position. (#4936)
-    t = IM_REGISTER_TEST(e, "window", "window_popup_mouse_reopen");
+    t = IM_REGISTER_TEST(e, "window", "window_popup_reopen_with_mouse");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_MenuBar);
