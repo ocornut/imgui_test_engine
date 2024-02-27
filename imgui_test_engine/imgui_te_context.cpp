@@ -2011,7 +2011,9 @@ void    ImGuiTestContext::MouseMoveToPos(ImVec2 target)
 }
 
 // This always teleport the mouse regardless of fast/slow mode. Useful e.g. to set initial mouse position for a GIF recording.
-void	ImGuiTestContext::MouseTeleportToPos(ImVec2 target)
+// Supported values for ImGuiTestOpFlags:
+// - ImGuiTestOpFlags_NoYield
+void	ImGuiTestContext::MouseTeleportToPos(ImVec2 target, ImGuiTestOpFlags flags)
 {
     if (IsError())
         return;
@@ -2020,8 +2022,11 @@ void	ImGuiTestContext::MouseTeleportToPos(ImVec2 target)
     LogDebug("MouseTeleportToPos from (%.0f,%.0f) to (%.0f,%.0f)", Inputs->MousePosValue.x, Inputs->MousePosValue.y, target.x, target.y);
 
     Inputs->MousePosValue = target;
-    ImGuiTestEngine_Yield(Engine);
-    ImGuiTestEngine_Yield(Engine);
+    if ((flags & ImGuiTestOpFlags_NoYield) == 0)
+    {
+        ImGuiTestEngine_Yield(Engine);
+        ImGuiTestEngine_Yield(Engine);
+    }
 }
 
 void    ImGuiTestContext::MouseDown(ImGuiMouseButton button)
