@@ -210,6 +210,7 @@ void RegisterTests_Window(ImGuiTestEngine* e)
         IM_CHECK(vars.Bool1 == true);   // Begin() return true
     };
 
+    // ## Test content sizes and its effect on scrollbar visibility
     t = IM_REGISTER_TEST(e, "window", "window_size_contents");
     t->Flags |= ImGuiTestFlags_NoAutoFinish;
     t->GuiFunc = [](ImGuiTestContext* ctx)
@@ -1871,11 +1872,11 @@ void RegisterTests_Window(ImGuiTestEngine* e)
     // Regardless of WindowPadding and ItemSpacing values
 #if IMGUI_VERSION_NUM >= 18202
     t = IM_REGISTER_TEST(e, "window", "window_scroll_tracking");
-    struct ScrollTestVars { int Variant = 0; bool FullyVisible[30][30] = {}; int TrackX = 0; int TrackY = 0; };
-    t->SetVarsDataType<ScrollTestVars>();
+    struct ScrollTrackingVars { int Variant = 0; bool FullyVisible[30][30] = {}; int TrackX = 0; int TrackY = 0; };
+    t->SetVarsDataType<ScrollTrackingVars>();
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
-        auto& vars = ctx->GetVars<ScrollTestVars>();
+        auto& vars = ctx->GetVars<ScrollTrackingVars>();
 
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
         if (ImGui::Button("Track 0,0")) { vars.TrackX = 0; vars.TrackY = 0; }
@@ -1920,7 +1921,7 @@ void RegisterTests_Window(ImGuiTestEngine* e)
     };
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
-        auto& vars = ctx->GetVars<ScrollTestVars>();
+        auto& vars = ctx->GetVars<ScrollTrackingVars>();
         ctx->SetRef("Test Window");
         ImGuiWindow* window = ctx->GetWindowByRef("");
 
@@ -1953,7 +1954,7 @@ void RegisterTests_Window(ImGuiTestEngine* e)
     };
 #endif
 
-    // ## Test that an auto-fit window doesn't have scrollbar while resizing (FIXME-TESTS: Also test non-zero ScrollMax when implemented)
+    // ## Test that nested auto-fit window doesn't have scrollbar while resizing (FIXME-TESTS: Also test non-zero ScrollMax when implemented)
     t = IM_REGISTER_TEST(e, "window", "window_scroll_while_resizing");
     t->Flags |= ImGuiTestFlags_NoAutoFinish;
     t->GuiFunc = [](ImGuiTestContext* ctx)
@@ -1978,6 +1979,80 @@ void RegisterTests_Window(ImGuiTestEngine* e)
     {
         ctx->WindowResize("Test Scrolling", ImVec2(400, 400));
         ctx->WindowResize("Test Scrolling", ImVec2(100, 100));
+    };
+
+    // ## Test scrollbar visibility
+    t = IM_REGISTER_TEST(e, "window", "window_scroll_visibility");
+    struct ScrollVisibilityVars { ImVec2 InSize; ImVec2 InDeclaredContentSize; ImVec2 InSubmittedContentSize; ImGuiWindowFlags InWindowFlags = 0; ImGuiWindow* OutWindow = NULL; };
+    t->SetVarsDataType<ScrollVisibilityVars>();
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        auto& vars = ctx->GetVars<ScrollVisibilityVars>();
+        if (vars.InSize.x >= 0.0f || vars.InSize.y >= 0.0f)
+            ImGui::SetNextWindowSize(vars.InSize);
+        if (vars.InDeclaredContentSize.x >= 0.0f || vars.InDeclaredContentSize.y >= 0.0f)
+            ImGui::SetNextWindowContentSize(vars.InDeclaredContentSize);
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | vars.InWindowFlags);
+        vars.OutWindow = ImGui::GetCurrentWindow();
+        if (vars.InSubmittedContentSize.x >= 0.0f || vars.InSubmittedContentSize.y >= 0.0f)
+            ImGui::Dummy(vars.InSubmittedContentSize);
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        auto& vars = ctx->GetVars<ScrollVisibilityVars>();
+        vars.InWindowFlags |= ImGuiWindowFlags_NoTitleBar;
+        ImGuiStyle& style = ImGui::GetStyle();
+
+        vars.InSize = ImVec2(100, 100);
+        vars.InDeclaredContentSize = ImVec2(-1.f, -1.f);
+        vars.InSubmittedContentSize = ImVec2(-1.f, -1.f);
+        ctx->Yield();
+        IM_CHECK_EQ(vars.OutWindow->ScrollbarY, false);
+
+        // use SetNextWindowContentSize()
+        vars.InSize = ImVec2(100, 100);
+        vars.InDeclaredContentSize = ImVec2(50.0f, 100.0f - style.WindowPadding.y * 2.0f);
+        vars.InSubmittedContentSize = ImVec2(-1.f, -1.f);
+        ctx->Yield();
+        IM_CHECK_EQ(vars.OutWindow->ScrollbarY, false);
+        vars.InDeclaredContentSize.y += 1.0f;
+        ctx->Yield();
+        IM_CHECK_EQ(vars.OutWindow->ScrollbarY, true);
+
+        // use Dummy() actual contents submission
+        vars.InSize = ImVec2(100, 100);
+        vars.InDeclaredContentSize = ImVec2(-1.f, -1.f);
+        vars.InSubmittedContentSize = ImVec2(50.0f, 100.0f - style.WindowPadding.y * 2.0f);
+        ctx->Yield();
+        IM_CHECK_EQ(vars.OutWindow->ScrollbarY, false);
+        vars.InSubmittedContentSize.y += 1.0f;
+        ctx->Yield();
+        IM_CHECK_EQ(vars.OutWindow->ScrollbarY, false); // Take one frame to measure contents size!
+        ctx->Yield();
+        IM_CHECK_EQ(vars.OutWindow->ScrollbarY, true);
+
+        // Verify reaction to altered size and contents size (#7252)
+        // FIXME-TESTS: We should/could cover more cases by tracking bugs corrected related to the setup of ScrollbarY flag.
+        vars.InSize = ImVec2(100, 100);
+        vars.InDeclaredContentSize = ImVec2(100.0f, 100.0f - style.WindowPadding.y * 2.0f);
+        vars.InSubmittedContentSize = ImVec2(100.0f, 100.0f - style.WindowPadding.y * 2.0f);
+        ctx->Yield();
+        IM_CHECK_EQ(vars.OutWindow->ScrollbarY, false);
+        ctx->Yield();
+        IM_CHECK_EQ(vars.OutWindow->ScrollbarY, false);
+        // ...increase contents
+        vars.InSize.y += 50.0f;
+        vars.InDeclaredContentSize.y += 50.0f;
+        vars.InSubmittedContentSize.y += 50.0f;
+        ctx->Yield();
+#if IMGUI_BROKEN_TESTS
+        IM_CHECK_EQ(vars.OutWindow->ScrollbarY, false); // Expected/ideal
+#else
+        IM_CHECK_EQ(vars.OutWindow->ScrollbarY, true); // Current as of 1.90.4
+#endif
+        ctx->Yield();
+        IM_CHECK_EQ(vars.OutWindow->ScrollbarY, false);
     };
 
     // ## Test window scrolling using mouse wheel.
