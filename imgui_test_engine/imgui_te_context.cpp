@@ -380,11 +380,15 @@ bool    ImGuiTestContext::SuspendTestFunc(const char* file, int line)
     if (IsError())
         return false;
 
-    file = ImPathFindFilename(file);
     if (file != NULL)
+    {
+        file = ImPathFindFilename(file);
         LogError("SuspendTestFunc() at %s:%d", file, line);
+    }
     else
+    {
         LogError("SuspendTestFunc()");
+    }
 
     // Save relevant state.
     // FIXME-TESTS: Saving/restoring window z-order could be desirable.
