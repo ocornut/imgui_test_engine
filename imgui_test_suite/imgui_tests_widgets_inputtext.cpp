@@ -1012,7 +1012,8 @@ void RegisterTests_WidgetsInputText(ImGuiTestEngine* e)
             {
                 if (data->EventFlag == ImGuiInputTextFlags_CallbackCompletion)
                 {
-                    data->InsertChars(data->CursorPos, "..");
+                    // Append lots of text to avoid relying on existing capacity
+                    data->InsertChars(data->CursorPos, ".......................................");
                 }
                 else if (data->EventFlag == ImGuiInputTextFlags_CallbackHistory)
                 {
@@ -1061,7 +1062,7 @@ void RegisterTests_WidgetsInputText(ImGuiTestEngine* e)
         ctx->KeyCharsAppend("Hello World");
         IM_CHECK_STR_EQ(vars.CompletionBuffer.c_str(), "Hello World");
         ctx->KeyPress(ImGuiKey_Tab);
-        IM_CHECK_STR_EQ(vars.CompletionBuffer.c_str(), "Hello World..");
+        IM_CHECK_STR_EQ(vars.CompletionBuffer.c_str(), "Hello World.......................................");
 
         // FIXME: Not testing History callback :)
         ctx->ItemClick("History");
