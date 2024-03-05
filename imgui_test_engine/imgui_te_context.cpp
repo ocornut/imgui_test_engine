@@ -3729,6 +3729,8 @@ void    ImGuiTestContext::DockInto(ImGuiTestRef src_id, ImGuiTestRef dst_id, ImG
     MouseLiftDragThreshold();
     if (window_src->DockIsActive)
         MouseMoveToPos(g.IO.MousePos + ImVec2(0, ImGui::GetFrameHeight() * 2.0f));
+    else
+        Yield(); // A yield is necessary to start the moving, otherwise if by the time we call MouseSetViewport() no frame has elapsed and the viewports differs, dragging will fail.
     // (Button still held)
 
     // Locate target

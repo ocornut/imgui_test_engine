@@ -5,6 +5,9 @@ CHANGELOG
    Those changes are not all listed here.
 ** For a while this is going to ONLY INCLUDE BREAKING CHANGES.
 
+2024/03/05:
+- TestEngine: Fixed an issue with using DockInto() from one viewport to another.
+
 2024/02/27:
 - TestEngine: Added ImGuiTestOpFlags_NoYield support to MouseTeleportToPos(), useful in
   situations where very precise timings are required (e.g. successive frames teleports).
