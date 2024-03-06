@@ -3681,9 +3681,8 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         {
             for (ImGuiSelectionRequest& req : ms_io->Requests)
             {
-                if (req.Type == ImGuiSelectionRequestType_Clear)     { Clear(); }
-                if (req.Type == ImGuiSelectionRequestType_SelectAll) { SelectAll(items_count); }
-                if (req.Type == ImGuiSelectionRequestType_SetRange)  { SetRange(ItemDataToIndex(req.RangeFirstItem), ItemDataToIndex(req.RangeLastItem), req.RangeSelected ? 1 : 0); }
+                if (req.Type == ImGuiSelectionRequestType_SetAll)   { if (req.Selected) { SelectAll(items_count); } else { Clear(); } }
+                if (req.Type == ImGuiSelectionRequestType_SetRange) { SetRange(ItemDataToIndex(req.RangeFirstItem), ItemDataToIndex(req.RangeLastItem), req.Selected ? 1 : 0); }
             }
         }
         void EmitBasicItems(ImGuiMultiSelectIO* ms_io, int items_count, const char* label_format)
