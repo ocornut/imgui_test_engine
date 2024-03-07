@@ -4342,6 +4342,128 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
 #endif
 #endif
 
+    // ## Test BeginMultiSelect() API with non-selectable checkboxes, to benefit from range-select features
+#if IMGUI_VERSION_NUM >= 19044
+    t = IM_REGISTER_TEST(e, "widgets", "widgets_multiselect_checkboxes");
+    struct MultiSelectCheckboxesVars
+    {
+        bool    ApplyBeginRequests = false;
+        int     ItemsCount = 20;
+        ImU64   Mask = 0;
+
+        void Clear() { Mask = 0; }
+    };
+    t->SetVarsDataType<MultiSelectCheckboxesVars>();
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        auto& vars = ctx->GetVars<MultiSelectCheckboxesVars>();
+
+        // Apply multi-select requests over a bool items[] array, where ImGuiSelectionUserData is item index.
+        auto ApplyRequestsToBitMask = [](ImGuiMultiSelectIO* ms_io, ImU64& mask, int items_count)
+        {
+            for (ImGuiSelectionRequest& req : ms_io->Requests)
+            {
+                if (req.Type == ImGuiSelectionRequestType_SetAll)
+                    for (int n = 0; n < items_count; n++)
+                        mask = req.Selected ? (mask | ((ImU64)1 << n)) : (mask & ~((ImU64)1 << n));
+                if (req.Type == ImGuiSelectionRequestType_SetRange)
+                    for (int n = (int)req.RangeFirstItem; n <= (int)req.RangeLastItem; n++)
+                        mask = req.Selected ? (mask | ((ImU64)1 << n)) : (mask & ~((ImU64)1 << n));
+            }
+        };
+
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImGuiMultiSelectIO* ms_io = ImGui::BeginMultiSelect(ImGuiMultiSelectFlags_NoAutoClear | ImGuiMultiSelectFlags_NoAutoSelect | ImGuiMultiSelectFlags_ClearOnEscape);
+        ImGui::Button("Header");
+        if (vars.ApplyBeginRequests) // Verify that system can function without this
+            ApplyRequestsToBitMask(ms_io, vars.Mask, vars.ItemsCount);
+        for (int n = 0; n < vars.ItemsCount; n++)
+        {
+            ImGui::SetNextItemSelectionUserData(n);
+            ImGui::CheckboxFlags(Str30f("Item %d", n).c_str(), &vars.Mask, (ImU64)1 << n);
+        }
+        ImGui::EndMultiSelect();
+        ApplyRequestsToBitMask(ms_io, vars.Mask, vars.ItemsCount);
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        auto& vars = ctx->GetVars<MultiSelectCheckboxesVars>();
+
+#if IMGUI_BROKEN_TESTS
+        for (int step = 0; step < 2; step++) // Broken if clipped
+#else
+        for (int step = 0; step < 1; step++)
+#endif
+        {
+            vars.Clear();
+            vars.ApplyBeginRequests = (step == 0);
+
+            // Clicks
+            ctx->SetRef("Test Window");
+            ctx->ItemClick("Item 1");
+            IM_CHECK_EQ(vars.Mask, (ImU64)(0x02));
+            ctx->ItemClick("Item 1");
+            IM_CHECK_EQ(vars.Mask, (ImU64)0);
+            ctx->ItemClick("Item 1");
+            ctx->ItemClick("Item 2");
+            IM_CHECK_EQ(vars.Mask, (ImU64)(0x02 | 0x04));
+
+            // Shift+Click
+            ctx->KeyDown(ImGuiMod_Shift);
+            ctx->ItemClick("Item 6"); // Set 2-6
+            IM_CHECK_EQ(vars.Mask, (ImU64)(0x02 | 0x04 | 0x08 | 0x10 | 0x20 | 0x40));
+            ctx->ItemClick("Item 6"); // Clear 2-6
+            IM_CHECK_EQ(vars.Mask, (ImU64)(0x02));
+            ctx->ItemClick("Item 6"); // Set 2-6
+            ctx->ItemClick("Item 7"); // Set 2-7
+            IM_CHECK_EQ(vars.Mask, (ImU64)(0x02 | 0x04 | 0x08 | 0x10 | 0x20 | 0x40 | 0x80));
+            ctx->KeyUp(ImGuiMod_Shift);
+
+            ctx->KeyPress(ImGuiMod_Shortcut | ImGuiKey_A);
+            IM_CHECK_EQ(vars.Mask, ((ImU64)1 << vars.ItemsCount) - 1);
+            ctx->KeyPress(ImGuiKey_Home);
+            ctx->KeyPress(ImGuiKey_DownArrow); // Skip Button
+            IM_CHECK_EQ(vars.Mask, ((ImU64)1 << vars.ItemsCount) - 1);
+            ctx->KeyPress(ImGuiKey_Space);
+            IM_CHECK_EQ(vars.Mask, (((ImU64)1 << vars.ItemsCount) - 1) ^ 0x01);
+            ctx->KeyPress(ImGuiMod_Shift | ImGuiKey_End);
+            IM_CHECK_EQ(vars.Mask, (ImU64)0);
+
+            // Shift+Arrows
+            ctx->KeyPress(ImGuiKey_Home);
+            ctx->KeyPress(ImGuiKey_DownArrow); // Skip Button
+            ctx->KeyPress(ImGuiMod_Shift | ImGuiKey_DownArrow);
+            IM_CHECK_EQ(vars.Mask, (ImU64)0);
+            ctx->KeyPress(ImGuiKey_Space);
+            IM_CHECK_EQ(vars.Mask, (ImU64)(0x02));
+            ctx->KeyPress(ImGuiMod_Shift | ImGuiKey_DownArrow);
+            IM_CHECK_EQ(vars.Mask, (ImU64)(0x02 | 0x04));
+            ctx->KeyPress(ImGuiMod_Shift | ImGuiKey_DownArrow);
+            IM_CHECK_EQ(vars.Mask, (ImU64)(0x02 | 0x04 | 0x08));
+            ctx->KeyPress(ImGuiMod_Shift | ImGuiKey_UpArrow);
+            ctx->KeyPress(ImGuiMod_Shift | ImGuiKey_UpArrow);
+            IM_CHECK_EQ(vars.Mask, (ImU64)(0x02 | 0x04 | 0x08));
+            ctx->KeyPress(ImGuiMod_Shift | ImGuiKey_UpArrow);
+            IM_CHECK_EQ(vars.Mask, (ImU64)(0x01 | 0x02 | 0x04 | 0x08));
+
+            // Test that pressing arrow updates RangeSrc
+            ctx->KeyPress(ImGuiKey_DownArrow, 5);
+            IM_CHECK_EQ(ImGui::GetFocusID(), ctx->GetID("Item 5")); // 0x20
+            ctx->KeyPress(ImGuiMod_Shift | ImGuiKey_DownArrow);
+            IM_CHECK_EQ(vars.Mask, (ImU64)(0x01 | 0x02 | 0x04 | 0x08));
+
+            // Test ImGuiMultiSelectFlags_ClearOnEscape
+            ctx->KeyPress(ImGuiKey_Escape);
+            IM_CHECK_EQ(vars.Mask, (ImU64)(0));
+
+            // Test that right-click doesn't do anything
+            ctx->ItemClick("Item 2", ImGuiMouseButton_Right);
+            IM_CHECK_EQ(vars.Mask, (ImU64)(0));
+        }
+    };
+#endif
+
     // ## Basic test for GetTypingSelectRequest()
     // Technically this API doesn't require MultiSelect but it's easier for us to reuse that code.
     t = IM_REGISTER_TEST(e, "widgets", "widgets_typingselect");
