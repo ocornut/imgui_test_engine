@@ -4869,10 +4869,10 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
             if (ctx->IsGuiFuncOnly())
             {
                 float step = ctx->UiContext->IO.DeltaTime * 500.0f;
-                if (ImGui::IsKeyDown(ImGui::GetKeyIndex(ImGuiKey_UpArrow))) vars.Size.y -= step;
-                if (ImGui::IsKeyDown(ImGui::GetKeyIndex(ImGuiKey_DownArrow))) vars.Size.y += step;
-                if (ImGui::IsKeyDown(ImGui::GetKeyIndex(ImGuiKey_LeftArrow))) vars.Size.x -= step;
-                if (ImGui::IsKeyDown(ImGui::GetKeyIndex(ImGuiKey_RightArrow))) vars.Size.x += step;
+                if (ImGui::IsKeyDown(ImGuiKey_UpArrow)) vars.Size.y -= step;
+                if (ImGui::IsKeyDown(ImGuiKey_DownArrow)) vars.Size.y += step;
+                if (ImGui::IsKeyDown(ImGuiKey_LeftArrow)) vars.Size.x -= step;
+                if (ImGui::IsKeyDown(ImGuiKey_RightArrow)) vars.Size.x += step;
             }
         };
 
