@@ -2,6 +2,8 @@
 
 Automation system for [Dear ImGui](https://github.com/ocornut/imgui) and applications/games/engines using Dear ImGui.
 
+Because Dear ImGui tends to be wired in low-level subsystems within your codebase, you can leverage that to automate actions interacting with them. 
+
 ## Contents
 
 - [imgui_test_engine/](https://github.com/ocornut/imgui_test_engine/tree/main/imgui_test_engine): dear imgui test engine / automation system (library)
