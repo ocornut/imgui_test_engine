@@ -2889,7 +2889,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
 #endif
 
 #if IMGUI_VERSION_NUM >= 18408
-    // ## Test null range in TextUnformatted() (#3615)
+    // ## Test null range in TextUnformatted() (#3615, #7391)
     t = IM_REGISTER_TEST(e, "widgets", "widgets_text_null");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
@@ -2910,6 +2910,13 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
             ImVec2 p1 = ImGui::GetCursorScreenPos();
             IM_CHECK_EQ(p0, p1);
         }
+#if IMGUI_VERSION_NUM >= 19047
+        {
+            ImVec2 p0 = ImGui::GetCursorScreenPos();
+            ImGui::GetWindowDrawList()->AddText(p0, ImGui::GetColorU32(ImGuiCol_Text), str + 1, str + 1);
+            ImGui::GetWindowDrawList()->AddText(p0, ImGui::GetColorU32(ImGuiCol_Text), NULL, NULL);
+        }
+#endif
         ImGui::End();
     };
 #endif
