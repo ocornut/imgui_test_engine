@@ -1625,6 +1625,48 @@ void RegisterTests_Table(ImGuiTestEngine* e)
     };
 #endif
 
+#if IMGUI_VERSION_NUM >= 19047
+    // ## Test auto-fit with synced instance (#7218)
+    t = IM_REGISTER_TEST(e, "table", "table_synced_3_autofit");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        bool do_checks = !ctx->IsFirstGuiFrame();
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+        if (ImGui::BeginTable("test_table", 2, ImGuiTableFlags_Borders | ImGuiTableFlags_SizingFixedFit))
+        {
+            ImGui::TableNextColumn();
+            if (do_checks)
+                IM_CHECK_EQ_NO_RET(ImGui::GetContentRegionAvail().x, ImGui::CalcTextSize("Very very long text 1").x);
+            ImGui::Text("Very very long text 1");
+            ImGui::TableNextColumn();
+            if (do_checks)
+                IM_CHECK_EQ_NO_RET(ImGui::GetContentRegionAvail().x, ImGui::CalcTextSize("Text 1").x);
+            ImGui::Text("Text 1");
+            ImGui::EndTable();
+        }
+        for (int n = 0; n < 2; n++)
+        {
+            // Third table is indented. Because our table width computation logic stores absolute coordinates
+            // for efficiency, it makes sense to double-check this case as well.
+            if (n == 1)
+                ImGui::Indent();
+            if (ImGui::BeginTable("test_table", 2, ImGuiTableFlags_Borders | ImGuiTableFlags_SizingFixedFit))
+            {
+                ImGui::TableNextColumn();
+                if (do_checks)
+                    IM_CHECK_EQ_NO_RET(ImGui::GetContentRegionAvail().x, ImGui::CalcTextSize("Very very long text 1").x);
+                ImGui::Text("Text 1");
+                ImGui::TableNextColumn();
+                if (do_checks)
+                    IM_CHECK_EQ_NO_RET(ImGui::GetContentRegionAvail().x, ImGui::CalcTextSize("Text 2").x);
+                ImGui::Text("Text 2");
+                ImGui::EndTable();
+            }
+        }
+        ImGui::End();
+    };
+#endif
+
     // ## Test two tables in a tooltip continuously expanding tooltip size (#3162)
     t = IM_REGISTER_TEST(e, "table", "table_two_tables_in_tooltip");
     t->GuiFunc = [](ImGuiTestContext* ctx)
