@@ -2936,10 +2936,9 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ImGui::SetScrollY(log_panel, log_panel->ScrollMax.y);
         ctx->SleepStandard();
         ctx->ItemClick("Clear");
-        // FIXME-TESTS: A bit of extra testing that will be possible once tomato problem is solved.
-        // ctx->ComboClick("Test type/Single call to TextUnformatted()");
-        // ctx->ComboClick("Test type/Multiple calls to Text(), clipped");
-        // ctx->ComboClick("Test type/Multiple calls to Text(), not clipped (slow)");
+        ctx->ComboClick("Test type/Single call to TextUnformatted()");
+        ctx->ComboClick("Test type/Multiple calls to Text(), clipped");
+        ctx->ComboClick("Test type/Multiple calls to Text(), not clipped (slow)");
         ctx->WindowClose("");
     };
 
