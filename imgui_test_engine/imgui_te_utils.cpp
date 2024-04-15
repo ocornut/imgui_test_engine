@@ -790,7 +790,6 @@ const ImBuildInfo* ImBuildGetCompilationInfo()
 #elif defined(__EMSCRIPTEN__)
         build_info.Cpu = "WebAsm";
 #else
-#error
         build_info.Cpu = (sizeof(size_t) == 4) ? "Unknown32" : "Unknown64";
 #endif
 
