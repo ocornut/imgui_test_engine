@@ -5,6 +5,9 @@ CHANGELOG
    Those changes are not all listed here.
 ** For a while this is going to ONLY INCLUDE BREAKING CHANGES.
 
+2024/04/15:
+- TestEngine: Added ImGuiTestEngine_UnregisterTest().
+
 2024/04/11:
 - TestEngine: Better assert on misusage of ComboClick().
 
