@@ -4535,7 +4535,7 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
         // See: http://www.russellcottrell.com/greek/utilities/SurrogatePairCalculator.htm
         // 0x20628 = 0xD841 + 0xDE28
         ImGuiIO& io = ctx->UiContext->IO;
-        io.ClearInputCharacters();
+        io.ClearInputKeys();
         IM_CHECK_EQ(io.InputQueueSurrogate, 0);
         io.AddInputCharacterUTF16(0xD841);
         IM_CHECK_EQ(io.InputQueueCharacters.Size, 0);
