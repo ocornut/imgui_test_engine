@@ -383,7 +383,7 @@ void RegisterTests_Window(ImGuiTestEngine* e)
     };
 
     // ## Test appending multiple times to a child window (bug #2282)
-    t = IM_REGISTER_TEST(e, "window", "window_append");
+    t = IM_REGISTER_TEST(e, "window", "window_append_child");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         ImGui::SetNextWindowSize(ImVec2(200, 200));
@@ -409,6 +409,39 @@ void RegisterTests_Window(ImGuiTestEngine* e)
         ImVec2 pos4 = ImGui::GetCursorScreenPos();
         IM_CHECK_EQ(pos3, pos4); // Append calls to BeginChild() shouldn't affect CursorPos in parent window
         ImGui::End();
+    };
+
+    // ## Test IsItemXXX calls after an append-Begin() call (#7506)
+    t = IM_REGISTER_TEST(e, "window", "window_append_status");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        auto& vars = ctx->GenericVars;
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+        vars.Bool1 = ImGui::IsItemHovered();
+        ImGui::Text("IsItemHovered = %d (first)", vars.Bool1);
+        ImRect window_rect = ImGui::GetCurrentWindowRead()->Rect();
+        ImGui::End();
+
+        // Make sure we have an item in-between so that old last item isn't used
+        ImGui::SetNextWindowPos(ImVec2(window_rect.Max.x, window_rect.Min.y));
+        ImGui::Begin("Another window");
+        ImGui::Button("Foobar");
+        {
+            ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+            vars.Bool2 = ImGui::IsItemHovered();
+            ImGui::Text("IsItemHovered = %d (append)", vars.Bool2);
+            ImGui::End();
+        }
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        auto& vars = ctx->GenericVars;
+        ctx->MouseMoveToPos(ctx->GetWindowTitlebarPoint("Test Window"));
+        IM_CHECK(vars.Bool1 == true);
+#if IMGUI_VERSION_NUM >= 19052
+        IM_CHECK(vars.Bool2 == true);
+#endif
     };
 
     // ## Test basic focus behavior
