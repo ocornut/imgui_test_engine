@@ -2146,6 +2146,64 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ImGui::End();
     };
 
+    // ## Test padding when using TreeNode() + SameLine() idioms (#7505)
+    t = IM_REGISTER_TEST(e, "widgets", "widgets_treenode_padding");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiStyle& style = ImGui::GetStyle();
+
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+
+        for (int n = 0; n < 2; n++)
+        {
+            ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, (n == 0) ? ImVec2(4, 3) : ImVec2(11, 3));
+            ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, (n == 0) ? ImVec2(8, 4) : ImVec2(9, 4));;
+            ImGui::PushID(n);
+
+            float offset = ImGui::GetTreeNodeToLabelSpacing();
+            IM_CHECK_EQ(offset, ImGui::GetFontSize() + style.FramePadding.x * 2.0f);
+
+            ImVec2 p = ImGui::GetCursorScreenPos();
+            {
+                bool is_open = ImGui::TreeNode("Hello1");
+                ImGui::SameLine();
+                IM_CHECK_EQ(ImGui::GetCursorScreenPos().x, p.x + offset + ImGui::CalcTextSize("Hello1").x + style.ItemSpacing.x);
+                ImGui::Text("World");
+                if (is_open)
+                    ImGui::TreePop();
+            }
+            {
+                bool is_open = ImGui::TreeNode("Hello2");
+                ImGui::SameLine(0, 0);
+                IM_CHECK_EQ(ImGui::GetCursorScreenPos().x, p.x + offset + ImGui::CalcTextSize("Hello2").x);
+                ImGui::Text("World");
+                if (is_open)
+                    ImGui::TreePop();
+            }
+#if IMGUI_VERSION_NUM >= 19052
+            {
+                bool is_open = ImGui::TreeNodeEx("##Hello3", 0 * ImGuiTreeNodeFlags_SpanAvailWidth);
+                ImGui::SameLine();
+                IM_CHECK_EQ(ImGui::GetCursorScreenPos().x, p.x + offset + style.ItemSpacing.x);
+                ImGui::TextColored(ImVec4(1, 0, 0, 1), "%s", "World");
+                if (is_open)
+                    ImGui::TreePop();
+            }
+            {
+                bool is_open = ImGui::TreeNodeEx("##Hello4", 0 * ImGuiTreeNodeFlags_SpanAvailWidth);
+                ImGui::SameLine(0, 0);
+                IM_CHECK_EQ(ImGui::GetCursorScreenPos().x, p.x + offset);
+                ImGui::TextColored(ImVec4(1, 0, 0, 1), "%s", "World");
+                if (is_open)
+                    ImGui::TreePop();
+            }
+#endif
+            ImGui::PopID();
+            ImGui::PopStyleVar(2);
+        }
+        ImGui::End();
+    };
+
     // ## Test PlotLines() with a single value (#2387).
     t = IM_REGISTER_TEST(e, "widgets", "widgets_plot_lines_unexpected_input");
     t->GuiFunc = [](ImGuiTestContext* ctx)
