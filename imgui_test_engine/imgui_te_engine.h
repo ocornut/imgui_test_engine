@@ -290,7 +290,6 @@ struct ImGuiTestItemInfo
     ImGuiID                     ID = 0;                     // Item ID
     char                        DebugLabel[32] = {};        // Shortened label for debugging purpose
     ImGuiWindow*                Window = NULL;              // Item Window
-    int                         RefCount : 8;               // User can increment this if they want to hold on the result pointer across frames, otherwise the task will be GC-ed.
     unsigned int                NavLayer : 1;               // Nav layer of the item (ImGuiNavLayer)
     int                         Depth : 16;                 // Depth from requested parent id. 0 == ID is immediate child of requested parent id.
     int                         TimestampMain = -1;         // Timestamp of main result (all fields)

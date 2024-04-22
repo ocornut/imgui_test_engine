@@ -966,6 +966,9 @@ ImGuiTestItemInfo ImGuiTestContext::ItemInfo(ImGuiTestRef ref, ImGuiTestOpFlags 
     if (IsError())
         return ItemInfoNull();
 
+    const ImGuiTestOpFlags SUPPORTED_FLAGS = ImGuiTestOpFlags_NoError;
+    IM_ASSERT((flags & ~SUPPORTED_FLAGS) == 0);
+
     ImGuiID full_id = 0;
 
     if (const char* p = ref.Path ? strstr(ref.Path, "**/") : NULL)
@@ -1517,7 +1520,7 @@ void    ImGuiTestContext::NavMoveTo(ImGuiTestRef ref)
 
     if (item.ID == 0)
         return;
-    item.RefCount++;
+    //item.RefCount++;
 
     if (EngineIO->ConfigRunSpeed == ImGuiTestRunSpeed_Cinematic)
         SleepStandard();
@@ -1544,7 +1547,7 @@ void    ImGuiTestContext::NavMoveTo(ImGuiTestRef ref)
         if (g.NavId != item.ID)
             IM_ERRORF_NOHDR("Unable to set NavId to %s", desc.c_str());
 
-    item.RefCount--;
+    //item.RefCount--;
 }
 
 void    ImGuiTestContext::NavActivate()
@@ -1626,8 +1629,6 @@ void    ImGuiTestContext::MouseMove(ImGuiTestRef ref, ImGuiTestOpFlags flags)
         return;
     }
 
-    item.RefCount++;
-
     // FIXME-TESTS: If window was not brought to front (because of either ImGuiWindowFlags_NoBringToFrontOnFocus or ImGuiTestOpFlags_NoFocusWindow)
     // then we need to make space by moving other windows away.
     // An easy to reproduce this bug is to run "docking_dockspace_tab_amend" with Test Engine UI over top-left corner, covering the Tools menu.
@@ -1674,12 +1675,12 @@ void    ImGuiTestContext::MouseMove(ImGuiTestRef ref, ImGuiTestOpFlags flags)
     }
 
     // Update item
-    item = (flags & ImGuiTestOpFlags_NoAutoOpenFullPath) ? ItemInfo(ref) : ItemInfoOpenFullPath(ref);
+    item = ItemInfo(item.ID);
 
     // FIXME-TESTS-NOT_SAME_AS_END_USER
     ImVec2 pos = item.RectFull.GetCenter();
     if (WindowTeleportToMakePosVisible(window->ID, pos))
-        item = (flags & ImGuiTestOpFlags_NoAutoOpenFullPath) ? ItemInfo(ref) : ItemInfoOpenFullPath(ref);
+        item = ItemInfo(item.ID);
 
     // Keep a deep copy of item info since item-> will be kept updated as we set a RefCount on it.
     const ImGuiTestItemInfo item_initial_state = item;
@@ -1762,13 +1763,13 @@ void    ImGuiTestContext::MouseMove(ImGuiTestRef ref, ImGuiTestOpFlags flags)
                     float extra_size = window->CalcFontSize() * 3.0f;
                     WindowResize(window->ID, window->Size + ImVec2(extra_size, extra_size));
                     MouseMove(ref, flags | ImGuiTestOpFlags_IsSecondAttempt);
-                    item.RefCount--;
+                    //item.RefCount--;
                     return;
                 }
             }
 
             // Update item
-            item = (flags & ImGuiTestOpFlags_NoAutoOpenFullPath) ? ItemInfo(ref) : ItemInfoOpenFullPath(ref);
+            item = ItemInfo(item.ID);
 
             ImVec2 pos_old = item_initial_state.RectFull.Min;
             ImVec2 pos_new = item.RectFull.Min;
@@ -1789,7 +1790,7 @@ void    ImGuiTestContext::MouseMove(ImGuiTestRef ref, ImGuiTestOpFlags flags)
         }
     }
 
-    item.RefCount--;
+    //item.RefCount--;
 }
 
 void    ImGuiTestContext::MouseSetViewport(ImGuiWindow* window)
@@ -2717,24 +2718,24 @@ void    ImGuiTestContext::ItemAction(ImGuiTestAction action, ImGuiTestRef ref, I
         IM_ASSERT(action_arg == NULL); // Unused
         if ((item.StatusFlags & ImGuiItemStatusFlags_Opened) == 0)
         {
-            item.RefCount++;
+            //item.RefCount++;
             MouseMove(ref, flags);
 
             // Some item may open just by hovering, give them that chance
-            item = ItemInfo(item.ID, ImGuiTestOpFlags_NoAutoOpenFullPath);
+            item = ItemInfo(item.ID);
             if ((item.StatusFlags & ImGuiItemStatusFlags_Opened) == 0)
             {
                 MouseClick(0);
-                item = ItemInfo(item.ID, ImGuiTestOpFlags_NoAutoOpenFullPath);
+                item = ItemInfo(item.ID);
                 if ((item.StatusFlags & ImGuiItemStatusFlags_Opened) == 0)
                 {
                     MouseDoubleClick(0); // Attempt a double-click // FIXME-TESTS: let's not start doing those fuzzy things..
-                    item = ItemInfo(item.ID, ImGuiTestOpFlags_NoAutoOpenFullPath);
+                    item = ItemInfo(item.ID);
                     if ((item.StatusFlags & ImGuiItemStatusFlags_Opened) == 0)
                         IM_ERRORF_NOHDR("Unable to Open item: '%s' in '%s'", desc.c_str(), item.Window ? item.Window->Name : "N/A");
                 }
             }
-            item.RefCount--;
+            //item.RefCount--;
             //Yield();
         }
     }
@@ -2743,18 +2744,18 @@ void    ImGuiTestContext::ItemAction(ImGuiTestAction action, ImGuiTestRef ref, I
         IM_ASSERT(action_arg == NULL); // Unused
         if ((item.StatusFlags & ImGuiItemStatusFlags_Opened) != 0)
         {
-            item.RefCount++;
+            //item.RefCount++;
             ItemClick(ref, 0, flags);
-            item = ItemInfo(item.ID, ImGuiTestOpFlags_NoAutoOpenFullPath);
+            item = ItemInfo(item.ID);
             if ((item.StatusFlags & ImGuiItemStatusFlags_Opened) != 0)
             {
                 ItemDoubleClick(ref, flags); // Attempt a double-click
                 // FIXME-TESTS: let's not start doing those fuzzy things.. widget should give direction of how to close/open... e.g. do you we close a TabItem?
-                item = ItemInfo(item.ID, ImGuiTestOpFlags_NoAutoOpenFullPath);
+                item = ItemInfo(item.ID);
                 if ((item.StatusFlags & ImGuiItemStatusFlags_Opened) != 0)
                     IM_ERRORF_NOHDR("Unable to Close item: %s", ImGuiTestRefDesc(ref, item).c_str());
             }
-            item.RefCount--;
+            //item.RefCount--;
             Yield();
         }
     }
@@ -3027,8 +3028,8 @@ void    ImGuiTestContext::ItemDragAndDrop(ImGuiTestRef ref_src, ImGuiTestRef ref
     ImGuiTestRefDesc desc_src(ref_src, item_src);
     ImGuiTestRefDesc desc_dst(ref_dst, item_dst);
     LogDebug("ItemDragAndDrop %s to %s", desc_src.c_str(), desc_dst.c_str());
-    item_dst.RefCount++;
-    item_src.RefCount++;
+    //item_dst.RefCount++;
+    //item_src.RefCount++;
 
     // Try to keep destination window above other windows. MouseMove() operation will avoid focusing destination window
     // as that may steal ActiveID and break operation.
@@ -3048,8 +3049,8 @@ void    ImGuiTestContext::ItemDragAndDrop(ImGuiTestRef ref_src, ImGuiTestRef ref
     SleepStandard();
     MouseUp(button);
 
-    item_dst.RefCount--;
-    item_src.RefCount--;
+    //item_dst.RefCount--;
+    //item_src.RefCount--;
 }
 
 void    ImGuiTestContext::ItemDragWithDelta(ImGuiTestRef ref_src, ImVec2 pos_delta)
@@ -3239,13 +3240,13 @@ void    ImGuiTestContext::MenuAction(ImGuiTestAction action, ImGuiTestRef ref)
             // First move horizontally into the menu, then vertically!
             if (depth > 0)
             {
-                item.RefCount++;
+                //item.RefCount++;
                 MouseSetViewport(item.Window);
                 if (depth > 1 && (Inputs->MousePosValue.x <= item.RectFull.Min.x || Inputs->MousePosValue.x >= item.RectFull.Max.x))
                     MouseMoveToPos(ImVec2(item.RectFull.GetCenter().x, Inputs->MousePosValue.y));
                 if (depth > 0 && (Inputs->MousePosValue.y <= item.RectFull.Min.y || Inputs->MousePosValue.y >= item.RectFull.Max.y))
                     MouseMoveToPos(ImVec2(Inputs->MousePosValue.x, item.RectFull.GetCenter().y));
-                item.RefCount--;
+                //item.RefCount--;
             }
 
             if (is_target_item)
