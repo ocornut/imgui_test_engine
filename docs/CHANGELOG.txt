@@ -5,6 +5,9 @@ CHANGELOG
    Those changes are not all listed here.
 ** For a while this is going to ONLY INCLUDE BREAKING CHANGES.
 
+2024/04/22:
+- TestEngine: Fixed a bug and potential crash in ItemDragAndDrop(). (#49)
+
 2024/04/15:
 - TestEngine: Added ImGuiTestEngine_UnregisterTest().
 - TestEngine: Fixed directory creation for capture save when using IMGUI_USE_WCHAR32.

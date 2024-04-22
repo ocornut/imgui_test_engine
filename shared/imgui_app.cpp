@@ -295,7 +295,7 @@ static bool ImGuiApp_ImplWin32DX11_InitCreateWindow(ImGuiApp* app_opaque, const 
     window_size.y = ImFloor(window_size.y * dpi_scale);
 
     // Center in monitor
-    MONITORINFO monitor_info = { 0 };
+    MONITORINFO monitor_info = { };
     monitor_info.cbSize = sizeof(MONITORINFO);
     if (::GetMonitorInfo(monitor, &monitor_info))
     {
