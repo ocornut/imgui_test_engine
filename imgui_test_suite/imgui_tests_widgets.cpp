@@ -953,7 +953,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         OverlapTestVars& vars = ctx->GetVars<OverlapTestVars>();
         ctx->SetRef("Test Window");
 
-        ImVec2 p = ctx->ItemInfo("00000")->RectFull.Min;
+        ImVec2 p = ctx->ItemInfo("00000").RectFull.Min;
 
         ctx->MouseMoveToPos(p - ImVec2(10, 10));
         vars.Status[0].Clear();
@@ -1507,11 +1507,11 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         {
             vars.TabBarFlags = ImGuiTabBarFlags_Reorderable | (i == 0 ? ImGuiTabBarFlags_FittingPolicyResizeDown : ImGuiTabBarFlags_FittingPolicyScroll);
             ctx->Yield();
-            IM_CHECK_GT(ctx->ItemInfo("Leading")->RectClipped.GetWidth(), 1.0f);
-            IM_CHECK_EQ(ctx->ItemInfo("Tab 0")->RectClipped.GetWidth(), 0.0f);
-            IM_CHECK_EQ(ctx->ItemInfo("Tab 1")->RectClipped.GetWidth(), 0.0f);
-            IM_CHECK_EQ(ctx->ItemInfo("Tab 2")->RectClipped.GetWidth(), 0.0f);
-            IM_CHECK_GT(ctx->ItemInfo("Trailing")->RectClipped.GetWidth(), 1.0f);
+            IM_CHECK_GT(ctx->ItemInfo("Leading").RectClipped.GetWidth(), 1.0f);
+            IM_CHECK_EQ(ctx->ItemInfo("Tab 0").RectClipped.GetWidth(), 0.0f);
+            IM_CHECK_EQ(ctx->ItemInfo("Tab 1").RectClipped.GetWidth(), 0.0f);
+            IM_CHECK_EQ(ctx->ItemInfo("Tab 2").RectClipped.GetWidth(), 0.0f);
+            IM_CHECK_GT(ctx->ItemInfo("Trailing").RectClipped.GetWidth(), 1.0f);
         }
     };
 
@@ -1758,9 +1758,9 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ctx->SetRef("Test Window");
         for (int i = 0; i < vars.Count; i++)
         {
-            ImGuiTestItemInfo* item_info = ctx->ItemInfo(Str30f("TabBar/Tab %d", i).c_str());
-            IM_CHECK(item_info->ID != 0);
-            IM_CHECK_EQ(item_info->RectFull.GetWidth(), 30.0f + i * 10.0f);
+            ImGuiTestItemInfo item_info = ctx->ItemInfo(Str30f("TabBar/Tab %d", i).c_str());
+            IM_CHECK(item_info.ID != 0);
+            IM_CHECK_EQ(item_info.RectFull.GetWidth(), 30.0f + i * 10.0f);
         }
     };
 #endif
@@ -2518,12 +2518,12 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ctx->MouseMove("Widgets", ImGuiTestOpFlags_NoFocusWindow);
         ctx->SleepNoSkip(1.0f, 1.0f / 60.0f);
 
-        IM_CHECK(ctx->ItemInfo("Widgets")->ID != 0);
-        IM_CHECK((ctx->ItemInfo("Widgets")->StatusFlags & ImGuiItemStatusFlags_Opened) != 0);
+        IM_CHECK(ctx->ItemInfo("Widgets").ID != 0);
+        IM_CHECK((ctx->ItemInfo("Widgets").StatusFlags & ImGuiItemStatusFlags_Opened) != 0);
         IM_CHECK_EQ(g.ActiveId, active_id);
         ctx->MouseMove("Tree Nodes", ImGuiTestOpFlags_NoFocusWindow);
         ctx->SleepNoSkip(1.0f, 1.0f / 60.0f);
-        IM_CHECK((ctx->ItemInfo("Tree Nodes")->StatusFlags & ImGuiItemStatusFlags_Opened) != 0);
+        IM_CHECK((ctx->ItemInfo("Tree Nodes").StatusFlags & ImGuiItemStatusFlags_Opened) != 0);
         IM_CHECK_EQ(g.ActiveId, active_id);
         ctx->MouseUp(0);
     };
@@ -2989,7 +2989,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ctx->ItemClick("Add 1000 lines");
         ctx->SleepStandard();
 
-        ImGuiWindow* log_panel = ctx->WindowInfo("Log")->Window;
+        ImGuiWindow* log_panel = ctx->WindowInfo("Log").Window;
         IM_CHECK(log_panel != NULL);
         ImGui::SetScrollY(log_panel, log_panel->ScrollMax.y);
         ctx->SleepStandard();
@@ -3274,18 +3274,18 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         IM_CHECK_EQ(g.OpenPopupStack.Size, 3);
 
         // Move down instantaneously to exercise successive frames opens (#7325)
-        ctx->MouseTeleportToPos(ctx->ItemInfo("//##Menu_01/3")->RectClipped.GetCenter(), ImGuiTestOpFlags_NoYield);
+        ctx->MouseTeleportToPos(ctx->ItemInfo("//##Menu_01/3").RectClipped.GetCenter(), ImGuiTestOpFlags_NoYield);
         ctx->Yield();
         IM_CHECK_EQ(g.OpenPopupStack.Size, 3);
-        ctx->MouseTeleportToPos(ctx->ItemInfo("//##Menu_01/5")->RectClipped.GetCenter(), ImGuiTestOpFlags_NoYield);
+        ctx->MouseTeleportToPos(ctx->ItemInfo("//##Menu_01/5").RectClipped.GetCenter(), ImGuiTestOpFlags_NoYield);
         ctx->Yield();
         IM_CHECK_EQ(g.OpenPopupStack.Size, 3);
         ctx->Yield();
         IM_CHECK_EQ(g.OpenPopupStack.Size, 3);
-        ctx->MouseTeleportToPos(ctx->ItemInfo("//##Menu_01/4")->RectClipped.GetCenter(), ImGuiTestOpFlags_NoYield);
+        ctx->MouseTeleportToPos(ctx->ItemInfo("//##Menu_01/4").RectClipped.GetCenter(), ImGuiTestOpFlags_NoYield);
         ctx->Yield();
         IM_CHECK_EQ(g.OpenPopupStack.Size, 3);
-        ctx->MouseTeleportToPos(ctx->ItemInfo("//##Menu_01/3")->RectClipped.GetCenter(), ImGuiTestOpFlags_NoYield);
+        ctx->MouseTeleportToPos(ctx->ItemInfo("//##Menu_01/3").RectClipped.GetCenter(), ImGuiTestOpFlags_NoYield);
         ctx->Yield();
         IM_CHECK_EQ(g.OpenPopupStack.Size, 3);
         ctx->Yield();
@@ -5390,8 +5390,8 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
     {
         ImGuiTestGenericVars& vars = ctx->GenericVars;
         ctx->SetRef("Test Window");
-        ImGuiWindow* child1 = ctx->WindowInfo("Child 1")->Window;
-        ImGuiWindow* child2 = ctx->WindowInfo("Child 2")->Window;
+        ImGuiWindow* child1 = ctx->WindowInfo("Child 1").Window;
+        ImGuiWindow* child2 = ctx->WindowInfo("Child 2").Window;
         IM_CHECK(child1 && child2);
         ImVec2& child_size = vars.Size;
         for (int axis = 0; axis < 2; axis++)

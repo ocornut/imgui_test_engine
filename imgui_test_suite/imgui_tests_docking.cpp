@@ -1361,7 +1361,7 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
         ctx->DockInto("B", vars.DockId, ImGuiDir_Down, true);
         ctx->DockInto("C", "B");
         ImGuiWindow* window = ctx->GetWindowByRef("A");
-        ImGuiWindow* window_child = ctx->WindowInfo("Test Window/InjectedChild")->Window;
+        ImGuiWindow* window_child = ctx->WindowInfo("Test Window/InjectedChild").Window;
         ImGuiDockNode* node_root = ImGui::DockNodeGetRootNode(window->DockNode);
         ImGuiDockNode* node_split = node_root->ChildNodes[0];
         ImGuiDockNode* node_a = node_split->ChildNodes[0];

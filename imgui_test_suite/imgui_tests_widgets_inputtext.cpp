@@ -905,7 +905,7 @@ void RegisterTests_WidgetsInputText(ImGuiTestEngine* e)
         ctx->KeyPress(ImGuiKey_UpArrow);
         ctx->KeyUp(ImGuiMod_Shift);
 
-        ImGuiWindow* child_window = ctx->WindowInfo("//Test Window/Field")->Window;
+        ImGuiWindow* child_window = ctx->WindowInfo("//Test Window/Field").Window;
         IM_CHECK(child_window != NULL);
         const int selection_len = (int)strlen("Line 9\n");
 
@@ -1373,7 +1373,7 @@ void RegisterTests_WidgetsInputText(ImGuiTestEngine* e)
         IM_CHECK_EQ(g.ActiveId, input_id);
         IM_CHECK(vars.Status.Active == 1);
         ctx->KeyCharsReplace("1\n2\n3\n4\n5\n6\n\7\n8\n9\n10\n11\n12\n13\n14\n15\n");
-        ImGuiWindow* window = ctx->WindowInfo("Field")->Window;
+        ImGuiWindow* window = ctx->WindowInfo("Field").Window;
         IM_CHECK(window != NULL);
         ImGuiID scrollbar_id = ImGui::GetWindowScrollbarID(window, ImGuiAxis_Y);
         ctx->MouseMove(scrollbar_id);

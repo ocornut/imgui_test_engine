@@ -450,7 +450,7 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
             }
             else
             {
-                ImGuiID child_id = ctx->WindowInfo("//##Menu_01/Child")->ID;
+                ImGuiID child_id = ctx->WindowInfo("//##Menu_01/Child").ID;
                 ctx->SetRef(child_id);
             }
             ctx->ItemClick("Tabs/Tab 1");
@@ -628,7 +628,7 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
             // Set up window focus order, focus child window.
             ctx->WindowFocus("Window 1");
             ctx->WindowFocus("Window 2"); // FIXME: Needed for case when docked
-            ctx->ItemClick(ctx->GetID("Button In", ctx->WindowInfo("Window 2/Child")->ID));
+            ctx->ItemClick(ctx->GetID("Button In", ctx->WindowInfo("Window 2/Child").ID));
 
             ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_Tab);
             IM_CHECK(g.NavWindow == ctx->GetWindowByRef("Window 1"));
@@ -715,7 +715,7 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
 #endif
 
             ImGuiTestRef win1_button_ref("Window 1/Button 1");
-            ImGuiTestRef win2_button_ref(ctx->GetID("Button 2", ctx->WindowInfo("Window 2/Child")->ID));
+            ImGuiTestRef win2_button_ref(ctx->GetID("Button 2", ctx->WindowInfo("Window 2/Child").ID));
 
             // Focus Window 1, navigate to the button
             ctx->WindowFocus("Window 1");
@@ -1145,7 +1145,7 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
             ctx->NavActivate();
             ctx->NavMoveTo("Scrolling");
             ctx->NavActivate(); // FIXME-TESTS: Could query current g.NavWindow instead of making names?
-            ImGuiWindow* child_window = ctx->WindowInfo("Scrolling/scrolling")->Window;
+            ImGuiWindow* child_window = ctx->WindowInfo("Scrolling/scrolling").Window;
             IM_CHECK(child_window != NULL);
             ctx->SetRef(child_window->ID);
             ctx->ScrollTo(demo_window->ID, ImGuiAxis_Y, (child_window->Pos - demo_window->Pos).y);  // Required because buttons do not register their IDs when out of view (SkipItems == true).
@@ -1338,8 +1338,8 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
                 IM_CHECK_EQ(g.NavId, ctx->GetID("Window/##1"));
             else
                 IM_CHECK_EQ(g.NavId, ctx->GetID("Window/##2"));
-            ImGuiTestItemInfo* input = ctx->ItemInfo("Window/##2");
-            IM_CHECK_EQ(window->InnerClipRect.Contains(input->RectFull), vars.SetFocus);
+            ImGuiTestItemInfo input = ctx->ItemInfo("Window/##2");
+            IM_CHECK_EQ(window->InnerClipRect.Contains(input.RectFull), vars.SetFocus);
             ImGui::SetScrollY(window, 0);   // Reset scrolling.
             vars.ShowWindows = false;
             ctx->Yield(2);
@@ -1519,7 +1519,7 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
         vars.ShowWindows = true;
         vars.SetFocus = false;
         ctx->Yield(2);
-        IM_CHECK_EQ(g.NavId, ctx->GetID("Child 0 Button 1", ctx->WindowInfo("Window 1/Child 0")->ID));
+        IM_CHECK_EQ(g.NavId, ctx->GetID("Child 0 Button 1", ctx->WindowInfo("Window 1/Child 0").ID));
         vars.ShowWindows = false;
         ctx->Yield(2);
 
@@ -1528,7 +1528,7 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
         vars.SetFocus = true;
         ctx->Yield(2);
 #if IMGUI_VERSION_NUM >= 18205
-        IM_CHECK_EQ(g.NavId, ctx->GetID("Child 1 Button 2", ctx->WindowInfo("Window 1/Child 1")->ID));
+        IM_CHECK_EQ(g.NavId, ctx->GetID("Child 1 Button 2", ctx->WindowInfo("Window 1/Child 1").ID));
 #endif
     };
 
@@ -2092,27 +2092,27 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         ImGuiContext& g = *ctx->UiContext;
-        ImGuiTestItemInfo* item_info = NULL;
+        ImGuiTestItemInfo item_info;
         ctx->SetRef("Test Window");
         for (int n = 0; n < 22; n++)
         {
             ctx->KeyPress(ImGuiKey_Tab);
             item_info = ctx->ItemInfo(g.ActiveId);
-            IM_CHECK(item_info->ID != 0);
-            IM_CHECK_STR_EQ(item_info->DebugLabel, Str30f("Input%d", n % 20).c_str());
+            IM_CHECK(item_info.ID != 0);
+            IM_CHECK_STR_EQ(item_info.DebugLabel, Str30f("Input%d", n % 20).c_str());
         }
         // Should be on 21
         for (int n = 0; n < 4; n++)
         {
             item_info = ctx->ItemInfo(g.ActiveId);
-            IM_CHECK(item_info->ID != 0);
-            IM_CHECK_STR_EQ(item_info->DebugLabel, Str30f("Input%d", (21 - n) % 20).c_str());
+            IM_CHECK(item_info.ID != 0);
+            IM_CHECK_STR_EQ(item_info.DebugLabel, Str30f("Input%d", (21 - n) % 20).c_str());
 
             ctx->KeyPress(ImGuiMod_Shift | ImGuiKey_Tab);
 
             item_info = ctx->ItemInfo(g.ActiveId);
-            IM_CHECK(item_info->ID != 0);
-            IM_CHECK_STR_EQ(item_info->DebugLabel, Str30f("Input%d", (20 - n) % 20).c_str());
+            IM_CHECK(item_info.ID != 0);
+            IM_CHECK_STR_EQ(item_info.DebugLabel, Str30f("Input%d", (20 - n) % 20).c_str());
         }
     };
 #endif

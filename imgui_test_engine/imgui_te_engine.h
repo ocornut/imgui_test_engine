@@ -301,7 +301,7 @@ struct ImGuiTestItemInfo
     ImGuiItemFlags              InFlags = 0;                // Item flags
     ImGuiItemStatusFlags        StatusFlags = 0;            // Item Status flags (fully updated for some items only, compare TimestampStatus to FrameCount)
 
-    ImGuiTestItemInfo()         { RefCount = 0; NavLayer = 0; Depth = 0; }
+    ImGuiTestItemInfo()         { memset(this, 0, sizeof(*this)); }
     bool                        IsEmpty() const         { return ID == 0; }
 };
 

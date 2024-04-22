@@ -1234,9 +1234,9 @@ void RegisterTests_Table(ImGuiTestEngine* e)
         {
             ImGuiID handle_id = ImGui::TableGetColumnResizeID(table, column_n);
             if (column_n == table->RightMostEnabledColumn)
-                IM_CHECK(ctx->ItemInfo(handle_id, ImGuiTestOpFlags_NoError)->ID == 0); // W
+                IM_CHECK(ctx->ItemInfo(handle_id, ImGuiTestOpFlags_NoError).ID == 0); // W
             else
-                IM_CHECK(ctx->ItemInfo(handle_id, ImGuiTestOpFlags_NoError)->ID != 0); // FF
+                IM_CHECK(ctx->ItemInfo(handle_id, ImGuiTestOpFlags_NoError).ID != 0); // FF
         }
         IM_CHECK(table->ColumnsGivenWidth == table->InnerWindow->ContentRegionRect.GetWidth());
     };
@@ -2342,9 +2342,9 @@ void RegisterTests_Table(ImGuiTestEngine* e)
 
         auto check_is_fully_visible = [ctx](const ImGuiTestRef& ref)
         {
-            ImGuiTestItemInfo* item_info = ctx->ItemInfo(ref);
-            IM_CHECK_EQ(item_info->RectClipped.Min, item_info->RectFull.Min);
-            IM_CHECK_EQ(item_info->RectClipped.Max, item_info->RectFull.Max);
+            ImGuiTestItemInfo item_info = ctx->ItemInfo(ref);
+            IM_CHECK_EQ(item_info.RectClipped.Min, item_info.RectFull.Min);
+            IM_CHECK_EQ(item_info.RectClipped.Max, item_info.RectFull.Max);
         };
 
         {
@@ -3349,14 +3349,14 @@ void RegisterTests_Table(ImGuiTestEngine* e)
 
         // Left to right, verify that column is still fully visible at the end of resize
         ctx->ItemDragWithDelta(resize_id, ImVec2(window->InnerRect.GetWidth() * 2.0f, 0.0f));
-        ImGuiTestItemInfo* item_info = ctx->ItemInfo("table1/0");
-        IM_CHECK(item_info->ID != 0);
+        ImGuiTestItemInfo item_info = ctx->ItemInfo("table1/0");
+        IM_CHECK(item_info.ID != 0);
         IM_CHECK(window->ClipRect.Min.x <= table->Columns[0].ClipRect.Min.x && window->ClipRect.Max.x >= table->Columns[0].ClipRect.Max.x);
 
         // Right to left, verify that column is still fully visible at the end of resize
         ctx->ItemDragWithDelta(resize_id, ImVec2(-window->InnerRect.GetWidth() * 2.0f, 0.0f));
         item_info = ctx->ItemInfo("table1/0");
-        IM_CHECK(item_info->ID != 0);
+        IM_CHECK(item_info.ID != 0);
         IM_CHECK(window->ClipRect.Min.x <= table->Columns[0].ClipRect.Min.x && window->ClipRect.Max.x >= table->Columns[0].ClipRect.Max.x);
     };
 

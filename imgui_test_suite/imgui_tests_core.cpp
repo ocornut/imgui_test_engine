@@ -1709,8 +1709,8 @@ void RegisterTests_Window(ImGuiTestEngine* e)
         ctx->Yield();
         ctx->WindowResize("//Test Window", ImVec2(200.0f, 200.0f)); // Set width
         ctx->WindowResize("//Test Window", ImVec2(-1.0f, -1.0f)); // Then auto-fit
-        ImGuiWindow* window = ctx->WindowInfo("//Test Window")->Window;
-        ImGuiWindow* child = ctx->WindowInfo("//Test Window/Child 1")->Window;
+        ImGuiWindow* window = ctx->WindowInfo("//Test Window").Window;
+        ImGuiWindow* child = ctx->WindowInfo("//Test Window/Child 1").Window;
         IM_CHECK(window && child);
 
         ImGuiStyle& style = ImGui::GetStyle();
@@ -2189,7 +2189,7 @@ void RegisterTests_Window(ImGuiTestEngine* e)
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         ImGuiWindow* window = ctx->GetWindowByRef("Test Window");
-        ImGuiWindow* child = ctx->WindowInfo("Test Window/Child")->Window;
+        ImGuiWindow* child = ctx->WindowInfo("Test Window/Child").Window;
         IM_CHECK(window != NULL && child != NULL);
         ImGuiContext& g = *ctx->UiContext;
         ImGui::SetScrollX(window, 0);
@@ -2293,7 +2293,7 @@ void RegisterTests_Window(ImGuiTestEngine* e)
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         ImGuiWindow* window = ctx->GetWindowByRef("Test Window");
-        ImGuiWindow* child = ctx->WindowInfo("Test Window/Child")->Window;
+        ImGuiWindow* child = ctx->WindowInfo("Test Window/Child").Window;
         IM_CHECK(window != NULL && child != NULL);
         ImGuiContext& g = *ctx->UiContext;
         ImGui::SetScrollX(window, 0);
@@ -5739,8 +5739,8 @@ void RegisterTests_TestEngine(ImGuiTestEngine* e)
 
 #if IMGUI_VERSION_NUM >= 18809
         // BeginMenu() - Items using PushID(id); SubItem(""); PopID() idioms
-        IM_CHECK(ctx->ItemInfo("**/TestMenu/")->ID != 0);
-        IM_CHECK(ctx->ItemInfo("**/TestMenu")->ID != 0);
+        IM_CHECK(ctx->ItemInfo("**/TestMenu/").ID != 0);
+        IM_CHECK(ctx->ItemInfo("**/TestMenu").ID != 0);
         ctx->ItemClick("**/TestMenu");
 
         // InputScalar() - Items using PushID(id); SubItem(""); PopID() idioms
@@ -5812,105 +5812,105 @@ void RegisterTests_TestEngine(ImGuiTestEngine* e)
     {
         auto& vars = ctx->GenericVars;
 
-        ImGuiTestItemInfo* window_info = NULL;
+        ImGuiTestItemInfo window_info;
 
         // Query by ID (not very useful but supported)
         ctx->LogInfo("## Test querying by ID");
         window_info = ctx->WindowInfo(ctx->GetID("//Test Window/"));
-        IM_CHECK(window_info->ID != 0 && window_info->Window != NULL);
-        IM_CHECK_EQ(window_info->Window->ID, window_info->ID);
-        IM_CHECK_EQ(window_info->Window->ID, vars.IdArray[0]);
+        IM_CHECK(window_info.ID != 0 && window_info.Window != NULL);
+        IM_CHECK_EQ(window_info.Window->ID, window_info.ID);
+        IM_CHECK_EQ(window_info.Window->ID, vars.IdArray[0]);
 
         window_info = ctx->WindowInfo(vars.IdArray[1]);
-        IM_CHECK(window_info->ID != 0 && window_info->Window != NULL);
-        IM_CHECK_EQ(window_info->Window->ID, window_info->ID);
-        IM_CHECK_EQ(window_info->Window->ID, vars.IdArray[1]);
+        IM_CHECK(window_info.ID != 0 && window_info.Window != NULL);
+        IM_CHECK_EQ(window_info.Window->ID, window_info.ID);
+        IM_CHECK_EQ(window_info.Window->ID, vars.IdArray[1]);
 
         // Ensure that non-windows and non-existing windows are not found
         window_info = ctx->WindowInfo(ctx->GetID("//Test Window/Item"), ImGuiTestOpFlags_NoError);
-        IM_CHECK(window_info->ID == 0 && window_info->Window == NULL);
+        IM_CHECK(window_info.ID == 0 && window_info.Window == NULL);
 
         window_info = ctx->WindowInfo(ctx->GetID("//Non Existing Window/"), ImGuiTestOpFlags_NoError);
-        IM_CHECK(window_info->ID == 0 && window_info->Window == NULL);
+        IM_CHECK(window_info.ID == 0 && window_info.Window == NULL);
 
         // Query by path
         ctx->LogInfo("## Test querying by Path");
         window_info = ctx->WindowInfo("//Test Window");
-        IM_CHECK(window_info->ID != 0 && window_info->Window != NULL);
-        IM_CHECK_EQ(window_info->Window->ID, window_info->ID);
-        IM_CHECK_EQ(window_info->Window->ID, vars.IdArray[0]);
+        IM_CHECK(window_info.ID != 0 && window_info.Window != NULL);
+        IM_CHECK_EQ(window_info.Window->ID, window_info.ID);
+        IM_CHECK_EQ(window_info.Window->ID, vars.IdArray[0]);
 
         window_info = ctx->WindowInfo("//Test Window/");
-        IM_CHECK(window_info->ID != 0 && window_info->Window != NULL);
-        IM_CHECK_EQ(window_info->Window->ID, window_info->ID);
-        IM_CHECK_EQ(window_info->Window->ID, vars.IdArray[0]);
+        IM_CHECK(window_info.ID != 0 && window_info.Window != NULL);
+        IM_CHECK_EQ(window_info.Window->ID, window_info.ID);
+        IM_CHECK_EQ(window_info.Window->ID, vars.IdArray[0]);
 
         window_info = ctx->WindowInfo("//Test Window/Child1");
-        IM_CHECK(window_info->ID != 0 && window_info->Window != NULL);
-        IM_CHECK_EQ(window_info->Window->ID, window_info->ID);
-        IM_CHECK_EQ(window_info->Window->ID, vars.IdArray[1]);
+        IM_CHECK(window_info.ID != 0 && window_info.Window != NULL);
+        IM_CHECK_EQ(window_info.Window->ID, window_info.ID);
+        IM_CHECK_EQ(window_info.Window->ID, vars.IdArray[1]);
 
         // Query by path with a ref
         ctx->SetRef("//Test Window");
         window_info = ctx->WindowInfo("");
-        IM_CHECK(window_info->ID != 0 && window_info->Window != NULL);
-        IM_CHECK_EQ(window_info->Window->ID, window_info->ID);
-        IM_CHECK_EQ(window_info->Window->ID, vars.IdArray[0]);
+        IM_CHECK(window_info.ID != 0 && window_info.Window != NULL);
+        IM_CHECK_EQ(window_info.Window->ID, window_info.ID);
+        IM_CHECK_EQ(window_info.Window->ID, vars.IdArray[0]);
 
         window_info = ctx->WindowInfo("Child1");
-        IM_CHECK(window_info->ID != 0 && window_info->Window != NULL);
-        IM_CHECK_EQ(window_info->Window->ID, window_info->ID);
-        IM_CHECK_EQ(window_info->Window->ID, vars.IdArray[1]);
+        IM_CHECK(window_info.ID != 0 && window_info.Window != NULL);
+        IM_CHECK_EQ(window_info.Window->ID, window_info.ID);
+        IM_CHECK_EQ(window_info.Window->ID, vars.IdArray[1]);
 
-        ctx->SetRef(window_info->ID);
+        ctx->SetRef(window_info.ID);
         ctx->ItemClick("Child1_Item");
 
         ctx->SetRef("//$FOCUSED");
         window_info = ctx->WindowInfo("SubChild");
-        IM_CHECK(window_info->ID != 0 && window_info->Window != NULL);
-        IM_CHECK_EQ(window_info->Window->ID, window_info->ID);
-        IM_CHECK_EQ(window_info->Window->ID, vars.IdArray[2]);
+        IM_CHECK(window_info.ID != 0 && window_info.Window != NULL);
+        IM_CHECK_EQ(window_info.Window->ID, window_info.ID);
+        IM_CHECK_EQ(window_info.Window->ID, vars.IdArray[2]);
 
         ctx->SetRef("");
         window_info = ctx->WindowInfo("//$FOCUSED/SubChild");
-        IM_CHECK(window_info->ID != 0 && window_info->Window != NULL);
-        IM_CHECK_EQ(window_info->Window->ID, window_info->ID);
-        IM_CHECK_EQ(window_info->Window->ID, vars.IdArray[2]);
+        IM_CHECK(window_info.ID != 0 && window_info.Window != NULL);
+        IM_CHECK_EQ(window_info.Window->ID, window_info.ID);
+        IM_CHECK_EQ(window_info.Window->ID, vars.IdArray[2]);
 
         // Test sub-child + verify that wrong seed doesn't matter if our ref uses "//"
         ctx->SetRef("//DummyNonExistingSeed");
         window_info = ctx->WindowInfo("//Test Window/Child1/SubChild");
-        IM_CHECK(window_info->ID != 0 && window_info->Window != NULL);
-        IM_CHECK_EQ(window_info->Window->ID, window_info->ID);
-        IM_CHECK_EQ(window_info->Window->ID, vars.IdArray[2]);
+        IM_CHECK(window_info.ID != 0 && window_info.Window != NULL);
+        IM_CHECK_EQ(window_info.Window->ID, window_info.ID);
+        IM_CHECK_EQ(window_info.Window->ID, vars.IdArray[2]);
 
         // Test sub-child which have been created with the ImGuiID version of BeginChild()
         window_info = ctx->WindowInfo("//Test Window/Child1/SubChildUsingID");
-        IM_CHECK(window_info->ID != 0 && window_info->Window != NULL);
-        IM_CHECK_EQ(window_info->Window->ID, window_info->ID);
-        IM_CHECK_EQ(window_info->Window->ID, vars.IdArray[3]);
+        IM_CHECK(window_info.ID != 0 && window_info.Window != NULL);
+        IM_CHECK_EQ(window_info.Window->ID, window_info.ID);
+        IM_CHECK_EQ(window_info.Window->ID, vars.IdArray[3]);
 
         // Test for missing/non-found window
         window_info = ctx->WindowInfo("//Test Window/Item", ImGuiTestOpFlags_NoError);
-        IM_CHECK(window_info->ID == 0 && window_info->Window == NULL);
+        IM_CHECK(window_info.ID == 0 && window_info.Window == NULL);
         window_info = ctx->WindowInfo("//Test Window/NotExisting", ImGuiTestOpFlags_NoError);
-        IM_CHECK(window_info->ID == 0 && window_info->Window == NULL);
+        IM_CHECK(window_info.ID == 0 && window_info.Window == NULL);
 
         // Test with ### in names
         ctx->SetRef("//Test Window");
         window_info = ctx->WindowInfo("Child2###Child2Name/Child3###Child3Name");
-        IM_CHECK(window_info->ID != 0 && window_info->Window != NULL);
+        IM_CHECK(window_info.ID != 0 && window_info.Window != NULL);
         window_info = ctx->WindowInfo("###Child2Name/###Child3Name");
-        IM_CHECK(window_info->ID != 0 && window_info->Window != NULL);
+        IM_CHECK(window_info.ID != 0 && window_info.Window != NULL);
 
         // Test when child is not in root of parent window (used ID stack)
         ctx->SetRef("//Test Window");
         window_info = ctx->WindowInfo("Folder/Child3");
-        IM_CHECK(window_info->ID != 0 && window_info->Window != NULL);
+        IM_CHECK(window_info.ID != 0 && window_info.Window != NULL);
         window_info = ctx->WindowInfo("//Test Window/Folder/Child3");
-        IM_CHECK(window_info->ID != 0 && window_info->Window != NULL);
+        IM_CHECK(window_info.ID != 0 && window_info.Window != NULL);
         window_info = ctx->WindowInfo("//Test Window/Folder/NotExisting", ImGuiTestOpFlags_NoError);
-        IM_CHECK(window_info->ID == 0 && window_info->Window == NULL);
+        IM_CHECK(window_info.ID == 0 && window_info.Window == NULL);
 
         // FIXME: Missing tests for wildcards.
     };
@@ -6139,7 +6139,7 @@ void RegisterTests_TestEngine(ImGuiTestEngine* e)
         IM_CHECK_EQ(ctx->GetID("/Foo"), ImHashDecoratedPath("Hello, world!/Foo"));  // "/" uses current window as a seed.
 
         // SetRef() with child windows.
-        ImGuiWindow* child_window = ctx->WindowInfo("//Test Window/Child")->Window;
+        ImGuiWindow* child_window = ctx->WindowInfo("//Test Window/Child").Window;
         IM_CHECK(child_window != NULL);
         Str64 ref(child_window->Name);
         ImStrReplace(&ref, "/", "\\/");
@@ -6220,8 +6220,8 @@ void RegisterTests_TestEngine(ImGuiTestEngine* e)
     };
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
-        IM_CHECK_NE(ctx->ItemInfoOpenFullPath("//Test Window")->ID, 0u);             // Ok
-        IM_CHECK_NE(ctx->ItemInfoOpenFullPath("//Test Window/**/Button2")->ID, 0u);  // Ok
+        IM_CHECK_NE(ctx->ItemInfoOpenFullPath("//Test Window").ID, 0u);             // Ok
+        IM_CHECK_NE(ctx->ItemInfoOpenFullPath("//Test Window/**/Button2").ID, 0u);  // Ok
 
         {
             ImGuiTestItemList items;

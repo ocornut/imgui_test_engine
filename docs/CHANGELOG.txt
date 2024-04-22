@@ -6,6 +6,29 @@ CHANGELOG
 ** For a while this is going to ONLY INCLUDE BREAKING CHANGES.
 
 2024/04/22:
+- TestEngine: *EXCEPTIONALLY BREAKING CHANGE*
+  Changed ItemInfo(), WindowInfo() and variants signatures to return
+    a full ImGuiTestItemInfo struct instead of a pointer.
+    Before:
+      ImGuiTestItemInfo*  ItemInfo(ImGuiTestRef ref, ....);
+      ImGuiTestItemInfo*  WindowInfo(ImGuiTestRef window_ref, ...);
+    After:
+      ImGuiTestItemInfo   ItemInfo(ImGuiTestRef ref, ....);
+      ImGuiTestItemInfo   WindowInfo(ImGuiTestRef window_ref, ...);
+  - The initial design suggested that the data could be updated on subsequent
+    frames, but it technically required to manipulate the RefCount field and it was
+    very easy to get wrong and mistakes were difficult to notice and debug,
+    occasionally leading to dangling pointers.
+  - We are instead returning a copy of the value at the current time.
+    You may call ItemInfo()/WindowInfo() again if you need refreshed values.
+       item = ItemInfo(item.ID); // refresh values
+  - If you were using info->RefCount++/info->RefCount-- is likely means that
+    you wanted to reuse an ItemInfo pointers accross frames and might
+    want to request the refreshed data.
+  - Removed the ImGuiTestItemInfo::RefCount field since it is now unused,
+    and its removal makes it easier to spot cases that might need fixing.
+  APOLOGIES FOR THE BREAKING CHANGE.
+  PLEASE CONTACT US IF YOU HAVE ISSUES OR FEEDBACK OR ANY QUESTION.
 - TestEngine: Fixed a bug and potential crash in ItemDragAndDrop(). (#49)
 
 2024/04/15:

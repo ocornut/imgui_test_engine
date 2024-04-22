@@ -192,10 +192,10 @@ void RegisterTests_Viewports(ImGuiTestEngine* e)
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         ImGuiContext& g = *ctx->UiContext;
-        ImGuiWindow* window_a = ctx->WindowInfo("//Window A")->Window;
-        ImGuiWindow* window_b = ctx->WindowInfo("//Window B")->Window;
-        ImGuiWindow* window_child_a = ctx->WindowInfo("//Window A/Child A")->Window;
-        ImGuiWindow* window_child_b = ctx->WindowInfo("//Window B/Child B")->Window;
+        ImGuiWindow* window_a = ctx->WindowInfo("//Window A").Window;
+        ImGuiWindow* window_b = ctx->WindowInfo("//Window B").Window;
+        ImGuiWindow* window_child_a = ctx->WindowInfo("//Window A/Child A").Window;
+        ImGuiWindow* window_child_b = ctx->WindowInfo("//Window B/Child B").Window;
         IM_CHECK_SILENT(window_a && window_b && window_child_a && window_child_b);
         ctx->Yield();
 
@@ -269,8 +269,8 @@ void RegisterTests_Viewports(ImGuiTestEngine* e)
     {
         ImGuiContext& g = *ctx->UiContext;
         ImGuiViewport* main_viewport = ImGui::GetMainViewport();
-        ImGuiWindow* window_a = ctx->WindowInfo("//Window A")->Window;
-        ImGuiWindow* window_b = ctx->WindowInfo("//Window B")->Window;
+        ImGuiWindow* window_a = ctx->WindowInfo("//Window A").Window;
+        ImGuiWindow* window_b = ctx->WindowInfo("//Window B").Window;
 
         // Move all other windows which could be occluding to main viewport
         // FIXME-TESTS: Could add dedicated/shared helpers?
@@ -332,20 +332,20 @@ void RegisterTests_Viewports(ImGuiTestEngine* e)
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         ImGuiViewport* main_viewport = ImGui::GetMainViewport();
-        ImGuiWindow* window = ctx->WindowInfo("//Test Window")->Window;
+        ImGuiWindow* window = ctx->WindowInfo("//Test Window").Window;
         IM_CHECK(window != NULL);
         ctx->WindowMove(window->ID, main_viewport->Pos + ImVec2(main_viewport->Size.x - window->Size.x - 2.0f, 10.0f));
         IM_CHECK(window->Viewport == main_viewport);
 
         ctx->ItemClick("//Test Window/open first popup");
-        ImGuiWindow* popup_1 = ctx->WindowInfo("//$FOCUSED")->Window;
+        ImGuiWindow* popup_1 = ctx->WindowInfo("//$FOCUSED").Window;
         IM_CHECK(popup_1 && (popup_1->Flags & ImGuiWindowFlags_Popup));
         IM_CHECK(popup_1->Viewport != main_viewport);
 
         // Important: as per https://github.com/ocornut/imgui/issues/6462, prior to our fix this depends on backend handling
         // the ImGuiViewportFlags_NoFocusOnClick flag or not. Behavior may be different depending on backend (e.g. mock viewport support vs interactive win32/glfw backend).
         ctx->ItemClick("//$FOCUSED/open second popup");
-        ImGuiWindow* popup_2 = ctx->WindowInfo("//$FOCUSED")->Window;
+        ImGuiWindow* popup_2 = ctx->WindowInfo("//$FOCUSED").Window;
         IM_CHECK(popup_2 && (popup_2->Flags & ImGuiWindowFlags_Popup));
         IM_CHECK(popup_2 != popup_1);
         IM_CHECK(popup_2->Viewport != main_viewport);
@@ -385,13 +385,13 @@ void RegisterTests_Viewports(ImGuiTestEngine* e)
 
         // Dock and move to ensure the dock node has its own viewport
         ctx->DockClear("Test Window 1", "Sibling", "Test Window 2", NULL);
-        ImGuiWindow* window_1 = ctx->WindowInfo("//Test Window 1")->Window;
+        ImGuiWindow* window_1 = ctx->WindowInfo("//Test Window 1").Window;
         IM_CHECK(window_1 != NULL);
         ctx->WindowMove(window_1->ID, main_viewport->Pos + ImVec2(main_viewport->Size.x, 0.0f));
         IM_CHECK(window_1->Viewport != main_viewport);
         ctx->DockInto("Sibling", "Test Window 1");
 
-        ImGuiWindow* window_2 = ctx->WindowInfo("//Test Window 2")->Window;
+        ImGuiWindow* window_2 = ctx->WindowInfo("//Test Window 2").Window;
         IM_CHECK(window_2 != NULL);
         ctx->WindowMove(window_2->ID, window_1->Rect().GetBL() + ImVec2(0.0f, 10.0f));
         IM_CHECK(window_2->Viewport != main_viewport);
@@ -400,7 +400,7 @@ void RegisterTests_Viewports(ImGuiTestEngine* e)
         //ctx->WindowFocus("//Test Window 1");
         ctx->ItemClick("//Test Window 1/Open modal");
 
-        ImGuiWindow* window_modal = ctx->WindowInfo("//$FOCUSED")->Window;
+        ImGuiWindow* window_modal = ctx->WindowInfo("//$FOCUSED").Window;
         IM_CHECK(window_modal != NULL);
         ctx->WindowMove(window_modal->ID, window_2->Rect().GetBL() + ImVec2(0.0f, 10.0f));
 
