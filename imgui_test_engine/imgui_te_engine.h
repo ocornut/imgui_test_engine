@@ -288,12 +288,12 @@ struct IMGUI_API ImGuiTestEngineIO
 struct ImGuiTestItemInfo
 {
     ImGuiID                     ID = 0;                     // Item ID
-    char                        DebugLabel[32] = {};        // Shortened label for debugging purpose
+    char                        DebugLabel[32] = {};        // Shortened/truncated label for debugging and convenience purpose
     ImGuiWindow*                Window = NULL;              // Item Window
     unsigned int                NavLayer : 1;               // Nav layer of the item (ImGuiNavLayer)
     int                         Depth : 16;                 // Depth from requested parent id. 0 == ID is immediate child of requested parent id.
-    int                         TimestampMain = -1;         // Timestamp of main result (all fields)
-    int                         TimestampStatus = -1;       // Timestamp of StatusFlags
+    int                         TimestampMain;              // Timestamp of main result (all fields)
+    int                         TimestampStatus;            // Timestamp of StatusFlags
     ImGuiID                     ParentID = 0;               // Item Parent ID (value at top of the ID stack)
     ImRect                      RectFull = ImRect();        // Item Rectangle
     ImRect                      RectClipped = ImRect();     // Item Rectangle (clipped with window->ClipRect at time of item submission)
@@ -301,7 +301,6 @@ struct ImGuiTestItemInfo
     ImGuiItemStatusFlags        StatusFlags = 0;            // Item Status flags (fully updated for some items only, compare TimestampStatus to FrameCount)
 
     ImGuiTestItemInfo()         { memset(this, 0, sizeof(*this)); }
-    bool                        IsEmpty() const         { return ID == 0; }
 };
 
 // Result of an GatherItems() query
