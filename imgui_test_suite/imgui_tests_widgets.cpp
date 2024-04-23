@@ -925,7 +925,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
 
     // ## Test overlap mode
     t = IM_REGISTER_TEST(e, "widgets", "widgets_overlap_1");
-    struct OverlapTestVars { ImGuiTestGenericItemStatus Status[2]; int Int1 = 0; };
+    struct OverlapTestVars { ImGuiTestGenericItemStatus Status[6]; int Int1 = 0; };
     t->SetVarsDataType<OverlapTestVars>();
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
@@ -1022,6 +1022,141 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         IM_CHECK(vars.Status[1].Activated > 0);
     };
 #endif
+
+    // ## Test timing of overlap mode
+    t = IM_REGISTER_TEST(e, "widgets", "widgets_overlap_3_timing");
+    t->SetVarsDataType<OverlapTestVars>();
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        auto& vars = ctx->GetVars<OverlapTestVars>();
+        ImGui::SetNextWindowPos(ImGui::GetMainViewport()->Pos); // Ensure visible as we'll teleport to pos without full on MouseMove() calls
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
+
+        // Not overlapping but verify how AllowOverlap mode after timing
+        // FIXME-TESTS: Testing IsItemHovered() timing but not button hover color timing. Expand test by using HoveredId
+        {
+            ImGui::SeparatorText("#7514");
+            ImGui::SetNextItemAllowOverlap();
+            bool button_0_pressed = ImGui::Button("Button0", { 120.0f, 50.0 });
+            bool button_0_hovered = ImGui::IsItemHovered();
+            vars.Status[0].QueryInc(button_0_pressed);
+
+            bool button_1_pressed = ImGui::Button("Button1", { 120.0f, 50.0 });
+            bool button_1_hovered = ImGui::IsItemHovered();
+            vars.Status[1].QueryInc(button_1_pressed);
+
+            ImGui::Text(button_0_hovered ? "Button 0 hovered" : "");
+            ImGui::Text(button_1_hovered ? "Button 1 hovered" : "");
+        }
+        {
+            ImGui::SeparatorText("#7515");
+            ImVec2 pos = ImGui::GetCursorPos();
+
+            ImGui::SetNextItemAllowOverlap();
+            bool button_2_pressed = ImGui::Button("Button2", { 120.0f, 50.0f });
+            bool button_2_hovered = ImGui::IsItemHovered();
+            vars.Status[2].QueryInc(button_2_pressed);
+
+            pos.y += 25;
+            ImGui::SetCursorPos(pos);
+            //ImGui::SetNextItemAllowOverlap();
+            bool button_3_pressed = ImGui::Button("Button3", { 120.0f, 50.0f });// # button or dummy, irrelevant
+            bool button_3_hovered = ImGui::IsItemHovered();
+            //ImGui::Dummy({ 50.0f, 50.0f });
+            vars.Status[3].QueryInc(button_3_pressed);
+
+            ImGui::Text(button_2_hovered ? "Button 2 hovered" : "");
+            ImGui::Text(button_3_hovered ? "Button 3 hovered" : "");
+        }
+        {
+            ImGui::SeparatorText("No SetNextItemAllowOverlap()");
+            ImVec2 pos = ImGui::GetCursorPos();
+
+            bool button_4_pressed = ImGui::Button("Button4", { 120.0f, 50.0f });
+            bool button_4_hovered = ImGui::IsItemHovered();
+            vars.Status[4].QueryInc(button_4_pressed);
+
+            pos.y += 25;
+            ImGui::SetCursorPos(pos);
+            bool button_5_pressed = ImGui::Button("Button5", { 120.0f, 50.0f });// # button or dummy, irrelevant
+            bool button_5_hovered = ImGui::IsItemHovered();
+            vars.Status[5].QueryInc(button_5_pressed);
+
+            ImGui::Text(button_4_hovered ? "Button 4 hovered" : "");
+            ImGui::Text(button_5_hovered ? "Button 5 hovered" : "");
+        }
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        auto& vars = ctx->GetVars<OverlapTestVars>();
+        ctx->SetRef("Test Window");
+
+        ImRect button0_rect = ctx->ItemInfo("Button0").RectFull; // Query ahead to avoid messing with precise frame timing
+        ImRect button1_rect = ctx->ItemInfo("Button1").RectFull;
+        ImRect button2_rect = ctx->ItemInfo("Button2").RectFull;
+        ImRect button3_rect = ctx->ItemInfo("Button3").RectFull;
+        ImRect button4_rect = ctx->ItemInfo("Button4").RectFull;
+        ImRect button5_rect = ctx->ItemInfo("Button5").RectFull;
+
+        // Test setup from #7514 (mostly timing)
+        ctx->MouseMove("Button0");
+        vars.Status[0].Clear();
+        vars.Status[1].Clear();
+        ctx->Yield(3);
+        IM_CHECK_EQ(vars.Status[0].Hovered, 3);
+        IM_CHECK_EQ(vars.Status[1].Hovered, 0);
+
+        ctx->MouseTeleportToPos(button1_rect.GetCenter(), ImGuiTestOpFlags_NoYield);
+        ctx->Yield();
+        IM_CHECK_EQ(vars.Status[0].Hovered, 3);
+        IM_CHECK_EQ(vars.Status[1].Hovered, 1);
+        ctx->Yield();
+        IM_CHECK_EQ(vars.Status[0].Hovered, 3);
+        IM_CHECK_EQ(vars.Status[1].Hovered, 2);
+
+        ctx->MouseTeleportToPos(button0_rect.GetCenter(), ImGuiTestOpFlags_NoYield);
+        ctx->Yield();
+        IM_CHECK_EQ(vars.Status[0].Hovered, 3); // On this frame nothing is hovered (#7514)
+        IM_CHECK_EQ(vars.Status[1].Hovered, 2);
+        ctx->Yield();
+        IM_CHECK_EQ(vars.Status[0].Hovered, 4); // Resume hovering
+        IM_CHECK_EQ(vars.Status[1].Hovered, 2);
+
+        // Test setup from #7515 (timing + duplicate hover)
+        ctx->MouseTeleportToPos(button2_rect.GetTL()); // Top: not overlapping Button 3
+        vars.Status[2].Clear();
+        vars.Status[3].Clear();
+        ctx->Yield(3);
+        IM_CHECK_EQ(vars.Status[2].Hovered, 3);
+        IM_CHECK_EQ(vars.Status[3].Hovered, 0);
+        ctx->MouseTeleportToPos(ImVec2(button2_rect.GetCenter().x, button2_rect.Max.y - 1), ImGuiTestOpFlags_NoYield); // Overlapping Button 2 and Button 3
+        ctx->Yield();
+#if IMGUI_BROKEN_TESTS == 0
+        IM_CHECK_EQ(vars.Status[2].Hovered, 4); // FIXME: #7515: two items reporting as IsItemHovered()
+        IM_CHECK_EQ(vars.Status[3].Hovered, 1); // FIXME: #7515
+#endif
+        ctx->Yield();
+        IM_CHECK_EQ(vars.Status[2].Hovered, 4);
+        IM_CHECK_EQ(vars.Status[3].Hovered, 2);
+
+        // Test how IsItemHovered() doesn't mind g.HoveredId, probaaaably should?
+        ctx->MouseTeleportToPos(button4_rect.GetTL()); // Top: not overlapping Button 4
+        vars.Status[4].Clear();
+        vars.Status[5].Clear();
+        ctx->Yield(3);
+        IM_CHECK_EQ(vars.Status[4].Hovered, 3);
+        IM_CHECK_EQ(vars.Status[5].Hovered, 0);
+        ctx->MouseTeleportToPos(ImVec2(button4_rect.GetCenter().x, button4_rect.Max.y - 1), ImGuiTestOpFlags_NoYield); // Overlapping Button 4 and Button 5
+        ctx->Yield();
+#if IMGUI_BROKEN_TESTS == 0
+        IM_CHECK_EQ(vars.Status[4].Hovered, 4); // FIXME: Two items always reporting as IsItemHovered()
+        IM_CHECK_EQ(vars.Status[5].Hovered, 1); //
+        ctx->Yield();
+        IM_CHECK_EQ(vars.Status[4].Hovered, 5); // FIXME: Two items always reporting as IsItemHovered()
+        IM_CHECK_EQ(vars.Status[5].Hovered, 2);
+#endif
+    };
 
     // ## Check input of InputScalar().
     t = IM_REGISTER_TEST(e, "widgets", "widgets_inputscalar_input");
