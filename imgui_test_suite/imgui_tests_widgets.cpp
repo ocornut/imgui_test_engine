@@ -1095,9 +1095,9 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ImRect button0_rect = ctx->ItemInfo("Button0").RectFull; // Query ahead to avoid messing with precise frame timing
         ImRect button1_rect = ctx->ItemInfo("Button1").RectFull;
         ImRect button2_rect = ctx->ItemInfo("Button2").RectFull;
-        ImRect button3_rect = ctx->ItemInfo("Button3").RectFull;
+        //ImRect button3_rect = ctx->ItemInfo("Button3").RectFull;
         ImRect button4_rect = ctx->ItemInfo("Button4").RectFull;
-        ImRect button5_rect = ctx->ItemInfo("Button5").RectFull;
+        //ImRect button5_rect = ctx->ItemInfo("Button5").RectFull;
 
         // Test setup from #7514 (mostly timing)
         ctx->MouseMove("Button0");
