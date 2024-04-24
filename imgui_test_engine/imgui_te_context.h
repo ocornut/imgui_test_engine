@@ -438,18 +438,18 @@ struct IMGUI_API ImGuiTestContext
     void        ItemSelectAndReadValue(ImGuiTestRef ref, int* out_v);
     void        ItemSelectAndReadValue(ImGuiTestRef ref, float* out_v);
 
+    // Item/Widgets: Status query
+    bool        ItemExists(ImGuiTestRef ref);
+    bool        ItemIsChecked(ImGuiTestRef ref);
+    bool        ItemIsOpened(ImGuiTestRef ref);
+    void        ItemVerifyCheckedIfAlive(ImGuiTestRef ref, bool checked);
+
     // Item/Widgets: Drag and Mouse operations
     void        ItemHold(ImGuiTestRef ref, float time);
     void        ItemHoldForFrames(ImGuiTestRef ref, int frames);
     void        ItemDragOverAndHold(ImGuiTestRef ref_src, ImGuiTestRef ref_dst);
     void        ItemDragAndDrop(ImGuiTestRef ref_src, ImGuiTestRef ref_dst, ImGuiMouseButton button = 0);
     void        ItemDragWithDelta(ImGuiTestRef ref_src, ImVec2 pos_delta);
-
-    // Item/Widgets: Status query
-    bool        ItemExists(ImGuiTestRef ref);
-    bool        ItemIsChecked(ImGuiTestRef ref);
-    bool        ItemIsOpened(ImGuiTestRef ref);
-    void        ItemVerifyCheckedIfAlive(ImGuiTestRef ref, bool checked);
 
     // Helpers for Tab Bars widgets
     void        TabClose(ImGuiTestRef ref);
