@@ -434,7 +434,7 @@ struct IMGUI_API ImGuiTestContext
     // Item/Widgets: Helpers to easily read a value by selecting Slider/Drag/Input text, copying into clipboard and parsing it.
     // - This requires the item to be selectable (we will later provide helpers that works in more general manner)
     // - Original clipboard value is restored afterward.
-    void        ItemSelectAndReadValue(ImGuiTestRef ref, ImGuiDataType data_type, void* out_data);
+    bool        ItemSelectAndReadValue(ImGuiTestRef ref, ImGuiDataType data_type, void* out_data, ImGuiTestOpFlags flags = ImGuiTestOpFlags_None);
     void        ItemSelectAndReadValue(ImGuiTestRef ref, int* out_v);
     void        ItemSelectAndReadValue(ImGuiTestRef ref, float* out_v);
 
