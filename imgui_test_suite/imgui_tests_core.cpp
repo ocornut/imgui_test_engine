@@ -6044,6 +6044,29 @@ void RegisterTests_TestEngine(ImGuiTestEngine* e)
         ctx->MenuClick("SECOND_MENU/Item");
     };
 
+    // ## Test basic use of ItemSelectReadValue();
+    t = IM_REGISTER_TEST(e, "testengine", "testengine_select_read_value");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+
+        int v_int = 123;
+        float v_float = 0.456f;
+        ImGui::SliderInt("int", &v_int, 0, 200);
+        ImGui::DragFloat("float", &v_float, 0.01f, 0.0f, 1.0f);
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ctx->SetRef("Test Window");
+        int v_int = 0;
+        float v_float = 0;
+        ctx->ItemSelectAndReadValue("int", &v_int);
+        ctx->ItemSelectAndReadValue("float", &v_float);
+        IM_CHECK_EQ(v_int, 123);
+        IM_CHECK_EQ(v_float, 0.456f);
+    };
+
     // ## Test hash functions and ##/### operators
     t = IM_REGISTER_TEST(e, "testengine", "testengine_hash_001");
     t->TestFunc = [](ImGuiTestContext* ctx)

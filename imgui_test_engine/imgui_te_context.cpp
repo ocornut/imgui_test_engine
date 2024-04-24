@@ -2945,6 +2945,7 @@ void    ImGuiTestContext::ItemInputValue(ImGuiTestRef ref, int value)
     ItemInput(ref);
     KeyCharsReplaceEnter(buf);
 }
+
 void    ImGuiTestContext::ItemInputValue(ImGuiTestRef ref, float value)
 {
     char buf[32];
@@ -2957,6 +2958,44 @@ void    ImGuiTestContext::ItemInputValue(ImGuiTestRef ref, const char* value)
 {
     ItemInput(ref);
     KeyCharsReplaceEnter(value);
+}
+
+void    ImGuiTestContext::ItemSelectAndReadValue(ImGuiTestRef ref, ImGuiDataType data_type, void* out_data)
+{
+    if (IsError())
+        return;
+
+    const ImGuiDataTypeInfo* data_type_info = ImGui::DataTypeGetInfo(data_type);
+
+    IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
+    LogDebug("ItemSelectReadValue '%s' %08X as %s", ref.Path ? ref.Path : "NULL", ref.ID, data_type_info->Name);
+    IM_CHECK_SILENT(out_data != NULL);
+
+    Str256 backup_clipboard = ImGui::GetClipboardText();
+
+    ItemInput(ref);
+    KeyPress(ImGuiKey_A | ImGuiMod_Shortcut);
+    KeyPress(ImGuiKey_C | ImGuiMod_Shortcut);   // Copy to clipboard
+    KeyPress(ImGuiKey_Enter);
+
+    const char* clipboard = ImGui::GetClipboardText();
+    bool ret = ImGui::DataTypeApplyFromText(clipboard, data_type, out_data, data_type_info->ScanFmt);
+    if (ret == false)
+    {
+        LogError("Unable to parse buffer '%s' as %s", clipboard, data_type_info->Name);
+        IM_CHECK(ret);
+    }
+    ImGui::SetClipboardText(backup_clipboard.c_str());
+}
+
+void    ImGuiTestContext::ItemSelectAndReadValue(ImGuiTestRef ref, int* out_v)
+{
+    ItemSelectAndReadValue(ref, ImGuiDataType_S32, (void*)out_v);
+}
+
+void    ImGuiTestContext::ItemSelectAndReadValue(ImGuiTestRef ref, float* out_v)
+{
+    ItemSelectAndReadValue(ref, ImGuiDataType_Float, (void*)out_v);
 }
 
 void    ImGuiTestContext::ItemHold(ImGuiTestRef ref, float time)

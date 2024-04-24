@@ -31,6 +31,11 @@ CHANGELOG
   PLEASE CONTACT US IF YOU HAVE ISSUES OR FEEDBACK OR ANY QUESTION.
 - TestEngine: Fixed a bug and potential crash in ItemDragAndDrop(). (#49)
 
+2024/04/23:
+- TestEngine: Added ItemSelectAndReadValue() helper to read a field from TestFunc
+  by selecting it and using clipboard. We will later introduce more general alternatives
+  but this is a simple and helpful tool.
+
 2024/04/15:
 - TestEngine: Added ImGuiTestEngine_UnregisterTest().
 - TestEngine: Fixed directory creation for capture save when using IMGUI_USE_WCHAR32.
