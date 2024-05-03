@@ -4613,6 +4613,17 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
         IM_CHECK_STR_EQ(text.c_str(), "A thing somewhere");
     };
 
+#if IMGUI_VERSION_NUM >= 19054
+    t = IM_REGISTER_TEST(e, "misc", "misc_text_funcs");
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        IM_CHECK_EQ(ImTextCountLines("Hello", NULL), 1);
+        IM_CHECK_EQ(ImTextCountLines("Hello\n", NULL), 1);
+        IM_CHECK_EQ(ImTextCountLines("Hello\nWorld", NULL), 2);
+        IM_CHECK_EQ(ImTextCountLines("Hello\nWorld\n", NULL), 2);
+        IM_CHECK_EQ(ImTextCountLines("Hello\nWorld\nA", NULL), 3);
+    };
+#endif
 
     // ## Test ImGuiTextLineIndex
 #if IMGUI_VERSION_NUM >= 18833

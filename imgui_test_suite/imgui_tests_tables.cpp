@@ -315,7 +315,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
 
         vars.Bool2 = true; // With border
         vars.Bool1 = false;
-        ctx->WindowResize("Test window 1", ImVec2(10, 800));
+        ctx->WindowResize("Test window 1", ImVec2(ImGui::GetStyle().WindowPadding.x, 800));
         vars.Bool1 = true;
         ctx->Yield();
         ctx->Yield();
