@@ -6621,6 +6621,79 @@ void RegisterTests_Capture(ImGuiTestEngine* e)
         ctx->PopupCloseAll();
     };
 
+    // ## For FAQ entry
+    t = IM_REGISTER_TEST(e, "capture", "capture_faq_idstack_gif");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        auto& vars = ctx->GenericVars;
+        struct Object { ImVec2 pos; };
+        static Object* objects[3] = { (Object*)&vars.FloatArray[0], (Object*)&vars.FloatArray[2], (Object*)&vars.FloatArray[4] };
+
+        ImGui::Begin("Incorrect!");
+        ImGui::DragFloat2("My value", &objects[0]->pos.x);
+        ImGui::DragFloat2("My value", &objects[1]->pos.x);
+        ImGui::DragFloat2("My value", &objects[2]->pos.x);
+        ImGui::End();
+
+        ImGui::Begin("Correct!");
+        ImGui::DragFloat2("My value", &objects[0]->pos.x);
+        ImGui::DragFloat2("My value##2", &objects[1]->pos.x);
+        ImGui::DragFloat2("My value##3", &objects[2]->pos.x);
+        ImGui::End();
+
+        ImGui::Begin("Also Correct!");
+        for (int row = 0; row < 3; row++)
+        {
+            ImGui::PushID(row);
+            ImGui::DragFloat2("My value", &objects[row]->pos.x);
+            ImGui::PopID();
+        }
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        const char* windows[3] = { "Incorrect!", "Correct!", "Also Correct!" };
+        auto& vars = ctx->GenericVars;
+
+        // Hidden setup
+        ImVec2 window_size = ImVec2(280, ImGui::GetFrameHeightWithSpacing() * 5);
+        ImVec2 window_offset = ImVec2(0, window_size.y + ImGui::GetStyle().ItemSpacing.y * 2);
+        for (int step = 0; step < 3; step++)
+            ctx->WindowResize(windows[step], window_size);
+        for (int step = 1; step < 3; step++)
+            ctx->WindowMove(windows[step], ctx->WindowInfo(windows[step - 1]).Window->Pos + window_offset);
+
+        // Capture
+        ctx->CaptureSetExtension(".gif");
+        for (int step = 0; step < 3; step++)
+            ctx->CaptureAddWindow(windows[step]);
+        ctx->CaptureBeginVideo();
+
+        ImVec2 field_offset(0, ImGui::GetFrameHeightWithSpacing());
+        for (int step = 0; step < 3; step++)
+        {
+            ctx->SetRef(windows[step]);
+            vars.Clear(); // Reset all to 0
+            ctx->WindowFocus(""); // Make more visible
+
+            // This is tricky: because the test engine relies on ID we can't naturally aim at fields easily.
+            // So we query position and use position as a base to derive others.
+            ImGuiTestItemInfo info = ctx->ItemInfo(step == 2 ? "$$0/My value/$$0" : "My value/$$0");
+            ImVec2 p = info.RectFull.GetCenter();
+            if (step == 0)
+                p -= field_offset * 2; // IN THE CASE OF DUPLICATE ID, OUR QUERY WILL GET THE LAST ONE WITH SAME ID.
+            ctx->MouseMoveToPos(p);
+            ctx->MouseClick();
+            ctx->MouseMoveToPos(p + field_offset * 1);
+            ctx->MouseClick();
+            ctx->MouseMoveToPos(p + field_offset * 2);
+            ctx->MouseClick();
+            ctx->MouseDoubleClick(); // Normally we'd use ItemInputvalue() but because of the IDconflict this is simplier
+            ctx->KeyCharsReplaceEnter("1234");
+        }
+        ctx->CaptureEndVideo();
+    };
+
     // ## Capture all tables demo
     t = IM_REGISTER_TEST(e, "capture", "capture_table_demo");
     t->TestFunc = [](ImGuiTestContext* ctx)
