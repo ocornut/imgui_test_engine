@@ -2148,8 +2148,8 @@ void    ImGuiTestContext::MouseLiftDragThreshold(ImGuiMouseButton button)
 ImGuiWindow* ImGuiTestContext::FindHoveredWindowAtPos(const ImVec2& pos)
 {
     ImGuiContext& g = *UiContext;
-    const ImVec2 padding_regular = g.Style.TouchExtraPadding;
-    const ImVec2 padding_for_resize = g.IO.ConfigWindowsResizeFromEdges ? g.WindowsHoverPadding : padding_regular;
+    ImVec2 padding_regular = g.Style.TouchExtraPadding;
+    ImVec2 padding_for_resize = g.IO.ConfigWindowsResizeFromEdges ? g.WindowsHoverPadding : padding_regular;
     for (int i = g.Windows.Size - 1; i >= 0; i--)
     {
         ImGuiWindow* window = g.Windows[i];
@@ -2159,12 +2159,8 @@ ImGuiWindow* ImGuiTestContext::FindHoveredWindowAtPos(const ImVec2& pos)
             continue;
 
         // Using the clipped AABB, a child window will typically be clipped by its parent (not always)
-        ImRect bb(window->OuterRectClipped);
-        if (window->Flags & (ImGuiWindowFlags_ChildWindow | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_AlwaysAutoResize))
-            bb.Expand(padding_regular);
-        else
-            bb.Expand(padding_for_resize);
-        if (!bb.Contains(pos))
+        ImVec2 hit_padding = (window->Flags & (ImGuiWindowFlags_NoResize | ImGuiWindowFlags_AlwaysAutoResize)) ? padding_regular : padding_for_resize;
+        if (!window->OuterRectClipped.ContainsWithPad(pos, hit_padding))
             continue;
 
         // Support for one rectangular hole in any given window
