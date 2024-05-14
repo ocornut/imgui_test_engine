@@ -2140,13 +2140,18 @@ void    ImGuiTestContext::MouseLiftDragThreshold(ImGuiMouseButton button)
     g.IO.MouseDragMaxDistanceSqr[button] = (g.IO.MouseDragThreshold * g.IO.MouseDragThreshold) + (g.IO.MouseDragThreshold * g.IO.MouseDragThreshold);
 }
 
-// Modeled on FindHoveredWindow() in imgui.cpp.
-// Ideally that core function would be refactored to avoid this copy.
-// - Need to take account of MovingWindow specificities and early out.
-// - Need to be able to skip viewport compare.
-// So for now we use a custom function.
 ImGuiWindow* ImGuiTestContext::FindHoveredWindowAtPos(const ImVec2& pos)
 {
+#if IMGUI_VERSION_NUM >= 19062
+    ImGuiWindow* hovered_window = NULL;
+    ImGui::FindHoveredWindowEx(pos, true, &hovered_window, NULL);
+    return hovered_window;
+#else
+    // Modeled on FindHoveredWindow() in imgui.cpp.
+    // Ideally that core function would be refactored to avoid this copy.
+    // - Need to take account of MovingWindow specificities and early out.
+    // - Need to be able to skip viewport compare.
+    // So for now we use a custom function.
     ImGuiContext& g = *UiContext;
     ImVec2 padding_regular = g.Style.TouchExtraPadding;
     ImVec2 padding_for_resize = g.IO.ConfigWindowsResizeFromEdges ? g.WindowsHoverPadding : padding_regular;
@@ -2176,6 +2181,7 @@ ImGuiWindow* ImGuiTestContext::FindHoveredWindowAtPos(const ImVec2& pos)
         return window;
     }
     return NULL;
+#endif
 }
 
 static bool IsPosOnVoid(ImGuiContext& g, const ImVec2& pos)
