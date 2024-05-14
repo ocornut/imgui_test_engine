@@ -4617,11 +4617,19 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
     t = IM_REGISTER_TEST(e, "misc", "misc_text_funcs");
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
+#ifdef IMGUI_HAS_IMSTR
+        IM_CHECK_EQ(ImTextCountLines("Hello"), 1);
+        IM_CHECK_EQ(ImTextCountLines("Hello\n"), 1);
+        IM_CHECK_EQ(ImTextCountLines("Hello\nWorld"), 2);
+        IM_CHECK_EQ(ImTextCountLines("Hello\nWorld\n"), 2);
+        IM_CHECK_EQ(ImTextCountLines("Hello\nWorld\nA"), 3);
+#else
         IM_CHECK_EQ(ImTextCountLines("Hello", NULL), 1);
         IM_CHECK_EQ(ImTextCountLines("Hello\n", NULL), 1);
         IM_CHECK_EQ(ImTextCountLines("Hello\nWorld", NULL), 2);
         IM_CHECK_EQ(ImTextCountLines("Hello\nWorld\n", NULL), 2);
         IM_CHECK_EQ(ImTextCountLines("Hello\nWorld\nA", NULL), 3);
+#endif
     };
 #endif
 
