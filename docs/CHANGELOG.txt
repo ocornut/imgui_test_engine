@@ -5,6 +5,10 @@ CHANGELOG
    Those changes are not all listed here.
 ** For a while this is going to ONLY INCLUDE BREAKING CHANGES.
 
+2024/05/14:
+- TestEngine: IM_TEST_ENGINE_ASSERT() doesn't crash if called prior to test engine
+  initialization.
+
 2024/04/22:
 - TestEngine: *EXCEPTIONALLY BREAKING CHANGE*
   Changed ItemInfo(), WindowInfo() and variants signatures to return
