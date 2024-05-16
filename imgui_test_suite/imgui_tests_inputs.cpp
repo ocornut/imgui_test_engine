@@ -26,6 +26,12 @@ static inline bool operator==(const ImVec2& lhs, const ImVec2& rhs) { return lhs
 static inline bool operator!=(const ImVec2& lhs, const ImVec2& rhs) { return lhs.x != rhs.x || lhs.y != rhs.y; }    // for IM_CHECK_NE()
 #endif
 
+#if IMGUI_VERSION_NUM >= 19063
+#define ImGuiMod_CtrlAfterMacTranslation    (g.IO.ConfigMacOSXBehaviors ? ImGuiMod_Super : ImGuiMod_Ctrl)
+#else
+#define ImGuiMod_CtrlAfterMacTranslation    (ImGuiMod_Ctrl)
+#endif
+
 //-------------------------------------------------------------------------
 // Tests: Inputs
 //-------------------------------------------------------------------------
@@ -334,7 +340,7 @@ void RegisterTests_Inputs(ImGuiTestEngine* e)
         io.AddKeyEvent(ImGuiMod_Shift, true);
         ctx->Yield();
         IM_CHECK_EQ(ImGui::IsKeyDown(ImGuiKey_K), true);
-        IM_CHECK(io.KeyMods == (ImGuiMod_Ctrl | ImGuiMod_Shift));
+        IM_CHECK_EQ(io.KeyMods, ImGuiMod_CtrlAfterMacTranslation | ImGuiMod_Shift);
         io.AddKeyEvent(ImGuiKey_K, false);
         io.AddKeyEvent(ImGuiMod_Ctrl, false);
         io.AddKeyEvent(ImGuiMod_Shift, false);
@@ -347,7 +353,7 @@ void RegisterTests_Inputs(ImGuiTestEngine* e)
         io.AddKeyEvent(ImGuiKey_K, true);
         ctx->Yield();
         IM_CHECK_EQ(ImGui::IsKeyDown(ImGuiKey_K), true);
-        IM_CHECK(io.KeyMods == (ImGuiMod_Ctrl | ImGuiMod_Shift));
+        IM_CHECK_EQ(io.KeyMods, ImGuiMod_CtrlAfterMacTranslation | ImGuiMod_Shift);
         io.AddKeyEvent(ImGuiKey_K, false);
         io.AddKeyEvent(ImGuiMod_Ctrl, false);
         io.AddKeyEvent(ImGuiMod_Shift, false);
@@ -358,7 +364,7 @@ void RegisterTests_Inputs(ImGuiTestEngine* e)
         io.AddKeyEvent(ImGuiMod_Ctrl, true);
         io.AddKeyEvent(ImGuiMod_Ctrl, false);
         ctx->Yield();
-        IM_CHECK(io.KeyMods == ImGuiMod_Ctrl);
+        IM_CHECK_EQ(io.KeyMods, ImGuiMod_CtrlAfterMacTranslation);
         ctx->Yield();
         IM_CHECK(io.KeyMods == ImGuiMod_None);
 
@@ -369,7 +375,7 @@ void RegisterTests_Inputs(ImGuiTestEngine* e)
         io.AddKeyEvent(ImGuiMod_Ctrl, false);
         io.AddKeyEvent(ImGuiMod_Shift, false);
         ctx->Yield();
-        IM_CHECK(io.KeyMods == (ImGuiMod_Ctrl | ImGuiMod_Shift));
+        IM_CHECK_EQ(io.KeyMods, ImGuiMod_CtrlAfterMacTranslation | ImGuiMod_Shift);
         ctx->Yield();
         IM_CHECK(io.KeyMods == ImGuiMod_None);
 
@@ -378,7 +384,7 @@ void RegisterTests_Inputs(ImGuiTestEngine* e)
         io.AddKeyEvent(ImGuiMod_Ctrl, true);
         ctx->Yield();
         IM_CHECK_EQ(io.MousePos, ImVec2(200.0f, 200.0f));
-        IM_CHECK(io.KeyMods == ImGuiMod_Ctrl);
+        IM_CHECK(io.KeyMods == ImGuiMod_CtrlAfterMacTranslation);
         io.AddKeyEvent(ImGuiMod_Ctrl, false);
         ctx->Yield();
         IM_CHECK(io.InputQueueCharacters.Size == 0);
@@ -390,7 +396,7 @@ void RegisterTests_Inputs(ImGuiTestEngine* e)
         io.AddKeyEvent(ImGuiMod_Ctrl, false);
         ctx->Yield();
         IM_CHECK_EQ(io.MousePos, ImVec2(200.0f, 200.0f));
-        IM_CHECK(io.KeyMods == ImGuiMod_Ctrl);
+        IM_CHECK(io.KeyMods == ImGuiMod_CtrlAfterMacTranslation);
         ctx->Yield();
         IM_CHECK_EQ(io.MousePos, ImVec2(210.0f, 210.0f));
         IM_CHECK(io.KeyMods == ImGuiMod_None);

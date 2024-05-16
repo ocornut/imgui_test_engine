@@ -2505,8 +2505,8 @@ void RegisterTests_Window(ImGuiTestEngine* e)
         ImGuiWindow* window = ctx->GetWindowByRef("###Test Window");
 
         // Open window switcher (CTRL+TAB).
-        ctx->KeyDown(ImGuiMod_Ctrl); // Hold CTRL down
-        ctx->KeyPress(ImGuiKey_Tab);
+        ctx->KeyDown(g.ConfigNavWindowingKeyNext & ImGuiMod_Mask_); // Hold CTRL down
+        ctx->KeyPress(g.ConfigNavWindowingKeyNext & ~ImGuiMod_Mask_);
         ctx->SleepNoSkip(0.3f, 1.0f / 60.0f);
         for (int i = 0; i < 2; i++)
         {
@@ -2514,7 +2514,7 @@ void RegisterTests_Window(ImGuiTestEngine* e)
             IM_CHECK_STR_EQ_NO_RET(window->Name, window_name.c_str());    // Verify window->Name gets updated.
             ctx->Yield();
         }
-        ctx->KeyUp(ImGuiMod_Ctrl);
+        ctx->KeyUp(g.ConfigNavWindowingKeyNext & ImGuiMod_Mask_);
     };
 
     // ## Test window appearing state.

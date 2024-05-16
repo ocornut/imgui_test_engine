@@ -132,7 +132,7 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
         ctx->ItemOpen("//Dear ImGui Demo/Help");
         ctx->KeyPress(ImGuiKey_DownArrow);
         ctx->ItemClose("//Dear ImGui Demo/Help");
-        ctx->KeyPress(ImGuiKey_Tab | ImGuiMod_Ctrl);
+        ctx->KeyPress(g.ConfigNavWindowingKeyNext); // Ctrl+Tab
         IM_CHECK_EQ(g.NavId, ctx->GetID("Window options"));
         ctx->KeyPress(ImGuiKey_DownArrow);
         IM_CHECK_EQ(g.NavId, ctx->GetID("table/BBBB"));
@@ -594,6 +594,7 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         ImGuiContext& g = *ctx->UiContext;
+        ImGuiKeyChord chord_ctrl_tab = g.ConfigNavWindowingKeyNext; // Generally ImGuiMod_Ctrl | ImGuiKey_Tab. Using _Super on Mac.
 
         // FIXME-TESTS: Facilitate usage of variants
         const int test_count = ctx->HasDock ? 2 : 1;
@@ -610,29 +611,29 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
             ctx->WindowFocus("Window 1");
             ctx->WindowFocus("Window 2");
 
-            ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_Tab);
+            ctx->KeyPress(chord_ctrl_tab);
             IM_CHECK(g.NavWindow == ctx->GetWindowByRef("Window 1"));
 
             // Intentionally perform a "SLOW" ctrl-tab to make sure the UI appears!
             //ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_Tab);
-            ctx->KeyDown(ImGuiMod_Ctrl);
-            ctx->KeyPress(ImGuiKey_Tab);
+            ctx->KeyDown(chord_ctrl_tab & ImGuiMod_Mask_);
+            ctx->KeyPress(chord_ctrl_tab & ~ImGuiMod_Mask_);
             ctx->SleepNoSkip(0.5f, 0.1f);
             IM_CHECK(g.NavWindowingTarget == ctx->GetWindowByRef("Window 2"));
             IM_CHECK(g.NavWindowingTarget->SkipItems == false);
-            ctx->KeyUp(ImGuiMod_Ctrl);
+            ctx->KeyUp(chord_ctrl_tab & ImGuiMod_Mask_);
             IM_CHECK(g.NavWindow == ctx->GetWindowByRef("Window 2"));
 
             // Test previous windowing key combo with UI
-            ctx->KeyDown(ImGuiMod_Ctrl);
-            ctx->KeyPress(ImGuiKey_Tab);
+            ctx->KeyDown(chord_ctrl_tab & ImGuiMod_Mask_);
+            ctx->KeyPress(chord_ctrl_tab & ~ImGuiMod_Mask_);
             ctx->SleepNoSkip(0.5f, 0.1f);
             IM_CHECK(g.NavWindowingTarget == ctx->GetWindowByRef("Window 1"));
             IM_CHECK(g.NavWindowingTarget->SkipItems == false);
-            ctx->KeyPress(ImGuiMod_Shift | ImGuiKey_Tab);
+            ctx->KeyPress(ImGuiMod_Shift | (chord_ctrl_tab & ~ImGuiMod_Mask_)); // FIXME: In theory should use g.ConfigNavWindowingKeyPrev
             IM_CHECK(g.NavWindowingTarget == ctx->GetWindowByRef("Window 2"));
             IM_CHECK(g.NavWindowingTarget->SkipItems == false);
-            ctx->KeyUp(ImGuiMod_Ctrl);
+            ctx->KeyUp(chord_ctrl_tab & ImGuiMod_Mask_);
             IM_CHECK(g.NavWindow == ctx->GetWindowByRef("Window 2"));
 
             // Set up window focus order, focus child window.
@@ -640,7 +641,7 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
             ctx->WindowFocus("Window 2"); // FIXME: Needed for case when docked
             ctx->ItemClick(ctx->GetID("Button In", ctx->WindowInfo("Window 2/Child").ID));
 
-            ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_Tab);
+            ctx->KeyPress(chord_ctrl_tab);
             IM_CHECK(g.NavWindow == ctx->GetWindowByRef("Window 1"));
         }
     };
@@ -670,24 +671,26 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         ImGuiContext& g = *ctx->UiContext;
+        ImGuiKeyChord chord_ctrl_tab = g.ConfigNavWindowingKeyNext; // Generally ImGuiMod_Ctrl | ImGuiKey_Tab. Using _Super on Mac.
+
 #ifdef IMGUI_HAS_DOCK
         ctx->DockClear("Dear ImGui Demo", "Test Window", NULL);
 #endif
         ctx->WindowFocus("Dear ImGui Demo");
         ctx->WindowFocus("Test Window");
         ctx->ItemClick("Test Window/Popup 1");
-        ctx->KeyDown(ImGuiMod_Ctrl);
+        ctx->KeyDown(chord_ctrl_tab & ImGuiMod_Mask_);
         ctx->KeyPress(ImGuiKey_Tab); // to Test Window
         ctx->KeyPress(ImGuiKey_Tab); // to Dear ImGui Demo
-        ctx->KeyUp(ImGuiMod_Ctrl);
+        ctx->KeyUp(chord_ctrl_tab & ImGuiMod_Mask_);
         ctx->Yield(2);
         IM_CHECK(g.NavWindow == ctx->GetWindowByRef("Dear ImGui Demo"));
         IM_CHECK(g.OpenPopupStack.Size == 0);
 
-        ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_Tab);
+        ctx->KeyPress(chord_ctrl_tab);
         IM_CHECK(g.NavWindow == ctx->GetWindowByRef("Test Window"));
         ctx->ItemClick("Test Window/Popup 2");
-        ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_Tab); // To Dear ImGui Demo
+        ctx->KeyPress(chord_ctrl_tab); // To Dear ImGui Demo
         ctx->Yield(2);
         IM_CHECK(g.NavWindow == ctx->GetWindowByRef("Dear ImGui Demo"));
 #if IMGUI_VERSION_NUM >= 19018
@@ -712,6 +715,7 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         ImGuiContext& g = *ctx->UiContext;
+        ImGuiKeyChord chord_ctrl_tab = g.ConfigNavWindowingKeyNext; // Generally ImGuiMod_Ctrl | ImGuiKey_Tab. Using _Super on Mac.
 
         // FIXME-TESTS: Facilitate usage of variants
         const int test_count = ctx->HasDock ? 2 : 1;
@@ -737,11 +741,11 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
             ctx->NavMoveTo(win2_button_ref);
 
             // Ctrl+Tab back to previous window, check if nav id was restored
-            ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_Tab);
+            ctx->KeyPress(chord_ctrl_tab);
             IM_CHECK_EQ(ctx->GetID(win1_button_ref), g.NavId);
 
             // Ctrl+Tab back to previous window, check if nav id was restored
-            ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_Tab);
+            ctx->KeyPress(chord_ctrl_tab);
             IM_CHECK_EQ(ctx->GetID(win2_button_ref), g.NavId);
         }
     };
@@ -770,12 +774,14 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         ImGuiContext& g = *ctx->UiContext;
+        ImGuiKeyChord chord_ctrl_tab = g.ConfigNavWindowingKeyNext; // Generally ImGuiMod_Ctrl | ImGuiKey_Tab. Using _Super on Mac.
+
         ctx->WindowFocus("Window 1");
         ctx->WindowFocus("Window 2");
-        ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_Tab);
+        ctx->KeyPress(chord_ctrl_tab);
         IM_CHECK_STR_EQ(g.NavWindow->Name, "Window 1");
         IM_CHECK_EQ(g.NavLayer, ImGuiNavLayer_Menu);
-        ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_Tab);
+        ctx->KeyPress(chord_ctrl_tab);
         IM_CHECK_STR_EQ(g.NavWindow->Name, "Window 2");
         IM_CHECK_EQ(g.NavLayer, ImGuiNavLayer_Main);
     };
@@ -797,13 +803,15 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         // FIXME-TESTS: Fails if window is resized too small
+        ImGuiContext& g = *ctx->UiContext;
+        ImGuiKeyChord chord_ctrl_tab = g.ConfigNavWindowingKeyNext; // Generally ImGuiMod_Ctrl | ImGuiKey_Tab. Using _Super on Mac.
         ctx->SetInputMode(ImGuiInputSource_Keyboard);
         ctx->SetRef("Test window 1");
         ctx->ItemInput("InputText");
         ctx->KeyCharsAppend("123");
-        IM_CHECK_EQ(ctx->UiContext->ActiveId, ctx->GetID("InputText"));
-        ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_Tab);
-        IM_CHECK_EQ(ctx->UiContext->ActiveId, (ImGuiID)0);
+        IM_CHECK_EQ(g.ActiveId, ctx->GetID("InputText"));
+        ctx->KeyPress(chord_ctrl_tab);
+        IM_CHECK_EQ(g.ActiveId, (ImGuiID)0);
         ctx->Sleep(1.0f);
     };
 
