@@ -6,6 +6,8 @@ CHANGELOG
 ** For a while this is going to ONLY INCLUDE BREAKING CHANGES.
 
 2024/05/16:
+- TestEngine: Fixes/support for 1.90.7 swapping Ctrl<>Cmd on Mac OSX,
+  and ImGuiMod_Shortcut being made obsolete/unnecessary.
 - TestEngine: Added debugger detection support on Mac OSX (disable watchdog,
   enable asserts on failure or other options).
 

@@ -478,7 +478,7 @@ void RegisterTests_Inputs(ImGuiTestEngine* e)
 #endif
 
     // ## Test ImGuiMod_Shortcut redirect (#5923)
-#if IMGUI_VERSION_NUM >= 18912
+#if IMGUI_VERSION_NUM >= 18912 && IMGUI_VERSION_NUM < 19063
     t = IM_REGISTER_TEST(e, "inputs", "inputs_io_mod_shortcut");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
@@ -494,6 +494,7 @@ void RegisterTests_Inputs(ImGuiTestEngine* e)
             // Verify whatever Shortcut does with routing
             vars.Count++;
             IM_CHECK(ImGui::IsKeyDown(ImGuiMod_Shortcut));
+#if IMGUI_VERSION_NUM < 19063
             if (g.IO.ConfigMacOSXBehaviors)
             {
                 // Verify IsKeyPressed() redirection + merged io.KeyMods
@@ -502,6 +503,7 @@ void RegisterTests_Inputs(ImGuiTestEngine* e)
                 IM_CHECK(g.IO.KeyMods == (ImGuiMod_Super));// | ImGuiMod_Shortcut));
             }
             else
+#endif
             {
                 IM_CHECK(ImGui::IsKeyDown(ImGuiMod_Ctrl) == true);
                 IM_CHECK(ImGui::IsKeyDown(ImGuiMod_Super) == false);
@@ -524,7 +526,11 @@ void RegisterTests_Inputs(ImGuiTestEngine* e)
         if (ctx->UiContext->IO.ConfigMacOSXBehaviors)
         {
             ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_L);
+#if IMGUI_VERSION_NUM >= 19063
+            IM_CHECK_EQ(vars.Count, 1);
+#else
             IM_CHECK_EQ(vars.Count, 0);
+#endif
             ctx->KeyPress(ImGuiMod_Super | ImGuiKey_L);
             IM_CHECK_EQ(vars.Count, 1);
         }
