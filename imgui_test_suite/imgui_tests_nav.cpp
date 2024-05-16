@@ -313,15 +313,25 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
             ctx->NavInput();
             IM_CHECK_EQ(g.ActiveId, input_id);
             ctx->KeyPress(ImGuiMod_Alt);
-            IM_CHECK_EQ(g.ActiveId, (ImGuiID)0);
-            IM_CHECK(g.NavLayer == ImGuiNavLayer_Menu);
-            ctx->KeyPress(ImGuiKey_Escape); // ESC to leave layer
+            if (g.IO.ConfigMacOSXBehaviors)
+            {
+                // On OSX, InputText() claims Alt mod
+                IM_CHECK_EQ(g.ActiveId, input_id);
+                ctx->KeyPress(ImGuiKey_Escape); // ESC to leave layer
+            }
+            else
+            {
+                IM_CHECK_EQ(g.ActiveId, (ImGuiID)0);
+                IM_CHECK(g.NavLayer == ImGuiNavLayer_Menu);
+                ctx->KeyPress(ImGuiKey_Escape); // ESC to leave layer
+            }
             IM_CHECK(g.NavLayer == ImGuiNavLayer_Main);
             IM_CHECK(g.NavId == input_id);
 
             // Test that toggling layer is canceled by character typing (#370)
             ctx->NavMoveTo(input_id);
             ctx->NavInput();
+            IM_CHECK_EQ(g.ActiveId, input_id);
             ctx->KeyDown(ImGuiMod_Alt);
             ctx->KeyChars("ABC");
             ctx->KeyUp(ImGuiMod_Alt);

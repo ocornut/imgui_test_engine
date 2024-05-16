@@ -1590,11 +1590,14 @@ void RegisterTests_Inputs(ImGuiTestEngine* e)
     };
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
+        ImGuiContext& g = *GImGui;
         auto& vars = ctx->GetVars<InputRoutingVars>();
         ctx->SetRef("Test Window");
 
         for (int step = 0; step < 2; step++)
         {
+            ctx->LogDebug("Step %d", step);
+            
             // Emit presses with no active id
             bool is_active = (step == 1);
             ctx->ItemClick("buf");
@@ -1617,13 +1620,19 @@ void RegisterTests_Inputs(ImGuiTestEngine* e)
 #else
             vars.TestIsPressedOnly(3);
 #endif
-            vars.Clear();
-            ctx->KeyPress(ImGuiMod_Shift | ImGuiMod_Alt | ImGuiKey_G);
-#if IMGUI_BROKEN_TESTS
-            vars.TestIsPressedOnly(is_active ? -1 : 4); // Technically more correct but too aggressive behavior for rare user-base?
-#else
-            vars.TestIsPressedOnly(4);
-#endif
+
+            // Alt is eaten on OSX (unless Ctrl is also pressed)
+            if (g.IO.ConfigMacOSXBehaviors == false)
+            {
+                vars.Clear();
+                ctx->KeyPress(ImGuiMod_Shift | ImGuiMod_Alt | ImGuiKey_G);
+    #if IMGUI_BROKEN_TESTS
+                vars.TestIsPressedOnly(is_active ? -1 : 4); // Technically more correct but too aggressive behavior for rare user-base?
+    #else
+                vars.TestIsPressedOnly(4);
+    #endif
+            }
+
             vars.Clear();
             ctx->KeyPress(ImGuiKey_F1);
             vars.TestIsPressedOnly(5);
