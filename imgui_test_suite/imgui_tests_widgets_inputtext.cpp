@@ -172,16 +172,16 @@ void RegisterTests_WidgetsInputText(ImGuiTestEngine* e)
         //const char line_buf[26+8+1+1] = "xxxxxxx abcdefghijklmnopqrstuvwxyz\n"; // 8+26+1 = 35
         //ImGui::SetClipboardText(line_buf);
         //IM_CHECK(strlen(line_buf) == 35);
-        //ctx->KeyPress(ImGuiMod_Shortcut | ImGuiKey_V, 10);
+        //ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_V, 10);
 
         // Select all, copy, paste 3 times
-        ctx->KeyPress(ImGuiMod_Shortcut | ImGuiKey_A);    // Select all
-        ctx->KeyPress(ImGuiMod_Shortcut | ImGuiKey_C);    // Copy
-        ctx->KeyPress(ImGuiMod_Shortcut | ImGuiKey_End);  // Go to end, clear selection
+        ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_A);    // Select all
+        ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_C);    // Copy
+        ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_End);  // Go to end, clear selection
         ctx->SleepStandard();
         for (int n = 0; n < 3; n++)
         {
-            ctx->KeyPress(ImGuiMod_Shortcut | ImGuiKey_V);// Paste append three times
+            ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_V);// Paste append three times
             ctx->SleepStandard();
         }
         int len = (int)strlen(vars.StrLarge.Data);
@@ -191,8 +191,8 @@ void RegisterTests_WidgetsInputText(ImGuiTestEngine* e)
 
         // Undo x2
         IM_CHECK(undo_state.redo_point == IMSTB_TEXTEDIT_UNDOSTATECOUNT);
-        ctx->KeyPress(ImGuiMod_Shortcut | ImGuiKey_Z);
-        ctx->KeyPress(ImGuiMod_Shortcut | ImGuiKey_Z);
+        ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_Z);
+        ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_Z);
         len = (int)strlen(vars.StrLarge.Data);
         IM_CHECK_EQ(len, 350 * 2);
         IM_CHECK_EQ(undo_state.undo_point, 1);
@@ -200,7 +200,7 @@ void RegisterTests_WidgetsInputText(ImGuiTestEngine* e)
         IM_CHECK_EQ(undo_state.redo_char_point, IMSTB_TEXTEDIT_UNDOCHARCOUNT - 350 * 2);
 
         // Undo x1 should call stb_textedit_discard_redo()
-        ctx->KeyPress(ImGuiMod_Shortcut | ImGuiKey_Z);
+        ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_Z);
         len = (int)strlen(vars.StrLarge.Data);
         IM_CHECK_EQ(len, 350 * 1);
     };
@@ -257,9 +257,9 @@ void RegisterTests_WidgetsInputText(ImGuiTestEngine* e)
         ctx->KeyCharsAppend("Hello");
         ctx->KeyPress(ImGuiKey_DownArrow);                      // Trigger modification from callback.
         IM_CHECK_STR_EQ(vars.str.c_str(), "Hello, world!");
-        ctx->KeyPress(ImGuiMod_Shortcut | ImGuiKey_Z);
+        ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_Z);
         IM_CHECK_STR_EQ(vars.str.c_str(), "Hello");
-        ctx->KeyPress(ImGuiMod_Shortcut | ImGuiKey_Y);
+        ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_Y);
         IM_CHECK_STR_EQ(vars.str.c_str(), "Hello, world!");
     };
 #endif
@@ -438,7 +438,7 @@ void RegisterTests_WidgetsInputText(ImGuiTestEngine* e)
             ctx->KeyPress(ImGuiKey_Escape);                      // Reset input to initial value.
             IM_CHECK_STR_EQ(vars.Str1, initial_value);
             ctx->ItemInput("Field");
-            ctx->KeyPress(ImGuiMod_Shortcut | ImGuiKey_Z);       // Undo
+            ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_Z);       // Undo
             IM_CHECK_STR_EQ(vars.Str1, "text");
             ctx->KeyPress(ImGuiKey_Enter);                       // Unfocus otherwise test_n==1 strcpy will fail
         }
@@ -872,9 +872,9 @@ void RegisterTests_WidgetsInputText(ImGuiTestEngine* e)
         IM_CHECK_EQ(stb.select_start, 0);
         IM_CHECK_EQ(stb.select_end, 23);
         IM_CHECK_EQ(stb.cursor, 23);
-        ctx->KeyPress(ImGuiMod_Shortcut | ImGuiKey_LeftArrow);
+        ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_LeftArrow);
         IM_CHECK_EQ(stb.cursor, 0);
-        ctx->KeyPress(ImGuiMod_Shortcut | ImGuiKey_RightArrow);
+        ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_RightArrow);
         IM_CHECK_EQ(stb.cursor, 23);
     };
 
@@ -1067,12 +1067,12 @@ void RegisterTests_WidgetsInputText(ImGuiTestEngine* e)
         // FIXME: Not testing History callback :)
         ctx->ItemClick("History");
         ctx->KeyCharsAppend("ABCDEF");
-        ctx->KeyPress(ImGuiMod_Shortcut | ImGuiKey_Z);
+        ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_Z);
         IM_CHECK_STR_EQ(vars.HistoryBuffer.c_str(), "ABCDE");
-        ctx->KeyPress(ImGuiMod_Shortcut | ImGuiKey_Z);
-        ctx->KeyPress(ImGuiMod_Shortcut | ImGuiKey_Z);
+        ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_Z);
+        ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_Z);
         IM_CHECK_STR_EQ(vars.HistoryBuffer.c_str(), "ABC");
-        ctx->KeyPress(ImGuiMod_Shortcut | ImGuiKey_Y);
+        ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_Y);
         IM_CHECK_STR_EQ(vars.HistoryBuffer.c_str(), "ABCD");
         ctx->KeyPress(ImGuiKey_UpArrow);
         IM_CHECK_STR_EQ(vars.HistoryBuffer.c_str(), "Pressed Up!");
@@ -1284,7 +1284,7 @@ void RegisterTests_WidgetsInputText(ImGuiTestEngine* e)
             // Copying without selection.
             ctx->ItemClick("Field");
             if (variant == 0)
-                ctx->KeyPress(ImGuiMod_Shortcut | ImGuiKey_C);
+                ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_C);
             else
                 ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_Insert);
             clipboard_text = ImGui::GetClipboardText();
@@ -1296,7 +1296,7 @@ void RegisterTests_WidgetsInputText(ImGuiTestEngine* e)
             for (int i = 0; i < 5; i++) // Seek to and select first word
                 ctx->KeyPress(ImGuiMod_Shift | ImGuiKey_RightArrow);
             if (variant == 0)
-                ctx->KeyPress(ImGuiMod_Shortcut | ImGuiKey_C);
+                ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_C);
             else
                 ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_Insert);
             clipboard_text = ImGui::GetClipboardText();
@@ -1308,7 +1308,7 @@ void RegisterTests_WidgetsInputText(ImGuiTestEngine* e)
             for (int i = 0; i < 5; i++) // Seek to and select first word
                 ctx->KeyPress(ImGuiMod_Shift | ImGuiKey_RightArrow);
             if (variant == 0)
-                ctx->KeyPress(ImGuiMod_Shortcut | ImGuiKey_X);
+                ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_X);
             else
                 ctx->KeyPress(ImGuiMod_Shift | ImGuiKey_Delete);
             clipboard_text = ImGui::GetClipboardText();
@@ -1320,7 +1320,7 @@ void RegisterTests_WidgetsInputText(ImGuiTestEngine* e)
             ImGui::SetClipboardText("h\xc9\x99\xcb\x88l\xc5\x8d");  // həˈlō
             ctx->KeyPress(ImGuiKey_Home);
             if (variant == 0)
-                ctx->KeyPress(ImGuiMod_Shortcut | ImGuiKey_V);
+                ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_V);
             else
                 ctx->KeyPress(ImGuiMod_Shift | ImGuiKey_Insert);
             IM_CHECK_STR_EQ(text, "h\xc9\x99\xcb\x88l\xc5\x8d, world!");
@@ -1421,7 +1421,7 @@ void RegisterTests_WidgetsInputText(ImGuiTestEngine* e)
         ctx->KeyPress(ImGuiKey_Tab);
         ctx->KeyPress(ImGuiKey_Tab | ImGuiMod_Shift);
         IM_CHECK_EQ(g.ActiveId, input_id);
-        ctx->KeyPress(ImGuiMod_Shortcut | ImGuiKey_A);
+        ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_A);
         ctx->KeyPress(ImGuiKey_Delete);
         IM_CHECK_STR_EQ(vars.Str1, "");
         ctx->KeyChars("Hello");

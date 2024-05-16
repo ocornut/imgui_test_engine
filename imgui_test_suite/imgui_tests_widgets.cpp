@@ -4619,7 +4619,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
             IM_CHECK_EQ(vars.Mask, (ImU64)(0x02 | 0x04 | 0x08 | 0x10 | 0x20 | 0x40 | 0x80));
             ctx->KeyUp(ImGuiMod_Shift);
 
-            ctx->KeyPress(ImGuiMod_Shortcut | ImGuiKey_A);
+            ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_A);
             IM_CHECK_EQ(vars.Mask, ((ImU64)1 << vars.ItemsCount) - 1);
             ctx->KeyPress(ImGuiKey_Home);
             ctx->KeyPress(ImGuiKey_DownArrow); // Skip Button

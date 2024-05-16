@@ -5188,8 +5188,8 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
         {
             ctx->ItemInput("##TabBar/Primitives/Size");
             IM_CHECK_EQ(g.ActiveId, ctx->GetID("##TabBar/Primitives/Size"));
-            ctx->KeyPress(ImGuiMod_Shortcut | ImGuiKey_A);
-            ctx->KeyPress(ImGuiMod_Shortcut | ImGuiKey_C);
+            ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_A);
+            ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_C);
             ctx->KeyPress(ImGuiKey_Enter);
             float backup_size = (float)ImAtof(ImGui::GetClipboardText());
 
