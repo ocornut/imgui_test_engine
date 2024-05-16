@@ -50,15 +50,14 @@ endif
 ifneq ($(BACKEND_LIB),)
 	ifeq ($(BACKEND_LIB), sdl2)
 		CFLAGS += -DIMGUI_APP_SDL2_GL3
-		#SOURCES += $(IMGUI_DIR)/backends/imgui_impl_sdl2.cpp
+		LIBS += $(shell pkg-config --libs sdl2)
+		CFLAGS += $(shell pkg-config --cflags sdl2)
 	endif
 	ifeq ($(BACKEND_LIB), glfw3)
 		CFLAGS += -DIMGUI_APP_GLFW_GL3
-		#SOURCES += $(IMGUI_DIR)/backends/imgui_impl_glfw.cpp
+		LIBS += $(shell pkg-config --libs glfw3)
+		CFLAGS += $(shell pkg-config --cflags glfw3)
 	endif
-	LIBS = $(shell pkg-config --libs $(BACKEND_LIB))
-	CFLAGS += $(shell pkg-config --cflags $(BACKEND_LIB))
-	#SOURCES += $(IMGUI_DIR)/backends/imgui_impl_opengl3.cpp
 endif
 
 LIBS += -lpthread

@@ -445,14 +445,19 @@ void RegisterTests_Inputs(ImGuiTestEngine* e)
         ctx->Yield();
         IM_CHECK(g.InputEventsQueue.Size == 0);
 
+        ImVec2 void_pos;
+        if (!ctx->FindExistingVoidPosOnViewport(ImGui::GetMainViewport(), &void_pos))
+            void_pos = ImVec2(1.0f, 1.0f);
+
         io.AddKeyEvent(ImGuiKey_Space, true);
-        io.AddMousePosEvent(100.0f, 100.0f);
+        io.AddMousePosEvent(void_pos.x, void_pos.y);
         io.AddMouseButtonEvent(1, true);
         io.AddMouseWheelEvent(0.0f, 1.0f);
         IM_CHECK(g.InputEventsQueue.Size == 4);
 
+        // May interfere
         io.AddMouseButtonEvent(1, true);
-        io.AddMousePosEvent(100.0f, 100.0f);
+        io.AddMousePosEvent(void_pos.x, void_pos.y);
         io.AddKeyEvent(ImGuiKey_Space, true);
         io.AddMouseWheelEvent(0.0f, 0.0f);
         IM_CHECK(g.InputEventsQueue.Size == 4);
