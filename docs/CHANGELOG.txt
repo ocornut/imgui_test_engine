@@ -5,6 +5,10 @@ CHANGELOG
    Those changes are not all listed here.
 ** For a while this is going to ONLY INCLUDE BREAKING CHANGES.
 
+2024/05/16:
+- TestEngine: Added debugger detection support on Mac OSX (disable watchdog,
+  enable asserts on failure or other options).
+
 2024/05/14:
 - TestEngine: IM_TEST_ENGINE_ASSERT() doesn't crash if called prior to test engine
   initialization.
