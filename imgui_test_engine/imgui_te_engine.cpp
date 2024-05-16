@@ -592,8 +592,11 @@ void ImGuiTestEngine_ApplyInputToImGuiContext(ImGuiTestEngine* engine)
             case ImGuiTestInputType_Key:
             {
                 ImGuiKeyChord key_chord = input.KeyChord;
-#if IMGUI_VERSION_NUM >= 19016
+#if IMGUI_VERSION_NUM >= 19016 && IMGUI_VERSION_NUM < 19063
                 key_chord = ImGui::FixupKeyChord(&g, key_chord); // This will add ImGuiMod_Alt when pressing ImGuiKey_LeftAlt or ImGuiKey_LeftRight
+#endif
+#if IMGUI_VERSION_NUM >= 19063
+                key_chord = ImGui::FixupKeyChord(key_chord);     // This will add ImGuiMod_Alt when pressing ImGuiKey_LeftAlt or ImGuiKey_LeftRight
 #endif
                 ImGuiKey key = (ImGuiKey)(key_chord & ~ImGuiMod_Mask_);
                 ImGuiKeyChord mods = (key_chord & ImGuiMod_Mask_);
