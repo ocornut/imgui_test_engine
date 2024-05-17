@@ -1654,7 +1654,7 @@ void RegisterTests_Inputs(ImGuiTestEngine* e)
         for (int step = 0; step < 2; step++)
         {
             ctx->LogDebug("Step %d", step);
-            
+
             // Emit presses with no active id
             bool is_active = (step == 1);
             ctx->ItemClick("buf");
@@ -1695,6 +1695,20 @@ void RegisterTests_Inputs(ImGuiTestEngine* e)
             vars.TestIsPressedOnly(5);
             vars.Clear();
         }
+    };
+#endif
+
+#if IMGUI_VERSION_NUM >= 19064
+    t = IM_REGISTER_TEST(e, "inputs", "inputs_keychord_name");
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        IM_CHECK_STR_EQ(ImGui::GetKeyChordName(ImGuiKey_None), "None");
+        IM_CHECK_STR_EQ(ImGui::GetKeyChordName(ImGuiKey_A), "A");
+        IM_CHECK_STR_EQ(ImGui::GetKeyChordName(ImGuiKey_A | ImGuiMod_Ctrl), "Ctrl+A");
+        IM_CHECK_STR_EQ(ImGui::GetKeyChordName(ImGuiKey_LeftCtrl), "LeftCtrl");
+        IM_CHECK_STR_EQ(ImGui::GetKeyChordName(ImGuiMod_Ctrl | ImGuiKey_LeftCtrl), "LeftCtrl");
+        IM_CHECK_STR_EQ(ImGui::GetKeyChordName(ImGuiMod_Ctrl), "Ctrl");
+        IM_CHECK_STR_EQ(ImGui::GetKeyChordName(ImGuiMod_Ctrl | ImGuiMod_Shift | ImGuiKey_LeftCtrl), "Shift+LeftCtrl");
     };
 #endif
 
