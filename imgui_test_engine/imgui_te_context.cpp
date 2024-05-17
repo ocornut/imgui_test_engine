@@ -1696,8 +1696,11 @@ void    ImGuiTestContext::MouseMove(ImGuiTestRef ref, ImGuiTestOpFlags flags)
         // it make test-engine behavior a little less deterministic.
         // Incorrectly written tests could possibly succeed or fail based on position of other windows.
         bool is_covered = FindHoveredWindowAtPos(pos) != item.Window;
+#if IMGUI_VERSION_NUM >= 18944
         bool is_inhibited = ImGui::IsWindowContentHoverable(item.Window) == false;
-
+#else
+        bool is_inhibited = false;
+#endif
         // FIXME-TESTS-NOT_SAME_AS_END_USER: This has too many side effect, could we do without?
         // - e.g. This can close a modal.
         if (is_covered || is_inhibited)
@@ -1719,8 +1722,11 @@ void    ImGuiTestContext::MouseMove(ImGuiTestRef ref, ImGuiTestOpFlags flags)
     {
         // Avoid unnecessary focus
         bool is_covered = FindHoveredWindowAtPos(pos) != item.Window;
+#if IMGUI_VERSION_NUM >= 18944
         bool is_inhibited = ImGui::IsWindowContentHoverable(item.Window) == false;
-
+#else
+        bool is_inhibited = false;
+#endif
         if (is_covered || is_inhibited)
             WindowBringToFront(window->ID);
     }
@@ -2165,7 +2171,9 @@ ImGuiWindow* ImGuiTestContext::FindHoveredWindowAtPos(const ImVec2& pos)
 
         // Using the clipped AABB, a child window will typically be clipped by its parent (not always)
         ImVec2 hit_padding = (window->Flags & (ImGuiWindowFlags_NoResize | ImGuiWindowFlags_AlwaysAutoResize)) ? padding_regular : padding_for_resize;
-        if (!window->OuterRectClipped.ContainsWithPad(pos, hit_padding))
+        ImRect r = window->OuterRectClipped;
+        r.Expand(hit_padding);
+        if (!r.Contains(pos))
             continue;
 
         // Support for one rectangular hole in any given window

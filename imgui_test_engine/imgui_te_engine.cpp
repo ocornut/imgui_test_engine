@@ -1429,8 +1429,10 @@ struct ImGuiTestContextUiContextBackup
         IO = g.IO;
         Style = g.Style;
         DebugLogFlags = g.DebugLogFlags;
+#if IMGUI_VERSION_NUM >= 18837
         ConfigNavWindowingKeyNext = g.ConfigNavWindowingKeyNext;
         ConfigNavWindowingKeyPrev = g.ConfigNavWindowingKeyPrev;
+#endif
         memset(IO.MouseDown, 0, sizeof(IO.MouseDown));
         for (int n = 0; n < IM_ARRAYSIZE(IO.KeysData); n++)
             IO.KeysData[n].Down = false;
@@ -1443,8 +1445,10 @@ struct ImGuiTestContextUiContextBackup
         g.IO = IO;
         g.Style = Style;
         g.DebugLogFlags = DebugLogFlags;
+#if IMGUI_VERSION_NUM >= 18837
         g.ConfigNavWindowingKeyNext = ConfigNavWindowingKeyNext;
         g.ConfigNavWindowingKeyPrev = ConfigNavWindowingKeyPrev;
+#endif
     }
     void RestoreClipboardFuncs(ImGuiContext& g)
     {
