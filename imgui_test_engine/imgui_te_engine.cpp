@@ -1340,8 +1340,9 @@ void ImGuiTestEngine_QueueTests(ImGuiTestEngine* engine, ImGuiTestGroup group, c
         if (group != ImGuiTestGroup_Unknown && test->Group != group)
             continue;
 
-        if (!ImGuiTestEngine_PassFilter(test, filter_str))
-            continue;
+        if (filter_str != NULL)
+            if (!ImGuiTestEngine_PassFilter(test, filter_str))
+                continue;
 
         ImGuiTestEngine_QueueTest(engine, test, run_flags);
     }
