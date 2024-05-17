@@ -241,6 +241,51 @@ void RegisterTests_Inputs(ImGuiTestEngine* e)
         ctx->Yield();
         IM_CHECK_EQ(ImGui::IsKeyDown(ImGuiKey_F), false);
 
+        // MouseButton Ctrl+Left = Right alias for macOS X (#2343)
+#if IMGUI_VERSION_NUM >= 19064
+        bool backup_is_osx = io.ConfigMacOSXBehaviors;
+        for (int is_osx = 0; is_osx < 2; is_osx++)
+        {
+            ctx->LogDebug("Testing Super+LeftClick atlas (osx=%d)", is_osx);
+            io.ConfigMacOSXBehaviors = is_osx;
+            ctx->Yield();
+            if (io.ConfigMacOSXBehaviors)
+            {
+                io.AddKeyEvent(ImGuiMod_Ctrl, true); // In a twisted plot of fate, because we feed raw input we use Ctrl here and not Super
+                io.AddMouseButtonEvent(0, true);
+                ctx->Yield();
+                IM_CHECK_EQ(io.MouseDown[0], false);
+                IM_CHECK_EQ(io.MouseDown[1], true); // Aliased
+                ctx->Yield(3);
+                IM_CHECK_EQ(io.MouseDown[0], false);
+                IM_CHECK_EQ(io.MouseDown[1], true); // Still aliased
+                io.AddKeyEvent(ImGuiMod_Ctrl, false);
+                ctx->Yield();
+                IM_CHECK_EQ(io.MouseDown[1], true); // Still aliased: ensure what's more sensible design for this
+                io.AddMouseButtonEvent(0, false);
+                ctx->Yield();
+                IM_CHECK_EQ(io.MouseDown[1], false); // Still aliased for release
+            }
+            else
+            {
+                io.AddKeyEvent(ImGuiMod_Super, true);
+                io.AddMouseButtonEvent(0, true);
+                ctx->Yield();
+                IM_CHECK_EQ(io.MouseDown[0], true);
+                IM_CHECK_EQ(io.MouseDown[1], false); // Not aliased
+                ctx->Yield(3);
+                IM_CHECK_EQ(io.MouseDown[0], true);
+                IM_CHECK_EQ(io.MouseDown[1], false); // Still not aliased
+                io.AddMouseButtonEvent(0, false);
+                ctx->Yield();
+                IM_CHECK_EQ(io.MouseDown[0], false); // Still not aliased for release
+                io.AddKeyEvent(ImGuiMod_Super, false);
+            }
+        }
+        io.ConfigMacOSXBehaviors = backup_is_osx;
+        ctx->Yield();
+#endif
+
         // Key | MousePos -> 2 frames
         io.AddKeyEvent(ImGuiKey_G, true);
         io.AddMousePosEvent(130.0f, 130.0f);
