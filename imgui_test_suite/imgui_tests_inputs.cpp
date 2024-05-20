@@ -247,7 +247,7 @@ void RegisterTests_Inputs(ImGuiTestEngine* e)
         for (int is_osx = 0; is_osx < 2; is_osx++)
         {
             ctx->LogDebug("Testing Super+LeftClick atlas (osx=%d)", is_osx);
-            io.ConfigMacOSXBehaviors = is_osx;
+            io.ConfigMacOSXBehaviors = is_osx != 0;
             ctx->Yield();
             if (io.ConfigMacOSXBehaviors)
             {

@@ -189,7 +189,7 @@ jobs:
   # MacOS minutes are expensive (x10) for private repo so reduce the amount of tests running there for now.
   # Builds are performed only for docking branch and tests are only performed daily or on request.
   MacOS:
-    runs-on: macos-11
+    runs-on: macos-latest
     env:
       BUILD_ALWAYS: ${{ secrets.BUILD_ALWAYS }}
       BUILD_SCHEDULED: ${{ secrets.BUILD_SCHEDULED }}
