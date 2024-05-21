@@ -1183,7 +1183,7 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         ImGuiTestGenericVars& vars = ctx->GenericVars;
-        vars.DockId = ImGui::DockSpaceOverViewport(ImGui::GetMainViewport(), ImGuiDockNodeFlags_PassthruCentralNode);
+        vars.DockId = ImGui::DockSpaceOverViewport(0, ImGui::GetMainViewport(), ImGuiDockNodeFlags_PassthruCentralNode);
         ImGui::SetNextWindowSize(ImVec2(300, 200), ImGuiCond_Appearing);
         ImGui::Begin("Left", NULL, ImGuiWindowFlags_NoSavedSettings); ImGui::End();
         ImGui::SetNextWindowSize(ImVec2(300, 200), ImGuiCond_Appearing);
@@ -1197,10 +1197,11 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
     {
         ImGuiTestGenericVars& vars = ctx->GenericVars;
         ImGuiViewport* viewport = ImGui::GetMainViewport();
-        ImGuiWindow* window = ctx->GetWindowByRef(Str30f("DockSpaceViewport_%08X", viewport->ID).c_str());
+        ImGuiWindow* window = ctx->GetWindowByRef(Str30f("WindowOverViewport_%08X", viewport->ID).c_str());
         ctx->DockClear("Left", "Up", "Right", "Down", NULL);
 
         // Empty dockspace has no padding.
+        IM_CHECK(window != NULL);
         IM_CHECK_EQ(window->HitTestHoleOffset.x, 0);
         IM_CHECK_EQ(window->HitTestHoleOffset.y, 0);
         IM_CHECK_EQ(window->HitTestHoleSize.x, viewport->Size.x);
@@ -1598,7 +1599,7 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
     t = IM_REGISTER_TEST(e, "docking", "docking_undock_large");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
-        ImGuiID dockspace_id = ImGui::DockSpaceOverViewport(ImGui::GetMainViewport(), ImGuiDockNodeFlags_PassthruCentralNode);
+        ImGuiID dockspace_id = ImGui::DockSpaceOverViewport(0, ImGui::GetMainViewport(), ImGuiDockNodeFlags_PassthruCentralNode);
         ImGui::SetNextWindowDockID(dockspace_id, ImGuiCond_Appearing);
         ImGui::Begin("Window 1", NULL, ImGuiWindowFlags_NoSavedSettings);
         ImGui::Text("This is window 1");
