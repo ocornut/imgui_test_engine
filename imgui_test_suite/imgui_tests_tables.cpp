@@ -1360,6 +1360,68 @@ void RegisterTests_Table(ImGuiTestEngine* e)
     };
 #endif
 
+    // ## Test that BeginTable/EndTable can be queried with ItemInfo() even when clipped.
+#if IMGUI_VERSION_NUM >= 19065
+    t = IM_REGISTER_TEST(e, "table", "table_clipped_outer_query");
+    struct TableClippedOuterContainerQueryVars { bool EmptyInside = false; bool MultiInstances = false; };
+    t->SetVarsDataType<TableClippedOuterContainerQueryVars>();
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        auto& vars = ctx->GetVars<TableClippedOuterContainerQueryVars>();
+        ImGui::SetNextWindowSize(ImVec2(300.0f, 500.0f));
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImGui::Checkbox("EmptyInside", &vars.EmptyInside);
+        ImGui::Checkbox("Multi-instances", &vars.MultiInstances);
+
+        for (int n = 0; n < 6; n++)
+        {
+            ImGui::Text("table%d", n);
+
+            ImGui::BeginChild(Str30f("child%d", n).c_str(), ImVec2(-FLT_MIN, 100), ImGuiChildFlags_Border | ImGuiChildFlags_FrameStyle);
+            if (!vars.EmptyInside) // This affects EndChild() submission path
+                ImGui::Button("Button");
+            ImGui::EndChild();
+
+            const int instances_count = vars.MultiInstances ? 3 : 1;
+            for (int instance = 0; instance < instances_count; instance++)
+            {
+                if (ImGui::BeginTable(Str30f("table%d", n).c_str(), 3, ImGuiTableFlags_ScrollY | ImGuiTableFlags_Borders, ImVec2(-FLT_MIN, 200)))
+                {
+                    if (!vars.EmptyInside) // This affects EndChild() submission path
+                    {
+                        ImGui::TableNextColumn();
+                        ImGui::Button("Button");
+                    }
+                    ImGui::EndTable();
+                }
+            }
+        }
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        auto& vars = ctx->GetVars<TableClippedOuterContainerQueryVars>();
+        ctx->SetRef("Test Window");
+        for (int step = 0; step < 3; step++)
+        {
+            ctx->LogDebug("Step %d", step);
+            vars.EmptyInside = (step == 1);
+            vars.MultiInstances = (step == 2);
+            ctx->Yield(4); // FIXME-TESTS: Investigate why yielding for 3 frames makes EndTable()'s child NavLayersActiveMask != 0, needed to stress both paths
+            for (int n = 0; n < 6; n++)
+            {
+                //ImGuiTestItemInfo info1 = ctx->WindowInfo(Str30f("child%d", n).c_str());
+                ImGuiTestItemInfo info2 = ctx->ItemInfo(Str30f("table%d", n).c_str());
+                IM_CHECK_EQ(ctx->ItemExists(Str30f("table%d", n).c_str()), true);
+            }
+            // Double down as a child test
+            for (int n = 0; n < 6; n++)
+                IM_CHECK_EQ(ctx->ItemExists(Str30f("child%d", n).c_str()), true);
+        }
+        ctx->ScrollToItemY("table4");
+    };
+#endif
+
     // ## Test that BeginTable/EndTable with no contents doesn't fail
     t = IM_REGISTER_TEST(e, "table", "table_empty");
     t->GuiFunc = [](ImGuiTestContext* ctx)
