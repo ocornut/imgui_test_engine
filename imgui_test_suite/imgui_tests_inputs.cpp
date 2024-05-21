@@ -834,7 +834,6 @@ void RegisterTests_Inputs(ImGuiTestEngine* e)
     {
         ImGuiContext& g = *ctx->UiContext;
         auto& vars = ctx->GenericVars;
-        ctx->SetRef("Test Window");
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_MenuBar);
 
         ImGui::Button("Button 1");
@@ -847,19 +846,19 @@ void RegisterTests_Inputs(ImGuiTestEngine* e)
             if (vars.Step == 0)
                 IM_CHECK_EQ(owner_data->OwnerCurr, ImGuiKeyOwner_None);
             else if (vars.Step == 1 || vars.Step == 2)
-                IM_CHECK_EQ(owner_data->OwnerCurr, ctx->GetID("Button 1"));
+                IM_CHECK_EQ(owner_data->OwnerCurr, ImGui::GetID("Button 1"));
             // [2022-09-20]: changed SetKeyOwner() to alter OwnerCurr as well
             //else if (vars.Step == 2)
-            //    IM_CHECK_EQ(owner_data->OwnerCurr, ctx->GetID("Button 2"));
+            //    IM_CHECK_EQ(owner_data->OwnerCurr, ImGui::GetID("Button 2"));
             if (vars.Step >= 1)
-                IM_CHECK_EQ(owner_data->OwnerNext, ctx->GetID("Button 1"));
+                IM_CHECK_EQ(owner_data->OwnerNext, ImGui::GetID("Button 1"));
         }
 
         ImGui::Button("Button 2");
         if (vars.Step >= 2)
             ImGui::SetKeyOwner(ImGuiKey_Space, ImGui::GetItemID());
         if (vars.Bool1 && vars.Step >= 2)
-            IM_CHECK_EQ(owner_data->OwnerNext, ctx->GetID("Button 2"));
+            IM_CHECK_EQ(owner_data->OwnerNext, ImGui::GetID("Button 2"));
 
         ImGui::End();
     };

@@ -492,6 +492,7 @@ void ImGuiTestContext::SetInputMode(ImGuiInputSource input_mode)
     }
 }
 
+// Shortcut when we have a window pointer, avoid mistakes with slashes in child names.
 void ImGuiTestContext::SetRef(ImGuiWindow* window)
 {
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
@@ -511,7 +512,7 @@ void ImGuiTestContext::SetRef(ImGuiWindow* window)
         WindowCollapse(window->ID, false);
 }
 
-// SetRef() ok in GUI Func ONLY if pointer to a pointer.
+// It is exceptionally OK to call SetRef() in GuiFunc, as a facilitaty to call seeded ctx->GetId() in GuiFunc.
 // FIXME-TESTS: May be good to focus window when docked? Otherwise locate request won't even see an item?
 void ImGuiTestContext::SetRef(ImGuiTestRef ref)
 {

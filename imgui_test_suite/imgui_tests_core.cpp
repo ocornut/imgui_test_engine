@@ -5702,6 +5702,20 @@ void RegisterTests_TestEngine(ImGuiTestEngine* e)
     };
 #endif
 
+    // ## Test basic permitted uses of SetRef()/GetID() in GuiFunc
+    t = IM_REGISTER_TEST(e, "testengine", "testengine_ref_from_guifunc");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ctx->SetRef("Test Window");
+        ImGui::Button("Hello");
+        IM_CHECK_EQ(ImGui::GetItemID(), ctx->GetID("Hello"));
+        ctx->SetRef("Test Window/Wor");
+        ImGui::Button("World");
+        IM_CHECK_EQ(ImGui::GetItemID(), ctx->GetID("ld"));
+        ImGui::End();
+    };
+
     // ## Test **/ handling
     t = IM_REGISTER_TEST(e, "testengine", "testengine_ref_wildcard");
     t->GuiFunc = [](ImGuiTestContext* ctx)

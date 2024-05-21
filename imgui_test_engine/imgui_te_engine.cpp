@@ -1571,13 +1571,6 @@ void ImGuiTestEngine_RunTest(ImGuiTestEngine* engine, ImGuiTestContext* parent_c
     // Clear ImGui inputs to avoid key/mouse leaks from one test to another
     ImGuiTestEngine_ClearInput(engine);
 
-    ctx->FrameCount = parent_ctx ? parent_ctx->FrameCount : 0;
-    ctx->ErrorCounter = 0;
-    ctx->SetRef("");
-    ctx->SetInputMode(ImGuiInputSource_Mouse);
-    ctx->UiContext->NavInputSource = ImGuiInputSource_Keyboard;
-    ctx->Clipboard.clear();
-
     // Backup entire IO and style. Allows tests modifying them and not caring about restoring state.
     ImGuiTestContextUiContextBackup backup_ui_context;
     backup_ui_context.Backup(*ctx->UiContext);
@@ -1618,6 +1611,12 @@ void ImGuiTestEngine_RunTest(ImGuiTestEngine* engine, ImGuiTestContext* parent_c
     ImGuiTestActiveFunc backup_active_func = ctx->ActiveFunc;
     ctx->ActiveFunc = ImGuiTestActiveFunc_TestFunc;
     ctx->FirstGuiFrame = (test->GuiFunc != NULL) ? true : false;
+    ctx->FrameCount = parent_ctx ? parent_ctx->FrameCount : 0;
+    ctx->ErrorCounter = 0;
+    ctx->SetRef("");
+    ctx->SetInputMode(ImGuiInputSource_Mouse);
+    ctx->UiContext->NavInputSource = ImGuiInputSource_Keyboard;
+    ctx->Clipboard.clear();
 
     // Warm up GUI
     // - We need one mandatory frame running GuiFunc before running TestFunc
