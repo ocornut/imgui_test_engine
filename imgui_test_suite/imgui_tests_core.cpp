@@ -465,24 +465,29 @@ void RegisterTests_Window(ImGuiTestEngine* e)
     {
         ImGuiContext& g = *ctx->UiContext;
         IM_CHECK_EQ(g.NavWindow->ID, ctx->GetID("//BBBB"));
-        ctx->YieldUntil(19);
+        while (ctx->FrameCount < 19)
+            ctx->Yield();
         IM_CHECK_EQ(g.NavWindow->ID, ctx->GetID("//BBBB"));
-        ctx->YieldUntil(20);
+        while (ctx->FrameCount < 20)
+            ctx->Yield();
         IM_CHECK_EQ(g.NavWindow->ID, ctx->GetID("//DDDD"));
-        ctx->YieldUntil(30);
+        while (ctx->FrameCount < 30)
+            ctx->Yield();
         ctx->WindowFocus("//CCCC");
         IM_CHECK_EQ(g.NavWindow->ID, ctx->GetID("//CCCC"));
-        ctx->YieldUntil(39);
-        ctx->YieldUntil(40);
+        while (ctx->FrameCount < 40)
+            ctx->Yield();
         IM_CHECK_EQ(g.NavWindow->ID, ctx->GetID("//CCCC"));
 
         // When docked, it should NOT takes 1 extra frame to lose focus (fixed 2019/03/28)
-        ctx->YieldUntil(41);
+        while (ctx->FrameCount < 41)
+            ctx->Yield();
         IM_CHECK_EQ(g.NavWindow->ID, ctx->GetID("//BBBB"));
 
-        ctx->YieldUntil(49);
+        while (ctx->FrameCount < 49)
+            ctx->Yield();
         IM_CHECK_EQ(g.NavWindow->ID, ctx->GetID("//BBBB"));
-        ctx->YieldUntil(50);
+        ctx->Yield();
         IM_CHECK_EQ(g.NavWindow->ID, ctx->GetID("//DDDD"));
     };
 

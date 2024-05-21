@@ -344,12 +344,6 @@ void    ImGuiTestContext::Yield(int count)
     }
 }
 
-void    ImGuiTestContext::YieldUntil(int frame_count)
-{
-    while (FrameCount < frame_count)
-        ImGuiTestEngine_Yield(Engine);
-}
-
 // Supported values for ImGuiTestRunFlags:
 // - ImGuiTestRunFlags_NoError: if child test fails, return false and do not mark parent test as failed.
 // - ImGuiTestRunFlags_ShareVars: share generic vars and custom vars between child and parent tests.
@@ -512,7 +506,7 @@ void ImGuiTestContext::SetRef(ImGuiWindow* window)
         WindowCollapse(window->ID, false);
 }
 
-// It is exceptionally OK to call SetRef() in GuiFunc, as a facilitaty to call seeded ctx->GetId() in GuiFunc.
+// It is exceptionally OK to call SetRef() in GuiFunc, as a facility to call seeded ctx->GetId() in GuiFunc.
 // FIXME-TESTS: May be good to focus window when docked? Otherwise locate request won't even see an item?
 void ImGuiTestContext::SetRef(ImGuiTestRef ref)
 {

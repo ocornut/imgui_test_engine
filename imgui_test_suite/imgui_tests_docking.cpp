@@ -277,7 +277,8 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
     {
         ImGuiTestGenericVars& vars = ctx->GenericVars;
         ctx->DockClear("AAAA", "BBBB", "CCCC", NULL);
-        ctx->YieldUntil(10);
+        while (ctx->FrameCount < 10)
+            ctx->Yield();
 
         vars.DockId = ImGui::DockBuilderAddNode(0, ImGuiDockNodeFlags_None);
         ImGui::DockBuilderSetNodePos(vars.DockId, ImGui::GetMainViewport()->Pos + ImVec2(100, 100));
@@ -285,7 +286,8 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
         ImGui::DockBuilderDockWindow("AAAA", vars.DockId);
         ImGui::DockBuilderDockWindow("BBBB", vars.DockId);
         ImGui::DockBuilderDockWindow("CCCC", vars.DockId);
-        ctx->YieldUntil(20);
+        while (ctx->FrameCount < 20)
+            ctx->Yield();
     };
 
     // ## Test SetNextWindowDockID() api
