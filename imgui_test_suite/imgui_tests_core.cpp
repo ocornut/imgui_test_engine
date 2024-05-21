@@ -5680,6 +5680,7 @@ void RegisterTests_TestEngine(ImGuiTestEngine* e)
     {
         ImGui::SetNextWindowSize(ImVec2(300, 300));
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImGui::Button("Button in parent");
         ImGui::BeginChild("Child1", ImVec2(200, 200), ImGuiChildFlags_Border);
         ImGui::Button("Button in child");
         ImGui::EndChild();
@@ -5704,6 +5705,16 @@ void RegisterTests_TestEngine(ImGuiTestEngine* e)
         IM_CHECK((g.HoveredWindow->Flags & ImGuiWindowFlags_ChildWindow) != 0);
         IM_CHECK_STR_EQ(g.HoveredWindow->Name, "Child1");
 #endif
+
+        // Test using SetRef() on an item
+        ctx->SetRef("Test Window/Button in parent");
+        ctx->ItemClick("");
+
+        // Child by path
+        /*
+        ctx->SetRef("Test Window/Child 1");
+        ctx->ItemClick("Button in child");
+        */
     };
 #endif
 

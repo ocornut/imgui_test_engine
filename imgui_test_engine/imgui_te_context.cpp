@@ -486,7 +486,7 @@ void ImGuiTestContext::SetInputMode(ImGuiInputSource input_mode)
     }
 }
 
-// Shortcut when we have a window pointer, avoid mistakes with slashes in child names.
+// Shortcut for when we have a window pointer, avoid mistakes with slashes in child names.
 void ImGuiTestContext::SetRef(ImGuiWindow* window)
 {
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
@@ -529,13 +529,23 @@ void ImGuiTestContext::SetRef(ImGuiTestRef ref)
     }
     RefWindowID = 0;
 
+    // Early out
+    if (ref.IsEmpty())
+        return;
+
     // Try to infer window
-    // (1) Try first element of ref path, it is most likely a window name and item lookup won't be necessary.
+    // (This is in order to set viewport, uncollapse window, and store its base id for leading "/" operator)
+
+    // (0) Windows is fully specified in path?
     ImGuiWindow* window = GetWindowByRef("");
+
+    // (1) Try first element of ref path, it is most likely a window name and item lookup won't be necessary.
     if (window == NULL && ref.Path != NULL)
     {
+        // "Window/SomeItem" -> search for "Window"
         const char* name_begin = ref.Path;
-        while (*name_begin == '/') name_begin++;
+        while (*name_begin == '/') // Skip leading slashes
+            name_begin++;
         const char* name_end = name_begin - 1;
         do
         {
@@ -556,6 +566,7 @@ void ImGuiTestContext::SetRef(ImGuiTestRef ref)
             window = item_info.Window;
     }
 
+    // Set viewport and base ID for single "/" operator.
     if (window)
     {
         RefWindowID = window->ID;
