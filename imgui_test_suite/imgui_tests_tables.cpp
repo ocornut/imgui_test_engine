@@ -1411,7 +1411,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
             for (int n = 0; n < 6; n++)
             {
                 //ImGuiTestItemInfo info1 = ctx->WindowInfo(Str30f("child%d", n).c_str());
-                ImGuiTestItemInfo info2 = ctx->ItemInfo(Str30f("table%d", n).c_str());
+                //ImGuiTestItemInfo info2 = ctx->ItemInfo(Str30f("table%d", n).c_str());
                 IM_CHECK_EQ(ctx->ItemExists(Str30f("table%d", n).c_str()), true);
             }
             // Double down as a child test
