@@ -604,12 +604,12 @@ void RegisterTests_Inputs(ImGuiTestEngine* e)
         auto& counters = vars.IntArray;
         const ImGuiKey key = ImGuiKey_A;
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
-        counters[0] += ImGui::IsKeyPressed(key, 0, ImGuiInputFlags_None);
-        counters[1] += ImGui::IsKeyPressed(key, 0, ImGuiInputFlags_Repeat);
-        counters[2] += ImGui::IsKeyPressed(key, 0, ImGuiInputFlags_RepeatUntilRelease);
-        counters[3] += ImGui::IsKeyPressed(key, 0, ImGuiInputFlags_RepeatUntilKeyModsChange);
-        counters[4] += ImGui::IsKeyPressed(key, 0, ImGuiInputFlags_RepeatUntilKeyModsChangeFromNone);
-        counters[5] += ImGui::IsKeyPressed(key, 0, ImGuiInputFlags_RepeatUntilOtherKeyPress);
+        counters[0] += ImGui::IsKeyPressed(key, ImGuiInputFlags_None);
+        counters[1] += ImGui::IsKeyPressed(key, ImGuiInputFlags_Repeat);
+        counters[2] += ImGui::IsKeyPressed(key, ImGuiInputFlags_RepeatUntilRelease);
+        counters[3] += ImGui::IsKeyPressed(key, ImGuiInputFlags_RepeatUntilKeyModsChange);
+        counters[4] += ImGui::IsKeyPressed(key, ImGuiInputFlags_RepeatUntilKeyModsChangeFromNone);
+        counters[5] += ImGui::IsKeyPressed(key, ImGuiInputFlags_RepeatUntilOtherKeyPress);
         ImGui::Text("%d (_None)", counters[0]);
         ImGui::Text("%d (_Repeat)", counters[1]);
         ImGui::Text("%d (_RepeatUntilRelease)", counters[2]);
@@ -895,9 +895,9 @@ void RegisterTests_Inputs(ImGuiTestEngine* e)
         ImGui::SetKeyOwner(ImGuiKey_A, (vars.Step == 0) ? owner_id : ImGuiKeyOwner_Any, ImGuiInputFlags_LockThisFrame);
         if (ImGui::IsKeyPressed(ImGuiKey_A))
             vars.IntArray[1]++;
-        if (ImGui::IsKeyPressed(ImGuiKey_A, owner_id ^ 0x42424242))
+        if (ImGui::IsKeyPressed(ImGuiKey_A, 0, owner_id ^ 0x42424242))
             vars.IntArray[2]++;
-        if (ImGui::IsKeyPressed(ImGuiKey_A, owner_id))
+        if (ImGui::IsKeyPressed(ImGuiKey_A, 0, owner_id))
             vars.IntArray[3]++;
         ImGui::Text("%d %d %d", vars.IntArray[0], vars.IntArray[1], vars.IntArray[2]);
 
@@ -1090,14 +1090,14 @@ void RegisterTests_Inputs(ImGuiTestEngine* e)
             ImGui::SetKeyOwner(ImGuiKey_LeftAlt, vars.OwnerId);
 
         // Case 3: OK
-        if (vars.Step == 3 && ImGui::Shortcut(ImGuiMod_Alt, vars.OwnerId))
+        if (vars.Step == 3 && ImGui::Shortcut(ImGuiMod_Alt, 0, vars.OwnerId))
         {
             vars.IntArray[3]++;
             ImGui::Text("PRESSED");
         }
 
         // Case 4: KO : Shortcut works but doesn't inhibit Nav
-        if (vars.Step == 4 && ImGui::Shortcut(ImGuiKey_LeftAlt, vars.OwnerId))
+        if (vars.Step == 4 && ImGui::Shortcut(ImGuiKey_LeftAlt, 0, vars.OwnerId))
         {
             vars.IntArray[4]++;
             ImGui::Text("PRESSED");
@@ -1355,7 +1355,7 @@ void RegisterTests_Inputs(ImGuiTestEngine* e)
             IM_ASSERT(scope_name_c >= 'A' && scope_name_c <= 'Z');
             const int idx = scope_name_c - 'A';
             bool is_routing = ImGui::TestShortcutRouting(vars.KeyChord, id);
-            bool shortcut_pressed = ImGui::Shortcut(vars.KeyChord, id, 0);// ImGuiInputFlags_RouteAlways); // Use _RouteAlways to poll only, no side-effect
+            bool shortcut_pressed = ImGui::Shortcut(vars.KeyChord, 0, id);// ImGuiInputFlags_RouteAlways); // Use _RouteAlways to poll only, no side-effect
             vars.IsRouting[idx] = is_routing;
             vars.PressedCount[idx] += shortcut_pressed ? 1 : 0;
             ImGui::Text("Routing: %d %s", is_routing, shortcut_pressed ? "PRESSED" : "...");
