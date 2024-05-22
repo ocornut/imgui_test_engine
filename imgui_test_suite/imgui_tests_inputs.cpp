@@ -32,6 +32,10 @@ static inline bool operator!=(const ImVec2& lhs, const ImVec2& rhs) { return lhs
 #define ImGuiMod_CtrlAfterMacTranslation    (ImGuiMod_Ctrl)
 #endif
 
+#if IMGUI_VERSION_NUM < 19066
+#define ImGuiKeyOwner_NoOwner ImGuiKeyOwner_None
+#endif
+
 //-------------------------------------------------------------------------
 // Tests: Inputs
 //-------------------------------------------------------------------------
@@ -754,13 +758,13 @@ void RegisterTests_Inputs(ImGuiTestEngine* e)
     {
         ImGuiContext& g = *ctx->UiContext;
         ctx->SetRef("Test Window");
-        IM_CHECK_EQ(ImGui::TestKeyOwner(ImGuiKey_Home, ImGuiKeyOwner_None), true);
+        IM_CHECK_EQ(ImGui::TestKeyOwner(ImGuiKey_Home, ImGuiKeyOwner_NoOwner), true);
         ctx->ItemCheck("Steal ImGuiKey_Home");
 
-        IM_CHECK_EQ(ImGui::TestKeyOwner(ImGuiKey_Home, ImGuiKeyOwner_None), false);
+        IM_CHECK_EQ(ImGui::TestKeyOwner(ImGuiKey_Home, ImGuiKeyOwner_NoOwner), false);
         IM_CHECK_EQ(ImGui::TestKeyOwner(ImGuiKey_Home, ctx->GetID("hello1")), true);
         IM_CHECK_EQ(ImGui::TestKeyOwner(ImGuiKey_End, ctx->GetID("hello1")), true);
-        IM_CHECK_EQ(ImGui::GetKeyOwnerData(&g, ImGuiKey_End)->OwnerCurr, ImGuiKeyOwner_None);
+        IM_CHECK_EQ(ImGui::GetKeyOwnerData(&g, ImGuiKey_End)->OwnerCurr, ImGuiKeyOwner_NoOwner);
         ctx->KeyPress(ImGuiKey_End);
         IM_CHECK_EQ(g.NavId, ctx->GetID("Button Down"));
         ctx->KeyPress(ImGuiKey_Home);
@@ -777,14 +781,14 @@ void RegisterTests_Inputs(ImGuiTestEngine* e)
     {
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_MenuBar);
         ImGui::Button("Button 1");
-        IM_CHECK_EQ_NO_RET(ImGui::TestKeyOwner(ImGuiKey_A, ImGuiKeyOwner_None), ctx->IsFirstGuiFrame() ? true : false);
+        IM_CHECK_EQ_NO_RET(ImGui::TestKeyOwner(ImGuiKey_A, ImGuiKeyOwner_NoOwner), ctx->IsFirstGuiFrame() ? true : false);
         IM_CHECK_EQ_NO_RET(ImGui::TestKeyOwner(ImGuiKey_A, ImGui::GetItemID()), true);
         ImGui::SetKeyOwner(ImGuiKey_A, ImGui::GetItemID());
 
         ImGui::Button("Button 2");
         if (!ctx->IsFirstGuiFrame()) // Can't check this on first frame since TestKeyOwner() is not checking OwnerNext
         {
-            IM_CHECK_EQ_NO_RET(ImGui::TestKeyOwner(ImGuiKey_A, ImGuiKeyOwner_None), false);
+            IM_CHECK_EQ_NO_RET(ImGui::TestKeyOwner(ImGuiKey_A, ImGuiKeyOwner_NoOwner), false);
             IM_CHECK_EQ_NO_RET(ImGui::TestKeyOwner(ImGuiKey_A, ImGui::GetItemID()), false);
         }
 
@@ -844,7 +848,7 @@ void RegisterTests_Inputs(ImGuiTestEngine* e)
         if (vars.Bool1)
         {
             if (vars.Step == 0)
-                IM_CHECK_EQ(owner_data->OwnerCurr, ImGuiKeyOwner_None);
+                IM_CHECK_EQ(owner_data->OwnerCurr, ImGuiKeyOwner_NoOwner);
             else if (vars.Step == 1 || vars.Step == 2)
                 IM_CHECK_EQ(owner_data->OwnerCurr, ImGui::GetID("Button 1"));
             // [2022-09-20]: changed SetKeyOwner() to alter OwnerCurr as well
@@ -1123,7 +1127,7 @@ void RegisterTests_Inputs(ImGuiTestEngine* e)
         vars.Clear();
         vars.Step = 3;
         ctx->Yield(2);
-        IM_CHECK_EQ(ImGui::GetKeyOwner(ImGuiMod_Alt), ImGuiKeyOwner_None);
+        IM_CHECK_EQ(ImGui::GetKeyOwner(ImGuiMod_Alt), ImGuiKeyOwner_NoOwner);
         ctx->KeyDown(ImGuiMod_Alt);
         IM_CHECK_EQ(ImGui::GetKeyOwner(ImGuiMod_Alt), vars.OwnerId);
         IM_CHECK_EQ(vars.IntArray[3], 1);
@@ -1140,16 +1144,16 @@ void RegisterTests_Inputs(ImGuiTestEngine* e)
         vars.Clear();
         vars.Step = 4;
         ctx->Yield(2);
-        IM_CHECK_EQ(ImGui::GetKeyOwner(ImGuiKey_LeftAlt), ImGuiKeyOwner_None);
+        IM_CHECK_EQ(ImGui::GetKeyOwner(ImGuiKey_LeftAlt), ImGuiKeyOwner_NoOwner);
         ctx->KeyDown(ImGuiMod_Alt);
-        IM_CHECK_EQ(ImGui::GetKeyOwner(ImGuiMod_Alt), ImGuiKeyOwner_None);
+        IM_CHECK_EQ(ImGui::GetKeyOwner(ImGuiMod_Alt), ImGuiKeyOwner_NoOwner);
         IM_CHECK_EQ(ImGui::GetKeyOwner(ImGuiKey_LeftAlt), vars.OwnerId);
         IM_CHECK_EQ(vars.IntArray[4], 1);            // Shortcut passed: TestEngine arbitrarily needs to turn loose ImGuiMod_Alt into some Alt key
         ctx->KeyUp(ImGuiMod_Alt);
         IM_CHECK_EQ(g.NavLayer, ImGuiNavLayer_Main); // No effect
         ctx->Yield(2);
         ctx->KeyDown(ImGuiKey_LeftAlt);
-        IM_CHECK_EQ(ImGui::GetKeyOwner(ImGuiMod_Alt), ImGuiKeyOwner_None);
+        IM_CHECK_EQ(ImGui::GetKeyOwner(ImGuiMod_Alt), ImGuiKeyOwner_NoOwner);
         IM_CHECK_EQ(ImGui::GetKeyOwner(ImGuiKey_LeftAlt), vars.OwnerId);
         IM_CHECK_EQ(vars.IntArray[4], 2);            // Shortcut passed
         ctx->KeyUp(ImGuiKey_LeftAlt);
