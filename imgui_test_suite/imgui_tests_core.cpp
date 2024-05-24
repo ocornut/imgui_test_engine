@@ -1747,6 +1747,46 @@ void RegisterTests_Window(ImGuiTestEngine* e)
         ImGui::End();
     };
 
+#if IMGUI_VERSION_NUM >= 19067
+    // ## Test ImGuiChildFlags_ResizeX
+    t = IM_REGISTER_TEST(e, "window", "window_child_resize");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImGui::BeginChild("Child 1", ImVec2(150, -FLT_MIN), ImGuiChildFlags_Border | ImGuiChildFlags_ResizeX);
+        for (int n = 0; n < 20; n++)
+            ImGui::Selectable(Str30f("Object %d", n).c_str());
+        ImGui::Selectable("Object with Long Name");
+        ImGui::EndChild();
+        ImGui::SameLine();
+        ImGui::BeginChild("Child 2", ImVec2(150, -FLT_MIN));
+        ImGui::Text("Contents");
+        ImGui::EndChild();
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ctx->SetRef("Test Window");
+        ImGuiWindow* child1 = ctx->WindowInfo("Child 1").Window;
+        ImGuiWindow* child2 = ctx->WindowInfo("Child 2").Window;
+        IM_CHECK(child1 != NULL && child2 != NULL);
+
+        ctx->WindowResize("", ImVec2(500.0f, 800.0f)); // Without scrollbar
+        ctx->WindowResize(child1->ID, ImVec2(300.0f, child1->Size.y));
+        ctx->WindowResize(child1->ID, ImVec2(100.0f, child1->Size.y));
+        ctx->MouseDoubleClick(0);
+        IM_CHECK_EQ(child1->ScrollbarY, false);
+        IM_CHECK_EQ(child1->Size.x, ImGui::CalcTextSize("Object with Long Name").x + ImGui::GetStyle().WindowPadding.x * 2.0f);
+
+        ctx->WindowResize("", ImVec2(500.0f, 100.0f)); // Scrollbar
+        ctx->WindowResize(child1->ID, ImVec2(300.0f, child1->Size.y));
+        ctx->WindowResize(child1->ID, ImVec2(100.0f, child1->Size.y));
+        ctx->MouseDoubleClick(0);
+        IM_CHECK_EQ(child1->ScrollbarY, true);
+        IM_CHECK_EQ(child1->Size.x, ImGui::CalcTextSize("Object with Long Name").x + ImGui::GetStyle().WindowPadding.x * 2.0f + ImGui::GetStyle().ScrollbarSize);
+    };
+#endif
+
     // ## Test that basic SetScrollHereY call scrolls all the way (#1804)
     // ## Test expected value of ScrollMaxY
     t = IM_REGISTER_TEST(e, "window", "window_scroll_001");
@@ -5306,8 +5346,13 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
 
         ctx->SetRef("Example: Documents");
         ctx->ItemCheck("**/Lettuce");
+#if IMGUI_VERSION_NUM >= 19067
+        ctx->ItemClick("##tabs/Lettuce###doc0");
+        ctx->ItemClick("##tabs/Lettuce###doc0/**/Modify");
+#else
         ctx->ItemClick("##tabs/Lettuce");
         ctx->ItemClick("##tabs/Lettuce/**/Modify");
+#endif
         ctx->MenuClick("File");
         ctx->SetRef("");
         ctx->ItemClick("##Menu_00/Close All Documents");
@@ -6383,8 +6428,13 @@ void RegisterTests_Capture(ImGuiTestEngine* e)
         ctx->ItemCheck("**/Tomato");
         ctx->ItemCheck("**/Eggplant");
         ctx->ItemCheck("**/A Rather Long Title");
+#if IMGUI_VERSION_NUM >= 19067
+        ctx->ItemClick("##tabs/Eggplant###doc1");
+        ctx->SetRef(ctx->GetID("##tabs/Eggplant###doc1"));
+#else
         ctx->ItemClick("##tabs/Eggplant");
         ctx->SetRef(ctx->GetID("##tabs/Eggplant"));
+#endif
         ctx->MouseMove("**/Modify");
         ctx->Sleep(1.0f);
     };
