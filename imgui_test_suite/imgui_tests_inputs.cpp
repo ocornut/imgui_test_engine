@@ -1306,6 +1306,7 @@ void RegisterTests_Inputs(ImGuiTestEngine* e)
     t = IM_REGISTER_TEST(e, "inputs", "inputs_routing_1");
     struct InputRoutingVars
     {
+        ImGuiInputFlags Flags = 0;
         bool            IsRouting[26] = {};
         bool            StealOwner = false;
         int             PressedCount[26] = {};
@@ -1637,15 +1638,20 @@ void RegisterTests_Inputs(ImGuiTestEngine* e)
     {
         auto& vars = ctx->GetVars<InputRoutingVars>();
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
-        ImGui::InputText("buf", vars.Str, IM_ARRAYSIZE(vars.Str));;
-        vars.PressedCount[0] += ImGui::Shortcut(ImGuiKey_G);                                 // Filtered
-        vars.PressedCount[1] += ImGui::Shortcut(ImGuiMod_Ctrl | ImGuiKey_G);                 // Pass
-        vars.PressedCount[2] += ImGui::Shortcut(ImGuiMod_Alt | ImGuiKey_G);                  // Filtered
-        vars.PressedCount[3] += ImGui::Shortcut(ImGuiMod_Ctrl | ImGuiMod_Alt | ImGuiKey_G);  // Currently pass / Should be filtered?
-        vars.PressedCount[4] += ImGui::Shortcut(ImGuiMod_Shift | ImGuiMod_Alt | ImGuiKey_G); // Currently pass / Should be filtered?
-        vars.PressedCount[5] += ImGui::Shortcut(ImGuiKey_F1);                                // Pass
-        for (int n = 0; n < 6; n++)
-            ImGui::Text("%d", vars.PressedCount[n]);
+        ImGui::CheckboxFlags("ImGuiInputFlags_RouteGlobal", &vars.Flags, ImGuiInputFlags_RouteGlobal);
+        ImGui::InputText("buf", vars.Str, IM_ARRAYSIZE(vars.Str));
+        vars.PressedCount[0] += ImGui::Shortcut(ImGuiKey_G, vars.Flags);                     // Filtered
+        vars.PressedCount[1] += ImGui::Shortcut(ImGuiMod_Ctrl | ImGuiKey_G, vars.Flags);     // Pass
+        vars.PressedCount[2] += ImGui::Shortcut(ImGuiMod_Alt | ImGuiKey_G, vars.Flags);      // Filtered
+        vars.PressedCount[3] += ImGui::Shortcut(ImGuiMod_Ctrl | ImGuiMod_Alt | ImGuiKey_G, vars.Flags);  // Currently pass / Should be filtered?
+        vars.PressedCount[4] += ImGui::Shortcut(ImGuiMod_Shift | ImGuiMod_Alt | ImGuiKey_G, vars.Flags); // Currently pass / Should be filtered?
+        vars.PressedCount[5] += ImGui::Shortcut(ImGuiKey_F1, vars.Flags);                    // Pass
+        ImGui::Text("%d - Shortcut(ImGuiKey_G)", vars.PressedCount[0]);
+        ImGui::Text("%d - Shortcut(ImGuiMod_Ctrl | ImGuiKey_G)", vars.PressedCount[1]);
+        ImGui::Text("%d - Shortcut(ImGuiMod_Alt | ImGuiKey_G)", vars.PressedCount[2]);
+        ImGui::Text("%d - Shortcut(ImGuiMod_Ctrl | ImGuiMod_Alt | ImGuiKey_G)", vars.PressedCount[3]);
+        ImGui::Text("%d - Shortcut(ImGuiMod_Shift | ImGuiMod_Alt | ImGuiKey_G)", vars.PressedCount[4]);
+        ImGui::Text("%d - Shortcut(ImGuiKey_F1)", vars.PressedCount[5]);
         ImGui::End();
     };
     t->TestFunc = [](ImGuiTestContext* ctx)
@@ -1654,14 +1660,23 @@ void RegisterTests_Inputs(ImGuiTestEngine* e)
         auto& vars = ctx->GetVars<InputRoutingVars>();
         ctx->SetRef("Test Window");
 
-        for (int step = 0; step < 2; step++)
+        for (int step = 0; step < 4; step++)
         {
+#if IMGUI_VERSION_NUM < 19067
+            if (step >= 2)
+                continue;
+#endif
             ctx->LogDebug("Step %d", step);
 
             // Emit presses with no active id
-            bool is_active = (step == 1);
+            bool is_active = (step & 1) != 0;
+            bool is_global = (step & 2) != 0;
+
+            vars.Flags = is_global ? ImGuiInputFlags_RouteGlobal : ImGuiInputFlags_RouteFocused;
+            ctx->Yield(2);
+
             ctx->ItemClick("buf");
-            if (step == 0)
+            if (!is_active)
                 ctx->KeyPress(ImGuiKey_Escape);
 
             ctx->KeyPress(ImGuiKey_G);
