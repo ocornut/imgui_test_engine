@@ -5,6 +5,10 @@ CHANGELOG
    Those changes are not all listed here.
 ** For a while this is going to ONLY INCLUDE BREAKING CHANGES.
 
+2024/05/24:
+- TestEngine: ctx->WindowResize() knows how to work with child windows
+  using resize borders only, and which don't have a resize corners.
+
 2024/05/21:
 - TestEngine: *BREAKING* obsoleted ctx->YieldUntil(int frame_count) which
   seems mostly unused, misleading, and can be replaced by 2 lines of code.
