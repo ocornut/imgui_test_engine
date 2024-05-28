@@ -1695,7 +1695,7 @@ void    ImGuiTestContext::MouseMove(ImGuiTestRef ref, ImGuiTestOpFlags flags)
     pos = GetMouseAimingPos(item, flags);
 
     // Focus window
-    if (!(flags & ImGuiTestOpFlags_NoFocusWindow))
+    if (!(flags & ImGuiTestOpFlags_NoFocusWindow) && item.Window != NULL)
     {
         // Avoid unnecessary focus
         // While this is generally desirable and much more consistent with user behavior,
