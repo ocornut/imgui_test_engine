@@ -3490,7 +3490,7 @@ ImGuiSortDirection ImGuiTestContext::TableClickHeader(ImGuiTestRef ref, const ch
 
     if (key_mods != ImGuiMod_None)
         KeyUp(key_mods);
-    return (ImGuiSortDirection_)column->SortDirection;
+    return (ImGuiSortDirection)column->SortDirection;
 }
 
 void ImGuiTestContext::TableSetColumnEnabled(ImGuiTestRef ref, const char* label, bool enabled)
