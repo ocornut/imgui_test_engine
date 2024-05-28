@@ -1349,7 +1349,7 @@ void    ImGuiTestContext::ScrollTo(ImGuiTestRef ref, ImGuiAxis axis, float scrol
         const float window_resize_grip_size = ImTrunc(ImMax(g.FontSize * 1.35f, window->WindowRounding + 1.0f + g.FontSize * 0.2f));
 
         // In case of a very small window, directly use SetScrollX/Y function to prevent resizing it
-        // FIXME-TESTS: GetWindowScrollbarMousePositionForScroll doesn't return the exact value when scrollbar grip is too small
+        // FIXME-TESTS: GetWindowScrollbarMousePositionForScroll() doesn't return the exact value when scrollbar grip is too small
         if (scrollbar_size_v >= window_resize_grip_size)
         {
             MouseSetViewport(window);
@@ -2297,7 +2297,11 @@ ImVec2  ImGuiTestContext::GetWindowTitlebarPoint(ImGuiTestRef window_ref)
         else
 #endif
         {
+#if IMGUI_VERSION_NUM >= 19071
+            const float h = window->TitleBarHeight;
+#else
             const float h = window->TitleBarHeight();
+#endif
             drag_pos = ImFloor(window->Pos + ImVec2(window->Size.x, h) * 0.5f);
         }
 
@@ -3977,7 +3981,11 @@ void    ImGuiTestContext::UndockNode(ImGuiID dock_id)
     if (node->Windows.empty())
         return;
 
+#if IMGUI_VERSION_NUM >= 19071
+    const float h = node->Windows[0]->TitleBarHeight;
+#else
     const float h = node->Windows[0]->TitleBarHeight();
+#endif
     if (!UiContext->IO.ConfigDockingWithShift)
         KeyDown(ImGuiMod_Shift); // Disable docking
     ItemDragWithDelta(ImGui::DockNodeGetWindowMenuButtonId(node), ImVec2(h, h) * -2);
@@ -3996,7 +4004,11 @@ void    ImGuiTestContext::UndockWindow(const char* window_name)
     if (!window->DockIsActive)
         return;
 
+#if IMGUI_VERSION_NUM >= 19071
+    const float h = window->TitleBarHeight;
+#else
     const float h = window->TitleBarHeight();
+#endif
     if (!UiContext->IO.ConfigDockingWithShift)
         KeyDown(ImGuiMod_Shift);
     ItemDragWithDelta(window->TabId, ImVec2(h, h) * -2);

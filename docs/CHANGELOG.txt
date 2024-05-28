@@ -5,6 +5,9 @@ CHANGELOG
    Those changes are not all listed here.
 ** For a while this is going to ONLY INCLUDE BREAKING CHANGES.
 
+2024/05/28:
+- TestEngine: Fixes/support for 1.90.8 WIP changes.
+
 2024/05/24:
 - TestEngine: ctx->WindowResize() knows how to work with child windows
   using resize borders only, and which don't have a resize corners.

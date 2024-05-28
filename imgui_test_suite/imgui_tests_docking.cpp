@@ -531,7 +531,7 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
             }
         }
 
-        const float h = window1->TitleBarHeight();
+        const float h = window1->TitleBarHeight;
         ImVec2 pos;
 
         for (int n = 0; n < 3; n++)
@@ -631,7 +631,7 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
         switch (ctx->Test->ArgVariant)
         {
         case 0:
-            ImGui::BeginChild("Child", ImVec2(300, 200 - ImGui::GetCurrentWindow()->TitleBarHeight()));
+            ImGui::BeginChild("Child", ImVec2(300, 200 - ImGui::GetCurrentWindow()->TitleBarHeight));
             ImGui::EndChild();
             break;
         case 1:
@@ -1715,7 +1715,7 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
             ctx->MouseMove(windowB->TabId, ImGuiTestOpFlags_NoCheckHoveredId);
             ctx->MouseDown(0);
 
-            const float h = windowB->TitleBarHeight();
+            const float h = windowB->TitleBarHeight;
             ctx->MouseMoveToPos(g.IO.MousePos + (ImVec2(h, h) * -2));
             ctx->Yield();
 
