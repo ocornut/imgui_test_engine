@@ -1315,6 +1315,47 @@ static ImVec2 GetWindowScrollbarMousePositionForScroll(ImGuiWindow* window, ImGu
 #define ImTrunc ImFloor
 #endif
 
+static bool ScrollToWithScrollbar(ImGuiTestContext* ctx, ImGuiWindow* window, ImGuiAxis axis, float scroll_target)
+{
+    ImGuiContext& g = *ctx->UiContext;
+    ctx->Yield();
+    ctx->WindowFocus(window->ID);
+    if (window->ScrollbarSizes[axis ^ 1] <= 0.0f) // Verify if still exists after yield
+        return false;
+
+    const ImRect scrollbar_rect = ImGui::GetWindowScrollbarRect(window, axis);
+    const float scrollbar_size_v = scrollbar_rect.Max[axis] - scrollbar_rect.Min[axis];
+    const float window_resize_grip_size = ImTrunc(ImMax(g.FontSize * 1.35f, window->WindowRounding + 1.0f + g.FontSize * 0.2f));
+
+    // In case of a very small window, directly use SetScrollX/Y function to prevent resizing it
+    // FIXME-TESTS: GetWindowScrollbarMousePositionForScroll() doesn't return the exact value when scrollbar grip is too small
+    if (scrollbar_size_v < window_resize_grip_size)
+        return false;
+
+    ctx->MouseSetViewport(window);
+
+    const float scroll_src = window->Scroll[axis];
+    ImVec2 scrollbar_src_pos = GetWindowScrollbarMousePositionForScroll(window, axis, scroll_src);
+    scrollbar_src_pos[axis] = ImMin(scrollbar_src_pos[axis], scrollbar_rect.Min[axis] + scrollbar_size_v - window_resize_grip_size);
+    ctx->MouseMoveToPos(scrollbar_src_pos);
+    ctx->MouseDown(0);
+    ctx->SleepStandard();
+
+    ImVec2 scrollbar_dst_pos = GetWindowScrollbarMousePositionForScroll(window, axis, scroll_target);
+    ctx->MouseMoveToPos(scrollbar_dst_pos);
+    ctx->MouseUp(0);
+    ctx->SleepStandard();
+
+    // Verify that things worked
+    const float scroll_result = window->Scroll[axis];
+    if (ImFabs(scroll_result - scroll_target) < 1.0f)
+        return true;
+
+    // FIXME-TESTS: Investigate
+    ctx->LogWarning("Failed to set Scroll%c. Requested %.2f, got %.2f.", 'X' + axis, scroll_target, scroll_result);
+    return true;
+}
+
 // Supported values for ImGuiTestOpFlags:
 // - ImGuiTestOpFlags_NoFocusWindow
 void    ImGuiTestContext::ScrollTo(ImGuiTestRef ref, ImGuiAxis axis, float scroll_target, ImGuiTestOpFlags flags)
@@ -1340,32 +1381,10 @@ void    ImGuiTestContext::ScrollTo(ImGuiTestRef ref, ImGuiAxis axis, float scrol
 
     // Try to use Scrollbar if available
     const ImGuiTestItemInfo scrollbar_item = ItemInfo(ImGui::GetWindowScrollbarID(window, axis), ImGuiTestOpFlags_NoError);
-    if (scrollbar_item.ID != 0 && EngineIO->ConfigRunSpeed != ImGuiTestRunSpeed_Fast && !(flags & ImGuiTestOpFlags_NoFocusWindow))
+    if (scrollbar_item.ID != 0 && /*EngineIO->ConfigRunSpeed != ImGuiTestRunSpeed_Fast && */ !(flags & ImGuiTestOpFlags_NoFocusWindow))
     {
-        WindowFocus(window->ID);
-
-        const ImRect scrollbar_rect = ImGui::GetWindowScrollbarRect(window, axis);
-        const float scrollbar_size_v = scrollbar_rect.Max[axis] - scrollbar_rect.Min[axis];
-        const float window_resize_grip_size = ImTrunc(ImMax(g.FontSize * 1.35f, window->WindowRounding + 1.0f + g.FontSize * 0.2f));
-
-        // In case of a very small window, directly use SetScrollX/Y function to prevent resizing it
-        // FIXME-TESTS: GetWindowScrollbarMousePositionForScroll() doesn't return the exact value when scrollbar grip is too small
-        if (scrollbar_size_v >= window_resize_grip_size)
+        if (ScrollToWithScrollbar(this, window, axis, scroll_target_clamp))
         {
-            MouseSetViewport(window);
-
-            const float scroll_src = window->Scroll[axis];
-            ImVec2 scrollbar_src_pos = GetWindowScrollbarMousePositionForScroll(window, axis, scroll_src);
-            scrollbar_src_pos[axis] = ImMin(scrollbar_src_pos[axis], scrollbar_rect.Min[axis] + scrollbar_size_v - window_resize_grip_size);
-            MouseMoveToPos(scrollbar_src_pos);
-            MouseDown(0);
-            SleepStandard();
-
-            ImVec2 scrollbar_dst_pos = GetWindowScrollbarMousePositionForScroll(window, axis, scroll_target_clamp);
-            MouseMoveToPos(scrollbar_dst_pos);
-            MouseUp(0);
-            SleepStandard();
-
             // Verify that things worked
             const float scroll_result = window->Scroll[axis];
             if (ImFabs(scroll_result - scroll_target_clamp) < 1.0f)

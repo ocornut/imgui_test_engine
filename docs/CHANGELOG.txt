@@ -7,6 +7,8 @@ CHANGELOG
 
 2024/05/28:
 - TestEngine: Fixes/support for 1.90.8 WIP changes.
+- TestEngine: Fixed edge case calling ScrollTo() in non-Fast mode trying to
+  access window scrollbar on the same frame where it disappears.
 
 2024/05/24:
 - TestEngine: ctx->WindowResize() knows how to work with child windows

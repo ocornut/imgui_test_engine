@@ -4290,6 +4290,7 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
         for (int step = 0; step < 4; step++)
         {
             vars.Step = step;
+            ctx->Yield();
             ctx->ScrollToTop("");
             ctx->Yield(2);
             ctx->ScrollToBottom("");
