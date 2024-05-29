@@ -4664,6 +4664,75 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
     };
 #endif
 
+#if IMGUI_VERSION_NUM >= 19071
+    // ## Test box-selection + exercise Assets Browser a little.
+    // This test is probably fragile because are are dealing with Assets Browser instead of duplicating it in our code.
+    t = IM_REGISTER_TEST(e, "widgets", "widgets_multiselect_boxselect");
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiContext& g = *GImGui;
+        ctx->MenuCheck("//Dear ImGui Demo/Examples/Assets Browser");
+        ctx->SetRef("Example: Assets Browser");
+        ctx->WindowResize("", ImVec2(750, 600)); // FIXME: Calculated for 15 item wide (15 * 32) + (15-1+2) * 10 + Parent/Child Padding + Scrollbar
+        ctx->MenuClick("File/Clear items");
+        ctx->MenuClick("File/Add 10000 items");
+        ctx->MenuAction(ImGuiTestAction_Open, "Options");
+        ctx->ItemInputValue("//$FOCUSED/Icon Size", 32.0f);
+        ctx->ItemInputValue("//$FOCUSED/Icon Spacing", 10);
+        ctx->ItemInputValue("//$FOCUSED/Icon Hit Spacing", 4);
+
+        ImGuiWindow* child_window = ctx->WindowInfo("Assets").Window;
+        IM_CHECK(child_window != NULL);
+        ctx->SetRef(child_window);
+        ctx->ScrollToTop("");
+        ImGuiMultiSelectState* ms_storage = ImGui::GetMultiSelectState(ctx->GetID(""));
+        IM_CHECK(ms_storage != NULL);
+        IM_CHECK_EQ(ms_storage->LastSelectionSize, 0);
+        //g.DebugLogFlags |= ImGuiDebugLogFlags_OutputToTestEngine;
+        ctx->ItemClick("$$7");
+        IM_CHECK_EQ(ms_storage->LastSelectionSize, 1);
+        ctx->KeyPress(ImGuiKey_Escape);
+        IM_CHECK_EQ(ms_storage->LastSelectionSize, 0);
+
+        // Box-select part of a row, then a rectangle
+        ctx->ItemDragAndDrop("$$0", "$$5");
+        IM_CHECK_EQ(ms_storage->LastSelectionSize, 6);
+        ctx->ItemDragAndDrop("$$20", "$$105");
+        IM_CHECK_EQ(ms_storage->LastSelectionSize, 6 * 6);
+        ctx->KeyPress(ImGuiKey_Escape);
+
+        // Box-select from void
+        ImGuiTestItemInfo item_1 = ctx->ItemInfo("$$1");
+        ImGuiTestItemInfo item_2 = ctx->ItemInfo("$$2");
+        ctx->MouseMoveToPos((item_1.RectFull.GetCenter() + item_2.RectFull.GetCenter()) * 0.5f);
+        IM_CHECK(ImGui::IsAnyItemHovered() == false);
+        IM_CHECK_EQ(ms_storage->LastSelectionSize, 0);
+        ctx->MouseClick(0);
+        IM_CHECK_EQ(ms_storage->LastSelectionSize, 0); // Verify we are over void
+        ctx->MouseDown(0);
+        ctx->MouseMove("$$22", ImGuiTestOpFlags_NoCheckHoveredId);
+        ctx->MouseUp(0);
+        IM_CHECK_EQ(ms_storage->LastSelectionSize, 2 * 5);
+
+        // Verify that first selected item was turned into NavId
+        IM_CHECK_EQ(g.NavId, ctx->GetID("$$2"));
+
+        // Exercise box-select scroll (in a very basic way)
+        IM_CHECK_EQ(child_window->Scroll.y, 0.0f);
+        ctx->ItemClick("$$0");
+        ctx->MouseMove("$$3");
+        ctx->MouseDown(0);
+        ctx->MouseMoveToPos(ImGui::GetMousePos() + ImVec2(0, 1000));
+        ctx->SleepNoSkip(2.0f, 0.1f);
+        ctx->MouseUp(0);
+        IM_CHECK_GT(child_window->Scroll.y, 0.0f);
+
+        ctx->MenuUncheck("//Dear ImGui Demo/Examples/Assets Browser");
+    };
+#endif
+
+#endif // #ifdef IMGUI_HAS_MULTI_SELECT
+
     // ## Basic test for GetTypingSelectRequest()
     // Technically this API doesn't require MultiSelect but it's easier for us to reuse that code.
     t = IM_REGISTER_TEST(e, "widgets", "widgets_typingselect");
@@ -4764,8 +4833,6 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ctx->Yield();
         IM_CHECK(vars.Selection0.SelectionSize == 1 && vars.Selection0.GetSelected(2));
     };
-
-#endif // #ifdef IMGUI_HAS_MULTI_SELECT
 
     // ## Test Selectable() with ImGuiSelectableFlags_SpanAllColumns inside Columns()
     t = IM_REGISTER_TEST(e, "widgets", "widgets_selectable_span_all_columns");

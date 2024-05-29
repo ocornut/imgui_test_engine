@@ -450,6 +450,7 @@ void    ImGuiTestContext::SleepNoSkip(float time, float framestep_in_second)
     if (IsError())
         return;
 
+    LogDebug("SleepNoSkip %f seconds (in %f increments)", time, framestep_in_second);
     while (time > 0.0f && !Abort)
     {
         ImGuiTestEngine_SetDeltaTime(Engine, framestep_in_second);
