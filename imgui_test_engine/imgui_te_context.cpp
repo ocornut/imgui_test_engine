@@ -1549,7 +1549,6 @@ void    ImGuiTestContext::NavMoveTo(ImGuiTestRef ref)
 
     if (item.ID == 0)
         return;
-    //item.RefCount++;
 
     if (EngineIO->ConfigRunSpeed == ImGuiTestRunSpeed_Cinematic)
         SleepStandard();
@@ -1575,8 +1574,6 @@ void    ImGuiTestContext::NavMoveTo(ImGuiTestRef ref)
     if (!Abort)
         if (g.NavId != item.ID)
             IM_ERRORF_NOHDR("Unable to set NavId to %s", desc.c_str());
-
-    //item.RefCount--;
 }
 
 void    ImGuiTestContext::NavActivate()
@@ -1711,7 +1708,7 @@ void    ImGuiTestContext::MouseMove(ImGuiTestRef ref, ImGuiTestOpFlags flags)
     if (WindowTeleportToMakePosVisible(window->ID, pos))
         item = ItemInfo(item.ID);
 
-    // Keep a deep copy of item info since item-> will be kept updated as we set a RefCount on it.
+    // Keep a copy of item info
     const ImGuiTestItemInfo item_initial_state = item;
 
     // Target point
@@ -1798,7 +1795,6 @@ void    ImGuiTestContext::MouseMove(ImGuiTestRef ref, ImGuiTestOpFlags flags)
                     float extra_size = window->CalcFontSize() * 3.0f;
                     WindowResize(window->ID, window->Size + ImVec2(extra_size, extra_size));
                     MouseMove(ref, flags | ImGuiTestOpFlags_IsSecondAttempt);
-                    //item.RefCount--;
                     return;
                 }
             }
@@ -1824,8 +1820,6 @@ void    ImGuiTestContext::MouseMove(ImGuiTestRef ref, ImGuiTestOpFlags flags)
             IM_ERRORF_NOHDR("%s", error_message.c_str());
         }
     }
-
-    //item.RefCount--;
 }
 
 void    ImGuiTestContext::MouseSetViewport(ImGuiWindow* window)
@@ -2769,7 +2763,6 @@ void    ImGuiTestContext::ItemAction(ImGuiTestAction action, ImGuiTestRef ref, I
         IM_ASSERT(action_arg == NULL); // Unused
         if ((item.StatusFlags & ImGuiItemStatusFlags_Opened) == 0)
         {
-            //item.RefCount++;
             MouseMove(ref, flags);
 
             // Some item may open just by hovering, give them that chance
@@ -2786,7 +2779,6 @@ void    ImGuiTestContext::ItemAction(ImGuiTestAction action, ImGuiTestRef ref, I
                         IM_ERRORF_NOHDR("Unable to Open item: '%s' in '%s'", desc.c_str(), item.Window ? item.Window->Name : "N/A");
                 }
             }
-            //item.RefCount--;
             //Yield();
         }
     }
@@ -2795,7 +2787,6 @@ void    ImGuiTestContext::ItemAction(ImGuiTestAction action, ImGuiTestRef ref, I
         IM_ASSERT(action_arg == NULL); // Unused
         if ((item.StatusFlags & ImGuiItemStatusFlags_Opened) != 0)
         {
-            //item.RefCount++;
             ItemClick(ref, 0, flags);
             item = ItemInfo(item.ID);
             if ((item.StatusFlags & ImGuiItemStatusFlags_Opened) != 0)
@@ -2806,7 +2797,6 @@ void    ImGuiTestContext::ItemAction(ImGuiTestAction action, ImGuiTestRef ref, I
                 if ((item.StatusFlags & ImGuiItemStatusFlags_Opened) != 0)
                     IM_ERRORF_NOHDR("Unable to Close item: %s", ImGuiTestRefDesc(ref, item).c_str());
             }
-            //item.RefCount--;
             Yield();
         }
     }
@@ -3134,8 +3124,6 @@ void    ImGuiTestContext::ItemDragAndDrop(ImGuiTestRef ref_src, ImGuiTestRef ref
     ImGuiTestRefDesc desc_src(ref_src, item_src);
     ImGuiTestRefDesc desc_dst(ref_dst, item_dst);
     LogDebug("ItemDragAndDrop %s to %s", desc_src.c_str(), desc_dst.c_str());
-    //item_dst.RefCount++;
-    //item_src.RefCount++;
 
     // Try to keep destination window above other windows. MouseMove() operation will avoid focusing destination window
     // as that may steal ActiveID and break operation.
@@ -3154,9 +3142,6 @@ void    ImGuiTestContext::ItemDragAndDrop(ImGuiTestRef ref_src, ImGuiTestRef ref
     MouseMove(item_dst.ID, ImGuiTestOpFlags_NoCheckHoveredId | ImGuiTestOpFlags_NoFocusWindow);
     SleepStandard();
     MouseUp(button);
-
-    //item_dst.RefCount--;
-    //item_src.RefCount--;
 }
 
 void    ImGuiTestContext::ItemDragWithDelta(ImGuiTestRef ref_src, ImVec2 pos_delta)
@@ -3349,13 +3334,11 @@ void    ImGuiTestContext::MenuAction(ImGuiTestAction action, ImGuiTestRef ref)
             // First move horizontally into the menu, then vertically!
             if (depth > 0)
             {
-                //item.RefCount++;
                 MouseSetViewport(item.Window);
                 if (depth > 1 && (Inputs->MousePosValue.x <= item.RectFull.Min.x || Inputs->MousePosValue.x >= item.RectFull.Max.x))
                     MouseMoveToPos(ImVec2(item.RectFull.GetCenter().x, Inputs->MousePosValue.y));
                 if (depth > 0 && (Inputs->MousePosValue.y <= item.RectFull.Min.y || Inputs->MousePosValue.y >= item.RectFull.Max.y))
                     MouseMoveToPos(ImVec2(Inputs->MousePosValue.x, item.RectFull.GetCenter().y));
-                //item.RefCount--;
             }
 
             if (is_target_item)
