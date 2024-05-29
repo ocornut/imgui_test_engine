@@ -15,6 +15,9 @@ CHANGELOG
 - TestEngine: Fixed an issue using ctx->MenuXXX functions successively
   on the same menu. In some situation a second access would erroneously
   think the previous menu was still open.
+- TestEngine: Fixed an issue where calling ItemDragAndDrop() would erroneously
+  manipulate mouse threshold, creating inconsistency with normal use when using
+  box-select and drag'n drop together.
 
 2024/05/28:
 - TestEngine: Fixes/support for 1.90.8 WIP changes.

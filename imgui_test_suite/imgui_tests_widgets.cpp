@@ -2646,6 +2646,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ctx->MouseMove("Drag");
         ctx->SleepStandard();
         ctx->MouseDown();
+        ctx->Yield();
         ctx->MouseLiftDragThreshold();
         IM_CHECK_EQ(g.ActiveId, active_id);
 

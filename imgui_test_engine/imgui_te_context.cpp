@@ -3106,9 +3106,11 @@ void    ImGuiTestContext::ItemDragOverAndHold(ImGuiTestRef ref_src, ImGuiTestRef
     MouseDown(0);
 
     // Enforce lifting drag threshold even if both item are exactly at the same location.
+    // Don't lift the threshold in the same frame as calling MouseDown() as it can trigger two actions.
+    Yield();
     MouseLiftDragThreshold();
-
     MouseMove(ref_dst, ImGuiTestOpFlags_NoCheckHoveredId);
+
     SleepNoSkip(1.0f, 1.0f / 10.0f);
     MouseUp(0);
 }
@@ -3137,9 +3139,11 @@ void    ImGuiTestContext::ItemDragAndDrop(ImGuiTestRef ref_src, ImGuiTestRef ref
     MouseDown(button);
 
     // Enforce lifting drag threshold even if both item are exactly at the same location.
+    // Don't lift the threshold in the same frame as calling MouseDown() as it can trigger two actions.
+    Yield();
     MouseLiftDragThreshold();
-
     MouseMove(item_dst.ID, ImGuiTestOpFlags_NoCheckHoveredId | ImGuiTestOpFlags_NoFocusWindow);
+
     SleepStandard();
     MouseUp(button);
 }
@@ -3860,6 +3864,7 @@ void    ImGuiTestContext::DockInto(ImGuiTestRef src_id, ImGuiTestRef dst_id, ImG
     MouseDown(0);
     if (g.IO.ConfigDockingWithShift)
         KeyDown(ImGuiMod_Shift);
+    Yield();
     MouseLiftDragThreshold();
     if (window_src->DockIsActive)
         MouseMoveToPos(g.IO.MousePos + ImVec2(0, ImGui::GetFrameHeight() * 2.0f));
