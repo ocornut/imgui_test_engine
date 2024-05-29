@@ -6,6 +6,10 @@ CHANGELOG
 ** For a while this is going to ONLY INCLUDE BREAKING CHANGES.
 
 2024/05/29:
+- TestEngine: UI: Hovering 0xXXXXXXXX identifiers in test log attempts
+  to visually locate them and provide options to Debug Break in the call
+  emitting this item, similar to Dear ImGui Debug Log window.
+  (require latest Dear ImGui version).
 - TestEngine: Fixed an issue using ctx->MenuXXX functions successively
   on the same menu. In some situation a second access would erroneously
   think the previous menu was still open.
