@@ -3334,7 +3334,8 @@ void    ImGuiTestContext::MenuAction(ImGuiTestAction action, ImGuiTestRef ref)
 
         ImGuiTestItemInfo item = ItemInfo(buf.c_str());
         IM_CHECK_SILENT(item.ID != 0);
-        if ((item.StatusFlags & ImGuiItemStatusFlags_Opened) == 0) // Open menus can be ignored completely.
+        bool has_latest_status = (item.TimestampStatus == UiContext->FrameCount);
+        if ((item.StatusFlags & ImGuiItemStatusFlags_Opened) == 0 || !has_latest_status) // Open menus can be ignored completely.
         {
             // We cannot move diagonally to a menu item because depending on the angle and other items we cross on our path we could close our target menu.
             // First move horizontally into the menu, then vertically!

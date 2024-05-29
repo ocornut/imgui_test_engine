@@ -5,6 +5,11 @@ CHANGELOG
    Those changes are not all listed here.
 ** For a while this is going to ONLY INCLUDE BREAKING CHANGES.
 
+2024/05/29:
+- TestEngine: Fixed an issue using ctx->MenuXXX functions successively
+  on the same menu. In some situation a second access would erroneously
+  think the previous menu was still open.
+
 2024/05/28:
 - TestEngine: Fixes/support for 1.90.8 WIP changes.
 - TestEngine: Fixed edge case calling ScrollTo() in non-Fast mode trying to
