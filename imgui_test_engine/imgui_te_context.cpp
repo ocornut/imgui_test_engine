@@ -22,18 +22,22 @@
 
 ImGuiTestRefDesc::ImGuiTestRefDesc(const ImGuiTestRef& ref)
 {
-    if (ref.Path)
-        ImFormatString(Buf, IM_ARRAYSIZE(Buf), "'%s' > %08X", ref.Path, ref.ID);
+    if (ref.Path && ref.ID != 0)
+        ImFormatString(Buf, IM_ARRAYSIZE(Buf), "'%s' (id 0x%08X)", ref.Path, ref.ID);
+    else if (ref.Path)
+        ImFormatString(Buf, IM_ARRAYSIZE(Buf), "'%s'", ref.Path);
     else
-        ImFormatString(Buf, IM_ARRAYSIZE(Buf), "%08X", ref.ID);
+        ImFormatString(Buf, IM_ARRAYSIZE(Buf), "0x%08X", ref.ID);
 }
 
 ImGuiTestRefDesc::ImGuiTestRefDesc(const ImGuiTestRef& ref, const ImGuiTestItemInfo& item)
 {
-    if (ref.Path)
-        ImFormatString(Buf, IM_ARRAYSIZE(Buf), "'%s' > %08X", ref.Path, ref.ID);
+    if (ref.Path && item.ID != 0)
+        ImFormatString(Buf, IM_ARRAYSIZE(Buf), "'%s' (id 0x%08X)", ref.Path, item.ID);
+    else if (ref.Path)
+        ImFormatString(Buf, IM_ARRAYSIZE(Buf), "'%s'", ref.Path);
     else
-        ImFormatString(Buf, IM_ARRAYSIZE(Buf), "%08X > '%s'", ref.ID, item.DebugLabel);
+        ImFormatString(Buf, IM_ARRAYSIZE(Buf), "0x%08X (label \"%s\")", ref.ID, item.DebugLabel);
 }
 
 //-------------------------------------------------------------------------
@@ -491,7 +495,7 @@ void ImGuiTestContext::SetRef(ImGuiWindow* window)
 {
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
     IM_CHECK_SILENT(window != NULL);
-    LogDebug("SetRef '%s' %08X", window->Name, window->ID);
+    LogDebug("SetRef '%s' 0x%08X", window->Name, window->ID);
 
     // We grab the ID directly and avoid ImHashDecoratedPath so "/" in window names are not ignored.
     size_t len = strlen(window->Name);
@@ -512,7 +516,7 @@ void ImGuiTestContext::SetRef(ImGuiTestRef ref)
 {
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
     if (ActiveFunc == ImGuiTestActiveFunc_TestFunc)
-        LogDebug("SetRef '%s' %08X", ref.Path ? ref.Path : "NULL", ref.ID);
+        LogDebug("SetRef '%s' 0x%08X", ref.Path ? ref.Path : "NULL", ref.ID);
 
     if (ref.Path)
     {
@@ -1112,7 +1116,7 @@ ImGuiTestItemInfo ImGuiTestContext::WindowInfo(ImGuiTestRef ref, ImGuiTestOpFlag
     // Query by ID (not very useful but supported)
     if (ref.ID != 0)
     {
-        LogDebug("WindowInfo: by id: %08X", ref.ID);
+        LogDebug("WindowInfo: by id: 0x%08X", ref.ID);
         IM_ASSERT(ref.Path == NULL);
         ImGuiWindow* window = GetWindowByRef(ref);
         if (window == NULL)
@@ -1808,15 +1812,15 @@ void    ImGuiTestContext::MouseMove(ImGuiTestRef ref, ImGuiTestOpFlags flags)
             ImVec2 size_new = item.RectFull.GetSize();
             Str256f error_message(
                 "Unable to Hover %s:\n"
-                "- Expected item %08X in window '%s', targeted position: (%.1f,%.1f)'\n"
-                "- Hovered id was %08X in '%s'.\n"
+                "- Expected item 0x%08X in window '%s', targeted position: (%.1f,%.1f)'\n"
+                "- Hovered id was 0x%08X in '%s'.\n"
                 "- Item Pos:  Before mouse move (%6.1f,%6.1f) vs Now (%6.1f,%6.1f) (%s)\n"
                 "- Item Size: Before mouse move (%6.1f,%6.1f) vs Now (%6.1f,%6.1f) (%s)",
                 desc.c_str(),
                 item.ID, item.Window ? item.Window->Name : "<NULL>", pos.x, pos.y,
                 hovered_id, g.HoveredWindow ? g.HoveredWindow->Name : "",
-                pos_old.x, pos_old.y, pos_new.x, pos_new.y, (pos_old.x == pos_new.x && pos_old.y == pos_new.y) ? "Same" : "Changed",
-                size_old.x, size_old.y, size_new.x, size_new.y, (size_old.x == size_new.x && size_old.y == size_new.y) ? "Same" : "Changed");
+                pos_old.x, pos_old.y, pos_new.x, pos_new.y, (pos_old.x == pos_new.x && pos_old.y == pos_new.y) ? "Same" : "CHANGED",
+                size_old.x, size_old.y, size_new.x, size_new.y, (size_old.x == size_new.x && size_old.y == size_new.y) ? "Same" : "CHANGED");
             IM_ERRORF_NOHDR("%s", error_message.c_str());
         }
     }
@@ -1887,7 +1891,7 @@ bool    ImGuiTestContext::WindowTeleportToMakePosVisible(ImGuiTestRef ref, ImVec
         delta.x = (pos.x < visible_r.Min.x) ? (visible_r.Min.x - pos.x + pad) : (pos.x > visible_r.Max.x) ? (visible_r.Max.x - pos.x - pad) : 0.0f;
         delta.y = (pos.y < visible_r.Min.y) ? (visible_r.Min.y - pos.y + pad) : (pos.y > visible_r.Max.y) ? (visible_r.Max.y - pos.y - pad) : 0.0f;
         ImGui::SetWindowPos(window, window->Pos + delta, ImGuiCond_Always);
-        LogDebug("WindowTeleportToMakePosVisible %s delta (%.1f,%.1f)", window->Name, delta.x, delta.y);
+        LogDebug("WindowTeleportToMakePosVisible '%s' delta (%.1f,%.1f)", window->Name, delta.x, delta.y);
         Yield();
         return true;
     }
@@ -3019,7 +3023,7 @@ bool    ImGuiTestContext::ItemSelectAndReadValue(ImGuiTestRef ref, ImGuiDataType
     IM_ASSERT((flags & ~SUPPORTED_FLAGS) == 0);
 
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
-    LogDebug("ItemSelectReadValue '%s' %08X as %s", ref.Path ? ref.Path : "NULL", ref.ID, data_type_info->Name);
+    LogDebug("ItemSelectReadValue '%s' 0x%08X as %s", ref.Path ? ref.Path : "NULL", ref.ID, data_type_info->Name);
     IM_CHECK_SILENT_RETV(out_data != NULL, false);
 
     Str256 backup_clipboard = ImGui::GetClipboardText();
@@ -3065,7 +3069,8 @@ void    ImGuiTestContext::ItemHold(ImGuiTestRef ref, float time)
         return;
 
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
-    LogDebug("ItemHold '%s' %08X", ref.Path ? ref.Path : "NULL", ref.ID);
+    ImGuiTestRefDesc desc(ref);
+    LogDebug("ItemHold %s", desc.c_str());
 
     MouseMove(ref);
 
@@ -3082,7 +3087,8 @@ void    ImGuiTestContext::ItemHoldForFrames(ImGuiTestRef ref, int frames)
         return;
 
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
-    LogDebug("ItemHoldForFrames '%s' %08X", ref.Path ? ref.Path : "NULL", ref.ID);
+    ImGuiTestRefDesc desc(ref);
+    LogDebug("ItemHoldForFrames %s", desc.c_str());
 
     MouseMove(ref);
     Yield();
@@ -3212,7 +3218,8 @@ void    ImGuiTestContext::TabClose(ImGuiTestRef ref)
         return;
 
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
-    LogDebug("TabClose '%s' %08X", ref.Path ? ref.Path : "NULL", ref.ID);
+    ImGuiTestRefDesc desc(ref);
+    LogDebug("TabClose %s", desc.c_str());
 
     // Move into first, then click close button as it appears
     MouseMove(ref);
@@ -3265,7 +3272,8 @@ void    ImGuiTestContext::MenuAction(ImGuiTestAction action, ImGuiTestRef ref)
         return;
 
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
-    LogDebug("MenuAction '%s' %08X", ref.Path ? ref.Path : "NULL", ref.ID);
+    ImGuiTestRefDesc desc(ref);
+    LogDebug("MenuAction %s", desc.c_str());
 
     IM_ASSERT(ref.Path != NULL);
 
@@ -3410,7 +3418,8 @@ void    ImGuiTestContext::ComboClick(ImGuiTestRef ref)
         return;
 
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
-    LogDebug("ComboClick '%s' %08X", ref.Path ? ref.Path : "NULL", ref.ID);
+    ImGuiTestRefDesc desc(ref);
+    LogDebug("ComboClick %s", desc.c_str());
 
     IM_ASSERT(ref.Path != NULL); // Should always pass an actual path, not an ID.
 
@@ -3463,7 +3472,8 @@ void ImGuiTestContext::TableOpenContextMenu(ImGuiTestRef ref, int column_n)
         return;
 
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
-    LogDebug("TableOpenContextMenu '%s' %08X", ref.Path ? ref.Path : "NULL", ref.ID);
+    ImGuiTestRefDesc desc(ref);
+    LogDebug("TableOpenContextMenu %s", desc.c_str());
 
     ImGuiTable* table = ImGui::TableFindByID(GetID(ref));
     IM_CHECK_SILENT(table != NULL);
@@ -3500,7 +3510,8 @@ void ImGuiTestContext::TableSetColumnEnabled(ImGuiTestRef ref, const char* label
         return;
 
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
-    LogDebug("TableSetColumnEnabled '%s' %08X = %d", ref.Path ? ref.Path : "NULL", ref.ID, enabled);
+    ImGuiTestRefDesc desc(ref);
+    LogDebug("TableSetColumnEnabled %s label '%s' enabled = %d", desc.c_str(), label, enabled);
 
     TableOpenContextMenu(ref);
 
@@ -3520,7 +3531,8 @@ void ImGuiTestContext::TableResizeColumn(ImGuiTestRef ref, int column_n, float w
         return;
 
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
-    LogDebug("TableResizeColumn '%s' %08X column %d width %.2f", ref.Path ? ref.Path : "NULL", ref.ID, column_n, width);
+    ImGuiTestRefDesc desc(ref);
+    LogDebug("TableResizeColumn %s column %d width %.2f", desc.c_str(), column_n, width);
 
     ImGuiTable* table = ImGui::TableFindByID(GetID(ref));
     IM_CHECK_SILENT(table != NULL);
@@ -3658,7 +3670,7 @@ void    ImGuiTestContext::WindowMove(ImGuiTestRef ref, ImVec2 input_pos, ImVec2 
     IM_CHECK_SILENT(window != NULL);
 
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
-    LogDebug("WindowMove %s (%.1f,%.1f) ", window->Name, input_pos.x, input_pos.y);
+    LogDebug("WindowMove '%s' (%.1f,%.1f) ", window->Name, input_pos.x, input_pos.y);
     ImVec2 target_pos = ImFloor(input_pos - pivot * window->Size);
     if (ImLengthSqr(target_pos - window->Pos) < 0.001f)
     {
@@ -3704,7 +3716,7 @@ void    ImGuiTestContext::WindowResize(ImGuiTestRef ref, ImVec2 size)
     size = ImFloor(size);
 
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
-    LogDebug("WindowResize %s (%.1f,%.1f)", window->Name, size.x, size.y);
+    LogDebug("WindowResize '%s' (%.1f,%.1f)", window->Name, size.x, size.y);
     if (ImLengthSqr(size - window->Size) < 0.001f)
         return;
 
