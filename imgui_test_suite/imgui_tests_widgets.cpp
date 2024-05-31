@@ -5451,7 +5451,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
 #endif
 
     // ## Test BeginDisabled()/EndDisabled()
-#if (IMGUI_VERSION_NUM >= 18405)
+#if IMGUI_VERSION_NUM >= 18405
     t = IM_REGISTER_TEST(e, "widgets", "widgets_disabled_2");
     struct BeginDisabledVars
     {
@@ -5538,6 +5538,46 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ctx->ItemClick("F");
         IM_CHECK(vars.ButtonInfo[5].Status.RetValue == 1);              // BeginDisabled(false) does not prevent clicks
         IM_CHECK(vars.ButtonInfo[5].Status.Clicked == 1);
+    };
+#endif
+
+#if IMGUI_VERSION_NUM >= 19073
+    // ## Test nested functions and Alpha values
+    t = IM_REGISTER_TEST(e, "widgets", "widgets_disabled_nested");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiContext& g = *GImGui;
+        ImGui::PushStyleVar(ImGuiStyleVar_Alpha, 1.0f);
+        ImGui::PushStyleVar(ImGuiStyleVar_DisabledAlpha, 0.4f);
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+
+        ImGui::BeginDisabled();
+        IM_CHECK((g.CurrentItemFlags & ImGuiItemFlags_Disabled) != 0);
+        IM_CHECK_FLOAT_EQ_EPS(ImGui::GetStyle().Alpha, 1.0f * 0.4f);
+
+        ImGui::Begin("Nested window call");
+        IM_CHECK((g.CurrentItemFlags& ImGuiItemFlags_Disabled) == 0);
+        IM_CHECK_FLOAT_EQ_EPS(ImGui::GetStyle().Alpha, 1.0f);
+
+        ImGui::End();
+        IM_CHECK((g.CurrentItemFlags & ImGuiItemFlags_Disabled) != 0);
+        IM_CHECK_FLOAT_EQ_EPS(ImGui::GetStyle().Alpha, 1.0f * 0.4f);
+
+        ImGui::BeginChild("Nested Child", ImVec2(200, 200));
+        IM_CHECK((g.CurrentItemFlags & ImGuiItemFlags_Disabled) != 0);
+        IM_CHECK_FLOAT_EQ_EPS(ImGui::GetStyle().Alpha, 1.0f * 0.4f);
+
+        ImGui::EndChild();
+        IM_CHECK((g.CurrentItemFlags & ImGuiItemFlags_Disabled) != 0);
+        IM_CHECK_FLOAT_EQ_EPS(ImGui::GetStyle().Alpha, 1.0f * 0.4f);
+
+        ImGui::EndDisabled();
+        IM_CHECK((g.CurrentItemFlags & ImGuiItemFlags_Disabled) == 0);
+        IM_CHECK_FLOAT_EQ_EPS(ImGui::GetStyle().Alpha, 1.0f);
+
+        ImGui::End();
+        ImGui::PopStyleVar();
+        ImGui::PopStyleVar();
     };
 #endif
 

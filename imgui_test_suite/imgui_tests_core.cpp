@@ -3715,6 +3715,9 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
 #ifdef IMGUI_HAS_MULTI_SELECT
         ImGui::BeginMultiSelect(ImGuiMultiSelectFlags_None);
 #endif
+#if IMGUI_VERSION_NUM >= 18415
+        ImGui::BeginDisabled();
+#endif
         ImGui::SetNextItemOpen(true);
         ImGui::TreeNode("node");
         ImGui::BeginTabBar("tabbar");
