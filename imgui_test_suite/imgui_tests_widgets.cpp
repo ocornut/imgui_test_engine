@@ -3852,6 +3852,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
     };
 
     // ## Test MultiSelect API
+    // FIXME-MULTISELECT: maybe use BasicStorage?
     struct ExampleSelection
     {
         ImGuiStorage                        Storage;
@@ -4731,10 +4732,9 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
     };
 #endif
 
-#endif // #ifdef IMGUI_HAS_MULTI_SELECT
-
     // ## Basic test for GetTypingSelectRequest()
     // Technically this API doesn't require MultiSelect but it's easier for us to reuse that code.
+    // (under IMGUI_HAS_MULTI_SELECT as we also use this API + vars)
     t = IM_REGISTER_TEST(e, "widgets", "widgets_typingselect");
     t->SetVarsDataType<MultiSelectTestVars>();
     struct TypingSelectTestFuncs
@@ -4833,6 +4833,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ctx->Yield();
         IM_CHECK(vars.Selection0.SelectionSize == 1 && vars.Selection0.GetSelected(2));
     };
+#endif // #ifdef IMGUI_HAS_MULTI_SELECT
 
     // ## Test Selectable() with ImGuiSelectableFlags_SpanAllColumns inside Columns()
     t = IM_REGISTER_TEST(e, "widgets", "widgets_selectable_span_all_columns");
