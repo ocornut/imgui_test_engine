@@ -2747,7 +2747,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
 
             ImGui::TableNextColumn();
             ImGui::TableSetBgColor(ImGuiTableBgTarget_RowBg0, COL_ROW_BG);
-            ImGui::Button(Str30f("%dx%d", (int)vars.ItemSize.x, (int)vars.ItemSize.y).c_str(), vars.ItemSize);
+            ImGui::Button(Str30f("-- %dx%d --", (int)vars.ItemSize.x, (int)vars.ItemSize.y).c_str(), vars.ItemSize);
             ImGui::EndTable();
 
             HelperDrawAndFillBounds(&vars);
@@ -2768,6 +2768,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
         ImGui::CheckboxFlags("ImGuiTableFlags_SizingFixedFit", &vars.TableFlags, ImGuiTableFlags_SizingFixedFit);
         ImGui::CheckboxFlags("ImGuiTableFlags_NoKeepColumnsVisible", &vars.TableFlags, ImGuiTableFlags_NoKeepColumnsVisible);
         ImGui::CheckboxFlags("ImGuiWindowFlags_HorizontalScrollbar", &vars.WindowFlags, ImGuiWindowFlags_HorizontalScrollbar);
+        ImGui::CheckboxFlags("ImGuiWindowFlags_AlwaysAutoResize", &vars.WindowFlags, ImGuiWindowFlags_AlwaysAutoResize);
         ImGui::DragFloat2("WindowSize", &vars.WindowSize.x, 1.0f, 0.0f, FLT_MAX);
         ImGui::DragFloat2("ItemSize", &vars.ItemSize.x, 1.0f, 0.0f, FLT_MAX);
         ImGui::DragFloat2("TableOuterSize", &vars.OuterSize.x, 1.0f, -FLT_MAX, FLT_MAX);
@@ -2778,17 +2779,21 @@ void RegisterTests_Table(ImGuiTestEngine* e)
             ImGui::Text("InnerWindow->ContentSize.y = %.1f", table->InnerWindow->ContentSize.y);
             ImGui::Text("InnerWindow->ContentSizeIdeal.x = %.1f", table->InnerWindow->ContentSizeIdeal.x);
             ImGui::Text("InnerWindow->ContentSizeIdeal.y = %.1f", table->InnerWindow->ContentSizeIdeal.y);
+            ImGui::Text("InnerWindow->Size.x = %.1f", table->InnerWindow->Size.x);
+            ImGui::Text("InnerWindow->Size.y = %.1f", table->InnerWindow->Size.y);
         }
         ImGui::Text("OuterWindow->ContentSize.x = %.1f", table->OuterWindow->ContentSize.x);
         ImGui::Text("OuterWindow->ContentSize.y = %.1f", table->OuterWindow->ContentSize.y);
         ImGui::Text("OuterWindow->ContentSizeIdeal.x = %.1f", table->OuterWindow->ContentSizeIdeal.x);
         ImGui::Text("OuterWindow->ContentSizeIdeal.y = %.1f", table->OuterWindow->ContentSizeIdeal.y);
+        ImGui::Text("OuterWindow->Size.x = %.1f", table->OuterWindow->Size.x);
+        ImGui::Text("OuterWindow->Size.y = %.1f", table->OuterWindow->Size.y);
         ImGui::Text("IsItemHovered() = %d", vars.OutTableIsItemHovered);
 
         //if (ctx->FrameCount < 3) { ImGui::LogFinish(); }
 
         ImGui::Separator();
-        ImGui::Text("Legend:");
+        ImGui::Text("Legend, after EndTable():");
         ImGui::Checkbox("Show bounds", &vars.DebugShowBounds);
         ImGui::ColorButton("ItemRect", ImColor(COL_ITEM_RECT), ImGuiColorEditFlags_NoTooltip); ImGui::SameLine(0.f, style.ItemInnerSpacing.x); ImGui::Text("ItemRect");
         ImGui::ColorButton("CursorMaxPos", ImColor(COL_CURSOR_MAX_POS), ImGuiColorEditFlags_NoTooltip); ImGui::SameLine(0.f, style.ItemInnerSpacing.x); ImGui::Text("CursorMaxPos");
@@ -3015,6 +3020,22 @@ void RegisterTests_Table(ImGuiTestEngine* e)
             IM_CHECK_EQ(table->InnerWindow->ContentSize[axis], 200.0f);
             IM_CHECK_EQ(table->OuterWindow->ContentSize[axis], 300.0f);
         }
+
+#if IMGUI_VERSION_NUM >= 19074
+        // #7651 "Table with ImGuiTableFlags_ScrollY does not reserve horizontal space for vertical scrollbar"
+        // Puzzling that this wasn't exercised properly in other tests.
+        vars.TableFlags = ImGuiTableFlags_NoSavedSettings | ImGuiTableFlags_ScrollY;
+        vars.WindowFlags = ImGuiWindowFlags_AlwaysAutoResize;
+        vars.WindowSize = ImVec2(0.0f, 0.0f);
+        //vars.ColumnsCount = 1; // Unused, hardcoded
+        vars.OuterSize = ImVec2(0.0f, 100.0f);
+        vars.ItemSize = ImVec2(200.0f, 500.0f);
+        ctx->Yield(2);
+        ctx->Yield(2);
+        IM_CHECK_EQ(table->OuterWindow->Size.x, 200.0f + table->InnerWindow->ScrollbarSizes.x);
+        IM_CHECK_EQ(table->OuterWindow->ContentSize.x, 200.0f + table->InnerWindow->ScrollbarSizes.x);
+        ctx->Yield();
+#endif
     };
 #endif
 
