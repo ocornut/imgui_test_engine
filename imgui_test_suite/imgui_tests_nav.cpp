@@ -1635,8 +1635,9 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         ImGuiContext& g = *GImGui;
+        auto& vars = ctx->GenericVars;
 
-        ImGui::SetNextWindowSize(ctx->GenericVars.Size, ImGuiCond_Always);
+        ImGui::SetNextWindowSize(vars.WindowSize, ImGuiCond_Always);
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysVerticalScrollbar | ImGuiWindowFlags_AlwaysHorizontalScrollbar);
         for (int y = 0; y < 6; y++)
             for (int x = 0; x < 6; x++)
@@ -1646,8 +1647,8 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
                     ImGui::SameLine();
 
                 // Window size is such that only 3x3 buttons are visible at a time.
-                if (ctx->GenericVars.Size.y == 0.0f && y == 3 && x == 2)
-                    ctx->GenericVars.Size = ImGui::GetCursorPos() + ImVec2(g.Style.ScrollbarSize, g.Style.ScrollbarSize); // FIXME: Calculate Window Size from Decoration Size
+                if (vars.WindowSize.y == 0.0f && y == 3 && x == 2)
+                    vars.WindowSize = ImGui::GetCursorPos() + ImVec2(g.Style.ScrollbarSize, g.Style.ScrollbarSize); // FIXME: Calculate Window Size from Decoration Size
             }
         ImGui::End();
 
@@ -1742,11 +1743,11 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
             ImGui::End();
         }
 
-        ImGui::SetNextWindowSize(ImVec2(100, vars.Size.y), ImGuiCond_Always);
+        ImGui::SetNextWindowSize(ImVec2(100, vars.WindowSize.y), ImGuiCond_Always);
 
         // FIXME-NAV: Lack of ImGuiWindowFlags_NoCollapse breaks window scrolling without activable items.
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysVerticalScrollbar | ImGuiWindowFlags_AlwaysHorizontalScrollbar | ImGuiWindowFlags_NoCollapse);
-        vars.Size.y = ImFloor(ImGui::GetCursorPosY() + ImGui::GetTextLineHeightWithSpacing() * 20.8f + ImGui::GetStyle().ScrollbarSize);
+        vars.WindowSize.y = ImFloor(ImGui::GetCursorPosY() + ImGui::GetTextLineHeightWithSpacing() * 20.8f + ImGui::GetStyle().ScrollbarSize);
         if (vars.UseClipper)
         {
             ImGuiListClipper clipper;
@@ -1852,9 +1853,9 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
         }
 
         // FIXME-NAV: Lack of ImGuiWindowFlags_NoCollapse breaks window scrolling without activable items.
-        ImGui::SetNextWindowSize(ImVec2(100, vars.Size.y), ImGuiCond_Always);
+        ImGui::SetNextWindowSize(ImVec2(100, vars.WindowSize.y), ImGuiCond_Always);
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysVerticalScrollbar | ImGuiWindowFlags_AlwaysHorizontalScrollbar | ImGuiWindowFlags_NoCollapse);
-        vars.Size.y = ImFloor(ImGui::GetCursorPosY() + ImGui::GetFrameHeightWithSpacing() * 3.0f + ImGui::GetStyle().ScrollbarSize);
+        vars.WindowSize.y = ImFloor(ImGui::GetCursorPosY() + ImGui::GetFrameHeightWithSpacing() * 3.0f + ImGui::GetStyle().ScrollbarSize);
         if (vars.UseClipper)
         {
             ImGuiListClipper clipper;

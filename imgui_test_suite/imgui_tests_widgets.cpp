@@ -5615,7 +5615,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ImGuiTestGenericVars& vars = ctx->GenericVars;
         ImGui::SetNextWindowSize(ImVec2(300, 200), ImGuiCond_Always);
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
-        ImVec2& child_size = vars.Size;
+        ImVec2& child_size = vars.WindowSize;
         ImGuiAxis axis = (ImGuiAxis)ctx->Test->ArgVariant;
 
         ImGui::Splitter("splitter", &child_size.x, &child_size.y, axis, +1);
@@ -5637,7 +5637,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ImGuiWindow* child1 = ctx->WindowInfo("Child 1").Window;
         ImGuiWindow* child2 = ctx->WindowInfo("Child 2").Window;
         IM_CHECK(child1 && child2);
-        ImVec2& child_size = vars.Size;
+        ImVec2& child_size = vars.WindowSize;
         for (int axis = 0; axis < 2; axis++)
         {
             ctx->LogDebug("Axis: ImGuiAxis_%s", axis ? "Y" : "X");
