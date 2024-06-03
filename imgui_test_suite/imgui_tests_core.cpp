@@ -262,6 +262,43 @@ void RegisterTests_Window(ImGuiTestEngine* e)
             ctx->Finish();
     };
 
+    // ## Test effect of ScrollbarX on vertical scroll and vice-versa (#1574)
+    t = IM_REGISTER_TEST(e, "window", "window_size_scrollbar_xy");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        auto& vars = ctx->GenericVars;
+        ImGui::SetNextWindowSize(vars.WindowSize);
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_HorizontalScrollbar | ImGuiWindowFlags_NoTitleBar);
+        ImGui::PopStyleVar();
+        ImGui::Dummy(vars.ItemSize);
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        auto& vars = ctx->GenericVars;
+        ImGuiWindow* window = ctx->GetWindowByRef("Test Window");
+        IM_CHECK(window != NULL);
+
+        vars.WindowSize = ImVec2(100, 100);
+        vars.ItemSize = ImVec2(100, 100);
+        ctx->Yield(2);
+        IM_CHECK(window->ScrollbarX == false);
+        IM_CHECK(window->ScrollbarY == false);
+
+        vars.ItemSize = ImVec2(100, 101);
+        ctx->Yield(2);
+        IM_CHECK(window->ScrollbarX == true);
+        IM_CHECK(window->ScrollbarY == true);
+
+        vars.ItemSize = ImVec2(101, 100);
+        ctx->Yield(2);
+        IM_CHECK(window->ScrollbarX == true);
+#if IMGUI_VERSION_NUM >= 19074
+        IM_CHECK(window->ScrollbarY == true);
+#endif
+    };
+
     // ## Test that non-integer size/position passed to window gets rounded down and not cause any drift.
     t = IM_REGISTER_TEST(e, "window", "window_size_unrounded");
     t->Flags |= ImGuiTestFlags_NoAutoFinish;
