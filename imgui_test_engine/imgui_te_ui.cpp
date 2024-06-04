@@ -778,8 +778,10 @@ static void ImGuiTestEngine_ShowTestTool(ImGuiTestEngine* engine, bool* p_open)
     ImGui::Checkbox("KeepGUI", &engine->IO.ConfigKeepGuiFunc);
     ImGui::SetItemTooltip("Keep GUI function running after a test fails, or when a single queued test is finished.\nHold ESC to abort a running GUI function.");
     ImGui::SameLine();
-    ImGui::Checkbox("Refocus", &engine->IO.ConfigRestoreFocusAfterTests);
-    ImGui::SetItemTooltip("Restore focus back after running tests.");
+    bool keep_focus = !engine->IO.ConfigRestoreFocusAfterTests;
+    if (ImGui::Checkbox("KeepFocus", &keep_focus))
+        engine->IO.ConfigRestoreFocusAfterTests = !keep_focus;
+    ImGui::SetItemTooltip("Keep GUI focus after running tests, instead of restoring focus to this window.");
     ImGui::SameLine();
     ImGui::SeparatorEx(ImGuiSeparatorFlags_Vertical);
     ImGui::SameLine();
