@@ -5,6 +5,11 @@ CHANGELOG
    Those changes are not all listed here.
 ** For a while this is going to ONLY INCLUDE BREAKING CHANGES.
 
+2024/06/04:
+- TestEngine: UI: Added "Capture on error" checkbox to top bar.
+- TestEngine: UI: Reworded "Refocus" to "KeepFocus" (inverted value) in top bar
+  for consistency with other options.
+
 2024/05/29:
 - TestEngine: UI: Hovering 0xXXXXXXXX identifiers in test log attempts
   to visually locate them and provide options to Debug Break in the call
