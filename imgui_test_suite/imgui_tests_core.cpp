@@ -696,6 +696,44 @@ void RegisterTests_Window(ImGuiTestEngine* e)
         IM_CHECK_EQ(g.OpenPopupStack.Size, 2);
     };
 
+    // ## Test closing of popups by clicking on void (#7654)
+#if IMGUI_VERSION_NUM >= 19075
+    t = IM_REGISTER_TEST(e, "window", "window_popup_close_with_void");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+        if (ImGui::Button("Open modal"))
+            ImGui::OpenPopup("Modal");
+        if (ImGui::BeginPopupModal("Modal"))
+        {
+            if (ImGui::Button("Open popup"))
+                ImGui::OpenPopup("Popup");
+            if (ImGui::BeginPopup("Popup"))
+            {
+                if (ImGui::Button("Close popup"))
+                    ImGui::CloseCurrentPopup();
+                ImGui::EndPopup();
+            }
+            if (ImGui::Button("Close modal"))
+                ImGui::CloseCurrentPopup();
+            ImGui::EndPopup();
+        }
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiContext& g = *GImGui;
+        ctx->ItemClick("Test Window/Open modal");
+        ctx->ItemClick("//$FOCUSED/Open popup");
+        IM_CHECK_EQ(g.OpenPopupStack.Size, 2);
+        ctx->MouseMoveToVoid();
+        ctx->MouseClick(ImGuiMouseButton_Left);
+        IM_CHECK_EQ(g.OpenPopupStack.Size, 1);
+        ctx->ItemClick("//$FOCUSED/Close modal");
+        IM_CHECK_EQ(g.OpenPopupStack.Size, 0);
+    };
+#endif
+
     // ## Test input and output value of *p_open (#6900)
     t = IM_REGISTER_TEST(e, "window", "window_popup_close_signal");
     t->GuiFunc = [](ImGuiTestContext* ctx)
