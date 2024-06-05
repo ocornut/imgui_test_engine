@@ -1028,13 +1028,15 @@ void RegisterTests_Window(ImGuiTestEngine* e)
             ctx->MouseSetViewport(window);
             ctx->MouseMoveToPos(window->Rect().GetBL() + ImVec2(20.0f, -20.0f));    // Clicking parent window of menu popup closes it.
             ctx->MouseClick();
-#if !IMGUI_BROKEN_TESTS
             if (vars.UseModal)                                                      // FIXME: Closing menu by clicking on a window under the modal
             {
+#if IMGUI_VERSION_NUM >= 19075
+                IM_CHECK_EQ(g.OpenPopupStack.Size, 1); // Fixed by #7654
+#else
                 IM_CHECK_EQ(g.OpenPopupStack.Size, 2);
                 ctx->PopupCloseOne();
-            }
 #endif
+            }
             IM_CHECK_EQ(vars.FirstOpen, false);
             IM_CHECK_EQ(vars.SecondOpen, false);
             IM_CHECK_EQ(popup->Active, vars.UseModal);
@@ -1176,7 +1178,7 @@ void RegisterTests_Window(ImGuiTestEngine* e)
             ImGui::Checkbox("Popup1 is modal", &vars.IsModalPopup[0]);
             ImGui::Checkbox("Popup2 is modal", &vars.IsModalPopup[1]);
             ImGui::Combo("Interrupt Kind", &vars.Variant, interrupt_kind, IM_ARRAYSIZE(interrupt_kind));
-            ImGui::Text("(Hold CTRL to display interrupting window)");
+            ImGui::Checkbox("Show interrupts (Hold CTRL)", &vars.ShowInterrupts);
         }
 
         float spacing = ImFloor(ImGui::GetFontSize() * 2.0f);
