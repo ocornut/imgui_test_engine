@@ -5,6 +5,10 @@ CHANGELOG
    Those changes are not all listed here.
 ** For a while this is going to ONLY INCLUDE BREAKING CHANGES.
 
+2024/06/06:
+- TestEngine: WindowInfo() with ImGuiTestOpFlags_NoError doesn't spew error
+  messages in log. (#52)
+
 2024/06/04:
 - TestEngine: UI: Added "Capture on error" checkbox to top bar.
 - TestEngine: UI: Reworded "Refocus" to "KeepFocus" (inverted value) in top bar

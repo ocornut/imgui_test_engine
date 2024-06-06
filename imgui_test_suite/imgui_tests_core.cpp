@@ -5706,6 +5706,8 @@ void RegisterTests_TestEngine(ImGuiTestEngine* e)
         IM_CHECK(vars.Int1 == 0);
         ctx->ItemClick("Button1");
         IM_CHECK(vars.Int1 == 1);
+        ctx->WindowInfo("Non existing window 123456789", ImGuiTestOpFlags_NoError);
+        ctx->WindowInfo(ctx->GetID("Non existing window ABC"), ImGuiTestOpFlags_NoError);
     };
 
     // ## Test that our IM_CHECK_xxx macros don't expand parameters more than once, which would cause problem when parameters side-effects.
