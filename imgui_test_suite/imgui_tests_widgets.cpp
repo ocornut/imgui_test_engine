@@ -49,7 +49,9 @@ static inline bool operator==(const ImVec4& lhs, const ImVec4& rhs)     { return
 static inline bool operator!=(const ImVec4& lhs, const ImVec4& rhs)     { return lhs.x != rhs.x || lhs.y != rhs.y || lhs.z != rhs.z || lhs.w != rhs.w; }
 #endif
 
-typedef ImGuiDataTypeTempStorage ImGuiDataTypeStorage; // Will rename in imgui/ later
+#if IMGUI_VERSION_NUM < 19075
+typedef ImGuiDataTypeTempStorage ImGuiDataTypeStorage;
+#endif
 void GetSliderTestRanges(ImGuiDataType data_type, ImGuiDataTypeStorage* min_p, ImGuiDataTypeStorage* max_p)
 {
     switch (data_type)
