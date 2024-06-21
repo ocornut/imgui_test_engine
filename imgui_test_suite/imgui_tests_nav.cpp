@@ -1240,7 +1240,7 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
 
         // ...Unless flattened child
 #if IMGUI_VERSION_NUM >= 19002
-        ImGui::BeginChild("Child 3", ImVec2(100, 100), ImGuiChildFlags_Border, ImGuiWindowFlags_NavFlattened);
+        ImGui::BeginChild("Child 3", ImVec2(100, 100), ImGuiChildFlags_Border | ImGuiChildFlags_NavFlattened);
         IM_CHECK_EQ(ImGui::GetCurrentFocusScope(), focus_scope_id); // New child
         ImGui::EndChild();
 #endif
@@ -1430,22 +1430,22 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
         ImGui::EndGroup();
 
         ImGui::SameLine();
-        ImGui::BeginChild("Child 1", ImVec2(200, 200), false, ImGuiWindowFlags_NavFlattened);
+        ImGui::BeginChild("Child 1", ImVec2(200, 200), ImGuiChildFlags_NavFlattened);
         output_item("Child 1 Button 1");
         output_item("Child 1 Button 2");
         output_item("Child 1 Button 3");
         ImGui::EndChild();
 
         ImGui::SameLine();
-        ImGui::BeginChild("Child 2", ImVec2(200, 200), false, ImGuiWindowFlags_NavFlattened);
+        ImGui::BeginChild("Child 2", ImVec2(200, 200), ImGuiChildFlags_NavFlattened);
         output_item("Child 2 Button 1");
         output_item("Child 2 Button 2");
         output_item("Child 2 Button 3");
         ImGui::EndChild();
 
         ImGui::SameLine();
-        ImGui::BeginChild("Child 3", ImVec2(200, 200), false, ImGuiWindowFlags_NavFlattened);
-        ImGui::BeginChild("Child 3B", ImVec2(0, 0), false, ImGuiWindowFlags_NavFlattened);
+        ImGui::BeginChild("Child 3", ImVec2(200, 200), ImGuiChildFlags_NavFlattened);
+        ImGui::BeginChild("Child 3B", ImVec2(0, 0), ImGuiChildFlags_NavFlattened);
         output_item("Child 3B Button 1");
         output_item("Child 3B Button 2");
         output_item("Child 3B Button 3");
@@ -1453,7 +1453,7 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
         ImGui::EndChild();
 
         // FIXME-NAV: To test PageUp/PageDown/Home/End later
-        //ImGui::BeginChild("Child 4", ImVec2(200, 200), false, ImGuiWindowFlags_NavFlattened);
+        //ImGui::BeginChild("Child 4", ImVec2(200, 200), ImGuiChildFlags_NavFlattened);
         //output_item("Child 4 Button 1");
         //output_item("Child 4 Button 2");
         //output_item("Child 4 Button 3");
@@ -1504,7 +1504,7 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
 
         ImGui::Begin("Window 1", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
 
-        ImGui::BeginChild("Child 0", ImVec2(200, 200), false, ImGuiWindowFlags_NavFlattened);
+        ImGui::BeginChild("Child 0", ImVec2(200, 200), ImGuiChildFlags_NavFlattened);
         ImGui::Button("Child 0 Button 1");
         ImGui::Button("Child 0 Button 2");
         ImGui::Button("Child 0 Button 3");
@@ -1518,7 +1518,7 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
         ImGui::EndGroup();
 
         ImGui::SameLine();
-        ImGui::BeginChild("Child 1", ImVec2(200, 200), false, ImGuiWindowFlags_NavFlattened);
+        ImGui::BeginChild("Child 1", ImVec2(200, 200), ImGuiChildFlags_NavFlattened);
         ImGui::Button("Child 1 Button 1");
         ImGui::Button("Child 1 Button 2");
         if (vars.SetFocus)
@@ -2088,7 +2088,7 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
         for (int n = 0; n < 4; n++)
             ImGui::InputInt(Str30f("Input%d", n).c_str(), &vars.Int1, 0, 0);
 
-        ImGui::BeginChild("Child 1", ImVec2(0, ImGui::GetFrameHeightWithSpacing() * 3), true, ImGuiWindowFlags_NavFlattened);
+        ImGui::BeginChild("Child 1", ImVec2(0, ImGui::GetFrameHeightWithSpacing() * 3), ImGuiChildFlags_Border | ImGuiChildFlags_NavFlattened);
         for (int n = 4; n < 8; n++)
             ImGui::InputInt(Str30f("Input%d", n).c_str(), &vars.Int1, 0, 0);
         ImGui::EndChild();
@@ -2096,10 +2096,10 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
         for (int n = 8; n < 10; n++)
             ImGui::InputInt(Str30f("Input%d", n).c_str(), &vars.Int1, 0, 0);
 
-        ImGui::BeginChild("Child 2", ImVec2(0, ImGui::GetFrameHeightWithSpacing() * 3), true, ImGuiWindowFlags_NavFlattened);
+        ImGui::BeginChild("Child 2", ImVec2(0, ImGui::GetFrameHeightWithSpacing() * 3), ImGuiChildFlags_Border | ImGuiChildFlags_NavFlattened);
         for (int n = 10; n < 14; n++)
             ImGui::InputInt(Str30f("Input%d", n).c_str(), &vars.Int1, 0, 0);
-        ImGui::BeginChild("Child 3", ImVec2(0, ImGui::GetFrameHeightWithSpacing() * 3), true, ImGuiWindowFlags_NavFlattened);
+        ImGui::BeginChild("Child 3", ImVec2(0, ImGui::GetFrameHeightWithSpacing() * 3), ImGuiChildFlags_Border | ImGuiChildFlags_NavFlattened);
         for (int n = 14; n < 18; n++)
             ImGui::InputInt(Str30f("Input%d", n).c_str(), &vars.Int1, 0, 0);
         ImGui::EndChild();
