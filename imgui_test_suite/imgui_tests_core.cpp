@@ -1824,6 +1824,50 @@ void RegisterTests_Window(ImGuiTestEngine* e)
         ImGui::End();
     };
 
+#if IMGUI_VERSION_NUM >= 19001
+    // ## Test child maximum size not clamped (#7063)
+    // ## Test child menu maximum size clamped to viewport (#7287)
+    t = IM_REGISTER_TEST(e, "window", "window_child_maxsize");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_MenuBar);
+        if (ImGui::BeginMenuBar())
+        {
+            if (ImGui::BeginMenu("File"))
+            {
+                ImGui::MenuItem("Item1");
+                if (ImGui::BeginMenu("Submenu"))
+                {
+                    ImGui::MenuItem("Item2");
+                    for (int n = 0; n < 100; n++)
+                        ImGui::Text("Filler");
+                    ImGui::EndMenu();
+                }
+                ImGui::EndMenu();
+            }
+            ImGui::EndMenuBar();
+        }
+        ImGui::BeginChild("Child 0", ImVec2(0.0f, 0.0f), ImGuiChildFlags_Border | ImGuiChildFlags_AutoResizeX | ImGuiChildFlags_AutoResizeY);
+        ImGui::Dummy(ImVec2(500, 10000));
+        ImGui::EndChild();
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiWindow* child = ctx->WindowInfo("//Test Window/Child 0").Window;
+        IM_CHECK_EQ(child->Size, ImVec2(500, 10000) + ImGui::GetStyle().WindowPadding * 2.0f);
+
+        ctx->SetRef("Test Window");
+
+#if IMGUI_VERSION_NUM >= 19032
+        ctx->MenuClick("File/Submenu");
+        ImGuiWindow* menu = ctx->WindowInfo("//$FOCUSED").Window;
+        IM_CHECK(menu != NULL);
+        IM_CHECK_LT(menu->Size.y, menu->Viewport->Size.y);
+#endif
+    };
+#endif
+
 #if IMGUI_VERSION_NUM >= 19067
     // ## Test ImGuiChildFlags_ResizeX
     t = IM_REGISTER_TEST(e, "window", "window_child_resize");
@@ -6220,6 +6264,31 @@ void RegisterTests_TestEngine(ImGuiTestEngine* e)
         ctx->WindowResize("", ImVec2(50, 200));
         ctx->MenuClick("SECOND_MENU/Item");
     };
+
+    // ## Test accessing items in a child window which is not visible
+    // FIXME-TESTS: This is currently unsupported and should be!
+    // (e.g. the sequence "window_child_layout_maxsize" "window_child_resize" would break if using same window)
+#if IMGUI_BROKEN_TESTS
+    t = IM_REGISTER_TEST(e, "testengine", "testengine_hover_hidden_child");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImGui::BeginChild("Child1", ImVec2(200, 200), ImGuiChildFlags_Border);
+        ImGui::EndChild();
+        ImGui::SameLine();
+        ImGui::BeginChild("Child2", ImVec2(200, 200), ImGuiChildFlags_Border);
+        ImGui::Button("Button2");
+        ImGui::EndChild();
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ctx->SetRef("Test Window");
+        ctx->WindowResize("", ImVec2(100, 100));
+        ctx->SetRef(ctx->WindowInfo("//Test Window/Child2").Window);
+        ctx->ItemClick("Button2");
+    };
+#endif
 
     // ## Test basic use of ItemSelectReadValue();
     t = IM_REGISTER_TEST(e, "testengine", "testengine_select_read_value");
