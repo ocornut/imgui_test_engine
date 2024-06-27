@@ -5551,6 +5551,53 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
     };
 #endif
 
+#if IMGUI_VERSION_NUM >= 19084
+    // ## Test nested functions and Alpha values
+    t = IM_REGISTER_TEST(e, "widgets", "widgets_disabled_shortcuts");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        auto& vars = ctx->GenericVars;
+
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+
+        ImGui::BeginDisabled();
+
+        // Case 1: SetNextItemShortcut() within disabled block
+        ImGui::Text("Ctrl+S");
+        ImGui::SetNextItemShortcut(ImGuiMod_Ctrl | ImGuiKey_S);
+        if (ImGui::Button("Button"))                            // Buttons return true when clicked (most widgets return true when edited/activated)
+            vars.Count++;
+
+        // Case 2: Shortcut() within disabled block
+        ImGui::Text("Ctrl+T");
+        if (ImGui::Shortcut(ImGuiMod_Ctrl | ImGuiKey_T))
+            vars.Count++;
+        ImGui::EndDisabled();
+
+        // Case 3: SetNextItemShortcut() NOT within disabled block but with disabled item
+        // this will generally be handled by the 'if (g.LastItemData.InFlags & ImGuiItemFlags_Disabled)' check in ItemHandleShortcut()
+        ImGui::SetNextItemShortcut(ImGuiMod_Ctrl | ImGuiKey_U);
+        if (ImGui::Selectable("Ctrl+U", false, ImGuiSelectableFlags_Disabled))
+            vars.Count++;
+
+        ImGui::Text("Counter = %d", vars.Count);
+
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        auto& vars = ctx->GenericVars;
+        ctx->SetRef("Test Window");
+        ctx->WindowFocus("");
+        ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_S);
+        IM_CHECK(vars.Count == 0);
+        ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_T);
+        IM_CHECK(vars.Count == 0);
+        ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_U);
+        IM_CHECK(vars.Count == 0);
+    };
+#endif
+
     // ## Test SetItemUsingMouseWheel() preventing scrolling.
     t = IM_REGISTER_TEST(e, "widgets", "widgets_item_using_mouse_wheel");
     t->GuiFunc = [](ImGuiTestContext* ctx)
