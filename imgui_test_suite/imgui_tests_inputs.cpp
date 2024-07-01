@@ -44,6 +44,29 @@ void RegisterTests_Inputs(ImGuiTestEngine* e)
 {
     ImGuiTest* t = NULL;
 
+    // ## Test io.WantCaptureMouse button on frame where a button that's not owned by imgui is released (#1392)
+    t = IM_REGISTER_TEST(e, "inputs", "inputs_io_capture_on_release_not_owned");
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiContext& g = *GImGui;
+        ctx->MouseMoveToVoid();
+        ctx->MouseDown(0);
+        IM_CHECK_EQ(g.IO.WantCaptureMouse, false);
+        IM_CHECK_EQ(g.ActiveId, 0u);
+
+        ctx->MouseMove("Dear ImGui Demo", ImGuiTestOpFlags_NoCheckHoveredId);
+        IM_CHECK_EQ(g.IO.WantCaptureMouse, false);
+        IM_CHECK_EQ(g.ActiveId, 0u);
+
+        ctx->MouseUp(0); // Include a yield
+#if IMGUI_BROKEN_TESTS // Test bug reported by #1392
+        IM_CHECK_EQ(g.IO.WantCaptureMouse, false);
+#endif
+
+        ctx->Yield();
+        IM_CHECK_EQ(g.IO.WantCaptureMouse, true);
+    };
+
     // ## Test input queue trickling
     t = IM_REGISTER_TEST(e, "inputs", "inputs_io_inputqueue");
     t->GuiFunc = [](ImGuiTestContext* ctx)
