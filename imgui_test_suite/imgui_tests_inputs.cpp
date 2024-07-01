@@ -59,7 +59,7 @@ void RegisterTests_Inputs(ImGuiTestEngine* e)
         IM_CHECK_EQ(g.ActiveId, 0u);
 
         ctx->MouseUp(0); // Include a yield
-#if IMGUI_BROKEN_TESTS // Test bug reported by #1392
+#if IMGUI_VERSION_NUM >= 19085 // Test bug reported by #1392
         IM_CHECK_EQ(g.IO.WantCaptureMouse, false);
 #endif
 

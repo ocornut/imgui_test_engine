@@ -5526,8 +5526,13 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         IM_CHECK_FLOAT_EQ_EPS(ImGui::GetStyle().Alpha, 1.0f * 0.4f);
 
         ImGui::Begin("Nested window call");
-        IM_CHECK((g.CurrentItemFlags& ImGuiItemFlags_Disabled) == 0);
+#if IMGUI_VERSION_NUM >= 19085
+        IM_CHECK((g.CurrentItemFlags & ImGuiItemFlags_Disabled) != 0);
+        IM_CHECK_FLOAT_NE_EPS(ImGui::GetStyle().Alpha, 1.0f);
+#else
+        IM_CHECK((g.CurrentItemFlags & ImGuiItemFlags_Disabled) == 0);
         IM_CHECK_FLOAT_EQ_EPS(ImGui::GetStyle().Alpha, 1.0f);
+#endif
 
         ImGui::End();
         IM_CHECK((g.CurrentItemFlags & ImGuiItemFlags_Disabled) != 0);

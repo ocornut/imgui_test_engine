@@ -5,6 +5,9 @@ CHANGELOG
    Those changes are not all listed here.
 ** For a while this is going to ONLY INCLUDE BREAKING CHANGES.
 
+2024/07/01:
+- TestEngine: added helper IM_CHECK_FLOAT_NE_EPS() macro.
+
 2024/06/06:
 - TestEngine: WindowInfo() with ImGuiTestOpFlags_NoError doesn't spew error
   messages in log. (#52)
