@@ -2,18 +2,18 @@
 
 Automation system for [Dear ImGui](https://github.com/ocornut/imgui) and applications/games/engines using Dear ImGui.
 
-Because Dear ImGui tends to be wired in low-level subsystems within your codebase, you can leverage that to automate actions interacting with them. 
+Because Dear ImGui tends to be wired in many low-level subsystems within your codebase, you can leverage that to automate actions interacting with them. It may be a very efficient solution to automate and tests many things (engine systems etc.).
 
 ## Contents
 
 - [imgui_test_engine/](https://github.com/ocornut/imgui_test_engine/tree/main/imgui_test_engine): dear imgui test engine / automation system (library)
-- [imgui_test_suite/](https://github.com/ocornut/imgui_test_engine/tree/main/imgui_test_suite): dear imgui test suite (application)
+- [imgui_test_suite/](https://github.com/ocornut/imgui_test_engine/tree/main/imgui_test_suite): dear imgui test suite (app)
 - [app_minimal/](https://github.com/ocornut/imgui_test_engine/tree/main/app_minimal): minimal demo app showcasing how to integrate the test engine (app)
 - [shared/](https://github.com/ocornut/imgui_test_engine/tree/main/shared): shared C++ helpers for apps
 
 ## Don't blink
 
-Running Dear ImGui Test Suite, in Fast Mode, in a visible window:
+Running Dear ImGui Test Suite, in Fast Mode, with full rendering enabled:
 
 https://user-images.githubusercontent.com/8225057/182409619-cd3bf990-b383-4a6c-a6ba-c5afe7557d6c.mp4
 
