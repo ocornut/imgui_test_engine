@@ -5442,11 +5442,15 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
         ctx->WindowResize("", backup_size);
 
         // Flex the popup showing in "Circle Tessellation Max Error" (note that style modifications are restored at end of test)
-        ctx->ItemOpen("Configuration");
-        ctx->ItemOpen("Style");
+#if IMGUI_VERSION_NUM >= 19091
+        ctx->MenuCheck("//Dear ImGui Demo/Tools/Style Editor");
+        ctx->SetRef("Dear ImGui Style Editor");
+        //ctx->ItemOpen("Configuration");
+        //ctx->ItemOpen("Style");
         ctx->ItemClick("**/Rendering");
         ctx->ItemInputValue("**/Circle Tessellation Max Error", 1.5f);
         ctx->ItemInputValue("**/Circle Tessellation Max Error", 1.25f);
+#endif
     };
 
     t = IM_REGISTER_TEST(e, "demo", "demo_cov_apps");
