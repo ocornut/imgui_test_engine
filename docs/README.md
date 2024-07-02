@@ -65,4 +65,4 @@ See [Wiki](https://github.com/ocornut/imgui_test_engine/wiki) sections:
 ## Licenses
 
 - The [imgui_test_engine/](https://github.com/ocornut/imgui_test_engine/tree/main/imgui_test_engine) folder is under the [Dear ImGui Test Engine License](https://github.com/ocornut/imgui_test_engine/blob/main/imgui_test_engine/LICENSE.txt).<BR>TL;DR: free for individuals, educational, open-source and small businesses uses. Paid for larger businesses. Read license for details. License sales to larger businesses are used to fund and sustain the development of Dear ImGui.
-- Other folders are all under the [MIT License](https://github.com/ocornut/imgui_test_engine/blob/main/imgui_test_suite/LICENSE.txt).
+- The [imgui_test_suite/](https://github.com/ocornut/imgui_test_engine/tree/main/imgui_test_suite) folder and all other folders are all under the [MIT License](https://github.com/ocornut/imgui_test_engine/blob/main/imgui_test_suite/LICENSE.txt).
