@@ -4702,6 +4702,42 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
     };
 #endif
 
+    t = IM_REGISTER_TEST(e, "widgets", "widgets_multiselect_batch_requests");
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiSelectionBasicStorage selection;
+
+        ImGuiMultiSelectIO io;
+        io.ItemsCount = 100;
+        for (int idx = 90; idx >= 10; idx -= 10)
+            io.Requests.push_back({ ImGuiSelectionRequestType_SetRange, true, +1, idx, idx });
+        selection.ApplyRequests(&io);
+        IM_CHECK_EQ(selection.Size, 9);
+        io.Requests.clear();
+        io.Requests.push_back({ ImGuiSelectionRequestType_SetRange, false, +1, 60, 60 });
+        selection.ApplyRequests(&io);
+        IM_CHECK_EQ(selection.Size, 8);
+
+        io.Requests.clear();
+        io.Requests.push_back({ ImGuiSelectionRequestType_SetRange, true, +1, 12, 15 });
+        selection.ApplyRequests(&io);
+        IM_CHECK_EQ(selection.Size, 8 + 4);
+        io.Requests.clear();
+        io.Requests.push_back({ ImGuiSelectionRequestType_SetRange, false, +1, 12, 15 });
+        selection.ApplyRequests(&io);
+        IM_CHECK_EQ(selection.Size, 8);
+
+        // Multiple set ranges (emulates what BoxSelect can do)
+        io.Requests.clear();
+        io.Requests.push_back({ ImGuiSelectionRequestType_SetRange, false, +1, 12, 15 }); // Need no effect
+        io.Requests.push_back({ ImGuiSelectionRequestType_SetRange, false, +1, 12, 15 }); // Need duplicates
+        io.Requests.push_back({ ImGuiSelectionRequestType_SetRange, true, +1, 25, 25 });
+        io.Requests.push_back({ ImGuiSelectionRequestType_SetRange, false, +1, 40, 40 });
+        io.Requests.push_back({ ImGuiSelectionRequestType_SetRange, true, +1, 65, 65 });
+        selection.ApplyRequests(&io);
+        IM_CHECK_EQ(selection.Size, 8 + 2 - 1);
+    };
+
     // ## Basic test for GetTypingSelectRequest()
     // Technically this API doesn't require MultiSelect but it's easier for us to reuse that code.
     // (under IMGUI_HAS_MULTI_SELECT as we also use this API + vars)
