@@ -831,7 +831,7 @@ void RegisterTests_Inputs(ImGuiTestEngine* e)
         if (ImGui::BeginPopup("Popup"))
         {
             // Will take ownership on mouse down aka frame of double-click
-            if (ImGui::Selectable("Front", false, ImGuiSelectableFlags_DontClosePopups | ImGuiSelectableFlags_AllowDoubleClick, ImVec2(200, 200)))
+            if (ImGui::Selectable("Front", false, ImGuiSelectableFlags_NoAutoClosePopups | ImGuiSelectableFlags_AllowDoubleClick, ImVec2(200, 200)))
                 if (ImGui::IsMouseDoubleClicked(0))
                     ImGui::CloseCurrentPopup();
             ImGui::EndPopup();

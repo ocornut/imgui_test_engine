@@ -1959,9 +1959,9 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
         out_widget("Item1", 1);
         if (vars.Step == 1)
             IM_CHECK(!ImGui::IsItemVisible());
-        ImGui::PushTabStop(false);
+        ImGui::PushItemFlag(ImGuiItemFlags_NoTabStop, true);
         out_widget("Item2", 2);
-        ImGui::PopTabStop();
+        ImGui::PopItemFlag();
         out_widget("Item3", 3);
         out_widget("Item4", 4);
 
@@ -2192,11 +2192,11 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
         }
         else if (vars.Step == 7)
         {
-            ImGui::PushTabStop(false);
+            ImGui::PushItemFlag(ImGuiItemFlags_NoTabStop, true);
             ImGui::SetKeyboardFocusHere();
             ImGui::InputText("Text1", vars.Str1, IM_ARRAYSIZE(vars.Str1));
             vars.Status.QuerySet();
-            ImGui::PopTabStop();
+            ImGui::PopItemFlag();
         }
         else if (vars.Step == 8)
         {
