@@ -424,6 +424,10 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         {
             for (int data_type = 0; data_type < ImGuiDataType_COUNT; data_type++)
             {
+#if IMGUI_VERSION_NUM >= 19094
+                if (data_type == ImGuiDataType_Bool)
+                    continue;
+#endif
                 size_t data_size = ImGui::DataTypeGetInfo(data_type)->Size;
                 IM_ASSERT(data_size + 2 <= sizeof(vars.data_storage));
                 memset(vars.data_storage, 0, sizeof(vars.data_storage));
@@ -4956,6 +4960,10 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
         for (ImGuiDataType data_type = 0; data_type < ImGuiDataType_COUNT; data_type++)
         {
+#if IMGUI_VERSION_NUM >= 19094
+            if (data_type == ImGuiDataType_Bool)
+                continue;
+#endif
             const ImGuiDataTypeInfo* data_type_info = ImGui::DataTypeGetInfo(data_type);
             for (int invert_range = 0; invert_range < 2; invert_range++)
             {
@@ -4987,6 +4995,10 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ctx->SetRef("Test Window");
         for (int data_type = 0; data_type < ImGuiDataType_COUNT; data_type++)
         {
+#if IMGUI_VERSION_NUM >= 19094
+            if (data_type == ImGuiDataType_Bool)
+                continue;
+#endif
             for (int invert_range = 0; invert_range < 2; invert_range++)
             {
                 auto& v = vars.Values[data_type];
