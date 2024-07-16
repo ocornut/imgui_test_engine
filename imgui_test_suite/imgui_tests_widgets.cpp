@@ -724,6 +724,10 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         IM_CHECK(vars.Bool2 == true);
     };
 
+#if IMGUI_VERSION_NUM < 19094
+#define ImGuiItemFlags_Default_ ImGuiItemFlags_None
+#endif
+
     // ## Test inheritance of ItemFlags
     t = IM_REGISTER_TEST(e, "widgets", "widgets_item_flags_stack");
     t->GuiFunc = [](ImGuiTestContext* ctx)

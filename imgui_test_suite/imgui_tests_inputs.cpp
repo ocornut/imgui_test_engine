@@ -818,6 +818,10 @@ void RegisterTests_Inputs(ImGuiTestEngine* e)
         ImGui::End();
     };
 
+#if IMGUI_VERSION_NUM < 19094
+#define ImGuiSelectableFlags_NoAutoClosePopups ImGuiSelectableFlags_DontClosePopups
+#endif
+
     // ## Test release event of a Selectable() in a popup from being caught by parent window
     t = IM_REGISTER_TEST(e, "inputs", "inputs_owner_popup_overlap");
     t->GuiFunc = [](ImGuiTestContext* ctx)
