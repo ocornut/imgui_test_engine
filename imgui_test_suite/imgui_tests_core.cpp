@@ -4070,7 +4070,7 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
     // ## Test ImGuiListClipper basic behavior
     // ## Test ImGuiListClipper with table frozen rows
     t = IM_REGISTER_TEST(e, "misc", "misc_clipper");
-    struct ClipperTestVars { ImGuiWindow* WindowOut = NULL; float WindowHeightInItems = 10.0f; int ItemsIn = 100; int ItemsOut = 0; int ForceDisplayStart = 0, ForceDisplayEnd = 0; float OffsetY = 0.0f; ImBitVector ItemsOutMask; bool ClipperManualItemHeight = true; bool TableEnable = false; int TableFreezeRows = 0; };
+    struct ClipperTestVars { ImGuiWindow* WindowOut = NULL; float WindowHeightInItems = 10.0f; int ItemsIn = 100; int ItemsOut = 0; int ForceDisplayStart = 0, ForceDisplayEnd = 0; float OffsetY = 0.0f; ImBitVector ItemsOutMask; bool ClipperManualItemHeight = true; bool ClipperUnknownItemsCount = false; bool TableEnable = false; int TableFreezeRows = 0; };
     t->SetVarsDataType<ClipperTestVars>();
     auto ClipperGuiFunc = [](ImGuiTestContext* ctx)
     {
@@ -4083,6 +4083,7 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
             ImGui::Checkbox("TableEnable", &vars.TableEnable);
             ImGui::SliderInt("TableFreezeRows", &vars.TableFreezeRows, 0, 3);
             ImGui::Checkbox("ClipperManualItemHeight", &vars.ClipperManualItemHeight);
+            ImGui::Checkbox("ClipperUnknownItemsCount", &vars.ClipperUnknownItemsCount);
             ImGui::End();
         }
 
@@ -4105,11 +4106,16 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
             vars.ItemsOutMask.Create(vars.ItemsIn);
 
             float start_y = ImGui::GetCursorScreenPos().y;
+            int items_count_passed_to_clipper = vars.ItemsIn;
+#if IMGUI_VERSION_NUM >= 19095
+            if (vars.ClipperUnknownItemsCount)
+                items_count_passed_to_clipper = INT_MAX;
+#endif
             ImGuiListClipper clipper;
             if (vars.ClipperManualItemHeight)
-                clipper.Begin(vars.ItemsIn, ImGui::GetTextLineHeightWithSpacing());
+                clipper.Begin(items_count_passed_to_clipper, ImGui::GetTextLineHeightWithSpacing());
             else
-                clipper.Begin(vars.ItemsIn);
+                clipper.Begin(items_count_passed_to_clipper);
 #if IMGUI_VERSION_NUM >= 18984
             if (vars.ForceDisplayStart != vars.ForceDisplayEnd)
                 clipper.IncludeItemsByIndex(vars.ForceDisplayStart, vars.ForceDisplayEnd);
@@ -4135,6 +4141,10 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
             vars.OffsetY = ImGui::GetCursorScreenPos().y - start_y;
 
             clipper.End(); // Extraneous call
+#if IMGUI_VERSION_NUM >= 19095
+            if (vars.ClipperUnknownItemsCount)
+                clipper.SeekCursorForItem(vars.ItemsIn);
+#endif
 
             if (vars.TableEnable)
                 ImGui::EndTable();
@@ -4148,25 +4158,27 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
         auto& vars = ctx->GetVars<ClipperTestVars>();
         float item_height = ImGui::GetTextLineHeightWithSpacing(); // EXPECTED item height
 
-        int step_count = 5;
-        for (int clipper_step = 0; clipper_step < 2; clipper_step++)
-            for (int step = 0; step < step_count; step++)
+        int contents_step_count = 5;
+        for (int clipper_step = 0; clipper_step < 3; clipper_step++)
+            for (int contents_step = 0; contents_step < contents_step_count; contents_step++)
             {
                 vars.ClipperManualItemHeight = (clipper_step == 1);
-                vars.TableEnable = (step > 1);
-                vars.TableFreezeRows = (step == 3) ? 1 : (step == 4) ? 2 : 0;
+                vars.ClipperUnknownItemsCount = (clipper_step == 3);
+
+                vars.TableEnable = (contents_step > 1);
+                vars.TableFreezeRows = (contents_step == 3) ? 1 : (contents_step == 4) ? 2 : 0;
                 vars.ForceDisplayStart = vars.ForceDisplayEnd = 0;
                 vars.ItemsIn = 100;
                 int extra_forced_items = 0;
 #if IMGUI_VERSION_NUM >= 18509
-                if (step == 1)
+                if (contents_step == 1)
                 {
                     extra_forced_items = 2;
                     vars.ForceDisplayStart = 15;
                     vars.ForceDisplayEnd = 15 + extra_forced_items;
                 }
 #endif
-                ctx->LogInfo("## Step %d, Table=%d, TableFreezeRows=%d, ClipperManualItemHeight=%d", step, vars.TableEnable, vars.TableFreezeRows, vars.ClipperManualItemHeight);
+                ctx->LogInfo("## Step %d-%d, Table=%d, TableFreezeRows=%d, ClipperManualItemHeight=%d UnknownItemsCount=%d", clipper_step, contents_step, vars.TableEnable, vars.TableFreezeRows, vars.ClipperManualItemHeight, vars.ClipperUnknownItemsCount);
 
                 ctx->Yield();
                 ctx->Yield();
