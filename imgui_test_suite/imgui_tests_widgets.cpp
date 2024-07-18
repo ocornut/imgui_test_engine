@@ -30,6 +30,10 @@
 #pragma GCC diagnostic ignored "-Wunused-parameter"
 #endif
 
+#if IMGUI_VERSION_NUM >= 19096
+#define IMGUI_HAS_MULTISELECT
+#endif
+
 //-------------------------------------------------------------------------
 // Ideas/Specs for future tests
 // It is important we take the habit to write those down.
@@ -1974,7 +1978,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         int                     ToggleCount = 0;
         int                     DragSourceCount = 0;
         ImGuiTreeNodeFlags      TreeNodeFlags = 0;
-#ifdef IMGUI_HAS_MULTI_SELECT
+#ifdef IMGUI_HAS_MULTISELECT
         ImGuiMultiSelectFlags   MultiSelectFlags = 0;
 #endif
     };
@@ -1994,7 +1998,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         }
         vars.Reset = false;
 
-#ifdef IMGUI_HAS_MULTI_SELECT
+#ifdef IMGUI_HAS_MULTISELECT
         ImGui::Text("TreeNodeFlags: 0x%08X, MultiSelect: %d (flags=%08X)", vars.TreeNodeFlags, vars.IsMultiSelect, vars.MultiSelectFlags);
         ImGui::CheckboxFlags("ImGuiTreeNodeFlags_OpenOnArrow", &vars.TreeNodeFlags, ImGuiTreeNodeFlags_OpenOnArrow);
         ImGui::CheckboxFlags("ImGuiTreeNodeFlags_OpenOnDoubleClick", &vars.TreeNodeFlags, ImGuiTreeNodeFlags_OpenOnDoubleClick);
@@ -2028,7 +2032,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         if (ImGui::TreeNodeEx("BBB", vars.TreeNodeFlags))
             ImGui::TreePop();
 
-#ifdef IMGUI_HAS_MULTI_SELECT
+#ifdef IMGUI_HAS_MULTISELECT
         if (vars.IsMultiSelect)
             ImGui::EndMultiSelect();
 #endif
@@ -2040,7 +2044,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         TreeNodeTestVars& vars = ctx->GetVars<TreeNodeTestVars>();
         ctx->SetRef("Test Window");
 
-#ifdef IMGUI_HAS_MULTI_SELECT
+#ifdef IMGUI_HAS_MULTISELECT
         int step_count = 3;
 #else
         int step_count = 1;
@@ -2049,7 +2053,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         for (int step_n = 0; step_n < step_count; step_n++)
         {
             vars.IsMultiSelect = (step_n == 1 || step_n == 2);
-#ifdef IMGUI_HAS_MULTI_SELECT
+#ifdef IMGUI_HAS_MULTISELECT
             vars.MultiSelectFlags = (step_n == 1 ? ImGuiMultiSelectFlags_SelectOnClickRelease : ImGuiMultiSelectFlags_SelectOnClick);
 #endif
 
@@ -3874,7 +3878,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         IM_CHECK_EQ(g.NavId, ctx->GetID("##Menu_01/Item 3"));
     };
 
-#ifdef IMGUI_HAS_MULTI_SELECT
+#ifdef IMGUI_HAS_MULTISELECT
 
     static const char* ExampleNames[] =
     {
@@ -4770,7 +4774,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
 
     // ## Basic test for GetTypingSelectRequest()
     // Technically this API doesn't require MultiSelect but it's easier for us to reuse that code.
-    // (under IMGUI_HAS_MULTI_SELECT as we also use this API + vars)
+    // (under IMGUI_HAS_MULTISELECT as we also use this API + vars)
     t = IM_REGISTER_TEST(e, "widgets", "widgets_typingselect");
     t->SetVarsDataType<MultiSelectTestVars>();
     struct TypingSelectTestFuncs
@@ -4869,7 +4873,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ctx->Yield();
         IM_CHECK(vars.Selection0.Size == 1 && vars.Selection0.Contains(2));
     };
-#endif // #ifdef IMGUI_HAS_MULTI_SELECT
+#endif // #ifdef IMGUI_HAS_MULTISELECT
 
     // ## Test Selectable() with ImGuiSelectableFlags_SpanAllColumns inside Columns()
     t = IM_REGISTER_TEST(e, "widgets", "widgets_selectable_span_all_columns");

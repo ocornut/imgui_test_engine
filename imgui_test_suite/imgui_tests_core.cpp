@@ -34,6 +34,9 @@
 static inline bool operator==(const ImVec2& lhs, const ImVec2& rhs)     { return lhs.x == rhs.x && lhs.y == rhs.y; }    // for IM_CHECK_EQ()
 static inline bool operator!=(const ImVec2& lhs, const ImVec2& rhs)     { return lhs.x != rhs.x || lhs.y != rhs.y; }    // for IM_CHECK_NE()
 #endif
+#if IMGUI_VERSION_NUM >= 19096
+#define IMGUI_HAS_MULTISELECT
+#endif
 
 //-------------------------------------------------------------------------
 // Ideas/Specs for future tests
@@ -3833,7 +3836,7 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
         ImGui::PushFont(ImGui::GetFont());
 #endif
         ImGui::BeginGroup();
-#ifdef IMGUI_HAS_MULTI_SELECT
+#ifdef IMGUI_HAS_MULTISELECT
         ImGui::BeginMultiSelect(ImGuiMultiSelectFlags_None);
 #endif
 #if IMGUI_VERSION_NUM >= 18415
