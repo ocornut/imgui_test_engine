@@ -1418,45 +1418,42 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
     t = IM_REGISTER_TEST(e, "nav", "nav_flattened");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
-        ImGui::Begin("Window 1", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
-
-        const auto& output_item = [](const char* label) { ImGui::Button(label); };
-        //const auto& output_item = [](const char* label) { static char buf[32]; ImGui::SetNextItemWidth(ImGui::GetFontSize() * 5); ImGui::InputText(label, buf, 32); };
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
 
         ImGui::BeginGroup();
-        output_item("Button 1");
-        output_item("Button 2");
-        output_item("Button 3");
+        ImGui::Button("Button 1");
+        ImGui::Button("Button 2");
+        ImGui::Button("Button 3");
         ImGui::EndGroup();
 
         ImGui::SameLine();
         ImGui::BeginChild("Child 1", ImVec2(200, 200), ImGuiChildFlags_NavFlattened);
-        output_item("Child 1 Button 1");
-        output_item("Child 1 Button 2");
-        output_item("Child 1 Button 3");
+        ImGui::Button("Child 1 Button 1");
+        ImGui::Button("Child 1 Button 2");
+        ImGui::Button("Child 1 Button 3");
         ImGui::EndChild();
 
         ImGui::SameLine();
         ImGui::BeginChild("Child 2", ImVec2(200, 200), ImGuiChildFlags_NavFlattened);
-        output_item("Child 2 Button 1");
-        output_item("Child 2 Button 2");
-        output_item("Child 2 Button 3");
+        ImGui::Button("Child 2 Button 1");
+        ImGui::Button("Child 2 Button 2");
+        ImGui::Button("Child 2 Button 3");
         ImGui::EndChild();
 
         ImGui::SameLine();
         ImGui::BeginChild("Child 3", ImVec2(200, 200), ImGuiChildFlags_NavFlattened);
         ImGui::BeginChild("Child 3B", ImVec2(0, 0), ImGuiChildFlags_NavFlattened);
-        output_item("Child 3B Button 1");
-        output_item("Child 3B Button 2");
-        output_item("Child 3B Button 3");
+        ImGui::Button("Child 3B Button 1");
+        ImGui::Button("Child 3B Button 2");
+        ImGui::Button("Child 3B Button 3");
         ImGui::EndChild();
         ImGui::EndChild();
 
         // FIXME-NAV: To test PageUp/PageDown/Home/End later
         //ImGui::BeginChild("Child 4", ImVec2(200, 200), ImGuiChildFlags_NavFlattened);
-        //output_item("Child 4 Button 1");
-        //output_item("Child 4 Button 2");
-        //output_item("Child 4 Button 3");
+        //ImGui::Button("Child 4 Button 1");
+        //ImGui::Button("Child 4 Button 2");
+        //ImGui::Button("Child 4 Button 3");
         //ImGui::EndChild();
 
         ImGui::End();
@@ -1465,10 +1462,13 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
     {
         ImGuiContext& g = *ctx->UiContext;
 
+        // Auto fit
+        ctx->WindowResize("//Test Window", ImVec2(0.0f, 0.0f));
+
         // Navigating in child
-        IM_CHECK_EQ(g.NavId, ctx->GetID("Window 1/Button 1"));
+        IM_CHECK_EQ(g.NavId, ctx->GetID("//Test Window/Button 1"));
         ctx->KeyPress(ImGuiKey_DownArrow);
-        IM_CHECK_EQ(g.NavId, ctx->GetID("Window 1/Button 2"));
+        IM_CHECK_EQ(g.NavId, ctx->GetID("//Test Window/Button 2"));
         ctx->KeyPress(ImGuiKey_RightArrow);
 
         // Parent -> Child
@@ -1479,7 +1479,7 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
         // Child -> Parent
         ctx->KeyPress(ImGuiKey_LeftArrow);
         ctx->KeyPress(ImGuiKey_DownArrow);
-        IM_CHECK_EQ(g.NavId, ctx->GetID("Window 1/Button 2"));
+        IM_CHECK_EQ(g.NavId, ctx->GetID("//Test Window/Button 2"));
 
         // Parent -> Child -> Child
         ctx->KeyPress(ImGuiKey_RightArrow);
@@ -1489,6 +1489,13 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
         // Child -> nested Child
         ctx->KeyPress(ImGuiKey_RightArrow);
         IM_CHECK_EQ(g.NavId, ctx->GetID("//$FOCUSED/Child 3B Button 2"));
+
+        // Test focus loss + restore by clicking on resize grip
+#if IMGUI_VERSION_NUM >= 19098
+        ImGuiWindow* window = ctx->GetWindowByRef("//Test Window");
+        ctx->ItemClick(ImGui::GetWindowResizeCornerID(window, 0));
+        IM_CHECK_EQ(g.NavId, ctx->GetID("//$FOCUSED/Child 3B Button 2"));
+#endif
 
         // FIXME: test PageUp/PageDown on child
     };
