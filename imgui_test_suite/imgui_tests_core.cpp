@@ -3389,6 +3389,42 @@ void RegisterTests_Layout(ImGuiTestEngine* e)
 
         ImGui::End();
     };
+
+    // ## Test EndGroup() function compensating for BeginTable(...,(0,0))...EndTable() and others undershooting with CursorMaxPos report. (#7543)
+    t = IM_REGISTER_TEST(e, "layout", "layout_group_endtable");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        for (int step = 0; step < 2; step++)
+        {
+            ImGui::SetNextWindowSize(ImVec2(500, 500));
+            ImGui::Begin(Str30f("Test Window %d", step).c_str(), NULL, ImGuiWindowFlags_NoSavedSettings);
+            ImVec2 avail = ImGui::GetContentRegionAvail();
+            ImGui::BeginGroup();
+
+            // Y behavior for non-scrolling table is rightly different between < 0.0f and == 0.0f
+            ImVec2 table_outer_size = (step == 0) ? ImVec2(-100, -100) : ImVec2(0.0f, 0.0f);
+            ImVec2 expected_size = (step == 0) ? ImVec2(avail.x - 100.0f, avail.y - 100.0f) : ImVec2(avail.x, ImGui::GetTextLineHeight() + ImGui::GetStyle().CellPadding.y * 2.f);
+
+            if (ImGui::BeginTable("table", 2, ImGuiTableFlags_Borders, table_outer_size))
+            {
+                ImGui::TableNextColumn();
+                ImGui::Text("Hello");
+                ImGui::TableNextColumn();
+                ImGui::Text("World");
+                ImGui::EndTable();
+                ImGui::DebugDrawItemRect();
+                IM_CHECK_EQ(expected_size.x, ImGui::GetItemRectSize().x);
+                IM_CHECK_EQ(expected_size.y, ImGui::GetItemRectSize().y);
+            }
+            ImGui::EndGroup();
+#if IMGUI_VERSION_NUM >= 19099
+            IM_CHECK_EQ(expected_size.x, ImGui::GetItemRectSize().x); // Fixed by #7543
+            IM_CHECK_EQ(expected_size.y, ImGui::GetItemRectSize().y); // "
+#endif
+            ImGui::End();
+        }
+    };
+
 }
 
 //-------------------------------------------------------------------------
