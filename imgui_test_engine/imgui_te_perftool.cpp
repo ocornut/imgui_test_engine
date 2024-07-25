@@ -1162,10 +1162,7 @@ void ImGuiPerfTool::ShowPerfToolWindow(ImGuiTestEngine* engine, bool* p_open)
         ImGui::SetTooltip("Generate a report and open it in the browser.");
 
     // Align help button to the right.
-    float help_pos = ImGui::GetWindowContentRegionMax().x - style.FramePadding.x * 2 - ImGui::CalcTextSize("(?)").x;
-    if (help_pos > ImGui::GetCursorPosX())
-        ImGui::SetCursorPosX(help_pos);
-
+    ImGui::SetCursorPosX(ImGui::GetCursorPosX() + ImMax(0.0f, ImGui::GetContentRegionAvail().x - ImGui::CalcTextSize("(?)").x));
     ImGui::TextDisabled("(?)");
     if (ImGui::IsItemHovered())
     {

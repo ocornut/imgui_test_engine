@@ -327,7 +327,7 @@ static void ShowTestGroup(ImGuiTestEngine* e, ImGuiTestGroup group, Str* filter)
 
     ImGui::SameLine();
     const char* perflog_label = "Perf Tool";
-    float filter_width = ImGui::GetWindowContentRegionMax().x - ImGui::GetCursorPos().x;
+    float filter_width = ImGui::GetContentRegionAvail().x;
     float perf_stress_factor_width = (30 * dpi_scale);
     if (group == ImGuiTestGroup_Perfs)
     {
