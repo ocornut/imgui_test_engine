@@ -4678,16 +4678,31 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ImGuiContext& g = *GImGui;
         ctx->MenuCheck("//Dear ImGui Demo/Examples/Assets Browser");
         ctx->SetRef("Example: Assets Browser");
+        ImGuiWindow* child_window = ctx->WindowInfo("Assets").Window;
+        IM_CHECK(child_window != NULL);
+
         ctx->WindowResize("", ImVec2(750, 600)); // FIXME: Calculated for 15 item wide (15 * 32) + (15-1+2) * 10 + Parent/Child Padding + Scrollbar
         ctx->MenuClick("File/Clear items");
         ctx->MenuClick("File/Add 10000 items");
+
+        // Zoom/unzoom
+        ctx->SetRef(child_window);
+        ctx->ItemClick("$$20");
+        ctx->KeyDown(ImGuiMod_Ctrl);
+        for (int n = 0; n < 10; n++)
+            ctx->MouseWheelY(-1.0f);
+        for (int n = 0; n < 10; n++)
+            ctx->MouseWheelY(+1.0f);
+        ctx->KeyUp(ImGuiMod_Ctrl);
+        ctx->KeyPress(ImGuiKey_Escape);
+
+        // Set specific option
+        ctx->SetRef("Example: Assets Browser");
         ctx->MenuAction(ImGuiTestAction_Open, "Options");
         ctx->ItemInputValue("//$FOCUSED/Icon Size", 32.0f);
         ctx->ItemInputValue("//$FOCUSED/Icon Spacing", 10);
         ctx->ItemInputValue("//$FOCUSED/Icon Hit Spacing", 4);
 
-        ImGuiWindow* child_window = ctx->WindowInfo("Assets").Window;
-        IM_CHECK(child_window != NULL);
         ctx->SetRef(child_window);
         ctx->ScrollToTop("");
         ImGuiMultiSelectState* ms_storage = ImGui::GetMultiSelectState(ctx->GetID(""));
@@ -4731,6 +4746,8 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ctx->SleepNoSkip(2.0f, 0.1f);
         ctx->MouseUp(0);
         IM_CHECK_GT(child_window->Scroll.y, 0.0f);
+
+        ctx->KeyPress(ImGuiKey_Escape);
 
         ctx->MenuUncheck("//Dear ImGui Demo/Examples/Assets Browser");
     };
