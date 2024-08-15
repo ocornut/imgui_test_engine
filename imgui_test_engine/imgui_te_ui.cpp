@@ -487,6 +487,16 @@ static void ShowTestGroup(ImGuiTestEngine* e, ImGuiTestGroup group, Str* filter)
                     e->IO.SrcFileOpenFunc(test->SourceFile, test->SourceLine, e->IO.SrcFileOpenUserData);
                 if (ImGui::MenuItem("View source...", NULL, false, test->SourceFile != NULL))
                     view_source = true;
+#ifdef _MSC_VER
+                if (ImGui::GetIO().ConfigDebugIsDebuggerPresent)
+                {
+                    if (ImGui::MenuItem("Debug output source...", NULL, false, test->SourceFile != NULL))
+                    {
+                        Str256f dbgbuf("%s(%d): Doubleclick me\n", test->SourceFile, test->SourceLine);
+                        ImOsOutputDebugString(dbgbuf.c_str());
+                    }
+                }
+#endif
 
                 if (group == ImGuiTestGroup_Perfs && ImGui::MenuItem("View perflog"))
                 {
