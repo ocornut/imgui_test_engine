@@ -362,47 +362,92 @@ void RegisterTests_Inputs(ImGuiTestEngine* e)
         IM_CHECK(io.InputQueueCharacters.Size == 0);
 
 #if IMGUI_VERSION_NUM >= 18709
-        const int INPUT_TEXT_STEPS = 2;
+        const int INPUT_TEXT_STEPS = 2; // test with and without active InputText()
 #else
         const int INPUT_TEXT_STEPS = 1;
 #endif
         for (int step = 0; step < INPUT_TEXT_STEPS; step++)
         {
-            vars.Bool1 = (step == 0); // Simulate activated InputText()
+            const bool is_input_text_active = (step == 1);
+            vars.Bool1 = is_input_text_active; // Simulate activated InputText()
             ctx->Yield();
 
-            // Key down | Char -> 2 frames when InputText() is active
-            // Key down, Char -> 1 frames otherwise
+            // Here we submit ImGuiKey_K vs 'L' but the fact that they match or not is not a problem.
+            // Should probably change them to match to avoid any doubt.
+
+            // Key down | MaybeChar-Char -> 1 frames when InputText() is active from IMGUI_VERSION_NUM >= 19102, 2 frames before
+            // Key down, MaybeChar-Char -> 1 frames otherwise
             io.AddKeyEvent(ImGuiKey_K, true);
             io.AddInputCharacter('L');
             ctx->Yield();
             IM_CHECK_EQ(ImGui::IsKeyDown(ImGuiKey_K), true);
-            if (step == 0)
+            if (is_input_text_active)
             {
+#if IMGUI_VERSION_NUM < 19102
                 IM_CHECK(io.InputQueueCharacters.Size == 0);
                 ctx->Yield();
+#endif
             }
             IM_CHECK(io.InputQueueCharacters.Size == 1 && io.InputQueueCharacters[0] == 'L');
             io.AddKeyEvent(ImGuiKey_K, false);
             ctx->Yield();
             IM_CHECK(io.InputQueueCharacters.Size == 0);
 
-            // Char | Key -> 2 frames when InputText() is active
-            // Char, Key -> 1 frame otherwise
+            // Char | MaybeChar-Key -> 2 frames when InputText() is active from IMGUI_VERSION_NUM >= 19102, 2 frames before
+            // Char, MaybeChar-Key -> 1 frame otherwise
             io.AddInputCharacter('L');
             io.AddKeyEvent(ImGuiKey_K, true);
             ctx->Yield();
             IM_CHECK(io.InputQueueCharacters.Size == 1 && io.InputQueueCharacters[0] == 'L');
-            if (step == 0)
+            if (is_input_text_active)
             {
+#if IMGUI_VERSION_NUM < 19102
                 IM_CHECK_EQ(ImGui::IsKeyDown(ImGuiKey_K), false);
                 ctx->Yield();
                 IM_CHECK(io.InputQueueCharacters.Size == 0);
+#endif
             }
             IM_CHECK_EQ(ImGui::IsKeyDown(ImGuiKey_K), true);
             ctx->Yield();
+            IM_CHECK(io.InputQueueCharacters.Size == 0);
             io.AddKeyEvent(ImGuiKey_K, false);
             ctx->Yield();
+
+#if IMGUI_VERSION_NUM >= 19102
+            // See #7889
+            // NonChar-Key down | Char -> 2 frames when InputText() is active
+            // NonChar-Key down, Char -> 1 frames otherwise
+            io.AddKeyEvent(ImGuiKey_LeftArrow, true);
+            io.AddInputCharacter('L');
+            ctx->Yield();
+            IM_CHECK_EQ(ImGui::IsKeyDown(ImGuiKey_LeftArrow), true);
+            if (is_input_text_active)
+            {
+                IM_CHECK(io.InputQueueCharacters.Size == 0);
+                ctx->Yield();
+            }
+            IM_CHECK(io.InputQueueCharacters.Size == 1 && io.InputQueueCharacters[0] == 'L');
+            io.AddKeyEvent(ImGuiKey_LeftArrow, false);
+            ctx->Yield();
+            IM_CHECK(io.InputQueueCharacters.Size == 0);
+
+            // Char | NonChar-Key -> 2 frames when InputText() is active
+            // Char, NonChar-Key -> 1 frame otherwise
+            io.AddInputCharacter('L');
+            io.AddKeyEvent(ImGuiKey_LeftArrow, true);
+            ctx->Yield();
+            IM_CHECK(io.InputQueueCharacters.Size == 1 && io.InputQueueCharacters[0] == 'L');
+            if (is_input_text_active)
+            {
+                IM_CHECK_EQ(ImGui::IsKeyDown(ImGuiKey_LeftArrow), false);
+                ctx->Yield();
+                IM_CHECK(io.InputQueueCharacters.Size == 0);
+            }
+            IM_CHECK_EQ(ImGui::IsKeyDown(ImGuiKey_LeftArrow), true);
+            ctx->Yield();
+            io.AddKeyEvent(ImGuiKey_LeftArrow, false);
+            ctx->Yield();
+#endif
         }
 
         // Key, KeyMods -> 1 frame
