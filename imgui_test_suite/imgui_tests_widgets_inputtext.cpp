@@ -1386,6 +1386,30 @@ void RegisterTests_WidgetsInputText(ImGuiTestEngine* e)
     };
 #endif
 
+    // Test refocusing while active (#4761, #7870), extra to "nav_focus_api"
+#if IMGUI_VERSION_NUM >= 19102
+    t = IM_REGISTER_TEST(e, "widgets", "widgets_inputtext_multiline_refocus");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiTestGenericVars& vars = ctx->GenericVars;
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+        if (ImGui::InputTextMultiline("Field", vars.Str1, IM_ARRAYSIZE(vars.Str1), ImVec2(), ImGuiInputTextFlags_CtrlEnterForNewLine | ImGuiInputTextFlags_EnterReturnsTrue))
+            ImGui::SetKeyboardFocusHere(-1);
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiContext& g = *ctx->UiContext;
+        ctx->SetRef("Test Window");
+        ImGuiID input_id = ctx->GetID("Field");
+        ctx->ItemClick("Field");
+        IM_CHECK_EQ(g.ActiveId, input_id);
+        ctx->KeyChars("Hello");
+        ctx->KeyPress(ImGuiKey_Enter);
+        IM_CHECK_EQ(g.ActiveId, input_id);
+    };
+#endif
+
 #if IMGUI_VERSION_NUM >= 18992
     // ## Test for Enter key in InputTextMultiline() used for both entering child and input
     t = IM_REGISTER_TEST(e, "widgets", "widgets_inputtext_multiline_enter");
