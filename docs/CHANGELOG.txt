@@ -5,6 +5,9 @@ CHANGELOG
    Those changes are not all listed here.
 ** For a while this is going to ONLY INCLUDE BREAKING CHANGES.
 
+2024/08/22
+- TestEngine: fixes for internal changes and ImGuiPlatformIO use in 1.91.1 WIP.
+
 2024/07/08:
 - TestEngine: fixes an issue browsing menus inside a popup not inside a menu-bar. (#43) [@peterigz]
 
