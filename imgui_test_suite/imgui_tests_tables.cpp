@@ -1377,7 +1377,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
         {
             ImGui::Text("table%d", n);
 
-            ImGui::BeginChild(Str30f("child%d", n).c_str(), ImVec2(-FLT_MIN, 100), ImGuiChildFlags_Border | ImGuiChildFlags_FrameStyle);
+            ImGui::BeginChild(Str30f("child%d", n).c_str(), ImVec2(-FLT_MIN, 100), ImGuiChildFlags_Borders | ImGuiChildFlags_FrameStyle);
             if (!vars.EmptyInside) // This affects EndChild() submission path
                 ImGui::Button("Button");
             ImGui::EndChild();

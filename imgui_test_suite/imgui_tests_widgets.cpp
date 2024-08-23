@@ -33,6 +33,9 @@
 #if IMGUI_VERSION_NUM >= 19096
 #define IMGUI_HAS_MULTISELECT
 #endif
+#if IMGUI_VERSION_NUM < 19104
+#define ImGuiChildFlags_Borders ImGuiChildFlags_Border
+#endif
 
 //-------------------------------------------------------------------------
 // Ideas/Specs for future tests
@@ -693,7 +696,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ImGuiTestGenericVars& vars = ctx->GenericVars;
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
 
-        ImGui::BeginChild("Child", ImVec2(100, 100), ImGuiChildFlags_Border);
+        ImGui::BeginChild("Child", ImVec2(100, 100), ImGuiChildFlags_Borders);
         vars.Pos = ImGui::GetCursorScreenPos();
         ImGui::Dummy(ImVec2(10, 10));
         ImGui::Button("button");

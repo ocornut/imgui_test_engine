@@ -412,7 +412,7 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
                 if (ImGui::BeginMenu("Submenu2"))
                 {
                     bool use_child = ctx->Test->ArgVariant == 1;
-                    if (!use_child || ImGui::BeginChild("Child", ImVec2(100.f, 30.f), ImGuiChildFlags_Border))
+                    if (!use_child || ImGui::BeginChild("Child", ImVec2(100.f, 30.f), ImGuiChildFlags_Borders))
                     {
                         if (ImGui::BeginTabBar("Tabs"))
                         {
@@ -586,7 +586,7 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
 
         ImGui::Begin("Window 2", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
         ImGui::Button("Button Out");
-        ImGui::BeginChild("Child", ImVec2(50, 50), ImGuiChildFlags_Border);
+        ImGui::BeginChild("Child", ImVec2(50, 50), ImGuiChildFlags_Borders);
         ImGui::Button("Button In");
         ImGui::EndChild();
         ImGui::End();
@@ -707,7 +707,7 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
         ImGui::End();
 
         ImGui::Begin("Window 2", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
-        ImGui::BeginChild("Child", ImVec2(50, 50), ImGuiChildFlags_Border);
+        ImGui::BeginChild("Child", ImVec2(50, 50), ImGuiChildFlags_Borders);
         ImGui::Button("Button 2");
         ImGui::EndChild();
         ImGui::End();
@@ -1066,7 +1066,7 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
         ImGui::Begin("Window 1", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
         ImGui::Button("Button 1");
         ImGui::Button("Button 2");
-        ImGui::BeginChild("Child", ImVec2(100, 100), ImGuiChildFlags_Border);
+        ImGui::BeginChild("Child", ImVec2(100, 100), ImGuiChildFlags_Borders);
         ImGui::Button("Button 3");
         ImGui::Button("Button 4");
         ImGui::EndChild();
@@ -1240,7 +1240,7 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
 
         // ...Unless flattened child
 #if IMGUI_VERSION_NUM >= 19002
-        ImGui::BeginChild("Child 3", ImVec2(100, 100), ImGuiChildFlags_Border | ImGuiChildFlags_NavFlattened);
+        ImGui::BeginChild("Child 3", ImVec2(100, 100), ImGuiChildFlags_Borders | ImGuiChildFlags_NavFlattened);
         IM_CHECK_EQ(ImGui::GetCurrentFocusScope(), focus_scope_id); // New child
         ImGui::EndChild();
 #endif
@@ -2095,7 +2095,7 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
         for (int n = 0; n < 4; n++)
             ImGui::InputInt(Str30f("Input%d", n).c_str(), &vars.Int1, 0, 0);
 
-        ImGui::BeginChild("Child 1", ImVec2(0, ImGui::GetFrameHeightWithSpacing() * 3), ImGuiChildFlags_Border | ImGuiChildFlags_NavFlattened);
+        ImGui::BeginChild("Child 1", ImVec2(0, ImGui::GetFrameHeightWithSpacing() * 3), ImGuiChildFlags_Borders | ImGuiChildFlags_NavFlattened);
         for (int n = 4; n < 8; n++)
             ImGui::InputInt(Str30f("Input%d", n).c_str(), &vars.Int1, 0, 0);
         ImGui::EndChild();
@@ -2103,10 +2103,10 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
         for (int n = 8; n < 10; n++)
             ImGui::InputInt(Str30f("Input%d", n).c_str(), &vars.Int1, 0, 0);
 
-        ImGui::BeginChild("Child 2", ImVec2(0, ImGui::GetFrameHeightWithSpacing() * 3), ImGuiChildFlags_Border | ImGuiChildFlags_NavFlattened);
+        ImGui::BeginChild("Child 2", ImVec2(0, ImGui::GetFrameHeightWithSpacing() * 3), ImGuiChildFlags_Borders | ImGuiChildFlags_NavFlattened);
         for (int n = 10; n < 14; n++)
             ImGui::InputInt(Str30f("Input%d", n).c_str(), &vars.Int1, 0, 0);
-        ImGui::BeginChild("Child 3", ImVec2(0, ImGui::GetFrameHeightWithSpacing() * 3), ImGuiChildFlags_Border | ImGuiChildFlags_NavFlattened);
+        ImGui::BeginChild("Child 3", ImVec2(0, ImGui::GetFrameHeightWithSpacing() * 3), ImGuiChildFlags_Borders | ImGuiChildFlags_NavFlattened);
         for (int n = 14; n < 18; n++)
             ImGui::InputInt(Str30f("Input%d", n).c_str(), &vars.Int1, 0, 0);
         ImGui::EndChild();

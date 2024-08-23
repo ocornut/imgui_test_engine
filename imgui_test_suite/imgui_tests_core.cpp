@@ -37,6 +37,9 @@ static inline bool operator!=(const ImVec2& lhs, const ImVec2& rhs)     { return
 #if IMGUI_VERSION_NUM >= 19096
 #define IMGUI_HAS_MULTISELECT
 #endif
+#if IMGUI_VERSION_NUM < 19104
+#define ImGuiChildFlags_Borders ImGuiChildFlags_Border
+#endif
 
 //-------------------------------------------------------------------------
 // Ideas/Specs for future tests
@@ -380,7 +383,7 @@ void RegisterTests_Window(ImGuiTestEngine* e)
         ImGui::SetNextWindowSize(ImVec2(1, 1), ImGuiCond_Appearing); // Fixes test failing due to side-effects caused by other tests using window with same name.
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
         ImGui::Text(ImGui::GetIO().KeyShift ? "This is some longer text" : "Hello World");
-        ImGui::BeginChild("Child", ImVec2(0, 200), ImGuiChildFlags_Border);
+        ImGui::BeginChild("Child", ImVec2(0, 200), ImGuiChildFlags_Borders);
         ImGui::EndChild();
         ImVec2 sz = ImGui::GetWindowSize();
         ImGui::End();
@@ -432,7 +435,7 @@ void RegisterTests_Window(ImGuiTestEngine* e)
         ImGui::End();
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
         ImGui::Text("Line 2");
-        ImGui::BeginChild("Blah", ImVec2(0, 50), ImGuiChildFlags_Border);
+        ImGui::BeginChild("Blah", ImVec2(0, 50), ImGuiChildFlags_Borders);
         ImGui::Text("Line 3");
         ImGui::EndChild();
         ImVec2 pos1 = ImGui::GetCursorScreenPos();
@@ -1780,7 +1783,7 @@ void RegisterTests_Window(ImGuiTestEngine* e)
 
         ImGui::SetNextWindowSizeConstraints(ImVec2(0.0f, 0.0f), ImVec2(FLT_MAX, ImGui::GetTextLineHeightWithSpacing() * 10));
 
-        ImGui::BeginChild("Child 1", ImVec2(-FLT_MIN, 0.0f), ImGuiChildFlags_Border | ImGuiChildFlags_AutoResizeY);// , ImGuiWindowFlags_AlwaysAutoResize);
+        ImGui::BeginChild("Child 1", ImVec2(-FLT_MIN, 0.0f), ImGuiChildFlags_Borders | ImGuiChildFlags_AutoResizeY);// , ImGuiWindowFlags_AlwaysAutoResize);
         for (int n = 0; n < vars.Count; n++)
             ImGui::Text("Line %d", n);
         ImGui::EndChild();
@@ -1817,7 +1820,7 @@ void RegisterTests_Window(ImGuiTestEngine* e)
     {
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
         ImGui::Text("Hi");
-        ImGui::BeginChild("Child 1", ImVec2(100, 100), ImGuiChildFlags_Border);
+        ImGui::BeginChild("Child 1", ImVec2(100, 100), ImGuiChildFlags_Borders);
         ImGui::EndChild();
         if (ctx->FrameCount == 2)
         {
@@ -1850,7 +1853,7 @@ void RegisterTests_Window(ImGuiTestEngine* e)
             }
             ImGui::EndMenuBar();
         }
-        ImGui::BeginChild("Child 0", ImVec2(0.0f, 0.0f), ImGuiChildFlags_Border | ImGuiChildFlags_AutoResizeX | ImGuiChildFlags_AutoResizeY);
+        ImGui::BeginChild("Child 0", ImVec2(0.0f, 0.0f), ImGuiChildFlags_Borders | ImGuiChildFlags_AutoResizeX | ImGuiChildFlags_AutoResizeY);
         ImGui::Dummy(ImVec2(500, 10000));
         ImGui::EndChild();
         ImGui::End();
@@ -1877,7 +1880,7 @@ void RegisterTests_Window(ImGuiTestEngine* e)
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
-        ImGui::BeginChild("Child 1", ImVec2(150, -FLT_MIN), ImGuiChildFlags_Border | ImGuiChildFlags_ResizeX);
+        ImGui::BeginChild("Child 1", ImVec2(150, -FLT_MIN), ImGuiChildFlags_Borders | ImGuiChildFlags_ResizeX);
         for (int n = 0; n < 20; n++)
             ImGui::Selectable(Str30f("Object %d", n).c_str());
         ImGui::Selectable("Object with Long Name");
@@ -2451,7 +2454,7 @@ void RegisterTests_Window(ImGuiTestEngine* e)
 
         ImGui::Button("Button 1");
 
-        ImGui::BeginChild("Child", ImVec2(0.0f, 200.0f), ImGuiChildFlags_Border);
+        ImGui::BeginChild("Child", ImVec2(0.0f, 200.0f), ImGuiChildFlags_Borders);
         ImGui::Button("Button 2");
         ImGui::Text("this is a long line of text. this is a long line of text. this is a long line of text. this is a long line of text. ");
         ImGui::EndChild();
@@ -5908,7 +5911,7 @@ void RegisterTests_TestEngine(ImGuiTestEngine* e)
         ImGui::SetNextWindowSize(ImVec2(300, 300));
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
         ImGui::Button("Button in parent");
-        ImGui::BeginChild("Child1", ImVec2(200, 200), ImGuiChildFlags_Border);
+        ImGui::BeginChild("Child1", ImVec2(200, 200), ImGuiChildFlags_Borders);
         ImGui::Button("Button in child");
         ImGui::EndChild();
         ImGui::End();
@@ -5976,7 +5979,7 @@ void RegisterTests_TestEngine(ImGuiTestEngine* e)
         ImGui::Checkbox("Test1b", &vars.Bool1);
         ImGui::PopID();
 
-        ImGui::BeginChild("Child", ImVec2(0, 200), ImGuiChildFlags_Border);
+        ImGui::BeginChild("Child", ImVec2(0, 200), ImGuiChildFlags_Borders);
         ImGui::Checkbox("Test2", &vars.Bool2);
         ImGui::InputInt("Int1", &vars.Int1, 1, 1);
         ImGui::InputInt("AA###Int2", &vars.Int1, 0, 0);
@@ -6537,7 +6540,7 @@ void RegisterTests_TestEngine(ImGuiTestEngine* e)
     {
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
         ImGui::Button("Button1");
-        ImGui::BeginChild("Child", ImVec2(100, 100), ImGuiChildFlags_Border);
+        ImGui::BeginChild("Child", ImVec2(100, 100), ImGuiChildFlags_Borders);
         ImGui::Button("Button2");
         ImGui::EndChild();
         ImGui::End();
@@ -6867,7 +6870,7 @@ void RegisterTests_Capture(ImGuiTestEngine* e)
 
             // Display contents in a scrolling region
             ImGui::TextColored(ImVec4(1, 1, 0, 1), "Important Stuff");
-            ImGui::BeginChild("Scrolling", ImVec2(0, 0), ImGuiChildFlags_Border);
+            ImGui::BeginChild("Scrolling", ImVec2(0, 0), ImGuiChildFlags_Borders);
             for (int n = 0; n < 50; n++)
                 ImGui::Text("%04d: Some text", n);
             ImGui::EndChild();

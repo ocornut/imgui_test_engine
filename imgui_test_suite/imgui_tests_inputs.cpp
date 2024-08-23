@@ -1451,10 +1451,10 @@ void RegisterTests_Inputs(ImGuiTestEngine* e)
         DoRouteForItem('B', ImGui::GetItemID());
 
         ImGui::Button("ButtonC");
-        ImGui::BeginChild("ChildD", ImVec2(-FLT_MIN, 100), ImGuiChildFlags_Border);
+        ImGui::BeginChild("ChildD", ImVec2(-FLT_MIN, 100), ImGuiChildFlags_Borders);
         ImGui::Button("ChildD");
         ImGui::EndChild();
-        ImGui::BeginChild("ChildE", ImVec2(-FLT_MIN, 100), ImGuiChildFlags_Border);
+        ImGui::BeginChild("ChildE", ImVec2(-FLT_MIN, 100), ImGuiChildFlags_Borders);
         ImGui::Button("ChildE");
         DoRoute('E');
         ImGui::EndChild();
@@ -1623,7 +1623,7 @@ void RegisterTests_Inputs(ImGuiTestEngine* e)
         if (ImGui::Shortcut(ImGuiKey_W, vars.OwnerID, ImGuiInputFlags_Repeat))
             vars.PressedCount[0]++;
 
-        ImGui::BeginChild("Child1", ImVec2(100, 100), ImGuiChildFlags_Border);
+        ImGui::BeginChild("Child1", ImVec2(100, 100), ImGuiChildFlags_Borders);
         ImGui::Button("Button1");
         if (ImGui::Shortcut(ImGuiKey_W | ImGuiMod_Ctrl, vars.OwnerID, ImGuiInputFlags_Repeat))
             vars.PressedCount[1]++;
