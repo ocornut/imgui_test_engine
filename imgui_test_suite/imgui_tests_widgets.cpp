@@ -1552,6 +1552,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         vars.BoolArray[0] = vars.BoolArray[1] = vars.BoolArray[2] = true;
         ctx->Yield();
         ctx->Yield(); // Important: so tab layout are correct for TabClose()
+        ctx->Yield(); // Following "widgets_tabbar_select" // FIXME-TESTS: May be worth considering a second attempt in MouseMove() when item has moved?
         IM_CHECK(tab_bar->Tabs.Size == 3);
         IM_CHECK_STR_EQ(ImGui::TabBarGetTabName(tab_bar, &tab_bar->Tabs[0]), "Tab 0");
         IM_CHECK_STR_EQ(ImGui::TabBarGetTabName(tab_bar, &tab_bar->Tabs[1]), "Tab 1");
