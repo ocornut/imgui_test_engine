@@ -1465,6 +1465,64 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         IM_CHECK(draw_calls >= window->DrawList->CmdBuffer.Size); // May create less :)
     };
 
+    // ## Test selection behavior of current tab
+    // (this is incomplete, mostly added to regress test for #7914)
+    t = IM_REGISTER_TEST(e, "widgets", "widgets_tabbar_select");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiTestGenericVars& vars = ctx->GenericVars;
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
+        vars.Int2 = -1; // Open popup
+        if (ImGui::BeginTabBar("TabBar", ImGuiTabBarFlags_Reorderable))
+        {
+            for (int n = 0; n < 4; n++)
+            {
+                bool open = ImGui::BeginTabItem(Str30f("Tab %d", n).c_str());
+                if (open)
+                {
+                    vars.Int1 = n;
+                    ImGui::EndTabItem();
+                }
+
+                // Intentionally test for IsMouseClicked() and not IsMouseReleased() to test for #7914 where release reselected and closed popup.
+                // Note that #7914 was on docked Begin(), here we test at a lower level. But popup id becomes slightly more awkward if we
+                // had this code inside the BeginTabItem() block.
+                if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenBlockedByPopup) && ImGui::IsMouseClicked(ImGuiMouseButton_Right))
+                    ImGui::OpenPopup(Str30f("Popup %d", n).c_str());
+                if (ImGui::BeginPopup(Str30f("Popup %d", n).c_str()))
+                {
+                    vars.Int2 = n;
+                    ImGui::Text("Popup %d", n);
+                    ImGui::MenuItem("Close");
+                    ImGui::EndPopup();
+                }
+            }
+            ImGui::EndTabBar();
+
+            ImGui::Separator();
+            ImGui::Text("selected: %d, open: %d", vars.Int1, vars.Int2);
+        }
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiTestGenericVars& vars = ctx->GenericVars;
+        ctx->SetRef("Test Window");
+        ctx->MouseMove("TabBar/Tab 1");
+        ctx->MouseClick();
+        IM_CHECK(vars.Int1 == 1); // Tab selected
+        IM_CHECK(vars.Int2 == -1);// Popup not open
+        ctx->MouseMove("TabBar/Tab 0");
+        ctx->MouseDown(ImGuiMouseButton_Right);
+        ctx->Yield(); // Takes an extra frame
+        IM_CHECK(vars.Int1 == 0); // Tab selected
+        IM_CHECK(vars.Int2 == 0); // Popup open
+        ctx->SleepShort();
+        ctx->MouseDown(ImGuiMouseButton_Left);
+        IM_CHECK(vars.Int1 == 0); // Tab selected
+        IM_CHECK(vars.Int2 == 0); // Popup still open
+    };
+
     // ## Test order of tabs in a tab bar
     t = IM_REGISTER_TEST(e, "widgets", "widgets_tabbar_order");
     t->GuiFunc = [](ImGuiTestContext* ctx)
