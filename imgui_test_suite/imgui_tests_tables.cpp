@@ -1497,6 +1497,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
     };
 
     // ## Test rendering two tables with same ID (multi-instance, synced tables) (#5557)
+    // ## Test resizing with different X position. (#7933)
     t = IM_REGISTER_TEST(e, "table", "table_synced_1");
     struct MultiInstancesVars { bool MultiWindow = false, SideBySide = false, DifferSizes = false, Retest = false; int ClickCounters[3] = {}; };
     t->SetVarsDataType<MultiInstancesVars>();
@@ -1575,7 +1576,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
                     // Columns preserve proportions across instances.
                     float table_width = table->WorkRect.GetWidth();
                     for (int c = 0; c < col_count; c++)
-                        IM_CHECK(first_instance_width / column_widths[c] == table_width / table->Columns[c].WidthGiven);
+                        IM_CHECK_EQ(first_instance_width / column_widths[c], table_width / table->Columns[c].WidthGiven);
                 }
             }
 
@@ -1603,9 +1604,11 @@ void RegisterTests_Table(ImGuiTestEngine* e)
                 continue;   // Not applicable.
 
 #if !IMGUI_BROKEN_TESTS
-            // FIXME-TABLE: Column resize happens within first table instance, but depends on table->WorkRect of resized instance, which isn't available. See TableGetMaxColumnWidth().
+#if IMGUI_VERSION_NUM < 19105
             if (vars.MultiWindow && vars.SideBySide)
                 continue;
+#endif
+            // FIXME-TABLE: Column resize for multiple instances is not perfect. (e.g. #7933)
             if (vars.DifferSizes)
                 continue;
 #endif
