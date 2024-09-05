@@ -810,6 +810,7 @@ void RegisterTests_WidgetsInputText(ImGuiTestEngine* e)
                 // FIXME-TODO: More tests needed.
             }
 
+#if IMGUI_VERSION_NUM >= 19111
             // [SET 2: multibytes codepoints]
             ctx->KeyCharsReplace("\xE3\x83\x8F\xE3\x83\xAD\xE3\x83\xBC" "\xE3\x80\x80" "\xE4\xB8\x96\xE7\x95\x8C" "\xE3\x80\x82"); // "HARO- SEKAI. " (with double-width space)
             KeyPressAndDebugPrint(ImGuiKey_Home);
@@ -848,9 +849,9 @@ void RegisterTests_WidgetsInputText(ImGuiTestEngine* e)
                 KeyPressAndDebugPrint(chord_word_prev);
                 IM_CHECK_EQ(state->GetCursorPos(), 0);                  // (no-op)
             }
+#endif
 
             // [SET 3]
-            // [SET 2]
             // Delete all, Extra Test with Multiple Spaces
             ctx->KeyCharsReplace("Hello     world.....HELLO");
             KeyPressAndDebugPrint(ImGuiKey_Home);
