@@ -206,7 +206,7 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
 
     // ## Test that Alt toggle layer, test that AltGr doesn't.
     // ## Test that toggling layer steals active id.
-    // ## Test that toggling layer is canceled by character typing (#370)
+    // ## Test that toggling layer is canceled by character typing or any other key (#370)
     // ## Test that ESC closes a menu
     // All those are performed on child and popups windows as well.
     t = IM_REGISTER_TEST(e, "nav", "nav_menu_alt_key");
@@ -337,6 +337,18 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
             ctx->KeyUp(ImGuiMod_Alt);
             IM_CHECK(g.NavLayer == ImGuiNavLayer_Main);
             IM_CHECK_EQ(g.ActiveId, input_id);
+            ctx->KeyPress(ImGuiKey_Escape);
+
+#if IMGUI_VERSION_NUM >= 19111
+            // Test that toggling layer is canceled by character typing (#370)
+            IM_CHECK_EQ(g.ActiveId, 0u);
+            ctx->KeyDown(ImGuiMod_Alt);
+            ctx->KeyPress(ImGuiKey_Apostrophe);
+            ctx->KeyUp(ImGuiMod_Alt);
+            IM_CHECK(g.NavLayer == ImGuiNavLayer_Main);
+            IM_CHECK_EQ(g.ActiveId, 0u);
+#endif
+
 #endif
         }
     };
