@@ -487,6 +487,7 @@ void RegisterTests_WidgetsInputText(ImGuiTestEngine* e)
 #endif
 
     // ## Test input text multiline cursor movement: left, up, right, down, origin, end, ctrl+origin, ctrl+end, page up, page down
+    // ## Test on multi-byte characters (see Set 2)
     // TODO ## Test input text multiline cursor with selection: left, up, right, down, origin, end, ctrl+origin, ctrl+end, page up, page down
     // TODO ## Test input text multiline scroll movement only: ctrl + (left, up, right, down)
     // TODO ## Test input text multiline page up/page down history ?
@@ -809,6 +810,46 @@ void RegisterTests_WidgetsInputText(ImGuiTestEngine* e)
                 // FIXME-TODO: More tests needed.
             }
 
+            // [SET 2: multibytes codepoints]
+            ctx->KeyCharsReplace("\xE3\x83\x8F\xE3\x83\xAD\xE3\x83\xBC" "\xE3\x80\x80" "\xE4\xB8\x96\xE7\x95\x8C" "\xE3\x80\x82"); // "HARO- SEKAI. " (with double-width space)
+            KeyPressAndDebugPrint(ImGuiKey_Home);
+            IM_CHECK_EQ(state->GetCursorPos(), 0); // "|HARO- "
+            if (!is_osx)
+            {
+                // Windows
+                KeyPressAndDebugPrint(chord_word_next);
+                IM_CHECK_EQ(state->GetCursorPos(), 4);                  // "HARO- |"
+                KeyPressAndDebugPrint(chord_word_prev);
+                IM_CHECK_EQ(state->GetCursorPos(), 0);                  // "|HARO- "
+                for (int n = 0; n < 3; n++)
+                    KeyPressAndDebugPrint(ImGuiKey_RightArrow);
+                IM_CHECK_EQ(state->GetCursorPos(), 3);                  // "HARO-| "
+                KeyPressAndDebugPrint(chord_word_next);
+                IM_CHECK_EQ(state->GetCursorPos(), 3+1);                // "HARO- |"
+
+                KeyPressAndDebugPrint(chord_word_next);
+                IM_CHECK_EQ(state->GetCursorPos(), 3+1 + 2);            // "HARO- SEKAI|." // VS(Win) does this, GitHub-Web(Win) doesn't.
+                KeyPressAndDebugPrint(chord_word_next);
+                IM_CHECK_EQ(state->GetCursorPos(), 3+1 + 2+1);          // "HARO- SEKAI.|"
+
+                //... not duplicating all tests, we just want basic coverage that multi-byte UTF-8 codepoints are correctly taken into account.
+
+                ctx->KeyPress(ImGuiKey_End);
+                IM_CHECK_EQ(state->GetCursorPos(), 3+1 + 2+1);          // "HARO- SEKAI.|"
+
+                KeyPressAndDebugPrint(chord_word_prev);
+                IM_CHECK_EQ(state->GetCursorPos(), 3+1 + 2);            // "HARO- SEKAI|." // VS-Win: STOP, GitHubWeb-Win: SKIP
+                KeyPressAndDebugPrint(chord_word_prev);
+                IM_CHECK_EQ(state->GetCursorPos(), 3+1);                // "HARO- |"
+
+                KeyPressAndDebugPrint(chord_word_prev);
+                IM_CHECK_EQ(state->GetCursorPos(), 0);                  // "|HARO- SEKAI."
+
+                KeyPressAndDebugPrint(chord_word_prev);
+                IM_CHECK_EQ(state->GetCursorPos(), 0);                  // (no-op)
+            }
+
+            // [SET 3]
             // [SET 2]
             // Delete all, Extra Test with Multiple Spaces
             ctx->KeyCharsReplace("Hello     world.....HELLO");
