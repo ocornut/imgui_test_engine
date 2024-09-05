@@ -35,6 +35,9 @@ static inline bool operator!=(const ImVec2& lhs, const ImVec2& rhs) { return lhs
 #if IMGUI_VERSION_NUM < 19066
 #define ImGuiKeyOwner_NoOwner ImGuiKeyOwner_None
 #endif
+#if IMGUI_VERSION_NUM < 19104
+#define ImGuiChildFlags_Borders ImGuiChildFlags_Border
+#endif
 
 //-------------------------------------------------------------------------
 // Tests: Inputs

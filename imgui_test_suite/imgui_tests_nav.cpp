@@ -18,6 +18,9 @@
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-parameter"
 #endif
+#if IMGUI_VERSION_NUM < 19104
+#define ImGuiChildFlags_Borders ImGuiChildFlags_Border
+#endif
 
 //-------------------------------------------------------------------------
 // Ideas/Specs for future tests
