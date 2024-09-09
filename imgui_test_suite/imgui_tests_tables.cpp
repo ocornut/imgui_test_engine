@@ -351,6 +351,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
             for (int row_n = 0; row_n < 5; row_n++)
             {
                 ImGui::TableNextRow();
+                ImGui::PushID(row_n);
 
                 for (int column_n = 0; column_n < 4; column_n++)
                 {
@@ -362,6 +363,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
                     else
                         ImGui::Button(Str16f("Width %d", 50 + column_n * 10).c_str(), ImVec2(50.0f + column_n * 10.0f, 0.0f));
                 }
+                ImGui::PopID();
             }
             ImGui::EndTable();
         }
@@ -2544,7 +2546,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
             ImGui::TableNextColumn();
             ImGui::Button("test", ImVec2(50, 0));
             ImGui::TableNextColumn();
-            ImGui::Button("test", ImVec2(101, 0));
+            ImGui::Button("test2", ImVec2(101, 0));
             ImGuiTable* table = g.CurrentTable;
             ImGuiWindow* window = g.CurrentWindow;
             if (!ctx->IsFirstGuiFrame())
