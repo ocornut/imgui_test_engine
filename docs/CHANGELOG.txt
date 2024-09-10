@@ -5,6 +5,10 @@ CHANGELOG
    Those changes are not all listed here.
 ** For a while this is going to ONLY INCLUDE BREAKING CHANGES.
 
+2024/09/10:
+- TestEngine: CaptureTool: rename ImGuiCaptureFlags_IncludeTooltipsAndPopups to
+  ImGuiCaptureFlags_IncludePopups, as tooltips are always included by default in the capture.
+
 2024/08/22
 - TestEngine: fixes for internal changes and ImGuiPlatformIO use in 1.91.1 WIP.
 
