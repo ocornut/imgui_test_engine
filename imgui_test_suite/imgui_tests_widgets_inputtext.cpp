@@ -1115,6 +1115,10 @@ void RegisterTests_WidgetsInputText(ImGuiTestEngine* e)
         ctx->KeyPress(ImGuiKey_Tab);
         IM_CHECK_STR_EQ(vars.CompletionBuffer.c_str(), "Hello World.......................................");
 
+        // Test undo after callback changes
+        ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_Z);
+        IM_CHECK_STR_EQ(vars.CompletionBuffer.c_str(), "Hello World");
+
         // FIXME: Not testing History callback :)
         ctx->ItemClick("History");
         ctx->KeyCharsAppend("ABCDEF");
@@ -1129,6 +1133,12 @@ void RegisterTests_WidgetsInputText(ImGuiTestEngine* e)
         IM_CHECK_STR_EQ(vars.HistoryBuffer.c_str(), "Pressed Up!");
         ctx->KeyPress(ImGuiKey_DownArrow);
         IM_CHECK_STR_EQ(vars.HistoryBuffer.c_str(), "Pressed Down!");
+
+        // Test undo after callback changes
+        ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_Z);
+        IM_CHECK_STR_EQ(vars.HistoryBuffer.c_str(), "Pressed Up!");
+        ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_Z);
+        IM_CHECK_STR_EQ(vars.HistoryBuffer.c_str(), "ABCD");
 
         ctx->ItemClick("Edit");
         IM_CHECK_STR_EQ(vars.EditBuffer.c_str(), "");
@@ -1162,11 +1172,12 @@ void RegisterTests_WidgetsInputText(ImGuiTestEngine* e)
             }
             return 0;
         };
-        ImGui::InputText("Hello", vars.Str1, IM_ARRAYSIZE(vars.Str1), ImGuiInputTextFlags_CallbackAlways, callback);
+        ImGui::InputText("Hello", vars.Str1, IM_ARRAYSIZE(vars.Str1), vars.Bool1 ? ImGuiInputTextFlags_None : ImGuiInputTextFlags_CallbackAlways, callback);
         ImGui::End();
     };
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
+        ImGuiTestGenericVars& vars = ctx->GenericVars;
         ctx->SetRef("Test Window");
         ctx->ItemInput("Hello");
         ImGuiInputTextState* state = &ctx->UiContext->InputTextState;
@@ -1174,16 +1185,21 @@ void RegisterTests_WidgetsInputText(ImGuiTestEngine* e)
         ctx->KeyCharsAppend("ab");
         IM_CHECK(state->CurLenA == 2);
         IM_CHECK(state->CurLenW == 2);
-        IM_CHECK(strcmp(state->TextA.Data, "ab") == 0);
+        IM_CHECK_STR_EQ(state->TextA.Data, "ab");
         IM_CHECK(state->Stb->cursor == 2);
         ctx->KeyCharsAppend("c");
         IM_CHECK(state->CurLenA == 3);
         IM_CHECK(state->CurLenW == 1);
-        IM_CHECK(strcmp(state->TextA.Data, "\xE5\xA5\xBD") == 0);
+        IM_CHECK_STR_EQ(state->TextA.Data, "\xE5\xA5\xBD");
         IM_CHECK(state->TextW.Data[0] == 0x597D);
         IM_CHECK(state->TextW.Data[1] == 0);
         IM_CHECK(state->Stb->cursor == 1);
         IM_CHECK(state->Stb->select_start == 0 && state->Stb->select_end == 1);
+
+        // Test undo after callback changes
+        vars.Bool1 = true; // Disable callback otherwise "abc" after undo will immediately we rewritten
+        ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_Z);
+        IM_CHECK_STR_EQ(state->TextA.Data, "abc");
     };
 
     // ## Test resize callback (#3009, #2006, #1443, #1008)
