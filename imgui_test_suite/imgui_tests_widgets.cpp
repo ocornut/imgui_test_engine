@@ -4734,7 +4734,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
 #if IMGUI_VERSION_NUM >= 19071
     // ## Test box-selection + exercise Assets Browser a little.
     // This test is probably fragile because are are dealing with Assets Browser instead of duplicating it in our code.
-    t = IM_REGISTER_TEST(e, "widgets", "widgets_multiselect_boxselect");
+    t = IM_REGISTER_TEST(e, "widgets", "widgets_multiselect_boxselect_1");
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         ImGuiContext& g = *GImGui;
@@ -4812,6 +4812,76 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ctx->KeyPress(ImGuiKey_Escape);
 
         ctx->MenuUncheck("//Dear ImGui Demo/Examples/Assets Browser");
+    };
+#endif
+
+#if IMGUI_VERSION_NUM >= 19114
+    // ## Test box-selection in table with decorations (#7970, #7821)
+    t = IM_REGISTER_TEST(e, "widgets", "widgets_multiselect_boxselect_2");
+    struct BoxSelectTestVars { ImGuiTableFlags TableFlags = ImGuiTableFlags_ScrollY; ImGuiSelectionBasicStorage Selection; bool FrozenHeaders = false; };
+    t->SetVarsDataType<BoxSelectTestVars>();
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        auto& vars = ctx->GetVars<BoxSelectTestVars>();
+        ImGui::SetNextWindowSize(ImVec2(400.0f, 300.0f), ImGuiCond_Appearing);
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImGui::CheckboxFlags("BordersOuter", &vars.TableFlags, ImGuiTableFlags_BordersOuter);
+        ImGui::SameLine();
+        ImGui::CheckboxFlags("BordersInner", &vars.TableFlags, ImGuiTableFlags_BordersInner);
+        if (ImGui::BeginTable("table1", 1, vars.TableFlags))
+        {
+            auto ms = ImGui::BeginMultiSelect(ImGuiMultiSelectFlags_BoxSelect1d, vars.Selection.Size, 1000);
+            vars.Selection.ApplyRequests(ms);
+            if (vars.FrozenHeaders)
+            {
+                ImGui::TableSetupScrollFreeze(0, 1);
+                ImGui::TableHeadersRow();
+            }
+            for (unsigned i = 0; i < 1000; i++)
+            {
+                char buf[32];
+                snprintf(buf, sizeof buf, "Item %03d", i);
+                ImGui::SetNextItemSelectionUserData(i);
+                ImGui::TableNextColumn();
+                ImGui::Selectable(buf, vars.Selection.Contains(i));
+            }
+            ms = ImGui::EndMultiSelect();
+            vars.Selection.ApplyRequests(ms);
+            ImGui::EndTable();
+        }
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        auto& vars = ctx->GetVars<BoxSelectTestVars>();
+        ImGuiTable* table = ImGui::TableFindByID(ctx->GetID("Test Window/table1"));
+        IM_CHECK(table != NULL);
+
+        for (int step = 0; step < 4; step++)
+        {
+            vars.Selection.Clear();
+            vars.TableFlags = (step & 1) ? (vars.TableFlags | ImGuiTableFlags_BordersOuter) : (vars.TableFlags & ~ImGuiTableFlags_BordersOuter);
+            vars.FrozenHeaders = (step & 2) != 0;
+
+            ctx->SetRef(table->ID);
+            ctx->MouseMove("Item 001");
+            ctx->MouseDown(ImGuiMouseButton_Left);
+            //ctx->SetRef("//$FOCUSED");
+            ctx->MouseMoveToPos(ImGui::GetIO().MousePos + ImVec2(0, ctx->GetWindowByRef("//Test Window")->Size.y));
+            ctx->SleepNoSkip(1.0f, 0.05f);
+            ctx->MouseUp(ImGuiMouseButton_Left);
+            IM_CHECK(vars.Selection.Contains(0) == false);
+            int first_selected = 1;
+            int last_selected = 1;
+            for (int n = 1; n < 1000; n++)
+            {
+                if (vars.Selection.Contains(n) == false)
+                    break;
+                last_selected = n;
+            }
+            IM_CHECK(vars.Selection.Size > 1);
+            IM_CHECK_EQ(vars.Selection.Size, last_selected - first_selected + 1); // Check no selection gap (#7970)
+        }
     };
 #endif
 
