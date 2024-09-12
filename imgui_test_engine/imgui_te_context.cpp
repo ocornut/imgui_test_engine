@@ -1707,7 +1707,6 @@ void    ImGuiTestContext::MouseMove(ImGuiTestRef ref, ImGuiTestOpFlags flags)
     }
 
     // Update item
-    ImGuiTestItemInfo old_item = item;
     item = ItemInfo(item.ID);
 
     // FIXME-TESTS-NOT_SAME_AS_END_USER
