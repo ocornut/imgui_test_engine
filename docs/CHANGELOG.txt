@@ -5,6 +5,10 @@ CHANGELOG
    Those changes are not all listed here.
 ** For a while this is going to ONLY INCLUDE BREAKING CHANGES.
 
+2024/09/16:
+- TestEngine: Added ViewportPlatform_SetWindowPos() and ViewportPlatform_SetWindowSize()
+  functions to enforce or simulate platform move/resize.
+
 2024/09/12:
 - TestEngine: fixed a crash when item/window stops being submitted (or test is aborted)
   in the middle of a MouseMove() action performing a long scroll.
