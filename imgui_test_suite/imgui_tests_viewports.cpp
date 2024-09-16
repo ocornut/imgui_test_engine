@@ -114,6 +114,57 @@ void RegisterTests_Viewports(ImGuiTestEngine* e)
         IM_CHECK_NE(window->Pos, main_viewport->WorkPos + ImVec2(100.0f, 100.0f));
     };
 
+    // ## Test translating cases when hosted by main viewport (or any viewport with ImGuiViewportFlags_CanHostOtherWindows) (#7985)
+    t = IM_REGISTER_TEST(e, "viewport", "viewport_translate");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiViewport* main_viewport = ImGui::GetMainViewport();
+        ImGui::Begin("Test Window 1", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImGui::End();
+
+        ImGui::SetNextWindowViewport(main_viewport->ID);
+        ImGui::Begin("Test Window 2", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiViewport* main_viewport = ImGui::GetMainViewport();
+        const ImVec2 main_viewport_backup_pos = main_viewport->Pos; // Restore is not guaranteed (if test is aborted/fails)
+
+        for (int step = 0; step < 4; step++)
+        {
+            const bool fully_contained = (step & 1) == 0; // Fully contained or overlapping edge
+            const bool locked_to_main_viewport = (step & 2) != 0; // Automatic viewport or locked to main viewport
+            ImGuiWindow* window = ctx->GetWindowByRef(locked_to_main_viewport ? "//Test Window 2" : "//Test Window 1");
+            ctx->SetRef(window);
+            ctx->WindowResize("", { 100, 100 });
+            ImVec2 pos1 = { main_viewport->Pos.x + main_viewport->Size.x - (fully_contained ? 150.0f : 50.0f), main_viewport->Pos.y + 20 };
+            ctx->WindowMove("", pos1);
+            if (fully_contained || locked_to_main_viewport)
+                IM_CHECK_EQ(window->Viewport, main_viewport);
+            else
+                IM_CHECK_NE(window->Viewport, main_viewport);
+            IM_CHECK_EQ(window->Pos, pos1);
+            ctx->ViewportPlatform_SetWindowPos(main_viewport, main_viewport->Pos - ImVec2(30.0f, 0.0f));
+            ImVec2 pos2 = { main_viewport->Pos.x + main_viewport->Size.x - (fully_contained ? 150.0f : 50.0f), main_viewport->Pos.y + 20 };
+#if IMGUI_VERSION_NUM < 19114
+            if (!fully_contained && locked_to_main_viewport) // Fixed by #7985
+                continue;
+#endif
+            if (fully_contained || locked_to_main_viewport)
+            {
+                IM_CHECK_EQ(window->Viewport, main_viewport);
+                IM_CHECK_EQ(window->Pos, pos2);
+            }
+            else
+            {
+                IM_CHECK_NE(window->Viewport, main_viewport);
+                IM_CHECK_EQ(window->Pos, pos1);
+            }
+            ctx->ViewportPlatform_SetWindowPos(main_viewport, main_viewport_backup_pos);
+        }
+    };
+
     // ## Test value of ParentViewportID (include bug #4756)
     t = IM_REGISTER_TEST(e, "viewport", "viewport_parent_id");
     struct DefaultParentIdVars { ImGuiWindowClass WindowClass; bool SetWindowClass = false; };
