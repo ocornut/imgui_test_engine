@@ -1648,6 +1648,7 @@ void ImGuiTestContext::_MakeAimingSpaceOverPos(ImGuiViewport* viewport, ImGuiWin
         if (window->RootWindowDockTree != window)
             continue;
 #else
+        IM_UNUSED(viewport);
         if (window->RootWindow != window)
             continue;
 #endif
