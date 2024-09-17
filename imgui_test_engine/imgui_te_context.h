@@ -520,6 +520,7 @@ struct IMGUI_API ImGuiTestContext
 #endif
 
     // [Internal]
+    void        _MakeAimingSpaceOverPos(ImGuiViewport* viewport, ImGuiWindow* over_window, const ImVec2& over_pos); // Move windows covering 'window' at pos.
     void        _ForeignWindowsHideOverPos(const ImVec2& pos, ImGuiWindow** ignore_list);  // FIXME: Aim to remove this system...
     void        _ForeignWindowsUnhideAll();                                                // FIXME: Aim to remove this system...
 };

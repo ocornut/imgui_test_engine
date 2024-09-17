@@ -6,6 +6,8 @@ CHANGELOG
 ** For a while this is going to ONLY INCLUDE BREAKING CHANGES.
 
 2024/09/17:
+- TestEngine: now knows how mouse aim at windows with the ImGuiWindowFlags_NoBringToFrontOnFocus
+  flag when they are covered by other windows (when clicking or Ctrl+tabbing doesn't work).
 - TestEngine: opening source file default to use shell open if io.SrcFileOpenFunc is not set. (#56)
 - TestEngine: UI: opening source file prints filename/line_no in debug output to facilitate
   double-clicking in IDE. (#56) [@learn-more]
