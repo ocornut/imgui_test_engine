@@ -1700,18 +1700,29 @@ void RegisterTests_Table(ImGuiTestEngine* e)
     t = IM_REGISTER_TEST(e, "table", "table_synced_3_autofit");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
-        bool do_checks = !ctx->IsFirstGuiFrame();
+        auto& vars = ctx->GenericVars;
+
+        //bool do_checks = !ctx->IsFirstGuiFrame();
+        ImGui::SetNextWindowSize(ImVec2(500.0f, 0.0f), ImGuiCond_Appearing); // FIXME-TESTS FIXME-TABLE: Auto or too small width has effect on indented table instance
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+
+        ImGui::Checkbox("Do checks", &vars.Bool1);
+        ImGui::SliderInt("Step", &vars.Step, 0, 1);
+
+        const bool do_checks = vars.Bool1;
+        const float width_0 = ImGui::CalcTextSize("Very very long text 1").x;
+        const float width_1 = (vars.Step == 0) ? ImGui::CalcTextSize("Text 1").x : width_0;
+
         if (ImGui::BeginTable("test_table", 2, ImGuiTableFlags_Borders | ImGuiTableFlags_SizingFixedFit))
         {
             ImGui::TableNextColumn();
-            if (do_checks)
-                IM_CHECK_EQ_NO_RET(ImGui::GetContentRegionAvail().x, ImGui::CalcTextSize("Very very long text 1").x);
             ImGui::Text("Very very long text 1");
-            ImGui::TableNextColumn();
             if (do_checks)
-                IM_CHECK_EQ_NO_RET(ImGui::GetContentRegionAvail().x, ImGui::CalcTextSize("Text 1").x);
+                IM_CHECK_EQ_NO_RET(ImGui::GetContentRegionAvail().x, width_0);
+            ImGui::TableNextColumn();
             ImGui::Text("Text 1");
+            if (do_checks)
+                IM_CHECK_EQ_NO_RET(ImGui::GetContentRegionAvail().x, width_1);
             ImGui::EndTable();
         }
         for (int n = 0; n < 2; n++)
@@ -1724,16 +1735,48 @@ void RegisterTests_Table(ImGuiTestEngine* e)
             {
                 ImGui::TableNextColumn();
                 if (do_checks)
-                    IM_CHECK_EQ_NO_RET(ImGui::GetContentRegionAvail().x, ImGui::CalcTextSize("Very very long text 1").x);
+                    IM_CHECK_EQ_NO_RET(ImGui::GetContentRegionAvail().x, width_0);
                 ImGui::Text("Text 1");
                 ImGui::TableNextColumn();
                 if (do_checks)
-                    IM_CHECK_EQ_NO_RET(ImGui::GetContentRegionAvail().x, ImGui::CalcTextSize("Text 2").x);
+                    IM_CHECK_EQ_NO_RET(ImGui::GetContentRegionAvail().x, width_1);
                 ImGui::Text("Text 2");
                 ImGui::EndTable();
             }
         }
+        ImGui::Unindent();
+        if (vars.Step == 1)
+        {
+            if (ImGui::BeginTable("test_table", 2, ImGuiTableFlags_Borders | ImGuiTableFlags_SizingFixedFit))
+            {
+                ImGui::TableNextColumn();
+                if (do_checks)
+                    IM_CHECK_EQ_NO_RET(ImGui::GetContentRegionAvail().x, width_0);
+                ImGui::Text("Text 1");
+                ImGui::TableNextColumn();
+                ImGui::Text("Very very long text 1");
+                if (do_checks)
+                    IM_CHECK_EQ_NO_RET(ImGui::GetContentRegionAvail().x, width_1);
+                ImGui::EndTable();
+            }
+        }
         ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        auto& vars = ctx->GenericVars;
+        for (int step = 0; step < 2; step++)
+        {
+#if IMGUI_VERSION_NUM < 19115
+            if (step == 1)
+                continue;
+#endif
+            vars.Step = step;
+            vars.Bool1 = false;
+            ctx->Yield(2);
+            vars.Bool1 = true;
+            ctx->Yield(2);
+        }
     };
 #endif
 
