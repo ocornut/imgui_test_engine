@@ -520,9 +520,8 @@ struct IMGUI_API ImGuiTestContext
 #endif
 
     // [Internal]
-    // FIXME: Aim to remove this system...
-    void        ForeignWindowsHideOverPos(ImVec2 pos, ImGuiWindow** ignore_list);
-    void        ForeignWindowsUnhideAll();
+    void        _ForeignWindowsHideOverPos(const ImVec2& pos, ImGuiWindow** ignore_list);  // FIXME: Aim to remove this system...
+    void        _ForeignWindowsUnhideAll();                                                // FIXME: Aim to remove this system...
 };
 
 //-------------------------------------------------------------------------

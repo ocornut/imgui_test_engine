@@ -2221,7 +2221,7 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
         DockspaceTabButtonVars& vars = ctx->GetVars<DockspaceTabButtonVars>();
         vars.DockId = ImGui::DockSpaceOverViewport();
         ImGuiWindow* window_demo = ctx->GetWindowByRef("//Dear ImGui Demo");
-        IM_CHECK(window_demo != NULL);
+        IM_CHECK_SILENT(window_demo != NULL);
 
         // FIXME: It can be confusing which dock node we are supposed to use. While under normal circumstances using
         //  dockspace ID works, is simple and intuitive thing to do, it breaks when dockspace already has docked windows
@@ -2259,6 +2259,7 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
 
         // TabItemButton() did cause a dockspace child window get inserted into g.WindowsFocusOrder which eventually
         // caused a crash (#5515, 0e95cf)..
+        // FIXME-TESTS: 2024-09-17: any window obstructing the menu bar would break the test because DockSpaceOverViewport() uses ImGuiWindowFlags_NoBringToFrontOnFocus
         ctx->MenuCheck("//Dear ImGui Demo/Tools/Metrics\\/Debugger");
         ctx->WindowClose("Dear ImGui Metrics\\/Debugger");
         for (ImGuiWindow* window : g.WindowsFocusOrder)
