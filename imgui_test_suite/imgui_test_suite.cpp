@@ -2,8 +2,8 @@
 
 // Interactive mode, e.g.
 //   main.exe [tests]
-//   main.exe -gui -fileopener ..\..\tools\win32_open_with_sublime.cmd -slow
-//   main.exe -gui -fileopener ..\..\tools\win32_open_with_sublime.cmd -nothrottle
+//   main.exe -gui -slow
+//   main.exe -gui -nothrottle -fileopener ..\..\tools\win32_open_with_sublime.cmd
 
 // Command-line mode, e.g.
 //   main.exe -list                         // List available tests
@@ -14,7 +14,8 @@
 //   main.exe -nogui -viewport-mock         // Run with viewport emulation
 
 // Examples
-#define CMDLINE_ARGS  "-fileopener tools/win32_open_with_sublime.cmd"
+#define CMDLINE_ARGS    ""
+//#define CMDLINE_ARGS  "-fileopener tools/win32_open_with_sublime.cmd"
 //#define CMDLINE_ARGS  "-nogui -export-format junit -export-file output/tests.junit.xml widgets_input"
 //#define CMDLINE_ARGS  "-viewport-mock -nogui viewport_"               // Test mock viewports on TTY mode
 //#define CMDLINE_ARGS  "-gui -nothrottle"
@@ -173,7 +174,7 @@ static void TestSuite_PrintCommandLineHelp()
     printf("  -nopause                 : don't pause application on exit.\n");
     printf("  -nocapture               : don't capture any images or video.\n");
     printf("  -stressamount <int>      : set performance test duration multiplier (default: 5)\n");
-    printf("  -fileopener <file>       : provide a bat/cmd/shell script to open source file.\n");
+    printf("  -fileopener <file>       : provide a bat/cmd/shell script to open source file (default to opne with shell).\n");
     printf("  -export-file <file>      : save test run results in specified file.\n");
     printf("  -export-format <format>  : save test run results in specified format. (default: junit)\n");
     printf("  -list                    : list queued tests (one per line) and exit.\n");
@@ -272,15 +273,18 @@ static void SrcFileOpenerFunc(const char* filename, int line, void* user_data)
     TestSuiteApp* app = (TestSuiteApp*)user_data;
     if (app->OptSourceFileOpener.empty())
     {
-        fprintf(stderr, "Executable needs to be called with a -fileopener argument!\n");
-        return;
+        // Default opener is shell
+        ImOsOpenInShell(filename);
     }
-
-    Str256f cmd_line("%s %s %d", app->OptSourceFileOpener.c_str(), filename, line);
-    printf("Calling: '%s'\n", cmd_line.c_str());
-    bool ret = ImOsCreateProcess(cmd_line.c_str());
-    if (!ret)
-        fprintf(stderr, "Error creating process!\n");
+    else
+    {
+        // Custom file opener
+        Str256f cmd_line("%s %s %d", app->OptSourceFileOpener.c_str(), filename, line);
+        printf("Calling: '%s'\n", cmd_line.c_str());
+        bool ret = ImOsCreateProcess(cmd_line.c_str());
+        if (!ret)
+            fprintf(stderr, "Error creating process!\n");
+    }
 }
 
 // Return value for main()
@@ -503,7 +507,7 @@ int main(int argc, char** argv)
     }
 
     // Set up source file opener and framebuffer capture functions
-    test_io.SrcFileOpenFunc = app->OptSourceFileOpener.empty() ? NULL : SrcFileOpenerFunc;
+    test_io.SrcFileOpenFunc = SrcFileOpenerFunc;
     test_io.SrcFileOpenUserData = (void*)app;
     test_io.ScreenCaptureFunc = ImGuiApp_ScreenCaptureFunc;
     test_io.ScreenCaptureUserData = (void*)app->AppWindow;

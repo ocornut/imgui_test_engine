@@ -5,6 +5,11 @@ CHANGELOG
    Those changes are not all listed here.
 ** For a while this is going to ONLY INCLUDE BREAKING CHANGES.
 
+2024/09/17:
+- TestEngine: opening source file default to use shell open if io.SrcFileOpenFunc is not set. (#56)
+- TestEngine: UI: opening source file prints filename/line_no in debug output to facilitate
+  double-clicking in IDE. (#56) [@learn-more]
+
 2024/09/16:
 - TestEngine: Added ViewportPlatform_SetWindowPos() and ViewportPlatform_SetWindowSize()
   functions to enforce or simulate platform move/resize.
