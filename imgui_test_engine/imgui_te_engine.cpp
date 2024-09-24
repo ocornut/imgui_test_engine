@@ -75,6 +75,8 @@ static void ImGuiTestEngine_PreRender(ImGuiTestEngine* engine, ImGuiContext* ui_
 static void ImGuiTestEngine_PostRender(ImGuiTestEngine* engine, ImGuiContext* ui_ctx);
 static void ImGuiTestEngine_UpdateHooks(ImGuiTestEngine* engine);
 static void ImGuiTestEngine_RunGuiFunc(ImGuiTestEngine* engine);
+static void ImGuiTestEngine_ErrorRecoverySetup(ImGuiTestEngine* engine);
+static void ImGuiTestEngine_ErrorRecoveryRun(ImGuiTestEngine* engine);
 static void ImGuiTestEngine_TestQueueCoroutineMain(void* engine_opaque);
 
 // Settings
@@ -939,9 +941,7 @@ static void ImGuiTestEngine_RunGuiFunc(ImGuiTestEngine* engine)
             ctx->ActiveFunc = backup_active_func;
         }
 
-        // Safety net
-        //if (ctx->Test->Status == ImGuiTestStatus_Error)
-        ctx->RecoverFromUiContextErrors();
+        ImGuiTestEngine_ErrorRecoveryRun(engine);
     }
     if (ctx)
         ctx->FirstGuiFrame = false;
@@ -1457,6 +1457,10 @@ struct ImGuiTestContextUiContextBackup
     ImGuiDebugLogFlags  DebugLogFlags;
     ImGuiKeyChord       ConfigNavWindowingKeyNext;
     ImGuiKeyChord       ConfigNavWindowingKeyPrev;
+#if IMGUI_VERSION_NUM >= 19123
+    ImGuiErrorCallback  ErrorCallback;
+    void*               ErrorCallbackUserData;
+#endif
 
     void Backup(ImGuiContext& g)
     {
@@ -1469,6 +1473,10 @@ struct ImGuiTestContextUiContextBackup
 #if IMGUI_VERSION_NUM >= 18837
         ConfigNavWindowingKeyNext = g.ConfigNavWindowingKeyNext;
         ConfigNavWindowingKeyPrev = g.ConfigNavWindowingKeyPrev;
+#endif
+#if IMGUI_VERSION_NUM >= 19123
+        ErrorCallback = g.ErrorCallback;
+        ErrorCallbackUserData = g.ErrorCallbackUserData;
 #endif
         memset(IO.MouseDown, 0, sizeof(IO.MouseDown));
         for (int n = 0; n < IM_ARRAYSIZE(IO.KeysData); n++)
@@ -1488,6 +1496,10 @@ struct ImGuiTestContextUiContextBackup
 #if IMGUI_VERSION_NUM >= 18837
         g.ConfigNavWindowingKeyNext = ConfigNavWindowingKeyNext;
         g.ConfigNavWindowingKeyPrev = ConfigNavWindowingKeyPrev;
+#endif
+#if IMGUI_VERSION_NUM >= 19123
+        g.ErrorCallback = ErrorCallback;
+        g.ErrorCallbackUserData = ErrorCallbackUserData;
 #endif
     }
     void RestoreClipboardFuncs(ImGuiContext& g)
@@ -1667,6 +1679,9 @@ void ImGuiTestEngine_RunTest(ImGuiTestEngine* engine, ImGuiTestContext* parent_c
 #endif
     }
 
+    // Setup IO: error handling
+    ImGuiTestEngine_ErrorRecoverySetup(engine);
+
     // Mark as currently running the TestFunc (this is the only time when we are allowed to yield)
     IM_ASSERT(ctx->ActiveFunc == ImGuiTestActiveFunc_None || ctx->ActiveFunc == ImGuiTestActiveFunc_TestFunc);
     ImGuiTestActiveFunc backup_active_func = ctx->ActiveFunc;
@@ -1738,7 +1753,7 @@ void ImGuiTestEngine_RunTest(ImGuiTestEngine* engine, ImGuiTestContext* parent_c
         }
 
         // Recover missing End*/Pop* calls.
-        ctx->RecoverFromUiContextErrors();
+        ImGuiTestEngine_ErrorRecoveryRun(engine);
 
         if (engine->IO.ConfigRunSpeed != ImGuiTestRunSpeed_Fast)
             ctx->SleepStandard();
@@ -1834,6 +1849,85 @@ void ImGuiTestEngine_RunTest(ImGuiTestEngine* engine, ImGuiTestContext* parent_c
 
     IM_ASSERT(engine->TestContext == ctx);
     engine->TestContext = parent_ctx;
+}
+
+#if IMGUI_VERSION_NUM < 19123
+static void LogAsWarningFunc(void* user_data, const char* fmt, ...)
+{
+    ImGuiTestContext* ctx = (ImGuiTestContext*)user_data;
+    va_list args;
+    va_start(args, fmt);
+    ctx->LogExV(ImGuiTestVerboseLevel_Warning, ImGuiTestLogFlags_None, fmt, args);
+    va_end(args);
+}
+
+static void LogAsDebugFunc(void* user_data, const char* fmt, ...)
+{
+    ImGuiTestContext* ctx = (ImGuiTestContext*)user_data;
+    va_list args;
+    va_start(args, fmt);
+    ctx->LogExV(ImGuiTestVerboseLevel_Debug, ImGuiTestLogFlags_None, fmt, args);
+    va_end(args);
+}
+#else
+static void LogAsWarningFunc(ImGuiContext*, void* user_data, const char* msg)
+{
+    ImGuiContext& g = *GImGui;
+    ImGuiTestContext* ctx = (ImGuiTestContext*)user_data;
+    ImGuiWindow* window = g.CurrentWindow;
+    ctx->LogEx(ImGuiTestVerboseLevel_Warning, ImGuiTestLogFlags_None, "In '%s': %s", window ? window->Name : "NULL", msg);
+}
+static void LogAsDebugFunc(ImGuiContext*, void* user_data, const char* msg)
+{
+    ImGuiContext& g = *GImGui;
+    ImGuiTestContext* ctx = (ImGuiTestContext*)user_data;
+    ImGuiWindow* window = g.CurrentWindow;
+    ctx->LogEx(ImGuiTestVerboseLevel_Debug, ImGuiTestLogFlags_None, "In '%s': %s", window ? window->Name : "NULL", msg);
+}
+#endif
+
+void ImGuiTestEngine_ErrorRecoverySetup(ImGuiTestEngine* engine)
+{
+    ImGuiTestContext* ctx = engine->TestContext;
+    IM_ASSERT(ctx != NULL);
+    IM_ASSERT(ctx->Test != NULL);
+#if IMGUI_VERSION_NUM >= 19123
+    if (ctx->Test->Flags & ImGuiTestFlags_NoRecoveryWarnings)
+    {
+        ctx->UiContext->IO.ConfigErrorRecoveryEnableAssert = false;
+        ctx->UiContext->ErrorCallback = LogAsDebugFunc;
+        ctx->UiContext->ErrorCallbackUserData = ctx;
+    }
+    else
+    {
+        ctx->UiContext->ErrorCallback = LogAsWarningFunc;
+        ctx->UiContext->ErrorCallbackUserData = ctx;
+    }
+#else
+    IM_UNUSED(ctx);
+#endif
+}
+
+void ImGuiTestEngine_ErrorRecoveryRun(ImGuiTestEngine* engine)
+{
+    ImGuiTestContext* ctx = engine->TestContext;
+    IM_ASSERT(ctx != NULL);
+    IM_ASSERT(ctx->Test != NULL);
+    ImGuiTestEngine_ErrorRecoverySetup(engine);
+
+#if IMGUI_VERSION_NUM < 19123
+    // If we are _already_ in a test error state, recovering is normal so we'll hide the log.
+    const bool verbose = (ctx->TestOutput->Status != ImGuiTestStatus_Error) || (engine->IO.ConfigVerboseLevel >= ImGuiTestVerboseLevel_Debug);
+    if (verbose && (ctx->Test->Flags & ImGuiTestFlags_NoRecoveryWarnings) == 0)
+        ImGui::ErrorCheckEndFrameRecover(LogAsWarningFunc, ctx);
+    else
+        ImGui::ErrorCheckEndFrameRecover(LogAsDebugFunc, ctx);
+#else
+    // This would automatically be done in EndFrame() but doing it here means we get a report earlier and in the right co-routine.
+    // And the state we entered in happens to be the NewFrame() state (hence using g.StackSizesInNewFrame)
+    ImGuiContext& g = *GImGui;
+    ImGui::ErrorRecoveryTryToRecoverState(&g.StackSizesInNewFrame);
+#endif
 }
 
 //-------------------------------------------------------------------------

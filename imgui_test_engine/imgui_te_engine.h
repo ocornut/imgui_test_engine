@@ -115,7 +115,7 @@ enum ImGuiTestFlags_
     ImGuiTestFlags_None                 = 0,
     ImGuiTestFlags_NoGuiWarmUp          = 1 << 0,   // Disable running the GUI func for 2 frames before starting test code. For tests which absolutely need to start before GuiFunc.
     ImGuiTestFlags_NoAutoFinish         = 1 << 1,   // By default, tests with no TestFunc (only a GuiFunc) will end after warmup. Setting this require test to call ctx->Finish().
-    ImGuiTestFlags_NoRecoveryWarnings   = 1 << 2    // Disable state recovery warnings (missing End/Pop calls etc.) for tests which may rely on those.
+    ImGuiTestFlags_NoRecoveryWarnings   = 1 << 2    // Error/recovery warnings (missing End/Pop calls etc.) will be displayed as normal debug entries, for tests which may rely on those.
     //ImGuiTestFlags_RequireViewports   = 1 << 10
 };
 

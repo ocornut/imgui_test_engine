@@ -6,6 +6,7 @@ CHANGELOG
 ** For a while this is going to ONLY INCLUDE BREAKING CHANGES.
 
 2024/09/27:
+- TestEngine: updated for support for error handling/recovery mechanism from v1.91.3.
 - TestEngine: fixed issues dealing with covered ImGuiWindowFlags_NoBringToFrontOnFocus windows.
 
 2024/09/17:
