@@ -1880,6 +1880,10 @@ void RegisterTests_Window(ImGuiTestEngine* e)
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+
+        if (ImGui::Button("Set width to 200"))
+            ImGui::SetNextWindowSize({ 200, -FLT_MIN });
+
         ImGui::BeginChild("Child 1", ImVec2(150, -FLT_MIN), ImGuiChildFlags_Borders | ImGuiChildFlags_ResizeX);
         for (int n = 0; n < 20; n++)
             ImGui::Selectable(Str30f("Object %d", n).c_str());
@@ -1911,6 +1915,11 @@ void RegisterTests_Window(ImGuiTestEngine* e)
         ctx->MouseDoubleClick(0);
         IM_CHECK_EQ(child1->ScrollbarY, true);
         IM_CHECK_EQ(child1->Size.x, ImGui::CalcTextSize("Object with Long Name").x + ImGui::GetStyle().WindowPadding.x * 2.0f + ImGui::GetStyle().ScrollbarSize);
+
+#if IMGUI_VERSION_NUM >= 19122
+        ctx->ItemClick("Set width to 200");
+        IM_CHECK_EQ(child1->Size.x, 200.0f);
+#endif
     };
 #endif
 
