@@ -3333,6 +3333,7 @@ void RegisterTests_Layout(ImGuiTestEngine* e)
             float y2 = window->DC.CursorPos.y;
             ImGui::Text("Another line 5");
             IM_CHECK_EQ(y2, y1 + 100.0f + ImGui::GetStyle().ItemSpacing.y);
+            ImGui::End();
         }
 #endif
     };
@@ -3863,8 +3864,51 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
     };
 #endif
 
-    // ## Test ErrorCheckEndFrameRecover(), ErrorCheckEndWindowRecover()
-    t = IM_REGISTER_TEST(e, "misc", "misc_recover");
+    // ## Test error handling and state recovery logic e.g. ErrorRecoveryTryToRecoverState()
+#if IMGUI_VERSION_NUM >= 19123
+    t = IM_REGISTER_TEST(e, "misc", "misc_recover_1");
+    t->Flags |= ImGuiTestFlags_NoRecoveryWarnings;
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::Begin("Test window", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImGui::PopID();
+        //ImGui::PopClipRect();
+        ImGui::PopFocusScope();
+        ImGui::PopFont();
+        ImGui::PopItemFlag();
+        ImGui::PopItemWidth();
+        ImGui::PopStyleColor();
+        ImGui::PopStyleVar();
+        ImGui::PopTextWrapPos();
+    };
+
+    t = IM_REGISTER_TEST(e, "misc", "misc_recover_1_nested");
+    t->Flags |= ImGuiTestFlags_NoRecoveryWarnings;
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::Begin("Parent Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+
+        ImGui::Begin("Test window", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImGui::PopID();
+        //ImGui::PopClipRect();
+        ImGui::PopFocusScope();
+        ImGui::PopFont();
+        ImGui::PopItemFlag();
+        ImGui::PopItemWidth();
+        ImGui::PopStyleColor();
+        ImGui::PopStyleVar();
+        ImGui::PopTextWrapPos();
+    };
+
+    t = IM_REGISTER_TEST(e, "misc", "misc_recover_2");
+    t->Flags |= ImGuiTestFlags_NoRecoveryWarnings;
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::End();
+    };
+#endif
+
+    t = IM_REGISTER_TEST(e, "misc", "misc_recover_3");
     t->Flags |= ImGuiTestFlags_NoRecoveryWarnings;
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
@@ -3893,9 +3937,43 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
         ImGui::SetNextItemOpen(true);
         ImGui::TreeNode("node");
         ImGui::BeginTabBar("tabbar");
+
+#if IMGUI_VERSION_NUM >= 19123
+        ImGui::BeginChild("child", ImVec2(200, 200));
+#endif
         ImGui::BeginTable("table", 4);
         // Ensure we run two frames.
     };
+
+    // ## Basic way for manual state record/recover
+#if IMGUI_VERSION_NUM >= 19123
+    t = IM_REGISTER_TEST(e, "misc", "misc_recover_4_midway");
+    t->Flags |= ImGuiTestFlags_NoRecoveryWarnings;
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiContext& g = *GImGui;
+        ImGui::Begin("Test window", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImGui::PushID("Hello");
+        ImGui::BeginChild("Child");
+        ImGui::PushID("Hello2");
+        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4());
+
+        ImGuiErrorRecoveryState state;
+        ImGui::ErrorRecoveryStoreState(&state);
+        IM_CHECK_EQ(g.CurrentWindowStack.Size, 3);
+        IM_CHECK_EQ(g.CurrentWindow->IDStack.Size, 2);
+        int style_stack_size = g.ColorStack.Size;
+
+        ImGui::PushID("World2");
+        ImGui::BeginChild("Child2");
+        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1, 0, 1, 1));
+        ImGui::ErrorRecoveryTryToRecoverState(&state);
+
+        IM_CHECK_EQ(g.CurrentWindowStack.Size, 3);
+        IM_CHECK_EQ(g.CurrentWindow->IDStack.Size, 2);
+        IM_CHECK_EQ(g.ColorStack.Size, style_stack_size);
+    };
+#endif
 
     // ## Test window data garbage collection
     t = IM_REGISTER_TEST(e, "misc", "misc_gc");

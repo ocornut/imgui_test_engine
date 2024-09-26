@@ -174,7 +174,7 @@ static void TestSuite_PrintCommandLineHelp()
     printf("  -nopause                 : don't pause application on exit.\n");
     printf("  -nocapture               : don't capture any images or video.\n");
     printf("  -stressamount <int>      : set performance test duration multiplier (default: 5)\n");
-    printf("  -fileopener <file>       : provide a bat/cmd/shell script to open source file (default to opne with shell).\n");
+    printf("  -fileopener <file>       : provide a bat/cmd/shell script to open source file (default to open with shell).\n");
     printf("  -export-file <file>      : save test run results in specified file.\n");
     printf("  -export-format <format>  : save test run results in specified format. (default: junit)\n");
     printf("  -list                    : list queued tests (one per line) and exit.\n");
