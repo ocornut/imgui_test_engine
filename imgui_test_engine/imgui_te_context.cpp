@@ -956,11 +956,11 @@ static void ItemInfoErrorLog(ImGuiTestContext* ctx, ImGuiTestRef ref, ImGuiID fu
     // Prefixing the string with / ignore the reference/current ID
     Str256 msg;
     if (ref.Path && ref.Path[0] == '/' && ctx->RefStr[0] != 0)
-        msg.setf("Unable to locate item: '%s'", ref.Path);
+        msg.setf("Unable to locate item: '%s' (0x%08X)", ref.Path, full_id);
     else if (ref.Path && full_id != 0)
         msg.setf("Unable to locate item: '%s/%s' (0x%08X)", ctx->RefStr, ref.Path, full_id);
     else if (ref.Path)
-        msg.setf("Unable to locate item: '%s/%s'", ctx->RefStr, ref.Path);
+        msg.setf("Unable to locate item: '%s/%s' (0x%08X)", ctx->RefStr, ref.Path, full_id);
     else
         msg.setf("Unable to locate item: 0x%08X", ref.ID);
 

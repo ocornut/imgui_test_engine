@@ -3787,6 +3787,11 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
                 }
                 ImGui::EndMenu();
             }
+            if (ImGui::BeginMenu("File###Menu_File"))
+            {
+                ImGui::MenuItem("New###Menu_FileNew");
+                ImGui::EndMenu();
+            }
             ImGui::EndMenuBar();
         }
         ImGui::End();
@@ -3799,6 +3804,9 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
 
         ctx->MenuClick("First/Second");
         ctx->ItemClick("**/Item");
+
+        ctx->MenuClick("###Menu_File");
+        ctx->MenuClick("###Menu_File/###Menu_FileNew");
 
 #if IMGUI_BROKEN_TESTS
         ctx->MenuClick("First/Second");
