@@ -5,6 +5,9 @@ CHANGELOG
    Those changes are not all listed here.
 ** For a while this is going to ONLY INCLUDE BREAKING CHANGES.
 
+2024/09/27:
+- TestEngine: fixed issues dealing with covered ImGuiWindowFlags_NoBringToFrontOnFocus windows.
+
 2024/09/17:
 - TestEngine: now knows how mouse aim at windows with the ImGuiWindowFlags_NoBringToFrontOnFocus
   flag when they are covered by other windows (when clicking or Ctrl+tabbing doesn't work).

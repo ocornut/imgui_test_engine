@@ -6302,6 +6302,35 @@ void RegisterTests_TestEngine(ImGuiTestEngine* e)
         ctx->ItemDragAndDrop("//$FOCUSED/A", "//Test Window B/B");
     };
 
+    // Test aiming at covered item in a window with NoBringToFrontOnFocus (which requires moving windows out of the way)
+    t = IM_REGISTER_TEST(e, "window", "testengine_hover_covered_window_no_bring_to_front");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiViewport* viewport = ImGui::GetMainViewport();
+        ImGui::SetNextWindowPos(viewport->WorkPos);
+        ImGui::SetNextWindowSize(viewport->WorkSize);
+        if (ImGui::Begin("Main Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoDecoration))
+        {
+            if (ImGui::BeginMenuBar())
+            {
+                ImGui::Button("Hello");
+                ImGui::EndMenuBar();
+            }
+        }
+        ImGui::End();
+
+        // Window is initially in the way
+        ImGui::SetNextWindowPos(viewport->WorkPos, ImGuiCond_Appearing);
+        ImGui::SetNextWindowSize(viewport->WorkSize, ImGuiCond_Appearing);
+        ImGui::Begin("Window 2", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ctx->SetRef("Main Window");
+        ctx->ItemClick("**/Hello");
+    };
+
     // ## Test accessing items in non-scrolling menu layer when clipped
     t = IM_REGISTER_TEST(e, "testengine", "testengine_hover_hidden_menu");
     t->GuiFunc = [](ImGuiTestContext* ctx)

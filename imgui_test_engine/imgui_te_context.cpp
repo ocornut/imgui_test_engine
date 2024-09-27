@@ -1635,9 +1635,9 @@ void ImGuiTestContext::_MakeAimingSpaceOverPos(ImGuiViewport* viewport, ImGuiWin
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
     LogDebug("_MakeAimingSpaceOverPos(over_window = '%s', over_pos = %.2f,%.2f)", over_window ? over_window->Name : "N/A", over_pos.x, over_pos.y);
 
-    const int over_window_n = (over_window != NULL) ? ImGui::FindWindowDisplayIndex(over_window) : 0;
+    const int over_window_n = (over_window != NULL) ? ImGui::FindWindowDisplayIndex(over_window) : -1;
     const ImVec2 window_min_pos = over_pos + g.WindowsHoverPadding + ImVec2(1.0f, 1.0f);
-    for (int window_n = g.Windows.Size - 1; window_n >= over_window_n; window_n--)
+    for (int window_n = g.Windows.Size - 1; window_n > over_window_n; window_n--)
     {
         ImGuiWindow* window = g.Windows[window_n];
         if (window->WasActive == false)
@@ -1651,9 +1651,21 @@ void ImGuiTestContext::_MakeAimingSpaceOverPos(ImGuiViewport* viewport, ImGuiWin
         IM_UNUSED(viewport);
         if (window->RootWindow != window)
             continue;
+        if (window->Flags & ImGuiWindowFlags_NoMove)
+            continue;
 #endif
         if (window->Rect().Contains(window_min_pos))
-            WindowMove(window->Name, window_min_pos);
+        {
+            WindowMove(window->ID, window_min_pos);
+
+            // Verify that we have managed to move the window..
+            if (ImLengthSqr(window->Pos - window_min_pos) >= 1.0f)
+            {
+                LogWarning("Failed to move window '%s'! While trying to make space to click at (%.2f,%.2f) over window '%s'.",
+                    window->Name, over_pos.x, over_pos.y, over_window ? over_window->Name : "N/A");
+                //IM_CHECK_EQ(window->Pos, window_min_pos); // Failed to move window to make space
+            }
+        }
     }
 }
 
