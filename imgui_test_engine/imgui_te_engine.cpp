@@ -75,6 +75,7 @@ static void ImGuiTestEngine_PreRender(ImGuiTestEngine* engine, ImGuiContext* ui_
 static void ImGuiTestEngine_PostRender(ImGuiTestEngine* engine, ImGuiContext* ui_ctx);
 static void ImGuiTestEngine_UpdateHooks(ImGuiTestEngine* engine);
 static void ImGuiTestEngine_RunGuiFunc(ImGuiTestEngine* engine);
+static void ImGuiTestEngine_RunTestFunc(ImGuiTestEngine* engine);
 static void ImGuiTestEngine_ErrorRecoverySetup(ImGuiTestEngine* engine);
 static void ImGuiTestEngine_ErrorRecoveryRun(ImGuiTestEngine* engine);
 static void ImGuiTestEngine_TestQueueCoroutineMain(void* engine_opaque);
@@ -876,17 +877,9 @@ static void ImGuiTestEngine_PostNewFrame(ImGuiTestEngine* engine, ImGuiContext* 
     // Call user GUI function
     ImGuiTestEngine_RunGuiFunc(engine);
 
-    // Process on-going queues in a coroutine
-    // Run the test coroutine. This will resume the test queue from either the last point the test called YieldFromCoroutine(),
-    // or the loop in ImGuiTestEngine_TestQueueCoroutineMain that does so if no test is running.
-    // If you want to breakpoint the point execution continues in the test code, breakpoint the exit condition in YieldFromCoroutine()
-    const int input_queue_size_before = ui_ctx->InputEventsQueue.Size;
-    engine->IO.CoroutineFuncs->RunFunc(engine->TestQueueCoroutine);
-
-    // Events added by TestFunc() marked automaticaly to not be deleted
-    if (engine->TestContext && (engine->TestContext->RunFlags & ImGuiTestRunFlags_EnableRawInputs))
-        for (int n = input_queue_size_before; n < ui_ctx->InputEventsQueue.Size; n++)
-            ui_ctx->InputEventsQueue[n].AddedByTestEngine = true;
+    // Call user Test Function
+    // (process on-going queues in a coroutine)
+    ImGuiTestEngine_RunTestFunc(engine);
 
     // Update hooks and output flags
     ImGuiTestEngine_UpdateHooks(engine);
@@ -952,6 +945,24 @@ static void ImGuiTestEngine_RunGuiFunc(ImGuiTestEngine* engine)
     }
     if (ctx)
         ctx->FirstGuiFrame = false;
+}
+
+static void ImGuiTestEngine_RunTestFunc(ImGuiTestEngine* engine)
+{
+    ImGuiTestContext* ctx = engine->TestContext;
+    ImGuiContext* ui_ctx = engine->UiContextTarget;
+
+    // Process on-going queues in a coroutine
+    // Run the test coroutine. This will resume the test queue from either the last point the test called YieldFromCoroutine(),
+    // or the loop in ImGuiTestEngine_TestQueueCoroutineMain that does so if no test is running.
+    // If you want to breakpoint the point execution continues in the test code, breakpoint the exit condition in YieldFromCoroutine()
+    const int input_queue_size_before = ui_ctx->InputEventsQueue.Size;
+    engine->IO.CoroutineFuncs->RunFunc(engine->TestQueueCoroutine);
+
+    // Events added by TestFunc() marked automaticaly to not be deleted
+    if (engine->TestContext && (engine->TestContext->RunFlags & ImGuiTestRunFlags_EnableRawInputs))
+        for (int n = input_queue_size_before; n < ui_ctx->InputEventsQueue.Size; n++)
+            ui_ctx->InputEventsQueue[n].AddedByTestEngine = true;
 }
 
 // Main function for the test coroutine

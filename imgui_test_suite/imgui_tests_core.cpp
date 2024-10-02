@@ -886,6 +886,7 @@ void RegisterTests_Window(ImGuiTestEngine* e)
         ctx->MouseClickOnVoid();                                                        // Ensure no window is focused.
         ctx->ItemClick("Open", ImGuiMouseButton_Right, ImGuiTestOpFlags_NoFocusWindow); // Open popup without focusing window.
         IM_CHECK(g.OpenPopupStack.Size == 1);
+        IM_CHECK(g.OpenPopupStack[0].Window != NULL);
         IM_CHECK_EQ(g.OpenPopupStack[0].Window->ID, ctx->PopupGetWindowID("Popup"));
     };
 
