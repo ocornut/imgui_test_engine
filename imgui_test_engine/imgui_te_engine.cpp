@@ -131,6 +131,13 @@ ImGuiTestEngine::~ImGuiTestEngine()
     IM_DELETE(UiFilterPerfs);
 }
 
+// Using named functions here instead of lambda gives nicer call-stacks (mostly because we frequently step in PostNewFrame)
+static void ImGuiTestEngine_ShutdownHook(ImGuiContext* ui_ctx, ImGuiContextHook* hook)      { ImGuiTestEngine_UnbindImGuiContext((ImGuiTestEngine*)hook->UserData, ui_ctx); };
+static void ImGuiTestEngine_PreNewFrameHook(ImGuiContext* ui_ctx, ImGuiContextHook* hook)   { ImGuiTestEngine_PreNewFrame((ImGuiTestEngine*)hook->UserData, ui_ctx); };
+static void ImGuiTestEngine_PostNewFrameHook(ImGuiContext* ui_ctx, ImGuiContextHook* hook)  { ImGuiTestEngine_PostNewFrame((ImGuiTestEngine*)hook->UserData, ui_ctx); };
+static void ImGuiTestEngine_PreRenderHook(ImGuiContext* ui_ctx, ImGuiContextHook* hook)     { ImGuiTestEngine_PreRender((ImGuiTestEngine*)hook->UserData, ui_ctx); };
+static void ImGuiTestEngine_PostRenderHook(ImGuiContext* ui_ctx, ImGuiContextHook* hook)    { ImGuiTestEngine_PostRender((ImGuiTestEngine*)hook->UserData, ui_ctx); };
+
 static void ImGuiTestEngine_BindImGuiContext(ImGuiTestEngine* engine, ImGuiContext* ui_ctx)
 {
     IM_ASSERT(engine->UiContextTarget == ui_ctx);
@@ -151,27 +158,27 @@ static void ImGuiTestEngine_BindImGuiContext(ImGuiTestEngine* engine, ImGuiConte
     // Install generic context hooks facility
     ImGuiContextHook hook;
     hook.Type = ImGuiContextHookType_Shutdown;
-    hook.Callback = [](ImGuiContext* ui_ctx, ImGuiContextHook* hook) { ImGuiTestEngine_UnbindImGuiContext((ImGuiTestEngine*)hook->UserData, ui_ctx); };
+    hook.Callback = ImGuiTestEngine_ShutdownHook;
     hook.UserData = (void*)engine;
     ImGui::AddContextHook(ui_ctx, &hook);
 
     hook.Type = ImGuiContextHookType_NewFramePre;
-    hook.Callback = [](ImGuiContext* ui_ctx, ImGuiContextHook* hook) { ImGuiTestEngine_PreNewFrame((ImGuiTestEngine*)hook->UserData, ui_ctx); };
+    hook.Callback = ImGuiTestEngine_PreNewFrameHook;
     hook.UserData = (void*)engine;
     ImGui::AddContextHook(ui_ctx, &hook);
 
     hook.Type = ImGuiContextHookType_NewFramePost;
-    hook.Callback = [](ImGuiContext* ui_ctx, ImGuiContextHook* hook) { ImGuiTestEngine_PostNewFrame((ImGuiTestEngine*)hook->UserData, ui_ctx); };
+    hook.Callback = ImGuiTestEngine_PostNewFrameHook;
     hook.UserData = (void*)engine;
     ImGui::AddContextHook(ui_ctx, &hook);
 
     hook.Type = ImGuiContextHookType_RenderPre;
-    hook.Callback = [](ImGuiContext* ui_ctx, ImGuiContextHook* hook) { ImGuiTestEngine_PreRender((ImGuiTestEngine*)hook->UserData, ui_ctx); };
+    hook.Callback = ImGuiTestEngine_PreRenderHook;
     hook.UserData = (void*)engine;
     ImGui::AddContextHook(ui_ctx, &hook);
 
     hook.Type = ImGuiContextHookType_RenderPost;
-    hook.Callback = [](ImGuiContext* ui_ctx, ImGuiContextHook* hook) { ImGuiTestEngine_PostRender((ImGuiTestEngine*)hook->UserData, ui_ctx); };
+    hook.Callback = ImGuiTestEngine_PostRenderHook;
     hook.UserData = (void*)engine;
     ImGui::AddContextHook(ui_ctx, &hook);
 
