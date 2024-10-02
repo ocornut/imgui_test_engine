@@ -71,6 +71,7 @@ static void ImGuiTestEngine_ProcessTestQueue(ImGuiTestEngine* engine);
 static void ImGuiTestEngine_ClearTests(ImGuiTestEngine* engine);
 static void ImGuiTestEngine_PreNewFrame(ImGuiTestEngine* engine, ImGuiContext* ui_ctx);
 static void ImGuiTestEngine_PostNewFrame(ImGuiTestEngine* engine, ImGuiContext* ui_ctx);
+static void ImGuiTestEngine_PreEndFrame(ImGuiTestEngine* engine, ImGuiContext* ui_ctx);
 static void ImGuiTestEngine_PreRender(ImGuiTestEngine* engine, ImGuiContext* ui_ctx);
 static void ImGuiTestEngine_PostRender(ImGuiTestEngine* engine, ImGuiContext* ui_ctx);
 static void ImGuiTestEngine_UpdateHooks(ImGuiTestEngine* engine);
@@ -136,6 +137,7 @@ ImGuiTestEngine::~ImGuiTestEngine()
 static void ImGuiTestEngine_ShutdownHook(ImGuiContext* ui_ctx, ImGuiContextHook* hook)      { ImGuiTestEngine_UnbindImGuiContext((ImGuiTestEngine*)hook->UserData, ui_ctx); };
 static void ImGuiTestEngine_PreNewFrameHook(ImGuiContext* ui_ctx, ImGuiContextHook* hook)   { ImGuiTestEngine_PreNewFrame((ImGuiTestEngine*)hook->UserData, ui_ctx); };
 static void ImGuiTestEngine_PostNewFrameHook(ImGuiContext* ui_ctx, ImGuiContextHook* hook)  { ImGuiTestEngine_PostNewFrame((ImGuiTestEngine*)hook->UserData, ui_ctx); };
+static void ImGuiTestEngine_PreEndFrameHook(ImGuiContext* ui_ctx, ImGuiContextHook* hook)   { ImGuiTestEngine_PreEndFrame((ImGuiTestEngine*)hook->UserData, ui_ctx); };
 static void ImGuiTestEngine_PreRenderHook(ImGuiContext* ui_ctx, ImGuiContextHook* hook)     { ImGuiTestEngine_PreRender((ImGuiTestEngine*)hook->UserData, ui_ctx); };
 static void ImGuiTestEngine_PostRenderHook(ImGuiContext* ui_ctx, ImGuiContextHook* hook)    { ImGuiTestEngine_PostRender((ImGuiTestEngine*)hook->UserData, ui_ctx); };
 
@@ -170,6 +172,11 @@ static void ImGuiTestEngine_BindImGuiContext(ImGuiTestEngine* engine, ImGuiConte
 
     hook.Type = ImGuiContextHookType_NewFramePost;
     hook.Callback = ImGuiTestEngine_PostNewFrameHook;
+    hook.UserData = (void*)engine;
+    ImGui::AddContextHook(ui_ctx, &hook);
+
+    hook.Type = ImGuiContextHookType_EndFramePre;
+    hook.Callback = ImGuiTestEngine_PreEndFrameHook;
     hook.UserData = (void*)engine;
     ImGui::AddContextHook(ui_ctx, &hook);
 
@@ -876,6 +883,11 @@ static void ImGuiTestEngine_PostNewFrame(ImGuiTestEngine* engine, ImGuiContext* 
 
     // Call user GUI function
     ImGuiTestEngine_RunGuiFunc(engine);
+}
+
+static void ImGuiTestEngine_PreEndFrame(ImGuiTestEngine* engine, ImGuiContext* ui_ctx)
+{
+    IM_UNUSED(ui_ctx);
 
     // Call user Test Function
     // (process on-going queues in a coroutine)
@@ -949,7 +961,6 @@ static void ImGuiTestEngine_RunGuiFunc(ImGuiTestEngine* engine)
 
 static void ImGuiTestEngine_RunTestFunc(ImGuiTestEngine* engine)
 {
-    ImGuiTestContext* ctx = engine->TestContext;
     ImGuiContext* ui_ctx = engine->UiContextTarget;
 
     // Process on-going queues in a coroutine

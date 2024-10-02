@@ -5,6 +5,17 @@ CHANGELOG
    Those changes are not all listed here.
 ** For a while this is going to ONLY INCLUDE BREAKING CHANGES.
 
+2024/10/02:
+- TestEngine: moved processing of TestFunc from being done post-NewFrame to being done pre-EndFrame.
+  This makes all the timing/order matches between tests using GuiFunc and tests relying on gui code
+  submitted independently.
+    Prev: NewFrame -> test's GuiFunc -> test's TestFunc -> other UI -> EndFrame
+    Now:  NewFrame -> test's GuiFunc -> other UI -> test's TestFunc -> EndFrame
+  This doesn't make a difference for TestSuite.
+  This _should_ not make a difference for end-user, other than making all timing/order matches
+  between TestSuite and user apps not using test's GuiFunc. Different order means that subtle
+  ordering issues applying to user not using GuiFunc would have been uncaught.
+
 2024/09/27:
 - TestEngine: updated for support for error handling/recovery mechanism from v1.91.3.
 - TestEngine: fixed issues dealing with covered ImGuiWindowFlags_NoBringToFrontOnFocus windows.
