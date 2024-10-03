@@ -509,7 +509,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
     };
 
     // ## Test Sliders and Drags clamping values
-    t = IM_REGISTER_TEST(e, "widgets", "widgets_dragslider_clamping");
+    t = IM_REGISTER_TEST(e, "widgets", "widgets_dragslider_clamp");
     struct ImGuiDragSliderVars { float DragValue = 0.0f; float DragMin = 0.0f; float DragMax = 1.0f; float SliderValue = 0.0f; float SliderMin = 0.0f; float SliderMax = 0.0f; float ScalarValue = 0.0f; void* ScalarMinP = NULL; void* ScalarMaxP = NULL; ImGuiSliderFlags Flags = ImGuiSliderFlags_None; };
     t->SetVarsDataType<ImGuiDragSliderVars>();
     t->GuiFunc = [](ImGuiTestContext* ctx)
@@ -527,10 +527,18 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ImGuiContext& g = *ImGui::GetCurrentContext();
         ImGuiDragSliderVars& vars = ctx->GetVars<ImGuiDragSliderVars>();
         ctx->SetRef("Test Window");
+#if IMGUI_VERSION_NUM >= 19125
+        ImGuiSliderFlags flags[] = { ImGuiSliderFlags_None, ImGuiSliderFlags_ClampOnInput, ImGuiSliderFlags_ClampZeroRange, ImGuiSliderFlags_AlwaysClamp };
+#else
         ImGuiSliderFlags flags[] = { ImGuiSliderFlags_None, ImGuiSliderFlags_AlwaysClamp };
+#endif
         for (int i = 0; i < IM_ARRAYSIZE(flags); ++i)
         {
-            bool clamp_on_input = flags[i] == ImGuiSliderFlags_AlwaysClamp;
+#if IMGUI_VERSION_NUM >= 19125
+            bool clamp_on_input = (flags[i] & ImGuiSliderFlags_ClampOnInput) != 0;
+#else
+            bool clamp_on_input = (flags[i] & ImGuiSliderFlags_AlwaysClamp) != 0;
+#endif
             vars.Flags = flags[i];
 
             float slider_min_max[][2] = { {0.0f, 1.0f}, {0.0f, 0.0f} };
@@ -575,7 +583,11 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
                 vars.DragMax = drag_min_max[j][1];
 
                 // [0,0] is equivalent to [-FLT_MAX, FLT_MAX] range
+#if IMGUI_VERSION_NUM >= 19125
+                bool unbound = (vars.DragMin == 0.0f && vars.DragMax == 0.0f && !(vars.Flags & ImGuiSliderFlags_ClampZeroRange)) || (vars.DragMin == -FLT_MAX && vars.DragMax == FLT_MAX);
+#else
                 bool unbound = (vars.DragMin == 0.0f && vars.DragMax == 0.0f) || (vars.DragMin == -FLT_MAX && vars.DragMax == FLT_MAX);
+#endif
                 float value_before_click = 0.0f;
 
                 ctx->ItemInputValue("Drag", -3);
