@@ -2852,14 +2852,18 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
     // ## Test drag sources with _SourceNoPreviewTooltip flag not producing a tooltip.
     // ## Test drag target/accept with ImGuiDragDropFlags_AcceptNoPreviewTooltip
     t = IM_REGISTER_TEST(e, "widgets", "widgets_dragdrop_no_preview_tooltip");
-    struct DragNoPreviewTooltipVars { bool TooltipWasVisible = false; bool TooltipIsVisible = false; ImGuiDragDropFlags AcceptFlags = 0; };
+    struct DragNoPreviewTooltipVars { bool TooltipHasBeenVisible = false; int TooltipLastVisibleFrame = -1; ImGuiDragDropFlags AcceptFlags = 0; };
     t->Flags |= ImGuiTestFlags_NoGuiWarmUp;
     t->SetVarsDataType<DragNoPreviewTooltipVars>();
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
+        ImGuiContext& g = *ctx->UiContext;
         DragNoPreviewTooltipVars& vars = ctx->GetVars<DragNoPreviewTooltipVars>();
 
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
+
+        ImGui::CheckboxFlags("_AcceptNoPreviewTooltip", &vars.AcceptFlags, ImGuiDragDropFlags_AcceptNoPreviewTooltip);
+        ImGui::Separator();
 
         auto create_drag_drop_source = [](ImGuiDragDropFlags flags)
         {
@@ -2871,7 +2875,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
             }
         };
 
-        ImGui::Button("Drag");
+        ImGui::Button("Drag Src No Tooltip");
         create_drag_drop_source(ImGuiDragDropFlags_SourceNoPreviewTooltip);
 
         ImGui::Button("Drag Extern");
@@ -2888,40 +2892,43 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
             ImGui::EndDragDropTarget();
         }
 
-        ImGuiContext& g = *ctx->UiContext;
-        ImGuiWindow* tooltip = ctx->GetWindowByRef(Str16f("//##Tooltip_%02d", g.TooltipOverrideCount).c_str());
-        vars.TooltipIsVisible = g.TooltipOverrideCount != 0 || (tooltip != NULL && (tooltip->Active || tooltip->WasActive));
-        if (vars.TooltipIsVisible)
-            vars.TooltipWasVisible |= vars.TooltipIsVisible;
+        ImGuiWindow* tooltip = g.TooltipPreviousWindow;
+        //ImGuiWindow* tooltip = ctx->GetWindowByRef(Str16f("//##Tooltip_%02d", g.TooltipOverrideCount).c_str());
+        if (tooltip != NULL && (tooltip->Active || tooltip->WasActive))
+        {
+            vars.TooltipLastVisibleFrame = g.FrameCount;
+            vars.TooltipHasBeenVisible = true;
+        }
 
         ImGui::End();
     };
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
+        ImGuiContext& g = *ctx->UiContext;
         DragNoPreviewTooltipVars& vars = ctx->GetVars<DragNoPreviewTooltipVars>();
         ctx->SetRef("Test Window");
-        ctx->MouseMove("Drag");
-        vars.TooltipWasVisible = false;
-        ctx->ItemDragAndDrop("Drag", "Drop");
-        IM_CHECK(vars.TooltipWasVisible == false);
-        vars.TooltipWasVisible = false;
+        ctx->MouseMove("Drag Src No Tooltip");
+        vars.TooltipHasBeenVisible = false;
+        ctx->ItemDragAndDrop("Drag Src No Tooltip", "Drop");
+        IM_CHECK(vars.TooltipHasBeenVisible == false);
+        vars.TooltipHasBeenVisible = false;
         ctx->ItemDragAndDrop("Drag Extern", "Drop");
-        IM_CHECK(vars.TooltipWasVisible == false);
-        vars.TooltipWasVisible = false;
+        IM_CHECK(vars.TooltipHasBeenVisible == false);
+        vars.TooltipHasBeenVisible = false;
+        ctx->Yield();
 
         vars.AcceptFlags = 0;
         ctx->ItemDragOverAndHold("Drag Accept", "Drop");
         //ctx->Yield();   // A visible tooltip window gets hidden with one frame delay. (due to how we test for Active || WasActive)
-        IM_CHECK(vars.TooltipWasVisible == true);
-        IM_CHECK(vars.TooltipIsVisible == true);
-        ctx->MouseUp();
-        vars.TooltipWasVisible = false;
+        IM_CHECK(vars.TooltipHasBeenVisible == true);
+        IM_CHECK_EQ(vars.TooltipLastVisibleFrame + 1, g.FrameCount); // Bit wonky
+        vars.TooltipHasBeenVisible = false;
 
         vars.AcceptFlags = ImGuiDragDropFlags_AcceptNoPreviewTooltip;
         ctx->ItemDragOverAndHold("Drag Accept", "Drop");
         ctx->Yield();   // A visible tooltip window gets hidden with one frame delay (due to how we test for Active || WasActive)
-        IM_CHECK(vars.TooltipWasVisible == true);
-        IM_CHECK(vars.TooltipIsVisible == false);
+        IM_CHECK(vars.TooltipHasBeenVisible == true);
+        IM_CHECK_LT(vars.TooltipLastVisibleFrame + 1, g.FrameCount);
         ctx->MouseUp();
     };
 

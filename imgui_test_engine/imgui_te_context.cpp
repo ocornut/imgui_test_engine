@@ -3115,7 +3115,8 @@ void    ImGuiTestContext::ItemHoldForFrames(ImGuiTestRef ref, int frames)
     Yield();
 }
 
-// Used to test opening containers (TreeNode, Tabs) while dragging a payload
+// Used to test opening containers (TreeNode, Tabs) while dragging a payload.
+// Hold for 1 second and then release mouse button.
 void    ImGuiTestContext::ItemDragOverAndHold(ImGuiTestRef ref_src, ImGuiTestRef ref_dst)
 {
     if (IsError())
