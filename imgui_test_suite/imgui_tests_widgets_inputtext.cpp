@@ -895,6 +895,246 @@ void RegisterTests_WidgetsInputText(ImGuiTestEngine* e)
         }
     };
 
+#if IMGUI_VERSION_NUM >= 19130
+    // ## Test mouse double/triple-click word/line selection modes. (#8032)
+    t = IM_REGISTER_TEST(e, "widgets", "widgets_inputtext_selection_modes");
+    struct InputTextSelectionVars { Str str; ImVec2 top_left; };
+    t->SetVarsDataType<InputTextSelectionVars>([](auto* ctx, auto& vars)
+    {
+        vars.str = "Hello world! What's-up? good/bad\n"
+            "http://example.com/sub-domain <- url\n"
+            "#hashtag g/^re$/p (foo@bar) 9+10 $100\n"
+            "  ints & floats  \n"
+            "1. Earth 2. Moon 3. Sun\n";
+    });
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        InputTextSelectionVars& vars = ctx->GetVars<InputTextSelectionVars>();
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
+        ImGui::InputTextMultiline("Field", &vars.str, ImVec2(300, 100));
+        vars.top_left = ImGui::GetItemRectMin();
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        InputTextSelectionVars& vars = ctx->GetVars<InputTextSelectionVars>();
+        ctx->SetRef("Test Window");
+        ctx->ItemClick("Field");
+        ImGuiInputTextState* state = ImGui::GetInputTextState(ctx->GetID("Field"));
+        ImStb::STB_TexteditState& stb = *state->Stb;
+
+        ImVector<int> newline_indices;
+        for (int i = 0; i < vars.str.length(); ++i)
+        {
+            if (vars.str[i] == '\n')
+                newline_indices.push_back(i);
+        }
+
+        const auto& index_pos = [&](int index) -> ImVec2
+        {
+            int base = -1;
+            int row = 0;
+            for (int newline_index : newline_indices)
+            {
+                if (index <= newline_index)
+                    break;
+
+                base = newline_index;
+                ++row;
+            }
+
+            return vars.top_left + (ImGui::CalcTextSize("") * row) + ImGui::CalcTextSize(vars.str.c_str() + base + 1, vars.str.c_str() + index + 1);
+        };
+
+        // Double click on "W[|h]at"
+        // Quirk: "[|W]hat" will (incorrectly) do "world[!|]"
+        ctx->MouseMoveToPos(index_pos(14));
+        ctx->MouseDoubleClick();
+        // Expected selection: "[What's-up?|]"
+        IM_CHECK_EQ(stb.select_start, 13);
+        IM_CHECK_EQ(stb.select_end, 23);
+        IM_CHECK_EQ(stb.cursor, stb.select_end);
+
+        ctx->MouseClick(); IM_CHECK_EQ(state->HasSelection(), false);
+
+        // Quirk: cursor is always on the left side of first line selection
+        ctx->MouseClickMulti(0, 3);
+        IM_CHECK_EQ(stb.select_start, 33);
+        IM_CHECK_EQ(stb.select_end, 0);
+        IM_CHECK_EQ(stb.cursor, stb.select_end);
+
+        ctx->MouseClick(); IM_CHECK_EQ(state->HasSelection(), false);
+
+        // Double click and hold on "(f[|o]o@"
+        ctx->MouseMoveToPos(index_pos(90));
+        ctx->MouseClickMulti(0, 2, true);
+        // Verify selection mode states
+        IM_CHECK_EQ(state->SelectionClicks, 2);
+        IM_CHECK_EQ(state->SelectionOrigin, 90);
+        // Expected selection: "([foo@bar)|]"
+        IM_CHECK_EQ(stb.select_start, 89);
+        IM_CHECK_EQ(stb.select_end, 97);
+        IM_CHECK_EQ(stb.cursor, stb.select_end);
+
+        // Mouse move to "2. |Moon"
+        ctx->MouseMoveToPos(index_pos(138));
+        // Expected selection: "... 2. Moon|]"
+        IM_CHECK_EQ(stb.select_start, 89);
+        IM_CHECK_EQ(stb.select_end, 142);
+        IM_CHECK_EQ(stb.cursor, stb.select_end);
+
+        // Mouse move to "worl|d!"
+        ctx->MouseMoveToPos(index_pos(10));
+        // Expected selection: "[|world! ..."
+        IM_CHECK_EQ(stb.select_start, 97);
+        IM_CHECK_EQ(stb.select_end, 6);
+        IM_CHECK_EQ(stb.cursor, stb.select_end);
+
+        // Mouse move to "(|foo@"
+        ctx->MouseMoveToPos(index_pos(89));
+        // Expected selection: "([|foo@bar)]"
+        IM_CHECK_EQ(stb.select_start, 97);
+        IM_CHECK_EQ(stb.select_end, 89);
+        IM_CHECK_EQ(stb.cursor, stb.select_end);
+
+        ctx->MouseUp();
+        IM_CHECK_EQ(state->SelectionClicks, 0);
+
+        // Double click and hold on "ints| &"
+        ctx->MouseMoveToPos(index_pos(114));
+        ctx->MouseClickMulti(0, 2, true);
+        // Verify selection mode states
+        IM_CHECK_EQ(state->SelectionClicks, 2);
+        IM_CHECK_EQ(state->SelectionOrigin, 114);
+        // Expected selection: "[ints|]"
+        IM_CHECK_EQ(stb.select_start, 110);
+        IM_CHECK_EQ(stb.select_end, 114);
+        IM_CHECK_EQ(stb.cursor, stb.select_end);
+
+        // Mouse move to "|world"
+        ctx->MouseMoveToPos(index_pos(6));
+        // Expected selection: "[|world ... ints]"
+        IM_CHECK_EQ(stb.select_start, 114);
+        IM_CHECK_EQ(stb.select_end, 6);
+        IM_CHECK_EQ(stb.cursor, stb.select_end);
+
+        ctx->MouseUp();
+        IM_CHECK_EQ(state->SelectionClicks, 0);
+
+        // Triple click and hold on "ex|ample"
+        ctx->MouseMoveToPos(index_pos(42));
+        ctx->MouseClickMulti(0, 3, true);
+        IM_CHECK_EQ(state->SelectionClicks, 3);
+        IM_CHECK_EQ(state->SelectionOrigin, 42);
+        // Expected selection: "[|http ... url\n]"
+        IM_CHECK_EQ(stb.select_start, 70);
+        IM_CHECK_EQ(stb.select_end, 33);
+        IM_CHECK_EQ(stb.cursor, stb.select_end);
+
+        // Mouse move to "good|/bad"
+        ctx->MouseMoveToPos(index_pos(28));
+        // Expected selection: "[|Hello ... url\n]"
+        IM_CHECK_EQ(stb.select_start, 70);
+        IM_CHECK_EQ(stb.select_end, 0);
+        IM_CHECK_EQ(stb.cursor, stb.select_end);
+
+        // Mouse move to "f|loats"
+        ctx->MouseMoveToPos(index_pos(118));
+        // Expected selection: "[http ... floats  \n|]"
+        IM_CHECK_EQ(stb.select_start, 33);
+        IM_CHECK_EQ(stb.select_end, 126);
+        IM_CHECK_EQ(stb.cursor, stb.select_end);
+
+        // Mouse move to "<|- url"
+        ctx->MouseMoveToPos(index_pos(64));
+        // Expected selection: "[http ... url\n|]"
+        IM_CHECK_EQ(stb.select_start, 33);
+        IM_CHECK_EQ(stb.select_end, 70);
+        IM_CHECK_EQ(stb.cursor, stb.select_end);
+
+        ctx->MouseUp();
+        IM_CHECK_EQ(state->SelectionClicks, 0);
+
+        // Double click and hold on "domain| "
+        ctx->MouseMoveToPos(index_pos(62));
+        ctx->MouseClickMulti(0, 2, true);
+        // Verify selection mode states
+        IM_CHECK_EQ(state->SelectionClicks, 2);
+        IM_CHECK_EQ(state->SelectionOrigin, 62);
+        // Expected selection: "[domain|]"
+        IM_CHECK_EQ(stb.select_start, 52);
+        IM_CHECK_EQ(stb.select_end, 62);
+        IM_CHECK_EQ(stb.cursor, stb.select_end);
+        // Verify that text operations cancel ongoing selection
+        ctx->KeyPress(ImGuiKey_Backspace);
+        IM_CHECK_EQ(state->SelectionClicks, 0);
+        IM_CHECK_EQ(state->HasSelection(), false);
+        IM_CHECK_EQ(stb.cursor, 52);
+        ctx->MouseUp();
+
+        // Triple click and hold on "com/|"
+        ctx->MouseMoveToPos(index_pos(52));
+        ctx->MouseClickMulti(0, 3, true);
+        IM_CHECK_EQ(state->SelectionClicks, 3);
+        IM_CHECK_EQ(state->SelectionOrigin, 52);
+        // Expected selection: "[|http ... url\n]"
+        IM_CHECK_EQ(stb.select_start, 60);
+        IM_CHECK_EQ(stb.select_end, 33);
+        IM_CHECK_EQ(stb.cursor, stb.select_end);
+        ctx->KeyChars("line replace while mouse down");
+        ctx->KeyPress(ImGuiKey_Enter);
+        IM_CHECK_EQ(state->SelectionClicks, 0);
+        IM_CHECK_EQ(state->HasSelection(), false);
+        IM_CHECK_EQ(stb.cursor, 63);
+        ctx->MouseUp();
+
+        // Should update newline_indices when text changes. Skip for now.
+
+        // Double click and hold on "whi|le"
+        ctx->MouseMoveToPos(index_pos(49));
+        ctx->MouseClickMulti(0, 2, true);
+        IM_CHECK_EQ(state->SelectionClicks, 2);
+        IM_CHECK_EQ(state->SelectionOrigin, 49);
+        // Expected selection: "[while|]"
+        IM_CHECK_EQ(stb.select_start, 46);
+        IM_CHECK_EQ(stb.select_end, 51);
+        IM_CHECK_EQ(stb.cursor, stb.select_end);
+        // Verify keyboard selection still works
+        ctx->KeyPress(ImGuiMod_Ctrl | ImGuiMod_Shift | ImGuiKey_RightArrow, 3);
+        // Expected selection: "[while ... down|]"
+        IM_CHECK_EQ(stb.select_start, 46);
+        IM_CHECK_EQ(stb.select_end, 62);
+        IM_CHECK_EQ(stb.cursor, stb.select_end);
+        // Expected selection: "[while mouse |]"
+        ctx->KeyPress(ImGuiMod_Ctrl | ImGuiMod_Shift | ImGuiKey_LeftArrow);
+        IM_CHECK_EQ(stb.select_start, 46);
+        IM_CHECK_EQ(stb.select_end, 58);
+        IM_CHECK_EQ(stb.cursor, stb.select_end);
+        ctx->MouseUp();
+
+        // Double click and hold on "whi|le"
+        ctx->MouseMoveToPos(index_pos(49));
+        ctx->MouseClickMulti(0, 2, true);
+        ctx->MouseMoveToPos(index_pos(48));
+        // Expected selection: "[|while]"
+        IM_CHECK_EQ(stb.select_start, 51);
+        IM_CHECK_EQ(stb.select_end, 46);
+        IM_CHECK_EQ(stb.cursor, stb.select_end);
+        // Verify keyboard selection still works
+        ctx->KeyPress(ImGuiMod_Ctrl | ImGuiMod_Shift | ImGuiKey_LeftArrow, 2);
+        // Expected selection: "[|line ... while]"
+        IM_CHECK_EQ(stb.select_start, 51);
+        IM_CHECK_EQ(stb.select_end, 33);
+        IM_CHECK_EQ(stb.cursor, stb.select_end);
+        ctx->KeyPress(ImGuiMod_Ctrl | ImGuiMod_Shift | ImGuiKey_RightArrow);
+        // Expected selection: "[|replace while]"
+        IM_CHECK_EQ(stb.select_start, 51);
+        IM_CHECK_EQ(stb.select_end, 38);
+        IM_CHECK_EQ(stb.cursor, stb.select_end);
+        ctx->MouseUp();
+    };
+#endif
+
     // ## Verify that text selection does not leak spaces in password fields. (#4155)
     t = IM_REGISTER_TEST(e, "widgets", "widgets_inputtext_password");
     t->SetVarsDataType<InputTextCursorVars>();
