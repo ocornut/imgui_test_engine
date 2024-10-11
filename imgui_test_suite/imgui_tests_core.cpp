@@ -3496,16 +3496,33 @@ void RegisterTests_DrawList(ImGuiTestEngine* e)
         IM_CHECK_EQ(draw_list->CmdBuffer.back().ElemCount, 0u);
         ImGui::Button("Hello");
 
-        ImDrawCallback cb = [](const ImDrawList* parent_list, const ImDrawCmd* cmd)
+        ImDrawCallback cb1 = [](const ImDrawList* parent_list, const ImDrawCmd* cmd)
         {
             ImGuiTestContext* ctx = (ImGuiTestContext*)cmd->UserCallbackData;
             ctx->GenericVars.Int1++;
         };
-        draw_list->AddCallback(cb, (void*)ctx);
+        draw_list->AddCallback(cb1, (void*)ctx);
         IM_CHECK_EQ(draw_list->CmdBuffer.Size, 4);
 
-        draw_list->AddCallback(cb, (void*)ctx);
+        draw_list->AddCallback(cb1, (void*)ctx);
         IM_CHECK_EQ(draw_list->CmdBuffer.Size, 5);
+
+#if IMGUI_VERSION_NUM >= 19133
+        ImDrawCallback cb2 = [](const ImDrawList* parent_list, const ImDrawCmd* cmd)
+        {
+            IM_CHECK_EQ(cmd->UserCallbackData, nullptr);
+        };
+        draw_list->AddCallback(cb2, nullptr, 0);
+
+        ImDrawCallback cb3 = [](const ImDrawList* parent_list, const ImDrawCmd* cmd)
+        {
+            IM_CHECK_EQ(cmd->UserCallbackDataSize, strlen("Hello world") + 1);
+            IM_CHECK_STR_EQ((const char*)cmd->UserCallbackData, "Hello world");
+        };
+        char buf[32] = "Hello world";
+        draw_list->AddCallback(cb3, (void*)buf, strlen(buf) + 1);
+        memset(buf, 0, sizeof(buf)); // This is technically unnecessary but it is to convey that we are deep-copying data.
+#endif
 
         // Test callbacks in columns
         ImGui::Columns(3);
