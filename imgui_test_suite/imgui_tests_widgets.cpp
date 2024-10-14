@@ -133,8 +133,10 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
             vars.ButtonPressCount[2]++;
         if (ImGui::ButtonEx("Button3", ImVec2(0, 0), ImGuiButtonFlags_PressedOnClickReleaseAnywhere))
             vars.ButtonPressCount[3]++;
-        if (ImGui::ButtonEx("Button4", ImVec2(0, 0), ImGuiButtonFlags_Repeat))
+        ImGui::PushItemFlag(ImGuiItemFlags_ButtonRepeat, true);
+        if (ImGui::ButtonEx("Button4", ImVec2(0, 0)))
             vars.ButtonPressCount[4]++;
+        ImGui::PopItemFlag();
         ImGui::End();
     };
     t->TestFunc = [](ImGuiTestContext* ctx)
