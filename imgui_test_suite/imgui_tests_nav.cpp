@@ -658,6 +658,14 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
 
             ctx->KeyPress(chord_ctrl_tab);
             IM_CHECK(g.NavWindow == ctx->GetWindowByRef("Window 1"));
+
+            // Test CTRL+Tabbing from null focus
+#if IMGUI_VERSION_NUM >= 19134
+            ImGui::FocusWindow(NULL);
+            //ctx->WindowFocus(0u);
+            ctx->KeyPress(chord_ctrl_tab);
+            IM_CHECK(g.NavWindow == ctx->GetWindowByRef("Window 1"));
+#endif
         }
     };
 

@@ -3516,7 +3516,7 @@ void RegisterTests_DrawList(ImGuiTestEngine* e)
 
         ImDrawCallback cb3 = [](const ImDrawList* parent_list, const ImDrawCmd* cmd)
         {
-            IM_CHECK_EQ(cmd->UserCallbackDataSize, strlen("Hello world") + 1);
+            IM_CHECK_EQ(cmd->UserCallbackDataSize, (int)strlen("Hello world") + 1);
             IM_CHECK_STR_EQ((const char*)cmd->UserCallbackData, "Hello world");
         };
         char buf[32] = "Hello world";
