@@ -5650,6 +5650,12 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
             IM_CHECK(g.HoveredId == ctx->GetID(disabled_items[i])); // Will set HoveredId even when disabled.
         }
 
+#if IMGUI_VERSION_NUM >= 19135
+        ctx->WindowFocus("//Dear ImGui Demo");
+        ctx->ItemClick(disabled_items[0]);
+        IM_CHECK_EQ(g.NavWindow, window);
+#endif
+
         // Dragging a disabled item.
         ImVec2 window_pos = window->Pos;
         for (int i = 0; i < IM_ARRAYSIZE(disabled_items); i++)
