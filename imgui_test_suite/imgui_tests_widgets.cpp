@@ -5847,7 +5847,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ImGui::EndDisabled();
 
         // Case 3: SetNextItemShortcut() NOT within disabled block but with disabled item
-        // this will generally be handled by the 'if (g.LastItemData.InFlags & ImGuiItemFlags_Disabled)' check in ItemHandleShortcut()
+        // this will generally be handled by the 'if (g.LastItemData.ItemFlags & ImGuiItemFlags_Disabled)' check in ItemHandleShortcut()
         ImGui::SetNextItemShortcut(ImGuiMod_Ctrl | ImGuiKey_U);
         if (ImGui::Selectable("Ctrl+U", false, ImGuiSelectableFlags_Disabled))
             vars.Count++;

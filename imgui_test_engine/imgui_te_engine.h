@@ -307,7 +307,8 @@ struct ImGuiTestItemInfo
     ImGuiID                     ParentID = 0;               // Item Parent ID (value at top of the ID stack)
     ImRect                      RectFull = ImRect();        // Item Rectangle
     ImRect                      RectClipped = ImRect();     // Item Rectangle (clipped with window->ClipRect at time of item submission)
-    ImGuiItemFlags              InFlags = 0;                // Item flags
+    ImGuiItemFlags              ItemFlags = 0;              // Item flags
+    //ImGuiItemFlags            InFlags = 0;                // Item flags (OBSOLETE: before 2024/10/17 ItemFlags was called InFlags)
     ImGuiItemStatusFlags        StatusFlags = 0;            // Item Status flags (fully updated for some items only, compare TimestampStatus to FrameCount)
 
     ImGuiTestItemInfo()         { memset(this, 0, sizeof(*this)); }

@@ -7,6 +7,8 @@ CHANGELOG
 
 2024/10/17:
 - TestEngine: updated for minor internal changes in v1.91.4.
+- TestEngine: *BREAKING* renamed ImGuiTestItemInfo's InFlags to ItemFlags. 
+  (it's unlikely to have been used by end-user or tests. Please let us know if you did!).
 
 2024/10/02:
 - TestEngine: moved processing of TestFunc from being done post-NewFrame to being done pre-EndFrame.

@@ -1031,7 +1031,7 @@ ImGuiTestItemInfo ImGuiTestContext::ItemInfoOpenFullPath(ImGuiTestRef ref, ImGui
             if ((parent_item.StatusFlags & ImGuiItemStatusFlags_Openable) != 0 && (parent_item.StatusFlags & ImGuiItemStatusFlags_Opened) == 0)
             {
                 // Open intermediary item
-                if ((parent_item.InFlags & ImGuiItemFlags_Disabled) == 0) // FIXME: Report disabled state in log?
+                if ((parent_item.ItemFlags & ImGuiItemFlags_Disabled) == 0) // FIXME: Report disabled state in log?
                 {
                     ItemAction(ImGuiTestAction_Open, parent_item.ID, ImGuiTestOpFlags_NoAutoOpenFullPath);
                     opened_parents++;
@@ -2871,7 +2871,7 @@ void    ImGuiTestContext::ItemActionAll(ImGuiTestAction action, ImGuiTestRef ref
         {
             // Open parent
             if (action == ImGuiTestAction_Open)
-                if ((parent_info.StatusFlags & ImGuiItemStatusFlags_Openable) && (parent_info.InFlags & ImGuiItemFlags_Disabled) == 0)
+                if ((parent_info.StatusFlags & ImGuiItemStatusFlags_Openable) && (parent_info.ItemFlags & ImGuiItemFlags_Disabled) == 0)
                     ItemOpen(ref_parent, ImGuiTestOpFlags_NoError);
         }
     }
@@ -2944,7 +2944,7 @@ void    ImGuiTestContext::ItemActionAll(ImGuiTestAction action, ImGuiTestRef ref
                 break;
             case ImGuiTestAction_Check:
                 if ((item.StatusFlags & ImGuiItemStatusFlags_Checkable) && !(item.StatusFlags & ImGuiItemStatusFlags_Checked))
-                    if ((item.InFlags & ImGuiItemFlags_Disabled) == 0)
+                    if ((item.ItemFlags & ImGuiItemFlags_Disabled) == 0)
                     {
                         ItemAction(action, item.ID);
                         actioned_total++;
@@ -2952,7 +2952,7 @@ void    ImGuiTestContext::ItemActionAll(ImGuiTestAction action, ImGuiTestRef ref
                 break;
             case ImGuiTestAction_Uncheck:
                 if ((item.StatusFlags & ImGuiItemStatusFlags_Checkable) && (item.StatusFlags & ImGuiItemStatusFlags_Checked))
-                    if ((item.InFlags & ImGuiItemFlags_Disabled) == 0)
+                    if ((item.ItemFlags & ImGuiItemFlags_Disabled) == 0)
                     {
                         ItemAction(action, item.ID);
                         actioned_total++;
@@ -2960,7 +2960,7 @@ void    ImGuiTestContext::ItemActionAll(ImGuiTestAction action, ImGuiTestRef ref
                 break;
             case ImGuiTestAction_Open:
                 if ((item.StatusFlags & ImGuiItemStatusFlags_Openable) && !(item.StatusFlags & ImGuiItemStatusFlags_Opened))
-                    if ((item.InFlags & ImGuiItemFlags_Disabled) == 0)
+                    if ((item.ItemFlags & ImGuiItemFlags_Disabled) == 0)
                     {
                         ItemAction(action, item.ID);
                         actioned_total++;
@@ -2968,7 +2968,7 @@ void    ImGuiTestContext::ItemActionAll(ImGuiTestAction action, ImGuiTestRef ref
                 break;
             case ImGuiTestAction_Close:
                 if (item.Depth == highest_depth && (item.StatusFlags & ImGuiItemStatusFlags_Openable) && (item.StatusFlags & ImGuiItemStatusFlags_Opened))
-                    if ((item.InFlags & ImGuiItemFlags_Disabled) == 0)
+                    if ((item.ItemFlags & ImGuiItemFlags_Disabled) == 0)
                     {
                         ItemClose(item.ID);
                         actioned_total++;
@@ -3414,7 +3414,7 @@ void    ImGuiTestContext::MenuActionAll(ImGuiTestAction action, ImGuiTestRef ref
         if (action == ImGuiTestAction_Check || action == ImGuiTestAction_Uncheck)
         {
             ImGuiTestItemInfo info2 = ItemInfo(item.ID); // refresh info
-            if ((info2.InFlags & ImGuiItemFlags_Disabled) != 0) // FIXME: Report disabled state in log? Make that optional?
+            if ((info2.ItemFlags & ImGuiItemFlags_Disabled) != 0) // FIXME: Report disabled state in log? Make that optional?
                 continue;
             if ((info2.StatusFlags & ImGuiItemStatusFlags_Checkable) == 0)
                 continue;
