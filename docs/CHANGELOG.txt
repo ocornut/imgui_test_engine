@@ -5,6 +5,9 @@ CHANGELOG
    Those changes are not all listed here.
 ** For a while this is going to ONLY INCLUDE BREAKING CHANGES.
 
+2024/10/17:
+- TestEngine: updated for minor internal changes in v1.91.4.
+
 2024/10/02:
 - TestEngine: moved processing of TestFunc from being done post-NewFrame to being done pre-EndFrame.
   This makes all the timing/order matches between tests using GuiFunc and tests relying on gui code

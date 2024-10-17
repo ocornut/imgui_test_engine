@@ -2099,7 +2099,11 @@ static void ImGuiTestEngineHook_ItemAdd_GatherTask(ImGuiContext* ui_ctx, ImGuiTe
         item->RectClipped.ClipWithFull(item->RectFull);
         item->NavLayer = window->DC.NavLayerCurrent;
         item->Depth = result_depth;
+#if IMGUI_VERSION_NUM >= 19135
+        item->InFlags = item_data ? item_data->ItemFlags : ImGuiItemFlags_None;
+#else
         item->InFlags = item_data ? item_data->InFlags : ImGuiItemFlags_None;
+#endif
         item->StatusFlags = item_data ? item_data->StatusFlags : ImGuiItemStatusFlags_None;
         task->LastItemInfo = item;
     }
@@ -2128,7 +2132,11 @@ void ImGuiTestEngineHook_ItemAdd(ImGuiContext* ui_ctx, ImGuiID id, const ImRect&
         item->RectClipped.ClipWithFull(item->RectFull);
         item->NavLayer = window->DC.NavLayerCurrent;
         item->Depth = 0;
+#if IMGUI_VERSION_NUM >= 19135
+        item->InFlags = item_data ? item_data->ItemFlags : ImGuiItemFlags_None;
+#else
         item->InFlags = item_data ? item_data->InFlags : ImGuiItemFlags_None;
+#endif
         item->StatusFlags = item_data ? item_data->StatusFlags : ImGuiItemStatusFlags_None;
     }
 
