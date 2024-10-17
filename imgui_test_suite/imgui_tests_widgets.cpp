@@ -5558,6 +5558,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
             ImGui::EndMenuBar();
         }
 
+        ImGui::Checkbox("WidgetsDisabled", &vars.WidgetsDisabled);
         ImGui::Selectable("Enabled A");
         int index = 0;
 
@@ -5650,10 +5651,14 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
             IM_CHECK(g.HoveredId == ctx->GetID(disabled_items[i])); // Will set HoveredId even when disabled.
         }
 
+        // Verify that clicking on a disabled item takes focus
 #if IMGUI_VERSION_NUM >= 19135
-        ctx->WindowFocus("//Dear ImGui Demo");
-        ctx->ItemClick(disabled_items[0]);
-        IM_CHECK_EQ(g.NavWindow, window);
+        for (int i = 0; i < IM_ARRAYSIZE(disabled_items); i++)
+        {
+            ctx->WindowFocus("//Dear ImGui Demo");
+            ctx->ItemClick(disabled_items[i]);
+            IM_CHECK_EQ(g.NavWindow, window);
+        }
 #endif
 
         // Dragging a disabled item.
