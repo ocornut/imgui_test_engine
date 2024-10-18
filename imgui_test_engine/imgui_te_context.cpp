@@ -451,13 +451,23 @@ void ImGuiTestContext::SetInputMode(ImGuiInputSource input_mode)
 
     if (InputMode == ImGuiInputSource_Keyboard || InputMode == ImGuiInputSource_Gamepad)
     {
+#if IMGUI_VERSION_NUM >= 19136
+        ImGui::SetNavCursorVisible(true);
+        UiContext->NavHighlightItemUnderNav = true;
+#else
         UiContext->NavDisableHighlight = false;
         UiContext->NavDisableMouseHover = true;
+#endif
     }
     else
     {
+#if IMGUI_VERSION_NUM >= 19136
+        ImGui::SetNavCursorVisible(false);
+        UiContext->NavHighlightItemUnderNav = false;
+#else
         UiContext->NavDisableHighlight = true;
         UiContext->NavDisableMouseHover = false;
+#endif
     }
 }
 
@@ -1539,8 +1549,14 @@ void    ImGuiTestContext::NavMoveTo(ImGuiTestRef ref)
     ImRect rect_rel = item.RectFull;
     rect_rel.Translate(ImVec2(-item.Window->Pos.x, -item.Window->Pos.y));
     ImGui::SetNavID(item.ID, (ImGuiNavLayer)item.NavLayer, 0, rect_rel);
+#if IMGUI_VERSION_NUM >= 19136
+    ImGui::SetNavCursorVisible(true);
+    g.NavHighlightItemUnderNav = true;
+#else
     g.NavDisableHighlight = false;
-    g.NavDisableMouseHover = g.NavMousePosDirty = true;
+    g.NavDisableMouseHover = true;
+#endif
+    g.NavMousePosDirty = true;
     ImGui::ScrollToBringRectIntoView(item.Window, item.RectFull);
     while (g.NavMoveSubmitted)
         Yield();
@@ -2007,8 +2023,12 @@ void    ImGuiTestContext::MouseMoveToPos(ImVec2 target)
     if (EngineIO->ConfigRunSpeed == ImGuiTestRunSpeed_Cinematic)
         SleepStandard();
 
-    // Enforce a mouse move if we are already at destination, to enforce g.NavDisableMouseHover gets cleared.
+    // Enforce a mouse move if we are already at destination, to enforce g.NavHighlightItemUnderNav gets cleared.
+#if IMGUI_VERSION_NUM >= 19136
+    if (g.NavHighlightItemUnderNav && ImLengthSqr(Inputs->MousePosValue - target) < 1.0f)
+#else
     if (g.NavDisableMouseHover && ImLengthSqr(Inputs->MousePosValue - target) < 1.0f)
+#endif
     {
         Inputs->MousePosValue = target + ImVec2(1.0f, 0.0f);
         ImGuiTestEngine_Yield(Engine);

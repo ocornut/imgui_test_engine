@@ -461,7 +461,7 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
             ctx->KeyPress(ImGuiKey_RightArrow);
 #if IMGUI_VERSION_NUM >= 19018
             IM_CHECK(g.NavId == ctx->GetID("//##Menu_01/A"));
-            IM_CHECK(g.NavDisableHighlight == false);
+            IM_CHECK(g.NavCursorVisible == true);
 #endif
             ctx->KeyPress(ImGuiKey_DownArrow);
             IM_CHECK(g.NavId == ctx->GetID("//##Menu_01/B"));
@@ -1587,32 +1587,32 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
         ImGuiContext& g = *ctx->UiContext;
         ctx->SetRef("Dear ImGui Demo");
         ctx->MouseMove("Help");
-        IM_CHECK(g.NavDisableHighlight == true);
-        IM_CHECK(g.NavDisableMouseHover == false);
+        IM_CHECK(g.NavCursorVisible == false);
+        IM_CHECK(g.NavHighlightItemUnderNav == false);
         ctx->NavMoveTo("Configuration");
-        IM_CHECK(g.NavDisableHighlight == false);
-        IM_CHECK(g.NavDisableMouseHover == true);
+        IM_CHECK(g.NavCursorVisible == true);
+        IM_CHECK(g.NavHighlightItemUnderNav == true);
         ctx->KeyPress(ImGuiKey_UpArrow);
         IM_CHECK(g.NavId == ctx->GetID("Help"));
-        IM_CHECK(g.NavDisableHighlight == false);
-        IM_CHECK(g.NavDisableMouseHover == true);
+        IM_CHECK(g.NavCursorVisible == true);
+        IM_CHECK(g.NavHighlightItemUnderNav == true);
         ctx->MouseMove("Help");
-        IM_CHECK(g.NavDisableHighlight == false); // Moving mouse doesn't set this to true: rect will be visible but NavId not marked as "hovered"
-        IM_CHECK(g.NavDisableMouseHover == false);
+        IM_CHECK(g.NavCursorVisible == true); // Moving mouse doesn't set this to true: rect will be visible but NavId not marked as "hovered"
+        IM_CHECK(g.NavHighlightItemUnderNav == false);
 
         ctx->KeyPress(ImGuiMod_Alt);
-        IM_CHECK(g.NavDisableHighlight == false);
-        IM_CHECK(g.NavDisableMouseHover == true);
+        IM_CHECK(g.NavCursorVisible == true);
+        IM_CHECK(g.NavHighlightItemUnderNav == true);
 
 #if IMGUI_VERSION_NUM >= 18992
         // Switching from Mouse to keyboard
         ctx->ItemOpen("Inputs & Focus");
         ctx->ItemOpen("Tabbing");
         ctx->ItemClick("Tabbing/2");
-        IM_CHECK(g.NavDisableHighlight == true);
+        IM_CHECK(g.NavCursorVisible == false);
         ctx->KeyPress(ImGuiKey_Tab);
         IM_CHECK_EQ(g.NavId, ctx->GetID("Tabbing/3"));
-        IM_CHECK(g.NavDisableHighlight == false);
+        IM_CHECK(g.NavCursorVisible == true);
 #endif
     };
 
