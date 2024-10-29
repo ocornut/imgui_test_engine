@@ -170,12 +170,18 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ctx->ItemClick("Button4");
         IM_CHECK_EQ(vars.ButtonPressCount[4], 1);
         ctx->MouseDown(0);
+#if IMGUI_VERSION_NUM >= 19142
+        IM_CHECK_EQ(vars.ButtonPressCount[4], 2);
+#else
         IM_CHECK_EQ(vars.ButtonPressCount[4], 1);
+#endif
         ctx->SleepNoSkip(g.IO.KeyRepeatDelay, step);
         ctx->SleepNoSkip(g.IO.KeyRepeatRate, step);
         ctx->SleepNoSkip(g.IO.KeyRepeatRate, step);
         ctx->SleepNoSkip(g.IO.KeyRepeatRate, step);
-#if IMGUI_VERSION_NUM >= 18705
+#if IMGUI_VERSION_NUM >= 19142
+        IM_CHECK_EQ(vars.ButtonPressCount[4], 2 + 1 + 3);
+#elif IMGUI_VERSION_NUM >= 18705
         IM_CHECK_EQ(vars.ButtonPressCount[4], 1 + 1 + 3);
 #else
         IM_CHECK_EQ(vars.ButtonPressCount[4], 1 + 1 + 3 * 2); // MouseRepeatRate was double KeyRepeatRate, that's not documented / or that's a bug
