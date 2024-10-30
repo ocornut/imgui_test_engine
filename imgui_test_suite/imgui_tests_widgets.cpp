@@ -3865,7 +3865,11 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         ImGuiTestGenericVars& vars = ctx->GenericVars;
+#if IMGUI_VERSION_NUM >= 19142
+        IM_CHECK_STR_EQ(vars.Str1, "[ File ] | [ Edit ]");
+#else
         IM_CHECK_STR_EQ(vars.Str1, "File | Edit");
+#endif
     };
 
     // ## Test main menubar appending.
