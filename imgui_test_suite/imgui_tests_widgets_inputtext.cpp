@@ -1218,13 +1218,13 @@ void RegisterTests_WidgetsInputText(ImGuiTestEngine* e)
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
         if (ImGui::InputText("Field1", &vars.str, ImGuiInputTextFlags_EnterReturnsTrue))
         {
-            IM_CHECK_EQ(vars.str.capacity(), 4 + 5 + 1);
+            IM_CHECK_EQ(vars.str.capacity(), 4 + 5);
             IM_CHECK_STR_EQ(vars.str.c_str(), "abcdhello");
         }
         Str str_local_unsaved = "abcd";
         if (ImGui::InputText("Field2", &str_local_unsaved, ImGuiInputTextFlags_EnterReturnsTrue))
         {
-            IM_CHECK_EQ(str_local_unsaved.capacity(), 4 + 5 + 1);
+            IM_CHECK_EQ(str_local_unsaved.capacity(), 4 + 5);
             IM_CHECK_STR_EQ(str_local_unsaved.c_str(), "abcdhello");
         }
         ImGui::End();
@@ -1234,7 +1234,7 @@ void RegisterTests_WidgetsInputText(ImGuiTestEngine* e)
     {
         StrVars& vars = ctx->GetVars<StrVars>();
         vars.str.set("abcd");
-        IM_CHECK_EQ(vars.str.capacity(), 4 + 1);
+        IM_CHECK_EQ(vars.str.capacity(), 4);
         ctx->SetRef("Test Window");
         ctx->ItemInput("Field1");
         ctx->KeyCharsAppendEnter("hello");
@@ -1265,7 +1265,7 @@ void RegisterTests_WidgetsInputText(ImGuiTestEngine* e)
 
         StrVars& vars = ctx->GetVars<StrVars>();
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
-        ImGui::InputText("Field1", vars.str.c_str(), vars.str.capacity(), ImGuiInputTextFlags_CallbackHistory | ImGuiInputTextFlags_CallbackResize, callback, (void*)&vars.str);
+        ImGui::InputText("Field1", vars.str.c_str(), vars.str.capacity() + 1, ImGuiInputTextFlags_CallbackHistory | ImGuiInputTextFlags_CallbackResize, callback, (void*)&vars.str);
         ImGui::End();
     };
     t->TestFunc = [](ImGuiTestContext* ctx)

@@ -4908,6 +4908,20 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
     };
 #endif
 
+    // ## Various tests for Str helper class
+    t = IM_REGISTER_TEST(e, "misc", "misc_str");
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        Str16 text;
+        IM_CHECK(text.capacity() == 15);
+        text.set("0123456789ABCDE");
+        IM_CHECK(text.length() == 15);
+        IM_CHECK(text.capacity() == 15);
+        text.append("F");
+        IM_CHECK(text.length() == 16);
+        IM_CHECK(text.capacity() >= 16);
+    };
+
     // ## Test ImStrReplace() and ImStrXmlEscape().
     t = IM_REGISTER_TEST(e, "misc", "misc_str_replace");
     t->TestFunc = [](ImGuiTestContext* ctx)
