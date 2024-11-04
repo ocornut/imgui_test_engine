@@ -1117,6 +1117,16 @@ void RegisterTests_WidgetsInputText(ImGuiTestEngine* e)
         IM_CHECK_STR_EQ(vars.CompletionBuffer.c_str(), "Hello World");
         ctx->KeyPress(ImGuiKey_Tab);
         IM_CHECK_STR_EQ(vars.CompletionBuffer.c_str(), "Hello World.......................................");
+#if IMGUI_VERSION_NUM >= 19143
+        // Regression between 19113 and 19120
+        ctx->KeyChars("!!");
+        IM_CHECK_STR_EQ(vars.CompletionBuffer.c_str(), "Hello World.......................................!!");
+#endif
+
+        ctx->KeyCharsReplace("Hello World");
+        IM_CHECK_STR_EQ(vars.CompletionBuffer.c_str(), "Hello World");
+        ctx->KeyPress(ImGuiKey_Tab);
+        IM_CHECK_STR_EQ(vars.CompletionBuffer.c_str(), "Hello World.......................................");
 
         // Test undo after callback changes
         ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_Z);
