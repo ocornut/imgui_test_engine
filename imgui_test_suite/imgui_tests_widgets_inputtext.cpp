@@ -42,6 +42,10 @@ namespace ImStb
 
 struct StrVars { Str str; };
 
+#if IMGUI_VERSION_NUM < 19143
+#define TextLen CurLenA
+#endif
+
 void RegisterTests_WidgetsInputText(ImGuiTestEngine* e)
 {
     ImGuiTest* t = NULL;
@@ -69,7 +73,7 @@ void RegisterTests_WidgetsInputText(ImGuiTestEngine* e)
         ctx->ItemClick("InputText");
         ctx->KeyCharsAppendEnter(u8"World123\u00A9");
         IM_CHECK_STR_EQ(buf, u8"HelloWorld123\u00A9");
-        IM_CHECK_EQ(state.CurLenA, 15);
+        IM_CHECK_EQ(state.TextLen, 15);
         //IM_CHECK_EQ(state.CurLenW, 14);
 
         // Delete
@@ -79,7 +83,7 @@ void RegisterTests_WidgetsInputText(ImGuiTestEngine* e)
         ctx->KeyPress(ImGuiKey_Backspace, 3);     // Delete selection and two more characters
         ctx->KeyPress(ImGuiKey_Enter);
         IM_CHECK_STR_EQ(buf, "HelloWorld");
-        IM_CHECK_EQ(state.CurLenA, 10);
+        IM_CHECK_EQ(state.TextLen, 10);
         //IM_CHECK_EQ(state.CurLenW, 10);
 
         // Insert, Cancel
@@ -88,7 +92,7 @@ void RegisterTests_WidgetsInputText(ImGuiTestEngine* e)
         ctx->KeyChars("XXXXX");
         ctx->KeyPress(ImGuiKey_Escape);
         IM_CHECK_STR_EQ(buf, "HelloWorld");
-        IM_CHECK_EQ(state.CurLenA, 10);
+        IM_CHECK_EQ(state.TextLen, 10);
         //IM_CHECK_EQ(state.CurLenW, 10);
 
         // Delete, Cancel
@@ -97,7 +101,7 @@ void RegisterTests_WidgetsInputText(ImGuiTestEngine* e)
         ctx->KeyPress(ImGuiKey_Backspace, 5);
         ctx->KeyPress(ImGuiKey_Escape);
         IM_CHECK_STR_EQ(buf, "HelloWorld");
-        IM_CHECK_EQ(state.CurLenA, 10);
+        IM_CHECK_EQ(state.TextLen, 10);
         //IM_CHECK_EQ(state.CurLenW, 10);
 
         // Read-only mode
@@ -107,7 +111,7 @@ void RegisterTests_WidgetsInputText(ImGuiTestEngine* e)
         ctx->ItemClick("InputText");
         ctx->KeyCharsAppendEnter("World123");
         IM_CHECK_STR_EQ(buf, vars.Str1);
-        IM_CHECK_EQ(state.CurLenA, 20);
+        IM_CHECK_EQ(state.TextLen, 20);
         //IM_CHECK_EQ(state.CurLenW, 20);
 
         // Space as key (instead of Space as character) -> check not conflicting with Nav Activate (#4552)
@@ -650,7 +654,7 @@ void RegisterTests_WidgetsInputText(ImGuiTestEngine* e)
         // Empty buffer
         ctx->KeyCharsReplace("");
         IM_CHECK_EQ(stb.cursor, 0);
-        IM_CHECK_EQ(state->CurLenA, 0);
+        IM_CHECK_EQ(state->TextLen, 0);
         ctx->KeyPress(ImGuiKey_UpArrow);
         IM_CHECK_EQ(stb.cursor, 0);
         ctx->KeyPress(ImGuiKey_DownArrow);
@@ -664,7 +668,7 @@ void RegisterTests_WidgetsInputText(ImGuiTestEngine* e)
         // Extra test for #6783, long line trailed with \n, pressing down.
         // This is almost exercised elsewhere but didn't crash with small values until we added bound-check in STB_TEXTEDIT_GETCHAR() too.
         ctx->KeyCharsReplace("Click this text then press down-arrow twice to cause an assert.\n");
-        IM_CHECK_EQ(stb.cursor, state->CurLenA);
+        IM_CHECK_EQ(stb.cursor, state->TextLen);
         ctx->KeyPress(ImGuiKey_DownArrow);
 #endif
     };
@@ -967,7 +971,7 @@ void RegisterTests_WidgetsInputText(ImGuiTestEngine* e)
             IM_CHECK(ImAbs(state->Stb->select_end - state->Stb->select_start) == selection_len);
             IM_CHECK(state->Stb->select_end == state->Stb->cursor);
 #if IMGUI_VERSION_NUM >= 19114
-            IM_CHECK(state->Stb->cursor == state->CurLenA - selection_len);
+            IM_CHECK(state->Stb->cursor == state->TextLen - selection_len);
 #endif
             if (n == 1)
                 ctx->ScrollToBottom(child_window->ID);
@@ -980,7 +984,7 @@ void RegisterTests_WidgetsInputText(ImGuiTestEngine* e)
         IM_CHECK(child_window->Scroll.y == 0.0f);
         ctx->KeyPress(ImGuiKey_RightArrow);
 #if IMGUI_VERSION_NUM >= 19114
-        IM_CHECK_EQ(state->Stb->cursor, state->CurLenA);
+        IM_CHECK_EQ(state->Stb->cursor, state->TextLen);
 #endif
         IM_CHECK_EQ(child_window->Scroll.y, child_window->ScrollMax.y);
     };
@@ -1196,14 +1200,14 @@ void RegisterTests_WidgetsInputText(ImGuiTestEngine* e)
         ImGuiInputTextState* state = &ctx->UiContext->InputTextState;
         IM_CHECK(state && state->ID == ctx->GetID("Hello"));
         ctx->KeyCharsAppend("ab");
-        IM_CHECK(state->CurLenA == 2);
+        IM_CHECK(state->TextLen == 2);
 
         //IM_CHECK(state->CurLenW == 2);
         IM_CHECK_STR_EQ(state->TextA.Data, "ab");
         IM_CHECK(state->Stb->cursor == 2);
         ctx->KeyCharsAppend("c");
         // (callback triggers here)
-        IM_CHECK(state->CurLenA == 3 + 1);
+        IM_CHECK(state->TextLen == 3 + 1);
         //IM_CHECK(state->CurLenW == 1);
         IM_CHECK_STR_EQ(state->TextA.Data, "\xE5\xA5\xBD!");
         //IM_CHECK(state->TextW.Data[0] == 0x597D);
@@ -1752,3 +1756,7 @@ void RegisterTests_WidgetsInputText(ImGuiTestEngine* e)
         }
     };
 }
+
+#if IMGUI_VERSION_NUM < 19143
+#undef TextLen
+#endif
