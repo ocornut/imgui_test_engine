@@ -3322,6 +3322,38 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
     };
 #endif
 
+    // ## Test for text wrapping with consecutive separators
+    // FIXME: This is tricky to test for at least until we finish/merge the drawlist analyzer which can parse characters from vertices.
+    // For now we manually call CalcWordWrapPositionA().
+    t = IM_REGISTER_TEST(e, "widgets", "widgets_text_wrapped_2");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoTitleBar);
+        const char* s1 = "abcde..";
+        const char* s2 = "abcde.. That";
+        float local_off_x = ImGui::GetCursorPos().x;
+        float wrap_width = ImGui::CalcTextSize(s1).x;
+
+        // Visualize output here, no actual test
+        ImGui::PushTextWrapPos(wrap_width + local_off_x);
+        ImGui::TextUnformatted(s1);
+        ImGui::Spacing();
+        ImGui::TextUnformatted(s2); // Though the '.' can fit in the first line, it's now at the second line.
+        ImGui::PopTextWrapPos();
+        ImGui::End();
+
+        // Tests
+        const char* s1_w = ImGui::GetFont()->CalcWordWrapPositionA(1.0f, s1, s1 + strlen(s1), wrap_width);
+        IM_CHECK_EQ(s1_w, s1 + strlen(s1));
+
+#if IMGUI_BROKEN_TESTS
+// #if 1
+        // This is broken, see #8139
+        const char* s2_w = ImGui::GetFont()->CalcWordWrapPositionA(1.0f, s2, s2 + strlen(s2), wrap_width);
+        IM_CHECK_EQ(s2_w, s2 + strlen("abcde.."));
+#endif
+    };
+
     // ## Test LabelText() variants layout (#4004)
     t = IM_REGISTER_TEST(e, "widgets", "widgets_label_text");
     t->GuiFunc = [](ImGuiTestContext* ctx)
