@@ -30,6 +30,7 @@ imgui_test_suite/x64/*
 imgui_test_suite/imgui_test_suite
 
 ## Visual Studio artifacts
+.vscode/*
 .vs/*
 */ipch/*
 *.opensdf
