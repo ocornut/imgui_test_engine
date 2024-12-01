@@ -19,6 +19,7 @@
 #include "imgui_test_engine/imgui_te_utils.h"   // ImOsIsDebuggerPresent()
 
 extern void RegisterAppMinimalTests(ImGuiTestEngine* engine);
+extern void ShowGameWindowUnderTest();
 
 int main(int argc, char** argv)
 {
@@ -55,7 +56,7 @@ int main(int argc, char** argv)
     // Setup test engine
     ImGuiTestEngine* engine = ImGuiTestEngine_CreateContext();
     ImGuiTestEngineIO& test_io = ImGuiTestEngine_GetIO(engine);
-    test_io.ConfigVerboseLevel = ImGuiTestVerboseLevel_Info;
+test_io.ConfigVerboseLevel = ImGuiTestVerboseLevel_Info;
     test_io.ConfigVerboseLevelOnError = ImGuiTestVerboseLevel_Debug;
     test_io.ConfigRunSpeed = ImGuiTestRunSpeed_Cinematic; // Default to slowest mode in this demo
     test_io.ScreenCaptureFunc = ImGuiApp_ScreenCaptureFunc;
@@ -88,6 +89,7 @@ int main(int argc, char** argv)
 
         // Show windows
         ImGui::ShowDemoWindow();
+        ShowGameWindowUnderTest();
         ImGuiTestEngine_ShowTestEngineWindows(engine, NULL);
 
         // Render and swap
