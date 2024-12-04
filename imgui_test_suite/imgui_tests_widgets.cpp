@@ -3594,7 +3594,11 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ImGui::End();
 
         // Tests
+#ifdef IMGUI_HAS_TEXTURES
+        const char* s1_w = ImGui::GetFont()->CalcWordWrapPosition(ImGui::GetFontSize(), s1, s1 + strlen(s1), wrap_width);
+#else
         const char* s1_w = ImGui::GetFont()->CalcWordWrapPositionA(1.0f, s1, s1 + strlen(s1), wrap_width);
+#endif
         IM_CHECK_EQ(s1_w, s1 + strlen(s1));
 
 #if IMGUI_BROKEN_TESTS

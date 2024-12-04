@@ -1876,7 +1876,11 @@ void    ImGuiTestContext::MouseMove(ImGuiTestRef ref, ImGuiTestOpFlags flags)
                 if (is_hovering_resize_corner)
                 {
                     LogDebug("MouseMove: Child obstructed by parent's ResizeGrip, trying to resize window and trying again..");
+#if IMGUI_VERSION_NUM < 19172
                     float extra_size = window->CalcFontSize() * 3.0f;
+#else
+                    float extra_size = window->FontRefSize * 3.0f;
+#endif
                     WindowResize(window->ID, window->Size + ImVec2(extra_size, extra_size));
                     MouseMove(ref, flags | ImGuiTestOpFlags_IsSecondAttempt);
                     return;

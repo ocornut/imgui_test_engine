@@ -322,7 +322,14 @@ static void TestSuite_LoadFonts(float dpi_scale)
     {
         fprintf(stderr, "Font directory not found. Fonts not loaded.\n");
     }
+#if defined(IMGUI_HAS_TEXTURES)
+#ifndef IMGUI_DISABLE_OBSOLETE_FUNCTIONS
+    if ((io.BackendFlags & ImGuiBackendFlags_RendererHasTextures) == 0)
+        io.Fonts->Build();
+#endif
+#else
     io.Fonts->Build();
+#endif
 }
 
 static void TestSuite_QueueTests(TestSuiteApp* app, ImGuiTestRunFlags run_flags)

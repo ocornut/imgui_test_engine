@@ -1222,7 +1222,7 @@ ImFont* ImGui::FindFontByPrefix(const char* prefix)
 #if IMGUI_VERSION_NUM < 19184
         if (strncmp(font->ConfigData->Name, prefix, strlen(prefix)) == 0)
 #else
-        if (strncmp(font->Sources->Name, prefix, strlen(prefix)) == 0)
+        if (strncmp(font->Sources[0].Name, prefix, strlen(prefix)) == 0)
 #endif
             return font;
     return nullptr;
