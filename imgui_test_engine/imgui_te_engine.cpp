@@ -1511,6 +1511,7 @@ struct ImGuiTestContextUiContextBackup
         for (int n = 0; n < IM_ARRAYSIZE(IO.KeysData); n++)
             IO.KeysData[n].Down = false;
     }
+
     void Restore(ImGuiContext& g)
     {
 #if IMGUI_VERSION_NUM < 18993
@@ -1518,7 +1519,10 @@ struct ImGuiTestContextUiContextBackup
 #endif
         g.IO = IO;
 #if IMGUI_VERSION_NUM >= 19103
-        g.PlatformIO = PlatformIO;
+        // FIXME: This will invalidate pointers platform_io.Monitors[].
+        // User is not expected to point to monitor ever, but some may do that....
+        //g.PlatformIO = PlatformIO;
+        RestoreClipboardFuncs(g); // We only need to restore this for now. We'll find if we need more.
 #endif
         g.Style = Style;
         g.DebugLogFlags = DebugLogFlags;
