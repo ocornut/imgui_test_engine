@@ -119,7 +119,7 @@ static ImGuiID ImHashDecoratedPathParseLiteral(ImGuiID crc, const unsigned char*
 //   IM_ASSERT(ImHashDecoratedPath("Hello\\/world") == ImHashStr("Hello/world", 0));
 //   IM_ASSERT(ImHashDecoratedPath("$$1")           == (n = 1, ImHashData(&n, sizeof(int))));
 // Adapted from ImHash(). Not particularly fast!
-static const ImU32 GCrc32LookupTable[256] =
+static const ImU32 GImGuiTestEngineCrc32LookupTable[256] =
 {
 #if IMGUI_VERSION_NUM < 19152
     0x00000000,0x77073096,0xEE0E612C,0x990951BA,0x076DC419,0x706AF48F,0xE963A535,0x9E6495A3,0x0EDB8832,0x79DCB8A4,0xE0D5E91E,0x97D2D988,0x09B64C2B,0x7EB17CBD,0xE7B82D07,0x90BF1D91,
@@ -160,7 +160,7 @@ static const ImU32 GCrc32LookupTable[256] =
 
 ImGuiID ImHashDecoratedPath(const char* str, const char* str_end, ImGuiID seed)
 {
-    const ImU32* crc32_lut = GCrc32LookupTable;
+    const ImU32* crc32_lut = GImGuiTestEngineCrc32LookupTable;
 
     // Prefixing the string with / ignore the seed
     if (str != str_end && str[0] == '/')
