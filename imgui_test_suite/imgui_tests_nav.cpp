@@ -356,6 +356,32 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
         }
     };
 
+    // ## Test that Alt key doesn't steal ActiveId when using ImGuiWindowFlags_NoNavInputs (#8231)
+#if IMGUI_VERSION_NUM >= 19161
+    t = IM_REGISTER_TEST(e, "nav", "nav_menu_alt_key_disabled");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoNavInputs | ImGuiWindowFlags_NoSavedSettings);
+        if (ImGui::BeginMenuBar())
+        {
+            if (ImGui::BeginMenu("File"))
+                ImGui::EndMenu();
+            ImGui::EndMenuBar();
+        }
+        char buf[16] = "";
+        ImGui::InputText("Input", buf, IM_ARRAYSIZE(buf));
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ctx->SetRef("Test Window");
+        ctx->ItemInput("Input");
+        IM_CHECK_EQ(ImGui::GetActiveID(), ctx->GetID("Input"));
+        ctx->KeyPress(ImGuiMod_Alt);
+        ctx->KeyPress(ImGuiKey_LeftAlt);
+        IM_CHECK_EQ(ImGui::GetActiveID(), ctx->GetID("Input"));
+    };
+#endif
 
     // ## Test navigation home and end keys
     t = IM_REGISTER_TEST(e, "nav", "nav_home_end_keys");

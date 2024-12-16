@@ -516,6 +516,46 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         IM_CHECK_FLOAT_EQ_EPS(vars.Color1.z, 200.0f / 255.0f);
     };
 
+#if IMGUI_VERSION_NUM >= 19161
+    // ## Basic test for g.ActiveIdValueOnActivation introduced in #8223
+    t = IM_REGISTER_TEST(e, "widgets", "widgets_dragslider_initial_value");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        auto& vars = ctx->GenericVars;
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
+        ImGui::SliderFloat("SliderFloat", &vars.Float1, 0.0f, 1000.0f);
+        ImGui::DragInt("DragInt", &vars.Int1, 1);
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiContext& g = *GImGui;
+        auto& vars = ctx->GenericVars;
+
+        ctx->SetRef("Test Window");
+        float f_111 = 111.0f;
+        int i_42 = 42;
+        vars.Float1 = 111.0f;
+        vars.Int1 = 42;
+
+        ctx->MouseMove("SliderFloat", ImGuiTestOpFlags_MoveToEdgeL);
+        ctx->MouseDown(0);
+        IM_CHECK(memcmp(&g.ActiveIdValueOnActivation, &f_111, sizeof(float)) == 0);
+        ctx->MouseMove("SliderFloat", ImGuiTestOpFlags_MoveToEdgeR);
+        IM_CHECK(memcmp(&g.ActiveIdValueOnActivation, &f_111, sizeof(float)) == 0);
+        IM_CHECK(memcmp(&vars.Float1, &f_111, sizeof(float)) != 0);
+        ctx->MouseUp(0);
+
+        ctx->MouseMove("DragInt", ImGuiTestOpFlags_MoveToEdgeL);
+        ctx->MouseDown(0);
+        IM_CHECK(memcmp(&g.ActiveIdValueOnActivation, &i_42, sizeof(int)) == 0);
+        ctx->MouseMove("DragInt", ImGuiTestOpFlags_MoveToEdgeR);
+        IM_CHECK(memcmp(&g.ActiveIdValueOnActivation, &i_42, sizeof(int)) == 0);
+        IM_CHECK(memcmp(&vars.Int1, &i_42, sizeof(int)) != 0);
+        ctx->MouseUp(0);
+    };
+#endif
+
     // ## Test Sliders and Drags clamping values
     t = IM_REGISTER_TEST(e, "widgets", "widgets_dragslider_clamp");
     struct ImGuiDragSliderVars { float DragValue = 0.0f; float DragMin = 0.0f; float DragMax = 1.0f; float SliderValue = 0.0f; float SliderMin = 0.0f; float SliderMax = 0.0f; float ScalarValue = 0.0f; void* ScalarMinP = NULL; void* ScalarMaxP = NULL; ImGuiSliderFlags Flags = ImGuiSliderFlags_None; };
