@@ -5,6 +5,10 @@ CHANGELOG
    Those changes are not all listed here.
 ** For a while this is going to ONLY INCLUDE BREAKING CHANGES.
 
+2024/12/18:
+- TestEngine: fixed an issue accessing items when parent window is too small
+  to have a visible scrolling layer.
+
 2024/12/04:
 - TestEngine: fixed an issue with v1.91.1 where ImGuiPlatformMonitor array
   pointer was invalidated at end of a test, which would affect code taking

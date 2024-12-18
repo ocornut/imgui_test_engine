@@ -6413,7 +6413,7 @@ void RegisterTests_TestEngine(ImGuiTestEngine* e)
     };
 
     // Test aiming at covered item in a window with NoBringToFrontOnFocus (which requires moving windows out of the way)
-    t = IM_REGISTER_TEST(e, "window", "testengine_hover_covered_window_no_bring_to_front");
+    t = IM_REGISTER_TEST(e, "testengine", "testengine_hover_covered_window_no_bring_to_front");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         ImGuiViewport* viewport = ImGui::GetMainViewport();
@@ -6469,6 +6469,34 @@ void RegisterTests_TestEngine(ImGuiTestEngine* e)
         ctx->ItemClick("##menubar/Button");
         ctx->WindowResize("", ImVec2(50, 200));
         ctx->MenuClick("SECOND_MENU/Item");
+    };
+
+    // ## Test accessing items when main scrolling layer is too small for scrolling.
+    t = IM_REGISTER_TEST(e, "testengine", "testengine_hover_zero_size_main_layer");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_MenuBar);
+        if (ImGui::BeginMenuBar())
+        {
+            if (ImGui::BeginMenu("File"))
+                ImGui::EndMenu();
+            ImGui::EndMenuBar();
+        }
+        ImGui::Button("Button");
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ctx->SetRef("Test Window");
+        ctx->WindowResize("", ImVec2(50, ImGui::GetTextLineHeightWithSpacing()));
+
+        IM_CHECK(ctx->ItemInfo("Button").RectClipped.GetArea() == 0.0f);
+        IM_CHECK((ctx->ItemInfo("Button").StatusFlags& ImGuiItemStatusFlags_Visible) == 0);
+
+        ctx->ItemClick("Button");
+
+        IM_CHECK(ctx->ItemInfo("Button").RectClipped.GetArea() > 0.0f);
+        IM_CHECK((ctx->ItemInfo("Button").StatusFlags & ImGuiItemStatusFlags_Visible) != 0);
     };
 
     // ## Test accessing items in a child window which is not visible

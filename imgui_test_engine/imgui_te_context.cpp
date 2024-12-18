@@ -1732,6 +1732,22 @@ void    ImGuiTestContext::MouseMove(ImGuiTestRef ref, ImGuiTestOpFlags flags)
 
     // Check visibility and scroll if necessary
     {
+        if (item.NavLayer == ImGuiNavLayer_Main)
+        {
+            float min_visible_size = 10.0f;
+            float min_window_size_x = window->DecoInnerSizeX1 + window->DecoOuterSizeX1 + window->DecoOuterSizeX2 + min_visible_size + g.WindowsHoverPadding.x * 2.0f;
+            float min_window_size_y = window->DecoInnerSizeY1 + window->DecoOuterSizeY1 + window->DecoOuterSizeY2 + min_visible_size + g.WindowsHoverPadding.y * 2.0f;
+            if ((window->Size.x < min_window_size_x || window->Size.y < min_window_size_y) && (window->Flags & ImGuiWindowFlags_NoResize) == 0 && (window->Flags & ImGuiWindowFlags_AlwaysAutoResize) == 0)
+            {
+                LogDebug("MouseMove: Will attempt to resize window to make item in main scrolling layer visible.");
+                if (window->Size.x < min_window_size_x)
+                    WindowResize(window->ID, ImVec2(min_window_size_x, window->Size.y));
+                if (window->Size.y < min_window_size_y)
+                    WindowResize(window->ID, ImVec2(window->Size.x, min_window_size_y));
+                item = ItemInfo(item.ID);
+            }
+        }
+
         ImRect window_r = window->InnerClipRect;
         window_r.Expand(ImVec2(-g.WindowsHoverPadding.x, -g.WindowsHoverPadding.y));
 
