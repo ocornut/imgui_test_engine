@@ -361,7 +361,7 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
     t = IM_REGISTER_TEST(e, "nav", "nav_menu_alt_key_disabled");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
-        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoNavInputs | ImGuiWindowFlags_NoSavedSettings);
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoNavInputs | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
         if (ImGui::BeginMenuBar())
         {
             if (ImGui::BeginMenu("File"))
