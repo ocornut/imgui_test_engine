@@ -128,7 +128,7 @@ void RegisterTests_WidgetsInputText(ImGuiTestEngine* e)
     t = IM_REGISTER_TEST(e, "widgets", "widgets_inputtext_undo_redo");
     struct InputTextUndoRedoVars
     {
-        char Str1[256];
+        char Str1[256] = "";
         ImVector<char> StrLarge;
     };
     t->SetVarsDataType<InputTextUndoRedoVars>();
@@ -154,6 +154,8 @@ void RegisterTests_WidgetsInputText(ImGuiTestEngine* e)
         // Start with a 350 characters buffer.
         // For this test we don't inject the characters via pasting or key-by-key in order to precisely control the undo/redo state.
         char* buf = vars.StrLarge.Data;
+        if (vars.StrLarge.empty())
+            vars.StrLarge.resize(10000, 0);
         IM_CHECK_EQ((int)strlen(buf), 0);
         for (int n = 0; n < 10; n++)
             strcat(buf, "xxxxxxx abcdefghijklmnopqrstuvwxyz\n");

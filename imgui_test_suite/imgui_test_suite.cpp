@@ -31,6 +31,7 @@
 // Includes & Compiler Stuff
 //-------------------------------------------------------------------------
 
+// See DebugCrtInit() call to break on a specific alloc
 #ifdef _WIN32
 #define DEBUG_CRT
 #define _CRTDBG_MAP_ALLOC

@@ -5,6 +5,10 @@ CHANGELOG
    Those changes are not all listed here.
 ** For a while this is going to ONLY INCLUDE BREAKING CHANGES.
 
+2024/12/19:
+- TestEngine: ctx->SetVarsDataType() created blocks are zero-cleared before
+  construction.
+
 2024/12/18:
 - TestEngine: fixed an issue accessing items when parent window is too small
   to have a visible scrolling layer.

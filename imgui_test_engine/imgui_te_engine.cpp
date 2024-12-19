@@ -1639,6 +1639,7 @@ void ImGuiTestEngine_RunTest(ImGuiTestEngine* engine, ImGuiTestContext* parent_c
         if (test->VarsConstructor != NULL)
         {
             ctx->UserVars = IM_ALLOC(test->VarsSize);
+            memset(ctx->UserVars, 0, test->VarsSize);
             test->VarsConstructor(ctx->UserVars);
             if (test->VarsPostConstructor != NULL && test->VarsPostConstructorUserFn != NULL)
                 test->VarsPostConstructor(ctx, ctx->UserVars, test->VarsPostConstructorUserFn);
