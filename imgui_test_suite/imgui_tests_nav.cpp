@@ -2534,7 +2534,7 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
         if (ImGui::Button("Focus B")) { set_focus = 1; }
         ImGui::End();
 
-        char dummy[16];
+        char dummy[16] = "";
         ImGui::Begin("Test Window 1", NULL, ImGuiWindowFlags_NoSavedSettings);
         if (set_focus == 0)
             ImGui::SetKeyboardFocusHere();
