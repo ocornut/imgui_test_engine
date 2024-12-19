@@ -31,7 +31,7 @@
 // Includes & Compiler Stuff
 //-------------------------------------------------------------------------
 
-// See DebugCrtInit() call to break on a specific alloc
+// [Windows] Search for 'DebugCrtInit(0)' call in main() to debug/break on a specific alloc
 #ifdef _WIN32
 #define DEBUG_CRT
 #define _CRTDBG_MAP_ALLOC
@@ -69,6 +69,7 @@
 // Allocators
 //-------------------------------------------------------------------------
 
+// [Windows] Search for 'DebugCrtInit(0)' call in main() to debug/break on a specific alloc
 static void*   MallocWrapper(size_t size, void* user_data)    { IM_UNUSED(user_data); return malloc(size); }
 static void    FreeWrapper(void* ptr, void* user_data)        { IM_UNUSED(user_data); free(ptr); }
 
@@ -368,7 +369,7 @@ static void FindVideoEncoder(char* out, int out_len)
         *out = 0;
 }
 
-// Win32 Debug CRT to help catch leaks. Replace parameter in main() to track a given allocation from the ID given in leak report.
+// Win32 Debug CRT to help catch leaks. Replace parameter in main()'s 'DebugCrtInit(0)' call to track a given allocation from the ID given in leak report.
 #ifdef DEBUG_CRT
 static inline void DebugCrtInit(long break_alloc)
 {
@@ -389,7 +390,7 @@ static inline void DebugCrtDumpLeaks()
 int main(int argc, char** argv)
 {
 #ifdef DEBUG_CRT
-    DebugCrtInit(0);
+    DebugCrtInit(0); // <-- Insert allocation # here to debug break
 #endif
 
     TestSuiteApp GAppInstance;
