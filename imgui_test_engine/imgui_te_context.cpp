@@ -2684,6 +2684,7 @@ void    ImGuiTestContext::KeyCharsReplaceEnter(const char* chars)
 }
 
 // depth = 1 -> immediate child of 'parent' in ID Stack
+ // FIXME: Configurable filter for InLayerMask. Perhaps we can expose a GatherItemEx() that takes a ImGuiTestGatherTask struct as input.
 void    ImGuiTestContext::GatherItems(ImGuiTestItemList* out_list, ImGuiTestRef parent, int depth)
 {
     IM_ASSERT(out_list != NULL);
@@ -2703,7 +2704,7 @@ void    ImGuiTestContext::GatherItems(ImGuiTestItemList* out_list, ImGuiTestRef 
         parent.ID = GetID(parent);
     task->InParentID = parent.ID;
     task->InMaxDepth = depth;
-    task->InLayerMask = (1 << ImGuiNavLayer_Main); // FIXME: Configurable filter
+    task->InLayerMask = (1 << ImGuiNavLayer_Main);
     task->OutList = out_list;
 
     // Keep running while gathering
@@ -3511,7 +3512,9 @@ void    ImGuiTestContext::ComboClickAll(ImGuiTestRef ref_parent)
     GatherItems(&items, "//$FOCUSED");
     for (auto item : items)
     {
-        ItemClick(ref_parent); // We assume that every interaction will close the combo again
+        // Reopen popup when closed
+        if (GetWindowByRef("//$FOCUSED") != popup)
+            ItemClick(ref_parent);
         ItemClick(item.ID);
     }
 }

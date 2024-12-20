@@ -6760,6 +6760,35 @@ void RegisterTests_TestEngine(ImGuiTestEngine* e)
         }
     };
 
+    // ## Test for combo functions
+    t = IM_REGISTER_TEST(e, "testengine", "testengine_combo");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+        if (ImGui::BeginCombo("Combo", "", ImGuiComboFlags_HeightSmall))
+        {
+            // Large enough to have a scrollbar
+            for (int n = 0; n < 10; n++)
+                ImGui::Selectable(Str30f("Item %d", n).c_str());
+            ImGui::EndCombo();
+        }
+        if (ImGui::BeginCombo("Combo2", "", ImGuiComboFlags_HeightSmall))
+        {
+            // Large enough to have a scrollbar
+            ImGui::PushItemFlag(ImGuiItemFlags_AutoClosePopups, false);
+            for (int n = 0; n < 10; n++)
+                ImGui::Selectable(Str30f("Item %d", n).c_str());
+            ImGui::PopItemFlag();
+            ImGui::EndCombo();
+        }
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ctx->SetRef("Test Window");
+        ctx->ComboClickAll("Combo");
+        ctx->ComboClickAll("Combo2"); // without auto-close
+    };
 
     // ## Test not focusing window if unnecessary(issue #24)
     t = IM_REGISTER_TEST(e, "testengine", "testengine_avoid_focus");

@@ -8,6 +8,8 @@ CHANGELOG
 2024/12/20:
 - TestEngine: fixed error recovery mis-asserting after a GuiFunc triggered
   a failed error (when a test fail, error recover runs but shouldn't assert).
+- TestEngine: ComboClickAll() supports when item doesn't close combo
+  + remove initial extraneous click.
 
 2024/12/19:
 - TestEngine: ctx->SetVarsDataType() created blocks are zero-cleared before
