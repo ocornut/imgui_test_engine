@@ -3963,9 +3963,20 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
         // Ensure we run two frames.
     };
 
+    // ## Table with scrolling are child windows
+#if IMGUI_VERSION_NUM >= 19163
+    t = IM_REGISTER_TEST(e, "misc", "misc_recover_4_table");
+    t->Flags |= ImGuiTestFlags_NoRecoveryWarnings;
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::Begin("Test window", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImGui::BeginTable("table", 4, ImGuiTableFlags_ScrollY);
+    };
+#endif
+
     // ## Basic way for manual state record/recover
 #if IMGUI_VERSION_NUM >= 19123
-    t = IM_REGISTER_TEST(e, "misc", "misc_recover_4_midway");
+    t = IM_REGISTER_TEST(e, "misc", "misc_recover_5_midway");
     t->Flags |= ImGuiTestFlags_NoRecoveryWarnings;
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {

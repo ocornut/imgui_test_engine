@@ -1926,17 +1926,17 @@ void ImGuiTestEngine_ErrorRecoverySetup(ImGuiTestEngine* engine)
     IM_ASSERT(ctx != NULL);
     IM_ASSERT(ctx->Test != NULL);
 #if IMGUI_VERSION_NUM >= 19123
-    if (ctx->Test->Flags & ImGuiTestFlags_NoRecoveryWarnings)
-    {
-        ctx->UiContext->IO.ConfigErrorRecoveryEnableAssert = false;
-        ctx->UiContext->ErrorCallback = LogAsDebugFunc;
-        ctx->UiContext->ErrorCallbackUserData = ctx;
-    }
-    else
+    if ((ctx->Test->Flags & ImGuiTestFlags_NoRecoveryWarnings) == 0)
     {
         ctx->UiContext->ErrorCallback = LogAsWarningFunc;
         ctx->UiContext->ErrorCallbackUserData = ctx;
     }
+    else
+    {
+        ctx->UiContext->ErrorCallback = LogAsDebugFunc;
+        ctx->UiContext->ErrorCallbackUserData = ctx;
+    }
+    ctx->UiContext->IO.ConfigErrorRecoveryEnableAssert = ((ctx->Test->Flags & ImGuiTestFlags_NoRecoveryWarnings) == 0 && ctx->TestOutput->Status != ImGuiTestStatus_Error);
 #else
     IM_UNUSED(ctx);
 #endif

@@ -5,6 +5,10 @@ CHANGELOG
    Those changes are not all listed here.
 ** For a while this is going to ONLY INCLUDE BREAKING CHANGES.
 
+2024/12/20:
+- TestEngine: fixed error recovery mis-asserting after a GuiFunc triggered
+  a failed error (when a test fail, error recover runs but shouldn't assert).
+
 2024/12/19:
 - TestEngine: ctx->SetVarsDataType() created blocks are zero-cleared before
   construction.
