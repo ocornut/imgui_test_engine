@@ -5032,6 +5032,62 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         IM_CHECK_EQ(selection.Size, 8 + 2 - 1);
     };
 
+    // ## Exercise our workaround for #8250 to call TableEndCell() in BeginMultiSelect(), in order to at minima try to detect if calling TableEndCell() won't introduce later issues.
+#if IMGUI_VERSION_NUM >= 19163
+    t = IM_REGISTER_TEST(e, "widgets", "widgets_multiselect_cell_width_loss");
+    t->SetVarsDataType<MultiSelectTestVars>();
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        MultiSelectTestVars& vars = ctx->GetVars<MultiSelectTestVars>();
+        ImGui::SetNextWindowSize(ImVec2(400, 400));
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+        if (ImGui::BeginTable("Table", 2, ImGuiTableFlags_ScrollX | ImGuiTableFlags_ScrollY | ImGuiTableFlags_RowBg | ImGuiTableFlags_BordersOuter | ImGuiTableFlags_BordersInner))
+        {
+            ImGui::TableSetupColumn("Object");
+            ImGui::TableSetupColumn("Action");
+            ImGui::TableSetupScrollFreeze(0, 1);
+
+            if (ImGui::TableNextColumn())
+                ImGui::TextUnformatted("A wide item in column 1");
+            if (ImGui::TableNextColumn())
+                ImGui::TextUnformatted("A wide item in column 2"); // <-- width of this was lost by BeginMultiSelect()
+
+            const int ITEMS_COUNT = 50;
+            auto& selection = vars.Selection0;
+            ImGuiMultiSelectFlags flags = ImGuiMultiSelectFlags_ClearOnEscape | ImGuiMultiSelectFlags_BoxSelect1d;
+            ImGuiMultiSelectIO* ms_io = ImGui::BeginMultiSelect(flags, selection.Size, ITEMS_COUNT);
+            selection.ApplyRequests(ms_io);
+
+            ImGuiListClipper clipper;
+            clipper.Begin(ITEMS_COUNT);
+            if (ms_io->RangeSrcItem != -1)
+                clipper.IncludeItemByIndex((int)ms_io->RangeSrcItem); // Ensure RangeSrc item is not clipped.
+            while (clipper.Step())
+            {
+                for (int n = clipper.DisplayStart; n < clipper.DisplayEnd; n++)
+                {
+                    ImGui::TableNextRow();
+                    ImGui::TableNextColumn();
+                    bool item_is_selected = selection.Contains((ImGuiID)n);
+                    ImGui::SetNextItemSelectionUserData(n);
+                    ImGui::Selectable(Str64f("Object %05d: %s", n, ExampleNames[n % IM_ARRAYSIZE(ExampleNames)]).c_str(), item_is_selected, ImGuiSelectableFlags_SpanAllColumns | ImGuiSelectableFlags_AllowOverlap);
+                    ImGui::TableNextColumn();
+
+                    if (!ctx->IsFirstGuiFrame())
+                        IM_CHECK_GE(ImGui::GetContentRegionAvail().x, ImGui::CalcTextSize("A wide item in column 2").x); // <---- verify
+
+                    ImGui::SmallButton("hello");
+                }
+            }
+            ms_io = ImGui::EndMultiSelect();
+            selection.ApplyRequests(ms_io);
+
+            ImGui::EndTable();
+        }
+        ImGui::End();
+    };
+#endif
+
     // ## Basic test for GetTypingSelectRequest()
     // Technically this API doesn't require MultiSelect but it's easier for us to reuse that code.
     // (under IMGUI_HAS_MULTISELECT as we also use this API + vars)
