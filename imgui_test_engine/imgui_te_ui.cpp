@@ -439,7 +439,7 @@ static void ShowTestGroup(ImGuiTestEngine* e, ImGuiTestGroup group, Str* filter)
             }
 
             ImGui::TableNextColumn();
-            if (ImGui::Selectable(test->Category, test == e->UiSelectedTest, ImGuiSelectableFlags_SpanAllColumns | ImGuiSelectableFlags_SelectOnNav))
+            if (ImGui::Selectable(test->Category, test == e->UiSelectedTest, ImGuiSelectableFlags_SpanAllColumns | (ImGuiSelectableFlags)ImGuiSelectableFlags_SelectOnNav))
                 select_test = true;
 
             // Double-click to run test, CTRL+Double-click to run GUI function
