@@ -30,6 +30,7 @@ static inline bool operator!=(const ImVec2& lhs, const ImVec2& rhs) { return lhs
 // - Even if we don't implement the test right away: they allow us to remember edge cases and interesting things to test.
 // - Even if they will be hard to actually implement/automate, they still allow us to manually check things.
 //-------------------------------------------------------------------------
+// TODO: Run test suite with negative coordinates viewports, as it is a frequent code for issues!
 // TODO: Tests: Viewport: host A, viewport B over A, make new Modal appears where geometry overlap A -> SHOULD APPEAR OVER B
 // TODO: Tests: Viewport: host A, viewport B over A, window C with TopMost, move over host A (may be merged) then drag over B -> SHOULD APPEAR OVER B AKA NOT MERGE IN A, OR, UNMERGE FROM A
 //              Actually same test is meaningful even without TopMost flag, since clicking C supposedly should bring it to front, C merged in A and dragging around B should appear over B

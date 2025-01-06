@@ -55,6 +55,7 @@ Index of this file:
 // [SECTION] ImGuiApp Implementation: SDL + OpenGL3
 // [SECTION] ImGuiApp Implementation: GLFW + OpenGL3
 // [SECTION] ImGuiApp Implementation: OpenGL (Shared)
+// [SECTION] Mock backend for multi-viewports (Shared): The viewports are not visible
 
 */
 
@@ -120,7 +121,7 @@ bool ImGuiApp_ScreenCaptureFunc(ImGuiID viewport_id, int x, int y, int w, int h,
 //-----------------------------------------------------------------------------
 
 #ifdef IMGUI_HAS_VIEWPORT
-static void ImGuiApp_InstalMockViewportsBackend(ImGuiApp*);
+static void ImGuiApp_InstallMockViewportsBackend(ImGuiApp*);
 #endif
 
 // Data
@@ -135,7 +136,7 @@ static void ImGuiApp_ImplNull_InitBackends(ImGuiApp* app)
 #ifdef IMGUI_HAS_VIEWPORT
     ImGuiIO& io = ImGui::GetIO();
     if (app->MockViewports && (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable))
-        ImGuiApp_InstalMockViewportsBackend(app);
+        ImGuiApp_InstallMockViewportsBackend(app);
 #else
     IM_UNUSED(app);
 #endif
@@ -348,7 +349,7 @@ static void ImGuiApp_ImplWin32DX11_InitBackends(ImGuiApp* app_opaque)
 #ifdef IMGUI_HAS_VIEWPORT
     ImGuiIO& io = ImGui::GetIO();
     if (app->MockViewports && (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable))
-        ImGuiApp_InstalMockViewportsBackend(app);
+        ImGuiApp_InstallMockViewportsBackend(app);
 #endif
 }
 
@@ -714,7 +715,7 @@ static void ImGuiApp_ImplSdlGL2_InitBackends(ImGuiApp* app_opaque)
 #ifdef IMGUI_HAS_VIEWPORT
     ImGuiIO& io = ImGui::GetIO();
     if (app->MockViewports && (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable))
-        ImGuiApp_InstalMockViewportsBackend(app);
+        ImGuiApp_InstallMockViewportsBackend(app);
 #endif
 }
 
@@ -860,7 +861,7 @@ static void ImGuiApp_ImplSdlGL3_InitBackends(ImGuiApp* app_opaque)
 #ifdef IMGUI_HAS_VIEWPORT
     ImGuiIO& io = ImGui::GetIO();
     if (app->MockViewports && (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable))
-        ImGuiApp_InstalMockViewportsBackend(app);
+        ImGuiApp_InstallMockViewportsBackend(app);
 #endif
 }
 
@@ -1068,7 +1069,7 @@ static void ImGuiApp_ImplGlfw_InitBackends(ImGuiApp* app_opaque)
 #ifdef IMGUI_HAS_VIEWPORT
     ImGuiIO& io = ImGui::GetIO();
     if (app->MockViewports && (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable))
-        ImGuiApp_InstalMockViewportsBackend(app);
+        ImGuiApp_InstallMockViewportsBackend(app);
 #endif
 }
 
@@ -1200,12 +1201,10 @@ static bool ImGuiApp_ImplGL_CaptureFramebuffer(ImGuiApp* app, ImGuiViewport* vie
 #endif
 
 //-----------------------------------------------------------------------------
-// [SECTION] Mock backend for multi-viewports (Shared)
-// The viewports are not visible
+// [SECTION] Mock backend for multi-viewports (Shared): The viewports are not visible
 //-----------------------------------------------------------------------------
 
 #ifdef IMGUI_HAS_VIEWPORT
-
 
 // A virtual window
 struct ImGui_ImplMockViewport_ViewportData
@@ -1239,7 +1238,7 @@ static ImGui_ImplMockViewport_ViewportData* ImGui_ImplNullViewport_FindViewportD
 }
 
 // Mock backend (viewports not visible)
-static void ImGuiApp_InstalMockViewportsBackend(ImGuiApp*)
+static void ImGuiApp_InstallMockViewportsBackend(ImGuiApp*)
 {
     ImGuiIO& io = ImGui::GetIO();
 

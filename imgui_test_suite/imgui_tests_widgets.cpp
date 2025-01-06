@@ -440,7 +440,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
             for (int data_type = 0; data_type < ImGuiDataType_COUNT; data_type++)
             {
 #if IMGUI_VERSION_NUM >= 19094
-                if (data_type == ImGuiDataType_Bool)
+                if (data_type == ImGuiDataType_Bool || data_type == ImGuiDataType_String)
                     continue;
 #endif
                 size_t data_size = ImGui::DataTypeGetInfo(data_type)->Size;
@@ -5285,7 +5285,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         for (ImGuiDataType data_type = 0; data_type < ImGuiDataType_COUNT; data_type++)
         {
 #if IMGUI_VERSION_NUM >= 19094
-            if (data_type == ImGuiDataType_Bool)
+            if (data_type == ImGuiDataType_Bool || data_type == ImGuiDataType_String)
                 continue;
 #endif
             const ImGuiDataTypeInfo* data_type_info = ImGui::DataTypeGetInfo(data_type);
@@ -5320,7 +5320,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         for (int data_type = 0; data_type < ImGuiDataType_COUNT; data_type++)
         {
 #if IMGUI_VERSION_NUM >= 19094
-            if (data_type == ImGuiDataType_Bool)
+            if (data_type == ImGuiDataType_Bool || data_type == ImGuiDataType_String)
                 continue;
 #endif
             for (int invert_range = 0; invert_range < 2; invert_range++)
