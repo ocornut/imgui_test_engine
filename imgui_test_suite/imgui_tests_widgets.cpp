@@ -914,6 +914,127 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         status.Clear();
     };
 
+#if IMGUI_VERSION_NUM >= 19165
+    // ## Test the IsItemDeactivatedXXX() functions while interrupted (#5184, #5904, #6766, #8303, #8004?)
+    t = IM_REGISTER_TEST(e, "widgets", "widgets_status_deactivate_interrupted");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiTestGenericVars& vars = ctx->GenericVars;
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
+
+        ImGui::SliderInt("Step", &vars.Step, 0, 2);
+
+        ImGui::ButtonEx("Right click (1)", ImVec2(0, 0), ImGuiButtonFlags_MouseButtonRight);
+        ImGui::Text("F1 to ClearActiveID()");
+        ImGui::Text("F2 to SetWindowFocus(NULL)");
+        ImGui::Text("F3 to Open Modal");
+        if (ImGui::Shortcut(ImGuiKey_F1, ImGuiInputFlags_RouteGlobal))
+            ImGui::ClearActiveID();
+        if (ImGui::Shortcut(ImGuiKey_F2, ImGuiInputFlags_RouteGlobal))
+            ImGui::SetWindowFocus(NULL);
+        if (ImGui::Shortcut(ImGuiKey_F3, ImGuiInputFlags_RouteGlobal))
+            ImGui::OpenPopup("Modal 1");
+        if (ImGui::BeginPopupModal("Modal 1"))
+        {
+            ImGui::Text("Interrupted!");
+            if (ImGui::Shortcut(ImGuiKey_Escape))
+                ImGui::CloseCurrentPopup();
+            ImGui::EndPopup();
+        }
+
+        bool ret = false;
+        //if (ImGui::GetActiveID() != ctx->GetID("//Test Window/Field"))
+        //    vars.Str1[0] = 0;
+
+        if (vars.Step == 0)
+            ret = ImGui::InputText("Field", vars.Str1, IM_ARRAYSIZE(vars.Str1));
+        else if (vars.Step == 1)
+            ImGui::InputTextMultiline("Field", vars.Str1, IM_ARRAYSIZE(vars.Str1));
+        else if (vars.Step == 2)
+            ret = ImGui::SliderFloat3("Slider3", &vars.Color1.x, 0.0f, 1.0f);
+        vars.Status.QueryInc(ret);
+
+        bool is_item_activated = ImGui::IsItemActivated();
+        if (is_item_activated)
+            vars.Str1[0] = 0;
+
+        if (is_item_activated) IMGUI_DEBUG_LOG("IsItemActivated()\n");
+        bool is_item_deactivated = ImGui::IsItemDeactivated();
+        if (is_item_deactivated) IMGUI_DEBUG_LOG("IsItemDeactivated(): '%s'\n", vars.Str1);
+        bool is_item_deactivated_after_edit = ImGui::IsItemDeactivatedAfterEdit();
+        if (is_item_deactivated_after_edit) IMGUI_DEBUG_LOG("IsItemDeactivatedAfterEdit(): '%s'\n", vars.Str1);
+
+        ImGui::ButtonEx("Right click (2)", ImVec2(0, 0), ImGuiButtonFlags_MouseButtonRight);
+        ImGui::Text("F5 to ClearActiveID()");
+        ImGui::Text("F6 to SetWindowFocus(NULL)");
+        ImGui::Text("F7 to Open Modal");
+        if (ImGui::Shortcut(ImGuiKey_F5, ImGuiInputFlags_RouteGlobal))
+            ImGui::ClearActiveID();
+        if (ImGui::Shortcut(ImGuiKey_F6, ImGuiInputFlags_RouteGlobal))
+            ImGui::SetWindowFocus(NULL);
+        if (ImGui::Shortcut(ImGuiKey_F7, ImGuiInputFlags_RouteGlobal))
+            ImGui::OpenPopup("Modal 2");
+        if (ImGui::BeginPopupModal("Modal 2"))
+        {
+            ImGui::Text("Interrupted!");
+            if (ImGui::Shortcut(ImGuiKey_Escape))
+                ImGui::CloseCurrentPopup();
+            ImGui::EndPopup();
+        }
+
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        // Accumulate return values over several frames/action into each bool
+        ImGuiTestGenericVars& vars = ctx->GenericVars;
+        ImGuiTestGenericItemStatus& status = vars.Status;
+        ImGuiContext& g = *GImGui;
+
+        ctx->SetRef("Test Window");
+        for (int step = 0; step < 3; step++)
+        {
+            vars.Step = step;
+            const int substeps_count = (step == 2) ? 10 : 8;
+            for (int substep = 0; substep < substeps_count; substep++)
+            {
+                ctx->LogDebug("Step %d,%d", vars.Step, substep);
+                vars.Str1[0] = 0;
+                vars.Color1 = ImVec4();
+                ctx->Yield();
+
+                if (step == 2)
+                    ctx->ItemInput("Slider3/$$1");
+                else
+                    ctx->ItemInput("Field");
+                ctx->KeyChars("0.5");
+                status.Clear();
+                if ((substep / 2) == 0)
+                    ctx->ItemClick((substep & 1) ? "Right click (2)" : "Right click (1)", ImGuiMouseButton_Right);
+                else if ((substep / 2) == 1)
+                    ctx->KeyPress((substep & 1) ? ImGuiKey_F5 : ImGuiKey_F1); // ClearActiveID() before/after active id
+                else if ((substep / 2) == 2)
+                    ctx->KeyPress((substep & 1) ? ImGuiKey_F6 : ImGuiKey_F2); // SetWindowFocus(NULL) before/after active id
+                else if ((substep / 2) == 3)
+                    ctx->KeyPress((substep & 1) ? ImGuiKey_F7 : ImGuiKey_F3); // OpenModal before/after active id
+                else if ((substep / 2) == 4)
+                    ctx->KeyPress((substep & 1) ? (ImGuiMod_Shift | ImGuiKey_Tab) : (ImGuiKey_Tab)); // Go to next/prev field
+                IM_CHECK(status.Deactivated == 1 && status.DeactivatedAfterEdit == 1);
+                if ((substep / 2) == 4)
+                    IM_CHECK_NE(g.ActiveId, 0u); // Tabbed
+                else
+                    IM_CHECK_EQ(g.ActiveId, 0u); // Interrupted
+                if (step == 2)
+                    IM_CHECK_EQ(vars.Color1.y, 0.5f); // SliderFloat3
+                else
+                    IM_CHECK_STR_EQ(vars.Str1, "0.5"); // InputText/InputTextMultiline
+                if (substep == 6 || substep == 7)
+                    ctx->KeyPress(ImGuiKey_Escape); // Close modal
+            }
+        }
+    };
+#endif
+
     // ## Test the IsItemDeactivatedXXX() functions (e.g. #2550, #1875)
     t = IM_REGISTER_TEST(e, "widgets", "widgets_status_multicomponent");
     t->GuiFunc = [](ImGuiTestContext* ctx)

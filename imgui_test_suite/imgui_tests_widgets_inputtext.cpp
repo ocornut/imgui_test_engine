@@ -1369,6 +1369,9 @@ void RegisterTests_WidgetsInputText(ImGuiTestEngine* e)
         {
             // State reset.
             ImGui::ClearActiveID();
+#if IMGUI_VERSION_NUM >= 19165
+            ctx->Yield();
+#endif
             strcpy(text, "Hello, world!");
 
             // Copying without selection.
