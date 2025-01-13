@@ -5647,7 +5647,27 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
 
         // Disable Item Picker menu entry otherwise we are toast
         ImGui::GetIO().ConfigDebugIsDebuggerPresent = false;
+#if 0
         ctx->MenuCheckAll("Tools");
+#else
+        // MenuCheckAll() would trigger ItemPicker...
+        ImGuiTestItemList items;
+        ctx->MenuAction(ImGuiTestAction_Open, "Tools");
+        ctx->GatherItems(&items, "//$FOCUSED", 1);
+        for (auto item : items)
+        {
+            ctx->MenuAction(ImGuiTestAction_Open, "Tools"); // We assume that every interaction will close the menu again
+            ImGuiTestItemInfo info2 = ctx->ItemInfo(item.ID); // refresh info
+            if (info2.ID == ctx->GetID("//$FOCUSED/Item Picker"))
+                continue;
+            if ((info2.ItemFlags & ImGuiItemFlags_Disabled) != 0) // FIXME: Report disabled state in log? Make that optional?
+                continue;
+            if ((info2.StatusFlags & ImGuiItemStatusFlags_Checkable) == 0)
+                continue;
+            ctx->ItemAction(ImGuiTestAction_Check, item.ID);
+        }
+#endif
+
         ctx->MenuUncheckAll("Tools");
     };
 
