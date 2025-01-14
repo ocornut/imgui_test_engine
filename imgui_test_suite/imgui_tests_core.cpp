@@ -7234,7 +7234,11 @@ void RegisterTests_Capture(ImGuiTestEngine* e)
         ctx->ItemOpen("Tables/Synced instances", 1);
         //ctx->ItemOpen("Tables/Advanced/Options");
         ctx->ItemOpenAll("Tables/Advanced/Options", 1);
+#if IMGUI_VERSION_NUM >= 19167
+        ctx->ItemOpen("Tables/Tree view/**/Root with Long Name");
+#else
         ctx->ItemOpen("Tables/Tree view/**/Root");
+#endif
         ctx->ItemInputValue("Tables/Advanced/Options/Other:/items_count", 50000); // Fancy
         //ctx->TableOpenContextMenu("Tables/Reorderable, hideable, with headers/##table1", 1);
 
