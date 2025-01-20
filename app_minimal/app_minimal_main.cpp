@@ -88,7 +88,7 @@ int main(int argc, char** argv)
 
         // Show windows
         ImGui::ShowDemoWindow();
-        ImGuiTestEngine_ShowTestEngineWindows(engine, NULL);
+        ImGuiTestEngine_ShowTestEngineWindows(engine, nullptr);
 
         // Render and swap
         app->Vsync = test_io.IsRequestingMaxAppSpeed ? false : true;

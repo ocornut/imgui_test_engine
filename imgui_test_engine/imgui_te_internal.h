@@ -39,8 +39,8 @@ struct ImGuiTestGatherTask
     short                   InLayerMask = 0;
 
     // Output/Temp
-    ImGuiTestItemList*      OutList = NULL;
-    ImGuiTestItemInfo*      LastItemInfo = NULL;
+    ImGuiTestItemList*      OutList = nullptr;
+    ImGuiTestItemInfo*      LastItemInfo = nullptr;
 
     void Clear() { memset(this, 0, sizeof(*this)); }
 };
@@ -52,8 +52,8 @@ struct ImGuiTestFindByLabelTask
     // Input
     ImGuiID                 InPrefixId = 0;                 // A known base ID which appears BEFORE the wildcard ID (for "hello/**/foo/bar" it would be hash of "hello")
     int                     InSuffixDepth = 0;              // Number of labels in a path, after unknown base ID (for "hello/**/foo/bar" it would be 2)
-    const char*             InSuffix = NULL;                // A label string which appears on ID stack after unknown base ID (for "hello/**/foo/bar" it would be "foo/bar")
-    const char*             InSuffixLastItem = NULL;        // A last label string (for "hello/**/foo/bar" it would be "bar")
+    const char*             InSuffix = nullptr;             // A label string which appears on ID stack after unknown base ID (for "hello/**/foo/bar" it would be "foo/bar")
+    const char*             InSuffixLastItem = nullptr;     // A last label string (for "hello/**/foo/bar" it would be "bar")
     ImGuiID                 InSuffixLastItemHash = 0;
     ImGuiItemStatusFlags    InFilterItemStatusFlags = 0;    // Flags required for item to be returned
 
@@ -149,8 +149,8 @@ struct ImGuiTestInputs
 struct ImGuiTestEngine
 {
     ImGuiTestEngineIO           IO;
-    ImGuiContext*               UiContextTarget = NULL;         // imgui context for testing
-    ImGuiContext*               UiContextActive = NULL;         // imgui context for testing == UiContextTarget or NULL
+    ImGuiContext*               UiContextTarget = nullptr;      // imgui context for testing
+    ImGuiContext*               UiContextActive = nullptr;      // imgui context for testing == UiContextTarget or nullptr
 
     bool                        Started = false;
     ImU64                       BatchStartTime = 0;
@@ -159,11 +159,11 @@ struct ImGuiTestEngine
     float                       OverrideDeltaTime = -1.0f;      // Inject custom delta time into imgui context to simulate clock passing faster than wall clock time.
     ImVector<ImGuiTest*>        TestsAll;
     ImVector<ImGuiTestRunTask>  TestsQueue;
-    ImGuiTestContext*           TestContext = NULL;             // Running test context
+    ImGuiTestContext*           TestContext = nullptr;          // Running test context
     ImVector<ImGuiTestInfoTask*>InfoTasks;
     ImGuiTestGatherTask         GatherTask;
     ImGuiTestFindByLabelTask    FindByLabelTask;
-    ImGuiTestCoroutineHandle    TestQueueCoroutine = NULL;      // Coroutine to run the test queue
+    ImGuiTestCoroutineHandle    TestQueueCoroutine = nullptr;   // Coroutine to run the test queue
     bool                        TestQueueCoroutineShouldExit = false; // Flag to indicate that we are shutting down and the test queue coroutine should stop
 
     // Inputs
@@ -171,8 +171,8 @@ struct ImGuiTestEngine
 
     // UI support
     bool                        Abort = false;
-    ImGuiTest*                  UiSelectAndScrollToTest = NULL;
-    ImGuiTest*                  UiSelectedTest = NULL;
+    ImGuiTest*                  UiSelectAndScrollToTest = nullptr;
+    ImGuiTest*                  UiSelectedTest = nullptr;
     Str*                        UiFilterTests;
     Str*                        UiFilterPerfs;
     ImU32                       UiFilterByStatusMask = ~0u;
@@ -187,12 +187,12 @@ struct ImGuiTestEngine
     double                      PerfRefDeltaTime;
     ImMovingAverage<double>     PerfDeltaTime100;
     ImMovingAverage<double>     PerfDeltaTime500;
-    ImGuiPerfTool*              PerfTool = NULL;
+    ImGuiPerfTool*              PerfTool = nullptr;
 
     // Screen/Video Capturing
     ImGuiCaptureToolUI          CaptureTool;                        // Capture tool UI
     ImGuiCaptureContext         CaptureContext;                     // Capture context used in tests
-    ImGuiCaptureArgs*           CaptureCurrentArgs = NULL;
+    ImGuiCaptureArgs*           CaptureCurrentArgs = nullptr;
 
     // Tools
     bool                        PostSwapCalled = false;

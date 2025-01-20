@@ -94,8 +94,8 @@ struct TestSuiteApp
 {
     // Main State
     bool                        Quit = false;
-    ImGuiApp*                   AppWindow = NULL;
-    ImGuiTestEngine*            TestEngine = NULL;
+    ImGuiApp*                   AppWindow = nullptr;
+    ImGuiTestEngine*            TestEngine = nullptr;
     ImVec4                      ClearColor = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
 
     // Command-line options
@@ -119,7 +119,7 @@ struct TestSuiteApp
 
 static void TestSuite_ShowUI(TestSuiteApp* app)
 {
-    ImGuiTestEngine_ShowTestEngineWindows(app->TestEngine, NULL);
+    ImGuiTestEngine_ShowTestEngineWindows(app->TestEngine, nullptr);
 
     static bool show_demo_window = true;
     static bool show_another_window = false;
@@ -316,7 +316,7 @@ static void TestSuite_LoadFonts(float dpi_scale)
         //io.Fonts->AddFontFromFileTTF(Str64f("%s/%s", base_font_dir.c_str(), "Cousine-Regular.ttf").c_str(), 15.0f * dpi_scale);
         //io.Fonts->AddFontFromFileTTF(Str64f("%s/%s", base_font_dir.c_str(), "DroidSans.ttf").c_str(), 16.0f * dpi_scale);
         //io.Fonts->AddFontFromFileTTF(Str64f("%s/%s", base_font_dir.c_str(), "ProggyTiny.ttf").c_str(), 10.0f * dpi_scale);
-        //IM_ASSERT(font != NULL);
+        //IM_ASSERT(font != nullptr);
     }
     else
     {
@@ -351,7 +351,7 @@ static void TestSuite_QueueTests(TestSuiteApp* app, ImGuiTestRunFlags run_flags)
 
 static void FindVideoEncoder(char* out, int out_len)
 {
-    IM_ASSERT(out != NULL);
+    IM_ASSERT(out != nullptr);
     IM_ASSERT(out_len > 0);
     Str64 encoder_path("imgui_test_suite/tools/");           // Assume execution from root repository folder by default (linux/macos)
     if (!ImFileExist(encoder_path.c_str()))
@@ -417,7 +417,7 @@ int main(int argc, char** argv)
         if (!TestSuite_ParseCommandLineOptions(app, argc, argv))
             return ImGuiTestAppErrorCode_CommandLineError;
     }
-    argv = NULL;
+    argv = nullptr;
 
     // Default verbose levels differs whether we are in in GUI or Command-Line mode
     if (app->OptGui)
@@ -465,13 +465,13 @@ int main(int argc, char** argv)
     // Creates Application Wrapper
     if (app->OptGui)
         app->AppWindow = ImGuiApp_ImplDefault_Create();
-    if (app->AppWindow == NULL)
+    if (app->AppWindow == nullptr)
         app->AppWindow = ImGuiApp_ImplNull_Create();
     app->AppWindow->DpiAware = false;
     app->AppWindow->MockViewports = app->OptViewports && app->OptMockViewports;
 
     // Create TestEngine context
-    IM_ASSERT(app->TestEngine == NULL);
+    IM_ASSERT(app->TestEngine == nullptr);
     ImGuiTestEngine* engine = ImGuiTestEngine_CreateContext();
     app->TestEngine = engine;
 

@@ -9,7 +9,7 @@
 
 void RegisterAppMinimalTests(ImGuiTestEngine* e)
 {
-    ImGuiTest* t = NULL;
+    ImGuiTest* t = nullptr;
 
     //-----------------------------------------------------------------
     // ## Demo Test: Hello Automation World
@@ -19,7 +19,7 @@ void RegisterAppMinimalTests(ImGuiTestEngine* e)
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         IM_UNUSED(ctx);
-        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImGui::Begin("Test Window", nullptr, ImGuiWindowFlags_NoSavedSettings);
         ImGui::Text("Hello, automation world");
         ImGui::Button("Click Me");
         if (ImGui::TreeNode("Node"))
@@ -49,7 +49,7 @@ void RegisterAppMinimalTests(ImGuiTestEngine* e)
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         TestVars2& vars = ctx->GetVars<TestVars2>();
-        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImGui::Begin("Test Window", nullptr, ImGuiWindowFlags_NoSavedSettings);
         ImGui::SliderInt("Slider", &vars.MyInt, 0, 1000);
         ImGui::End();
     };
