@@ -64,7 +64,6 @@ static ImGuiTestEngine* GImGuiTestEngine = nullptr;
 static void ImGuiTestEngine_BindImGuiContext(ImGuiTestEngine* engine, ImGuiContext* ui_ctx);
 static void ImGuiTestEngine_UnbindImGuiContext(ImGuiTestEngine* engine, ImGuiContext* ui_ctx);
 static void ImGuiTestEngine_CoroutineStopAndJoin(ImGuiTestEngine* engine);
-static void ImGuiTestEngine_StartCalcSourceLineEnds(ImGuiTestEngine* engine);
 static void ImGuiTestEngine_ClearInput(ImGuiTestEngine* engine);
 static void ImGuiTestEngine_ApplyInputToImGuiContext(ImGuiTestEngine* engine);
 static void ImGuiTestEngine_ProcessTestQueue(ImGuiTestEngine* engine);
@@ -265,7 +264,6 @@ void    ImGuiTestEngine_Start(ImGuiTestEngine* engine, ImGuiContext* ui_ctx)
 
     engine->UiContextTarget = ui_ctx;
     ImGuiTestEngine_BindImGuiContext(engine, engine->UiContextTarget);
-    ImGuiTestEngine_StartCalcSourceLineEnds(engine);
 
     // Create our coroutine
     // (we include the word "Main" in the name to facilitate filtering for both this thread and the "Main Thread" in debuggers)
@@ -280,9 +278,11 @@ void    ImGuiTestEngine_Start(ImGuiTestEngine* engine, ImGuiContext* ui_ctx)
 void    ImGuiTestEngine_Stop(ImGuiTestEngine* engine)
 {
     IM_ASSERT(engine->Started);
+    IM_ASSERT(engine->UiContextTarget != NULL);
 
     engine->Abort = true;
     ImGuiTestEngine_CoroutineStopAndJoin(engine);
+    ImGuiTestEngine_UnbindImGuiContext(engine, engine->UiContextTarget);
     ImGuiTestEngine_Export(engine);
     engine->Started = false;
 }
@@ -1244,6 +1244,7 @@ ImGuiTest* ImGuiTestEngine_RegisterTest(ImGuiTestEngine* engine, const char* cat
     t->SourceFile = src_file;
     t->SourceLine = t->SourceLineEnd = src_line;
     engine->TestsAll.push_back(t);
+    engine->TestsSourceLinesDirty = true;
 
     return t;
 }
@@ -1270,6 +1271,7 @@ void ImGuiTestEngine_UnregisterTest(ImGuiTestEngine* engine, ImGuiTest* test)
         engine->UiSelectAndScrollToTest = nullptr;
     if (engine->UiSelectedTest == test)
         engine->UiSelectedTest = nullptr;
+    engine->TestsSourceLinesDirty = true;
 
     IM_DELETE(test);
 }
@@ -1283,6 +1285,7 @@ void ImGuiTestEngine_UnregisterAllTests(ImGuiTestEngine* engine)
     engine->TestsQueue.clear();
     engine->UiSelectAndScrollToTest = nullptr;
     engine->UiSelectedTest = nullptr;
+    engine->TestsSourceLinesDirty = true;
 }
 
 ImGuiPerfTool* ImGuiTestEngine_GetPerfTool(ImGuiTestEngine* engine)
@@ -1418,8 +1421,10 @@ void ImGuiTestEngine_QueueTests(ImGuiTestEngine* engine, ImGuiTestGroup group, c
     }
 }
 
-static void ImGuiTestEngine_StartCalcSourceLineEnds(ImGuiTestEngine* engine)
+// FIXME: This is grossly broken as it assume same filename.
+void ImGuiTestEngine_UpdateTestsSourceLines(ImGuiTestEngine* engine)
 {
+    engine->TestsSourceLinesDirty = false;
     if (engine->TestsAll.empty())
         return;
 

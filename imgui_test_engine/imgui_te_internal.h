@@ -160,6 +160,7 @@ struct ImGuiTestEngine
     ImVector<ImGuiTest*>        TestsAll;
     ImVector<ImGuiTestRunTask>  TestsQueue;
     ImGuiTestContext*           TestContext = nullptr;          // Running test context
+    bool                        TestsSourceLinesDirty = false;
     ImVector<ImGuiTestInfoTask*>InfoTasks;
     ImGuiTestGatherTask         GatherTask;
     ImGuiTestFindByLabelTask    FindByLabelTask;
@@ -220,6 +221,7 @@ void                ImGuiTestEngine_RunTest(ImGuiTestEngine* engine, ImGuiTestCo
 
 void                ImGuiTestEngine_RebootUiContext(ImGuiTestEngine* engine);
 ImGuiPerfTool*      ImGuiTestEngine_GetPerfTool(ImGuiTestEngine* engine);
+void                ImGuiTestEngine_UpdateTestsSourceLines(ImGuiTestEngine* engine);
 
 // Screen/Video Capturing
 bool                ImGuiTestEngine_CaptureScreenshot(ImGuiTestEngine* engine, ImGuiCaptureArgs* args);

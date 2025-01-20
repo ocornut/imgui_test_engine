@@ -22,7 +22,7 @@
 // - DrawTestLog() [internal]
 // - GetVerboseLevelName() [internal]
 // - ShowTestGroup() [internal]
-// - ImGuiTestEngine_ShowTestWindows()
+// - ImGuiTestEngine_ShowTestEngineWindows()
 //-------------------------------------------------------------------------
 
 // Look for " filename:number " in the string and add menu option to open source.
@@ -845,6 +845,9 @@ static void ImGuiTestEngine_ShowTestTool(ImGuiTestEngine* engine, bool* p_open)
 
 void    ImGuiTestEngine_ShowTestEngineWindows(ImGuiTestEngine* e, bool* p_open)
 {
+    if (e->TestsSourceLinesDirty)
+        ImGuiTestEngine_UpdateTestsSourceLines(e);
+
     // Test Tool
     ImGuiTestEngine_ShowTestTool(e, p_open);
 

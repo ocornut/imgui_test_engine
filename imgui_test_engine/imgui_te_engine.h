@@ -398,15 +398,17 @@ struct IMGUI_API ImGuiTest
     const char*                     Name = nullptr;                 // Literal, generally not owned unless NameOwned=true
     ImGuiTestGroup                  Group = ImGuiTestGroup_Unknown; // Coarse groups: 'Tests' or 'Perf'
     bool                            NameOwned = false;              //
-    const char*                     SourceFile = nullptr;           // __FILE__
-    int                             SourceLine = 0;                 // __LINE__
-    int                             SourceLineEnd = 0;              // Calculated by ImGuiTestEngine_StartCalcSourceLineEnds()
     int                             ArgVariant = 0;                 // User parameter. Generally we use it to run variations of a same test by sharing GuiFunc/TestFunc
     ImGuiTestFlags                  Flags = ImGuiTestFlags_None;    // See ImGuiTestFlags_
     ImFuncPtr(ImGuiTestGuiFunc)     GuiFunc = nullptr;              // GUI function (optional if your test are running over an existing GUI application)
     ImFuncPtr(ImGuiTestTestFunc)    TestFunc = nullptr;             // Test function
     void*                           UserData = nullptr;             // General purpose user data (if assigning capturing lambdas on GuiFunc/TestFunc you may not need to use this)
     //ImVector<ImGuiTestRunTask>    Dependencies;                   // Registered via AddDependencyTest(), ran automatically before our test. This is a simpler wrapper to calling ctx->RunChildTest()
+
+    // Sources information (exposed in UI)
+    const char*                     SourceFile = nullptr;           // __FILE__
+    int                             SourceLine = 0;                 // __LINE__
+    int                             SourceLineEnd = 0;              // end of line (when calculated by ImGuiTestEngine_StartCalcSourceLineEnds())
 
     // Last Test Output/Status
     // (this is the only part that may change after registration)
