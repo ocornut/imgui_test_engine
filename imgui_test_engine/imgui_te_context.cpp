@@ -3067,7 +3067,7 @@ void    ImGuiTestContext::ItemInputValue(ImGuiTestRef ref, const char* value)
 
 // Supported values for ImGuiTestOpFlags:
 // - ImGuiTestOpFlags_NoError
-bool    ImGuiTestContext::ItemSelectAndReadValue(ImGuiTestRef ref, ImGuiDataType data_type, void* out_data, ImGuiTestOpFlags flags)
+bool    ImGuiTestContext::ItemReadAsScalar(ImGuiTestRef ref, ImGuiDataType data_type, void* out_data, ImGuiTestOpFlags flags)
 {
     if (IsError())
         return false;
@@ -3107,28 +3107,32 @@ bool    ImGuiTestContext::ItemSelectAndReadValue(ImGuiTestRef ref, ImGuiDataType
     return ret;
 }
 
-void    ImGuiTestContext::ItemSelectAndReadValue(ImGuiTestRef ref, int* out_v)
+int     ImGuiTestContext::ItemReadAsInt(ImGuiTestRef ref)
 {
-    ItemSelectAndReadValue(ref, ImGuiDataType_S32, (void*)out_v);
+    int v = 0;
+    ItemReadAsScalar(ref, ImGuiDataType_S32, (void*)&v);
+    return v;
 }
 
-void    ImGuiTestContext::ItemSelectAndReadValue(ImGuiTestRef ref, float* out_v)
+float   ImGuiTestContext::ItemReadAsFloat(ImGuiTestRef ref)
 {
-    ItemSelectAndReadValue(ref, ImGuiDataType_Float, (void*)out_v);
+    float v = 0.0f;
+    ItemReadAsScalar(ref, ImGuiDataType_Float, (void*)&v);
+    return v;
 }
 
 // Convenient wrapper for ItemSelectAndReadString using our own storage
 // Returned pointer is only valid until next call to same function.
-const char* ImGuiTestContext::ItemSelectAndReadString(ImGuiTestRef ref)
+const char* ImGuiTestContext::ItemReadAsString(ImGuiTestRef ref)
 {
     if (IsError())
         return "";
 
-    size_t required_1 = ItemSelectAndReadString(ref, TempString.Data, TempString.capacity());
+    size_t required_1 = ItemReadAsString(ref, TempString.Data, TempString.capacity());
     if ((int)required_1 > TempString.capacity())
     {
         TempString.reserve((int)required_1);
-        size_t required_2 = ItemSelectAndReadString(ref, TempString.Data, TempString.capacity());
+        size_t required_2 = ItemReadAsString(ref, TempString.Data, TempString.capacity());
         IM_CHECK_SILENT_RETV(required_1 == required_2, "");
     }
     return TempString.Data;
@@ -3138,7 +3142,7 @@ const char* ImGuiTestContext::ItemSelectAndReadString(ImGuiTestRef ref)
 // write up to out_buf_size to out_buf, always zero-terminated.
 // if (out_buf == nulltr) || (out_buf_size < return value), then you want to.
 // You'd probably want to wrap this in a helper for your preferred string type.
-size_t  ImGuiTestContext::ItemSelectAndReadString(ImGuiTestRef ref, char* out_buf, size_t out_buf_size)
+size_t  ImGuiTestContext::ItemReadAsString(ImGuiTestRef ref, char* out_buf, size_t out_buf_size)
 {
     if (IsError())
     {

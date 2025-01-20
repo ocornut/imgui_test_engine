@@ -6,8 +6,11 @@ CHANGELOG
 ** For a while this is going to ONLY INCLUDE BREAKING CHANGES.
 
 2025/01/20:
-- TestEngine: added ItemSelectAndReadString() function helpers to facilitate
+- TestEngine: added ItemReadAsString() function helpers to facilitate
   retrieving value from a text editable field. (#26, #66)
+- TestEngine: *BREAKING* renamed ItemSelectAndReadValue() functions
+  to ItemReadAsInt(), ItemReadAsFloat(), ItemReadAsScalar(), simplified
+  their use and signatures.
 
 2024/12/20:
 - TestEngine: fixed error recovery mis-asserting after a GuiFunc triggered
@@ -33,7 +36,7 @@ CHANGELOG
 
 2024/10/17:
 - TestEngine: updated for various internal changes in v1.91.4.
-- TestEngine: *BREAKING* renamed ImGuiTestItemInfo's InFlags to ItemFlags. 
+- TestEngine: *BREAKING* renamed ImGuiTestItemInfo's InFlags to ItemFlags.
   (it's unlikely to have been used by end-user or tests. Please let us know if you did!).
 
 2024/10/02:

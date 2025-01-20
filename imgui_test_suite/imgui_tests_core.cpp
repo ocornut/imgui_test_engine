@@ -6555,8 +6555,8 @@ void RegisterTests_TestEngine(ImGuiTestEngine* e)
     };
 #endif
 
-    // ## Test basic use of ItemSelectReadValue();
-    t = IM_REGISTER_TEST(e, "testengine", "testengine_select_read_value");
+    // ## Test basic use of ItemReadAsInt(), ItemReadAsFloat(), ItemReadAsString() etc. (#26, #66)
+    t = IM_REGISTER_TEST(e, "testengine", "testengine_read_values");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
@@ -6572,28 +6572,26 @@ void RegisterTests_TestEngine(ImGuiTestEngine* e)
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         ctx->SetRef("Test Window");
-        int v_int = 0;
-        float v_float = 0;
-        ctx->ItemSelectAndReadValue("int", &v_int);
-        ctx->ItemSelectAndReadValue("float", &v_float);
+        int v_int = ctx->ItemReadAsInt("int");
+        float v_float = ctx->ItemReadAsFloat("float");
         IM_CHECK_EQ(v_int, 123);
         IM_CHECK_EQ(v_float, 0.456f);
 
-        const char* ret_str = ctx->ItemSelectAndReadString("text");
+        const char* ret_str = ctx->ItemReadAsString("text");
         IM_CHECK_STR_EQ(ret_str, "Hello World");
-        ret_str = ctx->ItemSelectAndReadString("int");
+        ret_str = ctx->ItemReadAsString("int");
         IM_CHECK_STR_EQ(ret_str, "123");
-        ret_str = ctx->ItemSelectAndReadString("float");
+        ret_str = ctx->ItemReadAsString("float");
         IM_CHECK_STR_EQ(ret_str, "0.456");
 
         char buf_small[3];
         char buf_large[30];
-        size_t ret0 = ctx->ItemSelectAndReadString("text", nullptr, 0);
+        size_t ret0 = ctx->ItemReadAsString("text", nullptr, 0);
         IM_CHECK_EQ(ret0, 12u);
-        size_t ret1 = ctx->ItemSelectAndReadString("text", buf_small, IM_ARRAYSIZE(buf_small));
+        size_t ret1 = ctx->ItemReadAsString("text", buf_small, IM_ARRAYSIZE(buf_small));
         IM_CHECK_EQ(ret1, 12u);
         IM_CHECK_STR_EQ(buf_small, "He");
-        size_t ret2 = ctx->ItemSelectAndReadString("text", buf_large, IM_ARRAYSIZE(buf_large));
+        size_t ret2 = ctx->ItemReadAsString("text", buf_large, IM_ARRAYSIZE(buf_large));
         IM_CHECK_EQ(ret2, 12u);
         IM_CHECK_STR_EQ(buf_large, "Hello World");
     };

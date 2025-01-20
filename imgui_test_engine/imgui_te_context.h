@@ -438,11 +438,11 @@ struct IMGUI_API ImGuiTestContext
     // - This requires the item to be selectable (we will later provide helpers that works in more general manner)
     // - (this temporarily use the internal test clipboard, but original clipboard value is restored afterwards)
     // See https://github.com/ocornut/imgui_test_engine/wiki/Automation-API#accessing-your-data
-    bool        ItemSelectAndReadValue(ImGuiTestRef ref, ImGuiDataType data_type, void* out_data, ImGuiTestOpFlags flags = ImGuiTestOpFlags_None);
-    void        ItemSelectAndReadValue(ImGuiTestRef ref, int* out_v);
-    void        ItemSelectAndReadValue(ImGuiTestRef ref, float* out_v);
-    const char* ItemSelectAndReadString(ImGuiTestRef ref);
-    size_t      ItemSelectAndReadString(ImGuiTestRef ref, char* out_buf, size_t out_buf_size);
+    int         ItemReadAsInt(ImGuiTestRef ref);
+    float       ItemReadAsFloat(ImGuiTestRef ref);
+    bool        ItemReadAsScalar(ImGuiTestRef ref, ImGuiDataType data_type, void* out_data, ImGuiTestOpFlags flags = ImGuiTestOpFlags_None);
+    const char* ItemReadAsString(ImGuiTestRef ref);
+    size_t      ItemReadAsString(ImGuiTestRef ref, char* out_buf, size_t out_buf_size);
 
     // Item/Widgets: Status query
     bool        ItemExists(ImGuiTestRef ref);
@@ -509,6 +509,10 @@ struct IMGUI_API ImGuiTestContext
 
     // Obsolete functions
 #ifndef IMGUI_DISABLE_OBSOLETE_FUNCTIONS
+    // Obsoleted 2025/01/20
+    bool        ItemSelectAndReadValue(ImGuiTestRef ref, ImGuiDataType data_type, void* out_data, ImGuiTestOpFlags flags = ImGuiTestOpFlags_None) { return ItemReadAsScalar(ref, data_type, out_data, flags); }
+    void        ItemSelectAndReadValue(ImGuiTestRef ref, int* out_v) { int v = ItemReadAsInt(ref); *out_v = v; }
+    void        ItemSelectAndReadValue(ImGuiTestRef ref, float* out_v) { float v = ItemReadAsFloat(ref); *out_v = v; }
     // Obsoleted 2024/05/21
     void        YieldUntil(int frame_count)     { while (FrameCount < frame_count) { Yield(); } }
     // Obsoleted 2022/10/11
