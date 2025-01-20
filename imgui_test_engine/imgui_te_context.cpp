@@ -3125,7 +3125,7 @@ const char* ImGuiTestContext::ItemSelectAndReadString(ImGuiTestRef ref)
         return "";
 
     size_t required_1 = ItemSelectAndReadString(ref, TempString.Data, TempString.capacity());
-    if (required_1 > TempString.capacity())
+    if ((int)required_1 > TempString.capacity())
     {
         TempString.reserve((int)required_1);
         size_t required_2 = ItemSelectAndReadString(ref, TempString.Data, TempString.capacity());
@@ -3167,7 +3167,7 @@ size_t  ImGuiTestContext::ItemSelectAndReadString(ImGuiTestRef ref, char* out_bu
     size_t value_required_buf_size = strlen(value_str) + 1;
 
     if (out_buf_size > 0)
-        ImFormatString(out_buf, out_buf_size, "%.*s", ImMax(value_required_buf_size, out_buf_size), value_str);
+        ImFormatString(out_buf, out_buf_size, "%.*s", (int)ImMax(value_required_buf_size, out_buf_size), value_str);
 
     ImGui::SetClipboardText(backup_clipboard.c_str());
 

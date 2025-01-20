@@ -6589,12 +6589,12 @@ void RegisterTests_TestEngine(ImGuiTestEngine* e)
         char buf_small[3];
         char buf_large[30];
         size_t ret0 = ctx->ItemSelectAndReadString("text", nullptr, 0);
-        IM_CHECK_EQ(ret0, 12);
+        IM_CHECK_EQ(ret0, 12u);
         size_t ret1 = ctx->ItemSelectAndReadString("text", buf_small, IM_ARRAYSIZE(buf_small));
-        IM_CHECK_EQ(ret1, 12);
+        IM_CHECK_EQ(ret1, 12u);
         IM_CHECK_STR_EQ(buf_small, "He");
         size_t ret2 = ctx->ItemSelectAndReadString("text", buf_large, IM_ARRAYSIZE(buf_large));
-        IM_CHECK_EQ(ret2, 12);
+        IM_CHECK_EQ(ret2, 12u);
         IM_CHECK_STR_EQ(buf_large, "Hello World");
     };
 
