@@ -1274,6 +1274,17 @@ void ImGuiTestEngine_UnregisterTest(ImGuiTestEngine* engine, ImGuiTest* test)
     IM_DELETE(test);
 }
 
+void ImGuiTestEngine_UnregisterAllTests(ImGuiTestEngine* engine)
+{
+    // Cannot unregister a running test. Please contact us if you need this.
+    IM_ASSERT(engine->TestContext == NULL);
+
+    engine->TestsAll.clear_delete();
+    engine->TestsQueue.clear();
+    engine->UiSelectAndScrollToTest = NULL;
+    engine->UiSelectedTest = NULL;
+}
+
 ImGuiPerfTool* ImGuiTestEngine_GetPerfTool(ImGuiTestEngine* engine)
 {
     return engine->PerfTool;

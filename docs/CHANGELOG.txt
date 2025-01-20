@@ -11,6 +11,7 @@ CHANGELOG
 - TestEngine: *BREAKING* renamed ItemSelectAndReadValue() functions
   to ItemReadAsInt(), ItemReadAsFloat(), ItemReadAsScalar(), simplified
   their use and signatures.
+- TestEngine: added ImGuiTestEngine_UnregisterAllTests() helper function.
 
 2024/12/20:
 - TestEngine: fixed error recovery mis-asserting after a GuiFunc triggered
