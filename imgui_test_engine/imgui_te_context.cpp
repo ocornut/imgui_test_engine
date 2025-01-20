@@ -3117,6 +3117,63 @@ void    ImGuiTestContext::ItemSelectAndReadValue(ImGuiTestRef ref, float* out_v)
     ItemSelectAndReadValue(ref, ImGuiDataType_Float, (void*)out_v);
 }
 
+// Convenient wrapper for ItemSelectAndReadString using our own storage
+// Returned pointer is only valid until next call to same function.
+const char* ImGuiTestContext::ItemSelectAndReadString(ImGuiTestRef ref)
+{
+    if (IsError())
+        return "";
+
+    size_t required_1 = ItemSelectAndReadString(ref, TempString.Data, TempString.capacity());
+    if (required_1 > TempString.capacity())
+    {
+        TempString.reserve((int)required_1);
+        size_t required_2 = ItemSelectAndReadString(ref, TempString.Data, TempString.capacity());
+        IM_CHECK_SILENT_RETV(required_1 == required_2, "");
+    }
+    return TempString.Data;
+}
+
+// return required buffer size to store output value (#26, #66)
+// write up to out_buf_size to out_buf, always zero-terminated.
+// if (out_buf == nulltr) || (out_buf_size < return value), then you want to.
+// You'd probably want to wrap this in a helper for your preferred string type.
+size_t  ImGuiTestContext::ItemSelectAndReadString(ImGuiTestRef ref, char* out_buf, size_t out_buf_size)
+{
+    if (IsError())
+    {
+        if (out_buf_size > 0)
+            out_buf[0] = 0;
+        return 0;
+    }
+
+    IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
+    LogDebug("ItemSelectAndReadString '%s' 0x%08X as string", ref.Path ? ref.Path : "NULL", ref.ID);
+    IM_CHECK_SILENT_RETV(out_buf != NULL || out_buf_size == 0, false);
+
+    Str256 backup_clipboard = ImGui::GetClipboardText();
+
+    ItemInput(ref);
+#if IMGUI_VERSION_NUM < 19063
+    KeyPress(ImGuiKey_A | ImGuiMod_Shortcut);
+    KeyPress(ImGuiKey_C | ImGuiMod_Shortcut);   // Copy to clipboard
+#else
+    KeyPress(ImGuiKey_A | ImGuiMod_Ctrl);
+    KeyPress(ImGuiKey_C | ImGuiMod_Ctrl);       // Copy to clipboard
+#endif
+    KeyPress(ImGuiKey_Enter);
+
+    const char* value_str = ImGui::GetClipboardText();
+    size_t value_required_buf_size = strlen(value_str) + 1;
+
+    if (out_buf_size > 0)
+        ImFormatString(out_buf, out_buf_size, "%.*s", ImMax(value_required_buf_size, out_buf_size), value_str);
+
+    ImGui::SetClipboardText(backup_clipboard.c_str());
+
+    return value_required_buf_size;
+}
+
 void    ImGuiTestContext::ItemHold(ImGuiTestRef ref, float time)
 {
     if (IsError())

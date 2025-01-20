@@ -6563,8 +6563,10 @@ void RegisterTests_TestEngine(ImGuiTestEngine* e)
 
         int v_int = 123;
         float v_float = 0.456f;
+        char v_text[16] = "Hello World";
         ImGui::SliderInt("int", &v_int, 0, 200);
         ImGui::DragFloat("float", &v_float, 0.01f, 0.0f, 1.0f);
+        ImGui::InputText("text", v_text, IM_ARRAYSIZE(v_text));
         ImGui::End();
     };
     t->TestFunc = [](ImGuiTestContext* ctx)
@@ -6576,6 +6578,24 @@ void RegisterTests_TestEngine(ImGuiTestEngine* e)
         ctx->ItemSelectAndReadValue("float", &v_float);
         IM_CHECK_EQ(v_int, 123);
         IM_CHECK_EQ(v_float, 0.456f);
+
+        const char* ret_str = ctx->ItemSelectAndReadString("text");
+        IM_CHECK_STR_EQ(ret_str, "Hello World");
+        ret_str = ctx->ItemSelectAndReadString("int");
+        IM_CHECK_STR_EQ(ret_str, "123");
+        ret_str = ctx->ItemSelectAndReadString("float");
+        IM_CHECK_STR_EQ(ret_str, "0.456");
+
+        char buf_small[3];
+        char buf_large[30];
+        size_t ret0 = ctx->ItemSelectAndReadString("text", nullptr, 0);
+        IM_CHECK_EQ(ret0, 12);
+        size_t ret1 = ctx->ItemSelectAndReadString("text", buf_small, IM_ARRAYSIZE(buf_small));
+        IM_CHECK_EQ(ret1, 12);
+        IM_CHECK_STR_EQ(buf_small, "He");
+        size_t ret2 = ctx->ItemSelectAndReadString("text", buf_large, IM_ARRAYSIZE(buf_large));
+        IM_CHECK_EQ(ret2, 12);
+        IM_CHECK_STR_EQ(buf_large, "Hello World");
     };
 
     // ## Test hash functions and ##/### operators

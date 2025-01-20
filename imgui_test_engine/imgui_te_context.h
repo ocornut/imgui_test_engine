@@ -248,6 +248,7 @@ struct IMGUI_API ImGuiTestContext
     ImGuiID                 RefID = 0;                              // Reference ID over which all named references are based
     ImGuiID                 RefWindowID = 0;                        // ID of a window that contains RefID item
     ImGuiInputSource        InputMode = ImGuiInputSource_Mouse;     // Prefer interacting with mouse/keyboard/gamepad
+    ImVector<char>          TempString;
     ImVector<char>          Clipboard;                              // Private clipboard for the test instance
     ImVector<ImGuiWindow*>  ForeignWindowsToHide;
     ImGuiTestItemInfo       DummyItemInfoNull;                      // Storage for ItemInfoNull()
@@ -433,12 +434,15 @@ struct IMGUI_API ImGuiTestContext
     void        ItemInputValue(ImGuiTestRef ref, float f);
     void        ItemInputValue(ImGuiTestRef ref, const char* str);
 
-    // Item/Widgets: Helpers to easily read a value by selecting Slider/Drag/Input text, copying into clipboard and parsing it.
+    // Item/Widgets: Helpers to easily read a value by selecting Slider/Drag/Input text, copying it and parsing it.
     // - This requires the item to be selectable (we will later provide helpers that works in more general manner)
-    // - Original clipboard value is restored afterward.
+    // - (this temporarily use the internal test clipboard, but original clipboard value is restored afterwards)
+    // See https://github.com/ocornut/imgui_test_engine/wiki/Automation-API#accessing-your-data
     bool        ItemSelectAndReadValue(ImGuiTestRef ref, ImGuiDataType data_type, void* out_data, ImGuiTestOpFlags flags = ImGuiTestOpFlags_None);
     void        ItemSelectAndReadValue(ImGuiTestRef ref, int* out_v);
     void        ItemSelectAndReadValue(ImGuiTestRef ref, float* out_v);
+    const char* ItemSelectAndReadString(ImGuiTestRef ref);
+    size_t      ItemSelectAndReadString(ImGuiTestRef ref, char* out_buf, size_t out_buf_size);
 
     // Item/Widgets: Status query
     bool        ItemExists(ImGuiTestRef ref);

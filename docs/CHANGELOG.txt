@@ -5,6 +5,10 @@ CHANGELOG
    Those changes are not all listed here.
 ** For a while this is going to ONLY INCLUDE BREAKING CHANGES.
 
+2025/01/20:
+- TestEngine: added ItemSelectAndReadString() function helpers to facilitate
+  retrieving value from a text editable field. (#26, #66)
+
 2024/12/20:
 - TestEngine: fixed error recovery mis-asserting after a GuiFunc triggered
   a failed error (when a test fail, error recover runs but shouldn't assert).
