@@ -12,8 +12,9 @@ CHANGELOG
   to ItemReadAsInt(), ItemReadAsFloat(), ItemReadAsScalar(), simplified
   their use and signatures.
 - TestEngine: added ImGuiTestEngine_UnregisterAllTests() helper function.
-- TestEngine: registering/unregistered tests during runtime ensure their
-  source line ranges is up to date.
+- TestEngine: UI: better highlight when using "right-click->View Source".
+- TestEngine: UI: registering/unregistered tests during runtime ensure
+  their source line ranges is up to date.
 
 2024/12/20:
 - TestEngine: fixed error recovery mis-asserting after a GuiFunc triggered

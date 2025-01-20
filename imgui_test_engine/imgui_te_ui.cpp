@@ -545,20 +545,19 @@ static void ShowTestGroup(ImGuiTestEngine* e, ImGuiTestGroup group, Str* filter)
                     source_blurb.append(file_data, file_data + file_size);
                 else
                     source_blurb.append("<Error loading sources>");
-                goto_line = (test->SourceLine + test->SourceLineEnd) / 2;
+                goto_line = test->SourceLine;
                 ImGui::OpenPopup("Source");
             }
             if (ImGui::BeginPopup("Source"))
             {
-                // FIXME: Local vs screen pos too messy :(
-                const ImVec2 start_pos = ImGui::GetCursorStartPos();
+                const ImVec2 start_pos = ImGui::GetCursorScreenPos();
                 const float line_height = ImGui::GetTextLineHeight();
                 if (goto_line != -1)
-                    ImGui::SetScrollFromPosY(start_pos.y + (goto_line - 1) * line_height, 0.5f);
+                    ImGui::SetScrollY(ImMax((goto_line - 5) * line_height, 0.0f));
                 goto_line = -1;
 
-                ImRect r(0.0f, test->SourceLine * line_height, ImGui::GetWindowWidth(), (test->SourceLine + 1) * line_height); // SourceLineEnd is too flaky
-                ImGui::GetWindowDrawList()->AddRectFilled(ImGui::GetWindowPos() + start_pos + r.Min, ImGui::GetWindowPos() + start_pos + r.Max, IM_COL32(80, 80, 150, 150));
+                ImRect r(0.0f, (test->SourceLine - 1) * line_height, ImGui::GetWindowWidth(), (test->SourceLineEnd - 1) * line_height);
+                ImGui::GetWindowDrawList()->AddRectFilled(start_pos + r.Min, start_pos + r.Max, IM_COL32(80, 80, 150, 100));
 
                 ImGui::TextUnformatted(source_blurb.c_str(), source_blurb.end());
                 ImGui::EndPopup();

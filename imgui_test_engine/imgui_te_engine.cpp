@@ -1421,26 +1421,37 @@ void ImGuiTestEngine_QueueTests(ImGuiTestEngine* engine, ImGuiTestGroup group, c
     }
 }
 
-// FIXME: This is grossly broken as it assume same filename.
 void ImGuiTestEngine_UpdateTestsSourceLines(ImGuiTestEngine* engine)
 {
     engine->TestsSourceLinesDirty = false;
     if (engine->TestsAll.empty())
         return;
 
-    ImVector<int> line_starts;
-    line_starts.reserve(engine->TestsAll.Size);
-    for (int n = 0; n < engine->TestsAll.Size; n++)
-        line_starts.push_back(engine->TestsAll[n]->SourceLine);
-    ImQsort(line_starts.Data, (size_t)line_starts.Size, sizeof(int), [](const void* lhs, const void* rhs) { return (*(const int*)lhs) - *(const int*)rhs; });
+    struct TestAndSourceLine { ImGuiTest* Test; int SourceLine; };
 
-    for (int n = 0; n < engine->TestsAll.Size; n++)
+    ImPool<ImVector<TestAndSourceLine>> db;
+    for (ImGuiTest* test : engine->TestsAll)
     {
-        ImGuiTest* test = engine->TestsAll[n];
-        for (int m = 0; m < line_starts.Size - 1; m++) // FIXME-OPT
-            if (line_starts[m] == test->SourceLine)
-                test->SourceLineEnd = ImMax(test->SourceLine, line_starts[m + 1]);
+        if (test->SourceFile == nullptr)
+            continue;
+        ImGuiID srcfile_hash = ImHashStr(test->SourceFile);
+        ImVector<TestAndSourceLine>* srcfile_tests = db.GetOrAddByKey(srcfile_hash);
+        srcfile_tests->push_back({ test, test->SourceLine });
     }
+
+    int pool_size = db.GetMapSize();
+    for (int map_n = 0; map_n < pool_size; map_n++)
+        if (ImVector<TestAndSourceLine>* srcfile_tests = db.TryGetMapData(map_n))
+        {
+            ImQsort(srcfile_tests->Data, (size_t)srcfile_tests->Size, sizeof(TestAndSourceLine), [](const void* lhs, const void* rhs)
+            { return ((const TestAndSourceLine*)lhs)->SourceLine - ((const TestAndSourceLine*)rhs)->SourceLine; });
+            for (int test_n = 0; test_n < srcfile_tests->Size - 1; test_n++)
+            {
+                TestAndSourceLine& tasl = (*srcfile_tests)[test_n];
+                IM_ASSERT(tasl.Test->SourceLine == tasl.SourceLine);
+                tasl.Test->SourceLineEnd = (*srcfile_tests)[test_n + 1].SourceLine - 1;
+            }
+        }
 }
 
 void ImGuiTestEngine_GetResult(ImGuiTestEngine* engine, int& count_tested, int& count_success)
