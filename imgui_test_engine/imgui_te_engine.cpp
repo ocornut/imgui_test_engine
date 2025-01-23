@@ -282,7 +282,7 @@ void    ImGuiTestEngine_Stop(ImGuiTestEngine* engine)
 
     engine->Abort = true;
     ImGuiTestEngine_CoroutineStopAndJoin(engine);
-    ImGuiTestEngine_UnbindImGuiContext(engine, engine->UiContextTarget);
+    //ImGuiTestEngine_UnbindImGuiContext(engine, engine->UiContextTarget);
     ImGuiTestEngine_Export(engine);
     engine->Started = false;
 }
