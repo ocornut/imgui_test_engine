@@ -219,6 +219,9 @@ int                 ImGuiTestEngine_GetFrameCount(ImGuiTestEngine* engine);
 bool                ImGuiTestEngine_PassFilter(ImGuiTest* test, const char* filter);
 void                ImGuiTestEngine_RunTest(ImGuiTestEngine* engine, ImGuiTestContext* ctx, ImGuiTest* test, ImGuiTestRunFlags run_flags);
 
+void                ImGuiTestEngine_BindImGuiContext(ImGuiTestEngine* engine, ImGuiContext* ui_ctx);
+void                ImGuiTestEngine_UnbindImGuiContext(ImGuiTestEngine* engine, ImGuiContext* ui_ctx);
+
 void                ImGuiTestEngine_RebootUiContext(ImGuiTestEngine* engine);
 ImGuiPerfTool*      ImGuiTestEngine_GetPerfTool(ImGuiTestEngine* engine);
 void                ImGuiTestEngine_UpdateTestsSourceLines(ImGuiTestEngine* engine);

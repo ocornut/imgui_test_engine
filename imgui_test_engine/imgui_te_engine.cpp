@@ -61,8 +61,6 @@ static ImGuiTestEngine* GImGuiTestEngine = nullptr;
 //-------------------------------------------------------------------------
 
 // Private functions
-static void ImGuiTestEngine_BindImGuiContext(ImGuiTestEngine* engine, ImGuiContext* ui_ctx);
-static void ImGuiTestEngine_UnbindImGuiContext(ImGuiTestEngine* engine, ImGuiContext* ui_ctx);
 static void ImGuiTestEngine_CoroutineStopAndJoin(ImGuiTestEngine* engine);
 static void ImGuiTestEngine_ClearInput(ImGuiTestEngine* engine);
 static void ImGuiTestEngine_ApplyInputToImGuiContext(ImGuiTestEngine* engine);
@@ -140,7 +138,7 @@ static void ImGuiTestEngine_PreEndFrameHook(ImGuiContext* ui_ctx, ImGuiContextHo
 static void ImGuiTestEngine_PreRenderHook(ImGuiContext* ui_ctx, ImGuiContextHook* hook)     { ImGuiTestEngine_PreRender((ImGuiTestEngine*)hook->UserData, ui_ctx); }
 static void ImGuiTestEngine_PostRenderHook(ImGuiContext* ui_ctx, ImGuiContextHook* hook)    { ImGuiTestEngine_PostRender((ImGuiTestEngine*)hook->UserData, ui_ctx); }
 
-static void ImGuiTestEngine_BindImGuiContext(ImGuiTestEngine* engine, ImGuiContext* ui_ctx)
+void ImGuiTestEngine_BindImGuiContext(ImGuiTestEngine* engine, ImGuiContext* ui_ctx)
 {
     IM_ASSERT(engine->UiContextTarget == ui_ctx);
 
@@ -196,7 +194,7 @@ static void ImGuiTestEngine_BindImGuiContext(ImGuiTestEngine* engine, ImGuiConte
     ui_ctx->TestEngine = engine;
 }
 
-static void    ImGuiTestEngine_UnbindImGuiContext(ImGuiTestEngine* engine, ImGuiContext* ui_ctx)
+void    ImGuiTestEngine_UnbindImGuiContext(ImGuiTestEngine* engine, ImGuiContext* ui_ctx)
 {
     IM_ASSERT(engine->UiContextTarget == ui_ctx);
 
