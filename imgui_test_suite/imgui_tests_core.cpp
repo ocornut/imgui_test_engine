@@ -487,6 +487,60 @@ void RegisterTests_Window(ImGuiTestEngine* e)
 #endif
     };
 
+#if IMGUI_VERSION_NUM >= 19174
+    // ## Test IsItemXXX calls after an append-BeginChild() call (#8350)
+    // FIXME: Not thoroughly testing everything.
+    t = IM_REGISTER_TEST(e, "window", "window_append_status_child");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        auto& vars = ctx->GenericVars;
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
+
+        ImGui::BeginChild("ChildWindow", ImVec2(200, 100), ImGuiChildFlags_FrameStyle);
+        vars.BoolArray[0] = ImGui::IsItemHovered(); // <-- this is undefined behavior, as normally this return data for title bar. we want to preserve the possibility to have them on child.
+        vars.BoolArray[1] = ImGui::IsItemVisible(); // "
+        ImGui::Text("Hello");
+        ImGui::EndChild();
+        vars.BoolArray[2] = ImGui::IsItemHovered();
+        vars.BoolArray[3] = ImGui::IsItemVisible();
+        ImGui::Button("Button");
+        ImGui::BeginChild("ChildWindow", ImVec2(200, 100));
+        vars.BoolArray[4] = ImGui::IsItemHovered(); // "
+        vars.BoolArray[5] = ImGui::IsItemVisible(); // "
+        ImGui::EndChild();
+        vars.BoolArray[6] = ImGui::IsItemHovered();
+        vars.BoolArray[7] = ImGui::IsItemVisible();
+
+        for (int n = 0; n < 8; n += 2)
+            ImGui::Text("hovered: %d visible: %d", vars.BoolArray[n], vars.BoolArray[n + 1]);
+
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        auto& vars = ctx->GenericVars;
+        ctx->MouseMove("Test Window/Button");
+        IM_CHECK(vars.BoolArray[0] == false);
+        IM_CHECK(vars.BoolArray[1] == false);
+        IM_CHECK(vars.BoolArray[2] == false);
+        IM_CHECK(vars.BoolArray[3] == true);
+        IM_CHECK(vars.BoolArray[4] == false);
+        IM_CHECK(vars.BoolArray[5] == false);
+        IM_CHECK(vars.BoolArray[6] == false);
+        IM_CHECK(vars.BoolArray[7] == true);
+
+        ctx->MouseMove(ctx->WindowInfo("Test Window/ChildWindow").ID);
+        IM_CHECK(vars.BoolArray[0] == false);
+        IM_CHECK(vars.BoolArray[1] == false);
+        IM_CHECK(vars.BoolArray[2] == true);
+        IM_CHECK(vars.BoolArray[3] == true);
+        IM_CHECK(vars.BoolArray[4] == false);
+        IM_CHECK(vars.BoolArray[5] == false);
+        IM_CHECK(vars.BoolArray[6] == true);
+        IM_CHECK(vars.BoolArray[7] == true);
+    };
+#endif
+
     // ## Test basic focus behavior
     // FIXME-TESTS: This in particular when combined with Docking should be tested with and without ConfigDockingTabBarOnSingleWindows
     t = IM_REGISTER_TEST(e, "window", "window_focus_1");
