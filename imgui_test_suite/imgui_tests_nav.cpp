@@ -296,8 +296,8 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
             IM_CHECK(g.NavLayer == ImGuiNavLayer_Main);
             ctx->KeyPress(ImGuiMod_Alt);
             IM_CHECK(g.NavLayer == ImGuiNavLayer_Menu);
-            const char* menu_item_1 = step == 3 ? "#COLLAPSE" : "##menubar/File";
-            const char* menu_item_2 = step == 3 ? "#CLOSE" : "##menubar/Edit";
+            const char* menu_item_1 = step == 3 ? "#COLLAPSE" : "##MenuBar/File";
+            const char* menu_item_2 = step == 3 ? "#CLOSE" : "##MenuBar/Edit";
             IM_CHECK_EQ(g.NavId, ctx->GetID(menu_item_1));
             ctx->KeyPress(ImGuiKey_RightArrow);
             IM_CHECK_EQ(g.NavId, ctx->GetID(menu_item_2));
@@ -1417,7 +1417,7 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
         ctx->LogDebug("Test variant: in menu");
         vars.ShowWindows = vars.SetFocus = vars.MenuLayer = true;
         ctx->Yield(2);
-        IM_CHECK_EQ(g.NavId, ctx->GetID("Window/##menubar/Item 2"));
+        IM_CHECK_EQ(g.NavId, ctx->GetID("Window/##MenuBar/Item 2"));
         IM_CHECK(g.NavLayer == ImGuiNavLayer_Menu);
 #endif
     };

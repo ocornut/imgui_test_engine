@@ -1050,24 +1050,24 @@ void RegisterTests_Window(ImGuiTestEngine* e)
             IM_CHECK_EQ(vars.SecondOpen, false);
 
             // Test menu opening by hovering a menu item while a menu is already open.
-            ctx->ItemClick("##menubar/First");                                      // Click and open first menu.
+            ctx->ItemClick("##MenuBar/First");                                      // Click and open first menu.
             IM_CHECK_EQ(vars.FirstOpen, true);
             IM_CHECK_EQ(vars.SecondOpen, false);
-            ctx->MouseMove("##menubar/Second", ImGuiTestOpFlags_NoFocusWindow);     // Hover and open second menu.
+            ctx->MouseMove("##MenuBar/Second", ImGuiTestOpFlags_NoFocusWindow);     // Hover and open second menu.
             IM_CHECK_EQ(vars.FirstOpen, false);
             IM_CHECK_EQ(vars.SecondOpen, true);
-            ctx->MouseMove("##menubar/First", ImGuiTestOpFlags_NoFocusWindow);      // Hover and open first menu again.
+            ctx->MouseMove("##MenuBar/First", ImGuiTestOpFlags_NoFocusWindow);      // Hover and open first menu again.
             IM_CHECK_EQ(vars.FirstOpen, true);
             IM_CHECK_EQ(vars.SecondOpen, false);
 
             // Test closing a menu by clicking menu item that opens this menu (#3496).
             //IM_SUSPEND_TESTFUNC();
-            ctx->ItemClick("##menubar/First", 0, ImGuiTestOpFlags_NoFocusWindow);      // Click it again to close.
+            ctx->ItemClick("##MenuBar/First", 0, ImGuiTestOpFlags_NoFocusWindow);      // Click it again to close.
             IM_CHECK_EQ(vars.FirstOpen, false);
             IM_CHECK_EQ(vars.SecondOpen, false);
 
             // Test closing open menu by clicking popup window body.
-            ctx->ItemClick("##menubar/First");                                      // Click and open first menu.
+            ctx->ItemClick("##MenuBar/First");                                      // Click and open first menu.
             ctx->MouseSetViewport(popup);
             ctx->MouseMoveToPos(popup->Rect().GetBR() - ImVec2(20.0f, 20.0f));      // Clicking window outside of menu closes it.
             ctx->MouseClick();
@@ -1085,7 +1085,7 @@ void RegisterTests_Window(ImGuiTestEngine* e)
                 ctx->WindowMove(popup->ID, window->Rect().GetTR());
 
             // Test closing a menu by clicking popup's parent window body.
-            ctx->ItemClick("##menubar/First");                                      // Click and open first menu.
+            ctx->ItemClick("##MenuBar/First");                                      // Click and open first menu.
             ctx->MouseSetViewport(window);
             ctx->MouseMoveToPos(window->Rect().GetBL() + ImVec2(20.0f, -20.0f));    // Clicking parent window of menu popup closes it.
             ctx->MouseClick();
@@ -1105,7 +1105,7 @@ void RegisterTests_Window(ImGuiTestEngine* e)
                 ctx->ItemClick("//Test Window/Open Menu Popup");                     // Reopen popup if it was closed.
 
             // Test closing a menu by clicking on empty space.
-            ctx->ItemClick("##menubar/First");                                      // Click and reopen first menu.
+            ctx->ItemClick("##MenuBar/First");                                      // Click and reopen first menu.
             ctx->MouseClickOnVoid();                                                // Clicking outside of menu closes it.
 #if IMGUI_BROKEN_TESTS
             IM_CHECK_EQ(vars.FirstOpen, false);
@@ -1422,7 +1422,7 @@ void RegisterTests_Window(ImGuiTestEngine* e)
             IM_CHECK(window3 != NULL && popup2 != NULL);
             IM_CHECK_EQ(g.NavWindow, window3);
             IM_CHECK_EQ(popup2->Active, true);
-            ctx->ItemClick(Str30f("//%s/##menubar/File", popup2->Name).c_str());// FIXME: MenuClick() does not work well with menus inside of a popup.
+            ctx->ItemClick(Str30f("//%s/##MenuBar/File", popup2->Name).c_str());// FIXME: MenuClick() does not work well with menus inside of a popup.
 #ifdef IMGUI_HAS_DOCK
             ctx->DockInto("Window3", "Interrupts", ImGuiDir_None, false, ImGuiTestOpFlags_NoFocusWindow | ImGuiTestOpFlags_NoError);
             IM_CHECK(ctx->WindowIsUndockedOrStandalone(window3));                                   // Can not dock into windows that belong to same begin stack, but are below parent popup
@@ -6551,7 +6551,7 @@ void RegisterTests_TestEngine(ImGuiTestEngine* e)
     {
         ctx->SetRef("Test Window");
         ctx->WindowResize("", ImVec2(50, 200));
-        ctx->ItemClick("##menubar/Button");
+        ctx->MenuClick("Button");
         ctx->WindowResize("", ImVec2(50, 200));
         ctx->MenuClick("SECOND_MENU/Item");
     };

@@ -3380,7 +3380,9 @@ bool    ImGuiTestContext::TabBarCompareOrder(ImGuiTabBar* tab_bar, const char** 
     return true;
 }
 
-
+// Automatically insert "##MenuBar" between window and menus.
+// Automatically open and navigate sub-menus
+// FIXME: Currently assume that any path after the window are sub-menus.
 void    ImGuiTestContext::MenuAction(ImGuiTestAction action, ImGuiTestRef ref)
 {
     if (IsError())
@@ -3445,8 +3447,13 @@ void    ImGuiTestContext::MenuAction(ImGuiTestAction action, ImGuiTestRef ref)
             p = path_end;
 
         const bool is_target_item = (p == path_end);
+#if IMGUI_VERSION_NUM >= 19174
+        if (current_window->Flags & ImGuiWindowFlags_MenuBar)
+            buf.setf("//%s/##MenuBar/%.*s", current_window->Name, (int)(p - path), path);    // Click menu in menu bar
+#else
         if (current_window->Flags & ImGuiWindowFlags_MenuBar)
             buf.setf("//%s/##menubar/%.*s", current_window->Name, (int)(p - path), path);    // Click menu in menu bar
+#endif
         else
             buf.setf("//%s/%.*s", current_window->Name, (int)(p - path), path);              // Click sub menu in its own window
 

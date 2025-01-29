@@ -3628,15 +3628,16 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
     };
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
+        // This would likely work with MenuClick("Menu") but going lower-level to ensure we don't mess with focus.
         auto& vars = ctx->GetVars<WindowMenuReopenVars>();
         ctx->SetRef("Test Window");
-        ctx->ItemClick("##menubar/Menu", 0, ImGuiTestOpFlags_NoFocusWindow);
+        ctx->ItemClick("##MenuBar/Menu", 0, ImGuiTestOpFlags_NoFocusWindow);
         IM_CHECK(vars.MenuIsVisible);
         vars.MenuWasOnceNotVisible = false;
-        ctx->ItemClick("##menubar/Menu", 0, ImGuiTestOpFlags_NoFocusWindow);
+        ctx->ItemClick("##MenuBar/Menu", 0, ImGuiTestOpFlags_NoFocusWindow);
         IM_CHECK(vars.MenuIsVisible == false);
         IM_CHECK(vars.MenuWasOnceNotVisible);
-        ctx->ItemClick("##menubar/Menu", 0, ImGuiTestOpFlags_NoFocusWindow);
+        ctx->ItemClick("##MenuBar/Menu", 0, ImGuiTestOpFlags_NoFocusWindow);
         IM_CHECK(vars.MenuIsVisible);
 
         ctx->SetRef("//$FOCUSED");
@@ -3828,9 +3829,9 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ctx->SetRef("Test Window");
 
         struct { const char* OpenButton; const char* MenuBase; } test_data[] = {
-            { NULL,         "##menubar" }, // Test from a window menu bar.
-            { "Open Popup", "##menubar" }, // Test from popup menu bar.
-            { "Open Modal", "##menubar" }, // Test from modal menu bar.
+            { NULL,         "##MenuBar" }, // Test from a window menu bar.
+            { "Open Popup", "##MenuBar" }, // Test from popup menu bar.
+            { "Open Modal", "##MenuBar" }, // Test from modal menu bar.
             { "Open Menu" , ""          }, // Test from popup menu.
         };
 
@@ -3892,7 +3893,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         IM_CHECK_NE(g.OpenPopupStack.back().OpenParentId, popup_parent_id);
 
         // 3. Now do same as 1. except in reverse order.
-        ctx->MouseMove("##menubar/Examples", ImGuiTestOpFlags_NoFocusWindow | ImGuiTestOpFlags_NoCheckHoveredId);
+        ctx->MouseMove("##MenuBar/Examples", ImGuiTestOpFlags_NoFocusWindow | ImGuiTestOpFlags_NoCheckHoveredId);
         IM_CHECK(g.OpenPopupStack.Size == 0);
 
         // 4. Clicking another menuset should finally open it.
@@ -4135,7 +4136,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
     {
         ImGuiContext& g = *ImGui::GetCurrentContext();
 
-        ctx->ItemClick("##MainMenuBar##menubar/Menu 1");
+        ctx->MenuClick("##MainMenuBar/Menu 1");
 
         // Click doesn't affect g.NavId which is null at this point
 
@@ -4147,18 +4148,18 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ctx->KeyPress(ImGuiKey_LeftArrow);
         IM_CHECK_EQ(g.NavId, ctx->GetID("##Menu_00/Sub Menu 1"));
         ctx->KeyPress(ImGuiKey_LeftArrow);
-        IM_CHECK_EQ(g.NavId, ctx->GetID("##MainMenuBar##menubar/Menu 1"));
+        IM_CHECK_EQ(g.NavId, ctx->GetID("##MainMenuBar##MenuBar/Menu 1"));
 
-        ctx->MouseMove("##MainMenuBar##menubar/Menu 2"); // FIXME-TESTS: Workaround so TestEngine can find again Menu 1
+        ctx->MouseMove("##MainMenuBar##MenuBar/Menu 2"); // FIXME-TESTS: Workaround so TestEngine can find again Menu 1
 
         // Test forwarding of nav event to parent when there's no match in the current menu
         // Going from "Menu 1/Sub Menu 1/Item 1" to "Menu 2"
-        ctx->ItemClick("##MainMenuBar##menubar/Menu 1");
+        ctx->ItemClick("##MainMenuBar##MenuBar/Menu 1");
         ctx->KeyPress(ImGuiKey_DownArrow);
         ctx->KeyPress(ImGuiKey_RightArrow);
         IM_CHECK_EQ(g.NavId, ctx->GetID("##Menu_01/Item 1"));
         ctx->KeyPress(ImGuiKey_RightArrow);
-        IM_CHECK_EQ(g.NavId, ctx->GetID("##MainMenuBar##menubar/Menu 2"));
+        IM_CHECK_EQ(g.NavId, ctx->GetID("##MainMenuBar##MenuBar/Menu 2"));
 
         ctx->KeyPress(ImGuiKey_DownArrow);
         IM_CHECK_EQ(g.NavId, ctx->GetID("##Menu_00/Sub Menu 2-1"));
@@ -4228,7 +4229,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
 #if IMGUI_BROKEN_TESTS
         ctx->MenuClick("Table/InputText2"); // FIXME-TESTS: This doesn't work because "../Table" in MenuAction doesn't resolve to an item, and even if it did it would try to click it.
 #else
-        ctx->ItemClick("##menubar/Table/InputText2");
+        ctx->ItemClick("##MenuBar/Table/InputText2");
 #endif
         IM_CHECK_EQ(g.NavLayer, ImGuiNavLayer_Menu);
         ctx->KeyPress(ImGuiKey_Escape); // Deactivate InputText

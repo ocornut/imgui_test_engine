@@ -8,6 +8,7 @@ CHANGELOG
 2025/01/29:
 - TestEngine: fixed issue using MenuXXX() functions with a relative path
   when current SetRef() value is empty.
+- TestEngine: fix for menu-bar changes in 1.91.8 wip.
 
 2025/01/20:
 - TestEngine: added ItemReadAsString() function helpers to facilitate
