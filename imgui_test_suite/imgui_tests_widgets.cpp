@@ -4172,6 +4172,72 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         IM_CHECK_EQ(g.NavId, ctx->GetID("##Menu_01/Item 3"));
     };
 
+    // ## Test main menubar automatically releasing focus + bug overriding layer (#8355)
+    t = IM_REGISTER_TEST(e, "widgets", "widgets_menu_mainmenubar_release_focus");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        auto& vars = ctx->GenericVars;
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImGui::Button("OK");
+        ImGui::End();
+        if (ImGui::BeginMainMenuBar())
+        {
+            if (ImGui::BeginMenu("File"))
+            {
+                ImGui::MenuItem("Hedhehog");
+                ImGui::EndMenu();
+            }
+            ImGui::Button("BUTTON");
+            ImGui::SetNextItemWidth(100);
+            ImGui::InputText("InputText1", vars.Str1, IM_ARRAYSIZE(vars.Str1));
+            if (ImGui::BeginTable("Table", 1))
+            {
+                ImGui::TableNextColumn();
+                ImGui::SetNextItemWidth(100);
+                ImGui::InputText("InputText2", vars.Str1, IM_ARRAYSIZE(vars.Str1));
+                ImGui::EndTable();
+            }
+            ImGui::EndMainMenuBar();
+        }
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiContext& g = *GImGui;
+        ImGuiWindow* test_window = ctx->GetWindowByRef("/Test Window");
+        ctx->ItemClick("/Test Window/OK");
+        IM_CHECK_EQ(g.NavWindow, test_window);
+
+        // It's not well specced, but MenuLayer->MainLayer is currently effectively done on FocusWindow(),
+        // which closing a menu does, but not e.g. clicking a button. That's why we press Escape.
+        // It may be the saner behavior that we limit this to closing menu, so maybe current behavior i the best.
+        ctx->SetRef("##MainMenuBar"); // FIXME-TESTS: It's pretty shitty we don't have a clear standard to use that yet
+        ctx->MenuClick("BUTTON");
+        IM_CHECK_EQ(g.NavLayer, ImGuiNavLayer_Menu);
+        ctx->KeyPress(ImGuiKey_Escape); // Leave menu layer
+        IM_CHECK_EQ(g.NavLayer, ImGuiNavLayer_Main);
+        IM_CHECK_EQ(g.NavWindow, test_window);
+
+        ctx->MenuClick("InputText1");
+        IM_CHECK_EQ(g.NavLayer, ImGuiNavLayer_Menu);
+        ctx->KeyPress(ImGuiKey_Escape); // Deactivate InputText
+        ctx->KeyPress(ImGuiKey_Escape); // Leave menu layer
+        ctx->Yield();
+        IM_CHECK_EQ(g.NavLayer, ImGuiNavLayer_Main);
+        IM_CHECK_EQ(g.NavWindow, test_window);
+
+#if IMGUI_BROKEN_TESTS
+        ctx->MenuClick("Table/InputText2"); // FIXME-TESTS: This doesn't work because "../Table" in MenuAction doesn't resolve to an item, and even if it did it would try to click it.
+#else
+        ctx->ItemClick("##menubar/Table/InputText2");
+#endif
+        IM_CHECK_EQ(g.NavLayer, ImGuiNavLayer_Menu);
+        ctx->KeyPress(ImGuiKey_Escape); // Deactivate InputText
+        ctx->KeyPress(ImGuiKey_Escape); // Leave menu layer
+        ctx->Yield();
+        IM_CHECK_EQ(g.NavLayer, ImGuiNavLayer_Main);
+        IM_CHECK_EQ(g.NavWindow, test_window);
+    };
+
 #ifdef IMGUI_HAS_MULTISELECT
 
     static const char* ExampleNames[] =
