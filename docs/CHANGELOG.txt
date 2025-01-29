@@ -5,6 +5,10 @@ CHANGELOG
    Those changes are not all listed here.
 ** For a while this is going to ONLY INCLUDE BREAKING CHANGES.
 
+2025/01/29:
+- TestEngine: fixed issue using MenuXXX() functions with a relative path
+  when current SetRef() value is empty.
+
 2025/01/20:
 - TestEngine: added ItemReadAsString() function helpers to facilitate
   retrieving value from a text editable field. (#26, #66)

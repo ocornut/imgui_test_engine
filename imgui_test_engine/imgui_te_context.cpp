@@ -3417,7 +3417,7 @@ void    ImGuiTestContext::MenuAction(ImGuiTestAction action, ImGuiTestRef ref)
     const char* path_end = path + strlen(path);
 
     ImGuiWindow* ref_window = nullptr;
-    if (path[0] == '/' && path[1] == '/')
+    if ((path[0] == '/' && path[1] == '/') || (RefID == 0))
     {
         const char* end = strstr(path + 2, "/");
         IM_CHECK_SILENT(end != nullptr); // Menu interaction without any menus specified in ref.
@@ -3428,7 +3428,7 @@ void    ImGuiTestContext::MenuAction(ImGuiTestAction action, ImGuiTestRef ref)
         if (ref_window == nullptr)
             LogError("MenuAction: missing ref window (invalid name \"//%s\" ?", window_name.c_str());
     }
-    else if (RefID)
+    else
     {
         ref_window = GetWindowByRef(RefID);
         if (ref_window == nullptr)
