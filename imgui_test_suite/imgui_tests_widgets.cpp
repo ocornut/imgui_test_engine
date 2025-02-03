@@ -839,6 +839,94 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
 
     // ## Test ColorEdit4() and IsItemDeactivatedXXX() functions
     // ## Test that IsItemActivated() doesn't trigger when clicking the color button to open picker
+    t = IM_REGISTER_TEST(e, "widgets", "widgets_status_common");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiTestGenericVars& vars = ctx->GenericVars;
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
+
+        ImGui::SliderInt("Step", &vars.Step, 0, 5);
+
+        bool ret = false;
+        switch (vars.Step)
+        {
+        case 0:
+            ret = ImGui::Button("Button");
+            break;
+        case 1:
+            ret = ImGui::Checkbox("Checkbox", &vars.Bool1);
+            break;
+        case 2:
+            ret = ImGui::SliderFloat("Slider", &vars.Float1, 0.0f, 1.0f);
+            break;
+        case 3:
+            ret = ImGui::Selectable("Selectable", &vars.Bool1);
+            break;
+        case 4:
+            ret = ImGui::Combo("Combo", &vars.Int1, "Zero\0One\0Two\0\0");
+            break;
+        case 5:
+            ret = ImGui::ColorEdit4("ColorEdit", &vars.Color1.x);
+            break;
+        }
+        vars.Status.QueryInc(ret);
+        vars.Status.Draw();
+        if (ImGui::Button("Clear counters"))
+            vars.Status.Clear();
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        // Accumulate return values over several frames/action into each bool
+        ImGuiTestGenericVars& vars = ctx->GenericVars;
+        ImGuiTestGenericItemStatus& status = vars.Status;
+
+        // Testing activation flag being set
+        ctx->SetRef("Test Window");
+
+        const char* item_names[6] = { "Button", "Checkbox", "Slider", "Selectable", "Combo", "ColorEdit##X" };
+        for (int step = 0; step < 6; step++)
+        {
+            vars.Step = step;
+            ctx->Yield(2);
+            status.Clear();
+
+            ctx->MouseMove(item_names[step]);
+            IM_CHECK(status.RetValue == 0 && status.Activated == 0 && status.Deactivated == 0 && status.DeactivatedAfterEdit == 0 && status.Edited == 0);
+            IM_CHECK(status.Hovered >= 1);
+            ctx->MouseDown();
+            IM_CHECK(status.Activated == 1 && status.Active >= 1 && status.Deactivated == 0);
+
+            if (step == 2 || step == 5)
+            {
+                ctx->MouseMove(item_names[step], ImGuiTestOpFlags_MoveToEdgeL);
+                ctx->MouseMove(item_names[step], ImGuiTestOpFlags_MoveToEdgeR);
+            }
+
+            ctx->MouseUp();
+            IM_CHECK(status.Activated == 1 && status.Deactivated == 1);
+
+            if (step == 4)
+            {
+                ctx->ComboClick("Combo/One");
+                ctx->ComboClick("Combo/Two");
+#if !IMGUI_BROKEN_TESTS
+                continue; // Currently broken
+#endif
+            }
+
+#if (IMGUI_VERSION_NUM > 19165) && (IMGUI_VERSION_NUM < 19181)
+            if (step == 1 || step == 3) // Checkbox(), Selectable() were broken (#8370)
+                continue;
+#endif
+
+            if (step != 0) // not triggered by Button
+                IM_CHECK(status.DeactivatedAfterEdit == 1);
+        }
+    };
+
+    // ## Test ColorEdit4() and IsItemDeactivatedXXX() functions
+    // ## Test that IsItemActivated() doesn't trigger when clicking the color button to open picker
     t = IM_REGISTER_TEST(e, "widgets", "widgets_status_coloredit");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
