@@ -1046,11 +1046,13 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         if (is_item_activated)
             vars.Str1[0] = 0;
 
+        /*
         if (is_item_activated) IMGUI_DEBUG_LOG("IsItemActivated()\n");
         bool is_item_deactivated = ImGui::IsItemDeactivated();
         if (is_item_deactivated) IMGUI_DEBUG_LOG("IsItemDeactivated(): '%s'\n", vars.Str1);
         bool is_item_deactivated_after_edit = ImGui::IsItemDeactivatedAfterEdit();
         if (is_item_deactivated_after_edit) IMGUI_DEBUG_LOG("IsItemDeactivatedAfterEdit(): '%s'\n", vars.Str1);
+        */
 
         ImGui::ButtonEx("Right click (2)", ImVec2(0, 0), ImGuiButtonFlags_MouseButtonRight);
         ImGui::Text("F5 to ClearActiveID()");
