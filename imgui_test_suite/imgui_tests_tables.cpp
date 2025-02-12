@@ -1829,10 +1829,10 @@ void RegisterTests_Table(ImGuiTestEngine* e)
         ImGui::Begin("Table Settings", NULL, vars.window_flags);
         if (ImGui::BeginTable("table1", 4, ImGuiTableFlags_Resizable | ImGuiTableFlags_Hideable | ImGuiTableFlags_Reorderable | ImGuiTableFlags_Sortable))
         {
-            ImGui::TableSetupColumn("Col1");
-            ImGui::TableSetupColumn("Col2");
-            ImGui::TableSetupColumn("Col3", ImGuiTableColumnFlags_WidthFixed, 50.0f);
-            ImGui::TableSetupColumn("Col4", ImGuiTableColumnFlags_WidthStretch);
+            ImGui::TableSetupColumn("Col0");
+            ImGui::TableSetupColumn("Col1", ImGuiTableColumnFlags_DefaultHide);
+            ImGui::TableSetupColumn("Col2", ImGuiTableColumnFlags_WidthFixed, 50.0f);
+            ImGui::TableSetupColumn("Col3", ImGuiTableColumnFlags_WidthStretch);
             ImGui::TableHeadersRow();
             if (vars.call_get_sort_specs) // Test against TableGetSortSpecs() having side effects
                 ImGui::TableGetSortSpecs();
@@ -1872,7 +1872,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
                 IM_CHECK_EQ_NO_RET(table->Columns[0].SortDirection, ImGuiSortDirection_Ascending);
 
                 IM_CHECK_EQ_NO_RET(table->Columns[0].IsEnabled, true);
-                IM_CHECK_EQ_NO_RET(table->Columns[1].IsEnabled, true);
+                IM_CHECK_EQ_NO_RET(table->Columns[1].IsEnabled, false);
                 IM_CHECK_EQ_NO_RET(table->Columns[2].IsEnabled, true);
                 IM_CHECK_EQ_NO_RET(table->Columns[3].IsEnabled, true);
 
@@ -1889,7 +1889,9 @@ void RegisterTests_Table(ImGuiTestEngine* e)
             {
                 IM_CHECK_EQ_NO_RET(table->Columns[0].SortOrder, 0);
                 IM_CHECK_EQ_NO_RET(table->Columns[0].SortDirection, col0_sorted_desc ? ImGuiSortDirection_Descending : ImGuiSortDirection_Ascending);
+#if IMGUI_VERSION_NUM >= 19184 // Fixed an issue in #7934
                 IM_CHECK_EQ_NO_RET(table->Columns[1].IsEnabled, !col1_hidden);
+#endif
                 IM_CHECK_EQ_NO_RET(table->Columns[0].DisplayOrder, col0_reordered ? (col1_hidden ? 2 : 1) : 0);
                 IM_CHECK_EQ_NO_RET(table->Columns[1].DisplayOrder, col0_reordered ? 0 : 1);
                 IM_CHECK_EQ_NO_RET(table->Columns[2].DisplayOrder, col0_reordered ? (col1_hidden ? 1 : 2) : 2);
@@ -1920,12 +1922,9 @@ void RegisterTests_Table(ImGuiTestEngine* e)
                 table->Columns[0].SortDirection = ImGuiSortDirection_Descending;
             }
 
-            if (col1_hidden)
-            {
-                // FIXME-TESTS: Later we should try to simulate inputs at user level.. Cannot use TableSetColumnIsEnabled() from pointer.
-                table->Columns[1].IsEnabled = table->Columns[1].IsUserEnabledNextFrame = false;
-                ctx->Yield();   // Must come into effect before reordering.
-            }
+            // FIXME-TESTS: Later we should try to simulate inputs at user level.. Cannot use TableSetColumnIsEnabled() from pointer.
+            table->Columns[1].IsEnabled = table->Columns[1].IsUserEnabledNextFrame = !col1_hidden;
+            ctx->Yield();   // Must come into effect before reordering.
 
             if (col0_reordered)
             {
@@ -1999,9 +1998,9 @@ void RegisterTests_Table(ImGuiTestEngine* e)
         ImGui::Begin("Table Settings", NULL, ImGuiWindowFlags_NoSavedSettings);
         if (ImGui::BeginTable("table1", 3, ImGuiTableFlags_Resizable | ImGuiTableFlags_Hideable | ImGuiTableFlags_Reorderable | ImGuiTableFlags_Sortable))
         {
+            ImGui::TableSetupColumn("Col0");
             ImGui::TableSetupColumn("Col1");
-            ImGui::TableSetupColumn("Col2");
-            ImGui::TableSetupColumn("Col3", ImGuiTableColumnFlags_DefaultHide);
+            ImGui::TableSetupColumn("Col2", ImGuiTableColumnFlags_DefaultHide);
             ImGui::TableHeadersRow();
             HelperTableSubmitCellsButtonFix(3, 3);
             ImGui::EndTable();
