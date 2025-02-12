@@ -1819,7 +1819,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
 
     // ## Test saving and loading table settings.
     t = IM_REGISTER_TEST(e, "table", "table_settings_1");
-    struct TableSettingsVars { ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoSavedSettings; bool call_get_sort_specs = false; };
+    struct TableSettingsVars { ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoSavedSettings; bool call_get_sort_specs = false; bool show_contents = true; };
     t->SetVarsDataType<TableSettingsVars>();
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
@@ -2051,6 +2051,55 @@ void RegisterTests_Table(ImGuiTestEngine* e)
         ctx->Yield();
         IM_CHECK_EQ(table->Columns[2].WidthAuto, 100.0f);
     };
+
+    // Test that a tables with default settings gets an entry in the .ini file (#7934)
+    // This is a bit awkwardly written but does the job.
+#if IMGUI_VERSION_NUM >= 19184
+    t = IM_REGISTER_TEST(e, "table", "table_settings_3");
+    t->SetVarsDataType<TableSettingsVars>([](auto* ctx, auto& vars) { vars.show_contents = false; }); // Ensure windows are not displayed before we tell them so.
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        TableSettingsVars& vars = ctx->GetVars<TableSettingsVars>();
+        if (vars.show_contents == false)
+            return;
+
+        ImGui::SetNextWindowSize(ImVec2(300, 200), ImGuiCond_Appearing);
+        ImGui::Begin("Table Settings", NULL, vars.window_flags);
+        if (ImGui::BeginTable("table1", 3, ImGuiTableFlags_Resizable | ImGuiTableFlags_Hideable | ImGuiTableFlags_Reorderable))
+        {
+            ImGui::TableSetupColumn("Col0", ImGuiTableColumnFlags_WidthStretch, 1.0f);
+            ImGui::TableSetupColumn("Col1", ImGuiTableColumnFlags_WidthStretch, 1.0f);
+            ImGui::TableSetupColumn("Col2", ImGuiTableColumnFlags_WidthStretch, 1.0f);
+            ImGui::TableHeadersRow();
+            HelperTableSubmitCellsButtonFix(3, 3);
+            ImGui::EndTable();
+        }
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        TableSettingsVars& vars = ctx->GetVars<TableSettingsVars>();
+        ImGuiID table_id = ctx->GetID("//Table Settings/table1");
+        TableDiscardInstanceAndSettings(table_id);
+        ImGuiTable* table = ImGui::TableFindByID(table_id);
+        IM_CHECK_EQ(table, nullptr);
+
+        vars.show_contents = true;
+        vars.window_flags &= ~ImGuiWindowFlags_NoSavedSettings;
+        ctx->Yield();
+        table = ImGui::TableFindByID(table_id);
+        IM_CHECK_EQ(table->IsSettingsDirty, false);
+        ImGui::SaveIniSettingsToMemory();
+        ctx->Yield();
+        IM_CHECK_EQ(table->SettingsLoadedFlags, 0);
+        IM_CHECK_NE(table->SettingsOffset, -1); // Verify settings are bound
+        // FIXME-TESTS: It would be nice to look into ini data.
+
+        ImGuiTableSettings* settings = ImGui::TableGetBoundSettings(table);
+        IM_CHECK(settings != NULL);
+        IM_CHECK(settings->SaveFlags == 0);
+    };
+#endif
 
     // ## Test table behavior with ItemWidth
     t = IM_REGISTER_TEST(e, "table", "table_item_width");
