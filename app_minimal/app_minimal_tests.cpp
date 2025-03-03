@@ -84,7 +84,7 @@ void RegisterAppMinimalTests(ImGuiTestEngine* e)
         ctx->SetRef("Dear ImGui Demo");
         ctx->ItemOpen("Widgets");       // Open collapsing header
         ctx->ItemOpenAll("Basic");      // Open tree node and all its descendant
-        ctx->CaptureScreenshotWindow("Dear ImGui Demo", ImGuiCaptureFlags_StitchAll | ImGuiCaptureFlags_HideMouseCursor);
+        ctx->CaptureScreenshotWindow("//Dear ImGui Demo", ImGuiCaptureFlags_StitchAll | ImGuiCaptureFlags_HideMouseCursor);
     };
 
     t = IM_REGISTER_TEST(e, "demo_tests", "capture_video");
@@ -94,7 +94,7 @@ void RegisterAppMinimalTests(ImGuiTestEngine* e)
         ctx->ItemCloseAll("");
         ctx->MouseTeleportToPos(ctx->GetWindowByRef("")->Pos);
 
-        ctx->CaptureAddWindow("Dear ImGui Demo"); // Optional: Capture single window
+        ctx->CaptureAddWindow("//Dear ImGui Demo"); // Optional: Capture single window
         ctx->CaptureBeginVideo();
         ctx->ItemOpen("Widgets");
         ctx->ItemInputValue("Basic/input text", "My first video!");
