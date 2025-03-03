@@ -2,6 +2,9 @@
 // (context when a running test + end user automation API)
 // This is the main (if not only) interface that your Tests will be using.
 
+// This file is governed by the "Dear ImGui Test Engine License".
+// Details of the license are provided in the LICENSE.txt file in the same directory.
+
 #if defined(_MSC_VER) && !defined(_CRT_SECURE_NO_WARNINGS)
 #define _CRT_SECURE_NO_WARNINGS
 #endif
