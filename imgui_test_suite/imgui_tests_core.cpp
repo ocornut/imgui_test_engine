@@ -5741,9 +5741,8 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
         ctx->ItemClick("##tabs/Lettuce/**/Modify");
 #endif
         ctx->MenuClick("File");
-        ctx->SetRef("");
-        ctx->ItemClick("##Menu_00/Close All Documents");
-        ctx->ItemClick("Save?/Yes");
+        ctx->ItemClick("//$FOCUSED/Close All Documents");
+        ctx->ItemClick("//Save?/Yes");
 
         // Reopen the Lettuce document in case we re-run the test
         ctx->SetRef("Example: Documents");

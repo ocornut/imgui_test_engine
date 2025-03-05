@@ -3781,34 +3781,37 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ctx->MouseMove("//$FOCUSED/Nested2");
         IM_CHECK_EQ(g.OpenPopupStack.Size, 2);
         ctx->MouseMove("//$FOCUSED/0");
-        ctx->MouseMove("//##Menu_01/0");    // Same
+
+        ctx->SetRef("//##Menu_01");
+
+        ctx->MouseMove("0");    // Same
         IM_CHECK_EQ(g.OpenPopupStack.Size, 3);
 
         // Move down
-        ctx->MouseMove("//##Menu_01/1");
+        ctx->MouseMove("1");
         IM_CHECK_EQ(g.OpenPopupStack.Size, 3);
-        ctx->MouseMove("//##Menu_01/2");
+        ctx->MouseMove("2");
         IM_CHECK_EQ(g.OpenPopupStack.Size, 3);
 
         // Move up: between 2024/02/08 and 2024/02/20 closure of /2 led to NewFrame() running
         // "if (g.NavWindow && !g.NavWindow->WasActive) FocusTopMostWindowUnderOne(NULL, etc.)"
         // and FocusTopMostWindowUnderOne() only look for top-level windows. (#7325)
-        ctx->MouseMove("//##Menu_01/1");
+        ctx->MouseMove("1");
         IM_CHECK_EQ(g.OpenPopupStack.Size, 3);
 
         // Move down instantaneously to exercise successive frames opens (#7325)
-        ctx->MouseTeleportToPos(ctx->ItemInfo("//##Menu_01/3").RectClipped.GetCenter(), ImGuiTestOpFlags_NoYield);
+        ctx->MouseTeleportToPos(ctx->ItemInfo("3").RectClipped.GetCenter(), ImGuiTestOpFlags_NoYield);
         ctx->Yield();
         IM_CHECK_EQ(g.OpenPopupStack.Size, 3);
-        ctx->MouseTeleportToPos(ctx->ItemInfo("//##Menu_01/5").RectClipped.GetCenter(), ImGuiTestOpFlags_NoYield);
+        ctx->MouseTeleportToPos(ctx->ItemInfo("5").RectClipped.GetCenter(), ImGuiTestOpFlags_NoYield);
         ctx->Yield();
         IM_CHECK_EQ(g.OpenPopupStack.Size, 3);
         ctx->Yield();
         IM_CHECK_EQ(g.OpenPopupStack.Size, 3);
-        ctx->MouseTeleportToPos(ctx->ItemInfo("//##Menu_01/4").RectClipped.GetCenter(), ImGuiTestOpFlags_NoYield);
+        ctx->MouseTeleportToPos(ctx->ItemInfo("4").RectClipped.GetCenter(), ImGuiTestOpFlags_NoYield);
         ctx->Yield();
         IM_CHECK_EQ(g.OpenPopupStack.Size, 3);
-        ctx->MouseTeleportToPos(ctx->ItemInfo("//##Menu_01/3").RectClipped.GetCenter(), ImGuiTestOpFlags_NoYield);
+        ctx->MouseTeleportToPos(ctx->ItemInfo("3").RectClipped.GetCenter(), ImGuiTestOpFlags_NoYield);
         ctx->Yield();
         IM_CHECK_EQ(g.OpenPopupStack.Size, 3);
         ctx->Yield();
@@ -4232,11 +4235,11 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
 
         // Test basic key Navigation
         ctx->KeyPress(ImGuiKey_DownArrow);
-        IM_CHECK_EQ(g.NavId, ctx->GetID("##Menu_00/Sub Menu 1"));
+        IM_CHECK_EQ(g.NavId, ctx->GetID("//$FOCUSED/Sub Menu 1"));
         ctx->KeyPress(ImGuiKey_RightArrow);
-        IM_CHECK_EQ(g.NavId, ctx->GetID("##Menu_01/Item 1"));
+        IM_CHECK_EQ(g.NavId, ctx->GetID("//$FOCUSED/Item 1"));
         ctx->KeyPress(ImGuiKey_LeftArrow);
-        IM_CHECK_EQ(g.NavId, ctx->GetID("##Menu_00/Sub Menu 1"));
+        IM_CHECK_EQ(g.NavId, ctx->GetID("//$FOCUSED/Sub Menu 1"));
         ctx->KeyPress(ImGuiKey_LeftArrow);
         IM_CHECK_EQ(g.NavId, ctx->GetID("##MainMenuBar##MenuBar/Menu 1"));
 
@@ -4247,20 +4250,20 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ctx->ItemClick("##MainMenuBar##MenuBar/Menu 1");
         ctx->KeyPress(ImGuiKey_DownArrow);
         ctx->KeyPress(ImGuiKey_RightArrow);
-        IM_CHECK_EQ(g.NavId, ctx->GetID("##Menu_01/Item 1"));
+        IM_CHECK_EQ(g.NavId, ctx->GetID("//$FOCUSED/Item 1"));
         ctx->KeyPress(ImGuiKey_RightArrow);
         IM_CHECK_EQ(g.NavId, ctx->GetID("##MainMenuBar##MenuBar/Menu 2"));
 
         ctx->KeyPress(ImGuiKey_DownArrow);
-        IM_CHECK_EQ(g.NavId, ctx->GetID("##Menu_00/Sub Menu 2-1"));
+        IM_CHECK_EQ(g.NavId, ctx->GetID("//$FOCUSED/Sub Menu 2-1"));
         ctx->KeyPress(ImGuiKey_RightArrow);
-        IM_CHECK_EQ(g.NavId, ctx->GetID("##Menu_01/Item 2"));
+        IM_CHECK_EQ(g.NavId, ctx->GetID("//$FOCUSED/Item 2"));
 
         ctx->KeyPress(ImGuiKey_LeftArrow);
         ctx->KeyPress(ImGuiKey_DownArrow);
-        IM_CHECK_EQ(g.NavId, ctx->GetID("##Menu_00/Sub Menu 2-2"));
+        IM_CHECK_EQ(g.NavId, ctx->GetID("//$FOCUSED/Sub Menu 2-2"));
         ctx->KeyPress(ImGuiKey_RightArrow);
-        IM_CHECK_EQ(g.NavId, ctx->GetID("##Menu_01/Item 3"));
+        IM_CHECK_EQ(g.NavId, ctx->GetID("//$FOCUSED/Item 3"));
     };
 
     // ## Test main menubar automatically releasing focus + bug overriding layer (#8355)

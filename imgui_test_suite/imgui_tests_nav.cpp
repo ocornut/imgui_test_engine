@@ -425,11 +425,11 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
         ImGuiContext& g = *ctx->UiContext;
         ctx->SetRef("Dear ImGui Demo");
         ctx->MenuClick("Menu");
-        IM_CHECK(g.NavId == ctx->GetID("//##Menu_00/New"));
+        IM_CHECK(g.NavId == ctx->GetID("//$FOCUSED/New"));
         ctx->KeyPress(ImGuiKey_UpArrow);
-        IM_CHECK(g.NavId == ctx->GetID("//##Menu_00/Quit"));
+        IM_CHECK(g.NavId == ctx->GetID("//$FOCUSED/Quit"));
         ctx->KeyPress(ImGuiKey_DownArrow);
-        IM_CHECK(g.NavId == ctx->GetID("//##Menu_00/New"));
+        IM_CHECK(g.NavId == ctx->GetID("//$FOCUSED/New"));
     };
 
     // ## Test menu closing with left arrow key. (#4510)
