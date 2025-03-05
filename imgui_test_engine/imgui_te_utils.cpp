@@ -930,6 +930,7 @@ FILE*       ImOsPOpen(const char* cmd_line, const char* mode)
     IM_ASSERT(cmd_line != nullptr && *cmd_line);
     IM_ASSERT(mode != nullptr && *mode);
 #if _WIN32
+#ifndef _GAMING_XBOX
     ImVector<wchar_t> w_cmd_line;
     ImVector<wchar_t> w_mode;
     ImUtf8ToWideChar(cmd_line, &w_cmd_line);
@@ -937,6 +938,9 @@ FILE*       ImOsPOpen(const char* cmd_line, const char* mode)
     w_mode.resize(w_mode.Size + 1);
     wcscat(w_mode.Data, L"b");   // Windows requires 'b' mode while unixes do not support it and default to binary.
     return _wpopen(w_cmd_line.Data, w_mode.Data);
+#else
+    IM_ASSERT(0 && "Unsupported");
+#endif
 #else
     return popen(cmd_line, mode);
 #endif
