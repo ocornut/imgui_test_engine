@@ -3521,7 +3521,11 @@ void    ImGuiTestContext::MenuAction(ImGuiTestAction action, ImGuiTestRef ref)
                 ItemAction(Inputs->MouseButtonsValue ? ImGuiTestAction_Hover : ImGuiTestAction_Click, buf.c_str());
             }
         }
+#if IMGUI_VERSION_NUM < 19187
         current_window = GetWindowByRef(Str16f("//##Menu_%02d", depth).c_str());
+#else
+        current_window = GetWindowByRef(Str16f("//###Menu_%02d", depth).c_str());
+#endif
         IM_CHECK_SILENT(current_window != nullptr);
 
         path = p + 1;

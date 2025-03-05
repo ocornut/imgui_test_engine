@@ -486,22 +486,22 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
             ctx->MenuClick("Menu/Submenu1");
             ctx->KeyPress(ImGuiKey_RightArrow);
 #if IMGUI_VERSION_NUM >= 19018
-            IM_CHECK(g.NavId == ctx->GetID("//##Menu_01/A"));
+            IM_CHECK(g.NavId == ctx->GetID("//###Menu_01/A"));
             IM_CHECK(g.NavCursorVisible == true);
 #endif
             ctx->KeyPress(ImGuiKey_DownArrow);
-            IM_CHECK(g.NavId == ctx->GetID("//##Menu_01/B"));
+            IM_CHECK(g.NavId == ctx->GetID("//###Menu_01/B"));
             ctx->KeyPress(ImGuiKey_LeftArrow);
-            IM_CHECK(g.NavId == ctx->GetID("//##Menu_00/Submenu1")); // Ensure navigation doesn't get us to Submenu2 which is at same Y position as B
+            IM_CHECK(g.NavId == ctx->GetID("//###Menu_00/Submenu1")); // Ensure navigation doesn't get us to Submenu2 which is at same Y position as B
 
             ctx->MenuClick("Menu/Submenu2");
             if (variant == 0)
             {
-                ctx->SetRef("##Menu_01");
+                ctx->SetRef("###Menu_01");
             }
             else
             {
-                ImGuiID child_id = ctx->WindowInfo("//##Menu_01/Child").ID;
+                ImGuiID child_id = ctx->WindowInfo("//###Menu_01/Child").ID;
                 ctx->SetRef(child_id);
             }
             ctx->ItemClick("Tabs/Tab 1");
@@ -520,7 +520,7 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
                 ctx->KeyPress(ImGuiKey_Escape);         // Exit child window nav
             }
             ctx->KeyPress(ImGuiKey_LeftArrow);          // Close 2nd level menu
-            IM_CHECK_STR_EQ(g.NavWindow->Name, "##Menu_00");
+            IM_CHECK_EQ(ImHashStr(g.NavWindow->Name), ImHashStr("###Menu_00"));
             ctx->KeyPress(ImGuiKey_LeftArrow);          // Close 1st level menu
             IM_CHECK_STR_EQ(g.NavWindow->Name, "Test Window");
         }

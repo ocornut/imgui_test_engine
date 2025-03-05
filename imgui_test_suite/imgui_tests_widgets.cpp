@@ -3782,7 +3782,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         IM_CHECK_EQ(g.OpenPopupStack.Size, 2);
         ctx->MouseMove("//$FOCUSED/0");
 
-        ctx->SetRef("//##Menu_01");
+        ctx->SetRef("//###Menu_01");
 
         ctx->MouseMove("0");    // Same
         IM_CHECK_EQ(g.OpenPopupStack.Size, 3);
@@ -6045,10 +6045,10 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         // Navigating over disabled menu.
         ctx->MenuAction(ImGuiTestAction_Hover, "Menu 1/Menu Enabled/Item");
         IM_CHECK(g.NavWindow != NULL);
-        //IM_CHECK_STR_EQ(g.NavWindow->Name, "##Menu_01");          // 2023/04/26 Incorrect since FindHoveredWindowAtPos() addition, since we don't necessarily focus sub-menu.
+        //IM_CHECK_EQ(ImHashStr(g.NavWindow->Name), ImHashStr("###Menu_01")); // 2023/04/26 Incorrect since FindHoveredWindowAtPos() addition, since we don't necessarily focus sub-menu.
         ctx->MenuAction(ImGuiTestAction_Hover, "Menu 1/Menu Disabled");
         IM_CHECK(g.NavWindow != NULL);
-        IM_CHECK_STR_EQ(g.NavWindow->Name, "##Menu_00");
+        IM_CHECK_EQ(ImHashStr(g.NavWindow->Name), ImHashStr("###Menu_00"));
 
         // Navigating over a disabled item.
         ctx->ItemClick("Enabled A");
