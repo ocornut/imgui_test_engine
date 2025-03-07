@@ -152,6 +152,27 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
     // - Drag/extract dock node (will create new node)
     // - Check that new dock pos/size are right
 
+    // ## Test that moving windows doesn't accidentally dock them
+    t = IM_REGISTER_TEST(e, "docking", "docking_move_does_not_dock");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::Begin("Window 1", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImGui::End();
+        ImGui::Begin("Window 2", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ctx->WindowResize("Window 1", ImVec2(200, 200));
+        ctx->WindowResize("Window 2", ImVec2(200, 200));
+        ctx->WindowMove("Window 1", ImGui::GetMainViewport()->Pos + ImVec2(300, 300));
+        ctx->WindowMove("Window 2", ImGui::GetMainViewport()->Pos + ImVec2(300, 300));
+        ctx->WindowMove("Window 1", ImGui::GetMainViewport()->Pos + ImVec2(100, 100));
+        ctx->WindowMove("Window 2", ImGui::GetMainViewport()->Pos + ImVec2(100, 100));
+        IM_CHECK(ctx->WindowIsUndockedOrStandalone(ctx->GetWindowByRef("Window 1")));
+        IM_CHECK(ctx->WindowIsUndockedOrStandalone(ctx->GetWindowByRef("Window 2")));
+    };
+
     // ## Test merging windows by dragging them.
     t = IM_REGISTER_TEST(e, "docking", "docking_basic_1");
     t->SetVarsDataType<DockingTestsGenericVars>([](auto* ctx, auto& vars) { vars.SetShowWindows(2, true); });
