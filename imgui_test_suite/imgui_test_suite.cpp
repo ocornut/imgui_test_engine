@@ -65,6 +65,10 @@
 #include "thirdparty/implot/implot.h"
 #endif
 
+#ifdef IMGUI_ENABLE_FREETYPE
+#include "misc/freetype/imgui_freetype.cpp"
+#endif
+
 //-------------------------------------------------------------------------
 // Allocators
 //-------------------------------------------------------------------------
