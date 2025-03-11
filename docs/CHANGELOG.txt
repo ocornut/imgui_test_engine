@@ -5,6 +5,9 @@ CHANGELOG
    Those changes are not all listed here.
 ** For a while this is going to ONLY INCLUDE BREAKING CHANGES.
 
+2025/03/11:
+- TestEngine: fixes various small issues compiling on game consoles.
+
 2025/03/05:
 - TestEngine: fixes for internal changes in 1.91.9 related to menu window mangling.
 
