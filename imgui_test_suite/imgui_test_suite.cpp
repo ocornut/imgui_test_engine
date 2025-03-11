@@ -70,14 +70,6 @@
 #endif
 
 //-------------------------------------------------------------------------
-// Allocators
-//-------------------------------------------------------------------------
-
-// [Windows] Search for 'DebugCrtInit(0)' call in main() to debug/break on a specific alloc
-static void*   MallocWrapper(size_t size, void* user_data)    { IM_UNUSED(user_data); return malloc(size); }
-static void    FreeWrapper(void* ptr, void* user_data)        { IM_UNUSED(user_data); free(ptr); }
-
-//-------------------------------------------------------------------------
 // Forward Declarations
 //-------------------------------------------------------------------------
 
@@ -396,6 +388,11 @@ static inline void DebugCrtDumpLeaks()
     _CrtDumpMemoryLeaks();
 }
 #endif // #ifdef DEBUG_CRT
+
+// Allocators
+// [Windows] Coming here from leak report? See 'DebugCrtInit(0)' JUST BELOW and change value debug/break on a specific alloc
+static void*   MallocWrapper(size_t size, void* user_data)  { IM_UNUSED(user_data); return malloc(size); }
+static void    FreeWrapper(void* ptr, void* user_data)      { IM_UNUSED(user_data); free(ptr); }
 
 // Application entry point
 int main(int argc, char** argv)
