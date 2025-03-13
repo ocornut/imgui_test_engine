@@ -1215,7 +1215,7 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
             ImGuiWindow* child_window = ctx->WindowInfo("Scrolling/scrolling").Window;
             IM_CHECK(child_window != NULL);
             ctx->SetRef(child_window->ID);
-            ctx->ScrollTo(demo_window->ID, ImGuiAxis_Y, (child_window->Pos - demo_window->Pos).y);  // Required because buttons do not register their IDs when out of view (SkipItems == true).
+            ctx->ScrollTo(demo_window->ID, ImGuiAxis_Y, (child_window->Pos - demo_window->DC.CursorStartPos).y);  // Required because buttons do not register their IDs when out of view (SkipItems == true).
             ctx->NavMoveTo("$$1/1");                    // Focus item within a child window.
             ctx->KeyPress(ImGuiMod_Alt);                // Focus menu
             ctx->NavActivate();                         // Open menu, focus first item in the menu.
