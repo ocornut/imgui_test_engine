@@ -9,6 +9,9 @@
 #define IMGUI_DEFINE_MATH_OPERATORS
 #include "imgui.h"
 #include "imgui_internal.h"
+#ifdef IMGUI_ENABLE_FREETYPE
+#include "misc/freetype/imgui_freetype.cpp"
+#endif
 
 // imgui_app is a helper to wrap multiple Dear ImGui platform/renderer backends
 #include "shared/imgui_app.h"
