@@ -3911,6 +3911,98 @@ void RegisterTests_DrawList(ImGuiTestEngine* e)
 }
 
 //-------------------------------------------------------------------------
+// Tests: Fonts
+//-------------------------------------------------------------------------
+
+void RegisterTests_Fonts(ImGuiTestEngine* e)
+{
+    ImGuiTest* t = NULL;
+
+    // ## Test ImFontAtlas clearing of input data (#4455, #3487)
+#ifndef IMGUI_HAS_TEXTURES
+    t = IM_REGISTER_TEST(e, "font", "font_atlas_clear");
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ImFontAtlas atlas;
+        atlas.Build();
+        IM_CHECK(atlas.IsBuilt());
+
+        atlas.ClearTexData();
+        IM_CHECK(atlas.IsBuilt());
+
+        atlas.ClearInputData();
+        IM_CHECK(atlas.Fonts.Size > 0);
+#if IMGUI_VERSION_NUM > 18407
+        IM_CHECK(atlas.IsBuilt());
+#endif
+
+        atlas.ClearFonts();
+        IM_CHECK(atlas.Fonts.Size == 0);
+        IM_CHECK(!atlas.IsBuilt());
+
+        atlas.Build();  // Build after clear
+        atlas.Build();  // Build too many times
+
+        // Full clear
+        atlas.Clear();
+        atlas.AddFontDefault();
+    };
+#endif
+
+    // ## Test ImFontAtlas building with overlapping glyph ranges (#2353, #2233)
+    t = IM_REGISTER_TEST(e, "font", "font_atlas_build_glyph_overlap");
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ImFontAtlas atlas;
+        ImFontConfig font_config;
+        static const ImWchar default_ranges[] =
+        {
+            0x0020, 0x00FF, // Basic Latin + Latin Supplement
+            0x0080, 0x00FF, // Latin_Supplement
+            0,
+        };
+        font_config.GlyphRanges = default_ranges;
+        atlas.AddFontDefault(&font_config);
+        //atlas.Build();
+    };
+
+    t = IM_REGISTER_TEST(e, "font", "font_atlas_ranges_builder");
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ImFontGlyphRangesBuilder builder;
+        builder.AddChar(31);
+        builder.AddChar(0x10000 - 1);
+        ImVector<ImWchar> out_ranges;
+        builder.BuildRanges(&out_ranges);
+        builder.Clear();
+        IM_CHECK_EQ(out_ranges.Size, 2 * 2 + 1);
+        builder.AddText("\xe6\x97\xa5\xe6\x9c\xac\xe8\xaa\x9e"); // "Ni-hon-go"
+        out_ranges.clear();
+        builder.BuildRanges(&out_ranges);
+        IM_CHECK_EQ(out_ranges.Size, 3 * 2 + 1);
+    };
+
+    // ## Basic coverage path of adding a font that doesn't load/parse
+#ifdef IMGUI_HAS_TEXTURES
+    t = IM_REGISTER_TEST(e, "font", "font_atlas_add_invalid_font");
+    t->Flags |= ImGuiTestFlags_NoRecoveryWarnings;
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ImDrawListSharedData shared_data;
+        ImFontAtlas atlas;
+        ImFontAtlasAddDrawListSharedData(&atlas, &shared_data);
+        //char invalid_font_data[] = "1234567890"; // Not a TTF!
+        ImFontConfig font_cfg;
+        font_cfg.FontDataOwnedByAtlas = false;
+        ImFont* font = atlas.AddFontFromMemoryTTF(&atlas, sizeof(atlas), 20.0f, &font_cfg); // Not a TTF!!!
+        IM_CHECK_EQ(font, nullptr);
+        IM_CHECK_EQ(atlas.Fonts.Size, 0);
+        IM_CHECK_EQ(atlas.Sources.Size, 0);
+    };
+#endif
+}
+
+//-------------------------------------------------------------------------
 // Tests: Misc
 //-------------------------------------------------------------------------
 
@@ -4668,89 +4760,6 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
             ctx->Yield(2);
         }
     };
-
-    // ## Test ImFontAtlas clearing of input data (#4455, #3487)
-#ifndef IMGUI_HAS_TEXTURES
-    t = IM_REGISTER_TEST(e, "misc", "misc_atlas_clear");
-    t->TestFunc = [](ImGuiTestContext* ctx)
-    {
-        ImFontAtlas atlas;
-        atlas.Build();
-        IM_CHECK(atlas.IsBuilt());
-
-        atlas.ClearTexData();
-        IM_CHECK(atlas.IsBuilt());
-
-        atlas.ClearInputData();
-        IM_CHECK(atlas.Fonts.Size > 0);
-#if IMGUI_VERSION_NUM > 18407
-        IM_CHECK(atlas.IsBuilt());
-#endif
-
-        atlas.ClearFonts();
-        IM_CHECK(atlas.Fonts.Size == 0);
-        IM_CHECK(!atlas.IsBuilt());
-
-        atlas.Build();  // Build after clear
-        atlas.Build();  // Build too many times
-
-        // Full clear
-        atlas.Clear();
-        atlas.AddFontDefault();
-    };
-#endif
-
-    // ## Test ImFontAtlas building with overlapping glyph ranges (#2353, #2233)
-    t = IM_REGISTER_TEST(e, "misc", "misc_atlas_build_glyph_overlap");
-    t->TestFunc = [](ImGuiTestContext* ctx)
-    {
-        ImFontAtlas atlas;
-        ImFontConfig font_config;
-        static const ImWchar default_ranges[] =
-        {
-            0x0020, 0x00FF, // Basic Latin + Latin Supplement
-            0x0080, 0x00FF, // Latin_Supplement
-            0,
-        };
-        font_config.GlyphRanges = default_ranges;
-        atlas.AddFontDefault(&font_config);
-        //atlas.Build();
-    };
-
-    t = IM_REGISTER_TEST(e, "misc", "misc_atlas_ranges_builder");
-    t->TestFunc = [](ImGuiTestContext* ctx)
-    {
-        ImFontGlyphRangesBuilder builder;
-        builder.AddChar(31);
-        builder.AddChar(0x10000-1);
-        ImVector<ImWchar> out_ranges;
-        builder.BuildRanges(&out_ranges);
-        builder.Clear();
-        IM_CHECK_EQ(out_ranges.Size, 2*2+1);
-        builder.AddText("\xe6\x97\xa5\xe6\x9c\xac\xe8\xaa\x9e"); // "Ni-hon-go"
-        out_ranges.clear();
-        builder.BuildRanges(&out_ranges);
-        IM_CHECK_EQ(out_ranges.Size, 3*2+1);
-    };
-
-    // ## Basic coverage path of adding a font that doesn't load/parse
-#ifdef IMGUI_HAS_TEXTURES
-    t = IM_REGISTER_TEST(e, "misc", "misc_atlas_add_invalid_font");
-    t->Flags |= ImGuiTestFlags_NoRecoveryWarnings;
-    t->TestFunc = [](ImGuiTestContext* ctx)
-    {
-        ImDrawListSharedData shared_data;
-        ImFontAtlas atlas;
-        ImFontAtlasAddDrawListSharedData(&atlas, &shared_data);
-        //char invalid_font_data[] = "1234567890"; // Not a TTF!
-        ImFontConfig font_cfg;
-        font_cfg.FontDataOwnedByAtlas = false;
-        ImFont* font = atlas.AddFontFromMemoryTTF(&atlas, sizeof(atlas), 20.0f, &font_cfg); // Not a TTF!!!
-        IM_CHECK_EQ(font, nullptr);
-        IM_CHECK_EQ(atlas.Fonts.Size, 0);
-        IM_CHECK_EQ(atlas.Sources.Size, 0);
-    };
-#endif
 
     // ## Test basic clipboard, test that clipboard is empty on start
     t = IM_REGISTER_TEST(e, "misc", "misc_clipboard");
@@ -7428,6 +7437,7 @@ void RegisterTests_All(ImGuiTestEngine* e)
     // Here
     extern void RegisterTests_TestEnginePerfTool(ImGuiTestEngine * e);// imgui_te_perftool.cpp
     RegisterTests_DrawList(e);
+    RegisterTests_Fonts(e);
     RegisterTests_Misc(e);
     RegisterTests_TestEngine(e);
     RegisterTests_TestEnginePerfTool(e);
