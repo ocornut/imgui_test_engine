@@ -1374,12 +1374,13 @@ void RegisterTests_WidgetsInputText(ImGuiTestEngine* e)
 #endif
             strcpy(text, "Hello, world!");
 
+            const ImGuiKeyChord chord_copy = (variant == 0) ? ImGuiMod_Ctrl | ImGuiKey_C : ImGuiMod_Ctrl | ImGuiKey_Insert;
+            const ImGuiKeyChord chord_cut = (variant == 0) ? ImGuiMod_Ctrl | ImGuiKey_X : ImGuiMod_Ctrl | ImGuiKey_Delete;
+            const ImGuiKeyChord chord_paste = (variant == 0) ? ImGuiMod_Ctrl | ImGuiKey_V : ImGuiMod_Shift | ImGuiKey_Insert;
+
             // Copying without selection.
             ctx->ItemClick("Field");
-            if (variant == 0)
-                ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_C);
-            else
-                ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_Insert);
+            ctx->KeyPress(chord_copy);
             clipboard_text = ImGui::GetClipboardText();
             IM_CHECK_STR_EQ(clipboard_text, "Hello, world!");
 
@@ -1388,10 +1389,7 @@ void RegisterTests_WidgetsInputText(ImGuiTestEngine* e)
             ctx->KeyPress(ImGuiKey_Home);
             for (int i = 0; i < 5; i++) // Seek to and select first word
                 ctx->KeyPress(ImGuiMod_Shift | ImGuiKey_RightArrow);
-            if (variant == 0)
-                ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_C);
-            else
-                ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_Insert);
+            ctx->KeyPress(chord_copy);
             clipboard_text = ImGui::GetClipboardText();
             IM_CHECK_STR_EQ(clipboard_text, "Hello");
 
@@ -1400,10 +1398,7 @@ void RegisterTests_WidgetsInputText(ImGuiTestEngine* e)
             ctx->KeyPress(ImGuiKey_Home);
             for (int i = 0; i < 5; i++) // Seek to and select first word
                 ctx->KeyPress(ImGuiMod_Shift | ImGuiKey_RightArrow);
-            if (variant == 0)
-                ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_X);
-            else
-                ctx->KeyPress(ImGuiMod_Shift | ImGuiKey_Delete);
+            ctx->KeyPress(chord_cut);
             clipboard_text = ImGui::GetClipboardText();
             IM_CHECK_STR_EQ(clipboard_text, "Hello");
             IM_CHECK_STR_EQ(text, ", world!");
@@ -1412,11 +1407,17 @@ void RegisterTests_WidgetsInputText(ImGuiTestEngine* e)
             ctx->ItemClick("Field");
             ImGui::SetClipboardText("h\xc9\x99\xcb\x88l\xc5\x8d");  // həˈlō
             ctx->KeyPress(ImGuiKey_Home);
-            if (variant == 0)
-                ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_V);
-            else
-                ctx->KeyPress(ImGuiMod_Shift | ImGuiKey_Insert);
+            ctx->KeyPress(chord_paste);
             IM_CHECK_STR_EQ(text, "h\xc9\x99\xcb\x88l\xc5\x8d, world!");
+
+#if IMGUI_VERSION_NUM >= 19189
+            // Paste carriage return into single line input (#8459)
+            ctx->ItemInputValue("Field", "");
+            ctx->ItemInput("Field");
+            ImGui::SetClipboardText("this is a\nsentence");
+            ctx->KeyPress(chord_paste);
+            IM_CHECK_STR_EQ(text, "this is a sentence");
+#endif
         }
     };
 
