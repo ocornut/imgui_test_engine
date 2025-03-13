@@ -3919,7 +3919,7 @@ void RegisterTests_Fonts(ImGuiTestEngine* e)
     ImGuiTest* t = NULL;
 
     // ## Test ImFontAtlas clearing of input data (#4455, #3487)
-#ifndef IMGUI_HAS_TEXTURES
+#if !defined(IMGUI_HAS_TEXTURES) || !defined(IMGUI_DISABLE_OBSOLETE_FUNCTIONS)
     t = IM_REGISTER_TEST(e, "font", "font_atlas_clear");
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
@@ -3998,6 +3998,23 @@ void RegisterTests_Fonts(ImGuiTestEngine* e)
         IM_CHECK_EQ(font, nullptr);
         IM_CHECK_EQ(atlas.Fonts.Size, 0);
         IM_CHECK_EQ(atlas.Sources.Size, 0);
+    };
+#endif
+
+    // ## Basic most test for custom rects
+#ifdef IMGUI_HAS_TEXTURES
+    t = IM_REGISTER_TEST(e, "font", "font_atlas_custom_rect");
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ImFontAtlas atlas;
+        ImFontAtlasRectId n = atlas.AddCustomRectRegular(100, 100);
+        IM_CHECK(n > 0);
+        atlas.AddFontDefault();
+        const ImTextureRect* r = atlas.GetCustomRect(n);
+        IM_CHECK(r != NULL);
+        atlas.Clear();
+        //r = atlas.GetCustomRect(n);
+        //IM_CHECK(r == NULL); // Invalid
     };
 #endif
 }
