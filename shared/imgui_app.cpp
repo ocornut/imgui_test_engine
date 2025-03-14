@@ -85,7 +85,7 @@ Index of this file:
 
 // Forward declarations
 #if defined(IMGUI_APP_GL2) || defined(IMGUI_APP_GL3)
-static bool ImGuiApp_ImplGL_CaptureFramebuffer(ImGuiApp* app, ImGuiViewport* viewport, int x, int y, int w, int h, unsigned int* pixels, void* user_data);
+static bool ImGuiApp_ImplGL_CaptureFramebuffer(ImGuiViewport* viewport, int x, int y, int w, int h, unsigned int* pixels);
 #endif
 
 // Linking
@@ -791,7 +791,7 @@ static bool ImGuiApp_ImplSdlGL2_CaptureFramebuffer(ImGuiApp* app, ImGuiViewport*
         if (vd->GLContext)
             SDL_GL_MakeCurrent(vd->Window, vd->GLContext);
 #endif
-    return ImGuiApp_ImplGL_CaptureFramebuffer(app, viewport, x, y, w, h, pixels, user_data);
+    return ImGuiApp_ImplGL_CaptureFramebuffer(viewport, x, y, w, h, pixels);
 }
 
 ImGuiApp* ImGuiApp_ImplSdlGL2_Create()
@@ -942,7 +942,7 @@ static bool ImGuiApp_ImplSdlGL3_CaptureFramebuffer(ImGuiApp* app, ImGuiViewport*
         if (vd->GLContext)
             SDL_GL_MakeCurrent(vd->Window, vd->GLContext);
 #endif
-    return ImGuiApp_ImplGL_CaptureFramebuffer(app, viewport, x, y, w, h, pixels, user_data);
+    return ImGuiApp_ImplGL_CaptureFramebuffer(viewport, x, y, w, h, pixels);
 }
 
 ImGuiApp* ImGuiApp_ImplSdlGL3_Create()
@@ -1139,11 +1139,13 @@ static void ImGuiApp_ImplGlfwGL3_ShutdownBackends(ImGuiApp* app_opaque)
 
 static bool ImGuiApp_ImplGlfwGL3_CaptureFramebuffer(ImGuiApp* app, ImGuiViewport* viewport, int x, int y, int w, int h, unsigned int* pixels, void* user_data)
 {
+    IM_UNUSED(app);
+    IM_UNUSED(user_data);
 #ifdef IMGUI_HAS_VIEWPORT
     if (GLFWwindow* window = (GLFWwindow*)viewport->PlatformHandle)
         glfwMakeContextCurrent(window);
 #endif
-    return ImGuiApp_ImplGL_CaptureFramebuffer(app, viewport, x, y, w, h, pixels, user_data);
+    return ImGuiApp_ImplGL_CaptureFramebuffer(viewport, x, y, w, h, pixels);
 }
 
 ImGuiApp* ImGuiApp_ImplGlfwGL3_Create()
@@ -1167,10 +1169,8 @@ ImGuiApp* ImGuiApp_ImplGlfwGL3_Create()
 //-----------------------------------------------------------------------------
 
 #if defined(IMGUI_APP_GL2) || defined(IMGUI_APP_GL3)
-static bool ImGuiApp_ImplGL_CaptureFramebuffer(ImGuiApp* app, ImGuiViewport* viewport, int x, int y, int w, int h, unsigned int* pixels, void* user_data)
+static bool ImGuiApp_ImplGL_CaptureFramebuffer(ImGuiViewport* viewport, int x, int y, int w, int h, unsigned int* pixels)
 {
-    IM_UNUSED(app);
-    IM_UNUSED(user_data);
     IM_UNUSED(viewport); // Expecting calling code to have set the right GL context
 
 #ifdef __linux__
