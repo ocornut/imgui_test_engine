@@ -104,6 +104,7 @@ static bool ImGuiApp_ImplGL_CaptureFramebuffer(ImGuiViewport* viewport, int x, i
 bool ImGuiApp_ScreenCaptureFunc(ImGuiID viewport_id, int x, int y, int w, int h, unsigned int* pixels, void* user_data)
 {
     ImGuiApp* app = (ImGuiApp*)user_data;
+    //IMGUI_DEBUG_LOG("ImGuiApp_ScreenCaptureFunc: %08X, at %dx%d, size %d,%d\n", viewport_id, x, y, w, h);
     if (app->CaptureFramebuffer == NULL)
         return false;
 #ifdef IMGUI_HAS_VIEWPORT
@@ -786,6 +787,8 @@ static void ImGuiApp_ImplSdlGL2_ShutdownBackends(ImGuiApp* app_opaque)
 
 static bool ImGuiApp_ImplSdlGL2_CaptureFramebuffer(ImGuiApp* app, ImGuiViewport* viewport, int x, int y, int w, int h, unsigned int* pixels, void* user_data)
 {
+    IM_UNUSED(app);
+    IM_UNUSED(user_data);
 #ifdef IMGUI_HAS_VIEWPORT
     if (ImGui_ImplSDL2_ViewportData* vd = (ImGui_ImplSDL2_ViewportData*)viewport->PlatformUserData)
         if (vd->GLContext)
@@ -937,6 +940,8 @@ static void ImGuiApp_ImplSdlGL3_ShutdownBackends(ImGuiApp* app_opaque)
 
 static bool ImGuiApp_ImplSdlGL3_CaptureFramebuffer(ImGuiApp* app, ImGuiViewport* viewport, int x, int y, int w, int h, unsigned int* pixels, void* user_data)
 {
+    IM_UNUSED(app);
+    IM_UNUSED(user_data);
 #ifdef IMGUI_HAS_VIEWPORT
     if (ImGui_ImplSDL2_ViewportData* vd = (ImGui_ImplSDL2_ViewportData*)viewport->PlatformUserData)
         if (vd->GLContext)
