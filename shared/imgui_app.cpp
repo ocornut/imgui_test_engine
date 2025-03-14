@@ -1140,9 +1140,8 @@ static void ImGuiApp_ImplGlfwGL3_ShutdownBackends(ImGuiApp* app_opaque)
 static bool ImGuiApp_ImplGlfwGL3_CaptureFramebuffer(ImGuiApp* app, ImGuiViewport* viewport, int x, int y, int w, int h, unsigned int* pixels, void* user_data)
 {
 #ifdef IMGUI_HAS_VIEWPORT
-    if (ImGui_ImplGlfw_ViewportData* vd = (ImGui_ImplGlfw_ViewportData*)viewport->PlatformUserData)
-        if (vd->Window)
-            glfwMakeContextCurrent(vd->Window);
+    if (GLFWwindow* window = (GLFWwindow*)viewport->PlatformHandle)
+        glfwMakeContextCurrent(window);
 #endif
     return ImGuiApp_ImplGL_CaptureFramebuffer(app, viewport, x, y, w, h, pixels, user_data);
 }
