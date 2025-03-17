@@ -1465,9 +1465,8 @@ void ImGuiTestEngine_GetResult(ImGuiTestEngine* engine, int& count_tested, int& 
     for (int n = 0; n < engine->TestsAll.Size; n++)
     {
         ImGuiTest* test = engine->TestsAll[n];
-        if (test->Output.Status == ImGuiTestStatus_Unknown)
+        if (test->Output.Status == ImGuiTestStatus_Unknown || test->Output.Status == ImGuiTestStatus_Queued)
             continue;
-        IM_ASSERT(test->Output.Status != ImGuiTestStatus_Queued);
         IM_ASSERT(test->Output.Status != ImGuiTestStatus_Running);
         count_tested++;
         if (test->Output.Status == ImGuiTestStatus_Success)
@@ -2004,30 +2003,32 @@ void ImGuiTestEngine_ErrorRecoveryRun(ImGuiTestEngine* engine)
 
 void ImGuiTestEngine_CrashHandler()
 {
+    ImGuiContext& g = *GImGui;
+    ImGuiTestEngine* engine = (ImGuiTestEngine*)g.TestEngine;
+    ImGuiTest* crashed_test = (engine->TestContext && engine->TestContext->Test) ? engine->TestContext->Test : nullptr;
+
+    ImOsConsoleSetTextColor(ImOsConsoleStream_StandardError, ImOsConsoleTextColor_BrightRed);
+    if (crashed_test != nullptr)
+        fprintf(stderr, "**ImGuiTestEngine_CrashHandler()** Crashed while running \"%s\" :(\n", crashed_test->Name);
+    else
+        fprintf(stderr, "**ImGuiTestEngine_CrashHandler()** Crashed :(\n");
+
     static bool handled = false;
     if (handled)
         return;
     handled = true;
 
-    ImGuiContext& g = *GImGui;
-    ImGuiTestEngine* engine = (ImGuiTestEngine*)g.TestEngine;
-
     // Write stop times, because thread executing tests will no longer run.
     engine->BatchEndTime = ImTimeGetInMicroseconds();
-    for (int i = 0; i < engine->TestsAll.Size; i++)
+    if (crashed_test && crashed_test->Output.Status == ImGuiTestStatus_Running)
     {
-        if (engine->TestContext)
-            if (ImGuiTest* test = engine->TestContext->Test)
-                if (test->Output.Status == ImGuiTestStatus_Running)
-                {
-                    test->Output.Status = ImGuiTestStatus_Error;
-                    test->Output.EndTime = engine->BatchEndTime;
-                    break;
-                }
+        crashed_test->Output.Status = ImGuiTestStatus_Error;
+        crashed_test->Output.EndTime = engine->BatchEndTime;
     }
 
     // Export test run results.
     ImGuiTestEngine_Export(engine);
+    ImGuiTestEngine_PrintResultSummary(engine);
 }
 
 #ifdef _WIN32

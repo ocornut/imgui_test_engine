@@ -5,6 +5,10 @@ CHANGELOG
    Those changes are not all listed here.
 ** For a while this is going to ONLY INCLUDE BREAKING CHANGES.
 
+2025/03/17:
+- TestEngine: helper crash handler installed by ImGuiTestEngine_InstallDefaultCrashHandler()
+  always print a crash string and extra info, even if result export settings are set to None.
+
 2025/03/11:
 - TestEngine: fixes various small issues compiling on game consoles.
 
