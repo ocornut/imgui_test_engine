@@ -222,6 +222,26 @@ static void ImGuiApp_ImplNull_Render(ImGuiApp* app_opaque)
     IM_UNUSED(app_opaque);
     ImDrawData* draw_data = ImGui::GetDrawData();
 
+#ifdef IMGUI_HAS_TEXTURES
+    for (ImTextureData* tex : ImGui::GetPlatformIO().Textures)
+    {
+        if (tex->Status == ImTextureStatus_WantCreate)
+        {
+            tex->SetTexUserID(0x42424242);
+            tex->Status = ImTextureStatus_OK;
+        }
+        if (tex->Status == ImTextureStatus_WantUpdates)
+        {
+            tex->Status = ImTextureStatus_OK;
+        }
+        if (tex->Status == ImTextureStatus_WantDestroy)
+        {
+            tex->SetTexUserID(ImTextureUserID_Invalid);
+            tex->Status = ImTextureStatus_Destroyed;
+        }
+    }
+#endif
+
 #ifdef IMGUI_HAS_VIEWPORT
     ImGuiIO& io = ImGui::GetIO();
     if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
