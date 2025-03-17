@@ -629,11 +629,10 @@ int main(int argc, char** argv)
     ImGuiTestAppErrorCode error_code = ImGuiTestAppErrorCode_Success;
     if (!aborted)
     {
-        int count_tested = 0;
-        int count_success = 0;
-        ImGuiTestEngine_GetResult(engine, count_tested, count_success);
+        ImGuiTestEngineResultSummary summary;
+        ImGuiTestEngine_GetResultSummary(engine, &summary);
         ImGuiTestEngine_PrintResultSummary(engine);
-        if (count_tested != count_success)
+        if (summary.CountSuccess < summary.CountTested)
             error_code = ImGuiTestAppErrorCode_TestFailed;
     }
 

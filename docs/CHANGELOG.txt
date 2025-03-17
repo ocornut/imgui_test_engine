@@ -6,6 +6,11 @@ CHANGELOG
 ** For a while this is going to ONLY INCLUDE BREAKING CHANGES.
 
 2025/03/17:
+- TestEngine: *BREAKING* reworked ImGuiTestEngine_GetResult() as ImGuiTestEngine_GetResultSummary()
+  outputting a structure where we can add more fields.
+    Prev:  void ImGuiTestEngine_GetResult(ImGuiTestEngine* engine, int& count_tested, int& count_success);
+    Now:   void ImGuiTestEngine_GetResultSummary(ImGuiTestEngine* engine, ImGuiTestEngineResultSummary* out_result);
+  New structure include the number of tests remaining in queue (for when aborting or crashing).
 - TestEngine: helper crash handler installed by ImGuiTestEngine_InstallDefaultCrashHandler()
   always print a crash string and extra info, even if result export settings are set to None.
 

@@ -1458,20 +1458,30 @@ void ImGuiTestEngine_UpdateTestsSourceLines(ImGuiTestEngine* engine)
         }
 }
 
-void ImGuiTestEngine_GetResult(ImGuiTestEngine* engine, int& count_tested, int& count_success)
+// count_remaining could be >0 if e.g. called during a crash handler or aborting a run.
+void ImGuiTestEngine_GetResultSummary(ImGuiTestEngine* engine, ImGuiTestEngineResultSummary* out_results)
 {
-    count_tested = 0;
-    count_success = 0;
+    int count_tested = 0;
+    int count_success = 0;
+    int count_remaining = 0;
     for (int n = 0; n < engine->TestsAll.Size; n++)
     {
         ImGuiTest* test = engine->TestsAll[n];
-        if (test->Output.Status == ImGuiTestStatus_Unknown || test->Output.Status == ImGuiTestStatus_Queued)
+        if (test->Output.Status == ImGuiTestStatus_Unknown)
             continue;
+        if (test->Output.Status == ImGuiTestStatus_Queued)
+        {
+            count_remaining++;
+            continue;
+        }
         IM_ASSERT(test->Output.Status != ImGuiTestStatus_Running);
         count_tested++;
         if (test->Output.Status == ImGuiTestStatus_Success)
             count_success++;
     }
+    out_results->CountTested = count_tested;
+    out_results->CountSuccess = count_success;
+    out_results->CountInQueue = count_remaining;
 }
 
 // Get a copy of the test list
