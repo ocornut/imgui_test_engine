@@ -3103,7 +3103,9 @@ void RegisterTests_Layout(ImGuiTestEngine* e)
                     break;
                 case ItemType_ImageButton:
                     expected_padding = style.FramePadding.y * 2.0f;
-#if IMGUI_VERSION_NUM >= 18807
+#ifdef IMGUI_HAS_TEXTURES
+                    ImGui::ImageButton("tex", ImGui::GetIO().Fonts->TexRef, ImVec2(100, ImGui::GetTextLineHeight()* label_line_count), ImVec2(0, 0), ImVec2(1, 1), ImVec4(1.0f, 0.6f, 0.0f, 1.0f));
+#elif IMGUI_VERSION_NUM >= 18807
                     ImGui::ImageButton("tex", ImGui::GetIO().Fonts->TexID, ImVec2(100, ImGui::GetTextLineHeight() * label_line_count), ImVec2(0, 0), ImVec2(1, 1), ImVec4(1.0f, 0.6f, 0.0f, 1.0f));
 #else
                     ImGui::ImageButton(ImGui::GetIO().Fonts->TexID, ImVec2(100, ImGui::GetTextLineHeight() * label_line_count), ImVec2(0, 0), ImVec2(1, 1), -1, ImVec4(1.0f, 0.6f, 0.0f, 1.0f));
@@ -3508,9 +3510,18 @@ struct HelpersTextureId
     // Replace fake texture IDs with a known good ID in order to prevent graphics API crashing application.
     void RemoveFakeTexFromDrawList(ImDrawList* draw_list, ImTextureID replacement_tex_id)
     {
+#ifdef IMGUI_HAS_TEXTURES
+        for (ImDrawCmd& cmd : draw_list->CmdBuffer)
+            if (cmd.GetTexID() == FakeTex0 || cmd.GetTexID() == FakeTex1)
+            {
+                IM_ASSERT(cmd.TexRef._TexData == NULL);
+                cmd.TexRef._TexID = replacement_tex_id;
+            }
+#else
         for (ImDrawCmd& cmd : draw_list->CmdBuffer)
             if (cmd.TextureId == FakeTex0 || cmd.TextureId == FakeTex1)
                 cmd.TextureId = replacement_tex_id;
+#endif
     }
 };
 
@@ -3614,7 +3625,11 @@ void RegisterTests_DrawList(ImGuiTestEngine* e)
     {
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
         ImDrawList* draw_list = ImGui::GetWindowDrawList();
+#ifdef IMGUI_HAS_TEXTURES
+        ImTextureID prev_texture_id = draw_list->_TextureStack.back().GetTexID();
+#else
         ImTextureID prev_texture_id = draw_list->_TextureIdStack.back();
+#endif
         const int start_cmdbuffer_size = draw_list->CmdBuffer.Size;
         IM_CHECK_EQ(draw_list->CmdBuffer.back().ElemCount, 0u);
 
@@ -3632,7 +3647,11 @@ void RegisterTests_DrawList(ImGuiTestEngine* e)
 
         IM_CHECK_EQ_NO_RET(draw_list->CmdBuffer.Size, start_cmdbuffer_size + 2);
         IM_CHECK_EQ_NO_RET(draw_list->CmdBuffer.back().ElemCount, 0u);
+#ifdef IMGUI_HAS_TEXTURES
+        IM_CHECK_NO_RET(prev_texture_id == draw_list->CmdBuffer.back().GetTexID());
+#else
         IM_CHECK_NO_RET(prev_texture_id == draw_list->CmdBuffer.back().TextureId);
+#endif
 
         fake_tex.RemoveFakeTexFromDrawList(draw_list, prev_texture_id);
 

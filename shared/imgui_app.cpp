@@ -227,7 +227,7 @@ static void ImGuiApp_ImplNull_Render(ImGuiApp* app_opaque)
     {
         if (tex->Status == ImTextureStatus_WantCreate)
         {
-            tex->SetTexUserID(0x42424242);
+            tex->SetTexID(0x42424242);
             tex->Status = ImTextureStatus_OK;
         }
         if (tex->Status == ImTextureStatus_WantUpdates)
@@ -236,7 +236,7 @@ static void ImGuiApp_ImplNull_Render(ImGuiApp* app_opaque)
         }
         if (tex->Status == ImTextureStatus_WantDestroy)
         {
-            tex->SetTexUserID(ImTextureUserID_Invalid);
+            tex->SetTexID(ImTextureID_Invalid);
             tex->Status = ImTextureStatus_Destroyed;
         }
     }
