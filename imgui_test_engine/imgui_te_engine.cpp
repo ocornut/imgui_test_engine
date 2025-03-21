@@ -547,14 +547,14 @@ void ImGuiTestEngine_ApplyInputToImGuiContext(ImGuiTestEngine* engine)
         if (g.InputEventsQueue[n].AddedByTestEngine == false)
             g.InputEventsQueue.erase(&g.InputEventsQueue[n--]);
 
-    // Special flags to stop submitting events
-    if (engine->TestContext->RunFlags & ImGuiTestRunFlags_EnableRawInputs)
-        return;
-
     // To support using ImGuiKey_NavXXXX shortcuts pointing to gamepad actions
     // FIXME-TEST-ENGINE: Should restore
     g.IO.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;
     g.IO.BackendFlags |= ImGuiBackendFlags_HasGamepad;
+
+    // Special flags to stop submitting events
+    if (engine->TestContext->RunFlags & ImGuiTestRunFlags_EnableRawInputs)
+        return;
 
     const int input_event_count_prev = g.InputEventsQueue.Size;
 

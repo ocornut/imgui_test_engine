@@ -531,6 +531,33 @@ void RegisterTests_Inputs(ImGuiTestEngine* e)
         IM_CHECK(io.InputQueueCharacters.Size == 1 && io.InputQueueCharacters[0] == 'B');
         ctx->Yield();
         IM_CHECK(io.InputQueueCharacters.Size == 0);
+
+        // Test analog values with trickling
+        // ImGuiTestEngine_ApplyInputToImGuiContext() currently sets _HasGamepad even in ImGuiTestRunFlags_EnableRawInputs mode
+        io.AddKeyAnalogEvent(ImGuiKey_GamepadLStickUp, false, 0.0f);
+        ctx->Yield();
+        IM_CHECK_EQ(ImGui::IsKeyPressed(ImGuiKey_GamepadLStickUp), false);
+        io.AddKeyAnalogEvent(ImGuiKey_GamepadLStickUp, true, 0.5f);
+        ctx->Yield();
+        IM_CHECK_EQ(ImGui::IsKeyPressed(ImGuiKey_GamepadLStickUp), true);
+        IM_CHECK_EQ(ImGui::GetKeyData(ImGuiKey_GamepadLStickUp)->AnalogValue, 0.5f);
+        io.AddKeyAnalogEvent(ImGuiKey_GamepadLStickUp, true, 0.6f);
+        io.AddKeyAnalogEvent(ImGuiKey_GamepadLStickUp, true, 0.7f);
+        io.AddKeyAnalogEvent(ImGuiKey_GamepadLStickUp, true, 0.8f);
+        ctx->Yield();
+        IM_CHECK_EQ(ImGui::IsKeyDown(ImGuiKey_GamepadLStickUp), true);
+        IM_CHECK_EQ(ImGui::GetKeyData(ImGuiKey_GamepadLStickUp)->AnalogValue, 0.8f);
+#if IMGUI_VERSION_NUM >= 19192
+        io.AddMousePosEvent(0.0f, 0.0f);
+        io.AddKeyAnalogEvent(ImGuiKey_GamepadLStickUp, true, 0.81f);
+        io.AddMousePosEvent(10.0f, 10.0f);
+        io.AddMousePosEvent(20.0f, 20.0f);
+        io.AddKeyAnalogEvent(ImGuiKey_GamepadLStickUp, true, 0.82f);
+        ctx->Yield();
+        IM_CHECK_EQ(ImGui::GetMousePos(), ImVec2(20.0f, 20.0));
+        IM_CHECK_EQ(ImGui::IsKeyDown(ImGuiKey_GamepadLStickUp), true);
+        IM_CHECK_EQ(ImGui::GetKeyData(ImGuiKey_GamepadLStickUp)->AnalogValue, 0.82f);
+#endif
     };
 
     // ## Test IO with multiple-context (#6199, #6256)
