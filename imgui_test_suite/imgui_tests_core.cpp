@@ -216,6 +216,44 @@ void RegisterTests_Window(ImGuiTestEngine* e)
         IM_CHECK(vars.Bool1 == true);   // Begin() return true
     };
 
+    // ## Test preserving content sizes while collapsed, and effect of SetWindowCollapsed(),SetNextWindowCollapsed() API (#7691)
+#if IMGUI_VERSION_NUM >= 19192
+    t = IM_REGISTER_TEST(e, "window", "window_size_collapsed_4");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        auto& vars = ctx->GenericVars;
+        if (vars.Step == 1)
+            ImGui::SetNextWindowCollapsed(true);
+        if (vars.Step == 2)
+            ImGui::SetNextWindowCollapsed(false);
+        if (ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize))
+            ImGui::Button("Button", ImVec2(100, 100));
+        if (vars.Step == 1)
+            ImGui::SetWindowCollapsed(true);
+        if (vars.Step == 2)
+            ImGui::SetWindowCollapsed(false);
+        if (!ctx->IsFirstGuiFrame())
+            IM_CHECK_EQ(ImGui::GetCurrentWindow()->ContentSize, ImVec2(100, 100));
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        auto& vars = ctx->GenericVars;
+        ctx->OpFlags |= ImGuiTestOpFlags_NoAutoUncollapse;
+        ctx->SetRef("Test Window");
+        ctx->WindowCollapse("", false);
+        ctx->Yield(3);
+        vars.Step = 1;
+        ctx->Yield(3);
+        vars.Step = 2;
+        ctx->Yield(3);
+        vars.Step = 3;
+        ctx->Yield(3);
+        vars.Step = 4;
+        ctx->Yield(3);
+    };
+#endif
+
     // ## Test content sizes and its effect on scrollbar visibility
     t = IM_REGISTER_TEST(e, "window", "window_size_contents");
     t->Flags |= ImGuiTestFlags_NoAutoFinish;
