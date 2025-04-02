@@ -4064,11 +4064,12 @@ void RegisterTests_Fonts(ImGuiTestEngine* e)
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         ImFontAtlas atlas;
-        ImFontAtlasRectId n = atlas.AddCustomRectRegular(100, 100);
-        IM_CHECK(n > 0);
+        ImFontAtlasRectId n = atlas.AddCustomRect(100, 100);
+        IM_CHECK(n != ImFontAtlasRectId_Invalid);
         atlas.AddFontDefault();
-        const ImTextureRect* r = atlas.GetCustomRect(n);
-        IM_CHECK(r != NULL);
+        ImFontAtlasRect r;
+        bool ret = atlas.GetCustomRect(n, &r);
+        IM_CHECK(ret == true);
         atlas.Clear();
         //r = atlas.GetCustomRect(n);
         //IM_CHECK(r == NULL); // Invalid
