@@ -5,6 +5,9 @@ CHANGELOG
    Those changes are not all listed here.
 ** For a while this is going to ONLY INCLUDE BREAKING CHANGES.
 
+2025/04/24:
+- TestEngine: fixed crash/issue in capture tool.
+
 2025/03/17:
 - TestEngine: *BREAKING* reworked ImGuiTestEngine_GetResult() as ImGuiTestEngine_GetResultSummary()
   outputting a structure where we can add more fields.
