@@ -78,8 +78,21 @@ void RegisterTests_Inputs(ImGuiTestEngine* e)
         ImGui::SetNextWindowPos(ImVec2(80, 80));
         ImGui::SetNextWindowSize(ImVec2(500, 500));
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoResize);
-        ctx->UiContext->WantTextInputNextFrame = vars.Bool1; // Simulate InputText() without eating inputs
-        //ImGui::InputText("InputText", vars.Str1, IM_ARRAYSIZE(vars.Str1));
+
+        // Simulate InputText() without eating inputs
+#if IMGUI_VERSION_NUM >= 19194
+        if (vars.Bool1)
+        {
+            ctx->UiContext->PlatformImeData.WantTextInput = true;
+            ctx->UiContext->PlatformImeData.ViewportId = ImGui::GetMainViewport()->ID;
+        }
+#else
+        if (vars.Bool1)
+        {
+            ctx->UiContext->WantTextInputNextFrame = true;
+        }
+#endif
+        //ImGui::InputText("InputText", vars.Str1, IM_ARRAYSIZE(vars.Str1)); // See 2025/04/24 comment below.
         //if (vars.Bool1)
         //    ImGui::SetKeyboardFocusHere(-1);
         ImGui::End();
@@ -372,6 +385,16 @@ void RegisterTests_Inputs(ImGuiTestEngine* e)
         for (int step = 0; step < INPUT_TEXT_STEPS; step++)
         {
             const bool is_input_text_active = (step == 1);
+            /*
+            // 2025/04/24: Doing this would be nice, but InputText() actually running means InputQueueCharacters is emptied each run, and its convenient to test for its size.
+            if (is_input_text_active)
+            {
+                ctx->Yield(3);
+                ctx->RunFlags &= ~ImGuiTestRunFlags_EnableRawInputs;
+                ctx->ItemClick("//Test Window/InputText");
+                ctx->RunFlags |= ImGuiTestRunFlags_EnableRawInputs;
+                ctx->Yield(3);
+            }*/
             vars.Bool1 = is_input_text_active; // Simulate activated InputText()
             ctx->Yield();
 
