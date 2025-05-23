@@ -3594,7 +3594,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ImGui::End();
 
         // Tests
-#ifdef IMGUI_HAS_TEXTURES
+#if IMGUI_VERSION_NUM >= 19197 || defined(IMGUI_HAS_TEXTURES)
         const char* s1_w = ImGui::GetFont()->CalcWordWrapPosition(ImGui::GetFontSize(), s1, s1 + strlen(s1), wrap_width);
 #else
         const char* s1_w = ImGui::GetFont()->CalcWordWrapPositionA(1.0f, s1, s1 + strlen(s1), wrap_width);
@@ -3604,7 +3604,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
 #if IMGUI_BROKEN_TESTS
 // #if 1
         // This is broken, see #8139
-        const char* s2_w = ImGui::GetFont()->CalcWordWrapPositionA(1.0f, s2, s2 + strlen(s2), wrap_width);
+        const char* s2_w = ImGui::GetFont()->CalcWordWrapPosition(ImGui::GetFontSize(), s2, s2 + strlen(s2), wrap_width);
         IM_CHECK_EQ(s2_w, s2 + strlen("abcde.."));
 #endif
     };
