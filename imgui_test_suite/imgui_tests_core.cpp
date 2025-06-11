@@ -4071,8 +4071,8 @@ void RegisterTests_Fonts(ImGuiTestEngine* e)
         bool ret = atlas.GetCustomRect(n, &r);
         IM_CHECK(ret == true);
         atlas.Clear();
-        //r = atlas.GetCustomRect(n);
-        //IM_CHECK(r == NULL); // Invalid
+        ret = atlas.GetCustomRect(n, &r);
+        IM_CHECK(ret == false);
     };
 #endif
 }
