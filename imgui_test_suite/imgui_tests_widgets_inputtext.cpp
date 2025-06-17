@@ -1293,6 +1293,46 @@ void RegisterTests_WidgetsInputText(ImGuiTestEngine* e)
         IM_CHECK_STR_EQ(vars.str.c_str(), "foo");
     };
 
+    // ## Test resize a callback bug (#8689)
+#if IMGUI_VERSION_NUM >= 19199
+    t = IM_REGISTER_TEST(e, "widgets", "widgets_inputtext_callback_resize3");
+    t->SetVarsDataType<StrVars>();
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        auto callback = [](ImGuiInputTextCallbackData* data)
+        {
+            if (data->EventFlag == ImGuiInputTextFlags_CallbackCompletion)
+            {
+                data->DeleteChars(0, data->BufTextLen);
+                data->InsertChars(0, "12345678901234567890"); // Insert 20
+            }
+            return 0;
+        };
+
+        // Use our Str* variant from imgui_te_utils.h
+        StrVars& vars = ctx->GetVars<StrVars>();
+        vars.str.reserve(vars.str.empty() ? 15 : 31); // Simulate std::string growth which goes from just under our test data to just over
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImGui::InputText("Field1", &vars.str, ImGuiInputTextFlags_CallbackCompletion, callback);
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ctx->SetRef("Test Window");
+        ctx->ItemClick("Field1");
+        ImGui::SetClipboardText("abcdefghijklmnop"); // 16 in one input
+        ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_V);
+        //ctx->KeyChars("abcdefghijklmnop");
+        ImGuiInputTextState* state = ImGui::GetInputTextState(ctx->GetID("Field1"));
+        IM_CHECK(state != NULL);
+        IM_CHECK_EQ(state->TextA.Size, 16 + 1);
+        ctx->KeyPress(ImGuiKey_Tab);
+        IM_CHECK_GE(state->TextA.Size, 20 + 1);
+        IM_CHECK_GE(state->TextA.Capacity, 20 + 1);
+        ctx->KeyPress(ImGuiKey_Enter);
+    };
+#endif
+
     // ## Test for Nav interference
     t = IM_REGISTER_TEST(e, "widgets", "widgets_inputtext_nav");
     t->GuiFunc = [](ImGuiTestContext* ctx)
