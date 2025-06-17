@@ -202,6 +202,27 @@ static bool ImGuiApp_ImplNull_CaptureFramebuffer(ImGuiApp* app, ImGuiViewport* v
 
 static void ImGuiApp_ImplNull_RenderDrawData(ImDrawData* draw_data)
 {
+#ifdef IMGUI_HAS_TEXTURES
+    if (draw_data->Textures != nullptr)
+        for (ImTextureData* tex : *draw_data->Textures)
+        {
+            if (tex->Status == ImTextureStatus_WantCreate)
+            {
+                tex->SetTexID(0x42424242);
+                tex->SetStatus(ImTextureStatus_OK);
+            }
+            if (tex->Status == ImTextureStatus_WantUpdates)
+            {
+                tex->SetStatus(ImTextureStatus_OK);
+            }
+            if (tex->Status == ImTextureStatus_WantDestroy)
+            {
+                tex->SetTexID(ImTextureID_Invalid);
+                tex->SetStatus(ImTextureStatus_Destroyed);
+            }
+        }
+#endif
+
     for (int n = 0; n < draw_data->CmdListsCount; n++)
     {
         const ImDrawList* cmd_list = draw_data->CmdLists[n];
@@ -221,26 +242,6 @@ static void ImGuiApp_ImplNull_Render(ImGuiApp* app_opaque)
 {
     IM_UNUSED(app_opaque);
     ImDrawData* draw_data = ImGui::GetDrawData();
-
-#ifdef IMGUI_HAS_TEXTURES
-    for (ImTextureData* tex : ImGui::GetPlatformIO().Textures)
-    {
-        if (tex->Status == ImTextureStatus_WantCreate)
-        {
-            tex->SetTexID(0x42424242);
-            tex->Status = ImTextureStatus_OK;
-        }
-        if (tex->Status == ImTextureStatus_WantUpdates)
-        {
-            tex->Status = ImTextureStatus_OK;
-        }
-        if (tex->Status == ImTextureStatus_WantDestroy)
-        {
-            tex->SetTexID(ImTextureID_Invalid);
-            tex->Status = ImTextureStatus_Destroyed;
-        }
-    }
-#endif
 
 #ifdef IMGUI_HAS_VIEWPORT
     ImGuiIO& io = ImGui::GetIO();

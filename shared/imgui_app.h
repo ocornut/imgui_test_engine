@@ -106,6 +106,9 @@ ImGuiApp* ImGuiApp_ImplNull_Create();
 
 #if defined(IMGUI_APP_SDL2_GL2) || defined(IMGUI_APP_SDL2_GL3)
 #include "imgui_impl_sdl2.cpp"
+#ifdef Status // X11 headers
+#undef Status
+#endif
 #endif
 
 #if defined(IMGUI_APP_GLFW_GL3)
