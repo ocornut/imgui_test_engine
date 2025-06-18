@@ -41,7 +41,7 @@ test->TestFunc = [](ImGuiTestContext* ctx)
 - Your app can be controlled from Dear ImGui + You can now automate your app = **You can test anything exposed in your app/engine**! (not only UI).
 - It **can run in your windowed application**. **It can also run headless** (e.g. running GUI tests from a console or on a CI server without rendering).
 - It **can run at simulated human speed** (for watching or exporting videos) or **can run in fast mode** (e.g. teleporting mouse).
-- It **can export screenshots and videos/gifs**. They can be leveraged for some forms of testing, but also to generate assets for documentation, or notify teams of certain changes. Assets that often need to be updated are best generated from a script inside of manually recreated/cropped/exported.
+- It **can export screenshots and videos/gifs**. They can be leveraged for some forms of testing, but also to generate assets for documentation, or notify teams of certain changes. Assets that often need to be updated are best generated from a script instead of manually recreated/cropped/exported.
 - You can use it to program high-level commands e.g. `MenuCheck("Edit/Options/Enable Grid")` or run more programmatic queries ("list openable items in that section, then open them all"). So from your POV it could be used for simple smoke testing ("open all our tools") or for more elaborate testing ("interact with xxx and xxx, check result").
 - It **can be used as a form of "live tutorial / demo"** where a script can run on an actual user application to showcase features.
 - It includes a performance tool and viewer which we used to record/compare performances between builds and branches (optional, requires ImPlot).
