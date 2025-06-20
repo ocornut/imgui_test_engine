@@ -2801,6 +2801,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
             // Set saturation to 0, hue must be preserved.
             ctx->ItemDragWithDelta("##picker/sv", ImVec2(-popup->Size.x * 0.5f, 0));
 
+            // FIXME-TESTS: This tends to break with other widget sizes, e.g. changing TestSuite font. Needs to investigate.
             Color color = read_color();
             IM_CHECK_EQ(color.S, 0.0f);
             IM_CHECK_EQ(color.H, 0.0f);                     // Hue undefined

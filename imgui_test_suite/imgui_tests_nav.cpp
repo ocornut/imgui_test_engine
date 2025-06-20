@@ -1909,7 +1909,7 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
         }
 
         // FIXME-NAV: Lack of ImGuiWindowFlags_NoCollapse breaks window scrolling without activable items.
-        ImGui::SetNextWindowSize(ImVec2(100, vars.WindowSize.y), ImGuiCond_Always);
+        ImGui::SetNextWindowSize(ImVec2(ImGui::CalcTextSize("OK 8").x, vars.WindowSize.y), ImGuiCond_Always);
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysVerticalScrollbar | ImGuiWindowFlags_AlwaysHorizontalScrollbar | ImGuiWindowFlags_NoCollapse);
         vars.WindowSize.y = ImFloor(ImGui::GetCursorPosY() + ImGui::GetFrameHeightWithSpacing() * 3.0f + ImGui::GetStyle().ScrollbarSize);
         if (vars.UseClipper)

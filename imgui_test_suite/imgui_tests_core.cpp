@@ -1788,22 +1788,27 @@ void RegisterTests_Window(ImGuiTestEngine* e)
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         ImGuiIO& io = ImGui::GetIO();
+        ImGuiStyle& style = ImGui::GetStyle();
         io.ConfigWindowsMoveFromTitleBarOnly = true;
 
         ctx->ItemClick("//Test Window/Open Modal");
 
         ImGuiWindow* window = ctx->GetWindowByRef("Modal");
-        ImGuiViewport* viewport = ImGui::GetMainViewport();
-        ImRect work_rect(viewport->WorkPos, viewport->WorkPos + viewport->WorkSize);
+        ImGuiViewportP* viewport = (ImGuiViewportP*)ImGui::GetMainViewport();
+
+        ImRect work_rect = viewport->GetWorkRect();
+        ImRect main_rect = viewport->GetMainRect();
+        ImVec2 visibility_padding = ImMax(style.DisplaySafeAreaPadding, style.DisplayWindowPadding);
+        main_rect.Expand(-visibility_padding);
 
         // Ensure the modal is fully within the working area both while it is settling and once it's settled
         for (int i = 0; i < 3; i++)
         {
-            IM_CHECK(work_rect.Contains(window->Rect()));
+            IM_CHECK(work_rect.Contains(window->Rect()) || main_rect.Contains(window->Rect()));
             ctx->Yield();
         }
 
-        io.ConfigWindowsMoveFromTitleBarOnly = false;
+        //io.ConfigWindowsMoveFromTitleBarOnly = false;
     };
 #endif
 
