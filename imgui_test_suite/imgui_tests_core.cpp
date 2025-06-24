@@ -3701,6 +3701,99 @@ void RegisterTests_DrawList(ImGuiTestEngine* e)
         ImGui::End();
     };
 
+#if IMGUI_VERSION_NUM >= 19198 // == #ifdef IMGUI_HAS_TEXTURES
+    t = IM_REGISTER_TEST(e, "drawlist", "drawlist_text_scale_stress");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        auto& vars = ctx->GenericVars;
+        ImGui::SetNextWindowSize(ImVec2(600, 600));
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+
+        const bool use_wrap = (vars.Step & 1) != 0;
+        const bool use_cliprect = (vars.Step & 2) != 0;
+        const bool use_direct_add_text = (vars.Step & 4) != 0;
+        const bool use_idxoffset = (vars.Step & 8) != 0.0f;
+        ImGui::Text("Step: %d (Wrap %d, Clip %d, Direct %d, IdxOffset %d", vars.Step, use_wrap, use_cliprect, use_direct_add_text, use_idxoffset);
+
+        ImFont* font = ImGui::FindFontByPrefix(TEST_SUITE_ALT_FONT_NAME);
+        IM_CHECK_SILENT(font != NULL);
+        ImGui::PushFont(font, vars.Float1);
+        //ImGui::PushFontSize(vars.Float1);
+
+        const char* text =
+            "The quick brown fox jumps over the lazy dog\n"
+            "The quick brown fox jumps over the lazy dog\n"
+            "The quick brown fox jumps over the lazy dog\n";
+
+        ImDrawList* draw_list = ImGui::GetWindowDrawList();
+
+        ImVec2 p = ImGui::GetCursorScreenPos();
+
+        if (use_cliprect)
+            ImGui::PushClipRect(p + ImVec2(0.0f, ImGui::GetFontSize() * 1.5f), p + ImVec2(ImGui::GetContentRegionAvail().x, ImGui::GetFontSize() * 2.5f), true);
+
+        IM_CHECK(draw_list->_VtxCurrentIdx < 1000); // Small amount
+        const int old_cmd_count = draw_list->CmdBuffer.Size;
+        if (use_idxoffset)
+        {
+            // Test with Text/AddText generating a new ImDrawCmd because we reached 64k vertices.
+            int unused_vtx = 65535 - draw_list->_VtxCurrentIdx - 40;
+            draw_list->PrimReserve(0, unused_vtx);
+            draw_list->_VtxWritePtr += unused_vtx;
+            draw_list->_VtxCurrentIdx += unused_vtx;
+            IM_CHECK_EQ(old_cmd_count, draw_list->CmdBuffer.Size);
+        }
+
+        if (!use_direct_add_text)
+        {
+            if (!use_wrap)
+                ImGui::Text(text);
+            else
+                ImGui::TextWrapped(text);
+        }
+        else
+        {
+            // Stress ImFont::RenderText() specific edge case path of retrying after detecting a CmdBuffer[] change due to missing glyphs.
+            float wrap_width = !use_wrap  ? 0.0f : ImGui::GetContentRegionAvail().x;
+            draw_list->AddText(nullptr, 0.0f, p, ImGui::GetColorU32(ImGuiCol_Text), text, NULL, wrap_width);
+        }
+
+        const int new_cmd_count = draw_list->CmdBuffer.Size;
+        if (use_idxoffset)
+        {
+            //if (new_cmd_count == old_cmd_count)
+            //    printf("");
+            //IM_CHECK_GT(new_cmd_count, old_cmd_count);
+        }
+        else
+        {
+            IM_CHECK_GE(new_cmd_count, old_cmd_count);
+        }
+
+        if (use_cliprect)
+            ImGui::PopClipRect();
+
+        ImGui::PopFont();
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        auto& vars = ctx->GenericVars;
+
+        for (int step = 0; step < 16; step++)
+        {
+            vars.Step = step;
+            ImGui::GetIO().Fonts->CompactCache();
+            ctx->Yield(2);
+            for (float t = 0.0f; t < IM_PI * 2; t += 0.03f)
+            {
+                vars.Float1 = 3.0f + (ImSin(t) + 1.0f) * 0.5f * 150.0f;
+                ctx->Yield(1);
+            }
+        }
+    };
+#endif
+
     t = IM_REGISTER_TEST(e, "drawlist", "drawlist_merge_cmd");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
