@@ -148,7 +148,11 @@ static void HelperTableWithResizingPolicies(const char* table_id, ImGuiTableFlag
     ImFont* font = ImGui::FindFontByPrefix(TEST_SUITE_ALT_FONT_NAME);
     if (!font)
         IM_CHECK_NO_RET(font != NULL);
+#if IMGUI_VERSION_NUM >= 19199
+    ImGui::PushFont(font, 0.0f);
+#else
     ImGui::PushFont(font);
+#endif
     ImGui::TableHeadersRow();
     ImGui::PopFont();
     for (int row = 0; row < 2; row++)

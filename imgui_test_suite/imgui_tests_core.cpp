@@ -4261,7 +4261,9 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
 #if IMGUI_VERSION_NUM >= 18415
         ImGui::PushItemFlag(ImGuiItemFlags_ButtonRepeat, true);
 #endif
-#if IMGUI_VERSION_NUM >= 18957
+#if IMGUI_VERSION_NUM >= 19199
+        ImGui::PushFont(NULL, 0.0f);
+#elif IMGUI_VERSION_NUM >= 18957
         ImGui::PushFont(ImGui::GetFont());
 #endif
         ImGui::BeginGroup();
@@ -7284,7 +7286,11 @@ void RegisterTests_Capture(ImGuiTestEngine* e)
         // FIXME-TESTS: Ideally we'd want to be able to manipulate fonts
         ImFont* font = ImGui::FindFontByPrefix(TEST_SUITE_ALT_FONT_NAME);
         IM_CHECK_SILENT(font != NULL);
+#if IMGUI_VERSION_NUM >= 19199
+        ImGui::PushFont(font, 0.0f);
+#else
         ImGui::PushFont(font);
+#endif
         style.FrameRounding = style.ChildRounding = 0;
         style.GrabRounding = 0;
         style.FrameBorderSize = style.ChildBorderSize = 1;
@@ -7376,7 +7382,11 @@ void RegisterTests_Capture(ImGuiTestEngine* e)
         ImGui::SetNextWindowSize(ImVec2(440, 330));
         ImFont* font = ImGui::FindFontByPrefix(TEST_SUITE_ALT_FONT_NAME);
         IM_CHECK_SILENT(font != NULL);
+#if IMGUI_VERSION_NUM >= 19199
+        ImGui::PushFont(font, 0.0f);
+#else
         ImGui::PushFont(font);
+#endif
 
         // State
         static bool my_tool_active = true;
