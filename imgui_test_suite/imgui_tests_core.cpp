@@ -3747,9 +3747,9 @@ void RegisterTests_DrawList(ImGuiTestEngine* e)
         if (!use_direct_add_text)
         {
             if (!use_wrap)
-                ImGui::Text(text);
+                ImGui::Text("%s", text);
             else
-                ImGui::TextWrapped(text);
+                ImGui::TextWrapped("%s", text);
         }
         else
         {
