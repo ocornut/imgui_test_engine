@@ -19,7 +19,8 @@
 // Test Engine
 #include "imgui_test_engine/imgui_te_engine.h"
 #include "imgui_test_engine/imgui_te_ui.h"
-#include "imgui_test_engine/imgui_te_utils.h"   // ImOsIsDebuggerPresent()
+#include "imgui_test_engine/imgui_te_utils.h"       // ImOsIsDebuggerPresent()
+#include "imgui_test_engine/imgui_te_exporters.h"   // ImGuiTestEngineExportFormat when use is uncommented.
 
 extern void RegisterAppMinimalTests(ImGuiTestEngine* engine);
 
@@ -65,7 +66,7 @@ int main(int argc, char** argv)
     test_io.ScreenCaptureUserData = (void*)app;
 
     // Optional: save test output in junit-compatible XML format.
-    //test_io.ExportResultsFile = "./results.xml";
+    //test_io.ExportResultsFilename = "./results.xml";
     //test_io.ExportResultsFormat = ImGuiTestEngineExportFormat_JUnitXml;
 
     // Start test engine
