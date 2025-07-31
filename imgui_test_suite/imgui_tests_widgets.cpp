@@ -1945,12 +1945,15 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         }
         ImGui::End();
     };
+#if IMGUI_VERSION_NUM < 19213
+#define ImGuiTabBarFlags_FittingPolicyShrink ImGuiTabBarFlags_FittingPolicyResizeDown
+#endif
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         ImGuiContext& g = *ctx->UiContext;
         auto& vars = ctx->GetVars<TabBarLeadingTrailingVars>();
 
-        vars.TabBarFlags = ImGuiTabBarFlags_Reorderable | ImGuiTabBarFlags_FittingPolicyResizeDown;
+        vars.TabBarFlags = ImGuiTabBarFlags_Reorderable | ImGuiTabBarFlags_FittingPolicyShrink;
         ctx->Yield();
 
         ctx->SetRef("Test Window/TabBar");
@@ -1987,7 +1990,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ctx->WindowResize("//Test Window", ImVec2(window->Size.x * 0.3f, window->Size.y));
         for (int i = 0; i < 2; ++i)
         {
-            vars.TabBarFlags = ImGuiTabBarFlags_Reorderable | (i == 0 ? ImGuiTabBarFlags_FittingPolicyResizeDown : ImGuiTabBarFlags_FittingPolicyScroll);
+            vars.TabBarFlags = ImGuiTabBarFlags_Reorderable | (i == 0 ? ImGuiTabBarFlags_FittingPolicyShrink : ImGuiTabBarFlags_FittingPolicyScroll);
             ctx->Yield();
             IM_CHECK_GT(ctx->ItemInfo("Leading").RectClipped.GetWidth(), 1.0f);
             IM_CHECK_EQ(ctx->ItemInfo("Tab 0").RectClipped.GetWidth(), 0.0f);
