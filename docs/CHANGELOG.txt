@@ -5,6 +5,10 @@ CHANGELOG
    Those changes are not all listed here.
 ** For a while this is going to ONLY INCLUDE BREAKING CHANGES.
 
+2025/08/11
+- TestEngine: detect mismatching build issue when ImGui compiled struct layout does not
+  match one seen by test engine.
+
 2025/04/24:
 - TestEngine: fixed crash/issue in capture tool.
 

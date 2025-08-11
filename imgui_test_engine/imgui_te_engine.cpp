@@ -230,6 +230,7 @@ void    ImGuiTestEngine_UnbindImGuiContext(ImGuiTestEngine* engine, ImGuiContext
 // Create test context (not bound to any dear imgui context yet)
 ImGuiTestEngine*    ImGuiTestEngine_CreateContext()
 {
+    IMGUI_CHECKVERSION(); // <--- If you get a crash here: mismatching config, check that both imgui and imgui_test_engine are using same defines (e.g. using the same imconfig file)
     ImGuiTestEngine* engine = IM_NEW(ImGuiTestEngine)();
     return engine;
 }
