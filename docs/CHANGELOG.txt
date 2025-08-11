@@ -6,6 +6,8 @@ CHANGELOG
 ** For a while this is going to ONLY INCLUDE BREAKING CHANGES.
 
 2025/08/11
+- TestEngine: error when it is detected that main imgui library has not been
+  compiled with IMGUI_ENABLE_TEST_ENGINE. (#80)
 - TestEngine: detect mismatching build issue when ImGui compiled struct layout does not
   match one seen by test engine.
 
