@@ -5997,6 +5997,8 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         vars.HoveredDisabled[index] |= ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled);
         if (ctx->FrameCount == 0)
             IM_CHECK_EQ(ImGui::GetItemID(), ImGui::GetID("Button"));      // Make sure widget has an ID
+        ImGui::SameLine();
+        ImGui::Text("%d/%d", vars.Hovered[index], vars.HoveredDisabled[index]);
         index++;
 
         float f = 0.0f;
@@ -6005,6 +6007,8 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         vars.HoveredDisabled[index] |= ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled);
         if (ctx->FrameCount == 0)
             IM_CHECK_EQ(ImGui::GetItemID(), ImGui::GetID("DragFloat"));     // Make sure widget has an ID
+        ImGui::SameLine();
+        ImGui::Text("%d/%d", vars.Hovered[index], vars.HoveredDisabled[index]);
         index++;
 
         vars.Activated[index] |= ImGui::Selectable("Selectable", false, 0);
@@ -6012,6 +6016,8 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         vars.HoveredDisabled[index] |= ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled);
         if (ctx->FrameCount == 0)
             IM_CHECK_EQ(ImGui::GetItemID(), ImGui::GetID("Selectable"));    // Make sure widget has an ID
+        ImGui::SameLine();
+        ImGui::Text("%d/%d", vars.Hovered[index], vars.HoveredDisabled[index]);
         index++;
 
         if (vars.WidgetsDisabled)
@@ -6022,6 +6028,8 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         vars.HoveredDisabled[index] |= ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled);
         if (ctx->FrameCount == 0)
             IM_CHECK_EQ(ImGui::GetItemID(), ImGui::GetID("SelectableFlag"));    // Make sure widget has an ID
+        ImGui::SameLine();
+        ImGui::Text("%d/%d", vars.Hovered[index], vars.HoveredDisabled[index]);
         index++;
 
         ImGui::Selectable("Enabled B");
@@ -6161,20 +6169,25 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         };
 
         begin_disabled();
-        vars.ButtonInfo[index].Status.QueryInc(ImGui::Button("A"));
+        vars.ButtonInfo[0].Status.QueryInc(ImGui::Button("A"));
+        ImGui::SameLine(); ImGui::Text("%d,%d", vars.ButtonInfo[0].Status.Hovered, vars.ButtonInfo[0].Status.HoveredAllowDisabled);
         begin_disabled();
-        vars.ButtonInfo[index].Status.QueryInc(ImGui::Button("B"));
+        vars.ButtonInfo[1].Status.QueryInc(ImGui::Button("B"));
+        ImGui::SameLine(); ImGui::Text("%d,%d", vars.ButtonInfo[1].Status.Hovered, vars.ButtonInfo[1].Status.HoveredAllowDisabled);
         end_disabled();
         begin_disabled(false);
-        vars.ButtonInfo[index].Status.QueryInc(ImGui::Button("C"));
+        vars.ButtonInfo[2].Status.QueryInc(ImGui::Button("C"));
+        ImGui::SameLine(); ImGui::Text("%d,%d", vars.ButtonInfo[2].Status.Hovered, vars.ButtonInfo[2].Status.HoveredAllowDisabled);
         end_disabled();
-        vars.ButtonInfo[index].Status.QueryInc(ImGui::Button("D"));
+        vars.ButtonInfo[3].Status.QueryInc(ImGui::Button("D"));
+        ImGui::SameLine(); ImGui::Text("%d,%d", vars.ButtonInfo[3].Status.Hovered, vars.ButtonInfo[3].Status.HoveredAllowDisabled);
         end_disabled();
 
         begin_disabled();
         bool ret = ImGui::Button("E");
         end_disabled();
         vars.ButtonInfo[4].Status.QueryInc(ret);
+        ImGui::SameLine(); ImGui::Text("%d,%d", vars.ButtonInfo[4].Status.Hovered, vars.ButtonInfo[4].Status.HoveredAllowDisabled);
 
         ImGui::BeginDisabled(false);
         vars.ButtonInfo[5].Status.QueryInc(ImGui::Button("F"));
@@ -6190,12 +6203,20 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         {
             auto& button_info = vars.ButtonInfo[i];
             ctx->LogDebug("Button %s", button_info.Name);
+            button_info.Status.Clear();
             ctx->ItemClick(button_info.Name);
             IM_CHECK(button_info.Status.RetValue == 0);                 // No clicks
             IM_CHECK(button_info.Status.Clicked == 0);
+            IM_CHECK_GT(button_info.Status.HoveredAllowDisabled, 0);
             IM_CHECK(g.HoveredId == ctx->GetID(button_info.Name));      // HoveredId is set
             IM_CHECK(button_info.FlagsBegin == button_info.FlagsEnd);   // Flags and Alpha match between Begin/End calls
             IM_CHECK(button_info.AlphaBegin == button_info.AlphaEnd);
+            ctx->MouseDown(0);
+            button_info.Status.Clear();
+            ctx->Yield();
+            IM_CHECK_EQ(button_info.Status.Hovered, 0);
+            IM_CHECK_EQ(button_info.Status.HoveredAllowDisabled, 1);
+            ctx->MouseUp();
         }
         ctx->ItemClick("E");
         IM_CHECK(vars.ButtonInfo[4].Status.Hovered == 0);               // Ensure we rely on last item storage, not current state
