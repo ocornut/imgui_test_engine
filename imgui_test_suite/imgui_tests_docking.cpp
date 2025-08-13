@@ -1014,6 +1014,8 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         auto& vars = ctx->GenericVars;
+        //if (ImGui::GetIO().KeyShift)
+        //    printf("");
 
         ImGui::Begin("AAA", NULL, ImGuiWindowFlags_NoSavedSettings);
         vars.BoolArray[0] = ImGui::IsItemHovered();

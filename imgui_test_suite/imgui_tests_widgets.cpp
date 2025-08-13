@@ -845,7 +845,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ImGuiTestGenericVars& vars = ctx->GenericVars;
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
 
-        ImGui::SliderInt("Step", &vars.Step, 0, 5);
+        ImGui::SliderInt("Step", &vars.Step, 0, 6);
 
         bool ret = false;
         switch (vars.Step)
@@ -867,6 +867,9 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
             break;
         case 5:
             ret = ImGui::ColorEdit4("ColorEdit", &vars.Color1.x);
+            break;
+        case 6:
+            ImGui::Text("Text Without An Identifier");
             break;
         }
         vars.Status.QueryInc(ret);
@@ -897,6 +900,10 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
             ctx->MouseDown();
             IM_CHECK(status.Activated == 1 && status.Active >= 1 && status.Deactivated == 0);
 
+            status.Clear();
+            ctx->Yield();
+            IM_CHECK(status.Hovered == 1);
+
             if (step == 2 || step == 5)
             {
                 ctx->MouseMove(item_names[step], ImGuiTestOpFlags_MoveToEdgeL);
@@ -904,7 +911,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
             }
 
             ctx->MouseUp();
-            IM_CHECK(status.Activated == 1 && status.Deactivated == 1);
+            IM_CHECK(status.Activated == 0 && status.Deactivated == 1);
 
             if (step == 4)
             {
@@ -923,6 +930,22 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
             if (step != 0) // not triggered by Button
                 IM_CHECK(status.DeactivatedAfterEdit == 1);
         }
+
+        // Step 6: Text (item with no identifier) (#8883, #8877)
+#if IMGUI_VERSION_NUM >= 19222
+        {
+            vars.Step = 6;
+            ctx->Yield(2);
+            status.Clear();
+            ctx->Yield();
+            IM_CHECK(status.Hovered == 1);
+            ctx->MouseDown(0);
+            status.Clear();
+            ctx->Yield();
+            IM_CHECK(status.Hovered == 1);
+            ctx->MouseUp(0);
+        }
+#endif
     };
 
     // ## Test ColorEdit4() and IsItemDeactivatedXXX() functions
@@ -6168,6 +6191,9 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
             button_info.AlphaEnd = g.DisabledAlphaBackup;
         };
 
+        //if (ImGui::GetIO().KeyShift)
+        //    printf("");
+
         begin_disabled();
         vars.ButtonInfo[0].Status.QueryInc(ImGui::Button("A"));
         ImGui::SameLine(); ImGui::Text("%d,%d", vars.ButtonInfo[0].Status.Hovered, vars.ButtonInfo[0].Status.HoveredAllowDisabled);
@@ -6191,6 +6217,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
 
         ImGui::BeginDisabled(false);
         vars.ButtonInfo[5].Status.QueryInc(ImGui::Button("F"));
+        ImGui::SameLine(); ImGui::Text("%d,%d", vars.ButtonInfo[5].Status.Hovered, vars.ButtonInfo[5].Status.HoveredAllowDisabled);
         ImGui::EndDisabled();
         ImGui::End();
     };
@@ -6212,10 +6239,21 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
             IM_CHECK(button_info.FlagsBegin == button_info.FlagsEnd);   // Flags and Alpha match between Begin/End calls
             IM_CHECK(button_info.AlphaBegin == button_info.AlphaEnd);
             ctx->MouseDown(0);
-            button_info.Status.Clear();
+            for (int all_i = 0; all_i < 5; all_i++)
+                vars.ButtonInfo[all_i].Status.Clear();
             ctx->Yield();
             IM_CHECK_EQ(button_info.Status.Hovered, 0);
             IM_CHECK_EQ(button_info.Status.HoveredAllowDisabled, 1);
+
+#if IMGUI_VERSION_NUM >= 19222
+            // Check that other disabled items do NOT report as Disabled
+            for (int all_i = 0; all_i < 5; all_i++)
+                if (all_i != i)
+                {
+                    IM_CHECK_EQ(vars.ButtonInfo[all_i].Status.Hovered, 0);
+                    IM_CHECK_EQ(vars.ButtonInfo[all_i].Status.HoveredAllowDisabled, 0);
+                }
+#endif
             ctx->MouseUp();
         }
         ctx->ItemClick("E");
