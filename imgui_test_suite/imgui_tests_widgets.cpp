@@ -3618,6 +3618,12 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ImGui::Spacing();
         ImGui::TextUnformatted(s2); // Though the '.' can fit in the first line, it's now at the second line.
         ImGui::PopTextWrapPos();
+
+        // Text wrapping with leading \n
+        ImGui::Separator();
+        ImGui::TextWrapped("\nHello");
+        IM_CHECK_EQ(ImGui::GetItemRectSize(), ImVec2(ImGui::CalcTextSize("Hello").x, ImGui::GetFontSize() * 2));
+
         ImGui::End();
 
         // Tests
