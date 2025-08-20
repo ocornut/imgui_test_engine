@@ -8,6 +8,7 @@
 #include "imgui_internal.h"
 #include "imgui_test_engine/imgui_te_engine.h"      // IM_REGISTER_TEST()
 #include "imgui_test_engine/imgui_te_context.h"
+#include "imgui_test_engine/thirdparty/Str/Str.h"
 
 // Warnings
 #ifdef _MSC_VER
@@ -514,6 +515,66 @@ void RegisterTests_Viewports(ImGuiTestEngine* e)
 #else
         IM_CHECK_EQ(vars.ShowWindow2, true);  // Old behavior
 #endif
+    };
+
+    // ## Test Platform Close behavior on nested windows/dockspaces (#8887)
+    t = IM_REGISTER_TEST(e, "viewport", "viewport_platform_close_2");
+    struct PlatformCloseVars { bool ParentIsOpen = true; bool ChildsIsOpen[3] = { true, true, true }; };
+    t->SetVarsDataType<PlatformCloseVars>();
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        auto& vars = ctx->GetVars<PlatformCloseVars>();
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+        if (ImGui::Button("Reopen Parent"))
+            vars.ParentIsOpen = true;
+        if (ImGui::Button("Reopen All"))
+            vars.ParentIsOpen = vars.ChildsIsOpen[0] = vars.ChildsIsOpen[1] = vars.ChildsIsOpen[2] = true;
+        ImGui::End();
+
+        ImGui::SetNextWindowSize({ 800.f, 1000.f }, ImGuiCond_FirstUseEver);
+        if (vars.ParentIsOpen)
+        {
+            ImGui::Begin("Parent Window", &vars.ParentIsOpen, ImGuiWindowFlags_NoSavedSettings);
+            ImGuiID dockspace_id = ImGui::GetID("dockspace");
+            ImGui::DockSpace(dockspace_id, ImVec2(500, 500));
+            for (int i = 0; i < 3; ++i)
+                if (vars.ChildsIsOpen[i])
+                {
+                    ImGui::SetNextWindowDockID(dockspace_id, ImGuiCond_Always);
+                    ImGui::Begin(Str30f("Docked Window %d", i).c_str(), &vars.ChildsIsOpen[i], ImGuiWindowFlags_NoSavedSettings);
+                    ImGui::End();
+                }
+            ImGui::End();
+        }
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        auto& vars = ctx->GetVars<PlatformCloseVars>();
+        ctx->ItemClick("//Test Window//Reopen All");
+        IM_CHECK(vars.ParentIsOpen && vars.ChildsIsOpen[0] && vars.ChildsIsOpen[1] && vars.ChildsIsOpen[2]);
+
+        // Ensure in a standalone viewport
+        // FIXME: A helper would be nice for this.
+        ctx->DockClear("Parent Window", NULL);
+        ctx->WindowMove("Parent Window", ImGui::GetMainViewport()->Pos + ImVec2(ImGui::GetMainViewport()->Size.x, 0.0f));
+        ImGuiWindow* window = ctx->GetWindowByRef("Parent Window");
+        IM_CHECK(window->Viewport != ImGui::GetMainViewport());
+
+        // Close using Platform decoration
+        ctx->ViewportPlatform_CloseWindow(window->Viewport);
+        IM_CHECK_EQ(vars.ParentIsOpen, false);
+#if IMGUI_VERSION_NUM >= 19223
+        IM_CHECK_EQ(vars.ChildsIsOpen[0], true);
+        IM_CHECK_EQ(vars.ChildsIsOpen[1], true);
+        IM_CHECK_EQ(vars.ChildsIsOpen[2], true);
+#endif
+
+        ctx->ItemClick("//Test Window//Reopen All");
+        ctx->WindowClose("Parent Window");
+        IM_CHECK_EQ(vars.ParentIsOpen, false);
+        IM_CHECK_EQ(vars.ChildsIsOpen[0], true);
+        IM_CHECK_EQ(vars.ChildsIsOpen[1], true);
+        IM_CHECK_EQ(vars.ChildsIsOpen[2], true);
     };
 
 #if IMGUI_VERSION_NUM >= 18965
