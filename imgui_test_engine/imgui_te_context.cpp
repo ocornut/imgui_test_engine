@@ -1417,6 +1417,39 @@ void    ImGuiTestContext::ScrollTo(ImGuiTestRef ref, ImGuiAxis axis, float scrol
 
 // Supported values for ImGuiTestOpFlags:
 // - ImGuiTestOpFlags_NoFocusWindow
+void    ImGuiTestContext::ScrollToPos(ImGuiTestRef window_ref, float pos_v, ImGuiAxis axis, ImGuiTestOpFlags flags)
+{
+    if (IsError())
+        return;
+
+    IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
+    LogDebug("ScrollToPos %c %.2f", 'X' + axis, pos_v);
+
+    // Ensure window size and ScrollMax are up-to-date
+    Yield();
+
+    ImGuiWindow* window = GetWindowByRef(window_ref);
+    IM_CHECK_SILENT(window != NULL);
+    float item_curr = pos_v;
+    float item_target = ImFloor(window->InnerClipRect.GetCenter()[axis]);
+    float scroll_delta = item_target - item_curr;
+    float scroll_target = ImClamp(window->Scroll[axis] - scroll_delta, 0.0f, window->ScrollMax[axis]);
+
+    ScrollTo(window->ID, axis, scroll_target, (flags & ImGuiTestOpFlags_NoFocusWindow));
+}
+
+void    ImGuiTestContext::ScrollToPosX(ImGuiTestRef window_ref, float pos_x)
+{
+    ScrollToPos(window_ref, pos_x, ImGuiAxis_X);
+}
+
+void    ImGuiTestContext::ScrollToPosY(ImGuiTestRef window_ref, float pos_y)
+{
+    ScrollToPos(window_ref, pos_y, ImGuiAxis_Y);
+}
+
+// Supported values for ImGuiTestOpFlags:
+// - ImGuiTestOpFlags_NoFocusWindow
 void    ImGuiTestContext::ScrollToItem(ImGuiTestRef ref, ImGuiAxis axis, ImGuiTestOpFlags flags)
 {
     if (IsError())

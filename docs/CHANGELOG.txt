@@ -5,7 +5,10 @@ CHANGELOG
    Those changes are not all listed here.
 ** For a while this is going to ONLY INCLUDE BREAKING CHANGES.
 
-2025/08/11
+2025/08/22:
+- TestEngine: added ctx->ScrollToPos(), ScrollToPosX(), ScrollToPosY() helpers.
+
+2025/08/11:
 - TestEngine: error when it is detected that main imgui library has not been
   compiled with IMGUI_ENABLE_TEST_ENGINE. (#80)
 - TestEngine: detect mismatching build issue when ImGui compiled struct layout does not
