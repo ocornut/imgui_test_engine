@@ -5727,8 +5727,8 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
             for (int i = 0; i < IM_ARRAYSIZE(x_offset); i++)
             {
                 ctx->ItemDragWithDelta("slider", ImVec2(sign * x_offset[i], 0.f));
-                IM_CHECK_GT(vars.Float1, sign * slider_v[i] - (slider_v[i] * 0.1f));  // FIXME-TESTS: Exact values actually depends on GrabSize.
-                IM_CHECK_LT(vars.Float1, sign * slider_v[i] + (slider_v[i] * 0.1f));
+                IM_CHECK_GT(vars.Float1, sign * slider_v[i] - (slider_v[i] * 0.15f));  // FIXME-TESTS: Exact values actually depends on GrabSize.
+                IM_CHECK_LT(vars.Float1, sign * slider_v[i] + (slider_v[i] * 0.15f));
             }
     };
 

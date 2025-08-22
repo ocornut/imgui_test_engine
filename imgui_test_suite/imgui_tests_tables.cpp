@@ -2348,12 +2348,11 @@ void RegisterTests_Table(ImGuiTestEngine* e)
     t = IM_REGISTER_TEST(e, "table", "table_freezing");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
-        ImGui::SetNextWindowSize(ImVec2(300, 200), ImGuiCond_Appearing);
-        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
         memset(ctx->GenericVars.BoolArray, 0, sizeof(ctx->GenericVars.BoolArray));
         const int column_count = 15;
         ImGuiTableFlags flags = ImGuiTableFlags_ScrollX | ImGuiTableFlags_ScrollY | ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg;
-        if (ImGui::BeginTable("table1", column_count, flags))
+        if (ImGui::BeginTable("table1", column_count, flags, { 300, (ImGui::GetTextLineHeight() + ImGui::GetStyle().CellPadding.y * 2) * 7 }))
         {
             ImGui::TableSetupScrollFreeze(ctx->GenericVars.Int1, ctx->GenericVars.Int2);
             for (int i = 0; i < column_count; i++)

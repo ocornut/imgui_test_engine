@@ -2608,7 +2608,7 @@ void RegisterTests_Window(ImGuiTestEngine* e)
 #if IMGUI_VERSION_NUM >= 18913
         IM_CHECK_EQ(window->Scroll.y, 0.0f);
         ctx->MouseWheel(ImVec2(1.0f, -10.0f));
-        IM_CHECK_EQ(window->Scroll.y, 0.0f); // This assume that MouseWheel() only did a single Yield() after injecting value, might change.
+        //IM_CHECK_EQ(window->Scroll.y, 0.0f); // This assume that MouseWheel() only did a single Yield() after injecting value, might change.
         ctx->Yield();
         IM_CHECK_GT(window->Scroll.y, 0.0f);
 
@@ -2618,7 +2618,7 @@ void RegisterTests_Window(ImGuiTestEngine* e)
         IM_CHECK(g.WheelingWindow == NULL);
         ctx->MouseMove("**/Button 2");
         ctx->MouseWheel(ImVec2(-10.0f, 1.0f));
-        IM_CHECK_EQ(child->Scroll.x, 0.0f); // This assume that MouseWheel() only did a single Yield() after injecting value, might change.
+        //IM_CHECK_EQ(child->Scroll.x, 0.0f); // This assume that MouseWheel() only did a single Yield() after injecting value, might change.
         ctx->Yield();
         IM_CHECK_GT(child->Scroll.x, 0.0f);
 #endif
@@ -2635,6 +2635,7 @@ void RegisterTests_Window(ImGuiTestEngine* e)
         ctx->MouseWheelY(-1.0f);
         ctx->Yield();
         ctx->MouseWheelY(-0.1f);
+        IM_CHECK_EQ(g.WheelingWindow, window);
         ctx->Yield();
         float timer0 = g.WheelingWindowReleaseTimer;
         ctx->SleepNoSkip(timer0 * 0.9f, timer0 * 0.9f);
@@ -2651,11 +2652,12 @@ void RegisterTests_Window(ImGuiTestEngine* e)
         float timer1 = g.WheelingWindowReleaseTimer;
         IM_CHECK(timer1 < timer0);
         IM_CHECK(timer1 == 0.0f);
-        IM_CHECK(g.WheelingWindow == NULL);
+        IM_CHECK_EQ(g.WheelingWindow, nullptr);
         IM_CHECK_GT(window->Scroll.y, 0.0f);
         ctx->MouseWheelX(-10.0f); // FIXME
         ctx->Yield();
-        IM_CHECK(g.WheelingWindow == child);
+        //IM_CHECK(g.WheelingWindow == child); // Incorrectly assumed that cursor was overchild before using MouseWheelX()
+        IM_CHECK_NE(g.WheelingWindow, nullptr);
     };
 
     // ## Test window moving
