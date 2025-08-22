@@ -6,6 +6,7 @@ CHANGELOG
 ** For a while this is going to ONLY INCLUDE BREAKING CHANGES.
 
 2025/08/22:
+- TestEngine: fixed issues interaction with clipped table headers.
 - TestEngine: added ctx->ScrollToPos(), ScrollToPosX(), ScrollToPosY() helpers.
 
 2025/08/11:

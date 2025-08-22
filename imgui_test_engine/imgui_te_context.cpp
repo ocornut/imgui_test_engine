@@ -3677,7 +3677,18 @@ void ImGuiTestContext::TableOpenContextMenu(ImGuiTestRef ref, int column_n)
 
     if (column_n == -1)
         column_n = table->RightMostEnabledColumn;
-    ItemClick(TableGetHeaderID(table, column_n), ImGuiMouseButton_Right);
+
+    IM_CHECK(column_n >= 0 && column_n <= table->ColumnsCount);
+    ImGuiTableColumn* column = &table->Columns[column_n];
+    IM_CHECK_SILENT(column->IsEnabled);
+
+    ImGuiID header_id = TableGetHeaderID(table, column_n);
+
+    // Make visible
+    if (!ItemExists(header_id))
+        ScrollToPosX(table->InnerWindow->ID, (column->MinX + column->MaxX) * 0.5f);
+
+    ItemClick(header_id, ImGuiMouseButton_Right);
     Yield();
 }
 
@@ -3694,7 +3705,13 @@ ImGuiSortDirection ImGuiTestContext::TableClickHeader(ImGuiTestRef ref, const ch
     if (key_mods != ImGuiMod_None)
         KeyDown(key_mods);
 
-    ItemClick(TableGetHeaderID(table, label), ImGuiMouseButton_Left);
+    ImGuiID header_id = TableGetHeaderID(table, label);
+
+    // Make visible
+    if (!ItemExists(header_id))
+        ScrollToPosX(table->InnerWindow->ID, (column->MinX + column->MaxX) * 0.5f);
+
+    ItemClick(header_id, ImGuiMouseButton_Left);
 
     if (key_mods != ImGuiMod_None)
         KeyUp(key_mods);
@@ -3710,7 +3727,11 @@ void ImGuiTestContext::TableSetColumnEnabled(ImGuiTestRef ref, const char* label
     ImGuiTestRefDesc desc(ref);
     LogDebug("TableSetColumnEnabled %s label '%s' enabled = %d", desc.c_str(), label, enabled);
 
-    TableOpenContextMenu(ref);
+    ImGuiTable* table = ImGui::TableFindByID(GetID(ref));
+    IM_CHECK_SILENT(table != NULL);
+    ImGuiTableColumn* column = HelperTableFindColumnByName(table, label);
+    int column_n = column->IsEnabled ? table->Columns.index_from_ptr(column) : -1;
+    TableOpenContextMenu(ref, column_n);
 
     ImGuiTestRef backup_ref = GetRef();
     SetRef("//$FOCUSED");
