@@ -78,7 +78,7 @@ static void TestSuite_ShowUI(TestSuiteApp* app);
 static void TestSuite_PrintCommandLineHelp();
 static bool TestSuite_ParseCommandLineOptions(TestSuiteApp* app, int argc, char** argv);
 static void TestSuite_QueueTests(TestSuiteApp* app, ImGuiTestRunFlags run_flags);
-static void TestSuite_LoadFonts(float dpi_scale);
+static void TestSuite_LoadFonts();
 
 //-------------------------------------------------------------------------
 // Test Application
@@ -293,25 +293,21 @@ enum ImGuiTestAppErrorCode
     ImGuiTestAppErrorCode_TestFailed = 2
 };
 
-static void TestSuite_LoadFonts(float dpi_scale)
+static void TestSuite_LoadFonts()
 {
     ImGuiIO& io = ImGui::GetIO();
 
-    ImFontConfig cfg;
-    cfg.SizePixels = IM_ROUND(13.0f * dpi_scale);
-    io.Fonts->AddFontDefault(&cfg);
-    //ImFontConfig cfg;
-    //cfg.RasterizerMultiply = 1.1f;
+    io.Fonts->AddFontDefault();
 
     Str64 base_font_dir;
     if (ImFileFindInParents("imgui_test_suite/assets/fonts/", 3, &base_font_dir))
     {
-        io.Fonts->AddFontFromFileTTF(Str64f("%s/%s", base_font_dir.c_str(), "NotoSans-Regular.ttf").c_str(), IM_ROUND(16.0f * dpi_scale));
-        io.Fonts->AddFontFromFileTTF(Str64f("%s/%s", base_font_dir.c_str(), "Roboto-Medium.ttf").c_str(), IM_ROUND(16.0f * dpi_scale));
-        //io.Fonts->AddFontFromFileTTF(Str64f("%s/%s", base_font_dir.c_str(), "RobotoMono-Regular.ttf").c_str(), 16.0f * dpi_scale, &cfg);
-        //io.Fonts->AddFontFromFileTTF(Str64f("%s/%s", base_font_dir.c_str(), "Cousine-Regular.ttf").c_str(), 15.0f * dpi_scale);
-        //io.Fonts->AddFontFromFileTTF(Str64f("%s/%s", base_font_dir.c_str(), "DroidSans.ttf").c_str(), 16.0f * dpi_scale);
-        //io.Fonts->AddFontFromFileTTF(Str64f("%s/%s", base_font_dir.c_str(), "ProggyTiny.ttf").c_str(), 10.0f * dpi_scale);
+        io.Fonts->AddFontFromFileTTF(Str64f("%s/%s", base_font_dir.c_str(), "NotoSans-Regular.ttf").c_str(), 16.0f);
+        io.Fonts->AddFontFromFileTTF(Str64f("%s/%s", base_font_dir.c_str(), "Roboto-Medium.ttf").c_str(), 16.0f);
+        //io.Fonts->AddFontFromFileTTF(Str64f("%s/%s", base_font_dir.c_str(), "RobotoMono-Regular.ttf").c_str(), 16.0f, &cfg);
+        //io.Fonts->AddFontFromFileTTF(Str64f("%s/%s", base_font_dir.c_str(), "Cousine-Regular.ttf").c_str(), 15.0f);
+        //io.Fonts->AddFontFromFileTTF(Str64f("%s/%s", base_font_dir.c_str(), "DroidSans.ttf").c_str(), 16.0f);
+        //io.Fonts->AddFontFromFileTTF(Str64f("%s/%s", base_font_dir.c_str(), "ProggyTiny.ttf").c_str(), 10.0f);
         //IM_ASSERT(font != nullptr);
     }
     else
@@ -475,7 +471,7 @@ int main(int argc, char** argv)
         app->AppWindow = ImGuiApp_ImplDefault_Create();
     if (app->AppWindow == nullptr)
         app->AppWindow = ImGuiApp_ImplNull_Create();
-    app->AppWindow->DpiAware = false;
+    app->AppWindow->DpiAware = true;
     app->AppWindow->MockViewports = app->OptViewports && app->OptMockViewports;
 
     // Create TestEngine context
@@ -538,7 +534,7 @@ int main(int argc, char** argv)
 
     // Create Application Window, Initialize Backends
     ImGuiApp* app_window = app->AppWindow;
-    app_window->InitCreateWindow(app_window, "Dear ImGui Test Suite", ImVec2(1440, 900));
+    app_window->InitCreateWindow(app_window, "Dear ImGui Test Suite", ImVec2(1600, 1000));
     app_window->InitBackends(app_window);
 
     // Register and queue our tests
@@ -578,11 +574,15 @@ int main(int argc, char** argv)
     ImGuiTestEngine_Start(engine, ImGui::GetCurrentContext());
     ImGuiTestEngine_InstallDefaultCrashHandler();
 
-    // Load fonts, Set DPI scale
-    //const float dpi_scale = app_window->DpiScale;
-    const float dpi_scale = 1.0f;
-    TestSuite_LoadFonts(dpi_scale);
-    ImGui::GetStyle().ScaleAllSizes(dpi_scale);
+    // Setup scaling
+    const float main_scale = app_window->DpiScale;
+    ImGuiStyle& style = ImGui::GetStyle();
+    style.ScaleAllSizes(main_scale);
+    style.FontSizeBase = 13.0f;
+    style.FontScaleDpi = main_scale;
+
+    // Load fonts
+    TestSuite_LoadFonts();
 
     // Main loop
     bool aborted = false;
@@ -592,6 +592,9 @@ int main(int argc, char** argv)
         // (stop updating them once we started aborting, as e.g. closed windows will have zero size etc.)
         if (!aborted && !app_window->NewFrame(app_window))
             aborted = true;
+
+        if (ImGui::GetFrameCount() == 0)
+            printf("Main DisplaySize: (%.0f,%.0f), FontSizeBase = %.1f, FontScaleDpi = %.2f\n", io.DisplaySize.x, io.DisplaySize.y, style.FontSizeBase, style.FontScaleDpi);
 
         // Abort logic
         if (aborted && ImGuiTestEngine_TryAbortEngine(engine))

@@ -16,6 +16,9 @@ CHANGELOG
 - TestEngine: fixed an issue with single-axis WindowResize() on small windows
   where corner resize grip can overlap center of side borders.
 - TestEngine: UI: added a link with tips/help at the bottom of error log.
+- TestSuite: make imgui_test_suite application DPI aware and load scaled fonts.
+  Made various/misc fixes to tests to ensure test suite runs with different
+  font sizes.
 
 2025/12/19:
 - TestEngine: ctx->WindowResize(): passing 0.0f keep existing size of for

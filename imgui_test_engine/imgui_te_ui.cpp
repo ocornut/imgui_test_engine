@@ -120,6 +120,8 @@ static float GetDpiScale()
 {
 #ifdef IMGUI_HAS_VIEWPORT
     return ImGui::GetWindowViewport()->DpiScale;
+#elif IMGUI_VERSION_NUM >= 19197
+    return ImGui::GetStyle()._MainScale;
 #else
     return 1.0f;
 #endif

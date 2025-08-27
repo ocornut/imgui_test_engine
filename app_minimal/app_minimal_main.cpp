@@ -50,7 +50,7 @@ int main(int argc, char** argv)
 #endif
 
     // Setup application
-    app->DpiAware = false;
+    app->DpiAware = true;
     app->SrgbFramebuffer = false;
     app->ClearColor = ImVec4(0.120f, 0.120f, 0.120f, 1.000f);
     app->InitCreateWindow(app, "Dear ImGui: Minimal App With Test Engine", ImVec2(1600, 1000));
@@ -68,6 +68,12 @@ int main(int argc, char** argv)
     // Optional: save test output in junit-compatible XML format.
     //test_io.ExportResultsFilename = "./results.xml";
     //test_io.ExportResultsFormat = ImGuiTestEngineExportFormat_JUnitXml;
+
+    // Setup scaling
+    float main_scale = app->DpiScale;
+    ImGuiStyle& style = ImGui::GetStyle();
+    style.ScaleAllSizes(main_scale);
+    style.FontScaleDpi = main_scale;
 
     // Start test engine
     ImGuiTestEngine_Start(engine, ImGui::GetCurrentContext());
