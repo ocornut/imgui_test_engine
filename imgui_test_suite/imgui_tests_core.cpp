@@ -6825,10 +6825,10 @@ void RegisterTests_TestEngine(ImGuiTestEngine* e)
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
-        ImGui::BeginChild("Child1", ImVec2(200, 200), ImGuiChildFlags_Border);
+        ImGui::BeginChild("Child1", ImVec2(200, 200), ImGuiChildFlags_Borders);
         ImGui::EndChild();
         ImGui::SameLine();
-        ImGui::BeginChild("Child2", ImVec2(200, 200), ImGuiChildFlags_Border);
+        ImGui::BeginChild("Child2", ImVec2(200, 200), ImGuiChildFlags_Borders);
         ImGui::Button("Button2");
         ImGui::EndChild();
         ImGui::End();
