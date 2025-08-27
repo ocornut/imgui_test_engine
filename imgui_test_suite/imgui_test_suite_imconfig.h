@@ -1,3 +1,8 @@
+// Dear ImGui Test Suite should be built with `#define IMGUI_USER_CONFIG "imgui_test_suite/imgui_test_suite_imconfig.h"`
+// passed to the compiler command-line, so this will automatically be included every time imgui.h is included.
+
+// This should be empty in a normal repository but we still include it to facilitate local work
+// (e.g. modifying imgui/imconfig.h to quickly tested a feature)
 #include "imconfig.h"
 
 // Enable graphics backends
@@ -16,8 +21,10 @@
 // Test Engine
 //------------------------------------------------------------------------
 
-// Disable tests that are known to be broken. This mainly exist as a way to grep them.
+// Disable tests that are known to be broken (e.g. because of missing a feature or fix that would be desirable).
+// This exist as a way to grep the tests easily.
 // We use this with #if instead of #ifdef to facilitate temporarily enabling a single broken test in the corresponding code.
+// In theory all the broken test should succeed to compile but fail at runtime, but as they aren't actively maintained some may fail to build.
 #define IMGUI_BROKEN_TESTS 0
 
 // Enable coroutine implementation using std::thread
