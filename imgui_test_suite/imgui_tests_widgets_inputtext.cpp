@@ -1368,6 +1368,22 @@ void RegisterTests_WidgetsInputText(ImGuiTestEngine* e)
         IM_CHECK_EQ(ctx->UiContext->NavId, ctx->GetID("D"));
     };
 
+    // ## Test InputText widget with zero size buffer
+#if IMGUI_VERSION_NUM >= 19224
+    t = IM_REGISTER_TEST(e, "widgets", "widgets_inputtext_zero_buffer");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImGui::InputText("Field", "", 0);
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ctx->SetRef("Test Window");
+        ctx->ItemClick("Field");
+    };
+#endif
+
     // ## Test InputText widget with user a buffer on stack, reading/writing past end of buffer.
     t = IM_REGISTER_TEST(e, "widgets", "widgets_inputtext_temp_buffer");
     t->GuiFunc = [](ImGuiTestContext* ctx)
