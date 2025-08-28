@@ -533,11 +533,15 @@ void RegisterTests_WidgetsInputText(ImGuiTestEngine* e)
             if (n < vars.LineCount - 1)
                 vars.str.append("\n");
         }
+
         ctx->ItemInput("Field");
 
         ImGuiInputTextState* state = ImGui::GetInputTextState(ctx->GetID("Field"));
         IM_CHECK(state != NULL);
         ImStb::STB_TexteditState& stb = *state->Stb;
+#ifdef IMGUI_HAS_INPUTTEXT_WORDWRAP
+        IM_CHECK_EQ(state->LineCount, vars.LineCount);
+#endif
         //vars.Cursor = stb.cursor;
 
         const int page_size = (vars.LineCount / 2) - 1;
@@ -589,7 +593,11 @@ void RegisterTests_WidgetsInputText(ImGuiTestEngine* e)
             SetCursorPosition(cursor_pos_begin_of_last_line); ctx->KeyPress(ImGuiKey_LeftArrow);
             IM_CHECK_EQ(stb.cursor, cursor_pos_begin_of_last_line - 1);
             SetCursorPosition(cursor_pos_begin_of_last_line); ctx->KeyPress(ImGuiKey_DownArrow);
-            IM_CHECK_EQ(stb.cursor, has_trailing_line_feed ? eof : cursor_pos_begin_of_last_line);
+#ifdef IMGUI_HAS_INPUTTEXT_WORDWRAP
+            IM_CHECK_EQ(stb.cursor, has_trailing_line_feed ? eof : cursor_pos_end_of_last_line);
+#else
+            IM_CHECK_EQ(stb.cursor, has_trailing_line_feed ? eof : cursor_pos_begin_of_last_line); // for has_trailing_line_feed==false, this is handled by a custom check in the STB_TEXTEDIT_K_DOWN handler.
+#endif
             SetCursorPosition(cursor_pos_begin_of_last_line); ctx->KeyPress(ImGuiKey_RightArrow);
             IM_CHECK_EQ(stb.cursor, cursor_pos_begin_of_last_line + 1);
 
@@ -639,7 +647,11 @@ void RegisterTests_WidgetsInputText(ImGuiTestEngine* e)
             ctx->KeyPress(ImGuiKey_PageDown);
             IM_CHECK_EQ(stb.cursor, cursor_pos_middle_of_first_line + char_count_per_line * page_size * 2);
             ctx->KeyPress(ImGuiKey_PageDown);
+#ifdef IMGUI_HAS_INPUTTEXT_WORDWRAP
+            IM_CHECK_EQ(stb.cursor, eof);
+#else
             IM_CHECK_EQ(stb.cursor, has_trailing_line_feed ? eof : eof - (char_count_per_line / 2) + 1);
+#endif
 
             // We started PageDown from the middle of a line, so even if we're at the end (with X = 0),
             // PageUp should bring us one page up to the middle of the line
