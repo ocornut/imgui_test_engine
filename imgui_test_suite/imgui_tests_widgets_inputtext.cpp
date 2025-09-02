@@ -1829,6 +1829,219 @@ void RegisterTests_WidgetsInputText(ImGuiTestEngine* e)
             ctx->KeyPress(ImGuiKey_Escape);
         }
     };
+
+#ifdef IMGUI_HAS_INPUTTEXT_WORDWRAP
+    // ## Test word-wrapping ImGuiInputTextFlags_WordWrap  #3237 #952 #1062
+    t = IM_REGISTER_TEST(e, "widgets", "widgets_inputtext_wordwrap_1");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiTestGenericVars& vars = ctx->GenericVars;
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
+        if (vars.Width == 0.0f)
+            vars.Width = 120.0f;
+
+        if (ImGui::SmallButton("Pattern 1"))
+            strcpy(vars.Str1,
+                "Aaaaa Aaaaa AAAAA\n"           //  0..17
+                "  Bbbbbb Bbbbbb BBBBBB\n"      // 18..40
+                "Ccccccc Cccccccc CCCCCCCC\n"   // 41..66
+            );
+        if (ImGui::SmallButton("Pattern 2"))
+            strcpy(vars.Str1,
+                "Aaaaa Aaaaa AAAAA\n"           //  0..17
+                "  Bbbbbbbbb Bbbbbb BBBBB\n"    // 18..42
+                "Ccccccccc Cccccccc CCCCCC\n"   // 43..58
+            );
+
+        ImGui::DragFloat("Width", &vars.Width, 1.0f, 0.0f, 200.0f);
+
+        ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, { 0.0f, 0.0f });
+        ImGuiInputTextFlags input_text_flags = ImGuiInputTextFlags_WordWrap;
+        ImGui::SetNextItemWidth(vars.Width);
+        ImGui::InputTextMultiline("Field", vars.Str1, IM_ARRAYSIZE(vars.Str1), ImVec2(0, 0), input_text_flags);
+        ImGui::PopStyleVar();
+
+        if (ImGuiInputTextState* state = ImGui::GetInputTextState(ImGui::GetItemID()))
+        {
+            ImGui::Text("Cursor %d/%d", state->GetCursorPos(), state->TextLen);
+            ImGui::Text("LineCount: %d", state->LineCount);
+            ImGui::Text("LastMoveLR: %d", state->LastMoveDirectionLR);
+            ImGui::Text("PreferredX: %.0f", state->GetPreferredOffsetX());
+        }
+
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiTestGenericVars& vars = ctx->GenericVars;
+        vars.Width = ImGui::CalcTextSize("Ccccccc Cccccccc CCCCCCCC").x + 10.0f + ImGui::GetStyle().ScrollbarSize;
+
+        ctx->SetRef("Test Window");
+        ctx->ItemClick("Pattern 1");
+        ctx->ItemClick("Field");
+
+        // ALL UP/DOWN KEYS USAGE ARE ASSUMING A MONOSPACE FONT
+
+        // [No wrapping yet]
+        // Aaaaa Aaaaa AAAAA           //  0..17
+        //   Bbbbbb Bbbbbb BBBBBB      // 18..40
+        // Ccccccc Cccccccc CCCCCCCC   // 41..66
+        ImGuiInputTextState* state = ImGui::GetInputTextState(ctx->GetID("Field"));
+        IM_CHECK(state != NULL);
+        IM_CHECK_EQ(state->GetCursorPos(), 67);
+        ctx->KeyPress(ImGuiKey_Home);
+        IM_CHECK_EQ(state->GetCursorPos(), 67);
+        ctx->KeyPress(ImGuiKey_LeftArrow);
+        IM_CHECK_EQ(state->GetCursorPos(), 66);
+        ctx->KeyPress(ImGuiKey_Home);
+        IM_CHECK_EQ(state->GetCursorPos(), 41);
+        ctx->KeyPress(ImGuiKey_Home);
+        IM_CHECK_EQ(state->GetCursorPos(), 41);
+        ctx->KeyPress(ImGuiKey_LeftArrow);
+        IM_CHECK_EQ(state->GetCursorPos(), 40); // after last B
+        ctx->KeyPress(ImGuiKey_DownArrow);
+        IM_CHECK_EQ(state->GetCursorPos(), 66 - 3); // assume monospace font
+        ctx->KeyPress(ImGuiKey_UpArrow);
+        IM_CHECK_EQ(state->GetCursorPos(), 40); // after last B
+        ctx->KeyPress(ImGuiKey_UpArrow);
+        IM_CHECK_EQ(state->GetCursorPos(), 17); // after last A
+
+        // [Wrapping 1]
+        // Aaaaa Aaaaa AAAAA    //  0..17
+        //   Bbbbbb Bbbbbb_     // 18..34
+        // BBBBBB               // 34..40
+        // Ccccccc Cccccccc_    // 41..58
+        // CCCCCCCC             // 58..66
+        vars.Width = ImGui::CalcTextSize("Aaaaa Aaaaa AAAAA ").x + ImGui::GetStyle().ScrollbarSize;
+        ctx->Yield(2);
+        ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_End);
+        ctx->KeyPress(ImGuiKey_LeftArrow);
+        IM_CHECK_EQ(state->GetCursorPos(), 66);
+        ctx->KeyPress(ImGuiKey_Home);
+        IM_CHECK_EQ(state->GetCursorPos(), 58);
+        ctx->KeyPress(ImGuiKey_Home);
+        IM_CHECK_EQ(state->GetCursorPos(), 41);
+        ctx->KeyPress(ImGuiKey_Home);
+        IM_CHECK_EQ(state->GetCursorPos(), 41);
+        ctx->KeyPress(ImGuiKey_End);
+        IM_CHECK_EQ(state->GetCursorPos(), 57+1); //58  // After second "Ccccccc" *before* space.
+        ctx->KeyPress(ImGuiKey_LeftArrow);
+        ctx->KeyPress(ImGuiKey_End);
+        IM_CHECK_EQ(state->GetCursorPos(), 57+1); //58
+        ctx->KeyPress(ImGuiKey_End);
+        IM_CHECK_EQ(state->GetCursorPos(), 66);
+        ctx->KeyPress(ImGuiKey_UpArrow);
+        IM_CHECK_EQ(state->GetCursorPos(), 40+1+8); // After first "Ccccccc"
+        ctx->KeyPress(ImGuiKey_UpArrow);
+        IM_CHECK_EQ(state->GetCursorPos(), 40); // after last B
+        ctx->KeyPress(ImGuiKey_UpArrow);
+        IM_CHECK_EQ(state->GetCursorPos(), 17+1+8); // after first "  Bbbbbb"
+
+        ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_Home);
+        IM_CHECK_EQ(state->GetCursorPos(), 0);
+        ctx->KeyPress(ImGuiKey_End);
+        IM_CHECK_EQ(state->GetCursorPos(), 17); // after last "AAAAA"
+        ctx->KeyPress(ImGuiKey_DownArrow);
+        IM_CHECK_EQ(state->GetCursorPos(), 34); // after mid "Bbbbb_"
+        ctx->KeyPress(ImGuiKey_UpArrow);
+        IM_CHECK_EQ(state->GetCursorPos(), 17); // back
+
+        ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_End);
+        IM_CHECK_EQ(state->GetCursorPos(), 67);
+        IM_CHECK_EQ(state->GetPreferredOffsetX(), -1.0f);
+        IM_CHECK_EQ(state->LastMoveDirectionLR, ImGuiDir_Right);
+        ctx->KeyPress(ImGuiKey_UpArrow);
+        IM_CHECK_EQ(state->GetCursorPos(), 58);
+        IM_CHECK_EQ(state->GetPreferredOffsetX(), 0.0f);
+        IM_CHECK_EQ(state->LastMoveDirectionLR, ImGuiDir_Left);
+
+        ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_Home);
+        IM_CHECK_EQ(state->GetCursorPos(), 0);
+        IM_CHECK_EQ(state->GetPreferredOffsetX(), -1.0f);
+        IM_CHECK_EQ(state->LastMoveDirectionLR, ImGuiDir_Left);
+        ctx->KeyPress(ImGuiKey_DownArrow);
+        IM_CHECK_EQ(state->GetCursorPos(), 18);
+        IM_CHECK_EQ(state->LastMoveDirectionLR, ImGuiDir_Left);
+        ctx->KeyPress(ImGuiKey_DownArrow);
+        IM_CHECK_EQ(state->GetCursorPos(), 34);
+        IM_CHECK_EQ(state->LastMoveDirectionLR, ImGuiDir_Left);
+        ctx->KeyPress(ImGuiKey_UpArrow);
+        IM_CHECK_EQ(state->GetCursorPos(), 18);
+        state->LastMoveDirectionLR = ImGuiDir_Right;
+        ctx->KeyPress(ImGuiKey_DownArrow);
+        IM_CHECK_EQ(state->GetCursorPos(), 34);
+        IM_CHECK_EQ(state->LastMoveDirectionLR, ImGuiDir_Left);
+
+        // [Wrapping 2]
+        // Aaaaa_    //  0..6
+        // Aaaaa_    //  6..12
+        // AAAAA     // 12..17
+        // __Bbbbbb  // 18..26
+        // _Bbbbbb   // 26..34
+        // BBBBBB    // 34..40
+        // Ccccccc_  // 41..49
+        // Cccccccc  // 49..57
+        // _CCCCCCCC // 57..66
+        vars.Width = ImGui::CalcTextSize("Aaaaa    ").x + ImGui::GetStyle().ScrollbarSize;
+        ctx->Yield(2);
+        ctx->ItemClick("Field");
+        ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_Home);
+        IM_CHECK_EQ(state->GetCursorPos(), 0);
+        ctx->KeyPress(ImGuiKey_DownArrow);
+        IM_CHECK_EQ(state->GetCursorPos(), 6);
+        ctx->KeyPress(ImGuiKey_End);
+        IM_CHECK_EQ(state->GetCursorPos(), 12); // On wrapping-point
+        IM_CHECK_EQ(state->LastMoveDirectionLR, ImGuiDir_Right);
+        ctx->KeyPress(ImGuiKey_DownArrow);
+        IM_CHECK_EQ(state->GetCursorPos(), 17);
+        ctx->KeyPress(ImGuiKey_Home);
+        IM_CHECK_EQ(state->GetCursorPos(), 12); // On wrapping-point
+        IM_CHECK_EQ(state->LastMoveDirectionLR, ImGuiDir_Left);
+        ctx->KeyPress(ImGuiKey_Home);
+        IM_CHECK_EQ(state->GetCursorPos(), 0);
+
+        // [Wrapping 3]
+        // Aaaaa Aaaaa AAAAA
+        //   Bbbbbbbbb Bbbbbb BBBBB
+        // Ccccccccc Cccccccc CCCCCC
+        // ->
+        // Aaaaa Aaaaa AAAAA    //  0..17
+        //   Bbbbbbbbb_         // 18..30
+        // Bbbbbb BBBBB         // 30..42
+        // Ccccccccc_           // 43..53
+        // Cccccccc CCCCCC      // 53..68
+        vars.Width = ImGui::CalcTextSize("Aaaaa Aaaaa AAAAA").x + 4 + ImGui::GetStyle().ScrollbarSize;
+        ctx->ItemClick("Pattern 2");
+        ctx->Yield(2);
+        ctx->ItemClick("Field");
+        ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_Home);
+        IM_CHECK_EQ(state->GetCursorPos(), 0);
+        ctx->KeyPress(ImGuiKey_End);
+        IM_CHECK_EQ(state->GetCursorPos(), 17);
+        ctx->KeyPress(ImGuiKey_DownArrow);
+        IM_CHECK_EQ(state->GetCursorPos(), 30);
+        ctx->KeyPress(ImGuiKey_DownArrow);
+        IM_CHECK_EQ(state->GetCursorPos(), 42);
+        ctx->KeyPress(ImGuiKey_DownArrow);
+        IM_CHECK_EQ(state->GetCursorPos(), 53);
+        ctx->KeyPress(ImGuiKey_DownArrow);
+        IM_CHECK_EQ(state->GetCursorPos(), 68);
+        ctx->KeyPress(ImGuiKey_DownArrow);
+        IM_CHECK_EQ(state->GetCursorPos(), 69); // \n
+        ctx->KeyPress(ImGuiKey_UpArrow);
+        IM_CHECK_EQ(state->GetCursorPos(), 68);
+        ctx->KeyPress(ImGuiKey_UpArrow);
+        IM_CHECK_EQ(state->GetCursorPos(), 53);
+        ctx->KeyPress(ImGuiKey_UpArrow);
+        IM_CHECK_EQ(state->GetCursorPos(), 42);
+        ctx->KeyPress(ImGuiKey_UpArrow);
+        IM_CHECK_EQ(state->GetCursorPos(), 30);
+        ctx->KeyPress(ImGuiKey_UpArrow);
+        IM_CHECK_EQ(state->GetCursorPos(), 17);
+        ctx->KeyPress(ImGuiKey_UpArrow);
+        IM_CHECK_EQ(state->GetCursorPos(), 17);
+    };
+#endif
 }
 
 #if IMGUI_VERSION_NUM < 19143
