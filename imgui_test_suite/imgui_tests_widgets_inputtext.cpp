@@ -1386,7 +1386,8 @@ void RegisterTests_WidgetsInputText(ImGuiTestEngine* e)
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
-        ImGui::InputText("Field", "", 0);
+        char buf[1] = "";
+        ImGui::InputText("Field", buf, 0);
         ImGui::End();
     };
     t->TestFunc = [](ImGuiTestContext* ctx)
