@@ -593,7 +593,7 @@ void RegisterTests_WidgetsInputText(ImGuiTestEngine* e)
             SetCursorPosition(cursor_pos_begin_of_last_line); ctx->KeyPress(ImGuiKey_LeftArrow);
             IM_CHECK_EQ(stb.cursor, cursor_pos_begin_of_last_line - 1);
             SetCursorPosition(cursor_pos_begin_of_last_line); ctx->KeyPress(ImGuiKey_DownArrow);
-#ifdef IMGUI_HAS_INPUTTEXT_WORDWRAP
+#if IMGUI_VERSION_NUM >= 19224
             IM_CHECK_EQ(stb.cursor, has_trailing_line_feed ? eof : cursor_pos_end_of_last_line);
 #else
             IM_CHECK_EQ(stb.cursor, has_trailing_line_feed ? eof : cursor_pos_begin_of_last_line); // for has_trailing_line_feed==false, this is handled by a custom check in the STB_TEXTEDIT_K_DOWN handler.
@@ -647,7 +647,7 @@ void RegisterTests_WidgetsInputText(ImGuiTestEngine* e)
             ctx->KeyPress(ImGuiKey_PageDown);
             IM_CHECK_EQ(stb.cursor, cursor_pos_middle_of_first_line + char_count_per_line * page_size * 2);
             ctx->KeyPress(ImGuiKey_PageDown);
-#ifdef IMGUI_HAS_INPUTTEXT_WORDWRAP
+#if IMGUI_VERSION_NUM >= 19224
             IM_CHECK_EQ(stb.cursor, eof);
 #else
             IM_CHECK_EQ(stb.cursor, has_trailing_line_feed ? eof : eof - (char_count_per_line / 2) + 1);
