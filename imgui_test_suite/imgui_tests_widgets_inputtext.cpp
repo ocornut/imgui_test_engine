@@ -1417,6 +1417,77 @@ void RegisterTests_WidgetsInputText(ImGuiTestEngine* e)
         ctx->KeyCharsAppendEnter("barrr");
     };
 
+    // ## Test reverting with an InputText widget with user a buffer on stack. (#8915)
+    t = IM_REGISTER_TEST(e, "widgets", "widgets_inputtext_temp_buffer_2");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        auto& vars = ctx->GenericVars;
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+
+        int& i_stored = vars.Int1;
+        int& i_tmp = vars.Int2;
+        i_tmp = i_stored;
+        if (ImGui::InputInt("Field1", &i_tmp))
+            if (ImGui::IsItemDeactivatedAfterEdit())
+                i_stored = i_tmp;
+
+        char* s_stored = vars.Str1;
+        char* s_tmp = vars.Str2;
+        int s_bufsize = IM_ARRAYSIZE(vars.Str1);
+        memcpy(s_tmp, s_stored, s_bufsize);
+        if (ImGui::InputText("Field2", s_tmp, s_bufsize, vars.InputTextFlags))
+            if (ImGui::IsItemDeactivatedAfterEdit())
+                memcpy(s_stored, s_tmp, s_bufsize);
+
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        auto& vars = ctx->GenericVars;
+        ctx->SetRef("Test Window");
+
+        int& i_stored = vars.Int1;
+        int& i_tmp = vars.Int2;
+        ctx->ItemClick("Field1");
+        ctx->KeyCharsReplaceEnter("123");
+        IM_CHECK_EQ(i_stored, 123);
+        ctx->ItemClick("Field1");
+        ctx->KeyCharsReplace("200");
+        IM_CHECK_EQ(i_stored, 123);
+        IM_CHECK_EQ(i_tmp, 200);
+        ctx->KeyPress(ImGuiKey_Escape);
+#if IMGUI_VERSION_NUM >= 19225
+        IM_CHECK_EQ(i_stored, 123);
+#endif
+        IM_CHECK_EQ(i_tmp, 123);
+
+        for (int n = 0; n < 3; n++)
+        {
+            vars.InputTextFlags = (n == 0) ? ImGuiInputTextFlags_None : ImGuiInputTextFlags_EscapeClearsAll;
+            ctx->Yield();
+
+            char* s_stored = vars.Str1;
+            char* s_tmp = vars.Str2;
+            ctx->ItemClick("Field2");
+
+            const char* s_step1 = (n == 0 || n == 1) ? "abc" : "";
+            ctx->KeyCharsReplaceEnter(s_step1);
+            IM_CHECK_STR_EQ(s_stored, s_step1);
+            ctx->ItemClick("Field2");
+            ctx->KeyCharsReplace("fff");
+            IM_CHECK_STR_EQ(s_stored, s_step1);
+            IM_CHECK_STR_EQ(s_tmp, "fff");
+            ctx->KeyPress(ImGuiKey_Escape);
+#if IMGUI_VERSION_NUM >= 19225
+            IM_CHECK_STR_EQ(s_stored, s_step1);
+#endif
+            if (vars.InputTextFlags & ImGuiInputTextFlags_EscapeClearsAll)
+                IM_CHECK_STR_EQ(s_tmp, "");
+            else
+                IM_CHECK_STR_EQ(s_tmp, s_step1);
+        }
+    };
+
     // ## Test InputText clipboard functions.
     t = IM_REGISTER_TEST(e, "widgets", "widgets_inputtext_clipboard");
     t->GuiFunc = [](ImGuiTestContext* ctx)
