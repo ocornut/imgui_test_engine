@@ -539,7 +539,7 @@ void RegisterTests_WidgetsInputText(ImGuiTestEngine* e)
         ImGuiInputTextState* state = ImGui::GetInputTextState(ctx->GetID("Field"));
         IM_CHECK(state != NULL);
         ImStb::STB_TexteditState& stb = *state->Stb;
-#ifdef IMGUI_HAS_INPUTTEXT_WORDWRAP
+#if IMGUI_VERSION_NUM >= 19226
         IM_CHECK_EQ(state->LineCount, vars.LineCount);
 #endif
         //vars.Cursor = stb.cursor;
@@ -1902,8 +1902,8 @@ void RegisterTests_WidgetsInputText(ImGuiTestEngine* e)
         }
     };
 
-#ifdef IMGUI_HAS_INPUTTEXT_WORDWRAP
-    // ## Test word-wrapping ImGuiInputTextFlags_WordWrap  #3237 #952 #1062
+#if IMGUI_VERSION_NUM >= 19226
+    // ## Test word-wrapping ImGuiInputTextFlags_WordWrap (#3237 #952 #1062)
     t = IM_REGISTER_TEST(e, "widgets", "widgets_inputtext_wordwrap_1");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
