@@ -5990,16 +5990,12 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
         ctx->SetRef("Dear ImGui Demo");
         ctx->MenuCheck("Tools/Style Editor");
 
-        ImFont* font_backup = ImGui::GetFont();
         ImGuiTestRef ref_window = "Dear ImGui Style Editor";
         ctx->SetRef(ref_window);
         ctx->ComboClickAll("Fonts##Selector");
-        ImGui::GetIO().FontDefault = font_backup;
 
-        ImGuiStyle style_backup = ImGui::GetStyle();
         ctx->SetRef(ref_window);
         ctx->ComboClickAll("Colors##Selector");
-        ImGui::GetStyle() = style_backup;
     };
 
     // ## Coverage: exercice some actions in ColorEditOptionsPopup() and ColorPickerOptionsPopup(
