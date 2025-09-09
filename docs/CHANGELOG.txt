@@ -5,6 +5,10 @@ CHANGELOG
    Those changes are not all listed here.
 ** For a while this is going to ONLY INCLUDE BREAKING CHANGES.
 
+2025/09/09:
+- TestEngine: fixed ctx->ComboXXX functions for cases where the Combo selectables are
+  using ImGuiSelectableFlags_NoAutoClosePopups or setting ImGuiItemFlags_AutoClosePopups=false.
+
 2025/08/22:
 - TestEngine: fixed issues interaction with clipped table headers.
 - TestEngine: added ctx->ScrollToPos(), ScrollToPosX(), ScrollToPosY() helpers.
