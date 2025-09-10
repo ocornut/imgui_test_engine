@@ -2329,6 +2329,41 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         }
     };
 
+    // ## Tests: test TabBarQueueFocus() on appearing frame (#8929, #6681)
+#if IMGUI_VERSION_NUM >= 19227
+    t = IM_REGISTER_TEST(e, "widgets", "widgets_tabbar_focus_tab_on_first_frame");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        auto& vars = ctx->GenericVars;
+
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+
+        // Forcefully clear existing data, if any
+        if (ctx->IsFirstGuiFrame())
+            if (ImGuiTabBar* tab_bar = ImGui::TabBarFindByID(ImGui::GetID("##TabBar")))
+                ImGui::TabBarRemove(tab_bar);
+
+        if (ImGui::BeginTabBar("##TabBar"))
+        {
+            if (vars.Bool1 == false)
+            {
+                // Focus once
+                ImGui::TabBarQueueFocus(ImGui::GetCurrentTabBar(), "BBB");
+                vars.Bool1 = true;
+            }
+            if (ImGui::BeginTabItem("AAA"))
+                ImGui::EndTabItem();
+            if (ImGui::BeginTabItem("BBB"))
+                ImGui::EndTabItem();
+            if (ImGui::BeginTabItem("CCC"))
+                ImGui::EndTabItem();
+            IM_CHECK_EQ(ImGui::GetCurrentTabBar()->SelectedTabId, ImGui::GetID("BBB")); // GuiFunc without TestFunc will run for 2 frames
+            ImGui::EndTabBar();
+        }
+        ImGui::End();
+    };
+#endif
+
     // ## Test various TreeNode flags
     t = IM_REGISTER_TEST(e, "widgets", "widgets_treenode_behaviors");
     struct TreeNodeTestVars
