@@ -5289,11 +5289,17 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
             int new_size = buf.size();
             index.append(buf.c_str(), old_size, new_size);
         };
-        IM_CHECK(index.LineOffsets.Data == NULL); // Check no allocation
+#if IMGUI_VERSION_NUM < 19227
+#define Offsets LineOffsets
+#endif
+        IM_CHECK(index.Offsets.Data == NULL); // Check no allocation
         IM_CHECK_EQ(index.size(), 0);
         f_append("");
-        IM_CHECK(index.LineOffsets.Data == NULL); // Check no allocation
+        IM_CHECK(index.Offsets.Data == NULL); // Check no allocation
         IM_CHECK_EQ(index.size(), 0);
+#if IMGUI_VERSION_NUM < 19227
+#undef Offsets
+#endif
 
         f_append("hel");
         IM_CHECK_EQ(index.size(), 1);
