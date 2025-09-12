@@ -999,6 +999,7 @@ ImGuiApp* ImGuiApp_ImplSdlGL3_Create()
 #include "imgui_impl_opengl3.h"
 #define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
+#undef Status
 
 // Data
 struct ImGuiApp_ImplGlfwGL3 : public ImGuiApp
