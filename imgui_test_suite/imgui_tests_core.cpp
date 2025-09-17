@@ -1747,6 +1747,24 @@ void RegisterTests_Window(ImGuiTestEngine* e)
     };
 #endif
 
+#if IMGUI_VERSION_NUM >= 19229
+    // ## Test opening a popup from a shortcut. In particular this repros a crash bug fixed in 1.92.3 in NavCalcPreferredRefPos().
+    t = IM_REGISTER_TEST(e, "window", "window_popup_from_shortcut");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::SetNextItemShortcut(ImGuiMod_Ctrl | ImGuiKey_F1, ImGuiInputFlags_RouteGlobal);
+        if (ImGui::Button("Open"))
+            ImGui::OpenPopup("blah");
+        if (ImGui::BeginPopup("blah"))
+            ImGui::EndPopup();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::FocusWindow(NULL);
+        ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_F1);
+    };
+#endif
+
 #if IMGUI_VERSION_NUM >= 18611
     // ## Test immediate window creation after modal opens. (#4920)
     t = IM_REGISTER_TEST(e, "window", "window_modal_begin_after");
