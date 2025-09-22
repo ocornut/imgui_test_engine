@@ -8,6 +8,7 @@ CHANGELOG
 2025/09/22:
 - TestEngine: added test_io.ConfigLogToFunc hook to serially log all output (rather than
   peeking into the individual log output of each test).
+- TestEngine: using ImGuiTestFlags_NoRecoveryWarnings also mute log.
 
 2025/09/09:
 - TestEngine: fixed ctx->ComboXXX functions for cases where the Combo selectables are
