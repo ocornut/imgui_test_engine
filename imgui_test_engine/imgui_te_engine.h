@@ -367,8 +367,10 @@ struct IMGUI_API ImGuiTestLog
 
     // Functions
     ImGuiTestLog() {}
-    bool    IsEmpty() const         { return Buffer.empty(); }
-    void    Clear();
+    bool        IsEmpty() const     { return Buffer.empty(); }
+    const char* GetText()           { return Buffer.c_str(); }
+    int         GetTextLen()        { return Buffer.size(); }
+    void        Clear();
 
     // Extract log contents filtered per log-level.
     // Output:
