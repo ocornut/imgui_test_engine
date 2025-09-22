@@ -5,6 +5,10 @@ CHANGELOG
    Those changes are not all listed here.
 ** For a while this is going to ONLY INCLUDE BREAKING CHANGES.
 
+2025/09/22:
+- TestEngine: added test_io.ConfigLogToFunc hook to serially log all output (rather than
+  peeking into the individual log output of each test).
+
 2025/09/09:
 - TestEngine: fixed ctx->ComboXXX functions for cases where the Combo selectables are
   using ImGuiSelectableFlags_NoAutoClosePopups or setting ImGuiItemFlags_AutoClosePopups=false.
