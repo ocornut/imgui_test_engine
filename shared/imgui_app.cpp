@@ -266,7 +266,7 @@ ImGuiApp* ImGuiApp_ImplNull_Create()
 #ifdef IMGUI_HAS_VIEWPORT
     intf->ShutdownBackends      = [](ImGuiApp* app) { IM_UNUSED(app); ImGui::DestroyPlatformWindows(); };
 #else
-    intf->ShutdownCloseWindow   = [](ImGuiApp* app) { IM_UNUSED(app); };
+    intf->ShutdownBackends      = [](ImGuiApp* app) { IM_UNUSED(app); };
 #endif
     intf->CaptureFramebuffer    = ImGuiApp_ImplNull_CaptureFramebuffer;
     intf->Destroy               = [](ImGuiApp* app) { delete (ImGuiApp_ImplNull*)app; };
