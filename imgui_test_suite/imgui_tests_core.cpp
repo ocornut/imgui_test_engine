@@ -4193,6 +4193,31 @@ void RegisterTests_Fonts(ImGuiTestEngine* e)
         IM_CHECK(ret == false);
     };
 #endif
+
+    // ## Basic exercising of sharing an atlas between multiple contexts.
+#if IMGUI_VERSION_NUM >= 19234
+    t = IM_REGISTER_TEST(e, "font", "font_atlas_shared");
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiContext* ui_ctx[3];
+        ui_ctx[0] = ImGui::CreateContext();
+        ui_ctx[1] = ImGui::CreateContext(ui_ctx[0]->IO.Fonts);
+        ui_ctx[2] = ImGui::CreateContext(ui_ctx[0]->IO.Fonts);
+        for (int n = 0; n < 3; n++)
+        {
+            // FIXME-TESTS: Would be nice to standardize the Null Backend
+            ImGui::SetCurrentContext(ui_ctx[n]);
+            ui_ctx[n]->IO.BackendFlags |= ImGuiBackendFlags_RendererHasTextures;
+            ui_ctx[n]->IO.DisplaySize = ImVec2(900, 900);
+            ImGui::NewFrame();
+        }
+        for (int n = 0; n < 3; n++)
+        {
+            ImGui::SetCurrentContext(ui_ctx[n]);
+            ImGui::DestroyContext();
+        }
+    };
+#endif
 }
 
 //-------------------------------------------------------------------------
