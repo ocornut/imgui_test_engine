@@ -5,6 +5,9 @@ CHANGELOG
    Those changes are not all listed here.
 ** For a while this is going to ONLY INCLUDE BREAKING CHANGES.
 
+2025/10/01:
+- TestEngine: fixed recovering from situation where TestFunc changed current context.
+
 2025/09/22:
 - TestEngine: added test_io.ConfigLogToFunc hook to serially log all output (rather than
   peeking into the individual log output of each test).
