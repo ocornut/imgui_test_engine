@@ -655,8 +655,8 @@ template<> inline void ImGuiTestEngineUtil_appendf_auto(ImGuiTextBuffer* buf, Im
 // Floating point compares using an epsilon
 #define IM_CHECK_FLOAT_EQ(_LHS, _RHS)               IM_CHECK_FLOAT_OP_CUSTOM(_LHS, _RHS, ==, (ImFabs(__lhs-__rhs) <= FLT_EPSILON), true)    // Float Equal (w/ epsilon)
 #define IM_CHECK_FLOAT_NE(_LHS, _RHS)               IM_CHECK_FLOAT_OP_CUSTOM(_LHS, _RHS, !=, (ImFabs(__lhs-__rhs) >  FLT_EPSILON), true)    // Float Not Equal (w/ epsilon)
-#define IM_CHECK_DOUBLE_EQ(_LHS, _RHS)              IM_CHECK_FLOAT_OP_CUSTOM(_LHS, _RHS, ==, (ImFabs(__lhs-__rhs) <= DBL_EPSILON), true)    // Float Equal (w/ epsilon)
-#define IM_CHECK_DOUBLE_NE(_LHS, _RHS)              IM_CHECK_FLOAT_OP_CUSTOM(_LHS, _RHS, !=, (ImFabs(__lhs-__rhs) >  DBL_EPSILON), true)    // Double Not Equal (w/ epsilon)
+#define IM_CHECK_DOUBLE_EQ(_LHS, _RHS)              IM_CHECK_FLOAT_OP_CUSTOM(_LHS, _RHS, ==, (fabs(__lhs-__rhs) <= DBL_EPSILON), true)      // Double Equal (w/ epsilon)
+#define IM_CHECK_DOUBLE_NE(_LHS, _RHS)              IM_CHECK_FLOAT_OP_CUSTOM(_LHS, _RHS, !=, (fabs(__lhs-__rhs) >  DBL_EPSILON), true)      // Double Not Equal (w/ epsilon)
 
 #ifndef IMGUI_DISABLE_OBSOLETE_FUNCTIONS
 // Obsoleted in favor of simpler names
