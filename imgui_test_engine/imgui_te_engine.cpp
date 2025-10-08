@@ -2379,10 +2379,10 @@ void ImGuiTestEngine_AssertLog(const char* expr, const char* file, const char* f
 // Used by IM_CHECK_OP() macros
 ImGuiTextBuffer* ImGuiTestEngine_GetTempStringBuilder()
 {
-    static ImGuiTextBuffer builder;
-    builder.Buf.resize(1);
-    builder.Buf[0] = 0;
-    return &builder;
+    ImGuiTestEngine* engine = GImGuiTestEngine;
+    engine->StringBuilderForChecks.Buf.resize(1);
+    engine->StringBuilderForChecks.Buf[0] = 0;
+    return &engine->StringBuilderForChecks;
 }
 
 // Out of convenience for main library we allow this to be called before TestEngine is initialized.
