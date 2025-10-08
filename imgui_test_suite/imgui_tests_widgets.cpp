@@ -508,12 +508,12 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ctx->ItemInput("Color##Y");
         IM_CHECK_EQ(ctx->UiContext->ActiveId, ctx->GetID("Color##Y"));
         ctx->KeyCharsAppend("123");
-        IM_CHECK_FLOAT_EQ_EPS(vars.Color1.y, 123.0f / 255.0f);
+        IM_CHECK_FLOAT_EQ(vars.Color1.y, 123.0f / 255.0f);
         ctx->KeyPress(ImGuiKey_Tab);
         ctx->KeyCharsAppendEnter("200");
-        IM_CHECK_FLOAT_EQ_EPS(vars.Color1.x,   0.0f / 255.0f);
-        IM_CHECK_FLOAT_EQ_EPS(vars.Color1.y, 123.0f / 255.0f);
-        IM_CHECK_FLOAT_EQ_EPS(vars.Color1.z, 200.0f / 255.0f);
+        IM_CHECK_FLOAT_EQ(vars.Color1.x,   0.0f / 255.0f);
+        IM_CHECK_FLOAT_EQ(vars.Color1.y, 123.0f / 255.0f);
+        IM_CHECK_FLOAT_EQ(vars.Color1.z, 200.0f / 255.0f);
     };
 
 #if IMGUI_VERSION_NUM >= 19161
@@ -6317,32 +6317,32 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
 
         ImGui::BeginDisabled();
         IM_CHECK((g.CurrentItemFlags & ImGuiItemFlags_Disabled) != 0);
-        IM_CHECK_FLOAT_EQ_EPS(ImGui::GetStyle().Alpha, 1.0f * 0.4f);
+        IM_CHECK_FLOAT_EQ(ImGui::GetStyle().Alpha, 1.0f * 0.4f);
 
         ImGui::Begin("Nested window call");
 #if IMGUI_VERSION_NUM >= 19085
         IM_CHECK((g.CurrentItemFlags & ImGuiItemFlags_Disabled) != 0);
-        IM_CHECK_FLOAT_NE_EPS(ImGui::GetStyle().Alpha, 1.0f);
+        IM_CHECK_FLOAT_NE(ImGui::GetStyle().Alpha, 1.0f);
 #else
         IM_CHECK((g.CurrentItemFlags & ImGuiItemFlags_Disabled) == 0);
-        IM_CHECK_FLOAT_EQ_EPS(ImGui::GetStyle().Alpha, 1.0f);
+        IM_CHECK_FLOAT_EQ(ImGui::GetStyle().Alpha, 1.0f);
 #endif
 
         ImGui::End();
         IM_CHECK((g.CurrentItemFlags & ImGuiItemFlags_Disabled) != 0);
-        IM_CHECK_FLOAT_EQ_EPS(ImGui::GetStyle().Alpha, 1.0f * 0.4f);
+        IM_CHECK_FLOAT_EQ(ImGui::GetStyle().Alpha, 1.0f * 0.4f);
 
         ImGui::BeginChild("Nested Child", ImVec2(200, 200));
         IM_CHECK((g.CurrentItemFlags & ImGuiItemFlags_Disabled) != 0);
-        IM_CHECK_FLOAT_EQ_EPS(ImGui::GetStyle().Alpha, 1.0f * 0.4f);
+        IM_CHECK_FLOAT_EQ(ImGui::GetStyle().Alpha, 1.0f * 0.4f);
 
         ImGui::EndChild();
         IM_CHECK((g.CurrentItemFlags & ImGuiItemFlags_Disabled) != 0);
-        IM_CHECK_FLOAT_EQ_EPS(ImGui::GetStyle().Alpha, 1.0f * 0.4f);
+        IM_CHECK_FLOAT_EQ(ImGui::GetStyle().Alpha, 1.0f * 0.4f);
 
         ImGui::EndDisabled();
         IM_CHECK((g.CurrentItemFlags & ImGuiItemFlags_Disabled) == 0);
-        IM_CHECK_FLOAT_EQ_EPS(ImGui::GetStyle().Alpha, 1.0f);
+        IM_CHECK_FLOAT_EQ(ImGui::GetStyle().Alpha, 1.0f);
 
         ImGui::End();
         ImGui::PopStyleVar();

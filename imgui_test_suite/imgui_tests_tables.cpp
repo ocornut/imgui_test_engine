@@ -1087,9 +1087,9 @@ void RegisterTests_Table(ImGuiTestEngine* e)
                 }
                 if (sizing_policy == ImGuiTableFlags_SizingStretchProp)
                 {
-                    IM_CHECK_FLOAT_EQ_EPS(table2->Columns[1].StretchWeight / table2->Columns[0].StretchWeight, ImGui::CalcTextSize("BBBBBBBB").x / ImGui::CalcTextSize("AAAA").x);
-                    IM_CHECK_FLOAT_EQ_EPS(table2->Columns[2].StretchWeight / table2->Columns[0].StretchWeight, ImGui::CalcTextSize("CCCCCCCCCCCC").x / ImGui::CalcTextSize("AAAA").x);
-                    IM_CHECK_FLOAT_EQ_EPS(table2->Columns[2].StretchWeight / table2->Columns[1].StretchWeight, ImGui::CalcTextSize("CCCCCCCCCCCC").x / ImGui::CalcTextSize("BBBBBBBB").x);
+                    IM_CHECK_FLOAT_EQ(table2->Columns[1].StretchWeight / table2->Columns[0].StretchWeight, ImGui::CalcTextSize("BBBBBBBB").x / ImGui::CalcTextSize("AAAA").x);
+                    IM_CHECK_FLOAT_EQ(table2->Columns[2].StretchWeight / table2->Columns[0].StretchWeight, ImGui::CalcTextSize("CCCCCCCCCCCC").x / ImGui::CalcTextSize("AAAA").x);
+                    IM_CHECK_FLOAT_EQ(table2->Columns[2].StretchWeight / table2->Columns[1].StretchWeight, ImGui::CalcTextSize("CCCCCCCCCCCC").x / ImGui::CalcTextSize("BBBBBBBB").x);
                 }
             }
 

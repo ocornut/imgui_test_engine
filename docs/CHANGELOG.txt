@@ -9,6 +9,10 @@ CHANGELOG
 - TestEngine: IM_CHECK_FLOAT_xx compare operators using epsilon now display input values
   in the log instead of the fabs(a-b) result.
 - TestEngine: added IM_CHECK_DOUBLE_EQ, IM_CHECK_DOUBLE_NE check macros.
+- TestEngine: *BREAKING* renamed check macros as the suffix was unnecessary.
+    IM_CHECK_FLOAT_EQ_EPS --> IM_CHECK_FLOAT_EQ
+    IM_CHECK_FLOAT_NE_EPS --> IM_CHECK_FLOAT_NE.
+  Kept inline redirection macros.
 - TestEngine: *BREAKING* obsoleted IM_CHECK_FLOAT_NEAR / IM_CHECK_FLOAT_NEAR_NO_RET
   check macros which were ambiguous. Kept inline redirection macros.
     IM_CHECK_FLOAT_NEAR(A, B, 100.0f) --> IM_CHECK(fabs(a - b) <= 100.0f)
