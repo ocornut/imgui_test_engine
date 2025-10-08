@@ -8,6 +8,8 @@ CHANGELOG
 2025/10/08:
 - TestEngine: IM_CHECK_FLOAT_xx compare operators using epsilon now display input values
   in the log instead of the fabs(a-b) result.
+- TestEngine: added IM_CHECK_DOUBLE_EQ, IM_CHECK_DOUBLE_NE check macros.
+
 2025/10/01:
 - TestEngine: fixed recovering from situation where TestFunc changed current context.
 
