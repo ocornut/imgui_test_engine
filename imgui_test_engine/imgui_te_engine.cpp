@@ -1020,7 +1020,7 @@ void ImGuiTestEngine_Yield(ImGuiTestEngine* engine)
     // Can only yield in the test func!
     if (ctx)
     {
-        IM_ASSERT(ctx->ActiveFunc == ImGuiTestActiveFunc_TestFunc && "Can only yield inside TestFunc()!");
+        IM_ASSERT(ctx->ActiveFunc != ImGuiTestActiveFunc_GuiFunc && "Can only yield inside a TestFunc()!");
         for (ImGuiWindow* window : ctx->ForeignWindowsToHide)
         {
             window->HiddenFramesForRenderOnly = 2;          // Hide root window
@@ -1805,7 +1805,7 @@ void ImGuiTestEngine_RunTest(ImGuiTestEngine* engine, ImGuiTestContext* parent_c
     }
     else
     {
-        if (test->TestFunc)
+        if (test->TestFunc != nullptr)
         {
             // Test function
             test->TestFunc(ctx);
@@ -1878,6 +1878,24 @@ void ImGuiTestEngine_RunTest(ImGuiTestEngine* engine, ImGuiTestContext* parent_c
                 }
             }
         }
+    }
+
+    // Call test shutdown function (optional)
+    if (test->TeardownFunc != nullptr)
+    {
+        ctx->LogInfo("Running TestShutdownFunc:");
+        IM_ASSERT(ctx->ActiveFunc == ImGuiTestActiveFunc_GuiFunc || ctx->ActiveFunc == ImGuiTestActiveFunc_TestFunc);
+        ctx->ActiveFunc = ImGuiTestActiveFunc_TeardownFunc;
+
+        // Backup and clear status
+        // - This allow us to store temporary status during the TestShutdownFunc(), so an error in it will stop the function.
+        // - An alternative would be to test for (ActiveFunc != ImGuiTestActiveFunc_TestShutdownFunc) inside ctx->IsError() if we want to keep running.
+        // - A crash during TestShutdownFunc() would not be reported as a failed test status but well, the crash itself will be reported.
+        ImGuiTestStatus backup_status = ctx->TestOutput->Status;
+        ctx->TestOutput->Status = ImGuiTestStatus_Running;
+        test->TeardownFunc(ctx);
+        ctx->TestOutput->Status = backup_status;
+        ImGui::SetCurrentContext(ctx->UiContext);
     }
 
     IM_ASSERT(engine->CaptureCurrentArgs == nullptr && "Active capture was not terminated in the test code.");
@@ -2413,12 +2431,11 @@ bool ImGuiTestEngine_Check(const char* file, const char* func, int line, ImGuiTe
 
     if (ImGuiTestContext* ctx = engine->TestContext)
     {
-        ImGuiTest* test = ctx->Test;
         //ctx->LogDebug("IM_CHECK(%s)", expr);
         if (!result)
         {
             if (!(ctx->RunFlags & ImGuiTestRunFlags_GuiFuncOnly))
-                test->Output.Status = ImGuiTestStatus_Error;
+                ctx->TestOutput->Status = ImGuiTestStatus_Error;
 
             if (file)
                 ctx->LogError("Error %s:%d '%s'", file_without_path, line, expr);

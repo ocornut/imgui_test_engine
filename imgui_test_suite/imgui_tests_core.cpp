@@ -6776,6 +6776,22 @@ void RegisterTests_TestEngine(ImGuiTestEngine* e)
         ctx->ItemDragAndDrop("//$FOCUSED/A", "//Test Window B/B");
     };
 
+    // Test basic usage of TestTeardownFunc
+    // FIXME-TESTS: This is not actually validating that the function is running.
+    t = IM_REGISTER_TEST(e, "testengine", "testengine_teardown_func");
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ctx->SetRef("Dear ImGui Demo");
+        ctx->MenuCheck("Examples/Documents");
+        //IM_CHECK(false);
+    };
+    t->TeardownFunc = [](ImGuiTestContext* ctx)
+    {
+        ctx->SetRef("Dear ImGui Demo");
+        //ctx->MenuUncheck("Examples/Error");
+        ctx->MenuUncheck("Examples/Documents");
+    };
+
     // Test aiming at covered item in a window with NoBringToFrontOnFocus (which requires moving windows out of the way)
     t = IM_REGISTER_TEST(e, "testengine", "testengine_hover_covered_window_no_bring_to_front");
     t->GuiFunc = [](ImGuiTestContext* ctx)

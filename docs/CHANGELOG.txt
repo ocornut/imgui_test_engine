@@ -6,6 +6,8 @@ CHANGELOG
 ** For a while this is going to ONLY INCLUDE BREAKING CHANGES.
 
 2025/10/08:
+- TestEngine: added TeardownFunc facility to setup a driving function which
+  will run even if the test fails. (#82)
 - TestEngine: IM_CHECK_FLOAT_xx compare operators using epsilon now display input values
   in the log instead of the fabs(a-b) result.
 - TestEngine: added IM_CHECK_DOUBLE_EQ, IM_CHECK_DOUBLE_NE check macros.

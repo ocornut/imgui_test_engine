@@ -226,7 +226,7 @@ struct IMGUI_API ImGuiTestContext
     ImGuiContext*           UiContext = nullptr;                    // UI context
     ImGuiTestEngineIO*      EngineIO = nullptr;                     // Test Engine IO/settings
     ImGuiTest*              Test = nullptr;                         // Test currently running
-    ImGuiTestOutput*        TestOutput = nullptr;                   // Test output (generally == &Test->Output)
+    ImGuiTestOutput*        TestOutput = nullptr;                   // Test output (generally == &Test->Output while executing TestFunc)
     ImGuiTestOpFlags        OpFlags = ImGuiTestOpFlags_None;        // Flags affecting all operation (supported: ImGuiTestOpFlags_NoAutoUncollapse)
     int                     PerfStressAmount = 0;                   // Convenience copy of engine->IO.PerfStressAmount
     int                     FrameCount = 0;                         // Test frame count (restarts from zero every time)
