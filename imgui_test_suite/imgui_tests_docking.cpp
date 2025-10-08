@@ -1793,13 +1793,13 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
             if (vars.Step == 1)
             {
                 IM_CHECK(ImGui::GetWindowDockID() == dockMainId);
-                IM_CHECK_FLOAT_NEAR_NO_RET(sz.x, 1000 - 200 - 200, DOCKING_SPLITTER_SIZE * 2);
-                IM_CHECK_FLOAT_NEAR_NO_RET(sz.y, 500 - 100, DOCKING_SPLITTER_SIZE * 2);
+                IM_CHECK_NO_RET(ImFabs(sz.x - (1000 - 200 - 200)) <= DOCKING_SPLITTER_SIZE * 2);
+                IM_CHECK_NO_RET(ImFabs(sz.y - (500 - 100)) <= DOCKING_SPLITTER_SIZE * 2);
             }
             if (vars.Step == 2)
             {
-                IM_CHECK_FLOAT_NEAR_NO_RET(sz.x, 1000 - 300 - 300, DOCKING_SPLITTER_SIZE * 2);
-                IM_CHECK_FLOAT_NEAR_NO_RET(sz.y, 400 - 100, DOCKING_SPLITTER_SIZE * 2);
+                IM_CHECK_NO_RET(ImFabs(sz.x - (1000 - 300 - 300)) <= DOCKING_SPLITTER_SIZE * 2);
+                IM_CHECK_NO_RET(ImFabs(sz.y - (400 - 100)) <= DOCKING_SPLITTER_SIZE * 2);
             }
             ImGui::Text("(%.1f,%.1f)", sz.x, sz.y);
             ImGui::End();
@@ -1811,15 +1811,15 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
             if (vars.Step == 1)
             {
                 IM_CHECK(ImGui::GetWindowDockID() == dockTopRightId);
-                IM_CHECK_FLOAT_NEAR_NO_RET(sz.x, 200, DOCKING_SPLITTER_SIZE * 2);
-                IM_CHECK_FLOAT_NEAR_NO_RET(sz.y, 500, DOCKING_SPLITTER_SIZE * 2);
+                IM_CHECK_NO_RET(ImFabs(sz.x - 200) <= DOCKING_SPLITTER_SIZE * 2);
+                IM_CHECK_NO_RET(ImFabs(sz.y - 500) <= DOCKING_SPLITTER_SIZE * 2);
             }
             if (vars.Step == 2)
             {
 #if IMGUI_BROKEN_TESTS
-                IM_CHECK_FLOAT_NEAR_NO_RET(sz.x, 100, DOCKING_SPLITTER_SIZE * 2); // Docking size application is depth-first, so L|C|R will not resize neatly yet
+                IM_CHECK_NO_RET(ImFabs(sz.x - 100) <= DOCKING_SPLITTER_SIZE * 2); // Docking size application is depth-first, so L|C|R will not resize neatly yet
 #endif
-                IM_CHECK_FLOAT_NEAR_NO_RET(sz.y, 400, DOCKING_SPLITTER_SIZE * 2);
+                IM_CHECK_NO_RET(ImFabs(sz.y - 400) <= DOCKING_SPLITTER_SIZE * 2);
             }
             ImGui::Text("(%.1f,%.1f)", sz.x, sz.y);
             ImGui::End();
@@ -1831,15 +1831,15 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
             if (vars.Step == 1)
             {
                 IM_CHECK(ImGui::GetWindowDockID() == dockTopLeftId);
-                IM_CHECK_FLOAT_NEAR_NO_RET(sz.x, 200, DOCKING_SPLITTER_SIZE * 2);
-                IM_CHECK_FLOAT_NEAR_NO_RET(sz.y, 500, DOCKING_SPLITTER_SIZE * 2);
+                IM_CHECK_NO_RET((sz.x - 200) <= DOCKING_SPLITTER_SIZE * 2);
+                IM_CHECK_NO_RET((sz.y - 500) <= DOCKING_SPLITTER_SIZE * 2);
             }
             if (vars.Step == 2)
             {
 #if IMGUI_BROKEN_TESTS
-                IM_CHECK_FLOAT_NEAR_NO_RET(sz.x, 100, DOCKING_SPLITTER_SIZE * 2); // Docking size application is depth-first, so L|C|R will not resize neatly yet
+                IM_CHECK_NO_RET((sz.x - 100) <= DOCKING_SPLITTER_SIZE * 2); // Docking size application is depth-first, so L|C|R will not resize neatly yet
 #endif
-                IM_CHECK_FLOAT_NEAR_NO_RET(sz.y, 400, DOCKING_SPLITTER_SIZE * 2);
+                IM_CHECK_NO_RET((sz.y - 400) <= DOCKING_SPLITTER_SIZE * 2);
             }
             ImGui::Text("(%.1f,%.1f)", sz.x, sz.y);
             ImGui::End();
@@ -1851,11 +1851,11 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
             if (vars.Step == 1)
             {
                 IM_CHECK(ImGui::GetWindowDockID() == dockDownId);
-                IM_CHECK_FLOAT_NEAR_NO_RET(sz.y, 100, DOCKING_SPLITTER_SIZE * 2);
+                IM_CHECK_NO_RET((sz.y - 100) <= DOCKING_SPLITTER_SIZE * 2);
             }
             if (vars.Step == 2)
             {
-                IM_CHECK_FLOAT_NEAR_NO_RET(sz.y, 100, DOCKING_SPLITTER_SIZE * 2);
+                IM_CHECK_NO_RET((sz.y - 100) <= DOCKING_SPLITTER_SIZE * 2);
             }
 
             ImGui::Text("(%.1f,%.1f)", sz.x, sz.y);
