@@ -2459,7 +2459,7 @@ bool ImGuiTestEngine_CheckOpStr(const char* file, const char* func, int line, Im
         IM_ASSERT(0);
     *out_res = res;
 
-    ImGuiTextBuffer buf; // FIXME-OPT: Now we can probably remove that allocation
+    ImGuiTextBuffer* buf = ImGuiTestEngine_GetTempStringBuilder();
 
     bool lhs_is_literal = lhs_desc[0] == '\"';
     bool rhs_is_literal = rhs_desc[0] == '\"';
@@ -2472,7 +2472,7 @@ bool ImGuiTestEngine_CheckOpStr(const char* file, const char* func, int line, Im
             lhs_value_len--;
         if (rhs_value_len > 0 && rhs_value[rhs_value_len - 1] == '\n')
             rhs_value_len--;
-        buf.appendf(
+        buf->appendf(
             "\n"
             "---------------------------------------- // lhs: %s\n"
             "%.*s\n"
@@ -2488,15 +2488,13 @@ bool ImGuiTestEngine_CheckOpStr(const char* file, const char* func, int line, Im
     else
     {
         // Single line strings
-        buf.appendf(
+        buf->appendf(
             "%s [\"%s\"] %s %s [\"%s\"]",
             lhs_is_literal ? "" : lhs_desc, lhs_value,
             op,
             rhs_is_literal ? "" : rhs_desc, rhs_value);
     }
-
-
-    return ImGuiTestEngine_Check(file, func, line, flags, res, buf.c_str());
+    return ImGuiTestEngine_Check(file, func, line, flags, res, buf->c_str());
 }
 
 bool ImGuiTestEngine_Error(const char* file, const char* func, int line, ImGuiTestCheckFlags flags, const char* fmt, ...)
