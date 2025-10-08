@@ -2447,7 +2447,7 @@ bool ImGuiTestEngine_Check(const char* file, const char* func, int line, ImGuiTe
     return false;
 }
 
-bool ImGuiTestEngine_CheckStrOp(const char* file, const char* func, int line, ImGuiTestCheckFlags flags, const char* op, const char* lhs_var, const char* lhs_value, const char* rhs_var, const char* rhs_value, bool* out_res)
+bool ImGuiTestEngine_CheckOpStr(const char* file, const char* func, int line, ImGuiTestCheckFlags flags, const char* op, const char* lhs_desc, const char* lhs_value, const char* rhs_desc, const char* rhs_value, bool* out_res)
 {
     int res_strcmp = strcmp(lhs_value, rhs_value);
     bool res = 0;
@@ -2461,8 +2461,8 @@ bool ImGuiTestEngine_CheckStrOp(const char* file, const char* func, int line, Im
 
     ImGuiTextBuffer buf; // FIXME-OPT: Now we can probably remove that allocation
 
-    bool lhs_is_literal = lhs_var[0] == '\"';
-    bool rhs_is_literal = rhs_var[0] == '\"';
+    bool lhs_is_literal = lhs_desc[0] == '\"';
+    bool rhs_is_literal = rhs_desc[0] == '\"';
     if (strchr(lhs_value, '\n') != nullptr || strchr(rhs_value, '\n') != nullptr)
     {
         // Multi line strings
@@ -2479,9 +2479,9 @@ bool ImGuiTestEngine_CheckStrOp(const char* file, const char* func, int line, Im
             "---------------------------------------- // rhs: %s, compare op: %s\n"
             "%.*s\n"
             "----------------------------------------\n",
-            lhs_is_literal ? "literal" : lhs_var,
+            lhs_is_literal ? "literal" : lhs_desc,
             (int)lhs_value_len, lhs_value,
-            rhs_is_literal ? "literal" : rhs_var,
+            rhs_is_literal ? "literal" : rhs_desc,
             op,
             (int)rhs_value_len, rhs_value);
     }
@@ -2490,9 +2490,9 @@ bool ImGuiTestEngine_CheckStrOp(const char* file, const char* func, int line, Im
         // Single line strings
         buf.appendf(
             "%s [\"%s\"] %s %s [\"%s\"]",
-            lhs_is_literal ? "" : lhs_var, lhs_value,
+            lhs_is_literal ? "" : lhs_desc, lhs_value,
             op,
-            rhs_is_literal ? "" : rhs_var, rhs_value);
+            rhs_is_literal ? "" : rhs_desc, rhs_value);
     }
 
 

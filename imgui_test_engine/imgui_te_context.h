@@ -604,7 +604,7 @@ template<> inline void ImGuiTestEngineUtil_appendf_auto(ImGuiTextBuffer* buf, Im
     do                                                          \
     {                                                           \
         bool __res;                                             \
-        if (ImGuiTestEngine_CheckStrOp(__FILE__, __func__, __LINE__, _FLAGS, #_OP, #_LHS, _LHS, #_RHS, _RHS, &__res)) \
+        if (ImGuiTestEngine_CheckOpStr(__FILE__, __func__, __LINE__, _FLAGS, #_OP, #_LHS, _LHS, #_RHS, _RHS, &__res)) \
             IM_ASSERT(__res);                                   \
         if (_RETURN && !__res)                                  \
             return;                                             \
