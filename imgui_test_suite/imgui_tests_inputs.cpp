@@ -1661,6 +1661,102 @@ void RegisterTests_Inputs(ImGuiTestEngine* e)
     };
 #endif
 
+    // ## Additional tests for ImGuiInputFlags_RouteOverActive
+    // (the "inputs_routing_1" test above is too large and should be split imho)
+#if IMGUI_VERSION_NUM >= 19236
+    t = IM_REGISTER_TEST(e, "inputs", "inputs_routing_over_active");
+    t->SetVarsDataType<InputRoutingVars>();
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        auto& vars = ctx->GetVars<InputRoutingVars>();
+
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
+
+        ImGui::Button("Button 1");
+        ImGui::InputText("InputText 1", vars.Str, IM_ARRAYSIZE(vars.Str));
+
+        bool ctrl_z_parent = ImGui::Shortcut(ImGuiMod_Ctrl | ImGuiKey_Z, ImGuiInputFlags_RouteOverActive | ImGuiInputFlags_Repeat);
+        bool ctrl_y_parent = ImGui::Shortcut(ImGuiMod_Ctrl | ImGuiKey_Y, ImGuiInputFlags_RouteOverActive | ImGuiInputFlags_Repeat);
+        ImGui::Text(ctrl_z_parent ? "Ctrl+Z PARENT" : "");
+        ImGui::Text(ctrl_y_parent ? "Ctrl+Y PARENT" : "");
+        vars.PressedCount[0] += ctrl_z_parent ? 1 : 0;
+        vars.PressedCount[1] += ctrl_y_parent ? 1 : 0;
+
+        ImGui::BeginChild("Child", ImVec2(0.0f, 200.0f), ImGuiChildFlags_Borders);
+        ImGui::Button("Button 2");
+        ImGui::InputText("InputText 2", vars.Str, IM_ARRAYSIZE(vars.Str));
+        bool ctrl_z_child = ImGui::Shortcut(ImGuiMod_Ctrl | ImGuiKey_Z, ImGuiInputFlags_RouteOverActive | ImGuiInputFlags_Repeat);
+        ImGui::Text(ctrl_z_child ? "Ctrl+Z CHILD" : "");
+        vars.PressedCount[2] += ctrl_z_child ? 1 : 0;
+        ImGui::EndChild();
+
+        bool ctrl_c_global = ImGui::Shortcut(ImGuiMod_Ctrl | ImGuiKey_C, ImGuiInputFlags_RouteGlobal | ImGuiInputFlags_Repeat);
+        ImGui::Text(ctrl_c_global ? "Ctrl+C GLOBAL" : "");
+        vars.PressedCount[3] += ctrl_c_global ? 1 : 0;
+        bool ctrl_a_global = ImGui::Shortcut(ImGuiMod_Ctrl | ImGuiKey_A, ImGuiInputFlags_RouteGlobal | ImGuiInputFlags_RouteOverActive | ImGuiInputFlags_Repeat);
+        ImGui::Text(ctrl_a_global ? "Ctrl+A GLOBAL" : "");
+        vars.PressedCount[4] += ctrl_a_global ? 1 : 0;
+
+        ImGui::End();
+
+        ImGui::Begin("Another Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImGui::Button("Button");
+        ImGui::InputText("InputText", vars.Str, IM_ARRAYSIZE(vars.Str));
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        auto& vars = ctx->GetVars<InputRoutingVars>();
+
+        // [1] Test ImGuiInputFlags_RouteGlobal with and without ImGuiInputFlags_RouteOverActive
+        // We focus "Another Window" and test shortcuts called from "Test Window"
+        ctx->SetRef("Another Window");
+
+        // Button() does not submit shortcuts
+        ctx->ItemClick("Button");
+        ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_C); // uses ImGuiInputFlags_RouteGlobal
+        IM_CHECK_EQ(vars.PressedCount[3], 1);
+        ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_A); // uses ImGuiInputFlags_RouteGlobal | ImGuiInputFlags_RouteOverActive
+        IM_CHECK_EQ(vars.PressedCount[4], 1);
+        ctx->MouseDown(0);
+        IM_CHECK_EQ(ImGui::GetActiveID(), ctx->GetID("Button"));
+        ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_C);
+        IM_CHECK_EQ(vars.PressedCount[3], 2);
+        ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_A);
+        IM_CHECK_EQ(vars.PressedCount[4], 2);
+        ctx->MouseUp(0);
+
+        // InputText() keeps active and submit both Ctrl+C and CTRL+A shortcut
+        vars.PressedCount[3] = vars.PressedCount[4] = 0;
+        ctx->ItemClick("InputText");
+        IM_CHECK_EQ(ImGui::GetActiveID(), ctx->GetID("InputText"));
+        ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_C); // uses ImGuiInputFlags_RouteGlobal
+        IM_CHECK_EQ(vars.PressedCount[3], 0);
+        ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_A); // uses ImGuiInputFlags_RouteGlobal | ImGuiInputFlags_RouteOverActive
+        IM_CHECK_EQ(vars.PressedCount[4], 1);
+        ctx->KeyPress(ImGuiKey_Escape);
+
+        // [2] Test ImGuiInputFlags_RouteFocused with ImGuiInputFlags_RouteOverActive, all in "Test Window".
+        // This is the part that's supported since IMGUI_VERSION_NUM >= 19236
+        ctx->SetRef("Test Window");
+        ctx->ItemClick("InputText 1");
+        IM_CHECK_EQ(ImGui::GetActiveID(), ctx->GetID("InputText 1"));
+        ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_Z); // uses ImGuiInputFlags_RouteFocused | ImGuiInputFlags_RouteOverActive
+        ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_Y); // "
+        IM_CHECK_EQ(vars.PressedCount[0], 1);
+        IM_CHECK_EQ(vars.PressedCount[1], 1);
+        IM_CHECK_EQ(vars.PressedCount[2], 0);
+        ctx->SetRef(ctx->WindowInfo("//Test Window/Child").Window);
+        ctx->ItemClick("InputText 2");
+        IM_CHECK_EQ(ImGui::GetActiveID(), ctx->GetID("InputText 2"));
+        ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_Z); // uses ImGuiInputFlags_RouteFocused | ImGuiInputFlags_RouteOverActive
+        ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_Y); // "
+        IM_CHECK_EQ(vars.PressedCount[0], 1);
+        IM_CHECK_EQ(vars.PressedCount[1], 2);
+        IM_CHECK_EQ(vars.PressedCount[2], 1);
+    };
+#endif
+
     // ## Additional tests for Shortcut(), notably of underlying ImGuiInputFlags_RepeatUntilKeyModsChange behavior.
     // Notably, test cases of releasing a mod key not triggering the other shortcut when Repeat is on
 #if IMGUI_VERSION_NUM >= 19003
