@@ -129,6 +129,8 @@ static void DockingTestsGenericGuiFunc(ImGuiTestContext* ctx)
             ImGui::Text("This is '%s'", window_name.c_str());
             ImGui::Text("ID = %08X, DockID = %08X", ImGui::GetCurrentWindow()->ID, ImGui::GetWindowDockID());
             ImGui::Text("AppearingCount = %d", vars.AppearingCount[n]);
+            ImGui::Button("Button 1");
+            ImGui::Button("Button 2");
             ImGui::End();
         }
 }
@@ -1271,7 +1273,7 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
         IM_CHECK(window1->DockId == window2->DockId);
     };
 
-    // ## Test docked window focusing from the menu.
+    // ## Test docked window focusing from the window/collapse menu.
     t = IM_REGISTER_TEST(e, "docking", "docking_focus_from_menu");
     t->SetVarsDataType<DockingTestsGenericVars>([](auto* ctx, auto& vars) { vars.SetShowWindows(3, true); });
     t->GuiFunc = DockingTestsGenericGuiFunc;
@@ -1332,12 +1334,12 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
         }
 
         // Check whether collapse button interaction focuses window.
-        for (int i = 0; i < IM_ARRAYSIZE(windows); i++)
+        for (ImGuiWindow* window : windows)
         {
             // FIXME-TESTS: Standardize access to window/collapse menu ID (there are 6 instances in tests)
-            ctx->ItemClick(ImGui::DockNodeGetWindowMenuButtonId(windows[i]->DockNode));
+            ctx->ItemClick(ImGui::DockNodeGetWindowMenuButtonId(window->DockNode));
             ctx->KeyPress(ImGuiKey_Escape);
-            IM_CHECK(g.NavWindow == windows[i]);
+            IM_CHECK(g.NavWindow == window);
         }
 
         // Check whether focus is maintained after splitter interaction.
@@ -1352,6 +1354,31 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
         IM_CHECK(g.NavWindow == last_focused_window);
 #endif
         IM_UNUSED(last_focused_window);
+    };
+
+    // ## Test docked window focusing using keyboard navigation (#8997)
+    t = IM_REGISTER_TEST(e, "docking", "docking_focus_from_host_nav");
+    t->SetVarsDataType<DockingTestsGenericVars>();
+    t->SetVarsDataType<DockingTestsGenericVars>([](auto* ctx, auto& vars) { vars.SetShowWindows(3, true); });
+    t->GuiFunc = DockingTestsGenericGuiFunc;
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiContext& g = *ctx->UiContext;
+        ImGuiWindow* windows[3] = { ctx->GetWindowByRef("AAA"), ctx->GetWindowByRef("BBB"), ctx->GetWindowByRef("CCC") };
+        ctx->DockClear("AAA", "BBB", "CCC", NULL);
+        ctx->DockInto("BBB", "AAA", ImGuiDir_None);
+        ctx->DockInto("CCC", "AAA", ImGuiDir_None);
+        for (ImGuiWindow* window : windows)
+            window->NavLastIds[0] = window->NavLastIds[1] = 0;
+        IM_CHECK_EQ(g.NavWindow, windows[2]);
+        IM_CHECK_EQ(g.NavId, ctx->GetID("//CCC/Button 1"));
+
+        ctx->KeyPress(ImGuiMod_Alt);
+        ctx->KeyPress(ImGuiKey_LeftArrow);
+        ctx->KeyPress(ImGuiKey_LeftArrow);
+        ctx->KeyPress(ImGuiKey_Space);
+        IM_CHECK_EQ(g.NavWindow, windows[0]);
+        IM_CHECK_EQ(g.NavId, ctx->GetID("//AAA/Button 1")); // Test that NavInit has been performed on the newly appearing window
     };
 
     // # Test dock node focused flag.
