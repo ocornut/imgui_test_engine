@@ -1345,6 +1345,65 @@ void RegisterTests_WidgetsInputText(ImGuiTestEngine* e)
     };
 #endif
 
+    // ## Test partial insertion both via Ctrl+V and via callback (#9029)
+    t = IM_REGISTER_TEST(e, "widgets", "widgets_inputtext_insert_partial");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        auto& vars = ctx->GenericVars;
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+        auto callback = [](ImGuiInputTextCallbackData* data)
+        {
+            if (data->EventFlag == ImGuiInputTextFlags_CallbackCompletion)
+            {
+                if (data->SelectionEnd != data->SelectionStart)
+                    data->DeleteChars(ImMin(data->SelectionStart, data->SelectionEnd), ImAbs(data->SelectionEnd - data->SelectionStart));
+                data->InsertChars(data->CursorPos, "22222");
+            }
+            return 0;
+        };
+        ImGui::InputText("Field", vars.Str1, 10+1, ImGuiInputTextFlags_CallbackCompletion, callback); // Room for 10 ASCII chars
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        auto& vars = ctx->GenericVars;
+        ctx->SetRef("Test Window");
+
+        for (int n = 0; n < 2; n++)
+        {
+            ctx->ItemInput("Field");
+            ctx->KeyCharsReplace("00000111");
+
+            ImGui::SetClipboardText("22222");
+            if (n == 0)
+                ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_V);
+            else
+                ctx->KeyPress(ImGuiKey_Tab);
+#if IMGUI_VERSION_NUM >= 19242
+            IM_CHECK_STR_EQ(vars.Str1, "0000011122");
+            ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_Z);
+            IM_CHECK_STR_EQ(vars.Str1, "00000111");
+            ctx->KeyPress(ImGuiMod_Shift | ImGuiKey_LeftArrow, 2); // Select trailing "11"
+            if (n == 0)
+                ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_V);
+            else
+                ctx->KeyPress(ImGuiKey_Tab);
+            IM_CHECK_STR_EQ(vars.Str1, "0000012222");
+            if (n == 0)
+            {
+                // callback version does it in 1 operation
+                ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_Z);
+                IM_CHECK_STR_EQ(vars.Str1, "000001");
+            }
+            ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_Z);
+            IM_CHECK_STR_EQ(vars.Str1, "00000111");
+#else
+            IM_CHECK_STR_EQ(vars.Str1, "00000111"); // Canceled paste
+            ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_Z);
+#endif
+        }
+    };
+
     // ## Test for Nav interference
     t = IM_REGISTER_TEST(e, "widgets", "widgets_inputtext_nav");
     t->GuiFunc = [](ImGuiTestContext* ctx)

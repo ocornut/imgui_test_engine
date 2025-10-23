@@ -6731,7 +6731,7 @@ void RegisterTests_TestEngine(ImGuiTestEngine* e)
         // FIXME: Missing tests for wildcards.
     };
 
-    // ## Test referencing tables (#53)
+    // ## Test referencing tables (imgui_test_engine/#53)
     t = IM_REGISTER_TEST(e, "testengine", "testengine_ref_tables");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
@@ -6755,6 +6755,15 @@ void RegisterTests_TestEngine(ImGuiTestEngine* e)
         ctx->SetRef("Test Window");
         ctx->ItemClick("Table1/Button1");
         ctx->ItemClick("Table2/Button2");
+
+        ctx->SetRef("Test Window/Table1");
+        ctx->ItemClick("Button1");
+        ctx->SetRef("Test Window/Table2");
+        ctx->ItemClick("Button2");
+
+        ctx->SetRef("");
+        ctx->SetRef("//Test Window/Table1/Button1");
+        ctx->SetRef("//Test Window/Table2/Button2");
     };
 
     // ## Test auto-opening intermediary openable items automatically.
