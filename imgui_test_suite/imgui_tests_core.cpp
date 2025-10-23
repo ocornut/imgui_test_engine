@@ -6731,6 +6731,32 @@ void RegisterTests_TestEngine(ImGuiTestEngine* e)
         // FIXME: Missing tests for wildcards.
     };
 
+    // ## Test referencing tables (#53)
+    t = IM_REGISTER_TEST(e, "testengine", "testengine_ref_tables");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_AlwaysAutoResize);
+        if (ImGui::BeginTable("Table1", 2, ImGuiTableFlags_NoSavedSettings | ImGuiTableFlags_Borders))
+        {
+            ImGui::TableNextColumn();
+            ImGui::Button("Button1");
+            ImGui::EndTable();
+        }
+        if (ImGui::BeginTable("Table2", 2, ImGuiTableFlags_NoSavedSettings | ImGuiTableFlags_Borders | ImGuiTableFlags_ScrollX | ImGuiTableFlags_ScrollY, ImVec2(0.0f, 100.0f)))
+        {
+            ImGui::TableNextColumn();
+            ImGui::Button("Button2");
+            ImGui::EndTable();
+        }
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ctx->SetRef("Test Window");
+        ctx->ItemClick("Table1/Button1");
+        ctx->ItemClick("Table2/Button2");
+    };
+
     // ## Test auto-opening intermediary openable items automatically.
     t = IM_REGISTER_TEST(e, "testengine", "testengine_ref_auto_open");
     t->GuiFunc = [](ImGuiTestContext* ctx)
