@@ -3524,6 +3524,60 @@ void RegisterTests_Layout(ImGuiTestEngine* e)
         ImGui::End();
     };
 
+    // ## Test EndGroup() report/merging of item status (#9028 and many more?)
+    // FIXME-TESTS: need many more tests for groups.
+    t = IM_REGISTER_TEST(e, "layout", "layout_group_status_query");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        auto& vars = ctx->GenericVars;
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImGui::BeginGroup();
+        ImGui::Button("Button");
+        ImGui::SliderInt("SliderInt", &vars.Int1, 0, 100);
+        ImGui::Checkbox("Checkbox", &vars.Bool1);
+        ImGui::Selectable("Selectable");
+        ImGui::EndGroup();
+        vars.Status.QueryInc(false);
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        auto& vars = ctx->GenericVars;
+        ctx->SetRef("Test Window");
+
+        ctx->ItemClick("Button");
+        IM_CHECK_GE(vars.Status.Active, 1);
+        IM_CHECK_EQ(vars.Status.Activated, 1);
+        IM_CHECK_EQ(vars.Status.Deactivated, 1);
+        IM_CHECK_EQ(vars.Status.Clicked, 1);
+        vars.Status.Clear();
+
+        ctx->ItemInputValue("SliderInt", 9); // Single character = single edit
+        IM_CHECK_GE(vars.Status.Active, 1);
+        IM_CHECK_EQ(vars.Status.Activated, 1);
+        IM_CHECK_EQ(vars.Status.Deactivated, 1);
+        IM_CHECK_EQ(vars.Status.Edited, 1);
+        vars.Status.Clear();
+
+        ctx->ItemClick("Checkbox");
+        IM_CHECK_GE(vars.Status.Active, 1);
+        IM_CHECK_EQ(vars.Status.Activated, 1);
+        IM_CHECK_EQ(vars.Status.Deactivated, 1);
+#if IMGUI_VERSION_NUM >= 19242
+        IM_CHECK_EQ(vars.Status.Edited, 1);
+#endif
+        vars.Status.Clear();
+
+        ctx->ItemClick("Selectable");
+        IM_CHECK_GE(vars.Status.Active, 1);
+        IM_CHECK_EQ(vars.Status.Activated, 1);
+        IM_CHECK_EQ(vars.Status.Deactivated, 1);
+#if IMGUI_VERSION_NUM >= 19242
+        IM_CHECK_EQ(vars.Status.Edited, 1);
+#endif
+        vars.Status.Clear();
+    };
+
     // ## Test EndGroup() function compensating for BeginTable(...,(0,0))...EndTable() and others undershooting with CursorMaxPos report. (#7543)
     t = IM_REGISTER_TEST(e, "layout", "layout_group_endtable");
     t->GuiFunc = [](ImGuiTestContext* ctx)
