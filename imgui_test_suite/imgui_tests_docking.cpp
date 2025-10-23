@@ -2320,6 +2320,40 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
             }
     };
 
+    // ## Test DockBuilderCopyDockSpace() when window not in remapping list (#6035)
+#if IMGUI_VERSION_NUM > 18916
+    t = IM_REGISTER_TEST(e, "docking", "docking_dockspace_copy_no_remap");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::SetNextWindowSize({ 600.f, 300.f });
+        ImGui::Begin("Window0", nullptr, ImGuiWindowFlags_NoSavedSettings);
+        ImGuiID id0 = ImGui::GetID("DockSpace0");
+        ImGuiID id1 = ImGui::GetID("DockSpace1");
+
+        if (ImGui::Button("Copy"))
+        {
+            ImVector<const char*> remap;
+            ImGui::DockBuilderCopyDockSpace(id0, id1, &remap);
+        }
+
+        ImGui::DockSpace(id0, { 300.f, 300.f });
+        ImGui::SameLine();
+        ImGui::DockSpace(id1, { 300.f, 300.f });
+        ImGui::End();
+
+        ImGui::SetNextWindowSize({ 100.f, 100.f });
+        ImGui::Begin("Window1", nullptr, ImGuiWindowFlags_NoSavedSettings);
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiID dock_id = ctx->GetID("Window0/DockSpace0");
+        ctx->DockClear("Window1", nullptr);
+        ctx->DockInto("Window1", dock_id, ImGuiDir_Up);
+        ctx->ItemClick("Window0/Copy");
+    };
+#endif
+
 #else
     IM_UNUSED(e);
 #endif
