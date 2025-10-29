@@ -1380,7 +1380,6 @@ void RegisterTests_WidgetsInputText(ImGuiTestEngine* e)
             else
                 ctx->KeyPress(ImGuiKey_Tab);
             IM_UNUSED(vars);
-#if IMGUI_BROKEN_TESTS
 #if IMGUI_VERSION_NUM >= 19242
             IM_CHECK_STR_EQ(vars.Str1, "0000011122");
             ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_Z);
@@ -1403,8 +1402,31 @@ void RegisterTests_WidgetsInputText(ImGuiTestEngine* e)
             IM_CHECK_STR_EQ(vars.Str1, "00000111"); // Canceled paste
             ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_Z);
 #endif
-#endif
         }
+    };
+
+    // ## Test truncate in the middle of UTF-8 (#9029)
+    t = IM_REGISTER_TEST(e, "widgets", "widgets_inputtext_insert_truncate_2");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        auto& vars = ctx->GenericVars;
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImGui::InputText("Field", vars.Str1, 4 + 1);
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        auto& vars = ctx->GenericVars;
+        ctx->SetRef("Test Window");
+        ctx->ItemInput("Field");
+        ctx->KeyCharsReplace("AA\xe2\x82\xa1"); // "AA' + valid 3 bytes sequence
+        IM_CHECK_STR_EQ(vars.Str1, "AA");
+        ctx->KeyCharsReplace("BB\xe2\x28\xa1"); // "BB" + invalid 3 bytes sequence
+        IM_CHECK_STR_EQ(vars.Str1, "BB");
+        ctx->KeyCharsReplace("CC\xf0\x90\x8c\xbc"); // "CC" + valid 4 bytes sequence
+        IM_CHECK_STR_EQ(vars.Str1, "CC");
+        ctx->KeyCharsReplace("CCCC\xf0\x90\x8c\xbc"); // "CCCC" + valid 4 bytes sequence
+        IM_CHECK_STR_EQ(vars.Str1, "CCCC");
     };
 
     // ## Test for Nav interference
