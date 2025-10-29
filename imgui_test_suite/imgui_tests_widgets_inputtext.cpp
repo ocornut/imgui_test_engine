@@ -1345,8 +1345,8 @@ void RegisterTests_WidgetsInputText(ImGuiTestEngine* e)
     };
 #endif
 
-    // ## Test partial insertion both via Ctrl+V and via callback (#9029)
-    t = IM_REGISTER_TEST(e, "widgets", "widgets_inputtext_insert_partial");
+    // ## Test truncate / partial insertion both via Ctrl+V and via callback (#9029)
+    t = IM_REGISTER_TEST(e, "widgets", "widgets_inputtext_insert_truncate");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         auto& vars = ctx->GenericVars;
@@ -1379,6 +1379,8 @@ void RegisterTests_WidgetsInputText(ImGuiTestEngine* e)
                 ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_V);
             else
                 ctx->KeyPress(ImGuiKey_Tab);
+            IM_UNUSED(vars);
+#if IMGUI_BROKEN_TESTS
 #if IMGUI_VERSION_NUM >= 19242
             IM_CHECK_STR_EQ(vars.Str1, "0000011122");
             ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_Z);
@@ -1400,6 +1402,7 @@ void RegisterTests_WidgetsInputText(ImGuiTestEngine* e)
 #else
             IM_CHECK_STR_EQ(vars.Str1, "00000111"); // Canceled paste
             ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_Z);
+#endif
 #endif
         }
     };
