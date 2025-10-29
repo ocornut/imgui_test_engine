@@ -5,6 +5,11 @@ CHANGELOG
    Those changes are not all listed here.
 ** For a while this is going to ONLY INCLUDE BREAKING CHANGES.
 
+2025/10/29:
+- TestEngine: fixed an issue when mouse position after running a series of test
+  may be temporarily reverted to the one before starting the test. This was not
+  noticeable on backends which would keep submitting latest mouse position.
+
 2025/10/08:
 - TestEngine: added TeardownFunc facility to setup a driving function which
   will run even if the test fails. (#82)

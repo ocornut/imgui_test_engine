@@ -3776,7 +3776,7 @@ void RegisterTests_DrawList(ImGuiTestEngine* e)
     };
 
 #if IMGUI_VERSION_NUM >= 19198 // == #ifdef IMGUI_HAS_TEXTURES
-    t = IM_REGISTER_TEST(e, "drawlist", "drawlist_text_scale_stress");
+    t = IM_REGISTER_TEST(e, "drawlist", "drawlist_font_scale_stress");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         auto& vars = ctx->GenericVars;
@@ -3863,6 +3863,8 @@ void RegisterTests_DrawList(ImGuiTestEngine* e)
             {
                 vars.Float1 = 3.0f + (ImSin(t) + 1.0f) * 0.5f * 150.0f;
                 ctx->Yield(1);
+                if (ctx->IsError()) // Explicit break to allow early aborting a long test
+                    break;
             }
         }
     };
