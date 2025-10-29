@@ -1808,6 +1808,7 @@ void RegisterTests_Window(ImGuiTestEngine* e)
         ImGuiIO& io = ImGui::GetIO();
         ImGuiStyle& style = ImGui::GetStyle();
         io.ConfigWindowsMoveFromTitleBarOnly = true;
+        ctx->Yield();
 
         ctx->ItemClick("//Test Window/Open Modal");
 
@@ -1825,8 +1826,6 @@ void RegisterTests_Window(ImGuiTestEngine* e)
             IM_CHECK(work_rect.Contains(window->Rect()) || main_rect.Contains(window->Rect()));
             ctx->Yield();
         }
-
-        //io.ConfigWindowsMoveFromTitleBarOnly = false;
     };
 #endif
 
