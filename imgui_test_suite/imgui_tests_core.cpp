@@ -433,6 +433,39 @@ void RegisterTests_Window(ImGuiTestEngine* e)
         }
     };
 
+    // ## Test auto-resizing on a single direction, namely the fact that if the other axis isn't auto-fitting it may need to account for a scrollbar. (#9060)
+    t = IM_REGISTER_TEST(e, "window", "window_size_auto_single_axis");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+        for (const int n : {1, 5, 2, 3, 9, 6, 3, 1})
+            ImGui::Text("%*s|", n+10, "");
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ctx->SetRef("Test Window");
+        ImGuiWindow* window = ctx->GetWindowByRef("");
+        IM_CHECK(window != NULL);
+        ctx->ItemDoubleClick(ImGui::GetWindowResizeCornerID(window, 0)); // Same as "ctx->WindowResize("", { 0.0f, 0.0f });" but more explicit.
+        IM_CHECK_EQ(window->ScrollbarX, false);
+        IM_CHECK_EQ(window->ScrollbarY, false);
+        ImVec2 size_autofit_both = window->Size;
+        ctx->WindowResize("", { window->Size.x, window->Size.y / 2.0f });
+        IM_CHECK_EQ(window->ScrollbarX, false);
+        IM_CHECK_EQ(window->ScrollbarY, true);
+        ctx->ItemDoubleClick(ImGui::GetWindowResizeBorderID(window, ImGuiDir_Right));
+#if IMGUI_VERSION_NUM >= 19245
+        IM_CHECK_EQ(window->Size.x, size_autofit_both.x + ImGui::GetStyle().ScrollbarSize);
+#else
+        IM_CHECK_EQ(window->Size.x, size_autofit_both.x); // Incorrect
+#endif
+        IM_CHECK_EQ(window->ScrollbarX, false);
+        IM_CHECK_EQ(window->ScrollbarY, true);
+        ctx->ItemDoubleClick(ImGui::GetWindowResizeCornerID(window, 0));
+        IM_CHECK_EQ(window->Size, size_autofit_both);
+    };
+
     // ## Test that uncollapsing an auto-resizing window does not go through a frame where the window is smaller than expected
     t = IM_REGISTER_TEST(e, "window", "window_size_auto_uncollapse");
     t->GuiFunc = [](ImGuiTestContext* ctx)
