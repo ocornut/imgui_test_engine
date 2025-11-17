@@ -90,6 +90,11 @@ ImGuiApp* ImGuiApp_ImplNull_Create();
 
 #if IMGUI_APP_IMPLEMENTATION
 
+// Always link with NULL backend
+#if IMGUI_VERSION_NUM >= 19246
+#include "imgui_impl_null.cpp"
+#endif
+
 #if defined(IMGUI_APP_WIN32_DX11)
 #include "imgui_impl_win32.cpp"
 #include "imgui_impl_dx11.cpp"
