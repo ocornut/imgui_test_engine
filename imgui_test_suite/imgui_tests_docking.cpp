@@ -13,6 +13,7 @@
 #define IMGUI_DEFINE_MATH_OPERATORS
 #include "imgui.h"
 #include "imgui_internal.h"
+#include "imgui_impl_null.h"
 #include "imgui_test_engine/imgui_te_engine.h"      // IM_REGISTER_TEST()
 #include "imgui_test_engine/imgui_te_context.h"
 #include "imgui_test_engine/thirdparty/Str/Str.h"
@@ -2320,7 +2321,55 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
             }
     };
 
+    // ## Test recovery from invalid settings (#9070)
+#if IMGUI_VERSION_NUM >= 19246
+    t = IM_REGISTER_TEST(e, "docking", "docking_settings_invalid_1");
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        const char* ini_data =
+            "[Window][Window0000]\n"
+            "Pos=121,16\n"
+            "Size=479,759\n"
+            "DockId=0x00000002\n"
+
+            "[Window][Window0001]\n"
+            "DockId=0x00000003\n"
+
+            "[Window][Window0002]\n"
+            "Pos=0,16\n"
+            "Size=119,759\n"
+            "DockId=0x00000004\n"
+
+            "[Window][WindowOverViewport_11111111]"
+            "Pos=0,16\n"
+            "Size=600,759\n"
+
+            "[Window][Window0003]\n"
+            "Size=450,350\n"
+
+            "[Docking][Data]\n"
+            "DockSpace     ID=0x08BD597D Window=0x1BBC0F80 Pos=100,116 Size=600,759 Split=X\n"
+            "  DockNode    ID=0x00000002 Parent=0x08BD597D SizeRef=479,800 CentralNode=1 NoTabBar=1 HiddenTabBar=1 Selected=0x5EE3988C\n"
+            "    DockNode  ID=0x00000004 Parent=0x00000001 SizeRef=119,399 NoTabBar=1 HiddenTabBar=1 Selected=0x35623F2B\n"
+            "    DockNode  ID=0x00000004 Parent=0x00000001 SizeRef=119,399 NoTabBar=1 HiddenTabBar=1 Selected=0x35623F2B\n"
+            "  DockNode    ID=0x00000002 Parent=0x08BD597D SizeRef=479,800 CentralNode=1 NoTabBar=1 HiddenTabBar=1 Selected=0x5EE3988C\n";
+
+        ImGuiContext* imgui_ctx = ImGui::CreateContext();
+        ImGui::SetCurrentContext(imgui_ctx);
+        ImGuiIO& io = ImGui::GetIO();
+        io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
+        ImGui_ImplNull_Init();
+        ImGui_ImplNull_NewFrame();
+        ImGui::LoadIniSettingsFromMemory(ini_data);
+        ImGui::NewFrame();
+        ImGui::DockSpaceOverViewport();
+        ImGui_ImplNull_Shutdown();
+        ImGui::DestroyContext(imgui_ctx);
+    };
+#endif
+
 #else
     IM_UNUSED(e);
 #endif
+
 }
