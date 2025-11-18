@@ -4716,6 +4716,21 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
             ctx->KeyPress(ImGuiMod_Shift | ImGuiKey_End);
             IM_CHECK_EQ(g.NavId, ctx->GetID("Object 0099"));
             IM_CHECK_EQ(selection.Size, 100);
+
+            // Test basic navigation from clipped item (#9079)
+            // This could be part of a nav_clipped_xxx test but it's trivial to add here.
+            ctx->KeyPress(ImGuiKey_Home);
+            ctx->KeyPress(ImGuiKey_DownArrow, 2);
+            IM_CHECK_EQ(g.NavId, ctx->GetID("Object 0002"));
+            ctx->MouseMove(g.NavId);
+            for (int n = 0; n < 10; n++) // We want to scroll but ensure we don't lose focus, so let's inject a mouse wheel instead of using ctx->ScrollToBottom()
+                ctx->MouseWheelY(-1.0f);
+            IM_CHECK((ctx->ItemInfo("Object 0002").StatusFlags & ImGuiItemStatusFlags_Visible) == 0);
+            ctx->KeyPress(ImGuiKey_DownArrow);
+#if IMGUI_VERSION_NUM >= 19247
+            IM_CHECK_EQ(g.NavId, ctx->GetID("Object 0003"));
+            IM_CHECK((ctx->ItemInfo("Object 0003").StatusFlags & ImGuiItemStatusFlags_Visible) != 0);
+#endif
         }
     };
 
