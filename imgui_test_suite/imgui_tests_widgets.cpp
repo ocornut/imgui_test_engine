@@ -4731,6 +4731,23 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
             IM_CHECK_EQ(g.NavId, ctx->GetID("Object 0003"));
             IM_CHECK((ctx->ItemInfo("Object 0003").StatusFlags & ImGuiItemStatusFlags_Visible) != 0);
 #endif
+
+            // Test Page Up/Page Down navigation from clipped item (#9079)
+#if IMGUI_VERSION_NUM >= 19247
+            ctx->KeyPress(ImGuiKey_Home);
+            ctx->KeyPress(ImGuiMod_Shift | ImGuiKey_PageDown);
+            IM_CHECK(selection.Size > 0);
+            int page_worth = selection.Size; // Measure roughly a page worth of contents
+            IM_CHECK_GT(page_worth, 1); // This mostly to get the value logged
+            //IM_SUSPEND_TESTFUNC();
+            ctx->KeyPress(ImGuiKey_Home);
+            ctx->KeyPress(ImGuiKey_DownArrow, 2);
+            IM_CHECK_EQ(g.NavId, ctx->GetID("Object 0002"));
+            ctx->ScrollToBottom("");
+            ctx->KeyPress(ImGuiKey_PageDown);
+            IM_CHECK(selection.Size == 1);
+            IM_CHECK(selection.Contains(2 + page_worth) || selection.Contains(2 + page_worth - 1) || selection.Contains(2 + page_worth + 1));
+#endif
         }
     };
 
