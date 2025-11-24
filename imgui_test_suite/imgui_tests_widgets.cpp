@@ -1,6 +1,7 @@
 // dear imgui
 // (tests: widgets)
 
+
 #define _CRT_SECURE_NO_WARNINGS
 #include <limits.h>
 #define IMGUI_DEFINE_MATH_OPERATORS
@@ -10,6 +11,7 @@
 #include "imgui_test_engine/imgui_te_context.h"
 #include "imgui_test_engine/imgui_te_utils.h"       // InputText() with Str
 #include "imgui_test_engine/thirdparty/Str/Str.h"
+#include "imgui_test_suite.h"
 
 // Warnings
 #ifdef _MSC_VER
@@ -3744,13 +3746,40 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         }
 
         // test
-        for (size_t i = 0; i < total_chars; ++i) {
-            float wrap_width = ImGui::CalcTextSize(cjk_s1, cjk_s1 + cbyte[i]).x + 0.001f;
-            const char* s1_w = ImGui::GetFont()->CalcWordWrapPositionCJK(
-                ImGui::GetFontSize(), cjk_s1, cjk_s1 + strlen(cjk_s1), wrap_width);
-            // printf("%zu %p %p %p\n", i, cjk_s1, s1_w, cjk_s1 + expected_wrap_offset_byte[i]);
-            IM_CHECK_EQ(s1_w, cjk_s1 + expected_wrap_offset_byte[i]);
+        ImFont* font = ImGui::FindFontByPrefix(TEST_SUITE_ALT_FONT_NAME_CJK);
+        ImGui::PushFont(font);
+        if (ImGui::BeginTable("## display", 3, ImGuiTableFlags_NoSavedSettings))
+        {
+            ImGui::TableSetupColumn("Full Text");
+            ImGui::TableSetupColumn("First Line");
+            ImGui::TableSetupColumn("Next Line");
+            ImGui::TableHeadersRow();
+            for (size_t i = 0; i < total_chars; ++i)
+            {
+                float wrap_width = ImGui::CalcTextSize(cjk_s1, cjk_s1 + cbyte[i]).x;
+                const char* s1_w = ImGui::GetFont()->CalcWordWrapPositionCJK(
+                    ImGui::GetFontSize(), cjk_s1, cjk_s1 + strlen(cjk_s1), wrap_width);
+                    ImGui::TableNextColumn();
+                    ImGui::TextUnformatted(cjk_s1);
+                    // Build rect coordinates
+                    ImVec2 text_pos = ImGui::GetItemRectMin();
+                    ImVec2 text_size = ImGui::GetItemRectSize();
+                    ImVec2 rect_max = ImVec2(text_pos.x + wrap_width, text_pos.y + text_size.y);
+                    // Draw the rectangle
+                    ImGui::GetWindowDrawList()->AddRect(
+                        text_pos,
+                        rect_max,
+                        IM_COL32(255, 0, 0, 255) // red outline
+                    );
+                    ImGui::TableNextColumn();
+                    ImGui::TextUnformatted(cjk_s1, s1_w);
+                    ImGui::TableNextColumn();
+                    ImGui::TextUnformatted(s1_w);
+                IM_CHECK_EQ(s1_w, cjk_s1 + expected_wrap_offset_byte[i]);
+            }
+            ImGui::EndTable();
         }
+        ImGui::PopFont();
         ImGui::End();
     };
 
@@ -3775,13 +3804,40 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         }
 
         // test
-        for (size_t i = 0; i < total_chars; ++i) {
-            float wrap_width = ImGui::CalcTextSize(cjk_s1, cjk_s1 + cbyte[i]).x + 0.001f;
-            const char* s1_w = ImGui::GetFont()->CalcWordWrapPositionCJK(
-                ImGui::GetFontSize(), cjk_s1, cjk_s1 + strlen(cjk_s1), wrap_width);
-            // printf("%zu %p %p %p\n", i, cjk_s1, s1_w, cjk_s1 + expected_wrap_offset_byte[i]);
-            IM_CHECK_EQ(s1_w, cjk_s1 + expected_wrap_offset_byte[i]);
+        ImFont* font = ImGui::FindFontByPrefix(TEST_SUITE_ALT_FONT_NAME_CJK);
+        ImGui::PushFont(font);
+        if (ImGui::BeginTable("## display", 3, ImGuiTableFlags_NoSavedSettings))
+        {
+            ImGui::TableSetupColumn("Full Text");
+            ImGui::TableSetupColumn("First Line");
+            ImGui::TableSetupColumn("Next Line");
+            ImGui::TableHeadersRow();
+            for (size_t i = 0; i < total_chars; ++i)
+            {
+                float wrap_width = ImGui::CalcTextSize(cjk_s1, cjk_s1 + cbyte[i]).x;
+                const char* s1_w = ImGui::GetFont()->CalcWordWrapPositionCJK(
+                    ImGui::GetFontSize(), cjk_s1, cjk_s1 + strlen(cjk_s1), wrap_width);
+                    ImGui::TableNextColumn();
+                    ImGui::TextUnformatted(cjk_s1);
+                    // Build rect coordinates
+                    ImVec2 text_pos = ImGui::GetItemRectMin();
+                    ImVec2 text_size = ImGui::GetItemRectSize();
+                    ImVec2 rect_max = ImVec2(text_pos.x + wrap_width, text_pos.y + text_size.y);
+                    // Draw the rectangle
+                    ImGui::GetWindowDrawList()->AddRect(
+                        text_pos,
+                        rect_max,
+                        IM_COL32(255, 0, 0, 255) // red outline
+                    );
+                    ImGui::TableNextColumn();
+                    ImGui::TextUnformatted(cjk_s1, s1_w);
+                    ImGui::TableNextColumn();
+                    ImGui::TextUnformatted(s1_w);
+                IM_CHECK_EQ(s1_w, cjk_s1 + expected_wrap_offset_byte[i]);
+            }
+            ImGui::EndTable();
         }
+        ImGui::PopFont();
         ImGui::End();
     };
 
@@ -3806,13 +3862,40 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         }
 
         // test
-        for (size_t i = 0; i < total_chars; ++i) {
-            float wrap_width = ImGui::CalcTextSize(cjk_s1, cjk_s1 + cbyte[i]).x + 0.001f;
-            const char* s1_w = ImGui::GetFont()->CalcWordWrapPositionCJK(
-                ImGui::GetFontSize(), cjk_s1, cjk_s1 + strlen(cjk_s1), wrap_width);
-            // printf("%zu %p %p %p\n", i, cjk_s1, s1_w, cjk_s1 + expected_wrap_offset_byte[i]);
-            IM_CHECK_EQ(s1_w, cjk_s1 + expected_wrap_offset_byte[i]);
+        ImFont* font = ImGui::FindFontByPrefix(TEST_SUITE_ALT_FONT_NAME_CJK);
+        ImGui::PushFont(font);
+        if (ImGui::BeginTable("## display", 3, ImGuiTableFlags_NoSavedSettings))
+        {
+            ImGui::TableSetupColumn("Full Text");
+            ImGui::TableSetupColumn("First Line");
+            ImGui::TableSetupColumn("Next Line");
+            ImGui::TableHeadersRow();
+            for (size_t i = 0; i < total_chars; ++i)
+            {
+                float wrap_width = ImGui::CalcTextSize(cjk_s1, cjk_s1 + cbyte[i]).x;
+                const char* s1_w = ImGui::GetFont()->CalcWordWrapPositionCJK(
+                    ImGui::GetFontSize(), cjk_s1, cjk_s1 + strlen(cjk_s1), wrap_width);
+                    ImGui::TableNextColumn();
+                    ImGui::TextUnformatted(cjk_s1);
+                    // Build rect coordinates
+                    ImVec2 text_pos = ImGui::GetItemRectMin();
+                    ImVec2 text_size = ImGui::GetItemRectSize();
+                    ImVec2 rect_max = ImVec2(text_pos.x + wrap_width, text_pos.y + text_size.y);
+                    // Draw the rectangle
+                    ImGui::GetWindowDrawList()->AddRect(
+                        text_pos,
+                        rect_max,
+                        IM_COL32(255, 0, 0, 255) // red outline
+                    );
+                    ImGui::TableNextColumn();
+                    ImGui::TextUnformatted(cjk_s1, s1_w);
+                    ImGui::TableNextColumn();
+                    ImGui::TextUnformatted(s1_w);
+                IM_CHECK_EQ(s1_w, cjk_s1 + expected_wrap_offset_byte[i]);
+            }
+            ImGui::EndTable();
         }
+        ImGui::PopFont();
         ImGui::End();
     };
 #endif
