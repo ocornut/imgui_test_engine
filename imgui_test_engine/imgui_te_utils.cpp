@@ -594,6 +594,21 @@ int ImStrBase64Encode(const unsigned char* src, char* dst, int length)
     return encoded_len;
 }
 
+// Collect Utf8 character offsets
+size_t ImStrUtf8CollectOffsets(const char* in_text, const char* in_text_end, size_t* out_offsets, size_t out_offsets_size) {
+    const char* s = in_text;
+    size_t total_chars = 0;
+    out_offsets[total_chars++] = 0;  // first offset always 0
+    while (s < in_text_end && total_chars < out_offsets_size) {
+        unsigned int unused_c;
+        s += ImTextCharFromUtf8(&unused_c, s, in_text_end);
+        if (s < in_text_end) {
+            out_offsets[total_chars++] = s - in_text;
+        }
+    }
+    return total_chars;
+}
+
 //-----------------------------------------------------------------------------
 // Parsing Helpers
 //-----------------------------------------------------------------------------

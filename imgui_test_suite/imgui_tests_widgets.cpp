@@ -3678,6 +3678,8 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
     };
 
 #if IMGUI_VERSION_NUM >= 19197 || defined(IMGUI_HAS_TEXTURES)
+
+    // # Legacy test
     t = IM_REGISTER_TEST(e, "widgets", "widgets_text_wrapped_cjk_1");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
@@ -3702,12 +3704,14 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         IM_CHECK_EQ(s2_w, s2 + strlen(s1));
         ImGui::End();
     };
+
+    // # Test pure CJK characters
     t = IM_REGISTER_TEST(e, "widgets", "widgets_text_wrapped_cjk_2");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoTitleBar);
         const int cjk_char_utf8_bytes = 3;
-        const char* s1 = "零一二三四五六七八九十百千万";   // contains CJK characters
+        const char* s1 = "零一二三四五六七八九十百千万";   // every char must be CJK
         const int s1_size = strlen(s1);
         for (int i = 0; i * cjk_char_utf8_bytes  < s1_size ; ++i) {
             const float local_off_x = ImGui::GetCursorPos().x;
@@ -3718,26 +3722,96 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         }
         ImGui::End();
     };
+
+    // # Test HeadProhibitedW
     t = IM_REGISTER_TEST(e, "widgets", "widgets_text_wrapped_cjk_3");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoTitleBar);
-        const int cjk_char_utf8_bytes = 3;
-        const char* s1 = "零一，二三。四五六》七八九！十百､千万";  // contains CJK characters
-        const int s1_size = strlen(s1);
 
-        // unsigned int c = 0;
-        // s += ImTextCharFromUtf8(&c, s, text_end);
+        // test data
+        const char cjk_s1[] = "零一，二三。四五六》七八九！十百､千万";
+        const size_t expected_wrap_offset_char[] = { 1, 1, 1, 3, 4, 4, 6, 7, 8, 8, 10, 11, 12, 12, 14, 15, 15, 17, 18 };  // a little verbose be ok for a test case
 
+        // common, get the total chars in utf8 string and calculate the expected_wrap_position_byte
+        const size_t max_chars = sizeof cjk_s1 - 1; // max_chars is always -LE sizeof(total bytes) for utf8 string;
+        size_t cbyte[max_chars];
+        size_t total_chars = ImStrUtf8CollectOffsets(cjk_s1, cjk_s1 + strlen(cjk_s1), &cbyte[0], max_chars);
+        IM_ASSERT((sizeof expected_wrap_offset_char / sizeof expected_wrap_offset_char[0])  == total_chars); // test wrap position for every char!
+        size_t expected_wrap_offset_byte[max_chars];
+        for (size_t i =0; i < total_chars; ++i){
+            expected_wrap_offset_byte[i] = cbyte[expected_wrap_offset_char[i]];
+        }
 
-        const int expects[] = { 1, 1, 1, 3, 4, 4, 6, 7, 8, 8, 10, 11, 12, 12, 14, 15, 15, 17, 18 };
-        IM_ASSERT(sizeof(expects) / sizeof(expects[0]) * cjk_char_utf8_bytes == s1_size);  // ensure size of expects matches chars in s1
-        for (int i = 0; i * cjk_char_utf8_bytes < s1_size ; ++i) {
-            const float local_off_x = ImGui::GetCursorPos().x;
-            const float wrap_width = ImGui::CalcTextSize(s1, s1 + i * cjk_char_utf8_bytes).x + 0.001;
-            const char* s1_w = ImGui::GetFont()->CalcWordWrapPositionCJK(ImGui::GetFontSize(), s1, s1 + s1_size, wrap_width);
-            printf("%d %p %p %p\n",int(i), s1, s1_w, s1 +  expects[i] * cjk_char_utf8_bytes);
-            IM_CHECK_EQ(s1_w, s1 + expects[i] * cjk_char_utf8_bytes);
+        // test
+        for (size_t i = 0; i < total_chars; ++i) {
+            float wrap_width = ImGui::CalcTextSize(cjk_s1, cjk_s1 + cbyte[i]).x + 0.001f;
+            const char* s1_w = ImGui::GetFont()->CalcWordWrapPositionCJK(
+                ImGui::GetFontSize(), cjk_s1, cjk_s1 + strlen(cjk_s1), wrap_width);
+            // printf("%zu %p %p %p\n", i, cjk_s1, s1_w, cjk_s1 + expected_wrap_offset_byte[i]);
+            IM_CHECK_EQ(s1_w, cjk_s1 + expected_wrap_offset_byte[i]);
+        }
+        ImGui::End();
+    };
+
+    // Test TailProhibitedW
+    t = IM_REGISTER_TEST(e, "widgets", "widgets_text_wrapped_cjk_4");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoTitleBar);
+
+        // test data
+        const char cjk_s1[] = "零一《二三【四五¥六七｛八九";
+        const size_t expected_wrap_offset_char[] = { 1, 1, 2, 2, 4, 5, 5, 7, 8, 8, 10, 11, 11, 13 };  // a little verbose be ok for a test case
+
+        // common, get the total chars in utf8 string and calculate the expected_wrap_position_byte
+        const size_t max_chars = sizeof cjk_s1 - 1; // max_chars is always -LE sizeof(total bytes) for utf8 string;
+        size_t cbyte[max_chars];
+        size_t total_chars = ImStrUtf8CollectOffsets(cjk_s1, cjk_s1 + strlen(cjk_s1), &cbyte[0], max_chars);
+        IM_ASSERT((sizeof expected_wrap_offset_char / sizeof expected_wrap_offset_char[0])  == total_chars); // test wrap position for every char!
+        size_t expected_wrap_offset_byte[max_chars];
+        for (size_t i =0; i < total_chars; ++i){
+            expected_wrap_offset_byte[i] = cbyte[expected_wrap_offset_char[i]];
+        }
+
+        // test
+        for (size_t i = 0; i < total_chars; ++i) {
+            float wrap_width = ImGui::CalcTextSize(cjk_s1, cjk_s1 + cbyte[i]).x + 0.001f;
+            const char* s1_w = ImGui::GetFont()->CalcWordWrapPositionCJK(
+                ImGui::GetFontSize(), cjk_s1, cjk_s1 + strlen(cjk_s1), wrap_width);
+            // printf("%zu %p %p %p\n", i, cjk_s1, s1_w, cjk_s1 + expected_wrap_offset_byte[i]);
+            IM_CHECK_EQ(s1_w, cjk_s1 + expected_wrap_offset_byte[i]);
+        }
+        ImGui::End();
+    };
+
+    // Test Mixed CJK and English
+    t = IM_REGISTER_TEST(e, "widgets", "widgets_text_wrapped_cjk_5");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoTitleBar);
+
+        // test data
+        const char cjk_s1[] = "零一hello world二三";  // contains CJK characters
+        const size_t expected_wrap_offset_char[] = { 1, 1, 2, 2, 2, 2, 2, 8, 8, 8, 8, 8, 8, 13, 14};
+
+        // common, get the total chars in utf8 string and calculate the expected_wrap_position_byte
+        const size_t max_chars = sizeof cjk_s1 - 1; // max_chars is always -LE sizeof(total bytes) for utf8 string;
+        size_t cbyte[max_chars];
+        size_t total_chars = ImStrUtf8CollectOffsets(cjk_s1, cjk_s1 + strlen(cjk_s1), &cbyte[0], max_chars);
+        IM_ASSERT((sizeof expected_wrap_offset_char / sizeof expected_wrap_offset_char[0])  == total_chars); // test wrap position for every char!
+        size_t expected_wrap_offset_byte[max_chars];
+        for (size_t i =0; i < total_chars; ++i){
+            expected_wrap_offset_byte[i] = cbyte[expected_wrap_offset_char[i]];
+        }
+
+        // test
+        for (size_t i = 0; i < total_chars; ++i) {
+            float wrap_width = ImGui::CalcTextSize(cjk_s1, cjk_s1 + cbyte[i]).x + 0.001f;
+            const char* s1_w = ImGui::GetFont()->CalcWordWrapPositionCJK(
+                ImGui::GetFontSize(), cjk_s1, cjk_s1 + strlen(cjk_s1), wrap_width);
+            // printf("%zu %p %p %p\n", i, cjk_s1, s1_w, cjk_s1 + expected_wrap_offset_byte[i]);
+            IM_CHECK_EQ(s1_w, cjk_s1 + expected_wrap_offset_byte[i]);
         }
         ImGui::End();
     };

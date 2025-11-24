@@ -50,7 +50,7 @@ void        ImStrReplace(Str* s, const char* find, const char* repl);
 const char* ImStrchrRangeWithEscaping(const char* str, const char* str_end, char find_c);
 void        ImStrXmlEscape(Str* s);
 int         ImStrBase64Encode(const unsigned char* src, char* dst, int length);
-
+size_t      ImStrUtf8CollectOffsets(const char* in_text, const char* in_text_end, size_t* out_offsets, size_t out_offsets_size);
 //-----------------------------------------------------------------------------
 // Parsing Helpers
 //-----------------------------------------------------------------------------
