@@ -3584,7 +3584,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ImGui::LogToClipboard();
 #ifdef __GNUC__
 #pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wformat-overflow"  // warning: �%s� directive argument is null
+#pragma GCC diagnostic ignored "-Wformat-overflow"  // warning: �%s� directive argument is null
 #endif
         ImGui::Text("%s", (const char*)NULL);
         ImGui::Text("%.*s", 3, (const char*)NULL);
@@ -3676,6 +3676,72 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         IM_CHECK_EQ(s2_w, s2 + strlen("abcde.."));
 #endif
     };
+
+#if IMGUI_VERSION_NUM >= 19197 || defined(IMGUI_HAS_TEXTURES)
+    t = IM_REGISTER_TEST(e, "widgets", "widgets_text_wrapped_cjk_1");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoTitleBar);
+        const char* s1 = "abcde..";
+        const char* s2 = "abcde.. That";
+        float local_off_x = ImGui::GetCursorPos().x;
+        float wrap_width = ImGui::CalcTextSize(s1).x;
+        // Visualize output here, no actual test
+        ImGui::PushTextWrapPos(wrap_width + local_off_x);
+        ImGui::TextUnformatted(s1);
+        ImGui::Spacing();
+        ImGui::TextUnformatted(s2); // Though the '.' can fit in the first line, it's now at the second line.
+        ImGui::PopTextWrapPos();
+
+        // Text wrapping with leading \n
+        ImGui::Separator();
+        ImGui::TextWrapped("\nHello");
+        IM_CHECK_EQ(ImGui::GetItemRectSize(), ImVec2(ImGui::CalcTextSize("Hello").x, ImGui::GetFontSize() * 2));
+
+        const char* s2_w = ImGui::GetFont()->CalcWordWrapPositionCJK(ImGui::GetFontSize(), s2, s2 + strlen(s1), wrap_width);
+        IM_CHECK_EQ(s2_w, s2 + strlen(s1));
+        ImGui::End();
+    };
+    t = IM_REGISTER_TEST(e, "widgets", "widgets_text_wrapped_cjk_2");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoTitleBar);
+        const int cjk_char_utf8_bytes = 3;
+        const char* s1 = "零一二三四五六七八九十百千万";   // contains CJK characters
+        const int s1_size = strlen(s1);
+        for (int i = 0; i * cjk_char_utf8_bytes  < s1_size ; ++i) {
+            const float local_off_x = ImGui::GetCursorPos().x;
+            const float wrap_width = ImGui::CalcTextSize(s1, s1 + i * cjk_char_utf8_bytes).x;
+            const char* s1_w = ImGui::GetFont()->CalcWordWrapPositionCJK(ImGui::GetFontSize(), s1, s1 + s1_size, wrap_width);
+            // printf("%p %p %p\n", s1, s1_w, s1 + ImMax(3, i));
+            IM_CHECK_EQ(s1_w, s1 + ImMax(cjk_char_utf8_bytes, i * cjk_char_utf8_bytes));
+        }
+        ImGui::End();
+    };
+    t = IM_REGISTER_TEST(e, "widgets", "widgets_text_wrapped_cjk_3");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoTitleBar);
+        const int cjk_char_utf8_bytes = 3;
+        const char* s1 = "零一，二三。四五六》七八九！十百､千万";  // contains CJK characters
+        const int s1_size = strlen(s1);
+
+        // unsigned int c = 0;
+        // s += ImTextCharFromUtf8(&c, s, text_end);
+
+
+        const int expects[] = { 1, 1, 1, 3, 4, 4, 6, 7, 8, 8, 10, 11, 12, 12, 14, 15, 15, 17, 18 };
+        IM_ASSERT(sizeof(expects) / sizeof(expects[0]) * cjk_char_utf8_bytes == s1_size);  // ensure size of expects matches chars in s1
+        for (int i = 0; i * cjk_char_utf8_bytes < s1_size ; ++i) {
+            const float local_off_x = ImGui::GetCursorPos().x;
+            const float wrap_width = ImGui::CalcTextSize(s1, s1 + i * cjk_char_utf8_bytes).x + 0.001;
+            const char* s1_w = ImGui::GetFont()->CalcWordWrapPositionCJK(ImGui::GetFontSize(), s1, s1 + s1_size, wrap_width);
+            printf("%d %p %p %p\n",int(i), s1, s1_w, s1 +  expects[i] * cjk_char_utf8_bytes);
+            IM_CHECK_EQ(s1_w, s1 + expects[i] * cjk_char_utf8_bytes);
+        }
+        ImGui::End();
+    };
+#endif
 
     // ## Test LabelText() variants layout (#4004)
     t = IM_REGISTER_TEST(e, "widgets", "widgets_label_text");
