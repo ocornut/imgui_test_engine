@@ -1238,6 +1238,9 @@ void    ImGuiTestContext::ScrollToTop(ImGuiTestRef ref)
     if (IsError())
         return;
 
+    IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
+    LogDebug("ScrollToTop");
+
     ImGuiWindow* window = GetWindowByRef(ref);
     IM_CHECK_SILENT(window != nullptr);
     if (window->Scroll.y == 0.0f)
@@ -1250,6 +1253,9 @@ void    ImGuiTestContext::ScrollToBottom(ImGuiTestRef ref)
 {
     if (IsError())
         return;
+
+    IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
+    LogDebug("ScrollToBottom");
 
     ImGuiWindow* window = GetWindowByRef(ref);
     IM_CHECK_SILENT(window != nullptr);

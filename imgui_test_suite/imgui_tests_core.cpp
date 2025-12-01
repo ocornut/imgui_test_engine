@@ -5061,6 +5061,7 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
         ctx->SetRef("Test Window");
         for (int step = 0; step < 4; step++)
         {
+            ctx->LogInfo("STEP %d", step);
             vars.Step = step;
             ctx->Yield();
             ctx->ScrollToTop("");
