@@ -5877,7 +5877,7 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
         ctx->ItemOpenAll("");
 
         // Additional tests we bundled here because we are benefiting from the "opened all" state
-        ctx->ScrollVerifyScrollMax("");
+        ctx->_ScrollVerifyScrollMax("");
 
         // Test the Log/Capture api
         const char* clipboard = ImGui::GetClipboardText();
@@ -5897,7 +5897,7 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
         ctx->ItemUncheck("All");
         ctx->WindowClose("");
 #if 0
-        ctx->CaptureScreenshotWindow("Dear ImGui Demo", ImGuiCaptureFlags_StitchFullContents);
+        ctx->CaptureScreenshotWindow("//Dear ImGui Demo", ImGuiCaptureFlags_StitchAll);
 #endif
     };
 
