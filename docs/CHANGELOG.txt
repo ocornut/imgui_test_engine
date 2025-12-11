@@ -6,6 +6,7 @@ CHANGELOG
 ** For a while this is going to ONLY INCLUDE BREAKING CHANGES.
 
 2025/12/11:
+- TestEngine: fixes for changes in 1.92.6.
 - TestEngine: added TableSetColumnEnabled() by column index helper.
 
 2025/10/29:

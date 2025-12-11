@@ -7094,6 +7094,13 @@ void RegisterTests_TestEngine(ImGuiTestEngine* e)
 
         // Verify that ### reset to the last slash
         IM_CHECK_EQ(ImHashDecoratedPath("Hello/world###Blah"), ImHashStr("###Blah", 0, ImHashStr("Hello")));
+
+        // Verify that ### is not accounted in identifier (whereas ## is)
+#if IMGUI_VERSION_NUM >= 19255
+        IM_CHECK_EQ(ImHashDecoratedPath("###Blah"), ImHashDecoratedPath("Blah"));
+        IM_CHECK_EQ(ImHashStr("###Blah"), ImHashStr("Blah"));
+        IM_CHECK_EQ(ImHashDecoratedPath("###Blah"), ImHashStr("###Blah"));
+#endif
     };
 
     // ## Test GetID() + SetRef() behaviors. Test "//$FOCUSED" function.
