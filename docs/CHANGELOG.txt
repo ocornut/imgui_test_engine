@@ -5,6 +5,9 @@ CHANGELOG
    Those changes are not all listed here.
 ** For a while this is going to ONLY INCLUDE BREAKING CHANGES.
 
+2025/12/11:
+- TestEngine: added TableSetColumnEnabled() by column index helper.
+
 2025/10/29:
 - TestEngine: fixed an issue when mouse position after running a series of test
   may be temporarily reverted to the one before starting the test. This was not

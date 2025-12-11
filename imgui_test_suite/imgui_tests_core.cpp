@@ -2835,6 +2835,7 @@ void RegisterTests_Window(ImGuiTestEngine* e)
     {
         ImGuiContext& g = *ctx->UiContext;
         ImGuiWindow* window = ctx->GetWindowByRef("###Test Window");
+        IM_CHECK_SILENT(window != NULL);
 
         // Open window switcher (CTRL+TAB).
         ctx->KeyDown(g.ConfigNavWindowingKeyNext & ImGuiMod_Mask_); // Hold CTRL down
