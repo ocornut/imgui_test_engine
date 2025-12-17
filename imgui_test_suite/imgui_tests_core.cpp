@@ -3950,6 +3950,99 @@ void RegisterTests_DrawList(ImGuiTestEngine* e)
         ImGui::End();
     };
 
+    // ## Test word-wrapping logic
+    // Also see "widgets_text_wrapped", "widgets_text_wrapped_2", "widgets_inputtext_wordwrap_1"
+    // FIXME: This is currently a test bed and doesn't actually test/verify anything yet.
+    // FIXME: #9066 / #8838 for fuller CJK features.
+    t = IM_REGISTER_TEST(e, "drawlist", "drawlist_text_wordwrap_1");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
+
+        auto TextWidth = [](const char* s)
+        {
+            return ImGui::CalcTextSize(s).x;
+        };
+        struct WordWrapTestCase
+        {
+            const char*     Text;
+            float           WrapWidth;
+        };
+        const WordWrapTestCase test_cases[] =
+        {
+            { "Hello World",        TextWidth("Hello") },
+            { "Hello World",        TextWidth("Hello ") },
+            { "Hello World",        TextWidth("Hello W") },
+            { "Hello World!",       TextWidth("Hello") },
+            { "Hello World!",       TextWidth("Hello ") },
+            { "Hello World!",       TextWidth("Hello W") },
+            { "abcde!.",            FLT_MAX },
+            { "abcde!.",            TextWidth("abcde!.") },
+            { "abcde!. That",       TextWidth("abcde!.") },     // #8139, #8439
+            { "Hello 1.4023",       TextWidth("Hello 1.4") },   // #8503
+            { "example... this",    TextWidth("example") },     // #9094
+            { "example... this",    TextWidth("example.") },    // #9094
+            { "example... this",    TextWidth("example..") },   // #9094
+            { "example... this",    TextWidth("example...") },  // #9094
+            { "example... this",    TextWidth("example... ") }, // #9094
+            { "a a a a a a a",      TextWidth("a a a") },       // #8990
+            { "a a a a a a a",      TextWidth("a a a ") },      // #8990
+        };
+
+        ImDrawList* draw_list = ImGui::GetWindowDrawList();
+        ImFont* font = ImGui::GetFont();
+        float font_size = ImGui::GetFontSize();
+        ImU32 text_col = ImGui::GetColorU32(ImGuiCol_Text);
+
+        if (ImGui::BeginTable("split", 3, ImGuiTableFlags_Borders))
+        {
+            ImGui::TableSetupColumn("_None");
+            ImGui::TableSetupColumn("_WrapKeepBlanks");
+            ImGui::TableHeadersRow();
+
+            for (int n = 0; n < IM_ARRAYSIZE(test_cases); n++)
+            {
+                ImGui::TableNextRow();
+                ImGui::TableSetColumnIndex(0);
+                ImGui::TextDisabled("%d", n);
+
+                const WordWrapTestCase& tc = test_cases[n];
+                for (int step = 0; step < 2; step++)
+                {
+                    ImGui::TableSetColumnIndex(step + 1);
+
+                    ImVec2 p = ImGui::GetCursorScreenPos();
+                    ImDrawTextFlags text_flags = ImDrawTextFlags_None;
+                    if (step == 1)
+                        text_flags |= ImDrawTextFlags_WrapKeepBlanks;
+                    float wrap_width = tc.WrapWidth;
+
+                    // Calculate text size (use internals so we can pass flags)
+                    const char* p_end_text;
+                    ImVec2 p_end_offset;
+                    ImVec2 sz = ImFontCalcTextSizeEx(font, font_size, FLT_MAX, wrap_width, tc.Text, nullptr, nullptr, &p_end_text, &p_end_offset, text_flags);
+                    //ImVec2 sz = font->CalcTextSizeA(font_size, FLT_MAX, wrap_width, tc.Text, nullptr);
+
+                    draw_list->AddRect(p, p + sz, IM_COL32(255, 0, 255, 180));
+                    draw_list->AddLine(p + ImVec2(wrap_width, 0.0f), p + ImVec2(wrap_width, sz.y), IM_COL32(255, 255, 0, 255)); // Wrap limit
+                    draw_list->AddCircleFilled(p + p_end_offset, 2.0f, IM_COL32(255, 0, 255, 255)); // End offset
+
+                    // Render text (use internals so we can pass flags)
+                    font->RenderText(draw_list, font_size, p, text_col, draw_list->_ClipRectStack.back(), tc.Text, nullptr, wrap_width, text_flags);
+                    //draw_list->AddText(nullptr, 0.0f, p, text_col, tc.Text, nullptr, wrap_width);
+
+                    if (wrap_width < FLT_MAX)
+                        ImGui::Dummy(ImVec2(ImMax(sz.x, wrap_width), sz.y));
+                    else
+                        ImGui::Dummy(sz);
+                }
+            }
+            ImGui::EndTable();
+        }
+
+        ImGui::End();
+    };
+
     // ## Test VtxOffset
     t = IM_REGISTER_TEST(e, "drawlist", "drawlist_vtxoffset_basic");
     t->GuiFunc = [](ImGuiTestContext* ctx)
