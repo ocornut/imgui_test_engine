@@ -3950,14 +3950,13 @@ void RegisterTests_DrawList(ImGuiTestEngine* e)
         ImGui::End();
     };
 
-    // ## Test word-wrapping logic
+    // ## Test word-wrapping logic (#8990 and many more)
     // Also see "widgets_text_wrapped", "widgets_text_wrapped_2", "widgets_inputtext_wordwrap_1"
-    // FIXME: This is currently a test bed and doesn't actually test/verify anything yet.
     // FIXME: #9066 / #8838 for fuller CJK features.
     t = IM_REGISTER_TEST(e, "drawlist", "drawlist_text_wordwrap_1");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
-        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
 
         auto TextWidth = [](const char* s)
         {
@@ -3967,26 +3966,45 @@ void RegisterTests_DrawList(ImGuiTestEngine* e)
         {
             const char*     Text;
             float           WrapWidth;
+            int             Results0[10] = {}; // without ImDrawTextFlags_WrapKeepBlanks
+            int             Results1[10] = {}; // with ImDrawTextFlags_WrapKeepBlanks
         };
         const WordWrapTestCase test_cases[] =
         {
-            { "Hello World",        TextWidth("Hello") },
-            { "Hello World",        TextWidth("Hello ") },
-            { "Hello World",        TextWidth("Hello W") },
-            { "Hello World!",       TextWidth("Hello") },
-            { "Hello World!",       TextWidth("Hello ") },
-            { "Hello World!",       TextWidth("Hello W") },
-            { "abcde!.",            FLT_MAX },
-            { "abcde!.",            TextWidth("abcde!.") },
-            { "abcde!. That",       TextWidth("abcde!.") },     // #8139, #8439
-            { "Hello 1.4023",       TextWidth("Hello 1.4") },   // #8503
-            { "example... this",    TextWidth("example") },     // #9094
-            { "example... this",    TextWidth("example.") },    // #9094
-            { "example... this",    TextWidth("example..") },   // #9094
-            { "example... this",    TextWidth("example...") },  // #9094
-            { "example... this",    TextWidth("example... ") }, // #9094
-            { "a a a a a a a",      TextWidth("a a a") },       // #8990
-            { "a a a a a a a",      TextWidth("a a a ") },      // #8990
+            //{ "  .A",             TextWidth("  .A"),      { }, { } },
+            { "Hello World",        TextWidth("Hello"),     { 5,5 },    { 5,1,5 },  },
+            { "Hello World",        TextWidth("Hello "),    { 5,5 },    { 6,5,  },  }, // #8990
+            { "Hello World",        TextWidth("Hello W"),   { 5,5 },    { 6,5,  },  },
+            { "Hello  World",       TextWidth("Hello"),     { 5,5 },    { 5,2,5 },  }, 
+            { "Hello  World",       TextWidth("Hello "),    { 5,5 },    { 6,6   },  },
+            { "Hello  World",       TextWidth("Hello  "),   { 5,5 },    { 7,5   },  },
+            { "Hello  World",       TextWidth("Hello  W"),  { 5,5 },    { 7,5   },  },
+            { "Hello World!",       TextWidth("Hello"),     { 5,5,1 },  { 5,1,5,1 },},
+            { "Hello World!",       TextWidth("Hello "),    { 5,6 },    { 6,6 },    },
+            { "Hello World!",       TextWidth("Hello W"),   { 5,6 },    { 6,6 },    },
+            { "HelloWorld!",        TextWidth("Hello"),     { 5,5,1 },  { 5,5,1 },  },
+            { "HelloWorld!",        TextWidth("HelloW"),    { 6,5 },    { 6,5 },    },
+            { "HelloWorld!",        TextWidth("HelloWo"),   { 7,4 },    { 7,4 },    },
+            { "Hello.World!",       TextWidth("Hello"),     { 5,1,5,1 },{ 5,1,5,1 },},
+            { "Hello.World!",       TextWidth("Hello."),    { 6,6 },    { 6,6 },    },
+            { "Hello.World!",       TextWidth("Hello.W"),   { 6,6 },    { 6,6 },    },
+            { "abcde!.",            TextWidth("abcde!."),   { 7 },      { 7, },     },
+            { "abcde!. That",       TextWidth("abcde!."),   { 7,4 },    { 7,5 },    },  // #8139, #8439
+            { "Hello 1.4023",       TextWidth("Hello 1.4"), { 5,6 },    { 6,6 },    },  // #8503
+            { "example... is",      TextWidth("example"),   { 7,6 },    { 7,6 },    },  // #9094
+            { "example... is",      TextWidth("example."),  { 8,5 },    { 8,5 },    },  // #9094 (too long to fit)
+            { "example... is",      TextWidth("example.."), { 9,4 },    { 9,4 },    },  // #9094 (too long to fit)
+            { "example... is",      TextWidth("example..."),{ 10,2 },   { 10,3 },   },  // #9094
+            { "example... is",      TextWidth("example... "),{10,2 },   { 11,2 },   },  // #9094
+            { "example...",         TextWidth("example... "),{10 },     { 10 },     },  // #9094
+            { "a a a a a a a",      TextWidth("a a a"),     { 5,5,1 },  { 4,4,5 },  },  // #8990
+            { "a a a a a a a",      TextWidth("a a a "),    { 5,5,1 },  { 6,6,1},   },  // #8990
+            { "aaaaa  bbb",         TextWidth("aaaaa "),    { 5,3 },    { 6,4 },    },  // #8990 ???
+            { "aaaaa  bbb",         TextWidth("aaaaa  "),   { 5,3 },    { 7,3 },    },  // #8990
+            { "aaaaa  bbb",         TextWidth("aaaaa  b"),  { 5,3 },    { 7,3 },    },  // #8990
+            { "aa   bb cc",         TextWidth("aa   bb c"), { 7,2 },    { 8,2 },    },
+            { "A fox",              TextWidth("T")*0.3f,    { 1,1,1,1 },{ 1,1,1,1,1 }, }, // FIXME: Would emitting the space be better? But inconsistent with wider version?
+            { "The quick brown fox",TextWidth("The "),      { },        { },        },    // Getting this nicely compact requires scanning for span width
         };
 
         ImDrawList* draw_list = ImGui::GetWindowDrawList();
@@ -3994,53 +4012,118 @@ void RegisterTests_DrawList(ImGuiTestEngine* e)
         float font_size = ImGui::GetFontSize();
         ImU32 text_col = ImGui::GetColorU32(ImGuiCol_Text);
 
-        if (ImGui::BeginTable("split", 3, ImGuiTableFlags_Borders))
+        auto& vars = ctx->GenericVars;
+        if (ctx->IsFirstGuiFrame())
+            vars.Int1 = -1;
+        ImGui::InputInt("Breakpoint", &vars.Int1, 0);
+
+        int errors = 0;
+
+        if (ImGui::BeginTable("split", 1+2+2, ImGuiTableFlags_Borders | ImGuiTableFlags_ScrollY))
         {
+            ImGui::TableSetupColumn("#");
             ImGui::TableSetupColumn("_None");
+            ImGui::TableSetupColumn("");
             ImGui::TableSetupColumn("_WrapKeepBlanks");
+            ImGui::TableSetupColumn("");
             ImGui::TableHeadersRow();
 
-            for (int n = 0; n < IM_COUNTOF(test_cases); n++)
+            for (int test_n = 0; test_n < IM_COUNTOF(test_cases); test_n++)
             {
+                const WordWrapTestCase& tc = test_cases[test_n];
+
                 ImGui::TableNextRow();
                 ImGui::TableSetColumnIndex(0);
-                ImGui::TextDisabled("%d", n);
+                ImGui::TextDisabled("%d: '%s'", test_n, tc.Text);
+                if (ImGui::IsItemClicked())
+                    vars.Int1 = test_n;
 
-                const WordWrapTestCase& tc = test_cases[n];
+                int results_buf[2][10] = {};
+
                 for (int step = 0; step < 2; step++)
                 {
-                    ImGui::TableSetColumnIndex(step + 1);
+#if 0
+                    // Breakpoint
+                    if (test_n == vars.Int1 && ImGui::GetIO().KeyShift)// && step == 1)
+                    {
+                        printf("");
+                        vars.Int1 = -1;
+                    }
+#endif
+
+                    ImGui::TableSetColumnIndex(1 + (step * 2));
 
                     ImVec2 p = ImGui::GetCursorScreenPos();
+                    const char* text = tc.Text;
+                    const char* text_end = tc.Text + strlen(tc.Text);
                     ImDrawTextFlags text_flags = ImDrawTextFlags_None;
                     if (step == 1)
                         text_flags |= ImDrawTextFlags_WrapKeepBlanks;
                     float wrap_width = tc.WrapWidth;
 
-                    // Calculate text size (use internals so we can pass flags)
-                    const char* p_end_text;
-                    ImVec2 p_end_offset;
-                    ImVec2 sz = ImFontCalcTextSizeEx(font, font_size, FLT_MAX, wrap_width, tc.Text, nullptr, nullptr, &p_end_text, &p_end_offset, text_flags);
+                    // Calculate whole text size (use internals so we can pass flags)
+                    const char* p_out_remaining;
+                    ImVec2 p_out_offset;
+                    ImVec2 sz = ImFontCalcTextSizeEx(font, font_size, FLT_MAX, wrap_width, text, text_end, text_end, &p_out_remaining, &p_out_offset, text_flags);
                     //ImVec2 sz = font->CalcTextSizeA(font_size, FLT_MAX, wrap_width, tc.Text, nullptr);
+                    IM_ASSERT(p_out_remaining == text_end);
 
-                    draw_list->AddRect(p, p + sz, IM_COL32(255, 0, 255, 180));
-                    draw_list->AddLine(p + ImVec2(wrap_width, 0.0f), p + ImVec2(wrap_width, sz.y), IM_COL32(255, 255, 0, 255)); // Wrap limit
-                    draw_list->AddCircleFilled(p + p_end_offset, 2.0f, IM_COL32(255, 0, 255, 255)); // End offset
+                    draw_list->AddRect(p, p + sz, IM_COL32(255, 0, 255, 120));
+                    draw_list->AddLine(p + ImVec2(wrap_width, 0.0f), p + ImVec2(wrap_width, sz.y), IM_COL32(255, 255, 0, 200)); // Wrap limit
+                    draw_list->AddCircleFilled(p + p_out_offset, 2.0f, IM_COL32(255, 0, 255, 255)); // End offset
 
                     // Render text (use internals so we can pass flags)
-                    font->RenderText(draw_list, font_size, p, text_col, draw_list->_ClipRectStack.back(), tc.Text, nullptr, wrap_width, text_flags);
+                    font->RenderText(draw_list, font_size, p, text_col, draw_list->_ClipRectStack.back(), text, text_end, wrap_width, text_flags);
                     //draw_list->AddText(nullptr, 0.0f, p, text_col, tc.Text, nullptr, wrap_width);
 
                     if (wrap_width < FLT_MAX)
                         ImGui::Dummy(ImVec2(ImMax(sz.x, wrap_width), sz.y));
                     else
                         ImGui::Dummy(sz);
+
+                    // Store each individual wrapped line lengths.
+                    // (it's easier to compare/reasons in term of length than offset)
+                    const char* s = tc.Text;
+                    ImGui::TableNextColumn();
+                    ImGui::PushStyleVarY(ImGuiStyleVar_ItemSpacing, 0.0f);
+                    int line_idx = 0;
+                    while (*s)
+                    {
+                        const char* line_start = s;
+                        const char* line_end = ImFontCalcWordWrapPositionEx(font, font_size, s, text_end, wrap_width, text_flags);
+                        const int line_len = (int)(line_end - line_start);
+                        if (line_idx >= IM_COUNTOF(results_buf[step]))
+                            break;
+                        results_buf[step][line_idx] = line_len;
+                        ImGui::Text("% 3d: '%.*s'", line_len, line_len, line_start);
+                        s = ImTextCalcWordWrapNextLineStart(line_end, text_end, text_flags); // Wrapping skips upcoming blanks
+                        line_idx++;
+                    }
+
+                    const int* result_expected = (step == 0) ? tc.Results0 : tc.Results1;
+                    const int* result_actual = results_buf[step];
+                    if (result_expected[0] != 0)
+                    {
+                        int match_len = 0;
+                        for (; result_expected[match_len]; match_len++)
+                            if (result_expected[match_len] != result_actual[match_len])
+                                break;
+                        bool is_success = result_expected[match_len] == 0 && result_actual[match_len] == 0;
+                        if (!is_success)
+                            errors++;
+                        ImGui::TableSetBgColor(ImGuiTableBgTarget_CellBg, is_success ? IM_COL32(0, 255, 0, 30) : IM_COL32(255, 0, 0, 30));
+                    }
+
+                    ImGui::PopStyleVar();
                 }
             }
             ImGui::EndTable();
         }
-
         ImGui::End();
+#if IMGUI_VERSION_NUM >= 19257
+        if (errors > 0)
+            IM_CHECK_EQ(errors, 0);
+#endif
     };
 
     // ## Test VtxOffset

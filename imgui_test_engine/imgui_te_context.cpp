@@ -303,7 +303,7 @@ void    ImGuiTestContext::Finish(ImGuiTestStatus status)
 {
     if (ActiveFunc == ImGuiTestActiveFunc_GuiFunc)
     {
-        IM_ASSERT(status == ImGuiTestStatus_Success || status == ImGuiTestStatus_Unknown);
+        IM_ASSERT(status == ImGuiTestStatus_Success || status == ImGuiTestStatus_Unknown); // Use IM_CHECK(false) or IM_CHECK(some_express) to set an error
         if (RunFlags & ImGuiTestRunFlags_GuiFuncOnly)
             return;
         if (TestOutput->Status == ImGuiTestStatus_Running)
