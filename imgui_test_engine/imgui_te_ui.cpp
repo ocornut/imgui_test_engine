@@ -665,7 +665,7 @@ static void ImGuiTestEngine_ShowLogAndTools(ImGuiTestEngine* engine)
             engine->ToolDebugRebootUiContext = true;
 
         const ImGuiInputTextCallback filter_callback = [](ImGuiInputTextCallbackData* data) { return (data->EventChar == ',' || data->EventChar == ';') ? 1 : 0; };
-        ImGui::InputText("Branch/Annotation", engine->IO.GitBranchName, IM_ARRAYSIZE(engine->IO.GitBranchName), ImGuiInputTextFlags_CallbackCharFilter, filter_callback, nullptr);
+        ImGui::InputText("Branch/Annotation", engine->IO.GitBranchName, IM_COUNTOF(engine->IO.GitBranchName), ImGuiInputTextFlags_CallbackCharFilter, filter_callback, nullptr);
         ImGui::SetItemTooltip("This will be stored in the CSV file for performance tools.");
 
         ImGui::Separator();

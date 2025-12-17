@@ -1309,7 +1309,7 @@ void RegisterTests_Window(ImGuiTestEngine* e)
             };
             ImGui::Checkbox("Popup1 is modal", &vars.IsModalPopup[0]);
             ImGui::Checkbox("Popup2 is modal", &vars.IsModalPopup[1]);
-            ImGui::Combo("Interrupt Kind", &vars.Variant, interrupt_kind, IM_ARRAYSIZE(interrupt_kind));
+            ImGui::Combo("Interrupt Kind", &vars.Variant, interrupt_kind, IM_COUNTOF(interrupt_kind));
             ImGui::Checkbox("Show interrupts (Hold CTRL)", &vars.ShowInterrupts);
         }
 
@@ -1423,7 +1423,7 @@ void RegisterTests_Window(ImGuiTestEngine* e)
             return ImGui::FindWindowDisplayIndex(window);
         };
 
-        auto OpenPopup = [ctx, &vars](int n) { IM_ASSERT(n < IM_ARRAYSIZE(vars.OpenPopup)); vars.OpenPopup[n] = true; ctx->Yield(2); };
+        auto OpenPopup = [ctx, &vars](int n) { IM_ASSERT(n < IM_COUNTOF(vars.OpenPopup)); vars.OpenPopup[n] = true; ctx->Yield(2); };
         auto SetShowInterrupts = [ctx, &vars](bool visible) { vars.ShowInterrupts = visible; ctx->Yield(2); };
 
         for (int popup_kind = 0; popup_kind < 4; popup_kind++)
@@ -1752,11 +1752,11 @@ void RegisterTests_Window(ImGuiTestEngine* e)
         if (ImGui::BeginPopup("##popup", ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_ChildWindow))
         {
             static const char* autocomplete[] = { "cats", "dogs", "rabbits", "turtles" };
-            for (int i = 0; i < IM_ARRAYSIZE(autocomplete); i++)
+            for (int i = 0; i < IM_COUNTOF(autocomplete); i++)
                 if (ImGui::Selectable(autocomplete[i]))
                 {
                     ImGui::ClearActiveID();
-                    ImFormatString(vars.Str1, IM_ARRAYSIZE(vars.Str1), "%s", autocomplete[i]);
+                    ImFormatString(vars.Str1, IM_COUNTOF(vars.Str1), "%s", autocomplete[i]);
                 }
             if (is_input_text_enter_pressed || (!is_input_text_active && !ImGui::IsWindowFocused()))
                 ImGui::CloseCurrentPopup();
@@ -3252,11 +3252,11 @@ void RegisterTests_Layout(ImGuiTestEngine* e)
         ImGui::Separator();
 
         static char buf[128] = "";
-        ImGui::InputTextMultiline("##InputText", buf, IM_ARRAYSIZE(buf), ImVec2(0, 8));
+        ImGui::InputTextMultiline("##InputText", buf, IM_COUNTOF(buf), ImVec2(0, 8));
         IM_CHECK_EQ_NO_RET(window->DC.LastItemRect.GetHeight(), 8.0f);
         ImGui::Separator();
 
-        ImGui::InputTextMultiline("InputText\nTwoLines", buf, IM_ARRAYSIZE(buf), ImVec2(0, 8));
+        ImGui::InputTextMultiline("InputText\nTwoLines", buf, IM_COUNTOF(buf), ImVec2(0, 8));
         IM_CHECK_EQ_NO_RET(window->DC.LastItemRect.GetHeight(), g.FontSize * 2.0f);
         ImGui::Separator();
 
@@ -4000,7 +4000,7 @@ void RegisterTests_DrawList(ImGuiTestEngine* e)
             ImGui::TableSetupColumn("_WrapKeepBlanks");
             ImGui::TableHeadersRow();
 
-            for (int n = 0; n < IM_ARRAYSIZE(test_cases); n++)
+            for (int n = 0; n < IM_COUNTOF(test_cases); n++)
             {
                 ImGui::TableNextRow();
                 ImGui::TableSetColumnIndex(0);
@@ -5083,7 +5083,7 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
 
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoSavedSettings);
         const int section[] = { 5, 1, 5, 0, 2 };
-        for (int section_n = 0; section_n < IM_ARRAYSIZE(section); section_n++)
+        for (int section_n = 0; section_n < IM_COUNTOF(section); section_n++)
         {
             const int item_count = section[section_n];
             ctx->LogDebug("item_count = %d", item_count);
@@ -5343,7 +5343,7 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
             { 0xF4, 0xF4,  0x80, 0x8F,  0x80, 0xBF,  0x80, 0xBF }, // U+100000 - U+10FFFF F4     80-8F  80-BF  80-BF
 #endif
         };
-        for (int range_n = 0; range_n < IM_ARRAYSIZE(valid_ranges); range_n++)
+        for (int range_n = 0; range_n < IM_COUNTOF(valid_ranges); range_n++)
         {
             const unsigned char* range = valid_ranges[range_n];
             unsigned char seq[4] = { 0, 0, 0, 0 };
@@ -5577,18 +5577,18 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
 
         // Test functionality
         ImGuiTextFilter filter;
-        ImStrncpy(filter.InputBuf, "-bar", IM_ARRAYSIZE(filter.InputBuf));
+        ImStrncpy(filter.InputBuf, "-bar", IM_COUNTOF(filter.InputBuf));
         filter.Build();
 
         IM_CHECK(filter.PassFilter("bartender") == false);
         IM_CHECK(filter.PassFilter("cartender") == true);
 
-        ImStrncpy(filter.InputBuf, "bar ", IM_ARRAYSIZE(filter.InputBuf));
+        ImStrncpy(filter.InputBuf, "bar ", IM_COUNTOF(filter.InputBuf));
         filter.Build();
         IM_CHECK(filter.PassFilter("bartender") == true);
         IM_CHECK(filter.PassFilter("cartender") == false);
 
-        ImStrncpy(filter.InputBuf, "bar", IM_ARRAYSIZE(filter.InputBuf));
+        ImStrncpy(filter.InputBuf, "bar", IM_COUNTOF(filter.InputBuf));
         filter.Build();
         IM_CHECK(filter.PassFilter("bartender") == true);
         IM_CHECK(filter.PassFilter("cartender") == false);
@@ -5842,8 +5842,8 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
     t = IM_REGISTER_TEST(e, "misc", "misc_mouse_clicks");
     struct MouseClicksVars
     {
-        ImU16 MouseClickedCount[IM_ARRAYSIZE(ImGuiIO::MouseClickedCount)];
-        float MouseDownDuration[IM_ARRAYSIZE(ImGuiIO::MouseDownDuration)];
+        ImU16 MouseClickedCount[IM_COUNTOF(ImGuiIO::MouseClickedCount)];
+        float MouseDownDuration[IM_COUNTOF(ImGuiIO::MouseDownDuration)];
     };
     t->SetVarsDataType<MouseClicksVars>();
     t->GuiFunc = [](ImGuiTestContext* ctx)
@@ -7133,7 +7133,7 @@ void RegisterTests_TestEngine(ImGuiTestEngine* e)
         char v_text[16] = "Hello World";
         ImGui::SliderInt("int", &v_int, 0, 200);
         ImGui::DragFloat("float", &v_float, 0.01f, 0.0f, 1.0f);
-        ImGui::InputText("text", v_text, IM_ARRAYSIZE(v_text));
+        ImGui::InputText("text", v_text, IM_COUNTOF(v_text));
         ImGui::End();
     };
     t->TestFunc = [](ImGuiTestContext* ctx)
@@ -7155,10 +7155,10 @@ void RegisterTests_TestEngine(ImGuiTestEngine* e)
         char buf_large[30];
         size_t ret0 = ctx->ItemReadAsString("text", nullptr, 0);
         IM_CHECK_EQ(ret0, 12u);
-        size_t ret1 = ctx->ItemReadAsString("text", buf_small, IM_ARRAYSIZE(buf_small));
+        size_t ret1 = ctx->ItemReadAsString("text", buf_small, IM_COUNTOF(buf_small));
         IM_CHECK_EQ(ret1, 12u);
         IM_CHECK_STR_EQ(buf_small, "He");
-        size_t ret2 = ctx->ItemReadAsString("text", buf_large, IM_ARRAYSIZE(buf_large));
+        size_t ret2 = ctx->ItemReadAsString("text", buf_large, IM_COUNTOF(buf_large));
         IM_CHECK_EQ(ret2, 12u);
         IM_CHECK_STR_EQ(buf_large, "Hello World");
     };
@@ -7604,7 +7604,7 @@ void RegisterTests_Capture(ImGuiTestEngine* e)
             ImGui::Text("Hello, world 123");
             ImGui::Button("Save");
             ImGui::SetNextItemWidth(194);
-            ImGui::InputText("string", ctx->GenericVars.Str1, IM_ARRAYSIZE(ctx->GenericVars.Str1));
+            ImGui::InputText("string", ctx->GenericVars.Str1, IM_COUNTOF(ctx->GenericVars.Str1));
             ImGui::SetNextItemWidth(194);
             ImGui::SliderFloat("float", &float_value, 0.0f, 1.0f);
             ImGui::End();
@@ -7643,7 +7643,7 @@ void RegisterTests_Capture(ImGuiTestEngine* e)
         ImGui::Text("Hello, world 123");
         ImGui::Button("Save");
         ImGui::SetNextItemWidth(194);
-        ImGui::InputText("string", string_buffer, IM_ARRAYSIZE(string_buffer));
+        ImGui::InputText("string", string_buffer, IM_COUNTOF(string_buffer));
         ImGui::SetNextItemWidth(194);
         ImGui::SliderFloat("float", &float_value, 0.0f, 4.0f);
         ImGui::End();
@@ -7702,7 +7702,7 @@ void RegisterTests_Capture(ImGuiTestEngine* e)
 
             // Plot some values
             const float my_values[] = { 0.2f, 0.1f, 1.0f, 0.5f, 0.9f, 2.2f };
-            ImGui::PlotLines("Frame Times", my_values, IM_ARRAYSIZE(my_values));
+            ImGui::PlotLines("Frame Times", my_values, IM_COUNTOF(my_values));
 
             // Display contents in a scrolling region
             ImGui::TextColored(ImVec4(1, 1, 0, 1), "Important Stuff");

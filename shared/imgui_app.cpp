@@ -97,6 +97,11 @@ static bool ImGuiApp_ImplGL_CaptureFramebuffer(ImGuiViewport* viewport, int x, i
 #pragma comment(lib, "opengl32")  // Link with opengl32.lib. MinGW will require linking with '-lopengl32'
 #endif
 
+// Legacy version support
+#if IMGUI_VERSION_NUM < 19256 && !defined(IM_COUNTOF)
+#define IM_COUNTOF  IM_ARRAYSIZE
+#endif
+
 //-----------------------------------------------------------------------------
 // [SECTION] Helper stub to store directly in ImGuiTestEngineIO::ScreenCaptureFunc when using test engine (prototype is same as ImGuiScreenCaptureFunc)
 //-----------------------------------------------------------------------------
@@ -1392,7 +1397,7 @@ static void ImGuiApp_InstallMockViewportsBackend(ImGuiApp*)
         ImGui_ImplMockViewport_Data* bd = ImGui_ImplNullViewport_GetBackendData();
         ImGui_ImplMockViewport_ViewportData* vd = ImGui_ImplNullViewport_FindViewportData(bd, viewport);
         if (vd != NULL)
-            ImFormatString(vd->Title, IM_ARRAYSIZE(vd->Title), "%s", title);
+            ImFormatString(vd->Title, IM_COUNTOF(vd->Title), "%s", title);
     };
     platform_io.Platform_OnChangedViewport = [](ImGuiViewport* viewport)
     {

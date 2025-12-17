@@ -92,7 +92,7 @@ void RegisterTests_Inputs(ImGuiTestEngine* e)
             ctx->UiContext->WantTextInputNextFrame = true;
         }
 #endif
-        //ImGui::InputText("InputText", vars.Str1, IM_ARRAYSIZE(vars.Str1)); // See 2025/04/24 comment below.
+        //ImGui::InputText("InputText", vars.Str1, IM_COUNTOF(vars.Str1)); // See 2025/04/24 comment below.
         //if (vars.Bool1)
         //    ImGui::SetKeyboardFocusHere(-1);
         ImGui::End();
@@ -1448,7 +1448,7 @@ void RegisterTests_Inputs(ImGuiTestEngine* e)
         {
             if (idx != -1)
                 IM_CHECK_EQ(IsRouting[idx], true);
-            for (int n = 0; n < IM_ARRAYSIZE(IsRouting); n++)
+            for (int n = 0; n < IM_COUNTOF(IsRouting); n++)
                 if (n != idx)
                     IM_CHECK_SILENT(IsRouting[n] == false);
         }
@@ -1456,7 +1456,7 @@ void RegisterTests_Inputs(ImGuiTestEngine* e)
         {
             if (idx != -1)
                 IM_CHECK_GT(PressedCount[idx], 0);
-            for (int n = 0; n < IM_ARRAYSIZE(IsRouting); n++)
+            for (int n = 0; n < IM_COUNTOF(IsRouting); n++)
                 if (n != idx)
                     IM_CHECK_SILENT(PressedCount[n] == 0);
         }
@@ -1500,7 +1500,7 @@ void RegisterTests_Inputs(ImGuiTestEngine* e)
         // TODO: Write a test for that
         //ImGui::Text("Down: %d", ImGui::InputRoutingSubmit2(ImGuiKey_DownArrow));
 
-        ImGui::InputText("InputTextB", vars.Str, IM_ARRAYSIZE(vars.Str));
+        ImGui::InputText("InputTextB", vars.Str, IM_COUNTOF(vars.Str));
         DoRouteForItem('B', ImGui::GetItemID());
 
         ImGui::Button("ButtonC");
@@ -1518,7 +1518,7 @@ void RegisterTests_Inputs(ImGuiTestEngine* e)
         {
             ImGui::Button("PopupF");
             DoRoute('F');
-            ImGui::InputText("InputTextG", vars.Str, IM_ARRAYSIZE(vars.Str));
+            ImGui::InputText("InputTextG", vars.Str, IM_COUNTOF(vars.Str));
             DoRouteForItem('G', ImGui::GetItemID());
             ImGui::EndPopup();
         }
@@ -1673,7 +1673,7 @@ void RegisterTests_Inputs(ImGuiTestEngine* e)
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
 
         ImGui::Button("Button 1");
-        ImGui::InputText("InputText 1", vars.Str, IM_ARRAYSIZE(vars.Str));
+        ImGui::InputText("InputText 1", vars.Str, IM_COUNTOF(vars.Str));
 
         bool ctrl_z_parent = ImGui::Shortcut(ImGuiMod_Ctrl | ImGuiKey_Z, ImGuiInputFlags_RouteOverActive | ImGuiInputFlags_Repeat);
         bool ctrl_y_parent = ImGui::Shortcut(ImGuiMod_Ctrl | ImGuiKey_Y, ImGuiInputFlags_RouteOverActive | ImGuiInputFlags_Repeat);
@@ -1684,7 +1684,7 @@ void RegisterTests_Inputs(ImGuiTestEngine* e)
 
         ImGui::BeginChild("Child", ImVec2(0.0f, 200.0f), ImGuiChildFlags_Borders);
         ImGui::Button("Button 2");
-        ImGui::InputText("InputText 2", vars.Str, IM_ARRAYSIZE(vars.Str));
+        ImGui::InputText("InputText 2", vars.Str, IM_COUNTOF(vars.Str));
         bool ctrl_z_child = ImGui::Shortcut(ImGuiMod_Ctrl | ImGuiKey_Z, ImGuiInputFlags_RouteOverActive | ImGuiInputFlags_Repeat);
         ImGui::Text(ctrl_z_child ? "Ctrl+Z CHILD" : "");
         vars.PressedCount[2] += ctrl_z_child ? 1 : 0;
@@ -1701,7 +1701,7 @@ void RegisterTests_Inputs(ImGuiTestEngine* e)
 
         ImGui::Begin("Another Window", NULL, ImGuiWindowFlags_NoSavedSettings);
         ImGui::Button("Button");
-        ImGui::InputText("InputText", vars.Str, IM_ARRAYSIZE(vars.Str));
+        ImGui::InputText("InputText", vars.Str, IM_COUNTOF(vars.Str));
         ImGui::End();
     };
     t->TestFunc = [](ImGuiTestContext* ctx)
@@ -1860,7 +1860,7 @@ void RegisterTests_Inputs(ImGuiTestEngine* e)
         auto& vars = ctx->GetVars<InputRoutingVars>();
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
         ImGui::CheckboxFlags("ImGuiInputFlags_RouteGlobal", &vars.Flags, ImGuiInputFlags_RouteGlobal);
-        ImGui::InputText("buf", vars.Str, IM_ARRAYSIZE(vars.Str));
+        ImGui::InputText("buf", vars.Str, IM_COUNTOF(vars.Str));
         vars.PressedCount[0] += ImGui::Shortcut(ImGuiKey_G, vars.Flags);                     // Filtered
         vars.PressedCount[1] += ImGui::Shortcut(ImGuiMod_Ctrl | ImGuiKey_G, vars.Flags);     // Pass
         vars.PressedCount[2] += ImGui::Shortcut(ImGuiMod_Alt | ImGuiKey_G, vars.Flags);      // Filtered

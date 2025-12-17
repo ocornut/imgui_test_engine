@@ -184,13 +184,13 @@ static void EditTableSizingFlags(ImGuiTableFlags* p_flags)
         { ImGuiTableFlags_SizingStretchSame,  "ImGuiTableFlags_SizingStretchSame",  "Columns default to _WidthStretch with same weights." }
     };
     int idx;
-    for (idx = 0; idx < IM_ARRAYSIZE(policies); idx++)
+    for (idx = 0; idx < IM_COUNTOF(policies); idx++)
         if (policies[idx].Value == (*p_flags & ImGuiTableFlags_SizingMask_))
             break;
-    const char* preview_text = (idx < IM_ARRAYSIZE(policies)) ? policies[idx].Name + (idx > 0 ? strlen("ImGuiTableFlags") : 0) : "";
+    const char* preview_text = (idx < IM_COUNTOF(policies)) ? policies[idx].Name + (idx > 0 ? strlen("ImGuiTableFlags") : 0) : "";
     if (ImGui::BeginCombo("Sizing Policy", preview_text))
     {
-        for (int n = 0; n < IM_ARRAYSIZE(policies); n++)
+        for (int n = 0; n < IM_COUNTOF(policies); n++)
             if (ImGui::Selectable(policies[n].Name, idx == n))
                 *p_flags = (*p_flags & ~ImGuiTableFlags_SizingMask_) | policies[n].Value;
         ImGui::EndCombo();
@@ -534,7 +534,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
 
         ImGui::Text("(width variance should be <= %.2f)", max_variance);
         ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(ImGui::GetStyle().ItemSpacing.x, ImTrunc(ImGui::GetStyle().ItemSpacing.y * 0.80f)));
-        for (int test_case_n = 0; test_case_n < IM_ARRAYSIZE(test_cases); test_case_n++)
+        for (int test_case_n = 0; test_case_n < IM_COUNTOF(test_cases); test_case_n++)
         {
             const TestCase& tc = test_cases[test_case_n];
             ImGui::PushID(test_case_n);
@@ -3308,7 +3308,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
         ctx->SetRef("Test Window");
         ImGuiTable* table = ImGui::TableFindByID(ctx->GetID("table1"));
         const int column_count[] = { 10, 15, 13, 18, 12, 20, 19 };
-        for (int i = 0; i < IM_ARRAYSIZE(column_count); i++)
+        for (int i = 0; i < IM_COUNTOF(column_count); i++)
         {
             vars.ColumnsCount = column_count[i];
 #if IMGUI_VERSION_NUM >= 18204

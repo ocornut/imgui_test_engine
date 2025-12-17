@@ -53,19 +53,19 @@ struct DockingTestsGenericVars
 
     DockingTestsGenericVars()
     {
-        for (int n = 0; n < IM_ARRAYSIZE(NodesId); n++)
+        for (int n = 0; n < IM_COUNTOF(NodesId); n++)
             NodesId[n] = 0;
-        for (int n = 0; n < IM_ARRAYSIZE(ShowWindow); n++)
+        for (int n = 0; n < IM_COUNTOF(ShowWindow); n++)
             ShowWindow[n] = false;
-        for (int n = 0; n < IM_ARRAYSIZE(ShowWindowGroups); n++)
+        for (int n = 0; n < IM_COUNTOF(ShowWindowGroups); n++)
             ShowWindowGroups[n] = true;
-        for (int n = 0; n < IM_ARRAYSIZE(ShowWindow); n++)
+        for (int n = 0; n < IM_COUNTOF(ShowWindow); n++)
             AppearingCount[n] = false;
     }
 
     void SetShowWindows(int count, bool show)
     {
-        IM_ASSERT(count < IM_ARRAYSIZE(ShowWindow));
+        IM_ASSERT(count < IM_COUNTOF(ShowWindow));
         for (int i = 0; i < count; i++)
             ShowWindow[i] = show;
     }
@@ -95,7 +95,7 @@ static void DockingTestsGenericGuiFunc(ImGuiTestContext* ctx)
     {
         ImGui::Begin("Test Config");
         ImGui::Checkbox("Show Dockspace", &vars.ShowDockspace);
-        for (int n = 0; n < IM_ARRAYSIZE(vars.ShowWindow); n++)
+        for (int n = 0; n < IM_COUNTOF(vars.ShowWindow); n++)
         {
             if ((n % 5) == 0)
             {
@@ -118,7 +118,7 @@ static void DockingTestsGenericGuiFunc(ImGuiTestContext* ctx)
     }
     ImGui::End();
 
-    for (int n = 0; n < IM_ARRAYSIZE(vars.ShowWindow); n++)
+    for (int n = 0; n < IM_COUNTOF(vars.ShowWindow); n++)
         if (vars.ShowWindow[n] && vars.ShowWindowGroups[n / 5])
         {
             ImGui::SetNextWindowSize(ImVec2(300.0f, 200.0f), ImGuiCond_Appearing);
@@ -470,7 +470,7 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
         ImGui::Begin("AAAA", NULL, ImGuiWindowFlags_NoSavedSettings);
         if (ctx->FrameCount == 10)  IM_CHECK(ImGui::IsWindowFocused());
         if (ctx->FrameCount == 10)  ImGui::SetKeyboardFocusHere();
-        ImGui::InputText("Input", vars.Str1, IM_ARRAYSIZE(vars.Str1));
+        ImGui::InputText("Input", vars.Str1, IM_COUNTOF(vars.Str1));
         if (ctx->FrameCount == 10)  IM_CHECK(!ImGui::IsItemActive());
         if (ctx->FrameCount == 11)  IM_CHECK(ImGui::IsItemActive());
         ImGui::End();
@@ -479,7 +479,7 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
         ImGui::Begin("BBBB", NULL, ImGuiWindowFlags_NoSavedSettings);
         if (ctx->FrameCount == 50)  IM_CHECK(ImGui::IsWindowFocused());
         if (ctx->FrameCount == 50)  ImGui::SetKeyboardFocusHere();
-        ImGui::InputText("Input", vars.Str2, IM_ARRAYSIZE(vars.Str2));
+        ImGui::InputText("Input", vars.Str2, IM_COUNTOF(vars.Str2));
         if (ctx->FrameCount == 50)  IM_CHECK(!ImGui::IsItemActive());
         if (ctx->FrameCount == 51)  IM_CHECK(ImGui::IsItemActive());
         ImGui::End();
@@ -629,7 +629,7 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
     {
         ImGuiWindow* windows[] = { ctx->GetWindowByRef("AAA"), ctx->GetWindowByRef("BBB") };
 
-        for (int i = 0; i < IM_ARRAYSIZE(windows); i++)
+        for (int i = 0; i < IM_COUNTOF(windows); i++)
         {
             ImGuiWindow* window = windows[i];
             ctx->DockClear("BBB", "AAA", NULL);
@@ -1286,7 +1286,7 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
         ctx->DockInto("BBB", "AAA");
         ctx->DockInto("CCC", "BBB");
 
-        for (int i = 0; i < IM_ARRAYSIZE(windows); i++)
+        for (int i = 0; i < IM_COUNTOF(windows); i++)
         {
             ctx->ItemClick(ImGui::DockNodeGetWindowMenuButtonId(windows[i]->RootWindowDockTree->DockNodeAsHost));
             ctx->SetRef("//$FOCUSED");
@@ -1308,7 +1308,7 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
         ctx->DockInto("BBB", "AAA", ImGuiDir_Right);
 
         // Test focusing window by clicking on it.
-        for (int i = 0; i < IM_ARRAYSIZE(windows); i++)
+        for (int i = 0; i < IM_COUNTOF(windows); i++)
         {
             ctx->MouseSetViewport(windows[i]);
             ctx->MouseMoveToPos(windows[i]->Rect().GetCenter());
@@ -1317,14 +1317,14 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
         }
 
         // Test focusing window by clicking its tab.
-        for (int i = 0; i < IM_ARRAYSIZE(windows); i++)
+        for (int i = 0; i < IM_COUNTOF(windows); i++)
         {
             ctx->ItemClick(windows[i]->Name);
             IM_CHECK(g.NavWindow == windows[i]);
         }
 
         // Test focusing window by clicking empty space in its tab bar.
-        for (int i = 0; i < IM_ARRAYSIZE(windows); i++)
+        for (int i = 0; i < IM_COUNTOF(windows); i++)
         {
             ImRect bar_rect = windows[i]->DockNode->TabBar->BarRect;
             ctx->MouseSetViewport(windows[i]);

@@ -57,7 +57,7 @@ void RegisterTests_WidgetsInputText(ImGuiTestEngine* e)
         ImGuiTestGenericVars& vars = ctx->GenericVars;
         ImGui::SetNextWindowSize(ImVec2(200, 200));
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
-        ImGui::InputText("InputText", vars.Str1, IM_ARRAYSIZE(vars.Str1), vars.Bool1 ? ImGuiInputTextFlags_ReadOnly : ImGuiInputTextFlags_None);
+        ImGui::InputText("InputText", vars.Str1, IM_COUNTOF(vars.Str1), vars.Bool1 ? ImGuiInputTextFlags_ReadOnly : ImGuiInputTextFlags_None);
         ImGui::End();
     };
     t->TestFunc = [](ImGuiTestContext* ctx)
@@ -140,7 +140,7 @@ void RegisterTests_WidgetsInputText(ImGuiTestEngine* e)
         ImGui::SetNextWindowSize(ImVec2(ImGui::GetFontSize() * 50, 0.0f));
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
         ImGui::Text("strlen() = %d", (int)strlen(vars.StrLarge.Data));
-        ImGui::InputText("Other", vars.Str1, IM_ARRAYSIZE(vars.Str1), ImGuiInputTextFlags_None);
+        ImGui::InputText("Other", vars.Str1, IM_COUNTOF(vars.Str1), ImGuiInputTextFlags_None);
         ImGui::InputTextMultiline("InputText", vars.StrLarge.Data, (size_t)vars.StrLarge.Size, ImVec2(-1, ImGui::GetFontSize() * 20), ImGuiInputTextFlags_None);
         ImGui::End();
         //DebugInputTextState();
@@ -285,8 +285,8 @@ void RegisterTests_WidgetsInputText(ImGuiTestEngine* e)
         ImGuiTestGenericVars& vars = ctx->GenericVars;
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
         ImGui::LogToBuffer();
-        ImGui::InputText("##InputText", vars.Str1, IM_ARRAYSIZE(vars.Str1)); // Remove label to simplify the capture/comparison
-        ImStrncpy(vars.Str2, ctx->UiContext->LogBuffer.c_str(), IM_ARRAYSIZE(vars.Str2));
+        ImGui::InputText("##InputText", vars.Str1, IM_COUNTOF(vars.Str1)); // Remove label to simplify the capture/comparison
+        ImStrncpy(vars.Str2, ctx->UiContext->LogBuffer.c_str(), IM_COUNTOF(vars.Str2));
         ImGui::LogFinish();
         ImGui::Text("Captured: \"%s\"", vars.Str2);
         ImGui::End();
@@ -352,7 +352,7 @@ void RegisterTests_WidgetsInputText(ImGuiTestEngine* e)
             if (ctx->FrameCount < 50)
                 ImGui::Button("Hello");
             else
-                ImGui::InputText("Hello", vars.Str1, IM_ARRAYSIZE(vars.Str1));
+                ImGui::InputText("Hello", vars.Str1, IM_COUNTOF(vars.Str1));
         }
         if (vars.Step == 1)
         {
@@ -371,7 +371,7 @@ void RegisterTests_WidgetsInputText(ImGuiTestEngine* e)
         }
         if (vars.Step == 2)
         {
-            ImGui::InputTextMultiline("Hello", vars.Str1, IM_ARRAYSIZE(vars.Str1));
+            ImGui::InputTextMultiline("Hello", vars.Str1, IM_COUNTOF(vars.Str1));
         }
         ImGui::End();
     };
@@ -412,7 +412,7 @@ void RegisterTests_WidgetsInputText(ImGuiTestEngine* e)
     {
         ImGuiTestGenericVars& vars = ctx->GenericVars;
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
-        ImGui::InputText("Field", vars.Str1, IM_ARRAYSIZE(vars.Str1), ImGuiInputTextFlags_AllowTabInput);
+        ImGui::InputText("Field", vars.Str1, IM_COUNTOF(vars.Str1), ImGuiInputTextFlags_AllowTabInput);
         ImGui::End();
     };
     t->TestFunc = [](ImGuiTestContext* ctx)
@@ -431,7 +431,7 @@ void RegisterTests_WidgetsInputText(ImGuiTestEngine* e)
     {
         ImGuiTestGenericVars& vars = ctx->GenericVars;
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
-        ImGui::InputText("Field", vars.Str1, IM_ARRAYSIZE(vars.Str1));
+        ImGui::InputText("Field", vars.Str1, IM_COUNTOF(vars.Str1));
         ImGui::End();
 
     };
@@ -467,7 +467,7 @@ void RegisterTests_WidgetsInputText(ImGuiTestEngine* e)
         ImGuiTestGenericVars& vars = ctx->GenericVars;
         ImGui::SetNextWindowSize(ImVec2(200, 200));
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
-        bool ret_val = ImGui::InputText("InputText", vars.Str1, IM_ARRAYSIZE(vars.Str1), ImGuiInputTextFlags_EscapeClearsAll);
+        bool ret_val = ImGui::InputText("InputText", vars.Str1, IM_COUNTOF(vars.Str1), ImGuiInputTextFlags_EscapeClearsAll);
         vars.Status.QueryInc(ret_val);
         ImGui::End();
     };
@@ -1203,7 +1203,7 @@ void RegisterTests_WidgetsInputText(ImGuiTestEngine* e)
             }
             return 0;
         };
-        ImGui::InputText("Hello", vars.Str1, IM_ARRAYSIZE(vars.Str1), vars.Bool1 ? ImGuiInputTextFlags_None : ImGuiInputTextFlags_CallbackAlways, callback);
+        ImGui::InputText("Hello", vars.Str1, IM_COUNTOF(vars.Str1), vars.Bool1 ? ImGuiInputTextFlags_None : ImGuiInputTextFlags_CallbackAlways, callback);
         ImGui::End();
     };
     t->TestFunc = [](ImGuiTestContext* ctx)
@@ -1441,7 +1441,7 @@ void RegisterTests_WidgetsInputText(ImGuiTestEngine* e)
         ImGui::Button("UR", sz);
         ImGui::Button("L", sz); ImGui::SameLine();
         ImGui::SetNextItemWidth(sz.x);
-        ImGui::InputText("##Field", vars.Str1, IM_ARRAYSIZE(vars.Str1), ImGuiInputTextFlags_AllowTabInput);
+        ImGui::InputText("##Field", vars.Str1, IM_COUNTOF(vars.Str1), ImGuiInputTextFlags_AllowTabInput);
         ImGui::SameLine();
         ImGui::Button("R", sz);
         ImGui::Button("DL", sz); ImGui::SameLine();
@@ -1517,7 +1517,7 @@ void RegisterTests_WidgetsInputText(ImGuiTestEngine* e)
 
         char* s_stored = vars.Str1;
         char* s_tmp = vars.Str2;
-        int s_bufsize = IM_ARRAYSIZE(vars.Str1);
+        int s_bufsize = IM_COUNTOF(vars.Str1);
         memcpy(s_tmp, s_stored, s_bufsize);
         if (ImGui::InputText("Field2", s_tmp, s_bufsize, vars.InputTextFlags))
             if (ImGui::IsItemDeactivatedAfterEdit())
@@ -1578,7 +1578,7 @@ void RegisterTests_WidgetsInputText(ImGuiTestEngine* e)
     {
         ImGuiTestGenericVars& vars = ctx->GenericVars;
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
-        ImGui::InputText("Field", vars.Str1, IM_ARRAYSIZE(vars.Str1), ImGuiInputTextFlags_EnterReturnsTrue);
+        ImGui::InputText("Field", vars.Str1, IM_COUNTOF(vars.Str1), ImGuiInputTextFlags_EnterReturnsTrue);
         ImGui::End();
     };
     t->TestFunc = [](ImGuiTestContext* ctx)
@@ -1651,7 +1651,7 @@ void RegisterTests_WidgetsInputText(ImGuiTestEngine* e)
     {
         ImGuiTestGenericVars& vars = ctx->GenericVars;
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
-        ImGui::InputTextMultiline("Field", vars.Str1, IM_ARRAYSIZE(vars.Str1));
+        ImGui::InputTextMultiline("Field", vars.Str1, IM_COUNTOF(vars.Str1));
 #if IMGUI_VERSION_NUM >= 18511
         IM_CHECK_EQ(ImGui::GetItemID(), ImGui::GetID("Field"));
 #endif
@@ -1674,7 +1674,7 @@ void RegisterTests_WidgetsInputText(ImGuiTestEngine* e)
     {
         ImGuiTestGenericVars& vars = ctx->GenericVars;
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
-        ImGui::InputTextMultiline("Field", vars.Str1, IM_ARRAYSIZE(vars.Str1));
+        ImGui::InputTextMultiline("Field", vars.Str1, IM_COUNTOF(vars.Str1));
         //IM_CHECK_EQ(ImGui::GetItemID(), ImGui::GetID("Field"));
         vars.Status.QuerySet();
         ImGui::Text("IsItemActive: %d", vars.Status.Active);
@@ -1711,7 +1711,7 @@ void RegisterTests_WidgetsInputText(ImGuiTestEngine* e)
     {
         ImGuiTestGenericVars& vars = ctx->GenericVars;
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
-        if (ImGui::InputTextMultiline("Field", vars.Str1, IM_ARRAYSIZE(vars.Str1), ImVec2(), ImGuiInputTextFlags_CtrlEnterForNewLine | ImGuiInputTextFlags_EnterReturnsTrue))
+        if (ImGui::InputTextMultiline("Field", vars.Str1, IM_COUNTOF(vars.Str1), ImVec2(), ImGuiInputTextFlags_CtrlEnterForNewLine | ImGuiInputTextFlags_EnterReturnsTrue))
             ImGui::SetKeyboardFocusHere(-1);
         ImGui::End();
     };
@@ -1736,7 +1736,7 @@ void RegisterTests_WidgetsInputText(ImGuiTestEngine* e)
         ImGuiTestGenericVars& vars = ctx->GenericVars;
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
         ImGui::Button("Above");
-        ImGui::InputTextMultiline("Field", vars.Str1, IM_ARRAYSIZE(vars.Str1));
+        ImGui::InputTextMultiline("Field", vars.Str1, IM_COUNTOF(vars.Str1));
         ImGui::Button("Below");
         ImGui::End();
     };
@@ -1782,7 +1782,7 @@ void RegisterTests_WidgetsInputText(ImGuiTestEngine* e)
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
         ImGui::Button("Above");
         ImGuiInputTextFlags input_text_flags = vars.Bool1 ? ImGuiInputTextFlags_AllowTabInput : ImGuiInputTextFlags_None;
-        ImGui::InputTextMultiline("Field", vars.Str1, IM_ARRAYSIZE(vars.Str1), ImVec2(0,0), input_text_flags);
+        ImGui::InputTextMultiline("Field", vars.Str1, IM_COUNTOF(vars.Str1), ImVec2(0,0), input_text_flags);
         ImGui::Button("Below");
         ImGui::End();
     };
@@ -1824,7 +1824,7 @@ void RegisterTests_WidgetsInputText(ImGuiTestEngine* e)
     {
         auto& vars = ctx->GenericVars;
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
-        ImGui::InputTextMultiline("Field", vars.Str1, IM_ARRAYSIZE(vars.Str1), ImVec2(), ImGuiInputTextFlags_AllowTabInput);
+        ImGui::InputTextMultiline("Field", vars.Str1, IM_COUNTOF(vars.Str1), ImVec2(), ImGuiInputTextFlags_AllowTabInput);
         ImGui::End();
     };
     t->TestFunc = [](ImGuiTestContext* ctx)
@@ -2014,7 +2014,7 @@ void RegisterTests_WidgetsInputText(ImGuiTestEngine* e)
         ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, { 0.0f, 0.0f });
         ImGuiInputTextFlags input_text_flags = ImGuiInputTextFlags_WordWrap;
         ImGui::SetNextItemWidth(vars.Width);
-        ImGui::InputTextMultiline("Field", vars.Str1, IM_ARRAYSIZE(vars.Str1), ImVec2(0, 0), input_text_flags);
+        ImGui::InputTextMultiline("Field", vars.Str1, IM_COUNTOF(vars.Str1), ImVec2(0, 0), input_text_flags);
         ImGui::PopStyleVar();
 
         if (ImGuiInputTextState* state = ImGui::GetInputTextState(ImGui::GetItemID()))

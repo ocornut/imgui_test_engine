@@ -648,7 +648,7 @@ void RegisterTests_Perf(ImGuiTestEngine* e)
         for (int n = 0; n < loop_count; n++)
         {
             ImGui::PushID(n);
-            ImGui::InputText("InputText", buf, IM_ARRAYSIZE(buf), ImGuiInputTextFlags_None);
+            ImGui::InputText("InputText", buf, IM_COUNTOF(buf), ImGuiInputTextFlags_None);
             ImGui::PopID();
         }
         ImGui::End();
@@ -666,7 +666,7 @@ void RegisterTests_Perf(ImGuiTestEngine* e)
         for (int n = 0; n < loop_count; n++)
         {
             ImGui::PushID(n);
-            ImGui::InputTextMultiline("InputText", buf, IM_ARRAYSIZE(buf), ImVec2(0, ImGui::GetFrameHeightWithSpacing() * 2), ImGuiInputTextFlags_None);
+            ImGui::InputTextMultiline("InputText", buf, IM_COUNTOF(buf), ImVec2(0, ImGui::GetFrameHeightWithSpacing() * 2), ImGuiInputTextFlags_None);
             ImGui::PopID();
         }
         ImGui::End();
@@ -833,7 +833,7 @@ void RegisterTests_Perf(ImGuiTestEngine* e)
 			const char* fill_modes[] = { "Stroke", "Fill", "Stroke+Fill", "Fill+Stroke" };
 			static int fill_mode = 0;
 			ImGui::SetNextItemWidth(128.0f);
-			ImGui::Combo("Fill mode", &fill_mode, fill_modes, IM_ARRAYSIZE(fill_modes));
+			ImGui::Combo("Fill mode", &fill_mode, fill_modes, IM_COUNTOF(fill_modes));
 
             ImGui::ColorEdit4("Color BG", &color_bg.x);
             ImGui::ColorEdit4("Color FG", &color_fg.x);
@@ -1143,11 +1143,11 @@ void RegisterTests_Perf(ImGuiTestEngine* e)
         const char* text_suffixes[] = { "_short", "_long", "_too_long" };
         const char* wrap_suffixes[] = { "", "_wrapped" };
         const char* clip_suffixes[] = { "", "_clipped" };
-        for (int i = 0; i < IM_ARRAYSIZE(text_suffixes); i++)
+        for (int i = 0; i < IM_COUNTOF(text_suffixes); i++)
         {
-            for (int j = 0; j < IM_ARRAYSIZE(wrap_suffixes); j++)
+            for (int j = 0; j < IM_COUNTOF(wrap_suffixes); j++)
             {
-                for (int k = 0; k < IM_ARRAYSIZE(clip_suffixes); k++)
+                for (int k = 0; k < IM_COUNTOF(clip_suffixes); k++)
                 {
                     Str64f test_name("%s%s%s%s", base_name, text_suffixes[i], wrap_suffixes[j], clip_suffixes[k]);
                     t = IM_REGISTER_TEST(e, "perf", "");

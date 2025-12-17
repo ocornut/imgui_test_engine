@@ -229,7 +229,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
             ctx->LogDebug("Pressed!");
             vars.ButtonPressCount[5]++;
         }
-        for (int n = 0; n < IM_ARRAYSIZE(vars.ButtonPressCount); n++)
+        for (int n = 0; n < IM_COUNTOF(vars.ButtonPressCount); n++)
             ImGui::Text("%d: %d", n, vars.ButtonPressCount[n]);
 
         ImGui::End();
@@ -580,7 +580,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
 #else
         ImGuiSliderFlags flags[] = { ImGuiSliderFlags_None, ImGuiSliderFlags_AlwaysClamp };
 #endif
-        for (int i = 0; i < IM_ARRAYSIZE(flags); ++i)
+        for (int i = 0; i < IM_COUNTOF(flags); ++i)
         {
 #if IMGUI_VERSION_NUM >= 19125
             bool clamp_on_input = (flags[i] & ImGuiSliderFlags_ClampOnInput) != 0;
@@ -590,7 +590,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
             vars.Flags = flags[i];
 
             float slider_min_max[][2] = { {0.0f, 1.0f}, {0.0f, 0.0f} };
-            for (int j = 0; j < IM_ARRAYSIZE(slider_min_max); ++j)
+            for (int j = 0; j < IM_COUNTOF(slider_min_max); ++j)
             {
                 ctx->LogInfo("## Slider %d with Flags = 0x%08X", j, vars.Flags);
 
@@ -622,7 +622,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
             }
 
             float drag_min_max[][2] = { {0.0f, 1.0f}, {0.0f, 0.0f}, {-FLT_MAX, FLT_MAX} };
-            for (int j = 0; j < IM_ARRAYSIZE(drag_min_max); ++j)
+            for (int j = 0; j < IM_COUNTOF(drag_min_max); ++j)
             {
                 ctx->LogDebug("Drag %d with flags = 0x%08X", j, vars.Flags);
 
@@ -676,7 +676,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
             }
 
             float scalar_min_max[][2] = { {-FLT_MAX, 1.0f}, {0.0f, FLT_MAX} };
-            for (int j = 0; j < IM_ARRAYSIZE(scalar_min_max); ++j)
+            for (int j = 0; j < IM_COUNTOF(scalar_min_max); ++j)
             {
                 ctx->LogDebug("Scalar %d with flags = 0x%08X", j, vars.Flags);
 
@@ -765,7 +765,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         vars.Bool1 = ImGui::IsItemHovered();
         ImGui::Text("hovered: %d", vars.Bool1);
 
-        ImGui::InputTextMultiline("##Field", vars.Str1, IM_ARRAYSIZE(vars.Str1), ImVec2(-FLT_MIN, 0.0f));
+        ImGui::InputTextMultiline("##Field", vars.Str1, IM_COUNTOF(vars.Str1), ImVec2(-FLT_MIN, 0.0f));
         vars.Bool2 = ImGui::IsItemHovered();
         ImGui::Text("hovered: %d", vars.Bool2);
         ImGui::End();
@@ -982,9 +982,9 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
     {
         ImGuiTestGenericVars& vars = ctx->GenericVars;
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
-        bool ret = ImGui::InputText("Field", vars.Str1, IM_ARRAYSIZE(vars.Str1));
+        bool ret = ImGui::InputText("Field", vars.Str1, IM_COUNTOF(vars.Str1));
         vars.Status.QueryInc(ret);
-        ImGui::InputText("Sibling", vars.Str2, IM_ARRAYSIZE(vars.Str2));
+        ImGui::InputText("Sibling", vars.Str2, IM_COUNTOF(vars.Str2));
         ImGui::End();
     };
     t->TestFunc = [](ImGuiTestContext* ctx)
@@ -1058,9 +1058,9 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         //    vars.Str1[0] = 0;
 
         if (vars.Step == 0)
-            ret = ImGui::InputText("Field", vars.Str1, IM_ARRAYSIZE(vars.Str1));
+            ret = ImGui::InputText("Field", vars.Str1, IM_COUNTOF(vars.Str1));
         else if (vars.Step == 1)
-            ImGui::InputTextMultiline("Field", vars.Str1, IM_ARRAYSIZE(vars.Str1));
+            ImGui::InputTextMultiline("Field", vars.Str1, IM_COUNTOF(vars.Str1));
         else if (vars.Step == 2)
             ret = ImGui::SliderFloat3("Slider3", &vars.Color1.x, 0.0f, 1.0f);
         vars.Status.QueryInc(ret);
@@ -1984,7 +1984,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
 
         // Check that tabs relative order matches what we expect (which is not the same as submission order above)
         float offset_x = -FLT_MAX;
-        for (int i = 0; i < IM_ARRAYSIZE(tabs); ++i)
+        for (int i = 0; i < IM_COUNTOF(tabs); ++i)
         {
             ctx->MouseMove(tabs[i]);
             IM_CHECK_GT(g.IO.MousePos.x, offset_x);
@@ -2243,11 +2243,11 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
     {
         auto& vars = ctx->GenericVars;
         const ImGuiTabItemFlags test_flags[] = { ImGuiTabItemFlags_None, ImGuiTabItemFlags_Trailing, ImGuiTabItemFlags_Leading, ImGuiTabItemFlags_None };
-        vars.Count = IM_ARRAYSIZE(test_flags);
+        vars.Count = IM_COUNTOF(test_flags);
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
         if (ImGui::BeginTabBar("TabBar"))
         {
-            for (int i = 0; i < IM_ARRAYSIZE(test_flags); i++)
+            for (int i = 0; i < IM_COUNTOF(test_flags); i++)
             {
                 ImGui::SetNextItemWidth(30.0f + i * 10.0f);
                 if (ImGui::BeginTabItem(Str16f("Tab %d", i).c_str(), NULL, test_flags[i]))
@@ -3285,7 +3285,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
             "clear color/##ColorButton",    // Drag & drop system
             "float"                         // Active item (FIXME: Unspecified if we want that behavior of allowing drag while another is active)
         };
-        for (int n = 0; n < IM_ARRAYSIZE(items); n++)
+        for (int n = 0; n < IM_COUNTOF(items); n++)
         {
             ctx->ScrollToTop("Dear ImGui Demo");
             IM_CHECK_EQ(window_demo->Scroll.y, 0.0f);
@@ -4000,7 +4000,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
             { "Open Menu" , ""          }, // Test from popup menu.
         };
 
-        for (int variant = 0; variant < IM_ARRAYSIZE(test_data); variant++)
+        for (int variant = 0; variant < IM_COUNTOF(test_data); variant++)
         {
             ctx->LogDebug("Variant: %d", variant);
             auto& td = test_data[variant];
@@ -4216,7 +4216,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
             if (ImGui::BeginMenu("Edit"))
                 ImGui::EndMenu();
             ImGui::EndMenuBar();
-            ImStrncpy(vars.Str1, ctx->UiContext->LogBuffer.c_str(), IM_ARRAYSIZE(vars.Str1));
+            ImStrncpy(vars.Str1, ctx->UiContext->LogBuffer.c_str(), IM_COUNTOF(vars.Str1));
             ImGui::LogFinish();
         }
         ImGui::End();
@@ -4355,12 +4355,12 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
             }
             ImGui::Button("BUTTON");
             ImGui::SetNextItemWidth(100);
-            ImGui::InputText("InputText1", vars.Str1, IM_ARRAYSIZE(vars.Str1));
+            ImGui::InputText("InputText1", vars.Str1, IM_COUNTOF(vars.Str1));
             if (ImGui::BeginTable("Table", 1))
             {
                 ImGui::TableNextColumn();
                 ImGui::SetNextItemWidth(100);
-                ImGui::InputText("InputText2", vars.Str1, IM_ARRAYSIZE(vars.Str1));
+                ImGui::InputText("InputText2", vars.Str1, IM_COUNTOF(vars.Str1));
                 ImGui::EndTable();
             }
             ImGui::EndMainMenuBar();
@@ -5455,7 +5455,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
                     ImGui::TableNextColumn();
                     bool item_is_selected = selection.Contains((ImGuiID)n);
                     ImGui::SetNextItemSelectionUserData(n);
-                    ImGui::Selectable(Str64f("Object %05d: %s", n, ExampleNames[n % IM_ARRAYSIZE(ExampleNames)]).c_str(), item_is_selected, ImGuiSelectableFlags_SpanAllColumns | ImGuiSelectableFlags_AllowOverlap);
+                    ImGui::Selectable(Str64f("Object %05d: %s", n, ExampleNames[n % IM_COUNTOF(ExampleNames)]).c_str(), item_is_selected, ImGuiSelectableFlags_SpanAllColumns | ImGuiSelectableFlags_AllowOverlap);
                     ImGui::TableNextColumn();
 
                     if (!ctx->IsFirstGuiFrame())
@@ -5482,7 +5482,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
     {
         static const char* GetItemName(int n)
         {
-            return ExampleNames[n % IM_ARRAYSIZE(ExampleNames)];
+            return ExampleNames[n % IM_COUNTOF(ExampleNames)];
         }
     };
     t->GuiFunc = [](ImGuiTestContext* ctx)
@@ -5491,7 +5491,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ExampleSelection& selection = vars.Selection0;
         //selection.OptMangleItemData = false;
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
-        const int items_count = IM_ARRAYSIZE(ExampleNames);
+        const int items_count = IM_COUNTOF(ExampleNames);
         ImGuiMultiSelectIO* ms_io = ImGui::BeginMultiSelect(ImGuiMultiSelectFlags_None, selection.Size, items_count);
         selection.ApplyRequests(ms_io);
 
@@ -5791,7 +5791,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         float x_offset[] = {50.f,   100.f,  150.f,  190.f};
         float slider_v[] = {0.06f,  0.35f,  2.11f,  8.97f};
         for (float sign : {-1.f, 1.f})
-            for (int i = 0; i < IM_ARRAYSIZE(x_offset); i++)
+            for (int i = 0; i < IM_COUNTOF(x_offset); i++)
             {
                 ctx->ItemDragWithDelta("slider", ImVec2(sign * x_offset[i], 0.f));
                 IM_CHECK_GT(vars.Float1, sign * slider_v[i] - (slider_v[i] * 0.15f));  // FIXME-TESTS: Exact values actually depends on GrabSize.
@@ -6170,7 +6170,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ctx->KeyPress(ImGuiKey_Escape);
 
         // Clicking a disabled item.
-        for (int i = 0; i < IM_ARRAYSIZE(disabled_items); i++)
+        for (int i = 0; i < IM_COUNTOF(disabled_items); i++)
         {
             ctx->MouseMove(disabled_items[i]);
             vars.Reset();
@@ -6184,7 +6184,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
 
         // Verify that clicking on a disabled item takes focus
 #if IMGUI_VERSION_NUM >= 19135
-        for (int i = 0; i < IM_ARRAYSIZE(disabled_items); i++)
+        for (int i = 0; i < IM_COUNTOF(disabled_items); i++)
         {
             ctx->WindowFocus("//Dear ImGui Demo");
             ctx->ItemClick(disabled_items[i]);
@@ -6194,7 +6194,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
 
         // Dragging a disabled item.
         ImVec2 window_pos = window->Pos;
-        for (int i = 0; i < IM_ARRAYSIZE(disabled_items); i++)
+        for (int i = 0; i < IM_COUNTOF(disabled_items); i++)
         {
             ctx->MouseMove(disabled_items[i]);
             vars.Reset();
@@ -6204,7 +6204,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         }
 
         // Disable active ID when widget gets disabled while held.
-        for (int i = 0; i < IM_ARRAYSIZE(disabled_items); i++)
+        for (int i = 0; i < IM_COUNTOF(disabled_items); i++)
         {
             vars.WidgetsDisabled = false;
             ctx->MouseMove(disabled_items[i]);
@@ -6512,7 +6512,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ImGui::DragInt("%f", &vars.Int1, 1, 0, 0, "%f");
         ImGui::DragInt("%.0f", &vars.Int1, 1, 0, 0, "%.0f");
         ImGui::DragInt("%.3f", &vars.Int1, 1, 0, 0, "%.3f");
-        ImStrncpy(vars.Str1, ctx->UiContext->LogBuffer.c_str(), IM_ARRAYSIZE(vars.Str2));
+        ImStrncpy(vars.Str1, ctx->UiContext->LogBuffer.c_str(), IM_COUNTOF(vars.Str2));
         ImGui::LogFinish();
         ImGui::End();
     };

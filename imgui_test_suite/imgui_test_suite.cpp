@@ -491,9 +491,9 @@ int main(int argc, char** argv)
     test_io.ConfigNoThrottle = app->OptNoThrottle;
     test_io.PerfStressAmount = app->OptStressAmount;
     test_io.ConfigCaptureEnabled = app->OptCaptureEnabled;
-    FindVideoEncoder(test_io.VideoCaptureEncoderPath, IM_ARRAYSIZE(test_io.VideoCaptureEncoderPath));
-    ImStrncpy(test_io.VideoCaptureEncoderParams, IMGUI_CAPTURE_DEFAULT_VIDEO_PARAMS_FOR_FFMPEG, IM_ARRAYSIZE(test_io.VideoCaptureEncoderParams));
-    ImStrncpy(test_io.GifCaptureEncoderParams, IMGUI_CAPTURE_DEFAULT_GIF_PARAMS_FOR_FFMPEG, IM_ARRAYSIZE(test_io.GifCaptureEncoderParams));
+    FindVideoEncoder(test_io.VideoCaptureEncoderPath, IM_COUNTOF(test_io.VideoCaptureEncoderPath));
+    ImStrncpy(test_io.VideoCaptureEncoderParams, IMGUI_CAPTURE_DEFAULT_VIDEO_PARAMS_FOR_FFMPEG, IM_COUNTOF(test_io.VideoCaptureEncoderParams));
+    ImStrncpy(test_io.GifCaptureEncoderParams, IMGUI_CAPTURE_DEFAULT_GIF_PARAMS_FOR_FFMPEG, IM_COUNTOF(test_io.GifCaptureEncoderParams));
     test_io.CheckDrawDataIntegrity = true;
 
     if (app->OptGui)
@@ -556,7 +556,7 @@ int main(int argc, char** argv)
     Str64 git_branch;
     if (ImFileFindInParents("imgui/", 4, &git_repo_path))
         if (ImBuildFindGitBranchName(git_repo_path.c_str(), &git_branch))
-            strncpy(test_io.GitBranchName, git_branch.c_str(), IM_ARRAYSIZE(test_io.GitBranchName));
+            strncpy(test_io.GitBranchName, git_branch.c_str(), IM_COUNTOF(test_io.GitBranchName));
     if (!test_io.GitBranchName[0])
     {
         strcpy(test_io.GitBranchName, "unknown");

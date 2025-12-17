@@ -158,7 +158,7 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
 
         if (ImGui::BeginPopup("Popup", ImGuiWindowFlags_NoSavedSettings) || ImGui::BeginPopupModal("Modal", NULL, ImGuiWindowFlags_NoSavedSettings))
         {
-            ImGui::InputText("Field", vars.Str1, IM_ARRAYSIZE(vars.Str1));
+            ImGui::InputText("Field", vars.Str1, IM_COUNTOF(vars.Str1));
             if (ctx->IsGuiFuncOnly() && ImGui::IsKeyPressed(ImGuiKey_Escape) && !g.IO.NavVisible)
                 ImGui::CloseCurrentPopup();
             ImGui::EndPopup();
@@ -235,7 +235,7 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
         };
         auto window_content = [ctx]()
         {
-            ImGui::InputText("Input", ctx->GenericVars.Str1, IM_ARRAYSIZE(ctx->GenericVars.Str1));
+            ImGui::InputText("Input", ctx->GenericVars.Str1, IM_COUNTOF(ctx->GenericVars.Str1));
             ctx->GenericVars.Id = ImGui::GetItemID();
         };
 
@@ -369,7 +369,7 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
             ImGui::EndMenuBar();
         }
         char buf[16] = "";
-        ImGui::InputText("Input", buf, IM_ARRAYSIZE(buf));
+        ImGui::InputText("Input", buf, IM_COUNTOF(buf));
         ImGui::End();
     };
     t->TestFunc = [](ImGuiTestContext* ctx)
@@ -842,11 +842,11 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
         ImGuiTestGenericVars& vars = ctx->GenericVars;
         ImGui::Begin("Test window 1", NULL, ImGuiWindowFlags_NoSavedSettings);
         ImGui::Text("This is test window 1");
-        ImGui::InputText("InputText", vars.Str1, IM_ARRAYSIZE(vars.Str1));
+        ImGui::InputText("InputText", vars.Str1, IM_COUNTOF(vars.Str1));
         ImGui::End();
         ImGui::Begin("Test window 2", NULL, ImGuiWindowFlags_NoSavedSettings);
         ImGui::Text("This is test window 2");
-        ImGui::InputText("InputText", vars.Str2, IM_ARRAYSIZE(vars.Str2));
+        ImGui::InputText("InputText", vars.Str2, IM_COUNTOF(vars.Str2));
         ImGui::End();
     };
     t->TestFunc = [](ImGuiTestContext* ctx)
@@ -997,7 +997,7 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
             vars.Int1++;
         ImGui::SameLine();
         ImGui::Text("%d", vars.Int1);
-        ImGui::InputText("InputText", vars.Str1, IM_ARRAYSIZE(vars.Str1));
+        ImGui::InputText("InputText", vars.Str1, IM_COUNTOF(vars.Str1));
         if (ImGui::Button("Activate Src 1"))
 #if IMGUI_VERSION_NUM >= 18961
             ImGui::ActivateItemByID(activate_target);
@@ -1051,7 +1051,7 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
     {
         ImGuiTestGenericVars& vars = ctx->GenericVars;
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
-        ImGui::InputText("InputText", vars.Str1, IM_ARRAYSIZE(vars.Str1));
+        ImGui::InputText("InputText", vars.Str1, IM_COUNTOF(vars.Str1));
         if (ImGui::Button("Button"))
             vars.Int1++;
         ImGui::End();
@@ -1380,8 +1380,8 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
         }
         static char buf[32];
         ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 200);
-        ImGui::InputText("##1", buf, IM_ARRAYSIZE(buf));
-        ImGui::InputText("##2", buf, IM_ARRAYSIZE(buf));
+        ImGui::InputText("##1", buf, IM_COUNTOF(buf));
+        ImGui::InputText("##2", buf, IM_COUNTOF(buf));
         if (vars.SetFocus && !vars.MenuLayer)
             ImGui::SetItemDefaultFocus();
         ImGui::End();
@@ -2002,13 +2002,13 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
         auto out_widget = [&vars](const char* label, int n)
         {
             if (vars.WidgetType == 0)
-                ImGui::InputText(label, vars.Bufs[n], IM_ARRAYSIZE(vars.Bufs[n]));
+                ImGui::InputText(label, vars.Bufs[n], IM_COUNTOF(vars.Bufs[n]));
             if (vars.WidgetType == 1)
                 ImGui::SliderFloat(label, &vars.Floats[n], 0.0f, 1.0f);
             if (vars.WidgetType == 2)
                 ImGui::DragFloat(label, &vars.Floats[n], 0.1f, 0.0f, 1.0f);
             if (vars.WidgetType == 3)
-                ImGui::InputTextMultiline(label, vars.Bufs[n], IM_ARRAYSIZE(vars.Bufs[n]), ImVec2(0, ImGui::GetTextLineHeight() * 2));
+                ImGui::InputTextMultiline(label, vars.Bufs[n], IM_COUNTOF(vars.Bufs[n]), ImVec2(0, ImGui::GetTextLineHeight() * 2));
         };
 
         out_widget("Item0", 0);
@@ -2203,12 +2203,12 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
         if (vars.Step == 1)
         {
             ImGui::SetKeyboardFocusHere();
-            ImGui::InputText("Text1", vars.Str1, IM_ARRAYSIZE(vars.Str1));
+            ImGui::InputText("Text1", vars.Str1, IM_COUNTOF(vars.Str1));
             vars.Status.QuerySet();
         }
         else if (vars.Step == 2)
         {
-            ImGui::InputText("Text2", vars.Str1, IM_ARRAYSIZE(vars.Str1));
+            ImGui::InputText("Text2", vars.Str1, IM_COUNTOF(vars.Str1));
             vars.Status.QuerySet();
             ImGui::SetKeyboardFocusHere(-1);
         }
@@ -2216,9 +2216,9 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
         {
             // Multiple overriding calls in same frame (last gets it)
             ImGui::SetKeyboardFocusHere();
-            ImGui::InputText("Text1", vars.Str1, IM_ARRAYSIZE(vars.Str1));
+            ImGui::InputText("Text1", vars.Str1, IM_COUNTOF(vars.Str1));
             ImGui::SetKeyboardFocusHere();
-            ImGui::InputText("Text2", vars.Str1, IM_ARRAYSIZE(vars.Str1));
+            ImGui::InputText("Text2", vars.Str1, IM_COUNTOF(vars.Str1));
         }
         else if (vars.Step == 4)
         {
@@ -2231,26 +2231,26 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
             if (vars.Bool1)
             {
                 ImGui::SetKeyboardFocusHere();
-                ImGui::InputText("Text1", vars.Str1, IM_ARRAYSIZE(vars.Str1));
+                ImGui::InputText("Text1", vars.Str1, IM_COUNTOF(vars.Str1));
             }
-            ImGui::InputText("NoFocus1", vars.Str2, IM_ARRAYSIZE(vars.Str2));
+            ImGui::InputText("NoFocus1", vars.Str2, IM_COUNTOF(vars.Str2));
             vars.Status.QuerySet();
         }
         else if (vars.Step == 6)
         {
             if (vars.Bool1)
             {
-                ImGui::InputText("Text1", vars.Str1, IM_ARRAYSIZE(vars.Str1));
+                ImGui::InputText("Text1", vars.Str1, IM_COUNTOF(vars.Str1));
                 ImGui::SetKeyboardFocusHere(-1);
             }
-            ImGui::InputText("NoFocus1", vars.Str2, IM_ARRAYSIZE(vars.Str2));
+            ImGui::InputText("NoFocus1", vars.Str2, IM_COUNTOF(vars.Str2));
             vars.Status.QuerySet();
         }
         else if (vars.Step == 7)
         {
             ImGui::PushItemFlag(ImGuiItemFlags_NoTabStop, true);
             ImGui::SetKeyboardFocusHere();
-            ImGui::InputText("Text1", vars.Str1, IM_ARRAYSIZE(vars.Str1));
+            ImGui::InputText("Text1", vars.Str1, IM_COUNTOF(vars.Str1));
             vars.Status.QuerySet();
             ImGui::PopItemFlag();
         }
@@ -2265,13 +2265,13 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
             if (ImGui::Button("Focus"))
             //if (!ImGui::IsAnyItemActive())
                 ImGui::SetKeyboardFocusHere();
-            ImGui::InputTextMultiline("TextMultiline1", vars.Str1, IM_ARRAYSIZE(vars.Str1));
+            ImGui::InputTextMultiline("TextMultiline1", vars.Str1, IM_COUNTOF(vars.Str1));
             vars.Status.QuerySet();
         }
         else if (vars.Step == 10) // #4761
         {
             bool focus = ImGui::Button("Focus");
-            ImGui::InputTextMultiline("TextMultiline2", vars.Str1, IM_ARRAYSIZE(vars.Str1));
+            ImGui::InputTextMultiline("TextMultiline2", vars.Str1, IM_COUNTOF(vars.Str1));
             vars.Status.QuerySet();
             if (focus)
                 //if (!ImGui::IsAnyItemActive())
@@ -2279,20 +2279,20 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
         }
         else if (vars.Step == 11) // Test non-wrapping of SetKeyboardFocusHere(0)
         {
-            ImGui::InputText("Text1", vars.Str1, IM_ARRAYSIZE(vars.Str1));
-            ImGui::InputText("Text2", vars.Str1, IM_ARRAYSIZE(vars.Str1));
+            ImGui::InputText("Text1", vars.Str1, IM_COUNTOF(vars.Str1));
+            ImGui::InputText("Text2", vars.Str1, IM_COUNTOF(vars.Str1));
             ImGui::SetKeyboardFocusHere(0);
             ImGui::Begin("Test Window 2", NULL, ImGuiWindowFlags_NoSavedSettings);
-            ImGui::InputText("Text3", vars.Str1, IM_ARRAYSIZE(vars.Str1));
+            ImGui::InputText("Text3", vars.Str1, IM_COUNTOF(vars.Str1));
             ImGui::End();
         }
         else if (vars.Step == 12) // Test non-wrapping of SetKeyboardFocusHere(-1)
         {
             ImGui::SetKeyboardFocusHere(-1);
-            ImGui::InputText("Text1", vars.Str1, IM_ARRAYSIZE(vars.Str1));
-            ImGui::InputText("Text2", vars.Str1, IM_ARRAYSIZE(vars.Str1));
+            ImGui::InputText("Text1", vars.Str1, IM_COUNTOF(vars.Str1));
+            ImGui::InputText("Text2", vars.Str1, IM_COUNTOF(vars.Str1));
             ImGui::Begin("Test Window 2", NULL, ImGuiWindowFlags_NoSavedSettings);
-            ImGui::InputText("Text3", vars.Str1, IM_ARRAYSIZE(vars.Str1));
+            ImGui::InputText("Text3", vars.Str1, IM_COUNTOF(vars.Str1));
             ImGui::End();
         }
         ImGui::End();
@@ -2452,7 +2452,7 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
         for (int n = 0; n < 50; n++)
             ImGui::Text("Dummy %d", n);
 
-        ImGui::InputText("Text1", vars.Str1, IM_ARRAYSIZE(vars.Str1));
+        ImGui::InputText("Text1", vars.Str1, IM_COUNTOF(vars.Str1));
         vars.Status[0].QuerySet(false);
         if (vars.Step == 1)
             ImGui::SetKeyboardFocusHere(-1);
@@ -2460,7 +2460,7 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
         for (int n = 0; n < 50; n++)
             ImGui::Text("Dummy %d", n);
 
-        ImGui::InputText("Text2", vars.Str1, IM_ARRAYSIZE(vars.Str1));
+        ImGui::InputText("Text2", vars.Str1, IM_COUNTOF(vars.Str1));
         vars.Status[1].QuerySet(false);
         if (vars.Step == 2)
             ImGui::SetKeyboardFocusHere(-1);
@@ -2468,7 +2468,7 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
         for (int n = 0; n < 50; n++)
             ImGui::Text("Dummy %d", n);
 
-        ImGui::InputText("Text3", vars.Str1, IM_ARRAYSIZE(vars.Str1));
+        ImGui::InputText("Text3", vars.Str1, IM_COUNTOF(vars.Str1));
         vars.Status[2].QuerySet(false);
         if (vars.Step == 3)
             ImGui::SetKeyboardFocusHere(-1);
@@ -2538,12 +2538,12 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
         ImGui::Begin("Test Window 1", NULL, ImGuiWindowFlags_NoSavedSettings);
         if (set_focus == 0)
             ImGui::SetKeyboardFocusHere();
-        ImGui::InputText("Item A", dummy, IM_ARRAYSIZE(dummy));
+        ImGui::InputText("Item A", dummy, IM_COUNTOF(dummy));
         ImGui::End();
         ImGui::Begin("Test Window 2", NULL, ImGuiWindowFlags_NoSavedSettings);
         if (set_focus == 1)
             ImGui::SetKeyboardFocusHere();
-        ImGui::InputText("Item B", dummy, IM_ARRAYSIZE(dummy));
+        ImGui::InputText("Item B", dummy, IM_COUNTOF(dummy));
         ImGui::End();
     };
     t->TestFunc = [](ImGuiTestContext* ctx)
