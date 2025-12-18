@@ -4671,19 +4671,25 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
         IM_CHECK_EQ((int)sizeof(v128), 16);
         v128.ClearAllBits();
         v128.SetBitRange(1, 2);
-        IM_CHECK(v128.Storage[0] == 0x00000002 && v128.Storage[1] == 0x00000000 && v128.Storage[2] == 0x00000000);
+#if IMGUI_VERSION_NUM < 19256
+#define Data Storage
+#endif
+        IM_CHECK(v128.Data[0] == 0x00000002 && v128.Data[1] == 0x00000000 && v128.Data[2] == 0x00000000);
         v128.ClearAllBits();
         v128.SetBitRange(1, 32);
-        IM_CHECK(v128.Storage[0] == 0xFFFFFFFE && v128.Storage[1] == 0x00000000 && v128.Storage[2] == 0x00000000);
+        IM_CHECK(v128.Data[0] == 0xFFFFFFFE && v128.Data[1] == 0x00000000 && v128.Data[2] == 0x00000000);
         v128.ClearAllBits();
         v128.SetBitRange(1, 33);
-        IM_CHECK(v128.Storage[0] == 0xFFFFFFFE && v128.Storage[1] == 0x00000001 && v128.Storage[2] == 0x00000000);
+        IM_CHECK(v128.Data[0] == 0xFFFFFFFE && v128.Data[1] == 0x00000001 && v128.Data[2] == 0x00000000);
         v128.ClearAllBits();
         v128.SetBitRange(2, 33);
-        IM_CHECK(v128.Storage[0] == 0xFFFFFFFC && v128.Storage[1] == 0x00000001 && v128.Storage[2] == 0x00000000);
+        IM_CHECK(v128.Data[0] == 0xFFFFFFFC && v128.Data[1] == 0x00000001 && v128.Data[2] == 0x00000000);
         v128.ClearAllBits();
         v128.SetBitRange(0, 65);
-        IM_CHECK(v128.Storage[0] == 0xFFFFFFFF && v128.Storage[1] == 0xFFFFFFFF && v128.Storage[2] == 0x00000001);
+        IM_CHECK(v128.Data[0] == 0xFFFFFFFF && v128.Data[1] == 0xFFFFFFFF && v128.Data[2] == 0x00000001);
+#if IMGUI_VERSION_NUM < 19256
+#undef Data
+#endif
 
         ImBitArray<129> v129;
         v129.ClearAllBits();
