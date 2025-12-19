@@ -4443,6 +4443,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ExampleSelection        Selection1;
         bool                    Test0 = false;
         ImGuiMultiSelectFlags   MultiSelectFlags = ImGuiMultiSelectFlags_None;
+        ImGuiWindowFlags        WindowFlags = ImGuiWindowFlags_AlwaysAutoResize;
     };
     auto multiselect_guifunc = [](ImGuiTestContext* ctx)
     {
@@ -4450,7 +4451,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ExampleSelection& selection = vars.Selection0;
 
         const int ITEMS_COUNT = 100;
-        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | vars.WindowFlags);
         ImGui::Text("(Size = %3d items)", selection.Size);
         ImGui::Separator();
 
@@ -4719,6 +4720,9 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
 
             // Test basic navigation from clipped item (#9079)
             // This could be part of a nav_clipped_xxx test but it's trivial to add here.
+            vars.WindowFlags &= ~ImGuiWindowFlags_AlwaysAutoResize;
+            ctx->Yield();
+            ctx->WindowResize("", ImVec2(0.0f, ImGui::GetTextLineHeightWithSpacing() * 50.0f));
             ctx->KeyPress(ImGuiKey_Home);
             ctx->KeyPress(ImGuiKey_DownArrow, 2);
             IM_CHECK_EQ(g.NavId, ctx->GetID("Object 0002"));
@@ -4734,6 +4738,8 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
 
             // Test Page Up/Page Down navigation from clipped item (#9079)
 #if IMGUI_VERSION_NUM >= 19247
+            vars.WindowFlags |= ImGuiWindowFlags_AlwaysAutoResize;
+            ctx->Yield();
             ctx->KeyPress(ImGuiKey_Home);
             ctx->KeyPress(ImGuiMod_Shift | ImGuiKey_PageDown);
             IM_CHECK(selection.Size > 0);
