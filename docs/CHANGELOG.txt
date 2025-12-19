@@ -5,6 +5,9 @@ CHANGELOG
    Those changes are not all listed here.
 ** For a while this is going to ONLY INCLUDE BREAKING CHANGES.
 
+2025/12/19:
+- TestEngine: ctx->WindowResize() can keep existing size for a given axis.
+
 2025/12/11:
 - TestEngine: fixes for changes in 1.92.6.
 - TestEngine: added TableSetColumnEnabled() by column index helper.
