@@ -3988,7 +3988,8 @@ void    ImGuiTestContext::WindowMove(ImGuiTestRef ref, ImVec2 input_pos, ImVec2 
     MouseSetViewport(window); // Update in case window has changed viewport
 }
 
-// Pass < 0.0f on an axis to preserve current size.
+// Pass == 0.0f on an axis to preserve current size.
+// Pass <  0.0f on an axis to auto-resize.
 void    ImGuiTestContext::WindowResize(ImGuiTestRef ref, ImVec2 size)
 {
     if (IsError())
@@ -3997,8 +3998,8 @@ void    ImGuiTestContext::WindowResize(ImGuiTestRef ref, ImVec2 size)
     ImGuiWindow* window = GetWindowByRef(ref);
     IM_CHECK_SILENT(window != nullptr);
 
-    size.x = (size.x <= 0.0f) ? window->Size.x : ImFloor(size.x);
-    size.y = (size.y <= 0.0f) ? window->Size.y : ImFloor(size.y);
+    size.x = (size.x == 0.0f) ? window->Size.x : ImFloor(size.x);
+    size.y = (size.y == 0.0f) ? window->Size.y : ImFloor(size.y);
 
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
     LogDebug("WindowResize '%s' (%.1f,%.1f)", window->Name, size.x, size.y);
