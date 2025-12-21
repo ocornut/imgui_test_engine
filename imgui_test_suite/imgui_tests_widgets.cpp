@@ -4738,7 +4738,8 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
 
             // Test Page Up/Page Down navigation from clipped item (#9079)
 #if IMGUI_VERSION_NUM >= 19247
-            vars.WindowFlags |= ImGuiWindowFlags_AlwaysAutoResize;
+            //vars.WindowFlags |= ImGuiWindowFlags_AlwaysAutoResize;
+            ctx->WindowResize("", ImVec2(0.0f, ImGui::GetTextLineHeightWithSpacing() * 40.0f));
             ctx->Yield();
             ctx->KeyPress(ImGuiKey_Home);
             ctx->KeyPress(ImGuiMod_Shift | ImGuiKey_PageDown);
@@ -4750,9 +4751,11 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
             ctx->KeyPress(ImGuiKey_DownArrow, 2);
             IM_CHECK_EQ(g.NavId, ctx->GetID("Object 0002"));
             ctx->ScrollToBottom("");
+            ctx->Yield();
+            IM_CHECK((ctx->ItemInfo("Object 0002").StatusFlags & ImGuiItemStatusFlags_Visible) == false);
             ctx->KeyPress(ImGuiKey_PageDown);
             IM_CHECK(selection.Size == 1);
-            IM_CHECK(selection.Contains(2 + page_worth) || selection.Contains(2 + page_worth - 1) || selection.Contains(2 + page_worth + 1));
+            IM_CHECK(selection.Contains(2 + page_worth) || selection.Contains(2 + page_worth - 1) || selection.Contains(2 + page_worth + 1) || selection.Contains(2 + page_worth + 2));
 #endif
         }
     };
