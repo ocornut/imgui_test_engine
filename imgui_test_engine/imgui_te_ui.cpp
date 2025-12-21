@@ -578,8 +578,13 @@ static void ShowTestGroup(ImGuiTestEngine* e, ImGuiTestGroup group, Str* filter,
                 ImGuiTestEngine_AbortCurrentTest(e);
             else if (queue_gui_func_toggle && !e->IO.IsRunningTests)
                 ImGuiTestEngine_QueueTest(e, test, ImGuiTestRunFlags_RunFromGui | ImGuiTestRunFlags_GuiFuncOnly);
-            if (queue_test && !e->IO.IsRunningTests)
-                ImGuiTestEngine_QueueTest(e, test, ImGuiTestRunFlags_RunFromGui);
+            if (queue_test)
+            {
+                if (e->IO.IsRunningTests)
+                    ImGuiTestEngine_AbortCurrentTest(e);
+                else
+                    ImGuiTestEngine_QueueTest(e, test, ImGuiTestRunFlags_RunFromGui);
+            }
 
             ImGui::PopID();
         }

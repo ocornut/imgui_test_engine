@@ -8,6 +8,7 @@ CHANGELOG
 2025/12/19:
 - TestEngine: ctx->WindowResize(): passing 0.0f keep existing size of for
   a given axis, vs passing < 0.0f auto-resize for this axis.
+- TestEngine: UI: clicking "Run" again stop current test.
 
 2025/12/11:
 - TestEngine: fixes for changes in 1.92.6.
