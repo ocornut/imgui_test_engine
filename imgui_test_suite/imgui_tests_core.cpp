@@ -974,7 +974,7 @@ void RegisterTests_Window(ImGuiTestEngine* e)
         IM_CHECK(g.NavWindow == NULL);
 
         // Try with inverse buttons
-        vars.PopupFlags = 0;
+        vars.PopupFlags = ImGuiPopupFlags_MouseButtonLeft;
         ctx->MouseClickOnVoid(0);
         IM_CHECK(vars.Bool1 == true);
         ctx->MouseClickOnVoid(1);
