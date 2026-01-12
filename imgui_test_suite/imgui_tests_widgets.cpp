@@ -3584,7 +3584,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ImGui::LogToClipboard();
 #ifdef __GNUC__
 #pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wformat-overflow"  // warning: ‘%s’ directive argument is null
+#pragma GCC diagnostic ignored "-Wformat-overflow"  // warning: ï¿½%sï¿½ directive argument is null
 #endif
         ImGui::Text("%s", (const char*)NULL);
         ImGui::Text("%.*s", 3, (const char*)NULL);
@@ -5881,6 +5881,174 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ctx->ItemClick("Float", 0, ImGuiTestOpFlags_MoveToEdgeR);
         IM_CHECK_EQ(vars.Float1, 100.0f);
     };
+
+#if IMGUI_VERSION_NUM >= 19259
+    // ## Test SliderFloatRange2 overlapping handles resolution by drag direction
+    t = IM_REGISTER_TEST(e, "widgets", "widgets_slider_range2_overlap_resolve");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiTestGenericVars& vars = ctx->GenericVars;
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImGui::SliderFloatRange2("range", &vars.FloatArray[0], &vars.FloatArray[1], 0.0f, 1.0f);
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiTestGenericVars& vars = ctx->GenericVars;
+
+        // Test dragging right when overlapped
+        vars.FloatArray[0] = 0.5f;
+        vars.FloatArray[1] = 0.5f;
+        ctx->SetRef("Test Window");
+        ctx->ItemClick("range");
+        ctx->ItemDragWithDelta("range", ImVec2(50, 0));
+        IM_CHECK_EQ(vars.FloatArray[0], 0.5f);  // Min stays
+        IM_CHECK_GT(vars.FloatArray[1], 0.5f);  // Max increases (dragged right)
+
+        // Test dragging left when overlapped
+        vars.FloatArray[0] = 0.5f;
+        vars.FloatArray[1] = 0.5f;
+        ctx->ItemClick("range");
+        ctx->ItemDragWithDelta("range", ImVec2(-50, 0));
+        IM_CHECK_LT(vars.FloatArray[0], 0.5f);  // Min decreases (dragged left)
+        IM_CHECK_EQ(vars.FloatArray[1], 0.5f);  // Max stays
+    };
+
+    // ## Test SliderFloatRange2 Ctrl+Click text input with "..." separator
+    t = IM_REGISTER_TEST(e, "widgets", "widgets_slider_range2_text_input");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiTestGenericVars& vars = ctx->GenericVars;
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImGui::SliderFloatRange2("range", &vars.FloatArray[0], &vars.FloatArray[1], 0.0f, 1.0f);
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiTestGenericVars& vars = ctx->GenericVars;
+        vars.FloatArray[0] = 0.25f;
+        vars.FloatArray[1] = 0.75f;
+
+        ctx->SetRef("Test Window");
+
+        // Ctrl+Click to enter text input mode
+        ctx->KeyDown(ImGuiMod_Ctrl);
+        ctx->ItemClick("range");
+        ctx->KeyUp(ImGuiMod_Ctrl);
+
+        // Type new values with "..." separator
+        ctx->KeyCharsReplaceEnter("0.1...0.9");
+
+        IM_CHECK(ImAbs(vars.FloatArray[0] - 0.1f) < 0.01f);
+        IM_CHECK(ImAbs(vars.FloatArray[1] - 0.9f) < 0.01f);
+    };
+
+    // ## Test SliderFloatRange2 text input with " - " separator
+    t = IM_REGISTER_TEST(e, "widgets", "widgets_slider_range2_text_input_dash");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiTestGenericVars& vars = ctx->GenericVars;
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImGui::SliderFloatRange2("range", &vars.FloatArray[0], &vars.FloatArray[1], 0.0f, 1.0f);
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiTestGenericVars& vars = ctx->GenericVars;
+        vars.FloatArray[0] = 0.25f;
+        vars.FloatArray[1] = 0.75f;
+
+        ctx->SetRef("Test Window");
+
+        ctx->KeyDown(ImGuiMod_Ctrl);
+        ctx->ItemClick("range");
+        ctx->KeyUp(ImGuiMod_Ctrl);
+
+        // Type new values with " - " separator
+        ctx->KeyCharsReplaceEnter("0.2 - 0.8");
+
+        IM_CHECK(ImAbs(vars.FloatArray[0] - 0.2f) < 0.01f);
+        IM_CHECK(ImAbs(vars.FloatArray[1] - 0.8f) < 0.01f);
+    };
+
+    // ## Test SliderFloatRange2 handles can't cross
+    t = IM_REGISTER_TEST(e, "widgets", "widgets_slider_range2_no_cross");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiTestGenericVars& vars = ctx->GenericVars;
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImGui::SliderFloatRange2("range", &vars.FloatArray[0], &vars.FloatArray[1], 0.0f, 1.0f);
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiTestGenericVars& vars = ctx->GenericVars;
+        vars.FloatArray[0] = 0.4f;
+        vars.FloatArray[1] = 0.6f;
+
+        ctx->SetRef("Test Window");
+
+        // Try to drag min handle past max
+        ctx->ItemClick("range", 0, ImGuiTestOpFlags_MoveToEdgeL);
+        ctx->ItemDragWithDelta("range", ImVec2(200, 0));
+
+        // Min should be clamped to max
+        IM_CHECK_LE(vars.FloatArray[0], vars.FloatArray[1]);
+    };
+
+    // ## Test SliderIntRange2 text input
+    t = IM_REGISTER_TEST(e, "widgets", "widgets_slider_range2_int");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiTestGenericVars& vars = ctx->GenericVars;
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImGui::SliderIntRange2("range", &vars.IntArray[0], &vars.IntArray[1], 0, 100);
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiTestGenericVars& vars = ctx->GenericVars;
+        vars.IntArray[0] = 25;
+        vars.IntArray[1] = 75;
+
+        ctx->SetRef("Test Window");
+
+        ctx->KeyDown(ImGuiMod_Ctrl);
+        ctx->ItemClick("range");
+        ctx->KeyUp(ImGuiMod_Ctrl);
+        ctx->KeyCharsReplaceEnter("10...90");
+
+        IM_CHECK_EQ(vars.IntArray[0], 10);
+        IM_CHECK_EQ(vars.IntArray[1], 90);
+    };
+
+    // ## Test SliderFloat2 with ImGuiSliderFlags_Range flag
+    t = IM_REGISTER_TEST(e, "widgets", "widgets_slider_range2_flag");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiTestGenericVars& vars = ctx->GenericVars;
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImGui::SliderFloat2("range", vars.FloatArray, 0.0f, 1.0f, "%.3f", ImGuiSliderFlags_Range);
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiTestGenericVars& vars = ctx->GenericVars;
+        vars.FloatArray[0] = 0.25f;
+        vars.FloatArray[1] = 0.75f;
+
+        ctx->SetRef("Test Window");
+
+        // Test text input works via the flag approach
+        ctx->KeyDown(ImGuiMod_Ctrl);
+        ctx->ItemClick("range");
+        ctx->KeyUp(ImGuiMod_Ctrl);
+        ctx->KeyCharsReplaceEnter("0.1...0.9");
+
+        IM_CHECK(ImAbs(vars.FloatArray[0] - 0.1f) < 0.01f);
+        IM_CHECK(ImAbs(vars.FloatArray[1] - 0.9f) < 0.01f);
+    };
+#endif
 
     // ## Test tooltip positioning in various conditions.
     t = IM_REGISTER_TEST(e, "widgets", "widgets_popup_positioning");
