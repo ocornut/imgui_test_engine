@@ -3681,8 +3681,8 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
 
 #if IMGUI_VERSION_NUM >= 19197 || defined(IMGUI_HAS_TEXTURES)
 
-    // # Legacy test
-    t = IM_REGISTER_TEST(e, "widgets", "widgets_text_wrapped_cjk_1");
+    // # CJK(zh-cn) Legacy test
+    t = IM_REGISTER_TEST(e, "widgets", "widgets_text_wrapped_cjk_legacy_headless");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoTitleBar);
@@ -3707,13 +3707,15 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ImGui::End();
     };
 
-    // # Test pure CJK characters
-    t = IM_REGISTER_TEST(e, "widgets", "widgets_text_wrapped_cjk_2");
+    /* this test case is not really needed, it's covered by the rest cases
+    // ## Test pure CJK(zh-cn) characters
+    // No special case in this test, the wrap can happen at at every char
+    t = IM_REGISTER_TEST(e, "widgets", "widgets_text_wrapped_cjk_zh_cn_normal_chars_headless");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoTitleBar);
         const int cjk_char_utf8_bytes = 3;
-        const char* s1 = "零一二三四五六七八九十百千万";   // every char must be CJK
+        const char* s1 = "零一二三四五六七八九十百千万";   // every char must be CJK normal chars
         const int s1_size = strlen(s1);
         for (int i = 0; i * cjk_char_utf8_bytes  < s1_size ; ++i) {
             const float local_off_x = ImGui::GetCursorPos().x;
@@ -3724,22 +3726,24 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         }
         ImGui::End();
     };
+    */
 
-    // # Test HeadProhibitedW
-    t = IM_REGISTER_TEST(e, "widgets", "widgets_text_wrapped_cjk_3");
+    // # Test CJK(zh-cn) HeadProhibitedW
+    // the wraps are not allowed to be placed before pronunciation_mark, e.g 。 》, ！ ､
+    t = IM_REGISTER_TEST(e, "widgets", "widgets_text_wrapped_cjk_zh_cn_mixed_char_with_pronunciation_mark_not_allow_at_head");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoTitleBar);
 
         // test data
         const char cjk_s1[] = "零一，二三。四五六》七八九！十百､千万";
-        const size_t expected_wrap_offset_char[] = { 1, 1, 1, 3, 4, 4, 6, 7, 8, 8, 10, 11, 12, 12, 14, 15, 15, 17, 18 };  // a little verbose be ok for a test case
+        const size_t expected_wrap_offset_char[] = { 1, 1, 1, 3, 4, 4, 6, 7, 8, 8, 10, 11, 12, 12, 14, 15, 15, 17, 18 };
 
-        // common, get the total chars in utf8 string and calculate the expected_wrap_position_byte
+        // common prepare, get the total chars in utf8 string and calculate the expected_wrap_position_byte
         const size_t max_chars = sizeof cjk_s1 - 1; // max_chars is always -LE sizeof(total bytes) for utf8 string;
         size_t cbyte[max_chars];
         size_t total_chars = ImStrUtf8CollectOffsets(cjk_s1, cjk_s1 + strlen(cjk_s1), &cbyte[0], max_chars);
-        IM_ASSERT((sizeof expected_wrap_offset_char / sizeof expected_wrap_offset_char[0])  == total_chars); // test wrap position for every char!
+        IM_ASSERT((sizeof expected_wrap_offset_char / sizeof expected_wrap_offset_char[0])  == total_chars);
         size_t expected_wrap_offset_byte[max_chars];
         for (size_t i =0; i < total_chars; ++i){
             expected_wrap_offset_byte[i] = cbyte[expected_wrap_offset_char[i]];
@@ -3748,12 +3752,13 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         // test
         ImFont* font = ImGui::FindFontByPrefix(TEST_SUITE_ALT_FONT_NAME_CJK);
         ImGui::PushFont(font);
-        if (ImGui::BeginTable("## display", 3, ImGuiTableFlags_NoSavedSettings))
+        if (ImGui::BeginTable("## display", 3, ImGuiTableFlags_NoSavedSettings | ImGuiTableFlags_Borders | ImGuiTableFlags_ScrollY))
         {
             ImGui::TableSetupColumn("Full Text");
-            ImGui::TableSetupColumn("First Line");
-            ImGui::TableSetupColumn("Next Line");
+            ImGui::TableSetupColumn("Result");
+            ImGui::TableSetupColumn("Explain");
             ImGui::TableHeadersRow();
+            // test wrap position for every char!
             for (size_t i = 0; i < total_chars; ++i)
             {
                 float wrap_width = ImGui::CalcTextSize(cjk_s1, cjk_s1 + cbyte[i]).x;
@@ -3761,20 +3766,24 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
                     ImGui::GetFontSize(), cjk_s1, cjk_s1 + strlen(cjk_s1), wrap_width);
                     ImGui::TableNextColumn();
                     ImGui::TextUnformatted(cjk_s1);
-                    // Build rect coordinates
                     ImVec2 text_pos = ImGui::GetItemRectMin();
-                    ImVec2 text_size = ImGui::GetItemRectSize();
-                    ImVec2 rect_max = ImVec2(text_pos.x + wrap_width, text_pos.y + text_size.y);
-                    // Draw the rectangle
+                    float x0 = text_pos.x;
+                    float y0 = text_pos.y;
+                    float height = ImGui::GetItemRectSize().y;
+                    float real_wrap_width =  ImGui::CalcTextSize(cjk_s1, s1_w).x;
+                    ImGui::GetWindowDrawList()->AddLine(
+                        {x0+wrap_width, y0},{x0+wrap_width, y0+height * 2},
+                        IM_COL32(255,255, 0, 255), 2.0F
+                    );
                     ImGui::GetWindowDrawList()->AddRect(
-                        text_pos,
-                        rect_max,
-                        IM_COL32(255, 0, 0, 255) // red outline
+                        {x0, y0},{x0+real_wrap_width, y0+height},
+                        IM_COL32(0,255, 0, 255)
                     );
                     ImGui::TableNextColumn();
                     ImGui::TextUnformatted(cjk_s1, s1_w);
-                    ImGui::TableNextColumn();
                     ImGui::TextUnformatted(s1_w);
+                    ImGui::TableNextColumn();
+                    ImGui::TextUnformatted(i == 0 || i == expected_wrap_offset_char[i] ? "" : "pronunciation mark rule");
                 IM_CHECK_EQ(s1_w, cjk_s1 + expected_wrap_offset_byte[i]);
             }
             ImGui::EndTable();
@@ -3783,21 +3792,23 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ImGui::End();
     };
 
-    // Test TailProhibitedW
-    t = IM_REGISTER_TEST(e, "widgets", "widgets_text_wrapped_cjk_4");
+    // Test CJK(zh-cn) TailProhibitedW
+    // the wraps are not allowed to be placed after pronunciation_mark, e.g 《 【 ¥｛
+    t = IM_REGISTER_TEST(e, "widgets", "widgets_text_wrapped_cjk_zh_cn_mixed_char_with_pronunciation_mark_not_allow_at_tail");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoTitleBar);
 
         // test data
         const char cjk_s1[] = "零一《二三【四五¥六七｛八九";
-        const size_t expected_wrap_offset_char[] = { 1, 1, 2, 2, 4, 5, 5, 7, 8, 8, 10, 11, 11, 13 };  // a little verbose be ok for a test case
+        // based on cjk_s1 manually set the offset of expected wrap pos (not byte)
+        const size_t expected_wrap_offset_char[] = { 1, 1, 2, 2, 4, 5, 5, 7, 8, 8, 10, 11, 11, 13 };  
 
-        // common, get the total chars in utf8 string and calculate the expected_wrap_position_byte
+        // common prepare, get the total chars in utf8 string and calculate the expected_wrap_position_byte
         const size_t max_chars = sizeof cjk_s1 - 1; // max_chars is always -LE sizeof(total bytes) for utf8 string;
         size_t cbyte[max_chars];
         size_t total_chars = ImStrUtf8CollectOffsets(cjk_s1, cjk_s1 + strlen(cjk_s1), &cbyte[0], max_chars);
-        IM_ASSERT((sizeof expected_wrap_offset_char / sizeof expected_wrap_offset_char[0])  == total_chars); // test wrap position for every char!
+        IM_ASSERT((sizeof expected_wrap_offset_char / sizeof expected_wrap_offset_char[0])  == total_chars);
         size_t expected_wrap_offset_byte[max_chars];
         for (size_t i =0; i < total_chars; ++i){
             expected_wrap_offset_byte[i] = cbyte[expected_wrap_offset_char[i]];
@@ -3806,12 +3817,13 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         // test
         ImFont* font = ImGui::FindFontByPrefix(TEST_SUITE_ALT_FONT_NAME_CJK);
         ImGui::PushFont(font);
-        if (ImGui::BeginTable("## display", 3, ImGuiTableFlags_NoSavedSettings))
+        if (ImGui::BeginTable("## display", 3, ImGuiTableFlags_NoSavedSettings | ImGuiTableFlags_Borders | ImGuiTableFlags_ScrollY))
         {
             ImGui::TableSetupColumn("Full Text");
-            ImGui::TableSetupColumn("First Line");
-            ImGui::TableSetupColumn("Next Line");
+            ImGui::TableSetupColumn("Result");
+            ImGui::TableSetupColumn("Explain");
             ImGui::TableHeadersRow();
+            // test wrap position for every char!
             for (size_t i = 0; i < total_chars; ++i)
             {
                 float wrap_width = ImGui::CalcTextSize(cjk_s1, cjk_s1 + cbyte[i]).x;
@@ -3819,20 +3831,24 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
                     ImGui::GetFontSize(), cjk_s1, cjk_s1 + strlen(cjk_s1), wrap_width);
                     ImGui::TableNextColumn();
                     ImGui::TextUnformatted(cjk_s1);
-                    // Build rect coordinates
                     ImVec2 text_pos = ImGui::GetItemRectMin();
-                    ImVec2 text_size = ImGui::GetItemRectSize();
-                    ImVec2 rect_max = ImVec2(text_pos.x + wrap_width, text_pos.y + text_size.y);
-                    // Draw the rectangle
+                    float x0 = text_pos.x;
+                    float y0 = text_pos.y;
+                    float height = ImGui::GetItemRectSize().y;
+                    float real_wrap_width =  ImGui::CalcTextSize(cjk_s1, s1_w).x;
+                    ImGui::GetWindowDrawList()->AddLine(
+                        {x0+wrap_width, y0},{x0+wrap_width, y0+height * 2},
+                        IM_COL32(255,255, 0, 255), 2.0F
+                    );
                     ImGui::GetWindowDrawList()->AddRect(
-                        text_pos,
-                        rect_max,
-                        IM_COL32(255, 0, 0, 255) // red outline
+                        {x0, y0},{x0+real_wrap_width, y0+height},
+                        IM_COL32(0,255, 0, 255)
                     );
                     ImGui::TableNextColumn();
                     ImGui::TextUnformatted(cjk_s1, s1_w);
-                    ImGui::TableNextColumn();
                     ImGui::TextUnformatted(s1_w);
+                    ImGui::TableNextColumn();
+                    ImGui::TextUnformatted(i == 0 || i == expected_wrap_offset_char[i] ? "" : "pronunciation mark rule");
                 IM_CHECK_EQ(s1_w, cjk_s1 + expected_wrap_offset_byte[i]);
             }
             ImGui::EndTable();
@@ -3841,21 +3857,23 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ImGui::End();
     };
 
-    // Test Mixed CJK and English
-    t = IM_REGISTER_TEST(e, "widgets", "widgets_text_wrapped_cjk_5");
+    // Test Mixed CJK(zh-cn) and English
+    // no special rule for CJK chars
+    t = IM_REGISTER_TEST(e, "widgets", "widgets_text_wrapped_cjk_zh_cn_mixed_with_english");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoTitleBar);
 
         // test data
         const char cjk_s1[] = "零一hello world二三";  // contains CJK characters
+        // based on cjk_s1 manually set the offset of expected wrap pos (not byte)
         const size_t expected_wrap_offset_char[] = { 1, 1, 2, 2, 2, 2, 2, 8, 8, 8, 8, 8, 8, 13, 14};
 
-        // common, get the total chars in utf8 string and calculate the expected_wrap_position_byte
+        // common prepare, get the total chars in utf8 string and calculate the expected_wrap_position_byte
         const size_t max_chars = sizeof cjk_s1 - 1; // max_chars is always -LE sizeof(total bytes) for utf8 string;
         size_t cbyte[max_chars];
         size_t total_chars = ImStrUtf8CollectOffsets(cjk_s1, cjk_s1 + strlen(cjk_s1), &cbyte[0], max_chars);
-        IM_ASSERT((sizeof expected_wrap_offset_char / sizeof expected_wrap_offset_char[0])  == total_chars); // test wrap position for every char!
+        IM_ASSERT((sizeof expected_wrap_offset_char / sizeof expected_wrap_offset_char[0])  == total_chars);
         size_t expected_wrap_offset_byte[max_chars];
         for (size_t i =0; i < total_chars; ++i){
             expected_wrap_offset_byte[i] = cbyte[expected_wrap_offset_char[i]];
@@ -3864,12 +3882,13 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         // test
         ImFont* font = ImGui::FindFontByPrefix(TEST_SUITE_ALT_FONT_NAME_CJK);
         ImGui::PushFont(font);
-        if (ImGui::BeginTable("## display", 3, ImGuiTableFlags_NoSavedSettings))
+        if (ImGui::BeginTable("## display", 3, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoTitleBar))
         {
             ImGui::TableSetupColumn("Full Text");
-            ImGui::TableSetupColumn("First Line");
-            ImGui::TableSetupColumn("Next Line");
+            ImGui::TableSetupColumn("Result");
+            ImGui::TableSetupColumn("Explain");
             ImGui::TableHeadersRow();
+            // test wrap position for every char!
             for (size_t i = 0; i < total_chars; ++i)
             {
                 float wrap_width = ImGui::CalcTextSize(cjk_s1, cjk_s1 + cbyte[i]).x;
@@ -3877,20 +3896,24 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
                     ImGui::GetFontSize(), cjk_s1, cjk_s1 + strlen(cjk_s1), wrap_width);
                     ImGui::TableNextColumn();
                     ImGui::TextUnformatted(cjk_s1);
-                    // Build rect coordinates
                     ImVec2 text_pos = ImGui::GetItemRectMin();
-                    ImVec2 text_size = ImGui::GetItemRectSize();
-                    ImVec2 rect_max = ImVec2(text_pos.x + wrap_width, text_pos.y + text_size.y);
-                    // Draw the rectangle
+                    float x0 = text_pos.x;
+                    float y0 = text_pos.y;
+                    float height = ImGui::GetItemRectSize().y;
+                    float real_wrap_width =  ImGui::CalcTextSize(cjk_s1, s1_w).x;
+                    ImGui::GetWindowDrawList()->AddLine(
+                        {x0+wrap_width, y0},{x0+wrap_width, y0+height * 2},
+                        IM_COL32(255,255, 0, 255), 2.0F
+                    );
                     ImGui::GetWindowDrawList()->AddRect(
-                        text_pos,
-                        rect_max,
-                        IM_COL32(255, 0, 0, 255) // red outline
+                        {x0, y0},{x0+real_wrap_width, y0+height},
+                        IM_COL32(0,255, 0, 255)
                     );
                     ImGui::TableNextColumn();
                     ImGui::TextUnformatted(cjk_s1, s1_w);
-                    ImGui::TableNextColumn();
                     ImGui::TextUnformatted(s1_w);
+                    ImGui::TableNextColumn();
+                    ImGui::TextUnformatted(i == 0 || i == expected_wrap_offset_char[i] ? "" : "English rules, legacy");
                 IM_CHECK_EQ(s1_w, cjk_s1 + expected_wrap_offset_byte[i]);
             }
             ImGui::EndTable();
