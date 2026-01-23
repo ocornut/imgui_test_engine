@@ -6360,6 +6360,16 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         IM_CHECK((g.CurrentItemFlags & ImGuiItemFlags_Disabled) != 0);
         IM_CHECK_FLOAT_EQ(ImGui::GetStyle().Alpha, 1.0f * 0.4f);
 
+        // Tooltip has specific feature (#7640, #9180)
+        ImGui::Button("Button");
+        if (ImGui::BeginItemTooltip())
+        {
+            ImGui::Text("Hello");
+            IM_CHECK((g.CurrentItemFlags& ImGuiItemFlags_Disabled) == 0);
+            IM_CHECK_FLOAT_EQ(ImGui::GetStyle().Alpha, 1.0f);
+            ImGui::EndTooltip();
+        }
+
         ImGui::Begin("Nested window call");
 #if IMGUI_VERSION_NUM >= 19085
         IM_CHECK((g.CurrentItemFlags & ImGuiItemFlags_Disabled) != 0);

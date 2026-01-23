@@ -1242,6 +1242,9 @@ static bool ImGuiApp_ImplGL_CaptureFramebuffer(ImGuiViewport* viewport, int x, i
 // [SECTION] Mock backend for multi-viewports (Shared): The viewports are not visible
 //-----------------------------------------------------------------------------
 
+// FIXME: Add OS/WM emulating feature: resist moving.
+// FIXME: Add OS/WM emulating feature: resist resizing.
+
 #ifdef IMGUI_HAS_VIEWPORT
 
 // A virtual window
