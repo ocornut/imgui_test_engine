@@ -1,7 +1,6 @@
 // dear imgui
 // (tests: widgets)
 
-
 #define _CRT_SECURE_NO_WARNINGS
 #include <limits.h>
 #define IMGUI_DEFINE_MATH_OPERATORS
@@ -11,7 +10,7 @@
 #include "imgui_test_engine/imgui_te_context.h"
 #include "imgui_test_engine/imgui_te_utils.h"       // InputText() with Str
 #include "imgui_test_engine/thirdparty/Str/Str.h"
-#include "imgui_test_suite.h"
+#include "imgui_test_suite.h"                       // TEST_SUITE_ALT_FONT_NAME_CJK
 
 // Warnings
 #ifdef _MSC_VER
@@ -3586,7 +3585,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ImGui::LogToClipboard();
 #ifdef __GNUC__
 #pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wformat-overflow"  // warning: �%s� directive argument is null
+#pragma GCC diagnostic ignored "-Wformat-overflow" // warning: %s directive argument is null
 #endif
         ImGui::Text("%s", (const char*)NULL);
         ImGui::Text("%.*s", 3, (const char*)NULL);
@@ -3679,9 +3678,9 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
 #endif
     };
 
-#if IMGUI_VERSION_NUM >= 19197 || defined(IMGUI_HAS_TEXTURES)
+#if (IMGUI_VERSION_NUM >= 19197 || defined(IMGUI_HAS_TEXTURES)) && defined(IMGUI_TEST_ENGINE_ENABLE_STD_FUNCTION)
 
-    // # CJK(zh-cn) Legacy test
+    // # Legacy test
     t = IM_REGISTER_TEST(e, "widgets", "widgets_text_wrapped_cjk_legacy_headless");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
@@ -3728,27 +3727,19 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
     };
     */
 
-    // # Test CJK(zh-cn) HeadProhibitedW
-    // the wraps are not allowed to be placed before pronunciation_mark, e.g 。 》, ！ ､
-    t = IM_REGISTER_TEST(e, "widgets", "widgets_text_wrapped_cjk_zh_cn_mixed_char_with_pronunciation_mark_not_allow_at_head");
-    t->GuiFunc = [](ImGuiTestContext* ctx)
-    {
+
+    auto cjk_wrap_test_helper= [](const char * cjk_s1, const size_t * expected_wrap_offset_char, size_t expected_wrap_offset_char_count){
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoTitleBar);
-
-        // test data
-        const char cjk_s1[] = "零一，二三。四五六》七八九！十百､千万";
-        const size_t expected_wrap_offset_char[] = { 1, 1, 1, 3, 4, 4, 6, 7, 8, 8, 10, 11, 12, 12, 14, 15, 15, 17, 18 };
-
         // common prepare, get the total chars in utf8 string and calculate the expected_wrap_position_byte
-        const size_t max_chars = sizeof cjk_s1 - 1; // max_chars is always -LE sizeof(total bytes) for utf8 string;
+        static size_t const max_chars = 9999;
         size_t cbyte[max_chars];
         size_t total_chars = ImStrUtf8CollectOffsets(cjk_s1, cjk_s1 + strlen(cjk_s1), &cbyte[0], max_chars);
-        IM_ASSERT((sizeof expected_wrap_offset_char / sizeof expected_wrap_offset_char[0])  == total_chars);
+        // test wrap position for every char, so the count of expects should be equal to total_chars
+        IM_ASSERT(expected_wrap_offset_char_count == total_chars);
         size_t expected_wrap_offset_byte[max_chars];
         for (size_t i =0; i < total_chars; ++i){
             expected_wrap_offset_byte[i] = cbyte[expected_wrap_offset_char[i]];
         }
-
         // test
         ImFont* font = ImGui::FindFontByPrefix(TEST_SUITE_ALT_FONT_NAME_CJK);
         ImGui::PushFont(font);
@@ -3790,137 +3781,52 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         }
         ImGui::PopFont();
         ImGui::End();
+    };
+
+   // # Test CJK(zh-cn) HeadProhibitedW
+    // the wraps are not allowed to be placed before pronunciation_mark, e.g 。 》, ！ ､
+    t = IM_REGISTER_TEST(e, "widgets", "widgets_text_wrapped_cjk_zh_cn_mixed_char_with_pronunciation_mark_not_allow_at_head");
+    t->GuiFunc = [&cjk_wrap_test_helper](ImGuiTestContext* ctx)
+    {
+        // test data
+        const char cjk_s1[] = "零一，二三。四五六》七八九！十百､千万";
+        const size_t expected_wrap_offset_char[] = { 1, 1, 1, 3, 4, 4, 6, 7, 8, 8, 10, 11, 12, 12, 14, 15, 15, 17, 18 };
+        cjk_wrap_test_helper(
+            cjk_s1,
+            expected_wrap_offset_char,
+            sizeof expected_wrap_offset_char / sizeof expected_wrap_offset_char[0]);
     };
 
     // Test CJK(zh-cn) TailProhibitedW
     // the wraps are not allowed to be placed after pronunciation_mark, e.g 《 【 ¥｛
     t = IM_REGISTER_TEST(e, "widgets", "widgets_text_wrapped_cjk_zh_cn_mixed_char_with_pronunciation_mark_not_allow_at_tail");
-    t->GuiFunc = [](ImGuiTestContext* ctx)
+    t->GuiFunc = [&cjk_wrap_test_helper](ImGuiTestContext* ctx)
     {
-        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoTitleBar);
-
         // test data
         const char cjk_s1[] = "零一《二三【四五¥六七｛八九";
         // based on cjk_s1 manually set the offset of expected wrap pos (not byte)
         const size_t expected_wrap_offset_char[] = { 1, 1, 2, 2, 4, 5, 5, 7, 8, 8, 10, 11, 11, 13 };  
-
-        // common prepare, get the total chars in utf8 string and calculate the expected_wrap_position_byte
-        const size_t max_chars = sizeof cjk_s1 - 1; // max_chars is always -LE sizeof(total bytes) for utf8 string;
-        size_t cbyte[max_chars];
-        size_t total_chars = ImStrUtf8CollectOffsets(cjk_s1, cjk_s1 + strlen(cjk_s1), &cbyte[0], max_chars);
-        IM_ASSERT((sizeof expected_wrap_offset_char / sizeof expected_wrap_offset_char[0])  == total_chars);
-        size_t expected_wrap_offset_byte[max_chars];
-        for (size_t i =0; i < total_chars; ++i){
-            expected_wrap_offset_byte[i] = cbyte[expected_wrap_offset_char[i]];
-        }
-
-        // test
-        ImFont* font = ImGui::FindFontByPrefix(TEST_SUITE_ALT_FONT_NAME_CJK);
-        ImGui::PushFont(font);
-        if (ImGui::BeginTable("## display", 3, ImGuiTableFlags_NoSavedSettings | ImGuiTableFlags_Borders | ImGuiTableFlags_ScrollY))
-        {
-            ImGui::TableSetupColumn("Full Text");
-            ImGui::TableSetupColumn("Result");
-            ImGui::TableSetupColumn("Explain");
-            ImGui::TableHeadersRow();
-            // test wrap position for every char!
-            for (size_t i = 0; i < total_chars; ++i)
-            {
-                float wrap_width = ImGui::CalcTextSize(cjk_s1, cjk_s1 + cbyte[i]).x;
-                const char* s1_w = ImGui::GetFont()->CalcWordWrapPositionCJK(
-                    ImGui::GetFontSize(), cjk_s1, cjk_s1 + strlen(cjk_s1), wrap_width);
-                    ImGui::TableNextColumn();
-                    ImGui::TextUnformatted(cjk_s1);
-                    ImVec2 text_pos = ImGui::GetItemRectMin();
-                    float x0 = text_pos.x;
-                    float y0 = text_pos.y;
-                    float height = ImGui::GetItemRectSize().y;
-                    float real_wrap_width =  ImGui::CalcTextSize(cjk_s1, s1_w).x;
-                    ImGui::GetWindowDrawList()->AddLine(
-                        {x0+wrap_width, y0},{x0+wrap_width, y0+height * 2},
-                        IM_COL32(255,255, 0, 255), 2.0F
-                    );
-                    ImGui::GetWindowDrawList()->AddRect(
-                        {x0, y0},{x0+real_wrap_width, y0+height},
-                        IM_COL32(0,255, 0, 255)
-                    );
-                    ImGui::TableNextColumn();
-                    ImGui::TextUnformatted(cjk_s1, s1_w);
-                    ImGui::TextUnformatted(s1_w);
-                    ImGui::TableNextColumn();
-                    ImGui::TextUnformatted(i == 0 || i == expected_wrap_offset_char[i] ? "" : "pronunciation mark rule");
-                IM_CHECK_EQ(s1_w, cjk_s1 + expected_wrap_offset_byte[i]);
-            }
-            ImGui::EndTable();
-        }
-        ImGui::PopFont();
-        ImGui::End();
+        cjk_wrap_test_helper(
+            cjk_s1,
+            expected_wrap_offset_char,
+            sizeof expected_wrap_offset_char / sizeof expected_wrap_offset_char[0]);
     };
 
     // Test Mixed CJK(zh-cn) and English
     // no special rule for CJK chars
     t = IM_REGISTER_TEST(e, "widgets", "widgets_text_wrapped_cjk_zh_cn_mixed_with_english");
-    t->GuiFunc = [](ImGuiTestContext* ctx)
+    t->GuiFunc = [&cjk_wrap_test_helper](ImGuiTestContext* ctx)
     {
-        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoTitleBar);
-
         // test data
         const char cjk_s1[] = "零一hello world二三";  // contains CJK characters
         // based on cjk_s1 manually set the offset of expected wrap pos (not byte)
         const size_t expected_wrap_offset_char[] = { 1, 1, 2, 2, 2, 2, 2, 8, 8, 8, 8, 8, 8, 13, 14};
-
-        // common prepare, get the total chars in utf8 string and calculate the expected_wrap_position_byte
-        const size_t max_chars = sizeof cjk_s1 - 1; // max_chars is always -LE sizeof(total bytes) for utf8 string;
-        size_t cbyte[max_chars];
-        size_t total_chars = ImStrUtf8CollectOffsets(cjk_s1, cjk_s1 + strlen(cjk_s1), &cbyte[0], max_chars);
-        IM_ASSERT((sizeof expected_wrap_offset_char / sizeof expected_wrap_offset_char[0])  == total_chars);
-        size_t expected_wrap_offset_byte[max_chars];
-        for (size_t i =0; i < total_chars; ++i){
-            expected_wrap_offset_byte[i] = cbyte[expected_wrap_offset_char[i]];
-        }
-
-        // test
-        ImFont* font = ImGui::FindFontByPrefix(TEST_SUITE_ALT_FONT_NAME_CJK);
-        ImGui::PushFont(font);
-        if (ImGui::BeginTable("## display", 3, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoTitleBar))
-        {
-            ImGui::TableSetupColumn("Full Text");
-            ImGui::TableSetupColumn("Result");
-            ImGui::TableSetupColumn("Explain");
-            ImGui::TableHeadersRow();
-            // test wrap position for every char!
-            for (size_t i = 0; i < total_chars; ++i)
-            {
-                float wrap_width = ImGui::CalcTextSize(cjk_s1, cjk_s1 + cbyte[i]).x;
-                const char* s1_w = ImGui::GetFont()->CalcWordWrapPositionCJK(
-                    ImGui::GetFontSize(), cjk_s1, cjk_s1 + strlen(cjk_s1), wrap_width);
-                    ImGui::TableNextColumn();
-                    ImGui::TextUnformatted(cjk_s1);
-                    ImVec2 text_pos = ImGui::GetItemRectMin();
-                    float x0 = text_pos.x;
-                    float y0 = text_pos.y;
-                    float height = ImGui::GetItemRectSize().y;
-                    float real_wrap_width =  ImGui::CalcTextSize(cjk_s1, s1_w).x;
-                    ImGui::GetWindowDrawList()->AddLine(
-                        {x0+wrap_width, y0},{x0+wrap_width, y0+height * 2},
-                        IM_COL32(255,255, 0, 255), 2.0F
-                    );
-                    ImGui::GetWindowDrawList()->AddRect(
-                        {x0, y0},{x0+real_wrap_width, y0+height},
-                        IM_COL32(0,255, 0, 255)
-                    );
-                    ImGui::TableNextColumn();
-                    ImGui::TextUnformatted(cjk_s1, s1_w);
-                    ImGui::TextUnformatted(s1_w);
-                    ImGui::TableNextColumn();
-                    ImGui::TextUnformatted(i == 0 || i == expected_wrap_offset_char[i] ? "" : "English rules, legacy");
-                IM_CHECK_EQ(s1_w, cjk_s1 + expected_wrap_offset_byte[i]);
-            }
-            ImGui::EndTable();
-        }
-        ImGui::PopFont();
-        ImGui::End();
+        cjk_wrap_test_helper(
+            cjk_s1,
+            expected_wrap_offset_char,
+            sizeof expected_wrap_offset_char / sizeof expected_wrap_offset_char[0]);
     };
+
 #endif
 
     // ## Test LabelText() variants layout (#4004)
