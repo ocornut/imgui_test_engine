@@ -3,7 +3,8 @@
 
 #pragma once
 
-#define TEST_SUITE_ALT_FONT_NAME   "Roboto-Medium.ttf"      // Prefix
+#define TEST_SUITE_ALT_FONT_NAME       "Roboto-Medium.ttf"      // Prefix
+#define TEST_SUITE_ALT_FONT_NAME_CJK   "SourceHanSansCN-VF-subset.ttf"      // Prefix
 
 // Tests Registration Functions
 struct ImGuiTestEngine;

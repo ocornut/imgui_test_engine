@@ -308,6 +308,7 @@ static void TestSuite_LoadFonts(float dpi_scale)
     {
         io.Fonts->AddFontFromFileTTF(Str64f("%s/%s", base_font_dir.c_str(), "NotoSans-Regular.ttf").c_str(), IM_ROUND(16.0f * dpi_scale));
         io.Fonts->AddFontFromFileTTF(Str64f("%s/%s", base_font_dir.c_str(), "Roboto-Medium.ttf").c_str(), IM_ROUND(16.0f * dpi_scale));
+        io.Fonts->AddFontFromFileTTF(Str64f("%s/%s", base_font_dir.c_str(), "SourceHanSansCN-VF-subset.ttf").c_str(), IM_ROUND(16.0f * dpi_scale));
         //io.Fonts->AddFontFromFileTTF(Str64f("%s/%s", base_font_dir.c_str(), "RobotoMono-Regular.ttf").c_str(), 16.0f * dpi_scale, &cfg);
         //io.Fonts->AddFontFromFileTTF(Str64f("%s/%s", base_font_dir.c_str(), "Cousine-Regular.ttf").c_str(), 15.0f * dpi_scale);
         //io.Fonts->AddFontFromFileTTF(Str64f("%s/%s", base_font_dir.c_str(), "DroidSans.ttf").c_str(), 16.0f * dpi_scale);
