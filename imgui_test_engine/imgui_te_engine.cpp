@@ -2432,7 +2432,7 @@ bool ImGuiTestEngine_Check(const char* file, const char* func, int line, ImGuiTe
     ImGuiTestEngine* engine = GImGuiTestEngine;
     (void)func;
 
-    // Removed absolute path from output so we have deterministic output (otherwise __FILE__ gives us machine dending output)
+    // Removed absolute path from output so we have deterministic output (otherwise __FILE__ gives us compiling machine specific output)
     const char* file_without_path = file ? ImPathFindFilename(file) : "";
 
     if (ImGuiTestContext* ctx = engine->TestContext)
