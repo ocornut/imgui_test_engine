@@ -4377,8 +4377,11 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         // which closing a menu does, but not e.g. clicking a button. That's why we press Escape.
         // It may be the saner behavior that we limit this to closing menu, so maybe current behavior i the best.
         ctx->SetRef("##MainMenuBar"); // FIXME-TESTS: It's pretty shitty we don't have a clear standard to use that yet
-        ctx->MenuClick("BUTTON");
+        ctx->ItemClick("##MenuBar/BUTTON");
+        IM_CHECK_EQ(g.NavId, ctx->GetID("##MenuBar/BUTTON"));
         IM_CHECK_EQ(g.NavLayer, ImGuiNavLayer_Menu);
+        IM_CHECK_NE(g.NavWindow, test_window);
+
         ctx->KeyPress(ImGuiKey_Escape); // Leave menu layer
         IM_CHECK_EQ(g.NavLayer, ImGuiNavLayer_Main);
         IM_CHECK_EQ(g.NavWindow, test_window);

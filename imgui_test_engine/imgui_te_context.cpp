@@ -1732,20 +1732,24 @@ static void FocusOrMakeClickableAtPos(ImGuiTestContext* ctx, ImGuiWindow* window
 {
     IM_ASSERT(window != nullptr);
 
-    // Avoid unnecessary focus
-    // While this is generally desirable and much more consistent with user behavior,
-    // it make test-engine behavior a little less deterministic.
-    // incorrectly written tests could possibly succeed or fail based on position of other windows.
-    bool is_covered = ctx->FindHoveredWindowAtPos(pos) != window;
-#if IMGUI_VERSION_NUM >= 18944
-    bool is_inhibited = ImGui::IsWindowContentHoverable(window) == false;
-#else
-    bool is_inhibited = false;
-#endif
-    // FIXME-TESTS-NOT_SAME_AS_END_USER: This has too many side effect, could we do without?
-    // - e.g. This can close a modal.
-    if (is_covered || is_inhibited)
+    for (int attempts = 0; attempts < 2; attempts++)
     {
+        // Avoid unnecessary focus
+        // While this is generally desirable and much more consistent with user behavior,
+        // it make test-engine behavior a little less deterministic.
+        // incorrectly written tests could possibly succeed or fail based on position of other windows.
+        bool is_covered = ctx->FindHoveredWindowAtPos(pos) != window;
+#if IMGUI_VERSION_NUM >= 18944
+        bool is_inhibited = ImGui::IsWindowContentHoverable(window) == false;
+#else
+        bool is_inhibited = false;
+#endif
+        if (!is_covered && !is_inhibited)
+            return;
+
+        // FIXME-TESTS-NOT_SAME_AS_END_USER: This has too many side effect, could we do without?
+        // - e.g. This can close a modal.
+
         // Testing ImGuiWindowFlags_NoBringToFrontOnFocus is similar to what FocusWindow() does
         ImGuiWindow* focus_front_window = window ? window->RootWindow : nullptr;
 #ifdef IMGUI_HAS_DOCK
@@ -1753,14 +1757,19 @@ static void FocusOrMakeClickableAtPos(ImGuiTestContext* ctx, ImGuiWindow* window
 #else
         ImGuiWindow* display_front_window = window ? window->RootWindow : nullptr;
 #endif
-        if ((window->Flags | focus_front_window->Flags | display_front_window->Flags) & ImGuiWindowFlags_NoBringToFrontOnFocus)
+        const bool can_bring_to_front = ((window->Flags | focus_front_window->Flags | display_front_window->Flags) & ImGuiWindowFlags_NoBringToFrontOnFocus) == 0;
+
+        // Initially I expected to aim to make the most common path move other windows and WindowBringToFront() the exceptional path.
+        // However from a user's perspective, if a window can be moved to front it is usually more natural to do this.
+        if (attempts == 0)
         {
-            // FIXME-TESTS: Aim to make it the common/default path, and WindowBringToFront() the exceptional path!
-            ctx->_MakeAimingSpaceOverPos(window->Viewport, window, pos);
-        }
-        else
-        {
+            if (!can_bring_to_front)
+                continue;
             ctx->WindowBringToFront(window->ID);
+        }
+        else if (attempts == 1)
+        {
+            ctx->_MakeAimingSpaceOverPos(window->Viewport, window, pos);
         }
     }
 }
@@ -2026,6 +2035,9 @@ bool    ImGuiTestContext::WindowTeleportToMakePosVisible(ImGuiTestRef ref, ImVec
     // itself. As a side effect this also adds support for child windows.
     window = window->RootWindowDockTree;
 #endif
+
+    if (window->Flags & ImGuiWindowFlags_NoMove)
+        return false;
 
     ImRect visible_r;
     visible_r.Min = GetMainMonitorWorkPos();
