@@ -931,7 +931,7 @@ void RegisterTests_Perf(ImGuiTestEngine* e)
 		const float line_len = 64.0f; // Length of line to draw
 		const ImVec2 line_spacing(80.0f, 96.0f); // Spacing between lines
 
-		ImGui::SetNextWindowSize(ImVec2((num_cols + 0.5f) * line_spacing.x, (num_rows * 2 * line_spacing.y) + 128.0f), ImGuiCond_Once);
+		ImGui::SetNextWindowSize(ImVec2((num_cols + 0.5f) * line_spacing.x, (num_rows * 2 * line_spacing.y) + 128.0f), ImGuiCond_Appearing);
 		if (ImGui::Begin("perf_misc_lines", NULL, ImGuiWindowFlags_NoSavedSettings))
 		{
 			ImDrawList* draw_list = ImGui::GetWindowDrawList();

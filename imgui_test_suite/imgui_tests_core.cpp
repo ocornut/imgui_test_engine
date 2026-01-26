@@ -351,8 +351,8 @@ void RegisterTests_Window(ImGuiTestEngine* e)
         ImVec2 viewport_pos = ImGui::GetMainViewport()->Pos;
         // #2067
         {
-            ImGui::SetNextWindowPos(viewport_pos + ImVec2(401.0f, 103.0f), ImGuiCond_Once);
-            ImGui::SetNextWindowSize(ImVec2(348.48f, 400.0f), ImGuiCond_Once);
+            ImGui::SetNextWindowPos(viewport_pos + ImVec2(401.0f, 103.0f), ImGuiCond_Appearing);
+            ImGui::SetNextWindowSize(ImVec2(348.48f, 400.0f), ImGuiCond_Appearing);
             ImGui::Begin("Issue 2067", NULL, ImGuiWindowFlags_NoSavedSettings);
             ImVec2 pos = ImGui::GetWindowPos() - viewport_pos;
             ImVec2 size = ImGui::GetWindowSize();
@@ -363,8 +363,8 @@ void RegisterTests_Window(ImGuiTestEngine* e)
         }
         // Test that non-rounded size constraint are not altering pos/size (#2530)
         {
-            ImGui::SetNextWindowPos(viewport_pos + ImVec2(401.0f, 103.0f), ImGuiCond_Once);
-            ImGui::SetNextWindowSize(ImVec2(348.48f, 400.0f), ImGuiCond_Once);
+            ImGui::SetNextWindowPos(viewport_pos + ImVec2(401.0f, 103.0f), ImGuiCond_Appearing);
+            ImGui::SetNextWindowSize(ImVec2(348.48f, 400.0f), ImGuiCond_Appearing);
             ImGui::SetNextWindowSizeConstraints(ImVec2(475.200012f, 0.0f), ImVec2(475.200012f, 100.4f));
             ImGui::Begin("Issue 2530", NULL, ImGuiWindowFlags_NoSavedSettings);
             ImVec2 pos = ImGui::GetWindowPos();
@@ -1445,19 +1445,19 @@ void RegisterTests_Window(ImGuiTestEngine* e)
             IM_CHECK_EQ(g.NavWindow, window0);
             IM_CHECK_EQ(popup1->Active, true);
             SetShowInterrupts(true);                                            // "Window1" and "Window2" appear
+            ImGuiWindow* window1 = ctx->GetWindowByRef("Window1"); (void)window1;
+            ImGuiWindow* window2 = ctx->GetWindowByRef("Window2"); (void)window2;
             IM_CHECK_LT(FindWindowDisplayIndex(popup1->Name), FindWindowDisplayIndex("Window0"));
             IM_CHECK_LT(FindWindowDisplayIndex("Window0"), FindWindowDisplayIndex("Window1"));
             IM_CHECK_LT(FindWindowDisplayIndex("Window1"), FindWindowDisplayIndex("Window2"));
-            IM_CHECK_NE(ctx->GetWindowByRef("Window1")->Pos, window_move_dest);
-            IM_CHECK_NE(ctx->GetWindowByRef("Window2")->Pos, window_move_dest);
+            IM_CHECK_NE(window1->Pos, window_move_dest);
+            IM_CHECK_NE(window2->Pos, window_move_dest);
             ctx->WindowMove("Window1", window_move_dest, ImVec2(0.0f, 0.0f), ImGuiTestOpFlags_NoFocusWindow); // Avoid forceful FocusWindow()
             ctx->WindowMove("Window2", window_move_dest, ImVec2(0.0f, 0.0f), ImGuiTestOpFlags_NoFocusWindow); // Avoid forceful FocusWindow()
-            IM_CHECK_EQ(ctx->GetWindowByRef("Window1")->Pos, window_move_dest); // Window can move
-            IM_CHECK_EQ(ctx->GetWindowByRef("Window2")->Pos, window_move_dest); // Window can move
+            IM_CHECK_EQ(window1->Pos, window_move_dest); // Window can move
+            IM_CHECK_EQ(window2->Pos, window_move_dest); // Window can move
             IM_CHECK_EQ(popup1->Active, true);                                  // Popup/modal remains active
 #ifdef IMGUI_HAS_DOCK
-            ImGuiWindow* window1 = ctx->GetWindowByRef("Window1");
-            ImGuiWindow* window2 = ctx->GetWindowByRef("Window2");
             ctx->DockInto("Window0", "Interrupts", ImGuiDir_None, false, ImGuiTestOpFlags_NoFocusWindow | ImGuiTestOpFlags_NoError);
             IM_CHECK(ctx->WindowIsUndockedOrStandalone(window0));           // Failure to dock into window that does not belong to begin stack of current popup
             ctx->DockInto("Window0", "Hello, world!", ImGuiDir_None, false, ImGuiTestOpFlags_NoFocusWindow | ImGuiTestOpFlags_NoError);
@@ -1522,14 +1522,14 @@ void RegisterTests_Window(ImGuiTestEngine* e)
             ctx->WindowMove("Window2", window_move_dest, ImVec2(0.0f, 0.0f), ImGuiTestOpFlags_NoFocusWindow);
             if (vars.IsModalPopup[1])                                       // Window interactions blocked by modal
             {
-                IM_CHECK_NE(ctx->GetWindowByRef("Window1")->Pos, window_move_dest);
-                IM_CHECK_NE(ctx->GetWindowByRef("Window2")->Pos, window_move_dest);
+                IM_CHECK_NE(window1->Pos, window_move_dest);
+                IM_CHECK_NE(window2->Pos, window_move_dest);
                 IM_CHECK_EQ(popup2->Active, true);                          // Modal remains active
             }
             else                                                            // Windows can move
             {
-                IM_CHECK_EQ(ctx->GetWindowByRef("Window1")->Pos, window_move_dest);
-                IM_CHECK_EQ(ctx->GetWindowByRef("Window2")->Pos, window_move_dest);
+                IM_CHECK_EQ(window1->Pos, window_move_dest);
+                IM_CHECK_EQ(window2->Pos, window_move_dest);
                 IM_CHECK_EQ(popup2->Active, false);                         // Popup is closed
             }
             IM_CHECK_EQ(popup1->Active, true);                              // Popup/modal remains active
@@ -7178,7 +7178,7 @@ void RegisterTests_TestEngine(ImGuiTestEngine* e)
         ctx->WindowResize("", ImVec2(50, ImGui::GetTextLineHeightWithSpacing()));
 
         IM_CHECK(ctx->ItemInfo("Button").RectClipped.GetArea() == 0.0f);
-        IM_CHECK((ctx->ItemInfo("Button").StatusFlags& ImGuiItemStatusFlags_Visible) == 0);
+        IM_CHECK((ctx->ItemInfo("Button").StatusFlags & ImGuiItemStatusFlags_Visible) == 0);
 
         ctx->ItemClick("Button");
 

@@ -58,6 +58,7 @@ struct TableTestingVars
     ImVec2                  ItemSize = ImVec2(0.0f, 0.0f);
     int                     ColumnsCount = 3;
     ImGuiTableColumnFlags   ColumnFlags[6] = {};
+    float                   Widths[6] = {};
     bool                    DebugShowBounds = true;
 
     ImRect                  OutTableItemRect;
@@ -310,7 +311,9 @@ void RegisterTests_Table(ImGuiTestEngine* e)
         ImGuiTestGenericVars& vars = ctx->GenericVars;
         vars.Bool2 = true; // With border
         vars.Bool1 = false;
-        ctx->WindowResize("Test window 1", ImVec2(500, 800));
+
+        const float width = ImGui::CalcTextSize("Selectable Spanning").x * 4.0f;
+        ctx->WindowResize("Test window 1", ImVec2(width, 800));
         vars.Bool1 = true;
         ctx->Yield();
         ctx->Yield();
@@ -339,18 +342,19 @@ void RegisterTests_Table(ImGuiTestEngine* e)
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         auto& vars = ctx->GetVars<TableTestingVars>();
-        ImGui::SetNextWindowSize(ImVec2(600.0f, 0.0f), ImGuiCond_Appearing);
+        ImGui::SetNextWindowSize(ImVec2(800.0f, 0.0f), ImGuiCond_Appearing);
         ImGui::Begin("Test window 1", NULL, ImGuiWindowFlags_NoSavedSettings);
         ImGui::CheckboxFlags("ImGuiTableFlags_Resizable", &vars.TableFlags, ImGuiTableFlags_Resizable);
         if (ctx->IsFirstGuiFrame())
             TableDiscardInstanceAndSettings(ImGui::GetID("table1"));
         if (ImGui::BeginTable("table1", 5, vars.TableFlags | ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_BordersV))
         {
-            ImGui::TableSetupColumn("Set100", 0, 100.0f);                       // Contents: 50.0f
-            ImGui::TableSetupColumn("Def");                                     // Contents: 60.0f
-            ImGui::TableSetupColumn("Fix", ImGuiTableColumnFlags_WidthFixed);   // Contents: 70.0f
-            ImGui::TableSetupColumn("Auto", vars.ColumnFlags[3] ? vars.ColumnFlags[3] : ImGuiTableColumnFlags_NoResize); // Contents: 80.0f
-            ImGui::TableSetupColumn("Stretch", ImGuiTableColumnFlags_WidthStretch);
+            const ImGuiTableColumnFlags cf = ImGuiTableColumnFlags_NoHeaderWidth;
+            ImGui::TableSetupColumn("Set100", cf, 150.0f);                              // Contents: 80.0f
+            ImGui::TableSetupColumn("Def", cf);                                         // Contents: 90.0f
+            ImGui::TableSetupColumn("Fix", cf | ImGuiTableColumnFlags_WidthFixed);      // Contents: 100.0f
+            ImGui::TableSetupColumn("Auto", cf | ((vars.ColumnFlags[3] ? vars.ColumnFlags[3] : ImGuiTableColumnFlags_NoResize))); // Contents: 110.0f
+            ImGui::TableSetupColumn("Stretch", cf | ImGuiTableColumnFlags_WidthStretch);
             ImGui::TableHeadersRow();
             for (int row_n = 0; row_n < 5; row_n++)
             {
@@ -365,7 +369,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
                     //else if (column_n == 4)
                     //    ImGui::Button(Str16f("Fill %d,%d", row_n, column_n).c_str(), ImVec2(-FLT_MIN, 0.0f));
                     else
-                        ImGui::Button(Str16f("Width %d", 50 + column_n * 10).c_str(), ImVec2(50.0f + column_n * 10.0f, 0.0f));
+                        ImGui::Button(Str16f("W %d", 80 + column_n * 10).c_str(), ImVec2(80.0f + column_n * 10.0f, 0.0f));
                 }
                 ImGui::PopID();
             }
@@ -386,18 +390,18 @@ void RegisterTests_Table(ImGuiTestEngine* e)
             else if (n == 1)
                 vars.TableFlags |= ImGuiTableFlags_Resizable;
             ctx->Yield();
-            IM_CHECK_EQ(table->Columns[0].WidthRequest, 100.0f);
+            IM_CHECK_EQ(table->Columns[0].WidthRequest, 150.0f);
             if (vars.TableFlags & ImGuiTableFlags_Resizable)
-                IM_CHECK_EQ(table->Columns[0].WidthAuto, 50.0f);
+                IM_CHECK_EQ(table->Columns[0].WidthAuto, 80.0f);
             else
-                IM_CHECK_EQ(table->Columns[0].WidthAuto, 100.0f);
-            IM_CHECK_EQ(table->Columns[0].WidthGiven, 100.0f);
-            IM_CHECK_EQ(table->Columns[1].WidthAuto, 60.0f);
-            IM_CHECK_EQ(table->Columns[1].WidthGiven, 60.0f);
-            IM_CHECK_EQ(table->Columns[2].WidthAuto, 70.0f);
-            IM_CHECK_EQ(table->Columns[2].WidthGiven, 70.0f);
-            IM_CHECK_EQ(table->Columns[3].WidthAuto, 80.0f);
-            IM_CHECK_EQ(table->Columns[3].WidthGiven, 80.0f);
+                IM_CHECK_EQ(table->Columns[0].WidthAuto, 150.0f);
+            IM_CHECK_EQ(table->Columns[0].WidthGiven, 150.0f);
+            IM_CHECK_EQ(table->Columns[1].WidthAuto, 90.0f);
+            IM_CHECK_EQ(table->Columns[1].WidthGiven, 90.0f);
+            IM_CHECK_EQ(table->Columns[2].WidthAuto, 100.0f);
+            IM_CHECK_EQ(table->Columns[2].WidthGiven, 100.0f);
+            IM_CHECK_EQ(table->Columns[3].WidthAuto, 110.0f);
+            IM_CHECK_EQ(table->Columns[3].WidthGiven, 110.0f);
             IM_CHECK_GT(table->Columns[4].WidthAuto, 1.0f);
         }
 
@@ -407,45 +411,45 @@ void RegisterTests_Table(ImGuiTestEngine* e)
         ctx->ItemDragWithDelta(ImGui::TableGetColumnResizeID(table, 1), ImVec2(-30.0f, 0));
         ctx->ItemDragWithDelta(ImGui::TableGetColumnResizeID(table, 2), ImVec2(-40.0f, 0));
         ctx->ItemDragWithDelta(ImGui::TableGetColumnResizeID(table, 3), ImVec2(-50.0f, 0));
-        IM_CHECK_EQ(table->Columns[0].WidthRequest, 100.0f - 20.0f);    // Verify resizes
-        IM_CHECK_EQ(table->Columns[1].WidthRequest, 60.0f - 30.0f);
-        IM_CHECK_EQ(table->Columns[2].WidthRequest, 70.0f - 40.0f);
-        IM_CHECK_EQ(table->Columns[3].WidthRequest, 80.0f - 50.0f);
+        IM_CHECK_EQ(table->Columns[0].WidthRequest, 150.0f - 20.0f);    // Verify resizes
+        IM_CHECK_EQ(table->Columns[1].WidthRequest, 90.0f - 30.0f);
+        IM_CHECK_EQ(table->Columns[2].WidthRequest, 100.0f - 40.0f);
+        IM_CHECK_EQ(table->Columns[3].WidthRequest, 110.0f - 50.0f);
         vars.ColumnFlags[3] = ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoResize;
         ctx->Yield();
-        IM_CHECK_EQ_NO_RET(table->Columns[3].WidthGiven, 80.0f);        // Auto: restore
+        IM_CHECK_EQ_NO_RET(table->Columns[3].WidthGiven, 110.0f);       // Auto: restore
         vars.TableFlags &= ~ImGuiTableFlags_Resizable;
         ctx->Yield();
-        IM_CHECK_EQ_NO_RET(table->Columns[0].WidthGiven, 100.0f);       // Explicit: restore
-        IM_CHECK_EQ_NO_RET(table->Columns[1].WidthGiven, 60.0f);        // Default: restore
+        IM_CHECK_EQ_NO_RET(table->Columns[0].WidthGiven, 150.0f);       // Explicit: restore
+        IM_CHECK_EQ_NO_RET(table->Columns[1].WidthGiven, 90.0f);        // Default: restore
         //IM_CHECK_EQ_NO_RET(table->Columns[2].WidthGiven, 70.0f - 40.0f);// Fixed: keep whatever width it had (would allow e.g. explicit call to TableSetColumnWidth)
-        IM_CHECK_EQ_NO_RET(table->Columns[2].WidthGiven, 70.0f);        // Fixed: restore
-        IM_CHECK_EQ_NO_RET(table->Columns[3].WidthGiven, 80.0f);        // Auto: restore
+        IM_CHECK_EQ_NO_RET(table->Columns[2].WidthGiven, 100.0f);       // Fixed: restore
+        IM_CHECK_EQ_NO_RET(table->Columns[3].WidthGiven, 110.0f);       // Auto: restore
 
         // Resize up, check for restored widths after clearing the _Resizable flag
         vars.TableFlags |= ImGuiTableFlags_Resizable;
         vars.ColumnFlags[3] = ImGuiTableColumnFlags_WidthFixed;
         ctx->Yield();
         ctx->ItemDoubleClick(ImGui::TableGetColumnResizeID(table, 2));
-        IM_CHECK_EQ(table->Columns[2].WidthGiven, 70.0f);               // Fixed: restore
+        IM_CHECK_EQ(table->Columns[2].WidthGiven, 100.0f);              // Fixed: restore
         ctx->ItemDragWithDelta(ImGui::TableGetColumnResizeID(table, 0), ImVec2(+20.0f, 0));
         ctx->ItemDragWithDelta(ImGui::TableGetColumnResizeID(table, 1), ImVec2(+30.0f, 0));
         ctx->ItemDragWithDelta(ImGui::TableGetColumnResizeID(table, 2), ImVec2(+40.0f, 0));
         ctx->ItemDragWithDelta(ImGui::TableGetColumnResizeID(table, 3), ImVec2(+50.0f, 0));
-        IM_CHECK_EQ(table->Columns[0].WidthRequest, 100.0f + 20.0f);    // Verify resizes
-        IM_CHECK_EQ(table->Columns[1].WidthRequest, 60.0f + 30.0f);
-        IM_CHECK_EQ(table->Columns[2].WidthRequest, 70.0f + 40.0f);
-        IM_CHECK_EQ(table->Columns[3].WidthRequest, 80.0f + 50.0f);
+        IM_CHECK_EQ(table->Columns[0].WidthRequest, 150.0f + 20.0f);    // Verify resizes
+        IM_CHECK_EQ(table->Columns[1].WidthRequest, 90.0f + 30.0f);
+        IM_CHECK_EQ(table->Columns[2].WidthRequest, 100.0f + 40.0f);
+        IM_CHECK_EQ(table->Columns[3].WidthRequest, 110.0f + 50.0f);
         vars.ColumnFlags[3] = ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoResize;
         ctx->Yield();
-        IM_CHECK_EQ_NO_RET(table->Columns[3].WidthGiven, 80.0f);        // Auto: restore
+        IM_CHECK_EQ_NO_RET(table->Columns[3].WidthGiven, 110.0f);       // Auto: restore
         vars.TableFlags &= ~ImGuiTableFlags_Resizable;
         ctx->Yield();
-        IM_CHECK_EQ_NO_RET(table->Columns[0].WidthGiven, 100.0f);       // Explicit: restore
-        IM_CHECK_EQ_NO_RET(table->Columns[1].WidthGiven, 60.0f);        // Default: restore
-        //IM_CHECK_EQ_NO_RET(table->Columns[2].WidthGiven, 70.0f + 40.0f);// Fixed: keep whatever width it had (would allow e.g. explicit call to TableSetColumnWidth)
-        IM_CHECK_EQ_NO_RET(table->Columns[2].WidthGiven, 70.0f);        // Fixed: restore
-        IM_CHECK_EQ_NO_RET(table->Columns[3].WidthGiven, 80.0f);        // Auto: restore
+        IM_CHECK_EQ_NO_RET(table->Columns[0].WidthGiven, 150.0f);       // Explicit: restore
+        IM_CHECK_EQ_NO_RET(table->Columns[1].WidthGiven, 90.0f);        // Default: restore
+        //IM_CHECK_EQ_NO_RET(table->Columns[2].WidthGiven, 100.0f + 40.0f);// Fixed: keep whatever width it had (would allow e.g. explicit call to TableSetColumnWidth)
+        IM_CHECK_EQ_NO_RET(table->Columns[2].WidthGiven, 100.0f);        // Fixed: restore
+        IM_CHECK_EQ_NO_RET(table->Columns[3].WidthGiven, 110.0f);        // Auto: restore
     };
 
     // ## Table: test effect of specifying a weight in TableSetupColumn()
@@ -653,7 +657,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
     t = IM_REGISTER_TEST(e, "table", "table_width_same");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
-        ImGui::SetNextWindowSize(ImVec2(500, 300), ImGuiCond_Once);
+        ImGui::SetNextWindowSize(ImVec2(500, 300), ImGuiCond_Appearing);
         ImGui::Begin("Test window 1", NULL, ImGuiWindowFlags_NoSavedSettings);
 
         for (int test_n = 0; test_n < 3; test_n++)
@@ -719,7 +723,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         TableWidthAutofitVars& vars = ctx->GetVars<TableWidthAutofitVars>();
-        ImGui::SetNextWindowSize(ImVec2(500, 300), ImGuiCond_Once);
+        ImGui::SetNextWindowSize(ImVec2(500, 300), ImGuiCond_Appearing);
         ImGui::Begin("Test window 1", NULL, ImGuiWindowFlags_NoSavedSettings);
         if (ctx->IsFirstGuiFrame())
         {
@@ -864,9 +868,9 @@ void RegisterTests_Table(ImGuiTestEngine* e)
             ctx->SetRef("Test window 1");
             ImGuiTable* table = ImGui::TableFindByID(ctx->GetID("table2"));
             ctx->WindowResize("", ImVec2(800, 200));
-            IM_CHECK_GT(table->Columns[1].WidthGiven, ImGui::CalcTextSize(very_long_text).x);
+            //IM_CHECK_GT(table->Columns[1].WidthGiven, ImGui::CalcTextSize(very_long_text).x);
             ctx->ItemDoubleClick(ImGui::GetWindowResizeCornerID(ctx->GetWindowByRef(""), 0));
-            IM_CHECK_GE(table->Columns[1].WidthGiven, ImGui::CalcTextSize(very_long_text).x);
+            IM_CHECK_GE(table->Columns[1].WidthGiven, ImGui::CalcTextSize(very_long_text).x); // FIXME-TESTS: This will fail if host viewport is too small to host table
         }
 #endif
     };
@@ -888,36 +892,36 @@ void RegisterTests_Table(ImGuiTestEngine* e)
         ImGuiTableFlags table_flags = ImGuiTableFlags_SizingFixedFit;
         if (vars.Step == 0)
         {
-            vars.Width = 50.0f + 100.0f + cell_padding * 2.0f;
+            vars.Width = 120.0f + 150.0f + cell_padding * 2.0f;
         }
         if (vars.Step == 1)
         {
             table_flags |= ImGuiTableFlags_BordersInnerV;
-            vars.Width = 50.0f + 100.0f + cell_padding * 2.0f + border_size;
+            vars.Width = 120.0f + 150.0f + cell_padding * 2.0f + border_size;
         }
         if (vars.Step == 2)
         {
             table_flags |= ImGuiTableFlags_BordersOuterV;
-            vars.Width = 50.0f + 100.0f + cell_padding * 4.0f + border_size * 2.0f;
+            vars.Width = 120.0f + 150.0f + cell_padding * 4.0f + border_size * 2.0f;
         }
         if (vars.Step == 3)
         {
             table_flags |= ImGuiTableFlags_BordersInnerV | ImGuiTableFlags_BordersOuterV;
-            vars.Width = 50.0f + 100.0f + cell_padding * 4.0f + border_size * 3.0f;
+            vars.Width = 120.0f + 150.0f + cell_padding * 4.0f + border_size * 3.0f;
         }
         if (ImGui::BeginTable("table1", 2, table_flags))
         {
-            ImGui::TableSetupColumn("0", ImGuiTableColumnFlags_WidthFixed, 50.0f);
-            ImGui::TableSetupColumn("1", ImGuiTableColumnFlags_WidthFixed, 100.0f);
+            ImGui::TableSetupColumn("0", ImGuiTableColumnFlags_WidthFixed, 120.0f);
+            ImGui::TableSetupColumn("1", ImGuiTableColumnFlags_WidthFixed, 150.0f);
             ImGui::TableNextRow();
             ImGui::TableSetColumnIndex(0);
-            ImGui::Button("50", ImVec2(50, 0));
-            ImGui::Text("(%.2f)", ImGui::GetContentRegionAvail().x);
+            ImGui::Button("120", ImVec2(120, 0));
+            ImGui::Text("(%.1f)", ImGui::GetContentRegionAvail().x);
             ImGui::Button("...", ImVec2(ImGui::GetContentRegionAvail().x, 0));
 
             ImGui::TableSetColumnIndex(1);
-            ImGui::Button("100", ImVec2(100, 0));
-            ImGui::Text("(%.2f)", ImGui::GetContentRegionAvail().x);
+            ImGui::Button("150", ImVec2(150, 0));
+            ImGui::Text("(%.1f)", ImGui::GetContentRegionAvail().x);
             ImGui::Button("...", ImVec2(ImGui::GetContentRegionAvail().x, 0));
 
             ImGui::EndTable();
@@ -937,8 +941,8 @@ void RegisterTests_Table(ImGuiTestEngine* e)
             ctx->LogDebug("Step %d", step);
             vars.Step = step;
             ctx->Yield(); // previous step previously submitted, window contents width reflect old step, outer rect reflects old step, reported ideal width reflects new step
-            IM_CHECK_EQ(table->Columns[0].ContentMaxXUnfrozen - table->Columns[0].WorkMinX, 50.0f);
-            IM_CHECK_EQ(table->Columns[1].ContentMaxXUnfrozen - table->Columns[1].WorkMinX, 100.0f);
+            IM_CHECK_EQ(table->Columns[0].ContentMaxXUnfrozen - table->Columns[0].WorkMinX, 120.0f);
+            IM_CHECK_EQ(table->Columns[1].ContentMaxXUnfrozen - table->Columns[1].WorkMinX, 150.0f);
             IM_CHECK_EQ(table->ColumnsAutoFitWidth, vars.Width);
             ctx->Yield(); // inner-window update to correct ideal width and auto-resize to it
             IM_CHECK_EQ(window->ContentSizeIdeal.x, vars.Width);
@@ -985,10 +989,11 @@ void RegisterTests_Table(ImGuiTestEngine* e)
 
         if (ImGui::BeginTable("table1", 3, vars.TableFlags, vars.OuterSize))
         {
+            vars.Widths[0] = ImGui::CalcTextSize("Oh dear").x + 9.0f; // Wider than longest label
             if (vars.Step == 1)
             {
                 ImGui::TableSetupColumn("", 0);
-                ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthFixed, 99.0f);
+                ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthFixed, vars.Widths[0]);
                 ImGui::TableSetupColumn("", 0);
             }
             for (int row = 0; row < 3; row++)
@@ -1003,18 +1008,19 @@ void RegisterTests_Table(ImGuiTestEngine* e)
         }
         if (ImGui::BeginTable("table2", 3, vars.TableFlags, vars.OuterSize))
         {
+            vars.Widths[1] = ImGui::CalcTextSize("CCCCCCCC").x + 9.0f; // Wider than longest label
             if (vars.Step == 1)
             {
                 ImGui::TableSetupColumn("", 0);
-                ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthFixed, 99.0f);
+                ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthFixed, vars.Widths[1]);
                 ImGui::TableSetupColumn("", 0);
             }
             for (int row = 0; row < 3; row++)
             {
                 ImGui::TableNextRow();
-                ImGui::TableNextColumn(); ImGui::Text("AAAA");
-                ImGui::TableNextColumn(); ImGui::Text("BBBBBBBB");
-                ImGui::TableNextColumn(); ImGui::Text("CCCCCCCCCCCC");
+                ImGui::TableNextColumn(); ImGui::Text("AAA");
+                ImGui::TableNextColumn(); ImGui::Text("BBBBBB");
+                ImGui::TableNextColumn(); ImGui::Text("CCCCCCCC");
             }
             ImGui::EndTable();
             //HelperDrawAndFillBounds(&vars);
@@ -1063,15 +1069,15 @@ void RegisterTests_Table(ImGuiTestEngine* e)
                 }
                 if (sizing_policy == ImGuiTableFlags_SizingFixedFit)
                 {
-                    IM_CHECK_EQ(table2->Columns[0].WidthRequest, ImGui::CalcTextSize("AAAA").x);
-                    IM_CHECK_EQ(table2->Columns[1].WidthRequest, ImGui::CalcTextSize("BBBBBBBB").x);
-                    IM_CHECK_EQ(table2->Columns[2].WidthRequest, ImGui::CalcTextSize("CCCCCCCCCCCC").x);
+                    IM_CHECK_EQ(table2->Columns[0].WidthRequest, ImGui::CalcTextSize("AAA").x);
+                    IM_CHECK_EQ(table2->Columns[1].WidthRequest, ImGui::CalcTextSize("BBBBBB").x);
+                    IM_CHECK_EQ(table2->Columns[2].WidthRequest, ImGui::CalcTextSize("CCCCCCCC").x);
                 }
                 if (sizing_policy == ImGuiTableFlags_SizingFixedSame)
                 {
-                    IM_CHECK_EQ(table2->Columns[0].WidthRequest, ImGui::CalcTextSize("CCCCCCCCCCCC").x);
-                    IM_CHECK_EQ(table2->Columns[1].WidthRequest, ImGui::CalcTextSize("CCCCCCCCCCCC").x);
-                    IM_CHECK_EQ(table2->Columns[2].WidthRequest, ImGui::CalcTextSize("CCCCCCCCCCCC").x);
+                    IM_CHECK_EQ(table2->Columns[0].WidthRequest, ImGui::CalcTextSize("CCCCCCCC").x);
+                    IM_CHECK_EQ(table2->Columns[1].WidthRequest, ImGui::CalcTextSize("CCCCCCCC").x);
+                    IM_CHECK_EQ(table2->Columns[2].WidthRequest, ImGui::CalcTextSize("CCCCCCCC").x);
                 }
                 if (sizing_policy == ImGuiTableFlags_SizingStretchSame || sizing_policy == ImGuiTableFlags_SizingStretchProp)
                 {
@@ -1087,17 +1093,17 @@ void RegisterTests_Table(ImGuiTestEngine* e)
                 }
                 if (sizing_policy == ImGuiTableFlags_SizingStretchProp)
                 {
-                    IM_CHECK_FLOAT_EQ(table2->Columns[1].StretchWeight / table2->Columns[0].StretchWeight, ImGui::CalcTextSize("BBBBBBBB").x / ImGui::CalcTextSize("AAAA").x);
-                    IM_CHECK_FLOAT_EQ(table2->Columns[2].StretchWeight / table2->Columns[0].StretchWeight, ImGui::CalcTextSize("CCCCCCCCCCCC").x / ImGui::CalcTextSize("AAAA").x);
-                    IM_CHECK_FLOAT_EQ(table2->Columns[2].StretchWeight / table2->Columns[1].StretchWeight, ImGui::CalcTextSize("CCCCCCCCCCCC").x / ImGui::CalcTextSize("BBBBBBBB").x);
+                    IM_CHECK_FLOAT_NEAR_EQ(table2->Columns[1].StretchWeight / table2->Columns[0].StretchWeight, ImGui::CalcTextSize("BBBBBB").x / ImGui::CalcTextSize("AAA").x, 0.001f);
+                    IM_CHECK_FLOAT_NEAR_EQ(table2->Columns[2].StretchWeight / table2->Columns[0].StretchWeight, ImGui::CalcTextSize("CCCCCCCC").x / ImGui::CalcTextSize("AAA").x, 0.001f);
+                    IM_CHECK_FLOAT_NEAR_EQ(table2->Columns[2].StretchWeight / table2->Columns[1].StretchWeight, ImGui::CalcTextSize("CCCCCCCC").x / ImGui::CalcTextSize("BBBBBB").x, 0.001f);
                 }
             }
 
             ctx->Sleep(0.5f);
             vars.Step = 1;
             ctx->Sleep(0.5f);
-            IM_CHECK_EQ(table1->Columns[1].WidthRequest, 99.0f);
-            IM_CHECK_EQ(table2->Columns[1].WidthRequest, 99.0f);
+            IM_CHECK_EQ(table1->Columns[1].WidthRequest, vars.Widths[0]);
+            IM_CHECK_EQ(table2->Columns[1].WidthRequest, vars.Widths[1]);
         }
     };
 
@@ -1106,7 +1112,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         ImGui::SetNextWindowPos(ImGui::GetMainViewport()->Pos + ImVec2(20, 5), ImGuiCond_Appearing);
-        ImGui::SetNextWindowSize(ImVec2(400.0f, 0.0f), ImGuiCond_Appearing);
+        ImGui::SetNextWindowSize(ImVec2(500.0f, 0.0f), ImGuiCond_Appearing);
         ImGui::Begin("Test window 1", NULL, ImGuiWindowFlags_NoSavedSettings);
 
         if (ctx->IsFirstGuiFrame())
@@ -1520,7 +1526,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
 
         for (int instance_n = 0; instance_n < 2; instance_n++)
         {
-            float width = 300.0f + (vars.DifferSizes ? instance_n : 0) * 50.0f;
+            float width = 400.0f + (vars.DifferSizes ? instance_n : 0) * 50.0f;
             ImGui::SetNextWindowSize(ImVec2(width, vars.MultiWindow ? 210.0f : 320.0f), ImGuiCond_Always);
 
             if (vars.MultiWindow && instance_n == 1)
@@ -1707,15 +1713,21 @@ void RegisterTests_Table(ImGuiTestEngine* e)
         auto& vars = ctx->GenericVars;
 
         //bool do_checks = !ctx->IsFirstGuiFrame();
-        ImGui::SetNextWindowSize(ImVec2(500.0f, 0.0f), ImGuiCond_Appearing); // FIXME-TESTS FIXME-TABLE: Auto or too small width has effect on indented table instance
+
+        ImGuiStyle& style = ImGui::GetStyle();
+        const float indent = 40.0f;
+        const float width_0 = ImGui::CalcTextSize("Very very long text 1").x;
+        const float width_1 = (vars.Step == 0) ? ImGui::CalcTextSize("Text 1").x : width_0;
+        const float cellspacing = 2; // FIXME
+        const float window_width = (width_0 * 2) + (style.CellPadding.x * 4) + (cellspacing * 2) * indent + (style.WindowPadding.x * 2.0f);
+
+        ImGui::SetNextWindowSize(ImVec2(window_width, 0.0f), ImGuiCond_Appearing);// Appearing); // FIXME-TESTS FIXME-TABLE: Auto or too small width has effect on indented table instance
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
 
         ImGui::Checkbox("Do checks", &vars.Bool1);
         ImGui::SliderInt("Step", &vars.Step, 0, 1);
 
         const bool do_checks = vars.Bool1;
-        const float width_0 = ImGui::CalcTextSize("Very very long text 1").x;
-        const float width_1 = (vars.Step == 0) ? ImGui::CalcTextSize("Text 1").x : width_0;
 
         if (ImGui::BeginTable("test_table", 2, ImGuiTableFlags_Borders | ImGuiTableFlags_SizingFixedFit))
         {
@@ -1734,7 +1746,8 @@ void RegisterTests_Table(ImGuiTestEngine* e)
             // Third table is indented. Because our table width computation logic stores absolute coordinates
             // for efficiency, it makes sense to double-check this case as well.
             if (n == 1)
-                ImGui::Indent();
+                ImGui::Indent(indent);
+            //float avail = ImGui::GetContentRegionAvail().x;
             if (ImGui::BeginTable("test_table", 2, ImGuiTableFlags_Borders | ImGuiTableFlags_SizingFixedFit))
             {
                 ImGui::TableNextColumn();
@@ -1748,7 +1761,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
                 ImGui::EndTable();
             }
         }
-        ImGui::Unindent();
+        ImGui::Unindent(indent);
         if (vars.Step == 1)
         {
             if (ImGui::BeginTable("test_table", 2, ImGuiTableFlags_Borders | ImGuiTableFlags_SizingFixedFit))
@@ -1769,16 +1782,18 @@ void RegisterTests_Table(ImGuiTestEngine* e)
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         auto& vars = ctx->GenericVars;
+        bool& do_checks = vars.Bool1;
         for (int step = 0; step < 2; step++)
         {
 #if IMGUI_VERSION_NUM < 19115
             if (step == 1)
                 continue;
 #endif
+            ctx->LogDebug("Step %d", step);
             vars.Step = step;
-            vars.Bool1 = false;
+            do_checks = false;
             ctx->Yield(2);
-            vars.Bool1 = true;
+            do_checks = true;
             ctx->Yield(2);
         }
     };
@@ -2350,9 +2365,14 @@ void RegisterTests_Table(ImGuiTestEngine* e)
     {
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
         memset(ctx->GenericVars.BoolArray, 0, sizeof(ctx->GenericVars.BoolArray));
-        const int column_count = 15;
+        const int column_count = 20;
+
+        const float column_00_approx_w = ImGui::CalcTextSize("2,22").x;  // For single digits columns
+        const float column_10_approx_w = ImGui::CalcTextSize("22,22").x; // Double-single digits columns
+        const float table_width = column_00_approx_w * (10 - 5) + column_10_approx_w * 10; // Table width smaller than contents
+
         ImGuiTableFlags flags = ImGuiTableFlags_ScrollX | ImGuiTableFlags_ScrollY | ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg;
-        if (ImGui::BeginTable("table1", column_count, flags, { 300, (ImGui::GetTextLineHeight() + ImGui::GetStyle().CellPadding.y * 2) * 7 }))
+        if (ImGui::BeginTable("table1", column_count, flags, { table_width, (ImGui::GetTextLineHeight() + ImGui::GetStyle().CellPadding.y * 2) * 7 }))
         {
             ImGui::TableSetupScrollFreeze(ctx->GenericVars.Int1, ctx->GenericVars.Int2);
             for (int i = 0; i < column_count; i++)

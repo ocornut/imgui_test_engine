@@ -1368,7 +1368,8 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
         if (!vars.ShowWindows)
             return;
 
-        ImGui::SetNextWindowSize(ImVec2(100, 100));
+        float h = ImGui::GetFrameHeight() * 3 + 1;// +ImGui::GetStyle().WindowPadding.y * 2.0f;
+        ImGui::SetNextWindowSize(ImVec2(100, h));
         ImGui::Begin("Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_MenuBar);
         if (ImGui::BeginMenuBar())
         {

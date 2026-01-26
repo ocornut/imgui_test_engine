@@ -2862,11 +2862,17 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
             // Set saturation to 0, hue must be preserved.
             ctx->ItemDragWithDelta("##picker/sv", ImVec2(-popup->Size.x * 0.5f, 0));
 
+            float eps;
+            if (variant == 0)
+                eps = FLT_EPSILON;
+            else
+                eps = 1.0f / 350.0f; // < 1/255
+
             // FIXME-TESTS: This tends to break with other widget sizes, e.g. changing TestSuite font. Needs to investigate.
             Color color = read_color();
             IM_CHECK_EQ(color.S, 0.0f);
-            IM_CHECK_EQ(color.H, 0.0f);                     // Hue undefined
-            IM_CHECK_EQ(color_start.H, g.ColorEditSavedHue); // Preserved hue matches original color
+            IM_CHECK_EQ(color.H, 0.0f);                            // Hue undefined
+            IM_CHECK_FLOAT_NEAR_EQ(color_start.H, g.ColorEditSavedHue, eps); // Preserved hue matches original color
 
             // Test saturation preservation during mouse input.
             ctx->ItemClick("##picker/sv");
@@ -2880,7 +2886,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
             ctx->MouseMoveToPos(g.IO.MousePos + ImVec2(0.0f, -popup->Size.y * 1.0f));  // Top
             ctx->MouseUp();
             IM_CHECK_EQ(read_color().S, color_start.S);
-            IM_CHECK_EQ(g.ColorEditSavedSat, color_start.H);
+            IM_CHECK_FLOAT_NEAR_EQ(g.ColorEditSavedSat, color_start.S, eps);
 
             ctx->ItemClick("##picker/sv");                  // Reset color
             ctx->ItemClick("##picker/hue");
@@ -2891,7 +2897,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
             color = read_color();
             IM_CHECK_EQ(color.V, 0.0f);
             IM_CHECK_EQ(color.S, 0.0f);                     // Saturation undefined
-            IM_CHECK_EQ(color_start.S, g.ColorEditSavedSat);// Preserved saturation matches original color
+            IM_CHECK_FLOAT_NEAR_EQ(color_start.S, g.ColorEditSavedSat, eps);// Preserved saturation matches original color
 
             // Set color to pure white and verify it can reach (1.0f, 1.0f, 1.0f).
             ctx->ItemDragWithDelta("##picker/sv", ImVec2(-popup->Size.x * 0.5f, -popup->Size.y * 0.5f));
@@ -2922,7 +2928,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
             ctx->MouseMoveToPos(g.IO.MousePos + ImVec2(-popup->Size.x * 1.0f, 0.0f));  // BL
             ctx->MouseMoveToPos(g.IO.MousePos + ImVec2(0.0f, -popup->Size.y * 1.0f));  // TL
             ctx->MouseUp();
-            IM_CHECK_EQ(color_start.H, g.ColorEditSavedHue); // Hue remains unchanged during all operations
+            IM_CHECK_FLOAT_NEAR_EQ(color_start.H, g.ColorEditSavedHue, eps); // Hue remains unchanged during all operations
         }
     };
 
@@ -4454,6 +4460,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ExampleSelection& selection = vars.Selection0;
 
         const int ITEMS_COUNT = 100;
+        ImGui::SetNextWindowPos(ImGui::GetMainViewport()->Pos, ImGuiCond_Appearing); 
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | vars.WindowFlags);
         ImGui::Text("(Size = %3d items)", selection.Size);
         ImGui::Separator();
@@ -4743,6 +4750,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
 #if IMGUI_VERSION_NUM >= 19247
             //vars.WindowFlags |= ImGuiWindowFlags_AlwaysAutoResize;
             ctx->WindowResize("", ImVec2(0.0f, ImGui::GetTextLineHeightWithSpacing() * 40.0f));
+            ctx->WindowMove("", ImGui::GetMainViewport()->Pos);
             ctx->Yield();
             ctx->KeyPress(ImGuiKey_Home);
             ctx->KeyPress(ImGuiMod_Shift | ImGuiKey_PageDown);
