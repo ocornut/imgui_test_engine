@@ -3943,8 +3943,12 @@ void    ImGuiTestContext::WindowBringToFront(ImGuiTestRef ref, ImGuiTestOpFlags 
     }
     else if (window->RootWindow != g.Windows.back()->RootWindow)
     {
+        ImGuiWindow* blocking_modal = ImGui::FindBlockingModal(window);
         LogDebug("BringWindowToDisplayFront('%s') (window.back=%s)", window->Name, g.Windows.back()->Name);
-        ImGui::BringWindowToDisplayFront(window); // FIXME-TESTS-NOT_SAME_AS_END_USER: This is not an actually possible action for end-user.
+        if (blocking_modal == NULL)
+            ImGui::BringWindowToDisplayFront(window); // FIXME-TESTS-NOT_SAME_AS_END_USER: This is not an actually possible action for end-user.
+        else
+            ImGui::BringWindowToDisplayBehind(window, blocking_modal);
         Yield(2);
     }
 
@@ -3974,6 +3978,8 @@ void    ImGuiTestContext::WindowMove(ImGuiTestRef ref, ImVec2 input_pos, ImVec2 
 
     if ((flags & ImGuiTestOpFlags_NoFocusWindow) == 0)
         WindowFocus(window->ID);
+    else
+        WindowBringToFront(window->ID, ImGuiTestOpFlags_NoFocusWindow);
     WindowCollapse(window->ID, false);
 
     MouseSetViewport(window);

@@ -9,6 +9,10 @@ CHANGELOG
 - TestEngine: rework logic for aiming at an iten in a covered window to
   move covering windows if the target window cannot be brought to front.
   In particular, it fixes issues when programmatic code is stealing focus.
+- TestEngine: fixed a bug where some actions aiming at a window behind
+  a modal would erroneously succeed.
+- TestEngine: fixed using WindowMove() with ImGuiTestOpFlags_NoFocusWindow
+  (not an action that is possible by a real end-user).
 
 2025/12/19:
 - TestEngine: ctx->WindowResize(): passing 0.0f keep existing size of for
