@@ -4041,20 +4041,30 @@ void    ImGuiTestContext::WindowResize(ImGuiTestRef ref, ImVec2 size)
         id = border_x2;
     else
         id = resize_br;
-    MouseMove(id, ImGuiTestOpFlags_IsSecondAttempt);
 
     if (size.x <= 0.0f || size.y <= 0.0f)
     {
         IM_ASSERT(size.x <= 0.0f && size.y <= 0.0f);
+        MouseMove(id, ImGuiTestOpFlags_IsSecondAttempt);
         MouseDoubleClick(0);
         Yield();
     }
     else
     {
+        if (id == resize_br)
+        {
+            MouseMove(id, ImGuiTestOpFlags_IsSecondAttempt);
+        }
+        else
+        {
+            // Resize grip easily covers borders
+            MouseMove(id, ImGuiTestOpFlags_IsSecondAttempt | ImGuiTestOpFlags_NoCheckHoveredId);
+            IM_CHECK(UiContext->HoveredId == id || UiContext->HoveredId == resize_br); // Either is fine
+        }
         MouseDown(0);
         ImVec2 delta = size - window->Size;
         MouseMoveToPos(Inputs->MousePosValue + delta);
-        Yield(); // At this point we don't guarantee the final size!
+        Yield(); // At this point we don't guarantee the final size! Constraint may apply.
         MouseUp();
     }
     MouseSetViewport(window); // Update in case window has changed viewport
