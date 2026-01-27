@@ -401,7 +401,7 @@ int main(int argc, char** argv)
     TestSuiteApp* app = &GAppInstance;
 
     // Default to GUI mode when a graphics backend is compiled
-#if defined(IMGUI_APP_WIN32_DX11) || defined(IMGUI_APP_SDL2_GL2) || defined(IMGUI_APP_SDL2_GL3) || defined(IMGUI_APP_GLFW_GL3)
+#if defined(IMGUI_APP_WIN32_DX11) || defined(IMGUI_APP_SDL2_GL2) || defined(IMGUI_APP_SDL2_GL3) || defined(IMGUI_APP_SDL3_GL3) || defined(IMGUI_APP_GLFW_GL3)
     app->OptGui = true;
 #endif
 

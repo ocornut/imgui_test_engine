@@ -6,11 +6,13 @@
 #include "imconfig.h"
 
 // Enable graphics backends
+//#define IMGUI_APP_WIN32_DX11
+//#define IMGUI_APP_SDL2_GL3
+//#define IMGUI_APP_SDL3_GL3
+//#define IMGUI_APP_GLFW_GL3
 #ifdef _WIN32
 #define IMGUI_APP_WIN32_DX11
 #endif
-//#define IMGUI_APP_SDL2_GL3
-//#define IMGUI_APP_GLFW_GL3
 
 // Disable legacy features / enforce using latest
 #ifndef IMGUI_HAS_IMSTR

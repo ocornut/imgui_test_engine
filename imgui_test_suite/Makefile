@@ -42,6 +42,12 @@ ifeq ($(BACKEND_LIB),)
 endif
 
 ifeq ($(BACKEND_LIB),)
+	ifeq ($(shell pkg-config --exists sdl3 && echo 1), 1)
+		BACKEND_LIB := sdl3
+	endif
+endif
+
+ifeq ($(BACKEND_LIB),)
 	ifeq ($(shell pkg-config --exists glfw3 && echo 1), 1)
 		BACKEND_LIB := glfw3
 	endif
@@ -52,6 +58,11 @@ ifneq ($(BACKEND_LIB),)
 		CFLAGS += -DIMGUI_APP_SDL2_GL3
 		LIBS += $(shell pkg-config --libs sdl2)
 		CFLAGS += $(shell pkg-config --cflags sdl2)
+	endif
+	ifeq ($(BACKEND_LIB), sdl3)
+		CFLAGS += -DIMGUI_APP_SDL3_GL3
+		LIBS += $(shell pkg-config --libs sdl3)
+		CFLAGS += $(shell pkg-config --cflags sdl3)
 	endif
 	ifeq ($(BACKEND_LIB), glfw3)
 		CFLAGS += -DIMGUI_APP_GLFW_GL3
@@ -86,6 +97,9 @@ ifeq ($(UNAME_S), Darwin) #APPLE
 	ifeq ($(HAS_SDL2), 1)
 		LIBS += -framework OpenGL
 	endif
+	ifeq ($(HAS_SDL3), 1)
+		LIBS += -framework OpenGL
+	endif
 endif
 
 ifeq ($(ASAN),1)
@@ -96,6 +110,9 @@ endif
 ifeq ($(findstring MINGW,$(UNAME_S)),MINGW)
 	ECHO_MESSAGE = "MinGW"
 	ifeq ($(HAS_SDL2), 1)
+		LIBS += -lopengl32
+	endif
+	ifeq ($(HAS_SDL3), 1)
 		LIBS += -lopengl32
 	endif
 endif
