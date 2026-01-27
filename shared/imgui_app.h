@@ -7,7 +7,7 @@
 // To use graphics backends, define one of the following in your project:
 //   #define IMGUI_APP_WIN32_DX11
 //   #define IMGUI_APP_SDL2_GL2
-//   #define IMGUI_APP_SDL2_GL3
+//   #define IMGUI_APP_SDL3_GL3
 //   #define IMGUI_APP_GLFW_GL3
 //-----------------------------------------------------------------------------
 // IMPORTANT: BACKENDS IMPLEMENTATIONS ARE AUTOMATICALLY LINKED IN imgui_app.cpp
@@ -64,7 +64,7 @@ ImGuiApp* ImGuiApp_ImplSdlGL2_Create();
 #endif
 #endif
 
-#ifdef IMGUI_APP_SDL2_GL3
+#ifdef IMGUI_APP_SDL3_GL3
 ImGuiApp* ImGuiApp_ImplSdlGL3_Create();
 #ifndef ImGuiApp_ImplDefault_Create
 #define ImGuiApp_ImplDefault_Create ImGuiApp_ImplSdlGL3_Create
@@ -105,8 +105,15 @@ ImGuiApp* ImGuiApp_ImplNull_Create();
 #include "imgui_impl_opengl2.cpp"
 #endif
 
-#if defined(IMGUI_APP_SDL2_GL3) || defined(IMGUI_APP_GLFW_GL3)
+#if defined(IMGUI_APP_SDL2_GL3) || defined(IMGUI_APP_SDL3_GL3) || defined(IMGUI_APP_GLFW_GL3)
 #include "imgui_impl_opengl3.cpp"
+#endif
+
+#if defined(IMGUI_APP_SDL3_GL3)
+#include "imgui_impl_sdl3.cpp"
+#ifdef Status // X11 headers
+#undef Status
+#endif
 #endif
 
 #if defined(IMGUI_APP_SDL2_GL2) || defined(IMGUI_APP_SDL2_GL3)

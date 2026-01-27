@@ -78,6 +78,11 @@ Index of this file:
 #define IMGUI_APP_GL3
 #endif
 
+#ifdef IMGUI_APP_SDL3_GL3
+#define IMGUI_APP_SDL3
+#define IMGUI_APP_GL3
+#endif
+
 #ifdef IMGUI_APP_GLFW_GL3
 #define IMGUI_APP_GLFW
 #define IMGUI_APP_GL3
@@ -92,6 +97,10 @@ static bool ImGuiApp_ImplGL_CaptureFramebuffer(ImGuiViewport* viewport, int x, i
 #if defined(_MSC_VER) && defined(IMGUI_APP_SDL2)
 #pragma comment(lib, "sdl2")      // Link with sdl2.lib. MinGW will require linking with '-lsdl2'
 #pragma comment(lib, "sdl2main")  // Link with sdl2main.lib. MinGW will require linking with '-lsdl2main'
+#endif
+#if defined(_MSC_VER) && defined(IMGUI_APP_SDL3)
+#pragma comment(lib, "sdl3")      // Link with sdl3.lib. MinGW will require linking with '-lsdl2'
+#pragma comment(lib, "sdl3main")  // Link with sdl3main.lib. MinGW will require linking with '-lsdl3main'
 #endif
 #if defined(_MSC_VER) && defined(IMGUI_APP_GL2)
 #pragma comment(lib, "opengl32")  // Link with opengl32.lib. MinGW will require linking with '-lopengl32'
@@ -996,6 +1005,212 @@ ImGuiApp* ImGuiApp_ImplSdlGL3_Create()
 
 #endif // #ifdef IMGUI_APP_SDL2_GL3
 
+//-----------------------------------------------------------------------------
+// [SECTION] ImGuiApp Implementation: SDL3 + OpenGL3
+//-----------------------------------------------------------------------------
+
+#ifdef IMGUI_APP_SDL3
+
+// Include
+#include "imgui_impl_sdl3.h"
+#include <SDL3/SDL.h>
+
+#define SDL3_HAS_PER_MONITOR_DPI            1
+
+// Data
+struct ImGuiApp_ImplSdl3GLX : public ImGuiApp
+{
+    SDL_Window*     window;
+    SDL_GLContext   gl_context;
+    const char*     glsl_version;
+};
+
+// Forward declarations of helper functions
+static float ImGuiApp_ImplSdl3_GetDPI(SDL_DisplayID display_id)
+{
+#if SDL3_HAS_PER_MONITOR_DPI
+    if (display_id != 0)
+    {
+        float dpi;
+        if (SDL_GetDisplayContentScale(display_id, &dpi))
+            return dpi;
+    }
+#else
+    IM_UNUSED(display_id);
+#endif
+    return 1.0f;
+}
+
+#endif
+
+#ifdef IMGUI_APP_SDL3_GL3
+
+// Functions
+static bool ImGuiApp_ImplSdl3GL3_CreateWindow(ImGuiApp* app_opaque, const char* window_title, ImVec2 window_size)
+{
+    ImGuiApp_ImplSdl3GLX* app = (ImGuiApp_ImplSdl3GLX*)app_opaque;
+    
+    // Setup SDL
+    if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER | SDL_INIT_GAMEPAD))
+    {
+        printf("Error: %s\n", SDL_GetError());
+        return false;
+    }
+
+    // Decide GL+GLSL versions
+#if __APPLE__
+    // GL 3.2 Core + GLSL 150
+    app->glsl_version = "#version 150";
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, SDL_GL_CONTEXT_FORWARD_COMPATIBLE_FLAG); // Always required on Mac
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 2);
+#else
+    // GL 3.0 + GLSL 130
+    app->glsl_version = "#version 130";
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, 0);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
+#endif
+
+    // Create window with graphics context
+    SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
+    SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
+    SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
+    
+    // Get DPI for primary display
+    SDL_DisplayID primary_display = SDL_GetPrimaryDisplay();
+    app->DpiScale = app->DpiAware ? ImGuiApp_ImplSdl3_GetDPI(primary_display) : 1.0f;
+    window_size.x = ImFloor(window_size.x * app->DpiScale);
+    window_size.y = ImFloor(window_size.y * app->DpiScale);
+    
+    SDL_WindowFlags window_flags = (SDL_WindowFlags)(SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE | SDL_WINDOW_HIGH_PIXEL_DENSITY);
+    app->window = SDL_CreateWindow(window_title, (int)window_size.x, (int)window_size.y, window_flags);
+    if (app->window == NULL)
+    {
+        printf("Error: SDL_CreateWindow(): %s\n", SDL_GetError());
+        return false;
+    }
+    
+    SDL_SetWindowPosition(app->window, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
+    app->gl_context = SDL_GL_CreateContext(app->window);
+    if (app->gl_context == NULL)
+    {
+        printf("Error: SDL_GL_CreateContext(): %s\n", SDL_GetError());
+        return false;
+    }
+    
+    SDL_GL_MakeCurrent(app->window, app->gl_context);
+    return true;
+}
+
+static void ImGuiApp_ImplSdl3GL3_InitBackends(ImGuiApp* app_opaque)
+{
+    ImGuiApp_ImplSdl3GLX* app = (ImGuiApp_ImplSdl3GLX*)app_opaque;
+    ImGui_ImplSDL3_InitForOpenGL(app->window, app->gl_context);
+    ImGui_ImplOpenGL3_Init(app->glsl_version);
+#ifdef IMGUI_HAS_VIEWPORT
+    ImGuiIO& io = ImGui::GetIO();
+    if (app->MockViewports && (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable))
+        ImGuiApp_InstallMockViewportsBackend(app);
+#endif
+}
+
+static bool ImGuiApp_ImplSdl3GL3_NewFrame(ImGuiApp* app_opaque)
+{
+    ImGuiApp_ImplSdl3GLX* app = (ImGuiApp_ImplSdl3GLX*)app_opaque;
+    
+    // Poll and handle events (inputs, window resize, etc.)
+    SDL_Event event;
+    while (SDL_PollEvent(&event))
+    {
+        ImGui_ImplSDL3_ProcessEvent(&event);
+        if (event.type == SDL_EVENT_QUIT)
+            return false;
+        else if (event.type == SDL_EVENT_WINDOW_CLOSE_REQUESTED && event.window.windowID == SDL_GetWindowID(app->window))
+            return false;
+        else if (event.type == SDL_EVENT_WINDOW_DISPLAY_CHANGED)
+        {
+            SDL_DisplayID display_id = SDL_GetDisplayForWindow(app->window);
+            app->DpiScale = ImGuiApp_ImplSdl3_GetDPI(display_id);
+        }
+    }
+    
+    SDL_GL_MakeCurrent(app->window, app->gl_context);
+    ImGui_ImplOpenGL3_NewFrame();
+    ImGui_ImplSDL3_NewFrame();
+    return true;
+}
+
+static void ImGuiApp_ImplSdl3GL3_Render(ImGuiApp* app_opaque)
+{
+    ImGuiApp_ImplSdl3GLX* app = (ImGuiApp_ImplSdl3GLX*)app_opaque;
+    ImGuiIO& io = ImGui::GetIO();
+    
+#ifdef IMGUI_HAS_VIEWPORT
+    if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
+    {
+        SDL_Window* backup_current_window = SDL_GL_GetCurrentWindow();
+        SDL_GLContext backup_current_context = SDL_GL_GetCurrentContext();
+        ImGui::UpdatePlatformWindows();
+        ImGui::RenderPlatformWindowsDefault();
+        SDL_GL_MakeCurrent(backup_current_window, backup_current_context);
+    }
+#endif
+    
+    SDL_GL_MakeCurrent(app->window, app->gl_context);
+    SDL_GL_SetSwapInterval(app->Vsync ? 1 : 0);
+    glViewport(0, 0, (int)io.DisplaySize.x, (int)io.DisplaySize.y);
+    glClearColor(app->ClearColor.x, app->ClearColor.y, app->ClearColor.z, app->ClearColor.w);
+    glClear(GL_COLOR_BUFFER_BIT);
+    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+    SDL_GL_SwapWindow(app->window);
+}
+
+static void ImGuiApp_ImplSdl3GL3_ShutdownCloseWindow(ImGuiApp* app_opaque)
+{
+    ImGuiApp_ImplSdl3GLX* app = (ImGuiApp_ImplSdl3GLX*)app_opaque;
+    SDL_GL_DestroyContext(app->gl_context);
+    SDL_DestroyWindow(app->window);
+    SDL_Quit();
+}
+
+static void ImGuiApp_ImplSdl3GL3_ShutdownBackends(ImGuiApp* app_opaque)
+{
+    ImGuiApp_ImplSdl3GLX* app = (ImGuiApp_ImplSdl3GLX*)app_opaque;
+    IM_UNUSED(app);
+    ImGui_ImplOpenGL3_Shutdown();
+    ImGui_ImplSDL3_Shutdown();
+}
+
+static bool ImGuiApp_ImplSdl3GL3_CaptureFramebuffer(ImGuiApp* app, ImGuiViewport* viewport, int x, int y, int w, int h, unsigned int* pixels, void* user_data)
+{
+    IM_UNUSED(app);
+    IM_UNUSED(user_data);
+#ifdef IMGUI_HAS_VIEWPORT
+    if (ImGui_ImplSDL3_ViewportData* vd = (ImGui_ImplSDL3_ViewportData*)viewport->PlatformUserData)
+        if (vd->GLContext)
+            SDL_GL_MakeCurrent(vd->Window, vd->GLContext);
+#endif
+    return ImGuiApp_ImplGL_CaptureFramebuffer(viewport, x, y, w, h, pixels);
+}
+
+ImGuiApp* ImGuiApp_ImplSdl3GL3_Create()
+{
+    ImGuiApp_ImplSdl3GLX* intf = new ImGuiApp_ImplSdl3GLX();
+    intf->InitCreateWindow      = ImGuiApp_ImplSdl3GL3_CreateWindow;
+    intf->InitBackends          = ImGuiApp_ImplSdl3GL3_InitBackends;
+    intf->NewFrame              = ImGuiApp_ImplSdl3GL3_NewFrame;
+    intf->Render                = ImGuiApp_ImplSdl3GL3_Render;
+    intf->ShutdownCloseWindow   = ImGuiApp_ImplSdl3GL3_ShutdownCloseWindow;
+    intf->ShutdownBackends      = ImGuiApp_ImplSdl3GL3_ShutdownBackends;
+    intf->CaptureFramebuffer    = ImGuiApp_ImplSdl3GL3_CaptureFramebuffer;
+    intf->Destroy               = [](ImGuiApp* app) { SDL_Quit(); delete (ImGuiApp_ImplSdl3GLX*)app; };
+    return intf;
+}
+
+#endif // #ifdef IMGUI_APP_SDL3_GL3
 
 //-----------------------------------------------------------------------------
 // [SECTION] ImGuiApp Implementation: GLFW + OpenGL3

@@ -124,13 +124,19 @@ jobs:
         if: env.SHOULD_BUILD == 'true'
         run: |
           sudo apt-get update
-          sudo apt-get install -y libglfw3-dev libsdl2-dev
+          sudo apt-get install -y libglfw3-dev libsdl2-dev libsdl3-dev
 
       - name: Build (with SDL2)
         if: env.SHOULD_BUILD == 'true' && env.SHOULD_BUILD_EXTENDED == 'true'
         run: |
           make -C imgui_test_suite/ clean
           CFLAGS=-Werror make -C imgui_test_suite/ -j$(nproc) BACKEND_LIB=sdl2 IMGUI_TEST_ENGINE_ENABLE_IMPLOT=0
+
+      - name: Build (with SDL3)
+        if: env.SHOULD_BUILD == 'true' && env.SHOULD_BUILD_EXTENDED == 'true'
+        run: |
+          make -C imgui_test_suite/ clean
+          CFLAGS=-Werror make -C imgui_test_suite/ -j$(nproc) BACKEND_LIB=sdl3 IMGUI_TEST_ENGINE_ENABLE_IMPLOT=0
 
       - name: Build (with GLFW3)
         if: env.SHOULD_BUILD == 'true' && env.SHOULD_BUILD_EXTENDED == 'true'
