@@ -65,9 +65,9 @@ ImGuiApp* ImGuiApp_ImplSdlGL2_Create();
 #endif
 
 #ifdef IMGUI_APP_SDL3_GL3
-ImGuiApp* ImGuiApp_ImplSdlGL3_Create();
+ImGuiApp* ImGuiApp_ImplSdl3GL3_Create();
 #ifndef ImGuiApp_ImplDefault_Create
-#define ImGuiApp_ImplDefault_Create ImGuiApp_ImplSdlGL3_Create
+#define ImGuiApp_ImplDefault_Create ImGuiApp_ImplSdl3GL3_Create
 #endif
 #endif
 

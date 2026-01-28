@@ -725,7 +725,7 @@ static bool ImGuiApp_ImplSdlGL2_CreateWindow(ImGuiApp* app_opaque, const char* w
     // Setup SDL
     // (Some versions of SDL before <2.0.10 appears to have performance/stalling issues on a minority of Windows systems,
     // depending on whether SDL_INIT_GAMECONTROLLER is enabled or disabled.. updating to latest version of SDL is recommended!)
-    if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER | SDL_INIT_GAMECONTROLLER) != 0)
+    if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_GAMECONTROLLER) != 0)
     {
         printf("Error: %s\n", SDL_GetError());
         return false;
@@ -1031,8 +1031,8 @@ static float ImGuiApp_ImplSdl3_GetDPI(SDL_DisplayID display_id)
 #if SDL3_HAS_PER_MONITOR_DPI
     if (display_id != 0)
     {
-        float dpi;
-        if (SDL_GetDisplayContentScale(display_id, &dpi))
+        float dpi = SDL_GetDisplayContentScale(display_id);
+        if (dpi > 0.0f)
             return dpi;
     }
 #else
@@ -1051,7 +1051,7 @@ static bool ImGuiApp_ImplSdl3GL3_CreateWindow(ImGuiApp* app_opaque, const char* 
     ImGuiApp_ImplSdl3GLX* app = (ImGuiApp_ImplSdl3GLX*)app_opaque;
     
     // Setup SDL
-    if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER | SDL_INIT_GAMEPAD))
+    if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_GAMEPAD))
     {
         printf("Error: %s\n", SDL_GetError());
         return false;
