@@ -19,6 +19,16 @@
 #include "imgui_te_utils.h"
 #include "thirdparty/Str/Str.h"
 
+// Warnings
+#if defined(__clang__)
+#if __has_warning("-Wunknown-warning-option")
+#pragma clang diagnostic ignored "-Wunknown-warning-option"         // warning: unknown warning group 'xxx'                      // not all warnings are known by all Clang versions and they tend to be rename-happy.. so ignoring warnings triggers new warnings on some configuration. Great!
+#endif
+#pragma clang diagnostic ignored "-Wsign-conversion"                // warning: implicit conversion changes signedness
+#elif defined(__GNUC__)
+#pragma GCC diagnostic ignored "-Wsign-conversion"                  // warning: conversion to 'xxxx' from 'xxxx' may change the sign of the result
+#endif
+
 //-------------------------------------------------------------------------
 // [SECTION] ImGuiTestRefDesc
 //-------------------------------------------------------------------------
@@ -505,6 +515,7 @@ void ImGuiTestContext::SetRef(ImGuiWindow* window)
 
     // We grab the ID directly and avoid ImHashDecoratedPath so "/" in window names are not ignored.
     size_t len = strlen(window->Name);
+    IM_UNUSED(len); // Only used when IM_ASSERT enabled
     IM_ASSERT(len < IM_COUNTOF(RefStr) - 1);
     strcpy(RefStr, window->Name);
     RefID = RefWindowID = window->ID;
@@ -527,6 +538,7 @@ void ImGuiTestContext::SetRef(ImGuiTestRef ref)
     if (ref.Path)
     {
         size_t len = strlen(ref.Path);
+        IM_UNUSED(len); // Only used when IM_ASSERT enabled
         IM_ASSERT(len < IM_COUNTOF(RefStr) - 1);
 
         strcpy(RefStr, ref.Path);
@@ -986,6 +998,7 @@ ImGuiTestItemInfo ImGuiTestContext::ItemInfo(ImGuiTestRef ref, ImGuiTestOpFlags 
         return ItemInfoNull();
 
     const ImGuiTestOpFlags SUPPORTED_FLAGS = ImGuiTestOpFlags_NoError;
+    IM_UNUSED(SUPPORTED_FLAGS); // Only used when IM_ASSERT enabled
     IM_ASSERT((flags & ~SUPPORTED_FLAGS) == 0);
 
     ImGuiID full_id = 0;
@@ -3178,6 +3191,7 @@ bool    ImGuiTestContext::ItemReadAsScalar(ImGuiTestRef ref, ImGuiDataType data_
 
     const ImGuiDataTypeInfo* data_type_info = ImGui::DataTypeGetInfo(data_type);
     const ImGuiTestOpFlags SUPPORTED_FLAGS = ImGuiTestOpFlags_NoError;
+    IM_UNUSED(SUPPORTED_FLAGS); // Only used when IM_ASSERT enabled
     IM_ASSERT((flags & ~SUPPORTED_FLAGS) == 0);
 
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);

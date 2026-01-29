@@ -555,7 +555,7 @@ struct IMGUI_API ImGuiTestContext
 // Helpers used by IM_CHECK_OP() macros.
 // ImGuiTestEngine_GetTempStringBuilder() returns a shared instance of ImGuiTextBuffer to recycle memory allocations
 template<typename T> void ImGuiTestEngineUtil_appendf_auto(ImGuiTextBuffer* buf, T v) { buf->append("???"); IM_UNUSED(v); } // FIXME-TESTS: Could improve with some template magic
-template<> inline void ImGuiTestEngineUtil_appendf_auto(ImGuiTextBuffer* buf, const char* v) { buf->appendf("\"%s\"", v); }
+template<> inline void ImGuiTestEngineUtil_appendf_auto(ImGuiTextBuffer* buf, const char* v) { if (v) buf->appendf("\"%s\"", v); else buf->append("nullptr"); }
 template<> inline void ImGuiTestEngineUtil_appendf_auto(ImGuiTextBuffer* buf, bool v)        { buf->append(v ? "true" : "false"); }
 template<> inline void ImGuiTestEngineUtil_appendf_auto(ImGuiTextBuffer* buf, ImS8 v)        { buf->appendf("%d", v); }
 template<> inline void ImGuiTestEngineUtil_appendf_auto(ImGuiTextBuffer* buf, ImU8 v)        { buf->appendf("%u", v); }

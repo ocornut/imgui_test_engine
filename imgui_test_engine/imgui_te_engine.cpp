@@ -36,6 +36,13 @@
 // Warnings
 #ifdef _MSC_VER
 #pragma warning (disable: 4127) // conditional expression is constant
+#elif defined(__clang__)
+#if __has_warning("-Wunknown-warning-option")
+#pragma clang diagnostic ignored "-Wunknown-warning-option"         // warning: unknown warning group 'xxx'                      // not all warnings are known by all Clang versions and they tend to be rename-happy.. so ignoring warnings triggers new warnings on some configuration. Great!
+#endif
+#pragma clang diagnostic ignored "-Wsign-conversion"                // warning: implicit conversion changes signedness
+#elif defined(__GNUC__)
+#pragma GCC diagnostic ignored "-Wsign-conversion"                  // warning: conversion to 'xxxx' from 'xxxx' may change the sign of the result
 #endif
 
 /*
@@ -1089,6 +1096,7 @@ bool ImGuiTestEngine_CaptureScreenshot(ImGuiTestEngine* engine, ImGuiCaptureArgs
     engine->IO.ConfigRunSpeed = ImGuiTestRunSpeed_Fast;
 
     const int frame_count = engine->FrameCount;
+    IM_UNUSED(frame_count); // only used when IM_ASSERT is enabled
 
     // Because we rely on window->ContentSize for stitching, let 1 extra frame elapse to make sure any
     // windows which contents have changed in the last frame get a correct window->ContentSize value.
@@ -1279,6 +1287,7 @@ void ImGuiTestEngine_UnregisterTest(ImGuiTestEngine* engine, ImGuiTest* test)
 
     // Remove from lists
     bool found = engine->TestsAll.find_erase(test);
+    IM_UNUSED(found); // Only used when IM_ASSERT enabled
     IM_ASSERT(found); // Calling ImGuiTestEngine_UnregisterTest() on an unknown test.
     for (int n = 0; n < engine->TestsQueue.Size; n++)
     {
@@ -2043,6 +2052,7 @@ void ImGuiTestEngine_ErrorRecoveryRun(ImGuiTestEngine* engine)
     else
         ImGui::ErrorCheckEndFrameRecover(LogAsDebugFunc, ctx);
 #else
+    IM_UNUSED(ctx); // Only used when IM_ASSERT enabled
     // This would automatically be done in EndFrame() but doing it here means we get a report earlier and in the right co-routine.
     // And the state we entered in happens to be the NewFrame() state (hence using g.StackSizesInNewFrame)
     ImGuiContext& g = *GImGui;
