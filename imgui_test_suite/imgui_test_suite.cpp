@@ -111,6 +111,7 @@ struct TestSuiteApp
     Str128                      OptExportFilename;
     ImGuiTestEngineExportFormat OptExportFormat = ImGuiTestEngineExportFormat_JUnitXml;
     ImVector<char*>             TestsToRun;
+    Str128                      OptExplicitFfmpegPath; // will try to auto detect if not provided
 };
 
 static void TestSuite_ShowUI(TestSuiteApp* app)
@@ -176,6 +177,7 @@ static void TestSuite_PrintCommandLineHelp()
     printf("  -export-file <file>      : save test run results in specified file.\n");
     printf("  -export-format <format>  : save test run results in specified format. (default: junit)\n");
     printf("  -list                    : list queued tests (one per line) and exit.\n");
+    printf("  -ffmpeg <file>           : provide explicit path to ffmpeg (will try to auto-detect if not specified).\n");
     printf("Tests:\n");
     printf("   all/tests/perf          : queue by groups: all, only tests, only performance benchmarks.\n");
     printf("   [pattern]               : queue all tests containing the word [pattern].\n");
@@ -254,6 +256,10 @@ static bool TestSuite_ParseCommandLineOptions(TestSuiteApp* app, int argc, char*
         {
             app->OptListTests = true;
             app->OptGui = false;
+        }
+        else if (strcmp(argv[n], "-ffmpeg") == 0 && n + 1 < argc)
+        {
+            app->OptExplicitFfmpegPath = argv[n + 1];
         }
         else
         {
@@ -487,7 +493,10 @@ int main(int argc, char** argv)
     test_io.ConfigNoThrottle = app->OptNoThrottle;
     test_io.PerfStressAmount = app->OptStressAmount;
     test_io.ConfigCaptureEnabled = app->OptCaptureEnabled;
-    FindVideoEncoder(test_io.VideoCaptureEncoderPath, IM_COUNTOF(test_io.VideoCaptureEncoderPath));
+    if (app->OptExplicitFfmpegPath.empty())
+        FindVideoEncoder(test_io.VideoCaptureEncoderPath, IM_COUNTOF(test_io.VideoCaptureEncoderPath));
+    else
+        ImStrncpy(test_io.VideoCaptureEncoderPath, app->OptExplicitFfmpegPath.c_str(), IM_COUNTOF(test_io.VideoCaptureEncoderPath));
     ImStrncpy(test_io.VideoCaptureEncoderParams, IMGUI_CAPTURE_DEFAULT_VIDEO_PARAMS_FOR_FFMPEG, IM_COUNTOF(test_io.VideoCaptureEncoderParams));
     ImStrncpy(test_io.GifCaptureEncoderParams, IMGUI_CAPTURE_DEFAULT_GIF_PARAMS_FOR_FFMPEG, IM_COUNTOF(test_io.GifCaptureEncoderParams));
     test_io.CheckDrawDataIntegrity = true;
