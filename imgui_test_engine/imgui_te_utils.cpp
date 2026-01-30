@@ -1088,6 +1088,7 @@ bool    ImOsIsDebuggerPresent()
 
     size = sizeof(info);
     junk = sysctl(mib, sizeof(mib) / sizeof(*mib), &info, &size, nullptr, 0);
+    IM_UNUSED(junk); // Only used when IM_ASSERT enabled
     IM_ASSERT(junk == 0);
 
     // We're being debugged if the P_TRACED flag is set.
