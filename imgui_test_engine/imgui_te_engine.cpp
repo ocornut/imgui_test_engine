@@ -589,9 +589,8 @@ void ImGuiTestEngine_ApplyInputToImGuiContext(ImGuiTestEngine* engine)
         mouse_hovered_viewport = ImGui::FindHoveredViewportFromPlatformWindowStack(engine->Inputs.MousePosValue); // Rarely used, some tests rely on this (e.g. "docking_dockspace_passthru_hover") may make it a opt-in feature instead?
     if (mouse_hovered_viewport && (mouse_hovered_viewport->Flags & ImGuiViewportFlags_NoInputs))
         mouse_hovered_viewport = nullptr;
-    //if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
-        if (io.BackendFlags & ImGuiBackendFlags_HasMouseHoveredViewport)
-            io.AddMouseViewportEvent(mouse_hovered_viewport ? mouse_hovered_viewport->ID : 0);
+    if (io.BackendFlags & ImGuiBackendFlags_HasMouseHoveredViewport)
+        io.AddMouseViewportEvent(mouse_hovered_viewport ? mouse_hovered_viewport->ID : 0);
     bool mouse_hovered_viewport_focused = mouse_hovered_viewport && (mouse_hovered_viewport->Flags & ImGuiViewportFlags_IsFocused) != 0;
 #endif
 
