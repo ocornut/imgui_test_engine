@@ -58,16 +58,16 @@ ImGuiApp* ImGuiApp_ImplWin32DX11_Create();
 #endif
 
 #ifdef IMGUI_APP_SDL2_GL2
-ImGuiApp* ImGuiApp_ImplSdlGL2_Create();
+ImGuiApp* ImGuiApp_ImplSDL2GL2_Create();
 #ifndef ImGuiApp_ImplDefault_Create
-#define ImGuiApp_ImplDefault_Create ImGuiApp_ImplSdlGL2_Create
+#define ImGuiApp_ImplDefault_Create ImGuiApp_ImplSDL2GL2_Create
 #endif
 #endif
 
 #ifdef IMGUI_APP_SDL2_GL3
-ImGuiApp* ImGuiApp_ImplSdlGL3_Create();
+ImGuiApp* ImGuiApp_ImplSDL2GL3_Create();
 #ifndef ImGuiApp_ImplDefault_Create
-#define ImGuiApp_ImplDefault_Create ImGuiApp_ImplSdlGL3_Create
+#define ImGuiApp_ImplDefault_Create ImGuiApp_ImplSDL2GL3_Create
 #endif
 #endif
 
@@ -111,8 +111,7 @@ ImGuiApp* ImGuiApp_ImplNull_Create();
 
 #if defined(IMGUI_APP_SDL2_GL2) || defined(IMGUI_APP_SDL2_GL3)
 #include "imgui_impl_sdl2.cpp"
-#ifdef Status // X11 headers
-#undef Status
+#ifdef Status // X11 headers are leaking this.
 #endif
 #endif
 
