@@ -399,7 +399,7 @@ ImGuiCaptureStatus ImGuiCaptureContext::CaptureUpdate(ImGuiCaptureArgs* args)
     }
     else
     {
-        IM_ASSERT(args == _CaptureArgs); // Capture args can not change mid-capture.
+        IM_ASSERT(!_CaptureArgs || args == _CaptureArgs); // Capture may be cancelled, but args can not otherwise change mid-capture.
     }
 
     //-----------------------------------------------------------------
