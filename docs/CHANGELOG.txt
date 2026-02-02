@@ -5,6 +5,10 @@ CHANGELOG
    Those changes are not all listed here.
 ** For a while this is going to ONLY INCLUDE BREAKING CHANGES.
 
+2026/02/02:
+- TestEngine: improve how item visibility is evaluated when nested
+  PushClipRect() are used.
+
 2026/01/26:
 - TestEngine: rework logic for aiming at an iten in a covered window to
   move covering windows if the target window cannot be brought to front.
