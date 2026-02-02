@@ -2114,7 +2114,7 @@ void RegisterTests_Window(ImGuiTestEngine* e)
         ImGui::Begin("Test Scrolling 1", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysHorizontalScrollbar | ImGuiWindowFlags_AlwaysAutoResize);
         ImGui::Dummy(ImVec2(200, 200));
         ImGuiWindow* window1 = ctx->UiContext->CurrentWindow;
-        IM_CHECK_EQ_NO_RET(window1->ScrollMax.x, 0.0f); // FIXME-TESTS: If another window in another test used same name, ScrollMax won't be zero on first frame
+        IM_CHECK_EQ_NO_RET(window1->ScrollMax.x, 0.0f);
         IM_CHECK_EQ_NO_RET(window1->ScrollMax.y, 0.0f);
         ImGui::End();
 
@@ -2130,23 +2130,35 @@ void RegisterTests_Window(ImGuiTestEngine* e)
     };
 
     // ## Test that SetScrollY/GetScrollY values are matching. You'd think this would be obvious! Think again!
-    // FIXME-TESTS: With/without menu bars, could we easily allow for test variations that affects both GuiFunc and TestFunc
     t = IM_REGISTER_TEST(e, "window", "window_scroll_003");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
-        ImGui::Begin("Test Scrolling 3", NULL, ImGuiWindowFlags_NoSavedSettings);
+        auto& vars = ctx->GenericVars;
+        ImGui::Begin("Test Scrolling 3", NULL, ImGuiWindowFlags_NoSavedSettings | (vars.Step == 1 ? ImGuiWindowFlags_MenuBar : 0));
+        if (vars.Step == 1 && ImGui::BeginMenuBar())
+            ImGui::EndMenuBar();
         for (int n = 0; n < 100; n++)
             ImGui::Text("Line %d", n);
         ImGui::End();
     };
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
-        ctx->Yield();
+        auto& vars = ctx->GenericVars;
         ImGuiWindow* window = ImGui::FindWindowByName("Test Scrolling 3");
-        ImGui::SetScrollY(window, 100.0f);
-        ctx->Yield();
-        float sy = window->Scroll.y;
-        IM_CHECK_EQ(sy, 100.0f);
+        ctx->WindowResize("//Test Scrolling 3", { 200.f, ImGui::GetTextLineHeight() * 50.0f });
+
+        for (int step = 0; step < 2; step++)
+        {
+            vars.Step = step;
+            ctx->Yield();
+            ImGui::SetScrollY(window, 0.0f);
+            ctx->Yield();
+            IM_CHECK_EQ(window->Scroll.y, 0.0f);
+            ctx->Yield();
+            ImGui::SetScrollY(window, 100.0f);
+            ctx->Yield();
+            IM_CHECK_EQ(window->Scroll.y, 100.0f);
+        }
     };
 
     // ## Test scroll functions are delayed to next frame except SetNextWindowScroll which applies immediately (#1526)
