@@ -7725,15 +7725,16 @@ void RegisterTests_Capture(ImGuiTestEngine* e)
     t = IM_REGISTER_TEST(e, "capture", "capture_readme_gif");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
-        ImGui::SetNextWindowSize(ImVec2(300, 160), ImGuiCond_Appearing);
+        float sc = ImGui::GetFontSize();
+        ImGui::SetNextWindowSize(ImVec2(sc * 23.0f, sc * 11.0f), ImGuiCond_Appearing);
         ImGui::Begin("CaptureGif", NULL, ImGuiWindowFlags_NoSavedSettings);
         static char string_buffer[64] = {};
         static float float_value = 0.6f;
         ImGui::Text("Hello, world 123");
         ImGui::Button("Save");
-        ImGui::SetNextItemWidth(194);
+        ImGui::SetNextItemWidth(sc * 15.0f);
         ImGui::InputText("string", string_buffer, IM_COUNTOF(string_buffer));
-        ImGui::SetNextItemWidth(194);
+        ImGui::SetNextItemWidth(sc * 15.0f);
         ImGui::SliderFloat("float", &float_value, 0.0f, 4.0f);
         ImGui::End();
     };
@@ -7757,7 +7758,10 @@ void RegisterTests_Capture(ImGuiTestEngine* e)
     t = IM_REGISTER_TEST(e, "capture", "capture_readme_my_first_tool");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
-        ImGui::SetNextWindowSize(ImVec2(440, 330));
+        ImGui::PushFont(nullptr, 18.0f);
+        float sc = ImGui::GetFontSize();
+        ImGui::SetNextWindowSize(ImVec2(33 * sc, 25 * sc));
+        /*
         ImFont* font = ImGui::FindFontByPrefix(TEST_SUITE_ALT_FONT_NAME);
         IM_CHECK_SILENT(font != NULL);
 #if IMGUI_VERSION_NUM >= 19199
@@ -7765,6 +7769,7 @@ void RegisterTests_Capture(ImGuiTestEngine* e)
 #else
         ImGui::PushFont(font);
 #endif
+        */
 
         // State
         static bool my_tool_active = true;
@@ -7871,7 +7876,8 @@ void RegisterTests_Capture(ImGuiTestEngine* e)
         auto& vars = ctx->GenericVars;
 
         // Hidden setup
-        ImVec2 window_size = ImVec2(280, ImGui::GetFrameHeightWithSpacing() * 5);
+        float sc = ImGui::GetFontSize();
+        ImVec2 window_size = ImVec2(sc * 21, ImGui::GetFrameHeightWithSpacing() * 5);
         ImVec2 window_offset = ImVec2(0, window_size.y + ImGui::GetStyle().ItemSpacing.y * 2);
         for (int step = 0; step < 3; step++)
             ctx->WindowResize(windows[step], window_size);
