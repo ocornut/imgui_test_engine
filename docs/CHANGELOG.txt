@@ -6,11 +6,14 @@ CHANGELOG
 ** For a while this is going to ONLY INCLUDE BREAKING CHANGES.
 
 2026/02/02:
+- TestEngine: can access TabBars in dock nodes or menu layer.
+- TestEngine: fixes to aim at tab items while another item is active
+  (e.g. for drag and drop), requires latest (1.92.6) core library.
 - TestEngine: improve how item visibility is evaluated when nested
   PushClipRect() are used.
 
 2026/01/26:
-- TestEngine: rework logic for aiming at an iten in a covered window to
+- TestEngine: rework logic for aiming at an item in a covered window to
   move covering windows if the target window cannot be brought to front.
   In particular, it fixes issues when programmatic code is stealing focus.
 - TestEngine: fixed a bug where some actions aiming at a window behind

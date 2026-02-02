@@ -1489,6 +1489,17 @@ void    ImGuiTestContext::ScrollToPosY(ImGuiTestRef window_ref, float pos_y)
     ScrollToPos(window_ref, pos_y, ImGuiAxis_Y);
 }
 
+#if IMGUI_VERSION_NUM < 19226
+namespace ImGui
+{
+    ImGuiTabBar* TabBarFindByID(ImGuiID id)
+    {
+        ImGuiContext& g = *GImGui;
+        return g.TabBars.GetByKey(id);
+    }
+}
+#endif
+
 // Supported values for ImGuiTestOpFlags:
 // - ImGuiTestOpFlags_NoFocusWindow
 void    ImGuiTestContext::ScrollToItem(ImGuiTestRef ref, ImGuiAxis axis, ImGuiTestOpFlags flags)
@@ -1510,14 +1521,26 @@ void    ImGuiTestContext::ScrollToItem(ImGuiTestRef ref, ImGuiAxis axis, ImGuiTe
 
     // TabBar are a special case because they have no scrollbar and rely on ScrollButton "<" and ">"
     // FIXME-TESTS: Consider moving to its own function.
-    ImGuiContext& g = *UiContext;
     if (axis == ImGuiAxis_X)
-        if (ImGuiTabBar* tab_bar = g.TabBars.GetByKey(item.ParentID))
-            if (tab_bar->Flags & ImGuiTabBarFlags_FittingPolicyScroll)
+    {
+        ImGuiTabBar* tab_bar = ImGui::TabBarFindByID(item.ParentID);
+#ifdef IMGUI_HAS_DOCK
+        if (tab_bar == NULL)
+            if (ImGuiDockNode* node = ImGui::DockContextFindNodeByID(UiContext, item.ParentID))
+                if (node->TabBar != NULL)
+                    tab_bar = node->TabBar;
+#endif
+        if (tab_bar)
+            if (tab_bar->Flags & (ImGuiTabBarFlags_FittingPolicyScroll | ImGuiTabBarFlags_FittingPolicyMixed))
             {
                 ScrollToTabItem(tab_bar, item.ID);
                 return;
             }
+    }
+
+    // Unsupported beyond tab bars
+    if (item.NavLayer == ImGuiNavLayer_Menu)
+        return;
 
     // FIXME: Consider storing current ClipRect
     ImGuiWindow* window = item.Window;
@@ -1554,30 +1577,52 @@ void    ImGuiTestContext::ScrollToTabItem(ImGuiTabBar* tab_bar, ImGuiID tab_id)
     if (target_tab_item == nullptr)
         return;
 
-    int selected_tab_index = tab_bar->Tabs.index_from_ptr(selected_tab_item);
-    int target_tab_index = tab_bar->Tabs.index_from_ptr(target_tab_item);
+    const int selected_tab_index = tab_bar->Tabs.index_from_ptr(selected_tab_item);
+    const int target_tab_index = tab_bar->Tabs.index_from_ptr(target_tab_item);
+    if (selected_tab_index == target_tab_index)
+        return;
 
     ImGuiTestRef backup_ref = GetRef();
     SetRef(tab_bar->ID);
 
-    if (selected_tab_index > target_tab_index)
+#if IMGUI_VERSION_NUM >= 19259
+    ImGuiID active_id = ImGui::GetActiveID();
+    if (active_id != 0 || ImGui::IsDragDropActive() || selected_tab_index == target_tab_index)
     {
-        MouseMove("##<");
-        for (int i = 0; i < selected_tab_index - target_tab_index; ++i)
-            MouseClick(0);
+        // Cannot click: will use mouse wheeling
+        // FIXME-TESTS: Taking a shortcut now instead of doing a mouse wheel.
+        //MouseMoveToPos(tab_bar->BarRect.GetCenter());
+        //MouseWheelX(delta?);
+        tab_bar->NextScrollToTabId = tab_id;
     }
     else
+#endif
     {
-        MouseMove("##>");
-        for (int i = 0; i < target_tab_index - selected_tab_index; ++i)
-            MouseClick(0);
+        if (selected_tab_index > target_tab_index)
+        {
+            MouseMove("##<");
+            for (int i = 0; i < selected_tab_index - target_tab_index; ++i)
+                MouseClick(0);
+        }
+        else
+        {
+            MouseMove("##>");
+            for (int i = 0; i < target_tab_index - selected_tab_index; ++i)
+                MouseClick(0);
+        }
     }
 
     // Skip the scroll animation
+    Yield();
     if (EngineIO->ConfigRunSpeed == ImGuiTestRunSpeed_Fast)
     {
         tab_bar->ScrollingAnim = tab_bar->ScrollingTarget;
         Yield();
+    }
+    else
+    {
+        while (tab_bar->ScrollingAnim != tab_bar->ScrollingTarget)
+            Yield();
     }
 
     SetRef(backup_ref);
@@ -1863,13 +1908,10 @@ void    ImGuiTestContext::MouseMove(ImGuiTestRef ref, ImGuiTestOpFlags flags)
         float visibility_ratio_x = (item_r_clipped.GetWidth() + 1.0f) / (item.RectFull.GetWidth() + 1.0f);
         float visibility_ratio_y = (item_r_clipped.GetHeight() + 1.0f) / (item.RectFull.GetHeight() + 1.0f);
 
-        if (item.NavLayer == ImGuiNavLayer_Main)
-        {
-            if (visibility_ratio_x < 0.70f)
-                ScrollToItem(ref, ImGuiAxis_X, ImGuiTestOpFlags_NoFocusWindow);
-            if (visibility_ratio_y < 0.90f)
-                ScrollToItem(ref, ImGuiAxis_Y, ImGuiTestOpFlags_NoFocusWindow);
-        }
+        if (visibility_ratio_x < 0.70f)
+            ScrollToItem(ref, ImGuiAxis_X, ImGuiTestOpFlags_NoFocusWindow);
+        if (visibility_ratio_y < 0.90f)
+            ScrollToItem(ref, ImGuiAxis_Y, ImGuiTestOpFlags_NoFocusWindow);
         // FIXME: Scroll parent window
     }
 
