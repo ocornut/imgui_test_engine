@@ -206,12 +206,12 @@ static void DrawTestLog(ImGuiTestEngine* e, ImGuiTest* test)
             ImGui::OpenPopup("Help");
         if (ImGui::BeginPopup("Help"))
         {
+            ImGui::BulletText("%s", "Click '[X] KeepGui' (io.ConfigKeepGuiFunc)    to view and interact with failing state.");
             ImGui::BulletText("%s", "Click '[X] Break'   (io.ConfigBreakOnError)   to break in debugger.");
             ImGui::BulletText("%s", "Click '[X] Capture' (io.ConfigCaptureOnError) to capture image of failing state to disk.");
-            ImGui::BulletText("%s", "Click '[X] KeepGui' (io.ConfigKeepGuiFunc)    to interact with failing state.");
             ImGui::BulletText("%s", "Right-click in Log to open file.");
             ImGui::BulletText("%s", "Hover hex identifiers in Log to locate them on screen.");
-            ImGui::BulletText("%s", "Call IM_SUSPEND_TESTFUNC() from TestFunc to interact with state at a given point.");
+            ImGui::BulletText("%s", "Call IM_SUSPEND_TESTFUNC() from TestFunc to view and interact with state at any given point.");
             ImGui::EndPopup();
         }
     }
