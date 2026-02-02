@@ -2512,7 +2512,7 @@ ImVec2   ImGuiTestContext::GetPosOnVoid(ImGuiViewport* viewport)
 
 ImVec2  ImGuiTestContext::GetWindowTitlebarPoint(ImGuiTestRef window_ref)
 {
-    // FIXME-TESTS: Need to find a -visible- click point. drag_pos may end up being outside of main viewport.
+    // FIXME-TESTS: Need to find a -visible- click point. 'pos' may end up being outside of main viewport.
     if (IsError())
         return ImVec2();
 
@@ -2523,7 +2523,7 @@ ImVec2  ImGuiTestContext::GetWindowTitlebarPoint(ImGuiTestRef window_ref)
         return ImVec2();
     }
 
-    ImVec2 drag_pos;
+    ImVec2 pos;
     for (int n = 0; n < 2; n++)
     {
 #ifdef IMGUI_HAS_DOCK
@@ -2532,7 +2532,7 @@ ImVec2  ImGuiTestContext::GetWindowTitlebarPoint(ImGuiTestRef window_ref)
             ImGuiTabBar* tab_bar = window->DockNode->TabBar;
             ImGuiTabItem* tab = ImGui::TabBarFindTabByID(tab_bar, window->TabId);
             IM_ASSERT(tab != nullptr);
-            drag_pos = tab_bar->BarRect.Min + ImVec2(tab->Offset + tab->Width * 0.5f, tab_bar->BarRect.GetHeight() * 0.5f);
+            pos = tab_bar->BarRect.Min + ImVec2(tab->Offset + tab->Width * 0.5f, tab_bar->BarRect.GetHeight() * 0.5f);
         }
         else
 #endif
@@ -2542,14 +2542,14 @@ ImVec2  ImGuiTestContext::GetWindowTitlebarPoint(ImGuiTestRef window_ref)
 #else
             const float h = window->TitleBarHeight();
 #endif
-            drag_pos = ImFloor(window->Pos + ImVec2(window->Size.x, h) * 0.5f);
+            pos = ImFloor(window->Pos + ImVec2(window->Size.x, h) * 0.5f);
         }
 
         // If we didn't have to teleport it means we can reach the position already
-        if (!WindowTeleportToMakePosVisible(window->ID, drag_pos))
+        if (!WindowTeleportToMakePosVisible(window->ID, pos))
             break;
     }
-    return drag_pos;
+    return pos;
 }
 
 // Click position which should have no windows.

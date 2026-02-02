@@ -502,6 +502,7 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
     };
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
+        ImGuiIO& io = ImGui::GetIO();
         ImVec2 viewport_pos = ImGui::GetMainViewport()->Pos;
         ImVec2 viewport_size = ImGui::GetMainViewport()->Size;
         ImGuiWindow* window1 = ctx->GetWindowByRef("Window 1");
@@ -598,8 +599,9 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
                 IM_CHECK(window1->DockNode->HostWindow != window3->DockNode->HostWindow);   // And both window groups belong to separate trees
                 break;
             case 2:
+            {
                 // Dock state of all windows did not change
-                ctx->LogDebug("Moving entire node...");
+                ctx->LogDebug("Moving both nodes by dragging empty space..."); // FIXME-DOCKING FIXME-TESTS: Poorly documented.
                 IM_CHECK(window1->DockNode == node1);
                 IM_CHECK(window2->DockNode == node2);
                 IM_CHECK(window3->DockNode == node3);
@@ -607,13 +609,27 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
                 IM_CHECK(window1->DockNode->HostWindow == window2->DockNode->HostWindow);
                 IM_CHECK(window3->DockNode->HostWindow == window4->DockNode->HostWindow);
                 IM_CHECK(window1->DockNode->HostWindow == window3->DockNode->HostWindow);
-                pos = window4->DockNode->TabBar->BarRect.Max - ImVec2(1, h * 0.5f);
-                ctx->WindowTeleportToMakePosVisible(window4->DockNode->HostWindow->ID, pos + ImVec2(10, 10));     // Make space for next drag operation
+
+                // FIXME-TESTS: Resize wide enough so we'll be able to find empty space WITHIN the dock node title bar
+                const float min_w = (ImGui::CalcTextSize("Window 11").x + ImGui::GetFrameHeight() * 3) * 4.0f;
+                ctx->WindowResize(window1->DockNode->HostWindow->ID, { min_w, 0.0f });
+
+                //ImVec2 empty_pos_on_dock_node_title_bar = ctx->GetDockNodeTitlebarPos(window4->DockNode);    // FIXME: Implement a generic version... which would need resizing.
+                ImVec2 empty_pos_on_dock_node_title_bar = window4->DockNode->TabBar->BarRect.Max - ImVec2(1, h * 0.5f);
+
+                ImVec2 drag_offset = ImVec2(io.MouseDragThreshold, io.MouseDragThreshold);
+                //ctx->WindowTeleportToMakePosVisible(window4->DockNode->HostWindow->ID, pos + drag_offset);     // Make space for next drag operation
                 pos = window4->DockNode->HostWindow->Pos;
-                ctx->MouseMoveToPos(window4->DockNode->TabBar->BarRect.Max - ImVec2(1, h * 0.5f));
-                ctx->MouseDragWithDelta(ImVec2(10, 10));
-                IM_CHECK_EQ(window4->DockNode->HostWindow->Pos, pos + ImVec2(10, 10));      // Entire dock tree was moved
+
+                ctx->MouseMoveToPos(empty_pos_on_dock_node_title_bar);                  // Aim at empty space
+                if (!io.ConfigDockingWithShift)
+                    ctx->KeyDown(ImGuiMod_Shift); // Disable docking
+                ctx->MouseDragWithDelta(drag_offset);
+                if (!io.ConfigDockingWithShift)
+                    ctx->KeyUp(ImGuiMod_Shift);
+                IM_CHECK_EQ(window4->DockNode->HostWindow->Pos, pos + drag_offset);     // Entire dock tree was moved
                 break;
+            }
             default:
                 IM_ASSERT(false);
             }
@@ -1813,7 +1829,7 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
         }
 
         // FIXME-TESTS: DockBuilderDockWindow() doesn't work on windows that haven't been created and use ImGuiWindowFlags_NoSavedSettings
-        static const float DOCKING_SPLITTER_SIZE = 2.0f; // FIXME-TESTS
+        static const float docking_separator_size = ImGui::GetStyle().DockingSeparatorSize;
         {
             ImGui::Begin("dockMainId", NULL, ImGuiWindowFlags_NoSavedSettings * 0);
             ImVec2 sz = ImGui::GetWindowSize();
@@ -1821,13 +1837,13 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
             if (vars.Step == 1)
             {
                 IM_CHECK(ImGui::GetWindowDockID() == dockMainId);
-                IM_CHECK_NO_RET(ImFabs(sz.x - (1000 - 200 - 200)) <= DOCKING_SPLITTER_SIZE * 2);
-                IM_CHECK_NO_RET(ImFabs(sz.y - (500 - 100)) <= DOCKING_SPLITTER_SIZE * 2);
+                IM_CHECK_NO_RET(ImFabs(sz.x - (1000 - 200 - 200)) <= docking_separator_size * 2);
+                IM_CHECK_NO_RET(ImFabs(sz.y - (500 - 100)) <= docking_separator_size * 2);
             }
             if (vars.Step == 2)
             {
-                IM_CHECK_NO_RET(ImFabs(sz.x - (1000 - 300 - 300)) <= DOCKING_SPLITTER_SIZE * 2);
-                IM_CHECK_NO_RET(ImFabs(sz.y - (400 - 100)) <= DOCKING_SPLITTER_SIZE * 2);
+                IM_CHECK_NO_RET(ImFabs(sz.x - (1000 - 300 - 300)) <= docking_separator_size * 2);
+                IM_CHECK_NO_RET(ImFabs(sz.y - (400 - 100)) <= docking_separator_size * 2);
             }
             ImGui::Text("(%.1f,%.1f)", sz.x, sz.y);
             ImGui::End();
@@ -1839,15 +1855,15 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
             if (vars.Step == 1)
             {
                 IM_CHECK(ImGui::GetWindowDockID() == dockTopRightId);
-                IM_CHECK_NO_RET(ImFabs(sz.x - 200) <= DOCKING_SPLITTER_SIZE * 2);
-                IM_CHECK_NO_RET(ImFabs(sz.y - 500) <= DOCKING_SPLITTER_SIZE * 2);
+                IM_CHECK_NO_RET(ImFabs(sz.x - 200) <= docking_separator_size * 2);
+                IM_CHECK_NO_RET(ImFabs(sz.y - 500) <= docking_separator_size * 2);
             }
             if (vars.Step == 2)
             {
 #if IMGUI_BROKEN_TESTS
-                IM_CHECK_NO_RET(ImFabs(sz.x - 100) <= DOCKING_SPLITTER_SIZE * 2); // Docking size application is depth-first, so L|C|R will not resize neatly yet
+                IM_CHECK_NO_RET(ImFabs(sz.x - 100) <= docking_separator_size * 2); // Docking size application is depth-first, so L|C|R will not resize neatly yet
 #endif
-                IM_CHECK_NO_RET(ImFabs(sz.y - 400) <= DOCKING_SPLITTER_SIZE * 2);
+                IM_CHECK_NO_RET(ImFabs(sz.y - 400) <= docking_separator_size * 2);
             }
             ImGui::Text("(%.1f,%.1f)", sz.x, sz.y);
             ImGui::End();
@@ -1859,15 +1875,15 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
             if (vars.Step == 1)
             {
                 IM_CHECK(ImGui::GetWindowDockID() == dockTopLeftId);
-                IM_CHECK_NO_RET((sz.x - 200) <= DOCKING_SPLITTER_SIZE * 2);
-                IM_CHECK_NO_RET((sz.y - 500) <= DOCKING_SPLITTER_SIZE * 2);
+                IM_CHECK_NO_RET((sz.x - 200) <= docking_separator_size * 2);
+                IM_CHECK_NO_RET((sz.y - 500) <= docking_separator_size * 2);
             }
             if (vars.Step == 2)
             {
 #if IMGUI_BROKEN_TESTS
-                IM_CHECK_NO_RET((sz.x - 100) <= DOCKING_SPLITTER_SIZE * 2); // Docking size application is depth-first, so L|C|R will not resize neatly yet
+                IM_CHECK_NO_RET((sz.x - 100) <= docking_separator_size * 2); // Docking size application is depth-first, so L|C|R will not resize neatly yet
 #endif
-                IM_CHECK_NO_RET((sz.y - 400) <= DOCKING_SPLITTER_SIZE * 2);
+                IM_CHECK_NO_RET((sz.y - 400) <= docking_separator_size * 2);
             }
             ImGui::Text("(%.1f,%.1f)", sz.x, sz.y);
             ImGui::End();
@@ -1879,11 +1895,11 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
             if (vars.Step == 1)
             {
                 IM_CHECK(ImGui::GetWindowDockID() == dockDownId);
-                IM_CHECK_NO_RET((sz.y - 100) <= DOCKING_SPLITTER_SIZE * 2);
+                IM_CHECK_NO_RET((sz.y - 100) <= docking_separator_size * 2);
             }
             if (vars.Step == 2)
             {
-                IM_CHECK_NO_RET((sz.y - 100) <= DOCKING_SPLITTER_SIZE * 2);
+                IM_CHECK_NO_RET((sz.y - 100) <= docking_separator_size * 2);
             }
 
             ImGui::Text("(%.1f,%.1f)", sz.x, sz.y);

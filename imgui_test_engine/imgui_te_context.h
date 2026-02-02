@@ -336,7 +336,7 @@ struct IMGUI_API ImGuiTestContext
 
     // Miscellaneous helpers
     ImVec2      GetPosOnVoid(ImGuiViewport* viewport);                              // Find a point that has no windows // FIXME: This needs error return and flag to enable/disable forcefully finding void.
-    ImVec2      GetWindowTitlebarPoint(ImGuiTestRef window_ref);                    // Return a clickable point on window title-bar (window tab for docked windows).
+    ImVec2      GetWindowTitlebarPoint(ImGuiTestRef window_ref);                    // Return a clickable point on window title-bar (window tab for docked windows) that will e.g. move this single window.
     ImVec2      GetMainMonitorWorkPos();                                            // Work pos and size of main viewport when viewports are disabled, or work pos and size of monitor containing main viewport when viewports are enabled.
     ImVec2      GetMainMonitorWorkSize();
 
@@ -509,6 +509,7 @@ struct IMGUI_API ImGuiTestContext
     bool        WindowIsUndockedOrStandalone(ImGuiWindow* window);
     bool        DockIdIsUndockedOrStandalone(ImGuiID dock_id);
     void        DockNodeHideTabBar(ImGuiDockNode* node, bool hidden);
+    //ImVec2    GetDockNodeTitlebarPos(ImGuiDockNode* node);
 #endif
 
     // Performances Measurement (use along with Dear ImGui Perf Tool)
