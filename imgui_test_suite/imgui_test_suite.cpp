@@ -15,6 +15,7 @@
 
 // Examples
 #define CMDLINE_ARGS    ""
+//#define CMDLINE_ARGS  "-scale 1.75"
 //#define CMDLINE_ARGS  "-fileopener tools/win32_open_with_sublime.cmd"
 //#define CMDLINE_ARGS  "-nogui -export-format junit -export-file output/tests.junit.xml widgets_input"
 //#define CMDLINE_ARGS  "-viewport-mock -nogui viewport_"               // Test mock viewports on TTY mode
@@ -107,6 +108,7 @@ struct TestSuiteApp
     bool                        OptMockViewports = false;
     bool                        OptCaptureEnabled = true;
     int                         OptStressAmount = 5;
+    float                       OptScale = 0.0f;
     Str128                      OptSourceFileOpener;
     Str128                      OptExportFilename;
     ImGuiTestEngineExportFormat OptExportFormat = ImGuiTestEngineExportFormat_JUnitXml;
@@ -167,6 +169,7 @@ static void TestSuite_PrintCommandLineHelp()
     printf("  -ve0/-ve1/-ve2/-ve3/-ve4 : verbose level for errored tests [same as above]\n");
     printf("  -gui/-nogui              : enable gui/interactive mode.\n");
     printf("  -guifunc                 : run test GuiFunc only (no TestFunc).\n");
+    printf("  -scale <float>/auto      : set content scale (default: auto = pulled from system on GUI mode, 1.0 in console mode)\n");
     printf("  -slow                    : run automation at feeble human speed.\n");
     printf("  -nothrottle              : run GUI app without throttling/vsync by default.\n");
     printf("  -nopause                 : don't pause application on exit.\n");
@@ -222,6 +225,23 @@ static bool TestSuite_ParseCommandLineOptions(TestSuiteApp* app, int argc, char*
         else if (strcmp(argv[n], "-nocapture") == 0)    { app->OptCaptureEnabled = false; }
         else if (strcmp(argv[n], "-viewport") == 0)     { app->OptViewports = true; }
         else if (strcmp(argv[n], "-viewport-mock") == 0){ app->OptViewports = app->OptMockViewports = true; }
+        else if (strcmp(argv[n], "-scale") == 0 && n + 1 < argc)
+        {
+            if (strcmp(argv[n + 1], "auto") == 0)
+            {
+                app->OptScale = 0.0f;
+            }
+            else
+            {
+                app->OptScale = (float)atof(argv[n + 1]);
+                if (app->OptScale == 0.0f)
+                {
+                    fprintf(stderr, "Invalid value '%s' passed to '-scale'.", argv[n + 1]);
+                    return false;
+                }
+            }
+            n++;
+        }
         else if (strcmp(argv[n], "-stressamount") == 0 && n + 1 < argc)
         {
             app->OptStressAmount = atoi(argv[n + 1]);
@@ -244,6 +264,7 @@ static bool TestSuite_ParseCommandLineOptions(TestSuiteApp* app, int argc, char*
                 fprintf(stderr, "Unknown value '%s' passed to '-export-format'.", argv[n + 1]);
                 fprintf(stderr, "Possible values:\n");
                 fprintf(stderr, "- junit\n");
+                return false;
             }
         }
         else if (strcmp(argv[n], "-export-file") == 0 && n + 1 < argc)
@@ -575,11 +596,12 @@ int main(int argc, char** argv)
     ImGuiTestEngine_InstallDefaultCrashHandler();
 
     // Setup scaling
-    const float main_scale = app_window->DpiScale;
+    const float main_scale = (app->OptScale != 0.0f) ? app->OptScale : app_window->DpiScale; // Override with e.g. '-scale 1.75' command-line param.
     ImGuiStyle& style = ImGui::GetStyle();
     style.ScaleAllSizes(main_scale);
     style.FontSizeBase = 13.0f;
     style.FontScaleDpi = main_scale;
+    // NB: we don't test io.ConfigDpiScaleFonts = true.
 
     // Load fonts
     TestSuite_LoadFonts();

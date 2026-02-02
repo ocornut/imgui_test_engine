@@ -11,6 +11,9 @@ CHANGELOG
   (e.g. for drag and drop), requires latest (1.92.6) core library.
 - TestEngine: improve how item visibility is evaluated when nested
   PushClipRect() are used.
+- TestSuite: added '-scale' command-line parameter to override content scale.
+    # test_suite -scale 1.75  ; set content scale to 1.75 (also works in console mode).
+    # test_suite -scale auto  ; default: pull from system in GUI mode (always 1.0 in console mode).
 
 2026/01/26:
 - TestEngine: rework logic for aiming at an item in a covered window to
