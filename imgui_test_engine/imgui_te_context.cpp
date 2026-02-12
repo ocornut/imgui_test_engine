@@ -2344,7 +2344,7 @@ void    ImGuiTestContext::MouseClick(ImGuiMouseButton button)
 }
 
 // TODO: click time argument (seconds and/or frames)
-void    ImGuiTestContext::MouseClickMulti(ImGuiMouseButton button, int count)
+void    ImGuiTestContext::MouseClickMulti(ImGuiMouseButton button, int count, bool hold)
 {
     if (IsError())
         return;
@@ -2372,7 +2372,9 @@ void    ImGuiTestContext::MouseClickMulti(ImGuiMouseButton button, int count)
             Yield(2); // Leave enough time for non-alive IDs to expire. (#5325)
         else
             Yield();
-        Inputs->MouseButtonsValue = 0;
+
+        if (n != count - 1 || !hold)
+            Inputs->MouseButtonsValue = 0;
 
         if (EngineIO->ConfigRunSpeed != ImGuiTestRunSpeed_Fast)
             Yield(2); // Not strictly necessary but covers more variant.
