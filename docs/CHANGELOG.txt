@@ -5,6 +5,9 @@ CHANGELOG
    Those changes are not all listed here.
 ** For a while this is going to ONLY INCLUDE BREAKING CHANGES.
 
+2026/02/19:
+- TestEngine w/ Perfs Tools: update for ImPlot 0.18. (#95)
+
 2026/02/02:
 - TestEngine: can access TabBars in dock nodes or menu layer.
 - TestEngine: fixes to aim at tab items while another item is active
