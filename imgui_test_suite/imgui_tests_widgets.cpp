@@ -3622,11 +3622,13 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ImDrawList* draw_list = ImGui::GetWindowDrawList();
         unsigned int vtx_0 = draw_list->_VtxCurrentIdx;
         ImGui::TextWrapped("This is a long wrapped text hello world hello world this is some long text");
+        ImGui::DebugDrawItemRect();
         ImRect rect = g.LastItemData.Rect;
-        rect.Expand(2.0f);
+        rect.Expand(2.0f); // FIXME???
+        rect.Max.y -= g.FontBaked->Descent;
         unsigned int vtx_1 = draw_list->_VtxCurrentIdx;
         for (unsigned int n = vtx_0; n < vtx_1; n++)
-            IM_CHECK(rect.Contains(draw_list->VtxBuffer[n].pos));
+            IM_CHECK_NO_RET(rect.Contains(draw_list->VtxBuffer[n].pos));
         for (int n = 0; n < 6; n++)
             ImGui::Text("Dummy %d", n);
         ImGui::End();

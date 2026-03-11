@@ -7674,23 +7674,27 @@ void RegisterTests_Capture(ImGuiTestEngine* e)
 
         // Setup style
         // FIXME-TESTS: Ideally we'd want to be able to manipulate fonts
-        ImFont* font = ImGui::FindFontByPrefix(TEST_SUITE_ALT_FONT_NAME);
-        IM_CHECK_SILENT(font != NULL);
+        ImFont* font = nullptr;// ImGui::FindFontByPrefix(TEST_SUITE_ALT_FONT_NAME);
+        //IM_CHECK_SILENT(font != NULL);
+        if (ctx->IsFirstGuiFrame())
+            style.ScaleAllSizes(14.0f / style.FontSizeBase);
+
 #if IMGUI_VERSION_NUM >= 19199
-        ImGui::PushFont(font, 0.0f);
+        ImGui::PushFont(font, 13.0f);
 #else
         ImGui::PushFont(font);
 #endif
+        style.WindowRounding = 8.0f;
         style.FrameRounding = style.ChildRounding = 0;
         style.GrabRounding = 0;
-        style.FrameBorderSize = style.ChildBorderSize = 1;
+        style.FrameBorderSize = style.ChildBorderSize = 0;
         io.ConfigInputTextCursorBlink = false;
 
         // Show two windows
         for (int n = 0; n < 2; n++)
         {
             bool open = true;
-            ImGui::SetNextWindowSize(ImVec2(300, 160), ImGuiCond_Appearing);
+            ImGui::SetNextWindowSize(ImVec2(ImGui::GetFontSize() * 19, ImGui::GetFrameHeightWithSpacing() * 6.0f), ImGuiCond_Appearing);
             if (n == 0)
             {
                 ImGui::StyleColorsDark(&style);
@@ -7704,9 +7708,9 @@ void RegisterTests_Capture(ImGuiTestEngine* e)
             float float_value = 0.6f;
             ImGui::Text("Hello, world 123");
             ImGui::Button("Save");
-            ImGui::SetNextItemWidth(194);
+            ImGui::SetNextItemWidth(ImGui::GetFontSize() * 12);
             ImGui::InputText("string", ctx->GenericVars.Str1, IM_COUNTOF(ctx->GenericVars.Str1));
-            ImGui::SetNextItemWidth(194);
+            ImGui::SetNextItemWidth(ImGui::GetFontSize() * 12);
             ImGui::SliderFloat("float", &float_value, 0.0f, 1.0f);
             ImGui::End();
         }
@@ -7718,18 +7722,22 @@ void RegisterTests_Capture(ImGuiTestEngine* e)
             return;
 
         // Capture both windows in separate captures
-        ImGuiContext& g = *ctx->UiContext;
+        //ImGuiContext& g = *ctx->UiContext;
         for (int n = 0; n < 2; n++)
         {
             ImGuiWindow* window = (n == 0) ? ctx->GetWindowByRef("//Debug##Dark") : ctx->GetWindowByRef("//Debug##Light");
             ctx->SetRef(window);
             IM_CHECK_SILENT(window != NULL);
+            //ctx->WindowResize("", ImVec2(-1.0f, -1.0f)); // Auto-fit
+            //ctx->WindowResize("", ImVec2(window->Size.x * 1.3f, window->Size.y * 1.2f));
 
             ctx->ItemClick("string");
             ctx->KeyCharsReplace("quick brown fox");
             //ctx->KeyPress(ImGuiKey_End);
-            ctx->MouseMove("float");
-            ctx->MouseMoveToPos(g.IO.MousePos + ImVec2(30, -10));
+            //ctx->MouseMove("float");
+            //ctx->MouseMoveToPos(g.IO.MousePos + ImVec2(30, -10));
+            ImRect r = ctx->ItemInfo("float").RectFull;
+            ctx->MouseMoveToPos(ImLerp(r.Min, r.Max, ImVec2(0.75f, 0.40f)));
             ctx->CaptureScreenshotWindow("");
         }
     };
@@ -7770,9 +7778,9 @@ void RegisterTests_Capture(ImGuiTestEngine* e)
     t = IM_REGISTER_TEST(e, "capture", "capture_readme_my_first_tool");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
-        ImGui::PushFont(nullptr, 18.0f);
+        ImGui::PushFont(nullptr, 14.0f);
         float sc = ImGui::GetFontSize();
-        ImGui::SetNextWindowSize(ImVec2(33 * sc, 25 * sc));
+        ImGui::SetNextWindowSize(ImVec2(30 * sc, 20 * sc), ImGuiCond_Appearing);
         /*
         ImFont* font = ImGui::FindFontByPrefix(TEST_SUITE_ALT_FONT_NAME);
         IM_CHECK_SILENT(font != NULL);
@@ -7807,8 +7815,12 @@ void RegisterTests_Capture(ImGuiTestEngine* e)
             ImGui::ColorEdit4("Color", my_color);
 
             // Plot some values
-            const float my_values[] = { 0.2f, 0.1f, 1.0f, 0.5f, 0.9f, 2.2f };
-            ImGui::PlotLines("Frame Times", my_values, IM_COUNTOF(my_values));
+            float samples[100];
+            for (int n = 0; n < 100; n++)
+                samples[n] = sinf(n * 0.2f + (float)ImGui::GetTime() * 1.5f);
+            ImGui::PlotLines("Samples", samples, 100);
+            //const float my_values[] = { 0.2f, 0.1f, 1.0f, 0.5f, 0.9f, 2.2f };
+            //ImGui::PlotLines("Frame Times", my_values, IM_COUNTOF(my_values));
 
             // Display contents in a scrolling region
             ImGui::TextColored(ImVec4(1, 1, 0, 1), "Important Stuff");
