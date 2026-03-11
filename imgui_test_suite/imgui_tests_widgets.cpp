@@ -992,37 +992,54 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         // Accumulate return values over several frames/action into each bool
         ImGuiTestGenericVars& vars = ctx->GenericVars;
         ImGuiTestGenericItemStatus& status = vars.Status;
+        ImGuiIO& io = ImGui::GetIO();
 
-        // Testing activation flag being set
         ctx->SetRef("Test Window");
-        ctx->ItemClick("Field");
-        IM_CHECK(status.RetValue == 0 && status.Activated == 1 && status.Deactivated == 0 && status.DeactivatedAfterEdit == 0 && status.Edited == 0);
-        status.Clear();
+        for (int step = 0; step < 2; step++)
+        {
+#if IMGUI_VERSION_NUM < 19264
+            if (step == 1)
+                continue;
+#endif
+            io.ConfigInputTextEnterKeepActive = (step == 1);
+            ctx->Yield();
 
-        // Testing deactivated flag being set when canceling with Escape
-        ctx->KeyPress(ImGuiKey_Escape);
-        IM_CHECK(status.RetValue == 0 && status.Activated == 0 && status.Deactivated == 1 && status.DeactivatedAfterEdit == 0 && status.Edited == 0);
-        status.Clear();
+            // Testing activation flag being set
+            ctx->ItemClick("Field");
+            IM_CHECK(status.RetValue == 0 && status.Activated == 1 && status.Deactivated == 0 && status.DeactivatedAfterEdit == 0 && status.Edited == 0);
+            status.Clear();
 
-        // Testing validation with Return after editing
-        ctx->ItemClick("Field");
-        IM_CHECK(status.RetValue == 0 && status.Activated && !status.Deactivated && !status.DeactivatedAfterEdit && status.Edited == 0);
-        status.Clear();
-        ctx->KeyCharsAppend("Hello");
-        IM_CHECK(status.RetValue != 0 && !status.Activated && !status.Deactivated && !status.DeactivatedAfterEdit && status.Edited >= 1);
-        status.Clear();
-        ctx->KeyPress(ImGuiKey_Enter);
-        IM_CHECK(status.RetValue == 0 && !status.Activated && status.Deactivated && status.DeactivatedAfterEdit && status.Edited == 0);
-        status.Clear();
+            // Testing deactivated flag being set when canceling with Escape
+            ctx->KeyPress(ImGuiKey_Escape);
+            IM_CHECK(status.RetValue == 0 && status.Activated == 0 && status.Deactivated == 1 && status.DeactivatedAfterEdit == 0 && status.Edited == 0);
+            status.Clear();
 
-        // Testing validation with Tab after editing
-        ctx->ItemClick("Field");
-        ctx->KeyCharsAppend(" World");
-        IM_CHECK(status.RetValue != 0 && status.Activated && !status.Deactivated && !status.DeactivatedAfterEdit && status.Edited >= 1);
-        status.Clear();
-        ctx->KeyPress(ImGuiKey_Tab);
-        IM_CHECK(status.RetValue == 0 && !status.Activated && status.Deactivated && status.DeactivatedAfterEdit && status.Edited == 0);
-        status.Clear();
+            // Testing validation with Return after editing
+            ctx->ItemClick("Field");
+            IM_CHECK(status.RetValue == 0 && status.Activated && !status.Deactivated && !status.DeactivatedAfterEdit && status.Edited == 0);
+            status.Clear();
+            ctx->KeyCharsAppend("Hello");
+            IM_CHECK(status.RetValue != 0 && !status.Activated && !status.Deactivated && !status.DeactivatedAfterEdit && status.Edited >= 1);
+            status.Clear();
+            ctx->KeyPress(ImGuiKey_Enter);
+            IM_CHECK(status.RetValue == 0 && status.Deactivated && status.DeactivatedAfterEdit && status.Edited == 0);
+            if (io.ConfigInputTextEnterKeepActive)
+                IM_CHECK(status.Activated);
+            else
+                IM_CHECK(!status.Activated);
+            if (io.ConfigInputTextEnterKeepActive)
+                ctx->KeyPress(ImGuiKey_Escape);
+            status.Clear();
+
+            // Testing validation with Tab after editing
+            ctx->ItemClick("Field");
+            ctx->KeyCharsAppend(" World");
+            IM_CHECK(status.RetValue != 0 && status.Activated && !status.Deactivated && !status.DeactivatedAfterEdit && status.Edited >= 1);
+            status.Clear();
+            ctx->KeyPress(ImGuiKey_Tab);
+            IM_CHECK(status.RetValue == 0 && !status.Activated && status.Deactivated && status.DeactivatedAfterEdit && status.Edited == 0);
+            status.Clear();
+        }
     };
 
 #if IMGUI_VERSION_NUM >= 19165

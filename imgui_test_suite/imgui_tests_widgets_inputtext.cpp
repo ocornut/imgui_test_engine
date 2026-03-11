@@ -68,60 +68,71 @@ void RegisterTests_WidgetsInputText(ImGuiTestEngine* e)
 
         ctx->SetRef("Test Window");
 
-        // Insert
-        strcpy(buf, "Hello");
-        ctx->ItemClick("InputText");
-        ctx->KeyCharsAppendEnter(u8"World123\u00A9");
-        IM_CHECK_STR_EQ(buf, u8"HelloWorld123\u00A9");
-        IM_CHECK_EQ(state.TextLen, 15);
-        //IM_CHECK_EQ(state.CurLenW, 14);
+        for (int step = 0; step < 2; step++)
+        {
+#if IMGUI_VERSION_NUM < 19264
+            if (step == 1)
+                continue;
+#endif
+            ImGui::GetIO().ConfigInputTextEnterKeepActive = (step == 1);
+            ctx->Yield();
 
-        // Delete
-        ctx->ItemClick("InputText");
-        ctx->KeyPress(ImGuiKey_End);
-        ctx->KeyPress(ImGuiMod_Shift | ImGuiKey_LeftArrow, 2);    // Select last two characters
-        ctx->KeyPress(ImGuiKey_Backspace, 3);     // Delete selection and two more characters
-        ctx->KeyPress(ImGuiKey_Enter);
-        IM_CHECK_STR_EQ(buf, "HelloWorld");
-        IM_CHECK_EQ(state.TextLen, 10);
-        //IM_CHECK_EQ(state.CurLenW, 10);
+            // Insert
+            strcpy(buf, "Hello");
+            ctx->ItemClick("InputText");
+            ctx->KeyCharsAppendEnter(u8"World123\u00A9");
+            IM_CHECK_STR_EQ(buf, u8"HelloWorld123\u00A9");
+            IM_CHECK_EQ(state.TextLen, 15);
+            //IM_CHECK_EQ(state.CurLenW, 14);
 
-        // Insert, Cancel
-        ctx->ItemClick("InputText");
-        ctx->KeyPress(ImGuiKey_End);
-        ctx->KeyChars("XXXXX");
-        ctx->KeyPress(ImGuiKey_Escape);
-        IM_CHECK_STR_EQ(buf, "HelloWorld");
-        IM_CHECK_EQ(state.TextLen, 10);
-        //IM_CHECK_EQ(state.CurLenW, 10);
+            // Delete
+            ctx->ItemClick("InputText");
+            ctx->KeyPress(ImGuiKey_End);
+            ctx->KeyPress(ImGuiMod_Shift | ImGuiKey_LeftArrow, 2);    // Select last two characters
+            ctx->KeyPress(ImGuiKey_Backspace, 3);     // Delete selection and two more characters
+            ctx->KeyPress(ImGuiKey_Enter);
+            IM_CHECK_STR_EQ(buf, "HelloWorld");
+            IM_CHECK_EQ(state.TextLen, 10);
+            //IM_CHECK_EQ(state.CurLenW, 10);
+            ctx->KeyPress(ImGuiKey_Escape);     // In case of io.ConfigInputTextEnterKeepActive
 
-        // Delete, Cancel
-        ctx->ItemClick("InputText");
-        ctx->KeyPress(ImGuiKey_End);
-        ctx->KeyPress(ImGuiKey_Backspace, 5);
-        ctx->KeyPress(ImGuiKey_Escape);
-        IM_CHECK_STR_EQ(buf, "HelloWorld");
-        IM_CHECK_EQ(state.TextLen, 10);
-        //IM_CHECK_EQ(state.CurLenW, 10);
+            // Insert, Cancel
+            ctx->ItemClick("InputText");
+            ctx->KeyPress(ImGuiKey_End);
+            ctx->KeyChars("XXXXX");
+            ctx->KeyPress(ImGuiKey_Escape);
+            IM_CHECK_STR_EQ(buf, "HelloWorld");
+            IM_CHECK_EQ(state.TextLen, 10);
+            //IM_CHECK_EQ(state.CurLenW, 10);
 
-        // Read-only mode
-        strcpy(buf, "Some read-only text.");
-        vars.Bool1 = true;
-        ctx->Yield();
-        ctx->ItemClick("InputText");
-        ctx->KeyCharsAppendEnter("World123");
-        IM_CHECK_STR_EQ(buf, vars.Str1);
-        IM_CHECK_EQ(state.TextLen, 20);
-        //IM_CHECK_EQ(state.CurLenW, 20);
+            // Delete, Cancel
+            ctx->ItemClick("InputText");
+            ctx->KeyPress(ImGuiKey_End);
+            ctx->KeyPress(ImGuiKey_Backspace, 5);
+            ctx->KeyPress(ImGuiKey_Escape);
+            IM_CHECK_STR_EQ(buf, "HelloWorld");
+            IM_CHECK_EQ(state.TextLen, 10);
+            //IM_CHECK_EQ(state.CurLenW, 10);
 
-        // Space as key (instead of Space as character) -> check not conflicting with Nav Activate (#4552)
-        vars.Bool1 = false;
-        ctx->ItemClick("InputText");
-        ctx->KeyCharsReplace("Hello");
-        IM_CHECK(ImGui::GetActiveID() == ctx->GetID("InputText"));
-        ctx->KeyPress(ImGuiKey_Space); // Should not add text, should not validate
-        IM_CHECK(ImGui::GetActiveID() == ctx->GetID("InputText"));
-        IM_CHECK_STR_EQ(vars.Str1, "Hello");
+            // Read-only mode
+            strcpy(buf, "Some read-only text.");
+            vars.Bool1 = true;
+            ctx->Yield();
+            ctx->ItemClick("InputText");
+            ctx->KeyCharsAppendEnter("World123");
+            IM_CHECK_STR_EQ(buf, vars.Str1);
+            IM_CHECK_EQ(state.TextLen, 20);
+            //IM_CHECK_EQ(state.CurLenW, 20);
+
+            // Space as key (instead of Space as character) -> check not conflicting with Nav Activate (#4552)
+            vars.Bool1 = false;
+            ctx->ItemClick("InputText");
+            ctx->KeyCharsReplace("Hello");
+            IM_CHECK(ImGui::GetActiveID() == ctx->GetID("InputText"));
+            ctx->KeyPress(ImGuiKey_Space); // Should not add text, should not validate
+            IM_CHECK(ImGui::GetActiveID() == ctx->GetID("InputText"));
+            IM_CHECK_STR_EQ(vars.Str1, "Hello");
+        }
     };
 
     // ## Test InputText undo/redo ops, in particular related to issue we had with stb_textedit undo/redo buffers
@@ -1530,45 +1541,55 @@ void RegisterTests_WidgetsInputText(ImGuiTestEngine* e)
         auto& vars = ctx->GenericVars;
         ctx->SetRef("Test Window");
 
-        int& i_stored = vars.Int1;
-        int& i_tmp = vars.Int2;
-        ctx->ItemClick("Field1");
-        ctx->KeyCharsReplaceEnter("123");
-        IM_CHECK_EQ(i_stored, 123);
-        ctx->ItemClick("Field1");
-        ctx->KeyCharsReplace("200");
-        IM_CHECK_EQ(i_stored, 123);
-        IM_CHECK_EQ(i_tmp, 200);
-        ctx->KeyPress(ImGuiKey_Escape);
-#if IMGUI_VERSION_NUM >= 19225
-        IM_CHECK_EQ(i_stored, 123);
-#endif
-        IM_CHECK_EQ(i_tmp, 123);
-
-        for (int n = 0; n < 3; n++)
+        for (int step = 0; step < 2; step++)
         {
-            vars.InputTextFlags = (n == 0) ? ImGuiInputTextFlags_None : ImGuiInputTextFlags_EscapeClearsAll;
+#if IMGUI_VERSION_NUM < 19264
+            if (step == 1)
+                continue;
+#endif
+            ImGui::GetIO().ConfigInputTextEnterKeepActive = (step == 1);
             ctx->Yield();
 
-            char* s_stored = vars.Str1;
-            char* s_tmp = vars.Str2;
-            ctx->ItemClick("Field2");
-
-            const char* s_step1 = (n == 0 || n == 1) ? "abc" : "";
-            ctx->KeyCharsReplaceEnter(s_step1);
-            IM_CHECK_STR_EQ(s_stored, s_step1);
-            ctx->ItemClick("Field2");
-            ctx->KeyCharsReplace("fff");
-            IM_CHECK_STR_EQ(s_stored, s_step1);
-            IM_CHECK_STR_EQ(s_tmp, "fff");
+            int& i_stored = vars.Int1;
+            int& i_tmp = vars.Int2;
+            ctx->ItemClick("Field1");
+            ctx->KeyCharsReplaceEnter("123");
+            IM_CHECK_EQ(i_stored, 123);
+            ctx->ItemClick("Field1");
+            ctx->KeyCharsReplace("200");
+            IM_CHECK_EQ(i_stored, 123);
+            IM_CHECK_EQ(i_tmp, 200);
             ctx->KeyPress(ImGuiKey_Escape);
 #if IMGUI_VERSION_NUM >= 19225
-            IM_CHECK_STR_EQ(s_stored, s_step1);
+            IM_CHECK_EQ(i_stored, 123);
 #endif
-            if (vars.InputTextFlags & ImGuiInputTextFlags_EscapeClearsAll)
-                IM_CHECK_STR_EQ(s_tmp, "");
-            else
-                IM_CHECK_STR_EQ(s_tmp, s_step1);
+            IM_CHECK_EQ(i_tmp, 123);
+
+            for (int n = 0; n < 3; n++)
+            {
+                vars.InputTextFlags = (n == 0) ? ImGuiInputTextFlags_None : ImGuiInputTextFlags_EscapeClearsAll;
+                ctx->Yield();
+
+                char* s_stored = vars.Str1;
+                char* s_tmp = vars.Str2;
+                ctx->ItemClick("Field2");
+
+                const char* s_step1 = (n == 0 || n == 1) ? "abc" : "";
+                ctx->KeyCharsReplaceEnter(s_step1);
+                IM_CHECK_STR_EQ(s_stored, s_step1);
+                ctx->ItemClick("Field2");
+                ctx->KeyCharsReplace("fff");
+                IM_CHECK_STR_EQ(s_stored, s_step1);
+                IM_CHECK_STR_EQ(s_tmp, "fff");
+                ctx->KeyPress(ImGuiKey_Escape);
+#if IMGUI_VERSION_NUM >= 19225
+                IM_CHECK_STR_EQ(s_stored, s_step1);
+#endif
+                if (vars.InputTextFlags & ImGuiInputTextFlags_EscapeClearsAll)
+                    IM_CHECK_STR_EQ(s_tmp, "");
+                else
+                    IM_CHECK_STR_EQ(s_tmp, s_step1);
+            }
         }
     };
 
