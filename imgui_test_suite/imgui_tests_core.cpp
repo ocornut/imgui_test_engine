@@ -2999,6 +2999,19 @@ void RegisterTests_Window(ImGuiTestEngine* e)
         IM_CHECK_NE(g.NavWindow, (ImGuiWindow*)NULL);
         IM_CHECK_EQ(g.NavWindow->ID, popup_window_id);
 
+        // Context menu with Keyboard Shift+F10 (#8803)
+#if IMGUI_VERSION_NUM >= 19265
+        ctx->NavMoveTo(ctx->GetID("#CLOSE"));
+        ctx->KeyPress(ImGuiMod_Shift | ImGuiKey_F10);
+        IM_CHECK_NE(g.NavWindow, (ImGuiWindow*)NULL);
+        IM_CHECK_EQ(g.NavWindow->ID, popup_window_id);
+
+        ctx->NavMoveTo(ctx->GetID("#COLLAPSE"));
+        ctx->KeyPress(ImGuiMod_Shift | ImGuiKey_F10);
+        IM_CHECK_NE(g.NavWindow, (ImGuiWindow*)NULL);
+        IM_CHECK_EQ(g.NavWindow->ID, popup_window_id);
+#endif
+
 #ifdef IMGUI_HAS_DOCK
         ctx->DockInto("//Window B", "//Window A");
 

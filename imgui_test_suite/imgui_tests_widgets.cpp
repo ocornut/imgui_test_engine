@@ -3424,12 +3424,12 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         if (ImGui::BeginCombo("Combo", "Preview"))
         {
             vars.Bool1 = true;
-            ImGui::Selectable("Close");
+            ImGui::Selectable("Close Combo");
             ImGui::EndCombo();
         }
         if (ImGui::BeginPopupContextItem())
         {
-            if (ImGui::Button("Close"))
+            if (ImGui::Button("Close Context Menu"))
                 ImGui::CloseCurrentPopup();
             vars.Bool2 = true;
             ImGui::EndPopup();
@@ -3440,16 +3440,28 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
     {
         ImGuiTestGenericVars& vars = ctx->GenericVars;
         ctx->SetRef("Test Window");
+
+        // Context menu
         ctx->MouseMove("Combo");
         ctx->MouseClick(ImGuiMouseButton_Right);
         IM_CHECK(vars.Bool1 == false && vars.Bool2 == true);
-        ctx->ItemClick("//$FOCUSED/Close");
+        ctx->ItemClick("//$FOCUSED/Close Context Menu");
         vars.Bool1 = vars.Bool2 = false;
 
+        // Combo contents
         ctx->ItemClick("Combo");
         IM_CHECK(vars.Bool1 == true && vars.Bool2 == false);
-        ctx->ItemClick("//$FOCUSED/Close");
+        ctx->ItemClick("//$FOCUSED/Close Combo");
         vars.Bool1 = vars.Bool2 = false;
+
+        // Context menu with Keyboard Shift+F10 (#8803)
+#if IMGUI_VERSION_NUM >= 19265
+        ctx->NavMoveTo("Combo");
+        ctx->KeyPress(ImGuiMod_Shift | ImGuiKey_F10);
+        IM_CHECK(vars.Bool1 == false && vars.Bool2 == true);
+        ctx->ItemClick("//$FOCUSED/Close Context Menu");
+        vars.Bool1 = vars.Bool2 = false;
+#endif
     };
 #endif
 
