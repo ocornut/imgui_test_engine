@@ -1163,6 +1163,334 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         }
     };
 
+#if 1
+    // ## Test ImGuiInputTextFlags_NoLiveEdit features on InputFloat(), InputText(). (#701)
+    t = IM_REGISTER_TEST(e, "widgets", "widgets_status_no_live_edit");
+    struct LiveEditTestVars
+    {
+        int     Step;
+        char    Str1[256];
+        Str16   Str2;
+        float   Float1;
+        float   Float3[3];
+        bool    UseLiveEdit = false;
+        ImGuiInputTextFlags InputTextFlags;// = ImGuiInputTextFlags_NoLiveEdit;
+        ImGuiTestGenericItemStatus Status;
+
+        const char* get_str()
+        {
+            return Step == 1 ? Str2.c_str() : Str1;
+        }
+    };
+    t->SetVarsDataType<LiveEditTestVars>();
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        auto& vars = ctx->GetVars<LiveEditTestVars>();
+
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);// | ImGuiWindowFlags_AlwaysAutoResize); // FIXME-TEST: Multiline+Tabbing out sensible to visibility
+
+        ImGui::SliderInt("Step", &vars.Step, 0, 6);
+        //ImGui::CheckboxFlags("ImGuiInputTextFlags_NoLiveEdit", &vars.InputTextFlags, ImGuiInputTextFlags_NoLiveEdit);
+        //ImGui::CheckboxFlags("ImGuiInputTextFlags_NoLiveEdit", &vars.InputTextFlags, ImGuiInputTextFlags_NoLiveEdit);
+        ImGui::CheckboxFlags("ImGuiInputTextFlags_EnterReturnsTrue", &vars.InputTextFlags, ImGuiInputTextFlags_EnterReturnsTrue);
+        ImGui::CheckboxFlags("ImGuiInputTextFlags_EscapeClearsAll", &vars.InputTextFlags, ImGuiInputTextFlags_EscapeClearsAll);
+        ImGui::Checkbox("LiveEdit", &vars.UseLiveEdit);
+
+        ImGui::PushItemFlag(ImGuiItemFlags_LiveEdit, vars.UseLiveEdit);
+
+        bool ret = false;
+        if (vars.Step == 0)
+            ret = ImGui::InputText("Buf", vars.Str1, IM_COUNTOF(vars.Str1), vars.InputTextFlags);
+        else if (vars.Step == 1)
+            ret = ImGui::InputText("Buf", &vars.Str2, vars.InputTextFlags);
+        else if (vars.Step == 2)
+            ret = ImGui::InputTextMultiline("Buf", vars.Str1, IM_COUNTOF(vars.Str1), {}, vars.InputTextFlags);
+        else if (vars.Step == 3)
+            ret = ImGui::InputFloat("Buf", &vars.Float1, 0.0f, 0.0f, "%.1f", vars.InputTextFlags);
+        else if (vars.Step == 4)
+            ret = ImGui::InputFloat("Buf", &vars.Float1, 1.0f, 100.0f, "%.1f", vars.InputTextFlags);
+        else if (vars.Step == 5)
+            ret = ImGui::SliderFloat("Buf", &vars.Float1, -1000.0f, 1000.0f, "%.1f");
+        else if (vars.Step == 6)
+            ret = ImGui::SliderFloat3("Buf", &vars.Float3[0], -1000.0f, 1000.0f, "%.1f");
+
+        vars.Status.QueryInc(ret);
+        ImGui::BulletText(
+            "Return value = %s\n"
+            "IsItemActive() = %s\n"
+            "IsItemEdited() = %s\n"
+            "IsItemActivated() = %s\n"
+            "IsItemDeactivated() = %s\n"
+            "IsItemDeactivatedAfterEdit() = %s\n",
+            ret ? "TRUE" : "-",
+            ImGui::IsItemActive() ? "TRUE" : "-",
+            ImGui::IsItemEdited() ? "TRUE" : "-",
+            ImGui::IsItemActivated() ? "TRUE" : "-",
+            ImGui::IsItemDeactivated() ? "TRUE" : "-",
+            ImGui::IsItemDeactivatedAfterEdit() ? "TRUE" : "-");
+
+        const bool is_numeric = (vars.Step == 3 || vars.Step == 4 || vars.Step == 5 || vars.Step == 6);
+        const bool is_multi_components = (vars.Step == 6);
+        if (is_numeric && is_multi_components)
+            ImGui::BulletText("User Data: %.3f; %.3f; %.3f", vars.Float3[0], vars.Float3[1], vars.Float3[2]);
+        else if (is_numeric)
+            ImGui::BulletText("User Data: %.3f", vars.Float1);
+        else
+            ImGui::BulletText("User Data = '%s'", vars.get_str());
+
+        ImGui::PopItemFlag();
+
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiContext& g = *GImGui;
+        auto& vars = ctx->GetVars<LiveEditTestVars>();
+        auto& status = vars.Status;
+
+        ctx->SetRef("Test Window");
+
+        ctx->ItemClick("Buf");
+        ImGuiInputTextState* state = ImGui::GetInputTextState(ctx->GetID("Buf"));
+        IM_CHECK(state != NULL);
+
+        for (int step = 0; step < 6; step++)
+        {
+            const bool is_dynamic_str = (step == 1);
+            const bool is_multiline = (step == 2);
+            const bool is_numeric = (step == 3 || step == 4 || step == 5 || step == 6);
+            const bool is_drag_slider = (step == 5);
+            const bool is_multi_components = (vars.Step == 6);
+
+            if (is_numeric)
+                vars.InputTextFlags |= ImGuiInputTextFlags_ParseEmptyRefVal; // "" -> 0.0f
+            vars.Step = step;
+            ctx->LogInfo("STEP %d: is_numeric=%d, is_dynamic_str=%d, is_multiline=%d, is_drag_slider=%d", step, is_numeric, is_dynamic_str, is_multiline, is_drag_slider);
+            ctx->Yield();
+
+            // Append text, validate
+            status.Clear();
+            const ImGuiID id = ctx->GetID("Buf");
+            ctx->ItemInput("Buf");
+            if (is_numeric)
+                ctx->KeyChars("123");
+            else
+                ctx->KeyChars("Hello");
+            IM_CHECK_EQ_NO_RET(status.RetValue, 0);
+            IM_CHECK_EQ_NO_RET(status.Edited, 0); // FIXME-TESTS
+            IM_CHECK_EQ_NO_RET(status.Deactivated, 0);
+            IM_CHECK_EQ_NO_RET(status.DeactivatedAfterEdit, 0);
+            IM_CHECK_STR_EQ_NO_RET(vars.get_str(), "");
+            status.Clear();
+            ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_Enter);
+            IM_CHECK_EQ_NO_RET(status.RetValue, 1);
+            IM_CHECK_EQ_NO_RET(status.Edited, 1);
+            IM_CHECK_EQ_NO_RET(status.Deactivated, 1);
+            IM_CHECK_EQ_NO_RET(status.DeactivatedAfterEdit, 1);
+            if (is_numeric)
+                IM_CHECK_EQ_NO_RET(vars.Float1, 123.0f);
+            else
+                IM_CHECK_STR_EQ_NO_RET(vars.get_str(), "Hello");
+
+            // Modify text, Tab out
+            status.Clear();
+            ctx->ItemInput("Buf");
+            IM_CHECK_EQ(g.ActiveId, id);
+            ctx->KeyPress(ImGuiKey_End);
+            ctx->KeyPress(ImGuiKey_Backspace, 5);
+            ctx->KeyChars("777");
+            IM_CHECK_STR_EQ_NO_RET(state->GetText(), "777");
+            IM_CHECK_EQ_NO_RET(status.RetValue, 0);
+            IM_CHECK_EQ_NO_RET(status.Edited, 0); // FIXME-TESTS
+            IM_CHECK_EQ_NO_RET(status.Deactivated, 0);
+            IM_CHECK_EQ_NO_RET(status.DeactivatedAfterEdit, 0);
+            if (is_numeric)
+                IM_CHECK_EQ_NO_RET(vars.Float1, 123.0f);
+            else
+                IM_CHECK_STR_EQ_NO_RET(vars.get_str(), "Hello");
+            status.Clear();
+            ctx->KeyPress(ImGuiKey_Tab);
+            IM_CHECK_NE_NO_RET(g.ActiveId, id);
+            IM_CHECK_EQ_NO_RET(status.RetValue, 1);
+            IM_CHECK_EQ_NO_RET(status.Edited, 1);
+            IM_CHECK_EQ_NO_RET(status.Deactivated, 1);
+            IM_CHECK_EQ_NO_RET(status.DeactivatedAfterEdit, 1);
+            if (is_numeric)
+                IM_CHECK_EQ_NO_RET(vars.Float1, 777.0f);
+            else
+                IM_CHECK_STR_EQ_NO_RET(vars.get_str(), "777");
+
+            // Revert to previous text
+            ctx->KeyPress(ImGuiMod_Shift | ImGuiKey_Tab);
+            IM_CHECK_EQ_NO_RET(g.ActiveId, id);
+            ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_A);
+            if (is_numeric)
+                ctx->KeyChars("123");
+            else
+                ctx->KeyChars("Hello");
+            ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_Enter);
+
+            // Activate, validate (no changes)
+            status.Clear();
+            ctx->ItemInput("Buf");
+            ctx->KeyPress(ImGuiKey_End);
+            ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_Enter);
+            IM_CHECK_EQ_NO_RET(status.RetValue, 0);
+            IM_CHECK_EQ_NO_RET(status.Edited, 0);
+            IM_CHECK_EQ_NO_RET(status.Activated, 1);
+            IM_CHECK_EQ_NO_RET(status.Deactivated, 1);
+            IM_CHECK_EQ_NO_RET(status.DeactivatedAfterEdit, 0);
+            if (is_numeric)
+            {
+                status.Clear();
+                ctx->ItemInput("Buf");
+                IM_CHECK_STR_EQ_NO_RET(state->GetText(), "123.0");
+                ctx->KeyPress(ImGuiKey_End);
+                ctx->KeyPress(ImGuiKey_Backspace); // Remove trailing zero = same value after parsing
+                ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_Enter);
+                IM_CHECK_EQ_NO_RET(vars.Float1, 123.0f);
+                IM_CHECK_STR_EQ_NO_RET(state->GetText(), "123.");
+                IM_CHECK_EQ_NO_RET(status.RetValue, 0);
+                IM_CHECK_EQ_NO_RET(status.Edited, 0);
+                IM_CHECK_EQ_NO_RET(status.Activated, 1);
+                IM_CHECK_EQ_NO_RET(status.Deactivated, 1);
+                IM_CHECK_EQ_NO_RET(status.DeactivatedAfterEdit, 0);
+            }
+
+            // Activate, append, delete, validate (no changes in final output)
+            status.Clear();
+            ctx->ItemInput("Buf");
+            ctx->KeyPress(ImGuiKey_End);
+            if (is_numeric)
+            {
+                ctx->KeyChars("444");
+                IM_CHECK_EQ_NO_RET(vars.Float1, 123.0f);
+                IM_CHECK_STR_EQ_NO_RET(state->GetText(), "123.0444");
+            }
+            else
+            {
+                ctx->KeyChars("ABC");
+                IM_CHECK_STR_EQ_NO_RET(vars.get_str(), "Hello");
+                IM_CHECK_STR_EQ_NO_RET(state->GetText(), "HelloABC");
+            }
+            ctx->KeyPress(ImGuiKey_Backspace, 3);
+            ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_Enter);
+            if (is_numeric)
+            {
+                IM_CHECK_EQ_NO_RET(vars.Float1, 123.0f);
+                IM_CHECK_STR_EQ_NO_RET(state->GetText(), "123.0");
+            }
+            else
+            {
+                IM_CHECK_STR_EQ_NO_RET(vars.get_str(), "Hello");
+                IM_CHECK_STR_EQ_NO_RET(state->GetText(), "Hello");
+            }
+            IM_CHECK_EQ_NO_RET(status.RetValue, 0);
+            IM_CHECK_EQ_NO_RET(status.Edited, 0); // FIXME-TESTS
+            IM_CHECK_EQ_NO_RET(status.Activated, 1);
+            IM_CHECK_EQ_NO_RET(status.Deactivated, 1);
+            IM_CHECK_EQ_NO_RET(status.DeactivatedAfterEdit, 0); // FIXME-TESTS
+
+            // Activate, append, revert (no changes in final output)
+            status.Clear();
+            ctx->ItemInput("Buf");
+            ctx->KeyPress(ImGuiKey_End);
+            if (is_numeric)
+            {
+                ctx->KeyChars("456");
+                IM_CHECK_EQ_NO_RET(vars.Float1, 123.0f);
+                IM_CHECK_STR_EQ_NO_RET(state->GetText(), "123.0456");
+            }
+            else
+            {
+                ctx->KeyChars("World");
+                IM_CHECK_STR_EQ_NO_RET(vars.get_str(), "Hello");
+                IM_CHECK_STR_EQ_NO_RET(state->GetText(), "HelloWorld");
+            }
+            ctx->KeyPress(ImGuiKey_Escape);
+            if (is_numeric)
+            {
+                IM_CHECK_EQ_NO_RET(vars.Float1, 123.0f);
+                IM_CHECK_STR_EQ_NO_RET(state->GetText(), "123.0");
+            }
+            else
+            {
+                IM_CHECK_STR_EQ_NO_RET(vars.get_str(), "Hello");
+                IM_CHECK_STR_EQ_NO_RET(state->GetText(), "Hello");
+            }
+            IM_CHECK_EQ_NO_RET(status.RetValue, 0);
+            IM_CHECK_EQ_NO_RET(status.Edited, 0); // FIXME-TESTS
+            IM_CHECK_EQ_NO_RET(status.Activated, 1);
+            IM_CHECK_EQ_NO_RET(status.Deactivated, 1);
+            IM_CHECK_EQ_NO_RET(status.DeactivatedAfterEdit, 0); // FIXME-TESTS
+
+            // Testing with _EscapeClearsAll clearing buffer
+            if (!is_drag_slider)
+            {
+                vars.InputTextFlags |= ImGuiInputTextFlags_EscapeClearsAll;
+                ctx->Yield();
+                status.Clear();
+                ctx->ItemInput("Buf");
+                ctx->KeyChars("999");
+                ctx->KeyPress(ImGuiKey_Escape);
+                if (is_numeric)
+                    IM_CHECK_EQ_NO_RET(vars.Float1, 123.0f);
+                else
+                    IM_CHECK_STR_EQ_NO_RET(vars.get_str(), "Hello");
+                IM_CHECK_STR_EQ_NO_RET(state->GetText(), ""); // Edit buffer cleared
+                ctx->KeyPress(ImGuiKey_Escape);
+                IM_CHECK_EQ_NO_RET(status.RetValue, 1);
+                IM_CHECK_EQ_NO_RET(status.Deactivated, 1);
+                IM_CHECK_EQ_NO_RET(status.DeactivatedAfterEdit, 1);
+                IM_CHECK_STR_EQ_NO_RET(vars.get_str(), "");
+
+                // Testing with _EscapeClearsAll clearing buffer, part 2
+                status.Clear();
+                ctx->ItemInput("Buf");
+                ctx->KeyChars("999");
+                IM_CHECK_STR_EQ_NO_RET(vars.get_str(), "");
+                IM_CHECK_STR_EQ_NO_RET(state->GetText(), "999");
+                ctx->KeyPress(ImGuiKey_Escape);
+                IM_CHECK_STR_EQ_NO_RET(vars.get_str(), "");
+                IM_CHECK_STR_EQ_NO_RET(state->GetText(), "");
+                ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_Enter);
+                IM_CHECK_EQ_NO_RET(status.RetValue, 0);
+                IM_CHECK_EQ_NO_RET(status.Deactivated, 1);
+                IM_CHECK_EQ_NO_RET(status.DeactivatedAfterEdit, 0);
+                IM_CHECK_STR_EQ_NO_RET(vars.get_str(), "");
+
+                vars.InputTextFlags &= ~ImGuiInputTextFlags_EscapeClearsAll;
+            }
+
+            // Misc
+            if (is_drag_slider)
+            {
+                ctx->ItemInput("Buf");
+                ctx->KeyCharsReplaceEnter("456");
+                IM_CHECK_EQ_NO_RET(vars.Float1, 456.0f);
+                ctx->ItemDragWithDelta("Buf", { -100, 0 });
+                IM_CHECK_LT_NO_RET(vars.Float1, 456.0f);
+                IM_CHECK_EQ(g.ActiveId, 0u);
+                ctx->Yield(2);
+                ctx->ItemInput("Buf");
+                IM_CHECK_EQ(g.ActiveId, ctx->GetID("Buf"));
+                ctx->KeyCharsAppend("222");
+                IM_CHECK_LT_NO_RET(vars.Float1, 456.0f);
+                ctx->KeyPress(ImGuiKey_Enter);
+                IM_CHECK_LT_NO_RET(vars.Float1, 456222.0f);
+
+                // Verify that Ctrl+Clicking on a previous widget after a non-committed edit works
+                ctx->ItemInput("Buf");
+                ctx->KeyCharsReplace("333");
+                ctx->ItemInput("Step"); // Ctrl+Click
+                IM_CHECK_EQ(g.ActiveId, ctx->GetID("Step"));
+            }
+
+            ctx->Yield();
+        }
+    };
+#endif
+
 #if IMGUI_VERSION_NUM >= 19165
     // ## Test the IsItemDeactivatedXXX() functions while interrupted (#5184, #5904, #6766, #8303, #8004?)
     t = IM_REGISTER_TEST(e, "widgets", "widgets_status_deactivate_interrupted");
@@ -1237,6 +1565,12 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
             ImGui::EndPopup();
         }
 
+        ImGui::Text("F9 to Clear underlying data");
+        if (ImGui::Shortcut(ImGuiKey_F9, ImGuiInputFlags_RouteGlobal))
+        {
+            vars.Str1[0] = 0;
+            vars.Color1 = ImVec4();
+        }
         ImGui::End();
     };
     t->TestFunc = [](ImGuiTestContext* ctx)
@@ -1263,7 +1597,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
                 vars.Color1 = ImVec4();
                 const bool is_input = (step == 3 || step == 4);
                 IM_UNUSED(is_input);
-                ctx->Yield();
+                ctx->Yield(3);
 
                 if (step == 2)
                     ctx->ItemInput("Slider3/$$1");
@@ -1294,6 +1628,8 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
                     IM_CHECK_STR_EQ(vars.Str1, "0.5"); // InputText/InputTextMultiline
                 if (substep == 6 || substep == 7)
                     ctx->KeyPress(ImGuiKey_Escape); // Close modal
+
+                ctx->Yield(10);
             }
         }
     };
