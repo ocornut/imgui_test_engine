@@ -982,9 +982,33 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
     {
         ImGuiTestGenericVars& vars = ctx->GenericVars;
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
-        bool ret = ImGui::InputText("Field", vars.Str1, IM_COUNTOF(vars.Str1));
-        vars.Status.QueryInc(ret);
+
+        ImGui::SliderInt("Step", &vars.Step, 0, 2);
         ImGui::InputText("Sibling", vars.Str2, IM_COUNTOF(vars.Str2));
+
+        const bool is_temp_apply_on_deactivate = (vars.Step % 4) == 2;
+        const bool is_multiline = (vars.Step % 8) == 4;
+
+        Str128 local = vars.Str1;
+        bool ret;
+        if (is_temp_apply_on_deactivate)
+        {
+            if (is_multiline)
+                ret = ImGui::InputTextMultiline("Field", &local);
+            else
+                ret = ImGui::InputText("Field", &local);
+            if (ImGui::IsItemDeactivatedAfterEdit())
+                snprintf(vars.Str1, IM_COUNTOF(vars.Str1), "%s", local.c_str());
+        }
+        else
+        {
+            if (is_multiline)
+                ret = ImGui::InputTextMultiline("Field", vars.Str1, IM_COUNTOF(vars.Str1));
+            else
+                ret = ImGui::InputText("Field", vars.Str1, IM_COUNTOF(vars.Str1));
+        }
+
+        vars.Status.QueryInc(ret);
         ImGui::End();
     };
     t->TestFunc = [](ImGuiTestContext* ctx)
@@ -995,13 +1019,25 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ImGuiIO& io = ImGui::GetIO();
 
         ctx->SetRef("Test Window");
-        for (int step = 0; step < 2; step++)
+        for (int step = 0; step < 8; step++)
         {
+            vars.Step = step;
+            const bool is_enter_keep_active = (step % 2) == 1;
+            const bool is_temp_apply_on_deactivate = (step % 4) == 2;
+            const bool is_multiline = (step % 8) == 4;
+
 #if IMGUI_VERSION_NUM < 19264
-            if (step == 1)
+            if (is_enter_keep_active)
                 continue;
 #endif
-            io.ConfigInputTextEnterKeepActive = (step == 1);
+            if (is_temp_apply_on_deactivate)
+                continue; // Unsupported yet (#9308)
+            if (is_enter_keep_active && is_multiline)
+                continue; // Unsupported yet
+
+            ctx->LogInfo("Step %d: is_enter_keep_active %d, is_temp_apply_on_deactivate %d, is_multiline %d", step, is_enter_keep_active, is_temp_apply_on_deactivate, is_multiline);
+            io.ConfigInputTextEnterKeepActive = is_enter_keep_active;
+            vars.Str1[0] = 0;
             ctx->Yield();
 
             // Testing activation flag being set
@@ -1020,9 +1056,15 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
             status.Clear();
             ctx->KeyCharsAppend("Hello");
             IM_CHECK(status.RetValue != 0 && !status.Activated && !status.Deactivated && !status.DeactivatedAfterEdit && status.Edited >= 1);
+            if (!is_temp_apply_on_deactivate)
+                IM_CHECK_STR_EQ(vars.Str1, "Hello");
             status.Clear();
-            ctx->KeyPress(ImGuiKey_Enter);
-            IM_CHECK(status.RetValue == 0 && status.Deactivated && status.DeactivatedAfterEdit && status.Edited == 0);
+            ctx->KeyPress(is_multiline ? (ImGuiMod_Ctrl | ImGuiKey_Enter) : ImGuiKey_Enter);
+            if (!is_temp_apply_on_deactivate)
+                IM_CHECK(status.RetValue == 0 && status.Deactivated && status.DeactivatedAfterEdit && status.Edited == 0);
+            else
+                IM_CHECK(status.RetValue >= 1 && status.Deactivated && status.DeactivatedAfterEdit && status.Edited >= 1);
+            IM_CHECK_STR_EQ(vars.Str1, "Hello");
             if (io.ConfigInputTextEnterKeepActive)
                 IM_CHECK(status.Activated);
             else
@@ -1038,6 +1080,17 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
             status.Clear();
             ctx->KeyPress(ImGuiKey_Tab);
             IM_CHECK(status.RetValue == 0 && !status.Activated && status.Deactivated && status.DeactivatedAfterEdit && status.Edited == 0);
+            IM_CHECK_STR_EQ(vars.Str1, "Hello World");
+            status.Clear();
+
+            // Testing validation when clicking on earlier submitted Sibling after editing
+            ctx->ItemClick("Field");
+            ctx->KeyCharsReplace("123");
+            IM_CHECK(status.RetValue != 0 && status.Activated && !status.Deactivated && !status.DeactivatedAfterEdit && status.Edited >= 1);
+            status.Clear();
+            ctx->ItemClick("Sibling");
+            IM_CHECK(status.RetValue == 0 && !status.Activated && status.Deactivated && status.DeactivatedAfterEdit && status.Edited == 0);
+            IM_CHECK_STR_EQ(vars.Str1, "123");
             status.Clear();
         }
     };
