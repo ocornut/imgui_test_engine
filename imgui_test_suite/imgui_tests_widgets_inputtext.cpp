@@ -1837,6 +1837,80 @@ void RegisterTests_WidgetsInputText(ImGuiTestEngine* e)
     };
 #endif
 
+    // ## Test consistent line count
+#if IMGUI_VERSION_NUM >= 19266
+    t = IM_REGISTER_TEST(e, "widgets", "widgets_inputtext_multiline_linecount");
+    struct InputTextMultilineCountVars
+    {
+        ImGuiInputTextFlags Flags = 0;
+        ImGuiWindow*        Window = NULL;
+        Str256              Buf;
+    };
+    t->SetVarsDataType<InputTextMultilineCountVars>();
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        auto& vars = ctx->GetVars<InputTextMultilineCountVars>();
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
+        ImGui::InputTextMultiline("Field", &vars.Buf, ImVec2(500, 0), vars.Flags);
+        ImGuiInputTextState* state = ImGui::GetInputTextState(ImGui::GetItemID());
+        IM_UNUSED(state); // For debugging
+        ImGui::BeginChild("Field");
+        vars.Window = ImGui::GetCurrentWindow();
+        ImGui::EndChild();
+        ImGui::Text("state->LineCount = %d", state ? state->LineCount : -1);
+        float padding_y = ImGui::GetStyle().FramePadding.y * 2.0f;
+        ImGui::Text("window->ContentSize = %f => %.2f lines", vars.Window->ContentSize.y, (vars.Window->ContentSize.y - padding_y) / ImGui::GetTextLineHeight());
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        auto& vars = ctx->GetVars<InputTextMultilineCountVars>();
+        ctx->SetRef("Test Window");
+        ctx->ItemClick("Field");
+        ctx->KeyPress(ImGuiKey_Escape);
+        ImGuiInputTextState* state = ImGui::GetInputTextState(ctx->GetID("Field"));
+        IM_CHECK(state != NULL);
+        IM_CHECK(vars.Window != NULL);
+        float padding_y = ImGui::GetStyle().FramePadding.y * 2.0f;
+
+        for (int n = 0; n < 4; n++)
+        {
+            bool test_while_active = (n % 2) == 1;
+            bool is_wordwrap = (n % 4) == 2;
+            vars.Flags = is_wordwrap ? ImGuiInputTextFlags_WordWrap : ImGuiInputTextFlags_None; // no actual word-wrapping expected
+            ctx->Yield();
+
+            // No trailing \n, widget inactive
+            ctx->ItemInput("Field");
+            ctx->KeyCharsReplace("aaaa\nbbb\nccc");
+            ctx->Yield();
+            if (test_while_active)
+                IM_CHECK_EQ(state->LineCount, 3);
+            else
+                ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_Enter);
+            IM_CHECK_EQ(vars.Window->ContentSize.y, ImGui::GetTextLineHeight() * 3 + padding_y);
+
+            ctx->ItemInput("Field");
+            ctx->KeyCharsReplace("aaaa\nbbb\nccc\na");
+            ctx->Yield();
+            if (test_while_active)
+                IM_CHECK_EQ(state->LineCount, 4);
+            else
+                ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_Enter);
+            IM_CHECK_EQ(vars.Window->ContentSize.y, ImGui::GetTextLineHeight() * 4 + padding_y);
+
+            ctx->ItemInput("Field");
+            ctx->KeyCharsReplace("aaaa\nbbb\nccc\n");
+            ctx->Yield();
+            if (test_while_active)
+                IM_CHECK_EQ(state->LineCount, 4);
+            else
+                ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_Enter);
+            IM_CHECK_EQ(vars.Window->ContentSize.y, ImGui::GetTextLineHeight() * 4 + padding_y);
+        }
+    };
+#endif
+
     // ## Test handling of Tab/Enter/Space keys events also emitting text events. (#2467, #1336)
     // Backends are inconsistent in behavior: some don't send a text event for Tab and Enter (but still send it for Space)
 #if IMGUI_VERSION_NUM >= 18711
