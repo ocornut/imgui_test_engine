@@ -5420,21 +5420,21 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
 #endif
 
 #if IMGUI_VERSION_NUM >= 19114
-    // ## Test box-selection in table with decorations (#7970, #7821)
+    // ## Test box-selection in table with decorations (#7970, #7821 + #9307)
     t = IM_REGISTER_TEST(e, "widgets", "widgets_multiselect_boxselect_2");
-    struct BoxSelectTestVars { ImGuiTableFlags TableFlags = ImGuiTableFlags_ScrollY; ImGuiSelectionBasicStorage Selection; bool FrozenHeaders = false; };
+    struct BoxSelectTestVars { ImGuiTableFlags TableFlags = ImGuiTableFlags_ScrollY; ImGuiMultiSelectFlags MultiSelectFlags; ImGuiSelectionBasicStorage Selection; bool FrozenHeaders = false; };
     t->SetVarsDataType<BoxSelectTestVars>();
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         auto& vars = ctx->GetVars<BoxSelectTestVars>();
-        ImGui::SetNextWindowSize(ImVec2(400.0f, 300.0f), ImGuiCond_Appearing);
+        ImGui::SetNextWindowSize(ImVec2(400.0f, 24 * ImGui::GetTextLineHeightWithSpacing()), ImGuiCond_Appearing);
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
         ImGui::CheckboxFlags("BordersOuter", &vars.TableFlags, ImGuiTableFlags_BordersOuter);
         ImGui::SameLine();
         ImGui::CheckboxFlags("BordersInner", &vars.TableFlags, ImGuiTableFlags_BordersInner);
         if (ImGui::BeginTable("table1", 1, vars.TableFlags))
         {
-            auto ms = ImGui::BeginMultiSelect(ImGuiMultiSelectFlags_BoxSelect1d, vars.Selection.Size, 1000);
+            auto ms = ImGui::BeginMultiSelect(vars.MultiSelectFlags, vars.Selection.Size, 1000);
             vars.Selection.ApplyRequests(ms);
             if (vars.FrozenHeaders)
             {
@@ -5463,6 +5463,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
 
         for (int step = 0; step < 4; step++)
         {
+            vars.MultiSelectFlags = ImGuiMultiSelectFlags_BoxSelect1d;
             vars.Selection.Clear();
             vars.TableFlags = (step & 1) ? (vars.TableFlags | ImGuiTableFlags_BordersOuter) : (vars.TableFlags & ~ImGuiTableFlags_BordersOuter);
             vars.FrozenHeaders = (step & 2) != 0;
@@ -5485,6 +5486,16 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
             }
             IM_CHECK(vars.Selection.Size > 1);
             IM_CHECK_EQ(vars.Selection.Size, last_selected - first_selected + 1); // Check no selection gap (#7970)
+
+#if IMGUI_VERSION_NUM >= 19266
+            vars.MultiSelectFlags |= ImGuiMultiSelectFlags_SelectOnClickAlways;
+            ctx->Yield();
+            ctx->ItemDragAndDrop("Item 002", "Item 007");
+            IM_CHECK_EQ(vars.Selection.Size, 6);
+            ctx->ItemDragAndDrop("Item 003", "Item 006"); // Box-select from inside     // FIXME-TESTS FIXME-MULTISELECT: Spotted a clipping bug here if window is smallish/clipped.
+            IM_CHECK_EQ(vars.Selection.Size, 4);
+            vars.MultiSelectFlags &= ~ImGuiMultiSelectFlags_SelectOnClickAlways;
+#endif
         }
     };
 #endif
