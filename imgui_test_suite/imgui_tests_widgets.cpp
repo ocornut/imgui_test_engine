@@ -1034,8 +1034,10 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
             if (is_enter_keep_active)
                 continue;
 #endif
+#if IMGUI_VERSION_NUM < 19266
             if (is_temp_apply_on_deactivate)
                 continue; // Unsupported yet (#9308)
+#endif
             if (is_enter_keep_active && is_multiline)
                 continue; // Unsupported yet
 
@@ -1083,7 +1085,10 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
             IM_CHECK(status.RetValue != 0 && status.Activated && !status.Deactivated && !status.DeactivatedAfterEdit && status.Edited >= 1);
             status.Clear();
             ctx->KeyPress(ImGuiKey_Tab);
-            IM_CHECK(status.RetValue == 0 && !status.Activated && status.Deactivated && status.DeactivatedAfterEdit && status.Edited == 0);
+            if (!is_temp_apply_on_deactivate)
+                IM_CHECK(status.RetValue == 0 && !status.Activated && status.Deactivated && status.DeactivatedAfterEdit && status.Edited == 0);
+            else
+                IM_CHECK(status.RetValue >= 1 && !status.Activated && status.Deactivated && status.DeactivatedAfterEdit && status.Edited >= 1);
             IM_CHECK_STR_EQ(vars.Str1, "Hello World");
             status.Clear();
 
@@ -1093,7 +1098,10 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
             IM_CHECK(status.RetValue != 0 && status.Activated && !status.Deactivated && !status.DeactivatedAfterEdit && status.Edited >= 1);
             status.Clear();
             ctx->ItemClick("Sibling");
-            IM_CHECK(status.RetValue == 0 && !status.Activated && status.Deactivated && status.DeactivatedAfterEdit && status.Edited == 0);
+            if (!is_temp_apply_on_deactivate)
+                IM_CHECK(status.RetValue == 0 && !status.Activated && status.Deactivated && status.DeactivatedAfterEdit && status.Edited == 0);
+            else
+                IM_CHECK(status.RetValue >= 1 && !status.Activated && status.Deactivated && status.DeactivatedAfterEdit && status.Edited >= 1);
             IM_CHECK_STR_EQ(vars.Str1, "123");
             status.Clear();
         }

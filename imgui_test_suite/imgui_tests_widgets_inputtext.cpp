@@ -1522,6 +1522,9 @@ void RegisterTests_WidgetsInputText(ImGuiTestEngine* e)
         int& i_stored = vars.Int1;
         int& i_tmp = vars.Int2;
         i_tmp = i_stored;
+
+        const bool is_multiline = (vars.Step % 4) == 2;
+
         if (ImGui::InputInt("Field1", &i_tmp))
             if (ImGui::IsItemDeactivatedAfterEdit())
                 i_stored = i_tmp;
@@ -1530,7 +1533,13 @@ void RegisterTests_WidgetsInputText(ImGuiTestEngine* e)
         char* s_tmp = vars.Str2;
         int s_bufsize = IM_COUNTOF(vars.Str1);
         memcpy(s_tmp, s_stored, s_bufsize);
-        if (ImGui::InputText("Field2", s_tmp, s_bufsize, vars.InputTextFlags))
+
+        bool ret;
+        if (is_multiline)
+            ret = ImGui::InputTextMultiline("Field2", s_tmp, s_bufsize, { 0,0 }, vars.InputTextFlags);
+        else
+            ret = ImGui::InputText("Field2", s_tmp, s_bufsize, vars.InputTextFlags);
+        if (ret)
             if (ImGui::IsItemDeactivatedAfterEdit())
                 memcpy(s_stored, s_tmp, s_bufsize);
 
@@ -1541,13 +1550,16 @@ void RegisterTests_WidgetsInputText(ImGuiTestEngine* e)
         auto& vars = ctx->GenericVars;
         ctx->SetRef("Test Window");
 
-        for (int step = 0; step < 2; step++)
+        for (int step = 0; step < 4; step++)
         {
+            const bool is_enter_keep_active = (step % 2) == 1;
+            const bool is_multiline = (step % 4) == 2;
 #if IMGUI_VERSION_NUM < 19264
-            if (step == 1)
+            if (is_enter_keep_active)
                 continue;
 #endif
-            ImGui::GetIO().ConfigInputTextEnterKeepActive = (step == 1);
+            ImGui::GetIO().ConfigInputTextEnterKeepActive = is_enter_keep_active;
+            vars.Step = step;
             ctx->Yield();
 
             int& i_stored = vars.Int1;
@@ -1573,10 +1585,23 @@ void RegisterTests_WidgetsInputText(ImGuiTestEngine* e)
                 char* s_stored = vars.Str1;
                 char* s_tmp = vars.Str2;
                 ctx->ItemClick("Field2");
-
                 const char* s_step1 = (n == 0 || n == 1) ? "abc" : "";
-                ctx->KeyCharsReplaceEnter(s_step1);
+                ctx->KeyCharsReplace(s_step1);
+                ctx->KeyPress(is_multiline ? ImGuiMod_Ctrl | ImGuiKey_Enter : ImGuiKey_Enter);
                 IM_CHECK_STR_EQ(s_stored, s_step1);
+
+                // Testing with Tab as it takes the deactivation path (#9308, #8915)
+#if IMGUI_VERSION_NUM >= 19266
+                ctx->ItemClick("Field2");
+                ctx->KeyCharsReplace("eee");
+                IM_CHECK_STR_EQ(s_stored, s_step1);
+                IM_CHECK_STR_EQ(s_tmp, "eee");
+                ctx->KeyPress(ImGuiKey_Tab);
+                IM_CHECK_STR_EQ(s_stored, "eee");
+                IM_CHECK_STR_EQ(s_tmp, "eee");
+                strcpy(s_stored, s_step1);
+#endif
+
                 ctx->ItemClick("Field2");
                 ctx->KeyCharsReplace("fff");
                 IM_CHECK_STR_EQ(s_stored, s_step1);
