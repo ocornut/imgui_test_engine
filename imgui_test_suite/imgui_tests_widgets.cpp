@@ -108,6 +108,10 @@ void GetSliderTestRanges(ImGuiDataType data_type, ImGuiDataTypeStorage* min_p, I
     }
 }
 
+#if IMGUI_VERSION_NUM < 19266
+#define ImGuiMultiSelectFlags_SelectOnAuto ImGuiMultiSelectFlags_SelectOnClick
+#endif
+
 //-------------------------------------------------------------------------
 // Tests: Widgets
 //-------------------------------------------------------------------------
@@ -2467,7 +2471,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ImGui::CheckboxFlags("ImGuiTreeNodeFlags_OpenOnArrow", &vars.TreeNodeFlags, ImGuiTreeNodeFlags_OpenOnArrow);
         ImGui::CheckboxFlags("ImGuiTreeNodeFlags_OpenOnDoubleClick", &vars.TreeNodeFlags, ImGuiTreeNodeFlags_OpenOnDoubleClick);
         ImGui::Checkbox("IsMultiSelect", &vars.IsMultiSelect);
-        ImGui::CheckboxFlags("ImGuiMultiSelectFlags_SelectOnClick", &vars.MultiSelectFlags, ImGuiMultiSelectFlags_SelectOnClick);
+        ImGui::CheckboxFlags("ImGuiMultiSelectFlags_SelectOnAuto", &vars.MultiSelectFlags, ImGuiMultiSelectFlags_SelectOnAuto);
         ImGui::CheckboxFlags("ImGuiMultiSelectFlags_SelectOnClickRelease", &vars.MultiSelectFlags, ImGuiMultiSelectFlags_SelectOnClickRelease);
 
         if (vars.IsMultiSelect)
@@ -2518,7 +2522,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         {
             vars.IsMultiSelect = (step_n == 1 || step_n == 2);
 #ifdef IMGUI_HAS_MULTISELECT
-            vars.MultiSelectFlags = (step_n == 1 ? ImGuiMultiSelectFlags_SelectOnClickRelease : ImGuiMultiSelectFlags_SelectOnClick);
+            vars.MultiSelectFlags = (step_n == 1 ? ImGuiMultiSelectFlags_SelectOnClickRelease : ImGuiMultiSelectFlags_SelectOnAuto);
 #endif
 
             {
@@ -4614,7 +4618,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         for (int step = 0; step < 2; step++)
         {
             ctx->LogDebug("STEP %d", step);
-            vars.MultiSelectFlags = (step == 0) ? ImGuiMultiSelectFlags_SelectOnClick : ImGuiMultiSelectFlags_SelectOnClickRelease;
+            vars.MultiSelectFlags = (step == 0) ? ImGuiMultiSelectFlags_SelectOnAuto : ImGuiMultiSelectFlags_SelectOnClickRelease;
             vars.MultiSelectFlags |= ImGuiMultiSelectFlags_ClearOnEscape;
 
             selection.Clear();
@@ -4649,7 +4653,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
             ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_A);
             IM_CHECK_EQ(selection.Size, 100);
 
-            // Verify that click on selected item clear other items from selection on MouseUp
+            // Verify that click on selected item clear other items from selection on MouseUp, not MouseDown
             ctx->MouseMove("Object 0001");
             ctx->MouseDown(0);
             IM_CHECK_EQ(selection.Size, 100);
