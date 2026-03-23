@@ -1948,8 +1948,13 @@ void RegisterTests_Table(ImGuiTestEngine* e)
             if (col0_reordered)
             {
                 // FIXME-TESTS: Later we should try to simulate inputs at user level
+#if IMGUI_VERSION_NUM < 19267
                 table->ReorderColumn = table->HeldHeaderColumn = 0;
-                table->ReorderColumnDir = +1;
+                table->ReorderColumnDir = +1; // 2026/03/23: Crossing over hidden column was previously done in the lower-level function
+#else
+                ImGui::TableQueueSetColumnDisplayOrder(table, 0, col1_hidden ? 2 : 1);
+                ctx->Yield();
+#endif
             }
 
             if (col2_resized)
