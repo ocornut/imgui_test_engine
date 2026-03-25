@@ -128,17 +128,16 @@ static bool SelectableInput(const char* str_id, bool selected, ImGuiSelectableFl
 
     ImGuiID id = window->GetID("##Input");
     bool temp_input_is_active = TempInputIsActive(id);
-    bool temp_input_start = ret ? IsMouseDoubleClicked(0) : false;
+    bool temp_input_start = ret && IsMouseDoubleClicked(0);
     bool temp_input_start_by_enter_pressed = IsItemFocused() && (IsKeyPressed(ImGuiKey_Enter) || IsKeyPressed(ImGuiKey_KeypadEnter));
     if (temp_input_is_active || temp_input_start || temp_input_start_by_enter_pressed)
     {
-        if (temp_input_start_by_enter_pressed)
+        if (temp_input_start_by_enter_pressed && !temp_input_is_active)
         {
             g.NavActivateId = id;
             g.NavActivateFlags = ImGuiActivateFlags_PreferInput;
         }
         ret = TempInputText(g.LastItemData.Rect, id, "##Input", buf, (int)buf_size, ImGuiInputTextFlags_None);
-        KeepAliveID(id);
         if (temp_input_is_active && !TempInputIsActive(id))
             SetFocusID(id_selectable, window);
     }
@@ -146,11 +145,10 @@ static bool SelectableInput(const char* str_id, bool selected, ImGuiSelectableFl
     {
         window->DrawList->AddText(pos, GetColorU32(ImGuiCol_Text), buf);
     }
-
     PopID();
     IMGUI_TEST_ENGINE_ITEM_INFO(id, str_id, g.LastItemData.StatusFlags | ImGuiItemStatusFlags_Inputable);
     return ret;
-};
+}
 #endif
 
 //-------------------------------------------------------------------------
