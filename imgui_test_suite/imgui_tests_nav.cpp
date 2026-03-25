@@ -1997,6 +1997,10 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
 
         //ImGui::SetNextItemWidth(50);
         //ImGui::SliderInt("WidgetType", &vars.WidgetType, 0, 3);
+        if (ImGui::Shortcut(ImGuiKey_F1))
+            vars.WidgetType = ImClamp(vars.WidgetType - 1, 0, 4);
+        if (ImGui::Shortcut(ImGuiKey_F2))
+            vars.WidgetType = ImClamp(vars.WidgetType + 1, 0, 4);
         for (int n = 0; n < 10; n++)
             ImGui::Text("Filler");
 
@@ -2071,16 +2075,16 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
 
 #if IMGUI_VERSION_NUM >= 18936
                 // Test departing from a TabStop=0 item
-                ctx->ItemInput("Item2");
+                ctx->ItemInput("Item2"); // <-- Activate with mouse
                 IM_CHECK_EQ(g.ActiveId, ctx->GetID("Item2"));
                 ctx->KeyPress(ImGuiKey_Tab);
                 IM_CHECK_EQ(g.ActiveId, ctx->GetID("Item3"));
-                ctx->ItemInput("Item2");
+                ctx->ItemInput("Item2"); // <-- Activate with mouse
                 IM_CHECK_EQ(g.ActiveId, ctx->GetID("Item2"));
                 ctx->KeyPress(ImGuiMod_Shift | ImGuiKey_Tab);
                 IM_CHECK_EQ(g.ActiveId, ctx->GetID("Item1"));
 
-                ctx->ItemInput("Item0");
+                ctx->ItemInput("Item0"); // <-- Activate with mouse. This disable nav cursor.
                 ctx->KeyPress(ImGuiKey_Escape);
 #endif
             }

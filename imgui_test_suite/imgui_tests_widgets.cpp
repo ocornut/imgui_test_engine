@@ -48,7 +48,6 @@
 // TODO: Tests: test SetColorEditOptions(0) then restore value
 //-------------------------------------------------------------------------
 
-
 // Helpers
 #if IMGUI_VERSION_NUM < 19002
 static inline bool operator==(const ImVec2& lhs, const ImVec2& rhs)     { return lhs.x == rhs.x && lhs.y == rhs.y; }    // for IM_CHECK_EQ()
@@ -110,6 +109,48 @@ void GetSliderTestRanges(ImGuiDataType data_type, ImGuiDataTypeStorage* min_p, I
 
 #if IMGUI_VERSION_NUM < 19266
 #define ImGuiMultiSelectFlags_SelectOnAuto ImGuiMultiSelectFlags_SelectOnClick
+#endif
+
+// SelectableInput() from #2718, for "widgets_selectable_input"
+#if IMGUI_VERSION_NUM >= 19267
+static bool SelectableInput(const char* str_id, bool selected, ImGuiSelectableFlags flags, char* buf, size_t buf_size)
+{
+    using namespace ImGui;
+    ImGuiContext& g = *GImGui;
+    ImGuiWindow* window = g.CurrentWindow;
+    ImVec2 pos = window->DC.CursorPos;
+
+    PushID(str_id);
+    PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(g.Style.ItemSpacing.x, g.Style.FramePadding.y * 2.0f));
+    bool ret = Selectable("", selected, flags | ImGuiSelectableFlags_AllowDoubleClick | ImGuiSelectableFlags_AllowOverlap);
+    ImGuiID id_selectable = g.LastItemData.ID;
+    PopStyleVar();
+
+    ImGuiID id = window->GetID("##Input");
+    bool temp_input_is_active = TempInputIsActive(id);
+    bool temp_input_start = ret ? IsMouseDoubleClicked(0) : false;
+    bool temp_input_start_by_enter_pressed = IsItemFocused() && (IsKeyPressed(ImGuiKey_Enter) || IsKeyPressed(ImGuiKey_KeypadEnter));
+    if (temp_input_is_active || temp_input_start || temp_input_start_by_enter_pressed)
+    {
+        if (temp_input_start_by_enter_pressed)
+        {
+            g.NavActivateId = id;
+            g.NavActivateFlags = ImGuiActivateFlags_PreferInput;
+        }
+        ret = TempInputText(g.LastItemData.Rect, id, "##Input", buf, (int)buf_size, ImGuiInputTextFlags_None);
+        KeepAliveID(id);
+        if (temp_input_is_active && !TempInputIsActive(id))
+            SetFocusID(id_selectable, window);
+    }
+    else
+    {
+        window->DrawList->AddText(pos, GetColorU32(ImGuiCol_Text), buf);
+    }
+
+    PopID();
+    IMGUI_TEST_ENGINE_ITEM_INFO(id, str_id, g.LastItemData.StatusFlags | ImGuiItemStatusFlags_Inputable);
+    return ret;
+};
 #endif
 
 //-------------------------------------------------------------------------
@@ -5781,6 +5822,30 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
             ctx->ItemDragAndDrop(TableGetHeaderID(table, "1"), TableGetHeaderID(table, "2"));
         }
     };
+
+    // Test SelectableInput() snipper from #2718
+#if IMGUI_VERSION_NUM >= 19267
+    t = IM_REGISTER_TEST(e, "widgets", "widgets_selectable_input");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        auto& vars = ctx->GenericVars;
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+        SelectableInput("obj1", false, ImGuiSelectableFlags_None, vars.Str1, IM_COUNTOF(vars.Str1));
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        auto& vars = ctx->GenericVars;
+        ImGuiContext& g = *ctx->UiContext;
+        ctx->SetRef("Test Window");
+        ctx->ItemDoubleClick("obj1");
+        ctx->Yield();
+        ctx->KeyChars("Hello!");
+        ctx->KeyPress(ImGuiKey_Enter);
+        IM_CHECK_STR_EQ(vars.Str1, "Hello!");
+        IM_CHECK_EQ(g.NavId, ctx->GetID("obj1"));
+    };
+#endif
 
     // ## Test sliders with inverted ranges.
     t = IM_REGISTER_TEST(e, "widgets", "widgets_slider_ranges");
