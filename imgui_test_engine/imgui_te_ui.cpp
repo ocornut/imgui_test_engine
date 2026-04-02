@@ -387,6 +387,18 @@ static void ShowTestGroup(ImGuiTestEngine* e, ImGuiTestGroup group, Str* filter,
     int tests_succeeded = 0;
     int tests_failed = 0;
     ImVector<ImGuiTest*> tests_to_remove;
+
+    // Set table child window to use _NavFlattened. WIP/Undocumented. (#8280)
+#if IMGUI_VERSION_NUM >= 19183
+    {
+        ImGuiContext& g = *GImGui;
+        if (!(g.NextWindowData.HasFlags & ImGuiNextWindowDataFlags_HasChildFlags))
+            g.NextWindowData.ChildFlags = 0;
+        g.NextWindowData.ChildFlags |= ImGuiChildFlags_NavFlattened;
+        g.NextWindowData.HasFlags |= ImGuiNextWindowDataFlags_HasChildFlags;
+    }
+#endif
+
     if (ImGui::BeginTable("Tests", 3, ImGuiTableFlags_ScrollY | ImGuiTableFlags_Resizable | ImGuiTableFlags_NoBordersInBody | ImGuiTableFlags_SizingFixedFit))
     {
         ImGui::TableSetupScrollFreeze(0, 1);
