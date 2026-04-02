@@ -468,7 +468,7 @@ static void ShowTestGroup(ImGuiTestEngine* e, ImGuiTestGroup group, Str* filter,
             // Double-click to run test, CTRL+Double-click to run GUI function
             const bool is_running_gui_func = (test_context && (test_context->RunFlags & ImGuiTestRunFlags_GuiFuncOnly));
             const bool has_gui_func = (test->GuiFunc != nullptr);
-            if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(0))
+            if ((ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(0)) || (ImGui::IsItemFocused() && ImGui::IsKeyPressed(ImGuiKey_Enter))) // FIXME: How to properly handle that with selectable
             {
                 if (ImGui::GetIO().KeyCtrl)
                     queue_gui_func_toggle = true;

@@ -5,6 +5,10 @@ CHANGELOG
    Those changes are not all listed here.
 ** For a while this is going to ONLY INCLUDE BREAKING CHANGES.
 
+2026/04/02:
+- TestEngine: UI: allow running a test from the keyboard.
+  (also note that generally from 1.92.7, Shift+F10 or Menu key can open context menus)
+
 2026/02/19:
 - TestEngine w/ Perfs Tools: update for ImPlot 0.18. (#95)
 
