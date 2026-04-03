@@ -209,8 +209,9 @@ static void DrawTestLog(ImGuiTestEngine* e, ImGuiTest* test)
             ImGui::BulletText("%s", "Click '[X] KeepGui' (io.ConfigKeepGuiFunc)    to view and interact with failing state.");
             ImGui::BulletText("%s", "Click '[X] Break'   (io.ConfigBreakOnError)   to break in debugger.");
             ImGui::BulletText("%s", "Click '[X] Capture' (io.ConfigCaptureOnError) to capture image of failing state to disk.");
-            ImGui::BulletText("%s", "Right-click in Log to open file.");
-            ImGui::BulletText("%s", "Hover hex identifiers in Log to locate them on screen.");
+            ImGui::BulletText("%s", "Log: Right-click on a filename to see open options.");
+            ImGui::BulletText("%s", "Log: Hover hex identifiers to locate items on the screen.");
+            ImGui::BulletText("%s", "Log: Increase Verbose Level (top row of this window) to get a more detailed log.");
             ImGui::BulletText("%s", "Call IM_SUSPEND_TESTFUNC() from TestFunc to view and interact with state at any given point.");
             ImGui::EndPopup();
         }
