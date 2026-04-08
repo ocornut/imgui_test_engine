@@ -4094,16 +4094,16 @@ void    ImGuiTestContext::WindowResize(ImGuiTestRef ref, ImVec2 size)
     ImGuiID border_y2 = ImGui::GetWindowResizeBorderID(window, ImGuiDir_Down);
     ImGuiID resize_br = ImGui::GetWindowResizeCornerID(window, 0);
     ImGuiID id;
-    if (ImAbs(size.x - window->Size.x) < 0.0001f && ItemExists(border_y2))
+    if ((size.x == 0.0f || ImAbs(size.x - window->Size.x) < 0.0001f) && ItemExists(border_y2))
         id = border_y2;
-    else if (ImAbs(size.y - window->Size.y) < 0.0001f && ItemExists(border_x2))
+    else if ((size.y == 0.0f || ImAbs(size.y - window->Size.y) < 0.0001f) && ItemExists(border_x2))
         id = border_x2;
     else
         id = resize_br;
 
     if (size.x <= 0.0f || size.y <= 0.0f)
     {
-        IM_ASSERT(size.x <= 0.0f && size.y <= 0.0f);
+        //IM_ASSERT(size.x <= 0.0f && size.y <= 0.0f);
         MouseMove(id, ImGuiTestOpFlags_IsSecondAttempt);
         MouseDoubleClick(0);
         Yield();

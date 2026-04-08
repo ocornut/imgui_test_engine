@@ -5,6 +5,9 @@ CHANGELOG
    Those changes are not all listed here.
 ** For a while this is going to ONLY INCLUDE BREAKING CHANGES.
 
+2026/04/08
+- TestEngine: fixed an issue using WindowResize() to auto-fit on a single axis.
+
 2026/04/02:
 - TestEngine: fixed an issue reaching to TabItem where the tab-bar use
   scrolling but also happens to be horizonally scrolled within its parent window.
