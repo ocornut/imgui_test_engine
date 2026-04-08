@@ -7957,6 +7957,8 @@ void RegisterTests_Capture(ImGuiTestEngine* e)
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         ctx->SetRef("Dear ImGui Demo");
+        ctx->WindowResize("", { 34 * ImGui::GetFontSize(), 0.0f });
+
         ctx->ItemOpen("Tables & Columns");
 #if IMGUI_VERSION_NUM >= 18995
         ctx->ItemClick("Tables/Expand all");

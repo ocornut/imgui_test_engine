@@ -3074,17 +3074,19 @@ void RegisterTests_Table(ImGuiTestEngine* e)
         }
 
         // Widths, Height + Scrolling
-        for (ImGuiAxis axis = ImGuiAxis_X; axis <= ImGuiAxis_Y; axis = (ImGuiAxis)(axis + 1))
+        for (int step = 3; step <= 5; step++)
         {
+            ImGuiAxis axis = (step == 3) ? ImGuiAxis_X : ImGuiAxis_Y;
             if (axis == ImGuiAxis_X)
                 ctx->LogInfo("[3] Width + Scrolling");
             else
-                ctx->LogInfo("[4] Height + Scrolling");
+                ctx->LogInfo("[%d] Height + Scrolling", step);
 
             vars.ItemSize[axis] = 200.0f;
             vars.ItemSize[axis ^ 1] = 100.0f;
 
             vars.TableFlags = ImGuiTableFlags_NoSavedSettings | ImGuiTableFlags_ScrollX;
+            vars.WindowFlags = (step == 5) ? ImGuiWindowFlags_None : ImGuiWindowFlags_AlwaysAutoResize;
             vars.WindowSize = ImVec2(300.0f, 300.0f);
             vars.OuterSize[axis] = 0.0f; // right/bottom align
             vars.OuterSize[axis ^ 1] = 220.0f;
@@ -3096,6 +3098,10 @@ void RegisterTests_Table(ImGuiTestEngine* e)
             IM_CHECK_EQ(table->OuterWindow->ContentSizeIdeal[axis], 200.0f);
             vars.WindowSize[axis] = 100.0f;
             ctx->Yield(2);
+            if (step == 4)
+                ctx->ScrollToTop(table->InnerWindow->ID);
+            else if (step == 5)
+                ctx->ScrollToBottom(table->InnerWindow->ID);
             IM_CHECK_EQ(table->InnerWindow->ContentSize[axis], 200.0f);
             IM_CHECK_EQ(table->InnerWindow->ContentSizeIdeal[axis], 200.0f);
             IM_CHECK_EQ(table->OuterWindow->ContentSize[axis], 100.0f);
@@ -3114,6 +3120,10 @@ void RegisterTests_Table(ImGuiTestEngine* e)
             IM_CHECK_EQ(table->OuterWindow->ContentSizeIdeal[axis], 200.0f);
             vars.WindowSize[axis] = 100.0f;
             ctx->Yield(2);
+            if (step == 4)
+                ctx->ScrollToTop(table->InnerWindow->ID);
+            else if (step == 5)
+                ctx->ScrollToBottom(table->InnerWindow->ID);
             IM_CHECK_EQ(table->InnerWindow->ContentSize[axis], 200.0f);
             IM_CHECK_EQ(table->InnerWindow->ContentSizeIdeal[axis], 200.0f);
             IM_CHECK_EQ(table->OuterWindow->ContentSize[axis], 100.0f);
@@ -3128,6 +3138,10 @@ void RegisterTests_Table(ImGuiTestEngine* e)
             ctx->Yield(); // small item-size previously submitted, columns[0] is min-width, reported to inner window
             ctx->Yield(); // inner-window update to small contents width, columns[0] resize to fit, reported to inner window
             ctx->Yield(); // inner-window update to correct contents width
+            if (step == 4)
+                ctx->ScrollToTop(table->InnerWindow->ID);
+            else if (step == 5)
+                ctx->ScrollToBottom(table->InnerWindow->ID);
             IM_CHECK_EQ(table->InnerWindow->ContentSize[axis], 200.0f);
             IM_CHECK_EQ(table->InnerWindow->ContentSizeIdeal[axis], 200.0f);
             IM_CHECK_EQ(table->OuterWindow->ContentSize[axis], 100.0f);
@@ -3144,8 +3158,30 @@ void RegisterTests_Table(ImGuiTestEngine* e)
             vars.WindowSize[axis] = 100.0f;
             vars.WindowSize[axis ^ 1] = 300.0f;
             ctx->Yield(2);
+            if (step == 4)
+                ctx->ScrollToTop(table->InnerWindow->ID);
+            else if (step == 5)
+                ctx->ScrollToBottom(table->InnerWindow->ID);
             IM_CHECK_EQ(table->InnerWindow->ContentSize[axis], 200.0f);
             IM_CHECK_EQ(table->OuterWindow->ContentSize[axis], 300.0f);
+
+#if IMGUI_VERSION_NUM >= 19271
+            if (axis == ImGuiAxis_Y)
+            {
+                vars.TableFlags = ImGuiTableFlags_NoSavedSettings | ImGuiTableFlags_ScrollX;
+                vars.WindowFlags = ImGuiWindowFlags_None;
+                vars.WindowSize.y = 200.0f;
+                vars.OuterSize = { 0.0f, 0.0f };
+                vars.ItemSize = { 0.0f, 1000.0f };
+                ctx->Yield(2);
+                IM_CHECK_EQ(table->OuterWindow->ContentSizeIdeal[axis], 1000.0f);
+                if (step == 4)
+                    ctx->ScrollToTop(table->InnerWindow->ID);
+                else if (step == 5)
+                    ctx->ScrollToBottom(table->InnerWindow->ID);
+                IM_CHECK_EQ(table->OuterWindow->ContentSizeIdeal[axis], 1000.0f);
+            }
+#endif
         }
 
 #if IMGUI_VERSION_NUM >= 19074
