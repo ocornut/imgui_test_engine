@@ -119,10 +119,23 @@ void RegisterTests_WidgetsInputText(ImGuiTestEngine* e)
             vars.Bool1 = true;
             ctx->Yield();
             ctx->ItemClick("InputText");
+            state.TextA.clear(); // <-- Should be unused while read-only.
             ctx->KeyCharsAppendEnter("World123");
             IM_CHECK_STR_EQ(buf, vars.Str1);
             IM_CHECK_EQ(state.TextLen, 20);
             //IM_CHECK_EQ(state.CurLenW, 20);
+
+            // Disable Read-only flag while active and while state->TextA was not used (#9354)
+#if IMGUI_VERSION_NUM >= 19271
+            state.TextA.clear(); // <-- Should be unused while read-only.
+            state.TextLen = 0;
+            ctx->ItemClick("InputText");
+            IM_CHECK(state.TextA.Data == NULL); // was cleared before
+            vars.Bool1 = false;
+            ctx->Yield(2);
+            IM_CHECK_STR_EQ(buf, vars.Str1);
+            IM_CHECK_EQ(state.TextLen, 20);
+#endif
 
             // Space as key (instead of Space as character) -> check not conflicting with Nav Activate (#4552)
             vars.Bool1 = false;
