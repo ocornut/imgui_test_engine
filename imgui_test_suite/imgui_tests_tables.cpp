@@ -3199,6 +3199,40 @@ void RegisterTests_Table(ImGuiTestEngine* e)
         IM_CHECK_EQ(table->OuterWindow->ContentSize.x, 200.0f + table->InnerWindow->ScrollbarSizes.x);
         ctx->Yield();
 #endif
+
+#if IMGUI_VERSION_NUM >= 19271
+        // #9352
+        vars.TableFlags = ImGuiTableFlags_NoSavedSettings | ImGuiTableFlags_ScrollX;
+        vars.WindowFlags = ImGuiWindowFlags_None;
+        vars.WindowSize = ImVec2(0.0f, 0.0f);
+        vars.OuterSize = ImVec2(0.0f, 0.0f);
+        vars.ItemSize = ImVec2(500.0f, 500.0f);
+        ctx->Yield(2);
+
+        ctx->WindowResize("", { 50, 50 });
+        ctx->WindowResize("", { -1.0f, 0.0f });     // Auto X resize
+        IM_CHECK_EQ(table->InnerWindow->Size.x, 500.0f + ImGui::GetStyle().ScrollbarSize);
+        IM_CHECK_EQ(table->InnerWindow->Size.y, 50.0f);
+
+        ctx->WindowResize("", { 0.0f, -1.0f });     // Auto Y resize
+        IM_CHECK_EQ(table->InnerWindow->Size.y, 500.0f);
+
+        ctx->WindowResize("", { -1.0f, -1.0f });    // Simultaneous both axis resize
+        IM_CHECK_EQ(table->InnerWindow->Size.x, 500.0f);
+        IM_CHECK_EQ(table->InnerWindow->Size.y, 500.0f);
+        IM_CHECK_EQ(table->OuterWindow->Size.x, 500.0f);
+        IM_CHECK_EQ(table->OuterWindow->Size.y, 500.0f);
+
+        ctx->WindowResize("", { 50, 50 });
+        ctx->WindowResize("", { -1.0f, -1.0f });    // Simultaneous both axis resize from a small size where scrollbar appeared
+#if IMGUI_BROKEN_TESTS
+        // Scrollbar eval in EndTable() is wrong. (#9352)
+        IM_CHECK_EQ(table->InnerWindow->Size.x, 500.0f);
+        IM_CHECK_EQ(table->InnerWindow->Size.y, 500.0f);
+        IM_CHECK_EQ(table->OuterWindow->Size.x, 500.0f);
+        IM_CHECK_EQ(table->OuterWindow->Size.y, 500.0f);
+#endif
+#endif
     };
 #endif
 
