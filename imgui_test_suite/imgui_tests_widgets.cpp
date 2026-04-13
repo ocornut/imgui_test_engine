@@ -5469,25 +5469,26 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
 #if IMGUI_VERSION_NUM >= 19114
     // ## Test box-selection in table with decorations (#7970, #7821 + #9307)
     t = IM_REGISTER_TEST(e, "widgets", "widgets_multiselect_boxselect_2");
-    struct BoxSelectTestVars { ImGuiTableFlags TableFlags = ImGuiTableFlags_ScrollY; ImGuiMultiSelectFlags MultiSelectFlags; ImGuiSelectionBasicStorage Selection; bool FrozenHeaders = false; };
+    struct BoxSelectTestVars { ImGuiTableFlags TableFlags = ImGuiTableFlags_ScrollY; ImGuiMultiSelectFlags MultiSelectFlags = ImGuiMultiSelectFlags_BoxSelect1d; ImGuiSelectionBasicStorage Selection; bool FrozenHeaders = false; };
     t->SetVarsDataType<BoxSelectTestVars>();
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         auto& vars = ctx->GetVars<BoxSelectTestVars>();
         ImGui::SetNextWindowSize(ImVec2(400.0f, 24 * ImGui::GetTextLineHeightWithSpacing()), ImGuiCond_Appearing);
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
-        ImGui::CheckboxFlags("BordersOuter", &vars.TableFlags, ImGuiTableFlags_BordersOuter);
+        ImGui::CheckboxFlags("_BordersOuter", &vars.TableFlags, ImGuiTableFlags_BordersOuter);
         ImGui::SameLine();
-        ImGui::CheckboxFlags("BordersInner", &vars.TableFlags, ImGuiTableFlags_BordersInner);
+        ImGui::CheckboxFlags("_BordersInner", &vars.TableFlags, ImGuiTableFlags_BordersInner);
+        ImGui::CheckboxFlags("_BoxSelect1d", &vars.MultiSelectFlags, ImGuiMultiSelectFlags_BoxSelect1d);
         if (ImGui::BeginTable("table1", 1, vars.TableFlags))
         {
-            auto ms = ImGui::BeginMultiSelect(vars.MultiSelectFlags, vars.Selection.Size, 1000);
-            vars.Selection.ApplyRequests(ms);
             if (vars.FrozenHeaders)
             {
                 ImGui::TableSetupScrollFreeze(0, 1);
                 ImGui::TableHeadersRow();
             }
+            auto ms = ImGui::BeginMultiSelect(vars.MultiSelectFlags, vars.Selection.Size, 1000);
+            vars.Selection.ApplyRequests(ms);
             for (unsigned i = 0; i < 1000; i++)
             {
                 char buf[32];
