@@ -6661,18 +6661,18 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         ImGuiTestGenericVars& vars = ctx->GenericVars;
+        ImGuiAxis axis = (ImGuiAxis)vars.Step;
+
         ImGui::SetNextWindowSize(ImVec2(300, 200), ImGuiCond_Always);
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
-        ImVec2& child_size = vars.WindowSize;
-        ImGuiAxis axis = (ImGuiAxis)ctx->Test->ArgVariant;
 
-        ImGui::Splitter("splitter", &child_size.x, &child_size.y, axis, +1);
+        ImGui::Splitter("splitter", &vars.WindowSize.x, &vars.WindowSize.y, axis, +1);
 
-        if (ImGui::BeginChild("Child 1", ImVec2(axis == ImGuiAxis_X ? child_size.x : 0.0f, axis == ImGuiAxis_Y ? child_size.x : 0.0f)))
+        if (ImGui::BeginChild("Child 1", ImVec2(axis == ImGuiAxis_X ? vars.WindowSize.x : 0.0f, axis == ImGuiAxis_Y ? vars.WindowSize.x : 0.0f)))
             ImGui::TextUnformatted("Child 1");
         ImGui::EndChild();
 
-        if (ImGui::BeginChild("Child 2", ImVec2(axis == ImGuiAxis_X ? child_size.y : 0.0f, axis == ImGuiAxis_Y ? child_size.y : 0.0f)))
+        if (ImGui::BeginChild("Child 2", ImVec2(axis == ImGuiAxis_X ? vars.WindowSize.y : 0.0f, axis == ImGuiAxis_Y ? vars.WindowSize.y : 0.0f)))
             ImGui::TextUnformatted("Child 1");
         ImGui::EndChild();
 
@@ -6685,16 +6685,16 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ImGuiWindow* child1 = ctx->WindowInfo("Child 1").Window;
         ImGuiWindow* child2 = ctx->WindowInfo("Child 2").Window;
         IM_CHECK(child1 && child2);
-        ImVec2& child_size = vars.WindowSize;
         for (int axis = 0; axis < 2; axis++)
         {
             ctx->LogDebug("Axis: ImGuiAxis_%s", axis ? "Y" : "X");
-            ctx->Test->ArgVariant = axis;
-            child_size = ImVec2(100, 100);
+            vars.Step = axis;
+            vars.WindowSize = ImVec2(100, 100);
+            ctx->Yield();
             for (int i = -1; i < 1; i++)
             {
                 ctx->ItemDragWithDelta("splitter", ImVec2(50.0f * i, 50.0f * i));
-                IM_CHECK_EQ(axis == ImGuiAxis_X ? child1->Size.x + child2->Size.x : child1->Size.y + child2->Size.y, child_size.x + child_size.y);
+                IM_CHECK_EQ(axis == ImGuiAxis_X ? child1->Size.x + child2->Size.x : child1->Size.y + child2->Size.y, vars.WindowSize.x + vars.WindowSize.y);
             }
         }
     };
