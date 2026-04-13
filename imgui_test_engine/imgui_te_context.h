@@ -122,7 +122,7 @@ enum ImGuiTestAction
 enum ImGuiTestOpFlags_
 {
     ImGuiTestOpFlags_None               = 0,
-    ImGuiTestOpFlags_NoCheckHoveredId   = 1 << 1,   // Don't check for HoveredId after aiming for a widget. A few situations may want this: while e.g. dragging or another items prevents hovering, or for items that don't use ItemHoverable()
+    ImGuiTestOpFlags_NoCheckHoveredId   = 1 << 1,   // Don't check for HoveredId after aiming for a widget. This is automatic when there's an active item, typically in drag and drop operation. Otherwise, a few situations may want this e.g. for items that don't use ItemHoverable(), or when intently aiming for an item behind a popup/modal inhibition layer.
     ImGuiTestOpFlags_NoError            = 1 << 2,   // Don't abort/error e.g. if the item cannot be found or the operation doesn't succeed.
     ImGuiTestOpFlags_NoFocusWindow      = 1 << 3,   // Don't focus window when aiming at an item
     ImGuiTestOpFlags_NoAutoUncollapse   = 1 << 4,   // Disable automatically uncollapsing windows (useful when specifically testing Collapsing behaviors)

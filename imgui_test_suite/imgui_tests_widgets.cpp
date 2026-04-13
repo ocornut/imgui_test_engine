@@ -199,12 +199,12 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         vars.ButtonPressCount[2] = 0;
         ctx->MouseMove("Button2");
         ctx->MouseDown(0);
-        ctx->MouseMove("Button0", ImGuiTestOpFlags_NoCheckHoveredId);
+        ctx->MouseMove("Button0");
         ctx->MouseUp(0);
         IM_CHECK_EQ(vars.ButtonPressCount[2], 0);
         ctx->MouseMove("Button3");
         ctx->MouseDown(0);
-        ctx->MouseMove("Button0", ImGuiTestOpFlags_NoCheckHoveredId);
+        ctx->MouseMove("Button0");
         ctx->MouseUp(0);
         IM_CHECK_EQ(vars.ButtonPressCount[3], 1);
 
@@ -303,7 +303,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         vars.ButtonPressCount[3] = 0;
         ctx->MouseMove("ButtonLR");
         ctx->MouseDown(0);
-        ctx->MouseMove("ButtonR", ImGuiTestOpFlags_NoCheckHoveredId);
+        ctx->MouseMove("ButtonR");
         ctx->MouseDown(1);
         ctx->MouseUp(0);
         ctx->MouseMove("ButtonLR");
@@ -420,7 +420,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         vars.NextStep = ButtonStateMachineTestStep_MouseDown;
         ctx->MouseDown();
 
-        ctx->MouseMove("Unused", ImGuiTestOpFlags_NoCheckHoveredId);
+        ctx->MouseMove("Unused");
         vars.NextStep = ButtonStateMachineTestStep_MovedAway;
         ctx->Yield();
 
@@ -1877,7 +1877,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ctx->WindowResize("Test Window", ImVec2(300, 300));
         int draw_calls = window->DrawList->CmdBuffer.Size;
         ctx->WindowResize("Test Window", ImVec2(1, 1));
-        IM_CHECK(draw_calls >= window->DrawList->CmdBuffer.Size); // May create less :)
+        IM_CHECK_GE(draw_calls, window->DrawList->CmdBuffer.Size); // May create less :)
     };
 
     // ## Test selection behavior of current tab
