@@ -1,6 +1,18 @@
 // dear imgui
 // Minimal Application demonstrating integrating the Dear ImGui Test Engine
 
+// You can use this sample to understand the minimum code needed to add Test Engine into your own application.
+// This sample implement the instructions provided at https://github.com/ocornut/imgui_test_engine/wiki/Setting-Up.
+// You can also quickly build and run this if you'd like to experiment, but there's not much value in running this.
+
+// This particular example use a backend-wrapper helper called 'imgui_app' which is also used by imgui_test_suite.
+// We do this in order to make this application supports multiple backends to simplify our own testing.
+// Note that imgui_app does not support all backends.
+// However, you are not meant and should not need to use imgui_app yourself.
+// This is just a helper for app_minimal and imgui_test_suite (applications). imgui_test_engine (library) does not need it.
+
+// You can add Test Engine support to any of the imgui/examples/ applications by copying the Test Engine specific lines.
+
 // Visual Studio warnings
 #ifdef _MSC_VER
 #pragma warning (disable: 4996)     // 'This function or variable may be unsafe': strcpy, strdup, sprintf, vsnprintf, sscanf, fopen
