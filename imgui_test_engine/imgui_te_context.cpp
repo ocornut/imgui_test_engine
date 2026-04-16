@@ -1839,6 +1839,7 @@ static void FocusOrMakeClickableAtPos(ImGuiTestContext* ctx, ImGuiWindow* window
 // Supported values for ImGuiTestOpFlags:
 // - ImGuiTestOpFlags_NoFocusWindow
 // - ImGuiTestOpFlags_NoCheckHoveredId (automatic if there's an active id)
+// - ImGuiTestOpFlags_NoScroll
 // - ImGuiTestOpFlags_IsSecondAttempt [used when recursively calling ourself)
 // - ImGuiTestOpFlags_MoveToEdgeXXX flags
 // FIXME-TESTS: This is too eagerly trying to scroll everything even if already visible.
@@ -1911,14 +1912,16 @@ void    ImGuiTestContext::MouseMove(ImGuiTestRef ref, ImGuiTestOpFlags flags)
 
         // In theory all we need is one visible point, but it is generally nicer if we scroll toward visibility.
         // Bias toward reducing amount of horizontal scroll.
-        float visibility_ratio_x = (item_r_clipped.GetWidth() + 1.0f) / (item.RectFull.GetWidth() + 1.0f);
-        float visibility_ratio_y = (item_r_clipped.GetHeight() + 1.0f) / (item.RectFull.GetHeight() + 1.0f);
-
-        if (visibility_ratio_x < 0.70f)
-            ScrollToItem(ref, ImGuiAxis_X, ImGuiTestOpFlags_NoFocusWindow);
-        if (visibility_ratio_y < 0.90f)
-            ScrollToItem(ref, ImGuiAxis_Y, ImGuiTestOpFlags_NoFocusWindow);
-        // FIXME: Scroll parent window
+        if ((flags & ImGuiTestOpFlags_NoScroll) == 0)
+        {
+            float visibility_ratio_x = (item_r_clipped.GetWidth() + 1.0f) / (item.RectFull.GetWidth() + 1.0f);
+            float visibility_ratio_y = (item_r_clipped.GetHeight() + 1.0f) / (item.RectFull.GetHeight() + 1.0f);
+            if (visibility_ratio_x < 0.70f)
+                ScrollToItem(ref, ImGuiAxis_X, ImGuiTestOpFlags_NoFocusWindow);
+            if (visibility_ratio_y < 0.90f)
+                ScrollToItem(ref, ImGuiAxis_Y, ImGuiTestOpFlags_NoFocusWindow);
+            // FIXME: Scroll parent window
+        }
     }
 
     // Menu layer is not scrollable: attempt to resize window.
@@ -3478,6 +3481,12 @@ bool    ImGuiTestContext::ItemIsOpened(ImGuiTestRef ref)
 {
     ImGuiTestItemInfo item = ItemInfo(ref);
     return (item.StatusFlags & ImGuiItemStatusFlags_Opened) != 0;
+}
+
+bool    ImGuiTestContext::ItemIsVisible(ImGuiTestRef ref)
+{
+    ImGuiTestItemInfo item = ItemInfo(ref, ImGuiTestOpFlags_NoError);
+    return (item.StatusFlags & ImGuiItemStatusFlags_Visible) != 0;
 }
 
 void    ImGuiTestContext::ItemVerifyCheckedIfAlive(ImGuiTestRef ref, bool checked)

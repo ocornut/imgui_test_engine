@@ -133,6 +133,7 @@ enum ImGuiTestOpFlags_
     ImGuiTestOpFlags_MoveToEdgeR        = 1 << 9,
     ImGuiTestOpFlags_MoveToEdgeU        = 1 << 10,
     ImGuiTestOpFlags_MoveToEdgeD        = 1 << 11,
+    ImGuiTestOpFlags_NoScroll           = 1 << 12,  // Disable automatically scrolling to reach an item.
 };
 
 // Advanced filtering for ItemActionAll()
@@ -362,7 +363,7 @@ struct IMGUI_API ImGuiTestContext
     void        MouseDragWithDelta(ImVec2 delta, ImGuiMouseButton button = 0);
     void        MouseWheel(ImVec2 delta);
     void        MouseWheelX(float dx) { MouseWheel(ImVec2(dx, 0.0f)); }
-    void        MouseWheelY(float dy) { MouseWheel(ImVec2(0.0f, dy)); }
+    void        MouseWheelY(float dy) { MouseWheel(ImVec2(0.0f, dy)); } // +1: up, -1: down
     void        MouseMoveToVoid(ImGuiViewport* viewport = nullptr);
     void        MouseClickOnVoid(ImGuiMouseButton button = 0, ImGuiViewport* viewport = nullptr);
     ImGuiWindow*FindHoveredWindowAtPos(const ImVec2& pos);
@@ -454,6 +455,7 @@ struct IMGUI_API ImGuiTestContext
     bool        ItemExists(ImGuiTestRef ref);
     bool        ItemIsChecked(ImGuiTestRef ref);
     bool        ItemIsOpened(ImGuiTestRef ref);
+    bool        ItemIsVisible(ImGuiTestRef ref);
     void        ItemVerifyCheckedIfAlive(ImGuiTestRef ref, bool checked);
 
     // Item/Widgets: Drag and Mouse operations

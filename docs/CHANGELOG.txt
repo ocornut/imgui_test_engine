@@ -5,6 +5,11 @@ CHANGELOG
    Those changes are not all listed here.
 ** For a while this is going to ONLY INCLUDE BREAKING CHANGES.
 
+2026/04/16:
+- TestEngine: added ctx->IsItemVisible() helper.
+- TestEngine: added ImGuiTestOpFlags_NoScroll to prevent e.g. MouseMove() actions
+  from scrolling to get item in better view.
+
 2026/04/13:
 - TestEngine: MouseMove() operations automatically sets ImGuiTestOpFlags_NoCheckHoveredId
   (skips checking HoveredId at the end) when there's an Active item before starting the
