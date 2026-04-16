@@ -5394,7 +5394,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ImGuiWindow* child_window = ctx->WindowInfo("Assets").Window;
         IM_CHECK(child_window != NULL);
 
-        ctx->WindowResize("", ImVec2(750, 600)); // FIXME: Calculated for 15 item wide (15 * 32) + (15-1+2) * 10 + Parent/Child Padding + Scrollbar
+        ctx->WindowResize("", ImVec2(870, 600)); // FIXME: Calculated for 15 item wide (15 * 40) + (15-1+2) * 10 + Parent/Child Padding + Scrollbar
         ctx->MenuClick("File/Clear items");
         ctx->MenuClick("File/Add 10000 items");
 
@@ -5412,9 +5412,9 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         // Set specific option
         ctx->SetRef("Example: Assets Browser");
         ctx->MenuAction(ImGuiTestAction_Open, "Options");
-        ctx->ItemInputValue("//$FOCUSED/Icon Size", 32.0f);
+        ctx->ItemInputValue("//$FOCUSED/Icon Size", 40.0f);
         ctx->ItemInputValue("//$FOCUSED/Icon Spacing", 10);
-        ctx->ItemInputValue("//$FOCUSED/Icon Hit Spacing", 4);
+        ctx->ItemInputValue("//$FOCUSED/Icon Hit Spacing", 2);
 
         ctx->SetRef(child_window);
         ctx->ScrollToTop("");
@@ -5438,7 +5438,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ImGuiTestItemInfo item_1 = ctx->ItemInfo("$$1");
         ImGuiTestItemInfo item_2 = ctx->ItemInfo("$$2");
         ctx->MouseMoveToPos((item_1.RectFull.GetCenter() + item_2.RectFull.GetCenter()) * 0.5f);
-        IM_CHECK(ImGui::IsAnyItemHovered() == false);
+        IM_CHECK(ImGui::IsAnyItemHovered() == false); // Assume IconHitSpacing > 0s
         IM_CHECK_EQ(ms_storage->LastSelectionSize, 0);
         ctx->MouseClick(0);
         IM_CHECK_EQ(ms_storage->LastSelectionSize, 0); // Verify we are over void
@@ -5455,19 +5455,69 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ctx->ItemClick("$$0");
         ctx->MouseMove("$$3");
         ctx->MouseDown(0);
+        ctx->MouseMove("$$5");
+        IM_CHECK_EQ(ms_storage->LastSelectionSize, 3);
         ctx->MouseMoveToPos(ImGui::GetMousePos() + ImVec2(0, 1000));
         ctx->SleepNoSkip(2.0f, 0.1f);
         ctx->MouseUp(0);
         IM_CHECK_GT(child_window->Scroll.y, 0.0f);
 
-        ctx->KeyPress(ImGuiKey_Escape);
+        // Establish how many rows are visible
+#if IMGUI_VERSION_NUM >= 19273
+        ctx->ScrollToTop("");
+        ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_A);
+        int item_count = ms_storage->LastSelectionSize;
+        int last_visible = -1;
+        int left_most_idx = 0;
+        int right_most_idx = -1;
+        float right_most_x2 = -FLT_MAX;
+        for (int n = 0; n < item_count; n++)
+        {
+            ImGuiTestItemInfo info = ctx->ItemInfo(Str30f("$$%d", n).c_str(), ImGuiTestOpFlags_NoError);
+            if ((info.StatusFlags & ImGuiItemStatusFlags_Visible) == 0)
+                break;
+            last_visible = n;
+            if (right_most_x2 < info.RectFull.Max.x)
+            {
+                right_most_x2 = info.RectFull.Max.x;
+                right_most_idx = n;
+            }
+        }
+        int count_per_line = (right_most_idx - left_most_idx) + 1;
+        ctx->LogDebug("count: %d, visible: %d, per_line: %d", item_count, last_visible, count_per_line);
+        IM_CHECK_GT(count_per_line, 8);
+
+        // Make a box selection at the bottom + Mouse Wheeling, with varying pixel offset to stress test effect of clipping on BoxSelect
+        // #7821, #7970, #7994, #8250 are all related to Box-Selecting with various form of clipping meddling in.
+        for (int off = 0; off < 31.0f; off++)
+        {
+            ctx->LogDebug("With off %f\n", (float)off);
+            //if (off == 4) { ctx->CaptureBeginVideo(); }
+            ctx->KeyPress(ImGuiKey_Escape);
+            IM_CHECK_EQ(ms_storage->LastSelectionSize, 0);
+            ctx->MouseMove(Str30f("$$%d", 114/*last_visible - count_per_line * 2 + 3*/).c_str(), ImGuiTestOpFlags_NoScroll);
+            ctx->MouseDown(0);
+            ctx->MouseMove(Str30f("$$%d", 118/*last_visible - count_per_line * 2 + 7*/).c_str(), ImGuiTestOpFlags_NoScroll | ImGuiTestOpFlags_MoveToEdgeU);
+            ctx->MouseMoveToPos(ImGui::GetMousePos() + ImVec2(0.0f, (float)off));
+            IM_CHECK_EQ(ms_storage->LastSelectionSize, 5);
+            //if (off == 4) IM_SUSPEND_TESTFUNC();
+            //IM_SUSPEND_TESTFUNC();
+            for (int n = 0; n < 3; n++)
+                ctx->MouseWheelY(-2.0f);
+            for (int n = 0; n < 3; n++)
+                ctx->MouseWheelY(+2.0f);
+            ctx->MouseUp(0);
+            //if (off == 4) { ctx->CaptureEndVideo(); }
+            IM_CHECK_EQ(ms_storage->LastSelectionSize, 5); // Anything bigger means we missed some rows.
+        }
+#endif
 
         ctx->MenuUncheck("//Dear ImGui Demo/Examples/Assets Browser");
     };
 #endif
 
 #if IMGUI_VERSION_NUM >= 19114
-    // ## Test box-selection in table with decorations (#7970, #7821 + #9307)
+    // ## Test box-selection in table with decorations (#7970, #7821, #8250, #9307)
     t = IM_REGISTER_TEST(e, "widgets", "widgets_multiselect_boxselect_2");
     struct BoxSelectTestVars { ImGuiTableFlags TableFlags = ImGuiTableFlags_ScrollY; ImGuiMultiSelectFlags MultiSelectFlags = ImGuiMultiSelectFlags_BoxSelect1d; ImGuiSelectionBasicStorage Selection; bool FrozenHeaders = false; };
     t->SetVarsDataType<BoxSelectTestVars>();
@@ -5509,12 +5559,30 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ImGuiTable* table = ImGui::TableFindByID(ctx->GetID("Test Window/table1"));
         IM_CHECK(table != NULL);
 
+        auto FindFirstAndLastSelected = [](ImGuiSelectionBasicStorage* selection, int count, int* p_out_first_selected, int* p_out_last_selected)
+        {
+            int first_selected = -1;
+            int last_selected = -1;
+            for (int n = 0; n < count; n++)
+            {
+                if (selection->Contains(n) == false)
+                    continue;
+                if (first_selected == -1)
+                    first_selected = n;
+                last_selected = n;
+            }
+            *p_out_first_selected = first_selected;
+            *p_out_last_selected = last_selected;
+        };
+
         for (int step = 0; step < 4; step++)
         {
             vars.MultiSelectFlags = ImGuiMultiSelectFlags_BoxSelect1d;
             vars.Selection.Clear();
             vars.TableFlags = (step & 1) ? (vars.TableFlags | ImGuiTableFlags_BordersOuter) : (vars.TableFlags & ~ImGuiTableFlags_BordersOuter);
             vars.FrozenHeaders = (step & 2) != 0;
+            ctx->LogInfo("Step %d", step);
+            ctx->Yield();
 
             ctx->SetRef(table->ID);
             ctx->MouseMove("Item 001");
@@ -5522,18 +5590,27 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
             //ctx->SetRef("//$FOCUSED");
             ctx->MouseMoveToPos(ImGui::GetIO().MousePos + ImVec2(0, ctx->GetWindowByRef("//Test Window")->Size.y));
             ctx->SleepNoSkip(1.0f, 0.05f);
-            ctx->MouseUp(ImGuiMouseButton_Left);
             IM_CHECK(vars.Selection.Contains(0) == false);
-            int first_selected = 1;
-            int last_selected = 1;
-            for (int n = 1; n < 1000; n++)
-            {
-                if (vars.Selection.Contains(n) == false)
-                    break;
-                last_selected = n;
-            }
+            int first_selected;
+            int last_selected;
+            FindFirstAndLastSelected(&vars.Selection, 1000, &first_selected, &last_selected);
             IM_CHECK(vars.Selection.Size > 1);
+            IM_CHECK_EQ(first_selected, 1);
+            IM_CHECK(last_selected > 1);
             IM_CHECK_EQ(vars.Selection.Size, last_selected - first_selected + 1); // Check no selection gap (#7970)
+            ctx->LogDebug("first_selected = %d, last_selected = %d", first_selected, last_selected);
+            
+#if IMGUI_VERSION_NUM >= 19273
+            // Scroll back up to unselect
+            ctx->MouseMove("Item 003"); // <--- This will defacto scroll and use the equivalent of mouse wheeling while holding the button
+            IM_CHECK_EQ(vars.Selection.Size, 3);
+            ctx->MouseUp(ImGuiMouseButton_Left);
+            FindFirstAndLastSelected(&vars.Selection, 1000, &first_selected, &last_selected);
+            IM_CHECK_EQ(first_selected, 1);
+            IM_CHECK_EQ(last_selected, 3);
+#else
+            ctx->MouseUp(ImGuiMouseButton_Left);
+#endif
 
 #if IMGUI_VERSION_NUM >= 19266
             vars.MultiSelectFlags |= ImGuiMultiSelectFlags_SelectOnClickAlways;
