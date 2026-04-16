@@ -3723,7 +3723,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ImGui::LogToClipboard();
 #ifdef __GNUC__
 #pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wformat-overflow"  // warning: ‘%s’ directive argument is null
+#pragma GCC diagnostic ignored "-Wformat-overflow"  // warning: '%s' directive argument is null
 #endif
         ImGui::Text("%s", (const char*)NULL);
         ImGui::Text("%.*s", 3, (const char*)NULL);
@@ -5637,6 +5637,67 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
             ImGui::EndTable();
         }
         ImGui::End();
+    };
+#endif
+
+    // ## Test that multi-select + skipping column submissions doesn't break table auto-fit (#9341, #8250)
+#if IMGUI_VERSION_NUM >= 19272
+    t = IM_REGISTER_TEST(e, "table", "widgets_multiselect_cell_width_loss2");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        auto& vars = ctx->GenericVars;
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImGuiTableFlags table_flags = ImGuiTableFlags_Borders | ImGuiTableFlags_Resizable | ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_ScrollY;
+        if (ctx->IsFirstGuiFrame())
+            TableDiscardInstanceAndSettings(ImGui::GetID("table1"));
+        if (ImGui::BeginTable("table1", 2, table_flags, { 400,400 }))
+        {
+            ImGui::TableSetupColumn("Name", ImGuiTableColumnFlags_NoHeaderLabel);
+            ImGui::TableSetupColumn("Value", ImGuiTableColumnFlags_NoHeaderLabel);
+            ImGui::TableHeadersRow();
+
+            ImGuiSelectionBasicStorage selection;
+            ImGuiMultiSelectIO* ms_io = NULL;
+            if (vars.Bool1)
+            {
+                ms_io = ImGui::BeginMultiSelect(ImGuiMultiSelectFlags_None, selection.Size, 50);
+                selection.ApplyRequests(ms_io);
+            }
+            for (int row_n = 0; row_n < 50; row_n++)
+            {
+                ImGui::TableNextRow();
+                ImGui::TableNextColumn();
+                ImGui::Text("Row XXXXX");
+                if (row_n < 10)
+                {
+                    ImGui::TableNextColumn(); // Only some rows submit content to the second column
+                    ImGui::Text("Value Y");
+                }
+            }
+            if (vars.Bool1)
+            {
+                ms_io = ImGui::EndMultiSelect();
+                selection.ApplyRequests(ms_io);
+            }
+
+            ImGuiTable* table = ImGui::GetCurrentTable();
+            if (table->Columns[0].WidthAuto > 0.0f)
+                IM_CHECK_EQ(table->Columns[0].WidthAuto, ImGui::CalcTextSize("Row XXXXX").x);
+            if (table->Columns[1].WidthAuto > 0.0)
+                IM_CHECK_EQ(table->Columns[1].WidthAuto, ImGui::CalcTextSize("Value Y").x);
+
+            ImGui::EndTable();
+        }
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        auto& vars = ctx->GenericVars;
+        ctx->SetRef("Test Window");
+        vars.Bool1 = false;
+        ctx->Yield(3);
+        vars.Bool1 = true;
+        ctx->Yield(3);
     };
 #endif
 
