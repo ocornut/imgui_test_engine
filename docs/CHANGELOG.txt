@@ -9,6 +9,9 @@ CHANGELOG
 - TestEngine: added ctx->IsItemVisible() helper.
 - TestEngine: added ImGuiTestOpFlags_NoScroll to prevent e.g. MouseMove() actions
   from scrolling to get item in better view.
+- TestEngine: fixed calling IM_SUSPEND_TESTFUNC() while in a CaptureBeginVideo() block
+  from running at unthrottled framerate. Among other things the very high-frame rate
+  during interactive suspend would make it easy to miss debug display.
 
 2026/04/13:
 - TestEngine: MouseMove() operations automatically sets ImGuiTestOpFlags_NoCheckHoveredId
