@@ -3223,7 +3223,8 @@ void    ImGuiTestContext::ItemInputValue(ImGuiTestRef ref, int value)
 void    ImGuiTestContext::ItemInputValue(ImGuiTestRef ref, float value)
 {
     char buf[32];
-    ImFormatString(buf, IM_COUNTOF(buf), "%f", value);
+    char* buf_end = buf + ImFormatString(buf, IM_COUNTOF(buf), "%f", value);
+    ImStrTrimTrailingZeroesFromFloat(buf, buf_end);
     ItemInput(ref);
     KeyCharsReplaceEnter(buf);
 }
