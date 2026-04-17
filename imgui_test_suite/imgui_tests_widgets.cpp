@@ -5485,6 +5485,8 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         }
         int count_per_line = (right_most_idx - left_most_idx) + 1;
         ctx->LogDebug("count: %d, visible: %d, per_line: %d", item_count, last_visible, count_per_line);
+        //int count_per_line = 16;
+        //ctx->LogDebug("count: %d, visible: %d, per_line: %d", item_count, last_visible, count_per_line);
         IM_CHECK_GT(count_per_line, 8);
 
         // Make a box selection at the bottom + Mouse Wheeling, with varying pixel offset to stress test effect of clipping on BoxSelect
@@ -5495,8 +5497,10 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
             //if (off == 4) { ctx->CaptureBeginVideo(); }
             ctx->KeyPress(ImGuiKey_Escape);
             IM_CHECK_EQ(ms_storage->LastSelectionSize, 0);
-            ctx->MouseMove(Str30f("$$%d", 114/*last_visible - count_per_line * 2 + 3*/).c_str(), ImGuiTestOpFlags_NoScroll);
+            ctx->MouseMove(Str30f("$$%d", 114/*last_visible - count_per_line * 2 + 3*/).c_str(), ImGuiTestOpFlags_NoScroll | ImGuiTestOpFlags_MoveToEdgeU);
+            ctx->MouseMoveToPos(ImGui::GetMousePos() + ImVec2(0.0f, (float)off));
             ctx->MouseDown(0);
+            IM_CHECK_EQ(g.ActiveId, ctx->GetID(Str30f("$$%d", 114).c_str()));
             ctx->MouseMove(Str30f("$$%d", 118/*last_visible - count_per_line * 2 + 7*/).c_str(), ImGuiTestOpFlags_NoScroll | ImGuiTestOpFlags_MoveToEdgeU);
             ctx->MouseMoveToPos(ImGui::GetMousePos() + ImVec2(0.0f, (float)off));
             IM_CHECK_EQ(ms_storage->LastSelectionSize, 5);
