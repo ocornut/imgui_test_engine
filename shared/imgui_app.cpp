@@ -244,8 +244,11 @@ static void ImGuiApp_ImplNull_RenderDrawData(ImDrawData* draw_data)
             const ImDrawCmd* pcmd = &cmd_list->CmdBuffer[cmd_i];
             if (pcmd->UserCallback != NULL)
             {
-                if (pcmd->UserCallback != ImDrawCallback_ResetRenderState)
-                    pcmd->UserCallback(cmd_list, pcmd);
+#ifndef IMGUI_DISABLE_OBSOLETE_FUNCTIONS
+                if (pcmd->UserCallback == ImDrawCallback_ResetRenderState)
+                    continue;
+#endif
+                pcmd->UserCallback(cmd_list, pcmd);
             }
         }
     }
