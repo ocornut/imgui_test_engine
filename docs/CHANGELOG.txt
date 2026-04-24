@@ -5,6 +5,10 @@ CHANGELOG
    Those changes are not all listed here.
 ** For a while this is going to ONLY INCLUDE BREAKING CHANGES.
 
+2026/04/24:
+- TestEngine: IM_TEST_ENGINE_ASSERT() handler (generally wired to app or imgui assert)
+  automatically marks current test as errored.
+
 2026/04/16:
 - TestEngine: added ctx->IsItemVisible() helper.
 - TestEngine: added ImGuiTestOpFlags_NoScroll to prevent e.g. MouseMove() actions
