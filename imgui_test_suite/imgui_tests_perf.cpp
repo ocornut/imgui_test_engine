@@ -119,11 +119,11 @@ void RegisterTests_Perf(ImGuiTestEngine* e)
         {
         case DrawPrimFunc_RectStroke:
             for (int n = 0; n < loop_count; n++)
-                draw_list->AddRect(center - ImVec2(r,r), center + ImVec2(r,r), col, 0.0f, 0, 1.0f);
+                draw_list->AddRect(center - ImVec2(r,r), center + ImVec2(r,r), col, 0.0f, 1.0f);
             break;
         case DrawPrimFunc_RectStrokeThick:
             for (int n = 0; n < loop_count; n++)
-                draw_list->AddRect(center - ImVec2(r, r), center + ImVec2(r, r), col, 0.0f, 0, 4.0f);
+                draw_list->AddRect(center - ImVec2(r, r), center + ImVec2(r, r), col, 0.0f, 4.0f);
             break;
         case DrawPrimFunc_RectFilled:
             for (int n = 0; n < loop_count; n++)
@@ -131,11 +131,11 @@ void RegisterTests_Perf(ImGuiTestEngine* e)
             break;
         case DrawPrimFunc_RectRoundedStroke:
             for (int n = 0; n < loop_count; n++)
-                draw_list->AddRect(center - ImVec2(r, r), center + ImVec2(r, r), col, rounding, 0, 1.0f);
+                draw_list->AddRect(center - ImVec2(r, r), center + ImVec2(r, r), col, rounding, 1.0f);
             break;
         case DrawPrimFunc_RectRoundedStrokeThick:
             for (int n = 0; n < loop_count; n++)
-                draw_list->AddRect(center - ImVec2(r, r), center + ImVec2(r, r), col, rounding, 0, 4.0f);
+                draw_list->AddRect(center - ImVec2(r, r), center + ImVec2(r, r), col, rounding, 4.0f);
             break;
         case DrawPrimFunc_RectRoundedFilled:
             for (int n = 0; n < loop_count; n++)
@@ -170,12 +170,12 @@ void RegisterTests_Perf(ImGuiTestEngine* e)
         case DrawPrimFunc_LongJaggedStroke:
             for (float n = 0; n < 10 * loop_count; n += 2.51327412287f)
                 draw_list->PathLineTo(center + ImVec2(r * sinf(n), r * cosf(n)));
-            draw_list->PathStroke(col, false, 1.0);
+            draw_list->PathStroke(col, 1.0f);
             break;
         case DrawPrimFunc_LongJaggedStrokeThick:
             for (float n = 0; n < 10 * loop_count; n += 2.51327412287f)
                 draw_list->PathLineTo(center + ImVec2(r * sinf(n), r * cosf(n)));
-            draw_list->PathStroke(col, false, 4.0);
+            draw_list->PathStroke(col, 4.0f);
             break;
 		case DrawPrimFunc_Line:
 			draw_list->Flags &= ~ImDrawListFlags_AntiAliasedLines;
@@ -1029,7 +1029,7 @@ void RegisterTests_Perf(ImGuiTestEngine* e)
                     ImVec2 top_left = ImVec2(center.x - (line_len * 0.5f), center.y - (line_len * 0.5f));
                     ImVec2 bottom_right = ImVec2(center.x + (line_len * 0.5f), center.y + (line_len * 0.5f));
 
-                    draw_list->AddRect(top_left, bottom_right, IM_COL32(255, 255, 255, 255), 0.0f, 0, cell_line_width);
+                    draw_list->AddRect(top_left, bottom_right, IM_COL32(255, 255, 255, 255), 0.0f, cell_line_width);
 
                     ImGui::SetCursorPos(ImVec2(cursor_pos.x + ((j + 0.5f) * line_spacing.x) - 16.0f, cursor_pos.y + ((i + 0.5f) * line_spacing.y) - (ImGui::GetTextLineHeight() * 0.5f)));
                     ImGui::Text("%.2f", cell_line_width);
