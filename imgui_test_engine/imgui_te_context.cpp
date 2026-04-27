@@ -1543,9 +1543,12 @@ void    ImGuiTestContext::ScrollToItem(ImGuiTestRef ref, ImGuiAxis axis, ImGuiTe
     // Unsupported beyond tab bars
     if (item.NavLayer == ImGuiNavLayer_Menu)
         return;
+    if (item.ID == 0)
+        return;
 
     // FIXME: Consider storing current ClipRect
     ImGuiWindow* window = item.Window;
+    IM_CHECK_SILENT(window != NULL);
     float item_curr = ImFloor(item.RectFull.GetCenter()[axis]);
     float item_target = ImFloor(window->InnerClipRect.GetCenter()[axis]);
     float scroll_delta = item_target - item_curr;
