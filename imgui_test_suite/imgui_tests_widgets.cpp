@@ -1919,6 +1919,15 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
             IM_CHECK_STR_EQ(capture_widget_value(i), "{ 1236 }");
             IM_CHECK_EQ(vars.Int, 1236);
 #endif
+
+            // No % in format (e.g. #9385)
+#if IMGUI_VERSION_NUM >= 19276
+            vars.Int = 0;
+            vars.Format = "WOW!";
+            ctx->ItemInput(widget_name);
+            ctx->KeyCharsReplaceEnter("1237");
+            IM_CHECK_EQ(vars.Int, 1237);
+#endif
         }
     };
 
