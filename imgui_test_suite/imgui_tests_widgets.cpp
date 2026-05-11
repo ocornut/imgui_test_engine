@@ -4236,8 +4236,13 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
             // give flickering window time to reappear so MenuAction() does not fail.
             ctx->Yield();
 #endif
+#if IMGUI_VERSION_NUM < 19277
             IM_CHECK_EQ(ctx->UiContext->ActiveId, 0u);
+#endif
             ctx->MenuAction(ImGuiTestAction_Hover, "AAA/BBB/CCC");
+#if IMGUI_VERSION_NUM >= 19277
+            IM_CHECK_EQ(ctx->UiContext->ActiveId, 0u);
+#endif
             IM_CHECK_EQ(vars.Status.Hovered, 1);
             ctx->MouseUp();
             IM_CHECK_EQ(vars.Status.Clicked, 1);
