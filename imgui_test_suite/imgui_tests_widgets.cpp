@@ -1262,6 +1262,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
                 vars.Str1[0] = 0;
                 vars.Color1 = ImVec4();
                 const bool is_input = (step == 3 || step == 4);
+                IM_UNUSED(is_input);
                 ctx->Yield();
 
                 if (step == 2)
