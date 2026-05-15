@@ -1874,7 +1874,7 @@ void    ImGuiTestContext::MouseMove(ImGuiTestRef ref, ImGuiTestOpFlags flags)
 
     // When dragging it makes sense to avoid checking HoveredId
     // We check for this ahead of time to result likelihood of false positives.
-    if (g.ActiveId != 0)
+    if (g.ActiveId != 0 && !g.ActiveIdAllowOverlap)
         flags |= ImGuiTestOpFlags_NoCheckHoveredId;
 
     // FIXME-TESTS: If window was not brought to front (because of either ImGuiWindowFlags_NoBringToFrontOnFocus or ImGuiTestOpFlags_NoFocusWindow)
