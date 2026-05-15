@@ -1369,7 +1369,7 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
             return;
 
         float h = ImGui::GetFrameHeight() * 3 + 1;// +ImGui::GetStyle().WindowPadding.y * 2.0f;
-        ImGui::SetNextWindowSize(ImVec2(100, h));
+        ImGui::SetNextWindowSize(ImVec2(200, h)); // Sensitive to window width because SetItemDefaultFocus() doesn't keeps both item X1/X2 borders visible by default.
         ImGui::Begin("Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_MenuBar);
         if (ImGui::BeginMenuBar())
         {
@@ -2562,6 +2562,32 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
         IM_CHECK_EQ(g.ActiveId, ctx->GetID("//Test Window 1/Item A"));
         ctx->ItemClick("//Test Window 2/Focus B");
         IM_CHECK_EQ(g.ActiveId, ctx->GetID("//Test Window 2/Item B"));
+    };
+#endif
+
+    // ## Test making a focus request upon reacting on a click to e.g. a Text() item. (#9382)
+#if IMGUI_VERSION_NUM >= 19281
+    t = IM_REGISTER_TEST(e, "nav", "nav_focus_api_on_window_void");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        auto& vars = ctx->GenericVars;
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImGui::Text("Some Text");
+        vars.Pos = (ImGui::GetItemRectMin() + ImGui::GetItemRectMax()) * 0.5f;
+        const bool focus = ImGui::IsItemClicked();
+        ImGui::SliderFloat("float", &vars.Float1, 0.0f, 1.0f);
+        if (focus)
+            ImGui::SetKeyboardFocusHere(-1);
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        auto& vars = ctx->GenericVars;
+        ctx->SetRef("Test Window");
+        ctx->WindowFocus("");
+        ctx->MouseMoveToPos(vars.Pos);
+        ctx->MouseClick();
+        IM_CHECK_EQ(ImGui::GetActiveID(), ctx->GetID("float"));
     };
 #endif
 
