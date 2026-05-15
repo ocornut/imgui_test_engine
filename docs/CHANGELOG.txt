@@ -10,6 +10,8 @@ CHANGELOG
   by other windows and aiming point is near the border of the covering window.
 - TestEngine: amend/fix 2026/04/13 change when MouseMove() operation is called
   while an item is active but allow overlapping other items (e.g. InputText).
+- TestEngine: fixed an issue where using ImGuiTestOpFlags_NoCheckHoveredId
+  would unnecessarily disable fallback code to access items in small windows.
 
 2026/05/11:
 - TestEngine: fixed ImGuiTestEngine_InstallDefaultCrashHandler() implementation

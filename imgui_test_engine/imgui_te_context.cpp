@@ -1983,7 +1983,7 @@ void    ImGuiTestContext::MouseMove(ImGuiTestRef ref, ImGuiTestOpFlags flags)
         FocusOrMakeClickableAtPos(this, item.Window, pos);
 
     // Check hovering target: may be an item (common) or a window (rare)
-    if (!Abort && !(flags & ImGuiTestOpFlags_NoCheckHoveredId))
+    if (!Abort)
     {
         ImGuiID hovered_id;
         bool is_hovered_item;
@@ -2030,9 +2030,11 @@ void    ImGuiTestContext::MouseMove(ImGuiTestRef ref, ImGuiTestOpFlags flags)
 
             // Update item
             item = ItemInfo(item.ID);
+        }
 
-            // Log message
-            // FIXME: Consider a second attempt?
+        // Error message
+        if (!is_hovered_item && !is_hovered_window && !(flags & ImGuiTestOpFlags_NoCheckHoveredId))
+        {
             ImVec2 pos_old = item_initial_state.RectFull.Min;
             ImVec2 pos_new = item.RectFull.Min;
             ImVec2 size_old = item_initial_state.RectFull.GetSize();
