@@ -7516,7 +7516,7 @@ void RegisterTests_TestEngine(ImGuiTestEngine* e)
         ctx->ComboClickAll("Combo2"); // without auto-close
     };
 
-    // ## Test not focusing window if unnecessary(issue #24)
+    // ## Test not focusing window if unnecessary (github: imgui_test_engine#24)
     t = IM_REGISTER_TEST(e, "testengine", "testengine_avoid_focus");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
@@ -7541,6 +7541,7 @@ void RegisterTests_TestEngine(ImGuiTestEngine* e)
 
         ImGui::SetNextWindowPos(viewport->Pos);
         ImGui::SetNextWindowSize(viewport->Size);
+        ImGui::SetNextWindowBgAlpha(0.35f);
         if (ImGui::Begin("Test Window", nullptr, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoBringToFrontOnFocus))
         {
             if (ImGui::Button("Launch"))
@@ -7554,7 +7555,8 @@ void RegisterTests_TestEngine(ImGuiTestEngine* e)
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         ctx->ItemClick("//Test Window/Launch");
-        ctx->MouseMove("//Overlay");
+        //ImGuiWindow* window = ctx->GetWindowByRef("//Overlay");
+        ctx->MouseMove("//Overlay"); // FIXME: 2026-05-15: This test is rather fragile because of both checks inside the Overlay window. e.g. Currently fails if run after "nav_focus_api"
         ctx->MouseClick();
     };
 

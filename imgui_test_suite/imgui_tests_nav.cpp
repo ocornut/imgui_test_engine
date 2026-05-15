@@ -1551,7 +1551,7 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
     };
 
     // ## Check default focus with _NavFlattened flag
-    t = IM_REGISTER_TEST(e, "nav", "nav_flattened_focus_default");
+    t = IM_REGISTER_TEST(e, "nav", "nav_focus_flattened_default");
     t->SetVarsDataType<DefaultFocusVars>();
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {

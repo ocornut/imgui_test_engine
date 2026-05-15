@@ -5,6 +5,10 @@ CHANGELOG
    Those changes are not all listed here.
 ** For a while this is going to ONLY INCLUDE BREAKING CHANGES.
 
+2026/05/15:
+- TestEngine: fixed an issue aiming at items when the parent window is covered
+  by other windows and aiming point is near the border of the covering window.
+
 2026/05/11:
 - TestEngine: fixed ImGuiTestEngine_InstallDefaultCrashHandler() implementation
   on Unix/POSIX system from calling the crash handler function multiple times. (#96)

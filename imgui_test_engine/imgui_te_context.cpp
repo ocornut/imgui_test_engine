@@ -1777,7 +1777,7 @@ void ImGuiTestContext::_MakeAimingSpaceOverPos(ImGuiViewport* viewport, ImGuiWin
         if (window->Flags & ImGuiWindowFlags_NoMove)
             continue;
 #endif
-        if (window->Rect().Contains(window_min_pos))
+        if (window->Rect().ContainsWithPad(window_min_pos, hover_padding))
         {
             WindowMove(window->ID, window_min_pos);
 
