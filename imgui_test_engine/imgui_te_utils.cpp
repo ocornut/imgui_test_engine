@@ -36,6 +36,9 @@
 #if defined(__linux) || defined(__linux__) || defined(__MACH__) || defined(__MSL__) || defined(__MINGW32__)
 #include <pthread.h>    // pthread_setname_np()
 #endif
+#if defined(__APPLE__)
+#include <TargetConditionals.h>   // TARGET_OS_IPHONE
+#endif
 #include <chrono>       // high_resolution_clock::now()
 #include <thread>       // this_thread::sleep_for()
 
@@ -999,6 +1002,11 @@ void    ImOsOpenInShell(const char* path)
 #if defined(_WIN32) && !IMGUI_TEST_ENGINE_IS_GAME_CONSOLE
     ImPathFixSeparatorsForCurrentOS(command.c_str());
     ::ShellExecuteA(nullptr, "open", command.c_str(), nullptr, nullptr, SW_SHOWDEFAULT);
+#elif defined(__APPLE__) && TARGET_OS_IPHONE
+    // iOS / tvOS / watchOS / visionOS deprecate system() and App Store review
+    // rejects binaries that call it. No shell-out is available; treat
+    // ImOsOpenInShell as a no-op on those platforms.
+    IM_UNUSED(path);
 #elif !IMGUI_TEST_ENGINE_IS_GAME_CONSOLE
 #if __APPLE__
     const char* open_executable = "open";
