@@ -725,9 +725,9 @@ uint64_t ImTimeGetInMicroseconds()
     return (uint64_t)ms.count();
 }
 
-void ImTimestampToISO8601(uint64_t timestamp, Str* out_date)
+void ImTimestampToISO8601(uint64_t timestamp_us, Str* out_date)
 {
-    time_t unix_time = (time_t)(timestamp / 1000000); // Convert to seconds.
+    time_t unix_time = (time_t)(timestamp_us / 1000000); // Convert to seconds.
     tm* time = gmtime(&unix_time);
     const char* time_format = "%Y-%m-%dT%H:%M:%S";
 

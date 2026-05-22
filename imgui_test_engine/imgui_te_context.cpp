@@ -4536,7 +4536,9 @@ void    ImGuiTestContext::PerfCapture(const char* category, const char* test_nam
     entry.OS = build_info->OS;
     entry.Compiler = build_info->Compiler;
     entry.Date = build_info->Date;
-    ImGuiTestEngine_PerfToolAppendToCSV(Engine->PerfTool, &entry, csv_file);
+    ImGuiTestEngine_PerfToolAppendToCSV(&entry, csv_file);
+    if (Engine->PerfTool)
+        Engine->PerfTool->AddEntry(&entry);
 
     // Disable the "Success" message
     RunFlags |= ImGuiTestRunFlags_NoSuccessMsg;
