@@ -844,6 +844,10 @@ static void ImGuiTestEngine_PreNewFrame(ImGuiTestEngine* engine, ImGuiContext* u
         test_ctx->FrameCount++;
         test_ctx->RunningTime = t1;
         ImGuiTestEngine_UpdateWatchdog(engine, ui_ctx, t0, t1);
+
+        // Forcefully disable ItemPicker
+        if (g.DebugItemPickerActive && (test_ctx->RunFlags & ImGuiTestRunFlags_GuiFuncOnly) == 0)
+            g.DebugItemPickerActive = false;
     }
 
     engine->PerfDeltaTime100.AddSample(g.IO.DeltaTime);
