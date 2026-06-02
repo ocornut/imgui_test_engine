@@ -9,6 +9,7 @@
 #include "imgui_test_engine/imgui_te_engine.h"      // IM_REGISTER_TEST()
 #include "imgui_test_engine/imgui_te_context.h"
 #include "imgui_test_engine/thirdparty/Str/Str.h"
+#include "imgui_test_engine/imgui_te_utils.h"
 
 // Warnings
 #ifdef _MSC_VER
@@ -27,6 +28,29 @@
 #define IMGUI_HAS_TEXLINES
 #endif
 
+
+// Init state to any non-zero number as seed.
+static ImU32 XorShift32(ImU32& state)
+{
+    ImU32 x = state;
+    x ^= x << 13;
+    x ^= x >> 17;
+    x ^= x << 5;
+    state = x;
+    return x;
+}
+
+// Random number inf range [low, high)
+static float RandFloatRange(ImU32& state, float range_min, float range_max)
+{
+    ImU32 u_bits = 0x3f800000 | XorShift32(state) >> 9;
+    float u = 0.f;
+    memcpy(&u, &u_bits, sizeof(float));
+    u -= 1.f;
+    return range_min + (range_max - range_min) * u;
+}
+
+
 void RegisterTests_Perf(ImGuiTestEngine* e)
 {
     ImGuiTest* t = NULL;
@@ -39,9 +63,38 @@ void RegisterTests_Perf(ImGuiTestEngine* e)
     };
 
     // ## Measure the cost all demo contents
-    t = IM_REGISTER_TEST(e, "perf", "perf_demo_all");
-    t->TestFunc = [](ImGuiTestContext* ctx)
+    enum
     {
+        DemoAllFunc_StyleNone,
+        DemoAllFunc_StyleBorder,
+        DemoAllFunc_StyleRounded,
+        DemoAllFunc_StyleBorderRounded,
+    };
+
+    auto DemoAllFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiStyle& style = ImGui::GetStyle();
+        ImGuiStyle style_backup = style;
+        if (ctx->Test->ArgVariant == DemoAllFunc_StyleBorder || ctx->Test->ArgVariant == DemoAllFunc_StyleBorderRounded)
+        {
+            style.ChildBorderSize = 2.f;
+            style.FrameBorderSize = 1.f;
+            style.WindowBorderSize = 2.f;
+            style.TabBarBorderSize = 1.f;
+        }
+        if (ctx->Test->ArgVariant == DemoAllFunc_StyleRounded|| ctx->Test->ArgVariant == DemoAllFunc_StyleBorderRounded)
+        {
+            style.ChildRounding = 4.f;
+            style.FrameRounding = 3.f;
+            style.TabRounding = 2.f;
+            style.ScrollbarRounding = 3.f;
+            style.WindowRounding = 4.f;
+            style.ChildBorderSize = 3.f;
+            style.FrameBorderSize = 2.f;
+            style.WindowBorderSize = 1.f;
+            style.TabBarBorderSize = 4.f;
+        }
+
         ctx->PerfCalcRef();
 
         ctx->SetRef("Dear ImGui Demo");
@@ -67,7 +120,26 @@ void RegisterTests_Perf(ImGuiTestEngine* e)
         ctx->ItemCloseAll("");
         ctx->MenuUncheckAll("Examples");
         ctx->MenuUncheckAll("Tools");
+
+        style = style_backup;
     };
+
+    t = IM_REGISTER_TEST(e, "perf", "perf_demo_all");
+    t->TestFunc = DemoAllFunc;
+    t->ArgVariant = DemoAllFunc_StyleNone;
+
+    t = IM_REGISTER_TEST(e, "perf", "perf_demo_all_border");
+    t->TestFunc = DemoAllFunc;
+    t->ArgVariant = DemoAllFunc_StyleBorder;
+
+    t = IM_REGISTER_TEST(e, "perf", "perf_demo_all_rounded");
+    t->TestFunc = DemoAllFunc;
+    t->ArgVariant = DemoAllFunc_StyleRounded;
+
+    t = IM_REGISTER_TEST(e, "perf", "perf_demo_all_border_rounded");
+    t->TestFunc = DemoAllFunc;
+    t->ArgVariant = DemoAllFunc_StyleBorderRounded;
+
 
     // ## Measure the drawing cost of various ImDrawList primitives
     enum
@@ -102,14 +174,15 @@ void RegisterTests_Perf(ImGuiTestEngine* e)
     auto DrawPrimFunc = [](ImGuiTestContext* ctx)
     {
         ImGui::Begin("Test Func", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
-        int loop_count = 200 * ctx->PerfStressAmount;
+        int loop_count = 500 * ctx->PerfStressAmount;
         ImDrawList* draw_list = ImGui::GetWindowDrawList();
         int segments = 0;
         ImGui::Button("##CircleFilled", ImVec2(120, 120));
         ImVec2 bounds_min = ImGui::GetItemRectMin();
         ImVec2 bounds_size = ImGui::GetItemRectSize();
-        ImVec2 center = bounds_min + bounds_size * 0.5f;
-        float r = (float)(int)(ImMin(bounds_size.x, bounds_size.y) * 0.8f * 0.5f);
+        ImVec2 bounds_max = bounds_min + bounds_size;
+        ImVec2 center = ImTrunc(bounds_min + bounds_size * 0.5f);
+        float r = ImTrunc(ImMin(bounds_size.x, bounds_size.y) * 0.8f * 0.5f);
         float rounding = 8.0f;
         ImU32 col = IM_COL32(255, 255, 0, 255);
 		ImDrawListFlags old_flags = draw_list->Flags; // Save old flags as some of these tests manipulate them
@@ -162,20 +235,28 @@ void RegisterTests_Perf(ImGuiTestEngine* e)
                 draw_list->AddNgon(center, r, col, 3, 4.0f);
             break;
         case DrawPrimFunc_LongStroke:
-            draw_list->AddNgon(center, r, col, 10 * loop_count, 1.0f);
+            for (int i = 0; i < ctx->PerfStressAmount; i++)
+                draw_list->AddNgon(center, r, col, 4000, 1.0f);
             break;
         case DrawPrimFunc_LongStrokeThick:
-            draw_list->AddNgon(center, r, col, 10 * loop_count, 4.0f);
+            for (int i = 0; i < ctx->PerfStressAmount; i++)
+                draw_list->AddNgon(center, r, col, 4000, 1.0f);
             break;
         case DrawPrimFunc_LongJaggedStroke:
-            for (float n = 0; n < 10 * loop_count; n += 2.51327412287f)
-                draw_list->PathLineTo(center + ImVec2(r * sinf(n), r * cosf(n)));
-            draw_list->PathStroke(col, 1.0f);
+            for (int i = 0; i < ctx->PerfStressAmount; i++)
+            {
+                for (float n = 0; n < 4000; n++)
+                    draw_list->PathLineTo(center + ImVec2(r * sinf(n * 2.51327412287f), r * cosf(n * 2.51327412287f)));
+                draw_list->PathStroke(col, 1.0f);
+            }
             break;
         case DrawPrimFunc_LongJaggedStrokeThick:
-            for (float n = 0; n < 10 * loop_count; n += 2.51327412287f)
-                draw_list->PathLineTo(center + ImVec2(r * sinf(n), r * cosf(n)));
-            draw_list->PathStroke(col, 4.0f);
+            for (int i = 0; i < ctx->PerfStressAmount; i++)
+            {
+                for (float n = 0; n < 4000; n++)
+                    draw_list->PathLineTo(center + ImVec2(r * sinf(n * 2.51327412287f), r * cosf(n * 2.51327412287f)));
+                draw_list->PathStroke(col, 4.0f);
+            }
             break;
 		case DrawPrimFunc_Line:
 			draw_list->Flags &= ~ImDrawListFlags_AntiAliasedLines;
@@ -328,6 +409,197 @@ void RegisterTests_Perf(ImGuiTestEngine* e)
 	t->GuiFunc = DrawPrimFunc;
 	t->TestFunc = PerfCaptureFunc;
 #endif
+
+
+    enum
+    {
+        DrawPrimMixedFunc_NoDraw,
+        DrawPrimMixedFunc_Shapes,
+        DrawPrimMixedFunc_ShapesTrunc,
+    };
+
+    auto DrawPrimMixedFunc = [](ImGuiTestContext* ctx)
+        {
+            ImGui::Begin("Test Func", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
+            int loop_count = 200 * ctx->PerfStressAmount;
+            ImDrawList* draw_list = ImGui::GetWindowDrawList();
+            ImGui::Button("##CircleFilled", ImVec2(400, 200));
+            ImVec2 bounds_min = ImGui::GetItemRectMin();
+            ImVec2 bounds_size = ImGui::GetItemRectSize();
+            ImVec2 bounds_max = bounds_min + bounds_size;
+
+            // Add some colors to see better if the test works.
+            const ImU32 colors[8] = {
+                IM_COL32(255,   0,   0, 220),
+                IM_COL32(255, 255,   0, 220),
+                IM_COL32(  0, 255,   0, 220),
+                IM_COL32(  0, 255, 255, 220),
+                IM_COL32(  0,   0, 255, 220),
+                IM_COL32(255,   0, 255, 220),
+                IM_COL32(255, 255, 255, 220),
+                IM_COL32(  0,   0,   0, 220),
+            };
+
+            ImDrawListFlags old_flags = draw_list->Flags; // Save old flags as some of these tests manipulate them
+            if (ctx->IsFirstTestFrame())
+                ctx->LogDebug("Drawing %d primitives...", loop_count);
+            switch (ctx->Test->ArgVariant)
+            {
+            case DrawPrimMixedFunc_NoDraw:
+            {
+                // Test as base line to see how much we spend on the randoms
+                ImU32 rnd_state = 1234;
+                for (int n = 0; n < loop_count; n++)
+                {
+                    {
+                        ImVec2 p0 = { RandFloatRange(rnd_state, bounds_min.x, bounds_max.x), RandFloatRange(rnd_state, bounds_min.y, bounds_max.y) };
+                        ImVec2 p1 = { RandFloatRange(rnd_state, bounds_min.x, bounds_max.x), RandFloatRange(rnd_state, bounds_min.y, bounds_max.y) };
+                        float thickness = RandFloatRange(rnd_state, 0.f, 15.f);
+//                        draw_list->AddLine(p0, p1, col, thickness, flags);
+                    }
+                    {
+                        float min_x = RandFloatRange(rnd_state, bounds_min.x, bounds_max.x);
+                        float max_x = min_x + RandFloatRange(rnd_state, 0.f, bounds_size.x);
+                        float y = RandFloatRange(rnd_state, bounds_min.y, bounds_max.y);
+                        float thickness = RandFloatRange(rnd_state, 0.f, 15.f);
+//                        draw_list->AddLineH(min_x, max_x, y, col, thickness, flags);
+                    }
+                    {
+                        float x = RandFloatRange(rnd_state, bounds_min.x, bounds_max.x);
+                        float min_y = RandFloatRange(rnd_state, bounds_min.y, bounds_max.y);
+                        float max_y = min_y + RandFloatRange(rnd_state, 0.f, bounds_size.y);
+                        float thickness = RandFloatRange(rnd_state, 0.f, 15.f);
+//                        draw_list->AddLineV(x, min_y, max_y, col, thickness, flags);
+                    }
+                    {
+                        ImVec2 p_min = { RandFloatRange(rnd_state, bounds_min.x, bounds_max.x), RandFloatRange(rnd_state, bounds_min.y, bounds_max.y) };
+                        ImVec2 p_max = { p_min.x + RandFloatRange(rnd_state, bounds_size.x, bounds_size.x), p_min.y + RandFloatRange(rnd_state, bounds_size.y, bounds_size.y) };
+                        float rounding = RandFloatRange(rnd_state, 0.f, 15.f);
+                        float thickness = RandFloatRange(rnd_state, 0.f, 15.f);
+//                        draw_list->AddRect(p_min, p_max, col, rounding, thickness, flags);
+                    }
+                    {
+                        ImVec2 p_min = { RandFloatRange(rnd_state, bounds_min.x, bounds_max.x), RandFloatRange(rnd_state, bounds_min.y, bounds_max.y) };
+                        ImVec2 p_max = { p_min.x + RandFloatRange(rnd_state, bounds_size.x, bounds_size.x), p_min.y + RandFloatRange(rnd_state, bounds_size.y, bounds_size.y) };
+                        float rounding = RandFloatRange(rnd_state, 0.f, 15.f);
+//                        draw_list->AddRectFilled(p_min, p_max, col, rounding, flags);
+                    }
+                }
+            }
+            break;
+            case DrawPrimMixedFunc_Shapes:
+            {
+                // Test random common UI shapes.
+                // This test tries to hit all specialized code paths and act as a general measure how the common functions perform.
+                ImU32 rnd_state = 1234;
+                ImDrawFlags flags = 0;
+
+                for (int n = 0; n < loop_count; n++)
+                {
+                    {
+                        ImVec2 p0 = { RandFloatRange(rnd_state, bounds_min.x, bounds_max.x), RandFloatRange(rnd_state, bounds_min.y, bounds_max.y) };
+                        ImVec2 p1 = { RandFloatRange(rnd_state, bounds_min.x, bounds_max.x), RandFloatRange(rnd_state, bounds_min.y, bounds_max.y) };
+                        float thickness = RandFloatRange(rnd_state, 0.f, 15.f);
+                        draw_list->AddLine(p0, p1, colors[n % IM_COUNTOF(colors)], thickness); // , flags);
+                    }
+                    {
+                        float min_x = RandFloatRange(rnd_state, bounds_min.x, bounds_max.x);
+                        float max_x = min_x + RandFloatRange(rnd_state, 0.f, bounds_size.x);
+                        float y = RandFloatRange(rnd_state, bounds_min.y, bounds_max.y);
+                        float thickness = RandFloatRange(rnd_state, 0.f, 15.f);
+                        draw_list->AddLineH(min_x, max_x, y, colors[n % IM_COUNTOF(colors)], thickness); // , flags);
+                    }
+                    {
+                        float x = RandFloatRange(rnd_state, bounds_min.x, bounds_max.x);
+                        float min_y = RandFloatRange(rnd_state, bounds_min.y, bounds_max.y);
+                        float max_y = min_y + RandFloatRange(rnd_state, 0.f, bounds_size.y);
+                        float thickness = RandFloatRange(rnd_state, 0.f, 15.f);
+                        draw_list->AddLineV(x, min_y, max_y, colors[n % IM_COUNTOF(colors)], thickness); // , flags);
+                    }
+                    {
+                        ImVec2 p_min = { RandFloatRange(rnd_state, bounds_min.x, bounds_max.x), RandFloatRange(rnd_state, bounds_min.y, bounds_max.y) };
+                        ImVec2 p_max = { p_min.x + RandFloatRange(rnd_state, bounds_size.x, bounds_size.x), p_min.y + RandFloatRange(rnd_state, bounds_size.y, bounds_size.y) };
+                        float rounding = RandFloatRange(rnd_state, 0.f, 15.f);
+                        float thickness = RandFloatRange(rnd_state, 0.f, 15.f);
+                        draw_list->AddRect(p_min, p_max, colors[n % IM_COUNTOF(colors)], rounding, thickness, flags);
+                    }
+                    {
+                        ImVec2 p_min = { RandFloatRange(rnd_state, bounds_min.x, bounds_max.x), RandFloatRange(rnd_state, bounds_min.y, bounds_max.y) };
+                        ImVec2 p_max = { p_min.x + RandFloatRange(rnd_state, bounds_size.x, bounds_size.x), p_min.y + RandFloatRange(rnd_state, bounds_size.y, bounds_size.y) };
+                        float rounding = RandFloatRange(rnd_state, 0.f, 15.f);
+                        draw_list->AddRectFilled(p_min, p_max, colors[n % IM_COUNTOF(colors)], rounding, flags);
+                    }
+                }
+            }
+            break;
+            case DrawPrimMixedFunc_ShapesTrunc:
+            {
+                // Test random common UI shapes, truncated to integer coordinates.
+                // This test tries to hit the specialized codepaths that handle pixel perfect rendering (int coords).
+                ImU32 rnd_state = 1234;
+                ImDrawFlags flags = 0;
+
+                for (int n = 0; n < loop_count; n++)
+                {
+                    {
+                        ImVec2 p0 = { IM_TRUNC(RandFloatRange(rnd_state, bounds_min.x, bounds_max.x)), IM_TRUNC(RandFloatRange(rnd_state, bounds_min.y, bounds_max.y)) };
+                        ImVec2 p1 = { IM_TRUNC(RandFloatRange(rnd_state, bounds_min.x, bounds_max.x)), IM_TRUNC(RandFloatRange(rnd_state, bounds_min.y, bounds_max.y)) };
+                        float thickness = IM_TRUNC(RandFloatRange(rnd_state, 0.f, 15.f));
+                        draw_list->AddLine(p0, p1, colors[n % IM_COUNTOF(colors)], thickness); // , flags);
+                    }
+                    {
+                        float min_x = IM_TRUNC(RandFloatRange(rnd_state, bounds_min.x, bounds_max.x));
+                        float max_x = min_x + IM_TRUNC(RandFloatRange(rnd_state, 0.f, bounds_size.x));
+                        float y = IM_TRUNC(RandFloatRange(rnd_state, bounds_min.y, bounds_max.y));
+                        float thickness = IM_TRUNC(RandFloatRange(rnd_state, 0.f, 15.f));
+                        draw_list->AddLineH(min_x, max_x, y, colors[n % IM_COUNTOF(colors)], thickness); // , flags);
+                    }
+                    {
+                        float x = IM_TRUNC(RandFloatRange(rnd_state, bounds_min.x, bounds_max.x));
+                        float min_y = IM_TRUNC(RandFloatRange(rnd_state, bounds_min.y, bounds_max.y));
+                        float max_y = min_y + IM_TRUNC(RandFloatRange(rnd_state, 0.f, bounds_size.y));
+                        float thickness = IM_TRUNC(RandFloatRange(rnd_state, 0.f, 15.f));
+                        draw_list->AddLineV(x, min_y, max_y, colors[n % IM_COUNTOF(colors)], thickness); // , flags);
+                    }
+                    {
+                        ImVec2 p_min = { IM_TRUNC(RandFloatRange(rnd_state, bounds_min.x, bounds_max.x)), IM_TRUNC(RandFloatRange(rnd_state, bounds_min.y, bounds_max.y)) };
+                        ImVec2 p_max = { p_min.x + IM_TRUNC(RandFloatRange(rnd_state, bounds_size.x, bounds_size.x)), p_min.y + IM_TRUNC(RandFloatRange(rnd_state, bounds_size.y, bounds_size.y)) };
+                        float rounding = IM_TRUNC(RandFloatRange(rnd_state, 0.f, 15.f));
+                        float thickness = IM_TRUNC(RandFloatRange(rnd_state, 0.f, 15.f));
+                        draw_list->AddRect(p_min, p_max, colors[n % IM_COUNTOF(colors)], rounding, thickness, flags);
+                    }
+                    {
+                        ImVec2 p_min = { IM_TRUNC(RandFloatRange(rnd_state, bounds_min.x, bounds_max.x)), IM_TRUNC(RandFloatRange(rnd_state, bounds_min.y, bounds_max.y)) };
+                        ImVec2 p_max = { p_min.x + IM_TRUNC(RandFloatRange(rnd_state, bounds_size.x, bounds_size.x)), p_min.y + IM_TRUNC(RandFloatRange(rnd_state, bounds_size.y, bounds_size.y)) };
+                        float rounding = IM_TRUNC(RandFloatRange(rnd_state, 0.f, 15.f));
+                        draw_list->AddRectFilled(p_min, p_max, colors[n % IM_COUNTOF(colors)], rounding, flags);
+                    }
+                }
+            }
+            break;
+
+            default:
+                IM_ASSERT(0);
+            }
+            draw_list->Flags = old_flags; // Restore flags
+            ImGui::End();
+        };
+
+    t = IM_REGISTER_TEST(e, "perf", "perf_draw_prim_mixed_no_draw");
+    t->ArgVariant = DrawPrimMixedFunc_NoDraw;
+    t->GuiFunc = DrawPrimMixedFunc;
+    t->TestFunc = PerfCaptureFunc;
+
+    t = IM_REGISTER_TEST(e, "perf", "perf_draw_prim_mixed_shapes");
+    t->ArgVariant = DrawPrimMixedFunc_Shapes;
+    t->GuiFunc = DrawPrimMixedFunc;
+    t->TestFunc = PerfCaptureFunc;
+
+    t = IM_REGISTER_TEST(e, "perf", "perf_draw_prim_mixed_shapes_trunc");
+    t->ArgVariant = DrawPrimMixedFunc_ShapesTrunc;
+    t->GuiFunc = DrawPrimMixedFunc;
+    t->TestFunc = PerfCaptureFunc;
+
 
     // ## Measure the cost of ImDrawListSplitter split/merge functions
     auto DrawSplittedFunc = [](ImGuiTestContext* ctx)
