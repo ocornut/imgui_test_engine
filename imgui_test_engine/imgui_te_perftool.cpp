@@ -1787,7 +1787,7 @@ void ImGuiPerfTool::_ShowEntriesTableBatches()
     if (!_Batches.size())
         return;
 
-    ImGuiTableFlags table_flags = ImGuiTableFlags_Hideable | ImGuiTableFlags_Borders | ImGuiTableFlags_Resizable | ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_ScrollY;
+    ImGuiTableFlags table_flags = ImGuiTableFlags_Hideable | ImGuiTableFlags_RowBg | ImGuiTableFlags_Borders | ImGuiTableFlags_Resizable | ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_ScrollY;
 
     int visible_batch_count = 0;
     for (ImGuiPerfToolBatch& batch : _Batches)
@@ -1849,6 +1849,8 @@ void ImGuiPerfTool::_ShowEntriesTableBatches()
                     ImGui::TableSetBgColor(ImGuiTableBgTarget_CellBg, col);
                 }
 
+                ImGui::BeginGroup();
+
                 // Branch + build type.
                 ImGui::TextUnformatted(entry.GitBranchName);
                 ImGui::SameLine();
@@ -1858,6 +1860,18 @@ void ImGuiPerfTool::_ShowEntriesTableBatches()
                 ImGui::PushStyleColor(ImGuiCol_Text, text_color_dim);
                 ImGui::Text("%s %s %s", entry.Compiler, entry.OS, entry.Cpu);
                 ImGui::PopStyleColor();
+
+                ImGui::EndGroup();
+                
+                if (ImGui::BeginItemTooltip())
+                {
+                    ImGui::TextUnformatted(entry.GitBranchName);
+                    ImGui::TextUnformatted(entry.BuildType);
+                    ImGui::TextUnformatted(entry.Compiler);
+                    ImGui::TextUnformatted(entry.OS);
+                    ImGui::TextUnformatted(entry.Cpu);
+                    ImGui::EndTooltip();
+                }
 
                 // Toggle baseline column on click.
                 if (ImGui::TableGetHoveredRow() == ImGui::TableGetRowIndex() && ImGui::TableGetHoveredColumn() == ImGui::TableGetColumnIndex() && ImGui::IsMouseClicked(ImGuiMouseButton_Left))
@@ -1968,6 +1982,7 @@ void ImGuiPerfTool::_ShowEntriesTableBatches()
                 {
                     ImGui::Text("Min: %.3lf ms", entry->DtDeltaMsMin);
                     ImGui::Text("Max: %.3lf ms", entry->DtDeltaMsMax);
+                    ImGui::Text("Samples: %d", entry->NumSamples);
                     ImGui::EndTooltip();
                 }
 
