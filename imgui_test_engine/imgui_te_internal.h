@@ -202,6 +202,7 @@ struct ImGuiTestEngine
     ImGuiCaptureArgs*           CaptureCurrentArgs = nullptr;
 
     // Tools
+    bool                        PreSwapCalled = false;
     bool                        PostSwapCalled = false;
     bool                        ToolDebugRebootUiContext = false;   // Completely shutdown and recreate the dear imgui context in place
     bool                        ToolSlowDown = false;

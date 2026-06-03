@@ -390,6 +390,11 @@ void    ImGuiTestEngine_RebootUiContext(ImGuiTestEngine* engine)
     ImGuiTestEngine_Start(engine, ctx);
 }
 
+void    ImGuiTestEngine_PreSwap(ImGuiTestEngine* engine)
+{
+    engine->PreSwapCalled = true;
+}
+
 void    ImGuiTestEngine_PostSwap(ImGuiTestEngine* engine)
 {
     engine->PostSwapCalled = true;

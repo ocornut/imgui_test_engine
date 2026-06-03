@@ -6,6 +6,8 @@ CHANGELOG
 ** For a while this is going to ONLY INCLUDE BREAKING CHANGES.
 
 2026/06/03:
+- TestEngine: added ImGuiTestEngine_PreSwap() hook used by performance tools
+  to mesure time used by Present/Swap.
 - TestEngine: PerfTool: added batches view to compare builds/branches.
 
 2026/05/29:

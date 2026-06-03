@@ -645,6 +645,7 @@ int main(int argc, char** argv)
         app_window->Render(app_window);
 
         // Post-swap handler is REQUIRED in order to support screen capture
+        ImGuiTestEngine_PreSwap(engine);
         app_window->Present(app_window);
         ImGuiTestEngine_PostSwap(engine);
     }

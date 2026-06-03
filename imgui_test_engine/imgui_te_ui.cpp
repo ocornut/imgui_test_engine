@@ -738,6 +738,10 @@ static void ImGuiTestEngine_ShowLogAndTools(ImGuiTestEngine* engine)
             //if (engine->PerfRefDeltaTime <= 0.0 && engine->PerfRefDeltaTime.IsFull())
             //    engine->PerfRefDeltaTime = dt_2000;
 
+            if (!engine->PreSwapCalled)
+                ImGui::TextColored(ImVec4(1,0,0,1), "ImGuiTestEngine_PreSwap() not called by application!");
+            if (!engine->PostSwapCalled)
+                ImGui::TextColored(ImVec4(1,0,0,1), "ImGuiTestEngine_PostSwapCalled() not called by application!");
             ImGui::Checkbox("Unthrolled", &engine->IO.ConfigNoThrottle);
             ImGui::SameLine();
             if (ImGui::Button("Pick ref dt"))
