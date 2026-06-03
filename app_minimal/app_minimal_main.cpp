@@ -116,6 +116,7 @@ int main(int argc, char** argv)
         app->Vsync = test_io.IsRequestingMaxAppSpeed ? false : true;
         ImGui::Render();
         app->Render(app);
+        app->Present(app);
 
         // Post-swap handler is REQUIRED in order to support screen capture
         ImGuiTestEngine_PostSwap(engine);

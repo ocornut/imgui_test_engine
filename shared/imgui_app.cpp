@@ -271,6 +271,11 @@ static void ImGuiApp_ImplNull_Render(ImGuiApp* app_opaque)
     ImGuiApp_ImplNull_RenderDrawData(draw_data);
 }
 
+static void ImGuiApp_ImplNull_Present(ImGuiApp* app_opaque)
+{
+    IM_UNUSED(app_opaque);
+}
+
 ImGuiApp* ImGuiApp_ImplNull_Create()
 {
     ImGuiApp_ImplNull* intf = new ImGuiApp_ImplNull();
@@ -278,6 +283,7 @@ ImGuiApp* ImGuiApp_ImplNull_Create()
     intf->InitBackends          = ImGuiApp_ImplNull_InitBackends;
     intf->NewFrame              = ImGuiApp_ImplNull_NewFrame;
     intf->Render                = ImGuiApp_ImplNull_Render;
+    intf->Present               = ImGuiApp_ImplNull_Present;
     intf->ShutdownCloseWindow   = [](ImGuiApp* app) { IM_UNUSED(app); };
 #ifdef IMGUI_HAS_VIEWPORT
     intf->ShutdownBackends      = [](ImGuiApp* app) { IM_UNUSED(app); ImGui::DestroyPlatformWindows(); };
@@ -451,6 +457,11 @@ static void ImGuiApp_ImplWin32DX11_Render(ImGuiApp* app_opaque)
     app->pd3dDeviceContext->OMSetRenderTargets(1, &app->mainRenderTargetView, NULL);
     app->pd3dDeviceContext->ClearRenderTargetView(app->mainRenderTargetView, (float*)&app->ClearColor);
     ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
+}
+
+static void ImGuiApp_ImplWin32DX11_Present(ImGuiApp* app_opaque)
+{
+    ImGuiApp_ImplWin32DX11* app = (ImGuiApp_ImplWin32DX11*)app_opaque;
 
     // Present
     if (app->Vsync)
@@ -545,6 +556,7 @@ ImGuiApp* ImGuiApp_ImplWin32DX11_Create()
     intf->InitBackends = ImGuiApp_ImplWin32DX11_InitBackends;
     intf->NewFrame = ImGuiApp_ImplWin32DX11_NewFrame;
     intf->Render = ImGuiApp_ImplWin32DX11_Render;
+    intf->Present = ImGuiApp_ImplWin32DX11_Present;
     intf->ShutdownCloseWindow = ImGuiApp_ImplWin32DX11_ShutdownCloseWindow;
     intf->ShutdownBackends = ImGuiApp_ImplWin32DX11_ShutdownBackends;
     intf->CaptureFramebuffer = ImGuiApp_ImplWin32DX11_CaptureFramebuffer;
@@ -799,6 +811,11 @@ static void ImGuiApp_ImplSDL2GL2_Render(ImGuiApp* app_opaque)
     glClearColor(app->ClearColor.x, app->ClearColor.y, app->ClearColor.z, app->ClearColor.w);
     glClear(GL_COLOR_BUFFER_BIT);
     ImGui_ImplOpenGL2_RenderDrawData(ImGui::GetDrawData());
+}
+
+static void ImGuiApp_ImplSDL2GL2_Present(ImGuiApp* app_opaque)
+{
+    ImGuiApp_ImplSDL2GLX* app = (ImGuiApp_ImplSDL2GLX*)app_opaque;
     SDL_GL_SwapWindow(app->window);
 }
 
@@ -837,6 +854,7 @@ ImGuiApp* ImGuiApp_ImplSDL2GL2_Create()
     intf->InitBackends          = ImGuiApp_ImplSDL2GL2_InitBackends;
     intf->NewFrame              = ImGuiApp_ImplSDL2GL2_NewFrame;
     intf->Render                = ImGuiApp_ImplSDL2GL2_Render;
+    intf->Present               = ImGuiApp_ImplSDL2GL2_Present;
     intf->ShutdownCloseWindow   = ImGuiApp_ImplSDL2GLX_ShutdownCloseWindow;
     intf->ShutdownBackends      = ImGuiApp_ImplSDL2GL2_ShutdownBackends;
     intf->CaptureFramebuffer    = ImGuiApp_ImplSDL2GL2_CaptureFramebuffer;
@@ -958,6 +976,11 @@ static void ImGuiApp_ImplSDL2GL3_Render(ImGuiApp* app_opaque)
     glClearColor(app->ClearColor.x, app->ClearColor.y, app->ClearColor.z, app->ClearColor.w);
     glClear(GL_COLOR_BUFFER_BIT);
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+}
+
+static void ImGuiApp_ImplSDL2GL3_Present(ImGuiApp* app_opaque)
+{
+    ImGuiApp_ImplSDL2GLX* app = (ImGuiApp_ImplSDL2GLX*)app_opaque;
     SDL_GL_SwapWindow(app->window);
 }
 
@@ -996,6 +1019,7 @@ ImGuiApp* ImGuiApp_ImplSDL2GL3_Create()
     intf->InitBackends          = ImGuiApp_ImplSDL2GL3_InitBackends;
     intf->NewFrame              = ImGuiApp_ImplSDL2GL3_NewFrame;
     intf->Render                = ImGuiApp_ImplSDL2GL3_Render;
+    intf->Present               = ImGuiApp_ImplSDL2GL3_Present;
     intf->ShutdownCloseWindow   = ImGuiApp_ImplSDL2GLX_ShutdownCloseWindow;
     intf->ShutdownBackends      = ImGuiApp_ImplSDL2GL3_ShutdownBackends;
     intf->CaptureFramebuffer    = ImGuiApp_ImplSDL2GL3_CaptureFramebuffer;
@@ -1147,6 +1171,11 @@ static void ImGuiApp_ImplSDL3GL3_Render(ImGuiApp* app_opaque)
     glClearColor(app->ClearColor.x, app->ClearColor.y, app->ClearColor.z, app->ClearColor.w);
     glClear(GL_COLOR_BUFFER_BIT);
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+}
+
+static void ImGuiApp_ImplSDL3GL3_Present(ImGuiApp* app_opaque)
+{
+    ImGuiApp_ImplSDL3GLX* app = (ImGuiApp_ImplSDL3GLX*)app_opaque;
     SDL_GL_SwapWindow(app->window);
 }
 
@@ -1185,6 +1214,7 @@ ImGuiApp* ImGuiApp_ImplSDL3GL3_Create()
     intf->InitBackends          = ImGuiApp_ImplSDL3GL3_InitBackends;
     intf->NewFrame              = ImGuiApp_ImplSDL3GL3_NewFrame;
     intf->Render                = ImGuiApp_ImplSDL3GL3_Render;
+    intf->Present               = ImGuiApp_ImplSDL3GL3_Present;
     intf->ShutdownCloseWindow   = ImGuiApp_ImplSDL3GL3_ShutdownCloseWindow;
     intf->ShutdownBackends      = ImGuiApp_ImplSDL3GL3_ShutdownBackends;
     intf->CaptureFramebuffer    = ImGuiApp_ImplSDL3GL3_CaptureFramebuffer;
@@ -1352,6 +1382,11 @@ static void ImGuiApp_ImplGlfwGL3_Render(ImGuiApp* app_opaque)
         glfwMakeContextCurrent(backup_current_context);
     }
 #endif
+}
+
+static void ImGuiApp_ImplGlfwGL3_Present(ImGuiApp* app_opaque)
+{
+    ImGuiApp_ImplGlfwGL3* app = (ImGuiApp_ImplGlfwGL3*)app_opaque;
     glfwSwapBuffers(app->window);
 }
 
@@ -1388,6 +1423,7 @@ ImGuiApp* ImGuiApp_ImplGlfwGL3_Create()
     intf->InitBackends          = ImGuiApp_ImplGlfw_InitBackends;
     intf->NewFrame              = ImGuiApp_ImplGlfwGL3_NewFrame;
     intf->Render                = ImGuiApp_ImplGlfwGL3_Render;
+    intf->Present               = ImGuiApp_ImplGlfwGL3_Present
     intf->ShutdownCloseWindow   = ImGuiApp_ImplGlfwGL3_ShutdownCloseWindow;
     intf->ShutdownBackends      = ImGuiApp_ImplGlfwGL3_ShutdownBackends;
     intf->CaptureFramebuffer    = ImGuiApp_ImplGlfwGL3_CaptureFramebuffer;

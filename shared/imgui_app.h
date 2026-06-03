@@ -35,6 +35,7 @@ struct ImGuiApp
     void    (*InitBackends)(ImGuiApp* app) = nullptr;
     bool    (*NewFrame)(ImGuiApp* app) = nullptr;
     void    (*Render)(ImGuiApp* app) = nullptr;
+    void    (*Present)(ImGuiApp* app) = nullptr;
     void    (*ShutdownCloseWindow)(ImGuiApp* app) = nullptr;
     void    (*ShutdownBackends)(ImGuiApp* app) = nullptr;
     void    (*Destroy)(ImGuiApp* app) = nullptr;
