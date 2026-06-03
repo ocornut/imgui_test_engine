@@ -9,7 +9,6 @@
 #include "imgui_test_engine/imgui_te_engine.h"      // IM_REGISTER_TEST()
 #include "imgui_test_engine/imgui_te_context.h"
 #include "imgui_test_engine/thirdparty/Str/Str.h"
-#include "imgui_test_engine/imgui_te_utils.h"
 
 // Warnings
 #ifdef _MSC_VER
@@ -74,7 +73,6 @@ void RegisterTests_Perf(ImGuiTestEngine* e)
     auto DemoAllFunc = [](ImGuiTestContext* ctx)
     {
         ImGuiStyle& style = ImGui::GetStyle();
-        ImGuiStyle style_backup = style;
         if (ctx->Test->ArgVariant == DemoAllFunc_StyleBorder || ctx->Test->ArgVariant == DemoAllFunc_StyleBorderRounded)
         {
             style.ChildBorderSize = 2.f;
@@ -117,11 +115,9 @@ void RegisterTests_Perf(ImGuiTestEngine* e)
         ctx->PerfCapture();
 
         ctx->SetRef("Dear ImGui Demo");
-        ctx->ItemCloseAll("");
+        //ctx->ItemCloseAll("");
         ctx->MenuUncheckAll("Examples");
         ctx->MenuUncheckAll("Tools");
-
-        style = style_backup;
     };
 
     t = IM_REGISTER_TEST(e, "perf", "perf_demo_all");
@@ -456,6 +452,9 @@ void RegisterTests_Perf(ImGuiTestEngine* e)
                         ImVec2 p1 = { RandFloatRange(rnd_state, bounds_min.x, bounds_max.x), RandFloatRange(rnd_state, bounds_min.y, bounds_max.y) };
                         float thickness = RandFloatRange(rnd_state, 0.f, 15.f);
 //                        draw_list->AddLine(p0, p1, col, thickness, flags);
+                        IM_UNUSED(p0);
+                        IM_UNUSED(p1);
+                        IM_UNUSED(thickness);
                     }
                     {
                         float min_x = RandFloatRange(rnd_state, bounds_min.x, bounds_max.x);
@@ -463,6 +462,9 @@ void RegisterTests_Perf(ImGuiTestEngine* e)
                         float y = RandFloatRange(rnd_state, bounds_min.y, bounds_max.y);
                         float thickness = RandFloatRange(rnd_state, 0.f, 15.f);
 //                        draw_list->AddLineH(min_x, max_x, y, col, thickness, flags);
+                        IM_UNUSED(max_x);
+                        IM_UNUSED(y);
+                        IM_UNUSED(thickness);
                     }
                     {
                         float x = RandFloatRange(rnd_state, bounds_min.x, bounds_max.x);
@@ -470,6 +472,9 @@ void RegisterTests_Perf(ImGuiTestEngine* e)
                         float max_y = min_y + RandFloatRange(rnd_state, 0.f, bounds_size.y);
                         float thickness = RandFloatRange(rnd_state, 0.f, 15.f);
 //                        draw_list->AddLineV(x, min_y, max_y, col, thickness, flags);
+                        IM_UNUSED(x);
+                        IM_UNUSED(max_y);
+                        IM_UNUSED(thickness);
                     }
                     {
                         ImVec2 p_min = { RandFloatRange(rnd_state, bounds_min.x, bounds_max.x), RandFloatRange(rnd_state, bounds_min.y, bounds_max.y) };
@@ -477,12 +482,15 @@ void RegisterTests_Perf(ImGuiTestEngine* e)
                         float rounding = RandFloatRange(rnd_state, 0.f, 15.f);
                         float thickness = RandFloatRange(rnd_state, 0.f, 15.f);
 //                        draw_list->AddRect(p_min, p_max, col, rounding, thickness, flags);
+                        IM_UNUSED(rounding);
+                        IM_UNUSED(thickness);
                     }
                     {
                         ImVec2 p_min = { RandFloatRange(rnd_state, bounds_min.x, bounds_max.x), RandFloatRange(rnd_state, bounds_min.y, bounds_max.y) };
                         ImVec2 p_max = { p_min.x + RandFloatRange(rnd_state, bounds_size.x, bounds_size.x), p_min.y + RandFloatRange(rnd_state, bounds_size.y, bounds_size.y) };
                         float rounding = RandFloatRange(rnd_state, 0.f, 15.f);
 //                        draw_list->AddRectFilled(p_min, p_max, col, rounding, flags);
+                        IM_UNUSED(rounding);
                     }
                 }
             }
