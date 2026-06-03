@@ -745,16 +745,11 @@ static void ImGuiTestEngine_ShowLogAndTools(ImGuiTestEngine* engine)
                 double fps_now = 1000.0 / dt_1;
 
                 ImGui::Checkbox("Unthrolled", &engine->IO.ConfigNoThrottle);
-                ImGui::SameLine();
-                if (ImGui::Button("Pick ref dt"))
-                    engine->PerfRefValue = avg_500;
-                ImGui::Text("[ref]      %6.3f ms", engine->PerfRefValue);
 
                 ImGui::SeparatorText("io.DeltaTime");
-                double dt_ref = engine->PerfRefValue;
-                ImGui::Text("[current] %6.3f ms (%.1f FPS) ++ %6.3f ms", dt_1, 1000.0 / dt_1, dt_1 - dt_ref);
-                ImGui::Text("[avg 100] %6.3f ms (%.1f FPS) ++ %6.3f ms ~ converging in %.1f secs", avg_100, 1000.0 / avg_100, dt_1 - dt_ref, 100.0 / fps_now);
-                ImGui::Text("[avg 500] %6.3f ms (%.1f FPS) ++ %6.3f ms ~ converging in %.1f secs", avg_500, 1000.0 / avg_500, dt_1 - dt_ref, 500.0 / fps_now);
+                ImGui::Text("[current] %6.3f ms (%.1f FPS)", dt_1, 1000.0 / dt_1);
+                ImGui::Text("[avg 100] %6.3f ms (%.1f FPS) ~ converging in %.1f secs", avg_100, 1000.0 / avg_100, 100.0 / fps_now);
+                ImGui::Text("[avg 500] %6.3f ms (%.1f FPS) ~ converging in %.1f secs", avg_500, 1000.0 / avg_500, 500.0 / fps_now);
                 ImGui::PlotLines("Last 500##0",
                     [](void* data, int n) { ImMovingAverage<double>* ma = (ImMovingAverage<double>*)data; return (float)ma->Samples[n]; },
                     ma, ma->Samples.Size, 0 * ma->Idx, nullptr, 0.0f, (float)(ImMax(avg_100, avg_500) * 1.2f), plot_size);

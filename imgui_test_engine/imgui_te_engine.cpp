@@ -120,7 +120,6 @@ static void  ImGuiTestEngine_SettingsWriteAll(ImGuiContext* imgui_ctx, ImGuiSett
 
 ImGuiTestEngine::ImGuiTestEngine()
 {
-    PerfRefValue = 0.0f;
     PerfTool = IM_NEW(ImGuiPerfTool);
     UiFilterTests = IM_NEW(Str256); // We bite the bullet of adding an extra alloc/indirection in order to avoid including Str.h in our header
     UiFilterPerfs = IM_NEW(Str256);

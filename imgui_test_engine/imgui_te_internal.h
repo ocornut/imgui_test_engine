@@ -219,7 +219,6 @@ struct ImGuiTestEngine
     ImGuiTestEnginePerfRecord   PerfDtPreRenderToPreSwap;
     ImGuiTestEnginePerfRecord   PerfDtPreNewFrameToPreSwap;
     ImGuiTestEnginePerfRecord   PerfDtPreSwapToPostSwap;
-    double                      PerfRefValue;
     ImGuiPerfTool*              PerfTool = nullptr;
 
     // Screen/Video Capturing

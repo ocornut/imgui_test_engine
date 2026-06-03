@@ -4472,15 +4472,15 @@ void    ImGuiTestContext::UndockWindow(const char* window_name)
 // ImGuiTestContext - Performance Tools
 //-------------------------------------------------------------------------
 
-// Calculate the reference DeltaTime, averaged over PerfIterations/500 frames, with GuiFunc disabled.
+// Calculate the reference DeltaTime, averaged over 100 frames, with GuiFunc disabled.
 void    ImGuiTestContext::PerfCalcRef()
 {
     LogDebug("Measuring ref dt...");
     RunFlags |= ImGuiTestRunFlags_GuiFuncDisable;
 
     ImMovingAverage<double> delta_times;
-    delta_times.Init(PerfIterations);
-    for (int n = 0; n < PerfIterations && !Abort; n++)
+    delta_times.Init(100);
+    for (int n = 0; n < 100 && !Abort; n++)
     {
         Yield();
 
