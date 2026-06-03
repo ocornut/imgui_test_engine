@@ -149,6 +149,25 @@ struct ImGuiTestInputs
     ImVec2                      HostMousePos;
 };
 
+struct ImGuiTestEnginePerfRecord
+{
+    double                      RawValueMs;                     // For current frame
+    ImMovingAverage<double>     Average100;
+    ImMovingAverage<double>     Average500;
+
+    ImGuiTestEnginePerfRecord()
+    {
+        Average100.Init(100);
+        Average500.Init(500);
+    }
+    void UpdateValueForCurrentFrame(double v_ms)
+    {
+        RawValueMs = v_ms;
+        Average100.AddSample(v_ms);
+        Average500.AddSample(v_ms);
+    }
+};
+
 // [Internal] Test Engine Context
 struct ImGuiTestEngine
 {
@@ -191,9 +210,16 @@ struct ImGuiTestEngine
     float                       UiLogHeight = 150.0f;
 
     // Performance Monitor
-    double                      PerfRefDeltaTime;
-    ImMovingAverage<double>     PerfDeltaTime100;
-    ImMovingAverage<double>     PerfDeltaTime500;
+    ImU64                       PerfTimestampPreNewFrame;
+    ImU64                       PerfTimestampPreRender;
+    ImU64                       PerfTimestampPreSwap;
+    ImU64                       PerfTimestampPostSwap;
+    ImGuiTestEnginePerfRecord   PerfDtApp;
+    ImGuiTestEnginePerfRecord   PerfDtPreNewFrameToPreRender;
+    ImGuiTestEnginePerfRecord   PerfDtPreRenderToPreSwap;
+    ImGuiTestEnginePerfRecord   PerfDtPreNewFrameToPreSwap;
+    ImGuiTestEnginePerfRecord   PerfDtPreSwapToPostSwap;
+    double                      PerfRefValue;
     ImGuiPerfTool*              PerfTool = nullptr;
 
     // Screen/Video Capturing

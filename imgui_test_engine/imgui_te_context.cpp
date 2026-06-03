@@ -4483,7 +4483,7 @@ void    ImGuiTestContext::PerfCalcRef()
     for (int n = 0; n < PerfIterations && !Abort; n++)
     {
         Yield();
-        delta_times.AddSample(UiContext->IO.DeltaTime);
+        delta_times.AddSample(UiContext->IO.DeltaTime * 1000.0f);
     }
 
     PerfRefDt = delta_times.GetAverage();
@@ -4507,14 +4507,14 @@ void    ImGuiTestContext::PerfCapture(const char* category, const char* test_nam
     for (int n = 0; n < PerfIterations && !Abort; n++)
     {
         Yield();
-        delta_times.AddSample(UiContext->IO.DeltaTime);
+        delta_times.AddSample(UiContext->IO.DeltaTime * 1000.0f);
     }
     if (Abort)
         return;
 
     double dt_curr = delta_times.GetAverage();
-    double dt_ref_ms = PerfRefDt * 1000;
-    double dt_delta_ms = (dt_curr - PerfRefDt) * 1000;
+    double dt_ref_ms = PerfRefDt;
+    double dt_delta_ms = (dt_curr - PerfRefDt);
 
     const ImBuildInfo* build_info = ImBuildGetCompilationInfo();
 
