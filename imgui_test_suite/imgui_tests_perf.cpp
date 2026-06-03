@@ -73,26 +73,20 @@ void RegisterTests_Perf(ImGuiTestEngine* e)
     auto DemoAllFunc = [](ImGuiTestContext* ctx)
     {
         ImGuiStyle& style = ImGui::GetStyle();
-        if (ctx->Test->ArgVariant == DemoAllFunc_StyleBorder || ctx->Test->ArgVariant == DemoAllFunc_StyleBorderRounded)
-        {
-            style.ChildBorderSize = 2.f;
-            style.FrameBorderSize = 1.f;
-            style.WindowBorderSize = 2.f;
-            style.TabBarBorderSize = 1.f;
-        }
-        if (ctx->Test->ArgVariant == DemoAllFunc_StyleRounded|| ctx->Test->ArgVariant == DemoAllFunc_StyleBorderRounded)
-        {
-            style.ChildRounding = 4.f;
-            style.FrameRounding = 3.f;
-            style.TabRounding = 2.f;
-            style.ScrollbarRounding = 3.f;
-            style.WindowRounding = 4.f;
-            style.ChildBorderSize = 3.f;
-            style.FrameBorderSize = 2.f;
-            style.WindowBorderSize = 1.f;
-            style.TabBarBorderSize = 4.f;
-        }
 
+        bool use_borders = (ctx->Test->ArgVariant == DemoAllFunc_StyleBorder || ctx->Test->ArgVariant == DemoAllFunc_StyleBorderRounded);
+        style.ChildBorderSize = use_borders ? 2.0f : 0.0f;
+        style.FrameBorderSize = use_borders ? 1.0f : 0.0f;
+        style.WindowBorderSize = use_borders ? 2.0f : 0.0f;
+        style.TabBarBorderSize = use_borders ? 1.0f : 0.0f;
+
+        bool use_rounding = (ctx->Test->ArgVariant == DemoAllFunc_StyleRounded || ctx->Test->ArgVariant == DemoAllFunc_StyleBorderRounded);
+        style.ChildRounding = use_rounding ? 4.0f : 0.0f;
+        style.FrameRounding = use_rounding ? 3.0f : 0.0f;
+        style.TabRounding = use_rounding ? 2.0f : 0.0f;
+        style.ScrollbarRounding = use_rounding ? 3.0f : 0.0f;
+        style.WindowRounding = use_rounding ? 4.0f : 0.0f;
+        style.TreeLinesRounding = use_rounding ? 4.0f : 0.0f;
         ctx->PerfCalcRef();
 
         ctx->SetRef("Dear ImGui Demo");
@@ -101,21 +95,21 @@ void RegisterTests_Perf(ImGuiTestEngine* e)
         ctx->MenuCheckAll("Tools");
 
         IM_CHECK_SILENT(ctx->UiContext->IO.DisplaySize.x > 820);
-        IM_CHECK_SILENT(ctx->UiContext->IO.DisplaySize.y > 820);
+        IM_CHECK_SILENT(ctx->UiContext->IO.DisplaySize.y > 1020);
         if (ctx->IsError())
             return;
 
-        // FIXME-TESTS: Backup full layout
+        // FIXME-TESTS: Provide a feature in test engine to restore/backup full layout when requested by test.
         ImVec2 pos = ImGui::GetMainViewport()->Pos + ImVec2(20, 20);
         for (ImGuiWindow* window : ctx->UiContext->Windows)
         {
             window->Pos = pos;
-            window->SizeFull = ImVec2(800, 800);
+            window->SizeFull = ImVec2(800, 1000);
         }
         ctx->PerfCapture();
 
         ctx->SetRef("Dear ImGui Demo");
-        //ctx->ItemCloseAll("");
+        ctx->ItemCloseAll("");
         ctx->MenuUncheckAll("Examples");
         ctx->MenuUncheckAll("Tools");
     };
