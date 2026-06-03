@@ -5,6 +5,9 @@ CHANGELOG
    Those changes are not all listed here.
 ** For a while this is going to ONLY INCLUDE BREAKING CHANGES.
 
+2026/06/03:
+- TestEngine: PerfTool: added batches view to compare builds/branches.
+
 2026/05/29:
 - TestEngine: forcefully disable ItemPicker when active while running a test,
   because it has code to force a breakpoint.
