@@ -4590,8 +4590,8 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         ImGuiContext& g = *GImGui;
-        ImGuiWindow* test_window = ctx->GetWindowByRef("/Test Window");
-        ctx->ItemClick("/Test Window/OK");
+        ImGuiWindow* test_window = ctx->GetWindowByRef("//Test Window");
+        ctx->ItemClick("//Test Window/OK");
         IM_CHECK_EQ(g.NavWindow, test_window);
 
         // It's not well specced, but MenuLayer->MainLayer is currently effectively done on FocusWindow(),

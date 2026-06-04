@@ -7852,7 +7852,6 @@ void RegisterTests_Capture(ImGuiTestEngine* e)
         ctx->Sleep(1.0f);
         ctx->ItemClick("Color##ColorButton");
 
-        ctx->SetRef("/$FOCUSED");
         ctx->Sleep(2.0f);
         ctx->PopupCloseAll();
     };
