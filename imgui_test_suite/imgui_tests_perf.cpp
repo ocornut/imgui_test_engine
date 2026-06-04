@@ -1080,6 +1080,7 @@ void RegisterTests_Perf(ImGuiTestEngine* e)
 		const int num_cols = 3; // Number of columns to draw
 		const int num_rows = 3; // Number of rows to draw
 		const float max_radius = 400.0f; // Maximum allowed radius
+        ImGuiStyle& style = ImGui::GetStyle();
 
 		static ImVec2 content_size(32.0f, 32.0f); // Size of window content on last frame
 
@@ -1097,7 +1098,7 @@ void RegisterTests_Perf(ImGuiTestEngine* e)
             ImGui::SliderFloat("Line width", &line_width, 1.0f, 10.0f);
             ImGui::SliderFloat("Radius", &radius, 1.0f, max_radius);
 			ImGui::SliderInt("Segments", &segment_count_manual, 1, 512);
-			ImGui::DragFloat("Circle Max Error", &ImGui::GetStyle().CircleTessellationMaxError, 0.005f, 0.1f, 5.0f, "%.2f");
+			ImGui::DragFloat("Circle Max Error", &style.CircleTessellationMaxError, 0.005f, 0.1f, 5.0f, "%.2f");
 			ImGui::Checkbox("No anti-aliasing", &no_aa);
 			ImGui::SameLine();
 			ImGui::Checkbox("Overdraw", &overdraw);
@@ -1125,7 +1126,7 @@ void RegisterTests_Perf(ImGuiTestEngine* e)
 			// Draw the first <n> radius/segment size pairs in a quasi-logarithmic down the side
 			for (int pair_rad = 1, step = 1; pair_rad <= 512; pair_rad += step)
 			{
-                int segment_count = IM_DRAWLIST_CIRCLE_AUTO_SEGMENT_CALC((float)pair_rad, draw_list->_Data->CircleSegmentMaxError);
+                const int segment_count = IM_DRAWLIST_CIRCLE_AUTO_SEGMENT_CALC((float)pair_rad, style.CircleTessellationMaxError);
 				ImGui::TextColored((pair_rad == (int)radius) ? color_bg : color_fg, "Rad %d = %d segs", pair_rad, segment_count);
 				if ((pair_rad >= 16) && ((pair_rad & (pair_rad - 1)) == 0))
 					step *= 2;
@@ -1146,7 +1147,7 @@ void RegisterTests_Perf(ImGuiTestEngine* e)
 				draw_list->Flags &= ~ImDrawListFlags_AntiAliasedLines;
 
 			// Get the suggested segment count for this radius
-			const int segment_count_suggested = IM_DRAWLIST_CIRCLE_AUTO_SEGMENT_CALC(radius, draw_list->_Data->CircleSegmentMaxError);
+            const int segment_count_suggested = IM_DRAWLIST_CIRCLE_AUTO_SEGMENT_CALC(radius, style.CircleTessellationMaxError);
             const int segment_count_by_column[3] = { segment_count_suggested, segment_count_manual, 512 };
             const char* desc_by_column[3] = { "auto", "manual", "max" };
 
