@@ -243,7 +243,7 @@ ImGuiID ImHashDecoratedPath(const char* str, const char* str_end, ImGuiID seed)
 //    "//hello/world/child" --> "world/child"
 //    "world/child"         --> "child"
 // This is a helper for code needing to do some parsing of individual nodes in a path.
-// Note: we need the (unsigned char*) stuff in order to keep code similar to ImHashDecoratedPath(). They are not really necessary in this function tho.
+// Note: we use the (unsigned char*) stuff in order to keep code similar to ImHashDecoratedPath(). They are not really necessary in this function tho.
 const char* ImFindNextDecoratedPartInPath(const char* str, const char* str_end)
 {
     const unsigned char* current = (const unsigned char*)str;
@@ -256,9 +256,10 @@ const char* ImFindNextDecoratedPartInPath(const char* str, const char* str_end)
         if (str_end != nullptr && current == (const unsigned char*)str_end)
             break;
 
-        const unsigned char c = *current++;
+        const unsigned char c = *current;
         if (c == 0)
             break;
+        current++;
         if (c == '\\' && !inhibit_one)
         {
             inhibit_one = true;
@@ -271,7 +272,8 @@ const char* ImFindNextDecoratedPartInPath(const char* str, const char* str_end)
 
         inhibit_one = false;
     }
-    return nullptr;
+    IM_ASSERT((const char*)current == str_end || *current == 0);
+    return (const char*)current;
 }
 
 //-----------------------------------------------------------------------------

@@ -1170,9 +1170,9 @@ ImGuiTestItemInfo ImGuiTestContext::WindowInfo(ImGuiTestRef ref, ImGuiTestOpFlag
             // Find next part of the path + create a zero-terminated copy for convenience
             const char* part_start = current;
             const char* part_end = ImFindNextDecoratedPartInPath(current);
-            if (part_end == nullptr)
+            if (part_end[0] == 0)
             {
-                current = part_end = part_start + strlen(part_start);
+                current = part_end;
             }
             else if (part_end > part_start)
             {
