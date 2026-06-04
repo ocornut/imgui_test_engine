@@ -7294,6 +7294,15 @@ void RegisterTests_TestEngine(ImGuiTestEngine* e)
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
         ImGui::BeginChild("Child");
         ImGui::EndChild();
+        ImGui::Button("Button");
+        if (ctx->IsFirstGuiFrame())
+        {
+            // Test "/" prefix in GuiFunc mode
+            ImGuiID button_id = ImGui::GetItemID();
+            IM_CHECK_EQ(ctx->GetID("/Button"), button_id);
+            IM_CHECK_EQ(ctx->GetID("//Test Window/Button"), button_id);
+            IM_CHECK_NE(ctx->GetID("Button"), button_id);
+        }
         ImGui::End();
     };
     t->TestFunc = [](ImGuiTestContext* ctx)

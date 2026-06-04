@@ -1060,20 +1060,35 @@ ImGuiTestItemInfo ImGuiTestContext::ItemInfoOpenFullPath(ImGuiTestRef ref, ImGui
     if (!can_open_full_path)
         return ItemInfoNull();
 
+    IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
+    LogDebug("ItemInfoOpenFullPath: '%s'\n", ref.Path);
+
     // Tries to auto open intermediaries leading to final path.
     // Note that openables cannot be part of the **/ (else it means we would have to open everything).
     // - Openables can be before the wildcard    "Node2/Node3/**/Button"
     // - Openables can be after the wildcard     "**/Node2/Node3/Lv4/Button"
     int opened_parents = 0;
-    for (const char* parent_end = strstr(ref.Path, "/"); parent_end != nullptr; parent_end = strstr(parent_end + 1, "/"))
+
+    const char* path = ref.Path;
+   
+    //for (const char* parent_end = strstr(ref.Path, "/"); parent_end != nullptr; parent_end = strstr(parent_end + 1, "/"))
+    for (const char* next_path = nullptr; path[0] != 0; path = next_path)
     {
+        const char* parent_end = ImFindNextDecoratedPartInPath(path);
+        if (parent_end[0] == 0)
+            break;
+
+        next_path = parent_end;
+        if (parent_end > path && parent_end[-1] == '/')
+            parent_end--;
+
         // Skip "**/* sections
         if (strncmp(ref.Path, "**/", parent_end - ref.Path) == 0)
             continue;
 
-        Str128 parent_id;
-        parent_id.set(ref.Path, parent_end);
-        ImGuiTestItemInfo parent_item = ItemInfo(parent_id.c_str(), ImGuiTestOpFlags_NoError);
+        Str128 parent_path;
+        parent_path.set(ref.Path, parent_end);
+        ImGuiTestItemInfo parent_item = ItemInfo(parent_path.c_str(), ImGuiTestOpFlags_NoError);
         if (parent_item.ID != 0)
         {
 #ifdef IMGUI_HAS_DOCK
@@ -1084,6 +1099,7 @@ ImGuiTestItemInfo ImGuiTestContext::ItemInfoOpenFullPath(ImGuiTestRef ref, ImGui
                 // Open intermediary item
                 if ((parent_item.ItemFlags & ImGuiItemFlags_Disabled) == 0) // FIXME: Report disabled state in log?
                 {
+                    LogDebug("ItemInfoOpenFullPath: open '%s' (0x%08X)\n", parent_path.c_str(), parent_item.ID);
                     ItemAction(ImGuiTestAction_Open, parent_item.ID, ImGuiTestOpFlags_NoAutoOpenFullPath);
                     opened_parents++;
                 }
@@ -1092,6 +1108,7 @@ ImGuiTestItemInfo ImGuiTestContext::ItemInfoOpenFullPath(ImGuiTestRef ref, ImGui
             else if (parent_window->ID == parent_item.ID && parent_window->DockIsActive && parent_window->DockTabIsVisible == false)
             {
                 // Make tab visible
+                LogDebug("ItemInfoOpenFullPath: select docking tab '%s'\n", parent_path.c_str());
                 ItemClick(parent_item.ID);
                 opened_parents++;
             }
@@ -1100,6 +1117,8 @@ ImGuiTestItemInfo ImGuiTestContext::ItemInfoOpenFullPath(ImGuiTestRef ref, ImGui
     }
     if (opened_parents > 0)
         item = ItemInfo(ref, (flags & ImGuiTestOpFlags_NoError));
+
+    LogDebug("ItemInfoOpenFullPath: opened %d parents, result item '%s' (0x%08X)\n", opened_parents, item.DebugLabel, item.ID);
 
     if (item.ID == 0)
         ItemInfoErrorLog(this, ref, 0, flags);
