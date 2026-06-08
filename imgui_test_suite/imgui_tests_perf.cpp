@@ -166,7 +166,12 @@ void RegisterTests_Perf(ImGuiTestEngine* e)
         float r = ImTrunc(ImMin(bounds_size.x, bounds_size.y) * 0.8f * 0.5f);
         float rounding = 8.0f;
         ImU32 col = IM_COL32(255, 255, 0, 255);
-		ImDrawListFlags old_flags = draw_list->Flags; // Save old flags as some of these tests manipulate them
+#if IMGUI_VERSION_NUM < 19283
+        using ImDrawListFlags = ImDrawFlags;
+        using ImDrawListFlags_AntiAliasedLines = ImDrawFlags_AAStrokes;
+        using ImDrawListFlags_AntiAliasedLinesUseTex = ImDrawFlags_UseTexForLines;
+#endif
+        ImDrawFlags old_flags = draw_list->Flags; // Save old flags as some of these tests manipulate them
         if (ctx->IsFirstTestFrame())
             ctx->LogDebug("Drawing %d primitives...", loop_count);
         switch (ctx->Test->ArgVariant)
@@ -240,34 +245,34 @@ void RegisterTests_Perf(ImGuiTestEngine* e)
             }
             break;
 		case DrawPrimFunc_Line:
-			draw_list->Flags &= ~ImDrawListFlags_AntiAliasedLines;
+			draw_list->Flags &= ~ImDrawFlags_AAStrokes;
 			for (int n = 0; n < loop_count; n++)
 				draw_list->AddLine(center - ImVec2(r, r), center + ImVec2(r, r), col, 1.0f);
 			break;
 		case DrawPrimFunc_LineAA:
-            draw_list->Flags |= ImDrawListFlags_AntiAliasedLines;
+            draw_list->Flags |= ImDrawFlags_AAStrokes;
 			for (int n = 0; n < loop_count; n++)
 				draw_list->AddLine(center - ImVec2(r, r), center + ImVec2(r, r), col, 1.0f);
 			break;
 		case DrawPrimFunc_LineAANoTex:
-			draw_list->Flags |= ImDrawListFlags_AntiAliasedLines;
-			draw_list->Flags &= ~ImDrawListFlags_AntiAliasedLinesUseTex;
+			draw_list->Flags |= ImDrawFlags_AAStrokes;
+			draw_list->Flags &= ~ImDrawFlags_UseTexForLines;
 			for (int n = 0; n < loop_count; n++)
 				draw_list->AddLine(center - ImVec2(r, r), center + ImVec2(r, r), col, 1.0f);
 			break;
 		case DrawPrimFunc_LineThick:
-			draw_list->Flags &= ~ImDrawListFlags_AntiAliasedLines;
+			draw_list->Flags &= ~ImDrawFlags_AAStrokes;
 			for (int n = 0; n < loop_count; n++)
 				draw_list->AddLine(center - ImVec2(r, r), center + ImVec2(r, r), col, 4.0f);
 			break;
 		case DrawPrimFunc_LineThickAA:
-			draw_list->Flags |= ImDrawListFlags_AntiAliasedLines;
+			draw_list->Flags |= ImDrawFlags_AAStrokes;
 			for (int n = 0; n < loop_count; n++)
 				draw_list->AddLine(center - ImVec2(r, r), center + ImVec2(r, r), col, 4.0f);
 			break;
         case DrawPrimFunc_LineThickAANoTex:
-			draw_list->Flags |= ImDrawListFlags_AntiAliasedLines;
-			draw_list->Flags &= ~ImDrawListFlags_AntiAliasedLinesUseTex;
+			draw_list->Flags |= ImDrawFlags_AAStrokes;
+			draw_list->Flags &= ~ImDrawFlags_UseTexForLines;
 			for (int n = 0; n < loop_count; n++)
 				draw_list->AddLine(center - ImVec2(r, r), center + ImVec2(r, r), col, 4.0f);
 			break;
@@ -412,7 +417,12 @@ void RegisterTests_Perf(ImGuiTestEngine* e)
                 IM_COL32(  0,   0,   0, 220),
             };
 
-            ImDrawListFlags old_flags = draw_list->Flags; // Save old flags as some of these tests manipulate them
+#if IMGUI_VERSION_NUM < 19283
+            using ImDrawListFlags = ImDrawFlags;
+            using ImDrawListFlags_AntiAliasedLines = ImDrawFlags_AAStrokes;
+            using ImDrawListFlags_AntiAliasedLinesUseTex = ImDrawFlags_UseTexForLines;
+#endif
+            ImDrawFlags old_flags = draw_list->Flags; // Save old flags as some of these tests manipulate them
             if (ctx->IsFirstTestFrame())
                 ctx->LogDebug("Drawing %d primitives...", loop_count);
             switch (ctx->Test->ArgVariant)
@@ -1124,9 +1134,9 @@ void RegisterTests_Perf(ImGuiTestEngine* e)
 			content_size = ImVec2(cursor_pos.x + (item_spacing.x * num_cols) + text_standoff.x, ImMax(cursor_pos.y + (item_spacing.y * num_rows) + text_standoff.y, ImGui::GetCursorPosY()));
 
 			// Save old flags
-			ImDrawListFlags backup_draw_list_flags = draw_list->Flags;
+			ImDrawFlags backup_draw_list_flags = draw_list->Flags;
 			if (no_aa)
-				draw_list->Flags &= ~ImDrawListFlags_AntiAliasedLines;
+				draw_list->Flags &= ~ImDrawFlags_AAStrokes;
 
 			// Get the suggested segment count for this radius
             const int segment_count_suggested = IM_DRAWLIST_CIRCLE_AUTO_SEGMENT_CALC(radius, style.CircleTessellationMaxError);
@@ -1206,10 +1216,6 @@ void RegisterTests_Perf(ImGuiTestEngine* e)
             ImVec2 cursor_screen_pos = ImGui::GetCursorScreenPos();
             ImVec2 base_pos(cursor_screen_pos.x + (line_spacing.x * 0.5f), cursor_screen_pos.y);
 
-#ifndef IMGUI_HAS_TEXLINES
-            const ImDrawListFlags ImDrawListFlags_AntiAliasedLinesUseTex = 0;
-#endif
-
 			for (int i = 0; i < num_rows; i++)
 			{
                 int row_idx = i;
@@ -1225,9 +1231,9 @@ void RegisterTests_Perf(ImGuiTestEngine* e)
 				const char* name = "";
 				switch (row_idx)
 				{
-				case 0: name = "No AA";  draw_list->Flags &= ~ImDrawListFlags_AntiAliasedLines; break;
-				case 1: name = "AA no texturing"; draw_list->Flags |= ImDrawListFlags_AntiAliasedLines; draw_list->Flags &= ~ImDrawListFlags_AntiAliasedLinesUseTex; break;
-				case 2: name = "AA w/ texturing"; draw_list->Flags |= ImDrawListFlags_AntiAliasedLines; draw_list->Flags |= ImDrawListFlags_AntiAliasedLinesUseTex; break;
+				case 0: name = "No AA";  draw_list->Flags &= ~ImDrawFlags_AAStrokes; break;
+				case 1: name = "AA no texturing"; draw_list->Flags |= ImDrawFlags_AAStrokes; draw_list->Flags &= ~ImDrawFlags_UseTexForLines; break;
+				case 2: name = "AA w/ texturing"; draw_list->Flags |= ImDrawFlags_AAStrokes; draw_list->Flags |= ImDrawFlags_UseTexForLines; break;
 				}
 
 				int initial_vtx_count = draw_list->VtxBuffer.Size;
@@ -1270,9 +1276,9 @@ void RegisterTests_Perf(ImGuiTestEngine* e)
                 const char* name = "";
                 switch (row_idx)
                 {
-                case 0: name = "No AA";  draw_list->Flags &= ~ImDrawListFlags_AntiAliasedLines; break;
-                case 1: name = "AA no texturing"; draw_list->Flags |= ImDrawListFlags_AntiAliasedLines; draw_list->Flags &= ~ImDrawListFlags_AntiAliasedLinesUseTex; break;
-                case 2: name = "AA w/ texturing"; draw_list->Flags |= ImDrawListFlags_AntiAliasedLines; draw_list->Flags |= ImDrawListFlags_AntiAliasedLinesUseTex; break;
+                case 0: name = "No AA";  draw_list->Flags &= ~ImDrawFlags_AAStrokes; break;
+                case 1: name = "AA no texturing"; draw_list->Flags |= ImDrawFlags_AAStrokes; draw_list->Flags &= ~ImDrawFlags_UseTexForLines; break;
+                case 2: name = "AA w/ texturing"; draw_list->Flags |= ImDrawFlags_AAStrokes; draw_list->Flags |= ImDrawFlags_UseTexForLines; break;
                 }
 
                 int initial_vtx_count = draw_list->VtxBuffer.Size;
