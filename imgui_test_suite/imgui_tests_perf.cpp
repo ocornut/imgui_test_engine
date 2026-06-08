@@ -23,11 +23,6 @@
 // Tests: Performances/Benchmarks
 //-------------------------------------------------------------------------
 
-#if IMGUI_VERSION_NUM >= 17703
-#define IMGUI_HAS_TEXLINES
-#endif
-
-
 // Init state to any non-zero number as seed.
 static ImU32 XorShift32(ImU32& state)
 {
@@ -151,14 +146,10 @@ void RegisterTests_Perf(ImGuiTestEngine* e)
         DrawPrimFunc_LongJaggedStrokeThick,
 		DrawPrimFunc_Line,
 		DrawPrimFunc_LineAA,
-#ifdef IMGUI_HAS_TEXLINES
         DrawPrimFunc_LineAANoTex,
-#endif
         DrawPrimFunc_LineThick,
 		DrawPrimFunc_LineThickAA,
-#ifdef IMGUI_HAS_TEXLINES
         DrawPrimFunc_LineThickAANoTex
-#endif
     };
 
     auto DrawPrimFunc = [](ImGuiTestContext* ctx)
@@ -258,14 +249,12 @@ void RegisterTests_Perf(ImGuiTestEngine* e)
 			for (int n = 0; n < loop_count; n++)
 				draw_list->AddLine(center - ImVec2(r, r), center + ImVec2(r, r), col, 1.0f);
 			break;
-#ifdef IMGUI_HAS_TEXLINES
 		case DrawPrimFunc_LineAANoTex:
 			draw_list->Flags |= ImDrawListFlags_AntiAliasedLines;
 			draw_list->Flags &= ~ImDrawListFlags_AntiAliasedLinesUseTex;
 			for (int n = 0; n < loop_count; n++)
 				draw_list->AddLine(center - ImVec2(r, r), center + ImVec2(r, r), col, 1.0f);
 			break;
-#endif
 		case DrawPrimFunc_LineThick:
 			draw_list->Flags &= ~ImDrawListFlags_AntiAliasedLines;
 			for (int n = 0; n < loop_count; n++)
@@ -276,14 +265,12 @@ void RegisterTests_Perf(ImGuiTestEngine* e)
 			for (int n = 0; n < loop_count; n++)
 				draw_list->AddLine(center - ImVec2(r, r), center + ImVec2(r, r), col, 4.0f);
 			break;
-#ifdef IMGUI_HAS_TEXLINES
         case DrawPrimFunc_LineThickAANoTex:
 			draw_list->Flags |= ImDrawListFlags_AntiAliasedLines;
 			draw_list->Flags &= ~ImDrawListFlags_AntiAliasedLinesUseTex;
 			for (int n = 0; n < loop_count; n++)
 				draw_list->AddLine(center - ImVec2(r, r), center + ImVec2(r, r), col, 4.0f);
 			break;
-#endif
         default:
             IM_ASSERT(0);
         }
@@ -376,12 +363,10 @@ void RegisterTests_Perf(ImGuiTestEngine* e)
 	t->GuiFunc = DrawPrimFunc;
 	t->TestFunc = PerfCaptureFunc;
 
-#ifdef IMGUI_HAS_TEXLINES
 	t = IM_REGISTER_TEST(e, "perf", "perf_draw_prim_line_antialiased_no_tex");
 	t->ArgVariant = DrawPrimFunc_LineAANoTex;
 	t->GuiFunc = DrawPrimFunc;
 	t->TestFunc = PerfCaptureFunc;
-#endif
 
 	t = IM_REGISTER_TEST(e, "perf", "perf_draw_prim_line_thick");
 	t->ArgVariant = DrawPrimFunc_LineThick;
@@ -393,13 +378,10 @@ void RegisterTests_Perf(ImGuiTestEngine* e)
 	t->GuiFunc = DrawPrimFunc;
 	t->TestFunc = PerfCaptureFunc;
 
-#ifdef IMGUI_HAS_TEXLINES
 	t = IM_REGISTER_TEST(e, "perf", "perf_draw_prim_line_thick_antialiased_no_tex");
 	t->ArgVariant = DrawPrimFunc_LineThickAANoTex;
 	t->GuiFunc = DrawPrimFunc;
 	t->TestFunc = PerfCaptureFunc;
-#endif
-
 
     enum
     {
