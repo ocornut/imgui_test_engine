@@ -2934,6 +2934,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
 
         ctx->SetRef("Test Window");
         ImGuiTable* table = ImGui::TableFindByID(ctx->GetID("table1"));
+        ImGui::GetStyle().WindowMinSize = { 10.0f, 10.0f }; // Smaller than width=50 that we attempt to set below.
 
         // [1] Widths, Non-Scrolling
         if (1)
