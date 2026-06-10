@@ -5,6 +5,9 @@ CHANGELOG
    Those changes are not all listed here.
 ** For a while this is going to ONLY INCLUDE BREAKING CHANGES.
 
+2026/06/10:
+- TestEngine: added ctx->TableResizeColumn() helper given a column name.
+
 2026/06/03:
 - TestEngine: added ImGuiTestEngine_PreSwap() hook used by performance tools
   to mesure time used by Present/Swap.

@@ -3903,6 +3903,7 @@ void ImGuiTestContext::TableSetColumnEnabled(ImGuiTestRef ref, const char* label
     ImGuiTable* table = ImGui::TableFindByID(GetID(ref));
     IM_CHECK_SILENT(table != NULL);
     ImGuiTableColumn* column = HelperTableFindColumnByName(table, label);
+    IM_CHECK_SILENT(column != NULL);
     int column_n = column->IsEnabled ? table->Columns.index_from_ptr(column) : -1;
     TableOpenContextMenu(ref, column_n);
 
@@ -3927,12 +3928,38 @@ void ImGuiTestContext::TableResizeColumn(ImGuiTestRef ref, int column_n, float w
 
     ImGuiTable* table = ImGui::TableFindByID(GetID(ref));
     IM_CHECK_SILENT(table != nullptr);
+    IM_CHECK_SILENT(column_n >= 0 && column_n < table->ColumnsCount);
+    ImGuiTableColumn* column = &table->Columns[column_n];
+    IM_CHECK_SILENT(column->IsEnabled);
 
     ImGuiID resize_id = ImGui::TableGetColumnResizeID(table, column_n);
-    float old_width = table->Columns[column_n].WidthGiven;
+    float old_width = column->WidthGiven;
     ItemDragWithDelta(resize_id, ImVec2(width - old_width, 0));
 
-    IM_CHECK_EQ(table->Columns[column_n].WidthRequest, width);
+    IM_CHECK_EQ(column->WidthRequest, width);
+}
+
+void ImGuiTestContext::TableResizeColumn(ImGuiTestRef ref, const char* label, float width)
+{
+    if (IsError())
+        return;
+
+    IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
+    ImGuiTestRefDesc desc(ref);
+    LogDebug("TableResizeColumn %s column '%s' width %.2f", desc.c_str(), label, width);
+
+    ImGuiTable* table = ImGui::TableFindByID(GetID(ref));
+    IM_CHECK_SILENT(table != nullptr);
+    ImGuiTableColumn* column = HelperTableFindColumnByName(table, label);
+    IM_CHECK_SILENT(column != NULL);
+    IM_CHECK(column->IsEnabled);
+
+    int column_n = table->Columns.index_from_ptr(column);
+    ImGuiID resize_id = ImGui::TableGetColumnResizeID(table, column_n);
+    float old_width = column->WidthGiven;
+    ItemDragWithDelta(resize_id, ImVec2(width - old_width, 0));
+
+    IM_CHECK_EQ(column->WidthRequest, width);
 }
 
 const ImGuiTableSortSpecs* ImGuiTestContext::TableGetSortSpecs(ImGuiTestRef ref)
