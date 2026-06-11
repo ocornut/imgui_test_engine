@@ -6742,6 +6742,11 @@ void RegisterTests_TestEngine(ImGuiTestEngine* e)
         ImGui::Checkbox("Test1b", &vars.Bool1);
         ImGui::PopID();
 
+        ImGui::Checkbox("Hello/World", &vars.BoolArray[0]); // Label containing a slash
+        ImGui::PushID("node2/sub");                         // Pushed ID string containing a slash
+        ImGui::Checkbox("Test1c", &vars.BoolArray[1]);
+        ImGui::PopID();
+
         ImGui::BeginChild("Child", ImVec2(0, 200), ImGuiChildFlags_Borders);
         ImGui::Checkbox("Test2", &vars.Bool2);
         ImGui::InputInt("Int1", &vars.Int1, 1, 1);
@@ -6771,6 +6776,17 @@ void RegisterTests_TestEngine(ImGuiTestEngine* e)
         ctx->SetRef("");
         ctx->ItemClick("**/Test1");
         ctx->ItemClick("**/node/Test1b");
+
+        // Test Window/Hello\/World, Test Window/node2\/sub/Test1c
+        // Labels containing a slash: "\/" inhibits the path separator.
+        ctx->SetRef("Test Window");
+        IM_CHECK_EQ(ctx->ItemInfo("**/Hello\\/World").ID, ctx->GetID("Hello\\/World"));
+        ctx->ItemClick("**/Hello\\/World");
+        ctx->ItemClick("**/node2\\/sub/Test1c");
+
+        ctx->SetRef("");
+        ctx->ItemClick("**/Hello\\/World");
+        ctx->ItemClick("**/node2\\/sub/Test1c");
 
         // Test Window/Child_XXXXX/Test2
         ctx->SetRef("");
