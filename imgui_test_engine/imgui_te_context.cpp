@@ -900,18 +900,46 @@ ImGuiID ImGuiTestContext::ItemInfoHandleWildcardSearch(const char* wildcard_pref
         task->InPrefixId = RefID;
     task->OutItemId = 0;
 
-    // Advance pointer to point it to the last label
+    // Advance pointer to point it to the last label (after the last '/') and fill its depth (InSuffixDepth)
+    // Labels are separated by '/', except if this char is escaped by a `\\` (where inhibit_one will be true)
     task->InSuffix = task->InSuffixLastItem = wildcard_suffix_start;
-    for (const char* c = task->InSuffix; *c; c++)
-        if (*c == '/')
-            task->InSuffixLastItem = c + 1;
-    task->InSuffixLastItemHash = ImHashStr(task->InSuffixLastItem, 0, 0);
-
-    // Count number of labels
     task->InSuffixDepth = 1;
-    for (const char* c = wildcard_suffix_start; *c; c++)
-        if (*c == '/')
+    bool inhibit_one = false;
+    for (const char* c = task->InSuffix; *c; c++)
+    {
+        if (*c == '\\' && !inhibit_one)
+        {
+            inhibit_one = true;
+            continue;
+        }
+        if (*c == '/' && !inhibit_one)
+        {
+            task->InSuffixLastItem = c + 1;
             task->InSuffixDepth++;
+        }
+        inhibit_one = false;
+    }
+
+    // Escape char (`\\`) shall not take part in the hash computation of a label (Hash("Some\\/Label") = Hash("Some/Label")).
+    if (strchr(task->InSuffixLastItem, '\\') == nullptr)
+    {
+        task->InSuffixLastItemHash = ImHashStr(task->InSuffixLastItem, 0, 0);
+    }
+    else
+    {
+        Str256 last_item_unescaped;
+        for (const char* c = task->InSuffixLastItem; *c; c++)
+        {
+            if (*c == '\\')
+            {
+                c++;
+                if (*c == 0)
+                    break;
+            }
+            last_item_unescaped.append(*c);
+        }
+        task->InSuffixLastItemHash = ImHashStr(last_item_unescaped.c_str(), 0, 0);
+    }
 
     int retries = 0;
     while (retries < 2 && task->OutItemId == 0)
