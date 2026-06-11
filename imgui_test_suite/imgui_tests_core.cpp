@@ -6165,6 +6165,12 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
         ctx->ItemClick("##tabs/Rendering");
 
         ctx->SetRef("Dear ImGui Demo");
+        ctx->MenuCheck("Examples/Property editor");
+        ctx->SetRef("Example: Property editor");
+        ctx->ItemCheck("**/Use Clipper");
+        ctx->ItemUncheck("**/Use Clipper");
+
+        ctx->SetRef("Dear ImGui Demo");
         ctx->MenuCheck("Examples/Custom rendering");
         ctx->SetRef("Example: Custom rendering");
         ctx->ItemClick("##TabBar/Primitives");

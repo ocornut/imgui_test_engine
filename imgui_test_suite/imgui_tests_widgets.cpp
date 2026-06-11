@@ -5596,6 +5596,11 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         }
 #endif
 
+        // Dummy Deletion for coverage
+        IM_CHECK_EQ(ms_storage->LastSelectionSize, 5);
+        ctx->KeyPress(ImGuiKey_Delete);
+        IM_CHECK_EQ(ms_storage->LastSelectionSize, 1);
+
         ctx->MenuUncheck("//Dear ImGui Demo/Examples/Assets Browser");
     };
 #endif
