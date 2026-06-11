@@ -1321,19 +1321,35 @@ ImGuiID TableGetHeaderID(ImGuiTable* table, int column_n, int instance_no)
     return ImHashData(column_name, strlen(column_name), column_id);
 }
 
-// FIXME: Could be moved to core as an internal function?
-void TableDiscardInstanceAndSettings(ImGuiID table_id)
+void TableDiscardInstance(ImGuiID table_id)
+{
+    ImGuiContext& g = *GImGui;
+    IM_UNUSED(g); // Only used when IM_ASSERT enabled
+    if (ImGuiTable* table = ImGui::TableFindByID(table_id))
+    {
+        IM_ASSERT(g.CurrentTable != table);
+        ImGui::TableRemove(table);
+    }
+}
+
+void TableDiscardSettings(ImGuiID table_id)
 {
     ImGuiContext& g = *GImGui;
     IM_UNUSED(g); // Only used when IM_ASSERT enabled
     IM_ASSERT(g.CurrentTable == nullptr);
     if (ImGuiTableSettings* settings = ImGui::TableSettingsFindByID(table_id))
         settings->ID = 0;
-
     if (ImGuiTable* table = ImGui::TableFindByID(table_id))
-        ImGui::TableRemove(table);
+        table->SettingsOffset = -1;
     // FIXME-TABLE: We should be able to use TableResetSettings() instead of TableRemove()! Maybe less of a clean slate but would be good to check that it does the job
     //ImGui::TableResetSettings(table);
+}
+
+// FIXME: Could be moved to core as an internal function?
+void TableDiscardInstanceAndSettings(ImGuiID table_id)
+{
+    TableDiscardSettings(table_id);
+    TableDiscardInstance(table_id);
 }
 
 // Helper to verify ImDrawData integrity of buffer count (broke before e.g. #6716)

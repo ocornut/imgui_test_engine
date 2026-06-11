@@ -15,6 +15,7 @@ imgui.ini
 *.o
 *.obj
 *.exe
+*.cov
 app_minimal/build/*
 app_minimal/Debug/*
 app_minimal/Release/*
