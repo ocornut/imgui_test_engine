@@ -3542,7 +3542,9 @@ void RegisterTests_Table(ImGuiTestEngine* e)
         ctx->MouseMoveToPos(table->InnerClipRect.GetCenter());
         ctx->MouseClick(ImGuiMouseButton_Right);
         ctx->SetRef("//$FOCUSED");
-#if IMGUI_VERSION_NUM >= 18903
+#if IMGUI_VERSION_NUM >= 19283
+        ctx->MenuClick("###Reset/###ResetOrder");
+#elif IMGUI_VERSION_NUM >= 18903
         ctx->ItemClick("###ResetOrder");
 #else
         ctx->ItemClick("Reset order");
