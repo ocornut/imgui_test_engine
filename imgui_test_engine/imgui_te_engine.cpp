@@ -1193,12 +1193,7 @@ static void ImGuiTestEngine_ProcessTestQueue(ImGuiTestEngine* engine)
 {
     // Avoid tracking scrolling in UI when running a single test
     const bool track_scrolling = (engine->TestsQueue.Size > 1) || (engine->TestsQueue.Size == 1 && (engine->TestsQueue[0].RunFlags & ImGuiTestRunFlags_RunFromCommandLine));
-
-    // Backup some state
-    ImGuiIO& io = ImGui::GetIO();
-    const char* backup_ini_filename = io.IniFilename;
     ImGuiWindow* backup_nav_window = engine->UiContextTarget->NavWindow;
-    io.IniFilename = nullptr;
 
     int ran_tests = 0;
     engine->BatchStartTime = ImTimeGetInMicroseconds();
@@ -1238,12 +1233,8 @@ static void ImGuiTestEngine_ProcessTestQueue(ImGuiTestEngine* engine)
     engine->TestsQueue.clear();
 
     // Restore UI state (done after all ImGuiTestEngine_RunTest() are done)
-    if (ran_tests)
-    {
-        if (engine->IO.ConfigRestoreFocusAfterTests)
-            ImGui::FocusWindow(backup_nav_window);
-    }
-    io.IniFilename = backup_ini_filename;
+    if (ran_tests && engine->IO.ConfigRestoreFocusAfterTests)
+        ImGui::FocusWindow(backup_nav_window);
 }
 
 bool ImGuiTestEngine_IsTestQueueEmpty(ImGuiTestEngine* engine)
@@ -1769,6 +1760,10 @@ void ImGuiTestEngine_RunTest(ImGuiTestEngine* engine, ImGuiTestContext* parent_c
     else
         io.BackendFlags &= ~ImGuiBackendFlags_HasMouseHoveredViewport;
 #endif
+
+    // Setup IO: disable saving .ini to disk
+    if ((ctx->RunFlags & ImGuiTestRunFlags_GuiFuncOnly) == 0)
+        io.IniFilename = nullptr;
 
     // Setup IO: override clipboard
     if ((ctx->RunFlags & ImGuiTestRunFlags_GuiFuncOnly) == 0)
