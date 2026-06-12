@@ -76,6 +76,7 @@ struct TableColumnSpecs
     ImGuiID                 ID;             // Unused but helpful during debugging.
     ImGuiTableColumnFlags   Flags;
     float                   WidthOrWeight;
+    int                     QueueSetDisplayOrder = -1;
 
     TableColumnSpecs(const char* label, ImGuiTableColumnFlags flags = 0, float width_or_weight = 0.0f) { ImFormatString(Label, IM_COUNTOF(Label), "%s", label); ID = ImHashStr(Label); Flags = flags; WidthOrWeight = width_or_weight; }
 };
@@ -138,8 +139,16 @@ struct TableSpecsVars
         TableSpecs& specs = Specs[ActiveSpecNo];
         if (specs.Columns.Size > 0 && ImGui::BeginTable(name, specs.Columns.Size, specs.TableFlags))
         {
+            table = ImGui::GetCurrentTable();
             for (TableColumnSpecs& column_spec : specs.Columns)
-                ImGui::TableSetupColumn(column_spec.Label, column_spec.Flags, column_spec.WidthOrWeight);
+                if (column_spec.Label != nullptr)
+                    ImGui::TableSetupColumn(column_spec.Label, column_spec.Flags, column_spec.WidthOrWeight);
+            for (TableColumnSpecs& column_spec : specs.Columns)
+                if (column_spec.QueueSetDisplayOrder != -1)
+                {
+                    ImGui::TableQueueSetColumnDisplayOrder(table, specs.Columns.index_from_ptr(&column_spec), column_spec.QueueSetDisplayOrder);
+                    column_spec.QueueSetDisplayOrder = -1;
+                }
             ImGui::TableHeadersRow();
             for (int row = 0; row < 8; row++)
             {
@@ -148,7 +157,6 @@ struct TableSpecsVars
                     if (ImGui::TableNextColumn())
                         ImGui::Text("%d", col);
             }
-            table = ImGui::GetCurrentTable();
             ImGui::EndTable();
         }
         return table;
@@ -165,6 +173,9 @@ struct TableSpecsVars
             ImGui::PushID(n);
             ImGui::AlignTextToFramePadding();
             ImGui::Text("%d: 0x%08X", n, ImHashStr(column_spec.Label));
+            ImGui::SameLine();
+            ImGui::SetNextItemWidth(ImGui::CalcTextSize("999").x);
+            ImGui::InputInt("##QueueSetDisplayOrder", &column_spec.QueueSetDisplayOrder, 0, 0);
             ImGui::SameLine();
             if (ImGui::Button("Del"))
                 remove_idx = n;
@@ -205,6 +216,10 @@ struct TableSpecsVars
         ImGui::SliderInt("offset", &add_offset, 0, 12);
 
         ImGui::CheckboxFlags("_Reorderable", &specs.TableFlags, ImGuiTableFlags_Reorderable);
+        ImGui::CheckboxFlags("_NoSavedSettings", &specs.TableFlags, ImGuiTableFlags_NoSavedSettings);
+        //ImGui::CheckboxFlags("_Resizable", &specs.TableFlags, ImGuiTableFlags_Resizable);
+        //ImGui::CheckboxFlags("_Hidable", &specs.TableFlags, ImGuiTableFlags_Hideable);
+        //ImGui::CheckboxFlags("_Sortable", &specs.TableFlags, ImGuiTableFlags_Sortable);
     }
     void ShowEditors()
     {
@@ -289,11 +304,7 @@ struct TableSpecsVars
             ImGui::SaveIniSettingsToMemory();
         if (ImGuiTable* table = ImGui::TableFindByID(table_id))
             if (ImGuiTableSettings* settings = ImGui::TableGetBoundSettings(table))
-#if IMGUI_VERSION_NUM < 19283
-                ImGui::DebugNodeTableSettings(settings);
-#else
                 ImGui::DebugNodeTableSettings(settings, table);
-#endif
     }
 };
 
@@ -2497,6 +2508,228 @@ void RegisterTests_Table(ImGuiTestEngine* e)
         // Mark our remaining table dirty again
         ctx->TableResizeColumn(ctx->GetID(vars.TableName), 1, 109.0f); // Mark dirty
         ctx->TableResizeColumn(ctx->GetID(vars.TableName), 1, 111.0f);
+    };
+#endif
+
+#if IMGUI_VERSION_NUM >= 19284
+    // ## Test tracking topology changes (#9108)
+    t = IM_REGISTER_TEST(e, "table", "table_topology_change_1");
+    t->SetVarsDataType<TableSpecsVars>(
+        [](ImGuiTestContext* ctx, TableSpecsVars& vars)
+    {
+        vars.Specs[0].TableFlags |= ImGuiTableFlags_Resizable | ImGuiTableFlags_Reorderable | ImGuiTableFlags_Hideable | ImGuiTableFlags_Sortable;
+        vars.Specs[0].TableFlags |= ImGuiTableFlags_RowBg | ImGuiTableFlags_Borders;
+        //vars.Specs[0].TableFlags |= ImGuiTableFlags_TrackTopologyChanges;
+        vars.Specs[0].TableFlags |= ImGuiTableFlags_SizingFixedFit;
+        vars.Specs[1].TableFlags = vars.Specs[0].TableFlags;
+    });
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        auto& vars = ctx->GetVars<TableSpecsVars>();
+
+        ImGui::SetNextWindowSize({ ImGui::GetFontSize() * 35, ImGui::GetFontSize() * 50 }, ImGuiCond_Appearing);
+        ImGui::Begin("Test Window", NULL); // WITHOUT ImGuiWindowFlags_NoSavedSettings);
+        const ImGuiID table_id = ImGui::GetID("Table1");
+
+        if (ctx->IsFirstGuiFrame())
+            TableDiscardInstanceAndSettings(table_id);
+        if (ctx->IsFirstGuiFrame() && ctx->IsGuiFuncOnly())
+        {
+            vars.AddColumn("One");
+            vars.AddColumn("Two");
+            vars.AddColumn("Three");
+        }
+
+        // Show table, Edit specs
+        vars.ShowActionButtons(table_id);
+        //auto& specs = vars.GetActiveSpecs();
+        vars.ShowTable("Table1");
+        vars.ShowEditors();
+        vars.ShowIniData(table_id);
+
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        auto& vars = ctx->GetVars<TableSpecsVars>();
+        ctx->SetRef("Test Window");
+        ImGuiID table_id = ctx->GetID("Table1");
+
+        GImGui->DebugLogFlags |= ImGuiDebugLogFlags_EventTable;
+
+        for (int step = 0; step < 4; step++)
+        {
+            // Step 0: change specs while table is active
+            // Step 1: change specs after discarding table instance (reload from settings)
+            // Step 2: change specs after saving .ini data and discarding both instance and settings (simulate app restart with a modified build)
+            // Step 3: change specs while table is active, with ImGuiTableFlags_NoSavedSettings (preservation via runtime reconcile only)
+            ctx->LogDebug("Step %d", step);
+            TableDiscardInstanceAndSettings(table_id);
+            const bool use_settings = (step != 3);
+            for (TableSpecs& specs : vars.Specs)
+                specs.TableFlags = use_settings ? (specs.TableFlags & ~ImGuiTableFlags_NoSavedSettings) : (specs.TableFlags | ImGuiTableFlags_NoSavedSettings);
+            ImGuiTable* table = NULL;
+            ImGuiTableSettings* table_settings = NULL;
+
+            // Simulate the topology change happening "offline" (depending on step)
+            ImVector<char> ini_data;
+            auto disturb = [&]()
+            {
+                if (step == 1)
+                {
+                    TableDiscardInstance(table_id);
+                    table = NULL;
+                }
+                else if (step == 2)
+                {
+                    // This should in theory be very close to TableDiscardInstance() version above.
+                    // But for safety/completeness we do it this way too.
+                    SaveIniSettingsToVector(&ini_data);
+                    TableDiscardInstanceAndSettings(table_id);
+                    ImGui::LoadIniSettingsFromMemory(ini_data.Data, ini_data.Size);
+                    table = NULL;
+                }
+            };
+
+            vars.Clear();
+            vars.AddColumn("One");
+            vars.AddColumn("Two");
+            vars.AddColumn("Three");
+            vars.LogDebug(ctx);
+            ctx->Yield(2);
+            table = ImGui::TableFindByID(table_id);
+            IM_CHECK_SILENT(table != NULL);
+            if (use_settings)
+            {
+                table_settings = ImGui::TableGetBoundSettings(table);
+                IM_CHECK_SILENT(table_settings != NULL);
+                IM_CHECK_EQ(table_settings->ColumnsCount, 3);
+            }
+            ctx->TableClickHeader(table_id, "One");
+
+            // Resize "Two", sort by "Two", hide "Three"
+            ctx->TableResizeColumn(table_id, "Two", 200.0f);
+            IM_CHECK_EQ(table->Columns[1].WidthRequest, 200.0f);
+            IM_CHECK_EQ(table->Columns[1].DisplayOrder, 1);
+            IM_CHECK_NE(table->Columns[1].SortOrder, 0);
+            IM_CHECK_EQ(ctx->TableClickHeader(table_id, "Two"), ImGuiSortDirection_Ascending);
+            IM_CHECK_EQ(table->Columns[1].SortOrder, 0);
+            IM_CHECK_EQ(table->Columns[1].SortDirection, ImGuiSortDirection_Ascending);
+            ctx->TableSetColumnEnabled(table_id, "Three", false);
+            IM_CHECK_EQ(table->Columns[2].IsUserEnabled, false);
+
+            disturb();
+
+            // Reordering columns
+            vars.Clear();
+            vars.AddColumn("One");
+            vars.AddColumn("Three");
+            vars.AddColumn("Two");
+            vars.LogDebug(ctx);
+            ctx->Yield(2);
+            table = ImGui::TableFindByID(table_id);
+            IM_CHECK_SILENT(table != NULL);
+            IM_CHECK_NE(table->Columns[1].WidthRequest, 200.0f);
+            IM_CHECK_EQ(table->Columns[1].DisplayOrder, 2);
+            IM_CHECK_EQ(table->Columns[1].IsUserEnabled, false);    // "Three" kept hidden state
+            IM_CHECK_EQ(table->Columns[2].WidthRequest, 200.0f);    // "Two" kept resize
+            IM_CHECK_EQ(table->Columns[2].DisplayOrder, 1);
+            IM_CHECK_EQ(table->Columns[2].SortOrder, 0);            // "Two" kept sort state
+            IM_CHECK_EQ((int)table->Columns[2].SortDirection, (int)ImGuiSortDirection_Ascending);
+            if (use_settings)
+            {
+                table_settings = ImGui::TableGetBoundSettings(table);
+                IM_CHECK_SILENT(table_settings != NULL);
+                IM_CHECK_EQ(table_settings->ColumnsCount, 3);
+            }
+
+            disturb();
+
+            // Reducing count
+            vars.Clear();
+            vars.AddColumn("Two");
+            vars.LogDebug(ctx);
+            ctx->Yield(2);
+            table = ImGui::TableFindByID(table_id);
+            IM_CHECK_SILENT(table != NULL);
+            IM_CHECK_EQ(table->Columns[0].WidthRequest, 200.0f);
+            IM_CHECK_EQ(table->Columns[0].DisplayOrder, 0);
+            IM_CHECK_EQ(table->Columns[0].SortOrder, 0);
+            if (use_settings)
+            {
+                table_settings = ImGui::TableGetBoundSettings(table);
+                IM_CHECK_SILENT(table_settings != NULL);
+                IM_CHECK_EQ(table_settings->ColumnsCount, 1);
+            }
+
+            disturb();
+
+            // Growing count, reintroducing "Three"
+            vars.Clear();
+            vars.AddColumn("AAA");
+            vars.AddColumn("BBB");
+            vars.AddColumn("Three");
+            vars.AddColumn("Two");
+            vars.LogDebug(ctx);
+            ctx->Yield(2);
+            table = ImGui::TableFindByID(table_id);
+            IM_CHECK_SILENT(table != NULL);
+            IM_CHECK_EQ(table->Columns[3].WidthRequest, 200.0f);
+            IM_CHECK_EQ(table->Columns[3].DisplayOrder, 0); // Order preserved!
+            IM_CHECK_EQ(table->Columns[3].SortOrder, 0);
+            IM_CHECK_EQ(table->Columns[0].IsUserEnabled, true); // New columns are visible
+            IM_CHECK_EQ(table->Columns[1].IsUserEnabled, true);
+            IM_CHECK_EQ(table->Columns[2].IsUserEnabled, true); // Settings of "Three" were discarded when removed from submitted columns: hidden state is lost, this is the same as a new column.
+            if (use_settings)
+            {
+                table_settings = ImGui::TableGetBoundSettings(table);
+                IM_CHECK_SILENT(table_settings != NULL);
+                IM_CHECK_EQ(table_settings->ColumnsCount, 4);
+            }
+
+            disturb();
+
+            // Remove labels / stop submitting TableSetupColumns() entirely.
+            vars.Clear();
+            vars.AddColumn(nullptr);
+            vars.AddColumn(nullptr);
+            vars.AddColumn(nullptr);
+            vars.AddColumn(nullptr);
+            vars.LogDebug(ctx);
+            ctx->Yield(2);
+            table = ImGui::TableFindByID(table_id);
+            IM_CHECK_SILENT(table != NULL);
+            IM_CHECK_EQ(table->Columns[3].WidthRequest, 200.0f);
+            IM_CHECK_EQ(table->Columns[3].DisplayOrder, 0); // Order preserved!
+            IM_CHECK_EQ(table->Columns[3].SortOrder, 0);
+            IM_CHECK_EQ(table->Columns[0].IsUserEnabled, true); // New columns are visible
+            IM_CHECK_EQ(table->Columns[1].IsUserEnabled, true);
+            IM_CHECK_EQ(table->Columns[2].IsUserEnabled, true); // Settings of "Three" were discarded when removed from submitted columns: hidden state is lost, this is the same as a new column.
+
+            disturb();
+
+            // Duplicates
+            vars.Clear();
+            vars.AddColumn("AA");
+            vars.AddColumn("AA");
+            vars.AddColumn("BB");
+            vars.AddColumn("BB");
+            vars.LogDebug(ctx);
+            ctx->Yield(2);
+            table = ImGui::TableFindByID(table_id);
+            ctx->TableResizeColumn(table_id, 0, 100.0f);
+            ctx->TableResizeColumn(table_id, 1, 110.0f);
+            ctx->TableResizeColumn(table_id, 2, 120.0f);
+            ctx->TableResizeColumn(table_id, 3, 130.0f);
+            disturb();
+            ctx->Yield(2);
+            table = ImGui::TableFindByID(table_id);
+            IM_CHECK_EQ(table->Columns[0].WidthRequest, 100.0f);
+            IM_CHECK_EQ(table->Columns[1].WidthRequest, 110.0f);
+            IM_CHECK_EQ(table->Columns[2].WidthRequest, 120.0f);
+            IM_CHECK_EQ(table->Columns[3].WidthRequest, 130.0f);
+            // FIXME-TESTS: Is there something to detect?
+        }
     };
 #endif
 
