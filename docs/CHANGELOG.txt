@@ -8,6 +8,8 @@ CHANGELOG
 2026/06/12:
 - TestEngine: fixed an issue with KeyChars() submitting UTF-8 codepoints
   higher than 0xFFFF. (#98)
+- TestEngine: fixed an issue using **/ wildcards in path using escaped
+  slash characters ('\\/'). (#99)
 
 2026/06/10:
 - TestEngine: added ctx->TableResizeColumn() helper given a column name.
