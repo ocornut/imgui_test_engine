@@ -2807,7 +2807,7 @@ void    ImGuiTestContext::KeyChars(const char* chars)
         unsigned int c = 0;
         int bytes_count = ImTextCharFromUtf8(&c, chars, nullptr);
         chars += bytes_count;
-        if (c > 0 && c <= 0xFFFF)
+        if (c > 0 && c <= IM_UNICODE_CODEPOINT_MAX)
             Inputs->Queue.push_back(ImGuiTestInput::ForChar((ImWchar)c));
 
         if (EngineIO->ConfigRunSpeed != ImGuiTestRunSpeed_Fast)
