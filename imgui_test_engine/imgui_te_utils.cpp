@@ -1352,6 +1352,15 @@ void TableDiscardInstanceAndSettings(ImGuiID table_id)
     TableDiscardInstance(table_id);
 }
 
+void SaveIniSettingsToVector(ImVector<char>* out)
+{
+    size_t ini_size = 0;
+    const char* ini_main = ImGui::SaveIniSettingsToMemory(&ini_size);
+    out->resize((int)ini_size + 1);
+    memcpy(out->Data, ini_main, ini_size + 1);
+    out->resize((int)ini_size);
+}
+
 // Helper to verify ImDrawData integrity of buffer count (broke before e.g. #6716)
 void DrawDataVerifyMatchingBufferCount(ImDrawData* draw_data)
 {

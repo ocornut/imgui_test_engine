@@ -132,6 +132,9 @@ void        TableDiscardInstance(ImGuiID table_id);
 void        TableDiscardSettings(ImGuiID table_id);
 void        TableDiscardInstanceAndSettings(ImGuiID table_id);
 
+// Settings
+void        SaveIniSettingsToVector(ImVector<char>* out);
+
 // DrawData functions
 void        DrawDataVerifyMatchingBufferCount(ImDrawData* draw_data);
 

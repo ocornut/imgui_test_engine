@@ -70,6 +70,229 @@ struct TableTestingVars
     int                     Step = 0;
 };
 
+struct TableColumnSpecs
+{
+    char                    Label[32];
+    ImGuiTableColumnFlags   Flags;
+    float                   WidthOrWeight;
+
+    TableColumnSpecs(const char* label, ImGuiTableColumnFlags flags = 0, float width_or_weight = 0.0f) { ImFormatString(Label, IM_COUNTOF(Label), "%s", label); Flags = flags; WidthOrWeight = width_or_weight; }
+};
+
+struct TableSpecs
+{
+    ImGuiTableFlags             TableFlags = 0;
+    ImVector<TableColumnSpecs>  Columns;
+};
+
+struct TableSpecsVars
+{
+    TableSpecs                  Specs[2];
+    int                         ActiveSpecNo = 0;
+    int                         QueueNewColumnIdx = -1;
+    int                         QueueNewColumnSetOrder = -1;
+
+    TableSpecsVars()    { } 
+    ~TableSpecsVars()   { Clear(); }
+
+    TableSpecs& GetActiveSpecs() { return Specs[ActiveSpecNo]; }
+    void Clear()
+    {
+        //ctx->LogInfo("Specs: AddColumn('%s')");
+        for (TableSpecs& specs : Specs)
+            specs.Columns.clear();
+    }
+    void AddColumn(const char* label, ImGuiTableColumnFlags flags = 0, float width_or_weight = 0.0f, int offset = -1)
+    {
+        //IMGUI_DEBUG_LOG(ctx->LogInfo("Specs: AddColumn('%s')", label);
+        TableSpecs& specs = Specs[ActiveSpecNo];
+        if (offset == -1)
+            offset = specs.Columns.Size;
+        IM_ASSERT(offset >= 0 && offset <= specs.Columns.Size);
+        specs.Columns.insert(specs.Columns.Data + offset, TableColumnSpecs(label, flags, width_or_weight));
+    }
+    void RemoveColumn(int column_n)
+    {
+        TableSpecs& specs = Specs[ActiveSpecNo];
+        specs.Columns[column_n].~TableColumnSpecs();
+        specs.Columns.erase(specs.Columns.Data + column_n);
+    }
+    void SwapColumns(int column_n0, int column_n1)
+    {
+        TableSpecs& specs = Specs[ActiveSpecNo];
+        IM_ASSERT(column_n0 != column_n1);
+        ImSwap(specs.Columns[column_n0], specs.Columns[column_n1]);
+    }
+    void LogDebug(ImGuiTestContext* ctx)
+    {
+        Str256 buf;
+        buf.appendf("Spec = { ", ActiveSpecNo);
+        for (auto& column_spec : Specs[ActiveSpecNo].Columns)
+            buf.appendf("\"%s\", ", column_spec.Label);
+        buf.appendf("}");
+        ctx->LogDebug(buf.c_str());
+    }
+    ImGuiTable* ShowTable(const char* name)
+    {
+        ImGuiTable* table = nullptr;
+        TableSpecs& specs = Specs[ActiveSpecNo];
+        if (specs.Columns.Size > 0 && ImGui::BeginTable(name, specs.Columns.Size, specs.TableFlags))
+        {
+            for (TableColumnSpecs& column_spec : specs.Columns)
+                ImGui::TableSetupColumn(column_spec.Label, column_spec.Flags, column_spec.WidthOrWeight);
+            ImGui::TableHeadersRow();
+            for (int row = 0; row < 8; row++)
+            {
+                ImGui::TableNextRow();
+                for (int col = 0; col < specs.Columns.Size; col++)
+                    if (ImGui::TableNextColumn())
+                        ImGui::Text("%d", col);
+            }
+            table = ImGui::GetCurrentTable();
+            ImGui::EndTable();
+        }
+        return table;
+    }
+    void ShowEditor()
+    {
+        TableSpecs& specs = Specs[ActiveSpecNo];
+        int remove_idx = -1;
+        int move_idx = -1;
+        int move_dir = 0;
+        for (int n = 0; n < specs.Columns.Size; n++)
+        {
+            TableColumnSpecs& column_spec = specs.Columns[n];
+            ImGui::PushID(n);
+            ImGui::AlignTextToFramePadding();
+            ImGui::Text("%d: 0x%08X", n, ImHashStr(column_spec.Label));
+            ImGui::SameLine();
+            if (ImGui::Button("Del"))
+                remove_idx = n;
+            ImGui::SameLine();
+            ImGui::BeginDisabled(n == 0);
+            if (ImGui::ArrowButton("##MoveUp", ImGuiDir_Up))
+            {
+                move_idx = n;
+                move_dir = -1;
+            }
+            ImGui::EndDisabled();
+            ImGui::SameLine();
+            ImGui::BeginDisabled(n + 1 == specs.Columns.Size);
+            if (ImGui::ArrowButton("##MoveDown", ImGuiDir_Down))
+            {
+                move_idx = n;
+                move_dir = +1;
+            }
+            ImGui::EndDisabled();
+            ImGui::SameLine();
+            ImGui::Text("%s", column_spec.Label);
+            ImGui::PopID();
+        }
+        if (remove_idx != -1)
+            RemoveColumn(remove_idx);
+        if (move_idx != -1)
+            SwapColumns(move_idx, move_idx + move_dir);
+
+        static char add_label[128] = "label";
+        static int add_offset = 0;
+        if (ImGui::Button("Add"))
+            AddColumn(add_label, 0, 0.0f, ImMin(specs.Columns.Size, add_offset));
+        ImGui::SameLine();
+        ImGui::SetNextItemWidth(ImGui::GetFontSize() * 9);
+        ImGui::InputTextWithHint("##label", "Label", add_label, IM_ARRAYSIZE(add_label));
+        ImGui::SameLine();
+        ImGui::SetNextItemWidth(ImGui::GetFontSize() * 5);
+        ImGui::SliderInt("offset", &add_offset, 0, 12);
+
+        ImGui::CheckboxFlags("_Reorderable", &specs.TableFlags, ImGuiTableFlags_Reorderable);
+    }
+    void ShowEditors()
+    {
+        int next_active_spec_no = ActiveSpecNo;
+        for (int n = 0; n < 2; n++)
+        {
+            ImGui::PushID(n);
+            ActiveSpecNo = n;
+            auto& specs = GetActiveSpecs();
+            ImGui::SeparatorText(Str64f("Specs %d%s: %d columns", n, n == next_active_spec_no ? " (Active)" : "", specs.Columns.Size).c_str());
+            ShowEditor();
+            ImGui::PopID();
+        }
+        ActiveSpecNo = next_active_spec_no;
+
+        ImGui::SeparatorText("Controls");
+        float button_w = ImGui::CalcTextSize("Make Spec XX active").x;
+
+        if (ImGui::Button("Make Spec 0 active", { button_w, 0.0f }))
+            ActiveSpecNo = 0;
+        ImGui::SameLine();
+        if (ImGui::Button("Make Spec 1 active", { button_w, 0.0f }))
+            ActiveSpecNo = 1;
+
+        if (ImGui::Button("Copy Spec 0 to 1", { button_w, 0.0f }))
+            Specs[1] = Specs[0];
+        ImGui::SameLine();
+        if (ImGui::Button("Copy Spec 1 to 0", { button_w, 0.0f }))
+            Specs[0] = Specs[1];
+    }
+    void ShowActionButtons(ImGuiID table_id)
+    {
+        bool want_swap = false;
+        ImVec2 button_sz(ImGui::CalcTextSize("Discard Settings + SwapXX").x, 0.0f);
+
+        if (ImGui::Button("Reset Settings", button_sz))
+            ImGui::TableResetSettings(ImGui::TableFindByID(table_id));
+        ImGui::SameLine();
+        if (ImGui::Button("Reset Settings + Swap", button_sz))
+        {
+            ImGui::TableResetSettings(ImGui::TableFindByID(table_id));
+            want_swap = true;
+        }
+
+        if (ImGui::Button("Discard Settings", button_sz))
+            TableDiscardSettings(table_id);
+        ImGui::SameLine();
+        if (ImGui::Button("Discard Settings + Swap", button_sz))
+        {
+            TableDiscardSettings(table_id);
+            want_swap = true;
+        }
+
+        if (ImGui::Button("Discard Instance", button_sz))
+            TableDiscardInstance(table_id);
+        ImGui::SameLine();
+        if (ImGui::Button("Discard Instance + Swap", button_sz))
+        {
+            TableDiscardInstance(table_id);
+            want_swap = true;
+        }
+
+        if (ImGui::Button("Discard Both", button_sz))
+            TableDiscardInstanceAndSettings(table_id);
+        ImGui::SameLine();
+        if (ImGui::Button("Discard Both + Swap", button_sz))
+        {
+            TableDiscardInstanceAndSettings(table_id);
+            want_swap = true;
+        }
+
+        if (want_swap)
+            ActiveSpecNo ^= 1;
+    }
+    void ShowIniData(ImGuiID table_id)
+    {
+        ImGuiContext& g = *GImGui;
+        ImGui::SeparatorText(".ini settings");
+        ImGui::Text("SettingsDirtyTimer %.2f", g.SettingsDirtyTimer);
+        ImGui::SameLine();
+        if (ImGui::SmallButton("Save now"))
+            ImGui::SaveIniSettingsToMemory();
+        if (ImGuiTable* table = ImGui::TableFindByID(table_id))
+            if (ImGuiTableSettings* settings = ImGui::TableGetBoundSettings(table))
+                ImGui::DebugNodeTableSettings(settings);
+    }
+};
+
 static void HelperDrawAndFillBounds(TableTestingVars* vars)
 {
     ImGuiWindow* outer_window = ImGui::GetCurrentWindow();
@@ -2013,7 +2236,6 @@ void RegisterTests_Table(ImGuiTestEngine* e)
         TableDiscardInstanceAndSettings(table_id);
     };
 
-
     // ## Test saving and loading table settings (more)
     t = IM_REGISTER_TEST(e, "table", "table_settings_2");
     t->GuiFunc = [](ImGuiTestContext* ctx)
@@ -2122,6 +2344,78 @@ void RegisterTests_Table(ImGuiTestEngine* e)
         ImGuiTableSettings* settings = ImGui::TableGetBoundSettings(table);
         IM_CHECK(settings != NULL);
         IM_CHECK(settings->SaveFlags == 0);
+    };
+#endif
+
+    // ## Test loading incomplete .ini data without _TrackTopologyChanges (#4046, #9108)
+#if IMGUI_VERSION_NUM >= 19283
+    t = IM_REGISTER_TEST(e, "table", "table_settings_4");
+    t->SetVarsDataType<TableSpecsVars>(
+        [](ImGuiTestContext* ctx, TableSpecsVars& vars)
+    {
+        vars.Specs[0].TableFlags |= ImGuiTableFlags_Resizable | ImGuiTableFlags_Reorderable | ImGuiTableFlags_Hideable | ImGuiTableFlags_Sortable;
+        vars.Specs[0].TableFlags |= ImGuiTableFlags_RowBg | ImGuiTableFlags_Borders;
+        vars.Specs[0].TableFlags |= ImGuiTableFlags_SizingFixedFit;
+        vars.Specs[1].TableFlags = vars.Specs[0].TableFlags;
+    });
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        auto& vars = ctx->GetVars<TableSpecsVars>();
+
+        ImGui::SetNextWindowSize({ ImGui::GetFontSize() * 35, ImGui::GetFontSize() * 50 }, ImGuiCond_Appearing);
+        ImGui::Begin("Test Window", NULL); // WITHOUT ImGuiWindowFlags_NoSavedSettings);
+        const ImGuiID table_id = ImGui::GetID("Table1");
+
+        if (ctx->IsFirstGuiFrame())
+            TableDiscardInstanceAndSettings(table_id);
+        if (ctx->IsFirstGuiFrame() && ctx->IsGuiFuncOnly())
+        {
+            vars.AddColumn("One");
+            vars.AddColumn("Two");
+            vars.AddColumn("Three");
+        }
+
+        // Show table, Edit specs
+        vars.ShowActionButtons(table_id);
+        vars.ShowTable("Table1");
+        vars.ShowEditors();
+        vars.ShowIniData(table_id);
+
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        auto& vars = ctx->GetVars<TableSpecsVars>();
+        ctx->SetRef("Test Window");
+        ImGuiID table_id = ctx->GetID("Table1");
+
+        //ImGuiContext& g = *GImGui;
+        //g.DebugLogFlags |= ImGuiDebugLogFlags_EventTable;
+
+        vars.Clear();
+        vars.AddColumn("AAA");
+        vars.AddColumn("BBB");
+        vars.AddColumn("CCC");
+        ctx->Yield(2);
+        ImGuiTable* table = ImGui::TableFindByID(table_id);
+
+        ImVector<char> ini_data;
+        SaveIniSettingsToVector(&ini_data);
+        TableDiscardInstanceAndSettings(table_id);
+        vars.AddColumn("DDD", 0, 55.0f);
+        ctx->Yield(2);
+        IM_CHECK_EQ(table->Columns[3].WidthRequest, 55.0f);
+        IM_CHECK_EQ(table->Columns[3].IsUserEnabled, true);
+
+        ctx->TableResizeColumn(table_id, "DDD", 199.0f);
+        ctx->TableSetColumnEnabled(table_id, "DDD", false);
+        IM_CHECK_EQ(table->Columns[3].WidthRequest, 199.0f);
+        IM_CHECK_EQ(table->Columns[3].IsUserEnabled, false);
+
+        ImGui::LoadIniSettingsFromMemory(ini_data.Data, ini_data.Size);
+        ctx->Yield(2);
+        IM_CHECK_EQ(table->Columns[3].WidthRequest, 55.0f);
+        IM_CHECK_EQ(table->Columns[3].IsUserEnabled, true);
     };
 #endif
 
