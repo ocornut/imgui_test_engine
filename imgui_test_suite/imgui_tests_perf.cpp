@@ -162,6 +162,7 @@ void RegisterTests_Perf(ImGuiTestEngine* e)
         ImVec2 bounds_min = ImGui::GetItemRectMin();
         ImVec2 bounds_size = ImGui::GetItemRectSize();
         ImVec2 bounds_max = bounds_min + bounds_size;
+        IM_UNUSED(bounds_max);
         ImVec2 center = ImTrunc(bounds_min + bounds_size * 0.5f);
         float r = ImTrunc(ImMin(bounds_size.x, bounds_size.y) * 0.8f * 0.5f);
         float rounding = 8.0f;
@@ -458,6 +459,8 @@ void RegisterTests_Perf(ImGuiTestEngine* e)
                         float rounding = RandFloatRange(rnd_state, 0.f, 15.f);
                         float thickness = RandFloatRange(rnd_state, 0.f, 15.f);
 //                        draw_list->AddRect(p_min, p_max, col, rounding, thickness, flags);
+                        IM_UNUSED(p_min);
+                        IM_UNUSED(p_max);
                         IM_UNUSED(rounding);
                         IM_UNUSED(thickness);
                     }
@@ -466,6 +469,8 @@ void RegisterTests_Perf(ImGuiTestEngine* e)
                         ImVec2 p_max = { p_min.x + RandFloatRange(rnd_state, bounds_size.x, bounds_size.x), p_min.y + RandFloatRange(rnd_state, bounds_size.y, bounds_size.y) };
                         float rounding = RandFloatRange(rnd_state, 0.f, 15.f);
 //                        draw_list->AddRectFilled(p_min, p_max, col, rounding, flags);
+                        IM_UNUSED(p_min);
+                        IM_UNUSED(p_max);
                         IM_UNUSED(rounding);
                     }
                 }

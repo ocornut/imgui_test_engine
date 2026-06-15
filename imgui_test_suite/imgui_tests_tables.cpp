@@ -130,7 +130,7 @@ struct TableSpecsVars
         for (auto& column_spec : Specs[ActiveSpecNo].Columns)
             buf.appendf("\"%s\", ", column_spec.Label);
         buf.appendf("}");
-        ctx->LogDebug(buf.c_str());
+        ctx->LogDebug("%s", buf.c_str());
     }
     ImGuiTable* ShowTable(const char* name)
     {
@@ -289,7 +289,11 @@ struct TableSpecsVars
             ImGui::SaveIniSettingsToMemory();
         if (ImGuiTable* table = ImGui::TableFindByID(table_id))
             if (ImGuiTableSettings* settings = ImGui::TableGetBoundSettings(table))
+#if IMGUI_VERSION_NUM < 19283
                 ImGui::DebugNodeTableSettings(settings);
+#else
+                ImGui::DebugNodeTableSettings(settings, table);
+#endif
     }
 };
 
