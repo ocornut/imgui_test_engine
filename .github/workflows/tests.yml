@@ -277,8 +277,8 @@ jobs:
   Windows:
     runs-on: windows-2022
     env:
-      VS_PATH: C:\Program Files\Microsoft Visual Studio\2022\Enterprise\
-      MSBUILD_PATH: C:\Program Files\Microsoft Visual Studio\2022\Enterprise\MSBuild\Current\Bin\
+      VS_PATH: C:\Program Files\Microsoft Visual Studio\18\Enterprise
+      MSBUILD_PATH: C:\Program Files\Microsoft Visual Studio\18\Enterprise\MSBuild\Current\Bin\
       BUILD_ALWAYS: ${{ secrets.BUILD_ALWAYS }}
       BUILD_SCHEDULED: ${{ secrets.BUILD_SCHEDULED }}
 
