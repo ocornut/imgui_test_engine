@@ -5,6 +5,9 @@ CHANGELOG
    Those changes are not all listed here.
 ** For a while this is going to ONLY INCLUDE BREAKING CHANGES.
 
+2026/06/15:
+- TestEngine: added `IM_DEBUG_BREAK` handler for GCC+AArch64/ARM64. (#100)
+
 2026/06/12:
 - TestEngine: fixed an issue with KeyChars() submitting UTF-8 codepoints
   higher than 0xFFFF. (#98)

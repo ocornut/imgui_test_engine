@@ -39,7 +39,7 @@
 #endif
 
 // Define IM_DEBUG_BREAK macros so it is accessible in imgui.h
-// (this is a conveniance for app using test engine may define an IM_ASSERT() that uses this instead of an actual assert)
+// (this is a convenience for app using test engine may define an IM_ASSERT() that uses this instead of an actual assert)
 // (this is a copy of the block in imgui_internal.h. if the one in imgui_internal.h were to be defined at the top of imgui.h we wouldn't need this)
 #ifndef IM_DEBUG_BREAK
 #if defined (_MSC_VER)
@@ -52,6 +52,8 @@
 #define IM_DEBUG_BREAK()    __asm__ volatile(".inst 0xde01")
 #elif defined(__GNUC__) && defined(__arm__) && !defined(__thumb__)
 #define IM_DEBUG_BREAK()    __asm__ volatile(".inst 0xe7f001f0");
+#elif defined(__GNUC__) && defined(__aarch64__)
+#define IM_DEBUG_BREAK()    __asm__ volatile(".inst 0xd4200000")    // GDB needs 'set $pc=($pc+4)' to skip this :(
 #else
 #define IM_DEBUG_BREAK()    IM_ASSERT(0)    // It is expected that you define IM_DEBUG_BREAK() into something that will break nicely in a debugger!
 #endif
