@@ -1328,6 +1328,7 @@ void TableDiscardInstance(ImGuiID table_id)
     if (ImGuiTable* table = ImGui::TableFindByID(table_id))
     {
         IM_ASSERT(g.CurrentTable != table);
+        //ImGui::TableSaveSettings(table);
         ImGui::TableRemove(table);
     }
 }
@@ -1348,8 +1349,8 @@ void TableDiscardSettings(ImGuiID table_id)
 // FIXME: Could be moved to core as an internal function?
 void TableDiscardInstanceAndSettings(ImGuiID table_id)
 {
+    TableDiscardInstance(table_id); // In this order because TableDiscardInstance() does a setting save.
     TableDiscardSettings(table_id);
-    TableDiscardInstance(table_id);
 }
 
 void SaveIniSettingsToVector(ImVector<char>* out)

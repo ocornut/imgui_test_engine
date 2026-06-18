@@ -73,10 +73,11 @@ struct TableTestingVars
 struct TableColumnSpecs
 {
     char                    Label[32];
+    ImGuiID                 ID;             // Unused but helpful during debugging.
     ImGuiTableColumnFlags   Flags;
     float                   WidthOrWeight;
 
-    TableColumnSpecs(const char* label, ImGuiTableColumnFlags flags = 0, float width_or_weight = 0.0f) { ImFormatString(Label, IM_COUNTOF(Label), "%s", label); Flags = flags; WidthOrWeight = width_or_weight; }
+    TableColumnSpecs(const char* label, ImGuiTableColumnFlags flags = 0, float width_or_weight = 0.0f) { ImFormatString(Label, IM_COUNTOF(Label), "%s", label); ID = ImHashStr(Label); Flags = flags; WidthOrWeight = width_or_weight; }
 };
 
 struct TableSpecs
@@ -89,8 +90,7 @@ struct TableSpecsVars
 {
     TableSpecs                  Specs[2];
     int                         ActiveSpecNo = 0;
-    int                         QueueNewColumnIdx = -1;
-    int                         QueueNewColumnSetOrder = -1;
+    const char*                 TableName = nullptr;
 
     TableSpecsVars()    { } 
     ~TableSpecsVars()   { Clear(); }
@@ -2416,10 +2416,87 @@ void RegisterTests_Table(ImGuiTestEngine* e)
         IM_CHECK_EQ(table->Columns[3].WidthRequest, 199.0f);
         IM_CHECK_EQ(table->Columns[3].IsUserEnabled, false);
 
+        // Data for column 3 is missing: should be reset.
         ImGui::LoadIniSettingsFromMemory(ini_data.Data, ini_data.Size);
         ctx->Yield(2);
         IM_CHECK_EQ(table->Columns[3].WidthRequest, 55.0f);
         IM_CHECK_EQ(table->Columns[3].IsUserEnabled, true);
+    };
+#endif
+
+#if IMGUI_VERSION_NUM >= 19284
+    // ## Basic test for GC
+    t = IM_REGISTER_TEST(e, "table", "table_settings_5");
+    t->SetVarsDataType<TableSpecsVars>(
+        [](ImGuiTestContext* ctx, TableSpecsVars& vars)
+    {
+        vars.Specs[0].TableFlags |= ImGuiTableFlags_Resizable | ImGuiTableFlags_Reorderable | ImGuiTableFlags_Hideable | ImGuiTableFlags_Sortable;
+        vars.Specs[0].TableFlags |= ImGuiTableFlags_RowBg | ImGuiTableFlags_Borders;
+        vars.Specs[0].TableFlags |= ImGuiTableFlags_SizingFixedFit;
+        vars.Specs[1].TableFlags = vars.Specs[0].TableFlags;
+        vars.TableName = "TestTable1";
+    });
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        auto& vars = ctx->GetVars<TableSpecsVars>();
+        ImGui::SetNextWindowSize({ ImGui::GetFontSize() * 35, ImGui::GetFontSize() * 50 }, ImGuiCond_Appearing);
+        ImGui::Begin("Test Window", NULL); // WITHOUT ImGuiWindowFlags_NoSavedSettings);
+        vars.ShowTable(vars.TableName);
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        auto& vars = ctx->GetVars<TableSpecsVars>();
+        ImGuiContext& g = *GImGui;
+        ctx->SetRef("Test Window");
+        vars.AddColumn("A");
+        vars.AddColumn("B");
+        vars.AddColumn("C");
+
+        g.GcCompactAll = true;
+        ctx->Yield(2);
+
+        int TABLES_TO_GC = 10;
+
+        Str30 table_name;
+        for (int n = 0; n < TABLES_TO_GC; n++)
+        {
+            table_name.setf("Test %d", n);
+            vars.TableName = table_name.c_str();
+            ctx->Yield(2);
+            ctx->TableResizeColumn(ctx->GetID(vars.TableName), 1, 109.0f); // Mark dirty
+            ctx->TableResizeColumn(ctx->GetID(vars.TableName), 1, 111.0f);
+        }
+        ImGui::SaveIniSettingsToMemory();
+        for (int n = 0; n < TABLES_TO_GC; n++)
+        {
+            table_name.setf("Test %d", n);
+            vars.TableName = table_name.c_str();
+            TableDiscardSettings(ctx->GetID(vars.TableName));
+        }
+        //IM_SUSPEND_TESTFUNC();
+
+        // Create a table that will stay
+        vars.TableName = "table_settings_5";
+        TableDiscardSettings(ctx->GetID(vars.TableName));
+        ctx->Yield(2);
+        ctx->TableResizeColumn(ctx->GetID(vars.TableName), 1, 109.0f); // Mark dirty
+        ctx->TableResizeColumn(ctx->GetID(vars.TableName), 1, 111.0f);
+        ctx->Yield();
+        ImGui::SaveIniSettingsToMemory();
+        //IM_SUSPEND_TESTFUNC();
+
+        // GC others
+        int sz_before = g.SettingsTables.size();
+        g.GcCompactAll = true;
+        ctx->Yield(2);
+        int sz_after = g.SettingsTables.size();
+        IM_CHECK_LE(sz_after, sz_before);
+        IM_CHECK_LE(sz_after, sz_before - TABLES_TO_GC * 3 * sizeof(ImGuiTableColumnSettings));
+
+        // Mark our remaining table dirty again
+        ctx->TableResizeColumn(ctx->GetID(vars.TableName), 1, 109.0f); // Mark dirty
+        ctx->TableResizeColumn(ctx->GetID(vars.TableName), 1, 111.0f);
     };
 #endif
 
