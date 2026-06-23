@@ -2450,7 +2450,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         auto& vars = ctx->GetVars<TableSpecsVars>();
-        ImGui::SetNextWindowSize({ ImGui::GetFontSize() * 35, ImGui::GetFontSize() * 50 }, ImGuiCond_Appearing);
+        ImGui::SetNextWindowSize({ ImMax(500.0f, ImGui::GetFontSize() * 35), ImGui::GetFontSize() * 50 }, ImGuiCond_Appearing);
         ImGui::Begin("Test Window", NULL); // WITHOUT ImGuiWindowFlags_NoSavedSettings);
         vars.ShowTable(vars.TableName);
         ImGui::End();
@@ -2555,12 +2555,12 @@ void RegisterTests_Table(ImGuiTestEngine* e)
         ctx->SetRef("Test Window");
         ImGuiID table_id = ctx->GetID("Table1");
 
-        GImGui->DebugLogFlags |= ImGuiDebugLogFlags_EventTable;
+        //GImGui->DebugLogFlags |= ImGuiDebugLogFlags_EventTable;
 
         for (int step = 0; step < 4; step++)
         {
-            // Step 0: change specs while table is active
-            // Step 1: change specs after discarding table instance (reload from settings)
+            // Step 0: change specs while table is active: mostly exercise TableReconcileColumns()
+            // Step 1: change specs after discarding table instance (reload from settings): exercise TableLoadSettingsForColumns()
             // Step 2: change specs after saving .ini data and discarding both instance and settings (simulate app restart with a modified build)
             // Step 3: change specs while table is active, with ImGuiTableFlags_NoSavedSettings (preservation via runtime reconcile only)
             ctx->LogDebug("Step %d", step);
@@ -2708,6 +2708,59 @@ void RegisterTests_Table(ImGuiTestEngine* e)
 
             disturb();
 
+            // Restore with duplicates
+            vars.Clear();
+            vars.AddColumn("A");
+            vars.AddColumn("V1###V");
+            vars.AddColumn("V2###V");
+            vars.LogDebug(ctx);
+            ctx->Yield(2);
+            table = ImGui::TableFindByID(table_id);
+            ctx->TableResizeColumn(table_id, 0, 100.0f);
+            ctx->TableResizeColumn(table_id, 1, 110.0f);
+            ctx->TableResizeColumn(table_id, 2, 120.0f);
+            IM_CHECK_EQ(table->Columns[0].WidthRequest, 100.0f);
+            IM_CHECK_EQ(table->Columns[1].WidthRequest, 110.0f);
+            IM_CHECK_EQ(table->Columns[2].WidthRequest, 120.0f);
+            disturb();
+            vars.Clear();
+            vars.AddColumn("A", 0, 66.0f);
+            vars.AddColumn("NEW", 0, 66.0f);
+            vars.AddColumn("V1###V", 0, 66.0f);
+            vars.AddColumn("V2###V", 0, 66.0f);
+            vars.LogDebug(ctx);
+            ctx->Yield(2);
+            table = ImGui::TableFindByID(table_id);
+            IM_CHECK_EQ(table->Columns[0].WidthRequest, 100.0f);
+            IM_CHECK_EQ(table->Columns[1].WidthRequest, 66.0f);
+            IM_CHECK_EQ(table->Columns[2].WidthRequest, 110.0f);
+            IM_CHECK_EQ(table->Columns[3].WidthRequest, 120.0f); // Pick first available by ID match 
+
+            // Restore with duplicates (alt)
+            // This tends to check for subtle differences between TableReconcileColumns() and the TableLoadSettingsForColumns() path.
+            vars.Clear();
+            vars.AddColumn("x");
+            vars.AddColumn("y");
+            vars.AddColumn("z");
+            vars.LogDebug(ctx);
+            ctx->Yield(2);
+            table = ImGui::TableFindByID(table_id);
+            ctx->TableResizeColumn(table_id, 0, 100.0f);
+            ctx->TableResizeColumn(table_id, 1, 110.0f);
+            ctx->TableResizeColumn(table_id, 2, 120.0f);
+            disturb();
+            vars.Clear();
+            vars.AddColumn("y", 0, 66.0f);
+            vars.AddColumn("y", 0, 67.0f);
+            vars.AddColumn("y", 0, 68.0f);
+            ctx->Yield(2);
+            table = ImGui::TableFindByID(table_id);
+            IM_CHECK_EQ(table->Columns[0].WidthRequest, 110.0f);
+            IM_CHECK_EQ(table->Columns[1].WidthRequest, 100.0f); // Remaining
+            IM_CHECK_EQ(table->Columns[2].WidthRequest, 120.0f); // Remaining
+
+            disturb();
+
             // Duplicates
             vars.Clear();
             vars.AddColumn("AA");
@@ -2717,17 +2770,17 @@ void RegisterTests_Table(ImGuiTestEngine* e)
             vars.LogDebug(ctx);
             ctx->Yield(2);
             table = ImGui::TableFindByID(table_id);
-            ctx->TableResizeColumn(table_id, 0, 100.0f);
-            ctx->TableResizeColumn(table_id, 1, 110.0f);
-            ctx->TableResizeColumn(table_id, 2, 120.0f);
-            ctx->TableResizeColumn(table_id, 3, 130.0f);
+            ctx->TableResizeColumn(table_id, 0, 70.0f);
+            ctx->TableResizeColumn(table_id, 1, 80.0f);
+            ctx->TableResizeColumn(table_id, 2, 90.0f);
+            ctx->TableResizeColumn(table_id, 3, 100.0f);
             disturb();
             ctx->Yield(2);
             table = ImGui::TableFindByID(table_id);
-            IM_CHECK_EQ(table->Columns[0].WidthRequest, 100.0f);
-            IM_CHECK_EQ(table->Columns[1].WidthRequest, 110.0f);
-            IM_CHECK_EQ(table->Columns[2].WidthRequest, 120.0f);
-            IM_CHECK_EQ(table->Columns[3].WidthRequest, 130.0f);
+            IM_CHECK_EQ(table->Columns[0].WidthRequest, 70.0f);
+            IM_CHECK_EQ(table->Columns[1].WidthRequest, 80.0f);
+            IM_CHECK_EQ(table->Columns[2].WidthRequest, 90.0f);
+            IM_CHECK_EQ(table->Columns[3].WidthRequest, 100.0f);
             // FIXME-TESTS: Is there something to detect?
         }
     };
