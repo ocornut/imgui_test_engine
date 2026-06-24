@@ -1423,7 +1423,7 @@ ImGuiApp* ImGuiApp_ImplGlfwGL3_Create()
     intf->InitBackends          = ImGuiApp_ImplGlfw_InitBackends;
     intf->NewFrame              = ImGuiApp_ImplGlfwGL3_NewFrame;
     intf->Render                = ImGuiApp_ImplGlfwGL3_Render;
-    intf->Present               = ImGuiApp_ImplGlfwGL3_Present
+    intf->Present               = ImGuiApp_ImplGlfwGL3_Present;
     intf->ShutdownCloseWindow   = ImGuiApp_ImplGlfwGL3_ShutdownCloseWindow;
     intf->ShutdownBackends      = ImGuiApp_ImplGlfwGL3_ShutdownBackends;
     intf->CaptureFramebuffer    = ImGuiApp_ImplGlfwGL3_CaptureFramebuffer;

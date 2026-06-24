@@ -275,7 +275,7 @@ jobs:
   # Windows minutes are a little expensive (x2) for private repo so reduce the amount of tests running there for now.
   # Builds and tests are performed only for docking branch and x64 arch. Daily builds also include x86.
   Windows:
-    runs-on: windows-2022
+    runs-on: windows-2025
     env:
       VS_PATH: C:\Program Files\Microsoft Visual Studio\18\Enterprise
       MSBUILD_PATH: C:\Program Files\Microsoft Visual Studio\18\Enterprise\MSBuild\Current\Bin\
