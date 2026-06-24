@@ -2428,7 +2428,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
         IM_CHECK_EQ(table->Columns[3].IsUserEnabled, false);
 
         // Data for column 3 is missing: should be reset.
-        ImGui::LoadIniSettingsFromMemory(ini_data.Data, ini_data.Size);
+        ImGui::LoadIniSettingsFromMemory(ini_data.Data);
         ctx->Yield(2);
         IM_CHECK_EQ(table->Columns[3].WidthRequest, 55.0f);
         IM_CHECK_EQ(table->Columns[3].IsUserEnabled, true);
@@ -2503,7 +2503,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
         ctx->Yield(2);
         int sz_after = g.SettingsTables.size();
         IM_CHECK_LE(sz_after, sz_before);
-        IM_CHECK_LE(sz_after, sz_before - TABLES_TO_GC * 3 * sizeof(ImGuiTableColumnSettings));
+        IM_CHECK_LE(sz_after, sz_before - TABLES_TO_GC * 3 * (int)sizeof(ImGuiTableColumnSettings));
 
         // Mark our remaining table dirty again
         ctx->TableResizeColumn(ctx->GetID(vars.TableName), 1, 109.0f); // Mark dirty
@@ -2586,7 +2586,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
                     // But for safety/completeness we do it this way too.
                     SaveIniSettingsToVector(&ini_data);
                     TableDiscardInstanceAndSettings(table_id);
-                    ImGui::LoadIniSettingsFromMemory(ini_data.Data, ini_data.Size);
+                    ImGui::LoadIniSettingsFromMemory(ini_data.Data);
                     table = NULL;
                 }
             };
