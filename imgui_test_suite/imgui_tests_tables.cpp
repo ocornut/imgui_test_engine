@@ -110,7 +110,7 @@ struct TableSpecsVars
         if (offset == -1)
             offset = specs.Columns.Size;
         IM_ASSERT(offset >= 0 && offset <= specs.Columns.Size);
-        specs.Columns.insert(specs.Columns.Data + offset, TableColumnSpecs(label, flags, width_or_weight));
+        specs.Columns.insert(specs.Columns.Data + offset, TableColumnSpecs(label ? label : "", flags, width_or_weight));
     }
     void RemoveColumn(int column_n)
     {
@@ -141,7 +141,7 @@ struct TableSpecsVars
         {
             table = ImGui::GetCurrentTable();
             for (TableColumnSpecs& column_spec : specs.Columns)
-                if (column_spec.Label != nullptr)
+                if (column_spec.Label[0])// != nullptr)
                     ImGui::TableSetupColumn(column_spec.Label, column_spec.Flags, column_spec.WidthOrWeight);
             for (TableColumnSpecs& column_spec : specs.Columns)
                 if (column_spec.QueueSetDisplayOrder != -1)
