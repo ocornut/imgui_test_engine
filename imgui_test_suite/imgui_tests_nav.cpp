@@ -453,7 +453,7 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
                 if (ImGui::BeginMenu("Submenu2"))
                 {
                     bool use_child = ctx->Test->ArgVariant == 1;
-                    if (!use_child || ImGui::BeginChild("Child", ImVec2(100.f, 30.f), ImGuiChildFlags_Borders))
+                    if (!use_child || ImGui::BeginChild("Child", ImVec2(0.0f, 0.0f), ImGuiChildFlags_Borders | ImGuiChildFlags_AutoResizeX | ImGuiChildFlags_AutoResizeY))
                     {
                         if (ImGui::BeginTabBar("Tabs"))
                         {

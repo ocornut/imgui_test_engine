@@ -2050,14 +2050,14 @@ void RegisterTests_Window(ImGuiTestEngine* e)
         ImGuiWindow* child2 = ctx->WindowInfo("Child 2").Window;
         IM_CHECK(child1 != NULL && child2 != NULL);
 
-        ctx->WindowResize("", ImVec2(500.0f, 800.0f)); // Without scrollbar
+        ctx->WindowResize("", ImVec2(500.0f, 30 * ImGui::GetTextLineHeightWithSpacing())); // Without scrollbar
         ctx->WindowResize(child1->ID, ImVec2(300.0f, child1->Size.y));
         ctx->WindowResize(child1->ID, ImVec2(100.0f, child1->Size.y));
         ctx->MouseDoubleClick(0);
         IM_CHECK_EQ(child1->ScrollbarY, false);
         IM_CHECK_EQ(child1->Size.x, ImGui::CalcTextSize("Object with Long Name").x + ImGui::GetStyle().WindowPadding.x * 2.0f);
 
-        ctx->WindowResize("", ImVec2(500.0f, 100.0f)); // Scrollbar
+        ctx->WindowResize("", ImVec2(500.0f, 3 * ImGui::GetFrameHeightWithSpacing())); // Scrollbar
         ctx->WindowResize(child1->ID, ImVec2(300.0f, child1->Size.y));
         ctx->WindowResize(child1->ID, ImVec2(100.0f, child1->Size.y));
         ctx->MouseDoubleClick(0);
@@ -2353,7 +2353,7 @@ void RegisterTests_Window(ImGuiTestEngine* e)
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         ctx->WindowResize("Test Scrolling", ImVec2(400, 400));
-        ctx->WindowResize("Test Scrolling", ImVec2(100, 100));
+        ctx->WindowResize("Test Scrolling", ImVec2(100, ImGui::GetFrameHeightWithSpacing() * 3));
     };
 
     // ## Test scrollbar visibility
