@@ -1072,7 +1072,7 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
         ctx->NavInput();
         ctx->KeyCharsReplace("123");
         IM_CHECK_STR_EQ(vars.Str1, "123");
-        ctx->KeyPress(ImGuiKey_Enter);
+        ctx->KeyPress(ImGuiMod_Shift | ImGuiKey_Enter); // validate even with io.ConfigInputTextEnterKeepActive=true
         IM_CHECK(g.ActiveId == 0);
         IM_CHECK_STR_EQ(vars.Str1, "123");
 
@@ -1092,7 +1092,7 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
         IM_CHECK_STR_EQ(vars.Str1, "0");
         ctx->NavInput();
         ctx->KeyCharsReplace("123");
-        ctx->NavInput();
+        ctx->KeyPress(ImGuiMod_Shift | ImGuiKey_Enter);
         IM_CHECK(g.ActiveId == 0);
         IM_CHECK_STR_EQ(vars.Str1, "123");
 

@@ -969,7 +969,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
             if (is_input)
             {
                 ctx->KeyChars("123"); // Edit
-                ctx->KeyPress(ImGuiKey_Enter);
+                ctx->KeyPress(ImGuiMod_Shift | ImGuiKey_Enter);
             }
             IM_CHECK(status.Activated == 0 && status.Deactivated == 1);
 
@@ -1335,7 +1335,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
             ctx->ItemClick(field_0);
             IM_CHECK(status.RetValue == 0 && status.Activated == 1 && status.Deactivated == 0 && status.DeactivatedAfterEdit == 0);
             status.Clear();
-            ctx->KeyPress(ImGuiKey_Enter);
+            ctx->KeyPress(ImGuiMod_Shift | ImGuiKey_Enter);
             if (vars.InputTextFlags & ImGuiInputTextFlags_EnterReturnsTrue)
                 IM_CHECK(status.RetValue == 1);
             else
@@ -1353,7 +1353,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
                 IM_CHECK(status.RetValue >= 1);
             IM_CHECK(status.Activated == 0 && status.Deactivated == 0 && status.Edited >= 1);
             status.Clear();
-            ctx->KeyPress(ImGuiKey_Enter);
+            ctx->KeyPress(ImGuiMod_Shift | ImGuiKey_Enter);
             if (vars.InputTextFlags & ImGuiInputTextFlags_EnterReturnsTrue)
                 IM_CHECK(status.RetValue == 1);
             else
