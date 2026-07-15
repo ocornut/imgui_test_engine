@@ -1537,10 +1537,17 @@ void RegisterTests_WidgetsInputText(ImGuiTestEngine* e)
         i_tmp = i_stored;
 
         const bool is_multiline = (vars.Step % 4) == 2;
+        const bool is_liveedit = (vars.Step & 4) == 0;
 
+#if IMGUI_VERSION_NUM >= 19286
+        ImGui::PushItemFlag(ImGuiItemFlags_LiveEditOnInputScalar, is_liveedit);
+#endif
         if (ImGui::InputInt("Field1", &i_tmp))
             if (ImGui::IsItemDeactivatedAfterEdit())
                 i_stored = i_tmp;
+#if IMGUI_VERSION_NUM >= 19286
+        ImGui::PopItemFlag();
+#endif
 
         char* s_stored = vars.Str1;
         char* s_tmp = vars.Str2;
@@ -1548,10 +1555,16 @@ void RegisterTests_WidgetsInputText(ImGuiTestEngine* e)
         memcpy(s_tmp, s_stored, s_bufsize);
 
         bool ret;
+#if IMGUI_VERSION_NUM >= 19286
+        ImGui::PushItemFlag(ImGuiItemFlags_LiveEditOnInputText, is_liveedit);
+#endif
         if (is_multiline)
             ret = ImGui::InputTextMultiline("Field2", s_tmp, s_bufsize, { 0,0 }, vars.InputTextFlags);
         else
             ret = ImGui::InputText("Field2", s_tmp, s_bufsize, vars.InputTextFlags);
+#if IMGUI_VERSION_NUM >= 19286
+        ImGui::PopItemFlag();
+#endif
         if (ret)
             if (ImGui::IsItemDeactivatedAfterEdit())
                 memcpy(s_stored, s_tmp, s_bufsize);
@@ -1563,10 +1576,15 @@ void RegisterTests_WidgetsInputText(ImGuiTestEngine* e)
         auto& vars = ctx->GenericVars;
         ctx->SetRef("Test Window");
 
-        for (int step = 0; step < 4; step++)
+        for (int step = 0; step < 8; step++)
         {
             const bool is_enter_keep_active = (step % 2) == 1;
             const bool is_multiline = (step % 4) == 2;
+            const bool is_liveedit = (step & 4) == 0;
+#if IMGUI_VERSION_NUM < 19286
+            if (!is_liveedit)
+                continue;
+#endif
 #if IMGUI_VERSION_NUM < 19264
             if (is_enter_keep_active)
                 continue;
@@ -1583,7 +1601,10 @@ void RegisterTests_WidgetsInputText(ImGuiTestEngine* e)
             ctx->ItemClick("Field1");
             ctx->KeyCharsReplace("200");
             IM_CHECK_EQ(i_stored, 123);
-            IM_CHECK_EQ(i_tmp, 200);
+            if (is_liveedit)
+                IM_CHECK_EQ(i_tmp, 200);
+            else
+                IM_CHECK_EQ(i_tmp, 123);
             ctx->KeyPress(ImGuiKey_Escape);
 #if IMGUI_VERSION_NUM >= 19225
             IM_CHECK_EQ(i_stored, 123);
@@ -1608,7 +1629,10 @@ void RegisterTests_WidgetsInputText(ImGuiTestEngine* e)
                 ctx->ItemClick("Field2");
                 ctx->KeyCharsReplace("eee");
                 IM_CHECK_STR_EQ(s_stored, s_step1);
-                IM_CHECK_STR_EQ(s_tmp, "eee");
+                if (is_liveedit)
+                    IM_CHECK_STR_EQ(s_tmp, "eee");
+                else
+                    IM_CHECK_STR_EQ(s_tmp, s_step1);
                 ctx->KeyPress(ImGuiKey_Tab);
                 IM_CHECK_STR_EQ(s_stored, "eee");
                 IM_CHECK_STR_EQ(s_tmp, "eee");
@@ -1618,11 +1642,20 @@ void RegisterTests_WidgetsInputText(ImGuiTestEngine* e)
                 ctx->ItemClick("Field2");
                 ctx->KeyCharsReplace("fff");
                 IM_CHECK_STR_EQ(s_stored, s_step1);
-                IM_CHECK_STR_EQ(s_tmp, "fff");
+                if (is_liveedit)
+                    IM_CHECK_STR_EQ(s_tmp, "fff");
+                else
+                    IM_CHECK_STR_EQ(s_tmp, s_step1);
                 ctx->KeyPress(ImGuiKey_Escape);
 #if IMGUI_VERSION_NUM >= 19225
                 IM_CHECK_STR_EQ(s_stored, s_step1);
 #endif
+
+                // Caller copy from tmp->stored on IsItemDeactivatedAfter(), then stored->tmp next frame.
+                if (vars.InputTextFlags & ImGuiInputTextFlags_EscapeClearsAll)
+                    if (is_liveedit == false)
+                        continue;
+
                 if (vars.InputTextFlags & ImGuiInputTextFlags_EscapeClearsAll)
                     IM_CHECK_STR_EQ(s_tmp, "");
                 else
@@ -2007,6 +2040,7 @@ void RegisterTests_WidgetsInputText(ImGuiTestEngine* e)
     struct InputTextDeactivateVars
     {
         bool UseTempVar;
+        bool UseLiveEdit;
         ImVec4 Value;
         int ActivatedFrame = -1, ActivatedField = -1;
         int EditedRetFrame = -1, EditedRetField = -1;
@@ -2023,6 +2057,10 @@ void RegisterTests_WidgetsInputText(ImGuiTestEngine* e)
 
         ImVec4 temp_var = vars.Value;
         ImVec4* p = vars.UseTempVar ? &temp_var : &vars.Value;
+
+#if IMGUI_VERSION_NUM >= 19286
+        ImGui::PushItemFlag(ImGuiItemFlags_LiveEditOnInputScalar, vars.UseLiveEdit);
+#endif
 
         if (ImGui::InputFloat("x", &p->x, 0, 0, "%.3f", 0)) { vars.EditedRetFrame = ImGui::GetFrameCount(); vars.EditedRetField = 0; }
         if (ImGui::IsItemEdited()) { vars.EditedQueryFrame = ImGui::GetFrameCount(); vars.EditedQueryField = 0; }
@@ -2052,6 +2090,10 @@ void RegisterTests_WidgetsInputText(ImGuiTestEngine* e)
         ImGui::Text("Edited (query) frame %d, field %d", vars.EditedQueryFrame, vars.EditedQueryField);
         ImGui::Text("DeactivatedAfterEdit frame %d, field %d", vars.DeactivatedFrame, vars.DeactivatedField);
 
+#if IMGUI_VERSION_NUM >= 19286
+        ImGui::PopItemFlag();
+#endif
+
         ImGui::End();
     };
     t->TestFunc = [](ImGuiTestContext* ctx)
@@ -2061,10 +2103,17 @@ void RegisterTests_WidgetsInputText(ImGuiTestEngine* e)
 
         ctx->SetRef("Test Window");
 
+        for (int step_liveedit = 0; step_liveedit < 2; step_liveedit++)
         {
+            vars.UseLiveEdit = (step_liveedit == 0);
+#if IMGUI_VERSION_NUM < 19286
+            if (!vars.UseLiveEdit)
+                continue;
+#endif
+
             for (int step = 0; step < 3; step++)
             {
-                ctx->LogDebug("## Step %d", step);
+                ctx->LogDebug("## Step %d, LiveEdit %d", step, vars.UseLiveEdit);
 
                 vars.UseTempVar = (step > 0);
                 if (step == 0)
@@ -2079,7 +2128,7 @@ void RegisterTests_WidgetsInputText(ImGuiTestEngine* e)
                 ctx->ItemClick("y");
                 ctx->KeyCharsReplace("123.0"); // Input value but don't press enter
                 if (vars.UseTempVar == false)
-                    IM_CHECK_EQ(vars.Value.y, 123.0f);
+                    IM_CHECK_EQ(vars.Value.y, vars.UseLiveEdit ? 123.0f : 0.0f);
                 ctx->ItemClick("z"); // Click Next item
                 IM_CHECK_EQ(vars.Value.y, 123.0f);
                 IM_CHECK(vars.DeactivatedField == 1);

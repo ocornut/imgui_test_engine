@@ -457,19 +457,25 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
 
     // ## Test all types with DragScalar().
     t = IM_REGISTER_TEST(e, "widgets", "widgets_datatype_1");
-    struct DragDatatypeVars { int widget_type = 0; ImGuiDataType data_type = 0; char data_storage[10] = ""; char data_zero[8] = ""; ImGuiTestGenericItemStatus Status; };
+    struct DragDatatypeVars { int widget_type = 0; bool UseLiveEdit = true; ImGuiDataType data_type = 0; char data_storage[10] = ""; char data_zero[8] = ""; ImGuiTestGenericItemStatus Status; };
     t->SetVarsDataType<DragDatatypeVars>();
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         DragDatatypeVars& vars = ctx->GetVars<DragDatatypeVars>();
         ImGui::SetNextWindowSize(ImVec2(200, 200));
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+#if IMGUI_VERSION_NUM >= 19286
+        ImGui::PushItemFlag(ImGuiItemFlags_LiveEditOnInput, vars.UseLiveEdit);
+#endif
         bool ret;
         if (vars.widget_type == 0)
             ret = ImGui::DragScalar("Drag", vars.data_type, &vars.data_storage[1], 0.5f);
         else
             ret = ImGui::SliderScalar("Slider", vars.data_type, &vars.data_storage[1], &vars.data_zero, &vars.data_zero);
         vars.Status.QueryInc(ret);
+#if IMGUI_VERSION_NUM >= 19286
+        ImGui::PopItemFlag();
+#endif
         ImGui::End();
     };
     t->TestFunc = [](ImGuiTestContext* ctx)
@@ -478,7 +484,13 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         DragDatatypeVars& vars = ctx->GetVars<DragDatatypeVars>();
 
         ctx->SetRef("Test Window");
+        for (int liveedit_disable = 0; liveedit_disable < 2; liveedit_disable++)
         {
+            vars.UseLiveEdit = (liveedit_disable == 0);
+#if IMGUI_VERSION_NUM < 19286
+            if (vars.UseLiveEdit == false)
+                continue;
+#endif
             for (int widget_type = 0; widget_type < 2; widget_type++)
             {
                 for (int data_type = 0; data_type < ImGuiDataType_COUNT; data_type++)
@@ -512,6 +524,8 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
                     vars.Status.Clear();
                     ctx->ItemInput(widget_name);
                     ctx->KeyChars("123");                               // Case fixed by PR #3231
+                    if (!vars.UseLiveEdit)
+                        ctx->KeyPress(ImGuiKey_Enter);
                     IM_CHECK_GE(vars.Status.RetValue, 1);
                     IM_CHECK_GE(vars.Status.Edited, 1);
                     vars.Status.Clear();
@@ -553,8 +567,8 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ctx->ItemInput("Color##Y");
         IM_CHECK_EQ(ctx->UiContext->ActiveId, ctx->GetID("Color##Y"));
         ctx->KeyCharsAppend("123");
-        IM_CHECK_FLOAT_EQ(vars.Color1.y, 123.0f / 255.0f);
         ctx->KeyPress(ImGuiKey_Tab);
+        IM_CHECK_FLOAT_EQ(vars.Color1.y, 123.0f / 255.0f);
         ctx->KeyCharsAppendEnter("200");
         IM_CHECK_FLOAT_EQ(vars.Color1.x,   0.0f / 255.0f);
         IM_CHECK_FLOAT_EQ(vars.Color1.y, 123.0f / 255.0f);
@@ -1165,7 +1179,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         }
     };
 
-#if 1
+#if IMGUI_VERSION_NUM >= 19286
     // ## Test ImGuiInputTextFlags_NoLiveEdit features on InputFloat(), InputText(). (#701)
     t = IM_REGISTER_TEST(e, "widgets", "widgets_status_no_live_edit");
     struct LiveEditTestVars
@@ -1198,7 +1212,11 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ImGui::CheckboxFlags("ImGuiInputTextFlags_EscapeClearsAll", &vars.InputTextFlags, ImGuiInputTextFlags_EscapeClearsAll);
         ImGui::Checkbox("LiveEdit", &vars.UseLiveEdit);
 
-        ImGui::PushItemFlag(ImGuiItemFlags_LiveEdit, vars.UseLiveEdit);
+        const bool is_numeric = (vars.Step == 3 || vars.Step == 4 || vars.Step == 5 || vars.Step == 6);
+        if (is_numeric)
+            ImGui::PushItemFlag(ImGuiItemFlags_LiveEditOnInputScalar, vars.UseLiveEdit);
+        else
+            ImGui::PushItemFlag(ImGuiItemFlags_LiveEditOnInputText, vars.UseLiveEdit);
 
         bool ret = false;
         if (vars.Step == 0)
@@ -1231,7 +1249,6 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
             ImGui::IsItemDeactivated() ? "TRUE" : "-",
             ImGui::IsItemDeactivatedAfterEdit() ? "TRUE" : "-");
 
-        const bool is_numeric = (vars.Step == 3 || vars.Step == 4 || vars.Step == 5 || vars.Step == 6);
         const bool is_multi_components = (vars.Step == 6);
         if (is_numeric && is_multi_components)
             ImGui::BulletText("User Data: %.3f; %.3f; %.3f", vars.Float3[0], vars.Float3[1], vars.Float3[2]);
@@ -1438,7 +1455,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
                 if (is_numeric)
                     IM_CHECK_EQ_NO_RET(vars.Float1, 123.0f);
                 else
-                    IM_CHECK_STR_EQ_NO_RET(vars.get_str(), "Hello");
+                    IM_CHECK_STR_EQ_NO_RET(vars.get_str(), ""); // Live buffer cleared immediately on Escape! By spec.
                 IM_CHECK_STR_EQ_NO_RET(state->GetText(), ""); // Edit buffer cleared
                 ctx->KeyPress(ImGuiKey_Escape);
                 IM_CHECK_EQ_NO_RET(status.RetValue, 1);
@@ -1644,7 +1661,14 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ImGuiTestGenericVars& vars = ctx->GenericVars;
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
         ImGui::CheckboxFlags("ImGuiInputTextFlags_EnterReturnsTrue", &vars.InputTextFlags, ImGuiInputTextFlags_EnterReturnsTrue);
+#if IMGUI_VERSION_NUM >= 19286
+        bool& use_liveedit = vars.Bool1;
+        ImGui::PushItemFlag(ImGuiItemFlags_LiveEditOnInput, use_liveedit);
+#endif
         bool ret = ImGui::InputFloat4("Field", &vars.FloatArray[0], nullptr, vars.InputTextFlags);
+#if IMGUI_VERSION_NUM >= 19286
+        ImGui::PopItemFlag();
+#endif
         vars.Status.QueryInc(ret);
         ImGui::End();
     };
@@ -1653,17 +1677,24 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         // Accumulate return values over several frames/action into each bool
         ImGuiTestGenericVars& vars = ctx->GenericVars;
         ImGuiTestGenericItemStatus& status = vars.Status;
+        bool& use_liveedit = vars.Bool1;
 
         ctx->SetRef("Test Window");
         ImGuiID field_0 = ctx->GetID("Field/$$0");
         ImGuiID field_1 = ctx->GetID("Field/$$1");
         //ImGuiID field_2 = ctx->GetID("Field/$$2"));
 
+        for (int step_liveedit = 0; step_liveedit < 2; step_liveedit++)
         {
             for (int step = 0; step < 2; step++)
             {
                 vars.Clear();
                 vars.InputTextFlags = (step == 0) ? ImGuiInputTextFlags_None : ImGuiInputTextFlags_EnterReturnsTrue;
+                use_liveedit = (step_liveedit == 0);
+#if IMGUI_VERSION_NUM < 19286
+                if (!use_liveedit)
+                    continue;
+#endif
 #if IMGUI_VERSION_NUM < 19275
                 if (flags & ImGuiInputTextFlags_EnterReturnsTrue)
                     continue;
@@ -1686,14 +1717,17 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
                 ctx->ItemClick(field_0);
                 status.Clear();
                 ctx->KeyCharsAppend("123");
-                if (vars.InputTextFlags & ImGuiInputTextFlags_EnterReturnsTrue)
+                if ((vars.InputTextFlags & ImGuiInputTextFlags_EnterReturnsTrue) || !use_liveedit)
                     IM_CHECK(status.RetValue == 0);
                 else
                     IM_CHECK(status.RetValue >= 1);
-                IM_CHECK(status.Activated == 0 && status.Deactivated == 0 && status.Edited >= 1);
+                if (use_liveedit)
+                    IM_CHECK(status.Activated == 0 && status.Deactivated == 0 && status.Edited >= 1);
+                else
+                    IM_CHECK(status.Activated == 0 && status.Deactivated == 0 && status.Edited == 0);
                 status.Clear();
                 ctx->KeyPress(ImGuiMod_Shift | ImGuiKey_Enter);
-                if (vars.InputTextFlags & ImGuiInputTextFlags_EnterReturnsTrue)
+                if ((vars.InputTextFlags & ImGuiInputTextFlags_EnterReturnsTrue) || !use_liveedit)
                     IM_CHECK(status.RetValue == 1);
                 else
                     IM_CHECK(status.RetValue == 0);
@@ -1705,21 +1739,37 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
                 ctx->KeyCharsAppend("456");
                 status.Clear();
                 ctx->KeyPress(ImGuiKey_Tab);
-                IM_CHECK(status.RetValue == 0 && status.Activated == 1 && status.Deactivated == 1 && status.DeactivatedAfterEdit == 1);
+                if (use_liveedit || (vars.InputTextFlags & ImGuiInputTextFlags_EnterReturnsTrue))
+                    IM_CHECK(status.RetValue == 0);
+                else
+                    IM_CHECK(status.RetValue == 1);
+                IM_CHECK(status.Activated == 1 && status.Deactivated == 1 && status.DeactivatedAfterEdit == 1);
+                status.Clear();
 
                 // Testing Edited flag on all components
                 ctx->ItemClick(field_1); // FIXME-TESTS: Should not be necessary!
                 ctx->ItemClick(field_0);
                 ctx->KeyCharsAppend("111");
-                IM_CHECK(status.Edited >= 1);
+                if (use_liveedit)
+                    IM_CHECK(status.Edited >= 1);
+                else
+                    IM_CHECK(status.Edited == 0);
                 ctx->KeyPress(ImGuiKey_Tab);
+                IM_CHECK(status.Edited >= 1); // Requires AnyIdHasBeenEditedThisFrame logic. Otherwise fails with LiveEdit=0 and SliderFloat4: tabbing activate Y, EndGroup() doesn't grab the X edit.
                 status.Clear();
                 ctx->KeyCharsAppend("222");
-                IM_CHECK(status.Edited >= 1);
+                if (use_liveedit)
+                    IM_CHECK(status.Edited >= 1);
+                else
+                    IM_CHECK(status.Edited == 0);
                 ctx->KeyPress(ImGuiKey_Tab);
+                IM_CHECK(status.Edited >= 1); // "
                 status.Clear();
                 ctx->KeyCharsAppend("333");
-                IM_CHECK(status.Edited >= 1);
+                if (use_liveedit)
+                    IM_CHECK(status.Edited >= 1);
+                else
+                    IM_CHECK(status.Edited == 0);
 
                 ctx->KeyPress(ImGuiKey_Escape);
             }
@@ -1732,7 +1782,13 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
     {
         ImGuiTestGenericVars& vars = ctx->GenericVars;
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
+#if IMGUI_VERSION_NUM >= 19286
+        ImGui::PushItemFlag(ImGuiItemFlags_LiveEditOnInput, true);
+#endif
         bool ret = ImGui::InputFloat("Field", &vars.Float1);
+#if IMGUI_VERSION_NUM >= 19286
+        ImGui::PopItemFlag();
+#endif
         vars.Status.QueryInc(ret);
         ImGui::End();
     };
