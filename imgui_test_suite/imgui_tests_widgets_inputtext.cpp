@@ -1590,15 +1590,15 @@ void RegisterTests_WidgetsInputText(ImGuiTestEngine* e)
 #endif
             IM_CHECK_EQ(i_tmp, 123);
 
-            for (int n = 0; n < 3; n++)
+            for (int sub_step = 0; sub_step < 3; sub_step++)
             {
-                vars.InputTextFlags = (n == 0) ? ImGuiInputTextFlags_None : ImGuiInputTextFlags_EscapeClearsAll;
+                vars.InputTextFlags = (sub_step == 0) ? ImGuiInputTextFlags_None : ImGuiInputTextFlags_EscapeClearsAll;
                 ctx->Yield();
 
                 char* s_stored = vars.Str1;
                 char* s_tmp = vars.Str2;
                 ctx->ItemClick("Field2");
-                const char* s_step1 = (n == 0 || n == 1) ? "abc" : "";
+                const char* s_step1 = (sub_step == 0 || sub_step == 1) ? "abc" : "";
                 ctx->KeyCharsReplace(s_step1);
                 ctx->KeyPress(is_multiline ? ImGuiMod_Ctrl | ImGuiKey_Enter : ImGuiKey_Enter);
                 IM_CHECK_STR_EQ(s_stored, s_step1);
@@ -2061,61 +2061,63 @@ void RegisterTests_WidgetsInputText(ImGuiTestEngine* e)
 
         ctx->SetRef("Test Window");
 
-        for (int step = 0; step < 3; step++)
         {
-            ctx->LogDebug("## Step %d", step);
+            for (int step = 0; step < 3; step++)
+            {
+                ctx->LogDebug("## Step %d", step);
 
-            vars.UseTempVar = (step > 0);
-            if (step == 0)
-                ctx->WindowResize("", ImVec2(300, ImGui::GetFrameHeight() * 20));
+                vars.UseTempVar = (step > 0);
+                if (step == 0)
+                    ctx->WindowResize("", ImVec2(300, ImGui::GetFrameHeight() * 20));
 
-            // For step 2 we test an edge case where deactivated InputText() is immediately clipped out.
-            // FIXME-TESTS: Since this is solved by ItemAdd() clipping rules, it's possible a similar issue can be recreated with clipper.
-            if (step == 2)
-                ctx->WindowResize("", ImVec2(300, ImGui::GetFrameHeight()));
+                // For step 2 we test an edge case where deactivated InputText() is immediately clipped out.
+                // FIXME-TESTS: Since this is solved by ItemAdd() clipping rules, it's possible a similar issue can be recreated with clipper.
+                if (step == 2)
+                    ctx->WindowResize("", ImVec2(300, ImGui::GetFrameHeight()));
 
-            vars.Value = ImVec4();
-            ctx->ItemClick("y");
-            ctx->KeyCharsReplace("123.0"); // Input value but don't press enter
-            if (vars.UseTempVar == false)
+                vars.Value = ImVec4();
+                ctx->ItemClick("y");
+                ctx->KeyCharsReplace("123.0"); // Input value but don't press enter
+                if (vars.UseTempVar == false)
+                    IM_CHECK_EQ(vars.Value.y, 123.0f);
+                ctx->ItemClick("z"); // Click Next item
                 IM_CHECK_EQ(vars.Value.y, 123.0f);
-            ctx->ItemClick("z"); // Click Next item
-            IM_CHECK_EQ(vars.Value.y, 123.0f);
-            IM_CHECK(vars.DeactivatedField == 1);
-            ctx->KeyPress(ImGuiKey_Escape);
+                IM_CHECK(vars.DeactivatedField == 1);
+                ctx->KeyPress(ImGuiKey_Escape);
 
-            vars.Value = ImVec4();
-            ctx->ItemClick("y");
-            ctx->KeyCharsReplace("123.0"); // Input value but don't press enter
-            ctx->ItemClick("x"); // Click Previous item
+                vars.Value = ImVec4();
+                ctx->ItemClick("y");
+                ctx->KeyCharsReplace("123.0"); // Input value but don't press enter
+                ctx->ItemClick("x"); // Click Previous item
 #if IMGUI_VERSION_NUM < 18942
-            if (step == 0)
+                if (step == 0)
 #endif
-            IM_CHECK_EQ(vars.Value.y, 123.0f);
-            IM_CHECK(vars.DeactivatedField == 1);
-            ctx->KeyPress(ImGuiKey_Escape);
+                    IM_CHECK_EQ(vars.Value.y, 123.0f);
+                IM_CHECK(vars.DeactivatedField == 1);
+                ctx->KeyPress(ImGuiKey_Escape);
 
-            vars.Value = ImVec4();
-            ctx->ItemClick("y");
-            ctx->KeyCharsReplace("123.0"); // Input value but don't press enter
-            ctx->KeyPress(ImGuiKey_Tab); // Tab to Next Item
+                vars.Value = ImVec4();
+                ctx->ItemClick("y");
+                ctx->KeyCharsReplace("123.0"); // Input value but don't press enter
+                ctx->KeyPress(ImGuiKey_Tab); // Tab to Next Item
 #if IMGUI_VERSION_NUM < 18942
-            if (step == 0)
+                if (step == 0)
 #endif
-            IM_CHECK_EQ(vars.Value.y, 123.0f);
-            IM_CHECK(vars.DeactivatedField == 1);
-            ctx->KeyPress(ImGuiKey_Escape);
+                    IM_CHECK_EQ(vars.Value.y, 123.0f);
+                IM_CHECK(vars.DeactivatedField == 1);
+                ctx->KeyPress(ImGuiKey_Escape);
 
-            vars.Value = ImVec4();
-            ctx->ItemClick("y");
-            ctx->KeyCharsReplace("123.0"); // Input value but don't press enter
-            ctx->KeyPress(ImGuiMod_Shift | ImGuiKey_Tab); // Tab to previous item
+                vars.Value = ImVec4();
+                ctx->ItemClick("y");
+                ctx->KeyCharsReplace("123.0"); // Input value but don't press enter
+                ctx->KeyPress(ImGuiMod_Shift | ImGuiKey_Tab); // Tab to previous item
 #if IMGUI_VERSION_NUM < 18942
-            if (step == 0)
+                if (step == 0)
 #endif
-            IM_CHECK_EQ(vars.Value.y, 123.0f);
-            IM_CHECK(vars.DeactivatedField == 1);
-            ctx->KeyPress(ImGuiKey_Escape);
+                    IM_CHECK_EQ(vars.Value.y, 123.0f);
+                IM_CHECK(vars.DeactivatedField == 1);
+                ctx->KeyPress(ImGuiKey_Escape);
+            }
         }
     };
 

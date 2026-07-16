@@ -478,50 +478,52 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         DragDatatypeVars& vars = ctx->GetVars<DragDatatypeVars>();
 
         ctx->SetRef("Test Window");
-        for (int widget_type = 0; widget_type < 2; widget_type++)
         {
-            for (int data_type = 0; data_type < ImGuiDataType_COUNT; data_type++)
+            for (int widget_type = 0; widget_type < 2; widget_type++)
             {
-#if IMGUI_VERSION_NUM >= 19094
-                if (data_type == ImGuiDataType_Bool || data_type == ImGuiDataType_String)
-                    continue;
-#endif
-                size_t data_size = ImGui::DataTypeGetInfo(data_type)->Size;
-                IM_ASSERT(data_size + 2 <= sizeof(vars.data_storage));
-                memset(vars.data_storage, 0, sizeof(vars.data_storage));
-                memset(vars.data_zero, 0, sizeof(vars.data_zero));
-                vars.widget_type = widget_type;
-                vars.data_type = data_type;
-                vars.data_storage[0] = vars.data_storage[1 + data_size] = 42; // Sentinel values
-                const char* widget_name = widget_type == 0 ? "Drag" : "Slider";
-
-                if (widget_type == 0)
+                for (int data_type = 0; data_type < ImGuiDataType_COUNT; data_type++)
                 {
+#if IMGUI_VERSION_NUM >= 19094
+                    if (data_type == ImGuiDataType_Bool || data_type == ImGuiDataType_String)
+                        continue;
+#endif
+                    size_t data_size = ImGui::DataTypeGetInfo(data_type)->Size;
+                    IM_ASSERT(data_size + 2 <= sizeof(vars.data_storage));
+                    memset(vars.data_storage, 0, sizeof(vars.data_storage));
+                    memset(vars.data_zero, 0, sizeof(vars.data_zero));
+                    vars.widget_type = widget_type;
+                    vars.data_type = data_type;
+                    vars.data_storage[0] = vars.data_storage[1 + data_size] = 42; // Sentinel values
+                    const char* widget_name = widget_type == 0 ? "Drag" : "Slider";
+
+                    if (widget_type == 0)
+                    {
+                        vars.Status.Clear();
+                        ctx->MouseMove(widget_name);
+                        ctx->MouseDown();
+                        ctx->MouseMoveToPos(g.IO.MousePos + ImVec2(30, 0));
+                        IM_CHECK(vars.Status.Edited >= 1);
+                        vars.Status.Clear();
+                        ctx->MouseMoveToPos(g.IO.MousePos + ImVec2(-40, 0));
+                        IM_CHECK(vars.Status.Edited >= 1);
+                        ctx->MouseUp();
+                    }
+
                     vars.Status.Clear();
-                    ctx->MouseMove(widget_name);
-                    ctx->MouseDown();
-                    ctx->MouseMoveToPos(g.IO.MousePos + ImVec2(30, 0));
-                    IM_CHECK(vars.Status.Edited >= 1);
+                    ctx->ItemInput(widget_name);
+                    ctx->KeyChars("123");                               // Case fixed by PR #3231
+                    IM_CHECK_GE(vars.Status.RetValue, 1);
+                    IM_CHECK_GE(vars.Status.Edited, 1);
                     vars.Status.Clear();
-                    ctx->MouseMoveToPos(g.IO.MousePos + ImVec2(-40, 0));
-                    IM_CHECK(vars.Status.Edited >= 1);
-                    ctx->MouseUp();
+                    ctx->Yield();
+                    IM_CHECK_EQ(vars.Status.RetValue, 0);        // Verify it doesn't keep returning as edited.
+                    IM_CHECK_EQ(vars.Status.Edited, 0);
+
+                    vars.Status.Clear();
+                    ctx->KeyPress(ImGuiKey_Enter);
+                    IM_CHECK(vars.data_storage[0] == 42);               // Ensure there were no oob writes.
+                    IM_CHECK(vars.data_storage[1 + data_size] == 42);
                 }
-
-                vars.Status.Clear();
-                ctx->ItemInput(widget_name);
-                ctx->KeyChars("123");                               // Case fixed by PR #3231
-                IM_CHECK_GE(vars.Status.RetValue, 1);
-                IM_CHECK_GE(vars.Status.Edited, 1);
-                vars.Status.Clear();
-                ctx->Yield();
-                IM_CHECK_EQ(vars.Status.RetValue, 0);        // Verify it doesn't keep returning as edited.
-                IM_CHECK_EQ(vars.Status.Edited, 0);
-
-                vars.Status.Clear();
-                ctx->KeyPress(ImGuiKey_Enter);
-                IM_CHECK(vars.data_storage[0] == 42);               // Ensure there were no oob writes.
-                IM_CHECK(vars.data_storage[1 + data_size] == 42);
             }
         }
     };
@@ -1657,68 +1659,70 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ImGuiID field_1 = ctx->GetID("Field/$$1");
         //ImGuiID field_2 = ctx->GetID("Field/$$2"));
 
-        for (int step = 0; step < 2; step++)
         {
-            vars.Clear();
-            vars.InputTextFlags = (step == 0) ? ImGuiInputTextFlags_None : ImGuiInputTextFlags_EnterReturnsTrue;
+            for (int step = 0; step < 2; step++)
+            {
+                vars.Clear();
+                vars.InputTextFlags = (step == 0) ? ImGuiInputTextFlags_None : ImGuiInputTextFlags_EnterReturnsTrue;
 #if IMGUI_VERSION_NUM < 19275
-            if (flags & ImGuiInputTextFlags_EnterReturnsTrue)
-                continue;
+                if (flags & ImGuiInputTextFlags_EnterReturnsTrue)
+                    continue;
 #endif
-            ctx->Yield();
+                ctx->Yield();
 
-            // Testing activation/deactivation flags
-            ctx->ItemClick(field_0);
-            IM_CHECK(status.RetValue == 0 && status.Activated == 1 && status.Deactivated == 0 && status.DeactivatedAfterEdit == 0);
-            status.Clear();
-            ctx->KeyPress(ImGuiMod_Shift | ImGuiKey_Enter);
-            if (vars.InputTextFlags & ImGuiInputTextFlags_EnterReturnsTrue)
-                IM_CHECK(status.RetValue == 1);
-            else
-                IM_CHECK(status.RetValue == 0);
-            IM_CHECK(status.Activated == 0 && status.Deactivated == 1 && status.DeactivatedAfterEdit == 0);
-            status.Clear();
+                // Testing activation/deactivation flags
+                ctx->ItemClick(field_0);
+                IM_CHECK(status.RetValue == 0 && status.Activated == 1 && status.Deactivated == 0 && status.DeactivatedAfterEdit == 0);
+                status.Clear();
+                ctx->KeyPress(ImGuiMod_Shift | ImGuiKey_Enter);
+                if (vars.InputTextFlags & ImGuiInputTextFlags_EnterReturnsTrue)
+                    IM_CHECK(status.RetValue == 1);
+                else
+                    IM_CHECK(status.RetValue == 0);
+                IM_CHECK(status.Activated == 0 && status.Deactivated == 1 && status.DeactivatedAfterEdit == 0);
+                status.Clear();
 
-            // Testing validation with Return after editing
-            ctx->ItemClick(field_0);
-            status.Clear();
-            ctx->KeyCharsAppend("123");
-            if (vars.InputTextFlags & ImGuiInputTextFlags_EnterReturnsTrue)
-                IM_CHECK(status.RetValue == 0);
-            else
-                IM_CHECK(status.RetValue >= 1);
-            IM_CHECK(status.Activated == 0 && status.Deactivated == 0 && status.Edited >= 1);
-            status.Clear();
-            ctx->KeyPress(ImGuiMod_Shift | ImGuiKey_Enter);
-            if (vars.InputTextFlags & ImGuiInputTextFlags_EnterReturnsTrue)
-                IM_CHECK(status.RetValue == 1);
-            else
-                IM_CHECK(status.RetValue == 0);
-            IM_CHECK(status.Activated == 0 && status.Deactivated == 1);
-            status.Clear();
+                // Testing validation with Return after editing
+                ctx->ItemClick(field_0);
+                status.Clear();
+                ctx->KeyCharsAppend("123");
+                if (vars.InputTextFlags & ImGuiInputTextFlags_EnterReturnsTrue)
+                    IM_CHECK(status.RetValue == 0);
+                else
+                    IM_CHECK(status.RetValue >= 1);
+                IM_CHECK(status.Activated == 0 && status.Deactivated == 0 && status.Edited >= 1);
+                status.Clear();
+                ctx->KeyPress(ImGuiMod_Shift | ImGuiKey_Enter);
+                if (vars.InputTextFlags & ImGuiInputTextFlags_EnterReturnsTrue)
+                    IM_CHECK(status.RetValue == 1);
+                else
+                    IM_CHECK(status.RetValue == 0);
+                IM_CHECK(status.Activated == 0 && status.Deactivated == 1);
+                status.Clear();
 
-            // Testing validation with Tab after editing
-            ctx->ItemClick(field_0);
-            ctx->KeyCharsAppend("456");
-            status.Clear();
-            ctx->KeyPress(ImGuiKey_Tab);
-            IM_CHECK(status.RetValue == 0 && status.Activated == 1 && status.Deactivated == 1 && status.DeactivatedAfterEdit == 1);
+                // Testing validation with Tab after editing
+                ctx->ItemClick(field_0);
+                ctx->KeyCharsAppend("456");
+                status.Clear();
+                ctx->KeyPress(ImGuiKey_Tab);
+                IM_CHECK(status.RetValue == 0 && status.Activated == 1 && status.Deactivated == 1 && status.DeactivatedAfterEdit == 1);
 
-            // Testing Edited flag on all components
-            ctx->ItemClick(field_1); // FIXME-TESTS: Should not be necessary!
-            ctx->ItemClick(field_0);
-            ctx->KeyCharsAppend("111");
-            IM_CHECK(status.Edited >= 1);
-            ctx->KeyPress(ImGuiKey_Tab);
-            status.Clear();
-            ctx->KeyCharsAppend("222");
-            IM_CHECK(status.Edited >= 1);
-            ctx->KeyPress(ImGuiKey_Tab);
-            status.Clear();
-            ctx->KeyCharsAppend("333");
-            IM_CHECK(status.Edited >= 1);
+                // Testing Edited flag on all components
+                ctx->ItemClick(field_1); // FIXME-TESTS: Should not be necessary!
+                ctx->ItemClick(field_0);
+                ctx->KeyCharsAppend("111");
+                IM_CHECK(status.Edited >= 1);
+                ctx->KeyPress(ImGuiKey_Tab);
+                status.Clear();
+                ctx->KeyCharsAppend("222");
+                IM_CHECK(status.Edited >= 1);
+                ctx->KeyPress(ImGuiKey_Tab);
+                status.Clear();
+                ctx->KeyCharsAppend("333");
+                IM_CHECK(status.Edited >= 1);
 
-            ctx->KeyPress(ImGuiKey_Escape);
+                ctx->KeyPress(ImGuiKey_Escape);
+            }
         }
     };
 
