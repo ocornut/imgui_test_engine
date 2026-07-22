@@ -236,7 +236,7 @@ static void ImGuiApp_ImplNull_RenderDrawData(ImDrawData* draw_data)
         }
 #endif
 
-    for (int n = 0; n < draw_data->CmdListsCount; n++)
+    for (int n = 0; n < draw_data->CmdLists.Size; n++)
     {
         const ImDrawList* cmd_list = draw_data->CmdLists[n];
         for (int cmd_i = 0; cmd_i < cmd_list->CmdBuffer.Size; cmd_i++)
