@@ -1187,8 +1187,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         int     Step;
         char    Str1[256];
         Str16   Str2;
-        float   Float1;
-        float   Float3[3];
+        float   Floats[3];
         bool    UseLiveEdit = false;
         ImGuiInputTextFlags InputTextFlags;// = ImGuiInputTextFlags_NoLiveEdit;
         ImGuiTestGenericItemStatus Status;
@@ -1226,13 +1225,13 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         else if (vars.Step == 2)
             ret = ImGui::InputTextMultiline("Buf", vars.Str1, IM_COUNTOF(vars.Str1), {}, vars.InputTextFlags);
         else if (vars.Step == 3)
-            ret = ImGui::InputFloat("Buf", &vars.Float1, 0.0f, 0.0f, "%.1f", vars.InputTextFlags);
+            ret = ImGui::InputFloat("Buf", &vars.Floats[0], 0.0f, 0.0f, "%.1f", vars.InputTextFlags);
         else if (vars.Step == 4)
-            ret = ImGui::InputFloat("Buf", &vars.Float1, 1.0f, 100.0f, "%.1f", vars.InputTextFlags);
+            ret = ImGui::InputFloat("Buf", &vars.Floats[0], 1.0f, 100.0f, "%.1f", vars.InputTextFlags);
         else if (vars.Step == 5)
-            ret = ImGui::SliderFloat("Buf", &vars.Float1, -1000.0f, 1000.0f, "%.1f");
+            ret = ImGui::SliderFloat("Buf", &vars.Floats[0], -1000.0f, 1000.0f, "%.1f");
         else if (vars.Step == 6)
-            ret = ImGui::SliderFloat3("Buf", &vars.Float3[0], -1000.0f, 1000.0f, "%.1f");
+            ret = ImGui::SliderFloat3("Buf", &vars.Floats[0], -1000.0f, 1000.0f, "%.1f");
 
         vars.Status.QueryInc(ret);
         ImGui::BulletText(
@@ -1251,9 +1250,9 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
 
         const bool is_multi_components = (vars.Step == 6);
         if (is_numeric && is_multi_components)
-            ImGui::BulletText("User Data: %.3f; %.3f; %.3f", vars.Float3[0], vars.Float3[1], vars.Float3[2]);
+            ImGui::BulletText("User Data: %.3f; %.3f; %.3f", vars.Floats[0], vars.Floats[1], vars.Floats[2]);
         else if (is_numeric)
-            ImGui::BulletText("User Data: %.3f", vars.Float1);
+            ImGui::BulletText("User Data: %.3f", vars.Floats[0]);
         else
             ImGui::BulletText("User Data = '%s'", vars.get_str());
 
@@ -1273,14 +1272,15 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ImGuiInputTextState* state = ImGui::GetInputTextState(ctx->GetID("Buf"));
         IM_CHECK(state != NULL);
 
-        for (int step = 0; step < 6; step++)
+        for (int step = 0; step < 7; step++)
         {
             const bool is_dynamic_str = (step == 1);
             const bool is_multiline = (step == 2);
             const bool is_numeric = (step == 3 || step == 4 || step == 5 || step == 6);
-            const bool is_drag_slider = (step == 5);
-            const bool is_multi_components = (vars.Step == 6);
+            const bool is_drag_slider = (step == 5 || step == 6);
+            const bool is_multi_components = (step == 6);
 
+            vars = LiveEditTestVars(); // clear
             if (is_numeric)
                 vars.InputTextFlags |= ImGuiInputTextFlags_ParseEmptyRefVal; // "" -> 0.0f
             vars.Step = step;
@@ -1289,8 +1289,8 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
 
             // Append text, validate
             status.Clear();
-            const ImGuiID id = ctx->GetID("Buf");
-            ctx->ItemInput("Buf");
+            ImGuiID item_id = is_multi_components ? ctx->GetID("Buf/$$0") : ctx->GetID("Buf");
+            ctx->ItemInput(item_id);
             if (is_numeric)
                 ctx->KeyChars("123");
             else
@@ -1307,14 +1307,14 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
             IM_CHECK_EQ_NO_RET(status.Deactivated, 1);
             IM_CHECK_EQ_NO_RET(status.DeactivatedAfterEdit, 1);
             if (is_numeric)
-                IM_CHECK_EQ_NO_RET(vars.Float1, 123.0f);
+                IM_CHECK_EQ_NO_RET(vars.Floats[0], 123.0f);
             else
                 IM_CHECK_STR_EQ_NO_RET(vars.get_str(), "Hello");
 
             // Modify text, Tab out
             status.Clear();
-            ctx->ItemInput("Buf");
-            IM_CHECK_EQ(g.ActiveId, id);
+            ctx->ItemInput(item_id);
+            IM_CHECK_EQ(g.ActiveId, item_id);
             ctx->KeyPress(ImGuiKey_End);
             ctx->KeyPress(ImGuiKey_Backspace, 5);
             ctx->KeyChars("777");
@@ -1324,24 +1324,24 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
             IM_CHECK_EQ_NO_RET(status.Deactivated, 0);
             IM_CHECK_EQ_NO_RET(status.DeactivatedAfterEdit, 0);
             if (is_numeric)
-                IM_CHECK_EQ_NO_RET(vars.Float1, 123.0f);
+                IM_CHECK_EQ_NO_RET(vars.Floats[0], 123.0f);
             else
                 IM_CHECK_STR_EQ_NO_RET(vars.get_str(), "Hello");
             status.Clear();
             ctx->KeyPress(ImGuiKey_Tab);
-            IM_CHECK_NE_NO_RET(g.ActiveId, id);
+            IM_CHECK_NE_NO_RET(g.ActiveId, item_id);
             IM_CHECK_EQ_NO_RET(status.RetValue, 1);
             IM_CHECK_EQ_NO_RET(status.Edited, 1);
             IM_CHECK_EQ_NO_RET(status.Deactivated, 1);
             IM_CHECK_EQ_NO_RET(status.DeactivatedAfterEdit, 1);
             if (is_numeric)
-                IM_CHECK_EQ_NO_RET(vars.Float1, 777.0f);
+                IM_CHECK_EQ_NO_RET(vars.Floats[0], 777.0f);
             else
                 IM_CHECK_STR_EQ_NO_RET(vars.get_str(), "777");
 
             // Revert to previous text
             ctx->KeyPress(ImGuiMod_Shift | ImGuiKey_Tab);
-            IM_CHECK_EQ_NO_RET(g.ActiveId, id);
+            IM_CHECK_EQ_NO_RET(g.ActiveId, item_id);
             ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_A);
             if (is_numeric)
                 ctx->KeyChars("123");
@@ -1351,7 +1351,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
 
             // Activate, validate (no changes)
             status.Clear();
-            ctx->ItemInput("Buf");
+            ctx->ItemInput(item_id);
             ctx->KeyPress(ImGuiKey_End);
             ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_Enter);
             IM_CHECK_EQ_NO_RET(status.RetValue, 0);
@@ -1362,12 +1362,12 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
             if (is_numeric)
             {
                 status.Clear();
-                ctx->ItemInput("Buf");
+                ctx->ItemInput(item_id);
                 IM_CHECK_STR_EQ_NO_RET(state->GetText(), "123.0");
                 ctx->KeyPress(ImGuiKey_End);
                 ctx->KeyPress(ImGuiKey_Backspace); // Remove trailing zero = same value after parsing
                 ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_Enter);
-                IM_CHECK_EQ_NO_RET(vars.Float1, 123.0f);
+                IM_CHECK_EQ_NO_RET(vars.Floats[0], 123.0f);
                 IM_CHECK_STR_EQ_NO_RET(state->GetText(), "123.");
                 IM_CHECK_EQ_NO_RET(status.RetValue, 0);
                 IM_CHECK_EQ_NO_RET(status.Edited, 0);
@@ -1378,12 +1378,12 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
 
             // Activate, append, delete, validate (no changes in final output)
             status.Clear();
-            ctx->ItemInput("Buf");
+            ctx->ItemInput(item_id);
             ctx->KeyPress(ImGuiKey_End);
             if (is_numeric)
             {
                 ctx->KeyChars("444");
-                IM_CHECK_EQ_NO_RET(vars.Float1, 123.0f);
+                IM_CHECK_EQ_NO_RET(vars.Floats[0], 123.0f);
                 IM_CHECK_STR_EQ_NO_RET(state->GetText(), "123.0444");
             }
             else
@@ -1396,7 +1396,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
             ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_Enter);
             if (is_numeric)
             {
-                IM_CHECK_EQ_NO_RET(vars.Float1, 123.0f);
+                IM_CHECK_EQ_NO_RET(vars.Floats[0], 123.0f);
                 IM_CHECK_STR_EQ_NO_RET(state->GetText(), "123.0");
             }
             else
@@ -1412,12 +1412,12 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
 
             // Activate, append, revert (no changes in final output)
             status.Clear();
-            ctx->ItemInput("Buf");
+            ctx->ItemInput(item_id);
             ctx->KeyPress(ImGuiKey_End);
             if (is_numeric)
             {
                 ctx->KeyChars("456");
-                IM_CHECK_EQ_NO_RET(vars.Float1, 123.0f);
+                IM_CHECK_EQ_NO_RET(vars.Floats[0], 123.0f);
                 IM_CHECK_STR_EQ_NO_RET(state->GetText(), "123.0456");
             }
             else
@@ -1429,7 +1429,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
             ctx->KeyPress(ImGuiKey_Escape);
             if (is_numeric)
             {
-                IM_CHECK_EQ_NO_RET(vars.Float1, 123.0f);
+                IM_CHECK_EQ_NO_RET(vars.Floats[0], 123.0f);
                 IM_CHECK_STR_EQ_NO_RET(state->GetText(), "123.0");
             }
             else
@@ -1449,11 +1449,11 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
                 vars.InputTextFlags |= ImGuiInputTextFlags_EscapeClearsAll;
                 ctx->Yield();
                 status.Clear();
-                ctx->ItemInput("Buf");
+                ctx->ItemInput(item_id);
                 ctx->KeyChars("999");
                 ctx->KeyPress(ImGuiKey_Escape);
                 if (is_numeric)
-                    IM_CHECK_EQ_NO_RET(vars.Float1, 123.0f);
+                    IM_CHECK_EQ_NO_RET(vars.Floats[0], 123.0f);
                 else
                     IM_CHECK_STR_EQ_NO_RET(vars.get_str(), ""); // Live buffer cleared immediately on Escape! By spec.
                 IM_CHECK_STR_EQ_NO_RET(state->GetText(), ""); // Edit buffer cleared
@@ -1465,7 +1465,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
 
                 // Testing with _EscapeClearsAll clearing buffer, part 2
                 status.Clear();
-                ctx->ItemInput("Buf");
+                ctx->ItemInput(item_id);
                 ctx->KeyChars("999");
                 IM_CHECK_STR_EQ_NO_RET(vars.get_str(), "");
                 IM_CHECK_STR_EQ_NO_RET(state->GetText(), "999");
@@ -1484,26 +1484,28 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
             // Misc
             if (is_drag_slider)
             {
-                ctx->ItemInput("Buf");
+                ctx->ItemInput(item_id);
                 ctx->KeyCharsReplaceEnter("456");
-                IM_CHECK_EQ_NO_RET(vars.Float1, 456.0f);
-                ctx->ItemDragWithDelta("Buf", { -100, 0 });
-                IM_CHECK_LT_NO_RET(vars.Float1, 456.0f);
+                IM_CHECK_EQ_NO_RET(vars.Floats[0], 456.0f);
+                ctx->ItemDragWithDelta(item_id, { -100, 0 });
+                IM_CHECK_LT_NO_RET(vars.Floats[0], 456.0f);
                 IM_CHECK_EQ(g.ActiveId, 0u);
                 ctx->Yield(2);
-                ctx->ItemInput("Buf");
-                IM_CHECK_EQ(g.ActiveId, ctx->GetID("Buf"));
+                ctx->ItemInput(item_id);
+                IM_CHECK_EQ(g.ActiveId, item_id);
                 ctx->KeyCharsAppend("222");
-                IM_CHECK_LT_NO_RET(vars.Float1, 456.0f);
+                IM_CHECK_LT_NO_RET(vars.Floats[0], 456.0f);
                 ctx->KeyPress(ImGuiKey_Enter);
-                IM_CHECK_LT_NO_RET(vars.Float1, 456222.0f);
+                IM_CHECK_LT_NO_RET(vars.Floats[0], 456222.0f);
 
                 // Verify that Ctrl+Clicking on a previous widget after a non-committed edit works
-                ctx->ItemInput("Buf");
+                ctx->ItemInput(item_id);
                 ctx->KeyCharsReplace("333");
                 ctx->ItemInput("Step"); // Ctrl+Click
                 IM_CHECK_EQ(g.ActiveId, ctx->GetID("Step"));
             }
+
+            ctx->KeyPress(ImGuiKey_Escape);
 
             ctx->Yield();
         }
