@@ -1519,7 +1519,12 @@ static void ImGuiApp_InstallMockViewportsBackend(ImGuiApp*)
     ImGuiPlatformIO& platform_io = ImGui::GetPlatformIO();
     ImGui_ImplMockViewport_Data* bd = ImGui_ImplNullViewport_GetBackendData();
     bd->OriginalPlatformIO = platform_io;
+#if IMGUI_VERSION_NUM >= 19231
+    platform_io.ClearPlatformHandlers();
+    platform_io.ClearRendererHandlers();
+#else
     memset((void*)&platform_io, 0, offsetof(ImGuiPlatformIO, Monitors)); // FIXME: Clear all handlers by default
+#endif
 
     io.BackendFlags |= ImGuiBackendFlags_PlatformHasViewports | ImGuiBackendFlags_RendererHasViewports;
 
