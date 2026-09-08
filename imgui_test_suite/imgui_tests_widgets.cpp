@@ -4043,6 +4043,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
 #endif
 
 #if IMGUI_VERSION_NUM >= 18308
+#if IMGUI_VERSION_NUM >= 19297 // removed ImGuiComboFlags_CustomPreview
     // ## Test BeginComboPreview() and ImGuiComboFlags_CustomPreview
     t = IM_REGISTER_TEST(e, "widgets", "widgets_combo_custom_preview");
     t->GuiFunc = [](ImGuiTestContext* ctx)
@@ -4058,7 +4059,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
             ImGui::SetNextItemWidth(ImGui::GetFrameHeight() * 2.0f);
 
         const ImVec2 color_square_size = ImVec2(ImGui::GetFontSize(), ImGui::GetFontSize());
-        bool open = ImGui::BeginCombo("custom", "", ImGuiComboFlags_CustomPreview);
+        bool open = ImGui::BeginCombo("custom", "");
         if (open)
         {
             for (int n = 0; n < 5; n++)
@@ -4108,6 +4109,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         vars.Step = 2;
         ctx->Yield(2);
     };
+#endif
 #endif
 
 #if IMGUI_VERSION_NUM >= 18408
