@@ -455,30 +455,40 @@ void RegisterTests_WidgetsInputText(ImGuiTestEngine* e)
     {
         ImGuiTestGenericVars& vars = ctx->GenericVars;
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+#if IMGUI_VERSION_NUM >= 19297
+        ImGui::PushItemFlag(ImGuiItemFlags_MixedValue, vars.UseMixedValue);
+#endif
         ImGui::InputText("Field", vars.Str1, IM_COUNTOF(vars.Str1));
+#if IMGUI_VERSION_NUM >= 19297
+        ImGui::PopItemFlag();
+#endif
         ImGui::End();
 
     };
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         ImGuiTestGenericVars& vars = ctx->GenericVars;
-        // FIXME-TESTS: Facilitate usage of variants
-        const int test_count = ctx->HasDock ? 2 : 1;
-        for (int test_n = 0; test_n < test_count; test_n++)
+        for (int step = 0; step < 4; step++)
         {
-            ctx->LogDebug("TEST CASE %d", test_n);
-            const char* initial_value = (test_n == 0) ? "" : "initial";
+            ctx->LogDebug("STEP %d", step);
+            const char* initial_value = (step & 1) == 0 ? "" : "initial";
+            vars.UseMixedValue = (step & 2);
+#if IMGUI_VERSION_NUM >= 19297
+            if (vars.UseMixedValue)
+                continue;
+#endif
+
             strcpy(vars.Str1, initial_value);
             ctx->SetRef("Test Window");
             ctx->ItemInput("Field");
             ctx->KeyCharsReplace("text");
             IM_CHECK_STR_EQ(vars.Str1, "text");
-            ctx->KeyPress(ImGuiKey_Escape);                      // Reset input to initial value.
+            ctx->KeyPress(ImGuiKey_Escape);             // Reset input to initial value.
             IM_CHECK_STR_EQ(vars.Str1, initial_value);
             ctx->ItemInput("Field");
-            ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_Z);       // Undo
+            ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_Z);  // Undo
             IM_CHECK_STR_EQ(vars.Str1, "text");
-            ctx->KeyPress(ImGuiKey_Enter);                       // Unfocus otherwise test_n==1 strcpy will fail
+            ctx->KeyPress(ImGuiKey_Enter);              // Unfocus otherwise test_n==1 strcpy will fail
         }
     };
 
@@ -2041,11 +2051,13 @@ void RegisterTests_WidgetsInputText(ImGuiTestEngine* e)
     {
         bool UseTempVar;
         bool UseLiveEdit;
+        bool UseMixedValue;
         ImVec4 Value;
         int ActivatedFrame = -1, ActivatedField = -1;
         int EditedRetFrame = -1, EditedRetField = -1;
         int EditedQueryFrame = -1, EditedQueryField = -1;
         int DeactivatedFrame = -1, DeactivatedField = -1;
+        ImGuiTestGenericItemStatus Status[3];
     };
     t->SetVarsDataType<InputTextDeactivateVars>();
     t->GuiFunc = [](ImGuiTestContext* ctx)
@@ -2061,22 +2073,32 @@ void RegisterTests_WidgetsInputText(ImGuiTestEngine* e)
 #if IMGUI_VERSION_NUM >= 19286
         ImGui::PushItemFlag(ImGuiItemFlags_LiveEditOnInputScalar, vars.UseLiveEdit);
 #endif
+#if IMGUI_VERSION_NUM >= 19297
+        ImGui::PushItemFlag(ImGuiItemFlags_MixedValue, vars.UseMixedValue);
+#endif
 
-        if (ImGui::InputFloat("x", &p->x, 0, 0, "%.3f", 0)) { vars.EditedRetFrame = ImGui::GetFrameCount(); vars.EditedRetField = 0; }
+        bool ret;
+        ret = ImGui::InputFloat("x", &p->x, 0, 0, "%.3f", 0);
+        vars.Status[0].QueryInc(ret);
+        if (ret) { vars.EditedRetFrame = ImGui::GetFrameCount(); vars.EditedRetField = 0; }
         if (ImGui::IsItemEdited()) { vars.EditedQueryFrame = ImGui::GetFrameCount(); vars.EditedQueryField = 0; }
         if (ImGui::IsItemActivated()) { vars.ActivatedFrame = ImGui::GetFrameCount(); vars.ActivatedField = 0; }
         if (ImGui::IsItemDeactivatedAfterEdit()) { vars.DeactivatedFrame = ImGui::GetFrameCount(); vars.DeactivatedField = 0; }
         if (ImGui::IsItemDeactivatedAfterEdit() && vars.UseTempVar)
             vars.Value = temp_var;
 
-        if (ImGui::InputFloat("y", &p->y, 0, 0, "%.3f", 0)) { vars.EditedRetFrame = ImGui::GetFrameCount(); vars.EditedRetField = 1; }
+        ret = ImGui::InputFloat("y", &p->y, 0, 0, "%.3f", 0);
+        vars.Status[1].QueryInc(ret);
+        if (ret) { vars.EditedRetFrame = ImGui::GetFrameCount(); vars.EditedRetField = 1; }
         if (ImGui::IsItemEdited()) { vars.EditedQueryFrame = ImGui::GetFrameCount(); vars.EditedQueryField = 1; }
         if (ImGui::IsItemActivated()) { vars.ActivatedFrame = ImGui::GetFrameCount(); vars.ActivatedField = 1; }
         if (ImGui::IsItemDeactivatedAfterEdit()) { vars.DeactivatedFrame = ImGui::GetFrameCount(); vars.DeactivatedField = 1; }
         if (ImGui::IsItemDeactivatedAfterEdit() && vars.UseTempVar)
             vars.Value = temp_var;
 
-        if (ImGui::InputFloat("z", &p->z, 0, 0, "%.3f", 0)) { vars.EditedRetFrame = ImGui::GetFrameCount(); vars.EditedRetField = 2; }
+        ret = ImGui::InputFloat("z", &p->z, 0, 0, "%.3f", 0);
+        vars.Status[2].QueryInc(ret);
+        if (ret) { vars.EditedRetFrame = ImGui::GetFrameCount(); vars.EditedRetField = 2; }
         if (ImGui::IsItemEdited()) { vars.EditedQueryFrame = ImGui::GetFrameCount(); vars.EditedQueryField = 2; }
         if (ImGui::IsItemActivated()) { vars.ActivatedFrame = ImGui::GetFrameCount(); vars.ActivatedField = 2; }
         if (ImGui::IsItemDeactivatedAfterEdit()) { vars.DeactivatedFrame = ImGui::GetFrameCount(); vars.DeactivatedField = 2; }
@@ -2090,6 +2112,9 @@ void RegisterTests_WidgetsInputText(ImGuiTestEngine* e)
         ImGui::Text("Edited (query) frame %d, field %d", vars.EditedQueryFrame, vars.EditedQueryField);
         ImGui::Text("DeactivatedAfterEdit frame %d, field %d", vars.DeactivatedFrame, vars.DeactivatedField);
 
+#if IMGUI_VERSION_NUM >= 19297
+        ImGui::PopItemFlag();
+#endif
 #if IMGUI_VERSION_NUM >= 19286
         ImGui::PopItemFlag();
 #endif
@@ -2103,14 +2128,18 @@ void RegisterTests_WidgetsInputText(ImGuiTestEngine* e)
 
         ctx->SetRef("Test Window");
 
-        for (int step_liveedit = 0; step_liveedit < 2; step_liveedit++)
+        for (int step_variants = 0; step_variants < 4; step_variants++)
         {
-            vars.UseLiveEdit = (step_liveedit == 0);
+            vars.UseLiveEdit = (step_variants & 1) != 0;
+            vars.UseMixedValue = (step_variants & 2) != 0;
 #if IMGUI_VERSION_NUM < 19286
             if (!vars.UseLiveEdit)
                 continue;
 #endif
-
+#if IMGUI_VERSION_NUM < 19297
+            if (!vars.UseMixedMode)
+                continue;
+#endif
             for (int step = 0; step < 3; step++)
             {
                 ctx->LogInfo("STEP %d, LiveEdit %d, MixedMode %d", step, vars.UseLiveEdit, vars.UseMixedValue);

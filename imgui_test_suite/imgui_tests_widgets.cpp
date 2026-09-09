@@ -455,9 +455,9 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         IM_CHECK(vars.Bool1 == true);
     };
 
-    // ## Test all types with DragScalar().
+    // ## Test all scalar types with DragScalar(), SliderScalar() w/ live edit, mixed values variants.
     t = IM_REGISTER_TEST(e, "widgets", "widgets_datatype_1");
-    struct DragDatatypeVars { int widget_type = 0; bool UseLiveEdit = true; ImGuiDataType data_type = 0; char data_storage[10] = ""; char data_zero[8] = ""; ImGuiTestGenericItemStatus Status; };
+    struct DragDatatypeVars { int widget_type = 0; bool UseLiveEdit = true; bool UseMixedValue = false;  ImGuiDataType data_type = 0; char data_storage[10] = ""; char data_zero[8] = ""; ImGuiTestGenericItemStatus Status; };
     t->SetVarsDataType<DragDatatypeVars>();
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
@@ -467,12 +467,18 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
 #if IMGUI_VERSION_NUM >= 19286
         ImGui::PushItemFlag(ImGuiItemFlags_LiveEditOnInput, vars.UseLiveEdit);
 #endif
+#if IMGUI_VERSION_NUM >= 19297
+        ImGui::PushItemFlag(ImGuiItemFlags_MixedValue, vars.UseMixedValue);
+#endif
         bool ret;
         if (vars.widget_type == 0)
             ret = ImGui::DragScalar("Drag", vars.data_type, &vars.data_storage[1], 0.5f);
         else
             ret = ImGui::SliderScalar("Slider", vars.data_type, &vars.data_storage[1], &vars.data_zero, &vars.data_zero);
         vars.Status.QueryInc(ret);
+#if IMGUI_VERSION_NUM >= 19297
+        ImGui::PopItemFlag();
+#endif
 #if IMGUI_VERSION_NUM >= 19286
         ImGui::PopItemFlag();
 #endif
@@ -484,13 +490,20 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         DragDatatypeVars& vars = ctx->GetVars<DragDatatypeVars>();
 
         ctx->SetRef("Test Window");
-        for (int liveedit_disable = 0; liveedit_disable < 2; liveedit_disable++)
+        for (int step = 0; step < 4; step++)
         {
-            vars.UseLiveEdit = (liveedit_disable == 0);
+            vars.UseLiveEdit = (step & 1) == 0;
+            vars.UseMixedValue = (step & 2) != 0;
 #if IMGUI_VERSION_NUM < 19286
             if (vars.UseLiveEdit == false)
                 continue;
 #endif
+#if IMGUI_VERSION_NUM < 19297
+            if (vars.UseMixedValue)
+                continue;
+#endif
+            ctx->LogInfo("STEP %d, UseLiveEdit=%d, UseMixedValue=%d", step, vars.UseLiveEdit, vars.UseMixedValue);
+
             for (int widget_type = 0; widget_type < 2; widget_type++)
             {
                 for (int data_type = 0; data_type < ImGuiDataType_COUNT; data_type++)
@@ -530,13 +543,25 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
                     IM_CHECK_GE(vars.Status.Edited, 1);
                     vars.Status.Clear();
                     ctx->Yield();
-                    IM_CHECK_EQ(vars.Status.RetValue, 0);        // Verify it doesn't keep returning as edited.
+                    IM_CHECK_EQ(vars.Status.RetValue, 0);               // Verify it doesn't keep returning as edited.
                     IM_CHECK_EQ(vars.Status.Edited, 0);
 
                     vars.Status.Clear();
                     ctx->KeyPress(ImGuiKey_Enter);
                     IM_CHECK(vars.data_storage[0] == 42);               // Ensure there were no oob writes.
                     IM_CHECK(vars.data_storage[1 + data_size] == 42);
+
+                    // A single edit that ends up with same output is considered an Edit in MixedValue + LiveEdit mode
+                    vars.Status.Clear();
+                    ctx->ItemInput(widget_name);
+                    ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_A); // Select all
+                    ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_C); // Copy to clipboard
+                    ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_V); // Paste to clipboard
+                    if (vars.UseMixedValue && vars.UseLiveEdit)
+                        IM_CHECK_EQ(vars.Status.Edited, 1);
+                    else
+                        IM_CHECK_EQ(vars.Status.Edited, 0);
+                    ctx->KeyPress(ImGuiKey_Enter);
                 }
             }
         }
@@ -1053,17 +1078,25 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
     };
 
     // ## Test InputText() and IsItemDeactivatedXXX() functions (mentioned in #2215)
+    // ## Also text for MixedValue mode.
     t = IM_REGISTER_TEST(e, "widgets", "widgets_status_inputtext");
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         ImGuiTestGenericVars& vars = ctx->GenericVars;
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
 
-        ImGui::SliderInt("Step", &vars.Step, 0, 2);
+        ImGui::SliderInt("Step", &vars.Step, 0, 15);
         ImGui::InputText("Sibling", vars.Str2, IM_COUNTOF(vars.Str2));
 
-        const bool is_temp_apply_on_deactivate = (vars.Step % 4) == 2;
-        const bool is_multiline = (vars.Step % 8) == 4;
+        const int step = vars.Step;
+        const bool is_temp_apply_on_deactivate = (step & 2) != 0;
+        const bool is_multiline = (step & 4) != 0;
+        const bool is_mixedvalue = (step & 8) != 0;
+
+#if IMGUI_VERSION_NUM >= 19297
+        if (is_mixedvalue)
+            ImGui::PushItemFlag(ImGuiItemFlags_MixedValue, true);
+#endif
 
         Str128 local = vars.Str1;
         bool ret;
@@ -1085,6 +1118,12 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         }
 
         vars.Status.QueryInc(ret);
+
+#if IMGUI_VERSION_NUM >= 19297
+        if (is_mixedvalue)
+            ImGui::PopItemFlag();
+#endif
+
         ImGui::End();
     };
     t->TestFunc = [](ImGuiTestContext* ctx)
@@ -1095,12 +1134,13 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ImGuiIO& io = ImGui::GetIO();
 
         ctx->SetRef("Test Window");
-        for (int step = 0; step < 8; step++)
+        for (int step = 0; step < 16; step++)
         {
             vars.Step = step;
-            const bool is_enter_keep_active = (step % 2) == 1;
-            const bool is_temp_apply_on_deactivate = (step % 4) == 2;
-            const bool is_multiline = (step % 8) == 4;
+            const bool is_enter_keep_active = (step & 1) != 0;
+            const bool is_temp_apply_on_deactivate = (step & 2) != 0;
+            const bool is_multiline = (step & 4) != 0;
+            const bool is_mixedvalue = (step & 8) != 0;
 
 #if IMGUI_VERSION_NUM < 19264
             if (is_enter_keep_active)
@@ -1110,10 +1150,15 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
             if (is_temp_apply_on_deactivate)
                 continue; // Unsupported yet (#9308)
 #endif
+#if IMGUI_VERSION_NUM < 19297
+            if (is_mixedvalue)
+                continue;
+#endif
             if (is_enter_keep_active && is_multiline)
                 continue; // Unsupported yet
 
-            ctx->LogInfo("Step %d: is_enter_keep_active %d, is_temp_apply_on_deactivate %d, is_multiline %d", step, is_enter_keep_active, is_temp_apply_on_deactivate, is_multiline);
+            ctx->LogInfo("STEP %d: is_enter_keep_active %d, is_temp_apply_on_deactivate %d, is_multiline %d, is_mixedvalue %d",
+                step, is_enter_keep_active, is_temp_apply_on_deactivate, is_multiline, vars.UseMixedValue);
             io.ConfigInputTextEnterKeepActive = is_enter_keep_active;
             vars.Str1[0] = 0;
             ctx->Yield();
@@ -1138,7 +1183,9 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
                 IM_CHECK_STR_EQ(vars.Str1, "Hello");
             status.Clear();
             ctx->KeyPress(is_multiline ? (ImGuiMod_Ctrl | ImGuiKey_Enter) : ImGuiKey_Enter);
-            if (!is_temp_apply_on_deactivate)
+            if (is_mixedvalue)
+                IM_CHECK(status.RetValue == 1 && status.Deactivated && status.DeactivatedAfterEdit && status.Edited == 1);
+            else if (!is_temp_apply_on_deactivate)
                 IM_CHECK(status.RetValue == 0 && status.Deactivated && status.DeactivatedAfterEdit && status.Edited == 0);
             else
                 IM_CHECK(status.RetValue >= 1 && status.Deactivated && status.DeactivatedAfterEdit && status.Edited >= 1);
@@ -1180,16 +1227,18 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
     };
 
 #if IMGUI_VERSION_NUM >= 19286
-    // ## Test ImGuiInputTextFlags_NoLiveEdit features on InputFloat(), InputText(). (#701)
-    t = IM_REGISTER_TEST(e, "widgets", "widgets_status_no_live_edit");
+    // ## Test ImGuiItemFlags_LiveEditXXXX features on InputFloat(), InputText(). (#701)
+    // ## Test ImGuiItemFlags_MixedValue as well.
+    t = IM_REGISTER_TEST(e, "widgets", "widgets_status_liveedit_off");
     struct LiveEditTestVars
     {
         int     Step;
         char    Str1[256];
         Str16   Str2;
         float   Floats[3];
-        bool    UseLiveEdit = false;
-        ImGuiInputTextFlags InputTextFlags;// = ImGuiInputTextFlags_NoLiveEdit;
+        bool    UseLiveEdit = false; // Never modified by test code
+        bool    UseMixedValue = false;
+        ImGuiInputTextFlags InputTextFlags = 0;
         ImGuiTestGenericItemStatus Status;
 
         const char* get_str()
@@ -1205,17 +1254,19 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);// | ImGuiWindowFlags_AlwaysAutoResize); // FIXME-TEST: Multiline+Tabbing out sensible to visibility
 
         ImGui::SliderInt("Step", &vars.Step, 0, 6);
-        //ImGui::CheckboxFlags("ImGuiInputTextFlags_NoLiveEdit", &vars.InputTextFlags, ImGuiInputTextFlags_NoLiveEdit);
-        //ImGui::CheckboxFlags("ImGuiInputTextFlags_NoLiveEdit", &vars.InputTextFlags, ImGuiInputTextFlags_NoLiveEdit);
         ImGui::CheckboxFlags("ImGuiInputTextFlags_EnterReturnsTrue", &vars.InputTextFlags, ImGuiInputTextFlags_EnterReturnsTrue);
         ImGui::CheckboxFlags("ImGuiInputTextFlags_EscapeClearsAll", &vars.InputTextFlags, ImGuiInputTextFlags_EscapeClearsAll);
         ImGui::Checkbox("LiveEdit", &vars.UseLiveEdit);
+        ImGui::Checkbox("MixedValue", &vars.UseMixedValue);
 
         const bool is_numeric = (vars.Step == 3 || vars.Step == 4 || vars.Step == 5 || vars.Step == 6);
         if (is_numeric)
             ImGui::PushItemFlag(ImGuiItemFlags_LiveEditOnInputScalar, vars.UseLiveEdit);
         else
             ImGui::PushItemFlag(ImGuiItemFlags_LiveEditOnInputText, vars.UseLiveEdit);
+#if IMGUI_VERSION_NUM >= 19297
+        ImGui::PushItemFlag(ImGuiItemFlags_MixedValue, vars.UseMixedValue);
+#endif
 
         bool ret = false;
         if (vars.Step == 0)
@@ -1256,6 +1307,9 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         else
             ImGui::BulletText("User Data = '%s'", vars.get_str());
 
+#if IMGUI_VERSION_NUM >= 19297
+        ImGui::PopItemFlag();
+#endif
         ImGui::PopItemFlag();
 
         ImGui::End();
@@ -1272,242 +1326,289 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ImGuiInputTextState* state = ImGui::GetInputTextState(ctx->GetID("Buf"));
         IM_CHECK(state != NULL);
 
-        for (int step = 0; step < 7; step++)
+        for (int mixedvalue_step = 0; mixedvalue_step < 2; mixedvalue_step++)
         {
-            const bool is_dynamic_str = (step == 1);
-            const bool is_multiline = (step == 2);
-            const bool is_numeric = (step == 3 || step == 4 || step == 5 || step == 6);
-            const bool is_drag_slider = (step == 5 || step == 6);
-            const bool is_multi_components = (step == 6);
+            for (int step = 0; step < 7; step++)
+            {
+                const bool is_dynamic_str = (step == 1);
+                const bool is_multiline = (step == 2);
+                const bool is_numeric = (step == 3 || step == 4 || step == 5 || step == 6);
+                const bool is_drag_slider = (step == 5 || step == 6);
+                const bool is_multi_components = (step == 6);
 
-            vars = LiveEditTestVars(); // clear
-            if (is_numeric)
-                vars.InputTextFlags |= ImGuiInputTextFlags_ParseEmptyRefVal; // "" -> 0.0f
-            vars.Step = step;
-            ctx->LogInfo("STEP %d: is_numeric=%d, is_dynamic_str=%d, is_multiline=%d, is_drag_slider=%d", step, is_numeric, is_dynamic_str, is_multiline, is_drag_slider);
-            ctx->Yield();
-
-            // Append text, validate
-            status.Clear();
-            ImGuiID item_id = is_multi_components ? ctx->GetID("Buf/$$0") : ctx->GetID("Buf");
-            ctx->ItemInput(item_id);
-            if (is_numeric)
-                ctx->KeyChars("123");
-            else
-                ctx->KeyChars("Hello");
-            IM_CHECK_EQ_NO_RET(status.RetValue, 0);
-            IM_CHECK_EQ_NO_RET(status.Edited, 0); // FIXME-TESTS
-            IM_CHECK_EQ_NO_RET(status.Deactivated, 0);
-            IM_CHECK_EQ_NO_RET(status.DeactivatedAfterEdit, 0);
-            IM_CHECK_STR_EQ_NO_RET(vars.get_str(), "");
-            status.Clear();
-            ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_Enter);
-            IM_CHECK_EQ_NO_RET(status.RetValue, 1);
-            IM_CHECK_EQ_NO_RET(status.Edited, 1);
-            IM_CHECK_EQ_NO_RET(status.Deactivated, 1);
-            IM_CHECK_EQ_NO_RET(status.DeactivatedAfterEdit, 1);
-            if (is_numeric)
-                IM_CHECK_EQ_NO_RET(vars.Floats[0], 123.0f);
-            else
-                IM_CHECK_STR_EQ_NO_RET(vars.get_str(), "Hello");
-
-            // Modify text, Tab out
-            status.Clear();
-            ctx->ItemInput(item_id);
-            IM_CHECK_EQ(g.ActiveId, item_id);
-            ctx->KeyPress(ImGuiKey_End);
-            ctx->KeyPress(ImGuiKey_Backspace, 5);
-            ctx->KeyChars("777");
-            IM_CHECK_STR_EQ_NO_RET(state->GetText(), "777");
-            IM_CHECK_EQ_NO_RET(status.RetValue, 0);
-            IM_CHECK_EQ_NO_RET(status.Edited, 0); // FIXME-TESTS
-            IM_CHECK_EQ_NO_RET(status.Deactivated, 0);
-            IM_CHECK_EQ_NO_RET(status.DeactivatedAfterEdit, 0);
-            if (is_numeric)
-                IM_CHECK_EQ_NO_RET(vars.Floats[0], 123.0f);
-            else
-                IM_CHECK_STR_EQ_NO_RET(vars.get_str(), "Hello");
-            status.Clear();
-            ctx->KeyPress(ImGuiKey_Tab);
-            IM_CHECK_NE_NO_RET(g.ActiveId, item_id);
-            IM_CHECK_EQ_NO_RET(status.RetValue, 1);
-            IM_CHECK_EQ_NO_RET(status.Edited, 1);
-            IM_CHECK_EQ_NO_RET(status.Deactivated, 1);
-            IM_CHECK_EQ_NO_RET(status.DeactivatedAfterEdit, 1);
-            if (is_numeric)
-                IM_CHECK_EQ_NO_RET(vars.Floats[0], 777.0f);
-            else
-                IM_CHECK_STR_EQ_NO_RET(vars.get_str(), "777");
-
-            // Revert to previous text
-            ctx->KeyPress(ImGuiMod_Shift | ImGuiKey_Tab);
-            IM_CHECK_EQ_NO_RET(g.ActiveId, item_id);
-            ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_A);
-            if (is_numeric)
-                ctx->KeyChars("123");
-            else
-                ctx->KeyChars("Hello");
-            ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_Enter);
-
-            // Activate, validate (no changes)
-            status.Clear();
-            ctx->ItemInput(item_id);
-            ctx->KeyPress(ImGuiKey_End);
-            ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_Enter);
-            IM_CHECK_EQ_NO_RET(status.RetValue, 0);
-            IM_CHECK_EQ_NO_RET(status.Edited, 0);
-            IM_CHECK_EQ_NO_RET(status.Activated, 1);
-            IM_CHECK_EQ_NO_RET(status.Deactivated, 1);
-            IM_CHECK_EQ_NO_RET(status.DeactivatedAfterEdit, 0);
-            if (is_numeric)
-            {
-                status.Clear();
-                ctx->ItemInput(item_id);
-                IM_CHECK_STR_EQ_NO_RET(state->GetText(), "123.0");
-                ctx->KeyPress(ImGuiKey_End);
-                ctx->KeyPress(ImGuiKey_Backspace); // Remove trailing zero = same value after parsing
-                ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_Enter);
-                IM_CHECK_EQ_NO_RET(vars.Floats[0], 123.0f);
-                IM_CHECK_STR_EQ_NO_RET(state->GetText(), "123.");
-                IM_CHECK_EQ_NO_RET(status.RetValue, 0);
-                IM_CHECK_EQ_NO_RET(status.Edited, 0);
-                IM_CHECK_EQ_NO_RET(status.Activated, 1);
-                IM_CHECK_EQ_NO_RET(status.Deactivated, 1);
-                IM_CHECK_EQ_NO_RET(status.DeactivatedAfterEdit, 0);
-            }
-
-            // Activate, append, delete, validate (no changes in final output)
-            status.Clear();
-            ctx->ItemInput(item_id);
-            ctx->KeyPress(ImGuiKey_End);
-            if (is_numeric)
-            {
-                ctx->KeyChars("444");
-                IM_CHECK_EQ_NO_RET(vars.Floats[0], 123.0f);
-                IM_CHECK_STR_EQ_NO_RET(state->GetText(), "123.0444");
-            }
-            else
-            {
-                ctx->KeyChars("ABC");
-                IM_CHECK_STR_EQ_NO_RET(vars.get_str(), "Hello");
-                IM_CHECK_STR_EQ_NO_RET(state->GetText(), "HelloABC");
-            }
-            ctx->KeyPress(ImGuiKey_Backspace, 3);
-            ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_Enter);
-            if (is_numeric)
-            {
-                IM_CHECK_EQ_NO_RET(vars.Floats[0], 123.0f);
-                IM_CHECK_STR_EQ_NO_RET(state->GetText(), "123.0");
-            }
-            else
-            {
-                IM_CHECK_STR_EQ_NO_RET(vars.get_str(), "Hello");
-                IM_CHECK_STR_EQ_NO_RET(state->GetText(), "Hello");
-            }
-            IM_CHECK_EQ_NO_RET(status.RetValue, 0);
-            IM_CHECK_EQ_NO_RET(status.Edited, 0); // FIXME-TESTS
-            IM_CHECK_EQ_NO_RET(status.Activated, 1);
-            IM_CHECK_EQ_NO_RET(status.Deactivated, 1);
-            IM_CHECK_EQ_NO_RET(status.DeactivatedAfterEdit, 0); // FIXME-TESTS
-
-            // Activate, append, revert (no changes in final output)
-            status.Clear();
-            ctx->ItemInput(item_id);
-            ctx->KeyPress(ImGuiKey_End);
-            if (is_numeric)
-            {
-                ctx->KeyChars("456");
-                IM_CHECK_EQ_NO_RET(vars.Floats[0], 123.0f);
-                IM_CHECK_STR_EQ_NO_RET(state->GetText(), "123.0456");
-            }
-            else
-            {
-                ctx->KeyChars("World");
-                IM_CHECK_STR_EQ_NO_RET(vars.get_str(), "Hello");
-                IM_CHECK_STR_EQ_NO_RET(state->GetText(), "HelloWorld");
-            }
-            ctx->KeyPress(ImGuiKey_Escape);
-            if (is_numeric)
-            {
-                IM_CHECK_EQ_NO_RET(vars.Floats[0], 123.0f);
-                IM_CHECK_STR_EQ_NO_RET(state->GetText(), "123.0");
-            }
-            else
-            {
-                IM_CHECK_STR_EQ_NO_RET(vars.get_str(), "Hello");
-                IM_CHECK_STR_EQ_NO_RET(state->GetText(), "Hello");
-            }
-            IM_CHECK_EQ_NO_RET(status.RetValue, 0);
-            IM_CHECK_EQ_NO_RET(status.Edited, 0); // FIXME-TESTS
-            IM_CHECK_EQ_NO_RET(status.Activated, 1);
-            IM_CHECK_EQ_NO_RET(status.Deactivated, 1);
-            IM_CHECK_EQ_NO_RET(status.DeactivatedAfterEdit, 0); // FIXME-TESTS
-
-            // Testing with _EscapeClearsAll clearing buffer
-            if (!is_drag_slider)
-            {
-                vars.InputTextFlags |= ImGuiInputTextFlags_EscapeClearsAll;
+                vars = LiveEditTestVars(); // clear
+                if (is_numeric)
+                    vars.InputTextFlags |= ImGuiInputTextFlags_ParseEmptyRefVal; // "" -> 0.0f
+                vars.Step = step;
+                vars.UseMixedValue = (mixedvalue_step == 1);
+                ctx->LogInfo("STEP %d: mixedvalue=%d, is_numeric=%d, is_dynamic_str=%d, is_multiline=%d, is_drag_slider=%d",
+                    step,
+                    vars.UseLiveEdit,
+                    is_numeric, is_dynamic_str, is_multiline, is_drag_slider);
                 ctx->Yield();
+
+                // Append text, validate
                 status.Clear();
+                ImGuiID item_id = is_multi_components ? ctx->GetID("Buf/$$0") : ctx->GetID("Buf");
                 ctx->ItemInput(item_id);
-                ctx->KeyChars("999");
-                ctx->KeyPress(ImGuiKey_Escape);
+                if (is_numeric)
+                    ctx->KeyChars("123");
+                else
+                    ctx->KeyChars("Hello");
+                IM_CHECK_EQ_NO_RET(status.RetValue, 0);
+                IM_CHECK_EQ_NO_RET(status.Edited, 0); // FIXME-TESTS
+                IM_CHECK_EQ_NO_RET(status.Deactivated, 0);
+                IM_CHECK_EQ_NO_RET(status.DeactivatedAfterEdit, 0);
+                IM_CHECK_STR_EQ_NO_RET(vars.get_str(), "");
+                status.Clear();
+                ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_Enter);
+                IM_CHECK_EQ_NO_RET(status.RetValue, 1);
+                IM_CHECK_EQ_NO_RET(status.Edited, 1);
+                IM_CHECK_EQ_NO_RET(status.Deactivated, 1);
+                IM_CHECK_EQ_NO_RET(status.DeactivatedAfterEdit, 1);
                 if (is_numeric)
                     IM_CHECK_EQ_NO_RET(vars.Floats[0], 123.0f);
                 else
-                    IM_CHECK_STR_EQ_NO_RET(vars.get_str(), ""); // Live buffer cleared immediately on Escape! By spec.
-                IM_CHECK_STR_EQ_NO_RET(state->GetText(), ""); // Edit buffer cleared
-                ctx->KeyPress(ImGuiKey_Escape);
-                IM_CHECK_EQ_NO_RET(status.RetValue, 1);
-                IM_CHECK_EQ_NO_RET(status.Deactivated, 1);
-                IM_CHECK_EQ_NO_RET(status.DeactivatedAfterEdit, 1);
-                IM_CHECK_STR_EQ_NO_RET(vars.get_str(), "");
+                    IM_CHECK_STR_EQ_NO_RET(vars.get_str(), "Hello");
 
-                // Testing with _EscapeClearsAll clearing buffer, part 2
+                // Modify text, Tab out
                 status.Clear();
                 ctx->ItemInput(item_id);
-                ctx->KeyChars("999");
-                IM_CHECK_STR_EQ_NO_RET(vars.get_str(), "");
-                IM_CHECK_STR_EQ_NO_RET(state->GetText(), "999");
-                ctx->KeyPress(ImGuiKey_Escape);
-                IM_CHECK_STR_EQ_NO_RET(vars.get_str(), "");
-                IM_CHECK_STR_EQ_NO_RET(state->GetText(), "");
-                ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_Enter);
-                IM_CHECK_EQ_NO_RET(status.RetValue, 0);
-                IM_CHECK_EQ_NO_RET(status.Deactivated, 1);
-                IM_CHECK_EQ_NO_RET(status.DeactivatedAfterEdit, 0);
-                IM_CHECK_STR_EQ_NO_RET(vars.get_str(), "");
-
-                vars.InputTextFlags &= ~ImGuiInputTextFlags_EscapeClearsAll;
-            }
-
-            // Misc
-            if (is_drag_slider)
-            {
-                ctx->ItemInput(item_id);
-                ctx->KeyCharsReplaceEnter("456");
-                IM_CHECK_EQ_NO_RET(vars.Floats[0], 456.0f);
-                ctx->ItemDragWithDelta(item_id, { -100, 0 });
-                IM_CHECK_LT_NO_RET(vars.Floats[0], 456.0f);
-                IM_CHECK_EQ(g.ActiveId, 0u);
-                ctx->Yield(2);
-                ctx->ItemInput(item_id);
                 IM_CHECK_EQ(g.ActiveId, item_id);
-                ctx->KeyCharsAppend("222");
-                IM_CHECK_LT_NO_RET(vars.Floats[0], 456.0f);
-                ctx->KeyPress(ImGuiKey_Enter);
-                IM_CHECK_LT_NO_RET(vars.Floats[0], 456222.0f);
+                ctx->KeyPress(ImGuiKey_End);
+                ctx->KeyPress(ImGuiKey_Backspace, 5);
+                ctx->KeyChars("777");
+                IM_CHECK_STR_EQ_NO_RET(state->GetText(), "777");
+                IM_CHECK_EQ_NO_RET(status.RetValue, 0);
+                IM_CHECK_EQ_NO_RET(status.Edited, 0); // FIXME-TESTS
+                IM_CHECK_EQ_NO_RET(status.Deactivated, 0);
+                IM_CHECK_EQ_NO_RET(status.DeactivatedAfterEdit, 0);
+                if (is_numeric)
+                    IM_CHECK_EQ_NO_RET(vars.Floats[0], 123.0f);
+                else
+                    IM_CHECK_STR_EQ_NO_RET(vars.get_str(), "Hello");
+                status.Clear();
+                ctx->KeyPress(ImGuiKey_Tab);
+                IM_CHECK_NE_NO_RET(g.ActiveId, item_id);
+                IM_CHECK_EQ_NO_RET(status.RetValue, 1);
+                IM_CHECK_EQ_NO_RET(status.Edited, 1);
+                IM_CHECK_EQ_NO_RET(status.Deactivated, 1);
+                IM_CHECK_EQ_NO_RET(status.DeactivatedAfterEdit, 1);
+                if (is_numeric)
+                    IM_CHECK_EQ_NO_RET(vars.Floats[0], 777.0f);
+                else
+                    IM_CHECK_STR_EQ_NO_RET(vars.get_str(), "777");
 
-                // Verify that Ctrl+Clicking on a previous widget after a non-committed edit works
+                // Revert to previous text
+                ctx->KeyPress(ImGuiMod_Shift | ImGuiKey_Tab);
+                IM_CHECK_EQ_NO_RET(g.ActiveId, item_id);
+                ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_A);
+                if (is_numeric)
+                    ctx->KeyChars("123");
+                else
+                    ctx->KeyChars("Hello");
+                ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_Enter);
+
+                // Activate, validate (no changes)
+                status.Clear();
                 ctx->ItemInput(item_id);
-                ctx->KeyCharsReplace("333");
-                ctx->ItemInput("Step"); // Ctrl+Click
-                IM_CHECK_EQ(g.ActiveId, ctx->GetID("Step"));
+                ctx->KeyPress(ImGuiKey_End);
+                ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_Enter);
+                IM_CHECK_EQ_NO_RET(status.Activated, 1);
+                IM_CHECK_EQ_NO_RET(status.Deactivated, 1);
+                if (vars.UseMixedValue == false)
+                {
+                    IM_CHECK_EQ_NO_RET(status.RetValue, 0);
+                    IM_CHECK_EQ_NO_RET(status.Edited, 0);
+                    IM_CHECK_EQ_NO_RET(status.DeactivatedAfterEdit, 0);
+                }
+                else
+                {
+                    // MixedValue mode: validation always apply edit
+                    IM_CHECK_EQ_NO_RET(status.RetValue, 1);
+                    IM_CHECK_EQ_NO_RET(status.Edited, 1);
+                    IM_CHECK_EQ_NO_RET(status.DeactivatedAfterEdit, 1);
+                }
+                if (is_numeric)
+                {
+                    status.Clear();
+                    ctx->ItemInput(item_id);
+                    IM_CHECK_STR_EQ_NO_RET(state->GetText(), "123.0");
+                    ctx->KeyPress(ImGuiKey_End);
+                    ctx->KeyPress(ImGuiKey_Backspace); // Remove trailing zero = same value after parsing
+                    ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_Enter);
+                    IM_CHECK_EQ_NO_RET(vars.Floats[0], 123.0f);
+                    IM_CHECK_STR_EQ_NO_RET(state->GetText(), "123.");
+                    IM_CHECK_EQ_NO_RET(status.Activated, 1);
+                    IM_CHECK_EQ_NO_RET(status.Deactivated, 1);
+                    if (vars.UseMixedValue == false)
+                    {
+                        IM_CHECK_EQ_NO_RET(status.RetValue, 0);
+                        IM_CHECK_EQ_NO_RET(status.Edited, 0);
+                        IM_CHECK_EQ_NO_RET(status.DeactivatedAfterEdit, 0);
+                    }
+                    else
+                    {
+                        // MixedValue mode: validation always apply edit
+                        IM_CHECK_EQ_NO_RET(status.RetValue, 1);
+                        IM_CHECK_EQ_NO_RET(status.Edited, 1);
+                        IM_CHECK_EQ_NO_RET(status.DeactivatedAfterEdit, 1);
+                    }
+                }
+
+                // Activate, append, delete, validate (no changes in final output)
+                status.Clear();
+                ctx->ItemInput(item_id);
+                ctx->KeyPress(ImGuiKey_End);
+                if (is_numeric)
+                {
+                    ctx->KeyChars("444");
+                    IM_CHECK_EQ_NO_RET(vars.Floats[0], 123.0f);
+                    IM_CHECK_STR_EQ_NO_RET(state->GetText(), "123.0444");
+                }
+                else
+                {
+                    ctx->KeyChars("ABC");
+                    IM_CHECK_STR_EQ_NO_RET(vars.get_str(), "Hello");
+                    IM_CHECK_STR_EQ_NO_RET(state->GetText(), "HelloABC");
+                }
+                ctx->KeyPress(ImGuiKey_Backspace, 3);
+                ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_Enter);
+                if (is_numeric)
+                {
+                    IM_CHECK_EQ_NO_RET(vars.Floats[0], 123.0f);
+                    IM_CHECK_STR_EQ_NO_RET(state->GetText(), "123.0");
+                }
+                else
+                {
+                    IM_CHECK_STR_EQ_NO_RET(vars.get_str(), "Hello");
+                    IM_CHECK_STR_EQ_NO_RET(state->GetText(), "Hello");
+                }
+                IM_CHECK_EQ_NO_RET(status.Activated, 1);
+                IM_CHECK_EQ_NO_RET(status.Deactivated, 1);
+                if (vars.UseMixedValue == false)
+                {
+                    IM_CHECK_EQ_NO_RET(status.RetValue, 0);
+                    IM_CHECK_EQ_NO_RET(status.Edited, 0); // FIXME-TESTS
+                    IM_CHECK_EQ_NO_RET(status.DeactivatedAfterEdit, 0); // FIXME-TESTS
+                }
+                else
+                {
+                    // MixedValue mode: validation always apply edit
+                    IM_CHECK_EQ_NO_RET(status.RetValue, 1);
+                    IM_CHECK_EQ_NO_RET(status.Edited, 1);
+                    IM_CHECK_EQ_NO_RET(status.DeactivatedAfterEdit, 1);
+                }
+
+                // Activate, append, revert (no changes in final output)
+                status.Clear();
+                ctx->ItemInput(item_id);
+                ctx->KeyPress(ImGuiKey_End);
+                if (is_numeric)
+                {
+                    ctx->KeyChars("456");
+                    IM_CHECK_EQ_NO_RET(vars.Floats[0], 123.0f);
+                    IM_CHECK_STR_EQ_NO_RET(state->GetText(), "123.0456");
+                }
+                else
+                {
+                    ctx->KeyChars("World");
+                    IM_CHECK_STR_EQ_NO_RET(vars.get_str(), "Hello");
+                    IM_CHECK_STR_EQ_NO_RET(state->GetText(), "HelloWorld");
+                }
+                ctx->KeyPress(ImGuiKey_Escape);
+                if (is_numeric)
+                {
+                    IM_CHECK_EQ_NO_RET(vars.Floats[0], 123.0f);
+                    IM_CHECK_STR_EQ_NO_RET(state->GetText(), "123.0");
+                }
+                else
+                {
+                    IM_CHECK_STR_EQ_NO_RET(vars.get_str(), "Hello");
+                    IM_CHECK_STR_EQ_NO_RET(state->GetText(), "Hello");
+                }
+                // Note: in MixedValue=1, LiveEdit=0 mode, activate + append + revert does not mark as edited.
+                IM_CHECK_EQ_NO_RET(status.Activated, 1);
+                IM_CHECK_EQ_NO_RET(status.Deactivated, 1);
+                IM_CHECK_EQ_NO_RET(status.RetValue, 0);
+                IM_CHECK_EQ_NO_RET(status.Edited, 0); // FIXME-TESTS
+                IM_CHECK_EQ_NO_RET(status.DeactivatedAfterEdit, 0); // FIXME-TESTS
+
+                // Testing with _EscapeClearsAll clearing buffer
+                if (!is_drag_slider)
+                {
+                    vars.InputTextFlags |= ImGuiInputTextFlags_EscapeClearsAll;
+                    ctx->Yield();
+                    status.Clear();
+                    ctx->ItemInput(item_id);
+                    ctx->KeyChars("999");
+                    ctx->KeyPress(ImGuiKey_Escape);
+                    if (is_numeric)
+                        IM_CHECK_EQ_NO_RET(vars.Floats[0], 123.0f);
+                    else
+                        IM_CHECK_STR_EQ_NO_RET(vars.get_str(), ""); // Live buffer cleared immediately on Escape! By spec.
+                    IM_CHECK_STR_EQ_NO_RET(state->GetText(), ""); // Edit buffer cleared
+                    ctx->KeyPress(ImGuiKey_Escape);
+                    IM_CHECK_EQ_NO_RET(status.RetValue, 1);
+                    IM_CHECK_EQ_NO_RET(status.Deactivated, 1);
+                    IM_CHECK_EQ_NO_RET(status.DeactivatedAfterEdit, 1);
+                    IM_CHECK_STR_EQ_NO_RET(vars.get_str(), "");
+
+                    // Testing with _EscapeClearsAll clearing buffer, part 2
+                    status.Clear();
+                    ctx->ItemInput(item_id);
+                    ctx->KeyChars("999");
+                    IM_CHECK_STR_EQ_NO_RET(vars.get_str(), "");
+                    IM_CHECK_STR_EQ_NO_RET(state->GetText(), "999");
+                    ctx->KeyPress(ImGuiKey_Escape);
+                    IM_CHECK_STR_EQ_NO_RET(vars.get_str(), "");
+                    IM_CHECK_STR_EQ_NO_RET(state->GetText(), "");
+                    ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_Enter);
+                    IM_CHECK_EQ_NO_RET(status.Deactivated, 1);
+                    if (vars.UseMixedValue == false)
+                    {
+                        IM_CHECK_EQ_NO_RET(status.RetValue, 0);
+                        IM_CHECK_EQ_NO_RET(status.DeactivatedAfterEdit, 0);
+                    }
+                    else
+                    {
+                        // MixedValue mode: validation always apply edit
+                        IM_CHECK_EQ_NO_RET(status.RetValue, 1);
+                        IM_CHECK_EQ_NO_RET(status.DeactivatedAfterEdit, 1);
+                    }
+                    IM_CHECK_STR_EQ_NO_RET(vars.get_str(), "");
+
+                    vars.InputTextFlags &= ~ImGuiInputTextFlags_EscapeClearsAll;
+                }
+
+                // Misc
+                if (is_drag_slider)
+                {
+                    ctx->ItemInput(item_id);
+                    ctx->KeyCharsReplaceEnter("456");
+                    IM_CHECK_EQ_NO_RET(vars.Floats[0], 456.0f);
+                    ctx->ItemDragWithDelta(item_id, { -100, 0 });
+                    IM_CHECK_LT_NO_RET(vars.Floats[0], 456.0f);
+                    IM_CHECK_EQ(g.ActiveId, 0u);
+                    ctx->Yield(2);
+                    ctx->ItemInput(item_id);
+                    IM_CHECK_EQ(g.ActiveId, item_id);
+                    ctx->KeyCharsAppend("222");
+                    IM_CHECK_LT_NO_RET(vars.Floats[0], 456.0f);
+                    ctx->KeyPress(ImGuiKey_Enter);
+                    IM_CHECK_LT_NO_RET(vars.Floats[0], 456222.0f);
+
+                    // Verify that Ctrl+Clicking on a previous widget after a non-committed edit works
+                    ctx->ItemInput(item_id);
+                    ctx->KeyCharsReplace("333");
+                    ctx->ItemInput("Step"); // Ctrl+Click
+                    IM_CHECK_EQ(g.ActiveId, ctx->GetID("Step"));
+                }
+
+                ctx->KeyPress(ImGuiKey_Escape);
+
+                ctx->Yield();
             }
-
-            ctx->KeyPress(ImGuiKey_Escape);
-
-            ctx->Yield();
         }
     };
 #endif

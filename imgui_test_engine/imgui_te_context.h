@@ -194,6 +194,7 @@ struct IMGUI_API ImGuiTestGenericVars
     bool                    ShowWindow1, ShowWindow2;
     bool                    UseClipper;
     bool                    UseViewports;
+    bool                    UseMixedValue;
     float                   Width;
     ImVec2                  Pos;
     ImVec2                  Pivot;

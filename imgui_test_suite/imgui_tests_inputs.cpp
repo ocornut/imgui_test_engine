@@ -585,7 +585,7 @@ void RegisterTests_Inputs(ImGuiTestEngine* e)
 
     // ## Test IO with multiple-context (#6199, #6256)
 #if IMGUI_VERSION_NUM >= 18943
-    t = IM_REGISTER_TEST(e, "misc", "inputs_io_inputqueue_multi_context");
+    t = IM_REGISTER_TEST(e, "inputs", "inputs_io_inputqueue_multi_context");
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         ImGuiContext* c1 = ImGui::GetCurrentContext();
