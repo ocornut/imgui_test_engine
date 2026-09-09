@@ -5044,7 +5044,7 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
                     vars.ForceDisplayEnd = 15 + extra_forced_items;
                 }
 #endif
-                ctx->LogInfo("## Step %d-%d, Table=%d, TableFreezeRows=%d, ClipperManualItemHeight=%d UnknownItemsCount=%d", clipper_step, contents_step, vars.TableEnable, vars.TableFreezeRows, vars.ClipperManualItemHeight, vars.ClipperUnknownItemsCount);
+                ctx->LogInfo("STEP %d-%d, Table=%d, TableFreezeRows=%d, ClipperManualItemHeight=%d UnknownItemsCount=%d", clipper_step, contents_step, vars.TableEnable, vars.TableFreezeRows, vars.ClipperManualItemHeight, vars.ClipperUnknownItemsCount);
                 const float item_height = ImGui::GetTextLineHeight() + (vars.TableEnable ? ImGui::GetStyle().CellPadding.y * 2.0f : ImGui::GetStyle().ItemSpacing.y);
 
                 ctx->Yield();

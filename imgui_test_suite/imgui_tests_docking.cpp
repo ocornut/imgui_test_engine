@@ -188,7 +188,7 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
             // FIXME-TESTS: Tests doesn't work if already docked
             // FIXME-TESTS: DockSetMulti takes window_name not ref
             io.ConfigDockingAlwaysTabBar = (test_case_n == 1);
-            ctx->LogDebug("## TEST CASE %d: with ConfigDockingAlwaysTabBar = %d", test_case_n, io.ConfigDockingAlwaysTabBar);
+            ctx->LogInfo("TEST CASE %d: with ConfigDockingAlwaysTabBar = %d", test_case_n, io.ConfigDockingAlwaysTabBar);
 
             ImGuiWindow* window_aaa = ctx->GetWindowByRef("AAA");
             ImGuiWindow* window_bbb = ctx->GetWindowByRef("BBB");
@@ -1594,7 +1594,7 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
 
         for (int variant = 0; variant < 2; variant++)
         {
-            ctx->LogDebug("## TEST CASE %d", variant);
+            ctx->LogInfo("TEST CASE %d", variant);
             ctx->DockClear("AAA", "BBB", "CCC", "DDD", "EEE", "FFF", NULL);
 
             if (variant == 1)
@@ -1949,7 +1949,7 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
             ctx->Test->ArgVariant = variant;
             vars.ShowDockspace = (variant & 1) != 0;
             vars.SetShowWindows(3, true);
-            ctx->LogDebug("## TEST CASE: %d", variant);
+            ctx->LogInfo("TEST CASE: %d", variant);
             ctx->DockClear("AAA", "BBB", "CCC", NULL);
             ctx->DockInto("BBB", "CCC", ImGuiDir_Left);                         // BBB | CCC
             vars.ShowWindow[1] = false;                                         // Hide BBB

@@ -1176,7 +1176,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
         ImGuiTable* table = ImGui::TableFindByID(ctx->GetID("table1"));
         for (int step = 0; step < 4; step++)
         {
-            ctx->LogDebug("Step %d", step);
+            ctx->LogInfo("STEP", step);
             vars.Step = step;
             ctx->Yield(); // previous step previously submitted, window contents width reflect old step, outer rect reflects old step, reported ideal width reflects new step
             IM_CHECK_EQ(table->Columns[0].ContentMaxXUnfrozen - table->Columns[0].WorkMinX, 120.0f);
@@ -1657,7 +1657,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
         ctx->SetRef("Test Window");
         for (int step = 0; step < 3; step++)
         {
-            ctx->LogDebug("Step %d", step);
+            ctx->LogInfo("STEP %d", step);
             vars.EmptyInside = (step == 1);
             vars.MultiInstances = (step == 2);
             ctx->Yield(4); // FIXME-TESTS: Investigate why yielding for 3 frames makes EndTable()'s child NavLayersActiveMask != 0, needed to stress both paths
@@ -2027,7 +2027,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
             if (step == 1)
                 continue;
 #endif
-            ctx->LogDebug("Step %d", step);
+            ctx->LogInfo("STEP %d", step);
             vars.Step = step;
             do_checks = false;
             ctx->Yield(2);
@@ -2563,7 +2563,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
             // Step 1: change specs after discarding table instance (reload from settings): exercise TableLoadSettingsForColumns()
             // Step 2: change specs after saving .ini data and discarding both instance and settings (simulate app restart with a modified build)
             // Step 3: change specs while table is active, with ImGuiTableFlags_NoSavedSettings (preservation via runtime reconcile only)
-            ctx->LogDebug("Step %d", step);
+            ctx->LogInfo("STEP %d", step);
             TableDiscardInstanceAndSettings(table_id);
             const bool use_settings = (step != 3);
             for (TableSpecs& specs : vars.Specs)
@@ -3416,7 +3416,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
 
         for (int step = 0; step < 4; step++)
         {
-            ctx->LogDebug("Step %d", step);
+            ctx->LogInfo("STEP %d", step);
             vars.Count = 5;
             vars.Step = step;
             vars.WindowFlags = ImGuiWindowFlags_None;
@@ -3428,7 +3428,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
 
             for (int column_step = 0; column_step < 3; column_step++)
             {
-                ctx->LogDebug("Step %d with %d columns", step, vars.Count);
+                ctx->LogInfo("STEP %d with %d columns", step, vars.Count);
                 vars.WindowFlags = ImGuiWindowFlags_AlwaysAutoResize;
                 ctx->Yield();
 

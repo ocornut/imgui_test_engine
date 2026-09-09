@@ -283,7 +283,7 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
 
         for (int step = 0; step < 4; step++)
         {
-            ctx->LogDebug("Step %d", step);
+            ctx->LogInfo("STEP %d", step);
             ctx->GenericVars.Step = step; // Enable modal popup?
             ctx->PopupCloseAll();
             ctx->Yield();
@@ -2043,7 +2043,7 @@ void RegisterTests_Nav(ImGuiTestEngine* e)
 #endif
                 // Step 0: Make sure tabbing works on unclipped widgets
                 // Step 1: Make sure tabbing works on clipped widgets
-                ctx->LogDebug("STEP %d WIDGET %d", vars.Step, vars.WidgetType);
+                ctx->LogInfo("STEP %d WidgetType=%d", vars.Step, vars.WidgetType);
 
                 IM_CHECK_EQ(g.ActiveId, (ImGuiID)0);
 #if IMGUI_VERSION_NUM >= 18208

@@ -600,9 +600,9 @@ void RegisterTests_Viewports(ImGuiTestEngine* e)
         for (int variant = 0; variant < 2; variant++)
         {
             g.IO.ConfigViewportsNoAutoMerge = (variant == 1);
-            ctx->LogDebug("## Variant %d", variant);
-            ctx->LogDebug("- io.ConfigViewportsNoAutoMerge = %d", g.IO.ConfigViewportsNoAutoMerge);
-            ctx->LogDebug("- io.ConfigDockingAlwaysTabBar = %d", g.IO.ConfigDockingAlwaysTabBar);
+            ctx->LogInfo("VARIANT %d", variant);
+            ctx->LogInfo("- io.ConfigViewportsNoAutoMerge = %d", g.IO.ConfigViewportsNoAutoMerge);
+            ctx->LogInfo("- io.ConfigDockingAlwaysTabBar = %d", g.IO.ConfigDockingAlwaysTabBar);
 
             ImGuiWindow* window_1 = ctx->GetWindowByRef("Window 1");
             ctx->DockClear("Window 1", NULL);
@@ -643,9 +643,9 @@ void RegisterTests_Viewports(ImGuiTestEngine* e)
         {
             g.IO.ConfigDockingAlwaysTabBar = (variant & 1) != 0;
             g.IO.ConfigViewportsNoAutoMerge = (variant & 2) != 0;
-            ctx->LogDebug("## Variant %d", variant);
-            ctx->LogDebug("- io.ConfigDockingAlwaysTabBar = %d", g.IO.ConfigDockingAlwaysTabBar);
-            ctx->LogDebug("- io.ConfigViewportsNoAutoMerge = %d", g.IO.ConfigViewportsNoAutoMerge);
+            ctx->LogInfo("VARIANT %d", variant);
+            ctx->LogInfo("- io.ConfigDockingAlwaysTabBar = %d", g.IO.ConfigDockingAlwaysTabBar);
+            ctx->LogInfo("- io.ConfigViewportsNoAutoMerge = %d", g.IO.ConfigViewportsNoAutoMerge);
 
             ImGuiWindow* window_1 = ctx->GetWindowByRef("Window 1");
             //ImGuiWindow* window_2 = ctx->GetWindowByRef("Window 1");

@@ -776,7 +776,7 @@ void RegisterTests_WidgetsInputText(ImGuiTestEngine* e)
             const bool is_osx = g.IO.ConfigMacOSXBehaviors;
             const ImGuiKeyChord chord_word_prev = (is_osx ? ImGuiMod_Alt : ImGuiMod_Ctrl) | ImGuiKey_LeftArrow;
             const ImGuiKeyChord chord_word_next = (is_osx ? ImGuiMod_Alt : ImGuiMod_Ctrl) | ImGuiKey_RightArrow;
-            ctx->LogDebug("## Testing with io.ConfigMacOSXBehaviors = %d", is_osx);
+            ctx->LogInfo("Testing with io.ConfigMacOSXBehaviors = %d", is_osx);
 
             // [SET 1]
             ctx->KeyCharsReplace("Hello world. Foo.bar!!!");
@@ -2113,7 +2113,7 @@ void RegisterTests_WidgetsInputText(ImGuiTestEngine* e)
 
             for (int step = 0; step < 3; step++)
             {
-                ctx->LogDebug("## Step %d, LiveEdit %d", step, vars.UseLiveEdit);
+                ctx->LogInfo("STEP %d, LiveEdit %d, MixedMode %d", step, vars.UseLiveEdit, vars.UseMixedValue);
 
                 vars.UseTempVar = (step > 0);
                 if (step == 0)

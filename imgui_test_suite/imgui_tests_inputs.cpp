@@ -1790,7 +1790,7 @@ void RegisterTests_Inputs(ImGuiTestEngine* e)
         ctx->SetRef("Test Window");
         for (int step_n = 0; step_n < 2; step_n++)
         {
-            ctx->LogDebug("Step %d: %s", step_n, step_n ? "With owner_id" : "Without owner_id");
+            ctx->LogInfo("STEP %d: %s", step_n, step_n ? "With owner_id" : "Without owner_id");
             vars.PressedCount[0] = vars.PressedCount[1] = 0;
 
             ctx->ItemClick("Button0");
@@ -1887,7 +1887,7 @@ void RegisterTests_Inputs(ImGuiTestEngine* e)
             if (step >= 2)
                 continue;
 #endif
-            ctx->LogDebug("Step %d", step);
+            ctx->LogInfo("STEP %d", step);
 
             // Emit presses with no active id
             bool is_active = (step & 1) != 0;
@@ -2003,7 +2003,7 @@ void RegisterTests_Inputs(ImGuiTestEngine* e)
         auto& vars = ctx->GetVars<InputRoutingVars>();
         for (int variant = 0; variant < 4; variant++)
         {
-            ctx->LogInfo("## Step %d", variant);
+            ctx->LogInfo("STEP %d", variant);
             memset(&vars.Pressed, 0, sizeof(vars.Pressed));
 
             vars.Func = (InputFunc)variant;
@@ -2140,7 +2140,7 @@ void RegisterTests_Inputs(ImGuiTestEngine* e)
 
         for (int variant = 0; variant < 3; variant++)
         {
-            ctx->LogInfo("## Step %d", variant);
+            ctx->LogInfo("STEP %d", variant);
             memset(&vars.Pressed, 0, sizeof(vars.Pressed));
             vars.InputFlags = (variant == 0) ? ImGuiInputFlags_ServeAll : (variant == 1) ? ImGuiInputFlags_ServeFirst : ImGuiInputFlags_ServeLast;
 

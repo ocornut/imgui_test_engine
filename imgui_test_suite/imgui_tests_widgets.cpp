@@ -1613,7 +1613,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
             const int substeps_count = (step == 2) ? 10 : 8;
             for (int substep = 0; substep < substeps_count; substep++)
             {
-                ctx->LogDebug("Step %d,%d", vars.Step, substep);
+                ctx->LogInfo("STEP %d,%d", vars.Step, substep);
                 vars.Str1[0] = 0;
                 vars.Color1 = ImVec4();
                 const bool is_input = (step == 3 || step == 4);
@@ -5144,7 +5144,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ctx->SetRef("Test Window");
         for (int step = 0; step < 2; step++)
         {
-            ctx->LogDebug("STEP %d", step);
+            ctx->LogInfo("STEP %d", step);
             vars.MultiSelectFlags = (step == 0) ? ImGuiMultiSelectFlags_SelectOnAuto : ImGuiMultiSelectFlags_SelectOnClickRelease;
             vars.MultiSelectFlags |= ImGuiMultiSelectFlags_ClearOnEscape;
 
@@ -6830,14 +6830,14 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         for (int variant = 0; variant < 2; variant++)
         {
             const char* button_name = variant ? "Popup" : "Tooltip";
-            ctx->LogInfo("## Test variant: %s", button_name);
+            ctx->LogInfo("VARIANT: %s", button_name);
             ctx->ItemClick(button_name);        // Force tooltip creation so we can grab the pointer
             ImGuiWindow* tooltip = variant ? g.NavWindow : ctx->GetWindowByRef("//##Tooltip_00");
             IM_CHECK(tooltip != NULL);
 
             for (auto& test_case : test_cases)
             {
-                ctx->LogInfo("## Test case %d", (int)(&test_case - test_cases));
+                ctx->LogInfo("TEST CASE %d", (int)(&test_case - test_cases));
                 vars.Size = ImVec2(50, 50);
                 ctx->WindowMove("", test_case.Pos, test_case.Pivot);
                 ctx->ItemClick(button_name);
