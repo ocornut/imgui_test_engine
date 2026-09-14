@@ -1924,6 +1924,7 @@ void    ImGuiTestContext::ItemMakeVisible(ImGuiTestRef ref, ImGuiTestOpFlags fla
         if (visibility_ratio_y < 0.90f)
             ScrollToItem(ref, ImGuiAxis_Y, ImGuiTestOpFlags_NoFocusWindow);
         // FIXME: Scroll parent window
+        item = ItemInfo(ref);
     }
 
     // Menu layer is not scrollable: attempt to resize window.

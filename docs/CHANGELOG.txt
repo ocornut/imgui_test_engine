@@ -7,6 +7,8 @@ CHANGELOG
 
 2026/09/14:
 - TestEngine: fixed issue accessing window context menu for tabbed/docked windows.
+- TestEngine: fixed issue aiming at Tabs in Menu Layer or in Dock Node, when requiring
+  a scroll/focus action to make visible.
 - TestEngine: added ItemDragToPos() helper.
 - TestEngine: added ItemMakeVisible() helper.
 
