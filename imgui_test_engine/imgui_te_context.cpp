@@ -2553,6 +2553,20 @@ ImVec2   ImGuiTestContext::GetPosOnVoid(ImGuiViewport* viewport)
     return void_pos;
 }
 
+#if IMGUI_VERSION_NUM < 19298
+namespace ImGui
+{
+    #define TabBarGetTabPos TabBarGetTabPos2
+    ImVec2 TabBarGetTabPos2(ImGuiTabBar* tab_bar, ImGuiTabItem* tab)
+    {
+        if ((tab->Flags & ImGuiTabItemFlags_SectionMask_) == 0)
+            return tab_bar->BarRect.Min + ImVec2(IM_TRUNC(tab->Offset - tab_bar->ScrollingAnim), 0.0f);
+        else
+            return tab_bar->BarRect.Min + ImVec2(tab->Offset, 0.0f);
+    }
+}
+#endif
+
 ImVec2  ImGuiTestContext::GetWindowTitlebarPoint(ImGuiTestRef window_ref)
 {
     // FIXME-TESTS: Need to find a -visible- click point. 'pos' may end up being outside of main viewport.
@@ -2575,7 +2589,14 @@ ImVec2  ImGuiTestContext::GetWindowTitlebarPoint(ImGuiTestRef window_ref)
             ImGuiTabBar* tab_bar = window->DockNode->TabBar;
             ImGuiTabItem* tab = ImGui::TabBarFindTabByID(tab_bar, window->TabId);
             IM_ASSERT(tab != nullptr);
-            pos = tab_bar->BarRect.Min + ImVec2(tab->Offset + tab->Width * 0.5f, tab_bar->BarRect.GetHeight() * 0.5f);
+            pos = ImGui::TabBarGetTabPos(tab_bar, tab) + ImVec2(tab->Width * 0.5f, tab_bar->BarRect.GetHeight() * 0.5f);
+
+            if (ActiveFunc == ImGuiTestActiveFunc_TestFunc)
+                if (pos.x <= tab_bar->BarRect.Min.x || pos.x >= tab_bar->BarRect.Max.x)
+                    ScrollToTabItem(tab_bar, tab->ID);
+                        pos = ImGui::TabBarGetTabPos(tab_bar, tab) + ImVec2(tab->Width * 0.5f, tab_bar->BarRect.GetHeight() * 0.5f);
+
+            pos.x = ImClamp(pos.x, tab_bar->BarRect.Min.x, tab_bar->BarRect.Max.x);
         }
         else
 #endif
