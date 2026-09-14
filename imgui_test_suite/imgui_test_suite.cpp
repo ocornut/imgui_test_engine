@@ -447,7 +447,7 @@ int main(int argc, char** argv)
     // Default verbose levels differs whether we are in in GUI or Command-Line mode
     if (app->OptGui)
     {
-        // Default -v4 -ve4
+        // GUI mode: default -v4 -ve4
         if (app->OptVerboseLevelBasic == ImGuiTestVerboseLevel_COUNT)
             app->OptVerboseLevelBasic = ImGuiTestVerboseLevel_Debug;
         if (app->OptVerboseLevelError == ImGuiTestVerboseLevel_COUNT)
@@ -455,7 +455,7 @@ int main(int argc, char** argv)
     }
     else
     {
-        // Default -v2 -ve4
+        // TTY/Headless mode: default -v2 -ve4
         if (app->OptVerboseLevelBasic == ImGuiTestVerboseLevel_COUNT)
             app->OptVerboseLevelBasic = ImGuiTestVerboseLevel_Warning;
         if (app->OptVerboseLevelError == ImGuiTestVerboseLevel_COUNT)

@@ -374,6 +374,7 @@ ImGuiTestStatus ImGuiTestContext::RunChildTest(const char* child_test_name, ImGu
 
 // Return true to request aborting TestFunc
 // Called via IM_SUSPEND_TESTFUNC()
+// FIXME: Would be nice to ignore/skip this when running in headless/TTY mode but we currently do not have this information.
 bool    ImGuiTestContext::SuspendTestFunc(const char* file, int line)
 {
     if (IsError())

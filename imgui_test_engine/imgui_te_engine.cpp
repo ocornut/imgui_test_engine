@@ -808,11 +808,22 @@ static void ImGuiTestEngine_UpdateWatchdog(ImGuiTestEngine* engine, ImGuiContext
     if (t0 < timer_warn && t1 >= timer_warn)
     {
         test_ctx->LogWarning("[Watchdog] Running time for '%s' is >%.f seconds, may be excessive.", test_ctx->Test->Name, timer_warn);
+        if (test_ctx->TestOutput->Status == ImGuiTestStatus_Suspended)
+            test_ctx->LogWarning("[Watchdog] Note: test was Suspended.");
     }
     if (t0 < timer_kill_test && t1 >= timer_kill_test)
     {
-        test_ctx->LogError("[Watchdog] Running time for '%s' is >%.f seconds, aborting.", test_ctx->Test->Name, timer_kill_test);
-        IM_CHECK(false);
+        if (test_ctx->TestOutput->Status == ImGuiTestStatus_Suspended)
+        {
+            test_ctx->LogWarning("[Watchdog] Note: test was Suspended: resuming!");
+            test_ctx->TestOutput->Status = ImGuiTestStatus_Running;
+            return;
+        }
+        else
+        {
+            test_ctx->LogError("[Watchdog] Running time for '%s' is >%.f seconds, aborting.", test_ctx->Test->Name, timer_kill_test);
+            IM_CHECK(false);
+        }
     }
 
     // Final safety watchdog in case the TestFunc is calling Yield() but never returning.
