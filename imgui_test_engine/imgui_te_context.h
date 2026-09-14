@@ -134,6 +134,7 @@ enum ImGuiTestOpFlags_
     ImGuiTestOpFlags_MoveToEdgeU        = 1 << 10,
     ImGuiTestOpFlags_MoveToEdgeD        = 1 << 11,
     ImGuiTestOpFlags_NoScroll           = 1 << 12,  // Disable automatically scrolling to reach an item.
+    ImGuiTestOpFlags_NoWaitWhenMoving   = 1 << 13,  // Avoid waiting for item to be stable, lock current position and aim.
 };
 
 // Advanced filtering for ItemActionAll()

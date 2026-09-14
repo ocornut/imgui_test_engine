@@ -1597,6 +1597,21 @@ void    ImGuiTestContext::ScrollToItemY(ImGuiTestRef ref)
     ScrollToItem(ref, ImGuiAxis_Y);
 }
 
+// FIXME: May be unnecessary 
+static void TabBarWaitForScrolling(ImGuiTestContext* ctx, ImGuiTabBar* tab_bar)
+{
+    if (ctx->EngineIO->ConfigRunSpeed == ImGuiTestRunSpeed_Fast)
+    {
+        tab_bar->ScrollingAnim = tab_bar->ScrollingTarget;
+        ctx->Yield();
+    }
+    else
+    {
+        while (tab_bar->ScrollingAnim != tab_bar->ScrollingTarget)
+            ctx->Yield();
+    }
+}
+
 void    ImGuiTestContext::ScrollToTabItem(ImGuiTabBar* tab_bar, ImGuiID tab_id)
 {
     if (IsError())
@@ -1649,16 +1664,7 @@ void    ImGuiTestContext::ScrollToTabItem(ImGuiTabBar* tab_bar, ImGuiID tab_id)
 
     // Skip the scroll animation
     Yield();
-    if (EngineIO->ConfigRunSpeed == ImGuiTestRunSpeed_Fast)
-    {
-        tab_bar->ScrollingAnim = tab_bar->ScrollingTarget;
-        Yield();
-    }
-    else
-    {
-        while (tab_bar->ScrollingAnim != tab_bar->ScrollingTarget)
-            Yield();
-    }
+    TabBarWaitForScrolling(this, tab_bar);
 
     SetRef(backup_ref);
 }
@@ -1924,6 +1930,10 @@ void    ImGuiTestContext::ItemMakeVisible(ImGuiTestRef ref, ImGuiTestOpFlags fla
             ScrollToItem(ref, ImGuiAxis_X, ImGuiTestOpFlags_NoFocusWindow);
         if (visibility_ratio_y < 0.90f)
             ScrollToItem(ref, ImGuiAxis_Y, ImGuiTestOpFlags_NoFocusWindow);
+
+        //if (ImGuiTabBar* tab_bar = ImGui::TabBarFindByID(item.ParentID)) // -> favor lazily doing it in MouseMove() when item is moving.
+        //    TabBarWaitForScrolling(this, tab_bar);
+
         // FIXME: Scroll parent window
         item = ItemInfo(ref);
     }
@@ -1953,6 +1963,7 @@ void    ImGuiTestContext::ItemMakeVisible(ImGuiTestRef ref, ImGuiTestOpFlags fla
 // - ImGuiTestOpFlags_NoScroll
 // - ImGuiTestOpFlags_IsSecondAttempt [used when recursively calling ourself)
 // - ImGuiTestOpFlags_MoveToEdgeXXX flags
+// - ImGuiTestOpFlags_NoWaitWhenMoving
 // FIXME-TESTS: This is too eagerly trying to scroll everything even if already visible.
 void    ImGuiTestContext::MouseMove(ImGuiTestRef ref, ImGuiTestOpFlags flags)
 {
@@ -1994,8 +2005,7 @@ void    ImGuiTestContext::MouseMove(ImGuiTestRef ref, ImGuiTestOpFlags flags)
     item = ItemInfo(item.ID);
 
     // FIXME-TESTS-NOT_SAME_AS_END_USER
-    ImVec2 pos = item.RectFull.GetCenter();
-    if (WindowTeleportToMakePosVisible(window->ID, pos))
+    if (WindowTeleportToMakePosVisible(window->ID, item.RectFull.GetCenter()))
         item = ItemInfo(item.ID);
 
     // Handle the off-chance that e.g. item/window stops being submitted while scrolling (easy to repro by pressing Esc during a long scroll)
@@ -2008,15 +2018,32 @@ void    ImGuiTestContext::MouseMove(ImGuiTestRef ref, ImGuiTestOpFlags flags)
     // Keep a copy of item info
     const ImGuiTestItemInfo item_initial_state = item;
 
+    // Verify that item is not moving/animating around?
+    // FIXME: Attempts should in a simulated time?
+    if (item.FramesMoving > 0 && (flags & ImGuiTestOpFlags_NoWaitWhenMoving) == 0)
+    {
+        int wait_attempts = 0;
+        int stable_frames = 0;
+        do
+        {
+            ImGuiTestItemInfo item_prev = item;
+            Yield();
+            item = ItemInfo(item.ID);
+            stable_frames = item.FramesNotMoving;
+            wait_attempts++;
+        } while (stable_frames < 2 && wait_attempts < 100);
+        LogDebug("MouseMove: item is moving, waited for it to be stable. wait_attempts=%d, stable_frames=%d", wait_attempts, stable_frames);
+    }
+
     // Target point
-    pos = GetMouseAimingPos(item, flags);
+    ImVec2 pos = GetMouseAimingPos(item, flags);
 
     // Focus window
     if (!(flags & ImGuiTestOpFlags_NoFocusWindow) && item.Window != nullptr)
         FocusOrMakeClickableAtPos(this, item.Window, pos);
 
     // Another is window active test (in the case focus change has a side effect but also as we have yield an extra frame)
-    if (!item.Window->WasActive)
+    if (item.Window == nullptr || !item.Window->WasActive)
     {
         LogError("MouseMove: Window '%s' is not active (after aiming)", item.Window->Name);
         return;

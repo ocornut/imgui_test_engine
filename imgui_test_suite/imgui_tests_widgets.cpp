@@ -6198,7 +6198,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
             
 #if IMGUI_VERSION_NUM >= 19273
             // Scroll back up to unselect
-            ctx->MouseMove("Item 003"); // <--- This will defacto scroll and use the equivalent of mouse wheeling while holding the button
+            ctx->MouseMove("Item 003", ImGuiTestOpFlags_NoWaitWhenMoving); // <--- This will defacto scroll and use the equivalent of mouse wheeling while holding the button
             IM_CHECK_EQ(vars.Selection.Size, 3);
             ctx->MouseUp(ImGuiMouseButton_Left);
             FindFirstAndLastSelected(&vars.Selection, 1000, &first_selected, &last_selected);

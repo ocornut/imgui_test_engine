@@ -2221,6 +2221,17 @@ static void ImGuiTestEngineHook_ItemAdd_GatherTask(ImGuiContext* ui_ctx, ImGuiTe
     if (result_depth != -1)
     {
         ImGuiTestItemInfo* item = task->OutList->Pool.GetOrAddByKey(id); // Add
+
+        // Track if item geometry is changing
+        if (item->TimestampMain + 1 == engine->FrameCount)
+        {
+            const bool is_moving = (item->RectFull.Min != bb.Min) || (item->RectFull.Max != bb.Max);
+            item->FramesMoving = is_moving ? ImMin(item->FramesMoving + 1, 7u) : 0;
+            item->FramesNotMoving = is_moving ? 0 : ImMin(item->FramesNotMoving + 1, 7u);
+        }
+        else if (item->TimestampMain < engine->FrameCount)
+            item->FramesMoving = item->FramesNotMoving = 0;
+
         item->TimestampMain = engine->FrameCount;
         item->ID = id;
         item->ParentID = parent_id;
@@ -2255,6 +2266,17 @@ void ImGuiTestEngineHook_ItemAdd(ImGuiContext* ui_ctx, ImGuiID id, const ImRect&
     if (ImGuiTestInfoTask* task = ImGuiTestEngine_FindInfoTask(engine, id))
     {
         ImGuiTestItemInfo* item = &task->Result;
+
+        // Track if item geometry is changing
+        if (item->TimestampMain + 1 == engine->FrameCount)
+        {
+            const bool is_moving = (item->RectFull.Min != bb.Min) || (item->RectFull.Max != bb.Max);
+            item->FramesMoving = is_moving ? ImMin(item->FramesMoving + 1, 7u) : 0;
+            item->FramesNotMoving = is_moving ? 0 : ImMin(item->FramesNotMoving + 1, 7u);
+        }
+        else if (item->TimestampMain < engine->FrameCount)
+            item->FramesMoving = item->FramesNotMoving = 0;
+
         item->TimestampMain = engine->FrameCount;
         item->ID = id;
         item->ParentID = window->IDStack.Size ? window->IDStack.back() : 0;

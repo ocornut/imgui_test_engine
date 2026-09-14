@@ -11,6 +11,9 @@ CHANGELOG
   a scroll/focus action to make visible.
 - TestEngine: added ItemDragToPos() helper.
 - TestEngine: added ItemMakeVisible() helper.
+- TestEngine: aiming at moving/animating items attempts to wait for them to stabilize.
+- TestEngine: added `ImGuiTestOpFlags_NoWaitWhenMoving` for cases where e.g. MouseMove()
+  is intently targetting a recently moving items (e.g. actions while scrolling).
 
 2026/07/10:
 - TestEngine: fixed an issue validating text fields with io.ConfigInputTextEnterKeepActive.
