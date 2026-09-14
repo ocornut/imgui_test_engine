@@ -464,7 +464,8 @@ struct IMGUI_API ImGuiTestContext
     void        ItemHoldForFrames(ImGuiTestRef ref, int frames);
     void        ItemDragOverAndHold(ImGuiTestRef ref_src, ImGuiTestRef ref_dst);
     void        ItemDragAndDrop(ImGuiTestRef ref_src, ImGuiTestRef ref_dst, ImGuiMouseButton button = 0);
-    void        ItemDragWithDelta(ImGuiTestRef ref_src, ImVec2 pos_delta);
+    void        ItemDragToPos(ImGuiTestRef ref_src, const ImVec2& pos);
+    void        ItemDragWithDelta(ImGuiTestRef ref_src, const ImVec2& pos_delta);
 
     // Helpers for Tab Bars widgets
     void        TabClose(ImGuiTestRef ref);

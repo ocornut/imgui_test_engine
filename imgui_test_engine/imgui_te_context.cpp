@@ -3508,7 +3508,7 @@ void    ImGuiTestContext::ItemDragAndDrop(ImGuiTestRef ref_src, ImGuiTestRef ref
     MouseUp(button);
 }
 
-void    ImGuiTestContext::ItemDragWithDelta(ImGuiTestRef ref_src, ImVec2 pos_delta)
+void    ImGuiTestContext::ItemDragToPos(ImGuiTestRef ref_src, const ImVec2& pos)
 {
     if (IsError())
         return;
@@ -3516,7 +3516,26 @@ void    ImGuiTestContext::ItemDragWithDelta(ImGuiTestRef ref_src, ImVec2 pos_del
     IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
     ImGuiTestItemInfo item_src = ItemInfo(ref_src);
     ImGuiTestRefDesc desc_src(ref_src, item_src);
-    LogDebug("ItemDragWithDelta %s to (%f, %f)", desc_src.c_str(), pos_delta.x, pos_delta.y);
+    LogDebug("ItemDragToPos %s to (%f, %f)", desc_src.c_str(), pos.x, pos.y);
+
+    MouseMove(ref_src);
+    SleepStandard();
+    MouseDown(0);
+
+    MouseMoveToPos(pos);
+    SleepStandard();
+    MouseUp(0);
+}
+
+void    ImGuiTestContext::ItemDragWithDelta(ImGuiTestRef ref_src, const ImVec2& pos_delta)
+{
+    if (IsError())
+        return;
+
+    IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
+    ImGuiTestItemInfo item_src = ItemInfo(ref_src);
+    ImGuiTestRefDesc desc_src(ref_src, item_src);
+    LogDebug("ItemDragWithDelta %s (%f, %f)", desc_src.c_str(), pos_delta.x, pos_delta.y);
 
     MouseMove(ref_src);
     SleepStandard();

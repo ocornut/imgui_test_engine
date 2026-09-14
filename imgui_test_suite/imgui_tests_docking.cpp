@@ -774,10 +774,10 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
             IM_CHECK(ctx->TabBarCompareOrder(tab_bar, tab_order_initial));
 
             // Verify that drag operation past edge of the tab, but not entering other tab does not trigger reorder.
-            ctx->ItemDragWithDelta("AAA/#TAB", ImVec2((tab_bar->Tabs[0].Width + g.Style.ItemInnerSpacing.x) * +0.5f, 0.0f));
+            ctx->ItemDragToPos("AAA/#TAB", ImGui::TabBarGetTabPos(tab_bar, &tab_bar->Tabs[0]) + ImVec2(g.Style.ItemInnerSpacing.x * 0.5f, 0.0f));
             tab_bar = window_aaa->DockNode->TabBar;
             IM_CHECK(ctx->TabBarCompareOrder(tab_bar, tab_order_initial));
-            ctx->ItemDragWithDelta("BBB/#TAB", ImVec2((tab_bar->Tabs[0].Width + g.Style.ItemInnerSpacing.x) * -0.5f, 0.0f));
+            ctx->ItemDragToPos("BBB/#TAB", ImGui::TabBarGetTabPos(tab_bar, &tab_bar->Tabs[0]) + ImVec2(tab_bar->Tabs[0].Width + 1.0f, 0.0f));
             tab_bar = window_aaa->DockNode->TabBar;
             IM_CHECK(ctx->TabBarCompareOrder(tab_bar, tab_order_initial));
             IM_CHECK(tab_bar->Tabs[2].ID == window_ccc->TabId);

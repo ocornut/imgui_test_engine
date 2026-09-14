@@ -7,6 +7,7 @@ CHANGELOG
 
 2026/09/14:
 - TestEngine: fixed issue accessing window context menu for tabbed/docked windows.
+- TestEngine: added ItemDragToPos() helper.
 
 2026/07/10:
 - TestEngine: fixed an issue validating text fields with io.ConfigInputTextEnterKeepActive.
