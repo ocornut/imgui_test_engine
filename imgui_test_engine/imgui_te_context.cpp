@@ -1597,7 +1597,6 @@ void    ImGuiTestContext::ScrollToItemY(ImGuiTestRef ref)
     ScrollToItem(ref, ImGuiAxis_Y);
 }
 
-// FIXME: May be unnecessary 
 static void TabBarWaitForScrolling(ImGuiTestContext* ctx, ImGuiTabBar* tab_bar)
 {
     if (ctx->EngineIO->ConfigRunSpeed == ImGuiTestRunSpeed_Fast)
@@ -2020,8 +2019,10 @@ void    ImGuiTestContext::MouseMove(ImGuiTestRef ref, ImGuiTestOpFlags flags)
 
     // Verify that item is not moving/animating around?
     // FIXME: Attempts should in a simulated time?
-    if (item.FramesMoving > 0 && (flags & ImGuiTestOpFlags_NoWaitWhenMoving) == 0)
+    if (item.FramesNotMoving == 0 && (flags & ImGuiTestOpFlags_NoWaitWhenMoving) == 0)
     {
+        IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
+        LogDebug("MouseMove: item %s is moving, waiting for it to be stable.", desc.c_str());
         int wait_attempts = 0;
         int stable_frames = 0;
         do
@@ -2031,8 +2032,8 @@ void    ImGuiTestContext::MouseMove(ImGuiTestRef ref, ImGuiTestOpFlags flags)
             item = ItemInfo(item.ID);
             stable_frames = item.FramesNotMoving;
             wait_attempts++;
-        } while (stable_frames < 2 && wait_attempts < 100);
-        LogDebug("MouseMove: item is moving, waited for it to be stable. wait_attempts=%d, stable_frames=%d", wait_attempts, stable_frames);
+        } while (stable_frames < 2 && wait_attempts < 10);
+        LogDebug("  Done: wait_attempts=%d, stable_frames=%d", wait_attempts, stable_frames);
     }
 
     // Target point
@@ -2638,8 +2639,10 @@ ImVec2  ImGuiTestContext::GetWindowTitlebarPoint(ImGuiTestRef window_ref)
 
             if (ActiveFunc == ImGuiTestActiveFunc_TestFunc)
                 if (pos.x <= tab_bar->BarRect.Min.x || pos.x >= tab_bar->BarRect.Max.x)
+                {
                     ScrollToTabItem(tab_bar, tab->ID);
-                        pos = ImGui::TabBarGetTabPos(tab_bar, tab) + ImVec2(tab->Width * 0.5f, tab_bar->BarRect.GetHeight() * 0.5f);
+                    pos = ImGui::TabBarGetTabPos(tab_bar, tab) + ImVec2(tab->Width * 0.5f, tab_bar->BarRect.GetHeight() * 0.5f);
+                }
 
             pos.x = ImClamp(pos.x, tab_bar->BarRect.Min.x, tab_bar->BarRect.Max.x);
         }
