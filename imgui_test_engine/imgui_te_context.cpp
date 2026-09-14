@@ -1867,8 +1867,85 @@ static void FocusOrMakeClickableAtPos(ImGuiTestContext* ctx, ImGuiWindow* window
     }
 }
 
+// Supported values for ImGuiTestOpFlags:
+// - ImGuiTestOpFlags_NoAutoOpenFullPath
+// - ImGuiTestOpFlags_NoScroll
+void    ImGuiTestContext::ItemMakeVisible(ImGuiTestRef ref, ImGuiTestOpFlags flags)
+{
+    IMGUI_TEST_CONTEXT_REGISTER_DEPTH(this);
+    ImGuiContext& g = *UiContext;
+
+    ImGuiTestItemInfo item;
+    if (flags & ImGuiTestOpFlags_NoAutoOpenFullPath)
+        item = ItemInfo(ref);
+    else
+        item = ItemInfoOpenFullPath(ref);
+    ImGuiWindow* window = item.Window;
+
+    // Check visibility and scroll if necessary
+#if IMGUI_VERSION_NUM < 19183
+    const ImVec2 hover_padding = g.WindowsHoverPadding;
+#else
+    const ImVec2 hover_padding = ImVec2(g.WindowsBorderHoverPadding, g.WindowsBorderHoverPadding);
+#endif
+    if (item.NavLayer == ImGuiNavLayer_Main)
+    {
+        float min_visible_size = 10.0f;
+        float min_window_size_x = window->DecoInnerSizeX1 + window->DecoOuterSizeX1 + window->DecoOuterSizeX2 + min_visible_size + hover_padding.x * 2.0f;
+        float min_window_size_y = window->DecoInnerSizeY1 + window->DecoOuterSizeY1 + window->DecoOuterSizeY2 + min_visible_size + hover_padding.y * 2.0f;
+        if ((window->Size.x < min_window_size_x || window->Size.y < min_window_size_y) && (window->Flags & ImGuiWindowFlags_NoResize) == 0 && (window->Flags & ImGuiWindowFlags_AlwaysAutoResize) == 0)
+        {
+            LogDebug("MouseMove: Will attempt to resize window to make item in main scrolling layer visible.");
+            if (window->Size.x < min_window_size_x)
+                WindowResize(window->ID, ImVec2(min_window_size_x, window->Size.y));
+            if (window->Size.y < min_window_size_y)
+                WindowResize(window->ID, ImVec2(window->Size.x, min_window_size_y));
+            item = ItemInfo(item.ID);
+        }
+    }
+
+    //ImRect window_r = window->InnerClipRect;
+    //window_r.Expand(ImVec2(-hover_padding.x, -hover_padding.y));
+
+    ImRect item_r_clipped = item.RectClipped;
+    //item_r_clipped.Min.x = ImClamp(item.RectFull.Min.x, window_r.Min.x, window_r.Max.x);
+    //item_r_clipped.Min.y = ImClamp(item.RectFull.Min.y, window_r.Min.y, window_r.Max.y);
+    //item_r_clipped.Max.x = ImClamp(item.RectFull.Max.x, window_r.Min.x, window_r.Max.x);
+    //item_r_clipped.Max.y = ImClamp(item.RectFull.Max.y, window_r.Min.y, window_r.Max.y);
+
+    // In theory all we need is one visible point, but it is generally nicer if we scroll toward visibility.
+    // Bias toward reducing amount of horizontal scroll.
+    if ((flags & ImGuiTestOpFlags_NoScroll) == 0)
+    {
+        float visibility_ratio_x = (item_r_clipped.GetWidth() + 1.0f) / (item.RectFull.GetWidth() + 1.0f);
+        float visibility_ratio_y = (item_r_clipped.GetHeight() + 1.0f) / (item.RectFull.GetHeight() + 1.0f);
+        if (visibility_ratio_x < 0.70f)
+            ScrollToItem(ref, ImGuiAxis_X, ImGuiTestOpFlags_NoFocusWindow);
+        if (visibility_ratio_y < 0.90f)
+            ScrollToItem(ref, ImGuiAxis_Y, ImGuiTestOpFlags_NoFocusWindow);
+        // FIXME: Scroll parent window
+    }
+
+    // Menu layer is not scrollable: attempt to resize window.
+    if (item.NavLayer == ImGuiNavLayer_Menu)
+    {
+        // FIXME-TESTS: We designed RectClipped as being within RectFull which is not what we want here. Approximate using window's Max.x
+        ImRect window_r = window->Rect();
+        if (item.RectFull.Min.x > window_r.Max.x)
+        {
+            float extra_width_desired = item.RectFull.Max.x - window_r.Max.x; // item->RectClipped.Max.x;
+            if (extra_width_desired > 0.0f && (flags & ImGuiTestOpFlags_IsSecondAttempt) == 0)
+            {
+                LogDebug("MouseMove: Will attempt to resize window to make item in menu layer visible.");
+                WindowResize(window->ID, window->Size + ImVec2(extra_width_desired, 0.0f));
+            }
+        }
+    }
+}
+
 // Conceptually this could be called ItemHover()
 // Supported values for ImGuiTestOpFlags:
+// - ImGuiTestOpFlags_NoAutoOpenFullPath
 // - ImGuiTestOpFlags_NoFocusWindow
 // - ImGuiTestOpFlags_NoCheckHoveredId (automatic if there's an active id)
 // - ImGuiTestOpFlags_NoScroll
@@ -1910,69 +1987,8 @@ void    ImGuiTestContext::MouseMove(ImGuiTestRef ref, ImGuiTestOpFlags flags)
     // then we need to make space by moving other windows away.
     // An easy to reproduce this bug is to run "docking_dockspace_tab_amend" with Test Engine UI over top-left corner, covering the Tools menu.
 
-    // Check visibility and scroll if necessary
-    {
-#if IMGUI_VERSION_NUM < 19183
-        const ImVec2 hover_padding = g.WindowsHoverPadding;
-#else
-        const ImVec2 hover_padding = ImVec2(g.WindowsBorderHoverPadding, g.WindowsBorderHoverPadding);
-#endif
-        if (item.NavLayer == ImGuiNavLayer_Main)
-        {
-            float min_visible_size = 10.0f;
-            float min_window_size_x = window->DecoInnerSizeX1 + window->DecoOuterSizeX1 + window->DecoOuterSizeX2 + min_visible_size + hover_padding.x * 2.0f;
-            float min_window_size_y = window->DecoInnerSizeY1 + window->DecoOuterSizeY1 + window->DecoOuterSizeY2 + min_visible_size + hover_padding.y * 2.0f;
-            if ((window->Size.x < min_window_size_x || window->Size.y < min_window_size_y) && (window->Flags & ImGuiWindowFlags_NoResize) == 0 && (window->Flags & ImGuiWindowFlags_AlwaysAutoResize) == 0)
-            {
-                LogDebug("MouseMove: Will attempt to resize window to make item in main scrolling layer visible.");
-                if (window->Size.x < min_window_size_x)
-                    WindowResize(window->ID, ImVec2(min_window_size_x, window->Size.y));
-                if (window->Size.y < min_window_size_y)
-                    WindowResize(window->ID, ImVec2(window->Size.x, min_window_size_y));
-                item = ItemInfo(item.ID);
-            }
-        }
-
-        //ImRect window_r = window->InnerClipRect;
-        //window_r.Expand(ImVec2(-hover_padding.x, -hover_padding.y));
-
-        ImRect item_r_clipped = item.RectClipped;
-        //item_r_clipped.Min.x = ImClamp(item.RectFull.Min.x, window_r.Min.x, window_r.Max.x);
-        //item_r_clipped.Min.y = ImClamp(item.RectFull.Min.y, window_r.Min.y, window_r.Max.y);
-        //item_r_clipped.Max.x = ImClamp(item.RectFull.Max.x, window_r.Min.x, window_r.Max.x);
-        //item_r_clipped.Max.y = ImClamp(item.RectFull.Max.y, window_r.Min.y, window_r.Max.y);
-
-        // In theory all we need is one visible point, but it is generally nicer if we scroll toward visibility.
-        // Bias toward reducing amount of horizontal scroll.
-        if ((flags & ImGuiTestOpFlags_NoScroll) == 0)
-        {
-            float visibility_ratio_x = (item_r_clipped.GetWidth() + 1.0f) / (item.RectFull.GetWidth() + 1.0f);
-            float visibility_ratio_y = (item_r_clipped.GetHeight() + 1.0f) / (item.RectFull.GetHeight() + 1.0f);
-            if (visibility_ratio_x < 0.70f)
-                ScrollToItem(ref, ImGuiAxis_X, ImGuiTestOpFlags_NoFocusWindow);
-            if (visibility_ratio_y < 0.90f)
-                ScrollToItem(ref, ImGuiAxis_Y, ImGuiTestOpFlags_NoFocusWindow);
-            // FIXME: Scroll parent window
-        }
-    }
-
-    // Menu layer is not scrollable: attempt to resize window.
-    if (item.NavLayer == ImGuiNavLayer_Menu)
-    {
-        // FIXME-TESTS: We designed RectClipped as being within RectFull which is not what we want here. Approximate using window's Max.x
-        ImRect window_r = window->Rect();
-        if (item.RectFull.Min.x > window_r.Max.x)
-        {
-            float extra_width_desired = item.RectFull.Max.x - window_r.Max.x; // item->RectClipped.Max.x;
-            if (extra_width_desired > 0.0f && (flags & ImGuiTestOpFlags_IsSecondAttempt) == 0)
-            {
-                LogDebug("MouseMove: Will attempt to resize window to make item in menu layer visible.");
-                WindowResize(window->ID, window->Size + ImVec2(extra_width_desired, 0.0f));
-            }
-        }
-    }
-
-    // Update item
+    // Make visible
+    ItemMakeVisible(ref, flags);
     item = ItemInfo(item.ID);
 
     // FIXME-TESTS-NOT_SAME_AS_END_USER

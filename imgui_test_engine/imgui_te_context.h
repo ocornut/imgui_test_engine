@@ -457,6 +457,7 @@ struct IMGUI_API ImGuiTestContext
     bool        ItemIsChecked(ImGuiTestRef ref);
     bool        ItemIsOpened(ImGuiTestRef ref);
     bool        ItemIsVisible(ImGuiTestRef ref);
+    void        ItemMakeVisible(ImGuiTestRef ref, ImGuiTestOpFlags flags);
     void        ItemVerifyCheckedIfAlive(ImGuiTestRef ref, bool checked);
 
     // Item/Widgets: Drag and Mouse operations
