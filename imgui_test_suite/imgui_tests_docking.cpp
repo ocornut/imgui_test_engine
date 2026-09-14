@@ -84,7 +84,7 @@ static Str16 DockingTestsGetWindowName(int n)
 static void DockingTestsGenericGuiFunc(ImGuiTestContext* ctx)
 {
     DockingTestsGenericVars& vars = ctx->GetVars<DockingTestsGenericVars>();
-    ImGui::SetNextWindowSize(ImVec2(200, 100), ImGuiCond_Appearing);
+    ImGui::SetNextWindowSize(ImVec2(200, 200), ImGuiCond_Appearing);
 
     if (ctx->IsFirstGuiFrame())
     {
@@ -911,10 +911,10 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
             IM_CHECK(window_ddd->DockNode != NULL);
             IM_CHECK(node1 != node2);
 
-            ctx->ItemClick("DDD");
+            ctx->WindowFocus("//DDD");
             IM_CHECK_EQ(node2->SelectedTabId, window_ddd->TabId);
 
-            ctx->ItemClick("BBB");
+            ctx->WindowFocus("//BBB");
             ImGuiTabBar* tabbar_1 = node1->TabBar;
             IM_CHECK_EQ(node1->SelectedTabId, window_bbb->TabId);
             IM_CHECK_EQ(tabbar_1->SelectedTabId, window_bbb->TabId);
@@ -1683,7 +1683,7 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
         IM_CHECK(window->Size.x == initial_size.x);
         IM_CHECK(window->Size.y == initial_size.y);
 
-        ctx->ItemDragWithDelta("Window 1/#TAB", ImVec2(50.0f, 50.0f));
+        ctx->ItemDragWithDelta("Window 1/#TAB", ImVec2(ImGui::GetFontSize() * 3, ImGui::GetFontSize() * 3)); // Undock
         IM_CHECK(ctx->WindowIsUndockedOrStandalone(window));
 
         ImVec2 expect_size;
