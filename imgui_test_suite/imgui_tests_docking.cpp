@@ -16,6 +16,7 @@
 #include "imgui_impl_null.h"
 #include "imgui_test_engine/imgui_te_engine.h"      // IM_REGISTER_TEST()
 #include "imgui_test_engine/imgui_te_context.h"
+#include "imgui_test_engine/imgui_te_utils.h"
 #include "imgui_test_engine/thirdparty/Str/Str.h"
 
 // Warnings
