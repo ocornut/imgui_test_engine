@@ -2027,7 +2027,6 @@ void    ImGuiTestContext::MouseMove(ImGuiTestRef ref, ImGuiTestOpFlags flags)
         int stable_frames = 0;
         do
         {
-            ImGuiTestItemInfo item_prev = item;
             Yield();
             item = ItemInfo(item.ID);
             stable_frames = item.FramesNotMoving;
@@ -2598,20 +2597,6 @@ ImVec2   ImGuiTestContext::GetPosOnVoid(ImGuiViewport* viewport)
 
     return void_pos;
 }
-
-#if IMGUI_VERSION_NUM < 19298
-namespace ImGui
-{
-    #define TabBarGetTabPos TabBarGetTabPos2
-    ImVec2 TabBarGetTabPos2(ImGuiTabBar* tab_bar, ImGuiTabItem* tab)
-    {
-        if ((tab->Flags & ImGuiTabItemFlags_SectionMask_) == 0)
-            return tab_bar->BarRect.Min + ImVec2(IM_TRUNC(tab->Offset - tab_bar->ScrollingAnim), 0.0f);
-        else
-            return tab_bar->BarRect.Min + ImVec2(tab->Offset, 0.0f);
-    }
-}
-#endif
 
 ImVec2  ImGuiTestContext::GetWindowTitlebarPoint(ImGuiTestRef window_ref)
 {

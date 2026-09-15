@@ -1176,7 +1176,7 @@ void RegisterTests_Table(ImGuiTestEngine* e)
         ImGuiTable* table = ImGui::TableFindByID(ctx->GetID("table1"));
         for (int step = 0; step < 4; step++)
         {
-            ctx->LogInfo("STEP", step);
+            ctx->LogInfo("STEP %d", step);
             vars.Step = step;
             ctx->Yield(); // previous step previously submitted, window contents width reflect old step, outer rect reflects old step, reported ideal width reflects new step
             IM_CHECK_EQ(table->Columns[0].ContentMaxXUnfrozen - table->Columns[0].WorkMinX, 120.0f);

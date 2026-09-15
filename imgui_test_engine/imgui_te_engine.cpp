@@ -2226,8 +2226,8 @@ static void ImGuiTestEngineHook_ItemAdd_GatherTask(ImGuiContext* ui_ctx, ImGuiTe
         if (item->TimestampMain + 1 == engine->FrameCount)
         {
             const bool is_moving = (item->RectFull.Min != bb.Min) || (item->RectFull.Max != bb.Max);
-            item->FramesMoving = is_moving ? ImMin(item->FramesMoving + 1, 7u) : 0;
-            item->FramesNotMoving = is_moving ? 0 : ImMin(item->FramesNotMoving + 1, 7u);
+            item->FramesMoving = is_moving ? ImMin(item->FramesMoving + 1u, 7u) : 0;
+            item->FramesNotMoving = is_moving ? 0 : ImMin(item->FramesNotMoving + 1u, 7u);
         }
         else if (item->TimestampMain < engine->FrameCount)
             item->FramesMoving = item->FramesNotMoving = 0;
@@ -2271,8 +2271,8 @@ void ImGuiTestEngineHook_ItemAdd(ImGuiContext* ui_ctx, ImGuiID id, const ImRect&
         if (item->TimestampMain + 1 == engine->FrameCount)
         {
             const bool is_moving = (item->RectFull.Min != bb.Min) || (item->RectFull.Max != bb.Max);
-            item->FramesMoving = is_moving ? ImMin(item->FramesMoving + 1, 7u) : 0;
-            item->FramesNotMoving = is_moving ? 0 : ImMin(item->FramesNotMoving + 1, 7u);
+            item->FramesMoving = is_moving ? ImMin(item->FramesMoving + 1u, 7u) : 0;
+            item->FramesNotMoving = is_moving ? 0 : ImMin(item->FramesNotMoving + 1u, 7u);
         }
         else if (item->TimestampMain < engine->FrameCount)
             item->FramesMoving = item->FramesNotMoving = 0;
