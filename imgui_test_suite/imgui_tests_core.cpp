@@ -5702,7 +5702,7 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
     {
         static ImGuiTextFilter filter;
         ImGui::Begin("Text filter", NULL, ImGuiWindowFlags_NoSavedSettings);
-        filter.Draw("Filter", ImGui::GetFontSize() * 16);   // Test input filter drawing
+        filter.Draw("Filter");   // Test input filter drawing
         ImGui::End();
     };
     t->TestFunc = [](ImGuiTestContext* ctx)
@@ -5712,23 +5712,122 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
         ctx->ItemInput("Filter");
         ctx->KeyCharsAppend("Big,Cat,, ,  ,Bird"); // Trigger filter rebuild
 
-        // Test functionality
+        // Basic
         ImGuiTextFilter filter;
-        ImStrncpy(filter.InputBuf, "-bar", IM_COUNTOF(filter.InputBuf));
-        filter.Build();
-
-        IM_CHECK(filter.PassFilter("bartender") == false);
-        IM_CHECK(filter.PassFilter("cartender") == true);
-
-        ImStrncpy(filter.InputBuf, "bar ", IM_COUNTOF(filter.InputBuf));
-        filter.Build();
-        IM_CHECK(filter.PassFilter("bartender") == true);
-        IM_CHECK(filter.PassFilter("cartender") == false);
-
         ImStrncpy(filter.InputBuf, "bar", IM_COUNTOF(filter.InputBuf));
         filter.Build();
         IM_CHECK(filter.PassFilter("bartender") == true);
         IM_CHECK(filter.PassFilter("cartender") == false);
+
+        // Exclude
+        ImStrncpy(filter.InputBuf, "-bar", IM_COUNTOF(filter.InputBuf));
+        filter.Build();
+        IM_CHECK(filter.PassFilter("bartender") == false);
+        IM_CHECK(filter.PassFilter("cartender") == true);
+        ImStrncpy(filter.InputBuf, "  -bar", IM_COUNTOF(filter.InputBuf));
+        filter.Build();
+        IM_CHECK(filter.PassFilter("bartender") == false);
+        IM_CHECK(filter.PassFilter("cartender") == true);
+
+        // Blank trimming
+        ImStrncpy(filter.InputBuf, " bar , foo", IM_COUNTOF(filter.InputBuf));
+        filter.Build();
+        IM_CHECK(filter.PassFilter("bartender") == true);
+        IM_CHECK(filter.PassFilter("cartender") == false);
+
+#if IMGUI_VERSION_NUM >= 19297
+        // Blank trimming
+        ImStrncpy(filter.InputBuf, " bar  foo", IM_COUNTOF(filter.InputBuf));
+        filter.Build();
+        IM_CHECK(filter.PassFilter("bartender") == true);
+        IM_CHECK(filter.PassFilter("cartender") == false);
+
+        // Isolated '-' is an empty word
+        ImStrncpy(filter.InputBuf, "- bar", IM_COUNTOF(filter.InputBuf));
+        filter.Build();
+        IM_CHECK(filter.PassFilter("bartender") == true);
+        IM_CHECK(filter.PassFilter("cartender") == false);
+
+        // Unordered excludes (fixed 1.93.0)
+        ImStrncpy(filter.InputBuf, "bar,-foo", IM_COUNTOF(filter.InputBuf));
+        filter.Build();
+        IM_CHECK(filter.PassFilter("bartender") == true);
+        IM_CHECK(filter.PassFilter("foobar") == false);
+        ImStrncpy(filter.InputBuf, "-foo,bar", IM_COUNTOF(filter.InputBuf));
+        filter.Build();
+        IM_CHECK(filter.PassFilter("bartender") == true);
+        IM_CHECK(filter.PassFilter("foobar") == false);
+
+        // Space as a separator
+        ImStrncpy(filter.InputBuf, "foo bar", IM_COUNTOF(filter.InputBuf));
+        filter.Build();
+        IM_CHECK(filter.PassFilter("bartender") == true);
+        IM_CHECK(filter.PassFilter("foobar") == true);
+
+        // Quotes
+        ImStrncpy(filter.InputBuf, "\"foo bar\"", IM_COUNTOF(filter.InputBuf));
+        filter.Build();
+        IM_CHECK(filter.PassFilter("bartender") == false);
+        IM_CHECK(filter.PassFilter("foobar") == false);
+        IM_CHECK(filter.PassFilter("foo bar") == true);
+
+        ImStrncpy(filter.InputBuf, "-\"foo bar\"", IM_COUNTOF(filter.InputBuf));
+        filter.Build();
+        IM_CHECK(filter.PassFilter("bartender") == true);
+        IM_CHECK(filter.PassFilter("foobar") == true);
+        IM_CHECK(filter.PassFilter("foo bar") == false);
+
+        ImStrncpy(filter.InputBuf, "-tender", IM_COUNTOF(filter.InputBuf));
+        filter.Build();
+        IM_CHECK(filter.PassFilter("tender") == false);
+        IM_CHECK(filter.PassFilter("-tender") == false);
+
+        ImStrncpy(filter.InputBuf, "-\"tender\"", IM_COUNTOF(filter.InputBuf));
+        filter.Build();
+        IM_CHECK(filter.PassFilter("tender") == false);
+        IM_CHECK(filter.PassFilter("-tender") == false);
+
+        ImStrncpy(filter.InputBuf, "\"-tender\"", IM_COUNTOF(filter.InputBuf));
+        filter.Build();
+        IM_CHECK(filter.PassFilter("tender") == false);
+        IM_CHECK(filter.PassFilter("-tender") == true);
+
+        ImStrncpy(filter.InputBuf, "-\" tender\"", IM_COUNTOF(filter.InputBuf));
+        filter.Build();
+        IM_CHECK(filter.PassFilter("tender") == true);
+        IM_CHECK(filter.PassFilter(" tender") == false);
+
+        ImStrncpy(filter.InputBuf, "\"foo bar\",-tender", IM_COUNTOF(filter.InputBuf));
+        filter.Build();
+        IM_CHECK(filter.PassFilter("bartender") == false);
+        IM_CHECK(filter.PassFilter("foobar") == false);
+        IM_CHECK(filter.PassFilter("foo bar") == true);
+        IM_CHECK(filter.PassFilter("foo bar tender") == false);
+
+        // AND mode
+        ImStrncpy(filter.InputBuf, "foo bar", IM_COUNTOF(filter.InputBuf));
+        filter.FilterOp = '&';
+        filter.Build();
+        IM_CHECK(filter.PassFilter("bartender") == false);
+        IM_CHECK(filter.PassFilter("footender") == false);
+        IM_CHECK(filter.PassFilter("bar foo") == true);
+
+        ImStrncpy(filter.InputBuf, "\"foo bar\"", IM_COUNTOF(filter.InputBuf));
+        filter.FilterOp = '&';
+        filter.Build();
+        IM_CHECK(filter.PassFilter("bartender") == false);
+        IM_CHECK(filter.PassFilter("footender") == false);
+        IM_CHECK(filter.PassFilter("bar foo") == false);
+        IM_CHECK(filter.PassFilter("foo bar") == true);
+
+        ImStrncpy(filter.InputBuf, "foo bar -tender", IM_COUNTOF(filter.InputBuf));
+        filter.FilterOp = '&';
+        filter.Build();
+        IM_CHECK(filter.PassFilter("bartender") == false);
+        IM_CHECK(filter.PassFilter("footender") == false);
+        IM_CHECK(filter.PassFilter("bar foo") == true);
+        IM_CHECK(filter.PassFilter("bartender foo") == false);
+#endif
     };
 
     // ## Visual ImBezierClosestPoint test.
