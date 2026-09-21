@@ -5714,119 +5714,141 @@ void RegisterTests_Misc(ImGuiTestEngine* e)
 
         // Basic
         ImGuiTextFilter filter;
-        ImStrncpy(filter.InputBuf, "bar", IM_COUNTOF(filter.InputBuf));
-        filter.Build();
+        auto SetFilter = [&filter,ctx](const char* value)
+        {
+            ctx->LogInfo("filter = %s\n", value);
+            ImStrncpy(filter.InputBuf, value, IM_COUNTOF(filter.InputBuf));
+            filter.Build();
+        };
+
+        // Or
+        SetFilter("bar,car");
+        IM_CHECK(filter.PassFilter("bartender") == true);
+        IM_CHECK(filter.PassFilter("cartender") == true);
+
+        SetFilter("bar");
         IM_CHECK(filter.PassFilter("bartender") == true);
         IM_CHECK(filter.PassFilter("cartender") == false);
 
         // Exclude
-        ImStrncpy(filter.InputBuf, "-bar", IM_COUNTOF(filter.InputBuf));
-        filter.Build();
+        SetFilter("-bar");
         IM_CHECK(filter.PassFilter("bartender") == false);
         IM_CHECK(filter.PassFilter("cartender") == true);
-        ImStrncpy(filter.InputBuf, "  -bar", IM_COUNTOF(filter.InputBuf));
-        filter.Build();
+        SetFilter("   -bar");
         IM_CHECK(filter.PassFilter("bartender") == false);
         IM_CHECK(filter.PassFilter("cartender") == true);
 
         // Blank trimming
-        ImStrncpy(filter.InputBuf, " bar , foo", IM_COUNTOF(filter.InputBuf));
-        filter.Build();
+        SetFilter(" bar , foo");
         IM_CHECK(filter.PassFilter("bartender") == true);
         IM_CHECK(filter.PassFilter("cartender") == false);
 
 #if IMGUI_VERSION_NUM >= 19297
         // Blank trimming
-        ImStrncpy(filter.InputBuf, " bar  foo", IM_COUNTOF(filter.InputBuf));
-        filter.Build();
-        IM_CHECK(filter.PassFilter("bartender") == true);
-        IM_CHECK(filter.PassFilter("cartender") == false);
+        SetFilter(" ");
+        IM_CHECK(!filter.IsActive());
+
+        // Blank trimming
+        SetFilter("  ,  ,- ");
+        IM_CHECK(!filter.IsActive());
+
+        // Space is AND operator
+        SetFilter("foo bar");
+        IM_CHECK(filter.PassFilter("bartender") == false);
+        IM_CHECK(filter.PassFilter("foobar") == true);
+        IM_CHECK(filter.PassFilter("barfoo") == true);
+        IM_CHECK(filter.PassFilter("bartenderfoo") == true);
+
+        // Blank trimming
+        SetFilter(" bar   foo");
+        IM_CHECK(filter.PassFilter("bartender") == false);
+        IM_CHECK(filter.PassFilter("foobar") == true);
+        IM_CHECK(filter.PassFilter("barfoo") == true);
+        IM_CHECK(filter.PassFilter("bartenderfoo") == true);
 
         // Isolated '-' is an empty word
-        ImStrncpy(filter.InputBuf, "- bar", IM_COUNTOF(filter.InputBuf));
-        filter.Build();
+        SetFilter("- bar");
         IM_CHECK(filter.PassFilter("bartender") == true);
         IM_CHECK(filter.PassFilter("cartender") == false);
 
         // Unordered excludes (fixed 1.93.0)
-        ImStrncpy(filter.InputBuf, "bar,-foo", IM_COUNTOF(filter.InputBuf));
-        filter.Build();
+        SetFilter("bar -foo");
         IM_CHECK(filter.PassFilter("bartender") == true);
         IM_CHECK(filter.PassFilter("foobar") == false);
-        ImStrncpy(filter.InputBuf, "-foo,bar", IM_COUNTOF(filter.InputBuf));
-        filter.Build();
+        SetFilter("-foo bar");
         IM_CHECK(filter.PassFilter("bartender") == true);
         IM_CHECK(filter.PassFilter("foobar") == false);
 
-        // Space as a separator
-        ImStrncpy(filter.InputBuf, "foo bar", IM_COUNTOF(filter.InputBuf));
-        filter.Build();
+        // Multiple excludes
+        SetFilter("-foo -bar");
+        IM_CHECK(filter.PassFilter("foo") == false);
+        IM_CHECK(filter.PassFilter("bar") == false);
+        IM_CHECK(filter.PassFilter("foobar") == false);
+
+        SetFilter("bar,-foo");
         IM_CHECK(filter.PassFilter("bartender") == true);
-        IM_CHECK(filter.PassFilter("foobar") == true);
+        IM_CHECK(filter.PassFilter("foobar") == false);
+        SetFilter("-foo,bar");
+        IM_CHECK(filter.PassFilter("bartender") == true);
+        IM_CHECK(filter.PassFilter("foobar") == false);
 
         // Quotes
-        ImStrncpy(filter.InputBuf, "\"foo bar\"", IM_COUNTOF(filter.InputBuf));
-        filter.Build();
+        SetFilter("\"foo bar\"");
         IM_CHECK(filter.PassFilter("bartender") == false);
         IM_CHECK(filter.PassFilter("foobar") == false);
         IM_CHECK(filter.PassFilter("foo bar") == true);
 
-        ImStrncpy(filter.InputBuf, "-\"foo bar\"", IM_COUNTOF(filter.InputBuf));
-        filter.Build();
+        SetFilter("-\"foo bar\"");
         IM_CHECK(filter.PassFilter("bartender") == true);
         IM_CHECK(filter.PassFilter("foobar") == true);
         IM_CHECK(filter.PassFilter("foo bar") == false);
 
-        ImStrncpy(filter.InputBuf, "-tender", IM_COUNTOF(filter.InputBuf));
-        filter.Build();
+        SetFilter("-tender");
         IM_CHECK(filter.PassFilter("tender") == false);
         IM_CHECK(filter.PassFilter("-tender") == false);
 
-        ImStrncpy(filter.InputBuf, "-\"tender\"", IM_COUNTOF(filter.InputBuf));
-        filter.Build();
+        SetFilter("-\"tender\"");
         IM_CHECK(filter.PassFilter("tender") == false);
         IM_CHECK(filter.PassFilter("-tender") == false);
 
-        ImStrncpy(filter.InputBuf, "\"-tender\"", IM_COUNTOF(filter.InputBuf));
-        filter.Build();
+        SetFilter("\"-tender\"");
         IM_CHECK(filter.PassFilter("tender") == false);
         IM_CHECK(filter.PassFilter("-tender") == true);
 
-        ImStrncpy(filter.InputBuf, "-\" tender\"", IM_COUNTOF(filter.InputBuf));
-        filter.Build();
+        SetFilter("-\" tender\"");
         IM_CHECK(filter.PassFilter("tender") == true);
         IM_CHECK(filter.PassFilter(" tender") == false);
 
-        ImStrncpy(filter.InputBuf, "\"foo bar\",-tender", IM_COUNTOF(filter.InputBuf));
-        filter.Build();
+        SetFilter("\"foo bar\",-tender");
         IM_CHECK(filter.PassFilter("bartender") == false);
-        IM_CHECK(filter.PassFilter("foobar") == false);
+        IM_CHECK(filter.PassFilter("hello") == false);
         IM_CHECK(filter.PassFilter("foo bar") == true);
         IM_CHECK(filter.PassFilter("foo bar tender") == false);
 
-        // AND mode
-        ImStrncpy(filter.InputBuf, "foo bar", IM_COUNTOF(filter.InputBuf));
-        filter.FilterOp = '&';
-        filter.Build();
+        // More AND mode tests
+        SetFilter("foo bar");
         IM_CHECK(filter.PassFilter("bartender") == false);
         IM_CHECK(filter.PassFilter("footender") == false);
         IM_CHECK(filter.PassFilter("bar foo") == true);
 
-        ImStrncpy(filter.InputBuf, "\"foo bar\"", IM_COUNTOF(filter.InputBuf));
-        filter.FilterOp = '&';
-        filter.Build();
-        IM_CHECK(filter.PassFilter("bartender") == false);
-        IM_CHECK(filter.PassFilter("footender") == false);
+        SetFilter("\"foo bar\",hello world");
+        IM_CHECK(filter.PassFilter("hello") == false);
+        IM_CHECK(filter.PassFilter("world") == false);
+        IM_CHECK(filter.PassFilter("world hello") == true);
         IM_CHECK(filter.PassFilter("bar foo") == false);
         IM_CHECK(filter.PassFilter("foo bar") == true);
 
-        ImStrncpy(filter.InputBuf, "foo bar -tender", IM_COUNTOF(filter.InputBuf));
-        filter.FilterOp = '&';
-        filter.Build();
-        IM_CHECK(filter.PassFilter("bartender") == false);
-        IM_CHECK(filter.PassFilter("footender") == false);
+        SetFilter("foo bar -tender");
+        IM_CHECK(filter.PassFilter("bar") == false);
+        IM_CHECK(filter.PassFilter("foo") == false);
         IM_CHECK(filter.PassFilter("bar foo") == true);
         IM_CHECK(filter.PassFilter("bartender foo") == false);
+
+        SetFilter("hello world,food truck");
+        IM_CHECK(filter.PassFilter("hello world") == true);
+        IM_CHECK(filter.PassFilter("truck of food") == true);
+        IM_CHECK(filter.PassFilter("hello truck") == false);
+        IM_CHECK(filter.PassFilter("foodie world") == false);
 #endif
     };
 
