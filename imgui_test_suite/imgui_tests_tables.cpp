@@ -2567,7 +2567,10 @@ void RegisterTests_Table(ImGuiTestEngine* e)
             TableDiscardInstanceAndSettings(table_id);
             const bool use_settings = (step != 3);
             for (TableSpecs& specs : vars.Specs)
+            {
+                specs.TableFlags |= ImGuiTableFlags_Reorderable;
                 specs.TableFlags = use_settings ? (specs.TableFlags & ~ImGuiTableFlags_NoSavedSettings) : (specs.TableFlags | ImGuiTableFlags_NoSavedSettings);
+            }
             ImGuiTable* table = NULL;
             ImGuiTableSettings* table_settings = NULL;
 
@@ -2782,6 +2785,40 @@ void RegisterTests_Table(ImGuiTestEngine* e)
             IM_CHECK_EQ(table->Columns[2].WidthRequest, 90.0f);
             IM_CHECK_EQ(table->Columns[3].WidthRequest, 100.0f);
             // FIXME-TESTS: Is there something to detect?
+
+            // Non-reorderable tables (#9570)
+#if IMGUI_VERSION_NUM >= 19297
+            for (TableSpecs& specs : vars.Specs)
+                specs.TableFlags &= ~ImGuiTableFlags_Reorderable;
+
+            for (int sub_step = 0; sub_step < 2; sub_step++)
+            {
+                vars.Clear();
+                vars.AddColumn("Months");
+                vars.AddColumn("CC");
+                vars.AddColumn("DD");
+                ctx->Yield(2);
+                table = ImGui::TableFindByID(table_id);
+                for (int n = 0; n < 3; n++)
+                    IM_CHECK_EQ(table->Columns[n].DisplayOrder, n);
+                if (sub_step == 1)
+                {
+                    ctx->TableResizeColumn(table_id, 0, 70.0f);
+                    ctx->TableResizeColumn(table_id, 1, 72.0f);
+                }
+
+                vars.Clear();
+                vars.AddColumn("Months");
+                vars.AddColumn("AA");
+                vars.AddColumn("BB");
+                vars.AddColumn("CC");
+                vars.AddColumn("DD");
+                ctx->Yield(2);
+                table = ImGui::TableFindByID(table_id);
+                for (int n = 0; n < 3; n++)
+                    IM_CHECK_EQ(table->Columns[n].DisplayOrder, n);
+            }
+#endif
         }
     };
 #endif
