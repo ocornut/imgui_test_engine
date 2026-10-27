@@ -1620,9 +1620,13 @@ void RegisterTests_Docking(ImGuiTestEngine* e)
             IM_CHECK(ctx->TabBarCompareOrder(tab_bar_aaa, tab_order_1));
             IM_CHECK(ctx->TabBarCompareOrder(tab_bar_ddd, tab_order_2));
 
+#if IMGUI_VERSION_NUM < 19301
+#define VisibleTabContentsId VisibleTabId
+#endif
+
             IM_CHECK(tab_bar_aaa->Tabs.Size >= 2);
-            IM_CHECK(tab_bar_aaa->VisibleTabId == tab_bar_aaa->Tabs[1].ID);
-            IM_CHECK(tab_bar_ddd->VisibleTabId == tab_bar_ddd->Tabs[1].ID);
+            IM_CHECK(tab_bar_aaa->VisibleTabContentsId == tab_bar_aaa->Tabs[1].ID);
+            IM_CHECK(tab_bar_ddd->VisibleTabContentsId == tab_bar_ddd->Tabs[1].ID);
 
             // Hide and show all windows.
             vars.SetShowWindows(7, false);
