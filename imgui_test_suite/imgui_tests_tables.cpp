@@ -574,6 +574,49 @@ void RegisterTests_Table(ImGuiTestEngine* e)
 #endif
     };
 
+    // ## Table: NoHostExtendY backgrounds should merge without extra Bg0/border clip transitions.
+    t = IM_REGISTER_TEST(e, "table", "table_draw_calls_2");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        const float font_size = ImGui::GetFontSize();
+        ImGui::SetNextWindowSize(ImVec2(font_size * 40, font_size * 22), ImGuiCond_Always);
+        ImGui::Begin("Test window 1", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImGui::Text("Text before");
+        ImDrawList* draw_list = ImGui::GetWindowDrawList();
+        const int cmd_size_before = draw_list->CmdBuffer.Size;
+        if (ImGui::BeginTable("table", 2, ImGuiTableFlags_NoHostExtendY | ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg, ImVec2(0, font_size * 6)))
+        {
+            for (int row = 0; row < 4; row++)
+            {
+                ImGui::PushID(row);
+                ImGui::TableNextRow();
+                ImGui::TableSetColumnIndex(0);
+                ImGui::Selectable("Selected", true, ImGuiSelectableFlags_SpanAllColumns, ImVec2(0, font_size * 2));
+                ImGui::TableSetColumnIndex(1);
+                ImGui::Text("Cell");
+                ImGui::PopID();
+            }
+            ImGui::EndTable();
+        }
+        const int cmd_size_after = draw_list->CmdBuffer.Size;
+        ImGui::Text("Text after");
+        ImGui::Text("Draw calls %d --> %d", cmd_size_before, cmd_size_after);
+
+        // Bg0 row backgrounds and borders merge with the preceding host command.
+        // Bg2 highlights and column contents share a tighter clip; subsequent host text adds one more command.
+        // Clamping Bg0 as well adds two unnecessary transitions around the borders.
+        ImGui::End();
+        if (ctx->GenericVars.Bool1)
+            IM_CHECK_EQ(cmd_size_after, cmd_size_before + 2);
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ctx->WindowMove("Test window 1", ctx->GetMainMonitorWorkPos()); // Visible
+        ctx->Yield(2);
+        ctx->GenericVars.Bool1 = true;
+        ctx->Yield(2);
+    };
+
     // ## Table: test effect of specifying or not a width in TableSetupColumn(), the effect of toggling _Resizable or setting _Fixed/_Auto widths.
     t = IM_REGISTER_TEST(e, "table", "table_width_explicit");
     t->SetVarsDataType<TableTestingVars>();
