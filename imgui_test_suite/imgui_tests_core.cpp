@@ -2766,8 +2766,10 @@ void RegisterTests_Window(ImGuiTestEngine* e)
     t->GuiFunc = [](ImGuiTestContext* ctx)
     {
         ImGuiTestGenericVars& vars = ctx->GenericVars;
+        if (vars.ShowWindow1 == false)
+            return;
         ImGui::SetNextWindowSize(ImVec2(0, 0));
-        ImGui::SetNextWindowPos(vars.Pos, ImGuiCond_Always, vars.Pivot);
+        ImGui::SetNextWindowPos(vars.Pos, vars.Cond, vars.Pivot);
         ImGui::Begin("Movable Window", NULL, ImGuiWindowFlags_NoSavedSettings);
         ImGui::TextUnformatted("Lorem ipsum dolor sit amet");
         ImGui::End();
@@ -2775,6 +2777,10 @@ void RegisterTests_Window(ImGuiTestEngine* e)
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
         ImGuiTestGenericVars& vars = ctx->GenericVars;
+        vars.ShowWindow1 = true;
+        vars.Cond = ImGuiCond_Always;
+        ctx->Yield();
+
         ImGuiWindow* window = ctx->GetWindowByRef("Movable Window");
         for (int n = 0; n < 4; n++)     // Test all pivot combinations.
             for (int c = 0; c < 2; c++) // Test collapsed and uncollapsed windows.
@@ -2786,6 +2792,18 @@ void RegisterTests_Window(ImGuiTestEngine* e)
                 ctx->Yield();
                 IM_CHECK_EQ(window->Pos, vars.Pos - (window->Size * vars.Pivot));
             }
+
+        // Verify conditional
+        vars.Cond = ImGuiCond_Appearing;
+        vars.Pos = ImGui::GetMainViewport()->Pos + ImGui::GetMainViewport()->Size * 0.5f;
+        vars.Pivot = ImVec2(0.0f, 0.0f);
+        ctx->Yield();
+        IM_CHECK(ImLengthSqr(window->Pos - vars.Pos) > 1.0f);
+        vars.ShowWindow1 = false;
+        ctx->Yield();
+        vars.ShowWindow1 = true;
+        ctx->Yield();
+        IM_CHECK(ImLengthSqr(window->Pos - vars.Pos) <= 1.0f);
     };
 
     // ## Test window resizing from edges and corners.
