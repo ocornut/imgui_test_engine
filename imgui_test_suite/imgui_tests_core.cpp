@@ -2772,6 +2772,16 @@ void RegisterTests_Window(ImGuiTestEngine* e)
         ImGui::SetNextWindowPos(vars.Pos, vars.Cond, vars.Pivot);
         ImGui::Begin("Movable Window", NULL, ImGuiWindowFlags_NoSavedSettings);
         ImGui::TextUnformatted("Lorem ipsum dolor sit amet");
+        if (ImGui::Button("Open Popup"))
+            ImGui::OpenPopup("Pivot Popup");
+        ImGui::SetNextWindowPos(vars.Pos, vars.Cond, vars.Pivot);
+        if (ImGui::BeginPopupModal("Pivot Popup", NULL, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings))
+        {
+            ImGui::TextUnformatted("Lorem ipsum dolor sit amet");
+            if (ImGui::Button("Close"))
+                ImGui::CloseCurrentPopup();
+            ImGui::EndPopup();
+        }
         ImGui::End();
     };
     t->TestFunc = [](ImGuiTestContext* ctx)
@@ -2804,6 +2814,23 @@ void RegisterTests_Window(ImGuiTestEngine* e)
         vars.ShowWindow1 = true;
         ctx->Yield();
         IM_CHECK(ImLengthSqr(window->Pos - vars.Pos) <= 1.0f);
+
+        // A conditional pivot request must survive size measurement on each popup opening. (#9568)
+        ctx->WindowCollapse("Movable Window", false);
+        vars.Cond = ImGuiCond_Appearing;
+        vars.Pivot = ImVec2(1.0f, 1.0f);
+        ImVec2 popup_pos[2], expected_pos[2];
+        for (int n = 0; n < 2; n++)
+        {
+            ctx->ItemClick("//Movable Window/Open Popup");
+            ctx->Yield(2);
+            ImGuiWindow* popup = ctx->GetWindowByRef("Pivot Popup");
+            popup_pos[n] = popup->Pos;
+            expected_pos[n] = vars.Pos - (popup->Size * vars.Pivot);
+            ctx->ItemClick("//Pivot Popup/Close");
+        }
+        for (int n = 0; n < 2; n++)
+            IM_CHECK_EQ_NO_RET(popup_pos[n], expected_pos[n]);
     };
 
     // ## Test window resizing from edges and corners.
