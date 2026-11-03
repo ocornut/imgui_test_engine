@@ -5,6 +5,10 @@ CHANGELOG
    Those changes are not all listed here.
 ** For a while this is going to ONLY INCLUDE BREAKING CHANGES.
 
+2026/11/03
+- TestEngine: fixed an issue accessing a docked window via its parent tab bar
+  when the tab item is already selected but out of view.
+
 2026/09/14:
 - TestEngine: fixed issue accessing window context menu for tabbed/docked windows.
 - TestEngine: fixed issue aiming at Tabs in Menu Layer or in Dock Node, when requiring

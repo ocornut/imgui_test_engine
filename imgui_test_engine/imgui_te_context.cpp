@@ -1628,8 +1628,7 @@ void    ImGuiTestContext::ScrollToTabItem(ImGuiTabBar* tab_bar, ImGuiID tab_id)
 
     const int selected_tab_index = tab_bar->Tabs.index_from_ptr(selected_tab_item);
     const int target_tab_index = tab_bar->Tabs.index_from_ptr(target_tab_item);
-    if (selected_tab_index == target_tab_index)
-        return;
+    // We can't early out on selected_tab_index==target_tab_index as Selection doesn't imply visibility.
 
     ImGuiTestRef backup_ref = GetRef();
     SetRef(tab_bar->ID);
@@ -4437,6 +4436,7 @@ void    ImGuiTestContext::DockInto(ImGuiTestRef src_id, ImGuiTestRef dst_id, ImG
     else
         Yield(); // A yield is necessary to start the moving, otherwise if by the time we call MouseSetViewport() no frame has elapsed and the viewports differs, dragging will fail.
     // (Button still held)
+    IM_CHECK_SILENT(g.MovingWindow == window_src);
 
     // Locate target
     ImVec2 drop_pos;

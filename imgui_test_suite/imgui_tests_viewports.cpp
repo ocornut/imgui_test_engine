@@ -643,9 +643,11 @@ void RegisterTests_Viewports(ImGuiTestEngine* e)
         {
             g.IO.ConfigDockingAlwaysTabBar = (variant & 1) != 0;
             g.IO.ConfigViewportsNoAutoMerge = (variant & 2) != 0;
+            bool close_window_1 = (variant & 4) != 0;
             ctx->LogInfo("VARIANT %d", variant);
             ctx->LogInfo("- io.ConfigDockingAlwaysTabBar = %d", g.IO.ConfigDockingAlwaysTabBar);
             ctx->LogInfo("- io.ConfigViewportsNoAutoMerge = %d", g.IO.ConfigViewportsNoAutoMerge);
+            ctx->LogInfo("- close %s", close_window_1 ? "'Window 1'" : "'Window 2'");
 
             ImGuiWindow* window_1 = ctx->GetWindowByRef("Window 1");
             //ImGuiWindow* window_2 = ctx->GetWindowByRef("Window 1");
