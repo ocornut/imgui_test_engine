@@ -116,6 +116,71 @@ void RegisterTests_Viewports(ImGuiTestEngine* e)
         IM_CHECK_NE(window->Pos, main_viewport->WorkPos + ImVec2(100.0f, 100.0f));
     };
 
+    // ## Test auto merge (#9568)
+#if IMGUI_VERSION_NUM >= 19302
+    t = IM_REGISTER_TEST(e, "viewport", "viewport_merge_into_parent");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiWindowClass window_class;
+        window_class.ViewportFlagsOverrideSet = ImGuiViewportFlags_NoAutoMerge;
+        ImGui::SetNextWindowClass(&window_class);
+
+        ImGui::SetNextWindowSize({ 500,300 });
+        ImGui::Begin("Test Window 1");
+        if (ImGui::Button("Open Modal"))
+            ImGui::OpenPopup("Test Modal #9568");
+
+        // Center the modal to the parent using a pivot
+        ImVec2 parent_pos = ImGui::GetWindowPos();
+        ImVec2 parent_size = ImGui::GetWindowSize();
+        ImVec2 parent_center = parent_pos + parent_size * 0.5f;
+
+        ImGui::SetNextWindowPos(parent_center, ImGuiCond_Always, ImVec2(0.5f, 0.5f));
+        ImGui::SetNextWindowSize(parent_size * 0.80f);
+        if (ImGui::BeginPopupModal("Test Modal #9568", NULL, ImGuiWindowFlags_AlwaysAutoResize))
+        {
+            ImGui::Text("This modal creates a 1-frame rogue OS window glitch on its first frame.");
+            if (ImGui::Button("Close"))
+                ImGui::CloseCurrentPopup();
+            ImGui::EndPopup();
+        }
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiContext& g = *GImGui;
+      
+        ImGui::ClearWindowSettings("Test Modal #9568");
+
+        ctx->Yield(2);
+        ctx->WindowMove("//Test Window 1", ImGui::GetMainViewport()->Pos + ImVec2(ImGui::GetMainViewport()->Size.x, 50));
+        ctx->Yield();
+
+        const int count_a1 = g.ViewportCreatedCount;
+        const int count_b1 = g.PlatformWindowsCreatedCount;
+        ctx->ItemClick("//Test Window 1/Open Modal");
+
+        const int count_a2 = g.ViewportCreatedCount;
+        const int count_b2 = g.PlatformWindowsCreatedCount;
+        IM_CHECK_EQ(count_a1, count_a2);
+        IM_CHECK_EQ(count_b1, count_b2);
+        ctx->ItemClick("//$FOCUSED/Close");
+
+        ctx->ItemClick("//Test Window 1/Open Modal");
+        const int count_a3 = g.ViewportCreatedCount;
+        const int count_b3 = g.PlatformWindowsCreatedCount;
+        IM_CHECK_EQ(count_a1, count_a3);
+        IM_CHECK_EQ(count_b1, count_b3);
+        ctx->ItemClick("//$FOCUSED/Close");
+    };
+    t->TeardownFunc = [](ImGuiTestContext* ctx)
+    {
+        // FIXME: SetNextWindowClass() is never reset :( What is the desirable design?
+        ImGuiWindow* window = ctx->GetWindowByRef("//Test Window 1");
+        window->WindowClass = ImGuiWindowClass();
+    };
+#endif
+
     // ## Test translating cases when hosted by main viewport (or any viewport with ImGuiViewportFlags_CanHostOtherWindows) (#7985)
     t = IM_REGISTER_TEST(e, "viewport", "viewport_translate");
     t->GuiFunc = [](ImGuiTestContext* ctx)
