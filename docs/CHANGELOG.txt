@@ -8,6 +8,8 @@ CHANGELOG
 2026/11/03
 - TestEngine: fixed an issue accessing a docked window via its parent tab bar
   when the tab item is already selected but out of view.
+- TestEngine: fixed an issue reaching/moving windows when viewports are enabled but
+  a window is only partly visible (e.g. locked to a viewport or using _NoAutoMerge).
 
 2026/09/14:
 - TestEngine: fixed issue accessing window context menu for tabbed/docked windows.

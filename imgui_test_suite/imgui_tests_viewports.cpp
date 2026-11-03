@@ -139,8 +139,8 @@ void RegisterTests_Viewports(ImGuiTestEngine* e)
             const bool locked_to_main_viewport = (step & 2) != 0; // Automatic viewport or locked to main viewport
             ImGuiWindow* window = ctx->GetWindowByRef(locked_to_main_viewport ? "//Test Window 2" : "//Test Window 1");
             ctx->SetRef(window);
-            ctx->WindowResize("", { 100, 100 });
-            ImVec2 pos1 = { main_viewport->Pos.x + main_viewport->Size.x - (fully_contained ? 150.0f : 50.0f), main_viewport->Pos.y + 20 };
+            ctx->WindowResize("", { 200, 200 });
+            ImVec2 pos1 = { main_viewport->Pos.x + main_viewport->Size.x - (fully_contained ? 250.0f : 150.0f), main_viewport->Pos.y + 20 };
             ctx->WindowMove("", pos1);
             if (fully_contained || locked_to_main_viewport)
                 IM_CHECK_EQ(window->Viewport, main_viewport);
@@ -148,7 +148,7 @@ void RegisterTests_Viewports(ImGuiTestEngine* e)
                 IM_CHECK_NE(window->Viewport, main_viewport);
             IM_CHECK_EQ(window->Pos, pos1);
             ctx->ViewportPlatform_SetWindowPos(main_viewport, main_viewport->Pos - ImVec2(30.0f, 0.0f));
-            ImVec2 pos2 = { main_viewport->Pos.x + main_viewport->Size.x - (fully_contained ? 150.0f : 50.0f), main_viewport->Pos.y + 20 };
+            ImVec2 pos2 = { main_viewport->Pos.x + main_viewport->Size.x - (fully_contained ? 250.0f : 150.0f), main_viewport->Pos.y + 20 };
 #if IMGUI_VERSION_NUM < 19114
             if (!fully_contained && locked_to_main_viewport) // Fixed by #7985
                 continue;

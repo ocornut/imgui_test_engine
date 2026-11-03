@@ -2185,6 +2185,11 @@ bool    ImGuiTestContext::WindowTeleportToMakePosVisible(ImGuiTestRef ref, ImVec
     ImRect visible_r;
     visible_r.Min = GetMainMonitorWorkPos();
     visible_r.Max = visible_r.Min + GetMainMonitorWorkSize();
+#ifdef IMGUI_HAS_DOCK
+    if (window->Viewport)
+        visible_r = window->Viewport->GetWorkRect();
+#endif
+
     if (!visible_r.Contains(pos))
     {
         // Fallback move window directly to make our item reachable with the mouse.
