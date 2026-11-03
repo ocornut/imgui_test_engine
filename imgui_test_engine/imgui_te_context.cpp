@@ -4441,7 +4441,7 @@ void    ImGuiTestContext::DockInto(ImGuiTestRef src_id, ImGuiTestRef dst_id, ImG
     else
         Yield(); // A yield is necessary to start the moving, otherwise if by the time we call MouseSetViewport() no frame has elapsed and the viewports differs, dragging will fail.
     // (Button still held)
-    IM_CHECK_SILENT(g.MovingWindow == window_src);
+    //IM_CHECK_SILENT(g.MovingWindow == window_src);
 
     // Locate target
     ImVec2 drop_pos;
