@@ -151,6 +151,19 @@ static bool SelectableInput(const char* str_id, bool selected, ImGuiSelectableFl
 }
 #endif
 
+#if IMGUI_VERSION_NUM >= 19302
+template<typename TYPE>
+static TYPE DragWrap(ImGuiDataType data_type, TYPE v_cur, TYPE v_min, TYPE v_max)
+{
+    const bool is_floating_point = (data_type == ImGuiDataType_Float) || (data_type == ImGuiDataType_Double);
+    const TYPE range = v_max - v_min + (is_floating_point ? 0 : 1);
+    TYPE offset = ImMod((TYPE)(v_cur - v_min), range);
+    if (offset < 0)
+        offset += range;
+    return (TYPE)(v_min + offset);
+}
+#endif
+
 //-------------------------------------------------------------------------
 // Tests: Widgets
 //-------------------------------------------------------------------------
@@ -595,7 +608,7 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
         ctx->KeyPress(ImGuiKey_Tab);
         IM_CHECK_FLOAT_EQ(vars.Color1.y, 123.0f / 255.0f);
         ctx->KeyCharsAppendEnter("200");
-        IM_CHECK_FLOAT_EQ(vars.Color1.x,   0.0f / 255.0f);
+        IM_CHECK_FLOAT_EQ(vars.Color1.x, 0.0f / 255.0f);
         IM_CHECK_FLOAT_EQ(vars.Color1.y, 123.0f / 255.0f);
         IM_CHECK_FLOAT_EQ(vars.Color1.z, 200.0f / 255.0f);
     };
@@ -812,6 +825,71 @@ void RegisterTests_Widgets(ImGuiTestEngine* e)
             }
         }
     };
+
+#if IMGUI_VERSION_NUM >= 19302
+    // ## Test Drags WrapAround (#7749, #9612)
+    t = IM_REGISTER_TEST(e, "widgets", "widgets_dragslider_wrap");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        auto& vars = ctx->GenericVars;
+
+        ImGuiSliderFlags flags = ImGuiSliderFlags_WrapAround;
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings);
+        ImGui::DragInt("i 0..100", &vars.Int1, 0.1f, 0, 100, nullptr, flags);
+        ImGui::DragInt("i 100..200", &vars.Int1, 0.1f, 100, 200, nullptr, flags);
+        ImGui::DragFloat("f 0..100", &vars.Float1, 0.1f, 0.0f, 100.0f, nullptr, flags);
+        ImGui::DragFloat("f 100..200", &vars.Float1, 0.1f, 100.0f, 200.0f, nullptr, flags);
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        auto& vars = ctx->GenericVars;
+        ctx->SetRef("Test Window");
+
+        // FIXME: Delta will break once we scale factors accordingly to resolution/DPI
+        ImVec2 dx_one = { 10.0f, 0.0f };
+
+        vars.Int1 = 1;
+        ctx->ItemDragWithDelta("i 0..100", -dx_one);
+        IM_CHECK_EQ(vars.Int1, 0);
+        ctx->ItemDragWithDelta("i 0..100", -dx_one);
+        IM_CHECK_EQ(vars.Int1, 100);
+        ctx->ItemDragWithDelta("i 0..100", -dx_one);
+        IM_CHECK_EQ(vars.Int1, 99);
+        ctx->ItemDragWithDelta("i 0..100", dx_one * 100 * 10); // #9612
+        IM_CHECK_EQ(vars.Int1, 99 - 10); 
+        ctx->ItemDragWithDelta("i 0..100", -dx_one * 100 * 10); // #9612
+        IM_CHECK_EQ(vars.Int1, 99);
+
+        ctx->ItemDragWithDelta("i 100..200", -dx_one);
+        IM_CHECK_EQ(vars.Int1, 199);
+        ctx->ItemDragWithDelta("i 100..200", +dx_one);
+        IM_CHECK_EQ(vars.Int1, 200);
+        ctx->ItemDragWithDelta("i 100..200", +dx_one);
+        IM_CHECK_EQ(vars.Int1, 100);
+        ctx->ItemDragWithDelta("i 100..200", +dx_one * 101 * 10); // #9612
+        IM_CHECK_EQ(vars.Int1, 100);
+
+        vars.Float1 = 1;
+        ctx->ItemDragWithDelta("f 0..100", -dx_one);
+        IM_CHECK_EQ(vars.Float1, 0.0f);
+        ctx->ItemDragWithDelta("f 0..100", -dx_one);
+        IM_CHECK_EQ(vars.Float1, 99.0f);
+        ctx->ItemDragWithDelta("f 0..100", -dx_one);
+        IM_CHECK_EQ(vars.Float1, 98.0f);
+        ctx->ItemDragWithDelta("f 0..100", dx_one * 100 * 10); // #9612
+        IM_CHECK_EQ(vars.Float1, 98.0f);
+        ctx->ItemDragWithDelta("f 0..100", -dx_one * 100 * 10); // #9612
+        IM_CHECK_EQ(vars.Float1, 98.0f);
+
+        ctx->ItemDragWithDelta("f 100..200", -dx_one);
+        IM_CHECK_EQ(vars.Float1, 197.0f);
+        ctx->ItemDragWithDelta("f 100..200", +dx_one);
+        IM_CHECK_EQ(vars.Float1, 198.0f);
+        ctx->ItemDragWithDelta("f 100..200", +dx_one * 100 * 10); // #9612
+        IM_CHECK_EQ(vars.Float1, 198.0f);
+    };
+#endif
 
 #if 0
     // ## Testing Scroll on Window with Test Engine helpers
