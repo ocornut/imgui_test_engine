@@ -302,6 +302,54 @@ void RegisterTests_WidgetsInputText(ImGuiTestEngine* e)
     };
 #endif
 
+#if IMGUI_VERSION_NUM >= 19303
+    // ## Undo/redo with forward and backward UTF-8 selections remains collapsed after restoring text.
+    // Initially aiming to test https://github.com/nothings/stb/commit/2ccb29a4eee06ac97f7e846d50a160893577a339
+    // but actually the different is not observable from the ImGui layer as our wrapper already did that.
+    t = IM_REGISTER_TEST(e, "widgets", "widgets_inputtext_undo_selection");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
+        ImGui::InputText("Field", ctx->GenericVars.Str1, IM_COUNTOF(ctx->GenericVars.Str1));
+
+        ImGui::DebugTextEncoding(u8"\u00e9\u03a9"); // 2-bytes + 2-bytes, random characters
+
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ctx->SetRef("Test Window");
+        ctx->ItemClick("Field");
+
+        ctx->KeyCharsReplace("A");
+        ImGui::SetClipboardText(u8"\u00e9\u03a9");
+        ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_V);
+
+        ImGuiInputTextState* state = ImGui::GetInputTextState(ctx->GetID("Field"));
+        IM_CHECK(state != NULL);
+        IM_CHECK_STR_EQ(ctx->GenericVars.Str1, u8"A\u00e9\u03a9");
+        for (int reverse = 0; reverse < 2; reverse++)
+        {
+            ctx->KeyPress(reverse ? ImGuiKey_End : ImGuiKey_Home);
+            ctx->KeyPress(ImGuiMod_Shift | (reverse ? ImGuiKey_Home : ImGuiKey_End));
+            IM_CHECK(state->HasSelection());
+            ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_Z);
+            IM_CHECK_STR_EQ(ctx->GenericVars.Str1, "A");
+            IM_CHECK_EQ(state->GetCursorPos(), 1);
+            IM_CHECK_EQ(state->GetSelectionStart(), 1);
+            IM_CHECK_EQ(state->GetSelectionEnd(), 1);
+            ctx->KeyPress(reverse ? ImGuiKey_End : ImGuiKey_Home);
+            ctx->KeyPress(ImGuiMod_Shift | (reverse ? ImGuiKey_Home : ImGuiKey_End));
+            IM_CHECK(state->HasSelection());
+            ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_Y);
+            IM_CHECK_STR_EQ(ctx->GenericVars.Str1, u8"A\u00e9\u03a9");
+            IM_CHECK_EQ(state->GetCursorPos(), 5);
+            IM_CHECK_EQ(state->GetSelectionStart(), 5);
+            IM_CHECK_EQ(state->GetSelectionEnd(), 5);
+        }
+    };
+#endif
+
     // ## Test InputText vs user ownership of data
     t = IM_REGISTER_TEST(e, "widgets", "widgets_inputtext_text_ownership");
     t->GuiFunc = [](ImGuiTestContext* ctx)
@@ -613,7 +661,11 @@ void RegisterTests_WidgetsInputText(ImGuiTestEngine* e)
 
             // End of first line
             SetCursorPosition(cursor_pos_end_of_first_line); ctx->KeyPress(ImGuiKey_UpArrow);
+#if IMGUI_VERSION_NUM >= 19303
+            IM_CHECK_EQ(stb.cursor, 0); // stb_textedit 1.15: Up on the first row moves to its start.
+#else
             IM_CHECK_EQ(stb.cursor, cursor_pos_end_of_first_line);
+#endif
             SetCursorPosition(cursor_pos_end_of_first_line); ctx->KeyPress(ImGuiKey_LeftArrow);
             IM_CHECK_EQ(stb.cursor, cursor_pos_end_of_first_line - 1);
             SetCursorPosition(cursor_pos_end_of_first_line); ctx->KeyPress(ImGuiKey_DownArrow);
@@ -2408,7 +2460,11 @@ void RegisterTests_WidgetsInputText(ImGuiTestEngine* e)
         ctx->KeyPress(ImGuiKey_UpArrow);
         IM_CHECK_EQ(state->GetCursorPos(), 17);
         ctx->KeyPress(ImGuiKey_UpArrow);
+#if IMGUI_VERSION_NUM >= 19303
+        IM_CHECK_EQ(state->GetCursorPos(), 0); // stb_textedit 1.15: Up on the first row moves to its start.
+#else
         IM_CHECK_EQ(state->GetCursorPos(), 17);
+#endif
     };
 #endif
 }
