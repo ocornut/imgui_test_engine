@@ -583,7 +583,7 @@ void RegisterTests_WidgetsInputText(ImGuiTestEngine* e)
 #endif
 
     // ## Test input text multiline cursor movement: left, up, right, down, origin, end, ctrl+origin, ctrl+end, page up, page down
-    // ## Test on multi-byte characters (see Set 2)
+    // ## Test on multi-byte characters, first-line selection, and empty buffers
     // TODO ## Test input text multiline cursor with selection: left, up, right, down, origin, end, ctrl+origin, ctrl+end, page up, page down
     // TODO ## Test input text multiline scroll movement only: ctrl + (left, up, right, down)
     // TODO ## Test input text multiline page up/page down history ?
@@ -747,6 +747,47 @@ void RegisterTests_WidgetsInputText(ImGuiTestEngine* e)
                 //eof - (char_count_per_line * page_size) + (char_count_per_line / 2) + (has_trailing_line_feed ? 0 : 1));
         }
 
+#if IMGUI_VERSION_NUM >= 19303
+        // Up/PageUp on the first line moves to its start, including when extending a selection.
+        for (int utf8 = 0; utf8 < 2; utf8++)
+        {
+            const char* line = utf8 ? u8"\u00e9\u00e9\u00e9" : "abc";
+            ctx->KeyCharsReplace(Str30f("%s\n%s", line, line).c_str());
+            const ImGuiKey keys[] = { ImGuiKey_UpArrow, ImGuiKey_PageUp };
+            for (ImGuiKey key : keys)
+                for (int select = 0; select < 2; select++)
+                {
+                    ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_Home);
+                    ctx->KeyPress(ImGuiKey_RightArrow, 2);
+                    const int start = state->GetCursorPos();
+                    IM_CHECK_EQ(start, utf8 ? 4 : 2);
+                    ctx->KeyPress(key | (select ? ImGuiMod_Shift : 0));
+                    IM_CHECK_EQ(state->GetCursorPos(), 0);
+                    IM_CHECK_EQ(state->HasSelection(), select != 0);
+                    if (select)
+                    {
+                        IM_CHECK_EQ(state->GetSelectionStart(), start);
+                        IM_CHECK_EQ(state->GetSelectionEnd(), 0);
+                    }
+                }
+        }
+#endif
+
+#if IMGUI_VERSION_NUM >= 19143
+        // UTF-8: Up/Down from EOF, with and without a trailing newline. Positions are byte offsets.
+        ctx->KeyCharsReplace(u8"\u00e9\u00e9\u00e9\n\u00e9\u00e9\u00e9");
+        ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_End);
+        ctx->KeyPress(ImGuiKey_UpArrow);
+        IM_CHECK_EQ(state->GetCursorPos(), 6); // End of first line.
+        ctx->KeyPress(ImGuiKey_DownArrow);
+        IM_CHECK_EQ(state->GetCursorPos(), 13); // End of second line.
+        ctx->KeyChars("\n");
+        ctx->KeyPress(ImGuiKey_DownArrow, 2);
+        IM_CHECK_EQ(state->GetCursorPos(), 14); // Empty final line.
+        ctx->KeyPress(ImGuiKey_UpArrow);
+        IM_CHECK_EQ(state->GetCursorPos(), 7); // Start of second line.
+#endif
+
         // Cursor positioning after new line. Broken line indexing may produce incorrect results in such case.
         ctx->KeyCharsReplaceEnter("foo");
         IM_CHECK_EQ(stb.cursor, 4);
@@ -763,6 +804,11 @@ void RegisterTests_WidgetsInputText(ImGuiTestEngine* e)
         IM_CHECK_EQ(stb.cursor, 0);
         ctx->KeyPress(ImGuiKey_RightArrow);
         IM_CHECK_EQ(stb.cursor, 0);
+        ctx->KeyPress(ImGuiKey_PageUp);
+        IM_CHECK_EQ(stb.cursor, 0);
+        ctx->KeyPress(ImGuiKey_PageDown);
+        IM_CHECK_EQ(stb.cursor, 0);
+        IM_CHECK(!state->HasSelection());
 
 #if IMGUI_VERSION_NUM >= 18991
         // Extra test for #6783, long line trailed with \n, pressing down.
@@ -2420,6 +2466,27 @@ void RegisterTests_WidgetsInputText(ImGuiTestEngine* e)
         IM_CHECK_EQ(state->LastMoveDirectionLR, ImGuiDir_Left);
         ctx->KeyPress(ImGuiKey_Home);
         IM_CHECK_EQ(state->GetCursorPos(), 0);
+
+        // Up from the end of the first wrapped row.
+        ctx->KeyPress(ImGuiKey_End);
+        IM_CHECK_EQ(state->GetCursorPos(), 6);
+        IM_CHECK_EQ(state->LastMoveDirectionLR, ImGuiDir_Right);
+        ctx->KeyPress(ImGuiKey_UpArrow);
+#if IMGUI_VERSION_NUM >= 19303
+        IM_CHECK_EQ(state->GetCursorPos(), 0);
+#else
+        IM_CHECK_EQ(state->GetCursorPos(), 6);
+#endif
+
+        // Shift+Up from the same wrapping-point, on the start side of the second row.
+        ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_Home);
+        ctx->KeyPress(ImGuiKey_DownArrow);
+        IM_CHECK_EQ(state->GetCursorPos(), 6);
+        IM_CHECK_EQ(state->LastMoveDirectionLR, ImGuiDir_Left);
+        ctx->KeyPress(ImGuiMod_Shift | ImGuiKey_UpArrow);
+        IM_CHECK_EQ(state->GetCursorPos(), 0);
+        IM_CHECK_EQ(state->GetSelectionStart(), 6);
+        IM_CHECK_EQ(state->GetSelectionEnd(), 0);
 
         // [Wrapping 3]
         // Aaaaa Aaaaa AAAAA
