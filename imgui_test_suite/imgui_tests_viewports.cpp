@@ -765,6 +765,49 @@ void RegisterTests_Viewports(ImGuiTestEngine* e)
     };
 #endif
 
+#if IMGUI_VERSION_NUM >= 19303
+    // Repro for #9631
+    t = IM_REGISTER_TEST(e, "viewport", "viewport_owner_change_3");
+    t->GuiFunc = GenericGuiFuncTwoWindows;
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        auto& vars = ctx->GenericVars;
+        vars.ShowWindow1 = true;
+        vars.ShowWindow2 = true;
+        ctx->DockClear("Window 1", "Window 2", nullptr);
+        ctx->WindowResize("Window 1", { 800,400 });
+        ctx->WindowResize("Window 2", { 800,400 });
+        ctx->DockInto("Window 2", "Window 1", ImGuiDir_Right);
+        ImGuiWindow* window_1 = ctx->GetWindowByRef("Window 1");
+        ImGuiWindow* window_2 = ctx->GetWindowByRef("Window 2");
+        IM_CHECK(window_1->DockNode != NULL);
+        ImGuiViewportP* main_viewport = (ImGuiViewportP*)ImGui::GetMainViewport();
+        // FIXME-TESTS: Unclear way to move a root split dock node.
+#if 0
+        //ImVec2 p = main_viewport->Pos + ImVec2(main_viewport->Size.x - 50 - window_1->Size.x, 50.0f);
+        //ctx->WindowMove(window_1->DockNode->HostWindow->ID, p);
+#else
+        ctx->MouseSetViewport(window_1);
+        ctx->MouseMoveToPos(window_1->Rect().GetTR() + ImVec2(-30, +30));
+        ctx->MouseDown();
+        ctx->MouseMoveToPos(main_viewport->Pos + ImVec2(main_viewport->Size.x - 50, 50.0f));
+        ctx->MouseUp();
+#endif
+        IM_CHECK(window_1->Viewport != main_viewport);
+        IM_CHECK(window_2->Viewport != main_viewport);
+        IM_CHECK(main_viewport->GetMainRect().Contains(window_1->Rect()) == true);
+        IM_CHECK(main_viewport->GetMainRect().Contains(window_2->Rect()) == false);
+        ctx->Yield(2);
+        ctx->WindowClose("Window 1"); // somehow vars.ShowWindow1 doesn't repro the same way (viewport focus related?)
+        ctx->Yield(2);
+        ctx->WindowClose("Window 2"); // "
+        ctx->Yield(2);
+        vars.ShowWindow1 = true;
+        ctx->Yield(2);
+        IM_CHECK(window_1->Viewport != main_viewport); // Inherit full size
+    };
+#endif
+
 #else
     IM_UNUSED(e);
 #endif
