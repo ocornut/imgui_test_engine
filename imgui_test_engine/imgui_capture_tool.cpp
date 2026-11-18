@@ -169,11 +169,13 @@ static void HideOtherWindows(const ImGuiCaptureArgs* args)
         bool should_hide_window = true;
         for (ImGuiWindow* capture_window : args->InCaptureWindows)
         {
-            if (capture_window->DockNode != nullptr && capture_window->DockNode->HostWindow->RootWindow == window)
-            {
-                should_hide_window = false;
-                break;
-            }
+            if (capture_window->DockNode != nullptr)
+                if (capture_window->DockNode->HostWindow != nullptr)
+                    if (capture_window->DockNode->HostWindow->RootWindow == window)
+                    {
+                        should_hide_window = false;
+                        break;
+                    }
         }
         if (!should_hide_window)
             continue;
