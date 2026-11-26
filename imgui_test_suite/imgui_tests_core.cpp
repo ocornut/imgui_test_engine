@@ -7898,15 +7898,16 @@ void RegisterTests_Capture(ImGuiTestEngine* e)
             style.ScaleAllSizes(14.0f / style.FontSizeBase);
 
 #if IMGUI_VERSION_NUM >= 19199
-        ImGui::PushFont(font, 13.0f);
+        ImGui::PushFont(font, 18.0f);
 #else
         ImGui::PushFont(font);
 #endif
         style.WindowRounding = 8.0f;
-        style.FrameRounding = style.ChildRounding = 0;
-        style.GrabRounding = 0;
+        //style.FrameRounding = style.ChildRounding = 0;
+        //style.GrabRounding = 0;
         style.FrameBorderSize = style.ChildBorderSize = 0;
         io.ConfigInputTextCursorBlink = false;
+        style.MouseCursorScale = style._MainScale;
 
         // Show two windows
         for (int n = 0; n < 2; n++)
@@ -7954,8 +7955,8 @@ void RegisterTests_Capture(ImGuiTestEngine* e)
             //ctx->KeyPress(ImGuiKey_End);
             //ctx->MouseMove("float");
             //ctx->MouseMoveToPos(g.IO.MousePos + ImVec2(30, -10));
-            ImRect r = ctx->ItemInfo("float").RectFull;
-            ctx->MouseMoveToPos(ImLerp(r.Min, r.Max, ImVec2(0.75f, 0.40f)));
+            ImRect r = ctx->ItemInfo("string").RectFull;
+            ctx->MouseMoveToPos(ImLerp(r.Min, r.Max, ImVec2(1.35f, 0.40f)));
             ctx->CaptureScreenshotWindow("");
         }
     };

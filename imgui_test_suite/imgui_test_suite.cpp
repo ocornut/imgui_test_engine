@@ -598,9 +598,11 @@ int main(int argc, char** argv)
     // Setup scaling
     const float main_scale = (app->OptScale != 0.0f) ? app->OptScale : app_window->DpiScale; // Override with e.g. '-scale 1.75' command-line param.
     ImGuiStyle& style = ImGui::GetStyle();
-    style.ScaleAllSizes(main_scale);
     style.FontSizeBase = 13.0f;
     style.FontScaleDpi = main_scale;
+    style.FrameRounding = 3.0f;
+    style.GrabRounding = 3.0f;
+    style.ScaleAllSizes(main_scale);
     // NB: we don't test io.ConfigDpiScaleFonts = true.
 
     // Load fonts
