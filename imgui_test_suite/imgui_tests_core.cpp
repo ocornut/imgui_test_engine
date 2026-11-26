@@ -414,6 +414,101 @@ void RegisterTests_Window(ImGuiTestEngine* e)
     };
 
 #if IMGUI_VERSION_NUM >= 19311
+    // ## Test constrained border/corner resizing, including shrinking and stationary mouse input. (#6210, #8028)
+    t = IM_REGISTER_TEST(e, "window", "window_size_constraints_2");
+    struct WindowSizeConstraintsVars { float AspectRatio = 1.0f; int ResizeAxisMask = -1; int SeenMasks = 0; };
+    t->SetVarsDataType<WindowSizeConstraintsVars>();
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        auto& vars = ctx->GetVars<WindowSizeConstraintsVars>();
+        vars.SeenMasks = 0;
+        auto constraint_func = [](ImGuiSizeCallbackData* data) // Aspect Ratio constraint
+        {
+            ImGuiTestContext* ctx = (ImGuiTestContext*)data->UserData;
+            auto& vars = ctx->GetVars<WindowSizeConstraintsVars>();
+            IM_CHECK_SILENT(data->ResizeAxisMask >= 0 && data->ResizeAxisMask <= 3);
+            vars.ResizeAxisMask = data->ResizeAxisMask;
+            vars.SeenMasks |= 1 << data->ResizeAxisMask;
+            if (data->ResizeAxisMask == 2)
+                data->DesiredSize.x = data->DesiredSize.y * vars.AspectRatio;
+            else if (data->ResizeAxisMask == 1 || data->DesiredSize.x / vars.AspectRatio > data->DesiredSize.y)
+                data->DesiredSize.y = data->DesiredSize.x / vars.AspectRatio;
+            else
+                data->DesiredSize.x = data->DesiredSize.y * vars.AspectRatio;
+        };
+        ImGui::SetNextWindowSizeConstraints(ImVec2(0, 0), ImVec2(FLT_MAX, FLT_MAX), constraint_func, ctx);
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoScrollbar);
+        ImGui::Dummy(ImVec2(10, 10));
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        auto& vars = ctx->GetVars<WindowSizeConstraintsVars>();
+        ImGui::GetIO().ConfigWindowsResizeFromEdges = true;
+
+        ImGuiWindow* window = ctx->GetWindowByRef("Test Window");
+        const ImVec2 initial_pos = ImGui::GetMainViewport()->Pos + ImVec2(200, 150);
+        struct TestData { ImVec2 GrabPos; int AxisMask; };
+        const TestData test_datas[] =
+        {
+            { ImVec2(0, 0.5f), 1 }, // Left: keep right/top fixed, change height at bottom.
+            { ImVec2(1, 0.5f), 1 }, // Right: keep left/top fixed, change height at bottom.
+            { ImVec2(0.5f, 0), 2 }, // Top: keep left/bottom fixed, change width at right.
+            { ImVec2(0.5f, 1), 2 }, // Bottom: keep left/top fixed, change width at right.
+            { ImVec2(0, 1),    3 }, // Lower-left: keep the opposite corner fixed.
+            { ImVec2(1, 1),    3 }, // Lower-right. (Upper corner grips are not enabled)
+        };
+        const float aspect_ratios[] = { 1.0f, 2.0f, 0.5f }; // Square, landscape, portrait.
+        for (float aspect_ratio : aspect_ratios)
+            for (const TestData& test_data : test_datas)
+                for (int sign = -1; sign <= 1; sign += 2)
+                {
+                    ctx->LogDebug("## Ratio %.1f, grip/border (%.1f,%.1f), direction %d", aspect_ratio, test_data.GrabPos.x, test_data.GrabPos.y, sign);
+                    vars.AspectRatio = aspect_ratio;
+                    const ImVec2 initial_size(240 * aspect_ratio, 240);
+                    ImGui::SetWindowPos(window, initial_pos);
+                    ImGui::SetWindowSize(window, initial_size);
+                    ctx->Yield(2);
+                    IM_CHECK_EQ(vars.SeenMasks, 1 << 0); // Ordinary constraint evaluation has no directional preference.
+
+                    ImVec2 mouse_pos = initial_pos + initial_size * test_data.GrabPos;
+                    if (test_data.AxisMask == 3)
+                        mouse_pos += ImVec2(test_data.GrabPos.x == 0 ? 2.0f : -2.0f, -2.0f);
+                    ImVec2 delta;
+                    delta.x = (test_data.AxisMask & 1) ? 40 * aspect_ratio * sign : 0;
+                    delta.y = (test_data.AxisMask & 2) ? (test_data.AxisMask == 3 ? 20.0f : 40.0f) * sign : 0;
+                    if (test_data.GrabPos.x == 0)
+                        delta.x = -delta.x;
+                    if (test_data.GrabPos.y == 0)
+                        delta.y = -delta.y;
+                    const float expected_height = 240 + ((test_data.AxisMask == 3 && sign < 0) ? -20.0f : 40.0f * sign);
+                    const ImVec2 expected_size(expected_height * aspect_ratio, expected_height);
+                    ImVec2 expected_pos = initial_pos;
+                    if (test_data.GrabPos.x == 0)
+                        expected_pos.x += initial_size.x - expected_size.x;
+                    if (test_data.GrabPos.y == 0)
+                        expected_pos.y += initial_size.y - expected_size.y;
+
+                    ctx->MouseSetViewport(window);
+                    ctx->MouseMoveToPos(mouse_pos);
+                    ctx->MouseDown(0);
+                    ctx->MouseMoveToPos(mouse_pos + delta);
+                    for (int frame = 0; frame < 4; frame++)
+                    {
+                        IM_CHECK_EQ(window->Size, expected_size);
+                        IM_CHECK_EQ(window->Pos, expected_pos);
+                        IM_CHECK_EQ(vars.ResizeAxisMask, test_data.AxisMask);
+                        IM_CHECK_EQ(vars.SeenMasks, (1 << 0) | (1 << test_data.AxisMask));
+                        ctx->Yield(); // Check each stationary frame: a two-frame oscillation must not go unnoticed.
+                    }
+                    ctx->MouseUp(0);
+                    ctx->Yield();
+                    IM_CHECK_EQ(vars.SeenMasks, 1 << 0); // The drag's mask must not leak into subsequent sizing calls.
+                    IM_CHECK_EQ(window->Size, expected_size);
+                    IM_CHECK_EQ(window->Pos, expected_pos);
+                }
+    };
+
     // ## Border double-click must apply the callback's complete result, on the double-click frame itself.
     t = IM_REGISTER_TEST(e, "window", "window_size_constraints_autofit");
     t->GuiFunc = [](ImGuiTestContext* ctx)
@@ -422,7 +517,6 @@ void RegisterTests_Window(ImGuiTestEngine* e)
         {
             data->DesiredSize.x = data->DesiredSize.y = ImMax(data->DesiredSize.x, data->DesiredSize.y);
         };
-        ImGui::GetIO().ConfigWindowsResizeFromEdges = true;
         ImGui::SetNextWindowSizeConstraints(ImVec2(0, 0), ImVec2(FLT_MAX, FLT_MAX), constraint_func);
         ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoScrollbar);
         ImGui::Dummy(ImVec2(600, 550));
@@ -436,6 +530,7 @@ void RegisterTests_Window(ImGuiTestEngine* e)
     };
     t->TestFunc = [](ImGuiTestContext* ctx)
     {
+        ImGui::GetIO().ConfigWindowsResizeFromEdges = true;
         ImGuiWindow* window = ctx->GetWindowByRef("Test Window");
         for (int axis = 0; axis < 2; axis++)
         {
