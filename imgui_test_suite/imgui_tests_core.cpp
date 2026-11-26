@@ -413,6 +413,42 @@ void RegisterTests_Window(ImGuiTestEngine* e)
         }
     };
 
+#if IMGUI_VERSION_NUM >= 19311
+    // ## Border double-click must apply the callback's complete result, on the double-click frame itself.
+    t = IM_REGISTER_TEST(e, "window", "window_size_constraints_autofit");
+    t->GuiFunc = [](ImGuiTestContext* ctx)
+    {
+        auto constraint_func = [](ImGuiSizeCallbackData* data)
+        {
+            data->DesiredSize.x = data->DesiredSize.y = ImMax(data->DesiredSize.x, data->DesiredSize.y);
+        };
+        ImGui::GetIO().ConfigWindowsResizeFromEdges = true;
+        ImGui::SetNextWindowSizeConstraints(ImVec2(0, 0), ImVec2(FLT_MAX, FLT_MAX), constraint_func);
+        ImGui::Begin("Test Window", NULL, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoScrollbar);
+        ImGui::Dummy(ImVec2(600, 550));
+        if (ImGui::IsMouseDoubleClicked(0))
+        {
+            const ImVec2 size = ImGui::GetWindowSize();
+            IM_CHECK_EQ_NO_RET(size.x, size.y); // A later Begin() could otherwise repair the discarded dimension and hide the bug.
+            IM_CHECK_GT_NO_RET(size.x, 400.0f);
+        }
+        ImGui::End();
+    };
+    t->TestFunc = [](ImGuiTestContext* ctx)
+    {
+        ImGuiWindow* window = ctx->GetWindowByRef("Test Window");
+        for (int axis = 0; axis < 2; axis++)
+        {
+            ImGui::SetWindowPos(window, ImGui::GetMainViewport()->Pos + ImVec2(100, 100));
+            ImGui::SetWindowSize(window, ImVec2(400, 400));
+            ctx->Yield(2);
+            ctx->MouseSetViewport(window);
+            ctx->MouseTeleportToPos(window->Pos + window->Size * (axis == 0 ? ImVec2(1, 0.5f) : ImVec2(0.5f, 1)));
+            ctx->MouseDoubleClick(0);
+        }
+    };
+#endif
+
     // ## Test basic window auto resize
     t = IM_REGISTER_TEST(e, "window", "window_size_auto_basic");
     t->GuiFunc = [](ImGuiTestContext* ctx)
