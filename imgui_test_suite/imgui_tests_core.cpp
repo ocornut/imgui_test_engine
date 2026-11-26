@@ -7898,7 +7898,7 @@ void RegisterTests_Capture(ImGuiTestEngine* e)
             style.ScaleAllSizes(14.0f / style.FontSizeBase);
 
 #if IMGUI_VERSION_NUM >= 19199
-        ImGui::PushFont(font, 18.0f);
+        ImGui::PushFont(font, 13.0f);
 #else
         ImGui::PushFont(font);
 #endif
@@ -7907,13 +7907,13 @@ void RegisterTests_Capture(ImGuiTestEngine* e)
         //style.GrabRounding = 0;
         style.FrameBorderSize = style.ChildBorderSize = 0;
         io.ConfigInputTextCursorBlink = false;
-        style.MouseCursorScale = style._MainScale;
-
+        //style.MouseCursorScale = style._MainScale;
+        
         // Show two windows
         for (int n = 0; n < 2; n++)
         {
             bool open = true;
-            ImGui::SetNextWindowSize(ImVec2(ImGui::GetFontSize() * 19, ImGui::GetFrameHeightWithSpacing() * 6.0f), ImGuiCond_Appearing);
+            ImGui::SetNextWindowSize(ImVec2(ImGui::GetFontSize() * 16.2f, ImGui::GetFrameHeightWithSpacing() * 5.6f), ImGuiCond_Appearing);
             if (n == 0)
             {
                 ImGui::StyleColorsDark(&style);
@@ -7927,9 +7927,9 @@ void RegisterTests_Capture(ImGuiTestEngine* e)
             float float_value = 0.6f;
             ImGui::Text("Hello, world 123");
             ImGui::Button("Save");
-            ImGui::SetNextItemWidth(ImGui::GetFontSize() * 12);
+            ImGui::SetNextItemWidth(ImGui::GetFontSize() * 10);
             ImGui::InputText("string", ctx->GenericVars.Str1, IM_COUNTOF(ctx->GenericVars.Str1));
-            ImGui::SetNextItemWidth(ImGui::GetFontSize() * 12);
+            ImGui::SetNextItemWidth(ImGui::GetFontSize() * 10);
             ImGui::SliderFloat("float", &float_value, 0.0f, 1.0f);
             ImGui::End();
         }
@@ -7956,8 +7956,8 @@ void RegisterTests_Capture(ImGuiTestEngine* e)
             //ctx->MouseMove("float");
             //ctx->MouseMoveToPos(g.IO.MousePos + ImVec2(30, -10));
             ImRect r = ctx->ItemInfo("string").RectFull;
-            ctx->MouseMoveToPos(ImLerp(r.Min, r.Max, ImVec2(1.35f, 0.40f)));
-            ctx->CaptureScreenshotWindow("");
+            ctx->MouseMoveToPos(ImLerp(r.Min, r.Max, ImVec2(1.40f, 0.40f)));
+            ctx->CaptureScreenshotWindow("", ImGuiCaptureFlags_HideMouseCursor);
         }
     };
 
